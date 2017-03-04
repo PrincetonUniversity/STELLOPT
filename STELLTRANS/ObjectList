@@ -1,0 +1,25 @@
+ObjectFiles = \
+stelltran_read_database_predictive.o \
+stelltran_find_coeffs.o \
+stelltran_bal_update.o \
+stelltran_balance.o \
+colnew.o \
+stelltran_calcboot.o \
+stelltran_updateeq.o \
+stelltran_input_mod.o \
+stelltran_cycle.o \
+stelltran_read_database.o \
+stelltran_profiles_vmec.o \
+stelltran_current.o \
+stelltran_eqconsistency.o \
+stelltran_vars.o \
+stelltran_ecrh.o \
+stelltran_runeq.o \
+stelltran_equilutils.o \
+load_vmec_wout.o \
+stelltran_init.o \
+stelltran_data.o \
+stelltran_main.o \
+stelltran_runtime.o \
+stelltran_reinit_vmec.o \
+stelltran_loadeq.o 
