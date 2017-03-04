@@ -1,0 +1,72 @@
+#This makefile goes in dirs Debug and Release (first level below IPIES)
+SHELL   = /bin/sh
+MYHOME  = $(HOME)
+PRECOMP = /lib/cpp -traditional -DLINUX  -DLADAS  -DNETCDF -DNAG -DSILO_AVAI -DLHDF5 -DH5_USE_16_API -DGENE -DCOILOPTPP -DTERPSICHORE -DTRAVIS -DNTCC -DBNORM -DDKES_OPT -DBEAMS3D_OPT -DJINV_OPT -DNEO_OPT -DTXPORT_OPT -DMPI_OPT -DSKS  -DDIAGNO_OPT  -DDKES_OPT 
+HOME_BIN= /u/slazerso/bin
+LIB_LINK= $(HOME_BIN)/libstell.a -L$(BLASHOME)/lib -lopenblas  -L$(SCALAPACK_HOME)/lib -lscalapack -L$(BLACS_HOME)/lib -lmpiblacs -lmpiblacsCinit -lmpiblacsF77init -lmpiblacs  -L$(NETCDFHOME)/lib -lnetcdf -lnetcdff  -L$(HDF5_HOME)/lib -lhdf5_hl -lhdf5_fortran -lhdf5 -lpthread -lz -lm  -L$(NTCCHOME)/lib -laladdinsub -lr8slatec -ladpak -lcppsub -lcomput -lpspline -lportlib -lezcdf -lmds_sub -lmdstransp -lvaxonly -L$(NAG_ROOT)/lib -lnag_nag   
+LIB     = libstell.a
+LIB_DIR = ../../LIBSTELL
+COMPILE = $(MPIHOME)/bin/mpif90 
+COMPILE_FREE = $(MPIHOME)/bin/mpif90 -ffree-form -ffree-line-length-none -ffixed-line-length-none 
+FFILE   = '$*''.f'
+CFILE   = '$*''.c'
+F90FILE = '$*''.f90'
+LINK    = $(MPIHOME)/bin/mpif90 $(FLAGS) -o
+MOD_PATH= -I$(NTCCHOME)/mod   -I$(HDF5_HOME)/include -I$(HDF5_HOME)/lib  
+SPATH   = ../Sources
+#Contains list of source files (.o) and dependencies
+DEPLIST = IPIES.dep
+OBJLIST = ../ObjectList
+
+#Includes source files and dependency list
+include $(DEPLIST)
+include $(OBJLIST)
+VPATH = $(SPATH)
+
+.SUFFIXES :
+.SUFFIXES : .f .f90 .o
+xipies:  $(LIB) $(ObjectFiles)
+	$(LINK) $@ $(ObjectFiles) $(LIB_LINK)
+#Compile object files defined in OBJLIST.
+.f.o :
+	@if grep -q '^!DEC\$$' $<; \
+      then \
+         awk -f $(HOME_BIN)/awk_cdir.awk $< > $(CFILE) ; \
+         echo '$(PRECOMP) $<'; $(PRECOMP) $(CFILE) $(FFILE); \
+         rm -f $(CFILE); echo '$(COMPILE) $(FLAGS) $(MOD_PATH).. -c $<'; \
+         $(COMPILE) $(FLAGS) $(MOD_PATH).. -c $(FFILE); \
+      elif grep -q '^#if' $<; \
+      then \
+         cp $< $(CFILE); \
+         echo '$(PRECOMP) $<'; $(PRECOMP) $(CFILE) $(FFILE); \
+         rm -f $(CFILE); echo '$(COMPILE) $(FLAGS) $(MOD_PATH).. -c $<'; \
+         $(COMPILE) $(FLAGS) $(MOD_PATH).. -c $(FFILE); \
+      else \
+         echo '$(COMPILE) $(FLAGS) $(MOD_PATH). -c $<'; \
+         $(COMPILE) $(FLAGS) $(MOD_PATH). -c $<; \
+      fi
+
+.f90.o :
+	@if grep -q '^!DEC\$$' $<; \
+      then \
+         awk -f $(HOME_BIN)/awk_cdir.awk $< > $(CFILE) ; \
+         echo '$(PRECOMP) $<'; $(PRECOMP) $(CFILE) $(F90FILE); \
+         rm -f $(CFILE); echo '$(COMPILE_FREE) $(FLAGS) $(MOD_PATH).. -c $<'; \
+        $(COMPILE_FREE) $(FLAGS) $(MOD_PATH).. -c $(F90FILE); \
+      elif grep -q '^#if' $<; \
+      then \
+         cp $< $(CFILE); \
+         echo '$(PRECOMP) $<'; $(PRECOMP) $(CFILE) $(F90FILE); \
+         rm -f $(CFILE); echo '$(COMPILE_FREE) $(FLAGS) $(MOD_PATH).. -c $<'; \
+        $(COMPILE_FREE) $(FLAGS) $(MOD_PATH).. -c $(F90FILE); \
+      else \
+         echo '$(COMPILE_FREE) $(FLAGS) $(MOD_PATH). -c $<'; \
+         $(COMPILE_FREE) $(FLAGS) $(MOD_PATH).. -c $<; \
+      fi
+      
+#Check that library files are current. 
+$(LIB) :
+	@cd $(LIB_DIR); make $(TYPE)
+
+clean:
+	- rm -f *.o *.mod
