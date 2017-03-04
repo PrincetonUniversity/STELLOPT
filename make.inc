@@ -154,7 +154,8 @@ LIB_SHARE = $(BLASHOME)/lib/libopenblas.so \
 #######################################################################
 
 # Some Initial stuff
-HOME_BIN = $(MYHOME)
+# HOME_BIN = $(MYHOME)
+HOME_BIN = ../../
 MOD1_PATH = -I$(MYHOME)/libstell_dir
 MOD_PATH = 
 CLEAN_ARCH = 
