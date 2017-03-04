@@ -1,0 +1,75 @@
+
+
+		    Oak Ridge National Laboratory
+		      Anonymous FTP File Server
+
+		         Updated 5/12/200r53
+
+INTRODUCTION
+
+    The files under this directory are provided as a service of Oak Ridge 
+    National Laboratory, managed by UT-Battelle LLC.
+
+ORGANIZATION
+
+    The anonymous FTP server is organized as follows:
+
+    README 		 - this file
+
+    pub                  - public files for anonymous users to download
+                           with "get"
+
+    incoming             - directory for anonymous users to upload data
+                           into with the "put" command. DO NOT create
+                           directories in this area, as they will be
+                           deleted shortly after you create them.
+
+    outgoing             - directory for anonymous users to download 
+                           with "get".  "dir" and "ls" do not work in this
+                           directory and you must know file names.
+
+    bin, etc, usr        - files used to implement the server.  These
+			   are not interesting or useful to most
+  			   workstation users
+
+USAGE
+
+    Use the "cd" and "ls" commands to move around the FTP area.  Copy
+    files to your system with the "get" command.  Use the "binary" command
+    before transferring binary files such as executables and compressed
+    files.  Compressed files have names ending with ".Z" or ".gz".  Use the
+    uncompress or zcat command on your system to return ".Z" compressed
+    files (or gunzip or gzcat for ".gz" files, see /unix/gzip) to their
+    original format. 
+
+    Filenames ending in ".tar" are tar archives.  See the tar man page
+    on your system for more details on unpacking them.
+
+    Filenames ending in ".ps" are in PostScript format.  They can be
+    printed on a PostScript compatible printer or viewed on screen using a
+    previewer such as DEC's dxpsview or Sun OpenWindows' pageview.
+
+    Before retrieving large files, make sure you've got sufficient
+    disk space on your system to get the files and unpack them.  The "ls
+    -l" FTP command shows the size of files in bytes.  The "du" command on
+    most workstations will show available disk space in 512 byte blocks.
+
+    If you're coming from a workstation, don't forget that you can
+    execute UNIX commands on your system while you're in FTP by prefixing
+    them with an exclamation mark.  For example, to create a directory on
+    your system type "!mkdir dir-name".
+
+    Hint: to read text files without copying them to your system, copy
+    them to "-".  For example, "get README -" will copy the remote file 
+    README to your screen.  You can also substitute "/dev/tty" for "-",
+    e.g., "get README /dev/tty" on UNIX systems.
+
+IMPORTANT NOTICE
+
+    If you have any problems, send email to cipsgroup@ornl.gov.
+
+CONTACT
+
+    Helpline can be reached by phone at (865) 241-6765 and by
+    e-mail at helpline@ornl.gov.  If you have questions, comments, or 
+    suggestions for improving our service, please tell us.
