@@ -1,0 +1,30 @@
+# Microsoft Developer Studio Generated Dependency File, included by MAKEGRID.mak
+
+makegrid.o : \
+      ../../LIBSTELL/Debug/biotsavart.o \
+      ../../LIBSTELL/Debug/bsc_T.o \
+      ../../LIBSTELL/Debug/safe_open_mod.o \
+      ../../LIBSTELL/Debug/stel_constants.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      sym_check.o \
+      makegrid_global.o \
+      write_mgrid.o
+      
+
+makegrid_global.o : \
+      ../../LIBSTELL/Debug/stel_kinds.o
+      
+
+sym_check.o : \
+      ../../LIBSTELL/Debug/biotsavart.o \
+      makegrid_global.o \
+      write_mgrid.o
+
+
+write_mgrid.o : \
+      ../../LIBSTELL/Debug/biotsavart.o \
+      ../../LIBSTELL/Debug/ezcdf.o \
+      ../../LIBSTELL/Debug/mgrid_mod.o \
+      ../../LIBSTELL/Debug/safe_open_mod.o 
+
+      
