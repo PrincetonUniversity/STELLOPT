@@ -1,0 +1,17 @@
+ObjectFiles = \
+booz_jac.o \
+read_wout_booz.o \
+foranl.o \
+allocate_boozer.o \
+transpmn.o \
+boozer_xform.o \
+setup_booz.o \
+write_boozmn.o \
+harfun.o \
+trigfunc.o \
+booz_params.o \
+vcoords.o \
+boozer.o \
+free_mem_boozer.o \
+boozer_coords.o \
+booz_persistent.o 
