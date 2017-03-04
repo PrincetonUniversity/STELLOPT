@@ -1,0 +1,104 @@
+
+bfield_n.o : \
+      neswrite.o \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Release/safe_open_mod.o
+      
+      
+bn_alloc.o : \
+      meshes.o \
+      bnvariables.o
+      
+      
+bn_bfield_parallel.o : \
+      meshes.o \
+      bnvariables.o
+      
+      
+bn_fouri.o : \
+      meshes.o \
+      bnvariables.o
+
+
+bn_vecpot.o : \
+      meshes.o \
+      bnvariables.o
+      
+
+bnormal.o : \
+      meshes.o \
+      ../../LIBSTELL/Release/stel_kinds.o
+      
+      
+bn_precal.o : \
+      meshes.o \
+      bnvariables.o
+      
+      
+bn_read_commandline.o : \
+      neswrite.o
+      
+      
+bn_read_vmecf90.o : \
+      meshes.o \
+      bnvariables.o \
+      neswrite.o \
+      ../../LIBSTELL/Release/read_wout_mod.o
+
+
+bn_surface.o : \
+      meshes.o \
+      bnvariables.o
+      
+      
+bnvariables.o : \
+      ../../LIBSTELL/Release/stel_kinds.o
+      
+      
+bn_write_nescoil_input.o : \
+      meshes.o \
+      bnvariables.o \
+      neswrite.o \
+      ../../LIBSTELL/Release/safe_open_mod.o
+      
+      
+FZERO.o : \
+      ../../LIBSTELL/Release/stel_kinds.o
+
+
+Map_v.o : \
+      normal_info.o \
+      ../../LIBSTELL/Release/stel_kinds.o
+
+
+meshes.o : \
+
+
+neswrite.o : \
+      ../../LIBSTELL/Release/stel_kinds.o
+
+
+normal_info.o : \
+      ../../LIBSTELL/Release/stel_kinds.o
+
+
+normal_vector.o : \
+      neswrite.o \
+      normal_info.o \
+      ../../LIBSTELL/Release/stel_kinds.o
+      
+      
+regint.o : \
+      ../../LIBSTELL/Release/stel_kinds.o
+      
+      
+scaleup_boundary.o : \
+      neswrite.o \
+      meshes.o \
+      normal_info.o
+      
+      
+vecpot.o : \
+      bnvariables.o \
+      ../../LIBSTELL/Release/stel_kinds.o
+

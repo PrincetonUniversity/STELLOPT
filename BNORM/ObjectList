@@ -1,0 +1,22 @@
+ObjectFiles = \
+normal_info.o \
+Map_v.o \
+bnormal.o \
+bn_fouri.o \
+bn_read_vmecf90.o \
+FZERO.o \
+bn_vecpot.o \
+regint.o \
+neswrite.o \
+bn_alloc.o \
+meshes.o \
+vecpot.o \
+scaleup_boundary.o \
+bn_write_nescoil_input.o \
+bn_surface.o \
+bn_read_commandline.o \
+bn_bfield_parallel.o \
+bnvariables.o \
+bfield_n.o \
+bn_precal.o \
+normal_vector.o 
