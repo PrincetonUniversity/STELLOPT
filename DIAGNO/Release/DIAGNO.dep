@@ -1,0 +1,135 @@
+# Microsoft Developer Studio Generated Dependency File, included by VMEC2000.mak
+
+diagno.o : \
+      diagno_runtime.o \
+      diagno_input_mod.o 
+      
+
+diagno_input_mod.o : \
+      diagno_runtime.o \
+      ../../LIBSTELL/Release/safe_open_mod.o 
+      
+
+diagno_bench.o : \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      diagno_runtime.o \
+      ../../LIBSTELL/Release/virtual_casing_mod.o \
+      ../../LIBSTELL/Release/read_wout_mod.o \
+      ../../LIBSTELL/Release/biotsavart.o \
+      ../../LIBSTELL/Release/safe_open_mod.o 
+      
+
+diagno_runtime.o : \
+      ../../LIBSTELL/Release/stel_kinds.o
+      
+
+diagno_init_coil.o : \
+      diagno_runtime.o \
+      ../../LIBSTELL/Release/vmec_input.o \
+      ../../LIBSTELL/Release/biotsavart.o
+      
+
+diagno_init_vmec.o : \
+      ../../LIBSTELL/Release/read_wout_mod.o \
+      ../../LIBSTELL/Release/vmec_utils.o \
+      ../../LIBSTELL/Release/virtual_casing_mod.o \
+      diagno_runtime.o
+      
+
+diagno_init_spec.o : \
+      ../../LIBSTELL/Release/read_wout_mod.o \
+      ../../LIBSTELL/Release/vmec_utils.o \
+      ../../LIBSTELL/Release/virtual_casing_mod.o \
+      ../../LIBSTELL/Release/ez_hdf5.o \
+      diagno_runtime.o
+      
+
+diagno_bfield.o : \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Release/virtual_casing_mod.o \
+      ../../LIBSTELL/Release/biotsavart.o \
+      ../../LIBSTELL/Release/safe_open_mod.o \
+      diagno_runtime.o 
+      
+
+diagno_mirnov.o : \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Release/biotsavart.o \
+      ../../LIBSTELL/Release/safe_open_mod.o \
+      diagno_runtime.o 
+      
+
+diagno_bprobes.o : \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Release/virtual_casing_mod.o \
+      ../../LIBSTELL/Release/biotsavart.o \
+      ../../LIBSTELL/Release/safe_open_mod.o \
+      diagno_runtime.o 
+      
+
+diagno_rogowski.o : \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Release/biotsavart.o \
+      ../../LIBSTELL/Release/safe_open_mod.o \
+      diagno_runtime.o 
+      
+
+diagno_flux.o : \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Release/read_wout_mod.o \
+      ../../LIBSTELL/Release/safe_open_mod.o \
+      ../../LIBSTELL/Release/biotsavart.o \
+      diagno_runtime.o 
+      
+
+diagno_rogowski_new.o : \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Release/read_wout_mod.o \
+      ../../LIBSTELL/Release/safe_open_mod.o \
+      ../../LIBSTELL/Release/biotsavart.o \
+      diagno_runtime.o 
+      
+
+dflux_bode.o : \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Release/virtual_casing_mod.o \
+      ../../LIBSTELL/Release/bsc_T.o \
+      ../../LIBSTELL/Release/biotsavart.o 
+      
+
+dflux_simpson.o : \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Release/virtual_casing_mod.o \
+      ../../LIBSTELL/Release/bsc_T.o \
+      ../../LIBSTELL/Release/biotsavart.o 
+      
+
+dflux_midpoint.o : \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Release/virtual_casing_mod.o \
+      ../../LIBSTELL/Release/bsc_T.o \
+      ../../LIBSTELL/Release/biotsavart.o 
+      
+
+db_bode.o : \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Release/virtual_casing_mod.o \
+      ../../LIBSTELL/Release/bsc_T.o \
+      ../../LIBSTELL/Release/biotsavart.o 
+      
+
+db_simpson.o : \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Release/virtual_casing_mod.o \
+      ../../LIBSTELL/Release/bsc_T.o \
+      ../../LIBSTELL/Release/biotsavart.o 
+      
+
+db_midpoint.o : \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Release/virtual_casing_mod.o \
+      ../../LIBSTELL/Release/bsc_T.o \
+      ../../LIBSTELL/Release/biotsavart.o 
+      
+
+

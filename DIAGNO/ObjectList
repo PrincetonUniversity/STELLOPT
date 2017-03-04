@@ -1,0 +1,20 @@
+ObjectFiles = \
+dflux_simpson.o \
+diagno_bfield.o \
+db_bode.o \
+dflux_midpoint.o \
+diagno_input_mod.o \
+diagno_mirnov.o \
+diagno_runtime.o \
+diagno_rogowski_new.o \
+diagno_init_spec.o \
+db_simpson.o \
+diagno_init_coil.o \
+diagno.o \
+diagno_init_vmec.o \
+diagno_flux.o \
+diagno_rogowski.o \
+diagno_bench.o \
+diagno_bprobes.o \
+dflux_bode.o \
+db_midpoint.o 
