@@ -1,0 +1,25 @@
+ObjectFiles = \
+magnetic_fluxes.o \
+write_pies_input.o \
+pies_profile.o \
+pies_init_input.o \
+pies_background.o \
+pies_fieldlines.o \
+backspace_out.o \
+cubspl.o \
+pies_magco.o \
+uvtomn.o \
+toroidal_flux.o \
+mntouv.o \
+pies_runtime.o \
+write_pies_coil.o \
+pies_init_wout.o \
+main.o \
+init_profiles.o \
+pies_realspace.o \
+profile_functions.o \
+virtual_casing.o \
+mgrid_field.o \
+cyl2suv.o \
+calc_metrics.o \
+pies_init.o 
