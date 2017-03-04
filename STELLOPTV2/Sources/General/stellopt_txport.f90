@@ -31,7 +31,7 @@
       USE equil_utils
       USE booz_persistent
       USE read_boozer_mod
-      USE gist_mod
+!      USE gist_mod
       USE EZspline_obj
       USE EZspline
 !DEC$ IF DEFINED (GENE)
@@ -71,7 +71,7 @@
                      rky, rkalf, sgm2, rkpar0sq, rkparsq, dln_jac_rbb2, &
                      wstare, wde, bs, trm1a, trm1b, trm2a, trm3a, trm4a, &
                      trm6a, zt, dlzt, cj, gene_eig_r, gene_eig_i, gene_kymin,&
-                     temp1,temp2,temp3
+                     temp1,temp2,temp3, abserr,alpha0_end,alpha0_start
       COMPLEX :: ctrm1b,ccof0,cbb2a,cwa, cimag
       REAL(rprec), DIMENSION(3) :: sflCrd0,sflCrd, sflCrd_sav, gradS,gradThetaStar,&
                                    gradPhi,mag,gradAlpha, wrk, gradB,R_grad,Z_grad,&
@@ -124,6 +124,7 @@
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
       IF (iflag < 0) RETURN
+      abserr = 1.0E-9
 !DEC$ IF DEFINED (TXPORT_OPT)
       IF (lscreen) WRITE(6,'(a)') ' --------------------  TURBULENT TRANSPORT CALC  ----------------------'
       CALL FLUSH(6)
