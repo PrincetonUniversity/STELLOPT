@@ -1,0 +1,319 @@
+# Microsoft Developer Studio Generated Dependency File, included by SIESTA.mak
+
+add_resistivity.o : \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      descriptor_mod.o \
+      evolution.o \
+      nscalingtools.o \
+      perturbation.o \
+      siesta_bfield.o \
+      siesta_displacement.o \
+      siesta_state.o 
+      
+
+assert_mod.o : \
+      ../../LIBSTELL/Release/stel_kinds.o 
+      
+
+bhtobf.o : \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      descriptor_mod.o \
+      nscalingtools.o \
+      quantities.o \
+      timer_mod.o 
+      
+
+check3d.o : \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      descriptor_mod.o \
+      evolution.o \
+      hessian.o \
+      quantities.o \
+      shared_data.o 
+      
+
+cv_currents.o : \
+      ../../LIBSTELL/Release/stel_constants.o \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      evolution.o \
+      fourier.o \
+      hessian.o \
+      island_params.o \
+      nscalingtools.o \
+      quantities.o \
+      shared_data.o \
+      timer_mod.o 
+      
+
+descriptor_mod.o : \
+      ../../LIBSTELL/Release/stel_kinds.o 
+      
+
+diagnostics_mod.o : \
+      descriptor_mod.o \
+      fourier.o \
+      nscalingtools.o \
+      quantities.o \
+      timer_mod.o 
+      
+
+DirectAccess.o : \
+      ../../LIBSTELL/Release/safe_open_mod.o \
+      ../../LIBSTELL/Release/stel_kinds.o 
+      
+
+dumping_mod.o : \
+      ../../LIBSTELL/Release/read_wout_mod.o \
+      ../../LIBSTELL/Release/stel_constants.o \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Release/vmec_utils.o \
+      descriptor_mod.o \
+      diagnostics_mod.o \
+      fourier.o \
+      island_params.o \
+      metrics.o \
+      nscalingtools.o \
+      perturbation.o \
+      quantities.o 
+      
+
+evolution.o : \
+      ../../LIBSTELL/Release/stel_constants.o \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      descriptor_mod.o \
+      diagnostics_mod.o \
+      dumping_mod.o \
+      gmres.o \
+      hessian.o \
+      island_params.o \
+      nscalingtools.o \
+      perturbation.o \
+      quantities.o \
+      shared_data.o \
+      shared_functions.o \
+      siesta_state.o \
+      timer_mod.o 
+      
+
+f1dim_mod.o : \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      shared_data.o \
+      shared_functions.o 
+      
+
+fourier.o : \
+      ../../LIBSTELL/Release/stel_constants.o \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      descriptor_mod.o \
+      island_params.o \
+      nscalingtools.o \
+      timer_mod.o 
+      
+
+get_force_harmonics.o : \
+      descriptor_mod.o \
+      evolution.o \
+      fourier.o \
+      hessian.o \
+      nscalingtools.o \
+      quantities.o \
+      shared_data.o \
+      timer_mod.o 
+      
+
+gmres.o : \
+      ../../LIBSTELL/Release/stel_constants.o \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      blocktridiagonalsolver.o \
+      descriptor_mod.o \
+      hessian.o \
+      nscalingtools.o \
+      perturbation.o \
+      shared_data.o \
+      shared_functions.o \
+      siesta_state.o \
+      timer_mod.o 
+      
+
+hessian.o : \
+      ../../LIBSTELL/Release/stel_constants.o \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      blocktridiagonalsolver.o \
+      descriptor_mod.o \
+      DirectAccess.o \
+      island_params.o \
+      nscalingtools.o \
+      prof_mod.o \
+      ptrd_mod.o \
+      timer_mod.o 
+      
+
+init_state.o : \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      diagnostics_mod.o \
+      evolution.o \
+      fourier.o \
+      hessian.o \
+      nscalingtools.o \
+      perturbation.o \
+      quantities.o \
+      shared_data.o 
+      
+
+island_params.o : \
+      ../../LIBSTELL/Release/stel_kinds.o 
+      
+
+metrics.o : \
+      ../../LIBSTELL/Release/read_wout_mod.o \
+      ../../LIBSTELL/Release/stel_constants.o \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      descriptor_mod.o \
+      fourier.o \
+      island_params.o \
+      timer_mod.o 
+      
+
+nscalingtools.o : \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      blocktridiagonalsolver.o \
+      timer_mod.o 
+      
+
+perturbation.o : \
+      ../../LIBSTELL/Release/date_and_computer.o \
+      ../../LIBSTELL/Release/ezcdf.o \
+      ../../LIBSTELL/Release/stel_constants.o \
+      descriptor_mod.o \
+      fourier.o \
+      hessian.o \
+      nscalingtools.o \
+      quantities.o \
+      siesta_state.o 
+      
+
+prof_mod.o : \
+      assert_mod.o 
+      
+
+ptrd_mod.o : \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      assert_mod.o \
+      descriptor_mod.o 
+      
+
+quantities.o : \
+      ../../LIBSTELL/Release/stel_constants.o \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      fourier.o \
+      island_params.o \
+      metrics.o 
+      
+
+shared_data.o : \
+      ../../LIBSTELL/Release/stel_constants.o \
+      ../../LIBSTELL/Release/stel_kinds.o 
+      
+
+shared_functions.o : \
+      descriptor_mod.o \
+      hessian.o \
+      island_params.o \
+      nscalingtools.o \
+      quantities.o \
+      shared_data.o \
+      siesta_bfield.o \
+      siesta_displacement.o \
+      siesta_force.o \
+      siesta_pressure.o \
+      timer_mod.o 
+      
+
+siesta.o : \
+      descriptor_mod.o \
+      diagnostics_mod.o \
+      dumping_mod.o \
+      evolution.o \
+      hessian.o \
+      island_params.o \
+      metrics.o \
+      nscalingtools.o \
+      perturbation.o \
+      prof_mod.o \
+      quantities.o \
+      shared_data.o \
+      timer_mod.o 
+      
+
+siesta_bfield.o : \
+      ../../LIBSTELL/Release/stel_constants.o \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      fourier.o \
+      island_params.o \
+      nscalingtools.o \
+      perturbation.o \
+      quantities.o \
+      shared_data.o \
+      timer_mod.o 
+      
+
+siesta_displacement.o : \
+      ../../LIBSTELL/Release/stel_constants.o \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      descriptor_mod.o \
+      fourier.o \
+      nscalingtools.o \
+      quantities.o \
+      shared_data.o \
+      siesta_state.o \
+      timer_mod.o 
+      
+
+siesta_force.o : \
+      ../../LIBSTELL/Release/stel_constants.o \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      descriptor_mod.o \
+      fourier.o \
+      hessian.o \
+      island_params.o \
+      nscalingtools.o \
+      quantities.o \
+      shared_data.o \
+      timer_mod.o 
+      
+
+siesta_pressure.o : \
+      ../../LIBSTELL/Release/stel_constants.o \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      fourier.o \
+      hessian.o \
+      nscalingtools.o \
+      quantities.o \
+      shared_data.o \
+      timer_mod.o 
+      
+
+siesta_state.o : \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      diagnostics_mod.o \
+      nscalingtools.o \
+      quantities.o \
+      shared_data.o \
+      timer_mod.o 
+      
+
+timer_mod.o : \
+      ../../LIBSTELL/Release/stel_kinds.o 
+      
+
+utilities.o : \
+      ../../LIBSTELL/Release/stel_constants.o \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      descriptor_mod.o \
+      fourier.o \
+      island_params.o \
+      metrics.o \
+      nscalingtools.o \
+      quantities.o \
+      timer_mod.o 
+      
