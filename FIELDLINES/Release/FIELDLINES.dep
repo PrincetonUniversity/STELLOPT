@@ -1,0 +1,233 @@
+# Microsoft Developer Studio Generated Dependency File, included by VMEC2000.mak
+
+fieldlines_main.o: \
+      ../../LIBSTELL/Release/vessel_mod.o \
+      ../../LIBSTELL/Release/mpi_params.o \
+      fieldlines_grid.o \
+      fieldlines_runtime.o 
+      
+
+fieldlines_runtime.o: \
+      ../../LIBSTELL/Release/stel_kinds.o 
+      
+
+monit_find_axis.o: 
+
+
+random.o:
+      
+
+fieldlines_init.o: \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Release/vmec_input.o \
+      ../../LIBSTELL/Release/mpi_params.o \
+      ../../LIBSTELL/Release/vessel_mod.o \
+      random.o \
+      fieldlines_runtime.o \
+      fieldlines_grid.o \
+      fieldlines_input_mod.o \
+      fieldlines_lines.o
+      
+
+fmag_nag.o: \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      fieldlines_runtime.o \
+      fieldlines_grid.o 
+      
+
+fieldlines_find_axis.o: \
+      fieldlines_runtime.o \
+      fieldlines_grid.o 
+      
+
+fieldlines_find_hc.o: \
+      fieldlines_runtime.o \
+      fieldlines_lines.o \
+      fieldlines_grid.o 
+      
+
+fieldlines_init_subgrid.o: \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Release/mpi_params.o \
+      fieldlines_runtime.o \
+      fieldlines_grid.o \
+      fieldlines_lines.o
+      
+
+fieldlines_grid.o: \
+      ../../LIBSTELL/Release/stel_kinds.o 
+      
+
+fieldlines_input_mod.o: \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Release/safe_open_mod.o \
+      fieldlines_runtime.o \
+      fieldlines_lines.o \
+      fieldlines_grid.o 
+
+
+fieldlines_follow.o: \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Release/vessel_mod.o \
+      fieldlines_runtime.o \
+      fieldlines_lines.o \
+      fieldlines_grid.o \
+      ../../LIBSTELL/Release/mpi_params.o
+
+
+follow_single.o: \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      fieldlines_runtime.o \
+      fieldlines_grid.o 
+      
+
+vmec_plasfield.o : \
+      ../../LIBSTELL/Release/read_wout_mod.o \
+      ../../LIBSTELL/Release/mgrid_field_mod.o \
+      ../../LIBSTELL/Release/virtual_casing_mod.o
+      
+
+fieldlines_lines.o: \
+      ../../LIBSTELL/Release/stel_kinds.o 
+      
+
+fblin_nag.o: \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      fieldlines_grid.o \
+      fieldlines_runtime.o
+      
+
+fblin_tanmap_nag.o: \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      fieldlines_grid.o \
+      fieldlines_runtime.o
+      
+
+fblin_tanmap_rkh68.o: 
+      
+
+fblin_tanmap_lsode.o: 
+      
+
+faxis_nag.o: \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      fieldlines_grid.o 
+      
+
+fblin_lsode.o: 
+      
+
+fblin_rkh68.o: 
+      
+
+jacobian_lsode.o: \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      fieldlines_grid.o \
+      fieldlines_runtime.o
+
+jacobian_tanmap_lsode.o: \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      fieldlines_grid.o \
+      fieldlines_runtime.o
+      
+
+Map_v.o: \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      fieldlines_grid.o 
+      
+
+out_fieldlines_nag.o: \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Release/vessel_mod.o \
+      random.o \
+      fieldlines_runtime.o \
+      fieldlines_lines.o \
+      fieldlines_grid.o
+      
+
+backspace_out.o:  
+      
+
+drkhvg.o:  
+      
+
+fieldlines_write.o: \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Release/ez_hdf5.o \
+      fieldlines_grid.o \
+      fieldlines_runtime.o \
+      fieldlines_lines.o
+      
+
+fieldlines_write_emc3.o: \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Release/safe_open_mod.o \
+      ../../LIBSTELL/Release/virtual_casing_mod.o \
+      ../../LIBSTELL/Release/read_wout_mod.o \
+      fieldlines_grid.o \
+      fieldlines_runtime.o 
+      
+
+fieldlines_init_coil.o: \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Release/mpi_params.o \
+      ../../LIBSTELL/Release/vmec_input.o \
+      ../../LIBSTELL/Release/biotsavart.o \
+      fieldlines_runtime.o \
+      fieldlines_grid.o
+      
+
+fieldlines_init_I.o: \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Release/mpi_params.o \
+      ../../LIBSTELL/Release/vmec_input.o \
+      fieldlines_runtime.o \
+      fieldlines_grid.o
+      
+
+fieldlines_init_mgrid.o: \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Release/mpi_params.o \
+      ../../LIBSTELL/Release/mgrid_field_mod.o \
+      ../../LIBSTELL/Release/vmec_input.o \
+      fieldlines_runtime.o \
+      fieldlines_grid.o
+      
+
+fieldlines_init_vmec.o: \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Release/read_wout_mod.o \
+      ../../LIBSTELL/Release/vmec_utils.o \
+      ../../LIBSTELL/Release/virtual_casing_mod.o \
+      ../../LIBSTELL/Release/mpi_params.o \
+      fieldlines_runtime.o \
+      fieldlines_lines.o \
+      fieldlines_grid.o
+      
+
+fieldlines_init_vmec_edgestart.o: \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Release/read_wout_mod.o \
+      fieldlines_runtime.o \
+      fieldlines_lines.o 
+      
+
+fieldlines_init_restart.o: \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Release/mpi_params.o \
+      ../../LIBSTELL/Release/ez_hdf5.o \
+      fieldlines_lines.o \
+      fieldlines_runtime.o \
+      fieldlines_grid.o
+      
+
+fieldlines_init_nescoil.o: \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Release/mpi_params.o \
+      ../../LIBSTELL/Release/safe_open_mod.o \
+      ../../LIBSTELL/Release/virtual_casing_mod.o \
+      fieldlines_lines.o \
+      fieldlines_runtime.o \
+      fieldlines_grid.o
+      
+      
