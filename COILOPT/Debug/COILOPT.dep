@@ -1,0 +1,415 @@
+# Microsoft Developer Studio Generated Dependency File, included by COILOPT.mak
+
+boundary.o : \
+       ../../LIBSTELL/Debug/stel_constants.o 
+      
+
+coils.o : \
+       coiltypes.o 
+      
+
+coiltypes.o : \
+       ../../LIBSTELL/Debug/stel_constants.o 
+      
+
+times_stuff.o : \
+       ../../LIBSTELL/Debug/stel_constants.o 
+      
+
+vcoilpts.o : \
+       ../../LIBSTELL/Debug/stel_constants.o 
+      
+
+vwire.o : \
+       ../../LIBSTELL/Debug/vcoilpts.o 
+      
+
+coil_curvature.o : \
+       ../../LIBSTELL/Debug/modular_coils.o \
+       boundary.o \
+       vwire.o 
+      
+
+mod_coil_distance.o : \
+       ../../LIBSTELL/Debug/modular_coils.o \
+       ../../LIBSTELL/Debug/saddle_coils.o \
+       ../../LIBSTELL/Debug/vf_coils.o \
+       boundary.o \
+       vwire.o 
+      
+
+plasma_mod_coil_distance.o : \
+       ../../LIBSTELL/Debug/modular_coils.o \
+       boundary.o \
+       vwire.o 
+      
+
+plasma_sad_coil_distance.o : \
+       ../../LIBSTELL/Debug/saddle_coils.o \
+       boundary.o \
+       vwire.o 
+      
+
+sad_coil_distance.o : \
+       ../../LIBSTELL/Debug/modular_coils.o \
+       ../../LIBSTELL/Debug/saddle_coils.o \
+       ../../LIBSTELL/Debug/stel_constants.o \
+       ../../LIBSTELL/Debug/vf_coils.o \
+       boundary.o \
+       vwire.o 
+      
+
+allocate_modular_coils.o : \
+       ../../LIBSTELL/Debug/modular_coils.o \
+       ../../LIBSTELL/Debug/mpi_params.o \
+       ../../LIBSTELL/Debug/vcoilpts.o \
+       boundary.o \
+       coils.o \
+       vwire.o 
+      
+
+allocate_saddle_coils.o : \
+       ../../LIBSTELL/Debug/mpi_params.o \
+       ../../LIBSTELL/Debug/saddle_coils.o \
+       ../../LIBSTELL/Debug/vcoilpts.o \
+       boundary.o \
+       coils.o \
+       vwire.o 
+      
+
+allocate_vf_coils.o : \
+       ../../LIBSTELL/Debug/mpi_params.o \
+       ../../LIBSTELL/Debug/vf_coils.o \
+       coils.o 
+      
+
+allocate_wires.o : \
+       ../../LIBSTELL/Debug/biotsavart.o \
+       ../../LIBSTELL/Debug/tf_coils.o \
+       ../../LIBSTELL/Debug/vcoilpts.o \
+       vwire.o 
+      
+
+get_modes.o : \
+       ../../LIBSTELL/Debug/stel_constants.o 
+      
+
+initialize_access.o : \
+       ../../LIBSTELL/Debug/bcoils_mod.o \
+       ../../LIBSTELL/Debug/stel_constants.o \
+       ../../LIBSTELL/Debug/vcoilpts.o \
+       vwire.o 
+      
+
+initialize_opt.o : \
+       ../../LIBSTELL/Debug/bcoils_mod.o \
+       ../../LIBSTELL/Debug/coilsnamin.o \
+       ../../LIBSTELL/Debug/control_mod.o \
+       ../../LIBSTELL/Debug/gade_mod.o \
+       ../../LIBSTELL/Debug/modular_coils.o \
+       ../../LIBSTELL/Debug/mpi_params.o \
+       ../../LIBSTELL/Debug/saddle_coils.o \
+       ../../LIBSTELL/Debug/saddle_surface.o \
+       ../../LIBSTELL/Debug/safe_open_mod.o \
+       ../../LIBSTELL/Debug/stel_constants.o \
+       ../../LIBSTELL/Debug/system_mod.o \
+       ../../LIBSTELL/Debug/tf_coils.o \
+       ../../LIBSTELL/Debug/vcoilpts.o \
+       ../../LIBSTELL/Debug/vmec_input.o \
+       boundary.o \
+       coils.o \
+       vname.o \
+       vwire.o 
+      
+
+normal_vector.o : \
+       ../../LIBSTELL/Debug/bnorm_mod.o \
+       ../../LIBSTELL/Debug/mpi_params.o \
+       ../../LIBSTELL/Debug/stel_constants.o \
+       boundary.o 
+      
+
+read_bcoils.o : \
+       ../../LIBSTELL/Debug/bcoils_mod.o \
+       ../../LIBSTELL/Debug/mpi_params.o \
+       ../../LIBSTELL/Debug/safe_open_mod.o \
+       ../../LIBSTELL/Debug/vcoilpts.o 
+      
+
+read_bnorm_coefs.o : \
+       ../../LIBSTELL/Debug/bnorm_mod.o \
+       ../../LIBSTELL/Debug/mpi_params.o \
+       ../../LIBSTELL/Debug/safe_open_mod.o \
+       boundary.o 
+      
+
+read_wout.o : \
+       ../../LIBSTELL/Debug/mpi_params.o \
+       ../../LIBSTELL/Debug/read_wout_mod.o \
+       boundary.o \
+       vname.o 
+      
+
+b_error_mode.o : \
+       ../../LIBSTELL/Debug/bnorm_mod.o \
+       ../../LIBSTELL/Debug/stel_constants.o \
+       boundary.o 
+      
+
+b_error_spectrum.o : \
+       ../../LIBSTELL/Debug/bnorm_mod.o \
+       ../../LIBSTELL/Debug/mpi_params.o \
+       ../../LIBSTELL/Debug/stel_constants.o \
+       boundary.o 
+      
+
+clean_up.o : \
+       ../../LIBSTELL/Debug/control_mod.o \
+       ../../LIBSTELL/Debug/gade_mod.o \
+       ../../LIBSTELL/Debug/mpi_params.o \
+       ../../LIBSTELL/Debug/safe_open_mod.o \
+       ../../LIBSTELL/Debug/system_mod.o \
+       vname.o 
+      
+
+coil_curve.o : \
+       ../../LIBSTELL/Debug/stel_constants.o 
+      
+
+coilopt.o : \
+       ../../LIBSTELL/Debug/bcoils_mod.o \
+       ../../LIBSTELL/Debug/biotsavart.o \
+       ../../LIBSTELL/Debug/bnorm_mod.o \
+       ../../LIBSTELL/Debug/control_mod.o \
+       ../../LIBSTELL/Debug/modular_coils.o \
+       ../../LIBSTELL/Debug/mpi_params.o \
+       ../../LIBSTELL/Debug/saddle_coils.o \
+       ../../LIBSTELL/Debug/saddle_surface.o \
+       ../../LIBSTELL/Debug/safe_open_mod.o \
+       ../../LIBSTELL/Debug/tf_coils.o \
+       ../../LIBSTELL/Debug/vcoilpts.o \
+       ../../LIBSTELL/Debug/vf_coils.o \
+       boundary.o \
+       coils.o \
+       vname.o \
+       vwire.o 
+      
+
+eval_modular_coils.o : \
+       ../../LIBSTELL/Debug/modular_coils.o \
+       boundary.o \
+       coils.o \
+       vwire.o 
+      
+
+eval_poloidal_currents.o : \
+       ../../LIBSTELL/Debug/bcoils_mod.o \
+       ../../LIBSTELL/Debug/modular_coils.o \
+       ../../LIBSTELL/Debug/saddle_coils.o \
+       ../../LIBSTELL/Debug/tf_coils.o \
+       boundary.o 
+      
+
+eval_saddle_coils.o : \
+       ../../LIBSTELL/Debug/saddle_coils.o \
+       ../../LIBSTELL/Debug/saddle_surface.o \
+       ../../LIBSTELL/Debug/stel_constants.o \
+       ../../LIBSTELL/Debug/vcoilpts.o \
+       boundary.o \
+       coils.o \
+       vwire.o 
+      
+
+eval_saddle_rz.o : \
+       ../../LIBSTELL/Debug/saddle_coils.o \
+       ../../LIBSTELL/Debug/saddle_surface.o \
+       ../../LIBSTELL/Debug/stel_constants.o \
+       ../../LIBSTELL/Debug/vcoilpts.o \
+       boundary.o \
+       coils.o \
+       vwire.o 
+      
+
+eval_vf_coils.o : \
+       ../../LIBSTELL/Debug/vf_coils.o \
+       boundary.o \
+       coils.o \
+       vwire.o 
+      
+
+evaluate_access.o : \
+       ../../LIBSTELL/Debug/bcoils_mod.o \
+       ../../LIBSTELL/Debug/modular_coils.o \
+       ../../LIBSTELL/Debug/saddle_coils.o \
+       boundary.o \
+       vwire.o 
+      
+
+evaluate_bg_field.o : \
+       ../../LIBSTELL/Debug/bcoils_mod.o \
+       ../../LIBSTELL/Debug/biotsavart.o \
+       ../../LIBSTELL/Debug/modular_coils.o \
+       ../../LIBSTELL/Debug/saddle_coils.o \
+       ../../LIBSTELL/Debug/stel_constants.o \
+       ../../LIBSTELL/Debug/tf_coils.o \
+       ../../LIBSTELL/Debug/vcoilpts.o \
+       ../../LIBSTELL/Debug/vf_coils.o \
+       boundary.o \
+       vwire.o 
+      
+
+evaluate_bnorm.o : \
+       ../../LIBSTELL/Debug/bnorm_mod.o \
+       ../../LIBSTELL/Debug/mpi_params.o \
+       ../../LIBSTELL/Debug/safe_open_mod.o \
+       ../../LIBSTELL/Debug/stel_constants.o \
+       ../../LIBSTELL/Debug/tf_coils.o \
+       boundary.o 
+      
+
+evaluate_field_error.o : \
+       ../../LIBSTELL/Debug/bcoils_mod.o \
+       ../../LIBSTELL/Debug/biotsavart.o \
+       ../../LIBSTELL/Debug/modular_coils.o \
+       ../../LIBSTELL/Debug/saddle_coils.o \
+       ../../LIBSTELL/Debug/stel_constants.o \
+       ../../LIBSTELL/Debug/tf_coils.o \
+       ../../LIBSTELL/Debug/vcoilpts.o \
+       ../../LIBSTELL/Debug/vf_coils.o \
+       boundary.o \
+       vwire.o 
+      
+
+evaluate_max_field.o : \
+       ../../LIBSTELL/Debug/bcoils_mod.o \
+       ../../LIBSTELL/Debug/biotsavart.o \
+       ../../LIBSTELL/Debug/modular_coils.o \
+       ../../LIBSTELL/Debug/stel_constants.o \
+       vwire.o 
+      
+
+load_modular_structures.o : \
+       ../../LIBSTELL/Debug/modular_coils.o \
+       ../../LIBSTELL/Debug/stel_constants.o \
+       ../../LIBSTELL/Debug/tf_coils.o \
+       ../../LIBSTELL/Debug/vcoilpts.o \
+       boundary.o \
+       coils.o \
+       vwire.o 
+      
+
+load_saddle_structures.o : \
+       ../../LIBSTELL/Debug/saddle_coils.o \
+       ../../LIBSTELL/Debug/tf_coils.o \
+       ../../LIBSTELL/Debug/vcoilpts.o \
+       boundary.o \
+       coils.o \
+       vwire.o 
+      
+
+load_vf_structures.o : \
+       ../../LIBSTELL/Debug/vf_coils.o \
+       coils.o 
+      
+
+loadparams.o : \
+       ../../LIBSTELL/Debug/bcoils_mod.o \
+       ../../LIBSTELL/Debug/modular_coils.o \
+       ../../LIBSTELL/Debug/mpi_params.o \
+       ../../LIBSTELL/Debug/saddle_coils.o \
+       ../../LIBSTELL/Debug/saddle_surface.o \
+       ../../LIBSTELL/Debug/tf_coils.o \
+       ../../LIBSTELL/Debug/vcoilpts.o \
+       ../../LIBSTELL/Debug/vf_coils.o \
+       coils.o 
+      
+
+lsfun1.o : \
+       ../../LIBSTELL/Debug/bcoils_mod.o \
+       ../../LIBSTELL/Debug/bnorm_mod.o \
+       ../../LIBSTELL/Debug/control_mod.o \
+       ../../LIBSTELL/Debug/gade_mod.o \
+       ../../LIBSTELL/Debug/modular_coils.o \
+       ../../LIBSTELL/Debug/mpi_params.o \
+       ../../LIBSTELL/Debug/saddle_coils.o \
+       ../../LIBSTELL/Debug/safe_open_mod.o \
+       ../../LIBSTELL/Debug/stel_constants.o \
+       ../../LIBSTELL/Debug/tf_coils.o \
+       ../../LIBSTELL/Debug/vf_coils.o \
+       boundary.o \
+       times_stuff.o \
+       vname.o \
+       vwire.o 
+      
+
+modular_curve.o : \
+       ../../LIBSTELL/Debug/modular_coils.o \
+       ../../LIBSTELL/Debug/stel_constants.o \
+       coils.o \
+       vwire.o 
+      
+
+modular_surface.o : \
+       ../../LIBSTELL/Debug/modular_coils.o \
+       ../../LIBSTELL/Debug/stel_constants.o 
+      
+
+optimize.o : \
+       ../../LIBSTELL/Debug/control_mod.o \
+       ../../LIBSTELL/Debug/mpi_params.o \
+       ../../LIBSTELL/Debug/stel_constants.o \
+       vname.o 
+      
+
+radial_ext.o : \
+       ../../LIBSTELL/Debug/modular_coils.o \
+       ../../LIBSTELL/Debug/stel_constants.o 
+      
+
+rz_surf.o : \
+       ../../LIBSTELL/Debug/stel_constants.o 
+      
+
+save_for05.o : \
+       ../../LIBSTELL/Debug/coilsnamin.o \
+       ../../LIBSTELL/Debug/gade_mod.o \
+       ../../LIBSTELL/Debug/safe_open_mod.o 
+      
+
+speval.o : \
+       ../../LIBSTELL/Debug/stel_constants.o 
+      
+
+spline_bkp_distance.o : \
+       ../../LIBSTELL/Debug/saddle_coils.o 
+      
+
+theta_f.o : \
+       ../../LIBSTELL/Debug/modular_coils.o \
+       coils.o \
+       vwire.o 
+      
+
+write_coils.o : \
+       ../../LIBSTELL/Debug/bcoils_mod.o \
+       ../../LIBSTELL/Debug/modular_coils.o \
+       ../../LIBSTELL/Debug/saddle_coils.o \
+       ../../LIBSTELL/Debug/safe_open_mod.o \
+       ../../LIBSTELL/Debug/stel_constants.o \
+       ../../LIBSTELL/Debug/tf_coils.o \
+       ../../LIBSTELL/Debug/vf_coils.o \
+       boundary.o \
+       coils.o \
+       coiltypes.o \
+       vname.o \
+       vwire.o 
+      
+
+write_surfaces.o : \
+       ../../LIBSTELL/Debug/modular_coils.o \
+       ../../LIBSTELL/Debug/saddle_coils.o \
+       ../../LIBSTELL/Debug/saddle_surface.o \
+       ../../LIBSTELL/Debug/stel_constants.o \
+       boundary.o \
+       vwire.o 
+      
