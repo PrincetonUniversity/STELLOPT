@@ -1,0 +1,8 @@
+ObjectFiles = \
+bubble.o \
+plotter.o \
+totz.o \
+vname0.o \
+flsur.o \
+plotcurve.o \
+vplot.o 
