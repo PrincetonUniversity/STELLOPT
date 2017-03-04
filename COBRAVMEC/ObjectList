@@ -1,0 +1,26 @@
+ObjectFiles = \
+ballooning_data.o \
+EQL.o \
+coeffs.o \
+obtain_theta.o \
+INP.o \
+polint.o \
+CP.o \
+general_dimensions.o \
+normalize_data.o \
+fmesh_quantities.o \
+get_lambda.o \
+obtain_field_line.o \
+variat_eig_full.o \
+TVAL.o \
+obtain_zeta.o \
+order_input.o \
+geteigm.o \
+STM.o \
+get_ballooning_grate.o \
+cobra.o \
+readin_data.o \
+TVECT.o \
+getmatrix.o \
+summod.o \
+summodosd.o 
