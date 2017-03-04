@@ -1,0 +1,20 @@
+ObjectFiles = \
+cescale.o \
+printout.o \
+vcmain.o \
+wrdisk.o \
+lcalc.o \
+vnamecl2.o \
+dkes_input.o \
+dkes2.o \
+blox.o \
+residue.o \
+dkes_realspace.o \
+wrout.o \
+blk5d.o \
+header.o \
+vimatrix.o \
+rddisk.o \
+dkes_input_prepare.o \
+SORTI.o \
+filit.o 
