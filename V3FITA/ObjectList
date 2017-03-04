@@ -1,0 +1,31 @@
+ObjectFiles = \
+model_T.o \
+density_T.o \
+v3f_global.o \
+limiter_iso_T.o \
+b_transform_vmec.o \
+bivariate.o \
+signal_mc.o \
+signal_T.o \
+edge_limit_mc.o \
+sxrc_mc.o \
+sxr_routines.o \
+faraday_mod.o \
+edge_limit_T.o \
+geometric_T.o \
+ipsl_mc.o \
+mmaw.o \
+v3read_wout.o \
+mddc_mc.o \
+ptr_links.o \
+plasma_edge.o \
+recon_param_model.o \
+recon_param_T.o \
+eq_T.o \
+bfield_grid_mod.o \
+ip_global.o \
+b_transform_mod.o \
+v3fita.o \
+eq_interface.o \
+signal_cdf.o \
+gsq_mod.o 

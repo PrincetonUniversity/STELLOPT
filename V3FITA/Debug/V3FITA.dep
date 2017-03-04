@@ -1,0 +1,305 @@
+# Microsoft Developer Studio Generated Dependency File, included by V3FITA.mak
+
+b_transform_mod.o : \
+      ../../LIBSTELL/Debug/math_utilities.o \
+      ../../LIBSTELL/Debug/read_wout_mod.o \
+      ../../LIBSTELL/Debug/stel_constants.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Debug/TRACK_MOD.o \
+      ../../LIBSTELL/Debug/v3_utilities.o \
+      b_transform_vmec.o \
+      eq_T.o \
+      v3read_wout.o 
+      
+
+b_transform_vmec.o : \
+      ../../LIBSTELL/Debug/read_wout_mod.o \
+      ../../LIBSTELL/Debug/stel_constants.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      eq_T.o 
+      
+
+bfield_grid_mod.o : \
+      ../../LIBSTELL/Debug/AJAX_MOD.o \
+      ../../LIBSTELL/Debug/ezcdf.o \
+      ../../LIBSTELL/Debug/math_utilities.o \
+      ../../LIBSTELL/Debug/read_wout_mod.o \
+      ../../LIBSTELL/Debug/safe_open_mod.o \
+      ../../LIBSTELL/Debug/stel_constants.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Debug/v3_utilities.o \
+      b_transform_mod.o \
+      b_transform_vmec.o \
+      faraday_mod.o \
+      v3read_wout.o 
+      
+
+bivariate.o : \
+      ../../LIBSTELL/Debug/stel_kinds.o 
+      
+
+density_T.o : \
+      ../../LIBSTELL/Debug/stel_constants.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Debug/v3_utilities.o 
+      
+
+edge_limit_mc.o : \
+      ../../LIBSTELL/Debug/stel_constants.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Debug/v3_utilities.o \
+      edge_limit_T.o \
+      limiter_iso_T.o \
+      model_T.o 
+      
+
+edge_limit_T.o : \
+      ../../LIBSTELL/Debug/stel_constants.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Debug/v3_utilities.o \
+      limiter_iso_T.o 
+      
+
+eq_interface.o : \
+      ../../LIBSTELL/Debug/date_and_computer.o \
+      ../../LIBSTELL/Debug/mgrid_mod.o \
+      ../../LIBSTELL/Debug/safe_open_mod.o \
+      ../../LIBSTELL/Debug/stel_constants.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Debug/v3_utilities.o \
+      ../../LIBSTELL/Debug/vacfield_mod.o \
+      ../../LIBSTELL/Debug/vmec_input.o \
+      ../../LIBSTELL/Debug/write_array_generic.o \
+      ../../VMEC2000/Debug/precon2d.o \
+      ../../VMEC2000/Debug/vacmod0.o \
+      ../../VMEC2000/Debug/vmec_dim.o \
+      ../../VMEC2000/Debug/vmec_history.o \
+      ../../VMEC2000/Debug/vmec_main.o \
+      ../../VMEC2000/Debug/vmec_params.o \
+      ../../VMEC2000/Debug/xstuff.o \
+      eq_T.o \
+      v3f_global.o 
+      
+
+eq_T.o : \
+      ../../LIBSTELL/Debug/mgrid_mod.o \
+      ../../LIBSTELL/Debug/read_wout_mod.o \
+      ../../LIBSTELL/Debug/stel_constants.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Debug/v3_utilities.o 
+      
+
+faraday_mod.o : \
+      ../../LIBSTELL/Debug/AJAX_MOD.o \
+      ../../LIBSTELL/Debug/ezcdf.o \
+      ../../LIBSTELL/Debug/intpol_cdf.o \
+      ../../LIBSTELL/Debug/ip_beamline.o \
+      ../../LIBSTELL/Debug/ipsl_cdf.o \
+      ../../LIBSTELL/Debug/ipsl_T.o \
+      ../../LIBSTELL/Debug/math_utilities.o \
+      ../../LIBSTELL/Debug/safe_open_mod.o \
+      ../../LIBSTELL/Debug/SPEC_KIND_MOD.o \
+      ../../LIBSTELL/Debug/stel_constants.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Debug/TRACK_MOD.o \
+      b_transform_mod.o \
+      b_transform_vmec.o \
+      eq_T.o \
+      ip_global.o \
+      v3f_global.o 
+      
+
+geometric_T.o : \
+      ../../LIBSTELL/Debug/stel_constants.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Debug/v3_utilities.o \
+      edge_limit_T.o 
+      
+
+gsq_mod.o : \
+      ../../LIBSTELL/Debug/stel_constants.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Debug/v3_utilities.o \
+      eq_interface.o \
+      model_T.o \
+      recon_param_model.o \
+      recon_param_T.o \
+      signal_mc.o \
+      signal_T.o \
+      v3f_global.o 
+      
+
+ip_global.o : \
+      ../../LIBSTELL/Debug/diagnostic_T.o \
+      ../../LIBSTELL/Debug/ip_beamline.o \
+      ../../LIBSTELL/Debug/stel_constants.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Debug/v3_utilities.o \
+      plasma_edge.o \
+      signal_T.o 
+      
+
+ipsl_mc.o : \
+      ../../LIBSTELL/Debug/ipsl_T.o \
+      ../../LIBSTELL/Debug/stel_constants.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Debug/v3_utilities.o \
+      faraday_mod.o \
+      ip_global.o \
+      model_T.o 
+      
+
+limiter_iso_T.o : \
+      ../../LIBSTELL/Debug/stel_constants.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Debug/v3_utilities.o 
+      
+
+mddc_mc.o : \
+      ../../LIBSTELL/Debug/mddc_T.o \
+      ../../LIBSTELL/Debug/stel_constants.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Debug/v3_utilities.o \
+      bivariate.o \
+      model_T.o 
+      
+
+model_T.o : \
+      ../../LIBSTELL/Debug/bsc_T.o \
+      ../../LIBSTELL/Debug/stel_constants.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Debug/v3_utilities.o \
+      density_T.o \
+      eq_T.o 
+      
+
+plasma_edge.o : \
+      ../../LIBSTELL/Debug/stel_constants.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Debug/v3_utilities.o 
+      
+
+ptr_links.o : \
+      ../../LIBSTELL/Debug/ip_beamline.o 
+      
+
+recon_param_model.o : \
+      ../../LIBSTELL/Debug/stel_constants.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Debug/v3_utilities.o \
+      eq_interface.o \
+      model_T.o \
+      recon_param_T.o 
+      
+
+recon_param_T.o : \
+      ../../LIBSTELL/Debug/stel_constants.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Debug/v3_utilities.o 
+      
+
+signal_cdf.o : \
+      ../../LIBSTELL/Debug/bsc_T.o \
+      ../../LIBSTELL/Debug/diagnostic_cdf.o \
+      ../../LIBSTELL/Debug/diagnostic_T.o \
+      ../../LIBSTELL/Debug/ezcdf.o \
+      ../../LIBSTELL/Debug/stel_constants.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Debug/v3_utilities.o \
+      signal_T.o 
+      
+
+signal_mc.o : \
+      ../../LIBSTELL/Debug/read_wout_mod.o \
+      ../../LIBSTELL/Debug/stel_constants.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Debug/v3_utilities.o \
+      b_transform_vmec.o \
+      edge_limit_mc.o \
+      ipsl_mc.o \
+      mddc_mc.o \
+      model_T.o \
+      signal_T.o \
+      sxrc_mc.o 
+      
+
+signal_T.o : \
+      ../../LIBSTELL/Debug/diagnostic_T.o \
+      ../../LIBSTELL/Debug/stel_constants.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Debug/v3_utilities.o \
+      geometric_T.o 
+      
+
+sxr_routines.o : \
+      ../../LIBSTELL/Debug/read_wout_mod.o \
+      ../../LIBSTELL/Debug/safe_open_mod.o \
+      ../../LIBSTELL/Debug/stel_constants.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Debug/sxrc_T.o \
+      ../../LIBSTELL/Debug/v3_utilities.o \
+      ../../LIBSTELL/Debug/vmec_utils.o \
+      v3f_global.o 
+      
+
+sxrc_mc.o : \
+      ../../LIBSTELL/Debug/read_wout_mod.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Debug/sxrc_T.o \
+      ../../LIBSTELL/Debug/vmec_utils.o \
+      model_T.o \
+      v3f_global.o 
+      
+
+v3f_global.o : \
+      ../../LIBSTELL/Debug/bsc_T.o \
+      ../../LIBSTELL/Debug/diagnostic_T.o \
+      ../../LIBSTELL/Debug/stel_constants.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      eq_T.o \
+      geometric_T.o \
+      model_T.o \
+      recon_param_T.o \
+      signal_T.o 
+      
+
+v3fita.o : \
+      ../../LIBSTELL/Debug/diagnostic_cdf.o \
+      ../../LIBSTELL/Debug/diagnostic_T.o \
+      ../../LIBSTELL/Debug/ip_beamline.o \
+      ../../LIBSTELL/Debug/safe_open_mod.o \
+      ../../LIBSTELL/Debug/stel_constants.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Debug/sxrc_T.o \
+      ../../LIBSTELL/Debug/v3_utilities.o \
+      bfield_grid_mod.o \
+      edge_limit_T.o \
+      eq_interface.o \
+      eq_T.o \
+      faraday_mod.o \
+      geometric_T.o \
+      gsq_mod.o \
+      ip_global.o \
+      limiter_iso_T.o \
+      mmaw.o \
+      recon_param_model.o \
+      recon_param_T.o \
+      signal_cdf.o \
+      signal_mc.o \
+      signal_T.o \
+      sxr_routines.o \
+      v3f_global.o \
+      v3read_wout.o 
+      
+
+v3read_wout.o : \
+      ../../LIBSTELL/Debug/AJAX_MOD.o \
+      ../../LIBSTELL/Debug/read_wout_mod.o \
+      ../../LIBSTELL/Debug/SPEC_KIND_MOD.o \
+      ../../LIBSTELL/Debug/stel_constants.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Debug/TRACK_MOD.o \
+      ../../LIBSTELL/Debug/WRITE_MOD.o \
+      eq_T.o \
+      v3f_global.o 
+      
