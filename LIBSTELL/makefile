@@ -10,7 +10,7 @@
   MAKE = makelibstell
   LIB_DIR = $(MYHOME)/libstell_dir
 
-.PHONY: release debug clean_release clean_debug static_release shared_release
+.PHONY: release debug clean_release clean_debug static_release
 
 release:
 	@echo "Beginning release compilation and archiving of libstell"
