@@ -1,0 +1,27 @@
+ObjectFiles = \
+fblin.o \
+torlines_main.o \
+torlines_fieldlines.o \
+torlines_init_wout.o \
+cyl2suv.o \
+torlines_input_mod.o \
+calc_metrics.o \
+torlines_realspace.o \
+torlines_emc3.o \
+torlines_runtime.o \
+torlines_init.o \
+out_torlines.o \
+torlines_background.o \
+mntouv.o \
+normal_vector.o \
+follow.o \
+torlines_follow.o \
+backspace_out.o \
+torlines_gridtest.o \
+FZERO.o \
+scaleup_boundary.o \
+torlines_init_external.o \
+fblin_lsode.o \
+jacobian_lsode.o \
+Map_v.o \
+torlines_write.o 
