@@ -1,0 +1,85 @@
+# Microsoft Developer Studio Generated Dependency File, included by BOOZ_XFORM.mak
+
+allocate_boozer.o : \
+      booz_params.o \
+      booz_persistent.o 
+      
+
+booz_jac.o : \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      booz_params.o \
+      booz_persistent.o 
+      
+
+booz_params.o : \
+      ../../LIBSTELL/Debug/stel_kinds.o 
+      
+
+booz_persistent.o : \
+      ../../LIBSTELL/Debug/stel_kinds.o 
+      
+
+boozer.o : \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      booz_params.o 
+      
+
+boozer_coords.o : \
+      booz_params.o \
+      booz_persistent.o 
+      
+
+boozer_xform.o : \
+      ../../LIBSTELL/Debug/safe_open_mod.o \
+      booz_params.o 
+      
+
+foranl.o : \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      booz_params.o \
+      booz_persistent.o 
+      
+
+free_mem_boozer.o : \
+      booz_params.o \
+      booz_persistent.o 
+      
+
+harfun.o : \
+      ../../LIBSTELL/Debug/stel_kinds.o 
+      
+
+read_wout_booz.o : \
+      ../../LIBSTELL/Debug/read_wout_mod.o \
+      booz_params.o \
+      booz_persistent.o 
+      
+
+setup_booz.o : \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      booz_persistent.o 
+      
+
+transpmn.o : \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      booz_params.o 
+      
+
+trigfunc.o : \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      booz_params.o 
+      
+
+vcoords.o : \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      booz_persistent.o 
+      
+
+write_boozmn.o : \
+      ../../LIBSTELL/Debug/ezcdf.o \
+      ../../LIBSTELL/Debug/read_boozer_mod.o \
+      ../../LIBSTELL/Debug/read_wout_mod.o \
+      ../../LIBSTELL/Debug/safe_open_mod.o \
+      booz_params.o \
+      booz_persistent.o 
+      
