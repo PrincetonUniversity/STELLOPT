@@ -1,0 +1,7 @@
+# Microsoft Developer Studio Generated Dependency File, included by VMEC2000.mak
+
+vmec2v690_main.o: \
+      ../../LIBSTELL/Release/read_wout_mod.o \
+      ../../LIBSTELL/Release/safe_open_mod.o 
+      
+      
