@@ -1,0 +1,16 @@
+#!/bin/sh
+#     Script:     update
+#     Author:     S. Lazerson (lazerson@pppl.gov)
+#     Date:       10/06/11
+#     Purpose:    This script zips the various STELLOPT
+#                 programs into their zip files and then
+#                 zips these files into the STELLOPT zip
+#                 file.
+
+for CODE in LIBSTELL ANIMEC BCYCLIC BEAMS3D BOOTSJ BNORM BOOZ_XFORM COBRAVMEC COILOPT DESCUR DESCUR_PLOT DIAGNO DKES FIELDLINES GTOVMI IPIES J_INVARIANT JMC MAKEGRID NEO NESCOIL PARVMEC PENTA SIESTA STELLOPT STELLTRANS TORLINES V3FITA VMEC2000 VMEC2PIES VMEC2SPEC VMEC2STEL VMEC2V690 VMEC2XGC
+do
+cd $CODE
+echo $CODE
+make clean_release
+cd ..
+done
