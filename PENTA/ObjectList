@@ -1,0 +1,8 @@
+ObjectFiles = \
+penta_functions_mod.o \
+penta_modules.o \
+quanc8.o \
+penta_subroutines.o \
+penta_imp.o \
+read_input_file_mod.o \
+bspline90_22.o 
