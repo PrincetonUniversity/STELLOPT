@@ -1,0 +1,262 @@
+
+      subroutine datain(extension, iunit_in, iunit, ijbs, ians)
+c--
+c  read and initialize data for BOOTSJ
+c--
+C-----------------------------------------------
+C   M o d u l e s
+C-----------------------------------------------
+      use parambs
+      use vmec0
+      use read_boozer_mod
+C      use read_namelist_mod
+      use bootsj_input
+      implicit none
+C-----------------------------------------------
+C   D u m m y   A r g u m e n t s
+C-----------------------------------------------
+      integer :: iunit, ijbs, ians, iunit_in
+      character*(*) :: extension
+C-----------------------------------------------
+C   L o c a l   P a r a m e t e r s
+C-----------------------------------------------
+      real(rprec), parameter :: one = 1, zero = 0
+C-----------------------------------------------
+C   L o c a l   V a r i a b l e s
+C-----------------------------------------------
+      integer :: i, n, m, j, i1, ntheta_min, nzeta_min,
+     1   mn, ir, idum
+      real(rprec) :: temp
+      real(rprec), dimension(:), allocatable :: work
+      real(rprec) :: unit, file, status, err,
+     1    tempe0, tempi0, pres10, pres0, a, a1, dum
+
+      interface read_namelist
+         subroutine read_namelist(iunit, io_stat, lc_name)
+         use vmec_input
+         use vmec_seq
+         use bootsj_input
+         use optim_params
+         integer iunit, io_stat
+         character*(*) :: lc_name
+         end subroutine read_namelist
+      end interface
+C-----------------------------------------------
+!
+!     Read in boozer |B|, iota, phip, pres AND allocate needed arrays
+!
+      call read_boozer(extension)
+
+      jlist = 0
+      read (iunit_in, *,iostat=idum) jlist
+      IF (jlist(1) == 1) jlist(1:) = jlist(2:)
+      if (idum .gt. 0) stop ' Error reading bootsj input file in DATAIN'
+
+      close (iunit_in)
+
+!
+!
+!- Give default values of control data otherwise read from the file 'bootin'
+!
+!  nrho is an obsolete variable that is no longer used.  It is set to ns-1
+!  where ns is the number of whole mesh points used in vemc.
+!
+!  nrho is an obsolete variable that is no longer used.  It is set to ns-1
+!  where ns is the number of whole mesh points used in vemc.
+!
+      nrho = 30                !number of rho values to use
+      mbuse = 6                !number of m (poloidal) terms in B field.
+      nbuse = 4                !number of nzetah (toroidal) terms in B field.
+      zeff1 = 1.0_dp           !effective ion charge
+      dens0 = 0.3_dp           !central electron density in 10**20 m-3
+      teti = 2.0_dp            !ratio of Te/Ti for electron to ion
+                               !temperature profiles
+      tempres = -one           !tempe1(i)=pres(ir)**tempres
+                               !if(tempres.eq.-1.0_dp) then
+                               !tempe1(i)=sqrt(pres(i))
+      damp = -0.01_dp          !superceded by damp_bs
+      damp_bs = -0.01_dp       !damping factor for resonances
+      isymm0 = 0               !if ne.0 then force a symmetric-device calculation,
+      tempe1 = one             !1 keV default temperature
+      tempi1 = zero
+      ate    = zero
+      ati    = zero
+      ate(0) = -one
+      ati(0) = -one
+!
+!- Read control data
+!
+      call read_namelist (iunit, i, 'bootin')
+      if (i .ne. 0 ) stop 'Error reading bootin namelist'
+
+!  If the new damping variable is not read in, set to to the value this gives
+!  an unchanged damping factor, namely damp_bs**2 = damp.  If, in addition,
+!  damp is not read in, then set damp_bs = 0.001
+
+      if(damp_bs .lt. zero) then !in this case no damp_bs was read in
+        if(damp .gt. zero) then
+           damp_bs = sqrt(damp)
+        else
+           damp_bs = 0.001_dp      !in this case no damp was read in
+        endif
+      endif
+      teti = abs(teti)
+
+!
+!     CHECK DIMENSION SIZE CONSISTENCY
+!
+      if(nboz_b .lt. nbuse) then
+         if (lscreen) write(*,*) 'nbuse > nbos_b, nbuse = nboz_b'
+         nbuse = nboz_b
+      endif
+      if(mboz_b .lt. mbuse) then
+         if (lscreen) write(*,*) 'mbuse > mbos_b, mbuse = mboz_b'
+         mbuse = mboz_b
+      endif
+
+      nzeta_min = 2*nbuse + 1
+      ntheta_min = 2*mbuse + 1
+
+      do i = 0, 6
+         nzetah = 4*2**i
+         if(nzetah .gt. nzeta_min) exit
+         nzetah = 2*2**i * 3
+         if(nzetah .gt. nzeta_min) exit
+      enddo
+
+      do i = 0, 6
+         nthetah = 4*2**i
+         if(nthetah .gt. ntheta_min) exit
+         nthetah = 2*2**i * 3
+         if(nthetah .gt. ntheta_min) exit
+      enddo
+
+      if(lscreen) print *, 'mbuse = ',mbuse,'nbuse = ',
+     1    nbuse,'nthetah = ',nthetah, ' nzetah = ',nzetah
+
+   90 format(5e16.8)
+
+!     convert bmn's to amnfit's (positive m's only to positive n's only)
+
+      amnfit = zero
+
+      lsurf = .false.
+      status = tiny(a1)
+      do ir = 1, irup
+         do mn = 1,mnboz_b
+            m = ixm_b(mn)
+            n = ixn_b(mn)/nfp_b
+            if (m .gt. mboz_b) stop 'boozmn indexing conflict, m'
+            if (abs(n) .gt. nboz_b) stop 'boozmn indexing conflict, n'
+            if (n.lt.0) then
+               m = -m
+               n = -n
+            end if
+            if (m.eq.0 .and. n.eq.0 .and. bmnc_b(mn,ir).gt.status)
+     1         lsurf(ir) = .true.
+            amnfit(ir,m,n) = bmnc_b(mn,ir+1)     !!2nd half grid == 1st grid pt. here
+         end do
+      end do
+
+      call read_boozer_deallocate
+
+      zeff1 = max(one,zeff1)
+c  setup s grid.  A nonuniform mesh is allowed.
+
+      psimax = maxval(abs(flux))
+
+c  we need to keep the sign of psimax
+      if(flux(irup) .lt. zero) psimax = -psimax
+
+c  first normalize the mesh to 1
+c  and then shift from the full to half mesh with the first point on 1, not 2
+c  also need to calulate the deltas for differencing on the vmec grid
+c  special values at the ends will be calculated in bongrid
+
+      do ir = 1, irup
+        rhoar(ir) = 0.5_dp*(flux(ir) + flux(ir+1))/psimax
+        d_rho(ir) = (flux(ir+1) - flux(ir))/psimax
+      end do
+
+c      write (ijbs, 130) irup, psimax
+c  130 format(' Last flux surface used is number ',i2,' with PSIMAX =',1p
+c     1   e11.4,' WB')
+c
+c- Switch sign of q, if desired.
+c
+      if (iotasign .lt. 0) then
+         qsafety(:irup) = iotasign*qsafety(:irup)
+      endif
+
+c
+c                                                !Boozer I/g values
+      aiogar(:irup) = aipsi(:irup)/(gpsi(:irup)+1.0e-36_dp)
+c
+      call positiv (pres1, irup, 2) !to be sure that arrays are positive
+      call positiv (betar, irup, 2)
+c  evaluate electron and ion temperature profiles on vmec mesh
+      if (any(ate .ne. zero)) then
+         do ir = 1, irup
+            tempe1(ir) = temp(rhoar(ir), ate)
+         end do
+      end if
+      if (any(ati .ne. zero)) then
+         do ir = 1, irup
+            tempi1(ir) = temp(rhoar(ir), ati)
+         end do
+      end if
+
+      tempe0 = tempe1(1)            !central electron temperature in keV
+      tempi0 = tempi1(1)                 !central ion temperature in keV
+      pres10 = pres1(1)                    !central total pressure in Pa
+      pres0 = 1.6022E4_DP
+c  if the leading coefficient on either te or ti is negative, the intent is
+c  to assume a maximum density, and then calcuate the profiles using a
+c  power law given by abs(tempres).  this coefficient must originally be
+c  be negative and ca not be greater than one.  That is to say, the profiles
+c  are determined by ne(0) and tempres.  The ratio of Te to Ti is given by
+c  teti.
+      if (tempe0.le.zero .or. tempi0.le.zero) tempres = abs(tempres)
+      tempres = min(one,tempres)
+c
+      if (tempres .ge. zero) then   !in that case, calculate the temperature
+         teti = teti + 1.E-36_dp
+         a = one + one/(zeff1*teti)
+c                                   !central electron temperature in keV
+         tempe0 = pres10/(a*pres0*dens0)
+         tempi0 = tempe0/teti            !central ion temperature in keV
+         tempe1(:irup) = pres1(:irup)**tempres
+c                             !suggested Te and Ti profiles are the same
+         tempi1(:irup) = tempe1(:irup)
+         a = tempe0/tempe1(1)
+         a1 = tempi0/tempi1(1)
+         tempe1(:irup) = tempe1(:irup)*a
+         tempi1(:irup) = tempi1(:irup)*a1
+      endif
+c
+      call positiv (tempe1, irup, 2)
+      call positiv (tempi1, irup, 2)
+
+      dense(:irup) = pres1(:irup)/(pres0*(tempe1(:irup)+tempi1(:irup)/
+     1   zeff1)+1.E-36_dp)
+      allocate(work(irdim))
+      call smooth1 (dense, 1, irup, work, zero)
+      call positiv (dense, irup, 2)
+      i1 = irup - 1
+      a = tempe1(irup) + tempi1(irup)/zeff1
+      a1 = tempe1(i1) + tempi1(i1)/zeff1
+      dense(irup) = dense(i1)*a1*betar(irup)/(a*betar(i1)+1.E-36_dp)
+c  the above game is apparently to control the spline derivatives at the
+c  edge.
+      densi(:irup) = dense(:irup)/zeff1
+      dens0 = dense(1)                         !central electron density
+
+
+c
+c- Echo input data to output file.
+c
+      write (ians, bootin)
+
+      deallocate (work)
+
+      end subroutine datain

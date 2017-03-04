@@ -1,0 +1,28 @@
+ObjectFiles = \
+al31.o \
+output.o \
+bootsj.o \
+driver.o \
+temp.o \
+woflam.o \
+reorganz.o \
+vmec0.o \
+do_fft.o \
+bongrid.o \
+caprsh2.o \
+othersums.o \
+datain.o \
+trig.o \
+SIMPUN.o \
+fraction.o \
+sumit.o \
+allocate_radial.o \
+denmf.o \
+parambs.o \
+grad.o \
+allocate_angles.o \
+positiv.o \
+deallocate_all.o \
+smooth1.o \
+tok_fraction.o \
+read_boozer.o 
