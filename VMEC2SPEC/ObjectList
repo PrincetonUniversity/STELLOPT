@@ -1,0 +1,11 @@
+ObjectFiles = \
+write_spec_input.o \
+spec_input_mod.o \
+spec_init_input.o \
+main.o \
+spec_profile.o \
+spec_background.o \
+spec_init_wout.o \
+spec_rat_prof.o \
+spec_runtime.o \
+spec_init.o 
