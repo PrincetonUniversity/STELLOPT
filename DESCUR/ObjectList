@@ -1,0 +1,17 @@
+ObjectFiles = \
+restart.o \
+scrunch.o \
+vname1.o \
+getrz.o \
+vname0.o \
+printit.o \
+fftrans.o \
+amplitud.o \
+evolve.o \
+fixaray.o \
+descur.o \
+order.o \
+inguess.o \
+funct.o \
+getangle.o \
+read_wout_curve.o 
