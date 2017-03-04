@@ -277,7 +277,7 @@ endif
 LIB_LINK += $(GENE_LIB) $(COILOPT_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB)
 
 # Add libraries to LIB_LINK
-LIB_LINK+= $(HOME_BIN)/libstell.a $(LIBS)
+LIB_LINK+= $(MYHOME)/libstell.a $(LIBS)
 
 # 3rd Party Libs
 ifeq ($(LMPI),T)
