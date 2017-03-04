@@ -1,0 +1,660 @@
+# Microsoft Developer Studio Generated Dependency File, included by STELLOPT.mak
+
+chisq_3dbd.o : \
+      ../../LIBSTELL/Debug/optim_params.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      boozer_params.o \
+      chisq_mod.o \
+      optim.o 
+      
+
+chisq_aspect.o : \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      chisq_mod.o \
+      optim.o 
+      
+
+chisq_ballooning.o : \
+      ../../LIBSTELL/Debug/mpi_params.o \
+      ../../LIBSTELL/Debug/optim_params.o \
+      ../../LIBSTELL/Debug/safe_open_mod.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      chisq_mod.o \
+      optim.o 
+      
+
+chisq_beta.o : \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      chisq_mod.o \
+      optim.o 
+      
+
+chisq_bmin.o : \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      boozer_params.o \
+      chisq_mod.o \
+      optim.o 
+      
+
+chisq_bmn.o : \
+      ../../LIBSTELL/Debug/optim_params.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      chisq_mod.o \
+      optim.o 
+      
+
+chisq_bootsj.o : \
+      ../../LIBSTELL/Debug/optim_params.o \
+      ../../LIBSTELL/Debug/safe_open_mod.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      chisq_mod.o \
+      optim.o 
+      
+
+chisq_bpres.o : \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      chisq_mod.o \
+      optim.o 
+      
+
+chisq_bripple.o : \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Debug/vparams.o \
+      boozer_params.o \
+      chisq_mod.o \
+      optim.o 
+      
+
+chisq_coilgeom.o : \
+      ../../LIBSTELL/Debug/coilsnamin.o \
+      ../../LIBSTELL/Debug/safe_open_mod.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Debug/system_mod.o \
+      chisq_mod.o \
+      optim.o \
+      real_ptr_type.o 
+      
+
+chisq_curvature.o : \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      boozer_params.o \
+      chisq_mod.o 
+      
+
+chisq_diagnostics.o : \
+      ../../LIBSTELL/Debug/read_v3post_mod.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Debug/system_mod.o \
+      chisq_mod.o \
+      optim.o 
+      
+
+chisq_dkes.o : \
+      ../../LIBSTELL/Debug/mpi_params.o \
+      ../../LIBSTELL/Debug/optim_params.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      chisq_mod.o \
+      optim.o 
+      
+
+chisq_dsubr.o : \
+      ../../LIBSTELL/Debug/optim_params.o \
+      ../../LIBSTELL/Debug/safe_open_mod.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Debug/system_mod.o \
+      chisq_mod.o \
+      optim.o 
+      
+
+chisq_ellipticity.o : \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Debug/vparams.o \
+      boozer_params.o \
+      chisq_mod.o \
+      optim.o 
+      
+
+chisq_extcur.o : \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Debug/vmec_input.o \
+      chisq_mod.o \
+      optim.o 
+      
+
+chisq_iota.o : \
+      ../../LIBSTELL/Debug/optim_params.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      chisq_mod.o \
+      optim.o 
+      
+
+chisq_iota_p.o : \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      chisq_mod.o \
+      optim.o 
+      
+
+chisq_jac.o : \
+      ../../LIBSTELL/Debug/optim_params.o \
+      ../../LIBSTELL/Debug/read_boozer_mod.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      chisq_mod.o \
+      optim.o 
+      
+
+chisq_jinvar.o : \
+      ../../LIBSTELL/Debug/optim_params.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      chisq_mod.o \
+      optim.o 
+      
+
+chisq_jstar.o : \
+      ../../LIBSTELL/Debug/optim_params.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Debug/vparams.o \
+      boozer_params.o \
+      chisq_mod.o \
+      optim.o 
+      
+
+chisq_kappa.o : \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      boozer_params.o \
+      chisq_mod.o \
+      optim.o 
+      
+
+chisq_kink.o : \
+      ../../LIBSTELL/Debug/optim_params.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Debug/system_mod.o \
+      chisq_mod.o \
+      optim.o 
+      
+
+chisq_magwell.o : \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      chisq_mod.o \
+      optim.o 
+      
+
+chisq_maxcurrent.o : \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Debug/vparams.o \
+      chisq_mod.o \
+      optim.o 
+      
+
+chisq_mercier.o : \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      chisq_mod.o \
+      optim.o 
+      
+
+chisq_mod.o : \
+      ../../LIBSTELL/Debug/stel_kinds.o 
+      
+
+chisq_neo.o : \
+      ../../LIBSTELL/Debug/optim_params.o \
+      ../../LIBSTELL/Debug/safe_open_mod.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Debug/system_mod.o \
+      chisq_mod.o \
+      optim.o 
+      
+
+chisq_nescoil.o : \
+      ../../LIBSTELL/Debug/optim_params.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Debug/system_mod.o \
+      chisq_mod.o \
+      optim.o 
+      
+
+chisq_oh.o : \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Debug/vmec_input.o \
+      chisq_mod.o \
+      optim.o 
+      
+
+chisq_orbit.o : \
+      ../../LIBSTELL/Debug/optim_params.o \
+      ../../LIBSTELL/Debug/safe_open_mod.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Debug/system_mod.o \
+      chisq_mod.o \
+      optim.o 
+      
+
+chisq_polflux.o : \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Debug/vparams.o \
+      chisq_mod.o \
+      optim.o 
+      
+
+chisq_pseudo.o : \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      boozer_params.o \
+      chisq_mod.o \
+      optim.o 
+      
+
+chisq_rbtor.o : \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      chisq_mod.o \
+      optim.o 
+      
+
+chisq_rzbdy.o : \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      chisq_mod.o \
+      optim.o 
+      
+
+chisq_vac_island.o : \
+      ../../LIBSTELL/Debug/optim_params.o \
+      ../../LIBSTELL/Debug/safe_open_mod.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Debug/system_mod.o \
+      ../../LIBSTELL/Debug/vmec_input.o \
+      chisq_mod.o \
+      optim.o 
+      
+
+chisq_vacopt.o : \
+      ../../LIBSTELL/Debug/bsc_T.o \
+      ../../LIBSTELL/Debug/coilsnamin.o \
+      ../../LIBSTELL/Debug/safe_open_mod.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Debug/system_mod.o \
+      ../../LIBSTELL/Debug/vacfield_mod.o \
+      chisq_mod.o \
+      optim.o 
+      
+
+pfboot.o : \
+      ../../LIBSTELL/Debug/optim_params.o 
+      
+
+piota_prime.o : \
+      ../../LIBSTELL/Debug/optim_params.o 
+      
+
+piota_t.o : \
+      ../../LIBSTELL/Debug/optim_params.o 
+      
+
+pseed_t.o : \
+      ../../LIBSTELL/Debug/optim_params.o 
+      
+
+pwell_t.o : \
+      ../../LIBSTELL/Debug/optim_params.o 
+      
+
+boozer_params.o : \
+      ../../LIBSTELL/Debug/stel_kinds.o 
+      
+
+chk_rzmnb.o : \
+      ../../LIBSTELL/Debug/mpi_params.o \
+      ../../LIBSTELL/Debug/vmec_input.o \
+      ../../LIBSTELL/Debug/vparams.o \
+      optim.o 
+      
+
+flux_surf_curv.o : \
+      ../../LIBSTELL/Debug/mpi_params.o \
+      ../../LIBSTELL/Debug/safe_open_mod.o \
+      ../../LIBSTELL/Debug/vparams.o \
+      optim.o 
+      
+
+generate_mgrid.o : \
+      ../../LIBSTELL/Debug/coilsnamin.o \
+      ../../LIBSTELL/Debug/optim_params.o \
+      ../../LIBSTELL/Debug/safe_open_mod.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Debug/system_mod.o \
+      ../../LIBSTELL/Debug/vmec_input.o \
+      optim.o 
+      
+
+get_extension.o : \
+      ../../LIBSTELL/Debug/optim_params.o 
+      
+
+init_scale.o : \
+      ../../LIBSTELL/Debug/coilsnamin.o \
+      ../../LIBSTELL/Debug/mpi_params.o \
+      ../../LIBSTELL/Debug/optim_params.o \
+      ../../LIBSTELL/Debug/vmec_input.o 
+      
+
+initialize_opt.o : \
+      ../../LIBSTELL/Debug/coilsnamin.o \
+      ../../LIBSTELL/Debug/mpi_params.o \
+      ../../LIBSTELL/Debug/vacfield_mod.o \
+      ../../LIBSTELL/Debug/vmec_input.o \
+      ../../LIBSTELL/Debug/vparams.o \
+      legendre_params.o \
+      optim.o 
+      
+
+j_star.o : \
+      ../../LIBSTELL/Debug/mpi_params.o \
+      ../../LIBSTELL/Debug/stel_kinds.o 
+      
+
+legendre_params.o : \
+      ../../LIBSTELL/Debug/stel_kinds.o 
+      
+
+load_params.o : \
+      ../../LIBSTELL/Debug/bootsj_input.o \
+      ../../LIBSTELL/Debug/coilsnamin.o \
+      ../../LIBSTELL/Debug/mpi_params.o \
+      ../../LIBSTELL/Debug/optim_params.o \
+      ../../LIBSTELL/Debug/safe_open_mod.o \
+      ../../LIBSTELL/Debug/stel_constants.o \
+      ../../LIBSTELL/Debug/vacfield_mod.o \
+      ../../LIBSTELL/Debug/vmec_input.o \
+      ../../LIBSTELL/Debug/vparams.o \
+      legendre_params.o \
+      optim.o 
+      
+
+load_physics_codes.o : \
+      ../../LIBSTELL/Debug/mpi_params.o \
+      ../../LIBSTELL/Debug/read_boozer_mod.o \
+      ../../LIBSTELL/Debug/safe_open_mod.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Debug/system_mod.o \
+      optim.o 
+      
+
+load_target.o : \
+      ../../LIBSTELL/Debug/mpi_params.o \
+      ../../LIBSTELL/Debug/read_boozer_mod.o \
+      ../../LIBSTELL/Debug/safe_open_mod.o \
+      ../../LIBSTELL/Debug/vmec_input.o \
+      ../../LIBSTELL/Debug/vparams.o \
+      boozer_params.o \
+      chisq_mod.o \
+      optim.o 
+      
+
+lsfun1.o : \
+      ../../LIBSTELL/Debug/safe_open_mod.o \
+      optim.o 
+      
+
+modbooz.o : \
+      boozer_params.o 
+      
+
+optim.o : \
+      ../../LIBSTELL/Debug/optim_params.o 
+      
+
+real_ptr_type.o : \
+      ../../LIBSTELL/Debug/stel_kinds.o 
+      
+
+run_optimizer.o : \
+      ../../LIBSTELL/Debug/mpi_params.o \
+      ../../LIBSTELL/Debug/optim_params.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Debug/vparams.o \
+      chisq_mod.o \
+      optim.o 
+      
+
+stellarator_optimizer.o : \
+      ../../LIBSTELL/Debug/mpi_params.o \
+      optim.o 
+      
+
+update_style.o : \
+      ../../LIBSTELL/Debug/stel_kinds.o 
+      
+
+clean_up.o : \
+      ../../LIBSTELL/Debug/gade_mod.o \
+      ../../LIBSTELL/Debug/mpi_params.o \
+      ../../LIBSTELL/Debug/safe_open_mod.o \
+      ../../LIBSTELL/Debug/system_mod.o \
+      ../../LIBSTELL/Debug/vmec_input.o \
+      optim.o 
+      
+
+clean_up_extensions.o : \
+      ../../LIBSTELL/Debug/safe_open_mod.o \
+      ../../LIBSTELL/Debug/system_mod.o \
+      optim.o 
+      
+
+data_harvest.o : \
+      ../../LIBSTELL/Debug/saddle_coils.o \
+      ../../LIBSTELL/Debug/safe_open_mod.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Debug/vmec_input.o \
+      optim.o 
+      
+
+open_comm_files.o : \
+      ../../LIBSTELL/Debug/safe_open_mod.o \
+      ../../LIBSTELL/Debug/stel_kinds.o 
+      
+
+optimize.o : \
+      ../../LIBSTELL/Debug/mpi_params.o \
+      ../../LIBSTELL/Debug/system_mod.o \
+      ../../LIBSTELL/Debug/vparams.o \
+      boozer_params.o \
+      legendre_params.o \
+      optim.o 
+      
+
+osetup.o : \
+      ../../LIBSTELL/Debug/bootsj_input.o \
+      ../../LIBSTELL/Debug/mpi_params.o \
+      ../../LIBSTELL/Debug/safe_open_mod.o \
+      ../../LIBSTELL/Debug/system_mod.o \
+      ../../LIBSTELL/Debug/vacfield_mod.o \
+      ../../LIBSTELL/Debug/vmec_input.o \
+      ../../LIBSTELL/Debug/vparams.o \
+      boozer_params.o \
+      optim.o 
+      
+
+read_coilgeom_elem.o : \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      chisq_mod.o 
+      
+
+read_input_opt.o : \
+      ../../LIBSTELL/Debug/mpi_params.o \
+      ../../LIBSTELL/Debug/optim_params.o \
+      ../../LIBSTELL/Debug/safe_open_mod.o \
+      ../../LIBSTELL/Debug/vacfield_mod.o \
+      ../../LIBSTELL/Debug/vmec_input.o 
+      
+
+read_wout_opt.o : \
+      ../../LIBSTELL/Debug/mpi_params.o \
+      ../../LIBSTELL/Debug/read_wout_mod.o \
+      ../../LIBSTELL/Debug/vmec_input.o \
+      ../../LIBSTELL/Debug/vparams.o \
+      boozer_params.o \
+      optim.o 
+      
+
+write_indata.o : \
+      ../../LIBSTELL/Debug/bootsj_input.o \
+      ../../LIBSTELL/Debug/safe_open_mod.o \
+      ../../LIBSTELL/Debug/vacfield_mod.o \
+      ../../LIBSTELL/Debug/vmec_input.o \
+      ../../LIBSTELL/Debug/write_array_generic.o \
+      optim.o 
+      
+
+write_neoparam.o : \
+      ../../LIBSTELL/Debug/safe_open_mod.o 
+      
+
+write_rbzb.o : \
+      ../../LIBSTELL/Debug/vmec_input.o \
+      ../../LIBSTELL/Debug/write_array_generic.o \
+      optim.o 
+      
+
+aweight.o : \
+      ../../LIBSTELL/Debug/stel_kinds.o 
+      
+
+cmnf1.o : \
+      ../../LIBSTELL/Debug/stel_kinds.o 
+      
+
+cmnf2.o : \
+      ../../LIBSTELL/Debug/stel_kinds.o 
+      
+
+dmnf1.o : \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      cmnf1.o 
+      
+
+dmnf2.o : \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      cmnf2.o 
+      
+
+fdjac.o : \
+      ../../LIBSTELL/Debug/stel_kinds.o 
+      
+
+fmin_nr.o : \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      newtv.o 
+      
+
+funcv.o : \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      cmnf1.o \
+      geom.o 
+      
+
+geom.o : \
+      ../../LIBSTELL/Debug/stel_kinds.o 
+      
+
+lnsrch.o : \
+      ../../LIBSTELL/Debug/stel_kinds.o 
+      
+
+lubksb.o : \
+      ../../LIBSTELL/Debug/stel_kinds.o 
+      
+
+ludcmp.o : \
+      ../../LIBSTELL/Debug/stel_kinds.o 
+      
+
+newt.o : \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      newtv.o 
+      
+
+newtv.o : \
+      ../../LIBSTELL/Debug/stel_kinds.o 
+      
+
+p2surf.o : \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      geom.o 
+      
+
+surfsep.o : \
+      ../../LIBSTELL/Debug/optim_params.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      cmnf1.o \
+      cmnf2.o \
+      geom.o 
+      
+
+surnorm.o : \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      cmnf1.o \
+      cmnf2.o 
+      
+
+totbdy.o : \
+      ../../LIBSTELL/Debug/stel_kinds.o 
+      
+
+weighted_surfsep.o : \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      optim.o 
+      
+
+weightfcn.o : \
+      ../../LIBSTELL/Debug/stel_kinds.o 
+      
+
+bivariate.o : \
+      ../../LIBSTELL/Debug/stel_kinds.o 
+      
+
+get_coil_v3p.o : \
+      ../../LIBSTELL/Debug/read_response.o \
+      ../../LIBSTELL/Debug/read_wout_mod.o \
+      ../../LIBSTELL/Debug/safe_open_mod.o \
+      ../../LIBSTELL/Debug/stel_constants.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Debug/v3post_rfun.o 
+      
+
+get_input_v3p.o : \
+      ../../LIBSTELL/Debug/read_response.o \
+      ../../LIBSTELL/Debug/read_wout_mod.o \
+      ../../LIBSTELL/Debug/safe_open_mod.o \
+      ../../LIBSTELL/Debug/stel_constants.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Debug/v3post_rfun.o 
+      
+
+get_plasma_v3p.o : \
+      ../../LIBSTELL/Debug/read_response.o \
+      ../../LIBSTELL/Debug/read_wout_mod.o \
+      ../../LIBSTELL/Debug/safe_open_mod.o \
+      ../../LIBSTELL/Debug/stel_constants.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Debug/v3post_rfun.o \
+      bivariate.o 
+      
+
+setup_plasma_v3p.o : \
+      ../../LIBSTELL/Debug/read_wout_mod.o \
+      ../../LIBSTELL/Debug/stel_constants.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Debug/v3post_rfun.o 
+      
+
+v3post_sub.o : \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Debug/v3post_rfun.o 
+      
+
+write_out_v3p.o : \
+      ../../LIBSTELL/Debug/ezcdf.o \
+      ../../LIBSTELL/Debug/read_response.o \
+      ../../LIBSTELL/Debug/stel_constants.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Debug/v3post_rfun.o 
+      
