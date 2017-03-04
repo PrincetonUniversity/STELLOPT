@@ -1,0 +1,4 @@
+ObjectFiles = \
+vmec2xgc_regrid.o \
+vmec2xgc_pest2vmec.o \
+vmec2xgc_main.o 
