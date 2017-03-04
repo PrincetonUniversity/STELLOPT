@@ -1,0 +1,12 @@
+ObjectFiles = \
+namelist_input_makegrid.o \
+interactive_input.o \
+task_mgrid.o \
+task_mgrid_rs.o \
+task_circ_tor_grid.o \
+coil_group_report.o \
+fft_local.o \
+makegrid_global.o \
+makegrid.o \
+write_mgrid.o \
+sym_check.o 

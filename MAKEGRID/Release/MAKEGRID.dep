@@ -1,0 +1,80 @@
+# Microsoft Developer Studio Generated Dependency File, included by MAKEGRID.mak
+
+makegrid.o : \
+      ../../LIBSTELL/Release/biotsavart.o \
+      ../../LIBSTELL/Release/bsc_T.o \
+      ../../LIBSTELL/Release/safe_open_mod.o \
+      ../../LIBSTELL/Release/stel_constants.o \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      sym_check.o \
+      makegrid_global.o \
+      write_mgrid.o
+      
+
+makegrid_global.o : \
+      ../../LIBSTELL/Release/stel_kinds.o
+      
+
+sym_check.o : \
+      ../../LIBSTELL/Release/biotsavart.o \
+      makegrid_global.o \
+      write_mgrid.o
+
+
+write_mgrid.o : \
+      ../../LIBSTELL/Release/biotsavart.o \
+      ../../LIBSTELL/Release/ezcdf.o \
+      ../../LIBSTELL/Release/mgrid_mod.o \
+      ../../LIBSTELL/Release/safe_open_mod.o 
+
+
+
+namelist_input_makegrid.o : \
+      ../../LIBSTELL/Release/stel_constants.o \
+      makegrid_global.o \
+      sym_check.o \
+      write_mgrid.o
+
+
+interactive_input.o : \
+      makegrid_global.o \
+      write_mgrid.o
+
+
+task_mgrid.o : \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Release/biotsavart.o \
+      ../../LIBSTELL/Release/safe_open_mod.o \
+      makegrid_global.o \
+      sym_check.o \
+      write_mgrid.o
+
+
+task_mgrid_rs.o : \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Release/bsc_T.o \
+      ../../LIBSTELL/Release/biotsavart.o \
+      ../../LIBSTELL/Release/safe_open_mod.o \
+      makegrid_global.o \
+      sym_check.o \
+      write_mgrid.o
+
+
+task_circ_tor_grid.o : \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Release/stel_constants.o \
+      ../../LIBSTELL/Release/biotsavart.o \
+      makegrid_global.o \
+      write_mgrid.o
+
+
+coil_group_report.o : \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Release/stel_constants.o \
+      ../../LIBSTELL/Release/bsc_T.o \
+      sym_check.o 
+
+
+fft_local.o : \
+      ../../LIBSTELL/Release/stel_kinds.o 
+      
