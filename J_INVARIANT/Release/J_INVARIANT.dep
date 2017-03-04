@@ -1,0 +1,37 @@
+# Microsoft Developer Studio Generated Dependency File, included by VMEC2000.mak
+
+B_and_J_Library.o: \
+      BJdata.o
+      
+
+BJdata.o: \
+      ../../LIBSTELL/Release/stel_kinds.o
+      
+
+j_inv_calc.o: \
+      B_and_J_Library.o \
+      ../../LIBSTELL/Release/read_boozer_mod.o
+   
+  
+j_invariant.o: \
+      B_and_J_Library.o \
+      ../../LIBSTELL/Release/data_and_computer.o \
+      ../../LIBSTELL/Release/safe_open_mod.o \
+      ../../LIBSTELL/Release/read_boozer_mod.o
+      
+
+jac.o: \
+      ../../LIBSTELL/Release/stel_kinds.o
+      
+
+rhs.o: \
+      B_and_J_Library.o
+      
+
+sfmin.o: \
+      ../../LIBSTELL/Release/stel_kinds.o
+      
+      
+
+      
+      

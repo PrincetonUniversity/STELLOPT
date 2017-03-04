@@ -1,0 +1,8 @@
+ObjectFiles = \
+rhs.o \
+j_inv_calc.o \
+J_invariant.o \
+B_and_J_Library.o \
+sfmin.o \
+BJdata.o \
+jac.o 

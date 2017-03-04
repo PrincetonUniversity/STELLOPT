@@ -1,0 +1,62 @@
+#This makefile goes in dirs Debug and Release (first level below J_INVARIANT)
+include ../../make.inc
+FFILE   = '$*''.f'
+CFILE   = '$*''.c'
+F90FILE = '$*''.f90'
+SPATH   = ../Sources
+#Contains list of source files (.o) and dependencies
+DEPLIST = J_INVARIANT.dep
+OBJLIST = ../ObjectList
+
+#Includes source files and dependency list
+include $(DEPLIST)
+include $(OBJLIST)
+VPATH = $(SPATH)
+
+.SUFFIXES :
+.SUFFIXES : .f .f90 .o
+xjinvariant:  $(LIB) $(ObjectFiles)
+	$(LINK) $@ $(ObjectFiles) $(LIB_LINK)
+#Compile object files defined in OBJLIST.
+.f.o :
+	@if grep -q '^!DEC\$$' $<; \
+      then \
+         awk -f $(HOME_BIN)/awk_cdir.awk $< > $(CFILE) ; \
+         echo '$(PRECOMP) $<'; $(PRECOMP) $(CFILE) $(FFILE); \
+         rm -f $(CFILE); echo '$(COMPILE) $(FLAGS) $(MOD_PATH).. -c $<'; \
+         $(COMPILE) $(FLAGS) $(MOD_PATH).. -c $(FFILE); \
+      elif grep -q '^#if' $<; \
+      then \
+         cp $< $(CFILE); \
+         echo '$(PRECOMP) $<'; $(PRECOMP) $(CFILE) $(FFILE); \
+         rm -f $(CFILE); echo '$(COMPILE) $(FLAGS) $(MOD_PATH).. -c $<'; \
+         $(COMPILE) $(FLAGS) $(MOD_PATH).. -c $(FFILE); \
+      else \
+         echo '$(COMPILE) $(FLAGS) $(MOD_PATH). -c $<'; \
+         $(COMPILE) $(FLAGS) $(MOD_PATH). -c $<; \
+      fi
+
+.f90.o :
+	@if grep -q '^!DEC\$$' $<; \
+      then \
+         awk -f $(HOME_BIN)/awk_cdir.awk $< > $(CFILE) ; \
+         echo '$(PRECOMP) $<'; $(PRECOMP) $(CFILE) $(F90FILE); \
+         rm -f $(CFILE); echo '$(COMPILE_FREE) $(FLAGS) $(MOD_PATH).. -c $<'; \
+        $(COMPILE_FREE) $(FLAGS) $(MOD_PATH).. -c $(F90FILE); \
+      elif grep -q '^#if' $<; \
+      then \
+         cp $< $(CFILE); \
+         echo '$(PRECOMP) $<'; $(PRECOMP) $(CFILE) $(F90FILE); \
+         rm -f $(CFILE); echo '$(COMPILE_FREE) $(FLAGS) $(MOD_PATH).. -c $<'; \
+        $(COMPILE_FREE) $(FLAGS) $(MOD_PATH).. -c $(F90FILE); \
+      else \
+         echo '$(COMPILE_FREE) $(FLAGS) $(MOD_PATH). -c $<'; \
+         $(COMPILE_FREE) $(FLAGS) $(MOD_PATH).. -c $<; \
+      fi
+      
+#Check that library files are current. 
+$(LIB) :
+	@cd $(LIB_DIR); make $(TYPE)
+
+clean:
+	- rm -f *.o *.mod
