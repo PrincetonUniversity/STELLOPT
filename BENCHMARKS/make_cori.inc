@@ -4,7 +4,7 @@
   SHELL = /bin/sh
   PWD1 = `pwd`
   MYHOME = /global/u2/l/lazerson/bin_cori
-  PRECOMP:= /lib/cpp -traditional -DLINUX
+  PRECOMP:= fpp -DLINUX
   COMPILE = ftn
   COMPILE_FREE = ftn
   LINK    = ftn -Bstatic -o
@@ -133,8 +133,9 @@ LIB_SHARE =
 #######################################################################
 #######################################################################
 
-# Some Initial stuff
-HOME_BIN = $(MYHOME)
+# This is where we find the cawk script
+#HOME_BIN = $(MYHOME)
+HOME_BIN = ../../
 MOD1_PATH = -I$(MYHOME)/libstell_dir
 MOD_PATH = 
 CLEAN_ARCH = 
@@ -256,7 +257,8 @@ endif
 LIB_LINK += $(GENE_LIB) $(COILOPT_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB)
 
 # Add libraries to LIB_LINK
-LIB_LINK+= $(HOME_BIN)/libstell.a $(LIBS)
+#LIB_LINK+= $(HOME_BIN)/libstell.a $(LIBS)
+LIB_LINK+= $(LIB_DIR)/$(LOCTYPE)/$(LIB) $(LIBS)
 
 # 3rd Party Libs
 ifeq ($(LMPI),T)
