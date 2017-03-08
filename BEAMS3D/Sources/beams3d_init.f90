@@ -56,7 +56,7 @@
       bcs3=(/ 0, 0/)
       
       ! Handle Consistency checks
-      IF (ldepo .and. lvessel) lplasma_only = .FALSE.
+      !IF (ldepo .and. lvessel) lplasma_only = .FALSE.
       
       ! First Read The Input Namelist
       iunit = 11
@@ -214,7 +214,7 @@
       MODB = SQRT(B_R*B_R+B_PHI*B_PHI+B_Z*B_Z)
       
       ! Get setup vessel
-      IF (lvessel .and. .not. lplasma_only) THEN
+      IF (lvessel .and. (.not. lplasma_only .or. ldepo)) THEN
          CALL wall_load_txt(TRIM(vessel_string),ier)
          IF (myid /= master) DEALLOCATE(vertex,face) ! Do this to save memory
          IF (lverb) CALL wall_info(6)

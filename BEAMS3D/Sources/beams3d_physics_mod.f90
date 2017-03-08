@@ -34,7 +34,7 @@ MODULE beams3d_physics_mod
     !          vessel_string Limiting Surface Filename
     !          extcur        External currents for MGRID calculation
     !----------------------------------------------------------------------
-!DEC$ IF DEFINED (NTCC)
+
 
 CONTAINS
     !     Subroutines: _beams3d_physics: makes decisions about when to do what
@@ -264,7 +264,7 @@ SUBROUTINE beams3d_follow_neut(t, q)
     REAL*8 :: fval(1)
 !
 
-    dt_local = 50*dl/q(4)  ! Timestep (100 times larger than in plasma)
+    dt_local = 10*dl/q(4)  ! Timestep (10 times larger than in plasma)
     energy(1) = half*mymass*q(4)*q(4)/1000  ! Vll = V_neut (doesn't change durring integration) needed in keV
     qf(1) = q(1)*cos(q(2))
     qf(2) = q(1)*sin(q(2))
@@ -343,13 +343,17 @@ SUBROUTINE beams3d_follow_neut(t, q)
           ! izbeam  Beam Z
           ! iztarg  Target Z
           ! btsigv  cross section
+!DEC$ IF DEFINED (NTCC)
           CALL adas_btsigv(2,1,energy,temp,1,1,1,sigvii,ier)  ! Ion Impact ionization cross-section term.
           CALL adas_btsigv(1,1,energy,temp,1,1,1,sigvcx,ier)  ! Charge Exchange ionization cross-section term.
+!DEC$ ENDIF
           ! Arguments to sigvte(zneut,tevec,n1,sigv_adas,istat)
           ! zneut charge (=1)
           ! tevec electron temperature [keV]
           ! n1 array size
+!DEC$ IF DEFINED (NTCC)
           CALL adas_sigvte_ioniz(1,tempA,1,sigvei,ier)        ! Electron Impact ionization cross-section term.
+!DEC$ ENDIF
           tau_inv = ((sigvii(1) + sigvcx(1) + sigvei(1))*ne_temp) ! Delete a term if desired. (save a comment)
           cum_prob = cum_prob*exp(-dt_local*tau_inv)
           IF (cum_prob < rand_prob) THEN
@@ -510,6 +514,5 @@ SUBROUTINE beams3d_neutralize(t, q)
     CALL RANDOM_NUMBER(rand_prob)
 
 END SUBROUTINE beams3d_neutralize
-!DEC$ ENDIF  
 
 END MODULE beams3d_physics_mod
