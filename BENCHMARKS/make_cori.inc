@@ -4,7 +4,7 @@
   SHELL = /bin/sh
   PWD1 = `pwd`
   MYHOME = /global/u2/l/lazerson/bin_cori
-  PRECOMP:= fpp -DLINUX
+  PRECOMP:= fpp -C -P -DLINUX
   COMPILE = ftn
   COMPILE_FREE = ftn
   LINK    = ftn -Bstatic -o
@@ -44,10 +44,10 @@
 #######################################################################
 #            NTCC Options
 #######################################################################
-  LNTCC = F
-  NTCC_INC = -I/global/homes/l/lazerson/pub/mod
-  NTCC_LIB = -L/global/homes/l/lazerson/pub/lib -lpreact -lsigsub \
-             -laladdinsub -lpreact -lportlib
+  LNTCC = T
+  NTCC_INC = -I/global/homes/l/lazerson/pub_cori/mod
+  NTCC_LIB = -L/global/homes/l/lazerson/pub_cori/lib \
+             -lpreact -lsigsub -laladdinsub -lpreact -lportlib
 
 #######################################################################
 #            HDF5 Options
