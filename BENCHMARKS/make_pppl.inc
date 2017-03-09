@@ -154,7 +154,8 @@ LIB_SHARE = $(BLASHOME)/lib/libopenblas.so \
 #######################################################################
 
 # Some Initial stuff
-HOME_BIN = $(MYHOME)
+# HOME_BIN = $(MYHOME)
+HOME_BIN = ../../
 MOD1_PATH = -I$(MYHOME)/libstell_dir
 MOD_PATH = 
 CLEAN_ARCH = 
@@ -276,7 +277,10 @@ endif
 LIB_LINK += $(GENE_LIB) $(COILOPT_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB)
 
 # Add libraries to LIB_LINK
-LIB_LINK+= $(HOME_BIN)/libstell.a $(LIBS)
+# LIB_LINK+= $(MYHOME)/libstell.a $(LIBS)
+# This version avoids referencing the bin directory for the symbolic link to lib.
+# Which we can't reference since we now have the awk file in the main directory.
+LIB_LINK+= $(LIB_DIR)/$(LOCTYPE)/$(LIB) $(LIBS)
 
 # 3rd Party Libs
 ifeq ($(LMPI),T)
