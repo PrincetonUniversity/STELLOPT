@@ -45,8 +45,8 @@
 #            NTCC Options
 #######################################################################
   LNTCC = T
-  NTCC_INC = -I/global/homes/l/lazerson/pub_cori/mod
-  NTCC_LIB = -L/global/homes/l/lazerson/pub_cori/lib \
+  NTCC_INC = -I/global/homes/l/lazerson/pub_cori/preact/mod 
+  NTCC_LIB = -L/global/homes/l/lazerson/pub_cori/preact/lib \
              -lpreact -lsigsub -laladdinsub -lpreact -lportlib
 
 #######################################################################
