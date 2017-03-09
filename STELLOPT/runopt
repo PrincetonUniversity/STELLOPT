@@ -1,0 +1,10 @@
+#!/bin/sh
+#USAGE: runopt $1 $2
+#$1: name of input file
+#$2: number of processors requested
+if [ ! -n \"$2\" ]
+then
+   echo \"Usage: runopt <filename> <no processors>\"
+   exit [0]
+fi
+mpirun -np $2 $MY_HOME/xstellopt $1
