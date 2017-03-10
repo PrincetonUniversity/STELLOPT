@@ -84,7 +84,7 @@ c-----------------------------------------------
       ier_arr = 0
       IF (ALLOCATED(bsubumnc)) DEALLOCATE(bsubumnc)
       ALLOCATE(bsubumnc(mnmax_nyq,ns), stat=ier_arr(1))
-      IF (ALLOCATED(bsubvmnc)) DEALLOCATE(bsubvmnc);
+      IF (ALLOCATED(bsubvmnc)) DEALLOCATE(bsubvmnc)
       ALLOCATE(bsubvmnc(mnmax_nyq,ns), stat=ier_arr(2))
       IF (ALLOCATED(bmodmnc)) DEALLOCATE(bmodmnc);
       ALLOCATE(bmodmnc(mnmax_nyq,ns), stat=ier_arr(3))
@@ -205,5 +205,19 @@ c-----------------------------------------------
      1            ' istat3 = ',istat3
           STOP
       ENDIF
+      bsubumnc=0; bsubvmnc=0; bmodmnc=0
+      rmnc=0; zmns=0; lmns=0; xm = 0; xn = 0
+      xm_nyq = 0; xn_nyq = 0; pmns = 0
+      hiota = 0; phip = 0; gpsi = 0
+      ipsi = 0; beta_vol =0; pres=0
+      phi=0; buco = 0; bvco = 0
+      rmncb = 0; zmnsb = 0
+      pmnsb = 0; gmncb = 0
+      bmncb = 0; bmod_b = 0
+      sfull=0; scl=0; xmb=0; xnb=0
+      bsubumns=0; bsubvmns=0; bmodbmns=0;
+      rmns=0; zmnc=0; lmnc=0; pmnc=0;
+      rmnsb=0; zmncb=0; pmncb=0; gmnsb=0;
+      bmnsb=0;
 
       END SUBROUTINE allocate_boozer

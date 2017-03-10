@@ -215,14 +215,14 @@
             rmax_b   = rmax_vmec
             rmin_b   = rmin_vmec
             betaxis_b = betaxis_vmec
-            IF (ALLOCATED(idx_b)) DEALLOCATE(idx_b); ALLOCATE(idx_b(ns_b))
-            IF (ALLOCATED(iota_b)) DEALLOCATE(iota_b); ALLOCATE(iota_b(ns_b))
-            IF (ALLOCATED(pres_b)) DEALLOCATE(pres_b); ALLOCATE(pres_b(ns_b))
-            IF (ALLOCATED(phip_b)) DEALLOCATE(phip_b); ALLOCATE(phip_b(ns_b))
-            IF (ALLOCATED(phi_b)) DEALLOCATE(phi_b); ALLOCATE(phi_b(ns_b))
-            IF (ALLOCATED(beta_b)) DEALLOCATE(beta_b); ALLOCATE(beta_b(ns_b))
-            IF (ALLOCATED(buco_b)) DEALLOCATE(buco_b); ALLOCATE(buco_b(ns_b))
-            IF (ALLOCATED(bvco_b)) DEALLOCATE(bvco_b); ALLOCATE(bvco_b(ns_b))
+            IF (ALLOCATED(idx_b)) DEALLOCATE(idx_b); ALLOCATE(idx_b(ns_b)); idx_b=0
+            IF (ALLOCATED(iota_b)) DEALLOCATE(iota_b); ALLOCATE(iota_b(ns_b)); iota_b=0
+            IF (ALLOCATED(pres_b)) DEALLOCATE(pres_b); ALLOCATE(pres_b(ns_b)); pres_b=0
+            IF (ALLOCATED(phip_b)) DEALLOCATE(phip_b); ALLOCATE(phip_b(ns_b)); phip_b=0
+            IF (ALLOCATED(phi_b)) DEALLOCATE(phi_b); ALLOCATE(phi_b(ns_b)); phi_b=0
+            IF (ALLOCATED(beta_b)) DEALLOCATE(beta_b); ALLOCATE(beta_b(ns_b)); beta_b=0
+            IF (ALLOCATED(buco_b)) DEALLOCATE(buco_b); ALLOCATE(buco_b(ns_b)); buco_b=0
+            IF (ALLOCATED(bvco_b)) DEALLOCATE(bvco_b); ALLOCATE(bvco_b(ns_b)); bvco_b=0
             idx_b = 0
             WHERE(lbooz(1:ns_b)) idx_b(1:ns_b) = 1
             iota_b = hiota
@@ -232,25 +232,23 @@
             beta_b = beta_vol
             buco_b = buco
             bvco_b = bvco
-            IF (ALLOCATED(ixm_b)) DEALLOCATE(ixm_b); ALLOCATE(ixm_b(mnboz_b))   
-            IF (ALLOCATED(ixn_b)) DEALLOCATE(ixn_b); ALLOCATE(ixn_b(mnboz_b))
+            IF (ALLOCATED(ixm_b)) DEALLOCATE(ixm_b); ALLOCATE(ixm_b(mnboz_b)); ixm_b=0
+            IF (ALLOCATED(ixn_b)) DEALLOCATE(ixn_b); ALLOCATE(ixn_b(mnboz_b)); ixn_b=0
             ixm_b = NINT(xmb)
             ixn_b = NINT(xnb)
-            IF (ALLOCATED(bmnc_b)) DEALLOCATE(bmnc_b); ALLOCATE(bmnc_b(mnboz_b,ns_b))
-            IF (ALLOCATED(rmnc_b)) DEALLOCATE(rmnc_b); ALLOCATE(rmnc_b(mnboz_b,ns_b))  
-            IF (ALLOCATED(zmns_b)) DEALLOCATE(zmns_b); ALLOCATE(zmns_b(mnboz_b,ns_b))  
-            IF (ALLOCATED(pmns_b)) DEALLOCATE(pmns_b); ALLOCATE(pmns_b(mnboz_b,ns_b))  
-            IF (ALLOCATED(gmnc_b)) DEALLOCATE(gmnc_b); ALLOCATE(gmnc_b(mnboz_b,ns_b))  
-            bmnc_b = 0.0; rmnc_b = 0.0; zmns_b = 0.0; pmns_b = 0.0; gmnc_b = 0.0
+            IF (ALLOCATED(bmnc_b)) DEALLOCATE(bmnc_b); ALLOCATE(bmnc_b(mnboz_b,ns_b)); bmnc_b=0
+            IF (ALLOCATED(rmnc_b)) DEALLOCATE(rmnc_b); ALLOCATE(rmnc_b(mnboz_b,ns_b)); rmnc_b=0  
+            IF (ALLOCATED(zmns_b)) DEALLOCATE(zmns_b); ALLOCATE(zmns_b(mnboz_b,ns_b)); zmns_b=0  
+            IF (ALLOCATED(pmns_b)) DEALLOCATE(pmns_b); ALLOCATE(pmns_b(mnboz_b,ns_b)); pmns_b=0  
+            IF (ALLOCATED(gmnc_b)) DEALLOCATE(gmnc_b); ALLOCATE(gmnc_b(mnboz_b,ns_b)); gmnc_b=0
             lasym_b = .FALSE.
             IF (lasym_xboozer) THEN
                lasym_b = .TRUE.
-               IF (ALLOCATED(bmns_b)) DEALLOCATE(bmns_b); ALLOCATE(bmns_b(mnboz_b,ns_b))
-               IF (ALLOCATED(rmns_b)) DEALLOCATE(rmns_b); ALLOCATE(rmns_b(mnboz_b,ns_b))  
-               IF (ALLOCATED(zmnc_b)) DEALLOCATE(zmnc_b); ALLOCATE(zmnc_b(mnboz_b,ns_b))  
-               IF (ALLOCATED(pmnc_b)) DEALLOCATE(pmnc_b); ALLOCATE(pmnc_b(mnboz_b,ns_b))  
-               IF (ALLOCATED(gmns_b)) DEALLOCATE(gmns_b); ALLOCATE(gmns_b(mnboz_b,ns_b))  
-               bmns_b = 0.0; rmns_b = 0.0; zmnc_b = 0.0; pmnc_b = 0.0; gmns_b = 0.0
+               IF (ALLOCATED(bmns_b)) DEALLOCATE(bmns_b); ALLOCATE(bmns_b(mnboz_b,ns_b)); bmns_b=0
+               IF (ALLOCATED(rmns_b)) DEALLOCATE(rmns_b); ALLOCATE(rmns_b(mnboz_b,ns_b)); rmns_b=0
+               IF (ALLOCATED(zmnc_b)) DEALLOCATE(zmnc_b); ALLOCATE(zmnc_b(mnboz_b,ns_b)); zmnc_b=0
+               IF (ALLOCATED(pmnc_b)) DEALLOCATE(pmnc_b); ALLOCATE(pmnc_b(mnboz_b,ns_b)); pmnc_b=0
+               IF (ALLOCATED(gmns_b)) DEALLOCATE(gmns_b); ALLOCATE(gmns_b(mnboz_b,ns_b)); gmns_b=0  
             END IF
             ! The internal BOOZER variables are in packed form (meaning that they run
             ! over the number of surfaces calculated not the total number of

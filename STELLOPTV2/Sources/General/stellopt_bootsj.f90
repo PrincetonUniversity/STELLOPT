@@ -250,6 +250,7 @@
                 rfmn(-mbuse:mbuse,0:nbuse),alpha1mn(-mbuse:mbuse,0:nbuse),&
                 trigsv(ntrigv),trigsu(ntrigu), stat=irho)
             if (irho .ne. 0) stop 'allocation error in bootsj main'
+            cputimes=0; dmn=0; fmn=0; rfmn=0; alpha1mn=0; trigsv=0; trigsu=0
             ! Now we need to calculate indexes
             ! Now loop over surfaces
             ihere = 0
