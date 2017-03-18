@@ -21,6 +21,7 @@
 !-----------------------------------------------------------------------
       USE diagno_runtime
       USE diagno_input_mod
+      USE mpi_params
 !-----------------------------------------------------------------------
 !     Local Variables
 !          numargs      Number of input arguments
@@ -30,6 +31,9 @@
 !          args         Input arguments
 !-----------------------------------------------------------------------   
       implicit none
+#if defined(MPI_OPT)
+      INCLUDE 'mpif.h'
+#endif
       logical :: lbench
       integer numargs,i,ier
       integer, parameter :: arg_len =256
@@ -38,58 +42,66 @@
 !-----------------------------------------------------------------------
 !     Begin Program
 !-----------------------------------------------------------------------
-      numargs=0
-      arg1=''
-      lbench  = .false.
-      lverb   = .true.
-      lvmec   = .false.
-      lpies   = .false.
-      lspec   = .false.
-      lcoil   = .false.
-      lvac    = .false.
-      lmut    = .false.
-      lskip_flux  = .FALSE.
-      lskip_rogo  = .FALSE.
+    myworkid = master
+#if defined(MPI_OPT)
+    CALL MPI_INIT(ierr_mpi)
+    CALL MPI_COMM_DUP( MPI_COMM_WORLD, MPI_COMM_DIAGNO, ierr_mpi)
+    CALL MPI_COMM_RANK(MPI_COMM_DIAGNO, myworkid, ierr_mpi)
+    CALL MPI_COMM_SIZE(MPI_COMM_DIAGNO, nprocs_diagno, ierr_mpi)
+#endif
+    IF (myworkid == master) THEN
+       numargs=0
+       arg1=''
+       lbench  = .false.
+       lverb   = .true.
+       lvmec   = .false.
+       lpies   = .false.
+       lspec   = .false.
+       lcoil   = .false.
+       lvac    = .false.
+       lmut    = .false.
+       lskip_flux  = .FALSE.
+       lskip_rogo  = .FALSE.
       
-      ! First Handle the input arguments
-      CALL GETCARG(1, arg1, numargs)
-      ALLOCATE(args(numargs))
-      ! Cycle through Arguments
-      i=1
-      DO WHILE (i <= numargs)
-         call GETCARG(i,args(i),numargs)
-         select case (args(i))
-            case ("-noverb")  ! No Verbose Output
+       ! First Handle the input arguments
+       CALL GETCARG(1, arg1, numargs)
+       ALLOCATE(args(numargs))
+       ! Cycle through Arguments
+       i=1
+       DO WHILE (i <= numargs)
+          call GETCARG(i,args(i),numargs)
+          select case (args(i))
+             case ("-noverb")  ! No Verbose Output
                 lverb=.false.
-            case ("-mutual")  ! Calc Mutual Induction
+             case ("-mutual")  ! Calc Mutual Induction
                 lmut=.true.
-            case ("-bench")  ! Calc Mutual Induction
+             case ("-bench")  ! Calc Mutual Induction
                 lbench=.true.
-            case ("-vac")  ! Vacuum Fields only
+             case ("-vac")  ! Vacuum Fields only
                 lvac=.true.
-            case ("-vmec")
+             case ("-vmec")
                 i = i + 1
                 lvmec = .true.
                 lpies = .false.
                 lspec = .false.
                 CALL GETCARG(i,id_string,numargs)
-            case ("-pies")
+             case ("-pies")
                 i = i + 1
                 lpies = .true.
                 lvmec = .false.
                 lspec = .false.
                 CALL GETCARG(i,id_string,numargs)
-            case ("-spec")
+             case ("-spec")
                 i = i + 1
                 lspec = .true.
                 lpies = .false.
                 lvmec = .false.
                 CALL GETCARG(i,id_string,numargs)
-            case ("-coil")
+             case ("-coil")
                 i = i + 1
                 lcoil  = .true.
                 CALL GETCARG(i,coil_string,numargs)
-            case ("-help","-h") ! Output Help message
+             case ("-help","-h") ! Output Help message
                write(6,'(A,F5.2,A)')' Magnetic Diagnostic Code (v.',DIAGNO_VERSION,')'
                write(6,*)' Usage: xdiagno <options>'
                write(6,*)'    <options>'
@@ -104,12 +116,40 @@
                stop
          end select
          i = i + 1
-      END DO
-      DEALLOCATE(args)
-      id_string = TRIM(id_string)
-      id_string = ADJUSTL(id_string)
-      coil_string = TRIM(coil_string)
-      coil_string = ADJUSTL(coil_string)
+       END DO
+       DEALLOCATE(args)
+       id_string = TRIM(id_string)
+       id_string = ADJUSTL(id_string)
+       coil_string = TRIM(coil_string)
+       coil_string = ADJUSTL(coil_string)
+    ELSE
+        lverb = .false. ! Shutup the workers
+    END IF
+
+#if defined(MPI_OPT)
+    CALL MPI_BCAST(id_string, 256, MPI_CHARACTER, master, MPI_COMM_DIAGNO, ierr_mpi)
+    IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'diagno_main', ierr_mpi)
+    CALL MPI_BCAST(coil_string, 256, MPI_CHARACTER, master, MPI_COMM_DIAGNO, ierr_mpi)
+    IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'diagno_main', ierr_mpi)
+    CALL MPI_BCAST(lbench, 1, MPI_LOGICAL, master, MPI_COMM_DIAGNO, ierr_mpi)
+    IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'diagno_main', ierr_mpi)
+    CALL MPI_BCAST(lvmec, 1, MPI_LOGICAL, master, MPI_COMM_DIAGNO, ierr_mpi)
+    IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'diagno_main', ierr_mpi)
+    CALL MPI_BCAST(lpies, 1, MPI_LOGICAL, master, MPI_COMM_DIAGNO, ierr_mpi)
+    IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'diagno_main', ierr_mpi)
+    CALL MPI_BCAST(lspec, 1, MPI_LOGICAL, master, MPI_COMM_DIAGNO, ierr_mpi)
+    IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'diagno_main', ierr_mpi)
+    CALL MPI_BCAST(lcoil, 1, MPI_LOGICAL, master, MPI_COMM_DIAGNO, ierr_mpi)
+    IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'diagno_main', ierr_mpi)
+    CALL MPI_BCAST(lvac, 1, MPI_LOGICAL, master, MPI_COMM_DIAGNO, ierr_mpi)
+    IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'diagno_main', ierr_mpi)
+    CALL MPI_BCAST(lmut, 1, MPI_LOGICAL, master, MPI_COMM_DIAGNO, ierr_mpi)
+    IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'diagno_main', ierr_mpi)
+    CALL MPI_BCAST(lskip_flux, 1, MPI_LOGICAL, master, MPI_COMM_DIAGNO, ierr_mpi)
+    IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'diagno_main', ierr_mpi)
+    CALL MPI_BCAST(lskip_rogo, 1, MPI_LOGICAL, master, MPI_COMM_DIAGNO, ierr_mpi)
+    IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'diagno_main', ierr_mpi)
+#endif
       
       ! Read the Input file
       if(lverb) write(6,'(A)')'==========================================='
@@ -153,6 +193,11 @@
       END IF
       if(lverb) write(6,*)'============  DIAGNO Complete  ==========='
       if(lverb) write(6,*)'=========================================='
+#if defined(MPI_OPT)
+    ierr_mpi=0
+    CALL MPI_FINALIZE(ierr_mpi)
+    IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_FINE_ERR, 'diagno_main', ierr_mpi)
+#endif
 !-----------------------------------------------------------------------
 !     End Program
 !-----------------------------------------------------------------------

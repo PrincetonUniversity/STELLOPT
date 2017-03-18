@@ -28,6 +28,7 @@
 !                    where not all sensors are used.
 !                    Added NFP factor back in to VC
 !                    Added EQ_SGNS to handle PHIEDGE sign issues
+!       v3.50        Parallelized
 !-----------------------------------------------------------------------
       MODULE diagno_runtime
 !-----------------------------------------------------------------------
@@ -83,20 +84,33 @@
       INTEGER, PARAMETER ::  D02CJF_ERR = 71
       INTEGER, PARAMETER ::  D05ADF_ERR = 72
       INTEGER, PARAMETER ::  C05AJF_ERR = 73
+      INTEGER, PARAMETER :: MPI_ERR = 80
+      INTEGER, PARAMETER :: MPI_INIT_ERR = 801
+      INTEGER, PARAMETER :: MPI_RANK_ERR = 802
+      INTEGER, PARAMETER :: MPI_SIZE_ERR = 803
+      INTEGER, PARAMETER :: MPI_BARRIER_ERR = 81
+      INTEGER, PARAMETER :: MPI_SEND_ERR = 821
+      INTEGER, PARAMETER :: MPI_RECV_ERR = 822
+      INTEGER, PARAMETER :: MPI_REDU_ERR = 823
+      INTEGER, PARAMETER :: MPI_BCAST_ERR = 83
+      INTEGER, PARAMETER :: MPI_FINE_ERR = 89
+
       INTEGER, PARAMETER ::  MAXLINES   = 256
       
       LOGICAL         :: lverb, lvmec, lpies, lspec, lcoil, lvac, &
                          lrphiz, lmut, luse_mut, lvc_field
       LOGICAL         :: luse_extcur(512),lskip_flux(512),lskip_rogo(512)
-      INTEGER         :: nextcur, int_step, nu, nv, nfp_diagno, eq_sgns
+      INTEGER         :: nextcur, int_step, nu, nv, nfp_diagno, eq_sgns,&
+                         nprocs_diagno, mystart, myend
       REAL(rprec)     :: flux_turns(512), bprobe_turns(2048)
       REAL(rprec)     :: vc_adapt_tol, units, phiedge, vc_adapt_rel
       REAL(rprec), ALLOCATABLE :: extcur(:)
       CHARACTER(256)  :: id_string, flux_diag_file, bprobes_file, &
                          mirnov_file, seg_rog_file, bfield_points_file,&
-                         int_type, coil_string, flux_mut_file
+                         int_type, coil_string, flux_mut_file, rog_mut_file,&
+                         mir_mut_file, bprobes_mut_file
                          
-      REAL(rprec), PARAMETER :: DIAGNO_VERSION = 3.41
+      REAL(rprec), PARAMETER :: DIAGNO_VERSION = 3.50
       REAL(rprec), PARAMETER ::      pi = 3.14159265358979312D+00
       REAL(rprec), PARAMETER ::     pi2 = 6.28318530717958623
       REAL(rprec), PARAMETER ::  onerad = 1.74532925199432955E-02

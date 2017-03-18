@@ -43,7 +43,8 @@
            flux_diag_file, bprobes_file, mirnov_file, seg_rog_file,  &
            bfield_points_file, flux_turns, units, int_type, &
            int_step, lrphiz, vc_adapt_tol, vc_adapt_rel,&
-           flux_mut_file, lvc_field, bprobe_turns, luse_extcur
+           flux_mut_file, lvc_field, bprobe_turns, luse_extcur, &
+           bprobes_mut_file, mir_mut_file, rog_mut_file
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -63,6 +64,9 @@
       mirnov_file        = ''
       seg_rog_file       = ''
       bfield_points_file = ''
+      bprobes_mut_file   = ''
+      mir_mut_file      = ''
+      rog_mut_file      = ''
       flux_mut_file      = ''
       flux_turns     = 1.0_rprec
       bprobe_turns   = 1.0_rprec
@@ -126,6 +130,12 @@
       seg_rog_file = ADJUSTL(seg_rog_file)
       bfield_points_file = TRIM(bfield_points_file)
       bfield_points_file = ADJUSTL(bfield_points_file)
+      bprobes_mut_file = TRIM(bprobes_mut_file)
+      bprobes_mut_file = ADJUSTL(bprobes_mut_file)
+      mir_mut_file = TRIM(mir_mut_file)
+      mir_mut_file = ADJUSTL(mir_mut_file)
+      rog_mut_file = TRIM(rog_mut_file)
+      rog_mut_file = ADJUSTL(rog_mut_file)
       flux_mut_file = TRIM(flux_mut_file)
       flux_mut_file = ADJUSTL(flux_mut_file)
       int_type = TRIM(int_type)
@@ -139,6 +149,9 @@
 
       ! Handle Mutual Induction
       IF (LEN_TRIM(flux_mut_file)>1) luse_mut = .TRUE.
+      IF (LEN_TRIM(bprobes_mut_file)>1) luse_mut = .TRUE.
+      IF (LEN_TRIM(mir_mut_file)>1) luse_mut = .TRUE.
+      IF (LEN_TRIM(rog_mut_file)>1) luse_mut = .TRUE.
       IF (lmut) luse_mut = .FALSE.
       END SUBROUTINE read_diagno_input
       

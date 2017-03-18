@@ -28,25 +28,24 @@
 !-----------------------------------------------------------------------
       iunit = 11
       ! Read the wout file if extcur was allocated
-      IF (lcoil .and. .not. lmut) THEN
-         IF (ALLOCATED(extcur)) DEALLOCATE(extcur)
-         IF (ALLOCATED(extcur_out) .and. (nextcur_out > 0)) THEN
-            nextcur = nextcur_out
-            ALLOCATE(extcur(nextcur))
-            extcur(1:nextcur) = extcur_out(1:nextcur)
-         ELSE
-            OPEN(UNIT=iunit, FILE='input.' // TRIM(id_string), STATUS='OLD', IOSTAT=ier)
-            IF (ier /= 0) CALL handle_error(FILE_OPEN_ERR,id_string,ier)
-            CALL read_indata_namelist(iunit,ier)
-            IF (ier /= 0) CALL handle_error(VMEC_INPUT_ERR,id_string,ier)
-            CLOSE(iunit)
-            DO i = 1, nigroup
-               IF (ABS(extcur_in(i)) > 0) nextcur = i
-            END DO
-            ALLOCATE(extcur(nextcur))
-            extcur = 0.0
-            extcur(1:nextcur) = extcur_in(1:nextcur)
-         END IF
+      IF (ALLOCATED(extcur)) DEALLOCATE(extcur)
+      IF (ALLOCATED(extcur_out) .and. (nextcur_out > 0)) THEN
+         nextcur = nextcur_out
+         ALLOCATE(extcur(nigroup))
+         extcur = 0
+         extcur(1:nextcur) = extcur_out(1:nextcur)
+      ELSE
+         OPEN(UNIT=iunit, FILE='input.' // TRIM(id_string), STATUS='OLD', IOSTAT=ier)
+         IF (ier /= 0) CALL handle_error(FILE_OPEN_ERR,id_string,ier)
+         CALL read_indata_namelist(iunit,ier)
+         IF (ier /= 0) CALL handle_error(VMEC_INPUT_ERR,id_string,ier)
+         CLOSE(iunit)
+         DO i = 1, nigroup
+            IF (ABS(extcur_in(i)) > 0) nextcur = i
+         END DO
+         ALLOCATE(extcur(nigroup))
+         extcur = 0.0
+         extcur(1:nextcur) = extcur_in(1:nextcur)
       END IF
       
       ! Read the coils file
