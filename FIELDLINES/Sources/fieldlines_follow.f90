@@ -79,7 +79,8 @@
       tol_nag = follow_tol
       neqs_nag = 2
       relab = "M"
-      mf = 10
+      !mf = 10
+      mf=21
 
       ! Break up the work
       mypace  = nlines
@@ -218,8 +219,15 @@
                ! Set tolerances to match NAG
                itol = 2; rtol = follow_tol; atol(:) = follow_tol
                iopt = 1 ! Optional output
-               lrw = 20 + 16 * neqs_nag
-               liw = 20
+               IF (mf == 10) THEN
+                  lrw = 20 + 16 * neqs_nag
+                  liw = 20
+               ELSE IF (mf <23) THEN
+                  lrw = 22 +  9 * neqs_nag +  neqs_nag**2
+                  liw = 20 +  neqs_nag
+               ELSE
+                  STOP 'mf > 23, banded jacobian is not possible for this problem'
+               END IF
                ALLOCATE(w(lrw))
                ALLOCATE(iwork(liw))
                ier = 0
@@ -242,7 +250,7 @@
                                 iopt,w,lrw,iwork,liw,jacobian_lsode,mf)
                      IF (istate < -2) CALL handle_err(LSODE_ERR,'fieldlines_follow',istate)
                      CALL out_fieldlines_nag(phif_nag,q)
-                     iwork(11) = 0; iwork(12) = 0;
+                     iwork(11) = 0; iwork(12)=0; iwork(13)=0;
                      IF ((istate == -1) .or. (istate ==-2) .or. (ABS(phif_nag) > ABS(phi_end(l))) ) EXIT
                      !IF (ABS(phif_nag) > ABS(phi_end(l))) EXIT
                   END DO

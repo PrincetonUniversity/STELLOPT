@@ -49,9 +49,9 @@
          mylocalmaster = master
       ELSE
          ! Basic copy of MPI_COMM_FIELDLINES
+         CALL MPI_COMM_DUP( MPI_COMM_FIELDLINES, MPI_COMM_LOCAL, ierr_mpi)
          mylocalid = myid
          mylocalmaster = master
-         MPI_COMM_LOCAL = MPI_COMM_FIELDLINES
          numprocs_local = numprocs
       END IF
       
@@ -237,10 +237,10 @@
       
       
 !DEC$ IF DEFINED (MPI_OPT)
-      IF (numprocs > nlocal) THEN
+      !IF (numprocs > nlocal) THEN
          CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)
          IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'fieldlines_init_coil: MPI_COMM_LOCAL',ierr_mpi)
-      END IF
+      !END IF
       CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
       IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_init_coil',ierr_mpi)
 !DEC$ ENDIF
