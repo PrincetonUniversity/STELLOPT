@@ -80,31 +80,31 @@
          PHI(ik) = ATAN2(vertex(dex1,2),vertex(dex1,1))
       END DO
       ! Bubble Sort
-      dex3 = nface
-      DO WHILE (dex3 > 1)
-         bubble = 0 !bubble in the greatest element out of order
-         DO ik = 1, (dex3-1)
-            IF (PHI(ik) > PHI(ik+1)) THEN
-               ! Adjust PHI
-               temp(1) = PHI(ik)
-               PHI(ik) = PHI(ik+1)
-               PHI(ik+1) = temp(1)
-               ! Adjust VERTEX
-               dex1 = face(ik,1)
-               dex2 = face(ik+1,1)
-               temp = vertex(dex1,:)
-               vertex(dex1,:) = vertex(dex2,:)
-               vertex(dex2,:) = temp
-               ! Adjust the faces
-               WHERE(face == dex1) face = 0
-               WHERE(face == dex2) face = dex1
-               WHERE(face == 0) face = dex2
-               ! Adjust bubble
-               bubble = ik
-            END IF 
-         END DO
-         dex3 = bubble
-      END DO
+!      dex3 = nface
+!      DO WHILE (dex3 > 1)
+!         bubble = 0 !bubble in the greatest element out of order
+!         DO ik = 1, (dex3-1)
+!            IF (PHI(ik) > PHI(ik+1)) THEN
+!               ! Adjust PHI
+!               temp(1) = PHI(ik)
+!               PHI(ik) = PHI(ik+1)
+!               PHI(ik+1) = temp(1)
+!               ! Adjust VERTEX
+!               dex1 = face(ik,1)
+!               dex2 = face(ik+1,1)
+!               temp = vertex(dex1,:)
+!               vertex(dex1,:) = vertex(dex2,:)
+!               vertex(dex2,:) = temp
+!               ! Adjust the faces
+!               WHERE(face == dex1) face = 0
+!               WHERE(face == dex2) face = dex1
+!               WHERE(face == 0) face = dex2
+!               ! Adjust bubble
+!               bubble = ik
+!            END IF 
+!         END DO
+!         dex3 = bubble
+!      END DO
 !      ALLOCATE(A0(nface,3),V0(nface,3),V1(nface,3),&
 !               V2(nface,3),FN(nface,3),STAT=istat)
       ALLOCATE(A0(nface,3),V0(nface,3),V1(nface,3),&
@@ -442,10 +442,14 @@
       tmin = 2
       !LIMIT DOMAIN
       drx = ATAN2(y0,x0)
-      k1  = MINLOC(ABS(PHI-drx-0.1),DIM=1)
-      k2  = MINLOC(ABS(PHI-drx+0.1),DIM=1)
+      k1 = 1; k2 = nface
+      !k1  = MINLOC(ABS(PHI-drx-0.25),DIM=1)
+      !k2  = MINLOC(ABS(PHI-drx+0.25),DIM=1)
       IF ((k1 == 1) .or. (k2 == nface)) THEN
          k1 = 1; k2 = nface
+      END IF
+      IF (k1>k2) THEN
+         ik=k1; k1=k2; k2=ik
       END IF
       ! Define DR
       drx = x1-x0

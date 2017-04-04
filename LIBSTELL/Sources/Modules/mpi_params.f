@@ -27,6 +27,7 @@ c                    differently.
       INTEGER :: MPI_COMM_TORLINES = 329                         !communicator for FIELDLINES code
       INTEGER :: MPI_COMM_BEAMS = 330                            !communicator for BEAMS3D code
       INTEGER :: MPI_COMM_BOOZER = 331                           !communicator for BOOZ_XFORM code
+      INTEGER :: MPI_COMM_DIAGNO = 332                           !communicator for BOOZ_XFORM code
       INTEGER :: MPI_COMM_PARVMEC = 101                           !communicator for PARVMEC code
 
 !DEC$ IF DEFINED (MPI_OPT)

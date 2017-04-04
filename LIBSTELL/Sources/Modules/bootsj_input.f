@@ -12,9 +12,28 @@
       SUBROUTINE read_boot_namelist (iunit, istat)
       INTEGER :: iunit, istat
 
-      nrho = 0; mbuse = 0; nbuse = 0; zeff1 = 1
-      dens0 = 0; teti = 0; tempres = 0;
-      damp = 0; damp_bs = 0; isymm0 = 0; ate = 0; ati = 0
+      !nrho = 30; mbuse = 0; nbuse = 0; zeff1 = 1
+      !dens0 = 0.3; teti = 2; tempres = -1;
+      !damp = -0.01; damp_bs = -0.01; isymm0 = 0; ate = -1; ati = -1
+
+      nrho = 30                !number of rho values to use
+      mbuse = 6                !number of m (poloidal) terms in B field.
+      nbuse = 4                !number of nzetah (toroidal) terms in B field.
+      zeff1 = 1.0_dp           !effective ion charge
+      dens0 = 0.3_dp           !central electron density in 10**20 m-3
+      teti = 2.0_dp            !ratio of Te/Ti for electron to ion
+                               !temperature profiles
+      tempres = -one           !tempe1(i)=pres(ir)**tempres
+                               !if(tempres.eq.-1.0_dp) then
+                               !tempe1(i)=sqrt(pres(i))
+      damp = -0.01_dp          !superceded by damp_bs
+      damp_bs = -0.01_dp       !damping factor for resonances
+      isymm0 = 0               !if ne.0 then force a symmetric-device calculation,
+
+      ate    = 0
+      ati    = 0
+      ate(0) = -1
+      ati(0) = -1
       READ (iunit, nml=bootin, iostat=istat)
 
       END SUBROUTINE read_boot_namelist

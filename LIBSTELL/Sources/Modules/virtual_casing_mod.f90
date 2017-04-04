@@ -474,16 +474,16 @@
          kz_spl%x2(v) = DBLE(v-1)/DBLE(nvp)
          bn_spl%x2(v) = DBLE(v-1)/DBLE(nvp)
       END DO
-      x_spl%isHermite  = 0
-      y_spl%isHermite  = 0
-      z_spl%isHermite  = 0
-      nx_spl%isHermite = 0
-      ny_spl%isHermite = 0
-      nz_spl%isHermite = 0
-      kx_spl%isHermite = 0
-      ky_spl%isHermite = 0
-      kz_spl%isHermite = 0
-      bn_spl%isHermite = 0
+      x_spl%isHermite  = 1
+      y_spl%isHermite  = 1
+      z_spl%isHermite  = 1
+      nx_spl%isHermite = 1
+      ny_spl%isHermite = 1
+      nz_spl%isHermite = 1
+      kx_spl%isHermite = 1
+      ky_spl%isHermite = 1
+      kz_spl%isHermite = 1
+      bn_spl%isHermite = 1
       CALL EZspline_setup(x_spl,xreal,ier)
       CALL EZspline_setup(y_spl,yreal,ier)
       CALL EZspline_setup(z_spl,zreal,ier)

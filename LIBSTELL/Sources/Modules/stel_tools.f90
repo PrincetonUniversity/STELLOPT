@@ -480,11 +480,14 @@
       IF (x(2) < 0.0) x(2) = x(2) + pi2
       x(2) = MOD(x(2),pi2)
       IF (x(1) < 0) THEN
-         x(1) = -x(1)/2
-         x(2) = x(2) * 0.5*pi2
+         !x(1) = -x(1)/2
+         !x(2) = x(2) * 0.5*pi2
+         x(1) = -x(1)
+         x(2) = x(2)+pi2*0.5
          x(2) = MOD(x(2),pi2)
       END IF
       ier = 0
+      !wRITE(327,*) iflag,x(1),x(2)
       CALL EZspline_isInDomain(R_spl,x(2),PHI_Target,x(1),ier)
       IF (ier .ne. 0) THEN
          iflag = -1
@@ -498,10 +501,14 @@
       ELSE IF (iflag == 2) THEN
          CALL EZspline_gradient(R_spl,x(2),PHI_Target,x(1),R_grad,iflag)
          CALL EZspline_gradient(Z_spl,x(2),PHI_Target,x(1),Z_grad,iflag)
+         !CALL EZspline_interp(Ru_spl,x(2),PHI_Target,x(1),R_temp,iflag)
+         !CALL EZspline_interp(Zu_spl,x(2),PHI_Target,x(1),Z_temp,iflag)
          fjac(1,1) = R_grad(3) !dR/ds
          fjac(1,2) = R_grad(1) !dR/du
+         !fjac(1,2) = R_temp
          fjac(2,1) = Z_grad(3) !dZ/ds
          fjac(2,2) = Z_grad(1) !dZ/du
+         !fjac(2,2) = Z_temp
       END IF
       RETURN
       END SUBROUTINE rzfunct_stel_tool
