@@ -26,7 +26,7 @@
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       INTEGER     :: domain_flag, nfit_targs, nfit_coefs
-      REAL(rprec) :: R_target, PHI_target, Z_target
+      REAL(rprec) :: R_target, PHI_target, Z_target, SUM_target
       REAL(rprec), ALLOCATABLE :: fit_targs(:,:), fit_coefs(:)
       CHARACTER(LEN=256) :: fit_type
       TYPE(EZspline1_r8) :: prof_spl,Bhat_spl,L2_spl
@@ -288,13 +288,35 @@
             DO i = UBOUND(coefs,DIM=1), LBOUND(coefs,DIM=1), -1
                val = s_val*val + coefs(i)
             END DO
+         CASE ('power_series_0i0')
+            val = 0
+            DO i = UBOUND(coefs,DIM=1), LBOUND(coefs,DIM=1), -1
+               val = val*s_val**0.25 + coefs(i)
+            END DO
+            val = 4*val*s_val*(1-s_val)
          CASE ('power_series_edge0')
             val = 0
             i=UBOUND(coefs,DIM=1)
-            coefs(i) = -SUM(coefs(LBOUND(coefs,DIM=1):i-1))
+            !coefs(i) = -SUM(coefs(LBOUND(coefs,DIM=1):i-1))
+            val = -SUM(coefs(LBOUND(coefs,DIM=1):i))
             DO i = UBOUND(coefs,DIM=1), LBOUND(coefs,DIM=1), -1
                val = s_val*val + coefs(i)
             END DO
+         CASE ('power_series_i') ! dI/ds = a1+2*a2*x+a
+            val = 0
+            DO i = UBOUND(coefs,DIM=1), LBOUND(coefs,DIM=1), -1
+               val = s_val*val + coefs(i)*(i-1) ! OK (1-1)=0
+            END DO
+            IF (s_val >0) val = val / s_val
+         CASE ('power_series_i_edge0') ! dI/ds = a1+2*a2*x+a
+            val = 0
+            DO i = UBOUND(coefs,DIM=1), LBOUND(coefs,DIM=1), -1
+               val = val - coefs(i)*(i-1)
+            END DO
+            DO i = UBOUND(coefs,DIM=1), LBOUND(coefs,DIM=1), -1
+               val = s_val*val + coefs(i)*(i-1) ! OK (1-1)=0
+            END DO
+            IF (s_val >0) val = val / s_val
          ! For now don't handle spline
          CASE ('spline','akima_spline','akima_spline_ip')
             IF (EZspline_allocated(spl_obj)) THEN
@@ -500,7 +522,7 @@
       CALL get_equil_zeff(s,TRIM(ne_type),zeff_val,ier)
       IF (ier /= 0) zeff_val = 0
       IF (abs(te_val) > 0) THEN
-         fval = zeff_val*ne_val*ne_val/sqrt(te_val)
+         fval = zeff_val*ne_val*ne_val*sqrt(te_val)
       ELSE
          fval = 0
       END IF
@@ -1170,18 +1192,20 @@
       SUBROUTINE fit_profile(ptype,ntarg,sarr,farr,ncoefs,coefs)
       IMPLICIT NONE
       CHARACTER(LEN=*), INTENT(in)   :: ptype
-      INTEGER :: ntarg,ncoefs, nc
-      REAL(rprec) :: sarr(ntarg),farr(ntarg),coefs(ncoefs)
-      INTEGER :: ik, maxfev_local, nfev, info, njev, maxfev, nprint, mode
+      INTEGER, INTENT(in) :: ntarg,ncoefs
+      REAL(rprec), INTENT(in) :: sarr(ntarg), farr(ntarg)
+      REAL(rprec), INTENT(inout) :: coefs(ncoefs)
+      INTEGER :: nc, ik, maxfev_local, nfev, info, njev, maxfev, nprint, mode
       INTEGER, DIMENSION(ncoefs) :: ipvt
       DOUBLE PRECISION :: ftol,xtol,gtol,factor
-      DOUBLE PRECISION, ALLOCATABLE  :: xc_opt(:), diag(:), qtf(:), wa1(:), wa2(:), wa3(:)
-      DOUBLE PRECISION, DIMENSION(ntarg) :: fval,wa4
+      DOUBLE PRECISION, ALLOCATABLE :: xc_opt(:), diag(:), qtf(:), wa1(:), wa2(:), wa3(:)
+      DOUBLE PRECISION, ALLOCATABLE :: fval(:),wa4(:)
       DOUBLE PRECISION, ALLOCATABLE :: fjac(:,:)
-      nfit_targs = ntarg
+      nfit_targs = ntarg+1
       ALLOCATE(fit_targs(nfit_targs,2))
       fit_targs(:,1) = sarr
       fit_targs(:,2) = farr
+      SUM_target = SUM(farr)
       fit_type = ptype
       ! Adjust number of coefficients per fit type
       nc = ncoefs
@@ -1193,23 +1217,26 @@
             nc = 8
          CASE('gauss_trunc')
             nc = 2
-         CASE('power_series','power_series_edge0')
-            nc = MINLOC(coefs(2:),DIM=1) + 1
+         CASE('power_series','power_series_0i0','power_series_edge0','power_series_i','power_series_i_edge0')
+            DO ik = 1, ncoefs
+               IF (coefs(ik) /=0 ) nc = ik
+            END DO
          CASE('pedestal','sum_atan')
             nc = 21
          CASE('bump')
             nc = 3
       END SELECT
       ! ALLOCATE Vars
-      ALLOCATE(xc_opt(nc),diag(nc),qtf(nc),wa1(nc),wa2(nc),wa3(nc),fjac(ntarg,nc))
+      ALLOCATE(xc_opt(nc),diag(nc),qtf(nc),wa1(nc),wa2(nc),wa3(nc),fjac(nfit_targs,nc),&
+               fval(nfit_targs),wa4(nfit_targs))
       ! Setup LMDER
       xc_opt(1:nc) = coefs(1:nc)
       fval = 1.0E-30
       fjac = 0
-      ftol = 1.0E-3
-      xtol = 1.0E-3
+      ftol = 1.0E-6
+      xtol = 1.0E-6
       gtol = 1.0E-30
-      maxfev_local = 500
+      maxfev_local = 2000
       diag(:) = 1
       mode = 1
       factor = 0.1
@@ -1220,12 +1247,11 @@
       ipvt   = 0
       qtf    = 0.0
       wa1 = 0; wa2 = 0; wa3 = 0; wa4 = 0
-      CALL lmder_serial(fit_prof_fcn,ntarg,nc,xc_opt,fval,fjac,ntarg,ftol,xtol,gtol,&
+      CALL lmder_serial(fit_prof_fcn,nfit_targs,nc,xc_opt,fval,fjac,nfit_targs,ftol,xtol,gtol,&
                     maxfev_local,diag,mode,factor,nprint,info,nfev,njev,ipvt,qtf,&
                     wa1,wa2,wa3,wa4)
       coefs(1:nc) = xc_opt(1:nc)
-      
-      DEALLOCATE(fit_targs,xc_opt,diag,qtf,wa1,wa2,wa3,fjac)
+      DEALLOCATE(fit_targs,xc_opt,diag,qtf,wa1,wa2,wa3,fjac,fval,wa4)
       RETURN
       END SUBROUTINE fit_profile
       
@@ -1234,25 +1260,38 @@
       INTEGER m,n,ldfjac,iflag, ier
       DOUBLE PRECISION x(n),fvec(m),fjac(ldfjac,n), x_temp(n)
       INTEGER :: j,k
-      DOUBLE PRECISION :: val, val2, dx
-      DOUBLE PRECISION, PARAMETER :: delta = 1.0D-6
+      DOUBLE PRECISION :: val, val2, dx, vals, vals2
+      DOUBLE PRECISION :: x_temp2(n)
+      DOUBLE PRECISION, PARAMETER :: delta = 1.000001
       IF (iflag == 1) THEN
-         DO k = 1, m
+         vals =0
+         DO k = 1, m-1
             CALL eval_prof_stel(fit_targs(k,1),fit_type,val,n,x,ier)
-            fvec(k) = fit_targs(k,2) - val
+            vals = vals + val
+            fvec(k) = val - fit_targs(k,2)
          END DO
+         fvec(m) = vals - SUM_target
       ELSE IF (iflag == 2) THEN
-         x_temp = x
-         DO k = 1, m
-            CALL eval_prof_stel(fit_targs(k,1),fit_type,val,n,x,ier)
-            DO j = 1, n
-               dx = delta*x_temp(j)
-               IF (dx == 0) dx = delta
-               x_temp(j) = x_temp(j) + dx
-               CALL eval_prof_stel(fit_targs(k,1),fit_type,val2,n,x_temp,ier)
-               fjac(k,j) = -(val2-val)/dx
-               x_temp(j) = x(j)
+         x_temp  = x
+         x_temp2 = x
+         DO j = 1, n
+            vals = 0
+            vals2 = 0
+            x_temp2(j) = x_temp(j)*delta
+            dx = x_temp2(j)-x_temp(j)
+            IF (dx == 0) THEN
+               dx = delta-1
+               x_temp2(j) = dx
+            END IF
+            DO k = 1, m-1
+               CALL eval_prof_stel(fit_targs(k,1),fit_type,val,n,x_temp,ier)
+               CALL eval_prof_stel(fit_targs(k,1),fit_type,val2,n,x_temp2,ier)
+               fjac(k,j) = (val2-val)/dx
+               vals = vals + val
+               vals2 = vals2 + val2
             END DO
+            fjac(m,j) = (vals2-vals)/dx
+            x_temp2(j) = x_temp(j)
          END DO
       END IF
       RETURN

@@ -134,8 +134,11 @@
 !                  - Added NOPTIMIZERS option
 !         2.50     - PARALLEL VMEC Working (no restart yet)
 !                  - PARALLEL Boozer Working
+!                  - PARALLEL BOOTSJ Working
 !                  - Saving of Boozer files enabled
 !                  - Helicity target weighting corrected.
+!                  - Non-stellopt parameters properly handled by BOOTSJ
+!                  - VBOOT Added as Equilibrium Option (VMEC+BOOTSJ)
 !-----------------------------------------------------------------------
       MODULE stellopt_runtime
 !-----------------------------------------------------------------------

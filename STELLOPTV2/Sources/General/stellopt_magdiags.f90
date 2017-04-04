@@ -21,9 +21,10 @@
                                 id_string_diagno => id_string, &
                                 lcoil_diagno => lcoil, &
                                 diagno_coil_string => coil_string,&
-                                DIAGNO_VERSION
+                                DIAGNO_VERSION, nprocs_diagno, lvac
       USE biotsavart, ONLY: cleanup_biotsavart
       USE virtual_casing_mod, ONLY: free_virtual_casing, virtual_casing_surf_dump
+      USE mpi_params
       
 !-----------------------------------------------------------------------
 !     Subroutine Parameters
@@ -42,10 +43,18 @@
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
+      myworkid = master
+#if defined(MPI_OPT)
+      MPI_COMM_DIAGNO = MPI_COMM_MYWORLD
+      CALL MPI_COMM_RANK(MPI_COMM_DIAGNO, myworkid, ierr_mpi)
+      CALL MPI_COMM_SIZE(MPI_COMM_DIAGNO, nprocs_diagno, ierr_mpi)
+#endif
+
       IF (iflag < 0) RETURN
       lverb_diagno = lscreen
       id_string_diagno = TRIM(proc_string)
       lcoil_diagno = .false.
+      lvac = .false.
       IF (LEN_TRIM(magdiag_coil) > 1) THEN
          lcoil_diagno = .true.
          diagno_coil_string = TRIM(magdiag_coil)

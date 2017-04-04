@@ -13,6 +13,7 @@
       USE stellopt_vars, ONLY: equil_type
       USE equil_vals, ONLY: eff_ripple
       USE stellopt_targets, ONLY: sigma_neo
+      USE mpi_params
       ! NEO LIBRARIES
 !DEC$ IF DEFINED (NEO_OPT)
       USE neo_precision
@@ -34,6 +35,9 @@
 !        iflag         Error flag
 !----------------------------------------------------------------------
       IMPLICIT NONE
+!DEC$ IF DEFINED (MPI_OPT)
+      INCLUDE 'mpif.h'
+!DEC$ ENDIF
       LOGICAL, INTENT(in)    :: lscreen
       INTEGER, INTENT(inout) :: iflag
 !-----------------------------------------------------------------------
@@ -49,6 +53,9 @@
       REAL(rprec)   ::                     reff
       REAL(rprec)   ::                     psi,dpsi
       REAL(rprec)   ::                     b_ref,r_ref
+      REAL(rprec), ALLOCATABLE ::          save_array(:,:)
+      INTEGER, ALLOCATABLE :: mnum(:)
+      INTEGER       :: mystart,myend, chunk, numprocs_local
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
@@ -57,6 +64,69 @@
       IF (lscreen) WRITE(6,'(a)') ' ---------------------  NEOCLASSICAL TRANSPORT CALCULATION  ------------------'
       SELECT CASE(TRIM(equil_type))
          CASE('vmec2000','animec','flow','satire','parvmec','paravmec')
+!DEC$ IF DEFINED (MPI_OPT)
+            CALL MPI_COMM_SIZE( MPI_COMM_MYWORLD, numprocs_local, ierr_mpi )
+            CALL MPI_BCAST(mnboz_b,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
+            CALL MPI_BCAST(mboz_b,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
+            CALL MPI_BCAST(nboz_b,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
+            CALL MPI_BCAST(nfp_b,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
+            CALL MPI_BCAST(ns_b,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
+            CALL MPI_BCAST(aspect_b,1,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
+            CALL MPI_BCAST(rmax_b,1,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
+            CALL MPI_BCAST(rmin_b,1,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
+            CALL MPI_BCAST(betaxis_b,1,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
+            CALL MPI_BCAST(lasym_b,1,MPI_LOGICAL,master,MPI_COMM_MYWORLD,ierr_mpi)
+            ! Handle allocations
+            IF (myworkid /= master) THEN
+               !1D
+               IF (ALLOCATED(idx_b))  DEALLOCATE(idx_b);  ALLOCATE(idx_b(ns_b))
+               IF (ALLOCATED(iota_b)) DEALLOCATE(iota_b); ALLOCATE(iota_b(ns_b))
+               IF (ALLOCATED(pres_b)) DEALLOCATE(pres_b); ALLOCATE(pres_b(ns_b))
+               IF (ALLOCATED(phip_b)) DEALLOCATE(phip_b); ALLOCATE(phip_b(ns_b))
+               IF (ALLOCATED(phi_b))  DEALLOCATE(phi_b);  ALLOCATE(phi_b(ns_b))
+               IF (ALLOCATED(beta_b)) DEALLOCATE(beta_b); ALLOCATE(beta_b(ns_b))
+               IF (ALLOCATED(buco_b)) DEALLOCATE(buco_b); ALLOCATE(buco_b(ns_b))
+               IF (ALLOCATED(bvco_b)) DEALLOCATE(bvco_b); ALLOCATE(bvco_b(ns_b))
+               IF (ALLOCATED(ixm_b))  DEALLOCATE(ixm_b);  ALLOCATE(ixm_b(mnboz_b))
+               IF (ALLOCATED(ixn_b))  DEALLOCATE(ixn_b);  ALLOCATE(ixn_b(mnboz_b))
+               !2D
+               IF (ALLOCATED(rmnc_b))  DEALLOCATE(rmnc_b);  ALLOCATE(rmnc_b(mnboz_b,ns_b))
+               IF (ALLOCATED(zmns_b))  DEALLOCATE(zmns_b);  ALLOCATE(zmns_b(mnboz_b,ns_b))
+               IF (ALLOCATED(bmnc_b))  DEALLOCATE(bmnc_b);  ALLOCATE(bmnc_b(mnboz_b,ns_b))
+               IF (ALLOCATED(pmns_b))  DEALLOCATE(pmns_b);  ALLOCATE(pmns_b(mnboz_b,ns_b))
+               IF (ALLOCATED(gmnc_b))  DEALLOCATE(gmnc_b);  ALLOCATE(gmnc_b(mnboz_b,ns_b))
+               IF (lasym_b) THEN
+                  IF (ALLOCATED(rmns_b))  DEALLOCATE(rmns_b);  ALLOCATE(rmns_b(mnboz_b,ns_b))
+                  IF (ALLOCATED(zmnc_b))  DEALLOCATE(zmnc_b);  ALLOCATE(zmnc_b(mnboz_b,ns_b))
+                  IF (ALLOCATED(bmns_b))  DEALLOCATE(bmns_b);  ALLOCATE(bmns_b(mnboz_b,ns_b))
+                  IF (ALLOCATED(pmnc_b))  DEALLOCATE(pmnc_b);  ALLOCATE(pmnc_b(mnboz_b,ns_b))
+                  IF (ALLOCATED(gmns_b))  DEALLOCATE(gmns_b);  ALLOCATE(gmns_b(mnboz_b,ns_b))
+               END IF
+            END IF
+            ! Broadcast the variables
+            CALL MPI_BCAST(idx_b,ns_b,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
+            CALL MPI_BCAST(ixm_b,mnboz_b,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
+            CALL MPI_BCAST(ixn_b,mnboz_b,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
+            CALL MPI_BCAST(iota_b,ns_b,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
+            CALL MPI_BCAST(pres_b,ns_b,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
+            CALL MPI_BCAST(phip_b,ns_b,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
+            CALL MPI_BCAST(phi_b,ns_b,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
+            CALL MPI_BCAST(beta_b,ns_b,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
+            CALL MPI_BCAST(buco_b,ns_b,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
+            CALL MPI_BCAST(bvco_b,ns_b,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
+            CALL MPI_BCAST(rmnc_b,ns_b*mnboz_b,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
+            CALL MPI_BCAST(zmns_b,ns_b*mnboz_b,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
+            CALL MPI_BCAST(bmnc_b,ns_b*mnboz_b,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
+            CALL MPI_BCAST(gmnc_b,ns_b*mnboz_b,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
+            CALL MPI_BCAST(pmns_b,ns_b*mnboz_b,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
+            IF (lasym_b) THEN
+               CALL MPI_BCAST(rmns_b,ns_b*mnboz_b,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
+               CALL MPI_BCAST(zmnc_b,ns_b*mnboz_b,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
+               CALL MPI_BCAST(bmns_b,ns_b*mnboz_b,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
+               CALL MPI_BCAST(gmns_b,ns_b*mnboz_b,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
+               CALL MPI_BCAST(pmnc_b,ns_b*mnboz_b,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
+            END IF
+!DEC$ ENDIF
             ! CALL neo_read_control (Assume NEO namelist has been read)
             in_file  = 'dummy'
             extension = TRIM(proc_string)
@@ -255,29 +325,97 @@
                WRITE(6,'(A)')           '------------------------------------------------------------------'
                CALL FLUSH(6)
             END IF
-            DO fluxs_arr_i = 1, no_fluxs
+ 
+            ! Divide up work
+            IF (ALLOCATED(mnum)) DEALLOCATE(mnum)
+            ALLOCATE(mnum(numprocs_local))
+            mnum=0
+            i = 1
+            DO
+               IF (SUM(mnum,DIM=1) == no_fluxs) EXIT  ! Have to use ns_b because of logic
+               IF (i > numprocs_local) i = 1
+               mnum(i) = mnum(i) + 1
+               i=i+1
+            END DO
+            mystart = 1
+            DO i = 1, myworkid
+               mystart = SUM(mnum(1:i))+1
+            END DO
+            myend = mystart + mnum(myworkid+1) - 1
+            IF (myend < mystart) myend = mystart
+            IF (mnum(myworkid+1) == 0) mystart = myend + 1
+            DEALLOCATE(mnum)
+
+            ALLOCATE(save_array(no_fluxs,17)); save_array=0
+            DO fluxs_arr_i = mystart,myend
+           ! DO fluxs_arr_i = 1, no_fluxs
                psi_ind = fluxs_arr_i
-               IF (psi_ind .GE. 1 .AND. psi_ind .LE. npsi) THEN
-                  CALL neo_init_s(psi,dpsi)
-                  IF(psi_ind.EQ.1) dpsi=psi
-                  CALL flint_bo()
-                  reff=reff+drdpsi*dpsi
-                  IF (reff /= reff) reff = 0
-                  IF (calc_cur .EQ. 1) CALL flint_cur()
-                  IF (ref_swi .EQ. 1) THEN
-                     b_ref = bmref_g
-                     r_ref = rt0_g
-                  ELSE IF (ref_swi .EQ. 2) THEN
-                     b_ref = bmref
-                     r_ref = rt0
-                  ELSE
-                     IF (lscreen) WRITE (6,*) 'FATAL: This ref_swi ',ref_swi,' is not implemented!'
-                     iflag = -1
-                     RETURN
-                  END IF
-                  epstot = epstot * (b_ref/bmref)**2 * (r_ref/rt0)**2
-                  epspar = epspar * (b_ref/bmref)**2 * (r_ref/rt0)**2
-                  IF (epstot /= epstot) epstot = 0 
+               !IF (psi_ind .GE. 1 .AND. psi_ind .LE. npsi) THEN
+               CALL neo_init_s(psi,dpsi)
+               IF(psi_ind.EQ.1) dpsi=psi
+               CALL flint_bo()
+               reff=reff+drdpsi*dpsi
+               IF (reff /= reff) reff = 0
+               IF (calc_cur .EQ. 1) CALL flint_cur()
+               IF (ref_swi .EQ. 1) THEN
+                  b_ref = bmref_g
+                  r_ref = rt0_g
+               ELSE IF (ref_swi .EQ. 2) THEN
+                  b_ref = bmref
+                  r_ref = rt0
+               ELSE
+                  IF (lscreen) WRITE (6,*) 'FATAL: This ref_swi ',ref_swi,' is not implemented!'
+                  iflag = -1
+                  RETURN
+               END IF
+               epstot = epstot * (b_ref/bmref)**2 * (r_ref/rt0)**2
+               epspar = epspar * (b_ref/bmref)**2 * (r_ref/rt0)**2
+               IF (epstot /= epstot) epstot = 0 
+               save_array(fluxs_arr_i,1) = epstot
+               save_array(fluxs_arr_i,2) = reff
+               save_array(fluxs_arr_i,3) = iota(psi_ind)
+               save_array(fluxs_arr_i,4) = b_ref
+               save_array(fluxs_arr_i,5) = r_ref
+               save_array(fluxs_arr_i,6) = epspar(1)
+               save_array(fluxs_arr_i,7) = epspar(2)
+               save_array(fluxs_arr_i,8) = ctrone
+               save_array(fluxs_arr_i,9) = ctrtot
+               save_array(fluxs_arr_i,10) = bareph
+               save_array(fluxs_arr_i,11) = barept
+               save_array(fluxs_arr_i,12) = yps
+               save_array(fluxs_arr_i,13) = lambda_b
+               save_array(fluxs_arr_i,14) = lambda_ps1
+               save_array(fluxs_arr_i,15) = lambda_ps2
+               save_array(fluxs_arr_i,16) = lambda_b1
+               save_array(fluxs_arr_i,17) = lambda_b2
+            END DO
+!DEC$ IF DEFINED (MPI_OPT)
+            IF (myworkid == master) THEN
+               CALL MPI_REDUCE(MPI_IN_PLACE,save_array,no_fluxs*17,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
+            ELSE
+               CALL MPI_REDUCE(save_array,save_array,no_fluxs*17,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
+            END IF
+!DEC$ ENDIF
+            IF (myworkid == master) THEN
+               DO fluxs_arr_i = 1, no_fluxs
+                  psi_ind = fluxs_arr_i
+                  epstot = save_array(fluxs_arr_i,1)
+                  reff = save_array(fluxs_arr_i,2)
+                  iota(psi_ind) = save_array(fluxs_arr_i,3)
+                  b_ref = save_array(fluxs_arr_i,4)
+                  r_ref = save_array(fluxs_arr_i,5)
+                  epspar(1) = save_array(fluxs_arr_i,6)
+                  epspar(2) = save_array(fluxs_arr_i,7)
+                  ctrone = save_array(fluxs_arr_i,8)
+                  ctrtot = save_array(fluxs_arr_i,9)
+                  bareph = save_array(fluxs_arr_i,10)
+                  barept = save_array(fluxs_arr_i,11)
+                  yps = save_array(fluxs_arr_i,12)
+                  lambda_b = save_array(fluxs_arr_i,13)
+                  lambda_ps1 = save_array(fluxs_arr_i,14)
+                  lambda_ps2 = save_array(fluxs_arr_i,15)
+                  lambda_b1 = save_array(fluxs_arr_i,16)
+                  lambda_b2 = save_array(fluxs_arr_i,17)
                   IF (eout_swi .EQ. 1) THEN
                      WRITE(w_u3,'(1(1x,i8),5(1x,e17.10))')                    &
                            fluxs_arr(fluxs_arr_i),                             &
@@ -304,16 +442,11 @@
                   eff_ripple(fluxs_arr(fluxs_arr_i)) = epstot
                   IF (lscreen) WRITE(6,'(2X,I3,5(2X,E11.4))') fluxs_arr(fluxs_arr_i),epstot,reff,iota(psi_ind),b_ref,r_ref
                   CALL FLUSH(6)
-               ELSE
-                  IF (lscreen) WRITE (6,*) 'Flux surface ',psi_ind,' does not exist!'
-                  iflag = -1
-                  CALL FLUSH(6)
-                  RETURN
+               END DO
+               CLOSE(w_u3)
+               IF (calc_cur .EQ. 1) THEN
+                 CLOSE(w_u9)
                END IF
-            END DO
-            CLOSE(w_u3)
-            IF (calc_cur .EQ. 1) THEN
-              CLOSE(w_u9)
             END IF
             CALL neo_dealloc
             no_fluxs = 0  ! For next pass through

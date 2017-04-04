@@ -372,6 +372,16 @@
                ier = 0
                CALL stellopt_balloon(lscreen,ier)
                ier_paraexe = ier
+            CASE('diagno')
+               proc_string = file_str
+               ier = 0
+               CALL stellopt_magdiag(lscreen,ier)
+               ier_paraexe = ier
+            CASE('neo')
+               proc_string = file_str
+               ier = 0
+               CALL stellopt_neo(lscreen,ier)
+               ier_paraexe = ier
             CASE('write_mgrid')
                CALL stellopt_write_mgrid(MPI_COMM_MYWORLD,file_str,lscreen)
             CASE('exit')  ! we send this when we want to terminate the code (everyone leaves)

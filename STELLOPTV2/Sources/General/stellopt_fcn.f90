@@ -336,8 +336,12 @@
          ctemp_str = 'bootsj'
          IF (ANY(sigma_bootstrap < bigno) .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
          IF (ANY(sigma_balloon < bigno)) CALL stellopt_balloon(lscreen,iflag)
-         IF (lneed_magdiag) CALL stellopt_magdiag(lscreen,iflag)
-         IF (ANY(sigma_neo < bigno)) CALL stellopt_neo(lscreen,iflag)
+         !IF (lneed_magdiag) CALL stellopt_magdiag(lscreen,iflag)
+         ctemp_str = 'diagno'
+         IF (lneed_magdiag .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
+         !IF (ANY(sigma_neo < bigno)) CALL stellopt_neo(lscreen,iflag)
+         ctemp_str = 'neo'
+         IF (ANY(sigma_neo < bigno) .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
 !DEC$ IF DEFINED (TERPSICHORE)
          !IF (ANY(sigma_kink < bigno)) CALL stellopt_kink(lscreen,iflag)
          ctemp_str = 'terpsichore'

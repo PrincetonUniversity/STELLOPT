@@ -36,6 +36,7 @@
       INTEGER ::  ier, i, j, ik, ntheta, nzeta, nlis
       INTEGER ::  dex_ion, dex_zeff
       INTEGER :: mystart,myend, chunk, numprocs_local
+      INTEGER, ALLOCATABLE :: mnum(:)
       REAL(rprec) :: t1, t2
       integer, dimension(nfax) :: ifaxu, ifaxv
       integer :: ntrigu, ntrigv, i1
@@ -48,6 +49,7 @@
       real(rprec) :: a1, tempe0, tempi0, pres10, pres0
       real(rprec), dimension(:), allocatable :: work
       integer :: ihere = 0
+      real(rprec), PARAMETER :: one=1
       CHARACTER(LEN=32) :: temp_str
 !-----------------------------------------------
 !   E x t e r n a l   F u n c t i o n s
@@ -115,12 +117,28 @@
             capr = 0; caps = 0; h2 = 0; ftrapped = 0; fpassing =0; epsttok = 0
             fttok = 0; gbsnorm = 0; aiterm1 = 0; other1 = 0; rhoar = 0; bsnorm = 0
             fptok = 0; amain = 0; bmax1 = 0; thetamax = 0; zetahmax = 0; ajBbs = 0
-            d_rho = 0; b2avg = 0
-            chunk = FLOOR(REAL(irup) / REAL(numprocs_local))+1
-            mystart = myworkid*chunk + 1
-            myend = mystart + chunk - 1
-            IF (mystart > irup) mystart=irup
-            IF (myend > irup) myend = irup
+            d_rho = 0; b2avg = 0 
+
+            ! Divide up work
+            IF (ALLOCATED(mnum)) DEALLOCATE(mnum)
+            ALLOCATE(mnum(numprocs_local))
+            mnum=0
+            i = 1
+            DO
+               IF (SUM(mnum,DIM=1) == irup) EXIT
+               IF (i > numprocs_local) i = 1
+               mnum(i) = mnum(i) + 1
+               i=i+1
+            END DO
+            mystart = 1
+            DO i = 1, myworkid
+               mystart = SUM(mnum(1:i))+1
+            END DO
+            myend = mystart + mnum(myworkid+1) - 1
+            IF (myend < mystart) myend = mystart
+            IF (mnum(myworkid+1) == 0) mystart = myend + 1
+            DEALLOCATE(mnum)
+
 !DEC$ ENDIF
             ! Assume the bootsj namelist has been read in
             if(damp_bs .lt. 0.0) then !in this case no damp_bs was read in
@@ -185,16 +203,37 @@
             ! Notes: This part of the code wants quantities in 10^20 [m^-3] and
             !        [keV]
             IF (myworkid == master) THEN
-               DO ir = 1, irup
-                  CALL get_equil_te(rhoar(ir),TRIM(te_type),tempe1(ir),ier)
-                  CALL get_equil_ne(rhoar(ir),TRIM(ne_type),dense(ir),ier)
-                  IF (teti <= 0.0) THEN
-                     CALL get_equil_ti(rhoar(ir),TRIM(ti_type),tempi1(ir),ier)
-                  ELSE
-                     tempi1(ir) = tempe1(ir)/teti
-                  END IF
-                  dense(ir) = dense(ir) + 1.E-36_dp
-               END DO
+               IF (tempres < 0) THEN
+                  DO ir = 1, irup
+                     CALL get_equil_te(rhoar(ir),TRIM(te_type),tempe1(ir),ier)
+                     CALL get_equil_ne(rhoar(ir),TRIM(ne_type),dense(ir),ier)
+                     IF (teti <= 0.0) THEN
+                        CALL get_equil_ti(rhoar(ir),TRIM(ti_type),tempi1(ir),ier)
+                     ELSE
+                        tempi1(ir) = tempe1(ir)/teti
+                     END IF
+                     dense(ir) = dense(ir) + 1.E-36_dp
+                  END DO
+               ELSE
+                  ! Setup some variables
+                  tempe0 = ate(0)            !central electron temperature in keV
+                  tempi0 = ati(0)                 !central ion temperature in keV
+                  pres0 = 1.6022E-19_DP           !Normalization of P=N*ec Note we want eV and m^-3 at this point
+                  ! Mimic behavior (if ate/i >0 then use as central values and scale density)
+                  if (tempe0.le.0 .or. tempi0.le.0) tempres = abs(tempres)
+                  tempres = min(one,tempres)
+                  ! Calculate te/ti profiles
+                  a = one + one/(zeff1*teti)
+                  tempe0 = pres1(1)/(a*pres0*dens0*1E20) ! note dens0 in 1E20 m^-3
+                  tempi0 = tempe0/teti
+                  a      = tempe0/(pres1(1)**tempres)
+                  a1     = tempi0/(pres1(1)**tempres)
+                  tempe1 = pres1**tempres
+                  tempi1 = tempe1
+                  tempe1 = tempe1*a
+                  tempi1 = tempi1*a1
+                  dense = pres1/(pres0*(tempe1+tempi1/zeff1)+1.E-36_dp)
+               END IF
             END IF
 !DEC$ IF DEFINED (MPI_OPT)
             CALL MPI_BCAST(tempe1,irdim,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)

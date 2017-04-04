@@ -42,7 +42,7 @@
 !----------------------------------------------------------------------
       INTEGER ::  ier, ik, ij, iunit, nu, nv, u, v, mn, mystart,myend, chunk, numprocs_local, num_booz
       INTEGER,SAVE ::  irun_setup_booz = 0
-      INTEGER, ALLOCATABLE :: im(:), in(:)
+      INTEGER, ALLOCATABLE :: im(:), in(:), mnum(:)
       REAL(rprec), ALLOCATABLE :: xu(:), xv(:)
       REAL(rprec), ALLOCATABLE :: r_temp(:,:,:), z_temp(:,:,:), p_temp(:,:,:), g_temp(:,:,:), b_temp(:,:,:)
       REAL(rprec), ALLOCATABLE :: ru(:,:,:), rv(:,:,:)
@@ -131,11 +131,26 @@
             CALL MPI_BCAST(phi,ns_xboozer,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
             CALL MPI_BCAST(buco,ns_xboozer,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
             CALL MPI_BCAST(bvco,ns_xboozer,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
-            chunk = FLOOR(REAL(ns_vmec) / REAL(numprocs_local))
-            mystart = myworkid*chunk + 1
-            myend = mystart + chunk - 1
-            IF (mystart > ns_vmec) mystart=ns_vmec
-            IF (myend > ns_vmec) myend = ns_vmec
+
+            IF (ALLOCATED(mnum)) DEALLOCATE(mnum)
+            ALLOCATE(mnum(numprocs_local))
+            mnum=0
+            ij = 1
+            DO
+               IF (SUM(mnum,DIM=1) == ns_xboozer) EXIT  ! Have to use ns_b because of logic
+               IF (ij > numprocs_local) ij = 1
+               mnum(ij) = mnum(ij) + 1
+               ij=ij+1
+            END DO
+            mystart = 1
+            DO ij = 1, myworkid
+               mystart = SUM(mnum(1:ij))+1
+            END DO
+            myend = mystart + mnum(myworkid+1) - 1
+            IF (myend < mystart) myend = mystart
+            IF (mnum(myworkid+1) == 0) mystart = myend + 1
+            DEALLOCATE(mnum)
+
             ! Becasue of jsurf we first have everyone call on the 0th surface
             ik = 1
             DO

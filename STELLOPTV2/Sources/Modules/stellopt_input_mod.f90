@@ -805,21 +805,22 @@
       IF ((myid == master) .and. (TRIM(equil_type(1:4)) == 'vmec') ) THEN
          WRITE(6,*)        " Equilibrium calculation provided by: "
          WRITE(6,"(2X,A)") "================================================================================="
+         WRITE(6,"(2X,A)") "=========   Parallel Variational Moments Equilibrium Code (v "//TRIM(version_vmec)//")      ========="
          WRITE(6,"(2X,A)") "=========       Variational Moments Equilibrium Code (v "//TRIM(version_vmec)//")           ========="
          WRITE(6,"(2X,A)") "=========                (S. Hirshman, J. Whitson)                      ========="
          WRITE(6,"(2X,A)") "=========         http://vmecwiki.pppl.wikispaces.net/VMEC              ========="
          WRITE(6,"(2X,A)") "================================================================================="
          WRITE(6,*)        "    "
       END IF
-      IF ((myid == master) .and. (TRIM(equil_type(1:8)) == 'paravmec') ) THEN
-         WRITE(6,*)        " Equilibrium calculation provided by: "
-         WRITE(6,"(2X,A)") "================================================================================="
-         WRITE(6,"(2X,A)") "=========   Parallel Variational Moments Equilibrium Code (v "//TRIM(version_vmec)//")      ========="
-         WRITE(6,"(2X,A)") "=========                (S. Hirshman, J. Whitson)                      ========="
-         WRITE(6,"(2X,A)") "=========         http://vmecwiki.pppl.wikispaces.net/VMEC              ========="
-         WRITE(6,"(2X,A)") "================================================================================="
-         WRITE(6,*)        "    "
-      END IF
+      !IF ((myid == master) .and. (TRIM(equil_type(1:8)) == 'paravmec') ) THEN
+      !   WRITE(6,*)        " Equilibrium calculation provided by: "
+      !   WRITE(6,"(2X,A)") "================================================================================="
+      !   WRITE(6,"(2X,A)") "=========   Parallel Variational Moments Equilibrium Code (v "//TRIM(version_vmec)//")      ========="
+      !   WRITE(6,"(2X,A)") "=========                (S. Hirshman, J. Whitson)                      ========="
+      !   WRITE(6,"(2X,A)") "=========         http://vmecwiki.pppl.wikispaces.net/VMEC              ========="
+      !   WRITE(6,"(2X,A)") "================================================================================="
+      !   WRITE(6,*)        "    "
+      !END IF
 !DEC$ IF DEFINED (BEAMS3D_OPT)
       IF (myid == master .and. ANY(sigma_orbit < bigno) ) THEN
          WRITE(6,*)               " Energetic Particle calculation provided by: "
