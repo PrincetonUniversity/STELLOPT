@@ -43,8 +43,9 @@
       USE diagno_runtime
       USE biotsavart
       USE safe_open_mod
-      USE EZspline_obj
-      USE EZspline
+      USE virtual_casing_mod
+!      USE EZspline_obj
+!      USE EZspline
       USE mpi_params
 !-----------------------------------------------------------------------
 !     Local Variables
@@ -56,29 +57,28 @@
 #if defined(MPI_OPT)
       INCLUDE 'mpif.h'
       INTEGER(KIND=BYTE_8),ALLOCATABLE :: mnum(:), moffsets(:)
-      INTEGER :: numprocs_local, mylocalid, mylocalmaster
-      INTEGER :: MPI_COMM_LOCAL
 #endif
-      INTEGER(KIND=BYTE_8) :: icount, chunk
-      INTEGER :: ier, i, j, k, iunit, nfl, nfl2, nsegmx, nseg, ig,&
+      INTEGER(KIND=BYTE_8) :: chunk
+      INTEGER :: ier, i, j, k, iunit, nfl, nsegmx, nseg, ig,&
                  i1, i2, nfl_mut, ncg
       INTEGER, ALLOCATABLE :: nseg_ar(:), iflflg(:), idia(:)
-      REAL(rprec) :: br, bphi, bz, temp, xp, yp, zp, xp1, yp1, zp1,int_fac
-      REAL(rprec), ALLOCATABLE :: flux(:)
-      REAL(rprec), ALLOCATABLE :: xfl(:,:), yfl(:,:), zfl(:,:), &
+      REAL(rprec) :: xp, yp, zp, xp1, yp1, zp1, int_fac
+      DOUBLE PRECISION :: dtemp
+      DOUBLE PRECISION, ALLOCATABLE :: flux(:)
+      DOUBLE PRECISION, ALLOCATABLE :: xfl(:,:), yfl(:,:), zfl(:,:), &
                                   dx(:,:), dy(:,:), dz(:,:),&
-                                  xmid(:,:), ymid(:,:), zmid(:,:),&
                                   flux_mut(:,:), eff_area(:,:)
       CHARACTER(256) :: format_flux_headers
       CHARACTER(48), DIMENSION(:), ALLOCATABLE :: title
-      TYPE(EZspline1_r8) :: x_spl,y_spl,z_spl
-      INTEGER     ::  bcs0(2) = (/ 0, 0/)
+!      TYPE(EZspline1_r8) :: x_spl,y_spl,z_spl
+!      INTEGER     ::  bcs0(2) = (/ 0, 0/)
       
 !-----------------------------------------------------------------------
 !     External Functions
 !          ier            Error Flag
 !          iunit          File ID Number
 !-----------------------------------------------------------------------
+
       INTERFACE
          REAL FUNCTION db_bode(x0,y0,z0,x1,y1,z1,cg,ldb)
          USE stel_kinds, ONLY: rprec
@@ -105,15 +105,10 @@
 !     Begin Subroutine
 !-----------------------------------------------------------------------
       ! Basic copy of MPI_COMM_DIANGO
-      mylocalid = myworkid
-      mylocalmaster = master
-      MPI_COMM_LOCAL = MPI_COMM_DIAGNO
-      numprocs_local = nprocs_diagno
-      ncg = SIZE(coil_group)
-      IF (ncg == 0) ncg = 1 ! Just so we don't allocate a zero size array
+      ncg = 2 ! Just so we don't allocate a zero size array
 
       if(lverb) write(6,*)' --Calculating Rogowski Coil Values'
-      int_fac=1./int_step
+      int_fac=REAL(1)/REAL(int_step)
       !Define format control variables
       format_flux_headers='(5X,A14,2X,I3,4X,I3,6X,I1,9X,I1,6X,F5.1)'
       IF (lverb) THEN
@@ -135,8 +130,8 @@
             END DO
          END DO
          nsegmx=MAXVAL(nseg_ar)
-         ALLOCATE(xfl(nfl,1:nsegmx),yfl(nfl,1:nsegmx),zfl(nfl,1:nsegmx),&
-                  eff_area(nfl,1:nsegmx),STAT=ier)
+         ALLOCATE(xfl(nfl,nsegmx),yfl(nfl,nsegmx),zfl(nfl,nsegmx),&
+                  eff_area(nfl,nsegmx),STAT=ier)
          xfl = 0; yfl = 0; zfl = 0; eff_area=0; flux =0; flux_mut=0;
          REWIND(UNIT=iunit)
          READ(iunit,'(1I6)') nfl
@@ -162,71 +157,67 @@
       IF (myworkid /= master) THEN
          ALLOCATE(nseg_ar(nfl), title(nfl), flux(nfl),&
                   iflflg(nfl), idia(nfl),flux_mut(nfl,ncg), STAT=ier)
-         ALLOCATE(xfl(nfl,1:nsegmx),yfl(nfl,1:nsegmx),zfl(nfl,1:nsegmx),&
-                  eff_area(nfl,1:nsegmx),STAT=ier)
+         ALLOCATE(xfl(nfl,nsegmx),yfl(nfl,nsegmx),zfl(nfl,nsegmx),&
+                  eff_area(nfl,nsegmx),STAT=ier)
          xfl = 0; yfl = 0; zfl = 0; eff_area=0; flux=0; flux_mut=0;
       END IF
-#endif
 
-#if defined(MPI_OPT)
       ! Broadcast Arrays (1D)
       CALL MPI_BARRIER(MPI_COMM_DIAGNO,ierr_mpi)
       IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'diagno_rogow2',ierr_mpi)
-      CALL MPI_BCAST(nseg_ar,nfl,MPI_INTEGER, master, MPI_COMM_DIAGNO,ierr_mpi)
-      IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'diagno_rogow2',ierr_mpi)
-      CALL MPI_BCAST(iflflg,nfl,MPI_INTEGER, master, MPI_COMM_DIAGNO,ierr_mpi)
-      IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'diagno_rogow2',ierr_mpi)
-      CALL MPI_BCAST(idia,nfl,MPI_INTEGER, master, MPI_COMM_DIAGNO,ierr_mpi)
-      IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'diagno_rogow2',ierr_mpi)
-      CALL MPI_BCAST(title,nfl*48,MPI_CHARACTER, master, MPI_COMM_DIAGNO,ierr_mpi)
-      IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'diagno_rogow2',ierr_mpi)
+      CALL MPI_BCAST(nseg_ar, nfl, MPI_INTEGER, master, MPI_COMM_DIAGNO,ierr_mpi)
+      IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'diagno_rogow2', ierr_mpi)
+      CALL MPI_BCAST(iflflg,  nfl, MPI_INTEGER, master, MPI_COMM_DIAGNO,ierr_mpi)
+      IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'diagno_rogow2', ierr_mpi)
+      CALL MPI_BCAST(idia,    nfl, MPI_INTEGER, master, MPI_COMM_DIAGNO,ierr_mpi)
+      IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'diagno_rogow2', ierr_mpi)
+      !CALL MPI_BCAST(title,nfl*48,MPI_CHARACTER, master, MPI_COMM_DIAGNO,ierr_mpi)
+      !IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'diagno_rogow2',ierr_mpi)
 
       ! Broadcast Arrays (2D)
-      CALL MPI_BCAST(xfl,nfl*nsegmx,MPI_DOUBLE_PRECISION, master, MPI_COMM_DIAGNO,ierr_mpi)
+      CALL MPI_BCAST(xfl,      nfl*nsegmx,MPI_DOUBLE_PRECISION, master, MPI_COMM_DIAGNO,ierr_mpi)
       IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'diagno_rogow2',ierr_mpi)
-      CALL MPI_BCAST(yfl,nfl*nsegmx,MPI_DOUBLE_PRECISION, master, MPI_COMM_DIAGNO,ierr_mpi)
+      CALL MPI_BCAST(yfl,      nfl*nsegmx,MPI_DOUBLE_PRECISION, master, MPI_COMM_DIAGNO,ierr_mpi)
       IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'diagno_rogow2',ierr_mpi)
-      CALL MPI_BCAST(zfl,nfl*nsegmx,MPI_DOUBLE_PRECISION, master, MPI_COMM_DIAGNO,ierr_mpi)
+      CALL MPI_BCAST(zfl,      nfl*nsegmx,MPI_DOUBLE_PRECISION, master, MPI_COMM_DIAGNO,ierr_mpi)
       IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'diagno_rogow2',ierr_mpi)
-      CALL MPI_BCAST(eff_area,nfl*nsegmx,MPI_DOUBLE_PRECISION, master, MPI_COMM_DIAGNO,ierr_mpi)
+      CALL MPI_BCAST(eff_area, nfl*nsegmx,MPI_DOUBLE_PRECISION, master, MPI_COMM_DIAGNO,ierr_mpi)
       IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'diagno_rogow2',ierr_mpi)
 #endif
+
       ! Calculate the endpoints
-      ALLOCATE(dx(nfl,1:nsegmx),dy(nfl,1:nsegmx),dz(nfl,1:nsegmx),&
-               xmid(nfl,1:nsegmx),ymid(nfl,1:nsegmx),zmid(nfl,1:nsegmx),STAT=ier)
+      ALLOCATE(dx(nfl,1:nsegmx),dy(nfl,1:nsegmx),dz(nfl,1:nsegmx),STAT=ier)
+      dx=0; dy=0; dz=0
       DO i = 1, nfl
          nseg = nseg_ar(i)
-         dx(i,1:nseg-1) = xfl(i,2:nseg)-xfl(i,1:nseg)
-         dy(i,1:nseg-1) = yfl(i,2:nseg)-yfl(i,1:nseg)
-         dz(i,1:nseg-1) = zfl(i,2:nseg)-zfl(i,1:nseg)
-         xmid(i,1:nseg-1) = 0.5 * ( xfl(i,2:nseg) + xfl(i,2:nseg-1) )
-         ymid(i,1:nseg-1) = 0.5 * ( yfl(i,2:nseg) + yfl(i,2:nseg-1) )
-         zmid(i,1:nseg-1) = 0.5 * ( zfl(i,2:nseg) + zfl(i,2:nseg-1) )
+         dx(i,1:nseg-1) = xfl(i,2:nseg)-xfl(i,1:nseg-1)
+         dy(i,1:nseg-1) = yfl(i,2:nseg)-yfl(i,1:nseg-1)
+         dz(i,1:nseg-1) = zfl(i,2:nseg)-zfl(i,1:nseg-1)
       END DO
-
+ 
       ! Divide up the work
-      chunk = FLOOR(REAL(nfl) / REAL(numprocs_local))
+      chunk = FLOOR(REAL(nfl) / REAL(nprocs_diagno))
       mystart = myworkid*chunk + 1
       myend = mystart + chunk - 1
 #if defined(MPI_OPT)
       IF (ALLOCATED(mnum)) DEALLOCATE(mnum)
       IF (ALLOCATED(moffsets)) DEALLOCATE(moffsets)
-      ALLOCATE(mnum(numprocs_local), moffsets(numprocs_local))
-      CALL MPI_ALLGATHER(chunk,1,MPI_INTEGER,mnum,1,MPI_INTEGER,MPI_COMM_LOCAL,ierr_mpi)
-      CALL MPI_ALLGATHER(mystart,1,MPI_INTEGER,moffsets,1,MPI_INTEGER,MPI_COMM_LOCAL,ierr_mpi)
+      ALLOCATE(mnum(nprocs_diagno), moffsets(nprocs_diagno))
+      CALL MPI_ALLGATHER(chunk,1,MPI_INTEGER,mnum,1,MPI_INTEGER,MPI_COMM_DIAGNO,ierr_mpi)
+      CALL MPI_ALLGATHER(mystart,1,MPI_INTEGER,moffsets,1,MPI_INTEGER,MPI_COMM_DIAGNO,ierr_mpi)
       i = 1
       DO
-         IF ((moffsets(numprocs_local)+mnum(numprocs_local)-1) == nfl) EXIT
-         IF (i == numprocs_local) i = 1
+         IF ((moffsets(nprocs_diagno)+mnum(nprocs_diagno)-1) == nfl) EXIT
+         IF (i == nprocs_diagno) i = 1
          mnum(i) = mnum(i) + 1
-         moffsets(i+1:numprocs_local) = moffsets(i+1:numprocs_local) + 1
+         moffsets(i+1:nprocs_diagno) = moffsets(i+1:nprocs_diagno) + 1
          i=i+1
       END DO
-      mystart = moffsets(mylocalid+1)
-      chunk  = mnum(mylocalid+1)
+      mystart = moffsets(myworkid+1)
+      chunk  = mnum(myworkid+1)
       myend   = mystart + chunk - 1
 #endif
-      
+
       ! Read the mutual induction file if present
       iunit = 36
       IF (luse_mut) THEN
@@ -250,10 +241,10 @@
          END DO
          ncg = nextcur
       END IF
-        
+
       ! Calculate the fields
       DO i = mystart, myend
-         flux(i) = 0.0
+         flux(i) = 0
          IF (lskip_rogo(i)) CYCLE
          nseg = nseg_ar(i)
          SELECT CASE (int_type)
@@ -269,12 +260,14 @@
                      IF (lcoil) THEN
                         DO ig = 1, ncg
                            IF (.not.luse_extcur(ig)) CYCLE
-                           flux_mut(i,ig)=flux_mut(i,ig) + db_midpoint(xp,yp,zp,xp1,yp1,zp1,ig)*eff_area(i,j)
+                           dtemp = db_midpoint(xp,yp,zp,xp1,yp1,zp1,ig)
+                           flux_mut(i,ig)=flux_mut(i,ig) + dtemp*eff_area(i,j)
                         END DO
                      END IF
                      IF (lvac) CYCLE
                      ier = 0
-                     flux(i)=flux(i) + db_midpoint(xp,yp,zp,xp1,yp1,zp1,ier)*eff_area(i,j)
+                     dtemp = db_midpoint(xp,yp,zp,xp1,yp1,zp1,ier)
+                     flux(i)=flux(i) + dtemp*eff_area(i,j)
                   END DO
                END DO
             CASE('simpson')
@@ -288,15 +281,17 @@
                      zp1 = zfl(i,j) + k*int_fac*dz(i,j)
                      IF (lcoil) THEN
                         DO ig = 1, ncg
-                           IF (.not.luse_extcur(ig)) CYCLE
-                           flux_mut(i,ig)=flux_mut(i,ig) + db_simpson(xp,yp,zp,xp1,yp1,zp1,ig)*eff_area(i,j)
-                        END DO
+                           IF (.not.luse_extcur(ig)) CYCLE 
+                           dtemp = db_simpson(xp,yp,zp,xp1,yp1,zp1,ig)
+                           flux_mut(i,ig)=flux_mut(i,ig) + dtemp*eff_area(i,j)
+                        END DO 
                      END IF
-                     IF (lvac) CYCLE
+                     IF (lvac) CYCLE 
                      ier = 0
-                     flux(i)=flux(i) + db_simpson(xp,yp,zp,xp1,yp1,zp1,ier)*eff_area(i,j)
-                  END DO
-               END DO
+                     dtemp = db_simpson(xp,yp,zp,xp1,yp1,zp1,ier)
+                     flux(i)=flux(i) + dtemp*eff_area(i,j)
+                  END DO 
+               END DO 
             CASE('bode')
                DO j = 1, nseg-1
                   DO k = 1, int_step
@@ -309,12 +304,14 @@
                      IF (lcoil) THEN
                         DO ig = 1, ncg
                            IF (.not.luse_extcur(ig)) CYCLE
-                           flux_mut(i,ig)=flux_mut(i,ig) + db_bode(xp,yp,zp,xp1,yp1,zp1,ig)*eff_area(i,j)
+                           dtemp = db_bode(xp,yp,zp,xp1,yp1,zp1,ig)
+                           flux_mut(i,ig)=flux_mut(i,ig) + dtemp*eff_area(i,j)
                         END DO
                      END IF
                      IF (lvac) CYCLE
                      ier = 0
-                     flux(i)=flux(i) + db_bode(xp,yp,zp,xp1,yp1,zp1,ier)*eff_area(i,j)
+                     dtemp = db_bode(xp,yp,zp,xp1,yp1,zp1,ier)
+                     flux(i)=flux(i) + dtemp*eff_area(i,j)
                   END DO
                END DO
             CASE('simpson_spline')
@@ -331,30 +328,34 @@
                   !CALL EZspline_setup(y_spl,yp(0:nseg+1),ier)
                   !CALL EZspline_setup(z_spl,zp(0:nseg+1),ier)
          END SELECT
-         !IF (lverb) WRITE(6,'(2X,i6,10X,I5,10X,E18.8)') i, nseg, flux(i)
       END DO
 
       ! Now handle the arrays
-      IF (lmut) THEN
 #if defined(MPI_OPT)
+      CALL MPI_BARRIER(MPI_COMM_DIAGNO,ierr_mpi)
+      IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'diagno_rogo3',ierr_mpi)
+      IF (lmut) THEN ! Vacuum part
          IF (myworkid == master) THEN
             CALL MPI_REDUCE(MPI_IN_PLACE,flux_mut,nfl*ncg,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_DIAGNO,ierr_mpi)
          ELSE
             CALL MPI_REDUCE(flux_mut,flux_mut,nfl*ncg,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_DIAGNO,ierr_mpi)
          END IF
-         flux = SUM(flux_mut,DIM=2)
-#endif
-      ELSE
-         ! Plasma + vacuum
-         flux = flux + SUM(flux_mut, DIM=2)
-#if defined(MPI_OPT)
-         CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
-         IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'diagno_rogo3',ierr_mpi)
-         CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
-                        flux,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
-                        MPI_COMM_LOCAL,ierr_mpi)
-#endif
+      ELSE ! Plasma part
+         !CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
+         !               flux,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
+         !               MPI_COMM_DIAGNO,ierr_mpi)
+         IF (myworkid == master) THEN
+            CALL MPI_REDUCE(MPI_IN_PLACE,flux,nfl,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_DIAGNO,ierr_mpi)
+         ELSE
+            CALL MPI_REDUCE(flux,flux,nfl,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_DIAGNO,ierr_mpi)
+         END IF
       END IF
+      IF (ALLOCATED(mnum)) DEALLOCATE(mnum)
+      IF (ALLOCATED(moffsets)) DEALLOCATE(moffsets)
+#endif
+
+      ! Get the total flux
+      flux = flux + SUM(flux_mut, DIM=2)
 
       
       ! Write files
@@ -378,6 +379,7 @@
          DO i = 1, nfl
             IF (lverb) WRITE(6,'(2X,i6,10X,I5,10X,E18.8)') i, nseg_ar(i), flux(i)
             WRITE(iunit,'(A)') title(i)
+            CALL FLUSH(6)
          END DO
          CALL FLUSH(iunit)
          CLOSE(iunit)
@@ -386,10 +388,7 @@
       ! Clean up
       DEALLOCATE(nseg_ar, title, flux,iflflg, idia,flux_mut)
       DEALLOCATE(xfl,yfl,zfl,eff_area)
-      DEALLOCATE(dx,dy,dz,xmid,ymid,zmid)
-#if defined(MPI_OPT)
-      DEALLOCATE(mnum,moffsets)
-#endif
+      DEALLOCATE(dx,dy,dz)
       RETURN
 !-----------------------------------------------------------------------
 !     End Subroutine

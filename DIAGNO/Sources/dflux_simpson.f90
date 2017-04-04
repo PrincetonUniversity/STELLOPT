@@ -30,14 +30,11 @@
 !     Begin Function
 !-----------------------------------------------------------------------
 
-      delf = 0.0
-      delt = 1./float(nop-1)
+      delf = 0
+      delt = REAL(1)/REAL(nop-1)
       dx = x1-x0
       dy = y1-y0
       dz = z1-z0
-      xp = x0
-      yp = y0
-      zp = z0
       IF (cg > 0) THEN
          DO i = 1, nop
             xvec(1) = x0+(i-1)*dx*delt
@@ -48,7 +45,7 @@
          END DO
       ELSE
          DO i = 1, nop
-            ier = 1; ax = 0.0; ay = 0.0; az = 0.0
+            ier = 1; ax = 0; ay = 0; az = 0
             xp = x0+(i-1)*dx*delt
             yp = y0+(i-1)*dy*delt
             zp = z0+(i-1)*dz*delt

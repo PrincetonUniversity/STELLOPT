@@ -6,7 +6,9 @@
 !                    diagnostics for a given equilibrium using a
 !                    virtual casing principle or a volume integral over
 !                    the plasma current density.
-!     References:    H.J. Gardner, Nuclear Fusion, Vol. 30, No. 8 (1990)
+!     References:    S.A. Lazerson, PPCF, Vol. 55, 025014 (2013)
+!                    S.A. Lazerson, PPCF, Vol. 54, 122002 (2012)
+!                    H.J. Gardner, Nuclear Fusion, Vol. 30, No. 8 (1990)
 !                    V.D. Shfranov and L.E. Zakharov, Nuclear Fusion,
 !                         Vol. 12 (1972)
 !                    L.E. Zakharov, Nuclear Fusion, Vol. 13 (1973)
@@ -123,7 +125,9 @@
        coil_string = TRIM(coil_string)
        coil_string = ADJUSTL(coil_string)
     ELSE
-        lverb = .false. ! Shutup the workers
+       lverb = .false. ! Shutup the workers
+       lskip_flux  = .FALSE.
+       lskip_rogo  = .FALSE.
     END IF
 
 #if defined(MPI_OPT)
@@ -145,43 +149,43 @@
     IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'diagno_main', ierr_mpi)
     CALL MPI_BCAST(lmut, 1, MPI_LOGICAL, master, MPI_COMM_DIAGNO, ierr_mpi)
     IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'diagno_main', ierr_mpi)
-    CALL MPI_BCAST(lskip_flux, 1, MPI_LOGICAL, master, MPI_COMM_DIAGNO, ierr_mpi)
-    IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'diagno_main', ierr_mpi)
-    CALL MPI_BCAST(lskip_rogo, 1, MPI_LOGICAL, master, MPI_COMM_DIAGNO, ierr_mpi)
-    IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'diagno_main', ierr_mpi)
 #endif
       
       ! Read the Input file
-      if(lverb) write(6,'(A)')'==========================================='
+      if(lverb) write(6,'(A)')'============================================'
       if(lverb) write(6,'(A,F5.2,A)')'=========  D I A G N O  (v.',DIAGNO_VERSION,')  ========='
       if(lverb) write(6,'(A)')' - Reading input file'
       call read_diagno_input(id_string,ier)        !-----  Read diagno.control File -----
       
-      IF (lbench) CALL diagno_bench
+      IF (lbench) THEN
+         CALL diagno_bench
+      ELSE
          
-      ! Read the equilibrium file
-      IF (lvmec .and. .not. lvac) THEN
-         if(lverb) write(6,'(A)')' - Reading equilibrium surface'
-         CALL diagno_init_vmec
-      ELSE IF (lpies .and. .not. lvac) THEN
-         if(lverb) write(6,'(A)')' - Reading equilibrium surface'
-         !CALL diagno_init_pies
-         stop '!!!!!!! PIES Support pending !!!!!!'
-      ELSE IF (lspec .and. .not. lvac) THEN
-         if(lverb) write(6,'(A)')' - Reading equilibrium surface'
-         CALL diagno_init_spec
+         ! Read the equilibrium file
+         IF (lvmec .and. .not. lvac) THEN
+            if(lverb) write(6,'(A)')' - Reading equilibrium surface'
+            CALL diagno_init_vmec
+         ELSE IF (lpies .and. .not. lvac) THEN
+            if(lverb) write(6,'(A)')' - Reading equilibrium surface'
+            !CALL diagno_init_pies
+            stop '!!!!!!! PIES Support pending !!!!!!'
+         ELSE IF (lspec .and. .not. lvac) THEN
+            if(lverb) write(6,'(A)')' - Reading equilibrium surface'
+            CALL diagno_init_spec
+         END IF
+      
+         ! Read the Coils file
+         IF (lcoil) CALL diagno_init_coil
+      
+         ! Calculate diagnostic response
+         if(lverb) write(6,*)' - Calculating diagnostic responses'
+         IF (LEN_TRIM(bfield_points_file) > 1) CALL diagno_bfield
+         IF (LEN_TRIM(bprobes_file) > 1) CALL diagno_bprobes
+         IF (LEN_TRIM(mirnov_file) > 1) CALL diagno_mirnov
+         IF (LEN_TRIM(seg_rog_file) > 1) CALL diagno_rogowski_new
+         IF (LEN_TRIM(flux_diag_file) > 1) CALL diagno_flux
+
       END IF
-      
-      ! Read the Coils file
-      IF (lcoil) CALL diagno_init_coil
-      
-      ! Calculate diagnostic response
-      if(lverb) write(6,*)' - Calculating diagnostic responses'
-      IF (LEN_TRIM(bfield_points_file) > 1) CALL diagno_bfield
-      IF (LEN_TRIM(bprobes_file) > 1) CALL diagno_bprobes
-      IF (LEN_TRIM(mirnov_file) > 1) CALL diagno_mirnov
-      IF (LEN_TRIM(seg_rog_file) > 1) CALL diagno_rogowski_new
-      IF (LEN_TRIM(flux_diag_file) > 1) CALL diagno_flux
       
       
       ! Do Cleanup

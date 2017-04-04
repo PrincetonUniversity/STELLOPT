@@ -32,12 +32,12 @@
 !     Begin Function
 !-----------------------------------------------------------------------
 
-      delf = 0.0
-      delt = 1./float(nop-1)
+      delf = 0
+      delt = REAL(1)/REAL(nop-1)
       dx = x1-x0
       dy = y1-y0
       dz = z1-z0
-      dl = 1.0
+      dl = 1
       ldb_local=.false.
       IF (cg > 0) THEN
          DO i = 1, nop
@@ -54,8 +54,6 @@
             yp = y0+(i-1)*dy*delt
             zp = z0+(i-1)*dz*delt
             CALL bfield_vc(xp,yp,zp,bx,by,bz,ier)
-            !CALL bfield_virtual_casing_adapt(xp,yp,zp,bx,by,bz,ier)
-            !CALL bfield_volint_adapt(xp,yp,zp,bx,by,bz,ier)
             delf = delf+ ci(i)*(bx*dx+by*dy+bz*dz)
          END DO
       END IF

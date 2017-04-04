@@ -14,21 +14,25 @@
       USE read_wout_mod, ONLY: nfp, zmax_surf
       USE biotsavart
       USE safe_open_mod
+      USE mpi_params
 !-----------------------------------------------------------------------
 !     Local Variables
 !          ier            Error Flag
 !          iunit          File ID Number
 !-----------------------------------------------------------------------
       IMPLICIT NONE
+#if defined(MPI_OPT)
+      INCLUDE 'mpif.h'
+#endif
       INTEGER :: ier, iunit, ncoils, i, ig, iunit_out, ier1
       REAL(rprec) :: xp, yp, rp, phip, zp, bx, by, br, bphi, bz, modb,&
                      bxp, byp, bzp, c_loop, r_loop
       REAL(rprec) :: xvec(3),bvec(3)
       
-      INTEGER :: nsect, npts, j, k, nrad, nzed
+      INTEGER :: nsect, npts, j, k, nrad, nzed, chunk
       REAL(rprec) :: rs,rm, zs, axp, ayp, azp, r1, z1, dr, dz, r2, z2,&
                      my_rtol
-      REAL(rprec), ALLOCATABLE :: bfield_data(:,:)
+      REAL(rprec), ALLOCATABLE :: bfield_data(:,:), bfield_data2(:,:)
       CHARACTER(256)  ::  id_string_temp
 !-----------------------------------------------------------------------
 !     Begin Subroutine
@@ -59,7 +63,7 @@
       ig = 1
       dr = r2-r1
       dz = z2-z1
-      ALLOCATE(bfield_data(nsect*nrad*nzed,15))
+      ALLOCATE(bfield_data(nsect*nrad*nzed,15),bfield_data2(nsect*nrad*nzed,3))
       bfield_data(:,:) = 0.0
       DO i = 1, nsect
          DO j = 1, nrad
@@ -75,6 +79,7 @@
             END DO
          END DO
       END DO
+      bfield_data2(:,1:3)=bfield_data(:,1:3)
       ig = ig - 1
       ! First do volint
       lvc_field = .false.
@@ -84,74 +89,96 @@
       MIN_CLS = 0
       ! Create a fluxloop files
       ! Note that for DIA_LOOP we need to subtract off PHIEDGE if using VC but not J
-      CALL safe_open(iunit_out,ier,'test_loops_j.'//TRIM(id_string),'replace','formatted')
-      WRITE(iunit_out,'(I6)') 3
-      WRITE(iunit_out,'(3I6,A48)') 36,0,0,'DIA_LOOP'
-      DO i = 1, 36
-         xp = c_loop+r_loop*DCOS(pi2*(i-1)/36)
-         yp = 0.0
-         zp = r_loop*DSIN(pi2*(i-1)/36)
-         WRITE(iunit_out,'(3ES22.12E3)') xp,yp,zp
-      END DO
-      WRITE(iunit_out,'(3I6,A48)') 36,0,0,'TOR_LOOP'
-      DO i = 1, 36
-         xp = (c_loop+r_loop)*DCOS(pi2*(i-1)/36)
-         yp = (c_loop+r_loop)*DSIN(pi2*(i-1)/36)
-         zp = 0.0
-         WRITE(iunit_out,'(3ES22.12E3)') xp,yp,zp
-      END DO
-      WRITE(iunit_out,'(3I6,A48)') 36,0,0,'RAD_LOOP'
-      DO i = 1, 36
-         xp = (c_loop+r_loop)
-         yp = 0.5*zmax_surf*DCOS(pi2*(i-1)/36)
-         zp = 0.5*zmax_surf*DSIN(pi2*(i-1)/36)
-         WRITE(iunit_out,'(3ES22.12E3)') xp,yp,zp
-      END DO
-      CLOSE(iunit_out)
-      CALL safe_open(iunit_out,ier,'test_loops_b.'//TRIM(id_string),'replace','formatted')
-      WRITE(iunit_out,'(I6)') 3
-      WRITE(iunit_out,'(3I6,A48)') 36,0,1,'DIA_LOOP'
-      DO i = 1, 36
-         xp = c_loop+r_loop*DCOS(pi2*(i-1)/36)
-         yp = 0.0
-         zp = r_loop*DSIN(pi2*(i-1)/36)
-         WRITE(iunit_out,'(3ES22.12E3)') xp,yp,zp
-      END DO
-      WRITE(iunit_out,'(3I6,A48)') 36,0,0,'TOR_LOOP'
-      DO i = 1, 36
-         xp = (c_loop+r_loop)*DCOS(pi2*(i-1)/36)
-         yp = (c_loop+r_loop)*DSIN(pi2*(i-1)/36)
-         zp = 0.0
-         WRITE(iunit_out,'(3ES22.12E3)') xp,yp,zp
-      END DO
-      WRITE(iunit_out,'(3I6,A48)') 36,0,0,'RAD_LOOP'
-      DO i = 1, 36
-         xp = (c_loop+r_loop)
-         yp = 0.5*zmax_surf*DCOS(pi2*(i-1)/36)
-         zp = 0.5*zmax_surf*DSIN(pi2*(i-1)/36)
-         WRITE(iunit_out,'(3ES22.12E3)') xp,yp,zp
-      END DO
-      CLOSE(iunit_out)
+      IF (myworkid == master) THEN
+         CALL safe_open(iunit_out,ier,'test_loops_j.'//TRIM(id_string),'replace','formatted')
+         WRITE(iunit_out,'(I6)') 3
+         WRITE(iunit_out,'(3I6,A48)') 36,0,0,'DIA_LOOP'
+         DO i = 1, 36
+            xp = c_loop+r_loop*DCOS(pi2*(i-1)/36)
+            yp = 0.0
+            zp = r_loop*DSIN(pi2*(i-1)/36)
+            WRITE(iunit_out,'(3ES22.12E3)') xp,yp,zp
+         END DO
+         WRITE(iunit_out,'(3I6,A48)') 36,0,0,'TOR_LOOP'
+         DO i = 1, 36
+            xp = (c_loop+r_loop)*DCOS(pi2*(i-1)/36)
+            yp = (c_loop+r_loop)*DSIN(pi2*(i-1)/36)
+            zp = 0.0
+            WRITE(iunit_out,'(3ES22.12E3)') xp,yp,zp
+         END DO
+         WRITE(iunit_out,'(3I6,A48)') 36,0,0,'RAD_LOOP'
+         DO i = 1, 36
+            xp = (c_loop+r_loop)
+            yp = 0.5*zmax_surf*DCOS(pi2*(i-1)/36)
+            zp = 0.5*zmax_surf*DSIN(pi2*(i-1)/36)
+            WRITE(iunit_out,'(3ES22.12E3)') xp,yp,zp
+         END DO
+         CLOSE(iunit_out)
+         CALL safe_open(iunit_out,ier,'test_loops_b.'//TRIM(id_string),'replace','formatted')
+         WRITE(iunit_out,'(I6)') 3
+         WRITE(iunit_out,'(3I6,A48)') 36,0,1,'DIA_LOOP'
+         DO i = 1, 36
+            xp = c_loop+r_loop*DCOS(pi2*(i-1)/36)
+            yp = 0.0
+            zp = r_loop*DSIN(pi2*(i-1)/36)
+            WRITE(iunit_out,'(3ES22.12E3)') xp,yp,zp
+         END DO
+         WRITE(iunit_out,'(3I6,A48)') 36,0,0,'TOR_LOOP'
+         DO i = 1, 36
+            xp = (c_loop+r_loop)*DCOS(pi2*(i-1)/36)
+            yp = (c_loop+r_loop)*DSIN(pi2*(i-1)/36)
+            zp = 0.0
+            WRITE(iunit_out,'(3ES22.12E3)') xp,yp,zp
+         END DO
+         WRITE(iunit_out,'(3I6,A48)') 36,0,0,'RAD_LOOP'
+         DO i = 1, 36
+            xp = (c_loop+r_loop)
+            yp = 0.5*zmax_surf*DCOS(pi2*(i-1)/36)
+            zp = 0.5*zmax_surf*DSIN(pi2*(i-1)/36)
+            WRITE(iunit_out,'(3ES22.12E3)') xp,yp,zp
+         END DO
+         CLOSE(iunit_out)
+      END IF
+
+#if defined(MPI_OPT)
+      ! Broadcast Array sizes
+      CALL MPI_BARRIER(MPI_COMM_DIAGNO,ierr_mpi)
+      IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'diagno_flux1',ierr_mpi)
+#endif
+
+      ! Divide up the work
+      chunk = FLOOR(REAL(ig) / REAL(nprocs_diagno))
+      mystart = myworkid*chunk + 1
+      myend = mystart + chunk - 1
+
       if(lverb) write(6,*)' ---VOLINT'
-      DO i = 1, ig
-         bxp = 0.0; byp = 0.0; bzp = 0.0;
-         axp = 0.0; ayp = 0.0; azp = 0.0;
-         xp  = bfield_data(i,1)
-         yp  = bfield_data(i,2)
-         zp  = bfield_data(i,3)
-         ier = 1
-         CALL bfield_vc(xp,yp,zp,bxp,byp,bzp,ier)
-         ier1 = 1
-         CALL vecpot_vc(xp,yp,zp,axp,ayp,azp,ier1)
-         PRINT *,xp,yp,zp,ier,ier1,nlastcall
-         bfield_data(i,4)=axp
-         bfield_data(i,5)=ayp
-         bfield_data(i,6)=azp
-         bfield_data(i,7)=bxp
-         bfield_data(i,8)=byp
-         bfield_data(i,9)=bzp
-         !stop
-      END DO
+      bfield_data(:,4:15) = 0
+!      IF (myworkid == master) THEN
+         DO i = mystart, myend
+         !DO i = 1, ig
+            bxp = 0.0; byp = 0.0; bzp = 0.0;
+            axp = 0.0; ayp = 0.0; azp = 0.0;
+            xp  = bfield_data(i,1)
+            yp  = bfield_data(i,2)
+            zp  = bfield_data(i,3)
+            ier = 1
+            CALL bfield_vc(xp,yp,zp,bxp,byp,bzp,ier)
+            ier1 = 1
+            CALL vecpot_vc(xp,yp,zp,axp,ayp,azp,ier1)
+            !PRINT *,myworkid,xp,yp,zp,ier,ier1,nlastcall
+            bfield_data(i,4)=axp
+            bfield_data(i,5)=ayp
+            bfield_data(i,6)=azp
+            bfield_data(i,7)=bxp
+            bfield_data(i,8)=byp
+            bfield_data(i,9)=bzp
+         END DO
+!      END IF
+#if defined(MPI_OPT)
+      ! Broadcast Array sizes
+      CALL MPI_BARRIER(MPI_COMM_DIAGNO,ierr_mpi)
+      IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'diagno_flux1',ierr_mpi)
+#endif
       flux_diag_file = 'test_loops_j.'//TRIM(id_string)
       id_string_temp = id_string
       id_string = TRIM(id_string) // '_j'
@@ -165,39 +192,70 @@
       lvc_field = .true.
       CALL diagno_init_vmec
       MIN_CLS = 0
-      DO i = 1, ig
-         bxp = 0.0; byp = 0.0; bzp = 0.0;
-         axp = 0.0; ayp = 0.0; azp = 0.0;
-         xp  = bfield_data(i,1)
-         yp  = bfield_data(i,2)
-         zp  = bfield_data(i,3)
-         ier = 1
-         CALL bfield_vc(xp,yp,zp,bxp,byp,bzp,ier)
-         ier1 = 1
-         CALL vecpot_vc(xp,yp,zp,axp,ayp,azp,ier1)
-         PRINT *,'*',xp,yp,zp,ier,ier1,nlastcall
-         bfield_data(i,10)=axp
-         bfield_data(i,11)=ayp
-         bfield_data(i,12)=azp
-         bfield_data(i,13)=bxp
-         bfield_data(i,14)=byp
-         bfield_data(i,15)=bzp
-      END DO
+
+      ! Divide up the work
+      chunk = FLOOR(REAL(ig) / REAL(nprocs_diagno))
+      mystart = myworkid*chunk + 1
+      myend = mystart + chunk - 1
+!      IF (myworkid == master) THEN
+         DO i = mystart, myend
+         !DO i = 1, ig
+            bxp = 0.0; byp = 0.0; bzp = 0.0;
+            axp = 0.0; ayp = 0.0; azp = 0.0;
+            xp  = bfield_data(i,1)
+            yp  = bfield_data(i,2)
+            zp  = bfield_data(i,3)
+            ier = 1
+            CALL bfield_vc(xp,yp,zp,bxp,byp,bzp,ier)
+            ier1 = 1
+            CALL vecpot_vc(xp,yp,zp,axp,ayp,azp,ier1)
+            !PRINT *,'*',xp,yp,zp,ier,ier1,nlastcall
+            bfield_data(i,10)=axp
+            bfield_data(i,11)=ayp
+            bfield_data(i,12)=azp
+            bfield_data(i,13)=bxp
+            bfield_data(i,14)=byp
+            bfield_data(i,15)=bzp
+         END DO
+!      END IF
+
+#if defined(MPI_OPT)
+      ! Broadcast Array sizes
+      CALL MPI_BARRIER(MPI_COMM_DIAGNO,ierr_mpi)
+      IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'diagno_flux1',ierr_mpi)
+      IF (myworkid == master) THEN
+         CALL MPI_REDUCE(MPI_IN_PLACE,bfield_data,15*ig,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_DIAGNO,ierr_mpi)
+      ELSE
+         CALL MPI_REDUCE(bfield_data,bfield_data,15*ig,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_DIAGNO,ierr_mpi)
+      END IF
+      bfield_data(:,1:3)=bfield_data2(:,1:3)
+#endif
+
       flux_diag_file = 'test_loops_b.'//TRIM(id_string)
       id_string_temp = id_string
       id_string = TRIM(id_string) // '_b'
       CALL diagno_flux
       id_string = id_string_temp
-      CALL safe_open(iunit_out,ier,'diagno_bench.'//TRIM(id_string),'replace','formatted')
-      DO i = 1, ig
-            WRITE(iunit_out,'(15E20.10)') bfield_data(i,1:15)
-      END DO
-      CLOSE(iunit_out)
-      CALL safe_open(iunit_out,ier,'diagno_surf.'//TRIM(id_string),'replace','formatted')
-      IF (.true.) CALL virtual_casing_surf_dump(iunit_out)
-      CLOSE(iunit_out)
+      IF (myworkid == master) THEN
+         CALL safe_open(iunit_out,ier,'diagno_bench.'//TRIM(id_string),'replace','formatted')
+         DO i = 1, ig
+               WRITE(iunit_out,'(15E20.10)') bfield_data(i,1:15)
+         END DO
+         CLOSE(iunit_out)
+         CALL safe_open(iunit_out,ier,'diagno_surf.'//TRIM(id_string),'replace','formatted')
+         IF (.true.) CALL virtual_casing_surf_dump(iunit_out)
+         CLOSE(iunit_out)
+      END IF
+
+      DEALLOCATE(bfield_data,bfield_data2)
+
+#if defined(MPI_OPT)
+      ! Broadcast Array sizes
+      CALL MPI_BARRIER(MPI_COMM_DIAGNO,ierr_mpi)
+      IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'diagno_flux1',ierr_mpi)
+#endif
       
-      STOP
+!      STOP
  
       RETURN
 !-----------------------------------------------------------------------
