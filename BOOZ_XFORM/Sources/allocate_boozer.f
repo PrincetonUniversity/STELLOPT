@@ -215,7 +215,7 @@ c-----------------------------------------------
       pmnsb = 0; gmncb = 0
       bmncb = 0; bmod_b = 0
       sfull=0; scl=0; xmb=0; xnb=0
-      bsubumns=0; bsubvmns=0; bmodbmns=0;
+      bsubumns=0; bsubvmns=0; bmodmns=0;
       rmns=0; zmnc=0; lmnc=0; pmnc=0;
       rmnsb=0; zmncb=0; pmncb=0; gmnsb=0;
       bmnsb=0;
