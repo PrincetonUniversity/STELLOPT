@@ -57,16 +57,16 @@
 
       ! Divide up Work
       IF ((nprocs_beams) > nlocal) THEN
-         i = myid/nlocal
-         CALL MPI_COMM_SPLIT( MPI_COMM_BEAMS,i,myid,MPI_COMM_LOCAL,ierr_mpi)
+         i = myworkid/nlocal
+         CALL MPI_COMM_SPLIT( MPI_COMM_BEAMS,i,myworkid,MPI_COMM_LOCAL,ierr_mpi)
          CALL MPI_COMM_RANK( MPI_COMM_LOCAL, mylocalid, ierr_mpi )              ! MPI
          CALL MPI_COMM_SIZE( MPI_COMM_LOCAL, numprocs_local, ierr_mpi )          ! MPI
          mylocalmaster = master
       ELSE
-         ! Basic copy of MPI_COMM_FIELDLINES
-         mylocalid = myid
+         ! Basic copy of MPI_COMM_BEAMS
+         CALL MPI_COMM_DUP( MPI_COMM_BEAMS, MPI_COMM_LOCAL, ierr_mpi)
+         mylocalid = myworkid
          mylocalmaster = master
-         MPI_COMM_LOCAL = MPI_COMM_BEAMS
          numprocs_local = nprocs_beams
       END IF
       bx_vc = 0.0; by_vc = 0.0; bz_vc = 0.0
@@ -314,58 +314,42 @@
          DO j = 1, nphi
             DO i = 2, nr-1
                DO k = 2, nz-1
-                  IF ((B_R(i,j,k) == 0) .and. (B_PHI(i,j,k) == 1) .and. (B_Z(i,j,k) == 0) .and. (B_R(i,j,k+1) .ne. 0)) THEN
+                  IF ((S_ARR(i,j,k+1) .lt. 1.5)) THEN
                      B_R(i,j,k) = B_R(i,j,k+1)
                      B_PHI(i,j,k) = B_PHI(i,j,k+1)
                      B_Z(i,j,k) = B_Z(i,j,k+1)
+                     EXIT
                   END IF
                END DO
                DO k = nz-1, 2,-1
-                  IF ((B_R(i,j,k) == 0) .and. (B_PHI(i,j,k) == 1) .and. (B_Z(i,j,k) == 0) .and. (B_R(i,j,k-1) .ne. 0)) THEN
+                  IF ((S_ARR(i,j,k-1) .lt. 1.5)) THEN
                      B_R(i,j,k) = B_R(i,j,k-1)
                      B_PHI(i,j,k) = B_PHI(i,j,k-1)
                      B_Z(i,j,k) = B_Z(i,j,k-1)
+                     EXIT
                   END IF
                END DO
             END DO
             DO k = 2,nz-1
                DO i = 2, nr-1
-                  IF ((B_R(i,j,k) == 0) .and. (B_PHI(i,j,k) == 1) .and. (B_Z(i,j,k) == 0) .and. (B_R(i+1,j,k) .ne. 0)) THEN
+                  IF ((S_ARR(i+1,j,k) .lt. 1.5)) THEN
                      B_R(i,j,k) = B_R(i+1,j,k)
                      B_PHI(i,j,k) = B_PHI(i+1,j,k)
                      B_Z(i,j,k) = B_Z(i+1,j,k)
+                     EXIT
                   END IF
                END DO
                DO i = nr-1, 2, -1
-                  IF ((B_R(i,j,k) == 0) .and. (B_PHI(i,j,k) == 1) .and. (B_Z(i,j,k) == 0) .and. (B_R(i-1,j,k) .ne. 0)) THEN
+                  IF ((S_ARR(i-1,j,k) .lt. 1.5)) THEN
                      B_R(i,j,k) = B_R(i-1,j,k)
                      B_PHI(i,j,k) = B_PHI(i-1,j,k)
                      B_Z(i,j,k) = B_Z(i-1,j,k)
+                     EXIT
                   END IF
                END DO
             END DO
          END DO
-         DO j = 1, nphi
-            DO k = 2, nz-1
-               DO i = 2, nr-1
-                  IF ((B_R(i,j,k) == 0) .and. (B_PHI(i,j,k) == 1) .and. (B_Z(i,j,k) == 0)) THEN
-                     B_R(i,j,k)   = 0.25*(B_R(i+1,j,k) + B_R(i-1,j,k) + B_R(i,j,k+1) + B_R(i,j,k-1))
-                     B_PHI(i,j,k) = 0.25*(B_PHI(i+1,j,k) + B_PHI(i-1,j,k) + B_PHI(i,j,k+1) + B_PHI(i,j,k-1))
-                     B_Z(i,j,k)   = 0.25*(B_Z(i+1,j,k) + B_Z(i-1,j,k) + B_Z(i,j,k+1) + B_Z(i,j,k-1))
-                  END IF
-               END DO
-            END DO
-            DO i = 2, nr-1
-               DO k = 2, nz-1
-                  IF ((B_R(i,j,k) == 0) .and. (B_PHI(i,j,k) == 1) .and. (B_Z(i,j,k) == 0)) THEN
-                     B_R(i,j,k)   = 0.25*(B_R(i+1,j,k) + B_R(i-1,j,k) + B_R(i,j,k+1) + B_R(i,j,k-1))
-                     B_PHI(i,j,k) = 0.25*(B_PHI(i+1,j,k) + B_PHI(i-1,j,k) + B_PHI(i,j,k+1) + B_PHI(i,j,k-1))
-                     B_Z(i,j,k)   = 0.25*(B_Z(i+1,j,k) + B_Z(i-1,j,k) + B_Z(i,j,k+1) + B_Z(i,j,k-1))
-                  END IF
-               END DO
-            END DO
-         END DO
-         !PRINT *,'DONE SMOOTHING'
+         PRINT *,'DONE SMOOTHING'
       END IF   
       
       ! Broadcast the updated magnetic field to other members
@@ -382,10 +366,10 @@
 !DEC$ ENDIF
 
 !DEC$ IF DEFINED (MPI_OPT)
-      IF (numprocs > nlocal) THEN
+      !IF (numprocs > nlocal) THEN
          CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)
          IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'beams3d_init_coil: MPI_COMM_LOCAL',ierr_mpi)
-      END IF
+      !END IF
       CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
       IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'beams3d_init_vmec',ierr_mpi)
 !DEC$ ENDIF

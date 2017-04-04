@@ -316,7 +316,7 @@ SUBROUTINE beams3d_follow
                 END DO
             CASE ("LSODE","DLSODE")
                 ! Open a file
-                iunit = myid+400
+                iunit = myworkid+400
                 ier = 0
                 IF (ldebug) THEN
                    CALL safe_open(iunit,ier,'lsode_err_'//TRIM(id_string),'replace','formatted')
@@ -381,7 +381,7 @@ SUBROUTINE beams3d_follow
                                    iopt, w, lrw, iwork, liw, jacobian_lsode, mf)
                         IF ((istate == -3) .or. (istate == -4)) &
                            CALL handle_err(LSODE_ERR, 'beams3d_follow', istate)
-                        iwork(11) = 0; iwork(12) = 0;
+                        iwork(11) = 0; iwork(12) = 0; iwork(13) = 0
                         CALL out_beams3d_nag(tf_nag,q)
                         IF ((istate == -1) .or. (istate ==-2) .or. (tf_nag > t_end(l)) ) EXIT
                     END DO

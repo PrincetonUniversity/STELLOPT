@@ -42,16 +42,16 @@
 
       ! Divide up Work
       IF ((nprocs_beams) > nlocal) THEN
-         i = myid/nlocal
-         CALL MPI_COMM_SPLIT( MPI_COMM_BEAMS,i,myid,MPI_COMM_LOCAL,ierr_mpi)
+         i = myworkid/nlocal
+         CALL MPI_COMM_SPLIT( MPI_COMM_BEAMS,i,myworkid,MPI_COMM_LOCAL,ierr_mpi)
          CALL MPI_COMM_RANK( MPI_COMM_LOCAL, mylocalid, ierr_mpi )              ! MPI
          CALL MPI_COMM_SIZE( MPI_COMM_LOCAL, numprocs_local, ierr_mpi )          ! MPI
          mylocalmaster = master
       ELSE
-         ! Basic copy of MPI_COMM_FIELDLINES
-         mylocalid = myid
+         ! Basic copy of MPI_COMM_BEAMS
+         CALL MPI_COMM_DUP( MPI_COMM_BEAMS, MPI_COMM_LOCAL, ierr_mpi)
+         mylocalid = myworkid
          mylocalmaster = master
-         MPI_COMM_LOCAL = MPI_COMM_BEAMS
          numprocs_local = nprocs_beams
       END IF
 
@@ -241,10 +241,10 @@
 !DEC$ ENDIF
       
 !DEC$ IF DEFINED (MPI_OPT)
-      IF (numprocs > nlocal) THEN
+      !IF (numprocs > nlocal) THEN
          CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)
          IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'beams3d_init_coil: MPI_COMM_LOCAL',ierr_mpi)
-      END IF
+      !END IF
       CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
       IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'beams3d_init_coil',ierr_mpi)
 !DEC$ ENDIF

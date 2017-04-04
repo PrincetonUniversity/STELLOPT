@@ -215,9 +215,11 @@
       
       ! Get setup vessel
       IF (lvessel .and. (.not. lplasma_only .or. ldepo)) THEN
+         IF (myworkid == master) PRINT *,'Loading vessel:',TRIM(vessel_string)
          CALL wall_load_txt(TRIM(vessel_string),ier)
-         IF (myid /= master) DEALLOCATE(vertex,face) ! Do this to save memory
+         IF (myworkid /= master) DEALLOCATE(vertex,face) ! Do this to save memory
          IF (lverb) CALL wall_info(6)
+         CALL FLUSH(6)
       END IF
 
       ! Initialize Random Number generator
@@ -248,7 +250,7 @@
           mu_start = mu_start_in(1:nparticles)
           t_end = t_end_in(1:nparticles)
           beam  = 0
-      END IF
+      END IF; CALL FLUSH(6)
 
       ! Do a reality check
       IF (ANY(ABS(vll_start)>3E8) .and. lverb) THEN
@@ -306,6 +308,7 @@
          WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   PHI = [',MINVAL(phiaxis),',',MAXVAL(phiaxis),'];  NPHI: ',BR_spl%n2
          WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   Z   = [',MINVAL(zaxis),',',MAXVAL(zaxis),'];  NZ:   ',BR_spl%n3
          WRITE(6,'(A,I1)')               '   HERMITE FORM: ',BR_spl%isHermite
+         CALL FLUSH(6)
       END IF
 
 

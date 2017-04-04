@@ -237,7 +237,7 @@ END SUBROUTINE beams3d_physics
 
 SUBROUTINE beams3d_follow_neut(t, q)
     USE beams3d_grid, ONLY: TI_spl, NE_spl, S_spl, rmin, rmax, phimax
-    USE beams3d_lines, ONLY: myline
+    USE beams3d_lines, ONLY: myline,xlast,ylast,zlast
     USE beams3d_runtime, ONLY: t_end, lvessel,to3
     USE wall_mod, ONLY: collide
     !-----------------------------------------------------------------------
@@ -372,12 +372,19 @@ SUBROUTINE beams3d_follow_neut(t, q)
        qf = qf + myv_neut*dt_local
        t = t + dt_local
        IF (lvessel) CALL collide(x0,y0,z0,qf(1),qf(2),qf(3),xw,yw,zw,ltest)
+       !WRITE(328,*) x0,y0,z0,qf(1),qf(2),qf(3),xw,yw,zw,ltest
        IF (ltest) THEN
           q(1) = sqrt(xw*xw+yw*yw)
           q(2) = atan2(yw,xw)
           q(3) = zw
+          ! Next lines are so that out_beams3d_nag detects the wall.
+          xlast = x0; ylast=y0; zlast=z0
+          q(1) = sqrt(qf(1)*qf(1)+qf(2)*qf(2))
+          q(2) = ATAN2(qf(2),qf(1))
+          q(3) = qf(3)
           RETURN
        END IF
+       xlast = x0; ylast=y0; zlast=z0
        x0 = qf(1); y0 = qf(2); z0 = qf(3)
        q(1) = sqrt(qf(1)*qf(1)+qf(2)*qf(2))
        q(2) = ATAN2(qf(2),qf(1))

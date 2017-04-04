@@ -176,7 +176,7 @@ PROGRAM BEAMS3D
         DEALLOCATE(args)
         WRITE(6, '(a,f5.2)') 'BEAMS3D Version ', BEAMS3D_VERSION
     ELSE
-        lverb = .false. ! Shutup the slaves
+        lverb = .false. ! Shutup the workers
     END IF
     ! Broadcast variables
 !DEC$ IF DEFINED (MPI_OPT)
