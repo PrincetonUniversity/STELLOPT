@@ -105,7 +105,8 @@
 !     Begin Subroutine
 !-----------------------------------------------------------------------
       ! Basic copy of MPI_COMM_DIANGO
-      ncg = 2 ! Just so we don't allocate a zero size array
+      ncg = SIZE(coil_group)
+      IF (ncg == 0) ncg = 2 ! Just so we don't allocate a zero size array
 
       if(lverb) write(6,*)' --Calculating Rogowski Coil Values'
       int_fac=REAL(1)/REAL(int_step)
@@ -187,7 +188,7 @@
 
       ! Calculate the endpoints
       ALLOCATE(dx(nfl,1:nsegmx),dy(nfl,1:nsegmx),dz(nfl,1:nsegmx),STAT=ier)
-      dx=0; dy=0; dz=0
+      dx=0; dy=0; dz=0;
       DO i = 1, nfl
          nseg = nseg_ar(i)
          dx(i,1:nseg-1) = xfl(i,2:nseg)-xfl(i,1:nseg-1)
@@ -227,7 +228,8 @@
          ALLOCATE(flux_mut(nfl,nextcur), STAT=ier)
          DO i = 1, nfl
             DO ig = 1, nextcur
-               READ(iunit,'(1X,I4,1X,I4,E22.14)') i1,i2,flux_mut(i,ig)
+               READ(iunit,'(1X,I4,1X,I4,E22.14)') i1,i2,xp
+               flux_mut(i1,i2) = xp
             END DO
             IF (i<mystart .or. i>myend) flux_mut(i,:)=0
          END DO
@@ -239,7 +241,7 @@
                flux_mut(:,ig) = 0
             END IF
          END DO
-         ncg = nextcur
+         ncg = nextcur+1
       END IF
 
       ! Calculate the fields
@@ -247,16 +249,16 @@
          flux(i) = 0
          IF (lskip_rogo(i)) CYCLE
          nseg = nseg_ar(i)
-         SELECT CASE (int_type)
-            CASE('midpoint')
-               DO j = 1, nseg-1
-                  DO k = 1, int_step
-                     xp = xfl(i,j) + (k-1)*int_fac*dx(i,j)
-                     yp = yfl(i,j) + (k-1)*int_fac*dy(i,j)
-                     zp = zfl(i,j) + (k-1)*int_fac*dz(i,j)
-                     xp1 = xfl(i,j) + k*int_fac*dx(i,j)
-                     yp1 = yfl(i,j) + k*int_fac*dy(i,j)
-                     zp1 = zfl(i,j) + k*int_fac*dz(i,j)
+         DO j = 1, nseg-1
+            DO k = 1, int_step
+               xp = xfl(i,j) + (k-1)*int_fac*dx(i,j)
+               yp = yfl(i,j) + (k-1)*int_fac*dy(i,j)
+               zp = zfl(i,j) + (k-1)*int_fac*dz(i,j)
+               xp1 = xfl(i,j) + k*int_fac*dx(i,j)
+               yp1 = yfl(i,j) + k*int_fac*dy(i,j)
+               zp1 = zfl(i,j) + k*int_fac*dz(i,j)
+               SELECT CASE (int_type)
+                  CASE('midpoint')
                      IF (lcoil) THEN
                         DO ig = 1, ncg
                            IF (.not.luse_extcur(ig)) CYCLE
@@ -268,17 +270,7 @@
                      ier = 0
                      dtemp = db_midpoint(xp,yp,zp,xp1,yp1,zp1,ier)
                      flux(i)=flux(i) + dtemp*eff_area(i,j)
-                  END DO
-               END DO
-            CASE('simpson')
-               DO j = 1, nseg-1
-                  DO k = 1, int_step
-                     xp = xfl(i,j) + (k-1)*int_fac*dx(i,j)
-                     yp = yfl(i,j) + (k-1)*int_fac*dy(i,j)
-                     zp = zfl(i,j) + (k-1)*int_fac*dz(i,j)
-                     xp1 = xfl(i,j) + k*int_fac*dx(i,j)
-                     yp1 = yfl(i,j) + k*int_fac*dy(i,j)
-                     zp1 = zfl(i,j) + k*int_fac*dz(i,j)
+                  CASE('simpson')
                      IF (lcoil) THEN
                         DO ig = 1, ncg
                            IF (.not.luse_extcur(ig)) CYCLE 
@@ -286,21 +278,12 @@
                            flux_mut(i,ig)=flux_mut(i,ig) + dtemp*eff_area(i,j)
                         END DO 
                      END IF
-                     IF (lvac) CYCLE 
+                     IF (lvac) CYCLE
                      ier = 0
+                     !IF (myworkid == master) WRITE(6,*) myworkid,i,j,k,xp,yp,zp,xp1,yp1,zp1,eff_area(i,j); CALL FLUSH(6)
                      dtemp = db_simpson(xp,yp,zp,xp1,yp1,zp1,ier)
                      flux(i)=flux(i) + dtemp*eff_area(i,j)
-                  END DO 
-               END DO 
-            CASE('bode')
-               DO j = 1, nseg-1
-                  DO k = 1, int_step
-                     xp = xfl(i,j) + (k-1)*int_fac*dx(i,j)
-                     yp = yfl(i,j) + (k-1)*int_fac*dy(i,j)
-                     zp = zfl(i,j) + (k-1)*int_fac*dz(i,j)
-                     xp1 = xfl(i,j) + k*int_fac*dx(i,j)
-                     yp1 = yfl(i,j) + k*int_fac*dy(i,j)
-                     zp1 = zfl(i,j) + k*int_fac*dz(i,j)
+                  CASE('bode')
                      IF (lcoil) THEN
                         DO ig = 1, ncg
                            IF (.not.luse_extcur(ig)) CYCLE
@@ -312,22 +295,10 @@
                      ier = 0
                      dtemp = db_bode(xp,yp,zp,xp1,yp1,zp1,ier)
                      flux(i)=flux(i) + dtemp*eff_area(i,j)
-                  END DO
-               END DO
-            CASE('simpson_spline')
-                  !IF (EZspline_allocated(x_spl)) CALL EZspline_free(x_spl,ier)
-                  !IF (EZspline_allocated(y_spl)) CALL EZspline_free(y_spl,ier)
-                  !IF (EZspline_allocated(z_spl)) CALL EZspline_free(z_spl,ier)
-                  !CALL EZspline_init(x_spl,nseg+2,bcs0,ier)
-                  !CALL EZspline_init(y_spl,nseg+2,bcs0,ier)
-                  !CALL EZspline_init(z_spl,nseg+2,bcs0,ier)
-                  !x_spl%isHermite = 1
-                  !y_spl%isHermite = 1
-                  !z_spl%isHermite = 1
-                  !CALL EZspline_setup(x_spl,xfl(0:nseg+1),ier)
-                  !CALL EZspline_setup(y_spl,yp(0:nseg+1),ier)
-                  !CALL EZspline_setup(z_spl,zp(0:nseg+1),ier)
-         END SELECT
+               END SELECT
+            END DO
+         END DO
+         !WRITE(6,*) i,flux(i); CALL FLUSH(6)
       END DO
 
       ! Now handle the arrays
@@ -341,9 +312,6 @@
             CALL MPI_REDUCE(flux_mut,flux_mut,nfl*ncg,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_DIAGNO,ierr_mpi)
          END IF
       ELSE ! Plasma part
-         !CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
-         !               flux,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
-         !               MPI_COMM_DIAGNO,ierr_mpi)
          IF (myworkid == master) THEN
             CALL MPI_REDUCE(MPI_IN_PLACE,flux,nfl,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_DIAGNO,ierr_mpi)
          ELSE
@@ -357,10 +325,10 @@
       ! Get the total flux
       flux = flux + SUM(flux_mut, DIM=2)
 
-      
       ! Write files
       IF (myworkid == master) THEN
          iunit = 30
+         ier = 0
          IF (lmut) THEN
             CALL safe_open(iunit,ier,TRIM(rog_mut_file),'replace','formatted')
             WRITE(iunit,'(2(I4,1X))') nfl,ncg
@@ -372,21 +340,23 @@
          ELSE
             CALL safe_open(iunit,ier,'diagno_seg.'//TRIM(id_string),'replace','formatted')
             WRITE(iunit,'(1X,I4.4)') nfl
+            CALL FLUSH(iunit)
             DO i = 1, nfl
                WRITE(iunit,'(1X,1ES22.12E3)') flux(i)
+               CALL FLUSH(iunit)
             END DO
          END IF
          DO i = 1, nfl
             IF (lverb) WRITE(6,'(2X,i6,10X,I5,10X,E18.8)') i, nseg_ar(i), flux(i)
             WRITE(iunit,'(A)') title(i)
             CALL FLUSH(6)
+            CALL FLUSH(iunit)
          END DO
-         CALL FLUSH(iunit)
          CLOSE(iunit)
       END IF
       
       ! Clean up
-      DEALLOCATE(nseg_ar, title, flux,iflflg, idia,flux_mut)
+      DEALLOCATE(nseg_ar, title, flux, iflflg, idia, flux_mut)
       DEALLOCATE(xfl,yfl,zfl,eff_area)
       DEALLOCATE(dx,dy,dz)
       RETURN

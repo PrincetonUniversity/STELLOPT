@@ -261,23 +261,22 @@
          END DO
          ncg = nextcur
       END IF
-        
+
       ! Calculate the fields
-      flux = 0
       DO i = mystart, myend
          flux(i) = 0
          IF (lskip_flux(i)) CYCLE
          nseg = nseg_ar(i)
-         SELECT CASE (int_type)
-            CASE('midpoint')
-               DO j = 1, nseg
-                  DO k = 1, int_step
-                     xp = xfl(i,j) + (k-1)*int_fac*dx(i,j)
-                     yp = yfl(i,j) + (k-1)*int_fac*dy(i,j)
-                     zp = zfl(i,j) + (k-1)*int_fac*dz(i,j)
-                     xp1 = xfl(i,j) + k*int_fac*dx(i,j)
-                     yp1 = yfl(i,j) + k*int_fac*dy(i,j)
-                     zp1 = zfl(i,j) + k*int_fac*dz(i,j)
+         DO j = 1, nseg
+            DO k = 1, int_step
+               xp = xfl(i,j) + (k-1)*int_fac*dx(i,j)
+               yp = yfl(i,j) + (k-1)*int_fac*dy(i,j)
+               zp = zfl(i,j) + (k-1)*int_fac*dz(i,j)
+               xp1 = xfl(i,j) + k*int_fac*dx(i,j)
+               yp1 = yfl(i,j) + k*int_fac*dy(i,j)
+               zp1 = zfl(i,j) + k*int_fac*dz(i,j)
+               SELECT CASE (int_type)
+                  CASE('midpoint')
                      IF (lcoil) THEN
                         DO ig = 1, ncg
                            IF (.not.luse_extcur(ig)) CYCLE
@@ -289,39 +288,19 @@
                      ier = 0
                      dtemp = dflux_midpoint(xp,yp,zp,xp1,yp1,zp1,ier)
                      flux(i)=flux(i) + dtemp
-                  END DO
-               END DO
-            CASE('simpson')
-               DO j = 1, nseg
-                  DO k = 1, int_step
-                     xp = xfl(i,j) + (k-1)*int_fac*dx(i,j)
-                     yp = yfl(i,j) + (k-1)*int_fac*dy(i,j)
-                     zp = zfl(i,j) + (k-1)*int_fac*dz(i,j)
-                     xp1 = xfl(i,j) + k*int_fac*dx(i,j)
-                     yp1 = yfl(i,j) + k*int_fac*dy(i,j)
-                     zp1 = zfl(i,j) + k*int_fac*dz(i,j)
+                  CASE('simpson')
                      IF (lcoil) THEN
                         DO ig = 1, ncg
-                           IF (.not.luse_extcur(ig)) CYCLE
+                           IF (.not.luse_extcur(ig)) CYCLE 
                            dtemp = dflux_simpson(xp,yp,zp,xp1,yp1,zp1,ig)
                            flux_mut(i,ig)=flux_mut(i,ig) + dtemp
-                        END DO
+                        END DO 
                      END IF
                      IF (lvac) CYCLE
                      ier = 0
                      dtemp = dflux_simpson(xp,yp,zp,xp1,yp1,zp1,ier)
                      flux(i)=flux(i) + dtemp
-                  END DO
-               END DO
-            CASE('bode')
-               DO j = 1, nseg
-                  DO k = 1, int_step
-                     xp = xfl(i,j) + (k-1)*int_fac*dx(i,j)
-                     yp = yfl(i,j) + (k-1)*int_fac*dy(i,j)
-                     zp = zfl(i,j) + (k-1)*int_fac*dz(i,j)
-                     xp1 = xfl(i,j) + k*int_fac*dx(i,j)
-                     yp1 = yfl(i,j) + k*int_fac*dy(i,j)
-                     zp1 = zfl(i,j) + k*int_fac*dz(i,j)
+                  CASE('bode')
                      IF (lcoil) THEN
                         DO ig = 1, ncg
                            IF (.not.luse_extcur(ig)) CYCLE
@@ -333,23 +312,9 @@
                      ier = 0
                      dtemp = dflux_bode(xp,yp,zp,xp1,yp1,zp1,ier)
                      flux(i)=flux(i) + dtemp
-                  END DO
-               END DO
-            CASE('simpson_spline')
-                  !IF (EZspline_allocated(x_spl)) CALL EZspline_free(x_spl,ier)
-                  !IF (EZspline_allocated(y_spl)) CALL EZspline_free(y_spl,ier)
-                  !IF (EZspline_allocated(z_spl)) CALL EZspline_free(z_spl,ier)
-                  !CALL EZspline_init(x_spl,nseg+2,bcs0,ier)
-                  !CALL EZspline_init(y_spl,nseg+2,bcs0,ier)
-                  !CALL EZspline_init(z_spl,nseg+2,bcs0,ier)
-                  !x_spl%isHermite = 1
-                  !y_spl%isHermite = 1
-                  !z_spl%isHermite = 1
-                  !CALL EZspline_setup(x_spl,xfl(0:nseg+1),ier)
-                  !CALL EZspline_setup(y_spl,yp(0:nseg+1),ier)
-                  !CALL EZspline_setup(z_spl,zp(0:nseg+1),ier)
-         END SELECT
-         !IF (lverb) WRITE(6,'(2X,i6,10X,I5,10X,E18.8)') i, nseg, flux(i)
+               END SELECT
+            END DO
+         END DO
       END DO
 
 
@@ -364,9 +329,6 @@
             CALL MPI_REDUCE(flux_mut,flux_mut,nfl*ncg,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_DIAGNO,ierr_mpi)
          END IF
       ELSE ! Plasma part
-         !CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
-         !               flux,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
-         !               MPI_COMM_DIAGNO,ierr_mpi)
          IF (myworkid == master) THEN
             CALL MPI_REDUCE(MPI_IN_PLACE,flux,nfl,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_DIAGNO,ierr_mpi)
          ELSE
