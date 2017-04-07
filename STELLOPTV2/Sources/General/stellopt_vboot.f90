@@ -63,6 +63,11 @@
 
          ! Load Equilibrium
          CALL stellopt_load_equil(lscreen_local,iflag)
+
+         ! Don't do anything if pressure is zero
+         IF (wp <= 0 .or. beta<=0) EXIT
+
+         ! Call BOOZER Transformation
          lbooz(1:ns) = .TRUE.
          lbooz(1)    = .FALSE.
          CALL stellopt_paraexe('booz_xform',proc_string,lscreen_local); iflag = ier_paraexe
