@@ -14,8 +14,8 @@
 #######################################################################
 #            Define Compiler Flags
 #######################################################################
-#  FLAGS_R = -O2 -g -fexternal-blas -fbacktrace -fcheck=all 
-  FLAGS_R = -O2 -fexternal-blas
+  FLAGS_R = -O2 -g -fexternal-blas -fbacktrace -fcheck=all 
+#  FLAGS_R = -O2 -fexternal-blas
   FLAGS_D = -g -O0 -fexternal-blas -fcheck=all 
   LIBS    = -L$(BLASHOME)/lib -lopenblas \
             -L$(SCALAPACK_HOME)/lib -lscalapack \
@@ -32,6 +32,13 @@
   MPI_COMPILE_C = $(MPIHOME)/bin/mpicc
   MPI_LINK = $(MPIHOME)/bin/mpif90
 
+  # For GCC6
+  #MPI_COMPILE = mpif90
+  #MPI_COMPILE_FREE = mpif90 -ffree-form \
+  #                   -ffree-line-length-none -ffixed-line-length-none
+  #MPI_COMPILE_C = mpicc
+  #MPI_LINK = mpif90
+
 #######################################################################
 #            NAG Options
 #######################################################################
@@ -44,6 +51,9 @@
   LNETCDF = T
   NETCDF_INC = -I$(NETCDF_HOME)/include
   NETCDF_LIB = -L$(NETCDF_HOME)/lib -lnetcdf -lnetcdff
+
+  # FOR GCC6
+  #NETCDF_LIB = -L$(NETCDF_HOME)/lib -lnetcdff
 
 #######################################################################
 #            NTCC Options
