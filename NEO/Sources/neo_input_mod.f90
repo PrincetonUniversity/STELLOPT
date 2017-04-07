@@ -85,7 +85,7 @@
       max_m_mode = 0
       max_n_mode = 0
       npart      = 75
-      multra     = 1
+      multra     = 2
       acc_req    = 0.01
       no_bins    = 100
       nstep_per  = 75
