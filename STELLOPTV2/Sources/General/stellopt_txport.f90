@@ -76,7 +76,7 @@
       REAL(rprec), DIMENSION(3) :: sflCrd0,sflCrd, sflCrd_sav, gradS,gradThetaStar,&
                                    gradPhi,mag,gradAlpha, wrk, gradB,R_grad,Z_grad,&
                                    esubs, esubu, esubv, es, eu, ev, gradlam, ea, et
-      REAL(rprec),ALLOCATABLE :: phi0_gl(:), cosmt(:),cosnt(:),sinmt(:),sinnt(:), temp_arr(:)
+      REAL(rprec),ALLOCATABLE :: phi0_gl(:), cosmt(:),cosnt(:),sinmt(:),sinnt(:), temp_arr(:), tout_arr(:)
       REAL(rprec),ALLOCATABLE :: g11(:,:),g12(:,:),g22(:,:),Bhat(:,:),abs_jac(:,:),&
                                  L1(:,:),L2(:,:),dBdt(:,:),rll(:,:),rllm(:,:),vrbl(:,:), &
                                  kp1(:,:), sloc(:,:), rkp1av(:,:), slocav(:,:), rkpn(:,:), &
@@ -150,7 +150,7 @@
             ALLOCATE(phi0_gl(1:nalpha0_),g11(nalpha0_,maxPnt),g12(nalpha0_,maxPnt),g22(nalpha0_,maxPnt),&
                      Bhat(nalpha0_,maxPnt),abs_jac(nalpha0_,maxPnt),L1(nalpha0_,maxPnt),L2(nalpha0_,maxPnt),&
                      dBdt(nalpha0_,maxPnt),kp1(nalpha0_,maxPnt))
-            ALLOCATE(temp_arr(maxPnt))
+            ALLOCATE(temp_arr(maxPnt),tout_arr(maxPnt))
             ALLOCATE(rll(nalpha0_,maxPnt),rllm(nalpha0_,maxPnt),vrbl(nalpha0_,maxPnt),sloc(nalpha0_,maxPnt),&
                      rkp1av(nalpha0_,maxPnt),slocav(nalpha0_,maxPnt),rkpn(nalpha0_,maxPnt),rkpg(nalpha0_,maxPnt), &
                      rkk(nalpha0_,maxPnt),rllmp(nalpha0_,maxPnt),rllmpp(nalpha0_,maxPnt),vv(nalpha0_,maxPnt),&
@@ -412,10 +412,12 @@
                DO ialpha = 1, nalpha0_
                    !rkp1av(ialpha,:) = kp1(ialpha,:)
                    !slocav(ialpha,:) = sloc(ialpha,:)
-                  temp_arr=kp1(ialpha,:)
-                  CALL smoothg(temp_arr,maxPnt,dl_z,rkp1av(ialpha,:))
-                  temp_arr=sloc(ialpha,:)
-                  CALL smoothg(temp_arr,maxPnt,dl_z,slocav(ialpha,:))
+                  temp_arr=kp1(ialpha,:); tout_arr(:) = 0
+                  CALL smoothg(temp_arr,maxPnt,dl_z,tout_arr)
+                  rkp1av(ialpha,:) = tout_arr(:)
+                  temp_arr=sloc(ialpha,:); tout_arr(:) = 0
+                  CALL smoothg(temp_arr,maxPnt,dl_z,tout_arr)
+                  slocav(ialpha,:) = tout_arr(:)
                END DO
                rkpn = kp1
                rkpg = L1
@@ -704,7 +706,7 @@
                CALL FLUSH(6)
             END DO
             DEALLOCATE(phi0_gl,g11,g12,g22,Bhat,abs_jac,L2,L1,dBdt,kp1)
-            DEALLOCATE(temp_arr)
+            DEALLOCATE(temp_arr,tout_arr)
             DEALLOCATE(rll,rllm,vrbl,sloc,rkp1av,slocav,rkpn,rkpg,rkk,rllmp,rllmpp,vv,dkp,dkpfac,vkp1fac,qqfac,vqqprox)
          CASE('spec')
       END SELECT

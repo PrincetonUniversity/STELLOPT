@@ -195,6 +195,9 @@
       ! |Bmn| Helicity
       IF (ANY(sigma_helicity < bigno)) &
          CALL chisq_helicity(target_helicity, sigma_helicity, ncnt,iflag)
+      ! |Bmn| Helicity (OLD)
+      IF (ANY(sigma_helicity_old < bigno)) &
+         CALL chisq_helicity_old(target_helicity_old, sigma_helicity_old, ncnt,iflag)
       ! J*
       IF (ANY(sigma_Jstar < bigno)) &
          CALL chisq_jstar(target_Jstar, sigma_Jstar, ncnt,iflag)

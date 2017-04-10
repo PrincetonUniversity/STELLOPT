@@ -170,6 +170,13 @@ chisq_helicity.o : \
       equil_vals.o \
       $(LIB_DIR)/Release/read_boozer_mod.o
 
+
+chisq_helicity_old.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      equil_vals.o \
+      $(LIB_DIR)/Release/read_boozer_mod.o
+
 chisq_resjac.o : \
       stellopt_runtime.o \
       stellopt_targets.o \
