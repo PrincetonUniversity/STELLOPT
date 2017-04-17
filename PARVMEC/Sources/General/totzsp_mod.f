@@ -35,7 +35,7 @@
 
       INTEGER :: nsmin, nsmax
       INTEGER :: j, istat, js
-      REAL(rprec) :: skston, skstoff
+      REAL(rprec) :: skston, skstoff, r01_sav
 
       nsmin=t1lglob; nsmax=t1rglob
 
@@ -180,6 +180,15 @@
 
       z01(nsmin:nsmax) = zmnsc(n0+ioff,m1+joff,nsmin:nsmax)
       r01(nsmin:nsmax) = rmncc(n0+ioff,m1+joff,nsmin:nsmax)
+      lerror_sam = .FALSE.
+      IF (rank.EQ.0) r01_sav = r01(1)
+      IF (lactive) THEN
+         CALL MPI_Bcast(r01_sav,1,MPI_REAL8,0,NS_COMM,MPI_ERR)
+         IF (r01_sav.EQ.zero) THEN
+            lerror_sam = .TRUE.
+            RETURN
+         END IF
+      END IF
       IF (lactive) THEN
         IF (rank.EQ.0 .AND. r01(1).EQ.zero) THEN
            STOP 'r01(0) = 0 in totzsps_par'

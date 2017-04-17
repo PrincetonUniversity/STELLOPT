@@ -2,7 +2,7 @@
       USE vmec_main
       USE vacmod, ONLY: bsqvac, raxis_nestor, zaxis_nestor, nuv, nuv3
       USE vmec_params, ONLY: bad_jacobian_flag, zsc, lamscale
-      USE vmec_params, ONLY: ntmax
+      USE vmec_params, ONLY: ntmax, misc_error_flag
       USE realspace
       USE vforces
       USE vsvd, ONLY: router, rinner, gphifac, grmse
@@ -76,11 +76,15 @@ C-----------------------------------------------
 !
       CALL second0 (tffton)
       CALL second0(skston)
-      
       CALL totzsps_par (pgc, pr1, pru, prv, pz1, pzu, pzv, lu, lv, 
      1                  prcon, pzcon)
       CALL second0(skstoff)
       totzsps_time=totzsps_time+(skstoff-skston)
+
+      IF (lerror_sam) THEN
+         ier_flag = misc_error_flag
+         RETURN
+      END IF
 
 
 !     ANTI-SYMMETRIC CONTRIBUTIONS TO INVERSE TRANSFORMS
