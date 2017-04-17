@@ -1,5 +1,5 @@
 ObjectFiles = \
-chisq_helicity_old.o \
+chisq_helicity_ornl.o \
 stellopt_vboot.o \
 chisq_kappa.o \
 stellopt_write_mgrid.o \

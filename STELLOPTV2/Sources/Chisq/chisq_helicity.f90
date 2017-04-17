@@ -4,7 +4,7 @@
 !     Date:          06/28/2012
 !     Description:   Calculate ratio of magnetic energies in modes with
 !                    undesirable helicities to the energy in modes with
-!                    the desired helicity (bnorm).
+!                    the desired helicity (bnorm). All harmonics target.
 !-----------------------------------------------------------------------
       SUBROUTINE chisq_helicity(target,sigma,niter,iflag)
 !-----------------------------------------------------------------------
@@ -42,7 +42,7 @@
 !----------------------------------------------------------------------
       IF (iflag < 0 ) RETURN
       IF (lasym) STOP 'ERROR: Helicity targeting requires lasym = .FALSE.'
-      dex = COUNT(sigma < bigno)
+      dex = COUNT(sigma < bigno)*mnboz_b
       l_heli = NINT(REAL(helicity))
       k_heli = NINT(AIMAG(helicity))
       IF (niter >= 0) THEN   
@@ -69,64 +69,72 @@
             IF (sigma(ik) >= bigno) CYCLE
             bmax  = MAXVAL(ABS(bmnc_b(1:mnboz_b,ik)))
             sj = (real(ik,rprec) - 1.5_dp)/REAL((ns_b-1),rprec)            !!This is correct (SPH)
-            val = 0.0
             bnorm = 0.0
-            rad_wegt = 1
-            IF (sigma(ik) < 0) THEN
-               rad_wegt = sj*sj
-               WHERE(ixm_b < 3) rad_wegt = sj
-               WHERE(ixm_b == 3) rad_wegt = sj**1.5
-            END IF
-            bnorm = SUM(bmnc_b(:,ik)**2,MASK=lmask)
-            val   = SUM((bmnc_b(:,ik)/rad_wegt)**2,MASK=nlmask)
-!            DO mn = 1, mnboz_b
-!               n = ixn_b(mn)/nfp_b
-!               m = ixm_b(mn)
-!               bmn = bmnc_b(mn,ik)
+            num0 = mtargets + 1
+            DO mn = 1, mnboz_b
+               mtargets = mtargets + 1
+               targets(mtargets) = 0
+               vals(mtargets)    = 0
+               sigmas(mtargets)  = bigno
+               n = ixn_b(mn)/nfp_b
+               m = ixm_b(mn)
+               bmn = bmnc_b(mn,ik)
 !               ! Target for minimization Bmn-s with helicities other than the one desired
 !               ! General Helical Symmetry: mu - nv ~ Y(lu + kv) for integers Y != 0 (n,k in fp units)
 !               ! HELICITY = (1,0)  !QA
 !               !          = (0,1)  !QP
 !               !          = (1,-1) !QH (l,k) (m*k+n*l)
-!               lsym = .FALSE.
-!               IF (k_heli == 0) THEN               !!quasi-axisymmetry
-!                  IF (n == 0) lsym = .TRUE. 
-!               ELSE IF (l_heli == 0) THEN          !!quasi-poloidal symmetry
-!                  IF (m == 0) lsym = .TRUE.       
-!               ELSE IF (MOD(m,l_heli) == 0) THEN   !!quasi-helical symmetry (lu + kv)
-!                  IF ((m*k_heli+n*l_heli) == 0) lsym = .TRUE.
-!               END IF
-!               ! mimic's oak ridge system
-!               rad_sigma = 1
-!               IF (sigma(ik) < 0.0) THEN
-!                  rad_sigma = 1
-!               ELSE IF (m < 3) THEN
-!                  rad_sigma = sj
-!               ELSE IF (m == 3) THEN
-!                  rad_sigma = sj**1.5
-!               ELSE
-!                  rad_sigma = sj*sj
-!               END IF
-!               IF (lsym) THEN
-!                  bnorm = bnorm + bmn*bmn
-!               ELSE
-!                  val = val + bmn*bmn/rad_sigma
-!               END IF
-!            END DO
-            IF (bnorm == 0.0) bnorm = bmax*bmax
-            mtargets = mtargets + 1
-            targets(mtargets) = target(ik)
-            sigmas(mtargets)  = ABS(sigma(ik))
-            vals(mtargets)    = SQRT(ABS(val/bnorm))
-            IF (iflag == 1) WRITE(iunit_out,'(4ES22.12E3)') targets(mtargets),sigmas(mtargets),vals(mtargets),SQRT(bnorm)
+               lsym = .FALSE.
+               IF (k_heli == 0) THEN               !!quasi-axisymmetry
+                  IF (n == 0) lsym = .TRUE. 
+               ELSE IF (l_heli == 0) THEN          !!quasi-poloidal symmetry
+                  IF (m == 0) lsym = .TRUE.       
+               ELSE IF (MOD(m,l_heli) == 0) THEN   !!quasi-helical symmetry (lu + kv)
+                  IF ((m*k_heli+n*l_heli) == 0) lsym = .TRUE.
+               END IF
+
+               IF (lsym) THEN
+                  bnorm = bnorm + bmn*bmn
+                  CYCLE
+               END IF
+
+               sigmas(mtargets)  = 1
+               vals(mtargets)    = bmn
+            END DO
+
+            bnorm = sqrt(bnorm)
+            IF (bnorm == 0.0) bnorm = bmax
+
+            IF (sigma(ik) < 0.0) THEN
+               rad_sigma = 1
+            ELSE IF (m < 3) THEN
+               rad_sigma = sj
+            ELSE IF (m == 3) THEN
+               rad_sigma = sj**1.5
+            ELSE
+               rad_sigma = sj*sj
+            END IF
+
+            vals(num0:mtargets) = vals(num0:mtargets)/bnorm
+            sigmas(num0:mtargets)  = ABS(sigma(ik))*rad_sigma*sigmas(num0:mtargets)
+            
+            IF (iflag ==1) THEN
+               DO mn = num0,mtargets
+                  WRITE(iunit_out,'(4ES22.12E3)') targets(mn),sigmas(mn),vals(mn),SQRT(bnorm)
+               END DO
+            END IF
          END DO
          DEALLOCATE(lmask, rad_wegt, nlmask)
       ELSE
+         ! CALCULATE mnboz_b becasue we don't know it yet (setup_booz.f)
+         mnboz_b = (2*nboz+1)*(mboz-1) + (nboz + 1)
          DO ik = 1, nsd
             IF (sigma(ik) < bigno) THEN
-               mtargets = mtargets + 1
                lbooz(ik) = .TRUE.
-               IF (niter == -2) target_dex(mtargets) = jtarget_helicity
+               DO mn = 1, mnboz_b
+                  mtargets = mtargets + 1
+                  IF (niter == -2) target_dex(mtargets) = jtarget_helicity
+               END DO
             END IF
          END DO
       END IF

@@ -59,6 +59,7 @@
          iflag = 0
          CALL stellopt_paraexe('paravmec_run',proc_string,lscreen_local)
          iflag = ier_paraexe
+         IF (iflag .ne.0) RETURN
          !PRINT *,'-1-',iflag
 
          ! Load Equilibrium
@@ -72,9 +73,11 @@
          lbooz(1)    = .FALSE.
          CALL stellopt_paraexe('booz_xform',proc_string,lscreen_local); iflag = ier_paraexe
          !PRINT *,'-2-',iflag
+         IF (iflag .ne.0) RETURN
 
          ! Run BOOTSTRAP
          CALL stellopt_paraexe('bootsj',proc_string,lscreen_local); iflag = ier_paraexe
+         IF (iflag .ne.0) RETURN
          dibs = dibs * 1D6 ! Get in A
          aibs = aibs * 1D6 ! Get in A
          !PRINT *,'-3-',iflag
