@@ -115,7 +115,7 @@
          ibbi = 1
          borbi = 0
          READ (iodata, nml=dkes_indata, iostat=istat)
-         IF (istat .ne. 0) STOP'Error reading dkes_indata NAMELIST in DKES'
+         IF (istat .ne. 0) STOP 'Error reading dkes_indata NAMELIST in DKES'
          CLOSE (iodata)
          ! Recompute ntorb, mpolb for new style input where
          ! borbi is input with actual index value, borbi(n,m)
