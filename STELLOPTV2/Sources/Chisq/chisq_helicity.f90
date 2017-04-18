@@ -33,10 +33,8 @@
 !        te_val      Holds profile evaulation
 !-----------------------------------------------------------------------
       LOGICAL :: lsym
-      INTEGER :: dex, ik, mn, n, m, k_heli, l_heli, num0, n1, n2
+      INTEGER :: dex, ik, mn, n, m, k_heli, l_heli, num0, n1, n2, i_save
       REAL(rprec) :: bnorm, bmax, bmn, rad_sigma, sj, val
-      LOGICAL, ALLOCATABLE :: lmask(:), nlmask(:)
-      REAL(rprec), ALLOCATABLE :: rad_wegt(:)
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
@@ -48,23 +46,11 @@
       IF (niter >= 0) THEN   
          ! Get total number of modes for output
          IF (iflag == 1) THEN
-            WRITE(iunit_out,'(A,2(2X,I8))') 'HELICITY ',dex,4
-            WRITE(iunit_out,'(A)') 'TARGET  SIGMA  VALS  BNORM'
+            WRITE(iunit_out,'(A,2(2X,I8))') 'HELICITY_FULL ',dex,7
+            WRITE(iunit_out,'(A)') 'TARGET  SIGMA  VALS  BNORM  K  MBOZ  NBOZ'
             CALL FLUSH(iunit_out)
          END IF
          ! Now calculate chi_sq
-         ALLOCATE(lmask(mnboz_b),rad_wegt(mnboz_b),nlmask(mnboz_b))
-         lmask = .FALSE.
-         IF (k_heli == 0) THEN  !QAS
-            WHERE (ixn_b == 0)  lmask = .TRUE.
-         ELSE IF (l_heli == 0) THEN !QPS
-            WHERE (ixm_b == 0) lmask = .TRUE.
-         ELSE ! Helical symmetry
-            WHERE (MOD(ixm_b,l_heli) == 0) lmask = .TRUE.
-            WHERE ((ixm_b*k_heli + ixn_b*l_heli/nfp) /= 0) lmask = .FALSE.
-         END IF
-         nlmask = .TRUE.
-         WHERE(lmask) nlmask = .FALSE.
          DO ik = 1, nsd
             IF (sigma(ik) >= bigno) CYCLE
             bmax  = MAXVAL(ABS(bmnc_b(1:mnboz_b,ik)))
@@ -73,12 +59,14 @@
             num0 = mtargets + 1
             DO mn = 1, mnboz_b
                mtargets = mtargets + 1
-               targets(mtargets) = 0
+               targets(mtargets) = target(ik)
                vals(mtargets)    = 0
                sigmas(mtargets)  = bigno
                n = ixn_b(mn)/nfp_b
                m = ixm_b(mn)
                bmn = bmnc_b(mn,ik)
+               !m_save(mn) = m
+               !n_save(mn) = n
 !               ! Target for minimization Bmn-s with helicities other than the one desired
 !               ! General Helical Symmetry: mu - nv ~ Y(lu + kv) for integers Y != 0 (n,k in fp units)
 !               ! HELICITY = (1,0)  !QA
@@ -120,11 +108,10 @@
             
             IF (iflag ==1) THEN
                DO mn = num0,mtargets
-                  WRITE(iunit_out,'(4ES22.12E3)') targets(mn),sigmas(mn),vals(mn),SQRT(bnorm)
+                  WRITE(iunit_out,'(4ES22.12E3,3I4.4)') targets(mn),sigmas(mn),vals(mn),SQRT(bnorm),ik,ixm_b(mn-num0+1),ixn_b(mn-num0+1)/nfp_b
                END DO
             END IF
          END DO
-         DEALLOCATE(lmask, rad_wegt, nlmask)
       ELSE
          ! CALCULATE mnboz_b becasue we don't know it yet (setup_booz.f)
          mnboz_b = (2*nboz+1)*(mboz-1) + (nboz + 1)
