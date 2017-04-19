@@ -41,7 +41,7 @@
 !-----------------------------------------------------------------------
 
       ! Divide up Work
-      IF ((nprocs_beams) > nlocal) THEN
+      IF (nprocs_beams > nlocal) THEN
          i = myworkid/nlocal
          CALL MPI_COMM_SPLIT( MPI_COMM_BEAMS,i,myworkid,MPI_COMM_LOCAL,ierr_mpi)
          CALL MPI_COMM_RANK( MPI_COMM_LOCAL, mylocalid, ierr_mpi )              ! MPI

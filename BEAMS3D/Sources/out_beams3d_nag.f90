@@ -61,6 +61,7 @@ SUBROUTINE out_beams3d_nag(t, q)
        S_lines(mytdex, myline) = y0
        U_lines(mytdex, myline) = z0
        B_lines(mytdex, myline) = x1
+       !IF (myworkid == 0) PRINT *,'--',y0,z0,x1
     END IF
 !DEC$ IF DEFINED (NTCC)
     IF (lcollision) CALL beams3d_physics(t,q)

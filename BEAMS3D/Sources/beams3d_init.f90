@@ -278,12 +278,13 @@
       IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:S_spl',ier)
       CALL EZspline_init(U_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
       IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:S_spl',ier)
-      BR_spl%isHermite   = 0
-      BZ_spl%isHermite   = 0
-      BPHI_spl%isHermite = 0
-      MODB_spl%isHermite = 0
-      S_spl%isHermite = 0
-      U_spl%isHermite = 0
+      ! Cannot changes these since we use R8HERM directly in code.
+      BR_spl%isHermite   = 1
+      BZ_spl%isHermite   = 1
+      BPHI_spl%isHermite = 1
+      MODB_spl%isHermite = 1
+      S_spl%isHermite = 1
+      U_spl%isHermite = 1
       BR_spl%x1   = raxis
       BZ_spl%x1   = raxis
       BPHI_spl%x1 = raxis
