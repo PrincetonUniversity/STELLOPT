@@ -1,9 +1,19 @@
 #######################################################################
+#            Define User Specific Output Paths
+#######################################################################
+  # Set a default directory if one has not already been defined.
+  $STELLOPT_HOME ?= $(HOME)/bin
+
+
+#######################################################################
 #            Define Basic Utilities
 #######################################################################
+  # Temporaryily copy STELLOPT_HOME to MYHOME since MYHOME is currently
+  # used in all the makefiles.
+  MYHOME = $(STELLOPT_HOME)
+  
   SHELL = /bin/sh
   PWD1 = `pwd`
-  MYHOME = $(HOME)/bin
   PRECOMP:= cpp -traditional-cpp -E -P -C -DMACOSX
   COMPILE = gfortran
   COMPILE_FREE = gfortran -ffree-form -ffree-line-length-none -ffixed-line-length-none
@@ -163,9 +173,10 @@ LIB_SHARE = /opt/local/lib/libnetcdf.dylib \
 #######################################################################
 #######################################################################
 
-# Some Initial stuff
-# HOME_BIN = $(MYHOME)
+# Home bin specifies where the build scripts are located,
+# for example awk_cdir.awk.
 HOME_BIN = ../../
+
 MOD1_PATH = -I$(MYHOME)/libstell_dir
 MOD_PATH = 
 CLEAN_ARCH = 
