@@ -190,9 +190,9 @@
          END IF
       END IF
       IF (lactive) THEN
-        IF (rank.EQ.0 .AND. r01(1).EQ.zero) THEN
-           STOP 'r01(0) = 0 in totzsps_par'
-        END IF
+        !IF (rank.EQ.0 .AND. r01(1).EQ.zero) THEN
+        !   STOP 'r01(0) = 0 in totzsps_par'
+        !END IF
         dkappa = z01(1)/r01(1)
 !      END IF
 !      IF (nranks.GT.1.AND.grank.LT.nranks) THEN
@@ -668,7 +668,12 @@ C-----------------------------------------------
 
       z01(1:ns) = zmnsc(1:ns,n0+ioff,m1+joff)
       r01(1:ns) = rmncc(1:ns,n0+ioff,m1+joff)
-      IF (r01(1) .eq. zero) STOP 'r01(0) = 0 in totzsps_SPH'
+      lerror_sam = .FALSE.
+      IF (r01(1) .eq. zero) THEN
+         lerror_sam = .TRUE.
+         RETURN
+      END IF
+      !IF (r01(1) .eq. zero) STOP 'r01(0) = 0 in totzsps_SPH'
       dkappa = z01(1)/r01(1)
 #if defined(SKS)
       CALL second0(t2)

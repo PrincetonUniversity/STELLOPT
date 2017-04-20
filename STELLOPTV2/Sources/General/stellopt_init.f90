@@ -188,8 +188,13 @@
                     !END IF
                  END IF
               END DO
+              IF (lbound_opt(0,0)) THEN
+                 nvars = nvars + 1
+                 IF (lasym) nvars = nvars + 1
+              END IF
               DO n = -ntord, ntord
-                 DO m = 0, mpol1d
+                 DO m = 1, mpol1d
+                    IF (m==0 .and. n<=0) CYCLE
                     IF (lbound_opt(n,m)) THEN
                        nvars = nvars + 2
                        IF (lasym) nvars = nvars + 2
@@ -1176,8 +1181,37 @@
                  END DO
               END IF
               IF (ANY(lbound_opt)) THEN
+                 IF (lbound_opt(0,0)) THEN
+                    IF (lauto_domain) THEN
+                       rbc_min(0,0) = rbc(0,0) - ABS(pct_domain*rbc(0,0))
+                       rbc_max(0,0) = rbc(0,0) + ABS(pct_domain*rbc(0,0))
+                    END IF
+                    nvar_in = nvar_in + 1
+                    vars(nvar_in) = rbc(0,0)
+                    vars_min(nvar_in) = rbc_min(0,0)
+                    vars_max(nvar_in) = rbc_max(0,0)
+                    var_dex(nvar_in) = ibound_rbc
+                    diag(nvar_in)    = dbound_opt(0,0)
+                    arr_dex(nvar_in,1) = 0
+                    arr_dex(nvar_in,2) = 0
+                    IF (lasym) THEN
+                       IF (lauto_domain) THEN
+                          zbc_min(0,0) = zbc(0,0) - ABS(pct_domain*zbc(0,0))
+                          zbc_max(0,0) = zbc(0,0) + ABS(pct_domain*zbc(0,0))
+                       END IF
+                       nvar_in = nvar_in + 1
+                       vars(nvar_in) = zbc(0,0)
+                       vars_min(nvar_in) = zbc_min(0,0)
+                       vars_max(nvar_in) = zbc_max(0,0)
+                       var_dex(nvar_in) = ibound_zbc
+                       diag(nvar_in)    = dbound_opt(0,0)
+                       arr_dex(nvar_in,1) = 0
+                       arr_dex(nvar_in,2) = 0
+                    END IF
+                 END IF
                  DO n = LBOUND(lbound_opt,1), UBOUND(lbound_opt,1)
-                    DO m = LBOUND(lbound_opt,2), UBOUND(lbound_opt,2)
+                    DO m = 0, UBOUND(lbound_opt,2)
+                       IF (m==0 .and. n<=0) CYCLE
                        IF (lbound_opt(n,m)) THEN
                           IF (lauto_domain) THEN
                              rbc_min(n,m) = rbc(n,m) - ABS(pct_domain*rbc(n,m))
