@@ -73,7 +73,7 @@
       IMPLICIT NONE
       INTEGER, PARAMETER ::  lintsteps=512
       INTEGER, PARAMETER, PRIVATE ::  neval_max=10000
-      INTEGER,PRIVATE      ::  domain_flag, nfp
+      INTEGER, PRIVATE      ::  domain_flag, nfp
       DOUBLE PRECISION, PRIVATE ::  R_target, PHI_target, Z_target
       INTEGER, PRIVATE     ::  bcs0(2) = (/ 0, 0/)
       INTEGER, PRIVATE     ::  bcs1(2) = (/-1,-1/)
@@ -99,7 +99,10 @@
       END INTERFACE
       INTERFACE get_equil_s
          MODULE PROCEDURE get_equil_s_dbl, get_equil_s_sgl
-      END INTERFACE
+      END INTERFACE get_equil_s
+      INTERFACE get_equil_guess_flx
+         MODULE PROCEDURE get_equil_guess_flx_dbl, get_equil_guess_flx_sgl
+      END INTERFACE get_equil_guess_flx
       INTERFACE get_equil_RZ
          MODULE PROCEDURE get_equil_RZ_dbl, get_equil_RZ_sgl
       END INTERFACE
@@ -486,7 +489,6 @@
          !x(1) = 0
       END IF
       ier = 0
-      !WRITE(327,*) iflag,x(1),x(2)
       CALL EZspline_isInDomain(R_spl,x(2),PHI_Target,x(1),ier)
       IF (ier .ne. 0) THEN
          iflag = -1
@@ -513,6 +515,13 @@
       END SUBROUTINE rzfunct_stel_tool
       
       SUBROUTINE get_equil_s_dbl(r_val,phi_val,z_val,s_val,ier,u_val)
+      ! Purpose:
+      !   Given a set of real space (cylindrical) coordinates return
+      !   a set of flux coordinates.
+      !
+      ! Error codes:
+      !   ier = 9  Value is outside of flux space domain.
+      !  
       USE EZspline
       IMPLICIT NONE
       DOUBLE PRECISION, INTENT(in)    ::  r_val
@@ -530,19 +539,35 @@
       DOUBLE PRECISION, DIMENSION(nvars)  :: xc_opt, diag, qtf, wa1, wa2, wa3
       DOUBLE PRECISION, DIMENSION(mfunct) :: fval,wa4
       DOUBLE PRECISION, DIMENSION(ldfjac,nvars) :: fjac
+      DOUBLE PRECISION :: guess_flx(3)
+      LOGICAL :: l_make_guess
+
+      DOUBLE PRECISION :: enorm
+      
+      l_make_guess = .true.
+
+      IF (l_make_guess) THEN
+         CALL get_equil_guess_flx(r_val,phi_val,z_val,guess_flx(1),guess_flx(2),guess_flx(3),ier)
+      ELSE
+         guess_flx(1) = 0.5
+         guess_flx(2) = pi2*0.6
+         guess_flx(3) = MOD(phi_val,pi2/nfp)*nfp
+      END IF
+      
+         
       IF (s_val > 1 .or. s_val < 0) s_val = 0
       IF (ier < 0) RETURN
       ier = 0
       IF (EZspline_allocated(R_spl) .and. EZspline_allocated(Z_spl)) THEN
+         ! These target variables are modules level variables that are used
+         ! in rzfunct_stel_tool as part of the optimization loop.
          R_target = r_val
          Z_target = z_val
          PHI_target=phi_val
          IF (PHI_target < 0) PHI_target = PHI_target + pi2
          PHI_target = MOD(PHI_target,pi2/nfp)*nfp
-         !xc_opt(1) = 0.5
-         xc_opt(1) = s_val
-         xc_opt(2) = pi2*0.5
-         IF (PRESENT(u_val)) xc_opt(2) = MOD(u_val,pi2)
+         xc_opt(1) = guess_flx(1)
+         xc_opt(2) = guess_flx(2)
          fval = 1.0E-30
          fjac = 0
          ftol = search_tol
@@ -561,18 +586,29 @@
          wa1 = 0; wa2 = 0; wa3 = 0; wa4 = 0
          domain_flag = 0
          DO ik = 1, 4
-            CALL lmder_serial(rzfunct_stel_tool,mfunct,nvars,xc_opt,fval,fjac,ldfjac,ftol,xtol,gtol,&
-                    maxfev_local,diag,mode,factor,nprint,info,nfev,njev,ipvt,qtf,&
-                    wa1,wa2,wa3,wa4)
-            IF (info < 4) EXIT
-            xc_opt(1) = 0.75
-            xc_opt(2) = xc_opt(2) + 0.05*pi2
             info = 0
             nfev = 0
             njev = 0
+            CALL lmder_serial(rzfunct_stel_tool,mfunct,nvars,xc_opt,fval,fjac,ldfjac,ftol,xtol,gtol,&
+                    maxfev_local,diag,mode,factor,nprint,info,nfev,njev,ipvt,qtf,&
+                    wa1,wa2,wa3,wa4)
+            ! Check for absolute chi-sq convergence. This test is not done within the L-M routine.
+            IF (info > 0) THEN
+               IF (enorm(mfunct,fval)**2 < ftol) THEN
+                  info = 1
+               ENDIF
+            ENDIF
+            IF (info < 4) EXIT
+            ! If we have not achived success, try to bump the fitter into a better space.
+            IF (ik < 4) THEN 
+               xc_opt(1) = xc_opt(1) + 1e-4 * 10**(ik-1)
+               xc_opt(2) = xc_opt(2) + 1e-4*pi2 * 10**(ik-1)
+            END IF
          END DO
          ier = info
-         IF (info < 4) ier = 0
+         ! Any values of info greater than 0 may indicate success, however
+         ! values greater than 3 may indicate a problem in convergence.
+         IF ((info > 0) .AND. (info < 4)) ier = 0
          IF (domain_flag .ne. 0) THEN
             ier = 9
             s_val = 1.5
@@ -592,7 +628,7 @@
       END IF
       RETURN
       END SUBROUTINE get_equil_s_dbl
-
+      
       SUBROUTINE get_equil_s_sgl(r_val,phi_val,z_val,s_val,ier,u_val)
       IMPLICIT NONE
       REAL, INTENT(in)    ::  r_val
@@ -612,6 +648,79 @@
       s_val = s_dbl
       RETURN
       END SUBROUTINE get_equil_s_sgl
+
+      SUBROUTINE get_equil_guess_flx_dbl(r_val,phi_val,z_val,s_val,u_val,v_val,ier)
+      ! Purpose:
+      !   Make a guess of flux space coordinates given a set of real space
+      !   (cylindrical) coordinates.  This is only valid for toroidal geometries.
+      !
+      !   For certain geometrys this guess will be reasonably good, however for
+      !   many stellarator geometrys this will only be a crude guess.
+      IMPLICIT NONE
+      DOUBLE PRECISION, INTENT(in)  ::  r_val
+      DOUBLE PRECISION, INTENT(in)  ::  phi_val
+      DOUBLE PRECISION, INTENT(in)  ::  z_val
+      DOUBLE PRECISION, INTENT(out) ::  s_val
+      DOUBLE PRECISION, INTENT(out) ::  u_val
+      DOUBLE PRECISION, INTENT(out) ::  v_val
+      INTEGER, INTENT(inout) ::  ier
+
+      DOUBLE PRECISION :: axis(3)
+      DOUBLE PRECISION :: edge(3)
+      DOUBLE PRECISION :: s_temp, u_temp
+      IF (ier < 0) RETURN
+      
+      v_val = MOD(phi_val, pi2/nfp)*nfp
+      
+      ! Find the axis at the given phi_value.
+      s_temp = 0.0
+      u_temp = 0.0
+      CALL get_equil_rz(s_temp,u_temp,v_val,axis(1),axis(3),ier)
+      axis(2) = phi_val
+      IF (ier < 0) RETURN
+      
+      ! Calculate the u_val guess.
+      u_val = atan2(z_val-axis(3), r_val-axis(1))
+      IF (u_val < 0D0) THEN
+         u_val = u_val+pi2
+      END IF
+
+      ! Find the edge at the given u and v values.
+      s_temp = 1.0
+      CALL get_equil_rz(s_temp,u_val,v_val,edge(1),edge(3),ier)
+      edge(2) = phi_val
+      IF (ier < 0) RETURN
+      
+      ! Make a guess for s. This assumes that sqrt(s) is approx proportional
+      ! to real space distance. 
+      s_val = ((r_val-axis(1))**2 + (z_val-axis(3))**2)/((edge(1)-axis(1))**2+(edge(3)-axis(3))**2)
+
+      IF (s_val > 1) THEN
+         s_val = 1.0
+      ENDIF
+      RETURN
+      END SUBROUTINE get_equil_guess_flx_dbl
+    
+      SUBROUTINE get_equil_guess_flx_sgl(r_val,phi_val,z_val,s_val,u_val,v_val,ier)
+      IMPLICIT NONE
+      REAL, INTENT(in)    ::  r_val
+      REAL, INTENT(in)    ::  phi_val
+      REAL, INTENT(in)    ::  z_val
+      REAL, INTENT(out)   ::  s_val
+      REAL, INTENT(out)   ::  u_val
+      REAL, INTENT(out)   ::  v_val
+      INTEGER, INTENT(inout)     ::  ier
+      DOUBLE PRECISION    ::  r_dbl
+      DOUBLE PRECISION    ::  phi_dbl
+      DOUBLE PRECISION    ::  z_dbl
+      DOUBLE PRECISION    ::  s_dbl
+      DOUBLE PRECISION    ::  u_dbl
+      DOUBLE PRECISION    ::  v_dbl
+      r_dbl = r_val; phi_dbl = phi_val; z_dbl = z_val
+      CALL get_equil_guess_flx_dbl(r_dbl,phi_dbl,z_dbl,s_dbl,u_dbl,v_dbl,ier)
+      s_val = s_dbl; u_val = u_dbl; v_val = v_dbl
+      RETURN
+      END SUBROUTINE get_equil_guess_flx_sgl
       
       SUBROUTINE get_equil_RZ_dbl(s_val,u_val,v_val,R_val,Z_val,ier,R_grad,Z_grad)
       USE EZspline
@@ -633,7 +742,7 @@
          IF (PRESENT(R_grad)) CALL EZspline_gradient(R_spl,u_val,v_val,s_val,R_grad,ier)
          IF (PRESENT(Z_grad)) CALL EZspline_gradient(Z_spl,u_val,v_val,s_val,Z_grad,ier)
       ELSE
-         ier=-1
+         ier=9
       END IF
       RETURN
       END SUBROUTINE get_equil_RZ_dbl
@@ -681,7 +790,7 @@
          CALL EZspline_interp(L_spl,u_val,v_val,s_val,L_val,ier)
          IF (PRESENT(L_grad)) CALL EZspline_gradient(L_spl,u_val,v_val,s_val,L_grad,ier)
       ELSE
-         ier=-1
+         ier=9
       END IF
       RETURN
       END SUBROUTINE get_equil_L_dbl
@@ -813,7 +922,7 @@
             kappa = ABS(xp*zpp-zp*xpp)/denom
          END IF
       ELSE
-         ier=-1
+         ier=9
       END IF
       RETURN
       END SUBROUTINE get_equil_kappa_dbl
@@ -871,10 +980,11 @@
          by = Br * sin(phi_val) + Bphi * cos(phi_val)
          IF (PRESENT(B_grad)) CALL EZspline_gradient(B_spl,u_val,v_val,s_val,B_grad,ier)
       ELSE
-        bx  = 0
-        by  = 0
-        bz  = 0
-        IF (PRESENT(B_grad)) B_grad = 0
+         ier = 9
+         bx  = 0
+         by  = 0
+         bz  = 0
+         IF (PRESENT(B_grad)) B_grad = 0
       END IF
       IF (PRESENT(modb_val)) modb_val = sqrt(bx*bx+by*by+bz*bz)
       RETURN
@@ -937,6 +1047,7 @@
          Bphi = r_val * Bv
          bz = Z_grad(3)*Bs + Z_grad(1)*Bu + Z_grad(2)*Bv*nfp
       ELSE
+         ier   = 9
          Br    = 0
          Bphi  = 0
          Bz    = 0
