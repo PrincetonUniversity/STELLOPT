@@ -6,11 +6,38 @@
 #                 programs into their zip files and then
 #                 zips these files into the STELLOPT zip
 #                 file.
+#
+#     Usage:      To compile all STELLOPT codes simply call this script:
+#                 `build_all`. To complile only individual codes/libraries
+#                 add the requested script names as arguments:
+#                 `build_all LIBSTELL VMEC2000`.
+
+export FLAG_CALLED_FROM_BUILD_ALL=true
+
+RELEASE_TYPE=clean_release
+
+# Call the toplevel makfile to setup the output directories.
+make $RELEASE_TYPE
 
 for CODE in LIBSTELL ANIMEC BCYCLIC BEAMS3D BOOTSJ BNORM BOOZ_XFORM COBRAVMEC COILOPT DESCUR DESCUR_PLOT DIAGNO DKES FIELDLINES GTOVMI IPIES J_INVARIANT JMC MAKEGRID NEO NESCOIL PARVMEC PENTA SIESTA STELLOPT STELLTRANS TORLINES V3FITA VMEC2000 VMEC2PIES VMEC2SPEC VMEC2STEL VMEC2V690 VMEC2XGC
 do
-cd $CODE
-echo $CODE
-make clean_release
-cd ..
+  match=0
+
+  # If command line arguments were given, then check to see
+  # which codes should be compiled.  Otherwise compile everything.
+  if [ $# -ne 0 ]; then
+    echo $@|grep -q $CODE
+    if [ $? -eq 0 ]; then
+      match=1  
+    fi
+  else
+    echo $CODE
+    match=1
+  fi
+
+  if [ $match -eq 1 ]; then
+    cd $CODE
+    make $RELEASE_TYPE
+    cd ..
+  fi
 done
