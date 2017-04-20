@@ -4,33 +4,30 @@
   SHELL = /bin/sh
   PWD1 = `pwd`
   MYHOME = $(HOME)/bin
-  PRECOMP:= /lib/cpp -traditional -DLINUX
-  COMPILE = $(FC)
-  COMPILE_FREE = $(FC) -ffree-form -ffree-line-length-none -ffixed-line-length-none
+  PRECOMP:= cpp -traditional-cpp -E -P -C -DMACOSX
+  COMPILE = gfortran
+  COMPILE_FREE = gfortran -ffree-form -ffree-line-length-none -ffixed-line-length-none
   LINK    = ld $(FLAGS) -o
-  LINK_AR = ar -ruv
-  LINK_C  = $(CC) -shared -Wl,-z-defs
+  LINK_AR = ar -ruvs
+  LINK_C  = gcc -shared -Wl,-no_compact_unwind
 
 #######################################################################
 #            Define Compiler Flags
 #######################################################################
 #  FLAGS_R = -O2 -g -fexternal-blas -fbacktrace -fcheck=all 
-  FLAGS_R = -O2 -fexternal-blas -fbacktrace
-  FLAGS_D = -g -O0 -fexternal-blas -fcheck=all 
-  LIBS    = -L$(BLASHOME)/lib -lopenblas \
-            -L$(SCALAPACK_HOME)/lib -lscalapack \
-            -L$(BLACS_HOME)/lib -lmpiblacs -lmpiblacsCinit \
-            -lmpiblacsF77init -lmpiblacs 
+  FLAGS_R = -O2 -fexternal-blas -Wmissing-include-dirs
+  FLAGS_D = -g -O0 -fcheck=all 
+  LIBS    = -L/opt/local/lib -lopenblas -lscalapack  
 
 #######################################################################
 #            MPI Options
 #######################################################################
   LMPI    = T
-  MPI_COMPILE = $(MPIHOME)/bin/mpif90
-  MPI_COMPILE_FREE = $(MPIHOME)/bin/mpif90 -ffree-form \
+  MPI_COMPILE = /opt/local/bin/mpif90 
+  MPI_COMPILE_FREE = /opt/local/bin/mpif90 -ffree-form \
                      -ffree-line-length-none -ffixed-line-length-none
-  MPI_COMPILE_C = $(MPIHOME)/bin/mpicc
-  MPI_LINK = $(MPIHOME)/bin/mpif90
+  MPI_COMPILE_C = gcc -shared -Wl,-no_compact_unwind
+  MPI_LINK = /opt/local/bin/mpif90
 
   # For GCC6
   #MPI_COMPILE = mpif90
@@ -42,15 +39,15 @@
 #######################################################################
 #            NAG Options
 #######################################################################
-  LNAG = T
+  LNAG = F
   NAG_LIB = -L$(NAG_ROOT)/lib -lnag_nag
 
 #######################################################################
 #            NETCDF Options
 #######################################################################
   LNETCDF = T
-  NETCDF_INC = -I$(NETCDF_HOME)/include
-  NETCDF_LIB = -L$(NETCDF_HOME)/lib -lnetcdf -lnetcdff
+  NETCDF_INC = -I/opt/local/include
+  NETCDF_LIB = -L/opt/local/lib -lnetcdf -lnetcdff
 
   # FOR GCC6
   #NETCDF_LIB = -L$(NETCDF_HOME)/lib -lnetcdff
@@ -58,38 +55,38 @@
 #######################################################################
 #            NTCC Options
 #######################################################################
-  LNTCC = T
-  NTCC_INC = -I$(NTCCHOME)/mod
-  NTCC_LIB = -L$(NTCCHOME)/lib -laladdinsub -lr8slatec -ladpak\
-             -lcppsub -lcomput -lpspline -lportlib -lezcdf -lmds_sub \
-             -lmdstransp -lvaxonly
+  LNTCC = F
+  NTCC_INC = -I/Users/slazerso/Sims_PPPL/STELLOPT/NTCC/MAC/mod
+  NTCC_LIB = -L/Users/slazerso/Sims_PPPL/STELLOPT/NTCC/MAC/lib \
+             -lpreact -lsigsub -laladdinsub -lpreact -lpspline \
+             -lportlib -lezcdf
 
 #######################################################################
 #            HDF5 Options
 #######################################################################
   LHDF5 = T
-  HDF5_INC = -I$(HDF5_HOME)/include
-  HDF5_LIB = -L$(HDF5_HOME)/lib -lhdf5_hl -lhdf5_fortran -lhdf5 \
-             -lhdf5hl_fortran -lpthread -lz -lm
+  HDF5_INC = -I/opt/local/include
+  HDF5_LIB = -L/opt/local/lib -lhdf5 -lhdf5hl_fortran -lhdf5_hl \
+             -lhdf5_fortran
 
 #######################################################################
 #             PGPLOT Options
 #######################################################################
-  LPGPLOT = T
+  LPGPLOT = F
   PGPLOT_INC = -I$(PGPLOT_DIR)
   PGPLOT_LIB = -L$(PGPLOT_DIR) -lpgplot -L/usr/X11R6/lib -lX11
 
 #######################################################################
 #             SILO Options
 #######################################################################
-  LSILO = T
+  LSILO = F
   SILO_INC = -I$(SILOHOME)/include
   SILO_LIB = -L$(SILOHOME)/lib -lsilo
 
 #######################################################################
 #            GENE Options
 #######################################################################
-  LGENE = T
+  LGENE = F
   GENE_INC = -I$(GENE_PATH)
   GENE_DIR = $(GENE_PATH)
   LIB_GENE = libgene.a
@@ -102,7 +99,7 @@
 #######################################################################
 #            COILOPT++ Options
 #######################################################################
-  LCOILOPT = T
+  LCOILOPT = F
   COILOPT_INC = -I$(COILOPT_PATH)
   COILOPTPP_DIR = $(COILOPT_PATH)
   LIB_COILOPTPP = libcoilopt++.a
@@ -112,7 +109,7 @@
 #######################################################################
 #            TERPSICHORE Options
 #######################################################################
-  LTERPSICHORE= T
+  LTERPSICHORE= F
   TERPSICHORE_INC = -I$(TERPSICHORE_PATH)
   TERPSICHORE_DIR = $(TERPSICHORE_PATH)
   LIB_TERPSICHORE = libterpsichore.a
@@ -121,7 +118,7 @@
 #######################################################################
 #            TRAVIS Options
 #######################################################################
-  LTRAVIS= T
+  LTRAVIS= F
   TRAVIS_DIR = $(TRAVIS_PATH)
   LIB_TRAVIS = libtravis64_sopt.a
   LIB_MCONF  = libmconf64.a
@@ -131,19 +128,21 @@
 #######################################################################
 #            LIBSTELL Shared Options
 #######################################################################
-LIB_SHARE = $(BLASHOME)/lib/libopenblas.so \
-          $(SCALAPACK_HOME)/lib/libscalapack.a \
-          $(BLACS_HOME)/lib/libmpiblacs.a  $(BLACS_HOME)/lib/libmpiblacsCinit.a $(BLACS_HOME)/lib/libmpiblacsF77init.a \
-          $(NTCCHOME)/lib/libaladdinsub.a $(NTCCHOME)/lib/libr8slatec.a $(NTCCHOME)/lib/libadpak.a $(NTCCHOME)/lib/libcppsub.a $(NTCCHOME)/lib/libcomput.a \
-          $(NTCCHOME)/lib/libpspline.a $(NTCCHOME)/lib/libportlib.a $(NTCCHOME)/lib/libezcdf.a $(NTCCHOME)/lib/libmds_sub.a $(NTCCHOME)/lib/libmdstransp.a $(NTCCHOME)/lib/libvaxonly.a \
-          $(HDF5_HOME)/lib/libhdf5_hl.so $(HDF5_HOME)/lib/libhdf5_fortran.so $(HDF5_HOME)/lib/libhdf5hl_fortran.so $(HDF5_HOME)/lib/libhdf5.so \
-          $(NAG_ROOT)/lib/libnag_nag.so  \
-          $(NETCDFHOME)/lib/libnetcdf.so $(NETCDFHOME)/lib/libnetcdff.so $(NETCDFHOME)/lib/libnetcdf_c++.so \
-          $(SILOHOME)/lib/libsilo.a \
-          $(GSLHOME)/lib/libgsl.so \
-          $(GCC4_HOME)/lib64/libgfortran.so $(GCC4_HOME)/lib64/libstdc++.so \
-          $(MPIHOME)/lib/libmpi.so $(MPIHOME)/lib/libmpi_f77.so $(MPIHOME)/lib/libmpi_f90.so 
-#          /usr/lib/libc.so /usr/lib/libm.so /usr/lib/libpthread.so 
+LIB_SHARE = /opt/local/lib/libnetcdf.dylib \
+         /opt/local/lib/libnetcdff.dylib \
+         /opt/local/lib/libnetcdf_c++.dylib \
+         /opt/local/lib/libhdf5.dylib \
+         /opt/local/lib/libhdf5hl_fortran.dylib\
+         /opt/local/lib/libhdf5_hl.dylib \
+         /opt/local/lib/libhdf5_fortran.dylib\
+         /opt/local/lib/gcc6/libgfortran.dylib \
+         /opt/local/lib/gcc6/libstdc++.dylib \
+         /opt/local/lib/libopenblas.dylib \
+         /opt/local/lib/openmpi-gcc6/libmpi.dylib \
+         /opt/local/lib/openmpi-gcc6/libmpi_mpifh.12.dylib \
+         /opt/local/lib/libz.dylib \
+         /usr/lib/libc.dylib /usr/lib/libm.dylib  \
+         /usr/lib/libpthread.dylib
 
 #######################################################################
 #######################################################################
@@ -300,7 +299,7 @@ ifeq ($(LMPI),T)
   COMPILE = $(MPI_COMPILE)
   COMPILE_FREE = $(MPI_COMPILE_FREE)
   LINK    = $(MPI_COMPILE) $(FLAGS) -o 
-  LINK_C  = $(MPI_COMPILE_C) -shared -Wl,-z,defs
+  LINK_C  = $(MPI_COMPILE_C) 
 endif
 ifeq ($(LNETCDF),T)
   MOD1_PATH += $(NETCDF_INC)

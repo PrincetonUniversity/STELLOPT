@@ -90,7 +90,8 @@ subroutine read_booz_in
       IF (lasym) THEN
          ALLOCATE(rmns(ns,mnmax), zmnc(ns,mnmax), lmnc(ns,mnmax),&
                   bmns(ns,mnmax), stat=i_alloc)
-        IF(i_alloc /= 0) STOP'Allocation for fourier arrays (2) failed!'
+        IF(i_alloc /= 0) STOP &
+           'Allocation for fourier arrays (2) failed!'
       END IF
 ! **********************************************************************
 

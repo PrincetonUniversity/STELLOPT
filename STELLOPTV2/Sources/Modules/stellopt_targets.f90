@@ -131,6 +131,7 @@
       REAL(rprec), DIMENSION(nsd)   ::  target_neo, sigma_neo
       REAL(rprec), DIMENSION(nsd)   ::  target_Jstar, sigma_Jstar
       REAL(rprec), DIMENSION(nsd)   ::  target_helicity, sigma_helicity
+      REAL(rprec), DIMENSION(nsd)   ::  target_helicity_old, sigma_helicity_old
       COMPLEX                       ::  helicity
       REAL(rprec), DIMENSION(nsd)   ::  target_resjac, sigma_resjac, &
                                         xm_resjac, xn_resjac

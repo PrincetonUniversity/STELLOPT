@@ -56,7 +56,7 @@
 !-----------------------------------------------------------------------
 
       ! Divide up Work
-      IF ((nprocs_beams) > nlocal) THEN
+      IF (nprocs_beams > nlocal) THEN
          i = myworkid/nlocal
          CALL MPI_COMM_SPLIT( MPI_COMM_BEAMS,i,myworkid,MPI_COMM_LOCAL,ierr_mpi)
          CALL MPI_COMM_RANK( MPI_COMM_LOCAL, mylocalid, ierr_mpi )              ! MPI
@@ -116,7 +116,7 @@
          k = ns
          CALL wall_load_mn(DBLE(rmnc(1:mnmax,k)),DBLE(zmns(1:mnmax,k)),DBLE(xm),-DBLE(xn),mnmax,120,120)
          IF (lverb) CALL wall_info(6)
-         IF (myworkid /= master) DEALLOCATE(vertex,face)
+         IF (mylocalid /= master) DEALLOCATE(vertex,face)
       END IF
 
 
@@ -175,7 +175,7 @@
       
       ! Break up the Work
       chunk = FLOOR(REAL(nr*nphi*nz) / REAL(numprocs_local))
-      mystart = myworkid*chunk + 1
+      mystart = mylocalid*chunk + 1
       myend = mystart + chunk - 1
 
       ! This section sets up the work so we can use ALLGATHERV
@@ -253,7 +253,8 @@
             ! This is an error code check
             PRINT *,'ERROR in GetBcyl Detected'
             PRINT *,'R,PHI,Z',raxis_g(i),phiaxis(j),zaxis_g(k)
-            print *,'br,bphi,bz,myworkid',br,bphi,bz,myworkid
+            print *,'br,bphi,bz,myworkid',br,bphi,bz,mylocalid
+            CALL FLUSH(6)
             stop 'ERROR in GetBcyl'
          END IF
          IF (lverb .and. (MOD(s,nr) == 0)) THEN
@@ -354,7 +355,7 @@
       
       ! Broadcast the updated magnetic field to other members
       IF (lplasma_only) THEN
-         CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
+         CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
          IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'beams3d_init_vmec',ierr_mpi)
          CALL MPI_BCAST(B_R,nr*nphi*nz,MPI_DOUBLE_PRECISION,mylocalmaster,MPI_COMM_LOCAL,ierr_mpi)
          IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'beams3d_init_mgrid',ierr_mpi)
@@ -366,13 +367,13 @@
 !DEC$ ENDIF
 
 !DEC$ IF DEFINED (MPI_OPT)
-      !IF (numprocs > nlocal) THEN
-         CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)
-         IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'beams3d_init_coil: MPI_COMM_LOCAL',ierr_mpi)
-      !END IF
+      CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'beams3d_init_coil: MPI_COMM_LOCAL',ierr_mpi)
       CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
       IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'beams3d_init_vmec',ierr_mpi)
 !DEC$ ENDIF
+
+      RETURN
 !-----------------------------------------------------------------------
 !     End Subroutine
 !-----------------------------------------------------------------------    

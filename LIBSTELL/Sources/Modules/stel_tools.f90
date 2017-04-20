@@ -480,14 +480,13 @@
       IF (x(2) < 0.0) x(2) = x(2) + pi2
       x(2) = MOD(x(2),pi2)
       IF (x(1) < 0) THEN
-         !x(1) = -x(1)/2
-         !x(2) = x(2) * 0.5*pi2
-         x(1) = -x(1)
+         x(1) = ABS(x(1))
          x(2) = x(2)+pi2*0.5
          x(2) = MOD(x(2),pi2)
+         !x(1) = 0
       END IF
       ier = 0
-      !wRITE(327,*) iflag,x(1),x(2)
+      !WRITE(327,*) iflag,x(1),x(2)
       CALL EZspline_isInDomain(R_spl,x(2),PHI_Target,x(1),ier)
       IF (ier .ne. 0) THEN
          iflag = -1
@@ -531,7 +530,7 @@
       DOUBLE PRECISION, DIMENSION(nvars)  :: xc_opt, diag, qtf, wa1, wa2, wa3
       DOUBLE PRECISION, DIMENSION(mfunct) :: fval,wa4
       DOUBLE PRECISION, DIMENSION(ldfjac,nvars) :: fjac
-      s_val = 0
+      IF (s_val > 1 .or. s_val < 0) s_val = 0
       IF (ier < 0) RETURN
       ier = 0
       IF (EZspline_allocated(R_spl) .and. EZspline_allocated(Z_spl)) THEN
@@ -540,16 +539,18 @@
          PHI_target=phi_val
          IF (PHI_target < 0) PHI_target = PHI_target + pi2
          PHI_target = MOD(PHI_target,pi2/nfp)*nfp
-         xc_opt(1) = 0.5
-         xc_opt(2) = pi2/2
+         !xc_opt(1) = 0.5
+         xc_opt(1) = s_val
+         xc_opt(2) = pi2*0.5
+         IF (PRESENT(u_val)) xc_opt(2) = MOD(u_val,pi2)
          fval = 1.0E-30
          fjac = 0
          ftol = search_tol
          xtol = search_tol
          gtol = 1.0E-30
          maxfev_local = neval_max
-         diag(:) = 1
-         mode = 1
+         diag = (/1.0,4.0/)
+         mode = 2
          factor = 0.1
          nprint = 0
          info   = 9
@@ -564,6 +565,7 @@
                     maxfev_local,diag,mode,factor,nprint,info,nfev,njev,ipvt,qtf,&
                     wa1,wa2,wa3,wa4)
             IF (info < 4) EXIT
+            xc_opt(1) = 0.75
             xc_opt(2) = xc_opt(2) + 0.05*pi2
             info = 0
             nfev = 0

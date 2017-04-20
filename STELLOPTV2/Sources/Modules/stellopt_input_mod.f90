@@ -311,6 +311,7 @@
                          target_bootstrap,sigma_bootstrap, target_neo, sigma_neo,&
                          target_Jstar, sigma_Jstar, NumJstar,&
                          target_helicity, sigma_helicity, helicity,&
+                         target_helicity_old, sigma_helicity_old, &
                          target_resjac, sigma_resjac, xm_resjac, xn_resjac,&
                          target_separatrix, sigma_separatrix, &
                          r_separatrix, z_separatrix, phi_separatrix, &
@@ -708,6 +709,8 @@
       target_helicity(:) = 0.0
       sigma_helicity(:)  = bigno
       helicity           = CMPLX(0.0,0.0)
+      target_helicity_old(:) = 0.0
+      sigma_helicity_old(:)  = bigno
       target_resjac(:)  = 0.0
       sigma_resjac(:)   = bigno
       xn_resjac(:)      = 0
@@ -1586,6 +1589,21 @@
             IF (sigma_helicity(ik) < bigno) WRITE(iunit,"(2(2X,A,I3.3,A,E22.14))") &
                           'TARGET_HELICITY(',ik,') = ',target_helicity(ik), &
                           'SIGMA_HELICITY(',ik,') = ',sigma_helicity(ik)
+         END DO
+      END IF
+      IF (ANY(sigma_helicity_old < bigno)) THEN
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,'(A)') '!          BOOZER COORDINATE HELICITY (OLD)'  
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,outcmp) 'HELICITY',NINT(REAL(helicity)),NINT(AIMAG(helicity))
+         n=0
+         DO ik = 1,UBOUND(sigma_helicity_old,DIM=1)
+            IF(sigma_helicity_old(ik) < bigno) n=ik
+         END DO
+         DO ik = 1, n
+            IF (sigma_helicity_old(ik) < bigno) WRITE(iunit,"(2(2X,A,I3.3,A,E22.14))") &
+                          'TARGET_HELICITY_OLD(',ik,') = ',target_helicity_old(ik), &
+                          'SIGMA_HELICITY_OLD(',ik,') = ',sigma_helicity_old(ik)
          END DO
       END IF
       IF (ANY(sigma_resjac < bigno)) THEN

@@ -379,8 +379,10 @@ SUBROUTINE beams3d_follow
                         IF (lcollision) istate = 1
                         CALL DLSODE(fpart_lsode, neqs_nag, q, t_nag, tf_nag, itol, rtol, atol, itask, istate, &
                                    iopt, w, lrw, iwork, liw, jacobian_lsode, mf)
-                        IF ((istate == -3) .or. (istate == -4)) &
+                        IF ((istate == -3) .or. (istate == -4)) THEN
+                           !IF (myworkid==0) PRINT *,myworkid,neqs_nag, q, t_nag, tf_nag, itol, rtol, atol, itask, istate,iopt, w, lrw, iwork, liw,mf
                            CALL handle_err(LSODE_ERR, 'beams3d_follow', istate)
+                        END IF
                         iwork(11) = 0; iwork(12) = 0; iwork(13) = 0
                         CALL out_beams3d_nag(tf_nag,q)
                         IF ((istate == -1) .or. (istate ==-2) .or. (tf_nag > t_end(l)) ) EXIT

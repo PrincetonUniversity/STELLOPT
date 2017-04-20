@@ -140,12 +140,7 @@ SUBROUTINE beams3d_physics(t, q)
                        hx,hxi,hy,hyi,hz,hzi,&
                        TI_spl%fspl(1,1,1,1),TI_spl%n1,TI_spl%n2,TI_spl%n3)
        ti_temp = fval(1)
-       !IF (myworkid == master) PRINT *,modb,te_temp,ne_temp,ti_temp
-
-       ! Adjust to eV from keV
-       !te_temp = te_temp !* 1000
-       !ti_temp = ti_temp * 1000 ! ti needed in keV for Adas Ionization
-       !ne_temp = ne_temp *1E-6 !ne in cm^-3
+       !IF (myworkid == master) PRINT *,'*',modb,te_temp,ne_temp,ti_temp
 
        ! Helpers
        te_cube = te_temp * te_temp *te_temp
@@ -204,7 +199,6 @@ SUBROUTINE beams3d_physics(t, q)
           vll = (newspeed/speed)*vll
           moment = newspeed*newspeed*moment/(speed*speed)
           speed = newspeed
-
        !---------------------------------------------------------------
        !  Pitch Angle Scattering
        !---------------------------------------------------------------

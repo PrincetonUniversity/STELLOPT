@@ -51,7 +51,7 @@ C-----------------------------------------------
       REAL(rprec) :: rbtor, rbtor0, ctor, delbsq, res0, res1, delt0r   !DO NOT remove res0, delt0r -> V3FIT
       REAL(rprec), DIMENSION(ndatafmax) ::
      1  spfa, spfa2, hp, sifa, sifa2, hi
-      LOGICAL :: lthreed, lconm1
+      LOGICAL :: lthreed, lconm1, lerror_sam
       INTEGER, DIMENSION(:), ALLOCATABLE :: ireflect
       INTEGER :: multi_ns_grid, iequi, itype_precon, irst,
      1    iter1, iter2, iterc=1, ijacob, itfsq, iresidue, neqs, neqs1,
