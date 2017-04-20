@@ -18,7 +18,7 @@
       USE timer_sub
       USE mgrid_mod, ONLY: nextcur, curlabel, nfper0, read_mgrid, free_mgrid,&
                            mgrid_path_old
-!      USE init_geometry
+      USE init_geometry
       IMPLICIT NONE
 !DEC$ IF DEFINED (MPI_OPT)
 !      Need if linking to serial VMEC
@@ -182,10 +182,12 @@
       mj = m+joff
       rtest = SUM(rbcc(1:ntor1,mj))
       ztest = SUM(zbsc(1:ntor1,mj))
-!      lflip=(rtest*ztest .lt. zero)
-      signgs = one
-      IF (rtest*ztest .gt. zero) signgs = -one
-!      IF (lflip) CALL flip_theta(rmn_bdy, zmn_bdy)
+      lflip=(rtest*ztest .lt. zero)
+!!      signgs = one
+!!      IF (rtest*ztest .gt. zero) signgs = -one
+!!!      IF (lflip) CALL flip_theta(rmn_bdy, zmn_bdy)
+      signgs = -1
+      IF (lflip) CALL flip_theta(rmn_bdy, zmn_bdy)
 
 
 !
