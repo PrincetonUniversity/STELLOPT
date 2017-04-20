@@ -8,7 +8,9 @@ C      USE lmpar_mod, ONLY: wa2, wa4, myid, numprocs
       USE safe_open_mod
       USE mpi_params
       IMPLICIT NONE
+!DEC$ IF DEFINED (MPI_OPT)
       INCLUDE 'mpif.h'                                       !mpi stuff
+!DEC$ ENDIF
 C-----------------------------------------------
 C   D u m m y   A r g u m e n t s
 C-----------------------------------------------
@@ -56,8 +58,10 @@ C-----------------------------------------------
       j = myid
       num_lev = numprocs-1
 
+!DEC$ IF DEFINED (MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_STEL, ierr)
       IF (ierr_mpi .ne. 0) GOTO 3000
+!DEC$ ENDIF
       
       IF(j .gt. 0 ) THEN
 
@@ -118,9 +122,10 @@ c
          !PRINT *,'fnorm_array',fnorm_array
       END IF
 
-
+!DEC$ IF DEFINED (MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_STEL, ierr)
       IF (ierr_mpi .ne. 0) GOTO 3000
+!DEC$ ENDIF
      
 
 !
@@ -136,16 +141,20 @@ c
             WRITE(iunit,'(ES22.12E3)') fnorm1
             CLOSE(iunit)
          END IF
+!DEC$ IF DEFINED (MPI_OPT)
          CALL MPI_BARRIER(MPI_COMM_STEL,ierr)
          IF (ierr .ne. 0) CALL mpi_stel_abort(ierr)
+!DEC$ ENDIF
       END DO
       
 !
 !     Gather iflag information to ALL processors and check for iflag < 0
 !
+!DEC$ IF DEFINED (MPI_OPT)
       CALL MPI_ALLGATHER(iflag, 1, MPI_INTEGER, iflag_array, 1,
      1     MPI_INTEGER, MPI_COMM_STEL, ierr)
       IF (ierr .ne. 0) STOP 'MPI_ALLGATHER failed in STEPOPT_MP'
+!DEC$ ENDIF
 
       iflag = minval(iflag_array)
       IF (iflag .lt. 0) RETURN
@@ -153,8 +162,10 @@ c
 !
 !     Find processor with minimum fnorm1 value
 !
+!DEC$ IF DEFINED (MPI_OPT)
       CALL MPI_ALLGATHER(fnorm1, 1, MPI_REAL8, fnorm_array, 1,
      1     MPI_REAL8, MPI_COMM_STEL, ierr)
+!DEC$ ENDIF
       IF (ierr .ne. 0) STOP 'MPI_ALLGATHER failed in LMDIF'
       iflag_array(1:1) = minloc(fnorm_array)
       iproc_min = iflag_array(1) - 1
@@ -194,9 +205,11 @@ c
       END IF
 
       ! Need to broadcase nfev_off to everyone
+!DEC$ IF DEFINED (MPI_OPT)
       CALL MPI_BCAST(nfev_off,1,MPI_INTEGER,master,
      1     MPI_COMM_STEL,ierr)
       IF (ierr .ne. 0) GOTO 3000
+!DEC$ ENDIF
 
       IF( fnorm1 < fnorm) THEN
          fnorm = fnorm1
@@ -207,12 +220,14 @@ c
 !     overwriting their data. Note: diag, ipvt are same already on
 !     all processors. wa3 is overwritten...
 !
+!DEC$ IF DEFINED (MPI_OPT)
          CALL MPI_BCAST(wa2,n,MPI_REAL8,iproc_min,
      1     MPI_COMM_STEL,ierr)
          IF (ierr .ne. 0) GOTO 3000
          CALL MPI_BCAST(wa4,m,MPI_REAL8,iproc_min,
      1     MPI_COMM_STEL,ierr)
          IF (ierr .ne. 0) GOTO 3000
+!DEC$ ENDIF
 
          x = wa2
          fvec = wa4

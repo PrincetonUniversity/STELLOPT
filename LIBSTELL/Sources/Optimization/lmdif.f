@@ -11,7 +11,9 @@
      3                     jac_err, jac_index, n_red !PPPL   
 !DEC$ ELSE
       USE fdjac_mod, ONLY: max_processors, flip, flag_singletask, 
-     1                     flag_cleanup, fdjac2
+     1                     flag_cleanup, fdjac2, jac_order, h_order,
+     2                     jac_err, jac_index, flag_cleanup_lev,
+     3                     ix_min, jac_count, n_red
 !DEC$ ENDIF
       USE mpi_params
       USE safe_open_mod

@@ -29,6 +29,7 @@
       IMPLICIT NONE
 !DEC$ IF DEFINED (MPI_OPT)
       include 'mpif.h'                                       !mpi stuff
+      INTEGER :: status(MPI_STATUS_size)                     !mpi stuff
 !DEC$ ENDIF
 
       INTEGER, INTENT(in) :: n,m, ndiv, iwrite, NP
@@ -39,7 +40,6 @@
                  numsent, ierr,bin_val, iflag, iflag2, ierr_flag, &
                  iunit, num_recd
       REAL(rprec) :: temp_norm, enorm
-      INTEGER :: status(MPI_STATUS_size)                     !mpi stuff
       INTEGER , ALLOCATABLE :: bin_step(:)
       REAL(rprec), ALLOCATABLE :: x_temp(:), val_temp(:), dx(:)
       REAL(rprec), ALLOCATABLE :: grid(:,:),vals(:,:)
@@ -112,6 +112,7 @@
       IF (ierr_mpi /= MPI_SUCCESS) CALL mpi_stel_abort(ierr_mpi)
 !DEC$ ENDIF
       
+!DEC$ IF DEFINED (MPI_OPT)
       ! Queued Workload
       IF (myid .eq. master) THEN
          numsent = 1
@@ -176,6 +177,9 @@
             END IF
          END DO
       END IF
+!DEC$ ELSE
+      STOP 'LIBSTELL must be compile for parallel to use this feature!'
+!DEC$ ENDIF
 
 
 !DEC$ IF DEFINED (MPI_OPT)

@@ -297,8 +297,10 @@ c     END DO
          END DO
       END IF
       
+!DEC$ IF DEFINED (MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_STEL, ierr_mpi) 
       IF (ierr_mpi /= MPI_SUCCESS) CALL mpi_stel_abort(ierr_mpi)
+!DEC$ ENDIF 
 
 !!--------------------------------------------------------------------------!!
 !!------Perform evolutionary computation------------------------------------!!
