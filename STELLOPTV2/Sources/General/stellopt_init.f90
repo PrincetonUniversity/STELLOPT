@@ -203,6 +203,14 @@
               END DO
               DO n = -ntord, ntord
                  DO m = 0, mpol1d
+                    IF (lmode_opt(n,m)) THEN
+                       nvars = nvars + 1
+                       IF (lasym) nvars = nvars + 1
+                    END IF
+                 END DO
+              END DO
+              DO n = -ntord, ntord
+                 DO m = 0, mpol1d
                     IF (lrho_opt(n,m) .and. (m /= 0 .or. n >= 0)) THEN
                        nvars = nvars + 1
                     !   IF (lasym) nvars = nvars + 1
@@ -1128,6 +1136,26 @@
                           arr_dex(nvar_in,1) = n
                        END IF
                     END IF
+                 END DO
+              END IF
+              IF (ANY(lmode_opt)) THEN
+                 DO n = LBOUND(lmode_opt,1), UBOUND(lmode_opt,1)
+                    DO m = LBOUND(lmode_opt,2), UBOUND(lmode_opt,2)
+                       IF (lmode_opt(n,m)) THEN
+                          nvar_in = nvar_in + 1
+                          vars(nvar_in) = 0.5*(rbc(n,m)+zbs(n,m))
+                          IF (lauto_domain) THEN
+                             bound_min(n,m) = vars(nvar_in) - ABS(pct_domain*vars(nvar_in))
+                             bound_max(n,m) = vars(nvar_in) + ABS(pct_domain*vars(nvar_in))
+                          END IF
+                          vars_min(nvar_in) = bound_min(n,m)
+                          vars_max(nvar_in) = bound_max(n,m)
+                          var_dex(nvar_in)  = imodemn
+                          diag(nvar_in)     = dbound_opt(n,m)
+                          arr_dex(nvar_in,1) = n
+                          arr_dex(nvar_in,2) = m
+                       END IF
+                    END DO
                  END DO
               END IF
               IF (ANY(lrho_opt)) THEN

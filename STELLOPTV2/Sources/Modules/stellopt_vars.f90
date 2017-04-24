@@ -73,7 +73,7 @@
                                 lbootj_f_opt, lbeamj_f_opt, &
                                 lah_f_opt, lat_f_opt
       LOGICAL, DIMENSION(0:ntord)                ::  laxis_opt
-      LOGICAL, DIMENSION(-ntord:ntord,0:mpol1d)  ::  lbound_opt, lrho_opt
+      LOGICAL, DIMENSION(-ntord:ntord,0:mpol1d)  ::  lbound_opt, lrho_opt, lmode_opt
       LOGICAL, DIMENSION(-ntord:ntord,-mpol1d:mpol1d) :: ldeltamn_opt
       LOGICAL, DIMENSION(nigroup,20)             ::  lcoil_spline
       INTEGER  ::  nfunc_max
@@ -134,7 +134,7 @@
       REAL(rprec), DIMENSION(0:ntord)                     ::  daxis_opt
       REAL(rprec), DIMENSION(0:ntord)                     ::  raxis_min, raxis_max,&
                                                               zaxis_min, zaxis_max
-      REAL(rprec), DIMENSION(-ntord:ntord,0:mpol1d)       ::  rhobc
+      REAL(rprec), DIMENSION(-ntord:ntord,0:mpol1d)       ::  rhobc, modemn
       REAL(rprec), DIMENSION(-ntord:ntord,0:mpol1d)       ::  dbound_opt, drho_opt
       REAL(rprec), DIMENSION(-ntord:ntord,0:mpol1d)       ::  rbc_min, rbc_max
       REAL(rprec), DIMENSION(-ntord:ntord,0:mpol1d)       ::  zbs_min, zbs_max
@@ -202,6 +202,7 @@
       INTEGER, PARAMETER ::  ibound_zbs = 94
       INTEGER, PARAMETER ::  irhobc     = 95
       INTEGER, PARAMETER ::  ideltamn   = 96
+      INTEGER, PARAMETER ::  imodemn    = 97
       INTEGER, PARAMETER ::  iraxis_cc  = 911
       INTEGER, PARAMETER ::  iraxis_cs  = 912
       INTEGER, PARAMETER ::  izaxis_cc  = 913
@@ -402,6 +403,8 @@
             WRITE(iunit,out_format_2DB) 'RHO(',var_dex1,',',var_dex2,'):  Boundary Specifiction (Hirsh. -Bres.)'
          CASE(ideltamn)
             WRITE(iunit,out_format_2DB) 'DELTA(',var_dex1,',',var_dex2,'):  Boundary Specifiction (Garabedian)'
+         CASE(imodemn)
+            WRITE(iunit,out_format_2DB) 'MODE(',var_dex1,',',var_dex2,'):  Boundary Specifiction (Lazerson)'
          CASE(icoil_splinefx)
             WRITE(iunit,out_format_2DB) 'COIL_SPLINEX(',var_dex1,',',var_dex2,'):  Coil Spline Knots (X)'
          CASE(icoil_splinefy)

@@ -219,7 +219,7 @@
                          lai_f_opt, lne_f_opt, lte_f_opt, lti_f_opt,&
                          lbeamj_f_opt, lbootj_f_opt, lzeff_f_opt, &
                          lth_f_opt, lphi_s_opt, lphi_f_opt, &
-                         lrho_opt, ldeltamn_opt, lbound_opt, laxis_opt, &
+                         lrho_opt, ldeltamn_opt, lbound_opt, laxis_opt, lmode_opt, &
                          lne_opt, lte_opt, lti_opt, lth_opt, lzeff_opt, &
                          lah_f_opt, lat_f_opt, lcoil_spline, &
                          dphiedge_opt, dcurtor_opt, dbcrit_opt, &
@@ -398,6 +398,7 @@
       lbound_opt(:,:) = .FALSE.
       lrho_opt(:,:)   = .FALSE.
       ldeltamn_opt(:,:) = .FALSE.
+      lmode_opt(:,:)  = .FALSE.
       laxis_opt(:)    = .FALSE.
       lcoil_spline(:,:) = .FALSE.
       dphiedge_opt    = -1.0
@@ -1448,6 +1449,23 @@
                END IF
             END DO
          END DO
+      END IF
+      IF (ANY(lmode_opt)) THEN
+         DO m = LBOUND(lmode_opt,DIM=2), UBOUND(lmode_opt,DIM=2)
+           DO n = LBOUND(lmode_opt,DIM=1), UBOUND(lmode_opt,DIM=1)
+               IF(lmode_opt(n,m) .and. (bound_min(n,m)>-bigno .or. bound_max(n,m)<bigno)) THEN
+                 WRITE(iunit,"(2X,A,I4.3,A,I4.3,A,1X,'=',1X,L1,4(2X,A,I4.3,A,I4.3,A,1X,'=',1X,E22.14))")&
+                 'LMODE_OPT(',n,',',m,')',lmode_opt(n,m),&
+                 'BOUND_MIN(',n,',',m,')',bound_min(n,m),&
+                 'BOUND_MAX(',n,',',m,')',bound_max(n,m),&
+                 'DRHO_OPT(',n,',',m,')',drho_opt(n,m)
+               ELSEIF (lrho_opt(n,m)) THEN
+                 WRITE(iunit,"(2X,A,I4.3,A,I4.3,A,1X,'=',1X,L1,1(2X,A,I4.3,A,I4.3,A,1X,'=',1X,E22.14))")&
+                 'LMODE_OPT(',n,',',m,')',lmode_opt(n,m),&
+                 'DRHO_OPT(',n,',',m,')',drho_opt(n,m)
+               END IF
+           END DO
+        END DO
       END IF
 
       

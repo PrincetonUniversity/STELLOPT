@@ -140,9 +140,18 @@
          IF (var_dex(nvar_in) == ibound_zbs) zbs(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
          IF (var_dex(nvar_in) == irhobc)     rhobc(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
          IF (var_dex(nvar_in) == ideltamn)   deltamn(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
+         IF (var_dex(nvar_in) == ideltamn)   deltamn(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
          IF (var_dex(nvar_in) == icoil_splinefx)   coil_splinefx(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
          IF (var_dex(nvar_in) == icoil_splinefy)   coil_splinefy(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
          IF (var_dex(nvar_in) == icoil_splinefz)   coil_splinefz(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
+         IF (var_dex(nvar_in) == imodemn) THEN
+            rbc(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
+            zbs(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
+            IF (arr_dex(nvar_in,2) == 0) THEN
+               raxis_cc(arr_dex(nvar_in,1)) = x(nvar_in)
+               zaxis_cs(arr_dex(nvar_in,1)) = x(nvar_in)
+            END IF
+         END IF
       END DO
       ! Adust Boundary Representation
       IF (ANY(var_dex == irhobc)) THEN
