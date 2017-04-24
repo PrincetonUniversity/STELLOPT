@@ -45,7 +45,7 @@
          ier = 0
          phi = v/nfp
          CALL get_equil_s(temp,phi,z0,s,ier,u)
-         v=0; ier = 0
+         s=1; v=0; ier = 0
          CALL get_equil_RZ(s,u,v,Rin,temp,ier)
          DO i = 1, nt
             s=1; u = REAL((i-1))/REAL(nt); v= 0; ier = 0
