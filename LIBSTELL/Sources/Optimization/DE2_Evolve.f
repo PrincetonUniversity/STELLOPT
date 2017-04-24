@@ -209,6 +209,7 @@
       IF (lrestart) THEN
          IF (myid == master) 
      1        WRITE(6,*) 'Using evaluation from restart file'
+         CALL FLUSH(6)
       ELSE
 !DEC$ IF DEFINED (MPI_OPT)
          CALL MPI_BARRIER(MPI_COMM_STEL, ierr_mpi)

@@ -341,6 +341,10 @@ c     Get mpi parameters
          iflag = flag_singletask
          if (nfev .ne. 0) iflag = 0
          CALL fcn (m, n, x, fvec, iflag, nfev)
+         IF (iflag .ne. 0) THEN
+            WRITE(6,*) "FIRST RUN FAILS!  IMPROVE INPUT!"
+            STOP "ERRROR!"
+         END IF
          fnorm = enorm(m,fvec)
          iunit = 12; istat = 0
          CALL safe_open(iunit,istat,'xvec.dat','unknown','formatted',
