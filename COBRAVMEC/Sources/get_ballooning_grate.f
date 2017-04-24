@@ -255,6 +255,17 @@
               RETURN
            END IF
            CALL geteigm(a1f, a2f, a3f, npm2+inc, feigenv, feigfun)       ! get eigenvalue and eigenvector: 2-nd order
+           IF (lfail_balloon) THEN
+              grate = 100.0
+              DEALLOCATE (lmnsf, bmncf, rmncpf, zmnspf,
+     1                    lmnspf, bmncpf, iotapf, prespf, iotaf,
+     2               presf, phipf, bsupvmncf, bsupumncf, stat=k)
+              IF (lasym_v) THEN                                                 ! 110909 RS = Allow ASYMMETRIC input
+                 DEALLOCATE (lmncf, bmnsf, rmnspf, zmncpf,
+     1                lmncpf, bmnspf, bsupvmnsf, bsupumnsf, stat=k)
+              ENDIF
+              RETURN
+           END IF
 
            IF (tsymm .eq. 0) THEN
              eigfun(1:np-1) = feigfun(1:np-1)

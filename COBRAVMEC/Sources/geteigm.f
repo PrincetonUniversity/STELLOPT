@@ -20,6 +20,11 @@
       ALLOCATE (w(n), w2(4*n), stat = j)
       IF (j .ne. 0) STOP 'Allocation error in COBRA geteigm'
 
+      IF (ANY(asub*asup < 0)) THEN
+         lfail_balloon = .TRUE.
+         RETURN
+      END IF
+
       CALL TVAL(eigm, -kth, asub, ad, asup, n, w)
       CALL TVECT(eigm, eigf, asub, ad, asup, n, w2)
 
