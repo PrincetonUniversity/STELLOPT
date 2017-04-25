@@ -141,26 +141,18 @@
             END IF
             rbcc(ni,mj) = rbcc(ni,mj) + rbc(n,m)
             IF (m .gt. 0) zbsc(ni,mj) = zbsc(ni,mj) + zbs(n,m)
-            !zbsc(ni,mj) = zbsc(ni,mj) + zbs(n,m)
-            !IF (m .eq. 0) zbsc(ni,mj) = 0
 
             IF (lthreed) THEN
                IF (m .gt. 0) rbss(ni,mj) = rbss(ni,mj) + isgn*rbc(n,m)
                zbcs(ni,mj) = zbcs(ni,mj) - isgn*zbs(n,m)
-               !rbss(ni,mj) = rbss(ni,mj) + isgn*rbc(n,m)
-               !IF (m .eq. 0) rbss(ni,mj) = 0
             END IF
 
             IF (lasym) THEN
                IF (m .gt. 0) rbsc(ni,mj) = rbsc(ni,mj) + rbs(n,m)
                zbcc(ni,mj) = zbcc(ni,mj) + zbc(n,m)
-               !IF (m .eq. 0) rbsc(ni,mj) = 0
-               !rbsc(ni,mj) = rbsc(ni,mj) + rbs(n,m)
                IF (lthreed) THEN
                   rbcs(ni,mj) = rbcs(ni,mj) - isgn*rbs(n,m)
                   IF (m .gt. 0) zbss(ni,mj) = zbss(ni,mj) + isgn*zbc(n,m)
-                  !zbss(ni,mj) = zbss(ni,mj) + isgn*zbc(n,m)
-                  !IF (m .eq. 0) zbss(ni,mj) = 0
                END IF
             END IF
 
@@ -183,9 +175,6 @@
       rtest = SUM(rbcc(1:ntor1,mj))
       ztest = SUM(zbsc(1:ntor1,mj))
       lflip=(rtest*ztest .lt. zero)
-!!      signgs = one
-!!      IF (rtest*ztest .gt. zero) signgs = -one
-!!!      IF (lflip) CALL flip_theta(rmn_bdy, zmn_bdy)
       signgs = -1
       IF (lflip) CALL flip_theta(rmn_bdy, zmn_bdy)
 
