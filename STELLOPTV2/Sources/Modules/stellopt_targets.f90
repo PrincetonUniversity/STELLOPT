@@ -75,7 +75,9 @@
       REAL(rprec) ::  target_gradp_max, sigma_gradp_max, width_gradp_max
       REAL(rprec) ::  target_pmin, sigma_pmin, width_pmin
       REAL(rprec) ::  target_curvature, sigma_curvature
-      REAL(rprec) ::  target_kappa, sigma_kappa
+      REAL(rprec) ::  target_kappa, sigma_kappa, phi_kappa
+      REAL(rprec) ::  target_kappa_box, sigma_kappa_box, phi_kappa_box
+      REAL(rprec) ::  target_kappa_avg, sigma_kappa_avg
       REAL(rprec), PARAMETER ::  bigno_ne = 1.0E27
       REAL(rprec) ::  norm_press
       REAL(rprec) ::  qm_ratio
@@ -170,6 +172,8 @@
       INTEGER, PARAMETER :: jtarget_z0         = 1003
       INTEGER, PARAMETER :: jtarget_curvature  = 1004
       INTEGER, PARAMETER :: jtarget_kappa      = 1005
+      INTEGER, PARAMETER :: jtarget_kappa_box  = 10051
+      INTEGER, PARAMETER :: jtarget_kappa_avg  = 10052
       INTEGER, PARAMETER :: jtarget_beta       = 101
       INTEGER, PARAMETER :: jtarget_betapol    = 1011
       INTEGER, PARAMETER :: jtarget_betator    = 1012
@@ -242,6 +246,10 @@
             WRITE(iunit, out_format) 'Boundary Curvature (kertosis)'
          CASE(jtarget_kappa)
             WRITE(iunit, out_format) 'Boundary Elongation'
+         CASE(jtarget_kappa_box)
+            WRITE(iunit, out_format) 'Boundary Elongation (Box)'
+         CASE(jtarget_kappa_avg)
+            WRITE(iunit, out_format) 'Boundary Elongation (Avg.)'
          CASE(jtarget_curtor)
             WRITE(iunit, out_format) 'Net Toroidal Current'
          CASE(jtarget_curtor_max)

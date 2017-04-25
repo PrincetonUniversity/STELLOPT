@@ -139,6 +139,7 @@
 !                  - Helicity target weighting corrected.
 !                  - Non-stellopt parameters properly handled by BOOTSJ
 !                  - VBOOT Added as Equilibrium Option (VMEC+BOOTSJ)
+!         2.51     - Elongation Targeting corrected (Kappa)
 !-----------------------------------------------------------------------
       MODULE stellopt_runtime
 !-----------------------------------------------------------------------
@@ -203,7 +204,7 @@
       CHARACTER(256)           :: id_string, opt_type, proc_string, &
                                   proc_string_old, screen_str, xvec_file
       
-      REAL(rprec), PARAMETER :: STELLOPT_VERSION = 2.50
+      REAL(rprec), PARAMETER :: STELLOPT_VERSION = 2.51
       
       REAL(rprec), PARAMETER :: bigno = 1.0E+10
 !-----------------------------------------------------------------------

@@ -272,7 +272,9 @@
                          target_gradp_max, sigma_gradp_max, width_gradp_max, &
                          target_pmin, sigma_pmin, width_pmin, &
                          target_curvature, sigma_curvature, &
-                         target_kappa, sigma_kappa, &
+                         target_kappa, sigma_kappa, phi_kappa, &
+                         target_kappa_box, sigma_kappa_box, phi_kappa_box, &
+                         target_kappa_avg, sigma_kappa_avg, &
                          target_press, sigma_press, r_press, z_press, phi_press, s_press,&
                          target_te, sigma_te, r_te, z_te, phi_te, s_te,&
                          target_ne, sigma_ne, r_ne, z_ne, phi_ne, s_ne,&
@@ -559,6 +561,12 @@
       sigma_curvature  = bigno
       target_kappa     = 0.0
       sigma_kappa      = bigno
+      phi_kappa        = 0.0
+      target_kappa_box = 0.0
+      sigma_kappa_box  = bigno
+      phi_kappa_box    = 0.0
+      target_kappa_avg = 0.0
+      sigma_kappa_avg  = bigno
       target_kink(:)  = 0.0
       sigma_kink(:)   = bigno
       mlmnb_kink      = 264
@@ -1880,6 +1888,16 @@
       IF (sigma_kappa < bigno) THEN
          WRITE(iunit,outflt) 'TARGET_KAPPA',target_kappa
          WRITE(iunit,outflt) 'SIGMA_KAPPA',sigma_kappa
+         WRITE(iunit,outflt) 'PHI_KAPPA',phi_kappa
+      END IF 
+      IF (sigma_kappa_box < bigno) THEN
+         WRITE(iunit,outflt) 'TARGET_KAPPA_BOX',target_kappa_box
+         WRITE(iunit,outflt) 'SIGMA_KAPPA_BOX',sigma_kappa_box
+         WRITE(iunit,outflt) 'PHI_KAPPA_BOX',phi_kappa_box
+      END IF 
+      IF (sigma_kappa_avg < bigno) THEN
+         WRITE(iunit,outflt) 'TARGET_KAPPA_AVG',target_kappa_avg
+         WRITE(iunit,outflt) 'SIGMA_KAPPA_AVG',sigma_kappa_avg
       END IF 
       IF (sigma_aspect_max < bigno) THEN
          WRITE(iunit,outflt) 'TARGET_ASPECT_MAX',target_aspect_max
