@@ -48,7 +48,7 @@
 !        iunit       File unit number
 !----------------------------------------------------------------------
       LOGICAL ::  lscreen
-      INTEGER ::  ier, nvar_in, dex, dex2, ik, istat, iunit, pass
+      INTEGER ::  ier, nvar_in, dex, dex2, ik, istat, iunit, pass, mf,nf
       INTEGER ::  vctrl_array(5)
       REAL(rprec) :: norm_aphi, norm_am, norm_ac, norm_ai, norm_ah,&
                      norm_at, norm_ne, norm_te, norm_ti, norm_th, &
@@ -145,13 +145,15 @@
          IF (var_dex(nvar_in) == icoil_splinefy)   coil_splinefy(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
          IF (var_dex(nvar_in) == icoil_splinefz)   coil_splinefz(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
          IF (var_dex(nvar_in) == imodemn) THEN
-            rbc(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
-            zbs(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
-            rbc(-arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = -x(nvar_in)
-            zbs(-arr_dex(nvar_in,1),arr_dex(nvar_in,2)) =  x(nvar_in)
-            IF (arr_dex(nvar_in,2) == 0) THEN
-               raxis_cc(arr_dex(nvar_in,1)) = x(nvar_in)
-               zaxis_cs(arr_dex(nvar_in,1)) = x(nvar_in)
+            nf = arr_dex(nvar_in,1)
+            mf = arr_dex(nvar_in,2)
+            rbc(nf,mf) = x(nvar_in)
+            zbs(nf,mf) = x(nvar_in)
+            !rbc(-nf,mf) = -x(nvar_in)
+            !zbs(-nf,mf) =  x(nvar_in)
+            IF (mf == 0) THEN
+               raxis_cc(nf) = x(nvar_in)
+               zaxis_cs(nf) = x(nvar_in)
             END IF
          END IF
       END DO

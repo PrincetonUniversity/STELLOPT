@@ -214,30 +214,31 @@
             CALL get_equil_RZ(DBLE(0),DBLE(0),DBLE(0),r0,z0,iflag)
             ! Update boundary coefficients (this only effects the input files as we use a reset anyway)
             ! SAL - 09/19/12  In free boundary runs this can cause problems.
-            IF (.not. lfreeb_vmec) THEN
-               DO mn = 1, mnmax_vmec
-                  im = xm_vmec(mn)
-                  in = xn_vmec(mn)/nfp
-                  rbc_vmec(in,im)=rmnc_vmec(mn,ns_vmec)
-                  zbs_vmec(in,im)=zmns_vmec(mn,ns_vmec)
-                  IF (im == 0) THEN
-                     raxis_cc_vmec(abs(in)) = rmnc_vmec(mn,1)
-                     zaxis_cs_vmec(abs(in)) = zmns_vmec(mn,1)
-                  END IF
-               END DO
-               IF (lasym_vmec) THEN
-                  DO mn = 1, mnmax_vmec
-                     im = xm_vmec(mn)
-                     in = xn_vmec(mn)/nfp
-                     rbs_vmec(in,im)=rmns_vmec(mn,ns_vmec)
-                     zbc_vmec(in,im)=zmnc_vmec(mn,ns_vmec)
-                     IF (im == 0) THEN
-                        raxis_cs_vmec(abs(in)) = rmns_vmec(mn,1)
-                        zaxis_cc_vmec(abs(in)) = zmnc_vmec(mn,1)
-                     END IF
-                  END DO
-               END IF
-            END IF
+            ! SAL - 04/25/17  In fixed boundary this can cause prolbems because of flip_theta in readin
+            !IF (.not. lfreeb_vmec) THEN
+            !   DO mn = 1, mnmax_vmec
+            !      im = xm_vmec(mn)
+            !      in = xn_vmec(mn)/nfp
+            !      rbc_vmec(in,im)=rmnc_vmec(mn,ns_vmec)
+            !      zbs_vmec(in,im)=zmns_vmec(mn,ns_vmec)
+            !      IF (im == 0) THEN
+            !         raxis_cc_vmec(abs(in)) = rmnc_vmec(mn,1)
+            !         zaxis_cs_vmec(abs(in)) = zmns_vmec(mn,1)
+            !      END IF
+            !   END DO
+            !   IF (lasym_vmec) THEN
+            !      DO mn = 1, mnmax_vmec
+            !         im = xm_vmec(mn)
+            !         in = xn_vmec(mn)/nfp
+            !         rbs_vmec(in,im)=rmns_vmec(mn,ns_vmec)
+            !         zbc_vmec(in,im)=zmnc_vmec(mn,ns_vmec)
+            !         IF (im == 0) THEN
+            !            raxis_cs_vmec(abs(in)) = rmns_vmec(mn,1)
+            !            zaxis_cc_vmec(abs(in)) = zmnc_vmec(mn,1)
+            !         END IF
+            !      END DO
+            !   END IF
+            !END IF
          CASE('spec')
          CASE('pies')
          CASE('siesta')
