@@ -1466,11 +1466,11 @@
                  'LMODE_OPT(',n,',',m,')',lmode_opt(n,m),&
                  'BOUND_MIN(',n,',',m,')',bound_min(n,m),&
                  'BOUND_MAX(',n,',',m,')',bound_max(n,m),&
-                 'DRHO_OPT(',n,',',m,')',dbound_opt(n,m)
+                 'DBOUND_OPT(',n,',',m,')',dbound_opt(n,m)
                ELSEIF (lrho_opt(n,m)) THEN
                  WRITE(iunit,"(2X,A,I4.3,A,I4.3,A,1X,'=',1X,L1,1(2X,A,I4.3,A,I4.3,A,1X,'=',1X,E22.14))")&
                  'LMODE_OPT(',n,',',m,')',lmode_opt(n,m),&
-                 'DRHO_OPT(',n,',',m,')',dbound_opt(n,m)
+                 'DBOUND_OPT(',n,',',m,')',dbound_opt(n,m)
                END IF
            END DO
         END DO
