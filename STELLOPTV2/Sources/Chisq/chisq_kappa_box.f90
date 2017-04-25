@@ -1,11 +1,11 @@
 !-----------------------------------------------------------------------
-!     Subroutine:    chisq_kappa
+!     Subroutine:    chisq_kappa_box
 !     Authors:       S. Lazerson (lazerson@pppl.gov)
-!     Date:          01/18/2017
+!     Date:          04/25/2017
 !     Description:   Calculate difference between equilibrium elongation
-!                    and target elongation.
+!                    and target elongation. (Box Method)
 !-----------------------------------------------------------------------
-      SUBROUTINE chisq_kappa(target,sigma,niter,iflag)
+      SUBROUTINE chisq_kappa_box(target,sigma,niter,iflag)
 !-----------------------------------------------------------------------
 !     Libraries
 !-----------------------------------------------------------------------
@@ -30,28 +30,21 @@
       INTEGER, PARAMETER :: nt = 359
       INTEGER     :: i, ier
       REAL(rprec) :: s,u,v,Rout,temp,Rin, kappa, phi
-      REAL(rprec) :: Zarr(nt)
+      REAL(rprec) :: Zarr(nt), Rarr(nt)
       
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
       IF (iflag < 0) RETURN
-      IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'KAPPA ',1,4
+      IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'KAPPA_BOX ',1,4
       IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET SIGMA KAPPA PHI'
       IF (niter >= 0) THEN
-         s=1; u=0; v = MOD(phi_kapa,pi2/nfp)*nfp; ier = 0
-         CALL get_equil_RZ(s,u,v,Rout,temp,ier) ! v on [0,2pi]
-         temp = r0-0.1*(Rout-r0) ! 10% minor radius in negative direction
-         ier = 0
-         phi = phi_kappa
-         CALL get_equil_s(temp,phi,z0,s,ier,u)
-         s=1; v = MOD(phi_kapa_box,pi2/nfp)*nfp; ier = 0
-         CALL get_equil_RZ(s,u,v,Rin,temp,ier)
+         v = MOD(phi_kapa_box,pi2/nfp)*nfp
          DO i = 1, nt
-            s=1; u = pi2*REAL((i-1))/REAL(nt); v = MOD(phi_kapa_box,pi2/nfp)*nfp; ier = 0
-            CALL get_equil_RZ(s,u,v,temp,Zarr(i),ier)
+            s=1; u = pi2*REAL((i-1))/REAL(nt); v= phi_kappa_box/nfp; ier = 0
+            CALL get_equil_RZ(s,u,v,Rarr(i),Zarr(i),ier)
          END DO
-         kappa = (MAXVAL(Zarr)-MINVAL(Zarr))/(Rout-Rin)
+         kappa = (MAXVAL(Zarr)-MINVAL(Zarr))/(MAXVAL(Rarr)-MINVAL(Rarr))
          mtargets = mtargets + 1
          targets(mtargets) = target
          sigmas(mtargets)  = sigma
@@ -60,11 +53,11 @@
       ELSE
          IF (sigma < bigno) THEN
             mtargets = mtargets + 1
-            IF (niter == -2) target_dex(mtargets)=jtarget_kappa
+            IF (niter == -2) target_dex(mtargets)=jtarget_kappa_box
          END IF
       END IF
       RETURN
 !----------------------------------------------------------------------
 !     END SUBROUTINE
 !----------------------------------------------------------------------
-      END SUBROUTINE chisq_kappa
+      END SUBROUTINE chisq_kappa_box

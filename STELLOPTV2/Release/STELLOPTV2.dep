@@ -14,6 +14,21 @@ chisq_orbit.o : \
 chisq_kappa.o : \
       stellopt_runtime.o \
       stellopt_targets.o \
+      $(LIB_DIR)/Release/stel_tools.o \
+      equil_utils.o
+
+
+chisq_kappa_box.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      $(LIB_DIR)/Release/stel_tools.o \
+      equil_utils.o
+
+
+chisq_kappa_avg.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      $(LIB_DIR)/Release/stel_tools.o \
       equil_utils.o
 
 

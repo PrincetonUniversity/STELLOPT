@@ -81,6 +81,12 @@
       ! KAPPA (ellipticity)
       IF (sigma_kappa < bigno)  &
          CALL chisq_kappa(target_kappa,sigma_kappa,ncnt,iflag)
+      ! KAPPA (ellipticity box)
+      IF (sigma_kappa_box < bigno)  &
+         CALL chisq_kappa_box(target_kappa_box,sigma_kappa_box,ncnt,iflag)
+      ! KAPPA (ellipticity avg)
+      IF (sigma_kappa_avg < bigno)  &
+         CALL chisq_kappa_avg(target_kappa_avg,sigma_kappa_avg,ncnt,iflag)
       ! ASPECT RATIO (MAX)
       IF (sigma_aspect_max < bigno)  &
          CALL chisq_aspect(target_aspect_max,sigma_aspect_max,ncnt,iflag)
