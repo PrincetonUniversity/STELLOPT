@@ -149,8 +149,6 @@
             mf = arr_dex(nvar_in,2)
             rbc(nf,mf) = x(nvar_in)
             zbs(nf,mf) = x(nvar_in)
-            !rbc(-nf,mf) = -x(nvar_in)
-            !zbs(-nf,mf) =  x(nvar_in)
             IF (mf == 0) THEN
                raxis_cc(nf) = x(nvar_in)
                zaxis_cs(nf) = x(nvar_in)
