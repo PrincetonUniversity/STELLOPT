@@ -140,7 +140,7 @@
 #######################################################################
 LIB_SHARE = /opt/local/lib/libnetcdf.dylib \
          /opt/local/lib/libnetcdff.dylib \
-         /opt/local/lib/libnetcdf_c++.dylib \
+         /opt/local/lib/libnetcdf_c++4.dylib \
          /opt/local/lib/libhdf5.dylib \
          /opt/local/lib/libhdf5hl_fortran.dylib\
          /opt/local/lib/libhdf5_hl.dylib \
@@ -151,7 +151,8 @@ LIB_SHARE = /opt/local/lib/libnetcdf.dylib \
          /opt/local/lib/openmpi-gcc6/libmpi.dylib \
          /opt/local/lib/openmpi-gcc6/libmpi_mpifh.12.dylib \
          /opt/local/lib/libz.dylib \
-         /usr/lib/libc.dylib /usr/lib/libm.dylib  \
+         /usr/lib/libc.dylib \
+         /usr/lib/libm.dylib \
          /usr/lib/libpthread.dylib
 
 #######################################################################
