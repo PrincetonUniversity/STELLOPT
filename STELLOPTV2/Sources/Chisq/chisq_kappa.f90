@@ -25,11 +25,24 @@
       
 !-----------------------------------------------------------------------
 !     Local Variables
+!        i           Index over theta points
+!        ier         Error flag
+!        s           Radial coordiante [0,1]
+!        u           Poloidal coordiante [0,2*pi]
+!        v           Toroidal coordiante [0,2*pi] (over field period)
+!        Rax         Radial Axis Location [m]
+!        Zax         Vertical Axis Location [m]
+!        phi         Toroidal Coordiante [0,2*pi] (over device)
+!        temp        Temporary variable
+!        Rout        Radial outboard point [m]
+!        Rin         Raidal inboard point [m]
+!        kappa       Elongation
+!        Zarr(nt)    Array of Vertical points [m]
 !
 !-----------------------------------------------------------------------
       INTEGER, PARAMETER :: nt = 359
       INTEGER     :: i, ier
-      REAL(rprec) :: s,u,v,Rout,temp,Rin, kappa, phi
+      REAL(rprec) :: s,u,v,Rax,Zax,Rout,temp,Rin, kappa, phi
       REAL(rprec) :: Zarr(nt)
       
 !----------------------------------------------------------------------
@@ -39,18 +52,31 @@
       IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'KAPPA ',1,4
       IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET SIGMA KAPPA PHI'
       IF (niter >= 0) THEN
-         s=1; u=0; v = MOD(phi_kapa,pi2/nfp)*nfp; ier = 0
-         CALL get_equil_RZ(s,u,v,Rout,temp,ier) ! v on [0,2pi]
-         temp = r0-0.1*(Rout-r0) ! 10% minor radius in negative direction
+         ! Need axis Point
+         s = 0; u = 0; ier = 0
+         v = MOD(phi_kapa,pi2/nfp)*nfp
+         CALL get_equil_RZ(s,u,v,Rax,Zax,ier)
+         ! First calculated outboard point
+         temp = Rax + 0.05*aminor
          ier = 0
          phi = phi_kappa
          CALL get_equil_s(temp,phi,z0,s,ier,u)
+         s=1; ier = 0
+         CALL get_equil_RZ(s,u,v,Rout,temp,ier) ! v on [0,2pi]
+         ! Now Get inboard Point
+         temp = Rax-0.1*(Rout-Rax) ! 10% minor radius in negative direction
+         ier = 0
+         phi = phi_kappa
+         CALL get_equil_s(temp,phi,Zax,s,ier,u)
          s=1; v = MOD(phi_kapa_box,pi2/nfp)*nfp; ier = 0
          CALL get_equil_RZ(s,u,v,Rin,temp,ier)
+         ! Now get all points
+         v = MOD(phi_kapa_box,pi2/nfp)*nfp
          DO i = 1, nt
-            s=1; u = pi2*REAL((i-1))/REAL(nt); v = MOD(phi_kapa_box,pi2/nfp)*nfp; ier = 0
+            s=1; u = pi2*REAL((i-1))/REAL(nt); ier = 0
             CALL get_equil_RZ(s,u,v,temp,Zarr(i),ier)
          END DO
+         ! Calc Kappa
          kappa = (MAXVAL(Zarr)-MINVAL(Zarr))/(Rout-Rin)
          mtargets = mtargets + 1
          targets(mtargets) = target

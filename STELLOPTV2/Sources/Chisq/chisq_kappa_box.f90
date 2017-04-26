@@ -25,11 +25,19 @@
       
 !-----------------------------------------------------------------------
 !     Local Variables
+!        i           Index over theta points
+!        ier         Error flag
+!        s           Radial coordiante [0,1]
+!        u           Poloidal coordiante [0,2*pi]
+!        v           Toroidal coordiante [0,2*pi] (over field period)
+!        kappa       Elongation
+!        Zarr(nt)    Array of Vertical points [m]
+!        Rarr(nt)    Array of Radial points [m]
 !
 !-----------------------------------------------------------------------
       INTEGER, PARAMETER :: nt = 359
       INTEGER     :: i, ier
-      REAL(rprec) :: s,u,v,Rout,temp,Rin, kappa, phi
+      REAL(rprec) :: s,u,v,kappa
       REAL(rprec) :: Zarr(nt), Rarr(nt)
       
 !----------------------------------------------------------------------
@@ -41,7 +49,7 @@
       IF (niter >= 0) THEN
          v = MOD(phi_kapa_box,pi2/nfp)*nfp
          DO i = 1, nt
-            s=1; u = pi2*REAL((i-1))/REAL(nt); v= phi_kappa_box/nfp; ier = 0
+            s=1; u = pi2*REAL((i-1))/REAL(nt); ier = 0
             CALL get_equil_RZ(s,u,v,Rarr(i),Zarr(i),ier)
          END DO
          kappa = (MAXVAL(Zarr)-MINVAL(Zarr))/(MAXVAL(Rarr)-MINVAL(Rarr))
@@ -49,7 +57,7 @@
          targets(mtargets) = target
          sigmas(mtargets)  = sigma
          vals(mtargets)     = kappa
-         IF (iflag == 1) WRITE(iunit_out,'(4ES22.12E3)') target,sigma,kappa,phi_kappa
+         IF (iflag == 1) WRITE(iunit_out,'(4ES22.12E3)') target,sigma,kappa,phi_kappa_box
       ELSE
          IF (sigma < bigno) THEN
             mtargets = mtargets + 1
