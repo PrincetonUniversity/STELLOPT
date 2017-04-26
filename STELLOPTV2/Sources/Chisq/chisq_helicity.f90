@@ -14,6 +14,7 @@
       USE stellopt_targets
       USE equil_vals
       USE read_boozer_mod
+      USE vmec_input, ONLY: mpol, ntor
       IMPLICIT NONE
       
 !-----------------------------------------------------------------------
@@ -113,6 +114,9 @@
             END IF
          END DO
       ELSE
+         ! Consistency check
+         mboz = MAX(6*mpol, 2, mboz)             
+         nboz = MAX(2*ntor-1, 0, nboz)     
          ! CALCULATE mnboz_b becasue we don't know it yet (setup_booz.f)
          mnboz_b = (2*nboz+1)*(mboz-1) + (nboz + 1)
          DO ik = 1, nsd
