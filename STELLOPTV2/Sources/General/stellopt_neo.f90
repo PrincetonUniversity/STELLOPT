@@ -299,11 +299,34 @@
                RETURN
             ENDIF
             nper = nfp
+            !Open files
             w_u6_open = 0
-            call safe_open(w_u3, istat, out_file, 'replace', 'formatted')
-            if (istat .ne. 0) stop 'Error opening NEO output file'
-            IF (calc_cur .EQ. 1) THEN
-              OPEN(unit=w_u9,file=cur_file)
+            w_u3 = 222
+            istat = 0
+            IF (myworkid == master) call safe_open(w_u3, istat, out_file, 'replace', 'formatted')
+!DEC$ IF DEFINED (MPI_OPT)
+            CALL MPI_BCAST(istat,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
+!DEC$ ENDIF
+            !if (istat .ne. 0) stop 'Error opening NEO output file'
+            IF (istat .ne. 0) THEN
+               IF (myworkid == master) PRINT *,istat,out_file
+               IF (myworkid == master) WRITE(6,*) 'Error opening NEO output file:',TRIM(out_file),istat
+               iflag = -1
+               RETURN
+            END IF
+            istat = 0
+            IF (calc_cur .EQ. 1 .and. myworkid == master) THEN
+              !OPEN(unit=w_u9,file=cur_file)
+              call safe_open(w_u9, istat, cur_file, 'replace', 'formatted')
+            END IF
+!DEC$ IF DEFINED (MPI_OPT)
+            CALL MPI_BCAST(istat,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
+!DEC$ ENDIF
+            IF (istat .ne. 0) THEN
+               IF (myworkid == master) PRINT *,istat,out_file
+               IF (myworkid == master) WRITE(6,*) 'Error opening NEO Current file:',TRIM(out_file),istat
+               iflag = -1
+               RETURN
             END IF
             ! Loop over magnetic surfaces
             reff = 0
@@ -348,7 +371,6 @@
 
             ALLOCATE(save_array(no_fluxs,17)); save_array=0
             DO fluxs_arr_i = mystart,myend
-           ! DO fluxs_arr_i = 1, no_fluxs
                psi_ind = fluxs_arr_i
                !IF (psi_ind .GE. 1 .AND. psi_ind .LE. npsi) THEN
                CALL neo_init_s(psi,dpsi)
@@ -364,9 +386,11 @@
                   b_ref = bmref
                   r_ref = rt0
                ELSE
-                  IF (lscreen) WRITE (6,*) 'FATAL: This ref_swi ',ref_swi,' is not implemented!'
-                  iflag = -1
-                  RETURN
+                  ! This is checked above and would break the code if caught here
+                  !IF (lscreen) WRITE (6,*) 'FATAL: This ref_swi ',ref_swi,' is not implemented!'
+                  !IF (myworkid == master) CLOSE(w_u3)
+                  !iflag = -1
+                  !RETURN
                END IF
                epstot = epstot * (b_ref/bmref)**2 * (r_ref/rt0)**2
                epspar = epspar * (b_ref/bmref)**2 * (r_ref/rt0)**2
@@ -429,6 +453,7 @@
                      WRITE(w_u3,*) b_ref, r_ref, epstot                       !LPK
                   ELSE
                      IF (lscreen) WRITE(6,*) 'FATAL: This eout_swi ',eout_swi,' is not implemented!'
+                     IF (myworkid == master) CLOSE(w_u3)
                      iflag = -1
                      RETURN
                   END IF
