@@ -31,7 +31,7 @@
                                 lfix_ntor, llmdif, lgade, lswarm, lmap, lbasic, &
                                 lqas, lneed_booz, lqps, lhelical, lballoon, lneo, &
                                 ldkes, lbootsj, ltxport, lmap_plane, ljdotb0, liota, &
-                                lkink, lvaciota, ljcurv, loutput_harm
+                                lkink, lvaciota, ljcurv, loutput_harm, lmode
       INTEGER                :: m,n,ns
       REAL(rprec)            :: bound_min, bound_max, var, var_min, var_max, &
                                 temp, rho_exp,r1t,r2t,z1t, delta, filter_harm
@@ -48,7 +48,7 @@
       CHARACTER(LEN=*), PARAMETER :: arrvar2 = "(27x,3(2X,A,'(',I4.3,',',I4.3,') = ',1X,ES22.12E3))"
       CHARACTER(LEN=*), PARAMETER :: target3 = "(3(2X,A,'(',I3.3,')',1X,'=',1X,F8.4))"
       
-      REAL(rprec), PARAMETER :: VMEC2STEL_VERSION = 1.3_rprec
+      REAL(rprec), PARAMETER :: VMEC2STEL_VERSION = 1.31_rprec
 
       REAL(rprec), EXTERNAL :: piota
 !-----------------------------------------------------------------------
@@ -62,6 +62,7 @@
       lrhomn = .TRUE.
       ldeltamn = .FALSE.
       lrbc = .FALSE.
+      lmode = .FALSE.
       lmap_plane = .FALSE.
       lfix_ntor = .FALSE.
       llmdif    = .TRUE.
@@ -118,14 +119,22 @@
                lrbc     = .TRUE.
                lrhomn   = .FALSE.
                ldeltamn = .FALSE.
+               lmode    = .FALSE.
             CASE ("-rhomn")
                lrbc     = .FALSE.
                lrhomn   = .TRUE.
                ldeltamn = .FALSE.
+               lmode    = .FALSE.
             CASE ("-deltamn")
                lrbc     = .FALSE.
                lrhomn   = .FALSE.
                ldeltamn = .TRUE.
+               lmode    = .FALSE.
+            CASE ("-mode")
+               lrbc     = .FALSE.
+               lrhomn   = .FALSE.
+               ldeltamn = .FALSE.
+               lmode    = .TRUE.
             CASE ("-lmdif")
                llmdif = .TRUE.
                lgade  = .FALSE.
@@ -210,6 +219,7 @@
                WRITE(6,*) '   -rbc              VMEC Boundary Representation'
                WRITE(6,*) '   -rhomn            H/B Boundary Representation (default)'
                WRITE(6,*) '   -deltamn          Garabedian Boundary Representation'
+               WRITE(6,*) '   -mode             Mode pair targeting'
                WRITE(6,*) '   -harm             Output Harmonics (RBC/ZBS) 1% filter'
                WRITE(6,*) '   -fix_ntor         Fix m=0 modes (fixed boundary)'
                WRITE(6,*) '   -lmdif            Levenberg Optimization'
@@ -254,7 +264,7 @@
          WRITE(6,'(2X,A,ES10.2)')     'FTOL       = ',1.0E-6
          WRITE(6,'(2X,A,ES10.2)')     'XTOL       = ',1.0E-6
          WRITE(6,'(2X,A,ES10.2)')     'GTOL       = ',1.0E-30
-         WRITE(6,'(2X,A,F6.1)')       'FACTOR     = ',100.0
+         WRITE(6,'(2X,A,F6.1)')       'FACTOR     = ',10.0
          WRITE(6,'(2X,A,ES10.2)')     'EPSFCN     = ',1.0E-6
          WRITE(6,'(2X,A,I1.1)')       'MODE       = ',1
          WRITE(6,'(2X,A)')            'LKEEP_MINS = T'
@@ -524,6 +534,23 @@
                      END IF
                   END DO
                END DO
+            ELSEIF (lmode) THEN
+               var_name = 'MODE'
+               DO n = LBOUND(rbc,DIM=1), UBOUND(rbc,DIM=1)
+                  DO m = LBOUND(rbc,DIM=2), UBOUND(rbc,DIM=2)
+                     IF (ABS(rbc(n,m)) > 0 .or. ABS(zbs(n,m)) > 0) THEN
+                        var = 0.5*(rbc(n,m) + zbs(n,m))
+                        var_min = bound_min*var
+                        var_max = bound_max*var
+                        IF (var_max < var_min) THEN
+                           temp = var_max
+                           var_max = var_min
+                           var_min = temp
+                        END IF
+                        WRITE(6,arrvar) 'L'//TRIM(var_name)//'_OPT',n,m,'BOUND_MIN',n,m,var_min,'BOUND_MAX',n,m,var_max,'DBOUND_OPT',n,m,1.0
+                     END IF
+                  END DO
+               END DO
             ELSEIF (lrhomn) THEN
                rhobc = 0.0_rprec
                rho_exp = 4
@@ -719,9 +746,6 @@
                WRITE(6,"(2X,A,I4.3,':',I3.3,',',I4,A,I4,A)") 'LDELTAMN_OPT(',-ntor,ntor,m,') = ',2*ntor+1,'*T'
             END DO
          END IF
-         
-               
-         
       END IF
       IF (lbasic) THEN
          WRITE(6,'(A)')'!-----------------------------------------------------------------------'
@@ -730,10 +754,6 @@
          WRITE(6,'(2X,A,F6.3,2X,A,ES10.1)') 'TARGET_ASPECT  = ',rbc(0,0)/rbc(0,1),'SIGMA_ASPECT = ',0.001
          WRITE(6,'(2X,A,F6.3,2X,A,ES10.1)') 'TARGET_BETA    = ',0.05,'SIGMA_BETA = ',0.001
          WRITE(6,'(2X,A,ES10.1,2X,A,ES10.1)') 'TARGET_CURTOR  = ',curtor,'SIGMA_CURTOR = ',0.01*curtor
-         r1t = SUM(rbc(0,0:mpol-1))
-         r2t = SUM(rbc(0,0:mpol-1:2)) - SUM(rbc(0,1:mpol-1:2))
-         z1t = SUM(zbs(0,1:mpol-1:2))
-         WRITE(6,'(2X,A,F6.3,2X,A,ES10.1)') 'TARGET_KAPPA      = ',2*z1t/(r1t-r2t),'SIGMA_KAPPA = ',0.02*z1t/(r1t-r2t)
          WRITE(6,'(2X,A,F6.3,2X,A,ES10.1)') 'TARGET_PHIEDGE = ',phiedge,'SIGMA_PHIEDGE = ',0.01*phiedge
          WRITE(6,'(2X,A,F6.3,2X,A,ES10.1)') 'TARGET_RBTOR   = ',1.0,'SIGMA_RBTOR = ',0.01
          WRITE(6,'(2X,A,F6.3,2X,A,ES10.1)') 'TARGET_R0      = ',raxis_cc(0),'SIGMA_R0 = ',0.01*raxis_cc(0)
@@ -741,6 +761,17 @@
          WRITE(6,'(2X,A,F6.3,2X,A,ES10.1)') 'TARGET_Z0      = ',zaxis_cs(0),'SIGMA_Z0 = ',0.01*raxis_cs(0)
          WRITE(6,'(2X,A,F6.3,2X,A,ES10.1)') 'TARGET_VOLUME  = ',1.0,'SIGMA_VOLUME = ',0.01
          WRITE(6,'(2X,A,F6.3,2X,A,ES10.1)') 'TARGET_WP      = ',1.0,'SIGMA_WP = ',0.01
+         WRITE(6,'(A)')'!-----------------------------------------------------------------------'
+         WRITE(6,'(A)')'!          PLASMA ELONGATION (kappa)'
+         WRITE(6,'(A)')'!             PHI is toroidal angle [0,2pi] over whole device'
+         WRITE(6,'(A)')'!             Values output are approximate'
+         WRITE(6,'(A)')'!-----------------------------------------------------------------------'
+         r1t = SUM(rbc(0,0:mpol-1))
+         r2t = SUM(rbc(0,0:mpol-1:2)) - SUM(rbc(0,1:mpol-1:2))
+         z1t = SUM(zbs(0,1:mpol-1:2))
+         WRITE(6,'(2X,A,F6.3,2X,A,ES10.1,2X,A,F6.3)') 'TARGET_KAPPA     = ',2*z1t/(r1t-r2t),'SIGMA_KAPPA     = ',0.01*z1t/(r1t-r2t),' PHI_KAPPA = ',0.0
+         WRITE(6,'(2X,A,F6.3,2X,A,ES10.1,2X,A,F6.3)') 'TARGET_KAPPA_BOX = ',2*z1t/(r1t-r2t),'SIGMA_KAPPA_BOX = ',0.01*z1t/(r1t-r2t),' PHI_KAPPA_BOX = ',0.0
+         WRITE(6,'(2X,A,F6.3,2X,A,ES10.1)')           'TARGET_KAPPA_AVG = ',2*z1t/(r1t-r2t),'SIGMA_KAPPA_AVG = ',0.01*z1t/(r1t-r2t)
       END IF
       IF (lneed_booz) THEN
          WRITE(6,'(A)')'!-----------------------------------------------------------------------'
