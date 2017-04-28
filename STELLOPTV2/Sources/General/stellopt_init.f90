@@ -1360,8 +1360,14 @@
             rbc_temp = rbc
             zbs_temp = zbs
             CALL unique_boundary(rbc_temp,zbs_temp,rhobc,mpol1d,ntord,mpol-1,ntor,mpol-1,rho_exp)
-            delta = SUM((rbc-rbc_temp)**2)/rbc(0,1)**2 &
-                   +SUM((zbs-zbs_temp)**2)/zbs(0,1)**2
+            delta = 0
+            DO m = 0, mpol
+               DO n = -ntor, ntor
+                  IF (rbc(n,m) /= 0) delta = delta + (rbc(n,m)-rbc_temp(n,m))**2/rbc(n,m)**2
+                  IF (zbs(n,m) /= 0) delta = delta + (zbs(n,m)-zbs_temp(n,m))**2/zbs(n,m)**2
+               END DO
+            END DO
+            delta = sqrt(delta)
             WRITE(6,'(A,F7.2,A)')'   == Accuracy of conversion = ',100*(1-delta),'%  =='
             iunit = 12; ier = 0
             CALL safe_open(iunit,ier,'rhomn.txt','unknown','formatted')
@@ -1377,8 +1383,14 @@
             rbc_temp = rbc
             zbs_temp = zbs
             CALL unique_boundary_PG(rbc_temp,zbs_temp,deltamn,ntord,mpol1d,mpol,ntor)
-            delta = SUM((rbc-rbc_temp)**2)/rbc(0,1)**2 &
-                   +SUM((zbs-zbs_temp)**2)/zbs(0,1)**2
+            delta = 0
+            DO m = 0, mpol
+               DO n = -ntor, ntor
+                  IF (rbc(n,m) /= 0) delta = delta + (rbc(n,m)-rbc_temp(n,m))**2/rbc(n,m)**2
+                  IF (zbs(n,m) /= 0) delta = delta + (zbs(n,m)-zbs_temp(n,m))**2/zbs(n,m)**2
+               END DO
+            END DO
+            delta = sqrt(delta)
             WRITE(6,'(A,F7.2,A)')'   == Accuracy of conversion = ',100*(1-delta),'%  =='
             iunit = 12; ier = 0
             CALL safe_open(iunit,ier,'deltamn.txt','unknown','formatted')

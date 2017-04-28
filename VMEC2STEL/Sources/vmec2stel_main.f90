@@ -559,9 +559,32 @@
                CALL convert_boundary(rbc_temp,zbs_temp,rhobc,mpol1d,ntord,rho_exp)
                rbc_temp = rbc
                zbs_temp = zbs
+               WHERE(ABS(rhobc) < ABS(filter_harm*rhobc(0,1))) rhobc = 0
+               IF (loutput_harm) THEN
+                  DO n = -ntor,ntor
+                     DO m = 0, mpol
+                        IF (abs(rhobc(n,m)) > 0.0) &
+                            WRITE(6,'(1(A,I2,A,I2,A,E22.12))') '!  RHOMN(',n,',',m,') = ',rhobc(n,m)
+                     END DO
+                  END DO
+               END IF
                CALL unique_boundary(rbc_temp,zbs_temp,rhobc,mpol1d,ntord,mpol-1,ntor,mpol-1,rho_exp)
-               delta = SUM((rbc-rbc_temp)**2)/rbc(0,1)**2 &
-                      +SUM((zbs-zbs_temp)**2)/zbs(0,1)**2
+               IF (loutput_harm) THEN
+                  DO n = -ntor,ntor
+                     DO m = 0, mpol
+                         IF (abs(rbc_temp(n,m)) > 0.0 .or. abs(zbs_temp(n,m)) > 0.0) &
+                         WRITE(6,'(2(A,I2,A,I2,A,E22.12))') '  RBC(',n,',',m,') = ',rbc_temp(n,m),'  ZBS(',n,',',m,') = ',zbs_temp(n,m)
+                     END DO
+                  END DO
+               END IF
+               delta = 0
+               DO m = 0, mpol
+                  DO n = -ntor, ntor
+                     IF (rbc(n,m) /= 0) delta = delta + (rbc(n,m)-rbc_temp(n,m))**2/rbc(n,m)**2
+                     IF (zbs(n,m) /= 0) delta = delta + (zbs(n,m)-zbs_temp(n,m))**2/zbs(n,m)**2
+                  END DO
+               END DO
+               delta = sqrt(delta)
                WRITE(6,'(A)')'!-----------------------------------------------------------------------'
                WRITE(6,'(A)')'!          HIRSHMAN-BRESLAU BOUNDARY REPRESENTATION'
                WRITE(6,'(A,F10.2,A)')'!            BOUNDARY CONVERSION ACCURACY: ',100*(1-delta),'%'
@@ -654,8 +677,14 @@
                      END DO
                   END DO
                END IF
-               delta = SUM((rbc-rbc_temp)**2)/rbc(0,1)**2 &
-                      +SUM((zbs-zbs_temp)**2)/zbs(0,1)**2
+               delta = 0
+               DO m = 0, mpol
+                  DO n = -ntor, ntor
+                     IF (rbc(n,m) /= 0) delta = delta + (rbc(n,m)-rbc_temp(n,m))**2/rbc(n,m)**2
+                     IF (zbs(n,m) /= 0) delta = delta + (zbs(n,m)-zbs_temp(n,m))**2/zbs(n,m)**2
+                  END DO
+               END DO
+               delta = sqrt(delta)
                WRITE(6,'(A)')'!-----------------------------------------------------------------------'
                WRITE(6,'(A)')'!          GARABEDIAN BOUNDARY REPRESENTATION'
                WRITE(6,'(A,F10.2,A)')'!            BOUNDARY CONVERSION ACCURACY: ',100*(1-delta),'%'
