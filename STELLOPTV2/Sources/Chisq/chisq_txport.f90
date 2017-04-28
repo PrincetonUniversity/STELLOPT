@@ -14,6 +14,7 @@
       USE equil_vals
       USE gist_mod, ONLY: read_gist_namelist
       USE safe_open_mod, ONLY: safe_open
+      USE vmec_input, ONLY: nfp_vmec => nfp
 !DEC$ IF DEFINED (GENE)
       USE parameters_IO, ONLY: file_extension, read_parameters
       USE gene_scan, ONLY: check_for_scan
@@ -85,6 +86,7 @@
             END DO
          END DO
       ELSE
+         IF (alpha_end_txport > pi2/(2*nfp_vmec)) alpha_end_txport = pi2/(2*nfp_vmec)
          DO ik = 1, nsd
             IF (sigma(ik) >= bigno) CYCLE
             DO ip = 1, np

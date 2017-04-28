@@ -140,8 +140,12 @@
                alpha0_start = +pi2/(2*nfp)
                alpha0_end   = -pi2/(2*nfp)
             ELSE
-               alpha0_start  = 0 ! Harry modification
-               alpha0_end    = +pi2/(2*nfp)
+               ! Old
+               !alpha0_start  = 0 
+               !alpha0_end    = +pi2/(2*nfp)
+               ! New
+               alpha0_start = alpha_start_txport
+               alpha0_end = alpha_end_txport
                IF (lasym)  alpha0_start = -pi2/(2*nfp) ! Get full flux tube
             END IF
             alpha0_start_ = alpha0_start
@@ -697,7 +701,7 @@
                WHERE (vqqprox /= vqqprox) vqqprox = bigno
                txport_q(ik,:,:) = vqqprox(:,:)
                IF (lscreen .and. (ik==1)) WRITE(6,'(A)') '     s    alpha0   iota    shear    Bref    Lref  Q_turb'
-               IF (lscreen) WRITE(6,'(7(F8.4))')  s,alpha0_txport,ABS(iot),shat,Ba,a,SUM(SUM(vqqprox,DIM=2)/maxPnt,DIM=1)/nalpha0_
+               IF (lscreen) WRITE(6,'(7(F8.4))')  s,alpha_start_txport,ABS(iot),shat,Ba,a,SUM(SUM(vqqprox,DIM=2)/maxPnt,DIM=1)/nalpha0_
                WRITE(iunit,'(1pe14.6)') SUM(SUM(vqqprox,DIM=2)/maxPnt,DIM=1)/nalpha0_
                DO i = 1, maxPnt
                   WRITE(iunit,'(ES22.14)') vqqprox(:,i)

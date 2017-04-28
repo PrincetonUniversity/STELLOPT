@@ -319,7 +319,7 @@
                          r_separatrix, z_separatrix, phi_separatrix, &
                          target_limiter, sigma_limiter, &
                          r_limiter, z_limiter, phi_limiter, &
-                         lglobal_txport, nz_txport, nalpha_txport, alpha0_txport, &
+                         lglobal_txport, nz_txport, nalpha_txport, alpha_start_txport, alpha_end_txport, &
                          target_txport, sigma_txport, s_txport, txport_proxy,&
                          target_dkes, sigma_dkes, nu_dkes, &
                          target_jdotb,sigma_jdotb,target_bmin,sigma_bmin,&
@@ -732,7 +732,8 @@
       lglobal_txport    = .FALSE.
       nz_txport         = 128
       nalpha_txport     = 1
-      alpha0_txport     = 0.0
+      alpha_start_txport= 0.0
+      alpha_end_txport  = pi2/2
       target_txport     = 0.0
       sigma_txport      = bigno
       s_txport          = -1.0
@@ -1805,7 +1806,8 @@
          WRITE(iunit,outboo) 'LGLOBAL_TXPORT',lglobal_txport
          WRITE(iunit,outint) 'NZ_TXPORT',nz_txport
          WRITE(iunit,outint) 'NALPHA_TXPORT',nalpha_txport
-         WRITE(iunit,outflt) 'ALPHA0_TXPORT',alpha0_txport
+         WRITE(iunit,outflt) 'ALPHA_START_TXPORT',alpha_start_txport
+         WRITE(iunit,outflt) 'ALPHA_END_TXPORT',alpha_end_txport
          n=0
          DO ik = 1,UBOUND(sigma_txport,DIM=1)
             IF(sigma_txport(ik) < bigno) n=ik
