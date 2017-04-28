@@ -139,7 +139,7 @@
                                         xm_resjac, xn_resjac
       LOGICAL                       ::  lglobal_txport
       INTEGER                       ::  nz_txport, nalpha_txport
-      REAL(rprec)                   ::  alpha0_txport
+      REAL(rprec)                   ::  alpha_start_txport,alpha_end_txport
       REAL(rprec), DIMENSION(nsd)   ::  target_txport, sigma_txport, &
                                         s_txport
       CHARACTER(256)                ::  txport_proxy
