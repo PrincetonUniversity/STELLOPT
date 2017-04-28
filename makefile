@@ -4,7 +4,7 @@
 
 include make.inc
 
-.PHONY: release debug clean_release clean_debug static_release
+.PHONY: release debug clean_release clean_debug static_release shared_release
 
 release: pre_build
 
@@ -15,6 +15,8 @@ clean_release: pre_build
 clean_debug: pre_build
 
 static_release: pre_build
+
+shared_release: pre_build
 
 pre_build:
   ifneq ($(FLAG_CALLED_FROM_BUILD_ALL),true)

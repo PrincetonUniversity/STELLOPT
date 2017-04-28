@@ -11,7 +11,7 @@
 !DEC$ ELSEIF DEFINED (IRIX64)
       CALL system(TRIM(cmd))
       ireturn = 0
-!DEC$ ELSEIF DEFINED (LINUX) .OR. DEFINED(OSF1)
+!DEC$ ELSEIF DEFINED (LINUX) .OR. DEFINED(OSF1) .OR. DEFINED(MACOSX)
 C      INTEGER, EXTERNAL :: system
       INTEGER :: system
       ireturn = system(TRIM(cmd))

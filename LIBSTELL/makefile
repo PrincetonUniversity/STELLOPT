@@ -44,7 +44,7 @@ clean_debug:
 	@echo "CLEAN REMAKE IN PROGRESS"
 	@cd $(DBG); make -f $(MAKE) clean
 	@make debug
-      
+
 static_release:      
 	@echo "MAKING STATIC (RELEASE) EXECUTABLE"
 	@-(umask 022; rm -f $(LIB_DIR); ln -fs $(REL_PATH) $(LIB_DIR) 2> /dev/null; umask 077)
@@ -62,6 +62,7 @@ shared_release:
 	@rm -f $(REL)\*.f; rm -f $(REL)\*.f90
 	@rm -f $(MYHOME)/$(EXE_F)
 	@-(umask 022; rm -f $(MYHOME)/$(EXE_F); ln -fs $(REL_PATH)/$(EXE_F) $(MYHOME) 2> /dev/null; umask 077)
+	@-(umask 022; rm -f $(MYHOME)/$(EXE_FSHARE); ln -fs $(REL_PATH)/$(EXE_F_SHARE) $(MYHOME) 2> /dev/null; umask 077)
 	@echo "Shared release version - libstell.so - is now updated"
 	@echo "To free up space, delete all *.o files from Release"
 	@echo ""
