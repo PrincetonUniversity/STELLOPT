@@ -55,10 +55,13 @@
 !         0  : Success
 !        -1  : Error (General/non-specific)
 !        -2  : Outside of flux domain
+!        -3  : Wout file not loaded.
+!        -4  : Module variables not loaded.
 !
 !     Programming ToDo:
 !         * Fix handling of error codes from EZSpline to be consistent with
 !           error_status scheme defined above.
+!         * I should go back to making error_status an inout variable.
 !
 !-------------------------------------------------------------------------------
       MODULE mir_tools
@@ -113,17 +116,50 @@
         DOUBLE PRECISION, PRIVATE ::  R_target, PHI_target, Z_target
         INTEGER, PRIVATE     ::  bcs0(2) = (/ 0, 0/)
         INTEGER, PRIVATE     ::  bcs1(2) = (/-1,-1/)
-        DOUBLE PRECISION, PARAMETER,PRIVATE      :: pi2 = 6.283185482025146D+00
-        DOUBLE PRECISION, PARAMETER,PRIVATE      :: one = 1.000000000000000D+00
-        DOUBLE PRECISION, PARAMETER,PRIVATE      :: search_tol = 1.000000000000000D-12
-        TYPE(EZspline1_r8),PRIVATE :: Vp_spl, grho_spl, grho2_spl
-        TYPE(EZspline1_r8),PRIVATE :: S11_spl, S12_spl, S21_spl, S22_spl
-        TYPE(EZspline3_r8),PRIVATE :: R_spl, Z_spl, G_spl
-        TYPE(EZspline3_r8),PRIVATE :: Ru_spl, Zu_spl
-        TYPE(EZspline3_r8),PRIVATE :: Rv_spl, Zv_spl
-        TYPE(EZspline3_r8),PRIVATE :: Bs_spl, Bu_spl, Bv_spl, B_spl
-        TYPE(EZspline3_r8),PRIVATE :: L_spl, Lu_spl, Lv_spl
+        DOUBLE PRECISION, PARAMETER, PRIVATE      :: pi2 = 6.283185482025146D+00
+        DOUBLE PRECISION, PARAMETER, PRIVATE      :: one = 1.000000000000000D+00
+        DOUBLE PRECISION, PARAMETER, PRIVATE      :: search_tol = 1.000000000000000D-12
+        TYPE(EZspline1_r8), PRIVATE :: Vp_spl, grho_spl, grho2_spl
+        TYPE(EZspline1_r8), PRIVATE :: S11_spl, S12_spl, S21_spl, S22_spl
+        TYPE(EZspline3_r8), PRIVATE :: R_spl, Z_spl, G_spl
+        TYPE(EZspline3_r8), PRIVATE :: Ru_spl, Zu_spl
+        TYPE(EZspline3_r8), PRIVATE :: Rv_spl, Zv_spl
+        TYPE(EZspline3_r8), PRIVATE :: Bs_spl, Bu_spl, Bv_spl, B_spl
+        TYPE(EZspline3_r8), PRIVATE :: L_spl, Lu_spl, Lv_spl
+
         
+        DOUBLE PRECISION, ALLOCATABLE, PRIVATE :: &
+          rmnc(:,:) &
+          ,zmns(:,:) &
+          ,rmns(:,:) &
+          ,zmnc(:,:) &
+          ,bsmns(:,:) &
+          ,bsupumnc(:,:) &
+          ,bsupvmnc(:,:) &
+          ,bsmnc(:,:) &
+          ,bsupumns(:,:) &
+          ,bsupvmns(:,:) &
+          ,lmns(:,:) &
+          ,lmnc(:,:) &
+          ,bmnc(:,:) &
+          ,bmns(:,:) &
+          ,gmnc(:,:) &
+          ,gmns(:,:)
+        
+        INTEGER, ALLOCATABLE, PRIVATE :: &
+          xm(:) &
+          ,xn(:)
+
+        LOGICAL, PRIVATE :: &
+          lasym
+             
+        INTEGER, PRIVATE :: &
+          k1 &
+          ,k2 &
+          ,mnmax &
+          ,isherm &
+          ,ns_t
+             
         !-----------------------------------------------------------------------
         !     Private Subroutines
         !-----------------------------------------------------------------------
@@ -132,9 +168,6 @@
         !-----------------------------------------------------------------------
         !     INTERFACE Modules
         !-----------------------------------------------------------------------
-        INTERFACE load_fourier_geom
-           MODULE PROCEDURE load_fourier_geom_dbl, load_fourier_geom_sgl
-        END INTERFACE load_fourier_geom
         INTERFACE guess_flx_from_cyl
            MODULE PROCEDURE guess_flx_from_cyl_dbl, guess_flx_from_cyl_sgl
         END INTERFACE guess_flx_from_cyl
@@ -145,7 +178,7 @@
         ! Read in a wout file and initialize this module.
         !
         ! If a wout file has already been read in, then one should directly
-        ! call initialize_splines.
+        ! call initialize_module.
         ! ======================================================================
         SUBROUTINE initialize (filename, error_status)
           IMPLICIT NONE
@@ -154,58 +187,63 @@
           INTEGER, INTENT(OUT) :: error_status
 
           CALL read_wout_file (TRIM(filename), error_status)
-          CALL initialize_splines()
+          IF (error_status .NE. 0) RETURN
+          CALL initialize_module(error_status)
 
         END SUBROUTINE initialize
 
         
-        ! ======================================================================
-        ! Initialize stelltools from the values in the read_wout_mod
-        ! module.  Assume that a wout file has alerady been loaded.
-        ! ======================================================================
-        SUBROUTINE initialize_splines (nu, nv)
+        SUBROUTINE initialize_module (error_status)
           IMPLICIT NONE
-          
-          INTEGER, INTENT(IN), OPTIONAL :: nu, nv
-          INTEGER :: nu_local, nv_local
+          INTEGER, INTENT(OUT) :: error_status
           INTEGER :: mn
-          INTEGER :: error_status
-
-          DOUBLE PRECISION :: rmnc(1:mnmax_vmec,1:ns_vmec) &
-                              ,zmns(1:mnmax_vmec,1:ns_vmec)
-          DOUBLE PRECISION :: rmns(1:mnmax_vmec,1:ns_vmec) &
-                              ,zmnc(1:mnmax_vmec,1:ns_vmec)
-          DOUBLE PRECISION :: bsmns(1:mnmax_vmec,1:ns_vmec) &
-                              ,bsupumnc(1:mnmax_vmec,1:ns_vmec) &
-                              ,bsupvmnc(1:mnmax_vmec,1:ns_vmec)
-          DOUBLE PRECISION :: bsmnc(1:mnmax_vmec,1:ns_vmec) &
-                              ,bsupumns(1:mnmax_vmec,1:ns_vmec) &
-                              ,bsupvmns(1:mnmax_vmec,1:ns_vmec)
-          DOUBLE PRECISION :: lmns(1:mnmax_vmec,1:ns_vmec) &
-                              ,lmnc(1:mnmax_vmec,1:ns_vmec)
-          DOUBLE PRECISION :: bmnc(1:mnmax_vmec,1:ns_vmec) &
-                              ,bmns(1:mnmax_vmec,1:ns_vmec)
-          DOUBLE PRECISION :: gmnc(1:mnmax_vmec,1:ns_vmec) &
-                              ,gmns(1:mnmax_vmec,1:ns_vmec)
-                    
-          ! These values were chosen emperically to produce accuracy in going from
-          ! flux space to real space of about 1e-5 m. Testing was done for
-          ! LHD and W7-X.
-          IF (PRESENT(nu)) THEN
-             PRINT *, 'nu present.'
-             nu_local = nu
-          ELSE
-             nu_local = 50+1
+          
+          error_status = 0
+          
+          k1 = 1
+          k2 = ns_vmec
+          mnmax = mnmax_vmec
+          
+          ns_t = k2-k1+1
+          isherm = 0
+          
+          ! Preform checks
+          IF (.NOT. ALLOCATED(xm_vmec)) THEN
+             error_status = -3
+             RETURN
           ENDIF
           
-          IF (PRESENT(nv)) THEN
-             nv_local = nv
-          ELSE
-             nv_local = 500/nfp_vmec+1
-          ENDIF
-  
+          IF (ns_t < 1) error_status = -102
+          IF (mnmax < 1) error_status = -103
+          IF (error_status < 0) RETURN
+          
+          ! Allocations
+          IF (ALLOCATED(xm)) CALL mirtools_deallocate(error_status)
+          IF (error_status < 0) RETURN
+          
+          ALLOCATE( &
+            xm(1:mnmax_vmec) &
+            ,xn(1:mnmax_vmec) &
+            ,rmnc(1:mnmax_vmec,1:ns_vmec) &
+            ,zmns(1:mnmax_vmec,1:ns_vmec) &
+            ,rmns(1:mnmax_vmec,1:ns_vmec) &
+            ,zmnc(1:mnmax_vmec,1:ns_vmec) &
+            ,bsmns(1:mnmax_vmec,1:ns_vmec) &
+            ,bsupumnc(1:mnmax_vmec,1:ns_vmec) &
+            ,bsupvmnc(1:mnmax_vmec,1:ns_vmec) &
+            ,bsmnc(1:mnmax_vmec,1:ns_vmec) &
+            ,bsupumns(1:mnmax_vmec,1:ns_vmec) &
+            ,bsupvmns(1:mnmax_vmec,1:ns_vmec) &
+            ,lmns(1:mnmax_vmec,1:ns_vmec) &
+            ,lmnc(1:mnmax_vmec,1:ns_vmec) &
+            ,bmnc(1:mnmax_vmec,1:ns_vmec) &
+            ,bmns(1:mnmax_vmec,1:ns_vmec) &
+            ,gmnc(1:mnmax_vmec,1:ns_vmec) &
+            ,gmns(1:mnmax_vmec,1:ns_vmec))          
 
           ! Copy arrays from the the READ_WOUT_MOD module.
+          lasym = lasym_vmec
+          
           rmnc(:,:) = rmnc_vmec(:,:)
           zmns(:,:) = zmns_vmec(:,:)
 
@@ -216,7 +254,6 @@
           bmnc(:,:) = bmnc_vmec(:,:)
           gmnc(:,:) = gmnc_vmec(:,:)
 
-          
           IF (lasym_vmec) THEN
              rmns(:,:) = rmns_vmec(:,:)
              zmnc(:,:) = zmnc_vmec(:,:)
@@ -228,9 +265,7 @@
              bsupvmns(:,:) = bsupvmns_vmec(:,:)
           ENDIF
 
-          
-          PRINT '("Initializing STEL_TOOLS with nu=", i3, " nv=", i3)', nu_local, nv_local
-          ! Half to full grid
+          ! Half to full grid where needed.
           bsupumnc(:,1) = (3*bsupumnc(:,2) - bsupumnc(:,3))*0.5D+00
           bsupvmnc(:,1) = (3*bsupvmnc(:,2) - bsupvmnc(:,3))*0.5D+00
           gmnc(:,1)     = (3*gmnc(:,2) - gmnc(:,3))*0.5D+00
@@ -247,7 +282,6 @@
           gmnc(:,ns_vmec)     = 2*gmnc(:,ns_vmec) - gmnc(:,ns_vmec-1)
           lmns(:,ns_vmec) = 2*lmns(:,ns_vmec) - lmns(:,ns_vmec-1)
 
-          ! Load STEL_TOOLS
           IF (lasym_vmec) THEN
              bsupumns(:,1) = 1.5*bsupumns(:,2) - 0.5*bsupumns(:,3)
              bsupvmns(:,1) = 1.5*bsupvmns(:,2) - 0.5*bsupvmns(:,3)
@@ -264,432 +298,666 @@
              bsupvmns(:,ns_vmec) = 2*bsupvmns(:,ns_vmec) - bsupvmns(:,ns_vmec-1)
              gmns(:,ns_vmec)     = 2*gmns(:,ns_vmec) - gmns(:,ns_vmec-1)
              lmnc(:,ns_vmec) = 2*lmnc(:,ns_vmec) - lmnc(:,ns_vmec-1)
-             CALL load_fourier_geom(&
-                  1,ns_vmec,mnmax_vmec,nu_local,nv_local,INT(xm_vmec),INT(-xn_vmec),error_status,&
-                  rmnc,zmns,RMNS=rmns,ZMNC=zmnc,&
-                  BUMNC=bsupumnc,BVMNC=bsupvmnc,&
-                  BUMNS=bsupumns,BVMNS=bsupvmns,&
-                  LMNS=lmns,LMNC=lmnc,&
-                  BMNC=bmnc,BMNS=bmns,&
-                  GMNC=gmnc,GMNS=gmns)
-          ELSE
-             CALL load_fourier_geom(&
-                  1,ns_vmec,mnmax_vmec,nu_local,nv_local,INT(xm_vmec),INT(-xn_vmec),error_status,&
-                  rmnc,zmns,&
-                  BUMNC=bsupumnc,BVMNC=bsupvmnc,&
-                  LMNS=lmns,&
-                  BMNC=bmnc,&
-                  GMNC=gmnc)
           END IF
-                 
+
+          ! Find NFP
+          !
+          ! I don't know why same did this rather than just use nfp_vmec
+          !   --novi.
+          nfp = 1
+          nfp = MINVAL(ABS(xn_vmec), MASK=(xn_vmec>0))
+          IF (nfp == 0) nfp = 1
+
+          !set xn and xm for this module.
+          xn = -1 * INT(xn_vmec) / nfp
+          xm = INT(xm_vmec)
+          
+        END SUBROUTINE initialize_module
+
+        
+        SUBROUTINE mirtools_deallocate (error_status)
+          INTEGER, INTENT(OUT) :: error_status
+
+          error_status = 0
+          
+          DEALLOCATE( &
+            rmnc &
+            ,zmns &
+            ,rmns &
+            ,zmnc &
+            ,bsmns &
+            ,bsupumnc &
+            ,bsupvmnc &
+            ,bsmnc &
+            ,bsupumns &
+            ,bsupvmns &
+            ,lmns &
+            ,lmnc &
+            ,bmnc &
+            ,bmns &
+            ,gmnc &
+            ,gmns)
+          
+          DEALLOCATE( &
+            xm &
+            ,xn)
+               
+        END SUBROUTINE mirtools_deallocate
+
+        
+        SUBROUTINE guess_nu_nv(nu, nv, error_status)
+          ! These values were chosen emperically to produce accuracy
+          ! in going from flux space to real space of about 1e-5 m.
+          ! Testing was done for LHD and W7-X.
+          
+          IMPLICIT NONE
+          INTEGER, INTENT(OUT) :: nu, nv
+          INTEGER, INTENT(OUT) :: error_status
+          error_status = 0
+          nu = 50+1
+          nv = 500/nfp+1
+        END SUBROUTINE guess_nu_nv
+
+        
+        SUBROUTINE initialize_splines(error_status, nu, nv)  
+          USE EZspline
+          IMPLICIT NONE
+          INTEGER, INTENT(out)       :: error_status
+          INTEGER, INTENT(in), OPTIONAL :: nu
+          INTEGER, INTENT(in), OPTIONAL :: nv
+
+          CALL initialize_splines_rz(error_status, nu, nv)
+          CALL initialize_splines_rzderiv(error_status, nu, nv)
+          CALL initialize_splines_b(error_status, nu, nv)
+          CALL initialize_splines_jacobian(error_status, nu, nv)
+          CALL initialize_splines_fsa(error_status, nu, nv)
         END SUBROUTINE initialize_splines
 
         
-        SUBROUTINE load_fourier_geom_dbl( &
-          k1 &
-          ,k2 &
-          ,mnmax &
-          ,nu &
-          ,nv &
-          ,xm &
-          ,xn_in &
-          ,iflag &
-          ,rmnc &
-          ,zmns &
-          ,rmns &
-          ,zmnc &
-          ,bsmns &
-          ,bumnc &
-          ,bvmnc &
-          ,bsmnc &
-          ,bumns &
-          ,bvmns &
-          ,lmns &
-          ,lmnc &
-          ,bmnc &
-          ,bmns &
-          ,gmnc &
-          ,gmns)
-          
+        SUBROUTINE initialize_splines_rz(error_status, nu, nv)  
           USE EZspline
           IMPLICIT NONE
-          INTEGER, INTENT(in)        :: k1
-          INTEGER, INTENT(in)        :: k2
-          INTEGER, INTENT(in)        :: mnmax
-          INTEGER, INTENT(in)        :: nu
-          INTEGER, INTENT(in)        :: nv
-          INTEGER, INTENT(in) :: xm(1:mnmax)
-          INTEGER, INTENT(in) :: xn_in(1:mnmax)
-          INTEGER, INTENT(inout) :: iflag
-          DOUBLE PRECISION, INTENT(in) :: rmnc(1:mnmax,k1:k2), zmns(1:mnmax,k1:k2)
-          DOUBLE PRECISION, INTENT(in),OPTIONAL :: rmns(1:mnmax,k1:k2), zmnc(1:mnmax,k1:k2)
-          DOUBLE PRECISION, INTENT(in),OPTIONAL :: bsmns(1:mnmax,k1:k2) &
-                                                   ,bumnc(1:mnmax,k1:k2) &
-                                                   ,bvmnc(1:mnmax,k1:k2)
-          DOUBLE PRECISION, INTENT(in),OPTIONAL :: bsmnc(1:mnmax,k1:k2) &
-                                                   ,bumns(1:mnmax,k1:k2) &
-                                                   ,bvmns(1:mnmax,k1:k2)
-          DOUBLE PRECISION, INTENT(in),OPTIONAL :: lmns(1:mnmax,k1:k2), lmnc(1:mnmax,k1:k2)
-          DOUBLE PRECISION, INTENT(in),OPTIONAL :: bmnc(1:mnmax,k1:k2), bmns(1:mnmax,k1:k2)
-          DOUBLE PRECISION, INTENT(in),OPTIONAL :: gmnc(1:mnmax,k1:k2), gmns(1:mnmax,k1:k2)
-          INTEGER ::  ns_t, u, mn, isherm
-          INTEGER ::  xn(1:mnmax)
-          DOUBLE PRECISION, ALLOCATABLE :: xu(:), xv(:), rho(:), vp(:), grho(:), grho2(:)
-          DOUBLE PRECISION, ALLOCATABLE :: fmn_temp(:,:)
+          INTEGER, INTENT(out)       :: error_status
+          INTEGER, INTENT(in), OPTIONAL :: nu
+          INTEGER, INTENT(in), OPTIONAL :: nv
+          INTEGER :: nu_local, nv_local
+          INTEGER :: ez_status
+          INTEGER ::  u, mn
+          DOUBLE PRECISION, ALLOCATABLE :: xu(:), xv(:), rho(:)
           DOUBLE PRECISION, ALLOCATABLE :: f_temp(:,:,:)
-          DOUBLE PRECISION, ALLOCATABLE :: gsr(:,:,:), gsp(:,:,:), gsz(:,:,:), gs(:,:,:)
       
-          !Helper vars
-          iflag = 0
-          ns_t=k2-k1+1
-          isherm = 0
-          ! Preform checks
-          IF (ns_t < 1) iflag = -102
-          IF (mnmax< 1) iflag = -103
-          IF (nu < 1 .or. nv < 1) iflag = -104
-          IF (PRESENT(rmns).NEQV.PRESENT(zmnc)) iflag = -105
-          IF (PRESENT(bumnc).NEQV.PRESENT(bvmnc)) iflag = -106
-          IF (iflag <0) RETURN
+          error_status = 0
+
+          IF (PRESENT(nu) .AND. PRESENT(nv)) THEN
+             nu_local = nu
+             nv_local = nv
+          ELSE
+             CALL guess_nu_nv(nu_local, nv_local, error_status)
+          END IF
+
+          PRINT '("Inititalizing R, Z splines with nu=", i0, " nv=", i0)', nu_local, nv_local
+          
+          ! Check module initalization.
+          IF (.NOT. ALLOCATED(xm)) THEN
+             error_status = -4
+             RETURN
+          ENDIF
+          
           !Allocations
-          ALLOCATE(xu(nu),xv(nv),rho(k1:k2))
-          ALLOCATE(fmn_temp(1:mnmax,k1:k2))
-          ALLOCATE(f_temp(nu,nv,k1:k2))
+          ALLOCATE(xu(nu_local),xv(nv_local),rho(k1:k2))
+          ALLOCATE(f_temp(nu_local,nv_local,k1:k2))
+          
+          f_temp = 0
           FORALL(u=k1:k2) rho(u) = REAL(u-1)/REAL(ns_t-1)
-          FORALL(u=1:nu) xu(u) = REAL(u-1)/REAL(nu-1)
-          FORALL(u=1:nv) xv(u) = REAL(u-1)/REAL(nv-1)
-          ! Find NFP
-          nfp = 1
-          nfp = MINVAL(ABS(xn_in),MASK=(xn_in>0))
-          IF (nfp == 0) nfp = 1
-          xn = xn_in / nfp
+          FORALL(u=1:nu_local) xu(u) = REAL(u-1)/REAL(nu_local-1)
+          FORALL(u=1:nv_local) xv(u) = REAL(u-1)/REAL(nv_local-1)
+          
           ! Free Memory
-          IF (EZspline_allocated(R_spl)) CALL EZspline_free(R_spl,iflag)
-          IF (EZspline_allocated(Z_spl)) CALL EZspline_free(Z_spl,iflag)
-          IF (EZspline_allocated(G_spl)) CALL EZspline_free(G_spl,iflag)
-          IF (EZspline_allocated(Ru_spl)) CALL EZspline_free(Ru_spl,iflag)
-          IF (EZspline_allocated(Rv_spl)) CALL EZspline_free(Rv_spl,iflag)
-          IF (EZspline_allocated(Zu_spl)) CALL EZspline_free(Zu_spl,iflag)
-          IF (EZspline_allocated(Zv_spl)) CALL EZspline_free(Zv_spl,iflag)
-          IF (EZspline_allocated(Bs_spl)) CALL EZspline_free(Bs_spl,iflag)
-          IF (EZspline_allocated(Bu_spl)) CALL EZspline_free(Bu_spl,iflag)
-          IF (EZspline_allocated(Bv_spl)) CALL EZspline_free(Bv_spl,iflag)
-          IF (EZspline_allocated(B_spl)) CALL EZspline_free(B_spl,iflag)
-          IF (EZspline_allocated(L_spl)) CALL EZspline_free(L_spl,iflag)
-          IF (EZspline_allocated(Lu_spl)) CALL EZspline_free(Lu_spl,iflag)
-          IF (EZspline_allocated(Lv_spl)) CALL EZspline_free(Lv_spl,iflag)
+          IF (EZspline_allocated(R_spl)) CALL EZspline_free(R_spl,ez_status)
+          IF (EZspline_allocated(Z_spl)) CALL EZspline_free(Z_spl,ez_status)
+          
           ! Preform Init
-          CALL EZspline_init(R_spl,nu,nv,ns_t,bcs1,bcs1,bcs0,iflag)
-          CALL EZspline_init(Z_spl,nu,nv,ns_t,bcs1,bcs1,bcs0,iflag)
-          CALL EZspline_init(G_spl,nu,nv,ns_t,bcs1,bcs1,bcs0,iflag)
-          CALL EZspline_init(Ru_spl,nu,nv,ns_t,bcs1,bcs1,bcs0,iflag)
-          CALL EZspline_init(Rv_spl,nu,nv,ns_t,bcs1,bcs1,bcs0,iflag)
-          CALL EZspline_init(Zu_spl,nu,nv,ns_t,bcs1,bcs1,bcs0,iflag)
-          CALL EZspline_init(Zv_spl,nu,nv,ns_t,bcs1,bcs1,bcs0,iflag)
-          CALL EZspline_init(Bs_spl,nu,nv,ns_t,bcs1,bcs1,bcs0,iflag)
-          CALL EZspline_init(Bu_spl,nu,nv,ns_t,bcs1,bcs1,bcs0,iflag)
-          CALL EZspline_init(Bv_spl,nu,nv,ns_t,bcs1,bcs1,bcs0,iflag)
-          CALL EZspline_init(B_spl,nu,nv,ns_t,bcs1,bcs1,bcs0,iflag)
-          CALL EZspline_init(L_spl,nu,nv,ns_t,bcs1,bcs1,bcs0,iflag)
-          CALL EZspline_init(Lu_spl,nu,nv,ns_t,bcs1,bcs1,bcs0,iflag)
-          CALL EZspline_init(Lv_spl,nu,nv,ns_t,bcs1,bcs1,bcs0,iflag)
+          CALL EZspline_init(R_spl,nu_local,nv_local,ns_t,bcs1,bcs1,bcs0,ez_status)
+          CALL EZspline_init(Z_spl,nu_local,nv_local,ns_t,bcs1,bcs1,bcs0,ez_status)
+          
           ! R/Z
-          f_temp =0
           R_spl%x1 = xu*pi2; R_spl%x2 = xv*pi2; R_spl%x3 = rho; R_spl%isHermite = isherm
-          CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,rmnc,xm,xn,f_temp,0,1)
-          IF (PRESENT(rmns)) CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,rmns,xm,xn,f_temp,1,0)
-          CALL EZspline_setup(R_spl,f_temp,iflag); f_temp=0
+          CALL mntouv(k1,k2,mnmax,nu_local,nv_local,xu,xv,rmnc,xm,xn,f_temp,0,1)
+          IF (lasym) CALL mntouv(k1,k2,mnmax,nu_local,nv_local,xu,xv,rmns,xm,xn,f_temp,1,0)
+          CALL EZspline_setup(R_spl,f_temp,ez_status); f_temp=0
+          
           Z_spl%x1 = xu*pi2; Z_spl%x2 = xv*pi2; Z_spl%x3 = rho; Z_spl%isHermite = isherm
-          CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,zmns,xm,xn,f_temp,1,0)
-          IF (PRESENT(zmnc)) CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,zmnc,xm,xn,f_temp,0,0)
-          CALL EZspline_setup(Z_spl,f_temp,iflag); f_temp = 0
+          CALL mntouv(k1,k2,mnmax,nu_local,nv_local,xu,xv,zmns,xm,xn,f_temp,1,0)
+          IF (lasym) CALL mntouv(k1,k2,mnmax,nu_local,nv_local,xu,xv,zmnc,xm,xn,f_temp,0,0)
+          CALL EZspline_setup(Z_spl,f_temp,ez_status); f_temp = 0
+
+          IF (ez_status .NE. 0) error_status = -1*ez_status-200
+          
+          ! deallocations
+          DEALLOCATE(xu,xv,rho)
+          DEALLOCATE(f_temp)
+
+        END SUBROUTINE initialize_splines_rz
+
+        
+        SUBROUTINE initialize_splines_rzderiv(error_status, nu, nv)  
+          USE EZspline
+          IMPLICIT NONE
+          INTEGER, INTENT(out)       :: error_status
+          INTEGER, INTENT(in), OPTIONAL :: nu
+          INTEGER, INTENT(in), OPTIONAL :: nv
+          INTEGER :: nu_local, nv_local
+          INTEGER :: ez_status
+          INTEGER ::  u, mn
+          DOUBLE PRECISION, ALLOCATABLE :: xu(:), xv(:), rho(:)
+          DOUBLE PRECISION, ALLOCATABLE :: f_temp(:,:,:)
+          DOUBLE PRECISION, ALLOCATABLE :: fmn_temp(:,:)
+      
+          error_status = 0
+
+          IF (PRESENT(nu) .AND. PRESENT(nv)) THEN
+             nu_local = nu
+             nv_local = nv
+          ELSE
+             CALL guess_nu_nv(nu_local, nv_local, error_status)
+          END IF
+
+          PRINT '("Inititalizing R, Z derivative splines with nu=", i0, " nv=", i0)', nu_local, nv_local
+          
+          ! Check module initalization.
+          IF (.NOT. ALLOCATED(xm)) THEN
+             error_status = -4
+             RETURN
+          ENDIF
+          
+          !Allocations
+          ALLOCATE(xu(nu_local),xv(nv_local),rho(k1:k2))
+          ALLOCATE(f_temp(nu_local,nv_local,k1:k2))
+          ALLOCATE(fmn_temp(1:mnmax,k1:k2))
+          
+          f_temp = 0
+          fmn_temp = 0
+          FORALL(u=k1:k2) rho(u) = REAL(u-1)/REAL(ns_t-1)
+          FORALL(u=1:nu_local) xu(u) = REAL(u-1)/REAL(nu_local-1)
+          FORALL(u=1:nv_local) xv(u) = REAL(u-1)/REAL(nv_local-1)
+          
+          ! Free Memory
+          IF (EZspline_allocated(Ru_spl)) CALL EZspline_free(Ru_spl,ez_status)
+          IF (EZspline_allocated(Rv_spl)) CALL EZspline_free(Rv_spl,ez_status)
+          IF (EZspline_allocated(Zu_spl)) CALL EZspline_free(Zu_spl,ez_status)
+          IF (EZspline_allocated(Zv_spl)) CALL EZspline_free(Zv_spl,ez_status)
+          
+          ! Preform Init
+          CALL EZspline_init(Ru_spl,nu_local,nv_local,ns_t,bcs1,bcs1,bcs0,ez_status)
+          CALL EZspline_init(Rv_spl,nu_local,nv_local,ns_t,bcs1,bcs1,bcs0,ez_status)
+          CALL EZspline_init(Zu_spl,nu_local,nv_local,ns_t,bcs1,bcs1,bcs0,ez_status)
+          CALL EZspline_init(Zv_spl,nu_local,nv_local,ns_t,bcs1,bcs1,bcs0,ez_status)
+          
           ! dR/Du Derivatives
           Ru_spl%x1 = xu*pi2; Ru_spl%x2 = xv*pi2; Ru_spl%x3 = rho; Ru_spl%isHermite = isherm
           FORALL(mn = 1:mnmax) fmn_temp(mn,:) = -rmnc(mn,:)*xm(mn)
-          CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,fmn_temp,xm,xn,f_temp,1,0)
-          IF (PRESENT(rmns)) THEN
+          CALL mntouv(k1,k2,mnmax,nu_local,nv_local,xu,xv,fmn_temp,xm,xn,f_temp,1,0)
+          IF (lasym) THEN
              FORALL(mn = 1:mnmax) fmn_temp(mn,:) = rmns(mn,:)*xm(mn)
-             CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,fmn_temp,xm,xn,f_temp,0,0)
+             CALL mntouv(k1,k2,mnmax,nu_local,nv_local,xu,xv,fmn_temp,xm,xn,f_temp,0,0)
           END IF
-          CALL EZspline_setup(Ru_spl,f_temp,iflag); f_temp = 0
+          CALL EZspline_setup(Ru_spl,f_temp,ez_status); f_temp = 0
           ! dR/Dv Derivatives
           Rv_spl%x1 = xu*pi2; Rv_spl%x2 = xv*pi2; Rv_spl%x3 = rho; Rv_spl%isHermite = isherm
           FORALL(mn = 1:mnmax) fmn_temp(mn,:) = -rmnc(mn,:)*xn(mn)
-          CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,fmn_temp,xm,xn,f_temp,1,0)
-          IF (PRESENT(rmns)) THEN
+          CALL mntouv(k1,k2,mnmax,nu_local,nv_local,xu,xv,fmn_temp,xm,xn,f_temp,1,0)
+          IF (lasym) THEN
              FORALL(mn = 1:mnmax) fmn_temp(mn,:) = rmns(mn,:)*xn(mn)
-             CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,fmn_temp,xm,xn,f_temp,0,0)
+             CALL mntouv(k1,k2,mnmax,nu_local,nv_local,xu,xv,fmn_temp,xm,xn,f_temp,0,0)
           END IF
-          CALL EZspline_setup(Rv_spl,f_temp,iflag); f_temp = 0
+          CALL EZspline_setup(Rv_spl,f_temp,ez_status); f_temp = 0
           ! dZ/Du Derivatives
           Zu_spl%x1 = xu*pi2; Zu_spl%x2 = xv*pi2; Zu_spl%x3 = rho; Zu_spl%isHermite = isherm
           FORALL(mn = 1:mnmax) fmn_temp(mn,:) = zmns(mn,:)*xm(mn)
-          CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,fmn_temp,xm,xn,f_temp,0,0)
-          IF (PRESENT(zmnc)) THEN
+          CALL mntouv(k1,k2,mnmax,nu_local,nv_local,xu,xv,fmn_temp,xm,xn,f_temp,0,0)
+          IF (lasym) THEN
              FORALL(mn = 1:mnmax) fmn_temp(mn,:) = -zmnc(mn,:)*xm(mn)
-             CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,fmn_temp,xm,xn,f_temp,1,0)
+             CALL mntouv(k1,k2,mnmax,nu_local,nv_local,xu,xv,fmn_temp,xm,xn,f_temp,1,0)
           END IF
-          CALL EZspline_setup(Zu_spl,f_temp,iflag); f_temp = 0
+          CALL EZspline_setup(Zu_spl,f_temp,ez_status); f_temp = 0
           ! dZ/Dv Derivatives
           Zv_spl%x1 = xu*pi2; Zv_spl%x2 = xv*pi2; Zv_spl%x3 = rho; Zv_spl%isHermite = isherm
           FORALL(mn = 1:mnmax) fmn_temp(mn,:) = zmns(mn,:)*xn(mn)
-          CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,fmn_temp,xm,xn,f_temp,0,0)
-          IF (PRESENT(zmnc)) THEN
+          CALL mntouv(k1,k2,mnmax,nu_local,nv_local,xu,xv,fmn_temp,xm,xn,f_temp,0,0)
+          IF (lasym) THEN
              FORALL(mn = 1:mnmax) fmn_temp(mn,:) = -zmnc(mn,:)*xn(mn)
-             CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,fmn_temp,xm,xn,f_temp,1,0)
+             CALL mntouv(k1,k2,mnmax,nu_local,nv_local,xu,xv,fmn_temp,xm,xn,f_temp,1,0)
           END IF
-          CALL EZspline_setup(Zv_spl,f_temp,iflag); f_temp = 0
-          ! B^s
-          Bs_spl%x1 = xu*pi2; Bs_spl%x2 = xv*pi2; Bs_spl%x3 = rho; Bs_spl%isHermite = isherm
-          IF (PRESENT(bsmns)) CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,bsmns,xm,xn,f_temp,1,0)
-          IF (PRESENT(bsmnc)) CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,bsmnc,xm,xn,f_temp,0,0)
-          CALL EZspline_setup(Bs_spl,f_temp,iflag); f_temp = 0
-          ! B^u
-          Bu_spl%x1 = xu*pi2; Bu_spl%x2 = xv*pi2; Bu_spl%x3 = rho; Bu_spl%isHermite = isherm
-          IF (PRESENT(bumnc)) CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,bumnc,xm,xn,f_temp,0,0)
-          IF (PRESENT(bumns)) CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,bumns,xm,xn,f_temp,1,0)
-          CALL EZspline_setup(Bu_spl,f_temp,iflag); f_temp = 0
-          ! B^v
-          Bv_spl%x1 = xu*pi2; Bv_spl%x2 = xv*pi2; Bv_spl%x3 = rho; Bv_spl%isHermite = isherm
-          IF (PRESENT(bvmnc)) CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,bvmnc,xm,xn,f_temp,0,0)
-          IF (PRESENT(bvmns)) CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,bvmns,xm,xn,f_temp,1,0)
-          CALL EZspline_setup(Bv_spl,f_temp,iflag); f_temp = 0
-          ! ModB
-          B_spl%x1 = xu*pi2; B_spl%x2 = xv*pi2; B_spl%x3 = rho; B_spl%isHermite = isherm
-          IF (PRESENT(bmnc)) CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,bmnc,xm,xn,f_temp,0,0)
-          IF (PRESENT(bmns)) CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,bmns,xm,xn,f_temp,1,0)
-          CALL EZspline_setup(B_spl,f_temp,iflag); f_temp = 0
-          ! Jacobian sqrt(g)
-          G_spl%x1 = xu*pi2; G_spl%x2 = xv*pi2; G_spl%x3 = rho; G_spl%isHermite = isherm
-          IF (PRESENT(gmnc)) CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,gmnc,xm,xn,f_temp,0,0)
-          IF (PRESENT(gmns)) CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,gmns,xm,xn,f_temp,1,0)
-          CALL EZspline_setup(G_spl,f_temp,iflag); f_temp = 0
-          ! Lambda
-          L_spl%x1 = xu*pi2; L_spl%x2 = xv*pi2; L_spl%x3 = rho; L_spl%isHermite = isherm
-          IF (PRESENT(lmns)) CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,lmns,xm,xn,f_temp,1,0)
-          IF (PRESENT(lmnc)) CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,lmnc,xm,xn,f_temp,0,0)
-          CALL EZspline_setup(L_spl,f_temp,iflag); f_temp = 0
-          ! Lambda/u
-          Lu_spl%x1 = xu*pi2; Lu_spl%x2 = xv*pi2; Lu_spl%x3 = rho; Lu_spl%isHermite = isherm
-          IF (PRESENT(lmns)) THEN
-             FORALL(mn = 1:mnmax) fmn_temp(mn,:) = lmns(mn,:)*xm(mn)
-             CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,fmn_temp,xm,xn,f_temp,0,0)
-          END IF
-          IF (PRESENT(lmnc)) THEN
-             FORALL(mn = 1:mnmax) fmn_temp(mn,:) = -lmnc(mn,:)*xm(mn)
-             CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,fmn_temp,xm,xn,f_temp,1,0)
-          END IF
-          CALL EZspline_setup(Lu_spl,f_temp,iflag); f_temp = 0
-          ! Lambda/v
-          Lv_spl%x1 = xu*pi2; Lv_spl%x2 = xv*pi2; Lv_spl%x3 = rho; Lv_spl%isHermite = isherm
-          IF (PRESENT(lmns)) THEN
-             FORALL(mn = 1:mnmax) fmn_temp(mn,:) = lmns(mn,:)*xn(mn)
-             CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,fmn_temp,xm,xn,f_temp,0,0)
-          END IF
-          IF (PRESENT(lmnc)) THEN
-             FORALL(mn = 1:mnmax) fmn_temp(mn,:) = -lmnc(mn,:)*xn(mn)
-             CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,fmn_temp,xm,xn,f_temp,1,0)
-          END IF
-          CALL EZspline_setup(Lv_spl,f_temp,iflag); f_temp = 0
-      
-          ! Calculate rho_s
-          IF (PRESENT(gmnc) .or. PRESENT(gmns)) THEN
-             ! Allocations
-             IF (EZspline_allocated(Vp_spl)) CALL EZspline_free(Vp_spl,iflag)
-             IF (EZspline_allocated(grho_spl)) CALL EZspline_free(grho_spl,iflag)
-             IF (EZspline_allocated(grho2_spl)) CALL EZspline_free(grho2_spl,iflag)
-             IF (EZspline_allocated(S11_spl)) CALL EZspline_free(S11_spl,iflag)
-             IF (EZspline_allocated(S12_spl)) CALL EZspline_free(S12_spl,iflag)
-             IF (EZspline_allocated(S21_spl)) CALL EZspline_free(S21_spl,iflag)
-             IF (EZspline_allocated(S22_spl)) CALL EZspline_free(S22_spl,iflag)
-             CALL EZspline_init(Vp_spl,ns_t,bcs0,iflag)
-             CALL EZspline_init(grho_spl,ns_t,bcs0,iflag)
-             CALL EZspline_init(grho2_spl,ns_t,bcs0,iflag)
-             CALL EZspline_init(S11_spl,ns_t,bcs0,iflag)
-             CALL EZspline_init(S12_spl,ns_t,bcs0,iflag)
-             CALL EZspline_init(S21_spl,ns_t,bcs0,iflag)
-             CALL EZspline_init(S22_spl,ns_t,bcs0,iflag)
-             ALLOCATE(Vp(k1:k2),grho(k1:k2),grho2(k1:k2))
-             ALLOCATE(gsr(nu,nv,k1:k2),gsp(nu,nv,k1:k2),gsz(nu,nv,k1:k2),&
-                  gs(nu,nv,k1:k2))
-             ! Calc grad(s) components dR/du X dR/dv / sqrt(g)
-             !    Note component of R_spl comes from dphi/dphi and cyl coordinates
-             gsr = - Zu_spl%fspl(1,:,:,:)*R_spl%fspl(1,:,:,:)
-             gsp = (Zu_spl%fspl(1,:,:,:)*Rv_spl%fspl(1,:,:,:) - Ru_spl%fspl(1,:,:,:)*Zv_spl%fspl(1,:,:,:))*nfp
-             gsz =   Ru_spl%fspl(1,:,:,:)*R_spl%fspl(1,:,:,:)
-             f_temp   = G_spl%fspl(1,:,:,:)
-             gs  = (gsr*gsr+gsp*gsp+gsz*gsz)/(f_temp*f_temp)  !|grad(s)|^2
-             FORALL(u=k1:k2) gs(:,:,u) = gs(:,:,u)/(4*rho(u)) !|grad(rho)|^2
-             ! dV/ds
-             Vp = SUM(SUM(f_temp,DIM=1),DIM=1)
-             !Vp(1) = 2*Vp(2) - Vp(3)
-             ! <|grad(rho)|^2>
-             grho2 = SUM(SUM(gs*f_temp,DIM=1),DIM=1)
-             grho2 = grho2 / Vp
-             grho2(1) = 2*grho2(2) - grho2(3)
-             ! <|grad(rho|>|
-             gs = sqrt(gs) !|grad(rho)|
-             grho = SUM(SUM(gs*f_temp,DIM=1),DIM=1)
-             grho = grho / Vp
-             grho(1) = 2*grho(2) - grho(3)
-             ! Construct splines
-             CALL EZspline_setup(Vp_spl,ABS(Vp*pi2*pi2/(nu*nv)),iflag) ! ABS because of negative Jacobian
-             CALL EZspline_setup(grho_spl,grho,iflag)
-             CALL EZspline_setup(grho2_spl,grho2,iflag)
-             f_temp = 0; grho = 0
-             ! Calc S11
-             f_temp = (Ru_spl%fspl(1,:,:,:)*Ru_spl%fspl(1,:,:,:)+ &
-                  Zu_spl%fspl(1,:,:,:)*Zu_spl%fspl(1,:,:,:))
-             f_temp = f_temp / G_spl%fspl(1,:,:,:)
-             grho   = SUM(SUM(f_temp,DIM=1),DIM=1)/(nu*nv)
-             grho(1) = 2*grho(2) - grho(3)
-             CALL EZspline_setup(S11_spl,grho,iflag); f_temp = 0; grho = 0
-             ! Calc S21
-             f_temp = (Ru_spl%fspl(1,:,:,:)*Rv_spl%fspl(1,:,:,:)+ &
-                  Zu_spl%fspl(1,:,:,:)*Zv_spl%fspl(1,:,:,:))*nfp
-             f_temp = f_temp / G_spl%fspl(1,:,:,:)
-             grho   = SUM(SUM(f_temp,DIM=1),DIM=1)/(nu*nv)
-             grho(1) = 2*grho(2) - grho(3)
-             CALL EZspline_setup(S21_spl,grho,iflag); f_temp = 0; grho = 0
-             ! Calc S12
-             f_temp = (Ru_spl%fspl(1,:,:,:)*Rv_spl%fspl(1,:,:,:)+ &
-                  Zu_spl%fspl(1,:,:,:)*Zv_spl%fspl(1,:,:,:))* &
-                  (one+Lu_spl%fspl(1,:,:,:))*nfp
-             f_temp = f_temp - (Ru_spl%fspl(1,:,:,:)*Ru_spl%fspl(1,:,:,:)+ &
-                  Zu_spl%fspl(1,:,:,:)*Zu_spl%fspl(1,:,:,:))*&
-                  Lv_spl%fspl(1,:,:,:)
-             f_temp = f_temp / G_spl%fspl(1,:,:,:)
-             grho   = SUM(SUM(f_temp,DIM=1),DIM=1)/(nu*nv)
-             grho(1) = 2*grho(2) - grho(3)
-             CALL EZspline_setup(S12_spl,grho,iflag); f_temp = 0; grho = 0
-             ! Calc S22
-             f_temp = (Rv_spl%fspl(1,:,:,:)*Rv_spl%fspl(1,:,:,:)*nfp*nfp+ &
-                  Zv_spl%fspl(1,:,:,:)*Zv_spl%fspl(1,:,:,:)*nfp*nfp+ &
-                  R_spl%fspl(1,:,:,:)* R_spl%fspl(1,:,:,:))* &
-                  (one+Lu_spl%fspl(1,:,:,:))
-             f_temp = f_temp - (Ru_spl%fspl(1,:,:,:)*Rv_spl%fspl(1,:,:,:)+ &
-                  Zu_spl%fspl(1,:,:,:)*Zv_spl%fspl(1,:,:,:))*&
-                  Lv_spl%fspl(1,:,:,:)*nfp
-             f_temp = f_temp / G_spl%fspl(1,:,:,:)
-             grho   = SUM(SUM(f_temp,DIM=1),DIM=1)/(nu*nv)
-             !grho(1) = 2*grho(2) - grho(3)
-             CALL EZspline_setup(S22_spl,grho,iflag); f_temp = 0; grho = 0
-             DEALLOCATE(gsr,gsp,gsz,gs,Vp,grho,grho2)
-             f_temp = 0
-          END IF
-      
-          ! DEALLOCATIONS
+          CALL EZspline_setup(Zv_spl,f_temp,ez_status); f_temp = 0
+
+          IF (ez_status .NE. 0) error_status = -1*ez_status-200
+          
+          ! deallocations
           DEALLOCATE(xu,xv,rho)
           DEALLOCATE(f_temp)
-          ! Return
-          RETURN
-        END SUBROUTINE load_fourier_geom_dbl
+          DEALLOCATE(fmn_temp)
 
-        SUBROUTINE load_fourier_geom_sgl( &
-          k1 &
-          ,k2 &
-          ,mnmax &
-          ,nu &
-          ,nv &
-          ,xm &
-          ,xn_in &
-          ,iflag &
-          ,rmnc &
-          ,zmns &
-          ,rmns &
-          ,zmnc &
-          ,bsmns &
-          ,bumnc &
-          ,bvmnc &
-          ,bsmnc &
-          ,bumns &
-          ,bvmns &
-          ,lmns &
-          ,lmnc &
-          ,bmnc &
-          ,bmns &
-          ,gmnc &
-          ,gmns)
-          
+        END SUBROUTINE initialize_splines_rzderiv
+
+        
+        SUBROUTINE initialize_splines_b(error_status, nu, nv)  
           USE EZspline
           IMPLICIT NONE
-          INTEGER, INTENT(in)        :: k1
-          INTEGER, INTENT(in)        :: k2
-          INTEGER, INTENT(in)        :: mnmax
-          INTEGER, INTENT(in)        :: nu
-          INTEGER, INTENT(in)        :: nv
-          INTEGER, INTENT(in) :: xm(1:mnmax)
-          INTEGER, INTENT(in) :: xn_in(1:mnmax)
-          INTEGER, INTENT(inout) :: iflag
-          REAL, INTENT(in) :: rmnc(1:mnmax,k1:k2), zmns(1:mnmax,k1:k2)
-          REAL, INTENT(in),OPTIONAL :: rmns(1:mnmax,k1:k2) &
-                                       ,zmnc(1:mnmax,k1:k2)
-          REAL, INTENT(in),OPTIONAL :: bsmns(1:mnmax,k1:k2) &
-                                       ,bumnc(1:mnmax,k1:k2) &
-                                       ,bvmnc(1:mnmax,k1:k2)
-          REAL, INTENT(in),OPTIONAL :: bsmnc(1:mnmax,k1:k2) &
-                                       ,bumns(1:mnmax,k1:k2) &
-                                       ,bvmns(1:mnmax,k1:k2)
-          REAL, INTENT(in),OPTIONAL :: lmns(1:mnmax,k1:k2), lmnc(1:mnmax,k1:k2)
-          REAL, INTENT(in),OPTIONAL :: bmnc(1:mnmax,k1:k2), bmns(1:mnmax,k1:k2)
-          REAL, INTENT(in),OPTIONAL :: gmnc(1:mnmax,k1:k2), gmns(1:mnmax,k1:k2)
-          DOUBLE PRECISION :: rmnc_dbl(1:mnmax,k1:k2), zmns_dbl(1:mnmax,k1:k2)
-          DOUBLE PRECISION :: rmns_dbl(1:mnmax,k1:k2), zmnc_dbl(1:mnmax,k1:k2)
-          DOUBLE PRECISION :: bsmns_dbl(1:mnmax,k1:k2) &
-                              ,bumnc_dbl(1:mnmax,k1:k2) &
-                              ,bvmnc_dbl(1:mnmax,k1:k2)
-          DOUBLE PRECISION :: bsmnc_dbl(1:mnmax,k1:k2) &
-                              ,bumns_dbl(1:mnmax,k1:k2) &
-                              ,bvmns_dbl(1:mnmax,k1:k2)
-          DOUBLE PRECISION :: lmns_dbl(1:mnmax,k1:k2), lmnc_dbl(1:mnmax,k1:k2)
-          DOUBLE PRECISION :: bmnc_dbl(1:mnmax,k1:k2), bmns_dbl(1:mnmax,k1:k2)
-          DOUBLE PRECISION :: gmnc_dbl(1:mnmax,k1:k2), gmns_dbl(1:mnmax,k1:k2)
-          rmnc_dbl = rmnc
-          zmns_dbl = zmns
-          rmns_dbl = 0; zmnc_dbl = 0
-          bsmns_dbl = 0; bumnc_dbl = 0; bvmnc_dbl = 0
-          bsmnc_dbl = 0; bumns_dbl = 0; bvmns_dbl = 0
-          lmns_dbl = 0; lmnc_dbl = 0
-          bmnc_dbl = 0; bmns_dbl = 0
-          gmnc_dbl = 0; gmns_dbl = 0
-          IF (PRESENT(rmns)) rmns_dbl = rmns
-          IF (PRESENT(zmnc)) zmnc_dbl = zmnc
-          IF (PRESENT(bsmns)) bsmns_dbl = bsmns
-          IF (PRESENT(bsmnc)) bsmnc_dbl = bsmnc
-          IF (PRESENT(bumns)) bumns_dbl = bumns
-          IF (PRESENT(bumnc)) bumnc_dbl = bumnc
-          IF (PRESENT(bvmns)) bvmns_dbl = bvmns
-          IF (PRESENT(bvmnc)) bvmnc_dbl = bvmnc
-          IF (PRESENT(lmns)) lmns_dbl = lmns
-          IF (PRESENT(lmnc)) lmnc_dbl = lmnc
-          IF (PRESENT(bmns)) bmns_dbl = bmns
-          IF (PRESENT(bmnc)) bmnc_dbl = bmnc
-          CALL load_fourier_geom_dbl( &
-            k1 &
-            ,k2 &
-            ,mnmax &
-            ,nu &
-            ,nv &
-            ,xm &
-            ,xn_in &
-            ,iflag &
-            ,rmnc_dbl &
-            ,zmns_dbl &
-            ,RMNS=rmns_dbl &
-            ,ZMNC=zmnc_dbl &
-            ,BSMNS=bsmns_dbl &
-            ,BUMNC=bumnc_dbl &
-            ,BVMNC=bvmnc_dbl &
-            ,BSMNC=bsmnc_dbl &
-            ,BUMNS=bumns_dbl &
-            ,BVMNS=bvmns_dbl &
-            ,LMNS=lmns_dbl &
-            ,LMNC=lmnc_dbl &
-            ,BMNC=bmnc_dbl &
-            ,BMNS=bmns_dbl &
-            ,GMNC=gmnc_dbl &
-            ,GMNS=gmns_dbl)
-          RETURN
-        END SUBROUTINE load_fourier_geom_sgl
+          INTEGER, INTENT(out)       :: error_status
+          INTEGER, INTENT(in), OPTIONAL :: nu
+          INTEGER, INTENT(in), OPTIONAL :: nv
+          INTEGER :: nu_local, nv_local
+          INTEGER :: ez_status
+          INTEGER ::  u, mn
+          DOUBLE PRECISION, ALLOCATABLE :: xu(:), xv(:), rho(:)
+          DOUBLE PRECISION, ALLOCATABLE :: f_temp(:,:,:)
+      
+          error_status = 0
+
+          IF (PRESENT(nu) .AND. PRESENT(nv)) THEN
+             nu_local = nu
+             nv_local = nv
+          ELSE
+             CALL guess_nu_nv(nu_local, nv_local, error_status)
+          END IF
+
+          PRINT '("Inititalizing b-field splines with nu=", i0, " nv=", i0)', nu_local, nv_local
+          
+          ! Check module initalization.
+          IF (.NOT. ALLOCATED(xm)) THEN
+             error_status = -4
+             RETURN
+          ENDIF
+          
+          !Allocations
+          ALLOCATE(xu(nu_local),xv(nv_local),rho(k1:k2))
+          ALLOCATE(f_temp(nu_local,nv_local,k1:k2))
+          
+          f_temp = 0
+          FORALL(u=k1:k2) rho(u) = REAL(u-1)/REAL(ns_t-1)
+          FORALL(u=1:nu_local) xu(u) = REAL(u-1)/REAL(nu_local-1)
+          FORALL(u=1:nv_local) xv(u) = REAL(u-1)/REAL(nv_local-1)
+          
+          ! Free Memory
+          IF (EZspline_allocated(Bs_spl)) CALL EZspline_free(Bs_spl,ez_status)
+          IF (EZspline_allocated(Bu_spl)) CALL EZspline_free(Bu_spl,ez_status)
+          IF (EZspline_allocated(Bv_spl)) CALL EZspline_free(Bv_spl,ez_status)
+          IF (EZspline_allocated(B_spl)) CALL EZspline_free(B_spl,ez_status)
+          
+          ! Preform Init
+          CALL EZspline_init(Bs_spl,nu_local,nv_local,ns_t,bcs1,bcs1,bcs0,ez_status)
+          CALL EZspline_init(Bu_spl,nu_local,nv_local,ns_t,bcs1,bcs1,bcs0,ez_status)
+          CALL EZspline_init(Bv_spl,nu_local,nv_local,ns_t,bcs1,bcs1,bcs0,ez_status)
+          CALL EZspline_init(B_spl,nu_local,nv_local,ns_t,bcs1,bcs1,bcs0,ez_status)
+          
+          ! B^s
+          ! In VMEC B^s is defined as zero, so we don't need to calculate this one.
+          Bs_spl%x1 = xu*pi2; Bs_spl%x2 = xv*pi2; Bs_spl%x3 = rho; Bs_spl%isHermite = isherm
+          !IF (lasym) CALL mntouv(k1,k2,mnmax,nu_local,nv_local,xu,xv,bsmns,xm,xn,f_temp,1,0)
+          !IF (lasym) CALL mntouv(k1,k2,mnmax,nu_local,nv_local,xu,xv,bsmnc,xm,xn,f_temp,0,0)
+          CALL EZspline_setup(Bs_spl,f_temp,ez_status); f_temp = 0
+          ! B^u
+          Bu_spl%x1 = xu*pi2; Bu_spl%x2 = xv*pi2; Bu_spl%x3 = rho; Bu_spl%isHermite = isherm
+          CALL mntouv(k1,k2,mnmax,nu_local,nv_local,xu,xv,bsupumnc,xm,xn,f_temp,0,0)
+          IF (lasym) CALL mntouv(k1,k2,mnmax,nu_local,nv_local,xu,xv,bsupumns,xm,xn,f_temp,1,0)
+          CALL EZspline_setup(Bu_spl,f_temp,ez_status); f_temp = 0
+          ! B^v
+          Bv_spl%x1 = xu*pi2; Bv_spl%x2 = xv*pi2; Bv_spl%x3 = rho; Bv_spl%isHermite = isherm
+          CALL mntouv(k1,k2,mnmax,nu_local,nv_local,xu,xv,bsupvmnc,xm,xn,f_temp,0,0)
+          IF (lasym) CALL mntouv(k1,k2,mnmax,nu_local,nv_local,xu,xv,bsupvmns,xm,xn,f_temp,1,0)
+          CALL EZspline_setup(Bv_spl,f_temp,ez_status); f_temp = 0
+          ! ModB
+          B_spl%x1 = xu*pi2; B_spl%x2 = xv*pi2; B_spl%x3 = rho; B_spl%isHermite = isherm
+          CALL mntouv(k1,k2,mnmax,nu_local,nv_local,xu,xv,bmnc,xm,xn,f_temp,0,0)
+          IF (lasym) CALL mntouv(k1,k2,mnmax,nu_local,nv_local,xu,xv,bmns,xm,xn,f_temp,1,0)
+          CALL EZspline_setup(B_spl,f_temp,ez_status); f_temp = 0
+          
+          IF (ez_status .NE. 0) error_status = -1*ez_status-200
+          
+          ! deallocations
+          DEALLOCATE(xu,xv,rho)
+          DEALLOCATE(f_temp)
+
+        END SUBROUTINE initialize_splines_b        
+
+        
+        SUBROUTINE initialize_splines_lambda(error_status, nu, nv)  
+          USE EZspline
+          IMPLICIT NONE
+          INTEGER, INTENT(out)       :: error_status
+          INTEGER, INTENT(in), OPTIONAL :: nu
+          INTEGER, INTENT(in), OPTIONAL :: nv
+          INTEGER :: nu_local, nv_local
+          INTEGER :: ez_status
+          INTEGER ::  u, mn
+          DOUBLE PRECISION, ALLOCATABLE :: xu(:), xv(:), rho(:)
+          DOUBLE PRECISION, ALLOCATABLE :: f_temp(:,:,:)
+          DOUBLE PRECISION, ALLOCATABLE :: fmn_temp(:,:)
+   
+          error_status = 0
+
+          IF (PRESENT(nu) .AND. PRESENT(nv)) THEN
+             nu_local = nu
+             nv_local = nv
+          ELSE
+             CALL guess_nu_nv(nu_local, nv_local, error_status)
+          END IF
+
+          PRINT '("Inititalizing flux surface average splines with nu=", i0, " nv=", i0)', nu_local, nv_local
+          
+          ! Check module initalization.
+          IF (.NOT. ALLOCATED(xm)) THEN
+             error_status = -4
+             RETURN
+          ENDIF
+          
+          !Allocations
+          ALLOCATE(xu(nu_local),xv(nv_local),rho(k1:k2))
+          ALLOCATE(f_temp(nu_local,nv_local,k1:k2))
+          
+          f_temp = 0
+          FORALL(u=k1:k2) rho(u) = REAL(u-1)/REAL(ns_t-1)
+          FORALL(u=1:nu_local) xu(u) = REAL(u-1)/REAL(nu_local-1)
+          FORALL(u=1:nv_local) xv(u) = REAL(u-1)/REAL(nv_local-1)
+          
+          ! Free Memory
+          IF (EZspline_allocated(L_spl)) CALL EZspline_free(L_spl,ez_status)
+          IF (EZspline_allocated(Lu_spl)) CALL EZspline_free(Lu_spl,ez_status)
+          IF (EZspline_allocated(Lv_spl)) CALL EZspline_free(Lv_spl,ez_status)
+             
+          ! Preform Init
+          CALL EZspline_init(L_spl,nu_local,nv_local,ns_t,bcs1,bcs1,bcs0,ez_status)
+          CALL EZspline_init(Lu_spl,nu_local,nv_local,ns_t,bcs1,bcs1,bcs0,ez_status)
+          CALL EZspline_init(Lv_spl,nu_local,nv_local,ns_t,bcs1,bcs1,bcs0,ez_status)
+          
+          ! Lambda
+          L_spl%x1 = xu*pi2; L_spl%x2 = xv*pi2; L_spl%x3 = rho; L_spl%isHermite = isherm
+          CALL mntouv(k1,k2,mnmax,nu_local,nv_local,xu,xv,lmns,xm,xn,f_temp,1,0)
+          IF (lasym) CALL mntouv(k1,k2,mnmax,nu_local,nv_local,xu,xv,lmnc,xm,xn,f_temp,0,0)
+          CALL EZspline_setup(L_spl,f_temp,ez_status); f_temp = 0
+          ! Lambda/u
+          Lu_spl%x1 = xu*pi2; Lu_spl%x2 = xv*pi2; Lu_spl%x3 = rho; Lu_spl%isHermite = isherm
+          FORALL(mn = 1:mnmax) fmn_temp(mn,:) = lmns(mn,:)*xm(mn)
+          CALL mntouv(k1,k2,mnmax,nu_local,nv_local,xu,xv,fmn_temp,xm,xn,f_temp,0,0)
+          IF (lasym) THEN
+             FORALL(mn = 1:mnmax) fmn_temp(mn,:) = -lmnc(mn,:)*xm(mn)
+             CALL mntouv(k1,k2,mnmax,nu_local,nv_local,xu,xv,fmn_temp,xm,xn,f_temp,1,0)
+          END IF
+          CALL EZspline_setup(Lu_spl,f_temp,ez_status); f_temp = 0
+          ! Lambda/v
+          Lv_spl%x1 = xu*pi2; Lv_spl%x2 = xv*pi2; Lv_spl%x3 = rho; Lv_spl%isHermite = isherm
+          FORALL(mn = 1:mnmax) fmn_temp(mn,:) = lmns(mn,:)*xn(mn)
+          CALL mntouv(k1,k2,mnmax,nu_local,nv_local,xu,xv,fmn_temp,xm,xn,f_temp,0,0)
+          IF (lasym) THEN
+             FORALL(mn = 1:mnmax) fmn_temp(mn,:) = -lmnc(mn,:)*xn(mn)
+             CALL mntouv(k1,k2,mnmax,nu_local,nv_local,xu,xv,fmn_temp,xm,xn,f_temp,1,0)
+          END IF
+          CALL EZspline_setup(Lv_spl,f_temp,ez_status); f_temp = 0
+          
+          IF (ez_status .NE. 0) error_status = -1*ez_status-200
+          
+          ! deallocations
+          DEALLOCATE(xu,xv,rho)
+          DEALLOCATE(f_temp)
+          DEALLOCATE(fmn_temp)
+
+        END SUBROUTINE initialize_splines_lambda
+
+        
+        SUBROUTINE initialize_splines_jacobian(error_status, nu, nv)  
+          USE EZspline
+          IMPLICIT NONE
+          INTEGER, INTENT(out)       :: error_status
+          INTEGER, INTENT(in), OPTIONAL :: nu
+          INTEGER, INTENT(in), OPTIONAL :: nv
+          INTEGER :: nu_local, nv_local
+          INTEGER :: ez_status
+          INTEGER ::  u, mn
+          DOUBLE PRECISION, ALLOCATABLE :: xu(:), xv(:), rho(:)
+          DOUBLE PRECISION, ALLOCATABLE :: f_temp(:,:,:)
+   
+          error_status = 0
+
+          IF (PRESENT(nu) .AND. PRESENT(nv)) THEN
+             nu_local = nu
+             nv_local = nv
+          ELSE
+             CALL guess_nu_nv(nu_local, nv_local, error_status)
+          END IF
+
+          PRINT '("Inititalizing flux surface average splines with nu=", i0, " nv=", i0)', nu_local, nv_local
+          ! Check module initalization.
+          IF (.NOT. ALLOCATED(xm)) THEN
+             error_status = -4
+             RETURN
+          ENDIF
+          
+          !Allocations
+          ALLOCATE(xu(nu_local),xv(nv_local),rho(k1:k2))
+          ALLOCATE(f_temp(nu_local,nv_local,k1:k2))
+          
+          f_temp = 0
+          FORALL(u=k1:k2) rho(u) = REAL(u-1)/REAL(ns_t-1)
+          FORALL(u=1:nu_local) xu(u) = REAL(u-1)/REAL(nu_local-1)
+          FORALL(u=1:nv_local) xv(u) = REAL(u-1)/REAL(nv_local-1)
+          
+          ! Free Memory
+          IF (EZspline_allocated(G_spl)) CALL EZspline_free(G_spl,ez_status)
+             
+          ! Preform Init
+          CALL EZspline_init(G_spl,nu_local,nv_local,ns_t,bcs1,bcs1,bcs0,ez_status)
+             
+          ! Jacobian sqrt(g)
+          G_spl%x1 = xu*pi2; G_spl%x2 = xv*pi2; G_spl%x3 = rho; G_spl%isHermite = isherm
+          CALL mntouv(k1,k2,mnmax,nu_local,nv_local,xu,xv,gmnc,xm,xn,f_temp,0,0)
+          IF (lasym) CALL mntouv(k1,k2,mnmax,nu_local,nv_local,xu,xv,gmns,xm,xn,f_temp,1,0)
+          CALL EZspline_setup(G_spl,f_temp,ez_status); f_temp = 0
+          
+          IF (ez_status .NE. 0) error_status = -1*ez_status-200
+          
+          ! deallocations
+          DEALLOCATE(xu,xv,rho)
+          DEALLOCATE(f_temp)
+
+        END SUBROUTINE initialize_splines_jacobian
+
+        
+        SUBROUTINE initialize_splines_fsa(error_status, nu, nv)  
+          USE EZspline
+          IMPLICIT NONE
+          INTEGER, INTENT(out)       :: error_status
+          INTEGER, INTENT(in), OPTIONAL :: nu
+          INTEGER, INTENT(in), OPTIONAL :: nv
+          INTEGER :: nu_local, nv_local
+          INTEGER :: ez_status
+          INTEGER ::  u, mn
+          DOUBLE PRECISION, ALLOCATABLE :: xu(:), xv(:), rho(:)
+          DOUBLE PRECISION, ALLOCATABLE :: f_temp(:,:,:)
+          DOUBLE PRECISION, ALLOCATABLE :: vp(:), grho(:), grho2(:) 
+          DOUBLE PRECISION, ALLOCATABLE :: gsr(:,:,:), gsp(:,:,:), gsz(:,:,:), gs(:,:,:)      
+          error_status = 0
+
+          IF (PRESENT(nu) .AND. PRESENT(nv)) THEN
+             nu_local = nu
+             nv_local = nv
+          ELSE
+             CALL guess_nu_nv(nu_local, nv_local, error_status)
+          END IF
+
+          PRINT '("Inititalizing flux surface average splines with nu=", i0, " nv=", i0)', nu_local, nv_local
+          ! Check module initalization.
+          IF (.NOT. ALLOCATED(xm)) THEN
+             error_status = -4
+             RETURN
+          ENDIF
+
+          ! Check spline initialization.
+          IF (.NOT. EZspline_allocated(R_spl)) CALL initialize_splines_rz(error_status, nu_local, nv_local)
+          IF (.NOT. EZspline_allocated(Ru_spl)) CALL initialize_splines_rzderiv(error_status, nu_local, nv_local)
+          IF (.NOT. EZspline_allocated(G_spl)) CALL initialize_splines_jacobian(error_status, nu_local, nv_local)
+          
+          !Allocations
+          ALLOCATE(xu(nu_local),xv(nv_local),rho(k1:k2))
+          ALLOCATE(f_temp(nu_local,nv_local,k1:k2))
+          
+          f_temp = 0
+          FORALL(u=k1:k2) rho(u) = REAL(u-1)/REAL(ns_t-1)
+          FORALL(u=1:nu_local) xu(u) = REAL(u-1)/REAL(nu_local-1)
+          FORALL(u=1:nv_local) xv(u) = REAL(u-1)/REAL(nv_local-1)
+          
+          ! Free Memory
+          IF (EZspline_allocated(Vp_spl)) CALL EZspline_free(Vp_spl,ez_status)
+          IF (EZspline_allocated(grho_spl)) CALL EZspline_free(grho_spl,ez_status)
+          IF (EZspline_allocated(grho2_spl)) CALL EZspline_free(grho2_spl,ez_status)
+             
+          ! Preform Init
+          CALL EZspline_init(Vp_spl,ns_t,bcs0,ez_status)
+          CALL EZspline_init(grho_spl,ns_t,bcs0,ez_status)
+          CALL EZspline_init(grho2_spl,ns_t,bcs0,ez_status)
+
+          
+          ALLOCATE(Vp(k1:k2),grho(k1:k2),grho2(k1:k2))
+          ALLOCATE(gsr(nu_local,nv_local,k1:k2),gsp(nu_local,nv_local,k1:k2),gsz(nu_local,nv_local,k1:k2),&
+               gs(nu_local,nv_local,k1:k2))
+          ! Calc grad(s) components dR/du X dR/dv / sqrt(g)
+          !    Note component of R_spl comes from dphi/dphi and cyl coordinates
+          gsr = - Zu_spl%fspl(1,:,:,:)*R_spl%fspl(1,:,:,:)
+          gsp = (Zu_spl%fspl(1,:,:,:)*Rv_spl%fspl(1,:,:,:) - Ru_spl%fspl(1,:,:,:)*Zv_spl%fspl(1,:,:,:))*nfp
+          gsz =   Ru_spl%fspl(1,:,:,:)*R_spl%fspl(1,:,:,:)
+          f_temp   = G_spl%fspl(1,:,:,:)
+          gs  = (gsr*gsr+gsp*gsp+gsz*gsz)/(f_temp*f_temp)  !|grad(s)|^2
+          FORALL(u=k1:k2) gs(:,:,u) = gs(:,:,u)/(4*rho(u)) !|grad(rho)|^2
+          ! dV/ds
+          Vp = SUM(SUM(f_temp,DIM=1),DIM=1)
+          !Vp(1) = 2*Vp(2) - Vp(3)
+          ! <|grad(rho)|^2>
+          grho2 = SUM(SUM(gs*f_temp,DIM=1),DIM=1)
+          grho2 = grho2 / Vp
+          grho2(1) = 2*grho2(2) - grho2(3)
+          ! <|grad(rho|>|
+          gs = sqrt(gs) !|grad(rho)|
+          grho = SUM(SUM(gs*f_temp,DIM=1),DIM=1)
+          grho = grho / Vp
+          grho(1) = 2*grho(2) - grho(3)
+          ! Construct splines
+          CALL EZspline_setup(Vp_spl,ABS(Vp*pi2*pi2/(nu_local*nv_local)),ez_status) ! ABS because of negative Jacobian
+          CALL EZspline_setup(grho_spl,grho,ez_status)
+          CALL EZspline_setup(grho2_spl,grho2,ez_status)
+          f_temp = 0; grho = 0
+          
+          IF (ez_status .NE. 0) error_status = -1*ez_status-200
+          
+          ! deallocations
+          DEALLOCATE(gsr,gsp,gsz,gs,Vp,grho,grho2)
+          DEALLOCATE(xu,xv,rho)
+          DEALLOCATE(f_temp)
+
+        END SUBROUTINE initialize_splines_fsa
+
+        
+        SUBROUTINE initialize_splines_susceptance(error_status, nu, nv)  
+          USE EZspline
+          IMPLICIT NONE
+          INTEGER, INTENT(out)       :: error_status
+          INTEGER, INTENT(in), OPTIONAL :: nu
+          INTEGER, INTENT(in), OPTIONAL :: nv
+          INTEGER :: nu_local, nv_local
+          INTEGER :: ez_status
+          INTEGER ::  u, mn
+          DOUBLE PRECISION, ALLOCATABLE :: xu(:), xv(:), rho(:)
+          DOUBLE PRECISION, ALLOCATABLE :: f_temp(:,:,:)
+          DOUBLE PRECISION, ALLOCATABLE :: vp(:), grho(:), grho2(:) 
+          DOUBLE PRECISION, ALLOCATABLE :: gsr(:,:,:), gsp(:,:,:), gsz(:,:,:), gs(:,:,:)      
+          error_status = 0
+
+          IF (PRESENT(nu) .AND. PRESENT(nv)) THEN
+             nu_local = nu
+             nv_local = nv
+          ELSE
+             CALL guess_nu_nv(nu_local, nv_local, error_status)
+          END IF
+
+          PRINT '("Inititalizing flux surface average splines with nu=", i0, " nv=", i0)', nu_local, nv_local
+          
+          ! Check module initalization.
+          IF (.NOT. ALLOCATED(xm)) THEN
+             error_status = -4
+             RETURN
+          ENDIF
+
+          ! Check spline initialization.
+          IF (.NOT. EZspline_allocated(R_spl)) CALL initialize_splines_rz(error_status, nu_local, nv_local)
+          IF (.NOT. EZspline_allocated(Ru_spl)) CALL initialize_splines_rzderiv(error_status, nu_local, nv_local)
+          IF (.NOT. EZspline_allocated(G_spl)) CALL initialize_splines_jacobian(error_status, nu_local, nv_local)
+          
+          !Allocations
+          ALLOCATE(xu(nu_local),xv(nv_local),rho(k1:k2))
+          ALLOCATE(f_temp(nu_local,nv_local,k1:k2))
+          
+          f_temp = 0
+          FORALL(u=k1:k2) rho(u) = REAL(u-1)/REAL(ns_t-1)
+          FORALL(u=1:nu_local) xu(u) = REAL(u-1)/REAL(nu_local-1)
+          FORALL(u=1:nv_local) xv(u) = REAL(u-1)/REAL(nv_local-1)
+          
+          ! Free Memory
+          IF (EZspline_allocated(S11_spl)) CALL EZspline_free(S11_spl,ez_status)
+          IF (EZspline_allocated(S12_spl)) CALL EZspline_free(S12_spl,ez_status)
+          IF (EZspline_allocated(S21_spl)) CALL EZspline_free(S21_spl,ez_status)
+          IF (EZspline_allocated(S22_spl)) CALL EZspline_free(S22_spl,ez_status)
+             
+          ! Preform Init
+          CALL EZspline_init(S11_spl,ns_t,bcs0,ez_status)
+          CALL EZspline_init(S12_spl,ns_t,bcs0,ez_status)
+          CALL EZspline_init(S21_spl,ns_t,bcs0,ez_status)
+          CALL EZspline_init(S22_spl,ns_t,bcs0,ez_status)
+             
+          ! Calc S11
+          f_temp = (Ru_spl%fspl(1,:,:,:)*Ru_spl%fspl(1,:,:,:)+ &
+               Zu_spl%fspl(1,:,:,:)*Zu_spl%fspl(1,:,:,:))
+          f_temp = f_temp / G_spl%fspl(1,:,:,:)
+          grho   = SUM(SUM(f_temp,DIM=1),DIM=1)/(nu_local*nv_local)
+          grho(1) = 2*grho(2) - grho(3)
+          CALL EZspline_setup(S11_spl,grho,ez_status); f_temp = 0; grho = 0
+          ! Calc S21
+          f_temp = (Ru_spl%fspl(1,:,:,:)*Rv_spl%fspl(1,:,:,:)+ &
+               Zu_spl%fspl(1,:,:,:)*Zv_spl%fspl(1,:,:,:))*nfp
+          f_temp = f_temp / G_spl%fspl(1,:,:,:)
+          grho   = SUM(SUM(f_temp,DIM=1),DIM=1)/(nu_local*nv_local)
+          grho(1) = 2*grho(2) - grho(3)
+          CALL EZspline_setup(S21_spl,grho,ez_status); f_temp = 0; grho = 0
+          ! Calc S12
+          f_temp = (Ru_spl%fspl(1,:,:,:)*Rv_spl%fspl(1,:,:,:)+ &
+               Zu_spl%fspl(1,:,:,:)*Zv_spl%fspl(1,:,:,:))* &
+               (one+Lu_spl%fspl(1,:,:,:))*nfp
+          f_temp = f_temp - (Ru_spl%fspl(1,:,:,:)*Ru_spl%fspl(1,:,:,:)+ &
+               Zu_spl%fspl(1,:,:,:)*Zu_spl%fspl(1,:,:,:))*&
+               Lv_spl%fspl(1,:,:,:)
+          f_temp = f_temp / G_spl%fspl(1,:,:,:)
+          grho   = SUM(SUM(f_temp,DIM=1),DIM=1)/(nu_local*nv_local)
+          grho(1) = 2*grho(2) - grho(3)
+          CALL EZspline_setup(S12_spl,grho,ez_status); f_temp = 0; grho = 0
+          ! Calc S22
+          f_temp = (Rv_spl%fspl(1,:,:,:)*Rv_spl%fspl(1,:,:,:)*nfp*nfp+ &
+               Zv_spl%fspl(1,:,:,:)*Zv_spl%fspl(1,:,:,:)*nfp*nfp+ &
+               R_spl%fspl(1,:,:,:)* R_spl%fspl(1,:,:,:))* &
+               (one+Lu_spl%fspl(1,:,:,:))
+          f_temp = f_temp - (Ru_spl%fspl(1,:,:,:)*Rv_spl%fspl(1,:,:,:)+ &
+               Zu_spl%fspl(1,:,:,:)*Zv_spl%fspl(1,:,:,:))*&
+               Lv_spl%fspl(1,:,:,:)*nfp
+          f_temp = f_temp / G_spl%fspl(1,:,:,:)
+          grho   = SUM(SUM(f_temp,DIM=1),DIM=1)/(nu_local*nv_local)
+          !grho(1) = 2*grho(2) - grho(3)
+          CALL EZspline_setup(S22_spl,grho,ez_status); f_temp = 0; grho = 0
+          DEALLOCATE(gsr,gsp,gsz,gs,Vp,grho,grho2)
+          
+          IF (ez_status .NE. 0) error_status = -1*ez_status-200
+          
+          ! deallocations
+          DEALLOCATE(gsr,gsp,gsz,gs,Vp,grho,grho2)
+          DEALLOCATE(xu,xv,rho)
+          DEALLOCATE(f_temp)
+
+        END SUBROUTINE initialize_splines_susceptance
 
         
         SUBROUTINE rzfunct_stel_tool(m,n,x,fvec,fjac,ldfjac,iflag)
