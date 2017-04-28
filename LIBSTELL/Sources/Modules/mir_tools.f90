@@ -1,16 +1,58 @@
-!-------------------------------------------------------------------------------
+! ------------------------------------------------------------------------------
 !     Module:        mir_tools
 !     Authors:       S. Lazerson (lazerson@pppl.gov)
 !                    N. Pablant (npablant@pppl.gov)
 !     Date:          2017-04-26
-!     Description:   This module is designed as a replacement to the  AJAX
-!                    stellarator utilities.  It provides routines for the
-!                    inversion of stellerator equilibira.
 !
-!                    This is rewrite of the stel_tools modules designed to
-!                    have a more generalized interface.
+!     Description:
+!       This module is designed as a replacement to the  AJAX stellarator
+!       utilities.  It provides routines for the inversion of stellerator 
+!       equilibira.
 !
-!     LOAD_FOURIER_GEOM(k1,k2,mnmax,nu,nv,xm,xn,iflag,rmnc,zmns)
+!       This is rewrite of the stel_tools modules designed to have a more
+!       generalized interface.
+!
+!     Initialization:
+!       This module must be initialized before being used.  This consists
+!       of loading a wout file and initialzing the module.
+!
+!       Optionally the splines can be initialized as well by calling:
+!         initialize_splines(error_status, nu, nv)
+!       or calling one or more of the individual spline initialization
+!       routines. The optional inputs nu, nv control the number of
+!       points in the poloidal and toroidal used to construct the splines.
+!
+!       If the splines are not initialized manually, the will be
+!       initialized on the fly when needed, using the default values
+!       of nu and nv.
+!
+!
+!     Programming Notes:
+!        Where the code takes v_val as an input it is asking for a value
+!        running from 0 to 2*pi over a field period.  However,
+!        where the code takes phi_val as an input it is asking for
+!        the real toroidal angle, 0 to 2*pi over the device.  So
+!        phi_val = v_val/nfp.
+!
+!     Error Status:
+!         A error_status of zero means success.
+!         Postive values of error_status are informational but may indicate
+!         a non-terminal error of some type.
+!
+!         Here are a list of module wide specific error codes:
+!      
+!         0  : Success
+!        -1  : Error (General/non-specific)
+!        -2  : Outside of flux domain
+!        -3  : Wout file not loaded.
+!        -4  : Module variables not loaded.
+!
+!     Programming ToDo:
+!         * Fix handling of error codes from EZSpline to be consistent with
+!           error_status scheme defined above.
+!         * I should go back to making error_status an inout variable.
+!
+!     Programming Notes:
 !        Loads a given set of Fourier variables into memory.  The
 !        B-Field Fourier Harmonics must be supplied if the user wishes
 !        to evaluate the field.  The Lambda variables are only needed
@@ -38,32 +80,7 @@
 !        LMNS   Array of Lambda modes (1:MNMAX,K1:K2) (sin)
 !        LMNC   Array of Lambda modes (1:MNMAX,K1:K2) (cos)
 !
-!     Programming Notes:
-!        Where the code takes v_val as an input it is asking for a value
-!        running from 0 to 2*pi over a field period.  However,
-!        where the code takes phi_val as an input it is asking for
-!        the real toroidal angle, 0 to 2*pi over the device.  So
-!        phi_val = v_val/nfp.
-!
-!     Error Status:
-!         A error_status of zero means success.
-!         Postive values of error_status are informational but may indicate
-!         a non-terminal error of some type.
-!
-!         Here are a list of module wide specific error codes:
-!      
-!         0  : Success
-!        -1  : Error (General/non-specific)
-!        -2  : Outside of flux domain
-!        -3  : Wout file not loaded.
-!        -4  : Module variables not loaded.
-!
-!     Programming ToDo:
-!         * Fix handling of error codes from EZSpline to be consistent with
-!           error_status scheme defined above.
-!         * I should go back to making error_status an inout variable.
-!
-!-------------------------------------------------------------------------------
+! ------------------------------------------------------------------------------
       MODULE mir_tools
       
         !-----------------------------------------------------------------------
@@ -359,7 +376,9 @@
         END SUBROUTINE guess_nu_nv
 
         
-        SUBROUTINE initialize_splines(error_status, nu, nv)  
+        SUBROUTINE initialize_splines(error_status, nu, nv)
+          ! Initialize all of the splines available in the module.
+          
           USE EZspline
           IMPLICIT NONE
           INTEGER, INTENT(out)       :: error_status
@@ -369,8 +388,11 @@
           CALL initialize_splines_rz(error_status, nu, nv)
           CALL initialize_splines_rzderiv(error_status, nu, nv)
           CALL initialize_splines_b(error_status, nu, nv)
+          CALL initialize_splines_lambda(error_status, nu, nv)
           CALL initialize_splines_jacobian(error_status, nu, nv)
           CALL initialize_splines_fsa(error_status, nu, nv)
+          CALL initialize_splines_susceptance(error_status, nu, nv)
+          
         END SUBROUTINE initialize_splines
 
         
@@ -725,7 +747,7 @@
              CALL guess_nu_nv(nu_local, nv_local, error_status)
           END IF
 
-          PRINT '("Inititalizing flux surface average splines with nu=", i0, " nv=", i0)', nu_local, nv_local
+          PRINT '("Inititalizing jacobian splines with nu=", i0, " nv=", i0)', nu_local, nv_local
           ! Check module initalization.
           IF (.NOT. ALLOCATED(xm)) THEN
              error_status = -4
@@ -785,6 +807,7 @@
           END IF
 
           PRINT '("Inititalizing flux surface average splines with nu=", i0, " nv=", i0)', nu_local, nv_local
+          
           ! Check module initalization.
           IF (.NOT. ALLOCATED(xm)) THEN
              error_status = -4
@@ -795,6 +818,7 @@
           IF (.NOT. EZspline_allocated(R_spl)) CALL initialize_splines_rz(error_status, nu_local, nv_local)
           IF (.NOT. EZspline_allocated(Ru_spl)) CALL initialize_splines_rzderiv(error_status, nu_local, nv_local)
           IF (.NOT. EZspline_allocated(G_spl)) CALL initialize_splines_jacobian(error_status, nu_local, nv_local)
+          IF (error_status < 0) RETURN
           
           !Allocations
           ALLOCATE(xu(nu_local),xv(nv_local),rho(k1:k2))
@@ -889,6 +913,7 @@
           IF (.NOT. EZspline_allocated(R_spl)) CALL initialize_splines_rz(error_status, nu_local, nv_local)
           IF (.NOT. EZspline_allocated(Ru_spl)) CALL initialize_splines_rzderiv(error_status, nu_local, nv_local)
           IF (.NOT. EZspline_allocated(G_spl)) CALL initialize_splines_jacobian(error_status, nu_local, nv_local)
+          IF (error_status < 0) RETURN
           
           !Allocations
           ALLOCATE(xu(nu_local),xv(nv_local),rho(k1:k2))
@@ -1041,6 +1066,9 @@
 
           error_status = 0
           point_flx(:) = 0
+
+          IF (.NOT. EZspline_allocated(R_spl)) CALL initialize_splines_rz(error_status)
+          IF (error_status < 0) RETURN
           
           IF (PRESENT(guess)) THEN
              PRINT *, 'flx_from_cyl: Using user guess.'
@@ -1244,6 +1272,9 @@
           error_status = 0
           point_cyl(:) = 0
           
+          IF (.NOT. EZspline_allocated(R_spl)) CALL initialize_splines_rz(error_status)
+          IF (error_status < 0) RETURN
+          
           v_val = MOD(point_flx(3) , pi2/nfp)*nfp
           
           CALL EZspline_isInDomain( &
@@ -1289,7 +1320,10 @@
           
           v_val = MOD(point_flx(3), pi2/nfp)*nfp
 
-          CALL EZSPLINE_isInDomain(R_spl, point_flx(2), v_val, point_flx(1), error_status)
+          IF (.NOT. EZspline_allocated(Bs_spl)) CALL initialize_splines_b(error_status)
+          IF (error_status < 0) RETURN
+          
+          CALL EZSPLINE_isInDomain(Bs_spl, point_flx(2), v_val, point_flx(1), error_status)
           IF (error_status == 0) THEN
              CALL EZspline_interp(Bs_spl, point_flx(2), v_val, point_flx(1), b_flx(1), error_status)
              CALL EZspline_interp(Bu_spl, point_flx(2), v_val, point_flx(1), b_flx(2), error_status)
@@ -1316,6 +1350,10 @@
 
           error_status = 0
           b_cyl(:) = 0
+          
+          IF (.NOT. EZspline_allocated(Ru_spl)) CALL initialize_splines_rzderiv(error_status)
+          IF (.NOT. EZspline_allocated(Bs_spl)) CALL initialize_splines_b(error_status)
+          IF (error_status < 0) RETURN
           
           v_val = MOD(point_flx(3), pi2/nfp)*nfp
 
@@ -1401,6 +1439,12 @@
           DOUBLE PRECISION, INTENT(out) :: fsa_gradrho
           INTEGER, INTENT(out) :: error_status
 
+          error_status = 0
+          fsa_gradrho = 0
+          
+          IF (.NOT. EZspline_allocated(grho_spl)) CALL initialize_splines_fsa(error_status)
+          IF (error_status < 0) RETURN
+          
           IF (s_val >= 0 .and. s_val <= 1) THEN
              CALL EZspline_interp(grho_spl, s_val, fsa_gradrho, error_status)
           ELSE
@@ -1417,6 +1461,12 @@
           DOUBLE PRECISION, INTENT(out) :: fsa_gradrho2
           INTEGER, INTENT(out) :: error_status
 
+          error_status = 0
+          fsa_gradrho2 = 0
+          
+          IF (.NOT. EZspline_allocated(grho2_spl)) CALL initialize_splines_fsa(error_status)
+          IF (error_status < 0) RETURN
+          
           IF (s_val >= 0 .and. s_val <= 1) THEN
              CALL EZspline_interp(grho2_spl, s_val, fsa_gradrho2, error_status)
           ELSE
