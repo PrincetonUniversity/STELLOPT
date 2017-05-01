@@ -19,7 +19,9 @@ SUBROUTINE beams3d_follow
     USE stel_kinds, ONLY: rprec
     USE beams3d_runtime
     USE beams3d_lines
-    USE beams3d_grid, ONLY: tmin, tmax, delta_t
+    USE beams3d_grid, ONLY: tmin, tmax, delta_t, BR_spl, BZ_spl, BPHI_spl, &
+                            MODB_spl, S_spl, U_spl, TE_spl, NE_spl, TI_spl, &
+                            TE_spl, TI_spl
     USE mpi_params ! MPI
     USE beams3d_physics_mod
     USE safe_open_mod, ONLY: safe_open
@@ -396,6 +398,21 @@ SUBROUTINE beams3d_follow
     istate = 0
     CALL handle_err(MPI_CHECK,'beams3d_follow',istate)
 
+!       Deallocations
+    IF (ALLOCATED(q)) DEALLOCATE(q)
+    IF (ALLOCATED(w)) DEALLOCATE(w)
+    IF (ALLOCATED(iwork)) DEALLOCATE(iwork)
+    ! Do this here to conserve on memory
+    IF (EZspline_allocated(BR_spl))   CALL EZspline_free(BR_spl,ier)
+    IF (EZspline_allocated(BZ_spl))   CALL EZspline_free(BZ_spl,ier)
+    IF (EZspline_allocated(BPHI_spl)) CALL EZspline_free(BPHI_spl,ier)
+    IF (EZspline_allocated(MODB_spl)) CALL EZspline_free(MODB_spl,ier)
+    IF (EZspline_allocated(S_spl)) CALL EZspline_free(S_spl,ier)
+    IF (EZspline_allocated(U_spl)) CALL EZspline_free(U_spl,ier)
+    IF (EZspline_allocated(TE_spl))   CALL EZspline_free(TE_spl,ier)
+    IF (EZspline_allocated(NE_spl))   CALL EZspline_free(NE_spl,ier)
+    IF (EZspline_allocated(TI_spl))   CALL EZspline_free(TI_spl,ier)
+
     ! Handle WALL Heat MAp
 !DEC$ IF DEFINED (MPI_OPT)
     IF (ALLOCATED(ihit_array)) THEN
@@ -403,15 +420,11 @@ SUBROUTINE beams3d_follow
          CALL MPI_REDUCE(MPI_IN_PLACE,ihit_array,nface,MPI_INTEGER,MPI_SUM,master,MPI_COMM_BEAMS,ierr_mpi)
       ELSE
          CALL MPI_REDUCE(ihit_array,ihit_array,nface,MPI_INTEGER,MPI_SUM,master,MPI_COMM_BEAMS,ierr_mpi)
+         CALL wall_free(ier)
       END IF
     END IF
 !DEC$ ENDIF
 
-!       Deallocations
-    IF (ALLOCATED(q)) DEALLOCATE(q)
-    IF (ALLOCATED(w)) DEALLOCATE(w)
-    IF (ALLOCATED(iwork)) DEALLOCATE(iwork)
-    IF (lvessel .and. (myworkid /= master)) CALL wall_free(ier)
     ier = 0
 
 !   Clean up progress bar
@@ -449,66 +462,6 @@ SUBROUTINE beams3d_follow
                                 nprocs_beams,mnum,moffsets,myworkid,master,MPI_COMM_BEAMS,ier)
     CALL BEAMS3D_TRANSMIT_2DLOG(0,npoinc,mystart,myend,neut_lines(0:npoinc,mystart:myend),&
                                 nprocs_beams,mnum,moffsets,myworkid,master,MPI_COMM_BEAMS,ier)
-!
-!    ! Redefine since we don't offset by npoinc+1
-!    CALL MPI_ALLGATHER((myend-mystart+1),1,MPI_INTEGER,mnum,1,MPI_INTEGER,MPI_COMM_BEAMS,ierr_mpi)
-!    CALL MPI_ALLGATHER(mystart,1,MPI_INTEGER,moffsets,1,MPI_INTEGER,MPI_COMM_BEAMS,ierr_mpi)
-!    IF (myworkid == master) THEN
-!       CALL MPI_GATHERV(MPI_IN_PLACE,nparticles,MPI_LOGICAL,&
-!                        lost_lines(mystart:myend),mnum, moffsets,MPI_LOGICAL,&
-!                        master,MPI_COMM_BEAMS,ier)
-!    ELSE
-!       CALL MPI_GATHERV(lost_lines(mystart:myend),myend-mystart+1,MPI_LOGICAL,&
-!                        lost_lines(mystart:myend),mnum, moffsets,MPI_LOGICAL,&
-!                        master,MPI_COMM_BEAMS,ier)
-!    END IF
-!           Now add algather statement
-!    CALL MPI_BARRIER(MPI_COMM_BEAMS, ierr_mpi)
-!    IF (ierr_mpi /= 0) CALL handle_err(MPI_BARRIER_ERR, 'beams3d_follow', ierr_mpi)
-!    IF (myworkid == master) THEN
-!        ALLOCATE(buffer_mast(0:npoinc, 8), STAT=ier)
-!        IF (ier /= 0) CALL handle_err(ALLOC_ERR, 'buffer_mast', ier)
-!        DO i = myend + 1, nparticles
-!            CALL MPI_RECV(buffer_mast, 8 * (npoinc + 1), MPI_DOUBLE_PRECISION, MPI_ANY_SOURCE, &
-!                          MPI_ANY_TAG, MPI_COMM_BEAMS, status, ierr_mpi)
-!            IF (ierr_mpi /= 0) CALL handle_err(MPI_RECV_ERR, 'beams3d_follow', ierr_mpi)
-!            sender = status(MPI_SOURCE)
-!            j = status(MPI_TAG)
-!            R_lines(:, j) = buffer_mast(:, 1)
-!            PHI_lines(:, j) = buffer_mast(:, 2)
-!            Z_lines(:, j) = buffer_mast(:, 3)
-!            vll_lines(:, j) = buffer_mast(:, 4)
-!            neut_lines(:,j) = buffer_mast(:,5)==1
-!            moment_lines(:,j) = buffer_mast(:,6)
-!            PE_lines(:,j) = buffer_mast(:,7)
-!            PI_lines(:,j) = buffer_mast(:,8)
-!            CALL MPI_RECV(lost_lines(j),1,MPI_LOGICAL,sender,j,MPI_COMM_BEAMS,status,ierr_mpi)
-!            IF (ierr_mpi /= 0) CALL handle_err(MPI_RECV_ERR, 'beams3d_follow2', ierr_mpi)
-!        END DO
-!        DEALLOCATE(buffer_mast)
-!    ELSE
-!        IF (mystart <= nparticles) THEN
-!        ALLOCATE(buffer_slav(0:npoinc, 8), STAT=ier)
-!        IF (ier /= 0) CALL handle_err(ALLOC_ERR, 'buffer_slav', ier)
-!        DO j = mystart, myend
-!            buffer_slav(:, 1) = R_lines(:, j)
-!            buffer_slav(:, 2) = PHI_lines(:, j)
-!            buffer_slav(:, 3) = Z_lines(:, j)
-!            buffer_slav(:, 4) = vll_lines(:, j)
-!            !buffer_slav(:, 5) = neut_lines(:, j)
-!            buffer_slav(:,5) = 0
-!            WHERE(neut_lines(:,j)) buffer_slav(:,5) = 1
-!            buffer_slav(:, 6) = moment_lines(:, j)
-!            buffer_slav(:, 7) = PE_lines(:, j)
-!            buffer_slav(:, 8) = PI_lines(:, j)
-!            CALL MPI_SEND(buffer_slav, 8 * (npoinc + 1), MPI_DOUBLE_PRECISION, master, j, MPI_COMM_BEAMS, ierr_mpi)
-!            IF (ierr_mpi /= 0) CALL handle_err(MPI_SEND_ERR, 'beams3d_follow', ierr_mpi)
-!            CALL MPI_SEND(lost_lines(j),1,MPI_LOGICAL,master,j,MPI_COMM_BEAMS,ierr_mpi)
-!            IF (ierr_mpi /= 0) CALL handle_err(MPI_SEND_ERR, 'beams3d_follow2', ierr_mpi)
-!        END DO
-!        DEALLOCATE(buffer_slav)
-!        END IF
-!    END IF
     DEALLOCATE(mnum)
     DEALLOCATE(moffsets)
     CALL MPI_BARRIER(MPI_COMM_BEAMS, ierr_mpi)
