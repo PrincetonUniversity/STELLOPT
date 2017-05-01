@@ -184,7 +184,7 @@
                WRITE(6,*) '        NFUNC: ',ndiv**nvars
                IF (lauto_domain) WRITE(6,*) '  !!!!!! AUTO_DOMAIN Calculation !!!!!!!'
             END IF
-            CALL MAP(stellopt_fcn,nvars,mtargets,vars_min,vars_max,npop,nprint,ndiv)
+            CALL MAP(stellopt_fcn,nvars,mtargets,vars_min,vars_max,npop,nprint,ndiv,MPI_COMM_STEL)
             info = 5
             IF (lverb) THEN
                 WRITE(6,*) '!!!!!  PARAMETER SPACE MAPPING DONE  !!!!!'

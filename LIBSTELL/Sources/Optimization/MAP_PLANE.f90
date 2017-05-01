@@ -143,6 +143,7 @@
          END IF
          WRITE(6, '(2x,A,3x,A,7x,A)') 'Iteration','Processor','Chi-Sq'
          WRITE(6, '(2x,i6,8x,i3,7x,1ES22.12E3)') 1, myid, temp_norm*temp_norm
+         CALL FLUSH(6)
       END IF
 !DEC$ IF DEFINED (MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_STEL, ierr_mpi)                 !mpi stuff
@@ -178,6 +179,7 @@
             vals(dex2,1:m) = val_temp(1:m)
             temp_norm = enorm(m,val_temp)
             WRITE(6, '(2x,i6,8x,i3,7x,1ES22.12E3)') dex2, dex1, temp_norm*temp_norm
+            CALL FLUSH(6)
             IF (numsent < num_search) THEN
                 ! Send More Work
                 numsent = numsent + 1
@@ -228,6 +230,8 @@
    
       IF (myid .eq. master) THEN
          map_file = 'map_plane.dat'
+         WRITE(6,'(A)') '------- Outputing to map_plane.dat --------'
+         CALL FLUSH(6)
          CALL safe_open(iunit,ierr,TRIM(map_file),'new','formatted')
          WRITE(iunit,'(4(2X,i6))') m,n,ndiv,num_search
          DO i = 1, num_search
