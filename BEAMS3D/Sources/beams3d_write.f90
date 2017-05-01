@@ -23,7 +23,7 @@
                                     HDF5_CLOSE_ERR, BEAMS3D_VERSION, weight, e_beams, p_beams,&
                                     charge, Zatom, mass, ldepo, v_neut
       USE safe_open_mod, ONLY: safe_open
-      USE wall_mod, ONLY: nface,nvertex,face,vertex,ihit_array
+      USE wall_mod, ONLY: nface,nvertex,face,vertex,ihit_array, wall_free
       USE mpi_params
 !-----------------------------------------------------------------------
 !     Input Variables
@@ -178,7 +178,7 @@
                   CALL write_var_hdf5(fid,'wall_strikes',nface,ier,INTVAR=ihit_array,&
                                    ATT='Wall Strikes',ATT_NAME='description')
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'moment_lines',ier)
-                  DEALLOCATE(ihit_array)
+                  CALL wall_free(ier)
                END IF
             CASE('DIAG')
                CALL open_hdf5('beams3d_'//TRIM(id_string)//'.h5',fid,ier,LCREATE=.false.)
