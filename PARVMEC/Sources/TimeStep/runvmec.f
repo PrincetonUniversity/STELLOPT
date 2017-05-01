@@ -449,10 +449,10 @@ C-----------------------------------------------
 
   100 CONTINUE
 
-      IF (ier_flag.eq.bad_jacobian_flag .and. jacob_off.eq.0) THEN
-         jacob_off = 1
-         GO TO 50
-      END IF
+      !IF (ier_flag.eq.bad_jacobian_flag .and. jacob_off.eq.0) THEN
+      !   jacob_off = 1
+      !   GO TO 50
+      !END IF
 
       CALL second0 (timeoff)
       timer(tsum) = timer(tsum) + timeoff - timeon
