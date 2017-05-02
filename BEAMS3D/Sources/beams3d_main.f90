@@ -11,7 +11,6 @@ PROGRAM BEAMS3D
     !     Libraries
     !-----------------------------------------------------------------------
     USE beams3d_runtime
-    USE read_wout_mod
     USE wall_mod, ONLY: wall_free
     USE mpi_params ! MPI
     !-----------------------------------------------------------------------
@@ -24,7 +23,7 @@ PROGRAM BEAMS3D
     !-----------------------------------------------------------------------
     IMPLICIT NONE
 !DEC$ IF DEFINED (MPI_OPT)
-!    INCLUDE 'mpif.h' ! MPI
+    INCLUDE 'mpif.h' ! MPI
 !DEC$ ENDIF
     integer :: numargs, i, ier
     integer, parameter :: arg_len = 256
@@ -235,7 +234,6 @@ PROGRAM BEAMS3D
     ! Write some stuff
     CALL beams3d_diagnostics
     ! Clean up
-    IF (myworkid == master) CALL read_wout_deallocate ! This is here so STELLOPT master process doesn't call it.
     CALL beams3d_free
 !DEC$ IF DEFINED (MPI_OPT)
     ierr_mpi=0

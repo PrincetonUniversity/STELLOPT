@@ -262,47 +262,73 @@
       END IF
 
 
-      ! Construct Splines
+      ! Construct Splines One by one for memeory reasons
       bcs1=(/ 0, 0/)
       bcs2=(/-1,-1/)
       bcs3=(/ 0, 0/)
+      ! BR
       CALL EZspline_init(BR_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
       IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:BR_spl',ier)
-      CALL EZspline_init(BZ_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
-      IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:BZ_spl',ier)
+      BR_spl%isHermite   = 1
+      BR_spl%x1   = raxis
+      BR_spl%x2   = phiaxis
+      BR_spl%x3   = zaxis
+      CALL EZspline_setup(BR_spl,B_R,ier,EXACT_DIM=.true.)
+      IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:BR_spl',ier)
+      IF (myworkid /= master) DEALLOCATE(B_R)
+      ! BPHI
       CALL EZspline_init(BPHI_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
       IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:BPHI_spl',ier)
+      BPHI_spl%isHermite = 1
+      BPHI_spl%x1 = raxis
+      BPHI_spl%x2 = phiaxis
+      BPHI_spl%x3 = zaxis
+      CALL EZspline_setup(BPHI_spl,B_PHI,ier,EXACT_DIM=.true.)
+      IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:BPHI_spl',ier)
+      IF (myworkid /= master) DEALLOCATE(B_PHI)
+      !BZ
+      CALL EZspline_init(BZ_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
+      IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:BZ_spl',ier)
+      BZ_spl%isHermite   = 1
+      BZ_spl%x1   = raxis
+      BZ_spl%x2   = phiaxis
+      BZ_spl%x3   = zaxis
+      CALL EZspline_setup(BZ_spl,B_Z,ier,EXACT_DIM=.true.)
+      IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:BZ_spl',ier)
+      IF (myworkid /= master) DEALLOCATE(B_Z)
+      ! MODB
       CALL EZspline_init(MODB_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
       IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:MODB_spl',ier)
+      MODB_spl%isHermite = 1
+      MODB_spl%x1 = raxis
+      MODB_spl%x2 = phiaxis
+      MODB_spl%x3 = zaxis
+      CALL EZspline_setup(MODB_spl,MODB,ier,EXACT_DIM=.true.)
+      IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:MODB_spl',ier)
+      IF (myworkid /= master) DEALLOCATE(MODB)
+      ! S
       CALL EZspline_init(S_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
       IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:S_spl',ier)
+      S_spl%isHermite = 1
+      S_spl%x1 = raxis
+      S_spl%x2 = phiaxis
+      S_spl%x3 = zaxis
+      CALL EZspline_setup(S_spl,S_ARR,ier,EXACT_DIM=.true.)
+      IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:S_spl',ier)
+      IF (myworkid /= master) DEALLOCATE(S_ARR)
+      ! U
       CALL EZspline_init(U_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
       IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:S_spl',ier)
       ! Cannot changes these since we use R8HERM directly in code.
-      BR_spl%isHermite   = 1
-      BZ_spl%isHermite   = 1
-      BPHI_spl%isHermite = 1
-      MODB_spl%isHermite = 1
-      S_spl%isHermite = 1
       U_spl%isHermite = 1
-      BR_spl%x1   = raxis
-      BZ_spl%x1   = raxis
-      BPHI_spl%x1 = raxis
-      MODB_spl%x1 = raxis
-      S_spl%x1 = raxis
       U_spl%x1 = raxis
-      BR_spl%x2   = phiaxis
-      BZ_spl%x2   = phiaxis
-      BPHI_spl%x2 = phiaxis
-      MODB_spl%x2 = phiaxis
-      S_spl%x2 = phiaxis
       U_spl%x2 = phiaxis
-      BR_spl%x3   = zaxis
-      BZ_spl%x3   = zaxis
-      BPHI_spl%x3 = zaxis
-      MODB_spl%x3 = zaxis
-      S_spl%x3 = zaxis
       U_spl%x3 = zaxis
+      CALL EZspline_setup(U_spl,U_ARR,ier,EXACT_DIM=.true.)
+      IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:U_spl',ier)
+      IF (myworkid /= master) DEALLOCATE(U_ARR)
+
+      ! Print Grid info to screen
       IF (lverb) THEN
          WRITE(6,'(A)')'----- Constructing Splines -----'
          WRITE(6,'(A,F9.5,A,F9.5,A,I4)') '   R   = [',MINVAL(raxis),',',MAXVAL(raxis),'];  NR:   ',BR_spl%n1
@@ -312,25 +338,6 @@
          CALL FLUSH(6)
       END IF
       IF (myworkid /= master) DEALLOCATE(raxis,zaxis,phiaxis)
-
-      CALL EZspline_setup(BR_spl,B_R,ier,EXACT_DIM=.true.)
-      IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:BR_spl',ier)
-      IF (myworkid /= master) DEALLOCATE(B_R)
-      CALL EZspline_setup(BZ_spl,B_Z,ier,EXACT_DIM=.true.)
-      IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:BZ_spl',ier)
-      IF (myworkid /= master) DEALLOCATE(B_Z)
-      CALL EZspline_setup(BPHI_spl,B_PHI,ier,EXACT_DIM=.true.)
-      IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:BPHI_spl',ier)
-      IF (myworkid /= master) DEALLOCATE(B_PHI)
-      CALL EZspline_setup(MODB_spl,MODB,ier,EXACT_DIM=.true.)
-      IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:MODB_spl',ier)
-      IF (myworkid /= master) DEALLOCATE(MODB)
-      CALL EZspline_setup(S_spl,S_ARR,ier,EXACT_DIM=.true.)
-      IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:S_spl',ier)
-      IF (myworkid /= master) DEALLOCATE(S_ARR)
-      CALL EZspline_setup(U_spl,U_ARR,ier,EXACT_DIM=.true.)
-      IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:U_spl',ier)
-      IF (myworkid /= master) DEALLOCATE(U_ARR)
 
       ! Output Grid
       CALL beams3d_write('GRID_INIT')
