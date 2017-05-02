@@ -164,14 +164,6 @@ beams3d_init_restart.o: \
       beams3d_grid.o
 
 
-beams3d_flux.o: \
-      ../../LIBSTELL/Release/stel_kinds.o \
-      ../../LIBSTELL/Release/vmec_utils.o \
-      beams3d_runtime.o \
-      beams3d_lines.o \
-      beams3d_grid.o
-      
-      
 beams3d_init_beams.o: \
       ../../LIBSTELL/Release/stel_kinds.o \
       ../../LIBSTELL/Release/mpi_params.o \
