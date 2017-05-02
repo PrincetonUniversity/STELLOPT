@@ -126,7 +126,7 @@
 
       ! Break up the Work
       chunk = FLOOR(REAL(nr*nphi*nz) / REAL(numprocs_local))
-      mystart = myworkid*chunk + 1
+      mystart = mylocalid*chunk + 1
       myend = mystart + chunk - 1
 
       ! This section sets up the work so we can use ALLGATHERV
