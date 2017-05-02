@@ -266,7 +266,7 @@
       
       ! Free variables
       IF (.not. lplasma_only) CALL free_virtual_casing
-      IF ((.not. lflux) .and. (myworkid .ne. master)) CALL read_wout_deallocate
+      IF ((.not. lflux) .and. (mylocalid .ne. master)) CALL read_wout_deallocate
       
       IF (lverb) THEN
          CALL backspace_out(6,36)
