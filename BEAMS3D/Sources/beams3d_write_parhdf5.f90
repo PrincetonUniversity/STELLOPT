@@ -6,7 +6,7 @@
 !                    you must be on a parallel file system for this to
 !                    work.
 !-----------------------------------------------------------------------
-      SUBROUTINE beams3d_write_parhdf5(n1,n2,m1,m2,mystart,myend,Farr)
+      SUBROUTINE beams3d_write_parhdf5(n1,n2,m1,m2,mystart,myend,Farr,var_name)
 !-----------------------------------------------------------------------
 !     Libraries
 !-----------------------------------------------------------------------
@@ -21,6 +21,7 @@
       IMPLICIT NONE
       INTEGER :: n1,n2,m1,m2,mystart,myend
       DOUBLE PRECISION :: Farr(n1:n2,mystart:myend)
+      CHARACTER(LEN=*), INTENT(in)  :: var_name
 !-----------------------------------------------------------------------
 !     Local Variables
 !          ier          Error Flag
@@ -40,6 +41,7 @@
                         dataspace
       INTEGER(HSIZE_T), ALLOCATABLE :: dimsf(:), counts(:)
       INTEGER(HSSIZE_T), ALLOCATABLE :: offset(:)
+
 !-----------------------------------------------------------------------
 !     Begin Subroutine
 !-----------------------------------------------------------------------
@@ -60,28 +62,25 @@
       ALLOCATE(dimsf(rank))
       dimsf(1) = n2-n1+1
       dimsf(2) = m2-m1+1
-      IF (myworkid == master) WRITE(6,*) dimsf(1),dimsf(2); CALL FLUSH(6)
       CALL h5screate_simple_f(rank, dimsf, filespace, ier)
-      ! Create the Dataset      CALL h5dcreate_f(file_id, dsetname, H5T_NATIVE_DOUBLE, filespace, dset_id, ier)
+      ! Create the Dataset      CALL h5dcreate_f(file_id, var_name, H5T_NATIVE_DOUBLE, filespace, dset_id, ier)
       ! Close the filespace
       CALL h5sclose_f(filespace, ier)
 
       ! Create the hyperslab in memory
       ALLOCATE(counts(rank))
       ALLOCATE(offset(rank))
-      counts(1) = n2-n1+1
-      counts(2) = myend-mystart+1
+      counts(1) = SIZE(Farr,1)
+      counts(2) = SIZE(Farr,2)
       offset(1) = 0
       offset(2) = mystart-1
-      WRITE(6,*) 'counts: ',myworkid,counts(1),counts(2); CALL FLUSH(6)
-      WRITE(6,*) 'offset: ',myworkid,offset(1),offset(2); CALL FLUSH(6)
       CALL h5screate_simple_f(rank, counts, memspace, ier)
       ! Select the hyperslab      CALL h5dget_space_f(dset_id, dataspace, ier)      CALL h5sselect_hyperslab_f (dataspace, H5S_SELECT_SET_F, offset, counts, ier)
 
-      ! Create a property list for the dataset      CALL h5pcreate_f(H5P_DATASET_XFER_F, plist_id, ier)       CALL h5pset_dxpl_mpio_f(plist_id, H5FD_MPIO_COLLECTIVE_F, ier)
+      ! Create a property list for the dataset      CALL h5pcreate_f(H5P_DATASET_XFER_F, plist_id, ier)       CALL h5pset_dxpl_mpio_f(plist_id, H5FD_MPIO_INDEPENDENT_F, ier)
 
       ! Write dataset
-      CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, Farr, counts, ier, file_space_id = dataspace, mem_space_id = memspace, xfer_prp = plist_id)
+      CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, Farr, dimsf, ier, file_space_id = dataspace, mem_space_id = memspace, xfer_prp = plist_id)
 
       ! Close Property list      CALL h5pclose_f(plist_id, error)
       ! Close memory space      CALL h5sclose_f(memspace, ier)

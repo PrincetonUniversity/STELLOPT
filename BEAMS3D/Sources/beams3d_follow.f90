@@ -435,7 +435,7 @@ SUBROUTINE beams3d_follow
 !        CALL FLUSH(6)
 !    END IF
 
-    CALL beams3d_write_parhdf5(0,npoinc,1,nparticles,mystart,myend,R_lines)
+    CALL beams3d_write_parhdf5(0,npoinc,1,nparticles,mystart,myend,R_lines,'R_lines')
     !CALL beams3d_write_parhdf5(0,npoinc,1,nparticles,mystart,myend,PHI_lines)
     !CALL beams3d_write_parhdf5(0,npoinc,1,nparticles,mystart,myend,Z_lines)
 
