@@ -166,8 +166,10 @@
          CALL second0(skston)
          jedge = 0
          CALL scalfor_par (gcr, arm, brm, ard, brd, crd, jedge)
+         IF (lerror_sam) RETURN
          jedge = 1
          CALL scalfor_par (gcz, azm, bzm, azd, bzd, crd, jedge)
+         IF (lerror_sam) RETURN
          CALL second0(skstoff)
          res_scalfor=res_scalfor+skstoff-skston
 

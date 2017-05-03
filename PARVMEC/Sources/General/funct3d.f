@@ -86,8 +86,6 @@ C-----------------------------------------------
       IF (lerror_sam) THEN
          ier_flag = bad_jacobian_flag
          irst = 2
-         CALL MPI_BCast(ier_flag,1,MPI_INTEGER,0,
-     1                  RUNVMEC_COMM_WORLD,MPI_ERR)
          RETURN
       END IF
 
@@ -451,7 +449,15 @@ C-----------------------------------------------
       END DO
 
       CALL second0 (skston)
+      lerror_sam = .false.
       CALL residue_par(pgc, pgc(1+irzloff), pgc(1+2*irzloff))
+      IF (lerror_sam) THEN
+         ier_flag = bad_jacobian_flag
+         irst = 2
+!         CALL MPI_BCast(ier_flag,1,MPI_INTEGER,0,
+!     1                  RUNVMEC_COMM_WORLD,MPI_ERR)
+         RETURN
+      END IF
       CALL second0 (skstoff)
       residue_time = residue_time + (skstoff-skston)
 
