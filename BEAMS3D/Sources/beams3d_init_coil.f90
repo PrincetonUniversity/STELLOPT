@@ -32,7 +32,7 @@
       INTEGER :: numprocs_local, mylocalid, mylocalmaster
       INTEGER :: MPI_COMM_LOCAL
 !DEC$ ENDIF
-      INTEGER(KIND=BYTE_8) :: icount, chunk
+      INTEGER(KIND=BYTE_8) :: chunk
       INTEGER :: ier, iunit, s, i, j, mystart, myend, k, ik, ig, coil_dex
       REAL(rprec)  :: br, bphi, bz, current, current_first, &
                       br_temp, bphi_temp, bz_temp
@@ -241,10 +241,8 @@
 !DEC$ ENDIF
       
 !DEC$ IF DEFINED (MPI_OPT)
-      !IF (numprocs > nlocal) THEN
-         CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)
-         IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'beams3d_init_coil: MPI_COMM_LOCAL',ierr_mpi)
-      !END IF
+      CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'beams3d_init_coil: MPI_COMM_LOCAL',ierr_mpi)
       CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
       IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'beams3d_init_coil',ierr_mpi)
 !DEC$ ENDIF

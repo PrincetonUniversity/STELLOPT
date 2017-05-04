@@ -33,13 +33,12 @@
       IMPLICIT NONE
       INTEGER, PARAMETER :: BYTE_8 = SELECTED_INT_KIND (8)
 !DEC$ IF DEFINED (MPI_OPT)
-!      INCLUDE 'mpif.h'   ! MPI
-      INTEGER :: sender, status(MPI_STATUS_SIZE)                     !mpi stuff                     !mpi stuff
+      INCLUDE 'mpif.h'   ! MPI
       INTEGER(KIND=BYTE_8),ALLOCATABLE :: mnum(:), moffsets(:)
       INTEGER :: numprocs_local, mylocalid, mylocalmaster
       INTEGER :: MPI_COMM_LOCAL
 !DEC$ ENDIF  
-      INTEGER(KIND=BYTE_8) :: icount, chunk
+      INTEGER(KIND=BYTE_8) :: chunk
       INTEGER :: ier, s, i, j, k, nu, nv, mystart, myend
       INTEGER :: bcs1_s(2)
       INTEGER, ALLOCATABLE :: xn_temp(:), xm_temp(:)
@@ -366,8 +365,12 @@
 !DEC$ ENDIF
 
 !DEC$ IF DEFINED (MPI_OPT)
-      CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)
-      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'beams3d_init_coil: MPI_COMM_LOCAL',ierr_mpi)
+      !CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
+      !IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'beams3d_init_vmec',ierr_mpi)
+      ! This line crashes the code sometimes.  Not sure what to do about it.
+      ! Seems to be compiler dependent
+      !CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)
+      !IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'beams3d_init_coil: MPI_COMM_LOCAL',ierr_mpi)
       CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
       IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'beams3d_init_vmec',ierr_mpi)
 !DEC$ ENDIF
