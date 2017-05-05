@@ -19,6 +19,7 @@
       USE EZspline
 !DEC$ IF DEFINED (MPI_OPT)
       USE mpi_params                                                    ! MPI
+      USE mpi_inc
 !DEC$ ENDIF  
       
 !-----------------------------------------------------------------------
