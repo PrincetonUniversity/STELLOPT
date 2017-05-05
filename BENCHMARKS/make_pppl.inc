@@ -15,7 +15,7 @@
 #            Define Compiler Flags
 #######################################################################
 #  FLAGS_R = -O2 -g -fexternal-blas -fbacktrace -fcheck=all 
-  FLAGS_R = -O2 -fexternal-blas -fbacktrace
+  FLAGS_R = -g -O2 -fexternal-blas -fbacktrace
   FLAGS_D = -g -O0 -fexternal-blas -fcheck=all 
   LIBS    = -L$(BLASHOME)/lib -lopenblas \
             -L$(SCALAPACK_HOME)/lib -lscalapack \
