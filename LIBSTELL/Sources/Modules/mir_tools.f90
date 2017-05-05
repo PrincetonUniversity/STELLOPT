@@ -46,6 +46,13 @@
 !        -2  : Outside of flux domain
 !        -3  : Wout file not loaded.
 !        -4  : Module variables not loaded.
+!        -10 : Not enough radial surfaces in input arrays.
+!        -11 : Not enough fourier modes in input arrays.
+!
+!        -100 to -199 : Error from read_wout_file. See read_wout_mod.f for
+!                       information about specific codes.
+!        -200 to -399 : Error from EZSpline.  See EZspline.f90 for information
+!                       about specific codes.
 !
 !     Programming ToDo:
 !         * Fix handling of error codes from EZSpline to be consistent with
@@ -143,25 +150,24 @@
         TYPE(EZspline3_r8), PRIVATE :: Rv_spl, Zv_spl
         TYPE(EZspline3_r8), PRIVATE :: Bs_spl, Bu_spl, Bv_spl, B_spl
         TYPE(EZspline3_r8), PRIVATE :: L_spl, Lu_spl, Lv_spl
-
         
         DOUBLE PRECISION, ALLOCATABLE, PRIVATE :: &
           rmnc(:,:) &
           ,zmns(:,:) &
           ,rmns(:,:) &
           ,zmnc(:,:) &
-          ,bsmns(:,:) &
-          ,bsupumnc(:,:) &
-          ,bsupvmnc(:,:) &
-          ,bsmnc(:,:) &
-          ,bsupumns(:,:) &
-          ,bsupvmns(:,:) &
-          ,lmns(:,:) &
-          ,lmnc(:,:) &
-          ,bmnc(:,:) &
-          ,bmns(:,:) &
-          ,gmnc(:,:) &
-          ,gmns(:,:)
+          ,bsmns_half(:,:) &
+          ,bsupumnc_half(:,:) &
+          ,bsupvmnc_half(:,:) &
+          ,bsmnc_half(:,:) &
+          ,bsupumns_half(:,:) &
+          ,bsupvmns_half(:,:) &
+          ,lmns_half(:,:) &
+          ,lmnc_half(:,:) &
+          ,bmnc_half(:,:) &
+          ,bmns_half(:,:) &
+          ,gmnc_half(:,:) &
+          ,gmns_half(:,:)
         
         INTEGER, ALLOCATABLE, PRIVATE :: &
           xm(:) &
@@ -191,20 +197,24 @@
       CONTAINS
 
 
-        ! ======================================================================
-        ! Read in a wout file and initialize this module.
-        !
-        ! If a wout file has already been read in, then one should directly
-        ! call initialize_module.
-        ! ======================================================================
-        SUBROUTINE initialize (filename, error_status)
+        SUBROUTINE initialize (error_status, filename)
+          ! Initialize the mir_tools.
+          !
+          ! Optionally, this will also load also a given wout file.
+
           IMPLICIT NONE
 
-          CHARACTER(len=*), INTENT(IN) :: filename
-          INTEGER, INTENT(OUT) :: error_status
+          INTEGER, INTENT(OUT) :: error_status          
+          CHARACTER(len=*), INTENT(IN), OPTIONAL :: filename
 
-          CALL read_wout_file (TRIM(filename), error_status)
-          IF (error_status .NE. 0) RETURN
+          IF (PRESENT(filename)) THEN
+             CALL read_wout_file (TRIM(filename), error_status)
+             IF (error_status .NE. 0) THEN
+                error_status = -100 - ABS(error_status)
+                RETURN
+             ENDIF
+          ENDIF
+          
           CALL initialize_module(error_status)
 
         END SUBROUTINE initialize
@@ -230,8 +240,8 @@
              RETURN
           ENDIF
           
-          IF (ns_t < 1) error_status = -102
-          IF (mnmax < 1) error_status = -103
+          IF (ns_t < 1) error_status = -10
+          IF (mnmax < 1) error_status = -11
           IF (error_status < 0) RETURN
           
           ! Allocations
@@ -245,18 +255,18 @@
             ,zmns(1:mnmax_vmec,1:ns_vmec) &
             ,rmns(1:mnmax_vmec,1:ns_vmec) &
             ,zmnc(1:mnmax_vmec,1:ns_vmec) &
-            ,bsmns(1:mnmax_vmec,1:ns_vmec) &
-            ,bsupumnc(1:mnmax_vmec,1:ns_vmec) &
-            ,bsupvmnc(1:mnmax_vmec,1:ns_vmec) &
-            ,bsmnc(1:mnmax_vmec,1:ns_vmec) &
-            ,bsupumns(1:mnmax_vmec,1:ns_vmec) &
-            ,bsupvmns(1:mnmax_vmec,1:ns_vmec) &
-            ,lmns(1:mnmax_vmec,1:ns_vmec) &
-            ,lmnc(1:mnmax_vmec,1:ns_vmec) &
-            ,bmnc(1:mnmax_vmec,1:ns_vmec) &
-            ,bmns(1:mnmax_vmec,1:ns_vmec) &
-            ,gmnc(1:mnmax_vmec,1:ns_vmec) &
-            ,gmns(1:mnmax_vmec,1:ns_vmec))          
+            ,bsmns_half(1:mnmax_vmec,1:ns_vmec) &
+            ,bsupumnc_half(1:mnmax_vmec,1:ns_vmec) &
+            ,bsupvmnc_half(1:mnmax_vmec,1:ns_vmec) &
+            ,bsmnc_half(1:mnmax_vmec,1:ns_vmec) &
+            ,bsupumns_half(1:mnmax_vmec,1:ns_vmec) &
+            ,bsupvmns_half(1:mnmax_vmec,1:ns_vmec) &
+            ,lmns_half(1:mnmax_vmec,1:ns_vmec) &
+            ,lmnc_half(1:mnmax_vmec,1:ns_vmec) &
+            ,bmnc_half(1:mnmax_vmec,1:ns_vmec) &
+            ,bmns_half(1:mnmax_vmec,1:ns_vmec) &
+            ,gmnc_half(1:mnmax_vmec,1:ns_vmec) &
+            ,gmns_half(1:mnmax_vmec,1:ns_vmec))          
 
           ! Copy arrays from the the READ_WOUT_MOD module.
           lasym = lasym_vmec
@@ -264,62 +274,27 @@
           rmnc(:,:) = rmnc_vmec(:,:)
           zmns(:,:) = zmns_vmec(:,:)
 
-          bsupumnc(:,:) = bsupumnc_vmec(:,:)
-          bsupvmnc(:,:) = bsupvmnc_vmec(:,:)
+          bsupumnc_half(:,:) = bsupumnc_vmec(:,:)
+          bsupvmnc_half(:,:) = bsupvmnc_vmec(:,:)
 
-          lmns(:,:) = lmns_vmec(:,:)
-          bmnc(:,:) = bmnc_vmec(:,:)
-          gmnc(:,:) = gmnc_vmec(:,:)
+          lmns_half(:,:) = lmns_vmec(:,:)
+          bmnc_half(:,:) = bmnc_vmec(:,:)
+          gmnc_half(:,:) = gmnc_vmec(:,:)
 
           IF (lasym_vmec) THEN
              rmns(:,:) = rmns_vmec(:,:)
              zmnc(:,:) = zmnc_vmec(:,:)
-             lmnc(:,:) = lmnc_vmec(:,:)
-             bmns(:,:) = bmns_vmec(:,:)
-             gmns(:,:) = gmns_vmec(:,:)
+             lmnc_half(:,:) = lmnc_vmec(:,:)
+             bmns_half(:,:) = bmns_vmec(:,:)
+             gmns_half(:,:) = gmns_vmec(:,:)
              
-             bsupumns(:,:) = bsupumns_vmec(:,:)
-             bsupvmns(:,:) = bsupvmns_vmec(:,:)
+             bsupumns_half(:,:) = bsupumns_vmec(:,:)
+             bsupvmns_half(:,:) = bsupvmns_vmec(:,:)
           ENDIF
-
-          ! Half to full grid where needed.
-          bsupumnc(:,1) = (3*bsupumnc(:,2) - bsupumnc(:,3))*0.5D+00
-          bsupvmnc(:,1) = (3*bsupvmnc(:,2) - bsupvmnc(:,3))*0.5D+00
-          gmnc(:,1)     = (3*gmnc(:,2) - gmnc(:,3))*0.5D+00
-          lmns(:,1) = (3*lmns(:,2) - lmns(:,3))*0.5D+00
-          FORALL(mn = 1:mnmax_vmec) bsupumnc(mn,2:ns_vmec-1) = &
-               0.5*(bsupumnc(mn,2:ns_vmec-1) + bsupumnc(mn,3:ns_vmec))
-          FORALL(mn = 1:mnmax_vmec) bsupvmnc(mn,2:ns_vmec-1) = &
-               0.5*(bsupvmnc(mn,2:ns_vmec-1) + bsupvmnc(mn,3:ns_vmec))
-          FORALL(mn = 1:mnmax_vmec) gmnc(mn,2:ns_vmec-1)     = &
-               0.5*(gmnc(mn,2:ns_vmec-1) + gmnc(mn,3:ns_vmec))
-          FORALL(mn = 1:mnmax_vmec) lmns(mn,2:ns_vmec-1) = 0.5*(lmns(mn,2:ns_vmec-1) + lmns(mn,3:ns_vmec))
-          bsupumnc(:,ns_vmec) = 2*bsupumnc(:,ns_vmec) - bsupumnc(:,ns_vmec-1)
-          bsupvmnc(:,ns_vmec) = 2*bsupvmnc(:,ns_vmec) - bsupvmnc(:,ns_vmec-1)
-          gmnc(:,ns_vmec)     = 2*gmnc(:,ns_vmec) - gmnc(:,ns_vmec-1)
-          lmns(:,ns_vmec) = 2*lmns(:,ns_vmec) - lmns(:,ns_vmec-1)
-
-          IF (lasym_vmec) THEN
-             bsupumns(:,1) = 1.5*bsupumns(:,2) - 0.5*bsupumns(:,3)
-             bsupvmns(:,1) = 1.5*bsupvmns(:,2) - 0.5*bsupvmns(:,3)
-             gmns(:,1)     = (3*gmns(:,2) - gmns(:,3))*0.5D+00
-             lmnc(:,1) = (3*lmnc(:,2) - lmnc(:,3))*0.5D+00
-             FORALL(mn = 1:mnmax_vmec) bsupumns(mn,2:ns_vmec-1) = &
-                  0.5*(bsupumns(mn,2:ns_vmec-1) + bsupumns(mn,3:ns_vmec))
-             FORALL(mn = 1:mnmax_vmec) bsupvmns(mn,2:ns_vmec-1) = &
-                  0.5*(bsupvmns(mn,2:ns_vmec-1) + bsupvmns(mn,3:ns_vmec))
-             FORALL(mn = 1:mnmax_vmec) gmns(mn,2:ns_vmec-1)     = &
-                  0.5*(gmns(mn,2:ns_vmec-1) + gmns(mn,3:ns_vmec))
-             FORALL(mn = 1:mnmax_vmec) lmnc(mn,2:ns_vmec-1) = 0.5*(lmnc(mn,2:ns_vmec-1) + lmnc(mn,3:ns_vmec))
-             bsupumns(:,ns_vmec) = 2*bsupumns(:,ns_vmec) - bsupumns(:,ns_vmec-1)
-             bsupvmns(:,ns_vmec) = 2*bsupvmns(:,ns_vmec) - bsupvmns(:,ns_vmec-1)
-             gmns(:,ns_vmec)     = 2*gmns(:,ns_vmec) - gmns(:,ns_vmec-1)
-             lmnc(:,ns_vmec) = 2*lmnc(:,ns_vmec) - lmnc(:,ns_vmec-1)
-          END IF
 
           ! Find NFP
           !
-          ! I don't know why same did this rather than just use nfp_vmec
+          ! I don't know why sam did this rather than just use nfp_vmec
           !   --novi.
           nfp = 1
           nfp = MINVAL(ABS(xn_vmec), MASK=(xn_vmec>0))
@@ -342,18 +317,18 @@
             ,zmns &
             ,rmns &
             ,zmnc &
-            ,bsmns &
-            ,bsupumnc &
-            ,bsupvmnc &
-            ,bsmnc &
-            ,bsupumns &
-            ,bsupvmns &
-            ,lmns &
-            ,lmnc &
-            ,bmnc &
-            ,bmns &
-            ,gmnc &
-            ,gmns)
+            ,bsmns_half &
+            ,bsupumnc_half &
+            ,bsupvmnc_half &
+            ,bsmnc_half &
+            ,bsupumns_half &
+            ,bsupvmns_half &
+            ,lmns_half &
+            ,lmnc_half &
+            ,bmnc_half &
+            ,bmns_half &
+            ,gmnc_half &
+            ,gmns_half)
           
           DEALLOCATE( &
             xm &
@@ -388,9 +363,9 @@
           CALL initialize_splines_rz(error_status, nu, nv)
           CALL initialize_splines_rzderiv(error_status, nu, nv)
           CALL initialize_splines_b(error_status, nu, nv)
-          CALL initialize_splines_lambda(error_status, nu, nv)
           CALL initialize_splines_jacobian(error_status, nu, nv)
           CALL initialize_splines_fsa(error_status, nu, nv)
+          CALL initialize_splines_lambda(error_status, nu, nv)
           CALL initialize_splines_susceptance(error_status, nu, nv)
           
         END SUBROUTINE initialize_splines
@@ -453,7 +428,7 @@
           IF (lasym) CALL mntouv(k1,k2,mnmax,nu_local,nv_local,xu,xv,zmnc,xm,xn,f_temp,0,0)
           CALL EZspline_setup(Z_spl,f_temp,ez_status); f_temp = 0
 
-          IF (ez_status .NE. 0) error_status = -1*ez_status-200
+          IF (ez_status .NE. 0) error_status = -200 - ABS(ez_status)
           
           ! deallocations
           DEALLOCATE(xu,xv,rho)
@@ -551,8 +526,8 @@
              CALL mntouv(k1,k2,mnmax,nu_local,nv_local,xu,xv,fmn_temp,xm,xn,f_temp,1,0)
           END IF
           CALL EZspline_setup(Zv_spl,f_temp,ez_status); f_temp = 0
-
-          IF (ez_status .NE. 0) error_status = -1*ez_status-200
+         
+          IF (ez_status .NE. 0) error_status = -200 - ABS(ez_status) 
           
           ! deallocations
           DEALLOCATE(xu,xv,rho)
@@ -596,10 +571,22 @@
           ALLOCATE(f_temp(nu_local,nv_local,k1:k2))
           
           f_temp = 0
-          FORALL(u=k1:k2) rho(u) = REAL(u-1)/REAL(ns_t-1)
+          rho(:) = 0.0
+          FORALL(u=k1+1:k2) rho(u) = REAL(u-1)/REAL(ns_t-1) - 0.5/REAL(ns_t-1)
           FORALL(u=1:nu_local) xu(u) = REAL(u-1)/REAL(nu_local-1)
           FORALL(u=1:nv_local) xv(u) = REAL(u-1)/REAL(nv_local-1)
-          
+
+          ! Linearly interpolate to Zero
+          rho(k1) = 0.0
+          bsmnc_half(:,1) = 1.5*bsmnc_half(:,2) - 0.5*bsmnc_half(:,3)
+          bsmns_half(:,1) = 1.5*bsmns_half(:,2) - 0.5*bsmns_half(:,3)
+          bsupumnc_half(:,1) = 1.5*bsupumnc_half(:,2) - 0.5*bsupumnc_half(:,3)
+          bsupvmnc_half(:,1) = 1.5*bsupvmnc_half(:,2) - 0.5*bsupvmnc_half(:,3)
+          bsupumns_half(:,1) = 1.5*bsupumns_half(:,2) - 0.5*bsupumns_half(:,3)
+          bsupvmns_half(:,1) = 1.5*bsupvmns_half(:,2) - 0.5*bsupvmns_half(:,3)
+          bmnc_half(:,1) = 1.5*bmnc_half(:,2) - 0.5*bmnc_half(:,3)
+          bmns_half(:,1) = 1.5*bmns_half(:,2) - 0.5*bmns_half(:,3)
+             
           ! Free Memory
           IF (EZspline_allocated(Bs_spl)) CALL EZspline_free(Bs_spl,ez_status)
           IF (EZspline_allocated(Bu_spl)) CALL EZspline_free(Bu_spl,ez_status)
@@ -615,26 +602,26 @@
           ! B^s
           ! In VMEC B^s is defined as zero, so we don't need to calculate this one.
           Bs_spl%x1 = xu*pi2; Bs_spl%x2 = xv*pi2; Bs_spl%x3 = rho; Bs_spl%isHermite = isherm
-          !IF (lasym) CALL mntouv(k1,k2,mnmax,nu_local,nv_local,xu,xv,bsmns,xm,xn,f_temp,1,0)
-          !IF (lasym) CALL mntouv(k1,k2,mnmax,nu_local,nv_local,xu,xv,bsmnc,xm,xn,f_temp,0,0)
+          !IF (lasym) CALL mntouv(k1,k2,mnmax,nu_local,nv_local,xu,xv,bsmns_half,xm,xn,f_temp,1,0)
+          !IF (lasym) CALL mntouv(k1,k2,mnmax,nu_local,nv_local,xu,xv,bsmnc_half,xm,xn,f_temp,0,0)
           CALL EZspline_setup(Bs_spl,f_temp,ez_status); f_temp = 0
           ! B^u
           Bu_spl%x1 = xu*pi2; Bu_spl%x2 = xv*pi2; Bu_spl%x3 = rho; Bu_spl%isHermite = isherm
-          CALL mntouv(k1,k2,mnmax,nu_local,nv_local,xu,xv,bsupumnc,xm,xn,f_temp,0,0)
-          IF (lasym) CALL mntouv(k1,k2,mnmax,nu_local,nv_local,xu,xv,bsupumns,xm,xn,f_temp,1,0)
+          CALL mntouv(k1,k2,mnmax,nu_local,nv_local,xu,xv,bsupumnc_half,xm,xn,f_temp,0,0)
+          IF (lasym) CALL mntouv(k1,k2,mnmax,nu_local,nv_local,xu,xv,bsupumns_half,xm,xn,f_temp,1,0)
           CALL EZspline_setup(Bu_spl,f_temp,ez_status); f_temp = 0
           ! B^v
           Bv_spl%x1 = xu*pi2; Bv_spl%x2 = xv*pi2; Bv_spl%x3 = rho; Bv_spl%isHermite = isherm
-          CALL mntouv(k1,k2,mnmax,nu_local,nv_local,xu,xv,bsupvmnc,xm,xn,f_temp,0,0)
-          IF (lasym) CALL mntouv(k1,k2,mnmax,nu_local,nv_local,xu,xv,bsupvmns,xm,xn,f_temp,1,0)
+          CALL mntouv(k1,k2,mnmax,nu_local,nv_local,xu,xv,bsupvmnc_half,xm,xn,f_temp,0,0)
+          IF (lasym) CALL mntouv(k1,k2,mnmax,nu_local,nv_local,xu,xv,bsupvmns_half,xm,xn,f_temp,1,0)
           CALL EZspline_setup(Bv_spl,f_temp,ez_status); f_temp = 0
           ! ModB
           B_spl%x1 = xu*pi2; B_spl%x2 = xv*pi2; B_spl%x3 = rho; B_spl%isHermite = isherm
-          CALL mntouv(k1,k2,mnmax,nu_local,nv_local,xu,xv,bmnc,xm,xn,f_temp,0,0)
-          IF (lasym) CALL mntouv(k1,k2,mnmax,nu_local,nv_local,xu,xv,bmns,xm,xn,f_temp,1,0)
+          CALL mntouv(k1,k2,mnmax,nu_local,nv_local,xu,xv,bmnc_half,xm,xn,f_temp,0,0)
+          IF (lasym) CALL mntouv(k1,k2,mnmax,nu_local,nv_local,xu,xv,bmns_half,xm,xn,f_temp,1,0)
           CALL EZspline_setup(B_spl,f_temp,ez_status); f_temp = 0
           
-          IF (ez_status .NE. 0) error_status = -1*ez_status-200
+          IF (ez_status .NE. 0) error_status = -200 - ABS(ez_status) 
           
           ! deallocations
           DEALLOCATE(xu,xv,rho)
@@ -678,10 +665,16 @@
           ALLOCATE(f_temp(nu_local,nv_local,k1:k2))
           
           f_temp = 0
-          FORALL(u=k1:k2) rho(u) = REAL(u-1)/REAL(ns_t-1)
+          rho(:) = 0.0
+          FORALL(u=k1+1:k2) rho(u) = REAL(u-1)/REAL(ns_t-1) - 0.5/REAL(ns_t-1)
           FORALL(u=1:nu_local) xu(u) = REAL(u-1)/REAL(nu_local-1)
           FORALL(u=1:nv_local) xv(u) = REAL(u-1)/REAL(nv_local-1)
           
+          ! Linearly interpolate to Zero
+          rho(k1) = 0.0
+          lmnc_half(:,1) = 1.5*lmnc_half(:,2) - 0.5*lmnc_half(:,3)
+          lmns_half(:,1) = 1.5*lmns_half(:,2) - 0.5*lmns_half(:,3)
+
           ! Free Memory
           IF (EZspline_allocated(L_spl)) CALL EZspline_free(L_spl,ez_status)
           IF (EZspline_allocated(Lu_spl)) CALL EZspline_free(Lu_spl,ez_status)
@@ -694,29 +687,29 @@
           
           ! Lambda
           L_spl%x1 = xu*pi2; L_spl%x2 = xv*pi2; L_spl%x3 = rho; L_spl%isHermite = isherm
-          CALL mntouv(k1,k2,mnmax,nu_local,nv_local,xu,xv,lmns,xm,xn,f_temp,1,0)
-          IF (lasym) CALL mntouv(k1,k2,mnmax,nu_local,nv_local,xu,xv,lmnc,xm,xn,f_temp,0,0)
+          CALL mntouv(k1,k2,mnmax,nu_local,nv_local,xu,xv,lmns_half,xm,xn,f_temp,1,0)
+          IF (lasym) CALL mntouv(k1,k2,mnmax,nu_local,nv_local,xu,xv,lmnc_half,xm,xn,f_temp,0,0)
           CALL EZspline_setup(L_spl,f_temp,ez_status); f_temp = 0
           ! Lambda/u
           Lu_spl%x1 = xu*pi2; Lu_spl%x2 = xv*pi2; Lu_spl%x3 = rho; Lu_spl%isHermite = isherm
-          FORALL(mn = 1:mnmax) fmn_temp(mn,:) = lmns(mn,:)*xm(mn)
+          FORALL(mn = 1:mnmax) fmn_temp(mn,:) = lmns_half(mn,:)*xm(mn)
           CALL mntouv(k1,k2,mnmax,nu_local,nv_local,xu,xv,fmn_temp,xm,xn,f_temp,0,0)
           IF (lasym) THEN
-             FORALL(mn = 1:mnmax) fmn_temp(mn,:) = -lmnc(mn,:)*xm(mn)
+             FORALL(mn = 1:mnmax) fmn_temp(mn,:) = -lmnc_half(mn,:)*xm(mn)
              CALL mntouv(k1,k2,mnmax,nu_local,nv_local,xu,xv,fmn_temp,xm,xn,f_temp,1,0)
           END IF
           CALL EZspline_setup(Lu_spl,f_temp,ez_status); f_temp = 0
           ! Lambda/v
           Lv_spl%x1 = xu*pi2; Lv_spl%x2 = xv*pi2; Lv_spl%x3 = rho; Lv_spl%isHermite = isherm
-          FORALL(mn = 1:mnmax) fmn_temp(mn,:) = lmns(mn,:)*xn(mn)
+          FORALL(mn = 1:mnmax) fmn_temp(mn,:) = lmns_half(mn,:)*xn(mn)
           CALL mntouv(k1,k2,mnmax,nu_local,nv_local,xu,xv,fmn_temp,xm,xn,f_temp,0,0)
           IF (lasym) THEN
-             FORALL(mn = 1:mnmax) fmn_temp(mn,:) = -lmnc(mn,:)*xn(mn)
+             FORALL(mn = 1:mnmax) fmn_temp(mn,:) = -lmnc_half(mn,:)*xn(mn)
              CALL mntouv(k1,k2,mnmax,nu_local,nv_local,xu,xv,fmn_temp,xm,xn,f_temp,1,0)
           END IF
           CALL EZspline_setup(Lv_spl,f_temp,ez_status); f_temp = 0
           
-          IF (ez_status .NE. 0) error_status = -1*ez_status-200
+          IF (ez_status .NE. 0) error_status = -200 - ABS(ez_status)
           
           ! deallocations
           DEALLOCATE(xu,xv,rho)
@@ -726,7 +719,11 @@
         END SUBROUTINE initialize_splines_lambda
 
         
-        SUBROUTINE initialize_splines_jacobian(error_status, nu, nv)  
+        SUBROUTINE initialize_splines_jacobian(error_status, nu, nv)
+          !
+          ! Programming Notes:
+          !   gmnc_half, gmns_half are defined on the half mesh.
+          !
           USE EZspline
           IMPLICIT NONE
           INTEGER, INTENT(out)       :: error_status
@@ -759,9 +756,15 @@
           ALLOCATE(f_temp(nu_local,nv_local,k1:k2))
           
           f_temp = 0
-          FORALL(u=k1:k2) rho(u) = REAL(u-1)/REAL(ns_t-1)
+          ! Evaluate on the half mesh.
+          FORALL(u=k1+1:k2) rho(u) = REAL(u-1)/REAL(ns_t-1) - 0.5/REAL(ns_t-1)
           FORALL(u=1:nu_local) xu(u) = REAL(u-1)/REAL(nu_local-1)
           FORALL(u=1:nv_local) xv(u) = REAL(u-1)/REAL(nv_local-1)
+
+          ! Extrapolate to zero.
+          rho(k1) = 0.0
+          gmnc_half(:,1) = 1.5*gmnc_half(:,2) - 0.5*gmnc_half(:,3)
+          gmns_half(:,1) = 1.5*gmns_half(:,2) - 0.5*gmns_half(:,3)
           
           ! Free Memory
           IF (EZspline_allocated(G_spl)) CALL EZspline_free(G_spl,ez_status)
@@ -771,11 +774,11 @@
              
           ! Jacobian sqrt(g)
           G_spl%x1 = xu*pi2; G_spl%x2 = xv*pi2; G_spl%x3 = rho; G_spl%isHermite = isherm
-          CALL mntouv(k1,k2,mnmax,nu_local,nv_local,xu,xv,gmnc,xm,xn,f_temp,0,0)
-          IF (lasym) CALL mntouv(k1,k2,mnmax,nu_local,nv_local,xu,xv,gmns,xm,xn,f_temp,1,0)
+          CALL mntouv(k1,k2,mnmax,nu_local,nv_local,xu,xv,gmnc_half,xm,xn,f_temp,0,0)
+          IF (lasym) CALL mntouv(k1,k2,mnmax,nu_local,nv_local,xu,xv,gmns_half,xm,xn,f_temp,1,0)
           CALL EZspline_setup(G_spl,f_temp,ez_status); f_temp = 0
           
-          IF (ez_status .NE. 0) error_status = -1*ez_status-200
+          IF (ez_status .NE. 0) error_status = -200 - ABS(ez_status)
           
           ! deallocations
           DEALLOCATE(xu,xv,rho)
@@ -869,7 +872,7 @@
           CALL EZspline_setup(grho2_spl,grho2,ez_status)
           f_temp = 0; grho = 0
           
-          IF (ez_status .NE. 0) error_status = -1*ez_status-200
+          IF (ez_status .NE. 0) error_status = -200 - ABS(ez_status)
           
           ! deallocations
           DEALLOCATE(gsr,gsp,gsz,gs,Vp,grho,grho2)
@@ -975,7 +978,7 @@
           CALL EZspline_setup(S22_spl,grho,ez_status); f_temp = 0; grho = 0
           DEALLOCATE(gsr,gsp,gsz,gs,Vp,grho,grho2)
           
-          IF (ez_status .NE. 0) error_status = -1*ez_status-200
+          IF (ez_status .NE. 0) error_status = -200 - ABS(ez_status)
           
           ! deallocations
           DEALLOCATE(gsr,gsp,gsz,gs,Vp,grho,grho2)
@@ -1277,27 +1280,10 @@
           
           v_val = MOD(point_flx(3) , pi2/nfp)*nfp
           
-          CALL EZspline_isInDomain( &
-            R_spl &
-            ,point_flx(2) &
-            ,v_val &
-            ,point_flx(1) &
-            ,error_status)
+          CALL EZspline_isInDomain(R_spl, point_flx(2), v_val, point_flx(1), error_status)
           IF (error_status == 0) THEN
-             CALL EZspline_interp( &
-               R_spl &
-               ,point_flx(2) &
-               ,v_val &
-               ,point_flx(1) &
-               ,point_cyl(1) &
-               ,error_status)
-             CALL EZspline_interp( &
-               Z_spl &
-               ,point_flx(2) &
-               ,v_val &
-               ,point_flx(1) &
-               ,point_cyl(3) &
-               ,error_status)
+             CALL EZspline_interp(R_spl, point_flx(2), v_val, point_flx(1), point_cyl(1), error_status)
+             CALL EZspline_interp(Z_spl, point_flx(2), v_val, point_flx(1), point_cyl(3), error_status)
              point_cyl(2) = point_flx(3)
           ELSE
              error_status = -2
@@ -1431,6 +1417,106 @@
           CALL b_car_from_flx(point_flx, b_car, error_status)
         END SUBROUTINE b_car_from_cyl
 
+        
+        SUBROUTINE sderiv_cyl_from_flx(point_flx, sderiv_cyl, error_status)
+          USE EZspline
+          IMPLICIT NONE
+          DOUBLE PRECISION, INTENT(in) :: point_flx(3)
+          DOUBLE PRECISION, INTENT(out) :: sderiv_cyl(3)
+          INTEGER, INTENT(out) :: error_status
+
+          DOUBLE PRECISION :: r_cyl, g_cyl
+          DOUBLE PRECISION :: R_grad(3), Z_grad(3)
+         
+          DOUBLE PRECISION :: v_val
+
+          error_status = 0
+          sderiv_cyl(:) = 0
+
+          IF (.NOT. EZspline_allocated(R_spl)) CALL initialize_splines_rz(error_status)
+          IF (.NOT. EZspline_allocated(Ru_spl)) CALL initialize_splines_rzderiv(error_status)
+          IF (.NOT. EZspline_allocated(G_spl)) CALL initialize_splines_jacobian(error_status)
+          IF (error_status < 0) RETURN
+                    
+          v_val = MOD(point_flx(3), pi2/nfp)*nfp
+
+          CALL EZSPLINE_isInDomain(R_spl, point_flx(2), v_val, point_flx(1), error_status)
+          IF (error_status == 0) THEN
+             R_grad = 0; Z_grad = 0
+             CALL EZspline_interp(R_spl, point_flx(2), v_val, point_flx(1), r_cyl, error_status)
+             CALL EZspline_interp(Ru_spl, point_flx(2), v_val, point_flx(1), R_grad(1), error_status)
+             CALL EZspline_interp(Rv_spl, point_flx(2), v_val, point_flx(1), R_grad(2), error_status)
+             CALL EZspline_interp(Zu_spl, point_flx(2), v_val, point_flx(1), Z_grad(1), error_status)
+             CALL EZspline_interp(Zv_spl, point_flx(2), v_val, point_flx(1), Z_grad(2), error_status)
+             CALL EZspline_interp(G_spl, point_flx(2), v_val, point_flx(1), g_cyl, error_status)
+             
+             ! Calc grad(s) components dR/du X dR/dv / sqrt(g)
+             !    Note component of R_spl comes from dphi/dphi and cyl coordinates
+             sderiv_cyl(1) = - Z_grad(1)*r_cyl
+             sderiv_cyl(2) = (Z_grad(1)*R_grad(2) - R_grad(1)*Z_grad(1))*nfp
+             sderiv_cyl(3) = R_grad(1)*r_cyl
+             sderiv_cyl(:) = sderiv_cyl(:)/g_cyl
+          ELSE
+             error_status = -2
+          END IF
+          
+        END SUBROUTINE sderiv_cyl_from_flx
+
+        
+        SUBROUTINE sderiv_car_from_flx(point_flx, sderiv_car, error_status)
+          USE EZspline
+          IMPLICIT NONE
+          DOUBLE PRECISION, INTENT(in) :: point_flx(3)
+          DOUBLE PRECISION, INTENT(out) :: sderiv_car(3)
+          INTEGER, INTENT(out) :: error_status
+
+          DOUBLE PRECISION :: sderiv_cyl(3)
+          DOUBLE PRECISION :: point_cyl(3)
+
+          error_status = 0
+          sderiv_car(:) = 0
+
+          IF (.NOT. EZspline_allocated(R_spl)) CALL initialize_splines_rz(error_status)
+
+          CALL sderiv_cyl_from_flx(point_flx, sderiv_cyl, error_status)
+          IF (error_status < 0 ) RETURN
+
+          CALL cyl_from_flx(point_flx, point_cyl, error_status)
+
+          sderiv_car(1) = COS(point_cyl(2))*sderiv_cyl(1) - SIN(point_cyl(2))*sderiv_cyl(2)
+          sderiv_car(2) = SIN(point_cyl(2))*sderiv_cyl(1) + COS(point_cyl(2))*sderiv_cyl(2)
+          sderiv_car(3) = sderiv_cyl(3)
+          
+        END SUBROUTINE sderiv_car_from_flx
+
+        
+        SUBROUTINE jacobian_from_flx(point_flx, jacobian, error_status)
+          USE EZspline
+          IMPLICIT NONE
+          DOUBLE PRECISION, INTENT(in) :: point_flx(3)
+          DOUBLE PRECISION, INTENT(out) :: jacobian
+          INTEGER, INTENT(out) :: error_status
+         
+          DOUBLE PRECISION :: v_val
+
+          error_status = 0
+          jacobian = 0
+
+          IF (.NOT. EZspline_allocated(G_spl)) CALL initialize_splines_jacobian(error_status)
+          IF (.NOT. EZspline_allocated(Ru_spl)) CALL initialize_splines_rzderiv(error_status)
+          IF (error_status < 0) RETURN
+                    
+          v_val = MOD(point_flx(3), pi2/nfp)*nfp
+
+          CALL EZSPLINE_isInDomain(G_spl, point_flx(2), v_val, point_flx(1), error_status)
+          IF (error_status == 0) THEN
+             CALL EZspline_interp(G_spl, point_flx(2), v_val, point_flx(1), jacobian, error_status)
+          ELSE
+             error_status = -2
+          END IF
+          
+        END SUBROUTINE jacobian_from_flx
+        
         
         SUBROUTINE fsa_gradrho_from_s(s_val, fsa_gradrho, error_status)
           USE EZspline
