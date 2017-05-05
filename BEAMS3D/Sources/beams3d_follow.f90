@@ -24,6 +24,7 @@ SUBROUTINE beams3d_follow
                             TE_spl, TI_spl
     USE mpi_params ! MPI
     USE beams3d_physics_mod
+    USE beams3d_write_par
     USE safe_open_mod, ONLY: safe_open
     USE wall_mod, ONLY: wall_free, ihit_array, nface
     !-----------------------------------------------------------------------
@@ -51,7 +52,7 @@ SUBROUTINE beams3d_follow
 !DEC$ ENDIF
     INTEGER :: ier, l, neqs_nag, l2, itol, itask, &
                istate, iopt, lrw, liw, mf, out, iunit
-    INTEGER, ALLOCATABLE :: iwork(:)
+    INTEGER, ALLOCATABLE :: iwork(:), itemp(:,:)
     REAL :: dist
     REAL(rprec) :: tf_max, vel_max
     DOUBLE PRECISION, ALLOCATABLE :: w(:), q(:)
@@ -391,6 +392,11 @@ SUBROUTINE beams3d_follow
                     END DO
                 END DO
                 IF (ldebug) CLOSE(iunit)
+             CASE ('DEBUG')
+                DO l = 0, npoinc
+                   R_lines(l,mystart:myend) = REAL(l)
+                END DO
+                B_lines(0:npoinc,mystart:myend) = REAL(myid)
         END SELECT
     END IF
 
@@ -435,36 +441,49 @@ SUBROUTINE beams3d_follow
 !        CALL FLUSH(6)
 !    END IF
 
-    CALL beams3d_write_parhdf5(0,npoinc,1,nparticles,mystart,myend,R_lines,'R_lines')
-    !CALL beams3d_write_parhdf5(0,npoinc,1,nparticles,mystart,myend,PHI_lines)
-    !CALL beams3d_write_parhdf5(0,npoinc,1,nparticles,mystart,myend,Z_lines)
+!DEC$ IF DEFINED (MPI_OPT)
 
-!DEC$ IF DEFINED (MPI_OPT1)
-    IF (myworkid==master) THEN
-       mystart = 1; myend=nparticles
-    END IF
-    CALL BEAMS3D_TRANSMIT_2DDBL(0,npoinc,mystart,myend,R_lines(0:npoinc,mystart:myend),&
-                                nprocs_beams,mnum,moffsets,myworkid,master,MPI_COMM_BEAMS,ier)
-    CALL BEAMS3D_TRANSMIT_2DDBL(0,npoinc,mystart,myend,PHI_lines(0:npoinc,mystart:myend),&
-                                nprocs_beams,mnum,moffsets,myworkid,master,MPI_COMM_BEAMS,ier)
-    CALL BEAMS3D_TRANSMIT_2DDBL(0,npoinc,mystart,myend,Z_lines(0:npoinc,mystart:myend),&
-                                nprocs_beams,mnum,moffsets,myworkid,master,MPI_COMM_BEAMS,ier)
-    CALL BEAMS3D_TRANSMIT_2DDBL(0,npoinc,mystart,myend,vll_lines(0:npoinc,mystart:myend),&
-                                nprocs_beams,mnum,moffsets,myworkid,master,MPI_COMM_BEAMS,ier)
-    CALL BEAMS3D_TRANSMIT_2DDBL(0,npoinc,mystart,myend,moment_lines(0:npoinc,mystart:myend),&
-                                nprocs_beams,mnum,moffsets,myworkid,master,MPI_COMM_BEAMS,ier)
-    CALL BEAMS3D_TRANSMIT_2DDBL(0,npoinc,mystart,myend,PE_lines(0:npoinc,mystart:myend),&
-                                nprocs_beams,mnum,moffsets,myworkid,master,MPI_COMM_BEAMS,ier)
-    CALL BEAMS3D_TRANSMIT_2DDBL(0,npoinc,mystart,myend,PI_lines(0:npoinc,mystart:myend),&
-                                nprocs_beams,mnum,moffsets,myworkid,master,MPI_COMM_BEAMS,ier)
-    CALL BEAMS3D_TRANSMIT_2DDBL(0,npoinc,mystart,myend,S_lines(0:npoinc,mystart:myend),&
-                                nprocs_beams,mnum,moffsets,myworkid,master,MPI_COMM_BEAMS,ier)
-    CALL BEAMS3D_TRANSMIT_2DDBL(0,npoinc,mystart,myend,U_lines(0:npoinc,mystart:myend),&
-                                nprocs_beams,mnum,moffsets,myworkid,master,MPI_COMM_BEAMS,ier)
-    CALL BEAMS3D_TRANSMIT_2DDBL(0,npoinc,mystart,myend,B_lines(0:npoinc,mystart:myend),&
-                                nprocs_beams,mnum,moffsets,myworkid,master,MPI_COMM_BEAMS,ier)
-    CALL BEAMS3D_TRANSMIT_2DLOG(0,npoinc,mystart,myend,neut_lines(0:npoinc,mystart:myend),&
-                                nprocs_beams,mnum,moffsets,myworkid,master,MPI_COMM_BEAMS,ier)
+    CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend,      'R_lines', DBLVAR=R_lines)
+    CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend,    'PHI_lines', DBLVAR=PHI_lines)
+    CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend,      'Z_lines', DBLVAR=Z_lines)
+    CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend,    'vll_lines', DBLVAR=vll_lines)
+    CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend, 'moment_lines', DBLVAR=moment_lines)
+    CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend,     'PE_lines', DBLVAR=PE_lines)
+    CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend,     'PI_lines', DBLVAR=PI_lines)
+    CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend,      'S_lines', DBLVAR=S_lines)
+    CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend,      'U_lines', DBLVAR=U_lines)
+    CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend,      'B_lines', DBLVAR=B_lines)
+    ALLOCATE(itemp(0:npoinc,mystart:myend))
+    itemp = 0; WHERE(neut_lines) itemp=1;
+    CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend,   'neut_lines', INTVAR=itemp)
+    DEALLOCATE(itemp)
+
+!   OLD memory hungry way
+!    IF (myworkid==master) THEN
+!       mystart = 1; myend=nparticles
+!    END IF
+!    CALL BEAMS3D_TRANSMIT_2DDBL(0,npoinc,mystart,myend,R_lines(0:npoinc,mystart:myend),&
+!                                nprocs_beams,mnum,moffsets,myworkid,master,MPI_COMM_BEAMS,ier)
+!    CALL BEAMS3D_TRANSMIT_2DDBL(0,npoinc,mystart,myend,PHI_lines(0:npoinc,mystart:myend),&
+!                                nprocs_beams,mnum,moffsets,myworkid,master,MPI_COMM_BEAMS,ier)
+!    CALL BEAMS3D_TRANSMIT_2DDBL(0,npoinc,mystart,myend,Z_lines(0:npoinc,mystart:myend),&
+!                                nprocs_beams,mnum,moffsets,myworkid,master,MPI_COMM_BEAMS,ier)
+!    CALL BEAMS3D_TRANSMIT_2DDBL(0,npoinc,mystart,myend,vll_lines(0:npoinc,mystart:myend),&
+!                                nprocs_beams,mnum,moffsets,myworkid,master,MPI_COMM_BEAMS,ier)
+!    CALL BEAMS3D_TRANSMIT_2DDBL(0,npoinc,mystart,myend,moment_lines(0:npoinc,mystart:myend),&
+!                                nprocs_beams,mnum,moffsets,myworkid,master,MPI_COMM_BEAMS,ier)
+!    CALL BEAMS3D_TRANSMIT_2DDBL(0,npoinc,mystart,myend,PE_lines(0:npoinc,mystart:myend),&
+!                                nprocs_beams,mnum,moffsets,myworkid,master,MPI_COMM_BEAMS,ier)
+!    CALL BEAMS3D_TRANSMIT_2DDBL(0,npoinc,mystart,myend,PI_lines(0:npoinc,mystart:myend),&
+!                                nprocs_beams,mnum,moffsets,myworkid,master,MPI_COMM_BEAMS,ier)
+!    CALL BEAMS3D_TRANSMIT_2DDBL(0,npoinc,mystart,myend,S_lines(0:npoinc,mystart:myend),&
+!                                nprocs_beams,mnum,moffsets,myworkid,master,MPI_COMM_BEAMS,ier)
+!    CALL BEAMS3D_TRANSMIT_2DDBL(0,npoinc,mystart,myend,U_lines(0:npoinc,mystart:myend),&
+!                                nprocs_beams,mnum,moffsets,myworkid,master,MPI_COMM_BEAMS,ier)
+!    CALL BEAMS3D_TRANSMIT_2DDBL(0,npoinc,mystart,myend,B_lines(0:npoinc,mystart:myend),&
+!                                nprocs_beams,mnum,moffsets,myworkid,master,MPI_COMM_BEAMS,ier)
+!    CALL BEAMS3D_TRANSMIT_2DLOG(0,npoinc,mystart,myend,neut_lines(0:npoinc,mystart:myend),&
+!                                nprocs_beams,mnum,moffsets,myworkid,master,MPI_COMM_BEAMS,ier)
     DEALLOCATE(mnum)
     DEALLOCATE(moffsets)
     CALL MPI_BARRIER(MPI_COMM_BEAMS, ierr_mpi)

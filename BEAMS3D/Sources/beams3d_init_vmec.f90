@@ -365,8 +365,8 @@
 !DEC$ ENDIF
 
 !DEC$ IF DEFINED (MPI_OPT)
-      !CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
-      !IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'beams3d_init_vmec',ierr_mpi)
+      CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
+      IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'beams3d_init_vmec',ierr_mpi)
       ! This line crashes the code sometimes.  Not sure what to do about it.
       ! Seems to be compiler dependent
       !CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)
