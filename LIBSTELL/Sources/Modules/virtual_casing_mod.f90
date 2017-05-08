@@ -848,10 +848,10 @@
       ! BEGIN SUBROUTINE
       nuvp = 0
       norm = -one
-      IF (ALLOCATED(xsurf)) DEALLOCATE(xsurf, ysurf, zsurf)
-      IF (ALLOCATED(nxsurf))DEALLOCATE(nxsurf, nysurf, nzsurf)
-      IF (ALLOCATED(btopx))DEALLOCATE(btopx, btopy, btopz, btops)
-      IF (ALLOCATED(jx_3d))DEALLOCATE(jx_3d, jy_3d, jz_3d)
+      IF (ALLOCATED(xsurf))  DEALLOCATE(xsurf, ysurf, zsurf)
+      IF (ALLOCATED(nxsurf)) DEALLOCATE(nxsurf, nysurf, nzsurf)
+      IF (ALLOCATED(btopx))  DEALLOCATE(btopx, btopy, btopz, btops)
+      IF (ALLOCATED(jx_3d))  DEALLOCATE(jx_3d, jy_3d, jz_3d)
 
       IF (EZspline_allocated(x_spl)) CALL EZspline_free(x_spl,ier)
       IF (EZspline_allocated(y_spl)) CALL EZspline_free(y_spl,ier)

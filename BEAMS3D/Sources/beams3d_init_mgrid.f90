@@ -40,7 +40,7 @@
 !-----------------------------------------------------------------------
 
       ! Divide up Work
-      IF ((nprocs_beams) > nlocal) THEN
+      IF (nprocs_beams > nlocal) THEN
          i = myworkid/nlocal
          CALL MPI_COMM_SPLIT( MPI_COMM_BEAMS,i,myworkid,MPI_COMM_LOCAL,ierr_mpi)
          CALL MPI_COMM_RANK( MPI_COMM_LOCAL, mylocalid, ierr_mpi )              ! MPI
@@ -65,10 +65,9 @@
             CLOSE(iunit)
          END IF
 !DEC$ IF DEFINED (MPI_OPT)
-         CALL MPI_BCAST(extcur_in,nigroup,MPI_REAL, mylocalmaster, MPI_COMM_LOCAL,ierr_mpi)
-         IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'beams3d_init_mgrid',ierr_mpi)
-         CALL MPI_BCAST(nv_in,1,MPI_REAL, mylocalmaster, MPI_COMM_LOCAL,ierr_mpi)
-         IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'beams3d_init_mgrid',ierr_mpi)
+         CALL MPI_BCAST(extcur_in,nigroup,MPI_DOUBLE_PRECISION, mylocalmaster, MPI_COMM_LOCAL,ierr_mpi)
+         CALL MPI_BCAST(nv_in,1,MPI_INTEGER, mylocalmaster, MPI_COMM_LOCAL,ierr_mpi)
+         CALL MPI_BCAST(nfp_in,1,MPI_INTEGER, mylocalmaster, MPI_COMM_LOCAL,ierr_mpi)
 !DEC$ ENDIF
          DO i = 1, SIZE(extcur_in,DIM=1)
            IF (ABS(extcur_in(i)) > 0) nextcur = i
@@ -98,12 +97,8 @@
                WRITE(6,'(A)') '!!  get vacuum field.          !!'
                WRITE(6,'(A)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
             END IF
-!DEC$ IF DEFINED (MPI_OPT)
-         CALL MPI_FINALIZE(ierr_mpi)
-         IF (ierr_mpi /=0) CALL handle_err(MPI_FINE_ERR,'beams3d_init_mgrid',ierr_mpi)
-!DEC$ ENDIF
          stop
-      END IF
+      END IF 
       
       ! Reset the phi grid limit to match mgrid
       phimin = 0.0
@@ -112,7 +107,7 @@
       
       ! Break up the Work
       chunk = FLOOR(REAL(nr*nphi*nz) / REAL(numprocs_local))
-      mystart = myworkid*chunk + 1
+      mystart = mylocalid*chunk + 1
       myend = mystart + chunk - 1
 
       ! This section sets up the work so we can use ALLGATHERV
@@ -168,26 +163,21 @@
       ! Now recompose the array and send to everyone.
 !DEC$ IF DEFINED (MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
-      IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_init_mgrid',ierr_mpi)
-!       ! Adjust indexing to send 2D arrays
-       CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
+      
+      ! Send Data
+      CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
                         B_R,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
                         MPI_COMM_LOCAL,ierr_mpi)
-       CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
+      CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
                         B_PHI,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
                         MPI_COMM_LOCAL,ierr_mpi)
-       CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
+      CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
                         B_Z,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
                         MPI_COMM_LOCAL,ierr_mpi)
-       DEALLOCATE(mnum)
-       DEALLOCATE(moffsets)
-!DEC$ ENDIF
-      
-!DEC$ IF DEFINED (MPI_OPT)
-      !IF (numprocs > nlocal) THEN
-         CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)
-         IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'fieldlines_init_coil: MPI_COMM_LOCAL',ierr_mpi)
-      !END IF
+      DEALLOCATE(mnum)
+      DEALLOCATE(moffsets)
+
+      CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)
       CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
       IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'beams3d_init_mgrid',ierr_mpi)
 !DEC$ ENDIF
