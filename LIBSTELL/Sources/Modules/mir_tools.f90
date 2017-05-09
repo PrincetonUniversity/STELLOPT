@@ -76,6 +76,7 @@
 !       * I should go back to making error_status an inout variable to make
 !         stringing together commands without error checking for each line.
 !       * I sholud split up the fsa spline initialization.
+!       * Extrapolate half grid values out to s=1.0.
 !
 !     Programming Notes:
 !        Loads a given set of Fourier variables into memory.  The
@@ -931,6 +932,7 @@
           INTEGER :: ez_status
           INTEGER ::  u, mn
           DOUBLE PRECISION, ALLOCATABLE :: xu(:), xv(:), rho(:)
+          DOUBLE PRECISION, ALLOCATABLE :: gmnc_temp(:,:), gmns_temp(:,:)
           DOUBLE PRECISION, ALLOCATABLE :: f_temp(:,:,:)
    
           error_status = 0
@@ -950,8 +952,9 @@
           ENDIF
           
           !Allocations
-          ALLOCATE(xu(nu_local),xv(nv_local),rho(k1:k2))
-          ALLOCATE(f_temp(nu_local,nv_local,k1:k2))
+          ALLOCATE(xu(nu_local),xv(nv_local),rho(k1:k2+1))
+          ALLOCATE(gmnc_temp(1:mnmax_vmec,1:ns_vmec+1),gmns_temp(1:mnmax_vmec,1:ns_vmec+1))
+          ALLOCATE(f_temp(nu_local,nv_local,k1:k2+1))
           
           f_temp = 0
           ! Evaluate on the half mesh.
@@ -959,21 +962,29 @@
           FORALL(u=1:nu_local) xu(u) = REAL(u-1)/REAL(nu_local-1)
           FORALL(u=1:nv_local) xv(u) = REAL(u-1)/REAL(nv_local-1)
 
-          ! Find the coefficent values at s=0 through linear interpolation.
+          ! Fill our temporary half mesh variables.
+          gmnc_temp(:,k1:k2) = gmnc_half
+          gmns_temp(:,k1:k2) = gmns_half
+          
+          ! Find the coefficent values at s=0 and s=1 through linear interpolation.
           rho(k1) = 0.0
-          gmnc_half(:,1) = 1.5*gmnc_half(:,2) - 0.5*gmnc_half(:,3)
-          gmns_half(:,1) = 1.5*gmns_half(:,2) - 0.5*gmns_half(:,3)
+          gmnc_temp(:,1) = 1.5*gmnc_half(:,2) - 0.5*gmnc_half(:,3)
+          gmns_temp(:,1) = 1.5*gmns_half(:,2) - 0.5*gmns_half(:,3)
+          
+          rho(k2+1) = 1.0
+          gmnc_temp(:,k2+1) = 1.5*gmnc_half(:,k2) - 0.5*gmnc_half(:,k2-1)
+          gmns_temp(:,k2+1) = 1.5*gmns_half(:,k2) - 0.5*gmns_half(:,k2-1)
           
           ! Free Memory
           IF (EZspline_allocated(G_spl)) CALL EZspline_free(G_spl,ez_status)
              
           ! Preform Init
-          CALL EZspline_init(G_spl,nu_local,nv_local,ns_t,bcs1,bcs1,bcs0,ez_status)
+          CALL EZspline_init(G_spl,nu_local,nv_local,ns_t+1,bcs1,bcs1,bcs0,ez_status)
              
           ! Jacobian sqrt(g)
           G_spl%x1 = xu*pi2; G_spl%x2 = xv*pi2; G_spl%x3 = rho; G_spl%isHermite = isherm
-          CALL mntouv(k1,k2,mnmax,nu_local,nv_local,xu,xv,gmnc_half,xm,xn,f_temp,0,0)
-          IF (lasym) CALL mntouv(k1,k2,mnmax,nu_local,nv_local,xu,xv,gmns_half,xm,xn,f_temp,1,0)
+          CALL mntouv(k1,k2+1,mnmax,nu_local,nv_local,xu,xv,gmnc_temp,xm,xn,f_temp,0,0)
+          IF (lasym) CALL mntouv(k1,k2+1,mnmax,nu_local,nv_local,xu,xv,gmns_temp,xm,xn,f_temp,1,0)
           CALL EZspline_setup(G_spl,f_temp,ez_status); f_temp = 0
           
           IF (ez_status .NE. 0) error_status = -200 - ABS(ez_status)
@@ -981,6 +992,7 @@
           ! deallocations
           DEALLOCATE(xu,xv,rho)
           DEALLOCATE(f_temp)
+          DEALLOCATE(gmnc_temp, gmns_temp)
 
         END SUBROUTINE initialize_splines_jacobian
 
@@ -1146,23 +1158,23 @@
           ! <|B|>
           fsa_bmod = SUM(SUM(b_temp*g_temp,DIM=1),DIM=1)
           fsa_bmod = fsa_bmod / Vp
-          fsa_bmod(1) = 2*fsa_bmod(2) - fsa_bmod(3)
+          fsa_bmod(1) = 2.0*fsa_bmod(2) - fsa_bmod(3)
           
           ! <|grad(rho)|^2>
           grho2 = SUM(SUM(gs*g_temp,DIM=1),DIM=1)
           grho2 = grho2 / Vp
-          grho2(1) = 2*grho2(2) - grho2(3)
+          grho2(1) = 2.0*grho2(2) - grho2(3)
           
           ! <|grad(rho)|>|
           gs = sqrt(gs) !|grad(rho)|
           grho = SUM(SUM(gs*g_temp,DIM=1),DIM=1)
           grho = grho / Vp
-          grho(1) = 2*grho(2) - grho(3)
+          grho(1) = 2.0*grho(2) - grho(3)
 
           ! <|B|^2/grad(rho)>
           b2overgrho = SUM(SUM(b_temp**2*g_temp/gs,DIM=1),DIM=1)
           b2overgrho = b2overgrho / Vp
-          b2overgrho(1) = 2*b2overgrho(2) - b2overgrho(3)        
+          b2overgrho(1) = 2.0*b2overgrho(2) - b2overgrho(3)        
           
           ! Construct splines
           CALL EZspline_setup(Vp_spl,ABS(Vp*pi2*pi2/(nu_local*nv_local)),ez_status) ! ABS because of negative Jacobian
