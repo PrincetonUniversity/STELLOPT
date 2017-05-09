@@ -23,7 +23,7 @@
                                     HDF5_CLOSE_ERR, BEAMS3D_VERSION, weight, e_beams, p_beams,&
                                     charge, Zatom, mass, ldepo, v_neut
       USE safe_open_mod, ONLY: safe_open
-      USE wall_mod, ONLY: nface,nvertex,face,vertex,ihit_array
+      USE wall_mod, ONLY: nface,nvertex,face,vertex,ihit_array, wall_free
       USE mpi_params
 !-----------------------------------------------------------------------
 !     Input Variables
@@ -147,38 +147,38 @@
                CALL write_var_hdf5(fid,'Zatom',nparticles,ier,DBLVAR=Zatom,ATT='Particle Charge Number',&
                                    ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'Zatom',ier)
-               CALL write_var_hdf5(fid,'R_lines',npoinc+1,nparticles,ier,DBLVAR=R_lines,ATT='Cylindrical R of Trajectory [m]',&
-                                   ATT_NAME='description')
-               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'R_lines',ier)
-               CALL write_var_hdf5(fid,'Z_lines',npoinc+1,nparticles,ier,DBLVAR=Z_lines,ATT='Cylindrical Z of Trajectory [m]',&
-                                   ATT_NAME='description')
-               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'Z_lines',ier)
-               CALL write_var_hdf5(fid,'PHI_lines',npoinc+1,nparticles,ier,DBLVAR=PHI_lines,ATT='Cylindrical Phi of Trajectory [rad]',&
-                                   ATT_NAME='description')
-               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'PHI_lines',ier)
-               CALL write_var_hdf5(fid,'vll_lines',npoinc+1,nparticles,ier,DBLVAR=vll_lines,ATT='Parallel Particle Velocity [m/s]',&
-                                   ATT_NAME='description')
-               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'vll_lines',ier)
-               CALL write_var_hdf5(fid,'neut_lines',npoinc+1,nparticles,ier,BOOVAR=neut_lines,ATT='Neutral Indicator [1=Neut.]',&
-                                   ATT_NAME='description')
-               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'neut_lines',ier)
-               CALL write_var_hdf5(fid,'moment_lines',npoinc+1,nparticles,ier,DBLVAR=moment_lines,&
-                                   ATT='Magnetic Moment [kg m^2 /s^2 T ]',ATT_NAME='description')
-               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'moment_lines',ier)
-               CALL write_var_hdf5(fid,'S_lines',npoinc+1,nparticles,ier,DBLVAR=S_lines,ATT='Toroidal Flux Coordinate',&
-                                   ATT_NAME='description')
-               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'S_lines',ier)
-               CALL write_var_hdf5(fid,'U_lines',npoinc+1,nparticles,ier,DBLVAR=U_lines,ATT='U Flux Coordinate',&
-                                   ATT_NAME='description')
-               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'U_lines',ier)
-               CALL write_var_hdf5(fid,'B_lines',npoinc+1,nparticles,ier,DBLVAR=B_lines,ATT='|B| along Fieldline',&
-                                   ATT_NAME='description')
-               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'B_lines',ier)
+!               CALL write_var_hdf5(fid,'R_lines',npoinc+1,nparticles,ier,DBLVAR=R_lines,ATT='Cylindrical R of Trajectory [m]',&
+!                                   ATT_NAME='description')
+!               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'R_lines',ier)
+!               CALL write_var_hdf5(fid,'Z_lines',npoinc+1,nparticles,ier,DBLVAR=Z_lines,ATT='Cylindrical Z of Trajectory [m]',&
+!                                   ATT_NAME='description')
+!               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'Z_lines',ier)
+!               CALL write_var_hdf5(fid,'PHI_lines',npoinc+1,nparticles,ier,DBLVAR=PHI_lines,ATT='Cylindrical Phi of Trajectory [rad]',&
+!                                   ATT_NAME='description')
+!               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'PHI_lines',ier)
+!               CALL write_var_hdf5(fid,'vll_lines',npoinc+1,nparticles,ier,DBLVAR=vll_lines,ATT='Parallel Particle Velocity [m/s]',&
+!                                   ATT_NAME='description')
+!               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'vll_lines',ier)
+!               CALL write_var_hdf5(fid,'neut_lines',npoinc+1,nparticles,ier,BOOVAR=neut_lines,ATT='Neutral Indicator [1=Neut.]',&
+!                                   ATT_NAME='description')
+!               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'neut_lines',ier)
+!               CALL write_var_hdf5(fid,'moment_lines',npoinc+1,nparticles,ier,DBLVAR=moment_lines,&
+!                                   ATT='Magnetic Moment [kg m^2 /s^2 T ]',ATT_NAME='description')
+!               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'moment_lines',ier)
+!               CALL write_var_hdf5(fid,'S_lines',npoinc+1,nparticles,ier,DBLVAR=S_lines,ATT='Toroidal Flux Coordinate',&
+!                                   ATT_NAME='description')
+!               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'S_lines',ier)
+!               CALL write_var_hdf5(fid,'U_lines',npoinc+1,nparticles,ier,DBLVAR=U_lines,ATT='U Flux Coordinate',&
+!                                   ATT_NAME='description')
+!               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'U_lines',ier)
+!               CALL write_var_hdf5(fid,'B_lines',npoinc+1,nparticles,ier,DBLVAR=B_lines,ATT='|B| along Fieldline',&
+!                                   ATT_NAME='description')
+!               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'B_lines',ier)
                IF (ALLOCATED(ihit_array)) THEN
                   CALL write_var_hdf5(fid,'wall_strikes',nface,ier,INTVAR=ihit_array,&
                                    ATT='Wall Strikes',ATT_NAME='description')
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'moment_lines',ier)
-                  DEALLOCATE(ihit_array)
+                  CALL wall_free(ier)
                END IF
             CASE('DIAG')
                CALL open_hdf5('beams3d_'//TRIM(id_string)//'.h5',fid,ier,LCREATE=.false.)

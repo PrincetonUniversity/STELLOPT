@@ -6,9 +6,9 @@
      1                 nbctotp
       IMPLICIT NONE
 !DEC$ IF DEFINED (MPI_OPT)
-      INCLUDE 'mpif.h'                                                          ! MPI
+!      INCLUDE 'mpif.h'                                                          ! MPI
 !DEC$ ELSE
-      INTEGER :: MPI_COMM_SELF = 0
+!      INTEGER :: MPI_COMM_SELF = 0
 !DEC$ ENDIF  
 
       INTEGER, PARAMETER :: nlimset = 2       !number of different limiters

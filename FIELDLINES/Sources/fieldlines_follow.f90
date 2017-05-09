@@ -19,8 +19,9 @@
       USE vessel_mod
       USE fieldlines_runtime
       USE fieldlines_lines
-      USE fieldlines_grid, ONLY: phimin, phimax, delta_phi
-      USE wall_mod, ONLY: ihit_array, nface
+      USE fieldlines_grid, ONLY: phimin, phimax, delta_phi,&
+                                 BR_spl, BZ_spl, MU_spl, MODB_spl
+      USE wall_mod, ONLY: ihit_array, nface, wall_free
       USE mpi_params                                                    ! MPI
 !-----------------------------------------------------------------------
 !     Local Variables
@@ -263,21 +264,29 @@
          END SELECT
       END IF
 
-      ! Handle WALL Heat MAp
+      ! Deallocations
+      IF (ALLOCATED(q)) DEALLOCATE(q)
+      IF (ALLOCATED(w)) DEALLOCATE(w)
+      IF (ALLOCATED(iwork)) DEALLOCATE(iwork)
+      ! Do this here to conserve on memory
+      IF (nruntype==runtype_old) THEN
+         IF (EZspline_allocated(BR_spl)) CALL EZspline_free(BR_spl,ier)
+         IF (EZspline_allocated(BZ_spl)) CALL EZspline_free(BZ_spl,ier)
+         IF (EZspline_allocated(MU_spl)) CALL EZspline_free(MU_spl,ier)
+         IF (EZspline_allocated(MODB_spl)) CALL EZspline_free(MODB_spl,ier)
+      END IF
+
+      ! Handle WALL Heat Map
 !DEC$ IF DEFINED (MPI_OPT)
       IF (ALLOCATED(ihit_array)) THEN
         IF (myid == master) THEN
            CALL MPI_REDUCE(MPI_IN_PLACE,ihit_array,nface,MPI_INTEGER,MPI_SUM,master,MPI_COMM_FIELDLINES,ierr_mpi)
         ELSE
            CALL MPI_REDUCE(ihit_array,ihit_array,nface,MPI_INTEGER,MPI_SUM,master,MPI_COMM_FIELDLINES,ierr_mpi)
+           CALL wall_free(ier) ! Only master needs it.
         END IF
       END IF
 !DEC$ ENDIF
-
-      ! Deallocations
-      IF (ALLOCATED(q)) DEALLOCATE(q)
-      IF (ALLOCATED(w)) DEALLOCATE(w)
-      IF (ALLOCATED(iwork)) DEALLOCATE(iwork)
       
       ! Clean up progress bar
       IF (lverb) WRITE(6,*) ' '
@@ -293,12 +302,16 @@
 
       CALL FIELDLINES_TRANSMIT_2DDBL(mystart,myend,0,nsteps,R_lines,&
                                      1,nlines,myid,master,MPI_COMM_FIELDLINES,ier)
+      IF (ALLOCATED(R_lines) .and. myid /= master) DEALLOCATE(R_lines)
       CALL FIELDLINES_TRANSMIT_2DDBL(mystart,myend,0,nsteps,PHI_lines,&
                                      1,nlines,myid,master,MPI_COMM_FIELDLINES,ier)
+      IF (ALLOCATED(PHI_lines) .and. myid /= master) DEALLOCATE(PHI_lines)
       CALL FIELDLINES_TRANSMIT_2DDBL(mystart,myend,0,nsteps,Z_lines,&
                                      1,nlines,myid,master,MPI_COMM_FIELDLINES,ier)
+      IF (ALLOCATED(Z_lines) .and. myid /= master) DEALLOCATE(Z_lines)
       CALL FIELDLINES_TRANSMIT_2DDBL(mystart,myend,0,nsteps,B_lines,&
                                      1,nlines,myid,master,MPI_COMM_FIELDLINES,ier)
+      IF (ALLOCATED(B_lines) .and. myid /= master) DEALLOCATE(B_lines)
 
       CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
       IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_follow',ierr_mpi)

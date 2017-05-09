@@ -24,7 +24,7 @@ C-----------------------------------------------
       INTEGER :: m , mp, n, js, jmax, jmin4(0:mnsize-1)
       REAL(rprec), DIMENSION(:,:,:), ALLOCATABLE :: ax, bx, dx
       REAL(rprec) :: mult_fac
-      INTEGER :: nsmin, nsmax, i, j, k, l
+      INTEGER :: nsmin, nsmax, i, j, k, l, ier
       INTEGER :: blksize, numjs, left, right
       INTEGER, ALLOCATABLE, DIMENSION(:) :: counts, disps
       REAL(rprec), ALLOCATABLE, DIMENSION(:,:,:,:) :: send_buf2
@@ -187,8 +187,17 @@ C-----------------------------------------------
           allgather_time = allgather_time + (allgvtoff-allgvton)
 
           CALL second0(tridslvton)
+          ier = 0
           CALL serial_tridslv_modified(ax,dx,bx,gcx,jmin4,jmax,mnsize-1,
-     1                          ns,ntmax)
+     1                          ns,ntmax,ier)
+
+          CALL MPI_Allreduce(MPI_IN_PLACE,ier,1,MPI_INTEGER,MPI_SUM,
+     1                       NS_COMM,MPI_ERR)
+          IF (ier /=0) THEN
+             lerror_sam = .true.
+             DEALLOCATE(ax,bx,dx)
+             RETURN
+          END IF
           CALL second0(tridslvtoff)
           tridslv_time = tridslv_time + (tridslvtoff-tridslvton)
 
@@ -255,8 +264,14 @@ C-----------------------------------------------
 
       ELSE ! If only one processor
         CALL second0(tridslvton)
+        ier = 0
         CALL serial_tridslv_modified(ax,dx,bx,gcx,jmin4,jmax,mnsize-1,
-     1                              ns,ntmax)
+     1                              ns,ntmax,ier)
+        IF (ier /=0) THEN
+           lerror_sam = .true.
+           DEALLOCATE(ax,bx,dx)
+           RETURN
+        END IF
         CALL second0(tridslvtoff)
         tridslv_time = tridslv_time + (tridslvtoff-tridslvton)
       END IF
@@ -379,7 +394,7 @@ C-----------------------------------------------
       END SUBROUTINE bst_parallel_tridiag_solver
 
       SUBROUTINE serial_tridslv_modified(a, d, b, c, jmin, jmax, mnd1,
-     1                                   ns,nrhs)
+     1                                   ns,nrhs,ier)
       USE stel_kinds
       USE vmec_main, ONLY: lfreeb
       IMPLICIT NONE
@@ -390,6 +405,7 @@ C-----------------------------------------------
       INTEGER, DIMENSION(0:mnd1), INTENT(in) :: jmin
       REAL(rprec), DIMENSION(0:mnd1,ns) :: a, d, b
       REAL(rprec), DIMENSION(0:mnd1,ns,nrhs), INTENT(inout) :: c
+      INTEGER, INTENT(inout) :: ier
 C-----------------------------------------------
 C   L o c a l   P a r a m e t e r s
 C-----------------------------------------------
@@ -407,6 +423,7 @@ C-----------------------------------------------
 !     ADDED VECTORIZATION ON FOURIER MODE ARGUMENT (01-2000)
 !     AND NEW ARGUMENT (NRHS) TO DO MULTIPLE RIGHT SIDES SIMULTANEOUSLY
 !
+      ier = 0
       IF (jmax .gt. ns) STOP 'jmax>ns in tridslv_par'
 
       ALLOCATE (alf(0:mnd1,ns), stat=in)
@@ -439,8 +456,13 @@ C-----------------------------------------------
       DO i0 = in1,jmax
          alf(:,i0-1) = a(:,i0-1)*psi0(:)
          psi0 = d(:,i0) - b(:,i0)*alf(:,i0-1)
-         IF (ANY(ABS(psi0) .le. 1.E-8_dp*ABS(d(:,i0)))) 
-     1       STOP 'psi0/d(i0) < 1.E-8: possible singularity in tridslv'
+!         IF (ANY(ABS(psi0) .le. 1.E-8_dp*ABS(d(:,i0)))) 
+!     1       STOP 'psi0/d(i0) < 1.E-8: possible singularity in tridslv'
+         IF (ANY(ABS(psi0) .le. 1.E-8_dp*ABS(d(:,i0)))) THEN
+            DEALLOCATE(alf)
+            ier = -1
+            RETURN
+         END IF
          psi0  = one/psi0
          DO jrhs = 1, nrhs
             c(:,i0,jrhs) = (c(:,i0,jrhs) - b(:,i0)*c(:,i0-1,jrhs))
