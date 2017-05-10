@@ -258,7 +258,12 @@
           CHARACTER(len=*), INTENT(in), OPTIONAL :: filename
           INTEGER, INTENT(in), OPTIONAL :: nu
           INTEGER, INTENT(in), OPTIONAL :: nv
+          
+          IF (error_status < 0) RETURN
 
+          CALL free_all(error_status)
+          IF (error_status < 0) RETURN
+          
           IF (PRESENT(filename)) THEN
              CALL read_wout_file (TRIM(filename), error_status)
              IF (error_status .NE. 0) THEN
@@ -267,17 +272,20 @@
              ENDIF
           ENDIF
           
-          CALL init_arrays_from_vmec (error_status)
-          CALL init_module(error_status, nu, nv)
+          CALL init_fourier_arrays_vmec (error_status)
+          CALL init_interpolation_mesh(error_status, nu, nv)
 
         END SUBROUTINE initialize_from_vmec
 
         
-        SUBROUTINE init_arrays_from_vmec (error_status)
+        SUBROUTINE init_fourier_arrays_vmec (error_status)
           IMPLICIT NONE
           INTEGER, INTENT(INOUT) :: error_status
           INTEGER :: mn
           
+          IF (error_status < 0) RETURN
+
+          CALL free_fourier_arrays(error_status)
           IF (error_status < 0) RETURN
           
           k1 = 1
@@ -298,9 +306,6 @@
           IF (error_status < 0) RETURN
           
           ! Allocations
-          IF (ALLOCATED(xm)) CALL mirtools_deallocate(error_status)
-          IF (error_status < 0) RETURN
-          
           ALLOCATE( &
             xm(1:mnmax_vmec) &
             ,xn(1:mnmax_vmec) &
@@ -490,10 +495,10 @@
           xn = -1 * INT(xn_vmec) / nfp
           xm = INT(xm_vmec)
           
-        END SUBROUTINE init_arrays_from_vmec
+        END SUBROUTINE init_fourier_arrays_vmec
 
         
-        SUBROUTINE init_module (error_status, nu, nv)
+        SUBROUTINE init_interpolation_mesh (error_status, nu, nv)
           IMPLICIT NONE
 
           INTEGER, INTENT(inout) :: error_status          
@@ -502,20 +507,23 @@
           INTEGER :: u
 
           IF (error_status < 0) RETURN
-
+          
+          CALL free_interpolation_mesh(error_status)
+          IF (error_status < 0) RETURN
+          
           IF (PRESENT(nu) .AND. PRESENT(nv)) THEN
-             nu_module = nu
-             nv_module = nv
+            nu_module = nu
+            nv_module = nv
           ELSE
-             CALL guess_nu_nv(nu_module, nv_module, error_status)
+            CALL guess_nu_nv(nu_module, nv_module, error_status)
           END IF
 
           IF (LOG_LEVEL >= 4) PRINT  '("Inititalizing mirtools with nu=", i0, " nv=", i0)', nu_module, nv_module
           
           ! Check module array initalization.
           IF (.NOT. ALLOCATED(xm)) THEN
-             error_status = -4
-             RETURN
+            error_status = -4
+            RETURN
           ENDIF
           
           ! Poloidal and toroidal coordinates.
@@ -533,58 +541,133 @@
           s_half(k1) = 0.0
           s_half(k2+1) = 1.0
           
-        END SUBROUTINE init_module
+        END SUBROUTINE init_interpolation_mesh
+
         
-        
-        SUBROUTINE mirtools_deallocate (error_status)
+        SUBROUTINE free_all (error_status)
           INTEGER, INTENT(inout) :: error_status
 
           IF (error_status < 0) RETURN
+          CALL free_fourier_arrays(error_status)
+          CALL free_interpolation_mesh(error_status)
+          CALL free_splines(error_status)
           
-          DEALLOCATE( &
-            rmnc &
-            ,zmns &
-            ,rmns &
-            ,zmnc &
-            ,bsmns_half &
-            ,bsupumnc_half &
-            ,bsupvmnc_half &
-            ,bsmnc_half &
-            ,bsupumns_half &
-            ,bsupvmns_half &
-            ,lmns_half &
-            ,lmnc_half &
-            ,bmnc_half &
-            ,bmns_half &
-            ,gmnc_half &
-            ,gmns_half &
-            ,bsmns_full &
-            ,bsupumnc_full &
-            ,bsupvmnc_full &
-            ,bsmnc_full &
-            ,bsupumns_full &
-            ,bsupvmns_full &
-            ,lmns_full &
-            ,lmnc_full &
-            ,bmnc_full &
-            ,bmns_full &
-            ,gmnc_full &
-            ,gmns_full &
-            )
-          
-          DEALLOCATE( &
-            xm &
-            ,xn &
-            )
+        END SUBROUTINE free_all
 
-          DEALLOCATE( &
-            xu &
-            ,xv &
-            ,s_full &
-            ,s_half &
-            )
-               
-        END SUBROUTINE mirtools_deallocate
+        
+        SUBROUTINE free_fourier_arrays (error_status)
+          INTEGER, INTENT(inout) :: error_status
+
+          IF (error_status < 0) RETURN
+
+          IF (ALLOCATED(rmnc)) THEN
+             DEALLOCATE( &
+               rmnc &
+               ,zmns &
+               ,rmns &
+               ,zmnc &
+               ,bsmns_half &
+               ,bsupumnc_half &
+               ,bsupvmnc_half &
+               ,bsmnc_half &
+               ,bsupumns_half &
+               ,bsupvmns_half &
+               ,lmns_half &
+               ,lmnc_half &
+               ,bmnc_half &
+               ,bmns_half &
+               ,gmnc_half &
+               ,gmns_half &
+               ,bsmns_full &
+               ,bsupumnc_full &
+               ,bsupvmnc_full &
+               ,bsmnc_full &
+               ,bsupumns_full &
+               ,bsupvmns_full &
+               ,lmns_full &
+               ,lmnc_full &
+               ,bmnc_full &
+               ,bmns_full &
+               ,gmnc_full &
+               ,gmns_full &
+               )
+
+             DEALLOCATE( &
+              xm &
+              ,xn &
+              )
+          ENDIF
+
+        END SUBROUTINE free_fourier_arrays
+
+        
+        SUBROUTINE free_interpolation_mesh (error_status)
+          INTEGER, INTENT(inout) :: error_status
+
+          IF (error_status < 0) RETURN
+
+          IF (ALLOCATED(xu)) THEN
+             DEALLOCATE( &
+               xu &
+               ,xv &
+               ,s_full &
+               ,s_half &
+               )
+          ENDIF
+          
+        END SUBROUTINE free_interpolation_mesh
+
+        
+        SUBROUTINE free_splines (error_status)
+          USE EZspline
+          INTEGER, INTENT(inout) :: error_status
+          INTEGER :: ez_status
+          ez_status = 0
+          
+          IF (error_status < 0) RETURN
+
+          IF (EZspline_allocated(R_spl)) CALL EZspline_free(R_spl,ez_status)
+          IF (EZspline_allocated(Z_spl)) CALL EZspline_free(Z_spl,ez_status)
+
+          IF (EZspline_allocated(Ru_spl)) CALL EZspline_free(Ru_spl,ez_status)
+          IF (EZspline_allocated(Rv_spl)) CALL EZspline_free(Rv_spl,ez_status)
+          IF (EZspline_allocated(Zu_spl)) CALL EZspline_free(Zu_spl,ez_status)
+          IF (EZspline_allocated(Zv_spl)) CALL EZspline_free(Zv_spl,ez_status)
+
+          IF (EZspline_allocated(Bs_spl)) CALL EZspline_free(Bs_spl,ez_status)
+          IF (EZspline_allocated(Bu_spl)) CALL EZspline_free(Bu_spl,ez_status)
+          IF (EZspline_allocated(Bv_spl)) CALL EZspline_free(Bv_spl,ez_status)
+          
+          IF (EZspline_allocated(B_spl)) CALL EZspline_free(B_spl,ez_status)
+
+          IF (EZspline_allocated(L_spl)) CALL EZspline_free(L_spl,ez_status)
+          IF (EZspline_allocated(Lu_spl)) CALL EZspline_free(Lu_spl,ez_status)
+          IF (EZspline_allocated(Lv_spl)) CALL EZspline_free(Lv_spl,ez_status)
+
+          IF (EZspline_allocated(G_spl)) CALL EZspline_free(G_spl,ez_status)
+
+          IF (EZspline_allocated(Vp_spl)) CALL EZspline_free(Vp_spl,ez_status)
+          IF (EZspline_allocated(b_fsa_spl)) CALL EZspline_free(b_fsa_spl,ez_status)
+          IF (EZspline_allocated(grho_fsa_spl)) CALL EZspline_free(grho_fsa_spl,ez_status)
+          IF (EZspline_allocated(grho2_fsa_spl)) CALL EZspline_free(grho2_fsa_spl,ez_status)
+          IF (EZspline_allocated(b2overgrho_fsa_spl)) CALL EZspline_free(b2overgrho_fsa_spl,ez_status)
+
+          IF (EZspline_allocated(S11_spl)) CALL EZspline_free(S11_spl,ez_status)
+          IF (EZspline_allocated(S12_spl)) CALL EZspline_free(S12_spl,ez_status)
+          IF (EZspline_allocated(S21_spl)) CALL EZspline_free(S21_spl,ez_status)
+          IF (EZspline_allocated(S22_spl)) CALL EZspline_free(S22_spl,ez_status)
+
+          IF (EZspline_allocated(DsDr_spl)) CALL EZspline_free(DsDr_spl,ez_status)
+          IF (EZspline_allocated(DsDphi_spl)) CALL EZspline_free(DsDphi_spl,ez_status)
+          IF (EZspline_allocated(dsDz_spl)) CALL EZspline_free(DsDz_spl,ez_status)
+
+          IF (EZspline_allocated(DrhoDr_spl)) CALL EZspline_free(DrhoDr_spl,ez_status)
+          IF (EZspline_allocated(DrhoDphi_spl)) CALL EZspline_free(DrhoDphi_spl,ez_status)
+          IF (EZspline_allocated(DrhoDz_spl)) CALL EZspline_free(DrhoDz_spl,ez_status)
+
+          IF (ez_status .NE. 0) error_status = -200 - ABS(ez_status)
+          
+        END SUBROUTINE free_splines
 
         
         SUBROUTINE guess_nu_nv(nu, nv, error_status)
@@ -633,6 +716,7 @@
           INTEGER :: ez_status
           DOUBLE PRECISION, ALLOCATABLE :: f_temp(:,:,:)
           REAL :: time_start, time_end
+          ez_status = 0
           
           IF (error_status < 0) RETURN
           
@@ -684,13 +768,14 @@
         SUBROUTINE initialize_splines_rzderiv(error_status)  
           USE EZspline
           IMPLICIT NONE
-          INTEGER, INTENT(inout)       :: error_status
+          INTEGER, INTENT(inout) :: error_status
           INTEGER :: ez_status
           INTEGER ::  mn
           DOUBLE PRECISION, ALLOCATABLE :: f_temp(:,:,:)
           DOUBLE PRECISION, ALLOCATABLE :: fmn_temp(:,:)
           REAL :: time_start, time_end
-
+          ez_status = 0
+          
           IF (error_status < 0) RETURN
           
           ! Check module initalization.
@@ -784,7 +869,8 @@
           INTEGER :: ez_status
           DOUBLE PRECISION, ALLOCATABLE :: f_temp(:,:,:)
           REAL :: time_start, time_end
-
+          ez_status = 0
+          
           IF (error_status < 0) RETURN
           
           ! Check module initalization.
@@ -850,6 +936,7 @@
           INTEGER :: ez_status
           DOUBLE PRECISION, ALLOCATABLE :: f_temp(:,:,:)
           REAL :: time_start, time_end
+          ez_status = 0
           
           IF (error_status < 0) RETURN
           
@@ -899,6 +986,7 @@
           DOUBLE PRECISION, ALLOCATABLE :: f_temp(:,:,:)
           DOUBLE PRECISION, ALLOCATABLE :: fmn_temp(:,:)
           REAL :: time_start, time_end
+          ez_status = 0
 
           IF (error_status < 0) RETURN
           
@@ -975,6 +1063,7 @@
           INTEGER :: ez_status
           DOUBLE PRECISION, ALLOCATABLE :: f_temp(:,:,:)
           REAL :: time_start, time_end
+          ez_status = 0
 
           IF (error_status < 0) RETURN
         
@@ -1031,6 +1120,7 @@
           DOUBLE PRECISION, ALLOCATABLE :: vp(:), fsa_bmod(:), grho(:), grho2(:), b2overgrho(:)
           DOUBLE PRECISION, ALLOCATABLE :: gsr(:,:,:), gsp(:,:,:), gsz(:,:,:), gs(:,:,:)
           REAL :: time_start, time_end
+          ez_status = 0
 
           IF (error_status < 0) RETURN
           
@@ -1153,6 +1243,7 @@
           DOUBLE PRECISION, ALLOCATABLE :: f_temp(:,:,:)
           DOUBLE PRECISION, ALLOCATABLE :: f1d_temp(:)
           REAL :: time_start, time_end
+          ez_status = 0
 
           IF (error_status < 0) RETURN
           
@@ -1262,6 +1353,7 @@
           INTEGER :: u
           DOUBLE PRECISION, ALLOCATABLE :: gsr(:,:,:), gsp(:,:,:), gsz(:,:,:)
           REAL :: time_start, time_end, time_01, time_02
+          ez_status = 0
 
           IF (error_status < 0) RETURN
           
@@ -1288,9 +1380,9 @@
             )
                                     
           ! Free Memory
-          IF (EZspline_allocated(Vp_spl)) CALL EZspline_free(DsDr_spl,ez_status)
-          IF (EZspline_allocated(Vp_spl)) CALL EZspline_free(DsDphi_spl,ez_status)
-          IF (EZspline_allocated(Vp_spl)) CALL EZspline_free(DsDz_spl,ez_status)
+          IF (EZspline_allocated(DsDr_spl)) CALL EZspline_free(DsDr_spl,ez_status)
+          IF (EZspline_allocated(DsDphi_spl)) CALL EZspline_free(DsDphi_spl,ez_status)
+          IF (EZspline_allocated(dsDz_spl)) CALL EZspline_free(DsDz_spl,ez_status)
           
           ! Preform Init
           CALL EZspline_init(DsDr_spl,  nu_module,nv_module,ns_t,bcs1,bcs1,bcs0,ez_status)
@@ -1320,6 +1412,8 @@
           DsDz_spl%x1 = xu*pi2; DsDz_spl%x2 = xv*pi2; DsDz_spl%x3 = s_full; DsDz_spl%isHermite = isherm
           CALL EZspline_setup(DsDz_spl,gsz,ez_status)
 
+          IF (ez_status .NE. 0) error_status = -200 - ABS(ez_status)
+
           ! deallocations
           DEALLOCATE(gsr,gsp,gsz)
 
@@ -1343,6 +1437,7 @@
           INTEGER :: u
           DOUBLE PRECISION, ALLOCATABLE :: gsr(:,:,:), gsp(:,:,:), gsz(:,:,:), DrhoDs_temp(:,:,:)
           REAL :: time_start, time_end, time_01, time_02, time_03, time_04, time_05
+          ez_status = 0
 
           IF (error_status < 0) RETURN
           
@@ -1371,9 +1466,9 @@
             )
                                     
           ! Free Memory
-          IF (EZspline_allocated(Vp_spl)) CALL EZspline_free(DrhoDr_spl,ez_status)
-          IF (EZspline_allocated(Vp_spl)) CALL EZspline_free(DrhoDphi_spl,ez_status)
-          IF (EZspline_allocated(Vp_spl)) CALL EZspline_free(DrhoDz_spl,ez_status)
+          IF (EZspline_allocated(DrhoDr_spl)) CALL EZspline_free(DrhoDr_spl,ez_status)
+          IF (EZspline_allocated(DrhoDphi_spl)) CALL EZspline_free(DrhoDphi_spl,ez_status)
+          IF (EZspline_allocated(DrhoDz_spl)) CALL EZspline_free(DrhoDz_spl,ez_status)
           
           ! Preform Init
           CALL EZspline_init(DrhoDr_spl,  nu_module,nv_module,ns_t,bcs1,bcs1,bcs0,ez_status)
@@ -1414,7 +1509,9 @@
           
           DrhoDz_spl%x1 = xu*pi2; DrhoDz_spl%x2 = xv*pi2; DrhoDz_spl%x3 = s_full; DrhoDz_spl%isHermite = isherm
           CALL EZspline_setup(DrhoDz_spl,gsz,ez_status)          
-          
+
+          IF (ez_status .NE. 0) error_status = -200 - ABS(ez_status)
+
           ! deallocations
           DEALLOCATE(gsr,gsp,gsz,DrhoDs_temp)
 
@@ -1708,7 +1805,9 @@
           !   Realspace cylindrical cooridantes.
           DOUBLE PRECISION, INTENT(out) ::  point_cyl(3)
           INTEGER, INTENT(inout) ::  error_status
+          INTEGER :: ez_status
           DOUBLE PRECISION :: v_val
+          ez_status = 0
 
           IF (error_status < 0) RETURN
           point_cyl(:) = 0
@@ -1718,11 +1817,12 @@
           
           v_val = MOD(point_flx(3) , pi2/nfp)*nfp
           
-          CALL EZspline_isInDomain(R_spl, point_flx(2), v_val, point_flx(1), error_status)
-          IF (error_status == 0) THEN
-             CALL EZspline_interp(R_spl, point_flx(2), v_val, point_flx(1), point_cyl(1), error_status)
-             CALL EZspline_interp(Z_spl, point_flx(2), v_val, point_flx(1), point_cyl(3), error_status)
+          CALL EZspline_isInDomain(R_spl, point_flx(2), v_val, point_flx(1), ez_status)
+          IF (ez_status == 0) THEN
+             CALL EZspline_interp(R_spl, point_flx(2), v_val, point_flx(1), point_cyl(1), ez_status)
+             CALL EZspline_interp(Z_spl, point_flx(2), v_val, point_flx(1), point_cyl(3), ez_status)
              point_cyl(2) = point_flx(3)
+             IF (ez_status .NE. 0) error_status = -200 - ABS(ez_status)
           ELSE
              error_status = -2
           END IF
@@ -1736,8 +1836,10 @@
           DOUBLE PRECISION, INTENT(in) :: point_flx(3)
           DOUBLE PRECISION, INTENT(out) :: modb
           INTEGER, INTENT(inout) :: error_status
+          INTEGER :: ez_status
          
           DOUBLE PRECISION :: v_val
+          ez_status = 0
 
           IF (error_status < 0) RETURN
           modb = 0
@@ -1747,9 +1849,10 @@
           IF (.NOT. EZspline_allocated(B_spl)) CALL initialize_splines_modb(error_status)
           IF (error_status < 0) RETURN
           
-          CALL EZSPLINE_isInDomain(B_spl, point_flx(2), v_val, point_flx(1), error_status)
-          IF (error_status == 0) THEN
-             CALL EZspline_interp(B_spl, point_flx(2), v_val, point_flx(1), modb, error_status)
+          CALL EZSPLINE_isInDomain(B_spl, point_flx(2), v_val, point_flx(1), ez_status)
+          IF (ez_status == 0) THEN
+             CALL EZspline_interp(B_spl, point_flx(2), v_val, point_flx(1), modb, ez_status)
+             IF (ez_status .NE. 0) error_status = -200 - ABS(ez_status)
           ELSE
              error_status = -2
           END IF
@@ -1764,7 +1867,9 @@
           DOUBLE PRECISION, INTENT(out) :: b_flx(3)
           INTEGER, INTENT(inout) :: error_status
          
+          INTEGER :: ez_status
           DOUBLE PRECISION :: v_val
+          ez_status = 0
 
           IF (error_status < 0) RETURN
           b_flx(:) = 0
@@ -1774,11 +1879,12 @@
           IF (.NOT. EZspline_allocated(Bs_spl)) CALL initialize_splines_b(error_status)
           IF (error_status < 0) RETURN
           
-          CALL EZSPLINE_isInDomain(Bs_spl, point_flx(2), v_val, point_flx(1), error_status)
-          IF (error_status == 0) THEN
-             CALL EZspline_interp(Bs_spl, point_flx(2), v_val, point_flx(1), b_flx(1), error_status)
-             CALL EZspline_interp(Bu_spl, point_flx(2), v_val, point_flx(1), b_flx(2), error_status)
-             CALL EZspline_interp(Bv_spl, point_flx(2), v_val, point_flx(1), b_flx(3), error_status)
+          CALL EZSPLINE_isInDomain(Bs_spl, point_flx(2), v_val, point_flx(1), ez_status)
+          IF (ez_status == 0) THEN
+             CALL EZspline_interp(Bs_spl, point_flx(2), v_val, point_flx(1), b_flx(1), ez_status)
+             CALL EZspline_interp(Bu_spl, point_flx(2), v_val, point_flx(1), b_flx(2), ez_status)
+             CALL EZspline_interp(Bv_spl, point_flx(2), v_val, point_flx(1), b_flx(3), ez_status)
+             IF (ez_status .NE. 0) error_status = -200 - ABS(ez_status)
           ELSE
              error_status = -2
           END IF
@@ -1792,12 +1898,13 @@
           DOUBLE PRECISION, INTENT(in) :: point_flx(3)
           DOUBLE PRECISION, INTENT(out) :: b_cyl(3)
           INTEGER, INTENT(inout) :: error_status
-
+          INTEGER :: ez_status
           DOUBLE PRECISION :: point_cyl(3)
           DOUBLE PRECISION :: b_flx(3)
           DOUBLE PRECISION :: R_grad(3), Z_grad(3)
          
           DOUBLE PRECISION :: v_val
+          ez_status = 0
 
           IF (error_status < 0) RETURN
           b_cyl(:) = 0
@@ -1814,16 +1921,17 @@
           CALL cyl_from_flx(point_flx, point_cyl, error_status)
           IF (error_status < 0) RETURN
 
-          CALL EZSPLINE_isInDomain(R_spl, point_flx(2), v_val, point_flx(1), error_status)
-          IF (error_status == 0) THEN
+          CALL EZSPLINE_isInDomain(R_spl, point_flx(2), v_val, point_flx(1), ez_status)
+          IF (ez_status == 0) THEN
              R_grad = 0; Z_grad = 0
-             CALL EZspline_interp(Ru_spl, point_flx(2), v_val, point_flx(1), R_grad(1), error_status)
-             CALL EZspline_interp(Rv_spl, point_flx(2), v_val, point_flx(1), R_grad(2), error_status)
-             CALL EZspline_interp(Zu_spl, point_flx(2), v_val, point_flx(1), Z_grad(1), error_status)
-             CALL EZspline_interp(Zv_spl, point_flx(2), v_val, point_flx(1), Z_grad(2), error_status)
+             CALL EZspline_interp(Ru_spl, point_flx(2), v_val, point_flx(1), R_grad(1), ez_status)
+             CALL EZspline_interp(Rv_spl, point_flx(2), v_val, point_flx(1), R_grad(2), ez_status)
+             CALL EZspline_interp(Zu_spl, point_flx(2), v_val, point_flx(1), Z_grad(1), ez_status)
+             CALL EZspline_interp(Zv_spl, point_flx(2), v_val, point_flx(1), Z_grad(2), ez_status)
              b_cyl(1) = R_grad(3)*b_flx(1) + R_grad(1)*b_flx(2) + R_grad(2)*b_flx(3)*nfp
              b_cyl(2) = point_cyl(1) * b_flx(3)
              b_cyl(3) = Z_grad(3)*b_flx(1) + Z_grad(1)*b_flx(2) + Z_grad(2)*b_flx(3)*nfp
+             IF (ez_status .NE. 0) error_status = -200 - ABS(ez_status)
           ELSE
              error_status = -2
           END IF
@@ -1891,6 +1999,7 @@
           INTEGER, INTENT(inout) :: error_status
           INTEGER :: ez_status
           DOUBLE PRECISION :: v_val
+          ez_status = 0
 
           IF (error_status < 0) RETURN
 
@@ -1947,6 +2056,7 @@
           INTEGER, INTENT(inout) :: error_status
           INTEGER :: ez_status
           DOUBLE PRECISION :: v_val
+          ez_status = 0
 
           IF (error_status < 0) RETURN
 
@@ -2001,21 +2111,23 @@
           DOUBLE PRECISION, INTENT(in) :: point_flx(3)
           DOUBLE PRECISION, INTENT(out) :: jacobian
           INTEGER, INTENT(inout) :: error_status
+          INTEGER :: ez_status
          
           DOUBLE PRECISION :: v_val
+          ez_status = 0
 
           IF (error_status < 0) RETURN
           jacobian = 0
 
           IF (.NOT. EZspline_allocated(G_spl)) CALL initialize_splines_jacobian(error_status)
-          IF (.NOT. EZspline_allocated(Ru_spl)) CALL initialize_splines_rzderiv(error_status)
           IF (error_status < 0) RETURN
                     
           v_val = MOD(point_flx(3), pi2/nfp)*nfp
 
-          CALL EZSPLINE_isInDomain(G_spl, point_flx(2), v_val, point_flx(1), error_status)
-          IF (error_status == 0) THEN
-             CALL EZspline_interp(G_spl, point_flx(2), v_val, point_flx(1), jacobian, error_status)
+          CALL EZSPLINE_isInDomain(G_spl, point_flx(2), v_val, point_flx(1), ez_status)
+          IF (ez_status == 0) THEN
+             CALL EZspline_interp(G_spl, point_flx(2), v_val, point_flx(1), jacobian, ez_status)
+             IF (ez_status .NE. 0) error_status = -200 - ABS(ez_status)
           ELSE
              error_status = -2
           END IF
@@ -2029,6 +2141,8 @@
           DOUBLE PRECISION, INTENT(in) :: s_val
           DOUBLE PRECISION, INTENT(out) :: fsa_modb
           INTEGER, INTENT(inout) :: error_status
+          INTEGER :: ez_status
+          ez_status = 0
 
           IF (error_status < 0) RETURN
           fsa_modb = 0
@@ -2036,8 +2150,11 @@
           IF (.NOT. EZspline_allocated(b_fsa_spl)) CALL initialize_splines_fsa(error_status)
           IF (error_status < 0) RETURN
           
-          IF (s_val >= 0 .and. s_val <= 1) THEN
-             CALL EZspline_interp(b_fsa_spl, s_val, fsa_modb, error_status)
+
+          CALL EZSPLINE_isInDomain(b_fsa_spl, s_val, ez_status)
+          IF (ez_status == 0) THEN
+             CALL EZspline_interp(b_fsa_spl, s_val, fsa_modb, ez_status)
+             IF (ez_status .NE. 0) error_status = -200 - ABS(ez_status)
           ELSE
              error_status = -2
           END IF
@@ -2051,6 +2168,8 @@
           DOUBLE PRECISION, INTENT(in) :: s_val
           DOUBLE PRECISION, INTENT(out) :: fsa_gradrho
           INTEGER, INTENT(inout) :: error_status
+          INTEGER :: ez_status
+          ez_status = 0
 
           IF (error_status < 0) RETURN
           fsa_gradrho = 0
@@ -2058,8 +2177,10 @@
           IF (.NOT. EZspline_allocated(grho_fsa_spl)) CALL initialize_splines_fsa(error_status)
           IF (error_status < 0) RETURN
           
-          IF (s_val >= 0 .and. s_val <= 1) THEN
-             CALL EZspline_interp(grho_fsa_spl, s_val, fsa_gradrho, error_status)
+          CALL EZSPLINE_isInDomain(grho_fsa_spl, s_val, ez_status)
+          IF (ez_status == 0) THEN
+             CALL EZspline_interp(grho_fsa_spl, s_val, fsa_gradrho, ez_status)
+             IF (ez_status .NE. 0) error_status = -200 - ABS(ez_status)
           ELSE
              error_status = -2
           END IF
@@ -2073,6 +2194,8 @@
           DOUBLE PRECISION, INTENT(in) :: s_val
           DOUBLE PRECISION, INTENT(out) :: fsa_gradrho2
           INTEGER, INTENT(inout) :: error_status
+          INTEGER :: ez_status
+          ez_status = 0
 
           IF (error_status < 0) RETURN
           fsa_gradrho2 = 0
@@ -2080,8 +2203,10 @@
           IF (.NOT. EZspline_allocated(grho2_fsa_spl)) CALL initialize_splines_fsa(error_status)
           IF (error_status < 0) RETURN
           
-          IF (s_val >= 0 .and. s_val <= 1) THEN
-             CALL EZspline_interp(grho2_fsa_spl, s_val, fsa_gradrho2, error_status)
+          CALL EZSPLINE_isInDomain(grho2_fsa_spl, s_val, ez_status)
+          IF (ez_status == 0) THEN
+             CALL EZspline_interp(grho2_fsa_spl, s_val, fsa_gradrho2, ez_status)
+             IF (ez_status .NE. 0) error_status = -200 - ABS(ez_status)
           ELSE
              error_status = -2
           END IF
@@ -2095,6 +2220,8 @@
           DOUBLE PRECISION, INTENT(in) :: s_val
           DOUBLE PRECISION, INTENT(out) :: fsa_b2overgradrho
           INTEGER, INTENT(inout) :: error_status
+          INTEGER :: ez_status
+          ez_status = 0
 
           IF (error_status < 0) RETURN
           fsa_b2overgradrho = 0
@@ -2102,8 +2229,10 @@
           IF (.NOT. EZspline_allocated(b2overgrho_fsa_spl)) CALL initialize_splines_fsa(error_status)
           IF (error_status < 0) RETURN
           
-          IF (s_val >= 0 .and. s_val <= 1) THEN
-             CALL EZspline_interp(b2overgrho_fsa_spl, s_val, fsa_b2overgradrho, error_status)
+          CALL EZSPLINE_isInDomain(b2overgrho_fsa_spl, s_val, ez_status)
+          IF (ez_status == 0) THEN
+             CALL EZspline_interp(b2overgrho_fsa_spl, s_val, fsa_b2overgradrho, ez_status)
+             IF (ez_status .NE. 0) error_status = -200 - ABS(ez_status)
           ELSE
              error_status = -2
           END IF
