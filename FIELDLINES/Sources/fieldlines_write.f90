@@ -74,16 +74,16 @@
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'nsteps',ier)
          CALL write_scalar_hdf5(fid,'npoinc',ier,INTVAR=npoinc,ATT='Number of steps per field period',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'npoinc',ier)
-         CALL write_var_hdf5(fid,'R_lines',nlines,nsteps+1,ier,DBLVAR=R_lines,ATT='Cylindrical R of Fieldline [m]',ATT_NAME='description')
-         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'R_lines',ier)
-         CALL write_var_hdf5(fid,'Z_lines',nlines,nsteps+1,ier,DBLVAR=Z_lines,ATT='Cylindrical Z of Fieldline [m]',ATT_NAME='description')
-         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'Z_lines',ier)
-         CALL write_var_hdf5(fid,'PHI_lines',nlines,nsteps+1,ier,DBLVAR=PHI_lines,ATT='Cylindrical Phi of Fieldline [rad]',ATT_NAME='description')
-         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'PHI_lines',ier)
-         IF (lmodb) THEN
-            CALL write_var_hdf5(fid,'B_lines',nlines,nsteps+1,ier,DBLVAR=B_lines,ATT='|B| Along fieldline [T]',ATT_NAME='description')
-            IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'B_lines',ier)
-         END IF
+         !CALL write_var_hdf5(fid,'R_lines',nlines,nsteps+1,ier,DBLVAR=R_lines,ATT='Cylindrical R of Fieldline [m]',ATT_NAME='description')
+         !IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'R_lines',ier)
+         !CALL write_var_hdf5(fid,'Z_lines',nlines,nsteps+1,ier,DBLVAR=Z_lines,ATT='Cylindrical Z of Fieldline [m]',ATT_NAME='description')
+         !IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'Z_lines',ier)
+         !CALL write_var_hdf5(fid,'PHI_lines',nlines,nsteps+1,ier,DBLVAR=PHI_lines,ATT='Cylindrical Phi of Fieldline [rad]',ATT_NAME='description')
+         !IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'PHI_lines',ier)
+         !IF (lmodb) THEN
+         !   CALL write_var_hdf5(fid,'B_lines',nlines,nsteps+1,ier,DBLVAR=B_lines,ATT='|B| Along fieldline [T]',ATT_NAME='description')
+         !   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'B_lines',ier)
+         !END IF
       END IF
       ! Wall Data
       IF (ALLOCATED(vertex)) THEN

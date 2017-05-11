@@ -41,6 +41,7 @@
       phiend_temp = pi2
       ra = r_start(1); za = z_start(1); phia=phi_start(1)
       ! Get inner point
+      STOP 'DISABLED Due to upgrades'
       IF (myid == master) THEN
          WRITE(6,'(A)') '===========EDGE SEARCH=========='
          CALL FLUSH(6)

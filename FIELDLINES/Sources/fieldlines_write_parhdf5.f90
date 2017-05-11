@@ -28,9 +28,9 @@
       IMPLICIT NONE
       INTEGER                                :: n1,n2,m1,m2,mystart,myend
       CHARACTER(LEN=*), INTENT(in)           :: var_name
-      INTEGER, INTENT(in),  OPTIONAL         :: INTVAR(mystart:myend,n1:n2)
-      REAL, INTENT(in),  OPTIONAL            :: FLTVAR(mystart:myend,n1:n2)
-      DOUBLE PRECISION, INTENT(in), OPTIONAL :: DBLVAR(mystart:myend,n1:n2)
+      INTEGER, INTENT(in),  OPTIONAL         :: INTVAR(mystart:myend,m1:m2)
+      REAL, INTENT(in),  OPTIONAL            :: FLTVAR(mystart:myend,m1:m2)
+      DOUBLE PRECISION, INTENT(in), OPTIONAL :: DBLVAR(mystart:myend,m1:m2)
 !-----------------------------------------------------------------------
 !     Local Variables
 !          ier          Error Flag
@@ -67,7 +67,7 @@
       dimsf(1) = n2-n1+1
       dimsf(2) = m2-m1+1
       chunk_dims(1) = myend-mystart+1
-      chunk_dims(2) = n2-n1+1
+      chunk_dims(2) = m2-m1+1
       counts(1) = 1
       counts(2) = 1
       offset(1) = mystart-1
@@ -80,13 +80,13 @@
       CALL h5open_f(ier)
       ! Setup File access
       CALL h5pcreate_f(H5P_FILE_ACCESS_F, fapl_id, ier)
-      CALL h5pset_fapl_mpio_f(fapl_id, MPI_COMM_BEAMS, info, ier)
+      CALL h5pset_fapl_mpio_f(fapl_id, MPI_COMM_FIELDLINES, info, ier)
       CALL h5pget_driver_f(fapl_id, driver_id, ier)
       ! Open file
-      CALL h5fopen_f('beams3d_'//TRIM(id_string)//'.h5', H5F_ACC_RDWR_F, file_id, ier, access_prp = fapl_id)
+      CALL h5fopen_f('fieldlines_'//TRIM(id_string)//'.h5', H5F_ACC_RDWR_F, file_id, ier, access_prp = fapl_id)
 !!!!!!! Begin writing
 
-      WRITE(6,*) myworkid,dimsf,chunk_dims,counts,offset; CALL FLUSH(6)
+      WRITE(6,*) myid,dimsf,chunk_dims,counts,offset; CALL FLUSH(6)
 
       ! Create Spaces
       CALL h5screate_simple_f(rank, dimsf, fspace_id, ier)
@@ -148,10 +148,10 @@
             CALL h5pcreate_f(H5P_FILE_ACCESS_F, fapl_id, ier)
 
             ! Open file
-            CALL h5fopen_f('beams3d_'//TRIM(id_string)//'.h5', H5F_ACC_RDWR_F, file_id, ier, access_prp = H5P_DEFAULT_F)
+            CALL h5fopen_f('fieldlines_'//TRIM(id_string)//'.h5', H5F_ACC_RDWR_F, file_id, ier, access_prp = H5P_DEFAULT_F)
 
             ! Open or create the dataset and get/create dataspace identifer
-            IF  (myworkid == master) THEN
+            IF  (myid == master) THEN
                CALL h5screate_simple_f(rank, dimsf, fspace_id, ier)
                IF (livar) CALL h5dcreate_f(file_id, TRIM(var_name), H5T_NATIVE_INTEGER, fspace_id, dset_id, ier)
                IF (lfvar) CALL h5dcreate_f(file_id, TRIM(var_name), H5T_NATIVE_DOUBLE, fspace_id, dset_id, ier)
@@ -187,8 +187,8 @@
             ! Close the fortran interface
             CALL h5close_f(ier)
          END IF
-         CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
-         IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'beams3d_init_coil',ierr_mpi)
+         CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
+         IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_write_parhdf5',ierr_mpi)
       END DO
 
 !DEC$ ENDIF

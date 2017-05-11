@@ -21,6 +21,7 @@
       USE fieldlines_lines
       USE fieldlines_grid, ONLY: phimin, phimax, delta_phi,&
                                  BR_spl, BZ_spl, MU_spl, MODB_spl
+      USE fieldlines_write_par
       USE wall_mod, ONLY: ihit_array, nface, wall_free
       USE mpi_params                                                    ! MPI
 !-----------------------------------------------------------------------
@@ -292,27 +293,36 @@
       IF (lverb) WRITE(6,*) ' '
       
 !DEC$ IF DEFINED (MPI_OPT)
-      IF (myid==master) THEN
-         R_lines(myend+1:nlines,0:nsteps) = 0
-         Z_lines(myend+1:nlines,0:nsteps) = 0
-         PHI_lines(myend+1:nlines,0:nsteps) = 0
-         B_lines(myend+1:nlines,0:nsteps) = 0
-         mystart = 1; myend=nlines
-      END IF
 
-      CALL FIELDLINES_TRANSMIT_2DDBL(mystart,myend,0,nsteps,R_lines,&
-                                     1,nlines,myid,master,MPI_COMM_FIELDLINES,ier)
-      IF (ALLOCATED(R_lines) .and. myid /= master) DEALLOCATE(R_lines)
-      CALL FIELDLINES_TRANSMIT_2DDBL(mystart,myend,0,nsteps,PHI_lines,&
-                                     1,nlines,myid,master,MPI_COMM_FIELDLINES,ier)
-      IF (ALLOCATED(PHI_lines) .and. myid /= master) DEALLOCATE(PHI_lines)
-      CALL FIELDLINES_TRANSMIT_2DDBL(mystart,myend,0,nsteps,Z_lines,&
-                                     1,nlines,myid,master,MPI_COMM_FIELDLINES,ier)
-      IF (ALLOCATED(Z_lines) .and. myid /= master) DEALLOCATE(Z_lines)
-      CALL FIELDLINES_TRANSMIT_2DDBL(mystart,myend,0,nsteps,B_lines,&
-                                     1,nlines,myid,master,MPI_COMM_FIELDLINES,ier)
-      IF (ALLOCATED(B_lines) .and. myid /= master) DEALLOCATE(B_lines)
 
+      CALL fieldlines_write_parhdf5(1, nlines, 0, nsteps, mystart, myend,   'R_lines', DBLVAR=R_lines)
+      CALL fieldlines_write_parhdf5(1, nlines, 0, nsteps, mystart, myend, 'PHI_lines', DBLVAR=PHI_lines)
+      CALL fieldlines_write_parhdf5(1, nlines, 0, nsteps, mystart, myend,   'Z_lines', DBLVAR=Z_lines)
+      CALL fieldlines_write_parhdf5(1, nlines, 0, nsteps, mystart, myend,   'B_lines', DBLVAR=B_lines)
+      !CALL fieldlines_write_parhdf5(1, nlines, 0, npoinc, mystart, myend,    'PHI_lines', DBLVAR=PHI_lines)
+      !CALL fieldlines_write_parhdf5(1, nlines, 0, npoinc, mystart, myend,      'Z_lines', DBLVAR=Z_lines)
+      !CALL fieldlines_write_parhdf5(1, nlines, 0, npoinc, mystart, myend,      'B_lines', DBLVAR=B_lines)
+!      IF (myid==master) THEN
+!         R_lines(myend+1:nlines,0:nsteps) = 0
+!         Z_lines(myend+1:nlines,0:nsteps) = 0
+!         PHI_lines(myend+1:nlines,0:nsteps) = 0
+!         B_lines(myend+1:nlines,0:nsteps) = 0
+!         mystart = 1; myend=nlines
+!      END IF
+
+!      CALL FIELDLINES_TRANSMIT_2DDBL(mystart,myend,0,nsteps,R_lines,&
+!                                     1,nlines,myid,master,MPI_COMM_FIELDLINES,ier)
+!      IF (ALLOCATED(R_lines) .and. myid /= master) DEALLOCATE(R_lines)
+!      CALL FIELDLINES_TRANSMIT_2DDBL(mystart,myend,0,nsteps,PHI_lines,&
+!                                     1,nlines,myid,master,MPI_COMM_FIELDLINES,ier)
+!      IF (ALLOCATED(PHI_lines) .and. myid /= master) DEALLOCATE(PHI_lines)
+!      CALL FIELDLINES_TRANSMIT_2DDBL(mystart,myend,0,nsteps,Z_lines,&
+!                                     1,nlines,myid,master,MPI_COMM_FIELDLINES,ier)
+!      IF (ALLOCATED(Z_lines) .and. myid /= master) DEALLOCATE(Z_lines)
+!      CALL FIELDLINES_TRANSMIT_2DDBL(mystart,myend,0,nsteps,B_lines,&
+!                                     1,nlines,myid,master,MPI_COMM_FIELDLINES,ier)
+!      IF (ALLOCATED(B_lines) .and. myid /= master) DEALLOCATE(B_lines)
+!
       CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
       IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_follow',ierr_mpi)
       ! Don't worry about telling the slaves, they won't do any writing.

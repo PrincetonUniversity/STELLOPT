@@ -302,6 +302,7 @@
       ! Handle different run type
       CALL fieldlines_init
       IF (lemc3 .or. lbfield_only .or. lafield_only) nruntype=runtype_norun
+      IF (myid == master) CALL fieldlines_write
       SELECT CASE(nruntype)
          CASE(runtype_old)
             CALL fieldlines_follow
@@ -326,7 +327,8 @@
          CASE(runtype_norun)
       END SELECT
       ! Output Date
-      IF (myid == master) CALL fieldlines_write
+      !IF (myid == master) CALL fieldlines_write
+      
 
       ! Clean up
       IF (lvessel) CALL wall_free(ier)

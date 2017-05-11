@@ -77,6 +77,7 @@ fieldlines_follow.o: \
       fieldlines_runtime.o \
       fieldlines_lines.o \
       fieldlines_grid.o \
+      fieldlines_write_parhdf5.o \
       ../../LIBSTELL/Release/mpi_params.o
 
 
