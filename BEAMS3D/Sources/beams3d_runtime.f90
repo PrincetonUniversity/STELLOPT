@@ -304,6 +304,7 @@ CONTAINS
         END IF
         CALL FLUSH(6)
 !DEC$ IF DEFINED (MPI_OPT)
+        !WRITE(6,*) 'GOT HERE',TRIM(string_val),ierr; CALL FLUSH(6)
         CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
         ALLOCATE(error_array(1:nprocs_beams))
         ierr_mpi = 0
