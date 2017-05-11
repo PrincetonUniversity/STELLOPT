@@ -6,6 +6,11 @@ fieldlines_main.o: \
       fieldlines_grid.o \
       fieldlines_runtime.o 
       
+      
+fieldlines_write_parhdf5.o: \
+      ../../LIBSTELL/Release/mpi_params.o \
+      fieldlines_runtime.o 
+      
 
 fieldlines_runtime.o: \
       ../../LIBSTELL/Release/stel_kinds.o 

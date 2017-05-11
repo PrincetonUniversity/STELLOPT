@@ -121,20 +121,20 @@
       ! Allocations
       ALLOCATE(q(neqs_nag),STAT=ier)
       IF (ier /= 0) CALL handle_err(ALLOC_ERR,'Q',ier)
-      IF (myid == master) THEN
-         ALLOCATE(R_lines(nlines,0:nsteps),Z_lines(nlines,0:nsteps),PHI_lines(nlines,0:nsteps),STAT=ier)
-         IF (ier /= 0) CALL handle_err(ALLOC_ERR,'R_LINES, Z_LINES PHI_LINES',ier)
-         ALLOCATE(B_lines(nlines,0:nsteps),STAT=ier)
-         IF (ier /= 0) CALL handle_err(ALLOC_ERR,'B_LINES',ier)
-         B_lines = -1
-         R_lines=0.0
-         Z_lines=0.0
-         PHI_lines=-1.0
-         R_lines(1:nlines,0)   = R_start(1:nlines)
-         Z_lines(1:nlines,0)   = Z_start(1:nlines)
-         PHI_lines(1:nlines,0) = phi_start(1:nlines)
-      ELSE
-         IF (mystart <= nlines) THEN
+!      IF (myid == master) THEN
+!         ALLOCATE(R_lines(nlines,0:nsteps),Z_lines(nlines,0:nsteps),PHI_lines(nlines,0:nsteps),STAT=ier)
+!         IF (ier /= 0) CALL handle_err(ALLOC_ERR,'R_LINES, Z_LINES PHI_LINES',ier)
+!         ALLOCATE(B_lines(nlines,0:nsteps),STAT=ier)
+!         IF (ier /= 0) CALL handle_err(ALLOC_ERR,'B_LINES',ier)
+!         B_lines = -1
+!         R_lines=0.0
+!         Z_lines=0.0
+!         PHI_lines=-1.0
+!         R_lines(1:nlines,0)   = R_start(1:nlines)
+!         Z_lines(1:nlines,0)   = Z_start(1:nlines)
+!         PHI_lines(1:nlines,0) = phi_start(1:nlines)
+!      ELSE
+!         IF (mystart <= nlines) THEN
             ALLOCATE(R_lines(mystart:myend,0:nsteps),Z_lines(mystart:myend,0:nsteps),PHI_lines(mystart:myend,0:nsteps),STAT=ier)
             IF (ier /= 0) CALL handle_err(ALLOC_ERR,'R_LINES, Z_LINES PHI_LINES',ier)
             ALLOCATE(B_lines(mystart:myend,0:nsteps),STAT=ier)
@@ -146,8 +146,8 @@
             R_lines(mystart:myend,0)   = R_start(mystart:myend)
             Z_lines(mystart:myend,0)   = Z_start(mystart:myend)
             PHI_lines(mystart:myend,0) = phi_start(mystart:myend)
-         END IF
-      END IF
+!         END IF
+!      END IF
 
       ! Output some stuff
       IF (lverb) THEN
