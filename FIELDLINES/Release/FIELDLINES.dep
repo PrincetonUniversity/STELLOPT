@@ -77,7 +77,6 @@ fieldlines_follow.o: \
       fieldlines_runtime.o \
       fieldlines_lines.o \
       fieldlines_grid.o \
-      fieldlines_write_parhdf5.o \
       ../../LIBSTELL/Release/mpi_params.o
 
 
@@ -160,7 +159,11 @@ drkhvg.o:
 fieldlines_write.o: \
       ../../LIBSTELL/Release/stel_kinds.o \
       ../../LIBSTELL/Release/ez_hdf5.o \
+      ../../LIBSTELL/Release/safe_open_mod.o \
+      ../../LIBSTELL/Release/mpi_params.o \
+      ../../LIBSTELL/Release/wall_mod.o \
       fieldlines_grid.o \
+      fieldlines_write_parhdf5.o \
       fieldlines_runtime.o \
       fieldlines_lines.o
       
