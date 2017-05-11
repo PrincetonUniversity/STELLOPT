@@ -60,8 +60,7 @@
       alpha = 0.75
       nfp = (pi2/phimax)
       phi2 = phi0+pi2/nfp
-      PRINT *,phi2,nfp,phi0
-      IF (lverb) PRINT *,nfp
+      !phi2 = phi0+pi2
       IF (lverb) WRITE(6,'(A)') '===========AXIS SEARCH=========='
       IF (lverb) WRITE(6,'(A)') '        R0        Z0       Error     '
       IF (lverb) WRITE(6,'(A,F8.5,F8.5)') '     ',r0,z0
@@ -73,14 +72,13 @@
          CALL follow_single(r1,phi0,z1,phi2,q4)
          rerr = r0-r1
          zerr = z0-z1
-         PRINT *,r0,phi0,z0,r1,phi2,z1,rerr,zerr
+         IF (lverb) WRITE(6,'(A,F8.5,1X,F8.5,1X,ES11.4)') '     ',r0,z0,sqrt(rerr*rerr+zerr*zerr)
          IF (sqrt(rerr*rerr+zerr*zerr) < (follow_tol*10)) EXIT ! Factor of 10 prevents overworking the algorithm.
-         !IF (lverb) WRITE(6,'(F8.5,F8.5,ES11.4)') r0,z0,sqrt(rerr*rerr+zerr*zerr)
          q4(1) = q4(1) - 1
          q4(4) = q4(4) - 1
          r0   = r0 + alpha*(q4(4) * rerr - q4(2) * zerr) / (q4(1)*q4(4)-q4(2)*q4(3))
          z0   = z0 + alpha*(-q4(3) * rerr + q4(1) * zerr) / (q4(1)*q4(4)-q4(2)*q4(3))
-         IF (i > 25) EXIT
+         IF (i > 200) EXIT
       END DO
       IF (lverb) WRITE(6,'(A,F8.5,1X,F8.5,1X,ES11.4)') '     ',r0,z0,sqrt(rerr*rerr+zerr*zerr)
       ! Now return eigenvalues of q

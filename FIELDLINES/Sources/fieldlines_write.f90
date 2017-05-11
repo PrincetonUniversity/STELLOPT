@@ -33,6 +33,9 @@
 !          iunit        File ID
 !-----------------------------------------------------------------------
       IMPLICIT NONE
+!DEC$ IF DEFINED (MPI_OPT)
+      INCLUDE 'mpif.h'
+!DEC$ ENDIF
       INTEGER :: ier, iunit, mystart
 !-----------------------------------------------------------------------
 !     Begin Subroutine
@@ -95,15 +98,6 @@
                                       ATT='Wall Strikes',ATT_NAME='description')
             IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'wall_strikes',ier)
             DEALLOCATE(ihit_array)
-         END IF
-         ! Homocline
-         IF (ALLOCATED(Rhc_lines)) THEN
-            nlines = SIZE(Rhc_lines,1)
-            nsteps = SIZE(Rhc_lines,2)
-            CALL write_var_hdf5(fid,'Rhc_lines',nlines,nsteps,ier,DBLVAR=Rhc_lines,ATT='Cylindrical R of Homocline Fieldline [m]',ATT_NAME='description')
-            IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'R_lines',ier)
-            CALL write_var_hdf5(fid,'Zhc_lines',nlines,nsteps,ier,DBLVAR=Zhc_lines,ATT='Cylindrical Z of Homocline Fieldline [m]',ATT_NAME='description')
-            IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'Z_lines',ier)
          END IF
          ! Here we output the grid
          IF (ladvanced) THEN
@@ -183,10 +177,22 @@
       !  This is the parallel call.
       IF (.not. lbfield_only .and. .not. lafield_only .and. .not. lemc3) THEN
          mystart = LBOUND(R_lines,1)
+         myend   = UBOUND(R_lines,1)
+         CALL MPI_ALLREDUCE(myend,nlines,1,MPI_INTEGER,MPI_MAX,MPI_COMM_FIELDLINES,ierr_mpi)
          CALL fieldlines_write_parhdf5(1, nlines, 0, nsteps, mystart, myend,   'R_lines', DBLVAR=R_lines)
          CALL fieldlines_write_parhdf5(1, nlines, 0, nsteps, mystart, myend, 'PHI_lines', DBLVAR=PHI_lines)
          CALL fieldlines_write_parhdf5(1, nlines, 0, nsteps, mystart, myend,   'Z_lines', DBLVAR=Z_lines)
          CALL fieldlines_write_parhdf5(1, nlines, 0, nsteps, mystart, myend,   'B_lines', DBLVAR=B_lines)
+      END IF
+      ! Homocline
+      IF (ALLOCATED(Rhc_lines)) THEN
+         !nlines = SIZE(Rhc_lines,1)
+         nsteps = SIZE(Rhc_lines,2)
+         mystart = LBOUND(Rhc_lines,1)
+         myend   = UBOUND(Rhc_lines,1)
+         CALL MPI_ALLREDUCE(myend,nlines,1,MPI_INTEGER,MPI_MAX,MPI_COMM_FIELDLINES,ierr_mpi)
+         CALL fieldlines_write_parhdf5(1, nlines, 0, nsteps, mystart, myend, 'Rhc_lines', DBLVAR=Rhc_lines)
+         CALL fieldlines_write_parhdf5(1, nlines, 0, nsteps, mystart, myend, 'Zhc_lines', DBLVAR=Zhc_lines)
       END IF
 !DEC$ ELSE
       iunit = 100

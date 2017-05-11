@@ -30,7 +30,7 @@
                      lrw, liw
       INTEGER     :: iwork(20)
       DOUBLE PRECISION :: tol_nag
-      REAL(rprec) :: q(6), w(6*21+28), w2(20+16*6)
+      DOUBLE PRECISION :: q(6), w(6*21+28), w2(20+16*6)
       DOUBLE PRECISION :: phi0_nag, phi1_nag, rtol
       DOUBLE PRECISION :: atol(6)
       DOUBLE PRECISION :: rkh_work(6,2)
@@ -91,6 +91,7 @@
             liw = 20
             ier = 0
             w2=0; iwork = 0; itask = 1; istate = 1;
+            iopt = 1; iwork(6) = 50000 ! Need this because 500 over a field period is not much
             CALL DLSODE(fblin_tanmap_lsode,neqs,q,phi0_nag,phi1_nag,itol,rtol,atol,&
                         itask,istate,iopt,w2,lrw,iwork,liw,jacobian_tanmap_lsode,mf)
             IF (istate < -1) CALL handle_err(LSODE_ERR,'follow_single',istate)
