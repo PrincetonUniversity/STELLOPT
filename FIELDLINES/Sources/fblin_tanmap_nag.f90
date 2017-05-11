@@ -35,8 +35,8 @@
 !          br_dot     Random force for diffusion
 !-----------------------------------------------------------------------
       INTEGER :: ier
-      REAL(rprec) :: r_temp, phi_temp, z_temp, br_temp, bz_temp
-      REAL(rprec) :: drdr, drdz, dzdr,dzdz
+      DOUBLE PRECISION :: r_temp, phi_temp, z_temp, br_temp, bz_temp
+      DOUBLE PRECISION :: drdr, drdz, dzdr,dzdz
       
 !-----------------------------------------------------------------------
 !     Begin Subroutine

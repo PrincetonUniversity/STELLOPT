@@ -67,7 +67,6 @@
          END IF
 !DEC$ IF DEFINED (MPI_OPT)
          CALL MPI_BCAST(extcur_in,nigroup,MPI_REAL, mylocalmaster, MPI_COMM_LOCAL,ierr_mpi)
-         IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'fieldlines_init_coil',ierr_mpi)
 !DEC$ ENDIF
          DO i = 1, SIZE(extcur_in,DIM=1)
            IF (ABS(extcur_in(i)) > 0) nextcur = i
@@ -175,41 +174,6 @@
             CALL FLUSH(6)
          END IF
       END DO
-	
-      ! Get the fields
-      !chunk  = nz/nprocs_beams
-      !IF (MOD(nz,nprocs_beams) /= 0) chunk = chunk + 1
-      !myzs = myworkid*chunk + 1
-      !myze = myzs + chunk - 1
-      !if (myze > nz) myze = nz
-      !count = 0
-      !IF (myzs <= nz) THEN
-      !   DO ik = myzs, myze
-      !      DO j = 1, nphi
-      !         DO i = 1, nr
-      !            br = 0.; bphi = 0.; bz = 0.
-      !            br_temp   = 0.0;
-      !            bphi_temp = 0.0;
-      !            bz_temp   = 0.0;
-      !            DO ig = 1, nextcur
-      !               CALL bfield(raxis(i), phiaxis(j), zaxis(ik), br, bphi, bz, IG = ig)
-      !               br_temp = br_temp + br
-      !               bphi_temp = bphi_temp + bphi
-      !               bz_temp = bz_temp + bz
-      !            END DO
-      !            B_R(i,j,ik)   = br_temp
-      !            B_PHI(i,j,ik) = bphi_temp
-      !            B_Z(i,j,ik)   = bz_temp
-      !            count = count + 1
-      !         END DO
-      !         IF (lverb) THEN
-      !            CALL backspace_out(6,6)
-      !            WRITE(6,'(A,I3,A)',ADVANCE='no') '[',INT((100.*count)/(nr*nphi*myze)),']%'
-      !            CALL FLUSH(6)
-      !         END IF
-      !      END DO
-      !   END DO
-      !END IF
       
       ! Clean up the progress bar
       IF (lverb) THEN
@@ -225,24 +189,21 @@
 
 !DEC$ IF DEFINED (MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
-      IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'beams3d_init_coil',ierr_mpi)
-!       ! Adjust indexing to send 2D arrays
-       CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
+
+      ! Adjust indexing to send 2D arrays
+      CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
                         B_R,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
                         MPI_COMM_LOCAL,ierr_mpi)
-       CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
+      CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
                         B_PHI,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
                         MPI_COMM_LOCAL,ierr_mpi)
-       CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
+      CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
                         B_Z,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
                         MPI_COMM_LOCAL,ierr_mpi)
-       DEALLOCATE(mnum)
-       DEALLOCATE(moffsets)
-!DEC$ ENDIF
-      
-!DEC$ IF DEFINED (MPI_OPT)
+      DEALLOCATE(mnum)
+      DEALLOCATE(moffsets)
+
       CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)
-      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'beams3d_init_coil: MPI_COMM_LOCAL',ierr_mpi)
       CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
       IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'beams3d_init_coil',ierr_mpi)
 !DEC$ ENDIF

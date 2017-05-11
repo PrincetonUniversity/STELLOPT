@@ -121,33 +121,17 @@
       ! Allocations
       ALLOCATE(q(neqs_nag),STAT=ier)
       IF (ier /= 0) CALL handle_err(ALLOC_ERR,'Q',ier)
-      IF (myid == master) THEN
-         ALLOCATE(R_lines(nlines,0:nsteps),Z_lines(nlines,0:nsteps),PHI_lines(nlines,0:nsteps),STAT=ier)
-         IF (ier /= 0) CALL handle_err(ALLOC_ERR,'R_LINES, Z_LINES PHI_LINES',ier)
-         ALLOCATE(B_lines(nlines,0:nsteps),STAT=ier)
-         IF (ier /= 0) CALL handle_err(ALLOC_ERR,'B_LINES',ier)
-         B_lines = -1
-         R_lines=0.0
-         Z_lines=0.0
-         PHI_lines=-1.0
-         R_lines(1:nlines,0)   = R_start(1:nlines)
-         Z_lines(1:nlines,0)   = Z_start(1:nlines)
-         PHI_lines(1:nlines,0) = phi_start(1:nlines)
-      ELSE
-         IF (mystart <= nlines) THEN
-            ALLOCATE(R_lines(mystart:myend,0:nsteps),Z_lines(mystart:myend,0:nsteps),PHI_lines(mystart:myend,0:nsteps),STAT=ier)
-            IF (ier /= 0) CALL handle_err(ALLOC_ERR,'R_LINES, Z_LINES PHI_LINES',ier)
-            ALLOCATE(B_lines(mystart:myend,0:nsteps),STAT=ier)
-            IF (ier /= 0) CALL handle_err(ALLOC_ERR,'B_LINES',ier)
-            R_lines=0.0
-            Z_lines=0.0
-            PHI_lines=-1.0
-            B_lines = -1
-            R_lines(mystart:myend,0)   = R_start(mystart:myend)
-            Z_lines(mystart:myend,0)   = Z_start(mystart:myend)
-            PHI_lines(mystart:myend,0) = phi_start(mystart:myend)
-         END IF
-      END IF
+      ALLOCATE(R_lines(mystart:myend,0:nsteps),Z_lines(mystart:myend,0:nsteps),PHI_lines(mystart:myend,0:nsteps),STAT=ier)
+      IF (ier /= 0) CALL handle_err(ALLOC_ERR,'R_LINES, Z_LINES PHI_LINES',ier)
+      ALLOCATE(B_lines(mystart:myend,0:nsteps),STAT=ier)
+      IF (ier /= 0) CALL handle_err(ALLOC_ERR,'B_LINES',ier)
+      R_lines=0.0
+      Z_lines=0.0
+      PHI_lines=-1.0
+      B_lines = -1
+      R_lines(mystart:myend,0)   = R_start(mystart:myend)
+      Z_lines(mystart:myend,0)   = Z_start(mystart:myend)
+      PHI_lines(mystart:myend,0) = phi_start(mystart:myend)
 
       ! Output some stuff
       IF (lverb) THEN
@@ -263,6 +247,8 @@
                B_lines(mystart:myend,0:nsteps) = REAL(myid)
          END SELECT
       END IF
+      
+      IF (myid == master) WRITE(6,*) ' '
 
       ! Deallocations
       IF (ALLOCATED(q)) DEALLOCATE(q)
@@ -286,33 +272,7 @@
            CALL wall_free(ier) ! Only master needs it.
         END IF
       END IF
-!DEC$ ENDIF
       
-      ! Clean up progress bar
-      IF (lverb) WRITE(6,*) ' '
-      
-!DEC$ IF DEFINED (MPI_OPT)
-      IF (myid==master) THEN
-         R_lines(myend+1:nlines,0:nsteps) = 0
-         Z_lines(myend+1:nlines,0:nsteps) = 0
-         PHI_lines(myend+1:nlines,0:nsteps) = 0
-         B_lines(myend+1:nlines,0:nsteps) = 0
-         mystart = 1; myend=nlines
-      END IF
-
-      CALL FIELDLINES_TRANSMIT_2DDBL(mystart,myend,0,nsteps,R_lines,&
-                                     1,nlines,myid,master,MPI_COMM_FIELDLINES,ier)
-      IF (ALLOCATED(R_lines) .and. myid /= master) DEALLOCATE(R_lines)
-      CALL FIELDLINES_TRANSMIT_2DDBL(mystart,myend,0,nsteps,PHI_lines,&
-                                     1,nlines,myid,master,MPI_COMM_FIELDLINES,ier)
-      IF (ALLOCATED(PHI_lines) .and. myid /= master) DEALLOCATE(PHI_lines)
-      CALL FIELDLINES_TRANSMIT_2DDBL(mystart,myend,0,nsteps,Z_lines,&
-                                     1,nlines,myid,master,MPI_COMM_FIELDLINES,ier)
-      IF (ALLOCATED(Z_lines) .and. myid /= master) DEALLOCATE(Z_lines)
-      CALL FIELDLINES_TRANSMIT_2DDBL(mystart,myend,0,nsteps,B_lines,&
-                                     1,nlines,myid,master,MPI_COMM_FIELDLINES,ier)
-      IF (ALLOCATED(B_lines) .and. myid /= master) DEALLOCATE(B_lines)
-
       CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
       IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_follow',ierr_mpi)
       ! Don't worry about telling the slaves, they won't do any writing.

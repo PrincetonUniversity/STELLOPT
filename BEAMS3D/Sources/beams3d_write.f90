@@ -21,7 +21,7 @@
                                     lvessel, lvac, lbeam_simple, handle_err, nparticles_start, &
                                     HDF5_OPEN_ERR,HDF5_WRITE_ERR,&
                                     HDF5_CLOSE_ERR, BEAMS3D_VERSION, weight, e_beams, p_beams,&
-                                    charge, Zatom, mass, ldepo, v_neut
+                                    charge, Zatom, mass, ldepo, v_neut,lcollision
       USE safe_open_mod, ONLY: safe_open
       USE wall_mod, ONLY: nface,nvertex,face,vertex,ihit_array, wall_free
       USE mpi_params
@@ -70,6 +70,8 @@
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'lflux',ier)
                CALL write_scalar_hdf5(fid,'ldepo',ier,BOOVAR=ldepo,ATT='Only Deposition Flag',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ldepo',ier)
+               CALL write_scalar_hdf5(fid,'lcollision',ier,BOOVAR=lcollision,ATT='Collisionall Operators Flag',ATT_NAME='description')
+               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'lcollision',ier)
                CALL write_scalar_hdf5(fid,'nr',ier,INTVAR=nr,ATT='Number of Radial Gridpoints',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'nr',ier)
                CALL write_scalar_hdf5(fid,'nphi',ier,INTVAR=nphi,ATT='Number of Toroidal Gridpoints',ATT_NAME='description')

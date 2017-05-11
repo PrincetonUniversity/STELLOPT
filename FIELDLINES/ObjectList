@@ -1,4 +1,5 @@
 ObjectFiles = \
+fieldlines_write_parhdf5.o \
 fieldlines_lines.o \
 follow_single.o \
 Map_v.o \

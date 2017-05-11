@@ -99,15 +99,6 @@
       CALL EZspline_setup(Vp_spl_s,vp(1:ns),ier,EXACT_DIM=.true.)
       IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init_vmec',ier)
 
-      ! Initialize Virtual Casing
-      nu = 8 * mpol + 1 
-      nu = 2 ** CEILING(log(DBLE(nu))/log(2.0_rprec))
-      nv = 8 * ntor + 1
-      nv = 2 ** CEILING(log(DBLE(nv))/log(2.0_rprec))
-      IF (nv < 128) nv = 128
-      dr_temp    = 1./REAL(ns)
-      ALLOCATE(xm_temp(mnmax),xn_temp(mnmax), STAT=ier)
-      IF (ier /= 0) CALL handle_err(ALLOC_ERR,'XM_TEMP XN_TEMP',ier)
 
       ! If only plasma response then put a wall at the plasma boundary Unless doing depo calc
       IF (lplasma_only .and. .not.ldepo) THEN
@@ -118,9 +109,16 @@
          IF (mylocalid /= master) DEALLOCATE(vertex,face)
       END IF
 
-
-
+      ! Initialize Virtual Casing
       IF (.not. lplasma_only) THEN
+         nu = 8 * mpol + 1 
+         nu = 2 ** CEILING(log(DBLE(nu))/log(2.0_rprec))
+         nv = 8 * ntor + 1
+         nv = 2 ** CEILING(log(DBLE(nv))/log(2.0_rprec))
+         IF (nv < 128) nv = 128
+         dr_temp    = 1./REAL(ns)
+         ALLOCATE(xm_temp(mnmax),xn_temp(mnmax), STAT=ier)
+         IF (ier /= 0) CALL handle_err(ALLOC_ERR,'XM_TEMP XN_TEMP',ier)
          ALLOCATE(rmnc_temp(mnmax,2),zmns_temp(mnmax,2),&
                   bumnc_temp(mnmax,1),bvmnc_temp(mnmax,1), STAT = ier)
          IF (ier /= 0) CALL handle_err(ALLOC_ERR,'RMNC_TEMP ZMNS_TEMP BUMNC_TEMP BVMNC_TEMP',ier)
@@ -157,14 +155,10 @@
          DEALLOCATE(rmnc_temp,zmns_temp)
          DEALLOCATE(bumnc_temp,bvmnc_temp)
          
-         DEALLOCATE(xm_temp,xn_temp)
          adapt_tol = 0.0
          adapt_rel = vc_adapt_tol
+         DEALLOCATE(xm_temp,xn_temp)
       END IF
-!DEC$ IF DEFINED (MPI_OPT)
-      CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
-      IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'beams3d_init_vmec',ierr_mpi)
-!DEC$ ENDIF
       
       IF (lverb) THEN
          IF (.not.lplasma_only) CALL virtual_casing_info(6)
@@ -179,6 +173,7 @@
 
       ! This section sets up the work so we can use ALLGATHERV
 !DEC$ IF DEFINED (MPI_OPT)
+      CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
       IF (ALLOCATED(mnum)) DEALLOCATE(mnum)
       IF (ALLOCATED(moffsets)) DEALLOCATE(moffsets)
       ALLOCATE(mnum(numprocs_local), moffsets(numprocs_local))
@@ -247,6 +242,8 @@
                IF (ABS(br_vc) > 0)   B_R(i,j,k)   = B_R(i,j,k) + br_vc
                IF (ABS(bphi_vc) > 0) B_PHI(i,j,k) = B_PHI(i,j,k) + bphi_vc
                IF (ABS(bz_vc) > 0)   B_Z(i,j,k)   = B_Z(i,j,k) + bz_vc
+            ELSE
+               WRITE(6,*) myworkid,mylocalid,i,j,k,ier
             END IF
          ELSE
             ! This is an error code check
@@ -278,7 +275,6 @@
       
 !DEC$ IF DEFINED (MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
-      IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'beams3d_init_vmec',ierr_mpi)
       CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
                         B_R,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
                         MPI_COMM_LOCAL,ierr_mpi)
@@ -354,23 +350,12 @@
       ! Broadcast the updated magnetic field to other members
       IF (lplasma_only) THEN
          CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
-         IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'beams3d_init_vmec',ierr_mpi)
          CALL MPI_BCAST(B_R,nr*nphi*nz,MPI_DOUBLE_PRECISION,mylocalmaster,MPI_COMM_LOCAL,ierr_mpi)
-         IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'beams3d_init_mgrid',ierr_mpi)
          CALL MPI_BCAST(B_PHI,nr*nphi*nz,MPI_DOUBLE_PRECISION,mylocalmaster,MPI_COMM_LOCAL,ierr_mpi)
-         IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'beams3d_init_mgrid',ierr_mpi)
          CALL MPI_BCAST(B_Z,nr*nphi*nz,MPI_DOUBLE_PRECISION,mylocalmaster,MPI_COMM_LOCAL,ierr_mpi)
-         IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'beams3d_init_mgrid',ierr_mpi)
       END IF
-!DEC$ ENDIF
 
-!DEC$ IF DEFINED (MPI_OPT)
-      CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
-      IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'beams3d_init_vmec',ierr_mpi)
-      ! This line crashes the code sometimes.  Not sure what to do about it.
-      ! Seems to be compiler dependent
-      !CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)
-      !IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'beams3d_init_coil: MPI_COMM_LOCAL',ierr_mpi)
+      CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)
       CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
       IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'beams3d_init_vmec',ierr_mpi)
 !DEC$ ENDIF

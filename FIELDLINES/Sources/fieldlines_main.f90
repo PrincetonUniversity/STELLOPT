@@ -326,7 +326,8 @@
          CASE(runtype_norun)
       END SELECT
       ! Output Date
-      IF (myid == master) CALL fieldlines_write
+      CALL fieldlines_write
+      
 
       ! Clean up
       IF (lvessel) CALL wall_free(ier)
