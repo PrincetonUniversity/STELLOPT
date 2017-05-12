@@ -79,8 +79,14 @@
 !                      about specific codes.
 !
 !     Programming ToDo:
-!       * Fix handling of error codes from EZSpline to be consistent with
-!         error_status scheme defined above.
+!       * Near the magnetic axis it would probably be more accurate to
+!         construct the splines as a function of rho rather than as a
+!         function of s. This needs to be tested.  Switching to rho
+!         would be very easy.
+!       * Update conversion from half to full grid to use quadratic
+!         interpolation.  This is especially important for s=0.0 and s=1.0
+!         where using linear interpolation leads to an incorrect first
+!         derivative in the resulting spline.
 !
 !     Programming Notes:
 !        Loads a given set of Fourier variables into memory.  The
@@ -151,7 +157,6 @@
         !     PRIVATE
         !        LOG_LEVEL       The following debug levels are defined:
         !                          1:critical 2:error 3:warning 4:info 5:debug
-        !        DOMAIN_FLAG     Used to determin if in domain durring search
         !        NFP             Field periodicity determined from XN array
         !        R(PHI/Z)_target Used durring search
         !        BCS(0/1)        Spline Boundary Conditions
@@ -162,7 +167,7 @@
         INTEGER, PARAMETER, PRIVATE :: LOG_LEVEL=4
         INTEGER, PARAMETER ::  lintsteps=512
         INTEGER, PARAMETER, PRIVATE ::  neval_max=10000
-        INTEGER, PRIVATE      ::  domain_flag, nfp
+        INTEGER, PRIVATE      ::  nfp
         DOUBLE PRECISION, PRIVATE ::  R_target, PHI_target, Z_target
         INTEGER, PRIVATE     ::  bcs0(2) = (/ 0, 0/)
         INTEGER, PRIVATE     ::  bcs1(2) = (/-1,-1/)
@@ -176,7 +181,6 @@
         TYPE(EZspline3_r8), PRIVATE :: Rv_spl, Zv_spl
         TYPE(EZspline3_r8), PRIVATE :: Bs_spl, Bu_spl, Bv_spl, B_spl
         TYPE(EZspline3_r8), PRIVATE :: L_spl, Lu_spl, Lv_spl
-        TYPE(EZspline3_r8), PRIVATE :: DsDr_spl, DsDphi_spl, DsDz_spl
         TYPE(EZspline3_r8), PRIVATE :: DrhoDr_spl, DrhoDphi_spl, DrhoDz_spl
         
         DOUBLE PRECISION, ALLOCATABLE, PRIVATE :: &
@@ -231,7 +235,9 @@
           xu(:) &
           ,xv(:) &
           ,s_full(:) &
-          ,s_half(:)
+          ,s_half(:) &
+          ,rho_full(:) &
+          ,rho_half(:)
 
         !-----------------------------------------------------------------------
         !     Private Subroutines
@@ -533,13 +539,19 @@
 
           ! Radial coordinate on the full mesh.          
           ALLOCATE(s_full(k1:k2))
-          FORALL(u=k1:k2) s_full(u) = REAL(u-1)/REAL(ns_t-1)          
-
+          FORALL(u=k1:k2) s_full(u) = REAL(u-1)/REAL(ns_t-1)
+          
+          ALLOCATE(rho_full(k1:k2))
+          rho_full = SQRT(s_full)
+          
           ! Radial coordinate on the half mesh.
           ALLOCATE(s_half(k1:k2+1))
           FORALL(u=k1+1:k2) s_half(u) = REAL(u-1)/REAL(ns_t-1) - 0.5/REAL(ns_t-1)          
           s_half(k1) = 0.0
           s_half(k2+1) = 1.0
+       
+          ALLOCATE(rho_half(k1:k2))
+          rho_half = SQRT(s_half)
           
         END SUBROUTINE init_interpolation_mesh
 
@@ -612,6 +624,8 @@
                ,xv &
                ,s_full &
                ,s_half &
+               ,rho_full &
+               ,rho_half &
                )
           ENDIF
           
@@ -657,10 +671,6 @@
           IF (EZspline_allocated(S21_spl)) CALL EZspline_free(S21_spl,ez_status)
           IF (EZspline_allocated(S22_spl)) CALL EZspline_free(S22_spl,ez_status)
 
-          IF (EZspline_allocated(DsDr_spl)) CALL EZspline_free(DsDr_spl,ez_status)
-          IF (EZspline_allocated(DsDphi_spl)) CALL EZspline_free(DsDphi_spl,ez_status)
-          IF (EZspline_allocated(dsDz_spl)) CALL EZspline_free(DsDz_spl,ez_status)
-
           IF (EZspline_allocated(DrhoDr_spl)) CALL EZspline_free(DrhoDr_spl,ez_status)
           IF (EZspline_allocated(DrhoDphi_spl)) CALL EZspline_free(DrhoDphi_spl,ez_status)
           IF (EZspline_allocated(DrhoDz_spl)) CALL EZspline_free(DrhoDz_spl,ez_status)
@@ -702,7 +712,8 @@
           CALL initialize_splines_fsa(error_status)
           CALL initialize_splines_lambda(error_status)
           CALL initialize_splines_susceptance(error_status)
-                    
+          CALL initialize_splines_gradrho(error_status)
+          
           CALL cpu_time(time_end)        
           IF (LOG_LEVEL >= 5) PRINT  '("Total spline initialization time = ",f6.3," (seconds).")',time_end-time_start
 
@@ -742,14 +753,14 @@
           
           ! R
           f_temp=0
-          R_spl%x1 = xu*pi2; R_spl%x2 = xv*pi2; R_spl%x3 = s_full; R_spl%isHermite = isherm
+          R_spl%x1 = xu*pi2; R_spl%x2 = xv*pi2; R_spl%x3 = rho_full; R_spl%isHermite = isherm
           CALL mntouv(k1,k2,mnmax,nu_module,nv_module,xu,xv,rmnc,xm,xn,f_temp,0,1)
           IF (lasym) CALL mntouv(k1,k2,mnmax,nu_module,nv_module,xu,xv,rmns,xm,xn,f_temp,1,0)
           CALL EZspline_setup(R_spl,f_temp,ez_status)
           
           ! Z
           f_temp = 0
-          Z_spl%x1 = xu*pi2; Z_spl%x2 = xv*pi2; Z_spl%x3 = s_full; Z_spl%isHermite = isherm
+          Z_spl%x1 = xu*pi2; Z_spl%x2 = xv*pi2; Z_spl%x3 = rho_full; Z_spl%isHermite = isherm
           CALL mntouv(k1,k2,mnmax,nu_module,nv_module,xu,xv,zmns,xm,xn,f_temp,1,0)
           IF (lasym) CALL mntouv(k1,k2,mnmax,nu_module,nv_module,xu,xv,zmnc,xm,xn,f_temp,0,0)
           CALL EZspline_setup(Z_spl,f_temp,ez_status);
@@ -808,7 +819,7 @@
           
           ! dR/Du Derivatives
           f_temp = 0
-          Ru_spl%x1 = xu*pi2; Ru_spl%x2 = xv*pi2; Ru_spl%x3 = s_full; Ru_spl%isHermite = isherm
+          Ru_spl%x1 = xu*pi2; Ru_spl%x2 = xv*pi2; Ru_spl%x3 = rho_full; Ru_spl%isHermite = isherm
           FORALL(mn = 1:mnmax) fmn_temp(mn,:) = -rmnc(mn,:)*xm(mn)
           CALL mntouv(k1,k2,mnmax,nu_module,nv_module,xu,xv,fmn_temp,xm,xn,f_temp,1,0)
           IF (lasym) THEN
@@ -819,7 +830,7 @@
           
           ! dR/Dv Derivatives
           f_temp = 0
-          Rv_spl%x1 = xu*pi2; Rv_spl%x2 = xv*pi2; Rv_spl%x3 = s_full; Rv_spl%isHermite = isherm
+          Rv_spl%x1 = xu*pi2; Rv_spl%x2 = xv*pi2; Rv_spl%x3 = rho_full; Rv_spl%isHermite = isherm
           FORALL(mn = 1:mnmax) fmn_temp(mn,:) = -rmnc(mn,:)*xn(mn)
           CALL mntouv(k1,k2,mnmax,nu_module,nv_module,xu,xv,fmn_temp,xm,xn,f_temp,1,0)
           IF (lasym) THEN
@@ -830,7 +841,7 @@
           
           ! dZ/Du Derivatives
           f_temp = 0
-          Zu_spl%x1 = xu*pi2; Zu_spl%x2 = xv*pi2; Zu_spl%x3 = s_full; Zu_spl%isHermite = isherm
+          Zu_spl%x1 = xu*pi2; Zu_spl%x2 = xv*pi2; Zu_spl%x3 = rho_full; Zu_spl%isHermite = isherm
           FORALL(mn = 1:mnmax) fmn_temp(mn,:) = zmns(mn,:)*xm(mn)
           CALL mntouv(k1,k2,mnmax,nu_module,nv_module,xu,xv,fmn_temp,xm,xn,f_temp,0,0)
           IF (lasym) THEN
@@ -841,7 +852,7 @@
           
           ! dZ/Dv Derivatives
           f_temp = 0
-          Zv_spl%x1 = xu*pi2; Zv_spl%x2 = xv*pi2; Zv_spl%x3 = s_full; Zv_spl%isHermite = isherm
+          Zv_spl%x1 = xu*pi2; Zv_spl%x2 = xv*pi2; Zv_spl%x3 = rho_full; Zv_spl%isHermite = isherm
           FORALL(mn = 1:mnmax) fmn_temp(mn,:) = zmns(mn,:)*xn(mn)
           CALL mntouv(k1,k2,mnmax,nu_module,nv_module,xu,xv,fmn_temp,xm,xn,f_temp,0,0)
           IF (lasym) THEN
@@ -899,21 +910,21 @@
           ! B^s
           ! In VMEC B^s is defined as zero, so we don't need to calculate this one.
           f_temp = 0
-          Bs_spl%x1 = xu*pi2; Bs_spl%x2 = xv*pi2; Bs_spl%x3 = s_full; Bs_spl%isHermite = isherm
+          Bs_spl%x1 = xu*pi2; Bs_spl%x2 = xv*pi2; Bs_spl%x3 = rho_full; Bs_spl%isHermite = isherm
           !IF (lasym) CALL mntouv(k1,k2,mnmax,nu_module,nv_module,xu,xv,bsmns_full,xm,xn,f_temp,1,0)
           !IF (lasym) CALL mntouv(k1,k2,mnmax,nu_module,nv_module,xu,xv,bsmnc_full,xm,xn,f_temp,0,0)
           CALL EZspline_setup(Bs_spl,f_temp,ez_status)
           
           ! B^u
           f_temp = 0
-          Bu_spl%x1 = xu*pi2; Bu_spl%x2 = xv*pi2; Bu_spl%x3 = s_full; Bu_spl%isHermite = isherm
+          Bu_spl%x1 = xu*pi2; Bu_spl%x2 = xv*pi2; Bu_spl%x3 = rho_full; Bu_spl%isHermite = isherm
           CALL mntouv(k1,k2,mnmax,nu_module,nv_module,xu,xv,bsupumnc_full,xm,xn,f_temp,0,0)
           IF (lasym) CALL mntouv(k1,k2,mnmax,nu_module,nv_module,xu,xv,bsupumns_full,xm,xn,f_temp,1,0)
           CALL EZspline_setup(Bu_spl,f_temp,ez_status)
           
           ! B^v
           f_temp = 0
-          Bv_spl%x1 = xu*pi2; Bv_spl%x2 = xv*pi2; Bv_spl%x3 = s_full; Bv_spl%isHermite = isherm
+          Bv_spl%x1 = xu*pi2; Bv_spl%x2 = xv*pi2; Bv_spl%x3 = rho_full; Bv_spl%isHermite = isherm
           CALL mntouv(k1,k2,mnmax,nu_module,nv_module,xu,xv,bsupvmnc_full,xm,xn,f_temp,0,0)
           IF (lasym) CALL mntouv(k1,k2,mnmax,nu_module,nv_module,xu,xv,bsupvmns_full,xm,xn,f_temp,1,0)
           CALL EZspline_setup(Bv_spl,f_temp,ez_status)
@@ -961,7 +972,7 @@
 
           ! ModB
           f_temp = 0
-          B_spl%x1 = xu*pi2; B_spl%x2 = xv*pi2; B_spl%x3 = s_full; B_spl%isHermite = isherm
+          B_spl%x1 = xu*pi2; B_spl%x2 = xv*pi2; B_spl%x3 = rho_full; B_spl%isHermite = isherm
           CALL mntouv(k1,k2,mnmax,nu_module,nv_module,xu,xv,bmnc_full,xm,xn,f_temp,0,0)
           IF (lasym) CALL mntouv(k1,k2,mnmax,nu_module,nv_module,xu,xv,bmns_full,xm,xn,f_temp,1,0)
           CALL EZspline_setup(B_spl,f_temp,ez_status)
@@ -1017,14 +1028,14 @@
           
           ! Lambda
           f_temp = 0
-          L_spl%x1 = xu*pi2; L_spl%x2 = xv*pi2; L_spl%x3 = s_full; L_spl%isHermite = isherm
+          L_spl%x1 = xu*pi2; L_spl%x2 = xv*pi2; L_spl%x3 = rho_full; L_spl%isHermite = isherm
           CALL mntouv(k1,k2,mnmax,nu_module,nv_module,xu,xv,lmns_full,xm,xn,f_temp,1,0)
           IF (lasym) CALL mntouv(k1,k2,mnmax,nu_module,nv_module,xu,xv,lmnc_full,xm,xn,f_temp,0,0)
           CALL EZspline_setup(L_spl,f_temp,ez_status)
           
           ! Lambda/u
           f_temp = 0
-          Lu_spl%x1 = xu*pi2; Lu_spl%x2 = xv*pi2; Lu_spl%x3 = s_full; Lu_spl%isHermite = isherm
+          Lu_spl%x1 = xu*pi2; Lu_spl%x2 = xv*pi2; Lu_spl%x3 = rho_full; Lu_spl%isHermite = isherm
           FORALL(mn = 1:mnmax) fmn_temp(mn,:) = lmns_full(mn,:)*xm(mn)
           CALL mntouv(k1,k2,mnmax,nu_module,nv_module,xu,xv,fmn_temp,xm,xn,f_temp,0,0)
           IF (lasym) THEN
@@ -1035,7 +1046,7 @@
           
           ! Lambda/v
           f_temp = 0
-          Lv_spl%x1 = xu*pi2; Lv_spl%x2 = xv*pi2; Lv_spl%x3 = s_full; Lv_spl%isHermite = isherm
+          Lv_spl%x1 = xu*pi2; Lv_spl%x2 = xv*pi2; Lv_spl%x3 = rho_full; Lv_spl%isHermite = isherm
           FORALL(mn = 1:mnmax) fmn_temp(mn,:) = lmns_full(mn,:)*xn(mn)
           CALL mntouv(k1,k2,mnmax,nu_module,nv_module,xu,xv,fmn_temp,xm,xn,f_temp,0,0)
           IF (lasym) THEN
@@ -1088,7 +1099,7 @@
              
           ! Jacobian sqrt(g)
           f_temp = 0
-          G_spl%x1 = xu*pi2; G_spl%x2 = xv*pi2; G_spl%x3 = s_full; G_spl%isHermite = isherm
+          G_spl%x1 = xu*pi2; G_spl%x2 = xv*pi2; G_spl%x3 = rho_full; G_spl%isHermite = isherm
           CALL mntouv(k1,k2+1,mnmax,nu_module,nv_module,xu,xv,gmnc_full,xm,xn,f_temp,0,0)
           IF (lasym) CALL mntouv(k1,k2+1,mnmax,nu_module,nv_module,xu,xv,gmns_full,xm,xn,f_temp,1,0)
           CALL EZspline_setup(G_spl,f_temp,ez_status)
@@ -1202,19 +1213,19 @@
           
           ! Construct splines
           ! ABS because of negative Jacobian
-          Vp_spl%x1 = s_full; Vp_spl%isHermite = isherm
+          Vp_spl%x1 = rho_full; Vp_spl%isHermite = isherm
           CALL EZspline_setup(Vp_spl,ABS(Vp*pi2*pi2/(nu_module*nv_module)),ez_status)
 
-          b_fsa_spl%x1 = s_full; b_fsa_spl%isHermite = isherm
+          b_fsa_spl%x1 = rho_full; b_fsa_spl%isHermite = isherm
           CALL EZspline_setup(b_fsa_spl,fsa_bmod,ez_status)
 
-          grho_fsa_spl%x1 = s_full; grho_fsa_spl%isHermite = isherm
+          grho_fsa_spl%x1 = rho_full; grho_fsa_spl%isHermite = isherm
           CALL EZspline_setup(grho_fsa_spl,grho,ez_status)
 
-          grho2_fsa_spl%x1 = s_full; grho2_fsa_spl%isHermite = isherm
+          grho2_fsa_spl%x1 = rho_full; grho2_fsa_spl%isHermite = isherm
           CALL EZspline_setup(grho2_fsa_spl,grho2,ez_status)
 
-          b2overgrho_fsa_spl%x1 = s_full; b2overgrho_fsa_spl%isHermite = isherm
+          b2overgrho_fsa_spl%x1 = rho_full; b2overgrho_fsa_spl%isHermite = isherm
           CALL EZspline_setup(b2overgrho_fsa_spl,b2overgrho,ez_status)
           
           IF (ez_status .NE. 0) error_status = -200 - ABS(ez_status)
@@ -1286,7 +1297,7 @@
           f_temp = f_temp / g_spl%fspl(1,:,:,:)
           f1d_temp   = SUM(SUM(f_temp,DIM=1),DIM=1)/(nu_module*nv_module)
           f1d_temp(1) = 2*f1d_temp(2) - f1d_temp(3)
-          S11_spl%x1 = s_full; S11_spl%isHermite = isherm
+          S11_spl%x1 = rho_full; S11_spl%isHermite = isherm
           CALL EZspline_setup(S11_spl,f1d_temp,ez_status)
           
           ! Calc S21
@@ -1297,7 +1308,7 @@
           f_temp = f_temp / g_spl%fspl(1,:,:,:)
           f1d_temp   = SUM(SUM(f_temp,DIM=1),DIM=1)/(nu_module*nv_module)
           f1d_temp(1) = 2*f1d_temp(2) - f1d_temp(3)
-          S21_spl%x1 = s_full; S21_spl%isHermite = isherm
+          S21_spl%x1 = rho_full; S21_spl%isHermite = isherm
           CALL EZspline_setup(S21_spl,f1d_temp,ez_status)
           
           ! Calc S12
@@ -1312,7 +1323,7 @@
           f_temp = f_temp / g_spl%fspl(1,:,:,:)
           f1d_temp   = SUM(SUM(f_temp,DIM=1),DIM=1)/(nu_module*nv_module)
           f1d_temp(1) = 2*f1d_temp(2) - f1d_temp(3)
-          S12_spl%x1 = s_full; S12_spl%isHermite = isherm
+          S12_spl%x1 = rho_full; S12_spl%isHermite = isherm
           CALL EZspline_setup(S12_spl,f1d_temp,ez_status)
           
           ! Calc S22
@@ -1328,7 +1339,7 @@
           f_temp = f_temp / g_spl%fspl(1,:,:,:)
           f1d_temp   = SUM(SUM(f_temp,DIM=1),DIM=1)/(nu_module*nv_module)
           !f1d_temp(1) = 2*f1d_temp(2) - f1d_temp(3)
-          S22_spl%x1 = s_full; S22_spl%isHermite = isherm
+          S22_spl%x1 = rho_full; S22_spl%isHermite = isherm
           CALL EZspline_setup(S22_spl,f1d_temp,ez_status)
           
           IF (ez_status .NE. 0) error_status = -200 - ABS(ez_status)
@@ -1340,95 +1351,17 @@
           IF (LOG_LEVEL >= 5) PRINT  '("Initialization Time = ",f6.3," (seconds).")',time_end-time_start
           
         END SUBROUTINE initialize_splines_susceptance
-
-        
-        SUBROUTINE initialize_splines_grads(error_status)
-          !
-          ! Initialize splines for grad(s)
-          !
-          USE EZspline
-          IMPLICIT NONE
-          INTEGER, INTENT(inout)       :: error_status
-          INTEGER :: ez_status
-          INTEGER :: u
-          DOUBLE PRECISION, ALLOCATABLE :: gsr(:,:,:), gsp(:,:,:), gsz(:,:,:)
-          REAL :: time_start, time_end, time_01, time_02
-          ez_status = 0
-
-          IF (error_status < 0) RETURN
-          
-          ! Check module initalization.
-          IF ((.NOT. ALLOCATED(xm)) .OR. (.NOT. ALLOCATED(xu))) THEN
-             error_status = -4
-             RETURN
-          ENDIF
-
-          ! Initialize required splines.
-          IF (.NOT. EZspline_allocated(R_spl)) CALL initialize_splines_rz(error_status)
-          IF (.NOT. EZspline_allocated(Ru_spl)) CALL initialize_splines_rzderiv(error_status)
-          IF (.NOT. EZspline_allocated(G_spl)) CALL initialize_splines_jacobian(error_status)
-
-
-          IF (LOG_LEVEL >= 4) PRINT  *, "Inititalizing grad(s) splines."         
-          CALL cpu_time(time_start)
-
-          ! Allocations
-          ALLOCATE( &
-            gsr(nu_module,nv_module,k1:k2) &
-            ,gsp(nu_module,nv_module,k1:k2) &
-            ,gsz(nu_module,nv_module,k1:k2) &
-            )
-                                    
-          ! Free Memory
-          IF (EZspline_allocated(DsDr_spl)) CALL EZspline_free(DsDr_spl,ez_status)
-          IF (EZspline_allocated(DsDphi_spl)) CALL EZspline_free(DsDphi_spl,ez_status)
-          IF (EZspline_allocated(dsDz_spl)) CALL EZspline_free(DsDz_spl,ez_status)
-          
-          ! Preform Init
-          CALL EZspline_init(DsDr_spl,  nu_module,nv_module,ns_t,bcs1,bcs1,bcs0,ez_status)
-          CALL EZspline_init(DsDphi_spl,nu_module,nv_module,ns_t,bcs1,bcs1,bcs0,ez_status)
-          CALL EZspline_init(DsDz_spl,  nu_module,nv_module,ns_t,bcs1,bcs1,bcs0,ez_status)
-
-          CALL cpu_time(time_01)
-          
-          ! Calc grad(s) components dR/du X dR/dv / sqrt(g)
-          !    Note component of R_spl comes from dphi/dphi and cyl coordinates
-          gsr = (- zu_spl%fspl(1,:,:,:)*r_spl%fspl(1,:,:,:)) / g_spl%fspl(1,:,:,:)
-          gsp = ((zu_spl%fspl(1,:,:,:)*Rv_spl%fspl(1,:,:,:) &
-                  - Ru_spl%fspl(1,:,:,:)*Zv_spl%fspl(1,:,:,:))*nfp) &
-                 / g_spl%fspl(1,:,:,:)
-          gsz = (Ru_spl%fspl(1,:,:,:)*R_spl%fspl(1,:,:,:)) / g_spl%fspl(1,:,:,:)
-
-          
-          CALL cpu_time(time_02)
-          
-          ! Construct splines
-          DsDr_spl%x1 = xu*pi2; DsDr_spl%x2 = xv*pi2; DsDr_spl%x3 = s_full; DsDr_spl%isHermite = isherm
-          CALL EZspline_setup(DsDr_spl,gsr,ez_status)
-          
-          DsDphi_spl%x1 = xu*pi2; DsDphi_spl%x2 = xv*pi2; DsDphi_spl%x3 = s_full; DsDphi_spl%isHermite = isherm
-          CALL EZspline_setup(DsDphi_spl,gsp,ez_status)
-          
-          DsDz_spl%x1 = xu*pi2; DsDz_spl%x2 = xv*pi2; DsDz_spl%x3 = s_full; DsDz_spl%isHermite = isherm
-          CALL EZspline_setup(DsDz_spl,gsz,ez_status)
-
-          IF (ez_status .NE. 0) error_status = -200 - ABS(ez_status)
-
-          ! deallocations
-          DEALLOCATE(gsr,gsp,gsz)
-
-          CALL cpu_time(time_end)
-          IF (LOG_LEVEL >= 5) PRINT  '("Setup Time = ",f6.3," (seconds).")',time_01-time_start
-          IF (LOG_LEVEL >= 5) PRINT  '("Calc grad(s) = ",f6.3," (seconds).")',time_02-time_01
-          IF (LOG_LEVEL >= 5) PRINT  '("Spines grad(s) = ",f6.3," (seconds).")',time_end-time_02          
-          IF (LOG_LEVEL >= 5) PRINT  '("Initialization Time = ",f6.3," (seconds).")',time_end-time_start
-          
-        END SUBROUTINE initialize_splines_grads
         
         
         SUBROUTINE initialize_splines_gradrho(error_status)
           !
           ! Initialize splines for grad(rho)
+          !
+          ! Programming Note:
+          !   Near the magnetic axis it is necessary calculate derivatives with
+          !   using rho rather than s.  Due to the very non-linear nature of
+          !   the second derivative of s near the axis, the splines cannot
+          !   accurately represent the gradients.
           !
           USE EZspline
           IMPLICIT NONE
@@ -1501,13 +1434,13 @@
           CALL cpu_time(time_02)
           
           ! Construct splines
-          DrhoDr_spl%x1 = xu*pi2; DrhoDr_spl%x2 = xv*pi2; DrhoDr_spl%x3 = s_full; DrhoDr_spl%isHermite = isherm
+          DrhoDr_spl%x1 = xu*pi2; DrhoDr_spl%x2 = xv*pi2; DrhoDr_spl%x3 = rho_full; DrhoDr_spl%isHermite = isherm
           CALL EZspline_setup(DrhoDr_spl,gsr,ez_status)
           
-          DrhoDphi_spl%x1 = xu*pi2; DrhoDphi_spl%x2 = xv*pi2; DrhoDphi_spl%x3 = s_full; DrhoDphi_spl%isHermite = isherm
+          DrhoDphi_spl%x1 = xu*pi2; DrhoDphi_spl%x2 = xv*pi2; DrhoDphi_spl%x3 = rho_full; DrhoDphi_spl%isHermite = isherm
           CALL EZspline_setup(DrhoDphi_spl,gsp,ez_status)
           
-          DrhoDz_spl%x1 = xu*pi2; DrhoDz_spl%x2 = xv*pi2; DrhoDz_spl%x3 = s_full; DrhoDz_spl%isHermite = isherm
+          DrhoDz_spl%x1 = xu*pi2; DrhoDz_spl%x2 = xv*pi2; DrhoDz_spl%x3 = rho_full; DrhoDz_spl%isHermite = isherm
           CALL EZspline_setup(DrhoDz_spl,gsz,ez_status)          
 
           IF (ez_status .NE. 0) error_status = -200 - ABS(ez_status)
@@ -1527,10 +1460,12 @@
         SUBROUTINE rzfunct_stel_tool(m,n,x,fvec,fjac,ldfjac,iflag)
           USE EZspline
           IMPLICIT NONE
-          INTEGER :: m,n,ldfjac,iflag, ier
+          INTEGER :: m,n,ldfjac,iflag, status_ez, status_domain
           DOUBLE PRECISION :: x(n),fvec(m),fjac(ldfjac,n)
           DOUBLE PRECISION :: R_temp, Z_temp
           DOUBLE PRECISION :: R_grad(3), Z_grad(3)
+          DOUBLE PRECISION :: epsilon
+          epsilon = 1D-10
           IF (x(2) < 0.0) x(2) = x(2) + pi2
           x(2) = MOD(x(2),pi2)
           IF (x(1) < 0) THEN
@@ -1539,29 +1474,49 @@
              x(2) = MOD(x(2),pi2)
              !x(1) = 0
           END IF
-          ier = 0
-          CALL EZspline_isInDomain(R_spl,x(2),PHI_Target,x(1),ier)
-          IF (ier .ne. 0) THEN
-             iflag = -1
-             domain_flag = -1
-          END IF
-          IF (iflag == 1) THEN
-             CALL EZspline_interp(R_spl,x(2),PHI_Target,x(1),R_temp,iflag)
-             CALL EZspline_interp(Z_spl,x(2),PHI_Target,x(1),Z_temp,iflag)
-             fvec(1) = (R_temp - R_target)
-             fvec(2) = (Z_temp - Z_target)
-          ELSE IF (iflag == 2) THEN
-             CALL EZspline_gradient(R_spl,x(2),PHI_Target,x(1),R_grad,iflag)
-             CALL EZspline_gradient(Z_spl,x(2),PHI_Target,x(1),Z_grad,iflag)
-             !CALL EZspline_interp(Ru_spl,x(2),PHI_Target,x(1),R_temp,iflag)
-             !CALL EZspline_interp(Zu_spl,x(2),PHI_Target,x(1),Z_temp,iflag)
-             fjac(1,1) = R_grad(3) !dR/ds
-             fjac(1,2) = R_grad(1) !dR/du
-             !fjac(1,2) = R_temp
-             fjac(2,1) = Z_grad(3) !dZ/ds
-             fjac(2,2) = Z_grad(1) !dZ/du
-             !fjac(2,2) = Z_temp
-          END IF
+          status_ez = 0
+
+          CALL EZspline_isInDomain(R_spl,x(2),PHI_Target,x(1),status_ez)
+          status_domain = status_ez
+          
+          IF (status_domain .eq. 0) THEN
+             ! The point is within the defined domain.
+             IF (iflag == 1) THEN
+                CALL EZspline_interp(R_spl,x(2),PHI_Target,x(1),R_temp,status_ez)
+                CALL EZspline_interp(Z_spl,x(2),PHI_Target,x(1),Z_temp,status_ez)
+                fvec(1) = (R_temp - R_target)
+                fvec(2) = (Z_temp - Z_target)
+             ELSE IF (iflag == 2) THEN
+                CALL EZspline_gradient(R_spl,x(2),PHI_Target,x(1),R_grad,status_ez)
+                CALL EZspline_gradient(Z_spl,x(2),PHI_Target,x(1),Z_grad,status_ez)
+                fjac(1,1) = R_grad(3) !dR/ds
+                fjac(1,2) = R_grad(1) !dR/du
+                fjac(2,1) = Z_grad(3) !dZ/ds
+                fjac(2,2) = Z_grad(1) !dZ/du
+             END IF
+          ELSE
+             ! Begin linear extrapolation outside of rho = 1.0.
+             IF (iflag == 1) THEN
+                CALL EZspline_interp(R_spl,x(2),PHI_Target,1D0,R_temp,status_ez)
+                CALL EZspline_interp(Z_spl,x(2),PHI_Target,1D0,Z_temp,status_ez)
+                CALL EZspline_gradient(R_spl,x(2),PHI_Target,1D0,R_grad,status_ez)
+                CALL EZspline_gradient(Z_spl,x(2),PHI_Target,1D0,Z_grad,status_ez)
+                R_temp = R_temp + R_grad(3)*(x(1)-1.0)
+                Z_temp = Z_temp + Z_grad(3)*(x(1)-1.0)
+                fvec(1) = (R_temp - R_target)
+                fvec(2) = (Z_temp - Z_target)
+             ELSE IF (iflag == 2) THEN
+                CALL EZspline_gradient(R_spl,x(2),PHI_Target,1D0,R_grad,status_ez)
+                CALL EZspline_gradient(Z_spl,x(2),PHI_Target,1D0,Z_grad,status_ez)
+                fjac(1,1) = R_grad(3) !dR/ds
+                fjac(1,2) = R_grad(1) !dR/du
+                fjac(2,1) = Z_grad(3) !dZ/ds
+                fjac(2,2) = Z_grad(1) !dZ/du
+             END IF
+          ENDIF
+
+          iflag = status_ez
+          
           RETURN
         END SUBROUTINE rzfunct_stel_tool
 
@@ -1634,7 +1589,9 @@
              PHI_target = point_cyl(2)
              IF (PHI_target < 0) PHI_target = PHI_target + pi2
              PHI_target = MOD(PHI_target,pi2/nfp)*nfp
-             xc_opt(1) = guess_flx(1)
+             !xc_opt(1) = guess_flx(1)
+             ! Convert from s to rho.
+             xc_opt(1) = SQRT(guess_flx(1))
              xc_opt(2) = guess_flx(2)
              fval = 1.0E-30
              fjac = 0
@@ -1652,7 +1609,6 @@
              ipvt   = 0
              qtf    = 0.0
              wa1 = 0; wa2 = 0; wa3 = 0; wa4 = 0
-             domain_flag = 0
              DO ik = 1, 4
                 info = 0
                 nfev = 0
@@ -1689,7 +1645,7 @@
                    ENDIF
                 ENDIF
                 IF (info < 4) EXIT
-                ! If we have not achived success, try to bump the fitter into a better space.
+                ! If we have  achived partial success, try to bump the fitter into a better space.
                 IF (ik < 4) THEN 
                    xc_opt(1) = xc_opt(1) + 1e-4 * 10**(ik-1)
                    xc_opt(2) = xc_opt(2) + 1e-4*pi2 * 10**(ik-1)
@@ -1699,14 +1655,20 @@
              ! Any values of info greater than 0 may indicate success, however
              ! values greater than 3 may indicate a problem in convergence.
              IF ((info > 0) .AND. (info < 4)) error_status = 0
-             IF (domain_flag .ne. 0) THEN
+             ! Check to see if this point is within the VMEC domain.
+             ! In principal this check could be removed in which case
+             ! this function will provide linear extrapolation outside of
+             ! s=1.0.
+             IF (xc_opt(1) > 1.0) THEN
                 error_status = -2
                 point_flx(1) = 1.5
                 point_flx(2) = 2*pi2
                 point_flx(3) = 2*pi2
                 RETURN
              END IF
-             point_flx(1) = xc_opt(1)
+             !point_flx(1) = xc_opt(1)
+             ! Convert from rho to s.
+             point_flx(1) = xc_opt(1)**2
              point_flx(2) = xc_opt(2)
              point_flx(2) = MOD(point_flx(2), pi2)
              IF (point_flx(2) < 0) point_flx(2) = point_flx(2) + pi2
@@ -1817,10 +1779,10 @@
           
           v_val = MOD(point_flx(3) , pi2/nfp)*nfp
           
-          CALL EZspline_isInDomain(R_spl, point_flx(2), v_val, point_flx(1), ez_status)
+          CALL EZspline_isInDomain(R_spl, point_flx(2), v_val, SQRT(point_flx(1)), ez_status)
           IF (ez_status == 0) THEN
-             CALL EZspline_interp(R_spl, point_flx(2), v_val, point_flx(1), point_cyl(1), ez_status)
-             CALL EZspline_interp(Z_spl, point_flx(2), v_val, point_flx(1), point_cyl(3), ez_status)
+             CALL EZspline_interp(R_spl, point_flx(2), v_val, SQRT(point_flx(1)), point_cyl(1), ez_status)
+             CALL EZspline_interp(Z_spl, point_flx(2), v_val, SQRT(point_flx(1)), point_cyl(3), ez_status)
              point_cyl(2) = point_flx(3)
              IF (ez_status .NE. 0) error_status = -200 - ABS(ez_status)
           ELSE
@@ -1849,9 +1811,9 @@
           IF (.NOT. EZspline_allocated(B_spl)) CALL initialize_splines_modb(error_status)
           IF (error_status < 0) RETURN
           
-          CALL EZSPLINE_isInDomain(B_spl, point_flx(2), v_val, point_flx(1), ez_status)
+          CALL EZSPLINE_isInDomain(B_spl, point_flx(2), v_val, SQRT(point_flx(1)), ez_status)
           IF (ez_status == 0) THEN
-             CALL EZspline_interp(B_spl, point_flx(2), v_val, point_flx(1), modb, ez_status)
+             CALL EZspline_interp(B_spl, point_flx(2), v_val, SQRT(point_flx(1)), modb, ez_status)
              IF (ez_status .NE. 0) error_status = -200 - ABS(ez_status)
           ELSE
              error_status = -2
@@ -1879,11 +1841,11 @@
           IF (.NOT. EZspline_allocated(Bs_spl)) CALL initialize_splines_b(error_status)
           IF (error_status < 0) RETURN
           
-          CALL EZSPLINE_isInDomain(Bs_spl, point_flx(2), v_val, point_flx(1), ez_status)
+          CALL EZSPLINE_isInDomain(Bs_spl, point_flx(2), v_val, SQRT(point_flx(1)), ez_status)
           IF (ez_status == 0) THEN
-             CALL EZspline_interp(Bs_spl, point_flx(2), v_val, point_flx(1), b_flx(1), ez_status)
-             CALL EZspline_interp(Bu_spl, point_flx(2), v_val, point_flx(1), b_flx(2), ez_status)
-             CALL EZspline_interp(Bv_spl, point_flx(2), v_val, point_flx(1), b_flx(3), ez_status)
+             CALL EZspline_interp(Bs_spl, point_flx(2), v_val, SQRT(point_flx(1)), b_flx(1), ez_status)
+             CALL EZspline_interp(Bu_spl, point_flx(2), v_val, SQRT(point_flx(1)), b_flx(2), ez_status)
+             CALL EZspline_interp(Bv_spl, point_flx(2), v_val, SQRT(point_flx(1)), b_flx(3), ez_status)
              IF (ez_status .NE. 0) error_status = -200 - ABS(ez_status)
           ELSE
              error_status = -2
@@ -1921,13 +1883,13 @@
           CALL cyl_from_flx(point_flx, point_cyl, error_status)
           IF (error_status < 0) RETURN
 
-          CALL EZSPLINE_isInDomain(R_spl, point_flx(2), v_val, point_flx(1), ez_status)
+          CALL EZSPLINE_isInDomain(R_spl, point_flx(2), v_val, SQRT(point_flx(1)), ez_status)
           IF (ez_status == 0) THEN
              R_grad = 0; Z_grad = 0
-             CALL EZspline_interp(Ru_spl, point_flx(2), v_val, point_flx(1), R_grad(1), ez_status)
-             CALL EZspline_interp(Rv_spl, point_flx(2), v_val, point_flx(1), R_grad(2), ez_status)
-             CALL EZspline_interp(Zu_spl, point_flx(2), v_val, point_flx(1), Z_grad(1), ez_status)
-             CALL EZspline_interp(Zv_spl, point_flx(2), v_val, point_flx(1), Z_grad(2), ez_status)
+             CALL EZspline_interp(Ru_spl, point_flx(2), v_val, SQRT(point_flx(1)), R_grad(1), ez_status)
+             CALL EZspline_interp(Rv_spl, point_flx(2), v_val, SQRT(point_flx(1)), R_grad(2), ez_status)
+             CALL EZspline_interp(Zu_spl, point_flx(2), v_val, SQRT(point_flx(1)), Z_grad(1), ez_status)
+             CALL EZspline_interp(Zv_spl, point_flx(2), v_val, SQRT(point_flx(1)), Z_grad(2), ez_status)
              b_cyl(1) = R_grad(3)*b_flx(1) + R_grad(1)*b_flx(2) + R_grad(2)*b_flx(3)*nfp
              b_cyl(2) = point_cyl(1) * b_flx(3)
              b_cyl(3) = Z_grad(3)*b_flx(1) + Z_grad(1)*b_flx(2) + Z_grad(2)*b_flx(3)*nfp
@@ -1997,28 +1959,14 @@
           DOUBLE PRECISION, INTENT(in) :: point_flx(3)
           DOUBLE PRECISION, INTENT(out) :: grads_cyl(3)
           INTEGER, INTENT(inout) :: error_status
-          INTEGER :: ez_status
-          DOUBLE PRECISION :: v_val
-          ez_status = 0
+          DOUBLE PRECISION :: gradrho_cyl(3)
 
           IF (error_status < 0) RETURN
 
           grads_cyl(:) = 0
+          CALL gradrho_cyl_from_flx(point_flx, gradrho_cyl, error_status)
 
-          IF (.NOT. EZspline_allocated(DsDr_spl)) CALL initialize_splines_grads(error_status)
-          IF (error_status < 0) RETURN
-                    
-          v_val = MOD(point_flx(3), pi2/nfp)*nfp
-
-          CALL EZSPLINE_isInDomain(DsDr_spl, point_flx(2), v_val, point_flx(1), ez_status)
-          IF (ez_status == 0) THEN
-             CALL EZspline_interp(DsDr_spl, point_flx(2), v_val, point_flx(1), grads_cyl(1), ez_status)
-             CALL EZspline_interp(DsDphi_spl, point_flx(2), v_val, point_flx(1), grads_cyl(2), ez_status)
-             CALL EZspline_interp(DsDz_spl, point_flx(2), v_val, point_flx(1), grads_cyl(3), ez_status)
-             IF (ez_status .NE. 0) error_status = -200 - ABS(ez_status)
-          ELSE
-             error_status = -2
-          END IF
+          grads_cyl = 2.0*SQRT(point_flx(1))*gradrho_cyl
           
         END SUBROUTINE grads_cyl_from_flx
 
@@ -2067,11 +2015,11 @@
                     
           v_val = MOD(point_flx(3), pi2/nfp)*nfp
 
-          CALL EZSPLINE_isInDomain(DrhoDr_spl, point_flx(2), v_val, point_flx(1), ez_status)
+          CALL EZSPLINE_isInDomain(DrhoDr_spl, point_flx(2), v_val, SQRT(point_flx(1)), ez_status)
           IF (ez_status == 0) THEN
-             CALL EZspline_interp(DrhoDr_spl, point_flx(2), v_val, point_flx(1), gradrho_cyl(1), ez_status)
-             CALL EZspline_interp(DrhoDphi_spl, point_flx(2), v_val, point_flx(1), gradrho_cyl(2), ez_status)
-             CALL EZspline_interp(DrhoDz_spl, point_flx(2), v_val, point_flx(1), gradrho_cyl(3), ez_status)
+             CALL EZspline_interp(DrhoDr_spl, point_flx(2), v_val, SQRT(point_flx(1)), gradrho_cyl(1), ez_status)
+             CALL EZspline_interp(DrhoDphi_spl, point_flx(2), v_val, SQRT(point_flx(1)), gradrho_cyl(2), ez_status)
+             CALL EZspline_interp(DrhoDz_spl, point_flx(2), v_val, SQRT(point_flx(1)), gradrho_cyl(3), ez_status)
              IF (ez_status .NE. 0) error_status = -200 - ABS(ez_status)
           ELSE
              error_status = -2
@@ -2124,9 +2072,9 @@
                     
           v_val = MOD(point_flx(3), pi2/nfp)*nfp
 
-          CALL EZSPLINE_isInDomain(G_spl, point_flx(2), v_val, point_flx(1), ez_status)
+          CALL EZSPLINE_isInDomain(G_spl, point_flx(2), v_val, SQRT(point_flx(1)), ez_status)
           IF (ez_status == 0) THEN
-             CALL EZspline_interp(G_spl, point_flx(2), v_val, point_flx(1), jacobian, ez_status)
+             CALL EZspline_interp(G_spl, point_flx(2), v_val, SQRT(point_flx(1)), jacobian, ez_status)
              IF (ez_status .NE. 0) error_status = -200 - ABS(ez_status)
           ELSE
              error_status = -2
@@ -2151,9 +2099,9 @@
           IF (error_status < 0) RETURN
           
 
-          CALL EZSPLINE_isInDomain(b_fsa_spl, s_val, ez_status)
+          CALL EZSPLINE_isInDomain(b_fsa_spl, SQRT(s_val), ez_status)
           IF (ez_status == 0) THEN
-             CALL EZspline_interp(b_fsa_spl, s_val, fsa_modb, ez_status)
+             CALL EZspline_interp(b_fsa_spl, SQRT(s_val), fsa_modb, ez_status)
              IF (ez_status .NE. 0) error_status = -200 - ABS(ez_status)
           ELSE
              error_status = -2
@@ -2177,9 +2125,9 @@
           IF (.NOT. EZspline_allocated(grho_fsa_spl)) CALL initialize_splines_fsa(error_status)
           IF (error_status < 0) RETURN
           
-          CALL EZSPLINE_isInDomain(grho_fsa_spl, s_val, ez_status)
+          CALL EZSPLINE_isInDomain(grho_fsa_spl, SQRT(s_val), ez_status)
           IF (ez_status == 0) THEN
-             CALL EZspline_interp(grho_fsa_spl, s_val, fsa_gradrho, ez_status)
+             CALL EZspline_interp(grho_fsa_spl, SQRT(s_val), fsa_gradrho, ez_status)
              IF (ez_status .NE. 0) error_status = -200 - ABS(ez_status)
           ELSE
              error_status = -2
@@ -2203,9 +2151,9 @@
           IF (.NOT. EZspline_allocated(grho2_fsa_spl)) CALL initialize_splines_fsa(error_status)
           IF (error_status < 0) RETURN
           
-          CALL EZSPLINE_isInDomain(grho2_fsa_spl, s_val, ez_status)
+          CALL EZSPLINE_isInDomain(grho2_fsa_spl, SQRT(s_val), ez_status)
           IF (ez_status == 0) THEN
-             CALL EZspline_interp(grho2_fsa_spl, s_val, fsa_gradrho2, ez_status)
+             CALL EZspline_interp(grho2_fsa_spl, SQRT(s_val), fsa_gradrho2, ez_status)
              IF (ez_status .NE. 0) error_status = -200 - ABS(ez_status)
           ELSE
              error_status = -2
@@ -2229,9 +2177,9 @@
           IF (.NOT. EZspline_allocated(b2overgrho_fsa_spl)) CALL initialize_splines_fsa(error_status)
           IF (error_status < 0) RETURN
           
-          CALL EZSPLINE_isInDomain(b2overgrho_fsa_spl, s_val, ez_status)
+          CALL EZSPLINE_isInDomain(b2overgrho_fsa_spl, SQRT(s_val), ez_status)
           IF (ez_status == 0) THEN
-             CALL EZspline_interp(b2overgrho_fsa_spl, s_val, fsa_b2overgradrho, ez_status)
+             CALL EZspline_interp(b2overgrho_fsa_spl, SQRT(s_val), fsa_b2overgradrho, ez_status)
              IF (ez_status .NE. 0) error_status = -200 - ABS(ez_status)
           ELSE
              error_status = -2
