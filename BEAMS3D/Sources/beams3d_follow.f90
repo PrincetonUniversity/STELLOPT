@@ -280,11 +280,7 @@ SUBROUTINE beams3d_follow
                 ier = 0
                 DO l = mystart, myend
                     ltherm = .false.
-                    IF (lbeam) THEN
-                        lneut = .true.
-                    ELSE
-                        lneut = .false.
-                    END IF
+                    lneut  = .false.
                     q(1) = R_start(l)
                     q(2) = phi_start(l)
                     q(3) = Z_start(l)
@@ -292,18 +288,32 @@ SUBROUTINE beams3d_follow
                     B_temp(:) = 1.0
                     t_nag = 0.0
                     tf_nag = 0.0
-                    ier = 0
-                    myline = l
                     mycharge = charge(l)
                     myZ = Zatom(l)
                     mymass = mass(l)
                     moment = mu_start(l)
                     myv_neut(:) = v_neut(:,myline)
-                    CALL RANDOM_NUMBER(rand_prob)
-                    cum_prob = 1.0
-                    tau      = 10.0
-                    mytdex = 0
+                    IF (lbeam) lneut = .TRUE.
                     CALL out_beams3d_nag(tf_nag,q)
+                    IF (lbeam) THEN
+                       lcollision = .FALSE.
+                       ! Follow into plasma
+                       CALL beams3d_follow_neut(t_nag,q)
+                       mytdex = 1
+                       tf_nag = t_nag
+                       CALL out_beams3d_nag(tf_nag,q)
+                       IF (tf_nag > t_end(l)) CYCLE  ! Detect end shinethrough particle
+                       ! Ionize
+                       CALL beams3d_ionize(tf_nag,q)
+                       mytdex = 2
+                       CALL out_beams3d_nag(tf_nag,q)
+                       IF (ldepo) CYCLE
+                       ltherm = .FALSE.
+                       lcollision = .TRUE.
+                       mytdex = 3
+                       tf_nag = tf_nag - dt  ! Because out advances t by dt
+                       dt_out = (t_end(l) - t_nag)/(npoinc-2) ! Adjust dt slightly to keep indexing correct.
+                    END IF
                     DO
                         CALL drkhvg(t_nag, q, neqs_nag, dt, 2, fpart_rkh68, rkh_work, iopt, ier)
                         IF (ier < 0) CALL handle_err(RKH68_ERR, 'beams3d_follow', ier)
