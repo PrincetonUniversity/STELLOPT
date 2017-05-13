@@ -31,10 +31,10 @@
 !          ns           Number of flux divisions for current calculation
 !-----------------------------------------------------------------------
       IMPLICIT NONE
-      INTEGER :: ier, iunit, istat, i, j, k, nlost, ninj, sbeam, ebeam
+      INTEGER :: ier, iunit, istat, i, j, k, ninj, sbeam, ebeam
       REAL(rprec) :: maxdist,mindist,v1,v2,dist,ddist,s1,s2, vp_temp
       LOGICAL, ALLOCATABLE     :: partmask(:), partmask2(:,:), partmask2t(:,:)
-      INTEGER, ALLOCATABLE  :: int_mask(:), int_mask2(:,:)
+      INTEGER, ALLOCATABLE  :: int_mask(:), int_mask2(:,:), nlost(:)
       INTEGER, ALLOCATABLE  :: dist_func(:,:,:)
       REAL, ALLOCATABLE     :: real_mask(:)
       INTEGER, PARAMETER :: ndist = 100
@@ -69,17 +69,19 @@
 
       ! Main Allocations
       IF (ALLOCATED(shine_through)) DEALLOCATE(shine_through)
+      IF (ALLOCATED(nlost)) DEALLOCATE(nlost)
       ALLOCATE(shine_through(nbeams))
-      IF (myworkid == master) THEN
-         ALLOCATE(partmask(1:nparticles))
-         ALLOCATE(partmask2(0:npoinc,1:nparticles))
-         ALLOCATE(partmask2t(0:npoinc,1:nparticles))
-         ALLOCATE(int_mask(1:nparticles))
-         ALLOCATE(int_mask2(0:npoinc,1:nparticles))
-         ALLOCATE(real_mask(1:nparticles))
-         maxdist=MAXVAl(MAXVAL(vll_lines,DIM=2),DIM=1)
-         mindist=MINVAl(MINVAL(vll_lines,DIM=2),DIM=1)
-      ELSE
+      ALLOCATE(nlost(nbeams))
+!      IF (myworkid == master) THEN
+!         ALLOCATE(partmask(1:nparticles))
+!         ALLOCATE(partmask2(0:npoinc,1:nparticles))
+!         ALLOCATE(partmask2t(0:npoinc,1:nparticles))
+!         ALLOCATE(int_mask(1:nparticles))
+!         ALLOCATE(int_mask2(0:npoinc,1:nparticles))
+!         ALLOCATE(real_mask(1:nparticles))
+!         maxdist=MAXVAl(MAXVAL(vll_lines,DIM=2),DIM=1)
+!         mindist=MINVAl(MINVAL(vll_lines,DIM=2),DIM=1)
+!      ELSE
          ALLOCATE(partmask(mystart:myend))
          ALLOCATE(partmask2(0:npoinc,mystart:myend))
          ALLOCATE(partmask2t(0:npoinc,mystart:myend))
@@ -88,7 +90,7 @@
          ALLOCATE(real_mask(mystart:myend))
          maxdist=MAXVAl(MAXVAL(vll_lines,DIM=2),DIM=1)
          mindist=MINVAl(MINVAL(vll_lines,DIM=2),DIM=1)
-      END IF
+!      END IF
 !DEC$ IF DEFINED (MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_BEAMS, ierr_mpi)
       IF (ierr_mpi /= 0) CALL handle_err(MPI_BARRIER_ERR, 'beams3d_follow', ierr_mpi)
@@ -130,11 +132,22 @@
          END DO
       END DO
 
+      ! Calculate shinethrough and loss
+      shine_through = 0
+      DO i = 1, nbeams
+         shine_through(i) = 100.*COUNT(neut_lines(1,mystart:myend) .and. (beam(mystart:myend)==i),DIM=1)/COUNT(beam==i)
+         nlost(i)         = COUNT(lost_lines(mystart:myend).and. beam(mystart:myend) == i)
+      END DO
+
 !DEC$ IF DEFINED (MPI_OPT)
       IF (myworkid == master) THEN
-         CALL MPI_REDUCE(MPI_IN_PLACE,dist_func,nbeams*ndist*(npoinc+1),MPI_INTEGER,MPI_SUM,master,MPI_COMM_BEAMS,ierr_mpi)
+         CALL MPI_REDUCE(MPI_IN_PLACE, dist_func,     nbeams*ndist*(npoinc+1), MPI_INTEGER,          MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
+         CALL MPI_REDUCE(MPI_IN_PLACE, shine_through, nbeams,                  MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
+         CALL MPI_REDUCE(MPI_IN_PLACE, nlost,         nbeams,                  MPI_INTEGER,          MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
       ELSE
-         CALL MPI_REDUCE(dist_func,dist_func,nbeams*ndist*(npoinc+1),MPI_INTEGER,MPI_SUM,master,MPI_COMM_BEAMS,ierr_mpi)
+         CALL MPI_REDUCE(dist_func,     dist_func,     nbeams*ndist*(npoinc+1), MPI_INTEGER,          MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
+         CALL MPI_REDUCE(shine_through, shine_through, nbeams,                  MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
+         CALL MPI_REDUCE(nlost,         nlost,         nbeams,                  MPI_INTEGER,          MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
       END IF
 !DEC$ ENDIF
 
@@ -151,23 +164,17 @@
             WRITE(iunit,'((I5,3(2X,E22.12)))') i,E_BEAMS(i),CHARGE_BEAMS(i),MASS_BEAMS(i)
 
             ! Output beam losses
-            nlost = COUNT(lost_lines .and. (beam .eq. i))
             ninj  = COUNT(beam .eq. i)
             WRITE(iunit,'(A)') ' Particles Launched  Particles Lost  Lost(%)  TIME_END'
             WRITE(iunit,'(6X,I10,11X,I5,7x,F5.1,6x,E22.12)') ninj, nlost, 100.*nlost/ninj, MAXVAL(t_end)
             WRITE(iunit,'(A)') ' '
             CALL FLUSH(iunit)
 
-            ! Shine through
-            !shine_through(i) = 100.*SUM(neut_lines(npoinc,:),DIM=1,MASK=(beam==i))/real(ninj)
-            !shine_through(i) = 100.*COUNT(neut_lines(npoinc,:).and.(beam==i),DIM=1)/real(ninj)
-            shine_through(i) = 100.*COUNT(neut_lines(1,:).and.(beam==i),DIM=1)/real(ninj)
-
             ! Screen Output
             IF (lverb) THEN
                IF (i==1) WRITE(6,'(A)')  ' BEAMLINE     ENERGY [keV]   CHARGE [e]   MASS [Mp]   Particles [#]   Lost [%]  Shinethrough [%]'
                WRITE(6,'(I5,3(11X,I3),8X,I8,2(8X,F5.1))') i,NINT(E_BEAMS(i)*6.24150636309E15),NINT(CHARGE_BEAMS(i)*6.24150636309E18),&
-                                         NINT(MASS_BEAMS(i)*5.97863320194E26), ninj, 100.*nlost/ninj, shine_through(i)
+                                         NINT(MASS_BEAMS(i)*5.97863320194E26), ninj, 100.*nlost(i)/ninj, shine_through(i)
                CALL FLUSH(6)
             END IF
             ! Write Distribution Function
@@ -227,30 +234,18 @@
 
 !DEC$ IF DEFINED (MPI_OPT)
          IF (myworkid == master) THEN
-            CALL MPI_REDUCE(MPI_IN_PLACE,ndot_prof,nbeams*ns_prof,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_BEAMS,ierr_mpi)
+            CALL MPI_REDUCE(MPI_IN_PLACE, ndot_prof,   nbeams*ns_prof, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
+            CALL MPI_REDUCE(MPI_IN_PLACE, epower_prof, nbeams*ns_prof, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
+            CALL MPI_REDUCE(MPI_IN_PLACE, ipower_prof, nbeams*ns_prof, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
+            CALL MPI_REDUCE(MPI_IN_PLACE, j_prof,      nbeams*ns_prof, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
          ELSE
-            CALL MPI_REDUCE(ndot_prof,ndot_prof,nbeams*ns_prof,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_BEAMS,ierr_mpi)
+            CALL MPI_REDUCE(ndot_prof,   ndot_prof,   nbeams*ns_prof, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
+            CALL MPI_REDUCE(epower_prof, epower_prof, nbeams*ns_prof, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
+            CALL MPI_REDUCE(ipower_prof, ipower_prof, nbeams*ns_prof, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
+            CALL MPI_REDUCE(j_prof,      j_prof,      nbeams*ns_prof, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
          END IF
-
-         IF (myworkid == master) THEN
-            CALL MPI_REDUCE(MPI_IN_PLACE,epower_prof,nbeams*ns_prof,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_BEAMS,ierr_mpi)
-         ELSE
-            CALL MPI_REDUCE(epower_prof,epower_prof,nbeams*ns_prof,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_BEAMS,ierr_mpi)
-         END IF
-
-         IF (myworkid == master) THEN
-            CALL MPI_REDUCE(MPI_IN_PLACE,ipower_prof,nbeams*ns_prof,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_BEAMS,ierr_mpi)
-         ELSE
-            CALL MPI_REDUCE(ipower_prof,ipower_prof,nbeams*ns_prof,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_BEAMS,ierr_mpi)
-         END IF
-
-         IF (myworkid == master) THEN
-            CALL MPI_REDUCE(MPI_IN_PLACE,j_prof,nbeams*ns_prof,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_BEAMS,ierr_mpi)
-         ELSE
-            CALL MPI_REDUCE(j_prof,j_prof,nbeams*ns_prof,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_BEAMS,ierr_mpi)
-         END IF
-
 !DEC$ ENDIF
+
          IF (myworkid == master) THEN
             DO i = 1, nbeams
                ninj  = COUNT(beam .eq. i)
