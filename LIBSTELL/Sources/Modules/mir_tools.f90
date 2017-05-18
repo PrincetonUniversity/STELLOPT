@@ -79,10 +79,6 @@
 !                      about specific codes.
 !
 !     Programming ToDo:
-!       * Near the magnetic axis it would probably be more accurate to
-!         construct the splines as a function of rho rather than as a
-!         function of s. This needs to be tested.  Switching to rho
-!         would be very easy.
 !       * Update conversion from half to full grid to use quadratic
 !         interpolation.  This is especially important for s=0.0 and s=1.0
 !         where using linear interpolation leads to an incorrect first
@@ -228,8 +224,8 @@
           ,ns_t
         
         INTEGER, PRIVATE :: &
-          nu_module &
-          ,nv_module
+          m_nu &
+          ,m_nv
                 
         DOUBLE PRECISION, ALLOCATABLE, PRIVATE :: &
           xu(:) &
@@ -239,6 +235,11 @@
           ,rho_full(:) &
           ,rho_half(:)
 
+        DOUBLE PRECISION, ALLOCATABLE :: m_cosmt(:,:)
+        DOUBLE PRECISION, ALLOCATABLE :: m_sinmt(:,:)
+        DOUBLE PRECISION, ALLOCATABLE :: m_cosnz(:,:)
+        DOUBLE PRECISION, ALLOCATABLE :: m_sinnz(:,:)
+        
         !-----------------------------------------------------------------------
         !     Private Subroutines
         !-----------------------------------------------------------------------
@@ -510,21 +511,27 @@
           INTEGER, INTENT(inout) :: error_status          
           INTEGER, INTENT(in), OPTIONAL :: nu
           INTEGER, INTENT(in), OPTIONAL :: nv
-          INTEGER :: u
-
+          INTEGER :: u, ii, mn
+          DOUBLE PRECISION :: xm_temp(1:mnmax,1)
+          DOUBLE PRECISION :: xn_temp(1:mnmax,1)
+          DOUBLE PRECISION, ALLOCATABLE :: xu_temp(:,:)
+          DOUBLE PRECISION, ALLOCATABLE :: xv_temp(:,:)
+          DOUBLE PRECISION, ALLOCATABLE :: mt(:,:)
+          DOUBLE PRECISION, ALLOCATABLE :: nz(:,:)
+          
           IF (error_status < 0) RETURN
           
           CALL free_interpolation_mesh(error_status)
           IF (error_status < 0) RETURN
           
           IF (PRESENT(nu) .AND. PRESENT(nv)) THEN
-            nu_module = nu
-            nv_module = nv
+            m_nu = nu
+            m_nv = nv
           ELSE
-            CALL guess_nu_nv(nu_module, nv_module, error_status)
+            CALL guess_nu_nv(m_nu, m_nv, error_status)
           END IF
 
-          IF (LOG_LEVEL >= 4) PRINT  '("Inititalizing mirtools with nu=", i0, " nv=", i0)', nu_module, nv_module
+          IF (LOG_LEVEL >= 4) PRINT  '("Inititalizing mirtools with nu=", i0, " nv=", i0)', m_nu, m_nv
           
           ! Check module array initalization.
           IF (.NOT. ALLOCATED(xm)) THEN
@@ -533,9 +540,9 @@
           ENDIF
           
           ! Poloidal and toroidal coordinates.
-          ALLOCATE(xu(nu_module),xv(nv_module))
-          FORALL(u=1:nu_module) xu(u) = REAL(u-1)/REAL(nu_module-1)
-          FORALL(u=1:nv_module) xv(u) = REAL(u-1)/REAL(nv_module-1)
+          ALLOCATE(xu(m_nu),xv(m_nv))
+          FORALL(u=1:m_nu) xu(u) = REAL(u-1)/REAL(m_nu-1)
+          FORALL(u=1:m_nv) xv(u) = REAL(u-1)/REAL(m_nv-1)
 
           ! Radial coordinate on the full mesh.          
           ALLOCATE(s_full(k1:k2))
@@ -552,6 +559,39 @@
        
           ALLOCATE(rho_half(k1:k2))
           rho_half = SQRT(s_half)
+
+          ! Precalculate required trig functions required for the mntouv subroutine.
+          ALLOCATE( &
+            m_cosmt(1:mnmax,1:m_nu) &
+            ,m_sinmt(1:mnmax,1:m_nu) &
+            ,m_cosnz(1:mnmax,1:m_nv) &
+            ,m_sinnz(1:mnmax,1:m_nv) &
+            ,STAT=error_status)
+          
+          ALLOCATE( &
+            xu_temp(1,1:m_nu) &
+            ,xv_temp(1,1:m_nv) &
+            ,mt(1:mnmax,1:m_nu) &
+            ,nz(1:mnmax,1:m_nv) &
+            )
+          
+          FORALL(ii=1:mnmax) xm_temp(ii,1)=DBLE(xm(ii))
+          FORALL(ii=1:mnmax) xn_temp(ii,1)=DBLE(xn(ii))
+          FORALL(ii=1:m_nu) xu_temp(1,ii)=xu(ii)
+          FORALL(ii=1:m_nv) xv_temp(1,ii)=xv(ii)
+          mt = MATMUL(xm_temp,xu_temp)
+          nz = MATMUL(xn_temp,xv_temp)
+          FORALL(mn=1:mnmax,ii=1:m_nu) m_cosmt(mn,ii) = dcos(pi2*mt(mn,ii))
+          FORALL(mn=1:mnmax,ii=1:m_nu) m_sinmt(mn,ii) = dsin(pi2*mt(mn,ii))
+          FORALL(mn=1:mnmax,ii=1:m_nv) m_cosnz(mn,ii) = dcos(pi2*nz(mn,ii))
+          FORALL(mn=1:mnmax,ii=1:m_nv) m_sinnz(mn,ii) = dsin(pi2*nz(mn,ii))
+          
+          DEALLOCATE( &
+            xu_temp &
+            ,xv_temp &
+            ,mt &
+            ,nz &
+            )
           
         END SUBROUTINE init_interpolation_mesh
 
@@ -619,15 +659,20 @@
           IF (error_status < 0) RETURN
 
           IF (ALLOCATED(xu)) THEN
-             DEALLOCATE( &
-               xu &
-               ,xv &
-               ,s_full &
-               ,s_half &
-               ,rho_full &
-               ,rho_half &
-               )
+            DEALLOCATE( &
+              xu &
+              ,xv &
+              ,s_full &
+              ,s_half &
+              ,rho_full &
+              ,rho_half &
+              ,m_cosmt &
+              ,m_sinmt &
+              ,m_cosnz &
+              ,m_sinnz &
+              )
           ENDIF
+           
           
         END SUBROUTINE free_interpolation_mesh
 
@@ -741,28 +786,28 @@
           CALL cpu_time(time_start)
           
           !Allocations
-          ALLOCATE(f_temp(nu_module,nv_module,k1:k2))
+          ALLOCATE(f_temp(m_nu,m_nv,k1:k2))
           
           ! Free Memory
           IF (EZspline_allocated(R_spl)) CALL EZspline_free(R_spl,ez_status)
           IF (EZspline_allocated(Z_spl)) CALL EZspline_free(Z_spl,ez_status)
           
           ! Preform Init
-          CALL EZspline_init(R_spl,nu_module,nv_module,ns_t,bcs1,bcs1,bcs0,ez_status)
-          CALL EZspline_init(Z_spl,nu_module,nv_module,ns_t,bcs1,bcs1,bcs0,ez_status)
+          CALL EZspline_init(R_spl,m_nu,m_nv,ns_t,bcs1,bcs1,bcs0,ez_status)
+          CALL EZspline_init(Z_spl,m_nu,m_nv,ns_t,bcs1,bcs1,bcs0,ez_status)
           
           ! R
           f_temp=0
           R_spl%x1 = xu*pi2; R_spl%x2 = xv*pi2; R_spl%x3 = rho_full; R_spl%isHermite = isherm
-          CALL mntouv(k1,k2,mnmax,nu_module,nv_module,xu,xv,rmnc,xm,xn,f_temp,0,1)
-          IF (lasym) CALL mntouv(k1,k2,mnmax,nu_module,nv_module,xu,xv,rmns,xm,xn,f_temp,1,0)
+          CALL mntouv(rmnc,f_temp,0)
+          IF (lasym) CALL mntouv(rmns,f_temp,1)
           CALL EZspline_setup(R_spl,f_temp,ez_status)
           
           ! Z
           f_temp = 0
           Z_spl%x1 = xu*pi2; Z_spl%x2 = xv*pi2; Z_spl%x3 = rho_full; Z_spl%isHermite = isherm
-          CALL mntouv(k1,k2,mnmax,nu_module,nv_module,xu,xv,zmns,xm,xn,f_temp,1,0)
-          IF (lasym) CALL mntouv(k1,k2,mnmax,nu_module,nv_module,xu,xv,zmnc,xm,xn,f_temp,0,0)
+          CALL mntouv(zmns,f_temp,1)
+          IF (lasym) CALL mntouv(zmnc,f_temp,0)
           CALL EZspline_setup(Z_spl,f_temp,ez_status);
           
           IF (ez_status .NE. 0) error_status = -200 - ABS(ez_status)
@@ -799,7 +844,7 @@
           CALL cpu_time(time_start)
           
           !Allocations
-          ALLOCATE(f_temp(nu_module,nv_module,k1:k2))
+          ALLOCATE(f_temp(m_nu,m_nv,k1:k2))
           ALLOCATE(fmn_temp(1:mnmax,k1:k2))
          
           f_temp = 0
@@ -812,19 +857,19 @@
           IF (EZspline_allocated(Zv_spl)) CALL EZspline_free(Zv_spl,ez_status)
           
           ! Preform Init
-          CALL EZspline_init(Ru_spl,nu_module,nv_module,ns_t,bcs1,bcs1,bcs0,ez_status)
-          CALL EZspline_init(Rv_spl,nu_module,nv_module,ns_t,bcs1,bcs1,bcs0,ez_status)
-          CALL EZspline_init(Zu_spl,nu_module,nv_module,ns_t,bcs1,bcs1,bcs0,ez_status)
-          CALL EZspline_init(Zv_spl,nu_module,nv_module,ns_t,bcs1,bcs1,bcs0,ez_status)
+          CALL EZspline_init(Ru_spl,m_nu,m_nv,ns_t,bcs1,bcs1,bcs0,ez_status)
+          CALL EZspline_init(Rv_spl,m_nu,m_nv,ns_t,bcs1,bcs1,bcs0,ez_status)
+          CALL EZspline_init(Zu_spl,m_nu,m_nv,ns_t,bcs1,bcs1,bcs0,ez_status)
+          CALL EZspline_init(Zv_spl,m_nu,m_nv,ns_t,bcs1,bcs1,bcs0,ez_status)
           
           ! dR/Du Derivatives
           f_temp = 0
           Ru_spl%x1 = xu*pi2; Ru_spl%x2 = xv*pi2; Ru_spl%x3 = rho_full; Ru_spl%isHermite = isherm
           FORALL(mn = 1:mnmax) fmn_temp(mn,:) = -rmnc(mn,:)*xm(mn)
-          CALL mntouv(k1,k2,mnmax,nu_module,nv_module,xu,xv,fmn_temp,xm,xn,f_temp,1,0)
+          CALL mntouv(fmn_temp,f_temp,1)
           IF (lasym) THEN
              FORALL(mn = 1:mnmax) fmn_temp(mn,:) = rmns(mn,:)*xm(mn)
-             CALL mntouv(k1,k2,mnmax,nu_module,nv_module,xu,xv,fmn_temp,xm,xn,f_temp,0,0)
+             CALL mntouv(fmn_temp,f_temp,0)
           END IF
           CALL EZspline_setup(Ru_spl,f_temp,ez_status)
           
@@ -832,10 +877,10 @@
           f_temp = 0
           Rv_spl%x1 = xu*pi2; Rv_spl%x2 = xv*pi2; Rv_spl%x3 = rho_full; Rv_spl%isHermite = isherm
           FORALL(mn = 1:mnmax) fmn_temp(mn,:) = -rmnc(mn,:)*xn(mn)
-          CALL mntouv(k1,k2,mnmax,nu_module,nv_module,xu,xv,fmn_temp,xm,xn,f_temp,1,0)
+          CALL mntouv(fmn_temp,f_temp,1)
           IF (lasym) THEN
              FORALL(mn = 1:mnmax) fmn_temp(mn,:) = rmns(mn,:)*xn(mn)
-             CALL mntouv(k1,k2,mnmax,nu_module,nv_module,xu,xv,fmn_temp,xm,xn,f_temp,0,0)
+             CALL mntouv(fmn_temp,f_temp,0)
           END IF
           CALL EZspline_setup(Rv_spl,f_temp,ez_status)
           
@@ -843,10 +888,10 @@
           f_temp = 0
           Zu_spl%x1 = xu*pi2; Zu_spl%x2 = xv*pi2; Zu_spl%x3 = rho_full; Zu_spl%isHermite = isherm
           FORALL(mn = 1:mnmax) fmn_temp(mn,:) = zmns(mn,:)*xm(mn)
-          CALL mntouv(k1,k2,mnmax,nu_module,nv_module,xu,xv,fmn_temp,xm,xn,f_temp,0,0)
+          CALL mntouv(fmn_temp,f_temp,0)
           IF (lasym) THEN
              FORALL(mn = 1:mnmax) fmn_temp(mn,:) = -zmnc(mn,:)*xm(mn)
-             CALL mntouv(k1,k2,mnmax,nu_module,nv_module,xu,xv,fmn_temp,xm,xn,f_temp,1,0)
+             CALL mntouv(fmn_temp,f_temp,1)
           END IF
           CALL EZspline_setup(Zu_spl,f_temp,ez_status)
           
@@ -854,10 +899,10 @@
           f_temp = 0
           Zv_spl%x1 = xu*pi2; Zv_spl%x2 = xv*pi2; Zv_spl%x3 = rho_full; Zv_spl%isHermite = isherm
           FORALL(mn = 1:mnmax) fmn_temp(mn,:) = zmns(mn,:)*xn(mn)
-          CALL mntouv(k1,k2,mnmax,nu_module,nv_module,xu,xv,fmn_temp,xm,xn,f_temp,0,0)
+          CALL mntouv(fmn_temp,f_temp,0)
           IF (lasym) THEN
              FORALL(mn = 1:mnmax) fmn_temp(mn,:) = -zmnc(mn,:)*xn(mn)
-             CALL mntouv(k1,k2,mnmax,nu_module,nv_module,xu,xv,fmn_temp,xm,xn,f_temp,1,0)
+             CALL mntouv(fmn_temp,f_temp,1)
           END IF
           CALL EZspline_setup(Zv_spl,f_temp,ez_status)
          
@@ -894,7 +939,7 @@
           CALL cpu_time(time_start)
           
           !Allocations
-          ALLOCATE(f_temp(nu_module,nv_module,k1:k2))
+          ALLOCATE(f_temp(m_nu,m_nv,k1:k2))
           f_temp = 0
              
           ! Free Memory
@@ -903,30 +948,30 @@
           IF (EZspline_allocated(Bv_spl)) CALL EZspline_free(Bv_spl,ez_status)
           
           ! Preform Init
-          CALL EZspline_init(Bs_spl,nu_module,nv_module,ns_t,bcs1,bcs1,bcs0,ez_status)
-          CALL EZspline_init(Bu_spl,nu_module,nv_module,ns_t,bcs1,bcs1,bcs0,ez_status)
-          CALL EZspline_init(Bv_spl,nu_module,nv_module,ns_t,bcs1,bcs1,bcs0,ez_status)
+          CALL EZspline_init(Bs_spl,m_nu,m_nv,ns_t,bcs1,bcs1,bcs0,ez_status)
+          CALL EZspline_init(Bu_spl,m_nu,m_nv,ns_t,bcs1,bcs1,bcs0,ez_status)
+          CALL EZspline_init(Bv_spl,m_nu,m_nv,ns_t,bcs1,bcs1,bcs0,ez_status)
           
           ! B^s
           ! In VMEC B^s is defined as zero, so we don't need to calculate this one.
           f_temp = 0
           Bs_spl%x1 = xu*pi2; Bs_spl%x2 = xv*pi2; Bs_spl%x3 = rho_full; Bs_spl%isHermite = isherm
-          !IF (lasym) CALL mntouv(k1,k2,mnmax,nu_module,nv_module,xu,xv,bsmns_full,xm,xn,f_temp,1,0)
-          !IF (lasym) CALL mntouv(k1,k2,mnmax,nu_module,nv_module,xu,xv,bsmnc_full,xm,xn,f_temp,0,0)
+          !IF (lasym) CALL mntouv(bsmns_full,f_temp,1)
+          !IF (lasym) CALL mntouv(bsmnc_full,f_temp,0)
           CALL EZspline_setup(Bs_spl,f_temp,ez_status)
           
           ! B^u
           f_temp = 0
           Bu_spl%x1 = xu*pi2; Bu_spl%x2 = xv*pi2; Bu_spl%x3 = rho_full; Bu_spl%isHermite = isherm
-          CALL mntouv(k1,k2,mnmax,nu_module,nv_module,xu,xv,bsupumnc_full,xm,xn,f_temp,0,0)
-          IF (lasym) CALL mntouv(k1,k2,mnmax,nu_module,nv_module,xu,xv,bsupumns_full,xm,xn,f_temp,1,0)
+          CALL mntouv(bsupumnc_full,f_temp,0)
+          IF (lasym) CALL mntouv(bsupumns_full,f_temp,1)
           CALL EZspline_setup(Bu_spl,f_temp,ez_status)
           
           ! B^v
           f_temp = 0
           Bv_spl%x1 = xu*pi2; Bv_spl%x2 = xv*pi2; Bv_spl%x3 = rho_full; Bv_spl%isHermite = isherm
-          CALL mntouv(k1,k2,mnmax,nu_module,nv_module,xu,xv,bsupvmnc_full,xm,xn,f_temp,0,0)
-          IF (lasym) CALL mntouv(k1,k2,mnmax,nu_module,nv_module,xu,xv,bsupvmns_full,xm,xn,f_temp,1,0)
+          CALL mntouv(bsupvmnc_full,f_temp,0)
+          IF (lasym) CALL mntouv(bsupvmns_full,f_temp,1)
           CALL EZspline_setup(Bv_spl,f_temp,ez_status)
 
           IF (ez_status .NE. 0) error_status = -200 - ABS(ez_status) 
@@ -961,20 +1006,20 @@
           CALL cpu_time(time_start)
           
           !Allocations
-          ALLOCATE(f_temp(nu_module,nv_module,k1:k2))
+          ALLOCATE(f_temp(m_nu,m_nv,k1:k2))
           f_temp = 0
              
           ! Free Memory
           IF (EZspline_allocated(B_spl)) CALL EZspline_free(B_spl,ez_status)
           
           ! Preform Init
-          CALL EZspline_init(B_spl,nu_module,nv_module,ns_t,bcs1,bcs1,bcs0,ez_status)
+          CALL EZspline_init(B_spl,m_nu,m_nv,ns_t,bcs1,bcs1,bcs0,ez_status)
 
           ! ModB
           f_temp = 0
           B_spl%x1 = xu*pi2; B_spl%x2 = xv*pi2; B_spl%x3 = rho_full; B_spl%isHermite = isherm
-          CALL mntouv(k1,k2,mnmax,nu_module,nv_module,xu,xv,bmnc_full,xm,xn,f_temp,0,0)
-          IF (lasym) CALL mntouv(k1,k2,mnmax,nu_module,nv_module,xu,xv,bmns_full,xm,xn,f_temp,1,0)
+          CALL mntouv(bmnc_full,f_temp,0)
+          IF (lasym) CALL mntouv(bmns_full,f_temp,1)
           CALL EZspline_setup(B_spl,f_temp,ez_status)
           
           IF (ez_status .NE. 0) error_status = -200 - ABS(ez_status) 
@@ -1011,7 +1056,7 @@
           CALL cpu_time(time_start)
           
           !Allocations
-          ALLOCATE(f_temp(nu_module,nv_module,k1:k2))
+          ALLOCATE(f_temp(m_nu,m_nv,k1:k2))
           ALLOCATE(fmn_temp(1:mnmax,k1:k2))
           f_temp = 0
           fmn_temp = 0
@@ -1022,25 +1067,25 @@
           IF (EZspline_allocated(Lv_spl)) CALL EZspline_free(Lv_spl,ez_status)
              
           ! Preform Init
-          CALL EZspline_init(L_spl,nu_module,nv_module,ns_t,bcs1,bcs1,bcs0,ez_status)
-          CALL EZspline_init(Lu_spl,nu_module,nv_module,ns_t,bcs1,bcs1,bcs0,ez_status)
-          CALL EZspline_init(Lv_spl,nu_module,nv_module,ns_t,bcs1,bcs1,bcs0,ez_status)
+          CALL EZspline_init(L_spl,m_nu,m_nv,ns_t,bcs1,bcs1,bcs0,ez_status)
+          CALL EZspline_init(Lu_spl,m_nu,m_nv,ns_t,bcs1,bcs1,bcs0,ez_status)
+          CALL EZspline_init(Lv_spl,m_nu,m_nv,ns_t,bcs1,bcs1,bcs0,ez_status)
           
           ! Lambda
           f_temp = 0
           L_spl%x1 = xu*pi2; L_spl%x2 = xv*pi2; L_spl%x3 = rho_full; L_spl%isHermite = isherm
-          CALL mntouv(k1,k2,mnmax,nu_module,nv_module,xu,xv,lmns_full,xm,xn,f_temp,1,0)
-          IF (lasym) CALL mntouv(k1,k2,mnmax,nu_module,nv_module,xu,xv,lmnc_full,xm,xn,f_temp,0,0)
+          CALL mntouv(lmns_full,f_temp,1)
+          IF (lasym) CALL mntouv(lmnc_full,f_temp,0)
           CALL EZspline_setup(L_spl,f_temp,ez_status)
           
           ! Lambda/u
           f_temp = 0
           Lu_spl%x1 = xu*pi2; Lu_spl%x2 = xv*pi2; Lu_spl%x3 = rho_full; Lu_spl%isHermite = isherm
           FORALL(mn = 1:mnmax) fmn_temp(mn,:) = lmns_full(mn,:)*xm(mn)
-          CALL mntouv(k1,k2,mnmax,nu_module,nv_module,xu,xv,fmn_temp,xm,xn,f_temp,0,0)
+          CALL mntouv(fmn_temp,f_temp,0)
           IF (lasym) THEN
              FORALL(mn = 1:mnmax) fmn_temp(mn,:) = -lmnc_full(mn,:)*xm(mn)
-             CALL mntouv(k1,k2,mnmax,nu_module,nv_module,xu,xv,fmn_temp,xm,xn,f_temp,1,0)
+             CALL mntouv(fmn_temp,f_temp,1)
           END IF
           CALL EZspline_setup(Lu_spl,f_temp,ez_status)
           
@@ -1048,10 +1093,10 @@
           f_temp = 0
           Lv_spl%x1 = xu*pi2; Lv_spl%x2 = xv*pi2; Lv_spl%x3 = rho_full; Lv_spl%isHermite = isherm
           FORALL(mn = 1:mnmax) fmn_temp(mn,:) = lmns_full(mn,:)*xn(mn)
-          CALL mntouv(k1,k2,mnmax,nu_module,nv_module,xu,xv,fmn_temp,xm,xn,f_temp,0,0)
+          CALL mntouv(fmn_temp,f_temp,0)
           IF (lasym) THEN
              FORALL(mn = 1:mnmax) fmn_temp(mn,:) = -lmnc_full(mn,:)*xn(mn)
-             CALL mntouv(k1,k2,mnmax,nu_module,nv_module,xu,xv,fmn_temp,xm,xn,f_temp,1,0)
+             CALL mntouv(fmn_temp,f_temp,1)
           END IF
           CALL EZspline_setup(Lv_spl,f_temp,ez_status)
           
@@ -1088,20 +1133,20 @@
           CALL cpu_time(time_start)
           
           !Allocations
-          ALLOCATE(f_temp(nu_module,nv_module,k1:k2))
+          ALLOCATE(f_temp(m_nu,m_nv,k1:k2))
           f_temp = 0
           
           ! Free Memory
           IF (EZspline_allocated(G_spl)) CALL EZspline_free(G_spl,ez_status)
              
           ! Preform Init
-          CALL EZspline_init(G_spl,nu_module,nv_module,ns_t,bcs1,bcs1,bcs0,ez_status)
+          CALL EZspline_init(G_spl,m_nu,m_nv,ns_t,bcs1,bcs1,bcs0,ez_status)
              
           ! Jacobian sqrt(g)
           f_temp = 0
           G_spl%x1 = xu*pi2; G_spl%x2 = xv*pi2; G_spl%x3 = rho_full; G_spl%isHermite = isherm
-          CALL mntouv(k1,k2+1,mnmax,nu_module,nv_module,xu,xv,gmnc_full,xm,xn,f_temp,0,0)
-          IF (lasym) CALL mntouv(k1,k2+1,mnmax,nu_module,nv_module,xu,xv,gmns_full,xm,xn,f_temp,1,0)
+          CALL mntouv(gmnc_full,f_temp,0)
+          IF (lasym) CALL mntouv(gmns_full,f_temp,1)
           CALL EZspline_setup(G_spl,f_temp,ez_status)
             
           IF (ez_status .NE. 0) error_status = -200 - ABS(ez_status)
@@ -1158,10 +1203,10 @@
             ,grho2(k1:k2) &
             ,b2overgrho(k1:k2))
           ALLOCATE( &
-            gsr(nu_module,nv_module,k1:k2) &
-            ,gsp(nu_module,nv_module,k1:k2) &
-            ,gsz(nu_module,nv_module,k1:k2),&
-            gs(nu_module,nv_module,k1:k2))
+            gsr(m_nu,m_nv,k1:k2) &
+            ,gsp(m_nu,m_nv,k1:k2) &
+            ,gsz(m_nu,m_nv,k1:k2),&
+            gs(m_nu,m_nv,k1:k2))
                                     
           ! Free Memory
           IF (EZspline_allocated(Vp_spl)) CALL EZspline_free(Vp_spl,ez_status)
@@ -1214,7 +1259,7 @@
           ! Construct splines
           ! ABS because of negative Jacobian
           Vp_spl%x1 = rho_full; Vp_spl%isHermite = isherm
-          CALL EZspline_setup(Vp_spl,ABS(Vp*pi2*pi2/(nu_module*nv_module)),ez_status)
+          CALL EZspline_setup(Vp_spl,ABS(Vp*pi2*pi2/(m_nu*m_nv)),ez_status)
 
           b_fsa_spl%x1 = rho_full; b_fsa_spl%isHermite = isherm
           CALL EZspline_setup(b_fsa_spl,fsa_bmod,ez_status)
@@ -1274,7 +1319,7 @@
           CALL cpu_time(time_start)
           
           !Allocations
-          ALLOCATE(f_temp(nu_module,nv_module,k1:k2))
+          ALLOCATE(f_temp(m_nu,m_nv,k1:k2))
           ALLOCATE(f1d_temp(k1:k2))
           
           ! Free Memory
@@ -1295,7 +1340,7 @@
           f_temp = (Ru_spl%fspl(1,:,:,:)*Ru_spl%fspl(1,:,:,:)+ &
                Zu_spl%fspl(1,:,:,:)*Zu_spl%fspl(1,:,:,:))
           f_temp = f_temp / g_spl%fspl(1,:,:,:)
-          f1d_temp   = SUM(SUM(f_temp,DIM=1),DIM=1)/(nu_module*nv_module)
+          f1d_temp   = SUM(SUM(f_temp,DIM=1),DIM=1)/(m_nu*m_nv)
           f1d_temp(1) = 2*f1d_temp(2) - f1d_temp(3)
           S11_spl%x1 = rho_full; S11_spl%isHermite = isherm
           CALL EZspline_setup(S11_spl,f1d_temp,ez_status)
@@ -1306,7 +1351,7 @@
           f_temp = (Ru_spl%fspl(1,:,:,:)*Rv_spl%fspl(1,:,:,:)+ &
                Zu_spl%fspl(1,:,:,:)*Zv_spl%fspl(1,:,:,:))*nfp
           f_temp = f_temp / g_spl%fspl(1,:,:,:)
-          f1d_temp   = SUM(SUM(f_temp,DIM=1),DIM=1)/(nu_module*nv_module)
+          f1d_temp   = SUM(SUM(f_temp,DIM=1),DIM=1)/(m_nu*m_nv)
           f1d_temp(1) = 2*f1d_temp(2) - f1d_temp(3)
           S21_spl%x1 = rho_full; S21_spl%isHermite = isherm
           CALL EZspline_setup(S21_spl,f1d_temp,ez_status)
@@ -1321,7 +1366,7 @@
                Zu_spl%fspl(1,:,:,:)*Zu_spl%fspl(1,:,:,:))*&
                Lv_spl%fspl(1,:,:,:)
           f_temp = f_temp / g_spl%fspl(1,:,:,:)
-          f1d_temp   = SUM(SUM(f_temp,DIM=1),DIM=1)/(nu_module*nv_module)
+          f1d_temp   = SUM(SUM(f_temp,DIM=1),DIM=1)/(m_nu*m_nv)
           f1d_temp(1) = 2*f1d_temp(2) - f1d_temp(3)
           S12_spl%x1 = rho_full; S12_spl%isHermite = isherm
           CALL EZspline_setup(S12_spl,f1d_temp,ez_status)
@@ -1337,7 +1382,7 @@
                Zu_spl%fspl(1,:,:,:)*Zv_spl%fspl(1,:,:,:))*&
                Lv_spl%fspl(1,:,:,:)*nfp
           f_temp = f_temp / g_spl%fspl(1,:,:,:)
-          f1d_temp   = SUM(SUM(f_temp,DIM=1),DIM=1)/(nu_module*nv_module)
+          f1d_temp   = SUM(SUM(f_temp,DIM=1),DIM=1)/(m_nu*m_nv)
           !f1d_temp(1) = 2*f1d_temp(2) - f1d_temp(3)
           S22_spl%x1 = rho_full; S22_spl%isHermite = isherm
           CALL EZspline_setup(S22_spl,f1d_temp,ez_status)
@@ -1392,10 +1437,10 @@
 
           ! Allocations
           ALLOCATE( &
-            gsr(nu_module,nv_module,k1:k2) &
-            ,gsp(nu_module,nv_module,k1:k2) &
-            ,gsz(nu_module,nv_module,k1:k2) &
-            ,DrhoDs_temp(nu_module,nv_module,k1:k2) &
+            gsr(m_nu,m_nv,k1:k2) &
+            ,gsp(m_nu,m_nv,k1:k2) &
+            ,gsz(m_nu,m_nv,k1:k2) &
+            ,DrhoDs_temp(m_nu,m_nv,k1:k2) &
             )
                                     
           ! Free Memory
@@ -1404,9 +1449,9 @@
           IF (EZspline_allocated(DrhoDz_spl)) CALL EZspline_free(DrhoDz_spl,ez_status)
           
           ! Preform Init
-          CALL EZspline_init(DrhoDr_spl,  nu_module,nv_module,ns_t,bcs1,bcs1,bcs0,ez_status)
-          CALL EZspline_init(DrhoDphi_spl,nu_module,nv_module,ns_t,bcs1,bcs1,bcs0,ez_status)
-          CALL EZspline_init(DrhoDz_spl,  nu_module,nv_module,ns_t,bcs1,bcs1,bcs0,ez_status)
+          CALL EZspline_init(DrhoDr_spl,  m_nu,m_nv,ns_t,bcs1,bcs1,bcs0,ez_status)
+          CALL EZspline_init(DrhoDphi_spl,m_nu,m_nv,ns_t,bcs1,bcs1,bcs0,ez_status)
+          CALL EZspline_init(DrhoDz_spl,  m_nu,m_nv,ns_t,bcs1,bcs1,bcs0,ez_status)
 
           
           CALL cpu_time(time_01)
@@ -2240,68 +2285,29 @@
 
         
         !-----------------------------------------------------------------------
-        SUBROUTINE mntouv(k1,k,mnmax,nu,nv,xu,xv,fmn,xm,xn,f,signs,calc_trig)
+        SUBROUTINE mntouv(fmn,f,signs)
           IMPLICIT NONE
-          ! INPUT VARIABLES
-          INTEGER, INTENT(in) :: k1
-          INTEGER, INTENT(in) :: k
-          INTEGER, INTENT(in) :: mnmax
-          INTEGER, INTENT(in) :: nu
-          INTEGER, INTENT(in) :: nv
-          DOUBLE PRECISION, INTENT(in) :: xu(1:nu)
-          DOUBLE PRECISION, INTENT(in) :: xv(1:nv)           
-          DOUBLE PRECISION, INTENT(in) :: fmn(1:mnmax,k1:k)
-          INTEGER, INTENT(in) :: xm(1:mnmax)
-          INTEGER, INTENT(in) :: xn(1:mnmax)
-          DOUBLE PRECISION, INTENT(inout) :: f(1:nu,1:nv,k1:k)
+          ! INPUT VARIABLES        
+          DOUBLE PRECISION, INTENT(in) :: fmn(1:mnmax,k1:k2)
+          DOUBLE PRECISION, INTENT(inout) :: f(1:m_nu,1:m_nv,k1:k2)
           INTEGER, INTENT(in) :: signs
-          INTEGER, INTENT(in) :: calc_trig
           ! LOCAL VARIABLES
-          INTEGER     :: mn, i, ier, ik
-          DOUBLE PRECISION :: xm_temp(1:mnmax,1)
-          DOUBLE PRECISION :: xn_temp(1:mnmax,1)
-          DOUBLE PRECISION :: mt(1:mnmax,1:nu)
-          DOUBLE PRECISION :: nz(1:mnmax,1:nv)
-          DOUBLE PRECISION :: fmn_temp(1:mnmax,1:nu)
-          DOUBLE PRECISION :: xu_temp(1,1:nu)
-          DOUBLE PRECISION :: xv_temp(1,1:nv)
+          INTEGER     :: mn, ik
+          DOUBLE PRECISION :: fmn_temp(1:mnmax,1:m_nu)
           DOUBLE PRECISION :: fmn_help(1:mnmax)
-          DOUBLE PRECISION, ALLOCATABLE, SAVE :: cosmt(:,:)
-          DOUBLE PRECISION, ALLOCATABLE, SAVE :: sinmt(:,:)
-          DOUBLE PRECISION, ALLOCATABLE, SAVE :: cosnz(:,:)
-          DOUBLE PRECISION, ALLOCATABLE, SAVE :: sinnz(:,:)
-          ! BEGIN SUBROUTINE
-          IF (calc_trig == 1) THEN
-             IF (ALLOCATED(cosmt)) DEALLOCATE(cosmt)
-             IF (ALLOCATED(sinmt)) DEALLOCATE(sinmt)
-             IF (ALLOCATED(cosnz)) DEALLOCATE(cosnz)
-             IF (ALLOCATED(sinnz)) DEALLOCATE(sinnz)
-             ALLOCATE(cosmt(1:mnmax,1:nu),sinmt(1:mnmax,1:nu),&
-                  cosnz(1:mnmax,1:nv),sinnz(1:mnmax,1:nv),STAT=ier)
-             FORALL(i=1:mnmax) xm_temp(i,1)=DBLE(xm(i))
-             FORALL(i=1:mnmax) xn_temp(i,1)=DBLE(xn(i))
-             FORALL(i=1:nu) xu_temp(1,i)=xu(i)
-             FORALL(i=1:nv) xv_temp(1,i)=xv(i)
-             mt = MATMUL(xm_temp,xu_temp)
-             nz = MATMUL(xn_temp,xv_temp)
-             FORALL(mn=1:mnmax,i=1:nu) cosmt(mn,i) = dcos(pi2*mt(mn,i))
-             FORALL(mn=1:mnmax,i=1:nu) sinmt(mn,i) = dsin(pi2*mt(mn,i))
-             FORALL(mn=1:mnmax,i=1:nv) cosnz(mn,i) = dcos(pi2*nz(mn,i))
-             FORALL(mn=1:mnmax,i=1:nv) sinnz(mn,i) = dsin(pi2*nz(mn,i))
-          END IF
-          IF (SIGNS == 0) THEN
-             DO ik = k1,k
+          IF (signs == 0) THEN
+             DO ik = k1,k2
                 FORALL(mn=1:mnmax) fmn_help(mn)=fmn(mn,ik)
-                fmn_temp=SPREAD(fmn_help,2,nu)
-                f(1:nu,1:nv,ik) = f(1:nu,1:nv,ik)  + MATMUL(TRANSPOSE((fmn_temp*cosmt)),cosnz) &
-                     - MATMUL(TRANSPOSE((fmn_temp*sinmt)),sinnz)
+                fmn_temp=SPREAD(fmn_help,2,m_nu)
+                f(1:m_nu,1:m_nv,ik) = f(1:m_nu,1:m_nv,ik)  + MATMUL(TRANSPOSE((fmn_temp*m_cosmt)),m_cosnz) &
+                     - MATMUL(TRANSPOSE((fmn_temp*m_sinmt)),m_sinnz)
              END DO
-          ELSE IF (SIGNS == 1) THEN
-             DO ik = k1,k
+          ELSE IF (signs == 1) THEN
+             DO ik = k1,k2
                 FORALL(mn=1:mnmax) fmn_help(mn)=fmn(mn,ik)
-                fmn_temp=SPREAD(fmn_help,2,nu)
-                f(1:nu,1:nv,ik) = f(1:nu,1:nv,ik) + MATMUL(TRANSPOSE((fmn_temp*sinmt)),cosnz) &
-                     + MATMUL(TRANSPOSE((fmn_temp*cosmt)),sinnz)
+                fmn_temp=SPREAD(fmn_help,2,m_nu)
+                f(1:m_nu,1:m_nv,ik) = f(1:m_nu,1:m_nv,ik) + MATMUL(TRANSPOSE((fmn_temp*m_sinmt)),m_cosnz) &
+                     + MATMUL(TRANSPOSE((fmn_temp*m_cosmt)),m_sinnz)
              END DO
           END IF
 
