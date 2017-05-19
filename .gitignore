@@ -5,11 +5,13 @@
 *.zip
 .DS*
 ._*
+__*
 */Release/*.f90
 */Release/*.f
 */Debug/*.f90
 */Debug/*.f
 update*
+COILGEOM
 bin
 setup
 xanimec
