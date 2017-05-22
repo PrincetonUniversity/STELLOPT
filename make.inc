@@ -1,1 +1,1 @@
-BENCHMARKS/make_pppl.inc
+BENCHMARKS/make_debian.inc
