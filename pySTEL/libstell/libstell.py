@@ -5,14 +5,15 @@ def read_vmec(file):
     import numpy.ctypeslib as npct
     import numpy as np
     # Load Libraries
-    libstell = ct.cdll.LoadLibrary("/u/slazerso/src/STELLOPT_GCC/LIBSTEL/Release/libstell.so")
+    #libstell = ct.cdll.LoadLibrary("/u/slazerso/src/STELLOPT_GCC/LIBSTEL/Release/libstell.so")
+    libstell = ct.cdll.LoadLibrary("/home/jonathan/bin/libstell.so")
     # Read File
     read_wout = getattr(libstell,'__read_wout_mod_MOD_readw_and_open')
-    read_wout.argparse=[ct.c_char_p,ct.c_int,ct.c_int,ct.c_int]
+    read_wout.argparse=[ct.c_char_p, ct.c_int, ct.c_int, ct.c_int]
     read_wout.restype=None
     ierr = ct.c_int(0)
     iopen = ct.c_int(0)
-    read_wout(file.encode('UTF-8'),ct.byref(ierr),iopen,len(file))
+    read_wout(file.encode('UTF-8'), ct.byref(ierr), iopen, len(file))
     # Setup Arrays
     vmec_data={}
     vmec_data['ns']=ct.c_int.in_dll(libstell,'__read_wout_mod_MOD_ns').value
@@ -162,10 +163,13 @@ def cfunct(theta,zeta,fmnc,xm,xn):
     cosnz=np.cos(nz)
     sinnz=np.sin(nz)
     f = np.zeros((ns,lt,lz))
-    fmn = np.ndarray((lz,lt))
+    
+    fmn = np.ndarray((mn,lt))
     for k in range(ns):
-        fmn = np.broadcast_to(fmnc[k,:],(lt,94)).T
-        f[k,:,:]=np.matmul((fmn*cosmt).T,cosnz)-np.matmul((fmn*sinmt).T,sinnz)
+        fmn = np.broadcast_to(fmnc[k,:],(lt,mn)).T
+        fmncosmt=(fmn*cosmt).T
+        fmnsinmt=(fmn*sinmt).T
+        f[k,:,:]=np.matmul(fmncosmt, cosnz)-np.matmul(fmnsinmt, sinnz)
     return f
     
 def sfunct(theta,zeta,fmnc,xm,xn):
@@ -181,9 +185,9 @@ def sfunct(theta,zeta,fmnc,xm,xn):
     cosnz=np.cos(nz)
     sinnz=np.sin(nz)
     f = np.zeros((ns,lt,lz))
-    fmn = np.ndarray((lz,lt))
+    fmn = np.ndarray((mn,lt))
     for k in range(ns):
-        fmn = np.broadcast_to(fmnc[k,:],(lt,94)).T
+        fmn = np.broadcast_to(fmnc[k,:],(lt,mn)).T
         f[k,:,:]=np.matmul((fmn*sinmt).T,cosnz)+np.matmul((fmn*cosmt).T,sinnz)
     return f
 

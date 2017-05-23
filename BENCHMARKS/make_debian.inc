@@ -6,7 +6,7 @@
 #######################################################################
 FC = gfortran
 BLASHOME = /usr
-BLACSHOME = /usr
+BLACS_HOME = /usr
 SCALAPACK_HOME = /usr
 MPIHOME = /usr
 NETCDF_HOME = /usr
@@ -15,6 +15,7 @@ PGPLOT_DIR = /usr
 SILOHOME = /usr
 COILOPT_PATH = /home/jonathan/Uni/03_Masterarbeit/00_programs/stellopt/COILOPT
 GSLHOME = /usr
+GCC6_HOME=/usr/lib/gcc/x86_64-linux-gnu/6
 
 #######################################################################
 #            Define Basic Utilities
@@ -35,10 +36,10 @@ GSLHOME = /usr
 #  FLAGS_R = -O2 -g -fexternal-blas -fbacktrace -fcheck=all 
   FLAGS_R = -g -O2 -fexternal-blas -fbacktrace
   FLAGS_D = -g -O0 -fexternal-blas -fcheck=all 
-  LIBS    = -L$(BLASHOME)/lib/libblas -lblas \
-            -L$(SCALAPACK_HOME)/lib -lscalapack-openmpi \
-            -L$(BLACS_HOME)/lib -lmpiblacs-openmpi -lmpiblacsCinit-openmpi \
-            -lmpiblacsF77init-openmpi
+  LIBS    = -L$(SCALAPACK_HOME)/lib -llapack -lscalapack-openmpi \
+            -L$(BLASHOME)/lib/libblas -lblas \
+            -L$(BLACS_HOME)/lib -lblacs-openmpi -lblacsCinit-openmpi \
+            -lblacsF77init-openmpi
 
 #######################################################################
 #            MPI Options
@@ -85,7 +86,7 @@ GSLHOME = /usr
 #######################################################################
 #            HDF5 Options
 #######################################################################
-  LHDF5 = T
+  LHDF5 = F
   HDF5_INC = -I$(HDF5_HOME)/include/hdf5/serial
   HDF5_LIB = -L$(HDF5_HOME)/lib/x86_64-linux-gnu -L$(HDF5_HOME)/lib/x86_64-linux-gnu/hdf5/serial -lhdf5_hl -lhdf5_fortran -lhdf5 \
              -lhdf5hl_fortran -lpthread -lz -lm
@@ -149,19 +150,37 @@ GSLHOME = /usr
 #######################################################################
 #            LIBSTELL Shared Options
 #######################################################################
-LIB_SHARE = $(BLASHOME)/lib/libopenblas.so \
-          $(SCALAPACK_HOME)/lib/libscalapack.a \
-          $(BLACS_HOME)/lib/libmpiblacs.a  $(BLACS_HOME)/lib/libmpiblacsCinit.a $(BLACS_HOME)/lib/libmpiblacsF77init.a \
-          $(NTCCHOME)/lib/libaladdinsub.a $(NTCCHOME)/lib/libr8slatec.a $(NTCCHOME)/lib/libadpak.a $(NTCCHOME)/lib/libcppsub.a $(NTCCHOME)/lib/libcomput.a \
-          $(NTCCHOME)/lib/libpspline.a $(NTCCHOME)/lib/libportlib.a $(NTCCHOME)/lib/libezcdf.a $(NTCCHOME)/lib/libmds_sub.a $(NTCCHOME)/lib/libmdstransp.a $(NTCCHOME)/lib/libvaxonly.a \
-          $(HDF5_HOME)/lib/libhdf5_hl.so $(HDF5_HOME)/lib/libhdf5_fortran.so $(HDF5_HOME)/lib/libhdf5hl_fortran.so $(HDF5_HOME)/lib/libhdf5.so \
-          $(NAG_ROOT)/lib/libnag_nag.so  \
-          $(NETCDFHOME)/lib/libnetcdf.so $(NETCDFHOME)/lib/libnetcdff.so $(NETCDFHOME)/lib/libnetcdf_c++.so \
-          $(SILOHOME)/lib/libsilo.a \
-          $(GSLHOME)/lib/libgsl.so \
-          $(GCC4_HOME)/lib64/libgfortran.so $(GCC4_HOME)/lib64/libstdc++.so \
-          $(MPIHOME)/lib/libmpi.so $(MPIHOME)/lib/libmpi_f77.so $(MPIHOME)/lib/libmpi_f90.so 
-#          /usr/lib/libc.so /usr/lib/libm.so /usr/lib/libpthread.so 
+#LIB_SHARE = $(BLASHOME)/lib/libblas.so \
+          $(SCALAPACK_HOME)/lib/libscalapack-openmpi.so \
+          $(BLACS_HOME)/lib/libblacs-openmpi.so  $(BLACS_HOME)/lib/libblacsCinit-openmpi.so $(BLACS_HOME)/lib/libblacsF77init-openmpi.so \
+          $(HDF5_HOME)/lib/x86_64-linux-gnu/libhdf5_hl.so $(HDF5_HOME)/lib/x86_64-linux-gnu/libhdf5_fortran.so $(HDF5_HOME)/lib/x86_64-linux-gnu/libhdf5hl_fortran.so $(HDF5_HOME)/lib/x86_64-linux-gnu/libhdf5.so \
+          $(HDF5_HOME)/lib/x86_64-linux-gnu/libmpi_usempif08.so $(HDF5_HOME)/lib/x86_64-linux-gnu/libhdf5_openmpi_fortran.so \
+          $(NETCDF_HOME)/lib/x86_64-linux-gnu/libnetcdf.so $(NETCDF_HOME)/lib/x86_64-linux-gnu/libnetcdff.so $(NETCDF_HOME)/lib/x86_64-linux-gnu/libnetcdf_c++.so \
+          $(SILOHOME)/lib/x86_64-linux-gnu/libsiloh5.so \
+          $(GSLHOME)/lib/x86_64-linux-gnu/libgsl.so \
+          $(GCC6_HOME)/libgfortran.so $(GCC6_HOME)/libstdc++.so \
+          $(MPIHOME)/lib/x86_64-linux-gnu/libmpi.so $(MPIHOME)/lib/x86_64-linux-gnu/libmpi_mpifh.so \
+          /usr/lib/x86_64-linux-gnu/libm.so /usr/lib/liblapack.so /usr/lib/x86_64-linux-gnu/libdl.so
+LIB_SHARE = $(BLASHOME)/lib/libblas.so \
+          $(SCALAPACK_HOME)/lib/libscalapack-openmpi.so \
+          $(BLACS_HOME)/lib/libblacs-openmpi.so \
+          $(BLACS_HOME)/lib/libblacsCinit-openmpi.so \
+          $(BLACS_HOME)/lib/libblacsF77init-openmpi.so \
+          $(HDF5_HOME)/lib/x86_64-linux-gnu/libhdf5_openmpi_fortran.so \
+          $(NETCDF_HOME)/lib/x86_64-linux-gnu/libnetcdf.so \
+          $(NETCDF_HOME)/lib/x86_64-linux-gnu/libnetcdff.so \
+          $(NETCDF_HOME)/lib/x86_64-linux-gnu/libnetcdf_c++.so \
+          $(SILOHOME)/lib/x86_64-linux-gnu/libsiloh5.so \
+          $(GSLHOME)/lib/x86_64-linux-gnu/libgsl.so \
+          $(GCC6_HOME)/libgfortran.so \
+          $(GCC6_HOME)/libstdc++.so \
+          $(MPIHOME)/lib/x86_64-linux-gnu/libmpi.so \
+          $(MPIHOME)/lib/x86_64-linux-gnu/libmpi_mpifh.so \
+          /usr/lib/x86_64-linux-gnu/libm.so \
+          /usr/lib/liblapack.so \
+          /usr/lib/x86_64-linux-gnu/libdl.so \
+          /usr/lib/x86_64-linux-gnu/libmpi_usempif08.so
+
 
 #######################################################################
 #######################################################################

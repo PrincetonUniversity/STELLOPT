@@ -1,4 +1,4 @@
-#!/usr/pppl/gcc/4.6-pkgs/python-3.2.3/bin/python3
+#!/usr/bin/python3
 import sys, os
 import matplotlib
 import numpy as np                    #For Arrays
