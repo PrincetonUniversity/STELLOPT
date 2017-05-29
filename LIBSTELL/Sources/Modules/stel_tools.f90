@@ -936,12 +936,14 @@
       DOUBLE PRECISION :: xp, xpp, zp, zpp, denom
       kappa = 0
       IF (ier < 0) RETURN
-      rho_val = SQRT(rho_val)
+      rho_val = SQRT(s_val)
       CALL EZspline_isInDomain(R_spl,u_val,v_val,rho_val,ier)
       IF (ier == 0) THEN
-         CALL EZspline_derivative(R_spl,1,0,0,u_val,v_val,rho_val,xp,ier)
+         !CALL EZspline_derivative(R_spl,1,0,0,u_val,v_val,rho_val,xp,ier)
+         CALL EZspline_interp(Ru_spl,u_val,v_val,rho_val,xp,ier)
          CALL EZspline_derivative(Ru_spl,1,0,0,u_val,v_val,rho_val,xpp,ier)
-         CALL EZspline_derivative(Z_spl,1,0,0,u_val,v_val,rho_val,zp,ier)
+         !CALL EZspline_derivative(Z_spl,1,0,0,u_val,v_val,rho_val,zp,ier)
+         CALL EZspline_interp(Zu_spl,u_val,v_val,rho_val,zp,ier)
          CALL EZspline_derivative(Zu_spl,1,0,0,u_val,v_val,rho_val,zpp,ier)
          denom = (xp*xp+zp*zp)**1.5
          IF (ABS(denom) > 0) THEN
