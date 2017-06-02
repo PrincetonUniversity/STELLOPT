@@ -7,7 +7,7 @@ matplotlib.use("Qt5Agg")
 from PyQt5 import uic, QtCore, QtWidgets
 from PyQt5.QtWidgets import QMainWindow, QApplication, qApp, QApplication, QVBoxLayout, QSizePolicy
 from PyQt5.QtGui import QIcon
-from libstell.libstell import read_vmec, cfunct, sfunct, torocont, isotoro
+from libstell.libstell import read_vmec, cfunct, sfunct, torocont, isotoro, calc_jll
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from mpl_toolkits import mplot3d
@@ -24,7 +24,7 @@ class MyApp(QMainWindow):
 		self.statusBar().showMessage('Ready')
 		self.ui.plot_list = ['Summary','-----1D-----','Iota','q','Pressure',\
 		'<Buco>','<Bvco>','<jcuru>','<jcurv>','<j.B>',  '-----3D------','|B|','sqrt(g)',\
-		'B^u','B^v','B_s','B_u','B_v','j^u','j^v','j.B','---Special---','LPK']
+		'B^u','B^v','B_s','B_u','B_v','j^u','j^v', 'jll', 'j.B','---Special---','LPK']
 		files = os.listdir('.')
 		for name in files:
 			if(name[0:4]=='wout'):
@@ -233,6 +233,8 @@ class MyApp(QMainWindow):
 				val = self.cu/self.g
 			elif (plot_name=='j^v'):
 				val = self.cv/self.g
+			elif (plot_name=='jll'):
+				val = calc_jll(self.vmec_data, self.theta, self.zeta)
 			elif (plot_name=='j.B'):
 				val = (self.cu*self.bu+self.cv*self.bv)/self.g
 			# Now handle the type of plot
