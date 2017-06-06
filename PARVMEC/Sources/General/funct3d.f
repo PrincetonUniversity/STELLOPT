@@ -81,13 +81,13 @@ C-----------------------------------------------
       CALL second0(skstoff)
       totzsps_time=totzsps_time+(skstoff-skston)
 
-      CALL MPI_BCast(lerror_sam,1,MPI_LOGICAL,0,RUNVMEC_COMM_WORLD,
-     1               MPI_ERR)
-      IF (lerror_sam) THEN
-         ier_flag = bad_jacobian_flag
-         irst = 2
-         RETURN
-      END IF
+!      CALL MPI_BCast(lerror_sam,1,MPI_LOGICAL,0,RUNVMEC_COMM_WORLD,
+!     1               MPI_ERR)
+!      IF (lerror_sam) THEN
+!         ier_flag = bad_jacobian_flag
+!         irst = 2
+!         RETURN
+!      END IF
 
 
 !     ANTI-SYMMETRIC CONTRIBUTIONS TO INVERSE TRANSFORMS
@@ -195,6 +195,15 @@ C-----------------------------------------------
       bcovar_time=bcovar_time+(tbcovoff - tbcovon)
 
       END IF ACTIVE1
+
+
+      CALL MPI_BCast(lerror_sam,1,MPI_LOGICAL,0,RUNVMEC_COMM_WORLD,
+     1               MPI_ERR)
+      IF (lerror_sam) THEN
+         ier_flag = bad_jacobian_flag
+         irst = 2
+         RETURN
+      END IF
 
       bbuf(1)=irst; bbuf(2)=iequi; bbuf(3)=ivac; bbuf(4)=iter2
       CALL MPI_BCast(bbuf,4,MPI_INTEGER,0,RUNVMEC_COMM_WORLD,MPI_ERR)

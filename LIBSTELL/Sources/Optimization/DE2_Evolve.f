@@ -557,6 +557,25 @@
             CLOSE(iunitx)
          END IF
 
+         
+         ! Output the best value
+         ibest     = MINLOC(fnorm_new,DIM = 1)   
+         fnorm     = fnorm_new(ibest)
+         IF (fnorm_min > fnorm) THEN
+!            fnorm_min = fnorm
+            ! Save the output
+            IF (myid == master) THEN
+               x_temp = x_array(ibest,:)
+               iflag = 0
+               CALL fcn(m, n, x_temp, temp_fvec, iflag, iter)
+               iflag = GADE_CLEANUP
+               CALL fcn(m, n, x_temp, temp_fvec, iflag, iter)
+               WRITE(6,*) ' '
+               WRITE(6,*) '  New Minimum at ',ibest,fnorm_min
+               WRITE(6,*) ' '
+            END IF
+         END IF
+
          ! Now find the best
          IF (myid == master) THEN
             j = 0
@@ -592,32 +611,9 @@
          CALL MPI_BCAST(fnorm,1,MPI_REAL8,
      1                  master,MPI_COMM_STEL,ierr_mpi)
          IF (ierr_mpi /= MPI_SUCCESS) CALL mpi_stel_abort(ierr_mpi) 
-!DEC$ ENDIF
-
-         ! Get the best value
-         IF (fnorm_min > fnorm) THEN
-            fnorm_min = fnorm
-            
-            ! Save the output
-            IF (myid == master) THEN
-               x_temp = x_array(ibest,:)
-               iflag = 0
-               CALL fcn(m, n, x_temp, temp_fvec, iflag, iter)
-               iflag = GADE_CLEANUP
-               CALL fcn(m, n, x_temp, temp_fvec, iflag, iter)
-               WRITE(6,*) ' '
-               WRITE(6,*) '  New Minimum at ',ibest,fnorm_min
-               WRITE(6,*) ' '
-            END IF
-         END IF
-         
-         
-!DEC$ IF DEFINED (MPI_OPT)
-         CALL MPI_BARRIER(MPI_COMM_STEL, ierr_mpi)
-         IF (ierr_mpi /= MPI_SUCCESS) CALL mpi_stel_abort(ierr_mpi)
          CALL MPI_BCAST(fnorm_min,1,MPI_REAL8,master,MPI_COMM_STEL,
      1               ierr_mpi)
-         IF (ierr_mpi .ne. 0) CALL mpi_stel_abort(ierr_mpi)
+         IF (ierr_mpi /= MPI_SUCCESS) CALL mpi_stel_abort(ierr_mpi)
 !DEC$ ENDIF
          
          ! WRITE RESTART FILE
