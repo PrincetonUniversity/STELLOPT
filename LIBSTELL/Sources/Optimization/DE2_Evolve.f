@@ -544,8 +544,8 @@
          END DO
 !DEC$ ENDIF
       
-         ! Output to the xvec.dat file
          IF (myid == master) THEN
+            ! Output to the xvec.dat file
             CALL safe_open(iunitx,ierr,'xvec.dat','unknown',
      1                     'formatted',ACCESS_IN='APPEND')
             IF (ierr .ne. 0) STOP 'DE2_Evolve Error OPEN(xvec.dat)'
@@ -555,17 +555,15 @@
                WRITE(iunitx,'(ES22.12E3)') fnorm_new(i)
             END DO
             CLOSE(iunitx)
-         END IF
+           
+            ! Find the best value
+            ibest = MINLOC(fnorm_new,DIM = 1)
+            fnorm = fnorm_new(ibest)  
 
-         
-         ! Output the best value
-         ibest     = MINLOC(fnorm_new,DIM = 1)   
-         fnorm     = fnorm_new(ibest)
-         IF (fnorm_min > fnorm) THEN
-!            fnorm_min = fnorm
-            ! Save the output
-            IF (myid == master) THEN
-               x_temp = x_array(ibest,:)
+            ! Save the minimum state
+            IF (fnorm_min > fnorm) THEN
+               fnorm_min = fnorm
+               x_temp = x_new(ibest,:)
                iflag = 0
                CALL fcn(m, n, x_temp, temp_fvec, iflag, iter)
                iflag = GADE_CLEANUP
@@ -574,13 +572,18 @@
                WRITE(6,*) '  New Minimum at ',ibest,fnorm_min
                WRITE(6,*) ' '
             END IF
-         END IF
 
-         ! Now find the best
-         IF (myid == master) THEN
+            ! Write the RESTART File
+            REWIND (unit=irestart)
+            WRITE(iRESTART,*) n
+            DO i=1,NP
+               WRITE(iRESTART,*) i,fnorm_new(i),
+     1                           (x_new(i,j),j=1, n)
+            END DO
+            CALL FLUSH(iRESTART)
+       
+            ! Update X
             j = 0
-            ibest     = MINLOC(fnorm_new,DIM = 1)
-            fnorm     = fnorm_array(ibest)
             DO i = 1, NP
                IF (fnorm_new(i) < fnorm_array(i)) THEN
                   j = j + 1
@@ -615,18 +618,7 @@
      1               ierr_mpi)
          IF (ierr_mpi /= MPI_SUCCESS) CALL mpi_stel_abort(ierr_mpi)
 !DEC$ ENDIF
-         
-         ! WRITE RESTART FILE
-         IF (myid == master) THEN
-            REWIND (unit=irestart)
-            WRITE(iRESTART,*) n
-            DO i=1,NP
-               WRITE(iRESTART,*) i,fnorm_array(i),
-     1                           (x_array(i,j),j=1, n)
-            END DO
-            CALL FLUSH(iRESTART)
-            
-         END IF
+
       END DO
       
       x_temp = x_array(ibest,1)
