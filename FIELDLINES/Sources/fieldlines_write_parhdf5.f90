@@ -50,7 +50,7 @@
       INTEGER(HID_T) :: file_id, fspace_id, dset_id, mspace_id, &
                         fapl_id, dcpl_id, dxpl_id, driver_id
       INTEGER(HSIZE_T), ALLOCATABLE :: dimsf(:), counts(:), chunk_dims(:),&
-                                       offset(:)
+                                       offset(:), block(:), stride(:)
 
 !-----------------------------------------------------------------------
 !     Begin Subroutine
@@ -74,68 +74,7 @@
       offset(2) = 0
 
 !DEC$ IF DEFINED (HDF5_PAR)
-      ier = 0
-      info = MPI_INFO_NULL
-      ! Initialize
-      CALL h5open_f(ier)
-      ! Setup File access
-      CALL h5pcreate_f(H5P_FILE_ACCESS_F, fapl_id, ier)
-      CALL h5pset_fapl_mpio_f(fapl_id, MPI_COMM_FIELDLINES, info, ier)
-      CALL h5pget_driver_f(fapl_id, driver_id, ier)
-      ! Open file
-      CALL h5fopen_f('fieldlines_'//TRIM(id_string)//'.h5', H5F_ACC_RDWR_F, file_id, ier, access_prp = fapl_id)
-!!!!!!! Begin writing
-
-      WRITE(6,*) myid,dimsf,chunk_dims,counts,offset; CALL FLUSH(6)
-
-      ! Create Spaces
-      CALL h5screate_simple_f(rank, dimsf, fspace_id, ier)
-      !CALL h5screate_simple_f(rank, dimsf, mspace_id, ier)
-      CALL h5screate_simple_f(rank, chunk_dims, mspace_id, ier)
-
-
-      ! Enable Chunking
-      CALL h5pcreate_f(H5P_DATASET_CREATE_F, dcpl_id, ier)
-      CALL h5pset_chunk_f(dcpl_id, rank, chunk_dims, ier)
-
-      ! Create Dataset
-      IF (livar) CALL h5dcreate_f(file_id, TRIM(var_name), H5T_NATIVE_INTEGER, fspace_id, dset_id, ier, dcpl_id)
-      IF (lfvar) CALL h5dcreate_f(file_id, TRIM(var_name), H5T_NATIVE_DOUBLE, fspace_id, dset_id, ier, dcpl_id)
-      IF (ldvar) CALL h5dcreate_f(file_id, TRIM(var_name), H5T_NATIVE_DOUBLE, fspace_id, dset_id, ier, dcpl_id)
-
-
-      ! Select Hyperslab in memory
-      CALL h5sselect_hyperslab_f(mspace_id, H5S_SELECT_SET_F, offset, chunk_dims, ier)
-
-      ! Select Hyperslab in File
-      CALL h5sselect_hyperslab_f(fspace_id, H5S_SELECT_SET_F, offset, chunk_dims, ier)
-
-      ! Create Properties
-      CALL h5pcreate_f(H5P_DATASET_XFER_F, dxpl_id, ier)
-      CALL h5pset_dxpl_mpio_f(dxpl_id, H5FD_MPIO_COLLECTIVE_F, ier)
-
-
-      ! Write dataset
-      IF (livar) CALL h5dwrite_f(dset_id, H5T_NATIVE_INTEGER, INTVAR, dimsf, ier, mem_space_id = mspace_id, file_space_id = fspace_id, xfer_prp = dxpl_id)
-      IF (lfvar) CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, FLTVAR, dimsf, ier, mem_space_id = mspace_id, file_space_id = fspace_id, xfer_prp = dxpl_id)
-      IF (ldvar) CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, DBLVAR, dimsf, ier, mem_space_id = mspace_id, file_space_id = fspace_id, xfer_prp = dxpl_id)
-
-      ! Close Property list
-      CALL h5pclose_f(fapl_id, ier)
-      CALL h5pclose_f(dcpl_id, ier)
-      CALL h5pclose_f(dxpl_id, ier)
-      CALL h5sclose_f(mspace_id, ier)
-      CALL h5sclose_f(fspace_id, ier)
-      CALL h5dclose_f(dset_id, ier)
-
-      ! Deallocate Helpers
-      DEALLOCATE(dimsf,chunk_dims,counts,offset)
-
-!!!!!!!CLOSE FILE
-      ! Close the file
-      CALL h5fclose_f(file_id, ier)
-      ! Close the fortran interface
-      CALL h5close_f(ier)
+      ! Setup Helper Arrays      ALLOCATE(stride(rank),block(rank))      stride(1) = 1      stride(2) = 1      block(1)  = chunk_dims(1)      block(2)  = chunk_dims(2)      ier = 0      info = MPI_INFO_NULL      ! Opent the fortran interface      CALL h5open_f(ier)      ! Setup the File access      CALL h5pcreate_f(H5P_FILE_ACCESS_F, fapl_id, ier)      ! Setup the parallel communicator      CALL h5pset_fapl_mpio_f(fapl_id, MPI_COMM_FIELDLINES, info, ier)      ! Open file      CALL h5fopen_f('fieldlines_'//TRIM(id_string)//'.h5', H5F_ACC_RDWR_F, file_id, ier, access_prp = fapl_id)      CALL h5pclose_f(fapl_id,ier)      ! Create File Space      CALL h5screate_simple_f(rank, dimsf, fspace_id, ier)      ! Enable Chunking      CALL h5pcreate_f(H5P_DATASET_CREATE_F, dcpl_id, ier)      CALL h5pset_chunk_f(dcpl_id, rank, chunk_dims, ier)      ! Create Dataset      IF (livar) CALL h5dcreate_f(file_id, TRIM(var_name), H5T_NATIVE_INTEGER, fspace_id, dset_id, ier, dcpl_id)      IF (lfvar) CALL h5dcreate_f(file_id, TRIM(var_name), H5T_NATIVE_DOUBLE, fspace_id, dset_id, ier, dcpl_id)      IF (ldvar) CALL h5dcreate_f(file_id, TRIM(var_name), H5T_NATIVE_DOUBLE, fspace_id, dset_id, ier, dcpl_id)      CALL h5pclose_f(dcpl_id, ier)      ! Create Memory Space      CALL h5screate_simple_f(rank, chunk_dims, mspace_id, ier)      ! Select Hyperslab in File      !CALL h5sselect_hyperslab_f(fspace_id, H5S_SELECT_SET_F, offset, chunk_dims, ier)      CALL h5sselect_hyperslab_f(fspace_id, H5S_SELECT_SET_F, offset, counts, ier,stride,block)      ! Create Properties      CALL h5pcreate_f(H5P_DATASET_XFER_F, dxpl_id, ier)      CALL h5pset_dxpl_mpio_f(dxpl_id, H5FD_MPIO_COLLECTIVE_F, ier)      ! Write dataset      IF (livar) CALL h5dwrite_f(dset_id, H5T_NATIVE_INTEGER, INTVAR, dimsf, ier, mem_space_id = mspace_id, file_space_id = fspace_id, xfer_prp = dxpl_id)      IF (lfvar) CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, FLTVAR, dimsf, ier, mem_space_id = mspace_id, file_space_id = fspace_id, xfer_prp = dxpl_id)      IF (ldvar) CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, DBLVAR, dimsf, ier, mem_space_id = mspace_id, file_space_id = fspace_id, xfer_prp = dxpl_id)      CALL h5pclose_f(dxpl_id, ier)      ! Close Property list      CALL h5sclose_f(fspace_id, ier)      CALL h5sclose_f(mspace_id, ier)      CALL h5dclose_f(dset_id, ier)      ! Close the file      CALL h5fclose_f(file_id, ier)      ! Close the fortran interface      CALL h5close_f(ier)      DEALLOCATE(stride,block)
 
 !DEC$ ELSE
 

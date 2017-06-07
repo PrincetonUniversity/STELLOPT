@@ -287,7 +287,7 @@ ifeq ($(LNETCDF),T)
 endif
 ifeq ($(LHDF5),T)
   MOD1_PATH += $(HDF5_INC)
-  PRECOMP += -DLHDF5 -DH5_USE_16_API
+  PRECOMP += -DLHDF5 -DH5_USE_16_API -DHDF5_PAR
   LIB_LINK += $(HDF5_LIB)
   MOD_PATH += $(HDF5_INC)
 endif
