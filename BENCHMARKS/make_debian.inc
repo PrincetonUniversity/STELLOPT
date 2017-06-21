@@ -13,9 +13,9 @@ NETCDF_HOME = /usr
 HDF5_HOME = /usr
 PGPLOT_DIR = /usr
 SILOHOME = /usr
-COILOPT_PATH = /home/jonathan/Uni/03_Masterarbeit/00_programs/stellopt/COILOPT
+COILOPT_PATH = /home/IPP-HGW/jons/03_Masterarbeit/00_programs/stellopt/COILOPT
 GSLHOME = /usr
-GCC6_HOME=/usr/lib/gcc/x86_64-linux-gnu/6
+GCC49_HOME=/usr/lib/gcc/x86_64-linux-gnu/4.9
 
 #######################################################################
 #            Define Basic Utilities
@@ -162,24 +162,23 @@ GCC6_HOME=/usr/lib/gcc/x86_64-linux-gnu/6
           $(MPIHOME)/lib/x86_64-linux-gnu/libmpi.so $(MPIHOME)/lib/x86_64-linux-gnu/libmpi_mpifh.so \
           /usr/lib/x86_64-linux-gnu/libm.so /usr/lib/liblapack.so /usr/lib/x86_64-linux-gnu/libdl.so
 LIB_SHARE = $(BLASHOME)/lib/libblas.so \
-          $(SCALAPACK_HOME)/lib/libscalapack-openmpi.so \
-          $(BLACS_HOME)/lib/libblacs-openmpi.so \
-          $(BLACS_HOME)/lib/libblacsCinit-openmpi.so \
-          $(BLACS_HOME)/lib/libblacsF77init-openmpi.so \
+          $(SCALAPACK_HOME)/lib/libscalapack-openmpi.so.1 \
+          $(BLACS_HOME)/lib/libblacs-openmpi.so.1 \
+          $(BLACS_HOME)/lib/libblacsCinit-openmpi.so.1 \
+          $(BLACS_HOME)/lib/libblacsF77init-openmpi.so.1 \
           $(HDF5_HOME)/lib/x86_64-linux-gnu/libhdf5_openmpi_fortran.so \
-          $(NETCDF_HOME)/lib/x86_64-linux-gnu/libnetcdf.so \
-          $(NETCDF_HOME)/lib/x86_64-linux-gnu/libnetcdff.so \
-          $(NETCDF_HOME)/lib/x86_64-linux-gnu/libnetcdf_c++.so \
+          $(NETCDF_HOME)/lib/libnetcdf.so \
+          $(NETCDF_HOME)/lib/libnetcdff.so \
+          $(NETCDF_HOME)/lib/libnetcdf_c++.so \
           $(SILOHOME)/lib/x86_64-linux-gnu/libsiloh5.so \
           $(GSLHOME)/lib/x86_64-linux-gnu/libgsl.so \
-          $(GCC6_HOME)/libgfortran.so \
-          $(GCC6_HOME)/libstdc++.so \
-          $(MPIHOME)/lib/x86_64-linux-gnu/libmpi.so \
-          $(MPIHOME)/lib/x86_64-linux-gnu/libmpi_mpifh.so \
+          $(GCC49_HOME)/libgfortran.so \
+          $(GCC49_HOME)/libstdc++.so \
+          $(MPIHOME)/lib/libmpi.so \
+          $(MPIHOME)/lib/libmpif77.so \
           /usr/lib/x86_64-linux-gnu/libm.so \
           /usr/lib/liblapack.so \
-          /usr/lib/x86_64-linux-gnu/libdl.so \
-          /usr/lib/x86_64-linux-gnu/libmpi_usempif08.so
+          /usr/lib/x86_64-linux-gnu/libdl.so
 
 
 #######################################################################

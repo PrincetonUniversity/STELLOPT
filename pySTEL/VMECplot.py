@@ -1,11 +1,12 @@
 #!/usr/bin/python3
 import sys, os
 import matplotlib
+import matplotlib.pyplot as _plt
+matplotlib.use("Qt5Agg")
 import numpy as np                    #For Arrays
 from math import pi
-matplotlib.use("Qt5Agg")
-from PyQt5 import uic, QtCore, QtWidgets
-from PyQt5.QtWidgets import QMainWindow, QApplication, qApp, QApplication, QVBoxLayout, QSizePolicy
+from PyQt5 import uic, QtGui
+from PyQt5.QtGui import QMainWindow, QApplication, qApp, QApplication, QVBoxLayout, QSizePolicy
 from PyQt5.QtGui import QIcon
 from libstell.libstell import read_vmec, cfunct, sfunct, torocont, isotoro, calc_jll
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -155,9 +156,10 @@ class MyApp(QMainWindow):
 	def update_plot(self,i):
 
 		plot_name = self.ui.PlotList.currentText();
-		self.fig.delaxes(self.ax)
+		self.fig.clf()
+		#self.fig.delaxes(self.ax)
 		self.ax = self.fig.add_subplot(111)
-		if (plot_name == 'Sumary'):
+		if (plot_name == 'Summary'):
 			print(plot_name)
 		elif (plot_name == 'Iota'):
 			self.ax.plot(self.nflux,self.vmec_data['iotaf'])
@@ -256,7 +258,9 @@ class MyApp(QMainWindow):
 				self.ax.set_xlabel('Toroidal Angle [rad]')
 				self.ax.set_ylabel('Normalized Flux')
 			elif (self.ui.RZ_button.isChecked()):
-				self.ax.pcolormesh(self.r[:,:,self.v],self.z[:,:,self.v],val[:,:,self.v],cmap='jet',shading='gouraud')
+				#self.ax.pcolormesh(self.r[:,:,self.v],self.z[:,:,self.v],val[:,:,self.v],cmap='jet',shading='gouraud')
+				cax = self.ax.pcolor(self.r[:,:,self.v],self.z[:,:,self.v],val[:,:,self.v],cmap='jet',shading='flat')
+				self.fig.colorbar(cax)
 				self.ax.set_xlabel('R [m]')
 				self.ax.set_ylabel('Z [m]')
 				self.ax.set_aspect('equal')
