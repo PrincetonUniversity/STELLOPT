@@ -1,95 +1,124 @@
 #######################################################################
+#            Define User Specific Output Paths
+#######################################################################
+  # Set a default directory if one has not already been defined.
+  $STELLOPT_HOME ?= $(HOME)/bin
+
+#######################################################################
+#            Define Debian Jessie Specifec locations
+#######################################################################
+SYSTEM_HOME = /usr
+GCC4_HOME = $(SYSTEM_HOME)
+MPI_HOME = $(SYSTEM_HOME)
+BLAS_HOME = $(SYSTEM_HOME)
+BLACS_HOME = $(SYSTEM_HOME)
+SCALAPACK_HOME = $(SYSTEM_HOME)
+NAG_HOME =
+NETCDF_HOME = /usr
+NTCC_HOME = 
+HDF5_HOME = /usr/lib/x86_64-linux-gnu/hdf5/serial/
+PGPLOT_HOME =
+SILO_HOME =
+GLS_HOME =
+
+GENE_HOME =
+
+#######################################################################
 #            Define Basic Utilities
 #######################################################################
+  # Temporaryily copy STELLOPT_HOME to MYHOME since MYHOME is currently
+  # used in all the makefiles.
+  MYHOME = $(STELLOPT_HOME)
+  
   SHELL = /bin/sh
   PWD1 = `pwd`
-  MYHOME = /hydra/u/sul/bin
-  PRECOMP:= fpp -C -P -DLINUX
-  COMPILE = ifort
-  COMPILE_FREE = ifort
-  LINK    = ftn -Bstatic -o
+  PRECOMP:= /usr/bin/cpp -traditional -DLINUX
+  COMPILE_C = gcc
+  COMPILE = gfortran
+  COMPILE_FREE = $(COMPILE) -ffree-form -ffree-line-length-none -ffixed-line-length-none
+  LINK    = ld $(FLAGS) -o
   LINK_AR = ar -ruv
-  LINK_C  = $(CC) -shared -Wl,-z-defs
+  LINK_C  = $(COMPILE_C) -shared -Wl,-z-defs
 
 #######################################################################
 #            Define Compiler Flags
 #######################################################################
-  FLAGS_R = -I$(MKL_HOME)/include -O2 -fp-model strict -xAVX -ip \
-            -assume noold_unit_star 
-  FLAGS_D = -g -I$(MKL_HOME)/include
-  LIBS    = -Wl,-rpath,$(MKL_HOME)/lib/intel64 \
-            -L$(MKL_HOME)/lib/intel64 -lmkl_scalapack_lp64 \
-            -lmkl_intel_lp64 -lmkl_core -lmkl_sequential \
-            -lmkl_blacs_intelmpi_lp64  -lpthread -lm -lpthread
+#  FLAGS_R = -O2 -g -fexternal-blas -fbacktrace -fcheck=all 
+  FLAGS_R = -g -O2 -fexternal-blas -fbacktrace
+  FLAGS_D = -g -O0 -fexternal-blas -fcheck=all 
+  LIBS    = -L$(BLAS_HOME)/lib -lopenblas
 
 #######################################################################
 #            MPI Options
 #######################################################################
   LMPI    = T
-  MPI_COMPILE = mpiifort
-  MPI_COMPILE_FREE = mpiifort
-  MPI_COMPILE_C = 
-  MPI_LINK = mpiifort
+  MPI_COMPILE = $(MPI_HOME)/bin/mpif90
+  MPI_COMPILE_FREE = $(MPI_COMPILE) -ffree-form \
+                     -ffree-line-length-none -ffixed-line-length-none
+  MPI_COMPILE_C = $(MPI_HOME)/bin/mpicc
+  MPI_LINK = $(MPI_HOME)/bin/mpif90
+
+#######################################################################
+#            GCC Options
+#######################################################################
+  GCC4_LIB = $(GCC4_HOME)/lib/x86_64-linux-gnu/
 
 #######################################################################
 #            NAG Options
 #######################################################################
-  LNAG = T
-  NAG_LIB = $(NAGFLIB) $(NAGMKLLIB)
+  LNAG = F
+  NAG_LIB = -L$(NAG_HOME)/lib -lnag_nag
 
 #######################################################################
 #            NETCDF Options
 #######################################################################
   LNETCDF = T
-  NETCDF_INC = -I$(NETCDF_HOME)/include 
-  NETCDF_LIB = -Wl,-rpath,$(NETCDF_HOME)/lib -L$(NETCDF_HOME)/lib \
-               -lnetcdf -lnetcdff 
+  NETCDF_INC = -I$(NETCDF_HOME)/include
+  NETCDF_LIB = -L$(NETCDF_HOME)/lib -lnetcdf -lnetcdff
 
 #######################################################################
 #            NTCC Options
 #######################################################################
-  LNTCC = T
-  NTCC_INC = -I$(NTCCHOME)/mod
-  NTCC_LIB = -L$(NTCCHOME)/lib -laladdinsub -ladpak -lcppsub \
-             -lcomput -lportlib 
+  LNTCC = F
+  NTCC_INC = -I$(NTCC_HOME)/mod
+  NTCC_LIB = -L$(NTCC_HOME)/lib -laladdinsub -lr8slatec -ladpak\
+             -lcppsub -lcomput -lpspline -lportlib -lezcdf -lmds_sub \
+             -lmdstransp -lvaxonly
 
 #######################################################################
 #            HDF5 Options
 #######################################################################
   LHDF5 = T
-  HDF5_INC = -I$(HDF5_HOME)/include 
-  HDF5_LIB = -Wl,-rpath,$(HDF5_HOME)/lib -L$(HDF5_HOME)/lib \
-             -lhdf5 -lhdf5_fortran -lhdf5_hl -lhdf5hl_fortran 
+  HDF5_INC = -I$(HDF5_HOME)/include
+  HDF5_LIB = -L$(HDF5_HOME)/lib -lhdf5_hl -lhdf5_fortran -lhdf5 \
+             -lhdf5hl_fortran -lpthread -lz -lm
 
 #######################################################################
 #             PGPLOT Options
 #######################################################################
   LPGPLOT = F
-  PGPLOT_INC =
-  PGPLOT_LIB = 
+  PGPLOT_INC = -I$(PGPLOT_HOME)
+  PGPLOT_LIB = -L$(PGPLOT_HOME) -lpgplot -L/usr/X11R6/lib -lX11
 
 #######################################################################
 #             SILO Options
 #######################################################################
   LSILO = F
-  SILO_INC = -I$(SILO_DIR)/include
-  SILO_LIB = -L$(SILO_DIR)/lib -lsilo
+  SILO_INC = -I$(SILO_HOME)/include
+  SILO_LIB = -L$(SILO_HOME)/lib -lsilo
 
 #######################################################################
 #            GENE Options
 #######################################################################
   LGENE = F
-  GENE_INC = -I$(GENE_PATH)
-  GENE_DIR = $(GENE_PATH)
+  GENE_INC = -I$(GENE_HOME)
+  GENE_DIR = $(GENE_HOME)
   LIB_GENE = libgene.a
-  GENE_LIB = -L$(FFTW_HOME)/lib -lfftw3 -lfftw3f -Xlinker \
-             -rpath=$(FFTW_HOME)/lib \
-             -Wl,-rpath,$(SLEPC_HOME)/intel14.0-mpi.ibm1308-double-cplx/lib \
-             -L$(SLEPC_HOME)/intel14.0-mpi.ibm1308-double-cplx/lib -lslepc \
-             -Wl,-rpath,$(PETSC_HOME)/lib -L$(PETSC_HOME)/lib -lpetsc \
-             -Wl,-rpath,$(MKL_HOME)/lib/intel64 -L$(MKL_HOME)/lib/intel64 \
-             -lmkl_scalapack_lp64 -lmkl_intel_lp64 -lmkl_core \
-             -lmkl_sequential -lmkl_blacs_intelmpi_lp64 -lpthread -lm 
+  GENE_LIB = $(GENE_DIR)/$(LIB_GENE) \
+             -L/u/slazerso/src/GENE17_2016/external/pppl_cluster/futils/src -lfutils \
+             -L$(FFTWHOME)/lib -lfftw3 \
+             -L$(SLEPC_DIR)/$(PETSC_ARCH)/lib -lslepc \
+             -L$(PETSC_DIR)/$(PETSC_ARCH)/lib -lpetsc -lX11
 
 #######################################################################
 #            COILOPT++ Options
@@ -98,7 +127,8 @@
   COILOPT_INC = -I$(COILOPT_PATH)
   COILOPTPP_DIR = $(COILOPT_PATH)
   LIB_COILOPTPP = libcoilopt++.a
-  COILOPT_LIB = $(COILOPT_PATH)/$(LIB_COILOPTPP) 
+  COILOPT_LIB = $(COILOPT_PATH)/$(LIB_COILOPTPP) \
+                -L$(GSLHOME)/lib -lgsl -lgslcblas -lstdc++ -lmpi_cxx
 
 #######################################################################
 #            TERPSICHORE Options
@@ -122,7 +152,19 @@
 #######################################################################
 #            LIBSTELL Shared Options
 #######################################################################
-LIB_SHARE = 
+LIB_SHARE = $(BLAS_HOME)/lib/libopenblas.so \
+          $(SCALAPACK_HOME)/lib/libscalapack.a \
+          $(BLACS_HOME)/lib/libmpiblacs.a  $(BLACS_HOME)/lib/libmpiblacsCinit.a $(BLACS_HOME)/lib/libmpiblacsF77init.a \
+          $(NTCC_HOME)/lib/libaladdinsub.a $(NTCC_HOME)/lib/libr8slatec.a $(NTCC_HOME)/lib/libadpak.a $(NTCC_HOME)/lib/libcppsub.a $(NTCC_HOME)/lib/libcomput.a \
+          $(NTCC_HOME)/lib/libpspline.a $(NTCC_HOME)/lib/libportlib.a $(NTCC_HOME)/lib/libezcdf.a $(NTCC_HOME)/lib/libmds_sub.a $(NTCC_HOME)/lib/libmdstransp.a $(NTCC_HOME)/lib/libvaxonly.a \
+          $(HDF5_HOME)/lib/libhdf5_hl.so $(HDF5_HOME)/lib/libhdf5_fortran.so $(HDF5_HOME)/lib/libhdf5hl_fortran.so $(HDF5_HOME)/lib/libhdf5.so \
+          $(NAG_HOME)/lib/libnag_nag.so  \
+          $(NETCDF_HOME)/lib/libnetcdf.so $(NETCDF_HOME)/lib/libnetcdff.so $(NETCDF_HOME)/lib/libnetcdf_c++.so \
+          $(SILO_HOME)/lib/libsilo.a \
+          $(GSL_HOME)/lib/libgsl.so \
+          $(GCC4_LIBlibgfortran.so $(GCC4_LIB/libstdc++.so \
+          $(MPI_HOME)/lib/libmpi.so $(MPI_HOME)/lib/libmpi_f77.so $(MPI_HOME)/lib/libmpi_f90.so
+          
 
 #######################################################################
 #######################################################################
@@ -143,8 +185,8 @@ LIB_SHARE =
 #######################################################################
 #######################################################################
 
-# This is where we find the cawk script
-#HOME_BIN = $(MYHOME)
+# Some Initial stuff
+# HOME_BIN = $(MYHOME)
 HOME_BIN = ../../
 MOD1_PATH = -I$(MYHOME)/libstell_dir
 MOD_PATH = 
@@ -267,7 +309,9 @@ endif
 LIB_LINK += $(GENE_LIB) $(COILOPT_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB)
 
 # Add libraries to LIB_LINK
-#LIB_LINK+= $(HOME_BIN)/libstell.a $(LIBS)
+# LIB_LINK+= $(MYHOME)/libstell.a $(LIBS)
+# This version avoids referencing the bin directory for the symbolic link to lib.
+# Which we can't reference since we now have the awk file in the main directory.
 LIB_LINK+= $(LIB_DIR)/$(LOCTYPE)/$(LIB) $(LIBS)
 
 # 3rd Party Libs
@@ -287,7 +331,7 @@ ifeq ($(LNETCDF),T)
 endif
 ifeq ($(LHDF5),T)
   MOD1_PATH += $(HDF5_INC)
-  PRECOMP += -DLHDF5 -DH5_USE_16_API -DHDF5_PAR
+  PRECOMP += -DLHDF5 -DH5_USE_16_API
   LIB_LINK += $(HDF5_LIB)
   MOD_PATH += $(HDF5_INC)
 endif

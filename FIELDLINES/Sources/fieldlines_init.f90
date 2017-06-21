@@ -328,8 +328,8 @@
       IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'fieldlines_init',ier)
       CALL EZspline_init(BZ_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
       IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'fieldlines_init',ier)
-      BR_spl%isHermite = 0
-      BZ_spl%isHermite = 0
+      BR_spl%isHermite = 1
+      BZ_spl%isHermite = 1
       BR_spl%x1 = raxis
       BZ_spl%x1 = raxis
       BR_spl%x2 = phiaxis

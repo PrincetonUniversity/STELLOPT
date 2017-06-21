@@ -30,12 +30,12 @@
 !
 !-----------------------------------------------------------------------
       INTEGER :: i,j, ier
-      INTEGER, PARAMETER :: nbdry_pts = 90
-      REAL(rprec) :: s,u,v, xp,zp,xpp,zpp, denom
-      REAL(rprec) :: R_grad(3), Z_grad(3)
-      REAL(rprec), DIMENSION(nbdry_pts) :: kappa_avg, kappa_max, kurtosis,&
+      INTEGER, PARAMETER :: ntheta_pts = 128
+      INTEGER, PARAMETER :: nzeta_pts = 4
+      REAL(rprec) :: s,u,v
+      REAL(rprec), DIMENSION(nzeta_pts) :: kappa_avg, kappa_max, kurtosis,&
                                            kappa_sig, kappa_mu
-      REAL(rprec) :: kappa(nbdry_pts,nbdry_pts)
+      REAL(rprec) :: kappa(ntheta_pts,nzeta_pts)
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
@@ -44,33 +44,38 @@
       IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA  VAL  KURTOSIS  KURTOSIS_AVG  KURTOSIS_MAX  PHI'
       IF (niter >= 0) THEN
          s=1.0
-         DO i = 1, nbdry_pts
-            DO j = 1, nbdry_pts
-               u = pi2*(i-1)/nbdry_pts
-               v = pi2*(j-1)/nbdry_pts
+         kappa = 0
+         DO i = 1, ntheta_pts
+            DO j = 1, nzeta_pts
+               u = pi2*(i-1)/ntheta_pts
+               v = pi2*(j-1)/nzeta_pts
                CALL get_equil_kappa(s,u,v,kappa(i,j),ier)
+               !PRINT *,u,v,kappa(i,j),ier
             END DO
          END DO
-         kappa_avg = SUM(kappa,DIM=2)/nbdry_pts
-         DO i = 1, nbdry_pts
-            DO j = 1, nbdry_pts
+         kappa_max = -1.0E30; kappa_sig = 0; kappa_mu = 0
+         kappa_avg = SUM(kappa,DIM=1)/ntheta_pts
+         DO j = 1, nzeta_pts
+            DO i = 1, ntheta_pts
               kappa_max(j) = MAX(kappa_max(j),kappa(i,j))
-              kappa_sig(j) = kappa_sig(j) + (kappa(i,j)-kappa_avg(j)*kappa_avg(j))/nbdry_pts
-              kappa_mu(j) = kappa_mu(j) + (kappa(i,j)-kappa_avg(j)*kappa_avg(j)*kappa_avg(j)*kappa_avg(j))/nbdry_pts
+              kappa_sig(j) = kappa_sig(j) + (kappa(i,j)-kappa_avg(j)*kappa_avg(j)) !/ntheta_pts
+              kappa_mu(j) = kappa_mu(j) + (kappa(i,j)-kappa_avg(j)*kappa_avg(j)*kappa_avg(j)*kappa_avg(j)) !/ntheta_pts
             END DO
          END DO
+         kappa_sig = kappa_sig / ntheta_pts
+         kappa_mu   = kappa_mu / ntheta_pts
          kurtosis = kappa_mu/(kappa_sig*kappa_sig)
-         DO i = 1, nbdry_pts
+         DO j = 1, nzeta_pts
             mtargets = mtargets + 1
-            v = pi2*(i-1)/nbdry_pts
-            targets(mtargets) = 0.0
-            sigmas(mtargets)  = bigno
-            vals(mtargets)    = 0.44 + 0.5*TANH((kurtosis(i) -20)/15)
-            IF (iflag == 1) WRITE(iunit_out,'(7ES22.12E3)') target,sigma,vals(mtargets),kurtosis(i),kappa_avg(i),kappa_max(i),v
+            v = pi2*(j-1)/nzeta_pts
+            targets(mtargets) = target
+            sigmas(mtargets)  = sigma
+            vals(mtargets)    = 0.44 + 0.5*TANH((kurtosis(j) -20)/15)
+            IF (iflag == 1) WRITE(iunit_out,'(7ES22.12E3)') target,sigma,vals(mtargets),kurtosis(j),kappa_avg(j),kappa_max(j),v
          END DO
       ELSE
          IF (sigma < bigno) THEN
-            DO i =1, nbdry_pts
+            DO i =1, nzeta_pts
                mtargets = mtargets + 1
                IF (niter == -2) target_dex(mtargets)=jtarget_curvature
             END DO

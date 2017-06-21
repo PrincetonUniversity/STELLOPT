@@ -544,8 +544,8 @@
          END DO
 !DEC$ ENDIF
       
-         ! Output to the xvec.dat file
          IF (myid == master) THEN
+            ! Output to the xvec.dat file
             CALL safe_open(iunitx,ierr,'xvec.dat','unknown',
      1                     'formatted',ACCESS_IN='APPEND')
             IF (ierr .ne. 0) STOP 'DE2_Evolve Error OPEN(xvec.dat)'
@@ -555,13 +555,35 @@
                WRITE(iunitx,'(ES22.12E3)') fnorm_new(i)
             END DO
             CLOSE(iunitx)
-         END IF
+           
+            ! Find the best value
+            ibest = MINLOC(fnorm_new,DIM = 1)
+            fnorm = fnorm_new(ibest)  
 
-         ! Now find the best
-         IF (myid == master) THEN
+            ! Save the minimum state
+            IF (fnorm_min > fnorm) THEN
+               fnorm_min = fnorm
+               x_temp = x_new(ibest,:)
+               iflag = 0
+               CALL fcn(m, n, x_temp, temp_fvec, iflag, iter)
+               iflag = GADE_CLEANUP
+               CALL fcn(m, n, x_temp, temp_fvec, iflag, iter)
+               WRITE(6,*) ' '
+               WRITE(6,*) '  New Minimum at ',ibest,fnorm_min
+               WRITE(6,*) ' '
+            END IF
+
+            ! Write the RESTART File
+            REWIND (unit=irestart)
+            WRITE(iRESTART,*) n
+            DO i=1,NP
+               WRITE(iRESTART,*) i,fnorm_new(i),
+     1                           (x_new(i,j),j=1, n)
+            END DO
+            CALL FLUSH(iRESTART)
+       
+            ! Update X
             j = 0
-            ibest     = MINLOC(fnorm_new,DIM = 1)
-            fnorm     = fnorm_array(ibest)
             DO i = 1, NP
                IF (fnorm_new(i) < fnorm_array(i)) THEN
                   j = j + 1
@@ -592,45 +614,11 @@
          CALL MPI_BCAST(fnorm,1,MPI_REAL8,
      1                  master,MPI_COMM_STEL,ierr_mpi)
          IF (ierr_mpi /= MPI_SUCCESS) CALL mpi_stel_abort(ierr_mpi) 
-!DEC$ ENDIF
-
-         ! Get the best value
-         IF (fnorm_min > fnorm) THEN
-            fnorm_min = fnorm
-            
-            ! Save the output
-            IF (myid == master) THEN
-               x_temp = x_array(ibest,:)
-               iflag = 0
-               CALL fcn(m, n, x_temp, temp_fvec, iflag, iter)
-               iflag = GADE_CLEANUP
-               CALL fcn(m, n, x_temp, temp_fvec, iflag, iter)
-               WRITE(6,*) ' '
-               WRITE(6,*) '  New Minimum at ',ibest,fnorm_min
-               WRITE(6,*) ' '
-            END IF
-         END IF
-         
-         
-!DEC$ IF DEFINED (MPI_OPT)
-         CALL MPI_BARRIER(MPI_COMM_STEL, ierr_mpi)
-         IF (ierr_mpi /= MPI_SUCCESS) CALL mpi_stel_abort(ierr_mpi)
          CALL MPI_BCAST(fnorm_min,1,MPI_REAL8,master,MPI_COMM_STEL,
      1               ierr_mpi)
-         IF (ierr_mpi .ne. 0) CALL mpi_stel_abort(ierr_mpi)
+         IF (ierr_mpi /= MPI_SUCCESS) CALL mpi_stel_abort(ierr_mpi)
 !DEC$ ENDIF
-         
-         ! WRITE RESTART FILE
-         IF (myid == master) THEN
-            REWIND (unit=irestart)
-            WRITE(iRESTART,*) n
-            DO i=1,NP
-               WRITE(iRESTART,*) i,fnorm_array(i),
-     1                           (x_array(i,j),j=1, n)
-            END DO
-            CALL FLUSH(iRESTART)
-            
-         END IF
+
       END DO
       
       x_temp = x_array(ibest,1)

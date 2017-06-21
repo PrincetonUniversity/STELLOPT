@@ -193,7 +193,7 @@
                  IF (lasym) nvars = nvars + 1
               END IF
               DO n = -ntord, ntord
-                 DO m = 1, mpol1d
+                 DO m = 0, mpol1d
                     IF (m==0 .and. n<=0) CYCLE
                     IF (lbound_opt(n,m)) THEN
                        nvars = nvars + 2
