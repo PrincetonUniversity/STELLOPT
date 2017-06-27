@@ -242,7 +242,7 @@
       WRITE(iunit,outflt) 'PHIEDGE',phiedge
       IF (lrfp) THEN
          WRITE(iunit,'(A)') '!----- RFP Parameters -----'
-         WRITE(iunit,outboo) 'LRFP',lasym
+         WRITE(iunit,outboo) 'LRFP',lrfp
          WRITE (iunit,'(a,(1p,4ES22.12E3))') '  APHI = ',
      1                                   (aphi(n-1), n=1,SIZE(aphi))
       END IF
