@@ -1,13 +1,14 @@
-#!/usr/pppl/gcc/4.6-pkgs/python-3.2.3/bin/python3
+#!/usr/bin/python3
 import sys, os
 import matplotlib
+import matplotlib.pyplot as _plt
+matplotlib.use("Qt5Agg")
 import numpy as np                    #For Arrays
 from math import pi
-matplotlib.use("Qt5Agg")
-from PyQt5 import uic, QtCore, QtWidgets
-from PyQt5.QtWidgets import QMainWindow, QApplication, qApp, QApplication, QVBoxLayout, QSizePolicy
+from PyQt5 import uic, QtGui
+from PyQt5.QtGui import QMainWindow, QApplication, qApp, QApplication, QVBoxLayout, QSizePolicy
 from PyQt5.QtGui import QIcon
-from libstell.libstell import read_vmec, cfunct, sfunct, torocont, isotoro
+from libstell.libstell import read_vmec, cfunct, sfunct, torocont, isotoro, calc_jll
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from mpl_toolkits import mplot3d
@@ -24,7 +25,7 @@ class MyApp(QMainWindow):
 		self.statusBar().showMessage('Ready')
 		self.ui.plot_list = ['Summary','-----1D-----','Iota','q','Pressure',\
 		'<Buco>','<Bvco>','<jcuru>','<jcurv>','<j.B>',  '-----3D------','|B|','sqrt(g)',\
-		'B^u','B^v','B_s','B_u','B_v','j^u','j^v','j.B','---Special---','LPK']
+		'B^u','B^v','B_s','B_u','B_v','j^u','j^v', 'jll', 'j.B','---Special---','LPK']
 		files = os.listdir('.')
 		for name in files:
 			if(name[0:4]=='wout'):
@@ -155,9 +156,10 @@ class MyApp(QMainWindow):
 	def update_plot(self,i):
 
 		plot_name = self.ui.PlotList.currentText();
-		self.fig.delaxes(self.ax)
+		self.fig.clf()
+		#self.fig.delaxes(self.ax)
 		self.ax = self.fig.add_subplot(111)
-		if (plot_name == 'Sumary'):
+		if (plot_name == 'Summary'):
 			print(plot_name)
 		elif (plot_name == 'Iota'):
 			self.ax.plot(self.nflux,self.vmec_data['iotaf'])
@@ -233,6 +235,8 @@ class MyApp(QMainWindow):
 				val = self.cu/self.g
 			elif (plot_name=='j^v'):
 				val = self.cv/self.g
+			elif (plot_name=='jll'):
+				val = calc_jll(self.vmec_data, self.theta, self.zeta)
 			elif (plot_name=='j.B'):
 				val = (self.cu*self.bu+self.cv*self.bv)/self.g
 			# Now handle the type of plot
@@ -254,7 +258,9 @@ class MyApp(QMainWindow):
 				self.ax.set_xlabel('Toroidal Angle [rad]')
 				self.ax.set_ylabel('Normalized Flux')
 			elif (self.ui.RZ_button.isChecked()):
-				self.ax.pcolormesh(self.r[:,:,self.v],self.z[:,:,self.v],val[:,:,self.v],cmap='jet',shading='gouraud')
+				#self.ax.pcolormesh(self.r[:,:,self.v],self.z[:,:,self.v],val[:,:,self.v],cmap='jet',shading='gouraud')
+				cax = self.ax.pcolor(self.r[:,:,self.v],self.z[:,:,self.v],val[:,:,self.v],cmap='jet',shading='flat')
+				self.fig.colorbar(cax)
 				self.ax.set_xlabel('R [m]')
 				self.ax.set_ylabel('Z [m]')
 				self.ax.set_aspect('equal')
