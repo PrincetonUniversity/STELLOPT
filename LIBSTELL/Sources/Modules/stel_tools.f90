@@ -118,6 +118,9 @@
       INTERFACE get_equil_Bflx
          MODULE PROCEDURE get_equil_Bflx_dbl, get_equil_Bflx_sgl
       END INTERFACE
+      INTERFACE get_equil_Bsqflx
+         MODULE PROCEDURE get_equil_Bsqflx_dbl, get_equil_Bsqflx_sgl
+      END INTERFACE
       INTERFACE pest2vmec
          MODULE PROCEDURE pest2vmec_dbl, pest2vmec_sgl
       END INTERFACE
@@ -1159,6 +1162,45 @@
       IF (PRESENT(B_grad)) B_grad = B_grad_dbl
       RETURN
       END SUBROUTINE get_equil_Bflx_sgl
+
+      SUBROUTINE get_equil_Bsqflx_dbl(s_val,u_val,v_val,Bsq,ier,g_val)
+      USE EZspline
+      IMPLICIT NONE
+      DOUBLE PRECISION, INTENT(in)    ::  s_val
+      DOUBLE PRECISION, INTENT(in)    ::  u_val
+      DOUBLE PRECISION, INTENT(in)    ::  v_val
+      DOUBLE PRECISION, INTENT(out)   ::  Bsq
+      DOUBLE PRECISION, INTENT(out), OPTIONAL   ::  g_val
+      INTEGER, INTENT(inout)     ::  ier
+      DOUBLE PRECISION :: rho_val
+      IF (ier < 0) RETURN
+      rho_val = SQRT(s_val)
+      CALL EZspline_interp(B_spl,u_val,v_val,rho_val,Bsq,ier)
+      Bsq = Bsq*Bsq
+      IF (PRESENT(g_val)) CALL EZspline_interp(G_spl,u_val,v_val,rho_val,g_val,ier)
+      RETURN
+      END SUBROUTINE get_equil_Bsqflx_dbl
+
+      SUBROUTINE get_equil_Bsqflx_sgl(s_val,u_val,v_val,Bsq,ier,g_val)
+      USE EZspline
+      IMPLICIT NONE
+      REAL, INTENT(in)    ::  s_val
+      REAL, INTENT(in)    ::  u_val
+      REAL, INTENT(in)    ::  v_val
+      REAL, INTENT(out)   ::  Bsq
+      REAL, INTENT(out), OPTIONAL   ::  g_val
+      INTEGER, INTENT(inout)     ::  ier
+      DOUBLE PRECISION    ::  s_dbl
+      DOUBLE PRECISION    ::  u_dbl
+      DOUBLE PRECISION    ::  v_dbl
+      DOUBLE PRECISION   ::  Bsq_dbl
+      DOUBLE PRECISION   ::  g_dbl
+      s_dbl = s_val; u_dbl = u_val; v_dbl = v_val;
+      CALL get_equil_Bsqflx_dbl(s_dbl,u_dbl,v_dbl,Bsq_dbl,ier,G_VAL=g_dbl)
+      Bsq = Bsq_dbl
+      IF (PRESENT(g_val)) g_val = g_dbl
+      RETURN
+      END SUBROUTINE get_equil_Bsqflx_sgl
 
       SUBROUTINE pest2vmec_dbl(coord)
       USE EZspline
