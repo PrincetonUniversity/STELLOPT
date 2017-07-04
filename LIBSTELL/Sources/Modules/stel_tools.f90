@@ -80,7 +80,7 @@
       DOUBLE PRECISION, PARAMETER,PRIVATE      :: pi2 = 6.283185482025146D+00
       DOUBLE PRECISION, PARAMETER,PRIVATE      :: one = 1.000000000000000D+00
       DOUBLE PRECISION, PARAMETER,PRIVATE      :: search_tol = 1.000000000000000D-12
-      TYPE(EZspline1_r8),PRIVATE :: Vp_spl, grho_spl, grho2_spl
+      TYPE(EZspline1_r8),PRIVATE :: Vp_spl, grho_spl, grho2_spl, Bsq_spl
       TYPE(EZspline1_r8),PRIVATE :: S11_spl, S12_spl, S21_spl, S22_spl
       TYPE(EZspline3_r8),PRIVATE :: R_spl, Z_spl, G_spl
       TYPE(EZspline3_r8),PRIVATE :: Ru_spl, Zu_spl
@@ -333,6 +333,7 @@
          IF (EZspline_allocated(S12_spl)) CALL EZspline_free(S12_spl,iflag)
          IF (EZspline_allocated(S21_spl)) CALL EZspline_free(S21_spl,iflag)
          IF (EZspline_allocated(S22_spl)) CALL EZspline_free(S22_spl,iflag)
+         IF (EZspline_allocated(Bsq_spl)) CALL EZspline_free(Bsq_spl,iflag)
          CALL EZspline_init(Vp_spl,ns_t,bcs0,iflag)
          CALL EZspline_init(grho_spl,ns_t,bcs0,iflag)
          CALL EZspline_init(grho2_spl,ns_t,bcs0,iflag)
@@ -340,8 +341,10 @@
          CALL EZspline_init(S12_spl,ns_t,bcs0,iflag)
          CALL EZspline_init(S21_spl,ns_t,bcs0,iflag)
          CALL EZspline_init(S22_spl,ns_t,bcs0,iflag)
+         CALL EZspline_init(Bsq_spl,ns_t,bcs0,iflag)
          Vp_spl%x1 = rho; grho_spl%x1 = rho; grho2_spl%x1 = rho
          S11_spl%x1 = rho; S12_spl%x1 = rho; S21_spl%x1 = rho; S22_spl%x1=rho
+         Bsq_spl%x1 = rho
          ALLOCATE(Vp(k1:k2),grho(k1:k2),grho2(k1:k2))
          ALLOCATE(gsr(nu,nv,k1:k2),gsp(nu,nv,k1:k2),gsz(nu,nv,k1:k2),&
                   gs(nu,nv,k1:k2))
@@ -407,6 +410,13 @@
          grho   = SUM(SUM(f_temp,DIM=1),DIM=1)/(nu*nv)
          !grho(1) = 2*grho(2) - grho(3)
          CALL EZspline_setup(S22_spl,grho,iflag); f_temp = 0; grho = 0
+         ! Bsq
+         f_temp = B_spl%fspl(1,:,:,:)*B_spl%fspl(1,:,:,:)*G_spl%fspl(1,:,:,:)
+         grho   = SUM(SUM(f_temp,DIM=1),DIM=1)/(nu*nv)
+         grho2 = grho2 / Vp
+         grho2(1) = 2*grho2(2) - grho2(3)
+         CALL EZspline_setup(Bsq_spl,grho,iflag); f_temp = 0; grho = 0
+         ! Deallocate arrays
          DEALLOCATE(gsr,gsp,gsz,gs,Vp,grho,grho2)
          f_temp = 0
       END IF
@@ -1163,42 +1173,46 @@
       RETURN
       END SUBROUTINE get_equil_Bflx_sgl
 
-      SUBROUTINE get_equil_Bsqflx_dbl(s_val,u_val,v_val,Bsq,ier,g_val)
+      SUBROUTINE get_equil_Bsqflx_dbl(s_val,u_val,v_val,B,ier,Bsqp_val,g_val)
       USE EZspline
       IMPLICIT NONE
       DOUBLE PRECISION, INTENT(in)    ::  s_val
       DOUBLE PRECISION, INTENT(in)    ::  u_val
       DOUBLE PRECISION, INTENT(in)    ::  v_val
-      DOUBLE PRECISION, INTENT(out)   ::  Bsq
+      DOUBLE PRECISION, INTENT(out)   ::  B
       DOUBLE PRECISION, INTENT(out), OPTIONAL   ::  g_val
+      DOUBLE PRECISION, INTENT(out), OPTIONAL   ::  Bsqp_val
       INTEGER, INTENT(inout)     ::  ier
       DOUBLE PRECISION :: rho_val
       IF (ier < 0) RETURN
       rho_val = SQRT(s_val)
-      CALL EZspline_interp(B_spl,u_val,v_val,rho_val,Bsq,ier)
-      Bsq = Bsq*Bsq
+      CALL EZspline_interp(B_spl,u_val,v_val,rho_val,B,ier)
+      IF (PRESENT(Bsqp_val))  CALL EZspline_derivative(Bsq_spl,1,rho_val,Bsqp_val,ier)
       IF (PRESENT(g_val)) CALL EZspline_interp(G_spl,u_val,v_val,rho_val,g_val,ier)
       RETURN
       END SUBROUTINE get_equil_Bsqflx_dbl
 
-      SUBROUTINE get_equil_Bsqflx_sgl(s_val,u_val,v_val,Bsq,ier,g_val)
+      SUBROUTINE get_equil_Bsqflx_sgl(s_val,u_val,v_val,B,ier,Bsqp_val,g_val)
       USE EZspline
       IMPLICIT NONE
       REAL, INTENT(in)    ::  s_val
       REAL, INTENT(in)    ::  u_val
       REAL, INTENT(in)    ::  v_val
-      REAL, INTENT(out)   ::  Bsq
+      REAL, INTENT(out)   ::  B
+      REAL, INTENT(out), OPTIONAL   ::  Bsqp_val
       REAL, INTENT(out), OPTIONAL   ::  g_val
       INTEGER, INTENT(inout)     ::  ier
       DOUBLE PRECISION    ::  s_dbl
       DOUBLE PRECISION    ::  u_dbl
       DOUBLE PRECISION    ::  v_dbl
-      DOUBLE PRECISION   ::  Bsq_dbl
+      DOUBLE PRECISION   ::  B_dbl
       DOUBLE PRECISION   ::  g_dbl
+      DOUBLE PRECISION   ::  Bsqp_dbl
       s_dbl = s_val; u_dbl = u_val; v_dbl = v_val;
-      CALL get_equil_Bsqflx_dbl(s_dbl,u_dbl,v_dbl,Bsq_dbl,ier,G_VAL=g_dbl)
-      Bsq = Bsq_dbl
+      CALL get_equil_Bsqflx_dbl(s_dbl,u_dbl,v_dbl,B_dbl,ier,BSQP_VAL=Bsqp_dbl,G_VAL=g_dbl)
+      B = B_dbl
       IF (PRESENT(g_val)) g_val = g_dbl
+      IF (PRESENT(Bsqp_val)) Bsqp_val = Bsqp_dbl
       RETURN
       END SUBROUTINE get_equil_Bsqflx_sgl
 
