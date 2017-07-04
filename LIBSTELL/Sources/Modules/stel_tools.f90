@@ -118,8 +118,8 @@
       INTERFACE get_equil_Bflx
          MODULE PROCEDURE get_equil_Bflx_dbl, get_equil_Bflx_sgl
       END INTERFACE
-      INTERFACE get_equil_Bsqflx
-         MODULE PROCEDURE get_equil_Bsqflx_dbl, get_equil_Bsqflx_sgl
+      INTERFACE get_equil_Bsqavflx
+         MODULE PROCEDURE get_equil_Bsqavflx_dbl, get_equil_Bsqavflx_sgl
       END INTERFACE
       INTERFACE pest2vmec
          MODULE PROCEDURE pest2vmec_dbl, pest2vmec_sgl
@@ -1173,48 +1173,37 @@
       RETURN
       END SUBROUTINE get_equil_Bflx_sgl
 
-      SUBROUTINE get_equil_Bsqflx_dbl(s_val,u_val,v_val,B,ier,Bsqp_val,g_val)
+      SUBROUTINE get_equil_Bsqavflx_dbl(s_val,Bsqav,ier,Bsqavp_val)
       USE EZspline
       IMPLICIT NONE
       DOUBLE PRECISION, INTENT(in)    ::  s_val
-      DOUBLE PRECISION, INTENT(in)    ::  u_val
-      DOUBLE PRECISION, INTENT(in)    ::  v_val
-      DOUBLE PRECISION, INTENT(out)   ::  B
-      DOUBLE PRECISION, INTENT(out), OPTIONAL   ::  g_val
-      DOUBLE PRECISION, INTENT(out), OPTIONAL   ::  Bsqp_val
+      DOUBLE PRECISION, INTENT(out)   ::  Bsqav
+      DOUBLE PRECISION, INTENT(out), OPTIONAL   ::  Bsqavp_val
       INTEGER, INTENT(inout)     ::  ier
       DOUBLE PRECISION :: rho_val
       IF (ier < 0) RETURN
       rho_val = SQRT(s_val)
-      CALL EZspline_interp(B_spl,u_val,v_val,rho_val,B,ier)
-      IF (PRESENT(Bsqp_val))  CALL EZspline_derivative(Bsq_spl,1,rho_val,Bsqp_val,ier)
-      IF (PRESENT(g_val)) CALL EZspline_interp(G_spl,u_val,v_val,rho_val,g_val,ier)
+      CALL EZspline_interp(Bsq_spl,rho_val,Bsqav,ier)
+      IF (PRESENT(Bsqavp_val))  CALL EZspline_derivative(Bsq_spl,1,rho_val,Bsqavp_val,ier)
       RETURN
-      END SUBROUTINE get_equil_Bsqflx_dbl
+      END SUBROUTINE get_equil_Bsqavflx_dbl
 
-      SUBROUTINE get_equil_Bsqflx_sgl(s_val,u_val,v_val,B,ier,Bsqp_val,g_val)
+      SUBROUTINE get_equil_Bsqavflx_sgl(s_val,Bsqav,ier,Bsqavp_val)
       USE EZspline
       IMPLICIT NONE
       REAL, INTENT(in)    ::  s_val
-      REAL, INTENT(in)    ::  u_val
-      REAL, INTENT(in)    ::  v_val
-      REAL, INTENT(out)   ::  B
-      REAL, INTENT(out), OPTIONAL   ::  Bsqp_val
-      REAL, INTENT(out), OPTIONAL   ::  g_val
+      REAL, INTENT(out)   ::  Bsqav
+      REAL, INTENT(out), OPTIONAL   ::  Bsqavp_val
       INTEGER, INTENT(inout)     ::  ier
       DOUBLE PRECISION    ::  s_dbl
-      DOUBLE PRECISION    ::  u_dbl
-      DOUBLE PRECISION    ::  v_dbl
-      DOUBLE PRECISION   ::  B_dbl
-      DOUBLE PRECISION   ::  g_dbl
-      DOUBLE PRECISION   ::  Bsqp_dbl
-      s_dbl = s_val; u_dbl = u_val; v_dbl = v_val;
-      CALL get_equil_Bsqflx_dbl(s_dbl,u_dbl,v_dbl,B_dbl,ier,BSQP_VAL=Bsqp_dbl,G_VAL=g_dbl)
-      B = B_dbl
-      IF (PRESENT(g_val)) g_val = g_dbl
-      IF (PRESENT(Bsqp_val)) Bsqp_val = Bsqp_dbl
+      DOUBLE PRECISION   ::  Bsqav_dbl
+      DOUBLE PRECISION   ::  Bsqavp_dbl
+      s_dbl = s_val
+      CALL get_equil_Bsqavflx_dbl(s_dbl,Bsqav_dbl,ier,BSQAVP_VAL=Bsqavp_dbl)
+      Bsqav = Bsqav_dbl
+      IF (PRESENT(Bsqavp_val)) Bsqavp_val = Bsqavp_dbl
       RETURN
-      END SUBROUTINE get_equil_Bsqflx_sgl
+      END SUBROUTINE get_equil_Bsqavflx_sgl
 
       SUBROUTINE pest2vmec_dbl(coord)
       USE EZspline
