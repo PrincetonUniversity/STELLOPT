@@ -76,13 +76,7 @@
       INTEGER :: im,in
       REAL(rprec) :: temp, s_temp, u_temp, phi_temp
       REAL(rprec), ALLOCATABLE :: xu(:), xv(:)
-      REAL(rprec), ALLOCATABLE :: r_temp(:,:,:), z_temp(:,:,:)
-      REAL(rprec), ALLOCATABLE :: x_temp(:,:,:), y_temp(:,:,:)
-      REAL(rprec), ALLOCATABLE :: g_temp(:,:,:), l_temp(:,:,:), lu_temp(:,:,:), lv_temp(:,:,:)
-      REAL(rprec), ALLOCATABLE :: bs_temp(:,:,:), bu_temp(:,:,:), bv_temp(:,:,:), b_temp(:,:,:), bdu_temp(:,:,:), bdv_temp(:,:,:)
-      REAL(rprec), ALLOCATABLE :: ru(:,:,:), rv(:,:,:)
-      REAL(rprec), ALLOCATABLE :: zu(:,:,:), zv(:,:,:)
-      REAL(rprec), ALLOCATABLE :: fmn_temp(:,:)
+      DOUBLE PRECISION, ALLOCATABLE :: Vol(:)
       
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
@@ -134,25 +128,33 @@
             IF (EZspline_allocated(ip_spl)) CALL EZspline_free(ip_spl,iflag)
             IF (EZspline_allocated(jdotb_spl)) CALL EZspline_free(jdotb_spl,iflag)
             IF (EZspline_allocated(jcurv_spl)) CALL EZspline_free(jcurv_spl,iflag)
+            IF (EZspline_allocated(V_spl)) CALL EZspline_free(V_spl,iflag)
             CALL EZspline_init(pres_spl,ns_vmec,bcs0,iflag)
             CALL EZspline_init(iota_spl,ns_vmec,bcs0,iflag)
             CALL EZspline_init(jdotb_spl,ns_vmec,bcs0,iflag)
             CALL EZspline_init(jcurv_spl,ns_vmec,bcs0,iflag)
+            CALL EZspline_init(V_spl,ns_vmec,bcs0,iflag)
             !CALL EZspline_init(ip_spl,ns_vmec,bcs0,iflag)
             pres_spl%x1 = rho
             iota_spl%x1 = rho
             jdotb_spl%x1 = rho
             jcurv_spl%x1 = rho
+            V_spl%x1 = rho
             !ip_spl%x1 = phi_vmec
             pres_spl%isHermite = 1
             iota_spl%isHermite = 1
             jdotb_spl%isHermite = 1
             jcurv_spl%isHermite = 1
+            V_spl%isHermite = 1
             !ip_spl%isHermite = 1
             CALL EZspline_setup(pres_spl,pres_vmec,ier)
             CALL EZspline_setup(iota_spl,iota_vmec,ier)
             CALL EZspline_setup(jdotb_spl,jdotb_vmec,ier)
             CALL EZspline_setup(jcurv_spl,jcurv_vmec,ier)
+            ALLOCATE(Vol(ns_vmec))
+            FORALL(u=1:ns_vmec) Vol(u) = SUM(vp_vmec(1:u))
+            CALL EZspline_setup(V_spl,Vol,ier)
+            DEALLOCATE(Vol)
             ! Handle the FLOW arrays
             IF (TRIM(equil_type)=='flow' .or. TRIM(equil_type)=='satire') THEN
                mach0 = SQRT(machsq_vmec)

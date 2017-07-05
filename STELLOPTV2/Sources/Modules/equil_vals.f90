@@ -33,15 +33,10 @@
                                  orbit_lost_frac(:), radto_ece(:), radtx_ece(:)
       REAL(rprec),ALLOCATABLE :: balloon_grate(:,:,:)
       REAL(rprec),ALLOCATABLE :: txport_q(:,:,:), txport_q_all(:,:,:,:)
-      TYPE(EZspline1_r8) :: pres_spl, iota_spl, phi_spl, ip_spl,&
+      TYPE(EZspline1_r8) :: pres_spl, iota_spl, phi_spl, ip_spl, V_spl, &
                             te_spl, ne_spl, ti_spl, th_spl, jdotb_spl,&
                             nustar_spl, zeff_spl, jcurv_spl, omega_spl
       REAL(rprec), ALLOCATABLE :: wp_kink(:), wk_kink(:), omega_kink(:),&
                      growth_kink(:)
-      !TYPE(EZspline3_r8) :: R_spl, Z_spl
-      !TYPE(EZspline3_r8) :: Ru_spl, Zu_spl
-      !TYPE(EZspline3_r8) :: Rv_spl, Zv_spl
-      !TYPE(EZspline3_r8) :: Bs_spl, Bu_spl, Bv_spl, B_spl, Bdu_spl, Bdv_spl
-      !TYPE(EZspline3_r8) :: G_spl, L_spl, Lu_spl, Lv_spl
 
       END MODULE equil_vals
