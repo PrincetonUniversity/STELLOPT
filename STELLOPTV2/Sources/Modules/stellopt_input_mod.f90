@@ -275,6 +275,7 @@
                          target_kappa, sigma_kappa, phi_kappa, &
                          target_kappa_box, sigma_kappa_box, phi_kappa_box, &
                          target_kappa_avg, sigma_kappa_avg, &
+                         target_magwell, sigma_magwell, &
                          target_press, sigma_press, r_press, z_press, phi_press, s_press,&
                          target_te, sigma_te, r_te, z_te, phi_te, s_te,&
                          target_ne, sigma_ne, r_ne, z_ne, phi_ne, s_ne,&
@@ -543,23 +544,25 @@
       sigma_beta      = bigno
       target_betapol  = 0.0
       sigma_betapol   = bigno
-      target_betator  = 0.0
-      sigma_betator   = bigno
-      target_wp       = 0.0
-      sigma_wp        = bigno
-      target_aspect   = 0.0
-      sigma_aspect    = bigno
+      target_betator   = 0.0
+      sigma_betator    = bigno
+      target_wp        = 0.0
+      sigma_wp         = bigno
+      target_aspect    = 0.0
+      sigma_aspect     = bigno
       target_aspect_max= 0.0
-      sigma_aspect_max= bigno
-      width_aspect_max= 0.5 ! Ideally we'd want it to be something like N*EPSFCN
-      target_gradp_max= 0.0
-      sigma_gradp_max = bigno
-      width_gradp_max = 0.5
-      target_pmin     = 0.0
-      sigma_pmin      = bigno
-      width_pmin      = 0.5
+      sigma_aspect_max = bigno
+      width_aspect_max = 0.5 ! Ideally we'd want it to be something like N*EPSFCN
+      target_gradp_max = 0.0
+      sigma_gradp_max  = bigno
+      width_gradp_max  = 0.5
+      target_pmin      = 0.0
+      sigma_pmin       = bigno
+      width_pmin       = 0.5
       target_curvature = 0.0
       sigma_curvature  = bigno
+      target_magwell   = 0.0
+      sigma_magwell    = bigno
       target_kappa     = 0.0
       sigma_kappa      = bigno
       phi_kappa        = 0.0
@@ -1739,6 +1742,20 @@
            IF (sigma_jdotb(ik) < bigno)  WRITE(iunit,"(2(2X,A,I3.3,A,E22.14))") &
                           'TARGET_JDOTB(',ik,') = ',target_jdotb(ik), &
                           'SIGMA_JDOTB(',ik,') = ',sigma_jdotb(ik)
+         END DO
+      END IF
+      IF (ANY(sigma_magwell < bigno)) THEN
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,'(A)') '!          Magnetic Well (W>0 Stable)'  
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         n=0
+         DO ik = 1,UBOUND(sigma_magwell,DIM=1)
+            IF(sigma_magwell(ik) < bigno) n=ik
+         END DO
+         DO ik = 1, n
+           IF (sigma_magwell(ik) < bigno)  WRITE(iunit,"(2(2X,A,I3.3,A,E22.14))") &
+                          'TARGET_MAGWELL(',ik,') = ',target_magwell(ik), &
+                          'SIGMA_MAGWELL(',ik,') = ',sigma_magwell(ik)
          END DO
       END IF
       IF (ANY(sigma_jcurv < bigno)) THEN
