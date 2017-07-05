@@ -1187,7 +1187,8 @@
       IF (PRESENT(Bsqavp_val))  THEN
          CALL EZspline_derivative(Bsq_spl,1,rho_val,Bsqavp_val,ier)
          CALL EZspline_interp(Vp_spl,rho_val,vp_val,ier)
-         Bsqavp = 2*rho_val*Bsqavp/vp_val  ! d/dV = (dPhi/drho)*(dV/dPhi)^-1 * d/drho
+         Bsqavp_val = 2*rho_val*Bsqavp_val/vp_val  ! d/dV = (dPhi/drho)*(dV/dPhi)^-1 * d/drho
+      END IF
       RETURN
       END SUBROUTINE get_equil_Bsqav_dbl
 
