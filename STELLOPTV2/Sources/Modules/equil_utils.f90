@@ -161,6 +161,24 @@
       RETURN
       END SUBROUTINE get_equil_p
       
+      SUBROUTINE get_equil_volume(s_val,val,ier,pval)
+      IMPLICIT NONE
+      REAL(rprec), INTENT(inout) ::  s_val
+      REAL(rprec), INTENT(out)   ::  val
+      REAL(rprec), INTENT(out), OPTIONAL :: pval ! V'=dV/ds
+      INTEGER, INTENT(inout)     ::  ier
+      IF (ier < 0) RETURN
+      IF (EZspline_allocated(V_spl)) THEN
+         CALL EZspline_isInDomain(V_spl,s_val,ier)
+         IF (ier .ne. 0) RETURN
+         CALL EZspline_interp(V_spl,s_val,val,ier)
+         IF (PRESENT(pval)) CALL EZspline_derivative(V_spl,1,s_val,pval,ier)
+      ELSE
+         ier = -1
+      END IF
+      RETURN
+      END SUBROUTINE get_equil_volume
+      
       SUBROUTINE get_equil_jdotb(s_val,val,ier)
       IMPLICIT NONE
       REAL(rprec), INTENT(inout) ::  s_val
