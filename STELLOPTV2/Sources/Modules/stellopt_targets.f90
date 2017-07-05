@@ -182,6 +182,7 @@
       INTEGER, PARAMETER :: jtarget_phiedge    = 103
       INTEGER, PARAMETER :: jtarget_volume     = 104
       INTEGER, PARAMETER :: jtarget_wp         = 105
+      INTEGER, PARAMETER :: jtarget_magwell    = 1051
       INTEGER, PARAMETER :: jtarget_aspect_max = 106
       INTEGER, PARAMETER :: jtarget_gradp_max  = 107
       INTEGER, PARAMETER :: jtarget_pmin       = 108
@@ -260,6 +261,8 @@
             WRITE(iunit, out_format) 'Plasma Volume'
          CASE(jtarget_wp)
             WRITE(iunit, out_format) 'Plasma Stored Energy'
+         CASE(jtarget_magwell)
+            WRITE(iunit, out_format) 'Magnetic Well'
          CASE(jtarget_gradp_max)
             WRITE(iunit, out_format) 'Max Pressure Gradient (upper limit)'
          CASE(jtarget_pmin)
