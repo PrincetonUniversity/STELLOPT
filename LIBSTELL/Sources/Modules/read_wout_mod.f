@@ -907,6 +907,10 @@ C-----------------------------------------------
       i_animec = 0
       i_flow   = 0
       vmec_type = 0
+      
+      ! reset iasym, needed when using the same instance multiple times -jons
+      iasym = 0
+      
       CALL cdf_inquire(nwout, vn_pparmnc, dimlens, ier=ierror)
       IF (ierror.eq.0) vmec_type = 1
       CALL cdf_inquire(nwout, vn_omega, dimlens, ier=ierror)
