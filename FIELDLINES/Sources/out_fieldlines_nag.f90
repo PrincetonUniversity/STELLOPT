@@ -107,11 +107,11 @@
          B_lines(myline,myldex) = zw
       END IF
 
-      IF (lverb .and. ((phi+dphi) .ge. myldex*dphi)) THEN
-         CALL backspace_out(6,6)
-         WRITE(6,'(A,I3,A)',ADVANCE='no') '[',INT((100.*((myline-1)*nsteps+myldex)/(nsteps*myend))),']%'
-         CALL FLUSH(6)
-      END IF
+      !IF (lverb .and. ((phi+dphi) .ge. myldex*dphi)) THEN
+      !   CALL backspace_out(6,6)
+      !   WRITE(6,'(A,I3,A)',ADVANCE='no') '[',INT((100.*((myline-1)*nsteps+myldex)/(nsteps*myend))),']%'
+      !   CALL FLUSH(6)
+      !END IF
 
       ! Update position
       phi    = phi + dphi
