@@ -59,7 +59,7 @@
       character*(arg_len)                          :: arg1
       character*(arg_len),allocatable,dimension(:) :: args
       ! Runtime Related
-      INTEGER                :: nu,nv,mn,nfp,j,k, nrad, fid
+      INTEGER                :: nu,nv,mn,nfp,j,k, nrad, fid, fid_nv, node_num
       INTEGER     :: bcs1(2)
       INTEGER, ALLOCATABLE   :: nuarr(:)
       REAL(rprec)            :: rad_res, rho, s, u, v, ustar, &
@@ -73,6 +73,10 @@
       
       DOUBLE PRECISION, PARAMETER      :: pi2 = 6.283185482025146D+00
       REAL(rprec), PARAMETER :: VMEC2XGC_VERSION = 1.0_rprec
+
+      INTEGER, DIMENSION(1024,1024) :: node_label
+      INTEGER :: ii,iii, ele_num
+      DOUBLE PRECISION :: aa
 
 !-----------------------------------------------------------------------
 !     Begin Program
@@ -323,11 +327,16 @@
       !     Output Table
       !-----------------------------------------------------------------------
       fid = 32
+      fid_nv = 33
       WRITE(6,'(A)')        '-------------- Generating XGC Grid --------------'
       WRITE(6,'(A,I4,A,I4,A,I4)')'NRAD: ',nrad,'  NU:',MAXVAL(nuarr)-1,'  NV:',nv
       WRITE(6,'(A)')             'FILENAME: xgc_grid.'//TRIM(id_string)
       CALL safe_open(fid, ier, 'xgc_grid.'//TRIM(id_string), 'replace', 'formatted')
       DO k = 1, nv
+         WRITE(id_string,'(I4.4)') k
+         CALL safe_open(fid_nv, ier, 'xgc_mesh_'//TRIM(id_string)//'.node', 'replace', 'formatted')
+         WRITE(fid_nv,*) SUM(nuarr)-nrad, '  2  0  1'
+         node_num=0
          DO i = 1, nrad
             DO j = 1, nuarr(i)-1
                rho = rtrunc*REAL(i-1)/REAL(nrad-1)
@@ -353,15 +362,75 @@
                jr = 0; jphi = 0; jz = 0
                v = v/nfp
                WRITE(fid,*) i,s,u,v,ustar,Rtemp,lambda,Ztemp,br,bphi,bz,jr,jphi,jz
+               !Write out node file
+               node_num=node_num+1
+               WRITE(fid_nv,*) node_num, Rtemp, Ztemp
+               node_label(j,i) = node_num
+               !IF(node_num==2) print*,i,j,node_num,node_label(1,2)
             END DO
          END DO
+         CALL FLUSH(fid_nv)
          CALL FLUSH(fid)
       END DO
       WRITE(6,'(A)')        '-------------------------------------------------'
       CLOSE(fid)
-      DEALLOCATE(nuarr)
+!      DEALLOCATE(nuarr)
       CALL EZspline_free(iota_spl,ier)
+      !-----------------------------------------------------------------------
+      !     Output .ele (triangle elements file)
+      !-----------------------------------------------------------------------
+      nuarr(:)=nuarr(:)-1
+      ele_num = nuarr(2)
+      DO j=2,nrad-1
+        aa = DBLE(nuarr(j+1))/(DBLE(nuarr(j)))
+        DO i = 1, nuarr(j)
+          ii=idnint(dble(i)*aa-0.000001d0)
+          iii= idnint(dble(i-1)*aa-0.000001d0)
+          IF (i .eq. 1) iii=0
+          IF((ii-iii) .gt. 1) THEN
+            ele_num = ele_num + 3
+          ELSE 
+            ele_num = ele_num + 2
+          END IF
+        END DO 
+      END DO
+! 
+      DO k = 1, nv
+         DO j=1, nrad
+            node_label(nuarr(j)+1, j) = node_label(1,j)
+         END DO
 
+         WRITE(id_string,'(I4.4)') k
+         CALL safe_open(fid_nv, ier, 'xgc_mesh_'//TRIM(id_string)//'.ele', 'replace', 'formatted')
+         WRITE(fid_nv,*) ele_num, '  3  0'
+!
+         node_num = 0
+         DO i=1, nuarr(2)
+            node_num = node_num + 1
+            WRITE(fid_nv,*) node_num, node_label(i,2), node_label(1,1), node_label(i+1,2)
+         END DO
+!
+         DO j=2,nrad-1
+            aa = DBLE(nuarr(j+1))/(DBLE(nuarr(j)))
+            DO i = 1, nuarr(j)
+               ii=idnint(dble(i)*aa-0.000001d0)
+               iii= idnint(dble(i-1)*aa-0.000001d0)
+               IF (i .eq. 1) iii=0
+               IF((ii-iii) .gt. 1) THEN
+                  WRITE(fid_nv,*) node_num + 1, node_label(i,j), node_label(ii-1,j+1), node_label(ii,j+1)
+                  WRITE(fid_nv,*) node_num + 2, node_label(i,j), node_label(ii,j+1), node_label(ii+1,j+1)
+                  WRITE(fid_nv,*) node_num + 3, node_label(i,j), node_label(ii+1,j+1), node_label(i+1,j)
+                  node_num = node_num + 3
+               ELSE
+                  WRITE(fid_nv,*) node_num + 1, node_label(i,j), node_label(ii,j+1), node_label(ii+1,j+1)
+                  WRITE(fid_nv,*) node_num + 2, node_label(i,j), node_label(ii+1,j+1), node_label(i+1,j)
+                  node_num = node_num + 2
+               END IF
+            END DO
+         END DO
+         FLUSH(fid_nv)
+      END DO
+      DEALLOCATE(nuarr)
       !-----------------------------------------------------------------------
       !     Output FIELD
       !-----------------------------------------------------------------------

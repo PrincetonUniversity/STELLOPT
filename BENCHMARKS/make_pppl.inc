@@ -89,7 +89,7 @@
 #######################################################################
 #            GENE Options
 #######################################################################
-  LGENE = T
+  LGENE = F
   GENE_INC = -I$(GENE_PATH)
   GENE_DIR = $(GENE_PATH)
   LIB_GENE = libgene.a
@@ -102,7 +102,7 @@
 #######################################################################
 #            COILOPT++ Options
 #######################################################################
-  LCOILOPT = T
+  LCOILOPT = F
   COILOPT_INC = -I$(COILOPT_PATH)
   COILOPTPP_DIR = $(COILOPT_PATH)
   LIB_COILOPTPP = libcoilopt++.a
@@ -112,7 +112,7 @@
 #######################################################################
 #            TERPSICHORE Options
 #######################################################################
-  LTERPSICHORE= T
+  LTERPSICHORE= F
   TERPSICHORE_INC = -I$(TERPSICHORE_PATH)
   TERPSICHORE_DIR = $(TERPSICHORE_PATH)
   LIB_TERPSICHORE = libterpsichore.a
@@ -121,7 +121,7 @@
 #######################################################################
 #            TRAVIS Options
 #######################################################################
-  LTRAVIS= T
+  LTRAVIS= F
   TRAVIS_DIR = $(TRAVIS_PATH)
   LIB_TRAVIS = libtravis64_sopt.a
   LIB_MCONF  = libmconf64.a
