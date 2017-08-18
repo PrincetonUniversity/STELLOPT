@@ -221,7 +221,8 @@
                          lth_f_opt, lphi_s_opt, lphi_f_opt, &
                          lrho_opt, ldeltamn_opt, lbound_opt, laxis_opt, lmode_opt, &
                          lne_opt, lte_opt, lti_opt, lth_opt, lzeff_opt, &
-                         lah_f_opt, lat_f_opt, lcoil_spline, &
+                         lah_f_opt, lat_f_opt, lcoil_spline, lwindsurf, &
+                         windsurfname, &
                          dphiedge_opt, dcurtor_opt, dbcrit_opt, &
                          dpscale_opt, dmix_ece_opt,&
                          dextcur_opt, daphi_opt, dam_opt, dac_opt, &
@@ -338,15 +339,16 @@
 !     Subroutines
 !         read_stellopt_input:   Reads optimum namelist
 !-----------------------------------------------------------------------
-      CONTAINS
-      
+    CONTAINS
+
       SUBROUTINE read_stellopt_input(filename, istat, ithread)
       CHARACTER(*), INTENT(in) :: filename
       INTEGER, INTENT(out) :: istat
       INTEGER, INTENT(in) :: ithread
       LOGICAL :: lexist
-      INTEGER :: i, iunit, local_master
-      ! Initializations
+      INTEGER :: i, ierr, iunit, local_master
+
+      ! Initializations to default values
       nfunc_max       = 5000
       opt_type        = 'LMDIF'
       equil_type      = 'VMEC2000'
@@ -403,6 +405,7 @@
       lmode_opt(:,:)  = .FALSE.
       laxis_opt(:)    = .FALSE.
       lcoil_spline(:,:) = .FALSE.
+      lwindsurf       = .FALSE.
       dphiedge_opt    = -1.0
       dcurtor_opt     = -1.0
       dpscale_opt     = -1.0
@@ -442,7 +445,7 @@
       drho_opt(:,:) = -1.0
       ddeltamn_opt(:,:) = -1.0
       dcoil_spline(:,:) = -1.0
-      IF (.not.ltriangulate) THEN  ! This is done because values may be set by trinagulate
+      IF (.not.ltriangulate) THEN  ! This is done because values may be set by triangulate
          phiedge_min     = -bigno;  phiedge_max     = bigno
          curtor_min      = -bigno;  curtor_max      = bigno
          bcrit_min       = -bigno;  bcrit_max       = bigno
@@ -523,6 +526,9 @@
       coil_splinefx(:,:) = 0
       coil_splinefy(:,:) = 0
       coil_splinefz(:,:) = 0
+      windsurfname = ''
+      windsurf%mmax = -1
+      windsurf%nmax = -1
       mboz            = 64
       nboz            = 64
       target_phiedge  = 0.0
@@ -768,6 +774,7 @@
       sigma_coil_bnorm  = bigno
       nu_bnorm          = 256
       nv_bnorm          = 64
+
       ! Read name list
       lexist            = .false.
       istat=0
@@ -780,6 +787,7 @@
       IF (istat /= 0) CALL handle_err(NAMELIST_READ_ERR,'OPTIMUM in: '//TRIM(filename),istat)
       CALL FLUSH(iunit)
       CLOSE(iunit)
+
       ! Fix String vars
       equil_type=TRIM(equil_type)
       equil_type=ADJUSTL(equil_type)
@@ -793,8 +801,17 @@
       th_type = ADJUSTL(th_type)
       beamj_type = ADJUSTL(beamj_type)
       bootj_type = ADJUSTL(bootj_type)
+
       ! Coil Optimization
-      IF (ANY(ANY(lcoil_spline,2),1)) lcoil_geom = .true.
+      IF (ANY(ANY(lcoil_spline,2),1)) THEN
+         lcoil_geom = .true.
+         IF (lwindsurf) THEN
+            CALL read_winding_surface(windsurfname, windsurf, ierr)
+            IF (ierr.ne.0) CALL handle_err(CWS_READ_ERR, windsurfname, ierr)
+            !write(6,*)myid,'0-0=',windsurf%rctab(0,0),windsurf%zstab(0,0)
+         ENDIF
+      ENDIF
+
       ! If fixed boundary optimization or mapping turn off restart
       IF (ANY(ANY(lbound_opt,2),1) .or. opt_type=='map') lno_restart = .true.
       ! Test for proper normalization on ne profile
@@ -813,6 +830,7 @@
          ne_opt = ne_opt / ne_norm
          ne_aux_f = ne_aux_f / ne_norm
       END IF
+
       ! Print code messages
       CALL tolower(equil_type)
       IF ((myid == master) .and. (TRIM(equil_type(1:4)) == 'vmec') ) THEN
@@ -1058,6 +1076,113 @@
       target_helicity(1)  = 0.0;  sigma_helicity(1)  = bigno
       END SUBROUTINE read_stellopt_input
       
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      SUBROUTINE read_winding_surface(filename, surface, ierr)
+        IMPLICIT NONE
+        INTRINSIC ALL, MAXVAL, ABS
+
+        ! Arguments
+        CHARACTER(256), INTENT(IN)   :: filename
+        TYPE(vsurf), INTENT(INOUT)   :: surface
+        INTEGER, INTENT(OUT)         :: ierr
+
+        ! Local variables
+        REAL(rprec), DIMENSION(:), ALLOCATABLE :: rmnc, zmns
+        INTEGER, DIMENSION(:), ALLOCATABLE     :: mnum, nnum
+        INTEGER  :: iunit, istat, count, mode
+        LOGICAL  :: lexist
+
+        ! Reset winding surface
+        IF (ALLOCATED(surface%rctab)) DEALLOCATE(surface%rctab)
+        IF (ALLOCATED(surface%zstab)) DEALLOCATE(surface%zstab)
+        surface%mmax = -1;  surface%nmax = -1
+
+        IF (myid.eq.master) THEN   ! Master process does I/O
+           ! Open coil winding surface file
+           lexist = .false.
+           INQUIRE(FILE=TRIM(filename),EXIST=lexist)
+           IF (lexist) THEN
+              iunit=12;  istat=1
+              OPEN(iunit, file=TRIM(filename), status='old', action='read', iostat=istat)
+              IF (istat.eq.0) THEN  !Read the file
+                 WRITE(6,*)'Reading winding surface from file ',TRIM(filename),'.'
+
+                 count = 0
+                 DO ! Count lines
+                    READ(iunit,*,END=100)
+                    count = count + 1
+                 ENDDO
+
+100              IF (count.gt.0) THEN
+                    WRITE(6,'(I6,A)')count,' modes in winding surface file.'
+
+                    ! Allocate temporary (sparse) space for values
+                    ALLOCATE(mnum(count), nnum(count), rmnc(count), zmns(count))
+
+                    ! Read values
+                    REWIND(iunit)
+                    DO mode=1,count
+                       READ(iunit,*) mnum(mode), nnum(mode), rmnc(mode), zmns(mode)
+                    ENDDO !mode
+
+                    IF (ALL(mnum.ge.0)) THEN  ! Avoid error condition
+
+                       ! Find max poloidal & toroidal mode numbers
+                       surface%mmax = MAXVAL(mnum)
+                       surface%nmax = MAXVAL(ABS(nnum))
+110                    FORMAT(I6,A,I5)
+                       WRITE(6,110) -surface%nmax,' <= n <=',surface%nmax
+                       WRITE(6,110) 0,' <= m <=',surface%mmax
+
+                       ! Initialize the (dense) data structure
+                       ALLOCATE(surface%rctab(-surface%nmax:surface%nmax, 0:surface%mmax))
+                       ALLOCATE(surface%zstab(-surface%nmax:surface%nmax, 0:surface%mmax))
+                       surface%rctab = 0d0;  surface%zstab = 0d0
+
+                       !Load temporary data into permanent structure
+                       DO mode=1,count
+                          surface%rctab(nnum(mode),mnum(mode)) = rmnc(mode)
+                          surface%zstab(nnum(mode),mnum(mode)) = zmns(mode)
+                       ENDDO !mode
+                    ENDIF ! No negative m values
+
+                    ! Free up temporary space
+                    DEALLOCATE(mnum, nnum, rmnc, zmns)
+                 ENDIF !count > 0
+
+                 CLOSE(iunit)
+              ENDIF !File opened successfully
+           ENDIF !File exists
+        ENDIF !Master process
+
+!DEC$ IF DEFINED (MPI_OPT)
+        ! Broadcast mode counts to all processors
+        CALL MPI_BCAST(surface%nmax, 1, MPI_INTEGER, master, MPI_COMM_STEL, ierr)
+        IF (ierr /= MPI_SUCCESS) RETURN
+!DEC$ ELSE
+        ierr = 0
+!DEC$ ENDIF
+        IF (surface%nmax.lt.0) THEN
+           ierr = 1;  RETURN
+        ENDIF
+!DEC$ IF DEFINED (MPI_OPT)
+        CALL MPI_BCAST(surface%mmax, 1, MPI_INTEGER, master, MPI_COMM_STEL, ierr)
+        IF (ierr /= MPI_SUCCESS) RETURN
+
+        ! Broadcast data to all processors
+        IF (myid.ne.master) THEN
+           ALLOCATE(surface%rctab(-surface%nmax:surface%nmax, 0:surface%mmax))
+           ALLOCATE(surface%zstab(-surface%nmax:surface%nmax, 0:surface%mmax))
+        ENDIF
+        count = (2*surface%nmax + 1)*(surface%mmax + 1)
+        CALL MPI_BCAST(surface%rctab, count, MPI_REAL8, master, MPI_COMM_STEL, ierr)
+        IF (ierr /= MPI_SUCCESS) RETURN
+        CALL MPI_BCAST(surface%zstab, count, MPI_REAL8, master, MPI_COMM_STEL, ierr)
+        IF (ierr == MPI_SUCCESS) ierr = 0
+!DEC$ ENDIF
+      END SUBROUTINE read_winding_surface
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       SUBROUTINE write_optimum_namelist(iunit,istat)
       INTEGER, INTENT(in) :: iunit
       INTEGER, INTENT(in) :: istat
@@ -1502,6 +1627,10 @@
       END IF
 
       IF (ANY(lcoil_spline)) THEN
+         IF (lwindsurf) THEN
+            WRITE(iunit,'(A)') '  LWINDSURF = T'
+            WRITE(iunit,'(A,A,A)') "  WINDSURFNAME = '",TRIM(windsurfname),"'"
+         ENDIF
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          WRITE(iunit,'(A)') '!       Coil Splines'
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
@@ -2294,6 +2423,7 @@
          END DO
       END IF
       WRITE(iunit,'(A)') '/'
+
       RETURN
       END SUBROUTINE write_optimum_namelist
       
