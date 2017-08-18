@@ -64,10 +64,18 @@
          extcur = 1.0
       END IF
       
-      
+      ! Need to fix nextcur < SIZE(coil_group)
+      IF (nextcur < SIZE(coil_group)) THEN
+         DEALLOCATE(extcur)
+         ALLOCATE(extcur(SIZE(coil_group)))
+         extcur=0
+         extcur(1:nextcur) = extcur_in(1:nextcur)
+         nextcur = SIZE(coil_group)
+      END IF      
+
       ! Initiazlize the Current
       !nextcur = SIZE(coil_group) !SAL
-      nextcur = MIN(SIZE(coil_group), SIZE(extcur))  !!SPH
+      !nextcur = MIN(SIZE(coil_group), SIZE(extcur))  !!SPH
       DO ik = 1, nextcur
          DO j = 1, coil_group(ik) % ncoil
             current = coil_group(ik) % coils(j) % current

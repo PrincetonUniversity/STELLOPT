@@ -80,7 +80,7 @@
       DOUBLE PRECISION, PARAMETER,PRIVATE      :: pi2 = 6.283185482025146D+00
       DOUBLE PRECISION, PARAMETER,PRIVATE      :: one = 1.000000000000000D+00
       DOUBLE PRECISION, PARAMETER,PRIVATE      :: search_tol = 1.000000000000000D-12
-      TYPE(EZspline1_r8),PRIVATE :: Vp_spl, grho_spl, grho2_spl
+      TYPE(EZspline1_r8),PRIVATE :: Vp_spl, grho_spl, grho2_spl, Bsq_spl
       TYPE(EZspline1_r8),PRIVATE :: S11_spl, S12_spl, S21_spl, S22_spl
       TYPE(EZspline3_r8),PRIVATE :: R_spl, Z_spl, G_spl
       TYPE(EZspline3_r8),PRIVATE :: Ru_spl, Zu_spl
@@ -117,6 +117,9 @@
       END INTERFACE
       INTERFACE get_equil_Bflx
          MODULE PROCEDURE get_equil_Bflx_dbl, get_equil_Bflx_sgl
+      END INTERFACE
+      INTERFACE get_equil_Bsqav
+         MODULE PROCEDURE get_equil_Bsqav_dbl, get_equil_Bsqav_sgl
       END INTERFACE
       INTERFACE pest2vmec
          MODULE PROCEDURE pest2vmec_dbl, pest2vmec_sgl
@@ -330,6 +333,7 @@
          IF (EZspline_allocated(S12_spl)) CALL EZspline_free(S12_spl,iflag)
          IF (EZspline_allocated(S21_spl)) CALL EZspline_free(S21_spl,iflag)
          IF (EZspline_allocated(S22_spl)) CALL EZspline_free(S22_spl,iflag)
+         IF (EZspline_allocated(Bsq_spl)) CALL EZspline_free(Bsq_spl,iflag)
          CALL EZspline_init(Vp_spl,ns_t,bcs0,iflag)
          CALL EZspline_init(grho_spl,ns_t,bcs0,iflag)
          CALL EZspline_init(grho2_spl,ns_t,bcs0,iflag)
@@ -337,8 +341,10 @@
          CALL EZspline_init(S12_spl,ns_t,bcs0,iflag)
          CALL EZspline_init(S21_spl,ns_t,bcs0,iflag)
          CALL EZspline_init(S22_spl,ns_t,bcs0,iflag)
+         CALL EZspline_init(Bsq_spl,ns_t,bcs0,iflag)
          Vp_spl%x1 = rho; grho_spl%x1 = rho; grho2_spl%x1 = rho
          S11_spl%x1 = rho; S12_spl%x1 = rho; S21_spl%x1 = rho; S22_spl%x1=rho
+         Bsq_spl%x1 = rho
          ALLOCATE(Vp(k1:k2),grho(k1:k2),grho2(k1:k2))
          ALLOCATE(gsr(nu,nv,k1:k2),gsp(nu,nv,k1:k2),gsz(nu,nv,k1:k2),&
                   gs(nu,nv,k1:k2))
@@ -404,6 +410,13 @@
          grho   = SUM(SUM(f_temp,DIM=1),DIM=1)/(nu*nv)
          !grho(1) = 2*grho(2) - grho(3)
          CALL EZspline_setup(S22_spl,grho,iflag); f_temp = 0; grho = 0
+         ! Bsq
+         f_temp = B_spl%fspl(1,:,:,:)*B_spl%fspl(1,:,:,:)*G_spl%fspl(1,:,:,:)
+         grho   = SUM(SUM(f_temp,DIM=1),DIM=1)/(nu*nv)
+         grho2 = grho2 / Vp
+         grho2(1) = 2*grho2(2) - grho2(3)
+         CALL EZspline_setup(Bsq_spl,grho,iflag); f_temp = 0; grho = 0
+         ! Deallocate arrays
          DEALLOCATE(gsr,gsp,gsz,gs,Vp,grho,grho2)
          f_temp = 0
       END IF
@@ -1159,6 +1172,42 @@
       IF (PRESENT(B_grad)) B_grad = B_grad_dbl
       RETURN
       END SUBROUTINE get_equil_Bflx_sgl
+
+      SUBROUTINE get_equil_Bsqav_dbl(s_val,Bsqav,ier,Bsqavp_val)
+      USE EZspline
+      IMPLICIT NONE
+      DOUBLE PRECISION, INTENT(in)    ::  s_val
+      DOUBLE PRECISION, INTENT(out)   ::  Bsqav
+      DOUBLE PRECISION, INTENT(out), OPTIONAL   ::  Bsqavp_val
+      INTEGER, INTENT(inout)     ::  ier
+      DOUBLE PRECISION :: rho_val, vp_val
+      IF (ier < 0) RETURN
+      rho_val = SQRT(s_val)
+      CALL EZspline_interp(Bsq_spl,rho_val,Bsqav,ier)
+      IF (PRESENT(Bsqavp_val))  THEN
+         CALL EZspline_derivative(Bsq_spl,1,rho_val,Bsqavp_val,ier)
+         CALL EZspline_interp(Vp_spl,rho_val,vp_val,ier)
+         Bsqavp_val = 2*rho_val*Bsqavp_val/vp_val  ! d/dV = (dPhi/drho)*(dV/dPhi)^-1 * d/drho
+      END IF
+      RETURN
+      END SUBROUTINE get_equil_Bsqav_dbl
+
+      SUBROUTINE get_equil_Bsqav_sgl(s_val,Bsqav,ier,Bsqavp_val)
+      USE EZspline
+      IMPLICIT NONE
+      REAL, INTENT(in)    ::  s_val
+      REAL, INTENT(out)   ::  Bsqav
+      REAL, INTENT(out), OPTIONAL   ::  Bsqavp_val
+      INTEGER, INTENT(inout)     ::  ier
+      DOUBLE PRECISION    ::  s_dbl
+      DOUBLE PRECISION   ::  Bsqav_dbl
+      DOUBLE PRECISION   ::  Bsqavp_dbl
+      s_dbl = s_val
+      CALL get_equil_Bsqav_dbl(s_dbl,Bsqav_dbl,ier,BSQAVP_VAL=Bsqavp_dbl)
+      Bsqav = Bsqav_dbl
+      IF (PRESENT(Bsqavp_val)) Bsqavp_val = Bsqavp_dbl
+      RETURN
+      END SUBROUTINE get_equil_Bsqav_sgl
 
       SUBROUTINE pest2vmec_dbl(coord)
       USE EZspline

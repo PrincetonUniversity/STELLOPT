@@ -1,4 +1,5 @@
 ObjectFiles = \
+chisq_magwell.o \
 chisq_helicity_ornl.o \
 stellopt_vboot.o \
 chisq_kappa.o \

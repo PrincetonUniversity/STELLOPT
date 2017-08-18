@@ -153,6 +153,7 @@
       CALL write_array(iunit,'TFLUX',tflux(1:nvol),nvol,LOW_INDEX=1)
       CALL write_array(iunit,'PFLUX',pflux(1:nvol),nvol,LOW_INDEX=1)
       CALL write_array(iunit,'IOTA',iota(1:nvol),nvol,LOW_INDEX=1)
+      CALL write_array(iunit,'OITA',iota(1:nvol),nvol,LOW_INDEX=1)
       !CALL write_array(iunit,'MU',mu(1:nvol),nvol) 
       !CALL write_array(iunit,'PL',pl(1:nvol),nvol,LOW_INDEX=1) 
       !CALL write_array(iunit,'QL',ql(1:nvol),nvol,LOW_INDEX=1) 

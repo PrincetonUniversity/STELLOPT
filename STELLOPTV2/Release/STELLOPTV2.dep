@@ -147,6 +147,12 @@ chisq_jcurv.o : \
       equil_utils.o
       
 
+chisq_magwell.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      equil_utils.o
+      
+
 chisq_bprobes.o : \
       stellopt_runtime.o \
       stellopt_targets.o \
