@@ -87,11 +87,16 @@
 
          ! Check modularity
          lmodular = .FALSE.
-         IF ((coil_splinefx(i,1)==coil_splinefx(i,nelx_coil))&
-             .and. (coil_splinefy(i,1)==coil_splinefy(i,nely_coil)) &
-             .and.(coil_splinefz(i,1)==coil_splinefz(i,nelz_coil))) lmodular = .TRUE.
+         IF (lwindsurf) THEN
+            IF ((ABS(MODULO(coil_splinefx(i,1),1.0d0) - MODULO(coil_splinefx(i,nelx_coil),1.0D0)).le.EPSILON(u)) &
+                 .and. (coil_splinefy(i,1)==coil_splinefy(i,nely_coil)) ) lmodular = .TRUE.
+         ELSE
+            IF ((coil_splinefx(i,1)==coil_splinefx(i,nelx_coil))&
+                 .and. (coil_splinefy(i,1)==coil_splinefy(i,nely_coil)) &
+                 .and.(coil_splinefz(i,1)==coil_splinefz(i,nelz_coil))) lmodular = .TRUE.
+         END IF
 
-         ! Setup splines
+         ! Set up splines
          IF (EZspline_allocated(XC_spl)) CALL EZspline_free(XC_spl,ier)
          CALL EZspline_init(XC_spl,nelx_coil,bcs1,ier)
          XC_spl%x1 = coil_splinesx(i,1:nelx_coil)
@@ -129,6 +134,7 @@
          END IF
          c_coil(1:nseg) = extcur(i)
          IF (extcur(i) == 0) c_coil = 1
+
          ! Write Coil
          IF (lmodular) THEN ! Coil closes in a field period
             ! Screen output
