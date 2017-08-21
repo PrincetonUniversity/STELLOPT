@@ -240,7 +240,7 @@
                          beamj_aux_f, bootj_aux_f, zeff_aux_f, &
                          ne_opt, te_opt, ti_opt, th_opt, zeff_opt, &
                          ne_type, te_type, ti_type, th_type, &
-                         beamj_type, bootj_type, zeff_type, &
+                         beamj_type, bootj_type, bootcalc_type, zeff_type, & ! bootcalc_type added by MJL
                          ne_min, te_min, ti_min, th_min, beamj_f_min, &
                          bootj_f_min, zeff_min, zeff_f_min, &
                          ne_max, te_max, ti_max, th_max, beamj_f_max, &
@@ -491,6 +491,7 @@
       th_type         = 'akima_spline'
       beamj_type      = 'power_series'
       bootj_type      = 'power_series'
+      bootcalc_type   = 'bootsj' ! MJL
       ne_opt(0:20)       = 0.0
       zeff_opt(0:20)     = 0.0
       te_opt(0:20)       = 0.0
@@ -796,6 +797,7 @@
       th_type = ADJUSTL(th_type)
       beamj_type = ADJUSTL(beamj_type)
       bootj_type = ADJUSTL(bootj_type)
+      bootcalc_type = ADJUSTL(bootcalc_type) ! MJL
       ! Coil Optimization
       IF (ANY(ANY(lcoil_spline,2),1)) lcoil_geom = .true.
       ! If fixed boundary optimization or mapping turn off restart
@@ -1593,6 +1595,7 @@
          WRITE(iunit,"(2X,A,1X,'=',5(1X,E22.14))") 'BOOTJ_AUX_S',(bootj_aux_s(n), n=1,ik)
          WRITE(iunit,"(2X,A,1X,'=',5(1X,E22.14))") 'BOOTJ_AUX_F',(bootj_aux_f(n), n=1,ik)
       END IF
+      WRITE(iunit,outstr) 'BOOTCALC_TYPE',TRIM(bootcalc_type) ! MJL
       ! E-static potential
       ik = MINLOC(phi_aux_s(2:),DIM=1)
       IF (ik > 4) THEN

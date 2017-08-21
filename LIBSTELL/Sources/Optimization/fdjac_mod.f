@@ -681,12 +681,18 @@ c
 !     Find processor with minimum fnorm_min value and broadcast wa (=fvec_min), x_min, fnorm_min
 !
       IF (myid .eq. master) THEN
+         ! Begin MJL additions
+         print *,"jac_err:",jac_err
+         print *,"n_red:",n_red
+         ! End MJL additions
          jac_order = 0
          ix_temp = 1
          temp = 0
          lmask = .true.
 
          DO WHILE (ix_temp <= n_red)
+            print *,"In DO WHILE (ix_temp <= n_red) loop for ix_temp=",
+     *         ix_temp ! MJL
             isort = MINLOC(fnorm_array, MASK=lmask)
 
             temp = fnorm_array(isort(1))

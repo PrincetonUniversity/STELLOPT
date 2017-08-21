@@ -1265,9 +1265,57 @@
       ipvt   = 0
       qtf    = 0.0
       wa1 = 0; wa2 = 0; wa3 = 0; wa4 = 0
+!!$      print *,"About to call lmder_serial."
+!!$      print *,"  nfit_targs:",nfit_targs
+!!$      print *,"  nc:",nc
+!!$      print *,"  xc_opt:",xc_opt
+!!$      print *,"  fval:",fval
+!!$      print *,"  fjac:",fjac
+!!$      print *,"  nfit_targs:",nfit_targs
+!!$      print *,"  ftol:",ftol
+!!$      print *,"  xtol:",xtol
+!!$      print *,"  gtol:",gtol
+!!$      print *,"  maxfev_local:",maxfev_local
+!!$      print *,"  diag:",diag
+!!$      print *,"  mode:",mode
+!!$      print *,"  factor:",factor
+!!$      print *,"  nprint:",nprint
+!!$      print *,"  info:",info
+!!$      print *,"  nfev:",nfev
+!!$      print *,"  njev:",njev
+!!$      print *,"  ipvt:",ipvt
+!!$      print *,"  qtf:",qtf
+!!$      print *,"  wa1:",wa1
+!!$      print *,"  wa2:",wa2
+!!$      print *,"  wa3:",wa3
+!!$      print *,"  wa4:",wa4
       CALL lmder_serial(fit_prof_fcn,nfit_targs,nc,xc_opt,fval,fjac,nfit_targs,ftol,xtol,gtol,&
                     maxfev_local,diag,mode,factor,nprint,info,nfev,njev,ipvt,qtf,&
                     wa1,wa2,wa3,wa4)
+!!$      print *,"After call to lmder_serial:"
+!!$      print *,"  nfit_targs:",nfit_targs
+!!$      print *,"  nc:",nc
+!!$      print *,"  xc_opt:",xc_opt
+!!$      print *,"  fval:",fval
+!!$      print *,"  fjac:",fjac
+!!$      print *,"  nfit_targs:",nfit_targs
+!!$      print *,"  ftol:",ftol
+!!$      print *,"  xtol:",xtol
+!!$      print *,"  gtol:",gtol
+!!$      print *,"  maxfev_local:",maxfev_local
+!!$      print *,"  diag:",diag
+!!$      print *,"  mode:",mode
+!!$      print *,"  factor:",factor
+!!$      print *,"  nprint:",nprint
+!!$      print *,"  info:",info
+!!$      print *,"  nfev:",nfev
+!!$      print *,"  njev:",njev
+!!$      print *,"  ipvt:",ipvt
+!!$      print *,"  qtf:",qtf
+!!$      print *,"  wa1:",wa1
+!!$      print *,"  wa2:",wa2
+!!$      print *,"  wa3:",wa3
+!!$      print *,"  wa4:",wa4
       coefs(1:nc) = xc_opt(1:nc)
       DEALLOCATE(fit_targs,xc_opt,diag,qtf,wa1,wa2,wa3,fjac,fval,wa4)
       RETURN

@@ -219,7 +219,7 @@
                          lai_f_opt, lne_f_opt, lte_f_opt, lti_f_opt,&
                          lbeamj_f_opt, lbootj_f_opt, lzeff_f_opt, &
                          lth_f_opt, lphi_s_opt, lphi_f_opt, &
-                         lrho_opt, ldeltamn_opt, lbound_opt, laxis_opt, &
+                         lrho_opt, ldeltamn_opt, lbound_opt, laxis_opt, lmode_opt, &
                          lne_opt, lte_opt, lti_opt, lth_opt, lzeff_opt, &
                          lah_f_opt, lat_f_opt, lcoil_spline, &
                          dphiedge_opt, dcurtor_opt, dbcrit_opt, &
@@ -272,7 +272,10 @@
                          target_gradp_max, sigma_gradp_max, width_gradp_max, &
                          target_pmin, sigma_pmin, width_pmin, &
                          target_curvature, sigma_curvature, &
-                         target_kappa, sigma_kappa, &
+                         target_kappa, sigma_kappa, phi_kappa, &
+                         target_kappa_box, sigma_kappa_box, phi_kappa_box, &
+                         target_kappa_avg, sigma_kappa_avg, &
+                         target_magwell, sigma_magwell, &
                          target_press, sigma_press, r_press, z_press, phi_press, s_press,&
                          target_te, sigma_te, r_te, z_te, phi_te, s_te,&
                          target_ne, sigma_ne, r_ne, z_ne, phi_ne, s_ne,&
@@ -311,12 +314,13 @@
                          target_bootstrap,sigma_bootstrap, target_neo, sigma_neo,&
                          target_Jstar, sigma_Jstar, NumJstar,&
                          target_helicity, sigma_helicity, helicity,&
+                         target_helicity_old, sigma_helicity_old, &
                          target_resjac, sigma_resjac, xm_resjac, xn_resjac,&
                          target_separatrix, sigma_separatrix, &
                          r_separatrix, z_separatrix, phi_separatrix, &
                          target_limiter, sigma_limiter, &
                          r_limiter, z_limiter, phi_limiter, &
-                         lglobal_txport, nz_txport, nalpha_txport, alpha0_txport, &
+                         lglobal_txport, nz_txport, nalpha_txport, alpha_start_txport, alpha_end_txport, &
                          target_txport, sigma_txport, s_txport, txport_proxy,&
                          target_dkes, sigma_dkes, nu_dkes, &
                          target_jdotb,sigma_jdotb,target_bmin,sigma_bmin,&
@@ -397,6 +401,7 @@
       lbound_opt(:,:) = .FALSE.
       lrho_opt(:,:)   = .FALSE.
       ldeltamn_opt(:,:) = .FALSE.
+      lmode_opt(:,:)  = .FALSE.
       laxis_opt(:)    = .FALSE.
       lcoil_spline(:,:) = .FALSE.
       dphiedge_opt    = -1.0
@@ -484,8 +489,8 @@
       te_type         = 'akima_spline'
       ti_type         = 'akima_spline'
       th_type         = 'akima_spline'
-      beamj_type      = 'akima_spline'
-      bootj_type      = 'akima_spline'
+      beamj_type      = 'power_series'
+      bootj_type      = 'power_series'
       ne_opt(0:20)       = 0.0
       zeff_opt(0:20)     = 0.0
       te_opt(0:20)       = 0.0
@@ -508,8 +513,10 @@
       phi_aux_s(:)    = -1.0
       phi_aux_f(:)    = 0.0
       beamj_aux_s(:)  = -1.0
+      beamj_aux_s(1:5) = (/0.0,0.25,0.50,0.75,1.0/)
       beamj_aux_f(:)  = 0.0
       bootj_aux_s(:)  = -1.0
+      bootj_aux_s(1:5) = (/0.0,0.25,0.50,0.75,1.0/)
       bootj_aux_f(:)  = 0.0
       coil_splinesx(:,:) = -1
       coil_splinesy(:,:) = -1
@@ -537,25 +544,33 @@
       sigma_beta      = bigno
       target_betapol  = 0.0
       sigma_betapol   = bigno
-      target_betator  = 0.0
-      sigma_betator   = bigno
-      target_wp       = 0.0
-      sigma_wp        = bigno
-      target_aspect   = 0.0
-      sigma_aspect    = bigno
+      target_betator   = 0.0
+      sigma_betator    = bigno
+      target_wp        = 0.0
+      sigma_wp         = bigno
+      target_aspect    = 0.0
+      sigma_aspect     = bigno
       target_aspect_max= 0.0
-      sigma_aspect_max= bigno
-      width_aspect_max= 0.5 ! Ideally we'd want it to be something like N*EPSFCN
-      target_gradp_max= 0.0
-      sigma_gradp_max = bigno
-      width_gradp_max = 0.5
-      target_pmin     = 0.0
-      sigma_pmin      = bigno
-      width_pmin      = 0.5
+      sigma_aspect_max = bigno
+      width_aspect_max = 0.5 ! Ideally we'd want it to be something like N*EPSFCN
+      target_gradp_max = 0.0
+      sigma_gradp_max  = bigno
+      width_gradp_max  = 0.5
+      target_pmin      = 0.0
+      sigma_pmin       = bigno
+      width_pmin       = 0.5
       target_curvature = 0.0
       sigma_curvature  = bigno
+      target_magwell   = 0.0
+      sigma_magwell    = bigno
       target_kappa     = 0.0
       sigma_kappa      = bigno
+      phi_kappa        = 0.0
+      target_kappa_box = 0.0
+      sigma_kappa_box  = bigno
+      phi_kappa_box    = 0.0
+      target_kappa_avg = 0.0
+      sigma_kappa_avg  = bigno
       target_kink(:)  = 0.0
       sigma_kink(:)   = bigno
       mlmnb_kink      = 264
@@ -706,6 +721,8 @@
       target_helicity(:) = 0.0
       sigma_helicity(:)  = bigno
       helicity           = CMPLX(0.0,0.0)
+      target_helicity_old(:) = 0.0
+      sigma_helicity_old(:)  = bigno
       target_resjac(:)  = 0.0
       sigma_resjac(:)   = bigno
       xn_resjac(:)      = 0
@@ -718,7 +735,8 @@
       lglobal_txport    = .FALSE.
       nz_txport         = 128
       nalpha_txport     = 1
-      alpha0_txport     = 0.0
+      alpha_start_txport= 0.0
+      alpha_end_txport  = pi2/2
       target_txport     = 0.0
       sigma_txport      = bigno
       s_txport          = -1.0
@@ -803,21 +821,22 @@
       IF ((myid == master) .and. (TRIM(equil_type(1:4)) == 'vmec') ) THEN
          WRITE(6,*)        " Equilibrium calculation provided by: "
          WRITE(6,"(2X,A)") "================================================================================="
+         WRITE(6,"(2X,A)") "=========   Parallel Variational Moments Equilibrium Code (v "//TRIM(version_vmec)//")      ========="
          WRITE(6,"(2X,A)") "=========       Variational Moments Equilibrium Code (v "//TRIM(version_vmec)//")           ========="
          WRITE(6,"(2X,A)") "=========                (S. Hirshman, J. Whitson)                      ========="
          WRITE(6,"(2X,A)") "=========         http://vmecwiki.pppl.wikispaces.net/VMEC              ========="
          WRITE(6,"(2X,A)") "================================================================================="
          WRITE(6,*)        "    "
       END IF
-      IF ((myid == master) .and. (TRIM(equil_type(1:8)) == 'paravmec') ) THEN
-         WRITE(6,*)        " Equilibrium calculation provided by: "
-         WRITE(6,"(2X,A)") "================================================================================="
-         WRITE(6,"(2X,A)") "=========   Parallel Variational Moments Equilibrium Code (v "//TRIM(version_vmec)//")      ========="
-         WRITE(6,"(2X,A)") "=========                (S. Hirshman, J. Whitson)                      ========="
-         WRITE(6,"(2X,A)") "=========         http://vmecwiki.pppl.wikispaces.net/VMEC              ========="
-         WRITE(6,"(2X,A)") "================================================================================="
-         WRITE(6,*)        "    "
-      END IF
+      !IF ((myid == master) .and. (TRIM(equil_type(1:8)) == 'paravmec') ) THEN
+      !   WRITE(6,*)        " Equilibrium calculation provided by: "
+      !   WRITE(6,"(2X,A)") "================================================================================="
+      !   WRITE(6,"(2X,A)") "=========   Parallel Variational Moments Equilibrium Code (v "//TRIM(version_vmec)//")      ========="
+      !   WRITE(6,"(2X,A)") "=========                (S. Hirshman, J. Whitson)                      ========="
+      !   WRITE(6,"(2X,A)") "=========         http://vmecwiki.pppl.wikispaces.net/VMEC              ========="
+      !   WRITE(6,"(2X,A)") "================================================================================="
+      !   WRITE(6,*)        "    "
+      !END IF
 !DEC$ IF DEFINED (BEAMS3D_OPT)
       IF (myid == master .and. ANY(sigma_orbit < bigno) ) THEN
          WRITE(6,*)               " Energetic Particle calculation provided by: "
@@ -1443,6 +1462,23 @@
             END DO
          END DO
       END IF
+      IF (ANY(lmode_opt)) THEN
+         DO m = LBOUND(lmode_opt,DIM=2), UBOUND(lmode_opt,DIM=2)
+           DO n = LBOUND(lmode_opt,DIM=1), UBOUND(lmode_opt,DIM=1)
+               IF(lmode_opt(n,m) .and. (bound_min(n,m)>-bigno .or. bound_max(n,m)<bigno)) THEN
+                 WRITE(iunit,"(2X,A,I4.3,A,I4.3,A,1X,'=',1X,L1,4(2X,A,I4.3,A,I4.3,A,1X,'=',1X,E22.14))")&
+                 'LMODE_OPT(',n,',',m,')',lmode_opt(n,m),&
+                 'BOUND_MIN(',n,',',m,')',bound_min(n,m),&
+                 'BOUND_MAX(',n,',',m,')',bound_max(n,m),&
+                 'DBOUND_OPT(',n,',',m,')',dbound_opt(n,m)
+               ELSEIF (lrho_opt(n,m)) THEN
+                 WRITE(iunit,"(2X,A,I4.3,A,I4.3,A,1X,'=',1X,L1,1(2X,A,I4.3,A,I4.3,A,1X,'=',1X,E22.14))")&
+                 'LMODE_OPT(',n,',',m,')',lmode_opt(n,m),&
+                 'DBOUND_OPT(',n,',',m,')',dbound_opt(n,m)
+               END IF
+           END DO
+        END DO
+      END IF
 
       
       IF (ANY(lbound_opt)) THEN
@@ -1580,9 +1616,24 @@
             IF(sigma_helicity(ik) < bigno) n=ik
          END DO
          DO ik = 1, n
-            WRITE(iunit,"(2(2X,A,I3.3,A,E22.14))") &
+            IF (sigma_helicity(ik) < bigno) WRITE(iunit,"(2(2X,A,I3.3,A,E22.14))") &
                           'TARGET_HELICITY(',ik,') = ',target_helicity(ik), &
                           'SIGMA_HELICITY(',ik,') = ',sigma_helicity(ik)
+         END DO
+      END IF
+      IF (ANY(sigma_helicity_old < bigno)) THEN
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,'(A)') '!          BOOZER COORDINATE HELICITY (OLD)'  
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,outcmp) 'HELICITY',NINT(REAL(helicity)),NINT(AIMAG(helicity))
+         n=0
+         DO ik = 1,UBOUND(sigma_helicity_old,DIM=1)
+            IF(sigma_helicity_old(ik) < bigno) n=ik
+         END DO
+         DO ik = 1, n
+            IF (sigma_helicity_old(ik) < bigno) WRITE(iunit,"(2(2X,A,I3.3,A,E22.14))") &
+                          'TARGET_HELICITY_OLD(',ik,') = ',target_helicity_old(ik), &
+                          'SIGMA_HELICITY_OLD(',ik,') = ',sigma_helicity_old(ik)
          END DO
       END IF
       IF (ANY(sigma_resjac < bigno)) THEN
@@ -1594,7 +1645,7 @@
             IF(sigma_resjac(ik) < bigno) n=ik
          END DO
          DO ik = 1, n
-            WRITE(iunit,"(2(2X,A,I3.3,A,E22.14))") &
+            IF (sigma_resjac(ik) < bigno) WRITE(iunit,"(2(2X,A,I3.3,A,E22.14))") &
                           'TARGET_RESJAC(',ik,') = ',target_resjac(ik), &
                           'SIGMA_RESJAC(',ik,') = ',sigma_resjac(ik), &
                           'XM_RESJAC(',ik,') = ',xm_resjac(ik), &
@@ -1614,7 +1665,7 @@
             IF(sigma_balloon(ik) < bigno) n=ik
          END DO
          DO ik = 1, n
-            WRITE(iunit,"(2(2X,A,I3.3,A,E22.14))") &
+            IF (sigma_balloon(ik) < bigno) WRITE(iunit,"(2(2X,A,I3.3,A,E22.14))") &
                           'TARGET_BALLOON(',ik,') = ',target_balloon(ik), &
                           'SIGMA_BALLOON(',ik,') = ',sigma_balloon(ik)
          END DO
@@ -1628,7 +1679,7 @@
             IF(sigma_bootstrap(ik) < bigno) n=ik
          END DO
          DO ik = 1, n
-            WRITE(iunit,"(2(2X,A,I3.3,A,E22.14))") &
+           IF (sigma_bootstrap(ik) < bigno)  WRITE(iunit,"(2(2X,A,I3.3,A,E22.14))") &
                           'TARGET_BOOTSTRAP(',ik,') = ',target_bootstrap(ik), &
                           'SIGMA_BOOTSTRAP(',ik,') = ',sigma_bootstrap(ik)
          END DO
@@ -1673,7 +1724,7 @@
             IF(sigma_dkes(ik) < bigno) n=ik
          END DO
          DO ik = 1, n
-            WRITE(iunit,"(3(2X,A,I3.3,A,E22.14))") &
+            IF (sigma_dkes(ik) < bigno) WRITE(iunit,"(3(2X,A,I3.3,A,E22.14))") &
                           'TARGET_DKES(',ik,') = ',target_dkes(ik), &
                           'SIGMA_DKES(',ik,') = ',sigma_dkes(ik), &
                           'NU_DKES(',ik,') = ',nu_dkes(ik)
@@ -1688,9 +1739,23 @@
             IF(sigma_jdotb(ik) < bigno) n=ik
          END DO
          DO ik = 1, n
-            WRITE(iunit,"(2(2X,A,I3.3,A,E22.14))") &
+           IF (sigma_jdotb(ik) < bigno)  WRITE(iunit,"(2(2X,A,I3.3,A,E22.14))") &
                           'TARGET_JDOTB(',ik,') = ',target_jdotb(ik), &
                           'SIGMA_JDOTB(',ik,') = ',sigma_jdotb(ik)
+         END DO
+      END IF
+      IF (ANY(sigma_magwell < bigno)) THEN
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,'(A)') '!          Magnetic Well (W>0 Stable)'  
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         n=0
+         DO ik = 1,UBOUND(sigma_magwell,DIM=1)
+            IF(sigma_magwell(ik) < bigno) n=ik
+         END DO
+         DO ik = 1, n
+           IF (sigma_magwell(ik) < bigno)  WRITE(iunit,"(2(2X,A,I3.3,A,E22.14))") &
+                          'TARGET_MAGWELL(',ik,') = ',target_magwell(ik), &
+                          'SIGMA_MAGWELL(',ik,') = ',sigma_magwell(ik)
          END DO
       END IF
       IF (ANY(sigma_jcurv < bigno)) THEN
@@ -1702,7 +1767,7 @@
             IF(sigma_jcurv(ik) < bigno) n=ik
          END DO
          DO ik = 1, n
-            WRITE(iunit,"(2(2X,A,I3.3,A,E22.14))") &
+            IF (sigma_jcurv(ik) < bigno) WRITE(iunit,"(2(2X,A,I3.3,A,E22.14))") &
                           'TARGET_JCURV(',ik,') = ',target_jcurv(ik), &
                           'SIGMA_JCURV(',ik,') = ',sigma_jcurv(ik)
          END DO
@@ -1716,9 +1781,9 @@
             IF(sigma_bmin(ik) < bigno) n=ik
          END DO
          DO ik = 1, n
-            WRITE(iunit,"(2(2X,A,I3.3,A,E22.14))") &
+            IF (sigma_bmin(ik) < bigno) WRITE(iunit,"(2(2X,A,I3.3,A,E22.14))") &
                           'TARGET_BMIN(',ik,') = ',target_bmin(ik), &
-                          'SIGMA_BMIN(',ik,') = ',sigma_bmax(ik)
+                          'SIGMA_BMIN(',ik,') = ',sigma_bmin(ik)
          END DO
       END IF
       IF (ANY(sigma_bmax < bigno)) THEN
@@ -1730,7 +1795,7 @@
             IF(sigma_bmax(ik) < bigno) n=ik
          END DO
          DO ik = 1, n
-            WRITE(iunit,"(2(2X,A,I3.3,A,E22.14))") &
+            IF (sigma_bmax(ik) < bigno) WRITE(iunit,"(2(2X,A,I3.3,A,E22.14))") &
                           'TARGET_BMAX(',ik,') = ',target_bmax(ik), &
                           'SIGMA_BMAX(',ik,') = ',sigma_bmax(ik)
          END DO
@@ -1745,7 +1810,7 @@
             IF(sigma_Jstar(ik) < bigno) n=ik
          END DO
          DO ik = 1, n
-            WRITE(iunit,"(2(2X,A,I3.3,A,E22.14))") &
+            IF (sigma_Jstar(ik) < bigno) WRITE(iunit,"(2(2X,A,I3.3,A,E22.14))") &
                           'TARGET_JSTAR(',ik,') = ',target_Jstar(ik), &
                           'SIGMA_JSTAR(',ik,') = ',sigma_Jstar(ik)
          END DO
@@ -1758,13 +1823,14 @@
          WRITE(iunit,outboo) 'LGLOBAL_TXPORT',lglobal_txport
          WRITE(iunit,outint) 'NZ_TXPORT',nz_txport
          WRITE(iunit,outint) 'NALPHA_TXPORT',nalpha_txport
-         WRITE(iunit,outflt) 'ALPHA0_TXPORT',alpha0_txport
+         WRITE(iunit,outflt) 'ALPHA_START_TXPORT',alpha_start_txport
+         WRITE(iunit,outflt) 'ALPHA_END_TXPORT',alpha_end_txport
          n=0
          DO ik = 1,UBOUND(sigma_txport,DIM=1)
             IF(sigma_txport(ik) < bigno) n=ik
          END DO
          DO ik = 1, n
-            WRITE(iunit,"(3(2X,A,I3.3,A,E22.14))") &
+            IF (sigma_txport(ik) < bigno) WRITE(iunit,"(3(2X,A,I3.3,A,E22.14))") &
                           'S_TXPORT(',ik,') = ',s_txport(ik), &
                           'TARGET_TXPORT(',ik,') = ',target_txport(ik), &
                           'SIGMA_TXPORT(',ik,') = ',sigma_txport(ik)
@@ -1855,6 +1921,20 @@
       IF (sigma_curvature < bigno) THEN
          WRITE(iunit,outflt) 'TARGET_CURVATURE',target_curvature
          WRITE(iunit,outflt) 'SIGMA_CURVATURE',sigma_curvature
+      END IF 
+      IF (sigma_kappa < bigno) THEN
+         WRITE(iunit,outflt) 'TARGET_KAPPA',target_kappa
+         WRITE(iunit,outflt) 'SIGMA_KAPPA',sigma_kappa
+         WRITE(iunit,outflt) 'PHI_KAPPA',phi_kappa
+      END IF 
+      IF (sigma_kappa_box < bigno) THEN
+         WRITE(iunit,outflt) 'TARGET_KAPPA_BOX',target_kappa_box
+         WRITE(iunit,outflt) 'SIGMA_KAPPA_BOX',sigma_kappa_box
+         WRITE(iunit,outflt) 'PHI_KAPPA_BOX',phi_kappa_box
+      END IF 
+      IF (sigma_kappa_avg < bigno) THEN
+         WRITE(iunit,outflt) 'TARGET_KAPPA_AVG',target_kappa_avg
+         WRITE(iunit,outflt) 'SIGMA_KAPPA_AVG',sigma_kappa_avg
       END IF 
       IF (sigma_aspect_max < bigno) THEN
          WRITE(iunit,outflt) 'TARGET_ASPECT_MAX',target_aspect_max

@@ -149,7 +149,7 @@
       REAL(rprec), DIMENSION(nigroup,20) :: coil_splinefx_min,coil_splinefy_min,coil_splinefz_min,&
                                             coil_splinefx_max,coil_splinefy_max,coil_splinefz_max
       CHARACTER(256)  ::  equil_type, te_type, ne_type, ti_type, th_type, &
-                          beamj_type, bootj_type, zeff_type
+                          beamj_type, bootj_type, zeff_type, bootcalc_type ! bootcalc_type added by MJL
       
       ! These are not really variable parameters as we don't vary them
       ! yet

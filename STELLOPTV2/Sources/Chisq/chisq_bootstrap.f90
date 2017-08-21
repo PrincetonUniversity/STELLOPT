@@ -48,11 +48,13 @@
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
+      print *,"Hello world from chisq_bootstrap.f90. niter=",niter ! MJL
       IF (iflag < 0) RETURN
       ik   = COUNT(sigma < bigno)
       IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'BOOTSTRAP ',ik,10
       IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA  VAL  RHO  AVG_JDOTB  BEAM_JDOTB  BOOT_JDOTB  AJBBS  FACNU  BSNORM'
       IF (niter >= 0) THEN
+         print *,"In the chisq_bootstrap (niter >= 0) block." !MJL
          dex1 = MINLOC(beamj_aux_s(2:),DIM=1)
          dex2 = MINLOC(bootj_aux_s(2:),DIM=1)
          DO ik = 1, nsd
@@ -76,6 +78,7 @@
                   !CALL eval_prof_spline(dex2,bootj_aux_s(1:dex2),bootj_aux_f(1:dex2),s,j_boot,ier)
                   beam_jdotb = avg_jdotb * j_beam/(j_beam+j_boot) * SIGN(1.0_rprec,curtor)
                   boot_jdotb = avg_jdotb * j_boot/(j_beam+j_boot) * SIGN(1.0_rprec,curtor)
+                  print *,"Dangerous division: j_beam+j_boot=",j_beam+j_boot ! MJL
                ELSE IF ((ABS(curtor) > 0) .and. (l_boot_all)) THEN
                   boot_jdotb = avg_jdotb * aibs(ik)/curtor
                END IF
@@ -91,6 +94,7 @@
             END IF
          END DO
       ELSE
+         print *,"In the chisq_bootstrap (niter < 0) block." !MJL
          DO ik = 1, nsd
             IF (sigma(ik) < bigno) THEN
                lbooz(ik) = .TRUE.

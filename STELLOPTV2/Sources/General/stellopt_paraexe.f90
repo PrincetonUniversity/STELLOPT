@@ -367,6 +367,11 @@
                ier = 0
                CALL stellopt_bootsj(lscreen,ier)
                ier_paraexe = ier
+            CASE('sfincs')
+               proc_string = file_str
+               ier = 0
+               CALL stellopt_sfincs(lscreen,ier)
+               ier_paraexe = ier
             CASE('cobra')
                proc_string = file_str
                ier = 0

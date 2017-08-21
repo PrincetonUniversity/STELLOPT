@@ -1,10 +1,10 @@
 !-----------------------------------------------------------------------
-!     Subroutine:    stellopt_bootsj
+!     Subroutine:    stellopt_sfincs
 !     Authors:       S. Lazerson (lazerson@pppl.gov)
 !     Date:          06/06/2012
 !     Description:   This subroutine calculates the boostrap current
 !-----------------------------------------------------------------------
-      SUBROUTINE stellopt_bootsj(lscreen,iflag)
+      SUBROUTINE stellopt_sfincs(lscreen,iflag)
 !-----------------------------------------------------------------------
 !     Libraries
 !-----------------------------------------------------------------------
@@ -60,7 +60,7 @@
 !----------------------------------------------------------------------
       IF (iflag < 0) RETURN
       !IF (lscreen) WRITE(6,'(a)') ' ---------------------------  BOOTSTRAP CALCULATION  -------------------------'
-      IF (lscreen) WRITE(6,'(a)') ' --------------------  BOOTSTRAP CALCULATION USING BOOTSJ  -------------------'
+      IF (lscreen) WRITE(6,'(a)') ' ---------------------  BOOTSTRAP CALCULATION USING SFINCS  ------------------'
       SELECT CASE(TRIM(equil_type))
          CASE('vmec2000','animec','flow','satire','parvmec','paravmec','vboot')
             ! Get the data into bootsj
@@ -467,10 +467,10 @@
          CASE('spec')
       END SELECT
       !IF (lscreen) WRITE(6,'(a)') ' -------------------------  BOOTSTRAP CALCULATION DONE  ----------------------'
-      IF (lscreen) WRITE(6,'(a)') ' -------------------  BOOTSJ BOOTSTRAP CALCULATION DONE  ---------------------'
+      IF (lscreen) WRITE(6,'(a)') ' --------------------  SFINCS BOOTSTRAP CALCULATION DONE  --------------------'
       RETURN
   90  format(5e16.8)
 !----------------------------------------------------------------------
 !     END SUBROUTINE
 !----------------------------------------------------------------------
-      END SUBROUTINE stellopt_bootsj
+    END SUBROUTINE stellopt_sfincs

@@ -129,14 +129,30 @@ C-----------------------------------------------
          wa2(j) = x(j) + wa1(i)
          wa3(j) = diag(j)*wa1(i)
       END DO
+      ! Begin MJL additions
+      print *,"i=",i
+      print *,"j=",j
+      print *,"wa2=",wa2
+      print *,"wa3=",wa3
+      print *,"About to try present(xvmin)"
       IF (PRESENT(xvmin)) THEN
+         print *,"AAA Here comes size(xvmin):"
+         print *,size(xvmin)
+         print *,"Here comes shape(xvmin):"
+         print *,shape(xvmin)
+         print *,"Here comes xvmin:"
+         print *,xvmin
          WHERE(wa2 < xvmin) wa3 = 0
+         print *,"BBB"
          WHERE(wa2 < xvmin) wa2 = xvmin
+         print *,"CCC"
       END IF
+      print *,"Done with present(xvmin)"
       IF (PRESENT(xvmax)) THEN
          WHERE(wa2 > xvmax) wa3 = 0
          WHERE(wa2 > xvmax) wa2 = xvmax
       END IF
+      print *,"Done with present(xvmax)"
       pnorm = enorm(n,wa3)
       
 !
