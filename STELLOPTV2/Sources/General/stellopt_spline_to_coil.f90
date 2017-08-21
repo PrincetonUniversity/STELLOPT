@@ -2,9 +2,8 @@
 !     Subroutine:    stellopt_spline_to_coil
 !     Authors:       S. Lazerson (lazerson@pppl.gov)
 !     Date:          11/14/2016
-!     Description:   This subroutine the stellopt splines and generates
-!                    a coil data structure from them.  It also writes
-!                    the coil to a file.
+!     Description:   This subroutine generates a coil data structure from
+!                    the stellopt splines and writes it to a file.
 !-----------------------------------------------------------------------
       SUBROUTINE stellopt_spline_to_coil(lscreen)
 !-----------------------------------------------------------------------
@@ -30,7 +29,7 @@
       LOGICAL ::  lmodular
       INTEGER ::  i, j, k, ier, nelx_coil, nely_coil,nelz_coil, n_coilgroups, &
                   iunit
-      REAL(rprec) :: s_val, ph, rc_max, rc_min,zc_max,zc_min
+      REAL(rprec) :: s_val, ph, rc_max, rc_min,zc_max,zc_min, u,v
       REAL(rprec), ALLOCATABLE :: x_coil(:),y_coil(:),z_coil(:),c_coil(:), &
                                   p_coil(:), r_coil(:)
       TYPE(EZspline1_r8) :: XC_spl, YC_spl, ZC_spl
@@ -52,6 +51,14 @@
          IF (ANY(coil_splinesx(i,:) >-1)) n_coilgroups=n_coilgroups+1
       END DO
 
+      ! Make sure winding surface structure is set up correctly
+      IF (lwindsurf) THEN
+         IF ((windsurf%mmax.lt.0).or.(windsurf%nmax.lt.0).or.&
+              (.not.allocated(windsurf%rctab)).or.(.not.allocated(windsurf%zstab))) &
+              CALL handle_err(BAD_CWS_ERR, 'stellopt_spline_to_coil', 1)
+         windsurf%nfp = nfp
+      END IF
+
       ! Open files and print header
       CALL safe_open(iunit,ier,TRIM('coils.'//TRIM(proc_string)),'unknown','formatted')
       WRITE(iunit,'(A,I3)') 'periods',nfp
@@ -62,6 +69,7 @@
       ! Print out some info
       IF (lscreen) THEN
           WRITE(6,'(2X,A,A)')  'COIL NAME: ',TRIM('coils.'//TRIM(proc_string))
+          IF (lwindsurf) WRITE(6,'(2X,A,A)')  '      CWS: ',TRIM(windsurfname)
           WRITE(6,'(2X,A,I2)') '      NFP: ',nfp
           WRITE(6,'(2X,A,I2)') '   GROUPS: ',n_coilgroups
           CALL FLUSH(6)
@@ -71,38 +79,54 @@
       DO i = 1, n_coilgroups
          ! Setup the Coil name
          WRITE(coil_name,'(A,I3.3)') 'COIL_',i
+
          ! Count Spline knots
          nelx_coil = COUNT(coil_splinesx(i,:)>=0)
          nely_coil = COUNT(coil_splinesy(i,:)>=0)
          nelz_coil = COUNT(coil_splinesz(i,:)>=0)
+
          ! Check modularity
          lmodular = .FALSE.
          IF ((coil_splinefx(i,1)==coil_splinefx(i,nelx_coil))&
              .and. (coil_splinefy(i,1)==coil_splinefy(i,nely_coil)) &
              .and.(coil_splinefz(i,1)==coil_splinefz(i,nelz_coil))) lmodular = .TRUE.
+
          ! Setup splines
          IF (EZspline_allocated(XC_spl)) CALL EZspline_free(XC_spl,ier)
-         IF (EZspline_allocated(YC_spl)) CALL EZspline_free(YC_spl,ier)
-         IF (EZspline_allocated(ZC_spl)) CALL EZspline_free(ZC_spl,ier)
          CALL EZspline_init(XC_spl,nelx_coil,bcs1,ier)
-         CALL EZspline_init(YC_spl,nely_coil,bcs1,ier)
-         CALL EZspline_init(ZC_spl,nelz_coil,bcs1,ier)
          XC_spl%x1 = coil_splinesx(i,1:nelx_coil)
-         YC_spl%x1 = coil_splinesy(i,1:nely_coil)
-         ZC_spl%x1 = coil_splinesz(i,1:nelz_coil)
          XC_spl%isHermite = 1
-         YC_spl%isHermite = 1
-         ZC_spl%isHermite = 1
          CALL EZspline_setup(XC_spl,coil_splinefx(i,1:nelx_coil),ier)
+
+         IF (EZspline_allocated(YC_spl)) CALL EZspline_free(YC_spl,ier)
+         CALL EZspline_init(YC_spl,nely_coil,bcs1,ier)
+         YC_spl%x1 = coil_splinesy(i,1:nely_coil)
+         YC_spl%isHermite = 1
          CALL EZspline_setup(YC_spl,coil_splinefy(i,1:nely_coil),ier)
-         CALL EZspline_setup(ZC_spl,coil_splinefz(i,1:nelz_coil),ier)
-         ! Evaluate the coil
-         DO j = 1, nseg
-            s_val = REAL(j-1)/REAL(nseg-1)
-            CALL EZspline_interp(XC_spl,s_val,x_coil(j),ier)
-            CALL EZspline_interp(YC_spl,s_val,y_coil(j),ier)
-            CALL EZspline_interp(ZC_spl,s_val,z_coil(j),ier)
-         END DO
+
+         IF (lwindsurf) THEN !Interpret coil_splinefx as u, coil_splinefy as v
+            ! Evaluate the coil
+            DO j = 1, nseg
+               s_val = REAL(j-1)/REAL(nseg-1)
+               CALL EZspline_interp(XC_spl,s_val,u,ier)
+               CALL EZspline_interp(YC_spl,s_val,v,ier)
+               CALL stellopt_uv_to_xyz(u, v, x_coil(j), y_coil(j), z_coil(j))
+            END DO
+         ELSE                !Interpret coil_splinefx as x, coil_splinefy as y, coil_splinefz as z.
+            IF (EZspline_allocated(ZC_spl)) CALL EZspline_free(ZC_spl,ier)
+            CALL EZspline_init(ZC_spl,nelz_coil,bcs1,ier)
+            ZC_spl%x1 = coil_splinesz(i,1:nelz_coil)
+            ZC_spl%isHermite = 1
+            CALL EZspline_setup(ZC_spl,coil_splinefz(i,1:nelz_coil),ier)
+
+            ! Evaluate the coil
+            DO j = 1, nseg
+               s_val = REAL(j-1)/REAL(nseg-1)
+               CALL EZspline_interp(XC_spl,s_val,x_coil(j),ier)
+               CALL EZspline_interp(YC_spl,s_val,y_coil(j),ier)
+               CALL EZspline_interp(ZC_spl,s_val,z_coil(j),ier)
+            END DO
+         END IF
          c_coil(1:nseg) = extcur(i)
          IF (extcur(i) == 0) c_coil = 1
          ! Write Coil
@@ -184,6 +208,9 @@
       END IF
 
       ! Clean up
+      IF (EZspline_allocated(XC_spl)) CALL EZspline_free(XC_spl,ier)
+      IF (EZspline_allocated(YC_spl)) CALL EZspline_free(YC_spl,ier)
+      IF (EZspline_allocated(ZC_spl)) CALL EZspline_free(ZC_spl,ier)
       DEALLOCATE(x_coil,y_coil,z_coil,c_coil)
       IF (ALLOCATED(r_coil)) DEALLOCATE(r_coil)
       IF (ALLOCATED(p_coil)) DEALLOCATE(p_coil)
@@ -193,3 +220,74 @@
 !     END SUBROUTINE
 !----------------------------------------------------------------------
       END SUBROUTINE stellopt_spline_to_coil
+
+!-----------------------------------------------------------------------
+!     Subroutine:    stellopt_uv_to_xyz
+!     Authors:       J. Breslau (jbreslau@pppl.gov)
+!     Date:          8/21/2017
+!     Description:   This subroutine converts a u,v coordinate pair
+!                    on a winding surface to Cartesian coordinates.
+!     Inputs:
+!                    Poloidal coordinate 0 < u < 1.
+!                    Toroidal coordinate 0 < v < nfp.
+!     Outputs:
+!                    Cartesian values (x, y, z).
+!-----------------------------------------------------------------------
+      SUBROUTINE stellopt_uv_to_xyz(u, v, x, y, z)
+        USE stel_kinds, ONLY    : rprec
+        USE stellopt_vars, ONLY : windsurf
+        IMPLICIT NONE
+        INTRINSIC COS, SIN
+
+        ! Arguments
+        REAL(rprec), INTENT(IN)  :: u, v
+        REAL(rprec), INTENT(OUT) :: x, y, z
+
+        ! Constants
+        REAL(rprec), PARAMETER :: twopi = 6.283185307179586476925286766559D0
+
+        ! Local variables
+        REAL(rprec) :: theta, Nphi         ! Winding surface angular coordinates, in radians
+        REAL(rprec) :: cmt, smt            ! cos(m theta), sin(m theta)
+        REAL(rprec) :: cap, cam, sap, sam  ! cos(m theta +/- n N phi), sin(m theta +/- n N phi)
+        REAL(rprec) :: R                   ! Cylindrical R coordinate
+        REAL(rprec) :: Cu, Su, Cv, Sv, tmp
+        INTEGER     :: m, n                ! Poloidal, toroidal mode numbers
+
+        ! Initialize N phi trig. functions
+        Nphi = twopi*v
+        Cv = COS(Nphi);  Sv = SIN(Nphi)
+
+        ! Initialize m theta trig. fcns, recurrence relation
+        theta = twopi*u
+        Cu = COS(theta);  Su = SIN(theta)
+        cmt = 1.0;  smt = 0.0
+
+        ! Outer loop over poloidal mode numbers
+        R = 0.0;  z = 0.0
+        DO m=0,windsurf%mmax
+           ! Initialize +/- N phi recurrence relations
+           cam = cmt;  cap = cmt;  sam = smt;  sap = smt
+
+           ! n=0 mode contributions
+           R = R + windsurf%rctab(0,m)*cap
+           z = z + windsurf%zstab(0,m)*sap
+
+           ! Inner loop over toroidal mode numbers
+           DO n=1,windsurf%nmax
+              ! Increment/decrement sin(arg), cos(arg)
+              tmp = cap*Cv - sap*Sv;  sap = sap*Cv + cap*Sv;  cap = tmp
+              tmp = cam*Cv + sam*Sv;  sam = sam*Cv - cam*Sv;  cam = tmp
+
+              ! Add terms to series
+              R = R + windsurf%rctab(n,m)*cap + windsurf%rctab(-n,m)*cam
+              z = z + windsurf%zstab(n,m)*sap + windsurf%zstab(-n,m)*sam
+           END DO !n
+
+           ! Increment sin(m theta), cos(m theta)
+           tmp = cmt*Cu - smt*Su;  smt = smt*Cu + cmt*Su;  cmt = tmp
+        END DO !m
+
+        ! Convert from cylindrical to Cartesian coordinates
+        x = R*COS(Nphi/windsurf%nfp);  y = R*SIN(Nphi/windsurf%nfp)
+      END SUBROUTINE stellopt_uv_to_xyz

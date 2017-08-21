@@ -33,7 +33,7 @@
 !        iunit       File unit number
 !----------------------------------------------------------------------
       IMPLICIT NONE
-      INTEGER ::  i,n,m,ier, iunit,nvar_in
+      INTEGER ::  i,n,m,ier, iunit,nvar_in,knot_dofs
       INTEGER ::  ictrl(5)
       REAL(rprec) :: norm, delta
       REAL(rprec) :: fvec_temp(1)
@@ -225,10 +225,12 @@
                     END IF
                  END DO
               END DO
+              knot_dofs = 3
+              IF (lwindsurf) knot_dofs = 2
               DO n = LBOUND(lcoil_spline,DIM=1), UBOUND(lcoil_spline,DIM=1)
                  DO m = LBOUND(lcoil_spline,DIM=2), UBOUND(lcoil_spline,DIM=2)
                     IF (lcoil_spline(n,m)) THEN
-                       nvars = nvars + 3
+                       nvars = nvars + knot_dofs
                     END IF
                  END DO
               END DO
@@ -1307,6 +1309,7 @@
                              coil_splinefz_min(n,m) = coil_splinefz(n,m) - ABS(pct_domain*coil_splinefz(n,m))
                              coil_splinefz_max(n,m) = coil_splinefz(n,m) + ABS(pct_domain*coil_splinefz(n,m))
                           END IF
+
                           nvar_in = nvar_in + 1
                           vars(nvar_in) = coil_splinefx(n,m)
                           vars_min(nvar_in) = coil_splinefx_min(n,m)
@@ -1315,6 +1318,7 @@
                           diag(nvar_in)    = dcoil_spline(n,m)
                           arr_dex(nvar_in,1) = n
                           arr_dex(nvar_in,2) = m
+
                           nvar_in = nvar_in + 1
                           vars(nvar_in) = coil_splinefy(n,m)
                           vars_min(nvar_in) = coil_splinefy_min(n,m)
@@ -1323,17 +1327,20 @@
                           diag(nvar_in)    = dcoil_spline(n,m)
                           arr_dex(nvar_in,1) = n
                           arr_dex(nvar_in,2) = m
-                          nvar_in = nvar_in + 1
-                          vars(nvar_in) = coil_splinefz(n,m)
-                          vars_min(nvar_in) = coil_splinefz_min(n,m)
-                          vars_max(nvar_in) = coil_splinefz_max(n,m)
-                          var_dex(nvar_in) = icoil_splinefz
-                          diag(nvar_in)    = dcoil_spline(n,m)
-                          arr_dex(nvar_in,1) = n
-                          arr_dex(nvar_in,2) = m
+
+                          IF (.NOT.lwindsurf) THEN ! z gets ignored if winding surface is present.
+                             nvar_in = nvar_in + 1
+                             vars(nvar_in) = coil_splinefz(n,m)
+                             vars_min(nvar_in) = coil_splinefz_min(n,m)
+                             vars_max(nvar_in) = coil_splinefz_max(n,m)
+                             var_dex(nvar_in) = icoil_splinefz
+                             diag(nvar_in)    = dcoil_spline(n,m)
+                             arr_dex(nvar_in,1) = n
+                             arr_dex(nvar_in,2) = m
+                          END IF
                        END IF
-                    END DO
-                 END DO
+                    END DO !m
+                 END DO !n
               END IF
               ier = -327
               CALL stellopt_prof_to_vmec('init',ier)

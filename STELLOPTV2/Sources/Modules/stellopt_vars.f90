@@ -152,7 +152,6 @@
                                                       coil_splinefx_max,coil_splinefy_max,coil_splinefz_max
       TYPE vsurf
          REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: rctab, zstab
-         REAL(rprec)                              :: dphidv
          INTEGER                                  :: mmax, nmax, nfp
       END TYPE vsurf
       TYPE(vsurf)                                 :: windsurf

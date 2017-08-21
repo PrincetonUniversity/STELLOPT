@@ -163,6 +163,7 @@
       INTEGER, PARAMETER ::  NAMELIST_READ_ERR = 12
       INTEGER, PARAMETER ::  BAD_INPUT_ERR     = 13
       INTEGER, PARAMETER ::  CWS_READ_ERR      = 14
+      INTEGER, PARAMETER ::  BAD_CWS_ERR       = 15
       INTEGER, PARAMETER ::  VMEC_INPUT_ERR    = 2
       INTEGER, PARAMETER ::  VMEC_WOUT_ERR     = 21
       INTEGER, PARAMETER ::  MGRID_ERR         = 22
@@ -278,6 +279,10 @@
       ELSEIF (error_num .eq. CWS_READ_ERR) THEN
             WRITE(6,*) '  STELLOPT ENCOUNTERED AN ERROR READING A WINDING SURFACE'
             WRITE(6,*) '  FILENAME: ',TRIM(string_val)
+            WRITE(6,*) '  IERR:      ',ierr
+      ELSEIF (error_num .eq. BAD_CWS_ERR) THEN
+            WRITE(6,*) '  STELLOPT ENCOUNTERED A WINDING SURFACE ERROR'
+            WRITE(6,*) '  ROUTINE:   ',TRIM(string_val)
             WRITE(6,*) '  IERR:      ',ierr
       ELSEIF (error_num .eq. D02CJF_ERR) THEN
             WRITE(6,*) '  STELLOPT ENCOUNTERED A NAG ERROR (D02CJF)'
