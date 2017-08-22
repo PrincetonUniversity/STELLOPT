@@ -162,6 +162,11 @@
       IF (ANY(sigma_jcurv < bigno)) &
          CALL chisq_jcurv(target_jcurv, sigma_jcurv, ncnt,iflag)
          
+      !------------- COIL GEOMETRY TARGETS ---------------------
+      ! Coil lengths
+      IF (ANY(sigma_coillen < bigno)) &
+         CALL chisq_coillen(target_coillen, sigma_coillen, ncnt, iflag)
+
       !------------- EXTERNAL TARGETS --------------------------
       !  This section of the code relys upon external libraries
       !  for calculation of target parameters

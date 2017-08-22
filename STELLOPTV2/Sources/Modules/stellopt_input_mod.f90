@@ -59,7 +59,7 @@
 !                               Determines Velocity scaling factor (PSO)
 !            mode               Determines if scaling is automatic (1) or user(0) (LMDIF)
 !                               Determines strategy (GADE) 
-!                               Detremines number of divisions if > numprocs (MAP)
+!                               Determines number of divisions if > numprocs (MAP)
 !            cr_strategy        Crossover strategy (GADE, 0:exponential, 1: binomial)
 !            npopulation        Size of population (defaults to nproc if -1 or not set)
 !            lkeep_mins         Keep minimum files.
@@ -84,8 +84,11 @@
 !            lphi_f_opt         Logical array to control PHI_AUX_F variation (Electrostatic potential)
 !            lah_f_opt          Logical array to control AH_AUX_F variation
 !            lat_f_opt          Logical array to control AT_AUX_F variation
-!            lbound_opt         Logical array to control Boudnary variation
-!            lrho_opt           Logical array to control HB Boudnary variation
+!            lcoil_spline       Logical array to control coil spline knot variation
+!            lwindsurf          Logical to embed splined coils in a winding surface
+!            windsurfname       Character string naming file containing winding surface
+!            lbound_opt         Logical array to control Boundary variation
+!            lrho_opt           Logical array to control HB Boundary variation
 !            rho_exp            Integer controling value of HB Boundary exponent (default 2)
 !            dphiedge_opt       Scale factor for PHIEDGE variation
 !            dcurtor_opt        Scale factor for CURTOR variation
@@ -330,6 +333,7 @@
                          mass_orbit,Z_orbit,vperp_orbit,&
                          np_orbit,vll_orbit,mu_orbit, target_coil_bnorm,&
                          sigma_coil_bnorm, nu_bnorm, nv_bnorm,&
+                         target_coillen, sigma_coillen, &
                          target_ece,sigma_ece,freq_ece, mix_ece, vessel_ece, mirror_ece, &
                          antennaposition_ece, targetposition_ece, rbeam_ece, rfocus_ece, &
                          targettype_ece, antennatype_ece, nra_ece, nphi_ece, &
@@ -777,6 +781,8 @@
       sigma_coil_bnorm  = bigno
       nu_bnorm          = 256
       nv_bnorm          = 64
+      target_coillen    = 0.0
+      sigma_coillen     = bigno
 
       ! Read name list
       lexist            = .false.

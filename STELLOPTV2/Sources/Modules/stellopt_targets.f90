@@ -10,6 +10,7 @@
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
       USE vparams, ONLY: nsd
+      USE vsvd0, ONLY : nigroup
 
 !-----------------------------------------------------------------------
 !     Module Variables
@@ -166,7 +167,8 @@
       INTEGER     ::  numws
       REAL(rprec) ::  target_coil_bnorm, sigma_coil_bnorm
       INTEGER     ::  nu_bnorm,nv_bnorm
-                                        
+      REAL(rprec), DIMENSION(nigroup)    :: target_coillen, sigma_coillen
+
       INTEGER, PARAMETER :: jtarget_aspect     = 100
       INTEGER, PARAMETER :: jtarget_rbtor      = 1001
       INTEGER, PARAMETER :: jtarget_r0         = 1002
@@ -224,6 +226,7 @@
       INTEGER, PARAMETER :: jtarget_bmax       = 611
       INTEGER, PARAMETER :: jtarget_orbit      = 612
       INTEGER, PARAMETER :: jtarget_coil_bnorm = 613
+      INTEGER, PARAMETER :: jtarget_coillen    = 614
       
       
       CONTAINS
@@ -346,6 +349,8 @@
             WRITE(iunit, out_format) 'Limiter'
          CASE(jtarget_coil_bnorm)
             WRITE(iunit, out_format) 'COILOPT++ Normal Field'
+         CASE(jtarget_coillen)
+            WRITE(iunit, out_format) 'Coil Lengths'
       END SELECT
       END SUBROUTINE write_targets
       
