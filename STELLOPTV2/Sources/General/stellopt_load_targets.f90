@@ -213,6 +213,9 @@
       ! Coil Optimization
       IF (sigma_coil_bnorm < bigno) &
          CALL chisq_coil_bnorm(target_coil_bnorm, sigma_coil_bnorm, ncnt,iflag)
+      ! REGCOIL Coil Optimization
+      IF (sigma_regcoil_bnorm < bigno) &
+         CALL chisq_regcoil_bnorm(target_regcoil_bnorm, sigma_regcoil_bnorm, ncnt,iflag)
       ! Kink
       IF (ANY(sigma_kink < bigno)) &
          CALL chisq_kink(target_kink, sigma_kink, ncnt,iflag)

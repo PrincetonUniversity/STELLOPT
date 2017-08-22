@@ -376,6 +376,10 @@
          ctemp_str = 'coilopt++'
          IF (sigma_coil_bnorm < bigno .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen)
 !DEC$ ENDIF
+!DEC$ IF DEFINED (REGCOIL)
+         ctemp_str = 'regcoil'
+         IF (sigma_regcoil_bnorm < bigno .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen)
+!DEC$ ENDIF
 
          ! Now we load target values if an error was found then
          ! exagerate the fvec values so that those directions are not

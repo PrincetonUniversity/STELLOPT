@@ -33,6 +33,7 @@ chisq_mse.o \
 chisq_balloon.o \
 chisq_pmin.o \
 chisq_coil_bnorm.o \
+chisq_regcoil_bnorm.o \
 chisq_vessel.o \
 chisq_z0.o \
 chisq_curvature.o \
@@ -67,6 +68,7 @@ stellopt_load_targets.o \
 stellopt_toboozer.o \
 stellopt_init.o \
 stellopt_coiloptpp.o \
+stellopt_regcoil.o \
 stellopt_bootsj.o \
 stellopt_clean_up.o \
 stellopt_main.o \

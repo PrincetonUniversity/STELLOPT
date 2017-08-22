@@ -194,6 +194,21 @@
                      END DO
                   END IF
 !DEC$ ENDIF
+!DEC$ IF DEFINED (REGCOIL)
+                  IF (sigma_coil_bnorm < bigno) THEN
+                     CALL move_txtfile('bnorm.'//TRIM(proc_string_old),&
+                                       'bnorm.'//TRIM(proc_string))
+                     CALL move_txtfile('regcoil_params.'//TRIM(proc_string_old),&
+                                       'regcoil_params.'//TRIM(proc_string))
+                     ! CALL copy_txtfile('Bnormal_from_plasma_current'//TRIM(proc_string_old)//'.dat',&
+                     !                   'Bnormal_from_plasma_current'//TRIM(proc_string)//'.dat')
+                     ! CALL copy_txtfile('Bnormal_total_'//TRIM(proc_string_old)//'.dat',&
+                     !                   'Bnormal_total'//TRIM(proc_string)//'.dat')
+                     ! CALL move_txtfile('Bnormal_from_plasma_current'//TRIM(proc_string_old)//'.dat',&
+                     !                   'Bnormal_from_plasma_current'//TRIM(proc_string)//'.dat')
+                     ! Need to write out the winding surface.
+                  END IF
+!DEC$ ENDIF
 !DEC$ IF DEFINED (TERPSICHORE)
                   IF (ANY(sigma_kink < bigno)) THEN
                      CALL move_txtfile('terpsichore_eq.'//TRIM(proc_string_old),&
@@ -279,6 +294,14 @@
                      CALL copy_txtfile('coil_spline'//TRIM(temp_str)//'_'//TRIM(proc_string_old)//'.out',&
                                        'coil_spline'//TRIM(temp_str)//'_'//TRIM(proc_string)//'.out')
                   END DO
+               END IF
+!DEC$ ENDIF
+!DEC$ IF DEFINED (REGCOIL)
+               IF (sigma_regcoil_bnorm < bigno .and. (proc_string.ne.proc_string_old) ) THEN
+                  ! MUST Call 'write regcoil in'
+                  !CALL write_regcoil_namelist(iunit_out,ier)
+                  ! MUST Write out winding surface
+
                END IF
 !DEC$ ENDIF
                ! Keep minimum states
@@ -386,6 +409,21 @@
                         CALL copy_txtfile('coil_spline'//TRIM(temp_str)//'_'//TRIM(proc_string_old)//'.out',&
                                           'coil_spline'//TRIM(temp_str)//'_'//TRIM(proc_string)//'.out')
                      END DO
+                  END IF
+!DEC$ ENDIF
+!DEC$ IF DEFINED (REGCOIL)
+                  IF (sigma_coil_bnorm < bigno) THEN
+                     CALL move_txtfile('bnorm.'//TRIM(proc_string_old),&
+                                       'bnorm.'//TRIM(proc_string))
+                     CALL move_txtfile('regcoil_params.'//TRIM(proc_string_old),&
+                                       'regcoil_params.'//TRIM(proc_string))
+                     ! CALL copy_txtfile('Bnormal_from_plasma_current'//TRIM(proc_string_old)//'.dat',&
+                     !                   'Bnormal_from_plasma_current'//TRIM(proc_string)//'.dat')
+                     ! CALL copy_txtfile('Bnormal_total_'//TRIM(proc_string_old)//'.dat',&
+                     !                   'Bnormal_total'//TRIM(proc_string)//'.dat')
+                     ! CALL move_txtfile('Bnormal_from_plasma_current'//TRIM(proc_string_old)//'.dat',&
+                     !                   'Bnormal_from_plasma_current'//TRIM(proc_string)//'.dat')
+                     ! Need to write out the winding surface.
                   END IF
 !DEC$ ENDIF
 !DEC$ IF DEFINED (TERPSICHORE)

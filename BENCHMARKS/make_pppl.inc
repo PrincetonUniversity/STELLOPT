@@ -3,7 +3,7 @@
 #######################################################################
   SHELL = /bin/sh
   PWD1 = `pwd`
-  MYHOME = $(HOME)/bin
+  MYHOME = /p/stellopt/ANALYSIS/jschmitt/bin
   PRECOMP:= /lib/cpp -traditional -DLINUX
   COMPILE = $(FC)
   COMPILE_FREE = $(FC) -ffree-form -ffree-line-length-none -ffixed-line-length-none
@@ -89,7 +89,7 @@
 #######################################################################
 #            GENE Options
 #######################################################################
-  LGENE = T
+  LGENE = F
   GENE_INC = -I$(GENE_PATH)
   GENE_DIR = $(GENE_PATH)
   LIB_GENE = libgene.a
@@ -102,7 +102,7 @@
 #######################################################################
 #            COILOPT++ Options
 #######################################################################
-  LCOILOPT = T
+  LCOILOPT = F
   COILOPT_INC = -I$(COILOPT_PATH)
   COILOPTPP_DIR = $(COILOPT_PATH)
   LIB_COILOPTPP = libcoilopt++.a
@@ -112,7 +112,7 @@
 #######################################################################
 #            TERPSICHORE Options
 #######################################################################
-  LTERPSICHORE= T
+  LTERPSICHORE= F
   TERPSICHORE_INC = -I$(TERPSICHORE_PATH)
   TERPSICHORE_DIR = $(TERPSICHORE_PATH)
   LIB_TERPSICHORE = libterpsichore.a
@@ -121,12 +121,32 @@
 #######################################################################
 #            TRAVIS Options
 #######################################################################
-  LTRAVIS= T
+  LTRAVIS= F
   TRAVIS_DIR = $(TRAVIS_PATH)
   LIB_TRAVIS = libtravis64_sopt.a
   LIB_MCONF  = libmconf64.a
   TRAVIS_LIB = $(TRAVIS_DIR)/lib/$(LIB_TRAVIS) \
                $(TRAVIS_DIR)/mag_conf/lib/$(LIB_MCONF) -lstdc++
+
+#######################################################################
+#            REGCOIL Options
+#######################################################################
+  LREGCOIL= T
+  REGCOIL_PATH = /p/stellopt/ANALYSIS/jschmitt/src/regcoil
+  REGCOIL_INC = -I$(REGCOIL_PATH)
+  REGCOIL_DIR = $(REGCOIL_PATH)
+  LIB_REGCOIL = libregcoil.a
+  REGCOIL_LIB = $(REGCOIL_DIR)/$(LIB_REGCOIL)
+
+#######################################################################
+#            YOUR_NEW_CODE Options
+#######################################################################
+#  LYOURNEWCODE= F
+#  # YOURNEWCODE_DIR = $(YOURNEWCODE_PATH)
+#  YOURNEWCODE_DIR = /path/to/your/new/code
+#  LIB_YOURNEWCODE = yourcode.o
+#  YOURNEWCODE_LIB = $(YOURNEWCODE_DIR)/$(LIB_YOURNEWCODE)
+#  # Add additional flag(s) as necessary for your code here
 
 #######################################################################
 #            LIBSTELL Shared Options
@@ -225,6 +245,8 @@ else
   LCOILOPT = F
   LTERPSICHORE = F
   LTRAVIS = F
+  LREGCOIL= F
+#  LYOURNEWCODE = F
 endif
 ifeq ($(MAKECMDGOALS),xanimec)
   PRECOMP += -D_ANIMEC
@@ -283,9 +305,26 @@ else
   TRAVIS_DIR = 
   LIB_TRAVIS = 
 endif
+ifeq ($(LREGCOIL),T)
+  MOD1_PATH += $(REGCOIL_INC)
+  PRECOMP += -DREGCOIL
+  MOD_PATH += -I$(REGCOIL_DIR)
+else
+  REGCOIL_LIB = 
+  REGCOIL_DIR = 
+  LIB_REGCOIL = 
+endif
+
+#ifeq ($(LYOURNEWCODE),T)
+#  PRECOMP += -DYOURNEWCODE
+#else
+#  YOURNEWCODE_LIB = 
+#  YOURNEWCODE_DIR = 
+#  LIB_YOURNEWCODE = 
+#endif
 
 # Handle other codes
-LIB_LINK += $(GENE_LIB) $(COILOPT_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB)
+LIB_LINK += $(GENE_LIB) $(COILOPT_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB) $(REGCOIL_LIB)
 
 # Add libraries to LIB_LINK
 # LIB_LINK+= $(MYHOME)/libstell.a $(LIBS)

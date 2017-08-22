@@ -93,6 +93,14 @@ chisq_coil_bnorm.o : \
       equil_vals.o \
       $(LIB_DIR)/Release/safe_open_mod.o \
       $(LIB_DIR)/Release/mpi_params.o
+
+      
+chisq_regcoil_bnorm.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      equil_vals.o \
+      $(LIB_DIR)/Release/safe_open_mod.o \
+      $(LIB_DIR)/Release/mpi_params.o
       
       
 chisq_rbtor.o : \
