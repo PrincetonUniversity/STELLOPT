@@ -61,7 +61,7 @@
       INTEGER(KIND=BYTE_8) :: chunk
       INTEGER :: ier, i, j, k, iunit, nfl, nsegmx, nseg, ig,&
                  i1, i2, nfl_mut, ncg
-      INTEGER, ALLOCATABLE :: nseg_ar(:), iflflg(:), idia(:)
+      INTEGER, ALLOCATABLE :: nseg_ar(:), iflflg(:), idia(:), workdex(:)
       REAL(rprec) :: xp, yp, zp, xp1, yp1, zp1, int_fac
       DOUBLE PRECISION :: dtemp
       DOUBLE PRECISION, ALLOCATABLE :: flux(:)
@@ -195,9 +195,21 @@
          dy(i,1:nseg-1) = yfl(i,2:nseg)-yfl(i,1:nseg-1)
          dz(i,1:nseg-1) = zfl(i,2:nseg)-zfl(i,1:nseg-1)
       END DO
+
+      ! Only work on correct number of flux loops
+      i = COUNT(lskip_rogo)
+      j = nfl - i
+      ALLOCATE(workdex(j))
+      k=1
+      DO i = 1, nfl
+         IF (lskip_rogo(i)) CYCLE
+         workdex(k) = i
+         k=k+1
+      END DO
  
       ! Divide up the work
-      chunk = FLOOR(REAL(nfl) / REAL(nprocs_diagno))
+      i2 = nfl - COUNT(lskip_rogo)
+      chunk = FLOOR(REAL(i2) / REAL(nprocs_diagno))
       mystart = myworkid*chunk + 1
       myend = mystart + chunk - 1
 #if defined(MPI_OPT)
@@ -244,10 +256,12 @@
          ncg = nextcur+1
       END IF
 
+      flux = 0
       ! Calculate the fields
-      DO i = mystart, myend
+      DO i2 = mystart, myend
+         i = workdex(i2)
          flux(i) = 0
-         IF (lskip_rogo(i)) CYCLE
+         !IF (lskip_rogo(i)) CYCLE
          nseg = nseg_ar(i)
          DO j = 1, nseg-1
             DO k = 1, int_step
@@ -300,6 +314,7 @@
          END DO
          !WRITE(6,*) i,flux(i); CALL FLUSH(6)
       END DO
+      DEALLOCATE(workdex)
 
       ! Now handle the arrays
 #if defined(MPI_OPT)
