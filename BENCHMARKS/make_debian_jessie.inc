@@ -1,8 +1,8 @@
 #######################################################################
 #            Define User Specific Output Paths
 #######################################################################
-  # Set a default directory if one has not already been defined.
-  $STELLOPT_HOME ?= $(HOME)/bin
+# Set a default directory if one has not already been defined.
+STELLOPT_HOME ?= $(HOME)/bin
 
 #######################################################################
 #            Define Debian Jessie Specifec locations

@@ -146,6 +146,9 @@
       ! Parallel Current <J.B>
       IF (ANY(sigma_jdotb < bigno)) &
          CALL chisq_jdotb(target_jdotb, sigma_jdotb, ncnt,iflag)
+      ! Magnetic Well
+      IF (ANY(sigma_magwell < bigno)) &
+         CALL chisq_magwell(target_magwell, sigma_magwell, ncnt,iflag)
       ! B_min
       IF (ANY(sigma_bmin < bigno)) &
          CALL chisq_bmin(target_bmin, sigma_bmin, ncnt,iflag)
