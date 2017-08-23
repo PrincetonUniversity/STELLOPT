@@ -224,8 +224,7 @@
                          lth_f_opt, lphi_s_opt, lphi_f_opt, &
                          lrho_opt, ldeltamn_opt, lbound_opt, laxis_opt, lmode_opt, &
                          lne_opt, lte_opt, lti_opt, lth_opt, lzeff_opt, &
-                         lah_f_opt, lat_f_opt, lcoil_spline, lwindsurf, &
-                         windsurfname, &
+                         lah_f_opt, lat_f_opt, lcoil_spline, windsurfname, &
                          dphiedge_opt, dcurtor_opt, dbcrit_opt, &
                          dpscale_opt, dmix_ece_opt,&
                          dextcur_opt, daphi_opt, dam_opt, dac_opt, &
@@ -814,10 +813,10 @@
       ! Coil Optimization
       IF (ANY(ANY(lcoil_spline,2),1)) THEN
          lcoil_geom = .true.
-         IF (lwindsurf) THEN
+         IF (LEN_TRIM(windsurfname).gt.0) THEN
             CALL read_winding_surface(windsurfname, windsurf, ierr)
             IF (ierr.ne.0) CALL handle_err(CWS_READ_ERR, windsurfname, ierr)
-            !write(6,*)myid,'0-0=',windsurf%rctab(0,0),windsurf%zstab(0,0)
+            lwindsurf = .TRUE.
          ENDIF
       ENDIF
 

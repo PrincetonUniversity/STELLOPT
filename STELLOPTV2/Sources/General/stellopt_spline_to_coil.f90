@@ -186,10 +186,12 @@
 !-----------------------------------------------------------------------
       SUBROUTINE spline_to_coil(icoil, nseg, xarr, yarr, zarr, lmod)
         USE stellopt_vars
+        USE vmec_input,  ONLY : nfp
         USE equil_utils, ONLY : bcs1
         USE EZspline_obj
         USE EZspline
         IMPLICIT NONE
+        INTRINSIC ABS, MODULO, EPSILON
 
         ! Arguments
         INTEGER, INTENT(IN)                       :: icoil, nseg
@@ -219,6 +221,8 @@
         ylast = coil_splinefy(icoil,nknots)
 
         IF (lwindsurf) THEN !Interpret coil_splinefx as u, coil_splinefy as v
+           windsurf%nfp = nfp
+
            ! Evaluate the coil
            DO j = 1, nseg
               s_val = REAL(j-1)/REAL(nseg-1)
