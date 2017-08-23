@@ -197,7 +197,7 @@
       END DO
 
       ! Only work on correct number of flux loops
-      i = COUNT(lskip_rogo)
+      i = COUNT(lskip_rogo(1:nfl))
       j = nfl - i
       ALLOCATE(workdex(j))
       k=1
@@ -208,7 +208,7 @@
       END DO
  
       ! Divide up the work
-      i2 = nfl - COUNT(lskip_rogo)
+      i2 = nfl - COUNT(lskip_rogo(1:nfl))
       chunk = FLOOR(REAL(i2) / REAL(nprocs_diagno))
       mystart = myworkid*chunk + 1
       myend = mystart + chunk - 1
