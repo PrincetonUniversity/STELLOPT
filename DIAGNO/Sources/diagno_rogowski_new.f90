@@ -220,7 +220,7 @@
       CALL MPI_ALLGATHER(mystart,1,MPI_INTEGER,moffsets,1,MPI_INTEGER,MPI_COMM_DIAGNO,ierr_mpi)
       i = 1
       DO
-         IF ((moffsets(nprocs_diagno)+mnum(nprocs_diagno)-1) == nfl) EXIT
+         IF ((moffsets(nprocs_diagno)+mnum(nprocs_diagno)-1) == i2) EXIT
          IF (i == nprocs_diagno) i = 1
          mnum(i) = mnum(i) + 1
          moffsets(i+1:nprocs_diagno) = moffsets(i+1:nprocs_diagno) + 1
