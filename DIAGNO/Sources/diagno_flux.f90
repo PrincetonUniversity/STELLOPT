@@ -215,7 +215,6 @@
          dz(i,nseg+1) = dz(i,1)
       END DO
 
-      lskip_flux(10:20) = .TRUE.  ! Testing
       ! Only work on correct number of flux loops
       i = COUNT(lskip_flux)
       j = nfl - i
@@ -282,7 +281,6 @@
          flux(i) = 0
          !IF (lskip_flux(i)) CYCLE
          nseg = nseg_ar(i)
-         WRITE(6,*) myworkid,i2,i; CALL FLUSH(6)
          DO j = 1, nseg
             DO k = 1, int_step
                xp = xfl(i,j) + (k-1)*int_fac*dx(i,j)
