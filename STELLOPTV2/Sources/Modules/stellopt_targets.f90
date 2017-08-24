@@ -168,6 +168,9 @@
       REAL(rprec) ::  target_coil_bnorm, sigma_coil_bnorm
       INTEGER     ::  nu_bnorm,nv_bnorm
       REAL(rprec), DIMENSION(nigroup)    :: target_coillen, sigma_coillen
+      INTEGER     :: npts_curv
+      REAL(rprec), DIMENSION(nigroup)    :: target_coilcrv, sigma_coilcrv
+      REAL(rprec)                        :: target_coilsep, sigma_coilsep
 
       INTEGER, PARAMETER :: jtarget_aspect     = 100
       INTEGER, PARAMETER :: jtarget_rbtor      = 1001
@@ -227,8 +230,10 @@
       INTEGER, PARAMETER :: jtarget_orbit      = 612
       INTEGER, PARAMETER :: jtarget_coil_bnorm = 613
       INTEGER, PARAMETER :: jtarget_coillen    = 614
-      
-      
+      INTEGER, PARAMETER :: jtarget_coilcrv    = 615
+      INTEGER, PARAMETER :: jtarget_coilsep    = 616
+
+
       CONTAINS
       
       SUBROUTINE write_targets(iunit,var_num)
@@ -351,6 +356,10 @@
             WRITE(iunit, out_format) 'COILOPT++ Normal Field'
          CASE(jtarget_coillen)
             WRITE(iunit, out_format) 'Coil Lengths'
+         CASE(jtarget_coilcrv)
+            WRITE(iunit, out_format) 'Maximum Coil Curvature'
+         CASE(jtarget_coilsep)
+            WRITE(iunit, out_format) 'Minimum Coil Separation'
       END SELECT
       END SUBROUTINE write_targets
       

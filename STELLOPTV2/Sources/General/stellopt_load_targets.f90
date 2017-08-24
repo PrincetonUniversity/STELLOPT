@@ -166,6 +166,8 @@
       ! Coil lengths
       IF (ANY(sigma_coillen < bigno)) &
          CALL chisq_coillen(target_coillen, sigma_coillen, ncnt, iflag)
+      IF (ANY(sigma_coilcrv < bigno)) &
+         CALL chisq_coilcrv(target_coilcrv, sigma_coilcrv, ncnt, iflag)
 
       !------------- EXTERNAL TARGETS --------------------------
       !  This section of the code relys upon external libraries

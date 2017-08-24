@@ -1,11 +1,11 @@
 !-----------------------------------------------------------------------
-!     Subroutine:    chisq_coillen
+!     Subroutine:    chisq_coilcrv
 !     Authors:       J. Breslau (jbreslau@pppl.gov)
-!     Date:          8/22/2017
-!     Description:   Calculates the difference between the length of each 
-!                    coil and its target value.
+!     Date:          8/24/2017
+!     Description:   Calculates the difference between maximum curvature
+!                    for each coil and its target value.
 !-----------------------------------------------------------------------
-      SUBROUTINE chisq_coillen(target,sigma,niter,iflag)
+      SUBROUTINE chisq_coilcrv(target,sigma,niter,iflag)
 !-----------------------------------------------------------------------
 !     Libraries
 !-----------------------------------------------------------------------
@@ -28,30 +28,30 @@
 !
 !-----------------------------------------------------------------------
       INTEGER     :: ik
-      REAL(rprec) :: local_len
+      REAL(rprec) :: maxcurv, smax
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
       IF (iflag < 0) RETURN
       ik   = COUNT(sigma < bigno)
       IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'LEN ',ik,4
-      IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA  VAL'
+      IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA  VAL  LOC'
       IF (niter >= 0) THEN
          DO ik = 1, nigroup
             IF ((sigma(ik) < bigno) .AND. ANY(lcoil_spline(ik,:))) THEN
                mtargets = mtargets + 1
-               CALL get_coil_length(ik, local_len)
+               CALL get_coil_maxcurv(ik, maxcurv, smax)
                targets(mtargets) = target(ik)
                sigmas(mtargets)  = sigma(ik)
-               vals(mtargets)    = local_len
-               IF (iflag == 1) WRITE(iunit_out,'(I5,3ES22.12E3)') ik,target(ik),sigma(ik),local_len
+               vals(mtargets)    = maxcurv
+               IF (iflag == 1) WRITE(iunit_out,'(I5,3ES22.12E3)') ik,target(ik),sigma(ik),maxcurv,smax
             END IF
          END DO
       ELSE
          DO ik = 1, nigroup
             IF ((sigma(ik) < bigno) .AND. ANY(lcoil_spline(ik,:))) THEN
                mtargets = mtargets + 1
-               IF (niter == -2) target_dex(mtargets)=jtarget_coillen
+               IF (niter == -2) target_dex(mtargets)=jtarget_coilcrv
             END IF
          END DO
       END IF
@@ -59,4 +59,4 @@
 !----------------------------------------------------------------------
 !     END SUBROUTINE
 !----------------------------------------------------------------------
-      END SUBROUTINE chisq_coillen
+      END SUBROUTINE chisq_coilcrv
