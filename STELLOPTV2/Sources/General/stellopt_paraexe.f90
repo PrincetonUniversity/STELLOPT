@@ -354,8 +354,10 @@
             CASE('coilopt++')
                CALL stellopt_coiloptpp(file_str,lscreen)
 !DEC$ IF DEFINED (REGCOIL)
-            CASE('regcoil')
-               CALL stellopt_regcoil(file_str,lscreen)
+            CASE('regcoil_bnorm')
+               CALL stellopt_regcoil_bnorm(file_str,lscreen)
+            CASE('regcoil_chi2_b')
+               CALL stellopt_regcoil_chi2_b(file_str,lscreen)
 !DEC$ ENDIF
             CASE('terpsichore')
                proc_string = file_str
