@@ -150,11 +150,6 @@
       REAL(rprec), DIMENSION(nigroup,maxcoilknots) :: dcoil_spline
       REAL(rprec), DIMENSION(nigroup,maxcoilknots) :: coil_splinefx_min,coil_splinefy_min,coil_splinefz_min,&
                                                       coil_splinefx_max,coil_splinefy_max,coil_splinefz_max
-      TYPE vsurf
-         REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: rctab, zstab
-         INTEGER                                  :: mmax, nmax, nfp
-      END TYPE vsurf
-      TYPE(vsurf)                                 :: windsurf
       CHARACTER(256)  ::  equil_type, te_type, ne_type, ti_type, th_type, &
                           beamj_type, bootj_type, zeff_type, windsurfname
       

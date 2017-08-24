@@ -13,6 +13,7 @@
       USE stel_kinds, ONLY: rprec
       USE stellopt_runtime
       USE stellopt_vars
+      USE windingsurface
       USE stellopt_targets
       USE safe_open_mod, ONLY: safe_open
       USE diagno_runtime, ONLY: DIAGNO_VERSION
@@ -820,7 +821,7 @@
       IF (ANY(ANY(lcoil_spline,2),1)) THEN
          lcoil_geom = .true.
          IF (LEN_TRIM(windsurfname).gt.0) THEN
-            CALL read_winding_surface(windsurfname, windsurf, ierr)
+            CALL read_winding_surface(windsurfname, ierr)
             IF (ierr.ne.0) CALL handle_err(CWS_READ_ERR, windsurfname, ierr)
             lwindsurf = .TRUE.
          ENDIF
@@ -1089,112 +1090,6 @@
       target_dkes(2)      = 0.0;  sigma_dkes(2)      = bigno
       target_helicity(1)  = 0.0;  sigma_helicity(1)  = bigno
       END SUBROUTINE read_stellopt_input
-      
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      SUBROUTINE read_winding_surface(filename, surface, ierr)
-        IMPLICIT NONE
-        INTRINSIC ALL, MAXVAL, ABS
-
-        ! Arguments
-        CHARACTER(256), INTENT(IN)   :: filename
-        TYPE(vsurf), INTENT(INOUT)   :: surface
-        INTEGER, INTENT(OUT)         :: ierr
-
-        ! Local variables
-        REAL(rprec), DIMENSION(:), ALLOCATABLE :: rmnc, zmns
-        INTEGER, DIMENSION(:), ALLOCATABLE     :: mnum, nnum
-        INTEGER  :: iunit, istat, count, mode
-        LOGICAL  :: lexist
-
-        ! Reset winding surface
-        IF (ALLOCATED(surface%rctab)) DEALLOCATE(surface%rctab)
-        IF (ALLOCATED(surface%zstab)) DEALLOCATE(surface%zstab)
-        surface%mmax = -1;  surface%nmax = -1
-
-        IF (myid.eq.master) THEN   ! Master process does I/O
-           ! Open coil winding surface file
-           lexist = .false.
-           INQUIRE(FILE=TRIM(filename),EXIST=lexist)
-           IF (lexist) THEN
-              iunit=12;  istat=1
-              OPEN(iunit, file=TRIM(filename), status='old', action='read', iostat=istat)
-              IF (istat.eq.0) THEN  !Read the file
-                 WRITE(6,*)'Reading winding surface from file ',TRIM(filename),'.'
-
-                 count = 0
-                 DO ! Count lines
-                    READ(iunit,*,END=100)
-                    count = count + 1
-                 ENDDO
-
-100              IF (count.gt.0) THEN
-                    WRITE(6,'(I6,A)')count,' modes in winding surface file.'
-
-                    ! Allocate temporary (sparse) space for values
-                    ALLOCATE(mnum(count), nnum(count), rmnc(count), zmns(count))
-
-                    ! Read values
-                    REWIND(iunit)
-                    DO mode=1,count
-                       READ(iunit,*) mnum(mode), nnum(mode), rmnc(mode), zmns(mode)
-                    ENDDO !mode
-
-                    IF (ALL(mnum.ge.0)) THEN  ! Avoid error condition
-
-                       ! Find max poloidal & toroidal mode numbers
-                       surface%mmax = MAXVAL(mnum)
-                       surface%nmax = MAXVAL(ABS(nnum))
-110                    FORMAT(I6,A,I5)
-                       WRITE(6,110) -surface%nmax,' <= n <=',surface%nmax
-                       WRITE(6,110) 0,' <= m <=',surface%mmax
-
-                       ! Initialize the (dense) data structure
-                       ALLOCATE(surface%rctab(-surface%nmax:surface%nmax, 0:surface%mmax))
-                       ALLOCATE(surface%zstab(-surface%nmax:surface%nmax, 0:surface%mmax))
-                       surface%rctab = 0d0;  surface%zstab = 0d0
-
-                       !Load temporary data into permanent structure
-                       DO mode=1,count
-                          surface%rctab(nnum(mode),mnum(mode)) = rmnc(mode)
-                          surface%zstab(nnum(mode),mnum(mode)) = zmns(mode)
-                       ENDDO !mode
-                    ENDIF ! No negative m values
-
-                    ! Free up temporary space
-                    DEALLOCATE(mnum, nnum, rmnc, zmns)
-                 ENDIF !count > 0
-
-                 CLOSE(iunit)
-              ENDIF !File opened successfully
-           ENDIF !File exists
-        ENDIF !Master process
-
-!DEC$ IF DEFINED (MPI_OPT)
-        ! Broadcast mode counts to all processors
-        CALL MPI_BCAST(surface%nmax, 1, MPI_INTEGER, master, MPI_COMM_STEL, ierr)
-        IF (ierr /= MPI_SUCCESS) RETURN
-!DEC$ ELSE
-        ierr = 0
-!DEC$ ENDIF
-        IF (surface%nmax.lt.0) THEN
-           ierr = 1;  RETURN
-        ENDIF
-!DEC$ IF DEFINED (MPI_OPT)
-        CALL MPI_BCAST(surface%mmax, 1, MPI_INTEGER, master, MPI_COMM_STEL, ierr)
-        IF (ierr /= MPI_SUCCESS) RETURN
-
-        ! Broadcast data to all processors
-        IF (myid.ne.master) THEN
-           ALLOCATE(surface%rctab(-surface%nmax:surface%nmax, 0:surface%mmax))
-           ALLOCATE(surface%zstab(-surface%nmax:surface%nmax, 0:surface%mmax))
-        ENDIF
-        count = (2*surface%nmax + 1)*(surface%mmax + 1)
-        CALL MPI_BCAST(surface%rctab, count, MPI_REAL8, master, MPI_COMM_STEL, ierr)
-        IF (ierr /= MPI_SUCCESS) RETURN
-        CALL MPI_BCAST(surface%zstab, count, MPI_REAL8, master, MPI_COMM_STEL, ierr)
-        IF (ierr == MPI_SUCCESS) ierr = 0
-!DEC$ ENDIF
-      END SUBROUTINE read_winding_surface
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       SUBROUTINE write_optimum_namelist(iunit,istat)
