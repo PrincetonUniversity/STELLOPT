@@ -339,7 +339,8 @@
                          target_regcoil_winding_surface_separation, &
                          sigma_regcoil_winding_surface_separation, &
                          target_regcoil_bnorm, sigma_regcoil_bnorm, &
-                         target_regcoil_chi2_b, sigma_regcoil_chi2_b
+                         target_regcoil_chi2_b, sigma_regcoil_chi2_b, &
+                         regcoil_winding_surface_separation
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -492,6 +493,9 @@
       coil_splinefx_min       = -bigno;  coil_splinefx_max       = bigno
       coil_splinefy_min       = -bigno;  coil_splinefy_max       = bigno
       coil_splinefz_min       = -bigno;  coil_splinefz_max       = bigno
+      target_regcoil_winding_surface_separation = 0.0
+      sigma_regcoil_winding_surface_separation = bigno
+      regcoil_winding_surface_separation = 1.0
       regcoil_winding_surface_separation_min = 0.0
       regcoil_winding_surface_separation_max = bigno
       ne_type         = 'akima_spline'
@@ -1132,11 +1136,15 @@
       WRITE(iunit,'(A)') '!       Optimized Quantities'
       WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
       IF (lregcoil_winding_surface_separation_opt) THEN
-         WRITE(iunit,onevar) 'LCOIL_WINDING_SURFACE_SEPARATION', & 
+         WRITE(iunit,'(2X,A,E22.14)') 'MIX_ECE = ',mix_ece
+         WRITE(iunit,'(2X,A,E22.14)') &
+                'REGCOIL_WINDING_SURFACE_SEPARATION = ', &
+                regcoil_winding_surface_separation
+         WRITE(iunit,onevar) 'LREGCOIL_WINDING_SURFACE_SEPARATION', & 
                 lregcoil_winding_surface_separation_opt, &
-                'COIL_WINDING_SURFACE_SEPARATION_MIN', &
+                'REGCOIL_WINDING_SURFACE_SEPARATION_MIN', &
                 regcoil_winding_surface_separation_min, &
-                'COIL_WINDING_SURFACE_SEPARATION_MAX', &
+                'REGCOIL_WINDING_SURFACE_SEPARATION_MAX', &
                regcoil_winding_surface_separation_max
          IF (dregcoil_winding_surface_separation_opt > 0) &
                  WRITE(iunit,outflt) 'DREGCOIL_WINDING_SURFACE_SEPARATION', &

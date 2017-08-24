@@ -267,6 +267,23 @@
               IF (ier /= 0) CALL handle_err(VMEC_RUN_ERR,'Initialization call (stellopt_init)',ier)
               ! Now count
               nvar_in=0
+              IF (lregcoil_winding_surface_separation_opt) THEN
+                 IF (lauto_domain) THEN
+                    regcoil_winding_surface_separation_min = &
+                        regcoil_winding_surface_separation - &
+                        ABS(pct_domain*regcoil_winding_surface_separation)
+                    regcoil_winding_surface_separation_max = &
+                        regcoil_winding_surface_separation + &
+                        ABS(pct_domain*regcoil_winding_surface_separation)
+                 END IF
+                 nvar_in = nvar_in + 1
+                 vars(nvar_in) = regcoil_winding_surface_separation
+                 vars_min(nvar_in) = regcoil_winding_surface_separation_min
+                 vars_max(nvar_in) = regcoil_winding_surface_separation_max
+                 var_dex(nvar_in) = iregcoil_winding_surface_separation
+                 diag(nvar_in)    = dregcoil_winding_surface_separation_opt
+                 arr_dex(nvar_in,1) = 1
+              END IF
               IF (lphiedge_opt) THEN
                  IF (lauto_domain) THEN
                     phiedge_min = phiedge - ABS(pct_domain*phiedge)

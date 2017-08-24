@@ -101,6 +101,8 @@
          IF (var_dex(nvar_in) == icurtor) curtor = x(nvar_in)
          IF (var_dex(nvar_in) == ipscale) pres_scale = x(nvar_in)
          IF (var_dex(nvar_in) == imixece) mix_ece = x(nvar_in)
+         IF (var_dex(nvar_in) == iregcoil_winding_surface_separation) &
+                regcoil_winding_surface_separation = x(nvar_in)
          IF (var_dex(nvar_in) == ibcrit) bcrit = x(nvar_in)
          IF (var_dex(nvar_in) == iextcur) extcur(arr_dex(nvar_in,1)) = x(nvar_in)
          IF (var_dex(nvar_in) == iaphi) aphi(arr_dex(nvar_in,1)) = x(nvar_in)

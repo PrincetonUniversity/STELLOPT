@@ -1,5 +1,5 @@
 !-----------------------------------------------------------------------
-!     Subroutine:    chisq_regcoil_bnorm
+!     Subroutine:    chisq_regcoil_chi2_b
 !     Authors:       J.C. Schmitt (Auburn/PPPL) (jcschmitt@auburn.edu)
 !     Date:          2017
 !     Description:   Chisq routine(s) for REGCOIL.
@@ -17,7 +17,7 @@
 !                    positive iflag, indicates error but continues, and
 !                    zero indicates the code has functioned properly.
 !-----------------------------------------------------------------------
-      SUBROUTINE chisq_regcoil_bnorm(target,sigma,niter,iflag)
+      SUBROUTINE chisq_regcoil_chi2_b(target,sigma,niter,iflag)
 !-----------------------------------------------------------------------
 !     Libraries
 !-----------------------------------------------------------------------
@@ -44,7 +44,7 @@
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
       IF (iflag < 0) RETURN
-      IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'REGCOIL BNORM',1,4
+      IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'REGCOIL CHI2_B ',1,4
       IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA  DUMMY  CHI'
       IF (niter >= 0) THEN
          ! A note on how to calculate temp_val.
@@ -61,11 +61,11 @@
       ELSE
          IF (sigma < bigno) THEN
             mtargets = mtargets + 1
-            IF (niter == -2) target_dex(mtargets)=jtarget_regcoil_bnorm
+            IF (niter == -2) target_dex(mtargets)=jtarget_regcoil_chi2_b
          END IF
       END IF
       RETURN
 !----------------------------------------------------------------------
 !     END SUBROUTINE
 !----------------------------------------------------------------------
-      END SUBROUTINE chisq_regcoil_bnorm
+      END SUBROUTINE chisq_regcoil_chi2_b
