@@ -939,7 +939,7 @@
       END IF
 !DEC$ ENDIF
 !DEC$ IF DEFINED (COILOPTPP)
-      IF (myid == master .and. (sigma_coil_bnorm < bigno)) THEN
+      IF ( (sigma_regcoil_bnorm < bigno) .or. (sigma_regcoil_chi2_b < bigno)) THEN
          WRITE(6,*)        " Stellarator Coil Optimization provided by: "
          WRITE(6,"(2X,A)") "================================================================================="
          WRITE(6,"(2X,A)") "=========                            COILOPT++                          ========="

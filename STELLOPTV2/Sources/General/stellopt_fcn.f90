@@ -379,8 +379,10 @@
          IF (sigma_coil_bnorm < bigno .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen)
 !DEC$ ENDIF
 !DEC$ IF DEFINED (REGCOIL)
-         ctemp_str = 'regcoil'
+         ctemp_str = 'regcoil_bnorm'
          IF (sigma_regcoil_bnorm < bigno .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen)
+         ctemp_str = 'regcoil_chi2_b'
+         IF (sigma_regcoil_chi2_b < bigno .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen)
 !DEC$ ENDIF
 
          ! Now we load target values if an error was found then
