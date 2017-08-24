@@ -55,13 +55,13 @@
 
 
       ! reset the params file
-      copt_fext = 'coilopt_params'//CHAR(0)
+      copt_fext = 'regcoil_params'//CHAR(0)
       ! CALL init_settings(MPI_COMM_MYWORLD,copt_fext)
       ! initialize
       iverb = 0
       ivmec = 0
       ispline_file = 0
-      copt_fext = 'coilopt_params.'//TRIM(file_str)
+      copt_fext = 'regcoil_params.'//TRIM(file_str)
       ! Have master run bnorm
       nu = nu_bnorm
       nv = nv_bnorm
