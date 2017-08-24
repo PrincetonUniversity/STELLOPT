@@ -59,7 +59,7 @@
       INTEGER(KIND=BYTE_8) :: icount, chunk
       INTEGER :: ier, i, j, k, iunit, nfl, nfl2, nsegmx, nseg, ig,&
                  i1, i2, nfl_mut, ncg
-      INTEGER, ALLOCATABLE :: nseg_ar(:), iflflg(:), idia(:)
+      INTEGER, ALLOCATABLE :: nseg_ar(:), iflflg(:), idia(:), workdex(:)
       REAL(rprec) :: xp, yp, zp, xp1, yp1, zp1,int_fac
       DOUBLE PRECISION :: dtemp
       DOUBLE PRECISION, ALLOCATABLE :: flux(:)
@@ -215,8 +215,20 @@
          dz(i,nseg+1) = dz(i,1)
       END DO
 
+      ! Only work on correct number of flux loops
+      i = COUNT(lskip_flux(1:nfl))
+      j = nfl - i
+      ALLOCATE(workdex(j))
+      k=1
+      DO i = 1, nfl
+         IF (lskip_flux(i)) CYCLE
+         workdex(k) = i
+         k=k+1
+      END DO
+
       ! Divide up the work
-      chunk = FLOOR(REAL(nfl) / REAL(nprocs_diagno))
+      i2 = nfl - COUNT(lskip_flux(1:nfl))
+      chunk = FLOOR(REAL(i2) / REAL(nprocs_diagno))
       mystart = myworkid*chunk + 1
       myend = mystart + chunk - 1
 #if defined(MPI_OPT)
@@ -227,7 +239,7 @@
       CALL MPI_ALLGATHER(mystart,1,MPI_INTEGER,moffsets,1,MPI_INTEGER,MPI_COMM_DIAGNO,ierr_mpi)
       i = 1
       DO
-         IF ((moffsets(nprocs_diagno)+mnum(nprocs_diagno)-1) == nfl) EXIT
+         IF ((moffsets(nprocs_diagno)+mnum(nprocs_diagno)-1) == i2) EXIT
          IF (i == nprocs_diagno) i = 1
          mnum(i) = mnum(i) + 1
          moffsets(i+1:nprocs_diagno) = moffsets(i+1:nprocs_diagno) + 1
@@ -263,9 +275,11 @@
       END IF
 
       ! Calculate the fields
-      DO i = mystart, myend
+      flux = 0
+      DO i2 = mystart, myend
+         i = workdex(i2)
          flux(i) = 0
-         IF (lskip_flux(i)) CYCLE
+         !IF (lskip_flux(i)) CYCLE
          nseg = nseg_ar(i)
          DO j = 1, nseg
             DO k = 1, int_step
@@ -316,6 +330,7 @@
             END DO
          END DO
       END DO
+      DEALLOCATE(workdex)
 
 
       ! Now handle the arrays
