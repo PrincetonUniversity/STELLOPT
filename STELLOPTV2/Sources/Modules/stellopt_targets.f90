@@ -167,7 +167,10 @@
       REAL(rprec) ::  target_coil_bnorm, sigma_coil_bnorm
       INTEGER     ::  nu_bnorm,nv_bnorm
 
+      REAL(rprec) ::  target_regcoil_winding_surface_separation
+      REAL(rprec) ::  sigma_regcoil_winding_surface_separation
       REAL(rprec) ::  target_regcoil_bnorm, sigma_regcoil_bnorm
+      REAL(rprec) ::  target_regcoil_chi2_b, sigma_regcoil_chi2_b
                                         
       INTEGER, PARAMETER :: jtarget_aspect     = 100
       INTEGER, PARAMETER :: jtarget_rbtor      = 1001
@@ -226,7 +229,8 @@
       INTEGER, PARAMETER :: jtarget_bmax       = 611
       INTEGER, PARAMETER :: jtarget_orbit      = 612
       INTEGER, PARAMETER :: jtarget_coil_bnorm = 613
-      INTEGER, PARAMETER :: jtarget_regcoil_bnorm = 614
+      INTEGER, PARAMETER :: jtarget_regcoil_bnorm = 5150
+      INTEGER, PARAMETER :: jtarget_regcoil_chi2_b = 5151
       
       
       CONTAINS
@@ -351,6 +355,8 @@
             WRITE(iunit, out_format) 'COILOPT++ Normal Field'
          CASE(jtarget_regcoil_bnorm)
             WRITE(iunit, out_format) 'REGCOIL Normal Field (or something useful)'
+         CASE(jtarget_regcoil_chi2_b)
+            WRITE(iunit, out_format) 'REGCOIL Chi^2 B'
       END SELECT
       END SUBROUTINE write_targets
       

@@ -33,7 +33,7 @@
 !----------------------------------------------------------------------
 !-----------------------------------------------------------------------
 !     Local Variables
-!        iverb         Coilopt++ screen control
+!        iverb         REGCOIL screen control
 !        istat         Error status
 !        iunit         File unit number
 !        bnfou/_c      B-Normal Fourier coefficients

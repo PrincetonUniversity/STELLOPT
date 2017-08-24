@@ -132,6 +132,10 @@
 #            REGCOIL Options
 #######################################################################
   LREGCOIL= T
+# For now, REGCOIL_PATH is hardcoded right here. In the future, this
+# will be an environment variable set when user calls
+# 'module load regcoil'
+#  REGCOIL_PATH = $(REGCOIL_PATH)
   REGCOIL_PATH = /p/stellopt/ANALYSIS/jschmitt/src/regcoil
   REGCOIL_INC = -I$(REGCOIL_PATH)
   REGCOIL_DIR = $(REGCOIL_PATH)

@@ -1,13 +1,13 @@
 !-----------------------------------------------------------------------
 !     Subroutine:    chisq_regcoil_bnorm
-!     Authors:       J.C. Schmitt (jcschmitt@auburn.edu)
+!     Authors:       J.C. Schmitt (Auburn/PPPL) (jcschmitt@auburn.edu)
 !     Date:          2017
 !     Description:   Chisq routine(s) for REGCOIL.
 !                    More description needed
 !                    This is a template for the chisq routines.  In
 !                    general all chisq routines should take a target
 !                    variable, a sigma variable, and and error flag. On
-!                    entry, if iter is less than 1 the
+!                    entry, if niter is less than 1 the
 !                    code should simply increment the mtargets value by
 !                    the number of sigmas less than bigno.  On entry, if
 !                    iflag is set to a positive number the code should
@@ -61,7 +61,7 @@
       ELSE
          IF (sigma < bigno) THEN
             mtargets = mtargets + 1
-            IF (niter == -2) target_dex(mtargets)=jtarget_aspect
+            IF (niter == -2) target_dex(mtargets)=jtarget_regcoil_bnorm
          END IF
       END IF
       RETURN

@@ -112,6 +112,7 @@
       nvars = 0
       SELECT CASE (TRIM(equil_type))
          CASE('vmec2000','flow','animec','satire','paravmec','parvmec','vboot')
+              IF (lregcoil_winding_surface_separation_opt) nvars = nvars + 1
               IF (lphiedge_opt) nvars = nvars + 1
               IF (lcurtor_opt)  nvars = nvars + 1
               IF (lpscale_opt)  nvars = nvars + 1
