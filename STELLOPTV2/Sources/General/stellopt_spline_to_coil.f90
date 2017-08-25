@@ -190,7 +190,7 @@
         INTEGER, INTENT(IN)                       :: icoil, nseg
         REAL(rprec), DIMENSION(nseg), INTENT(OUT) :: xarr, yarr, zarr
         LOGICAL, INTENT(OUT)                      :: lmod  ! Does the coil close on itself within a field period?
-
+                                                           ! Note: this is true for saddle coils as well.
         ! Local variables
         TYPE(EZspline1_r8) :: XC_spl, YC_spl, ZC_spl
         REAL(rprec)        :: s_val, u, v, xlast, ylast
@@ -202,14 +202,12 @@
         nknots = COUNT(coil_splinesx(icoil,:) >= 0)
         CALL EZspline_init(XC_spl, nknots, bcs1, ier)
         XC_spl%x1 = coil_splinesx(icoil,1:nknots)
-        XC_spl%isHermite = 1
         CALL EZspline_setup(XC_spl, coil_splinefx(icoil,1:nknots), ier)
         xlast = coil_splinefx(icoil,nknots)
 
         nknots = COUNT(coil_splinesy(icoil,:) >= 0)
         CALL EZspline_init(YC_spl, nknots, bcs1, ier)
         YC_spl%x1 = coil_splinesy(icoil,1:nknots)
-        YC_spl%isHermite = 1
         CALL EZspline_setup(YC_spl, coil_splinefy(icoil,1:nknots), ier)
         ylast = coil_splinefy(icoil,nknots)
 
@@ -230,7 +228,6 @@
            nknots = COUNT(coil_splinesz(icoil,:) >= 0)
            CALL EZspline_init(ZC_spl, nknots, bcs1, ier)
            ZC_spl%x1 = coil_splinesz(icoil,1:nknots)
-           ZC_spl%isHermite = 1
            CALL EZspline_setup(ZC_spl, coil_splinefz(icoil,1:nknots), ier)
 
            ! Evaluate the coil
