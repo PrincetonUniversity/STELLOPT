@@ -334,6 +334,7 @@
                          np_orbit,vll_orbit,mu_orbit, target_coil_bnorm,&
                          sigma_coil_bnorm, nu_bnorm, nv_bnorm,&
                          target_coillen, sigma_coillen, &
+                         target_coilsep, sigma_coilsep, npts_csep, &
                          target_coilcrv, sigma_coilcrv, npts_curv, &
                          target_ece,sigma_ece,freq_ece, mix_ece, vessel_ece, mirror_ece, &
                          antennaposition_ece, targetposition_ece, rbeam_ece, rfocus_ece, &
@@ -789,6 +790,7 @@
       npts_curv         = 256
       target_coilsep    = 20.0
       sigma_coilsep     = bigno
+      npts_csep         = 128
 
       ! Read name list
       lexist            = .false.

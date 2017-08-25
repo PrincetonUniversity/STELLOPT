@@ -44,7 +44,7 @@
                targets(mtargets) = target(ik)
                sigmas(mtargets)  = sigma(ik)
                vals(mtargets)    = maxcurv
-               IF (iflag == 1) WRITE(iunit_out,'(I5,3ES22.12E3)') ik,target(ik),sigma(ik),maxcurv,smax
+               IF (iflag == 1) WRITE(iunit_out,'(I5,4ES22.12E3)') ik,target(ik),sigma(ik),maxcurv,smax
             END IF
          END DO
       ELSE

@@ -168,7 +168,7 @@
       REAL(rprec) ::  target_coil_bnorm, sigma_coil_bnorm
       INTEGER     ::  nu_bnorm,nv_bnorm
       REAL(rprec), DIMENSION(nigroup)    :: target_coillen, sigma_coillen
-      INTEGER     :: npts_curv
+      INTEGER     :: npts_curv, npts_csep
       REAL(rprec), DIMENSION(nigroup)    :: target_coilcrv, sigma_coilcrv
       REAL(rprec)                        :: target_coilsep, sigma_coilsep
 

@@ -287,6 +287,40 @@
       END SUBROUTINE get_coil_length
 
 !-------------------------------------------------------------------------------
+!     Subroutine:    get_coil_sep
+!     Author:        J. Breslau (jbreslau@pppl.gov)
+!     Date:          8/25/2017
+!     Description:   Estimates the distance of closest approach of two coils.
+!
+!     Inputs:       Coil coordinate arrays and sizes
+!     Output:       Shortest distance between any two coordinate pairs.
+!-------------------------------------------------------------------------------
+      SUBROUTINE get_coil_sep(x1, y1, z1, n1, x2, y2, z2, n2, minsep)
+        USE stel_kinds, ONLY : rprec        
+        IMPLICIT NONE
+        INTRINSIC SQRT
+
+        INTEGER, INTENT(IN)                    :: n1, n2
+        REAL(rprec), DIMENSION(n1), INTENT(IN) :: x1, y1, z1
+        REAL(rprec), DIMENSION(n2), INTENT(IN) :: x2, y2, z2
+        REAL(rprec), INTENT(OUT)               :: minsep
+
+        REAL(rprec) :: dsq
+        INTEGER     :: j1, j2
+
+        minsep = 1.0D+60
+
+        DO j1=1,n1-1     ! Assumes 1st and last pts are identical.
+           DO j2=1,n2-1
+              dsq = (x1(j1) - x2(j2))**2 + (y1(j1) - y2(j2))**2 + (z1(j1) - z2(j2))**2
+              IF (dsq < minsep) minsep = dsq
+           END DO !j2
+        END DO !j1
+
+        minsep = SQRT(minsep)
+      END SUBROUTINE get_coil_sep
+
+!-------------------------------------------------------------------------------
 !     Subroutine:    get_coil_maxcurv
 !     Author:        J. Breslau (jbreslau@pppl.gov)
 !     Date:          8/24/2017

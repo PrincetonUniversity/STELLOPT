@@ -64,6 +64,7 @@ chisq_faraday.o \
 chisq_gradp_max.o \
 chisq_jinvariant.o \
 chisq_coillen.o \
+chisq_coilsep.o \
 chisq_coilcrv.o \
 stellopt_neo.o \
 stellopt_fcn.o \
