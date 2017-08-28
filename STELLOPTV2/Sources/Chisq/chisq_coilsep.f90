@@ -32,7 +32,7 @@
       REAL(rprec), DIMENSION(:,:,:), ALLOCATABLE :: xyzuniq
       REAL(rprec), DIMENSION(:,:), ALLOCATABLE   :: ctarg
       REAL(rprec)                                :: deltaphi, cdp, sdp, rsgn
-      INTEGER                                    :: ic, ifp, irefl, itarg, iu, n_uniq
+      INTEGER                                    :: ic, ifp, irefl, itarg, iu, n_uniq, ic0
       LOGICAL, DIMENSION(:), ALLOCATABLE         :: lmod
 
 !----------------------------------------------------------------------
@@ -83,12 +83,19 @@
             DO itarg=1,n_uniq
                ctarg(:,3) = rsgn*xyzuniq(:,3,itarg)
                DO ifp=1,nfp+irefl-1
-                  ! Rotate to target field period
+                  ! Reflect (iff irefl==1) and rotate to target field period
                   cdp = COS(ifp*deltaphi);  sdp = SIN(ifp*deltaphi)
                   ctarg(:,1) = cdp*xyzuniq(:,1,itarg) - rsgn*sdp*xyzuniq(:,2,itarg)
                   ctarg(:,2) = sdp*xyzuniq(:,1,itarg) + rsgn*cdp*xyzuniq(:,2,itarg)
 
-                  DO ic=1,n_uniq
+                  ! Avoid redundant calcs. for reflections w/in same f.p.
+                  IF ((irefl.eq.1).AND.(ifp.eq.1)) THEN
+                     ic0 = itarg
+                  ELSE
+                     ic0 = 1
+                  END IF
+
+                  DO ic=ic0,n_uniq
                      mtargets = mtargets + 1
                      CALL get_coil_sep(xyzuniq(:,1,ic), xyzuniq(:,2,ic), xyzuniq(:,3,ic), npts_csep, &
                           ctarg(:,1), ctarg(:,2), ctarg(:,3), npts_csep, vals(mtargets))
@@ -115,7 +122,12 @@
          DO irefl=0,1
             DO itarg=1,n_uniq
                DO ifp=1,irefl+nfp-1
-                  DO ic=1,n_uniq
+                  IF ((irefl.eq.1).AND.(ifp.eq.1)) THEN
+                     ic0 = itarg
+                  ELSE
+                     ic0 = 1
+                  END IF
+                  DO ic=ic0,n_uniq
                      mtargets = mtargets + 1
                      IF (niter == -2) target_dex(mtargets)=jtarget_coilsep
                   END DO !ic
