@@ -170,6 +170,8 @@
          CALL chisq_coilsep(target_coilsep, sigma_coilsep, ncnt, iflag)
       IF (ANY(sigma_coilcrv < bigno)) &
          CALL chisq_coilcrv(target_coilcrv, sigma_coilcrv, ncnt, iflag)
+      IF (ANY(sigma_coilself < bigno)) &
+         CALL chisq_coilself(target_coilself, sigma_coilself, ncnt, iflag)
 
       !------------- EXTERNAL TARGETS --------------------------
       !  This section of the code relys upon external libraries

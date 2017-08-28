@@ -336,6 +336,7 @@
                          target_coillen, sigma_coillen, &
                          target_coilsep, sigma_coilsep, npts_csep, &
                          target_coilcrv, sigma_coilcrv, npts_curv, &
+                         target_coilself, sigma_coilself, npts_cself, &
                          target_ece,sigma_ece,freq_ece, mix_ece, vessel_ece, mirror_ece, &
                          antennaposition_ece, targetposition_ece, rbeam_ece, rfocus_ece, &
                          targettype_ece, antennatype_ece, nra_ece, nphi_ece, &
@@ -791,6 +792,9 @@
       target_coilsep    = 20.0
       sigma_coilsep     = bigno
       npts_csep         = 128
+      target_coilself   = 0.0
+      sigma_coilself    = bigno
+      npts_cself        = 360
 
       ! Read name list
       lexist            = .false.

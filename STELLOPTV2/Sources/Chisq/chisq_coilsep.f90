@@ -4,6 +4,8 @@
 !     Date:          2017
 !     Description:   Calculates the distance of closest approach between
 !                    each modifiable coil and every other coil.
+!     Warning:       This routine currently assumes all coils are modular,
+!                    and none are self-symmetric.
 !-----------------------------------------------------------------------
       SUBROUTINE chisq_coilsep(targ,sigma,niter,iflag)
 !-----------------------------------------------------------------------

@@ -66,6 +66,7 @@ chisq_jinvariant.o \
 chisq_coillen.o \
 chisq_coilsep.o \
 chisq_coilcrv.o \
+chisq_coilself.o \
 stellopt_neo.o \
 stellopt_fcn.o \
 stellopt_load_targets.o \

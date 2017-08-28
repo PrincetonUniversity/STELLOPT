@@ -428,3 +428,93 @@
         CALL EZspline_free(XC_spl, ier);  CALL EZspline_free(YC_spl, ier)
         IF (.NOT.lwindsurf) CALL EZspline_free(ZC_spl, ier)
       END SUBROUTINE get_coil_maxcurv
+
+!-----------------------------------------------------------------------
+!     Subroutine:    get_coil_self_int
+!     Author:        J. Breslau (jbreslau@pppl.gov)
+!     Date:          8/28/2017
+!     Description:   Computes the number of self-intersections of a 2D curve.
+!     Input:         Coil index icoil
+!     Output:        Number of intersections
+!-----------------------------------------------------------------------
+      SUBROUTINE get_coil_self_int(icoil, nselfint)
+        USE stellopt_vars
+        USE stellopt_targets, ONLY : npts_cself
+        USE EZspline_obj
+        USE EZspline
+        IMPLICIT NONE
+        INTRINSIC COUNT
+        LOGICAL, EXTERNAL :: uvintersect
+
+        ! Arguments
+        INTEGER, INTENT(IN)  :: icoil
+        INTEGER, INTENT(OUT) :: nselfint
+
+        ! Constants
+        INTEGER, DIMENSION(2), PARAMETER :: ezpbc = (/-1,-1/) ! Periodic boundary condition in EZspline
+
+        ! Local variables
+        TYPE(EZspline1_r8)                     :: C_spl
+        REAL(rprec), DIMENSION(:), ALLOCATABLE :: uc, vc
+        REAL(rprec)                            :: s_val
+        INTEGER                                :: ier, iseg, iseg2, nknots
+
+        ! Get u,v coords along coil
+        ALLOCATE(uc(0:npts_cself-1), vc(0:npts_cself-1))
+
+        nknots = COUNT(coil_splinesx(icoil,:) >= 0)
+        CALL EZspline_init(C_spl, nknots, ezpbc, ier)
+        C_spl%x1 = coil_splinesx(icoil,1:nknots)
+        CALL EZspline_setup(C_spl, coil_splinefx(icoil,1:nknots), ier)
+        DO iseg=1,npts_cself
+           s_val = REAL(iseg-1)/REAL(npts_cself-1)
+           CALL EZspline_interp(C_spl, s_val, uc(iseg-1), ier)
+        END DO !iseg
+        CALL EZspline_free(C_spl, ier)
+
+        nknots = COUNT(coil_splinesy(icoil,:) >= 0)
+        CALL EZspline_init(C_spl, nknots, ezpbc, ier)
+        C_spl%x1 = coil_splinesy(icoil,1:nknots)
+        CALL EZspline_setup(C_spl, coil_splinefy(icoil,1:nknots), ier)
+        DO iseg=1,npts_cself
+           s_val = REAL(iseg-1)/REAL(npts_cself-1)
+           CALL EZspline_interp(C_spl, s_val, vc(iseg-1), ier)
+        END DO !iseg
+        CALL EZspline_free(C_spl, ier)
+
+        ! Check for self-intersections
+        nselfint = 0
+        DO iseg=0,npts_cself-2
+           DO iseg2=iseg+2, npts_cself-2
+              IF (uvintersect(uc(iseg),  vc(iseg),  uc(iseg+1),  vc(iseg+1), &
+                              uc(iseg2), vc(iseg2), uc(iseg2+1), vc(iseg2+1))) &
+                nselfint = nselfint + 1
+           END DO !iseg2
+        END DO !iseg
+
+        DEALLOCATE(uc, vc)
+      END SUBROUTINE get_coil_self_int
+
+!-------------------------------------------------------------------------------
+! Return TRUE if the two specified line segments in a plane intersect.
+! Segments intersect at (u,v) = (u11+alpha*(u12-u11), v11+alpha*(v12-v11))
+! Segments intersect at (u,v) = (u21+beta*(u22-u21),  v21+beta*(v22-v21))
+! Invert matrix to solve for alpha, beta.
+!-------------------------------------------------------------------------------
+      LOGICAL FUNCTION uvintersect(u11, v11, u12, v12, u21, v21, u22, v22)
+        USE stel_kinds, ONLY : rprec
+        IMPLICIT NONE
+
+        REAL(rprec), INTENT(IN) :: u11, v11, u12, v12, u21, v21, u22, v22
+        REAL(rprec), PARAMETER :: zero=0.0D0, one=1.0D0
+        REAL(rprec) :: det, alpha, beta
+
+        uvintersect = .FALSE.
+        det = (u12 - u11)*(v21 - v22) - (v12 - v11)*(u21 - u22)
+        IF (det == 0.0) RETURN  ! Parallel segments do not intersect.
+
+        alpha = ((v21 - v22)*(u21 - u11) + (u22 - u21)*(v21 - v11))/det
+        beta = ((v11 - v12)*(u21 - u11) + (u12 - u11)*(v21 - v11))/det
+        IF ((alpha.ge.zero).AND.(alpha.le.one).AND.&
+             (beta.ge.zero).AND.(beta.le.one)) uvintersect = .TRUE.
+      END FUNCTION uvintersect
