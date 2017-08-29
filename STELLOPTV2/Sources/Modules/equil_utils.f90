@@ -301,6 +301,9 @@
          CASE ('two_power')
             val = 0
             val = coefs(1) * (one - s_val**coefs(2))**coefs(3)
+         CASE ('two_power_hollow')
+            val = 0
+            val = s_val * coefs(1) * (one - s_val**coefs(2))**coefs(3)
          CASE ('power_series')
             val = 0
             DO i = UBOUND(coefs,DIM=1), LBOUND(coefs,DIM=1), -1
@@ -383,6 +386,9 @@
             val = 0
             if ((s_val > x1) .and. (s_val < 1.0_rprec)) val = h*(s_val-x1)*(s_val-x2)
             val = val + x3*s_val*(s_val-1)/(-0.25_rprec)
+         CASE DEFAULT
+            PRINT *,"Error! Unknown profile type in subroutine eval_prof_stel:",type
+            STOP
       END SELECT
       RETURN
       END SUBROUTINE eval_prof_stel
@@ -731,7 +737,7 @@
       CALL tolower(prof_type)
       profile_norm = 0.0_rprec
       SELECT CASE (prof_type)
-         CASE ('two_power','two_lorentz','gauss_trunc','sum_atan','pedestal')
+         CASE ('two_power','two_power_hollow','two_lorentz','gauss_trunc','sum_atan','pedestal')
             profile_norm = 0.0_rprec  ! Don't normalize as we don't want to screw up our coefficients
          CASE ('power_series','power_series_edge0')
             DO ik = LBOUND(x,DIM=1), UBOUND(x,DIM=1)
@@ -741,6 +747,9 @@
             DO ik = LBOUND(x,DIM=1), UBOUND(x,DIM=1)
                profile_norm = profile_norm + x(ik)
             END DO
+         CASE DEFAULT
+            PRINT *,"Error! Unknown profile type in subroutine profile_norm:",prof_type
+            STOP
       END SELECT
       IF (ltriangulate) profile_norm = 0.0_rprec ! Don't use normalization in triangulation mode
       RETURN
@@ -1231,6 +1240,8 @@
       SELECT CASE (bootj_type)
          CASE('two_power')
             nc = 3
+         CASE('two_power_hollow')
+            nc = 3
          CASE('two_lorentz')
             nc = 8
          CASE('gauss_trunc')
@@ -1243,6 +1254,9 @@
             nc = 21
          CASE('bump')
             nc = 3
+         CASE DEFAULT
+            PRINT *,"Error! Unknown profile type in subroutine fit_profile:",ptype
+            STOP
       END SELECT
       ! ALLOCATE Vars
       ALLOCATE(xc_opt(nc),diag(nc),qtf(nc),wa1(nc),wa2(nc),wa3(nc),fjac(nfit_targs,nc),&
