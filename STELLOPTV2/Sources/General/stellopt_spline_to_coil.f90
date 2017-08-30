@@ -514,7 +514,8 @@
         IF (det == 0.0) RETURN  ! Parallel segments do not intersect.
 
         alpha = ((v21 - v22)*(u21 - u11) + (u22 - u21)*(v21 - v11))/det
-        beta = ((v11 - v12)*(u21 - u11) + (u12 - u11)*(v21 - v11))/det
-        IF ((alpha.ge.zero).AND.(alpha.le.one).AND.&
-             (beta.ge.zero).AND.(beta.le.one)) uvintersect = .TRUE.
+        IF ((alpha < zero) .OR. (alpha > one)) RETURN
+
+        beta  = ((v11 - v12)*(u21 - u11) + (u12 - u11)*(v21 - v11))/det
+        IF ((beta.ge.zero).AND.(beta.le.one)) uvintersect = .TRUE.
       END FUNCTION uvintersect
