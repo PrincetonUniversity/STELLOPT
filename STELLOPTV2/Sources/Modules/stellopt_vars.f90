@@ -157,6 +157,8 @@
       ! yet
       REAL(rprec), DIMENSION(ndatafmax) :: nustar_s, nustar_f
       
+      CHARACTER, DIMENSION(nigroup) :: coil_type
+
       REAL(rprec) :: phiedge_old  ! For keeping track of phiedge
       
       INTEGER, PARAMETER ::  norm_dex   = -5

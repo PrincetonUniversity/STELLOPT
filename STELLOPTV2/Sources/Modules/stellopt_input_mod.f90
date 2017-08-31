@@ -256,6 +256,7 @@
                          rbc_min, rbc_max, zbs_min, zbs_max, &
                          rbs_min, rbs_max, zbc_min, zbc_max, &
                          mboz, nboz, rho_exp, &
+                         coil_type, &
                          coil_splinesx,coil_splinesy,coil_splinesz,&
                          coil_splinefx,coil_splinefy,coil_splinefz,&
                          coil_splinefx_min,coil_splinefy_min,coil_splinefz_min,&
@@ -534,9 +535,10 @@
       coil_splinefx(:,:) = 0
       coil_splinefy(:,:) = 0
       coil_splinefz(:,:) = 0
-      windsurfname = ''
-      windsurf%mmax = -1
-      windsurf%nmax = -1
+      coil_type(:)    = 'U'    ! Default to "unknown"
+      windsurfname    = ''
+      windsurf%mmax   = -1
+      windsurf%nmax   = -1
       mboz            = 64
       nboz            = 64
       target_phiedge  = 0.0

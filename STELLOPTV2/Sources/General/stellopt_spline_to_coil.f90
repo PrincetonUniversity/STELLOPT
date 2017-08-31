@@ -198,14 +198,27 @@
 
         lmod = .FALSE.
 
-        ! Set up splines
+        ! Handle spline boundary conditions
         nknots = COUNT(coil_splinesx(icoil,:) >= 0)
+        IF (coil_type(icoil).eq.'M') THEN !Enforce periodicity for modular coils
+           lmod = .TRUE.
+           IF (lwindsurf) THEN !u0=0,uf=1,vf=v0
+              coil_splinefx(icoil,     1) = 0.0d0
+              coil_splinefx(icoil,nknots) = 1.0d0
+              coil_splinefy(icoil,nknots) = coil_splinefy(icoil,1)
+           ELSE  !z0=z(t=0), zf=z0, xf=x0,yf=y0
+              coil_splinefx(icoil,nknots) = coil_splinefx(icoil,1)
+              coil_splinefy(icoil,nknots) = coil_splinefy(icoil,1)
+              coil_splinefz(icoil,nknots) = coil_splinefz(icoil,1)
+           END IF
+        END IF
+
+        ! Set up splines
         CALL EZspline_init(XC_spl, nknots, bcs1, ier)
         XC_spl%x1 = coil_splinesx(icoil,1:nknots)
         CALL EZspline_setup(XC_spl, coil_splinefx(icoil,1:nknots), ier)
         xlast = coil_splinefx(icoil,nknots)
 
-        nknots = COUNT(coil_splinesy(icoil,:) >= 0)
         CALL EZspline_init(YC_spl, nknots, bcs1, ier)
         YC_spl%x1 = coil_splinesy(icoil,1:nknots)
         CALL EZspline_setup(YC_spl, coil_splinefy(icoil,1:nknots), ier)
@@ -225,7 +238,6 @@
            IF ((ABS(MODULO(coil_splinefx(icoil,1),1.0d0) - MODULO(xlast,1.0D0)).le.2.0*EPSILON(u)) &
                 .and. (coil_splinefy(icoil,1) == ylast) ) lmod = .TRUE.
         ELSE                !Interpret coil_splinefx as x, coil_splinefy as y, coil_splinefz as z.
-           nknots = COUNT(coil_splinesz(icoil,:) >= 0)
            CALL EZspline_init(ZC_spl, nknots, bcs1, ier)
            ZC_spl%x1 = coil_splinesz(icoil,1:nknots)
            CALL EZspline_setup(ZC_spl, coil_splinefz(icoil,1:nknots), ier)
@@ -354,13 +366,25 @@
         REAL(rprec)        :: cx, cy, cz, norm, kappa
         INTEGER            :: ier, ipt, nknots
 
-        ! Set up splines
+        ! Handle spline boundary conditions
         nknots = COUNT(coil_splinesx(icoil,:) >= 0)
+        IF (coil_type(icoil).eq.'M') THEN !Enforce periodicity for modular coils
+           IF (lwindsurf) THEN !u0=0,uf=1,vf=v0
+              coil_splinefx(icoil,     1) = 0.0d0
+              coil_splinefx(icoil,nknots) = 1.0d0
+              coil_splinefy(icoil,nknots) = coil_splinefy(icoil,1)
+           ELSE  !z0=z(t=0), zf=z0, xf=x0,yf=y0
+              coil_splinefx(icoil,nknots) = coil_splinefx(icoil,1)
+              coil_splinefy(icoil,nknots) = coil_splinefy(icoil,1)
+              coil_splinefz(icoil,nknots) = coil_splinefz(icoil,1)
+           END IF
+        END IF
+
+        ! Set up splines
         CALL EZspline_init(XC_spl, nknots, ezpbc, ier)
         XC_spl%x1 = coil_splinesx(icoil,1:nknots)
         CALL EZspline_setup(XC_spl, coil_splinefx(icoil,1:nknots), ier)
 
-        nknots = COUNT(coil_splinesy(icoil,:) >= 0)
         CALL EZspline_init(YC_spl, nknots, ezpbc, ier)
         YC_spl%x1 = coil_splinesy(icoil,1:nknots)
         CALL EZspline_setup(YC_spl, coil_splinefy(icoil,1:nknots), ier)
@@ -368,7 +392,6 @@
         IF (lwindsurf) THEN
            windsurf%nfp = nfp
         ELSE
-           nknots = COUNT(coil_splinesz(icoil,:) >= 0)
            CALL EZspline_init(ZC_spl, nknots, ezpbc, ier)
            ZC_spl%x1 = coil_splinesz(icoil,1:nknots)
            CALL EZspline_setup(ZC_spl, coil_splinefz(icoil,1:nknots), ier)
@@ -459,10 +482,21 @@
         REAL(rprec)                            :: s_val
         INTEGER                                :: ier, iseg, iseg2, nknots
 
+        IF (.NOT.lwindsurf) THEN
+           nselfint = -1;  RETURN
+        END IF
+
+        ! Handle spline boundary conditions
+        nknots = COUNT(coil_splinesx(icoil,:) >= 0)
+        IF (coil_type(icoil).eq.'M') THEN !Enforce periodicity for modular coils
+           coil_splinefx(icoil,     1) = 0.0d0
+           coil_splinefx(icoil,nknots) = 1.0d0
+           coil_splinefy(icoil,nknots) = coil_splinefy(icoil,1)
+        END IF
+
         ! Get u,v coords along coil
         ALLOCATE(uc(0:npts_cself-1), vc(0:npts_cself-1))
 
-        nknots = COUNT(coil_splinesx(icoil,:) >= 0)
         CALL EZspline_init(C_spl, nknots, ezpbc, ier)
         C_spl%x1 = coil_splinesx(icoil,1:nknots)
         CALL EZspline_setup(C_spl, coil_splinefx(icoil,1:nknots), ier)
@@ -472,7 +506,6 @@
         END DO !iseg
         CALL EZspline_free(C_spl, ier)
 
-        nknots = COUNT(coil_splinesy(icoil,:) >= 0)
         CALL EZspline_init(C_spl, nknots, ezpbc, ier)
         C_spl%x1 = coil_splinesy(icoil,1:nknots)
         CALL EZspline_setup(C_spl, coil_splinefy(icoil,1:nknots), ier)
