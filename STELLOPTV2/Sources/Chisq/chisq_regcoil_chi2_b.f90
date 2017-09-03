@@ -21,9 +21,15 @@
 !-----------------------------------------------------------------------
 !     Libraries
 !-----------------------------------------------------------------------
+
+! JCS TO DO: Verify that all of these are necessary.
       USE stellopt_runtime
       USE stellopt_targets
+      USE stellopt_input_mod
       USE equil_vals, ONLY: curtor
+      ! USE neo_input_mod, ONLY: read_neoin_input, write_neoin_namelist
+      USE regcoil_input_mod 
+      USE regcoil_variables
       
 !-----------------------------------------------------------------------
 !     Input/Output Variables
@@ -34,7 +40,8 @@
       REAL(rprec), INTENT(in)    ::  sigma
       INTEGER,     INTENT(in)    ::  niter
       INTEGER,     INTENT(inout) ::  iflag
-      
+      integer :: iunit
+ 
 !-----------------------------------------------------------------------
 !     Local Variables
 !
@@ -44,24 +51,37 @@
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
       IF (iflag < 0) RETURN
-      IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'REGCOIL CHI2_B ',1,4
+      IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') &
+         'REGCOIL CHI2_B ',1,4
       IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA  DUMMY  CHI'
       IF (niter >= 0) THEN
-         ! A note on how to calculate temp_val.
-         ! If target value is designed to be a limiter type target
-         ! (wall in parameter space) please define temp_val via a
-         ! hyperbolic tangent with width equal to 4-5 times EPSFCN.
-         ! This will allow the code to properly handle the optimization
-         ! process, define a gradient in search space.
-         mtargets = mtargets + 1
-         targets(mtargets) = 0.0
-         sigmas(mtargets)  = bigno
-         vals(mtargets)    = 0.0
-         IF (iflag == 1) WRITE(iunit_out,'(3ES22.12E3)') target,sigma,0.0,vals(mtargets)
+        IF (sigma < bigno) THEN
+           mtargets = mtargets + 1
+           targets(mtargets) = target
+           sigmas(mtargets)  = sigma
+           vals(mtargets)    = sqrt(chi2_B_target)
+           !   targets(mtargets) = 0.0
+           !  sigmas(mtargets)  = bigno
+           !  vals(mtargets)    = 0.0
+           IF (iflag == 1) WRITE(iunit_out,'(3ES22.12E3)') target,sigma,0.0,vals(mtargets)
+        ENDIF
       ELSE
+         ! IF (sigma < bigno .and. myid == master) THEN
          IF (sigma < bigno) THEN
+           write(6,'(a,i12)') '<---- niter=', niter
             mtargets = mtargets + 1
             IF (niter == -2) target_dex(mtargets)=jtarget_regcoil_chi2_b
+           ! Read the regcoil namelist from the input."id_string" file
+           ! WRITE(6,'(a,a)') '<---- id_string=', id_string
+        
+           CALL safe_open(iunit, iflag, TRIM('input.'//TRIM(id_string)), 'old', 'formatted')
+           CALL read_regcoil_input(iunit, iflag)
+           close(iunit)
+           IF (iflag < 0) THEN
+              WRITE(6,*) '!!!!!!!!!!!!ERRROR!!!!!!!!!!!!!!'
+              WRITE(6,*) '  REGCOIL Namelist not found     '
+              WRITE(6,*) '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+           END IF
          END IF
       END IF
       RETURN

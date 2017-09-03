@@ -2,12 +2,12 @@
 !     Subroutine:    stellopt_regcoil_chi2_b
 !     Authors:       J.C.Schmitt (Auburn/PPPL) jcschmitt@auburn.edu
 !     Date:          2017
-!     Description:   This subroutine call the coil regularization code
-!                    REGCOIL to create a coil set given some winding
-!                    surface
+!     Description:   This subroutine calls the coil regularization code
+!                    REGCOIL in 'target sqrt(<K^2>)' mode
+!                    
 !-----------------------------------------------------------------------
-      SUBROUTINE stellopt_regcoil_chi2_b(file_str,lscreen)
-!      SUBROUTINE stellopt_regcoil_chi2_b(file_str,iflag)
+      SUBROUTINE stellopt_regcoil_chi2_b(lscreen, iflag)
+!  proc_string is in memory, unique to optimzer function evaluation
 !-----------------------------------------------------------------------
 !     Libraries
 !-----------------------------------------------------------------------
@@ -15,15 +15,27 @@
       USE stellopt_input_mod
       USE stellopt_vars
       USE equil_utils
-      USE neswrite, ONLY: coil_separation
+!      USE neswrite, ONLY: coil_separation
+
+      ! REGCOIL files
+      USE regcoil_variables
+      USE regcoil_input_mod
+      USE validate_regcoil_input
+      USE compute_regcoil_lambda
+      USE init_regcoil_plasma
+      USE init_regcoil_coil_surface
+      USE read_regcoil_bnorm
+      USE build_regcoil_matrices
+      USE regcoil_auto_regularization_solve
+      USE write_regcoil_output
 
 !-----------------------------------------------------------------------
 !     Subroutine Parameters
 !        iflag         Error flag
 !----------------------------------------------------------------------
       IMPLICIT NONE
-      CHARACTER(256), INTENT(inout)    :: file_str
-      ! INTEGER, INTENT(inout) :: iflag
+      !CHARACTER(256), INTENT(inout)    :: file_str
+      INTEGER, INTENT(inout) :: iflag
       LOGICAL, INTENT(inout)        :: lscreen
 
 !-----------------------------------------------------------------------
@@ -36,81 +48,96 @@
 !        iverb         REGCOIL screen control
 !        istat         Error status
 !        iunit         File unit number
-!        bnfou/_c      B-Normal Fourier coefficients
       INTEGER ::  ier, iunit_rzuv
       ! FOR REGCOIL
       ! INTEGER(4)     :: regcoiloutTEMP,regcoilScrOut
       LOGICAL :: lexists
       INTEGER :: iverb, istat, nu, nv, mf, nf, md, nd, iunit, m, n, &
                  ivmec, ispline_file
-      REAL(rprec), ALLOCATABLE, DIMENSION(:,:) :: bnfou, bnfou_c
+!      REAL(rprec), ALLOCATABLE, DIMENSION(:,:) :: bnfou, bnfou_c
       CHARACTER(8)   :: temp_str
       CHARACTER(256) :: copt_fext
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
 !      IF (iflag < 0) RETURN
-      IF (lscreen) WRITE(6,'(a)') ' ----------------------------  REGCOIL CALCULATION  -------------------------'
+      IF (lscreen) then
+         WRITE(6,'(a)') ' -------------  REGCOIL CALCULATION  ---------'
+      ENDIF
 !DEC$ IF DEFINED (REGCOIL)
 
+       IF (lscreen) WRITE(6,'(a,a)') '<---- proc_string=', proc_string
+       wout_filename = 'wout_'//TRIM(proc_string)//'.nc'
+      separation = regcoil_winding_surface_separation
+      write(6,'(a)') '<----safe_open'
+      CALL safe_open(iunit, iflag, TRIM('regcoil_in.'// &
+               TRIM(proc_string)), 'replace', 'formatted')
+      write(6,'(a)') '<----write_regcoil_input'
+      CALL write_regcoil_input(proc_string, iunit, istat)
+      write(6,'(a)') '<----flush'
+      CALL FLUSH(iunit)
 
-      ! reset the params file
-      copt_fext = 'regcoil_params'//CHAR(0)
-      ! CALL init_settings(MPI_COMM_MYWORLD,copt_fext)
-      ! initialize
-      iverb = 0
-      ivmec = 0
-      ispline_file = 0
-      copt_fext = 'regcoil_params.'//TRIM(file_str)
-      ! Have master run bnorm
-      nu = nu_bnorm
-      nv = nv_bnorm
-      mf=24; nf=10; md=24; nd=20; coil_separation = 0.33;
-         ! Run BNORM code
-      !    ALLOCATE(bnfou(0:mf,-nf:nf),bnfou_c(0:mf,-nf:nf),STAT=istat)
-      !    IF (lscreen) WRITE(6,"(A)") '   - Calculating B-Normal File'
-      !    CALL bnormal(nu,nv,mf,nf,md,nd,bnfou,bnfou_c,TRIM(file_str)//'.nc')
-      !    IF (lscreen) WRITE(6,"(A,ES22.12E3)") '      Max. B-Normal: ',MAXVAL(MAXVAL(bnfou,DIM=2),DIM=1)
-      !    IF (lscreen) WRITE(6,"(A,ES22.12E3)") '      MIN. B-Normal: ',MINVAL(MINVAL(bnfou,DIM=2),DIM=1)
-      !    ! WRITE BNORMAL
-      !    CALL safe_open(iunit, istat, 'bnorm.' // TRIM(file_str), 'replace','formatted')
-      !    DO m = 0, mf
-      !       DO n = -nf, nf
-      !          WRITE(iunit,"(1x,2i5,ES22.12E3)") m,n,bnfou(m,n)
-      !       END DO
-      !    END DO
-      !    CLOSE(iunit)
-      !    DEALLOCATE(bnfou,bnfou_c)
-      !    IF (lscreen) WRITE(6,"(A)") '      Coefficients output to:   '//'bnorm.' // TRIM(file_str)
-      !    ! Turn on screen output
-      !    IF (lscreen) iverb = 1
-      ! CALL MPI_BCAST(iverb,1,MPI_INTEGER, master, MPI_COMM_MYWORLD,ierr_mpi)
-      ! IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_coiloptpp1',ierr_mpi)
-      ! ! Update file names
-      ! INQUIRE(FILE='wout_'//TRIM(file_str)//'.nc',EXIST=lexists)
-      ! IF (lexists) ivmec = 1
-      ! DO m = 0, numws-1
-      !     ispline_file = 0
-      !     WRITE(temp_str,'(I3.3)') m
-      !     INQUIRE(FILE='coil_spline'//TRIM(temp_str)//'_reset_file.out',EXIST=lexists)
-      !     IF (lexists) ispline_file = 1
-      ! END DO
-      ! CALL coilopt_update_parameters(nu,nv,ivmec,ispline_file,iverb,TRIM(file_str))
-      ! CALL MPI_BARRIER(MPI_COMM_MYWORLD,ierr_mpi)
-      ! IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_coiloptpp2',ierr_mpi)
-      ! ! Output the file
-      ! CALL coilopt_writeparams(MPI_COMM_MYWORLD,TRIM(copt_fext))
-      ! ! Run init
-      ! CALL MPI_BARRIER(MPI_COMM_MYWORLD,ierr_mpi)
-      ! IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_coiloptpp3',ierr_mpi)
-      ! IF (lscreen) WRITE(6,"(A)") '   - Initializing COILOPT++ '
-      ! CALL coilopt_init(MPI_COMM_MYWORLD,TRIM(copt_fext))
-      ! ! Run Coilopt++
-      ! IF (lscreen) WRITE(6,"(A)") '   - Executing COILOPT++ '
-      ! CALL coilopt_run(MPI_COMM_MYWORLD,iverb,TRIM(file_str))
-      ! ! Write Output
-      ! CALL coilopt_writeoutput(MPI_COMM_MYWORLD,TRIM(file_str))
-      ! CALL MPI_BARRIER(MPI_COMM_MYWORLD,ierr_mpi)
+      ! input file should be written. Now perform regcoil operation 
+      ! This should be *almost* a duplicate of the main code from
+      ! regcoil.f90
+      ! JCS : Probably don't need to re-read the namelist, but I like 
+      ! to do things in baby-steps with lots of debugging opptions and
+      ! info
+      !write(6,'(a)') '<----safe_open'
+      !CALL safe_open(iunit, iflag, TRIM('input.'//TRIM(proc_string)), &
+      !          'old', 'formatted')
+      !write(6,'(a)') '<----read_regcoil_input'
+      !call read_regcoil_input(iunit, iflag)
+      write(6,'(a)') '<----Validate'
+      call validate_input()
+      write(6,'(a)') '<----Compute lambda'
+      call compute_lambda()
+
+      ! Define the position vector and normal vector at each grid point for
+      ! the surfaces:
+      write(6,'(a)') '<----init_plasma'
+      call init_plasma()
+      write(6,'(a)') '<----init coil surfs'
+      call init_coil_surface()
+
+      ! Initialize some of the vectors and matrices needed:
+      write(6,'(a)') '<----read bnorm'
+      call read_bnorm()
+      write(6,'(a)') '<----build matrices'
+      call build_matrices()
+
+      ! JCS: I disabled all options except for #5 (for now)
+      write(6,'(a)') '<----select a case'
+      select case (general_option)
+      !case (1)
+      !   call solve()
+      !case (2)
+      !   call compute_diagnostics_for_nescout_potential()
+      !case (3)
+      !   call svd_scan()
+      !case (4)
+      !   call auto_regularization_solve()
+      case (5)
+      write(6,'(a)') '<----auto_reg solve'
+         call auto_regularization_solve()
+      case default
+         print *,"Invalid general_option:",general_option
+         stop
+      end select
+    
+!      write(6,'(a)') '<----safe_open'
+!      CALL safe_open(iunit, iflag, TRIM('regcoil_in.'// &
+!                TRIM(proc_string)), 'replace', 'formatted')
+!      write(6,'(a)') '<----write_output'
+!      call write_output()
+!
+!      write(6,'(a)') '<----flush'
+!      CALL FLUSH(iunit)
+
+      print *, chi2_B_target
+      print *,"REGCOIL complete. Total time=",totalTime,"sec."
+
+
       IF (lscreen) WRITE(6,'(a)') ' ---------------------------  REGCOIL CALCULATION DONE  ---------------------'
 !DEC$ ENDIF
       RETURN

@@ -413,10 +413,10 @@
 !DEC$ ENDIF
 !DEC$ IF DEFINED (REGCOIL)
                   IF (sigma_coil_bnorm < bigno) THEN
-                     CALL move_txtfile('bnorm.'//TRIM(proc_string_old),&
-                                       'bnorm.'//TRIM(proc_string))
-                     CALL move_txtfile('regcoil_params.'//TRIM(proc_string_old),&
-                                       'regcoil_params.'//TRIM(proc_string))
+                     ! CALL move_txtfile('bnorm.'//TRIM(proc_string_old),&
+                     !                   'bnorm.'//TRIM(proc_string))
+                     ! CALL move_txtfile('regcoil_params.'//TRIM(proc_string_old),&
+                     !                   'regcoil_params.'//TRIM(proc_string))
                      ! CALL copy_txtfile('Bnormal_from_plasma_current'//TRIM(proc_string_old)//'.dat',&
                      !                   'Bnormal_from_plasma_current'//TRIM(proc_string)//'.dat')
                      ! CALL copy_txtfile('Bnormal_total_'//TRIM(proc_string_old)//'.dat',&

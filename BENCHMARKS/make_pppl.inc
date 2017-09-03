@@ -137,10 +137,15 @@
 # 'module load regcoil'
 #  REGCOIL_PATH = $(REGCOIL_PATH)
   REGCOIL_PATH = /p/stellopt/ANALYSIS/jschmitt/src/regcoil
-  REGCOIL_INC = -I$(REGCOIL_PATH)
+  REGCOIL_INC = -I$(REGCOIL_PATH) \
+		-fopenmp -I$(NETCDF_HOME)/include \
+		 -I/usr/pppl/gcc/4.6-pkgs/openblas-48f06dd/include \
+		 -ffree-line-length-none
   REGCOIL_DIR = $(REGCOIL_PATH)
   LIB_REGCOIL = libregcoil.a
-  REGCOIL_LIB = $(REGCOIL_DIR)/$(LIB_REGCOIL)
+  REGCOIL_LIB = $(REGCOIL_DIR)/$(LIB_REGCOIL) \
+		-fopenmp -L$(NETCDF_HOME)/lib -lnetcdff  -lnetcdf \
+		 -L/usr/pppl/gcc/4.6-pkgs/openblas-48f06dd/lib -lopenblas
 
 #######################################################################
 #            YOUR_NEW_CODE Options
