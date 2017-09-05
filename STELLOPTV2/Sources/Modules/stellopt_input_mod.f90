@@ -535,6 +535,7 @@
       coil_splinefx(:,:) = 0
       coil_splinefy(:,:) = 0
       coil_splinefz(:,:) = 0
+      coil_nknots(:)  = 0
       coil_type(:)    = 'U'    ! Default to "unknown"
       windsurfname    = ''
       windsurf%mmax   = -1
@@ -828,11 +829,26 @@
       ! Coil Optimization
       IF (ANY(ANY(lcoil_spline,2),1)) THEN
          lcoil_geom = .true.
+
          IF (LEN_TRIM(windsurfname).gt.0) THEN
             CALL read_winding_surface(windsurfname, ierr)
             IF (ierr.ne.0) CALL handle_err(CWS_READ_ERR, windsurfname, ierr)
             lwindsurf = .TRUE.
          ENDIF
+
+         ! Count knots, error check
+         DO i=1,nigroup
+            IF (ANY(lcoil_spline(i,:))) THEN
+               coil_nknots(i) = COUNT(coil_splinesx(i,:) >= 0)
+               IF (coil_nknots(i) < 4) CALL handle_err(KNOT_DEF_ERR, 'read_stellopt_input', coil_nknots(i))
+               IF (COUNT(coil_splinesy(i,:) >= 0) .NE. coil_nknots(i)) &
+                    CALL handle_err(KNOT_MISMATCH_ERR, 'read_stellopt_input', coil_nknots(i))
+               IF ((.NOT.lwindsurf) .AND. (COUNT(coil_splinesz(i,:) >= 0) .NE. coil_nknots(i))) &
+                    CALL handle_err(KNOT_MISMATCH_ERR, 'read_stellopt_input', coil_nknots(i))
+               IF (ANY(lcoil_spline(i,coil_nknots(i)+1:maxcoilknots))) &
+                    CALL handle_err(KNOT_MISMATCH_ERR, 'read_stellopt_input', coil_nknots(i))
+            END IF
+         END DO
       ENDIF
 
       ! If fixed boundary optimization or mapping turn off restart

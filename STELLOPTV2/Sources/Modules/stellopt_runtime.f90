@@ -164,6 +164,8 @@
       INTEGER, PARAMETER ::  BAD_INPUT_ERR     = 13
       INTEGER, PARAMETER ::  CWS_READ_ERR      = 14
       INTEGER, PARAMETER ::  BAD_CWS_ERR       = 15
+      INTEGER, PARAMETER ::  KNOT_MISMATCH_ERR = 16
+      INTEGER, PARAMETER ::  KNOT_DEF_ERR      = 17
       INTEGER, PARAMETER ::  VMEC_INPUT_ERR    = 2
       INTEGER, PARAMETER ::  VMEC_WOUT_ERR     = 21
       INTEGER, PARAMETER ::  MGRID_ERR         = 22
@@ -284,6 +286,14 @@
             WRITE(6,*) '  STELLOPT ENCOUNTERED A WINDING SURFACE ERROR'
             WRITE(6,*) '  ROUTINE:   ',TRIM(string_val)
             WRITE(6,*) '  IERR:      ',ierr
+      ELSEIF (error_num .eq. KNOT_MISMATCH_ERR) THEN
+            WRITE(6,*) '  STELLOPT ENCOUNTERED A COIL COORDINATE SPLINE KNOT COUNT MISMATCH'
+            WRITE(6,*) '  ROUTINE:   ',TRIM(string_val)
+            WRITE(6,*) '  KNOT COUNT:      ',ierr
+      ELSEIF (error_num .eq. KNOT_DEF_ERR) THEN
+            WRITE(6,*) '  STELLOPT ENCOUNTERED A COIL SPLINE WITH LESS THAN FOUR KNOTS'
+            WRITE(6,*) '  ROUTINE:   ',TRIM(string_val)
+            WRITE(6,*) '  KNOT COUNT:      ',ierr
       ELSEIF (error_num .eq. D02CJF_ERR) THEN
             WRITE(6,*) '  STELLOPT ENCOUNTERED A NAG ERROR (D02CJF)'
             WRITE(6,*) '     CALLING FUNCTION ',TRIM(string_val)

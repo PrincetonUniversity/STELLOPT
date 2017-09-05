@@ -77,6 +77,7 @@
       LOGICAL, DIMENSION(-ntord:ntord,-mpol1d:mpol1d) :: ldeltamn_opt
       INTEGER, PARAMETER :: maxcoilknots=40
       LOGICAL, DIMENSION(nigroup,maxcoilknots)        ::  lcoil_spline
+      INTEGER, DIMENSION(nigroup)                     ::  coil_nknots
       LOGICAL  ::  lwindsurf
       INTEGER  ::  nfunc_max
       REAL(rprec)     ::  dphiedge_opt, dcurtor_opt, dbcrit_opt, &
