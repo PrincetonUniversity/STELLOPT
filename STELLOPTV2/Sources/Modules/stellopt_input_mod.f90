@@ -838,16 +838,15 @@
 
          ! Count knots, error check
          DO i=1,nigroup
-            IF (ANY(lcoil_spline(i,:))) THEN
-               coil_nknots(i) = COUNT(coil_splinesx(i,:) >= 0)
-               IF (coil_nknots(i) < 4) CALL handle_err(KNOT_DEF_ERR, 'read_stellopt_input', coil_nknots(i))
-               IF (COUNT(coil_splinesy(i,:) >= 0) .NE. coil_nknots(i)) &
-                    CALL handle_err(KNOT_MISMATCH_ERR, 'read_stellopt_input', coil_nknots(i))
-               IF ((.NOT.lwindsurf) .AND. (COUNT(coil_splinesz(i,:) >= 0) .NE. coil_nknots(i))) &
-                    CALL handle_err(KNOT_MISMATCH_ERR, 'read_stellopt_input', coil_nknots(i))
-               IF (ANY(lcoil_spline(i,coil_nknots(i)+1:maxcoilknots))) &
-                    CALL handle_err(KNOT_MISMATCH_ERR, 'read_stellopt_input', coil_nknots(i))
-            END IF
+            coil_nknots(i) = COUNT(coil_splinesx(i,:) >= 0)
+            IF ((coil_nknots(i) > 0).AND.(coil_nknots(i) < 4)) &
+                 CALL handle_err(KNOT_DEF_ERR, 'read_stellopt_input', coil_nknots(i))
+            IF (COUNT(coil_splinesy(i,:) >= 0) .NE. coil_nknots(i)) &
+                 CALL handle_err(KNOT_MISMATCH_ERR, 'read_stellopt_input', coil_nknots(i))
+            IF ((.NOT.lwindsurf) .AND. (COUNT(coil_splinesz(i,:) >= 0) .NE. coil_nknots(i))) &
+                 CALL handle_err(KNOT_MISMATCH_ERR, 'read_stellopt_input', coil_nknots(i))
+            IF (ANY(lcoil_spline(i,coil_nknots(i)+1:maxcoilknots))) &
+                 CALL handle_err(KNOT_MISMATCH_ERR, 'read_stellopt_input', coil_nknots(i))
          END DO
       ENDIF
 
