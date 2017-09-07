@@ -240,7 +240,8 @@
                          beamj_aux_f, bootj_aux_f, zeff_aux_f, &
                          ne_opt, te_opt, ti_opt, th_opt, zeff_opt, &
                          ne_type, te_type, ti_type, th_type, &
-                         beamj_type, bootj_type, bootcalc_type, zeff_type, & ! bootcalc_type added by MJL
+                         beamj_type, bootj_type, zeff_type, &
+                         bootcalc_type, sfincs_s, sfincs_min_procs, vboot_tolerance, & ! This line added by MJL
                          ne_min, te_min, ti_min, th_min, beamj_f_min, &
                          bootj_f_min, zeff_min, zeff_f_min, &
                          ne_max, te_max, ti_max, th_max, beamj_f_max, &
@@ -519,6 +520,10 @@
       bootj_aux_s(:)  = -1.0
       bootj_aux_s(1:5) = (/0.0,0.25,0.50,0.75,1.0/)
       bootj_aux_f(:)  = 0.0
+      sfincs_s        = -1 ! MJL
+      sfincs_s(1:4)   = (/ 0.2, 0.4, 0.6, 0.8 /) ! MJL
+      vboot_tolerance = 0.01 ! MJL
+      sfincs_min_procs = 1 ! MJL
       coil_splinesx(:,:) = -1
       coil_splinesy(:,:) = -1
       coil_splinesz(:,:) = -1
@@ -1595,7 +1600,15 @@
          WRITE(iunit,"(2X,A,1X,'=',5(1X,E22.14))") 'BOOTJ_AUX_S',(bootj_aux_s(n), n=1,ik)
          WRITE(iunit,"(2X,A,1X,'=',5(1X,E22.14))") 'BOOTJ_AUX_F',(bootj_aux_f(n), n=1,ik)
       END IF
-      WRITE(iunit,outstr) 'BOOTCALC_TYPE',TRIM(bootcalc_type) ! MJL
+      ! Begin additions by MJL
+      WRITE(iunit,outstr) 'BOOTCALC_TYPE',TRIM(bootcalc_type)
+      ik = MINLOC(sfincs_s(2:),DIM=1)
+      IF (ik > 2) THEN
+         WRITE(iunit,"(2X,A,1X,'=',5(1X,E22.14))") 'SFINCS_S',(sfincs_s(n), n=1,ik)
+      END IF
+      WRITE(iunit,*) 'SFINCS_MIN_PROCS =',sfincs_min_procs
+      WRITE(iunit,*) 'VBOOT_TOLERANCE =',vboot_tolerance
+      ! End additions by MJL
       ! E-static potential
       ik = MINLOC(phi_aux_s(2:),DIM=1)
       IF (ik > 4) THEN

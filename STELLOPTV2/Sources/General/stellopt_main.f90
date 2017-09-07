@@ -12,7 +12,6 @@
 !-----------------------------------------------------------------------
       USE stellopt_runtime
       USE mpi_params                                                    ! MPI
-      USE sfincs_main ! Added by MJL 2017-08-16
 !-----------------------------------------------------------------------
 !     Local Variables
 !          numargs      Number of input arguments
@@ -39,11 +38,6 @@
       myid = master
 !DEC$ IF DEFINED (MPI_OPT)
       CALL MPI_INIT( ierr_mpi )                                         ! MPI
-! Begin additions by MJL 2017-08-16
-!      call init_sfincs()
-!      call prepare_sfincs()
-!      call run_sfincs()
-! End MJL modifications
       color = 0
       CALL MPI_COMM_SPLIT( MPI_COMM_WORLD,color,myid,MPI_COMM_STEL,ierr_mpi)
       CALL MPI_COMM_RANK( MPI_COMM_STEL, myid, ierr_mpi )              ! MPI
@@ -184,6 +178,7 @@
          IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_main',ierr_mpi)
       END IF
       IF (lverb)  WRITE(6,*) '   Number of Optimizer Threads:    ',numprocs
+
 !DEC$ ENDIF
 
       ! Run optimization

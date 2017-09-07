@@ -145,6 +145,7 @@
 #            SFINCS Options
 #######################################################################
 
+#LSFINCS = F
 LSFINCS = T
 SFINCS_DIR = /Users/mattland/sfincs/fortran/version3
 SFINCS_INC = -I$(SFINCS_DIR)

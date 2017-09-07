@@ -309,6 +309,12 @@
             DO i = UBOUND(coefs,DIM=1), LBOUND(coefs,DIM=1), -1
                val = s_val*val + coefs(i)
             END DO
+         CASE ('power_series_0_boundaries')
+            val = 0
+            DO i = UBOUND(coefs,DIM=1), LBOUND(coefs,DIM=1), -1
+               val = s_val*val + coefs(i)
+            END DO
+            val = val * s_val * (1 - s_val)
          CASE ('power_series_0i0')
             val = 0
             DO i = UBOUND(coefs,DIM=1), LBOUND(coefs,DIM=1), -1
@@ -739,7 +745,7 @@
       SELECT CASE (prof_type)
          CASE ('two_power','two_power_hollow','two_lorentz','gauss_trunc','sum_atan','pedestal')
             profile_norm = 0.0_rprec  ! Don't normalize as we don't want to screw up our coefficients
-         CASE ('power_series','power_series_edge0')
+         CASE ('power_series','power_series_edge0','power_series_0_boundaries')
             DO ik = LBOUND(x,DIM=1), UBOUND(x,DIM=1)
                profile_norm = profile_norm + x(ik)/(ik+1)
             END DO
@@ -755,6 +761,31 @@
       RETURN
       END FUNCTION profile_norm
       
+
+      SUBROUTINE scale_profile(profile_type, profile_coefficients, factor)
+        ! This subroutine takes a profile and scales it by 'factor'.
+        ! For some profiles types like 'power_series', this involves multiplying all the profile coefficients
+        ! by factor. For other profile types like 'two_power', only certain profile coefficients get scaled.
+        IMPLICIT NONE
+        CHARACTER(LEN=*) :: profile_type
+        REAL(rprec), DIMENSION(:) :: profile_coefficients
+        REAL(rprec), INTENT(IN) :: factor
+
+        CALL tolower(profile_type)
+        SELECT CASE (profile_type)
+        CASE ('power_series','spline','akima_spline','akima_spline_ip','power_series_0_boundaries')
+           profile_coefficients = profile_coefficients * factor
+        CASE ('two_power','two_power_hollow')
+           profile_coefficients(1) = profile_coefficients(1) * factor
+        CASE DEFAULT
+           PRINT *,"Error! Unknown profile type in subroutine scale_profile:",profile_type
+           STOP
+        END SELECT
+        
+      END SUBROUTINE scale_profile
+
+
+
       SUBROUTINE get_equil_beamj(s_val,val,ier)
       IMPLICIT NONE
       REAL(rprec), INTENT(inout) ::  s_val
@@ -878,6 +909,26 @@
       END SELECT
       RETURN
       END SUBROUTINE get_equil_bootj
+
+      SUBROUTINE eval_profile(s_val, profile_type, val, profile_aux_s, profile_aux_f, ier)
+        ! s_val = Value of normalized flux s at which you wish to evaluate the profile.
+        ! On return, 'val' stores the value of the profile function at the selected s.
+        IMPLICIT NONE
+        REAL(rprec) ::  s_val, val
+        INTEGER ::  ier, dex
+        CHARACTER(LEN=*) :: profile_type
+        REAL(rprec), DIMENSION(21) :: profile_aux_s, profile_aux_f
+        IF (ier < 0) RETURN
+        CALL tolower(profile_type)
+        SELECT CASE(TRIM(profile_type))
+        CASE('spline','akima_spline')
+           dex = MINLOC(profile_aux_s(2:),DIM=1)
+           CALL eval_prof_spline(dex, profile_aux_s(1:dex), profile_aux_f(1:dex), s_val, val, ier)
+        CASE DEFAULT
+           CALL eval_prof_stel(s_val, profile_type, val, 21, profile_aux_f(1:21), ier)
+        END SELECT
+        RETURN
+      END SUBROUTINE eval_profile
 
 !     J_STAR by DA Spong
 !     computes the trapped branch of jstar on a single flux surface
@@ -1005,7 +1056,7 @@
        print *, "problem"
        return
       end if
-      call DGETRI(n, XTX, lda, ipiv, work, lwork, info)
+      call DGETRI(n, XTX, lda, ipiv, work, lwork, info) ! Explicitly computing the inverse of a matrix like this is innacurate. Better to use LAPACK DGELS*.
       if ( info /= 0 ) then
        print *, "problem"
        return
@@ -1228,16 +1279,11 @@
       DOUBLE PRECISION, ALLOCATABLE :: xc_opt(:), diag(:), qtf(:), wa1(:), wa2(:), wa3(:)
       DOUBLE PRECISION, ALLOCATABLE :: fval(:),wa4(:)
       DOUBLE PRECISION, ALLOCATABLE :: fjac(:,:)
-      nfit_targs = ntarg+1
-      ALLOCATE(fit_targs(nfit_targs,2))
-      fit_targs(:,1) = sarr
-      fit_targs(:,2) = farr
-      SUM_target = SUM(farr)
-      fit_type = ptype
+
       ! Adjust number of coefficients per fit type
       nc = ncoefs
-      CALL tolower(bootj_type)
-      SELECT CASE (bootj_type)
+      CALL tolower(ptype)
+      SELECT CASE (ptype)
          CASE('two_power')
             nc = 3
          CASE('two_power_hollow')
@@ -1246,7 +1292,7 @@
             nc = 8
          CASE('gauss_trunc')
             nc = 2
-         CASE('power_series','power_series_0i0','power_series_edge0','power_series_i','power_series_i_edge0')
+         CASE('power_series','power_series_0i0','power_series_edge0','power_series_i','power_series_i_edge0','power_series_0_boundaries')
             DO ik = 1, ncoefs
                IF (coefs(ik) /=0 ) nc = ik
             END DO
@@ -1258,6 +1304,18 @@
             PRINT *,"Error! Unknown profile type in subroutine fit_profile:",ptype
             STOP
       END SELECT
+      IF (ptype == 'power_series') THEN
+         ! For fitting polynomials, 'polyfit' is more robust than LMDER, so use polyfit.
+         coefs(1:nc) = polyfit(sarr,farr,nc-1)
+         RETURN
+      END IF
+
+      nfit_targs = ntarg+1
+      ALLOCATE(fit_targs(nfit_targs,2))
+      fit_targs(:,1) = sarr
+      fit_targs(:,2) = farr
+      SUM_target = SUM(farr)
+      fit_type = ptype
       ! ALLOCATE Vars
       ALLOCATE(xc_opt(nc),diag(nc),qtf(nc),wa1(nc),wa2(nc),wa3(nc),fjac(nfit_targs,nc),&
                fval(nfit_targs),wa4(nfit_targs))

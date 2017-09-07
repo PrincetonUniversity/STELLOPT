@@ -102,7 +102,9 @@
                                             ti_aux_s, th_aux_s, &
                                             zeff_aux_s, &
                                             phi_aux_s, beamj_aux_s,&
-                                            bootj_aux_s
+                                            bootj_aux_s, sfincs_s ! sfincs_s added by MJL
+      INTEGER                           ::  sfincs_min_procs ! Added by MJL
+      REAL(rprec)                       ::  vboot_tolerance ! Added by MJL
       REAL(rprec), DIMENSION(ndatafmax) ::  ne_aux_f, te_aux_f, &
                                             ti_aux_f, th_aux_f,&
                                             zeff_aux_f, &
@@ -150,6 +152,7 @@
                                             coil_splinefx_max,coil_splinefy_max,coil_splinefz_max
       CHARACTER(256)  ::  equil_type, te_type, ne_type, ti_type, th_type, &
                           beamj_type, bootj_type, zeff_type, bootcalc_type ! bootcalc_type added by MJL
+      REAL(rprec), DIMENSION(:), ALLOCATABLE :: sfincs_J_dot_B_flux_surface_average, sfincs_B_squared_flux_surface_average ! MJL
       
       ! These are not really variable parameters as we don't vary them
       ! yet
