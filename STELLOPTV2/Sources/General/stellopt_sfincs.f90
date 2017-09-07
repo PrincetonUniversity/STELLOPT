@@ -100,15 +100,14 @@
 
             ! Begin code by MJL
             base_directory_string = 'sfincs_'//TRIM(proc_string)
-            print *,'mkdir ' //TRIM(base_directory_string)//' 2>/dev/null'
             !IF (myworkid == master) CALL SYSTEM('mkdir ' //TRIM(base_directory_string)//' 2>/dev/null') ! The 2>/dev/null is used because otherwise there are messages printed to the screen about the directory already existing, which users need not worry about.
-            IF (myworkid == master) CALL execute_command_line('mkdir ' //TRIM(base_directory_string)//' 2>/dev/null') ! The 2>/dev/null is used because otherwise there are messages printed to the screen about the directory already existing, which users need not worry about.
+            IF (myworkid == master) CALL execute_command_line('mkdir -p ' //TRIM(base_directory_string)) ! The -p blocks a warning message if the directory already exists.
             !print *,"Calling sfincs at the following radii:",sfincs_s
             CALL MPI_COMM_SIZE(MPI_COMM_WORLD, numProcs_world, ierr_mpi)
             CALL MPI_COMM_RANK(MPI_COMM_WORLD, myRank_world, ierr_mpi)
             CALL MPI_COMM_SIZE(MPI_COMM_MYWORLD, numProcs_myworld, ierr_mpi)
             CALL MPI_COMM_RANK(MPI_COMM_MYWORLD, myRank_myworld, ierr_mpi)
-            print "(a,i3,a,i3,a,i3,a,i3,a,i3,a,i3)", "World: rank",myRank_world," of",numProcs_world,". Myworld: rank",myRank_myworld," of",numProcs_myworld,". myworkid=",myworkid,". master=",master
+            !print "(a,i3,a,i3,a,i3,a,i3,a,i3,a,i3)", "World: rank",myRank_world," of",numProcs_world,". Myworld: rank",myRank_myworld," of",numProcs_myworld,". myworkid=",myworkid,". master=",master
 
             IF (sfincs_min_procs > numProcs_myworld) THEN
                IF (myworkid==master) THEN
@@ -120,7 +119,7 @@
                sfincs_min_procs = numProcs_myWorld
             END IF
             Nradii = MINLOC(sfincs_s(2:),DIM=1)
-            IF (myworkid==master) PRINT *,"Number of radii for SFINCS:",Nradii
+            IF (myworkid==master .and. lscreen) PRINT *,"Number of radii for SFINCS:",Nradii
             DO j=1,Nradii
                IF (sfincs_s(j) <= 0) STOP "Error! sfincs_s values must be > 0 (except for 0 values at the end of the array, which are ignored)."
                IF (sfincs_s(j) > 1) STOP "Error! sfincs_s values must be <= 1."
@@ -167,26 +166,22 @@
             ! Print the processor/radius assignments in a coordinated manner.
             dummy = 0
             tag = 0
-            if (myworkid==master) then
-               print *,trim(proc_assignments_string)
-               do i = 1,numProcs_myWorld - 1
+            IF (myworkid==master) THEN
+               IF (lscreen) PRINT *,TRIM(proc_assignments_string)
+               DO i = 1,numProcs_myWorld - 1
                   ! To avoid a disordered flood of messages to the masterProc,
                   ! ping each proc 1 at a time by sending a dummy value:
-                  call MPI_SEND(dummy,1,MPI_INT,i,tag,MPI_COMM_MYWORLD,ierr_mpi)
+                  CALL MPI_SEND(dummy,1,MPI_INT,i,tag,MPI_COMM_MYWORLD,ierr_mpi)
                   ! Now receive the message from proc i:
-                  call MPI_RECV(proc_assignments_string,buffer_length,MPI_CHAR,i,MPI_ANY_TAG,MPI_COMM_MYWORLD,mpi_status,ierr_mpi)
-                  print *,trim(proc_assignments_string)
-               end do
-            else
+                  CALL MPI_RECV(proc_assignments_string,buffer_length,MPI_CHAR,i,MPI_ANY_TAG,MPI_COMM_MYWORLD,mpi_status,ierr_mpi)
+                  IF (lscreen) PRINT *,TRIM(proc_assignments_string)
+               END DO
+            ELSE
                ! First, wait for the dummy message from proc 0:
-               call MPI_RECV(dummy,1,MPI_INT,0,MPI_ANY_TAG,MPI_COMM_MYWORLD,mpi_status,ierr_mpi)
+               CALL MPI_RECV(dummy,1,MPI_INT,0,MPI_ANY_TAG,MPI_COMM_MYWORLD,mpi_status,ierr_mpi)
                ! Now send the message to proc 0:
-               call MPI_SEND(proc_assignments_string,buffer_length,MPI_CHAR,0,tag,MPI_COMM_MYWORLD,ierr_mpi)
-            end if
-
-            !print *,trim(proc_assignments_string)
-            !print "(a,i3,a,i3,a,i3,a,i3,a,i3,a,i3,a,i3)", "Myworld: rank",myRank_myworld," of",numProcs_myworld,". Sfincs: rank",myRank_sfincs," of",numProcs_sfincs,". myworkid=",myworkid,". master=",master," color=",color
-
+               CALL MPI_SEND(proc_assignments_string,buffer_length,MPI_CHAR,0,tag,MPI_COMM_MYWORLD,ierr_mpi)
+            END IF
             
             ! We at least need +1 for a point at s=0. We might also want another +1 if we wish to impose <j dot B>=0 at s=1.
             IF (.not. ALLOCATED(sfincs_J_dot_B_flux_surface_average))   ALLOCATE(sfincs_J_dot_B_flux_surface_average(Nradii+2))
@@ -223,22 +218,22 @@
                sfincs_d_ne_d_s = sfincs_d_ne_d_s / (1.0d+20)
                sfincs_ni = sfincs_ne
                sfincs_d_ni_d_s = sfincs_d_ne_d_s
+               ! Stellopt temperature normalization is 1 
                sfincs_Te = sfincs_Te / 1000
                sfincs_Ti = sfincs_Ti / 1000
                sfincs_d_Te_d_s = sfincs_d_Te_d_s / 1000
                sfincs_d_Ti_d_s = sfincs_d_Ti_d_s / 1000
 
                IF (myRank_sfincs == 0) THEN
-                  CALL SYSTEM('mkdir '//TRIM(directory_string))
+                  CALL SYSTEM('mkdir -p '//TRIM(directory_string)) ! -p mutes the warning printed if the directory already exists.
 
                   ! Copy the SFINCS input file into the new directory
-                  INQUIRE(FILE='input.namelist',EXIST=lfile_check)
-                  IF (.not. lfile_check) STOP "Error! SFINCS input.namelist file was not found."
                   unit_in = 11
                   unit_out = 12
-                  OPEN (unit=unit_in, file='input.namelist',status='old',action='read',iostat=file_status)
+                  OPEN (unit=unit_in, file='input.'//TRIM(id_string),status='old',action='read',iostat=file_status)
                   IF (file_status /= 0) THEN
-                     PRINT *,"Error opening old sfincs input.namelist file. iostat=",file_status
+                     PRINT *,"Error opening stellopt input file input."//TRIM(id_string)
+                     PRINT *,"iostat=",file_status
                      STOP
                   END IF
                   OPEN (unit=unit_out, file=TRIM(directory_string)//'/input.namelist',action='write',iostat=file_status)
