@@ -1820,7 +1820,7 @@ C-----------------------------------------------
      2  bsubvmnc, bsubsmns, bsupumnc, bsupvmnc, currvmnc, iotas, mass,
      3  pres, beta_vol, phip, buco, bvco, phi, vp, jcuru, am, ac, ai,
      4  jcurv, specw, Dmerc, Dshear, Dwell, Dcurr, Dgeod, equif, jdotb,
-     5  bdotgradv, raxis, zaxis, fsqt, wdot, stat = istat(3))
+     5  bdotgradv, raxis, zaxis, fsqt, wdot, qfact, stat = istat(3))
 
       IF (ALLOCATED(chipf)) DEALLOCATE (chipf, chi)
 
