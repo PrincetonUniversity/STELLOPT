@@ -1011,68 +1011,61 @@
       RETURN
       END SUBROUTINE smoothg
       
-      function polyfit(vx, vy, d)
-      !  From http://rosettacode.org/wiki/Polynomial_regression
+      FUNCTION polyfit(vx, vy, d)
+      ! Fit a polynomial of degree d to data (vx,vy) using one of the LAPACK
+      ! subroutines for least-squares fitting, DGELS.
       implicit none
       integer, intent(in)                   :: d
       integer, parameter                    :: dp = selected_real_kind(15, 307)
       real(dp), dimension(d+1)              :: polyfit
       real(dp), dimension(:), intent(in)    :: vx, vy
       
-      real(dp), dimension(:,:), allocatable :: X
-      real(dp), dimension(:,:), allocatable :: XT
-      real(dp), dimension(:,:), allocatable :: XTX
-      
-      integer :: i, j
-      
-      integer     :: n, lda, lwork
-      integer :: info
-      integer, dimension(:), allocatable :: ipiv
-      real(dp), dimension(:), allocatable :: work
-      
+      real(dp), dimension(:,:), allocatable :: matrix
+      integer :: n, m, j, lwork, info, ldb
+      real(dp), dimension(:), allocatable :: work, b
+
       n = d+1
-      lda = n
-      lwork = n
-      
-      allocate(ipiv(n))
-      allocate(work(lwork))
-      allocate(XT(n, size(vx)))
-      allocate(X(size(vx), n))
-      allocate(XTX(n, n))
-      
-      ! prepare the matrix
-      do i = 0, d
-       do j = 1, size(vx)
-          X(j, i+1) = vx(j)**i
-       end do
-      end do
-      
-      XT  = transpose(X)
-      XTX = matmul(XT, X)
-      
-      ! calls to LAPACK subs DGETRF and DGETRI
-      call DGETRF(n, n, XTX, lda, ipiv, info)
-      if ( info /= 0 ) then
-       print *, "problem"
-       return
-      end if
-      call DGETRI(n, XTX, lda, ipiv, work, lwork, info) ! Explicitly computing the inverse of a matrix like this is innacurate. Better to use LAPACK DGELS*.
-      if ( info /= 0 ) then
-       print *, "problem"
-       return
-      end if
-      
-      polyfit = matmul( matmul(XTX, XT), vy)
-      
-      deallocate(ipiv)
-      deallocate(work)
-      deallocate(X)
-      deallocate(XT)
-      deallocate(XTX)
-      RETURN
-      
-      end function polyfit
-      
+      m = SIZE(vx)
+      IF (SIZE(vy) .ne. m) STOP "Error in polyfit: sizes of vx and vy do not match"
+
+      ! Form the Vandermonde matrix:
+      ALLOCATE(matrix(m,n))
+      matrix(:,1) = 1
+      DO j = 1,d
+         matrix(:,j+1) = matrix(:,j) * vx
+      END DO
+
+      ldb = MAX(m,n)
+      ALLOCATE(b(ldb))
+      b(1:m) = vy
+      ! The DGELS argument b stores the data vector b on input, and it gets over-written with the solution vector.
+      ! Note that the sizes of the input and solution vector can be different.
+
+      ! Get size of work array:
+      lwork = -1
+      ALLOCATE(work(1))
+      CALL DGELS('N',m,n,1,matrix,m,b,ldb,work,lwork,info)
+      IF (info .ne. 0) THEN
+         PRINT *,"Error 1 in polyfit LAPACK DGELS: info=",info
+         STOP
+      END IF
+      lwork = work(1)
+      DEALLOCATE(work)
+      ALLOCATE(work(lwork))
+
+      ! Main LAPACK call:
+      CALL DGELS('N',m,n,1,matrix,m,b,ldb,work,lwork,info)
+      IF (info .ne. 0) THEN
+         PRINT *,"Error 2 in polyfit LAPACK DGELS: info=",info
+         STOP
+      END IF
+
+      polyfit = b(1:n)
+      DEALLOCATE(matrix,work,b)
+
+      END FUNCTION polyfit
+
+
       function polyval(c,s,d)
       integer, intent(in)                   :: d
       integer, parameter                    :: dp = selected_real_kind(15, 307)
