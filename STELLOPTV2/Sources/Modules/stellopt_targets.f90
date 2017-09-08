@@ -171,6 +171,7 @@
       REAL(rprec) ::  sigma_regcoil_winding_surface_separation
       REAL(rprec) ::  target_regcoil_bnorm, sigma_regcoil_bnorm
       REAL(rprec) ::  target_regcoil_chi2_b, sigma_regcoil_chi2_b
+      REAL(rprec) ::  target_regcoil_current_density, sigma_regcoil_current_density
                                         
       INTEGER, PARAMETER :: jtarget_aspect     = 100
       INTEGER, PARAMETER :: jtarget_rbtor      = 1001
@@ -231,6 +232,7 @@
       INTEGER, PARAMETER :: jtarget_coil_bnorm = 613
       INTEGER, PARAMETER :: jtarget_regcoil_bnorm = 5150
       INTEGER, PARAMETER :: jtarget_regcoil_chi2_b = 5151
+      INTEGER, PARAMETER :: jtarget_regcoil_current_density = 5152
       
       
       CONTAINS
@@ -357,6 +359,8 @@
             WRITE(iunit, out_format) 'REGCOIL Normal Field (or something useful)'
          CASE(jtarget_regcoil_chi2_b)
             WRITE(iunit, out_format) 'REGCOIL Chi^2 B'
+         CASE(jtarget_regcoil_current_density)
+            WRITE(iunit, out_format) 'REGCOIL Current Density on Winding Surface'
       END SELECT
       END SUBROUTINE write_targets
       

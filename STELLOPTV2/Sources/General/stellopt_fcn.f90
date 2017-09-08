@@ -103,6 +103,8 @@
          IF (var_dex(nvar_in) == imixece) mix_ece = x(nvar_in)
          IF (var_dex(nvar_in) == iregcoil_winding_surface_separation) &
                 regcoil_winding_surface_separation = x(nvar_in)
+         IF (var_dex(nvar_in) == iregcoil_current_density) &
+                regcoil_current_density = x(nvar_in)
          IF (var_dex(nvar_in) == ibcrit) bcrit = x(nvar_in)
          IF (var_dex(nvar_in) == iextcur) extcur(arr_dex(nvar_in,1)) = x(nvar_in)
          IF (var_dex(nvar_in) == iaphi) aphi(arr_dex(nvar_in,1)) = x(nvar_in)

@@ -66,16 +66,22 @@
       ENDIF
 !DEC$ IF DEFINED (REGCOIL)
 
-       IF (lscreen) WRITE(6,'(a,a)') '<---- proc_string=', proc_string
-       wout_filename = 'wout_'//TRIM(proc_string)//'.nc'
+      !IF (lscreen) WRITE(6,'(a,a)') '<---- proc_string=', proc_string
+      wout_filename = 'wout_'//TRIM(proc_string)//'.nc'
       separation = regcoil_winding_surface_separation
-      write(6,'(a)') '<----safe_open'
+      current_density_target = regcoil_current_density
+      ! regcoil will overwrite nlambda - need to restore it to the
+      ! original value here
+      nlambda = nlambda_regcoil
+      ! write(6,'(a)') '<----safe_open'
       CALL safe_open(iunit, iflag, TRIM('regcoil_in.'// &
                TRIM(proc_string)), 'replace', 'formatted')
-      write(6,'(a)') '<----write_regcoil_input'
+      ! write(6,'(a)') '<----write_regcoil_input'
       CALL write_regcoil_input(proc_string, iunit, istat)
-      write(6,'(a)') '<----flush'
+      ! write(6,'(a)') '<----flush'
       CALL FLUSH(iunit)
+      ! write(6,'(a)') '<----close'
+      CLOSE(iunit)
 
       ! input file should be written. Now perform regcoil operation 
       ! This should be *almost* a duplicate of the main code from
@@ -88,26 +94,27 @@
       !          'old', 'formatted')
       !write(6,'(a)') '<----read_regcoil_input'
       !call read_regcoil_input(iunit, iflag)
-      write(6,'(a)') '<----Validate'
+      ! write(6,'(a)') '<----Validate'
       call validate_input()
-      write(6,'(a)') '<----Compute lambda'
-      call compute_lambda()
+      ! write(6,'(a)') '<----Compute lambda'
+      !if (allocated(lambda)) deallocate(lambda)
+      call compute_lambda(lscreen)
 
       ! Define the position vector and normal vector at each grid point for
       ! the surfaces:
-      write(6,'(a)') '<----init_plasma'
-      call init_plasma()
-      write(6,'(a)') '<----init coil surfs'
-      call init_coil_surface()
+      ! write(6,'(a)') '<----init_plasma'
+      call init_plasma(lscreen)
+      ! write(6,'(a)') '<----init coil surfs'
+      call init_coil_surface(lscreen)
 
       ! Initialize some of the vectors and matrices needed:
-      write(6,'(a)') '<----read bnorm'
-      call read_bnorm()
-      write(6,'(a)') '<----build matrices'
-      call build_matrices()
+      ! write(6,'(a)') '<----read bnorm'
+      call read_bnorm(lscreen)
+      ! write(6,'(a)') '<----build matrices'
+      call build_matrices(lscreen)
 
       ! JCS: I disabled all options except for #5 (for now)
-      write(6,'(a)') '<----select a case'
+      ! write(6,'(a)') '<----select a case'
       select case (general_option)
       !case (1)
       !   call solve()
@@ -118,8 +125,8 @@
       !case (4)
       !   call auto_regularization_solve()
       case (5)
-      write(6,'(a)') '<----auto_reg solve'
-         call auto_regularization_solve()
+      ! write(6,'(a)') '<----auto_reg solve'
+         call auto_regularization_solve(lscreen)
       case default
          print *,"Invalid general_option:",general_option
          stop
@@ -134,8 +141,8 @@
 !      write(6,'(a)') '<----flush'
 !      CALL FLUSH(iunit)
 
-      print *, chi2_B_target
-      print *,"REGCOIL complete. Total time=",totalTime,"sec."
+      ! print *, chi2_B_target
+      ! print *,"REGCOIL complete. Total time=",totalTime,"sec."
 
 
       IF (lscreen) WRITE(6,'(a)') ' ---------------------------  REGCOIL CALCULATION DONE  ---------------------'
