@@ -195,6 +195,8 @@
                   END IF
 !DEC$ ENDIF
 !DEC$ IF DEFINED (REGCOIL)
+                 ! OUTPUT FILES SHOULD BE WRITTEN HERE - Use the regcoil
+                 ! write_output functions to write the hdf5 output file
                   IF (sigma_coil_bnorm < bigno) THEN
                      CALL move_txtfile('bnorm.'//TRIM(proc_string_old),&
                                        'bnorm.'//TRIM(proc_string))
