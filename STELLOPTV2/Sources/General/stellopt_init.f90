@@ -53,7 +53,7 @@
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'stellot_init:bcast_vars',ierr_mpi)
 
       ! Handle coil geometry
-      IF (lcoil_geom) CALL namelist_input_makegrid(TRIM(id_string))
+      IF (lcoil_geom) CALL namelist_input_makegrid(id_string)
 
       ! Read the Equilibrium input
       CALL tolower(equil_type)

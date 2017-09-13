@@ -7,8 +7,8 @@ chisq_kappa_box.o \
 chisq_kappa_avg.o \
 stellopt_write_mgrid.o \
 stellopt_coil_to_vac.o \
-stellopt_spline_to_coil.o \
 stellopt_winding_surface.o \
+stellopt_spline_to_coil.o \
 chisq_line_te.o \
 chisq_bmin.o \
 chisq_helicity.o \
