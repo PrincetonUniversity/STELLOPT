@@ -74,9 +74,9 @@
       DOUBLE PRECISION, PARAMETER      :: pi2 = 6.283185482025146D+00
       REAL(rprec), PARAMETER :: VMEC2XGC_VERSION = 1.0_rprec
 
-      INTEGER, DIMENSION(1024,1024) :: node_label
-      INTEGER :: ii,iii, ele_num
-      DOUBLE PRECISION :: aa
+      INTEGER, ALLOCATABLE   :: node_label(:,:)
+      INTEGER                :: ii,iii, ele_num
+      DOUBLE PRECISION       :: aa
 
 !-----------------------------------------------------------------------
 !     Begin Program
@@ -324,7 +324,7 @@
       nuarr(1) = 2
 
       !-----------------------------------------------------------------------
-      !     Output Table
+      !     Output Table and .node file
       !-----------------------------------------------------------------------
       fid = 32
       fid_nv = 33
@@ -332,10 +332,11 @@
       WRITE(6,'(A,I4,A,I4,A,I4)')'NRAD: ',nrad,'  NU:',MAXVAL(nuarr)-1,'  NV:',nv
       WRITE(6,'(A)')             'FILENAME: xgc_grid.'//TRIM(id_string)
       CALL safe_open(fid, ier, 'xgc_grid.'//TRIM(id_string), 'replace', 'formatted')
+      ALLOCATE(node_label(MAXVAL(nuarr)-1,nrad))
       DO k = 1, nv
          WRITE(id_string,'(I4.4)') k
          CALL safe_open(fid_nv, ier, 'xgc_mesh_'//TRIM(id_string)//'.node', 'replace', 'formatted')
-         WRITE(fid_nv,*) SUM(nuarr)-nrad, '  2  0  1'
+         WRITE(fid_nv,FMT='(I8.1,3I3.1)') SUM(nuarr)-nrad, 2, 0, 1
          node_num=0
          DO i = 1, nrad
             DO j = 1, nuarr(i)-1
@@ -364,9 +365,8 @@
                WRITE(fid,*) i,s,u,v,ustar,Rtemp,lambda,Ztemp,br,bphi,bz,jr,jphi,jz
                !Write out node file
                node_num=node_num+1
-               WRITE(fid_nv,*) node_num, Rtemp, Ztemp
+               WRITE(fid_nv,*) node_num, Rtemp, Ztemp, i, s
                node_label(j,i) = node_num
-               !IF(node_num==2) print*,i,j,node_num,node_label(1,2)
             END DO
          END DO
          CALL FLUSH(fid_nv)
@@ -402,7 +402,7 @@
 
          WRITE(id_string,'(I4.4)') k
          CALL safe_open(fid_nv, ier, 'xgc_mesh_'//TRIM(id_string)//'.ele', 'replace', 'formatted')
-         WRITE(fid_nv,*) ele_num, '  3  0'
+         WRITE(fid_nv,FMT='(I8.1,2I3.1)') ele_num, 3, 0
 !
          node_num = 0
          DO i=1, nuarr(2)
@@ -431,6 +431,7 @@
          FLUSH(fid_nv)
       END DO
       DEALLOCATE(nuarr)
+      DEALLOCATE(node_label)
       !-----------------------------------------------------------------------
       !     Output FIELD
       !-----------------------------------------------------------------------
@@ -462,6 +463,10 @@
       END DO
       WRITE(6,'(A)')        '-------------------------------------------------'
       CLOSE(fid)
+      !-----------------------------------------------------------------------
+      !     Output rectangular grid
+      !-----------------------------------------------------------------------
+       
 
       !-----------------------------------------------------------------------
       !     Deallocate VMEC
