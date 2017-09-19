@@ -78,6 +78,8 @@
       INTEGER                :: ii,iii, ele_num
       DOUBLE PRECISION       :: aa
 
+      DOUBLE PRECISION       :: flx_dat(128), mag_dat(3,128)
+      INTEGER                :: fid1, fid2, fid3
 !-----------------------------------------------------------------------
 !     Begin Program
 !-----------------------------------------------------------------------
@@ -466,7 +468,37 @@
       !-----------------------------------------------------------------------
       !     Output rectangular grid
       !-----------------------------------------------------------------------
-       
+      do k=1,64
+      fid=41
+      fid1=42
+      fid2=43
+      fid3=44
+      WRITE(id_string,'(I2.2)') k
+      CALL safe_open(fid, ier, 'flx1.'//TRIM(id_string), 'replace','formatted')
+      CALL safe_open(fid1, ier, 'mag1.'//TRIM(id_string), 'replace','formatted')
+      CALL safe_open(fid2, ier, 'mag2.'//TRIM(id_string), 'replace','formatted')
+      CALL safe_open(fid3, ier, 'mag3.'//TRIM(id_string), 'replace','formatted')
+      v = (1./nfp)*pi2*REAL(k-1)/REAL(63)
+      do i=1,128
+        Ztemp=-zmax_vmec + 2.*REAL(i-1)*(1/127.)
+        do j=1,128
+          Rtemp=rmin_vmec + 2.*REAL(j-1)*(1/127.)
+          CALL GetBcyl_WOUT(Rtemp,v,Ztemp,br, bphi, bz, SFLX=rho, UFLX=u, info=ier)
+          flx_dat(j)=rho
+          mag_dat(1,j)=br
+          mag_dat(2,j)=bz
+          mag_dat(3,j)=bphi
+        end do
+        WRITE(fid,*) flx_dat(:)
+        WRITE(fid1,*) mag_dat(1,:)
+        WRITE(fid2,*) mag_dat(2,:)
+        WRITE(fid3,*) mag_dat(3,:)
+      end do
+      flush(fid)
+      flush(fid1)
+      flush(fid2)
+      flush(fid3)
+      end do
 
       !-----------------------------------------------------------------------
       !     Deallocate VMEC
