@@ -68,7 +68,9 @@
 !DEC$ IF DEFINED (MPI_OPT)
          CALL MPI_BCAST(extcur_in,nigroup,MPI_REAL, mylocalmaster, MPI_COMM_LOCAL,ierr_mpi)
          IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'beams3d_init_mgrid',ierr_mpi)
-         CALL MPI_BCAST(nv_in,1,MPI_REAL, mylocalmaster, MPI_COMM_LOCAL,ierr_mpi)
+         CALL MPI_BCAST(nv_in,1,MPI_INTEGER, mylocalmaster, MPI_COMM_LOCAL,ierr_mpi)
+         IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'beams3d_init_mgrid',ierr_mpi)
+         CALL MPI_BCAST(nfp_in,1,MPI_INTEGER, mylocalmaster, MPI_COMM_LOCAL,ierr_mpi)
          IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'beams3d_init_mgrid',ierr_mpi)
 !DEC$ ENDIF
          DO i = 1, SIZE(extcur_in,DIM=1)
@@ -81,7 +83,7 @@
       END IF
       
       ! Read the mgrid file
-      CALL mgrid_load(mgrid_string,extcur,nextcur,nv_in,nfp_in,ier,myid)
+      CALL mgrid_load(mgrid_string,extcur,nextcur,nv_in,nfp_in,ier,mylocalid)
       IF (lverb) THEN
          CALL mgrid_info(6)
          WRITE(6,'(5X,A,I3.3,A)',ADVANCE='no') 'Vacuum Field Calculation [',0,']%'
