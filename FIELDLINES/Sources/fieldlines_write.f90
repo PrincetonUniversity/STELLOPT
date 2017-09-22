@@ -25,7 +25,7 @@
                                     HDF5_CLOSE_ERR, FIELDLINES_VERSION,&
                                     ladvanced, lbfield_only, lreverse,&
                                     lafield_only, lemc3, lmodb, &
-                                    MPI_BARRIER_ERR
+                                    MPI_BARRIER_ERR, iota0
       USE fieldlines_write_par
 !-----------------------------------------------------------------------
 !     Local Variables
@@ -166,6 +166,8 @@
             IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'B_Z',ier)
             CALL write_var_hdf5(fid,'B_PHI',nr,nphi,nz,ier,DBLVAR=B_PHI,ATT='Toroidal Field (BPHI)',ATT_NAME='description')
             IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'B_PHI',ier)
+            CALL write_scalar_hdf5(fid,'iota0',ier,DBLVAR=iota0,ATT='Axis Rotational Transform',ATT_NAME='description')
+            IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'nr',ier)
          END IF
          CALL close_hdf5(fid,ier)
          IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,'fieldlines_'//TRIM(id_string)//'.h5',ier)

@@ -35,8 +35,9 @@
 !                    - ModB along fieldline now saved.
 !                    - MU benchmarked by B. Isralei
 !                    - Wall strike points saved.
-!     v1.41 03/02/16 - Various edits for long runs
+!     v1.41 03/02/17 - Various edits for long runs
 !                    - Field construction improved for large machines
+!     v1.XX 09/22/17 - Store iota_axis in file.
 !-----------------------------------------------------------------------
       MODULE fieldlines_runtime
 !-----------------------------------------------------------------------
@@ -124,7 +125,7 @@
                          lerror_field, lwall_trans, ledge_start, lnescoil,&
                          lmodb
       INTEGER         :: nextcur, npoinc, nruntype, num_hcp
-      REAL(rprec)     :: mu, dphi, follow_tol, pi, pi2, mu0, delta_hc
+      REAL(rprec)     :: mu, dphi, follow_tol, pi, pi2, mu0, delta_hc, iota0
       REAL(rprec), DIMENSION(MAXLINES)     :: r_start, phi_start, &
                                               z_start, phi_end, &
                                               r_hc, z_hc, phi_hc
