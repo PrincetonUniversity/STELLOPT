@@ -68,18 +68,20 @@
                                 jr,jphi,jz,iota, nedge, rtrunc
       REAL(rprec), DIMENSION(3) :: scoord, Rgrad, Zgrad
       REAL(rprec), ALLOCATABLE, DIMENSION(:,:) :: lam
-      character(arg_len)     :: id_string
+      character(arg_len)     :: id_string, num_string
       TYPE(EZspline1_r8) :: iota_spl
       
       DOUBLE PRECISION, PARAMETER      :: pi2 = 6.283185482025146D+00
       REAL(rprec), PARAMETER :: VMEC2XGC_VERSION = 1.0_rprec
 
       INTEGER, ALLOCATABLE   :: node_label(:,:)
-      INTEGER                :: ii,iii, ele_num
-      DOUBLE PRECISION       :: aa
+      INTEGER                :: node_int2, node_int3, ele_num
+      DOUBLE PRECISION       :: node_dub
 
       DOUBLE PRECISION       :: flx_dat(128), mag_dat(3,128)
       INTEGER                :: fid1, fid2, fid3
+
+      LOGICAL                :: o_write, m_write, r_write
 !-----------------------------------------------------------------------
 !     Begin Program
 !-----------------------------------------------------------------------
@@ -88,6 +90,7 @@
       nu      = 360
       nv      = 360
       rtrunc  = 1.0
+      r_write = .false.
       !-----------------------------------------------------------------------
       !     Handle Input Arguments
       !-----------------------------------------------------------------------
@@ -118,6 +121,9 @@
                i = i + 1
                CALL GETCARG(i,args(i),numargs)
                READ(args(i),*) rtrunc
+            CASE ("-r")
+              !currently only used for testing
+              r_write=.true.
             CASE ("-help","-h")
                WRITE(6,'(a,f5.2)') 'VMEC2XGC Version ',VMEC2XGC_VERSION
                WRITE(6,*) ' XGC Input Generation Utility'
@@ -128,6 +134,7 @@
                WRITE(6,*) '   -nu <res>       Poloidal Grid Points'
                WRITE(6,*) '   -nv <res>       Toroidal Grid Points (field period)'
                WRITE(6,*) '   -trucate <res>  Radial Truncation of VMEC in rho'
+               WRITE(6,*) '   -r              Write rectangular grid output'
                WRITE(6,*) '   -help           This help message'
                STOP
             CASE DEFAULT
@@ -221,6 +228,7 @@
                               BMNC=DBLE(bmnc_vmec),&
                               GMNC=DBLE(gmnc_vmec))
       END IF
+!
       !-----------------------------------------------------------------------
       !     Construct Iota Spline (on S grid)
       !-----------------------------------------------------------------------
@@ -336,8 +344,8 @@
       CALL safe_open(fid, ier, 'xgc_grid.'//TRIM(id_string), 'replace', 'formatted')
       ALLOCATE(node_label(MAXVAL(nuarr)-1,nrad))
       DO k = 1, nv
-         WRITE(id_string,'(I4.4)') k
-         CALL safe_open(fid_nv, ier, 'xgc_mesh_'//TRIM(id_string)//'.node', 'replace', 'formatted')
+         WRITE(num_string,'(I4.4)') k
+         CALL safe_open(fid_nv, ier, 'xgc_mesh_'//TRIM(num_string)//'.node', 'replace', 'formatted')
          WRITE(fid_nv,FMT='(I8.1,3I3.1)') SUM(nuarr)-nrad, 2, 0, 1
          node_num=0
          DO i = 1, nrad
@@ -384,12 +392,12 @@
       nuarr(:)=nuarr(:)-1
       ele_num = nuarr(2)
       DO j=2,nrad-1
-        aa = DBLE(nuarr(j+1))/(DBLE(nuarr(j)))
+        node_dub = DBLE(nuarr(j+1))/(DBLE(nuarr(j)))
         DO i = 1, nuarr(j)
-          ii=idnint(dble(i)*aa-0.000001d0)
-          iii= idnint(dble(i-1)*aa-0.000001d0)
-          IF (i .eq. 1) iii=0
-          IF((ii-iii) .gt. 1) THEN
+          node_int2 = idnint(dble(i) * node_dub - 0.000001d0)
+          node_int3 = idnint(dble(i-1) * node_dub - 0.000001d0)
+          IF (i .eq. 1) node_int3=0
+          IF((node_int2-node_int3) .gt. 1) THEN
             ele_num = ele_num + 3
           ELSE 
             ele_num = ele_num + 2
@@ -402,8 +410,8 @@
             node_label(nuarr(j)+1, j) = node_label(1,j)
          END DO
 
-         WRITE(id_string,'(I4.4)') k
-         CALL safe_open(fid_nv, ier, 'xgc_mesh_'//TRIM(id_string)//'.ele', 'replace', 'formatted')
+         WRITE(num_string,'(I4.4)') k
+         CALL safe_open(fid_nv, ier, 'xgc_mesh_'//TRIM(num_string)//'.ele', 'replace', 'formatted')
          WRITE(fid_nv,FMT='(I8.1,2I3.1)') ele_num, 3, 0
 !
          node_num = 0
@@ -413,19 +421,19 @@
          END DO
 !
          DO j=2,nrad-1
-            aa = DBLE(nuarr(j+1))/(DBLE(nuarr(j)))
+            node_dub = DBLE(nuarr(j+1))/(DBLE(nuarr(j)))
             DO i = 1, nuarr(j)
-               ii=idnint(dble(i)*aa-0.000001d0)
-               iii= idnint(dble(i-1)*aa-0.000001d0)
-               IF (i .eq. 1) iii=0
-               IF((ii-iii) .gt. 1) THEN
-                  WRITE(fid_nv,*) node_num + 1, node_label(i,j), node_label(ii-1,j+1), node_label(ii,j+1)
-                  WRITE(fid_nv,*) node_num + 2, node_label(i,j), node_label(ii,j+1), node_label(ii+1,j+1)
-                  WRITE(fid_nv,*) node_num + 3, node_label(i,j), node_label(ii+1,j+1), node_label(i+1,j)
+               node_int2=idnint(dble(i)*node_dub-0.000001d0)
+               node_int3= idnint(dble(i-1)*node_dub-0.000001d0)
+               IF (i .eq. 1) node_int3=0
+               IF((node_int2-node_int3) .gt. 1) THEN
+                  WRITE(fid_nv,*) node_num + 1, node_label(i,j), node_label(node_int2-1,j+1), node_label(node_int2,j+1)
+                  WRITE(fid_nv,*) node_num + 2, node_label(i,j), node_label(node_int2,j+1), node_label(node_int2+1,j+1)
+                  WRITE(fid_nv,*) node_num + 3, node_label(i,j), node_label(node_int2+1,j+1), node_label(i+1,j)
                   node_num = node_num + 3
                ELSE
-                  WRITE(fid_nv,*) node_num + 1, node_label(i,j), node_label(ii,j+1), node_label(ii+1,j+1)
-                  WRITE(fid_nv,*) node_num + 2, node_label(i,j), node_label(ii+1,j+1), node_label(i+1,j)
+                  WRITE(fid_nv,*) node_num + 1, node_label(i,j), node_label(node_int2,j+1), node_label(node_int2+1,j+1)
+                  WRITE(fid_nv,*) node_num + 2, node_label(i,j), node_label(node_int2+1,j+1), node_label(i+1,j)
                   node_num = node_num + 2
                END IF
             END DO
@@ -468,38 +476,30 @@
       !-----------------------------------------------------------------------
       !     Output rectangular grid
       !-----------------------------------------------------------------------
-      do k=1,64
-      fid=41
-      fid1=42
-      fid2=43
-      fid3=44
-      WRITE(id_string,'(I2.2)') k
-      CALL safe_open(fid, ier, 'flx1.'//TRIM(id_string), 'replace','formatted')
-      CALL safe_open(fid1, ier, 'mag1.'//TRIM(id_string), 'replace','formatted')
-      CALL safe_open(fid2, ier, 'mag2.'//TRIM(id_string), 'replace','formatted')
-      CALL safe_open(fid3, ier, 'mag3.'//TRIM(id_string), 'replace','formatted')
-      v = (1./nfp)*pi2*REAL(k-1)/REAL(63)
-      do i=1,128
-        Ztemp=-zmax_vmec + 2.*REAL(i-1)*(1/127.)
-        do j=1,128
-          Rtemp=rmin_vmec + 2.*REAL(j-1)*(1/127.)
-          CALL GetBcyl_WOUT(Rtemp,v,Ztemp,br, bphi, bz, SFLX=rho, UFLX=u, info=ier)
-          flx_dat(j)=rho
-          mag_dat(1,j)=br
-          mag_dat(2,j)=bz
-          mag_dat(3,j)=bphi
+      if (r_write) then
+        do k=1,nv
+        fid=41
+        WRITE(id_string,'(I2.2)') k
+        CALL safe_open(fid, ier, 'STELrect_'//TRIM(id_string)//'.dat', 'replace','unformatted')
+        v = (1./nfp)*pi2*REAL(k-1)/REAL(63)
+        do i=1,128
+          Ztemp=-zmax_vmec + 2.*REAL(i-1)*(1/127.)
+          do j=1,128
+            Rtemp=rmin_vmec + 2.*REAL(j-1)*(1/127.)
+            CALL GetBcyl_WOUT(Rtemp,v,Ztemp,br, bphi, bz, SFLX=rho, UFLX=u, info=ier)
+            flx_dat(j)=rho**2
+            mag_dat(1,j)=br
+            mag_dat(2,j)=bz
+            mag_dat(3,j)=bphi
+          end do
+          WRITE(fid) flx_dat(:), mag_dat(:,:)
         end do
-        WRITE(fid,*) flx_dat(:)
-        WRITE(fid1,*) mag_dat(1,:)
-        WRITE(fid2,*) mag_dat(2,:)
-        WRITE(fid3,*) mag_dat(3,:)
-      end do
-      flush(fid)
-      flush(fid1)
-      flush(fid2)
-      flush(fid3)
-      end do
-
+        flush(fid)
+        flush(fid1)
+        flush(fid2)
+        flush(fid3)
+        end do
+      end if
       !-----------------------------------------------------------------------
       !     Deallocate VMEC
       !-----------------------------------------------------------------------
