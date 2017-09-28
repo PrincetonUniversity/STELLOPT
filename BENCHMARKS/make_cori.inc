@@ -1,9 +1,12 @@
+# -*- mode: makefile -*-
+
 #######################################################################
 #            Define Basic Utilities
 #######################################################################
   SHELL = /bin/sh
   PWD1 = `pwd`
-  MYHOME = /global/u2/l/lazerson/bin_cori
+  MYHOME = /global/u2/l/landrema/stellopt/bin
+#  MYHOME = /global/u2/l/lazerson/bin_cori
   PRECOMP:= fpp -C -P -DLINUX
   COMPILE = ftn
   COMPILE_FREE = ftn
@@ -44,7 +47,7 @@
 #######################################################################
 #            NTCC Options
 #######################################################################
-  LNTCC = T
+  LNTCC = F
   NTCC_INC = -I/global/homes/l/lazerson/pub_cori/preact/mod 
   NTCC_LIB = -L/global/homes/l/lazerson/pub_cori/preact/lib \
              -lpreact -lsigsub -laladdinsub -lpreact -lportlib
@@ -108,6 +111,23 @@
   LIB_MCONF  = libmconf64.a
   TRAVIS_LIB = $(TRAVIS_DIR)/lib/$(LIB_TRAVIS) \
                $(TRAVIS_DIR)/mag_conf/lib/$(LIB_MCONF) -lstdc++
+
+#######################################################################
+#            SFINCS Options
+#######################################################################
+
+#LSFINCS = F
+LSFINCS = T
+SFINCS_DIR = /global/homes/l/landrema/sfincs/fortran/version3
+SFINCS_INC = -I$(SFINCS_DIR)
+LIB_SFINCS = libsfincs.a
+
+#PETSC_DIR=/opt/local/lib/petsc
+#include ${PETSC_DIR}/lib/petsc/conf/variables
+# The above line defines the PETSC make variables PETSC_LIB, FC_LINKER_FLAGS, and FFLAGS, which are used below in SFINCS_LIB.
+
+SFINCS_LIB = $(SFINCS_DIR)/$(LIB_SFINCS) \
+	$(PETSC_LIB) $(FC_LINKER_FLAGS) $(FFLAGS)
 
 #######################################################################
 #            LIBSTELL Shared Options
@@ -194,6 +214,7 @@ else
   LCOILOPT = F
   LTERPSICHORE = F
   LTRAVIS = F
+  LSFINCS = F
 endif
 ifeq ($(MAKECMDGOALS),xanimec)
   PRECOMP += -D_ANIMEC
@@ -252,9 +273,18 @@ else
   TRAVIS_DIR = 
   LIB_TRAVIS = 
 endif
+ifeq ($(LSFINCS),T)
+  MOD1_PATH += $(SFINCS_INC)
+  PRECOMP += -DSFINCS
+  MOD_PATH += -I$(SFINCS_DIR)
+else
+  SFINCS_LIB = 
+  SFINCS_DIR = 
+  LIB_SFINCS = 
+endif
 
 # Handle other codes
-LIB_LINK += $(GENE_LIB) $(COILOPT_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB)
+LIB_LINK += $(GENE_LIB) $(COILOPT_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB) $(SFINCS_LIB)
 
 # Add libraries to LIB_LINK
 #LIB_LINK+= $(HOME_BIN)/libstell.a $(LIBS)
