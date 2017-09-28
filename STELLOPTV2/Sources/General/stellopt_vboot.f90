@@ -108,6 +108,7 @@
          ! Save vmec wout files from each iteration:
          WRITE (iteration_string,fmt="(i4.4)") vboot_iteration
          CALL system('cp wout_'//trim(proc_string)//".nc wout_"//trim(proc_string)//"_vboot"//trim(iteration_string)//".nc")
+         !CALL stellopt_paraexe('paravmec_write',trim(proc_string)//"_vboot"//trim(iteration_string),.true.) 
 
          ! Load Equilibrium
          CALL stellopt_load_equil(lscreen_local,iflag)
@@ -406,7 +407,7 @@
                  "Constant-<B^2> approximation for the integrating factor (dimensionless), " // &
                  "Integrand of eq (20)"
             DO radius_index = 2, Ns_fine
-               WRITE (unit_out,*) s_fine_half(radius_index), sfincs_AC_half(radius_index), sfincs_AC_low_beta_limit(radius_index), &
+               WRITE (unit_out,"(10(es24.15))") s_fine_half(radius_index), sfincs_AC_half(radius_index), sfincs_AC_low_beta_limit(radius_index), &
                     AC_fit_results(radius_index), j_dot_B_flux_surface_average_fine(radius_index), B_squared_flux_surface_average_fine_half(radius_index), &
                     d_p_d_s_fine_half(radius_index), integrating_factor_half(radius_index), integrating_factor_half_approximate(radius_index), integrand(radius_index)
             END DO
@@ -442,7 +443,7 @@
          END SELECT
 
          ! Setup for next pass
-         lscreen_local = .FALSE.
+         !lscreen_local = .FALSE.
          lfirst_pass = .FALSE.
       END DO
       
