@@ -15,29 +15,33 @@
 #            Define Compiler Flags
 #######################################################################
 #  FLAGS_R = -O2 -g -fexternal-blas -fbacktrace -fcheck=all 
-  FLAGS_R = -g -O2 -fexternal-blas -fbacktrace
+  FLAGS_R = -O2 -fexternal-blas
   FLAGS_D = -g -O0 -fexternal-blas -fcheck=all 
-  LIBS    = -L$(BLASHOME)/lib -lopenblas \
-            -L$(SCALAPACK_HOME)/lib -lscalapack \
-            -L$(BLACS_HOME)/lib -lmpiblacs -lmpiblacsCinit \
-            -lmpiblacsF77init -lmpiblacs 
+#  LIBS    = -L$(BLASHOME)/lib -lopenblas \
+#            -L$(SCALAPACK_HOME)/lib -lscalapack \
+#            -L$(BLACS_HOME)/lib -lmpiblacs -lmpiblacsCinit \
+#            -lmpiblacsF77init -lmpiblacs 
+
+#   FOR GCC6  (note that we use CFLAGS for include but only need
+#              to set it once below) 
+  LIBS = -L$(BLASHOME)/lib -lopenblas $(LDFLAGS) -lscalapack
 
 #######################################################################
 #            MPI Options
 #######################################################################
   LMPI    = T
-  MPI_COMPILE = $(MPIHOME)/bin/mpif90
-  MPI_COMPILE_FREE = $(MPIHOME)/bin/mpif90 -ffree-form \
-                     -ffree-line-length-none -ffixed-line-length-none
-  MPI_COMPILE_C = $(MPIHOME)/bin/mpicc
-  MPI_LINK = $(MPIHOME)/bin/mpif90
+#  MPI_COMPILE = $(MPIHOME)/bin/mpif90
+#  MPI_COMPILE_FREE = $(MPIHOME)/bin/mpif90 -ffree-form \
+#                     -ffree-line-length-none -ffixed-line-length-none
+#  MPI_COMPILE_C = $(MPIHOME)/bin/mpicc
+#  MPI_LINK = $(MPIHOME)/bin/mpif90
 
   # For GCC6
-  #MPI_COMPILE = mpif90
-  #MPI_COMPILE_FREE = mpif90 -ffree-form \
-  #                   -ffree-line-length-none -ffixed-line-length-none
-  #MPI_COMPILE_C = mpicc
-  #MPI_LINK = mpif90
+  MPI_COMPILE = mpif90
+  MPI_COMPILE_FREE = mpif90 -ffree-form \
+                     -ffree-line-length-none -ffixed-line-length-none
+  MPI_COMPILE_C = mpicc
+  MPI_LINK = mpif90
 
 #######################################################################
 #            NAG Options
@@ -49,8 +53,9 @@
 #            NETCDF Options
 #######################################################################
   LNETCDF = T
-  NETCDF_INC = -I$(NETCDF_HOME)/include
+  NETCDF_INC = $(CPPFLAGS)
   NETCDF_LIB = -L$(NETCDF_HOME)/lib -lnetcdf -lnetcdff
+  NETCDF_LIB = -lnetcdf -lnetcdff
 
   # FOR GCC6
   #NETCDF_LIB = -L$(NETCDF_HOME)/lib -lnetcdff
@@ -58,8 +63,8 @@
 #######################################################################
 #            NTCC Options
 #######################################################################
-  LNTCC = T
-  NTCC_INC = -I$(NTCCHOME)/mod
+  LNTCC = F
+  NTCC_INC = $(CPPFLAGS)
   NTCC_LIB = -L$(NTCCHOME)/lib -laladdinsub -lr8slatec -ladpak\
              -lcppsub -lcomput -lpspline -lportlib -lezcdf -lmds_sub \
              -lmdstransp -lvaxonly
@@ -68,28 +73,30 @@
 #            HDF5 Options
 #######################################################################
   LHDF5 = T
-  HDF5_INC = -I$(HDF5_HOME)/include
+  HDF5_INC =  #Only need to set NETCDF
   HDF5_LIB = -L$(HDF5_HOME)/lib -lhdf5_hl -lhdf5_fortran -lhdf5 \
+             -lhdf5hl_fortran -lpthread -lz -lm
+  HDF5_LIB = -lhdf5_hl -lhdf5_fortran -lhdf5 \
              -lhdf5hl_fortran -lpthread -lz -lm
 
 #######################################################################
 #             PGPLOT Options
 #######################################################################
   LPGPLOT = T
-  PGPLOT_INC = -I$(PGPLOT_DIR)
+  PGPLOT_INC = #Only need to set NETCDF
   PGPLOT_LIB = -L$(PGPLOT_DIR) -lpgplot -L/usr/X11R6/lib -lX11
 
 #######################################################################
 #             SILO Options
 #######################################################################
   LSILO = T
-  SILO_INC = -I$(SILOHOME)/include
+  SILO_INC = #Only need to set NETCDF
   SILO_LIB = -L$(SILOHOME)/lib -lsilo
 
 #######################################################################
 #            GENE Options
 #######################################################################
-  LGENE = T
+  LGENE = F
   GENE_INC = -I$(GENE_PATH)
   GENE_DIR = $(GENE_PATH)
   LIB_GENE = libgene.a
