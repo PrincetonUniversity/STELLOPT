@@ -6,7 +6,7 @@
       INTEGER, PARAMETER :: pexp=4, m0=0, m1=1, m2=2, m3=3
       LOGICAL, PARAMETER :: lorigin=.FALSE.
       INTEGER            :: mrho, m, istat
-      REAL, PARAMETER    :: p5=0.5_dp, zero=0
+      REAL(dp), PARAMETER    :: p5=0.5_dp, zero=0
       REAL(dp), ALLOCATABLE :: t1m(:), t2m(:), cos_HB(:), sin_HB(:)
       REAL(dp), ALLOCATABLE :: rz_array0(:,:,:), xtempa(:)
       REAL(dp), DIMENSION(:,:), ALLOCATABLE :: arhod, arhom, brhod, brhom,   &

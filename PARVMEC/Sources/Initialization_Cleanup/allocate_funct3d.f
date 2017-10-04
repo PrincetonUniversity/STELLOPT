@@ -126,8 +126,8 @@ C-----------------------------------------------
 
       IF (lfreeb) THEN
          ALLOCATE (brv(nznt), bphiv(nznt), bzv(nznt), bsqvac(nznt),
-     1             bsubu_sur(nznt), bsubv_sur(nznt),                !MRC    10-15-15
-     2             bsupu_sur(nznt), bsupv_sur(nznt),
+     1             bsqvac0(nznt), bsubu_sur(nuv3), bsubv_sur(nuv3),                !MRC    10-15-15
+     2             bsupu_sur(nuv3), bsupv_sur(nuv3),
      3             stat=istat1)
          IF (istat1.ne.0) STOP 'allocation error #2 in allocate_funct3d'
          brv=0; bphiv=0; bzv=0; bsqvac=0

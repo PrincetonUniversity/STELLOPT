@@ -8,37 +8,35 @@
 C-----------------------------------------------
 C   D u m m y   A r g u m e n t s
 C-----------------------------------------------
-      REAL(rprec), DIMENSION(nzeta,ntheta3,ns,0:1),
+      REAL(dp), DIMENSION(nzeta,ntheta3,ns,0:1),
      1     INTENT(inout) :: r1, z1
-      REAL(rprec),DIMENSION(nzeta,ntheta3,ns),INTENT(inout) :: ru0, zu0
+      REAL(dp),DIMENSION(nzeta,ntheta3,ns),INTENT(inout) :: ru0, zu0
 C-----------------------------------------------
 C   L o c a l   P a r a m e t e r s
 C-----------------------------------------------
       INTEGER, PARAMETER :: limpts = 61
-      REAL(rprec), PARAMETER :: p5 = 0.5_dp, two = 2
+      REAL(dp), PARAMETER :: p5 = 0.5_dp, two = 2
 C-----------------------------------------------
 C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
       INTEGER :: i, j, k
       INTEGER :: iv, iu, iu_r, ivminus, nlim, ns12, klim, n
-      REAL(rprec), DIMENSION(nzeta) :: rcom, zcom
-      REAL(rprec), DIMENSION(ntheta1) :: r1b, z1b, rub, zub
-      REAL(rprec), DIMENSION(ntheta1) :: r12, z12
-      REAL(rprec), DIMENSION(ntheta1) :: rs, zs, tau, ru12, zu12, tau0
-      REAL(rprec) :: rlim, zlim
-      REAL(rprec) :: rmax, rmin, zmax, zmin, dzeta
-      REAL(rprec) :: ds, mintau, mintemp
+      REAL(dp), DIMENSION(nzeta) :: rcom, zcom
+      REAL(dp), DIMENSION(ntheta1) :: r1b, z1b, rub, zub
+      REAL(dp), DIMENSION(ntheta1) :: r12, z12
+      REAL(dp), DIMENSION(ntheta1) :: rs, zs, tau, ru12, zu12, tau0
+      REAL(dp) :: rlim, zlim
+      REAL(dp) :: rmax, rmin, zmax, zmin, dzeta
+      REAL(dp) :: ds, mintau, mintemp
       INTEGER :: blksize, numjs, left, right, bcastrank
       INTEGER, ALLOCATABLE, DIMENSION(:) :: counts, disps
-      REAL(rprec), ALLOCATABLE, DIMENSION(:,:,:,:) :: send_buf
-      REAL(rprec), ALLOCATABLE, DIMENSION(:,:,:) :: send_buf2
-      REAL(rprec), ALLOCATABLE, DIMENSION(:) :: recv_buf
-      REAL(rprec) :: allgvton, allgvtoff
-      REAL(rprec) :: skston, skstoff
-      REAL(rprec), ALLOCATABLE, DIMENSION(:,:,:) :: bcastbuf
-!      REAL(rprec), DIMENSION(2) :: tmp
-      REAL(rprec), ALLOCATABLE :: tmp(:)
-      REAL(rprec)              :: tmp2(nzeta,2)
+      REAL(dp), ALLOCATABLE, DIMENSION(:,:,:,:) :: send_buf
+      REAL(dp), ALLOCATABLE, DIMENSION(:,:,:) :: send_buf2
+      REAL(dp), ALLOCATABLE, DIMENSION(:) :: recv_buf
+      REAL(dp) :: tbroadon, tbroadoff, tguesson, tguessoff
+      REAL(dp), ALLOCATABLE, DIMENSION(:,:,:) :: bcastbuf
+      REAL(dp), ALLOCATABLE :: tmp(:)
+      REAL(dp)              :: tmp2(nzeta,2)
 C-----------------------------------------------
 !
 !     COMPUTES GUESS FOR MAGNETIC AXIS IF USER GUESS
@@ -47,8 +45,7 @@ C-----------------------------------------------
 !     YIELD A VALUE FOR THE JACOBIAN WITH THE CORRECT SIGN (SIGNGS)
 !     CHOOSES THE AXIS POSITION SO THE MIN VALUE OF THE JACOBIAN IS MAXIMIZED
 !
-
-      CALL second0(skston)
+      CALL second0(tguesson)
       ns12 = (ns+1)/2
 
       IF (nranks.GT.1) THEN
@@ -76,11 +73,11 @@ C-----------------------------------------------
         bcastbuf(:,:,5)=ru0(:,:,ns12)
         bcastbuf(:,:,6)=zu0(:,:,ns12)
 
-        CALL second0(skston)
+        CALL second0(tbroadon)
         CALL MPI_Bcast(bcastbuf,6*nznt,MPI_REAL8,bcastrank,
      1                 NS_COMM, MPI_ERR)
-        CALL second0(skstoff)
-        broadcast_time = broadcast_time + (skstoff -skston)
+        CALL second0(tbroadoff)
+        broadcast_time = broadcast_time + (tbroadoff-tbroadon)
 
         r1(:,:,ns12,0)=bcastbuf(:,:,1)
         r1(:,:,ns12,1)=bcastbuf(:,:,2)
@@ -96,11 +93,11 @@ C-----------------------------------------------
         bcastbuf(:,:,5)=ru0(:,:,ns)
         bcastbuf(:,:,6)=zu0(:,:,ns)
 
-        CALL second0(skston)
+        CALL second0(tbroadon)
         CALL MPI_Bcast(bcastbuf,6*nznt,MPI_REAL8,nranks-1,
      1                 NS_COMM, MPI_ERR)
-        CALL second0(skstoff)
-        broadcast_time = broadcast_time + (skstoff -skston)
+        CALL second0(tbroadoff)
+        broadcast_time = broadcast_time + (tbroadoff-tbroadon)
 
         r1(:,:,ns,0)=bcastbuf(:,:,1)
         r1(:,:,ns,1)=bcastbuf(:,:,2)
@@ -110,19 +107,19 @@ C-----------------------------------------------
         zu0(:,:,ns)=bcastbuf(:,:,6)
         DEALLOCATE(bcastbuf)
 
-        CALL second0(skston)
+        CALL second0(tbroadon)
         CALL MPI_Bcast(psqrts(1,ns12),1,MPI_REAL8,bcastrank,
      1                 NS_COMM, MPI_ERR)
-        CALL second0(skstoff)
-        broadcast_time = broadcast_time + (skstoff -skston)
+        CALL second0(tbroadoff)
+        broadcast_time = broadcast_time + (tbroadoff-tbroadon)
 
         ALLOCATE(tmp(2*nzeta))
         tmp(1:nzeta) = r1(:,1,1,0) 
         tmp(nzeta+1:2*nzeta) = z1(:,1,1,0) 
-        CALL second0(skston)
+        CALL second0(tbroadon)
         CALL MPI_Bcast(tmp,2*nzeta,MPI_REAL8,0,NS_COMM,MPI_ERR)
-        CALL second0(skstoff)
-        broadcast_time = broadcast_time + (skstoff -skston)
+        CALL second0(tbroadoff)
+        broadcast_time = broadcast_time + (tbroadoff-tbroadon)
         r1(:,1,1,0) = tmp(1:nzeta)
         z1(:,1,1,0) = tmp(nzeta+1:2*nzeta)
         DEALLOCATE(tmp)
@@ -230,8 +227,8 @@ C-----------------------------------------------
          END IF
       END DO
 
-      CALL second0(skstoff)
-      guess_axis_time = guess_axis_time + (skstoff - skston)
+      CALL second0(tguessoff)
+      guess_axis_time = guess_axis_time + (tguessoff - tguesson)
 
       END SUBROUTINE guess_axis_par
 #endif
@@ -245,27 +242,27 @@ C-----------------------------------------------
 C-----------------------------------------------
 C   D u m m y   A r g u m e n t s
 C-----------------------------------------------
-      REAL(rprec), DIMENSION(ns,nzeta,ntheta3,0:1),
+      REAL(dp), DIMENSION(ns,nzeta,ntheta3,0:1),
      1     INTENT(in) :: r1, z1
-      REAL(rprec), DIMENSION(ns,nzeta,ntheta3), INTENT(in) :: ru0, zu0
+      REAL(dp), DIMENSION(ns,nzeta,ntheta3), INTENT(in) :: ru0, zu0
 C-----------------------------------------------
 C   L o c a l   P a r a m e t e r s
 C-----------------------------------------------
       INTEGER, PARAMETER :: limpts = 61
-      REAL(rprec), PARAMETER :: p5 = 0.5_dp, two = 2
+      REAL(dp), PARAMETER :: p5 = 0.5_dp, two = 2
 C-----------------------------------------------
 C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
       INTEGER :: i, j, k
       INTEGER :: iv, iu, iu_r, ivminus, nlim, ns12, klim, n
-      REAL(rprec), DIMENSION(nzeta) :: rcom, zcom
-      REAL(rprec), DIMENSION(ntheta1) :: r1b, z1b, rub, zub
-      REAL(rprec), DIMENSION(ntheta1) :: r12, z12
-      REAL(rprec), DIMENSION(ntheta1) :: rs, zs, tau, ru12, zu12, tau0
-      REAL(rprec) :: rlim, zlim
-      REAL(rprec) :: rmax, rmin, zmax, zmin, dzeta
-      REAL(rprec) :: ds, mintau, mintemp
-      REAL(rprec) :: skston, skstoff
+      REAL(dp), DIMENSION(nzeta) :: rcom, zcom
+      REAL(dp), DIMENSION(ntheta1) :: r1b, z1b, rub, zub
+      REAL(dp), DIMENSION(ntheta1) :: r12, z12
+      REAL(dp), DIMENSION(ntheta1) :: rs, zs, tau, ru12, zu12, tau0
+      REAL(dp) :: rlim, zlim
+      REAL(dp) :: rmax, rmin, zmax, zmin, dzeta
+      REAL(dp) :: ds, mintau, mintemp
+      REAL(dp) :: tguesson, tguessoff
 C-----------------------------------------------
 !
 !     COMPUTES GUESS FOR MAGNETIC AXIS IF USER GUESS
@@ -274,7 +271,7 @@ C-----------------------------------------------
 !     YIELD A VALUE FOR THE JACOBIAN WITH THE CORRECT SIGN (SIGNGS)
 !     CHOOSES THE AXIS POSITION SO THE MIN VALUE OF THE JACOBIAN IS MAXIMIZED
 !
-      CALL second0(skston)
+      CALL second0(tguesson)
       ns12 = (ns+1)/2
 
       planes: DO iv = 1, nzeta
@@ -378,7 +375,7 @@ C-----------------------------------------------
 
 !  100 FORMAT(' n = ',i4,' raxis = ',1pe10.3,' zaxis = ',1pe10.3)
 
-      CALL second0(skstoff)
-      s_guess_axis_time = s_guess_axis_time + (skstoff - skston)
+      CALL second0(tguessoff)
+      s_guess_axis_time = s_guess_axis_time + (tguessoff - tguesson)
 
       END SUBROUTINE guess_axis

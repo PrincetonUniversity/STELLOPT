@@ -19,7 +19,7 @@ C-----------------------------------------------
       CHARACTER(LEN=100), PARAMETER ::
 #if defined(SKS)
      1   banner = 
-     2   ' THIS IS PARVMEC FOR LDRD, VERSION ' 
+     2   ' THIS IS PARVMEC (PARALLEL VMEC), VERSION ' 
 #else
      1   banner = ' THIS IS VMEC2000, A 3D EQUILIBRIUM CODE, VERSION '
 #endif
@@ -41,7 +41,7 @@ C-----------------------------------------------
       CALL open_output_files (extension, iseq_count, lmac, lscreen,
      1                        lfirst, lwrite)
 
-      IF (.not.lfirst .or. .not.lwrite) RETURN
+      IF (.NOT.lfirst .OR. .NOT.lwrite) RETURN
 
 !     FORTRAN-90 ROUTINE
       CALL DATE_AND_TIME(date0,time0,zone0)

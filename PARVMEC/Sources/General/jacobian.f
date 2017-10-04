@@ -12,20 +12,19 @@
 C-----------------------------------------------
 C   L o c a l   P a r a m e t e r s
 C-----------------------------------------------
-      REAL(rprec), PARAMETER :: zero = 0, p5 = 0.5_dp, p25 = p5*p5
-      REAL(rprec) :: dphids
+      REAL(dp), PARAMETER :: zero = 0, p5 = 0.5_dp, p25 = p5*p5
+      REAL(dp) :: dphids
 C-----------------------------------------------
 C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
-      INTEGER :: l, nsmin, nsmax, lnsnum
-      REAL(rprec) :: ltaumax, ltaumin
-      REAL(rprec) :: taumax, taumin
-      REAL(rprec), ALLOCATABLE, DIMENSION(:) :: temp
-      REAL(rprec), ALLOCATABLE, DIMENSION(:) :: minarr, maxarr
-
-      REAL(rprec) :: t1, t2
-      INTEGER :: i, j, k
+      INTEGER :: i, nsmin, nsmax, lnsnum
+      REAL(dp) :: ltaumax, ltaumin
+      REAL(dp) :: taumax, taumin
+      REAL(dp), ALLOCATABLE, DIMENSION(:) :: temp
+      REAL(dp), ALLOCATABLE, DIMENSION(:) :: minarr, maxarr
+      REAL(dp) :: t1, t2, tjacon, tjacoff
 C-----------------------------------------------
+      CALL second0(tjacon)
 
       nsmin=MAX(2,tlglob); nsmax=t1rglob;
       dphids = p25
@@ -62,6 +61,8 @@ C-----------------------------------------------
 
       ltaumax=MAXVAL(ptau(:,nsmin:nsmax))
       ltaumin=MINVAL(ptau(:,nsmin:nsmax))
+!      ltaumax=MAXVAL(ptau(:,tlglob:trglob))
+!      ltaumin=MINVAL(ptau(:,tlglob:trglob))
 
       taumax=ltaumax
       taumin=ltaumin
@@ -77,6 +78,9 @@ C-----------------------------------------------
       END IF
 
       IF (taumax*taumin .lt. zero) irst = 2
+
+      CALL second0(tjacoff)
+      jacobian_time=jacobian_time+(tjacoff-tjacon)
 
       END SUBROUTINE jacobian_par
 #endif      
@@ -97,19 +101,18 @@ C-----------------------------------------------
 C-----------------------------------------------
 C   L o c a l   P a r a m e t e r s
 C-----------------------------------------------
-      REAL(rprec), PARAMETER :: zero = 0, p5 = 0.5_dp, p25 = p5*p5
+      REAL(dp), PARAMETER :: zero = 0, p5 = 0.5_dp, p25 = p5*p5
 C-----------------------------------------------
 C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
       INTEGER :: l
-      REAL(rprec) :: taumax, taumin, dphids, temp(nrzt/ns)
+      REAL(dp) :: taumax, taumin, dphids, temp(nrzt/ns), tjacon,tjacoff
 #if defined(SKS)
       INTEGER :: i, j, k, nsmin, nsmax
-      REAL(rprec) :: skston, skstoff 
 #endif
 C-----------------------------------------------
 #if defined(SKS)
-      CALL second0(skston)
+      CALL second0(tjacon)
 #endif
 
 C-----------------------------------------------
@@ -168,7 +171,7 @@ CDIR$ IVDEP
       IF (taumax*taumin .lt. zero) irst = 2
 
 #if defined(SKS)
-      CALL second0(skstoff)
-      s_jacobian_time=s_jacobian_time+(skstoff-skston)
+      CALL second0(tjacoff)
+      s_jacobian_time=s_jacobian_time+(tjacoff-tjacon)
 #endif
       END SUBROUTINE jacobian

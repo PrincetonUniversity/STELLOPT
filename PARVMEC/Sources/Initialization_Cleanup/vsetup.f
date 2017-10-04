@@ -5,12 +5,17 @@
       USE vsvd
       USE mgrid_mod, ONLY: nbcoil_max, nlim_max, nextcur, mgrid_mode
       USE gmres_mod, ONLY: nfcn
+      USE parallel_include_module, ONLY: vsetup_time
       IMPLICIT NONE
+!-----------------------------------------------
+!   D u m m y   A r g u m e n t s
+!C-----------------------------------------------
+      INTEGER, INTENT(IN) :: iseq_count
+      REAL(dp)            :: vseton, vsetoff
 C-----------------------------------------------
-C   D u m m y   A r g u m e n t s
-C-----------------------------------------------
-      INTEGER, INTENT(in) :: iseq_count
-C-----------------------------------------------
+#if defined(SKS)
+        CALL second0(vseton)
+#endif
 !
 !     Reset default initial values
 !
@@ -78,5 +83,10 @@ C-----------------------------------------------
         nbcoil_max = 0
         nlim_max = 0
       END IF
+
+#if defined(SKS)
+      CALL second0(vsetoff)
+      vsetup_time = vsetup_time + (vsetoff-vseton)
+#endif
 
       END SUBROUTINE vsetup

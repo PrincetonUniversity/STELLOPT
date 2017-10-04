@@ -13,7 +13,7 @@
 !-----------------------------------------------
 !   D u m m y   A r g u m e n t s
 !-----------------------------------------------
-      REAL(rprec), DIMENSION(0:ntor,0:mpol1,ns,ntmax),
+      REAL(dp), DIMENSION(0:ntor,0:mpol1,ns,ntmax),
      1    INTENT(inout) ::  rmn, zmn
       LOGICAL, INTENT(in) :: lreset, linterp
 #if defined(SKS)
@@ -21,14 +21,12 @@
 !   L o c a l   V a r i a b l e s
 !-----------------------------------------------
       INTEGER :: js, l, lk, lt, lz, ntype, m, n, mn
-      REAL(rprec), DIMENSION(0:ntor,ntmax) :: rold, zold
-      REAL(rprec) :: sm0, t1, facj, si, rax1, zax1
+      REAL(dp), DIMENSION(0:ntor,ntmax) :: rold, zold
+      REAL(dp) :: sm0, t1, facj, si, rax1, zax1
       INTEGER :: jcount, jk, k
       INTEGER :: i, j, nsmin, nsmax, lpar
-      REAL(rprec), ALLOCATABLE, DIMENSION(:,:) :: bcast_buf
-      REAL(rprec) :: skston, skstoff
-      REAL(rprec) :: allgvton, allgvtoff
-!      INTEGER, SAVE :: PASSNO=0
+      REAL(dp), ALLOCATABLE, DIMENSION(:,:) :: bcast_buf
+      REAL(dp) :: tprofon, tprofoff, tbroadon, tbroadoff
 
 !-----------------------------------------------
 !                INDEX OF LOCAL VARIABLES
@@ -40,6 +38,8 @@
 !     wint     two-dimensional array for normalizing angle integrations
 !     ireflect two-dimensional array for computing 2pi-v angle
 !-----------------------------------------------
+      CALL second0(tprofon)
+
       nsmin=t1lglob; nsmax=t1rglob
       DO js = nsmin, nsmax
         pphip(:,js) = phips(js)
@@ -64,7 +64,8 @@
         DO lz = 1, nzeta
           lk = lk + 1
           pwint_ns(lk)=cosmui3(lt,0)/mscale(0)
-          DO js=MAX(2,nsmin), nsmax
+          !DO js=MAX(2,nsmin), nsmax
+          DO js=MAX(2,t1lglob), t1rglob
             !pwint(lk,js)=cosmui3(lt,0)/mscale(0)
             pwint(lk,js)=pwint_ns(lk)
           END DO
@@ -98,11 +99,11 @@
         ALLOCATE(bcast_buf(0:2*ntor+1,1:ntmax))
         bcast_buf(0:ntor,1:ntmax)=rold(0:ntor,1:ntmax)
         bcast_buf(ntor+1:2*ntor+1,1:ntmax)=zold(0:ntor,1:ntmax)
-        CALL second0(skston)
+        CALL second0(tbroadon)
         CALL MPI_Bcast(bcast_buf,2*(ntor+1)*ntmax,MPI_REAL8,0,
      1                NS_COMM,MPI_ERR)
-        CALL second0(skstoff)
-        broadcast_time = broadcast_time + (skstoff - skston)
+        CALL second0(tbroadoff)
+        broadcast_time = broadcast_time + (tbroadoff - tbroadon)
         rold(0:ntor,1:ntmax)=bcast_buf(0:ntor,1:ntmax)
         zold(0:ntor,1:ntmax)=bcast_buf(ntor+1:2*ntor+1,1:ntmax)
       END IF
@@ -190,8 +191,11 @@
         CALL setup_int (pknots, sqrts, hthom, w_pb, w1_pb, u_pb,
      1       u1_pb, nk_pb, ipnodes, ns)
       ENDIF
+
+      CALL second0(tprofoff)
+      profile3d_time = profile3d_time + (tprofoff - tprofon)
+
 #endif
-      !CALL PrintOutLinearArray(pxc, 1, ns, .TRUE., 2000+PASSNO)
       END SUBROUTINE profil3d_par
 
       SUBROUTINE profil3d(rmn, zmn, lreset, linterp)
@@ -211,15 +215,15 @@
 !-----------------------------------------------
 !   D u m m y   A r g u m e n t s
 !-----------------------------------------------
-      REAL(rprec), DIMENSION(ns,0:ntor,0:mpol1,ntmax),
+      REAL(dp), DIMENSION(ns,0:ntor,0:mpol1,ntmax),
      1    INTENT(inout) ::  rmn, zmn
       LOGICAL, INTENT(in) :: lreset, linterp
 !-----------------------------------------------
 !   L o c a l   V a r i a b l e s
 !-----------------------------------------------
       INTEGER :: js, l, lk, lt, lz, ntype, m, n, mn
-      REAL(rprec), DIMENSION(0:ntor,ntmax) :: rold, zold
-      REAL(rprec) :: sm0, t1, facj, si, rax1, zax1
+      REAL(dp), DIMENSION(0:ntor,ntmax) :: rold, zold
+      REAL(dp) :: sm0, t1, facj, si, rax1, zax1
       INTEGER :: jcount, jk, k
 #if defined(SKS)
       INTEGER :: i, j, nsmin, nsmax

@@ -20,12 +20,12 @@ C-----------------------------------------------
       INTEGER, INTENT(inout) :: ier_flag
       LOGICAL :: lscreen
       INTEGER :: i, j, ij, k, js, jk, lk, lt, lz, jcount
-      REAL(rprec) :: t1, t2
-      REAL(rprec), ALLOCATABLE :: buffer(:,:), tmp(:,:)
+      REAL(dp) :: tfileon, tfileoff
+      REAL(dp), ALLOCATABLE :: buffer(:,:), tmp(:,:)
 C-----------------------------------------------
-      CALL second0(t1)
+      CALL second0(tfileon)
 
-      IF (lfreeb.AND.vlactive) THEN
+      IF (lfreeb .AND. vlactive) THEN
          ALLOCATE(buffer(numjs_vac, 7), tmp(nznt, 7),stat=i)
          IF (i .NE. 0) CALL STOPMPI(440)
          buffer(:,1) = brv(nuv3min:nuv3max)
@@ -98,19 +98,19 @@ C-----------------------------------------------
         CALL Parallel2Serial4X(pxc,xc)
         CALL Gather4XArray(pscalxc)
         CALL Parallel2Serial4X(pscalxc,scalxc)
-        CALL second0(t2)
+        CALL second0(tfileoff)
       END IF
-      fo_prepare_time = fo_prepare_time + (t2-t1)
+      fo_prepare_time = fo_prepare_time + (tfileoff-tfileon)
 
-      PARVMEC=.FALSE.
-      IF(grank.EQ.0) THEN
-        CALL fileout(iseq, ictrl_flag, ier_flag, lscreen) 
+!      ORIGPARVMEC=PARVMEC
+!      PARVMEC=.FALSE.
+      IF (grank .EQ. 0) THEN
+         CALL fileout(iseq, ictrl_flag, ier_flag, lscreen) 
       ENDIF
       CALL MPI_Barrier(NS_COMM, MPI_ERR)
-      CALL second0(t2)
-      fo_par_call_time = fo_par_call_time + (t2-t1)
-
-      PARVMEC=.TRUE.
+      CALL second0(tfileoff)
+      fileout_time = fileout_time + (tfileoff-tfileon)
+      fo_par_call_time = fileout_time
 #endif
       END SUBROUTINE fileout_par
 
@@ -149,10 +149,9 @@ C-----------------------------------------------
 C-----------------------------------------------
 C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
-      REAL(rprec) :: skston, skstoff
       INTEGER :: js, istat1=0, irst0, OFU
-      REAL(rprec), DIMENSION(:), POINTER :: lu, lv
-      REAL(rprec), ALLOCATABLE :: br_out(:), bz_out(:)
+      REAL(dp), DIMENSION(:), POINTER :: lu, lv
+      REAL(dp), ALLOCATABLE :: br_out(:), bz_out(:)
       CHARACTER(LEN=*), PARAMETER, DIMENSION(0:10) :: werror = (/
      1   'EXECUTION TERMINATED NORMALLY                            ',
      2   'INITIAL JACOBIAN CHANGED SIGN (IMPROVE INITIAL GUESS)    ',
@@ -168,7 +167,7 @@ C-----------------------------------------------
       CHARACTER(LEN=*), PARAMETER ::
      1    Warning = " Error deallocating global memory FILEOUT"
       LOGICAL :: log_open, lwrite, loutput, lterm
-      REAL(rprec) :: tmpxc, rmssum
+      REAL(dp) :: tmpxc, rmssum
 C-----------------------------------------------
     
       INFILEOUT=.TRUE.
@@ -180,6 +179,7 @@ C-----------------------------------------------
 !     CYLINDRICAL COMPONENTS OF B (BR, BPHI, BZ), AND
 !     AVERAGE EQUILIBRIUM PROPERTIES AT END OF RUN
 !
+
       iequi = 1
       lterm = ier_flag.eq.norm_term_flag  .or.
      1        ier_flag.eq.successful_term_flag
@@ -189,7 +189,8 @@ C-----------------------------------------------
       if (ier_flag .eq. successful_term_flag) 
      1    loc_ier_flag = norm_term_flag
 
-      IF (lwrite .and. loutput) THEN
+
+      IF (lwrite .AND. loutput) THEN
 !
 !     The sign of the jacobian MUST multiply phi to get the physically
 !     correct toroidal flux
@@ -202,29 +203,22 @@ C-----------------------------------------------
 
 !        Must save irst value if in "restart" mode
          irst0 = irst
-         CALL second0(skston)
          CALL funct3d (lscreen, istat)
-         CALL second0(skstoff)
-         fo_funct3d_time = fo_funct3d_time + (skstoff - skston)
+         fo_funct3d_time = timer(tfun)
+
 
 !        Write out any special files here
 !        CALL dump_special
 
          irst = irst0
 
-         CALL second0 (teqfon)
          ALLOCATE(br_out(nrzt), bz_out(nrzt), stat=istat)
          gc = xc
 #ifdef _HBANGLE
          CALL getrz(gc)
 #endif
-         CALL second0 (skston)
          CALL eqfor (br_out, bz_out, clmn, blmn, rcon(1,1), 
      1               gc, ier_flag)
-         CALL second0 (skstoff)
-         CALL second0 (teqfoff)
-         fo_eqfor_time = fo_eqfor_time + (skstoff - skston)
-         timer(teqf) = timer(teqf) + teqfoff - teqfon
       END IF
   
 !      CALL free_mem_precon
@@ -232,23 +226,15 @@ C-----------------------------------------------
 !     Call WROUT to write output or error message if lwrite = false
 !
 
-      IF (loutput .and. ASSOCIATED(bzmn_o)) THEN
-         CALL second0 (twouton)
-
-         CALL second0 (skston)
+      IF (loutput .AND. ASSOCIATED(bzmn_o)) THEN
          CALL wrout (bzmn_o, azmn_o, clmn, blmn, crmn_o, czmn_e,
      1        crmn_e, xsave, gc, loc_ier_flag, lwrite
 #ifdef _ANIMEC
      2       ,brmn_o, sigma_an, ppar, pperp, onembc, pp1, pp2, pp3
 #endif 
      3        )
-         CALL second0(skstoff)
-         fo_wrout_time = fo_wrout_time + (skstoff - skston)
-         CALL second0 (twoutoff)
 
-         timer(twout) = timer(twout) + twoutoff - twouton
-
-         IF (ntor .eq. 0) THEN
+         IF (ntor .EQ. 0) THEN
             CALL write_dcon (xc)
          END IF
 
@@ -273,6 +259,15 @@ C-----------------------------------------------
 #endif           
               CALL write_times(nthreed, lscreen, lfreeb, lrecon, 
      1                       ictrl_prec2d.ne.0)
+
+            IF (grank.EQ.0) THEN 
+              WRITE(nthreed,*)
+              WRITE(nthreed,'(1x,a,i4)') 'NO. OF PROCS:  ',gnranks
+              WRITE(nthreed,101)         'PARVMEC     :  ',PARVMEC
+              WRITE(nthreed,101)         'LPRECOND    :  ',LPRECOND
+              WRITE(nthreed,101)         'LV3FITCALL  :  ',LV3FITCALL
+            END IF
+ 101  FORMAT(1x,a,l4)
 #if defined(SKS)
             END IF
 #endif           

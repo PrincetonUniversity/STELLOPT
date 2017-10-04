@@ -7,7 +7,8 @@
       USE timer_sub
       USE mgrid_mod, ONLY: nextcur, curlabel, nfper0, read_mgrid
       USE init_geometry
-      USE parallel_include_module, ONLY: grank, mgrid_file_read_time
+      USE parallel_include_module, ONLY: grank, mgrid_file_read_time,
+     1                                   LPRECOND
       USE parallel_vmec_module, ONLY: RUNVMEC_COMM_WORLD
       IMPLICIT NONE
 C-----------------------------------------------
@@ -22,10 +23,10 @@ C-----------------------------------------------
       INTEGER :: iexit, ipoint, n, iunit, ier_flag_init,
      1   i, ni, m, nsmin, igrid, mj, isgn, ioff, joff,
      2   NonZeroLen    
-      REAL(rprec), DIMENSION(:,:), POINTER ::
+      REAL(dp), DIMENSION(:,:), POINTER ::
      1  rbcc, rbss, rbcs, rbsc, zbcs, zbsc, zbcc, zbss
-      REAL(rprec) :: rtest, ztest, tzc, trc, delta
-      REAL(rprec), ALLOCATABLE :: temp(:)
+      REAL(dp) :: rtest, ztest, tzc, trc, delta
+      REAL(dp), ALLOCATABLE :: temp(:)
       CHARACTER(LEN=100) :: line, line2
       CHARACTER(LEN=1)   :: ch1, ch2
       LOGICAL :: lwrite
@@ -242,19 +243,21 @@ C-----------------------------------------------
 !       THE FRACTION OF THE MEASURED DATA NEEDED TO COMPUTE THE ABSOLUTE
 !       SIGMA, I.E., (-SIGMA * DATA) = ACTUAL SIGMA USED IN CODE.
 !
-      lwrite = (grank .eq. 0)
+
+      CALL second0(treadon)
+
+      lwrite = (grank .EQ. 0)
       ier_flag_init = ier_flag
       ier_flag = norm_term_flag
-      CALL second0(treadon)
-      IF (ier_flag_init .eq. more_iter_flag) GOTO 1000
+      IF (ier_flag_init .EQ. more_iter_flag) GOTO 1000
 
 !
 !     READ IN DATA FROM INDATA FILE
 !
       CALL read_indata(input_file, iunit, ier_flag)
-      IF (ier_flag .ne. norm_term_flag) RETURN
+      IF (ier_flag .NE. norm_term_flag) RETURN
 
-      IF (tensi2 .eq. zero ) tensi2 = tensi
+      IF (tensi2 .EQ. zero ) tensi2 = tensi
 
 !
 !     Open output files here, print out heading to threed1 file
@@ -270,13 +273,13 @@ C-----------------------------------------------
 !  
       REWIND (iunit, iostat=iexit)
       IF (lWrite) THEN
-         DO WHILE(iexit .eq. 0)
+         DO WHILE(iexit .EQ. 0)
             READ (iunit, '(a)', iostat=iexit) line
-            IF (iexit .ne. 0) EXIT
+            IF (iexit .NE. 0) EXIT
             iexit = INDEX(line,'INDATA')
             iexit = iexit + INDEX(line,'indata')
             ipoint = INDEX(line,'!')
-            IF (ipoint .eq. 1) WRITE (nthreed, *) TRIM(line)
+            IF (ipoint .EQ. 1) WRITE (nthreed, *) TRIM(line)
          ENDDO
       END IF
       CLOSE (iunit)
@@ -288,10 +291,11 @@ C-----------------------------------------------
       IF (lfreeb) THEN
          CALL second0(trc)
          CALL read_mgrid (mgrid_file, extcur, nzeta, nfp, 
-     1                    lscreen, ier_flag, RUNVMEC_COMM_WORLD)
+     1                    lscreen, ier_flag, comm = RUNVMEC_COMM_WORLD)
          CALL second0(tzc)
+         mgrid_file_read_time = mgrid_file_read_time + (tzc - trc)
 
-         IF (lfreeb .and. lscreen .and. lwrite) THEN
+         IF (lfreeb .AND. lscreen .AND. lwrite) THEN
             WRITE (6,'(2x,a,1p,e10.2,a)') 'Time to read MGRID file: ', 
      1             tzc - trc, ' s'
             IF (ier_flag .ne. norm_term_flag) RETURN
@@ -336,7 +340,7 @@ C-----------------------------------------------
          IF (multi_ns_grid .eq. 1) ftol_array(1) = ftol
          DO igrid = 2, multi_ns_grid
             ftol_array(igrid) = 1.e-8_dp * (1.e8_dp * ftol)**
-     1        ( REAL(igrid-1,rprec)/(multi_ns_grid-1) )
+     1        ( REAL(igrid-1,dp)/(multi_ns_grid-1) )
          END DO
       ENDIF
 
@@ -559,9 +563,9 @@ C-----------------------------------------------
 !     CONVERT TO INTERNAL REPRESENTATION OF MODES
 !
 !     R = RBCC*COS(M*U)*COS(N*V) + RBSS*SIN(M*U)*SIN(N*V)
-!         + RBCS*COS(M*U)*SIN(N*V) + RBSC*SIN(M*U)*COS(N*V)
+!       + RBCS*COS(M*U)*SIN(N*V) + RBSC*SIN(M*U)*COS(N*V)
 !     Z = ZBCS*COS(M*U)*SIN(N*V) + ZBSC*SIN(M*U)*COS(N*V)
-!         + ZBCC*COS(M*U)*COS(N*V) + ZBSS*SIN(M*U)*SIN(N*V)
+!       + ZBCC*COS(M*U)*COS(N*V) + ZBSS*SIN(M*U)*SIN(N*V)
 !
 !
 !     POINTER ASSIGNMENTS (NOTE: INDICES START AT 1, NOT 0, FOR POINTERS, EVEN THOUGH
@@ -680,6 +684,7 @@ C-----------------------------------------------
 !
       precon_type = TRIM(ADJUSTL(precon_type))
       itype_precon = 0     !default scalar tri-di preconditioner
+      LPRECOND = .FALSE.
       ch1 = precon_type(1:1); ch2 = precon_type(2:2)
 
 !     ALL THE FOLLOWING USE THE FULL 2D BLOCK-TRI PRECONDITIONER
@@ -688,14 +693,18 @@ C-----------------------------------------------
       CASE ('c', 'C')
 !conjugate gradient
          IF (ch2 == 'g' .or. ch2 == 'G') itype_precon = 1             
+         LPRECOND = .TRUE.
       CASE ('g', 'G')
 !gmres or gmresr
          IF (ch2 == 'm' .or. ch2 == 'M') itype_precon = 2
          IF (LEN_TRIM(precon_type) == 6) itype_precon = 3             
+         LPRECOND = .TRUE.
       CASE ('t', 'T')
 !transpose free qmr
          IF (ch2 == 'f' .or. ch2 == 'F') itype_precon = 4             
+         LPRECOND = .TRUE.
       END SELECT
+      
 
       iresidue = -1
       IF (lrecon) THEN
@@ -704,7 +713,7 @@ C-----------------------------------------------
 !
         signiota = one
         IF (signgs*curtor*phiedge .lt. zero)signiota = -one
-        IF (sigma_current .eq. zero) THEN
+        IF (sigma_current .EQ. zero) THEN
           IF (lwrite) WRITE (*,*) 'Sigma_current cannot be zero!'
           ier_flag = -1
           RETURN
@@ -722,16 +731,20 @@ C-----------------------------------------------
       currv = mu0*curtor              !Convert to Internal units
 
       CALL second0(treadoff)
-      mgrid_file_read_time = mgrid_file_read_time + (treadoff - treadon)
       timer(tread) = timer(tread) + (treadoff-treadon)
+#if defined(SKS)
+      CALL MPI_Bcast(LPRECOND,1,MPI_LOGICAL,0,RUNVMEC_COMM_WORLD,            &
+     &               MPI_ERR)
+        readin_time = timer(tread)
+#endif
 
       END SUBROUTINE readin
 
       INTEGER FUNCTION NonZeroLen(array, n)
-      USE vmec_main, ONLY: rprec, zero
+      USE vmec_main, ONLY: dp, zero
       IMPLICIT NONE
       INTEGER, INTENT(IN)      :: n
-      REAL(rprec), INTENT(IN)  :: array(n)
+      REAL(dp), INTENT(IN)  :: array(n)
       INTEGER :: k
 
       DO k=n,1,-1

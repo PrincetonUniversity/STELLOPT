@@ -8,22 +8,24 @@
      3             pcrmn_e => pcrmn_e, pczmn_e => pczmn_e, 
      4             pczmn_o => pczmn_o
       USE parallel_include_module
+      USE timer_sub
       IMPLICIT NONE
 C-----------------------------------------------
 C   L o c a l   P a r a m e t e r s
 C-----------------------------------------------
-      REAL(rprec), PARAMETER :: p25 = p5*p5, dshalfds=p25
+      REAL(dp), PARAMETER :: p25 = p5*p5, dshalfds=p25
 C-----------------------------------------------
 C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
       INTEGER :: l, ndim
-      REAL(rprec), DIMENSION(:,:), POINTER :: 
-     1    bsqr, gvvs, guvs, guus
       INTEGER :: i, j, k, nsmin, nsmax
-      REAL(rprec) :: skston, skstoff
-      REAL(rprec), ALLOCATABLE, DIMENSION(:) :: bcastbuf
+      REAL(dp), DIMENSION(:,:), POINTER :: 
+     1    bsqr, gvvs, guvs, guus
+      REAL(dp), ALLOCATABLE, DIMENSION(:) :: bcastbuf
 C-----------------------------------------------
-      IF (.NOT.lactive .AND. .NOT.lfreeb) return
+      IF (.NOT.lactive .AND. .NOT.lfreeb) RETURN
+
+      CALL second0 (tforon)
 
       ndim = 1+nrzt
 
@@ -182,25 +184,6 @@ C-----------------------------------------------
           END DO
         END DO
 
-!SPH CHANGE: I DO NOT THINK WE NEED THIS!
-!        IF(gnranks.GT.1) THEN
-!          ALLOCATE(bcastbuf(4*nznt))
-!          bcastbuf(1:nznt) = parmn_e(:,ns)
-!          bcastbuf(nznt+1:2*nznt) = parmn_o(:,ns)
-!          bcastbuf(2*nznt+1:3*nznt) = pazmn_e(:,ns)
-!          bcastbuf(3*nznt+1:4*nznt) = pazmn_o(:,ns)
-!          CALL second0(skston)
-!          CALL MPI_Bcast(bcastbuf,SIZE(bcastbuf),MPI_REAL8,nranks-1,
-!     1                   NS_COMM,MPI_ERR)
-!          CALL second0(skstoff)
-!          broadcast_time = broadcast_time + (skstoff - skston)
-!          parmn_e(:,ns) = bcastbuf(1:nznt)
-!          parmn_o(:,ns) = bcastbuf(nznt+1:2*nznt)
-!          pazmn_e(:,ns) = bcastbuf(2*nznt+1:3*nznt)
-!          pazmn_o(:,ns) = bcastbuf(3*nznt+1:4*nznt)
-!          DEALLOCATE(bcastbuf)
-!        END IF
-
       ENDIF
 
  100  CONTINUE
@@ -222,6 +205,9 @@ C-----------------------------------------------
         pzcon(:,l,1) = pzcon(:,l,0) * psqrts(:,l)
       END DO
 #endif
+      CALL second0 (tforoff)
+      timer(tfor) = timer(tfor) + (tforoff - tforon)
+      forces_time = timer(tfor)
 
       END SUBROUTINE forces_par
 #endif      
@@ -236,27 +222,24 @@ C-----------------------------------------------
 #if defined (SKS)      
       USE parallel_include_module
 #endif
+      USE timer_sub
       IMPLICIT NONE
 C-----------------------------------------------
 C   L o c a l   P a r a m e t e r s
 C-----------------------------------------------
-      REAL(rprec), PARAMETER :: p25 = p5*p5, dshalfds=p25
+      REAL(dp), PARAMETER :: p25 = p5*p5, dshalfds=p25
 C-----------------------------------------------
 C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
       INTEGER :: l, ndim
-      REAL(rprec), DIMENSION(:), POINTER :: 
+      REAL(dp), DIMENSION(:), POINTER :: 
      1    bsqr, gvvs, guvs, guus
 #if defined (SKS)      
-      INTEGER :: i, j, k, nsmin, nsmax
-      REAL(rprec) :: skston, skstoff
+      INTEGER :: i, j, k
 #endif
 C-----------------------------------------------
       ndim = 1+nrzt
-#if defined(SKS)      
-      CALL second0 (skston)
-      nsmin=tlglob; nsmax=t1rglob
-#endif
+      CALL second0 (tforon)
 
 !     POINTER ALIASES
       bsqr => extra1(:,1);  gvvs => extra2(:,1)
@@ -418,9 +401,10 @@ C-----------------------------------------------
       zcon(:nrzt,1) = zcon(:nrzt,0) * sqrts(:nrzt)
 #endif
       
+      CALL second0 (tforoff)
 #if defined(SKS)      
-      CALL second0 (skstoff)
-      s_forces_time = s_forces_time + (skstoff-skston)
+      s_forces_time = s_forces_time + (tforoff-tforon)
 #endif
+      timer(tfor) = timer(tfor) + (tforoff - tforon)
 
       END SUBROUTINE forces

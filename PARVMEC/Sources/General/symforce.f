@@ -4,25 +4,25 @@
       USE vmec_main, p5 => cp5
       USE realspace, ONLY: ireflect_par
       USE parallel_include_module
+      USE timer_sub
       IMPLICIT NONE
 C-----------------------------------------------
 C   D u m m y   A r g u m e n t s
 C-----------------------------------------------
-      REAL(rprec), DIMENSION(nzeta,ntheta3,ns,0:1),
+      REAL(dp), DIMENSION(nzeta,ntheta3,ns,0:1),
      1   INTENT(inout) :: ars, brs, crs, azs, bzs, czs,
      2   bls, cls, rcs, zcs
-      REAL(rprec), DIMENSION(nzeta,ntheta3,ns,0:1), INTENT(out) ::
+      REAL(dp), DIMENSION(nzeta,ntheta3,ns,0:1), INTENT(out) ::
      1   ara, bra, cra, aza, bza, cza, bla, cla, rca, zca
 C-----------------------------------------------
 C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
       INTEGER :: mpar, ir, i, jk, jka
-      REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: ars_0, brs_0, azs_0, 
+      REAL(dp), DIMENSION(:,:), ALLOCATABLE :: ars_0, brs_0, azs_0, 
      1              bzs_0, bls_0, rcs_0, zcs_0, crs_0, czs_0, cls_0
       INTEGER :: nsmin, nsmax, j, k
-      REAL(rprec) :: skston, skstoff
 C-----------------------------------------------
-      CALL second0(skston)
+      CALL second0(tforon)
       nsmin=t1lglob; nsmax=t1rglob
 
       ALLOCATE (ars_0(nzeta,ns), brs_0(nzeta,ns), azs_0(nzeta,ns), 
@@ -92,8 +92,10 @@ C-----------------------------------------------
       DEALLOCATE (ars_0, brs_0, azs_0, bzs_0, bls_0,
      1            rcs_0, zcs_0, crs_0, czs_0, cls_0, stat=ir)
 
-      CALL second0(skstoff)
-      symforces_time = symforces_time + (skstoff - skston)
+      CALL second0(tforoff)
+      symforces_time = symforces_time + (tforoff - tforon)
+      timer(tfor) = timer(tfor) + (tforoff - tforon)
+
       END SUBROUTINE symforce_par
 #endif
 
@@ -101,24 +103,24 @@ C-----------------------------------------------
      1 cls, rcs, zcs, ara, bra, cra, aza, bza, cza, bla, cla, rca, zca)
       USE vmec_main, p5 => cp5
       USE parallel_include_module
+      USE timer_sub
       IMPLICIT NONE
 C-----------------------------------------------
 C   D u m m y   A r g u m e n t s
 C-----------------------------------------------
-      REAL(rprec), DIMENSION(ns*nzeta,ntheta3,0:1),
+      REAL(dp), DIMENSION(ns*nzeta,ntheta3,0:1),
      1   INTENT(inout) :: ars, brs, crs, azs, bzs, czs,
      2   bls, cls, rcs, zcs
-      REAL(rprec), DIMENSION(ns*nzeta,ntheta3,0:1), INTENT(out) ::
+      REAL(dp), DIMENSION(ns*nzeta,ntheta3,0:1), INTENT(out) ::
      1   ara, bra, cra, aza, bza, cza, bla, cla, rca, zca
 C-----------------------------------------------
 C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
       INTEGER :: mpar, ir, i, jk, jka
-      REAL(rprec), DIMENSION(:), ALLOCATABLE :: ars_0, brs_0, azs_0, 
+      REAL(dp), DIMENSION(:), ALLOCATABLE :: ars_0, brs_0, azs_0, 
      1              bzs_0, bls_0, rcs_0, zcs_0, crs_0, czs_0, cls_0
-      REAL(rprec) :: skston, skstoff
 C-----------------------------------------------
-      CALL second0(skston)
+      CALL second0(tforon)
       i = ns*nzeta
       ALLOCATE (ars_0(i), brs_0(i), azs_0(i), bzs_0(i), bls_0(i),
      1          rcs_0(i), zcs_0(i), crs_0(i), czs_0(i), cls_0(i),
@@ -185,8 +187,10 @@ C-----------------------------------------------
      1            rcs_0, zcs_0, crs_0, czs_0, cls_0, stat=ir)
 
 
-      CALL second0(skstoff)
-      s_symforces_time = s_symforces_time + (skstoff - skston)
+      CALL second0(tforoff)
+      s_symforces_time = s_symforces_time + (tforoff - tforon)
+      timer(tfor) = timer(tfor) + (tforoff - tforon)
+
       END SUBROUTINE symforce
 
       SUBROUTINE symoutput (bsq     , gsqrt , bsubu , bsubv ,bsupu ,  
@@ -208,12 +212,12 @@ C-----------------------------------------------
 C-----------------------------------------------
 C   D u m m y   A r g u m e n t s
 C-----------------------------------------------
-      REAL(rprec), DIMENSION(ns*nzeta,ntheta3), INTENT(inout) ::
+      REAL(dp), DIMENSION(ns*nzeta,ntheta3), INTENT(inout) ::
      1   bsq, gsqrt, bsubu, bsubv, bsupu, bsupv, bsubs
 #ifdef _ANIMEC
      2  ,ppar, pperp, sigma_an, tau_an, pbprim, ppprim, densit
 #endif
-      REAL(rprec), DIMENSION(ns*nzeta,ntheta3), INTENT(out)   ::
+      REAL(dp), DIMENSION(ns*nzeta,ntheta3), INTENT(out)   ::
      1   bsqa,gsqrta,bsubua,bsubva,bsupua,bsupva,bsubsa
 #ifdef _ANIMEC
      2  ,ppara ,pperpa, sigma_ana, tau_ana, pbprima, ppprima ,
@@ -223,7 +227,7 @@ C-----------------------------------------------
 C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
       INTEGER :: ir, i, jk, jka
-      REAL(rprec), DIMENSION(ns*nzeta) :: bsq_0, gsqrt_0, bsubu_0, 
+      REAL(dp), DIMENSION(ns*nzeta) :: bsq_0, gsqrt_0, bsubu_0, 
      1    bsubv_0, bsupu_0, bsupv_0, bsubs_0
 #ifdef _ANIMEC
      2  , ppar_0, pperp_0,
@@ -311,16 +315,16 @@ C-----------------------------------------------
 C-----------------------------------------------
 C   D u m m y   A r g u m e n t s
 C-----------------------------------------------
-      REAL(rprec), DIMENSION(nzeta,ntheta3), INTENT(inout) ::
+      REAL(dp), DIMENSION(nzeta,ntheta3), INTENT(inout) ::
      1   bsubu, bsubv, bsupu, bsupv
-      REAL(rprec), DIMENSION(nzeta,ntheta2), INTENT(out)   ::
+      REAL(dp), DIMENSION(nzeta,ntheta2), INTENT(out)   ::
      1   bsubua, bsubva, bsupua, bsupva
 
 C-----------------------------------------------
 C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
       INTEGER :: ir, i, jk, jka
-      REAL(rprec), DIMENSION(nzeta) :: bsubu_0, bsubv_0,
+      REAL(dp), DIMENSION(nzeta) :: bsubu_0, bsubv_0,
      1                                 bsupu_0, bsupv_0
 C-----------------------------------------------
 

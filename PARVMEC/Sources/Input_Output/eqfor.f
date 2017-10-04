@@ -25,35 +25,36 @@
       USE xstuff, ONLY: xc
 #endif
       USE safe_open_mod
+      USE timer_sub
       IMPLICIT NONE
 C-----------------------------------------------
 C   D u m m y   A r g u m e n t s
 C-----------------------------------------------
       INTEGER :: ier_flag
-      REAL(rprec), DIMENSION(ns,nznt,0:1), INTENT(in) :: bsubu, bsubv
-      REAL(rprec), DIMENSION(nrzt), INTENT(out) :: br, bz
-      REAL(rprec), DIMENSION(nrzt), INTENT(out) :: tau
-      REAL(rprec), DIMENSION(ns,0:ntor,0:mpol1,3*ntmax),
+      REAL(dp), DIMENSION(ns,nznt,0:1), INTENT(in) :: bsubu, bsubv
+      REAL(dp), DIMENSION(nrzt), INTENT(out) :: br, bz
+      REAL(dp), DIMENSION(nrzt), INTENT(out) :: tau
+      REAL(dp), DIMENSION(ns,0:ntor,0:mpol1,3*ntmax),
      1  TARGET, INTENT(in) :: rzl_array
 C-----------------------------------------------
 C   L o c a l   P a r a m e t e r s
 C-----------------------------------------------
-      REAL(rprec), PARAMETER :: c1p5=1.5_dp
+      REAL(dp), PARAMETER :: c1p5=1.5_dp
 C-----------------------------------------------
 C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
       INTEGER :: i, icount, itheta, js, js1, l, loff,
      1   lpi, lt, n, n1, nchicur, nchiiota0, noff,
      2   nout, nsort, iv, iu, lk, nplanes
-      REAL(rprec), DIMENSION(:), POINTER ::
+      REAL(dp), DIMENSION(:), POINTER ::
      1   rmags, zmags, rmaga, zmaga
-      REAL(rprec), DIMENSION(:,:,:), POINTER :: rmncc,zmnsc
-      REAL(rprec), DIMENSION(ns) :: phi1, chi1, jPS2
-      REAL(rprec) :: modb(nznt)
-      REAL(rprec), DIMENSION(:), ALLOCATABLE ::
+      REAL(dp), DIMENSION(:,:,:), POINTER :: rmncc,zmnsc
+      REAL(dp), DIMENSION(ns) :: phi1, chi1, jPS2
+      REAL(dp) :: modb(nznt)
+      REAL(dp), DIMENSION(:), ALLOCATABLE ::
      1   btor_vac, btor1, dbtor, phat, t12u, guu_1u, surf_area, 
      2   r3v, redge, rbps1u, bpol2vac, phipf_loc
-      REAL(rprec) :: aminr1, aminr2, aminr2in, anorm,
+      REAL(dp) :: aminr1, aminr2, aminr2in, anorm,
      1   aspectratio, betai, betstr, scaling_ratio,
      2   bminz2, bminz2in, btor, iotamax, musubi,
      3   bzcalc, bzin, chisq, chiwgt, cur0,
@@ -69,16 +70,14 @@ C-----------------------------------------------
      D   tol, toroidal_flux, vnorm, vprime, wght0, xmax,
      E   xmida, xmidb, xmin, rzmax, rzmin, zxmax, zxmin, zaxis0,
      F   zmax, zmin, yr1u, yz1u, waist(2), height(2)
-      REAL(rprec) d_of_kappa
-
-      REAL(rprec) :: tmpxc, rmssum
+      REAL(dp) :: d_of_kappa, tmpxc, rmssum
       INTEGER :: istat1, OFU, j, k
 C-----------------------------------------------
 C   E x t e r n a l   F u n c t i o n s
 C-----------------------------------------------
        EXTERNAL splintx,splints
 C-----------------------------------------------
-
+      CALL second0 (teqfon)
 !
 !     POINTER ASSOCIATIONS
 !
@@ -234,7 +233,7 @@ C-----------------------------------------------
 !
 !     MAKE SURE WOUT FILE DOES NOT REQUIRE ANY STUFF COMPUTED BELOW....
 !
-      IF (ier_flag .ne. successful_term_flag) RETURN
+      IF (ier_flag .NE. successful_term_flag) RETURN
 
 !
 !     Calculate mean (toroidally averaged) poloidal cross section area & toroidal flux
@@ -616,19 +615,21 @@ C-----------------------------------------------
      1   '    n     rmag       zmag        rmag        zmag',/,
      2   '        (cos nv)   (sin nv)    (sin nv)    (cos nv)',/)
       loff = LBOUND(rmags,1)
+      IF (rank. EQ. 0) THEN
       DO n = 0, ntor
          n1 = n + loff
          t1 = mscale(0)*nscale(n)
          tz = t1
-         IF (.not.lthreed) tz = 0
+         IF (.NOT.lthreed) tz = 0
          IF (lasym) THEN
-            IF(rank.EQ.0) WRITE (nthreed, 820) n, t1*rmags(n1),
-     1          (-tz*zmags(n1)), -tz*rmaga(n1), t1*zmaga(n1)
+             WRITE (nthreed, 820) n, t1*rmags(n1),
+     1          tz*zmags(n1), tz*rmaga(n1), t1*zmaga(n1)
          ELSE
-            IF(rank.EQ.0) WRITE (nthreed, 820) n, t1*rmags(n1),
-     1          (-tz*zmags(n1))
+             WRITE (nthreed, 820) n, t1*rmags(n1),
+     1          tz*zmags(n1)
          END IF
       END DO
+      END IF
   820 FORMAT(i5,1p,4e12.4)
 
       betstr = two*SQRT(sump2/volume_p)/(sumbtot/volume_p)
@@ -995,5 +996,9 @@ c                                             !total chi-squared for mse
      4   ,t25,'TOTAL',t50,i3,t60,e12.4,t80,e12.4)
 
       END IF          !!IF(LRECON)
+
+      CALL second0 (teqfoff)
+      timer(teqf) = timer(teqf) + teqfoff - teqfon
+      fo_eqfor_time = timer(teqf)
 
       END SUBROUTINE eqfor

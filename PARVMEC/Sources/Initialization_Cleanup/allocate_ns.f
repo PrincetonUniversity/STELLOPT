@@ -23,8 +23,11 @@ C-----------------------------------------------
       INTEGER :: ndim, nsp1, istat1
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: xc_old, scalxc_old
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: pxc_old, pscalxc_old
-      REAL(rprec) delr_mse
+      REAL(rprec) :: tallon, talloff, delr_mse
 C-----------------------------------------------
+#if defined(SKS)
+      CALL second0(tallon)
+#endif
 !
 !     FIRST STORE COARSE-MESH XC FOR INTERPOLATION
 !
@@ -37,17 +40,17 @@ C-----------------------------------------------
 !
 #if defined(SKS)
       IF (PARVMEC) THEN 
-        IF (neqs2_old.gt.0.and.ALLOCATED(pscalxc).and.linterp) THEN
+        IF (neqs2_old.GT.0 .AND. ALLOCATED(pscalxc) .AND. linterp) THEN
           ALLOCATE(pxc_old(neqs2_old),pscalxc_old(neqs2_old),
      1     stat=istat1)
-          IF (istat1.ne.0) STOP 'allocation error #1 in allocate_ns'
+          IF (istat1.NE.0) STOP 'allocation error #1 in allocate_ns'
           pxc_old(:neqs2_old) = pxc(:neqs2_old)
           pscalxc_old(:neqs2_old) = pscalxc(:neqs2_old)
           IF (lrecon) delr_mse = pxc(neqs2_old)
         END IF
       END IF
 #endif
-      IF (neqs2_old .gt. 0 .and. ALLOCATED(scalxc) .and. linterp) THEN
+      IF (neqs2_old.GT.0 .AND. ALLOCATED(scalxc) .AND. linterp) THEN
          ALLOCATE(xc_old(neqs2_old), scalxc_old(neqs2_old), stat=istat1)
          IF (istat1.ne.0) STOP 'allocation error #1 in allocate_ns'
          xc_old(:neqs2_old) = xc(:neqs2_old)
@@ -133,24 +136,24 @@ C-----------------------------------------------
 #ifdef _ANIMEC
       phot=0; tpotb=0
 #endif
-      IF (istat1.ne.0) STOP 'allocation error #7 in allocate_ns'
+      IF (istat1 .NE. 0) STOP 'allocation error #7 in allocate_ns'
 
       iotaf(nsp1) = 0
 
       ALLOCATE( rmidx(2*ns), hmidx(2*ns), wmidx(2*ns), qmidx(2*ns),
      1          tenmidx(2*ns), ymidx(2*ns), y2midx(2*ns), stat=istat1)
-      IF (istat1.ne.0) STOP 'allocation error #8 in allocate_ns'
+      IF (istat1 .NE. 0) STOP 'allocation error #8 in allocate_ns'
 
 #if defined(SKS)
       IF(PARVMEC) THEN
         ALLOCATE (pgc(neqs2), pxcdot(neqs2), pxsave(neqs2), 
-     1          pxstore(neqs2), stat=istat1)
+     1            pxstore(neqs2), pcol_scale(neqs2), stat=istat1)
         pxstore = zero
-        IF (istat1.ne.0) STOP 'allocation error #9 in allocate_ns'
+        IF (istat1 .NE. 0) STOP 'allocation error #9 in allocate_ns'
 
         IF (.not.ALLOCATED(pxc)) THEN
           ALLOCATE (pxc(neqs2), pscalxc(neqs2), stat=istat1)
-          IF (istat1.ne.0) STOP 'allocation error #10 in allocate_ns'
+          IF (istat1 .NE. 0) STOP 'allocation error #10 in allocate_ns'
           pxc(:neqs2) = zero
         END IF
 
@@ -163,13 +166,13 @@ C-----------------------------------------------
       END IF
 #endif
       ALLOCATE (gc(neqs2), xcdot(neqs2), xsave(neqs2), 
-     1          xstore(neqs2), stat=istat1)
+     1          xstore(neqs2), col_scale(neqs2), stat=istat1)
       xstore = zero
-      IF (istat1.ne.0) STOP 'allocation error #9 in allocate_ns'
+      IF (istat1 .NE. 0) STOP 'allocation error #9 in allocate_ns'
 
-      IF (.not.ALLOCATED(xc)) THEN
+      IF (.NOT.ALLOCATED(xc)) THEN
         ALLOCATE (xc(neqs2), scalxc(neqs2), stat=istat1)
-        IF (istat1.ne.0) STOP 'allocation error #10 in allocate_ns'
+        IF (istat1 .NE. 0) STOP 'allocation error #10 in allocate_ns'
         xc(:neqs2) = zero
       END IF
 
@@ -188,5 +191,11 @@ C-----------------------------------------------
       ELSE
         CALL allocate_funct3d
       END IF
+
+#if defined(SKS)
+      CALL second0(talloff)
+      allocate_ns_time = allocate_ns_time + (talloff-tallon)
+#endif
+
 
       END SUBROUTINE allocate_ns

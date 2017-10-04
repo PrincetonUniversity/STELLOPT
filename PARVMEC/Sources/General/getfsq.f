@@ -8,36 +8,32 @@
 !   D u m m y   A r g u m e n t s
 !-----------------------------------------------
       INTEGER, INTENT(in) :: medge
-      REAL(rprec), INTENT(out) :: gnormr, gnormz
-      REAL(rprec), INTENT(in)  :: gnorm
-      REAL(rprec), DIMENSION(mnsize,ns,ntmax), INTENT(in) :: gcr, gcz
+      REAL(dp), INTENT(out) :: gnormr, gnormz
+      REAL(dp), INTENT(in)  :: gnorm
+      REAL(dp), DIMENSION(mnsize,ns,ntmax), INTENT(IN) :: gcr, gcz
 !-----------------------------------------------
 !   L o c a l   V a r i a b l e s
 !-----------------------------------------------
-      INTEGER :: jsmax, nsmin, nsmax
-      REAL(rprec) :: totalgcr, totalgcz, tmpgcr, tmpgcz
-      REAL(rprec) :: skston, skstoff
-      REAL(rprec), DIMENSION(2) :: tmpgcx, totalgcx
+      INTEGER :: jsmax, nsmin, nsmax, l
+      REAL(dp) :: tmpgcx(ns,2), totalgcx(2)
 !-----------------------------------------------
+      IF (.NOT. lactive) RETURN
 
       jsmax = ns1 + medge
       nsmin=tlglob; nsmax=MIN(trglob,jsmax)
+      IF (trglob .GT. jsmax) tmpgcx(jsmax+1:trglob,1:2) = 0
 
+      DO l = nsmin, nsmax
+         tmpgcx(l,1) = SUM(gcr(:,l,:)**2)
+         tmpgcx(l,2) = SUM(gcz(:,l,:)**2)
+      END DO
+      DO l = 1, 2
+        CALL Gather1XArray(tmpgcx(:,l))
+        totalgcx(l) = SUM(tmpgcx(:,l))
+      END DO
 
-      IF (lactive) THEN
-        CALL second0(skston)
-        tmpgcr=SUM(gcr(:,nsmin:nsmax,:)**2)
-        tmpgcz=SUM(gcz(:,nsmin:nsmax,:)**2)
-        tmpgcx(1)=tmpgcr; tmpgcx(2)=tmpgcz
-        CALL MPI_Allreduce(tmpgcx,totalgcx,2,MPI_REAL8,MPI_SUM,
-     1                     NS_COMM,MPI_ERR)
-        totalgcr=totalgcx(1); totalgcz=totalgcx(2)
-        CALL second0(skstoff)
-        allreduce_time = allreduce_time + (skstoff - skston)
-      END IF
-
-      gnormr = gnorm * totalgcr
-      gnormz = gnorm * totalgcz
+      gnormr = gnorm * totalgcx(1)
+      gnormz = gnorm * totalgcx(2)
 
       END SUBROUTINE getfsq_par
 #endif
@@ -51,9 +47,9 @@
 !   D u m m y   A r g u m e n t s
 !-----------------------------------------------
       INTEGER, INTENT(in) :: medge
-      REAL(rprec), INTENT(out) :: gnormr, gnormz
-      REAL(rprec), INTENT(in)  :: gnorm
-      REAL(rprec), DIMENSION(ns,mnsize*ntmax), INTENT(in) :: gcr, gcz
+      REAL(dp), INTENT(out) :: gnormr, gnormz
+      REAL(dp), INTENT(in)  :: gnorm
+      REAL(dp), DIMENSION(ns,mnsize*ntmax), INTENT(in) :: gcr, gcz
 !-----------------------------------------------
 !   L o c a l   V a r i a b l e s
 !-----------------------------------------------

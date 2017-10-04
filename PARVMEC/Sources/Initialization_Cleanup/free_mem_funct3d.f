@@ -54,6 +54,8 @@ C-----------------------------------------------
      3               bsupu_sur, bsupv_sur, stat=istat1)
       IF (istat1 .ne. 0) STOP 'deallocation error#2 in funct3d'
 
+      IF (ALLOCATED(bsqvac0)) DEALLOCATE (bsqvac0)
+
       IF (ALLOCATED(extra1))
      1   DEALLOCATE (extra1, extra2, extra3, extra4, stat=istat1)
       IF (istat1 .ne. 0) STOP 'deallocation error#3 in funct3d'

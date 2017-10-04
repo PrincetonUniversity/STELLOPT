@@ -2,7 +2,6 @@
       SUBROUTINE add_fluxes_par(overg, bsupu, bsupv, lcurrent)
       USE vmec_main
       USE realspace, ONLY: pwint, pguu, pguv, pchip, pphip
-      USE precon2d, ONLY: ictrl_prec2d
       USE vmec_input, ONLY: nzeta
       USE vmec_dim, ONLY: ntheta3
       USE parallel_include_module
@@ -29,12 +28,12 @@
 !
 !     ADD MAGNETIC FLUX (CHIP, PHIP) TERMS TO BSUPU=-OVERG*LAM_V, BSUPV=OVERG*LAM_U
 !     COMPUTE FLUX FROM ITOR = <B_u>, ITOR(s) = integrated toroidal current (icurv)
-!     IF ncurr == 1
+!     IF ncurr == 1, AND ictrl_prec2d != 0, COMPUTE FORCE IN TOMNSP TO UPDATE chips
 !
 
-      IF (.not.lcurrent .or. ncurr.eq.0) GOTO 100
+      IF (.NOT.lcurrent .OR. ncurr.EQ.0) GOTO 100
 
-      nsmin=MAX(2,t2lglob); nsmax=t2rglob
+      nsmin=MAX(2,t1lglob); nsmax=t1rglob
       DO js = nsmin, nsmax
         top = icurv(js)
         bot = 0
@@ -49,12 +48,12 @@
 
  100  CONTINUE
 
-      nsmin=MAX(2,t2lglob); nsmax=t2rglob
+      nsmin=MAX(2,t1lglob); nsmax=t1rglob
 !     CHANGE THIS FOR lRFP = T  (solve for phips?)
-      IF (ncurr .eq. 0) THEN
+      IF (ncurr .EQ. 0) THEN
          chips(nsmin:nsmax) = iotas(nsmin:nsmax)*phips(nsmin:nsmax)
-      ELSE IF (.not.lcurrent) THEN
-         WHERE (phips(nsmin:nsmax) .ne. zero) &
+      ELSE IF (.NOT.lcurrent) THEN
+         WHERE (phips(nsmin:nsmax) .NE. zero) &
            iotas(nsmin:nsmax) = chips(nsmin:nsmax)/phips(nsmin:nsmax)
       END IF
 
@@ -62,26 +61,30 @@
          pchip(:,js) = chips(js)
       END DO
 
-      nsmin=MAX(2,t2lglob); nsmax=MIN(ns-1,t1rglob)
+      nsmin=MAX(2,t1lglob); nsmax=MIN(ns-1,trglob)
+      IF (nsmin.EQ.1) chipf(1) = chips(2)
       chipf(nsmin:nsmax) = (chips(nsmin:nsmax) + chips(nsmin+1:nsmax+1))/2
-      chipf(ns)    = 2*chips(ns)-chips(ns-1)
+      IF (nsmax.EQ.ns) chipf(ns)    = c1p5*chips(ns)- p5*chips(ns-1)
 
 !     Do not compute iota too near origin
+      IF(trglob_arr(1).LE.2) THEN
+        CALL MPI_Bcast(iotas(3),1,MPI_REAL8,1,NS_COMM,MPI_ERR)
+      END IF
       IF (lrfp) THEN
-         iotaf(1)  = one/(c1p5/iotas(2) - p5/iotas(3))
-         iotaf(ns) = one/(c1p5/iotas(ns) - p5/iotas(ns-1))
-         DO js = MAX(2,t2lglob), MIN(ns-1,t1rglob)
+         IF (nsmin.EQ.1) iotaf(1)  = one/(c1p5/iotas(2) - p5/iotas(3))
+         IF (nsmax.EQ.ns) iotaf(ns)=one/(c1p5/iotas(ns)-p5/iotas(ns-1))
+         DO js = MAX(2,t1lglob), MIN(ns-1,t1rglob)
             iotaf(js) = 2.0_dp/(one/iotas(js) + one/iotas(js+1))
          END DO
       ELSE
-         iotaf(1)  = c1p5*iotas(2) - p5*iotas(3)               !zero gradient near axis
-         iotaf(ns) = c1p5*iotas(ns) - p5*iotas(ns-1)
-         DO js = MAX(2,t2lglob), MIN(ns-1,t1rglob)
-            iotaf(js) = p5*(iotas(js) + iotas(js+1))
-         END DO
+        IF (nsmin.EQ.1) iotaf(1)  = c1p5*iotas(2) - p5*iotas(3)
+        IF (nsmax.EQ.ns) iotaf(ns)=c1p5*iotas(ns) - p5*iotas(ns-1)
+        DO js = MAX(2,t1lglob), MIN(ns-1,trglob)
+          iotaf(js) = p5*(iotas(js) + iotas(js+1))
+        END DO
       END IF
 
-      nsmin=t2lglob; nsmax=t1rglob
+      nsmin=MAX(1,t1lglob); nsmax=MIN(ns,t1rglob)
       bsupu(:,nsmin:nsmax) = bsupu(:,nsmin:nsmax)+pchip(:,nsmin:nsmax)*overg(:,nsmin:nsmax)
 
       END SUBROUTINE add_fluxes_par
@@ -90,7 +93,6 @@
       SUBROUTINE add_fluxes(overg, bsupu, bsupv, lcurrent)
       USE vmec_main
       USE realspace, ONLY: wint, guu, guv, chip, phip
-      USE precon2d, ONLY: ictrl_prec2d
 #if defined(SKS)      
       USE vmec_input, ONLY: nzeta
       USE vmec_dim, ONLY: ntheta3
@@ -150,14 +152,14 @@
          chip(js:nrzt:ns) = chips(js)
       END DO
 
-
+      chipf(1)     = c1p5*chips(2) - p5*chips(3)                       !SPH ADDED THIS 4-8-16
       chipf(2:ns1) = (chips(2:ns1) + chips(3:ns1+1))/2
-      chipf(ns)    = 2*chips(ns)-chips(ns1)
+      chipf(ns)    = c1p5*chips(ns)- p5*chips(ns1)                     !SPH FIXED THIS 4-8-16
 
 !     Do not compute iota too near origin
       IF (lrfp) THEN
          iotaf(1)  = one/(c1p5/iotas(2) - p5/iotas(3))
-         iotaf(ns) = one/(c1p5/iotas(ns) - p5/iotas(ns-1))
+         iotaf(ns) = one/(c1p5/iotas(ns) - p5/iotas(ns1))
          DO js = 2, ns-1
             iotaf(js) = 2.0_dp/(one/iotas(js) + one/iotas(js+1))
          END DO

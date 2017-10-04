@@ -7,13 +7,14 @@
       USE angle_constraints, ONLY: getrz
 #endif
       USE parallel_include_module
+      USE parallel_vmec_module, ONLY: CopyLastNtype
       USE vmec_params, ONLY: ntmax
       IMPLICIT NONE
 C-----------------------------------------------
 C   D u m m y   A r g u m e n t s
 C-----------------------------------------------
       INTEGER :: i0
-      REAL(rprec) :: delt0, w0
+      REAL(dp) :: delt0, w0
       LOGICAL :: lscreen
 C-----------------------------------------------
 C   L o c a l   P a r a m e t e r s
@@ -36,17 +37,14 @@ C-----------------------------------------------
 C-----------------------------------------------
 C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
-      REAL(rprec) :: betav, w, avm, den, skston, skstoff
-      REAL(rprec), ALLOCATABLE :: bcastbuf(:)
+      REAL(dp) :: betav, w, avm, den, tbroadon, tbroadoff
+      REAL(dp), ALLOCATABLE :: bcastbuf(:)
       CHARACTER(len=LEN(iter_line) + LEN(fsq_line) +
      1          LEN(raxis_line) + LEN(zaxis_line)) :: 
      2          print_line
       INTEGER :: i, j, k, l, lk
 C-----------------------------------------------
-!      RETURN
-!      IF(grank.NE.0) RETURN
-      IF(grank.GE.nranks) RETURN
-
+      IF(grank .GE. nranks) RETURN
 
 #ifdef _ANIMEC
       betav = (2*wper + wpar)/(3*wb)
@@ -58,18 +56,7 @@ C-----------------------------------------------
       specw(1) = one
 
       IF(PARVMEC) THEN 
-        lk=0
-        DO l=1, 3*ntmax
-          DO i=t2lglob, t2rglob
-            DO k=0, mpol1
-              DO j=0, ntor
-                lk = j + (ntor+1)*k +
-     1           (ntor+1)*(mpol1+1)*(i-1)+(ntor+1)*(mpol1+1)*ns*(l-1)+1
-                pgc(lk) = pxstore (lk)
-              END DO
-            END DO
-          END DO
-        END DO
+        CALL CopyLastNtype(pxstore, pgc)
       ELSE
         gc = xstore
       END IF
@@ -88,12 +75,12 @@ C-----------------------------------------------
       den = SUM(vp(2:ns))
       avm = DOT_PRODUCT(vp(2:ns),specw(2:ns)+specw(1:ns-1))
       avm = 0.5_dp*avm/den
-      IF (ivac .ge. 1) THEN
+      IF (ivac .GE. 1) THEN
         IF (PARVMEC) THEN
 !SPH CHANGE (MOVE OUT OF FUNCT3D)
 #if defined(MPI_OPT)
           ACTIVE1: IF (lactive) THEN
-          CALL second0(skston)
+          CALL second0(tbroadon)
           ALLOCATE(bcastbuf(3*nznt+1))
           bcastbuf(1:nznt) = dbsq
           bcastbuf(nznt+1:2*nznt) = bsqsav(:,3)
@@ -109,13 +96,11 @@ C-----------------------------------------------
           fedge = bcastbuf(3*nznt+1)
           DEALLOCATE(bcastbuf)
 
-          CALL second0(skstoff)
-          broadcast_time = broadcast_time + (skstoff - skston)
-#if defined(SKS)
+          CALL second0(tbroadoff)
+          broadcast_time = broadcast_time + (tbroadoff - tbroadon)
           den = SUM(bsqsav(:nznt,3)*pwint(:,2))
-          IF (den .ne. zero) delbsq =
+          IF (den .NE. zero) delbsq =
      1     SUM(dbsq(:nznt)*pwint(:,2))/den
-#endif
           END IF ACTIVE1
 #endif
         ELSE
@@ -125,7 +110,7 @@ C-----------------------------------------------
         END IF
       END IF
 
-      IF (i0.eq.1 .and. lfreeb) THEN
+      IF (i0.EQ.1 .AND. lfreeb) THEN
          print_line = iter_lines // " " // raxis_line 
          IF (lasym) print_line = TRIM(print_line) // " " // zaxis_line
          IF (lscreen.AND.grank.EQ.0) 
@@ -145,7 +130,7 @@ C-----------------------------------------------
          print_line = iter_line // fsq_line // raxis_line // "     "
          IF (lasym) print_line = iter_line // fsq_line // raxis_line
      1                        // zaxis_line
-         IF(grank.EQ.0) WRITE (nthreed, 25) TRIM(print_line)
+         IF (grank .EQ. 0) WRITE (nthreed, 25) TRIM(print_line)
       ENDIF
    15 FORMAT(/,a,6x,'WMHD      BETA      <M>   DEL-BSQ   FEDGE',/)
    16 FORMAT(/,a,6x,'WMHD      BETA     PHIEDGE  DEL-BSQ    FEDGE',/)

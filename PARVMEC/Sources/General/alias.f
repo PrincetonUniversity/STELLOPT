@@ -7,20 +7,21 @@
 C-----------------------------------------------
 C   D u m m y   A r g u m e n t s
 C-----------------------------------------------
-      REAL(rprec), PARAMETER :: p5 = 0.5_dp
-      REAL(rprec), DIMENSION(nzeta,ntheta3,ns), INTENT(out) :: gcons
-      REAL(rprec), DIMENSION(nzeta,ntheta3,ns), INTENT(in)  :: ztemp
-      REAL(rprec), DIMENSION(0:ntor,0:mpol1,ns) :: gcs, gsc, gcc, gss
+      REAL(dp), PARAMETER :: p5 = 0.5_dp
+      REAL(dp), DIMENSION(nzeta,ntheta3,ns), INTENT(out) :: gcons
+      REAL(dp), DIMENSION(nzeta,ntheta3,ns), INTENT(in)  :: ztemp
+      REAL(dp), DIMENSION(0:ntor,0:mpol1,ns) :: gcs, gsc, gcc, gss
 C-----------------------------------------------
 C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
       INTEGER :: m, i, ir, jk, jka, n, k, js, l, j
-      REAL(rprec), DIMENSION(:,:,:), ALLOCATABLE :: work
-      REAL(rprec), DIMENSION(:,:,:), ALLOCATABLE :: gcona
-
       INTEGER :: nsmin, nsmax
       INTEGER :: jcount, kk
+      REAL(dp), DIMENSION(:,:,:), ALLOCATABLE :: work
+      REAL(dp), DIMENSION(:,:,:), ALLOCATABLE :: gcona
+      REAL(dp) :: talon, taloff
 C-----------------------------------------------
+      CALL second0(talon)
 
       nsmin=tlglob; nsmax=t1rglob
 
@@ -133,6 +134,9 @@ C-----------------------------------------------
 
       DEALLOCATE (work, gcona)
 
+      CALL second0(taloff)
+      alias_time = alias_time + (taloff-talon)
+
       END SUBROUTINE alias_par
 #endif
 
@@ -146,24 +150,23 @@ C-----------------------------------------------
 C-----------------------------------------------
 C   D u m m y   A r g u m e n t s
 C-----------------------------------------------
-      REAL(rprec), PARAMETER :: p5 = 0.5_dp
-      REAL(rprec), DIMENSION(ns*nzeta,ntheta3), INTENT(out) :: gcons
-      REAL(rprec), DIMENSION(ns*nzeta,ntheta3), INTENT(in)  :: ztemp
-      REAL(rprec), DIMENSION(ns,0:ntor,0:mpol1) :: gcs, gsc, gcc, gss
+      REAL(dp), PARAMETER :: p5 = 0.5_dp
+      REAL(dp), DIMENSION(ns*nzeta,ntheta3), INTENT(out) :: gcons
+      REAL(dp), DIMENSION(ns*nzeta,ntheta3), INTENT(in)  :: ztemp
+      REAL(dp), DIMENSION(ns,0:ntor,0:mpol1) :: gcs, gsc, gcc, gss
 C-----------------------------------------------
 C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
       INTEGER :: m, i, ir, jk, jka, n, k, js, l, j
-      REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: work, gcona
+      REAL(dp), DIMENSION(:,:), ALLOCATABLE :: work, gcona
 #if defined (SKS)      
       INTEGER :: nsmin, nsmax
-      REAL(rprec) :: skston, skstoff
+      REAL(dp) :: talon, taloff
 #endif
 C-----------------------------------------------
 #if defined(SKS)
-      CALL second0(skston)
+      CALL second0(talon)
 #endif
-      
       ALLOCATE (work(ns*nzeta,4), gcona(ns*nzeta,ntheta3))
 
       gcons = 0
@@ -265,8 +268,8 @@ C-----------------------------------------------
 
       DEALLOCATE (work, gcona)
 #if defined(SKS)      
-      CALL second0(skstoff)
-      s_alias_time = s_alias_time + (skstoff-skston)
+      CALL second0(taloff)
+      s_alias_time = s_alias_time + (taloff-talon)
 #endif
 
       END SUBROUTINE alias

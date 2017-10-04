@@ -1,5 +1,5 @@
 #if defined(SKS)
-      SUBROUTINE convert_par(rmnc,zmns,lmns,rmns,zmnc,lmnc,rzl_array,js)
+      SUBROUTINE convert_par(rmnc,zmns,lmns,rmns,zmnc,lmnc,rzl_array)
       USE vmec_main
       USE vmec_params
       USE parallel_include_module
@@ -7,29 +7,29 @@
 C-----------------------------------------------
 C   D u m m y   A r g u m e n t s
 C-----------------------------------------------
-      INTEGER, INTENT(IN) :: js
-      REAL(rprec), DIMENSION(mnmax), INTENT(out) ::
+      REAL(dp), DIMENSION(mnmax), INTENT(OUT) ::
      1    rmnc, zmns, lmns, rmns, zmnc, lmnc
-      REAL(rprec), DIMENSION(0:ntor,0:mpol1,ns,3*ntmax),
-     1    INTENT(inout) :: rzl_array
+      REAL(dp), DIMENSION(0:ntor,0:mpol1,ns,3*ntmax),
+     1    INTENT(INOUT) :: rzl_array
 C-----------------------------------------------
 C   L o c a l   P a r a m e t e r s
 C-----------------------------------------------
-      REAL(rprec), PARAMETER :: p5 = 0.5_dp
+      REAL(dp), PARAMETER :: p5 = 0.5_dp
 C-----------------------------------------------
 C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
       INTEGER :: rmncc, rmnss, rmncs, rmnsc, zmncs, zmnsc, 
      1           zmncc, zmnss, lmncs, lmnsc, lmncc, lmnss
-      INTEGER :: mn, m, n, n1, bufsize, brank2, brank3
-      REAL(rprec) :: t1, sign0, mul1
-      REAL(rprec) :: skston, skstoff
-      REAL(rprec), ALLOCATABLE, DIMENSION(:) :: bcastbuf
+      INTEGER :: mn, m, n, n1, bufsize, js
+      REAL(dp) :: t1, sign0, mul1, tbroadon, tbroadoff
+      REAL(dp), ALLOCATABLE, DIMENSION(:) :: bcastbuf
 C-----------------------------------------------
 !
+!     FOR EDGE (js=ns) ONLY:
 !     CONVERTS INTERNAL MODE REPRESENTATION TO STANDARD
 !     FORM FOR OUTPUT (COEFFICIENTS OF COS(mu-nv), SIN(mu-nv) WITHOUT mscale,nscale norms)
 !
+      js = ns
       bufsize = (ntor+1)*(mpol1+1)*3*ntmax
       ALLOCATE(bcastbuf(bufsize))
       mn=0
@@ -41,15 +41,15 @@ C-----------------------------------------------
           END DO
         END DO
       END DO
-      CALL second0(skston)
+      CALL second0(tbroadon)
       CALL MPI_Bcast(bcastbuf,bufsize,MPI_REAL8,nranks-1,
      1               NS_COMM,MPI_ERR)
       IF(vlactive) THEN
         CALL MPI_Bcast(bcastbuf,bufsize,MPI_REAL8,0,
      1               VAC_COMM,MPI_ERR)
       END IF
-      CALL second0(skstoff)
-      broadcast_time = broadcast_time + (skstoff -skston)
+      CALL second0(tbroadoff)
+      broadcast_time = broadcast_time + (tbroadoff -tbroadon)
 
       mn=0
       DO n1 = 1, 3*ntmax
@@ -176,21 +176,21 @@ C-----------------------------------------------
 C   D u m m y   A r g u m e n t s
 C-----------------------------------------------
       INTEGER, INTENT(IN) :: js
-      REAL(rprec), DIMENSION(mnmax), INTENT(out) ::
+      REAL(dp), DIMENSION(mnmax), INTENT(out) ::
      1    rmnc, zmns, lmns, rmns, zmnc, lmnc
-      REAL(rprec), DIMENSION(ns,0:ntor,0:mpol1,3*ntmax),
+      REAL(dp), DIMENSION(ns,0:ntor,0:mpol1,3*ntmax),
      1    INTENT(in) :: rzl_array
 C-----------------------------------------------
 C   L o c a l   P a r a m e t e r s
 C-----------------------------------------------
-      REAL(rprec), PARAMETER :: p5 = 0.5_dp
+      REAL(dp), PARAMETER :: p5 = 0.5_dp
 C-----------------------------------------------
 C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
       INTEGER :: rmncc, rmnss, rmncs, rmnsc, zmncs, zmnsc, 
      1           zmncc, zmnss, lmncs, lmnsc, lmncc, lmnss
       INTEGER :: mn, m, n, n1
-      REAL(rprec) :: t1, sign0, mul1
+      REAL(dp) :: t1, sign0, mul1
 C-----------------------------------------------
 !
 !     CONVERTS INTERNAL MODE REPRESENTATION TO STANDARD

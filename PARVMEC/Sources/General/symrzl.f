@@ -9,22 +9,21 @@
 C-----------------------------------------------
 C   D u m m y   A r g u m e n t s
 C-----------------------------------------------
-      REAL(rprec), DIMENSION(nzeta,ntheta3,ns,0:1), INTENT(inout) ::
+      REAL(dp), DIMENSION(nzeta,ntheta3,ns,0:1), INTENT(inout) ::
      1   r1s, rus, rvs, z1s, zus, zvs, lus, lvs, rcons, zcons
-      REAL(rprec), DIMENSION(nzeta,ntheta3,ns,0:1), INTENT(in) ::
+      REAL(dp), DIMENSION(nzeta,ntheta3,ns,0:1), INTENT(in) ::
      1   r1a, rua, rva, z1a, zua, zva, lua, lva, rcona, zcona
 C-----------------------------------------------
 C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
-      INTEGER :: mpar, ir, i, jk, jka, n2
-      INTEGER :: j, k, nsmin, nsmax
-      REAL (rprec) :: skston, skstoff
+      INTEGER  :: mpar, ir, i, jk, jka, n2
+      INTEGER  :: j, k, nsmin, nsmax
+      REAL(dp) :: tsymon, tsymoff
 C-----------------------------------------------
 !
 !     FIRST SUM SYMMETRIC, ANTISYMMETRIC PIECES ON EXTENDED INTERVAL, THETA = [PI,2*PI]
 !
-
-      CALl second0(skston)
+      CALl second0(tsymon)
       nsmin=t1lglob; nsmax=t1rglob
 
       DO k = nsmin, nsmax
@@ -83,8 +82,9 @@ C-----------------------------------------------
         END DO
       END DO
 
-      CALl second0(skstoff)
-      symrzl_time = symrzl_time + (skstoff - skston)
+      CALl second0(tsymoff)
+      symrzl_time = symrzl_time + (tsymoff - tsymon)
+
       END SUBROUTINE symrzl_par
 #endif
 
@@ -96,21 +96,21 @@ C-----------------------------------------------
 C-----------------------------------------------
 C   D u m m y   A r g u m e n t s
 C-----------------------------------------------
-      REAL(rprec), DIMENSION(ns*nzeta,ntheta3,0:1), INTENT(inout) ::
+      REAL(dp), DIMENSION(ns*nzeta,ntheta3,0:1), INTENT(inout) ::
      1   r1s, rus, rvs, z1s, zus, zvs, lus, lvs, rcons, zcons
-      REAL(rprec), DIMENSION(ns*nzeta,ntheta3,0:1), INTENT(in) ::
+      REAL(dp), DIMENSION(ns*nzeta,ntheta3,0:1), INTENT(in) ::
      1   r1a, rua, rva, z1a, zua, zva, lua, lva, rcona, zcona
 C-----------------------------------------------
 C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
-      INTEGER :: mpar, ir, i, jk, jka, n2
-      INTEGER :: j, k, nsmin, nsmax
-      REAL(rprec) :: skston, skstoff
+      INTEGER  :: mpar, ir, i, jk, jka, n2
+      INTEGER  :: j, k, nsmin, nsmax
+      REAL(dp) :: tsymon, tsymoff
 C-----------------------------------------------
 !
 !     FIRST SUM SYMMETRIC, ANTISYMMETRIC PIECES ON EXTENDED INTERVAL, THETA = [PI,2*PI]
 !
-      CALl second0(skston)
+      CALl second0(tsymon)
       DO mpar = 0, 1
          DO i = 1 + ntheta2, ntheta1
             ir = ntheta1 + 2 - i                 !-theta
@@ -152,7 +152,7 @@ C-----------------------------------------------
          ENDIF
       END DO
 
-      CALl second0(skstoff)
-      s_symrzl_time = s_symrzl_time + (skstoff - skston)
+      CALl second0(tsymoff)
+      s_symrzl_time = s_symrzl_time + (tsymoff - tsymon)
 
       END SUBROUTINE symrzl

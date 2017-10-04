@@ -14,26 +14,25 @@
 C-----------------------------------------------
 C   D u m m y   A r g u m e n t s
 C-----------------------------------------------
-      REAL(rprec), DIMENSION(0:ntor,0:mpol1,ns,3*ntmax), INTENT(out) ::
+      REAL(dp), DIMENSION(0:ntor,0:mpol1,ns,3*ntmax), INTENT(OUT) ::
      1             xc, xcdot
       LOGICAL, INTENT(IN) :: lreset
 #if defined(SKS)
 C-----------------------------------------------
 C   L o c a l   P a r a m e t e r s
 C-----------------------------------------------
-      REAL(rprec), PARAMETER :: c1p5 = 1.5_dp
+      REAL(dp), PARAMETER :: c1p5 = 1.5_dp
 C-----------------------------------------------
 C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
       INTEGER :: i
-      REAL(rprec) :: Itor, si, tf, pedge, vpnorm, polflux_edge
-      REAL(rprec) :: phipslocal, phipstotal 
+      REAL(dp) :: Itor, si, tf, pedge, vpnorm, polflux_edge
+      REAL(dp) :: phipslocal, phipstotal, tprofon, tprofoff 
       INTEGER :: j, k, l, nsmin, nsmax
-      REAL(rprec) :: skston, skstoff
 C-----------------------------------------------
 C   E x t e r n a l   F u n c t i o n s
 C-----------------------------------------------
-      REAL(rprec), EXTERNAL :: pcurr, pmass, piota, torflux,
+      REAL(dp), EXTERNAL :: pcurr, pmass, piota, torflux,
      1    torflux_deriv, polflux, polflux_deriv
 #ifdef _ANIMEC
      2  , photp, ptrat
@@ -61,6 +60,8 @@ C-----------------------------------------------
 !     BY READING INPUT COEFFICIENTS. PRESSURE CONVERTED TO
 !     INTERNAL UNITS BY MULTIPLICATION BY mu0 = 4*pi*10**-7
 !
+      CALL second0(tprofon)
+
       IF (ncurr.EQ.1 .AND. lRFP)STOP 'ncurr=1 inconsistent with lRFP=T!'
       torflux_edge = signgs * phifac * phiedge / twopi
       si = torflux(one)
@@ -74,7 +75,7 @@ C-----------------------------------------------
       chips(1) = 0
       icurv(1) = 0
 
-      nsmin=MAX(2,t1lglob); nsmax=t2rglob
+      nsmin=MAX(2,t1lglob); nsmax=t1rglob
       DO i = nsmin, nsmax
          si = hs*(i-c1p5)
          tf = MIN(one, torflux(si))
@@ -85,20 +86,12 @@ C-----------------------------------------------
          icurv(i) = pcurr(tf)
       END DO
 
-
 !
 !     Compute lamscale factor for "normalizing" lambda (needed for scaling hessian)
+!     DO IT THIS WAY (rather than ALLREDUCE) FOR PROCESSOR INDEPENDENCE
 !
-      phipslocal=SUM(phips(MAX(2,tlglob):trglob)**2)
-      IF (nranks.GT.1.AND.grank.LT.nranks) THEN
-        CALL second0(skston)
-        CALL MPI_Allreduce(phipslocal,phipstotal,1,MPI_REAL8,MPI_SUM,
-     1                     NS_COMM,MPI_ERR)
-        CALL second0(skstoff)
-        allreduce_time = allreduce_time + (skstoff - skston)
-      ELSE
-        phipstotal=phipslocal
-      END IF
+      CALL Gather1XArray(phips)
+      phipstotal=SUM(phips(2:ns)**2)
       lamscale = SQRT(hs*phipstotal)
 
       IF (lflip) THEN
@@ -106,7 +99,8 @@ C-----------------------------------------------
          chips = -chips
       END IF
 
-      nsmin=t1lglob; nsmax=t2rglob
+      nsmin=t1lglob; nsmax=t1rglob
+
       DO i = nsmin, nsmax
          si = hs*(i-1)
          tf = MIN(one, torflux(si))
@@ -125,7 +119,7 @@ C-----------------------------------------------
       IF (ABS(pedge) .gt. ABS(EPSILON(pedge)*curtor))
      1   Itor = signgs*currv/(twopi*pedge)
       
-      nsmin=MAX(2,t1lglob); nsmax=t2rglob
+      nsmin=MAX(2,t1lglob); nsmax=t1rglob
       icurv(nsmin:nsmax) = Itor*icurv(nsmin:nsmax)
 
 !
@@ -133,7 +127,7 @@ C-----------------------------------------------
 !
       spres_ped = ABS(spres_ped)
       IF (.not.lrecon) THEN
-        nsmin=MAX(2,t1lglob); nsmax=t2rglob
+        nsmin=MAX(2,t1lglob); nsmax=t1rglob
         DO i = nsmin, nsmax
           si = hs*(i - c1p5)
 
@@ -161,7 +155,7 @@ C-----------------------------------------------
         END DO
 
       ELSE
-        nsmin=t1lglob; nsmax=t2rglob
+        nsmin=t1lglob; nsmax=t1rglob
         iotas(nsmin:nsmax) = 0
         iotaf(nsmin:nsmax) = 0
         mass (nsmin:nsmax) = 0
@@ -169,7 +163,7 @@ C-----------------------------------------------
       END IF
 
 
-      nsmin=t1lglob; nsmax=MIN(t2rglob,ns+1)
+      nsmin=t1lglob; nsmax=MIN(t1rglob,ns+1)
       pres(nsmin:nsmax) = 0
       xcdot(:,:,nsmin:nsmax,:) = 0
 
@@ -177,7 +171,7 @@ C-----------------------------------------------
       medge  = pmass (one) * (ABS(phips(ns))*r00)**gamma
       phedg  = photp (one)
 #endif
-      nsmin=t1lglob; nsmax=t2rglob
+      nsmin=MAX(1,t1lglob-1); nsmax=MIN(t1rglob+1,ns)
       DO i = nsmin, nsmax
          si = hs*ABS(i-1.5_dp)
          pshalf(:,i) = SQRT(si)
@@ -188,7 +182,7 @@ C-----------------------------------------------
 
       psqrts(:,ns) = 1     !!Avoid round-off
 
-      nsmin=MAX(2,t1lglob); nsmax=t2rglob
+      nsmin=MAX(2,t1lglob); nsmax=t1rglob
       DO i = nsmin, nsmax
          sm(i) = pshalf(1,i)/psqrts(1,i)
          IF (i .LT. ns) THEN
@@ -213,13 +207,16 @@ C-----------------------------------------------
 !
 !       COMPUTE INDEX ARRAY FOR FINDPHI ROUTINE
 !
-        nsmin=t1lglob; nsmax=t2rglob
+        nsmin=t1lglob; nsmax=t1rglob
         DO i = nsmin, nsmax
           indexr(i)    = ns + 1 - i                    !FINDPHI
           indexr(i+ns) = i + 1                         !FINDPHI
         ENDDO
         indexr(2*ns) = ns
       END IF
+
+      CALL second0(tprofoff)
+      profile1d_time = profile1d_time + (tprofoff - tprofon)
 #endif
       END SUBROUTINE profil1d_par
 
@@ -241,24 +238,24 @@ C-----------------------------------------------
 C-----------------------------------------------
 C   D u m m y   A r g u m e n t s
 C-----------------------------------------------
-      REAL(rprec), DIMENSION(neqs2), INTENT(out) :: xc, xcdot
+      REAL(dp), DIMENSION(neqs2), INTENT(out) :: xc, xcdot
       LOGICAL, INTENT(IN) :: lreset
 C-----------------------------------------------
 C   L o c a l   P a r a m e t e r s
 C-----------------------------------------------
-      REAL(rprec), PARAMETER :: c1p5 = 1.5_dp
+      REAL(dp), PARAMETER :: c1p5 = 1.5_dp
 C-----------------------------------------------
 C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
       INTEGER :: i
-      REAL(rprec) :: Itor, si, tf, pedge, vpnorm, polflux_edge
+      REAL(dp) :: Itor, si, tf, pedge, vpnorm, polflux_edge
 #if defined(SKS)
       INTEGER :: j, k, l, nsmin, nsmax
 #endif      
 C-----------------------------------------------
 C   E x t e r n a l   F u n c t i o n s
 C-----------------------------------------------
-      REAL(rprec), EXTERNAL :: pcurr, pmass, piota, torflux,
+      REAL(dp), EXTERNAL :: pcurr, pmass, piota, torflux,
      1    torflux_deriv, polflux, polflux_deriv
 #ifdef _ANIMEC
      2  , photp, ptrat
@@ -397,7 +394,7 @@ C-----------------------------------------------
       shalf(nrzt+1) = 1
       sqrts(nrzt+1) = 1
 #if defined(SKS)
-      nsmin=MAX(2,t1lglob); nsmax=t2rglob
+      nsmin=MAX(2,t1lglob); nsmax=t1rglob
 #endif
       DO i = 2,ns
          sm(i) = shalf(i)/sqrts(i)

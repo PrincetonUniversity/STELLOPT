@@ -8,12 +8,14 @@
       USE xstuff
       USE precon2d
       USE parallel_include_module
-      USE parallel_vmec_module, ONLY: tlglob_arr, trglob_arr
+      USE parallel_vmec_module, ONLY: tlglob_arr, trglob_arr,           &
+                                      lactive, SAXLASTNTYPE
+      USE blocktridiagonalsolver, ONLY: L_COLSCALE
       IMPLICIT NONE
 !-----------------------------------------------
 !   D u m m y   A r g u m e n t s
 !-----------------------------------------------
-      REAL(rprec), DIMENSION(0:ntor,0:mpol1,ns,ntmax), INTENT(inout) :: &
+      REAL(dp), DIMENSION(0:ntor,0:mpol1,ns,ntmax), INTENT(INOUT) :: &
         gcr, gcz, gcl
 !-----------------------------------------------
 !   L o c a l   P a r a m e t e r s
@@ -24,17 +26,16 @@
 !   L o c a l   V a r i a b l e s
 !-----------------------------------------------
       INTEGER :: nsfix, jedge, delIter
-      REAL(rprec) :: r1, tnorm, fac, tmp, total
+      REAL(dp) :: r1, tnorm, fac, tmp, tmp2(ns), ftotal
 
-      INTEGER  :: i, j, k, l, numjs, blksize, m, left, right
+      INTEGER  :: i, j, k, l, m, blksize, left, right
       INTEGER, ALLOCATABLE, DIMENSION(:) :: counts, disps
       INTEGER :: MPI_STAT(MPI_STATUS_SIZE)
-      REAL(rprec), ALLOCATABLE, DIMENSION(:,:,:,:) :: send_buf
-      REAL(rprec), ALLOCATABLE, DIMENSION(:) :: recv_buf
-      REAL(rprec) :: allgvton, allgvtoff
-      REAL(rprec) :: skston, skstoff 
-      REAL(rprec) :: t1, t2 
+      REAL(dp), ALLOCATABLE, DIMENSION(:,:,:,:) :: send_buf
+      REAL(dp), ALLOCATABLE, DIMENSION(:) :: recv_buf
+      REAL(dp) :: tredon, tredoff
 !-----------------------------------------------
+      CALL second0 (treson)
 
 #ifdef _HBANGLE
 !FREE-BDY RFP MAY NEED THIS TO IMPROVE CONVERGENCE (SPH 022514)
@@ -46,9 +47,9 @@
 #else
 !
 !     SYMMETRIC PERTURBATIONS (BASED ON POLAR RELATIONS):
-!        RSS(n) = ZCS(n), n != 0
+!        Rss(n) = Zcs(n), n != 0
 !     ASYMMETRIC PERTURBATIONS:
-!        RSC(n) = ZCC(n), ALL n
+!        Rsc(n) = Zcc(n), ALL n
 !
 !     INTERNALLY:
 !        XC(rss) = .5*(Rss + Zcs), XC(zcs) = .5*(Rss - Zcs) -> 0
@@ -71,7 +72,7 @@
 #endif
 
 !     PRECONDITIONER MUST BE CALCULATED USING RAW (UNPRECONDITIONED) FORCES
-      IF (ictrl_prec2d .GE. 2) RETURN
+      IF (ictrl_prec2d.GE.2 .OR. ictrl_prec2d.EQ.-1) RETURN
 
 !
 !     PUT FORCES INTO PHIFSAVE UNITS USED BY PRECONDITIONERS, FNORM
@@ -84,24 +85,24 @@
 
       IF (lrecon) THEN
 
-          CALL second0(skston)
+          CALL second0(tredon)
           tmp = SUM(gcr(n0,m0,tlglob:trglob,1))
           CALL MPI_Allreduce(tmp,r1,1,MPI_REAL8,MPI_SUM,NS_COMM,MPI_ERR)
-          CALL second0(skstoff)
-          allreduce_time = allreduce_time + (skstoff - skston)
+          CALL second0(tredoff)
+          allreduce_time = allreduce_time + (tredoff - tredon)
         fsqsum0 = signgs*hs*r1/r0scale
         nsfix = 1                   !fix origin for reconstruction mode
         gcr(:,:,tlglob:trglob,:) = gcr(:,:,tlglob:trglob,:) * tnorm**2
         gcz(:,:,tlglob:trglob,:) = gcz(:,:,tlglob:trglob,:) * tnorm**2
         gcl(:,:,tlglob:trglob,:) = gcl(:,:,tlglob:trglob,:) * tnorm
-        IF (iopt_raxis.gt.0 .and. iresidue.eq.2                        &
-           .and. fsq.lt.fopt_axis) iresidue = 3
-        IF (iresidue .lt. 3) gcr(n0,m0,nsfix,1) = zero
+        IF (iopt_raxis.GT.0 .AND. iresidue.EQ.2                        &
+           .AND. fsq.LT.fopt_axis) iresidue = 3
+        IF (iresidue .LT. 3) gcr(n0,m0,nsfix,1) = zero
       ELSE
 !
 !     ADJUST PHIEDGE
 !
-         IF (imovephi .gt. 0) CALL movephi1 (gphifac)
+         IF (imovephi .GT. 0) CALL movephi1 (gphifac)
       ENDIF
       gc(neqs1) = gphifac
 
@@ -112,46 +113,52 @@
       jedge = 0    
       delIter = iter2-iter1
 
-      IF (l_v3fit) THEN
-         IF (iter2-iter1.lt.50) jedge = 1
-      ELSE
+!      IF (l_v3fit) THEN
+!         IF (iter2-iter1.lt.50) jedge = 1
+!      ELSE
          IF (delIter.lt.50 .and.                                        &
-            (fsqr+fsqz).lt.1.E-6_dp) jedge = 1
-      ENDIF
+            (fsqr+fsqz).LT.1.E-6_dp) jedge = 1
+!      ENDIF
 
-      CALL second0(skston)
       CALL getfsq_par (gcr, gcz, fsqr, fsqz, r1*fnorm, jedge)
-      CALL second0(skstoff)
-      res_getfsq=res_getfsq+skstoff-skston
 
-      CALL second0(skston)
+      CALL second0(tredon)
       tmp = SUM(gcl(:,:,tlglob:trglob,:)*gcl(:,:,tlglob:trglob,:))
-      CALL MPI_Allreduce(tmp,total,1,MPI_REAL8,MPI_SUM,NS_COMM,MPI_ERR)
-      CALL second0(skstoff)
-      allreduce_time = allreduce_time + (skstoff - skston)
-      fsql = fnormL*total
-      fedge = r1*fnorm*SUM(gcr(:,:,ns,:)**2 + gcz(:,:,ns,:)**2)
-
+      CALL MPI_Allreduce(tmp,ftotal,1,MPI_REAL8,MPI_SUM,NS_COMM,MPI_ERR)
+      CALL second0(tredoff)
+      allreduce_time = allreduce_time + (tredoff - tredon)
+      fsql = fnormL*ftotal
+      IF(rank .EQ. nranks-1) &
+        fedge = r1*fnorm*SUM(gcr(:,:,ns,:)**2 + gcz(:,:,ns,:)**2)
 !
 !     PERFORM PRECONDITIONING AND COMPUTE RESIDUES
 !
-
+#if defined(PTESTING)
+      IF (ictrl_prec2d.EQ.1 .AND. lactive) THEN
+      CALL Gather4XArray(pgc)
+      IF (rank.eq.0) THEN
+         CALL PrintOutLinearArray(pgc, 1, ns, .FALSE., 1000+nranks)
+         PRINT *,'BEFORE precond_par'
+      END IF
+      CALL MPI_BARRIER(NS_COMM,MPI_ERR)
+      END IF
+#endif
       IF (ictrl_prec2d .EQ. 1) THEN
          
-         STOP 'residue:134: Block preconditioning not parallelized'
+         IF (l_colscale .AND. lactive) CALL SAXLASTNTYPE(pgc, pcol_scale, pgc)
 
-         CALL block_precond(gc)
+         LRESIDUECALL=.TRUE.
+         CALL block_precond_par(pgc)
+         LRESIDUECALL=.FALSE.
 
-         IF (.not.lfreeb .and. ANY(gcr(:,:,ns,:) .ne. zero))            &
+         IF (.NOT.lfreeb .AND. ANY(gcr(:,:,ns,:) .NE. zero))            &
             STOP 'gcr(ns) != 0 for fixed boundary in residue'
-         IF (.not.lfreeb .and. ANY(gcz(:,:,ns,:) .ne. zero))            &
+         IF (.NOT.lfreeb .AND. ANY(gcz(:,:,ns,:) .NE. zero))            &
             STOP 'gcz(ns) != 0 for fixed boundary in residue'
-         IF (ANY(gcl(1:,0,:,zsc) .ne. zero))                            &
+         IF (ANY(gcl(1:,m0,:,zsc) .NE. zero))                           &
             STOP 'gcl(m=0,n>0,sc) != 0 in residue'
-         IF (lthreed) THEN
-            IF (ANY(gcl(n0,:,:,zcs) .ne. zero))                         &
+         IF (lthreed .AND. ANY(gcl(n0,:,:,zcs) .NE. zero))              &
             STOP 'gcl(n=0,m,cs) != 0 in residue'
-         END IF
 
          fsqr1 = SUM(gcr*gcr)
          fsqz1 = SUM(gcz*gcz)
@@ -160,59 +167,51 @@
       ELSE
 !        m = 1 constraint scaling
 
-         IF (lthreed) CALL scale_m1_par(gcr(:,1,:,rss), gcz(:,1,:,zcs))
-         IF (lasym)   CALL scale_m1_par(gcr(:,1,:,rsc), gcz(:,1,:,zcc))
+         IF (lthreed) CALL scale_m1_par(gcr(:,m1,:,rss), gcz(:,m1,:,zcs))
+         IF (lasym)   CALL scale_m1_par(gcr(:,m1,:,rsc), gcz(:,m1,:,zcc))
 
-         CALL second0(skston)
          jedge = 0
          CALL scalfor_par (gcr, arm, brm, ard, brd, crd, jedge)
-         IF (lerror_sam) RETURN
          jedge = 1
          CALL scalfor_par (gcz, azm, bzm, azd, bzd, crd, jedge)
-         IF (lerror_sam) RETURN
-         CALL second0(skstoff)
-         res_scalfor=res_scalfor+skstoff-skston
 
-         CALL second0(skston)
          CALL getfsq_par (gcr, gcz, fsqr1, fsqz1, fnorm1, m1)
-         CALL second0(skstoff)
-         res_getfsq=res_getfsq+skstoff-skston
 
-         gcl(:,:,tlglob:trglob,:) = &
-           pfaclam(:,:,tlglob:trglob,:)*gcl(:,:,tlglob:trglob,:)
-         tmp = SUM(gcl(:,:,tlglob:trglob,:)*gcl(:,:,tlglob:trglob,:))
-         CALL second0(skston)
-         CALL MPI_Allreduce(tmp,total,1,MPI_REAL8,MPI_SUM,NS_COMM,MPI_ERR)
-         CALL second0(skstoff)
-         allreduce_time = allreduce_time + (skstoff - skston)
-         fsql1 = hs*total
+         DO l = tlglob, trglob
+            gcl(:,:,l,:) = pfaclam(:,:,l,:)*gcl(:,:,l,:)
+            tmp2(l) = SUM(gcl(:,:,l,:)**2)
+         END DO
+         CALL Gather1XArray(tmp2)
+         ftotal = SUM(tmp2(2:ns))
+         fsql1 = hs*ftotal
 
-      left=rank-1;  IF(rank.EQ.0) left=MPI_PROC_NULL
-      right=rank+1; IF(rank.EQ.nranks-1) right=MPI_PROC_NULL
+         CALL PadSides(pgc)  
 
-      blksize=(ntor+1)*(mpol1+1)*ntmax
-      CALL MPI_Sendrecv(gcl(:,:,tlglob,:),blksize,MPI_REAL8,left,1, &
-        gcl(:,:,t1rglob,:),blksize,MPI_REAL8,right,1,NS_COMM,&
-        MPI_STAT, MPI_ERR)
-      sendrecv_time = sendrecv_time + (skstoff - skston)
-      CALL MPI_Sendrecv(gcl(:,:,trglob,:),blksize,MPI_REAL8,right,1,&
-        gcl(:,:,t1lglob,:),blksize,MPI_REAL8,left,1,NS_COMM,&
-        MPI_STAT, MPI_ERR)
-      CALL second0(skstoff)
-      sendrecv_time = sendrecv_time + (skstoff - skston)
+      ENDIF
 
-    ENDIF
+#if defined(PTESTING)
+         IF (ictrl_prec2d.eq.1 .and. lactive) THEN
+            IF (ictrl_prec2d .NE. 1) CALL Gather4XArray(pgc)
+            IF (rank.eq.0)   &
+              CALL PrintOutLinearArray(pgc, 1, ns, .TRUE., 2000+nranks)
+            CALL MPI_BARRIER(NS_COMM,MPI_ERR)
+            STOP 'AFTER precond_par'
+         END IF
+#endif
+      CALL second0 (tresoff)
+      residue_time = residue_time + (tresoff-treson)
 
-    END SUBROUTINE residue_par
+      END SUBROUTINE residue_par
 
       SUBROUTINE constrain_m1_par(gcr, gcz)
-      USE vmec_main, p5 => cp5 
+      USE vmec_main
       USE parallel_include_module
+      USE precon2d, ONLY: ictrl_prec2d
       IMPLICIT NONE
 !-----------------------------------------------
 !   D u m m y   A r g u m e n t s
 !-----------------------------------------------
-      REAL(dp), DIMENSION(0:ntor,ns), INTENT(inout) :: gcr, gcz
+      REAL(dp), DIMENSION(0:ntor,ns), INTENT(INOUT) :: gcr, gcz
 !-----------------------------------------------
 !   L o c a l   P a r a m e t e r s
 !-----------------------------------------------
@@ -227,12 +226,13 @@
       ALLOCATE(temp(0:ntor,ns))
       IF (lconm1) THEN
          temp(:,tlglob:trglob) = gcr(:,tlglob:trglob)
-         gcr(:,tlglob:trglob) = osqrt2*(gcr(:,tlglob:trglob) + gcz(:,tlglob:trglob))
+         gcr(:,tlglob:trglob) = osqrt2*(gcr (:,tlglob:trglob) + gcz(:,tlglob:trglob))
          gcz(:,tlglob:trglob) = osqrt2*(temp(:,tlglob:trglob) - gcz(:,tlglob:trglob))
       END IF
 
 !v8.50: ADD iter2<2 so reset=<WOUT_FILE> works
-      IF (fsqz.LT.FThreshold .OR. iter2.LT.2) gcz(:,tlglob:trglob) = 0
+      IF (fsqz.LT.FThreshold .OR. iter2.LT.2 .OR. ictrl_prec2d.NE.0)   &
+         gcz(:,tlglob:trglob) = 0
  
       DEALLOCATE(temp)
       END SUBROUTINE constrain_m1_par
@@ -244,13 +244,13 @@
 !-----------------------------------------------
 !   D u m m y   A r g u m e n t s
 !-----------------------------------------------
-      REAL(rprec), DIMENSION(0:ntor,ns), INTENT(inout) :: gcr, gcz
+      REAL(dp), DIMENSION(0:ntor,ns), INTENT(inout) :: gcr, gcz
 !-----------------------------------------------
 !   L o c a l   P a r a m e t e r s
 !-----------------------------------------------
       INTEGER, PARAMETER :: nodd=2
       INTEGER :: n
-      REAL(rprec) :: fac(ns)
+      REAL(dp) :: fac(ns)
 !-----------------------------------------------
       IF (.not.lconm1) RETURN
 
@@ -279,15 +279,17 @@
       USE vsvd
       USE xstuff
       USE precon2d
+#if defined(SKS)
+      USE parallel_include_module
+#endif
 #ifdef _HBANGLE
       USE angle_constraints, ONLY: scalfor_rho
 #endif
-      USE parallel_include_module
       IMPLICIT NONE
 !-----------------------------------------------
 !   D u m m y   A r g u m e n t s
 !-----------------------------------------------
-      REAL(rprec), DIMENSION(ns,0:ntor,0:mpol1,ntmax), INTENT(inout) :: &
+      REAL(dp), DIMENSION(ns,0:ntor,0:mpol1,ntmax), INTENT(inout) :: &
         gcr, gcz, gcl
 !-----------------------------------------------
 !   L o c a l   P a r a m e t e r s
@@ -298,10 +300,8 @@
 !   L o c a l   V a r i a b l e s
 !-----------------------------------------------
       INTEGER :: nsfix, jedge, delIter
-      REAL(rprec) :: r1, tnorm, fac
-
+      REAL(dp) :: r1, tnorm, fac
       INTEGER  :: i, j, k, l
-      REAL(rprec) :: skston, skstoff
 !-----------------------------------------------
 !
 !     IMPOSE M=1 MODE CONSTRAINT TO MAKE THETA ANGLE
@@ -310,7 +310,7 @@
 !
 
 #if defined(SKS)      
-      CALL second0 (skston)
+      CALL second0 (treson)
 #endif
 
 #ifdef _HBANGLE
@@ -349,7 +349,7 @@
 #endif
 
 !     PRECONDITIONER MUST BE CALCULATED USING RAW (UNPRECONDITIONED) FORCES
-      IF (ictrl_prec2d .GE. 2) RETURN
+      IF (ictrl_prec2d.GE.2 .OR. ictrl_prec2d.EQ.-1) RETURN
 
 !
 !     PUT FORCES INTO PHIFSAVE UNITS USED BY PRECONDITIONERS, FNORM
@@ -412,6 +412,7 @@
 !
 
       IF (ictrl_prec2d .EQ. 1) THEN
+
          CALL block_precond(gc)
 
          IF (.not.lfreeb .and. ANY(gcr(ns,:,:,:) .ne. zero))            &
@@ -435,8 +436,8 @@
 #else
 
 !        m = 1 constraint scaling
-         IF (lthreed) CALL scale_m1(gcr(:,:,1,rss), gcz(:,:,1,zcs))
-         IF (lasym)   CALL scale_m1(gcr(:,:,1,rsc), gcz(:,:,1,zcc))
+         IF (lthreed) CALL scale_m1(gcr(:,:,m1,rss), gcz(:,:,m1,zcs))
+         IF (lasym)   CALL scale_m1(gcr(:,:,m1,rsc), gcz(:,:,m1,zcc))
 
          jedge = 0
          CALL scalfor (gcr, arm, brm, ard, brd, crd, jedge)
@@ -467,19 +468,20 @@
       ENDIF
 
 #if defined(SKS)      
-      CALL second0 (skstoff)
-      s_residue_time = s_residue_time + (skstoff-skston)
+      CALL second0 (tresoff)
+      s_residue_time = s_residue_time + (tresoff-treson)
 #endif
 
       END SUBROUTINE residue
 
       SUBROUTINE constrain_m1(gcr, gcz)
-      USE vmec_main, p5 => cp5 
+      USE vmec_main
+      USE precon2d, ONLY: ictrl_prec2d
       IMPLICIT NONE
 !-----------------------------------------------
 !   D u m m y   A r g u m e n t s
 !-----------------------------------------------
-      REAL(dp), DIMENSION(ns,0:ntor), INTENT(inout) :: gcr, gcz
+      REAL(dp), DIMENSION(ns,0:ntor), INTENT(INOUT) :: gcr, gcz
 !-----------------------------------------------
 !   L o c a l   P a r a m e t e r s
 !-----------------------------------------------
@@ -498,7 +500,8 @@
       END IF
 
 !v8.50: ADD iter2<2 so reset=<WOUT_FILE> works
-      IF (fsqz.LT.FThreshold .OR. iter2.LT.2) gcz = 0
+      IF (fsqz.LT.FThreshold .OR. iter2.LT.2 .OR. ictrl_prec2d.NE.0)   &
+        gcz = 0
  
       END SUBROUTINE constrain_m1
 
@@ -508,13 +511,13 @@
 !-----------------------------------------------
 !   D u m m y   A r g u m e n t s
 !-----------------------------------------------
-      REAL(rprec), DIMENSION(ns,0:ntor), INTENT(inout) :: gcr, gcz
+      REAL(dp), DIMENSION(ns,0:ntor), INTENT(inout) :: gcr, gcz
 !-----------------------------------------------
 !   L o c a l   P a r a m e t e r s
 !-----------------------------------------------
       INTEGER, PARAMETER :: nodd=2
       INTEGER :: n
-      REAL(rprec) :: fac(ns)
+      REAL(dp) :: fac(ns)
 !-----------------------------------------------
       IF (.not.lconm1) RETURN
 

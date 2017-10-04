@@ -2,30 +2,30 @@
       USE vmec_main
       USE xstuff
       USE parallel_include_module
+      USE parallel_vmec_module, ONLY: CopyLastNType, ZeroLastNtype
       IMPLICIT NONE
 !-----------------------------------------------
 !   D u m m y   V a r i a b l e s
 !-----------------------------------------------
-      REAL(rprec) :: time_step
+      REAL(dp) :: time_step
 !-----------------------------------------------
 !   L o c a l   P a r a m e t e r s
 !-----------------------------------------------
-      REAL(rprec), PARAMETER :: c1p03 = 1.03_dp, cp90 = 0.90_dp
-#if defined(SKS)
-      REAL(rprec) :: skston, skstoff
-#endif
+      REAL(dp), PARAMETER :: c1p03 = 1.03_dp, cp90 = 0.90_dp
+      REAL(dp)            :: treston, trestoff
 !-----------------------------------------------
 #if defined(SKS)
-      CALL second0(skston)
+      CALL second0(treston)
 #endif
       IF (PARVMEC) THEN
         SELECT CASE (irst)
         CASE DEFAULT
-          pxstore(:neqs2) = pxc(:neqs2)
+          CALL CopyLastNType(pxc, pxstore) 
           RETURN
         CASE (2:3)
-          pxcdot(:neqs2) = zero
-          pxc(:neqs2) = pxstore(:neqs2)
+          CALL ZeroLastNtype(pxcdot)
+          CALL CopyLastNType(pxstore, pxc) 
+!          pxc(:neqs2) = pxstore(:neqs2)
           time_step = time_step*((irst-2)/c1p03 + cp90*(3-irst))
           IF (irst .eq. 2) THEN
             ijacob = ijacob + 1
@@ -52,7 +52,7 @@
         END SELECT
       END IF
 #if defined(SKS)
-      CALL second0(skstoff)
-      restart_time = restart_time + (skstoff - skston)
+      CALL second0(trestoff)
+      restart_time = restart_time + (trestoff - treston)
 #endif
       END SUBROUTINE restart_iter

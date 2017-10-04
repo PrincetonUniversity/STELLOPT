@@ -35,7 +35,7 @@ C-----------------------------------------------
 
       nsmin=tlglob; nsmax=t1rglob
       ! Correct incoming lu1, bsq, gsqrt,   , xue, xuo, xodd, trigmult 
-      ! between [t1lglob, t2rglob]
+      ! between [t1lglob, t1rglob]
 
       ALLOCATE (ax(ns+1,4), bx(ns+1,4), ptau(nznt),
      1                     ptau2(nznt),temp(ns+1))
@@ -92,6 +92,7 @@ C-----------------------------------------------
       temp(ns+1)=0
 
       nsmin=t1lglob; nsmax=t1rglob
+!      nsmin=t1lglob; nsmax=trglob
       DO js = nsmin, nsmax
         axm(js,1) =-ax(js,1)
         axd(js,1) = ax(js,1) + ax(js+1,1)

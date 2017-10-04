@@ -6,9 +6,7 @@
 
         USE parallel_vmec_module, ONLY: PARVMEC
         USE parallel_vmec_module, ONLY: LV3FITCALL
-        USE parallel_vmec_module, ONLY: SKS_ALLGATHER
-        USE parallel_vmec_module, ONLY: BCYCLIC
-        USE parallel_vmec_module, ONLY: THOMAS
+        USE parallel_vmec_module, ONLY: LPRECOND
         USE parallel_vmec_module, ONLY: TOFU
 
         USE parallel_vmec_module, ONLY: num_grids 
@@ -33,7 +31,6 @@
         USE parallel_vmec_module, ONLY: nuv3min, nuv3max
         USE parallel_vmec_module, ONLY: tlglob, trglob
         USE parallel_vmec_module, ONLY: t1lglob, t1rglob
-        USE parallel_vmec_module, ONLY: t2lglob, t2rglob
         USE parallel_vmec_module, ONLY: tlglob_arr, trglob_arr
         USE parallel_vmec_module, ONLY: nuv3min_arr,nuv3max_arr 
         USE parallel_vmec_module, ONLY: trow, brow
@@ -43,13 +40,32 @@
         USE parallel_vmec_module, ONLY: par_ntor 
         USE parallel_vmec_module, ONLY: par_ns 
         USE parallel_vmec_module, ONLY: par_nuv 
-        USE parallel_vmec_module, ONLY: par_nuv3 
+        USE parallel_vmec_module, ONLY: blkrcounts
+        USE parallel_vmec_module, ONLY: blkdisp 
+        USE parallel_vmec_module, ONLY: ntblkrcounts
+        USE parallel_vmec_module, ONLY: ntblkdisp 
+        USE parallel_vmec_module, ONLY: nsrcounts
+        USE parallel_vmec_module, ONLY: nsdisp
+        USE parallel_vmec_module, ONLY: blocksize
+        USE parallel_vmec_module, ONLY: ntmaxblocksize
 
         USE parallel_vmec_module, ONLY: STOPMPI
+
+        USE parallel_vmec_module, ONLY: tolastntype
+        USE parallel_vmec_module, ONLY: copylastntype
+
+        USE parallel_vmec_module, ONLY: tolastns
+        USE parallel_vmec_module, ONLY: copylastns
+
+        USE parallel_vmec_module, ONLY: CopyParallelLinearSubarray
 
         USE parallel_vmec_module, ONLY: SetVacuumPartitions
         USE parallel_vmec_module, ONLY: SetVacuumCommunicator
 
+        USE parallel_vmec_module, ONLY: ComputeBlockAllGatherParameters
+        USE parallel_vmec_module, ONLY: ComputeNSAllGatherParameters
+
+        USE parallel_vmec_module, ONLY: PadSides
 
         USE parallel_vmec_module, ONLY: Parallel2Serial2X
         USE parallel_vmec_module, ONLY: Parallel2Serial4X
@@ -59,6 +75,7 @@
         USE parallel_vmec_module, ONLY: Gather1XArray
         USE parallel_vmec_module, ONLY: Gather2XArray
         USE parallel_vmec_module, ONLY: Gather4XArray
+        USE parallel_vmec_module, ONLY: GatherReordered4XArray
 
         USE parallel_vmec_module, ONLY: PrintParallelIJSPArray
         USE parallel_vmec_module, ONLY: PrintSerialIJSPArray
@@ -66,6 +83,7 @@
         USE parallel_vmec_module, ONLY: PrintSerialMNSPArray
         USE parallel_vmec_module, ONLY: PrintNSArray
         USE parallel_vmec_module, ONLY: PrintOutLinearArray
+        USE parallel_vmec_module, ONLY: RPrintOutLinearArray
 
         USE parallel_vmec_module, ONLY: bcyclic_comp_time
         USE parallel_vmec_module, ONLY: bcyclic_comm_time
@@ -83,7 +101,11 @@
         USE parallel_vmec_module, ONLY: sendrecv_time
         USE parallel_vmec_module, ONLY: scatter_time
 
+        LOGICAL :: LRESIDUECALL=.FALSE.
+        LOGICAL :: LGMRESCALL=.FALSE.
         LOGICAL :: INFILEOUT=.FALSE.
+        LOGICAL :: RVCTRIGGER=.FALSE.
+        INTEGER :: RVCCALLNUM
 
         !Common timers
         REAL(dp) :: mgrid_file_read_time=0
@@ -112,9 +134,6 @@
 
         REAL(dp) :: jacob1=0, jacob2=0
 
-        REAL(dp) :: res_getfsq=0
-        REAL(dp) :: res_scalfor=0
-
         INTEGER :: nfunct3d=0
         REAL(dp) :: old_vacuum_time=0
 
@@ -126,8 +145,7 @@
 
         !Vacuum, Scalpot variables
         INTEGER :: blksize_scp, numjs_vac
-        INTEGER, ALLOCATABLE, DIMENSION(:) :: counts_scp, disps_scp,    &
-                                              counts_vac, disps_vac, lindx_scp
+        INTEGER, ALLOCATABLE, DIMENSION(:) :: counts_vac, disps_vac, lindx_scp
 
         !Parallel timers
         REAL(dp) :: totzsps_time=0
@@ -165,6 +183,11 @@
         REAL(dp) :: forwardsolve_time=0
         REAL(dp) :: backwardsolve_time=0
         REAL(dp) :: finalize_time=0
+
+        REAL(dp) :: fill_blocks_time=0
+        REAL(dp) :: compute_blocks_time=0
+        REAL(dp) :: bcyclic_forwardsolve_time=0
+        REAL(dp) :: bcyclic_backwardsolve_time=0
 
         !Serial timers
         REAL(dp) :: s_totzsps_time=0
@@ -392,13 +415,18 @@ CONTAINS
             WRITE(TFILE,'(A20,A4,F15.6)') 'allgather', ': ', allgather_time
             WRITE(TFILE,'(A20,A4,F15.6)') 'allreduce', ': ', allreduce_time
             WRITE(TFILE,'(A20,A4,F15.6)') 'broadcast', ': ', broadcast_time
-            WRITE(TFILE,'(A20,A4,F15.6)') 'sendrecv', ': ', sendrecv_time
+            WRITE(TFILE,'(A20,A4,F15.6)') 'sendrecv ', ': ', sendrecv_time
             WRITE(TFILE,*) 
+            WRITE(TFILE,'(A20,A4,F15.6)') 'Fill_blocks    ', ': ', fill_blocks_time
+            WRITE(TFILE,'(A20,A4,F15.6)') 'Compute blocks ', ': ', compute_blocks_time
+            WRITE(TFILE,'(A20,A4,F15.6)') 'Forward solve  ', ': ', bcyclic_forwardsolve_time
+            WRITE(TFILE,'(A20,A4,F15.6)') 'Backward solve ', ': ', bcyclic_backwardsolve_time
             WRITE(TFILE,*) '============================================================' 
           END IF
           CALL FLUSH(TFILE)
           CLOSE(TFILE)
 
+          !WRITE(*,*) 'totzsps : ', totzsps_time
         END SUBROUTINE WriteTimes
 !------------------------------------------------
 

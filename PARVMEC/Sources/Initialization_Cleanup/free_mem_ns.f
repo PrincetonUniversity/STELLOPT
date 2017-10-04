@@ -33,6 +33,7 @@ C-----------------------------------------------
       IF (ALLOCATED(pxcdot)) DEALLOCATE (pxcdot)
       IF (ALLOCATED(pxsave)) DEALLOCATE (pxsave)
       IF (ALLOCATED(pgc)) DEALLOCATE (pgc)
+      IF (ALLOCATED(pcol_scale)) DEALLOCATE(pcol_scale)
 #endif
       END SUBROUTINE free_mem_ns_par
 
@@ -95,8 +96,8 @@ C-----------------------------------------------
      2     stat=istat9)
 
       IF (ALLOCATED(gc))
-     1  DEALLOCATE (gc, xsave, xstore, xcdot, stat=istat10)
-      IF (ALLOCATED(xc) .and. lreset) DEALLOCATE (xc, scalxc)
+     1  DEALLOCATE (gc, xsave, xstore, xcdot, col_scale, stat=istat10)
+      IF (ALLOCATED(xc) .AND. lreset) DEALLOCATE (xc, scalxc)
 
       IF (istat1.ne.0 .or. istat2.ne.0 .or. istat3.ne.0 .or.
      1      istat4.ne.0 .or. istat5.ne.0 .or. istat6.ne.0 .or.

@@ -12,4 +12,8 @@ C-----------------------------------------------
      2 cosmni, sinmni
       REAL(rprec), DIMENSION(:,:,:), ALLOCATABLE :: cmns
 
+!MRC 10-15-15
+      REAL(rprec), DIMENSION(:), ALLOCATABLE :: bsubu_sur, bsubv_sur
+      REAL(rprec), DIMENSION(:), ALLOCATABLE :: bsupu_sur, bsupv_sur
+
       END MODULE vac_persistent
