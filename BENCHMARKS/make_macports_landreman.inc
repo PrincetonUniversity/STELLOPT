@@ -33,7 +33,7 @@
   FLAGS_R = -g -O0  -Wmissing-include-dirs
   FLAGS_D = -g -O0 -fcheck=all 
 #  LIBS    = -L/opt/local/lib -lopenblas -lscalapack  
-  LIBS    = -L/opt/local/lib -framework Accelerate -lscalapack  
+  LIBS    = -L/opt/local/lib -framework Accelerate -lscalapack   -g
 
 #######################################################################
 #            MPI Options

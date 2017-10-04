@@ -1066,6 +1066,61 @@
       END FUNCTION polyfit
 
 
+      FUNCTION polyfit_0_boundaries(vx, vy, d)
+      ! Fit a polynomial of the form p(x) * x * (1-x) to data (vx,vy), where p(s) is a polynomial
+      ! of degree d, using one of the LAPACK subroutines for least-squares fitting, DGELS.
+      implicit none
+      integer, intent(in)                   :: d
+      integer, parameter                    :: dp = selected_real_kind(15, 307)
+      real(dp), dimension(d+1)              :: polyfit_0_boundaries
+      real(dp), dimension(:), intent(in)    :: vx, vy
+      
+      real(dp), dimension(:,:), allocatable :: matrix
+      integer :: n, m, j, lwork, info, ldb
+      real(dp), dimension(:), allocatable :: work, b
+
+      n = d + 1
+      m = SIZE(vx)
+      IF (SIZE(vy) .ne. m) STOP "Error in polyfit: sizes of vx and vy do not match"
+
+      ! Form the Vandermonde matrix * vx * (1-vx):
+      ALLOCATE(matrix(m,n))
+      matrix(:,1) = vx * (1 - vx)
+      DO j = 1,d
+         matrix(:,j+1) = matrix(:,j) * vx
+      END DO
+
+      ldb = MAX(m,n)
+      ALLOCATE(b(ldb))
+      b(1:m) = vy
+      ! The DGELS argument b stores the data vector b on input, and it gets over-written with the solution vector.
+      ! Note that the sizes of the input and solution vector can be different.
+
+      ! Get size of work array:
+      lwork = -1
+      ALLOCATE(work(1))
+      CALL DGELS('N',m,n,1,matrix,m,b,ldb,work,lwork,info)
+      IF (info .ne. 0) THEN
+         PRINT *,"Error 1 in polyfit LAPACK DGELS: info=",info
+         STOP
+      END IF
+      lwork = work(1)
+      DEALLOCATE(work)
+      ALLOCATE(work(lwork))
+
+      ! Main LAPACK call:
+      CALL DGELS('N',m,n,1,matrix,m,b,ldb,work,lwork,info)
+      IF (info .ne. 0) THEN
+         PRINT *,"Error 2 in polyfit LAPACK DGELS: info=",info
+         STOP
+      END IF
+
+      polyfit_0_boundaries = b(1:n)
+      DEALLOCATE(matrix,work,b)
+
+      END FUNCTION polyfit_0_boundaries
+
+
       function polyval(c,s,d)
       integer, intent(in)                   :: d
       integer, parameter                    :: dp = selected_real_kind(15, 307)
@@ -1300,6 +1355,9 @@
       IF (ptype == 'power_series') THEN
          ! For fitting polynomials, 'polyfit' is more robust than LMDER, so use polyfit.
          coefs(1:nc) = polyfit(sarr,farr,nc-1)
+         RETURN
+      ELSEIF (ptype == 'power_series_0_boundaries') THEN
+         coefs(1:nc) = polyfit_0_boundaries(sarr,farr,nc-1)
          RETURN
       END IF
 
