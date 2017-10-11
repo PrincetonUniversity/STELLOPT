@@ -475,7 +475,7 @@ svdinv2.o \
 svdcmp.o \
 gmresr.o \
 drive_gmres.o \
-init_gmres.o \
+dPackgmres.o \
 gmres.o \
 dlsode_aux1.o \
 prepj.o \

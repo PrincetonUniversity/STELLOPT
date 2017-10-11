@@ -1,49 +1,100 @@
-      SUBROUTINE gmres (n, m, icntl, cntl, yAx, x0, b, info)
-      USE stel_kinds, ONLY: rprec
+      MODULE GMRES_LIB
+      USE stel_kinds, ONLY: dp
+      USE stel_constants, ONLY: one, zero
+      USE mpi_inc
+
+      TYPE GMRES_INFO
+         INTEGER  :: m, mblk_size, icntl(9), info(3)
+         INTEGER  :: endglobrow, startglobrow, iam, nprocs
+#if defined(MPI_OPT)
+         INTEGER  :: my_comm=MPI_COMM_WORLD, 
+     1               my_comm_world=MPI_COMM_WORLD
+#else
+         INTEGER  :: my_comm=0,
+     1               my_comm_world=0
+#endif
+         INTEGER, POINTER  :: rcounts(:), disp(:)
+         LOGICAL  :: lactive = .TRUE.
+         REAL(dp) :: cntl(5), ftol
+         LOGICAL  :: lverbose = .TRUE.
+      END TYPE GMRES_INFO
+
+      INTEGER, PARAMETER :: matveci=1, precondLeft=2,
+     1                      precondRight=3, dotProd=4, peek=5
+
+      CONTAINS
+
+      SUBROUTINE gmres_ser (n, gi, yAx, apply_precond,
+     &                      getnlforce, x0, b)
+      USE stel_kinds, ONLY: dp
       USE stel_constants, ONLY: one, zero
       IMPLICIT NONE
-C-----------------------------------------------
-C   D u m m y   A r g u m e n t s
-C-----------------------------------------------
-      INTEGER :: n, m,  icntl(8), info(3)
-      REAL(rprec), INTENT(in)    :: b(n)
-      REAL(rprec), INTENT(inout) :: x0(n)
-      REAL(rprec) :: cntl(5)
-C-----------------------------------------------
-C   L o c a l   V a r i a b l e s
-C-----------------------------------------------
-      INTEGER :: revcom, colx, coly, colz, nbscal
-      INTEGER :: irc(5), jcount
-      INTEGER, PARAMETER :: matvec=1, precondLeft=2, 
-     1                      precondRight=3, dotProd=4
-      INTEGER :: nout, lwork
-      REAL(rprec)  :: rinfo(2)
-      REAL(rprec), TARGET, ALLOCATABLE :: work(:)
-      REAL(rprec), POINTER :: sx(:), sy(:), sz(:)
-C-----------------------------------------------
-      EXTERNAL yAx
-C-----------------------------------------------
+!-----------------------------------------------
+!   D u m m y   A r g u m e n t s
+!-----------------------------------------------
+      INTEGER :: n
+      TYPE(GMRES_INFO)        :: gi
+      REAL(dp), INTENT(IN)    :: b(n)
+      REAL(dp), INTENT(INOUT) :: x0(n)
+!      REAL(dp) :: cntl(5)
+!-----------------------------------------------
+!   L o c a l   V a r i a b l e s
+!-----------------------------------------------
+      INTEGER :: revcom, colx, coly, colz, nbscal, m, iam
+      INTEGER :: irc(5)
+      INTEGER :: nout, lwork, icount, jcount, kout, kprint
+      REAL(dp)  :: rinfo(2), fsq_nl=-1, fsq_lin, fsq_min,
+     1             delfsq, fsq_last, bnorm, xmod, xmax,
+     2             fsq_min_lin, gsum
+      REAL(dp), TARGET, ALLOCATABLE :: work(:)
+      REAL(dp), ALLOCATABLE         :: xmin(:)
+      REAL(dp), POINTER :: sx(:), sy(:), sz(:)
+	LOGICAL   :: lprint
+!-----------------------------------------------
+      EXTERNAL yAx, apply_precond, getnlforce
+!-----------------------------------------------
 !
 !     EASY-TO-USE WRAPPER FOR GMRES DRIVER CALL
 !
 !     X0: on input, initial guess if icntl(6) == 1
 !         on output, solution of Ax = b
-!         NOTE: it is not overwritten UNTIL the end of this routine
+!         NOTE: it is not overwritten until the END of this routine
 !
-      lwork = m**2 + m*(n+5) + 5*n + 1
-      ALLOCATE (work(lwork), stat=nout)
-      IF (nout .ne. 0) STOP 'Allocation error in gmres!'
-      work = 0
-      IF (icntl(6) .eq. 1) work(1:n) = x0
-      work(n+1:2*n) = b(1:n)
+      bnorm = SQRT(SUM(b*b))
+      IF (bnorm .EQ. 0) RETURN
 
-*****************************************
-** Reverse communication implementation
-*****************************************
-*
+!      PRINT *,'SERIAL BNORM: ', bnorm
+
+      fsq_min = -1; fsq_nl = -1; fsq_min_lin = -1
+      delfsq = 1
+      jcount = 0; icount = 0
+      kout = 0; kprint = 0
+
+      m = gi%m
+      iam = gi%iam
+	lprint = (iam.EQ.0 .AND. gi%lverbose)
+	
+!      lwork = m**2 + m*(n+6) + 5*n + 1
+      lwork = m**2 + m*(n+6) + 6*n + 1    !Additional space for peek revcom (5 -> 6)
+
+      ALLOCATE (work(lwork), stat=nout)
+      IF (nout .NE. 0) STOP 'Allocation error in gmres!'
+      work = 0
+      IF (gi%icntl(6) .EQ. 1) work(1:n) = x0/bnorm
+      work(n+1:2*n) = b(1:n)/bnorm
+
+      icount=0; jcount=0; fsq_min=-1
+      IF (lprint) PRINT 900
+ 900  FORMAT(1x,'GMRES CONVERGENCE SUMMARY',/,' -------------',/,1x,     
+     1      'ITER',7x,'FSQ_NL',10x,'||X||',9x,'MAX|X|',9x,'FSQ_ARN')
+
+      !****************************************
+      !* Reverse communication implementation
+      !****************************************
+
  10   CONTINUE
-      CALL drive_dgmres(n,n,m,lwork,work,
-     &                  irc,icntl,cntl,info,rinfo)
+      CALL drive_dgmres(n, n, m, lwork, work, irc,
+     &                  gi%icntl, gi%cntl, gi%info, rinfo)
       revcom = irc(1)
       colx   = irc(2)
       coly   = irc(3)
@@ -51,1078 +102,452 @@ C-----------------------------------------------
       nbscal = irc(5)
       sx => work(colx:);  sy => work(coly:);  sz => work(colz:)
 
-      IF (revcom.eq.matvec) THEN
-* perform the matrix vector product
-*        work(colz) <-- A * work(colx)
+      IF (revcom .EQ. matveci) THEN
+! perform the matrix vector product work(colz) <-- A * work(colx)
          CALL yAx (sx, sz, n) 
+!Debug
+!         gsum = SUM(work(colz:colz+n-1)**2)
+!         IF (lprint) PRINT *,'CALL MATVECI, |Ax| = ', SQRT(gsum)
+!End Debug
          GOTO 10
-*
+
       ELSE IF (revcom.eq.precondLeft) THEN
-* perform the left preconditioning
-*         work(colz) <-- M^{-1} * work(colx)
-!         CALL dcopy(n,work(colx),1,work(colz),1)
+! perform the left preconditioning
+!          IF (lprint) PRINT *,'CALL PRECONDL'        
+!         work(colz) <-- M^{-1} * work(colx)
+!         WRITE(10000,*) "left_dcopy"; CALL FLUSH(10000)
          CALL dcopy(n,sx,1,sz,1)
+!         WRITE(10000,*) "precondLeft"; CALL FLUSH(10000)
+         CALL apply_precond(sz)
          GOTO 10
-*
-      ELSE IF (revcom.eq.precondRight) THEN
-* perform the right preconditioning
-!         CALL dcopy(n,work(colx),1,work(colz),1)
-         CALL dcopy(n,sx,1,sz,1)
-         GOTO 10
-*
-      ELSE IF (revcom.eq.dotProd) THEN
-*      perform the scalar product
-*      work(colz) <-- work(colx) work(coly)
-*
-         CALL dgemv('C',n,nbscal,ONE,sx,n,sy,1,ZERO,sz,1)
-         GOTO 10
-      ENDIF
 
-*******************************
-* dump the solution to a file for debugging
-*******************************
-!  JDH Commented out below 2008-05-15
-!      GOTO 100
+      ELSE IF (revcom .EQ. precondRight) THEN
+! perform the right preconditioning
+!          IF (lprint) PRINT *,'CALL PRECONDR'        
+!         WRITE(10000,*) "right_dcopy"; CALL FLUSH(10000)
+         CALL dcopy(n,sx,1,sz,1)
+!         WRITE(10000,*) "precondRight"; CALL FLUSH(10000)
+         CALL apply_precond(sz)
+         GOTO 10
+
+      ELSE IF (revcom .EQ. dotProd) THEN
+!      perform the scalar product
+!      work(colz) <-- work(colx) work(coly)
 !
-!      nout = 11
-!      open(nout,FILE='sol_dTestgmres',STATUS='unknown')
-!      if (icntl(5).eq.0) then
-!        write(nout,*) 'Orthogonalization : MGS'
-!      elseif (icntl(5).eq.1) then
-!        write(nout,*) 'Orthogonalization : IMGS'
-!      elseif (icntl(5).eq.2) then
-!        write(nout,*) 'Orthogonalization : CGS'
-!      elseif (icntl(5).eq.3) then
-!        write(nout,*) 'Orthogonalization : ICGS'
-!      endif
-!      write(nout,*) 'Restart : ', m
-!      write(nout,*) 'info(1) = ',info(1),'  info(2) = ',info(2)
-!      write(nout,*) 'rinfo(1) = ',rinfo(1),'  rinfo(2) = ',rinfo(2)
-!      write(nout,*) 'Optimal workspace = ', info(3)
-!      write(nout,*) 'Solution : '
-!      do jcount=1,n
-!        write(nout,*) work(jcount)
-!      enddo
-!      write(nout,*) '   '
-!*
-!100   continue
-!*
+!         CALL dgemv('C',n,nbscal,ONE,sx,n,sy,1,ZERO,sz,1)
+!        WRITE(10000,*) "dotProd/truncate"; CALL FLUSH(10000)
+        DO nout = 0, nbscal-1
+          work(colz+nout) = SUM(work(colx:colx+n-1)*work(coly:coly+n-1))
+          CALL Truncate(work(colz+nout), 15)
+          colx = colx+n
+        END DO
 
-      x0 = work(1:n)
+! Debug
+!        IF (lprint) THEN
+!           gsum = SUM(work(colz:colz+nbscal-1)**2)
+!           PRINT 200,' CALL DOTPROD: nbscal = ', nbscal, 
+!     1               ' |WORK|: ', SQRT(gsum)
+! 200    FORMAT(a,i4,a,1p,e14.6)
+!        END IF
+! End Debug
+        GOTO 10
+
+      ELSE IF (revcom .EQ. peek) THEN
+!        IF (lprint) PRINT *,'CALL PEEK'        
+        fsq_last = fsq_nl                                                !need for delfsq criteria
+        CALL GetNLForce(work(colx), fsq_nl, bnorm, n)                    !get nonlinear force
+        fsq_lin = (rinfo(1)*bnorm)**2
+        icount = icount+1
+        IF (fsq_lin .LT. 1.E-30_dp) gi%icntl(7)=gi%info(1)
+        IF (fsq_min .EQ. -1) fsq_min = fsq_nl/0.89_dp
+!        IF (ngmres_type .EQ. 1) GOTO 10                                 !OLDSTYLE:IGNORE LOGIC BELOW
+        delfsq = (fsq_last-fsq_nl)/fsq_min
+        IF (delfsq .LT. 0.05_dp) THEN
+          jcount = jcount+1
+        ELSE
+          jcount = 0
+        END IF
+
+        IF (fsq_nl .LT. fsq_min) THEN
+          IF (.NOT.ALLOCATED(xmin)) ALLOCATE (xmin(n))
+          xmin = work(colx:colx+n-1)
+          kout = gi%info(1); xmod = bnorm*SQRT(SUM(xmin*xmin))
+          xmax = bnorm*MAXVAL(ABS(xmin))
+          IF (icount.EQ.1 .OR. MOD(icount,10).EQ.0) THEN
+             kprint = kout
+             IF (lprint) 
+     1          PRINT 910, kout, fsq_nl, xmod, xmax, fsq_lin
+          END IF
+          IF (fsq_nl .LE. gi%ftol) gi%icntl(7)=gi%info(1)
+          fsq_min = fsq_nl; fsq_min_lin = fsq_lin
+        ELSE IF (fsq_nl .GT. (3*fsq_min) .OR. jcount.GT.3) THEN
+          ! STOPPING CRITERIA (reset max iterations to current iteration)         
+          gi%icntl(7)=gi%info(1)
+        END IF
+        GOTO 10
+      ENDIF
+ 910  FORMAT(i5, 4(3x,1pe12.3))
+
+      IF (ALLOCATED (xmin)) THEN
+        x0(1:n) = xmin(1:n)
+        DEALLOCATE (xmin)
+      ELSE
+        x0(1:n) = work(1:n)
+      END IF
 
       DEALLOCATE (work)
 
-      END SUBROUTINE gmres
+      IF (lprint .AND. kprint.NE.kout)
+     &    PRINT 910, kout, fsq_min, xmod, xmax, fsq_min_lin
+
+      x0 = bnorm*x0
+      gi%ftol = fsq_min
+
+      END SUBROUTINE gmres_ser
+
+      SUBROUTINE gmres_par (n, gi, yAx, apply_precond, GetNLForce, 
+     &                      x0, b)
+      IMPLICIT NONE
+!-----------------------------------------------
+!   D u m m y   A r g u m e n t s
+!-----------------------------------------------
+      INTEGER, INTENT(IN)     :: n
+      TYPE(GMRES_INFO)        :: gi
+      REAL(dp), INTENT(IN)    :: b(n)
+      REAL(dp), INTENT(INOUT) :: x0(n)
+      EXTERNAL apply_precond, yAx, GetNLForce
+#if defined(MPI_OPT)
+!-----------------------------------------------
+!   L o c a l   V a r i a b l e s
+!-----------------------------------------------
+      INTEGER  :: revcom, colx, coly, colz, nbscal, m, iam
+      INTEGER  :: irc(5), jcount, icount
+      INTEGER  :: nout, lwork, kout, kprint, MPI_ERR, 
+     &            MY_COMM_WORLD, MY_COMM
+      INTEGER, ALLOCATABLE :: itest(:)
+      REAL(dp) :: rinfo(2), fsq_nl, fsq_min, fsq_last, delfsq, fsq_lin, 
+     &            fsq_min_lin
+      REAL(dp), ALLOCATABLE :: work(:), xmin(:)
+      INTEGER  :: nloc, myrowstart, myrowend
+      REAL(dp), ALLOCATABLE, DIMENSION(:) :: aux, tmpbuf
+      REAL(dp) :: skston, skstoff, xmax, xmod, bnorm, lsum, gsum
+      LOGICAL, PARAMETER :: lfast=.FALSE.
+      LOGICAL  :: lactive = .TRUE., lprint
+!-----------------------------------------------
+!
+!     EASY-TO-USE WRAPPER FOR GMRES PARALLEL DRIVER CALL
+!
+!     X0: on input, initial guess if icntl(6) == 1
+!         on output, solution of Ax = b
+!         NOTE: it is not overwritten UNTIL the end of this routine
+
+      lactive = gi%lactive
+      MY_COMM_WORLD = gi%MY_COMM_WORLD
+      MY_COMM       = gi%MY_COMM
+
+      fsq_min = -1; fsq_nl = -1; fsq_min_lin = -1
+      delfsq = 1
+      jcount = 0; icount = 0; kout = 0; kprint = 0
+
+      nloc=(gi%endglobrow-gi%startglobrow+1)*gi%mblk_size
+      myrowstart=(gi%startglobrow-1)*gi%mblk_size+1
+      myrowend=myrowstart+nloc-1
+
+      IF (.NOT.lactive) THEN
+         nloc = 1
+         myrowstart = 1; myrowend = myrowstart
+      END IF
+
+      ALLOCATE(tmpbuf(n), aux(n), itest(gi%nprocs), stat=nout)
+      IF (nout .NE. 0) STOP 'Allocation error in gmres_fun!'
+
+      m = gi%m; 
+	iam = gi%iam;  lprint = (iam.EQ.0 .AND. gi%lverbose)
+      lwork = m**2 + m*(nloc+6) + 6*nloc + 1    !Additional space for peek revcom (5 -> 6)
+      ALLOCATE (work(lwork), stat=nout)
+      IF (nout .NE. 0) STOP 'Allocation error in gmres_fun!'
+      work = 0
+
+      LACTIVE0: IF (lactive) THEN
+      lsum=SUM(b(myrowstart:myrowend)**2)
+      CALL MPI_ALLREDUCE(lsum,gsum,1,MPI_REAL8,MPI_SUM,MY_COMM,MPI_ERR)
+      bnorm=SQRT(gsum)
+      IF (bnorm .EQ. 0) RETURN
+
+      IF (gi%icntl(6) .EQ. 1)
+     &    work(1:nloc) = x0(myrowstart:myrowend)/bnorm
+
+      work(nloc+1:2*nloc) = b(myrowstart:myrowend)/bnorm
+
+      IF (lprint) PRINT 900
+900   FORMAT(1x,'GMRES CONVERGENCE SUMMARY',/,' -------------',/,
+     &       1x,'ITER',7x,'FSQ_NL',10x,'||X||',9x,'MAX|X|',9x,'FSQ_ARN')
+
+      ENDIF LACTIVE0
+
+      CALL MPI_BCAST(bnorm, 1, MPI_REAL8, 0, MY_COMM_WORLD,
+     &               MPI_ERR)
+
+!****************************************
+!* Reverse communication implementation
+!****************************************
+
+ 10   CONTINUE
+
+      IF (lactive) THEN
+      CALL drive_dgmres(n, nloc, m, lwork, work, irc,                    
+     &                  gi%icntl, gi%cntl, gi%info, rinfo)
+      ELSE
+         irc = 1
+      ENDIF
+
+!BCast to all processors in the local world group
+      CALL MPI_BCAST(irc(1), 1, MPI_INTEGER, 0, MY_COMM_WORLD,
+     &               MPI_ERR)
+
+      revcom = irc(1)
+      colx   = irc(2)
+      coly   = irc(3)
+      colz   = irc(4)
+      nbscal = irc(5)
+
+      IF (revcom .EQ. matveci) THEN
+! perform the matrix vector product work(colz) <-- A * work(colx)
+!        WRITE(10000+iam,*) "matvec"; CALL FLUSH(10000+iam)
+        CALL yAx (work(colx), work(colz), nloc)
+! Debug 
+!        IF (lactive) THEN
+!        lsum = SUM(work(colz:colz+nloc-1)**2)
+!        CALL MPI_REDUCE(lsum,gsum,1,MPI_REAL8,MPI_SUM,0,
+!     1                  MY_COMM,MPI_ERR)
+!        IF (lprint) THEN
+!           PRINT *,'CALL MATVECI, |Ax| = ', SQRT(gsum)
+!        END IF
+!         END IF
+! End Debug
+        GOTO 10
+
+      ELSE IF (revcom .EQ. precondLeft) THEN
+!        IF (lprint) PRINT *,'CALL PRECONL'
+! perform the left preconditioning work(colz) <-- M^{-1} * work(colx)
+!        WRITE(10000+iam,*) "left_dcopy"; CALL FLUSH(10000+iam)
+        CALL dcopy(nloc,work(colx),1,work(colz),1)
+        GOTO 10
+
+      ELSE IF (revcom .EQ. precondRight) THEN
+!        IF (lprint) PRINT *,'CALL PRECONDR'        
+! perform the right preconditioning
+!        WRITE(10000+iam,*) "right_dcopy"; CALL FLUSH(10000+iam)
+        CALL dcopy(nloc,work(colx),1,work(colz),1)
+
+        IF (lactive) THEN
+        aux(myrowstart:myrowend) = work(colz:colz+nloc-1)
+!        WRITE(10000+iam,*) "precondRight"; CALL FLUSH(10000+iam)
+        CALL apply_precond(aux)
+        work(colz:colz+nloc-1)=aux(myrowstart:myrowend)
+        END IF
+        GOTO 10
+
+      ELSE IF (revcom .EQ. dotProd) THEN
+! perform the scalar product (uses nbscal columns of A starting at work(colx))
+        ! work(colz) <-- work(colx) work(coly)
+
+        LACTIVE_DP: IF (lactive) THEN
+        !MAKE SURE nbscal is the same on all processors -
+        CALL MPI_ALLGATHER(nbscal, 1, MPI_INTEGER, itest, 1,
+     &                     MPI_INTEGER, MY_COMM, MPI_ERR)
+        IF (lprint .AND. ANY(itest(1:gi%nprocs) .NE. nbscal)) THEN
+           PRINT *,'itest: ',itest(1:gi%nprocs)
+           STOP 'nbscal not same on all procs!'
+        END IF
+
+!       THIS IS FASTER THAN ALLGATHERV LOOP, BUT MAY LEAD TO SLIGHTLY DIFFERENT CONVERGENCE
+!       SEQUENCES FOR DIFFERENT # PROCESSORS. THE DGEMV CALL IS SLIGHTLY SLOWER THAN THE LOOP
+        IF (lFast) THEN
+
+!!        CALL dgemv('C',nloc,nbscal,one,work(colx),nloc,work(coly),1,zero,aux,1)
+
+        DO nout=1,nbscal
+           aux(nout)= SUM(work(colx:colx+nloc-1)*work(coly:coly+nloc-1))
+           colx = colx+nloc
+        END DO
+
+        CALL MPI_ALLREDUCE(aux,work(colz),nbscal,MPI_REAL8,MPI_SUM,
+     &                     MY_COMM,MPI_ERR)
+
+!        WRITE(10000+iam,*) "dotProd/truncate-1"; CALL FLUSH(10000+iam)
+        ELSE
+
+!       THE TIMING FOR THIS DOES NOT SCALE AS WELL WITH # PROCESSORS, BUT
+!       LEADS TO A CONVERGENCE SEQUENCE THAT IS INDEPENDENT OF # PROCESSORS
+        CALL MPI_GATHERV(work(coly), nloc, MPI_REAL8, aux, gi%rcounts,
+     &                   gi%disp, MPI_REAL8, 0, MY_COMM, MPI_ERR)
+
+        DO nout=0,nbscal-1
+           CALL MPI_GATHERV(work(colx),nloc,MPI_REAL8,tmpbuf,gi%rcounts,
+     &                      gi%disp,MPI_REAL8,0,MY_COMM,MPI_ERR)
+           IF (iam .EQ. 0) work(colz+nout) = SUM(tmpbuf*aux)              !DO FOR ALL PROCS IF ALLGATHER FORM USED
+           colx = colx+nloc
+        END DO
+
+        CALL MPI_BCAST(work(colz), nbscal, MPI_REAL8, 0, MY_COMM,
+     &                 MPI_ERR)
+
+!Debug
+!        IF (lprint) THEN
+!           gsum = SUM(work(colz:colz+nbscal-1)**2)
+!           PRINT 200,' CALL DOTPROD: nbscal = ', nbscal, 
+!     1               ' |WORK|: ', SQRT(gsum)
+! 200    FORMAT(a,i4,a,1p,e14.6)
+!        END IF
+!End Debug
+        !WRITE(10000+iam,*) "dotProd/truncate-2", nbscal; 
+!        WRITE(10000+iam,*) "dotProd/truncate" 
+!        CALL FLUSH(10000+iam)
+        END IF
+
+        DO nout = 0,nbscal-1
+           CALL Truncate(work(colz+nout), 15)
+        END DO
+        END IF LACTIVE_DP
+
+        GOTO 10
+
+      ELSE IF (revcom .EQ. peek) THEN
+        IF (lactive) THEN
+!        IF (lprint) PRINT *,'CALL PEEK'
+        fsq_last = fsq_nl                                                 !need for delfsq criteria
+        aux(myrowstart:myrowend) = work(colx:colx+nloc-1)
+
+!        WRITE(10000+iam,*) "peek"; CALL FLUSH(10000+iam)
+        END IF
+!get nonlinear force
+        CALL GetNLForce(aux, fsq_nl, bnorm, n)
+
+        LACTIVE1: IF (lactive) THEN
+        fsq_lin = (rinfo(1)*bnorm)**2
+        icount = icount+1
+        IF (fsq_lin .LT. 1.E-30_dp) gi%icntl(7)=gi%info(1)
+        IF (fsq_min .EQ. -1) fsq_min = fsq_nl/0.89_dp
+!        IF (ngmres_type .EQ. 1) GOTO 10                                  !OLDSTYLE:IGNORE LOGIC BELOW
+        delfsq = (fsq_last-fsq_nl)/fsq_min                              
+        IF (delfsq .LT. 0.05_dp) THEN
+          jcount = jcount+1
+        ELSE
+          jcount = 0
+        END IF
+
+        IF (fsq_nl .LT. fsq_min) THEN
+          kout = gi%info(1)
+          lsum=SUM(aux(myrowstart:myrowend)**2)
+          CALL MPI_REDUCE(lsum,gsum,1,MPI_REAL8,MPI_SUM,0,
+     1                    MY_COMM,MPI_ERR)
+          xmod=bnorm*SQRT(gsum)
+          lsum=MAXVAL(ABS(aux(myrowstart:myrowend)))
+          CALL MPI_REDUCE(lsum,xmax,1,MPI_REAL8,MPI_MAX,0,
+     1                    MY_COMM,MPI_ERR)
+          xmax=bnorm*xmax
+
+          IF (icount.EQ.1 .OR. MOD(icount,10).EQ.0) THEN
+             IF (lprint) THEN
+             kprint = kout
+             PRINT 910, kout, fsq_nl, xmod, xmax, fsq_lin
+             END IF
+          END IF
+          IF (fsq_nl .LE. gi%ftol) gi%icntl(7)=gi%info(1)
+          IF (.NOT.ALLOCATED(xmin)) ALLOCATE (xmin(nloc))
+          xmin = work(colx:colx+nloc-1)
+          fsq_min = fsq_nl; fsq_min_lin = fsq_lin
+        ELSE IF (fsq_nl .GT. (3*fsq_min) .OR. jcount.GT.3) THEN
+          ! STOPPING CRITERIA (reset max iterations to current iteration)         
+          gi%icntl(7)=gi%info(1)
+        END IF
+        ENDIF LACTIVE1
+        GOTO 10
+      ENDIF
+
+ 910  FORMAT(i5, 4(3x,1pe12.3))
+
+!*******************************
+! end reverse loop: dump the solution to a file for debugging
+!******************************
+      GOTO 100
+
+      LACTIVE2: IF (lprint .AND. lactive) THEN
+      nout = 11
+      OPEN(nout,FILE='sol_dTestgmres',STATUS='unknown')
+      IF (gi%icntl(5).EQ.0) then
+        WRITE(nout,*) 'Orthogonalisation : MGS'
+      ELSEIF (gi%icntl(5).eq.1) then
+        WRITE(nout,*) 'Orthogonalisation : IMGS'
+      ELSEIF (gi%icntl(5).eq.2) then
+        WRITE(nout,*) 'Orthogonalisation : CGS'
+      ELSEIF (gi%icntl(5).eq.3) then
+        WRITE(nout,*) 'Orthogonalisation : ICGS'
+      ENDIF
+      WRITE(nout,*) 'Restart : ', m
+      WRITE(nout,*) 'info(1) = ',gi%info(1),'  info(2) = ',gi%info(2)
+      WRITE(nout,*) 'rinfo(1) = ',rinfo(1),'  rinfo(2) = ',rinfo(2)
+      WRITE(nout,*) 'Optimal workspace = ', gi%info(3)
+      WRITE(nout,*) 'Solution : '
+      DO jcount=1,n
+        WRITE(nout,*) work(jcount)
+      ENDDO
+      WRITE(nout,*) '   '
+
+      END IF LACTIVE2
+
+ 100  CONTINUE
+
+      LACTIVE3: IF (lactive) THEN
+      IF (ALLOCATED (xmin)) THEN
+        work(1:nloc) = xmin(1:nloc)
+        DEALLOCATE (xmin)
+      END IF
+
+      CALL MPI_ALLGATHERV(work, nloc, MPI_REAL8, tmpbuf, gi%rcounts,
+     &                    gi%disp, MPI_REAL8, MY_COMM, MPI_ERR)
+      gi%ftol = fsq_min
+      x0 = tmpbuf*bnorm
+
+      IF (lprint .AND. kprint.NE.kout)
+     &    PRINT 910, kout, fsq_min, xmod, xmax, fsq_min_lin
+
+!      IF (iam .EQ. 0) PRINT 110, icount
+! 110  FORMAT(1x,'Total GMRES Iterations: ',i4)
+      END IF LACTIVE3
+
+      DEALLOCATE (work, tmpbuf, aux, itest)
+#endif
+      END SUBROUTINE gmres_par
+
+      SUBROUTINE Truncate(num, iprec0)
+      USE stel_kinds, ONLY: dp
+      IMPLICIT NONE
+!     NEEDED TO RESOLVE CALL IN gmres_par
+!-----------------------------------------------
+!   D u m m y   A r g u m e n t s
+!-----------------------------------------------
+      INTEGER, INTENT(IN)     :: iprec0
+      REAL(dp), INTENT(INOUT) :: num
+!-----------------------------------------------
+!-----------------------------------------------
+!   L o c a l   V a r i a b l e s
+!-----------------------------------------------
+      CHARACTER*24 :: chnum, tchnum
+!-----------------------------------------------
+!
+!     TRUNCATES double-precision to precision iprec0 digits, keeping exponent range of double
+!     WRITE TO INTERNAL FILE TO DO TRUNCATION
+!
+!      RETURN
+
+      WRITE (chnum, '(a,i2,a,i2,a)') '(1p,e',iprec0+7,'.',iprec0,')'
+      WRITE (tchnum, chnum) num
+
+      READ (tchnum, chnum) num
+
+      END SUBROUTINE Truncate
 
 
-      SUBROUTINE dgmres(n,m,b,x,H,w,r0,V,yCurrent,xCurrent,rotSin,
-     &                  rotCos,irc,icntl,cntl,info,rinfo)
-*
-*
-*  Purpose
-*  =======
-*  dgmres solves the linear system Ax = b using the
-*  Generalized Minimal Residual iterative method
-*
-* When preconditioning is used we solve :
-*     M_1^{-1} A M_2^{-1} y = M_1^{-1} b
-*     x = M_2^{-1} y
-*
-*   Convergence test based on the normwise backward error for
-*  the preconditioned system
-*
-* Written : June 1996
-* Authors : Luc Giraud, Serge Gratton, V. Fraysse
-*             Parallel Algorithms - CERFACS
-*
-* Updated : April 1997
-* Authors :  Valerie Fraysse, Luc Giraud, Serge Gratton
-*             Parallel Algorithms - CERFACS
-*
-* Updated : March 1998
-* Purpose : Pb with F90 on DEC ws
-*           cure : remove "ZDSCAL" when used to initialize vectors to zero
-*
-* Updated : May 1998
-* Purpose : r0(1) <-- r0'r0 : pb when used with DGEMV for the dot product
-*           cure : w(1) <--  r0'r0
-*
-* Updated : June 1998
-* Purpose : Make clear that the warning and error messages come from the
-*           dgmres modules.
-*
-* Updated : February 2001 - L. Giraud
-* Purpose : In complex version, initializations to zero performed  in complex
-*           arithmetic to avoid implicit conversion by the compiler.
-*
-* Updated : July 2001 - L. Giraud, J. Langou
-* Purpose : Avoid to compute the approximate solution at each step of
-*           the Krylov space construction when spA is zero.
-*
-* Updated : November 2002 - S. Gratton
-* Purpose : Use Givens rotations conform to the classical definition.
-*           No impact one the convergence history.
-*
-* Updated : November 2002 - L. Giraud
-* Purpose : Properly handle the situation when the convergence is obtained
-*           exactly at the "IterMax" iteration
-*
-* Updated : December 2002 - L. Giraud, J.Langou
-* Purpose : Add the capability to avoid explicit residual calculation at restart
-*
-* Updated : January  2003 - L. Giraud, S. Gratton
-* Purpose : Use Givens rotations from BLAS.
-*
-* Updated : March    2003 - L. Giraud
-* Purpose : Set back retlbl to zero, if initial guess is solution
-*           or right-hand side is zero
-*
-*  Arguments
-*  =========
-*
-*  n       (input) INTEGER.
-*           On entry, the dimension of the problem.
-*           Unchanged on exit.
-*
-*  m        (input) INTEGER
-*           Restart parameter, <= N. This parameter controls the amount
-*           of memory required for matrix H (see WORK and H).
-*           Unchanged on exit.
-*
-*  b        (input) real*8/real*8
-*           Right hand side of the linear system.
-*
-*  x        (output) real*8/real*8
-*           Computed solution of the linear system.
-*
-*  H        (workspace)  real*8/real*8
-*           Hessenberg matrix built within dgmres
-*
-*  w        (workspace)  real*8/real*8
-*           Vector used as temporary storage
-*
-*  r0       (workspace)  real*8/real*8
-*           Vector used as temporary storage
-*
-*  V        (workspace)  real*8/real*8
-*           Basis computed by the Arnoldi's procedure.
-*  
-*  yCurrent (workspace) real*8/real*8
-*           solution of the current LS
-*
-*  xCurrent (workspace) real*8/real*8
-*           current iterate
-*
-*  rotSin   (workspace) real*8/real*8
-*           Sine of the Givens rotation
-*
-*  rotCos   (workspace) real*8
-*           Cosine of the Givens rotation
-*
-*  irc      (input/output) INTEGER array. length 3
-*             irc(1) : REVCOM   used for reverse communication
-*                              (type of external operation)
-*             irc(2) : COLX     used for reverse communication
-*             irc(3) : COLY     used for reverse communication
-*             irc(4) : COLZ     used for reverse communication
-*             irc(5) : NBSCAL   used for reverse communication
-*
-*  icntl    (input) INTEGER array. length 7
-*             icntl(1) : stdout for error messages
-*             icntl(2) : stdout for warnings
-*             icntl(3) : stdout for convergence history
-*             icntl(4) : 0 - no preconditioning
-*                        1 - left preconditioning
-*                        2 - right preconditioning
-*                        3 - double side preconditioning
-*                        4 - error, default set in Init
-*             icntl(5) : 0 - modified Gram-Schmidt
-*                        1 - iterative modified Gram-Schmidt
-*                        2 - classical Gram-Schmidt
-*                        3 - iterative classical Gram-Schmidt
-*             icntl(6) : 0 - default initial guess x_0 = 0 (to be set)
-*                        1 - user supplied initial guess
-*             icntl(7) : maximum number of iterations
-*             icntl(8) : 1 - default compute the true residual at each restart
-*                        0 - use recurence formula at restart
-*
-*  cntl     (input) real*8 array, length 5
-*             cntl(1) : tolerance for convergence
-*             cntl(2) : scaling factor for normwise perturbation on A
-*             cntl(3) : scaling factor for normwise perturbation on b
-*             cntl(4) : scaling factor for normwise perturbation on the
-*                       preconditioned matrix
-*             cntl(5) : scaling factor for normwise perturbation on
-*                       preconditioned right hand side
-*
-*  info     (output) INTEGER array, length 2
-*             info(1) :  0 - normal exit
-*                       -1 - n < 1
-*                       -2 - m < 1
-*                       -3 - lwork too small
-*                       -4 - convergence not achieved after icntl(7) iterations
-*                       -5 - precondition type not set by user
-*             info(2) : if info(1)=0 - number of iteration to converge
-*                       if info(1)=-3 - minimum workspace size necessary
-*             info(3) : optimal size for the workspace
-*
-* rinfo     (output) real*8 array, length 2
-*             if info(1)=0 
-*               rinfo(1) : backward error for the preconditioned system
-*               rinfo(2) : backward error for the unpreconditioned system
-*
-* Input variables
-* ---------------
-        integer  n, m, icntl(*)
-        real*8 b(*)
-        real*8    cntl(*)
-*
-* Output variables
-* ----------------
-       integer  info(*)
-       real*8    rinfo(*)
-*
-* Input/Output variables
-* ----------------------
-       integer  irc(*)
-       real*8 x(*), H(m+1,*), w(*), r0(*), V(n,*), yCurrent(*)
-       real*8 xCurrent(*), rotSin(*)
-       real*8    rotCos(*)
-*
-* Local variables
-* ---------------
-       integer  j, jH, iterOut, nOrtho, iterMax, initGuess, iOrthog
-       integer  xptr, bptr, wptr, r0ptr, Vptr, Hptr, yptr, xcuptr
-       integer  typePrec, leftPrec, rightPrec, dblePrec, noPrec
-       integer  iwarn, ihist
-       integer  compRsd
-       real*8    beta, bn, sA, sb, sPA, sPb, bea, be
-       real*8    dloo, dnormw, dnormx, dnormres, trueNormRes
-       real*8 dVi, temp, aux
-       real*8 auxHjj, auxHjp1j
-*
-       parameter (noPrec = 0, leftPrec = 1)
-       parameter (rightPrec = 2, dblePrec = 3)  
-*
-       real*8 ZERO, ONE
-       parameter (ZERO = 0.0d0, ONE = 1.0d0)
-       real*8 DZRO,DONE
-       parameter (DZRO = 0.0d0, DONE = 1.0d0)
-*
-*
-* External functions
-* ------------------
-       real*8    dnrm2
-       external dnrm2
-*
-* Reverse communication variables
-* -------------------------------
-       integer retlbl
-       DATA retlbl /0/
-       integer matvec, precondLeft, precondRight, prosca
-       parameter(matvec=1, precondLeft=2, precondRight=3, prosca=4)
-*
-* Saved variables
-* ---------------
-       save iterOut, jH, beta, bn, dnormres, retlbl, j
-       save sA, sb, sPA, sPb, dnormx, trueNormRes, bea, be
-       save dloo, nOrtho, compRsd
-
-!     Added by SPH to converge on Arnoldi backward error (bea) rather than be
-!     Set to FALSE for original behavior
- 	 LOGICAL, PARAMETER :: larnoldi = .TRUE.
-
-*
-* Intrinsic function
-* ------------------
-       intrinsic dabs, dsqrt 
-*
-*       Executable statements
-*
-* setup some pointers on the workspace
-       xptr     = 1
-       bptr     = xptr + n
-       r0ptr    = bptr + n
-       wptr     = r0ptr + n
-       Vptr     = wptr + n
-       if (icntl(8).eq.1) then
-         Hptr     = Vptr + m*n
-       else
-         Hptr     = Vptr + (m+1)*n
-       endif
-       yptr     = Hptr + (m+1)*(m+1)
-       xcuptr   = yptr + m
-*
-       iwarn      = icntl(2)
-       ihist      = icntl(3)
-       typePrec   = icntl(4)
-       iOrthog    = icntl(5)
-       initGuess  = icntl(6)
-       iterMax    = icntl(7)
-*
-       if (retlbl.eq.0) then
-         compRsd    = icntl(8)
-       endif
-*
-      if (retlbl.ne.0) then
-        if (retlbl.eq.5) then
-          goto 5
-        else if (retlbl.eq.6) then
-          goto 6
-        else if (retlbl.eq.8) then
-          goto 8
-        else if (retlbl.eq.11) then
-          goto 11
-        else if (retlbl.eq.16) then
-          goto 16
-        else if (retlbl.eq.18) then
-          goto 18
-        else if (retlbl.eq.21) then
-          goto 21
-        else if (retlbl.eq.26) then
-          goto 26
-        else if (retlbl.eq.31) then
-          goto 31
-        else if (retlbl.eq.32) then
-          goto 32
-        else if (retlbl.eq.33) then
-          goto 33
-        else if (retlbl.eq.34) then
-          goto 34 
-        else if (retlbl.eq.36) then
-          goto 36
-        else if (retlbl.eq.37) then
-          goto 37
-        else if (retlbl.eq.38) then
-          goto 38
-        else if (retlbl.eq.41) then
-          goto 41
-        else if (retlbl.eq.43) then
-          goto 43
-        else if (retlbl.eq.46) then
-          goto 46
-        else if (retlbl.eq.48) then
-          goto 48
-        else if (retlbl.eq.51) then
-          goto 51
-        else if (retlbl.eq.52) then
-          goto 52
-        else if (retlbl.eq.61) then
-          goto 61
-        else if (retlbl.eq.66) then
-          goto 66
-        else if (retlbl.eq.68) then
-          goto 68
-        endif
-      endif
-*
-*
-* intialization of various variables
-*
-      iterOut  = 0
-      beta     = DZRO
-*
-      if (initGuess.eq.0) then
-        do j=1,n
-          x(j) = ZERO
-        enddo
-      endif
-*
-*        bn = dnrm2(n,b,1)
-*
-      irc(1) = prosca
-      irc(2) = bptr
-      irc(3) = bptr
-      irc(4) = r0ptr
-      irc(5) = 1
-      retlbl = 5
-      return
- 5    continue
-      bn = dsqrt((r0(1)))
-*
-      if (bn.eq.DZRO) then
-        do j=1,n
-          x(j) = ZERO
-        enddo  
-        if (iwarn.ne.0) then
-          write(iwarn,*)
-          write(iwarn,*) ' WARNING GMRES : '
-          write(iwarn,*) '       Null right hand side'
-          write(iwarn,*) '       solution set to zero'
-          write(iwarn,*)
-        endif
-        info(1)  = 0
-        info(2)  = 0
-        rinfo(1) = DZRO
-        rinfo(2) = DZRO
-        irc(1)   = 0
-        retlbl = 0
-        return
-      endif
-*
-* Compute the scaling factor for the backward error on the 
-*  unpreconditioned sytem
-*
-      sA       = cntl(2)
-      sb       = cntl(3)
-      if ((sA.eq.DZRO).and.(sb.eq.DZRO)) then
-        sb = bn
-      endif
-* Compute the scaling factor for the backward error on the
-*  preconditioned sytem
-*
-       sPA      = cntl(4)
-       sPb      = cntl(5)
-       if ((sPA.eq.DZRO).and.(sPb.eq.DZRO)) then
-         if ((typePrec.eq.noPrec).or.(typePrec.eq.rightPrec)) then
-           sPb = bn
-         else
-           irc(1) = precondLeft
-           irc(2) = bptr
-           irc(4) = r0ptr
-           retlbl = 6
-           return
-         endif
-       endif
- 6     continue
-       if ((sPA.eq.DZRO).and.(sPb.eq.DZRO)) then
-         if ((typePrec.eq.dblePrec).or.(typePrec.eq.leftPrec)) then
-*
-*           sPb = dnrm2(n,r0,1)
-*
-           irc(1) = prosca
-           irc(2) = r0ptr
-           irc(3) = r0ptr
-           irc(4) = wptr
-           irc(5) = 1
-           retlbl = 8
-           return
-         endif
-       endif
- 8     continue
-       if ((sPA.eq.DZRO).and.(sPb.eq.DZRO)) then
-         if ((typePrec.eq.dblePrec).or.(typePrec.eq.leftPrec)) then
-           sPb = dsqrt((w(1)))
-* 
-         endif
-       endif
-*
-*
-* Compute the first residual
-*           Y = AX : r0 <-- A x
-*
-* The residual is computed only if the initial guess is not zero
-*
-       if (initGuess.ne.0) then
-         irc(1) = matvec
-         irc(2) = xptr
-         irc(4) = r0ptr
-         retlbl = 11
-         return
-       endif
- 11    continue
-       if (initGuess.ne.0) then
-         do j=1,n
-           r0(j) = b(j)-r0(j)
-         enddo
-       else
-         call dcopy(n,b,1,r0,1)
-       endif 
-*
-* Compute the preconditioned residual if necessary
-*      M_1Y = X : w <-- M_1^{-1} r0
-*
-       if ((typePrec.eq.noPrec).or.(typePrec.eq.rightPrec)) then
-         call dcopy(n,r0,1,w,1)
-       else
-         irc(1) = precondLeft
-         irc(2) = r0ptr
-         irc(4) = wptr
-         retlbl = 16
-         return
-       endif
- 16    continue
-*
-*
-*       beta = dnrm2(n,w,1)
-*
-*
-       irc(1) = prosca
-       irc(2) = wptr
-       irc(3) = wptr
-       irc(4) = r0ptr
-       irc(5) = 1
-       retlbl = 18
-       return
- 18    continue
-       beta = dsqrt((r0(1)))
-*
-       if (beta .eq. DZRO) then
-*  The residual is exactly zero : x is the exact solution
-         info(1) = 0
-         info(2) = 0
-         rinfo(1) = DZRO
-         rinfo(2) = DZRO
-         irc(1)   = 0
-         retlbl = 0
-         if (iwarn.ne.0) then
-          write(iwarn,*)
-          write(iwarn,*) ' WARNING GMRES : '
-          write(iwarn,*) '       Intial residual is zero'
-          write(iwarn,*) '       initial guess is solution'
-          write(iwarn,*)
-         endif
-         return
-       endif
-*
-       aux = ONE/beta
-       do j=1,n
-         V(j,1) = ZERO
-       enddo
-       call daxpy(n,aux,w,1,V(1,1),1)
-*
-*       Most outer loop : dgmres iteration
-*
-*       REPEAT
- 7     continue
-*
-*
-       H(1,m+1)=beta
-       do j=1,m
-         H(j+1,m+1) = ZERO
-       enddo
-*
-*        Construction of the hessenberg matrix WORK and of the orthogonal
-*        basis V such that AV=VH 
-*
-       jH = 1
- 10    continue
-* Remark : this  do loop has been written with a while do
-*          because the
-*               " do jH=1,restart "
-*         fails with the reverse communication.
-*      do  jH=1,restart
-*
-*
-* Compute the preconditioned residual if necessary
-*
-       if ((typePrec.eq.rightPrec).or.(typePrec.eq.dblePrec)) then  
-*
-*           Y = M_2^{-1}X : w <-- M_2^{-1} V(1,jH)
-*
-         irc(1) = precondRight
-         irc(2) = vptr + (jH-1)*n
-         irc(4) = wptr
-         retlbl = 21
-         return
-       else
-         call dcopy(n,V(1,jH),1,w,1)
-       endif
- 21    continue
-*
-*           Y = AX : r0 <-- A w
-*
-       irc(1) = matvec
-       irc(2) = wptr
-       irc(4) = r0ptr
-       retlbl = 26
-       return
- 26    continue
-*
-*      MY = X : w <-- M_1^{-1} r0
-*
-       if ((typePrec.eq.noPrec).or.(typePrec.eq.rightPrec)) then
-         call dcopy(n,r0,1,w,1)
-       else
-         irc(1) = precondLeft
-         irc(2) = r0ptr
-         irc(4) = wptr
-         retlbl = 31
-         return
-       endif
- 31    continue
-*
-* Orthogonalization using either MGS or IMGS
-*  
-* initialize the Hessenberg matrix to zero in order to be able to use
-*     IMGS as orthogonalization procedure.
-       do j=1,jH
-         H(j,jH) = ZERO
-       enddo
-       nOrtho = 0
- 19    continue
-       nOrtho = nOrtho +1
-       dloo   = DZRO
-*
-       if ((iOrthog.eq.0).or.(iOrthog.eq.1)) then
-* MGS
-*
-*           do j=1,jH
-*
-         j = 1
-*           REPEAT
-       endif
- 23    continue
-       if ((iOrthog.eq.0).or.(iOrthog.eq.1)) then
-*
-*             dVi     = ddot(n,V(1,j),1,w,1)
-*
-         irc(1) = prosca
-         irc(2) = vptr + (j-1)*n
-         irc(3) = wptr
-         irc(4) = r0ptr
-         irc(5) = 1
-         retlbl = 32
-         return
-       endif
- 32    continue
-       if ((iOrthog.eq.0).or.(iOrthog.eq.1)) then
-         dVi     = r0(1)
-         H(j,jH) = H(j,jH) + dVi
-         dloo    = dloo + dabs(dVi)**2
-         aux = -ONE*dVi
-         call daxpy(n,aux,V(1,j),1,w,1)
-         j = j + 1
-         if (j.le.jH) goto 23
-*          enddo_j
-       else
-* CGS
-* produit scalaire groupe
-*
-*           call dgemv('C',n,jH,ONE,V(1,1),n,w,1,ZERO,r0,1)
-*
-         irc(1) = prosca
-         irc(2) = vptr
-         irc(3) = wptr
-         irc(4) = r0ptr
-         irc(5) = jH
-         retlbl = 34
-         return
-       endif
- 34    continue
-       if ((iOrthog.eq.2).or.(iOrthog.eq.3)) then
-*
-         call daxpy(jH,ONE,r0,1,H(1,jH),1)
-         call dgemv('N',n,jH,-ONE,V(1,1),n,r0,1,ONE,w,1)
-         dloo = dnrm2(jH,r0,1)**2
-       endif
-*
-*         dnormw = dnrm2(n,w,1)
-*
-       irc(1) = prosca
-       irc(2) = wptr
-       irc(3) = wptr
-       irc(4) = r0ptr
-       irc(5) = 1
-       retlbl = 33
-       return
- 33    continue
-       dnormw = dsqrt((r0(1)))
-*
-       if ((iOrthog.eq.1).or.(iOrthog.eq.3)) then
-* IMGS / CGS orthogonalisation
-         dloo = dsqrt(dloo)
-* check the orthogonalization quality
-         if ((dnormw.le.dloo).and.(nOrtho.lt.3)) then
-           goto 19
-         endif
-       endif
-*
-       H(jH+1,jH) = dnormw
-       if ((jH.lt.m).or.(icntl(8).eq.0)) then
-         aux = ONE/dnormw
-         do j=1,n
-           V(j,jH+1) = ZERO
-         enddo
-         call daxpy(n,aux,w,1,V(1,jH+1),1)
-       endif
-* Apply previous Givens rotations to the new column of H
-       do j=1,jH-1
-         call drot(1, H(j,jH), 1, H(j+1,jH), 1, rotCos(j), rotSin(j))
-       enddo
-       auxHjj = H(jH,jH)
-       auxHjp1j= H(jH+1,jH)
-       call drotg(auxHjj, auxHjp1j, rotCos(jH),rotSin(jH))
-* Apply current rotation to the rhs of the least squares problem
-       call drot(1, H(jH,m+1), 1, H(jH+1,m+1), 1, rotCos(jH),
-     &            rotSin(jH))
-*
-* zabs(H(jH+1,m+1)) is the residual computed using the least squares
-*          solver
-* Complete the QR factorisation of the Hessenberg matrix by apply the current
-* rotation to the last entry of the collumn
-       call drot(1, H(jH,jH), 1, H(jH+1,jH), 1, rotCos(jH), rotSin(jH))
-       H(jH+1,jH) = ZERO
-*
-* Get the Least square residual
-*
-       dnormres = dabs(H(jH+1,m+1))
-       if (sPa.ne.DZRO) then
-*
-* Compute the solution of the current linear least squares problem
-*
-         call dcopy(jH,H(1,m+1),1,yCurrent,1)
-         call dtrsv('U','N','N',jH,H,m+1,yCurrent,1)
-*
-* Compute the value of the new iterate 
-*
-         call dgemv('N',n,jH,ONE,v,n,
-     &            yCurrent,1,ZERO,xCurrent,1)
-*
-         if ((typePrec.eq.rightPrec).or.(typePrec.eq.dblePrec)) then  
-*
-*         Y = M_2^{-1}X : r0 <-- M_2^{-1} xCurrent
-*
-           irc(1) = precondRight
-           irc(2) = xcuptr
-           irc(4) = r0ptr
-           retlbl = 36
-           return
-         else
-           call dcopy(n,xCurrent,1,r0,1)
-         endif
-       endif
- 36    continue
-*
-*
-       if (sPa.ne.DZRO) then
-* Update the current solution
-         call dcopy(n,x,1,xCurrent,1)
-         call daxpy(n,ONE,r0,1,xCurrent,1)
-*
-*         dnormx = dnrm2(n,xCurrent,1)
-*
-         irc(1) = prosca
-         irc(2) = xcuptr
-         irc(3) = xcuptr
-         irc(4) = r0ptr
-         irc(5) = 1
-         retlbl = 38
-         return
-       else
-         dnormx    = DONE
-       endif
- 38    continue
-       if (sPa.ne.DZRO) then
-         dnormx = dsqrt((r0(1)))
-       endif
-*
-       bea = dnormres/(sPA*dnormx+sPb)
-*
-* Check the convergence based on the Arnoldi Backward error for the
-* preconditioned system
-       if ((bea.le.cntl(1)).or.(iterOut*m+jH.ge.iterMax)) then  
-* 
-* The Arnoldi Backward error indicates that dgmres might have converge
-* enforce the calculation of the true residual at next restart
-         compRsd = 1
-*
-*  If the update of X has not yet been performed
-         if (sPA.eq.DZRO) then
-*
-* Compute the solution of the current linear least squares problem
-*
-           call dcopy(jH,H(1,m+1),1,yCurrent,1)
-           call dtrsv('U','N','N',jH,H,m+1,yCurrent,1)
-*
-* Compute the value of the new iterate 
-*
-           call dgemv('N',n,jH,ONE,v,n,
-     &            yCurrent,1,ZERO,xCurrent,1)
-*
-           if ((typePrec.eq.rightPrec).or.(typePrec.eq.dblePrec)) then
-* 
-*         Y = M_2^{-1}X : r0 <-- M_2^{-1} xCurrent
-*
-             irc(1) = precondRight
-             irc(2) = xcuptr
-             irc(4) = r0ptr 
-             retlbl = 37
-             return
-           else
-             call dcopy(n,xCurrent,1,r0,1)
-           endif
-         endif
-       endif
- 37    continue
-       if ((bea.le.cntl(1)).or.(iterOut*m+jH.ge.iterMax)) then
-         if (sPA.eq.DZRO) then
-* Update the current solution
-            call dcopy(n,x,1,xCurrent,1)
-            call daxpy(n,ONE,r0,1,xCurrent,1)
-         endif
-*
-         call dcopy(n,xCurrent,1,r0,1)
-* Compute the true residual, the Arnoldi one may be unaccurate
-*
-*           Y = AX : w  <-- A r0
-*
-         irc(1) = matvec
-         irc(2) = r0ptr
-         irc(4) = wptr
-         retlbl = 41
-         return
-       endif
- 41    continue
-       if ((bea.le.cntl(1)).or.(iterOut*m+jH.ge.iterMax)) then
-*
-         do j=1,n
-           w(j) = b(j) - w(j)
-         enddo
-* Compute the norm of the unpreconditioned residual
-*
-*        trueNormRes = dnrm2(n,w,1)
-*
-         irc(1) = prosca
-         irc(2) = wptr
-         irc(3) = wptr
-         irc(4) = r0ptr
-         irc(5) = 1
-         retlbl = 43
-         return
-       endif
- 43    continue
-       if ((bea.le.cntl(1)).or.(iterOut*m+jH.ge.iterMax)) then
-         trueNormRes = dsqrt((r0(1)))
-*
-         if ((typePrec.eq.leftPrec).or.(typePrec.eq.dblePrec)) then  
-*
-*      MY = X : r0 <-- M_1^{-1} w 
-*
-           irc(1) = precondLeft
-           irc(2) = wptr
-           irc(4) = r0ptr
-           retlbl = 46
-           return
-         else 
-           call dcopy(n,w,1,r0,1)
-         endif
-       endif
- 46    continue
-       if ((bea.le.cntl(1)).or.(iterOut*m+jH.ge.iterMax)) then
-*
-*        dnormres = dnrm2(n,r0,1) 
-*
-         irc(1) = prosca
-         irc(2) = r0ptr
-         irc(3) = r0ptr
-         irc(4) = wptr
-         irc(5) = 1
-         retlbl = 48
-         return
-       endif
- 48    continue
-       if ((bea.le.cntl(1)).or.(iterOut*m+jH.ge.iterMax)) then
-         dnormres = dsqrt((w(1)))
-*
-         be = dnormres/(sPA*dnormx+sPb)
-* Save the backward error on a file if convergence history requested
-         if (ihist.ne.0) then
-           write(ihist,'(I5,11x,E9.2,$)') iterOut*m+jH,bea
-           write(ihist,'(7x,E9.2)') be
-         endif
-*
-       endif
-*
-*
-* Check again the convergence
-       if ((bea.le.cntl(1)).or.(iterOut*m+jH.ge.iterMax)) then   
-         if (larnoldi .or. 
-     &      (be.le.cntl(1)).or.(iterOut*m+jH.ge.iterMax)) then   
-* The convergence has been achieved, we restore the solution in x
-* and compute the two backward errors.
-           call dcopy(n,xCurrent,1,x,1)
-*
-           if (sA.ne.DZRO) then
-*
-*            dnormx = dnrm2(n,x,1)
-*
-             irc(1) = prosca
-             irc(2) = xptr
-             irc(3) = xptr
-             irc(4) = r0ptr
-             irc(5) = 1
-             retlbl = 51
-             return
-           endif
-         endif
-       endif
- 51    continue
-       if ((bea.le.cntl(1)).or.(iterOut*m+jH.ge.iterMax)) then
-         if (larnoldi .or. 
-     &       (be.le.cntl(1)).or.(iterOut*m+jH.ge.iterMax)) then
-           if (sA.ne.DZRO) then
-             dnormx = dsqrt((r0(1)))
-*
-           else
-             dnormx = DONE
-           endif
-* Return the backward errors
-           rinfo(1) = be
-           rinfo(2) = trueNormRes/(sA*dnormx+sb)
-           if (be.le.cntl(1)) then
-             info(1) = 0
-             if (ihist.ne.0) then
-               write(ihist,*)
-               write(ihist,'(A20)') 'Convergence achieved'
-             endif
-           else if (be.gt.cntl(1)) then
-             if (iwarn.ne.0) then
-               write(iwarn,*)
-               write(iwarn,*) ' WARNING GMRES : '
-               write(iwarn,*) '       No convergence after '
-               write(iwarn,*) iterOut*m+jH,' iterations '
-               write(iwarn,*)
-             endif
-             if (ihist.ne.0) then
-               write(ihist,*)
-               write(ihist,*) ' WARNING GMRES :'
-               write(ihist,*) '       No convergence after '
-               write(ihist,*) iterOut*m+jH,' iterations '
-               write(ihist,*)
-             endif
-             info(1) = -4
-           endif
-           if (ihist.ne.0) then
-             write(ihist,'(A27,$)') 'B.E. on the preconditioned '
-             write(ihist,'(A10,E9.2)') 'system:   ', rinfo(1)
-             write(ihist,'(A29,$)') 'B.E. on the unpreconditioned '
-             write(ihist,'(A8,E9.2)') 'system: ', rinfo(2)
-           endif
-           info(2) = iterOut*m+jH
-           if (ihist.ne.0) then
-             write(ihist,'(A10,I2)') 'info(1) = ',info(1)
-             write(ihist,'(A32,I5)') 
-     &                'Number of iterations (info(2)): ',info(2)  
-           endif
-           irc(1)  = 0
-           retlbl  = 0
-           return
-         endif
-       else
-* Save the backward error on a file if convergence history requested
-         if (ihist.ne.0) then
-           write(ihist,'(I5,11x,E9.2,$)') iterOut*m+jH,bea
-           write(ihist,'(9x,A2)') '--'
-         endif
-*
-       endif  
-*
-       jH = jH + 1
-       if (jH.le.m) then
-         goto 10
-       endif
-*
-       iterOut = iterOut + 1
-*
-* we have completed the Krylov space construction, we restart if
-* we have not yet exceeded the maximum number of iterations allowed.
-*
-       if ((sPa.eq.DZRO).and.(bea.gt.cntl(1))) then
-*
-* Compute the solution of the current linear least squares problem
-*
-         jH = jH - 1
-         call dcopy(jH,H(1,m+1),1,yCurrent,1)
-         call dtrsv('U','N','N',jH,H,m+1,yCurrent,1)
-*
-* Compute the value of the new iterate
-*
-         call dgemv('N',n,jH,ONE,v,n,
-     &            yCurrent,1,ZERO,xCurrent,1)
-*
-         if ((typePrec.eq.rightPrec).or.(typePrec.eq.dblePrec)) then
-*
-*         Y = M_2^{-1}X : r0 <-- M_2^{-1} xCurrent
-*
-           irc(1) = precondRight
-           irc(2) = xcuptr
-           irc(4) = r0ptr
-           retlbl = 52
-           return
-         else
-           call dcopy(n,xCurrent,1,r0,1)
-         endif
-       endif
- 52    continue
-       if ((sPa.eq.DZRO).and.(bea.gt.cntl(1))) then
-* Update the current solution
-         call dcopy(n,x,1,xCurrent,1)
-         call daxpy(n,ONE,r0,1,xCurrent,1)
-       endif
-*
-       call dcopy(n,xCurrent,1,x,1)
-*
-       if (compRsd.eq.1) then
-*
-* Compute the true residual
-*
-         call dcopy(n,x,1,w,1)
-         irc(1) = matvec
-         irc(2) = wptr
-         irc(4) = r0ptr
-         retlbl = 61
-         return
-       endif
- 61    continue
-       if (compRsd.eq.1) then
-         do j=1,n
-           r0(j) = b(j) - r0(j)
-         enddo
-*
-* Precondition the new residual if necessary
-*
-         if ((typePrec.eq.leftPrec).or.(typePrec.eq.dblePrec)) then
-*
-*      MY = X : w <-- M_1^{-1} r0
-*
-           irc(1) = precondLeft
-           irc(2) = r0ptr
-           irc(4) = wptr
-           retlbl = 66
-           return
-         else
-           call dcopy(n,r0,1,w,1)
-         endif
-       endif
- 66    continue
-*
-*           beta = dnrm2(n,w,1)
-*
-       if (compRsd.eq.1) then
-         irc(1) = prosca
-         irc(2) = wptr
-         irc(3) = wptr
-         irc(4) = r0ptr
-         irc(5) = 1
-         retlbl = 68
-         return
-       endif
- 68    continue
-       if (compRsd.eq.1) then
-         beta = dsqrt((r0(1)))
-*
-       else
-* Use recurrence to approximate the residual at restart
-         beta = dabs(H(m+1,m+1))
-* Apply the Givens rotation is the reverse order
-         do j=m,1,-1
-           H(j,m+1)   = ZERO
-           call drot(1, H(j,m+1), 1, H(j+1,m+1), 1,
-     &               rotCos(j), -rotSin(j))
-         enddo
-*
-* On applique les vecteurs V
-*
-         call dgemv('N',n,m+1,ONE,v,n,H(1,m+1),1,ZERO,w,1)
-*
-       endif
-       do j=1,n
-         V(j,1) = ZERO
-       enddo
-       aux = ONE/beta
-       call daxpy(n,aux,w,1,V(1,1),1)
-*
-       goto 7
-*
-       end
+      END MODULE GMRES_LIB

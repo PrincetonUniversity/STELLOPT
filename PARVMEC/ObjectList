@@ -1,5 +1,6 @@
 ObjectFiles = \
 blocktridiagonalsolver_bst.o \
+blocktridiagonalsolver.o \
 forces.o \
 getfsq.o \
 alias.o \
