@@ -438,7 +438,7 @@
       CALL cdf_setatt(nwout, vn_iotaf, ln_iotaf)
 
       qfact=HUGE(qfact)
-      WHERE (iotaf .NE. zero) qfact=one/iotaf
+      WHERE (iotaf(1:ns) .NE. zero) qfact(1:ns)=one/iotaf(1:ns)
 
       CALL cdf_define(nwout, vn_qfact, qfact(1:ns), 
      1                dimname=r1dim)
@@ -712,10 +712,12 @@
       CALL cdf_write(nwout, vn_tmod, xn)
       CALL cdf_write(nwout, vn_pmod_nyq, xm_nyq0)
       CALL cdf_write(nwout, vn_tmod_nyq, xn_nyq0)
+      IF (lfreeb) THEN
       CALL cdf_write(nwout, vn_potsin, potvac(1:mnpd))
       IF (lasym) CALL cdf_write(nwout, vn_potcos, potvac(1+mnpd:2*mnpd))
       CALL cdf_write(nwout, vn_xmpot, xmpot)
       CALL cdf_write(nwout, vn_xnpot, xnpot)
+      END IF
      
 940   CONTINUE   ! before closing, write the initial part of the wouttxt-file
 #endif

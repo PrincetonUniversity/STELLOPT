@@ -6,7 +6,7 @@
       USE xstuff, ONLY: xc, gc, xsave, scalxc
       USE vmec_main, ONLY: vp, iotas, phips, chips, mass, icurv
       USE vmec_main, ONLY: ireflect, nznt, phipf, specw, sp, sm
-      USE vmec_params, ONLY: uminus
+      USE vmec_params, ONLY: uminus, output_flag
       USE realspace, ONLY: phip, sqrts, shalf, wint
 #if defined(SKS)
       USE realspace, ONLY: pphip, psqrts, pshalf, pwint
@@ -19,13 +19,16 @@ C-----------------------------------------------
       INTEGER, INTENT(in) :: iseq, ictrl_flag
       INTEGER, INTENT(inout) :: ier_flag
       LOGICAL :: lscreen
+      LOGICAL :: loutput !SAL
       INTEGER :: i, j, ij, k, js, jk, lk, lt, lz, jcount
       REAL(dp) :: tfileon, tfileoff
       REAL(dp), ALLOCATABLE :: buffer(:,:), tmp(:,:)
 C-----------------------------------------------
       CALL second0(tfileon)
 
-      IF (lfreeb .AND. vlactive) THEN
+      loutput = (IAND(ictrl_flag, output_flag) .ne. 0) !SAL
+
+      IF (lfreeb .AND. vlactive .AND. loutput) THEN
          ALLOCATE(buffer(numjs_vac, 7), tmp(nznt, 7),stat=i)
          IF (i .NE. 0) CALL STOPMPI(440)
          buffer(:,1) = brv(nuv3min:nuv3max)
@@ -72,7 +75,7 @@ C-----------------------------------------------
          END DO
       END DO
 
-      IF(grank.LT.nranks) THEN
+      IF(grank.LT.nranks .AND. loutput) THEN
         CALL Gather1XArray(vp)
         CALL Gather1XArray(iotas)
         CALL Gather1XArray(phips)
