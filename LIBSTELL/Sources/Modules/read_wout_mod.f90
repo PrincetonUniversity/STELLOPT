@@ -91,7 +91,24 @@
         vn_bsubvmns_sur = 'bsubvmns_sur',                               &
         vn_bsupumns_sur = 'bsupumns_sur',                               &
         vn_bsupvmns_sur = 'bsupvmns_sur',                               &
-        vn_rbc = 'rbc', vn_zbs = 'zbs', vn_rbs = 'rbs', vn_zbc = 'zbc'
+        vn_rbc = 'rbc', vn_zbs = 'zbs', vn_rbs = 'rbs', vn_zbc = 'zbc', &
+
+        vn_wpar = 'wpar', vn_pparmnc = 'pparmnc', vn_ppermnc ='ppermnc',&
+        vn_hotdmnc = 'hotdmnc', vn_pbprmnc = 'pbprmnc',                 &
+        vn_ppprmnc = 'ppprmnc', vn_sigmnc  = 'sigmnc',                  &
+        vn_taumnc  = 'taumnc',                                          &
+        vn_pparmns = 'pparmns', vn_ppermns = 'ppermns',                 &
+        vn_hotdmns = 'hotdmns', vn_pbprmns = 'pbprmns',                 &
+        vn_ppprmns = 'ppprmns', vn_sigmns  = 'sigmns',                  &
+        vn_taumns  = 'taumns',                                          &
+
+        vn_machsq = 'machsq',                                           &
+        vn_protmnc = 'protmnc', vn_protrsqmnc = 'protrsqmnc',           &
+        vn_prprmnc = 'prprmnc',                                         &
+        vn_protmns = 'protmns', vn_protrsqmns = 'protrsqmns',           &
+        vn_prprmns = 'prprmns',                                         &
+        vn_pmap = 'pmap', vn_omega = 'omega', vn_tpotb = 'tpotb'        
+
 ! Long names (ln_...)
       CHARACTER(LEN=*), PARAMETER :: ln_version = 'VMEC Version',       &
         ln_extension = 'Input file extension', ln_mgrid = 'MGRID file', &
@@ -206,7 +223,33 @@
         ln_rbc = 'Initial boundary R cos(mu-nv) coefficients',          &
         ln_zbs = 'Initial boundary Z sin(mu-nv) coefficients',          &
         ln_rbs = 'Initial boundary R sin(mu-nv) coefficients',          &
-        ln_zbc = 'Initial boundary Z cos(mu-nv) coefficients'
+        ln_zbc = 'Initial boundary Z cos(mu-nv) coefficients',          &
+
+        ln_wpar = 'Energy',                                             &
+        ln_pparmnc = 'cosmn compoents of hot part. para. pressure',     &
+        ln_ppermnc = 'cosmn compoents of hot part. perp. pressure',     &
+        ln_hotdmnc = 'cosmn compoents of hot part. density',            &
+        ln_pbprmnc = 'cosmn compoents of hot part. para. pres. grad.',  &
+        ln_ppprmnc = 'cosmn compoents of hot part. perp. pres. grad.',  &
+        ln_sigmnc  = 'cosmn firehose stability variable',               &
+        ln_taumnc  = 'cosmn mirror stability variable',                 &
+        ln_pparmns = 'sinmn compoents of hot part. para. pressure',     &
+        ln_ppermns = 'sinmn compoents of hot part. perp. pressure',     &
+        ln_hotdmns = 'sinmn compoents of hot part. density',            &
+        ln_pbprmns = 'sinmn compoents of hot part. para. pres. grad.',  &
+        ln_ppprmns = 'sinmn compoents of hot part. perp. pres. grad.',  &
+        ln_sigmns  = 'sinmn firehose stability variable',               &
+        ln_taumns  = 'sinmn mirror stability variable',                 &
+
+        ln_machsq = 'Mach # on axis (squared)',                         &
+        ln_protmnc = 'cosmn components of pressure',                    &
+        ln_protrsqmnc = 'cosmn component of rotational energy',         &
+        ln_prprmnc = 'cosmn components of radial pressure gradient',    &
+        ln_protmns = 'sinmn components of pressure',                    &
+        ln_protrsqmns = 'sinmn component of rotational energy',         &
+        ln_prprmns = 'sinmn components of radial pressure gradient',    &
+        ln_pmap = '<p(s,R)>', ln_omega = 'Toroidal Angular Freq.',      &
+        ln_tpotb = 'T_perp/T_parallel or T(flow)'                   
 #endif
 !-----------------------------------------------
 !   L o c a l   V a r i a b l e s
@@ -214,21 +257,26 @@
       INTEGER :: nfp, ns, mpol, ntor, mnmax, mnmax_nyq, itfsq, niter,   &
           iasym, ireconstruct, ierr_vmec, imse, itse, nstore_seq,       &
           isnodes, ipnodes, imatch_phiedge, isigng, mnyq, nnyq, ntmax,  &
-          mnmaxpot
+          mnmaxpot, vmec_type
       REAL(rprec) :: wb, wp, gamma, pfac, rmax_surf, rmin_surf,         &
           zmax_surf, aspect, betatot, betapol, betator, betaxis, b0,    &
           tswgt, msewgt, flmwgt, bcwgt, phidiam, version_,              &
           delphid, IonLarmor, VolAvgB,                                  &
           fsql, fsqr, fsqz, ftolv,                                      &
-          Aminor, Rmajor, Volume, RBtor, RBtor0, Itor
+          Aminor, Rmajor, Volume, RBtor, RBtor0, Itor, machsq
       REAL(rprec), ALLOCATABLE :: rzl_local(:,:,:,:)
       REAL(rprec), DIMENSION(:,:), ALLOCATABLE ::                       &
           rmnc, zmns, lmns, rmns, zmnc, lmnc, bmnc, gmnc, bsubumnc,     &
           bsubvmnc, bsubsmns, bsupumnc, bsupvmnc, currvmnc,             &
-          currumnc, bbc, raxis, zaxis
+          currumnc, bbc, raxis, zaxis 
       REAL(rprec), DIMENSION(:,:), ALLOCATABLE ::                       &
           bmns, gmns, bsubumns, bsubvmns, bsubsmnc,                     &
           bsupumns, bsupvmns, currumns, currvmns
+      REAL(rprec), DIMENSION(:,:), ALLOCATABLE ::                       &
+          pparmnc, ppermnc, hotdmnc, pbprmnc, ppprmnc, sigmnc, taumnc,  & ! SAL - ANIMEC
+          pparmns, ppermns, hotdmns, pbprmns, ppprmns, sigmns, taumns,  & ! SAL - ANIMEC
+          protmnc, protrsqmnc, prprmnc,                                 & ! SAL - FLOW
+          protmns, protrsqmns, prprmns                                    ! SAL - FLOW
       REAL(rprec), DIMENSION(:), ALLOCATABLE ::                         &
           bsubumnc_sur, bsubumns_sur, bsubvmnc_sur, bsubvmns_sur,       &
           bsupumnc_sur, bsupumns_sur, bsupvmnc_sur, bsupvmns_sur
@@ -242,6 +290,7 @@
          sknots, ystark, y2stark, pknots, ythom, y2thom,                &
          anglemse, rmid, qmid, shear, presmid, alfa, curmid, rstark,    &
          qmeas, datastark, rthom, datathom, dsiobt      
+      REAL(rprec), DIMENSION(:), ALLOCATABLE :: pmap, omega, tpotb        ! SAL -FLOW
       LOGICAL :: lasym, lthreed, lwout_opened=.false.
       CHARACTER :: mgrid_file*200, input_extension*100
       CHARACTER :: pmass_type*20, pcurr_type*20, piota_type*20
@@ -374,7 +423,8 @@
 !------------------------------------------------
 !   L o c a l   V a r i a b l e s
 !------------------------------------------------
-      INTEGER :: istat(15), i, j, k, js, m, n, n1, mn, nparts_in
+      INTEGER :: istat(15), i, j, k, js, m, n, n1, mn, nparts_in, &
+                 i_animec, i_flow
       CHARACTER(LEN=256) :: vmec_version
       LOGICAL            :: lcurr
 !------------------------------------------------
@@ -394,6 +444,21 @@
       READ (iunit, '(a)', iostat=istat(2), err=1000) vmec_version
 
       i = INDEX(vmec_version,'=')
+      !!!! ADDED BY SAL
+      i_animec = INDEX(vmec_version,'_ANIMEC')
+      i_flow = INDEX(vmec_version,'_FLOW')
+      vmec_type = 0
+      IF (i_animec > 0) THEN
+         vmec_type = 1 ! ANIMEC
+         vmec_version = vmec_version(1:i_animec-1)
+      END IF
+      IF (i_flow > 0) THEN
+         vmec_type = 2 ! FLOW
+         vmec_version = vmec_version(1:i_flow-1)
+      END IF
+      !!!! END SAL Addition
+
+
       IF (i .ge. 0) THEN
          READ(vmec_version(i+1:LEN_TRIM(vmec_version)),*) version_
       ELSE
@@ -413,6 +478,9 @@
          ELSE
             READ (iunit, *, iostat=istat(2), err=1000) wb, wp, gamma,   &
                pfac, rmax_surf, rmin_surf, zmax_surf
+         END IF
+         IF (vmec_type == 2) THEN !SAL
+            READ(iunit, *,iostat=istat(2), err=1000) machsq
          END IF
          IF (version_ .le. (8.0+eps_w)) THEN
             READ (iunit, *, iostat=istat(2), err=1000) nfp, ns, mpol,   &
@@ -470,6 +538,25 @@
                    bsupumns(mnmax_nyq,ns), bsupvmns(mnmax_nyq,ns),      &
                    currumns(mnmax_nyq,ns), currvmns(mnmax_nyq,ns),      &
                    stat=istat(6))
+     
+      IF (vmec_type == 1) THEN   ! SAL
+         ALLOCATE (pparmnc(mnmax_nyq,ns),ppermnc(mnmax_nyq,ns),         &
+                   hotdmnc(mnmax_nyq,ns),pbprmnc(mnmax_nyq,ns),         &
+                   ppprmnc(mnmax_nyq,ns),sigmnc(mnmax_nyq,ns),          &
+                   taumnc(mnmax_nyq,ns),stat=istat(6))
+         IF (lasym)                                                     &
+            ALLOCATE (pparmns(mnmax_nyq,ns),ppermns(mnmax_nyq,ns),      &
+                      hotdmns(mnmax_nyq,ns),pbprmns(mnmax_nyq,ns),      &
+                      ppprmns(mnmax_nyq,ns),sigmns(mnmax_nyq,ns),       &
+                      taumns(mnmax_nyq,ns),stat=istat(6))
+      ELSE IF (vmec_type == 2) THEN
+         ALLOCATE (pmap(ns), omega(ns), tpotb(ns),stat=istat(6))
+         ALLOCATE (protmnc(mnmax_nyq,ns),protrsqmnc(mnmax_nyq,ns),      &
+                   prprmnc(mnmax_nyq,ns),stat=istat(6))
+         IF (lasym)                                                     &
+            ALLOCATE (protmns(mnmax_nyq,ns),protrsqmns(mnmax_nyq,ns),   &
+                      prprmns(mnmax_nyq,ns),stat=istat(6))
+      END IF
 
       fsqt = 0; wdot = 0; raxis = 0; zaxis = 0
 
@@ -532,15 +619,47 @@
                xm_nyq(mn) = REAL(m,rprec)
                xn_nyq(mn) = REAL(n,rprec)
             END IF
-            READ (iunit, *, iostat=istat(8), err=1000)                  &
-              bmnc(mn,js), gmnc(mn,js), bsubumnc(mn,js),                &
-              bsubvmnc(mn,js), bsubsmns(mn,js),                         &
-              bsupumnc(mn,js), bsupvmnc(mn,js)
-            IF (lasym) THEN
+            IF (vmec_type == 1) THEN  !SAL (ELSE statement below is orriginal)
                READ (iunit, *, iostat=istat(8), err=1000)               &
-               bmns(mn,js), gmns(mn,js), bsubumns(mn,js),               &
-               bsubvmns(mn,js), bsubsmnc(mn,js),                        &
-               bsupumns(mn,js), bsupvmns(mn,js)
+               bmnc(mn,js), gmnc(mn,js), bsubumnc(mn,js),               &
+               bsubvmnc(mn,js), bsubsmns(mn,js),                        &
+               bsupumnc(mn,js), bsupvmnc(mn,js),                        &
+               pparmnc (mn,js), ppermnc (mn,js), hotdmnc (mn,js),       &
+               pbprmnc (mn,js), ppprmnc (mn,js), sigmnc  (mn,js),       &
+               taumnc  (mn,js)
+               IF (lasym) THEN
+                  READ (iunit, *, iostat=istat(8), err=1000)            &
+                  bmns(mn,js), gmns(mn,js), bsubumns(mn,js),            &
+                  bsubvmns(mn,js), bsubsmnc(mn,js),                     &
+                  bsupumns(mn,js), bsupvmns(mn,js),                     &
+                  pparmns (mn,js), ppermns (mn,js), hotdmns (mn,js),    &
+                  pbprmns (mn,js), ppprmns (mn,js), sigmns  (mn,js),    &
+                  taumns  (mn,js)
+               END IF
+            ELSE IF (vmec_type ==2) THEN
+               READ (iunit, *, iostat=istat(8), err=1000)               &
+               bmnc(mn,js), gmnc(mn,js), bsubumnc(mn,js),               &
+               bsubvmnc(mn,js), bsubsmns(mn,js),                        &
+               bsupumnc(mn,js), bsupvmnc(mn,js),                        &
+               protmnc (mn,js), protrsqmnc(mn,js), prprmnc(mn,js)
+               IF (lasym) THEN
+                  READ (iunit, *, iostat=istat(8), err=1000)            &
+                  bmns(mn,js), gmns(mn,js), bsubumns(mn,js),            &
+                  bsubvmns(mn,js), bsubsmnc(mn,js),                     &
+                  bsupumns(mn,js), bsupvmns(mn,js),                     &
+                  protmns (mn,js), protrsqmns(mn,js), prprmns(mn,js)
+               END IF
+            ELSE
+               READ (iunit, *, iostat=istat(8), err=1000)               &
+                 bmnc(mn,js), gmnc(mn,js), bsubumnc(mn,js),             &
+                 bsubvmnc(mn,js), bsubsmns(mn,js),                      &
+                 bsupumnc(mn,js), bsupvmnc(mn,js)
+               IF (lasym) THEN
+                  READ (iunit, *, iostat=istat(8), err=1000)            &
+                  bmns(mn,js), gmns(mn,js), bsubumns(mn,js),            &
+                  bsubvmns(mn,js), bsubsmnc(mn,js),                     &
+                  bsupumns(mn,js), bsupvmns(mn,js)
+            END IF
             END IF
          END DO
 
@@ -777,7 +896,7 @@
 !------------------------------------------------
 !   L o c a l   V a r i a b l e s
 !------------------------------------------------
-      INTEGER :: nwout, ierror
+      INTEGER :: nwout, ierror, i_animec, i_flow
       INTEGER, DIMENSION(3)   :: dimlens
 !      REAL(rprec) :: ohs
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: raxis_cc, raxis_cs,     &
@@ -792,6 +911,16 @@
 
 ! Be sure all arrays are deallocated
       CALL read_wout_deallocate
+      
+      ! ANIMEC/FLOW -SAL
+      i_animec = 0
+      i_flow   = 0
+      vmec_type = 0
+      
+      CALL cdf_inquire(nwout, vn_pparmnc, dimlens, ier=ierror)
+      IF (ierror.eq.0) vmec_type = 1
+      CALL cdf_inquire(nwout, vn_omega, dimlens, ier=ierror)
+      IF (ierror.eq.0) vmec_type = 2
 
 ! Read in scalar variables
       CALL cdf_read(nwout, vn_error, ierr_vmec)
@@ -864,6 +993,12 @@
          CALL cdf_read(nwout, vn_nobd, nobd)
          CALL cdf_read(nwout, vn_nbset, nbsets)
       END IF
+      
+      ! ANIMEC/FLOW -SAL
+      CALL cdf_inquire(nwout, vn_machsq, dimlens, ier=ierror)
+      IF (ierror.eq.0) CALL cdf_read(nwout, vn_machsq, machsq)
+      CALL cdf_inquire(nwout, vn_wpar, dimlens, ier=ierror)
+      IF (ierror.eq.0) CALL cdf_read(nwout, vn_wpar, wp)  ! This overwrites wp with wpar
 
 ! Inquire existence, dimensions of arrays for allocation
 ! 1D Arrays
@@ -999,6 +1134,14 @@
          CALL cdf_inquire(nwout, vn_curlab, dimlens)
          ALLOCATE (curlabel(dimlens(2)), stat = ierror)
       ENDIF
+      
+      ! ANIMEC/FLOW -SAL
+      CALL cdf_inquire(nwout, vn_pmap, dimlens, ier=ierror)
+      IF (ierror == 0) ALLOCATE (pmap(dimlens(1)), stat = ierror)
+      CALL cdf_inquire(nwout, vn_omega, dimlens, ier=ierror)
+      IF (ierror == 0) ALLOCATE (omega(dimlens(1)), stat = ierror)
+      CALL cdf_inquire(nwout, vn_tpotb, dimlens, ier=ierror)
+      IF (ierror == 0) ALLOCATE (tpotb(dimlens(1)), stat = ierror)
 
 ! 2D Arrays
       CALL cdf_inquire(nwout, vn_rmnc, dimlens)
@@ -1023,6 +1166,38 @@
       ALLOCATE (bsupumnc(dimlens(1),dimlens(2)), stat = ierror)
       CALL cdf_inquire(nwout, vn_bsupvmnc, dimlens)
       ALLOCATE (bsupvmnc(dimlens(1),dimlens(2)), stat = ierror)
+
+!     ANIMEC/FLOW -SAL
+      CALL cdf_inquire(nwout, vn_pparmnc, dimlens, ier=ierror)
+      IF (ierror == 0) ALLOCATE (pparmnc(dimlens(1),dimlens(2)),        &
+                                stat = ierror)
+      CALL cdf_inquire(nwout, vn_ppermnc, dimlens, ier=ierror)
+      IF (ierror == 0) ALLOCATE (ppermnc(dimlens(1),dimlens(2)),        &
+                                stat = ierror)
+      CALL cdf_inquire(nwout, vn_hotdmnc, dimlens, ier=ierror)
+      IF (ierror == 0) ALLOCATE (hotdmnc(dimlens(1),dimlens(2)),        &
+                                stat = ierror)
+      CALL cdf_inquire(nwout, vn_pbprmnc, dimlens, ier=ierror)
+      IF (ierror == 0) ALLOCATE (pbprmnc(dimlens(1),dimlens(2)),        &
+                                 stat = ierror)
+      CALL cdf_inquire(nwout, vn_ppprmnc, dimlens, ier=ierror)
+      IF (ierror == 0) ALLOCATE (ppprmnc(dimlens(1),dimlens(2)),        &
+                                 stat = ierror)
+      CALL cdf_inquire(nwout, vn_sigmnc, dimlens, ier=ierror)
+      IF (ierror == 0) ALLOCATE (sigmnc(dimlens(1),dimlens(2)),         &
+                                 stat = ierror)
+      CALL cdf_inquire(nwout, vn_taumnc, dimlens, ier=ierror)
+      IF (ierror == 0) ALLOCATE (taumnc(dimlens(1),dimlens(2)),         &
+                                 stat = ierror)
+      CALL cdf_inquire(nwout, vn_protmnc, dimlens, ier=ierror)
+      IF (ierror == 0) ALLOCATE (protmnc(dimlens(1),dimlens(2)),        &
+                                 stat = ierror)
+      CALL cdf_inquire(nwout, vn_protrsqmnc, dimlens, ier=ierror)
+      IF (ierror == 0) ALLOCATE (protrsqmnc(dimlens(1),dimlens(2)),     &
+                                 stat = ierror)
+      CALL cdf_inquire(nwout, vn_prprmnc, dimlens, ier=ierror)
+      IF (ierror == 0) ALLOCATE (prprmnc(dimlens(1),dimlens(2)),        &
+                                 stat = ierror)
 
 !  The curr*mn* arrays have the same dimensions as the bsu**mn* arrays. No need
 !  to inquire about the dimension sizes.
@@ -1064,6 +1239,38 @@
       ALLOCATE (bsupumns(dimlens(1),dimlens(2)), stat = ierror)
       CALL cdf_inquire(nwout, vn_bsupvmns, dimlens)
       ALLOCATE (bsupvmns(dimlens(1),dimlens(2)), stat = ierror)
+      
+      ! ANIMEC/FLOW -SAL
+      CALL cdf_inquire(nwout, vn_pparmns, dimlens, ier=ierror)
+      IF (ierror == 0) ALLOCATE (pparmns(dimlens(1),dimlens(2)),        &
+                                 stat = ierror)
+      CALL cdf_inquire(nwout, vn_ppermns, dimlens, ier=ierror)
+      IF (ierror == 0) ALLOCATE (ppermns(dimlens(1),dimlens(2)),        &
+                                 stat = ierror)
+      CALL cdf_inquire(nwout, vn_hotdmns, dimlens, ier=ierror)
+      IF (ierror == 0) ALLOCATE (hotdmns(dimlens(1),dimlens(2)),        &
+                                 stat = ierror)
+      CALL cdf_inquire(nwout, vn_pbprmns, dimlens, ier=ierror)
+      IF (ierror == 0) ALLOCATE (pbprmns(dimlens(1),dimlens(2)),        &
+                                 stat = ierror)
+      CALL cdf_inquire(nwout, vn_ppprmns, dimlens, ier=ierror)
+      IF (ierror == 0) ALLOCATE (ppprmns(dimlens(1),dimlens(2)),        &
+                                 stat = ierror)
+      CALL cdf_inquire(nwout, vn_sigmns, dimlens, ier=ierror)
+      IF (ierror == 0) ALLOCATE (sigmns(dimlens(1),dimlens(2)),         &
+                                 stat = ierror)
+      CALL cdf_inquire(nwout, vn_taumns, dimlens, ier=ierror)
+      IF (ierror == 0) ALLOCATE (taumns(dimlens(1),dimlens(2)),         &
+                                 stat = ierror)
+      CALL cdf_inquire(nwout, vn_protmns, dimlens, ier=ierror)
+      IF (ierror == 0) ALLOCATE (protmns(dimlens(1),dimlens(2)),        &
+                                 stat = ierror)
+      CALL cdf_inquire(nwout, vn_protrsqmns, dimlens, ier=ierror)
+      IF (ierror == 0) ALLOCATE (protrsqmns(dimlens(1),dimlens(2)),     &
+                                 stat = ierror)
+      CALL cdf_inquire(nwout, vn_prprmns, dimlens, ier=ierror)
+      IF (ierror == 0) ALLOCATE (prprmns(dimlens(1),dimlens(2)),        &
+                                 stat = ierror)
 
 !  The curr*mn* arrays have the same dimensions as the bsu**mn* arrays. No need
 !  to inquire about the dimension sizes.
@@ -1165,6 +1372,35 @@
             CALL cdf_read(nwout, vn_bsubvmns_sur, bsubvmns_sur)
             CALL cdf_read(nwout, vn_bsupumns_sur, bsupumns_sur)
             CALL cdf_read(nwout, vn_bsupvmns_sur, bsupvmns_sur)
+         END IF
+      END IF
+      
+      ! ANIMEC/FLOW -SAL
+      IF (vmec_type == 1) THEN
+         CALL cdf_read(nwout, vn_pparmnc, pparmnc)
+         CALL cdf_read(nwout, vn_ppermnc, ppermnc)
+         CALL cdf_read(nwout, vn_hotdmnc, hotdmnc)
+         CALL cdf_read(nwout, vn_pbprmnc, pbprmnc)
+         CALL cdf_read(nwout, vn_ppprmnc, ppprmnc)
+         CALL cdf_read(nwout,  vn_sigmnc,  sigmnc)
+         CALL cdf_read(nwout,  vn_taumnc,  taumnc)
+         IF (lasym) THEN
+            CALL cdf_read(nwout, vn_pparmns, pparmns)
+            CALL cdf_read(nwout, vn_ppermns, ppermns)
+            CALL cdf_read(nwout, vn_hotdmns, hotdmns)
+            CALL cdf_read(nwout, vn_pbprmns, pbprmns)
+            CALL cdf_read(nwout, vn_ppprmns, ppprmns)
+            CALL cdf_read(nwout,  vn_sigmns,  sigmns)
+            CALL cdf_read(nwout,  vn_taumns,  taumns)
+         END IF
+      ELSE IF (vmec_type == 2) THEN
+         CALL cdf_read(nwout,    vn_protmnc,    protmnc)
+         CALL cdf_read(nwout,    vn_prprmnc,    prprmnc)
+         CALL cdf_read(nwout, vn_protrsqmnc, protrsqmnc)
+         IF (lasym) THEN
+            CALL cdf_read(nwout,    vn_protmns,    protmns)
+            CALL cdf_read(nwout,    vn_prprmns,    prprmns)
+            CALL cdf_read(nwout, vn_protrsqmns, protrsqmns)
          END IF
       END IF
 
