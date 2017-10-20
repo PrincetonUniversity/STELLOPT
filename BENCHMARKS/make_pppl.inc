@@ -63,8 +63,9 @@
 #######################################################################
 #            NTCC Options
 #######################################################################
-  LNTCC = F
-  NTCC_INC = $(CPPFLAGS)
+  LNTCC = T
+  NTCCHOME = /u/slazerso/src/GCC6_LIBS/install
+  NTCC_INC = -I$(NTCCHOME)/include -I$(NTCCHOME)/mod
   NTCC_LIB = -L$(NTCCHOME)/lib -laladdinsub -lr8slatec -ladpak\
              -lcppsub -lcomput -lpspline -lportlib -lezcdf -lmds_sub \
              -lmdstransp -lvaxonly
@@ -96,12 +97,11 @@
 #######################################################################
 #            GENE Options
 #######################################################################
-  LGENE = F
+  LGENE = T
   GENE_INC = -I$(GENE_PATH)
   GENE_DIR = $(GENE_PATH)
   LIB_GENE = libgene.a
   GENE_LIB = $(GENE_DIR)/$(LIB_GENE) \
-             -L/u/slazerso/src/GENE17_2016/external/pppl_cluster/futils/src -lfutils \
              -L$(FFTWHOME)/lib -lfftw3 \
              -L$(SLEPC_DIR)/$(PETSC_ARCH)/lib -lslepc \
              -L$(PETSC_DIR)/$(PETSC_ARCH)/lib -lpetsc -lX11
