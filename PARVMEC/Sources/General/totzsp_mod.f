@@ -359,7 +359,8 @@ C-----------------------------------------------
 C   D u m m y   A r g u m e n t s
 C-----------------------------------------------
       INTEGER, INTENT(IN) :: nsmin, nsmax
-      REAL(dp), DIMENSION(0:ntor,ns), INTENT(INOUT) :: rmnss, zmncs
+!      REAL(dp), DIMENSION(0:ntor,ns), INTENT(INOUT) :: rmnss, zmncs
+      REAL(dp), DIMENSION(:,:), INTENT(INOUT) :: rmnss, zmncs !SAL 10/20/17 fix GCC warning at runtime.
 C-----------------------------------------------
 C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
@@ -384,8 +385,10 @@ C-----------------------------------------------
 C   D u m m y   A r g u m e n t s
 C-----------------------------------------------
       INTEGER, INTENT(IN) :: nsmin, nsmax
-      REAL(dp), DIMENSION(0:ntor,ns), INTENT(INOUT) :: 
-     1                                           rmnsc, zmncc
+!      REAL(dp), DIMENSION(0:ntor,ns), INTENT(INOUT) :: 
+!     1                                           rmnsc, zmncc
+      REAL(dp), DIMENSION(:,:), INTENT(INOUT) :: 
+     1                                           rmnsc, zmncc  !SAL 10/20/17 fix GCC warning at runtime.
 C-----------------------------------------------
 C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
