@@ -2128,6 +2128,58 @@
         END SUBROUTINE jacobian_from_flx
 
         
+        SUBROUTINE vp_from_s(s_val, vp, error_status)
+          USE EZspline
+          IMPLICIT NONE
+          DOUBLE PRECISION, INTENT(in) :: s_val
+          DOUBLE PRECISION, INTENT(out) :: vp
+          INTEGER, INTENT(inout) :: error_status
+          INTEGER :: ez_status
+          ez_status = 0
+
+          IF (error_status < 0) RETURN
+          vp = 0
+          
+          IF (.NOT. EZspline_allocated(Vp_spl)) CALL initialize_splines_fsa(error_status)
+          IF (error_status < 0) RETURN
+          
+
+          CALL EZSPLINE_isInDomain(Vp_spl, SQRT(s_val), ez_status)
+          IF (ez_status == 0) THEN
+             CALL EZspline_interp(Vp_spl, SQRT(s_val), vp, ez_status)
+             IF (ez_status .NE. 0) error_status = -200 - ABS(ez_status)
+          ELSE
+             error_status = -2
+          END IF
+
+        END SUBROUTINE vp_from_s
+
+        
+        SUBROUTINE surf_area_from_s(s_val, surf_area, error_status)
+          USE EZspline
+          IMPLICIT NONE
+          DOUBLE PRECISION, INTENT(in) :: s_val
+          DOUBLE PRECISION, INTENT(out) :: surf_area
+          INTEGER, INTENT(inout) :: error_status
+          INTEGER :: ez_status
+          DOUBLE PRECISION :: vp, fsa_gradrho
+          ez_status = 0
+
+          IF (error_status < 0) RETURN
+          surf_area = 0
+
+          CALL vp_from_s(s_val, vp, error_status)
+          IF (error_status < 0) RETURN
+          
+          CALL fsa_gradrho_from_s(s_val, fsa_gradrho, error_status)
+          IF (error_status < 0) RETURN
+
+          ! DV/ds * ds/drho * <grad(rho)>
+          surf_area = vp*2.0*SQRT(s_val)*fsa_gradrho
+          
+        END SUBROUTINE surf_area_from_s
+
+        
         SUBROUTINE fsa_modb_from_s(s_val, fsa_modb, error_status)
           USE EZspline
           IMPLICIT NONE
