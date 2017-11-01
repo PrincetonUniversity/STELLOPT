@@ -919,8 +919,12 @@ C-----------------------------------------------
 ! Read in scalar variables
       CALL cdf_read(nwout, vn_error, ierr_vmec)
       
-      IF (ierr_vmec.ne.norm_term_flag .and. ierr_vmec.ne.more_iter_flag)
-     1   GOTO 1000
+      IF (ierr_vmec.ne.norm_term_flag
+     1     .and. ierr_vmec.ne.more_iter_flag
+     2     .and. ierr_vmec.ne.jac75_flag) THEN
+         ierr = -2
+         GOTO 1000
+      END IF
 
       CALL cdf_read(nwout, vn_version, version_)
       CALL cdf_read(nwout, vn_extension, input_extension)
