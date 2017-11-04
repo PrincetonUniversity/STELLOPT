@@ -1,1 +1,1 @@
-BENCHMARKS/make_pppl.inc
+SHARE/make_pppl.inc
