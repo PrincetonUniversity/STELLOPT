@@ -35,7 +35,7 @@ LIB = libstell.a
 
 # Handle Which Code is being CALLED
 ifeq ($(MAKECMDGOALS),xstelloptv2)
-  PRECOMP += -DBNORM -DDKES_OPT -DBEAMS3D_OPT -DJINV_OPT -DNEO_OPT -DTXPORT_OPT -DDIAGNO_OPT  -DDKES_OPT  -DNEO_OPT  -DSKS  -DSKS2
+  PRECOMP += -DBNORM -DBEAMS3D_OPT -DJINV_OPT -DTXPORT_OPT -DDIAGNO_OPT -DSKS  -DSKS2
   VMEC_DIR ?= ../../VMEC2000
   LIB_VMEC= libvmec.a
   MOD_PATH+= -I$(VMEC_DIR)/$(LOCTYPE)
@@ -57,18 +57,12 @@ ifeq ($(MAKECMDGOALS),xstelloptv2)
   DIAGNO_DIR = ../../DIAGNO
   LIB_DIAGNO= libdiagno.a
   MOD_PATH+= -I$(DIAGNO_DIR)/$(LOCTYPE)
-  DKES_DIR= ../../DKES
-  LIB_DKES= libdkes.a
-  MOD_PATH+= -I$(DKES_DIR)/$(LOCTYPE)
   JINV_DIR = ../../J_INVARIANT
   LIB_JINV = libjinv.a
   MOD_PATH+= -I$(JINV_DIR)/$(LOCTYPE)
   MGRID_DIR= ../../MAKEGRID
   LIB_MGRID= libmakegrid.a
   MOD_PATH+= -I$(MGRID_DIR)/$(LOCTYPE)
-  NEO_DIR = ../../NEO
-  LIB_NEO = libneo.a
-  MOD_PATH+= -I$(NEO_DIR)/$(LOCTYPE)
   LIB_LINK=  $(VMEC_DIR)/$(LOCTYPE)/$(LIB_VMEC)  \
 	$(BEAMS3D_DIR)/$(LOCTYPE)/$(LIB_BEAMS3D) \
 	$(BOOTSJ_DIR)/$(LOCTYPE)/$(LIB_BOOTSJ) \
@@ -76,10 +70,28 @@ ifeq ($(MAKECMDGOALS),xstelloptv2)
 	$(BOOZ_DIR)/$(LOCTYPE)/$(LIB_BOOZ) \
 	$(COBRA_DIR)/$(LOCTYPE)/$(LIB_COBRA) \
 	$(DIAGNO_DIR)/$(LOCTYPE)/$(LIB_DIAGNO) \
-	$(DKES_DIR)/$(LOCTYPE)/$(LIB_DKES) \
 	$(JINV_DIR)/$(LOCTYPE)/$(LIB_JINV) \
-	$(MGRID_DIR)/$(LOCTYPE)/$(LIB_MGRID) \
-	$(NEO_DIR)/$(LOCTYPE)/$(LIB_NEO)
+	$(MGRID_DIR)/$(LOCTYPE)/$(LIB_MGRID) 
+  ifeq ($(LDKES),T)
+    DKES_DIR = ../../DKES
+    LIB_DKES = libdkes.a
+    MOD_PATH += -I$(DKES_DIR)/$(LOCTYPE)
+    PRECOMP += -DDKES_OPT
+    LIB_LINK += $(DKES_DIR)/$(LOCTYPE)/$(LIB_DKES)
+  else
+    DKES_DIR = 
+    LIB_DKES = 
+  endif
+  ifeq ($(LNEO),T)
+    NEO_DIR = ../../NEO
+    LIB_NEO = libneo.a
+    MOD_PATH += -I$(NEO_DIR)/$(LOCTYPE)
+    PRECOMP += -DNEO_OPT
+    LIB_LINK += $(NEO_DIR)/$(LOCTYPE)/$(LIB_NEO)
+  else
+    NEO_DIR = 
+    LIB_NEO = 
+  endif
 else
   LGENE = F
   LCOILOPT = F
