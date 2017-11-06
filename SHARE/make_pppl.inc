@@ -17,10 +17,22 @@
 #  FLAGS_R = -O2 -g -fexternal-blas -fbacktrace -fcheck=all 
   FLAGS_R = -O0 -fexternal-blas -fbacktrace
   FLAGS_D = -g -O0 -fexternal-blas -fcheck=all 
-#  LIBS    = -L$(BLASHOME)/lib -lopenblas \
-#            -L$(SCALAPACK_HOME)/lib -lscalapack \
+
+# Crutch for broken module vars
+  FFTWHOME = /usr/pppl/gcc/6.1-pkgs/openmpi-1.10.3-pkgs/fftw-3.3.4
+  HDF5_HOME = /usr/pppl/gcc/6.1-pkgs/openmpi-1.10.3-pkgs/hdf5-parallel-1.10.0-patch1
+  BLACS_HOME = /usr/pppl/gcc/6.1-pkgs/openmpi-1.10.3-pkgs/blacs-1.1alpha
+  NETCDF_F = /usr/pppl/gcc/6.1-pkgs/netcdf-fortran-4.4.4
+  NETCDF_C = /usr/pppl/gcc/6.1-pkgs/netcdf-c-4.4.1
+
+  LIBS    = -L$(BLASHOME)/lib -lopenblas \
+            -L$(SCALAPACK_HOME)/lib -lscalapack 
 #            -L$(BLACS_HOME)/lib -lmpiblacs -lmpiblacsCinit \
 #            -lmpiblacsF77init -lmpiblacs 
+
+  LIBS    += ${BLACS_HOME}/lib/blacs_MPI-LINUX-0.a
+  LIBS    += ${BLACS_HOME}/lib/blacsF77init_MPI-LINUX-0.a
+  LIBS    += ${BLACS_HOME}/lib/blacsCinit_MPI-LINUX-0.a
 
 #   FOR GCC6  (note that we use CFLAGS for include but only need
 #              to set it once below) 
@@ -53,28 +65,34 @@
 #            NETCDF Options
 #######################################################################
   LNETCDF = T
-  NETCDF_INC = $(CPPFLAGS)
-  NETCDF_LIB = -L$(NETCDF_HOME)/lib -lnetcdf -lnetcdff
-  NETCDF_LIB = -lnetcdf -lnetcdff
-
-  # FOR GCC6
-  #NETCDF_LIB = -L$(NETCDF_HOME)/lib -lnetcdff
+  NETCDF_INC = -I$(NETCDF_F)/include -I$(NETCDF_C)/include 
+  NETCDF_LIB = -L$(NETCDF_C)/lib -lnetcdf -L$(NETCDF_F)/lib -lnetcdff
 
 #######################################################################
 #            NTCC Options
 #######################################################################
   LNTCC = T
-  NTCCHOME = /u/slazerso/src/GCC6_LIBS/install
-  NTCC_INC = -I$(NTCCHOME)/include -I$(NTCCHOME)/mod
+  NTCC_INC = -I$(NTCCHOME)/mod
   NTCC_LIB = -L$(NTCCHOME)/lib -laladdinsub -lr8slatec -ladpak\
              -lcppsub -lcomput -lpspline -lportlib -lezcdf -lmds_sub \
              -lmdstransp -lvaxonly
+  NTCC_LIB = $(NTCCHOME)/lib/aladdinsub.a
+  NTCC_LIB += $(NTCCHOME)/lib/r8slatec.a
+  NTCC_LIB += $(NTCCHOME)/lib/adpak.a
+  NTCC_LIB += $(NTCCHOME)/lib/cppsub.a
+  NTCC_LIB += $(NTCCHOME)/lib/comput.a
+  NTCC_LIB += $(NTCCHOME)/lib/pspline.a
+  NTCC_LIB += $(NTCCHOME)/lib/portlib.a
+  NTCC_LIB += $(NTCCHOME)/lib/ezcdf.a
+  NTCC_LIB += $(NTCCHOME)/lib/mds_sub.a
+  NTCC_LIB += $(NTCCHOME)/lib/mdstransp.a
+  NTCC_LIB += $(NTCCHOME)/lib/vaxonly.a
 
 #######################################################################
 #            HDF5 Options
 #######################################################################
   LHDF5 = T
-  HDF5_INC =  #Only need to set NETCDF
+  HDF5_INC =  -I$(HDF5_HOME)/include
   HDF5_LIB = -L$(HDF5_HOME)/lib -lhdf5_hl -lhdf5_fortran -lhdf5 \
              -lhdf5hl_fortran -lpthread -lz -lm
   HDF5_LIB = -lhdf5_hl -lhdf5_fortran -lhdf5 \
@@ -84,14 +102,14 @@
 #             PGPLOT Options
 #######################################################################
   LPGPLOT = T
-  PGPLOT_INC = #Only need to set NETCDF
+  PGPLOT_INC = 
   PGPLOT_LIB = -L$(PGPLOT_DIR) -lpgplot -L/usr/X11R6/lib -lX11
 
 #######################################################################
 #             SILO Options
 #######################################################################
   LSILO = T
-  SILO_INC = #Only need to set NETCDF
+  SILO_INC = -I$(SILOHOME)/include
   SILO_LIB = -L$(SILOHOME)/lib -lsilo
 
 #######################################################################
