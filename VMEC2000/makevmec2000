@@ -1,11 +1,11 @@
-#This makefile goes in dirs Debug and Release (first level below PARVMEC)
+#This makefile goes in dirs Debug and Release (first level below XVMEC2000)
 include ../../make.inc
 FFILE   = '$*''.f'
 CFILE   = '$*''.c'
 F90FILE = '$*''.f90'
 SPATH   = ../Sources
 #Contains list of source files (.o) and dependencies
-DEPLIST = PARVMEC.dep
+DEPLIST = VMEC2000.dep
 OBJLIST = ../ObjectList
 
 #Includes source files and dependency list
@@ -15,7 +15,7 @@ VPATH = $(SPATH):$(SPATH)/General:$(SPATH)/Initialization_Cleanup:$(SPATH)/Hessi
 
 .SUFFIXES :
 .SUFFIXES : .f .f90 .o
-xparvmec:  $(LIB) $(ObjectFiles)
+xvmec2000:  $(LIB) $(ObjectFiles)
 	$(LINK) $@ $(ObjectFiles) $(LIB_LINK)
 #Compile object files defined in OBJLIST.
 .f.o :

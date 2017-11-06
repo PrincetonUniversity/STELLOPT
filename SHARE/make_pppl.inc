@@ -272,7 +272,7 @@ endif
 ifeq ($(MAKECMDGOALS),xanimec)
   PRECOMP += -D_ANIMEC
 endif
-ifeq ($(MAKECMDGOALS),xparvmec)
+ifeq ($(MAKECMDGOALS),xvmec2000)
   PRECOMP += -DSKS  -DSKS2
 endif
 ifeq ($(MAKECMDGOALS),xsiesta)
@@ -339,7 +339,6 @@ LIB_LINK+= $(LIB_DIR)/$(LOCTYPE)/$(LIB) $(LIBS)
 # 3rd Party Libs
 ifeq ($(LMPI),T)
   PRECOMP += -DMPI_OPT
-  VMEC_DIR = ../../PARVMEC
   COMPILE = $(MPI_COMPILE)
   COMPILE_FREE = $(MPI_COMPILE_FREE)
   LINK    = $(MPI_COMPILE) $(FLAGS) -o 

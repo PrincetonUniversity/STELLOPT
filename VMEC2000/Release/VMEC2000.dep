@@ -512,6 +512,7 @@ mercier.o : \
 printout.o : \
       angle_constraints.o \
       parallel_include_module.o \
+      parallel_vmec_module.o \
       realspace.o \
       vmec_main.o \
       vmec_params.o \
