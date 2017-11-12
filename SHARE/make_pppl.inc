@@ -25,30 +25,18 @@
   NETCDF_F = /usr/pppl/gcc/6.1-pkgs/netcdf-fortran-4.4.4
   NETCDF_C = /usr/pppl/gcc/6.1-pkgs/netcdf-c-4.4.1
 
-  LIBS    = -L$(BLASHOME)/lib -lopenblas \
+  LIBS    = -L$(ACML_HOME)/lib -lacml \
             -L$(SCALAPACK_HOME)/lib -lscalapack 
-#            -L$(BLACS_HOME)/lib -lmpiblacs -lmpiblacsCinit \
-#            -lmpiblacsF77init -lmpiblacs 
 
+# BLACS requires full links to library files
   LIBS    += ${BLACS_HOME}/lib/blacs_MPI-LINUX-0.a
   LIBS    += ${BLACS_HOME}/lib/blacsF77init_MPI-LINUX-0.a
   LIBS    += ${BLACS_HOME}/lib/blacsCinit_MPI-LINUX-0.a
-
-#   FOR GCC6  (note that we use CFLAGS for include but only need
-#              to set it once below) 
-  LIBS = -L$(BLASHOME)/lib -lopenblas $(LDFLAGS) -lscalapack
 
 #######################################################################
 #            MPI Options
 #######################################################################
   LMPI    = T
-#  MPI_COMPILE = $(MPIHOME)/bin/mpif90
-#  MPI_COMPILE_FREE = $(MPIHOME)/bin/mpif90 -ffree-form \
-#                     -ffree-line-length-none -ffixed-line-length-none
-#  MPI_COMPILE_C = $(MPIHOME)/bin/mpicc
-#  MPI_LINK = $(MPIHOME)/bin/mpif90
-
-  # For GCC6
   MPI_COMPILE = mpif90
   MPI_COMPILE_FREE = mpif90 -ffree-form \
                      -ffree-line-length-none -ffixed-line-length-none
@@ -73,9 +61,9 @@
 #######################################################################
   LNTCC = T
   NTCC_INC = -I$(NTCCHOME)/mod
-  NTCC_LIB = -L$(NTCCHOME)/lib -laladdinsub -lr8slatec -ladpak\
-             -lcppsub -lcomput -lpspline -lportlib -lezcdf -lmds_sub \
-             -lmdstransp -lvaxonly
+#  NTCC_LIB = -L$(NTCCHOME)/lib -laladdinsub -lr8slatec -ladpak\
+#             -lcppsub -lcomput -lpspline -lportlib -lezcdf -lmds_sub \
+#             -lmdstransp -lvaxonly
   NTCC_LIB = $(NTCCHOME)/lib/aladdinsub.a
   NTCC_LIB += $(NTCCHOME)/lib/r8slatec.a
   NTCC_LIB += $(NTCCHOME)/lib/adpak.a
@@ -94,8 +82,6 @@
   LHDF5 = T
   HDF5_INC =  -I$(HDF5_HOME)/include
   HDF5_LIB = -L$(HDF5_HOME)/lib -lhdf5_hl -lhdf5_fortran -lhdf5 \
-             -lhdf5hl_fortran -lpthread -lz -lm
-  HDF5_LIB = -lhdf5_hl -lhdf5_fortran -lhdf5 \
              -lhdf5hl_fortran -lpthread -lz -lm
 
 #######################################################################
