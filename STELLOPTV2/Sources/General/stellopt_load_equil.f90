@@ -36,6 +36,7 @@
                                bsupumnc_vmec => bsupumnc, bsupvmnc_vmec => bsupvmnc, &
                                bsupumns_vmec => bsupumns, bsupvmns_vmec => bsupvmns, &
                                xm_vmec => xm, xn_vmec => xn, &
+                               xm_nyq_vmec => xm_nyq, xn_nyq_vmec => xn_nyq, &
                                lasym_vmec => lasym, mpol_vmec => mpol,&
                                ntor_vmec => ntor, nfp_vmec => nfp, &
                                extcur_vmec => extcur, &
@@ -72,10 +73,13 @@
 !        iunit       File unit number
 !----------------------------------------------------------------------
       INTEGER ::  ier, iunit,nvar_in
-      INTEGER ::  nu, nv, u, v, mn, dex
+      INTEGER ::  nu, nv, u, v, mn, dex, mnmax_temp
       INTEGER :: im,in
+      INTEGER, ALLOCATABLE :: xm_temp(:), xn_temp(:)
       REAL(rprec) :: temp, s_temp, u_temp, phi_temp
       REAL(rprec), ALLOCATABLE :: xu(:), xv(:)
+      REAL(rprec), ALLOCATABLE :: rmnc_temp(:,:), zmns_temp(:,:), lmns_temp(:,:)
+      REAL(rprec), ALLOCATABLE :: rmns_temp(:,:), zmnc_temp(:,:), lmnc_temp(:,:)
       DOUBLE PRECISION, ALLOCATABLE :: Vol(:)
       
 !----------------------------------------------------------------------
@@ -170,48 +174,89 @@
             nu = 2 ** CEILING(log(REAL(nu))/log(2.0_rprec))
             nv = 4 * ntor_vmec + 5                                      ! Use at least 5 toroidal points
             nv = 2 ** CEILING(log(REAL(nv))/log(2.0_rprec)) + 1  ! Odd so we get nfp/2 plane
+            ! Handle Nyquist issues
+            IF (SIZE(xm_nyq_vmec) > SIZE(xm_vmec)) THEN
+               mnmax_temp = SIZE(xm_nyq_vmec)
+            ELSE
+               mnmax_temp = mnmax_vmec
+            END IF
+            ALLOCATE(xm_temp(mnmax_temp),xn_temp(mnmax_temp))
+            ALLOCATE(rmnc_temp(mnmax_temp,ns_vmec), zmns_temp(mnmax_temp,ns_vmec), lmns_temp(mnmax_temp,ns_vmec))
+            IF (lasym_vmec) ALLOCATE(rmns_temp(mnmax_temp,ns_vmec), zmnc_temp(mnmax_temp,ns_vmec), lmnc_temp(mnmax_temp,ns_vmec))
+            IF (SIZE(xm_nyq_vmec) > SIZE(xm_vmec)) THEN
+               xm_temp(1:mnmax_temp) = xm_nyq_vmec(1:mnmax_temp)
+               xn_temp(1:mnmax_temp) = xn_nyq_vmec(1:mnmax_temp)
+               rmnc_temp=0; zmns_temp=0; lmns_temp = 0;
+               DO u = 1,mnmax_temp
+                  DO v = 1, mnmax_vmec
+                     IF ((xm_vmec(v) .eq. xm_nyq_vmec(u)) .and. (xn_vmec(v) .eq. xn_nyq_vmec(u))) THEN
+                        rmnc_temp(u,1:ns_vmec) = rmnc_vmec(v,1:ns_vmec)
+                        zmns_temp(u,1:ns_vmec) = zmns_vmec(v,1:ns_vmec)
+                        lmns_temp(u,1:ns_vmec) = lmns_vmec(v,1:ns_vmec)
+                        IF (lasym_vmec) THEN
+                           rmns_temp(u,1:ns_vmec) = rmns_vmec(v,1:ns_vmec)
+                           zmnc_temp(u,1:ns_vmec) = zmnc_vmec(v,1:ns_vmec)
+                           lmnc_temp(u,1:ns_vmec) = lmnc_vmec(v,1:ns_vmec)
+                        END IF
+                     END IF
+                  END DO
+               END DO
+            ELSE
+               xm_temp(1:mnmax_temp) = xm_vmec(1:mnmax_temp)
+               xn_temp(1:mnmax_temp) = xn_vmec(1:mnmax_temp)
+               rmnc_temp(1:mnmax_temp,1:ns_vmec) = rmnc_vmec(1:mnmax_temp,1:ns_vmec)
+               zmns_temp(1:mnmax_temp,1:ns_vmec) = zmns_vmec(1:mnmax_temp,1:ns_vmec)
+               lmns_temp(1:mnmax_temp,1:ns_vmec) = lmns_vmec(1:mnmax_temp,1:ns_vmec)
+               IF (lasym_vmec) THEN
+                  rmns_temp(1:mnmax_temp,1:ns_vmec) = rmns_vmec(1:mnmax_temp,1:ns_vmec)
+                  zmnc_temp(1:mnmax_temp,1:ns_vmec) = zmnc_vmec(1:mnmax_temp,1:ns_vmec)
+                  lmnc_temp(1:mnmax_temp,1:ns_vmec) = lmnc_vmec(1:mnmax_temp,1:ns_vmec)
+               END IF
+            END IF
             ! Half to full grid
             bsupumnc_vmec(:,1) = (3*bsupumnc_vmec(:,2) - bsupumnc_vmec(:,3))*0.5D+00
             bsupvmnc_vmec(:,1) = (3*bsupvmnc_vmec(:,2) - bsupvmnc_vmec(:,3))*0.5D+00
             gmnc_vmec(:,1) = (3*gmnc_vmec(:,2) - gmnc_vmec(:,3))*0.5D+00
-            lmns_vmec(:,1) = (3*lmns_vmec(:,2) - lmns_vmec(:,3))*0.5D+00
-            FORALL(mn = 1:mnmax_vmec) bsupumnc_vmec(mn,2:ns_vmec-1) = 0.5*(bsupumnc_vmec(mn,2:ns_vmec-1) + bsupumnc_vmec(mn,3:ns_vmec))
-            FORALL(mn = 1:mnmax_vmec) bsupvmnc_vmec(mn,2:ns_vmec-1) = 0.5*(bsupvmnc_vmec(mn,2:ns_vmec-1) + bsupvmnc_vmec(mn,3:ns_vmec))
-            FORALL(mn = 1:mnmax_vmec) gmnc_vmec(mn,2:ns_vmec-1) = 0.5*(gmnc_vmec(mn,2:ns_vmec-1) + gmnc_vmec(mn,3:ns_vmec))
-            FORALL(mn = 1:mnmax_vmec) lmns_vmec(mn,2:ns_vmec-1) = 0.5*(lmns_vmec(mn,2:ns_vmec-1) + lmns_vmec(mn,3:ns_vmec))
+            lmns_temp(:,1) = (3*lmns_temp(:,2) - lmns_temp(:,3))*0.5D+00
+            FORALL(mn = 1:mnmax_temp) bsupumnc_vmec(mn,2:ns_vmec-1) = 0.5*(bsupumnc_vmec(mn,2:ns_vmec-1) + bsupumnc_vmec(mn,3:ns_vmec))
+            FORALL(mn = 1:mnmax_temp) bsupvmnc_vmec(mn,2:ns_vmec-1) = 0.5*(bsupvmnc_vmec(mn,2:ns_vmec-1) + bsupvmnc_vmec(mn,3:ns_vmec))
+            FORALL(mn = 1:mnmax_temp) gmnc_vmec(mn,2:ns_vmec-1) = 0.5*(gmnc_vmec(mn,2:ns_vmec-1) + gmnc_vmec(mn,3:ns_vmec))
+            FORALL(mn = 1:mnmax_temp) lmns_temp(mn,2:ns_vmec-1) = 0.5*(lmns_temp(mn,2:ns_vmec-1) + lmns_temp(mn,3:ns_vmec))
             bsupumnc_vmec(:,ns_vmec) = 2*bsupumnc_vmec(:,ns_vmec) - bsupumnc_vmec(:,ns_vmec-1)
             bsupvmnc_vmec(:,ns_vmec) = 2*bsupvmnc_vmec(:,ns_vmec) - bsupvmnc_vmec(:,ns_vmec-1)
             gmnc_vmec(:,ns_vmec)     = 2*gmnc_vmec(:,ns_vmec) - gmnc_vmec(:,ns_vmec-1)
-            lmns_vmec(:,ns_vmec) = 2*lmns_vmec(:,ns_vmec) - lmns_vmec(:,ns_vmec-1)
+            lmns_temp(:,ns_vmec) = 2*lmns_temp(:,ns_vmec) - lmns_temp(:,ns_vmec-1)
             ! Load STEL_TOOLS
             IF (lasym_vmec) THEN
                bsupumns_vmec(:,1) = 1.5*bsupumns_vmec(:,2) - 0.5*bsupumns_vmec(:,3)
                bsupvmns_vmec(:,1) = 1.5*bsupvmns_vmec(:,2) - 0.5*bsupvmns_vmec(:,3)
                gmns_vmec(:,1)     = (3*gmns_vmec(:,2) - gmns_vmec(:,3))*0.5D+00
-               lmnc_vmec(:,1) = (3*lmnc_vmec(:,2) - lmnc_vmec(:,3))*0.5D+00
-               FORALL(mn = 1:mnmax_vmec) bsupumns_vmec(mn,2:ns_vmec-1) = 0.5*(bsupumns_vmec(mn,2:ns_vmec-1) + bsupumns_vmec(mn,3:ns_vmec))
-               FORALL(mn = 1:mnmax_vmec) bsupvmns_vmec(mn,2:ns_vmec-1) = 0.5*(bsupvmns_vmec(mn,2:ns_vmec-1) + bsupvmns_vmec(mn,3:ns_vmec))
-               FORALL(mn = 1:mnmax_vmec) gmns_vmec(mn,2:ns_vmec-1) = 0.5*(gmns_vmec(mn,2:ns_vmec-1) + gmns_vmec(mn,3:ns_vmec))
-               FORALL(mn = 1:mnmax_vmec) lmnc_vmec(mn,2:ns_vmec-1) = 0.5*(lmnc_vmec(mn,2:ns_vmec-1) + lmnc_vmec(mn,3:ns_vmec))
+               lmnc_temp(:,1) = (3*lmnc_temp(:,2) - lmnc_temp(:,3))*0.5D+00
+               FORALL(mn = 1:mnmax_temp) bsupumns_vmec(mn,2:ns_vmec-1) = 0.5*(bsupumns_vmec(mn,2:ns_vmec-1) + bsupumns_vmec(mn,3:ns_vmec))
+               FORALL(mn = 1:mnmax_temp) bsupvmns_vmec(mn,2:ns_vmec-1) = 0.5*(bsupvmns_vmec(mn,2:ns_vmec-1) + bsupvmns_vmec(mn,3:ns_vmec))
+               FORALL(mn = 1:mnmax_temp) gmns_vmec(mn,2:ns_vmec-1) = 0.5*(gmns_vmec(mn,2:ns_vmec-1) + gmns_vmec(mn,3:ns_vmec))
+               FORALL(mn = 1:mnmax_temp) lmnc_vmec(mn,2:ns_vmec-1) = 0.5*(lmnc_vmec(mn,2:ns_vmec-1) + lmnc_vmec(mn,3:ns_vmec))
                bsupumns_vmec(:,ns_vmec) = 2*bsupumns_vmec(:,ns_vmec) - bsupumns_vmec(:,ns_vmec-1)
                bsupvmns_vmec(:,ns_vmec) = 2*bsupvmns_vmec(:,ns_vmec) - bsupvmns_vmec(:,ns_vmec-1)
                gmns_vmec(:,ns_vmec)     = 2*gmns_vmec(:,ns_vmec) - gmns_vmec(:,ns_vmec-1)
-               lmnc_vmec(:,ns_vmec) = 2*lmnc_vmec(:,ns_vmec) - lmnc_vmec(:,ns_vmec-1)
-               CALL load_fourier_geom(1,ns_vmec,mnmax_vmec,nu,nv,INT(xm_vmec),INT(-xn_vmec),iflag,&
-                           DBLE(rmnc_vmec),DBLE(zmns_vmec),RMNS=DBLE(rmns_vmec),ZMNC=DBLE(zmnc_vmec),&
+               lmnc_temp(:,ns_vmec) = 2*lmnc_temp(:,ns_vmec) - lmnc_temp(:,ns_vmec-1)
+               CALL load_fourier_geom(1,ns_vmec,mnmax_temp,nu,nv,INT(xm_temp),INT(-xn_temp),iflag,&
+                           DBLE(rmnc_temp),DBLE(zmns_temp),RMNS=DBLE(rmns_temp),ZMNC=DBLE(zmnc_temp),&
                            BUMNC=DBLE(bsupumnc_vmec),BVMNC=DBLE(bsupvmnc_vmec),&
                            BUMNS=DBLE(bsupumns_vmec),BVMNS=DBLE(bsupvmns_vmec),&
-                           LMNS=DBLE(lmns_vmec),LMNC=DBLE(lmnc_vmec),&
+                           LMNS=DBLE(lmns_temp),LMNC=DBLE(lmnc_temp),&
                            BMNC=DBLE(bmnc_vmec),BMNS=DBLE(bmns_vmec),&
                            GMNC=DBLE(gmnc_vmec),GMNS=DBLE(gmns_vmec))
+               DEALLOCATE(rmns_temp,zmnc_temp,lmnc_temp)
             ELSE
-               CALL load_fourier_geom(1,ns_vmec,mnmax_vmec,nu,nv,INT(xm_vmec),INT(-xn_vmec),iflag,&
-                           DBLE(rmnc_vmec),DBLE(zmns_vmec),&
+               CALL load_fourier_geom(1,ns_vmec,mnmax_temp,nu,nv,INT(xm_temp),INT(-xn_temp),iflag,&
+                           DBLE(rmnc_temp),DBLE(zmns_temp),&
                            BUMNC=DBLE(bsupumnc_vmec),BVMNC=DBLE(bsupvmnc_vmec),&
-                           LMNS=DBLE(lmns_vmec),&
+                           LMNS=DBLE(lmns_temp),&
                            BMNC=DBLE(bmnc_vmec),&
                            GMNC=DBLE(gmnc_vmec))
             END IF
+            DEALLOCATE(xm_temp,xn_temp,rmnc_temp,zmns_temp,lmns_temp)
             ! Update R0,Z0
             CALL get_equil_RZ(DBLE(0),DBLE(0),DBLE(0),r0,z0,iflag)
             ! Update boundary coefficients (this only effects the input files as we use a reset anyway)
