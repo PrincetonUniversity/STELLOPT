@@ -315,8 +315,11 @@
       END DO
      
       IF (rank.EQ.0) THEN
-        IF (ANY(bsubvh(:,1) .ne. zero)) STOP 'BSUBVH != 0 AT JS=1'
-        IF (ANY(bsubuh(:,1) .ne. zero)) STOP 'BSUBUH != 0 AT JS=1'
+        ! SAL 11/22/17
+        !IF (ANY(bsubvh(:,1) .ne. zero)) STOP 'BSUBVH != 0 AT JS=1'
+        !IF (ANY(bsubuh(:,1) .ne. zero)) STOP 'BSUBUH != 0 AT JS=1'
+        bsubuh(:,1) = zero
+        bsubvh(:,1) = zero
       END IF
 
       nsmin=tlglob; nsmax=MIN(trglob,ns-1)

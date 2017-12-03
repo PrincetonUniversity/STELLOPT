@@ -72,10 +72,10 @@ C-----------------------------------------------
         IF (lactive) THEN
            IF (lfreeb) THEN
               WRITE(nthreed, 14) nranks, vnranks
-              PRINT 14, nranks, vnranks
+              IF (lscreen) PRINT 14, nranks, vnranks
            ELSE
               WRITE (nthreed, 12) nranks
-              PRINT 12, nranks
+              IF (lscreen) PRINT 12, nranks
            END IF
   12  FORMAT ('  PROCESSOR COUNT - RADIAL: ',i4)
   14  FORMAT ('  PROCESSOR COUNT - RADIAL: ',i4,'  VACUUM: ',i4)
