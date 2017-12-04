@@ -479,9 +479,9 @@
       CALL tolower(type)
       SELECT CASE (type)
          CASE ('spline','akima_spline','akima_spline_ip')
-            CALL eval_prof_stel(s_val,type,val,21,emis_xics_f(0:20),ier,emis_xics_spl)
+            CALL eval_prof_stel(s_val,type,val,20,emis_xics_f(1:20),ier,emis_xics_spl)
          CASE DEFAULT
-            CALL eval_prof_stel(s_val,type,val,21,emis_xics_f(0:20),ier)
+            CALL eval_prof_stel(s_val,type,val,20,emis_xics_f(1:20),ier)
       END SELECT
       RETURN
       END SUBROUTINE get_equil_emis_xics
