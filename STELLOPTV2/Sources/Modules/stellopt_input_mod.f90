@@ -221,7 +221,7 @@
                          lth_f_opt, lphi_s_opt, lphi_f_opt, &
                          lrho_opt, ldeltamn_opt, lbound_opt, laxis_opt, lmode_opt, &
                          lne_opt, lte_opt, lti_opt, lth_opt, lzeff_opt, &
-                         lah_f_opt, lat_f_opt, lcoil_spline, &
+                         lah_f_opt, lat_f_opt, lcoil_spline, lemis_xics_f_opt, &
                          dphiedge_opt, dcurtor_opt, dbcrit_opt, &
                          dpscale_opt, dmix_ece_opt,&
                          dextcur_opt, daphi_opt, dam_opt, dac_opt, &
@@ -233,7 +233,7 @@
                          drho_opt, ddeltamn_opt, &
                          dne_opt, dte_opt, dti_opt, dth_opt, dzeff_opt, &
                          dah_f_opt, dat_f_opt, daxis_opt, &
-                         dmix_ece_opt, dcoil_spline, &
+                         dmix_ece_opt, dcoil_spline, demis_xics_f_opt, &
                          ne_aux_s, te_aux_s, ti_aux_s, th_aux_s, phi_aux_s,&
                          beamj_aux_s, bootj_aux_s, zeff_aux_s, &
                          ne_aux_f, te_aux_f, ti_aux_f, th_aux_f, phi_aux_f,&
@@ -247,6 +247,7 @@
                          bootj_f_max, zeff_max, zeff_f_max, &
                          ah_f_min, at_f_min, &
                          ah_f_max, at_f_max, &
+                         emis_xics_f_min, emis_xics_f_max, &
                          raxis_min, raxis_max, &
                          zaxis_min, zaxis_max, &
                          rbc_min, rbc_max, zbs_min, zbs_max, &
@@ -393,17 +394,18 @@
       lzeff_f_opt(:)  = .FALSE.
       lte_f_opt(:)    = .FALSE.
       lti_f_opt(:)    = .FALSE.
-      lth_f_opt(:)    = .FALSE.
-      lbeamj_f_opt(:) = .FALSE.
-      lbootj_f_opt(:) = .FALSE.
-      lah_f_opt(:)    = .FALSE.
-      lat_f_opt(:)    = .FALSE.
-      lbound_opt(:,:) = .FALSE.
-      lrho_opt(:,:)   = .FALSE.
-      ldeltamn_opt(:,:) = .FALSE.
-      lmode_opt(:,:)  = .FALSE.
-      laxis_opt(:)    = .FALSE.
-      lcoil_spline(:,:) = .FALSE.
+      lth_f_opt(:)        = .FALSE.
+      lbeamj_f_opt(:)     = .FALSE.
+      lbootj_f_opt(:)     = .FALSE.
+      lah_f_opt(:)        = .FALSE.
+      lat_f_opt(:)        = .FALSE.
+      lemis_xics_f_opt(:) = .FALSE.
+      lbound_opt(:,:)     = .FALSE.
+      lrho_opt(:,:)       = .FALSE.
+      ldeltamn_opt(:,:)   = .FALSE.
+      lmode_opt(:,:)      = .FALSE.
+      laxis_opt(:)        = .FALSE.
+      lcoil_spline(:,:)   = .FALSE.
       dphiedge_opt    = -1.0
       dcurtor_opt     = -1.0
       dpscale_opt     = -1.0
@@ -439,6 +441,7 @@
       dah_f_opt(:)    = -1.0
       dat_f_opt(:)    = -1.0
       daxis_opt(:)    = -1.0
+      demis_xics_f_opt(:) = -1.0
       dbound_opt(:,:) = -1.0
       drho_opt(:,:) = -1.0
       ddeltamn_opt(:,:) = -1.0
@@ -481,6 +484,7 @@
       th_f_min        = 0.0;     th_f_max        = bigno
       beamj_f_min     = -bigno;  beamj_f_max     = bigno
       bootj_f_min     = -bigno;  bootj_f_max     = bigno
+      emis_xics_f_min = -bigno;  emis_xics_f_max = bigno
       coil_splinefx_min       = -bigno;  coil_splinefx_max       = bigno
       coil_splinefy_min       = -bigno;  coil_splinefy_max       = bigno
       coil_splinefz_min       = -bigno;  coil_splinefz_max       = bigno
@@ -491,6 +495,7 @@
       th_type         = 'akima_spline'
       beamj_type      = 'power_series'
       bootj_type      = 'power_series'
+      emis_xics_type  = 'power_series'
       ne_opt(0:20)       = 0.0
       zeff_opt(0:20)     = 0.0
       te_opt(0:20)       = 0.0
@@ -512,12 +517,14 @@
       th_aux_f(:)     = 0.0 ! Probably need to recast th as ph later
       phi_aux_s(:)    = -1.0
       phi_aux_f(:)    = 0.0
-      beamj_aux_s(:)  = -1.0
+      beamj_aux_s(:)   = -1.0
       beamj_aux_s(1:5) = (/0.0,0.25,0.50,0.75,1.0/)
-      beamj_aux_f(:)  = 0.0
-      bootj_aux_s(:)  = -1.0
+      beamj_aux_f(:)   = 0.0
+      bootj_aux_s(:)   = -1.0
       bootj_aux_s(1:5) = (/0.0,0.25,0.50,0.75,1.0/)
-      bootj_aux_f(:)  = 0.0
+      bootj_aux_f(:)   = 0.0
+      emis_xics_s(1:5) = (/0.0,0.25,0.50,0.75,1.0/)
+      emis_xics_f(:)   = 0.0
       coil_splinesx(:,:) = -1
       coil_splinesy(:,:) = -1
       coil_splinesz(:,:) = -1
@@ -822,7 +829,6 @@
          WRITE(6,*)        " Equilibrium calculation provided by: "
          WRITE(6,"(2X,A)") "================================================================================="
          WRITE(6,"(2X,A)") "=========   Parallel Variational Moments Equilibrium Code (v "//TRIM(version_vmec)//")      ========="
-         WRITE(6,"(2X,A)") "=========       Variational Moments Equilibrium Code (v "//TRIM(version_vmec)//")           ========="
          WRITE(6,"(2X,A)") "=========                (S. Hirshman, J. Whitson)                      ========="
          WRITE(6,"(2X,A)") "=========         http://vmecwiki.pppl.wikispaces.net/VMEC              ========="
          WRITE(6,"(2X,A)") "================================================================================="
@@ -1410,6 +1416,17 @@
         IF (ANY(dbootj_f_opt > 0)) WRITE(iunit,"(2X,A,1X,'=',10(1X,E22.14))") 'DBOOTJ_F_OPT',(dbootj_f_opt(ik), ik = 1, n)
       END IF
       
+      IF (ANY(lemis_xics_f_opt)) THEN
+        n=0
+        DO ik = 1,UBOUND(lemis_xics_f_opt,DIM=1)
+           IF(lemis_xics_f_opt(ik)) n=ik
+        END DO
+        DO ik = 1, n
+           WRITE(iunit,vecvar) 'LEMIS_XICS_F_OPT',ik,lemis_xics_f_opt(ik),'EMIS_XICS_F_MIN',ik,emis_xics_f_min(ik),'EMIS_XICS_F_MAX',ik,emis_xics_f_max(ik)
+        END DO
+        IF (ANY(demis_xics_f_opt > 0)) WRITE(iunit,"(2X,A,1X,'=',10(1X,E22.14))") 'DEMIS_XICS_F_OPT',(demis_xics_f_opt(ik), ik = 1, n)
+      END IF
+      
       IF (ANY(laxis_opt)) THEN
          DO n = LBOUND(laxis_opt,DIM=1), UBOUND(laxis_opt,DIM=1)
             IF (laxis_opt(n) .and. (raxis_min(n)>-bigno .or. raxis_max(n)<bigno .or. zaxis_min(n)>-bigno .or. zaxis_max(n)<bigno)) THEN
@@ -1592,6 +1609,13 @@
          WRITE(iunit,outstr) 'BOOTJ_TYPE',TRIM(bootj_type)
          WRITE(iunit,"(2X,A,1X,'=',5(1X,E22.14))") 'BOOTJ_AUX_S',(bootj_aux_s(n), n=1,ik)
          WRITE(iunit,"(2X,A,1X,'=',5(1X,E22.14))") 'BOOTJ_AUX_F',(bootj_aux_f(n), n=1,ik)
+      END IF
+      ! Emissivities
+      ik = MINLOC(emis_xics_s(2:),DIM=1)
+      IF (ik > 2) THEN
+         WRITE(iunit,outstr) 'EMIS_XICS_TYPE',TRIM(emis_xics_type)
+         WRITE(iunit,"(2X,A,1X,'=',5(1X,E22.14))") 'EMIS_XICS_S',(emis_xics_s(n), n=1,ik)
+         WRITE(iunit,"(2X,A,1X,'=',5(1X,E22.14))") 'EMIS_XICS_F',(emis_xics_f(n), n=1,ik)
       END IF
       ! E-static potential
       ik = MINLOC(phi_aux_s(2:),DIM=1)
