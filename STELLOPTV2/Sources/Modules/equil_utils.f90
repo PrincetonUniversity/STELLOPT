@@ -479,14 +479,7 @@
       CALL tolower(type)
       SELECT CASE (type)
          CASE ('spline','akima_spline','akima_spline_ip')
-            CALL eval_prof_stel(s_val,type,val,21,emis_xics_f(0:20),ier,ti_spl)
-            !IF (EZspline_allocated(ti_spl)) THEN
-            !   CALL EZspline_isInDomain(ti_spl,s_val,ier)
-            !   IF (ier .ne. 0) RETURN
-            !   CALL EZspline_interp(ti_spl,s_val,val,ier)
-            !ELSE
-            !   ier = -1
-            !END IF
+            CALL eval_prof_stel(s_val,type,val,21,emis_xics_f(0:20),ier,emis_xics_spl)
          CASE DEFAULT
             CALL eval_prof_stel(s_val,type,val,21,emis_xics_f(0:20),ier)
       END SELECT

@@ -298,6 +298,7 @@
       IF (EZspline_allocated(th_spl)) CALL EZspline_free(th_spl,iflag)
       IF (EZspline_allocated(nustar_spl)) CALL EZspline_free(nustar_spl,iflag)
       IF (EZspline_allocated(zeff_spl)) CALL EZspline_free(zeff_spl,iflag)
+      IF (EZspline_allocated(emis_xics_spl)) CALL EZspline_free(emis_xics_spl,iflag)
       dex = MINLOC(phi_aux_s(2:),DIM=1)
       IF (dex > 4) THEN
          CALL EZspline_init(phi_spl,dex,bcs0,iflag)
@@ -346,6 +347,13 @@
          zeff_spl%x1 = zeff_aux_s(1:dex)
          zeff_spl%isHermite = 1
          CALL EZspline_setup(zeff_spl,zeff_aux_f,ier)
+      END IF
+      dex = MINLOC(emis_xics_s(2:),DIM=1)
+      IF (dex > 4) THEN
+         CALL EZspline_init(emis_xics_spl,dex,bcs0,iflag)
+         emis_xics_spl%x1 = emis_xics_s(1:dex)
+         emis_xics_spl%isHermite = 1
+         CALL EZspline_setup(emis_xics_spl,emis_xics_f,ier)
       END IF
       IF (lscreen) THEN
          WRITE(6,'(A,F7.3)')   '     ASPECT RATIO:  ',aspect
