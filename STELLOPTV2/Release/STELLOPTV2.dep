@@ -247,6 +247,18 @@ chisq_line_ti.o : \
       equil_utils.o 
       
 
+chisq_xics.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      equil_utils.o 
+      
+
+chisq_xics_bright.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      equil_utils.o 
+      
+
 chisq_faraday.o : \
       stellopt_runtime.o \
       stellopt_targets.o \
