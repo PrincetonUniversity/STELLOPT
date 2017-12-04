@@ -97,6 +97,10 @@
       REAL(rprec), DIMENSION(nprof) ::  target_ti_line,sigma_ti_line, &
                                         r0_ti_line, phi0_ti_line, z0_ti_line, &
                                         r1_ti_line, phi1_ti_line, z1_ti_line
+      REAL(rprec), DIMENSION(nprof) ::  target_xics,sigma_xics, &
+                                        target_xics_bright,sigma_xics_bright, &
+                                        r0_xics, phi0_xics, z0_xics, &
+                                        r1_xics, phi1_xics, z1_xics
       REAL(rprec), DIMENSION(nprof) ::  target_faraday,sigma_faraday, &
                                         r0_faraday, phi0_faraday, z0_faraday, &
                                         r1_faraday, phi1_faraday, z1_faraday
@@ -197,8 +201,10 @@
       INTEGER, PARAMETER :: jtarget_line_te    = 2011
       INTEGER, PARAMETER :: jtarget_ti         = 202
       INTEGER, PARAMETER :: jtarget_line_ti    = 2021
-      INTEGER, PARAMETER :: jtarget_vphi       = 2022
+      INTEGER, PARAMETER :: jtarget_xics       = 2022
+      INTEGER, PARAMETER :: jtarget_xics_bright= 2023
       INTEGER, PARAMETER :: jtarget_press      = 203
+      INTEGER, PARAMETER :: jtarget_vphi       = 204
       INTEGER, PARAMETER :: jtarget_iota       = 300  
       INTEGER, PARAMETER :: jtarget_iprime     = 301
       INTEGER, PARAMETER :: jtarget_vaciota    = 302  
@@ -286,6 +292,10 @@
             WRITE(iunit, out_format) 'Line Integrated Electron Temperature'
          CASE(jtarget_line_ti)
             WRITE(iunit, out_format) 'Line Integrated Ion Temperature'
+         CASE(jtarget_xics)
+            WRITE(iunit, out_format) 'XICS Signal'
+         CASE(jtarget_xics_bright)
+            WRITE(iunit, out_format) 'XICS Brightness'
          CASE(jtarget_te)
             WRITE(iunit, out_format) 'Electron Temperature'
          CASE(jtarget_ti)
