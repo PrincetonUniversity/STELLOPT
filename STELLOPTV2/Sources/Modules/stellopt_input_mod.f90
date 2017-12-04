@@ -287,6 +287,8 @@
                          target_ti_line, sigma_ti_line, r0_ti_line, phi0_ti_line, z0_ti_line,&
                          r1_ti_line, phi1_ti_line, z1_ti_line, &
                          target_ti, sigma_ti, r_ti, z_ti, phi_ti, s_ti,&
+                         target_xics, sigma_xics, r0_xics, phi0_xics, z0_xics,&
+                         r1_xics, phi1_xics, z1_xics, target_xics_bright, sigma_xics_bright, &
                          target_vphi, sigma_vphi, r_vphi, z_vphi, phi_vphi, s_vphi, qm_ratio,&
                          target_iota, sigma_iota, r_iota, z_iota, phi_iota, s_iota,&
                          target_vaciota, sigma_vaciota, r_vaciota, z_vaciota, phi_vaciota, s_vaciota,&
@@ -638,7 +640,17 @@
       r1_ti_line(:)   = 0.0
       phi1_ti_line(:) = 0.0
       z1_ti_line(:)   = 0.0
-      target_ti(:)    = 0.0
+      target_xics(:)  = 0.0
+      sigma_xics(:)   = bigno
+      target_xics_bright(:) = 0.0
+      sigma_xics_bright(:)  = bigno
+      r0_xics(:)            = 0.0
+      phi0_xics(:)          = 0.0
+      z0_xics(:)            = 0.0
+      r1_xics(:)            = 0.0
+      phi1_xics(:)          = 0.0
+      z1_xics(:)            = 0.0
+      target_ti(:)     = 0.0
       sigma_ti(:)     = bigno
       r_ti(:)         = 0.0
       z_ti(:)         = 0.0
@@ -2080,6 +2092,28 @@
                   'Z1_TI_LINE(',ik,')',z1_ti_line(ik),&
                   'TARGET_TI_LINE(',ik,')',target_ti_line(ik),&
                   'SIGMA_TI_LINE(',ik,')',sigma_ti_line(ik)
+            END IF
+         END DO
+      END IF
+      IF (ANY(sigma_xics < bigno)) THEN
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,'(A)') '!          XICS Signal Optimization'
+         WRITE(iunit,'(A)') '!              Brightness is line integrated emissivity'
+         WRITE(iunit,'(A)') '!              Signal is line integrated product of emis. and ion temp.'
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         DO ik = 1, UBOUND(sigma_xics,DIM=1)
+            IF (sigma_xics(ik) < bigno .and. sigma_emis_xics(ik) < bigno) THEN
+               WRITE(iunit,"(10(2X,A,I3.3,A,1X,'=',1X,E22.14))") &
+                  'TARGET_XICS(',ik,')',target_xics(ik),&
+                  'SIGMA_XICS(',ik,')',sigma_xics(ik),&
+                  'TARGET_XICS_BRIGHT(',ik,')',target_xics_bright(ik),&
+                  'SIGMA_XICS_BRIGHT(',ik,')',sigma_xics_bright(ik),&
+                  'R0_XICS(',ik,')',r0_xics(ik),&
+                  'PHI0_XICS(',ik,')',phi0_xics(ik),&
+                  'Z0_XICS(',ik,')',z0_xics(ik),&
+                  'R1_XICS(',ik,')',r1_xics(ik),&
+                  'PHI1_XICS(',ik,')',phi1_xics(ik),&
+                  'Z1_XICS(',ik,')',z1_xics(ik)
             END IF
          END DO
       END IF
