@@ -2102,7 +2102,7 @@
          WRITE(iunit,'(A)') '!              Signal is line integrated product of emis. and ion temp.'
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          DO ik = 1, UBOUND(sigma_xics,DIM=1)
-            IF (sigma_xics(ik) < bigno .and. sigma_emis_xics(ik) < bigno) THEN
+            IF (sigma_xics(ik) < bigno .and. sigma_xics_bright(ik) < bigno) THEN
                WRITE(iunit,"(10(2X,A,I3.3,A,1X,'=',1X,E22.14))") &
                   'TARGET_XICS(',ik,')',target_xics(ik),&
                   'SIGMA_XICS(',ik,')',sigma_xics(ik),&
