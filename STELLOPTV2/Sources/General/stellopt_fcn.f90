@@ -52,7 +52,7 @@
       INTEGER ::  vctrl_array(5)
       REAL(rprec) :: norm_aphi, norm_am, norm_ac, norm_ai, norm_ah,&
                      norm_at, norm_ne, norm_te, norm_ti, norm_th, &
-                     norm_phi, norm_zeff, temp
+                     norm_phi, norm_zeff, norm_emis_xics, temp
       INTEGER, PARAMETER     :: max_refit = 2
       REAL(rprec), PARAMETER :: ec  = 1.60217653D-19
       CHARACTER(len = 16)     :: temp_str
@@ -92,6 +92,7 @@
          IF (var_dex(nvar_in) == iah_aux_f .and. arr_dex(nvar_in,2) == norm_dex) norm_ah = x(nvar_in)
          IF (var_dex(nvar_in) == iat_aux_f .and. arr_dex(nvar_in,2) == norm_dex) norm_at = x(nvar_in)
          IF (var_dex(nvar_in) == izeff_aux_f .and. arr_dex(nvar_in,2) == norm_dex) norm_zeff = x(nvar_in)
+         IF (var_dex(nvar_in) == iemis_xics_f .and. arr_dex(nvar_in,2) == norm_dex) norm_emis_xics = x(nvar_in)
       END DO
       !CALL SLEEP(1)  ! Do this so code 'catches up'
       !temp = norm_phi+var_dex(1)  ! Think this can go away
@@ -130,6 +131,7 @@
          IF (var_dex(nvar_in) == ith_aux_f) th_aux_f(arr_dex(nvar_in,1)) = x(nvar_in)
          IF (var_dex(nvar_in) == iah_aux_f) ah_aux_f(arr_dex(nvar_in,1)) = x(nvar_in)
          IF (var_dex(nvar_in) == iat_aux_f) at_aux_f(arr_dex(nvar_in,1)) = x(nvar_in)
+         IF (var_dex(nvar_in) == iemis_xics_f) emis_xics_f(arr_dex(nvar_in,1)) = x(nvar_in)
          IF (var_dex(nvar_in) == iraxis_cc) raxis_cc(arr_dex(nvar_in,1)) = x(nvar_in)
          IF (var_dex(nvar_in) == izaxis_cs) zaxis_cs(arr_dex(nvar_in,1)) = x(nvar_in)
          IF (var_dex(nvar_in) == iraxis_cs) raxis_cs(arr_dex(nvar_in,1)) = x(nvar_in)
@@ -183,6 +185,7 @@
       th_aux_f = th_aux_f * norm_th
       ah_aux_f = ah_aux_f * norm_ah
       at_aux_f = at_aux_f * norm_at
+      emis_xics_f = emis_xics_f * norm_emis_xics
 
       ! Handle cleanup
       IF (iflag < -2) THEN
@@ -209,6 +212,7 @@
          th_aux_f = th_aux_f / norm_th
          ah_aux_f = ah_aux_f / norm_ah
          at_aux_f = at_aux_f / norm_at
+         emis_xics_f = emis_xics_f / norm_emis_xics
          RETURN
       END IF
 
@@ -411,6 +415,7 @@
       th_aux_f = th_aux_f / norm_th
       ah_aux_f = ah_aux_f / norm_ah
       at_aux_f = at_aux_f / norm_at
+      emis_xics_f = emis_xics_f / norm_emis_xics
       RETURN
 !----------------------------------------------------------------------
 !     END SUBROUTINE
