@@ -69,7 +69,7 @@
                                 lne_f_opt, lte_f_opt,&
                                 lti_f_opt, lth_f_opt,&
                                 lphi_s_opt, lphi_f_opt,&
-                                lzeff_f_opt, &
+                                lzeff_f_opt, lemis_xics_f_opt, &
                                 lbootj_f_opt, lbeamj_f_opt, &
                                 lah_f_opt, lat_f_opt
       LOGICAL, DIMENSION(0:ntord)                ::  laxis_opt
