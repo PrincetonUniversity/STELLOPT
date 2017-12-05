@@ -247,6 +247,7 @@
                          bootj_f_max, zeff_max, zeff_f_max, &
                          ah_f_min, at_f_min, &
                          ah_f_max, at_f_max, &
+                         emis_xics_s, emis_xics_f, emis_xics_type,&
                          emis_xics_f_min, emis_xics_f_max, &
                          raxis_min, raxis_max, &
                          zaxis_min, zaxis_max, &
