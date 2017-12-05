@@ -66,6 +66,7 @@
       norm_aphi = 1; norm_am = 1; norm_ac = 1; norm_ai = 1
       norm_ah   = 1; norm_at = 1; norm_phi = 1; norm_zeff = 1
       norm_ne   = 1; norm_te = 1; norm_ti  = 1; norm_th = 1
+      norm_emis_xics = 1
       ! Save variables
       !CALL SLEEP(1)  ! Do this so code 'catches up'
 

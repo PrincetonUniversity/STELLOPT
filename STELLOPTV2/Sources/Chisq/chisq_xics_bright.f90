@@ -51,7 +51,7 @@
             mtargets = mtargets + 1
             targets(mtargets) = target(ik)
             sigmas(mtargets)  = sigma(ik)
-            vals(mtargets)    = xics_val/xics_length
+            vals(mtargets)    = xics_val
             IF (iflag == 1) WRITE(iunit_out,'(9ES22.12E3)') target(ik),sigma(ik),xics_val/xics_length,x0(1),x0(2),x0(3),x1(1),x1(2),x1(3)
          END DO
       ELSE
