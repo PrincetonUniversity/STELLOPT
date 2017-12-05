@@ -220,7 +220,7 @@
               CALL EZspline_interp(YC_spl, s_val, v, ier)
               CALL stellopt_uv_to_xyz(u, v, xarr(j), yarr(j), zarr(j))
            END DO
-        ELSE                !Interpret coil_splinefx as x, coil_splinefy as y, coil_splinefz as z.
+        ELSE  !Interpret coil_splinefx as x, coil_splinefy as y, coil_splinefz as z.
            CALL EZspline_init(ZC_spl, nknots, ezpbc, ier)
            ZC_spl%x1 = coil_splinesz(icoil,1:nknots)
            CALL EZspline_setup(ZC_spl, coil_splinefz(icoil,1:nknots), ier)
@@ -240,15 +240,16 @@
       END SUBROUTINE spline_to_coil
 
 !-----------------------------------------------------------------------
-      SUBROUTINE enforce_spline_bcs(icoil, ismod)
+      SUBROUTINE enforce_spline_bcs(icoil, isper)
         USE stel_kinds, ONLY: rprec
         USE stellopt_vars, ONLY : coil_splinefx, coil_splinefy, coil_splinefz, &
              coil_nknots, coil_type, lwindsurf
+        USE vmec_input,  ONLY : nfp
         IMPLICIT NONE
         INTRINSIC ABS, MODULO
 
         INTEGER, INTENT(IN)  :: icoil
-        LOGICAL, INTENT(OUT) :: ismod
+        LOGICAL, INTENT(OUT) :: isper  !Does the coil repeat each field period?
 
         REAL(rprec), PARAMETER :: zero=0.0d0, one=1.0d0, abstol=2.0d-15
         INTEGER nknots
@@ -256,7 +257,7 @@
 
         SELECT CASE (coil_type(icoil))
         CASE ('M') ! Modular coil
-           ismod = .TRUE. ! Modular coils repeat each field period.
+           isper = .TRUE. ! Modular coils repeat each field period.
            coil_splinefy(icoil,nknots) = coil_splinefy(icoil,1)
            IF (lwindsurf) THEN !u0=0,uf=1,vf=v0
               coil_splinefx(icoil,1) = zero;  coil_splinefx(icoil,nknots) = one
@@ -265,17 +266,26 @@
               coil_splinefz(icoil,nknots) = coil_splinefz(icoil,1)
            END IF
         CASE ('S') ! Saddle coil
-           ismod = .TRUE. ! Saddle coils repeat each field period like modular coils.
+           isper = .TRUE. ! Saddle coils repeat each field period like modular coils.
            coil_splinefx(icoil,nknots) = coil_splinefx(icoil,1)
            coil_splinefy(icoil,nknots) = coil_splinefy(icoil,1)
            IF (.NOT.lwindsurf) coil_splinefz(icoil,nknots) = coil_splinefz(icoil,1)
+        CASE ('P') ! Wavy PF coil
+           isper = .FALSE. ! PF coils wrap around, do not repeat.
+           coil_splinefx(icoil,nknots) = coil_splinefx(icoil,1)
+           IF (lwindsurf) THEN !v0=0,vf=N,uf=u0
+              coil_splinefy(icoil,1) = zero;  coil_splinefy(icoil,nknots) = nfp
+           ELSE
+              coil_splinefy(icoil,nknots) = coil_splinefy(icoil,1)
+              coil_splinefz(icoil,nknots) = coil_splinefz(icoil,1)
+           END IF
         CASE DEFAULT
            IF (lwindsurf) THEN
-              ismod = ((ABS(MODULO(coil_splinefx(icoil,1),one) - &
+              isper = ((ABS(MODULO(coil_splinefx(icoil,1),one) - &
                    MODULO(coil_splinefx(icoil,nknots),one)).LE.abstol) &
                     .AND.(coil_splinefy(icoil,1) == coil_splinefy(icoil,nknots)) )
            ELSE
-              ismod = ((coil_splinefx(icoil,1) == coil_splinefx(icoil,nknots)) &
+              isper = ((coil_splinefx(icoil,1) == coil_splinefx(icoil,nknots)) &
                   .AND.(coil_splinefy(icoil,1) == coil_splinefy(icoil,nknots)) &
                   .AND.(coil_splinefz(icoil,1) == coil_splinefz(icoil,nknots)))
            END IF

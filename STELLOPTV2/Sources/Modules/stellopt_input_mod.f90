@@ -1560,7 +1560,6 @@
 
       IF (ANY(lcoil_spline)) THEN
          IF (lwindsurf) THEN
-            WRITE(iunit,'(A)') '  LWINDSURF = T'
             WRITE(iunit,'(A,A,A)') "  WINDSURFNAME = '",TRIM(windsurfname),"'"
          ENDIF
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
@@ -1571,8 +1570,9 @@
             IF (ANY(coil_splinesx(n,:)>-1)) THEN
                WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
                WRITE(iunit,'(A,I4.3)') '!       Coil Number ',n
-               ik = MINLOC(coil_splinesx(n,:),DIM=1)
-               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,L1))") 'COIL_SPLINESX(',n,',:)',(lcoil_spline(n,m), m = 1, ik)
+               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',1X,A)") 'COIL_TYPE(',n,')',COIL_TYPE(n)
+               ik = MINLOC(coil_splinesx(n,:),DIM=1) - 1
+               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',10(2X,L1))") 'LCOIL_SPLINE(',n,',:)',(lcoil_spline(n,m), m = 1, ik)
                WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'DCOIL_SPLINE(',n,',:)',(dcoil_spline(n,m), m = 1, ik)
                WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINESX(',n,',:)',(coil_splinesx(n,m), m = 1, ik)
                WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINEFX(',n,',:)',(coil_splinefx(n,m), m = 1, ik)
