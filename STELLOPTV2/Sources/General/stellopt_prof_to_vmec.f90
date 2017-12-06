@@ -44,6 +44,7 @@
                   dex_ah, dex_at
       INTEGER ::  ier,ik, iunit, dex
       REAL(rprec), PARAMETER :: ec  = 1.60217653D-19
+      REAL(rprec) :: emis_xics_temp
       REAL(rprec), ALLOCATABLE :: ne_temp(:), zeff_temp(:), te_temp(:), ti_temp(:),&
                                   th_temp(:), beamj_temp(:), bootj_temp(:), dump_temp(:)
       
@@ -304,6 +305,21 @@
       IF (ALLOCATED(ti_temp)) DEALLOCATE(ti_temp)
       IF (ALLOCATED(bootj_temp)) DEALLOCATE(bootj_temp)
       IF (ALLOCATED(beamj_temp)) DEALLOCATE(beamj_temp)
+
+      ! Output a diagnostic table
+         ! Now make table
+      IF (lnew_am) THEN
+         iunit = 68
+         IF (.not. lno_file) THEN
+            CALL safe_open(iunit,iflag,TRIM('dprof.'//TRIM(file_str)),'unknown','formatted')
+            WRITE(iunit,*) 's     emis_xics'
+            DO ik = 1, dex_am
+               CALL get_equil_emis_xics(am_aux_s(ik),TRIM(emis_xics_type),emis_xics_temp,ier)
+               WRITE(iunit,'(2es12.4)') am_aux_s(ik),emis_xics_temp
+            END DO
+            CLOSE(iunit)
+         END IF
+      END IF
       
       RETURN
 !----------------------------------------------------------------------
