@@ -63,6 +63,7 @@
       IF (EZspline_allocated(ti_spl)) CALL EZspline_free(ti_spl,iflag)
       IF (EZspline_allocated(th_spl)) CALL EZspline_free(th_spl,iflag)
       IF (EZspline_allocated(nustar_spl)) CALL EZspline_free(nustar_spl,iflag)
+      IF (EZspline_allocated(emis_xics_spl)) CALL EZspline_free(emis_xics_spl,iflag)
       IF (EZspline_allocated(zeff_spl)) CALL EZspline_free(zeff_spl,iflag)
       IF (EZspline_allocated(omega_spl)) CALL EZspline_free(omega_spl,iflag)
       dex = MINLOC(phi_aux_s(2:),DIM=1)
@@ -120,6 +121,13 @@
          omega_spl%x1 = ah_aux_s(1:dex)
          omega_spl%isHermite = 1
          CALL EZspline_setup(omega_spl,ah_aux_f,ier)
+      END IF
+      dex = MINLOC(emis_xics_s(2:),DIM=1)
+      IF (dex > 4) THEN
+         CALL EZspline_init(emis_xics_spl,dex,bcs0,iflag)
+         emis_xics_spl%x1 = emis_xics_s(1:dex)
+         emis_xics_spl%isHermite = 1
+         CALL EZspline_setup(emis_xics_spl,emis_xics_f,ier)
       END IF
       
       
@@ -307,7 +315,7 @@
       IF (ALLOCATED(beamj_temp)) DEALLOCATE(beamj_temp)
 
       ! Output a diagnostic table
-         ! Now make table
+      ! Now make table
       IF (lnew_am) THEN
          iunit = 68
          IF (.not. lno_file) THEN
