@@ -383,6 +383,14 @@
             val = 0
             if ((s_val > x1) .and. (s_val < 1.0_rprec)) val = h*(s_val-x1)*(s_val-x2)
             val = val + x3*s_val*(s_val-1)/(-0.25_rprec)
+         CASE ('hollow')
+            ! coefs(1) : Value at core
+            ! coefs(2) : Value at peak
+            ! coefs(3) : grid scaling
+            xp  = s_val**coefs(3)
+            x1  = 4*coefs(2)-3*coefs(1)
+            x2  = 2*coefs(1)-4*coefs(2)
+            val = coefs(1) + x1*xp + x2*xp*xp
       END SELECT
       RETURN
       END SUBROUTINE eval_prof_stel
@@ -775,7 +783,7 @@
       CALL tolower(prof_type)
       profile_norm = 0.0_rprec
       SELECT CASE (prof_type)
-         CASE ('two_power','two_lorentz','gauss_trunc','sum_atan','pedestal')
+         CASE ('two_power','two_lorentz','gauss_trunc','sum_atan','pedestal','bump','hollow')
             profile_norm = 0.0_rprec  ! Don't normalize as we don't want to screw up our coefficients
          CASE ('power_series','power_series_edge0')
             DO ik = LBOUND(x,DIM=1), UBOUND(x,DIM=1)
