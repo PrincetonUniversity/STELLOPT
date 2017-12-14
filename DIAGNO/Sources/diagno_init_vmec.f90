@@ -73,9 +73,11 @@
          ALLOCATE(xm_temp(mnmax_temp),xn_temp(mnmax_temp))
          ALLOCATE(rmnc_temp(mnmax_temp,2),zmns_temp(mnmax_temp,2))
          ALLOCATE(bumnc_temp(mnmax_temp,1),bvmnc_temp(mnmax_temp,1))
+         rmnc_temp =0; zmns_temp=0; bumnc_temp=0; bvmnc_temp=0
          IF (lasym) THEN
             ALLOCATE(rmns_temp(mnmax_temp,2),zmnc_temp(mnmax_temp,2))
             ALLOCATE(bumns_temp(mnmax_temp,1),bvmns_temp(mnmax_temp,1))
+            rmns_temp =0; zmnc_temp=0; bumns_temp=0; bvmns_temp=0
          END IF
          IF (lnyquist) THEN
             xm_temp = xm_nyq
@@ -110,8 +112,6 @@
                zmnc_temp(:,2) = zmnc(:,ns)
             END IF
          ENDIF
-         xm_temp=xm
-         xn_temp=-xn/nfp
          bumnc_temp(:,1) = (1.5*bsupumnc(:,ns) - 0.5*bsupumnc(:,ns-1))
          bvmnc_temp(:,1) = (1.5*bsupvmnc(:,ns) - 0.5*bsupvmnc(:,ns-1))
          IF (lasym) THEN
