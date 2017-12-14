@@ -391,6 +391,13 @@
             x1  = 4*coefs(2)-3*coefs(1)
             x2  = 2*coefs(1)-4*coefs(2)
             val = coefs(1) + x1*xp + x2*xp*xp
+         CASE ('hollow2')
+            ! coefs(1) : Value at core
+            ! coefs(2) : Value at peak
+            ! coefs(3) : grid scaling
+            xp  = s_val**coefs(3)
+            x1  = 8*coefs(2)-2*coefs(1)
+            val = (coefs(1)+x1*xp)*(xp-1)**2
       END SELECT
       RETURN
       END SUBROUTINE eval_prof_stel
