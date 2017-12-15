@@ -1,7 +1,7 @@
 MODULE ezcdf_GenGet
   USE ezcdf_opncls
   USE ezcdf_inqvar
-!DEC$ IF DEFINED (NETCDF)
+#ifdef NETCDF
   EXTERNAL handle_err
  
   PRIVATE
@@ -1027,5 +1027,5 @@ SUBROUTINE cdfr_0c8(ncid,varnam,varval,ier)
   call handle_err(status,varnam,'cdfr_0f','nf_get_var_real')
   if (PRESENT (ier)) ier = status
 END SUBROUTINE cdfr_0c8
-!DEC$ ENDIF
+#endif
 END MODULE ezcdf_GenGet
