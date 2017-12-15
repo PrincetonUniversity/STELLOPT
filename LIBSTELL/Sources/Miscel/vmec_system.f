@@ -3,25 +3,27 @@
       INTEGER :: ireturn
       CHARACTER(LEN=*), INTENT(in) :: cmd
 
-!DEC$ IF DEFINED (CRAY)
+#if defined(CRAY)
       INTEGER, EXTERNAL :: ishell
       ireturn = ishell(TRIM(cmd))
-!DEC$ ELSEIF DEFINED (RISC)
+#elif defined(RISC)
       CALL system(TRIM(cmd), ireturn)
-!DEC$ ELSEIF DEFINED (IRIX64)
+#elif defined(IRIX64)
       CALL system(TRIM(cmd))
       ireturn = 0
-!DEC$ ELSEIF DEFINED (LINUX) .OR. DEFINED(OSF1) .OR. DEFINED(MACOSX)
-C      INTEGER, EXTERNAL :: system
+#elif defined(LINUX) || defined(OSF1) || defined(DARWIN)
+!      INTEGER, EXTERNAL :: system
       INTEGER :: system
       ireturn = system(TRIM(cmd))
-!DEC$ ELSEIF DEFINED(WIN32) .OR. DEFINED(SUNOS)
+#elif defined(WIN32) || defined(SUNOS)
       INTEGER, EXTERNAL :: system
       ireturn = system(TRIM(cmd))
-!DEC$ ELSE
+#else
       INTEGER, EXTERNAL :: system
-      ireturn = system(TRIM(cmd) // CHAR(0))
-!DEC$ ENDIF
+      CHARACTER(LEN=LEN_TRIM(cmd)+1) :: cmd1
+      cmd1 = TRIM(cmd) // CHAR(0)
+      ireturn = system(TRIM(cmd1))
+#endif
       IF (PRESENT(ierror)) ierror = ireturn
 
       END SUBROUTINE vmec_system
