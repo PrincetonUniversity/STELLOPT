@@ -367,6 +367,7 @@ C-----------------------------------------------
 
       CALL second0(ton)
       IF (lactive) CALL ForwardSolve
+
       CALL second0(time_off)
       toff=time_off
       bcyclic_forwardsolve_time=bcyclic_forwardsolve_time+(toff-ton)
