@@ -75,7 +75,7 @@ C-----------------------------------------------
 !
 
         CALL totzsps_par (pgc, pr1, pru, prv, pz1, pzu, pzv, lu, lv, 
-     1                    prcon, pzcon)
+     1                    prcon, pzcon, ier_flag)
 
 !
 !     ANTI-SYMMETRIC CONTRIBUTIONS TO INVERSE TRANSFORMS

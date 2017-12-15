@@ -1,5 +1,5 @@
-      SUBROUTINE becoil (rad, zee, br, bp, bz, brvac, bpvac, bzvac, &
-     &                   lscreen)
+      SUBROUTINE becoil (rad, zee, br, bp, bz, brvac, bpvac, bzvac,
+     1                   lscreen)
       USE vparams, ONLY: nthreed
       USE vacmod
       USE parallel_include_module
