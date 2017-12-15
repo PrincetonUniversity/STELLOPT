@@ -931,6 +931,7 @@ cyl_flux.o : \
       
 
 sxrch_T.o : \
+      integration_path.o \
       stel_constants.o \
       stel_kinds.o \
       safe_open_mod.o 
@@ -1053,6 +1054,7 @@ tf_coils.o : \
       
 
 v3_utilities.o : \
+      mpi_inc.o \
       stel_kinds.o 
       
 
@@ -1090,6 +1092,7 @@ gist_mod.o : \
       
 
 vmec_utils.o : \
+      cyl_flux.o \
       read_wout_mod.o \
       stel_constants.o \
       stel_kinds.o 
