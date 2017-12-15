@@ -196,7 +196,7 @@ C-----------------------------------------------
 
          STOP
       ELSE
-         DO iseq = 2, numargs
+         DO iseq = 2, MIN(numargs,10)
             arg = command_arg(iseq)
             IF (TRIM(arg).eq.'noscreen' .or. TRIM(arg).eq.'NOSCREEN')
      1         lscreen = .false.
@@ -372,13 +372,13 @@ C-----------------------------------------------
               ictrl(3) = 0                                      ! - this is the number of iterations
               RVCCALLNUM=3
               CALL runvmec (ictrl, extension(1), lscreen,       ! - final call.
-     1       RVC_COMM, reset_file_name)
+     1        RVC_COMM, reset_file_name)
             ELSE                                                ! else-branch contains original code. 
 #if defined(SKS)		                                               
               CALL MPI_Barrier(RVC_COMM,MPI_ERR)
 #endif
               IF(grank.EQ.0) 
-     1           print *,"vmec.f:There is a bug in this branch."
+     1           PRINT *,"vmec.f:There is a bug in this branch."
               STOP 
 
               ictrl(1) = output_flag+cleanup_flag               !Output, cleanup  ! o-lines

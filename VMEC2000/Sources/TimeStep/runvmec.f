@@ -395,8 +395,9 @@ C-----------------------------------------------
 !     WRITE OUTPUT TO THREED1, WOUT FILES; FREE MEMORY ALLOCATED GLOBALLY
 !
  1000 IF(lmoreiter .AND. ier_flag.EQ.more_iter_flag) THEN  ! J Geiger
-        PRINT *, "runvmec: Running some more iterations",
-     &           " -> Skipping call to fileout!"
+        IF (grank .EQ. 0)                                                 
+     &     PRINT *, "runvmec: Running some more iterations",
+     &              " -> Skipping call to fileout!"
       ELSE IF (ier_flag.NE.more_iter_flag) THEN
 
         IF (PARVMEC) THEN 

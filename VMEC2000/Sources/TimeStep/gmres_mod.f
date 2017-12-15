@@ -72,6 +72,7 @@ C-----------------------------------------------
  90   CONTINUE
       nfcn = nfcn + 1
 
+      RETURN
 !DEBUG
       IF (lactive) THEN
       lmax = SUM(Ap(:,tlglob:trglob)**2)
@@ -89,24 +90,22 @@ C-----------------------------------------------
 
       END SUBROUTINE matvec_par
 
-      SUBROUTINE GetNLForce_par(xcstate, fsq_nl, bnorm, ndim)
+      SUBROUTINE GetNLForce_par(xcstate, fsq_nl, bnorm)
       USE xstuff, ONLY: pxc, pgc, x0=>pxsave
 !-----------------------------------------------
 !   D u m m y   A r g u m e n t s
 !-----------------------------------------------
-      INTEGER, INTENT(IN)  :: ndim
       REAL(dp),INTENT(IN)  :: xcstate(neqs), bnorm
       REAL(dp),INTENT(OUT) :: fsq_nl
 !-----------------------------------------------
 !undo internal gmres normalization
-      IF (ndim .NE. neqs) STOP 'ndim != neqs in GetNLForces_par'
 
       LACTIVE0: IF (lactive) THEN
 
       CALL Saxpby1LastNs(bnorm, xcstate, one, x0, pxc)
-
       CALL last_ntype_par
       CALL PadSides(pxc)
+
       END IF LACTIVE0
 
       CALL funct3d_par(lscreen0, ier_flag_res)
@@ -171,7 +170,6 @@ C-----------------------------------------------
       USE xstuff
       USE vmec_main, ONLY: fsqr, fsqz, fsql, ftolv
       USE gmres_lib, ONLY: gmres_par, gmres_info
-      USE vmec_input, ONLY: l_v3fit
 !-----------------------------------------------
 !   D u m m y   A r g u m e n t s
 !-----------------------------------------------
@@ -277,8 +275,6 @@ C-----------------------------------------------
        gi%my_comm_world = RUNVMEC_COMM_WORLD
        gi%lactive = lactive
 
-       gi%lverbose = .not.l_v3fit
-
        l=ictrl_prec2d
        IF (icntl(4) .NE. noPrec) ictrl_prec2d = -1
        CALL funct3d_par(lscreen0, ier_flag_res)
@@ -295,21 +291,35 @@ C-----------------------------------------------
       CALL CopyLastNtype(pgc, pgc, -one)
 
       CALL last_ns_par
+
       CALL gmres_par (n, gi, matvec_par, block_precond_par,
      1                getnlforce_par, pxcdot, pgc)
+
       CALL last_ntype_par
 
 !      ier_flag = gi%info(1)
 !      ictrl_prec2d = 1
       ier_flag = 0
-      fact = 1
-      fact_min = fact
+      fact = 1;  fact_min = fact
       fsq_min  = gi%ftol
+      fsqr_min = fsqr; fsqz_min = fsqz; fsql_min = fsql
 
 !     SIMPLE LINESEARCH SCALING SCAN
+
+!      IF (rank .EQ. 0) PRINT 1010
+ 1010 FORMAT(1x,'LINE SEARCH - SCAN ||X|| FOR MIN FSQ_NL',/,
+     &       '-------------',/,
+     &       1x,'ITER',7x,'FSQ_NL',10x,'||X||',9x,'MAX|X|')
+     
+      CALL MPI_BCAST(fsq_min, 1, MPI_REAL8, 0, RUNVMEC_COMM_WORLD, 
+     &               MPI_ERR)
+
       DO m = 1, 5
 
+        fact = fact*SQRT(0.5_dp)
         CALL SaxpbyLastNtype(fact, pxcdot, one, pxsave, pxc)
+!        CALL PadSides(pxc)
+ 
         CALL funct3d_par(lscreen0, ier_flag_res)
 
         fsq2 = fsqr+fsqz+fsql 
@@ -318,14 +328,14 @@ C-----------------------------------------------
           fsq_min = fsq2
           fact_min = fact
           fsqr_min = fsqr; fsqz_min = fsqz; fsql_min = fsql
+          IF (grank .EQ. 0) PRINT 1020, fact, fsq2
         ELSE
-          EXIT
+           EXIT
         END IF      
-        fact = fact/2._dp
 
       END DO
 
-! 1010 FORMAT(2x,'GMRES_FUN, TIME_STEP: ',1p,e10.3, ' FSQ_MIN: ',1pe10.3)
+ 1020 FORMAT(2x,'GMRES_FUN, TIME_STEP: ',1p,e10.3, ' FSQ_MIN: ',1pe10.3)
 
       fsqr = fsqr_min; fsqz = fsqz_min; fsql = fsql_min
       IF (ictrl_prec2d .EQ. 1) 
@@ -336,21 +346,20 @@ C-----------------------------------------------
 
       DEALLOCATE(gi%rcounts,gi%disp)
       LGMRESCALL=.FALSE.
+
       END SUBROUTINE gmres_fun_par
 #endif
 
-      SUBROUTINE GetNLForce(xcstate, fsq_nl, bnorm, ndim)
+      SUBROUTINE GetNLForce(xcstate, fsq_nl, bnorm)
       USE xstuff, ONLY: xc, gc, x0=>xsave
 !-----------------------------------------------
 !   D u m m y   A r g u m e n t s
 !-----------------------------------------------
-      INTEGER, INTENT(IN)  :: ndim
       REAL(dp),INTENT(IN)  :: xcstate(neqs), bnorm
       REAL(dp),INTENT(OUT) :: fsq_nl
 !-----------------------------------------------
 !undo internal gmres normalization
-      IF (ndim .NE. neqs) STOP 'ndim != neqs in GetNLForces'
-      xc(1:ndim) = x0(1:ndim)+bnorm*xcstate(1:ndim)    
+      xc(1:neqs) = x0(1:neqs)+bnorm*xcstate(1:neqs)    
 
       CALL funct3d(lscreen0, ier_flag_res)
       fsq_nl = fsqr+fsqz+fsql
@@ -395,11 +404,11 @@ C-----------------------------------------------
       nfcn = nfcn + 1
 
 !DEBUG
-      PRINT 100,'IN MATVEC, delta: ',delta,' |p|: ',
-     1        pmax, ' |Ap|: ',
-     2        SQRT(SUM(Ap(1:ndim)**2)), ' |Ap+p|: ',
-     3        SQRT(SUM((Ap(1:ndim)+p(1:ndim))**2))
- 100  FORMAT(1x,4(a,1p,e12.5))
+!      PRINT 100,'IN MATVEC, delta: ',delta,' |p|: ',
+!     1        pmax, ' |Ap|: ',
+!     2        SQRT(SUM(Ap(1:ndim)**2)), ' |Ap+p|: ',
+!     3        SQRT(SUM((Ap(1:ndim)+p(1:ndim))**2))
+! 100  FORMAT(1x,4(a,1p,e12.5))
 !END DEBUG
 
       END SUBROUTINE matvec
