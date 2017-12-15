@@ -59,7 +59,7 @@
 #######################################################################
 #            NTCC Options
 #######################################################################
-  LNTCC = F
+  LNTCC = T
   NTCC_INC = -I$(NTCCHOME)/mod
 #  NTCC_LIB = -L$(NTCCHOME)/lib -laladdinsub -lr8slatec -ladpak\
 #             -lcppsub -lcomput -lpspline -lportlib -lezcdf -lmds_sub \
