@@ -1,7 +1,8 @@
 #if defined (SKS)      
-      SUBROUTINE bcovar_par (lu, lv, tpxc)
+      SUBROUTINE bcovar_par (lu, lv, tpxc, ier_flag)
       USE vmec_main, fpsi => bvco, p5 => cp5
-      USE vmec_params, ONLY: ns4, signgs, pdamp, lamscale, ntmax
+      USE vmec_params, ONLY: ns4, signgs, pdamp, lamscale, ntmax,
+     1                       bsub_bad_js1_flag
       USE realspace, ONLY: pextra1, pextra2, pextra3, pextra4,
      1                     pguu, pguv, pgvv, pru, pzu,
      2                     pr1, prv, pzv, pshalf, pwint, pz1,
@@ -26,6 +27,7 @@
       REAL(dp), DIMENSION(nznt,ns,0:1), INTENT(INOUT) :: lu, lv
       REAL(dp), DIMENSION((1+ntor)*(1+mpol1),1:ns,1:2*ntmax), 
      1  INTENT(IN) :: tpxc
+      INTEGER, INTENT(inout) :: ier_flag
 !-----------------------------------------------
 !   L o c a l   P a r a m e t e r s
 !-----------------------------------------------
@@ -315,11 +317,8 @@
       END DO
      
       IF (rank.EQ.0) THEN
-        ! SAL 11/22/17
-        !IF (ANY(bsubvh(:,1) .ne. zero)) STOP 'BSUBVH != 0 AT JS=1'
-        !IF (ANY(bsubuh(:,1) .ne. zero)) STOP 'BSUBUH != 0 AT JS=1'
-        bsubuh(:,1) = zero
-        bsubvh(:,1) = zero
+        IF (ANY(bsubvh(:,1) .ne. zero)) ier_flag = bsub_bad_js1_flag
+        IF (ANY(bsubuh(:,1) .ne. zero)) ier_flag = bsub_bad_js1_flag
       END IF
 
       nsmin=tlglob; nsmax=MIN(trglob,ns-1)

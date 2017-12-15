@@ -11,8 +11,9 @@
 
 #if defined(SKS)
       SUBROUTINE totzsps_par(rzl_array, r11, ru1, rv1, z11, zu1, zv1,
-     1                       lu1, lv1, rcn1, zcn1)
-      USE vmec_params, ONLY: jmin1, jlam, ntmax, rcc, rss, zsc, zcs
+     1                       lu1, lv1, rcn1, zcn1, ier_flag)
+      USE vmec_params, ONLY: jmin1, jlam, ntmax, rcc, rss, zsc, zcs,
+     1                       r01_bad_value_flag
       USE precon2d, ONLY: ictrl_prec2d
       USE parallel_include_module
 !-----------------------------------------------
@@ -23,6 +24,7 @@
       REAL(dp), DIMENSION(nzeta,ntheta3,ns,0:1),
      1   INTENT(out) :: r11, ru1,
      1   rv1, z11, zu1,  zv1, lu1, lv1, rcn1, zcn1
+      INTEGER, INTENT(inout) :: ier_flag
 !-----------------------------------------------
 !   L o c a l   V a r i a b l e s
 !-----------------------------------------------
@@ -185,7 +187,7 @@
       r01(nsmin:nsmax) = rmncc(n0+ioff,m1+joff,nsmin:nsmax)
       IF (lactive) THEN
         IF (rank.EQ.0 .AND. r01(1).EQ.zero) THEN
-          STOP 'r01(0) = 0 in totzsps_par'
+          ier_flag = r01_bad_value_flag
         ELSE IF (rank.EQ.0 .AND. r01(1).NE.zero) THEN
            dkappa = z01(1)/r01(1)
         END IF
