@@ -118,7 +118,7 @@
 !   L o c a l   P a r a m e t e r s
 !-----------------------------------------------
       REAL(dp), PARAMETER :: c1p5 = 1.5_dp
-      LOGICAL :: lnyquist = .FALSE.                               !=false, suppress nyquist stuff
+      LOGICAL :: lnyquist = .TRUE.                               !=false, suppress nyquist stuff
 #ifdef NETCDF
       CHARACTER(LEN=*), PARAMETER, DIMENSION(1) ::
      1             r1dim = (/'radius'/), mn1dim = (/'mn_mode'/),
@@ -438,7 +438,7 @@
       CALL cdf_setatt(nwout, vn_iotaf, ln_iotaf)
 
       qfact=HUGE(qfact)
-      WHERE (iotaf(1:ns) .NE. zero) qfact(1:ns)=one/iotaf(1:ns)
+      WHERE (iotaf(1:ns) .NE. zero) qfact=one/iotaf(1:ns)
 
       CALL cdf_define(nwout, vn_qfact, qfact(1:ns), 
      1                dimname=r1dim)
@@ -712,13 +712,15 @@
       CALL cdf_write(nwout, vn_tmod, xn)
       CALL cdf_write(nwout, vn_pmod_nyq, xm_nyq0)
       CALL cdf_write(nwout, vn_tmod_nyq, xn_nyq0)
+
       IF (lfreeb) THEN
-      CALL cdf_write(nwout, vn_potsin, potvac(1:mnpd))
-      IF (lasym) CALL cdf_write(nwout, vn_potcos, potvac(1+mnpd:2*mnpd))
-      CALL cdf_write(nwout, vn_xmpot, xmpot)
-      CALL cdf_write(nwout, vn_xnpot, xnpot)
+         CALL cdf_write(nwout, vn_potsin, potvac(1:mnpd))
+         IF (lasym)                                                            &
+     &      CALL cdf_write(nwout, vn_potcos, potvac(1+mnpd:2*mnpd))
+         CALL cdf_write(nwout, vn_xmpot, xmpot)
+         CALL cdf_write(nwout, vn_xnpot, xnpot)
       END IF
-     
+
 940   CONTINUE   ! before closing, write the initial part of the wouttxt-file
 #endif
       IF (lwouttxt) THEN

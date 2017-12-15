@@ -1,6 +1,7 @@
       SUBROUTINE readin(input_file, iseq_count, ier_flag, lscreen)
       USE vmec_main
       USE vmec_params
+      USE vparams, ONLY: nsd
       USE vacmod
       USE vsvd
       USE vspline
@@ -310,6 +311,7 @@ C-----------------------------------------------
 !
 !     PARSE NS_ARRAY
 !
+      
       nsin = MAX (3, nsin)
       multi_ns_grid = 1
       IF (ns_array(1) .eq. 0) THEN                    !Old input style
