@@ -17,10 +17,10 @@ C-----------------------------------------------
       INTEGER :: nfper, nvper
       REAL(rprec), DIMENSION(:), ALLOCATABLE, TARGET :: potvac
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: bvecsav, amatsav,
-     1   bexni, brv, bphiv, bzv, bsqvac, r1b, rub, rvb, z1b,
+     1   bexni, brv, bphiv, bzv, bsqvac, bsqvac0, r1b, rub, rvb, z1b,
      2   zub, zvb, bexu, bexv, bexn, auu, auv, avv, snr, snv, snz, drv,
      3   guu_b, guv_b, gvv_b, rzb2, rcosuv, rsinuv,
-     4   bredge, bpedge, bzedge, vforsav
+     5   bredge, bpedge, bzedge
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: raxis_nestor, 
      1                                          zaxis_nestor
       REAL(rprec) :: bsubvvac, pi2,

@@ -247,6 +247,18 @@ chisq_line_ti.o : \
       equil_utils.o 
       
 
+chisq_xics.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      equil_utils.o 
+      
+
+chisq_xics_bright.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      equil_utils.o 
+      
+
 chisq_faraday.o : \
       stellopt_runtime.o \
       stellopt_targets.o \
@@ -270,8 +282,7 @@ chisq_neo.o : \
 chisq_dkes.o : \
       stellopt_runtime.o \
       stellopt_targets.o \
-      equil_vals.o \
-      $(NEO_DIR)/Release/neo_input_mod.o
+      equil_vals.o 
       
 
 chisq_ne.o : \
@@ -476,15 +487,6 @@ stellopt_neo.o : \
       stellopt_vars.o \
       equil_vals.o \
       stellopt_targets.o \
-      $(NEO_DIR)/Release/neo_precision.o \
-      $(NEO_DIR)/Release/neo_units.o \
-      $(NEO_DIR)/Release/neo_parameters.o \
-      $(NEO_DIR)/Release/neo_control.o \
-      $(NEO_DIR)/Release/neo_input.o \
-      $(NEO_DIR)/Release/neo_work.o \
-      $(NEO_DIR)/Release/neo_exchange.o \
-      $(NEO_DIR)/Release/neo_output.o \
-      $(NEO_DIR)/Release/sizey_bo.o \
       $(LIB_DIR)/Release/read_boozer_mod.o \
       $(LIB_DIR)/Release/safe_open_mod.o
       

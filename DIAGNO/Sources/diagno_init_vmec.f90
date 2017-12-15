@@ -34,7 +34,8 @@
 !          iunit          File ID Number
 !-----------------------------------------------------------------------
       IMPLICIT NONE
-      INTEGER :: ier, i, mn, u, v, nu2, nv2
+      LOGICAL :: lnyquist
+      INTEGER :: ier, i, mn, u, v, nu2, nv2, mnmax_temp
       INTEGER, ALLOCATABLE :: xn_temp(:), xm_temp(:)
       DOUBLE PRECISION, ALLOCATABLE :: rmnc_temp(:,:),zmns_temp(:,:),&
                            bumnc_temp(:,:),bvmnc_temp(:,:),&
@@ -60,28 +61,63 @@
       !    and j*g is on the full grid, verified in vmec_utils
       !    and read_wout_mod
       IF (lvc_field) THEN
+         ! Handle Nyquist issues
+         IF (SIZE(xm_nyq) > SIZE(xm)) THEN
+            mnmax_temp = SIZE(xm_nyq)
+            lnyquist = .true.
+         ELSE
+            mnmax_temp = mnmax
+            lnyquist = .false.
+         END IF
          ! Load Variables
-         ALLOCATE(xm_temp(mnmax),xn_temp(mnmax))
-         ALLOCATE(rmnc_temp(mnmax,2),zmns_temp(mnmax,2))
-         ALLOCATE(bumnc_temp(mnmax,1),bvmnc_temp(mnmax,1))
-         xm_temp=xm
-         xn_temp=-xn/nfp
-         rmnc_temp(:,1)=rmnc(:,ns-1)
-         rmnc_temp(:,2)=rmnc(:,ns)
-         zmns_temp(:,1)=zmns(:,ns-1)
-         zmns_temp(:,2)=zmns(:,ns)
+         ALLOCATE(xm_temp(mnmax_temp),xn_temp(mnmax_temp))
+         ALLOCATE(rmnc_temp(mnmax_temp,2),zmns_temp(mnmax_temp,2))
+         ALLOCATE(bumnc_temp(mnmax_temp,1),bvmnc_temp(mnmax_temp,1))
+         rmnc_temp =0; zmns_temp=0; bumnc_temp=0; bvmnc_temp=0
+         IF (lasym) THEN
+            ALLOCATE(rmns_temp(mnmax_temp,2),zmnc_temp(mnmax_temp,2))
+            ALLOCATE(bumns_temp(mnmax_temp,1),bvmns_temp(mnmax_temp,1))
+            rmns_temp =0; zmnc_temp=0; bumns_temp=0; bvmns_temp=0
+         END IF
+         IF (lnyquist) THEN
+            xm_temp = xm_nyq
+            xn_temp = -xn_nyq/nfp  ! Because init_virtual_casing uses (mu+nv) not (mu-nv*nfp)
+            DO u = 1,mnmax_temp
+               DO v = 1, mnmax
+                  IF ((xm(v) .eq. xm_nyq(u)) .and. (xn(v) .eq. xn_nyq(u))) THEN
+                     rmnc_temp(u,1) = rmnc(v,ns-1)
+                     zmns_temp(u,1) = zmns(v,ns-1)
+                     rmnc_temp(u,2) = rmnc(v,ns)
+                     zmns_temp(u,2) = zmns(v,ns)
+                     IF (lasym) THEN
+                        rmns_temp(u,1) = rmns(v,ns-1)
+                        zmnc_temp(u,1) = zmnc(v,ns-1)
+                        rmns_temp(u,2) = rmns(v,ns)
+                        zmnc_temp(u,2) = zmnc(v,ns)
+                     END IF
+                  END IF
+               END DO
+            END DO
+         ELSE
+            xm_temp = xm
+            xn_temp = -xn/nfp  ! Because init_virtual_casing uses (mu+nv) not (mu-nv*nfp)
+            rmnc_temp(:,1) = rmnc(:,ns-1)
+            zmns_temp(:,1) = zmns(:,ns-1)
+            rmnc_temp(:,2) = rmnc(:,ns)
+            zmns_temp(:,2) = zmns(:,ns)
+            IF (lasym) THEN
+               rmns_temp(:,1) = rmns(:,ns-1)
+               zmnc_temp(:,1) = zmnc(:,ns-1)
+               rmns_temp(:,2) = rmns(:,ns)
+               zmnc_temp(:,2) = zmnc(:,ns)
+            END IF
+         ENDIF
          bumnc_temp(:,1) = (1.5*bsupumnc(:,ns) - 0.5*bsupumnc(:,ns-1))
          bvmnc_temp(:,1) = (1.5*bsupvmnc(:,ns) - 0.5*bsupvmnc(:,ns-1))
          IF (lasym) THEN
-            ALLOCATE(rmns_temp(mnmax,2),zmnc_temp(mnmax,2))
-            ALLOCATE(bumns_temp(mnmax,1),bvmns_temp(mnmax,1))
-            rmns_temp(:,1)=rmns(:,ns-1)
-            rmns_temp(:,2)=rmns(:,ns)
-            zmnc_temp(:,1)=zmnc(:,ns-1)
-            zmnc_temp(:,2)=zmnc(:,ns)
             bumns_temp(:,1) = 1.5*bsupumns(:,ns) - 0.5*bsupumns(:,ns-1)
             bvmns_temp(:,1) = 1.5*bsupvmns(:,ns) - 0.5*bsupvmns(:,ns-1)
-            CALL init_virtual_casing(mnmax,nu2,nv2,xm_temp,xn_temp,&
+            CALL init_virtual_casing(mnmax_temp,nu2,nv2,xm_temp,xn_temp,&
                                          rmnc_temp,zmns_temp,nfp,&
                                          RMNS=rmns_temp, ZMNC=zmnc_temp,&
                                          BUMNC=bumnc_temp,BVMNC=bvmnc_temp,&
@@ -89,7 +125,7 @@
             DEALLOCATE(rmns_temp,zmnc_temp)
             DEALLOCATE(bumns_temp,bvmns_temp)
          ELSE
-            CALL init_virtual_casing(mnmax,nu2,nv2,xm_temp,xn_temp,&
+            CALL init_virtual_casing(mnmax_temp,nu2,nv2,xm_temp,xn_temp,&
                                          rmnc_temp,zmns_temp,nfp,&
                                          BUMNC=bumnc_temp,BVMNC=bvmnc_temp)
          END IF
@@ -142,6 +178,7 @@
             WRITE(6,'(3X,A,F10.5,A)')       'Current =',Itor, '[A]'
          END IF
          WRITE(6,'(3X,A,F10.5,A)')       'Flux    =',phiedge, '[Wb]'
+         IF(lnyquist) WRITE(6,'(3X,A)')  'NYQUIST DETECTED IN WOUT FILE!'
          WRITE(6,'(3X,A,F7.2)')          'VMEC v.',version_
          CALL FLUSH(6)
       END IF

@@ -6,7 +6,6 @@ C-----------------------------------------------
 C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
       INTEGER :: istat1 = 0, istat2 = 0, istat3 = 0
-      INTEGER :: istat4 = 0
 C-----------------------------------------------
 
       IF (ALLOCATED(bsubu0))
@@ -21,18 +20,10 @@ C-----------------------------------------------
      1    DEALLOCATE (amatsav, bvecsav, potvac, bsqsav, 
      2                raxis_nestor, zaxis_nestor, stat=istat3)
 
-#if defined(VVAC2_SAL)
-      !!!!! SAL ADDITION !!!!!
-      IF (ALLOCATED(vforsav)) DEALLOCATE(vforsav, stat=istat4)
-      !!!!!!!!!!!!!!!!!!!!!!!!
-#endif
-
-      IF (istat1.ne.0 .or. istat2.ne.0 .or. istat3.ne.0
-     1                .or. istat4.ne.0) THEN
+      IF (istat1.ne.0 .or. istat2.ne.0 .or. istat3.ne.0) THEN
           PRINT *,' deallocation problem in free_mem_nunv'
           PRINT *,' istat1 = ',istat1,' istat2 = ',istat2
-          PRINT *,' istat3 = ',istat3,' istat4 = ',istat4
-    
+          PRINT *,' istat3 = ',istat3
       ENDIF
 
       END SUBROUTINE free_mem_nunv

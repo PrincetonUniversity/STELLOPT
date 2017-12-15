@@ -63,6 +63,7 @@
       ELSE
          ! Basic copy of MPI_COMM_FIELDLINES
          CALL MPI_COMM_DUP( MPI_COMM_FIELDLINES, MPI_COMM_LOCAL, ierr_mpi)
+         IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'fieldlines_init_vmec: MPI_COMM_DUP',ierr_mpi)
          mylocalid = myid
          mylocalmaster = master
          numprocs_local = numprocs
@@ -134,7 +135,7 @@
       adapt_rel = vc_adapt_tol
       IF (vc_adapt_tol < 0) adapt_tol = adapt_rel
 !DEC$ IF DEFINED (MPI_OPT)
-      CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
+      CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
       IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'fieldlines_init_vmec',ierr_mpi)
 !DEC$ ENDIF
       
@@ -294,8 +295,10 @@
 
 !DEC$ IF DEFINED (MPI_OPT)
       !IF (numprocs > nlocal) THEN
-         CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)
-         IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'fieldlines_init_coil: MPI_COMM_LOCAL',ierr_mpi)
+         ierr_mpi=0
+      !   For John Schmitt
+      !   CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)
+      !   IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'fieldlines_init_vmec: MPI_COMM_FREE',ierr_mpi)
       !END IF
       CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
       IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_init_vmec',ierr_mpi)

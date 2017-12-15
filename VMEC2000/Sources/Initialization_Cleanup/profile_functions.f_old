@@ -346,7 +346,8 @@
 ! ai assumed to be dimensioned (0:n), with n >= 20 
 !-----------------------------------------------
       INTEGER     :: i, iflag, ioff
-      REAL(rprec) :: x, piota, temp_num, temp_denom
+      REAL(rprec), INTENT(IN) :: x
+      REAL(rprec) :: piota, temp_num, temp_denom
       CHARACTER(len=20) :: piota_type_lc
 !-----------------------------------------------
       piota = 0

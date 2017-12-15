@@ -24,11 +24,11 @@
       USE mpi_params     
 !DEC$ ENDIF
 !DEC$ IF DEFINED (SKS2)
-      USE parallel_vmec_module, ONLY: MyEnvVariables,&
-            InitializeParallel, FinalizeParallel, grank, gnranks,&
-            SKS_ALLGATHER, THOMAS, BCYCLIC, PARVMEC, LV3FITCALL,&
+      USE parallel_vmec_module, ONLY: &
+            InitializeParallel, FinalizeParallel, grank, &
+            PARVMEC, LV3FITCALL,&
             InitRunVmec,FinalizeRunVmec,RUNVMEC_COMM_WORLD,NS_RESLTN,&
-            FinalizeSurfaceComm, NS_COMM, parvmecinfo_file
+            FinalizeSurfaceComm, NS_COMM !, parvmecinfo_file
 !DEC$ ENDIF
       USE vmec_params, ONLY: norm_term_flag, bad_jacobian_flag,&
                              more_iter_flag, jac75_flag, input_error_flag,&
@@ -159,7 +159,7 @@
                ! Setup file string
                !IF (lscreen .and. .not.lrestart) file_str = 'reset_file'  ! First run make the restart file
                ! Execution loop
-               parvmecinfo_file = 'parvmecinfo_'//TRIM(file_str)
+               !parvmecinfo_file = 'parvmecinfo_'//TRIM(file_str)
                CALL MPI_BARRIER(MPI_COMM_MYWORLD,ierr_mpi)
                IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_paraexe: BARRIER1',ierr_mpi)
                DO dex = 1, 2

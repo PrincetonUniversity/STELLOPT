@@ -9,6 +9,7 @@
 .DS*
 ._*
 __*
+CMakeLists.txt
 */Release/*.f90
 */Release/*.f
 */Debug/*.f90

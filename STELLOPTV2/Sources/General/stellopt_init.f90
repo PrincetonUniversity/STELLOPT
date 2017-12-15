@@ -167,6 +167,7 @@
               IF (ANY(lac_f_opt)) nvars = nvars + COUNT(lac_f_opt)
               IF (ANY(lbeamj_f_opt)) nvars = nvars + COUNT(lbeamj_f_opt)
               IF (ANY(lbootj_f_opt)) nvars = nvars + COUNT(lbootj_f_opt)
+              IF (ANY(lemis_xics_f_opt)) nvars = nvars + COUNT(lemis_xics_f_opt)+1
               IF (ANY(lai_s_opt)) nvars = nvars + COUNT(lai_s_opt)
               IF (ANY(lai_f_opt)) nvars = nvars + COUNT(lai_f_opt)+1
               IF (ANY(lphi_s_opt)) nvars = nvars + COUNT(lphi_s_opt)
@@ -785,6 +786,36 @@
                        vars_max(nvar_in) = bootj_f_max(i)
                        var_dex(nvar_in) = ibootj_aux_f
                        diag(nvar_in)    = dbootj_f_opt(i)
+                       arr_dex(nvar_in,1) = i
+                    END IF
+                 END DO
+              END IF
+              IF (ANY(lemis_xics_f_opt)) THEN
+                 norm = profile_norm(emis_xics_f,emis_xics_type)
+                 IF (norm /=0) THEN
+                    nvar_in = nvar_in + 1
+                    vars(nvar_in) = norm
+                    vars_min(nvar_in) = norm - abs(norm_fac*norm)
+                    vars_max(nvar_in) = norm + abs(norm_fac*norm)
+                    var_dex(nvar_in) = iemis_xics_f
+                    diag(nvar_in)    = 1.0_rprec
+                    arr_dex(nvar_in,2) = norm_dex
+                    emis_xics_f = emis_xics_f / norm
+                    emis_xics_f_min = emis_xics_f_min/norm
+                    emis_xics_f_max = emis_xics_f_max/norm
+                 END IF
+                 DO i = LBOUND(lemis_xics_f_opt,DIM=1), UBOUND(lemis_xics_f_opt,DIM=1)
+                    IF (lemis_xics_f_opt(i)) THEN
+                       IF (lauto_domain) THEN
+                          emis_xics_f_min(i) = emis_xics_f(i) - ABS(pct_domain*emis_xics_f(i))
+                          emis_xics_f_max(i) = emis_xics_f(i) + ABS(pct_domain*emis_xics_f(i))
+                       END IF
+                       nvar_in = nvar_in + 1
+                       vars(nvar_in) = emis_xics_f(i)
+                       vars_min(nvar_in) = emis_xics_f_min(i)
+                       vars_max(nvar_in) = emis_xics_f_max(i)
+                       var_dex(nvar_in) = iemis_xics_f
+                       diag(nvar_in)    = demis_xics_f_opt(i)
                        arr_dex(nvar_in,1) = i
                     END IF
                  END DO
