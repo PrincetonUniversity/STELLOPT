@@ -87,7 +87,7 @@ C-----------------------------------------------
       timer_vac(tsurf) = timer_vac(tsurf) + (toff-ton)
 
       ton = toff
-      CALL bextern (plascur, wint)
+      CALL bextern (plascur, wint, lscreen)
       CALL second0(toff)
       timer_vac(tbext) = timer_vac(tbext)+(toff-ton)
 !

@@ -1,4 +1,4 @@
-      SUBROUTINE bextern(plascur, wint)
+      SUBROUTINE bextern(plascur, wint, lscreen)
       USE vacmod
       USE mgrid_mod, ONLY: bvac
       USE parallel_include_module
@@ -8,6 +8,7 @@ C   D u m m y   A r g u m e n t s
 C-----------------------------------------------
       REAL(dp), INTENT(IN) :: plascur
       REAL(dp), INTENT(IN) :: wint(nuv3)
+      LOGICAL :: lscreen
 C-----------------------------------------------
 C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
@@ -31,7 +32,8 @@ c
 !     COMPUTE B FROM COILS ON THE PLASMA BOUNDARY
 !
 
-      CALL becoil (r1b,z1b,brad,bphi,bz,bvac(1,1),bvac(1,2),bvac(1,3))
+      CALL becoil (r1b,z1b,brad,bphi,bz,bvac(1,1),bvac(1,2),bvac(1,3),         &
+     &             lscreen)
 
 !
 !     COMPUTE B (ON PLASMA BOUNDARY) FROM NET TOROIDAL PLASMA CURRENT

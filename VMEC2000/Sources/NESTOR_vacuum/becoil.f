@@ -1,4 +1,5 @@
-      SUBROUTINE becoil (rad, zee, br, bp, bz, brvac, bpvac, bzvac)
+      SUBROUTINE becoil (rad, zee, br, bp, bz, brvac, bpvac, bzvac, &
+     &                   lscreen)
       USE vparams, ONLY: nthreed
       USE vacmod
       USE parallel_include_module
@@ -10,6 +11,7 @@ C-----------------------------------------------
       REAL(dp), DIMENSION(nuv3), INTENT(out) :: br, bp, bz
       REAL(dp), DIMENSION(nr0b,nz0b,np0b), INTENT(in) ::
      1   brvac, bpvac, bzvac
+      LOGICAL :: lscreen
 C-----------------------------------------------
 C   L o c a l   P a r a m e t e r s
 C-----------------------------------------------
@@ -99,7 +101,7 @@ C-----------------------------------------------
          zj   = MINVAL(zee)
          IF (ri .lt. rminb) i = i + 4
          IF (zj .lt. zminb) i = i + 8
-         IF (i .ne. 0) THEN
+         IF (i .ne. 0 .and. lscreen) THEN
             PRINT *, warning
             WRITE (nthreed, *) warning
             IF (i/8 .ne. 0) PRINT *,' zmin = ', zj
