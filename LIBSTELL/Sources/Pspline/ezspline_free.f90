@@ -2,7 +2,7 @@
 ! R8 !
 !/////
 subroutine EZspline_free1_r8(spline_o, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline1_r8) spline_o
   ! ier:
@@ -26,7 +26,7 @@ end subroutine EZspline_free1_r8
  
  
 subroutine EZspline_free2_r8(spline_o, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline2_r8) spline_o
   ! ier:
@@ -57,7 +57,7 @@ end subroutine EZspline_free2_r8
  
  
 subroutine EZspline_free3_r8(spline_o, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline3_r8) spline_o
   ! ier:
@@ -94,7 +94,7 @@ end subroutine EZspline_free3_r8
 ! R4 !
 !/////
 subroutine EZspline_free1_r4(spline_o, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline1_r4) spline_o
   ! ier:
@@ -118,7 +118,7 @@ end subroutine EZspline_free1_r4
  
  
 subroutine EZspline_free2_r4(spline_o, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline2_r4) spline_o
   ! ier:
@@ -149,7 +149,7 @@ end subroutine EZspline_free2_r4
  
  
 subroutine EZspline_free3_r4(spline_o, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline3_r4) spline_o
   ! ier:

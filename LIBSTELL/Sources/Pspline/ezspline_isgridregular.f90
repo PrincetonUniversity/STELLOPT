@@ -2,7 +2,7 @@
 ! R8 !
 !/////
    subroutine EZspline_isGridRegular1_r8(spline_o, ier)
-     use EZspline_obj
+     use ezspline_obj
      implicit none
      type(EZspline1_r8) :: spline_o
      ! ier:
@@ -21,7 +21,7 @@
    end subroutine EZspline_isGridRegular1_r8
 
    subroutine EZspline_isGridRegular2_r8(spline_o, ier)
-     use EZspline_obj
+     use ezspline_obj
      implicit none
      type(EZspline2_r8) :: spline_o
      ! ier:
@@ -48,7 +48,7 @@
 
 
    subroutine EZspline_isGridRegular3_r8(spline_o, ier)
-     use EZspline_obj
+     use ezspline_obj
      implicit none
      type(EZspline3_r8) :: spline_o
      ! ier:
@@ -83,7 +83,7 @@
 ! R4 !
 !/////
    subroutine EZspline_isGridRegular1_r4(spline_o, ier)
-     use EZspline_obj
+     use ezspline_obj
      implicit none
      type(EZspline1_r4) :: spline_o
      ! ier:
@@ -102,7 +102,7 @@
    end subroutine EZspline_isGridRegular1_r4
 
    subroutine EZspline_isGridRegular2_r4(spline_o, ier)
-     use EZspline_obj
+     use ezspline_obj
      implicit none
      type(EZspline2_r4) :: spline_o
      ! ier:
@@ -129,7 +129,7 @@
 
 
    subroutine EZspline_isGridRegular3_r4(spline_o, ier)
-     use EZspline_obj
+     use ezspline_obj
      implicit none
      type(EZspline3_r4) :: spline_o
      ! ier:

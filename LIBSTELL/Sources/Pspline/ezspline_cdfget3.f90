@@ -1,6 +1,6 @@
 subroutine ezspline_cdfget3(ncid,zname,fspl,idim1,idim2,idim3,ifail)
 
-  use EZcdf
+  use ezcdf
   implicit NONE
 
   ! (due to ezspline rank limitation) read 4d object as 3d object

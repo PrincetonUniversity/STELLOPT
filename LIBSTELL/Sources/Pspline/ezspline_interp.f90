@@ -7,7 +7,7 @@
 !!!
 
 subroutine EZspline_interp1_r8(spline_o, p1, f, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline1_r8) spline_o
   real(ezspline_r8) p1  ! the location where the interpolation is sought
@@ -59,7 +59,7 @@ end subroutine EZspline_interp1_r8
 
 
 subroutine EZspline_interp1_array_r8(spline_o, k, p1, f, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline1_r8) spline_o
   integer, intent(in) :: k
@@ -110,7 +110,7 @@ end subroutine EZspline_interp1_array_r8
 !!!
 
 subroutine EZspline_interp2_r8(spline_o, p1, p2, f, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline2_r8) spline_o
   real(ezspline_r8) p1, p2  ! the location where the interpolation is sought
@@ -173,7 +173,7 @@ subroutine EZspline_interp2_r8(spline_o, p1, p2, f, ier)
 end subroutine EZspline_interp2_r8
 
 subroutine EZspline_interp2_array_r8(spline_o, k1, k2, p1, p2, f, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline2_r8) spline_o
   integer, intent(in) :: k1, k2
@@ -245,7 +245,7 @@ end subroutine EZspline_interp2_array_r8
 
 subroutine EZspline_interp2_cloud_r8(spline_o, k, p1, p2, f, ier)
   ! list of coordinate doublets
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline2_r8) spline_o
   integer, intent(in) :: k
@@ -311,7 +311,7 @@ end subroutine EZspline_interp2_cloud_r8
 !!!
 
 subroutine EZspline_interp3_r8(spline_o, p1, p2, p3, f, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline3_r8) spline_o
   real(ezspline_r8) p1, p2, p3 ! the location where the interpolation is sought
@@ -379,7 +379,7 @@ subroutine EZspline_interp3_r8(spline_o, p1, p2, p3, f, ier)
 end subroutine EZspline_interp3_r8
 
 subroutine EZspline_interp3_array_r8(spline_o, k1, k2, k3, p1, p2, p3, f, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline3_r8) spline_o
   integer :: k1, k2, k3
@@ -459,7 +459,7 @@ end subroutine EZspline_interp3_array_r8
 
 subroutine EZspline_interp3_cloud_r8(spline_o, k, p1, p2, p3, f, ier)
   ! list of coordinate triplets
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline3_r8) spline_o
   integer, intent(in) :: k
@@ -530,7 +530,7 @@ end subroutine EZspline_interp3_cloud_r8
 !!!
 
 subroutine EZspline_interp1_r4(spline_o, p1, f, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline1_r4) spline_o
   real(ezspline_r4) p1  ! the location where the interpolation is sought
@@ -582,7 +582,7 @@ end subroutine EZspline_interp1_r4
 
 
 subroutine EZspline_interp1_array_r4(spline_o, k, p1, f, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline1_r4) spline_o
   integer, intent(in) :: k
@@ -633,7 +633,7 @@ end subroutine EZspline_interp1_array_r4
 !!!
 
 subroutine EZspline_interp2_r4(spline_o, p1, p2, f, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline2_r4) spline_o
   real(ezspline_r4) p1, p2  ! the location where the interpolation is sought
@@ -695,7 +695,7 @@ subroutine EZspline_interp2_r4(spline_o, p1, p2, f, ier)
 end subroutine EZspline_interp2_r4
 
 subroutine EZspline_interp2_array_r4(spline_o, k1, k2, p1, p2, f, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline2_r4) spline_o
   integer, intent(in) :: k1, k2
@@ -768,7 +768,7 @@ end subroutine EZspline_interp2_array_r4
 
 subroutine EZspline_interp2_cloud_r4(spline_o, k, p1, p2, f, ier)
   ! list of coordinate doublets
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline2_r4) spline_o
   integer, intent(in) :: k
@@ -834,7 +834,7 @@ end subroutine EZspline_interp2_cloud_r4
 !!!
 
 subroutine EZspline_interp3_r4(spline_o, p1, p2, p3, f, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline3_r4) spline_o
   real(ezspline_r4) p1, p2, p3 ! the location where the interpolation is sought
@@ -902,7 +902,7 @@ subroutine EZspline_interp3_r4(spline_o, p1, p2, p3, f, ier)
 end subroutine EZspline_interp3_r4
 
 subroutine EZspline_interp3_array_r4(spline_o, k1, k2, k3, p1, p2, p3, f, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline3_r4) spline_o
   integer :: k1, k2, k3
@@ -982,7 +982,7 @@ end subroutine EZspline_interp3_array_r4
 
 subroutine EZspline_interp3_cloud_r4(spline_o, k, p1, p2, p3, f, ier)
   ! list of coordinate triplets
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline3_r4) spline_o
   integer, intent(in) :: k

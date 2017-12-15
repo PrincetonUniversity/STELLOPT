@@ -6,7 +6,7 @@
 !
 
 subroutine EZspline_derivative1_r8(spline_o, i1, p1, f, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline1_r8) spline_o
   integer, intent(in) :: i1
@@ -79,7 +79,7 @@ subroutine EZspline_derivative1_r8(spline_o, i1, p1, f, ier)
 end subroutine EZspline_derivative1_r8
 
 subroutine EZspline_derivative1_array_r8(spline_o, i1, k1, p1, f, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline1_r8) spline_o
   integer, intent(in) :: i1
@@ -158,7 +158,7 @@ end subroutine EZspline_derivative1_array_r8
 
 
 subroutine EZspline_derivative2_r8(spline_o, i1, i2, p1, p2, f, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline2_r8) spline_o
   integer, intent(in) :: i1, i2
@@ -251,7 +251,7 @@ end subroutine EZspline_derivative2_r8
 
 subroutine EZspline_derivative2_array_r8(spline_o, i1, i2, &
      & k1, k2, p1, p2, f, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline2_r8) spline_o
   integer, intent(in) :: i1, i2, k1, k2
@@ -368,7 +368,7 @@ end subroutine EZspline_derivative2_array_r8
 
 subroutine EZspline_derivative2_cloud_r8(spline_o, i1, i2, &
      & k, p1, p2, f, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline2_r8) spline_o
   integer, intent(in) :: i1, i2, k
@@ -466,7 +466,7 @@ end subroutine EZspline_derivative2_cloud_r8
 
 
 subroutine EZspline_derivative3_r8(spline_o, i1, i2, i3, p1, p2, p3, f, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline3_r8) spline_o
   integer, intent(in) :: i1, i2, i3
@@ -571,7 +571,7 @@ end subroutine EZspline_derivative3_r8
 
 subroutine EZspline_derivative3_array_r8(spline_o, i1, i2, i3, &
      & k1, k2, k3, p1, p2, p3, f, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline3_r8) spline_o
   integer, intent(in) :: i1, i2, i3, k1, k2, k3
@@ -704,7 +704,7 @@ end subroutine EZspline_derivative3_array_r8
 
 subroutine EZspline_derivative3_cloud_r8(spline_o, i1, i2, i3, &
      & k, p1, p2, p3, f, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline3_r8) spline_o
   integer, intent(in) :: i1, i2, i3, k
@@ -815,7 +815,7 @@ end subroutine EZspline_derivative3_cloud_r8
 !
 
 subroutine EZspline_derivative1_r4(spline_o, i1, p1, f, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline1_r4) spline_o
   integer, intent(in) :: i1
@@ -888,7 +888,7 @@ subroutine EZspline_derivative1_r4(spline_o, i1, p1, f, ier)
 end subroutine EZspline_derivative1_r4
 
 subroutine EZspline_derivative1_array_r4(spline_o, i1, k1, p1, f, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline1_r4) spline_o
   integer, intent(in) :: i1
@@ -967,7 +967,7 @@ end subroutine EZspline_derivative1_array_r4
 
 
 subroutine EZspline_derivative2_r4(spline_o, i1, i2, p1, p2, f, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline2_r4) spline_o
   integer, intent(in) :: i1, i2
@@ -1060,7 +1060,7 @@ end subroutine EZspline_derivative2_r4
 
 subroutine EZspline_derivative2_array_r4(spline_o, i1, i2, &
      & k1, k2, p1, p2, f, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline2_r4) spline_o
   integer, intent(in) :: i1, i2, k1, k2
@@ -1178,7 +1178,7 @@ end subroutine EZspline_derivative2_array_r4
 
 subroutine EZspline_derivative2_cloud_r4(spline_o, i1, i2, &
      & k, p1, p2, f, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline2_r4) spline_o
   integer, intent(in) :: i1, i2, k
@@ -1276,7 +1276,7 @@ end subroutine EZspline_derivative2_cloud_r4
 
 
 subroutine EZspline_derivative3_r4(spline_o, i1, i2, i3, p1, p2, p3, f, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline3_r4) spline_o
   integer, intent(in) :: i1, i2, i3
@@ -1382,7 +1382,7 @@ end subroutine EZspline_derivative3_r4
 
 subroutine EZspline_derivative3_array_r4(spline_o, i1, i2, i3, &
      & k1, k2, k3, p1, p2, p3, f, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline3_r4) spline_o
   integer, intent(in) :: i1, i2, i3, k1, k2, k3
@@ -1513,7 +1513,7 @@ end subroutine EZspline_derivative3_array_r4
 
 subroutine EZspline_derivative3_cloud_r4(spline_o, i1, i2, i3, &
      & k, p1, p2, p3, f, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline3_r4) spline_o
   integer, intent(in) :: i1, i2, i3, k

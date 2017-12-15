@@ -5,7 +5,7 @@
 ! map point into (xmin, xmax) cell when boundary conditions are periodic.
 
 subroutine EZspline_modulo1_r8(spline_o, p1, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline1_r8) spline_o
   real(ezspline_r8) :: p1 ! the location
@@ -19,7 +19,7 @@ subroutine EZspline_modulo1_r8(spline_o, p1, ier)
 end subroutine EZspline_modulo1_r8
 
 subroutine EZspline_modulo_array1_r8(spline_o, k1, p1, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline1_r8) spline_o
   integer, intent(in) :: k1 
@@ -35,7 +35,7 @@ end subroutine EZspline_modulo_array1_r8
 
 
 subroutine EZspline_modulo2_r8(spline_o, p1, p2, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline2_r8) spline_o
   real(ezspline_r8) :: p1, p2 ! the location
@@ -53,7 +53,7 @@ subroutine EZspline_modulo2_r8(spline_o, p1, p2, ier)
 end subroutine EZspline_modulo2_r8
 
 subroutine EZspline_modulo_array2_r8(spline_o, k1, k2, p1, p2, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline2_r8) spline_o
   integer, intent(in) :: k1, k2
@@ -72,7 +72,7 @@ subroutine EZspline_modulo_array2_r8(spline_o, k1, k2, p1, p2, ier)
 end subroutine EZspline_modulo_array2_r8
 
 subroutine EZspline_modulo_cloud2_r8(spline_o, k, p1, p2, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline2_r8) spline_o
   integer, intent(in) :: k
@@ -92,7 +92,7 @@ end subroutine EZspline_modulo_cloud2_r8
 
 
 subroutine EZspline_modulo3_r8(spline_o, p1, p2, p3, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline3_r8) spline_o
   real(ezspline_r8) :: p1, p2, p3 ! the location
@@ -114,7 +114,7 @@ subroutine EZspline_modulo3_r8(spline_o, p1, p2, p3, ier)
 end subroutine EZspline_modulo3_r8
 
 subroutine EZspline_modulo_array3_r8(spline_o, k1, k2, k3, p1, p2, p3, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline3_r8) spline_o
   integer, intent(in) :: k1, k2, k3
@@ -137,7 +137,7 @@ subroutine EZspline_modulo_array3_r8(spline_o, k1, k2, k3, p1, p2, p3, ier)
 end subroutine EZspline_modulo_array3_r8
 
 subroutine EZspline_modulo_cloud3_r8(spline_o, k, p1, p2, p3, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline3_r8) spline_o
   integer, intent(in) :: k
@@ -165,7 +165,7 @@ end subroutine EZspline_modulo_cloud3_r8
 ! map point into (xmin, xmax) cell when boundary conditions are periodic.
 
 subroutine EZspline_modulo1_r4(spline_o, p1, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline1_r4) spline_o
   real(ezspline_r4) :: p1 ! the location
@@ -179,7 +179,7 @@ subroutine EZspline_modulo1_r4(spline_o, p1, ier)
 end subroutine EZspline_modulo1_r4
 
 subroutine EZspline_modulo_array1_r4(spline_o, k1, p1, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline1_r4) spline_o
   integer, intent(in) :: k1 
@@ -195,7 +195,7 @@ end subroutine EZspline_modulo_array1_r4
 
 
 subroutine EZspline_modulo2_r4(spline_o, p1, p2, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline2_r4) spline_o
   real(ezspline_r4) :: p1, p2 ! the location
@@ -213,7 +213,7 @@ subroutine EZspline_modulo2_r4(spline_o, p1, p2, ier)
 end subroutine EZspline_modulo2_r4
 
 subroutine EZspline_modulo_array2_r4(spline_o, k1, k2, p1, p2, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline2_r4) spline_o
   integer, intent(in) :: k1, k2
@@ -232,7 +232,7 @@ subroutine EZspline_modulo_array2_r4(spline_o, k1, k2, p1, p2, ier)
 end subroutine EZspline_modulo_array2_r4
 
 subroutine EZspline_modulo_cloud2_r4(spline_o, k, p1, p2, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline2_r4) spline_o
   integer, intent(in) :: k
@@ -252,7 +252,7 @@ end subroutine EZspline_modulo_cloud2_r4
 
 
 subroutine EZspline_modulo3_r4(spline_o, p1, p2, p3, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline3_r4) spline_o
   real(ezspline_r4) :: p1, p2, p3 ! the location
@@ -274,7 +274,7 @@ subroutine EZspline_modulo3_r4(spline_o, p1, p2, p3, ier)
 end subroutine EZspline_modulo3_r4
 
 subroutine EZspline_modulo_array3_r4(spline_o, k1, k2, k3, p1, p2, p3, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline3_r4) spline_o
   integer, intent(in) :: k1, k2, k3
@@ -297,7 +297,7 @@ subroutine EZspline_modulo_array3_r4(spline_o, k1, k2, k3, p1, p2, p3, ier)
 end subroutine EZspline_modulo_array3_r4
 
 subroutine EZspline_modulo_cloud3_r4(spline_o, k, p1, p2, p3, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline3_r4) spline_o
   integer, intent(in) :: k
