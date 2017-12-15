@@ -1,4 +1,32 @@
-!DEC$ IF .NOT.DEFINED (CRAY)
+      SUBROUTINE sgefa1 (A, LDA, N, IPVT, INFO)
+      USE LIPREC, ONLY: WP => SP
+      IMPLICIT NONE
+C-----------------------------------------------
+C   D U M M Y   A R G U M E N T S
+C-----------------------------------------------
+      INTEGER LDA, N, INFO
+      INTEGER, DIMENSION(N) :: IPVT
+      REAL(WP), DIMENSION(LDA,N) :: A
+
+      CALL sgefa (A, LDA, N, IPVT, INFO)
+
+      END SUBROUTINE sgefa1 
+
+      SUBROUTINE dgefa1 (A, LDA, N, IPVT, INFO)
+      USE LIPREC, ONLY: WP => DP
+      IMPLICIT NONE
+C-----------------------------------------------
+C   D U M M Y   A R G U M E N T S
+C-----------------------------------------------
+      INTEGER LDA, N, INFO
+      INTEGER, DIMENSION(N) :: IPVT
+      REAL(WP), DIMENSION(LDA,N) :: A
+
+      CALL dgefa (A, LDA, N, IPVT, INFO)
+
+      END SUBROUTINE dgefa1
+
+#ifndef CRAY
       SUBROUTINE sgefa (A, LDA, N, IPVT, INFO)
       USE LIPREC, ONLY: WP => SP
       IMPLICIT NONE
@@ -228,31 +256,4 @@ c
       IF (a(n,n) .eq. zero) info = n
 
       END SUBROUTINE dgefa
-!DEC$ ENDIF
-      SUBROUTINE sgefa1 (A, LDA, N, IPVT, INFO)
-      USE LIPREC, ONLY: WP => SP
-      IMPLICIT NONE
-C-----------------------------------------------
-C   D U M M Y   A R G U M E N T S
-C-----------------------------------------------
-      INTEGER LDA, N, INFO
-      INTEGER, DIMENSION(N) :: IPVT
-      REAL(WP), DIMENSION(LDA,N) :: A
-
-      CALL sgefa (A, LDA, N, IPVT, INFO)
-
-      END SUBROUTINE sgefa1 
-
-      SUBROUTINE dgefa1 (A, LDA, N, IPVT, INFO)
-      USE LIPREC, ONLY: WP => DP
-      IMPLICIT NONE
-C-----------------------------------------------
-C   D U M M Y   A R G U M E N T S
-C-----------------------------------------------
-      INTEGER LDA, N, INFO
-      INTEGER, DIMENSION(N) :: IPVT
-      REAL(WP), DIMENSION(LDA,N) :: A
-
-      CALL dgefa (A, LDA, N, IPVT, INFO)
-
-      END SUBROUTINE dgefa1
+#endif
