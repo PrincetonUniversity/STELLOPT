@@ -139,7 +139,7 @@
             qdot(3) = A*( br_temp*rinv*gradb(2)-bphi_temp*gradb(1) )  - (br_temp*rinv*Efield(2)-bphi_temp*Efield(1))*binv*binv +  &
                       B*( br_temp*br_temp*gradbphi(1) + br_temp*bphi_temp*rinv*gradbphi(2) + br_temp*bz_temp*gradbphi(3) &
                           + br_temp*br_temp*bphi_temp*rinv - bphi_temp*br_temp*gradbr(1) - bphi_temp*bphi_temp*rinv*gradbr(2) &
-                          - bphi_temp*bz_temp*gradbr(3) - bphi_temp*bphi_temp*bphi_temp*rinv ) + vll*bz_temp*binv
+                          - bphi_temp*bz_temp*gradbr(3) + bphi_temp*bphi_temp*bphi_temp*rinv ) + vll*bz_temp*binv
              
             qdot(4) = -moment*binv*( br_temp*gradb(1) + bphi_temp*rinv*gradb(2) + bz_temp*gradb(3) )/mymass &
                      +mycharge*binv*(br_temp*Efield(1) + bphi_temp*rinv*Efield(2) + bz_temp*Efield(3) )/mymass
