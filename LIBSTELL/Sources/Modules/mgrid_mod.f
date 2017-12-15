@@ -5,15 +5,11 @@
       USE vsvd0, ONLY: nigroup, nparts, npfcoil, nbcoilsp, nfloops,
      1                 nbctotp
       IMPLICIT NONE
-!DEC$ IF DEFINED (MPI_OPT)
-!      INCLUDE 'mpif.h'                                                          ! MPI
-!DEC$ ELSE
-!      INTEGER :: MPI_COMM_SELF = 0
-!DEC$ ENDIF  
 
       INTEGER, PARAMETER :: nlimset = 2       !number of different limiters
       CHARACTER(LEN=*), PARAMETER :: 
      1   vn_br0 = 'br', vn_bp0 = 'bp', vn_bz0 = 'bz',
+     2   vn_ar0 = 'ar', vn_ap0 = 'ap', vn_az0 = 'az',
      3   vn_ir = 'ir', vn_jz = 'jz',
      4   vn_kp = 'kp', vn_nfp = 'nfp',
      5   vn_rmin='rmin', vn_rmax='rmax', vn_zmin='zmin', 
@@ -213,9 +209,10 @@ C-----------------------------------------------
      1                          ier_flag, lscreen)
          END IF
 
-         IF (np0b .ne. nv) THEN
+!SPH060517         IF (np0b .ne. nv) THEN
+         IF (nv.EQ.0 .OR. MOD(np0b, nv).NE.0) THEN
             PRINT *,' NZETA=',nv,
-     1      ' NOT EQUAL TO NP0B=',np0b,' IN MGRID FILE'
+     1      ' DOES NOT DIVIDE EVENLY INTO NP0B=',np0b,' IN MGRID FILE'
             ier_flag = 9
          ELSE IF (nfper0.ne.nfp) THEN
             PRINT *,' NFP(READ in) = ',nfp,' DOES NOT AGREE WITH ',
@@ -262,10 +259,9 @@ C-----------------------------------------------
       REAL(rprec), DIMENSION(:,:,:), ALLOCATABLE :: 
      1           brtemp, bztemp, bptemp
       INTEGER :: ier_flag, iunit = 50
-      INTEGER :: istat, ig, i, j, n, n1, m, nsets_max, k 
+      INTEGER :: istat, ig, i, j, n, n1, m, nsets_max, k
       LOGICAL :: lscreen, lstyle_2000
 C-----------------------------------------------
-
       CALL safe_open(iunit, istat, filename, 'old', 'unformatted')
       IF (istat .ne. 0) THEN
          ier_flag = 9
@@ -275,7 +271,7 @@ C-----------------------------------------------
       READ (iunit,iostat=istat) nr0b, nz0b, np0b, nfper0, nextcur
       IF (istat .ne. 0) ier_flag = 9
 
-      IF (nfper0.ne.nfp .or. np0b.ne.nv) RETURN
+      IF (nfper0.NE.nfp .OR. MOD(np0b, nv).NE.0) RETURN
 
       lstyle_2000 = (nextcur < 0)
       nextcur = ABS(nextcur)
@@ -304,7 +300,7 @@ C-----------------------------------------------
 !
 !     NOTE: ADD UP CONTRIBUTION TO BVAC DIRECTLY FOR ALL EXTERNAL CURRENT GROUPS
 
-      nbvac = nr0b*nz0b*np0b
+      nbvac = nr0b*nz0b*nv
       IF (.NOT. ALLOCATED(bvac)) THEN
          ALLOCATE (bvac(nbvac,3))
       ELSE IF (SIZE(bvac,1) .ne. nbvac) THEN
@@ -333,13 +329,14 @@ C-----------------------------------------------
 !
 !        STORE SUMMED BFIELD (OVER COIL GROUPS) IN BVAC
 !         
-         CALL sum_bfield(bvac(1,1), brtemp, extcur(ig), nbvac)
-         CALL sum_bfield(bvac(1,2), bptemp, extcur(ig), nbvac)
-         CALL sum_bfield(bvac(1,3), bztemp, extcur(ig), nbvac)
+         CALL sum_bfield(bvac(1,1), brtemp, extcur(ig), nv)
+         CALL sum_bfield(bvac(1,2), bptemp, extcur(ig), nv)
+         CALL sum_bfield(bvac(1,3), bztemp, extcur(ig), nv)
 
       END DO
 
       DEALLOCATE (brtemp, bztemp, bptemp)
+	np0b = nv
 
       CALL assign_bptrs(bvac)
 
@@ -605,7 +602,7 @@ C-----------------------------------------------
       CALL cdf_read(ngrid, vn_kp, np0b)
       CALL cdf_read(ngrid, vn_nfp, nfper0)
 
-      IF (nfper0.ne.nfp .or. np0b.ne.nv) RETURN
+      IF (nfper0.NE.nfp .OR. MOD(np0b, nv).NE.0) RETURN
 
       CALL cdf_read(ngrid, vn_nextcur, nextcur)
 
@@ -646,7 +643,7 @@ C-----------------------------------------------
 !
 !     READ 3D Br, Bp, Bz ARRAYS FOR EACH COIL GROUP
 !
-      nbvac = nr0b*nz0b*np0b
+      nbvac = nr0b*nz0b*nv
       IF (.NOT. ALLOCATED(bvac)) THEN
          ALLOCATE (bvac(nbvac,3), stat=istat)
       ELSE IF (SIZE(bvac,1) .ne. nbvac) THEN
@@ -681,10 +678,12 @@ C-----------------------------------------------
 !
 !        STORE SUMMED BFIELD (OVER COIL GROUPS) IN BVAC
 !
-         CALL sum_bfield(bvac(:,1), brtemp, extcur(ig), nbvac)
-         CALL sum_bfield(bvac(:,2), bptemp, extcur(ig), nbvac)
-         CALL sum_bfield(bvac(:,3), bztemp, extcur(ig), nbvac)
+         CALL sum_bfield(bvac(1,1), brtemp, extcur(ig), nv)
+         CALL sum_bfield(bvac(1,2), bptemp, extcur(ig), nv)
+         CALL sum_bfield(bvac(1,3), bztemp, extcur(ig), nv)
       END DO
+
+	np0b = nv
 
 #if defined(MPI_OPT)
       IF (lMPIInit.NE.0) THEN
@@ -730,13 +729,15 @@ C-----------------------------------------------
       END SUBROUTINE read_mgrid_nc
 #endif
 
-      SUBROUTINE sum_bfield(bfield, bf_add, cur, n1)
-      INTEGER     :: n1
-      REAL(rprec), INTENT(inout) :: bfield(n1)
-      REAL(rprec), INTENT(in)    :: bf_add(n1)
+      SUBROUTINE sum_bfield(bfield, bf_add, cur, nv)
+	INTEGER, INTENT(IN)        :: nv
+      REAL(rprec), INTENT(INOUT) :: bfield(nr0b*nz0b,nv)
+      REAL(rprec), INTENT(IN)    :: bf_add(nr0b*nz0b,np0b)
+	INTEGER     :: nskip
       REAL(rprec) :: cur
 
-      bfield = bfield + cur*bf_add
+      nskip = np0b/nv
+      bfield = bfield + cur*bf_add(:,1:np0b:nskip)
 
       END SUBROUTINE sum_bfield
 

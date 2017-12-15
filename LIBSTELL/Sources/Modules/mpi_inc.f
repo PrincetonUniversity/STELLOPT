@@ -10,8 +10,9 @@
 
       MODULE mpi_inc
       USE mpi_params, ONLY: MPI_COMM_PARVMEC
+
       IMPLICIT NONE
-      !INTEGER, PARAMETER :: MPI_COMM_PARVMEC=452
+
 #if defined(MPI_OPT)
       INCLUDE 'mpif.h'
 #endif

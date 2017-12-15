@@ -1,5 +1,5 @@
       MODULE vf_coils
-      USE Vcoilpts
+      USE vcoilpts
       INTEGER :: nvf_fix
       INTEGER :: num_vf, nvf, nrvf_c, nvf_coeffs
       REAL(rprec), DIMENSION(ncdim) :: rc_vf, zc_vf, cc_vf

@@ -1094,11 +1094,11 @@
 !  dimensions to allocate the temp buffer.
          CALL compression_decompress(this%a_r(1)%p)
          ALLOCATE(temp_buffer(SIZE(this%a_r(1)%p%data_buffer, 1),              &
-     &                        SIZE(this%a_r(2)%p%data_buffer, 2),              &
+     &                        SIZE(this%a_r(1)%p%data_buffer, 2),              &
      &                        SIZE(this%a_r)))
 
          temp_buffer(:,:,1) = this%a_r(1)%p%data_buffer
-         CALL compression_cleanup(this%a_r(1)%P)
+         CALL compression_cleanup(this%a_r(1)%p)
          DO phi = 2, SIZE(this%a_r)
             CALL compression_decompress(this%a_r(phi)%p)
             temp_buffer(:,:,phi) = this%a_r(phi)%p%data_buffer
