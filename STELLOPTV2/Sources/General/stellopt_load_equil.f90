@@ -182,11 +182,14 @@
             END IF
             ALLOCATE(xm_temp(mnmax_temp),xn_temp(mnmax_temp))
             ALLOCATE(rmnc_temp(mnmax_temp,ns_vmec), zmns_temp(mnmax_temp,ns_vmec), lmns_temp(mnmax_temp,ns_vmec))
-            IF (lasym_vmec) ALLOCATE(rmns_temp(mnmax_temp,ns_vmec), zmnc_temp(mnmax_temp,ns_vmec), lmnc_temp(mnmax_temp,ns_vmec))
+            rmnc_temp=0; zmns_temp=0; lmns_temp = 0;
+            IF (lasym_vmec) THEN
+                ALLOCATE(rmns_temp(mnmax_temp,ns_vmec), zmnc_temp(mnmax_temp,ns_vmec), lmnc_temp(mnmax_temp,ns_vmec))
+                rmns_temp=0; zmnc_temp=0; lmnc_temp = 0;
+            END IF
             IF (SIZE(xm_nyq_vmec) > SIZE(xm_vmec)) THEN
                xm_temp(1:mnmax_temp) = xm_nyq_vmec(1:mnmax_temp)
                xn_temp(1:mnmax_temp) = xn_nyq_vmec(1:mnmax_temp)
-               rmnc_temp=0; zmns_temp=0; lmns_temp = 0;
                DO u = 1,mnmax_temp
                   DO v = 1, mnmax_vmec
                      IF ((xm_vmec(v) .eq. xm_nyq_vmec(u)) .and. (xn_vmec(v) .eq. xn_nyq_vmec(u))) THEN
