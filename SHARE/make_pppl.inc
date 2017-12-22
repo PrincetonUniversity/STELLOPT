@@ -15,7 +15,7 @@
 #            Define Compiler Flags
 #######################################################################
 #  FLAGS_R = -O2 -g -fexternal-blas -fbacktrace -fcheck=all 
-  FLAGS_R = -O2 -g -fexternal-blas -fbacktrace
+  FLAGS_R = -O0 -g -fexternal-blas -fbacktrace
   FLAGS_D = -g -O0 -fexternal-blas -fcheck=all 
 
 # Crutch for broken module vars
@@ -37,8 +37,8 @@
 #            MPI Options
 #######################################################################
   LMPI    = T
-  MPI_COMPILE = mpif90
-  MPI_COMPILE_FREE = mpif90 -ffree-form \
+  MPI_COMPILE = mpifort
+  MPI_COMPILE_FREE = mpifort -ffree-form \
                      -ffree-line-length-none -ffixed-line-length-none
   MPI_COMPILE_C = mpicc
   MPI_LINK = mpif90
