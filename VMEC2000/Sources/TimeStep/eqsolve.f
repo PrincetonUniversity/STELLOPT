@@ -98,22 +98,22 @@ C-----------------------------------------------
       ier_flag = norm_term_flag
 
 !
+!
 !     FORCE ITERATION LOOP
 !
       iter_loop: DO WHILE (liter_flag)
 !
 !     ADVANCE FOURIER AMPLITUDES OF R, Z, AND LAMBDA
-!
          CALL evolve (delt0r, ier_flag, liter_flag, lscreen)
 
          IF (ijacob.eq.0 .and. (ier_flag.eq.bad_jacobian_flag
      1       .or. irst.eq.4) .and. ns.ge.3) THEN
             IF (lscreen) THEN
                IF (ier_flag .eq. bad_jacobian_flag) THEN
-                 IF (rank.EQ.0) 
+                 IF (grank.EQ.0) 
      1           PRINT *, ' INITIAL JACOBIAN CHANGED SIGN!'
                END IF
-               IF (rank.EQ.0) PRINT *,
+               IF (grank.EQ.0) PRINT *,
      1            ' TRYING TO IMPROVE INITIAL MAGNETIC AXIS GUESS'
             END IF
 #if defined (SKS)
@@ -167,6 +167,7 @@ C-----------------------------------------------
 
 !       Store force residual, wdot for plotting
          wdota = ABS(w0 - w1)/w0
+         CALL FLUSH(6)
 #if defined(SKS)
          CALL MPI_Bcast(r00,1,MPI_REAL8,0,NS_COMM,MPI_ERR)
 #endif
@@ -188,7 +189,7 @@ C-----------------------------------------------
          IF (MOD(iter2,nstep).eq.0 .or. iter2.eq.1 .or.
      1       .not.liter_flag) CALL printout(iter2, delt0r, w0, lscreen)
          iter2 = iter2 + 1
-         iterc = iterc + 1
+!         iterc = iterc + 1
 ! JDH 2012-06-20 ^^^ iterc is a cumulative iteration counter. Used in V3FIT.
 !   Never reset to 1
 

@@ -66,12 +66,15 @@
                 lverb=.false.
             case ("-wout")
                 lwout=.true.
+            case ("-flip")
+                lflipped=.true.
             case ("-help","-h") ! Output Help message
                write(6,*)' VMEC2SPEC - Version: ',VMEC2SPEC_VERSION
                write(6,*)' Usage: xvmec2spec input_file <options>'
                write(6,*)'    input_file:  VMEC input file'
                write(6,*)'    <options>'
                WRITE(6,*)'     -wout        Use VMEC Equilibria'
+               WRITE(6,*)'     -flip        Flip Toroidal Harmonics'
                write(6,*)'     -noverb      Supress all screen output'
                write(6,*)'     -help        Output help message'
                stop

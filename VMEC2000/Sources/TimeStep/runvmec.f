@@ -290,29 +290,24 @@ C-----------------------------------------------
 
 #if defined (SKS)
          CALL second0(tiniton)
-         CALL MPI_BARRIER(RUNVMEC_COMM_WORLD, MPI_ERR)
          IF(PARVMEC .AND. NS_RESLTN.GE.1) THEN
            IF (lactive) THEN
              CALL Gather4XArray(pscalxc)
              CALL Gather4XArray(pxc)
            END IF
-           CALL MPI_BARRIER(RUNVMEC_COMM_WORLD, MPI_ERR)
            CALL FinalizeSurfaceComm(NS_COMM)
 
            CALL second0(bcastton)
            CALL MPI_Bcast(pscalxc,SIZE(pscalxc),MPI_REAL8,
      1                      0,RUNVMEC_COMM_WORLD,MPI_ERR)
-           CALL MPI_BARRIER(RUNVMEC_COMM_WORLD, MPI_ERR)
            CALL MPI_Bcast(pxc,SIZE(pxc),MPI_REAL8,
      1                      0,RUNVMEC_COMM_WORLD,MPI_ERR)
-           CALL MPI_BARRIER(RUNVMEC_COMM_WORLD, MPI_ERR)
            CALL second0(bcasttoff)
            broadcast_time = broadcast_time + (bcasttoff - bcastton)
          END IF
 
          CALL InitSurfaceComm(nsval, nzeta, ntheta3,
      1        ntmax, ntor, mpol1)
-         CALL MPI_BARRIER(RUNVMEC_COMM_WORLD, MPI_ERR)
          CALL second0(tinitoff)
          init_parallel_time = init_parallel_time + (tinitoff-tiniton)
 
