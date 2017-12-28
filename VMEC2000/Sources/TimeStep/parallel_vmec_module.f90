@@ -233,6 +233,8 @@ CONTAINS
       END IF
       lactive=.TRUE.
       CALL MPI_Comm_rank(NS_COMM,rank,MPI_ERR)
+    ELSE
+      lactive=.FALSE.
     END IF
 #endif
   END SUBROUTINE SetSurfaceCommunicator
@@ -453,6 +455,8 @@ CONTAINS
       CALL SetVacuumPartitions(nuv3,nuv3min, nuv3max)
       CALL Setnuv3PartitionArrays
       vlactive=.TRUE.
+    ELSE
+      vlactive=.FALSE.
     ENDIF 
 #else
     nuv3min = 1;  nuv3max = nuv3
