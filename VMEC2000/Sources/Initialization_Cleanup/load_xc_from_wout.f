@@ -3,25 +3,25 @@
       USE read_wout_mod, ONLY: rmnc, zmns, lmns, rmns, zmnc, lmnc,
      1    xm, xn, ntor, ns,
      2    nfp, mnmax, read_wout_file, read_wout_deallocate
-      USE vmec_params, ONLY: mscale, nscale, ntmax, lamscale,
+      USE vmec_params, ONLY: mscale, nscale, ntmax,
      1                       rcc, rss, rsc, rcs, zsc, zcs, zcc, zss
       USE vmec_dim, ONLY: mpol1
       USE vparams, ONLY: one, zero, rprec
       USE vmec_input, ONLY: lasym
-      USE vmec_main, ONLY: lthreed, p5 => cp5, sp, sm, phipf, lconm1
+      USE vmec_main, ONLY: lthreed, p5 => cp5, sp, sm, phipf
+      USE parallel_include_module, ONLY: rank
       IMPLICIT NONE
 C-----------------------------------------------
 C   D u m m y   A r g u m e n t s
 C-----------------------------------------------
-      INTEGER, INTENT(IN) :: ns_in, mpol1_in, ntor_in
+      INTEGER :: ns_in, mpol1_in, ntor_in
       REAL(rprec), DIMENSION(ns_in,0:ntor_in,0:mpol1_in,ntmax),
-     1   INTENT(OUT) :: rmn, zmn, lmn
-      LOGICAL, INTENT(OUT) :: lreset
+     1   INTENT(out) :: rmn, zmn, lmn
+      LOGICAL, INTENT(out) :: lreset
       CHARACTER(LEN=*) :: reset_file
 C-----------------------------------------------
 C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
-      INTEGER, PARAMETER :: m1=1
       INTEGER :: ierr, mn, m, n, n1, js
       REAL(rprec) :: t1, t2
       REAL(rprec), ALLOCATABLE :: temp(:,:)
@@ -37,12 +37,12 @@ C-----------------------------------------------
 !      CALL read_wout_file (reset_file(5:), ierr)
       reset_file = " "               !nullify so this routine will not be recalled with present reset_file
 
-      IF (ierr .ne. 0) THEN
+      IF (ierr .ne. 0.AND.rank.EQ.0) THEN
          PRINT *,' Error opening/reading wout file in VMEC load_xc!'
          RETURN
       END IF
 
-      IF (ns_in .ne. ns) THEN
+      IF (ns_in .ne. ns.AND.rank.EQ.0) THEN
          PRINT *, 'ns_in (passed to load_xc) != ns (from reading wout)'
          RETURN
       END IF
@@ -99,23 +99,22 @@ C-----------------------------------------------
 
 !
 !     CONVERT TO INTERNAL FORM FOR (CONSTRAINED) m=1 MODES
-!     (INVERSE OF convert_sym, convert_asym ROUTINES)
 !
-      IF (lconm1) THEN
+
       IF (lthreed .or. lasym) ALLOCATE (temp(ns_in,0:ntor_in))
       IF (lthreed) THEN
-         temp = rmn(:,:,m1,rss)
-         rmn(:,:,m1,rss) = p5*(temp + zmn(:,:,m1,zcs))
-         zmn(:,:,m1,zcs) = p5*(temp - zmn(:,:,m1,zcs))
+         temp = rmn(:,:,1,rss)
+         rmn(:,:,1,rss) = p5*(temp + zmn(:,:,1,zcs))
+         zmn(:,:,1,zcs) = p5*(temp - zmn(:,:,1,zcs))
       END IF
       IF (lasym) THEN
-         temp = rmn(:,:,m1,rsc)
-         rmn(:,:,m1,rsc) = p5*(temp + zmn(:,:,m1,zcc))
-         zmn(:,:,m1,zcc) = p5*(temp - zmn(:,:,m1,zcc))
+         temp = rmn(:,:,1,rsc)
+         rmn(:,:,1,rsc) = p5*(temp + zmn(:,:,1,zcc))
+         zmn(:,:,1,zcc) = p5*(temp - zmn(:,:,1,zcc))
       END IF
 
       IF (ALLOCATED(temp)) DEALLOCATE (temp)
-      END IF
+
 !
 !     CONVERT lambda TO INTERNAL FULL MESH REPRESENTATION
 !
@@ -138,12 +137,8 @@ C-----------------------------------------------
          END DO
       END DO
 
-!v8.50 add lamscale factor (profil1d called first)
-      t1 = lamscale
-      IF (t1 .EQ. zero) t1 = one
-
       DO js = 2, ns
-         lmn(js,:,:,:) = phipf(js)*lmn(js,:,:,:) / t1
+         lmn(js,:,:,:) = phipf(js)*lmn(js,:,:,:)
       END DO
 
       CALL read_wout_deallocate

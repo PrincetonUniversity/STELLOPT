@@ -2,24 +2,21 @@
       USE vmec_main
       USE vmec_input, ONLY: bloat, ncurr
       USE vmec_params
-#ifdef _VACUUM2
-      USE vac2_vacmod
-#else
       USE vacmod
-#endif
       USE safe_open_mod
+      USE parallel_include_module
       IMPLICIT NONE
-!-----------------------------------------------
-!   D u m m y   A r g u m e n t s
-!-----------------------------------------------
+C-----------------------------------------------
+C   D u m m y   A r g u m e n t s
+C-----------------------------------------------
       INTEGER ier_flag, iunit
       CHARACTER(LEN=*) :: in_file
-!-----------------------------------------------
-!   L o c a l   V a r i a b l e s
-!-----------------------------------------------
+C-----------------------------------------------
+C   L o c a l   V a r i a b l e s
+C-----------------------------------------------
       INTEGER :: ireadseq, iosnml
-!-----------------------------------------------
-      iunit = indata0
+C-----------------------------------------------
+      iunit = indata0+rank
       CALL safe_open (iunit, ireadseq, in_file, 'old', 'formatted')
       IF (ireadseq .ne. 0) THEN
          WRITE (6, '(3a,i4)') ' In VMEC, error opening input file: ',
@@ -55,28 +52,14 @@
       IF (ntor .gt. ntord) STOP 'ntor>ntord: lower ntor'
       mpol1 = mpol - 1
       ntor1 = ntor + 1
-! 20130924 J.Geiger, assure minimum ntheta-value
-!                    and add a notification
-      IF (ntheta .lt. 2*mpol+6 ) THEN
-!        WRITE(6,*)"Adjust NTHETA from ",ntheta,
-!     1            " to new value: ",2*mpol+6
-        ntheta = 2*mpol+6    !number of theta grid points (>=2*mpol+6)
-      ENDIF
+      IF (ntheta .le. 0) ntheta = 2*mpol + 6    !number of theta grid points (>=2*mpol+6)
       ntheta1 = 2*(ntheta/2)
       ntheta2 = 1 + ntheta1/2                   !u = pi
       IF (ntor .eq. 0) lthreed = .false.
       IF (ntor .gt. 0) lthreed = .true.
 
       IF (ntor.eq.0 .and. nzeta.eq.0) nzeta = 1
-! 20130924 J.Geiger, assure minimum nzeta-value for ntor>0
-!                    and add a notification
-      IF (ntor.gt.0)then
-        IF (nzeta .lt. 2*ntor+4) THEN
-!          WRITE(6,*)"Adjust NZETA from ",nzeta,
-!     1              " to new value: ",2*ntor+4
-          nzeta = 2*ntor+4      !number of zeta grid points (=1 IF ntor=0)
-        ENDIF
-      ENDIF
+      IF (nzeta .le. 0) nzeta = 2*ntor + 4      !number of zeta grid points (=1 IF ntor=0)
       mnmax = ntor1 + mpol1*(1 + 2*ntor)        !SIZE of rmnc,  rmns,  ...
       mnsize = mpol*ntor1                       !SIZE of rmncc, rmnss, ...
 
@@ -87,17 +70,17 @@
       mf1 = 1+mf
       nf1 = 2*nf+1
       mnpd = mf1*nf1
+      nfper = nfp
+
 !
 !     INDEXING FOR PACKED-ARRAY STRUCTURE OF XC, GC 
 !
       rcc = 1;  zsc = 1
       rss = 0;  rsc = 0;  rcs = 0
       zcc = 0;  zss = 0;  zcs = 0     
-      IF (.NOT.lasym) THEN
+      IF (.not.lasym) THEN
          ntheta3 = ntheta2
-#ifndef _VACUUM2
          mnpd2 = mnpd
-#endif
          IF (lthreed) THEN
             ntmax = 2
             rss = 2;  zcs = 2
@@ -106,9 +89,7 @@
          END IF
       ELSE
          ntheta3 = ntheta1
-#ifndef _VACUUM2
          mnpd2 = 2*mnpd
-#endif
          IF (lthreed) THEN
              ntmax = 4
              rss = 2;  rsc = 3;  rcs = 4
@@ -120,15 +101,12 @@
       END IF
 
       nuv = nu*nv
-      nznt = nzeta*ntheta3
-#ifndef _VACUUM2
-      nfper = nfp
       nu2 = nu/2 + 1
       nu3 = ntheta3
-      nuv2 = nznt
-#endif
-!     IF (nuv2 < mnpd) THEN
-!        PRINT *, ' nuv2 < mnpd: not enough integration points'
+      nznt = nzeta*ntheta3
+      nuv3 = nznt
+!     IF (nuv3 < mnpd) THEN
+!        PRINT *, ' nuv3 < mnpd: not enough integration points'
 !        STOP 11
 !     ENDIF
 

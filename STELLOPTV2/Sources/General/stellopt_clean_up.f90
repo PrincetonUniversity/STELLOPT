@@ -150,6 +150,7 @@
                   CALL move_txtfile('neo_out.'//TRIM(proc_string_old),'neo_out.'//TRIM(proc_string))
                   CALL move_txtfile('tprof.'//TRIM(proc_string_old),'tprof.'//TRIM(proc_string))
                   CALL move_txtfile('jprof.'//TRIM(proc_string_old),'jprof.'//TRIM(proc_string))
+                  CALL move_txtfile('dprof.'//TRIM(proc_string_old),'dprof.'//TRIM(proc_string))
                   CALL move_txtfile('boot_fit.'//TRIM(proc_string_old),'boot_fit.'//TRIM(proc_string))
                   IF (lcoil_geom) THEN
                      CALL move_txtfile('coils.'//TRIM(proc_string_old),'coils.'//TRIM(proc_string))
@@ -366,6 +367,7 @@
                   CALL move_txtfile('neo_out.'//TRIM(proc_string_old),'neo_out.'//TRIM(proc_string))
                   CALL move_txtfile('tprof.'//TRIM(proc_string_old),'tprof.'//TRIM(proc_string))
                   CALL move_txtfile('jprof.'//TRIM(proc_string_old),'jprof.'//TRIM(proc_string))
+                  CALL move_txtfile('dprof.'//TRIM(proc_string_old),'dprof.'//TRIM(proc_string))
                   CALL move_txtfile('boot_fit.'//TRIM(proc_string_old),'boot_fit.'//TRIM(proc_string))
                   CALL copy_boozer_file(TRIM(proc_string_old),TRIM(proc_string))
                   IF (lcoil_geom) THEN

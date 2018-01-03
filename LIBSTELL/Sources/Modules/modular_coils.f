@@ -1,5 +1,5 @@
       MODULE modular_coils
-      USE Vcoilpts
+      USE vcoilpts
       INTEGER, PARAMETER :: nfourier=20, nsurf_p=200
       INTEGER :: nf_rho, nf_phi, nstep, niter_opt, nmod_coils,
      1    nmid, nodd, nfper, nmod_coils_per_period,

@@ -34,7 +34,7 @@ c
 
 c     Calculate fuv at each point on half+ period on uv surface
       i = 0                                !i is REAL space infex 1,nuvh
-      DO kv = 1, 1 + nv              !See surfacep.f, this is the same
+      DO kv = 1, 1 + nv/2              !See surfacep.f, this is the same
          DO ku = 1, nu
             i = i + 1                 !i goes from 1 to nuvh=nu*(1+nv/2)
 c        Find fuv(i) at this uv point

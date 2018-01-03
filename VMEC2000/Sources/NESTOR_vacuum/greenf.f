@@ -1,21 +1,23 @@
-      SUBROUTINE greenf(delgr, delgrp, ip)
+      SUBROUTINE greenf (delgr, delgrp, ip)
       USE vacmod
       USE vparams, ONLY: one
+      USE parallel_include_module
+      USE timer_sub
       IMPLICIT NONE
 C-----------------------------------------------
 C   D u m m y   A r g u m e n t s
 C-----------------------------------------------
       INTEGER, INTENT(in) :: ip
-      REAL(rprec), DIMENSION(nuv), INTENT(out) :: delgr, delgrp
+      REAL(dp), DIMENSION(nuv), INTENT(OUT) :: delgr, delgrp
 C-----------------------------------------------
 C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
       INTEGER, DIMENSION(2) :: ilow, ihigh
-      INTEGER :: ivoff, iskip, iuoff, i, kp, nloop, ivoff0
-      REAL(rprec), DIMENSION(:), ALLOCATABLE ::
-     1    gsave, ga1, ga2, dsave
-      REAL(rprec):: xip, yip, xper, yper,
-     1    sxsave, sysave, ftemp, htemp
+      INTEGER :: ivoff, iskip, iuoff, i, kp, nloop
+      REAL(dp), DIMENSION(:), ALLOCATABLE ::
+     1    ftemp, gsave, htemp, ga1, ga2, dsave
+      REAL(dp):: xip, yip, xper, yper,
+     1    sxsave, sysave, tgreenon, tgreenoff
 C-----------------------------------------------
 !
 !     ON ENTRANCE, IP IS THE INDEX OF THE PRIMED MESH POINT (lies in 1st field period)
@@ -28,8 +30,11 @@ C-----------------------------------------------
 !     BOTH THESE QUANTITIES ARE COMPUTED FOR ALL UNPRIMED U,V POINTS IN ONE FIELD PERIOD,
 !     FOR THIS FIXED PRIMED POINT (IP).
 !
-      ALLOCATE (gsave(nuv), ga1(nuv), ga2(nuv), dsave(nuv), stat=i)
-      IF (i .ne. 0) STOP 'allocation error in greenf'
+      CALL second0(tgreenon)
+
+      ALLOCATE (ftemp(nuv), gsave(nuv), htemp(nuv), ga1(nuv), ga2(nuv),
+     1          dsave(nuv), stat=i)
+      IF (i .NE. 0) STOP 'allocation error in greenf'
 
 !
 !     COMPUTE OFFSETS FOR U,V ANGLE DIFFERENCES AND CONSTANTS
@@ -38,30 +43,31 @@ C-----------------------------------------------
       ilow(2) = ip + 1
       ihigh(1) = ip - 1
       ihigh(2) = nuv
-      ivoff0 = nuv + 1 - ip
+      ivoff = nuv + 1 - ip
       iskip = (ip - 1)/nv
       iuoff = nuv - nv*iskip
       xip = rcosuv(ip)             !x == r*COS(ip), in 1st field period
       yip = rsinuv(ip)             !y == r*SIN(ip), in 1st field period
       delgr  = 0
       delgrp = 0
+
 !
 !     COMPUTE FIELD-PERIOD INVARIANT VECTORS
 !
 !     NOTE: |x - x'|**2 = gsave - 2*[x*x' + y*y']
 !
       DO i = 1, nuv
-         gsave(i) = rzb2(ip) + rzb2(i) - 2*z1b(ip)*z1b(i)
-         dsave(i) = drv(ip) + z1b(i)*snz(ip)
+        gsave(i) = rzb2(ip) + rzb2(i) - 2*z1b(ip)*z1b(i)
+        dsave(i) = drv(ip) + z1b(i)*snz(ip)
       END DO
+
 !
 !     SUM OVER FIELD-PERIODS (NVPER=NFPER) OR INTEGRATE OVER NV (NVPER=64) IF NV == 1
 !
 !     NOTE THE SURFACE NORMAL SNORM == Xu cross Xv = NP*[SNR, SNV, SNZ]
-!     IS PERIODIC ON EACH FIELD PERIOD: NOTE THE LOOP OVER KP IS A REDUCTION ON delgr, delgrp
+!     IS PERIODIC ON EACH FIELD PERIOD
 !
       DO kp = 1, nvper
-         ivoff = ivoff0 + 2*nu*(kp-1)
          xper = xip*cosper(kp) - yip*sinper(kp)              !x(ip) in field period kp
          yper = yip*cosper(kp) + xip*sinper(kp)              !y(ip) in field period kp
          sxsave = (snr(ip)*xper - snv(ip)*yper)/r1b(ip)
@@ -84,13 +90,13 @@ C-----------------------------------------------
                DO i = ilow(nloop), ihigh(nloop)
                  ga2(i) = ga2(i)/ga1(i)
                  ga1(i) = one/SQRT(ga1(i))
-                 ftemp = one/(gsave(i) 
+                 ftemp(i) = one/(gsave(i) 
      1                    - 2*(xper*rcosuv(i) + yper*rsinuv(i)))
-                 htemp = SQRT(ftemp)
+                 htemp(i) = SQRT(ftemp(i))
                  delgrp(i) = delgrp(i) - ga2(i)*ga1(i) 
-     1                     + ftemp*htemp*
+     1                     + ftemp(i)*htemp(i)*
      2              (rcosuv(i)*sxsave + rsinuv(i)*sysave + dsave(i))
-                 delgr(i) = delgr(i) + htemp - ga1(i)
+                 delgr(i) = delgr(i) + htemp(i) - ga1(i)
                END DO
             END DO
 
@@ -99,20 +105,26 @@ C-----------------------------------------------
                 delgr  = delgr /nvper
             END IF
 
-!!            ivoff = ivoff + 2*nu
+            ivoff = ivoff + 2*nu
             ihigh(1) = nuv
 
          ELSE
-            DO i = 1,nuv
-              ftemp = one/(gsave(i)  
+            DO i = 1, nuv
+              ftemp(i) = one/(gsave(i)  
      1                 -  2*(xper*rcosuv(i) + yper*rsinuv(i)))
-              htemp = SQRT(ftemp)
-              delgrp(i) = delgrp(i) + ftemp*htemp*
+              htemp(i) = SQRT(ftemp(i))
+              delgrp(i) = delgrp(i) + ftemp(i)*htemp(i)*
      1           (rcosuv(i)*sxsave + rsinuv(i)*sysave + dsave(i))
-              delgr(i) = delgr(i) + htemp
-            END DO
+              delgr(i) = delgr(i) + htemp(i)
+           END DO
          ENDIF
       END DO
-      DEALLOCATE (gsave, ga1, ga2, dsave, stat=i)
+
+      DEALLOCATE (ftemp, gsave, htemp, ga1, ga2, dsave, stat=i)
+
+      CALL second0(tgreenoff)
+      timer_vac(tgreenf) = timer_vac(tgreenf) + (tgreenoff-tgreenon)
+      greenf_time = timer_vac(tgreenf)
 
       END SUBROUTINE greenf
+

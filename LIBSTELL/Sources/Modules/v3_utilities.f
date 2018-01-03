@@ -1,5 +1,6 @@
 !  JDH 08-12-2004. First version. Some subroutines modeled after Numerical Recipes
 !  nrutil subroutines
+!  SPH 10-31-2017. Added MPI_ABORT 
 
 !*******************************************************************************
 !  File v3_utilitlies.f
@@ -16,8 +17,9 @@
 !*******************************************************************************
 
       MODULE v3_utilities
-
+      USE mpi_inc
       IMPLICIT NONE
+
 !*******************************************************************************
 ! SECTION I. Variable Declarations
 !*******************************************************************************
@@ -34,10 +36,11 @@
       REAL(rprec), PARAMETER :: twopi=6.28318530717958647692528677_rprec
       REAL(rprec), PARAMETER :: one = 1.0_rprec
       REAL(rprec), PARAMETER :: zero = 0.0_rprec
+      INTEGER                :: mpi_err, myrank=0
 
 !      USE stell_kinds, only : rprec, iprec, cprec
 !      USE stell_constants, only: pi, twopi, one, zero
-      PRIVATE rprec, iprec, cprec, pi, twopi, one, zero
+      PRIVATE rprec, iprec, cprec, pi, twopi, one, zero, mpi_err
 
 !-------------------------------------------------------------------------------
 !  JDH 08-13-04. Perhaps add variable for error IO unit numnber, and print there also
@@ -89,12 +92,16 @@
       CHARACTER(LEN=*), PARAMETER :: fmt='(1x,a,/,1x,a)'
       CHARACTER(LEN=1) :: first_char
       LOGICAL :: lfatal
-
+#if defined(MPI_OPT)
+      CALL MPI_COMM_RANK(MPI_COMM_WORLD, myrank, mpi_err)
+#endif
 !  Start of executable code
-      IF (.not. n1) THEN
-         WRITE (*,fmt) 'error: an assertion failed with this tag:',            &
+      IF (.not.n1) THEN
+         IF (myrank .eq. 0) THEN
+         WRITE (*,fmt) 'error: an assertion failed with this tag:',     &
      &      string
          WRITE(*,*) ' n1 = ',n1
+         END IF
 !  Is error Fatal or Warning?
          lfatal = .TRUE.
          IF (PRESENT(err_class)) THEN
@@ -103,9 +110,14 @@
      &         lfatal = .FALSE.
          ENDIF
          IF (lfatal) THEN
+#if defined(MPI_OPT)
+            CALL MPI_ABORT(MPI_COMM_WORLD, 1, MPI_ERR)
+#else
             STOP 'program terminated by assert1'
+#endif
          ELSE
-            WRITE(*,*) ' end of warning error message from assert1'
+            IF (myrank.eq.0)                                            &
+     &      WRITE(*,*) ' end of warning error message from assert1'
          END IF
       END IF
       END SUBROUTINE assert1
@@ -123,12 +135,17 @@
       CHARACTER(LEN=*), PARAMETER :: fmt='(1x,a,/,1x,a)'
       CHARACTER(LEN=1) :: first_char
       LOGICAL :: lfatal
+#if defined(MPI_OPT)
+      CALL MPI_COMM_RANK(MPI_COMM_WORLD, myrank, mpi_err)
+#endif
 
 !  Start of executable code
-      IF (.not. (n1 .and. n2)) THEN
-         WRITE (*,fmt) 'error: an assertion failed with this tag:',            &
+      IF (.not.(n1 .and. n2)) THEN
+         IF (myrank .eq. 0) THEN
+         WRITE (*,fmt) 'error: an assertion failed with this tag:',     &
      &      string
          WRITE(*,*) ' n1, n2 = ',n1, n2
+         END IF
 !  Is error Fatal or Warning?
          lfatal = .TRUE.
          IF (PRESENT(err_class)) THEN
@@ -137,9 +154,14 @@
      &         lfatal = .FALSE.
          ENDIF
          IF (lfatal) THEN
+#if defined(MPI_OPT)
+            CALL MPI_ABORT(MPI_COMM_WORLD, 1, MPI_ERR)
+#else
             STOP 'program terminated by assert2'
+#endif
          ELSE
-            WRITE(*,*) ' end of warning error message from assert2'
+            IF (myrank .eq. 0)                                          &
+     &      WRITE(*,*) ' end of warning error message from assert2'
          END IF
       END IF
       END SUBROUTINE assert2
@@ -157,12 +179,17 @@
       CHARACTER(LEN=*), PARAMETER :: fmt='(1x,a,/,1x,a)'
       CHARACTER(LEN=1) :: first_char
       LOGICAL :: lfatal
+#if defined(MPI_OPT)
+      CALL MPI_COMM_RANK(MPI_COMM_WORLD, myrank, mpi_err)
+#endif
 
 !  Start of executable code
-      IF (.not. (n1 .and. n2 .and. n3)) THEN
-         WRITE (*,fmt) 'error: an assertion failed with this tag:',              &
+      IF (.not.(n1 .and. n2 .and. n3)) THEN
+         IF (myrank .eq. 0) THEN
+         WRITE (*,fmt) 'error: an assertion failed with this tag:',     &
      &      string
          WRITE(*,*) ' n1, n2, n3 = ',n1, n2, n3
+         END IF
 !  Is error Fatal or Warning?
          lfatal = .TRUE.
          IF (PRESENT(err_class)) THEN
@@ -171,9 +198,14 @@
      &         lfatal = .FALSE.
          ENDIF
          IF (lfatal) THEN
+#if defined(MPI_OPT)
+            CALL MPI_ABORT(MPI_COMM_WORLD, 1, MPI_ERR)
+#else
             STOP 'program terminated by assert3'
+#endif
          ELSE
-            WRITE(*,*) ' end of warning error message from assert3'
+            IF (myrank .eq. 0)                                          &
+     &      WRITE(*,*) ' end of warning error message from assert3'
          END IF
       END IF
       END SUBROUTINE assert3
@@ -191,12 +223,17 @@
       CHARACTER(LEN=*), PARAMETER :: fmt='(1x,a,/,1x,a)'
       CHARACTER(LEN=1) :: first_char
       LOGICAL :: lfatal
+#if defined(MPI_OPT)
+      CALL MPI_COMM_RANK(MPI_COMM_WORLD, myrank, mpi_err)
+#endif
 
 !  Start of executable code
       IF (.not. (n1 .and. n2 .and. n3 .and. n4)) THEN
-         WRITE (*,fmt) 'error: an assertion failed with this tag:',              &
+         IF (myrank .eq. 0) THEN
+         WRITE (*,fmt) 'error: an assertion failed with this tag:',     &
      &      string
          WRITE(*,*) ' n1, n2, n3, n4 = ',n1, n2, n3, n4
+         END IF
 !  Is error Fatal or Warning?
          lfatal = .TRUE.
          IF (PRESENT(err_class)) THEN
@@ -205,9 +242,14 @@
      &         lfatal = .FALSE.
          ENDIF
          IF (lfatal) THEN
+#if defined(MPI_OPT)
+            CALL MPI_ABORT(MPI_COMM_WORLD, 1, MPI_ERR)
+#else
             STOP 'program terminated by assert4'
+#endif
          ELSE
-            WRITE(*,*) ' end of warning error message from assert4'
+            IF (myrank .eq. 0)                                          &
+     &      WRITE(*,*) ' end of warning error message from assert4'
          END IF
       END IF
       END SUBROUTINE assert4
@@ -226,10 +268,14 @@
       INTEGER(iprec) :: ntot, nfalse, ifirst, i
       CHARACTER(LEN=1) :: first_char
       LOGICAL :: lfatal
+#if defined(MPI_OPT)
+      CALL MPI_COMM_RANK(MPI_COMM_WORLD, myrank, mpi_err)
+#endif
 
 !  Start of executable code
-      IF (.not. all(n)) THEN
-         WRITE (*,fmt) 'error: an assertion failed with this tag:',              &
+      IF (.not.all(n)) THEN
+         IF (myrank .eq. 0) THEN
+         WRITE (*,fmt) 'error: an assertion failed with this tag:',     &
      &      string
          ntot = SIZE(n)
          WRITE (*,*) ntot, ' logicals in array. indices of .F. are:'
@@ -241,17 +287,23 @@
             END IF
          END DO
          WRITE (*,*) nfalse, ' logicals are false'
+         END IF
 !  Is error Fatal or Warning?
          lfatal = .TRUE.
          IF (PRESENT(err_class)) THEN
             first_char = err_class(1:1)
-            IF ((first_char .eq. 'w') .or. (first_char .eq. 'W'))
+            IF ((first_char .eq. 'w') .or. (first_char .eq. 'W'))       &
      &         lfatal = .FALSE.
          ENDIF
          IF (lfatal) THEN
+#if defined(MPI_OPT)
+            CALL MPI_ABORT(MPI_COMM_WORLD, 1, MPI_ERR)
+#else
             STOP 'program terminated by assert_v'
+#endif            
          ELSE
-            WRITE(*,*) ' end of warning error message from assert_v'
+            IF (myrank .eq. 0)                                          &
+     &      WRITE(*,*) ' end of warning error message from assert_v'
          END IF
       END IF
       END SUBROUTINE assert_v

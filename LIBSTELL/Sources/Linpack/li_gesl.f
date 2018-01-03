@@ -1,4 +1,35 @@
-!DEC$ IF .NOT.DEFINED (CRAY)
+      SUBROUTINE sgesl1 (A, LDA, N, IPVT, B, JOB)
+      USE LIPREC, ONLY: WP => SP
+      IMPLICIT NONE
+C-----------------------------------------------
+C   D U M M Y   A R G U M E N T S
+C-----------------------------------------------
+      INTEGER, INTENT(IN) :: LDA, N, JOB
+      INTEGER, DIMENSION(N), INTENT(IN) :: IPVT
+      REAL(WP), DIMENSION(*), INTENT(IN) :: A
+      REAL(WP), DIMENSION(N), INTENT(INOUT) :: B
+
+      CALL sgesl(A, LDA, N, IPVT, B, JOB)
+
+      END SUBROUTINE sgesl1
+
+      SUBROUTINE dgesl1 (A, LDA, N, IPVT, B, JOB)
+      USE LIPREC, ONLY: WP => DP
+      IMPLICIT NONE
+      
+C-----------------------------------------------
+C   D U M M Y   A R G U M E N T S
+C-----------------------------------------------
+      INTEGER, INTENT(IN) :: LDA, N, JOB
+      INTEGER, DIMENSION(N), INTENT(IN) :: IPVT
+      REAL(WP), DIMENSION(*), INTENT(IN) :: A
+      REAL(WP), DIMENSION(N), INTENT(INOUT) :: B
+
+      CALL dgesl(A, LDA, N, IPVT, B, JOB)
+
+      END SUBROUTINE dgesl1
+
+#ifndef CRAY
       SUBROUTINE sgesl (A, LDA, N, IPVT, B, JOB)
       USE LIPREC, ONLY: WP => SP
       IMPLICIT NONE
@@ -228,34 +259,4 @@ c
       END IF
 
       END SUBROUTINE dgesl
-!DEC$ ENDIF
-      SUBROUTINE sgesl1 (A, LDA, N, IPVT, B, JOB)
-      USE LIPREC, ONLY: WP => SP
-      IMPLICIT NONE
-C-----------------------------------------------
-C   D U M M Y   A R G U M E N T S
-C-----------------------------------------------
-      INTEGER, INTENT(IN) :: LDA, N, JOB
-      INTEGER, DIMENSION(N), INTENT(IN) :: IPVT
-      REAL(WP), DIMENSION(*), INTENT(IN) :: A
-      REAL(WP), DIMENSION(N), INTENT(INOUT) :: B
-
-      CALL sgesl(A, LDA, N, IPVT, B, JOB)
-
-      END SUBROUTINE sgesl1
-
-      SUBROUTINE dgesl1 (A, LDA, N, IPVT, B, JOB)
-      USE LIPREC, ONLY: WP => DP
-      IMPLICIT NONE
-      
-C-----------------------------------------------
-C   D U M M Y   A R G U M E N T S
-C-----------------------------------------------
-      INTEGER, INTENT(IN) :: LDA, N, JOB
-      INTEGER, DIMENSION(N), INTENT(IN) :: IPVT
-      REAL(WP), DIMENSION(*), INTENT(IN) :: A
-      REAL(WP), DIMENSION(N), INTENT(INOUT) :: B
-
-      CALL dgesl(A, LDA, N, IPVT, B, JOB)
-
-      END SUBROUTINE dgesl1
+#endif

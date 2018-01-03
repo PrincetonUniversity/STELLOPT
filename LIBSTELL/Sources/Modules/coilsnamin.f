@@ -7,7 +7,7 @@
       USE bcoils_mod
       USE bnorm_mod
       USE control_mod
-      USE Vcoilpts
+      USE vcoilpts
       IMPLICIT NONE
 
       NAMELIST /coilsin/ nmod_coils_per_period, nf_phi, nf_rho, epsfcn,

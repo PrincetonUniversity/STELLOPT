@@ -33,6 +33,7 @@
       USE stel_kinds , only : rprec
       USE stel_constants, only : pi, zero
       USE safe_open_mod    !from LIBSTELL/MODULES
+      USE integration_path
      
 !-------------------------------------------------------------------------------
 !  Use Statements for other structures, V3 Utilities
@@ -76,10 +77,10 @@
 !-------------------------------------------------------------------------------
       TYPE ipch_desc
         CHARACTER(LEN=chord_name_len) :: chord_name
-        REAL(rprec), DIMENSION(3)     :: xcart_i, xcart_f
         CHARACTER(LEN=1)              :: ip_type
         REAL(rprec)                   :: wavelength
         LOGICAL                       :: inDegrees
+        TYPE(vertex), POINTER         :: chordPath => null()
       END TYPE ipch_desc
 
 !*******************************************************************************
@@ -119,11 +120,15 @@
 
 !  Assignments    
          this % chord_name = chord_name
-         this % xcart_i = xcart_i
-         this % xcart_f = xcart_f
          this % ip_type = ip_type
          this % wavelength = wavelength
          this % inDegrees = inDegrees
+
+!  Must NULL out the vertices array or else it will point to the last
+!  integration_path created in memory
+
+         CALL path_append_vertex(this%chordPath, xcart_i)
+         CALL path_append_vertex(this%chordPath, xcart_f)
 
       END SUBROUTINE ipch_desc_construct
 
@@ -141,11 +146,11 @@
          TYPE (ipch_desc),INTENT(inout) :: this
          
          this % chord_name = ''
-         this % xcart_i = zero
-         this % xcart_f = zero
          this % ip_type = ' '
          this % wavelength = zero
-      
+
+         CALL path_destruct(this%chordPath)
+
       END SUBROUTINE ipch_desc_destroy
 
 
@@ -183,22 +188,29 @@
 ! iou  - iounit to use
 ! istat - status of file opening
 !-------------------------------------------------------------------------------     
-     
+      REAL(rprec), DIMENSION(3)    :: xcart_i
+      REAL(rprec), DIMENSION(3)    :: xcart_f
+
       INTEGER :: iou = 6
       INTEGER :: istat = 0      !status of safe_open call
-      
+
+      xcart_i = this%chordPath%position
+      xcart_f = this%chordPath%next%position
+
       IF (PRESENT(iounit).AND.PRESENT(filename)) THEN
          iou=iounit
          CALL safe_open(iou,istat,filename,'replace','formatted')
          WRITE(iou,*) 'chord name  - ', this % chord_name 
-         WRITE(iou,*) 'start position -', this % xcart_i
-         WRITE(iou,*) 'end position   -', this % xcart_f
+         WRITE(iou,*) 'start position -', xcart_i
+         WRITE(iou,*) 'end position   -', xcart_f
          WRITE(iou,*) 'ip_type   -', this % ip_type
+         WRITE(iou,*) 'wavelength -', this % wavelength
       ELSE
          WRITE(*,*) 'chord name  - ',this % chord_name 
-         WRITE(*,*) 'start position -',this % xcart_i
-         WRITE(*,*) 'end position   -',this % xcart_f
+         WRITE(*,*) 'start position -', xcart_i
+         WRITE(*,*) 'end position   -', xcart_f
          WRITE(*,*) 'ip_type   -', this % ip_type
+         WRITE(*,*) 'wavelength -', this % wavelength
       END IF
       
       END SUBROUTINE ipch_desc_write

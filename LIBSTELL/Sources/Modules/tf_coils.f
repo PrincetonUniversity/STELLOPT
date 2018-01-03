@@ -1,6 +1,6 @@
       MODULE tf_coils
       USE stel_constants
-      USE Vcoilpts
+      USE vcoilpts
       REAL(rprec) :: i_pol, i_tfc, pol_cur
       REAL(rprec), TARGET :: dpc_wgt
       INTEGER :: mtfcoil, mtfwire

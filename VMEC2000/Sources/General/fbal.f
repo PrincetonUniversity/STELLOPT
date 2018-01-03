@@ -5,6 +5,58 @@
 
       CONTAINS
 
+#if defined(SKS)
+
+      SUBROUTINE calc_fbal_par(bsubu, bsubv)
+      USE vmec_main, ONLY: buco, bvco, equif, iequi,
+     1                     jcurv, jcuru, chipf, vp, pres, 
+     2                     phipf, vpphi, presgrad, ohs
+      USE vmec_params, ONLY: signgs
+      USE vmec_dim, ONLY: ns, nrzt, nznt, ns1
+      USE realspace, ONLY: pwint, phip
+      USE vmec_input, ONLY: nzeta
+      USE vmec_dim, ONLY: ntheta3
+      USE parallel_include_module 
+      IMPLICIT NONE
+!-----------------------------------------------
+      REAL(dp), INTENT(in) :: bsubu(nznt,ns),
+     1                        bsubv(nznt,ns)
+!-----------------------------------------------
+!   L o c a l   V a r i a b l e s
+!-----------------------------------------------
+      INTEGER  :: js, lk
+      INTEGER :: nsmin, nsmax
+!-----------------------------------------------
+
+      nsmin=t1lglob; nsmax=t1rglob
+      DO js = nsmin, nsmax
+        buco(js) = SUM(bsubu(:,js)*pwint(:,js))
+        bvco(js) = SUM(bsubv(:,js)*pwint(:,js))
+      END DO
+
+      CALL Gather1XArray(bvco)
+      CALL Gather1XArray(buco)
+
+!     FROM AMPERE'S LAW, JcurX are angle averages of jac*JsupX, so
+!                        JcurX = (dV/ds)/twopi**2 <JsupX> where <...> is flux surface average
+      !nsmin=MAX(2,t1lglob); nsmax=MIN(t1rglob,ns-1)
+      nsmin=MAX(2,tlglob); nsmax=MIN(trglob,ns-1)
+      DO js = nsmin, nsmax
+         jcurv(js) = (signgs*ohs)*(buco(js+1) - buco(js))
+         jcuru(js) =-(signgs*ohs)*(bvco(js+1) - bvco(js))
+         vpphi(js) = (vp(js+1) + vp(js))/2
+         presgrad(js) = (pres(js+1) - pres(js))*ohs
+         equif(js) = (-phipf(js)*jcuru(js) + chipf(js)*jcurv(js))
+     1                /vpphi(js) + presgrad(js)
+      END DO
+      equif(1) = 0
+      equif(ns) = 0
+
+      !SKS-RANGE: All LHS's computed correctly in [t1lglob, trglob]
+
+      END SUBROUTINE calc_fbal_par
+#endif
+
       SUBROUTINE calc_fbal(bsubu, bsubv)
       USE vmec_main, ONLY: buco, bvco, equif, 
      1                     jcurv, jcuru, chipf, vp, pres, 
@@ -14,21 +66,24 @@
 #endif
       USE vmec_params, ONLY: signgs
       USE vmec_dim, ONLY: ns, nrzt, nznt, ns1
-      USE vmec_input, ONLY: lrfp
       USE realspace, ONLY: wint, phip
 #ifdef _ANIMEC
      1                    ,pperp, ppar, onembc, sigma_an,
      2                     pp1, pp2, pp3
       USE vforces, gsqrt => azmn_o
 #endif
+#if defined (SKS)      
+      USE parallel_include_module 
+#endif      
+      IMPLICIT NONE
 !-----------------------------------------------
       REAL(dp), INTENT(in) :: bsubu(1:nrzt), bsubv(1:nrzt)
 !-----------------------------------------------
 !   L o c a l   V a r i a b l e s
 !-----------------------------------------------
-      INTEGER  :: js
+      INTEGER  :: js, lk
+      INTEGER :: nsmin, nsmax
 #ifdef _ANIMEC
-      INTEGER  :: lk
       REAL(dp) :: t4, t5
 #endif
 !-----------------------------------------------
@@ -39,44 +94,15 @@
 
 !     FROM AMPERE'S LAW, JcurX are angle averages of jac*JsupX, so
 !                        JcurX = (dV/ds)/twopi**2 <JsupX> where <...> is flux surface average
-#ifdef _ANIMEC
-      IF (ANY(phot .ne. zero)) THEN
-         pp3(1:nrzt:ns) = 0
-         DO js = 2,ns
-            DO lk = 1,nznt
-               pp3(js:nrzt:ns) = gsqrt(js:nrzt:ns)/vp(js)
-!               l = js +(lk-1)*ns
-!               pp3(l) = gsqrt(l)/vp(js)
-            END DO
-         END DO	
-
-         CALL bimax_ppargrad(pp1,pp2,pp3,ppar,onembc,pres,phot,tpotb)
-
-         DO js = 2, ns1
-            pmap(js) = SUM(pp2(js:nrzt:ns)*wint(js:nrzt:ns))
-            pd  (js) = SUM(pp1(js:nrzt:ns)*wint(js:nrzt:ns))
-         END DO
-      ELSE
-         pmap = 0
-         pd   = 0
-      END IF
-#endif
       DO js = 2, ns1
          jcurv(js) = (signgs*ohs)*(buco(js+1) - buco(js))
          jcuru(js) =-(signgs*ohs)*(bvco(js+1) - bvco(js))
 !FOR RFP vpphi(js) = (vp(js+1)/phip(js+1) + vp(js)/phip(js))/2
          vpphi(js) = (vp(js+1) + vp(js))/2
          presgrad(js) = (pres(js+1) - pres(js))*ohs
-#ifdef _ANIMEC
-         t4 = signgs*pmap(js)*ohs*
-     1                  (pres(js+1)*phot(js+1)-pres(js)*phot(js))
-         t5 = signgs*pd(js) *  ohs*(tpotb(js+1)-tpotb(js))
-         presgrad(js) = presgrad(js) + t4 + t5
-#endif
          equif(js) = (-phipf(js)*jcuru(js) + chipf(js)*jcurv(js))
      1                /vpphi(js) + presgrad(js)
       END DO
-
       equif(1) = 0
       equif(ns) = 0
 
@@ -86,7 +112,7 @@
       SUBROUTINE bimax_ppargrad(pp1, pp2, pp3, ppar, onembc, pres, phot,
      1                          tpotb)
       USE vmec_main, ONLY: zero
-      USE vmec_dim, ONLY: ns, nznt, nrzt
+      USE vmec_dim, ONLY: ns, nrzt, nznt, ns1
 C-----------------------------------------------
 C   D u m m y   A r g u m e n t s
 C-----------------------------------------------
@@ -151,7 +177,7 @@ C-----------------------------------------------
       USE realspace, ONLY: sigma_an, pperp, ppar, onembc
 !      USE vforces,   ONLY: bsq => bzmn_o
       USE vmec_main, ONLY: tpotb, pppr, pmap, pres, papr, vp, wb,
-     &                     wp, wpar, wper, ns, nznt, nrzt, 
+     &                     wp, wpar, wper, ns, nznt, nrzt,
      &                     zero, one, nthreed
 !
 !     WAC (11/30/07): See description of anisotropic pressure below
@@ -188,7 +214,7 @@ C-----------------------------------------------
 !   1.  Change BSQ from total pressure to magnetic pressure            *
 !********0*********0*********0*********0*********0*********0*********0**
 c
-         bsq = bsq - pperp
+      bsq = bsq - pperp
 !
 !********0*********0*********0*********0*********0*********0*********0**
 !   2.  Compute Tau-minimum, Sigma-minimum, Peak Hot Particle Beta.    *
@@ -202,12 +228,12 @@ c
 
       DO 57 js = 2,ns
          DO 55 lk = 1,nznt
-           l = (lk-1) * ns + js
-           taumir(l) = one + (pperp(l) - pres(js)) / bsq(l)* 
+            l = (lk-1) * ns + js
+            taumir(l) = one + (pperp(l) - pres(js)) / bsq(l)*
      &      (one - tpotb(js)) / (one - tpotb(js) * onembc(l))
 !              taut = taumir(l) + pperp(l)/bsq(l) *0.25*tpotb(js)
-           if(onembc(l) .gt. zero)
-     &        taumir(l) = taumir(l) 
+            if(onembc(l) .gt. zero)
+     &        taumir(l) = taumir(l)
      &         + (pperp(l) - pres(js)) / bsq(l) * 0.25_dp*tpotb(js)
      &         * (one-onembc(l))*sqrt(tpotb(js)*onembc(l))
      &         / (one + tpotb(js) * onembc(l))
@@ -217,10 +243,10 @@ c
      &         / ((one + tpotb(js)*onembc(l))**2
      &         - (tpotb(js)*onembc(l))**1.5_dp * (5
      &         - (tpotb(js)*onembc(l))**2))
- 55       end do
- 57    end do
+55       end do
+57    end do
       do 62 js = 2,ns
-        do 60 lk = 1,nznt
+         do 60 lk = 1,nznt
             l = (lk-1) * ns + js
             taumin = MIN(taumir(l),taumin)
             sigmin = MIN(sigma_an(l),sigmin)
@@ -230,14 +256,14 @@ c
  62   end do
       betprx = HUGE(betprx)
       do 64 js=2,ns
-          betprc = 0.76786580_dp - 0.29708540_dp * tpotb(js)
-     &      + 0.054249860_dp * tpotb(js)**2 
+         betprc = 0.76786580_dp - 0.29708540_dp * tpotb(js)
+     &      + 0.054249860_dp * tpotb(js)**2
      &      - 0.0054254849_dp * tpotb(js)**3
-     &      + 0.00030947525_dp * tpotb(js)**4 
+     &      + 0.00030947525_dp * tpotb(js)**4
      &      - 9.7144781e-6_dp * tpotb(js)**5
-     &      + 1.3844199e-7_dp * tpotb(js)**6 
+     &      + 1.3844199e-7_dp * tpotb(js)**6
      &      - 1.4328673e-11_dp * (one + tpotb(js))*tpotb(js)**7
-          betprx=min(betprx,betprc)
+        betprx=min(betprx,betprc)
  64   end do
       bhotmx = bhotmx/3
       write (nthreed,101) taumin, sigmin, bhotmx
@@ -261,7 +287,7 @@ c
      &     , 1pe13.4,' maximum hot perp. beta_c =',1pe10.3)
 
       IF (ABS(betaht) .GT. 1.E-12_dp) THEN
-      write (nthreed,105)
+         write (nthreed,105)
  105  format(/,' js',8x,'s',9x,'th. press',3x,'par. pres',2x,
      &         'perp. pres')
       DO 79 js = 2,ns
@@ -275,4 +301,5 @@ c
 
       END SUBROUTINE mirror_crit
 #endif
+
       END MODULE fbal

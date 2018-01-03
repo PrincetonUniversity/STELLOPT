@@ -30,6 +30,6 @@
       INTEGER, PARAMETER :: jchix1 = jchix + 1
       INTEGER, PARAMETER :: nparts = 4        !number of items needed to specify pf coils
       INTEGER, PARAMETER :: npfcoil = 40      !number of filaments in pf coil pack (for plotting)
-      INTEGER, PARAMETER :: nigroup = 100     !number of external current groups
+      INTEGER, PARAMETER :: nigroup = 300     !number of external current groups
       INTEGER, PARAMETER :: ipedsvd = 8
       END MODULE vsvd0

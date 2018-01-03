@@ -1,4 +1,5 @@
       SUBROUTINE spline_akima(x,y,xx,yy,npts,iflag)
+! 2012-07-27: Typo correction, J Geiger
       USE stel_kinds
       implicit none
 !-----------------------------------------------
@@ -19,11 +20,11 @@
       real(rprec) :: cl,bl,cr,br,dx
 !-----------------------------------------------
 
-      !WRITE(6,*)  x, y
-      !WRITE(6,*)npts
-      !WRITE(6,*) xx
-      !WRITE(6,*) yy
-      !stop 'Test!'
+!     print * , x, y
+!     print * , npts
+!     print * , xx
+!     print * , yy
+!     stop 'Test!'
 
       iflag = 0  !initialization
       ix = size(xx)
@@ -47,8 +48,8 @@
       xloc(iv+1)= xloc(iv)+xloc(iv-1)-xloc(iv-2)
       yloc(1:iv)=yy
 ! calculate linear derivatives as far as existent
-      m(-1:iv+1) = (yloc(0:iv+2)-yloc(-1:iv+1))/
-     >               (xloc(0:iv+2)-xloc(-1:iv+1))
+      m(1:iv-1) = (yloc(2:iv)-yloc(1:iv-1))/
+     >            (xloc(2:iv)-xloc(1:iv-1))
 ! values for i=0, -1 and iv, iv+1 by quadratic extrapolation:
       cl = (m(2)-m(1))/(xloc(3)-xloc(1))
       bl = m(1) - cl*(xloc(2)-xloc(1))
@@ -59,9 +60,9 @@
       yloc(-1)=yloc(1)+bl*(xloc(-1)-xloc(1))+
      >               cl*(xloc(-1)-xloc(1))**2
       yloc(iv+1)=yloc(iv)+br*(xloc(iv+1)-xloc(iv))+
-     >               cl*(xloc(iv+1)-xloc(iv))**2
+     >               cr*(xloc(iv+1)-xloc(iv))**2
       yloc(iv+2)=yloc(iv)+br*(xloc(iv+2)-xloc(iv))+
-     >               cl*(xloc(iv+2)-xloc(iv))**2
+     >               cr*(xloc(iv+2)-xloc(iv))**2
 ! rest of linear derivatives
       m(-1) = (yloc(0)-yloc(-1))/(xloc(0)-xloc(-1))
       m( 0) = (yloc(1)-yloc( 0))/(xloc(1)-xloc( 0))

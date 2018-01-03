@@ -134,7 +134,13 @@
      &  vn_lstell_sym = 'mddc_mrf_lstell_sym',                                 &         
      &  vn_a_r = 'mddc_mrf_a_r',                                               &         
      &  vn_a_f = 'mddc_mrf_a_f',                                               &         
-     &  vn_a_z = 'mddc_mrf_a_z'    
+     &  vn_a_z = 'mddc_mrf_a_z',                                               &
+     &  vn_use_con_shell = 'mddc_mrf_use_con_shell',                           &
+     &  vn_a_s_r = 'mddc_mrf_a_s_r',                                           &
+     &  vn_a_s_f = 'mddc_mrf_a_s_f',                                           &
+     &  vn_a_s_z = 'mddc_mrf_a_s_z',                                           &
+     &  vn_kp_shell = 'mddc_mrf_kp_shell',                                     &
+     &  vn_kp_shell_store = 'mddc_mrf_kp_shell_store'
 
       CHARACTER (LEN=64), PRIVATE ::                                           &
      &  vn_code_name_use,                                                      &
@@ -156,7 +162,13 @@
      &  vn_lstell_sym_use,                                                     &
      &  vn_a_r_use,                                                            &
      &  vn_a_f_use,                                                            &
-     &  vn_a_z_use    
+     &  vn_a_z_use,                                                            &
+     &  vn_use_con_shell_use,                                                  &
+     &  vn_a_s_r_use,                                                          &
+     &  vn_a_s_f_use,                                                          &
+     &  vn_a_S_z_use,                                                          &
+     &  vn_kp_shell_use,                                                       &
+     &  vn_kp_shell_store_use
 
 !-------------------------------------------------------------------------------
 !  Lengths of Character Variables
@@ -328,9 +340,18 @@
       CALL cdf_define(iou, TRIM(vn_a_r_use), this % a_r)
       CALL cdf_define(iou, TRIM(vn_a_f_use), this % a_f)
       CALL cdf_define(iou, TRIM(vn_a_z_use), this % a_z)
-      
+
+      CALL cdf_define(iou, TRIM(vn_use_con_shell_use),                         &
+     &                this%use_con_shell)
+      IF (this%use_con_shell) THEN
+         CALL cdf_define(iou, TRIM(vn_kp_shell_use), this % kp_shell)
+         CALL cdf_define(iou, TRIM(vn_a_s_r_use), this % a_s_r)
+         CALL cdf_define(iou, TRIM(vn_a_s_f_use), this % a_s_f)
+         CALL cdf_define(iou, TRIM(vn_a_s_z_use), this % a_s_z)
+      END IF
+
       RETURN
-      
+
       END SUBROUTINE mddc_cdf_define_mrf
 
 !*******************************************************************************
@@ -461,9 +482,21 @@
       CALL cdf_write(iou, TRIM(vn_a_r_use), this % a_r)
       CALL cdf_write(iou, TRIM(vn_a_f_use), this % a_f)
       CALL cdf_write(iou, TRIM(vn_a_z_use), this % a_z)
-      
+
+      CALL cdf_write(iou, TRIM(vn_use_con_shell_use),                          &
+     &               this%use_con_shell)
+      IF (this%use_con_shell) THEN
+         CALL cdf_write(iou, TRIM(vn_kp_shell_use), this % kp_shell)
+         CALL cdf_write(iou, TRIM(vn_kp_shell_store_use),                      &
+     &                  this % kp_shell_store)
+
+         CALL cdf_write(iou, TRIM(vn_a_s_r_use), this % a_s_r)
+         CALL cdf_write(iou, TRIM(vn_a_s_f_use), this % a_s_f)
+         CALL cdf_write(iou, TRIM(vn_a_s_z_use), this % a_s_z)
+      END IF
+
       RETURN
-      
+
       END SUBROUTINE mddc_cdf_write_mrf
 
 !*******************************************************************************
@@ -570,6 +603,7 @@
 !-----------------------------------------------
       CHARACTER(len=32)            :: prefix_use
       INTEGER, DIMENSION(3) :: dimlens
+      INTEGER, DIMENSION(2) :: dimlens2
       
       CHARACTER(len=80)                          :: code_name
       CHARACTER(len=80)                          :: code_version
@@ -591,6 +625,13 @@
       REAL(rprec), DIMENSION(:,:,:), ALLOCATABLE :: a_r
       REAL(rprec), DIMENSION(:,:,:), ALLOCATABLE :: a_f
       REAL(rprec), DIMENSION(:,:,:), ALLOCATABLE :: a_z
+
+      LOGICAL                                    :: use_con_shell
+      REAL(rprec), DIMENSION(:,:), ALLOCATABLE   :: a_s_r
+      REAL(rprec), DIMENSION(:,:), ALLOCATABLE   :: a_s_f
+      REAL(rprec), DIMENSION(:,:), ALLOCATABLE   :: a_s_z
+      INTEGER                                    :: kp_shell
+      INTEGER                                    :: kp_shell_store
 
 ! Declare local variables
       INTEGER           :: ir1, ir2, ir3, if1, if2, if3, iz1,           &
@@ -653,10 +694,8 @@
       CALL cdf_read(iou, TRIM(vn_rmax_use), rmax)
       CALL cdf_read(iou, TRIM(vn_zmin_use), zmin)
       CALL cdf_read(iou, TRIM(vn_zmax_use), zmax)
-      CALL cdf_read(iou, TRIM(vn_n_field_periods_use),                         &
-     &   n_field_periods)
-      CALL cdf_read(iou, TRIM(vn_lstell_sym_use),                              &
-     &   lstell_sym)
+      CALL cdf_read(iou, TRIM(vn_n_field_periods_use), n_field_periods)
+      CALL cdf_read(iou, TRIM(vn_lstell_sym_use), lstell_sym)
 
       CALL cdf_inquire(iou, TRIM(vn_a_r_use),dimlens)
       ir1 = dimlens(1)
@@ -700,17 +739,56 @@
       CALL assert_eq(0,ier1,sub_name // 'alloc a_z')
       CALL cdf_read(iou, TRIM(vn_a_z_use), a_z)
 
+! Read
+      SELECT CASE (code_version)
+
+         CASE ('MRC 2014-09-28')
+            CALL cdf_read(iou, TRIM(vn_use_con_shell_use),                     &
+     &                    use_con_shell)
+
+            IF (use_con_shell) THEN
+               CALL cdf_read(iou, TRIM(vn_kp_shell_use), kp_shell)
+
+               CALL cdf_inquire(iou, TRIM(vn_a_r_use), dimlens2)
+               ir1 = dimlens2(1)
+               ir2 = dimlens2(2)
+               ALLOCATE(a_s_r(ir1,ir2))
+               CALL cdf_read(iou, TRIM(vn_a_s_r_use), a_s_r)
+
+               CALL cdf_inquire(iou, TRIM(vn_a_f_use), dimlens2)
+               if1 = dimlens2(1)
+               if2 = dimlens2(2)
+               ALLOCATE(a_s_r(if1,if2))
+               CALL cdf_read(iou, TRIM(vn_a_s_f_use), a_s_f)
+
+               CALL cdf_inquire(iou, TRIM(vn_a_z_use), dimlens2)
+               iz1 = dimlens2(1)
+               iz2 = dimlens2(2)
+               ALLOCATE(a_s_r(iz1,iz2))
+               CALL cdf_read(iou, TRIM(vn_a_s_z_use), a_s_z)
+            END IF
+
+         CASE DEFAULT
+            use_con_shell = .false.
+
+      END SELECT
+
 ! Create the mddc_mrf, this
       CALL mddc_mrf_construct(this,code_name,code_version,                     &
      &  date_run,field_coils_id,rdiag_coilg_1,extcur_mg,kp,                    &
-     &  rmin,rmax,zmin,zmax,n_field_periods,lstell_sym,a_r,a_f,a_z)
+     &  rmin,rmax,zmin,zmax,n_field_periods,lstell_sym,a_r,a_f,a_z,            &
+     &  use_con_shell, a_s_r, a_s_f, a_s_z, kp_shell)
 
 ! Deallocate the local pointers
       DEALLOCATE(rdiag_coilg_1,extcur_mg,STAT=ier1)
       CALL assert_eq(0,ier1,sub_name // 'dealloc 1')
        DEALLOCATE(a_r,a_f,a_z,STAT=ier1)
       CALL assert_eq(0,ier1,sub_name // 'dealloc 2')
-     
+
+      IF (ALLOCATED(a_s_r)) DEALLOCATE(a_s_r)
+      IF (ALLOCATED(a_s_f)) DEALLOCATE(a_s_f)
+      IF (ALLOCATED(a_s_z)) DEALLOCATE(a_s_z)
+
       RETURN
       
       END SUBROUTINE mddc_cdf_read_mrf
@@ -812,9 +890,16 @@
       vn_a_r_use = mddc_cdf_mknam(prefix_use,vn_a_r)
       vn_a_f_use = mddc_cdf_mknam(prefix_use,vn_a_f)
       vn_a_z_use = mddc_cdf_mknam(prefix_use,vn_a_z)
-      
+      vn_use_con_shell_use = mddc_cdf_mknam(prefix_use,vn_use_con_shell)
+      vn_a_s_r_use = mddc_cdf_mknam(prefix_use,vn_a_s_r)
+      vn_a_s_f_use = mddc_cdf_mknam(prefix_use,vn_a_s_f)
+      vn_a_s_z_use = mddc_cdf_mknam(prefix_use,vn_a_s_z)
+      vn_kp_shell_use = mddc_cdf_mknam(prefix_use,vn_kp_shell)
+      vn_kp_shell_store_use = mddc_cdf_mknam(prefix_use,                       &
+     &                                       vn_kp_shell_store)
+
       RETURN
-      
+
       END SUBROUTINE mddc_cdf_defvn_mrf
 !-------------------------------------------------------------------------------
 !  

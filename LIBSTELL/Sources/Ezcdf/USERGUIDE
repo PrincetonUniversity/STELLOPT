@@ -1,0 +1,259 @@
+USER GUIDE for EZcdf Library.
+============================
+
+05/03/1999 C. Ludescher
+Revision:  06/22/00 C.Ludescher ludesche@pppl.gov
+Revision:  05/17/01 A.Pletzer pletzer@pppl.gov
+
+o LANGUAGES: Fortran 90 and C++
+
+The following routines allow to write/read data to/from file in
+binary, yet portable way, using the netCDF file format. EZcdf is
+a thin (f90) wrapper on netCDF, a freely available library that can be 
+downloaded from http://www.unidata.ucar.edu/packages/netcdf/. NetCDF
+is platform (Unices, Windows, ...) and language (C/C++, Fortran, 
+Java, Perl, Python, ...) independent. Thus, a file produced by EZcdf
+can be read on any of the netCDF supported architectures and in any
+of the above programming languages.
+
+There are presently two versions of EZcdf, one in Fortran 90 and the
+other in C++ (EZcdf++). EZcdf++ is a re-implementation of the Fortran 90 
+version, using an object oriented approach. It has a similar capability, 
+to each F90 call corresponds a C++ method, except that *complex* 
+scalars/arrays are not, at present, supported. Only the Fortran version 
+is described here, consult eztest2.cc to see the correspondance between 
+EZcdf++ and the Fortran 90 version.
+
+Not all netCDF calls are supported by EZcdf. In particular, datasets
+may contain only the "variable" attribute and there should be no 'infinite'
+array. EZcdf is, however, the right tool if you need to save arrays of 
+various types and of rank <= 3. EZcdf is designed to be much easier to 
+use than raw netCDF calls. Many tasks such as defining the 
+dimension names are automated in EZcdf. Information about the data and 
+the data proper are accessed using string key words (e.g. the name of 
+the variable) as opposed to opaque integer id numbers in netCDF. Another 
+advantage of EZcdf over netCDF is the support for COMPLEX numbers (both 64- 
+and 128-bit long), which are laid out as REAL arrays of the twice the size. 
+(Some name mangling keeps track of which arrays are stored as REAL and which 
+as COMPLEX.) Finally, type checking is enforced through the use of F90 
+interfaces, providing a safety net for the user.
+
+
+
+
+The variable types and shapes supported are:
+	type			shape
+	----			-----
+	default integer       	scalar, array rank 1-3
+	4-byte real		scalar, array rank 1-3
+	8-byte real		scalar, array rank 1-3
+	8-byte complex          scalar, array rank 1-3 (*) (o)
+	16-byte complex         scalar, array rank 1-3 (*) (o)
+	default character	string, vector of strings
+
+(*) type not supported by netCDF
+(o) type not supported by EZcdf++
+
+A scalar value is treated as a 0-dimensional array and must be defined
+with length of dimension <= 1: e.g. dimlens (/1/)
+A character string is treated as a 1-dimensional array and must be
+defined with length of dimension = len(string).
+A vector of character strings is treated as a 2-dimensional array and
+must be defined with lengths = len(string(1)) and size(string). 
+Variable-length strings are not supported by netCDF.
+
+
+A netCDF dataset is stored in a single file comprising two parts:
+- a header, containing info about variable type and shape.
+            This part is defined via cdfDefVar and may be examined
+            via cdfInqVar.
+- the data. This part is written via cdfPutVar and can be retrieved
+            via cdfGetVar.
+
+For netCDF performance reasons, the EZcdf routines require that the
+header be *defined* before the data are written.
+
+From the user point of view, a read (write) process involves 4 steps: opening the file,
+inquiring about (defining) the variable type and shape, reading (writing)
+the data and closing the file. The process of reading is symmetric vs. the one of 
+writing:
+
+	READ:			WRITE:
+
+	ezcdf_open 'r'		ezcdf_open 'w' (*)
+	[cdfInqVar]  		cdfDefVar
+	cdfGetVar		cdfPutVar
+        ezcdf_close             ezcdf_close    (o)
+
+(*) a constructor call in EZcdf++
+(o) a destructor call in EZcdf++
+
+except that all cdfPutVar calls *must* be preceded by calls to cdfDefVar, 
+whereas cdfInqVar calls are optional (data type and dimensions may be known 
+or assumed before reading data). 
+
+
+   Public Interface Module:
+     ezcdf    --  Must be called by User
+   
+   Public Callable Routines:
+     ezcdf_open(ncid,filename,access,[ier])      -- create/open a file
+     ezcdf_close(ncid,[ier])                     -- close a netcdf file
+     cdfDefVar(ncid,varnam,dimlens,xtype,[ier])  -- define a variable 
+     cdfPutVar(ncid,varnam,val,[ier])            -- write variable  
+     cdfInqVar(ncid,varnam,dimlens,xtype,[ier])  -- get dimension(s)
+     cdfGetVar(ncid,varnam,val,[ier])            -- close the file
+
+   Private Interface Modules:
+     ezcdf_GenPut    -- generic Interface for  cdfPutVar
+     ezcdf_GenGet    -- generic Interface for  cdfGetVar
+     ezcdf_InqInt    -- Interface for cdfInqV
+
+   Internally used Subroutines:
+     cdfInqV       -- to get variable id and dimensions (cdfPutVar)
+     cdfDefV       -- to define variable (cdfDefVar)
+     cdfgv         -- to get variable info (cdfGetVar)
+     handle_err    -- to print error message
+
+
+o USAGE
+
+     access   : character      - 'r' (read) or 'w' (write)
+
+     ncid     : integer        - NetCDF ID, from "ezcdf_open".
+				 NOTE: do not declare ncid as "parameter".
+                                       ncid is a return value.
+
+     varnam   : character*(*)  - Name of variable. Must begin with
+                                 alphabetic character, followed by
+                                 alphanumeric including underscore.
+                                 Case is significant.
+ 
+     dimlens  : integer(3)     - Vector of length 3 containing the sizes of each 
+	 	                 dimension of "val". 
+
+				Rank of "val" should be <=3. For rank < 3 the user should
+				set the sizes to 1 (or zero), as in (/n, 1, 1/) for a 1-D
+				array of size n. Notice that dimlens=(/1, n, 1/) is different
+	                        from dimlens=(/n, 1, 1/), since in the former case the array
+				is stored with shape (1:1,1:n) while in the latter it is stored
+				as having shape (1:n). Rank contraction occurs if all sizes to
+				the right are 1 or zero. 
+
+                                 length(s) of dimension(s) of "val".
+                                 If "val" is a scalar, dimlens(1[:3]) = 1.
+				 If "val" is a charcater string,
+                                    dimlens(1) = len(val)
+				 If "val" is a character string vector, 
+                                    dimlens(1) = len(val(1)) 
+                                    dimlens(2) = size(val)
+
+				Thus, EZcdf will guess how best to store an array by looking at dimlens.
+				In some cases one may want to prevent the rank contraction, that 
+				is on may want to store for instance a 1-D array that happens to 
+				have only one element as a 1-D array. Using dimlens=(/1,1,1/) would
+				contract the array to a scalar. Preventing this can be achieved by
+				using *negative* sizes, as in dimlens=(/-1,1,1/). 
+
+				Here are more examples:
+
+   dimlens       rank              array shape in netCDF file
+   (/0,0,0/)       0
+   (/1,1,1/)       0
+   (/1,0,0/)       0                       (1-D array of length 1 stored as a scalar)
+   (/-1,0,0/)      1                 (1:1) (1-D array of length 1 stored as 1-D array)
+   (/5,1,1/)       1                 (1:5)
+   (/5,-1,1/)      2                 (1:5,1:1)
+   (/7,3,0/)       2                 (1:7,1:3)
+   (/7,3,1/)       2                 (1:7,1:3)       (same)
+   (/7,3,-1/)      3                 (1:7,1:3,1:1)
+   (/7,3,-2/)      3                 (1:7,1:3,1:2)
+   (/7,3,2/)       3                 (1:7,1:3,1:2)   (same)
+   (/-7,-3,-2/)    3                 (1:7,1:3,1:2)   (same)
+   (/-nx,-ny,-nz/) 3                 (1:nx,1:ny,1:nz)
+   (/nx,ny,nz/)    3 or 2 or 1 or 0  (1:nx,1:ny,1:nz) 
+                                   or (1:nx,1:ny) if nz=1
+                                   or (1:nx) if ny=nz=1
+                                   or scalar if nx=ny=nz=1
+
+
+     xtype    : character*(*)  - Type of the variable:
+				 'INT' = integer
+				 'R4'  = real*4
+				 'R8'  = real*8
+				 'C8'  = complex*8
+				 'C16'  = complex*16
+				 'CHAR'= character
+
+     val      : "xtype"[(*)]   - Data of type "xtype" to be written.
+				 Scalar, Vector or array rank 2 or 3.
+                                 If "xtype" = 'CHAR', only rank 1 is supported.
+
+     ier      : integer        - Optional argument.
+				 Returned status: 0 = success.
+
+o EXAMPLES
+  
+! Fortran Example to Write  netCDF File
+! =====================================
+  USE ezcdf                                  -- Interface
+! Input:
+  integer,     dimension(2) :: dimlens       -- length of dimensions
+  character*4               :: xtype         -- Variable Type
+  real*8, dimension(m,n)    :: val_r8        -- Array rank 2
+  character*8, dimension(k) :: val_char	     -- Character String Vector
+! Output:
+  integer, intent(out)      :: ncid          -- netCdf File Id
+
+! Create netcdf File 
+  call ezcdf_open(ncid,'my_file','w',[ier])
+
+! Define character string variable
+  dimlens(1) = len(val_char(1))        
+  dimlens(2) = size(val_char)        
+  call cdfDefVar(ncid,'my_text',dimlens,'CHAR',[ier]) 
+! Define data array variable 
+  dimlens(1) = m        
+  dimlens(2) = n        
+  call cdfDefVar(ncid,'my_data',dimlens,'R8',[ier]) 
+       :
+       :
+! Write Variable
+  call cdfPutVar(ncid,'my_data',val_r8,[ier])  
+  call cdfPutVar(ncid,'my_text',val_char,[ier])  
+       : 
+       :
+!close the file
+  call ezcdf_close(ncid)                               
+
+! Fortran Example to Read netCDF File
+  ===================================
+  USE ezcdf                                        -- Interface
+  call ezcdf_open(ncid,filename,'r',[ier])         -- open the file
+  call cdfInqVar(ncid,varnam,dimlens,xtype,[ier])  -- get dimension(s)
+         
+  call cdfGetVar(ncid,varnam,val,[ier])            -- read variable
+  call ezcdf_close(ncid)                                -- close the file
+
+
+o COMPILING/LINKING
+  
+  when compiling your program you need to specify the location of
+  the Fortran 90 modules, which are in <PREFIX>/mod
+
+  	e.g.: f90 -c -<M><PREFIX>/mod myprog.f
+
+  where <M> is the compiler specific option,
+  and  <PREFIX> is the location where libezcdf was installed.
+
+  to link your program use
+
+       -L<PREFIX>/lib -lezcdf -L<LIBROOT>/lib -lnetcdf
+
+  where <LIBROOT> is the location of the netcdf library, usually /usr/local.
+
+
+
+
+
+

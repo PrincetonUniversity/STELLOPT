@@ -1,5 +1,5 @@
 subroutine handle_err(status,nam3,nam1,nam2)
-!DEC$ IF DEFINED (NETCDF)
+#ifdef NETCDF
   include "netcdf.inc"
   INTEGER, intent(in) :: status
   character*(*), intent(in) :: nam1, nam2, nam3
@@ -9,7 +9,7 @@ subroutine handle_err(status,nam3,nam1,nam2)
           &          'while processing: ',a)
      print *, nf_strerror(status)
   endif
-!DEC$ ELSE
+#else
 return
-!DEC$ ENDIF
+#endif
 end subroutine handle_err

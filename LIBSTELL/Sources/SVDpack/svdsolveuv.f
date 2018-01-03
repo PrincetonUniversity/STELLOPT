@@ -1,6 +1,5 @@
       SUBROUTINE svdsolveuv(m, n, mp, np, wcut, file, a, b, x)
       USE stel_kinds
-      USE safe_open_mod
       IMPLICIT NONE
 C-----------------------------------------------
 C   D u m m y   A r g u m e n t s

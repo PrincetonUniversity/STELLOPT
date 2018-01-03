@@ -27,7 +27,7 @@ C-----------------------------------------------
 C-----------------------------------------------
 C   E x t e r n a l  S u b r o u t i n e s
 C-----------------------------------------------
-C      EXTERNAL la_getrf, la_getrs
+      EXTERNAL la_getrf, la_getrs
 C-----------------------------------------------
 c  modified (June, 2003, ORNL):         S. P. Hirshman
 c-----------------------------------------------------------------------
@@ -108,21 +108,21 @@ c  main loop. load and process (backwards) block-rows nblocks to 1.
 !
 !     Compute (and save) ql(nblocks) = a(nblocks)[-1] * ql, and source terms A-1 * srces [A-1 == inv(A)]
 !
-!         CALL la_getrf (mblk, mblk, ainv, mblk, ipiv, ier)
+         CALL la_getrf (mblk, mblk, ainv, mblk, ipiv, ier)
          IF (ier .ne. 0) GOTO 200
 
          IF (k .gt. 1) THEN
             ql(:,:,k) = bm1(:,:,k)
-!            CALL la_getrs('n', mblk, mblk, ainv,
-!     1                    mblk, ipiv, ql(1,1,k), mblk, ier)
-!            CALL la_getrs('n', mblk, 1,    ainv,
-!     1                    mblk,ipiv,srces(1,k),mblk,ier)
+            CALL la_getrs('n', mblk, mblk, ainv,
+     1                    mblk, ipiv, ql(1,1,k), mblk, ier)
+            CALL la_getrs('n', mblk, 1,    ainv,
+     1                    mblk,ipiv,srces(1,k),mblk,ier)
 
 !            CALL wrdisk(iunit, ql, ndisk, incnow, ibuph, incbu, ier)
 !            IF (ier .ne. 0) GOTO 302
          ELSE
-!            CALL la_getrs('n', mblk, 1,   ainv,
-!     1                    mblk,ipiv,srces(1,k),mblk,ier)
+            CALL la_getrs('n', mblk, 1,   ainv,
+     1                    mblk,ipiv,srces(1,k),mblk,ier)
          END IF
 
          k1 = k - 1

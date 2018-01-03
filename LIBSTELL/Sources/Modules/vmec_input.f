@@ -11,7 +11,7 @@
       INTEGER, PARAMETER :: ns_default   = 31
       INTEGER :: nfp, ncurr, nsin, niter, nstep, nvacskip, mpol, ntor,
      1           ntheta, nzeta, mfilter_fbdy, nfilter_fbdy,
-     2           max_main_iterations
+     2           max_main_iterations, omp_num_threads
       INTEGER, DIMENSION(100) :: ns_array, niter_array
       INTEGER :: imse, isnodes, itse, ipnodes, iopt_raxis,
      1   imatch_phiedge, nflxs
@@ -82,7 +82,7 @@
      3   raxis_cs, zaxis_cc, mpol, ntor, ntheta, nzeta, mfilter_fbdy,
      3   nfilter_fbdy, niter_array,
      4   ns_array, ftol_array, tcon0, precon_type, prec2d_threshold,
-     4   curtor, sigma_current, extcur,
+     4   curtor, sigma_current, extcur, omp_num_threads,
      5   phiedge, psa, pfa, isa, ifa, imatch_phiedge, iopt_raxis, 
      6   tensi, tensp, mseangle_offset, mseangle_offsetm, imse, 
      7   isnodes, rstark, datastark, sigma_stark, itse, ipnodes, 
@@ -102,11 +102,13 @@
       CONTAINS
 
       SUBROUTINE read_indata_namelist (iunit, istat)
-      INTEGER :: iunit, istat
+      INTEGER, INTENT(IN) :: iunit
+      INTEGER, INTENT(OUT) :: istat
 
 !
 !     INITIALIZATIONS
 !
+      omp_num_threads = 8
       gamma = 0
       spres_ped = 1
       mpol = mpol_default
@@ -151,11 +153,11 @@
       lmovie = .false.         ! S Lazerson for making movie files
       lmoreiter = .false.      ! default value if no max_main_iterations given.
       max_main_iterations = 1  ! to keep a presumably expected standard behavior.
-!DEC$ IF DEFINED (NETCDF)
+#if defined(NETCDF)
       lwouttxt = .false.       ! to keep functionality as expected with netcdf
-!DEC$ ELSE
+#else
       lwouttxt = .true.        ! and without netcdf
-!DEC$ ENDIF
+#endif
 
       pcurr_type = 'power_series'
       piota_type = 'power_series'
@@ -182,8 +184,19 @@
       READ (iunit, nml=indata, iostat=istat)
 
       IF (ALL(niter_array == -1)) niter_array = niter
-      WHERE (raxis .ne. 0._dp) raxis_cc = raxis
-      WHERE (zaxis .ne. 0._dp) zaxis_cs = zaxis
+      WHERE (raxis .ne. 0._dp) 
+         raxis_cc = raxis
+      ELSEWHERE
+         raxis_cc = raxis_cc
+      ENDWHERE
+      WHERE (zaxis .ne. 0._dp) 
+         zaxis_cs = zaxis
+      ELSEWHERE
+         zaxis_cs = zaxis_cs
+      ENDWHERE
+
+      raxis_cs(0) = 0; zaxis_cs(0) = 0
+
       IF(max_main_iterations .gt. 1) lmoreiter=.true.  !J Geiger: if more iterations are requested.
 
       END SUBROUTINE read_indata_namelist

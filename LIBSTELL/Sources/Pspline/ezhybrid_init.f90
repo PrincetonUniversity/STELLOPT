@@ -4,7 +4,7 @@
  
 subroutine EZhybrid_init2_r8(spline_o, n1, n2, hspline, ier, &
      BCS1, BCS2)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline2_r8) spline_o
   integer, intent(in) :: n1, n2
@@ -178,7 +178,7 @@ end subroutine EZhybrid_init2_r8
  
 subroutine EZhybrid_init3_r8(spline_o, n1, n2, n3, hspline, ier, &
      BCS1, BCS2, BCS3)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline3_r8) spline_o
   integer, intent(in) :: n1, n2, n3
@@ -404,7 +404,7 @@ end subroutine EZhybrid_init3_r8
  
 subroutine EZhybrid_init2_r4(spline_o, n1, n2, hspline, ier, &
      BCS1, BCS2)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline2_r4) spline_o
   integer, intent(in) :: n1, n2
@@ -579,7 +579,7 @@ end subroutine EZhybrid_init2_r4
  
 subroutine EZhybrid_init3_r4(spline_o, n1, n2, n3, hspline, ier, &
      BCS1, BCS2, BCS3)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline3_r4) spline_o
   integer, intent(in) :: n1, n2, n3

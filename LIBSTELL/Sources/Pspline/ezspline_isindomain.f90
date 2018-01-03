@@ -4,10 +4,8 @@
 !
 ! 1-D
 !
-
-
    subroutine EZspline_isInDomain1_r8(spline_o, p1, ier)
-     use EZspline_obj
+     use ezspline_obj
      implicit none
      type(EZspline1_r8) :: spline_o
      real(ezspline_r8), intent(in) :: p1
@@ -37,7 +35,7 @@
    end subroutine EZspline_isInDomain1_r8
 
    subroutine EZspline_isInDomain1_array_r8(spline_o, k1, p1, ier)
-       use EZspline_obj
+       use ezspline_obj
        type(EZspline1_r8) :: spline_o
        integer, intent(in) :: k1
        real(ezspline_r8), intent(in) :: p1(k1)
@@ -69,7 +67,7 @@
 
 
    subroutine EZspline_isInDomain2_r8(spline_o, p1, p2, ier)
-     use EZspline_obj
+     use ezspline_obj
      implicit none
      type(EZspline2_r8) :: spline_o
      real(ezspline_r8), intent(in) :: p1, p2
@@ -110,7 +108,7 @@
    end subroutine EZspline_isInDomain2_r8
 
    subroutine EZspline_isInDomain2_array_r8(spline_o, k1, k2, p1, p2, ier)
-       use EZspline_obj
+       use ezspline_obj
        type(EZspline2_r8) :: spline_o
        integer, intent(in) :: k1, k2
        real(ezspline_r8), intent(in) :: p1(k1), p2(k2)
@@ -144,7 +142,7 @@
      end subroutine EZspline_isInDomain2_array_r8
 
      subroutine EZspline_isInDomain2_cloud_r8(spline_o, k, p1, p2, ier)
-       use EZspline_obj
+       use ezspline_obj
        type(EZspline2_r8) :: spline_o
        integer, intent(in) :: k
        real(ezspline_r8), intent(in) :: p1(k), p2(k)
@@ -185,7 +183,7 @@
 
 
    subroutine EZspline_isInDomain3_r8(spline_o, p1, p2, p3, ier)
-     use EZspline_obj
+     use ezspline_obj
      implicit none
      type(EZspline3_r8) :: spline_o
      real(ezspline_r8), intent(in) :: p1, p2, p3
@@ -237,7 +235,7 @@
    end subroutine EZspline_isInDomain3_r8
 
    subroutine EZspline_isInDomain3_array_r8(spline_o, k1, k2, k3, p1, p2, p3, ier)
-       use EZspline_obj
+       use ezspline_obj
        type(EZspline3_r8) :: spline_o
        integer, intent(in) :: k1, k2, k3
        real(ezspline_r8), intent(in) :: p1(k1), p2(k2), p3(k3)
@@ -280,7 +278,7 @@
      end subroutine EZspline_isInDomain3_array_r8
 
      subroutine EZspline_isInDomain3_cloud_r8(spline_o, k, p1, p2, p3, ier)
-       use EZspline_obj
+       use ezspline_obj
        type(EZspline3_r8) :: spline_o
        integer, intent(in) :: k
        real(ezspline_r8), intent(in) :: p1(k), p2(k), p3(k)
@@ -330,7 +328,7 @@
 
 
    subroutine EZspline_isInDomain1_r4(spline_o, p1, ier)
-     use EZspline_obj
+     use ezspline_obj
      implicit none
      type(EZspline1_r4) :: spline_o
      real(ezspline_r4), intent(in) :: p1
@@ -360,7 +358,7 @@
    end subroutine EZspline_isInDomain1_r4
 
    subroutine EZspline_isInDomain1_array_r4(spline_o, k1, p1, ier)
-       use EZspline_obj
+       use ezspline_obj
        type(EZspline1_r4) :: spline_o
        integer, intent(in) :: k1
        real(ezspline_r4), intent(in) :: p1(k1)
@@ -392,7 +390,7 @@
 
 
    subroutine EZspline_isInDomain2_r4(spline_o, p1, p2, ier)
-     use EZspline_obj
+     use ezspline_obj
      implicit none
      type(EZspline2_r4) :: spline_o
      real(ezspline_r4), intent(in) :: p1, p2
@@ -433,7 +431,7 @@
    end subroutine EZspline_isInDomain2_r4
 
    subroutine EZspline_isInDomain2_array_r4(spline_o, k1, k2, p1, p2, ier)
-       use EZspline_obj
+       use ezspline_obj
        type(EZspline2_r4) :: spline_o
        integer, intent(in) :: k1, k2
        real(ezspline_r4), intent(in) :: p1(k1), p2(k2)
@@ -467,7 +465,7 @@
      end subroutine EZspline_isInDomain2_array_r4
 
      subroutine EZspline_isInDomain2_cloud_r4(spline_o, k, p1, p2, ier)
-       use EZspline_obj
+       use ezspline_obj
        type(EZspline2_r4) :: spline_o
        integer, intent(in) :: k
        real(ezspline_r4), intent(in) :: p1(k), p2(k)
@@ -508,7 +506,7 @@
 
 
    subroutine EZspline_isInDomain3_r4(spline_o, p1, p2, p3, ier)
-     use EZspline_obj
+     use ezspline_obj
      implicit none
      type(EZspline3_r4) :: spline_o
      real(ezspline_r4), intent(in) :: p1, p2, p3
@@ -560,7 +558,7 @@
    end subroutine EZspline_isInDomain3_r4
 
    subroutine EZspline_isInDomain3_array_r4(spline_o, k1, k2, k3, p1, p2, p3, ier)
-       use EZspline_obj
+       use ezspline_obj
        type(EZspline3_r4) :: spline_o
        integer, intent(in) :: k1, k2, k3
        real(ezspline_r4), intent(in) :: p1(k1), p2(k2), p3(k3)
@@ -603,7 +601,7 @@
      end subroutine EZspline_isInDomain3_array_r4
 
      subroutine EZspline_isInDomain3_cloud_r4(spline_o, k, p1, p2, p3, ier)
-       use EZspline_obj
+       use ezspline_obj
        type(EZspline3_r4) :: spline_o
        integer, intent(in) :: k
        real(ezspline_r4), intent(in) :: p1(k), p2(k), p3(k)

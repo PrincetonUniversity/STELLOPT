@@ -8,7 +8,6 @@ C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
       INTEGER :: istat1
 C-----------------------------------------------
-
       CALL free_mem_nunv
 
       ALLOCATE (bsubu0(nznt), rbsq(nznt), dbsq(nznt), stat=istat1)
@@ -27,11 +26,5 @@ C-----------------------------------------------
      2          bsqsav(nznt,3), potvac(2*mnpd), raxis_nestor(nv),
      3          zaxis_nestor(nv), stat=istat1)
          IF (istat1.ne.0) STOP 'allocation error #3 in allocate_nunv'
-         !!!!! SAL ADDITION !!!!!
-#if defined(VVAC2_SAL)
-         ALLOCATE (vforsav(nznt*7), stat=istat1)
-         IF (istat1.ne.0) STOP 'allocation error #4 in allocate_nunv'
-#endif
-         !!!!!!!!!!!!!!!!!!!!!!!!
 
       END SUBROUTINE allocate_nunv

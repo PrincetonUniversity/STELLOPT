@@ -1,14 +1,15 @@
-      SUBROUTINE becoil(rad, zee, br, bp, bz, brvac, bpvac, bzvac,
-     1                  lscreen)
+      SUBROUTINE becoil (rad, zee, br, bp, bz, brvac, bpvac, bzvac,
+     1                   lscreen)
       USE vparams, ONLY: nthreed
       USE vacmod
+      USE parallel_include_module
       IMPLICIT NONE
 C-----------------------------------------------
 C   D u m m y   A r g u m e n t s
 C-----------------------------------------------
-      REAL(rprec), DIMENSION(nuv2), INTENT(in) :: rad, zee
-      REAL(rprec), DIMENSION(nuv2), INTENT(out) :: br, bp, bz
-      REAL(rprec), DIMENSION(nr0b,nz0b,np0b), INTENT(in) ::
+      REAL(dp), DIMENSION(nuv3), INTENT(in) :: rad, zee
+      REAL(dp), DIMENSION(nuv3), INTENT(out) :: br, bp, bz
+      REAL(dp), DIMENSION(nr0b,nz0b,np0b), INTENT(in) ::
      1   brvac, bpvac, bzvac
       LOGICAL :: lscreen
 C-----------------------------------------------
@@ -21,8 +22,8 @@ C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
       INTEGER, SAVE :: icount = 0
       INTEGER :: i, kv, ir, jz, ir1, jz1
-      REAL(rprec) :: rad0, zee0, ri, zj,
-     1   pr, qz, w22, w21, w12, w11
+      REAL(dp) :: rad0, zee0, ri, zj,
+     1   pr, qz, w22, w21, w12, w11, tbecon, tbecoff
 C-----------------------------------------------
 !
 !     DETERMINE THE CYLINDRICAL COMPONENTS OF THE EXTERNAL
@@ -37,9 +38,11 @@ C-----------------------------------------------
 !                                AT WHICH B-FIELD IS TO BE DETERMINED
 !
 C-----------------------------------------------
+      CALL second0(tbecon)
+
       icount = icount + 1
 
-      DO i = 1, nuv2
+      DO i = nuv3min, nuv3max
 !
 !       CHECK THAT BOUNDARY POINTS ARE INSIDE VACUUM GRID.  IF NOT,
 !       SET THEM EQUAL TO LARGEST (OR SMALLEST) VACUUM GRID POINTS
@@ -88,7 +91,7 @@ C-----------------------------------------------
 !
 !     PRINT INFO IF R, Z OUT OF BOX
 !
-      IF (MOD(icount,25).eq.0 .and. lscreen) THEN
+      IF (MOD(icount,25).EQ.0 .AND. rank.EQ.0) THEN
          i = 0
          rad0 = MAXVAL(rad)
          zee0 = MAXVAL(zee)
@@ -98,7 +101,7 @@ C-----------------------------------------------
          zj   = MINVAL(zee)
          IF (ri .lt. rminb) i = i + 4
          IF (zj .lt. zminb) i = i + 8
-         IF (i .ne. 0) THEN
+         IF (i .ne. 0 .and. lscreen) THEN
             PRINT *, warning
             WRITE (nthreed, *) warning
             IF (i/8 .ne. 0) PRINT *,' zmin = ', zj
@@ -110,5 +113,8 @@ C-----------------------------------------------
             IF (i .ne. 0) PRINT *,' rmax = ', rad0
          END IF
       ENDIF
+
+      CALL second0(tbecoff)
+      becoil_time = becoil_time + (tbecoff - tbecon)
 
       END SUBROUTINE becoil

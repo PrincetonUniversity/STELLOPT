@@ -1,0 +1,53 @@
+The following routines serve as replacement for the non-portable 
+BZIO input/output routines used in many PPPL codes such as JSOLVER,
+DMAP, PEST etc. The present routines are based on netCDF, a portable
+binary file format (http://www.unidata.ucar.edu/packages/netcdf)
+with data access times comparable to raw binary reads/writes. The
+content of netCDF files can be viewed/translated to ASCII format
+using the ncdump command, which also allows one to take a quick look
+into the content of a file. Another advantage is that netCDF reads/writes
+need not be sequential; data can be accessed in any order. Since only
+a subset of data may be accessed, the content of netCDF files can evolve
+without compromising compatibility with older programs.
+
+The flexibility of netCDF comes at a price. Its inherent complexity
+has deterred many programmers in the past from using it. The CDF
+routines in this directory provide an easy-to-use and logical interface.
+The user is not required to know the netCDF syntax.
+The interface is simpler than the full set of netCDF features:
+Attributes, like units, labels, scale factors, etc., are not currently
+supported, it only allows writes of integers, real*4, real*8, and character
+variables. Arrays of up to rank three are presently supported.
+
+
+The four basic steps for writing data are:
+
+	USE cdfGenPut
+	INTEGER cdfid
+	INTEGER, DIMENSION(3) :: dimlens=(/1,1,1/) 
+	CHARACTER*80 file
+	CHARACTER*4 xtype
+	
+! Create file
+	CALL cdfOpn(cdfid,file,'w')                 
+! Define type and rank of varname
+	CALL cdfDefVar(cdfid,'varname',dimlens,xtype)
+! Write var
+    CALL cdfPutVar(cdfid,'varname',var)        
+! Close file
+    CALL cdfCls(cdfid)                            
+
+The reading follows closely the writing except that 'w'
+should be replaced by 'r',
+cdfDefVar becomes cdfInqVar and cdfPutVar becomes cdfGetVar.
+
+In the above example xtype can be either 'INT', 'R4", 
+'R8' (=double on most computers) or 'CHAR'.
+Note that the name of cdfPutVar does not change with the type
+of var, which can be INTEGER, REAL*4, REAL*8 or CHARACTER. The
+vector dimlens denotes the dimension(s) of var.
+
+
+
+
+

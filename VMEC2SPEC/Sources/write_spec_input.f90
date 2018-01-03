@@ -52,7 +52,7 @@
       gamma_spec = 0.00
       ladia = 0
       lconstraint = 1  ! Fit Iota
-      linitialize = 1
+      linitialize = 0
       !IF (lwout) linitialize = 0
       !DO i = 1, nvol
       !   IF (tflux(i) .eq. 1.0) press(i) = 0.0
@@ -122,7 +122,7 @@
       DEALLOCATE(rmnc_temp, zmns_temp)
       IF (lasym) DEALLOCATE(rmns_temp,zmnc_temp)
       ! Create File and Open
-      OPEN(UNIT=iunit, FILE=TRIM(TRIM(id_string) // '.spec'))
+      OPEN(UNIT=iunit, FILE=TRIM(TRIM(id_string) // '.sp'))
       ! Output INDATA Namelist
       WRITE(iunit,'(A)') '&PHYSICSLIST'
       WRITE(iunit,'(A)') '!---------   GRID Parameters  ---------------'
@@ -131,20 +131,19 @@
       WRITE(iunit,'(2X,A,I4)')      'NTOR        = ',n
       WRITE(iunit,'(2X,A,I3)')      'NFP         = ',nfp
       WRITE(iunit,'(2X,A,I1)')      'IGEOMETRY   = ',igeometry
-      !WRITE(iunit,'(2X,A,I1)')      'ITOROIDAL   = ',itoroidal
       IF (lasym) WRITE(iunit,'(2X,A,I1)')      'ISTELLSYM   = ',0
       CALL write_array(iunit,'LRAD',ni(1:nvol),nvol)
       WRITE(iunit,'(A)') '!---------   Free Boundary Parameters -------'
       WRITE(iunit,'(2X,A,I1)')      'LFREEBOUND  = ',0
       WRITE(iunit,'(2X,A,ES20.10)') 'PHIEDGE     = ',torflux_edge
-      WRITE(iunit,'(2X,A,ES20.10)') 'EXTCUR      = ',0.0
+      !WRITE(iunit,'(2X,A,ES20.10)') 'EXTCUR      = ',0.0
       WRITE(iunit,'(A)') '!---------   Pressure Parameters  -----------'
       WRITE(iunit,'(2X,A,I1)')      'LADIABATIC  = ',ladia
       WRITE(iunit,'(2X,A,ES20.10)') 'PSCALE      = ',pscale
       WRITE(iunit,'(2X,A,ES20.10)') 'GAMMA       = ',gamma_spec
       !CALL write_array(iunit,'PRESSURE',press(1:nvol)*mu0*pi2*pi2,nvol)  ! Old Way  
       CALL write_array(iunit,'PRESSURE',press(1:nvol),nvol)     
-      !CALL write_array(iunit,'ADIAB',adiab(1:nvol),nvol) ! Redundant
+      CALL write_array(iunit,'ADIABATIC',press(1:nvol),nvol)     
       WRITE(iunit,'(A)') '!---------   Current/Iota  Parameters -------'
       WRITE(iunit,'(2X,A,I1)')      'LCONSTRAINT = ',lconstraint
       WRITE(iunit,'(2X,A,ES20.10)') 'CURTOR      = ',curtor
@@ -154,7 +153,7 @@
       CALL write_array(iunit,'PFLUX',pflux(1:nvol),nvol,LOW_INDEX=1)
       CALL write_array(iunit,'IOTA',iota(1:nvol),nvol,LOW_INDEX=1)
       CALL write_array(iunit,'OITA',iota(1:nvol),nvol,LOW_INDEX=1)
-      !CALL write_array(iunit,'MU',mu(1:nvol),nvol) 
+      CALL write_array(iunit,'MU',mu(1:nvol),nvol) 
       !CALL write_array(iunit,'PL',pl(1:nvol),nvol,LOW_INDEX=1) 
       !CALL write_array(iunit,'QL',ql(1:nvol),nvol,LOW_INDEX=1) 
       !CALL write_array(iunit,'PR',pr(1:nvol),nvol,LOW_INDEX=1) 
@@ -185,58 +184,46 @@
       WRITE(iunit,'(A)') '/'
       WRITE(iunit,'(A)') '&NUMERICLIST'
       WRITE(iunit,'(2X,A,I3)')      'LINITIALIZE = ',linitialize        !Use RBC/ZBS
-      WRITE(iunit,'(2X,A,I3)')      'LWALL   = ',0
-      WRITE(iunit,'(2X,A,ES20.10)') 'PHIWALL     = ',0.5
+      WRITE(iunit,'(2X,A,I3)')      'LZEROVAC    = ',0
       WRITE(iunit,'(2X,A,I3)')      'NDISCRETE   = ',2
       WRITE(iunit,'(2X,A,I2)')      'NQUAD       = ',-1
       WRITE(iunit,'(2X,A,I2)')      'IMPOL       = ',-4
       WRITE(iunit,'(2X,A,I2)')      'INTOR       = ',-4
       WRITE(iunit,'(2X,A,I2)')      'LSPARSE     = ',0
+      WRITE(iunit,'(2X,A,I2)')      'LSVDIOTA    = ',0
       WRITE(iunit,'(2X,A,I2)')      'IMETHOD     = ',3
       WRITE(iunit,'(2X,A,I2)')      'IORDER      = ',2
       WRITE(iunit,'(2X,A,I2)')      'IPRECON     = ',1
       WRITE(iunit,'(2X,A,ES20.10)') 'IOTATOL     = ',-1.0
-      WRITE(iunit,'(2X,A,I1)')      'ISWMIN      = ',0
-!     Eliminated Per S. Hudson's Request
-!      WRITE(iunit,'(2X,A,I1)')      'LDMUPF      = ',2
-!      WRITE(iunit,'(2X,A,I2)')      'IEXTRAP     = ',-1
-!      WRITE(iunit,'(2X,A,I1)')      'LSLABEL     = ',0
-!      WRITE(iunit,'(2X,A,I3)')      'LSINTERP    = ',5
-!      WRITE(iunit,'(2X,A)')         'LSYMAGL     = .FALSE.'
-!      WRITE(iunit,'(2X,A,I1)')      'LPERTURB    = ',0
-!      WRITE(iunit,'(2X,A,ES20.10)') 'DPERTURB    = ',1.0E-30
+      WRITE(iunit,'(2X,A,I2)')      'LEXTRAP     = ',0
+      WRITE(iunit,'(2X,A,I2)')      'MREGULAR    = ',-1
       WRITE(iunit,'(A)') '/'
       WRITE(iunit,'(A)') '&LOCALLIST'
 !     Eliminated Per S. Hudson's Request
       WRITE(iunit,'(2X,A,I2)')      'LBELTRAMI     = ',4
       WRITE(iunit,'(2X,A,I2)')      'LINITGUES     = ',1
-!      WRITE(iunit,'(2X,A,I2)')      'LDENSE        = ',1
-      WRITE(iunit,'(2X,A)')         'LPOSDEF       = .FALSE.'
-      WRITE(iunit,'(2X,A,I3)')      'NMAXEXP        = ',4
-!      WRITE(iunit,'(2X,A,I2)')      'LPRECON       = ',1
-!      WRITE(iunit,'(2X,A,I2)')      'SPARSEITS     = ',-1
-!      WRITE(iunit,'(2X,A,ES20.10)') 'SSOROMEGA     = ',1.0
-!      WRITE(iunit,'(2X,A,ES20.10)') 'SPARSETOL     = ',-1.0
-!      WRITE(iunit,'(2X,A,I2)')      'LIOTASOLV      = ',1
-!      WRITE(iunit,'(2X,A,I2)')      'SPARSEPC      = ',1 ! Old Way
+      WRITE(iunit,'(2X,A)')         'LPOSDEF       = 0'
       WRITE(iunit,'(A)') '/'
       WRITE(iunit,'(A)') '&GLOBALLIST'
-      WRITE(iunit,'(2X,A,I2)')      'LMINIMIZE     = ',0
       WRITE(iunit,'(2X,A,I2)')      'LFINDZERO     = ',2
-      WRITE(iunit,'(2X,A,I2)')      'LCONDENSE     = ',0
+      WRITE(iunit,'(2X,A,ES20.10)') 'ESCALE        = ',0.0
+      WRITE(iunit,'(2X,A,ES20.10)') 'OPSILON       = ',1.0
       WRITE(iunit,'(2X,A,ES20.10)') 'PCONDENSE     = ',4.0
-      WRITE(iunit,'(2X,A,ES20.10)') 'QCONDENSE     = ',2.0
+      WRITE(iunit,'(2X,A,ES20.10)') 'EPSILON       = ',1.0D+00
+      WRITE(iunit,'(2X,A,ES20.10)') 'WPOLOIDAL     = ',1.0
+      WRITE(iunit,'(2X,A,ES20.10)') 'UPSILON       = ',1.0
       WRITE(iunit,'(2X,A,ES20.10)') 'FORCETOL      = ',1.0D-09
-      WRITE(iunit,'(2X,A,ES20.10)') 'NORMALERR     = ',1.0D-06
-      WRITE(iunit,'(2X,A,ES20.10)') 'NORBLEND      = ',0.0
-      WRITE(iunit,'(2X,A,I3)')      'MAXFBITS      = ',20
+      WRITE(iunit,'(2X,A,ES20.10)') 'C05XMAX       = ',1.0D-06
       WRITE(iunit,'(2X,A,ES20.10)') 'C05XTOL       = ',1.0D-12
       WRITE(iunit,'(2X,A,ES20.10)') 'C05FACTOR     = ',1.0D-04
-      WRITE(iunit,'(2X,A)')         'LREADGF       = .TRUE.'
-      WRITE(iunit,'(2X,A,I3)')      'VERIFY        = ',-1
-      WRITE(iunit,'(2X,A,ES20.10)') 'MAXSTEP       = ',1.0D-03
-      WRITE(iunit,'(2X,A,ES20.10)') 'EPSILON       = ',1.0D+00
-      WRITE(iunit,'(2X,A,I3)')      'MAXITER       = ',-1
+      WRITE(iunit,'(2X,A)')         'LREADGF       = .FALSE.'
+      WRITE(iunit,'(2X,A,I3)')      'MFREEITS        = ',0
+      WRITE(iunit,'(2X,A,ES20.10)') 'GBNTOL        = ',1.0D-06
+      WRITE(iunit,'(2X,A,ES20.10)') 'GBNBLD        = ',2.0/3.0
+      WRITE(iunit,'(2X,A,ES20.10)') 'VCASINGEPS    = ',1.0D-12
+      WRITE(iunit,'(2X,A,ES20.10)') 'VCASINGTOL    = ',1.0D-08
+      WRITE(iunit,'(2X,A,I2)')      'VCASINGITS    = ',8
+      WRITE(iunit,'(2X,A,I2)')      'VCASINGPER    = ',1
       WRITE(iunit,'(A)') '/'
       WRITE(iunit,'(A)') '&DIAGNOSTICSLIST'
       !WRITE(iunit,'(2X,A,I2)')      'LPOINCARE     = ',0
@@ -247,22 +234,33 @@
       WRITE(iunit,'(A)') '&SCREENLIST'
       WRITE(iunit,'(A)') '/'   
       ! Output R and Z
-      !IF (lwout) THEN
-      !   DO mn = 1, mnmax
-      !      WRITE(iunit,'(2X,I4,1X,I4)',ADVANCE='no') xm(mn),xn(mn)
-      !      DO ik = 0, nvol
-      !         WRITE(iunit,'(1X,ES20.10,1X,ES20.10)',ADVANCE='no') rmnc(mn,ik),zmns(mn,ik)
-      !         IF (lasym) WRITE(iunit,'(1X,ES20.10,1X,ES20.10)',ADVANCE='no') rmns(mn,ik),zmnc(mn,ik)
-      !      END DO
-      !      WRITE(iunit,'(A)',ADVANCE='YES')' '
-      !   END DO
-      !END IF
+      IF (lwout) THEN
+         IF (lflipped) THEN
+            DO mn = 1, mnmax
+               WRITE(iunit,'(2X,I4,1X,I4)',ADVANCE='no') xm(mn),-xn(mn)
+               DO ik = 0, nvol
+                  WRITE(iunit,'(1X,ES20.10,1X,ES20.10)',ADVANCE='no') rmnc(mn,ik),zmns(mn,ik)
+                  IF (lasym) WRITE(iunit,'(1X,ES20.10,1X,ES20.10)',ADVANCE='no') rmns(mn,ik),zmnc(mn,ik)
+               END DO
+               WRITE(iunit,'(A)',ADVANCE='YES')' '
+            END DO
+         ELSE
+            DO mn = 1, mnmax
+               WRITE(iunit,'(2X,I4,1X,I4)',ADVANCE='no') xm(mn),xn(mn)
+               DO ik = 0, nvol
+                  WRITE(iunit,'(1X,ES20.10,1X,ES20.10)',ADVANCE='no') rmnc(mn,ik),zmns(mn,ik)
+                  IF (lasym) WRITE(iunit,'(1X,ES20.10,1X,ES20.10)',ADVANCE='no') rmns(mn,ik),zmnc(mn,ik)
+               END DO
+               WRITE(iunit,'(A)',ADVANCE='YES')' '
+            END DO
+         END IF
+      END IF
       ! Close File
       CLOSE(UNIT=iunit)
       ! Write Some stuff
       IF (lverb) THEN
          write(6,*) '-----SPEC File Parameters-----'
-         write(6,'(A,A)') '    file: ',TRIM(id_string)//'.in'
+         write(6,'(A,A)') '    file: ',TRIM(id_string)//'.sp'
          write(6,'(A,I3)')      '    nvol: ',nvol
          write(6,'(A,I3)')      '    mpol: ',m
          write(6,'(A,I3)')      '    ntor: ',n

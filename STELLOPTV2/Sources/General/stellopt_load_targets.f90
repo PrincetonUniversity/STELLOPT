@@ -109,6 +109,12 @@
       ! LINE ION TEMPERATURE
       IF (ANY(sigma_ti_line < bigno)) &
          CALL chisq_line_ti(target_ti_line, sigma_ti_line, ncnt,iflag)
+      ! XICS Brightness
+      IF (ANY(sigma_xics_bright < bigno)) &
+         CALL chisq_xics_bright(target_xics_bright, sigma_xics_bright, ncnt,iflag)
+      ! XICS
+      IF (ANY(sigma_xics < bigno)) &
+         CALL chisq_xics(target_xics, sigma_xics, ncnt,iflag)
       ! SOFT X-RAYS
       IF (ANY(sigma_sxr < bigno)) &
          CALL chisq_sxr(target_sxr, sigma_sxr, ncnt,iflag)

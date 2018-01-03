@@ -1,4 +1,4 @@
-#This makefile goes in dirs Debug and Release (first level below VMEC2000)
+#This makefile goes in dirs Debug and Release (first level below XVMEC2000)
 include ../../make.inc
 FFILE   = '$*''.f'
 CFILE   = '$*''.c'
@@ -11,7 +11,7 @@ OBJLIST = ../ObjectList
 #Includes source files and dependency list
 include $(DEPLIST)
 include $(OBJLIST)
-VPATH = $(SPATH):$(SPATH)/TimeStep:$(SPATH)/NESTOR_vacuum:$(SPATH)/Input_Output:$(SPATH)/Initialization_Cleanup:$(SPATH)/Reconstruction:$(SPATH)/Hessian:$(SPATH)/Splines:$(SPATH)/General
+VPATH = $(SPATH):$(SPATH)/General:$(SPATH)/Initialization_Cleanup:$(SPATH)/Hessian:$(SPATH)/Splines:$(SPATH)/NESTOR_vacuum:$(SPATH)/Reconstruction:$(SPATH)/TimeStep:$(SPATH)/Input_Output
 
 .SUFFIXES :
 .SUFFIXES : .f .f90 .o

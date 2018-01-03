@@ -2,6 +2,7 @@
       USE vmec_main, p5 => cp5
       USE vmec_params, ONLY: jmin2, mscale, nscale, 
      1                       mnyq, nnyq, signgs
+      USE parallel_include_module, ONLY: fixarray_time
 #ifdef _HBANGLE
       USE angle_constraints, ONLY: init_multipliers
 #endif
@@ -9,13 +10,13 @@
 C-----------------------------------------------
 C   L o c a l   P a r a m e t e r s
 C-----------------------------------------------
-      REAL(rprec), PARAMETER :: two=2, pexp=4
+      REAL(dp), PARAMETER :: two=2, pexp=4
 C-----------------------------------------------
 C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
       INTEGER :: i, m, j, n, mn, mn1, nmin0, istat1, istat2
       INTEGER :: mnyq0, nnyq0
-      REAL(rprec):: argi, arg, argj, dnorm
+      REAL(dp):: argi, arg, argj, dnorm, tfixon, tfixoff
 C-----------------------------------------------
 !
 !     INDEX OF LOCAL VARIABLES
@@ -29,6 +30,9 @@ C-----------------------------------------------
 !    NOTE: ARRAYS ALLOCATED HERE ARE GLOBAL AND ARE DEALLOCATED IN FILEOUT
 !    NOTE: NEED 2 X NYQUIST FOR FAST HESSIAN CALCULATIONS 
 !
+#if defined(SKS)
+        CALL second0(tfixon)
+#endif
       mnyq0  = ntheta1/2; nnyq0  = nzeta/2
  
       mnyq = MAX(0, 2*mnyq0, 2*mpol1)
@@ -159,5 +163,11 @@ C-----------------------------------------------
 #endif
 
       IF (lrecon) CALL getgreen
+
+#if defined(SKS)
+      CALL second0(tfixoff)
+      fixarray_time = fixarray_time + (tfixoff-tfixon)
+#endif
+
 
       END SUBROUTINE fixaray

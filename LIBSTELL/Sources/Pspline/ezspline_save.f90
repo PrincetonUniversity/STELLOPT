@@ -12,7 +12,7 @@
 ! 1-D
 !
 
-!DEC$ IF DEFINED (NETCDF)
+#if defined(NETCDF)
    subroutine EZspline_save1_r8(spline_o, filename, ier, &
         spl_name, fullsave)
      use EZspline_obj
@@ -1083,5 +1083,4 @@
      endif
 
    end subroutine ezspline_defVar
-
-!DEC$ ENDIF
+#endif
