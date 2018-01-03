@@ -503,7 +503,8 @@
       sigma_regcoil_winding_surface_separation = bigno
       regcoil_winding_surface_separation = 1.0
       regcoil_winding_surface_separation_min = 1.0e-3
-      regcoil_winding_surface_separation_max = 2.0
+      ! regcoil_winding_surface_separation_max = 2.0
+      regcoil_winding_surface_separation_max = 10.
       target_regcoil_current_density = 0.0
       sigma_regcoil_current_density = bigno
       regcoil_current_density = 8.0e6
