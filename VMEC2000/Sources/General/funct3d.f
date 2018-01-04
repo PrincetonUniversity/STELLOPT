@@ -150,23 +150,16 @@ C-----------------------------------------------
 !     PRESSURE, AND METRIC ELEMENTS ON HALF-GRID
 
       CALL second0 (tbcovon)
-      CALL bcovar_par (lu, lv, pxc)
+      CALL bcovar_par (lu, lv, pxc, ier_flag)
       CALL second0 (tbcovoff)
       bcovar_time=bcovar_time+(tbcovoff - tbcovon)
 
       END IF ACTIVE1
 
-
-      CALL MPI_BARRIER(RUNVMEC_COMM_WORLD, MPI_ERR)
       bbuf(1)=irst; bbuf(2)=iequi; bbuf(3)=ivac; bbuf(4)=iter2
-      !WRITE(6,*) grank,MPI_ERR,'+'; CALL FLUSH(6)
       CALL MPI_BCast(bbuf,4,MPI_INTEGER,0,RUNVMEC_COMM_WORLD,MPI_ERR)
-      !WRITE(6,*) grank,MPI_ERR,'++'; CALL FLUSH(6)
       irst=bbuf(1); iequi=bbuf(2); ivac=bbuf(3); iter2=bbuf(4)
-      !WRITE(6,*) grank,MPI_ERR,'+++',bbuf; CALL FLUSH(6)
       CALL MPI_BCast(lfreeb,1,MPI_LOGICAL,0,RUNVMEC_COMM_WORLD,MPI_ERR)
-      !WRITE(6,*) grank,MPI_ERR,'++++',lfreeb; CALL FLUSH(6)
-      CALL MPI_BARRIER(RUNVMEC_COMM_WORLD, MPI_ERR)
 
       IF (irst.EQ.2 .AND. iequi.EQ.0) THEN
         CALL ZEROLASTNTYPE(pgc)
@@ -395,11 +388,8 @@ C-----------------------------------------------
         bcastbuf(3) = fsqz; bcastbuf(4) = fsqz1
         bcastbuf(5) = fsql; bcastbuf(6) = fsql1
         CALL second0(tbroadon)
-        !WRITE(6,*) grank,MPI_ERR,'x'; CALL FLUSH(6)
         CALL MPI_Bcast(bcastbuf,SIZE(bcastbuf),MPI_REAL8,0,
      1                 RUNVMEC_COMM_WORLD,MPI_ERR)
-        !WRITE(6,*) grank,MPI_ERR,'xx',bcastbuf; CALL FLUSH(6)
-        CALL MPI_BARRIER(RUNVMEC_COMM_WORLD,MPI_ERR)
         CALL second0(tbroadoff)
         broadcast_time = broadcast_time + (tbroadoff -tbroadon)
         fsqr = bcastbuf(1); fsqr1 = bcastbuf(2)
@@ -407,7 +397,6 @@ C-----------------------------------------------
         fsql = bcastbuf(5); fsql1 = bcastbuf(6)
         DEALLOCATE(bcastbuf)
       ENDIF
-      CALL FLUSH(6)
 
 
 !     Force new initial axis guess IF ALLOWED (l_moveaxis=T)
