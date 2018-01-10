@@ -223,7 +223,7 @@
                     rmns(i,k) = rmns_b(j,i_surf)
                     zmnc(i,k) = zmnc_b(j,i_surf)
                     lmnc(i,k) = -pmnc_b(j,i_surf)*nfp_b/twopi
-                    bmns(i,i) = bmns_b(j,i_surf)
+                    bmns(i,k) = bmns_b(j,i_surf)
                     if (ixm_b(j).eq.0 .and. ixn_b(j).eq.0)            &
                      sqrtg00(i) = gmnc_b(j,i_surf) + gmns_b(j,i_surf)
                  end if
