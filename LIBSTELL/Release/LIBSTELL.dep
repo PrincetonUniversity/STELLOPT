@@ -520,6 +520,16 @@ MAP.o : \
       safe_open_mod.o \
       gade_mod.o \
       stel_kinds.o 
+
+
+eval_x_queued.o : \
+      safe_open_mod.o \
+      stel_kinds.o
+
+
+MAP_HYPERS.o : \
+      safe_open_mod.o \
+      stel_kinds.o
       
 
 MAP_LINEAR.o : \

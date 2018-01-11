@@ -112,7 +112,7 @@
       ierr_mpi = 0
       DO
          ! First get the name of the code blah
-         ier_paraexe = 0
+         ier_paraexe = 0; ierr_mpi = 0
 !DEC$ IF DEFINED (MPI_OPT)
          CALL MPI_BARRIER(MPI_COMM_MYWORLD,ierr_mpi)
          IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_paraexe: BARRIER1',ierr_mpi)
@@ -147,21 +147,22 @@
                ! Setup reset_string
                reset_string =''
                lhit = .FALSE.
-               IF (myworkid == master) THEN
-                  IF (lfreeb .or. (lscreen.and.lrestart)) INQUIRE(FILE='wout_reset_file.nc',EXIST=lhit)
-               END IF
-               CALL MPI_BCAST(lhit,1,MPI_LOGICAL,master,MPI_COMM_MYWORLD,ierr_mpi)
-               IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_paraexe: BCAST2c',ierr_mpi)
-               IF (lhit) THEN
+               !IF (myworkid == master) THEN
+               !   IF (lfreeb .or. (lscreen.and.lrestart)) INQUIRE(FILE='wout_reset_file.nc',EXIST=lhit)
+               !END IF
+               !CALL MPI_BCAST(lhit,1,MPI_LOGICAL,master,MPI_COMM_MYWORLD,ierr_mpi)
+               !IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_paraexe: BCAST2c',ierr_mpi)
+               !IF (lhit) THEN
                !   ictrl(4) = MAXLOC(ns_array,DIM=1) ! Restart run
                !   reset_string='wout_reset_file.nc'
-               END IF
+               !END IF
                ! Setup file string
                !IF (lscreen .and. .not.lrestart) file_str = 'reset_file'  ! First run make the restart file
                ! Execution loop
                !parvmecinfo_file = 'parvmecinfo_'//TRIM(file_str)
-               CALL MPI_BARRIER(MPI_COMM_MYWORLD,ierr_mpi)
-               IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_paraexe: BARRIER1',ierr_mpi)
+               !CALL MPI_BARRIER(MPI_COMM_MYWORLD,ierr_mpi)
+               !IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_paraexe: BARRIER1',ierr_mpi)
+
                DO dex = 1, 2
                   CALL InitRunVmec(MPI_COMM_MYWORLD,lfreeb)
                   CALL runvmec(ictrl,file_str,lscreen,RUNVMEC_COMM_WORLD,reset_string)
@@ -190,6 +191,7 @@
                END DO
                in_parameter_2 = TRIM(file_str)
                ier_paraexe = ier
+               !PRINT *,myworkid,ier,ier_paraexe
 !DEC$ ENDIF
             CASE('paravmec_write')
 !DEC$ IF DEFINED (SKS2)

@@ -1,4 +1,6 @@
 ObjectFiles = \
+eval_x_queued.o \
+MAP_HYPERS.o \
 MAP_LINEAR.o \
 fft991.o \
 fact.o \
