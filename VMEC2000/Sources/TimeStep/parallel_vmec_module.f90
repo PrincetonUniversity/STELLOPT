@@ -234,6 +234,8 @@ CONTAINS
       lactive=.TRUE.
       CALL MPI_Comm_rank(NS_COMM,rank,MPI_ERR)
     ELSE
+      nranks = 1
+      rank   = 0
       lactive=.FALSE.
     END IF
 #endif
@@ -400,7 +402,7 @@ CONTAINS
     INTEGER, INTENT(INOUT)  :: INCOMM
 #if defined(MPI_OPT)
     CALL MPI_Comm_free(INCOMM,MPI_ERR)
-    INCOMM=0
+    INCOMM=0; lactive = .false.
     IF(ALLOCATED(ntblkrcounts)) DEALLOCATE(ntblkrcounts)
     IF(ALLOCATED(ntblkdisp)) DEALLOCATE(ntblkdisp)
     IF(ALLOCATED(blkrcounts)) DEALLOCATE(blkrcounts)
@@ -456,6 +458,8 @@ CONTAINS
       CALL Setnuv3PartitionArrays
       vlactive=.TRUE.
     ELSE
+      vnranks = 1
+      vrank   = 0
       vlactive=.FALSE.
     ENDIF 
 #else

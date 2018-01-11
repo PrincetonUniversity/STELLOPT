@@ -162,7 +162,6 @@ C-----------------------------------------------
          RETURN
       ENDIF
 
-
 !SPH:042117: MOVE TIME STEP CONTROL HERE (FROM END OF EQSOLVE) TO AVOID
 !STORING A POSSIBLE irst=2 STATE
       CALL TimeStepControl(ier_flag, PARVMEC)

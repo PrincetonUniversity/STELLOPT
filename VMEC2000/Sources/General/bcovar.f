@@ -2,7 +2,8 @@
       SUBROUTINE bcovar_par (lu, lv, tpxc, ier_flag)
       USE vmec_main, fpsi => bvco, p5 => cp5
       USE vmec_params, ONLY: ns4, signgs, pdamp, lamscale, ntmax,
-     1                       bsub_bad_js1_flag
+     1                       bsub_bad_js1_flag, arz_bad_value_flag,
+     2                       norm_term_flag
       USE realspace, ONLY: pextra1, pextra2, pextra3, pextra4,
      1                     pguu, pguv, pgvv, pru, pzu,
      2                     pr1, prv, pzv, pshalf, pwint, pz1,
@@ -414,8 +415,11 @@
          DO js = MAX(2,tlglob), MIN(ns-1,trglob)
            arnorm = SUM(pwint(:,js)*pru0(:,js)**2)
            aznorm = SUM(pwint(:,js)*pzu0(:,js)**2)
-           IF (arnorm.eq.zero .or. aznorm.eq.zero)
-     1        STOP 'arnorm or aznorm=0 in bcovar'
+!           IF (arnorm.eq.zero .or. aznorm.eq.zero)
+!     1        STOP 'arnorm or aznorm=0 in bcovar'
+           IF (arnorm .eq.zero .or. aznorm.eq.zero) THEN
+              ier_flag = arz_bad_value_flag
+           END IF
 
            tcon(js) = MIN(ABS(ard(js,1)/arnorm),
      1                    ABS(azd(js,1)/aznorm)) * tcon_mul*(32*hs)**2
@@ -424,6 +428,10 @@
          IF (lasym) tcon = p5*tcon
 #endif
       ENDIF
+      CALL MPI_ALLREDUCE(MPI_IN_PLACE,ier_flag,1,MPI_INTEGER,
+     1                MPI_MAX,NS_COMM,MPI_ERR)
+      !WRITE(6,*) ier_flag; CALL FLUSH(6); CALL FLUSH(6); CALL FLUSH(6);
+      IF (ier_flag .ne. norm_term_flag) RETURN 
 !
 !     COMPUTE COVARIANT BSUBU,V (EVEN, ODD) ON HALF RADIAL MESH
 !     FOR FORCE BALANCE AND RETURN (IEQUI=1)

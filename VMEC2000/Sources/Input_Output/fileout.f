@@ -155,7 +155,7 @@ C-----------------------------------------------
       INTEGER :: js, istat1=0, irst0, OFU
       REAL(dp), DIMENSION(:), POINTER :: lu, lv
       REAL(dp), ALLOCATABLE :: br_out(:), bz_out(:)
-      CHARACTER(LEN=*), PARAMETER, DIMENSION(0:10) :: werror = (/
+      CHARACTER(LEN=*), PARAMETER, DIMENSION(0:14) :: werror = (/
      1   'EXECUTION TERMINATED NORMALLY                            ',
      2   'INITIAL JACOBIAN CHANGED SIGN (IMPROVE INITIAL GUESS)    ',
      3   'FORCE RESIDUALS EXCEED FTOL: MORE ITERATIONS REQUIRED    ',
@@ -166,7 +166,11 @@ C-----------------------------------------------
      8   'PHIEDGE HAS WRONG SIGN IN VACUUM SUBROUTINE              ',
      9   'NS ARRAY MUST NOT BE ALL ZEROES                          ',
      A   'ERROR READING MGRID FILE                                 ',
-     B   'VAC-VMEC I_TOR MISMATCH : BOUNDARY MAY ENCLOSE EXT. COIL ' /)
+     B   '                                                         ',
+     C   'VAC-VMEC I_TOR MISMATCH : BOUNDARY MAY ENCLOSE EXT. COIL ',
+     D   'BSUBH(0) NOT EQUAL 0 AT NS = 1 IN BCOVAR                 ',
+     E   'R01(1) EQUALS 0 IN TOZSPS                                ',
+     F   'ARNORM OR AZNORM EQUALS 0 IN BCOVAR                      ' /)
       CHARACTER(LEN=*), PARAMETER ::
      1    Warning = " Error deallocating global memory FILEOUT"
       LOGICAL :: log_open, lwrite, loutput, lterm
