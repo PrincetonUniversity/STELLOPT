@@ -67,12 +67,21 @@
       ! Work Loop
       IF (myid == 0) THEN ! Master Loop
          ! Send initial datasets
-         DO i = 1, MIN(rank-1,NP)
+         sender = MIN(rank-1,NP)
+         DO i = 1, sender
             idex = idex + 1
             x_temp=xvec(:,idex)
             CALL MPI_SSEND(x_temp,n,MPI_DOUBLE,i,idex,HYPER_COMM,ierr_mpi)
             numsent = numsent+1
          END DO
+
+         ! Handle NP < rank-1
+         IF (sender < rank-1) THEN
+            DO i = sender+1, rank-1
+               CALL MPI_SSEND(MPI_BOTTOM,0,MPI_DOUBLE,i,0, &
+                                HYPER_COMM,ierr_mpi)
+            END DO
+         END IF
           
          ! Result/More work loop
          DO
@@ -83,7 +92,8 @@
             anstype         = mpi_stat(MPI_TAG)
             fvec(:,anstype) = fvec_temp
             fnorm           = SQRT(SUM(fvec_temp*fvec_temp))
-            WRITE(6,'(2(6X,I5),7X,1ES12.4E3)') anstype,sender,fnorm**2
+            WRITE(6,'(2X,I6,8X,I3,7X,1ES12.4E2)') anstype,sender,&
+                                                  fnorm**2
             CALL FLUSH(6)
 
             ! Send Work
@@ -101,7 +111,7 @@
             ! Exit if all work received
             IF (numrecd .eq. NP) EXIT
          END DO
-      ELSE ! Worker Loop
+      ELSE ! Worker Loop 
          DO
             CALL MPI_RECV(x_temp,n,MPI_DOUBLE,0, &
                           MPI_ANY_TAG,HYPER_COMM,mpi_stat,ierr_mpi)
@@ -119,6 +129,8 @@
          END DO            
       END IF
       CALL MPI_BARRIER(HYPER_COMM, ierr_mpi)
+!      iter = iter + NP
+      CALL MPI_BCAST(iter,1,MPI_INTEGER,0,HYPER_COMM,ierr_mpi)
 #endif
 
       ! DEALLOCATE
