@@ -455,7 +455,7 @@ c
              temp = x(j)
              x(j) = temp + h(j)
              h_order(j) = h(j)
-             call MPI_SEND(x, n, MPI_REAL8, j,
+             call MPI_SSEND(x, n, MPI_REAL8, j,
      1                  j, MPI_COMM_STEL, ierr_mpi)
              IF (ierr_mpi /= MPI_SUCCESS) CALL mpi_stel_abort(ierr_mpi)
              IF (ierr_mpi .ne. 0) STOP 'MPI_SEND error(1) in fdjac2'
@@ -522,7 +522,7 @@ c           that just sent in an answer
                x(numsent) = temp + h(numsent)
             
 
-               CALL MPI_SEND(x, n, MPI_REAL8,
+               CALL MPI_SSEND(x, n, MPI_REAL8,
      1                       sender, numsent, MPI_COMM_STEL, ierr_mpi)
                IF (ierr_mpi /= MPI_SUCCESS)
      1              CALL mpi_stel_abort(ierr_mpi)
@@ -531,7 +531,7 @@ c           that just sent in an answer
 
             ELSE                ! Tell workers that there is no more work to do
 
-               CALL MPI_SEND(MPI_BOTTOM, 0, MPI_REAL8,
+               CALL MPI_SSEND(MPI_BOTTOM, 0, MPI_REAL8,
      1                       sender, 0, MPI_COMM_STEL, ierr_mpi)
                IF (ierr_mpi /= MPI_SUCCESS) 
      1             CALL mpi_stel_abort(ierr_mpi)
@@ -566,7 +566,7 @@ c
 c           Send this function evaluation back to the master process tagged
 c           with the column number so the master knows where to put it
 c
-            CALL MPI_SEND(wa(1:m), m, MPI_REAL8, master,
+            CALL MPI_SSEND(wa(1:m), m, MPI_REAL8, master,
      1                    column, MPI_COMM_STEL, ierr_mpi)
             IF (ierr_mpi /= MPI_SUCCESS) CALL mpi_stel_abort(ierr_mpi)
             IF (ierr_mpi .ne. 0) STOP 'MPI_SEND error(4) in fdjac2'

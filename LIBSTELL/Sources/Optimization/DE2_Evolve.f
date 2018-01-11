@@ -217,7 +217,7 @@
          IF (myid == master) THEN
             numsent = 1
             DO j = 1,MIN(numprocs-1,NP-1)
-               CALL MPI_SEND(j+1,1,MPI_INTEGER,j,j,MPI_COMM_STEL,
+               CALL MPI_SSEND(j+1,1,MPI_INTEGER,j,j,MPI_COMM_STEL,
      1                        ierr_mpi)
                IF (ierr_mpi /= MPI_SUCCESS) 
      1                        CALL mpi_stel_abort(ierr_mpi)
@@ -239,13 +239,13 @@
                CALL FLUSH(6)
                IF (numsent < NP) THEN
                   numsent = numsent + 1
-                  CALL MPI_SEND(numsent, 1, MPI_INTEGER,
+                  CALL MPI_SSEND(numsent, 1, MPI_INTEGER,
      1                      sender, numsent, MPI_COMM_STEL, ierr_mpi)
                   IF (ierr_mpi /= MPI_SUCCESS) 
      1                        CALL mpi_stel_abort(ierr_mpi)
                ELSE
                   i = 0
-                  CALL MPI_SEND(i, 1, MPI_INTEGER,
+                  CALL MPI_SSEND(i, 1, MPI_INTEGER,
      1                      sender, numsent, MPI_COMM_STEL, ierr_mpi)
                   IF (ierr_mpi /= MPI_SUCCESS) 
      1                        CALL mpi_stel_abort(ierr_mpi)
@@ -263,7 +263,7 @@
                   iflag = j
                   CALL fcn(m, n, x_temp, temp_fvec, iflag, iter)
                   fnorm = SUM(temp_fvec*temp_fvec)
-                  CALL MPI_SEND(temp_fvec,m, MPI_REAL8, master,
+                  CALL MPI_SSEND(temp_fvec,m, MPI_REAL8, master,
      1                       j, MPI_COMM_STEL, ierr_mpi)
                   IF (ierr_mpi /= MPI_SUCCESS) 
      1                        CALL mpi_stel_abort(ierr_mpi)
