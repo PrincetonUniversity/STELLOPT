@@ -14,9 +14,9 @@
 #######################################################################
 #            Define Compiler Flags
 #######################################################################
-  FLAGS_R = -O2 -fexternal-blas -fbacktrace
+  FLAGS_R = -O2 -fexternal-blas
 #  FLAGS_R = -O0 -g -fexternal-blas -fbacktrace
-  FLAGS_D = -g -O0 -fexternal-blas -fcheck=all 
+  FLAGS_D = -g -O0 -fexternal-blas -fcheck=all -fbacktrace
 
 # Crutch for broken module vars
   FFTWHOME = /usr/pppl/gcc/6.1-pkgs/openmpi-1.10.3-pkgs/fftw-3.3.4
