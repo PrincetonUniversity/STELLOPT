@@ -68,7 +68,6 @@
       norm_ne   = 1; norm_te = 1; norm_ti  = 1; norm_th = 1
       norm_emis_xics = 1
       ! Save variables
-      !CALL SLEEP(1)  ! Do this so code 'catches up'
 
       DO nvar_in = 1, n
          IF (var_dex(nvar_in) == iaphi .and. arr_dex(nvar_in,2) == norm_dex) norm_aphi = x(nvar_in)
@@ -95,8 +94,8 @@
          IF (var_dex(nvar_in) == izeff_aux_f .and. arr_dex(nvar_in,2) == norm_dex) norm_zeff = x(nvar_in)
          IF (var_dex(nvar_in) == iemis_xics_f .and. arr_dex(nvar_in,2) == norm_dex) norm_emis_xics = x(nvar_in)
       END DO
-      !CALL SLEEP(1)  ! Do this so code 'catches up'
-      !temp = norm_phi+var_dex(1)  ! Think this can go away
+
+      ! Unpack array (minus RBC/ZBS/RBS/ZBC)
       DO nvar_in = 1, n
          IF (arr_dex(nvar_in,2) == norm_dex) cycle
          IF (var_dex(nvar_in) == iphiedge) phiedge = x(nvar_in)
@@ -137,16 +136,27 @@
          IF (var_dex(nvar_in) == izaxis_cs) zaxis_cs(arr_dex(nvar_in,1)) = x(nvar_in)
          IF (var_dex(nvar_in) == iraxis_cs) raxis_cs(arr_dex(nvar_in,1)) = x(nvar_in)
          IF (var_dex(nvar_in) == izaxis_cc) zaxis_cc(arr_dex(nvar_in,1)) = x(nvar_in)
-         IF (var_dex(nvar_in) == ibound_rbc) rbc(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
-         IF (var_dex(nvar_in) == ibound_rbs) rbs(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
-         IF (var_dex(nvar_in) == ibound_zbc) zbc(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
-         IF (var_dex(nvar_in) == ibound_zbs) zbs(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
          IF (var_dex(nvar_in) == irhobc)     rhobc(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
-         IF (var_dex(nvar_in) == ideltamn)   deltamn(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
          IF (var_dex(nvar_in) == ideltamn)   deltamn(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
          IF (var_dex(nvar_in) == icoil_splinefx)   coil_splinefx(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
          IF (var_dex(nvar_in) == icoil_splinefy)   coil_splinefy(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
          IF (var_dex(nvar_in) == icoil_splinefz)   coil_splinefz(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
+      END DO
+
+      ! Adust Boundary Representation
+      IF (ANY(var_dex == irhobc)) THEN
+         CALL unique_boundary(rbc,zbs,rhobc,mpol1d,ntord,mpol-1,ntor,mpol-1,rho_exp)
+      END IF
+      IF (ANY(var_dex == ideltamn)) THEN
+         CALL unique_boundary_PG(rbc,zbs,deltamn,ntord,mpol1d,mpol-1,ntor)
+      END IF
+
+      ! Unpack RBC/ZBS/RBS/ZBC
+      DO nvar_in = 1, n
+         IF (var_dex(nvar_in) == ibound_rbc) rbc(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
+         IF (var_dex(nvar_in) == ibound_rbs) rbs(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
+         IF (var_dex(nvar_in) == ibound_zbc) zbc(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
+         IF (var_dex(nvar_in) == ibound_zbs) zbs(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
          IF (var_dex(nvar_in) == imodemn) THEN
             nf = arr_dex(nvar_in,1)
             mf = arr_dex(nvar_in,2)
@@ -158,13 +168,7 @@
             END IF
          END IF
       END DO
-      ! Adust Boundary Representation
-      IF (ANY(var_dex == irhobc)) THEN
-         CALL unique_boundary(rbc,zbs,rhobc,mpol1d,ntord,mpol-1,ntor,mpol-1,rho_exp)
-      END IF
-      IF (ANY(var_dex == ideltamn)) THEN
-         CALL unique_boundary_PG(rbc,zbs,deltamn,ntord,mpol1d,mpol-1,ntor)
-      END IF
+
       ! Apply normalization
       aphi = aphi * norm_aphi
       am   = am   * norm_am
@@ -269,55 +273,6 @@
       CALL tolower(equil_type)
          SELECT CASE (TRIM(equil_type))
             CASE('vmec2000_old','animec','flow','satire')
-               ! Handle ne ti te th
-               ier=0
-               CALL stellopt_prof_to_vmec(proc_string,ier)
-               CALL stellopt_reinit_vmec
-               ! This will flush all changes
-               iunit = 37; iflag = 0
-               CALL safe_open(iunit,iflag,TRIM('temp_input.'//TRIM(proc_string)),'unknown','formatted')
-               CALL write_indata_namelist(iunit,ier)
-               CALL FLUSH(iunit)
-               ier=0
-               ! Setup VMEC control array
-               reset_string='wout_reset_file.nc'
-               IF (lno_restart .or. (lscreen .and. .not.lrestart)) THEN
-                  vctrl_array(4) = -1 ! Iterative evaluation
-                  reset_string = ''
-               ELSE
-                  vctrl_array(4) = MAXLOC(ns_array,DIM=1)
-               END IF
-               IF (lscreen .and. .not.lrestart) proc_string = 'reset_file'  ! First run make the restart file
-               vctrl_array(1) = restart_flag+timestep_flag+output_flag+reset_jacdt_flag ! Need restart to get profile variations
-               vctrl_array(2) = 0     ! vmec error flag  
-               vctrl_array(3) = -1    ! Use multigrid
-               vctrl_array(5) = myid ! Output file sequence number
-               !IF (TRIM(equil_type)=='animec') vctrl_array(1) = vctrl_array(1) + animec_flag
-               !IF (TRIM(equil_type)=='flow' .or. TRIM(equil_type)=='satire') vctrl_array(1) = vctrl_array(1) + flow_flag
-               DO pass = 1, 2
-                  CALL runvmec(vctrl_array,proc_string,lscreen,MPI_COMM_SELF,reset_string)
-                  ier=0; ier=vctrl_array(2); iflag = ier
-                  IF (  ier == successful_term_flag  .or. &
-                        ier == norm_term_flag) THEN
-                     iflag = 0
-                     CLOSE(UNIT=iunit,STATUS='delete')
-                     EXIT
-                  ELSE IF (.not. lno_restart .and. pass == 1) THEN ! Try recalcing from the beginning
-                     CALL stellopt_prof_to_vmec(proc_string,ier)
-                     vctrl_array(1) = restart_flag+timestep_flag+output_flag+reset_jacdt_flag
-                     vctrl_array(2) = 0     ! vmec error flag  
-                     vctrl_array(3) = -1    ! Use multigrid
-                     vctrl_array(4) = 0
-                     vctrl_array(5) = myid ! Output file sequence number
-                     !IF (TRIM(equil_type)=='animec') vctrl_array(1) = vctrl_array(1) + animec_flag
-                     !IF (TRIM(equil_type)=='flow' .or. TRIM(equil_type)=='satire') vctrl_array(1) = vctrl_array(1) + flow_flag
-                  ELSE
-                     CLOSE(UNIT=iunit)
-                     iflag = -1
-                     EXIT
-                  END IF
-               END DO
-               IF (lscreen .and. lverb) WRITE(6,*)  '---------------------------  VMEC CALCULATION DONE  -------------------------'
             CASE('paravmec','parvmec','vmec2000')
                iflag = 0
                CALL stellopt_paraexe('paravmec_run',proc_string,lscreen)

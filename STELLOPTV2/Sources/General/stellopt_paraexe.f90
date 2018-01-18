@@ -134,64 +134,50 @@
                ! Now update the namelists
                IF (myworkid == master) CALL stellopt_prof_to_vmec(file_str,ier)
                CALL stellopt_bcast_vmec(master,MPI_COMM_MYWORLD,ier)
-               CALL stellopt_reinit_vmec
-               IF (myworkid == master) THEN
-                  iunit = 37; ier = 0
-                  CALL safe_open(iunit,ier,TRIM('temp_input.'//TRIM(file_str)),'unknown','formatted')
-                  CALL write_indata_namelist(iunit,ier)
-                  CALL FLUSH(iunit)
-               END IF
-               ! Setup ICTRL Array
-               ictrl(1) = restart_flag+timestep_flag+output_flag+reset_jacdt_flag
-               ictrl(2) = 0; ictrl(3) = -1; ictrl(4) = -1; ictrl(5) = myseq
-               ! Setup reset_string
-               reset_string =''
-               lhit = .FALSE.
-               !IF (myworkid == master) THEN
-               !   IF (lfreeb .or. (lscreen.and.lrestart)) INQUIRE(FILE='wout_reset_file.nc',EXIST=lhit)
-               !END IF
-               !CALL MPI_BCAST(lhit,1,MPI_LOGICAL,master,MPI_COMM_MYWORLD,ierr_mpi)
-               !IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_paraexe: BCAST2c',ierr_mpi)
-               !IF (lhit) THEN
-               !   ictrl(4) = MAXLOC(ns_array,DIM=1) ! Restart run
-               !   reset_string='wout_reset_file.nc'
-               !END IF
-               ! Setup file string
-               !IF (lscreen .and. .not.lrestart) file_str = 'reset_file'  ! First run make the restart file
-               ! Execution loop
-               !parvmecinfo_file = 'parvmecinfo_'//TRIM(file_str)
-               !CALL MPI_BARRIER(MPI_COMM_MYWORLD,ierr_mpi)
-               !IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_paraexe: BARRIER1',ierr_mpi)
-
-               DO dex = 1, 2
-                  CALL InitRunVmec(MPI_COMM_MYWORLD,lfreeb)
-                  CALL runvmec(ictrl,file_str,lscreen,RUNVMEC_COMM_WORLD,reset_string)
-                  CALL FinalizeRunVmec(RUNVMEC_COMM_WORLD)
-                  ier=ictrl(2)
-                  CALL MPI_BCAST(ier,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
-                  IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_paraexe: BCAST2d',ierr_mpi)
-                  IF (  ier == successful_term_flag  .or. &
-                        ier == norm_term_flag) THEN
-                     IF (myworkid == master) CLOSE(UNIT=iunit,STATUS='delete')
-                     ier = 0
-                     EXIT  ! success
-                  ELSE IF (lfreeb .and. dex == 1) THEN ! Try recalcing from the beginning
-                     CALL stellopt_prof_to_vmec(file_str,ier)
-                     ictrl(1) = restart_flag+timestep_flag+reset_jacdt_flag
-                     ictrl(2) = 0     ! vmec error flag  
-                     ictrl(3) = -1    ! Use multigrid
-                     ictrl(4) = 0
-                     ictrl(5) = myseq 
-                     reset_string =''
-                  ELSE
-                     IF (myworkid == master) CLOSE(UNIT=iunit)
-                     ier = -1
-                     EXIT  ! failure
+               IF (ier .eq. 0) THEN
+                  CALL stellopt_reinit_vmec
+                  IF (myworkid == master) THEN
+                     iunit = 37; ier = 0
+                     CALL safe_open(iunit,ier,TRIM('temp_input.'//TRIM(file_str)),'unknown','formatted')
+                     CALL write_indata_namelist(iunit,ier)
+                     CALL FLUSH(iunit)
                   END IF
-               END DO
+                  ! Setup ICTRL Array
+                  ictrl(1) = restart_flag+timestep_flag+output_flag+reset_jacdt_flag
+                  ictrl(2) = 0; ictrl(3) = -1; ictrl(4) = -1; ictrl(5) = myseq
+                  ! Setup reset_string
+                  reset_string =''
+                  lhit = .FALSE.
+                  ! Execution Loop (2 times)
+                  DO dex = 1, 2
+                     CALL InitRunVmec(MPI_COMM_MYWORLD,lfreeb)
+                     CALL runvmec(ictrl,file_str,lscreen,RUNVMEC_COMM_WORLD,reset_string)
+                     CALL FinalizeRunVmec(RUNVMEC_COMM_WORLD)
+                     ier=ictrl(2)
+                     CALL MPI_BCAST(ier,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
+                     IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_paraexe: BCAST2d',ierr_mpi)
+                     IF (  ier == successful_term_flag  .or. &
+                           ier == norm_term_flag) THEN
+                        IF (myworkid == master) CLOSE(UNIT=iunit,STATUS='delete')
+                        ier = 0
+                        EXIT  ! success
+                     ELSE IF (lfreeb .and. dex == 1) THEN ! Try recalcing from the beginning
+                        CALL stellopt_prof_to_vmec(file_str,ier)
+                        ictrl(1) = restart_flag+timestep_flag+reset_jacdt_flag
+                        ictrl(2) = 0     ! vmec error flag  
+                        ictrl(3) = -1    ! Use multigrid
+                        ictrl(4) = 0
+                        ictrl(5) = myseq 
+                        reset_string =''
+                     ELSE
+                        IF (myworkid == master) CLOSE(UNIT=iunit)
+                        ier = -1
+                        EXIT  ! failure
+                     END IF
+                  END DO
+               END IF
                in_parameter_2 = TRIM(file_str)
                ier_paraexe = ier
-               !PRINT *,myworkid,ier,ier_paraexe
 !DEC$ ENDIF
             CASE('paravmec_write')
 !DEC$ IF DEFINED (SKS2)

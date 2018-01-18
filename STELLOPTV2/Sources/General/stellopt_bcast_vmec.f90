@@ -111,10 +111,10 @@
       CALL MPI_BCAST(fgiveup,1,MPI_DOUBLE_PRECISION,local_master,local_comm,iflag)
       CALL MPI_BARRIER(local_comm,iflag)
       ! Real Arrays
-      CALL MPI_BCAST(rbs,(2*ntord+1)*(mpol1d+1),MPI_DOUBLE_PRECISION,local_master,local_comm,iflag)
-      CALL MPI_BCAST(zbc,(2*ntord+1)*(mpol1d+1),MPI_DOUBLE_PRECISION,local_master,local_comm,iflag)
       CALL MPI_BCAST(rbc,(2*ntord+1)*(mpol1d+1),MPI_DOUBLE_PRECISION,local_master,local_comm,iflag)
       CALL MPI_BCAST(zbs,(2*ntord+1)*(mpol1d+1),MPI_DOUBLE_PRECISION,local_master,local_comm,iflag)
+      CALL MPI_BCAST(rbs,(2*ntord+1)*(mpol1d+1),MPI_DOUBLE_PRECISION,local_master,local_comm,iflag)
+      CALL MPI_BCAST(zbc,(2*ntord+1)*(mpol1d+1),MPI_DOUBLE_PRECISION,local_master,local_comm,iflag)
       CALL MPI_BCAST(am,21,MPI_DOUBLE_PRECISION,local_master,local_comm,iflag)
       CALL MPI_BCAST(ai,21,MPI_DOUBLE_PRECISION,local_master,local_comm,iflag)
       CALL MPI_BCAST(ac,21,MPI_DOUBLE_PRECISION,local_master,local_comm,iflag)
@@ -167,7 +167,13 @@
       CALL MPI_BCAST(arg1,120,MPI_CHARACTER,local_master,local_comm,iflag)
       CALL MPI_BCAST(input_extension,100,MPI_CHARACTER,local_master,local_comm,iflag)
       CALL MPI_BARRIER(local_comm,iflag)
+      IF (iflag /= 0) RETURN
 !DEC$ ENDIF
+
+      ! DO A CHECK HERE
+      iflag = 0
+      IF (rbc(0,1) < 0) iflag = -1
+      IF (rbc(0,0) < (SUM(SUM(rbc,DIM=2),DIM=1)-rbc(0,0))) iflag = -1
       RETURN
 !----------------------------------------------------------------------
 !     END SUBROUTINE
