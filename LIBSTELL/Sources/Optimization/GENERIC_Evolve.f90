@@ -1,5 +1,5 @@
 !-----------------------------------------------------------------------
-!     Subroutine:    PSO_Evolve
+!     Subroutine:    GENERIC_Evolve
 !     Authors:       S. Lazerson (lazerson@pppl.gov)
 !     Date:          03/13/2013
 !     Description:   This subroutine preformes a particle swarm
@@ -9,8 +9,8 @@
 !                    between XCmin and XCmax.  One member of the
 !                    population will start at the input value of x.
 !-----------------------------------------------------------------------
-      SUBROUTINE PSO_Evolve(fcn, m, n, NP, XCmin, XCmax, x, fvec,
-     1                      c1, c2, Vscale, ftol, xtol, maxfev)
+      SUBROUTINE GENERIC_Evolve(fcn, m, n, NP, XCmin, XCmax, x, fvec, &
+                           c1, c2, Vscale, ftol, xtol, maxfev, mode)
 !-----------------------------------------------------------------------
 !     Libraries
 !-----------------------------------------------------------------------
@@ -39,7 +39,7 @@
 !        xtol    Tollerance for global minimum in terms of x
 !        maxfev  Maximum number of function evaluations.
 !----------------------------------------------------------------------
-      INTEGER, INTENT(in) :: m, n, NP, maxfev
+      INTEGER, INTENT(in) :: m, n, NP, maxfev, mode
       REAL(rprec), INTENT(in)  :: c1, c2, ftol, xtol, Vscale
       REAL(rprec), INTENT(in)  :: XCmin(n), XCmax(n)
       REAL(rprec), INTENT(inout) :: x(n)
@@ -78,15 +78,18 @@
 !        x_array        Array of all X's for the population
 !----------------------------------------------------------------------
       LOGICAL :: lkeep_running, lfirst_pass, lnew_global
-      INTEGER :: i,j, iproc_min, dex, generation, iunit,
-     1           nfeval, ierr, istat, exit_flag, ntot
-      REAL(rprec) :: fnorm, fnorm_global, gnorm, pnorm,
-     1               vnorm, rand_C1, fnorm_max, xmax, l_temp
-      REAL(rprec), ALLOCATABLE :: x_temp(:), fnorm_array(:), 
-     1                            x_global(:), x_personal(:,:),
-     2                            vel(:), fvec_temp(:), vmax(:),
-     3                            fnorm_personal(:)
-      REAL(rprec), ALLOCATABLE :: x_array(:,:), fvec_array(:,:)
+      INTEGER :: i,j, iproc_min, dex, generation, iunit, &
+                 nfeval, ierr, istat, exit_flag, ntot
+      REAL(rprec) :: fnorm, fnorm_global, anorm, &
+                     vrand_C1, fnorm_max, xmax, l_temp
+      REAL, PARAMETER :: dt = 0.1
+      REAL(rprec), ALLOCATABLE :: x_temp(:), fnorm_array(:), &
+                                  x_global(:), x_personal(:,:), &
+                                  vel(:), fvec_temp(:), vmax(:), &
+                                  fnorm_personal(:), accel(:), &
+                                  h1a_array(:), h1b_array
+      REAL(rprec), ALLOCATABLE :: x_array(:,:), fvec_array(:,:), vel_array(:,:), &
+                                  h2a_array(:,:), h2b_array(:,:)
       CHARACTER(16) :: temp_string
       
       REAL(rprec) ::  enorm
@@ -95,11 +98,11 @@
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
       ! Preform Allocations
-      ALLOCATE (x_temp(n), fnorm_array(NP), fnorm_personal(NP),
-     1          x_global(n),
-     2          vel(n),fvec_temp(m), vmax(n), stat=ierr)
-      ALLOCATE (x_array(n,NP),fvec_array(m,NP),x_personal(n,NP),
-     1          stat=ierr)
+      ALLOCATE (x_temp(n), fnorm_array(NP), fnorm_personal(NP), &
+                x_global(n),accel(n),vel(n), fvec_temp(m), &
+                vmax(n), stat=ierr)
+      ALLOCATE (x_array(n,NP),fvec_array(m,NP),x_personal(n,NP), &
+                vel_array(n,NP),stat=ierr)
 
       ! Calculate VMAX
       xmax = enorm(n,XCmax-XCmin)
@@ -112,8 +115,8 @@
          x_array(1,:) = x(:)
          DO i=2,NP
             DO j = 1, n
-               CALL random_number(rand_C1)
-               x_array(j,i)=XCmin(j)+rand_C1*(XCmax(j)-XCmin(j))
+               CALL random_number(fnorm)
+               x_array(j,i)=XCmin(j)+fnorm*(XCmax(j)-XCmin(j))
             END DO
          END DO
       END IF
@@ -121,8 +124,7 @@
 !DEC$ IF DEFINED (MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_STEL, ierr)
       IF (ierr .ne. 0) CALL mpi_stel_abort(ierr)
-      CALL MPI_BCAST(X_array,NP*n,MPI_REAL8,master,MPI_COMM_STEL,
-     1               ierr)
+      CALL MPI_BCAST(X_array,NP*n,MPI_REAL8,master,MPI_COMM_STEL,ierr)
       IF (ierr .ne. 0) CALL mpi_stel_abort(ierr)
 !DEC$ ENDIF
 
@@ -135,6 +137,7 @@
       generation      = 1
       istat           = -1
       nfeval          = 0
+      vel_array       = 0
       DO WHILE (lkeep_running)
          ! Evaluate population
          IF (lfirst_pass) THEN ! Execute first
@@ -156,8 +159,7 @@
             CALL MPI_BARRIER(MPI_COMM_STEL, ierr_mpi)
 !DEC$ ENDIF
             IF (istat < 0) THEN
-               IF (myid == 0) WRITE(6,'(A)') 
-     1                      '!!!!! First Eq failed !!!!!'
+               IF (myid == 0) WRITE(6,'(A)')'!!!!! First Eq failed !!!!!'
                DEALLOCATE(x_temp,fvec_temp)
                IF (ALLOCATED(x_array)) DEALLOCATE(x_array)
                IF (ALLOCATED(fvec_array)) DEALLOCATE(fvec_array)
@@ -178,33 +180,29 @@
 
             ! Write Generation Number to screeen
             IF (myid == master) THEN
-!               WRITE(6,'(A)') '   '
-               WRITE(6,'(A,I5)') 
-     1                      '---  Starting Generation',generation
-!               WRITE(6,'(A)') '   '
+               WRITE(6,'(A)') '   '
+               WRITE(6,'(A,I5)')'---  Starting Generation',generation
             END IF
          END IF
          lfirst_pass = .false.
 
          ! Evaluate
-         CALL eval_x_queued(fcn,m,n,ntot,x_array(1:n,i:j),
-     1                  fvec_array(1:m,i:j),nfeval,MPI_COMM_STEL)
+         CALL eval_x_queued(fcn,m,n,ntot,x_array(1:n,i:j), &
+                            fvec_array(1:m,i:j),nfeval,MPI_COMM_STEL)
          nfeval = nfeval + NP
 
 !DEC$ IF DEFINED (MPI_OPT)
-         CALL MPI_BCAST(fvec_array,NP*m,MPI_REAL8,master,MPI_COMM_STEL,
-     1               ierr)
+         CALL MPI_BCAST(fvec_array,NP*m,MPI_REAL8,master,MPI_COMM_STEL,ierr)
          IF (ierr .ne. 0) CALL mpi_stel_abort(ierr)
-         CALL MPI_BCAST(x_array,NP*n,MPI_REAL8,master,MPI_COMM_STEL,
-     1               ierr)
+         CALL MPI_BCAST(x_array,NP*n,MPI_REAL8,master,MPI_COMM_STEL,ierr)
          IF (ierr .ne. 0) CALL mpi_stel_abort(ierr)
 !DEC$ ENDIF
  
          ! Output the xvector and fevals
          IF (myid == master) THEN
             ! XVEC
-            CALL safe_open(iunit,istat,'xvec.dat','unknown',
-     1                     'formatted', ACCESS_IN='APPEND')
+            CALL safe_open(iunit,istat,'xvec.dat','unknown', &
+                           'formatted', ACCESS_IN='APPEND')
             DO i = 1, NP
                WRITE(iunit,'(2(2X,I5.5))') n,generation
                fnorm = SQRT(SUM(fvec_array(:,i)*fvec_array(:,i),DIM=1))
@@ -215,8 +213,8 @@
             ! FEVALS
             WRITE(temp_string,'(i6.6)') generation
             iunit = 27; j=0;
-            CALL safe_open(iunit,istat,'fevals.'//TRIM(temp_string),
-     1                     'new','formatted')
+            CALL safe_open(iunit,istat,'fevals.'//TRIM(temp_string), &
+                           'new','formatted')
             WRITE(iunit,'(2X,i6,2X,i6)') m,n
             WRITE(iunit,'(1p,4e22.14)') (fvec(i), i=1,m)
             DO i = 1, m
@@ -238,13 +236,11 @@
             ! Global
             IF (fnorm_array(i) < fnorm_global) THEN
                ! Check for exit
-               IF ((fnorm_global-fnorm_array(i))/fnorm_global
-     1                  < ftol) THEN
+               IF ((fnorm_global-fnorm_array(i))/fnorm_global < ftol) THEN
                   lkeep_running = .false.
                   exit_flag = 1
                END IF
-               IF (MAXVAL(ABS((x_global-x_array(:,i))/x_global))
-     1                          < xtol) THEN
+               IF (MAXVAL(ABS((x_global-x_array(:,i))/x_global)) < xtol) THEN
                   lkeep_running = .false.
                   exit_flag = 2
                END IF
@@ -263,9 +259,8 @@
                istat = myid+1
                CALL fcn(m, n, x_temp, fvec_temp, istat, generation)
                WRITE(6,'(A)') '   '
-               WRITE(6,'(A,I5,A,1ES12.4E3)') 
-     1                      '---  New global minimum at generation',
-     2                   generation,' Chi-Squared:',fnorm_global**2
+               WRITE(6,'(A,I5,A,1ES12.4E3)')'---  New global minimum at generation', &
+                         generation,' Chi-Squared:',fnorm_global**2
                WRITE(6,'(A)') '   '
             END IF
 
@@ -275,34 +270,43 @@
             call fcn (m, n, x_temp, fvec_temp, istat, generation)
          END IF
          
-         ! Move particles
          DO i = 1, NP
+            ! Calculate Acceleration
+            anorm = SQRT(SUM((x_global - x_array(:,i))**2))
+            accel = (x_global - x_array(:,i))/(anorm*anorm*anorm)
             ! Calculate Velocity
-            CALL random_number(rand_C1)
-            vel = vel + c1*(x_personal(:,i)-x_array(:,i))*rand_C1
-     1                + c2*(x_global - x_array(:,i))*rand_C1
+            vel_array(:,i) = vel_array(:,i) + accel*dt
 
             ! Bound Velocity
+            vel = vel_array(:,i)
             WHERE (ABS(vel)>vmax) vel = SIGN(vmax,vel)
+            vel_array(:,i) = vel
 
             ! Step Particle
-            x_array(:,i) = x_array(:,i) + vel
+            x_array(:,i) = x_array(:,i) + vel*dt
 
             ! Kick minimum particle
-            IF (i==iproc_min) THEN
-               DO j = 1, n
-                  CALL random_number(rand_C1)
-                  x_array(j,i)=XCmin(j)+rand_C1*(XCmax(j)-XCmin(j))
-               END DO
-               x_personal(:,iproc_min) = x_array(:,iproc_min)
-               fnorm_personal(i) = 1E30
-            END IF
+            !IF (i==iproc_min) THEN
+            !   DO j = 1, n
+            !      CALL random_number(rand_C1)
+            !      x_array(j,i)=XCmin(j)+rand_C1*(XCmax(j)-XCmin(j))
+            !   END DO
+            !   x_personal(:,iproc_min) = x_array(:,iproc_min)
+            !   fnorm_personal(i) = 1E30
+            !END IF
 
             ! Bound the particle
             x_temp = x_array(:,i)
-            WHERE (x_temp > XCmax) x_temp = XCmax
-            WHERE (x_temp < XCmin) x_temp = XCmin
+            WHERE (x_temp > XCmax) 
+               x_temp = XCmax
+               vel    = -vel*0.1
+            END WHERE
+            WHERE (x_temp < XCmin) 
+               x_temp = XCmin
+               vel    = -vel*0.1
+            END WHERE
             x_array(:,i) = x_temp
+            vel_array(:,i) = vel
          END DO
 
          ! Test for max 
@@ -331,12 +335,11 @@
       END IF
       x = x_global
       fvec = fvec_array(:,iproc_min)
-      DEALLOCATE (x_temp,fnorm_array,fnorm_personal,x_global,vel,
-     1            fvec_temp)
-      DEALLOCATE (x_array, fvec_array, x_personal)
+      DEALLOCATE (x_temp,fnorm_array,fnorm_personal,x_global,vel,fvec_temp)
+      DEALLOCATE (x_array, fvec_array, x_personal,)
       
       RETURN
 !----------------------------------------------------------------------
 !     END SUBROUTINE
 !----------------------------------------------------------------------
-      END SUBROUTINE PSO_Evolve
+      END SUBROUTINE GENERIC_Evolve

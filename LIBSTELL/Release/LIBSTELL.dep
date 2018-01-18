@@ -539,6 +539,13 @@ MAP_LINEAR.o : \
       stel_kinds.o 
       
 
+GENERIC_Evolve.o : \
+      mpi_params.o \
+      safe_open_mod.o \
+      gade_mod.o \
+      stel_kinds.o 
+      
+
 MAP_PLANE.o : \
       mpi_params.o \
       safe_open_mod.o \
