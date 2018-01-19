@@ -396,7 +396,7 @@ c     burton s. garbow, kenneth e. hillstrom, jorge j. more
 c
 c     **********
 c*************** Updated by SAL****************************************
-      ALLOCATE (x_global(n,ldfjac),h(n),fvec_array(m,ldfjac))
+      ALLOCATE (x_global(n,n),h(n),fvec_array(m,ldfjac))
 
       epsmch = dpmpar(1)
       eps = SQRT(MAX(epsfcn,epsmch))
@@ -408,7 +408,7 @@ c*************** Updated by SAL****************************************
       WHERE (flip) h = -h
       h_order = h
 
-      DO i = 1, ldfjac
+      DO i = 1, n
          x_global(:,i) = x(:)
          x_global(i,i) = x(i) + h(i)
       END DO
@@ -418,14 +418,14 @@ c*************** Updated by SAL****************************************
 !
       CALL eval_x_queued(fcn,m,n,n,x_global,fvec_array,ncnt,
      1                   MPI_COMM_STEL)
-      CALL MPI_BCAST(fvec_array,m*ldfjac,MPI_DOUBLE_PRECISION,
+      CALL MPI_BCAST(fvec_array,m*n,MPI_DOUBLE_PRECISION,
      1               master,MPI_COMM_STEL,ierr_mpi)
 
 !
 !     Calculate Jacobian
 !
       fnorm_array = SQRT(SUM(fvec_array*fvec_array,DIM=1))
-      DO i = 1, ldfjac
+      DO i = 1, n
          fjac(i,:) = (fvec_array(:,i) - fvec(:))/h(i)
          temp_norm = fnorm_array(i)*fnorm_array(i)
          IF ((temp_norm >= 1.0E12).or.(temp_norm/=temp_norm)) THEN
