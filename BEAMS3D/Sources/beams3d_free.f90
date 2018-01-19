@@ -13,7 +13,8 @@
                                  BR_spl, BZ_spl, BPHI_spl, MODB_spl, &
                                  TE_spl, NE_spl, TI_spl, TE, NE, TI, &
                                  TE_spl_s, NE_spl_s, TI_spl_s, Vp_spl_s,&
-                                 S_ARR, S_spl, U_ARR, U_spl
+                                 S_ARR, S_spl, U_ARR, U_spl, &
+                                 POT_ARR, POT_spl
       USE beams3d_lines, ONLY: R_lines, PHI_lines, Z_lines, vll_lines, &
                                neut_lines, moment_lines, S_lines, U_lines, &
                                PE_lines, PI_lines, shine_through, &
@@ -47,6 +48,7 @@
       IF (EZspline_allocated(TE_spl))   CALL EZspline_free(TE_spl,ier)
       IF (EZspline_allocated(NE_spl))   CALL EZspline_free(NE_spl,ier)
       IF (EZspline_allocated(TI_spl))   CALL EZspline_free(TI_spl,ier)
+      IF (EZspline_allocated(POT_spl))   CALL EZspline_free(POT_spl,ier)
       IF (EZspline_allocated(TE_spl_s))   CALL EZspline_free(TE_spl_s,ier)
       IF (EZspline_allocated(NE_spl_s))   CALL EZspline_free(NE_spl_s,ier)
       IF (EZspline_allocated(TI_spl_s))   CALL EZspline_free(TI_spl_S,ier)

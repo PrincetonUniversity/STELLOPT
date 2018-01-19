@@ -142,12 +142,38 @@
          CALL beams3d_init_restart
       ELSE
          ! Create the background grid
-         ALLOCATE(raxis(nr),zaxis(nz),phiaxis(nphi),STAT=ier)
-         IF (ier /= 0) CALL handle_err(ALLOC_ERR,'RAXIS PHIAXIS ZAXIS',ier)
-         ALLOCATE(B_R(nr,nphi,nz),B_PHI(nr,nphi,nz),B_Z(nr,nphi,nz),MODB(nr,nphi,nz),&
-                  TE(nr,nphi,nz), NE(nr,nphi,nz), TI(nr,nphi,nz), POT_ARR(nr,nphi,nz),&
-                  S_ARR(nr,nphi,nz), U_ARR(nr,nphi,nz), STAT=ier)
-         IF (ier /= 0) CALL handle_err(ALLOC_ERR,'BR BZ',ier)
+         ALLOCATE(raxis(nr),STAT=ier)
+         IF (ier /= 0) CALL handle_err(ALLOC_ERR,'RAXIS',ier)
+         ALLOCATE(phiaxis(nphi),STAT=ier)
+         IF (ier /= 0) CALL handle_err(ALLOC_ERR,'PHIAXIS',ier)
+         ALLOCATE(zaxis(nz),STAT=ier)
+         IF (ier /= 0) CALL handle_err(ALLOC_ERR,'ZAXIS',ier)
+         !ALLOCATE(raxis(nr),zaxis(nz),phiaxis(nphi),STAT=ier)
+         !IF (ier /= 0) CALL handle_err(ALLOC_ERR,'RAXIS PHIAXIS ZAXIS',ier)
+         !ALLOCATE(B_R(nr,nphi,nz),B_PHI(nr,nphi,nz),B_Z(nr,nphi,nz),MODB(nr,nphi,nz),&
+         !         TE(nr,nphi,nz), NE(nr,nphi,nz), TI(nr,nphi,nz), POT_ARR(nr,nphi,nz),&
+         !         S_ARR(nr,nphi,nz), U_ARR(nr,nphi,nz), STAT=ier)
+         !IF (ier /= 0) CALL handle_err(ALLOC_ERR,'BR BZ',ier)
+         ALLOCATE(B_R(nr,nphi,nz),STAT=ier)
+         IF (ier /= 0) CALL handle_err(ALLOC_ERR,'B_R',ier)
+         ALLOCATE(B_PHI(nr,nphi,nz),STAT=ier)
+         IF (ier /= 0) CALL handle_err(ALLOC_ERR,'B_PHI',ier)
+         ALLOCATE(B_Z(nr,nphi,nz),STAT=ier)
+         IF (ier /= 0) CALL handle_err(ALLOC_ERR,'B_Z',ier)
+         ALLOCATE(MODB(nr,nphi,nz),STAT=ier)
+         IF (ier /= 0) CALL handle_err(ALLOC_ERR,'MODB',ier)
+         ALLOCATE(TE(nr,nphi,nz),STAT=ier)
+         IF (ier /= 0) CALL handle_err(ALLOC_ERR,'TE',ier)
+         ALLOCATE(NE(nr,nphi,nz),STAT=ier)
+         IF (ier /= 0) CALL handle_err(ALLOC_ERR,'NE',ier)
+         ALLOCATE(TI(nr,nphi,nz),STAT=ier)
+         IF (ier /= 0) CALL handle_err(ALLOC_ERR,'TI',ier)
+         ALLOCATE(POT_ARR(nr,nphi,nz),STAT=ier)
+         IF (ier /= 0) CALL handle_err(ALLOC_ERR,'POT_ARR',ier)
+         ALLOCATE(S_ARR(nr,nphi,nz),STAT=ier)
+         IF (ier /= 0) CALL handle_err(ALLOC_ERR,'S_ARR',ier)
+         ALLOCATE(U_ARR(nr,nphi,nz),STAT=ier)
+         IF (ier /= 0) CALL handle_err(ALLOC_ERR,'U_ARR',ier)
          FORALL(i = 1:nr) raxis(i) = (i-1)*(rmax-rmin)/(nr-1) + rmin
          FORALL(i = 1:nz) zaxis(i) = (i-1)*(zmax-zmin)/(nz-1) + zmin
          FORALL(i = 1:nphi) phiaxis(i) = (i-1)*(phimax-phimin)/(nphi-1) + phimin
