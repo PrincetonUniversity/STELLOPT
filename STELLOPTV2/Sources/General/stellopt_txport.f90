@@ -294,6 +294,10 @@
                      IF (u > pi2) u = MOD(u,pi2)
                      IF (v > pi2) v = MOD(v,pi2)
                      CALL get_equil_RZ(sflCrd(1),u,v,R,Z,iflag,R_GRAD=R_grad,Z_GRAD=Z_grad)
+                     ! Get equil_RZ returns dR/drho and dZ/drho
+                     !   dR/ds=(0.5/rho)*dR/drho=(0.5/sqrt(s))*dR/drho
+                     R_grad(3) = 0.5*R_grad(3)/SQRT(sflCrd(1))
+                     Z_grad(3) = 0.5*Z_grad(3)/SQRT(sflCrd(1))
                      ! e_s
                      esubs(1) = R_grad(3)
                      esubs(2) = zero
@@ -305,7 +309,7 @@
                      ! e_v
                      esubv(1) = R_grad(2)
                      esubv(2) = one
-                     esubv(3) = Z_grad(3) 
+                     esubv(3) = Z_grad(2) 
                      esubv(1) = esubv(1)*nfp
                      esubv(3) = esubv(3)*nfp
                      ! Cylindrical Coordianates
