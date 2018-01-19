@@ -229,8 +229,8 @@ PROGRAM BEAMS3D
     CALL beams3d_init
     ! Follow Fieldlines
     CALL beams3d_follow
-    CALL beams3d_write('TRAJECTORY')
-    IF (myworkid == master) CALL wall_free(ier)
+    CALL beams3d_write('TRAJECTORY_PARTIAL')
+    !IF (myworkid == master) CALL wall_free(ier)
     ! Write some stuff
     CALL beams3d_diagnostics
     ! Clean up

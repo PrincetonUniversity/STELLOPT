@@ -98,7 +98,8 @@
       IF (ALLOCATED(U_lines)) DEALLOCATE(U_lines)
       ALLOCATE(R_lines(0:npoinc,nparticles),Z_lines(0:npoinc,nparticles),PHI_lines(0:npoinc,nparticles),&
             vll_lines(0:npoinc,nparticles),neut_lines(0:npoinc,nparticles),moment_lines(0:npoinc,nparticles))
-      ALLOCATE(S_lines(0:npoinc,nparticles),U_lines(0:npoinc,nparticles))
+      ALLOCATE(S_lines(0:npoinc,nparticles),U_lines(0:npoinc,nparticles),B_lines(0:npoinc,nparticles))
+      ALLOCATE(PE_lines(0:npoinc,nparticles),PI_lines(0:npoinc,nparticles))
       CALL read_var_hdf5(fid,'R_lines',npoinc+1,nparticles,ier,DBLVAR=R_lines)
       IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'R_lines',ier)
       CALL read_var_hdf5(fid,'Z_lines',npoinc+1,nparticles,ier,DBLVAR=Z_lines)
@@ -115,6 +116,12 @@
       IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'S_lines',ier)
       CALL read_var_hdf5(fid,'U_lines',npoinc+1,nparticles,ier,DBLVAR=U_lines)
       IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'U_lines',ier)
+      CALL read_var_hdf5(fid,'B_lines',npoinc+1,nparticles,ier,DBLVAR=B_lines)
+      IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'B_lines',ier)
+      CALL read_var_hdf5(fid,'PE_lines',npoinc+1,nparticles,ier,DBLVAR=PE_lines)
+      IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'PE_lines',ier)
+      CALL read_var_hdf5(fid,'PI_lines',npoinc+1,nparticles,ier,DBLVAR=PI_lines)
+      IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'PI_lines',ier)
       IF (lflux) THEN
          ! DIAGNOSTICS
          IF (ALLOCATED(shine_through)) DEALLOCATE(shine_through)
