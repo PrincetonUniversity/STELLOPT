@@ -33,7 +33,7 @@
 !        iunit       File unit number
 !----------------------------------------------------------------------
       INTEGER ::  ier, iunit,m_sav
-      
+
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
@@ -168,6 +168,17 @@
       IF (ANY(sigma_jcurv < bigno)) &
          CALL chisq_jcurv(target_jcurv, sigma_jcurv, ncnt,iflag)
          
+      !------------- COIL GEOMETRY TARGETS ---------------------
+      ! Coil lengths
+      IF (ANY(sigma_coillen < bigno)) &
+         CALL chisq_coillen(target_coillen, sigma_coillen, ncnt, iflag)
+      IF (sigma_coilsep < bigno) &
+         CALL chisq_coilsep(target_coilsep, sigma_coilsep, ncnt, iflag)
+      IF (ANY(sigma_coilcrv < bigno)) &
+         CALL chisq_coilcrv(target_coilcrv, sigma_coilcrv, ncnt, iflag)
+      IF (ANY(sigma_coilself < bigno)) &
+         CALL chisq_coilself(target_coilself, sigma_coilself, ncnt, iflag)
+
       !------------- EXTERNAL TARGETS --------------------------
       !  This section of the code relys upon external libraries
       !  for calculation of target parameters

@@ -2,7 +2,7 @@
 !     Subroutine:    stellopt_fcn
 !     Authors:       S. Lazerson (lazerson@pppl.gov)
 !     Date:          05/26/2012
-!     Description:   This subroutine calculates the funciton which is
+!     Description:   This subroutine calculates the function which is
 !                    minimized by STELLOPT.  Originally developed for
 !                    the lmdif function.
 !-----------------------------------------------------------------------

@@ -10,6 +10,7 @@
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
       USE vparams, ONLY: nsd
+      USE vsvd0, ONLY : nigroup
 
 !-----------------------------------------------------------------------
 !     Module Variables
@@ -170,7 +171,12 @@
       INTEGER     ::  numws
       REAL(rprec) ::  target_coil_bnorm, sigma_coil_bnorm
       INTEGER     ::  nu_bnorm,nv_bnorm
-                                        
+      REAL(rprec), DIMENSION(nigroup)    :: target_coillen, sigma_coillen
+      INTEGER     :: npts_curv, npts_csep, npts_cself
+      REAL(rprec), DIMENSION(nigroup)    :: target_coilcrv,  sigma_coilcrv
+      REAL(rprec), DIMENSION(nigroup)    :: target_coilself, sigma_coilself
+      REAL(rprec)                        :: target_coilsep,  sigma_coilsep
+
       INTEGER, PARAMETER :: jtarget_aspect     = 100
       INTEGER, PARAMETER :: jtarget_rbtor      = 1001
       INTEGER, PARAMETER :: jtarget_r0         = 1002
@@ -230,8 +236,12 @@
       INTEGER, PARAMETER :: jtarget_bmax       = 611
       INTEGER, PARAMETER :: jtarget_orbit      = 612
       INTEGER, PARAMETER :: jtarget_coil_bnorm = 613
-      
-      
+      INTEGER, PARAMETER :: jtarget_coillen    = 614
+      INTEGER, PARAMETER :: jtarget_coilcrv    = 615
+      INTEGER, PARAMETER :: jtarget_coilsep    = 616
+      INTEGER, PARAMETER :: jtarget_coilself   = 617
+
+
       CONTAINS
       
       SUBROUTINE write_targets(iunit,var_num)
@@ -356,6 +366,14 @@
             WRITE(iunit, out_format) 'Limiter'
          CASE(jtarget_coil_bnorm)
             WRITE(iunit, out_format) 'COILOPT++ Normal Field'
+         CASE(jtarget_coillen)
+            WRITE(iunit, out_format) 'Coil Lengths'
+         CASE(jtarget_coilcrv)
+            WRITE(iunit, out_format) 'Maximum Coil Curvature'
+         CASE(jtarget_coilsep)
+            WRITE(iunit, out_format) 'Minimum Coil Separation'
+         CASE(jtarget_coilself)
+            WRITE(iunit, out_format) 'Number of Coil Self-intersections'
       END SELECT
       END SUBROUTINE write_targets
       
