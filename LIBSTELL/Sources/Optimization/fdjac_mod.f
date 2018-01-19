@@ -396,7 +396,7 @@ c     burton s. garbow, kenneth e. hillstrom, jorge j. more
 c
 c     **********
 c*************** Updated by SAL****************************************
-      ALLOCATE (x_global(n,n),h(n),fvec_array(m,ldfjac))
+      ALLOCATE (x_global(n,n),h(n),fvec_array(m,n))
 
       epsmch = dpmpar(1)
       eps = SQRT(MAX(epsfcn,epsmch))
@@ -426,7 +426,7 @@ c*************** Updated by SAL****************************************
 !
       fnorm_array = SQRT(SUM(fvec_array*fvec_array,DIM=1))
       DO i = 1, n
-         fjac(i,:) = (fvec_array(:,i) - fvec(:))/h(i)
+         fjac(:,i) = (fvec_array(:,i) - fvec(:))/h(i)
          temp_norm = fnorm_array(i)*fnorm_array(i)
          IF ((temp_norm >= 1.0E12).or.(temp_norm/=temp_norm)) THEN
             jac_err(i) = 0
