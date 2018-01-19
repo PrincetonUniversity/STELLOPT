@@ -111,7 +111,7 @@
       END DO
       nparticles_start = nparts - 1
       IF (lscreen) THEN
-         WRITE(6, '(a,f5.2)') 'BEAMS3D Version ', BEAMS3D_VERSION
+         WRITE(6, '(/,a,f5.2)') 'BEAMS3D Version ', BEAMS3D_VERSION
          WRITE(6,'(A)') '----- Particle Initialization -----'
          WRITE(6,'(A,F9.5,A,F9.5,A,I6)') '   S   = [',s_min,',',s_max,'];   NS:   ',COUNT(sigma_orbit .lt. bigno)
          WRITE(6,'(A,F9.5,A,F9.5,A,I4)') '   U   = [',0.0,',',pi2*(nu_orbit-1)/nu_orbit,'];   NU:   ',nu_orbit
@@ -149,7 +149,7 @@
       ! Follow the particles
       beam_str = 'beams3d'
       CALL stellopt_paraexe(beam_str,proc_string,lscreen)
-      IF (lscreen) WRITE(6,'(a)') ' ------------------------  ORBIT CALCULATION (DONE)  ----------------------'
+      IF (lscreen) WRITE(6,'(a)') '------------------------  ORBIT CALCULATION (DONE)  ----------------------'
       CALL FLUSH(6)
 
       ! Now analyze the results

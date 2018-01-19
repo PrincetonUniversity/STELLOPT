@@ -328,7 +328,7 @@
                ! Follow particles
                CALL beams3d_follow
                nbeams_beams = 1  ! Do this so the read in cleanup doesn't fail
-               CALL beams3d_write('TRAJECTORY')
+               CALL beams3d_write('TRAJECTORY_PARTIAL')
 
                ! Calculated particle locations in flux space
                CALL beams3d_diagnostics

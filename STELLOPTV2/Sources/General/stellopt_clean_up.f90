@@ -168,8 +168,7 @@
                      CALL beams3d_read
                      id_string_beams = TRIM(proc_string)
                      CALL beams3d_write('GRID_INIT')
-                     CALL beams3d_write('TRAJECTORY')
-                     CALL beams3d_write('RHO_TRAJECTORY')
+                     CALL beams3d_write('TRAJECTORY_FULL')
                      CALL beams3d_write('DIAG')
                      CALL beams3d_free
                      CALL move_txtfile('beams3d_diag_'//TRIM(proc_string_old)//'.txt',&
@@ -287,21 +286,9 @@
                   WRITE(temp_str,'(i5.5)') ncnt
                   proc_string = TRIM(id_string) // '.' // TRIM(ADJUSTL(temp_str))
                   SELECT CASE(TRIM(equil_type))
-                     CASE ('vmec2000_old','animec','flow','satire')
-                          vctrl_array(1) = output_flag ! Output to file
-                          vctrl_array(2) = 0     ! vmec error flag  
-                          vctrl_array(3) = 0    ! Use multigrid
-                          vctrl_array(4) = 0     ! Iterative 
-                          vctrl_array(5) = myid ! Output file sequence number
-                          !IF (TRIM(equil_type)=='animec') vctrl_array(1) = vctrl_array(1) + animec_flag
-                          !IF (TRIM(equil_type)=='flow' .or. TRIM(equil_type)=='satire') vctrl_array(1) = vctrl_array(1) + flow_flag
-                         CALL runvmec(vctrl_array,proc_string,.false.,MPI_COMM_SELF,'')
                      CASE('parvmec','paravmec','vmec2000','vboot')
                          CALL stellopt_paraexe('paravmec_write',proc_string,.false.)
                   END SELECT
-                  !CALL runvmec(vctrl_array,proc_string,.false.,'')
-                  !CALL stellopt_paraexe('paravmec_write',proc_string,.false.)
-                  !CALL runvmec(vctrl_array,proc_string,.false.,MPI_COMM_SELF,'')
                   ier=vctrl_array(2)
                   iflag = ier
                   IF (ier == successful_term_flag) iflag = 0
@@ -363,8 +350,7 @@
                      CALL beams3d_read
                      id_string_beams = TRIM(proc_string)
                      CALL beams3d_write('GRID_INIT')
-                     CALL beams3d_write('TRAJECTORY')
-                     CALL beams3d_write('RHO_TRAJECTORY')
+                     CALL beams3d_write('TRAJECTORY_FULL')
                      CALL beams3d_write('DIAG')
                      CALL beams3d_free
                      CALL move_txtfile('beams3d_diag_'//TRIM(proc_string_old)//'.txt',&
