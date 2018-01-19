@@ -124,7 +124,7 @@
       ! Initialize temperature profiles
       nne = NBEAM_PROF; nte = NBEAM_PROF; nti = NBEAM_PROF
       DO ik = 1, NBEAM_PROF
-         s_val = DBLE(ik-1)/DBLE(NBEAM_PROF)
+         s_val = DBLE(ik-1)/DBLE(NBEAM_PROF-1)
          NE_AUX_S_BEAMS(ik) = s_val
          TE_AUX_S_BEAMS(ik) = s_val
          TI_AUX_S_BEAMS(ik) = s_val
