@@ -118,7 +118,7 @@
 !   L o c a l   P a r a m e t e r s
 !-----------------------------------------------
       REAL(dp), PARAMETER :: c1p5 = 1.5_dp
-      LOGICAL :: lnyquist = .TRUE.                               !=false, suppress nyquist stuff
+      LOGICAL :: lnyquist = .FALSE.                               !=false, suppress nyquist stuff
 #ifdef NETCDF
       CHARACTER(LEN=*), PARAMETER, DIMENSION(1) ::
      1             r1dim = (/'radius'/), mn1dim = (/'mn_mode'/),

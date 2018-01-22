@@ -172,8 +172,8 @@
 
       ! DO A CHECK HERE
       iflag = 0
-      IF (rbc(0,1) < 0) iflag = -1
-      IF (rbc(0,0) < (SUM(SUM(rbc,DIM=2),DIM=1)-rbc(0,0))) iflag = -1
+      !IF (rbc(0,1) < 0) iflag = -1
+      !IF (rbc(0,0) < (SUM(SUM(rbc,DIM=2),DIM=1)-rbc(0,0))) iflag = -1
       RETURN
 !----------------------------------------------------------------------
 !     END SUBROUTINE

@@ -269,9 +269,9 @@
                   CASE('parvmec','paravmec','vmec2000','vboot')
                      CALL stellopt_paraexe('paravmec_write',proc_string,.false.)
                END SELECT
-               ier=vctrl_array(2)
+               iflag = ier_paraexe
                iflag = ier
-               IF (ier == successful_term_flag) iflag = 0
+               IF (ier_paraexe == successful_term_flag) iflag = 0
 !DEC$ IF DEFINED (COILOPTPP)
                IF (sigma_coil_bnorm < bigno .and. (proc_string.ne.proc_string_old) ) THEN
                	  DO ik = 0, numws-1
