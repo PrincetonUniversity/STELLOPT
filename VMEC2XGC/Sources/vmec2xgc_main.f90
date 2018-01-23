@@ -329,26 +329,6 @@
       WRITE(6,'(A)')             'FILENAME: xgc_grid.'//TRIM(id_string)
       CALL safe_open(fid, ier, 'xgc_grid.'//TRIM(id_string), 'replace', 'formatted')
       CALL safe_open(fid1, ier, 'grid_param.dat', 'replace', 'formatted')
-nrad=32
-nuarr(1)=2
-do i = 2, 6
-  nuarr(i)=6+1
-end do
-do i = 7, 12
-  nuarr(i)=12+1
-end do
-do i = 13, 18
-  nuarr(i)=18+1
-end do
-do i = 19, 24
-  nuarr(i)=32+1
-end do
-do i = 25, 30
-  nuarr(i)=48+1
-end do
-do i = 31,32 
-  nuarr(i)=64+1
-end do
       DO k = 1, nv
          DO i = 1, nrad
             DO j = 1, nuarr(i)-1
