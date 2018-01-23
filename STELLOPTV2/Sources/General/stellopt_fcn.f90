@@ -316,7 +316,7 @@
 !DEC$ IF DEFINED (TERPSICHORE)
          !IF (ANY(sigma_kink < bigno)) CALL stellopt_kink(lscreen,iflag)
          ctemp_str = 'terpsichore'
-         IF (ANY(sigma_kink < bigno) .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen)
+         IF (ANY(sigma_kink < bigno) .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
 !DEC$ ENDIF
 !DEC$ IF DEFINED (TRAVIS)
          IF (ANY(sigma_ece < bigno)) CALL stellopt_travis(lscreen,iflag)
@@ -334,7 +334,7 @@
 !DEC$ ENDIF
 !DEC$ IF DEFINED (COILOPTPP)
          ctemp_str = 'coilopt++'
-         IF (sigma_coil_bnorm < bigno .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen)
+         IF (sigma_coil_bnorm < bigno .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
 !DEC$ ENDIF
 
          ! Now we load target values if an error was found then

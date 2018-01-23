@@ -112,7 +112,7 @@
       ierr_mpi = 0
       DO
          ! First get the name of the code blah
-         ier_paraexe = 0; ierr_mpi = 0
+         ier_paraexe = 0; ierr_mpi = 0; ier = 0
 !DEC$ IF DEFINED (MPI_OPT)
          CALL MPI_BARRIER(MPI_COMM_MYWORLD,ierr_mpi)
          IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_paraexe: BARRIER1',ierr_mpi)
@@ -172,7 +172,7 @@
                      ELSE
                         IF (myworkid == master) CLOSE(UNIT=iunit)
                         ier = -1
-                        EXIT  ! failure
+                     !   EXIT  ! failure
                      END IF
                   !END DO
                END IF

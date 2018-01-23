@@ -339,6 +339,10 @@ C-----------------------------------------------
 
          CALL eqsolve (ier_flag, lscreen)
 
+#if defined(SKS)
+         CALL Finalize_bst(.FALSE.)
+#endif
+
          IF (numsteps > 0) THEN
             niter = niter_store
          END IF
@@ -365,7 +369,7 @@ C-----------------------------------------------
          ENDIF
 
 #if defined(SKS)
-         CALL Finalize_bst(.FALSE.)
+!         CALL Finalize_bst(.FALSE.)
          CALL second0(gridtoff)
          grid_time(grid_id) = gridtoff - gridton
          IF (lfreeb) THEN
