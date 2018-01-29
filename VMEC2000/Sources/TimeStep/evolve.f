@@ -262,6 +262,7 @@ C-----------------------------------------------
       INTEGER  :: ier_flag
       LOGICAL, INTENT(IN) :: PARVMEC
 
+
       fsq0 = fsqr+fsqz+fsql
       IF (iter2.EQ.iter1 .OR. res0.EQ.-1) THEN
 !         IF (res0.eq.-1 .AND. rank.eq.0) 
@@ -308,7 +309,8 @@ C-----------------------------------------------
            CALL funct3d (.FALSE., ier_flag)
 #if defined (SKS)      
          END IF
-	IF (irst .NE. 1) STOP 'Logic error in TimeStepControl!'
+	IF (irst .NE. 1 .and. irst .NE. 4)
+     1      STOP 'Logic error in TimeStepControl!'
 #endif
       END IF
 
