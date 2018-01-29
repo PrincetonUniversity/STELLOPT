@@ -118,7 +118,7 @@ C-----------------------------------------------
             END IF
 #if defined (SKS)
             IF (PARVMEC) THEN
-              CALL guess_axis_par (pr1, pz1, pru0, pzu0)
+              CALL guess_axis_par (pr1, pz1, pru0, pzu0, lscreen)
             ELSE
 #endif
               CALL guess_axis (r1, z1, ru0, zu0)

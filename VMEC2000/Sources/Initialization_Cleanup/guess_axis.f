@@ -1,5 +1,5 @@
 #if defined (SKS)
-      SUBROUTINE guess_axis_par(r1, z1, ru0, zu0)
+      SUBROUTINE guess_axis_par(r1, z1, ru0, zu0, lscreen)
       USE vmec_main
       USE vmec_params, ONLY: nscale, signgs
       USE realspace, ONLY: psqrts      
@@ -11,6 +11,7 @@ C-----------------------------------------------
       REAL(dp), DIMENSION(nzeta,ntheta3,ns,0:1),
      1     INTENT(inout) :: r1, z1
       REAL(dp),DIMENSION(nzeta,ntheta3,ns),INTENT(inout) :: ru0, zu0
+      LOGICAL, INTENT(in) :: lscreen
 C-----------------------------------------------
 C   L o c a l   P a r a m e t e r s
 C-----------------------------------------------
@@ -227,9 +228,11 @@ C-----------------------------------------------
          END IF
       END DO
 
-      IF (grank == 0) THEN
+      IF (grank == 0 .and. lscreen) THEN
+         PRINT *,' ---- Improved AXIS Guess ----'
          PRINT *,'     RAXIS_CC = ',raxis_cc(0:ntor)
          PRINT *,'     ZAXIS_CS = ',zaxis_cs(0:ntor)
+         PRINT *,' -----------------------------'
       END IF
 
       CALL second0(tguessoff)
