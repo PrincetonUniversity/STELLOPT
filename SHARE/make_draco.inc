@@ -241,6 +241,9 @@ ifeq ($(MAKECMDGOALS),xdes_plot)
     LIB_LINK += $(PGPLOT_LIB)
   endif
 endif
+ifeq ($(MAKECMDGOALS),xvmec2000)
+  PRECOMP += -DSKS  -DSKS2
+endif
 
 # Other Codes
 ifeq ($(LGENE),T)
