@@ -176,6 +176,7 @@
       REAL(rprec), DIMENSION(nigroup)    :: target_coilcrv,  sigma_coilcrv
       REAL(rprec), DIMENSION(nigroup)    :: target_coilself, sigma_coilself
       REAL(rprec)                        :: target_coilsep,  sigma_coilsep
+      REAL(rprec) :: target_ptsm3d, sigma_ptsm3d
 
       INTEGER, PARAMETER :: jtarget_aspect     = 100
       INTEGER, PARAMETER :: jtarget_rbtor      = 1001
@@ -240,6 +241,7 @@
       INTEGER, PARAMETER :: jtarget_coilcrv    = 615
       INTEGER, PARAMETER :: jtarget_coilsep    = 616
       INTEGER, PARAMETER :: jtarget_coilself   = 617
+      INTEGER, PARAMETER :: jtarget_ptsm3d     = 1223
 
 
       CONTAINS
@@ -300,6 +302,7 @@
             WRITE(iunit, out_format) 'Line Integrated Electron Density'
          CASE(jtarget_line_te)
             WRITE(iunit, out_format) 'Line Integrated Electron Temperature'
+
          CASE(jtarget_line_ti)
             WRITE(iunit, out_format) 'Line Integrated Ion Temperature'
          CASE(jtarget_xics)
@@ -374,6 +377,8 @@
             WRITE(iunit, out_format) 'Minimum Coil Separation'
          CASE(jtarget_coilself)
             WRITE(iunit, out_format) 'Number of Coil Self-intersections'
+         CASE(jtarget_ptsm3d)
+            WRITE(iunit, out_format) '3D turbulence saturation model'
       END SELECT
       END SUBROUTINE write_targets
       

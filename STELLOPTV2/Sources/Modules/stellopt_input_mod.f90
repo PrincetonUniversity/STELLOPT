@@ -346,7 +346,8 @@
                          antennaposition_ece, targetposition_ece, rbeam_ece, rfocus_ece, &
                          targettype_ece, antennatype_ece, nra_ece, nphi_ece, &
                          target_kink, sigma_kink,mlmnb_kink,mlmns_kink,ivac_kink,&
-                         nj_kink, nk_kink, lssl_kink, lssd_kink, mmaxdf_kink, nmaxdf_kink
+                         nj_kink, nk_kink, lssl_kink, lssd_kink, mmaxdf_kink, nmaxdf_kink,&
+                         target_ptsm3d, sigma_ptsm3d
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -818,6 +819,8 @@
       target_coilself   = 0.0
       sigma_coilself    = bigno
       npts_cself        = 360
+      target_ptsm3d     = 0.0
+      sigma_ptsm3d      = bigno
 
       ! Read name list
       lexist            = .false.
@@ -1120,6 +1123,28 @@
             WRITE(6,*) '  Optimization with linear GENE for turblent'
             WRITE(6,*) '  transport not possible.  Defaulting to proxy function'
             WRITE(6,*) '        txport_proxy = prox1d'
+         END IF
+      END IF
+!DEC$ ENDIF
+!DEC$ IF DEFINED (PTSM3D)
+      IF (myid == master .and. ANY(sigma_ptsm3d < bigno)) THEN
+         WRITE(6,*)        " Geometry Interface to Turbulent Transport provided by: "
+         WRITE(6,"(2X,A)") "================================================================================="
+         WRITE(6,"(2X,A)") "=========             Plasma Turbulence Saturation Model-3D             ========="
+         WRITE(6,"(2X,A)") "=========            (B.J. Faber, P.W. Terry and C.C. Hegna)            ========="
+         WRITE(6,"(2X,A)") "=========       bfaber@wisc.edu https://gitlab.com/bfaber/PTSM3D/       ========="
+         WRITE(6,"(2X,A)") "================================================================================="
+         WRITE(6,*)        "    "
+     END IF
+!DEC$ ELSE
+      IF (ANY(sigma_txport < bigno)) THEN
+         sigma_txport(:) = bigno
+         IF (myid == master) THEN
+            WRITE(6,*) '!!!!!!!!!!!!!!!!!!!! WARNING !!!!!!!!!!!!!!!!!!!!!!!!!'
+            WRITE(6,*) '  Turbulent transport optimization with the PTSM3D'
+            WRITE(6,*) '  code has been disabled.  Turbulent optimziation'
+            WRITE(6,*) '  has been turned off.  Contact your vendor for'
+            WRITE(6,*) '  further information.'
          END IF
       END IF
 !DEC$ ENDIF
@@ -1962,6 +1987,14 @@
          WRITE(iunit,outflt) 'TARGET_COIL_BNORM',target_coil_bnorm
          WRITE(iunit,outflt) 'SIGMA_COIL_BNORM',sigma_coil_bnorm
       END IF
+      IF (sigma_ptsm3d < bigno) THEN
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,'(A)') '!         TURBULENCE OPTIMIZATION WITH PTSM3D' 
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,outflt) 'TARGET_PTSM3D',target_ptsm3d
+         WRITE(iunit,outflt) 'SIGMA_PTSM3D',sigma_ptsm3d
+      ENDIF
+ 
       WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
       WRITE(iunit,'(A)') '!         EQUILIBRIUM/GEOMETRY OPTIMIZATION PARAMETERS' 
       WRITE(iunit,'(A)') '!----------------------------------------------------------------------'

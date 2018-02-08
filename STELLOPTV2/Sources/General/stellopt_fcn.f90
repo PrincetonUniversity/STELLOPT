@@ -336,6 +336,9 @@
          ctemp_str = 'coilopt++'
          IF (sigma_coil_bnorm < bigno .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
 !DEC$ ENDIF
+!DEC$ IF DEFINED (PTSM3D)
+         IF (sigma_ptsm3d < bigno) CALL stellopt_ptsm3d(lscreen,iflag)
+!DEC$ ENDIF
 
          ! Now we load target values if an error was found then
          ! exagerate the fvec values so that those directions are not
