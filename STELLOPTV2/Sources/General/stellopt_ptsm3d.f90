@@ -209,9 +209,11 @@
       CALL PTSM3D_compute_triplets
 
       CALL PTSM3D_compute_target
-
-      target_ptsm3d_zft = target_12f
-      target_ptsm3d_nzft = target_qst
+      
+      IF (opt_target == 'zf') target_ptsm3d = 1.0/target_12f
+      IF (opt_target == 'nzf') target_ptsm3d = 1.0/target_qst
+      IF (opt_target == 'combo') target_ptsm3d = &
+        & 1.0/(target_12f+target_qst) 
 
       CALL PTSM3D_finalize_triplets
 

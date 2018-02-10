@@ -101,13 +101,13 @@
 #######################################################################
 #            DKES/NEO Options
 #######################################################################
-  LDKES = T
-  LNEO  = T
+  LDKES = F
+  LNEO  = F
 
 #######################################################################
 #            GENE Options
 #######################################################################
-  LGENE = T
+  LGENE = F
   GENE_INC = -I$(GENE_PATH)
   GENE_DIR = $(GENE_PATH)
   LIB_GENE = libgene.a
@@ -119,7 +119,7 @@
 #######################################################################
 #            COILOPT++ Options
 #######################################################################
-  LCOILOPT = T
+  LCOILOPT = F
   COILOPT_INC = -I$(COILOPT_PATH)
   COILOPTPP_DIR = $(COILOPT_PATH)
   LIB_COILOPTPP = libcoilopt++.a
@@ -129,7 +129,7 @@
 #######################################################################
 #            TERPSICHORE Options
 #######################################################################
-  LTERPSICHORE= T
+  LTERPSICHORE= F
   TERPSICHORE_INC = -I$(TERPSICHORE_PATH)
   TERPSICHORE_DIR = $(TERPSICHORE_PATH)
   LIB_TERPSICHORE = libterpsichore.a
@@ -138,13 +138,22 @@
 #######################################################################
 #            TRAVIS Options
 #######################################################################
-  LTRAVIS= T
+  LTRAVIS= F
   TRAVIS_DIR = $(TRAVIS_PATH)
   LIB_TRAVIS = libtravis64_sopt.a
   LIB_MCONF  = libmconf64.a
   TRAVIS_LIB = $(TRAVIS_DIR)/lib/$(LIB_TRAVIS) \
                $(TRAVIS_DIR)/mag_conf/lib/$(LIB_MCONF) -lstdc++
 
+#######################################################################
+#            PTSM3D Options
+#######################################################################
+  LPTSM3D = T
+  PTSM3D_PATH = /u/bfaber/PTSM3D_opt
+  PTSM3D_INC =
+  PTSM3D_DIR = $(PTSM3D_PATH)
+  LIB_PTSM3D = libptsm3d.a
+  PTSM3D_LIB = $(PTSM3D_DIR)/$(LIB_PTSM3D)
 #######################################################################
 #            LIBSTELL Shared Options
 #######################################################################
