@@ -5,13 +5,13 @@
 !     Description:    T
 !
 !----------------------------------------------------------------------
-      SUBROUTINE stellopt_ptsm3d
+      SUBROUTINE stellopt_ptsm3d(lscreen,iflag)
 
 !----------------------------------------------------------------------
 !       Libraries
 !----------------------------------------------------------------------
       USE stellopt_runtime
-      USE stellop_input_mod
+      USE stellopt_input_mod
       USE stellopt_vars
       USE equil_vals
       USE equil_utils

@@ -134,6 +134,9 @@ chisq_txport.o : \
       $(LIB_DIR)/Release/gist_mod.o \
       $(LIB_DIR)/Release/safe_open_mod.o 
       
+chisq_ptsm3d.o : \
+	stellopt_runtime.o \
+	stellopt_targets.o
 
 chisq_jdotb.o : \
       stellopt_runtime.o \

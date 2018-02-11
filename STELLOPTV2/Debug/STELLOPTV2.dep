@@ -113,6 +113,9 @@ chisq_txport.o : \
       ../../LIBSTELL/Debug/gist_mod.o \
       ../../LIBSTELL/Debug/safe_open_mod.o 
       
+chiwq_txport.o : \
+	stellopt_runtime.o \
+	stellopt_targets.o
 
 chisq_jdotb.o : \
       stellopt_runtime.o \
