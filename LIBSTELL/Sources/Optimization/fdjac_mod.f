@@ -502,8 +502,36 @@ c*************** Updated by SAL****************************************
 
 !
 !     Find minimum
-!      jac_order = 0      ix_temp = 1      temp = 0      lmask = .true.      DO WHILE (ix_temp <= n_red)         isort = MINLOC(fnorm_array, MASK=lmask)         temp = fnorm_array(isort(1))         jac_order(ix_temp) = isort(1)
-         IF(isort(1) <= 0 .or. isort(1) > n_red) THEN            EXIT         ELSE IF(fnorm_array(isort(1)) > fnorm) THEN            EXIT         ELSE            lmask(isort(1)) = .false.            ix_temp = ix_temp + 1         END IF      END DO      ix_min = jac_order(1)      IF(ix_temp <= n) jac_order(ix_temp:) = 0      jac_count = ix_temp - 1      IF (ix_min .le. 0 .or. ix_min .gt. n) THEN         PRINT *,' IX_MIN = ',ix_min,' out of range'         STOP      END IF      j = jac_index(ix_min)      fnorm_min = fnorm_array(ix_min)      wa(:) = fjac(:, ix_min)*h(j) + fvec(:)                     ! Note wa ~ fvec_min      x_min(:) = x(:)      x_min(j) = x(j) + h(j)
+!
+      jac_order = 0
+      ix_temp = 1
+      temp = 0
+      lmask = .true.
+      DO WHILE (ix_temp <= n_red)
+         isort = MINLOC(fnorm_array, MASK=lmask)
+         temp = fnorm_array(isort(1))
+         jac_order(ix_temp) = isort(1)
+         IF(isort(1) <= 0 .or. isort(1) > n_red) THEN
+            EXIT
+         ELSE IF(fnorm_array(isort(1)) > fnorm) THEN
+            EXIT
+         ELSE
+            lmask(isort(1)) = .false.
+            ix_temp = ix_temp + 1
+         END IF
+      END DO
+      ix_min = jac_order(1)
+      IF(ix_temp <= n) jac_order(ix_temp:) = 0
+      jac_count = ix_temp - 1
+      IF (ix_min .le. 0 .or. ix_min .gt. n) THEN
+         PRINT *,' IX_MIN = ',ix_min,' out of range'
+         STOP
+      END IF
+      j = jac_index(ix_min)
+      fnorm_min = fnorm_array(ix_min)
+      wa(:) = fjac(:, ix_min)*h(j) + fvec(:)                     ! Note wa ~ fvec_min
+      x_min(:) = x(:)
+      x_min(j) = x(j) + h(j)
 
 !
 !     Cleanup

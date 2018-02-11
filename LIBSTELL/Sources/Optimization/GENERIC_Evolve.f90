@@ -336,7 +336,7 @@
       x = x_global
       fvec = fvec_array(:,iproc_min)
       DEALLOCATE (x_temp,fnorm_array,fnorm_personal,x_global,vel,fvec_temp)
-      DEALLOCATE (x_array, fvec_array, x_personal,)
+      DEALLOCATE (x_array, fvec_array, x_personal)
       
       RETURN
 !----------------------------------------------------------------------
