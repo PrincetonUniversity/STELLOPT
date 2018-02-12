@@ -4,4 +4,40 @@ The VMECwiki is designed to provide user documentation for various equilibrium m
 
 <span style="background-color: #ffa800;">Please note that accounts are only necessary if you wish to **EDIT** the pages.</span>
 
-[[STELLOPT|STELLOPT]]
+[[BEAMS3D]]
+
+[[BNORM]]
+
+[[BOOTSJ]]
+
+[[BOOZ_XFORM]]
+
+[[COBRAVMEC]]
+
+[[COILOPT]]
+
+[[DESCUR]]
+
+[[DIAGNO]]
+
+[[EXTENDER]]
+
+[[FIELDLINES]]
+
+[[MAKEGRID]]
+
+[[NEO]]
+
+[[NESCOIL]]
+
+[[NMORPH]]
+
+[[PIES]]
+
+[[SPEC]]
+
+[[STELLOPT]]
+
+[[TERPSICHORE]]
+
+[[TORLINES]]
