@@ -113,9 +113,10 @@ chisq_txport.o : \
       ../../LIBSTELL/Debug/gist_mod.o \
       ../../LIBSTELL/Debug/safe_open_mod.o 
       
-chiwq_txport.o : \
+chisq_ptsm3d.o : \
 	stellopt_runtime.o \
-	stellopt_targets.o
+	stellopt_targets.o \
+	equil_vals.o
 
 chisq_jdotb.o : \
       stellopt_runtime.o \
@@ -363,7 +364,16 @@ stellopt_txport.o : \
       ../../BOOZ_XFORM/Debug/booz_persistent.o \
       ../../LIBSTELL/Debug/gist_mod.o \
       ../../LIBSTELL/Debug/read_boozer_mod.o
-      
+
+stellopt_ptsm3d.o : \
+	stellopt_runtime.o \
+	stellopt_input_mod.o \
+	stellopt_vars.o \
+	stellopt_targets.o \
+	equil_vals.o \
+	equil_utils.o \
+      ../../BOOZ_XFORM/Debug/booz_persistent.o \
+      ../../LIBSTELL/Debug/read_boozer_mod.o
       
 stellopt_prof_to_vmec.o : \
       stellopt_runtime.o \

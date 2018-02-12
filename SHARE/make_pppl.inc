@@ -150,7 +150,7 @@
 #######################################################################
   LPTSM3D = T
   PTSM3D_PATH = /u/bfaber/PTSM3D_opt
-  PTSM3D_INC =
+  PTSM3D_INC = -I($PTSM3D_PATH)
   PTSM3D_DIR = $(PTSM3D_PATH)
   LIB_PTSM3D = libptsm3d.a
   PTSM3D_LIB = $(PTSM3D_DIR)/$(LIB_PTSM3D)
@@ -263,6 +263,7 @@ else
   LCOILOPT = F
   LTERPSICHORE = F
   LTRAVIS = F
+  LPTSM3D = F
 endif
 ifeq ($(MAKECMDGOALS),xanimec)
   PRECOMP += -D_ANIMEC
@@ -321,9 +322,18 @@ else
   TRAVIS_DIR = 
   LIB_TRAVIS = 
 endif
+ifeq ($(LPTSM3D),T)
+  MOD1_PATH += $(PTSM3D_INC)
+  PRECOMP += -DPTSM3D
+  MOD_PATH += -I$(PTSM3D_DIR)
+else
+  PTSM3D_LIB =
+  PTSM3D_DIR =
+  LIB_PTSM3D =
+endif
 
 # Handle other codes
-LIB_LINK += $(GENE_LIB) $(COILOPT_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB)
+LIB_LINK += $(GENE_LIB) $(COILOPT_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB) $(PTSM3D_LIB)
 
 # Add libraries to LIB_LINK
 # LIB_LINK+= $(MYHOME)/libstell.a $(LIBS)

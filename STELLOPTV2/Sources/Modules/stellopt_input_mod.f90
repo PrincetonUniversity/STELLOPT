@@ -1127,7 +1127,7 @@
       END IF
 !DEC$ ENDIF
 !DEC$ IF DEFINED (PTSM3D)
-      IF (myid == master .and. ANY(sigma_ptsm3d < bigno)) THEN
+      IF (myid == master .and. sigma_ptsm3d < bigno) THEN
          WRITE(6,*)        " Geometry Interface to Turbulent Transport provided by: "
          WRITE(6,"(2X,A)") "================================================================================="
          WRITE(6,"(2X,A)") "=========             Plasma Turbulence Saturation Model-3D             ========="

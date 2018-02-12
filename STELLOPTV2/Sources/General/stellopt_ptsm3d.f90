@@ -13,8 +13,13 @@
       USE stellopt_runtime
       USE stellopt_input_mod
       USE stellopt_vars
+      USE stellopt_targets
       USE equil_vals
       USE equil_utils
+      USE booz_persistent
+      USE read_boozer_mod
+      USE EZspline_obj
+      USE EZspline
       
       !PTSM3D Files
       USE PTSM3D_par
@@ -33,13 +38,21 @@
 !
 !----------------------------------------------------------------------
       INTEGER :: maxPnt, nalpha0_, ialpha, i, iunit, ik, ier 
-      REAL(rprec) :: a, s, Ba, Fa, iot,iotp,qprim,&
-                     pval, pprime, dalpha, alpha0_start_, phi0, &
-                     th, jac1, c, &
-                     gaa, gat, gst, gsa, gss, alpha, thetastar, &
-                     dBds, dBda, q, dpdx, sqrtg, modb, &
-                     u, v, R, Z, &
-                     temp1,temp2,temp3, abserr alpha0_end, alpha0_start
+      INTEGER :: j, k
+!      REAL(rprec) :: a, s, Ba, Fa, iot,iotp,qprim, &
+!                     pval, pprime, dalpha, alpha0_start_, phi0, &
+!                     th, jac1, c, &
+!                     gaa, gat, gst, gsa, gss, alpha, thetastar, &
+!                     dBds, dBda, q, dpdx, sqrtg, absb, &
+!                     u, v, R, Z, &
+!                     temp1,temp2,temp3, abserr alpha0_end, alpha0_start
+      REAL(rprec) :: s, a, Ba, Fa, iot, iotp, qprim, pval, pprime
+      REAL(rprec) :: dalpha, alpha0_start_, phi0, th, jac1, c
+      REAL(rprec) :: gaa, gat, gst, gsa, gss, alpha, thetastar
+      REAL(rprec) :: dBds, dBda, q, dpdx, sqrtg, absb, u, v, R, Z
+      REAL(rprec) :: temp1, temp2, temp3, abserr, alpha0_end
+      REAL(rprec) :: alpha0_start
+      REAL(rprec) :: g11,g12,g22,Bhat,abs_jac,L1,L2,dBdt
       REAL(rprec), DIMENSION(3) :: sflCrd0,sflCrd, sflCrd_sav, gradS,gradThetaStar,&
                                    gradPhi,mag,gradAlpha, wrk, gradB,R_grad,Z_grad,&
                                    esubs, esubu, esubv, es, eu, ev, gradlam, ea, et
@@ -56,6 +69,7 @@
 
       CALL PTSM3D_read_parameters
 
+      s0 = s
       Fa = phiedge
       a = Aminor
       Ba = ABS(Fa/(pi*a**2))
@@ -74,7 +88,6 @@
       qprime = q0*shat/(2.0*s0) 
       Bref = Ba
       minor_a = a
-      s0 = s
       CALL PTSM3D_intialize_geom
       CALL PTSM3D_set_norms 
       CALL PTSM3D_initialize_itg_solve
@@ -82,7 +95,7 @@
       DO k=lk1+1,lk2
         DO j=lj1,lj2
           sflCrd0(1) = s
-          sflCrd0(2) = 1.0/(2.0*s0*qprime)*kx(j)/ky(k)
+          sflCrd0(2) = 1.0/(2.0*s*qprime)*kx(j)/ky(k)
           !dtheta = pi2*local_npol/maxPnt
           phi0 = 0.0
           sflCrd0(3) = phi0
@@ -141,7 +154,7 @@
             eu = eu/sqrtg
             ev = ev/sqrtg
             ! Get Field (before we adjust eu so gradB is correct)
-            CALL get_equil_Bflx(sflCrd(1),u,v,temp1,temp2,temp3,iflag,modb,gradB)
+            CALL get_equil_Bflx(sflCrd(1),u,v,temp1,temp2,temp3,iflag,absb,gradB)
             gradB = gradB(3)*es + gradB(1)*eu + gradB(2)*ev*nfp
             ! Now Adjust e^u for lambda
             !IF (pest) THEN
@@ -166,18 +179,18 @@
             CALL cross_product(gradS,gradAlpha,wrk)
             jac1 = one/DOT_PRODUCT(wrk,gradThetaStar)
             
-            Bhat(i) = modb/Ba
+            Bhat = absb/Ba
             modB(i-1) = Bhat
  
-            g11(i) = gss*a**2/(4*s)
+            g11 = gss*a**2/(4*s)
             !g12(ialpha,i) = gsa*a**2*iot/2*sloc_fac
-            g12(i) = gsa*a**2*iot/2
-            g22(i) = (Bhat(i)**2+g12(i)**2)/g11(i)
-            abs_jac(i) = ABS(jac1*2*q/a**3)
-            gxx(i-1) = g11(i)
-            gxy(i-1) = g12(i)
-            gyy(i-1) = g22(i)
-            jac(i-1) = minor_a/(Bref*q0)*abs_jac(i) 
+            g12 = gsa*a**2*iot/2
+            g22 = (Bhat**2+g12**2)/g11
+            abs_jac = ABS(jac1*2*q/a**3)
+            gxx(i-1) = g11
+            gxy(i-1) = g12
+            gyy(i-1) = g22
+            jac(i-1) = minor_a/(Bref*q0)*abs_jac 
                      
             CALL cross_product(gradAlpha,gradThetaStar, es) 
             CALL cross_product(gradThetaStar,gradS,     ea) 
@@ -188,13 +201,13 @@
             gradB = gradB/Ba
             dBds = DOT_PRODUCT(gradB,es)
             dBda = DOT_PRODUCT(gradB,ea)
-            dBdt(i) = DOT_PRODUCT(gradB,et)
+            dBdt = DOT_PRODUCT(gradB,et)
             
             c = iot*iot*a**4
-            L1(i) = q/sqrt(s)*(dBda + c*(gss*gat-gsa*gst)*dBdt(i)/(4*Bhat(i)**2))
-            L2(i) = two*sqrt(s)*(dBds + c*(gaa*gst-gsa*gat)*dBdt(i)/(4*Bhat(i)**2))
-            dBdx(i-1) = L1(i)
-            dBdy(i-1) = L2(i)
+            L1 = q/sqrt(s)*(dBda + c*(gss*gat-gsa*gst)*dBdt/(4*Bhat**2))
+            L2 = two*sqrt(s)*(dBds + c*(gaa*gst-gsa*gat)*dBdt/(4*Bhat**2))
+            dBdx(i-1) = L1
+            dBdy(i-1) = L2
  
           ENDDO ! End loop over field line
  
@@ -210,10 +223,10 @@
 
       CALL PTSM3D_compute_target
       
-      IF (opt_target == 'zf') target_ptsm3d = 1.0/target_12f
-      IF (opt_target == 'nzf') target_ptsm3d = 1.0/target_qst
-      IF (opt_target == 'combo') target_ptsm3d = &
-        & 1.0/(target_12f+target_qst) 
+      !IF (opt_target == 'zf') target_ptsm3d = 1.0/target_12f
+      !IF (opt_target == 'nzf') target_ptsm3d = 1.0/target_qst
+      !IF (opt_target == 'combo') target_ptsm3d = &
+      !  & 1.0/(target_12f+target_qst) 
 
       CALL PTSM3D_finalize_triplets
 
