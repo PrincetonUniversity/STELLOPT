@@ -4,5 +4,4 @@ The VMECwiki is designed to provide user documentation for various equilibrium m
 
 <span style="background-color: #ffa800;">Please note that accounts are only necessary if you wish to **EDIT** the pages.</span>
 
-[[include component="pageList" hideInternal="true" tag="codepage" homeAtTop="on" limit="20"]]
-[[media type="googleplusone" key="" width="450" height="24"]]
+[[STELLOPT|STELLOPT]]
