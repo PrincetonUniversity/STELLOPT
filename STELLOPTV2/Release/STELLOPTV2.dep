@@ -422,9 +422,8 @@ stellopt_ptsm3d.o : \
 	stellopt_targets.o \
 	equil_vals.o \
 	equil_utils.o \
-	../../BOOZ_XFORM/Debug/booz_persistent.o \
-	../../LIBSTELL/Debug/gist_mod.o \
-	../../LIBSTELL/Debug/read_boozer.mod.o
+	$(BOOZ_DIR)/Release/booz_persistent.o \
+	$(LIB_DIR)/Release/read_boozer_mod.o \
       
 stellopt_prof_to_vmec.o : \
       stellopt_runtime.o \

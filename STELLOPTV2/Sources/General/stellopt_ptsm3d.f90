@@ -45,8 +45,8 @@
 !                     gaa, gat, gst, gsa, gss, alpha, thetastar, &
 !                     dBds, dBda, q, dpdx, sqrtg, absb, &
 !                     u, v, R, Z, &
-!                     temp1,temp2,temp3, abserr alpha0_end, alpha0_start
-      REAL(rprec) :: s, a, Ba, Fa, iot, iotp, qprim, pval, pprime
+!                     temp1,temp2,temp3, abserr, alpha0_end, alpha0_start
+      REAL(rprec) :: a, s, Ba, Fa, iot, iotp, qprim, pval, pprime
       REAL(rprec) :: dalpha, alpha0_start_, phi0, th, jac1, c
       REAL(rprec) :: gaa, gat, gst, gsa, gss, alpha, thetastar
       REAL(rprec) :: dBds, dBda, q, dpdx, sqrtg, absb, u, v, R, Z
@@ -69,18 +69,18 @@
 
       CALL PTSM3D_read_parameters
 
-      s0 = s
+      s = s0 
       Fa = phiedge
       a = Aminor
       Ba = ABS(Fa/(pi*a**2))
-      CALL EZspline_interp(iota_spl,s,iot,iflag)
-      CALL EZspline_derivative(iota_spl,1,s,iotp,iflag)
+      CALL EZspline_interp(iota_spl,s,iot,ier)
+      CALL EZspline_derivative(iota_spl,1,s,iotp,ier)
       !iot = iota_b(ik)
       !iotp = 0.5*(iota_b(ik+1)-iota_b(ik-1))/drho
       q = one/iot
       qprim = -iotp*q**2
       shat = two*s/q*qprim
-      CALL get_equil_p(s,pval,iflag,pprime)
+      CALL get_equil_p(s,pval,ier,pprime)
       dpdx = -4.0_rprec*sqrt(s)/Ba**2 * pprime*mu0
       maxPnt = nz0*local_npol
 
@@ -88,7 +88,7 @@
       qprime = q0*shat/(2.0*s0) 
       Bref = Ba
       minor_a = a
-      CALL PTSM3D_intialize_geom
+      CALL PTSM3D_initialize_geom
       CALL PTSM3D_set_norms 
       CALL PTSM3D_initialize_itg_solve
 
@@ -119,7 +119,7 @@
             END IF
             IF (u > pi2) u = MOD(u,pi2)
             IF (v > pi2) v = MOD(v,pi2)
-            CALL get_equil_RZ(sflCrd(1),u,v,R,Z,iflag,R_GRAD=R_grad,Z_GRAD=Z_grad)
+            CALL get_equil_RZ(sflCrd(1),u,v,R,Z,ier,R_GRAD=R_grad,Z_GRAD=Z_grad)
             ! Get equil_RZ returns dR/drho and dZ/drho
             !   dR/ds=(0.5/rho)*dR/drho=(0.5/sqrt(s))*dR/drho
             R_grad(3) = 0.5*R_grad(3)/SQRT(sflCrd(1))
@@ -154,11 +154,11 @@
             eu = eu/sqrtg
             ev = ev/sqrtg
             ! Get Field (before we adjust eu so gradB is correct)
-            CALL get_equil_Bflx(sflCrd(1),u,v,temp1,temp2,temp3,iflag,absb,gradB)
+            CALL get_equil_Bflx(sflCrd(1),u,v,temp1,temp2,temp3,ier,absb,gradB)
             gradB = gradB(3)*es + gradB(1)*eu + gradB(2)*ev*nfp
             ! Now Adjust e^u for lambda
             !IF (pest) THEN
-               CALL get_equil_L(sflCrd(1),u,v,temp1,iflag,gradlam)
+               CALL get_equil_L(sflCrd(1),u,v,temp1,ier,gradlam)
                eu = eu + gradlam(3)*es + gradlam(1)*eu + gradlam(2)*ev*nfp
             !ELSE
             !END IF
