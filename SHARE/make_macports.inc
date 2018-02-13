@@ -2,7 +2,7 @@
 #            Define User Specific Output Paths
 #######################################################################
   # Set a default directory if one has not already been defined.
-  $STELLOPT_HOME ?= $(HOME)/bin
+  STELLOPT_HOME ?= $(HOME)/bin
 
 
 #######################################################################
@@ -193,7 +193,7 @@ LIB = libstell.a
 # Handle Which Code is being CALLED
 ifeq ($(MAKECMDGOALS),xstelloptv2)
   PRECOMP += -DBNORM -DBEAMS3D_OPT -DJINV_OPT -DTXPORT_OPT -DDIAGNO_OPT -DSKS  -DSKS2
-  VMEC_DIR ?= ../../VMEC2000
+  VMEC_DIR = ../../VMEC2000
   LIB_VMEC= libvmec.a
   MOD_PATH+= -I$(VMEC_DIR)/$(LOCTYPE)
   BEAMS3D_DIR = ../../BEAMS3D
@@ -258,7 +258,7 @@ endif
 ifeq ($(MAKECMDGOALS),xanimec)
   PRECOMP += -D_ANIMEC
 endif
-ifeq ($(MAKECMDGOALS),xparvmec)
+ifeq ($(MAKECMDGOALS),xvmec2000)
   PRECOMP += -DSKS  -DSKS2
 endif
 ifeq ($(MAKECMDGOALS),xsiesta)
@@ -325,11 +325,10 @@ LIB_LINK+= $(LIB_DIR)/$(LOCTYPE)/$(LIB) $(LIBS)
 # 3rd Party Libs
 ifeq ($(LMPI),T)
   PRECOMP += -DMPI_OPT
-  VMEC_DIR = ../../PARVMEC
   COMPILE = $(MPI_COMPILE)
   COMPILE_FREE = $(MPI_COMPILE_FREE)
   LINK    = $(MPI_COMPILE) $(FLAGS) -o 
-  LINK_C  = $(MPI_COMPILE_C) 
+  LINK_C  = $(MPI_COMPILE_C) -shared 
 endif
 ifeq ($(LNETCDF),T)
   MOD1_PATH += $(NETCDF_INC)

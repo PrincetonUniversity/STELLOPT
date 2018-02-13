@@ -17,8 +17,8 @@ VPATH = $(SPATH):$(SPATH)/Chisq:$(SPATH)/General:$(SPATH)/Modules
 .SUFFIXES : .f .f90 .o
 xstelloptv2:  $(LIB) $(LIB_VMEC) $(LIB_BEAMS3D) $(LIB_BNORM) $(LIB_BOOTSJ) $(LIB_BOOZ) $(LIB_COBRA) $(LIB_DIAGNO) $(LIB_DKES) $(LIB_JINV) $(LIB_MGRID) $(LIB_NEO) $(LIB_GENE) $(LIB_COILOPTPP) $(LIB_TERPSICHORE) $(ObjectFiles)
 	$(LINK) $@ $(ObjectFiles) $(LIB_LINK)
-ifdef VMEC_DIR
-	@rm $(VMEC_DIR)/$(LOCTYPE)/$(LIB_VMEC)
+ifdef VMEC_DIR 
+	@rm $(VMEC_DIR)/$(LOCTYPE)/$(LIB_VMEC) 
 endif
 ifdef BEAMS3D_DIR
 	@rm $(BEAMS3D_DIR)/$(LOCTYPE)/$(LIB_BEAMS3D)
@@ -105,7 +105,7 @@ clean:
 
 #Construct vmec library. 
 $(LIB_VMEC) :
-	@cd $(VMEC_DIR); make $(TYPE); cd $(LOCTYPE); ar -cruv $(LIB_VMEC) *.o
+	@cd $(VMEC_DIR); make $(TYPE); cd $(LOCTYPE); ar -cruv $(LIB_VMEC) *.o 
 	
 #Construct beams3d library. 
 $(LIB_BEAMS3D) :
