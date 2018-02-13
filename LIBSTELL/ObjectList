@@ -128,7 +128,6 @@ second0.o \
 getcarg.o \
 vmec_chdir.o \
 power_to_legendre.o \
-blk3d.o \
 PCHDF.o \
 spline_cubic.o \
 fmax.o \

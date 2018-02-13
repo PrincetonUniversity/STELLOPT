@@ -334,11 +334,6 @@ bextrema.o : \
       stel_kinds.o 
       
 
-blk3d.o : \
-      safe_open_mod.o \
-      stel_kinds.o 
-      
-
 build_matrices_legendre.o : \
       stel_kinds.o 
       
