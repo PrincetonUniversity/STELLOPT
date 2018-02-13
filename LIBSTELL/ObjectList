@@ -297,7 +297,7 @@ r8spline.o \
 r8mkspl2z.o \
 r8vecpc2.o \
 mkintrp2d.o \
-EZspline_type.o \
+ezspline_type.o \
 mkspl3zb.o \
 r8vecintrp3d.o \
 gridbicub.o \
@@ -335,7 +335,7 @@ pc2ev.o \
 mktricubw.o \
 vecbicub.o \
 r8spleen.o \
-EZspline.o \
+ezspline.o \
 tpspline.o \
 r8bcspvec.o \
 genxpkg.o \
@@ -437,7 +437,7 @@ bcspvec.o \
 r8gridintrp2d.o \
 bpsplinb.o \
 r8genxpkg.o \
-EZspline_obj.o \
+ezspline_obj.o \
 r8mkintrp3d.o \
 vecpc3.o \
 mkspl3pb.o \
