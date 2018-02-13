@@ -26,12 +26,12 @@
       USE PTSM3D_geom
       USE PTSM3D_itg
       USE PTSM3D_triplets
-      USE PTSM3D_target
+      USE PTSM3D_targets
 
        
       IMPLICIT NONE
       LOGICAL, INTENT(in)     :: lscreen
-      LOGICAL, INTENT(inout)  :: iflag
+      INTEGER, INTENT(inout)  :: iflag
 
 !----------------------------------------------------------------------
 !     Local variables
@@ -221,12 +221,11 @@
 
       CALL PTSM3D_compute_triplets
 
-      CALL PTSM3D_compute_target
+      CALL PTSM3D_compute_targets
       
-      !IF (opt_target == 'zf') target_ptsm3d = 1.0/target_12f
-      !IF (opt_target == 'nzf') target_ptsm3d = 1.0/target_qst
-      !IF (opt_target == 'combo') target_ptsm3d = &
-      !  & 1.0/(target_12f+target_qst) 
+      IF (opt_target == 'zf') ptsm3d_target = target_12f
+      IF (opt_target == 'nzf') ptsm3d_target = target_qst
+      IF (opt_target == 'combo') ptsm3d_target = target_12f+target_qst 
 
       CALL PTSM3D_finalize_triplets
 

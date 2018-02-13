@@ -21,6 +21,9 @@
 !-----------------------------------------------------------------------
       USE stellopt_runtime
       USE stellopt_targets
+
+      USE PTSM3D_par
+      USE PTSM3D_targets
       
 !-----------------------------------------------------------------------
 !     Input/Output Variables
@@ -51,14 +54,15 @@
          ! This will allow the code to properly handle the optimization
          ! process, define a gradient in search space.
          mtargets = mtargets + 1
-         targets(mtargets) = 0.0
-         sigmas(mtargets)  = bigno
-         vals(mtargets)    = 0.0
+         targets(mtargets) = target
+         sigmas(mtargets)  = sigma
+! Need to add case if ptsm3d_target is zero
+         vals(mtargets)    = 1.0/ptsm3d_target
          IF (iflag == 1) WRITE(iunit_out,'(3ES22.12E3)') target,sigma,0.0,vals(mtargets)
       ELSE
          IF (sigma < bigno) THEN
             mtargets = mtargets + 1
-            IF (niter == -2) target_dex(mtargets)=jtarget_aspect
+            IF (niter == -2) target_dex(mtargets)=jtarget_ptsm3d
          END IF
       END IF
       RETURN

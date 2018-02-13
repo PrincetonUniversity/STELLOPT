@@ -136,8 +136,7 @@ chisq_txport.o : \
       
 chisq_ptsm3d.o : \
 	stellopt_runtime.o \
-	stellopt_targets.o \
-	equil_vals.o
+	stellopt_targets.o 
 
 chisq_jdotb.o : \
       stellopt_runtime.o \
