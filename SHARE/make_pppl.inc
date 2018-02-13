@@ -9,7 +9,7 @@
   COMPILE_FREE = $(FC) -ffree-form -ffree-line-length-none -ffixed-line-length-none
   LINK    = ld $(FLAGS) -o
   LINK_AR = ar -ruv
-  LINK_C  = $(CC) -shared -Wl,-z-defs
+  LINK_C  = $(CC) -shared
 
 #######################################################################
 #            Define Compiler Flags
@@ -40,7 +40,7 @@
   MPI_COMPILE = mpifort
   MPI_COMPILE_FREE = mpifort -ffree-form \
                      -ffree-line-length-none -ffixed-line-length-none
-  MPI_COMPILE_C = mpicc
+  MPI_COMPILE_C = mpifort
   MPI_LINK = mpif90
 
 #######################################################################
@@ -161,6 +161,7 @@ LIB_SHARE = $(BLASHOME)/lib/libopenblas.so \
           $(GCC4_HOME)/lib64/libgfortran.so $(GCC4_HOME)/lib64/libstdc++.so \
           $(MPIHOME)/lib/libmpi.so $(MPIHOME)/lib/libmpi_f77.so $(MPIHOME)/lib/libmpi_f90.so 
 #          /usr/lib/libc.so /usr/lib/libm.so /usr/lib/libpthread.so 
+LIB_SHARE = -lgfortran -lstdc++ -lc -lm -lmpi -lmpi_mpifh $(LIBS)
 
 #######################################################################
 #######################################################################
@@ -328,34 +329,39 @@ ifeq ($(LMPI),T)
   COMPILE = $(MPI_COMPILE)
   COMPILE_FREE = $(MPI_COMPILE_FREE)
   LINK    = $(MPI_COMPILE) $(FLAGS) -o 
-  LINK_C  = $(MPI_COMPILE_C) -shared -Wl,-z,defs
+  LINK_C  = $(MPI_COMPILE_C) -shared 
 endif
 ifeq ($(LNETCDF),T)
   MOD1_PATH += $(NETCDF_INC)
   PRECOMP += -DNETCDF
   LIB_LINK += $(NETCDF_LIB)
   MOD_PATH += $(NETCDF_INC)
+  LIB_SHARE += $(NETCDF_LIB)
 endif
 ifeq ($(LHDF5),T)
   MOD1_PATH += $(HDF5_INC)
   PRECOMP += -DLHDF5 -DH5_USE_16_API
   LIB_LINK += $(HDF5_LIB)
   MOD_PATH += $(HDF5_INC)
+  LIB_SHARE += $(HDF5_LIB)
 endif
 ifeq ($(LNAG),T)
   PRECOMP += -DNAG
   LIB_LINK += $(NAG_LIB)
+  LIB_SHARE += $(NAG_LIB)
 endif
 ifeq ($(LNTCC),T)
   MOD1_PATH += $(NTCC_INC)
   PRECOMP += -DLADAS -DNTCC
   LIB_LINK += $(NTCC_LIB)
   MOD_PATH += $(NTCC_INC)
+  LIB_SHARE += $(NTCC_LIB)
 endif
 ifeq ($(LSILO),T)
   MOD1_PATH += $(SILO_INC)
   PRECOMP += -DSILO_AVAI
   LIB_LINK += $(SILO_LIB)
+  LIB_SHARE += $(SILO_LIB)
 endif
 
 # This is hear because of MPI above resetting LINK
