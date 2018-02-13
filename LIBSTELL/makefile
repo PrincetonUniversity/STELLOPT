@@ -62,7 +62,7 @@ shared_release:
 	@rm -f $(REL)\*.f; rm -f $(REL)\*.f90
 	@rm -f $(MYHOME)/$(EXE_F)
 	@-(umask 022; rm -f $(MYHOME)/$(EXE_F); ln -fs $(REL_PATH)/$(EXE_F) $(MYHOME) 2> /dev/null; umask 077)
-	@-(umask 022; rm -f $(MYHOME)/$(EXE_FSHARE); ln -fs $(REL_PATH)/$(EXE_F_SHARE) $(MYHOME) 2> /dev/null; umask 077)
+	@-(umask 022; rm -f $(MYHOME)/$(EXE_F_SHARE); ln -fs $(REL_PATH)/$(EXE_F_SHARE) $(MYHOME) 2> /dev/null; umask 077)
 	@echo "Shared release version - libstell.so - is now updated"
 	@echo "To free up space, delete all *.o files from Release"
 	@echo ""
