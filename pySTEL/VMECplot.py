@@ -1,19 +1,19 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 import sys, os
 import matplotlib
 import matplotlib.pyplot as _plt
-matplotlib.use("Qt5Agg")
+matplotlib.use("Qt4Agg")
 import numpy as np                    #For Arrays
 from math import pi
-from PyQt5 import uic, QtGui
-from PyQt5.QtGui import QMainWindow, QApplication, qApp, QApplication, QVBoxLayout, QSizePolicy
-from PyQt5.QtGui import QIcon
+from PyQt4 import uic, QtGui
+from PyQt4.QtGui import QMainWindow, QApplication, qApp, QApplication, QVBoxLayout, QSizePolicy
+from PyQt4.QtGui import QIcon
 from libstell.libstell import read_vmec, cfunct, sfunct, torocont, isotoro, calc_jll
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from mpl_toolkits import mplot3d
 
-qtCreatorFile = "VMECplot.ui" # Enter file here.
+qtCreatorFile = "/u/slazerso/src/STELLOPT_GCC/pySTEL/VMECplot.ui" # Enter file here.
 Ui_MainWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 
 class MyApp(QMainWindow):
