@@ -291,6 +291,6 @@ BEAMS3D Version 1.00
 }}}
 # __**Examine the output.**__
 > In this example two files will be created: beams3d_ncsx_c09r00.h5 and beam3d_diag_ncsx_c09r00.txt. The first is an HDF5 file containing the saved particle trajectory information for the run with the magnetic field grid information. Here is a sample plot:
-> {{images/inject_ncsx_c09r00_full.png width="640" height="480"}}
+> {{images/inject_ncsx_c09r00_full.png}}
 > The second file is a diagnostic file indicating the number of particles lost from the simulation domain and the evolution of the parallel velocity distribution function. Here is a sample of such a plot:
-> {{images/vll_ncsx_c09r00_full.png width="800" height="600"}}
+> {{images/vll_ncsx_c09r00_full.png}}
