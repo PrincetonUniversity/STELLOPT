@@ -1,5 +1,5 @@
 =BNORM= 
-{{images/vmecwiki/bnorm_ncsx_c09r00_free.png}}
+{{images/bnorm_ncsx_c09r00_free.png}}
 
 The BNORM code calculates the Fourier coefficients of the magnetic field normal to the VMEC surface.
 [[math]]
