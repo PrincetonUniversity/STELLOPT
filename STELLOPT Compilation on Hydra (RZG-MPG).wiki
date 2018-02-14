@@ -1,0 +1,31 @@
+=STELLOPT Compilation on Hydra (RZG-IPP)= 
+
+This page details how to compile the STELLOPT family of codes on Hydra at [[@http://www.rzg.mpg.de/|Rechenzentrum Garching]] (RZG-MPE). In order to do so you will need an account on their system. These build instructions are for the Intel based compilers
+----
+Installation Steps
+# Load the necessary modules files
+> [[code]]
+module load intel
+module load mkl
+module load mpi.ibm
+module load fftw petsc-cplx slepc-cplx
+module load netcdf-mpi hdf5-mpi nag_flib/intel/mk24
+[[code]]
+# Now create a directory in which you wish to compile STELLOPT and place the STELLOPT ZIP file in that directory. Then unzip it.
+# Unzip stellinstall
+# Now you should be able to run the setup script and compile the STELLOPT family of codes.
+=STELLOPT Compilation on Draco (RZG-IPP)= 
+----
+Installation Steps
+# Load the necessary module files
+> [[code]]
+module load intel
+module load mkl
+module load impi
+module load netcdf-mpi hdf5-mpi fftw nag_flib/intel/mk24
+module load petsc-cplx
+module load slepc-cplx
+[[code]]
+# Now create a directory in which you wish to compile STELLOPT and place the STELLOPT ZIP file in that directory. Then unzip it.
+# Unzip stellinstall
+# Now you should be able to run the setup script and compile the STELLOPT family of codes.

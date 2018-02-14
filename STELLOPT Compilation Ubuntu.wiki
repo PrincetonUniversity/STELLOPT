@@ -1,0 +1,23 @@
+=STELLOPT Compilation on Ubuntu= 
+
+This page details how to compile the STELLOPT family of codes on [[@http://www.ubuntu.com/|Ubuntu]]. In order to do so you will need to install [[@http://gcc.gnu.org/|GNU based compilers]] on your Linux machine. In principle this set of steps should work for any Linux based distribution which uses [[@https://www.debian.org/|Debian]] based package management.
+----
+Installation Steps
+# Verify that your version of Ubuntu is up to date.
+# Use MacPorts to install your packages. For this example we're using gfortran 4.8 but you may substitute any other version.
+# [[code]]
+sudo apt-get install gfortran-4.8
+sudo apt-get install openmpi-bin
+sudo apt-get install libopenmpi-dev
+sudo apt-get install gfortran
+sudo apt-get install g++
+sudo apt-get install libnetcdf-dev
+sudo apt-get install libhdf5-serial-dev
+sudo apt-get install pgplot5
+sudo apt-get install libblas-dev
+sudo apt-get install liblapack-dev
+sudo apt-get install libncarg-dev
+[[code]]
+# Now create a directory in which you wish to compile STELLOPT and place the STELLOPT ZIP file in that directory. Then unzip it.
+# Unzip stellinstall
+# Now you should be able to run the setup script and compile the STELLOPT family of codes.

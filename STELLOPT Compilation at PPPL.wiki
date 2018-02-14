@@ -1,0 +1,62 @@
+=STELLOPT Compilation at the PPPL cluster[[image:PPPL-LOGO-FNLWH-GRADIENT_300px_WEB.jpg align="right"]]= 
+
+This page details how to compile the STELLOPT family of codes at the [[@http://www.pppl.gov/|PPPL]] cluster. The proper modules need to be loaded then compilation can begin. Please note that if you require additional module to be loaded you should do this before loading the compiler. This will prevent the $PATH variable from searching the wrong directories.
+----
+===GENERAL Instructions=== 
+On the PPPL cluster, STELLOPT is now maintained as an installed module. Use the following command to load stellopt
+[[code]]
+module load stellopt
+
+[[code]]
+To load the most current version of the code. This will load all the necessary modules. The /bin/ directory will be added to your path variable as well so codes can be called without specifying the full path. Such as:
+[[code]]
+mpirun -np 64 xstelloptv2 input.test
+[[code]]
+
+----
+===GNU=== 
+# Load the appropriate module files for the [[@https://gcc.gnu.org/|GNU]] compiler.
+> [[code]]
+module purge
+module load ppplcluster
+module load gcc4/4.6.3
+module load openmpi/1.4.3
+module load gsl silo
+module load openblas nag/mark23 netcdf/4.1.2 ntcc pgplot
+module load blacs fftw hdf5 scalapack
+[[code]]
+# Now you should be able to compile the STELLOPT family of codes. At this time, linking with COILOPT++ is possible. If the user wishes to link to GENE they will have to build the PETSC/SLEPC packages independently and make sure the proper environment variables are set.
+===Pathscale=== 
+# Load the appropriate module files for the [[@http://www.pathscale.com/|Pathscale]] compiler.
+> [[code]]
+module purge
+module load ppplcluster
+module load idl matlab
+module load pathscale
+module load openmpi
+module load nag/mark21 hdf5 netcdf adas
+module load fftw/3.1.2 lapack-blas blacs/1.1p3 acml/4.4.0-open64-64bit scalapack
+module load petsc_complex/3.2-p6 slepc_complex/3.2-p3
+module load parmetis
+module load ntcc
+module load ncarg pgplot sccs gnuplot
+module load subversion totalview
+[[code]]
+# Now you should be able to run the setup script and compile the STELLOPT family of codes.
+===Portland Group Compiler (PGI)=== 
+<span style="color: #ff0000;">NOTE: Recent a compiler bug exists in 13.6 which currently prevents VMEC from being compiled with this compiler.</span>
+# Load the appropriate module files for the [[@http://www.pgroup.com/|Portland Group]] compiler.
+> [[code]]
+module purge
+module purge
+module load ppplcluster
+module load idl matlab
+module load pgf/13.6
+module load acml hdf5-serial nag ncarg netcdf ntcc
+module load openmpi/1.4.3-qlogic pgplot superlu metis
+module load blacs fftw parmetis scalapack superlu_dist
+module load petsc_complex/3.3-p7 slepc_complex/3.3-p4
+module load cairo/1.12.16
+module load subversion totalview
+[[code]]
+# Now you should be able to run the setup script and compile the STELLOPT family of codes.
