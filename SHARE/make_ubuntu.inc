@@ -22,11 +22,11 @@
 #            MPI Options
 #######################################################################
   LMPI    = T
-  MPI_COMPILE = mpif90
+  MPI_COMPILE = mpif90.openmpi
   MPI_COMPILE_FREE = mpif90 -ffree-form \
                      -ffree-line-length-none -ffixed-line-length-none
-  MPI_COMPILE_C = mpicc
-  MPI_LINK = mpif90
+  MPI_COMPILE_C = mpicc.openmpi
+  MPI_LINK = mpif90.openmpi
 
 #######################################################################
 #            NAG Options
@@ -54,8 +54,8 @@
 #            HDF5 Options
 #######################################################################
   LHDF5 = T
-  HDF5_INC = -I/usr/include/hdf5/serial
-  HDF5_LIB = -L/usr/lib/x86_64-linux-gnu/hdf5/serial \
+  HDF5_INC = -I/usr/include/hdf5/openmpi
+  HDF5_LIB = -L/usr/lib/x86_64-linux-gnu/hdf5/openmpi \
              -lhdf5 -lhdf5hl_fortran -lhdf5_hl -lhdf5_fortran
 
 #######################################################################
