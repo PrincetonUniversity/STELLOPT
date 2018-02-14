@@ -13,7 +13,7 @@ from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from mpl_toolkits import mplot3d
 
-qtCreatorFile = "/u/slazerso/src/STELLOPT_GCC/pySTEL/VMECplot.ui" # Enter file here.
+qtCreatorFile = "VMECplot.ui" # Enter file here.
 Ui_MainWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 
 class MyApp(QMainWindow):
