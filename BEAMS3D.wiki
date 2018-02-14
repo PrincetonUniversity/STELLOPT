@@ -163,7 +163,8 @@ The data from the run is output in two fashions. The first is a text file which 
 
 ===Visualization=== 
 The data from the HDF5 file may be easily plotted in many plotting packages. The R , PHI, Z, and V_PARALLEL coordinates of each particle are save NPOINC times along the trajectory. To aid in plotting the evolution of the distribution function the code outputs a textfile which bins by VLL the particles at each NPOINC time step.
-[[media type="youtube" key="8TdZouWdmNY" width="560" height="315"]]
+
+[[https://www.youtube.com/watch?v=8TdZouWdmNY|Movie of Simulation]]
 
 ----
 
