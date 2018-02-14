@@ -67,8 +67,6 @@
 !     by theta_k and local_npol
 !----------------------------------------------------------------------
 
-      CALL PTSM3D_read_parameters
-
       s = s0 
       Fa = phiedge
       a = Aminor

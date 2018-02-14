@@ -21,6 +21,7 @@
 !-----------------------------------------------------------------------
       USE stellopt_runtime
       USE stellopt_targets
+      USE stellopt_input_mod
 
       USE PTSM3D_par
       USE PTSM3D_targets
@@ -34,6 +35,7 @@
       REAL(rprec), INTENT(in)    ::  sigma
       INTEGER,     INTENT(in)    ::  niter
       INTEGER,     INTENT(inout) ::  iflag
+      INTEGER :: iunit
       
 !-----------------------------------------------------------------------
 !     Local Variables
@@ -63,6 +65,10 @@
          IF (sigma < bigno) THEN
             mtargets = mtargets + 1
             IF (niter == -2) target_dex(mtargets)=jtarget_ptsm3d
+            CALL safe_open(iunit, iflag, &
+              & TRIM('input.'//TRIM(id_string)),'old','formatted')
+            CALL PTSM3D_read_stellopt_input(iunit, iflag)
+            close(iunit)
          END IF
       END IF
       RETURN

@@ -136,7 +136,9 @@ chisq_txport.o : \
       
 chisq_ptsm3d.o : \
 	stellopt_runtime.o \
-	stellopt_targets.o 
+	stellopt_targets.o \
+	stellopt_input_mod.o \
+	$(LIB_DIR)/Release/safe_open_mod.o
 
 chisq_jdotb.o : \
       stellopt_runtime.o \
