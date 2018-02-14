@@ -1,0 +1,6 @@
+nr 200   # number of radial grid points
+nz 200   # number of vertical grid points
+nphi 72  # number of toroidal cut planes, never be fooled to believe you can save too much on nphi
+rmin 4.5 # optional param., can be computed autom. from boundary
+rmax 6.5 # optional parameter
+zmax 1.0 # optional parameter

@@ -1,0 +1,36 @@
+this line is ignored
+this line is ignored
+this line is ignored
+this line is ignored
+neo_out
+10 ! no_fluxs = Number of flux surfaces to analyze.
+9 19 29 39 49 59 69 79 89 99  ! fluxs_arr = Indices of flux surfaces to analyze.
+200 ! theta_n
+200 ! phi_n
+0 ! max_m_mode
+0 ! max_n_mode
+75 ! npart
+1 ! multra
+0.01 ! acc_req
+100 ! no_bins
+75 ! nstep_per
+500 ! nstep_min
+2000 ! nstep_max
+0 ! calc_nstep_max
+1 ! eout_swi
+0 ! lab_swi
+0 ! inp_swi
+2 ! ref_swi
+1 ! write_progress
+0 ! write_output_files
+0 ! spline_test
+0 ! write_integrate
+0 ! write_diagnostic
+this line is ignored
+this line is ignored
+this line is ignored
+0 ! calc_cur
+neo_cur
+0 ! npart_cur
+0 ! alpha_cur
+0 ! write_cur_inte

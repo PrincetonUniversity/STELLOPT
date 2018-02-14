@@ -1,0 +1,13 @@
+&diagno_in
+  nu = 360
+  nv = 120
+  units = 1.
+  flux_diag_file = '/u/slazerso/Sims/NCSX/probes/diagno_fluxloops.NCSX'
+  lcomp_dia = .false.
+  lflux_comb = .false.
+  ltrace_progress = .true.
+  lwrpl_surf = .false.
+  int_type = 'simpson'
+  int_step = 2
+/
+
