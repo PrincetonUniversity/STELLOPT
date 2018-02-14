@@ -1,11 +1,14 @@
-=Tutorial: NCSX Neutral Beam Injection Example[[image:ncsx_fieldlines.jpg width="240" height="172" align="right"]]= 
+=Tutorial: NCSX Neutral Beam Injection Example=
+{{images/ncsx_fieldlines.jpg}}
+
 This tutorial will walk the user through running the BEAMS3D code for neutral beam injection. If the user is unfamiliar with the VMEC input namelist, please see the VMEC tutorials.
 
 ----
 
 # __**Edit the input namelist text file.**__
 > The BEAMS3D_INPUT namelist has been placed below the VMEC INDATA namelist (see free boundary example).
-> [[code format="fortran"]]
+{{{
+#!fortran
 &INDATA
 !----- Runtime Parameters -----
   DELT =   9.00E-01
@@ -233,10 +236,10 @@ This tutorial will walk the user through running the BEAMS3D code for neutral be
   T_END_IN(1:2) = 2*0.0005 ! BEAM DEP
 /
 &END
-[[code]]
+}}}
 # __**Execute the code.**__
 > To execute the code, we first invoke the MPI execution command with the number of processors we wish to use. The BEAMS3D executable is passed next with the VMEC run extension next. The coils option is passed next with the coil name (this will be used for calculation of the vacuum field). The full path may be specified here. This run will use plasma and vacuum fields outside the VMEC equilibrium. For vacuum only use the '-vac' flag. For trajectories only inside the plasma domain use the '-plasma' flag.
-> [[code format="bash"]]
+{{{
 >mpirun -np 32 ~/bin/xbeams3d -vmec ncsx_c09r00 -coil coils.c09r00
 BEAMS3D Version 1.00
 ----- Input Parameters -----
@@ -285,8 +288,9 @@ BEAMS3D Version 1.00
    FILE: beams3d_ncsx_c09r00.h5
 ----- BEAMS3D DONE -----
 >                                                                   
-[[code]]
+}}}
 # __**Examine the output.**__
-> In this example two files will be created: beams3d_ncsx_c09r00.h5 and beam3d_diag_ncsx_c09r00.txt. The first is an HDF5 file containing the saved particle trajectory information for the run with the magnetic field grid information. Here is a sample plot:[[image:inject_ncsx_c09r00_full.png width="640" height="480"]]
+> In this example two files will be created: beams3d_ncsx_c09r00.h5 and beam3d_diag_ncsx_c09r00.txt. The first is an HDF5 file containing the saved particle trajectory information for the run with the magnetic field grid information. Here is a sample plot:
+> {{images/inject_ncsx_c09r00_full.png width="640" height="480"}}
 > The second file is a diagnostic file indicating the number of particles lost from the simulation domain and the evolution of the parallel velocity distribution function. Here is a sample of such a plot:
-> [[image:vll_ncsx_c09r00_full.png width="800" height="600"]]
+> {{images/vll_ncsx_c09r00_full.png width="800" height="600"}}
