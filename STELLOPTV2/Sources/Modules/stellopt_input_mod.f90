@@ -13,6 +13,7 @@
       USE stel_kinds, ONLY: rprec
       USE stellopt_runtime
       USE stellopt_vars
+      USE windingsurface
       USE stellopt_targets
       USE safe_open_mod, ONLY: safe_open
       USE diagno_runtime, ONLY: DIAGNO_VERSION
@@ -59,7 +60,7 @@
 !                               Determines Velocity scaling factor (PSO)
 !            mode               Determines if scaling is automatic (1) or user(0) (LMDIF)
 !                               Determines strategy (GADE) 
-!                               Detremines number of divisions if > numprocs (MAP)
+!                               Determines number of divisions if > numprocs (MAP)
 !            cr_strategy        Crossover strategy (GADE, 0:exponential, 1: binomial)
 !            npopulation        Size of population (defaults to nproc if -1 or not set)
 !            lkeep_mins         Keep minimum files.
@@ -84,8 +85,11 @@
 !            lphi_f_opt         Logical array to control PHI_AUX_F variation (Electrostatic potential)
 !            lah_f_opt          Logical array to control AH_AUX_F variation
 !            lat_f_opt          Logical array to control AT_AUX_F variation
-!            lbound_opt         Logical array to control Boudnary variation
-!            lrho_opt           Logical array to control HB Boudnary variation
+!            lcoil_spline       Logical array to control coil spline knot variation
+!            lwindsurf          Logical to embed splined coils in a winding surface
+!            windsurfname       Character string naming file containing winding surface
+!            lbound_opt         Logical array to control Boundary variation
+!            lrho_opt           Logical array to control HB Boundary variation
 !            rho_exp            Integer controling value of HB Boundary exponent (default 2)
 !            dphiedge_opt       Scale factor for PHIEDGE variation
 !            dcurtor_opt        Scale factor for CURTOR variation
@@ -222,6 +226,7 @@
                          lrho_opt, ldeltamn_opt, lbound_opt, laxis_opt, lmode_opt, &
                          lne_opt, lte_opt, lti_opt, lth_opt, lzeff_opt, &
                          lah_f_opt, lat_f_opt, lcoil_spline, lemis_xics_f_opt, &
+                         windsurfname, &
                          dphiedge_opt, dcurtor_opt, dbcrit_opt, &
                          dpscale_opt, dmix_ece_opt,&
                          dextcur_opt, daphi_opt, dam_opt, dac_opt, &
@@ -254,6 +259,7 @@
                          rbc_min, rbc_max, zbs_min, zbs_max, &
                          rbs_min, rbs_max, zbc_min, zbc_max, &
                          mboz, nboz, rho_exp, &
+                         coil_type, &
                          coil_splinesx,coil_splinesy,coil_splinesz,&
                          coil_splinefx,coil_splinefy,coil_splinefz,&
                          coil_splinefx_min,coil_splinefy_min,coil_splinefz_min,&
@@ -333,6 +339,10 @@
                          mass_orbit,Z_orbit,vperp_orbit,&
                          np_orbit,vll_orbit,mu_orbit, target_coil_bnorm,&
                          sigma_coil_bnorm, nu_bnorm, nv_bnorm,&
+                         target_coillen, sigma_coillen, &
+                         target_coilsep, sigma_coilsep, npts_csep, &
+                         target_coilcrv, sigma_coilcrv, npts_curv, &
+                         target_coilself, sigma_coilself, npts_cself, &
                          target_ece,sigma_ece,freq_ece, mix_ece, vessel_ece, mirror_ece, &
                          antennaposition_ece, targetposition_ece, rbeam_ece, rfocus_ece, &
                          targettype_ece, antennatype_ece, nra_ece, nphi_ece, &
@@ -354,15 +364,16 @@
 !     Subroutines
 !         read_stellopt_input:   Reads optimum namelist
 !-----------------------------------------------------------------------
-      CONTAINS
-      
+    CONTAINS
+
       SUBROUTINE read_stellopt_input(filename, istat, ithread)
       CHARACTER(*), INTENT(in) :: filename
       INTEGER, INTENT(out) :: istat
       INTEGER, INTENT(in) :: ithread
       LOGICAL :: lexist
-      INTEGER :: i, iunit, local_master
-      ! Initializations
+      INTEGER :: i, ierr, iunit, local_master
+
+      ! Initializations to default values
       nfunc_max       = 5000
       opt_type        = 'LMDIF'
       equil_type      = 'VMEC2000'
@@ -408,18 +419,19 @@
       lzeff_f_opt(:)  = .FALSE.
       lte_f_opt(:)    = .FALSE.
       lti_f_opt(:)    = .FALSE.
-      lth_f_opt(:)        = .FALSE.
-      lbeamj_f_opt(:)     = .FALSE.
-      lbootj_f_opt(:)     = .FALSE.
-      lah_f_opt(:)        = .FALSE.
-      lat_f_opt(:)        = .FALSE.
+      lth_f_opt(:)    = .FALSE.
+      lbeamj_f_opt(:) = .FALSE.
+      lbootj_f_opt(:) = .FALSE.
+      lah_f_opt(:)    = .FALSE.
+      lat_f_opt(:)    = .FALSE.
       lemis_xics_f_opt(:) = .FALSE.
-      lbound_opt(:,:)     = .FALSE.
-      lrho_opt(:,:)       = .FALSE.
-      ldeltamn_opt(:,:)   = .FALSE.
-      lmode_opt(:,:)      = .FALSE.
-      laxis_opt(:)        = .FALSE.
-      lcoil_spline(:,:)   = .FALSE.
+      lbound_opt(:,:) = .FALSE.
+      lrho_opt(:,:)   = .FALSE.
+      ldeltamn_opt(:,:) = .FALSE.
+      lmode_opt(:,:)  = .FALSE.
+      laxis_opt(:)    = .FALSE.
+      lcoil_spline(:,:) = .FALSE.
+      lwindsurf       = .FALSE.
       dphiedge_opt    = -1.0
       dcurtor_opt     = -1.0
       dpscale_opt     = -1.0
@@ -560,6 +572,11 @@
       coil_splinefx(:,:) = 0
       coil_splinefy(:,:) = 0
       coil_splinefz(:,:) = 0
+      coil_nknots(:)  = 0
+      coil_type(:)    = 'U'    ! Default to "unknown"
+      windsurfname    = ''
+      windsurf%mmax   = -1
+      windsurf%nmax   = -1
       mboz            = 64
       nboz            = 64
       target_phiedge  = 0.0
@@ -823,6 +840,17 @@
       sigma_regcoil_chi2_b  = bigno
       target_regcoil_current_density = 8.0e6
       sigma_regcoil_current_density  = bigno
+      target_coillen    = 0.0
+      sigma_coillen     = bigno
+      target_coilcrv    = 0.0
+      sigma_coilcrv     = bigno
+      npts_curv         = 256
+      target_coilsep    = 20.0
+      sigma_coilsep     = bigno
+      npts_csep         = 128
+      target_coilself   = 0.0
+      sigma_coilself    = bigno
+      npts_cself        = 360
       ! Read name list
       lexist            = .false.
       istat=0
@@ -835,6 +863,7 @@
       IF (istat /= 0) CALL handle_err(NAMELIST_READ_ERR,'OPTIMUM in: '//TRIM(filename),istat)
       CALL FLUSH(iunit)
       CLOSE(iunit)
+
       ! Fix String vars
       equil_type=TRIM(equil_type)
       equil_type=ADJUSTL(equil_type)
@@ -848,8 +877,31 @@
       th_type = ADJUSTL(th_type)
       beamj_type = ADJUSTL(beamj_type)
       bootj_type = ADJUSTL(bootj_type)
+
       ! Coil Optimization
-      IF (ANY(ANY(lcoil_spline,2),1)) lcoil_geom = .true.
+      IF (ANY(ANY(lcoil_spline,2),1)) THEN
+         lcoil_geom = .true.
+
+         IF (LEN_TRIM(windsurfname).gt.0) THEN
+            CALL read_winding_surface(windsurfname, ierr)
+            IF (ierr.ne.0) CALL handle_err(CWS_READ_ERR, windsurfname, ierr)
+            lwindsurf = .TRUE.
+         ENDIF
+
+         ! Count knots, error check
+         DO i=1,nigroup
+            coil_nknots(i) = COUNT(coil_splinesx(i,:) >= 0)
+            IF ((coil_nknots(i) > 0).AND.(coil_nknots(i) < 4)) &
+                 CALL handle_err(KNOT_DEF_ERR, 'read_stellopt_input', coil_nknots(i))
+            IF (COUNT(coil_splinesy(i,:) >= 0) .NE. coil_nknots(i)) &
+                 CALL handle_err(KNOT_MISMATCH_ERR, 'read_stellopt_input', coil_nknots(i))
+            IF ((.NOT.lwindsurf) .AND. (COUNT(coil_splinesz(i,:) >= 0) .NE. coil_nknots(i))) &
+                 CALL handle_err(KNOT_MISMATCH_ERR, 'read_stellopt_input', coil_nknots(i))
+            IF (ANY(lcoil_spline(i,coil_nknots(i)+1:maxcoilknots))) &
+                 CALL handle_err(KNOT_MISMATCH_ERR, 'read_stellopt_input', coil_nknots(i))
+         END DO
+      ENDIF
+
       ! If fixed boundary optimization or mapping turn off restart
       IF (ANY(ANY(lbound_opt,2),1) .or. opt_type=='map') lno_restart = .true.
       ! Test for proper normalization on ne profile
@@ -868,6 +920,7 @@
          ne_opt = ne_opt / ne_norm
          ne_aux_f = ne_aux_f / ne_norm
       END IF
+
       ! Print code messages
       CALL tolower(equil_type)
       IF ((myid == master) .and. (TRIM(equil_type(1:4)) == 'vmec') ) THEN
@@ -1137,7 +1190,8 @@
       target_dkes(2)      = 0.0;  sigma_dkes(2)      = bigno
       target_helicity(1)  = 0.0;  sigma_helicity(1)  = bigno
       END SUBROUTINE read_stellopt_input
-      
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       SUBROUTINE write_optimum_namelist(iunit,istat)
       INTEGER, INTENT(in) :: iunit
       INTEGER, INTENT(in) :: istat
@@ -1621,6 +1675,9 @@
       END IF
 
       IF (ANY(lcoil_spline)) THEN
+         IF (lwindsurf) THEN
+            WRITE(iunit,'(A,A,A)') "  WINDSURFNAME = '",TRIM(windsurfname),"'"
+         ENDIF
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          WRITE(iunit,'(A)') '!       Coil Splines'
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
@@ -1629,8 +1686,9 @@
             IF (ANY(coil_splinesx(n,:)>-1)) THEN
                WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
                WRITE(iunit,'(A,I4.3)') '!       Coil Number ',n
-               ik = MINLOC(coil_splinesx(n,:),DIM=1)
-               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,L1))") 'COIL_SPLINESX(',n,',:)',(lcoil_spline(n,m), m = 1, ik)
+               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',1X,A)") 'COIL_TYPE(',n,')',COIL_TYPE(n)
+               ik = MINLOC(coil_splinesx(n,:),DIM=1) - 1
+               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',10(2X,L1))") 'LCOIL_SPLINE(',n,',:)',(lcoil_spline(n,m), m = 1, ik)
                WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'DCOIL_SPLINE(',n,',:)',(dcoil_spline(n,m), m = 1, ik)
                WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINESX(',n,',:)',(coil_splinesx(n,m), m = 1, ik)
                WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINEFX(',n,',:)',(coil_splinefx(n,m), m = 1, ik)
@@ -2471,6 +2529,7 @@
          END DO
       END IF
       WRITE(iunit,'(A)') '/'
+
       RETURN
       END SUBROUTINE write_optimum_namelist
       

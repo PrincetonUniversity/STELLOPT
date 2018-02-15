@@ -78,7 +78,10 @@
       LOGICAL, DIMENSION(0:ntord)                ::  laxis_opt
       LOGICAL, DIMENSION(-ntord:ntord,0:mpol1d)  ::  lbound_opt, lrho_opt, lmode_opt
       LOGICAL, DIMENSION(-ntord:ntord,-mpol1d:mpol1d) :: ldeltamn_opt
-      LOGICAL, DIMENSION(nigroup,20)             ::  lcoil_spline
+      INTEGER, PARAMETER :: maxcoilknots=40
+      LOGICAL, DIMENSION(nigroup,maxcoilknots)        ::  lcoil_spline
+      INTEGER, DIMENSION(nigroup)                     ::  coil_nknots
+      LOGICAL  ::  lwindsurf
       INTEGER  ::  nfunc_max
       REAL(rprec)     ::  dphiedge_opt, dcurtor_opt, dbcrit_opt, &
                           dpscale_opt, dmix_ece_opt, &
@@ -156,18 +159,20 @@
       REAL(rprec), DIMENSION(-ntord:ntord,-mpol1d:mpol1d) ::  deltamn
       REAL(rprec), DIMENSION(-ntord:ntord,-mpol1d:mpol1d) ::  ddeltamn_opt
       REAL(rprec), DIMENSION(-ntord:ntord,-mpol1d:mpol1d) ::  delta_min, delta_max
-      REAL(rprec), DIMENSION(nigroup,20) :: coil_splinesx,coil_splinesy,coil_splinesz,&
-                                            coil_splinefx,coil_splinefy,coil_splinefz
-      REAL(rprec), DIMENSION(nigroup,20) :: dcoil_spline
-      REAL(rprec), DIMENSION(nigroup,20) :: coil_splinefx_min,coil_splinefy_min,coil_splinefz_min,&
-                                            coil_splinefx_max,coil_splinefy_max,coil_splinefz_max
+      REAL(rprec), DIMENSION(nigroup,maxcoilknots) :: coil_splinesx,coil_splinesy,coil_splinesz,&
+                                                      coil_splinefx,coil_splinefy,coil_splinefz
+      REAL(rprec), DIMENSION(nigroup,maxcoilknots) :: dcoil_spline
+      REAL(rprec), DIMENSION(nigroup,maxcoilknots) :: coil_splinefx_min,coil_splinefy_min,coil_splinefz_min,&
+                                                      coil_splinefx_max,coil_splinefy_max,coil_splinefz_max
       CHARACTER(256)  ::  equil_type, te_type, ne_type, ti_type, th_type, &
-                          beamj_type, bootj_type, zeff_type, emis_xics_type
+                          beamj_type, bootj_type, zeff_type, emis_xics_type, windsurfname
       
       ! These are not really variable parameters as we don't vary them
       ! yet
       REAL(rprec), DIMENSION(ndatafmax) :: nustar_s, nustar_f
       
+      CHARACTER, DIMENSION(nigroup) :: coil_type
+
       REAL(rprec) :: phiedge_old  ! For keeping track of phiedge
       
       INTEGER, PARAMETER ::  norm_dex   = -5

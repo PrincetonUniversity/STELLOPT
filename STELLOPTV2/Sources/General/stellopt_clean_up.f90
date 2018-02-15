@@ -51,7 +51,7 @@
 !        iunit       File unit number
 !----------------------------------------------------------------------
       LOGICAL ::  lfile_found
-      INTEGER ::  ier, ik, iunit, ctype, temp_max, ialpha
+      INTEGER ::  ier, ik, iunit, ctype, temp_max, ialpha, m, n
       INTEGER ::  vctrl_array(5)
       CHARACTER(len = 256)   :: temp_str, reset_string
       REAL(rprec), ALLOCATABLE :: fvec_temp(:)
@@ -371,7 +371,7 @@
                   CALL move_txtfile('boot_fit.'//TRIM(proc_string_old),'boot_fit.'//TRIM(proc_string))
                   CALL copy_boozer_file(TRIM(proc_string_old),TRIM(proc_string))
                   IF (lcoil_geom) THEN
-                     CALL move_txtfile('coils.'//TRIM(proc_string_old),'coils.'//TRIM(proc_string))
+                     CALL SYSTEM('mv coils.'//TRIM(proc_string_old)//' coils.'//TRIM(proc_string))
                   END IF
                   IF (ANY(sigma_dkes < bigno)) THEN
                      DO ik = 1, nsd
@@ -452,6 +452,29 @@
                END IF
                ! Now open the Output file
                ALLOCATE(fvec_temp(mtargets))
+
+               !WRITE COIL KNOT FILE
+               IF (ANY(lcoil_spline)) THEN
+                  CALL safe_open(iunit_out,iflag,TRIM('knots.'//TRIM(id_string)),'unknown','formatted',ACCESS_IN='APPEND')
+                  IF (ncnt == 0) WRITE(iunit_out,'(A)') 'COIL KNOTS'
+                  WRITE(iunit_out,'(A,1X,I5.5)') 'ITER',ncnt
+                  DO n = LBOUND(lcoil_spline,DIM=1), UBOUND(lcoil_spline,DIM=1)
+                     IF (ANY(lcoil_spline(n,:))) THEN
+                        WRITE(iunit_out,'(2X,A,2X,I5.5)') 'COIL', n
+                        ik = MINLOC(coil_splinesx(n,:),DIM=1) - 1
+                        IF (lwindsurf) THEN
+                           WRITE(iunit_out,"(4X,'u =',4(2X,ES22.12E3))") (coil_splinefx(n,m), m = 1, ik)
+                           WRITE(iunit_out,"(4X,'v =',4(2X,ES22.12E3))") (coil_splinefy(n,m), m = 1, ik)
+                        ELSE
+                           WRITE(iunit_out,"(4X,'x =',4(2X,ES22.12E3))") (coil_splinefx(n,m), m = 1, ik)
+                           WRITE(iunit_out,"(4X,'y =',4(2X,ES22.12E3))") (coil_splinefy(n,m), m = 1, ik)
+                           WRITE(iunit_out,"(4X,'z =',4(2X,ES22.12E3))") (coil_splinefz(n,m), m = 1, ik)
+                        END IF !lwindsurf
+                     END IF
+                  END DO !n
+                  CLOSE(iunit_out)
+               END IF
+
                CALL safe_open(iunit_out,iflag,TRIM('stellopt.'//TRIM(id_string)),'unknown','formatted',ACCESS_IN='APPEND')
                iflag = 1
                IF (ncnt == 0) WRITE(iunit_out,'(A,1X,F5.2)') 'VERSION',STELLOPT_VERSION
