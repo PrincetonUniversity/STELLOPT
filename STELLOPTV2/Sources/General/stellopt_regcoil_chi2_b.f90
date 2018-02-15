@@ -7,7 +7,6 @@
 !                    
 !-----------------------------------------------------------------------
       SUBROUTINE stellopt_regcoil_chi2_b(lscreen, iflag)
-!  proc_string is in memory, unique to optimzer function evaluation
 !-----------------------------------------------------------------------
 !     Libraries
 !-----------------------------------------------------------------------
@@ -17,6 +16,7 @@
       USE equil_utils
 !      USE neswrite, ONLY: coil_separation
 
+!DEC$ IF DEFINED (REGCOIL)
       ! REGCOIL files
       USE regcoil_variables
       USE regcoil_input_mod
@@ -28,13 +28,13 @@
       USE build_regcoil_matrices
       USE regcoil_auto_regularization_solve
       USE write_regcoil_output
+!DEC$ ENDIF
 
 !-----------------------------------------------------------------------
 !     Subroutine Parameters
 !        iflag         Error flag
 !----------------------------------------------------------------------
       IMPLICIT NONE
-      !CHARACTER(256), INTENT(inout)    :: file_str
       INTEGER, INTENT(inout) :: iflag
       LOGICAL, INTENT(inout)        :: lscreen
 
