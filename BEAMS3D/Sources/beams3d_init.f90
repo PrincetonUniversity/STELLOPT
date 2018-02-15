@@ -207,33 +207,25 @@
          IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init: NE',ier)
          CALL EZspline_init(TI_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
          IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init: TI',ier)
-         CALL EZspline_init(POT_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
-         IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init: POT',ier)
          TE_spl%isHermite   = 1
          NE_spl%isHermite   = 1
          TI_spl%isHermite   = 1
-         POT_spl%isHermite   = 1
          TE_spl%x1   = raxis
          NE_spl%x1   = raxis
          TI_spl%x1   = raxis
-         POT_spl%x1   = raxis
          TE_spl%x2   = phiaxis
          NE_spl%x2   = phiaxis
          TI_spl%x2   = phiaxis
-         POT_spl%x2   = phiaxis
          TE_spl%x3   = zaxis
          NE_spl%x3   = zaxis
          TI_spl%x3   = zaxis
-         POT_spl%x3   = zaxis
          CALL EZspline_setup(TE_spl,TE,ier,EXACT_DIM=.true.)
          IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init: TE',ier)
          CALL EZspline_setup(NE_spl,NE,ier,EXACT_DIM=.true.)
          IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init: NE',ier)
          CALL EZspline_setup(TI_spl,TI,ier,EXACT_DIM=.true.)
          IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init: TI',ier)
-         CALL EZspline_setup(POT_spl,POT_ARR,ier,EXACT_DIM=.true.)
-         IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init: POT',ier)
-         IF (myworkid /= master) DEALLOCATE(TE, NE, TI, POT_ARR)
+         IF (myworkid /= master) DEALLOCATE(TE, NE, TI)
       END IF
          
       ! Construct MODB
@@ -344,7 +336,7 @@
       IF (myworkid /= master) DEALLOCATE(S_ARR)
       ! U
       CALL EZspline_init(U_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
-      IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:S_spl',ier)
+      IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:U_spl',ier)
       ! Cannot changes these since we use R8HERM directly in code.
       U_spl%isHermite = 1
       U_spl%x1 = raxis
@@ -353,6 +345,17 @@
       CALL EZspline_setup(U_spl,U_ARR,ier,EXACT_DIM=.true.)
       IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:U_spl',ier)
       IF (myworkid /= master) DEALLOCATE(U_ARR)
+      ! POT
+      CALL EZspline_init(POT_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
+      IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:POT_spl',ier)
+      ! Cannot changes these since we use R8HERM directly in code.
+      POT_spl%isHermite = 1
+      POT_spl%x1 = raxis
+      POT_spl%x2 = phiaxis
+      POT_spl%x3 = zaxis
+      CALL EZspline_setup(POT_spl,POT_ARR,ier,EXACT_DIM=.true.)
+      IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:POT_spl',ier)
+      IF (myworkid /= master) DEALLOCATE(POT_ARR)
 
       ! Print Grid info to screen
       IF (lverb) THEN
