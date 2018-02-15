@@ -28,10 +28,10 @@
       USE stellopt_input_mod
       USE stellopt_vars, ONLY: nlambda_regcoil
       USE equil_vals, ONLY: curtor
-      ! USE neo_input_mod, ONLY: read_neoin_input, write_neoin_namelist
+!DEC$ IF DEFINED (REGCOIL)
       USE regcoil_input_mod 
       USE regcoil_variables
-      
+!DEC$ ENDIF      
 !-----------------------------------------------------------------------
 !     Input/Output Variables
 !
@@ -52,6 +52,7 @@
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
       IF (iflag < 0) RETURN
+!DEC$ IF DEFINED (REGCOIL)
       IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') &
          'REGCOIL CHI2_B ',1,4
       IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA  DUMMY  CHI'
@@ -88,6 +89,7 @@
            END IF
          END IF
       END IF
+!DEC$ ENDIF      
       RETURN
 !----------------------------------------------------------------------
 !     END SUBROUTINE
