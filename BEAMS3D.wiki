@@ -108,17 +108,17 @@ BEASM3D -vmec <VMEC FILE> -coil <COIL FILE> -mgrid <MGRID FILE> -vessel <VESSEL 
 }}}
 
 || Argument || Default || Description ||
-|| <span style="color: #0000ff;">-vmec</span> || <span style="color: #0000ff;">NONE</span> || <span style="color: #0000ff;">VMEC input extension</span> ||
-|| <span style="color: #0000ff;">-coil</span> || <span style="color: #0000ff;">NONE</span> || <span style="color: #0000ff;">Coils File</span> ||
-|| <span style="color: #0000ff;">-mgrid</span> || <span style="color: #0000ff;">NONE</span> || <span style="color: #0000ff;">Makegrid style vacuum grid file</span> ||
-|| <span style="color: #0000ff;">-vessel</span> || <span style="color: #0000ff;">NONE</span> || <span style="color: #0000ff;">First wall file</span> ||
-|| <span style="color: #0000ff;">-vac</span> || <span style="color: #0000ff;">NONE</span> || <span style="color: #0000ff;">Only compute the vacuum field</span> ||
-|| <span style="color: #0000ff;">-plasma</span> || <span style="color: #0000ff;">NONE</span> || <span style="color: #0000ff;">Only compute fields inside the plasma domain (places wall at LCFS)</span> ||
-|| <span style="color: #0000ff;">-noverb</span> || <span style="color: #0000ff;">NONE</span> || <span style="color: #0000ff;">Suppresses screen output</span> ||
-|| <span style="color: #0000ff;">-field</span> || <span style="color: #0000ff;">NONE</span> || <span style="color: #0000ff;">Outputs the B-Field on the cylindrical grid only.</span> ||
-|| <span style="color: #0000ff;">-raw</span> || <span style="color: #0000ff;">NONE</span> || <span style="color: #0000ff;">Treats EXTCUR array as raw values (EXTCUR is a scale factor applied to what's in the coils file).</span> ||
-|| <span style="color: #0000ff;">-hitonly</span> || <span style="color: #0000ff;">NONE</span> || <span style="color: #0000ff;">Only save vessel strike points.</span> ||
-|| <span style="color: #0000ff;">-help</span> || <span style="color: #0000ff;">NONE</span> || <span style="color: #0000ff;">Print help message</span> ||
+|| -vmec || NONE || VMEC input extension ||
+|| -coil || NONE || Coils File ||
+|| -mgrid || NONE || Makegrid style vacuum grid file ||
+|| -vessel || NONE || First wall file ||
+|| -vac || NONE || Only compute the vacuum field ||
+|| -plasma || NONE || Only compute fields inside the plasma domain (places wall at LCFS) ||
+|| -noverb || NONE || Suppresses screen output ||
+|| -field || NONE || Outputs the B-Field on the cylindrical grid only. ||
+|| -raw || NONE || Treats EXTCUR array as raw values (EXTCUR is a scale factor applied to what's in the coils file). ||
+|| -hitonly || NONE || Only save vessel strike points.||
+|| -help || NONE || Print help message. ||
 In it's simplest invokation the code requires a VMEC input file.
 {{{
 >~/bin/xbeams3d -vmec ncsx_c09r00_free -mgrid mgrid_c09r00.nc -vac
