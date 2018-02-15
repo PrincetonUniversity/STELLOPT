@@ -14,9 +14,7 @@
       USE stellopt_input_mod
       USE stellopt_vars
       USE equil_utils
-!DEC$ IF DEFINED (REGCOIL)
-      USE neswrite, ONLY: coil_separation
-!DEC$ ENDIF
+      USE neswrite, ONLY: coil_separation  ! From BNORM code
 
 !-----------------------------------------------------------------------
 !     Subroutine Parameters

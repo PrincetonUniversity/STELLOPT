@@ -1060,13 +1060,13 @@
       END IF
 !DEC$ ELSE
       IF (myid == master .and. ((sigma_regcoil_bnorm < bigno) .or. &
-                                (sigma_regcoil_chi2_b < bigno) .or &
-                                (sigma_regcoil_current_density < bigno) ) THEN
+                                (sigma_regcoil_chi2_b < bigno) .or. &
+                                (sigma_regcoil_current_density < bigno) ) ) THEN
          sigma_regcoil_bnorm = bigno
          sigma_regcoil_chi2_b = bigno
          sigma_regcoil_current_density = bigno
          WRITE(6,*) '!!!!!!!!!!!!!!!!!!!! WARNING !!!!!!!!!!!!!!!!!!!!!!!!!'
-         WRITE(6,*) '  Coil optimization with the REGCOIL
+         WRITE(6,*) '  Coil optimization with the REGCOIL'
          WRITE(6,*) '  code has been disabled.  Coil optimziation'
          WRITE(6,*) '  has been turned off.  Contact your vendor for'
          WRITE(6,*) '  further information.'
