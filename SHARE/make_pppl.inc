@@ -107,7 +107,7 @@
 #######################################################################
 #            GENE Options
 #######################################################################
-  LGENE = F
+  LGENE = T
   GENE_INC = -I$(GENE_PATH)
   GENE_DIR = $(GENE_PATH)
   LIB_GENE = libgene.a
@@ -119,7 +119,7 @@
 #######################################################################
 #            COILOPT++ Options
 #######################################################################
-  LCOILOPT = F
+  LCOILOPT = T
   COILOPT_INC = -I$(COILOPT_PATH)
   COILOPTPP_DIR = $(COILOPT_PATH)
   LIB_COILOPTPP = libcoilopt++.a
@@ -129,7 +129,7 @@
 #######################################################################
 #            TERPSICHORE Options
 #######################################################################
-  LTERPSICHORE= F
+  LTERPSICHORE= T
   TERPSICHORE_INC = -I$(TERPSICHORE_PATH)
   TERPSICHORE_DIR = $(TERPSICHORE_PATH)
   LIB_TERPSICHORE = libterpsichore.a
@@ -138,7 +138,7 @@
 #######################################################################
 #            TRAVIS Options
 #######################################################################
-  LTRAVIS= F
+  LTRAVIS= T
   TRAVIS_DIR = $(TRAVIS_PATH)
   LIB_TRAVIS = libtravis64_sopt.a
   LIB_MCONF  = libmconf64.a
@@ -148,31 +148,21 @@
 #######################################################################
 #            REGCOIL Options
 #######################################################################
-  LREGCOIL= T
+  LREGCOIL= F
 # For now, REGCOIL_PATH is hardcoded right here. In the future, this
 # will be an environment variable set when user calls
 # 'module load regcoil'
 #  REGCOIL_PATH = $(REGCOIL_PATH)
-  REGCOIL_PATH = /p/stellopt/ANALYSIS/jschmitt/src/regcoil
-  REGCOIL_INC = -I$(REGCOIL_PATH) \
-		-fopenmp -I$(NETCDF_HOME)/include \
-		 -I/usr/pppl/gcc/4.6-pkgs/openblas-48f06dd/include \
-		 -ffree-line-length-none
-  REGCOIL_DIR = $(REGCOIL_PATH)
-  LIB_REGCOIL = libregcoil.a
-  REGCOIL_LIB = $(REGCOIL_DIR)/$(LIB_REGCOIL) \
-		-fopenmp -L$(NETCDF_HOME)/lib -lnetcdff  -lnetcdf \
-		 -L/usr/pppl/gcc/4.6-pkgs/openblas-48f06dd/lib -lopenblas
-
-#######################################################################
-#            YOUR_NEW_CODE Options
-#######################################################################
-#  LYOURNEWCODE= F
-#  # YOURNEWCODE_DIR = $(YOURNEWCODE_PATH)
-#  YOURNEWCODE_DIR = /path/to/your/new/code
-#  LIB_YOURNEWCODE = yourcode.o
-#  YOURNEWCODE_LIB = $(YOURNEWCODE_DIR)/$(LIB_YOURNEWCODE)
-#  # Add additional flag(s) as necessary for your code here
+#  REGCOIL_PATH = /p/stellopt/ANALYSIS/jschmitt/src/regcoil
+#  REGCOIL_INC = -I$(REGCOIL_PATH) \
+#		-fopenmp -I$(NETCDF_HOME)/include \
+#		 -I/usr/pppl/gcc/4.6-pkgs/openblas-48f06dd/include \
+#		 -ffree-line-length-none
+#  REGCOIL_DIR = $(REGCOIL_PATH)
+#  LIB_REGCOIL = libregcoil.a
+#  REGCOIL_LIB = $(REGCOIL_DIR)/$(LIB_REGCOIL) \
+#		-fopenmp -L$(NETCDF_HOME)/lib -lnetcdff  -lnetcdf \
+#		 -L/usr/pppl/gcc/4.6-pkgs/openblas-48f06dd/lib -lopenblas
 
 #######################################################################
 #            LIBSTELL Shared Options
@@ -352,14 +342,6 @@ else
   REGCOIL_DIR = 
   LIB_REGCOIL = 
 endif
-
-#ifeq ($(LYOURNEWCODE),T)
-#  PRECOMP += -DYOURNEWCODE
-#else
-#  YOURNEWCODE_LIB = 
-#  YOURNEWCODE_DIR = 
-#  LIB_YOURNEWCODE = 
-#endif
 
 # Handle other codes
 LIB_LINK += $(GENE_LIB) $(COILOPT_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB) $(REGCOIL_LIB)
