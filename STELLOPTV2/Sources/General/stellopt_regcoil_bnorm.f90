@@ -7,7 +7,6 @@
 !                    surface
 !-----------------------------------------------------------------------
       SUBROUTINE stellopt_regcoil_bnorm(file_str,lscreen)
-!      SUBROUTINE stellopt_regcoil(file_str,iflag)
 !-----------------------------------------------------------------------
 !     Libraries
 !-----------------------------------------------------------------------
@@ -15,7 +14,9 @@
       USE stellopt_input_mod
       USE stellopt_vars
       USE equil_utils
+!DEC$ IF DEFINED (REGCOIL)
       USE neswrite, ONLY: coil_separation
+!DEC$ ENDIF
 
 !-----------------------------------------------------------------------
 !     Subroutine Parameters
