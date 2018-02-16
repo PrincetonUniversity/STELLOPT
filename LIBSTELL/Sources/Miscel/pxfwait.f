@@ -11,7 +11,7 @@
       iretpid = 0
       istat = 0
 
-      ierror = wait(0)
+      !ierror = wait(0)
 #else
       CALL pxfwait(istat, iretpid, ierror)
 #endif

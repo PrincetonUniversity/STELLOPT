@@ -5,8 +5,8 @@ def read_vmec(file):
     import numpy.ctypeslib as npct
     import numpy as np
     # Load Libraries
-    #libstell = ct.cdll.LoadLibrary("/u/slazerso/src/STELLOPT_GCC/LIBSTEL/Release/libstell.so")
-    libstell = ct.cdll.LoadLibrary("/home/jonathan/bin/libstell.so")
+    libstell = ct.cdll.LoadLibrary("/u/slazerso/src/STELLOPT_GCC/LIBSTELL/Release/libstell.so")
+    #libstell = ct.cdll.LoadLibrary("/home/jonathan/bin/libstell.so")
     # Read File
     read_wout = getattr(libstell,'__read_wout_mod_MOD_readw_and_open')
     read_wout.argparse=[ct.c_char_p, ct.c_int, ct.c_int, ct.c_int]
