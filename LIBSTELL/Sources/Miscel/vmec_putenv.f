@@ -7,6 +7,6 @@
 
       temp = TRIM(ename) // "=" // TRIM(evalue) // CHAR(0)
 
-      ierror = putenv(temp)
+      !ierror = putenv(temp)
 
       END SUBROUTINE vmec_putenv

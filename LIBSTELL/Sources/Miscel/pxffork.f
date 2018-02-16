@@ -8,7 +8,7 @@
       INTEGER, EXTERNAL :: fork
 
       ierror = 0
-      ipid = fork()
+      !ipid = fork()
       IF (ipid < 0) ierror = -ipid
 #else
       CALL pxffork (ipid, ierror)
