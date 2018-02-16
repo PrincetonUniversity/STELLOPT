@@ -1,11 +1,19 @@
 # LIBSTELL Module
 
 def read_vmec(file):
+    import os, sys
     import ctypes as ct
     import numpy.ctypeslib as npct
     import numpy as np
     # Load Libraries
-    libstell = ct.cdll.LoadLibrary("/u/slazerso/src/STELLOPT_GCC/LIBSTELL/Release/libstell.so")
+    try:
+        libstell = ct.cdll.LoadLibrary(os.environ["STELLOPT_PATH"]+"/LIBSTELL/Release/libstell.so")
+        qtCreatorPath=os.environ["STELLOPT_PATH"]
+    except KeyError:
+        print("Please set environment variable STELLOPT_PATH")
+        sys.exit(1)
+    #libstell = ct.cdll.LoadLibrary("/u/slazerso/src/STELLOPT_GCC/LIBSTELL/Release/libstell.so")
+    #libstell = ct.cdll.LoadLibrary("/u/slazerso/bin/libstell.so")
     #libstell = ct.cdll.LoadLibrary("/home/jonathan/bin/libstell.so")
     # Read File
     read_wout = getattr(libstell,'__read_wout_mod_MOD_readw_and_open')
