@@ -347,7 +347,18 @@
                          antennaposition_ece, targetposition_ece, rbeam_ece, rfocus_ece, &
                          targettype_ece, antennatype_ece, nra_ece, nphi_ece, &
                          target_kink, sigma_kink,mlmnb_kink,mlmns_kink,ivac_kink,&
-                         nj_kink, nk_kink, lssl_kink, lssd_kink, mmaxdf_kink, nmaxdf_kink
+                         nj_kink, nk_kink, lssl_kink, lssd_kink, mmaxdf_kink, nmaxdf_kink, &
+                         lregcoil_winding_surface_separation_opt, &
+                         dregcoil_winding_surface_separation_opt, &
+                         lregcoil_current_density_opt, &
+                         dregcoil_current_density_opt, &
+                         target_regcoil_winding_surface_separation, &
+                         sigma_regcoil_winding_surface_separation, &
+                         target_regcoil_bnorm, sigma_regcoil_bnorm, &
+                         target_regcoil_chi2_b, sigma_regcoil_chi2_b, &
+                         target_regcoil_current_density, sigma_regcoil_current_density, &
+                         regcoil_winding_surface_separation, &
+                         regcoil_current_density
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -461,7 +472,11 @@
       drho_opt(:,:) = -1.0
       ddeltamn_opt(:,:) = -1.0
       dcoil_spline(:,:) = -1.0
-      IF (.not.ltriangulate) THEN  ! This is done because values may be set by triangulate
+      lregcoil_winding_surface_separation_opt    = .FALSE.
+      dregcoil_winding_surface_separation_opt    = -1.0
+      lregcoil_current_density_opt    = .FALSE.
+      dregcoil_current_density_opt    = -1.0
+      IF (.not.ltriangulate) THEN  ! This is done because values may be set by trinagulate
          phiedge_min     = -bigno;  phiedge_max     = bigno
          curtor_min      = -bigno;  curtor_max      = bigno
          bcrit_min       = -bigno;  bcrit_max       = bigno
@@ -503,6 +518,17 @@
       coil_splinefx_min       = -bigno;  coil_splinefx_max       = bigno
       coil_splinefy_min       = -bigno;  coil_splinefy_max       = bigno
       coil_splinefz_min       = -bigno;  coil_splinefz_max       = bigno
+      target_regcoil_winding_surface_separation = 0.0
+      sigma_regcoil_winding_surface_separation = bigno
+      regcoil_winding_surface_separation = 1.0
+      regcoil_winding_surface_separation_min = 1.0e-3
+      ! regcoil_winding_surface_separation_max = 2.0
+      regcoil_winding_surface_separation_max = 10.
+      target_regcoil_current_density = 0.0
+      sigma_regcoil_current_density = bigno
+      regcoil_current_density = 8.0e6
+      regcoil_current_density_min = 0.0
+      regcoil_current_density_max = bigno
       ne_type         = 'akima_spline'
       zeff_type       = 'akima_spline'
       te_type         = 'akima_spline'
@@ -808,6 +834,12 @@
       sigma_coil_bnorm  = bigno
       nu_bnorm          = 256
       nv_bnorm          = 64
+      target_regcoil_bnorm = 0.0
+      sigma_regcoil_bnorm  = bigno
+      target_regcoil_chi2_b = 0.0
+      sigma_regcoil_chi2_b  = bigno
+      target_regcoil_current_density = 8.0e6
+      sigma_regcoil_current_density  = bigno
       target_coillen    = 0.0
       sigma_coillen     = bigno
       target_coilcrv    = 0.0
@@ -819,7 +851,6 @@
       target_coilself   = 0.0
       sigma_coilself    = bigno
       npts_cself        = 360
-
       ! Read name list
       lexist            = .false.
       istat=0
@@ -1015,6 +1046,32 @@
          END IF
       END IF
 !DEC$ ENDIF
+!DEC$ IF DEFINED (REGCOIL)
+      IF (myid == master .and. ((sigma_regcoil_bnorm < bigno) .or. &
+                                (sigma_regcoil_chi2_b < bigno) .or. &
+                                (sigma_regcoil_current_density < bigno) )) THEN
+         WRITE(6,*)        " Stellarator REGCOIL Optimization provided by: "
+         WRITE(6,"(2X,A)") "================================================================================="
+         WRITE(6,"(2X,A)") "=========                            REGCOIL                            ========="
+         WRITE(6,"(2X,A)") "=========                        (M. Landreman)                         ========="
+         WRITE(6,"(2X,A)") "=========               Matt dot Landreman at gmail dot com             ========="
+         WRITE(6,"(2X,A)") "================================================================================="
+         WRITE(6,*)        "    "
+      END IF
+!DEC$ ELSE
+      IF (myid == master .and. ((sigma_regcoil_bnorm < bigno) .or. &
+                                (sigma_regcoil_chi2_b < bigno) .or. &
+                                (sigma_regcoil_current_density < bigno) ) ) THEN
+         sigma_regcoil_bnorm = bigno
+         sigma_regcoil_chi2_b = bigno
+         sigma_regcoil_current_density = bigno
+         WRITE(6,*) '!!!!!!!!!!!!!!!!!!!! WARNING !!!!!!!!!!!!!!!!!!!!!!!!!'
+         WRITE(6,*) '  Coil optimization with the REGCOIL'
+         WRITE(6,*) '  code has been disabled.  Coil optimziation'
+         WRITE(6,*) '  has been turned off.  Contact your vendor for'
+         WRITE(6,*) '  further information.'
+      END IF
+!DEC$ ENDIF
 !DEC$ IF DEFINED (DKES_OPT)
       IF (myid == master .and. ANY(sigma_dkes < bigno)) THEN
          WRITE(6,*)        " Drift-Kinetic Equation Solver (DKES) provided by: "
@@ -1169,6 +1226,34 @@
       WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
       WRITE(iunit,'(A)') '!       Optimized Quantities'
       WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+      IF (lregcoil_winding_surface_separation_opt) THEN
+         WRITE(iunit,'(2X,A,E22.14)') &
+                'REGCOIL_WINDING_SURFACE_SEPARATION = ', &
+                regcoil_winding_surface_separation
+         WRITE(iunit,onevar) 'LREGCOIL_WINDING_SURFACE_SEPARATION', & 
+                lregcoil_winding_surface_separation_opt, &
+                'REGCOIL_WINDING_SURFACE_SEPARATION_MIN', &
+                regcoil_winding_surface_separation_min, &
+                'REGCOIL_WINDING_SURFACE_SEPARATION_MAX', &
+               regcoil_winding_surface_separation_max
+         IF (dregcoil_winding_surface_separation_opt > 0) &
+                 WRITE(iunit,outflt) 'DREGCOIL_WINDING_SURFACE_SEPARATION', &
+                 dregcoil_winding_surface_separation_opt
+      END IF
+      IF (lregcoil_current_density_opt) THEN
+         WRITE(iunit,'(2X,A,E22.14)') &
+                'REGCOIL_CURRENT_DENSITY = ', &
+                regcoil_current_density
+         WRITE(iunit,onevar) 'LREGCOIL_CURRENT_DENSITY', & 
+                lregcoil_current_density_opt, &
+                'REGCOIL_CURRENT_DENSITY_MIN', &
+                regcoil_current_density_min, &
+                'REGCOIL_CURRENT_DENSITY_MAX', &
+               regcoil_current_density_max
+         IF (dregcoil_current_density_opt > 0) &
+                 WRITE(iunit,outflt) 'DREGCOIL_CURRENT_DENSITY', &
+                 dregcoil_current_density_opt
+      END IF
       IF (lphiedge_opt) THEN
          WRITE(iunit,onevar) 'LPHIEDGE_OPT',lphiedge_opt,'PHIEDGE_MIN',phiedge_min,'PHIEDGE_MAX',phiedge_max
          IF (dphiedge_opt > 0) WRITE(iunit,outflt) 'DPHIEDGE_OPT',dphiedge_opt
@@ -1962,6 +2047,21 @@
          WRITE(iunit,outint) 'NV_BNORM',nv_bnorm
          WRITE(iunit,outflt) 'TARGET_COIL_BNORM',target_coil_bnorm
          WRITE(iunit,outflt) 'SIGMA_COIL_BNORM',sigma_coil_bnorm
+      END IF
+      IF ((sigma_regcoil_bnorm < bigno) .or. &
+          (sigma_regcoil_chi2_b < bigno) .or.  &
+          (sigma_regcoil_current_density < bigno)) THEN
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,'(A)') '!          REGCOIL BNORM OPTIMIZATION'  
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,outint) 'NU_BNORM',nu_bnorm 
+         WRITE(iunit,outint) 'NV_BNORM',nv_bnorm
+         WRITE(iunit,outflt) 'TARGET_COIL_BNORM',target_regcoil_bnorm
+         WRITE(iunit,outflt) 'SIGMA_COIL_BNORM',sigma_regcoil_bnorm
+         WRITE(iunit,outflt) 'TARGET_COIL_CHI2_B',target_regcoil_chi2_b
+         WRITE(iunit,outflt) 'SIGMA_COIL_CHI2_B',sigma_regcoil_chi2_b
+         WRITE(iunit,outflt) 'TARGET_CURRENT_DENSITY',target_regcoil_current_density
+         WRITE(iunit,outflt) 'SIGMA_CURRENT_DENSITY',sigma_regcoil_current_density
       END IF
       WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
       WRITE(iunit,'(A)') '!         EQUILIBRIUM/GEOMETRY OPTIMIZATION PARAMETERS' 

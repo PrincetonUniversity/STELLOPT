@@ -15,7 +15,7 @@ VPATH = $(SPATH):$(SPATH)/Chisq:$(SPATH)/General:$(SPATH)/Modules
 
 .SUFFIXES :
 .SUFFIXES : .f .f90 .o
-xstelloptv2:  $(LIB) $(LIB_VMEC) $(LIB_BEAMS3D) $(LIB_BNORM) $(LIB_BOOTSJ) $(LIB_BOOZ) $(LIB_COBRA) $(LIB_DIAGNO) $(LIB_DKES) $(LIB_JINV) $(LIB_MGRID) $(LIB_NEO) $(LIB_GENE) $(LIB_COILOPTPP) $(LIB_TERPSICHORE) $(ObjectFiles)
+xstelloptv2:  $(LIB) $(LIB_VMEC) $(LIB_BEAMS3D) $(LIB_BNORM) $(LIB_BOOTSJ) $(LIB_BOOZ) $(LIB_COBRA) $(LIB_DIAGNO) $(LIB_DKES) $(LIB_JINV) $(LIB_MGRID) $(LIB_NEO) $(LIB_GENE) $(LIB_COILOPTPP) $(LIB_REGCOIL) $(LIB_TERPSICHORE) $(ObjectFiles)
 	$(LINK) $@ $(ObjectFiles) $(LIB_LINK)
 ifdef VMEC_DIR
 	@rm $(VMEC_DIR)/$(LOCTYPE)/$(LIB_VMEC)
@@ -55,6 +55,9 @@ ifdef GENE_DIR
 endif
 ifdef COILOPTPP_DIR
 	@rm $(COILOPTPP_DIR)/$(LIB_COILOPTPP)
+endif
+ifdef REGCOIL_DIR
+	@rm $(REGCOIL_DIR)/$(LIB_REGCOIL)
 endif
 ifdef TERPSICHORE_DIR
 	@rm $(TERPSICHORE_DIR)/$(LIB_TERPSICHORE)
@@ -156,6 +159,10 @@ endif
 #Construct COILOPT library. 
 $(LIB_COILOPTPP) :
 	@cd $(COILOPTPP_DIR); make; ar -cruv $(LIB_COILOPTPP) *.o 
+
+#Construct COILOPT library. 
+$(LIB_REGCOIL) :
+	@cd $(REGCOIL_DIR); make; ar -cruv $(LIB_REGCOIL) *.o 
 
 #Construct TERPSICHORE library. 
 $(LIB_TERPSICHORE) :

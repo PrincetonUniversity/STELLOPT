@@ -102,6 +102,10 @@
          IF (var_dex(nvar_in) == icurtor) curtor = x(nvar_in)
          IF (var_dex(nvar_in) == ipscale) pres_scale = x(nvar_in)
          IF (var_dex(nvar_in) == imixece) mix_ece = x(nvar_in)
+         IF (var_dex(nvar_in) == iregcoil_winding_surface_separation) &
+                regcoil_winding_surface_separation = x(nvar_in)
+         IF (var_dex(nvar_in) == iregcoil_current_density) &
+                regcoil_current_density = x(nvar_in)
          IF (var_dex(nvar_in) == ibcrit) bcrit = x(nvar_in)
          IF (var_dex(nvar_in) == iextcur) extcur(arr_dex(nvar_in,1)) = x(nvar_in)
          IF (var_dex(nvar_in) == iaphi) aphi(arr_dex(nvar_in,1)) = x(nvar_in)
@@ -335,6 +339,13 @@
 !DEC$ IF DEFINED (COILOPTPP)
          ctemp_str = 'coilopt++'
          IF (sigma_coil_bnorm < bigno .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
+!DEC$ ENDIF
+!DEC$ IF DEFINED (REGCOIL)
+         ! JCS: skipping parallelization for now - gonna try to do this
+         ! in serial
+         ! ctemp_str = 'regcoil_chi2_b'
+         ! IF (sigma_regcoil_chi2_b < bigno .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen)
+         IF (sigma_regcoil_chi2_b < bigno) CALL stellopt_regcoil_chi2_b(lscreen, iflag)
 !DEC$ ENDIF
 
          ! Now we load target values if an error was found then
