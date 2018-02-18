@@ -20,6 +20,7 @@
   LINK    = ld $(FLAGS) -o
   LINK_AR = ar -ruvs
   LINK_C  = gcc -shared -Wl,-no_compact_unwind
+  LINK_C  = $(CC) -shared -Wl,--no-undefined -Wl,-export-dynamic 
 
 #######################################################################
 #            Define Compiler Flags
@@ -36,15 +37,9 @@
   MPI_COMPILE = /opt/local/bin/mpif90 
   MPI_COMPILE_FREE = /opt/local/bin/mpif90 -ffree-form \
                      -ffree-line-length-none -ffixed-line-length-none
-  MPI_COMPILE_C = gcc -shared -Wl,-no_compact_unwind
+  MPI_COMPILE_C = mpicc 
   MPI_LINK = /opt/local/bin/mpif90
-
-  # For GCC6
-  #MPI_COMPILE = mpif90
-  #MPI_COMPILE_FREE = mpif90 -ffree-form \
-  #                   -ffree-line-length-none -ffixed-line-length-none
-  #MPI_COMPILE_C = mpicc
-  #MPI_LINK = mpif90
+  MPI_LINK = mpicc -shared 
 
 #######################################################################
 #            NAG Options
@@ -58,9 +53,6 @@
   LNETCDF = T
   NETCDF_INC = -I/opt/local/include
   NETCDF_LIB = -L/opt/local/lib -lnetcdf -lnetcdff
-
-  # FOR GCC6
-  #NETCDF_LIB = -L$(NETCDF_HOME)/lib -lnetcdff
 
 #######################################################################
 #            NTCC Options
@@ -90,8 +82,8 @@
 #             SILO Options
 #######################################################################
   LSILO = F
-  SILO_INC = -I$(SILOHOME)/include
-  SILO_LIB = -L$(SILOHOME)/lib -lsilo
+  SILO_INC = -I/opt/local/include
+  SILO_LIB = -L/opt/local/lib -lsilo
 
 #######################################################################
 #            DKES/NEO Options
@@ -160,6 +152,7 @@ LIB_SHARE = /opt/local/lib/libnetcdf.dylib \
          /usr/lib/libc.dylib \
          /usr/lib/libm.dylib \
          /usr/lib/libpthread.dylib
+LIB_SHARE = -L/opt/local/lib/gcc7 -lstdc++ -lgfortran -L/usr/lib -lz -lc -lm -lpthread -L/opt/local/lib/openmpi-gcc7 -lmpi -lmpi_mpifh $(LIBS)
 
 #######################################################################
 #######################################################################
@@ -183,7 +176,6 @@ LIB_SHARE = /opt/local/lib/libnetcdf.dylib \
 # Home bin specifies where the build scripts are located,
 # for example awk_cdir.awk.
 HOME_BIN = ../../
-
 MOD1_PATH = -I$(MYHOME)/libstell_dir
 MOD_PATH = 
 CLEAN_ARCH = 
@@ -328,34 +320,39 @@ ifeq ($(LMPI),T)
   COMPILE = $(MPI_COMPILE)
   COMPILE_FREE = $(MPI_COMPILE_FREE)
   LINK    = $(MPI_COMPILE) $(FLAGS) -o 
-  LINK_C  = $(MPI_COMPILE_C) -shared 
+  LINK_C  = $(MPI_LINK) 
 endif
 ifeq ($(LNETCDF),T)
   MOD1_PATH += $(NETCDF_INC)
   PRECOMP += -DNETCDF
   LIB_LINK += $(NETCDF_LIB)
   MOD_PATH += $(NETCDF_INC)
+  LIB_SHARE += $(NETCDF_LIB)
 endif
 ifeq ($(LHDF5),T)
   MOD1_PATH += $(HDF5_INC)
   PRECOMP += -DLHDF5 -DH5_USE_16_API
   LIB_LINK += $(HDF5_LIB)
   MOD_PATH += $(HDF5_INC)
+  LIB_SHARE += $(HDF5_LIB)
 endif
 ifeq ($(LNAG),T)
   PRECOMP += -DNAG
   LIB_LINK += $(NAG_LIB)
+  LIB_SHARE += $(NAG_LIB)
 endif
 ifeq ($(LNTCC),T)
   MOD1_PATH += $(NTCC_INC)
   PRECOMP += -DLADAS -DNTCC
   LIB_LINK += $(NTCC_LIB)
   MOD_PATH += $(NTCC_INC)
+  LIB_SHARE += $(NTCC_LIB)
 endif
 ifeq ($(LSILO),T)
   MOD1_PATH += $(SILO_INC)
   PRECOMP += -DSILO_AVAI
   LIB_LINK += $(SILO_LIB)
+  LIB_SHARE += $(SILO_LIB)
 endif
 
 # This is hear because of MPI above resetting LINK
@@ -366,6 +363,7 @@ ifeq ($(MAKECMDGOALS),libstell.a)
   INC_PATH = 
 endif
 ifeq ($(MAKECMDGOALS),libstell.so)
+  LINK = $(LINK_C)
   LIB_LINK = $(LIB_SHARE)
   COMPILE += -fPIC
   COMPILE_FREE += -fPIC
