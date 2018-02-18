@@ -146,6 +146,15 @@
                $(TRAVIS_DIR)/mag_conf/lib/$(LIB_MCONF) -lstdc++
 
 #######################################################################
+#            REGCOIL Options
+#######################################################################
+  LREGCOIL= T
+  REGCOIL_DIR = $(REGCOIL_PATH)
+  REGCOIL_INC = -I$(REGCOIL_DIR) 
+  LIB_REGCOIL = libregcoil.a
+  REGCOIL_LIB = $(REGCOIL_DIR)/$(LIB_REGCOIL) -fopenmp
+
+#######################################################################
 #            LIBSTELL Shared Options
 #######################################################################
 LIB_SHARE = -lc -lgfortran -lstdc++ -lmpi -lmpi_mpifh -lz -lc -lm -lpthread $(LIBS) -lc
@@ -242,6 +251,8 @@ else
   LCOILOPT = F
   LTERPSICHORE = F
   LTRAVIS = F
+  LREGCOIL= F
+#  LYOURNEWCODE = F
 endif
 ifeq ($(MAKECMDGOALS),xanimec)
   PRECOMP += -D_ANIMEC
@@ -300,9 +311,18 @@ else
   TRAVIS_DIR = 
   LIB_TRAVIS = 
 endif
+ifeq ($(LREGCOIL),T)
+  MOD1_PATH += $(REGCOIL_INC)
+  PRECOMP += -DREGCOIL
+  MOD_PATH += -I$(REGCOIL_DIR)
+else
+  REGCOIL_LIB = 
+  REGCOIL_DIR = 
+  LIB_REGCOIL = 
+endif
 
 # Handle other codes
-LIB_LINK += $(GENE_LIB) $(COILOPT_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB)
+LIB_LINK += $(GENE_LIB) $(COILOPT_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB) $(REGCOIL_LIB)
 
 # Add libraries to LIB_LINK
 # LIB_LINK+= $(MYHOME)/libstell.a $(LIBS)

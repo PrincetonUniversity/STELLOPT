@@ -74,6 +74,14 @@ chisq_coil_bnorm.o : \
       ../../LIBSTELL/Debug/mpi_params.o
       
       
+chisq_regcoil_bnorm.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      equil_vals.o \
+      ../../LIBSTELL/Debug/safe_open_mod.o \
+      ../../LIBSTELL/Debug/mpi_params.o
+      
+      
 chisq_rbtor.o : \
       stellopt_runtime.o \
       stellopt_targets.o \

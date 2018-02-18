@@ -51,7 +51,7 @@
 !        iunit       File unit number
 !----------------------------------------------------------------------
       LOGICAL ::  lfile_found
-      INTEGER ::  ier, ik, iunit, ctype, temp_max, ialpha
+      INTEGER ::  ier, ik, iunit, ctype, temp_max, ialpha, m, n
       INTEGER ::  vctrl_array(5)
       CHARACTER(len = 256)   :: temp_str, reset_string
       REAL(rprec), ALLOCATABLE :: fvec_temp(:)
@@ -194,6 +194,23 @@
                      END DO
                   END IF
 !DEC$ ENDIF
+!DEC$ IF DEFINED (REGCOIL)
+                 ! OUTPUT FILES SHOULD BE WRITTEN HERE - Use the regcoil
+                 ! write_output functions to write the hdf5 output file
+                  IF (sigma_coil_bnorm < bigno) THEN
+                     CALL move_txtfile('bnorm.'//TRIM(proc_string_old),&
+                                       'bnorm.'//TRIM(proc_string))
+                     CALL move_txtfile('regcoil_params.'//TRIM(proc_string_old),&
+                                       'regcoil_params.'//TRIM(proc_string))
+                     ! CALL copy_txtfile('Bnormal_from_plasma_current'//TRIM(proc_string_old)//'.dat',&
+                     !                   'Bnormal_from_plasma_current'//TRIM(proc_string)//'.dat')
+                     ! CALL copy_txtfile('Bnormal_total_'//TRIM(proc_string_old)//'.dat',&
+                     !                   'Bnormal_total'//TRIM(proc_string)//'.dat')
+                     ! CALL move_txtfile('Bnormal_from_plasma_current'//TRIM(proc_string_old)//'.dat',&
+                     !                   'Bnormal_from_plasma_current'//TRIM(proc_string)//'.dat')
+                     ! Need to write out the winding surface.
+                  END IF
+!DEC$ ENDIF
 !DEC$ IF DEFINED (TERPSICHORE)
                   IF (ANY(sigma_kink < bigno)) THEN
                      CALL move_txtfile('terpsichore_eq.'//TRIM(proc_string_old),&
@@ -281,6 +298,14 @@
                   END DO
                END IF
 !DEC$ ENDIF
+!DEC$ IF DEFINED (REGCOIL)
+               IF (sigma_regcoil_bnorm < bigno .and. (proc_string.ne.proc_string_old) ) THEN
+                  ! MUST Call 'write regcoil in'
+                  !CALL write_regcoil_namelist(iunit_out,ier)
+                  ! MUST Write out winding surface
+
+               END IF
+!DEC$ ENDIF
                ! Keep minimum states
                IF (lkeep_mins) THEN
                   WRITE(temp_str,'(i5.5)') ncnt
@@ -333,7 +358,7 @@
                   CALL move_txtfile('boot_fit.'//TRIM(proc_string_old),'boot_fit.'//TRIM(proc_string))
                   CALL copy_boozer_file(TRIM(proc_string_old),TRIM(proc_string))
                   IF (lcoil_geom) THEN
-                     CALL move_txtfile('coils.'//TRIM(proc_string_old),'coils.'//TRIM(proc_string))
+                     CALL SYSTEM('mv coils.'//TRIM(proc_string_old)//' coils.'//TRIM(proc_string))
                   END IF
                   IF (ANY(sigma_dkes < bigno)) THEN
                      DO ik = 1, nsd
@@ -376,6 +401,21 @@
                      END DO
                   END IF
 !DEC$ ENDIF
+!DEC$ IF DEFINED (REGCOIL)
+                  IF (sigma_coil_bnorm < bigno) THEN
+                     ! CALL move_txtfile('bnorm.'//TRIM(proc_string_old),&
+                     !                   'bnorm.'//TRIM(proc_string))
+                     ! CALL move_txtfile('regcoil_params.'//TRIM(proc_string_old),&
+                     !                   'regcoil_params.'//TRIM(proc_string))
+                     ! CALL copy_txtfile('Bnormal_from_plasma_current'//TRIM(proc_string_old)//'.dat',&
+                     !                   'Bnormal_from_plasma_current'//TRIM(proc_string)//'.dat')
+                     ! CALL copy_txtfile('Bnormal_total_'//TRIM(proc_string_old)//'.dat',&
+                     !                   'Bnormal_total'//TRIM(proc_string)//'.dat')
+                     ! CALL move_txtfile('Bnormal_from_plasma_current'//TRIM(proc_string_old)//'.dat',&
+                     !                   'Bnormal_from_plasma_current'//TRIM(proc_string)//'.dat')
+                     ! Need to write out the winding surface.
+                  END IF
+!DEC$ ENDIF
 !DEC$ IF DEFINED (TERPSICHORE)
                   IF (ANY(sigma_kink < bigno)) THEN
                      CALL move_txtfile('terpsichore_eq.'//TRIM(proc_string_old),&
@@ -398,6 +438,29 @@
                END IF
                ! Now open the Output file
                ALLOCATE(fvec_temp(mtargets))
+
+               !WRITE COIL KNOT FILE
+               IF (ANY(lcoil_spline)) THEN
+                  CALL safe_open(iunit_out,iflag,TRIM('knots.'//TRIM(id_string)),'unknown','formatted',ACCESS_IN='APPEND')
+                  IF (ncnt == 0) WRITE(iunit_out,'(A)') 'COIL KNOTS'
+                  WRITE(iunit_out,'(A,1X,I5.5)') 'ITER',ncnt
+                  DO n = LBOUND(lcoil_spline,DIM=1), UBOUND(lcoil_spline,DIM=1)
+                     IF (ANY(lcoil_spline(n,:))) THEN
+                        WRITE(iunit_out,'(2X,A,2X,I5.5)') 'COIL', n
+                        ik = MINLOC(coil_splinesx(n,:),DIM=1) - 1
+                        IF (lwindsurf) THEN
+                           WRITE(iunit_out,"(4X,'u =',4(2X,ES22.12E3))") (coil_splinefx(n,m), m = 1, ik)
+                           WRITE(iunit_out,"(4X,'v =',4(2X,ES22.12E3))") (coil_splinefy(n,m), m = 1, ik)
+                        ELSE
+                           WRITE(iunit_out,"(4X,'x =',4(2X,ES22.12E3))") (coil_splinefx(n,m), m = 1, ik)
+                           WRITE(iunit_out,"(4X,'y =',4(2X,ES22.12E3))") (coil_splinefy(n,m), m = 1, ik)
+                           WRITE(iunit_out,"(4X,'z =',4(2X,ES22.12E3))") (coil_splinefz(n,m), m = 1, ik)
+                        END IF !lwindsurf
+                     END IF
+                  END DO !n
+                  CLOSE(iunit_out)
+               END IF
+
                CALL safe_open(iunit_out,iflag,TRIM('stellopt.'//TRIM(id_string)),'unknown','formatted',ACCESS_IN='APPEND')
                iflag = 1
                IF (ncnt == 0) WRITE(iunit_out,'(A,1X,F5.2)') 'VERSION',STELLOPT_VERSION

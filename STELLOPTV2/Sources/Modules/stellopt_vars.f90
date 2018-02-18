@@ -45,6 +45,8 @@
 !            lphi_s_opt         Logical array to control PHI_AUX_S variation
 !            lphi_f_opt         Logical array to control PHI_AUX_F variation
 !            lbound_opt         Logical array to control Boudnary variation
+!            lregcoil_winding_surface_separation_opt Logical to control the
+!                    distance between the plasma and the winding surface
 !            equil_type         Name of Equilibrium Code
 !            ne_aux_f           Spline Knots for NE Profile (normalized to 1E19)
 !            te_aux_f           Spline Knots for TE Profile
@@ -56,7 +58,8 @@
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       LOGICAL  ::  lphiedge_opt, lcurtor_opt, lpscale_opt, lbcrit_opt,&
-                   lmix_ece_opt
+                   lmix_ece_opt, lregcoil_winding_surface_separation_opt, &
+                   lregcoil_current_density_opt
       LOGICAL, DIMENSION(nigroup)  ::  lextcur_opt
       LOGICAL, DIMENSION(1:20)  ::  laphi_opt
       LOGICAL, DIMENSION(0:20)  ::  lam_opt, lac_opt, lai_opt,&
@@ -81,11 +84,17 @@
       LOGICAL  ::  lwindsurf
       INTEGER  ::  nfunc_max
       REAL(rprec)     ::  dphiedge_opt, dcurtor_opt, dbcrit_opt, &
-                          dpscale_opt, dmix_ece_opt
+                          dpscale_opt, dmix_ece_opt, &
+                          dregcoil_winding_surface_separation_opt, &
+                          dregcoil_current_density_opt
       REAL(rprec)     ::  phiedge_min, curtor_min, bcrit_min, &
-                          pscale_min, mix_ece_min
+                          pscale_min, mix_ece_min, &
+                          regcoil_winding_surface_separation_min, &
+                          regcoil_current_density_min
       REAL(rprec)     ::  phiedge_max, curtor_max, bcrit_max, &
-                          pscale_max, mix_ece_max
+                          pscale_max, mix_ece_max, &
+                          regcoil_winding_surface_separation_max, &
+                          regcoil_current_density_max
       REAL(rprec), DIMENSION(nigroup)  ::  dextcur_opt,extcur_min,extcur_max
       REAL(rprec), DIMENSION(1:20)     ::  daphi_opt,aphi_min,aphi_max
       REAL(rprec), DIMENSION(0:20)     ::  dam_opt, dac_opt, dai_opt,&
@@ -99,7 +108,10 @@
                                            te_min, ne_min, ti_min, th_min, &
                                            te_max, ne_max, ti_max, th_max, &
                                            zeff_max, zeff_min
-      REAL(rprec)                       ::  mix_ece
+      REAL(rprec)                       :: mix_ece
+      REAL(rprec)                       :: regcoil_winding_surface_separation
+      REAL(rprec)                       :: regcoil_current_density
+      INTEGER :: nlambda_regcoil
       REAL(rprec), DIMENSION(0:20)      ::  te_opt, ti_opt, ne_opt, th_opt, zeff_opt                                     
       REAL(rprec), DIMENSION(ndatafmax) ::  ne_aux_s, te_aux_s, &
                                             ti_aux_s, th_aux_s, &
@@ -214,6 +226,8 @@
       INTEGER, PARAMETER ::  iraxis_cs  = 912
       INTEGER, PARAMETER ::  izaxis_cc  = 913
       INTEGER, PARAMETER ::  izaxis_cs  = 914
+      INTEGER, PARAMETER ::  iregcoil_winding_surface_separation   = 5150
+      INTEGER, PARAMETER ::  iregcoil_current_density   = 5151
       
       REAL(rprec), PARAMETER :: ne_norm = 1.0E18
       
@@ -226,6 +240,10 @@
       CHARACTER*(*), PARAMETER ::  out_format_2D = '(5X,A,I3.3,A,I3.3,A)'
       CHARACTER*(*), PARAMETER ::  out_format_2DB = '(5X,A,I4.3,A,I4.3,A)'
       SELECT CASE(var_num)
+         CASE(iregcoil_winding_surface_separation)
+            WRITE(iunit,out_format) 'REGCOIL_SEPARATION: Coil winding surface separation'
+         CASE(iregcoil_current_density)
+            WRITE(iunit,out_format) 'REGCOIL_CURRENT_DENSITY: Current density on winding surface'
          CASE(iphiedge)
             WRITE(iunit,out_format) 'PHIEDGE:  Total Enclosed Toroidal Flux'
          CASE(imixece)
