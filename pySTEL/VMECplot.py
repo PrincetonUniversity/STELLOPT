@@ -28,7 +28,8 @@ class MyApp(QMainWindow):
 		super(MyApp, self).__init__()
 		self.ui = Ui_MainWindow()
 		self.ui.setupUi(self) 
-		#self.setStyleSheet("background-color: white;");
+		self.setStyleSheet("background-color: white;");
+		#self.ui.PlotButtons.setStyleSheet("background-color: white;");
 		self.statusBar().showMessage('Ready')
 		self.ui.plot_list = ['Summary','-----1D-----','Iota','q','Pressure',\
 		'<Buco>','<Bvco>','<jcuru>','<jcurv>','<j.B>',  '-----3D------','|B|','sqrt(g)',\
@@ -274,6 +275,8 @@ class MyApp(QMainWindow):
 			elif (self.ui.ThreeD_button.isChecked()):
 				self.fig.delaxes(self.ax)
 				self.canvas.draw()
+				#mayavi_widget = MayaviQWidget(self.plot_widget)
+				#self.ui.plot_widget.addWidget(self.canvas)
 				self.ax = isotoro(self.r,self.z,self.zeta,self.s,val,fig=self.fig)
 				self.ax.grid(False)
 				self.ax.set_axis_off()

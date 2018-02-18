@@ -226,6 +226,7 @@ def isotoro(r,z,zeta,svals,*args,**kwargs):
     import mpl_toolkits.mplot3d as mplot3d
     import math as math
     import matplotlib.tri as mtri
+    from mayavi import mlab
     nr = np.size(svals)
     if (nr == 1):
         s= [svals]
@@ -255,12 +256,17 @@ def isotoro(r,z,zeta,svals,*args,**kwargs):
     for k in range(0,nr):
         if (len(args)==0):
             tsurf=h.plot_trisurf(vertex[:,0,k],vertex[:,1,k],vertex[:,2,k], triangles=tri.triangles,color='red',shade='yes',linewidths=0.0)
+            #tsurf=mlab.triangular_mesh(vertex[:,0,k],vertex[:,1,k],vertex[:,2,k], tri.triangless)
         else:
+            # Matplotlib way (SLOW)
             vals = args[0][s[k],:,:].T.flatten()
             colors = np.mean(vals[tri.triangles], axis=1)
             tsurf=h.plot_trisurf(vertex[:,0,k],vertex[:,1,k],vertex[:,2,k], triangles=tri.triangles,cmap='jet',shade='yes',linewidths=0.0)
             tsurf.set_array(colors)
             tsurf.autoscale()
+            #MAYAVI Way (need to figure out how to embed)
+            #vals = args[0][s[k],:,:].T.flatten()
+            #tsurf=mlab.triangular_mesh(vertex[:,0,k],vertex[:,1,k],vertex[:,2,k], tri.triangles, scalars=vals, colormap='jet')
     if (test==0):
         pyplot.show()
     return h

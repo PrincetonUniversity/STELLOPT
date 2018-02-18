@@ -74,6 +74,9 @@
               <height>200</height>
              </size>
             </property>
+            <property name="autoFillBackground">
+             <bool>true</bool>
+            </property>
             <property name="styleSheet">
              <string notr="true"/>
             </property>
@@ -81,7 +84,7 @@
              <string>Plot Options</string>
             </property>
             <property name="flat">
-             <bool>false</bool>
+             <bool>true</bool>
             </property>
             <property name="checkable">
              <bool>false</bool>
@@ -310,7 +313,7 @@
      <x>0</x>
      <y>0</y>
      <width>1027</width>
-     <height>30</height>
+     <height>22</height>
     </rect>
    </property>
   </widget>
