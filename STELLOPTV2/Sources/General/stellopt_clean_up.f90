@@ -300,8 +300,8 @@
 !DEC$ ENDIF
 !DEC$ IF DEFINED (REGCOIL)
                IF (sigma_regcoil_bnorm < bigno .and. (proc_string.ne.proc_string_old) ) THEN
-                  ! MUST Call 'write regcoil in'
-                  !CALL write_regcoil_namelist(iunit_out,ier)
+                  ! MUST Call 'regcoil_write in'
+                  !CALL regcoil_write_namelist(iunit_out,ier)
                   ! MUST Write out winding surface
 
                END IF
