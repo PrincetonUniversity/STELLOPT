@@ -39,7 +39,7 @@
                      -ffree-line-length-none -ffixed-line-length-none
   MPI_COMPILE_C = mpicc 
   MPI_LINK = /opt/local/bin/mpif90
-  MPI_LINK = mpicc -shared 
+  MPI_LINK = mpicc -shared  -Wl,-no_compact_unwind
 
 #######################################################################
 #            NAG Options
