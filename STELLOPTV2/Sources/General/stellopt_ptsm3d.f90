@@ -66,6 +66,9 @@
 !     Do this for each (kx,ky) pair focusing only on a range defined
 !     by theta_k and local_npol
 !----------------------------------------------------------------------
+      IF (lscreen) WRITE(6,'(a)') &
+      &  ' ------------------- BEGIN PTSM3D CALCULATION &
+      & ------------------- '
 
       s = s0 
       Fa = phiedge
@@ -220,7 +223,9 @@
       CALL PTSM3D_compute_triplets
 
       CALL PTSM3D_compute_targets
-      
+     
+      PRINT *, "PTSM3D target_12f: ", target_12f 
+      PRINT *, "PTSM3D target_qst: ", target_qst 
       IF (opt_target == 'zf') ptsm3d_target = target_12f
       IF (opt_target == 'nzf') ptsm3d_target = target_qst
       IF (opt_target == 'combo') ptsm3d_target = target_12f+target_qst 
@@ -230,5 +235,9 @@
       CALL PTSM3D_finalize_itg_solve
 
       CALL PTSM3D_finalize_geom
+
+      IF (lscreen) WRITE(6,'(a)') &
+      &  ' ------------------- END PTSM3D CALCULATION &
+      & -------------------'
 
       END SUBROUTINE stellopt_ptsm3d

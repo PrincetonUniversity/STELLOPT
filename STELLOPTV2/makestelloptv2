@@ -166,4 +166,4 @@ $(LIB_TERPSICHORE) :
 
 #Construct PTSM3D library.
 $(LIB_PTSM3D) :
-	@cd $(PTSM3D_DIR); make; ar -cruv $(LIB_PTSM3D) *.o 
+	@cd $(PTSM3D_DIR); make; ar -cruv $(LIB_PTSM3D) *.o *.mod

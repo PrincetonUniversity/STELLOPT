@@ -149,7 +149,7 @@
 #            PTSM3D Options
 #######################################################################
   LPTSM3D = T
-  PTSM3D_PATH = /u/bfaber/PTSM3D_opt
+  PTSM3D_PATH = /p/stellopt/ANALYSIS/bfaber/ptsm3d_opt
   PTSM3D_INC = -I($PTSM3D_PATH)
   PTSM3D_DIR = $(PTSM3D_PATH)
   LIB_PTSM3D = libptsm3d.a
