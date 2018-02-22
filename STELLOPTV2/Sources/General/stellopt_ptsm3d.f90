@@ -267,6 +267,6 @@
 
       IF (lscreen) WRITE(6,'(a)') &
       &  ' -------------------------  END PTSM3D CALCULATION &
-      &  -------------------------'
+      &  ------------------------'
 
       END SUBROUTINE stellopt_ptsm3d

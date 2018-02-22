@@ -59,7 +59,7 @@
          targets(mtargets) = target
          sigmas(mtargets)  = sigma
 ! Need to add case if ptsm3d_target is zero
-         vals(mtargets)    = 1.0/ptsm3d_target
+         vals(mtargets)    = -1.0*ptsm3d_target
          IF (iflag == 1) WRITE(iunit_out,'(3ES22.12E3)') target,sigma,0.0,vals(mtargets)
       ELSE
          IF (sigma < bigno) THEN
