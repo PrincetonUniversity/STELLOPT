@@ -54,7 +54,7 @@
       IF (iflag < 0) RETURN
 !DEC$ IF DEFINED (REGCOIL)
       IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') &
-         'REGCOIL CHI2_B ',1,4
+         'REGCOIL_CHI2_B ',1,4
       IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA  DUMMY  CHI'
       IF (niter >= 0) THEN
         IF (sigma < bigno) THEN
