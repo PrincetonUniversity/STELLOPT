@@ -38,7 +38,7 @@
 !
 !----------------------------------------------------------------------
       INTEGER :: maxPnt, nalpha0_, ialpha, i, iunit, ik, ier 
-      INTEGER :: j, k
+      INTEGER :: j, k, global_npol
 !      REAL(rprec) :: a, s, Ba, Fa, iot,iotp,qprim, &
 !                     pval, pprime, dalpha, alpha0_start_, phi0, &
 !                     th, jac1, c, &
@@ -92,12 +92,25 @@
       dtheta = pi2/real(nz0,rprec)
       maxTheta = nint(abs(1.0/qprim*1.0/dky))+local_npol*pi
       maxPnt = nint(2.0/dtheta*maxTheta)
-print *, maxTheta, maxPnt
+      global_npol = nint(maxTheta/pi)
+
       CALL PTSM3D_initialize_geom(maxPnt)
 
       CALL PTSM3D_set_norms 
 
       CALL PTSM3D_initialize_itg_solve
+
+iunit = 50000
+CALL safe_open(iunit,iflag,"gist_temp",'unknown','formatted')
+WRITE(iunit,'(A)') '&PARAMETERS'
+WRITE(iunit,"(A,F12.7)") "s0 = ",s
+WRITE(iunit,"(A,F12.7)") "minor_a = ", a
+WRITE(iunit,"(A,F12.7)") "Bref = ", Ba
+WRITE(iunit,"(A,F12.7)") "q0 = ",ABS(q)
+WRITE(iunit,"(A,F12.7)") "shat = ",shat 
+WRITE(iunit,"(A,I5)") "gridpoints = ",maxPnt
+WRITE(iunit,"(A,I5)") "n_pol = ",1
+WRITE(iunit,"(A)") "/"
 
       !DO k=lk1+1,lk2
       !  DO j=lj1,lj2
@@ -217,9 +230,11 @@ print *, maxTheta, maxPnt
             L2 = two*sqrt(s)*(dBds + c*(gaa*gst-gsa*gat)*dBdt/(4*Bhat**2))
             dBdx(i-1) = L1
             dBdy(i-1) = L2
-if (i == 1) print *, gxx(i-1),gxy(i-1), gyy(i-1), modB(i-1), jac(i-1),&
-  & dBdx(i-1), dBdy(i-1)
+WRITE(iunit,"(9ES20.10)") g11,g12,g22,Bhat,abs_jac,L2,&
+  &L1,th,0.0; CALL FLUSH(iunit)
+
           ENDDO ! End loop over field line
+CLOSE(iunit)
  
           ! Solve ITG dispersion relation for each (kx,ky)
           !CALL PTSM3D_itg_solve(j,k)
