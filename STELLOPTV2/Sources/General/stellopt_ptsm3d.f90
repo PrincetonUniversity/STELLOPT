@@ -51,7 +51,7 @@
       REAL(rprec) :: gaa, gat, gst, gsa, gss, alpha, thetastar
       REAL(rprec) :: dBds, dBda, q, dpdx, sqrtg, absb, u, v, R, Z
       REAL(rprec) :: temp1, temp2, temp3, abserr, alpha0_end
-      REAL(rprec) :: alpha0_start
+      REAL(rprec) :: alpha0_start, maxTheta
       REAL(rprec) :: g11,g12,g22,Bhat,abs_jac,L1,L2,dBdt
       REAL(rprec), DIMENSION(3) :: sflCrd0,sflCrd, sflCrd_sav, gradS,gradThetaStar,&
                                    gradPhi,mag,gradAlpha, wrk, gradB,R_grad,Z_grad,&
@@ -67,8 +67,8 @@
 !     by theta_k and local_npol
 !----------------------------------------------------------------------
       IF (lscreen) WRITE(6,'(a)') &
-      &  ' ------------------- BEGIN PTSM3D CALCULATION &
-      & ------------------- '
+      &  ' -------------------------  BEGIN PTSM3D CALCULATION &
+      &  ------------------------- '
 
       s = s0 
       Fa = phiedge
@@ -83,25 +83,33 @@
       shat = two*s/q*qprim
       CALL get_equil_p(s,pval,ier,pprime)
       dpdx = -4.0_rprec*sqrt(s)/Ba**2 * pprime*mu0
-      maxPnt = nz0*local_npol
-
+      !maxPnt = nz0*local_npol
+      
       q0 = q
       qprime = q0*shat/(2.0*s0) 
       Bref = Ba
       minor_a = a
-      CALL PTSM3D_initialize_geom
+      dtheta = pi2/real(nz0,rprec)
+      maxTheta = nint(abs(1.0/qprim*1.0/dky))+local_npol*pi
+      maxPnt = nint(2.0/dtheta*maxTheta)
+print *, maxTheta, maxPnt
+      CALL PTSM3D_initialize_geom(maxPnt)
+
       CALL PTSM3D_set_norms 
+
       CALL PTSM3D_initialize_itg_solve
 
-      DO k=lk1+1,lk2
-        DO j=lj1,lj2
+      !DO k=lk1+1,lk2
+      !  DO j=lj1,lj2
           sflCrd0(1) = s
-          sflCrd0(2) = 1.0/(2.0*s*qprime)*kx(j)/ky(k)
+          !sflCrd0(2) = 1.0/(2.0*s*qprime)*kx(j)/ky(k)
+          sflCrd0(2) = 0.0 
           !dtheta = pi2*local_npol/maxPnt
           phi0 = 0.0
           sflCrd0(3) = phi0
           DO i = 1, maxPnt ! Loop over field line
-            th = -pi*local_npol + (i-1)*dtheta
+            !th = -pi*local_npol + (i-1)*dtheta
+            th = -maxTheta + (i-1)*dtheta
             sflCrd(1) = sflCrd0(1)
             sflCrd(2) = th
             sflCrd(3) = sflCrd0(3) + q*(th-sflCrd0(2))
@@ -209,13 +217,15 @@
             L2 = two*sqrt(s)*(dBds + c*(gaa*gst-gsa*gat)*dBdt/(4*Bhat**2))
             dBdx(i-1) = L1
             dBdy(i-1) = L2
- 
+if (i == 1) print *, gxx(i-1),gxy(i-1), gyy(i-1), modB(i-1), jac(i-1),&
+  & dBdx(i-1), dBdy(i-1)
           ENDDO ! End loop over field line
  
           ! Solve ITG dispersion relation for each (kx,ky)
-          CALL PTSM3D_itg_solve(j,k)
-        ENDDO
-      ENDDO ! End loop over (kx,ky)
+          !CALL PTSM3D_itg_solve(j,k)
+          CALL PTSM3D_itg_solve
+        !ENDDO
+      !ENDDO ! End loop over (kx,ky)
 
       ! Call the rest of the PTSM3D functions
       CALL PTSM3D_initialize_triplets
@@ -237,7 +247,7 @@
       CALL PTSM3D_finalize_geom
 
       IF (lscreen) WRITE(6,'(a)') &
-      &  ' ------------------- END PTSM3D CALCULATION &
-      & -------------------'
+      &  ' -------------------------  END PTSM3D CALCULATION &
+      &  -------------------------'
 
       END SUBROUTINE stellopt_ptsm3d
