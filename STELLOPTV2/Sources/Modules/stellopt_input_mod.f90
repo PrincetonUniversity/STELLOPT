@@ -1239,6 +1239,9 @@
          IF (dregcoil_winding_surface_separation_opt > 0) &
                  WRITE(iunit,outflt) 'DREGCOIL_WINDING_SURFACE_SEPARATION', &
                  dregcoil_winding_surface_separation_opt
+         WRITE(iunit,'(2X,A,E22.14)') &
+                'REGCOIL_CURRENT_DENSITY = ', &
+                regcoil_current_density
       END IF
       IF (lregcoil_current_density_opt) THEN
          WRITE(iunit,'(2X,A,E22.14)') &
@@ -2062,6 +2065,7 @@
          WRITE(iunit,outflt) 'SIGMA_COIL_CHI2_B',sigma_regcoil_chi2_b
          WRITE(iunit,outflt) 'TARGET_CURRENT_DENSITY',target_regcoil_current_density
          WRITE(iunit,outflt) 'SIGMA_CURRENT_DENSITY',sigma_regcoil_current_density
+         WRITE(iunit,outflt) 'REGCOIIL_CURRENT_DENSITY',regcoil_current_density
       END IF
       WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
       WRITE(iunit,'(A)') '!         EQUILIBRIUM/GEOMETRY OPTIMIZATION PARAMETERS' 

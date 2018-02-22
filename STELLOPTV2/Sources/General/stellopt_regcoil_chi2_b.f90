@@ -90,15 +90,14 @@
       ! JCS : Probably don't need to re-read the namelist, but I like 
       ! to do things in baby-steps with lots of debugging opptions and
       ! info
-      !write(6,'(a)') '<----safe_open'
-      !CALL safe_open(iunit, iflag, TRIM('input.'//TRIM(proc_string)), &
+      ! write(6,'(a)') '<----safe_open'
+      ! CALL safe_open(iunit, iflag, TRIM('input.'//TRIM(proc_string)), &
       !          'old', 'formatted')
-      !write(6,'(a)') '<----read_regcoil_input'
-      !call regcoil_read_input(iunit, iflag)
+      ! write(6,'(a)') '<----read_regcoil_input'
+      ! call regcoil_read_input(iunit, iflag)
       ! write(6,'(a)') '<----Validate'
       call validate_input()
       ! write(6,'(a)') '<----Compute lambda'
-      !if (allocated(lambda)) deallocate(lambda)
       call compute_lambda(lscreen)
 
       ! Define the position vector and normal vector at each grid point for
@@ -128,19 +127,21 @@
       case (5)
       ! write(6,'(a)') '<----auto_reg solve'
          call auto_regularization_solve(lscreen)
+         ! Now, the value we want should be in the variable
+         ! 'chi2_B_target'
       case default
          print *,"Invalid general_option:",general_option
          stop
       end select
     
-!      write(6,'(a)') '<----safe_open'
-!      CALL safe_open(iunit, iflag, TRIM('regcoil_in.'// &
-!                TRIM(proc_string)), 'replace', 'formatted')
-!      write(6,'(a)') '<----write_output'
-!      call write_output()
-!
-!      write(6,'(a)') '<----flush'
-!      CALL FLUSH(iunit)
+      !      write(6,'(a)') '<----safe_open'
+      !      CALL safe_open(iunit, iflag, TRIM('regcoil_in.'// &
+      !                TRIM(proc_string)), 'replace', 'formatted')
+      !      write(6,'(a)') '<----write_output'
+      !      call write_output()
+      !
+      !      write(6,'(a)') '<----flush'
+      !      CALL FLUSH(iunit)
 
       ! print *, chi2_B_target
       ! print *,"REGCOIL complete. Total time=",totalTime,"sec."

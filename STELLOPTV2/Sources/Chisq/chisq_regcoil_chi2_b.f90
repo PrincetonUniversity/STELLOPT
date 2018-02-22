@@ -70,7 +70,7 @@
       ELSE
          ! IF (sigma < bigno .and. myid == master) THEN
          IF (sigma < bigno) THEN
-           write(6,'(a,i12)') '<---- niter=', niter
+           ! write(6,'(a,i12)') '<---- niter=', niter
             mtargets = mtargets + 1
             IF (niter == -2) target_dex(mtargets)=jtarget_regcoil_chi2_b
            ! Read the regcoil namelist from the input."id_string" file
