@@ -100,17 +100,19 @@
 
       CALL PTSM3D_initialize_itg_solve
 
-iunit = 50000
-CALL safe_open(iunit,iflag,"gist_temp",'unknown','formatted')
-WRITE(iunit,'(A)') '&PARAMETERS'
-WRITE(iunit,"(A,F12.7)") "s0 = ",s
-WRITE(iunit,"(A,F12.7)") "minor_a = ", a
-WRITE(iunit,"(A,F12.7)") "Bref = ", Ba
-WRITE(iunit,"(A,F12.7)") "q0 = ",ABS(q)
-WRITE(iunit,"(A,F12.7)") "shat = ",shat 
-WRITE(iunit,"(A,I5)") "gridpoints = ",maxPnt
-WRITE(iunit,"(A,I5)") "n_pol = ",1
-WRITE(iunit,"(A)") "/"
+      if (write_gist) then
+        iunit = 50000
+        CALL safe_open(iunit,iflag,"gist_temp",'unknown','formatted')
+        WRITE(iunit,'(A)') '&PARAMETERS'
+        WRITE(iunit,"(A,F12.7)") "s0 = ",s
+        WRITE(iunit,"(A,F12.7)") "minor_a = ", a
+        WRITE(iunit,"(A,F12.7)") "Bref = ", Ba
+        WRITE(iunit,"(A,F12.7)") "q0 = ",ABS(q)
+        WRITE(iunit,"(A,F12.7)") "shat = ",shat 
+        WRITE(iunit,"(A,I5)") "gridpoints = ",maxPnt
+        WRITE(iunit,"(A,I5)") "n_pol = ",1
+        WRITE(iunit,"(A)") "/"
+      end if
 
       !DO k=lk1+1,lk2
       !  DO j=lj1,lj2
@@ -230,11 +232,13 @@ WRITE(iunit,"(A)") "/"
             L2 = two*sqrt(s)*(dBds + c*(gaa*gst-gsa*gat)*dBdt/(4*Bhat**2))
             dBdx(i-1) = L1
             dBdy(i-1) = L2
-WRITE(iunit,"(9ES20.10)") g11,g12,g22,Bhat,abs_jac,L2,&
-  &L1,th,0.0; CALL FLUSH(iunit)
+            if (write_gist) then
+              WRITE(iunit,"(9ES20.10)") g11,g12,g22,Bhat,abs_jac,L2,&
+              &L1,th,0.0; CALL FLUSH(iunit)
+            end if
 
           ENDDO ! End loop over field line
-CLOSE(iunit)
+          if (write_gist) CLOSE(iunit)
  
           ! Solve ITG dispersion relation for each (kx,ky)
           !CALL PTSM3D_itg_solve(j,k)
