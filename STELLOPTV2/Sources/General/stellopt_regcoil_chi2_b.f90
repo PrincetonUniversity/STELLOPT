@@ -74,14 +74,15 @@
       ! original value here
       nlambda = regcoil_nlambda
       ! write(6,'(a)') '<----safe_open'
-      CALL safe_open(iunit, iflag, TRIM('regcoil_in.'// &
-               TRIM(proc_string)), 'replace', 'formatted')
-      ! write(6,'(a)') '<----regcoil_write_input'
-      CALL regcoil_write_input(proc_string, iunit, istat)
-      ! write(6,'(a)') '<----flush'
-      CALL FLUSH(iunit)
-      ! write(6,'(a)') '<----close'
-      CLOSE(iunit)
+      ! JCS: Testing NOT writing the regcoil input
+      !!!!!    CALL safe_open(iunit, iflag, TRIM('regcoil_in.'// &
+      !!!!!             TRIM(proc_string)), 'replace', 'formatted')
+      !!!!!    ! write(6,'(a)') '<----regcoil_write_input'
+      !!!!!    CALL regcoil_write_input(proc_string, iunit, istat)
+      !!!!!    ! write(6,'(a)') '<----flush'
+      !!!!!    CALL FLUSH(iunit)
+      !!!!!    ! write(6,'(a)') '<----close'
+      !!!!!    CLOSE(iunit)
 
       ! input file should be written. Now perform regcoil operation 
       ! This should be *almost* a duplicate of the main code from
