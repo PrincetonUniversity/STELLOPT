@@ -26,7 +26,7 @@
       USE stellopt_runtime
       USE stellopt_targets
       USE stellopt_input_mod
-      USE stellopt_vars, ONLY: nlambda_regcoil
+      USE stellopt_vars, ONLY: regcoil_nlambda
       USE equil_vals, ONLY: curtor
 !DEC$ IF DEFINED (REGCOIL)
       USE regcoil_input_mod 
@@ -77,10 +77,10 @@
            ! WRITE(6,'(a,a)') '<---- id_string=', id_string
         
            CALL safe_open(iunit, iflag, TRIM('input.'//TRIM(id_string)), 'old', 'formatted')
-           CALL read_regcoil_input(iunit, iflag)
+           CALL regcoil_read_input(iunit, iflag)
            ! save an internal copy of the value of nlambda here (regcoil may
            ! overwrite it)
-           nlambda_regcoil = nlambda
+           regcoil_nlambda = nlambda
            close(iunit)
            IF (iflag < 0) THEN
               WRITE(6,*) '!!!!!!!!!!!!ERRROR!!!!!!!!!!!!!!'

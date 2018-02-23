@@ -19,15 +19,15 @@
 !DEC$ IF DEFINED (REGCOIL)
       ! REGCOIL files
       USE regcoil_variables
-      USE regcoil_input_mod
-      USE validate_regcoil_input
-      USE compute_regcoil_lambda
-      USE init_regcoil_plasma
-      USE init_regcoil_coil_surface
-      USE read_regcoil_bnorm
-      USE build_regcoil_matrices
+      USE regcoil_input_mod, ONLY: regcoil_write_input
+      USE regcoil_validate_input
+      USE regcoil_compute_lambda
+      USE regcoil_init_plasma
+      USE regcoil_init_coil_surface
+      USE regcoil_read_bnorm
+      USE regcoil_build_matrices
       USE regcoil_auto_regularization_solve
-      USE write_regcoil_output
+      USE regcoil_write_output
 !DEC$ ENDIF
 
 !-----------------------------------------------------------------------
@@ -72,12 +72,12 @@
       current_density_target = regcoil_current_density
       ! regcoil will overwrite nlambda - need to restore it to the
       ! original value here
-      nlambda = nlambda_regcoil
+      nlambda = regcoil_nlambda
       ! write(6,'(a)') '<----safe_open'
       CALL safe_open(iunit, iflag, TRIM('regcoil_in.'// &
                TRIM(proc_string)), 'replace', 'formatted')
-      ! write(6,'(a)') '<----write_regcoil_input'
-      CALL write_regcoil_input(proc_string, iunit, istat)
+      ! write(6,'(a)') '<----regcoil_write_input'
+      CALL regcoil_write_input(proc_string, iunit, istat)
       ! write(6,'(a)') '<----flush'
       CALL FLUSH(iunit)
       ! write(6,'(a)') '<----close'
@@ -93,7 +93,7 @@
       !CALL safe_open(iunit, iflag, TRIM('input.'//TRIM(proc_string)), &
       !          'old', 'formatted')
       !write(6,'(a)') '<----read_regcoil_input'
-      !call read_regcoil_input(iunit, iflag)
+      !call regcoil_read_input(iunit, iflag)
       ! write(6,'(a)') '<----Validate'
       call validate_input()
       ! write(6,'(a)') '<----Compute lambda'
