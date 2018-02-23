@@ -68,7 +68,7 @@
 !----------------------------------------------------------------------
       IF (lscreen) WRITE(6,'(a)') &
       &  ' -------------------------  BEGIN PTSM3D CALCULATION &
-      &  ------------------------- '
+      & ------------------------ '
 
       s = s0 
       Fa = phiedge
@@ -252,12 +252,19 @@
       CALL PTSM3D_compute_triplets
 
       CALL PTSM3D_compute_targets
-     
-      PRINT *, "PTSM3D target_12f: ", target_12f 
-      PRINT *, "PTSM3D target_qst: ", target_qst 
-      IF (opt_target == 'zf') ptsm3d_target = target_12f
-      IF (opt_target == 'nzf') ptsm3d_target = target_qst
-      IF (opt_target == 'combo') ptsm3d_target = target_12f+target_qst 
+      
+      IF (opt_target == 'zf') THEN
+        ptsm3d_target = target_12f
+        IF (lscreen) WRITE(6,"(A,F12.7)"),"TARGET_12F  : ",target_12f 
+      END IF
+      IF (opt_target == 'nzf') THEN
+        ptsm3d_target = target_qst
+        IF (lscreen) WRITE(6,"(A,F12.7)"),"TARGET_QST  : ",target_qst 
+      END IF
+      IF (opt_target == 'combo') THEN
+        ptsm3d_target = target_12f+target_qst 
+        IF (lscreen) WRITE(6,"(A,F12.7)"),"PTSM3D_TARGET   : ",ptsm3d_target
+      END IF
 
       CALL PTSM3D_finalize_triplets
 
@@ -267,6 +274,6 @@
 
       IF (lscreen) WRITE(6,'(a)') &
       &  ' -------------------------  END PTSM3D CALCULATION &
-      &  ------------------------'
+      & --------------------------'
 
       END SUBROUTINE stellopt_ptsm3d
