@@ -12,53 +12,44 @@ def read_vmec(file):
     except KeyError:
         print("Please set environment variable STELLOPT_PATH")
         sys.exit(1)
-    #libstell = ct.cdll.LoadLibrary("/u/slazerso/src/STELLOPT_GCC/LIBSTELL/Release/libstell.so")
-    #libstell = ct.cdll.LoadLibrary("/u/slazerso/bin/libstell.so")
-    #libstell = ct.cdll.LoadLibrary("/home/jonathan/bin/libstell.so")
     # Read File
     read_wout = getattr(libstell,'__read_wout_mod_MOD_readw_and_open')
-    read_wout.argparse=[ct.c_char_p, ct.c_int, ct.c_int, ct.c_int]
+    read_wout.argtypes=[ct.c_char_p, ct.POINTER(ct.c_int), ct.POINTER(ct.c_int), ct.c_long]
     read_wout.restype=None
     ierr = ct.c_int(0)
     iopen = ct.c_int(0)
-    read_wout(file.encode('UTF-8'), ct.byref(ierr), iopen, len(file))
+    read_wout(file.encode('UTF-8'), ct.byref(ierr), ct.byref(iopen), len(file))
     # Setup Arrays
     vmec_data={}
-    vmec_data['ns']=ct.c_int.in_dll(libstell,'__read_wout_mod_MOD_ns').value
-    vmec_data['nfp']=ct.c_int.in_dll(libstell,'__read_wout_mod_MOD_nfp').value
-    vmec_data['mpol']=ct.c_int.in_dll(libstell,'__read_wout_mod_MOD_mpol').value
-    vmec_data['ntor']=ct.c_int.in_dll(libstell,'__read_wout_mod_MOD_ntor').value
-    vmec_data['mnmax']=ct.c_int.in_dll(libstell,'__read_wout_mod_MOD_mnmax').value
-    vmec_data['mnmax_nyq']=ct.c_int.in_dll(libstell,'__read_wout_mod_MOD_mnmax_nyq').value
-    vmec_data['iasym']=ct.c_int.in_dll(libstell,'__read_wout_mod_MOD_iasym').value
-    vmec_data['ierr_vmec']=ct.c_int.in_dll(libstell,'__read_wout_mod_MOD_ierr_vmec').value
-    vmec_data['wb']=ct.c_double.in_dll(libstell,'__read_wout_mod_MOD_wb').value
-    vmec_data['wp']=ct.c_double.in_dll(libstell,'__read_wout_mod_MOD_wp').value
-    vmec_data['gamma']=ct.c_double.in_dll(libstell,'__read_wout_mod_MOD_gamma').value
-    vmec_data['pfac']=ct.c_double.in_dll(libstell,'__read_wout_mod_MOD_pfac').value
-    vmec_data['rmax_surf']=ct.c_double.in_dll(libstell,'__read_wout_mod_MOD_rmax_surf').value
-    vmec_data['rmin_surf']=ct.c_double.in_dll(libstell,'__read_wout_mod_MOD_rmin_surf').value
-    vmec_data['zmax_surf']=ct.c_double.in_dll(libstell,'__read_wout_mod_MOD_zmax_surf').value
-    vmec_data['aspect']=ct.c_double.in_dll(libstell,'__read_wout_mod_MOD_aspect').value
-    vmec_data['betatot']=ct.c_double.in_dll(libstell,'__read_wout_mod_MOD_betatot').value
-    vmec_data['betapol']=ct.c_double.in_dll(libstell,'__read_wout_mod_MOD_betapol').value
-    vmec_data['betator']=ct.c_double.in_dll(libstell,'__read_wout_mod_MOD_betator').value
-    vmec_data['betaxis']=ct.c_double.in_dll(libstell,'__read_wout_mod_MOD_betaxis').value
-    vmec_data['b0']=ct.c_double.in_dll(libstell,'__read_wout_mod_MOD_b0').value
-    vmec_data['version']=ct.c_double.in_dll(libstell,'__read_wout_mod_MOD_version_').value
-    vmec_data['IonLarmor']=ct.c_double.in_dll(libstell,'__read_wout_mod_MOD_ionlarmor').value
-    vmec_data['VolAvgB']=ct.c_double.in_dll(libstell,'__read_wout_mod_MOD_volavgb').value
-    vmec_data['fsql']=ct.c_double.in_dll(libstell,'__read_wout_mod_MOD_fsql').value
-    vmec_data['fsqr']=ct.c_double.in_dll(libstell,'__read_wout_mod_MOD_fsqr').value
-    vmec_data['fsqz']=ct.c_double.in_dll(libstell,'__read_wout_mod_MOD_fsqz').value
-    vmec_data['ftolv']=ct.c_double.in_dll(libstell,'__read_wout_mod_MOD_ftolv').value
-    vmec_data['Aminor']=ct.c_double.in_dll(libstell,'__read_wout_mod_MOD_aminor').value
-    vmec_data['Rmajor']=ct.c_double.in_dll(libstell,'__read_wout_mod_MOD_rmajor').value
-    vmec_data['Volume']=ct.c_double.in_dll(libstell,'__read_wout_mod_MOD_volume').value
-    vmec_data['RBtor']=ct.c_double.in_dll(libstell,'__read_wout_mod_MOD_rbtor').value
-    vmec_data['RBtor0']=ct.c_double.in_dll(libstell,'__read_wout_mod_MOD_rbtor0').value
-    vmec_data['Itor']=ct.c_double.in_dll(libstell,'__read_wout_mod_MOD_itor').value
-    vmec_data['machsq']=ct.c_double.in_dll(libstell,'__read_wout_mod_MOD_machsq').value
+    # Logical
+    varlist=['lasym','lthreed','lwout_opened']
+    for temp in varlist:
+        vmec_data[temp]=ct.c_bool.in_dll(libstell,'__read_wout_mod_MOD_'+temp).value
+    # Integers
+    varlist=['ns','nfp','mpol','ntor','mnmax','mnmax_nyq','iasym','ierr_vmec']
+    for temp in varlist:
+        vmec_data[temp]=ct.c_int.in_dll(libstell,'__read_wout_mod_MOD_'+temp).value
+    # Doubles
+    varlist=['wb','wp','gamma','pfac','rmax_surf','rmin_surf','zmax_surf',\
+             'aspect','betatot','betapol','betator','betaxis','b0','version_',\
+             'ionlarmor','volavgb','fsql','fsqr','fsqz','ftolv','aminor','rmajor',\
+             'volume','rbtor','rbtor0','itor','machsq']
+    for temp in varlist:
+        vmec_data[temp]=ct.c_double.in_dll(libstell,'__read_wout_mod_MOD_'+temp).value
+    # REAL Arrays (ns)
+    varlist = ['iotas','iotaf','presf','phipf','chipf','chi','phi','mass',\
+               'pres','beta_vol','phip','buco','bvco','vp','overr','jcuru',\
+               'jcurv','specw','jdotb','dmerc','dwell','dcurr','dgeod','equif']
+    arr_size = vmec_data['ns']
+    ftemp = ct.POINTER(ct.c_double)
+    for temp in varlist:
+        vmec_data[temp]=npct.as_array(ftemp.in_dll(libstell,'__read_wout_mod_MOD_'+temp),(arr_size,1))
+    # REAL Arrays (mnmax)
+    ftemp = ct.POINTER(ct.c_double)
+    vmec_data['xm']=npct.as_array(ftemp.in_dll(libstell,'__read_wout_mod_MOD_xm'),(vmec_data['mnmax'],1))
+    vmec_data['xn']=npct.as_array(ftemp.in_dll(libstell,'__read_wout_mod_MOD_xn'),(vmec_data['mnmax'],1))
+    vmec_data['xm_nyq']=npct.as_array(ftemp.in_dll(libstell,'__read_wout_mod_MOD_xm_nyq'),(vmec_data['mnmax_nyq'],1))
+    vmec_data['xn_nyq']=npct.as_array(ftemp.in_dll(libstell,'__read_wout_mod_MOD_xn_nyq'),(vmec_data['mnmax_nyq'],1))
     ## Array values 1D
     ftemp=ct.POINTER(ct.c_double)
     ns = vmec_data['ns']
@@ -67,36 +58,6 @@ def read_vmec(file):
     ns_size = (ns,1)
     mn_size = (mnmax,1)
     mnnyq_size = (mnmax_nyq,1)
-    vmec_data['iotas']=npct.as_array(ftemp.in_dll(libstell,'__read_wout_mod_MOD_iotas'),ns_size)
-    vmec_data['iotaf']=npct.as_array(ftemp.in_dll(libstell,'__read_wout_mod_MOD_iotaf'),ns_size)
-    vmec_data['presf']=npct.as_array(ftemp.in_dll(libstell,'__read_wout_mod_MOD_presf'),ns_size)
-    vmec_data['phipf']=npct.as_array(ftemp.in_dll(libstell,'__read_wout_mod_MOD_phipf'),ns_size)
-    #vmec_data['qfact']=npct.as_array(ftemp.in_dll(libstell,'__read_wout_mod_MOD_qfact'),ns_size)
-    vmec_data['chipf']=npct.as_array(ftemp.in_dll(libstell,'__read_wout_mod_MOD_chipf'),ns_size)
-    vmec_data['chi']=npct.as_array(ftemp.in_dll(libstell,'__read_wout_mod_MOD_chi'),ns_size)
-    vmec_data['phi']=npct.as_array(ftemp.in_dll(libstell,'__read_wout_mod_MOD_phi'),ns_size)
-    vmec_data['mass']=npct.as_array(ftemp.in_dll(libstell,'__read_wout_mod_MOD_mass'),ns_size)
-    vmec_data['pres']=npct.as_array(ftemp.in_dll(libstell,'__read_wout_mod_MOD_pres'),ns_size)
-    vmec_data['betavol']=npct.as_array(ftemp.in_dll(libstell,'__read_wout_mod_MOD_beta_vol'),ns_size)
-    vmec_data['xm']=npct.as_array(ftemp.in_dll(libstell,'__read_wout_mod_MOD_xm'),mn_size)
-    vmec_data['xn']=npct.as_array(ftemp.in_dll(libstell,'__read_wout_mod_MOD_xn'),mn_size)
-    vmec_data['xm_nyq']=npct.as_array(ftemp.in_dll(libstell,'__read_wout_mod_MOD_xm_nyq'),mnnyq_size)
-    vmec_data['xn_nyq']=npct.as_array(ftemp.in_dll(libstell,'__read_wout_mod_MOD_xn_nyq'),mnnyq_size)
-    vmec_data['phip']=npct.as_array(ftemp.in_dll(libstell,'__read_wout_mod_MOD_phip'),ns_size)
-    vmec_data['buco']=npct.as_array(ftemp.in_dll(libstell,'__read_wout_mod_MOD_buco'),ns_size)
-    vmec_data['bvco']=npct.as_array(ftemp.in_dll(libstell,'__read_wout_mod_MOD_bvco'),ns_size)
-    vmec_data['vp']=npct.as_array(ftemp.in_dll(libstell,'__read_wout_mod_MOD_vp'),ns_size)
-    vmec_data['overr']=npct.as_array(ftemp.in_dll(libstell,'__read_wout_mod_MOD_overr'),ns_size)
-    vmec_data['jcuru']=npct.as_array(ftemp.in_dll(libstell,'__read_wout_mod_MOD_jcuru'),ns_size)
-    vmec_data['jcurv']=npct.as_array(ftemp.in_dll(libstell,'__read_wout_mod_MOD_jcurv'),ns_size)
-    vmec_data['specw']=npct.as_array(ftemp.in_dll(libstell,'__read_wout_mod_MOD_specw'),ns_size)
-    vmec_data['jdotb']=npct.as_array(ftemp.in_dll(libstell,'__read_wout_mod_MOD_jdotb'),ns_size)
-    vmec_data['Dmerc']=npct.as_array(ftemp.in_dll(libstell,'__read_wout_mod_MOD_dmerc'),ns_size)
-    vmec_data['Dshear']=npct.as_array(ftemp.in_dll(libstell,'__read_wout_mod_MOD_dshear'),ns_size)
-    vmec_data['Dwell']=npct.as_array(ftemp.in_dll(libstell,'__read_wout_mod_MOD_dwell'),ns_size)
-    vmec_data['Dcurr']=npct.as_array(ftemp.in_dll(libstell,'__read_wout_mod_MOD_dcurr'),ns_size)
-    vmec_data['Dgeod']=npct.as_array(ftemp.in_dll(libstell,'__read_wout_mod_MOD_dgeod'),ns_size)
-    vmec_data['equif']=npct.as_array(ftemp.in_dll(libstell,'__read_wout_mod_MOD_equif'),ns_size)
     ## 2D Arrays
     mn2d_size = (ns, mnmax)
     mn2d_nyq_size = (ns, mnmax_nyq)
@@ -226,7 +187,7 @@ def isotoro(r,z,zeta,svals,*args,**kwargs):
     import mpl_toolkits.mplot3d as mplot3d
     import math as math
     import matplotlib.tri as mtri
-    from mayavi import mlab
+    #from mayavi import mlab
     nr = np.size(svals)
     if (nr == 1):
         s= [svals]
@@ -311,33 +272,221 @@ def calc_jll(vmec_data, theta, zeta ):
     jll = (bu*ju+bv*jv)/(g*b)
     return jll
 
+def read_vmec_input(iunit,istat):
+    import os, sys
+    import ctypes as ct
+    import numpy.ctypeslib as npct
+    import numpy as np
+    # Load Libraries
+    try:
+        libstell = ct.cdll.LoadLibrary(os.environ["STELLOPT_PATH"]+"/LIBSTELL/Release/libstell.so")
+        qtCreatorPath=os.environ["STELLOPT_PATH"]
+    except KeyError:
+        print("Please set environment variable STELLOPT_PATH")
+        sys.exit(1)
+    # Read File
+    read_indata = getattr(libstell,'__vmec_input_MOD_read_indata_namelist')
+    read_indata.argparse=[ct.c_int, ct.c_int]
+    read_indata.restype=None
+    iunit_temp = ct.c_int(iunit)
+    istat_temp = ct.c_int(0)
+    read_indata_namelist(iunit_temp,istat_temp)
+    istat = istat_temp
+    # Process output
+    input_data={}
+    input_data['nfp']=ct.c_int.in_dll(libstell,'__vmec_input_MOD_nfp').value
+    return input_data
+
+def safe_open(iunit,istat,filename,filestat,fileform,record_in,access_in,delim_in):
+    import os, sys
+    import ctypes as ct
+    #import numpy.ctypeslib as npct
+    #import numpy as np
+    # Load Libraries
+    try:
+        libstell = ct.cdll.LoadLibrary(os.environ["STELLOPT_PATH"]+"/LIBSTELL/Release/libstell.so")
+        qtCreatorPath=os.environ["STELLOPT_PATH"]
+    except KeyError:
+        print("Please set environment variable STELLOPT_PATH")
+        sys.exit(1)
+    # Handle interface
+    safe_open_h = getattr(libstell,'__safe_open_mod_MOD_safe_open')
+    # SUBROUTINE safe_open(int iunit, int istat, char filename, char filestat, char fileform, int record_in, char access_in, char delim_in)
+    safe_open_h.argtypes= [ ct.POINTER(ct.c_int), ct.POINTER(ct.c_int), ct.c_char_p, ct.c_char_p, ct.c_char_p, \
+        ct.POINTER(ct.c_int), ct.c_char_p, ct.c_char_p, \
+        ct.c_long, ct.c_long, ct.c_long, ct.c_long, ct.c_long]
+    safe_open_h.restype=None
+    iunit_temp = ct.c_int(iunit)
+    istat_temp = ct.c_int(istat)
+    record_in_temp = ct.c_int(record_in)
+    opt1 = ct.c_bool(True)
+    opt2 = ct.c_bool(True)
+    opt3 = ct.c_bool(True)
+    safe_open_h(ct.byref(iunit_temp),ct.byref(istat_temp), \
+        filename.encode('UTF-8'),filestat.encode('UTF-8'),fileform.encode('UTF-8'),\
+        ct.byref(record_in_temp),access_in.encode('UTF-8'),delim_in.encode('UTF-8'), \
+        len(filename),len(filestat),len(fileform),len(access_in),len(delim_in))
+    istat = istat_temp
+    iunit = iunit_temp
+    istat = istat_temp
+    return istat
+
+def read_indata_namelist(iunit,istat):
+    import os, sys
+    import ctypes as ct
+    import numpy.ctypeslib as npct
+    import numpy as np
+    # Load Libraries
+    try:
+        libstell = ct.cdll.LoadLibrary(os.environ["STELLOPT_PATH"]+"/LIBSTELL/Release/libstell.so")
+        qtCreatorPath=os.environ["STELLOPT_PATH"]
+    except KeyError:
+        print("Please set environment variable STELLOPT_PATH")
+        sys.exit(1)
+    # Handle interface
+    read_indata_namelist = getattr(libstell,'__vmec_input_MOD_read_indata_namelist')
+    #SUBROUTINE read_indata_namelist (iunit, istat)
+    read_indata_namelist.argtypes = [ct.POINTER(ct.c_int),ct.POINTER(ct.c_int)]
+    read_indata_namelist.restype=None
+    iunit_temp = ct.c_int(iunit)
+    istat_temp = ct.c_int(istat)
+    read_indata_namelist(ct.byref(iunit_temp),ct.byref(istat_temp))
+    istat = istat_temp
+    iunit = iunit_temp
+    # Setup Arrays
+    indata_namelist={}
+    # Logicals
+    varlist=['lpofr','lmac','lfreeb','lrecon','loldout','ledge_dump','lasym','lforbal','lrfp',\
+             'lmovie','lmove_axis','lwouttxt','ldiagno','lmoreiter','lfull3d1out','l_v3fit',\
+             'lspectrum_dump','loptim','lgiveup','lbsubs','lgiveup']
+    for temp in varlist:
+        indata_namelist[temp]=ct.c_bool.in_dll(libstell,'__vmec_input_MOD_'+temp).value
+    # Integers
+    varlist=['nfp','ncurr','nsin','niter','nstep','nvacskip','mpol','ntor','ntheta','nzeta', \
+             'mfilter_fbdy','nfilter_fbdy','max_main_iterations','omp_num_threads',\
+             'imse','isnodes','itse','ipnodes','iopt_raxis','imatch_phiedge','nflxs']
+    for temp in varlist:
+        indata_namelist[temp]=ct.c_int.in_dll(libstell,'__vmec_input_MOD_'+temp).value
+    # Reals
+    varlist=['time_slice','curtor','delt','ftol','tcon0','gamma','phiedge','phidiam',\
+             'sigma_current','sigma_delphid','tensi','tensp','tensi2','fpolyi','presfac',\
+             'mseangle_offset','pres_offset','mseangle_offsetm','spres_ped','bloat',\
+             'pres_scale','prec2d_threshold','bcrit','fgiveup']
+    for temp in varlist:
+        indata_namelist[temp]=ct.c_double.in_dll(libstell,'__vmec_input_MOD_'+temp).value
+    # Get integers defined elsewhere (Hardcode for now, not sure how to get them)
+    #indata_namelist['nbsetsp']=ct.c_int.in_dll(libstell,'__vsvd0_MOD_nbsetsp').value
+    # Integer Arrays (100)
+    varlist = ['ns_array','niter_array']
+    arr_size=100
+    ftemp = ct.c_int*arr_size
+    for temp in varlist:
+        indata_namelist[temp]=npct.as_array(ftemp.in_dll(libstell,'__vmec_input_MOD_'+temp),(arr_size,1))
+    # Note that we skip some arrays related to recon stuff because we don't need them and we
+    # need to figure out how to pull stuff from other modules see the above issue.
+    # Real 2D Arrays (ntord=101,mpol1d=100)
+    varlist = ['rbs','zbc','rbc','zbs']
+    arr_size1=2*101+1
+    arr_size2=100+1
+    ftemp = ct.c_double*arr_size1*arr_size2
+    for temp in varlist:
+        indata_namelist[temp]=npct.as_array(ftemp.in_dll(libstell,'__vmec_input_MOD_'+temp),(arr_size1,arr_size2))
+    # REAL Arrays (21)
+    varlist = ['am','ai','ac','ah','at']
+    arr_size=21
+    ftemp = ct.c_double*arr_size
+    for temp in varlist:
+        indata_namelist[temp]=npct.as_array(ftemp.in_dll(libstell,'__vmec_input_MOD_'+temp),(arr_size,1))
+    # REAL Arrays (20)
+    varlist = ['aphi']
+    arr_size=20
+    ftemp = ct.c_double*arr_size
+    for temp in varlist:
+        indata_namelist[temp]=npct.as_array(ftemp.in_dll(libstell,'__vmec_input_MOD_'+temp),(arr_size,1))
+    # REAL Arrays (ndatafmax=101)
+    varlist = ['am_aux_s','am_aux_f','ac_aux_s','ac_aux_f','ai_aux_s','ai_aux_f',\
+               'ah_aux_s','ah_aux_f','at_aux_s','at_aux_f']
+    arr_size=101
+    ftemp = ct.c_double*arr_size
+    for temp in varlist:
+        indata_namelist[temp]=npct.as_array(ftemp.in_dll(libstell,'__vmec_input_MOD_'+temp),(arr_size,1))
+    # REAL Arrays (ntord+1=102)
+    varlist = ['raxis','zaxis','raxis_cc','raxis_cs','zaxis_cc','zaxis_cs']
+    arr_size=102
+    ftemp = ct.c_double*arr_size
+    for temp in varlist:
+        indata_namelist[temp]=npct.as_array(ftemp.in_dll(libstell,'__vmec_input_MOD_'+temp),(arr_size,1))
+    # REAL Arrays (100)
+    varlist = ['ftol_array']
+    arr_size=100
+    ftemp = ct.c_double*arr_size
+    for temp in varlist:
+        indata_namelist[temp]=npct.as_array(ftemp.in_dll(libstell,'__vmec_input_MOD_'+temp),(arr_size,1))
+    # REAL Arrays (nigroup=300)
+    varlist = ['extcur']
+    arr_size=300
+    ftemp = ct.c_double*arr_size
+    for temp in varlist:
+        indata_namelist[temp]=npct.as_array(ftemp.in_dll(libstell,'__vmec_input_MOD_'+temp),(arr_size,1))
+    # Charater arrays
+    varlist = ['pcurr_type','piota_type','pmass_type','pt_type','ph_type']
+    arr_size=20
+    ftemp = ct.c_char*arr_size
+    for temp in varlist:
+        indata_namelist[temp]=ftemp.in_dll(libstell,'__vmec_input_MOD_'+temp).value.decode('UTF-8')
+    ftemp = ct.c_char*200
+    indata_namelist['mgrid_file']=ftemp.in_dll(libstell,'__vmec_input_MOD_mgrid_file').value.decode('UTF-8')
+    ftemp = ct.c_char*200
+    indata_namelist['trip3d_file']=ftemp.in_dll(libstell,'__vmec_input_MOD_trip3d_file').value.decode('UTF-8')
+    ftemp = ct.c_char*10
+    indata_namelist['precon_type']=ftemp.in_dll(libstell,'__vmec_input_MOD_precon_type').value.decode('UTF-8')
+    ftemp = ct.c_char*120
+    indata_namelist['arg1']=ftemp.in_dll(libstell,'__vmec_input_MOD_arg1').value.decode('UTF-8')
+    ftemp = ct.c_char*100
+    indata_namelist['input_extension']=ftemp.in_dll(libstell,'__vmec_input_MOD_input_extension').value.decode('UTF-8')
+    return indata_namelist
+
+def write_indata_namelist(iunit,istat,indata):
+    import os, sys
+    import ctypes as ct
+    import numpy.ctypeslib as npct
+    import numpy as np
+    # Load Libraries
+    try:
+        libstell = ct.cdll.LoadLibrary(os.environ["STELLOPT_PATH"]+"/LIBSTELL/Release/libstell.so")
+        qtCreatorPath=os.environ["STELLOPT_PATH"]
+    except KeyError:
+        print("Please set environment variable STELLOPT_PATH")
+        sys.exit(1)
+    # Handle the variables
+    for var in indata:
+        if (type(indata[var])==int):
+            temp=ct.c_int.in_dll(libstell,'__vmec_input_MOD_'+var).value
+            print(var,temp)
+            print(var,indata[var])
+            #setattr(libstell,'__vmec_input_MOD_'+var,ct.POINTER(ct.c_int(indata[var])))
+            temp=ct.c_int.in_dll(libstell,'__vmec_input_MOD_'+var).value
+            print(var,temp)
+
+        #if (type(indata[var])==np.ndarray):
+        #    if (type(indata[var](1))==np.int32):
+        #    if (type(indata[var](1))==np.int32):
+    # Handle interface
+    write_indata_namelist = getattr(libstell,'__vmec_input_MOD_write_indata_namelist')
+    #SUBROUTINE read_indata_namelist (iunit, istat)
+    write_indata_namelist.argtypes = [ct.POINTER(ct.c_int),ct.POINTER(ct.c_int)]
+    write_indata_namelist.restype=None
+    iunit_temp = ct.c_int(iunit)
+    istat_temp = ct.c_int(istat)
+    write_indata_namelist(ct.byref(iunit_temp),ct.byref(istat_temp))
+    #istat = istat_temp
+    #iunit = iunit_temp
+    return
 
 
-    
-    
-    
-#def safe_open(file,iunit):
-#    import ctypes as ct
-#    # Load Libraries
-#    libstell = ct.cdll.LoadLibrary("/Users/slazerso/Sims_PPPL/STELLOPT/LIBSTELL/Release/libstell.so")
-#    read_input = getattr(libstell,'__safe_open_mod_MOD_safe_open')
-#    read_input.argparse=[ct.c_int,ct.c_int,ct.c_char_p,ct.c_int,ct.c_char_p,ct.c_int,ct.c_char_p,ct.c_int]
-#    read_input.restype=None
-#    ierr = ct.c_int(0)
-#    istat = ct.c_int(0)
-#    read_input(ct.byref(ierr),ct.byref(istat),file.encode('UTF-8'))
 
 
-#def read_indata(file):
-#    import ctypes as ct
-#    import numpy.ctypeslib as npct
-#    import numpy as np
-#    # Load Libraries
-#    libstell = ct.cdll.LoadLibrary("/Users/slazerso/Sims_PPPL/STELLOPT/LIBSTELL/Release/libstell.so")
-#    # Read File
-#    read_input = getattr(libstell,'__vmec_input_MOD_read_indata_namelist')
-#    read_wout.argparse=[ct.c_int,ct.c_int]
-#    read_wout.restype=None
-#    ierr = ct.c_int(0)
-#    iopen = ct.c_int(0)
-#    read_wout(file.encode('UTF-8'),ct.byref(ierr),iopen,len(file))
+
+
+
+
