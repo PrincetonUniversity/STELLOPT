@@ -339,7 +339,6 @@ def read_indata_namelist(iunit,istat):
     # Load Libraries
     try:
         libstell = ct.cdll.LoadLibrary(os.environ["STELLOPT_PATH"]+"/LIBSTELL/Release/libstell.so")
-        qtCreatorPath=os.environ["STELLOPT_PATH"]
     except KeyError:
         print("Please set environment variable STELLOPT_PATH")
         sys.exit(1)
@@ -459,14 +458,14 @@ def write_indata_namelist(iunit,istat,indata):
         print("Please set environment variable STELLOPT_PATH")
         sys.exit(1)
     # Handle the variables
-    for var in indata:
-        if (type(indata[var])==int):
-            temp=ct.c_int.in_dll(libstell,'__vmec_input_MOD_'+var).value
-            print(var,temp)
-            print(var,indata[var])
-            #setattr(libstell,'__vmec_input_MOD_'+var,ct.POINTER(ct.c_int(indata[var])))
-            temp=ct.c_int.in_dll(libstell,'__vmec_input_MOD_'+var).value
-            print(var,temp)
+    #for var in indata:
+    #    if (type(indata[var])==int):
+    #        temp=ct.c_int.in_dll(libstell,'__vmec_input_MOD_'+var).value
+    #        print(var,temp)
+    #        print(var,indata[var])
+    #        #setattr(libstell,'__vmec_input_MOD_'+var,ct.POINTER(ct.c_int(indata[var])))
+    #        temp=ct.c_int.in_dll(libstell,'__vmec_input_MOD_'+var).value
+    #        print(var,temp)
 
         #if (type(indata[var])==np.ndarray):
         #    if (type(indata[var](1))==np.int32):
