@@ -482,6 +482,63 @@ def write_indata_namelist(iunit,istat,indata):
     #iunit = iunit_temp
     return
 
+def pcurr(xx):
+    import os, sys
+    import ctypes as ct
+    import numpy.ctypeslib as npct
+    # Load Libraries
+    try:
+        libstell = ct.cdll.LoadLibrary(os.environ["STELLOPT_PATH"]+"/LIBSTELL/Release/libstell.so")
+        qtCreatorPath=os.environ["STELLOPT_PATH"]
+    except KeyError:
+        print("Please set environment variable STELLOPT_PATH")
+        sys.exit(1)
+    pcurr_func = getattr(libstell,'pcurr_')
+    #SUBROUTINE pcurr (xx)
+    pcurr_func.argtypes = [ct.POINTER(ct.c_double)]
+    pcurr_func.restype=ct.c_double
+    xx_temp = ct.c_double(xx)
+    val = pcurr_func(ct.byref(xx_temp))
+    return val;
+
+def pmass(xx):
+    import os, sys
+    import ctypes as ct
+    import numpy.ctypeslib as npct
+    # Load Libraries
+    try:
+        libstell = ct.cdll.LoadLibrary(os.environ["STELLOPT_PATH"]+"/LIBSTELL/Release/libstell.so")
+        qtCreatorPath=os.environ["STELLOPT_PATH"]
+    except KeyError:
+        print("Please set environment variable STELLOPT_PATH")
+        sys.exit(1)
+    pmass_func = getattr(libstell,'pmass_')
+    #SUBROUTINE piota (xx)
+    pmass_func.argtypes = [ct.POINTER(ct.c_double)]
+    pmass_func.restype=ct.c_double
+    xx_temp = ct.c_double(xx)
+    val = pmass_func(ct.byref(xx_temp))
+    return val;
+
+def piota(xx):
+    import os, sys
+    import ctypes as ct
+    import numpy.ctypeslib as npct
+    # Load Libraries
+    try:
+        libstell = ct.cdll.LoadLibrary(os.environ["STELLOPT_PATH"]+"/LIBSTELL/Release/libstell.so")
+        qtCreatorPath=os.environ["STELLOPT_PATH"]
+    except KeyError:
+        print("Please set environment variable STELLOPT_PATH")
+        sys.exit(1)
+    piota_func = getattr(libstell,'piota_')
+    #SUBROUTINE piota (xx)
+    piota_func.argtypes = [ct.POINTER(ct.c_double)]
+    piota_func.restype=ct.c_double
+    xx_temp = ct.c_double(xx)
+    val = piota_func(ct.byref(xx_temp))
+    return val;
+
 
 
 
