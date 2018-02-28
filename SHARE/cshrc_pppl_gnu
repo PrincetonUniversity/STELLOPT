@@ -1,3 +1,20 @@
+# Modules to load
+module load autoconf/2.69 idl matlab valgrind git
+module load gcc/6.1.0
+module load gsl 
+module load silo nag/fll6a24dfl pgplot szip/2.1 ntcc/gcc6.1.0
+module load acml/6.1.0/gfortran64
+module load hdf/4.2.12
+module load openmpi/1.10.3
+module load blacs fftw hdf5-parallel/1.10.0p1 scalapack
+module load curl/7.50.0 netcdf-c/4.4.1
+module load netcdf-fortran/4.4.4 netcdf-cxx4/4.3.0
+module load petsc_complex/3.7.7
+module load slepc_complex/3.7.4
+module load qt/4.8.3
+#module load qt/5.10.0
+module load python/3.6.4
+
 # This is to suppress messages on non Infiniband systems
 setenv NOIB "-mca btl ^openib"
 
