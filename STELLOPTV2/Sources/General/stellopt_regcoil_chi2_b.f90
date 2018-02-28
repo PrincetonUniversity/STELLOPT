@@ -70,34 +70,15 @@
       wout_filename = 'wout_'//TRIM(proc_string)//'.nc'
       separation = regcoil_winding_surface_separation
       current_density_target = regcoil_current_density
-      ! regcoil will overwrite nlambda - need to restore it to the
-      ! original value here
+      ! regcoil will overwrite nlambda each time - need to restore it to
+      ! the original value here
       nlambda = regcoil_nlambda
-      ! write(6,'(a)') '<----safe_open'
-      CALL safe_open(iunit, iflag, TRIM('regcoil_in.'// &
-               TRIM(proc_string)), 'replace', 'formatted')
-      ! write(6,'(a)') '<----regcoil_write_input'
-      CALL regcoil_write_input(proc_string, iunit, istat)
-      ! write(6,'(a)') '<----flush'
-      CALL FLUSH(iunit)
-      ! write(6,'(a)') '<----close'
-      CLOSE(iunit)
 
-      ! input file should be written. Now perform regcoil operation 
       ! This should be *almost* a duplicate of the main code from
       ! regcoil.f90
-      ! JCS : Probably don't need to re-read the namelist, but I like 
-      ! to do things in baby-steps with lots of debugging opptions and
-      ! info
-      !write(6,'(a)') '<----safe_open'
-      !CALL safe_open(iunit, iflag, TRIM('input.'//TRIM(proc_string)), &
-      !          'old', 'formatted')
-      !write(6,'(a)') '<----read_regcoil_input'
-      !call regcoil_read_input(iunit, iflag)
       ! write(6,'(a)') '<----Validate'
       call validate_input()
       ! write(6,'(a)') '<----Compute lambda'
-      !if (allocated(lambda)) deallocate(lambda)
       call compute_lambda(lscreen)
 
       ! Define the position vector and normal vector at each grid point for
@@ -114,6 +95,8 @@
       call build_matrices(lscreen)
 
       ! JCS: I disabled all options except for #5 (for now)
+      ! As REGCOIL development continues, future cases can 
+      ! be handled with case statements here.
       ! write(6,'(a)') '<----select a case'
       select case (general_option)
       !case (1)
@@ -127,22 +110,32 @@
       case (5)
       ! write(6,'(a)') '<----auto_reg solve'
          call auto_regularization_solve(lscreen)
+         ! Now, the value we want should be in the variable
+         ! 'chi2_B_target'. Normal termination of regcoil returns the
+         ! achieved chi2_B (miniumum). If there is an 'error' (too high
+         ! or too low of current), the chi2_B will contain the chi2_B
+         ! that was achieved. (This last statement is being verified -
+         ! JCS) 
       case default
          print *,"Invalid general_option:",general_option
          stop
       end select
-    
-!      write(6,'(a)') '<----safe_open'
-!      CALL safe_open(iunit, iflag, TRIM('regcoil_in.'// &
-!                TRIM(proc_string)), 'replace', 'formatted')
-!      write(6,'(a)') '<----write_output'
-!      call write_output()
-!
-!      write(6,'(a)') '<----flush'
-!      CALL FLUSH(iunit)
 
-      ! print *, chi2_B_target
-      ! print *,"REGCOIL complete. Total time=",totalTime,"sec."
+      !  These next few lines are for debugging purposes. If
+      !  uncommented, the regcoil input files should be written to the
+      !  working job directory and an output statement will be displaed
+      !  to the screen, regardless of the value of 'lscreen'
+      !  - JCS
+      !      write(6,'(a)') '<----safe_open'
+      !      CALL safe_open(iunit, iflag, TRIM('regcoil_in.'// &
+      !                TRIM(proc_string)), 'replace', 'formatted')
+      !      write(6,'(a)') '<----write_output'
+      !      call write_output()
+      !
+      !      write(6,'(a)') '<----flush'
+      !      CALL FLUSH(iunit)
+      !      print *, chi2_B_target
+      !      print *,"REGCOIL complete. Total time=",totalTime,"sec."
 
 
       IF (lscreen) WRITE(6,'(a)') ' ---------------------------  REGCOIL CALCULATION DONE  ---------------------'
