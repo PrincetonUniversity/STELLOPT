@@ -453,13 +453,16 @@ def set_module_var(module,var,val):
         f = ct.c_int
     elif type(val) == float:
         f = ct.c_double
+    elif type(val) == str:
+        n = len(val)
+        f = ct.c_char*n
     elif type(val) == np.ndarray:
         if type(val[0]) == bool:
             tt = ct.c_bool
         elif type(val[0]) == int:
             tt = ct.c_int
         elif type(val[0]) == np.float64:
-            tt = ct.c_float
+            tt = ct.c_double
         else:
             print('   Unrecognized type:',type(val[0]))
             return
@@ -474,8 +477,10 @@ def set_module_var(module,var,val):
         if n==1:
             for i,col in enumerate(val):
                 temp[i] = val[i]
+    elif type(val) == str:
+        temp.value = val.encode('UTF-8')
     else:
-        temp.value = v
+        temp.value = val
     return
 
 def write_indata_namelist(iunit,istat,indata):

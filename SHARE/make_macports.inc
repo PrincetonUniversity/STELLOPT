@@ -146,22 +146,6 @@
 #######################################################################
 #            LIBSTELL Shared Options
 #######################################################################
-LIB_SHARE = /opt/local/lib/libnetcdf.dylib \
-         /opt/local/lib/libnetcdff.dylib \
-         /opt/local/lib/libnetcdf_c++4.dylib \
-         /opt/local/lib/libhdf5.dylib \
-         /opt/local/lib/libhdf5hl_fortran.dylib\
-         /opt/local/lib/libhdf5_hl.dylib \
-         /opt/local/lib/libhdf5_fortran.dylib\
-         /opt/local/lib/gcc6/libgfortran.dylib \
-         /opt/local/lib/gcc6/libstdc++.dylib \
-         /opt/local/lib/libopenblas.dylib \
-         /opt/local/lib/openmpi-gcc6/libmpi.dylib \
-         /opt/local/lib/openmpi-gcc6/libmpi_mpifh.12.dylib \
-         /opt/local/lib/libz.dylib \
-         /usr/lib/libc.dylib \
-         /usr/lib/libm.dylib \
-         /usr/lib/libpthread.dylib
 
 LIB_SHARE = -L/opt/local/lib/gcc7 -lgfortran -lstdc++ \
             -L/opt/local/lib/openmpi-gcc7 -lmpi -lmpi_mpifh \

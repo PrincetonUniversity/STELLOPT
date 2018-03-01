@@ -35,17 +35,21 @@ class MyApp(QMainWindow):
 		self.ui.setupUi(self) 
 		self.setStyleSheet("background-color: white;")
 		# Setup Defaults
-		self.indata={}
-		self.indata['am']=np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+		iunit = 55
+		istat = 0
+		self.indata=read_indata_namelist(iunit,istat) # dummy just to get going
+		#set_module_var('vmec_input','am',self.indata['am'][:])
 		# Setup Components
 		self.ui.TableArrays.setRowCount(1)
 		self.ui.TableArrays.setColumnCount(20)
-		self.ui.TableArrays.show()
+		for num,item in enumerate(self.indata['am'], start=0):
+			self.ui.TableArrays.setItem(0,num, QTableWidgetItem(str(item)))
 		# Setup Plot
 		self.fig = Figure(figsize=(2,2),dpi=100)
 		self.ax = self.fig.add_subplot(111)
 		self.canvas = FigureCanvas(self.fig)
 		self.ui.Plotbox.addWidget(self.canvas)
+		self.DrawArrays()
 		# Callbacks
 		self.ui.ButtonLoadIndata.clicked.connect(self.LoadIndata)
 		self.ui.ComboBoxArrays.currentIndexChanged.connect(self.UpdateArrays)
@@ -108,11 +112,19 @@ class MyApp(QMainWindow):
 		type_name=self.ui.ComboBoxPType.currentText()
 		type_name = type_name.lower()
 		if data_name == 'am' or data_name == 'am_aux':
+			set_module_var('vmec_input','pmass_type','                    ')
 			set_module_var('vmec_input','pmass_type',type_name)
+			self.indata['pmass_type'] = type_name
 		elif data_name == 'ac' or data_name == 'ac_aux':
+			set_module_var('vmec_input','pcurr_type','                    ')
 			set_module_var('vmec_input','pcurr_type',type_name)
+			self.indata['pcurr_type'] = type_name
 		elif data_name == 'ai' or data_name == 'ai_aux':
+			set_module_var('vmec_input','piota_type','                    ')
 			set_module_var('vmec_input','piota_type',type_name)
+			self.indata['piota_type'] = type_name
+		self.UpdateArrays()
+		self.DrawArrays()
 
 	def UpdateArrays(self):
 		# Updates values in array box
@@ -174,7 +186,7 @@ class MyApp(QMainWindow):
 		row = self.ui.TableArrays.currentColumn()
 		if len(data_name) == 2:
 			self.indata[data_name][col]=value
-			set_module_var('vmec_input',data_name,self.indata[data_name])
+			set_module_var('vmec_input',data_name,self.indata[data_name][:])
 		self.DrawArrays()
 
 	def DrawArrays(self):
@@ -186,7 +198,7 @@ class MyApp(QMainWindow):
 		self.ax = self.fig.add_subplot(111)
 		s = np.ndarray((99,1))
 		f = np.ndarray((99,1))
-		for i in range(99): s[i]=(i-1.0)/(98)
+		for i in range(99): s[i]=(i)/98.0
 		if data_name[0:2] == 'am':
 			for i,xx in enumerate(s):
 				f[i] = pmass(xx)
@@ -199,7 +211,10 @@ class MyApp(QMainWindow):
 			for i,xx in enumerate(s):
 				f[i] = piota(xx)
 				self.ax.set_ylabel('Iota')
-		self.ax.plot(s,f)
+		fmax = max(f)
+		if fmax == 0:
+			fmax = 1
+		self.ax.plot(s,f/fmax)
 		self.ax.set_xlabel('Norm. Tor. Flux (s)')
 		self.ax.set_aspect('auto')
 		self.canvas.draw()
