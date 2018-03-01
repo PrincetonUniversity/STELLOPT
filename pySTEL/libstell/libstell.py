@@ -272,11 +272,9 @@ def calc_jll(vmec_data, theta, zeta ):
     jll = (bu*ju+bv*jv)/(g*b)
     return jll
 
-def read_vmec_input(iunit,istat):
+def safe_close(iunit):
     import os, sys
     import ctypes as ct
-    import numpy.ctypeslib as npct
-    import numpy as np
     # Load Libraries
     try:
         libstell = ct.cdll.LoadLibrary(os.environ["STELLOPT_PATH"]+"/LIBSTELL/Release/libstell.so")
@@ -284,24 +282,16 @@ def read_vmec_input(iunit,istat):
     except KeyError:
         print("Please set environment variable STELLOPT_PATH")
         sys.exit(1)
-    # Read File
-    read_indata = getattr(libstell,'__vmec_input_MOD_read_indata_namelist')
-    read_indata.argparse=[ct.c_int, ct.c_int]
-    read_indata.restype=None
+    # Handle interface
+    safe_close_h = getattr(libstell,'__safe_open_mod_MOD_safe_close')
+    safe_close_h.restype=None
     iunit_temp = ct.c_int(iunit)
-    istat_temp = ct.c_int(0)
-    read_indata_namelist(iunit_temp,istat_temp)
-    istat = istat_temp
-    # Process output
-    input_data={}
-    input_data['nfp']=ct.c_int.in_dll(libstell,'__vmec_input_MOD_nfp').value
-    return input_data
+    safe_close_h(ct.byref(iunit_temp))
+    return
 
 def safe_open(iunit,istat,filename,filestat,fileform,record_in,access_in,delim_in):
     import os, sys
     import ctypes as ct
-    #import numpy.ctypeslib as npct
-    #import numpy as np
     # Load Libraries
     try:
         libstell = ct.cdll.LoadLibrary(os.environ["STELLOPT_PATH"]+"/LIBSTELL/Release/libstell.so")
@@ -475,7 +465,7 @@ def set_module_var(module,var,val):
             return
         n = val.ndim
         f = tt*val.size
-        print(n,val.size)
+        #print(n,val.size)
     else:
         print('   Unrecognized type:',type(val))
         return

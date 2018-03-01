@@ -637,6 +637,66 @@
         <height>26</height>
        </rect>
       </property>
+      <item>
+       <property name="text">
+        <string>power_series</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>two_power</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>gauss_trunc</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>akima_spline</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>sum_atan</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>power_series_i</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>akima_spline_i</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>akima_spline_ip</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>pedestal</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>rational</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>nice_quadratic</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>two_lorentz</string>
+       </property>
+      </item>
      </widget>
     </widget>
    </widget>
@@ -647,7 +707,7 @@
      <x>0</x>
      <y>0</y>
      <width>893</width>
-     <height>22</height>
+     <height>20</height>
     </rect>
    </property>
   </widget>

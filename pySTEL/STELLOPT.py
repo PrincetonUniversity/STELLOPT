@@ -10,7 +10,7 @@ from PyQt4.QtGui import QMainWindow, QApplication, qApp, QApplication, QVBoxLayo
                         QSizePolicy, QWidget, QFileDialog
 from PyQt4.QtGui import QIcon, QTableWidget, QTableWidgetItem
 from libstell.libstell import safe_open, read_indata_namelist, pmass, pcurr, piota, \
-                              set_module_var
+                              set_module_var, safe_close
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from mpl_toolkits import mplot3d
@@ -53,6 +53,7 @@ class MyApp(QMainWindow):
 		self.ui.TableArrays.cellChanged.connect(self.DataArrays)
 
 	def LoadIndata(self,i):
+		# Handles loading an indata file.
 		w = QWidget()
 		w.resize(320, 240)
 		w.setWindowTitle("Hello World!")
@@ -64,6 +65,7 @@ class MyApp(QMainWindow):
 		recl  = 1
 		temp=safe_open(iunit,istat,filename,'old','formatted',recl,'sequential','none')
 		self.indata=read_indata_namelist(iunit,istat)
+		safe_close(iunit)
 		# Now update the UI
 		self.ui.TextTcon0.setText(str(self.indata['tcon0'])) 
 		self.ui.TextDelt.setText(str(self.indata['delt'])) 
@@ -113,9 +115,21 @@ class MyApp(QMainWindow):
 			set_module_var('vmec_input','piota_type',type_name)
 
 	def UpdateArrays(self):
+		# Updates values in array box
 		dex=self.ui.ComboBoxArrays.currentIndex()
 		data_name=self.ui.ComboBoxArrays.currentText()
 		data_name = data_name.lower()
+		# Update PType accordingly
+		strtmp = 'none'
+		if data_name == 'am' or data_name == 'am_aux':
+			strtmp = str(self.indata['pmass_type']).strip()
+		if data_name == 'ai' or data_name == 'ai_aux':
+			strtmp = str(self.indata['piota_type']).strip()
+		if data_name == 'ac' or data_name == 'ac_aux':
+			strtmp = str(self.indata['pcurr_type']).strip()
+		if strtmp != 'none':
+			self.ui.ComboBoxPType.setCurrentIndex(self.ui.ComboBoxPType.findText(strtmp))
+		# Update the table
 		self.ui.TableArrays.setRowCount(1)
 		self.ui.TableArrays.setColumnCount(20)
 		if data_name == 'am' or data_name == 'ac' or data_name == 'ai':
@@ -144,8 +158,10 @@ class MyApp(QMainWindow):
 				self.ui.TableArrays.setItem(1,4, QTableWidgetItem('0.2'))
 				self.ui.TableArrays.setItem(1,5, QTableWidgetItem('0.0'))
 		self.ui.TableArrays.show()
+		self.DrawArrays()
 
 	def DataArrays(self):
+		# Handles changes in matrix
 		# Get type of array
 		data_name = self.ui.ComboBoxArrays.currentText()
 		data_name = data_name.lower()
@@ -187,15 +203,6 @@ class MyApp(QMainWindow):
 		self.ax.set_xlabel('Norm. Tor. Flux (s)')
 		self.ax.set_aspect('auto')
 		self.canvas.draw()
-
-	#def UpdatePType(self,i):
-		#data_name=self.ui.ComboBoxArrays.currentText()
-		#if data_name[0:2] == 'am':
-			# set values
-			#self.ui.ComboBoxPType.
-			# set to currently selected value
-		#if data_name[0:2] == 'ac':
-		#if data_name[0:2] == 'ai':
 
 
 
