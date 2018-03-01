@@ -167,14 +167,14 @@
             dummy = 0
             tag = 0
             IF (myworkid==master) THEN
-               IF (lscreen) PRINT *,TRIM(proc_assignments_string)
+               IF (lscreen) WRITE(*,"(a)") TRIM(proc_assignments_string)
                DO i = 1,numProcs_myWorld - 1
                   ! To avoid a disordered flood of messages to the masterProc,
                   ! ping each proc 1 at a time by sending a dummy value:
                   CALL MPI_SEND(dummy,1,MPI_INT,i,tag,MPI_COMM_MYWORLD,ierr_mpi)
                   ! Now receive the message from proc i:
                   CALL MPI_RECV(proc_assignments_string,buffer_length,MPI_CHAR,i,MPI_ANY_TAG,MPI_COMM_MYWORLD,mpi_status,ierr_mpi)
-                  IF (lscreen) PRINT *,TRIM(proc_assignments_string)
+                  IF (lscreen) WRITE(*,"(a)") TRIM(proc_assignments_string)
                END DO
             ELSE
                ! First, wait for the dummy message from proc 0:
@@ -377,6 +377,7 @@
             END IF
 
             CALL MPI_COMM_FREE(MPI_COMM_SFINCS,ierr_mpi)
+            CALL MPI_BARRIER(MPI_COMM_MYWORLD,ierr_mpi) ! Weird things might happen if some procs move on while others are still running sfincs.
 
 !!$            ! Here we use the same convention as in VMEC: half-mesh quantities use arrays with the same size as full-mesh quantities,
 !!$            ! but the first array element is 0.
