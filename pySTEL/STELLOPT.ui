@@ -395,8 +395,8 @@
      <widget class="QLabel" name="label_13">
       <property name="geometry">
        <rect>
-        <x>220</x>
-        <y>250</y>
+        <x>280</x>
+        <y>310</y>
         <width>59</width>
         <height>16</height>
        </rect>
@@ -408,8 +408,8 @@
      <widget class="QLineEdit" name="TextCurtor">
       <property name="geometry">
        <rect>
-        <x>220</x>
-        <y>270</y>
+        <x>280</x>
+        <y>330</y>
         <width>91</width>
         <height>21</height>
        </rect>
@@ -454,8 +454,8 @@
      <widget class="QLabel" name="label_15">
       <property name="geometry">
        <rect>
-        <x>200</x>
-        <y>300</y>
+        <x>10</x>
+        <y>310</y>
         <width>81</width>
         <height>16</height>
        </rect>
@@ -467,8 +467,8 @@
      <widget class="QLineEdit" name="TextPresScale">
       <property name="geometry">
        <rect>
-        <x>200</x>
-        <y>320</y>
+        <x>10</x>
+        <y>330</y>
         <width>81</width>
         <height>21</height>
        </rect>
@@ -480,8 +480,8 @@
      <widget class="QLabel" name="label_16">
       <property name="geometry">
        <rect>
-        <x>300</x>
-        <y>300</y>
+        <x>110</x>
+        <y>310</y>
         <width>59</width>
         <height>16</height>
        </rect>
@@ -493,8 +493,8 @@
      <widget class="QLineEdit" name="TextBloat">
       <property name="geometry">
        <rect>
-        <x>300</x>
-        <y>320</y>
+        <x>110</x>
+        <y>330</y>
         <width>61</width>
         <height>21</height>
        </rect>
@@ -506,8 +506,8 @@
      <widget class="QLabel" name="label_17">
       <property name="geometry">
        <rect>
-        <x>380</x>
-        <y>300</y>
+        <x>190</x>
+        <y>310</y>
         <width>81</width>
         <height>16</height>
        </rect>
@@ -519,8 +519,8 @@
      <widget class="QLineEdit" name="TextSpresPed">
       <property name="geometry">
        <rect>
-        <x>380</x>
-        <y>320</y>
+        <x>190</x>
+        <y>330</y>
         <width>71</width>
         <height>21</height>
        </rect>
@@ -546,9 +546,9 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>360</y>
+        <y>391</y>
         <width>861</width>
-        <height>192</height>
+        <height>161</height>
        </rect>
       </property>
      </widget>
@@ -556,7 +556,7 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>320</y>
+        <y>360</y>
         <width>171</width>
         <height>26</height>
        </rect>
@@ -627,6 +627,16 @@
        </rect>
       </property>
       <layout class="QGridLayout" name="Plotbox"/>
+     </widget>
+     <widget class="QComboBox" name="ComboBoxPType">
+      <property name="geometry">
+       <rect>
+        <x>190</x>
+        <y>360</y>
+        <width>191</width>
+        <height>26</height>
+       </rect>
+      </property>
      </widget>
     </widget>
    </widget>

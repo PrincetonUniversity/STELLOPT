@@ -9,7 +9,8 @@ from PyQt4 import uic, QtGui
 from PyQt4.QtGui import QMainWindow, QApplication, qApp, QApplication, QVBoxLayout, \
                         QSizePolicy, QWidget, QFileDialog
 from PyQt4.QtGui import QIcon, QTableWidget, QTableWidgetItem
-from libstell.libstell import safe_open, read_indata_namelist, pmass, pcurr, piota
+from libstell.libstell import safe_open, read_indata_namelist, pmass, pcurr, piota, \
+                              set_module_var
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from mpl_toolkits import mplot3d
@@ -33,6 +34,13 @@ class MyApp(QMainWindow):
 		self.ui = Ui_MainWindow()
 		self.ui.setupUi(self) 
 		self.setStyleSheet("background-color: white;")
+		# Setup Defaults
+		self.indata={}
+		self.indata['am']=np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+		# Setup Components
+		self.ui.TableArrays.setRowCount(1)
+		self.ui.TableArrays.setColumnCount(20)
+		self.ui.TableArrays.show()
 		# Setup Plot
 		self.fig = Figure(figsize=(2,2),dpi=100)
 		self.ax = self.fig.add_subplot(111)
@@ -41,7 +49,8 @@ class MyApp(QMainWindow):
 		# Callbacks
 		self.ui.ButtonLoadIndata.clicked.connect(self.LoadIndata)
 		self.ui.ComboBoxArrays.currentIndexChanged.connect(self.UpdateArrays)
-		self.ui.TableArrays.cellChanged.connect(self.DrawArrays)
+		self.ui.ComboBoxPType.currentIndexChanged.connect(self.UpdatePType)
+		self.ui.TableArrays.cellChanged.connect(self.DataArrays)
 
 	def LoadIndata(self,i):
 		w = QWidget()
@@ -76,6 +85,7 @@ class MyApp(QMainWindow):
 		self.ui.TextBloat.setText(str(self.indata['bloat'])) 
 		self.ui.TextSpresPed.setText(str(self.indata['spres_ped']))
 		self.ui.ComboBoxNcurr.setCurrentIndex(self.indata['ncurr'])
+		# Handle the ComboBoxPType
 		# Handle NS Array table widget
 		ns_mask=self.indata['ns_array']!=0
 		ns_array = self.indata['ns_array'][ns_mask]
@@ -88,9 +98,21 @@ class MyApp(QMainWindow):
 			self.ui.TableNsArray.setItem(1,num, QTableWidgetItem(str(niter_array[num])))
 			self.ui.TableNsArray.setItem(2,num, QTableWidgetItem(str(ftol_array[num])))
 		self.ui.TableNsArray.show()
-		self.UpdateArrays
+		self.UpdateArrays()
 
-	def UpdateArrays(self,i):
+	def UpdatePType(self):
+		data_name=self.ui.ComboBoxArrays.currentText()
+		data_name = data_name.lower()
+		type_name=self.ui.ComboBoxPType.currentText()
+		type_name = type_name.lower()
+		if data_name == 'am' or data_name == 'am_aux':
+			set_module_var('vmec_input','pmass_type',type_name)
+		elif data_name == 'ac' or data_name == 'ac_aux':
+			set_module_var('vmec_input','pcurr_type',type_name)
+		elif data_name == 'ai' or data_name == 'ai_aux':
+			set_module_var('vmec_input','piota_type',type_name)
+
+	def UpdateArrays(self):
 		dex=self.ui.ComboBoxArrays.currentIndex()
 		data_name=self.ui.ComboBoxArrays.currentText()
 		data_name = data_name.lower()
@@ -122,13 +144,29 @@ class MyApp(QMainWindow):
 				self.ui.TableArrays.setItem(1,4, QTableWidgetItem('0.2'))
 				self.ui.TableArrays.setItem(1,5, QTableWidgetItem('0.0'))
 		self.ui.TableArrays.show()
-		self.DrawArrays
 
-	def DrawArrays(self,i):
-		data_name=self.ui.ComboBoxArrays.currentText()
-		# Handle plots
+	def DataArrays(self):
+		# Get type of array
+		data_name = self.ui.ComboBoxArrays.currentText()
+		data_name = data_name.lower()
+		# Get changed item
+		item = self.ui.TableArrays.currentItem()
+		if item is None:
+			return
+		value = float(item.text())
+		col = self.ui.TableArrays.currentColumn()
+		row = self.ui.TableArrays.currentColumn()
+		if len(data_name) == 2:
+			self.indata[data_name][col]=value
+			set_module_var('vmec_input',data_name,self.indata[data_name])
+		self.DrawArrays()
+
+	def DrawArrays(self):
+		# Determine type of array
+		data_name = self.ui.ComboBoxArrays.currentText()
+		data_name = data_name.lower()
+		# Handle plots / values
 		self.fig.clf()
-		#self.fig.delaxes(self.ax)
 		self.ax = self.fig.add_subplot(111)
 		s = np.ndarray((99,1))
 		f = np.ndarray((99,1))
@@ -137,11 +175,11 @@ class MyApp(QMainWindow):
 			for i,xx in enumerate(s):
 				f[i] = pmass(xx)
 				self.ax.set_ylabel('Pressure')
-		if data_name[0:2] == 'ac':
+		elif data_name[0:2] == 'ac':
 			for i,xx in enumerate(s):
 				f[i] = pcurr(xx)
 				self.ax.set_ylabel('Current')
-		if data_name[0:2] == 'ai':
+		elif data_name[0:2] == 'ai':
 			for i,xx in enumerate(s):
 				f[i] = piota(xx)
 				self.ax.set_ylabel('Iota')
@@ -150,6 +188,14 @@ class MyApp(QMainWindow):
 		self.ax.set_aspect('auto')
 		self.canvas.draw()
 
+	#def UpdatePType(self,i):
+		#data_name=self.ui.ComboBoxArrays.currentText()
+		#if data_name[0:2] == 'am':
+			# set values
+			#self.ui.ComboBoxPType.
+			# set to currently selected value
+		#if data_name[0:2] == 'ac':
+		#if data_name[0:2] == 'ai':
 
 
 

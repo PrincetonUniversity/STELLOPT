@@ -445,6 +445,49 @@ def read_indata_namelist(iunit,istat):
     indata_namelist['input_extension']=ftemp.in_dll(libstell,'__vmec_input_MOD_input_extension').value.decode('UTF-8')
     return indata_namelist
 
+def set_module_var(module,var,val):
+    import os, sys
+    import ctypes as ct
+    import numpy.ctypeslib as npct
+    import numpy as np
+    # Load Libraries
+    try:
+        libstell = ct.cdll.LoadLibrary(os.environ["STELLOPT_PATH"]+"/LIBSTELL/Release/libstell.so")
+        qtCreatorPath=os.environ["STELLOPT_PATH"]
+    except KeyError:
+        print("Please set environment variable STELLOPT_PATH")
+        sys.exit(1)
+    if type(val) == bool:
+        f = ct.c_bool
+    elif type(val) == int:
+        f = ct.c_int
+    elif type(val) == float:
+        f = ct.c_double
+    elif type(val) == np.ndarray:
+        if type(val[0]) == bool:
+            tt = ct.c_bool
+        elif type(val[0]) == int:
+            tt = ct.c_int
+        elif type(val[0]) == np.float64:
+            tt = ct.c_float
+        else:
+            print('   Unrecognized type:',type(val[0]))
+            return
+        n = val.ndim
+        f = tt*val.size
+        print(n,val.size)
+    else:
+        print('   Unrecognized type:',type(val))
+        return
+    temp=f.in_dll(libstell,'__'+module+'_MOD_'+var)
+    if type(val) == np.ndarray:
+        if n==1:
+            for i,col in enumerate(val):
+                temp[i] = val[i]
+    else:
+        temp.value = v
+    return
+
 def write_indata_namelist(iunit,istat,indata):
     import os, sys
     import ctypes as ct
