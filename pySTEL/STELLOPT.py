@@ -10,7 +10,7 @@ from PyQt4.QtGui import QMainWindow, QApplication, qApp, QApplication, QVBoxLayo
                         QSizePolicy, QWidget, QFileDialog
 from PyQt4.QtGui import QIcon, QTableWidget, QTableWidgetItem
 from libstell.libstell import safe_open, read_indata_namelist, pmass, pcurr, piota, \
-                              set_module_var, safe_close
+                              set_module_var, safe_close, cfunct, sfunct, isotoro
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from mpl_toolkits import mplot3d
@@ -38,7 +38,6 @@ class MyApp(QMainWindow):
 		iunit = 55
 		istat = 0
 		self.indata=read_indata_namelist(iunit,istat) # dummy just to get going
-		#set_module_var('vmec_input','am',self.indata['am'][:])
 		# Setup Components
 		self.ui.TableArrays.setRowCount(1)
 		self.ui.TableArrays.setColumnCount(20)
@@ -51,12 +50,28 @@ class MyApp(QMainWindow):
 		self.ui.Plotbox.addWidget(self.canvas)
 		self.DrawArrays()
 		# Callbacks
+		self.ui.TextMpol.editingFinished.connect(self.UpdateMpol)
+		self.ui.TextNtor.editingFinished.connect(self.UpdateNtor)
 		self.ui.ButtonLoadIndata.clicked.connect(self.LoadIndata)
 		self.ui.ComboBoxArrays.currentIndexChanged.connect(self.UpdateArrays)
 		self.ui.ComboBoxPType.currentIndexChanged.connect(self.UpdatePType)
 		self.ui.TableArrays.cellChanged.connect(self.DataArrays)
 
-	def LoadIndata(self,i):
+	def UpdateMpol(self):
+		strtmp = self.ui.TextMpol.text()
+		inttmp = int(strtmp)
+		self.indata['mpol'] = inttmp
+		set_module_var('vmec_input','mpol',inttmp)
+		return
+
+	def UpdateNtor(self):
+		strtmp = self.ui.TextNtor.text()
+		inttmp = int(strtmp)
+		self.indata['ntor'] = inttmp
+		set_module_var('vmec_input','ntor',inttmp)
+		return
+
+	def LoadIndata(self):
 		# Handles loading an indata file.
 		w = QWidget()
 		w.resize(320, 240)
@@ -123,6 +138,8 @@ class MyApp(QMainWindow):
 			set_module_var('vmec_input','piota_type','                    ')
 			set_module_var('vmec_input','piota_type',type_name)
 			self.indata['piota_type'] = type_name
+		else:
+			return
 		self.UpdateArrays()
 		self.DrawArrays()
 
@@ -144,14 +161,17 @@ class MyApp(QMainWindow):
 		# Update the table
 		self.ui.TableArrays.setRowCount(1)
 		self.ui.TableArrays.setColumnCount(20)
+		self.ui.TableArrays.setVerticalHeaderLabels('1')
+		self.ui.TableArrays.setHorizontalHeaderLabels('0;1;2;3;4;5;6;7;8;9;10;11;12;13;14;15;16;17;18;19;20'.split(';'))
 		if data_name == 'am' or data_name == 'ac' or data_name == 'ai':
 			for num,item in enumerate(self.indata[data_name], start=0):
 				self.ui.TableArrays.setItem(0,num, QTableWidgetItem(str(item)))
-		if data_name == 'am_aux' or data_name == 'ac_aux' or data_name == 'ai_aux':
+		elif data_name == 'am_aux' or data_name == 'ac_aux' or data_name == 'ai_aux':
 			aux_mask = self.indata[data_name+'_s']>=0
 			self.ui.TableArrays.setRowCount(2)
-			if (len(aux_mask) > 0):
-				self.ui.TableArrays.setColumnCount(len(aux_mask))
+			print(np.count_nonzero(aux_mask))
+			if (np.count_nonzero(aux_mask) > 0):
+				self.ui.TableArrays.setColumnCount(np.count_nonzero(aux_mask))
 				for num,item in enumerate(self.indata[data_name+'_s'][aux_mask], start=0):
 					self.ui.TableArrays.setItem(0,num, QTableWidgetItem(str(item)))
 					self.ui.TableArrays.setItem(1,num, QTableWidgetItem(str(self.indata[data_name+'_f'][num])))
@@ -169,6 +189,31 @@ class MyApp(QMainWindow):
 				self.ui.TableArrays.setItem(1,3, QTableWidgetItem('0.4'))
 				self.ui.TableArrays.setItem(1,4, QTableWidgetItem('0.2'))
 				self.ui.TableArrays.setItem(1,5, QTableWidgetItem('0.0'))
+				self.indata[data_name+'_s']=np.array([0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
+				self.indata[data_name+'_f']=np.array([1.0, 0.8, 0.6, 0.4, 0.2, 0.0])
+				set_module_var('vmec_input',data_name+'_s',self.indata[data_name+'_s'])
+				set_module_var('vmec_input',data_name+'_s',self.indata[data_name+'_f'])
+		elif data_name == 'rbc' or data_name == 'zbs' or data_name == 'rbs' or data_name == 'zbc':
+
+			self.ui.TableArrays.blockSignals(True)
+			# Set Array Size
+			self.ui.TableArrays.setRowCount(self.indata['ntor']*2+1)
+			self.ui.TableArrays.setColumnCount(self.indata['mpol'])
+			# Set Headings
+			temp =''
+			for i in range(2*self.indata['ntor']+1): temp = temp + str(i-self.indata['ntor'])+";"
+			self.ui.TableArrays.setVerticalHeaderLabels(temp.split(";"))
+			temp =''
+			for i in range(self.indata['mpol']): temp = temp + str(i)+";"
+			self.ui.TableArrays.setHorizontalHeaderLabels(temp.split(";"))
+			# Set Values
+			for i in range(2*self.indata['ntor']+1):
+				for j in range(self.indata['mpol']):
+					i2 = 101-self.indata['ntor'] + i
+					val = str(self.indata[data_name][j,i2])
+					self.ui.TableArrays.setItem(i,j, QTableWidgetItem(val))
+
+			self.ui.TableArrays.blockSignals(False)
 		self.ui.TableArrays.show()
 		self.DrawArrays()
 
@@ -183,10 +228,13 @@ class MyApp(QMainWindow):
 			return
 		value = float(item.text())
 		col = self.ui.TableArrays.currentColumn()
-		row = self.ui.TableArrays.currentColumn()
+		row = self.ui.TableArrays.currentRow()
 		if len(data_name) == 2:
 			self.indata[data_name][col]=value
 			set_module_var('vmec_input',data_name,self.indata[data_name][:])
+		elif data_name == 'rbc' or data_name == 'zbs' or data_name == 'rbs' or data_name == 'zbc':
+			row2 = 101 - self.indata['ntor'] + row
+			self.indata[data_name][col][row2]=value
 		self.DrawArrays()
 
 	def DrawArrays(self):
@@ -211,6 +259,40 @@ class MyApp(QMainWindow):
 			for i,xx in enumerate(s):
 				f[i] = piota(xx)
 				self.ax.set_ylabel('Iota')
+		elif data_name == 'rbc' or data_name == 'zbs' or data_name == 'rbs' or data_name == 'zbc':
+			mnmax = (2*self.indata['ntor']+1)*(self.indata['mpol'])
+			nu = 4*self.indata['mpol']
+			nv = 4*self.indata['ntor']
+			if nu < 64: nu=64
+			if nv < 32: nv=32
+			mn = 0
+			xn = np.ndarray((mnmax,1))
+			xm = np.ndarray((mnmax,1))
+			rmnc = np.ndarray((1,mnmax))
+			zmns = np.ndarray((1,mnmax))
+			rmns = np.ndarray((1,mnmax))
+			zmnc = np.ndarray((1,mnmax))
+			for i in range(2*self.indata['ntor']+1):
+				for j in range(self.indata['mpol']):
+					i2 = 101-self.indata['ntor'] + i
+					xn[mn] = (i-self.indata['ntor'])*self.indata['nfp']
+					xm[mn] = j
+					rmnc[0,mn] = self.indata['rbc'][j,i2]
+					zmns[0,mn] = self.indata['zbs'][j,i2]
+					rmns[0,mn] = self.indata['rbs'][j,i2]
+					zmnc[0,mn] = self.indata['zbc'][j,i2]
+					mn = mn + 1
+			theta = np.ndarray((nu,1))
+			zeta = np.ndarray((nv,1))
+			for j in range(nu): theta[j]=2*pi*j/(nu-1)
+			for j in range(nv): zeta[j]=pi*j/(nv)/self.indata['nfp']
+			r=cfunct(theta,zeta,rmnc,xm,xn)
+			z=sfunct(theta,zeta,zmns,xm,xn)
+			self.ax = isotoro(r,z,zeta,0,fig=self.fig)
+			self.ax.grid(False)
+			self.ax.set_axis_off()
+			self.canvas.draw()
+			return
 		fmax = max(f)
 		if fmax == 0:
 			fmax = 1
