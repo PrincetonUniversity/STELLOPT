@@ -38,7 +38,7 @@
 !
 !----------------------------------------------------------------------
       INTEGER :: maxPnt, nalpha0_, ialpha, i, iunit, ik, ier, ncnt 
-      INTEGER :: j, k, global_npol
+      INTEGER :: j, k, global_npol, m, lbound_i
 !      REAL(rprec) :: a, s, Ba, Fa, iot,iotp,qprim, &
 !                     pval, pprime, dalpha, alpha0_start_, phi0, &
 !                     th, jac1, c, &
@@ -53,12 +53,14 @@
       REAL(rprec) :: temp1, temp2, temp3, abserr, alpha0_end
       REAL(rprec) :: alpha0_start, maxTheta
       REAL(rprec) :: g11,g12,g22,Bhat,abs_jac,L1,L2,dBdt
-      REAL(rprec) :: th_mod, th_dif
+      REAL(rprec) :: th_mod, th_dif, lbound_th
+      REAL(rprec) :: gxx_slope, gxy_slope, gyy_slope, modB_slope
+      REAL(rprec) :: jac_slope, dBdx_slope, dBdy_slope 
       REAL(rprec), DIMENSION(3) :: sflCrd0,sflCrd, sflCrd_sav, gradS,gradThetaStar,&
                                    gradPhi,mag,gradAlpha, wrk, gradB,R_grad,Z_grad,&
                                    esubs, esubu, esubv, es, eu, ev, gradlam, ea, et
       character(len=128) :: temp_str, gist_filename, num_str
-      LOGICAL :: uflag, res
+      LOGICAL :: uflag, res, skip
  
       REAL(rprec), PARAMETER :: zero   = 0.0_rprec
       REAL(rprec), PARAMETER :: one    = 1.0_rprec
@@ -131,7 +133,8 @@
         WRITE(iunit,"(A,I5)") "n_pol = ",1
         WRITE(iunit,"(A)") "/"
       end if
-
+      
+      skip = .false.
       !DO k=lk1+1,lk2
       !  DO j=lj1,lj2
           sflCrd0(1) = s
@@ -145,8 +148,8 @@
             th = -maxTheta + (i-1)*dtheta
             th_mod = MOD(ABS(th),pi2)
             th_dif = ABS(pi2 - th_mod) 
-            IF (th_mod/pi > 0.04 .and. th_dif/pi > 0.04) THEN
-            IF (ABS(th)/pi < 4) PRINT *, th, th_mod
+            IF ((ABS(th) > pi .and. th_mod/pi > 0.04 .and. th_dif/pi > 0.04)&
+            & .or. (ABS(th) <= pi)) THEN
             sflCrd(1) = sflCrd0(1)
             sflCrd(2) = th
             sflCrd(3) = sflCrd0(3) + q*(th-sflCrd0(2))
@@ -155,40 +158,16 @@
             CALL pest2vmec(sflCrd) ! Returns on 2pi grid
             u = sflCrd(2)
             v = sflCrd(3)
-      IF (proc_string == 'QHS_good_opt0') THEN
-      IF (th/pi < 2.1 .and. th/pi > 1.9) THEN
-        PRINT *, "theta = ", th, th/pi
-        PRINT *, "8, u = ", u, ", v = ", v
-      END IF
-      END IF
             IF (u < 0) THEN
                u = -MOD(ABS(u),pi2)
                u = u + pi2
             END IF
             IF (v < 0) THEN
                v = -MOD(ABS(v),pi2)
-      IF (proc_string == 'QHS_good_opt0') THEN
-      IF (th/pi < 2.1 .and. th/pi > 1.9) THEN
-        PRINT *, "theta = ", th, th/pi
-        PRINT *, "9, u = ", u, ", v = ", v
-      END IF
-      END IF
                v = v + pi2
-      IF (proc_string == 'QHS_good_opt0') THEN
-      IF (th/pi < 2.1 .and. th/pi > 1.9) THEN
-        PRINT *, "theta = ", th, th/pi
-        PRINT *, "10, u = ", u, ", v = ", v
-      END IF
-      END IF
             END IF
             IF (u > pi2) u = MOD(u,pi2)
             IF (v > pi2) v = MOD(v,pi2)
-      IF (proc_string == 'QHS_good_opt0') THEN
-      IF (th/pi < 2.1 .and. th/pi > 1.9) THEN
-        PRINT *, "theta = ", th, th/pi
-        PRINT *, "11, u = ", u, ", v = ", v
-      END IF
-      END IF
             CALL get_equil_RZ(sflCrd(1),u,v,R,Z,ier,R_GRAD=R_grad,Z_GRAD=Z_grad)
             ! Get equil_RZ returns dR/drho and dZ/drho
             !   dR/ds=(0.5/rho)*dR/drho=(0.5/sqrt(s))*dR/drho
@@ -220,15 +199,6 @@
             CALL cross_product(esubu,esubv,es)
             CALL cross_product(esubv,esubs,eu)
             CALL cross_product(esubs,esubu,ev)
-      IF (proc_string == 'QHS_good_opt0') THEN
-      IF (th/pi < 2.1 .and. th/pi > 1.9) THEN
-        PRINT *, "esubu = ", esubu(1), esubu(2), esubu(3)
-        PRINT *, "esubv = ", esubv(1), esubv(2), esubv(3)
-        PRINT *, "es = ", es
-        PRINT *, "sqrtg = ", sqrtg
-        PRINT *, "es/sqrtg = ", es/sqrtg
-      END IF
-      END IF      
             es = es/sqrtg
             eu = eu/sqrtg
             ev = ev/sqrtg
@@ -287,20 +257,43 @@
             L2 = two*sqrt(s)*(dBds + c*(gaa*gst-gsa*gat)*dBdt/(4*Bhat**2))
             dBdx(i-1) = L1
             dBdy(i-1) = L2
-            if (write_gist) then
-              WRITE(iunit,"(9ES20.10)") g11,g12,g22,Bhat,abs_jac,L2,&
-              &L1,th,0.0; CALL FLUSH(iunit)
-            end if
-      IF (proc_string == 'QHS_good_opt0') THEN
-      IF (th/pi < 2.1 .and. th/pi > 1.9) THEN
-        PRINT *, "gradS = ", gradS
-        PRINT *, "gss = ", gss
-        PRINT *, "g11 = ", g11
-        PRINT *, "=============================================="
-      END IF
-      END IF 
+            IF (skip .eqv. .true.) THEN
+              gxx_slope = (gxx(i-1) - gxx(lbound_i))/(th-lbound_th)
+              gxy_slope = (gxy(i-1) - gxy(lbound_i))/(th-lbound_th)
+              gyy_slope = (gyy(i-1) - gyy(lbound_i))/(th-lbound_th)
+              modB_slope = (modB(i-1) - modB(lbound_i))/(th-lbound_th)
+              jac_slope = (jac(i-1) - jac(lbound_i))/(th-lbound_th)
+              dBdx_slope = (dBdx(i-1) - dBdx(lbound_i))/(th-lbound_th)
+              dBdy_slope = (dBdy(i-1) - dBdy(lbound_i))/(th-lbound_th)
+              DO m=1,i-lbound_i-2
+                gxx(lbound_i+m) = gxx(lbound_i) + gxx_slope*dtheta*m 
+                gxy(lbound_i+m) = gxy(lbound_i) + gxy_slope*dtheta*m 
+                gyy(lbound_i+m) = gyy(lbound_i) + gyy_slope*dtheta*m 
+                modB(lbound_i+m) = modB(lbound_i) + modB_slope*dtheta*m 
+                jac(lbound_i+m) = jac(lbound_i) + jac_slope*dtheta*m 
+                dBdx(lbound_i+m) = dBdx(lbound_i) + dBdx_slope*dtheta*m 
+                dBdy(lbound_i+m) = dBdy(lbound_i) + dBdy_slope*dtheta*m 
+              END DO 
+              skip = .false.
+            END IF
+              
+            
+          ELSE
+            IF (skip .eqv. .false.) THEN
+              lbound_i = i-2
+              lbound_th = th
+              skip = .true.
+            END IF
           END IF
+            
           ENDDO ! End loop over field line
+            if (write_gist) then
+              DO i=0,maxPnt-1
+              WRITE(iunit,"(9ES20.10)") gxx(i),gxy(i),gyy(i),modB(i),&
+              & (Bref*q0)/minor_a*jac(i), dBdy(i),&
+              & dBdx(i),-maxTheta + i*dtheta,0.0; CALL FLUSH(iunit)
+              END DO 
+            end if
           if (write_gist) CLOSE(iunit)
  
           ! Solve ITG dispersion relation for each (kx,ky)
