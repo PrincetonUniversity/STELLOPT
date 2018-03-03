@@ -37,7 +37,7 @@
 !     Local variables
 !
 !----------------------------------------------------------------------
-      INTEGER :: maxPnt, nalpha0_, ialpha, i, iunit, ik, ier 
+      INTEGER :: maxPnt, nalpha0_, ialpha, i, iunit, ik, ier, ncnt 
       INTEGER :: j, k, global_npol
 !      REAL(rprec) :: a, s, Ba, Fa, iot,iotp,qprim, &
 !                     pval, pprime, dalpha, alpha0_start_, phi0, &
@@ -53,9 +53,12 @@
       REAL(rprec) :: temp1, temp2, temp3, abserr, alpha0_end
       REAL(rprec) :: alpha0_start, maxTheta
       REAL(rprec) :: g11,g12,g22,Bhat,abs_jac,L1,L2,dBdt
+      REAL(rprec) :: th_mod, th_dif
       REAL(rprec), DIMENSION(3) :: sflCrd0,sflCrd, sflCrd_sav, gradS,gradThetaStar,&
                                    gradPhi,mag,gradAlpha, wrk, gradB,R_grad,Z_grad,&
                                    esubs, esubu, esubv, es, eu, ev, gradlam, ea, et
+      character(len=128) :: temp_str, gist_filename, num_str
+      LOGICAL :: uflag, res
  
       REAL(rprec), PARAMETER :: zero   = 0.0_rprec
       REAL(rprec), PARAMETER :: one    = 1.0_rprec
@@ -100,9 +103,24 @@
 
       CALL PTSM3D_initialize_itg_solve
 
+      temp_str = TRIM('gist_genet_'//TRIM(proc_string))
+      ncnt = 0
+      uflag = .false.
+      DO WHILE (uflag .eqv. .false.)
+        WRITE(num_str,"(I5.5)") ncnt 
+        gist_filename = TRIM(temp_str)//&
+        & '.' //TRIM(ADJUSTL(num_str))  
+        INQUIRE(FILE=TRIM(gist_filename),EXIST=res)
+        IF (res) THEN
+          ncnt = ncnt + 1
+        ELSE
+          uflag = .true.
+        END IF
+      END DO 
       if (write_gist) then
-        iunit = 50000
-        CALL safe_open(iunit,iflag,"gist_temp",'unknown','formatted')
+        iunit = 50000+iflag+100*ncnt
+        CALL safe_open(iunit,iflag,TRIM(gist_filename),&
+          & 'unknown','formatted')
         WRITE(iunit,'(A)') '&PARAMETERS'
         WRITE(iunit,"(A,F12.7)") "s0 = ",s
         WRITE(iunit,"(A,F12.7)") "minor_a = ", a
@@ -125,6 +143,10 @@
           DO i = 1, maxPnt ! Loop over field line
             !th = -pi*local_npol + (i-1)*dtheta
             th = -maxTheta + (i-1)*dtheta
+            th_mod = MOD(ABS(th),pi2)
+            th_dif = ABS(pi2 - th_mod) 
+            IF (th_mod/pi > 0.04 .and. th_dif/pi > 0.04) THEN
+            IF (ABS(th)/pi < 4) PRINT *, th, th_mod
             sflCrd(1) = sflCrd0(1)
             sflCrd(2) = th
             sflCrd(3) = sflCrd0(3) + q*(th-sflCrd0(2))
@@ -133,16 +155,40 @@
             CALL pest2vmec(sflCrd) ! Returns on 2pi grid
             u = sflCrd(2)
             v = sflCrd(3)
+      IF (proc_string == 'QHS_good_opt0') THEN
+      IF (th/pi < 2.1 .and. th/pi > 1.9) THEN
+        PRINT *, "theta = ", th, th/pi
+        PRINT *, "8, u = ", u, ", v = ", v
+      END IF
+      END IF
             IF (u < 0) THEN
                u = -MOD(ABS(u),pi2)
                u = u + pi2
             END IF
             IF (v < 0) THEN
                v = -MOD(ABS(v),pi2)
+      IF (proc_string == 'QHS_good_opt0') THEN
+      IF (th/pi < 2.1 .and. th/pi > 1.9) THEN
+        PRINT *, "theta = ", th, th/pi
+        PRINT *, "9, u = ", u, ", v = ", v
+      END IF
+      END IF
                v = v + pi2
+      IF (proc_string == 'QHS_good_opt0') THEN
+      IF (th/pi < 2.1 .and. th/pi > 1.9) THEN
+        PRINT *, "theta = ", th, th/pi
+        PRINT *, "10, u = ", u, ", v = ", v
+      END IF
+      END IF
             END IF
             IF (u > pi2) u = MOD(u,pi2)
             IF (v > pi2) v = MOD(v,pi2)
+      IF (proc_string == 'QHS_good_opt0') THEN
+      IF (th/pi < 2.1 .and. th/pi > 1.9) THEN
+        PRINT *, "theta = ", th, th/pi
+        PRINT *, "11, u = ", u, ", v = ", v
+      END IF
+      END IF
             CALL get_equil_RZ(sflCrd(1),u,v,R,Z,ier,R_GRAD=R_grad,Z_GRAD=Z_grad)
             ! Get equil_RZ returns dR/drho and dZ/drho
             !   dR/ds=(0.5/rho)*dR/drho=(0.5/sqrt(s))*dR/drho
@@ -174,6 +220,15 @@
             CALL cross_product(esubu,esubv,es)
             CALL cross_product(esubv,esubs,eu)
             CALL cross_product(esubs,esubu,ev)
+      IF (proc_string == 'QHS_good_opt0') THEN
+      IF (th/pi < 2.1 .and. th/pi > 1.9) THEN
+        PRINT *, "esubu = ", esubu(1), esubu(2), esubu(3)
+        PRINT *, "esubv = ", esubv(1), esubv(2), esubv(3)
+        PRINT *, "es = ", es
+        PRINT *, "sqrtg = ", sqrtg
+        PRINT *, "es/sqrtg = ", es/sqrtg
+      END IF
+      END IF      
             es = es/sqrtg
             eu = eu/sqrtg
             ev = ev/sqrtg
@@ -236,7 +291,15 @@
               WRITE(iunit,"(9ES20.10)") g11,g12,g22,Bhat,abs_jac,L2,&
               &L1,th,0.0; CALL FLUSH(iunit)
             end if
-
+      IF (proc_string == 'QHS_good_opt0') THEN
+      IF (th/pi < 2.1 .and. th/pi > 1.9) THEN
+        PRINT *, "gradS = ", gradS
+        PRINT *, "gss = ", gss
+        PRINT *, "g11 = ", g11
+        PRINT *, "=============================================="
+      END IF
+      END IF 
+          END IF
           ENDDO ! End loop over field line
           if (write_gist) CLOSE(iunit)
  
@@ -255,15 +318,24 @@
       
       IF (opt_target == 'zf') THEN
         ptsm3d_target = target_12f
-        IF (lscreen) WRITE(6,"(A,F12.7)"),"TARGET_12F  : ",target_12f 
+        !IF (lscreen) WRITE(6,"(2A,F12.7)"),&
+        WRITE(6,"(2A,F12.7)"),&
+          & TRIM(TRIM(proc_string)//"."//TRIM(num_str)),&
+          &", TARGET_12F  : ",target_12f 
       END IF
       IF (opt_target == 'nzf') THEN
         ptsm3d_target = target_qst
-        IF (lscreen) WRITE(6,"(A,F12.7)"),"TARGET_QST  : ",target_qst 
+        !IF (lscreen) WRITE(6,"(A,F12.7)"),"TARGET_QST  : ",target_qst 
+        WRITE(6,"(2A,F12.7)"),&
+          & TRIM(TRIM(proc_string)//"."//TRIM(num_str)),&
+          & "TARGET_QST  : ",target_qst
       END IF
       IF (opt_target == 'combo') THEN
         ptsm3d_target = target_12f+target_qst 
-        IF (lscreen) WRITE(6,"(A,F12.7)"),"PTSM3D_TARGET   : ",ptsm3d_target
+        !IF (lscreen) WRITE(6,"(A,F12.7)"),"PTSM3D_TARGET   : ",ptsm3d_target
+        WRITE(6,"(2A,F12.7)"),&
+          & TRIM(TRIM(proc_string)//"."//TRIM(num_str)),&
+          & "PTSM3D_TARGET   : ",ptsm3d_target
       END IF
 
       CALL PTSM3D_finalize_triplets
