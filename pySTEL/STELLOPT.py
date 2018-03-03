@@ -56,6 +56,7 @@ class MyApp(QMainWindow):
 		self.ui.ComboBoxArrays.currentIndexChanged.connect(self.UpdateArrays)
 		self.ui.ComboBoxPType.currentIndexChanged.connect(self.UpdatePType)
 		self.ui.TableArrays.cellChanged.connect(self.DataArrays)
+		self.ui.ButtonWriteIndata.clicked.connect(self.WriteIndata)
 
 	def UpdateMpol(self):
 		strtmp = self.ui.TextMpol.text()
@@ -120,6 +121,23 @@ class MyApp(QMainWindow):
 			self.ui.TableNsArray.setItem(2,num, QTableWidgetItem(str(ftol_array[num])))
 		self.ui.TableNsArray.show()
 		self.UpdateArrays()
+
+	def WriteIndata(self):
+		# Handles loading an indata file.
+		w = QWidget()
+		w.resize(320, 240)
+		w.setWindowTitle("Hello World!")
+		filename = QFileDialog.getSaveFileName(w, 'Open File', '.')
+		w.destroy
+		# Update the module with all the not-updated values
+
+		# Now write the file
+		iunit = 27
+		istat = 0
+		recl  = 1
+		temp=safe_open(iunit,istat,filename,'unknown','formatted',recl,'sequential','none')
+		#self.indata=write_indata_namelist(iunit,istat) # Not working yet
+		safe_close(iunit)
 
 	def UpdatePType(self):
 		data_name=self.ui.ComboBoxArrays.currentText()

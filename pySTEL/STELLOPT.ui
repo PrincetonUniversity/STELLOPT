@@ -698,6 +698,19 @@
        </property>
       </item>
      </widget>
+     <widget class="QPushButton" name="ButtonWriteIndata">
+      <property name="geometry">
+       <rect>
+        <x>610</x>
+        <y>10</y>
+        <width>121</width>
+        <height>32</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>WRITE INDATA</string>
+      </property>
+     </widget>
     </widget>
    </widget>
   </widget>

@@ -483,7 +483,7 @@ def set_module_var(module,var,val):
         temp.value = val
     return
 
-def write_indata_namelist(iunit,istat,indata):
+def write_indata_namelist(iunit,istat):
     import os, sys
     import ctypes as ct
     import numpy.ctypeslib as npct
@@ -495,19 +495,6 @@ def write_indata_namelist(iunit,istat,indata):
     except KeyError:
         print("Please set environment variable STELLOPT_PATH")
         sys.exit(1)
-    # Handle the variables
-    #for var in indata:
-    #    if (type(indata[var])==int):
-    #        temp=ct.c_int.in_dll(libstell,'__vmec_input_MOD_'+var).value
-    #        print(var,temp)
-    #        print(var,indata[var])
-    #        #setattr(libstell,'__vmec_input_MOD_'+var,ct.POINTER(ct.c_int(indata[var])))
-    #        temp=ct.c_int.in_dll(libstell,'__vmec_input_MOD_'+var).value
-    #        print(var,temp)
-
-        #if (type(indata[var])==np.ndarray):
-        #    if (type(indata[var](1))==np.int32):
-        #    if (type(indata[var](1))==np.int32):
     # Handle interface
     write_indata_namelist = getattr(libstell,'__vmec_input_MOD_write_indata_namelist')
     #SUBROUTINE read_indata_namelist (iunit, istat)
@@ -516,8 +503,8 @@ def write_indata_namelist(iunit,istat,indata):
     iunit_temp = ct.c_int(iunit)
     istat_temp = ct.c_int(istat)
     write_indata_namelist(ct.byref(iunit_temp),ct.byref(istat_temp))
-    #istat = istat_temp
-    #iunit = iunit_temp
+    istat = istat_temp
+    iunit = iunit_temp
     return
 
 def pcurr(xx):
