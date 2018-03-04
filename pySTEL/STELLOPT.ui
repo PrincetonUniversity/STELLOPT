@@ -712,6 +712,11 @@
       </property>
      </widget>
     </widget>
+    <widget class="QWidget" name="tab">
+     <attribute name="title">
+      <string>STELLOPT</string>
+     </attribute>
+    </widget>
    </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">

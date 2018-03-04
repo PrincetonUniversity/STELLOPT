@@ -459,7 +459,7 @@ def set_module_var(module,var,val):
     elif type(val) == np.ndarray:
         if type(val[0]) == bool:
             tt = ct.c_bool
-        elif type(val[0]) == int:
+        elif type(val[0]) == np.int32:
             tt = ct.c_int
         elif type(val[0]) == np.float64:
             tt = ct.c_double
@@ -503,8 +503,8 @@ def write_indata_namelist(iunit,istat):
     iunit_temp = ct.c_int(iunit)
     istat_temp = ct.c_int(istat)
     write_indata_namelist(ct.byref(iunit_temp),ct.byref(istat_temp))
-    istat = istat_temp
-    iunit = iunit_temp
+    #istat = istat_temp
+    #iunit = iunit_temp
     return
 
 def pcurr(xx):

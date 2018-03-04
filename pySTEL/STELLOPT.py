@@ -10,7 +10,8 @@ from PyQt4.QtGui import QMainWindow, QApplication, qApp, QApplication, QVBoxLayo
                         QSizePolicy, QWidget, QFileDialog
 from PyQt4.QtGui import QIcon, QTableWidget, QTableWidgetItem
 from libstell.libstell import safe_open, read_indata_namelist, pmass, pcurr, piota, \
-                              set_module_var, safe_close, cfunct, sfunct, isotoro
+                              set_module_var, safe_close, cfunct, sfunct, isotoro, \
+                              write_indata_namelist
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from mpl_toolkits import mplot3d
@@ -56,6 +57,7 @@ class MyApp(QMainWindow):
 		self.ui.ComboBoxArrays.currentIndexChanged.connect(self.UpdateArrays)
 		self.ui.ComboBoxPType.currentIndexChanged.connect(self.UpdatePType)
 		self.ui.TableArrays.cellChanged.connect(self.DataArrays)
+		self.ui.TableNsArray.cellChanged.connect(self.NSArrays)
 		self.ui.ButtonWriteIndata.clicked.connect(self.WriteIndata)
 
 	def UpdateMpol(self):
@@ -130,13 +132,36 @@ class MyApp(QMainWindow):
 		filename = QFileDialog.getSaveFileName(w, 'Open File', '.')
 		w.destroy
 		# Update the module with all the not-updated values
-
+		self.indata['tcon0'] = float(self.ui.TextTcon0.text())
+		set_module_var('vmec_input','tcon0',self.indata['tcon0'])
+		self.indata['delt'] = float(self.ui.TextDelt.text())
+		set_module_var('vmec_input','delt',self.indata['delt'])
+		self.indata['ntheta'] = int(self.ui.TextNtheta.text())
+		set_module_var('vmec_input','ntheta',self.indata['ntheta'])
+		self.indata['nzeta'] = int(self.ui.TextNzeta.text())
+		set_module_var('vmec_input','nzeta',self.indata['nzeta'])
+		self.indata['nfp'] = int(self.ui.TextNfp.text())
+		set_module_var('vmec_input','nfp',self.indata['nfp'])
+		self.indata['nvacskip'] = int(self.ui.TextNvacSkip.text())
+		set_module_var('vmec_input','nvacskip',self.indata['nvacskip'])
+		self.indata['gamma'] = float(self.ui.TextGamma.text())
+		set_module_var('vmec_input','gamma',self.indata['gamma'])
+		self.indata['phiedge'] = float(self.ui.TextPhiEdge.text())
+		set_module_var('vmec_input','phiedge',self.indata['phiedge'])
+		self.indata['pres_scale'] = float(self.ui.TextPresScale.text())
+		set_module_var('vmec_input','pres_scale',self.indata['pres_scale'])
+		self.indata['bloat'] = float(self.ui.TextBloat.text())
+		set_module_var('vmec_input','bloat',self.indata['bloat'])
+		self.indata['spres_ped'] = float(self.ui.TextSpresPed.text())
+		set_module_var('vmec_input','spres_ped',self.indata['spres_ped'])
+		self.indata['curtor'] = float(self.ui.TextCurtor.text())
+		set_module_var('vmec_input','curtor',self.indata['curtor'])
 		# Now write the file
 		iunit = 27
 		istat = 0
-		recl  = 1
+		recl  = 1000
 		temp=safe_open(iunit,istat,filename,'unknown','formatted',recl,'sequential','none')
-		#self.indata=write_indata_namelist(iunit,istat) # Not working yet
+		self.indata=write_indata_namelist(iunit,istat) # Not working yet
 		safe_close(iunit)
 
 	def UpdatePType(self):
@@ -160,6 +185,25 @@ class MyApp(QMainWindow):
 			return
 		self.UpdateArrays()
 		self.DrawArrays()
+
+	def NSArrays(self):
+		# Handles changes in NS matrix
+		# Get changed item
+		item = self.ui.TableNsArray.currentItem()
+		if item is None:
+			return
+		col = self.ui.TableNsArray.currentColumn()
+		row = self.ui.TableNsArray.currentRow()
+		print(row,col)
+		if row == 0: # NS
+			self.indata['ns_array'][col]=int(item.text())
+			set_module_var('vmec_input','ns_array',self.indata['ns_array'][:])
+		elif row == 1: #NITER_ARRAY
+			self.indata['niter_array'][col]=int(item.text())
+			set_module_var('vmec_input','niter_array',self.indata['niter_array'][:])
+		elif row ==2: #FTOL
+			self.indata['ftol_array'][col]=float(item.text())
+			set_module_var('vmec_input','ftol_array',self.indata['ftol_array'][:])
 
 	def UpdateArrays(self):
 		# Updates values in array box
