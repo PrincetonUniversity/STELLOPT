@@ -1215,8 +1215,7 @@
       DOUBLE PRECISION,INTENT(inout) :: coord(3)
       INTEGER :: ier, n1, n2
       DOUBLE PRECISION :: rho_val
-      DOUBLE PRECISION :: th, th1, th2, dth, phi, s, lam, dlam
-      LOGICAL :: pi2_flag
+      DOUBLE PRECISION :: th, th1, dth, phi, s, lam, dlam
       DOUBLE PRECISION,PARAMETER :: eps_newt = 1.0D-12
       s = coord(1)
       th = coord(2)
@@ -1236,25 +1235,18 @@
       dth = one
       n1 = 0
       rho_val = SQRT(s)
-      pi2_flag = .false.
       DO WHILE(ABS(dth) >= search_tol .and. n1 < 500)
          IF (th < 0) THEN
             th = th + pi2
-            pi2_flag = .true.
-            th2 = th1 + pi2
+            th1 = th1 + pi2
          END IF
          IF (th > pi2) THEN
             th = MOD(th,pi2)
-            pi2_flag = .true.
-            th2 = th1 - pi2
+            th1 = th1 - pi2
          END IF
          CALL EZSpline_interp(L_spl,th,phi,rho_val,lam,ier)
          CALL EZSpline_interp(Lu_spl,th,phi,rho_val,dlam,ier)
-         IF (pi2_flag .eqv. .false.) THEN
-           dth = -(th + lam - th1)/(one+dlam)
-         ELSE 
-           dth = -(th + lam - th2)/(one+dlam)
-         END IF
+         dth = -(th + lam - th1)/(one+dlam)
          n1 = n1 + 1
          th = th + 0.5*dth
       END DO
