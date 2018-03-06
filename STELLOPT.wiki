@@ -95,12 +95,21 @@ The final output of the STELLOPT routine is a combination of STELLOPT files, [[V
 
 ===Tutorials[[#Tutorials]]=== 
 [[STELLOPT Compilation|Compiling STELLOPT]]
+
 [[STELLOPT Input Namelist|The STELLOPT OPTIMUM namelist]]
+
 [[STELLOPT Fixed Boundary Optimization|Boundary Representations Explained]]
+
 [[STELLOPT Optimizer Comparison]]
+
 [[Optimization of an NCSX-like configuration]]
+
 [[Optimization of Iota using LMDIF]]
+
 [[STELLOPT Turblent Transport|STELLOPT Turbulent Transport]]
+
 [[STELLOPT Coil Optimization]]
+
 [[STELLOPT Energetic Particles|STELLOPT Energetic Particle Optimization]]
+
 [[vmecwiki/Stellopt_Adding_new_code|Adding Additional Constraints/Codes into STELLOPT]]
