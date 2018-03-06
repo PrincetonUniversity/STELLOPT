@@ -35,6 +35,8 @@ The wiki is designed to provide user documentation for various equilibrium magne
 
 [[SPEC]]
 
+[[SFINCS]]
+
 [[STELLOPT]]
 
 [[TERPSICHORE]]
