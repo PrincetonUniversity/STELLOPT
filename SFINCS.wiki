@@ -1,0 +1,92 @@
+SFINCS is a code that solves the drift-kinetic equation to compute many neoclassical quantities, such as the collisional radial fluxes, parallel flows, and bootstrap current. The code has a separate GitHub repository here
+[[https://github.com/landreman/sfincs]]
+and is not included in the main STELLOPT repository. This page describes one particular application of SFINCS: coupling to STELLOPT in order to obtain MHD equilibria with a self-consistent profile of bootstrap current. For other applications, you can refer directly to the SFINCS GitHub repository and the user manual there.
+
+----
+
+===Requirements=== 
+SFINCS requires a real (not complex) version of [[https://www.mcs.anl.gov/petsc/|PETSc]]. There is basically no way for an executable to link to both real and complex versions of PETSc, and since GENE uses a complex version of PETSc, this means SFINCS and GENE cannot both be linked to STELLOPT at the same time. (Although perhaps GENE could be built without PETSc support?)
+
+SFINCS requires that the PETSc library be built with either MUMPS or SuperLU_DIST, which are libraries for parallel direct solution of sparse linear systems. MUMPS is preferable to SuperLU_DIST, as it is faster and uses less memory.
+
+SFINCS also requires the HDF5 and NetCDF libraries.
+
+----
+
+===Installing, compiling, and linking=== 
+To get SFINCS, clone the git repository:
+
+{{{
+#!git
+git clone https://github.com/landreman/sfincs.git
+}}}
+
+Compile SFINCS following the directions in the SFINCS user manual. A library file libsfincs.a will be generated that we will link into STELLOPT.
+
+Next, in your STELLOPT repository, you must (at least for now) switch to the "sfincs" branch of the repo. To do this, type
+<span style="background-color: #dddddd; font-family: &#39;Courier New&#39;,Courier,monospace;">git checkout sfincs</span>
+from anywhere in the STELLOPT repository.
+
+In your stellopt <span style="font-family: Courier New,Courier,monospace;">make_*.inc</span> file, look for the section
+<span style="background-color: #dddddd; font-family: Courier New,Courier,monospace;">####################################################################### </span>
+<span style="background-color: #dddddd; font-family: Courier New,Courier,monospace;"># SFINCS Options </span>
+<span style="background-color: #dddddd; font-family: Courier New,Courier,monospace;">####################################################################### </span>
+Here, set
+<span style="background-color: #dddddd; font-family: Courier New,Courier,monospace;">LSFINCS = T</span>
+Also, set <span style="font-family: Courier New,Courier,monospace;">SFINCS_DIR</span><span class="s1"> and </span><span style="font-family: Courier New,Courier,monospace;">PETSC_DIR</span><span class="s1"> appropriately for your system. Now build STELLOPTV2. This should generate an executable </span><span style="font-family: Courier New,Courier,monospace;">xstelloptv2</span><span class="s1"> that is linked to SFINCS.</span>
+
+----
+
+==="vboot" iterations=== 
+To obtain a self-consistent profile of bootstrap current, each call to (PAR)VMEC is replaced by an iteration between VMEC and a bootstrap current code (SFINCS, or perhaps some other code like BOOTSJ). VMEC takes a given profile of toroidal current and computes the magnetic geometry. Then the bootstrap current code takes the given magnetic geometry and computes an updated current profile. The process is repeated until convergence. These iterations are coordinated by STELLOPT, in the file <span style="font-family: Courier New,Courier,monospace;">STELLOPTV2/Sources/General/stellopt_vboot.f90</span>. The switch to turn on this iteration in STELLOPTV2 is
+<span style="background-color: #dddddd; font-family: Courier New,Courier,monospace;">equil_type = 'vboot'</span>
+in the <span style="font-family: Courier New,Courier,monospace;">&optimum</span> namelist, instead of the usual settings 'vmec2000' or 'parvmec'. To select which code is used to compute the bootstrap current, you should include
+<span style="background-color: #dddddd; font-family: Courier New,Courier,monospace;">bootcalc_type='sfincs'</span>
+or
+<span style="background-color: #dddddd; font-family: Courier New,Courier,monospace;">bootcalc_type='bootsj'</span>
+in the <span style="font-family: Courier New,Courier,monospace;">&optimum</span> namelist. In this namelist you should also specify
+<span style="background-color: #dddddd; font-family: Courier New,Courier,monospace;">vboot_tolerance = 1.e-2</span>
+<span class="s1">or some other value; this variable controls the number of iterations that will be performed between VMEC and the bootstrap current code, with a smaller tolerance leading to more iterations. </span>
+
+For further mathematical details of the vboot iteration, see the note <span style="font-family: Courier New,Courier,monospace;">doc/computing_vmec_AC_profile_from_a_bootstrap_current_code</span>
+
+----
+
+===SFINCS input parameters=== 
+When SFINCS is run as a standalone code, it reads several namelists (&general, &geometryParameters, etc.) from a file named input.namelist. However when SFINCS is run via STELLOPT, these namelists should all be appended to the main STELLOPT input.* file. If there is an input.namelist file present, it will not be read by SFINCS.
+
+For detailed documentation of the SFINCS input namelists and parameters, see the SFINCS user manual.
+The following SFINCS input parameters must all be specified in the input file:
+<span style="font-family: Courier New,Courier,monospace;">equilibriumFile</span>
+<span style="font-family: Courier New,Courier,monospace;">inputRadialCoordinate</span>
+<span style="font-family: Courier New,Courier,monospace;">inputRadialCoordinateForGradients</span>
+<span style="font-family: Courier New,Courier,monospace;">psiN_wish</span>
+<span style="font-family: Courier New,Courier,monospace;">nHats</span>
+<span style="font-family: Courier New,Courier,monospace;">THats</span>
+<span style="font-family: Courier New,Courier,monospace;">dnHatdpsiNs</span>
+<span style="font-family: Courier New,Courier,monospace;">dTHatdpsiNs</span>
+These parameters will all be over-written by STELLOPT.
+
+There are several parameters related to the SFINCS-STELLOPT interaction that are not used with standalone SFINCS, and which should be specified in the <span style="font-family: Courier New,Courier,monospace;">&optimum</span> namelist. First, <span style="font-family: Courier New,Courier,monospace;">sfincs_s</span> should be set to a real array with entries in (0,1], giving the radii (in terms of normalized toroidal flux s) at which SFINCS will be run. Do not include 0 as a radius, since the bootstrap current always vanishes on axis. Depending on the density and temperature profiles, you may or may not wish to include 1 as a radius; if either the density or temperature vanish at s=1 then SFINCS will fail there. 
+
+Also, <span style="font-family: Courier New,Courier,monospace;">sfincs_min_procs</span> should be set to an integer giving the minimum number of processors allocated to SFINCS for each magnetic surface.
+
+----
+
+===Parallelization considerations=== 
+...
+
+----
+
+===SFINCS numerical resolution parameters=== 
+It is important to tune the SFINCS resolution parameters Ntheta, Nzeta, Nxi, and Nx based on the magnetic geometry and collisionality. If these values are too low, the SFINCS calculation will be under-resolved. If these resolution parameters are too high, the SFINCS calculations will take unnecessary computational time and memory. It is recommended that you do convergence testing using standalone SFINCS (not using STELLOPT) any time you make significant changes to the density, temperature, or magnetic geometry. (Small modifications to magnetic geometry, as arise during optimization, will not require changes to SFINCS resolution, but major changes such as switching from W7-X to NCSX will require resolution changes.) For detailed instructions on resolution convergence testing, see the chapter of the SFINCS user manual on `Numerical resolution parameters.'
+
+----
+
+===Visualization=== 
+Explain how to visualize the data.
+
+----
+
+===Tutorials=== 
+Put links to tutorial pages here.
