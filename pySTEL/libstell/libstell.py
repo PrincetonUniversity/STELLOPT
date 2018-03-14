@@ -564,7 +564,18 @@ def piota(xx):
     val = piota_func(ct.byref(xx_temp))
     return val;
 
-
+#def read_stellopt(filename):
+#    import numpy as np
+#    file_handle = open(filename,'r')
+#    stel_data={}
+#    stel_data['ITER'] = np.array([])
+#    for line in file_handle:
+#        print(line)
+#        if line.find('ITER '):
+#            d=line.find('ITER ')
+#            i=line.int()
+#            stel_data['ITER'] = np.concatenate((stel_data['ITER'],i),axis=1)
+#    file_handle.close()
 
 
 
