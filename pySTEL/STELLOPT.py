@@ -194,7 +194,6 @@ class MyApp(QMainWindow):
 			return
 		col = self.ui.TableNsArray.currentColumn()
 		row = self.ui.TableNsArray.currentRow()
-		print(row,col)
 		if row == 0: # NS
 			self.indata['ns_array'][col]=int(item.text())
 			set_module_var('vmec_input','ns_array',self.indata['ns_array'][:])
