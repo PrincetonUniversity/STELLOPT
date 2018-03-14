@@ -188,14 +188,14 @@ SUBROUTINE beams3d_physics(t, q)
              newspeed = speed - reduction*dt
              ltherm = .true.
              PE_lines(mytdex,myline) = PE_lines(mytdex,myline)+half*mymass*dve*dve*dt
-             PI_lines(mytdex,myline) = PI_lines(mytdex,myline)+half*mymass*dve*dve*dt
+             PI_lines(mytdex,myline) = PI_lines(mytdex,myline)+half*mymass*dvi*dve*dt
              vll = (newspeed/speed)*vll
              moment = newspeed*newspeed*moment/(speed*speed)
              q(4) = vll
              RETURN
           END IF
           PE_lines(mytdex,myline) = PE_lines(mytdex,myline)+half*mymass*dve*dve*dt
-          PI_lines(mytdex,myline) = PI_lines(mytdex,myline)+half*mymass*dve*dve*dt
+          PI_lines(mytdex,myline) = PI_lines(mytdex,myline)+half*mymass*dvi*dvi*dt
           vll = (newspeed/speed)*vll
           moment = newspeed*newspeed*moment/(speed*speed)
           speed = newspeed
