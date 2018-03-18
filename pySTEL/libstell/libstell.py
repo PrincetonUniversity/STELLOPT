@@ -771,6 +771,44 @@ def read_stellopt(filename):
 
     return stel_data;
 
+def read_stellopt_namelist(iunit,istat):
+    import os, sys
+    import ctypes as ct
+    import numpy.ctypeslib as npct
+    import numpy as np
+    # Load Libraries
+    try:
+        libstell = ct.cdll.LoadLibrary(os.environ["STELLOPT_PATH"]+"/LIBSTELL/Release/libstell.so")
+    except KeyError:
+        print("Please set environment variable STELLOPT_PATH")
+        sys.exit(1)
+    # Handle interface
+    #read_stellopt_input = getattr(libstell,'__vmec_input_MOD_read_indata_namelist')
+    #SUBROUTINE read_stellopt_input (iunit, istat)
+    #read_stellopt_input.argtypes = [ct.POINTER(ct.c_int),ct.POINTER(ct.c_int)]
+    #read_stellopt_input.restype=None
+    #iunit_temp = ct.c_int(iunit)
+    #istat_temp = ct.c_int(istat)
+    #read_stellopt_input(ct.byref(iunit_temp),ct.byref(istat_temp))
+    #istat = istat_temp
+    #iunit = iunit_temp
+    # Setup Arrays
+    stellopt_namelist={}
+    # Will delete this just using for testing
+    stellopt_namelist['NFUNC_MAX'] = 5000
+    stellopt_namelist['OPT_TYPE'] = 'LMDIF'
+    stellopt_namelist['EQUIL_TYPE'] = 'VMEC2000'
+    stellopt_namelist['FTOL'] = 1.0E-6
+    stellopt_namelist['XTOL'] = 1.0E-6
+    stellopt_namelist['GTOL'] = 1.0E-30
+    stellopt_namelist['EPSFCN'] = 1.0E-4
+    stellopt_namelist['MODE'] = 1
+    stellopt_namelist['FACTOR'] = 100
+    stellopt_namelist['CR_STRATEGY'] = 0
+    stellopt_namelist['NPOPULATION'] = -1
+    stellopt_namelist['NOPTIMIZERS'] = -1
+    return stellopt_namelist;
+
 
 
 
