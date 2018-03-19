@@ -238,13 +238,13 @@
                IF (ncnt == 0) WRITE(iunit_out,'(A,1X,F5.2)') 'VERSION',STELLOPT_VERSION
                WRITE(iunit_out,'(A,1X,I5.5)') 'ITER',ncnt
                CALL stellopt_load_targets(mtargets,fvec_temp,iflag,ncnt)          ! Count
-               WRITE(iunit_out,'(A,2(2X,I8))') 'TARGETS ',1,mtargets
+               WRITE(iunit_out,'(A,2(2X,I8))') 'TARGETS ',mtargets,1
                WRITE(iunit_out,'(A)') 'TARGETS'
                WRITE(iunit_out,'(ES22.12E3)') targets(1:mtargets)
-               WRITE(iunit_out,'(A,2(2X,I8))') 'SIGMAS ',1,mtargets
+               WRITE(iunit_out,'(A,2(2X,I8))') 'SIGMAS ',mtargets,1
                WRITE(iunit_out,'(A)') 'SIGMAS'
                WRITE(iunit_out,'(ES22.12E3)') sigmas(1:mtargets)
-               WRITE(iunit_out,'(A,2(2X,I8))') 'VALS ',1,mtargets
+               WRITE(iunit_out,'(A,2(2X,I8))') 'VALS ',mtargets,1
                WRITE(iunit_out,'(A)') 'VALUES'
                WRITE(iunit_out,'(ES22.12E3)') vals(1:mtargets)
                CLOSE(iunit_out)
@@ -466,13 +466,13 @@
                IF (ncnt == 0) WRITE(iunit_out,'(A,1X,F5.2)') 'VERSION',STELLOPT_VERSION
                WRITE(iunit_out,'(A,1X,I5.5)') 'ITER',ncnt
                CALL stellopt_load_targets(mtargets,fvec_temp,iflag,ncnt)          ! Count
-               WRITE(iunit_out,'(A,2(2X,I8))') 'TARGETS ',1,mtargets
+               WRITE(iunit_out,'(A,2(2X,I8))') 'TARGETS ',mtargets,1
                WRITE(iunit_out,'(A)') 'TARGETS'
                WRITE(iunit_out,'(ES22.12E3)') targets(1:mtargets)
-               WRITE(iunit_out,'(A,2(2X,I8))') 'SIGMAS ',1,mtargets
+               WRITE(iunit_out,'(A,2(2X,I8))') 'SIGMAS ',mtargets,1
                WRITE(iunit_out,'(A)') 'SIGMAS'
                WRITE(iunit_out,'(ES22.12E3)') sigmas(1:mtargets)
-               WRITE(iunit_out,'(A,2(2X,I8))') 'VALS ',1,mtargets
+               WRITE(iunit_out,'(A,2(2X,I8))') 'VALS ',mtargets,1
                WRITE(iunit_out,'(A)') 'VALUES'
                WRITE(iunit_out,'(ES22.12E3)') vals(1:mtargets)
                CLOSE(iunit_out)
@@ -535,13 +535,13 @@
                WRITE(iunit_out,'(A)') 'ITER MIN'
                ik = 999
                CALL stellopt_load_targets(mtargets,fvec_temp,iflag,ik)    ! Count
-               WRITE(iunit_out,'(A,2(2X,I8))') 'TARGETS ',1,mtargets
+               WRITE(iunit_out,'(A,2(2X,I8))') 'TARGETS ',mtargets,1
                WRITE(iunit_out,'(A)') 'TARGETS'
                WRITE(iunit_out,'(ES22.12E3)') targets(1:mtargets)
-               WRITE(iunit_out,'(A,2(2X,I8))') 'SIGMAS ',1,mtargets
+               WRITE(iunit_out,'(A,2(2X,I8))') 'SIGMAS ',mtargets,1
                WRITE(iunit_out,'(A)') 'SIGMAS'
                WRITE(iunit_out,'(ES22.12E3)') sigmas(1:mtargets)
-               WRITE(iunit_out,'(A,2(2X,I8))') 'VALS ',1,mtargets
+               WRITE(iunit_out,'(A,2(2X,I8))') 'VALS ',mtargets,1
                WRITE(iunit_out,'(A)') 'VALUES'
                WRITE(iunit_out,'(ES22.12E3)') vals(1:mtargets)
                CLOSE(iunit_out)
