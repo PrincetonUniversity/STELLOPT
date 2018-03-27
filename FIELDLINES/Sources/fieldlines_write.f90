@@ -185,7 +185,7 @@
          CALL fieldlines_write2d_parhdf5(1, nlines, 0, nsteps, mystart, myend, 'PHI_lines', DBLVAR=PHI_lines)
          CALL fieldlines_write2d_parhdf5(1, nlines, 0, nsteps, mystart, myend,   'Z_lines', DBLVAR=Z_lines)
          CALL fieldlines_write2d_parhdf5(1, nlines, 0, nsteps, mystart, myend,   'B_lines', DBLVAR=B_lines)
-         CALL fieldlines_write1d_parhdf5(1, nlines           , mystart, myend,   'B_lines', DBLVAR=B_lines)
+         CALL fieldlines_write1d_parhdf5(1, nlines           , mystart, myend,   'L_lines', DBLVAR=L_lines)
       END IF
       ! Homocline
       IF (ALLOCATED(Rhc_lines)) THEN
