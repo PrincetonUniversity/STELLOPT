@@ -16,7 +16,8 @@ and
 [[math]]
 
 In this representation the trajectory of the fieldline can be parameterized by toroidal angle. The resulting ODE is solved with a user determined step-size and accuracy. The available ODE packages are: [[https://computation.llnl.gov/casc/odepack/odepack_home.html|LSODE]], [[http://www.nag.co.uk/numeric/fl/manual/pdf/D02/d02cjf.pdf|NAG D02CJF]](requires license), and a Runge-Kutta-Hutta 6-th order 8 step method ([[http://dx.doi.org/10.1016/0022-247X(72)90062-5|D. Sarafyan, J. Math. Anal. Appl. 40, 436-455 (1972)]]) . The calculation of field line trajectories is parallelized over each field line. Thus each processor can follow each field line independently to speed computation.
-[[image:poinc3d_ncsx_c09r00_vac.jpg width="400" height="300" align="right"]]
+
+{{images/poinc3d_ncsx_c09r00_vac.jpg|""}}
 
 
 The code assembles fields from various sources. The vacuum component of the field can be calculated directly from a coils file or an mgrid file. In the later case the FIELDLINES grid must match the mgrid file. The plasma field inside the equilibria domain is placed directly on the background grid. The plasma response external to the equilibria is calculated using a virtual casing principle. In order to maintain accuracy near the surface of the plasma, the virtual casing principle employs an adaptive integration scheme over the surface current. This scheme is either handled by [[http://www.nag.co.uk/numeric/fl/manual/pdf/D01/d01eaf.pdf|NAG D01EAF]] (if available), or the [[@http://www.math.wsu.edu/faculty/genz/software/software.html|DCUHRE]] algorithm<ref>[[@http://dx.doi.org/10.1145/210232.210233|J. Berntsen, T. O. Espelid and A. Genz, Trans. Math. Softw. 17 (1991), pp. 437-451.]]</ref> <ref>[[@http://dx.doi.org/10.1145/210232.210234|J. Berntsen, T. O. Espelid and A. Genz, Trans. Math. Softw. 17 (1991), pp. 452-456.]]</ref> . This part of the code is parallelized over the vertical dimension (Z). Thus the z-axis is domain decomposed.
