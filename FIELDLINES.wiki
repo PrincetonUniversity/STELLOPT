@@ -1,11 +1,12 @@
 =FIELDLINES= 
-[[toc]]
+
 The FIELDLINES code follows field lines in a toroidal domain given a vacuum, [[VMEC]], [[PIES]], or [[SPEC]] equilibria, and is parallelized over the field line trajectories.
 
 ----
 
-===Theory[[#Theory]]=== 
+===Theory=== 
 The FIELDLINES code follows fieldlines in a toroidal domain. This is achieved by placing the magnetic field on an R-phi-Z mesh and constructing splines over that mesh. An ODE for following field lines as a function of the toroidal angle can be constructed by relating the motions in R and Z as a function of phi through
+
 [[math]]
 \frac{\partial R}{\partial \phi} = R\frac{B_R}{B_\phi}
 [[math]]
@@ -13,8 +14,10 @@ and
 [[math]]
 \frac{\partial Z}{\partial \phi} = R\frac{B_Z}{B_\phi}
 [[math]]
-In this representation the trajectory of the fieldline can be parameterized by toroidal angle. The resulting ODE is solved with a user determined step-size and accuracy. The available ODE packages are: [[@https://computation.llnl.gov/casc/odepack/odepack_home.html|LSODE]], [[@http://www.nag.co.uk/numeric/fl/manual/pdf/D02/d02cjf.pdf|NAG D02CJF]](requires license), and a Runge-Kutta-Hutta 6-th order 8 step method<ref>[[@http://dx.doi.org/10.1016/0022-247X(72)90062-5|D. Sarafyan, J. Math. Anal. Appl. 40, 436-455 (1972)]]</ref> . The calculation of field line trajectories is parallelized over each field line. Thus each processor can follow each field line independently to speed computation.
+
+In this representation the trajectory of the fieldline can be parameterized by toroidal angle. The resulting ODE is solved with a user determined step-size and accuracy. The available ODE packages are: [[https://computation.llnl.gov/casc/odepack/odepack_home.html|LSODE]], [[http://www.nag.co.uk/numeric/fl/manual/pdf/D02/d02cjf.pdf|NAG D02CJF]](requires license), and a Runge-Kutta-Hutta 6-th order 8 step method ([[http://dx.doi.org/10.1016/0022-247X(72)90062-5|D. Sarafyan, J. Math. Anal. Appl. 40, 436-455 (1972)]]) . The calculation of field line trajectories is parallelized over each field line. Thus each processor can follow each field line independently to speed computation.
 [[image:poinc3d_ncsx_c09r00_vac.jpg width="400" height="300" align="right"]]
+
 
 The code assembles fields from various sources. The vacuum component of the field can be calculated directly from a coils file or an mgrid file. In the later case the FIELDLINES grid must match the mgrid file. The plasma field inside the equilibria domain is placed directly on the background grid. The plasma response external to the equilibria is calculated using a virtual casing principle. In order to maintain accuracy near the surface of the plasma, the virtual casing principle employs an adaptive integration scheme over the surface current. This scheme is either handled by [[http://www.nag.co.uk/numeric/fl/manual/pdf/D01/d01eaf.pdf|NAG D01EAF]] (if available), or the [[@http://www.math.wsu.edu/faculty/genz/software/software.html|DCUHRE]] algorithm<ref>[[@http://dx.doi.org/10.1145/210232.210233|J. Berntsen, T. O. Espelid and A. Genz, Trans. Math. Softw. 17 (1991), pp. 437-451.]]</ref> <ref>[[@http://dx.doi.org/10.1145/210232.210234|J. Berntsen, T. O. Espelid and A. Genz, Trans. Math. Softw. 17 (1991), pp. 452-456.]]</ref> . This part of the code is parallelized over the vertical dimension (Z). Thus the z-axis is domain decomposed.
 
@@ -25,12 +28,12 @@ If the user wishes, the code can automatically locate the magnetic axis, find th
 
 ----
 
-===Compilation[[#Compilation]]=== 
-<span style="background-color: #ffffff;">FIELDLINES is a component of the STELLOPT suite of codes. It is contained within the 'stellopt.zip' file. Compilation of the STELLOPT suite is discussed on the [[vmecwiki/STELLOPT Compilation|STELLOPT Compilation Page]]. To obtain the code please contact the author Samuel A. Lazerson ([[mailto:lazerson@pppl.gov|lazerson@pppl.gov]]).</span>
+===Compilation=== 
+FIELDLINES is a component of the STELLOPT suite of codes. It is contained within the 'stellopt.zip' file. Compilation of the STELLOPT suite is discussed on the [[vmecwiki/STELLOPT Compilation|STELLOPT Compilation Page]]. To obtain the code please contact the author Samuel A. Lazerson ([[mailto:lazerson@pppl.gov|lazerson@pppl.gov]]).
 
 ----
 
-===Input Data Format[[#Input]]=== 
+===Input Data Format=== 
 The FIELDLINES code is controled through command line inputs and an input namelist which should be placed in the input.ext file. While the entire VMEC input name is not required the EXTCUR array is required. The name lists should look like:
 [[code format="fortran"]]
 &INDATA
