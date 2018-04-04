@@ -176,6 +176,7 @@
       REAL(rprec) ::  target_regcoil_bnorm, sigma_regcoil_bnorm
       REAL(rprec) ::  target_regcoil_chi2_b, sigma_regcoil_chi2_b
       REAL(rprec) ::  target_regcoil_current_density, sigma_regcoil_current_density
+      REAL(rprec) ::  target_curvature_p2, sigma_curvature_P2
       REAL(rprec), DIMENSION(nigroup)    :: target_coillen, sigma_coillen
       INTEGER     :: npts_curv, npts_csep, npts_cself
       REAL(rprec), DIMENSION(nigroup)    :: target_coilcrv,  sigma_coilcrv
@@ -248,7 +249,7 @@
       INTEGER, PARAMETER :: jtarget_regcoil_bnorm = 5150
       INTEGER, PARAMETER :: jtarget_regcoil_chi2_b = 5151
       INTEGER, PARAMETER :: jtarget_regcoil_current_density = 5152
-      
+      INTEGER, PARAMETER :: jtarget_curvature_P2 = 5200
 
       CONTAINS
       
@@ -388,6 +389,8 @@
             WRITE(iunit, out_format) 'Minimum Coil Separation'
          CASE(jtarget_coilself)
             WRITE(iunit, out_format) 'Number of Coil Self-intersections'
+         CASE(jtarget_curvature_p2)
+            WRITE(iunit, out_format) 'Maximum 2nd Principal Curvature'
       END SELECT
       END SUBROUTINE write_targets
       

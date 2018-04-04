@@ -207,6 +207,7 @@
 !            z_limiter          Array of (ntheta,nzeta) vertical limiter values [m] 
 !            phi_limiter        Array of (ntheta,nzeta) toroidal angle limiter values [rad]
 !            txport_proxy       String of proxy function name.
+!            curvature_P2       Min value of 2nd principal curvature
 !
 !   NOTE:  All varaibles which start with target have an similar
 !          varaible starting with sigma which defines the error bars.
@@ -358,7 +359,8 @@
                          target_regcoil_chi2_b, sigma_regcoil_chi2_b, &
                          target_regcoil_current_density, sigma_regcoil_current_density, &
                          regcoil_winding_surface_separation, &
-                         regcoil_current_density
+                         regcoil_current_density, &
+                         target_curvature_P2, sigma_curvature_P2
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -851,6 +853,8 @@
       target_coilself   = 0.0
       sigma_coilself    = bigno
       npts_cself        = 360
+      target_curvature_P2    = 0.0
+      sigma_curvature_P2     = bigno
       ! Read name list
       lexist            = .false.
       istat=0
@@ -2151,6 +2155,10 @@
          WRITE(iunit,outflt) 'SIGMA_PMIN',sigma_pmin
          WRITE(iunit,outflt) 'WIDTH_PMIN',width_pmin
       END IF
+      IF (sigma_curvature_P2 < bigno) THEN
+         WRITE(iunit,outflt) 'TARGET_CURVATURE_P2',target_curvature_P2
+         WRITE(iunit,outflt) 'SIGMA_CURVATURE_P2',sigma_curvature_P2
+      END IF          
       IF (ANY(sigma_extcur < bigno)) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          WRITE(iunit,'(A)') '!          Coil Current Optimization'
