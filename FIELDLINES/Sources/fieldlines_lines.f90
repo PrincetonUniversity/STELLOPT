@@ -25,7 +25,7 @@
 
       REAL(rprec) :: xlast,ylast,zlast ! for storing position
       REAL(rprec), ALLOCATABLE :: R_lines(:,:),Z_lines(:,:),PHI_lines(:,:),&
-                                  B_lines(:,:)
+                                  B_lines(:,:),L_lines(:)
       
       REAL(rprec), ALLOCATABLE :: Rhc_lines(:,:),Zhc_lines(:,:)
 
