@@ -91,7 +91,45 @@ for temp in varlist:
     print('  '+temp+': '+str(cal[0])+'   '+str(act[0])+'   '+str(int(perct))+'%')
     if perct > failtol:
         lfail = 1
+print('==== Arrays =====')
+varlist={}
+varlist['rmnc']=np.array([0.10626017748665509, 0.007264001298256034,0.19908958964667334])
+varlist['zmns']=np.array([-0.052361755823669816,-0.0032702139193588426,0.3325915977915322])
+varlist['lmns']=np.array([0.23343194352229876,0.004441209483371716,-0.1584630010151289])
+varlist['bmnc']=np.array([0.004663530489094516,-0.01013319840184541,-0.14676993780024872])
+for temp in varlist:
+    mn  = 1; k   = 0
+    act = varlist[temp][0]
+    cal = data[temp][k,mn]
+    s   = str(k)
+    m   = str(int(data['xm'][mn]))
+    n   = str(int(data['xn'][mn]))
+    perct = 100*abs((act-cal)/act)
+    print('  '+temp+'['+s+','+m+','+n+']: '+str(cal)+'   '+str(act)+'   '+str(int(perct))+'%')
+    if perct > failtol:
+        lfail = 1
+    mn  = 2; k   = 0
+    act = varlist[temp][1]
+    cal = data[temp][k,mn]
+    s   = str(k)
+    m   = str(int(data['xm'][mn]))
+    n   = str(int(data['xn'][mn]))
+    perct = 100*abs((act-cal)/act)
+    print('  '+temp+'['+s+','+m+','+n+']: '+str(cal)+'   '+str(act)+'   '+str(int(perct))+'%')
+    if perct > failtol:
+        lfail = 1
+    mn  = 13; k   = 64
+    act = varlist[temp][2]
+    cal = data[temp][k,mn]
+    s   = str(k)
+    m   = str(int(data['xm'][mn]))
+    n   = str(int(data['xn'][mn]))
+    perct = 100*abs((act-cal)/act)
+    print('  '+temp+'['+s+','+m+','+n+']: '+str(cal)+'   '+str(act)+'   '+str(int(perct))+'%')
+    if perct > failtol:
+        lfail = 1
 print('=================')
+
 if (lfail):
     print('  STATUS: FAIL!!!!!')
 else:
