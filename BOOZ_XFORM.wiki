@@ -2,7 +2,6 @@
 This code calculates the transformation to Boozer coordinates <ref>[[http://link.aip.org/link/doi/10.1063/1.863297|Boozer A. H. "Plasma equilibrium with rational magnetic surfaces." Phys. Fluids 24, 1999 (1981).]]</ref> of a [[VMEC]] equilibria.
 
 {{images/bmod_ncsx_c09r00_free.jpg}}
-<img src="images/bmod_ncsx_c09r00_free.jpg"/>
 
 <<toc>>
 ----
