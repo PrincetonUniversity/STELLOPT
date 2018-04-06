@@ -1,10 +1,10 @@
 =COBRAVMEC= 
-[[toc]]
-The COBRAVMEC code calculates ideal ballooning stability for [[VMEC]] equilibria.
 
+The COBRAVMEC code calculates ideal ballooning stability for [[VMEC]] equilibria.
+<<toc>>
 ----
 
-===Theory[[#Theory]]=== 
+===Theory=== 
 The Code for Ballooning Rapid Analysis<ref>[[http://www.sciencedirect.com/science/article/pii/S0021999100965148|R. Sanchez, S. P. Hirshman, J. C. Whitson, and A. S. Ware, "COBRA: An Optimized Code for Fast Analysis of Ideal Ballooning Stability of Three-Dimensional Magnetic Equilibria." J. Comp. Physics 161, 576-588 (2000).]]</ref> (CoBRA) solves for ballooning stability given a VMEC equilibria. Ballooning instabilites are interchange instabilities which are localized to regions of poor curvature in toroidal systems. In general the fourth order ballooning equation can be written
 [[math]]
 \frac{1}{J}\partial_\theta\left[\frac{\left(\nabla \beta\right)^2}{JB^\epsilon}\partial_\theta\Phi\right]+\left(2p'\kappa_W+\rho\omega^2\frac{\left(\nabla \beta\right)^2}{B^2}\right)\Phi+2\kappa_W\gamma p\nabla\cdot\vec{\xi}=0.
@@ -25,14 +25,14 @@ while P(y) and R(y) are positive. Here y is the normalized length along a field 
 
 ----
 
-===Compilation[[#Compilation]]=== 
+===Compilation=== 
 COBRAVMEC is a component of the STELLOPT suite of codes. It is contained within the 'stellopt.zip' file. Compilation of the STELLOPT suite is discussed on the [[STELLOPT Compilation|STELLOPT Compilation Page]].
 
 ----
 
-===Input Data Format (pre 4.1)[[#Input]]=== 
+===Input Data Format (pre 4.1)=== 
 The COBRAVMEC code takes an in_cobra text file which controls the execution of the code. The file has the following format
-[[code]]
+{{{
 5
 5
 test
@@ -40,13 +40,13 @@ test
 0.00  1.58  3.14  4.62  5.00
 5
 20  30  40  50  60
+}}}
 
-[[code]]
 The first line is the number of starting angles in zeta. The second line is the number of starting angles in theta. The third line is the VMEC output extension. The fourth line are the starting angles in zeta. The fifth line contains the starting angles in theta. The sixth line indicates the number of surfaces on which to calculate ballooning growth rates. The seventh line indicates the specific surfaces on which to calculate the ballooning growth rates. It should be noted that in this example since there are 5 zetas and 5 thetas there will be 25 angles evaluated.
 
 ===Input Data Format (version 4.1)=== 
 This version supports non-stellarator symmetric equilibria and the input format is slightly changed.
-[[code]]
+{{{
 !      INPUT FILE
 !      1st line:   extension of WOUT file
 !      2nd line:   k_w, kth  (No. helical wells; mode number)
@@ -57,12 +57,12 @@ This version supports non-stellarator symmetric equilibria and the input format 
 !      7th line:   init_theta_v (vector of initial poloidal angles (or labels), in degrees)
 !      8th line:   ns_surf (No. surfaces where growth rate is to be computed)
 !      9th line:   ns_v (vector of surfaces where growth rate is to be computed)
-[[code]]
+}}}
 ----
 
-===Execution[[#Execution]]=== 
+===Execution=== 
 The code is executed by passing the in_cobra input file on the command line. Screen output may be suppressed by passing 'F' after the input file.
-[[code format="bash"]]
+{{{
 yourmachine:0005> ~/bin/xcobravmec in_cobra.test
 ====================================================
 
@@ -80,13 +80,13 @@ yourmachine:0005> ~/bin/xcobravmec in_cobra.test
 
 ZETA0 =  0.000E+00 THETA0 =  0.000E+00 TIME IN COBRA CODE:  1.02E+00 SEC
 ====================================================
-[[code]]
+}}}
 
 ----
 
-===Output Data Format[[#Output]]=== 
+===Output Data Format=== 
 The screen output (if not suppressed) is verbose, containing information about the runs in tabular format. The code outputs a text file called cobra_grate.ext file (where ext is the input extension). For each set of starting points in theta and zeta it outputs a set of growth rates on each surface requested. The first line in each set is indicates the starting position in zeta, theta, and the number of surfaces on which the growth rate was calculated. Then for each surface the code outputs a line with the surface index and the growth rate. This is repeated for each field line followed. And example can be seen below
-[[code]]
+{{{
  0.000E+00 0.000E+00   4
    2 -5.35845793E-02
    3 -6.64339650E-02
@@ -98,14 +98,14 @@ The screen output (if not suppressed) is verbose, containing information about t
    4 -7.57780371E-02
    5 -8.64640971E-02
 
-[[code]]
+}}}
 
 ----
 
-===Visualization[[#Visualization]]=== 
+===Visualization=== 
 For each starting position, the code outputs the growthrate as a function of flux surface. This can be imported and easily plotted with many plotting packages.
 
 ----
 
-===Tutorials[[#Tutorials]]=== 
+===Tutorials=== 
 Put links to tutorial pages here.
