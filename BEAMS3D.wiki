@@ -1,6 +1,6 @@
 =BEAMS3D= 
-
 The BEAMS3D (Matthew McMillan and Samuel A Lazerson 2014 //Plasma Phys. Control. Fusion// **56** 095019) code is a guiding center particle code capable of following both user defined ensembles of particles and modeling neutral beam injection in parallel. The magnetic field is represented by a three dimensional splines over a cylindrical grid. It is currently interfaced to the MAKEGRID coils file, MAKEGRID output file, and VMEC equilibria. Ionization and recombination models are provided by ADAS.
+<<toc>>
 
 ----
 
