@@ -6,7 +6,7 @@ The BNORM code calculates the Fourier coefficients of the magnetic field normal 
 \vec{B}\cdot\hat{n}=\frac{1}{4\pi}\int\frac{\vec{j}' dA}{|\vec{x}-\vec{x}'|^{3/2}}
 [[math]]
 It achieves this by utilizing the covariant magnetic field on the VMEC surface to construct a surface current. It creates input files for the NESCOIL program.
-
+<<toc>>
 
 ----
 
