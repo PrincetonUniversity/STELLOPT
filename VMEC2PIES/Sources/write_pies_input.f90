@@ -605,8 +605,8 @@
          write(6,'(A,I3)')      '     nfp: ',nfp
          write(6,'(A,I3)')      '   freeb: ',freeb
          write(6,'(A,F7.3)')    '    rmaj: ',rmaj
-         write(6,'(A,E20.14)')  '   betai: ',betai
-         write(6,'(A,E20.14)')  '    iote: ',iote
+         write(6,'(A,E21.14)')  '   betai: ',betai
+         write(6,'(A,E21.14)')  '    iote: ',iote
          write(6,'(A,I3)')      'mustochf: ',mustochf
       END IF
 !-----------------------------------------------------------------------
