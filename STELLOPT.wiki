@@ -1,10 +1,9 @@
 =STELLOPT= 
-[[toc]]
 The STELLOPT code is design to optimize 3D MHD equilibria to a set of target physics parameters encompassing stellarator design and 3D equilibrium reconstruction. It is currently interfaced to the [[VMEC]] 3D equilibrium solver.
-
+<<toc>>
 ----
 
-===Theory[[#Theory]]=== 
+===Theory=== 
 <span style="line-height: 1.5;">The STELLOPT code can be thought of as a multi-dimensional non-linear curve fitting algorithm. The curve to which a fit is sought is parameterized by a set of target parameters which themselves may be MHD equilibrium quantities (beta, aspect ratio, etc.) or non-linear functions of the equilibrium itself (stability, particle transport, etc). The function used to fit these targets is the MHD equilibrium itself. Here the input parameters to the equilibrium serve as a set of coefficients parameterizing our non-linear fit function. The code uses either a modified [[http://en.wikipedia.org/wiki/Levenberg%E2%80%93Marquardt_algorithm|Levenberg-Marquardt algorithm]], [[http://en.wikipedia.org/wiki/Genetic_algorithm|genetic algorithm]], or [[http://en.wikipedia.org/wiki/Differential_evolution|differential evolution]] to find a best fit set of equilibrium inputs to the set of desired targets. The quality of fit is determined by the Chi-squared metric</span>
 [[math]]
 \chi_i^2=\frac{
@@ -41,7 +40,7 @@ The user specifies which equilibrium input values to vary independently of the t
 || ROGOWSKI || Vector || Array of Rogowski Coil measurements calculated by [[DIAGNO]] ||
 || VESSEL || Matrix || Limiting points in space ||
 || SEPARATRIX || Matrix || Desired edge points in space ||
-|| BALLOON || Vector || Array of radial locations for ballooning stability calculation by <span style="line-height: 1.5;">[[COBRAVMEC]]</span> ||
+|| BALLOON || Vector || Array of radial locations for ballooning stability calculation by [[COBRAVMEC]] ||
 || KINK || Single || Equilibrium kink stability as calculated by TERPSICHORE ||
 || BOOTSTRAP || Vector || Array of radial locations for bootstrap calculation by [[BOOTSJ]] ||
 || NEO || Vector || Array of radial locations for Neoclassical transport calculation by [[NEO]] ||
@@ -52,33 +51,33 @@ The user specifies which equilibrium input values to vary independently of the t
 
 ----
 
-===Compilation[[#Compilation]]=== 
-Compilation of the STELLOPT suite is discussed on the <span style="cursor: pointer;">[[STELLOPT Compilation|STELLOPT Compilation Page]]</span>.
+===Compilation=== 
+Compilation of the STELLOPT suite is discussed on the [[STELLOPT Compilation|STELLOPT Compilation Page]]
 ----
 
-===Input Data Format[[#Input]]=== 
+===Input Data Format=== 
 The STELLOPT code takes an input file which contains all the input namelists necessary to run the equilibrium code, STELLOPT, and any additional codes called by the optimizer. The STELLOPT code itself requires an [[STELLOPT Input Namelist|OPTIMUM namelist]] which contains the runtime parameters for the code, specifies which input variables to vary, any additional profiles, and the target parameters to match.
 
 ----
 
-===Execution[[#Execution]]=== 
+===Execution=== 
 The STELLOPT routine is designed to be run on a multi-processor machine or cluster. In general, it should be executed via a call to mpirun (most likely inside a PBS script). The call should take the form:
-[[code format="bash"]]
+{{{
 mpirun -np $NPROCS ~/bin/xstellopt $runid > log.$runid
-[[code]]
+}}}
 Here $NPROCS is the number of processors being requested and $runid is the suffix assigned to the input file. Upon execution STELLOPT will create a working directory entitled 'stellopt_$runid' where '$runid' is the value passed to it from the command line. All work and final output is preformed in this directory. Optional arguments which control the code behavior are:
 || Argument || Default || Description ||
-|| <span style="color: #0000ff;">-restart</span> || <span style="color: #0000ff;">NONE</span> || <span style="color: #0000ff;">Use wout_reset_file.nc in directory to restart VMEC run on first iteration.</span> ||
-|| <span style="color: #0000ff;">-noverb</span> || <span style="color: #0000ff;">NONE</span> || <span style="color: #0000ff;">Suppress screen output.</span> ||
-|| <span style="color: #0000ff;">-log</span> || <span style="color: #0000ff;">NONE</span> || <span style="color: #0000ff;">Send screen output to log file (useful on systems where >& doesn't work).</span> ||
-|| <span style="color: #0000ff;">-autodomain XX</span> || <span style="color: #0000ff;">NONE</span> || <span style="color: #0000ff;">Automatically calculate bounds as percentage (-autodomain 0.2, produces a +/-20% bound)</span> ||
-|| <span style="color: #0000ff;">-tri FILE1 FILE2</span> || <span style="color: #0000ff;">NONE</span> || <span style="color: #0000ff;">Use FILE1 and FILE2 to set Min and Max bounds respectively (used in hyperplane mapping mode)</span> ||
-|| <span style="color: #0000ff;">-xvec_file FILE1</span> || <span style="color: #0000ff;">NONE</span> || <span style="color: #0000ff;">Use FILE1 to initialize population for Differential Evolution and Particle Swarm runs.</span> ||
-|| <span style="color: #0000ff;">-help</span> || <span style="color: #0000ff;">NONE</span> || <span style="color: #0000ff;">Print help message</span> ||
+|| -restart || NONE || Use wout_reset_file.nc in directory to restart VMEC run on first iteration. ||
+|| -noverb || NONE || Suppress screen output. ||
+|| -log || NONE || Send screen output to log file (useful on systems where >& doesn't work). ||
+|| -autodomain XX || NONE || Automatically calculate bounds as percentage (-autodomain 0.2, produces a +/-20% bound) ||
+|| -tri FILE1 FILE2> || NONE || Use FILE1 and FILE2 to set Min and Max bounds respectively (used in hyperplane mapping mode) ||
+|| -xvec_file FILE1 || NONE || Use FILE1 to initialize population for Differential Evolution and Particle Swarm runs. ||
+|| -help || NONE || Print help message ||
 
 ----
 
-===Output Data Format[[#Output]]=== 
+===Output Data Format=== 
 The STELLOPT code will produce many files so it is suggested that each run be kept in a separate directory. A stereotypical run looks something like:
 
 
@@ -88,12 +87,12 @@ Additionally, many working files denoted by '_optXX' are produced by STELLOPT. T
 
 ----
 
-===Visualization[[#Visualization]]=== 
+===Visualization=== 
 The final output of the STELLOPT routine is a combination of STELLOPT files, [[VMEC]] files, and the output files of the physics modules invoked durring the run.
 
 ----
 
-===Tutorials[[#Tutorials]]=== 
+===Tutorials=== 
 [[STELLOPT Compilation|Compiling STELLOPT]]
 
 [[STELLOPT Input Namelist|The STELLOPT OPTIMUM namelist]]
