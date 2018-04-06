@@ -1,6 +1,6 @@
 =BOOTSJ= 
 <<toc>>
-{{vmecwiki/BOOTSJ_example.jpg|Polynomial fit to BOOTSJ calculated bootstrap current.}} 
+{{images/BOOTSJ_example.jpg|Polynomial fit to BOOTSJ calculated bootstrap current.}} 
 
 This code calculates the bootstrap current for 3D magnetic equilibria provided by VMEC.
 
