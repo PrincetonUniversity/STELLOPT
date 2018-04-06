@@ -1,9 +1,12 @@
 =BOOZ_XFORM= 
-This code calculates the transformation to Boozer coordinates <ref>[[http://link.aip.org/link/doi/10.1063/1.863297|Boozer A. H. "Plasma equilibrium with rational magnetic surfaces." Phys. Fluids 24, 1999 (1981).]]</ref> of a [[VMEC]] equilibria.[[image:bmod_ncsx_c09r00_free.jpg width="400" height="300" align="right"]]
+This code calculates the transformation to Boozer coordinates <ref>[[http://link.aip.org/link/doi/10.1063/1.863297|Boozer A. H. "Plasma equilibrium with rational magnetic surfaces." Phys. Fluids 24, 1999 (1981).]]</ref> of a [[VMEC]] equilibria.
 
+{{images/bmod_ncsx_c09r00_free.jpg}}
+
+<<toc>>
 ----
 
-===Theory[[#Theory]]=== 
+===Theory=== 
 The BOOZ_XFORM code <ref>[[http://iopscience.iop.org/0741-3335/42/6/303|Sanchez R., Hirshman S.P., Ware A. S., Berry L. A., and Spong D.A. "Ballooning stability optimization of low-aspect-ratio stellarators." Plas. Phys. Cont. Fusion 42, 641 (2000).]]</ref> transforms the [[VMEC]] field-line coordinate system to the [[http://www-fusion.ciemat.es/wiki/Flux_coordinates|straight field-line coordinates]] introduced by Boozer ([[http://www-fusion.ciemat.es/wiki/Boozer_coordinates|Fusionwiki link]]). The Boozer coordinates allow the magnetic field to be written in the form
 [[math]]
 \vec{B}=\nabla\psi\left(s\right)\times\nabla\zeta_b+\nabla\theta_b\times\nabla\chi\left(s\right)
@@ -14,24 +17,24 @@ Note: As of v6.9 only stellarator symmetric equilibria can be transformed. The v
 
 ----
 
-===Compilation[[#Compilation]]=== 
-BOOZ_XFORM is a component of the STELLOPT suite of codes. It is contained within the 'stellopt.zip' file. Compilation of the STELLOPT suite is discussed on the <span style="cursor: pointer;">[[STELLOPT Compilation|STELLOPT Compilation Page]]</span>.
+===Compilation=== 
+BOOZ_XFORM is a component of the STELLOPT suite of codes. It is contained within the 'stellopt.zip' file. Compilation of the STELLOPT suite is discussed on the [[STELLOPT Compilation|STELLOPT Compilation Page]].
 
 ----
 
-===Input Data Format[[#Input]]=== 
+===Input Data Format=== 
 The BOOZ_XFORM code takes an input filename as a command line argument. The input file contains the number of theta and zeta harmonics to use, the filename extension of the wout file to read, and a list of surfaces on which to calculate the transform. Typically the user will choose surfaces located at 1/4, 1/2, and 3/4 the way from the axis to the edge of the equilibrium. The choice of surface must coincide with a VMEC index. For example, if the user wished to specify 72 poloidal harmonics, 15 toroidal harmonics, the 'wout.test' file, and surfaces 25, 50 and 75, the file would look like:
-[[code]]
+{{{
 72  15
 'test'
 25 50 75
-[[code]]
+}}}
 
 ----
 
-===Execution[[#Execution]]=== 
+===Execution=== 
 The BOOZ_XFORM code takes a command line (see above) and optional output suppression arguments (T/F). For example, if the user had an input file entitled 'in_booz.test' the code could be executed by:
-[[code format="bash"]]
+{{{
 > xbooz_xform in_booz.test
   0 <= mboz <=   71    -15 <= nboz <=   15
   nu_boz =   290 nv_boz =    62
@@ -49,15 +52,16 @@ The BOOZ_XFORM code takes a command line (see above) and optional output suppres
 
  TIME IN BOOZER TRANSFORM CODE:    3.02E+00 SEC
 
-[[code]]
+}}}
 
 
 
 ----
 
-===Output Data Format[[#Output]]=== 
+===Output Data Format=== 
 The transformed R, Z, p and |B| quantities are output into a file 'boozmn.ext' where ext is the [[VMEC]] file extension specified in the input file. The STELLOPT library provides a fortran function for reading this file: read_boozer_file.f. This file can be included in a code through read_booz_mod. The output file is a binary file a general prescription for reading the file can be found below (taken from read_boozer_file):
-[[code format="fortran"]]
+{{{
+#!fortran
        read(iunit, iostat=ierr, err=100) nfp_b, ns_b, aspect_b, max_b, rmin_b, betaxis_b
 
        do nsval = 2, ns_b
@@ -85,15 +89,15 @@ The transformed R, Z, p and |B| quantities are output into a file 'boozmn.ext' w
           end do
        end do
 
-[[code]]
+}}}
 Note that this is for version v1.0. The latest version v2.0 outputs in [[https://www.unidata.ucar.edu/software/netcdf/|netCDF]] format.
 
 ----
 
-===Visualization[[#Visualization]]=== 
+===Visualization=== 
 Once read from the output file the BOOZ_XFORM data can be transformed to real space much the way [[VMEC]] data is. It is important to note that this code utilizes a trigonometric argument of the form (mu-nv). In Boozer coordinates the toroidal angle is optimized so before preforming a coordinate transformation the user should first transform the pmns (sin function) and add the values to the toroidal angle. This angle should then be used for transforming the remaining quantities.
 
 ----
 
-===Tutorials[[#Tutorials]]=== 
+===Tutorials=== 
 [[Boozer Transformation for NCSX-Like Configuration]]
