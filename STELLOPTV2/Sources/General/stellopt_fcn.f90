@@ -173,6 +173,17 @@
          END IF
       END DO
 
+      ! REGCOIIL winding surface - Unpack RBC/ZBS/RBS/ZBC winding
+      ! surface components -
+      DO nvar_in = 1, n
+         !print *, "regcoil: m,n, id, val", arr_dex(nvar_in,1), arr_dex(nvar_in,2), var_dex(nvar_in), x(nvar_in)
+         IF (var_dex(nvar_in) == iregcoil_rcws_rbound_c) regcoil_rcws_rbound_c(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
+         IF (var_dex(nvar_in) == iregcoil_rcws_rbound_s) regcoil_rcws_rbound_s(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
+         IF (var_dex(nvar_in) == iregcoil_rcws_zbound_c) regcoil_rcws_zbound_c(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
+         IF (var_dex(nvar_in) == iregcoil_rcws_zbound_s) regcoil_rcws_zbound_s(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
+      END DO
+
+
       ! Apply normalization
       aphi = aphi * norm_aphi
       am   = am   * norm_am
@@ -341,11 +352,12 @@
          IF (sigma_coil_bnorm < bigno .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
 !DEC$ ENDIF
 !DEC$ IF DEFINED (REGCOIL)
-         ! JCS: skipping parallelization for now - gonna try to do this
-         ! in serial
+         ! JCS: skipping parallelization for now 
          ! ctemp_str = 'regcoil_chi2_b'
          ! IF (sigma_regcoil_chi2_b < bigno .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen)
-         IF (sigma_regcoil_chi2_b < bigno) CALL stellopt_regcoil_chi2_b(lscreen, iflag)
+         IF (ANY(sigma_regcoil_chi2_b < bigno)) then
+           CALL stellopt_regcoil_chi2_b(lscreen, iflag)
+         end if
 !DEC$ ENDIF
 
          ! Now we load target values if an error was found then
