@@ -40,6 +40,9 @@ class MyApp(QMainWindow):
 		iunit = 55
 		istat = 0
 		self.indata=read_indata_namelist(iunit,istat) # dummy just to get going
+		self.indata['ntor']=4
+		self.indata['mpol']=9
+		self.indata['nfp']=3
 		# Set the OPTIMUM DEFAULTS (will repalce with something like read_indata_namelist)
 		self.optimum=read_stellopt_namelist(iunit,istat)
 		# Setup Components
@@ -56,6 +59,7 @@ class MyApp(QMainWindow):
 		# Callbacks (VMEC Tab)
 		self.ui.TextMpol.editingFinished.connect(self.UpdateMpol)
 		self.ui.TextNtor.editingFinished.connect(self.UpdateNtor)
+		self.ui.TextNfp.editingFinished.connect(self.UpdateNfp)
 		self.ui.ButtonLoadIndata.clicked.connect(self.LoadIndata)
 		self.ui.ComboBoxArrays.currentIndexChanged.connect(self.UpdateArrays)
 		self.ui.ComboBoxPType.currentIndexChanged.connect(self.UpdatePType)
@@ -64,6 +68,7 @@ class MyApp(QMainWindow):
 		self.ui.ButtonWriteIndata.clicked.connect(self.WriteIndata)
 		# Callbacks (STELLOPT Tab)
 		self.ui.ComboBoxOPTtype.currentIndexChanged.connect(self.UpdateOPTtype)
+		self.ui.TableOPTtype.cellChanged.connect(self.OPTArrays)
 
 	def UpdateMpol(self):
 		strtmp = self.ui.TextMpol.text()
@@ -77,6 +82,14 @@ class MyApp(QMainWindow):
 		inttmp = int(strtmp)
 		self.indata['ntor'] = inttmp
 		set_module_var('vmec_input','ntor',inttmp)
+		return
+		return
+
+	def UpdateNfp(self):
+		strtmp = self.ui.TextNfp.text()
+		inttmp = int(strtmp)
+		self.indata['nfp'] = inttmp
+		set_module_var('vmec_input','nfp',inttmp)
 		return
 
 	def LoadIndata(self):
@@ -267,7 +280,6 @@ class MyApp(QMainWindow):
 				set_module_var('vmec_input',data_name+'_s',self.indata[data_name+'_s'])
 				set_module_var('vmec_input',data_name+'_f',self.indata[data_name+'_f'])
 		elif data_name == 'rbc' or data_name == 'zbs' or data_name == 'rbs' or data_name == 'zbc':
-
 			self.ui.TableArrays.blockSignals(True)
 			# Set Array Size
 			self.ui.TableArrays.setRowCount(self.indata['ntor']*2+1)
@@ -323,7 +335,8 @@ class MyApp(QMainWindow):
 		data_name = data_name.lower()
 		# Handle plots / values
 		self.fig.clf()
-		self.ax = self.fig.add_subplot(111)
+		#self.fig.delaxes([-1.-1])
+		#self.ax = self.fig.add_subplot(111)
 		s = np.ndarray((99,1))
 		f = np.ndarray((99,1))
 		for i in range(99): s[i]=(i)/98.0
@@ -365,7 +378,7 @@ class MyApp(QMainWindow):
 			theta = np.ndarray((nu,1))
 			zeta = np.ndarray((nv,1))
 			for j in range(nu): theta[j]=2*pi*j/(nu-1)
-			for j in range(nv): zeta[j]=pi*j/(nv)/self.indata['nfp']
+			for j in range(nv): zeta[j]=pi*j/(nv*self.indata['nfp'])
 			r=cfunct(theta,zeta,rmnc,xm,xn)
 			z=sfunct(theta,zeta,zmns,xm,xn)
 			self.ax = isotoro(r,z,zeta,0,fig=self.fig)
@@ -384,6 +397,7 @@ class MyApp(QMainWindow):
 		self.canvas.draw()
 
 	def UpdateOPTtype(self):
+		self.ui.TableOPTtype.blockSignals(True)
 		# Determine type of Optimization
 		self.optimum['OPT_TYPE'] = self.ui.ComboBoxOPTtype.currentText()
 		self.optimum['OPT_TYPE'] = self.optimum['OPT_TYPE'].upper()
@@ -396,10 +410,28 @@ class MyApp(QMainWindow):
 		elif self.optimum['OPT_TYPE'] == 'GADE':
 			self.ui.TableOPTtype.setRowCount(6)
 			fields = ['NFUNC_MAX','FACTOR','CR_STRATEGY','MODE','NPOPULATION','NOPTIMIZERS']
+		self.ui.TableOPTtype.setVerticalHeaderLabels(fields)
 		for i,item in enumerate(fields):
-			self.ui.TableOPTtype.setItem(i,0, QTableWidgetItem(item))
 			val = str(self.optimum[item])
-			self.ui.TableOPTtype.setItem(i,1, QTableWidgetItem(val))
+			self.ui.TableOPTtype.setItem(i,0, QTableWidgetItem(val))
+		self.ui.TableOPTtype.blockSignals(False)
+
+	def OPTArrays(self):
+		# Handles changes in OPT table
+		# Get changed item
+		item = self.ui.TableOPTtype.currentItem()
+		if item is None:
+			return
+		col = self.ui.TableOPTtype.currentColumn()
+		row = self.ui.TableOPTtype.currentRow()
+		field = self.ui.TableOPTtype.verticalHeaderItem(row).text()
+		print(field)
+		if field == 'OPT_TYPE':
+			self.optimum[field]=item.text()
+		elif field in ['NOPTIMIZERS','NFUNC_MAX','MODE','CR_STRATEGY','NPOPULATION']:
+			self.optimum[field]=int(item.text())
+		else:
+			self.optimum[field]=float(item.text())
 
 
 

@@ -756,20 +756,25 @@
        <rect>
         <x>20</x>
         <y>70</y>
-        <width>261</width>
+        <width>191</width>
         <height>192</height>
        </rect>
       </property>
-      <column>
+      <row>
        <property name="text">
-        <string>Property</string>
+        <string>NPOPULATION</string>
        </property>
-      </column>
+      </row>
       <column>
        <property name="text">
         <string>Value</string>
        </property>
       </column>
+      <item row="0" column="0">
+       <property name="text">
+        <string>1</string>
+       </property>
+      </item>
      </widget>
     </widget>
    </widget>
