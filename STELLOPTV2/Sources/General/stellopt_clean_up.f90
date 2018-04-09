@@ -196,20 +196,10 @@
 !DEC$ ENDIF
 !DEC$ IF DEFINED (REGCOIL)
                  ! OUTPUT FILES SHOULD BE WRITTEN HERE - Use the regcoil
-                 ! write_output functions to write the hdf5 output file
-                  IF (sigma_coil_bnorm < bigno) THEN
-                     CALL move_txtfile('bnorm.'//TRIM(proc_string_old),&
-                                       'bnorm.'//TRIM(proc_string))
-                     CALL move_txtfile('regcoil_params.'//TRIM(proc_string_old),&
-                                       'regcoil_params.'//TRIM(proc_string))
-                     ! CALL copy_txtfile('Bnormal_from_plasma_current'//TRIM(proc_string_old)//'.dat',&
-                     !                   'Bnormal_from_plasma_current'//TRIM(proc_string)//'.dat')
-                     ! CALL copy_txtfile('Bnormal_total_'//TRIM(proc_string_old)//'.dat',&
-                     !                   'Bnormal_total'//TRIM(proc_string)//'.dat')
-                     ! CALL move_txtfile('Bnormal_from_plasma_current'//TRIM(proc_string_old)//'.dat',&
-                     !                   'Bnormal_from_plasma_current'//TRIM(proc_string)//'.dat')
-                     ! Need to write out the winding surface.
-                  END IF
+                 ! functions to write the hdf5 output file
+                 ! This is inside of the PSO loop. Should be
+                 ! duplicated, or broken out to a subroutine
+                 ! WRITE *, '<----- REGCOIL Output files missing -----'
 !DEC$ ENDIF
 !DEC$ IF DEFINED (TERPSICHORE)
                   IF (ANY(sigma_kink < bigno)) THEN
@@ -296,14 +286,6 @@
                      CALL copy_txtfile('coil_spline'//TRIM(temp_str)//'_'//TRIM(proc_string_old)//'.out',&
                                        'coil_spline'//TRIM(temp_str)//'_'//TRIM(proc_string)//'.out')
                   END DO
-               END IF
-!DEC$ ENDIF
-!DEC$ IF DEFINED (REGCOIL)
-               IF (sigma_regcoil_bnorm < bigno .and. (proc_string.ne.proc_string_old) ) THEN
-                  ! MUST Call 'regcoil_write in'
-                  !CALL regcoil_write_namelist(iunit_out,ier)
-                  ! MUST Write out winding surface
-
                END IF
 !DEC$ ENDIF
                ! Keep minimum states
@@ -402,18 +384,16 @@
                   END IF
 !DEC$ ENDIF
 !DEC$ IF DEFINED (REGCOIL)
-                  IF (sigma_coil_bnorm < bigno) THEN
-                     ! CALL move_txtfile('bnorm.'//TRIM(proc_string_old),&
-                     !                   'bnorm.'//TRIM(proc_string))
-                     ! CALL move_txtfile('regcoil_params.'//TRIM(proc_string_old),&
-                     !                   'regcoil_params.'//TRIM(proc_string))
-                     ! CALL copy_txtfile('Bnormal_from_plasma_current'//TRIM(proc_string_old)//'.dat',&
-                     !                   'Bnormal_from_plasma_current'//TRIM(proc_string)//'.dat')
-                     ! CALL copy_txtfile('Bnormal_total_'//TRIM(proc_string_old)//'.dat',&
-                     !                   'Bnormal_total'//TRIM(proc_string)//'.dat')
-                     ! CALL move_txtfile('Bnormal_from_plasma_current'//TRIM(proc_string_old)//'.dat',&
-                     !                   'Bnormal_from_plasma_current'//TRIM(proc_string)//'.dat')
-                     ! Need to write out the winding surface.
+                  ! Currently inside of LEV and GADE cleanup loop, and 
+                  ! 'Keeping the mins' section
+                  IF ( ANY(sigma_regcoil_chi2_b < bigno) .and. &
+                     ( ANY(lregcoil_rcws_rbound_c_opt) .or. ANY(lregcoil_rcws_rbound_s_opt) .or. &
+                       ANY(lregcoil_rcws_zbound_c_opt) .or. ANY(lregcoil_rcws_zbound_s_opt) ) ) THEN
+                     !print *, '<---In LEV/GADE cleanup.'
+                     !print *, '<---proc_string_old = ', proc_string_old
+                     !print *, '<---proc_string = ', proc_string
+                     CALL copy_txtfile('regcoil_nescout.'//TRIM(proc_string_old),&
+                                       'regcoil_nescout.'//TRIM(proc_string))
                   END IF
 !DEC$ ENDIF
 !DEC$ IF DEFINED (TERPSICHORE)
@@ -513,6 +493,10 @@
 !DEC$ IF DEFINED (BEAMS3D_OPT)
                   IF (ANY(sigma_orbit < bigno)) CALL write_beams3d_namelist(iunit_out,ier)
 !DEC$ ENDIF
+!DEC$ IF DEFINED (REGCOIL)
+                 ! JCS to do: If needed put regcoil items here.
+!DEC$ ENDIF
+
                WRITE(iunit_out,'(A)') '&END'
                CLOSE(iunit_out)
                ! Overwrite the restart file
