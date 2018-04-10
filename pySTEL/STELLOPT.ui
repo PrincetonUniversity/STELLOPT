@@ -24,7 +24,7 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>1</number>
+     <number>2</number>
     </property>
     <widget class="QWidget" name="TabOverview">
      <attribute name="title">
@@ -716,6 +716,66 @@
      <attribute name="title">
       <string>STELLOPT</string>
      </attribute>
+     <widget class="QComboBox" name="ComboBoxOPTtype">
+      <property name="geometry">
+       <rect>
+        <x>20</x>
+        <y>40</y>
+        <width>191</width>
+        <height>26</height>
+       </rect>
+      </property>
+      <item>
+       <property name="text">
+        <string>ONE_ITER</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>LMDIF</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>LMDIF_BOUNDED</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>GADE</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>PSO</string>
+       </property>
+      </item>
+     </widget>
+     <widget class="QTableWidget" name="TableOPTtype">
+      <property name="geometry">
+       <rect>
+        <x>20</x>
+        <y>70</y>
+        <width>191</width>
+        <height>192</height>
+       </rect>
+      </property>
+      <row>
+       <property name="text">
+        <string>NPOPULATION</string>
+       </property>
+      </row>
+      <column>
+       <property name="text">
+        <string>Value</string>
+       </property>
+      </column>
+      <item row="0" column="0">
+       <property name="text">
+        <string>1</string>
+       </property>
+      </item>
+     </widget>
     </widget>
    </widget>
   </widget>

@@ -12,6 +12,7 @@ from PyQt4.QtGui import QIcon, QTableWidget, QTableWidgetItem
 from libstell.libstell import safe_open, read_indata_namelist, pmass, pcurr, piota, \
                               set_module_var, safe_close, cfunct, sfunct, isotoro, \
                               write_indata_namelist
+from libstell.stellopt import read_stellopt_namelist
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from mpl_toolkits import mplot3d
@@ -39,6 +40,11 @@ class MyApp(QMainWindow):
 		iunit = 55
 		istat = 0
 		self.indata=read_indata_namelist(iunit,istat) # dummy just to get going
+		self.indata['ntor']=4
+		self.indata['mpol']=9
+		self.indata['nfp']=3
+		# Set the OPTIMUM DEFAULTS (will repalce with something like read_indata_namelist)
+		self.optimum=read_stellopt_namelist(iunit,istat)
 		# Setup Components
 		self.ui.TableArrays.setRowCount(1)
 		self.ui.TableArrays.setColumnCount(20)
@@ -50,15 +56,19 @@ class MyApp(QMainWindow):
 		self.canvas = FigureCanvas(self.fig)
 		self.ui.Plotbox.addWidget(self.canvas)
 		self.DrawArrays()
-		# Callbacks
+		# Callbacks (VMEC Tab)
 		self.ui.TextMpol.editingFinished.connect(self.UpdateMpol)
 		self.ui.TextNtor.editingFinished.connect(self.UpdateNtor)
+		self.ui.TextNfp.editingFinished.connect(self.UpdateNfp)
 		self.ui.ButtonLoadIndata.clicked.connect(self.LoadIndata)
 		self.ui.ComboBoxArrays.currentIndexChanged.connect(self.UpdateArrays)
 		self.ui.ComboBoxPType.currentIndexChanged.connect(self.UpdatePType)
 		self.ui.TableArrays.cellChanged.connect(self.DataArrays)
 		self.ui.TableNsArray.cellChanged.connect(self.NSArrays)
 		self.ui.ButtonWriteIndata.clicked.connect(self.WriteIndata)
+		# Callbacks (STELLOPT Tab)
+		self.ui.ComboBoxOPTtype.currentIndexChanged.connect(self.UpdateOPTtype)
+		self.ui.TableOPTtype.cellChanged.connect(self.OPTArrays)
 
 	def UpdateMpol(self):
 		strtmp = self.ui.TextMpol.text()
@@ -72,6 +82,14 @@ class MyApp(QMainWindow):
 		inttmp = int(strtmp)
 		self.indata['ntor'] = inttmp
 		set_module_var('vmec_input','ntor',inttmp)
+		return
+		return
+
+	def UpdateNfp(self):
+		strtmp = self.ui.TextNfp.text()
+		inttmp = int(strtmp)
+		self.indata['nfp'] = inttmp
+		set_module_var('vmec_input','nfp',inttmp)
 		return
 
 	def LoadIndata(self):
@@ -117,7 +135,6 @@ class MyApp(QMainWindow):
 		niter_array = self.indata['niter_array'][ns_mask]
 		self.ui.TableNsArray.setColumnCount(len(ns_array))
 		for num,item in enumerate(ns_array, start=0):
-			#print(num,item)
 			self.ui.TableNsArray.setItem(0,num, QTableWidgetItem(str(item)))
 			self.ui.TableNsArray.setItem(1,num, QTableWidgetItem(str(niter_array[num])))
 			self.ui.TableNsArray.setItem(2,num, QTableWidgetItem(str(ftol_array[num])))
@@ -211,12 +228,20 @@ class MyApp(QMainWindow):
 		data_name = data_name.lower()
 		# Update PType accordingly
 		strtmp = 'none'
-		if data_name == 'am' or data_name == 'am_aux':
+		if data_name == 'am':
 			strtmp = str(self.indata['pmass_type']).strip()
-		if data_name == 'ai' or data_name == 'ai_aux':
+		if data_name == 'ai':
 			strtmp = str(self.indata['piota_type']).strip()
 		if data_name == 'ac' or data_name == 'ac_aux':
 			strtmp = str(self.indata['pcurr_type']).strip()
+		if data_name == 'am_aux':
+			self.indata['pmass_type'] = 'akima_spline'
+			set_module_var('vmec_input','pmass_type','akima_spline')
+			strtmp = 'akima_spline'
+		if data_name == 'ai_aux':
+			self.indata['piota_type'] = 'akima_spline'
+			set_module_var('vmec_input','piota_type','akima_spline')
+			strtmp = 'akima_spline'
 		if strtmp != 'none':
 			self.ui.ComboBoxPType.setCurrentIndex(self.ui.ComboBoxPType.findText(strtmp))
 		# Update the table
@@ -224,13 +249,13 @@ class MyApp(QMainWindow):
 		self.ui.TableArrays.setColumnCount(20)
 		self.ui.TableArrays.setVerticalHeaderLabels('1')
 		self.ui.TableArrays.setHorizontalHeaderLabels('0;1;2;3;4;5;6;7;8;9;10;11;12;13;14;15;16;17;18;19;20'.split(';'))
-		if data_name == 'am' or data_name == 'ac' or data_name == 'ai':
+		if data_name in ['am','ac','ai']:
 			for num,item in enumerate(self.indata[data_name], start=0):
 				self.ui.TableArrays.setItem(0,num, QTableWidgetItem(str(item)))
-		elif data_name == 'am_aux' or data_name == 'ac_aux' or data_name == 'ai_aux':
+		elif data_name in ['am_aux','ac_aux','ai_aux']:
 			aux_mask = self.indata[data_name+'_s']>=0
 			self.ui.TableArrays.setRowCount(2)
-			print(np.count_nonzero(aux_mask))
+			self.ui.TableArrays.setColumnCount(50)
 			if (np.count_nonzero(aux_mask) > 0):
 				self.ui.TableArrays.setColumnCount(np.count_nonzero(aux_mask))
 				for num,item in enumerate(self.indata[data_name+'_s'][aux_mask], start=0):
@@ -253,9 +278,8 @@ class MyApp(QMainWindow):
 				self.indata[data_name+'_s']=np.array([0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
 				self.indata[data_name+'_f']=np.array([1.0, 0.8, 0.6, 0.4, 0.2, 0.0])
 				set_module_var('vmec_input',data_name+'_s',self.indata[data_name+'_s'])
-				set_module_var('vmec_input',data_name+'_s',self.indata[data_name+'_f'])
+				set_module_var('vmec_input',data_name+'_f',self.indata[data_name+'_f'])
 		elif data_name == 'rbc' or data_name == 'zbs' or data_name == 'rbs' or data_name == 'zbc':
-
 			self.ui.TableArrays.blockSignals(True)
 			# Set Array Size
 			self.ui.TableArrays.setRowCount(self.indata['ntor']*2+1)
@@ -290,7 +314,14 @@ class MyApp(QMainWindow):
 		value = float(item.text())
 		col = self.ui.TableArrays.currentColumn()
 		row = self.ui.TableArrays.currentRow()
-		if len(data_name) == 2:
+		if data_name in ['am_aux','ac_aux','ai_aux']:
+			if row == 0:
+				self.indata[data_name+'_s'][col]=value
+				set_module_var('vmec_input',data_name+'_s',self.indata[data_name+'_s'][:])
+			else:
+				self.indata[data_name+'_f'][col]=value
+				set_module_var('vmec_input',data_name+'_f',self.indata[data_name+'_f'][:])
+		elif data_name in ['am','ac','ai']:
 			self.indata[data_name][col]=value
 			set_module_var('vmec_input',data_name,self.indata[data_name][:])
 		elif data_name == 'rbc' or data_name == 'zbs' or data_name == 'rbs' or data_name == 'zbc':
@@ -304,13 +335,14 @@ class MyApp(QMainWindow):
 		data_name = data_name.lower()
 		# Handle plots / values
 		self.fig.clf()
-		self.ax = self.fig.add_subplot(111)
+		#self.fig.delaxes([-1.-1])
+		#self.ax = self.fig.add_subplot(111)
 		s = np.ndarray((99,1))
 		f = np.ndarray((99,1))
 		for i in range(99): s[i]=(i)/98.0
 		if data_name[0:2] == 'am':
 			for i,xx in enumerate(s):
-				f[i] = pmass(xx)
+				f[i] = pmass(xx)/(pi*4E-7)
 				self.ax.set_ylabel('Pressure')
 		elif data_name[0:2] == 'ac':
 			for i,xx in enumerate(s):
@@ -346,7 +378,7 @@ class MyApp(QMainWindow):
 			theta = np.ndarray((nu,1))
 			zeta = np.ndarray((nv,1))
 			for j in range(nu): theta[j]=2*pi*j/(nu-1)
-			for j in range(nv): zeta[j]=pi*j/(nv)/self.indata['nfp']
+			for j in range(nv): zeta[j]=pi*j/(nv*self.indata['nfp'])
 			r=cfunct(theta,zeta,rmnc,xm,xn)
 			z=sfunct(theta,zeta,zmns,xm,xn)
 			self.ax = isotoro(r,z,zeta,0,fig=self.fig)
@@ -357,10 +389,54 @@ class MyApp(QMainWindow):
 		fmax = max(f)
 		if fmax == 0:
 			fmax = 1
-		self.ax.plot(s,f/fmax)
+		self.ax.plot(s,f)
 		self.ax.set_xlabel('Norm. Tor. Flux (s)')
 		self.ax.set_aspect('auto')
+		if data_name[3:6] == 'aux':
+			self.ax.plot(self.indata[data_name+'_s'],self.indata[data_name+'_f'],'o')
 		self.canvas.draw()
+
+	def UpdateOPTtype(self):
+		self.ui.TableOPTtype.blockSignals(True)
+		# Determine type of Optimization
+		self.optimum['OPT_TYPE'] = self.ui.ComboBoxOPTtype.currentText()
+		self.optimum['OPT_TYPE'] = self.optimum['OPT_TYPE'].upper()
+		if self.optimum['OPT_TYPE'] == 'ONE_ITER':
+			fields = ['NOPTIMIZERS']
+			self.ui.TableOPTtype.setRowCount(1)
+		elif self.optimum['OPT_TYPE'] in ['LMDIF','LMDIF_BOUNDED']:
+			self.ui.TableOPTtype.setRowCount(8)
+			fields = ['NFUNC_MAX','FTOL','XTOL','GTOL','EPSFCN','FACTOR','MODE','NOPTIMIZERS']
+		elif self.optimum['OPT_TYPE'] == 'GADE':
+			self.ui.TableOPTtype.setRowCount(6)
+			fields = ['NFUNC_MAX','FACTOR','CR_STRATEGY','MODE','NPOPULATION','NOPTIMIZERS']
+		self.ui.TableOPTtype.setVerticalHeaderLabels(fields)
+		for i,item in enumerate(fields):
+			val = str(self.optimum[item])
+			self.ui.TableOPTtype.setItem(i,0, QTableWidgetItem(val))
+		self.ui.TableOPTtype.blockSignals(False)
+
+	def OPTArrays(self):
+		# Handles changes in OPT table
+		# Get changed item
+		item = self.ui.TableOPTtype.currentItem()
+		if item is None:
+			return
+		col = self.ui.TableOPTtype.currentColumn()
+		row = self.ui.TableOPTtype.currentRow()
+		field = self.ui.TableOPTtype.verticalHeaderItem(row).text()
+		print(field)
+		if field == 'OPT_TYPE':
+			self.optimum[field]=item.text()
+		elif field in ['NOPTIMIZERS','NFUNC_MAX','MODE','CR_STRATEGY','NPOPULATION']:
+			self.optimum[field]=int(item.text())
+		else:
+			self.optimum[field]=float(item.text())
+
+
+
+
+
 
 
 
