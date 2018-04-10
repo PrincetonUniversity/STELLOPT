@@ -957,6 +957,8 @@
       ! If targeting chi2_b on the plasma boundary AND varying the winding
       ! surface Fourier series, then load the nescin file from the regcoil
       ! namelist
+
+!DEC$ IF DEFINED (REGCOIL)
       IF ( ANY(sigma_regcoil_chi2_b < bigno) .and. &
             ( ANY(lregcoil_rcws_rbound_c_opt) .or. ANY(lregcoil_rcws_rbound_s_opt) .or. &
               ANY(lregcoil_rcws_zbound_c_opt) .or. ANY(lregcoil_rcws_zbound_s_opt) ) ) THEN
@@ -988,6 +990,7 @@
                        ' assigning stellopt variables'
          end if
       END IF
+!DEC$ ENDIF
       ! End of REGCOIL winding surface optimization initializion steps
 
       ! If fixed boundary optimization or mapping turn off restart
