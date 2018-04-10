@@ -95,14 +95,6 @@ chisq_coil_bnorm.o : \
       $(LIB_DIR)/Release/mpi_params.o
 
       
-chisq_regcoil_bnorm.o : \
-      stellopt_runtime.o \
-      stellopt_targets.o \
-      equil_vals.o \
-      $(LIB_DIR)/Release/safe_open_mod.o \
-      $(LIB_DIR)/Release/mpi_params.o
-
-      
 chisq_regcoil_chi2_b.o : \
       stellopt_runtime.o \
       stellopt_targets.o \
@@ -638,13 +630,6 @@ stellopt_clean_up.o : \
       $(LIB_DIR)/Release/bootsj_input.o \
       $(LIB_DIR)/Release/fdjac_mod.o \
       $(LIB_DIR)/Release/safe_open_mod.o 
-      
-
-stellopt_regcoil_bnorm.o : \
-      stellopt_runtime.o \
-      stellopt_input_mod.o \
-      stellopt_vars.o \
-      equil_utils.o
       
 
 stellopt_regcoil_chi2_b.o : \

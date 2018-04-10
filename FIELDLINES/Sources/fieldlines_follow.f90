@@ -117,6 +117,7 @@
       IF (ALLOCATED(Z_lines)) DEALLOCATE(Z_lines)
       IF (ALLOCATED(PHI_lines)) DEALLOCATE(PHI_lines)
       IF (ALLOCATED(B_lines)) DEALLOCATE(B_lines)
+      IF (ALLOCATED(L_lines)) DEALLOCATE(L_lines)
       
       ! Allocations
       ALLOCATE(q(neqs_nag),STAT=ier)
@@ -125,8 +126,11 @@
       IF (ier /= 0) CALL handle_err(ALLOC_ERR,'R_LINES, Z_LINES PHI_LINES',ier)
       ALLOCATE(B_lines(mystart:myend,0:nsteps),STAT=ier)
       IF (ier /= 0) CALL handle_err(ALLOC_ERR,'B_LINES',ier)
+      ALLOCATE(L_lines(mystart:myend),STAT=ier)
+      IF (ier /= 0) CALL handle_err(ALLOC_ERR,'L_LINES',ier)
       R_lines=0.0
       Z_lines=0.0
+      L_lines=0.0
       PHI_lines=-1.0
       B_lines = -1
       R_lines(mystart:myend,0)   = R_start(mystart:myend)

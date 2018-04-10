@@ -1012,7 +1012,7 @@ CEAL      WRITE (*, 1010) elongate, raxis(1), zaxis(1)
 CEAL      WRITE (3, 1010) elongate, raxis(1), zaxis(1)
 CEAL      WRITE (*, 1020) ntheta, nphi
 CEAL      WRITE (3, 1020) ntheta, nphi
- 1010 FORMAT(' Average elongation = ',1pe10.4,/,' Raxis = ',1pe12.4,
+ 1010 FORMAT(' Average elongation = ',1pe11.4,/,' Raxis = ',1pe12.4,
      1   ' Zaxis = ',1pe12.4)
  1020 FORMAT(' Number of Theta Points Matched = ',i5,/,
      1   ' Number Phi Planes = ',i5)

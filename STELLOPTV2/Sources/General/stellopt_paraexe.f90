@@ -348,10 +348,8 @@
 !DEC$ ENDIF
             CASE('coilopt++')
                CALL stellopt_coiloptpp(file_str,lscreen)
-            CASE('regcoil_bnorm')
-               CALL stellopt_regcoil_bnorm(file_str,lscreen)
             CASE('regcoil_chi2_b')
-               CALL stellopt_regcoil_chi2_b(file_str,lscreen)
+               CALL stellopt_regcoil_chi2_b(lscreen,ier)
             CASE('terpsichore')
                proc_string = file_str
                ier = 0

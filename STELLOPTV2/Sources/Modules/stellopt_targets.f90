@@ -9,7 +9,7 @@
 !     Libraries
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
-      USE vparams, ONLY: nsd
+      USE vparams, ONLY: nsd, ntor_rcws, mpol_rcws
       USE vsvd0, ONLY : nigroup
 
 !-----------------------------------------------------------------------
@@ -173,8 +173,7 @@
       INTEGER     ::  nu_bnorm,nv_bnorm
       REAL(rprec) ::  target_regcoil_winding_surface_separation
       REAL(rprec) ::  sigma_regcoil_winding_surface_separation
-      REAL(rprec) ::  target_regcoil_bnorm, sigma_regcoil_bnorm
-      REAL(rprec) ::  target_regcoil_chi2_b, sigma_regcoil_chi2_b
+      REAL(rprec),DIMENSION((2*ntor_rcws+1)*(2*mpol_rcws+1)*4) ::  target_regcoil_chi2_b, sigma_regcoil_chi2_b
       REAL(rprec) ::  target_regcoil_current_density, sigma_regcoil_current_density
       REAL(rprec), DIMENSION(nigroup)    :: target_coillen, sigma_coillen
       INTEGER     :: npts_curv, npts_csep, npts_cself
@@ -245,9 +244,8 @@
       INTEGER, PARAMETER :: jtarget_coilcrv    = 615
       INTEGER, PARAMETER :: jtarget_coilsep    = 616
       INTEGER, PARAMETER :: jtarget_coilself   = 617
-      INTEGER, PARAMETER :: jtarget_regcoil_bnorm = 5150
-      INTEGER, PARAMETER :: jtarget_regcoil_chi2_b = 5151
-      INTEGER, PARAMETER :: jtarget_regcoil_current_density = 5152
+      INTEGER, PARAMETER :: jtarget_regcoil_chi2_b = 5150
+      INTEGER, PARAMETER :: jtarget_regcoil_current_density = 5151
       
 
       CONTAINS
@@ -374,8 +372,6 @@
             WRITE(iunit, out_format) 'Limiter'
          CASE(jtarget_coil_bnorm)
             WRITE(iunit, out_format) 'COILOPT++ Normal Field'
-         CASE(jtarget_regcoil_bnorm)
-            WRITE(iunit, out_format) 'REGCOIL Normal Field (or something useful)'
          CASE(jtarget_regcoil_chi2_b)
             WRITE(iunit, out_format) 'REGCOIL Chi^2 B'
          CASE(jtarget_regcoil_current_density)
