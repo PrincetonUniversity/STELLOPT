@@ -308,15 +308,15 @@ class MyApp(QMainWindow):
 		self.zeta2=self.zeta[0:self.nv2+1]
 		self.r=cfunct(self.theta,self.zeta,self.vmec_data['rmnc'],self.vmec_data['xm'],self.vmec_data['xn'])
 		self.z=sfunct(self.theta,self.zeta,self.vmec_data['zmns'],self.vmec_data['xm'],self.vmec_data['xn'])
-		self.b=cfunct(self.theta,self.zeta,self.vmec_data['bmnc'],self.vmec_data['xm'],self.vmec_data['xn'])
-		self.g=cfunct(self.theta,self.zeta,self.vmec_data['gmnc'],self.vmec_data['xm'],self.vmec_data['xn'])
-		self.bu=cfunct(self.theta,self.zeta,self.vmec_data['bsupumnc'],self.vmec_data['xm'],self.vmec_data['xn'])
-		self.bv=cfunct(self.theta,self.zeta,self.vmec_data['bsupvmnc'],self.vmec_data['xm'],self.vmec_data['xn'])
-		self.cu=cfunct(self.theta,self.zeta,self.vmec_data['currumnc'],self.vmec_data['xm'],self.vmec_data['xn'])
-		self.cv=cfunct(self.theta,self.zeta,self.vmec_data['currvmnc'],self.vmec_data['xm'],self.vmec_data['xn'])
-		self.b_s=sfunct(self.theta,self.zeta,self.vmec_data['bsubsmns'],self.vmec_data['xm'],self.vmec_data['xn'])
-		self.b_u=cfunct(self.theta,self.zeta,self.vmec_data['bsubumnc'],self.vmec_data['xm'],self.vmec_data['xn'])
-		self.b_v=cfunct(self.theta,self.zeta,self.vmec_data['bsubvmnc'],self.vmec_data['xm'],self.vmec_data['xn'])
+		self.b=cfunct(self.theta,self.zeta,self.vmec_data['bmnc'],self.vmec_data['xm_nyq'],self.vmec_data['xn_nyq'])
+		self.g=cfunct(self.theta,self.zeta,self.vmec_data['gmnc'],self.vmec_data['xm_nyq'],self.vmec_data['xn_nyq'])
+		self.bu=cfunct(self.theta,self.zeta,self.vmec_data['bsupumnc'],self.vmec_data['xm_nyq'],self.vmec_data['xn_nyq'])
+		self.bv=cfunct(self.theta,self.zeta,self.vmec_data['bsupvmnc'],self.vmec_data['xm_nyq'],self.vmec_data['xn_nyq'])
+		self.cu=cfunct(self.theta,self.zeta,self.vmec_data['currumnc'],self.vmec_data['xm_nyq'],self.vmec_data['xn_nyq'])
+		self.cv=cfunct(self.theta,self.zeta,self.vmec_data['currvmnc'],self.vmec_data['xm_nyq'],self.vmec_data['xn_nyq'])
+		self.b_s=sfunct(self.theta,self.zeta,self.vmec_data['bsubsmns'],self.vmec_data['xm_nyq'],self.vmec_data['xn_nyq'])
+		self.b_u=cfunct(self.theta,self.zeta,self.vmec_data['bsubumnc'],self.vmec_data['xm_nyq'],self.vmec_data['xn_nyq'])
+		self.b_v=cfunct(self.theta,self.zeta,self.vmec_data['bsubvmnc'],self.vmec_data['xm_nyq'],self.vmec_data['xn_nyq'])
 
 
 if __name__ == "__main__":
