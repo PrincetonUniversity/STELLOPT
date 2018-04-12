@@ -14,7 +14,7 @@
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="QTabWidget" name="tabWidget">
+   <widget class="QTabWidget" name="tabMain">
     <property name="geometry">
      <rect>
       <x>0</x>
@@ -620,10 +620,10 @@
      <widget class="QWidget" name="gridLayoutWidget">
       <property name="geometry">
        <rect>
-        <x>530</x>
+        <x>540</x>
         <y>50</y>
-        <width>361</width>
-        <height>271</height>
+        <width>341</width>
+        <height>251</height>
        </rect>
       </property>
       <layout class="QGridLayout" name="Plotbox"/>
@@ -712,7 +712,7 @@
       </property>
      </widget>
     </widget>
-    <widget class="QWidget" name="tab">
+    <widget class="QWidget" name="tabSTELLOPT">
      <attribute name="title">
       <string>STELLOPT</string>
      </attribute>
@@ -775,6 +775,329 @@
         <string>1</string>
        </property>
       </item>
+     </widget>
+     <widget class="QTabWidget" name="tabStelVars">
+      <property name="geometry">
+       <rect>
+        <x>240</x>
+        <y>40</y>
+        <width>621</width>
+        <height>221</height>
+       </rect>
+      </property>
+      <property name="currentIndex">
+       <number>3</number>
+      </property>
+      <widget class="QWidget" name="tabStelVarsGlobal">
+       <attribute name="title">
+        <string>Global</string>
+       </attribute>
+       <widget class="QTableWidget" name="TableOPTVarsScalar">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>10</y>
+          <width>601</width>
+          <height>181</height>
+         </rect>
+        </property>
+        <row>
+         <property name="text">
+          <string>PHIEDGE</string>
+         </property>
+        </row>
+        <row>
+         <property name="text">
+          <string>PRES_SCALE</string>
+         </property>
+        </row>
+        <row>
+         <property name="text">
+          <string>CURTOR</string>
+         </property>
+        </row>
+        <column>
+         <property name="text">
+          <string>OPTIMIZED</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>Value</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>DValue</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>Minimum</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>Maximum</string>
+         </property>
+        </column>
+       </widget>
+      </widget>
+      <widget class="QWidget" name="tabStelVarsProfile">
+       <attribute name="title">
+        <string>Profiles</string>
+       </attribute>
+       <widget class="QComboBox" name="comboBoxStelVarsProfType">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>10</y>
+          <width>151</width>
+          <height>26</height>
+         </rect>
+        </property>
+        <item>
+         <property name="text">
+          <string>Pressure (AM)</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Current (AC)</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Iota (AI)</string>
+         </property>
+        </item>
+       </widget>
+       <widget class="QTableWidget" name="TableOPTVarsProf">
+        <property name="geometry">
+         <rect>
+          <x>20</x>
+          <y>40</y>
+          <width>571</width>
+          <height>141</height>
+         </rect>
+        </property>
+        <row>
+         <property name="text">
+          <string>AM(0)</string>
+         </property>
+        </row>
+        <row>
+         <property name="text">
+          <string>AM(1)</string>
+         </property>
+        </row>
+        <row>
+         <property name="text">
+          <string>AM(2)</string>
+         </property>
+        </row>
+        <row>
+         <property name="text">
+          <string>AM(3)</string>
+         </property>
+        </row>
+        <row>
+         <property name="text">
+          <string>AM(4)</string>
+         </property>
+        </row>
+        <row>
+         <property name="text">
+          <string>AM(5)</string>
+         </property>
+        </row>
+        <row>
+         <property name="text">
+          <string>AM(6)</string>
+         </property>
+        </row>
+        <row>
+         <property name="text">
+          <string>AM(7)</string>
+         </property>
+        </row>
+        <row>
+         <property name="text">
+          <string>AM(8)</string>
+         </property>
+        </row>
+        <row>
+         <property name="text">
+          <string>AM(9)</string>
+         </property>
+        </row>
+        <row>
+         <property name="text">
+          <string>AM(10)</string>
+         </property>
+        </row>
+        <column>
+         <property name="text">
+          <string>Optimized</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>Value</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>DValue</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>Minimum</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>Maximum</string>
+         </property>
+        </column>
+       </widget>
+      </widget>
+      <widget class="QWidget" name="tabStelVarsExtcur">
+       <attribute name="title">
+        <string>Vacuum Current</string>
+       </attribute>
+       <widget class="QTableWidget" name="TableOPTVarsExtcur">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>10</y>
+          <width>601</width>
+          <height>171</height>
+         </rect>
+        </property>
+        <row>
+         <property name="text">
+          <string>EXTCUR(1)</string>
+         </property>
+        </row>
+        <row>
+         <property name="text">
+          <string>EXTCUR(2)</string>
+         </property>
+        </row>
+        <row>
+         <property name="text">
+          <string>EXTCUR(2)</string>
+         </property>
+        </row>
+        <row>
+         <property name="text">
+          <string>EXTCUR(3)</string>
+         </property>
+        </row>
+        <row>
+         <property name="text">
+          <string>EXTCUR(5)</string>
+         </property>
+        </row>
+        <column>
+         <property name="text">
+          <string>Optimized</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>Value</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>DValue</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>Minimum</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>Maximum</string>
+         </property>
+        </column>
+       </widget>
+      </widget>
+      <widget class="QWidget" name="tabStelVarsBound">
+       <attribute name="title">
+        <string>Boundary</string>
+       </attribute>
+       <widget class="QComboBox" name="comboBoxStelVarsBoundType">
+        <property name="geometry">
+         <rect>
+          <x>0</x>
+          <y>0</y>
+          <width>201</width>
+          <height>26</height>
+         </rect>
+        </property>
+        <item>
+         <property name="text">
+          <string>VMEC</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Hirshman-Breslau</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Garabedian</string>
+         </property>
+        </item>
+       </widget>
+       <widget class="QTableWidget" name="TableOPTVarsBound">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>30</y>
+          <width>601</width>
+          <height>161</height>
+         </rect>
+        </property>
+        <row>
+         <property name="text">
+          <string>(0,1)</string>
+         </property>
+        </row>
+        <column>
+         <property name="text">
+          <string>Optimized</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>Value</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>DValue</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>Minimum</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>Maximum</string>
+         </property>
+        </column>
+       </widget>
+      </widget>
      </widget>
     </widget>
    </widget>

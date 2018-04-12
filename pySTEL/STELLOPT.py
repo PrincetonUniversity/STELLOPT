@@ -56,6 +56,11 @@ class MyApp(QMainWindow):
 		self.canvas = FigureCanvas(self.fig)
 		self.ui.Plotbox.addWidget(self.canvas)
 		self.DrawArrays()
+		# Setup STELLOPT Pannels
+		self.UpdateOPTtype()
+		self.UpdateOPTVarsScalar()
+		self.UpdateOPTVarsProf()
+		self.UpdateOPTVarsExtcur()
 		# Callbacks (VMEC Tab)
 		self.ui.TextMpol.editingFinished.connect(self.UpdateMpol)
 		self.ui.TextNtor.editingFinished.connect(self.UpdateNtor)
@@ -69,6 +74,13 @@ class MyApp(QMainWindow):
 		# Callbacks (STELLOPT Tab)
 		self.ui.ComboBoxOPTtype.currentIndexChanged.connect(self.UpdateOPTtype)
 		self.ui.TableOPTtype.cellChanged.connect(self.OPTArrays)
+		self.ui.tabStelVars.currentChanged.connect(self.StelVarsTab)
+		self.ui.TableOPTVarsScalar.cellChanged.connect(self.OPTVarsScalar)
+		self.ui.TableOPTVarsProf.cellChanged.connect(self.OPTVarsProf)
+		self.ui.comboBoxStelVarsProfType.currentIndexChanged.connect(self.UpdateOPTVarsProf)
+		self.ui.TableOPTVarsExtcur.cellChanged.connect(self.OPTVarsExtcur)
+		self.ui.comboBoxStelVarsBoundType.currentIndexChanged.connect(self.UpdateOPTVarsBound)
+		self.ui.TableOPTVarsBound.cellChanged.connect(self.OPTVarsBound)
 
 	def UpdateMpol(self):
 		strtmp = self.ui.TextMpol.text()
@@ -173,6 +185,12 @@ class MyApp(QMainWindow):
 		set_module_var('vmec_input','spres_ped',self.indata['spres_ped'])
 		self.indata['curtor'] = float(self.ui.TextCurtor.text())
 		set_module_var('vmec_input','curtor',self.indata['curtor'])
+		self.indata['mgrid_file'] = self.ui.TextMgridFile.text()
+		set_module_var('vmec_input','mgrid_file',self.indata['mgrid_file'])
+		# Update NCURR
+		dex = self.ui.ComboBoxNcurr.CurrentIndex()
+		self.indata['ncurr'] = int(dex)
+		set_module_var('vmec_input','ncurr',self.indata['ncurr'])
 		# Now write the file
 		iunit = 27
 		istat = 0
@@ -334,9 +352,8 @@ class MyApp(QMainWindow):
 		data_name = self.ui.ComboBoxArrays.currentText()
 		data_name = data_name.lower()
 		# Handle plots / values
+		self.fig.delaxes(self.ax)
 		self.fig.clf()
-		#self.fig.delaxes([-1.-1])
-		#self.ax = self.fig.add_subplot(111)
 		s = np.ndarray((99,1))
 		f = np.ndarray((99,1))
 		for i in range(99): s[i]=(i)/98.0
@@ -381,6 +398,7 @@ class MyApp(QMainWindow):
 			for j in range(nv): zeta[j]=pi*j/(nv*self.indata['nfp'])
 			r=cfunct(theta,zeta,rmnc,xm,xn)
 			z=sfunct(theta,zeta,zmns,xm,xn)
+			#self.ax = self.fig.add_subplot(111,projection='3d')
 			self.ax = isotoro(r,z,zeta,0,fig=self.fig)
 			self.ax.grid(False)
 			self.ax.set_axis_off()
@@ -389,6 +407,8 @@ class MyApp(QMainWindow):
 		fmax = max(f)
 		if fmax == 0:
 			fmax = 1
+		self.ax = self.fig.add_axes([0, 0, 1, 1])
+		#self.ax = self.fig.add_subplot(111)
 		self.ax.plot(s,f)
 		self.ax.set_xlabel('Norm. Tor. Flux (s)')
 		self.ax.set_aspect('auto')
@@ -408,6 +428,9 @@ class MyApp(QMainWindow):
 			self.ui.TableOPTtype.setRowCount(8)
 			fields = ['NFUNC_MAX','FTOL','XTOL','GTOL','EPSFCN','FACTOR','MODE','NOPTIMIZERS']
 		elif self.optimum['OPT_TYPE'] == 'GADE':
+			self.ui.TableOPTtype.setRowCount(6)
+			fields = ['NFUNC_MAX','FACTOR','CR_STRATEGY','MODE','NPOPULATION','NOPTIMIZERS']
+		elif self.optimum['OPT_TYPE'] == 'PSO':
 			self.ui.TableOPTtype.setRowCount(6)
 			fields = ['NFUNC_MAX','FACTOR','CR_STRATEGY','MODE','NPOPULATION','NOPTIMIZERS']
 		self.ui.TableOPTtype.setVerticalHeaderLabels(fields)
@@ -433,12 +456,310 @@ class MyApp(QMainWindow):
 		else:
 			self.optimum[field]=float(item.text())
 
+	def StelVarsTab(self):
+		# Handles updates to the tabs
+		# Get page index
+		item = self.ui.tabStelVars.currentIndex()
+		print(item)
+		if item == 0:
+			self.UpdateOPTVarsScalar()
+		elif item == 1:
+			self.UpdateOPTVarsProf()
+		elif item == 2:
+			self.UpdateOPTVarsExtcur()
+		elif item == 3:
+			self.UpdateOPTVarsBound()
 
 
+	def UpdateOPTVarsScalar(self):
+		self.ui.TableOPTVarsScalar.blockSignals(True)
+		#Update the Scalar Table
+		for i,item in enumerate(['PHIEDGE','PRES_SCALE','CURTOR']):
+			if self.optimum['L'+item+'_OPT'] == 1:
+				self.ui.TableOPTVarsScalar.setItem(i,0,QTableWidgetItem('T'))
+			else:
+				self.ui.TableOPTVarsScalar.setItem(i,0,QTableWidgetItem('F'))
+			self.ui.TableOPTVarsScalar.setItem(i,1,QTableWidgetItem(str(self.indata[item.lower()])))
+			self.ui.TableOPTVarsScalar.setItem(i,2,QTableWidgetItem(str(self.optimum['D'+item+'_OPT'])))
+			self.ui.TableOPTVarsScalar.setItem(i,3,QTableWidgetItem(str(self.optimum[item+'_MIN'])))
+			self.ui.TableOPTVarsScalar.setItem(i,4,QTableWidgetItem(str(self.optimum[item+'_MAX'])))
+		self.ui.TableOPTVarsScalar.blockSignals(False)
 
+	def OPTVarsScalar(self):
+		# Handles changes in Scalar table
+		# Get changed item
+		item = self.ui.TableOPTVarsScalar.currentItem()
+		if item is None:
+			return
+		col = self.ui.TableOPTVarsScalar.currentColumn()
+		row = self.ui.TableOPTVarsScalar.currentRow()
+		field = self.ui.TableOPTVarsScalar.verticalHeaderItem(row).text()
+		# Column determins value
+		field = field.upper()
+		if col == 0:
+			field = 'L'+field+'_OPT'
+			if item.text() == 'T':
+				val = 1
+			else:
+				val = 0
+		if col == 1:
+			return
+		elif col == 2:
+			field = 'D'+field+'_OPT'
+			val = float(item.text())
+		elif col == 3:
+			field = field+'_MIN'
+			val = float(item.text())
+		elif col == 4:
+			field = field+'_MAX'
+			val = float(item.text())
+		print(field, val)
+		self.optimum[field]=val
 
+	def UpdateOPTVarsProf(self):
+		self.ui.TableOPTVarsProf.blockSignals(True)
+		# Figure out which array to deal with
+		data_name = self.ui.comboBoxStelVarsProfType.currentText()
+		if data_name == 'Pressure (AM)':
+			field = 'AM'
+		elif data_name == 'Current (AC)':
+			field = 'AC'
+		elif data_name == 'Iota (AI)':
+			field = 'AI'
+		if field in ['AM','AC','AI']:
+			nrows = 11;
+		self.ui.TableOPTVarsProf.setRowCount(nrows)
+		for i in range(nrows):
+			self.ui.TableOPTVarsProf.setVerticalHeaderItem(i,QTableWidgetItem(str(field+'('+str(i)+')')))
+			if self.optimum['L'+field+'_OPT'][i] == 1:
+				self.ui.TableOPTVarsProf.setItem(i,0,QTableWidgetItem('T'))
+			else:
+				self.ui.TableOPTVarsProf.setItem(i,0,QTableWidgetItem('F'))
+			self.ui.TableOPTVarsProf.setItem(i,1,QTableWidgetItem(str(self.indata[field.lower()][i])))
+			self.ui.TableOPTVarsProf.setItem(i,2,QTableWidgetItem(str(self.optimum['D'+field+'_OPT'][i])))
+			self.ui.TableOPTVarsProf.setItem(i,3,QTableWidgetItem(str(self.optimum[field+'_MIN'][i])))
+			self.ui.TableOPTVarsProf.setItem(i,4,QTableWidgetItem(str(self.optimum[field+'_MAX'][i])))
+		self.ui.TableOPTVarsProf.blockSignals(False)
 
+	def OPTVarsProf(self):
+		# Handles changes in Profile table
+		# Get the current profile
+		data_name = self.ui.comboBoxStelVarsProfType.currentText()
+		print(data_name)
+		if data_name == 'Pressure (AM)':
+			field = 'AM'
+		elif data_name == 'Current (AC)':
+			field = 'AC'
+		elif data_name == 'Iota (AI)':
+			field = 'AI'
+		# Get changed item
+		item = self.ui.TableOPTVarsProf.currentItem()
+		if item is None:
+			return
+		col = self.ui.TableOPTVarsProf.currentColumn()
+		row = self.ui.TableOPTVarsProf.currentRow()
+		# Column determins value
+		field = field.upper()
+		if col == 0:
+			field = 'L'+field+'_OPT'
+			if item.text() == 'T':
+				val = 1
+			else:
+				val = 0
+		if col == 1:
+			return
+		elif col == 2:
+			field = 'D'+field+'_OPT'
+			val = float(item.text())
+		elif col == 3:
+			field = field+'_MIN'
+			val = float(item.text())
+		elif col == 4:
+			field = field+'_MAX'
+			val = float(item.text())
+		print(field, val)
+		temp = self.optimum[field]
+		temp[row] = val
+		self.optimum[field]=temp
 
+	def UpdateOPTVarsExtcur(self):
+		self.ui.TableOPTVarsExtcur.blockSignals(True)
+		# See how many EXTCUR array vars there are
+		if self.indata['lfreeb'] == 'T':
+			nextcur = 0
+			for i in range(99):
+				if not (self.indata['extcur'] == 0):
+					nextcur = i
+			self.ui.TableOPTVarsExtcur.setRowCount(nextcur)
+		else:
+			self.ui.TableOPTVarsExtcur.setRowCount(1)
+			return
+		field = 'EXTCUR'
+		for i in range(nextcur):
+			if self.optimum['L'+field+'_OPT'][i] == 1:
+				self.ui.TableOPTVarsProf.setItem(i,0,QTableWidgetItem('T'))
+			else:
+				self.ui.TableOPTVarsProf.setItem(i,0,QTableWidgetItem('F'))
+			self.ui.TableOPTVarsProf.setItem(i,1,QTableWidgetItem(str(self.indata[field.lower()][i])))
+			self.ui.TableOPTVarsProf.setItem(i,2,QTableWidgetItem(str(self.optimum['D'+field+'_OPT'][i])))
+			self.ui.TableOPTVarsProf.setItem(i,3,QTableWidgetItem(str(self.optimum[field+'_MIN'][i])))
+			self.ui.TableOPTVarsProf.setItem(i,4,QTableWidgetItem(str(self.optimum[field+'_MAX'][i])))
+			self.ui.TableOPTVarsProf.setVerticalHeaderItem(i,QTableWidgetItem(str(field+'('+str(i)+')')))
+		self.ui.TableOPTVarsProf.blockSignals(False)
+
+	def OPTVarsExtcur(self):
+		# Handles changes in Profile table
+		# Get the current profile
+		# Get changed item
+		item = self.ui.TableOPTVarsExtcur.currentItem()
+		if item is None:
+			return
+		col = self.ui.TableOPTVarsExtcur.currentColumn()
+		row = self.ui.TableOPTVarsExtcur.currentRow()
+		# Column determins value
+		field = 'EXTCUR'
+		if col == 0:
+			field = 'L'+field+'_OPT'
+			if item.text() == 'T':
+				val = 1
+			else:
+				val = 0
+		if col == 1:
+			return
+		elif col == 2:
+			field = 'D'+field+'_OPT'
+			val = float(item.text())
+		elif col == 3:
+			field = field+'_MIN'
+			val = float(item.text())
+		elif col == 4:
+			field = field+'_MAX'
+			val = float(item.text())
+		print(field, val)
+		temp = self.optimum[field]
+		temp[row] = val
+		self.optimum[field]=temp
+
+	def UpdateOPTVarsBound(self):
+		self.ui.TableOPTVarsBound.blockSignals(True)
+		# Figure out which array to deal with
+		data_name = self.ui.comboBoxStelVarsBoundType.currentText()
+		if data_name == 'VMEC':
+			field1 = 'BOUND'
+			field2 = 'BOUND'
+			field3 = 'BOUND'
+			field4 = 'BOUND'
+			nrows = (2*self.indata['ntor']+1)*(self.indata['mpol']-1)+self.indata['ntor']+1
+			xm = np.ndarray((nrows,1))
+			xn = np.ndarray((nrows,1))
+			i=0
+			for n in range(0,self.indata['ntor']+1):
+				xm[i] = 0
+				xn[i] = n
+				i=i+1
+			for m in range(1,self.indata['mpol']):
+				for n in range(-self.indata['ntor'],self.indata['ntor']+1):
+					if not(n<0 and m<1):
+						xm[i] = m
+						xn[i] = n
+						i=i+1
+		elif data_name == 'Hirshman-Breslau':
+			field1 = 'RHO'
+			field2 = 'RHO'
+			field3 = 'BOUND'
+			field4 = 'BOUND'
+			nrows = (2*self.indata['ntor']+1)*(self.indata['mpol']-1)+self.indata['ntor']+1
+			xm = np.ndarray((nrows,1))
+			xn = np.ndarray((nrows,1))
+			i=0
+			for n in range(0,self.indata['ntor']+1):
+				xm[i] = 0
+				xn[i] = n
+				i=i+1
+			for m in range(1,self.indata['mpol']):
+				for n in range(-self.indata['ntor'],self.indata['ntor']+1):
+					if not(n<0 and m<1):
+						xm[i] = m
+						xn[i] = n
+						i=i+1
+		elif data_name == 'Garabedian':
+			field1 = 'DELTAMN'
+			field2 = 'DELTAMN'
+			field3 = 'DELTA'
+			field4 = 'DELTA'
+			nrows = (2*self.indata['ntor']+1)*(2*self.indata['ntor']+1)
+			xm = np.ndarray((nrows,1))
+			xn = np.ndarray((nrows,1))
+			i=0
+			for m in range(-self.indata['mpol'],self.indata['mpol']+1):
+				for n in range(-self.indata['ntor'],self.indata['ntor']+1):
+						xm[i] = m
+						xn[i] = n
+						i=i+1
+		self.ui.TableOPTVarsBound.setRowCount(nrows)
+		for i in range(nrows):
+			m = int(xm[i])
+			n = int(xn[i])
+			dex1 = n+101
+			dex2 = m
+			head_string = '('+str(n)+','+str(m)+')'
+			self.ui.TableOPTVarsBound.setVerticalHeaderItem(i,QTableWidgetItem(head_string))
+			if self.optimum['L'+field1+'_OPT'][dex1][dex2] == 1:
+				self.ui.TableOPTVarsBound.setItem(i,0,QTableWidgetItem('T'))
+			else:
+				self.ui.TableOPTVarsBound.setItem(i,0,QTableWidgetItem('F'))
+		#	self.ui.TableOPTVarsProf.setItem(i,1,QTableWidgetItem(str(self.indata[field.lower()][i])))
+			self.ui.TableOPTVarsBound.setItem(i,2,QTableWidgetItem(str(self.optimum['D'+field2+'_OPT'][dex1][dex2])))
+			self.ui.TableOPTVarsBound.setItem(i,3,QTableWidgetItem(str(self.optimum[field3+'_MIN'][dex1][dex2])))
+			self.ui.TableOPTVarsBound.setItem(i,4,QTableWidgetItem(str(self.optimum[field4+'_MAX'][dex1][dex2])))
+		self.ui.TableOPTVarsBound.blockSignals(False)
+
+	def OPTVarsBound(self):
+		# Handles changes in Boundary table
+		# Get the current profile
+		data_name = self.ui.comboBoxStelVarsBoundType.currentText()
+		# Get changed item
+		item = self.ui.TableOPTVarsBound.currentItem()
+		if item is None:
+			return
+		col = self.ui.TableOPTVarsBound.currentColumn()
+		row_text = self.ui.TableOPTVarsBound.verticalHeaderItem(col)
+		row_text = row_text.text()
+		row_text = row_text.replace('(','')
+		row_text = row_text.replace(')','')
+		n, m = row_text.split(',')
+		n = int(n)
+		m = int(m)
+		if data_name == 'VMEC':
+			field1 = 'BOUND'
+			field2 = 'BOUND'
+			field3 = 'BOUND'
+			field4 = 'BOUND'
+			dex1 = n+100
+			dex2 = m
+
+		# Column determins value
+		if col == 0:
+			field = 'L'+field1+'_OPT'
+			if item.text() == 'T':
+				val = 1
+			else:
+				val = 0
+		if col == 1:
+			return
+		elif col == 2:
+			field = 'D'+field2+'_OPT'
+			val = float(item.text())
+		elif col == 3:
+			field = field3+'_MIN'
+			val = float(item.text())
+		elif col == 4:
+			field = field4+'_MAX'
+			val = float(item.text())
+		print(field, val)
+		temp = self.optimum[field]
+		temp[dex1,dex2] = val
+		self.optimum[field]=temp
 
 
 
