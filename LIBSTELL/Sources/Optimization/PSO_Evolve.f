@@ -109,7 +109,7 @@
       CALL RANDOM_SEED ( )  ! Processor reinitializes the seed
       IF (myid .eq. master) THEN
          x_array=0
-         x_array(1,:) = x(:)
+         x_array(:,1) = x(:)
          DO i=2,NP
             DO j = 1, n
                CALL random_number(rand_C1)
@@ -140,7 +140,7 @@
          IF (lfirst_pass) THEN ! Execute first
             ! Have proc 0 evaluate
             IF (myid .eq. master) THEN
-               x_temp        = x_array(1,:)
+               x_temp        = x_array(:,1)
                fvec_temp(:)  = 0
                CALL fcn(m, n, x_temp, fvec_temp, istat, generation)
                fvec_array(:,1) = fvec_temp

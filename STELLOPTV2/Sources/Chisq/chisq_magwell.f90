@@ -36,7 +36,8 @@
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
       IF (iflag < 0) RETURN
-      IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'MAGWELL ',1,6
+      ik = COUNT(sigma < bigno)
+      IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'MAGWELL ',ik,6
       IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA  MAGWELL  <B**2>  P  dP/ds'
       IF (niter >= 0) THEN
          DO ik = 1, nsd
