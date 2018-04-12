@@ -17,23 +17,21 @@ SFINCS also requires the HDF5 and NetCDF libraries.
 To get SFINCS, clone the git repository:
 
 {{{
-#!git
 git clone https://github.com/landreman/sfincs.git
 }}}
 
 Compile SFINCS following the directions in the SFINCS user manual. A library file libsfincs.a will be generated that we will link into STELLOPT.
 
-Next, in your STELLOPT repository, you must (at least for now) switch to the "sfincs" branch of the repo. To do this, type
-<span style="background-color: #dddddd; font-family: &#39;Courier New&#39;,Courier,monospace;">git checkout sfincs</span>
+Next, in your STELLOPT repository, you must (at least for now) switch to the "sfincs" branch of the repo. To do this, type {{{git checkout sfincs}}}
 from anywhere in the STELLOPT repository.
 
-In your stellopt <span style="font-family: Courier New,Courier,monospace;">make_*.inc</span> file, look for the section
-<span style="background-color: #dddddd; font-family: Courier New,Courier,monospace;">####################################################################### </span>
-<span style="background-color: #dddddd; font-family: Courier New,Courier,monospace;"># SFINCS Options </span>
-<span style="background-color: #dddddd; font-family: Courier New,Courier,monospace;">####################################################################### </span>
+In your stellopt {{{make_*.inc}}} file, look for the section
+{{{#######################################################################}}}\\
+{{{# SFINCS Options }}}\\
+{{{#######################################################################}}}\\
 Here, set
-<span style="background-color: #dddddd; font-family: Courier New,Courier,monospace;">LSFINCS = T</span>
-Also, set <span style="font-family: Courier New,Courier,monospace;">SFINCS_DIR</span><span class="s1"> and </span><span style="font-family: Courier New,Courier,monospace;">PETSC_DIR</span><span class="s1"> appropriately for your system. Now build STELLOPTV2. This should generate an executable </span><span style="font-family: Courier New,Courier,monospace;">xstelloptv2</span><span class="s1"> that is linked to SFINCS.</span>
+{{{LSFINCS = T}}}
+Also, set {{{SFINCS_DIR}}} and {{{PETSC_DIR}}} appropriately for your system. Now build STELLOPTV2. This should generate an executable {{{xstelloptv2}}} that is linked to SFINCS.
 
 ----
 
@@ -56,18 +54,18 @@ For further mathematical details of the vboot iteration, see the note <span styl
 When SFINCS is run as a standalone code, it reads several namelists (&general, &geometryParameters, etc.) from a file named input.namelist. However when SFINCS is run via STELLOPT, these namelists should all be appended to the main STELLOPT input.* file. If there is an input.namelist file present, it will not be read by SFINCS.
 
 For detailed documentation of the SFINCS input namelists and parameters, see the SFINCS user manual.
-The following SFINCS input parameters must all be specified in the input file:
-<span style="font-family: Courier New,Courier,monospace;">equilibriumFile</span>
-<span style="font-family: Courier New,Courier,monospace;">inputRadialCoordinate</span>
-<span style="font-family: Courier New,Courier,monospace;">inputRadialCoordinateForGradients</span>
-<span style="font-family: Courier New,Courier,monospace;">psiN_wish</span>
-<span style="font-family: Courier New,Courier,monospace;">nHats</span>
-<span style="font-family: Courier New,Courier,monospace;">THats</span>
-<span style="font-family: Courier New,Courier,monospace;">dnHatdpsiNs</span>
-<span style="font-family: Courier New,Courier,monospace;">dTHatdpsiNs</span>
+The following SFINCS input parameters must all be specified in the input file:\\
+{{{equilibriumFile}}}\\
+{{{inputRadialCoordinate}}}\\
+{{{inputRadialCoordinateForGradients}}}\\
+{{{psiN_wish}}}\\
+{{{nHats}}}\\
+{{{THats}}}\\
+{{{dnHatdpsiNs}}}\\
+{{{dTHatdpsiNs}}}\\
 These parameters will all be over-written by STELLOPT.
 
-There are several parameters related to the SFINCS-STELLOPT interaction that are not used with standalone SFINCS, and which should be specified in the <span style="font-family: Courier New,Courier,monospace;">&optimum</span> namelist. First, <span style="font-family: Courier New,Courier,monospace;">sfincs_s</span> should be set to a real array with entries in (0,1], giving the radii (in terms of normalized toroidal flux s) at which SFINCS will be run. Do not include 0 as a radius, since the bootstrap current always vanishes on axis. Depending on the density and temperature profiles, you may or may not wish to include 1 as a radius; if either the density or temperature vanish at s=1 then SFINCS will fail there. 
+There are several parameters related to the SFINCS-STELLOPT interaction that are not used with standalone SFINCS, and which should be specified in the {{{&optimum</span> namelist. First, <span style="font-family: Courier New,Courier,monospace;">sfincs_s</span> should be set to a real array with entries in (0,1], giving the radii (in terms of normalized toroidal flux s) at which SFINCS will be run. Do not include 0 as a radius, since the bootstrap current always vanishes on axis. Depending on the density and temperature profiles, you may or may not wish to include 1 as a radius; if either the density or temperature vanish at s=1 then SFINCS will fail there. 
 
 Also, <span style="font-family: Courier New,Courier,monospace;">sfincs_min_procs</span> should be set to an integer giving the minimum number of processors allocated to SFINCS for each magnetic surface.
 
