@@ -16,8 +16,8 @@
 !  are recalculated.
  
    subroutine EZspline_load1_r8(spline_o, filename, ier, spl_name)
-     use EZspline_obj
-     use EZcdf
+     use ezspline_obj
+     use ezcdf
      implicit none
      type(EZspline1_r8) :: spline_o
      character*(*) :: filename
@@ -146,8 +146,8 @@
  
  
    subroutine EZspline_load2_r8(spline_o, filename, ier, spl_name)
-     use EZspline_obj
-     use EZcdf
+     use ezspline_obj
+     use ezcdf
      implicit none
      type(EZspline2_r8) :: spline_o
      character*(*) :: filename
@@ -300,8 +300,8 @@
  
  
    subroutine EZspline_load3_r8(spline_o, filename, ier, spl_name)
-     use EZspline_obj
-     use EZcdf
+     use ezspline_obj
+     use ezcdf
      implicit none
      type(EZspline3_r8) :: spline_o
      character*(*) :: filename
@@ -467,8 +467,8 @@
  
  
    subroutine EZspline_load1_r4(spline_o, filename, ier, spl_name)
-     use EZspline_obj
-     use EZcdf
+     use ezspline_obj
+     use ezcdf
      implicit none
      type(EZspline1_r4) :: spline_o
      character*(*) :: filename
@@ -597,8 +597,8 @@
  
  
    subroutine EZspline_load2_r4(spline_o, filename, ier, spl_name)
-     use EZspline_obj
-     use EZcdf
+     use ezspline_obj
+     use ezcdf
      implicit none
      type(EZspline2_r4) :: spline_o
      character*(*) :: filename
@@ -751,8 +751,8 @@
  
  
    subroutine EZspline_load3_r4(spline_o, filename, ier, spl_name)
-     use EZspline_obj
-     use EZcdf
+     use ezspline_obj
+     use ezcdf
      implicit none
      type(EZspline3_r4) :: spline_o
      character*(*) :: filename

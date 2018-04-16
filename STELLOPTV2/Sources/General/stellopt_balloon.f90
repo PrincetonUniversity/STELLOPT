@@ -42,7 +42,7 @@
 !----------------------------------------------------------------------
       l_geom_input = .TRUE.
       l_tokamak_input = .FALSE.
-      k_w = 7
+      k_w = 10
       kth = 1
       IF (iflag < 0) RETURN
       IF (lscreen) WRITE(6,'(a)') ' ---------------------------  BALLOONING CALCULATION  ------------------------'

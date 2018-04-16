@@ -1,4 +1,34 @@
-!DEC$ IF .NOT.DEFINED (CRAY)
+      SUBROUTINE sgbsl1 (ABD, LDA, N, ML, MU, IPVT, B, JOB)
+      USE LIPREC, ONLY: WP => SP
+      IMPLICIT NONE
+C-----------------------------------------------
+C   D U M M Y   A R G U M E N T S
+C-----------------------------------------------
+      INTEGER LDA, N, ML, MU, JOB
+      INTEGER, DIMENSION(N) :: IPVT
+      REAL(WP), DIMENSION(*) :: ABD
+      REAL(WP), DIMENSION(N) :: B
+
+      CALL sgbsl (ABD, LDA, N, ML, MU, IPVT, B, JOB)
+
+      END SUBROUTINE sgbsl1
+
+      SUBROUTINE dgbsl1 (ABD, LDA, N, ML, MU, IPVT, B, JOB)
+      USE LIPREC, ONLY: WP => DP
+      IMPLICIT NONE
+C-----------------------------------------------
+C   D U M M Y   A R G U M E N T S
+C-----------------------------------------------
+      INTEGER LDA, N, ML, MU, JOB
+      INTEGER, DIMENSION(N) :: IPVT
+      REAL(WP), DIMENSION(*) :: ABD
+      REAL(WP), DIMENSION(N) :: B
+
+      CALL dgbsl (ABD, LDA, N, ML, MU, IPVT, B, JOB)
+
+      END SUBROUTINE dgbsl1
+
+#ifndef CRAY
       SUBROUTINE sgbsl (ABD, LDA, N, ML, MU, IPVT, B, JOB)
       USE LIPREC, ONLY: WP => SP
       IMPLICIT NONE
@@ -296,34 +326,4 @@ c
       END IF
 
       END SUBROUTINE dgbsl
-!DEC$ ENDIF
-      SUBROUTINE sgbsl1 (ABD, LDA, N, ML, MU, IPVT, B, JOB)
-      USE LIPREC, ONLY: WP => SP
-      IMPLICIT NONE
-C-----------------------------------------------
-C   D U M M Y   A R G U M E N T S
-C-----------------------------------------------
-      INTEGER LDA, N, ML, MU, JOB
-      INTEGER, DIMENSION(N) :: IPVT
-      REAL(WP), DIMENSION(*) :: ABD
-      REAL(WP), DIMENSION(N) :: B
-
-      CALL sgbsl (ABD, LDA, N, ML, MU, IPVT, B, JOB)
-
-      END SUBROUTINE sgbsl1
-
-      SUBROUTINE dgbsl1 (ABD, LDA, N, ML, MU, IPVT, B, JOB)
-      USE LIPREC, ONLY: WP => DP
-      IMPLICIT NONE
-C-----------------------------------------------
-C   D U M M Y   A R G U M E N T S
-C-----------------------------------------------
-      INTEGER LDA, N, ML, MU, JOB
-      INTEGER, DIMENSION(N) :: IPVT
-      REAL(WP), DIMENSION(*) :: ABD
-      REAL(WP), DIMENSION(N) :: B
-
-      CALL dgbsl (ABD, LDA, N, ML, MU, IPVT, B, JOB)
-
-      END SUBROUTINE dgbsl1
-
+#endif

@@ -57,7 +57,7 @@
                      r2, z2, theta2, dtheta, iota_min, iota_max
       REAL(rprec) :: p1,q1,p2,q2, flux1,flux2,dflux
       REAL(rprec), ALLOCATABLE :: rho_vmec(:), ftemp(:), ptemp(:),&
-                                  jtemp(:), btemp(:)
+                                  jtemp(:), btemp(:), itemp(:)
       REAL(rprec), ALLOCATABLE :: rmnc_temp(:,:), zmns_temp(:,:)
       REAL(rprec), ALLOCATABLE :: rmns_temp(:,:), zmnc_temp(:,:)
       TYPE(EZspline1_r8) :: f_spl, jdotb_spl, b_spl
@@ -106,7 +106,7 @@
          write(6,'(A,I3)') '      ns: ',ns
          write(6,'(A,L3)') '  lfreeb: ',lfreeb
          write(6,'(A,F6.3,A,F6.3,A)')    '    iota: [',iotamn,',',iotamx,']'  
-         write(6,'(A,F6.3)')             'torflux_edge: ',torflux_edge 
+         write(6,'(A,F7.3)')             'torflux_edge: ',torflux_edge 
          IF (ABS(curtor) .ge. 1.0E6) THEN
             write(6,'(A,F8.3,A)')             'Total Current: ',curtor/1.0E6,' [MA]'
          ELSE IF (ABS(curtor) .ge. 1.0E3) THEN
@@ -249,28 +249,36 @@
       ! Now initialize pressure profiles
       n_int = 100
       pflux = 0.0
+      iota(0) = iotaf_in(1)
       ALLOCATE(press(1:nvol),adiab(1:nvol),STAT=ier)
-      ALLOCATE(ftemp(1:n_int),ptemp(1:n_int),jtemp(1:n_int),btemp(1:n_int),STAT=ier)
+      ALLOCATE(ftemp(1:n_int),ptemp(1:n_int),jtemp(1:n_int),btemp(1:n_int),itemp(1:n_int),STAT=ier)
       CALL EZspline_init(p_spl,ns,bcs1,ier)
       IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'EZspline_init/spec_init_wout(p)',ier)
       CALL EZspline_init(jdotb_spl,ns,bcs1,ier)
       IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'EZspline_init/spec_init_wout(jdotb)',ier)
       CALL EZspline_init(b_spl,ns,bcs1,ier)
       IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'EZspline_init/spec_init_wout(b)',ier)
+      CALL EZspline_init(iota_spl,ns,bcs1,ier)
+      IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'EZspline_init/spec_init_wout(iota)',ier)
       p_spl%isHermite = 1      
       p_spl%x1 = phi/phi(ns)       !Spline over normalized toroidal flux
       jdotb_spl%isHermite = 1      
       jdotb_spl%x1 = phi/phi(ns)       !Spline over normalized toroidal flux
       b_spl%isHermite = 1      
       b_spl%x1 = phi/phi(ns)       !Spline over normalized toroidal flux
+      iota_spl%isHermite = 1      
+      iota_spl%x1 = phi/phi(ns)       !Spline over normalized toroidal flux
       CALL EZspline_setup(p_spl,presf,ier)
       IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'EZspline_setup/spec_init_wout',ier)
       CALL EZspline_setup(jdotb_spl,jdotb,ier)
       IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'EZspline_setup/spec_init_wout',ier)
       CALL EZspline_setup(b_spl,bdotgradv,ier)
       IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'EZspline_setup/spec_init_wout',ier)
+      CALL EZspline_setup(iota_spl,iotaf_in,ier)
+      IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'EZspline_setup/spec_init_wout',ier)
       !PRINT *,'tflux ',tflux
       flux1 = 0.0
+      pflux = 0.0
       DO ik = 1, nvol
          flux2 = tflux(ik)
          dflux = flux2-flux1
@@ -281,36 +289,43 @@
          CALL EZspline_interp(p_spl,n_int,ftemp,ptemp,ier)
          CALL EZspline_interp(jdotb_spl,n_int,ftemp,jtemp,ier)
          CALL EZspline_interp(b_spl,n_int,ftemp,btemp,ier)
-         press(ik) = SUM(ptemp*dflux/n_int)/dflux
-         mu(ik) = SUM(jtemp/btemp*dflux/n_int)/dflux
+         CALL EZspline_interp(iota_spl,n_int,ftemp,itemp,ier)
+         press(ik) = mu0*SUM(ptemp*dflux/n_int)/dflux
+         mu(ik) = mu0*SUM(jtemp/btemp/btemp)/n_int
          adiab(ik) = 5./3.
+         ! Chi' = iota*Phi'
+         pflux(ik) = SUM(itemp*dflux)/torflux_edge
          flux1 = flux2
       END DO
-      !PRINT *,'press', press
+      DO ik = 2, nvol
+         pflux(ik) = pflux(ik) + pflux(ik-1)
+         PRINT *,tflux(ik),press(ik),mu(ik),pflux(ik)
+      END DO
       CALL EZspline_free(p_spl,ier)
       ! Get Pressure and mu in magnetic units
-      press = press*mu0
-      mu    = abs(mu0*mu/phi(ns))
+      !press = press*mu0
+      !mu    = abs(mu0*mu/phi(ns))
+      !mu    = mu*mu0
       IF (ANY(press > 0.0)) pscale = 1.0
       
       ! Now calculate Current/iota Profile
       !IF (ncurr == 0) THEN
-         pflux(0) = 0.0
-         iota(0) = iotaf_in(1)
-         CALL EZspline_init(iota_spl,ns,bcs1,ier)
-         IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'EZspline_init/spec_init_wout',ier)
-         iota_spl%isHermite = 1      
-         iota_spl%x1 = phi/phi(ns)       !Spline over normalized toroidal flux
-         CALL EZspline_setup(iota_spl,iotaf_in,ier)
-         IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'EZspline_setup/spec_init_wout',ier)
-         DO ik = 1, nvol
-            CALL EZspline_interp(iota_spl,tflux(ik),iota(ik),ier)
-            pflux(ik) = tflux(ik) * iota(ik)
-         END DO
-         pr(0:nvol) = 0.0
-         qr(0:nvol) = 1.0
-         pl(0:nvol) = 0.0
-         ql(0:nvol) = 1.0
+         !pflux(0) = 0.0
+         !iota(0) = iotaf_in(1)
+         !CALL EZspline_init(iota_spl,ns,bcs1,ier)
+         !IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'EZspline_init/spec_init_wout',ier)
+         !iota_spl%isHermite = 1      
+         !iota_spl%x1 = phi/phi(ns)       !Spline over normalized toroidal flux
+         !CALL EZspline_setup(iota_spl,iotaf_in,ier)
+         !IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'EZspline_setup/spec_init_wout',ier)
+         !DO ik = 1, nvol
+         !   CALL EZspline_interp(iota_spl,tflux(ik),iota(ik),ier)
+         !   pflux(ik) = tflux(ik) * iota(ik)
+         !END DO
+         !pr(0:nvol) = 0.0
+         !qr(0:nvol) = 1.0
+         !pl(0:nvol) = 0.0
+         !ql(0:nvol) = 1.0
       !ELSE IF (ncurr == 1) THEN
       !   curtor=Itor
       !   stop 'ncurr==1 not supported yet'

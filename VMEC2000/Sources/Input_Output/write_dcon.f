@@ -44,7 +44,7 @@ C-----------------------------------------------
 
       dcon_file = "dcon_" // TRIM(input_extension) // ".txt"
       OPEN (unit=51,FILE=dcon_file,FORM='FORMATTED',iostat=istat)
-      IF (istat .ne. 0) STOP 'Error writing dcon input file'
+      IF (istat .ne. 0) STOP 'Error writing dcon output file'
 
       IF (mnmax .ne. mpol) STOP 'THIS IS NOT AXISYMMETRIC!'
 

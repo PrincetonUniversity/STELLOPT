@@ -2,7 +2,7 @@
 !     Subroutine:    stellopt_fcn
 !     Authors:       S. Lazerson (lazerson@pppl.gov)
 !     Date:          05/26/2012
-!     Description:   This subroutine calculates the funciton which is
+!     Description:   This subroutine calculates the function which is
 !                    minimized by STELLOPT.  Originally developed for
 !                    the lmdif function.
 !-----------------------------------------------------------------------
@@ -52,7 +52,7 @@
       INTEGER ::  vctrl_array(5)
       REAL(rprec) :: norm_aphi, norm_am, norm_ac, norm_ai, norm_ah,&
                      norm_at, norm_ne, norm_te, norm_ti, norm_th, &
-                     norm_phi, norm_zeff, temp
+                     norm_phi, norm_zeff, norm_emis_xics, temp
       INTEGER, PARAMETER     :: max_refit = 2
       REAL(rprec), PARAMETER :: ec  = 1.60217653D-19
       CHARACTER(len = 16)     :: temp_str
@@ -66,8 +66,8 @@
       norm_aphi = 1; norm_am = 1; norm_ac = 1; norm_ai = 1
       norm_ah   = 1; norm_at = 1; norm_phi = 1; norm_zeff = 1
       norm_ne   = 1; norm_te = 1; norm_ti  = 1; norm_th = 1
+      norm_emis_xics = 1
       ! Save variables
-      !CALL SLEEP(1)  ! Do this so code 'catches up'
 
       DO nvar_in = 1, n
          IF (var_dex(nvar_in) == iaphi .and. arr_dex(nvar_in,2) == norm_dex) norm_aphi = x(nvar_in)
@@ -92,15 +92,20 @@
          IF (var_dex(nvar_in) == iah_aux_f .and. arr_dex(nvar_in,2) == norm_dex) norm_ah = x(nvar_in)
          IF (var_dex(nvar_in) == iat_aux_f .and. arr_dex(nvar_in,2) == norm_dex) norm_at = x(nvar_in)
          IF (var_dex(nvar_in) == izeff_aux_f .and. arr_dex(nvar_in,2) == norm_dex) norm_zeff = x(nvar_in)
+         IF (var_dex(nvar_in) == iemis_xics_f .and. arr_dex(nvar_in,2) == norm_dex) norm_emis_xics = x(nvar_in)
       END DO
-      !CALL SLEEP(1)  ! Do this so code 'catches up'
-      !temp = norm_phi+var_dex(1)  ! Think this can go away
+
+      ! Unpack array (minus RBC/ZBS/RBS/ZBC)
       DO nvar_in = 1, n
          IF (arr_dex(nvar_in,2) == norm_dex) cycle
          IF (var_dex(nvar_in) == iphiedge) phiedge = x(nvar_in)
          IF (var_dex(nvar_in) == icurtor) curtor = x(nvar_in)
          IF (var_dex(nvar_in) == ipscale) pres_scale = x(nvar_in)
          IF (var_dex(nvar_in) == imixece) mix_ece = x(nvar_in)
+         IF (var_dex(nvar_in) == iregcoil_winding_surface_separation) &
+                regcoil_winding_surface_separation = x(nvar_in)
+         IF (var_dex(nvar_in) == iregcoil_current_density) &
+                regcoil_current_density = x(nvar_in)
          IF (var_dex(nvar_in) == ibcrit) bcrit = x(nvar_in)
          IF (var_dex(nvar_in) == iextcur) extcur(arr_dex(nvar_in,1)) = x(nvar_in)
          IF (var_dex(nvar_in) == iaphi) aphi(arr_dex(nvar_in,1)) = x(nvar_in)
@@ -130,20 +135,32 @@
          IF (var_dex(nvar_in) == ith_aux_f) th_aux_f(arr_dex(nvar_in,1)) = x(nvar_in)
          IF (var_dex(nvar_in) == iah_aux_f) ah_aux_f(arr_dex(nvar_in,1)) = x(nvar_in)
          IF (var_dex(nvar_in) == iat_aux_f) at_aux_f(arr_dex(nvar_in,1)) = x(nvar_in)
+         IF (var_dex(nvar_in) == iemis_xics_f) emis_xics_f(arr_dex(nvar_in,1)) = x(nvar_in)
          IF (var_dex(nvar_in) == iraxis_cc) raxis_cc(arr_dex(nvar_in,1)) = x(nvar_in)
          IF (var_dex(nvar_in) == izaxis_cs) zaxis_cs(arr_dex(nvar_in,1)) = x(nvar_in)
          IF (var_dex(nvar_in) == iraxis_cs) raxis_cs(arr_dex(nvar_in,1)) = x(nvar_in)
          IF (var_dex(nvar_in) == izaxis_cc) zaxis_cc(arr_dex(nvar_in,1)) = x(nvar_in)
-         IF (var_dex(nvar_in) == ibound_rbc) rbc(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
-         IF (var_dex(nvar_in) == ibound_rbs) rbs(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
-         IF (var_dex(nvar_in) == ibound_zbc) zbc(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
-         IF (var_dex(nvar_in) == ibound_zbs) zbs(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
          IF (var_dex(nvar_in) == irhobc)     rhobc(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
-         IF (var_dex(nvar_in) == ideltamn)   deltamn(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
          IF (var_dex(nvar_in) == ideltamn)   deltamn(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
          IF (var_dex(nvar_in) == icoil_splinefx)   coil_splinefx(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
          IF (var_dex(nvar_in) == icoil_splinefy)   coil_splinefy(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
          IF (var_dex(nvar_in) == icoil_splinefz)   coil_splinefz(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
+      END DO
+
+      ! Adust Boundary Representation
+      IF (ANY(var_dex == irhobc)) THEN
+         CALL unique_boundary(rbc,zbs,rhobc,mpol1d,ntord,mpol-1,ntor,mpol-1,rho_exp)
+      END IF
+      IF (ANY(var_dex == ideltamn)) THEN
+         CALL unique_boundary_PG(rbc,zbs,deltamn,ntord,mpol1d,mpol-1,ntor)
+      END IF
+
+      ! Unpack RBC/ZBS/RBS/ZBC
+      DO nvar_in = 1, n
+         IF (var_dex(nvar_in) == ibound_rbc) rbc(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
+         IF (var_dex(nvar_in) == ibound_rbs) rbs(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
+         IF (var_dex(nvar_in) == ibound_zbc) zbc(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
+         IF (var_dex(nvar_in) == ibound_zbs) zbs(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
          IF (var_dex(nvar_in) == imodemn) THEN
             nf = arr_dex(nvar_in,1)
             mf = arr_dex(nvar_in,2)
@@ -155,13 +172,18 @@
             END IF
          END IF
       END DO
-      ! Adust Boundary Representation
-      IF (ANY(var_dex == irhobc)) THEN
-         CALL unique_boundary(rbc,zbs,rhobc,mpol1d,ntord,mpol-1,ntor,mpol-1,rho_exp)
-      END IF
-      IF (ANY(var_dex == ideltamn)) THEN
-         CALL unique_boundary_PG(rbc,zbs,deltamn,ntord,mpol1d,mpol-1,ntor)
-      END IF
+
+      ! REGCOIIL winding surface - Unpack RBC/ZBS/RBS/ZBC winding
+      ! surface components -
+      DO nvar_in = 1, n
+         !print *, "regcoil: m,n, id, val", arr_dex(nvar_in,1), arr_dex(nvar_in,2), var_dex(nvar_in), x(nvar_in)
+         IF (var_dex(nvar_in) == iregcoil_rcws_rbound_c) regcoil_rcws_rbound_c(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
+         IF (var_dex(nvar_in) == iregcoil_rcws_rbound_s) regcoil_rcws_rbound_s(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
+         IF (var_dex(nvar_in) == iregcoil_rcws_zbound_c) regcoil_rcws_zbound_c(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
+         IF (var_dex(nvar_in) == iregcoil_rcws_zbound_s) regcoil_rcws_zbound_s(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
+      END DO
+
+
       ! Apply normalization
       aphi = aphi * norm_aphi
       am   = am   * norm_am
@@ -183,6 +205,7 @@
       th_aux_f = th_aux_f * norm_th
       ah_aux_f = ah_aux_f * norm_ah
       at_aux_f = at_aux_f * norm_at
+      emis_xics_f = emis_xics_f * norm_emis_xics
 
       ! Handle cleanup
       IF (iflag < -2) THEN
@@ -209,6 +232,7 @@
          th_aux_f = th_aux_f / norm_th
          ah_aux_f = ah_aux_f / norm_ah
          at_aux_f = at_aux_f / norm_at
+         emis_xics_f = emis_xics_f / norm_emis_xics
          RETURN
       END IF
 
@@ -264,55 +288,6 @@
       CALL tolower(equil_type)
          SELECT CASE (TRIM(equil_type))
             CASE('vmec2000_old','animec','flow','satire')
-               ! Handle ne ti te th
-               ier=0
-               CALL stellopt_prof_to_vmec(proc_string,ier)
-               CALL stellopt_reinit_vmec
-               ! This will flush all changes
-               iunit = 37; iflag = 0
-               CALL safe_open(iunit,iflag,TRIM('temp_input.'//TRIM(proc_string)),'unknown','formatted')
-               CALL write_indata_namelist(iunit,ier)
-               CALL FLUSH(iunit)
-               ier=0
-               ! Setup VMEC control array
-               reset_string='wout_reset_file.nc'
-               IF (lno_restart .or. (lscreen .and. .not.lrestart)) THEN
-                  vctrl_array(4) = -1 ! Iterative evaluation
-                  reset_string = ''
-               ELSE
-                  vctrl_array(4) = MAXLOC(ns_array,DIM=1)
-               END IF
-               IF (lscreen .and. .not.lrestart) proc_string = 'reset_file'  ! First run make the restart file
-               vctrl_array(1) = restart_flag+timestep_flag+output_flag+reset_jacdt_flag ! Need restart to get profile variations
-               vctrl_array(2) = 0     ! vmec error flag  
-               vctrl_array(3) = -1    ! Use multigrid
-               vctrl_array(5) = myid ! Output file sequence number
-               !IF (TRIM(equil_type)=='animec') vctrl_array(1) = vctrl_array(1) + animec_flag
-               !IF (TRIM(equil_type)=='flow' .or. TRIM(equil_type)=='satire') vctrl_array(1) = vctrl_array(1) + flow_flag
-               DO pass = 1, 2
-                  CALL runvmec(vctrl_array,proc_string,lscreen,MPI_COMM_SELF,reset_string)
-                  ier=0; ier=vctrl_array(2); iflag = ier
-                  IF (  ier == successful_term_flag  .or. &
-                        ier == norm_term_flag) THEN
-                     iflag = 0
-                     CLOSE(UNIT=iunit,STATUS='delete')
-                     EXIT
-                  ELSE IF (.not. lno_restart .and. pass == 1) THEN ! Try recalcing from the beginning
-                     CALL stellopt_prof_to_vmec(proc_string,ier)
-                     vctrl_array(1) = restart_flag+timestep_flag+output_flag+reset_jacdt_flag
-                     vctrl_array(2) = 0     ! vmec error flag  
-                     vctrl_array(3) = -1    ! Use multigrid
-                     vctrl_array(4) = 0
-                     vctrl_array(5) = myid ! Output file sequence number
-                     !IF (TRIM(equil_type)=='animec') vctrl_array(1) = vctrl_array(1) + animec_flag
-                     !IF (TRIM(equil_type)=='flow' .or. TRIM(equil_type)=='satire') vctrl_array(1) = vctrl_array(1) + flow_flag
-                  ELSE
-                     CLOSE(UNIT=iunit)
-                     iflag = -1
-                     EXIT
-                  END IF
-               END DO
-               IF (lscreen .and. lverb) WRITE(6,*)  '---------------------------  VMEC CALCULATION DONE  -------------------------'
             CASE('paravmec','parvmec','vmec2000')
                iflag = 0
                CALL stellopt_paraexe('paravmec_run',proc_string,lscreen)
@@ -356,7 +331,7 @@
 !DEC$ IF DEFINED (TERPSICHORE)
          !IF (ANY(sigma_kink < bigno)) CALL stellopt_kink(lscreen,iflag)
          ctemp_str = 'terpsichore'
-         IF (ANY(sigma_kink < bigno) .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen)
+         IF (ANY(sigma_kink < bigno) .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
 !DEC$ ENDIF
 !DEC$ IF DEFINED (TRAVIS)
          IF (ANY(sigma_ece < bigno)) CALL stellopt_travis(lscreen,iflag)
@@ -374,7 +349,15 @@
 !DEC$ ENDIF
 !DEC$ IF DEFINED (COILOPTPP)
          ctemp_str = 'coilopt++'
-         IF (sigma_coil_bnorm < bigno .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen)
+         IF (sigma_coil_bnorm < bigno .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
+!DEC$ ENDIF
+!DEC$ IF DEFINED (REGCOIL)
+         ! JCS: skipping parallelization for now 
+         ! ctemp_str = 'regcoil_chi2_b'
+         ! IF (sigma_regcoil_chi2_b < bigno .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen)
+         IF (ANY(sigma_regcoil_chi2_b < bigno)) then
+           CALL stellopt_regcoil_chi2_b(lscreen, iflag)
+         end if
 !DEC$ ENDIF
 
          ! Now we load target values if an error was found then
@@ -411,6 +394,7 @@
       th_aux_f = th_aux_f / norm_th
       ah_aux_f = ah_aux_f / norm_ah
       at_aux_f = at_aux_f / norm_at
+      emis_xics_f = emis_xics_f / norm_emis_xics
       RETURN
 !----------------------------------------------------------------------
 !     END SUBROUTINE

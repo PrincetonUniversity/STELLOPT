@@ -1,16 +1,16 @@
       SUBROUTINE pxffork_g (ipid, ierror)
       IMPLICIT NONE
       INTEGER :: ipid, ierror
-!DEC$ IF DEFINED (WIN32)
+#if defined(WIN32)
       ierror = 0
       ipid = 0
-!DEC$ ELSEIF .NOT.DEFINED (CRAY) .AND. .NOT.DEFINED(IRIX64) .AND. .NOT.DEFINED(IFORT)
-!      INTEGER, EXTERNAL :: fork
+#elif !defined(CRAY) && !defined(IRIX64) && !defined(IFORT)
+      INTEGER, EXTERNAL :: fork
 
       ierror = 0
-!      ipid = fork()
+      !ipid = fork()
       IF (ipid < 0) ierror = -ipid
-!DEC$ ELSE
+#else
       CALL pxffork (ipid, ierror)
-!DEC$ ENDIF
+#endif
       END SUBROUTINE pxffork_g

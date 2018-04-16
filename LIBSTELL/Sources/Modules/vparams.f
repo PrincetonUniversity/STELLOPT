@@ -50,4 +50,11 @@
       
       real(rprec), parameter :: dmu0   = 2.0e-7_dp*twopi                !SAL 09/26/11 for COBRA
 
+!
+!     FOR REGCOIL WINDING SURFACE Fourier Series Representation
+!
+      INTEGER, PARAMETER :: mpol_rcws = 32    ! maximum poloidal mode number (min = -max)
+      INTEGER, PARAMETER :: ntor_rcws = 32    ! maximum toroidal mode number (min = -max)
+
+
       END MODULE vparams

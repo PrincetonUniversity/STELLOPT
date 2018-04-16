@@ -44,7 +44,7 @@
       PUBLIC :: path_construct, path_append_vertex, path_destruct,             &
      &          path_test, path_integrate
       PRIVATE :: check, check_real, check_log, check_int,                      &
-     &           integrate, test_function
+     &           integrate, search, test_function
 
       CONTAINS
 
@@ -141,15 +141,15 @@
 !>  @brief Integrate along the path.
 !>
 !>  Recursively runs through the next vertex to find the last vertex. Once the
-!>  last vertex is found, a new vertex is allocated and appended to the path.
-!>  The integrand is proveded by means of call back function.
+!>  last vertex is found, integrate alone that path. The integrand is proveded
+!>  by means of call back function.
 !>
 !>  @param[inout] this                 Starting vertex to integrate to the end.
 !>  @param        integration_function Function pointer that defines the
 !>                                     integrand.
 !>  @param[in]    context              Generic object that contains data for the
 !>                                     integration function.
-!>  The total integrated path to the end.
+!>  @returns The total integrated path to the end.
 !-------------------------------------------------------------------------------
       RECURSIVE FUNCTION path_integrate(this, integration_function,            &
      &                                  context) RESULT(total)
@@ -179,6 +179,53 @@
      &                             integration_function)
       ELSE
          total = 0.0
+      END IF
+
+      END FUNCTION
+
+!-------------------------------------------------------------------------------
+!>  @brief Search along the path.
+!>
+!>  Recursively runs through the next vertex to find the last vertex. Once the
+!>  last vertex is found, a new vertex is allocated and appended to the path.
+!>  The integrand is proveded by means of call back function.
+!>
+!>  @param[inout] this            Starting vertex to begin search.
+!>  @param        search_function Function pointer that defines the search
+!>                                criteria.
+!>  @param[in]    context         Generic object that contains data for the
+!>                                integration function.
+!>  @param[out]   found           Signals if the condition was met.
+!>  @returns The vertex position along the path where the search condition was
+!>           found.
+!-------------------------------------------------------------------------------
+      RECURSIVE FUNCTION path_search(this, search_function, context,           &
+     &                               found) RESULT(xcart)
+
+      REAL (rprec), DIMENSION(3)    :: xcart
+      TYPE (vertex), INTENT(inout)  :: this
+      CHARACTER (len=1), INTENT(in) :: context(:)
+      LOGICAL, INTENT(out)          :: found
+      INTERFACE
+         FUNCTION search_function(context, xcart1, xcart2)
+         USE stel_kinds
+         LOGICAL                                :: search_function
+         CHARACTER (len=1), INTENT(in)          :: context(:)
+         REAL (rprec), DIMENSION(3), INTENT(in) :: xcart1
+         REAL (rprec), DIMENSION(3), INTENT(in) :: xcart2
+         END FUNCTION
+      END INTERFACE
+
+!  Start of executable code
+      found = .false.
+
+      IF (ASSOCIATED(this%next)) THEN
+         found = search(context, this, this%next, search_function,             &
+     &                  xcart)
+         IF (.not.found) THEN
+            xcart = path_search(this%next, search_function, context,           &
+     &                          found)
+         END IF
       END IF
 
       END FUNCTION
@@ -254,6 +301,86 @@
      &             + integration_function(context, xcart, dxcart,              &
      &                                    length, dx)
       ENDDO
+
+      END FUNCTION
+
+!-------------------------------------------------------------------------------
+!>  @brief Search line between to points.
+!>
+!>  This divides the straight line path defined by two vertices and searched for
+!>  a condition. The search criteria is proveded by means of call back function.
+!>
+!>  @param[in] context          Generic object that contains data for the search
+!>                              function.
+!>  @param[in]  vertex1         Starting point.
+!>  @param[in]  vertex2         Ending point.
+!>  @param      search_function Function pointer that defines the search
+!>                              criteria.
+!>  @param[out] xcart           Point where the search criteria was found.
+!>  @returns True if the criteria was met between vertex1 and vertex2.
+!-------------------------------------------------------------------------------
+      FUNCTION search(context, vertex1, vertex2, search_function, xcart)
+
+      IMPLICIT NONE
+
+!  Declare Arguments
+      LOGICAL                                 :: search
+      CHARACTER(len=1), INTENT(in)            :: context(:)
+      TYPE (vertex), INTENT(in)               :: vertex1
+      TYPE (vertex), INTENT(in)               :: vertex2
+      REAL (rprec), DIMENSION(3), INTENT(out) :: xcart
+      INTERFACE
+         FUNCTION search_function(context, xcart1, xcart2)
+         USE stel_kinds
+         LOGICAL                                :: search_function
+         CHARACTER (len=1), INTENT(in)          :: context(:)
+         REAL (rprec), DIMENSION(3), INTENT(in) :: xcart1
+         REAL (rprec), DIMENSION(3), INTENT(in) :: xcart2
+         END FUNCTION
+      END INTERFACE
+
+!  local variables
+      REAL (rprec), DIMENSION(3) :: dxcart
+      REAL (rprec)               :: dx
+      INTEGER                    :: i, nsteps
+
+!  local parameters
+      REAL(rprec), PARAMETER     :: dxCourse = 0.01
+      REAL(rprec), PARAMETER     :: dxFine = 1.0E-20
+
+!  Start of executable code
+!  Determine the number of integration steps to take by dividing the path length
+!  by the step length and rounding to the nearest integer.
+      dxcart = vertex2%position - vertex1%position
+      nsteps = INT(SQRT(DOT_PRODUCT(dxcart, dxcart))/dxCourse)
+
+!  Choose the actual step size.
+      dxcart = dxcart/nsteps
+
+      search = .false.
+      xcart = vertex1%position
+
+!  Linearly search the line until an interval containing the point is detected.
+      DO i = 1, nsteps
+         search = search_function(context, xcart, xcart + dxcart)
+         IF (search) THEN
+
+!  Found an interval. Bisect the interval until the length is machine precision.
+            DO WHILE (SQRT(DOT_PRODUCT(dxcart, dxcart)) .gt. dxFine)
+               dxcart = dxcart/2.0
+               IF (.not.search_function(context, xcart,                        &
+     &                                  xcart + dxcart)) THEN
+                  xcart = xcart + dxcart
+               END IF
+            END DO
+
+            xcart = xcart + dxcart/2.0
+            RETURN
+
+         END IF
+
+         xcart = xcart + dxcart
+      END DO
 
       END FUNCTION
 

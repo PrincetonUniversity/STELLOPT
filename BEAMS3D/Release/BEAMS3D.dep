@@ -11,8 +11,8 @@ out_beams3d_nag.o: \
       ../../LIBSTELL/Release/stel_kinds.o \
       ../../LIBSTELL/Release/wall_mod.o \
       ../../LIBSTELL/Release/mpi_params.o \
-      ../../LIBSTELL/Release/EZspline_obj.o \
-      ../../LIBSTELL/Release/EZspline.o \
+      ../../LIBSTELL/Release/ezspline_obj.o \
+      ../../LIBSTELL/Release/ezspline.o \
       beams3d_runtime.o \
       beams3d_lines.o \
       beams3d_grid.o \
@@ -21,7 +21,7 @@ out_beams3d_nag.o: \
 
 beams3d_runtime.o: \
       ../../LIBSTELL/Release/mpi_params.o \
-      ../../LIBSTELL/Release/EZspline.o \
+      ../../LIBSTELL/Release/ezspline.o \
       ../../LIBSTELL/Release/stel_kinds.o 
       
 
@@ -37,8 +37,8 @@ beams3d_init.o: \
       
 
 beams3d_grid.o: \
-      ../../LIBSTELL/Release/EZspline_obj.o \
-      ../../LIBSTELL/Release/EZspline.o \
+      ../../LIBSTELL/Release/ezspline_obj.o \
+      ../../LIBSTELL/Release/ezspline.o \
       ../../LIBSTELL/Release/stel_kinds.o 
       
 
@@ -67,8 +67,8 @@ beams3d_lines.o: \
       
 
 fpart_nag.o: \
-      ../../LIBSTELL/Release/EZspline_obj.o \
-      ../../LIBSTELL/Release/EZspline.o \
+      ../../LIBSTELL/Release/ezspline_obj.o \
+      ../../LIBSTELL/Release/ezspline.o \
       ../../LIBSTELL/Release/stel_kinds.o \
       ../../LIBSTELL/Release/mpi_params.o \
       beams3d_grid.o \
@@ -84,8 +84,8 @@ fpart_rkh68.o:
 
 jacobian_lsode.o: \
       ../../LIBSTELL/Release/stel_kinds.o \
-      ../../LIBSTELL/Release/EZspline_obj.o \
-      ../../LIBSTELL/Release/EZspline.o \
+      ../../LIBSTELL/Release/ezspline_obj.o \
+      ../../LIBSTELL/Release/ezspline.o \
       beams3d_grid.o \
       beams3d_runtime.o
       
@@ -125,7 +125,7 @@ beams3d_read.o: \
 beams3d_diagnostics.o: \
       ../../LIBSTELL/Release/stel_kinds.o \
       ../../LIBSTELL/Release/safe_open_mod.o \
-      ../../LIBSTELL/Release/EZspline.o \
+      ../../LIBSTELL/Release/ezspline.o \
       ../../LIBSTELL/Release/mpi_params.o \
       beams3d_runtime.o \
       beams3d_lines.o \

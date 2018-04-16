@@ -1,0 +1,272 @@
+EZcdf, Easy Interface to netCDF Routine Calls
+=============================================
+
+The module is available through the NTCC Webpage,
+w3.pppl.gov/NTTC  under "Modules Library", as compressed
+tarfile, ezcdf.tar.gz, and as zip archive, ezcdf.zip.
+Alternatively it can be obtained from ftp.pppl.gov
+in pub/NTCC/.
+
+
+o AUTHORS 
+
+Conceived by 7/98 by Sunitinder Sekhon
+Modified by J. Menard 12/98 to run on Cray C90
+Completely re-written by C.Ludescher 2/99 
+Added complex support (64 and 128 bit) by A. Pletzer 5/01 
+
+
+o CONTACT
+  
+  C. Ludescher cludescher@pppl.gov
+  A. Pletzer   pletzer@pppl.gov
+
+
+o REVISION HISTORY
+
+      date         Description
+
+  Februar 1999  -- Created 
+  April   2000  -- A.Pletzer: Added R4
+  May 01, 2000  -- C. Ludescher: Simplified by adding module ezcdf
+  May 17, 2001  -- A. Pletzer: Added C8 and C16
+
+-------------------------------------------------------------------------- 
+
+Index:
+   1. UNPACKING INSTRUCTIONS
+   2. CONTENTS
+   3. DESTINATIONS
+   4. BUILDING INSTRUCTIONS
+   5. TESTING
+   6. FINAL INSTALLATION
+
+**************************
+1. UNPACKING INSTRUCTIONS:
+**************************
+
+for tarfiles:
+  > gunzip ezcdf.tar.gz
+  > tar xvf ezcdf.tar
+
+or, for zip archives:
+  > unzip ezcdf.zip
+
+
+************
+2. CONTENTS:
+************
+
+Makefile: NOTE, "GNU make" must be used
+               (usually in /usr/gnu/bin or /usr/local/bin).
+	       Main Makefile to invoke Makefile(s) in subdirectories. 
+
+README_Ezcdf:  This file.  Brief descriptions of the other files, and
+               instructions for compiling libezcdf.a  and a test.
+
+in subdirectory ezcdf:
+----------------------
+README:        This file. A copy of README_Ezcdf from above. 
+
+Makefile:      to build library and test program.
+
+Sources to build libezcdf.a and f90 modules:
+     ezcdf.f90      ezcdf_genget.f90 ezcdf_genput.f90  ezcdf_inqint.f90
+     cdfcls.f90     cdfgetvar.f90     cdfinqv.f90    
+     cdfdefvar.f90  cdfgv.f90         cdfinqvar.f90  
+     ezcdf_open.f90 cdfputvar.f90     handle_err.f90
+
+Test programs:
+     eztest.f90  and its sample output EZsample.cdf
+     eztest2.cc, ezcdf.hh: This is an example how to call ezcdf
+                           from a C++ program.
+
+in subdirectory share:
+     
+Make.flags:        Include file for Makefile, to setup Flags, etc.
+
+Make.local.sample: Include file for Makefile, to setup non-conventional,
+                   site specific locations.
+
+****************
+3. DESTINATIONS:
+****************
+Or where do the files go?
+(this refers to building and testing; see FINAL INSTALLATION for end result) 
+
+When you extract the tar file you get a sub directory:
+./ezcdf  --  Sources, Documents and Makefile
+./share  --  Make include files  
+
+The makefile will create the following sub directories,
+lib:   for the library, libezcdf.a
+mod:   for the f90 modules
+test:  for EZtest and the sample output.
+obj/ezcdf:   for preprocessed sources and objects
+
+By default these directories are created in  
+./<MACHINE>, which is determined by the Makefile.
+e.g.: if you are running Linux, and the tar file resides in $HOME/foo,
+      the directories would be
+      $HOME/foo/ezcdf
+      $HOME/foo/LINUX/lib
+etc.
+
+
+You can overwrite the destination by defining OBJ, as an environment
+variable (e.g. in your login setup, export OBJ=/dir1/dir2),
+or with make (e.g. "make OBJ=.").
+If OBJ is defined, the destinations will be $OBJ/{lib,mod,obj,test}.
+If OBJ is defined as "." then in the example above, the destination
+would be $HOME/foo/{lib,mod,obj,test}.
+
+The rational behind <MACHINE> is to facilitate building for various platforms.
+
+
+*************************
+4. BUILDING INSTRUCTIONS:
+************************* 
+
+NOTE:  For linking the netCDF library is required.
+
+Check with your systems administer where these libraries are.
+
+netCDF is assumed to be in /usr/local,
+if not, you can specify the location with LIBROOT,
+
+e.g.: "gmake LIBROOT=/usr/contrib".
+
+Alternatively you can modify share/Make.local.sample
+and rename it to share/Make.local.
+
+Building libezcdf.a and test propram
+------------------------------------
+
+>  gmake            -- to build/link library and eztest
+
+>  gmake checklibs  -- tells you what the makefile will do
+                       (without any action);
+                       it sais which libraries it will make and
+                       which ones it already found and where.
+                       It also tells you how to rebuild an existing library.
+
+>  gmake clean      -- to remove all .o files
+>  gmake realclean  -- to remove everything but sources.
+
+
+
+
+Compiling on Linux:
+-------------------
+
+At present, there is no native Linux  fortran 90 compiler. However, many
+vendors offer good quality compilers. The following
+
+-Fujitsu f95
+-PGI pgf90
+-Nag f95
+
+have been successfully used to build ezcdf.
+
+By default the Makefile will select Fujitsu f95.
+
+To select a different compiler define
+FORTRAN_VARIANT to "Portland"  "NagWare"  "Fujitsu" or "Absoft"
+
+e.g.:
+setenv FORTRAN_VARIANT Portland (csh)
+FORTRAN_VARIANT=Portland; export  FORTRAN_VARIANT (sh)
+
+Alternatively, FORTRAN_VARIANT can be passed directly to the gmake
+command, as in:
+gmake  FORTRAN_VARIANT=Portland
+
+To use vastf90:
+> gmake VAST90=y
+
+Caveat: Be careful to use the same compiler for all objects and libraries.
+
+
+Compiling on Alpha Linux:
+-------------------------
+The Makefile assumes the Compaq compiler and specifies the 
+ " -assume no2underscores " option.
+
+Therefor the calling user software must also be compiled with this
+option, or you should edit share/Make.flags to remove the option.
+
+
+Compiling on SUN:
+-----------------
+The Makefile specifies the " -fast " option which includes -dalign.
+Therefore the calling user software must also be compiled with this
+option, or else edit share/Make.flags to remove the option.
+
+
+***********
+5. TESTING:
+***********
+
+cd <MACHINE>/test  or  cd $OBJ/test
+./eztest
+
+eztest will write and re-read a simple netCDF file EZtest.cdf
+The contents of EZtest.cdf should be the same as of EZsample.cdf,
+which is included in the distribution.
+
+./eztest2
+C++ version of eztest
+
+For details see USERGUIDE or http://w3.pppl.gov/NTCC/EZcdf
+
+**********************
+6. FINAL INSTALLATION:
+**********************
+
+Choose or create the root directory in which you wish to install the software.
+A common location would be /usr/ntcc, but installation
+can occur in any directory where you have appropriate permissions.
+
+You define your choice of root directory via PREFIX.
+There is "no default" for PREFIX.
+
+The assumptions are:
+
+libraries in:   $PREFIX/lib        = $LIBDIR       
+f90 modules in: $PREFIX/mod        = $MODDIR       
+man pages in:   $PREFIX/man/man3   = $MANDIR/man3
+
+To install the software, return to the top directory (the directory,
+where you downloaded the tar files) and type
+
+>  gmake install PREFIX=/dir1/dir2/
+    to install into /dir1/dir2/...
+
+>   gmake install
+    if you are using share/Make.local
+
+
+If you want things elsewhere, you can overwrite the default with
+> gmake install MODDIR=/xxx LIBDIR=/yyy MANDIR=/zzz
+
+NOTE:
+-----
+The library is installed as libezcdf.a
+Users should link with
+
+-L<PREFIX>/lib -lezcdf 
+
+Make sure users know what <PREFIX> is.
+
+See 4. BUILDING INSTRUCTIONS about other required libraries.
+
+After you have installed the software, you can delete the entire tree
+with
+> cd ..
+> rm -r foo
+   assuming the previous example.
+
+
+
+
+

@@ -1,10 +1,6 @@
       SUBROUTINE magnetics_data
       USE vmec_main
-#ifdef _VACUUM2
-      USE vac2_vacmod
-#else
       USE vacmod
-#endif
       USE vsvd
       USE mgrid_mod
       IMPLICIT NONE

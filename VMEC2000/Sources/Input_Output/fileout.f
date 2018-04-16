@@ -1,3 +1,122 @@
+      SUBROUTINE fileout_par(iseq, ictrl_flag, ier_flag, lscreen)
+      USE vmec_main, ONLY: ns, ntheta1, ntheta2, nzeta, bdamp, 
+     1                     lfreeb
+      USE parallel_include_module
+      USE xstuff, ONLY: pxc, pgc, pxsave, pscalxc
+      USE xstuff, ONLY: xc, gc, xsave, scalxc
+      USE vmec_main, ONLY: vp, iotas, phips, chips, mass, icurv
+      USE vmec_main, ONLY: ireflect, nznt, phipf, specw, sp, sm
+      USE vmec_params, ONLY: uminus, output_flag
+      USE realspace, ONLY: phip, sqrts, shalf, wint
+#if defined(SKS)
+      USE realspace, ONLY: pphip, psqrts, pshalf, pwint
+      USE vacmod, ONLY: bsqvac, brv, bphiv, bzv, nv, nuv3,
+     1                  bsupu_sur, bsupv_sur, bsubu_sur, bsubv_sur
+      IMPLICIT NONE
+C-----------------------------------------------
+C   D u m m y   A r g u m e n t s
+C-----------------------------------------------
+      INTEGER, INTENT(in) :: iseq, ictrl_flag
+      INTEGER, INTENT(inout) :: ier_flag
+      LOGICAL :: lscreen
+      LOGICAL :: loutput !SAL
+      INTEGER :: i, j, ij, k, js, jk, lk, lt, lz, jcount
+      REAL(dp) :: tfileon, tfileoff
+      REAL(dp), ALLOCATABLE :: buffer(:,:), tmp(:,:)
+C-----------------------------------------------
+      CALL second0(tfileon)
+
+      loutput = (IAND(ictrl_flag, output_flag) .ne. 0) !SAL
+
+      IF (lfreeb .AND. vlactive .AND. loutput) THEN
+         ALLOCATE(buffer(numjs_vac, 7), tmp(nznt, 7),stat=i)
+         IF (i .NE. 0) CALL STOPMPI(440)
+         buffer(:,1) = brv(nuv3min:nuv3max)
+         buffer(:,2) = bphiv(nuv3min:nuv3max)
+         buffer(:,3) = bzv(nuv3min:nuv3max)
+         buffer(:,4) = bsupu_sur(nuv3min:nuv3max)
+         buffer(:,5) = bsupv_sur(nuv3min:nuv3max)
+         buffer(:,6) = bsubu_sur(nuv3min:nuv3max)
+         buffer(:,7) = bsubv_sur(nuv3min:nuv3max)
+
+         DO i = 1, 7
+           CALL MPI_Allgatherv(buffer(:,i),numjs_vac,MPI_REAL8,tmp(:,i),
+     1        counts_vac,disps_vac,MPI_REAL8,VAC_COMM,MPI_ERR)
+         END DO
+         DEALLOCATE(buffer)
+
+         brv = tmp(:,1);  bphiv = tmp(:,2); bzv = tmp(:,3)
+         bsupu_sur = tmp(:,4); bsupv_sur = tmp(:,5)
+         bsubu_sur = tmp(:,6); bsubv_sur = tmp(:,7)
+         DEALLOCATE(tmp)
+      END IF
+!
+!     COMPUTE ARRAY FOR REFLECTING v = -v (ONLY needed for lasym)
+!
+      jcount = 0
+      DO k = 1, nzeta
+         jk = nzeta + 2 - k
+         IF (k .eq. 1) jk = 1
+         DO js = 1,ns
+           jcount = jcount+1
+           ireflect(jcount) = js+ns*(jk-1)           !Index for -zeta[k]
+         ENDDO
+      END DO
+
+!     INDEX FOR u = -u (need for lasym integration in wrout)
+      lk = 0
+      IF (.NOT.ALLOCATED(uminus)) ALLOCATE (uminus(nznt))
+      DO lt = 1, ntheta2
+         k = ntheta1-lt+2                  
+         IF (lt .eq. 1) k = 1             !u=-0 => u=0
+         DO lz = 1, nzeta
+            lk = lk + 1
+            uminus(lk) = k                !(-u), for u = 0,pi
+         END DO
+      END DO
+
+      IF(grank.LT.nranks .AND. loutput) THEN
+        CALL Gather1XArray(vp)
+        CALL Gather1XArray(iotas)
+        CALL Gather1XArray(phips)
+        CALL Gather1XArray(phipf)
+        CALL Gather1XArray(chips)
+        CALL Gather1XArray(mass)
+        CALL Gather1XArray(icurv)
+        CALL Gather1XArray(specw)
+        CALL Gather1XArray(bdamp)
+        CALL Gather1XArray(sm)
+        CALL Gather1XArray(sp)
+
+        CALL Gather2XArray(pphip) 
+        CALL Parallel2Serial2X(pphip, phip)
+        CALL Gather2XArray(psqrts)
+        CALL Parallel2Serial2X(psqrts, sqrts)
+        CALL Gather2XArray(pshalf)
+        CALL Parallel2Serial2X(pshalf, shalf)
+        CALL Gather2XArray(pwint)
+        CALL Parallel2Serial2X(pwint, wint)
+
+        CALL Gather4XArray(pxc)
+        CALL Parallel2Serial4X(pxc,xc)
+        CALL Gather4XArray(pscalxc)
+        CALL Parallel2Serial4X(pscalxc,scalxc)
+        CALL second0(tfileoff)
+      END IF
+      fo_prepare_time = fo_prepare_time + (tfileoff-tfileon)
+
+!      ORIGPARVMEC=PARVMEC
+!      PARVMEC=.FALSE.
+      IF (grank .EQ. 0) THEN
+         CALL fileout(iseq, ictrl_flag, ier_flag, lscreen) 
+      ENDIF
+      CALL MPI_Barrier(NS_COMM, MPI_ERR)
+      CALL second0(tfileoff)
+      fileout_time = fileout_time + (tfileoff-tfileon)
+      fo_par_call_time = fileout_time
+#endif
+      END SUBROUTINE fileout_par
+
       SUBROUTINE fileout(iseq, ictrl_flag, ier_flag, lscreen)
       USE vmec_main
       USE vac_persistent
@@ -13,6 +132,11 @@
 #ifdef _HBANGLE
       USE angle_constraints, ONLY: free_multipliers, getrz
 #endif
+      USE parallel_include_module
+#if defined(SKS)
+      USE xstuff, ONLY: pxc, pgc, pxsave, pscalxc
+      USE safe_open_mod
+#endif      
       IMPLICIT NONE
 C-----------------------------------------------
 C   D u m m y   A r g u m e n t s
@@ -28,10 +152,10 @@ C-----------------------------------------------
 C-----------------------------------------------
 C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
-      INTEGER :: js, istat1=0, irst0
-      REAL(rprec), DIMENSION(:), POINTER :: lu, lv
-      REAL(rprec), ALLOCATABLE :: br_out(:), bz_out(:)
-      CHARACTER(LEN=*), PARAMETER, DIMENSION(0:10) :: werror = (/
+      INTEGER :: js, istat1=0, irst0, OFU
+      REAL(dp), DIMENSION(:), POINTER :: lu, lv
+      REAL(dp), ALLOCATABLE :: br_out(:), bz_out(:)
+      CHARACTER(LEN=*), PARAMETER, DIMENSION(0:14) :: werror = (/
      1   'EXECUTION TERMINATED NORMALLY                            ',
      2   'INITIAL JACOBIAN CHANGED SIGN (IMPROVE INITIAL GUESS)    ',
      3   'FORCE RESIDUALS EXCEED FTOL: MORE ITERATIONS REQUIRED    ',
@@ -42,11 +166,19 @@ C-----------------------------------------------
      8   'PHIEDGE HAS WRONG SIGN IN VACUUM SUBROUTINE              ',
      9   'NS ARRAY MUST NOT BE ALL ZEROES                          ',
      A   'ERROR READING MGRID FILE                                 ',
-     B   'VAC-VMEC I_TOR MISMATCH : BOUNDARY MAY ENCLOSE EXT. COIL ' /)
+     B   '                                                         ',
+     C   'VAC-VMEC I_TOR MISMATCH : BOUNDARY MAY ENCLOSE EXT. COIL ',
+     D   'BSUBH(0) NOT EQUAL 0 AT NS = 1 IN BCOVAR                 ',
+     E   'R01(1) EQUALS 0 IN TOZSPS                                ',
+     F   'ARNORM OR AZNORM EQUALS 0 IN BCOVAR                      ' /)
       CHARACTER(LEN=*), PARAMETER ::
      1    Warning = " Error deallocating global memory FILEOUT"
       LOGICAL :: log_open, lwrite, loutput, lterm
+      REAL(dp) :: tmpxc, rmssum
 C-----------------------------------------------
+    
+      INFILEOUT=.TRUE.
+
       lu => czmn;   lv => crmn
 
 !
@@ -54,6 +186,7 @@ C-----------------------------------------------
 !     CYLINDRICAL COMPONENTS OF B (BR, BPHI, BZ), AND
 !     AVERAGE EQUILIBRIUM PROPERTIES AT END OF RUN
 !
+
       iequi = 1
       lterm = ier_flag.eq.norm_term_flag  .or.
      1        ier_flag.eq.successful_term_flag
@@ -63,12 +196,8 @@ C-----------------------------------------------
       if (ier_flag .eq. successful_term_flag) 
      1    loc_ier_flag = norm_term_flag
 
-      IF (lwrite .and. loutput) THEN
 
-!        Must save irst value if in "restart" mode
-         irst0 = irst
-         CALL funct3d (lscreen, istat)
-
+      IF (lwrite .AND. loutput) THEN
 !
 !     The sign of the jacobian MUST multiply phi to get the physically
 !     correct toroidal flux
@@ -79,12 +208,17 @@ C-----------------------------------------------
          END DO
          phi = (signgs*twopi*hs)*phi
 
+!        Must save irst value if in "restart" mode
+         irst0 = irst
+         CALL funct3d (lscreen, istat)
+         fo_funct3d_time = timer(tfun)
+
+
 !        Write out any special files here
 !        CALL dump_special
 
          irst = irst0
 
-         CALL second0 (teqfon)
          ALLOCATE(br_out(nrzt), bz_out(nrzt), stat=istat)
          gc = xc
 #ifdef _HBANGLE
@@ -92,8 +226,6 @@ C-----------------------------------------------
 #endif
          CALL eqfor (br_out, bz_out, clmn, blmn, rcon(1,1), 
      1               gc, ier_flag)
-         CALL second0 (teqfoff)
-         timer(teqf) = timer(teqf) + teqfoff - teqfon
       END IF
   
 !      CALL free_mem_precon
@@ -101,35 +233,52 @@ C-----------------------------------------------
 !     Call WROUT to write output or error message if lwrite = false
 !
 
-      IF (loutput .and. ASSOCIATED(bzmn_o)) THEN
-         CALL second0 (twouton)
-
+      IF (loutput .AND. ASSOCIATED(bzmn_o)) THEN
          CALL wrout (bzmn_o, azmn_o, clmn, blmn, crmn_o, czmn_e,
      1        crmn_e, xsave, gc, loc_ier_flag, lwrite
 #ifdef _ANIMEC
      2       ,brmn_o, sigma_an, ppar, pperp, onembc, pp1, pp2, pp3
 #endif 
      3        )
-         CALL second0 (twoutoff)
 
-         timer(twout) = timer(twout) + twoutoff - twouton
-
-         IF (ntor .eq. 0) THEN
+         IF (ntor .EQ. 0) THEN
             CALL write_dcon (xc)
          END IF
 
          IF (lscreen .and. ier_flag.ne.more_iter_flag) 
      1   PRINT 120, TRIM(werror(loc_ier_flag))
-         IF (lscreen .and. lterm) 
-     1   PRINT 10, TRIM(input_extension), ijacob
+         IF (lscreen .and. lterm) THEN 
+#if defined(SKS)
+           IF (grank.EQ.0) THEN
+#endif           
+             PRINT 10, TRIM(input_extension), ijacob
+#if defined(SKS)
+           END IF
+#endif           
+         END IF
 
          IF (nthreed .gt. 0) THEN
             WRITE (nthreed,120) TRIM(werror(loc_ier_flag))
             IF (.not. lterm) GOTO 1000
             WRITE (nthreed, 10) TRIM(input_extension), ijacob
-            CALL write_times(nthreed, lscreen, lfreeb, lrecon, 
+#if defined(SKS)
+            IF (rank.EQ.0) THEN
+#endif           
+              CALL write_times(nthreed, lscreen, lfreeb, lrecon, 
      1                       ictrl_prec2d.ne.0)
-         END IF
+
+            IF (grank.EQ.0) THEN 
+              WRITE(nthreed,*)
+              WRITE(nthreed,'(1x,a,i4)') 'NO. OF PROCS:  ',gnranks
+              WRITE(nthreed,101)         'PARVMEC     :  ',PARVMEC
+              WRITE(nthreed,101)         'LPRECOND    :  ',LPRECOND
+              WRITE(nthreed,101)         'LV3FITCALL  :  ',LV3FITCALL
+            END IF
+ 101  FORMAT(1x,a,l4)
+#if defined(SKS)
+            END IF
+#endif           
+          END IF
       END IF
 
    10 FORMAT(' FILE : ',a,/,' NUMBER OF JACOBIAN RESETS = ',i4,/)
@@ -195,3 +344,4 @@ C-----------------------------------------------
       CALL close_all_files
 
       END SUBROUTINE fileout
+!------------------------------------------------

@@ -25,7 +25,7 @@
                                     HDF5_CLOSE_ERR, FIELDLINES_VERSION,&
                                     ladvanced, lbfield_only, lreverse,&
                                     lafield_only, lemc3, lmodb, &
-                                    MPI_BARRIER_ERR
+                                    MPI_BARRIER_ERR, iota0
       USE fieldlines_write_par
 !-----------------------------------------------------------------------
 !     Local Variables
@@ -166,6 +166,8 @@
             IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'B_Z',ier)
             CALL write_var_hdf5(fid,'B_PHI',nr,nphi,nz,ier,DBLVAR=B_PHI,ATT='Toroidal Field (BPHI)',ATT_NAME='description')
             IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'B_PHI',ier)
+            CALL write_scalar_hdf5(fid,'iota0',ier,DBLVAR=iota0,ATT='Axis Rotational Transform',ATT_NAME='description')
+            IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'nr',ier)
          END IF
          CALL close_hdf5(fid,ier)
          IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,'fieldlines_'//TRIM(id_string)//'.h5',ier)
@@ -179,10 +181,11 @@
          mystart = LBOUND(R_lines,1)
          myend   = UBOUND(R_lines,1)
          CALL MPI_ALLREDUCE(myend,nlines,1,MPI_INTEGER,MPI_MAX,MPI_COMM_FIELDLINES,ierr_mpi)
-         CALL fieldlines_write_parhdf5(1, nlines, 0, nsteps, mystart, myend,   'R_lines', DBLVAR=R_lines)
-         CALL fieldlines_write_parhdf5(1, nlines, 0, nsteps, mystart, myend, 'PHI_lines', DBLVAR=PHI_lines)
-         CALL fieldlines_write_parhdf5(1, nlines, 0, nsteps, mystart, myend,   'Z_lines', DBLVAR=Z_lines)
-         CALL fieldlines_write_parhdf5(1, nlines, 0, nsteps, mystart, myend,   'B_lines', DBLVAR=B_lines)
+         CALL fieldlines_write2d_parhdf5(1, nlines, 0, nsteps, mystart, myend,   'R_lines', DBLVAR=R_lines)
+         CALL fieldlines_write2d_parhdf5(1, nlines, 0, nsteps, mystart, myend, 'PHI_lines', DBLVAR=PHI_lines)
+         CALL fieldlines_write2d_parhdf5(1, nlines, 0, nsteps, mystart, myend,   'Z_lines', DBLVAR=Z_lines)
+         CALL fieldlines_write2d_parhdf5(1, nlines, 0, nsteps, mystart, myend,   'B_lines', DBLVAR=B_lines)
+         CALL fieldlines_write1d_parhdf5(1, nlines           , mystart, myend,   'L_lines', DBLVAR=L_lines)
       END IF
       ! Homocline
       IF (ALLOCATED(Rhc_lines)) THEN
@@ -191,8 +194,8 @@
          mystart = LBOUND(Rhc_lines,1)
          myend   = UBOUND(Rhc_lines,1)
          CALL MPI_ALLREDUCE(myend,nlines,1,MPI_INTEGER,MPI_MAX,MPI_COMM_FIELDLINES,ierr_mpi)
-         CALL fieldlines_write_parhdf5(1, nlines, 0, nsteps, mystart, myend, 'Rhc_lines', DBLVAR=Rhc_lines)
-         CALL fieldlines_write_parhdf5(1, nlines, 0, nsteps, mystart, myend, 'Zhc_lines', DBLVAR=Zhc_lines)
+         CALL fieldlines_write2d_parhdf5(1, nlines, 0, nsteps, mystart, myend, 'Rhc_lines', DBLVAR=Rhc_lines)
+         CALL fieldlines_write2d_parhdf5(1, nlines, 0, nsteps, mystart, myend, 'Zhc_lines', DBLVAR=Zhc_lines)
       END IF
 !DEC$ ELSE
       iunit = 100

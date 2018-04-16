@@ -9,7 +9,7 @@ C-----------------------------------------------
 C   D u m m y   A r g u m e n t s
 C-----------------------------------------------
       INTEGER :: itol, itask, istate, iopt, lrw, liw, jac, mf
-      REAL(rprec) t, tout
+      REAL(rprec) :: t, tout
       INTEGER, DIMENSION(*) :: neq
       INTEGER, DIMENSION(liw) :: iwork
       REAL(rprec), DIMENSION(*) :: y, rtol, atol

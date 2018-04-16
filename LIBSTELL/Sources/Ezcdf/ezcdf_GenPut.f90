@@ -8,7 +8,7 @@ MODULE ezcdf_GenPut
   ! + support for complex numbers (ap) Wed May 16 15:18:05 EDT 2001
   ! added support for logicals (sph) Oct 1, 2002
   IMPLICIT NONE
-!DEC$ IF DEFINED (NETCDF)
+#ifdef NETCDF
 
   !
   ! C. Ludescher/A. Pletzer Tue Apr  4 10:11:33 EDT 2000
@@ -428,7 +428,8 @@ CONTAINS
     sts = nf_enddef(ncid)
     call cdfInqV(ncid,varnam,varid,dimlens,ndims,sts)
     if (sts .ne. 0) return
-    if (ndims .ne. 2) then
+    if (ndims .gt. 2) then
+!    if (ndims .ne. 2) then   !error if this 2d array has dimension 1 for second element
        print "('% cdfPutVar_2c: --E-- The variable ',a,               &
             &         ' was defined as',i2,' dimensional')",varnam,ndims
        return
@@ -1472,5 +1473,5 @@ CONTAINS
     call cdfDefVar(ncid,varnam,dims,vartype,ier,dimname)
 
   END SUBROUTINE cdfd_1c
-!DEC$ ENDIF
+#endif
 END MODULE ezcdf_GenPut

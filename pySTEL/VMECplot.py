@@ -1,19 +1,26 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 import sys, os
 import matplotlib
+matplotlib.use("Qt4Agg")
 import matplotlib.pyplot as _plt
-matplotlib.use("Qt5Agg")
 import numpy as np                    #For Arrays
 from math import pi
-from PyQt5 import uic, QtGui
-from PyQt5.QtGui import QMainWindow, QApplication, qApp, QApplication, QVBoxLayout, QSizePolicy
-from PyQt5.QtGui import QIcon
+from PyQt4 import uic, QtGui
+from PyQt4.QtGui import QMainWindow, QApplication, qApp, QApplication, QVBoxLayout, QSizePolicy
+from PyQt4.QtGui import QIcon
 from libstell.libstell import read_vmec, cfunct, sfunct, torocont, isotoro, calc_jll
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from mpl_toolkits import mplot3d
 
-qtCreatorFile = "VMECplot.ui" # Enter file here.
+try:
+	qtCreatorPath=os.environ["STELLOPT_PATH"]
+except KeyError:
+	print("Please set environment variable STELLOPT_PATH")
+	sys.exit(1)
+
+#qtCreatorFile = "/u/slazerso/src/STELLOPT_GCC/pySTEL/VMECplot.ui" # Enter file here.
+qtCreatorFile = qtCreatorPath+"/pySTEL/VMECplot.ui" # Enter file here.
 Ui_MainWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 
 class MyApp(QMainWindow):
@@ -259,7 +266,7 @@ class MyApp(QMainWindow):
 				self.ax.set_ylabel('Normalized Flux')
 			elif (self.ui.RZ_button.isChecked()):
 				#self.ax.pcolormesh(self.r[:,:,self.v],self.z[:,:,self.v],val[:,:,self.v],cmap='jet',shading='gouraud')
-				cax = self.ax.pcolor(self.r[:,:,self.v],self.z[:,:,self.v],val[:,:,self.v],cmap='jet',shading='flat')
+				cax = self.ax.pcolor(self.r[:,:,self.v],self.z[:,:,self.v],val[:,:,self.v],cmap='jet')
 				self.fig.colorbar(cax)
 				self.ax.set_xlabel('R [m]')
 				self.ax.set_ylabel('Z [m]')

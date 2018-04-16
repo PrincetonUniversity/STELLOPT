@@ -162,6 +162,10 @@
       INTEGER, PARAMETER ::  ALLOC_ERR         = 11
       INTEGER, PARAMETER ::  NAMELIST_READ_ERR = 12
       INTEGER, PARAMETER ::  BAD_INPUT_ERR     = 13
+      INTEGER, PARAMETER ::  CWS_READ_ERR      = 14
+      INTEGER, PARAMETER ::  BAD_CWS_ERR       = 15
+      INTEGER, PARAMETER ::  KNOT_MISMATCH_ERR = 16
+      INTEGER, PARAMETER ::  KNOT_DEF_ERR      = 17
       INTEGER, PARAMETER ::  VMEC_INPUT_ERR    = 2
       INTEGER, PARAMETER ::  VMEC_WOUT_ERR     = 21
       INTEGER, PARAMETER ::  MGRID_ERR         = 22
@@ -204,7 +208,7 @@
       CHARACTER(256)           :: id_string, opt_type, proc_string, &
                                   proc_string_old, screen_str, xvec_file
       
-      REAL(rprec), PARAMETER :: STELLOPT_VERSION = 2.51
+      REAL(rprec), PARAMETER :: STELLOPT_VERSION = 0.0
       
       REAL(rprec), PARAMETER :: bigno = 1.0E+10
 !-----------------------------------------------------------------------
@@ -274,6 +278,22 @@
             WRITE(6,*) '  STELLOPT ENCOUNTERED AN ERROR READING A NAMELIST'
             WRITE(6,*) '  ',TRIM(string_val)
             WRITE(6,*) '  IERR:      ',ierr
+      ELSEIF (error_num .eq. CWS_READ_ERR) THEN
+            WRITE(6,*) '  STELLOPT ENCOUNTERED AN ERROR READING A WINDING SURFACE'
+            WRITE(6,*) '  FILENAME: ',TRIM(string_val)
+            WRITE(6,*) '  IERR:      ',ierr
+      ELSEIF (error_num .eq. BAD_CWS_ERR) THEN
+            WRITE(6,*) '  STELLOPT ENCOUNTERED A WINDING SURFACE ERROR'
+            WRITE(6,*) '  ROUTINE:   ',TRIM(string_val)
+            WRITE(6,*) '  IERR:      ',ierr
+      ELSEIF (error_num .eq. KNOT_MISMATCH_ERR) THEN
+            WRITE(6,*) '  STELLOPT ENCOUNTERED A COIL COORDINATE SPLINE KNOT COUNT MISMATCH'
+            WRITE(6,*) '  ROUTINE:   ',TRIM(string_val)
+            WRITE(6,*) '  KNOT COUNT:      ',ierr
+      ELSEIF (error_num .eq. KNOT_DEF_ERR) THEN
+            WRITE(6,*) '  STELLOPT ENCOUNTERED A COIL SPLINE WITH LESS THAN FOUR KNOTS'
+            WRITE(6,*) '  ROUTINE:   ',TRIM(string_val)
+            WRITE(6,*) '  KNOT COUNT:      ',ierr
       ELSEIF (error_num .eq. D02CJF_ERR) THEN
             WRITE(6,*) '  STELLOPT ENCOUNTERED A NAG ERROR (D02CJF)'
             WRITE(6,*) '     CALLING FUNCTION ',TRIM(string_val)

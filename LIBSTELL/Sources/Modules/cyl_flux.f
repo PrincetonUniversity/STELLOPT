@@ -455,12 +455,27 @@ C-----------------------------------------------
 !
 !     COMPUTE Ru, Zu, Rv, Zv IF REQUIRED
 !
-      IF ((PRESENT(ru) .or. PRESENT(zu) .or. 
-     1     PRESENT(rv) .or. PRESENT(zv)) .and. info.eq.0)
-     2    CALL flx2cyl(rzl_in, c_flx, r_cyl_out, ns_loc, ntor_loc, 
-     3         mpol_loc, ntmax_loc, lthreed_loc, lasym_loc, 
-     4         iflag, MSCALE=mscale, NSCALE=nscale, 
-     5         RU=ru, ZU=zu, RV=rv, ZV=zv)
+!      IF ((PRESENT(ru) .or. PRESENT(zu) .or. 
+!     1     PRESENT(rv) .or. PRESENT(zv)) .and. info.eq.0)
+!     2    CALL flx2cyl(rzl_in, c_flx, r_cyl_out, ns_loc, ntor_loc, 
+!     3         mpol_loc, ntmax_loc, lthreed_loc, lasym_loc, 
+!     4         iflag, MSCALE=mscale, NSCALE=nscale, 
+!     5         RU=ru, ZU=zu, RV=rv, ZV=zv)
+
+      IF (PRESENT(ru) .or. PRESENT(zu) .or. PRESENT(rv) .or.                   &
+     &                                       PRESENT(zv)) THEN
+         IF (info .eq. 0) THEN
+             CALL flx2cyl(rzl_in, c_flx, r_cyl_out, ns_loc, ntor_loc,          & 
+     &          mpol_loc, ntmax_loc, lthreed_loc, lasym_loc,                   & 
+     &          iflag, MSCALE=mscale, NSCALE=nscale,                           & 
+     &          RU=ru, ZU=zu, RV=rv, ZV=zv)
+         ELSE    ! insure that optional arguments are assigned. JDH 2014-03-11
+            IF (PRESENT(ru)) ru = 0
+            IF (PRESENT(zu)) zu = 0
+            IF (PRESENT(rv)) rv = 0
+            IF (PRESENT(zv)) zv = 0
+         ENDIF
+      ENDIF
 
       CONTAINS ! internal subprograms newt2d and get_flxcoord
     

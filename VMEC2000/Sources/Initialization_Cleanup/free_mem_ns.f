@@ -1,3 +1,42 @@
+      SUBROUTINE free_mem_ns_par(lreset)
+      USE vmec_main
+      USE realspace
+      USE vforces
+      USE vsvd
+      USE xstuff
+      USE csplinx
+      USE fbal
+#if defined(SKS)
+      IMPLICIT NONE
+C-----------------------------------------------
+C   D u m m y   A r g u m e n t s
+C-----------------------------------------------
+      LOGICAL, INTENT(in) :: lreset
+C-----------------------------------------------
+C   L o c a l   V a r i a b l e s
+C-----------------------------------------------
+      INTEGER :: istat1 = 0, istat2 = 0, istat3 = 0, istat4 = 0,
+     1           istat5 = 0, istat6 = 0, istat7 = 0, istat8 = 0,
+     2           istat9 = 0, istat10 = 0
+C-----------------------------------------------
+      IF (ALLOCATED(pshalf)) DEALLOCATE(pshalf)
+      IF (ALLOCATED(psqrts)) DEALLOCATE(psqrts)
+      IF (ALLOCATED(pwint)) DEALLOCATE(pwint)
+      IF (ALLOCATED(pfaclam)) DEALLOCATE(pfaclam)
+      IF (ALLOCATED(pchip)) DEALLOCATE (pchip)
+      IF (ALLOCATED(pphip)) DEALLOCATE (pphip)
+      IF (ALLOCATED(pfaclam)) DEALLOCATE (pfaclam)
+
+      IF (ALLOCATED(pxc) .and. lreset) DEALLOCATE (pxc)
+      IF (ALLOCATED(pscalxc) .and. lreset) DEALLOCATE (pscalxc)
+      IF (ALLOCATED(pxstore)) DEALLOCATE (pxstore)
+      IF (ALLOCATED(pxcdot)) DEALLOCATE (pxcdot)
+      IF (ALLOCATED(pxsave)) DEALLOCATE (pxsave)
+      IF (ALLOCATED(pgc)) DEALLOCATE (pgc)
+      IF (ALLOCATED(pcol_scale)) DEALLOCATE(pcol_scale)
+#endif
+      END SUBROUTINE free_mem_ns_par
+
       SUBROUTINE free_mem_ns(lreset)
       USE vmec_main
       USE realspace
@@ -18,6 +57,7 @@ C-----------------------------------------------
      1           istat5 = 0, istat6 = 0, istat7 = 0, istat8 = 0,
      2           istat9 = 0, istat10 = 0
 C-----------------------------------------------
+
       IF (ALLOCATED(phip))
      1  DEALLOCATE (phip, chip, shalf, sqrts, wint, stat=istat3)
 
@@ -56,8 +96,8 @@ C-----------------------------------------------
      2     stat=istat9)
 
       IF (ALLOCATED(gc))
-     1  DEALLOCATE (gc, xsave, xstore, xcdot, stat=istat10)
-      IF (ALLOCATED(xc) .and. lreset) DEALLOCATE (xc, scalxc)
+     1  DEALLOCATE (gc, xsave, xstore, xcdot, col_scale, stat=istat10)
+      IF (ALLOCATED(xc) .AND. lreset) DEALLOCATE (xc, scalxc)
 
       IF (istat1.ne.0 .or. istat2.ne.0 .or. istat3.ne.0 .or.
      1      istat4.ne.0 .or. istat5.ne.0 .or. istat6.ne.0 .or.

@@ -1,5 +1,5 @@
       MODULE bcoils_mod
-      USE Vcoilpts
+      USE vcoilpts
       INTEGER :: mbcoils, mc_max
       INTEGER, DIMENSION(ncdim) :: mbwires, mc_bg
       REAL(rprec) :: mxb_wgt

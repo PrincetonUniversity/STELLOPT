@@ -7,7 +7,7 @@
 
 subroutine EZspline_gradient1_r8(spline_o, &
      p1, df, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline1_r8) spline_o
   real(ezspline_r8), intent(in) :: p1
@@ -56,7 +56,7 @@ end subroutine EZspline_gradient1_r8
 
 subroutine EZspline_gradient1_array_r8(spline_o, k1, &
      p1, df, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline1_r8) spline_o
   integer, intent(in) :: k1
@@ -111,7 +111,7 @@ end subroutine EZspline_gradient1_array_r8
 
 subroutine EZspline_gradient2_r8(spline_o, &
      p1, p2, df, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline2_r8) spline_o
   real(ezspline_r8), intent(in) :: p1, p2
@@ -172,7 +172,7 @@ end subroutine EZspline_gradient2_r8
 
 subroutine EZspline_gradient2_cloud_r8(spline_o, k, &
      p1, p2, df, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline2_r8) spline_o
   integer, intent(in) :: k
@@ -233,7 +233,7 @@ end subroutine EZspline_gradient2_cloud_r8
 
 subroutine EZspline_gradient2_array_r8(spline_o, k1, k2, &
      p1, p2, df, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline2_r8) spline_o
   integer, intent(in) :: k1, k2
@@ -320,7 +320,7 @@ end subroutine EZspline_gradient2_array_r8
 
 subroutine EZspline_gradient3_r8(spline_o, &
      p1, p2, p3, df, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline3_r8) spline_o
   real(ezspline_r8), intent(in) :: p1, p2, p3
@@ -386,7 +386,7 @@ end subroutine EZspline_gradient3_r8
 
 subroutine EZspline_gradient3_cloud_r8(spline_o, k, &
      p1, p2, p3, df, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline3_r8) spline_o
   integer, intent(in) :: k
@@ -452,7 +452,7 @@ end subroutine EZspline_gradient3_cloud_r8
 
 subroutine EZspline_gradient3_array_r8(spline_o, k1, k2, k3, &
      p1, p2, p3, df, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline3_r8) spline_o
   integer, intent(in) :: k1, k2, k3
@@ -549,7 +549,7 @@ end subroutine EZspline_gradient3_array_r8
 
 subroutine EZspline_gradient1_r4(spline_o, &
      p1, df, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline1_r4) spline_o
   real(ezspline_r4), intent(in) :: p1
@@ -598,7 +598,7 @@ end subroutine EZspline_gradient1_r4
 
 subroutine EZspline_gradient1_array_r4(spline_o, k1, &
      p1, df, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline1_r4) spline_o
   integer, intent(in) :: k1
@@ -653,7 +653,7 @@ end subroutine EZspline_gradient1_array_r4
 
 subroutine EZspline_gradient2_r4(spline_o, &
      p1, p2, df, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline2_r4) spline_o
   real(ezspline_r4), intent(in) :: p1, p2
@@ -715,7 +715,7 @@ end subroutine EZspline_gradient2_r4
 
 subroutine EZspline_gradient2_cloud_r4(spline_o, k, &
      p1, p2, df, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline2_r4) spline_o
   integer, intent(in) :: k
@@ -778,7 +778,7 @@ end subroutine EZspline_gradient2_cloud_r4
 
 subroutine EZspline_gradient2_array_r4(spline_o, k1, k2, &
      p1, p2, df, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline2_r4) spline_o
   integer, intent(in) :: k1, k2
@@ -865,7 +865,7 @@ end subroutine EZspline_gradient2_array_r4
 
 subroutine EZspline_gradient3_r4(spline_o, &
      p1, p2, p3, df, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline3_r4) spline_o
   real(ezspline_r4), intent(in) :: p1, p2, p3
@@ -931,7 +931,7 @@ end subroutine EZspline_gradient3_r4
 
 subroutine EZspline_gradient3_cloud_r4(spline_o, k, &
      p1, p2, p3, df, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline3_r4) spline_o
   integer, intent(in) :: k
@@ -997,7 +997,7 @@ end subroutine EZspline_gradient3_cloud_r4
 
 subroutine EZspline_gradient3_array_r4(spline_o, k1, k2, k3, &
      p1, p2, p3, df, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline3_r4) spline_o
   integer, intent(in) :: k1, k2, k3

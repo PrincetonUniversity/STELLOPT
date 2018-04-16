@@ -1,11 +1,6 @@
       SUBROUTINE freeb_data (rmnc, zmns, rmns, zmnc, bmodmn, bmodmn1)
       USE vmec_main
-#ifdef _VACUUM2
-      USE vac2_vacmod
-      USE vac2_mod_surf, ONLY: xmpot=>xm, xnpot=>xn
-#else
       USE vacmod
-#endif
       USE realspace, ONLY: r1, z1
       IMPLICIT NONE
 C-----------------------------------------------

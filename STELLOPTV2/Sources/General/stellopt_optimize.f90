@@ -68,11 +68,12 @@
                WRITE(6,*) '         MODE: ',mode
                WRITE(6,*) '       FACTOR: ',factor
             END IF
-            !vars_min = -bigno; vars_max = bigno
+            vars_min = -bigno; vars_max = bigno
+            WHERE(vars > bigno) vars_max = 1E30
             CALL lmdif(stellopt_fcn, mtargets, nvars, vars, fvec, &
                        ftol, xtol, gtol, nfunc_max, epsfcn, diag, mode, &
                        factor, nprint, info, nfev, fjac, ldfjac, ipvt, &
-                       qtf, wa1, wa2, wa3, wa4)
+                       qtf, wa1, wa2, wa3, wa4,vars_min,vars_max)
          CASE('lmdif_bounded')
             ALLOCATE(ipvt(nvars))
             ALLOCATE(qtf(nvars),wa1(nvars),wa2(nvars),wa3(nvars),&
@@ -231,6 +232,31 @@
                 WRITE(6,*) '!!!!!  HYPERPLANE MAPPING DONE  !!!!!'
                 WRITE(6,*) '       See map.dat for data               '
             END IF
+         CASE('map_hypers')
+            ALLOCATE(wa1(nvars),fvec(mtargets))
+            wa1 = vars
+            nprint = 6
+            npop   = npopulation
+            ndiv   = mode
+            c1 = factor
+            c2 = epsfcn
+            lno_restart = .true.
+            IF (lverb) THEN
+               WRITE(6,*) '    OPTIMIZER: Hypersphere Mapping'
+               WRITE(6,*) '         NRAD: ',nfunc_max
+               WRITE(6,*) '         NPOL: ',npop
+               WRITE(6,*) '         DRHO: ',c1
+               WRITE(6,*) '         ERHO: ',c2
+               WRITE(6,*) '            N: ',nvars
+               WRITE(6,*) '            M: ',mtargets
+               !IF (lauto_domain) WRITE(6,*) '  !!!!!! AUTO_DOMAIN Calculation !!!!!!!'
+            END IF
+            CALL MAP_HYPERS(stellopt_fcn,mtargets,nvars,npop,vars_min,vars_max,&
+                            wa1,fvec,c1,c2,nfunc_max,MPI_COMM_STEL)
+            IF (lverb) THEN
+                WRITE(6,*) '!!!!!  HYPERSHPERE MAPPING DONE  !!!!!'
+            END IF
+            DEALLOCATE(wa1,fvec)
          CASE('pso')
             ALLOCATE(wa1(nvars),fvec(mtargets))
             wa1 = vars

@@ -2,7 +2,7 @@
 ! R8 !
 !/////
 subroutine EZspline_init1_r8(spline_o, n1, BCS1, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline1_r8) spline_o
   integer, intent(in) :: n1
@@ -83,7 +83,7 @@ end subroutine EZspline_init1_r8
  
  
 subroutine EZspline_init2_r8(spline_o, n1, n2, BCS1, BCS2, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline2_r8) spline_o
   integer, intent(in) :: n1, n2
@@ -205,7 +205,7 @@ end subroutine EZspline_init2_r8
  
  
 subroutine EZspline_init3_r8(spline_o, n1, n2, n3, BCS1, BCS2, BCS3, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline3_r8) spline_o
   integer, intent(in) :: n1, n2, n3
@@ -365,7 +365,7 @@ end subroutine EZspline_init3_r8
 ! R4 !
 !/////
 subroutine EZspline_init1_r4(spline_o, n1, BCS1, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline1_r4) spline_o
   integer, intent(in) :: n1
@@ -446,7 +446,7 @@ end subroutine EZspline_init1_r4
  
  
 subroutine EZspline_init2_r4(spline_o, n1, n2, BCS1, BCS2, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline2_r4) spline_o
   integer, intent(in) :: n1, n2
@@ -568,7 +568,7 @@ end subroutine EZspline_init2_r4
  
  
 subroutine EZspline_init3_r4(spline_o, n1, n2, n3, BCS1, BCS2, BCS3, ier)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline3_r4) spline_o
   integer, intent(in) :: n1, n2, n3

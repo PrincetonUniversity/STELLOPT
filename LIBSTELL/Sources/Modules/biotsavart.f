@@ -622,7 +622,7 @@
 
       CALL bsc_a (coil_group(igroup), xpt, avec)
 
-!     Convert back to cylindrical coordinates from cartesian vector components of B
+!     Convert back to cylindrical coordinates from cartesian vector components of A
       ar = avec(1)*cosp + avec(2)*sinp
       ap =-avec(1)*sinp + avec(2)*cosp
       az = avec(3)

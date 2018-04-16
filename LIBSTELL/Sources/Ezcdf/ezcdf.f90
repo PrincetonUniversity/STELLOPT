@@ -61,6 +61,5 @@ MODULE ezcdf
   USE ezcdf_GenGet
   USE ezcdf_attrib
   USE ezcdf_opncls
- 
 
 END MODULE ezcdf

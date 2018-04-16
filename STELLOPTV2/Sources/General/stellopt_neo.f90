@@ -223,7 +223,7 @@
                     rmns(i,k) = rmns_b(j,i_surf)
                     zmnc(i,k) = zmnc_b(j,i_surf)
                     lmnc(i,k) = -pmnc_b(j,i_surf)*nfp_b/twopi
-                    bmns(i,i) = bmns_b(j,i_surf)
+                    bmns(i,k) = bmns_b(j,i_surf)
                     if (ixm_b(j).eq.0 .and. ixn_b(j).eq.0)            &
                      sqrtg00(i) = gmnc_b(j,i_surf) + gmns_b(j,i_surf)
                  end if
@@ -401,7 +401,7 @@
                save_array(fluxs_arr_i,4) = b_ref
                save_array(fluxs_arr_i,5) = r_ref
                save_array(fluxs_arr_i,6) = epspar(1)
-               save_array(fluxs_arr_i,7) = epspar(2)
+               IF (multra >1) save_array(fluxs_arr_i,7) = epspar(2)
                save_array(fluxs_arr_i,8) = ctrone
                save_array(fluxs_arr_i,9) = ctrtot
                save_array(fluxs_arr_i,10) = bareph
@@ -429,7 +429,7 @@
                   b_ref = save_array(fluxs_arr_i,4)
                   r_ref = save_array(fluxs_arr_i,5)
                   epspar(1) = save_array(fluxs_arr_i,6)
-                  epspar(2) = save_array(fluxs_arr_i,7)
+                  IF (multra >1) epspar(2) = save_array(fluxs_arr_i,7)
                   ctrone = save_array(fluxs_arr_i,8)
                   ctrtot = save_array(fluxs_arr_i,9)
                   bareph = save_array(fluxs_arr_i,10)
@@ -445,10 +445,17 @@
                            fluxs_arr(fluxs_arr_i),                             &
                            epstot,reff,iota(psi_ind),b_ref,r_ref
                   ELSEIF (eout_swi .EQ. 2) THEN
-                     WRITE(w_u3,'(1(1x,i8),12(1x,e17.10))')                   &
+                     IF (multra >1)THEN
+                         WRITE(w_u3,'(1(1x,i8),12(1x,e17.10))')                   &
                            fluxs_arr(fluxs_arr_i),                             &
                            epstot,reff,iota(psi_ind),b_ref,r_ref,              &
-                     epspar(1),epspar(2),ctrone,ctrtot,bareph,barept,yps
+                           epspar(1),epspar(2),ctrone,ctrtot,bareph,barept,yps
+                     ELSE 
+                           WRITE(w_u3,'(1(1x,i8),12(1x,e17.10))')                   &
+                           fluxs_arr(fluxs_arr_i),                             &
+                           epstot,reff,iota(psi_ind),b_ref,r_ref,              &
+                           epspar(1),0.0,ctrone,ctrtot,bareph,barept,yps
+                     END IF
                   ELSEIF (eout_swi .EQ. 10) THEN                              !LPK
                      WRITE(w_u3,*) b_ref, r_ref, epstot                       !LPK
                   ELSE

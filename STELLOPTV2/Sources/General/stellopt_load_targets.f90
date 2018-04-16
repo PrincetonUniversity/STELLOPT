@@ -33,7 +33,7 @@
 !        iunit       File unit number
 !----------------------------------------------------------------------
       INTEGER ::  ier, iunit,m_sav
-      
+
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
@@ -109,6 +109,12 @@
       ! LINE ION TEMPERATURE
       IF (ANY(sigma_ti_line < bigno)) &
          CALL chisq_line_ti(target_ti_line, sigma_ti_line, ncnt,iflag)
+      ! XICS Brightness
+      IF (ANY(sigma_xics_bright < bigno)) &
+         CALL chisq_xics_bright(target_xics_bright, sigma_xics_bright, ncnt,iflag)
+      ! XICS
+      IF (ANY(sigma_xics < bigno)) &
+         CALL chisq_xics(target_xics, sigma_xics, ncnt,iflag)
       ! SOFT X-RAYS
       IF (ANY(sigma_sxr < bigno)) &
          CALL chisq_sxr(target_sxr, sigma_sxr, ncnt,iflag)
@@ -162,6 +168,17 @@
       IF (ANY(sigma_jcurv < bigno)) &
          CALL chisq_jcurv(target_jcurv, sigma_jcurv, ncnt,iflag)
          
+      !------------- COIL GEOMETRY TARGETS ---------------------
+      ! Coil lengths
+      IF (ANY(sigma_coillen < bigno)) &
+         CALL chisq_coillen(target_coillen, sigma_coillen, ncnt, iflag)
+      IF (sigma_coilsep < bigno) &
+         CALL chisq_coilsep(target_coilsep, sigma_coilsep, ncnt, iflag)
+      IF (ANY(sigma_coilcrv < bigno)) &
+         CALL chisq_coilcrv(target_coilcrv, sigma_coilcrv, ncnt, iflag)
+      IF (ANY(sigma_coilself < bigno)) &
+         CALL chisq_coilself(target_coilself, sigma_coilself, ncnt, iflag)
+
       !------------- EXTERNAL TARGETS --------------------------
       !  This section of the code relys upon external libraries
       !  for calculation of target parameters
@@ -216,6 +233,10 @@
       ! Coil Optimization
       IF (sigma_coil_bnorm < bigno) &
          CALL chisq_coil_bnorm(target_coil_bnorm, sigma_coil_bnorm, ncnt,iflag)
+      ! REGCOIL Coil Optimization (CHI2_B targets)
+      IF (ANY(sigma_regcoil_chi2_b < bigno)) THEN
+         CALL chisq_regcoil_chi2_b(target_regcoil_chi2_b, sigma_regcoil_chi2_b, ncnt,iflag)
+      END IF
       ! Kink
       IF (ANY(sigma_kink < bigno)) &
          CALL chisq_kink(target_kink, sigma_kink, ncnt,iflag)

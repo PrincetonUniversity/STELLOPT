@@ -9,6 +9,7 @@
 .DS*
 ._*
 __*
+CMakeLists.txt
 */Release/*.f90
 */Release/*.f
 */Debug/*.f90
@@ -30,6 +31,7 @@ xdiagno
 xdkes
 xfieldlines
 xgtovmi
+xjmc
 xjinvariant
 xgrid
 xneo

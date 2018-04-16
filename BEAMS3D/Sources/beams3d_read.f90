@@ -14,7 +14,7 @@
 !DEC$ ENDIF  
       USE beams3d_lines
       USE beams3d_grid, ONLY: nr, nphi, nz, B_R, B_PHI, B_Z, raxis, &
-                                 zaxis, phiaxis, S_ARR, U_ARR
+                                 zaxis, phiaxis, S_ARR, U_ARR, POT_ARR
       USE beams3d_runtime, ONLY: id_string, npoinc, nbeams, beam, t_end, lverb, lflux, &
                                     lvmec, lpies, lspec, lcoil, lmgrid, lmu, lbeam, &
                                     lvessel, lvac, lbeam_simple, handle_err, nparticles_start, &
@@ -98,7 +98,8 @@
       IF (ALLOCATED(U_lines)) DEALLOCATE(U_lines)
       ALLOCATE(R_lines(0:npoinc,nparticles),Z_lines(0:npoinc,nparticles),PHI_lines(0:npoinc,nparticles),&
             vll_lines(0:npoinc,nparticles),neut_lines(0:npoinc,nparticles),moment_lines(0:npoinc,nparticles))
-      ALLOCATE(S_lines(0:npoinc,nparticles),U_lines(0:npoinc,nparticles))
+      ALLOCATE(S_lines(0:npoinc,nparticles),U_lines(0:npoinc,nparticles),B_lines(0:npoinc,nparticles))
+      ALLOCATE(PE_lines(0:npoinc,nparticles),PI_lines(0:npoinc,nparticles))
       CALL read_var_hdf5(fid,'R_lines',npoinc+1,nparticles,ier,DBLVAR=R_lines)
       IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'R_lines',ier)
       CALL read_var_hdf5(fid,'Z_lines',npoinc+1,nparticles,ier,DBLVAR=Z_lines)
@@ -115,6 +116,12 @@
       IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'S_lines',ier)
       CALL read_var_hdf5(fid,'U_lines',npoinc+1,nparticles,ier,DBLVAR=U_lines)
       IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'U_lines',ier)
+      CALL read_var_hdf5(fid,'B_lines',npoinc+1,nparticles,ier,DBLVAR=B_lines)
+      IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'B_lines',ier)
+      CALL read_var_hdf5(fid,'PE_lines',npoinc+1,nparticles,ier,DBLVAR=PE_lines)
+      IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'PE_lines',ier)
+      CALL read_var_hdf5(fid,'PI_lines',npoinc+1,nparticles,ier,DBLVAR=PI_lines)
+      IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'PI_lines',ier)
       IF (lflux) THEN
          ! DIAGNOSTICS
          IF (ALLOCATED(shine_through)) DEALLOCATE(shine_through)
@@ -167,9 +174,10 @@
       IF (ALLOCATED(B_PHI)) DEALLOCATE(B_PHI)
       IF (ALLOCATED(S_ARR)) DEALLOCATE(S_ARR)
       IF (ALLOCATED(U_ARR)) DEALLOCATE(U_ARR)
+      IF (ALLOCATED(POT_ARR)) DEALLOCATE(POT_ARR)
       ALLOCATE(raxis(nr),phiaxis(nphi),zaxis(nz), &
             B_R(nr,nphi,nz),B_PHI(nr,nphi,nz),B_Z(nr,nphi,nz),&
-            S_ARR(nr,nphi,nz),U_ARR(nr,nphi,nz))
+            S_ARR(nr,nphi,nz),U_ARR(nr,nphi,nz),POT_ARR(nr,nphi,nz))
       CALL read_var_hdf5(fid,'raxis',nr,ier,DBLVAR=raxis)
       IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'raxis',ier)
       CALL read_var_hdf5(fid,'zaxis',nz,ier,DBLVAR=zaxis)
@@ -186,6 +194,8 @@
       IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'S_ARR',ier)
       CALL read_var_hdf5(fid,'U_ARR',nr,nphi,nz,ier,DBLVAR=U_ARR)
       IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'U_ARR',ier)
+      CALL read_var_hdf5(fid,'POT_ARR',nr,nphi,nz,ier,DBLVAR=POT_ARR)
+      IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'POT_ARR',ier)
       ! Try to read the faces
       CALL read_scalar_hdf5(fid,'nvertex',ier,INTVAR=nvertex)
       IF (ier == 0) THEN

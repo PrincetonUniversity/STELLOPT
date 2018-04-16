@@ -33,13 +33,14 @@
       IMPLICIT NONE
       INTEGER, PARAMETER :: BYTE_8 = SELECTED_INT_KIND (8)
 !DEC$ IF DEFINED (MPI_OPT)
-      INCLUDE 'mpif.h'   ! MPI
+!      INCLUDE 'mpif.h'   ! MPI
       INTEGER(KIND=BYTE_8),ALLOCATABLE :: mnum(:), moffsets(:)
       INTEGER :: numprocs_local, mylocalid, mylocalmaster
       INTEGER :: MPI_COMM_LOCAL
 !DEC$ ENDIF  
+      LOGICAL :: lnyquist
       INTEGER(KIND=BYTE_8) :: chunk
-      INTEGER :: ier, s, i, j, k, nu, nv, mystart, myend
+      INTEGER :: ier, s, i, j, k, nu, nv, mystart, myend, mnmax_temp, u, v
       INTEGER :: bcs1_s(2)
       INTEGER, ALLOCATABLE :: xn_temp(:), xm_temp(:)
       REAL :: br_vc, bphi_vc, bz_vc, xaxis_vc, yaxis_vc, zaxis_vc,&
@@ -117,30 +118,63 @@
          nv = 2 ** CEILING(log(DBLE(nv))/log(2.0_rprec))
          IF (nv < 128) nv = 128
          dr_temp    = 1./REAL(ns)
-         ALLOCATE(xm_temp(mnmax),xn_temp(mnmax), STAT=ier)
+
+         ! Handle Nyquist issues
+         IF (SIZE(xm_nyq) > SIZE(xm)) THEN
+            mnmax_temp = SIZE(xm_nyq)
+            lnyquist = .true.
+         ELSE
+            mnmax_temp = mnmax
+            lnyquist = .false.
+         END IF
+         ALLOCATE(xm_temp(mnmax_temp),xn_temp(mnmax_temp), STAT=ier)
          IF (ier /= 0) CALL handle_err(ALLOC_ERR,'XM_TEMP XN_TEMP',ier)
-         ALLOCATE(rmnc_temp(mnmax,2),zmns_temp(mnmax,2),&
-                  bumnc_temp(mnmax,1),bvmnc_temp(mnmax,1), STAT = ier)
+         ALLOCATE(rmnc_temp(mnmax_temp,2),zmns_temp(mnmax_temp,2),&
+                  bumnc_temp(mnmax_temp,1),bvmnc_temp(mnmax_temp,1), STAT = ier)
          IF (ier /= 0) CALL handle_err(ALLOC_ERR,'RMNC_TEMP ZMNS_TEMP BUMNC_TEMP BVMNC_TEMP',ier)
-         xm_temp = xm
-         xn_temp = -xn/nfp  ! Because init_virtual_casing uses (mu+nv) not (mu-nv*nfp)
-         rmnc_temp(:,1)=rmnc(:,ns-1)
-         rmnc_temp(:,2)=rmnc(:,ns)
-         zmns_temp(:,1)=zmns(:,ns-1)
-         zmns_temp(:,2)=zmns(:,ns)
+         IF (lasym) ALLOCATE(rmns_temp(mnmax_temp,2),zmnc_temp(mnmax_temp,2),&
+                     bumns_temp(mnmax_temp,1),bvmns_temp(mnmax_temp,1), STAT = ier)
+         IF (ier /= 0) CALL handle_err(ALLOC_ERR,'RMNS_TEMP ZMNC_TEMP BUMNS_TEMP BVMNS_TEMP',ier)
+         IF (lnyquist) THEN
+            xm_temp = xm_nyq
+            xn_temp = -xn_nyq/nfp  ! Because init_virtual_casing uses (mu+nv) not (mu-nv*nfp)
+            IF(lverb) WRITE(6,'(A)')        '   NYQUIST DETECTED IN WOUT FILE!'
+            DO u = 1,mnmax_temp
+               DO v = 1, mnmax
+                  IF ((xm(v) .eq. xm_nyq(u)) .and. (xn(v) .eq. xn_nyq(u))) THEN
+                     rmnc_temp(u,1) = rmnc(v,ns-1)
+                     zmns_temp(u,1) = zmns(v,ns-1)
+                     rmnc_temp(u,2) = rmnc(v,ns)
+                     zmns_temp(u,2) = zmns(v,ns)
+                     IF (lasym) THEN
+                        rmns_temp(u,1) = rmns(v,ns-1)
+                        zmnc_temp(u,1) = zmnc(v,ns-1)
+                        rmns_temp(u,2) = rmns(v,ns)
+                        zmnc_temp(u,2) = zmnc(v,ns)
+                     END IF
+                  END IF
+               END DO
+            END DO
+         ELSE
+            xm_temp = xm
+            xn_temp = -xn/nfp  ! Because init_virtual_casing uses (mu+nv) not (mu-nv*nfp)
+            rmnc_temp(:,1) = rmnc(:,ns-1)
+            zmns_temp(:,1) = zmns(:,ns-1)
+            rmnc_temp(:,2) = rmnc(:,ns)
+            zmns_temp(:,2) = zmns(:,ns)
+            IF (lasym) THEN
+               rmns_temp(:,1) = rmns(:,ns-1)
+               zmnc_temp(:,1) = zmnc(:,ns-1)
+               rmns_temp(:,2) = rmns(:,ns)
+               zmnc_temp(:,2) = zmnc(:,ns)
+            END IF
+         ENDIF
          bumnc_temp(:,1) = (1.5*bsupumnc(:,ns) - 0.5*bsupumnc(:,ns-1))
          bvmnc_temp(:,1) = (1.5*bsupvmnc(:,ns) - 0.5*bsupvmnc(:,ns-1))
          IF (lasym) THEN
-            ALLOCATE(rmns_temp(mnmax,2),zmnc_temp(mnmax,2),&
-                     bumns_temp(mnmax,1),bvmns_temp(mnmax,1), STAT = ier)
-            IF (ier /= 0) CALL handle_err(ALLOC_ERR,'RMNS_TEMP ZMNC_TEMP BUMNS_TEMP BVMNS_TEMP',ier)
-            rmns_temp(:,1)=rmns(:,ns-1)
-            rmns_temp(:,2)=rmns(:,ns)
-            zmnc_temp(:,1)=zmnc(:,ns-1)
-            zmnc_temp(:,2)=zmnc(:,ns)
             bumns_temp(:,1) = 1.5*bsupumns(:,ns) - 0.5*bsupumns(:,ns-1)
             bvmns_temp(:,1) = 1.5*bsupvmns(:,ns) - 0.5*bsupvmns(:,ns-1)
-            CALL init_virtual_casing(mnmax,nu,nv,xm_temp,xn_temp,&
+            CALL init_virtual_casing(mnmax_temp,nu,nv,xm_temp,xn_temp,&
                                          rmnc_temp,zmns_temp,nfp,&
                                          RMNS=rmns_temp, ZMNC=zmnc_temp,&
                                          BUMNC=bumnc_temp,BVMNC=bvmnc_temp,&
@@ -148,7 +182,7 @@
             DEALLOCATE(rmns_temp,zmnc_temp)
             DEALLOCATE(bumns_temp,bvmns_temp)
          ELSE
-            CALL init_virtual_casing(mnmax,nu,nv,xm_temp,xn_temp,&
+            CALL init_virtual_casing(mnmax_temp,nu,nv,xm_temp,xn_temp,&
                                          rmnc_temp,zmns_temp,nfp,&
                                          BUMNC=bumnc_temp,BVMNC=bvmnc_temp)
          END IF

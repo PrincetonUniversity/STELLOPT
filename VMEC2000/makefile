@@ -12,7 +12,7 @@
 .PHONY: release debug clean_release clean_debug static_release
 
 release:
-	@echo "Beginning release compilation and linking of vmec2000"
+	@echo "Beginning release compilation and linking of xvmec2000"
 	@cd $(REL); rm -f *.f *.f90 *.c; rm -f $(MAKE); ln -fs ../$(MAKE) .; make -f $(MAKE) $(EXE_F) FLAGS="$(FLAGS_R) $(MOD1_PATH)" TYPE="release" LOCTYPE="Release"
 	@rm -f $(REL)\*.f; rm -f $(REL)\*.f90
 	@rm -f $(MYHOME)/$(EXE_F)

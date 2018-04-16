@@ -24,18 +24,15 @@
 ! SECTION XVI.  COMMENTS FOR DIFFERENT REVISIONS
 !*******************************************************************************
       MODULE bsc_T
+!-------------------------------------------------------------------------------
+!  Type declarations - lengths of reals, integers, and complexes.
+!-------------------------------------------------------------------------------
+      USE stel_kinds, ONLY: rprec, iprec, cprec
 
       IMPLICIT NONE
 !*******************************************************************************
 ! SECTION I. VARIABLE DECLARATIONS
 !*******************************************************************************
-
-!-------------------------------------------------------------------------------
-!  Type declarations - lengths of reals, integers, and complexes.
-!-------------------------------------------------------------------------------
-      INTEGER, PARAMETER :: rprec = SELECTED_REAL_KIND(12,100)
-      INTEGER, PARAMETER :: iprec = SELECTED_INT_KIND(8)
-      INTEGER, PARAMETER :: cprec = KIND((1.0_rprec,1.0_rprec))
 
 !-------------------------------------------------------------------------------
 !  Frequently used mathematical constants, lots of extra precision.
@@ -122,12 +119,13 @@
 !       ehnod    array(3,-) of ehat vectors (normalized dxnod)
 !       lsqnod   array(-) of square lengths of straight line segments (dxnod)
 !       lnod     array(-) of lengths of straight line segments (dxnod)
+!       sens     array(-) of segment sensitivities.
 !    Used for c_type = 'fil_rogo'
 !       ave_n_area  average value of number of turns per unit length times
 !                   cross-sectional area of turns
 !-------------------------------------------------------------------------------
       TYPE bsc_coil
-         CHARACTER (len=8) :: c_type
+         CHARACTER (len=10) :: c_type
          CHARACTER (len=30) :: s_name                                 
          CHARACTER (len=80) :: l_name
          REAL(rprec) :: eps_sq
@@ -141,6 +139,7 @@
          REAL(rprec), DIMENSION(:,:), POINTER :: ehnod => null()
          REAL(rprec), DIMENSION(:),   POINTER :: lsqnod => null()
          REAL(rprec), DIMENSION(:),   POINTER :: lnod => null()
+         REAL(rprec), DIMENSION(:),   POINTER :: sens => null()
       END TYPE bsc_coil
 !-------------------------------------------------------------------------------
 !  Declare type bsc_coilcoll                                                    
@@ -252,8 +251,8 @@
 !  For c_type = 'fil_rogo' (filamentary Rogowski coils)
 !     Much of the coding is the same as for fil_loop coils.
 !-------------------------------------------------------------------------------
-      SUBROUTINE bsc_construct_coil(this,c_type,s_name,l_name,current, 
-     &   xnod,rcirc,xcent,enhat,raux,anturns,xsarea)
+      SUBROUTINE bsc_construct_coil(this,c_type,s_name,l_name,current,         &
+     &   xnod,rcirc,xcent,enhat,raux,anturns,xsarea,sen)
 
       IMPLICIT NONE
 
@@ -276,14 +275,19 @@
 !              NB. Declared as REAL, not INTEGER
 !  xsarea    Cross-sectional area of turns in Rogowski coil
 
+!  Sensitivity of xnod segments.
+      REAL(rprec), DIMENSION(:), INTENT(in), OPTIONAL :: sen
+
 !  Declare local variables
       INTEGER(iprec) :: n_xnod_1, n_xnod_2, i, n, nm1
       REAL(rprec) :: enlength
 
 !  Local Variables added 2010-07-06 JDH      
       REAL(rprec), ALLOCATABLE, DIMENSION(:,:) :: xnod_temp
+      REAL(rprec), ALLOCATABLE, DIMENSION(:)   :: sens_temp
       REAL(rprec), DIMENSION(3) :: vec_temp
       INTEGER(iprec) :: itemp
+      INTEGER(iprec) :: itemp2
       REAL(rprec) :: lsqnod_temp
 
 !  Start of executable code
@@ -305,7 +309,7 @@
 
 !  Different coding, depending on c_type
       SELECT CASE (c_type)
-      CASE ('fil_loop','floop','fil_rogo')
+      CASE ('fil_loop','floop','fil_rogo','fil_rogo_s')
          this % c_type = c_type
 
 !  Check for presence of necessary arguments
@@ -327,8 +331,12 @@
 !  JDH 2010-07-06
 !  First, Eliminate all zero-length segments.
          ALLOCATE(xnod_temp(3,n_xnod_2 + 1))
-         
+         IF (PRESENT(sen)) THEN
+            ALLOCATE(sens_temp(n_xnod_2))
+         END IF
+
          itemp = 1
+         itemp2 = 1
          xnod_temp(1:3,1) = xnod(1:3,1)
          DO i = 2, n_xnod_2
             vec_temp(1:3) = xnod_temp(1:3,itemp) - xnod(1:3,i)
@@ -336,6 +344,13 @@
             IF (lsqnod_temp .eq. zero) THEN
                CYCLE
             ELSE
+               IF (PRESENT(sen)) THEN
+!  Average the sensitivity of the missing nodes.
+                  sens_temp(itemp) = SUM(sen(itemp2:i - 1))                    &
+     &                             / SIZE(sen(itemp2:i - 1))
+                  itemp2 = i
+               END IF
+
                itemp = itemp + 1
                xnod_temp(1:3,itemp) = xnod(1:3,i)
             ENDIF
@@ -381,14 +396,21 @@
          ALLOCATE(this % dxnod(3,nm1))           
          ALLOCATE(this % ehnod(3,nm1))           
          ALLOCATE(this % lsqnod(nm1))            
-         ALLOCATE(this % lnod(nm1))              
+         ALLOCATE(this % lnod(nm1))
+         ALLOCATE(this % sens(nm1))
 
 !  Copy xnod to this % xnod.
 !  Modified 2010-07-06 JDH
 !         this % xnod(1:3,1:nm1) = xnod(1:3,1:nm1)
          this % xnod(1:3,1:n) = xnod_temp(1:3,1:n)
          DEALLOCATE(xnod_temp)
-        
+
+         IF (PRESENT(sen)) THEN
+            this % sens(1:nm1) = sens_temp(1:nm1)
+         ELSE
+            this % sens = 1.0
+         END IF
+
 !  Calculations for the other arrays (not included as arguments)
 !  Compute dxnod
          this % dxnod(1:3,1:nm1) = this % xnod(1:3,2:n)                        &
@@ -647,6 +669,7 @@
       IF (ASSOCIATED(this % ehnod)) DEALLOCATE(this % ehnod)      
       IF (ASSOCIATED(this % lsqnod)) DEALLOCATE(this % lsqnod)
       IF (ASSOCIATED(this % lnod)) DEALLOCATE(this % lnod)
+      IF (ASSOCIATED(this % sens)) DEALLOCATE(this % sens)
 
       END SUBROUTINE bsc_destroy_coil
 
@@ -732,8 +755,9 @@
 !  Pointers components of bsc_coil.
 !  Only bother with this coding if coil is a fil_loop or fil_rogo
       IF ((right % c_type .eq. 'fil_loop') .or.                                &
-     &   (right % c_type .eq. 'floop') .or.                                    &
-     &   (right % c_type .eq. 'fil_rogo')) THEN
+     &    (right % c_type .eq. 'floop') .or.                                   &
+     &    (right % c_type .eq. 'fil_rogo') .or.                                &
+     &    (right % c_type .eq. 'fil_rogo_s')) THEN
        
 !  Find the SIZE of the pointer arrays.
          n   = SIZE(right % xnod,2)
@@ -778,6 +802,11 @@
          IF (ASSOCIATED(left % lnod)) DEALLOCATE(left % lnod)
          ALLOCATE(left % lnod(nm1))                                     
          left % lnod(1:nm1) = temp1(1:nm1)                              
+
+         temp1(1:nm1) =  right % sens(1:nm1)
+         IF (ASSOCIATED(left % sens)) DEALLOCATE(left % sens)
+         ALLOCATE(left % sens(nm1))
+         left % sens(1:nm1) = temp1(1:nm1)
 
          DEALLOCATE(temp1)
 
@@ -1203,7 +1232,12 @@
 !  Scale by the correct factor.
          a(1:3) = this % ave_n_area * a(1:3)
 
-      CASE DEFAULT 
+      CASE ('fil_rogo_s')
+!  Rogowski. Compute the B field from the nodes. The scaling is taken care of
+!  externally.
+         CALL bsc_b_coil_fil_loop(this,x,a)
+
+      CASE DEFAULT
          WRITE(*,*) 'FATAL: bsc_a_coil: c_type unrecognized:',                 &
      &     this % c_type
          STOP
@@ -1457,7 +1491,12 @@
          WRITE(*,*) 'WARNING: bsc_b_coil: NOT YET IMPLEMENTED',                &
      &     this % c_type
 
-      CASE DEFAULT 
+      CASE ('fil_rogo_s')
+!  Rogowski. Not yet implemented
+         WRITE(*,*) 'WARNING: bsc_b_coil: NOT YET IMPLEMENTED',                &
+     &     this % c_type
+
+      CASE DEFAULT
          WRITE(*,*) 'FATAL: bsc_b_coil: c_type unrecognized:',                 &
      &     this % c_type
          STOP
@@ -1529,7 +1568,7 @@
 
 ! Sum for B field
       DO i = 1,3                                                              
-         b(i) = DOT_PRODUCT(crossv(i,1:nm1),Rfactor(1:nm1))
+         b(i) = DOT_PRODUCT(this%sens*crossv(i,1:nm1),Rfactor(1:nm1))
       END DO
             
       END SUBROUTINE bsc_b_coil_fil_loop
@@ -1755,6 +1794,7 @@
 !  Local Variable Declaration
       REAL(rprec), DIMENSION(:,:), POINTER :: positions => null(),             &
      &  tangents => null(), avecs => null()
+      REAL(rprec), DIMENSION(:), POINTER :: sens => null()
       INTEGER(iprec) :: i, npoints
             
 !  Start of executable code
@@ -1763,7 +1803,7 @@
 !  Subroutine also allocates space to the pointers: positions, tangents, and
 !  avecs.
       CALL bsc_flux_pos(coil_b,len_integerate,positions,tangents,              &
-     &   avecs,npoints)
+     &   avecs,sens,npoints)
 
 !  Calculate vector potentials
       SELECT CASE (coil_b % c_type)
@@ -1771,14 +1811,15 @@
          DO i = 1,npoints
             CALL bsc_a(coil_a,positions(1:3,i),avecs(1:3,i))
          END DO
-      CASE ('fil_rogo')
+      CASE ('fil_rogo','fil_rogo_s')
          DO i = 1,npoints
             CALL bsc_b(coil_a,positions(1:3,i),avecs(1:3,i))
          END DO
       END SELECT
 
 !  Do summations
-      CALL bsc_flux_sum(coil_b,positions,tangents,avecs,npoints,flux)
+      CALL bsc_flux_sum(coil_b,positions,tangents,avecs,sens,npoints,          &
+     &                  flux)
 
 !  Rescale if bsc_k2 present
       IF (PRESENT(bsc_k2)) THEN
@@ -1786,7 +1827,7 @@
       ENDIF
 
 !  Deallocate space. 
-      DEALLOCATE(avecs,positions,tangents)
+      DEALLOCATE(avecs,positions,tangents,sens)
 
 !  That's all
       END SUBROUTINE bsc_fluxba_coil
@@ -1816,6 +1857,7 @@
 !  Local Variable Declaration
       REAL(rprec), DIMENSION(:,:), POINTER :: positions => null(),             &
      &  tangents => null(), avecs => null()
+      REAL(rprec), DIMENSION(:),POINTER :: sens => null()
       INTEGER(iprec) :: i, npoints
             
 !  Start of executable code
@@ -1824,7 +1866,7 @@
 !  Subroutine also allocates space to the pointers: positions, tangents, and
 !  avecs.
       CALL bsc_flux_pos(coil_b,len_integerate,positions,tangents,              &
-     &   avecs,npoints)
+     &   avecs,sens,npoints)
 
 !  Calculate vector potentials
       SELECT CASE (coil_b % c_type)
@@ -1832,14 +1874,15 @@
          DO i = 1,npoints
             CALL bsc_a(coil_a,positions(1:3,i),avecs(1:3,i))
          END DO
-      CASE ('fil_rogo')
+      CASE ('fil_rogo','fil_rogo_s')
          DO i = 1,npoints
             CALL bsc_b(coil_a,positions(1:3,i),avecs(1:3,i))
          END DO
       END SELECT
 
 !  Do summations
-      CALL bsc_flux_sum(coil_b,positions,tangents,avecs,npoints,flux)
+      CALL bsc_flux_sum(coil_b,positions,tangents,avecs,sens,npoints,          &
+     &                  flux)
 
 !  Rescale if bsc_k2 present
       IF (PRESENT(bsc_k2)) THEN
@@ -1847,7 +1890,7 @@
       ENDIF
 
 !  Deallocate space. 
-      DEALLOCATE(avecs,positions,tangents)
+      DEALLOCATE(avecs,positions,tangents,sens)
 
 !  That's all
       END SUBROUTINE bsc_fluxba_coil_a
@@ -1877,15 +1920,16 @@
 !  Local Variable Declaration
       REAL(rprec), DIMENSION(:,:), POINTER :: positions => null(),             &
      &  tangents => null(), avecs => null()
+      REAl(rprec), DIMENSION(:), POINTER :: sens => null()
       INTEGER(iprec) :: i, npoints
             
 !  Start of executable code
 
 !  Get array of positions at which to evaluate the vector potential
-!  Subroutine also allocates space to the pointers: positions, tangents, and
-!  avecs.
+!  Subroutine also allocates space to the pointers: positions, tangents, avecs
+!  and sens.
       CALL bsc_flux_pos(coil_b,len_integerate,positions,tangents,              &
-     &   avecs,npoints)
+     &   avecs,sens,npoints)
 
 !  Calculate vector potentials
       SELECT CASE (coil_b % c_type)
@@ -1893,14 +1937,15 @@
          DO i = 1,npoints
             CALL bsc_a(coil_a,positions(1:3,i),avecs(1:3,i))
          END DO
-      CASE ('fil_rogo')
+      CASE ('fil_rogo','fil_rogo_s')
          DO i = 1,npoints
             CALL bsc_b(coil_a,positions(1:3,i),avecs(1:3,i))
          END DO
       END SELECT
 
 !  Do summations
-      CALL bsc_flux_sum(coil_b,positions,tangents,avecs,npoints,flux)
+      CALL bsc_flux_sum(coil_b,positions,tangents,avecs,sens,npoints,          &
+     &                  flux)
 
 !  Rescale if bsc_k2 present
       IF (PRESENT(bsc_k2)) THEN
@@ -1908,7 +1953,7 @@
       ENDIF
 
 !  Deallocate space. 
-      DEALLOCATE(avecs,positions,tangents)
+      DEALLOCATE(avecs,positions,tangents,sens)
 
 !  That's all
       END SUBROUTINE bsc_fluxba_coilcoll
@@ -1918,7 +1963,7 @@
 !  Subroutine to find positions and tangents for second coil
 !-------------------------------------------------------------------------------
       SUBROUTINE bsc_flux_pos(coil_b,len_integrate,positions,                  &
-     &   tangents,avecs,npoints)
+     &   tangents,avecs,sens,npoints)
       IMPLICIT NONE
 !  This subroutine will return positions and tangents to the coil coil_b.
 !  It is called by the bsc_flux_ subroutines.
@@ -1938,6 +1983,7 @@
       REAL(rprec), INTENT(in) :: len_integrate
       REAL(rprec), DIMENSION(:,:), POINTER :: positions, tangents,             &
      &   avecs
+      REAL(rprec), DIMENSION(:), POINTER :: sens
       INTEGER(iprec), INTENT(out) ::  npoints
       
 !  Local Variable Declaration
@@ -1952,7 +1998,7 @@
       
 !  Define length of arrays
       SELECT CASE (coil_b % c_type)
-      CASE ('fil_loop','floop','fil_rogo')
+      CASE ('fil_loop','floop','fil_rogo','fil_rogo_s')
          IF (len_integrate .le. zero) THEN
             npoints = SIZE(coil_b % lnod)
          ELSE
@@ -1977,7 +2023,7 @@
       IF (ASSOCIATED(tangents)) DEALLOCATE(tangents)
       IF (ASSOCIATED(avecs)) DEALLOCATE(avecs)
       ALLOCATE(positions(3,npoints),tangents(3,npoints),                       &
-     &   avecs(3,npoints))
+     &   avecs(3,npoints),sens(npoints))
 
 !  For fil_loops, points spaced throughout the segment
 !  First and last points in a segment weighted at half the weight of all other
@@ -1988,7 +2034,7 @@
 !          3                    1/8, 1/2, 7/8               1/4, 1/2, 1/4
 !          4                    1/12, 4/12, 8/12, 11/12     1/6, 1/3, 1/3, 1/6
       SELECT CASE (coil_b % c_type)
-      CASE ('fil_loop','floop','fil_rogo')
+      CASE ('fil_loop','floop','fil_rogo','fil_rogo_s')
          i = 1
          nseg = SIZE(coil_b % lnod)
          DO iseg = 1,nseg
@@ -2002,15 +2048,18 @@
                positions(1:3,i) = coil_b % xnod(1:3,iseg) +                    &
      &            0.5 * coil_b % dxnod(1:3,iseg)
                tangents(1:3,i) = coil_b % dxnod(1:3,iseg)
+               sens(i) = coil_b % sens(iseg)
                i = i + 1
             ELSEIF (npoints_this_segment .eq. 2) THEN
                positions(1:3,i) = coil_b % xnod(1:3,iseg) +                    &
      &             0.25 * coil_b % dxnod(1:3,iseg)
                tangents(1:3,i) = 0.5 * coil_b % dxnod(1:3,iseg)
+               sens(i) = coil_b % sens(iseg)
                i = i + 1
                positions(1:3,i) = coil_b % xnod(1:3,iseg) +                    &
      &            0.75 * coil_b % dxnod(1:3,iseg)
                tangents(1:3,i) = 0.5 * coil_b % dxnod(1:3,iseg)
+               sens(i) = coil_b % sens(iseg)
                i = i + 1
             ELSE                            ! Here, 3 or more points per segment
                n_denom = npoints_this_segment - 1
@@ -2019,18 +2068,21 @@
      &            0.25 * frac_denom * coil_b % dxnod(1:3,iseg)
                tangents(1:3,i) = 0.5 * frac_denom *                            &
      &            coil_b % dxnod(1:3,iseg)
+               sens(i) = coil_b % sens(iseg)
                i = i + 1               
                DO j = 2,npoints_this_segment - 1
                   positions(1:3,i) = coil_b % xnod(1:3,iseg) +                 &
      &               frac_denom * (j-1) * coil_b % dxnod(1:3,iseg)   
                   tangents(1:3,i) = frac_denom *                               &
      &                coil_b % dxnod(1:3,iseg)
+                  sens(i) = coil_b % sens(iseg)
                   i = i + 1
                END DO
                positions(1:3,i) = coil_b % xnod(1:3,iseg) +                    &
      &            (1 - 0.25 * frac_denom) * coil_b % dxnod(1:3,iseg)
                tangents(1:3,i) = 0.5 * frac_denom *                            &
      &            coil_b % dxnod(1:3,iseg)
+               sens(i) = coil_b % sens(iseg)
                i = i + 1
             ENDIF
          END DO
@@ -2051,6 +2103,7 @@
      &         rhohat
             tangents(1:3,i) = coil_b % rcirc * dphi * phihat
          END DO
+         sens = 1.0
       END SELECT
       
       END SUBROUTINE bsc_flux_pos      
@@ -2058,8 +2111,8 @@
 !-------------------------------------------------------------------------------
 !  Subroutine to find do summations for flux
 !-------------------------------------------------------------------------------
-      SUBROUTINE bsc_flux_sum(coil_b,positions,tangents,avecs,npoints,         &
-     &   flux)
+      SUBROUTINE bsc_flux_sum(coil_b,positions,tangents,avecs,sens,            &
+     &                        npoints,flux)
       IMPLICIT NONE
 !  This subroutine will compute some sums
 !  It is called by the bsc_flux_ subroutines
@@ -2070,6 +2123,7 @@
       TYPE (bsc_coil), INTENT(in) :: coil_b
       REAL(rprec), DIMENSION(:,:), POINTER :: positions, tangents,             &
      &   avecs
+      REAL(rprec), DIMENSION(:), POINTER :: sens
       INTEGER(iprec), INTENT(in) ::  npoints
       REAL(rprec), INTENT(out) :: flux
       
@@ -2077,11 +2131,11 @@
       INTEGER(iprec) :: i
 
 !  Start of executable code
-      
+
 !  Sum dot products
       flux = zero
       DO i = 1,npoints
-         flux = flux + DOT_PRODUCT(avecs(1:3,i),tangents(1:3,i))
+         flux = flux + sens(i)*DOT_PRODUCT(avecs(1:3,i),tangents(1:3,i))
       END DO
 
 !  Extra Factor for coil_b a Rogowski coil
@@ -2280,7 +2334,7 @@
       SELECT CASE (this % c_type)
       CASE ('fil_circ','fcirc')
          mean_r(1:3) = this % xcent(1:3)   
-      CASE ('fil_loop','floop','fil_rogo')
+      CASE ('fil_loop','floop','fil_rogo','fil_rogo_s')
          nwire = SIZE(this % xnod,2)
          nm1 = MAX(1, nwire-1)
          coil_length =  SUM(this % lnod(1:nm1))
@@ -2325,7 +2379,7 @@
       SELECT CASE (this % c_type)
       CASE ('fil_circ','fcirc')
          mean_xnod(1:3) = this % xcent(1:3)   
-      CASE ('fil_loop','floop','fil_rogo')
+      CASE ('fil_loop','floop','fil_rogo','fil_rogo_s')
          nwire = SIZE(this % xnod,2)
          nm1 = MAX(1, nwire-1)
          DO i = 1,3

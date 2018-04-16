@@ -1,11 +1,11 @@
       SUBROUTINE spline(x,y,n,yp1,ypn,y2)
-      USE stel_kinds, ONLY: rprec, dp
+      USE stel_kinds, ONLY: dp
       IMPLICIT NONE
-C-----------------------------------------------
-C   D u m m y   A r g u m e n t s
-C-----------------------------------------------
+!-----------------------------------------------
+!   D u m m y   A r g u m e n t s
+!-----------------------------------------------
       INTEGER n
-      REAL(rprec) :: yp1,ypn,x(n),y(n),y2(n)
+      REAL(dp) :: yp1,ypn,x(n),y(n),y2(n)
 !Given arrays x(1:n) and y(1:n) containing a tabulated function, i.e., yi = f(xi), with
 !x1 < x2 < .. . < xN, and given values yp1 and ypn for the first derivative of the interpolating
 !function at points 1 and n, respectively, this routine returns an array y2(1:n) of
@@ -14,12 +14,12 @@ C-----------------------------------------------
 !the corresponding boundary condition for a natural spline, with zero second derivative on
 !that boundary. If yp1/ypn are -1 X 10**30 or smaller, set the bdy conditions so y2(1) = y2(2) or
 !y2(n) = y2(n-1) (added by SPH)
-C-----------------------------------------------
-C   L o c a l   V a r i a b l e s
-C-----------------------------------------------
+!-----------------------------------------------
+!   L o c a l   V a r i a b l e s
+!-----------------------------------------------
       INTEGER i,k
-      REAL(rprec) :: p,qn,sig,un,u(n)
-C-----------------------------------------------
+      REAL(dp) :: p,qn,sig,un,u(n)
+!-----------------------------------------------
       IF (yp1.gt..99e30_dp) THEN  !The lower boundary condition is set either to be "natural"
          y2(1)=0
          u(1)=0

@@ -1225,7 +1225,7 @@
             ay = zero
             az = zero
             adapt_rerun=.false.
-            print *,'error'
+            print *,'error',istat
          ELSE
             ax = finest_nag(1)
             ay = finest_nag(2)

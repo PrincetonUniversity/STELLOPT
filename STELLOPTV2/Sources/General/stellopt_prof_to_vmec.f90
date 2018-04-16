@@ -44,6 +44,7 @@
                   dex_ah, dex_at
       INTEGER ::  ier,ik, iunit, dex
       REAL(rprec), PARAMETER :: ec  = 1.60217653D-19
+      REAL(rprec) :: emis_xics_temp
       REAL(rprec), ALLOCATABLE :: ne_temp(:), zeff_temp(:), te_temp(:), ti_temp(:),&
                                   th_temp(:), beamj_temp(:), bootj_temp(:), dump_temp(:)
       
@@ -62,6 +63,7 @@
       IF (EZspline_allocated(ti_spl)) CALL EZspline_free(ti_spl,iflag)
       IF (EZspline_allocated(th_spl)) CALL EZspline_free(th_spl,iflag)
       IF (EZspline_allocated(nustar_spl)) CALL EZspline_free(nustar_spl,iflag)
+      IF (EZspline_allocated(emis_xics_spl)) CALL EZspline_free(emis_xics_spl,iflag)
       IF (EZspline_allocated(zeff_spl)) CALL EZspline_free(zeff_spl,iflag)
       IF (EZspline_allocated(omega_spl)) CALL EZspline_free(omega_spl,iflag)
       dex = MINLOC(phi_aux_s(2:),DIM=1)
@@ -119,6 +121,13 @@
          omega_spl%x1 = ah_aux_s(1:dex)
          omega_spl%isHermite = 1
          CALL EZspline_setup(omega_spl,ah_aux_f,ier)
+      END IF
+      dex = MINLOC(emis_xics_s(2:),DIM=1)
+      IF (dex > 4) THEN
+         CALL EZspline_init(emis_xics_spl,dex,bcs0,iflag)
+         emis_xics_spl%x1 = emis_xics_s(1:dex)
+         emis_xics_spl%isHermite = 1
+         CALL EZspline_setup(emis_xics_spl,emis_xics_f,ier)
       END IF
       
       
@@ -304,6 +313,21 @@
       IF (ALLOCATED(ti_temp)) DEALLOCATE(ti_temp)
       IF (ALLOCATED(bootj_temp)) DEALLOCATE(bootj_temp)
       IF (ALLOCATED(beamj_temp)) DEALLOCATE(beamj_temp)
+
+      ! Output a diagnostic table
+      ! Now make table
+      IF (lnew_am) THEN
+         iunit = 68
+         IF (.not. lno_file) THEN
+            CALL safe_open(iunit,iflag,TRIM('dprof.'//TRIM(file_str)),'unknown','formatted')
+            WRITE(iunit,*) 's     emis_xics'
+            DO ik = 1, dex_am
+               CALL get_equil_emis_xics(am_aux_s(ik),TRIM(emis_xics_type),emis_xics_temp,ier)
+               WRITE(iunit,'(2es12.4)') am_aux_s(ik),emis_xics_temp
+            END DO
+            CLOSE(iunit)
+         END IF
+      END IF
       
       RETURN
 !----------------------------------------------------------------------

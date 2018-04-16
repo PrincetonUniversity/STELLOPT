@@ -1,5 +1,5 @@
       MODULE saddle_coils
-      USE Vcoilpts
+      USE vcoilpts
       INTEGER, PARAMETER :: mfourier = 100
       INTEGER :: nsad_v, nsad_u, nsad_coeffs, nfils
       INTEGER :: nsad_coils_per_period, nsad_coils, nsmid, nsodd

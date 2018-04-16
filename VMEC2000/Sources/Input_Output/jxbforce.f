@@ -1,4 +1,4 @@
-      SUBROUTINE jxbforce(bsupu, bsupv, bsubu, bsubv, bsubsh, bsubsu,
+      SUBROUTINE jxbforce(bsupu, bsupv, bsubu, bsubv, bsubs, bsubsu,
      1   bsubsv, gsqrt, bsq, itheta, izeta, brho, sigma_an, ier_flag 
 #ifdef _ANIMEC
      2  ,pp1, pp2, ppar, onembc
@@ -14,10 +14,11 @@
      2                      ,pp3 
       USE fbal, ONLY: bimax_ppargrad
 #endif
-#undef NETCDF
 #ifdef NETCDF
       USE ezcdf
 #endif
+      USE xstuff, ONLY: xc 
+      USE parallel_include_module
       IMPLICIT NONE
 !-----------------------------------------------
 !   D u m m y   A r g u m e n t s
@@ -29,14 +30,13 @@
 #endif
       REAL(rprec), DIMENSION(ns,nznt,0:1), TARGET, INTENT(inout) ::
      1  bsubu, bsubv
-      REAL(rprec), DIMENSION(ns,nznt), INTENT(in)  :: bsubsh
+      REAL(rprec), DIMENSION(ns,nznt), INTENT(inout), TARGET :: bsubs
       REAL(rprec), DIMENSION(ns,nznt), INTENT(out) ::
      1  itheta, brho, izeta
 #ifdef _ANIMEC
      1 ,pp1, pp2
 #endif
       REAL(rprec), DIMENSION(ns,nznt,0:1) :: bsubsu, bsubsv
-      REAL(rprec), DIMENSION(ns,nznt), TARGET :: bsubs
       INTEGER, INTENT(in) :: ier_flag
 !-----------------------------------------------
 !   L o c a l   P a r a m e t e r s
@@ -153,7 +153,7 @@
      1   " radial unit vector (based on volume radial coordinate)"
       legend(8) = " BSUP{U,V} = sigma_an B DOT GRAD{U,V}:" //
      1   "  contravariant components of B"
-      legend(9) = " JSUP{U,V} = SQRT(g) J DOT GRAD{U,V}"
+      legend(9) = " JSUP{U,V} = SQRT(g') J DOT GRAD{U,V}"
       legend(10)=
      1  " K X B = Es DOT [K X B]: covariant component of K X B force"
       legend(11)= " K * B = K DOT B * SQRT(g')"
@@ -199,7 +199,7 @@
 !     Put bsubs on full mesh
 !
          IF (js.gt.1 .and. js.lt.ns) THEN     
-            bsubs(js,:) = p5*(bsubsh(js,:) + bsubsh(js+1,:))
+            bsubs(js,:) = p5*(bsubs(js,:) + bsubs(js+1,:))
          END IF
 
          bsubu(js,:,1) = bsubu(js,:,1)/shalf(js)
@@ -585,6 +585,10 @@
       DO js = 2, ns1
          ovp = two/(vp(js+1) + vp(js))/dnorm1
          tjnorm = ovp*signgs
+         sqgb2(:nznt) = sigma_an(js+1,:)*gsqrt(js+1,:)*
+     1                  (bsq(js+1,:)- pres(js+1))
+     2                + sigma_an(js,:)*gsqrt(js,:)    *
+     3                  (bsq(js,:) - pres(js))
 #ifdef _ANIMEC
          sqgb2(:nznt) = sigma_an(js+1,:nznt)*gsqrt(js+1,:nznt)
      1                * bsq(js+1,:nznt)
@@ -684,8 +688,8 @@ C                 lu (js,lz,lt ) =  lt
 #else
             WRITE (njxbout, 200) phi(js), avforce(js), jdotb(js),
      1         bdotgradv(js), pprime(1), one/ovp, 
-     2         dnorm1*tjnorm*SUM(itheta(js,:)*wint(js:nrzt:ns)),
-     3         dnorm1*tjnorm*SUM(izeta (js,:)*wint(js:nrzt:ns)),
+     2         (twopi**2)*tjnorm*SUM(itheta(js,:)*wint(js:nrzt:ns)),
+     3         (twopi**2)*tjnorm*SUM(izeta (js,:)*wint(js:nrzt:ns)),
      4         amaxfor(js), aminfor(js)
             WRITE (njxbout, 90)
             DO lz = 1, nzeta, nv_skip

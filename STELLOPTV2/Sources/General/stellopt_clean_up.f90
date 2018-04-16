@@ -51,7 +51,7 @@
 !        iunit       File unit number
 !----------------------------------------------------------------------
       LOGICAL ::  lfile_found
-      INTEGER ::  ier, ik, iunit, ctype, temp_max, ialpha
+      INTEGER ::  ier, ik, iunit, ctype, temp_max, ialpha, m, n
       INTEGER ::  vctrl_array(5)
       CHARACTER(len = 256)   :: temp_str, reset_string
       REAL(rprec), ALLOCATABLE :: fvec_temp(:)
@@ -150,6 +150,7 @@
                   CALL move_txtfile('neo_out.'//TRIM(proc_string_old),'neo_out.'//TRIM(proc_string))
                   CALL move_txtfile('tprof.'//TRIM(proc_string_old),'tprof.'//TRIM(proc_string))
                   CALL move_txtfile('jprof.'//TRIM(proc_string_old),'jprof.'//TRIM(proc_string))
+                  CALL move_txtfile('dprof.'//TRIM(proc_string_old),'dprof.'//TRIM(proc_string))
                   CALL move_txtfile('boot_fit.'//TRIM(proc_string_old),'boot_fit.'//TRIM(proc_string))
                   IF (lcoil_geom) THEN
                      CALL move_txtfile('coils.'//TRIM(proc_string_old),'coils.'//TRIM(proc_string))
@@ -167,8 +168,7 @@
                      CALL beams3d_read
                      id_string_beams = TRIM(proc_string)
                      CALL beams3d_write('GRID_INIT')
-                     CALL beams3d_write('TRAJECTORY')
-                     CALL beams3d_write('RHO_TRAJECTORY')
+                     CALL beams3d_write('TRAJECTORY_FULL')
                      CALL beams3d_write('DIAG')
                      CALL beams3d_free
                      CALL move_txtfile('beams3d_diag_'//TRIM(proc_string_old)//'.txt',&
@@ -193,6 +193,13 @@
                                           'coil_spline'//TRIM(temp_str)//'_'//TRIM(proc_string)//'.out')
                      END DO
                   END IF
+!DEC$ ENDIF
+!DEC$ IF DEFINED (REGCOIL)
+                 ! OUTPUT FILES SHOULD BE WRITTEN HERE - Use the regcoil
+                 ! functions to write the hdf5 output file
+                 ! This is inside of the PSO loop. Should be
+                 ! duplicated, or broken out to a subroutine
+                 ! WRITE *, '<----- REGCOIL Output files missing -----'
 !DEC$ ENDIF
 !DEC$ IF DEFINED (TERPSICHORE)
                   IF (ANY(sigma_kink < bigno)) THEN
@@ -221,13 +228,13 @@
                IF (ncnt == 0) WRITE(iunit_out,'(A,1X,F5.2)') 'VERSION',STELLOPT_VERSION
                WRITE(iunit_out,'(A,1X,I5.5)') 'ITER',ncnt
                CALL stellopt_load_targets(mtargets,fvec_temp,iflag,ncnt)          ! Count
-               WRITE(iunit_out,'(A,2(2X,I8))') 'TARGETS ',1,mtargets
+               WRITE(iunit_out,'(A,2(2X,I8))') 'TARGETS ',mtargets,1
                WRITE(iunit_out,'(A)') 'TARGETS'
                WRITE(iunit_out,'(ES22.12E3)') targets(1:mtargets)
-               WRITE(iunit_out,'(A,2(2X,I8))') 'SIGMAS ',1,mtargets
+               WRITE(iunit_out,'(A,2(2X,I8))') 'SIGMAS ',mtargets,1
                WRITE(iunit_out,'(A)') 'SIGMAS'
                WRITE(iunit_out,'(ES22.12E3)') sigmas(1:mtargets)
-               WRITE(iunit_out,'(A,2(2X,I8))') 'VALS ',1,mtargets
+               WRITE(iunit_out,'(A,2(2X,I8))') 'VALS ',mtargets,1
                WRITE(iunit_out,'(A)') 'VALUES'
                WRITE(iunit_out,'(ES22.12E3)') vals(1:mtargets)
                CLOSE(iunit_out)
@@ -269,9 +276,9 @@
                   CASE('parvmec','paravmec','vmec2000','vboot')
                      CALL stellopt_paraexe('paravmec_write',proc_string,.false.)
                END SELECT
-               ier=vctrl_array(2)
+               iflag = ier_paraexe
                iflag = ier
-               IF (ier == successful_term_flag) iflag = 0
+               IF (ier_paraexe == successful_term_flag) iflag = 0
 !DEC$ IF DEFINED (COILOPTPP)
                IF (sigma_coil_bnorm < bigno .and. (proc_string.ne.proc_string_old) ) THEN
                	  DO ik = 0, numws-1
@@ -286,21 +293,9 @@
                   WRITE(temp_str,'(i5.5)') ncnt
                   proc_string = TRIM(id_string) // '.' // TRIM(ADJUSTL(temp_str))
                   SELECT CASE(TRIM(equil_type))
-                     CASE ('vmec2000_old','animec','flow','satire')
-                          vctrl_array(1) = output_flag ! Output to file
-                          vctrl_array(2) = 0     ! vmec error flag  
-                          vctrl_array(3) = 0    ! Use multigrid
-                          vctrl_array(4) = 0     ! Iterative 
-                          vctrl_array(5) = myid ! Output file sequence number
-                          !IF (TRIM(equil_type)=='animec') vctrl_array(1) = vctrl_array(1) + animec_flag
-                          !IF (TRIM(equil_type)=='flow' .or. TRIM(equil_type)=='satire') vctrl_array(1) = vctrl_array(1) + flow_flag
-                         CALL runvmec(vctrl_array,proc_string,.false.,MPI_COMM_SELF,'')
                      CASE('parvmec','paravmec','vmec2000','vboot')
                          CALL stellopt_paraexe('paravmec_write',proc_string,.false.)
                   END SELECT
-                  !CALL runvmec(vctrl_array,proc_string,.false.,'')
-                  !CALL stellopt_paraexe('paravmec_write',proc_string,.false.)
-                  !CALL runvmec(vctrl_array,proc_string,.false.,MPI_COMM_SELF,'')
                   ier=vctrl_array(2)
                   iflag = ier
                   IF (ier == successful_term_flag) iflag = 0
@@ -341,10 +336,11 @@
                   CALL move_txtfile('neo_out.'//TRIM(proc_string_old),'neo_out.'//TRIM(proc_string))
                   CALL move_txtfile('tprof.'//TRIM(proc_string_old),'tprof.'//TRIM(proc_string))
                   CALL move_txtfile('jprof.'//TRIM(proc_string_old),'jprof.'//TRIM(proc_string))
+                  CALL move_txtfile('dprof.'//TRIM(proc_string_old),'dprof.'//TRIM(proc_string))
                   CALL move_txtfile('boot_fit.'//TRIM(proc_string_old),'boot_fit.'//TRIM(proc_string))
                   CALL copy_boozer_file(TRIM(proc_string_old),TRIM(proc_string))
                   IF (lcoil_geom) THEN
-                     CALL move_txtfile('coils.'//TRIM(proc_string_old),'coils.'//TRIM(proc_string))
+                     CALL SYSTEM('mv coils.'//TRIM(proc_string_old)//' coils.'//TRIM(proc_string))
                   END IF
                   IF (ANY(sigma_dkes < bigno)) THEN
                      DO ik = 1, nsd
@@ -361,8 +357,7 @@
                      CALL beams3d_read
                      id_string_beams = TRIM(proc_string)
                      CALL beams3d_write('GRID_INIT')
-                     CALL beams3d_write('TRAJECTORY')
-                     CALL beams3d_write('RHO_TRAJECTORY')
+                     CALL beams3d_write('TRAJECTORY_FULL')
                      CALL beams3d_write('DIAG')
                      CALL beams3d_free
                      CALL move_txtfile('beams3d_diag_'//TRIM(proc_string_old)//'.txt',&
@@ -388,6 +383,19 @@
                      END DO
                   END IF
 !DEC$ ENDIF
+!DEC$ IF DEFINED (REGCOIL)
+                  ! Currently inside of LEV and GADE cleanup loop, and 
+                  ! 'Keeping the mins' section
+                  IF ( ANY(sigma_regcoil_chi2_b < bigno) .and. &
+                     ( ANY(lregcoil_rcws_rbound_c_opt) .or. ANY(lregcoil_rcws_rbound_s_opt) .or. &
+                       ANY(lregcoil_rcws_zbound_c_opt) .or. ANY(lregcoil_rcws_zbound_s_opt) ) ) THEN
+                     !print *, '<---In LEV/GADE cleanup.'
+                     !print *, '<---proc_string_old = ', proc_string_old
+                     !print *, '<---proc_string = ', proc_string
+                     CALL copy_txtfile('regcoil_nescout.'//TRIM(proc_string_old),&
+                                       'regcoil_nescout.'//TRIM(proc_string))
+                  END IF
+!DEC$ ENDIF
 !DEC$ IF DEFINED (TERPSICHORE)
                   IF (ANY(sigma_kink < bigno)) THEN
                      CALL move_txtfile('terpsichore_eq.'//TRIM(proc_string_old),&
@@ -410,18 +418,41 @@
                END IF
                ! Now open the Output file
                ALLOCATE(fvec_temp(mtargets))
+
+               !WRITE COIL KNOT FILE
+               IF (ANY(lcoil_spline)) THEN
+                  CALL safe_open(iunit_out,iflag,TRIM('knots.'//TRIM(id_string)),'unknown','formatted',ACCESS_IN='APPEND')
+                  IF (ncnt == 0) WRITE(iunit_out,'(A)') 'COIL KNOTS'
+                  WRITE(iunit_out,'(A,1X,I5.5)') 'ITER',ncnt
+                  DO n = LBOUND(lcoil_spline,DIM=1), UBOUND(lcoil_spline,DIM=1)
+                     IF (ANY(lcoil_spline(n,:))) THEN
+                        WRITE(iunit_out,'(2X,A,2X,I5.5)') 'COIL', n
+                        ik = MINLOC(coil_splinesx(n,:),DIM=1) - 1
+                        IF (lwindsurf) THEN
+                           WRITE(iunit_out,"(4X,'u =',4(2X,ES22.12E3))") (coil_splinefx(n,m), m = 1, ik)
+                           WRITE(iunit_out,"(4X,'v =',4(2X,ES22.12E3))") (coil_splinefy(n,m), m = 1, ik)
+                        ELSE
+                           WRITE(iunit_out,"(4X,'x =',4(2X,ES22.12E3))") (coil_splinefx(n,m), m = 1, ik)
+                           WRITE(iunit_out,"(4X,'y =',4(2X,ES22.12E3))") (coil_splinefy(n,m), m = 1, ik)
+                           WRITE(iunit_out,"(4X,'z =',4(2X,ES22.12E3))") (coil_splinefz(n,m), m = 1, ik)
+                        END IF !lwindsurf
+                     END IF
+                  END DO !n
+                  CLOSE(iunit_out)
+               END IF
+
                CALL safe_open(iunit_out,iflag,TRIM('stellopt.'//TRIM(id_string)),'unknown','formatted',ACCESS_IN='APPEND')
                iflag = 1
                IF (ncnt == 0) WRITE(iunit_out,'(A,1X,F5.2)') 'VERSION',STELLOPT_VERSION
                WRITE(iunit_out,'(A,1X,I5.5)') 'ITER',ncnt
                CALL stellopt_load_targets(mtargets,fvec_temp,iflag,ncnt)          ! Count
-               WRITE(iunit_out,'(A,2(2X,I8))') 'TARGETS ',1,mtargets
+               WRITE(iunit_out,'(A,2(2X,I8))') 'TARGETS ',mtargets,1
                WRITE(iunit_out,'(A)') 'TARGETS'
                WRITE(iunit_out,'(ES22.12E3)') targets(1:mtargets)
-               WRITE(iunit_out,'(A,2(2X,I8))') 'SIGMAS ',1,mtargets
+               WRITE(iunit_out,'(A,2(2X,I8))') 'SIGMAS ',mtargets,1
                WRITE(iunit_out,'(A)') 'SIGMAS'
                WRITE(iunit_out,'(ES22.12E3)') sigmas(1:mtargets)
-               WRITE(iunit_out,'(A,2(2X,I8))') 'VALS ',1,mtargets
+               WRITE(iunit_out,'(A,2(2X,I8))') 'VALS ',mtargets,1
                WRITE(iunit_out,'(A)') 'VALUES'
                WRITE(iunit_out,'(ES22.12E3)') vals(1:mtargets)
                CLOSE(iunit_out)
@@ -462,6 +493,10 @@
 !DEC$ IF DEFINED (BEAMS3D_OPT)
                   IF (ANY(sigma_orbit < bigno)) CALL write_beams3d_namelist(iunit_out,ier)
 !DEC$ ENDIF
+!DEC$ IF DEFINED (REGCOIL)
+                 ! JCS to do: If needed put regcoil items here.
+!DEC$ ENDIF
+
                WRITE(iunit_out,'(A)') '&END'
                CLOSE(iunit_out)
                ! Overwrite the restart file
@@ -484,13 +519,13 @@
                WRITE(iunit_out,'(A)') 'ITER MIN'
                ik = 999
                CALL stellopt_load_targets(mtargets,fvec_temp,iflag,ik)    ! Count
-               WRITE(iunit_out,'(A,2(2X,I8))') 'TARGETS ',1,mtargets
+               WRITE(iunit_out,'(A,2(2X,I8))') 'TARGETS ',mtargets,1
                WRITE(iunit_out,'(A)') 'TARGETS'
                WRITE(iunit_out,'(ES22.12E3)') targets(1:mtargets)
-               WRITE(iunit_out,'(A,2(2X,I8))') 'SIGMAS ',1,mtargets
+               WRITE(iunit_out,'(A,2(2X,I8))') 'SIGMAS ',mtargets,1
                WRITE(iunit_out,'(A)') 'SIGMAS'
                WRITE(iunit_out,'(ES22.12E3)') sigmas(1:mtargets)
-               WRITE(iunit_out,'(A,2(2X,I8))') 'VALS ',1,mtargets
+               WRITE(iunit_out,'(A,2(2X,I8))') 'VALS ',mtargets,1
                WRITE(iunit_out,'(A)') 'VALUES'
                WRITE(iunit_out,'(ES22.12E3)') vals(1:mtargets)
                CLOSE(iunit_out)

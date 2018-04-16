@@ -392,6 +392,21 @@
             val = 0
             if ((s_val > x1) .and. (s_val < 1.0_rprec)) val = h*(s_val-x1)*(s_val-x2)
             val = val + x3*s_val*(s_val-1)/(-0.25_rprec)
+         CASE ('hollow')
+            ! coefs(1) : Value at core
+            ! coefs(2) : Value at peak
+            ! coefs(3) : grid scaling
+            xp  = s_val**coefs(3)
+            x1  = 4*coefs(2)-3*coefs(1)
+            x2  = 2*coefs(1)-4*coefs(2)
+            val = coefs(1) + x1*xp + x2*xp*xp
+         CASE ('hollow2')
+            ! coefs(1) : Value at core
+            ! coefs(2) : Value at peak
+            ! coefs(3) : grid scaling
+            xp  = s_val**coefs(3)
+            x1  = 8*coefs(2)-2*coefs(1)
+            val = (coefs(1)+x1*xp)*(xp-1)**2
          CASE DEFAULT
             PRINT *,"Error! Unknown profile type in subroutine eval_prof_stel:",type
             STOP
@@ -479,6 +494,25 @@
       RETURN
       END SUBROUTINE get_equil_ti
       
+      SUBROUTINE get_equil_emis_xics(s_val,type,val,ier)
+      IMPLICIT NONE
+      REAL(rprec), INTENT(in) ::  s_val
+      CHARACTER(LEN=*), INTENT(in)   :: type
+      REAL(rprec), INTENT(inout)   ::  val
+      INTEGER, INTENT(inout)     ::  ier
+      INTEGER :: i
+      REAL(rprec), PARAMETER :: one = 1.0_rprec
+      IF (ier < 0) RETURN
+      CALL tolower(type)
+      SELECT CASE (type)
+         CASE ('spline','akima_spline','akima_spline_ip')
+            CALL eval_prof_stel(s_val,type,val,20,emis_xics_f(1:20),ier,emis_xics_spl)
+         CASE DEFAULT
+            CALL eval_prof_stel(s_val,type,val,20,emis_xics_f(1:20),ier)
+      END SELECT
+      RETURN
+      END SUBROUTINE get_equil_emis_xics
+      
       SUBROUTINE get_equil_zeff(s_val,type,val,ier)
       IMPLICIT NONE
       REAL(rprec), INTENT(in) ::  s_val
@@ -538,6 +572,31 @@
       fval = fval*sqrt(dx*dx+dy*dy+dz*dz)
       RETURN
       END SUBROUTINE fcn_lineti
+
+      SUBROUTINE fcn_xics_bright(s,dx,dy,dz,fval,ier)
+      IMPLICIT NONE
+      REAL(rprec), INTENT(in) :: s,dx,dy,dz
+      REAL(rprec), INTENT(out) :: fval
+      INTEGER, INTENT(inout) :: ier
+      CALL get_equil_emis_xics(s,TRIM(emis_xics_type),fval,ier)
+      IF (ier /= 0) fval = 0
+      fval = fval*sqrt(dx*dx+dy*dy+dz*dz)
+      RETURN
+      END SUBROUTINE fcn_xics_bright
+
+      SUBROUTINE fcn_xics(s,dx,dy,dz,fval,ier)
+      IMPLICIT NONE
+      REAL(rprec), INTENT(in) :: s,dx,dy,dz
+      REAL(rprec), INTENT(out) :: fval
+      REAL(rprec) :: f1, f2
+      INTEGER, INTENT(inout) :: ier
+      CALL get_equil_ti(s,TRIM(ti_type),f1,ier)
+      IF (ier /= 0) fval = 0
+      CALL get_equil_emis_xics(s,TRIM(emis_xics_type),f2,ier)
+      IF (ier /= 0) fval = 0
+      fval = f1*f2*sqrt(dx*dx+dy*dy+dz*dz)
+      RETURN
+      END SUBROUTINE fcn_xics
 
       SUBROUTINE fcn_sxr(s,dx,dy,dz,fval,ier)
       IMPLICIT NONE
@@ -743,7 +802,7 @@
       CALL tolower(prof_type)
       profile_norm = 0.0_rprec
       SELECT CASE (prof_type)
-         CASE ('two_power','two_power_hollow','two_lorentz','gauss_trunc','sum_atan','pedestal')
+         CASE ('two_power','two_power_hollow','two_lorentz','gauss_trunc','sum_atan','pedestal','bump','hollow')
             profile_norm = 0.0_rprec  ! Don't normalize as we don't want to screw up our coefficients
          CASE ('power_series','power_series_edge0','power_series_0_boundaries')
             DO ik = LBOUND(x,DIM=1), UBOUND(x,DIM=1)

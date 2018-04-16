@@ -4,8 +4,8 @@ subroutine EZhybrid_init2_r8x(spline_o, n1, n2, hspline, ier)
 
   !  init call (set array size from object)
 
-  use EZspline_obj
-  use EZspline
+  use ezspline_obj
+  use ezspline
   implicit NONE
 
   type(EZspline2_r8) spline_o
@@ -21,8 +21,8 @@ subroutine EZhybrid_init3_r8x(spline_o, n1, n2, n3, hspline, ier)
 
   !  init call (set array size from object)
 
-  use EZspline_obj
-  use EZspline
+  use ezspline_obj
+  use ezspline
   implicit NONE
 
   type(EZspline3_r8) spline_o
@@ -38,8 +38,8 @@ subroutine EZhybrid_init2_r4x(spline_o, n1, n2, hspline, ier)
 
   !  init call (set array size from object)
 
-  use EZspline_obj
-  use EZspline
+  use ezspline_obj
+  use ezspline
   implicit NONE
 
   type(EZspline2_r4) spline_o
@@ -55,8 +55,8 @@ subroutine EZhybrid_init3_r4x(spline_o, n1, n2, n3, hspline, ier)
 
   !  init call (set array size from object)
 
-  use EZspline_obj
-  use EZspline
+  use ezspline_obj
+  use ezspline
   implicit NONE
 
   type(EZspline3_r4) spline_o

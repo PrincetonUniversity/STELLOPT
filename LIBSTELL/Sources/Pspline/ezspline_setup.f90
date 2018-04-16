@@ -2,7 +2,7 @@
 ! R8 !
 !/////
 subroutine EZspline_setup1_r8(spline_o, f, ier, exact_dim)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline1_r8) spline_o
   real(ezspline_r8), dimension(:), intent(in) :: f
@@ -141,7 +141,7 @@ end subroutine EZspline_setup1_r8
  
  
 subroutine EZspline_setup2_r8(spline_o, f, ier, exact_dim)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline2_r8) spline_o
   real(ezspline_r8), dimension(:,:), intent(in) :: f
@@ -364,7 +364,7 @@ end subroutine EZspline_setup2_r8
  
  
 subroutine EZspline_setup3_r8(spline_o, f, ier, exact_dim)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline3_r8) spline_o
   real(ezspline_r8), dimension(:,:,:), intent(in) :: f
@@ -646,7 +646,7 @@ end subroutine EZspline_setup3_r8
 ! R4 !
 !/////
 subroutine EZspline_setup1_r4(spline_o, f, ier, exact_dim)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline1_r4) spline_o
   real(ezspline_r4), dimension(:), intent(in) :: f
@@ -786,7 +786,7 @@ end subroutine EZspline_setup1_r4
  
  
 subroutine EZspline_setup2_r4(spline_o, f, ier, exact_dim)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline2_r4) spline_o
   real(ezspline_r4), dimension(:,:), intent(in) :: f
@@ -1004,7 +1004,7 @@ end subroutine EZspline_setup2_r4
  
  
 subroutine EZspline_setup3_r4(spline_o, f, ier, exact_dim)
-  use EZspline_obj
+  use ezspline_obj
   implicit none
   type(EZspline3_r4) spline_o
   real(ezspline_r4), dimension(:,:,:), intent(in) :: f

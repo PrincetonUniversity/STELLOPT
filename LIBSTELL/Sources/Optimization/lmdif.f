@@ -674,7 +674,7 @@ c     Get mpi parameters
               lredo_diag = .true.
               mode = 1
               IF (myid == master) WRITE(6,*) 
-     1             '  Improving Jacobian: fliping direction'
+     1             '  Improving Jacobian: flipping direction'
               cycle outerloop
            ! Try a very small step size
            ELSE IF (.not. lsmall_step .and. actred < 0) THEN

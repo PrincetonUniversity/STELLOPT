@@ -24,11 +24,11 @@
       USE mpi_params     
 !DEC$ ENDIF
 !DEC$ IF DEFINED (SKS2)
-      USE parallel_vmec_module, ONLY: MyEnvVariables,&
-            InitializeParallel, FinalizeParallel, grank, gnranks,&
-            SKS_ALLGATHER, THOMAS, BCYCLIC, PARVMEC, LV3FITCALL,&
+      USE parallel_vmec_module, ONLY: &
+            InitializeParallel, FinalizeParallel, grank, &
+            PARVMEC, LV3FITCALL,&
             InitRunVmec,FinalizeRunVmec,RUNVMEC_COMM_WORLD,NS_RESLTN,&
-            FinalizeSurfaceComm, NS_COMM, parvmecinfo_file
+            FinalizeSurfaceComm, NS_COMM !, parvmecinfo_file
 !DEC$ ENDIF
       USE vmec_params, ONLY: norm_term_flag, bad_jacobian_flag,&
                              more_iter_flag, jac75_flag, input_error_flag,&
@@ -112,7 +112,7 @@
       ierr_mpi = 0
       DO
          ! First get the name of the code blah
-         ier_paraexe = 0
+         ier_paraexe = 0; ierr_mpi = 0; ier = 0
 !DEC$ IF DEFINED (MPI_OPT)
          CALL MPI_BARRIER(MPI_COMM_MYWORLD,ierr_mpi)
          IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_paraexe: BARRIER1',ierr_mpi)
@@ -134,75 +134,70 @@
                ! Now update the namelists
                IF (myworkid == master) CALL stellopt_prof_to_vmec(file_str,ier)
                CALL stellopt_bcast_vmec(master,MPI_COMM_MYWORLD,ier)
-               CALL stellopt_reinit_vmec
-               IF (myworkid == master) THEN
-                  iunit = 37; ier = 0
-                  CALL safe_open(iunit,ier,TRIM('temp_input.'//TRIM(file_str)),'unknown','formatted')
-                  CALL write_indata_namelist(iunit,ier)
-                  CALL FLUSH(iunit)
-               END IF
-               ! Setup ICTRL Array
-               ictrl(1) = restart_flag+timestep_flag+output_flag+reset_jacdt_flag
-               ictrl(2) = 0; ictrl(3) = -1; ictrl(4) = -1; ictrl(5) = myseq
-               ! Setup reset_string
-               reset_string =''
-               lhit = .FALSE.
-               IF (myworkid == master) THEN
-                  IF (lfreeb .or. (lscreen.and.lrestart)) INQUIRE(FILE='wout_reset_file.nc',EXIST=lhit)
-               END IF
-               CALL MPI_BCAST(lhit,1,MPI_LOGICAL,master,MPI_COMM_MYWORLD,ierr_mpi)
-               IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_paraexe: BCAST2c',ierr_mpi)
-               IF (lhit) THEN
-               !   ictrl(4) = MAXLOC(ns_array,DIM=1) ! Restart run
-               !   reset_string='wout_reset_file.nc'
-               END IF
-               ! Setup file string
-               !IF (lscreen .and. .not.lrestart) file_str = 'reset_file'  ! First run make the restart file
-               ! Execution loop
-               parvmecinfo_file = 'parvmecinfo_'//TRIM(file_str)
-               CALL MPI_BARRIER(MPI_COMM_MYWORLD,ierr_mpi)
-               IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_paraexe: BARRIER1',ierr_mpi)
-               DO dex = 1, 2
-                  CALL InitRunVmec(MPI_COMM_MYWORLD,lfreeb)
-                  CALL runvmec(ictrl,file_str,lscreen,RUNVMEC_COMM_WORLD,reset_string)
-                  CALL FinalizeRunVmec(RUNVMEC_COMM_WORLD)
-                  ier=ictrl(2)
-                  CALL MPI_BCAST(ier,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
-                  IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_paraexe: BCAST2d',ierr_mpi)
-                  IF (  ier == successful_term_flag  .or. &
-                        ier == norm_term_flag) THEN
-                     IF (myworkid == master) CLOSE(UNIT=iunit,STATUS='delete')
-                     ier = 0
-                     EXIT  ! success
-                  ELSE IF (lfreeb .and. dex == 1) THEN ! Try recalcing from the beginning
-                     CALL stellopt_prof_to_vmec(file_str,ier)
-                     ictrl(1) = restart_flag+timestep_flag+reset_jacdt_flag
-                     ictrl(2) = 0     ! vmec error flag  
-                     ictrl(3) = -1    ! Use multigrid
-                     ictrl(4) = 0
-                     ictrl(5) = myseq 
-                     reset_string =''
-                  ELSE
-                     IF (myworkid == master) CLOSE(UNIT=iunit)
-                     ier = -1
-                     EXIT  ! failure
+               IF (ier .eq. 0) THEN
+                  CALL stellopt_reinit_vmec
+                  IF (myworkid == master) THEN
+                     iunit = 37; ier = 0
+                     CALL safe_open(iunit,ier,TRIM('temp_input.'//TRIM(file_str)),'unknown','formatted')
+                     CALL write_indata_namelist(iunit,ier)
+                     CALL FLUSH(iunit)
                   END IF
-               END DO
+                  ! Setup ICTRL Array
+                  ictrl(1) = restart_flag+timestep_flag+output_flag+reset_jacdt_flag
+                  ictrl(2) = 0; ictrl(3) = -1; ictrl(4) = -1; ictrl(5) = myseq
+                  ! Setup reset_string
+                  reset_string =''
+                  lhit = .FALSE.
+                  ! Execution Loop (2 times)
+                  !DO dex = 1, 2
+                     CALL InitRunVmec(MPI_COMM_MYWORLD,lfreeb)
+                     CALL runvmec(ictrl,file_str,lscreen,RUNVMEC_COMM_WORLD,reset_string)
+                     CALL FinalizeRunVmec(RUNVMEC_COMM_WORLD)
+                     ier=ictrl(2)
+                     CALL MPI_BCAST(ier,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
+                     IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_paraexe: BCAST2d',ierr_mpi)
+                     IF (  ier == successful_term_flag  .or. &
+                           ier == norm_term_flag) THEN
+                        IF (myworkid == master) CLOSE(UNIT=iunit,STATUS='delete')
+                        ier = 0
+                     !   EXIT  ! success
+                     !ELSE IF (lfreeb .and. dex == 1) THEN ! Try recalcing from the beginning
+                     !   CALL stellopt_prof_to_vmec(file_str,ier)
+                     !   ictrl(1) = restart_flag+timestep_flag+reset_jacdt_flag
+                     !   ictrl(2) = 0     ! vmec error flag  
+                     !   ictrl(3) = -1    ! Use multigrid
+                     !   ictrl(4) = 0
+                     !   ictrl(5) = myseq 
+                     !   reset_string =''
+                     ELSE
+                        IF (myworkid == master) CLOSE(UNIT=iunit)
+                        ier = -1
+                     !   EXIT  ! failure
+                     END IF
+                  !END DO
+               END IF
                in_parameter_2 = TRIM(file_str)
                ier_paraexe = ier
 !DEC$ ENDIF
             CASE('paravmec_write')
 !DEC$ IF DEFINED (SKS2)
+               CALL MPI_BCAST(myseq,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
+               IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_paraexe: BCAST2b',ierr_mpi)
                ictrl(1) = output_flag
                ictrl(2) = 0     ! vmec error flag  
                ictrl(3) = 0    ! Use multigrid
                ictrl(4) = 0
-               ictrl(5) = myid ! Output file sequence number
+               ictrl(5) = myseq ! Output file sequence number
+               reset_string =''
                CALL InitRunVmec(MPI_COMM_MYWORLD,lfreeb)
-               CALL runvmec(ictrl,file_str,lscreen,RUNVMEC_COMM_WORLD,'')
+               CALL runvmec(ictrl,file_str,lscreen,RUNVMEC_COMM_WORLD,reset_string)
                !CALL FinalizeRunVmec(RUNVMEC_COMM_WORLD) ! We don't allocate the vacuum communicator when we write
+               ier=ictrl(2)
+               CALL MPI_BCAST(ier,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
+               IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_paraexe: BCAST2d',ierr_mpi)
                CALL MPI_COMM_FREE(RUNVMEC_COMM_WORLD,ierr_mpi)
                IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_paraexe: MPI_COMM_FREE',ierr_mpi)
+               ier_paraexe = ier
 !DEC$ ENDIF
             CASE('gene_parallel')  ! Parallel Gene
 !DEC$ IF DEFINED (MPI_OPT) .AND. DEFINED (GENE)
@@ -340,7 +335,7 @@
                ! Follow particles
                CALL beams3d_follow
                nbeams_beams = 1  ! Do this so the read in cleanup doesn't fail
-               CALL beams3d_write('TRAJECTORY')
+               CALL beams3d_write('TRAJECTORY_PARTIAL')
 
                ! Calculated particle locations in flux space
                CALL beams3d_diagnostics
@@ -353,6 +348,8 @@
 !DEC$ ENDIF
             CASE('coilopt++')
                CALL stellopt_coiloptpp(file_str,lscreen)
+            CASE('regcoil_chi2_b')
+               CALL stellopt_regcoil_chi2_b(lscreen,ier)
             CASE('terpsichore')
                proc_string = file_str
                ier = 0

@@ -2,8 +2,8 @@
 ! R8 !
 !/////
    subroutine EZspline_2NetCDF_array3_r8(n1, n2, n3, x1, x2, x3, f, filename, ier)
-     use EZspline_obj   
-     use EZcdf
+     use ezspline_obj   
+     use ezcdf
      implicit none
      integer, intent(in) :: n1, n2, n3
      real(ezspline_r8), intent(in) :: x1(:), x2(:), x3(:), f(:, :, :)
@@ -52,8 +52,8 @@
    end subroutine EZspline_2NetCDF_array3_r8
 
    subroutine EZspline_2NetCDF_array2_r8(n1, n2, x1, x2, f, filename, ier)
-     use EZspline_obj   
-     use EZcdf
+     use ezspline_obj   
+     use ezcdf
      implicit none
      integer, intent(in) :: n1, n2
      real(ezspline_r8), intent(in) :: x1(:), x2(:), f(:,:)
@@ -98,8 +98,8 @@
    end subroutine EZspline_2NetCDF_array2_r8
 
    subroutine EZspline_2NetCDF1_r8(n1, x1, f, filename, ier)
-     use EZspline_obj   
-     use EZcdf
+     use ezspline_obj   
+     use ezcdf
      implicit none
      integer, intent(in) :: n1
      real(ezspline_r8), intent(in) :: x1(:), f(:)
@@ -139,8 +139,8 @@
    end subroutine EZspline_2NetCDF1_r8
 
    subroutine EZspline_2NetCDF_cloud3_r8(n, x1, x2, x3, f, filename, ier)
-     use EZspline_obj   
-     use EZcdf
+     use ezspline_obj   
+     use ezcdf
      implicit none
      integer, intent(in) :: n
      real(ezspline_r8), intent(in) :: x1(:), x2(:), x3(:), f(:)
@@ -186,8 +186,8 @@
    end subroutine EZspline_2NetCDF_cloud3_r8
 
    subroutine EZspline_2NetCDF_cloud2_r8(n, x1, x2, f, filename, ier)
-     use EZspline_obj   
-     use EZcdf
+     use ezspline_obj   
+     use ezcdf
      implicit none
      integer, intent(in) :: n
      real(ezspline_r8), intent(in) :: x1(:), x2(:), f(:)
@@ -232,8 +232,8 @@
 ! R4 !
 !/////
    subroutine EZspline_2NetCDF_array3_r4(n1, n2, n3, x1, x2, x3, f, filename, ier)
-     use EZspline_obj   
-     use EZcdf
+     use ezspline_obj   
+     use ezcdf
      implicit none
      integer, intent(in) :: n1, n2, n3
      real(ezspline_r4), intent(in) :: x1(:), x2(:), x3(:), f(:, :, :)
@@ -282,8 +282,8 @@
    end subroutine EZspline_2NetCDF_array3_r4
 
    subroutine EZspline_2NetCDF_array2_r4(n1, n2, x1, x2, f, filename, ier)
-     use EZspline_obj   
-     use EZcdf
+     use ezspline_obj   
+     use ezcdf
      implicit none
      integer, intent(in) :: n1, n2
      real(ezspline_r4), intent(in) :: x1(:), x2(:), f(:,:)
@@ -328,8 +328,8 @@
    end subroutine EZspline_2NetCDF_array2_r4
 
    subroutine EZspline_2NetCDF1_r4(n1, x1, f, filename, ier)
-     use EZspline_obj   
-     use EZcdf
+     use ezspline_obj   
+     use ezcdf
      implicit none
      integer, intent(in) :: n1
      real(ezspline_r4), intent(in) :: x1(:), f(:)
@@ -369,8 +369,8 @@
    end subroutine EZspline_2NetCDF1_r4
 
    subroutine EZspline_2NetCDF_cloud3_r4(n, x1, x2, x3, f, filename, ier)
-     use EZspline_obj   
-     use EZcdf
+     use ezspline_obj   
+     use ezcdf
      implicit none
      integer, intent(in) :: n
      real(ezspline_r4), intent(in) :: x1(:), x2(:), x3(:), f(:)
@@ -416,8 +416,8 @@
    end subroutine EZspline_2NetCDF_cloud3_r4
 
    subroutine EZspline_2NetCDF_cloud2_r4(n, x1, x2, f, filename, ier)
-     use EZspline_obj   
-     use EZcdf
+     use ezspline_obj   
+     use ezcdf
      implicit none
      integer, intent(in) :: n
      real(ezspline_r4), intent(in) :: x1(:), x2(:), f(:)

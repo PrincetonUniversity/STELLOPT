@@ -1,6 +1,6 @@
       SUBROUTINE svdinv(m, a, wcut, file)
       USE stel_kinds
-      USE safe_open_mod
+      USE safe_open_mod, ONLY: safe_open
       IMPLICIT NONE
 C-----------------------------------------------
 C   D u m m y   A r g u m e n t s

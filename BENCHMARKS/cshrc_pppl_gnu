@@ -1,6 +1,0 @@
-# This is to suppress messages on non Infiniband systems
-setenv NOIB "-mca btl ^openib"
-
-
-# To make deleting a run easy
-alias stellopt_cleanup "rm answers* auto* beams3d* b_norm_eq_* b_norm_init_* b_norm_final_* bnorm.* boozmn* checkpoint_* coilopt_params.* coil_spline*.out curv* dcon* deltamn.* diagno_flux.* diagno_bth.* diagno_seg.* dkes* fevals* field* fort.* gade* gist* eigenvalues* input.*.***** input_dkes.* jacobian.* jprof.* jxb* jBbs* LMsave* log_gene.* map.* map_plane.* mercier* mom* neo* nrg* opt* parameters_* results* rhomn* RZ* stellopt.* tprof* wout* temp_input.* terpsichore_eq.* terpsichore_16.* terpsichore_17.* terpsichore_19.* terpsichore_22.* terpsichore_23.* threed1.* tv_out_* txport* xvec.* uv_* var_* vsp*"
