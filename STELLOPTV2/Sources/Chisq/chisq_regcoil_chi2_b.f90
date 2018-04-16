@@ -56,7 +56,7 @@
       ! that might be varied/optimized. Each of RC, RS, ZC, ZS can have
       ! spectral components spanning the range of m and n in:
       !       (-mpol_rcws:mpmol_rcws,  -ntor_rcws:ntor_rcws)
-      INTEGER ::  mnprod_x4 = 4*(2*my_ntor+1)*(2*my_mpol+1)
+      INTEGER, PARAMETER ::  mnprod_x4 = 4*(2*my_ntor+1)*(2*my_mpol+1)
 
       REAL(rprec), INTENT(in)    :: target(mnprod_x4)
       REAL(rprec), INTENT(in)    :: sigma(mnprod_x4)

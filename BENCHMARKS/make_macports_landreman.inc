@@ -145,8 +145,8 @@
 #            SFINCS Options
 #######################################################################
 
-#LSFINCS = F
-LSFINCS = T
+LSFINCS = F
+#LSFINCS = T
 SFINCS_DIR = /Users/mattland/sfincs/fortran/version3
 SFINCS_INC = -I$(SFINCS_DIR)
 LIB_SFINCS = libsfincs.a
@@ -157,6 +157,16 @@ include ${PETSC_DIR}/lib/petsc/conf/variables
 
 SFINCS_LIB = $(SFINCS_DIR)/$(LIB_SFINCS) \
 	$(PETSC_LIB) $(FC_LINKER_FLAGS) $(FFLAGS)
+
+#######################################################################                                                                                       
+#            REGCOIL Options                                                                                                                                  
+#######################################################################                                                                                       
+  LREGCOIL= F
+#  REGCOIL_DIR = $(REGCOIL_PATH)
+  REGCOIL_DIR = /Users/mattland/regcoil
+  REGCOIL_INC = -I$(REGCOIL_DIR)
+  LIB_REGCOIL = libregcoil.a
+  REGCOIL_LIB = $(REGCOIL_DIR)/$(LIB_REGCOIL) -fopenmp
 
 #######################################################################
 #            LIBSTELL Shared Options
@@ -264,9 +274,12 @@ endif
 ifeq ($(MAKECMDGOALS),xanimec)
   PRECOMP += -D_ANIMEC
 endif
-ifeq ($(MAKECMDGOALS),xparvmec)
+ifeq ($(MAKECMDGOALS),xvmec2000)
   PRECOMP += -DSKS  -DSKS2
 endif
+#ifeq ($(MAKECMDGOALS),xparvmec)
+#  PRECOMP += -DSKS  -DSKS2
+#endif
 ifeq ($(MAKECMDGOALS),xsiesta)
   PRECOMP += -DSKS  -DSKS2
 endif
@@ -327,9 +340,18 @@ else
   SFINCS_DIR = 
   LIB_SFINCS = 
 endif
+ifeq ($(LREGCOIL),T)
+  MOD1_PATH += $(REGCOIL_INC)
+  PRECOMP += -DREGCOIL
+  MOD_PATH += -I$(REGCOIL_DIR)
+else
+  REGCOIL_LIB =
+  REGCOIL_DIR =
+  LIB_REGCOIL =
+endif
 
 # Handle other codes
-LIB_LINK += $(GENE_LIB) $(COILOPT_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB) $(SFINCS_LIB)
+LIB_LINK += $(GENE_LIB) $(COILOPT_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB) $(SFINCS_LIB) $(REGCOIL_LIB)
 
 # Add libraries to LIB_LINK
 # LIB_LINK+= $(MYHOME)/libstell.a $(LIBS)
