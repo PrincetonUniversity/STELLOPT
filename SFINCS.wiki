@@ -26,9 +26,11 @@ Next, in your STELLOPT repository, you must (at least for now) switch to the "sf
 from anywhere in the STELLOPT repository.
 
 In your stellopt {{{make_*.inc}}} file, look for the section\\
-{{{#######################################################################}}}\\
-{{{# SFINCS Options }}}\\
-{{{#######################################################################}}}\\
+{{{
+#######################################################################
+# SFINCS Options
+#######################################################################
+}}}
 Here, set
 {{{LSFINCS = T}}}
 Also, set {{{SFINCS_DIR}}} and {{{PETSC_DIR}}} appropriately for your system. Now build STELLOPTV2. This should generate an executable {{{xstelloptv2}}} that is linked to SFINCS.
@@ -55,14 +57,16 @@ When SFINCS is run as a standalone code, it reads several namelists (&general, &
 
 For detailed documentation of the SFINCS input namelists and parameters, see the SFINCS user manual.
 The following SFINCS input parameters must all be specified in the input file:\\
-{{{equilibriumFile}}}\\
-{{{inputRadialCoordinate}}}\\
-{{{inputRadialCoordinateForGradients}}}\\
-{{{psiN_wish}}}\\
-{{{nHats}}}\\
-{{{THats}}}\\
-{{{dnHatdpsiNs}}}\\
-{{{dTHatdpsiNs}}}\\
+{{{
+equilibriumFile
+inputRadialCoordinate
+inputRadialCoordinateForGradients
+psiN_wish
+nHats
+THats
+dnHatdpsiNs
+dTHatdpsiNs
+}}}
 These parameters will all be over-written by STELLOPT.
 
 There are several parameters related to the SFINCS-STELLOPT interaction that are not used with standalone SFINCS, and which should be specified in the {{{&optimum}}} namelist. First, {{{sfincs_s}}} should be set to a real array with entries in (0,1], giving the radii (in terms of normalized toroidal flux s) at which SFINCS will be run. Do not include 0 as a radius, since the bootstrap current always vanishes on axis. Depending on the density and temperature profiles, you may or may not wish to include 1 as a radius; if either the density or temperature vanish at s=1 then SFINCS will fail there. 
@@ -72,7 +76,13 @@ Also, {{{sfincs_min_procs}}} should be set to an integer giving the minimum numb
 ----
 
 ===Parallelization considerations=== 
-...
+
+The SFINCS calculations at different radii are essentially independent of each other, and so STELLOPT can efficiently parallelize calculations over radius. At the same time, SFINCS can take advantage of multiple processors for the calculation at each radius. An important consideration is that at each radius, SFINCS requires a substantial amount of memory (typically 30 GB - 1 TB for experimentally relevant parameters), and so enough processors must be devoted to each radius or else SFINCS will crash with an out-of-memory error. Due to this issue, the STELLOPT parameter {{{sfincs_min_procs}}} is provided. STELLOPT will divide up the processors among radii ensuring that each radius has at least {{{sfincs_min_procs}}} processors. If your SFINCS jobs are running out of memory but you do not wish to request more processors, raise {{{sfincs_min_procs}}}.
+
+As an example, suppose you are running on the IPP computer Draco or on NERSC Cori Haswell, either of which has nodes with 32 processors/node and 128 GB/node, so 4 GB/processor. Suppose further that you are running SFINCS at a resolution that requires 64 GB per solve, so you need 64/4=16 processors for each instance of SFINCS. Setting {{{sfincs_min_procs = 16}}} is then appropriate. Suppose also that {{{sfincs_s}}} contains 8 radii. If you can request 4 nodes (=4*32=128 processors), then SFINCS can run for all 8 radii in parallel. If you run on 2 nodes, then SFINCS will run for the first 4 radii in parallel, and afterwards SFINCS will run for the remaining 4 radii. If you run on 1 node, then sfincs will first run for the radii {{{sfincs_s(1:2)}}} in parallel, after which SFINCS will run for the radii {{{sfincs_s(3:4)}}}, then {{{sfincs_s(5:6)}}}, then {{{sfincs_s(7:8)}}}.
+
+There is no restriction that the number of processors must be a multiple of any particular number related to the number of radii in {{{sfincs_s}}} or to {{{sfincs_min_procs}}}. 
+Therefore as long as SFINCS does not run out of memory, any number of processors should be allowed. For optimal load balancing, you can request a number of processors equal to the number of radii in {{{sfincs_s}}} times the number of processors you want SFINCS to use at each radius.
 
 ----
 
@@ -81,8 +91,15 @@ It is important to tune the SFINCS resolution parameters Ntheta, Nzeta, Nxi, and
 
 ----
 
-===Visualization=== 
-Explain how to visualize the data.
+===Plotting output=== 
+
+Once a vboot calculation (using either BOOTSJ or SFINCS) has run, you can plot
+several quantities using the {{{vboot_plot}}} script in the {{{scripts}}} directory.
+This script will plot, for instance, how the total toroidal current and the profile
+of toroidal current vary over the vboot iterations. 
+Some of the data this script plots is saved in the {{{boot_fit.<extension>}}} file.
+The syntax for calling the plotting script is
+{{{vboot_plot boot_fit.<extension> wout_<extension>_vboot0000.nc}}}
 
 ----
 
