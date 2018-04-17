@@ -1,22 +1,21 @@
 =DESCUR= 
-[[toc]]
 The DESCUR code calculates a set of Fourier Harmonics which describe some closed toroidal surface.
-
+<<toc>>
 ----
 
-===Theory[[#Theory]]=== 
+===Theory=== 
 The DESCUR code uses a steepest descent algorithm to find a least-squares approximation to an arbitrary 3D space curve. Angle constraints, based on a minimum spectral width criterion, are applied. The constrain is satisfied by tangential variations along the curve.
 
 ----
 
-===Compilation[[#Compilation]]=== 
+===Compilation=== 
 The code is part of the STELLOPT package.
 
 ----
 
-===Input Data Format[[#Input]]=== 
+===Input Data Format=== 
 The code is interactive prompting the user for input. The spectral convergence parameter, representation, and source data are input from the command line. Source data can be specified as a series of R, phi, Z points in a test file, Fourier coefficients from a text file or VMEC output (wout file), a Solove've equilibrium, ellipse, D-shape, bean, belt, square or heliac. If fitting a set of R-phi-Z points the code expects the first line to be contain the number of points in theta, the number of points in phi and the periodicity of the boundary. The subsequent lines contain the R, phi, and Z coordinates in theta then phi order as so:
-[[code]]
+{{{
 24  24  3
 1.5  0.0  0.00
 1.4  0.0  0.20
@@ -26,10 +25,10 @@ The code is interactive prompting the user for input. The spectral convergence p
  .    .    .
  .    .    .
  .    .    .
-[[code]]
+}}}
 
 If fitting an axisymmetric surface then the following formulation may be used where only R and Z are specified.
-[[code]]
+{{{
 24  1  3
 1.5  0.00
 1.4  0.20
@@ -39,9 +38,10 @@ If fitting an axisymmetric surface then the following formulation may be used wh
  .    .
  .    .
  .    .
-[[code]]
+}}}
+
 If reading VMEC output either the WOUT file may be passed to DESCUR when prompted or a file with a set of Fourier harmonics. If the Fourier harmonics are passed the first line of the file should have MPOL, NPHI, and NFP specified on the first line, subsequent lines should have n,m, r-cosine, and z-sine as so:
-[[code]]
+{{{
 0  5  1
 0  0  1.0  0.0
 0  1  0.5  0.5
@@ -49,12 +49,12 @@ If reading VMEC output either the WOUT file may be passed to DESCUR when prompte
 .  .   .    .
 .  .   .    .
 .  .   .    .
-[[code]]
+}}}
 ----
 
-===Execution[[#Execution]]=== 
+===Execution=== 
 The code runs interactively as so:
-[[code]]
+{{{
 >~/bin/xcurve
  Enter spectral convergence parameter
  =0 for polar,  =1 for equal arclength
@@ -96,15 +96,14 @@ The code runs interactively as so:
   OUTPUTTING FOURIER COEFFICIENTS TO OUTCURVE FILE
 
  Do you wish to plot this data (Y/N)? N
-[[code]]
-
+}}}
 
 
 ----
 
-===Output Data Format[[#Output]]=== 
+===Output Data Format=== 
 Two output data files are produced, an 'outcurve' and an 'plotout' file. The 'outcurve' contains the runtime output of the code and the Fourier harmonics at it's end
-[[code]]
+{{{
  Average elongation = 1.2850E+00
  Raxis =   3.0000E+00 Zaxis =  -6.4514E-17
  Number of Theta Points Matched =   400
@@ -167,19 +166,21 @@ Two output data files are produced, an 'outcurve' and an 'plotout' file. The 'ou
   RBC(0,16) =  -1.789791E-06   RBS(0,16) =  -1.743855E-17   ZBC(0,16) =   1.509657E-17   ZBS(0,16) =  -1.940311E-06
   RBC(0,17) =  -1.476373E-07   RBS(0,17) =  -2.807427E-17   ZBC(0,17) =   1.824409E-17   ZBS(0,17) =   3.160506E-06
   RBC(0,19) =  -1.060073E-06   RBS(0,19) =  -3.150018E-18   ZBC(0,19) =   3.150018E-18   ZBS(0,19) =  -1.060073E-06
-[[code]]
+}}}
 
 
 The 'plotout' file contains information for plotting the curve. This is used by the DESCUR_PLOT routine.
 
 ----
 
-===Visualization[[#Visualization]]=== 
+===Visualization=== 
 The output of DESCUR code can be visualized with the DESCUR_PLOT code. This code produces contour plots of the Fourier Spectrum and a plot of the boundary based on the toroidal angle requested durring the execution of DESCUR.
-[[image:descur_example.jpg width="400" height="392" align="center"]]
+
+
+[[images/descur_example.jpg]]
 
 
 ----
 
-===Tutorials[[#Tutorials]]=== 
+===Tutorials=== 
 Put links to tutorial pages here.
