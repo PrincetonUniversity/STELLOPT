@@ -177,7 +177,7 @@ The 'plotout' file contains information for plotting the curve. This is used by 
 The output of DESCUR code can be visualized with the DESCUR_PLOT code. This code produces contour plots of the Fourier Spectrum and a plot of the boundary based on the toroidal angle requested durring the execution of DESCUR.
 
 
-[[images/descur_example.jpg]]
+{{images/descur_example.jpg}}
 
 
 ----
