@@ -1,22 +1,23 @@
 =COILOPT++= 
-[[toc]]
+
 This code optimizes a finite set of coils given b-normal on a plasma surface.
 
 ----
 
-===Theory[[#Theory]]=== 
+===Theory=== 
 The COILOPT++ utilizes Levenberg-Marquardt, Genetic, Simulated Annealing, and Particle Swarm type optimizers to minimize the residual normal field on a plasma surface. It's most widely used mode of operation is one in which the normal field on an equilibrium boundary is minimized through variation of coil shapes and surfaces. The plasma normal field is calculated by the BNORM code. COILOPT++ then utilizes a B-spline representation of coil traces on a winding surface to calculate the vacuum field. In it's most general form the coil geometry, winding surface, coil currents, and auxiliary vacuum coil currents may be varied to minimize the normal field on a plasma boundary. The code is currently interfaced to the VMEC code.
 
 ----
 
-===Compilation[[#Compilation]]=== 
+===Compilation=== 
 This is a C++ code which requires the netCDF, the [[@http://www.gnu.org/software/gsl/|GSL]] and [[@https://wci.llnl.gov/simulation/computer-codes/silo|SILO]] libraries. Compilation is straightforward and handled by the include makefile.
 
 ----
 
-===Input Data Format[[#Input]]=== 
+===Input Data Format=== 
 The code takes as input a text file which defines the location of other files and how the code will operate.
-[[code]]
+{{{
+#!C++
 cwsfilename[0] = cws  // Coil winding surface file (multiple may be specified)
 modsplinename[0] = fd.spline  // Modular coil spline file (number matches surface)
 Bmatch.woutname = wout.vmec_test // Text VMEC file name
@@ -168,24 +169,24 @@ saddleinsert.r_u = 0.05;      // u radius of coil
 saddleinsert.r_v = 0.05;      // v radius of coil
 saddleinsert.current = 0.0;   // counterclockwise coil current in amps
 saddleinsert.lmodgeom = 1;    // Allow new saddle geometry to vary
-[[code]]
+}}}
 
 
 
 ----
 
-===Execution[[#Execution]]=== 
+===Execution=== 
 The code is executed by passing the input parameters file to the code as such:
-[[code format="bash"]]
+{{{
 >> mpirun -np 64 ~/bin/xcoilopt++ -f coilopt_params
-[[code]]
+}}}
 ----
 
-===Output Data Format[[#Output]]=== 
+===Output Data Format=== 
 The code outputs various files based on the type of optimization preformed, while certain specific files are output no matter the optimization type.
 
 The equilibrium normal field for the equilibrium, initial configuration, and final configuration will be output in the b_norm_eq.dat, b_norm_init.dat, and b_norm_final.dat files. The have similar formats with the first line specifying the number of toroidal and poloidal data points, and a series of datapoints. The datapoints are listed as u, v, b_normal (where u and v run from 0 to 1)
-[[code]]
+{{{
 76    34
 0.000000e+00    0.000000e+00    0.000000e+00
 1.315789e-02    0.000000e+00    5.538695e-03
@@ -197,10 +198,10 @@ The equilibrium normal field for the equilibrium, initial configuration, and fin
        .              .              .
        .              .              .
        .              .              .
-[[code]]
+}}}
 
 The final coil spline file is named the same as the initial coil spline file with '.out' appened to the name. The first line contains the number of field periods, number of coils and number of XXX. Then the coil data is listed. Each coil is specified by a line beginning with the number of spline knots, DUU, DUL, the current in the coil, and symmetry. The next line contains the spline knots (plus 4 additional points). The U and V values at the spline knot locations are then listed line by line (number of lines equal to number of knots). The file then contains the information for the next coil till the end is reached.
-[[code]]
+{{{
 3    4    0
 24    0.000000e+00    0.000000e+00    5.029498e+05    0
 0.0000000e+00 0.0000000e+00 0.0000000e+00 0.0000000e+00 4.7619048e-02 9.5238095e-02 1.4285714e-01 1.9047619e-01 2.3809524e-01 2.8571429e-01 3.3333333e-01 3.8095238e-01 4.2857143e-01 4.7619048e-01 5.2380952e-01 5.7142857e-01 6.1904762e-01 6.6666667e-01 7.1428571e-01 7.6190476e-01 8.0952381e-01 8.5714286e-01 9.0476190e-01 9.5238095e-01 1.0000000e+00 1.0000000e+00 1.0000000e+00 1.0000000e+00
@@ -209,16 +210,16 @@ The final coil spline file is named the same as the initial coil spline file wit
 2.237615e-02    4.478223e-02
 6.971025e-02    4.783675e-02
 9.728082e-02    2.815039e-02
-[[code]]
+}}}
 If requested an mgrid file will be generated (mgrid.lmgrid).
 
 
 ----
 
-===Visualization[[#Visualization]]=== 
+===Visualization=== 
 Explain how to visualize the data.
 
 ----
 
-===Tutorials[[#Tutorials]]=== 
+===Tutorials=== 
 Put links to tutorial pages here.
