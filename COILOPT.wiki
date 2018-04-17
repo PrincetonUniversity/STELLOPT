@@ -1,6 +1,7 @@
 =COILOPT++= 
 
 This code optimizes a finite set of coils given b-normal on a plasma surface.
+<<toc>>
 
 ----
 
