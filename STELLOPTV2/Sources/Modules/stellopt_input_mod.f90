@@ -290,7 +290,7 @@
                          coil_splinefx_max,coil_splinefy_max,coil_splinefz_max,&
                          target_phiedge, sigma_phiedge, &
                          target_rbtor, sigma_rbtor, &
-                         target_r0, sigma_r0, target_z0, sigma_z0, &
+                         target_r0, sigma_r0, target_z0, sigma_z0, target_b0, sigma_b0, &
                          target_curtor, sigma_curtor, &
                          target_curtor_max, sigma_curtor_max, &
                          target_volume, sigma_volume, &
@@ -640,6 +640,8 @@
       sigma_phiedge   = bigno
       target_rbtor    = 0.0
       sigma_rbtor     = bigno
+      target_b0       = 0.0
+      sigma_b0        = bigno
       target_r0       = 0.0
       sigma_r0        = bigno
       target_z0       = 0.0
@@ -2253,6 +2255,10 @@
       IF (sigma_rbtor < bigno) THEN
          WRITE(iunit,outflt) 'TARGET_RBTOR',target_rbtor
          WRITE(iunit,outflt) 'SIGMA_RBTOR',sigma_rbtor
+      END IF 
+      IF (sigma_b0 < bigno) THEN
+         WRITE(iunit,outflt) 'TARGET_B0',target_b0
+         WRITE(iunit,outflt) 'SIGMA_B0',sigma_b0
       END IF 
       IF (sigma_r0 < bigno) THEN
          WRITE(iunit,outflt) 'TARGET_R0',target_r0

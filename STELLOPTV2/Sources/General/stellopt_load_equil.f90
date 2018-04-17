@@ -116,7 +116,7 @@
             nrad    = ns_vmec
             wp      = 1.5_rprec*pi2*pi2*SUM(vp_vmec(2:nrad)*presh_vmec(2:nrad))/(nrad-1) ! Old STELLOPT Way
             rbtor   = rbtor_vmec
-            Baxis   = b0_vmec
+            Baxis   = 0.5*SUM(3*bmnc_vmec(:,2)-bmnc_vmec(:,3),1) ! Asymmetric part zero at phi=0
             ! May need to create some radial arrays
             IF (ALLOCATED(rho)) DEALLOCATE(rho)
             ALLOCATE(rho(ns_vmec))
@@ -367,7 +367,8 @@
          WRITE(6,'(A,F7.3)')   '     TORIDAL FLUX:  ',phiedge
          WRITE(6,'(A,F7.3)')   '           VOLUME:  ',volume    
          WRITE(6,'(A,F7.3)')   '     MAJOR RADIUS:  ',rmajor
-         WRITE(6,'(A,F7.3)')   '     MINOR_RADIUS:  ',aminor
+         WRITE(6,'(A,F7.3)')   '     MINOR RADIUS:  ',aminor
+         WRITE(6,'(A,F7.3)')   '       AXIS FIELD:  ',Baxis
          WRITE(6,'(A,E20.12)')   '    STORED ENERGY:  ',wp
          CALL FLUSH(6)
       END IF
