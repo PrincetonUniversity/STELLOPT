@@ -1,6 +1,6 @@
 =DESCUR= 
 The DESCUR code calculates a set of Fourier Harmonics which describe some closed toroidal surface.
-<<toc>>
+
 ----
 
 ===Theory=== 
@@ -57,9 +57,9 @@ The code runs interactively as so:
 {{{
 >~/bin/xcurve
  Enter spectral convergence parameter
- =0 for polar,  =1 for equal arclength
+ = 0 for polar,  = 1 for equal arclength
  >1 for smaller spectral width
- =4 corresponds to STELLOPT choice): 4
+ = 4 corresponds to STELLOPT choice): 4
  Use (default) VMEC-compatible compression (V)
  or Advanced Hirshman-Breslau compression (A): V
  Select source of curve data to be fit:
