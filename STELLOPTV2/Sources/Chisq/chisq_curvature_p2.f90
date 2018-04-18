@@ -44,7 +44,8 @@ SUBROUTINE chisq_curvature_P2(target,sigma,niter,iflag)
   !----------------BEGIN SUBROUTINE --------------
 
   if (iflag < 0) return
-  if (iflag == 1) write(iunit_out, *) '2nd Principal Curvature Calc'
+  IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'P2     ',1,3
+  IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET SIGMA P2    '
   if (niter >= 0) then
     !Only consider the boundary
     rmnc = rmnc_full(:, ns)
@@ -145,7 +146,8 @@ SUBROUTINE chisq_curvature_P2(target,sigma,niter,iflag)
      mtargets = mtargets + 1
      targets(mtargets) = target
      sigmas(mtargets) = sigma
-     vals(mtargets) = minval(P2)
+     vals(mtargets) = -1*minval(P2)
+     IF (iflag == 1) WRITE(iunit_out,'(3ES22.12E3)') target,sigma,-1*minval(P2)
 
   else
      if (sigma < bigno) then
