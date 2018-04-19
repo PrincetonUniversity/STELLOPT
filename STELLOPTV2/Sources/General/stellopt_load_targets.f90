@@ -57,6 +57,9 @@
       ! Z0
       IF (sigma_z0 < bigno)  &
          CALL chisq_z0(target_z0,sigma_z0,ncnt,iflag)
+      ! B0
+      IF (sigma_b0 < bigno)  &
+         CALL chisq_b0(target_b0,sigma_b0,ncnt,iflag)
       ! VOLUME
       IF (sigma_volume < bigno)  &
          CALL chisq_volume(target_volume,sigma_volume,ncnt,iflag)
