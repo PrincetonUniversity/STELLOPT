@@ -33,101 +33,95 @@
 !                       sigma input arrays.
 !
 !-----------------------------------------------------------------------
-!      SUBROUTINE chisq_regcoil_chi2_b(target,sigma,niter,iflag)
+      SUBROUTINE chisq_regcoil_chi2_b(target,sigma,niter,iflag)
 !-----------------------------------------------------------------------
 !     Libraries
 !-----------------------------------------------------------------------
 
-!      USE stellopt_runtime
-!      USE stellopt_targets
-!      USE stellopt_input_mod
-!      USE stellopt_vars, ONLY: regcoil_nlambda, &
-!                               my_ntor => ntor_rcws, my_mpol => mpol_rcws
+      USE stellopt_runtime
+      USE stellopt_targets
+      USE stellopt_input_mod
+      USE stellopt_vars, ONLY: regcoil_nlambda
+      USE vparams, ONLY: mnprod_x4_rcws
 !DEC$ IF DEFINED (REGCOIL)
-!      USE regcoil_input_mod 
+      USE regcoil_input_mod 
 !DEC$ ENDIF      
 !-----------------------------------------------------------------------
 !     Input/Output Variables
 !
 !-----------------------------------------------------------------------
-!      IMPLICIT NONE
+      IMPLICIT NONE
 
-      ! Reserving space for the maximum number of Fourier components
-      ! that might be varied/optimized. Each of RC, RS, ZC, ZS can have
-      ! spectral components spanning the range of m and n in:
-      !       (-mpol_rcws:mpmol_rcws,  -ntor_rcws:ntor_rcws)
-!      INTEGER ::  mnprod_x4 = 4*(2*my_ntor+1)*(2*my_mpol+1)
-
-!      REAL(rprec), INTENT(in)    :: target(mnprod_x4)
-!      REAL(rprec), INTENT(in)    :: sigma(mnprod_x4)
-!      INTEGER,     INTENT(in)    ::  niter
-!      INTEGER,     INTENT(inout) ::  iflag
+      REAL(rprec), INTENT(in)    :: target(mnprod_x4_rcws)
+      REAL(rprec), INTENT(in)    :: sigma(mnprod_x4_rcws)
+      INTEGER,     INTENT(in)    ::  niter
+      INTEGER,     INTENT(inout) ::  iflag
 
 !-----------------------------------------------------------------------
 !     Local Variables
 !
 !-----------------------------------------------------------------------
-!      INTEGER :: iunit, counter, ii
+      INTEGER :: iunit, counter, ii
 
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
-!      IF (iflag < 0) RETURN
+      IF (iflag < 0) RETURN
 
 !DEC$ IF DEFINED (REGCOIL)
-!      IF (iflag == 1) THEN
-!          counter = 0
-!          DO ii = 1,mnprod_x4
-!            IF (sigma(ii) < bigno) counter=counter +1
-!          END DO
-!          WRITE(iunit_out,'(A,2(2X,I7))') 'REGCOIL_CHI2_B ', counter, 4
-!          WRITE(iunit_out,'(A)') 'TARGET  SIGMA  UNUSED  CHI'
-!      END IF
-!
-!      IF (niter >= 0) THEN
-!         ! Now fill in the targets, sigmas and chi_sq
-!         DO ii = 1, mnprod_x4
-!            !IF (sigma(ii) >= bigno) CYCLE
-!            IF (sigma(ii) < bigno) THEN
-!              mtargets = mtargets + 1
-!              targets(mtargets) = target(ii)
-!              sigmas(mtargets)  = sigma(ii)
-!              ! The value of the results is in the chi2_B_target variable
-!              vals(mtargets)    = sqrt(chi2_B_target)
-!              ! print *, mtargets, vals(mtargets), chi2_B_target, &
-!              !          target(ii), target_dex(mtargets), sigmas(mtargets), sigma(ii)
-!              IF (iflag == 1) WRITE(iunit_out,'(4ES22.12E3)') target(ii), &
-!                                    sigma(ii), 0.0, vals(mtargets)
-!            END IF
-!         END DO
-!      ELSE
-!         IF (ANY(sigma < bigno)) THEN
-!            ! Fill in the targets
-!            DO ii = 1, mnprod_x4
-!               IF (sigma(ii) < bigno) THEN
-!                  mtargets = mtargets + 1
-!                  IF (niter == -2) THEN
-!                     target_dex(mtargets)=jtarget_regcoil_chi2_b
-!                  END IF
-!               END IF
-!            END DO
-!            CALL safe_open(iunit, iflag, TRIM('input.'//TRIM(id_string)), 'old', 'formatted')
-!            CALL regcoil_read_input(iunit, iflag)
-!            ! save an internal copy of the value of nlambda here (regcoil may
-!            ! overwrite it)
-!            regcoil_nlambda = nlambda
-!            close(iunit)
-!            IF (iflag < 0) THEN
-!               WRITE(6,*) '!!!!!!!!!!!!ERRROR!!!!!!!!!!!!!!'
-!               WRITE(6,*) '  REGCOIL Namelist not found     '
-!               WRITE(6,*) '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-!            END IF
-!         END IF
-!      END IF
+      IF (iflag == 1) THEN
+          counter = 0
+          DO ii = 1,mnprod_x4_rcws
+            IF (sigma(ii) < bigno) counter=counter +1
+          END DO
+          WRITE(iunit_out,'(A,2(2X,I7))') 'REGCOIL_CHI2_B ', counter, 4
+          WRITE(iunit_out,'(A)') 'TARGET  SIGMA  UNUSED  CHI'
+      END IF
+
+      IF (niter >= 0) THEN
+         ! Now fill in the targets, sigmas and chi_sq
+         DO ii = 1, mnprod_x4_rcws
+            !IF (sigma(ii) >= bigno) CYCLE
+            IF (sigma(ii) < bigno) THEN
+              mtargets = mtargets + 1
+              targets(mtargets) = target(ii)
+              sigmas(mtargets)  = sigma(ii)
+              ! The value of the results is in the chi2_B_target variable
+              vals(mtargets)    = sqrt(chi2_B_target)
+              ! print *, mtargets, vals(mtargets), chi2_B_target, &
+              !          target(ii), target_dex(mtargets), sigmas(mtargets), sigma(ii)
+              IF (iflag == 1) WRITE(iunit_out,'(4ES22.12E3)') target(ii), &
+                                    sigma(ii), 0.0, vals(mtargets)
+            END IF
+         END DO
+      ELSE
+         IF (ANY(sigma < bigno)) THEN
+            ! Fill in the targets
+            DO ii = 1, mnprod_x4_rcws
+               IF (sigma(ii) < bigno) THEN
+                  mtargets = mtargets + 1
+                  IF (niter == -2) THEN
+                     target_dex(mtargets)=jtarget_regcoil_chi2_b
+                  END IF
+               END IF
+            END DO
+            CALL safe_open(iunit, iflag, TRIM('input.'//TRIM(id_string)), 'old', 'formatted')
+            CALL regcoil_read_input(iunit, iflag)
+            ! save an internal copy of the value of nlambda here (regcoil may
+            ! overwrite it)
+            regcoil_nlambda = nlambda
+            close(iunit)
+            IF (iflag < 0) THEN
+               WRITE(6,*) '!!!!!!!!!!!!ERRROR!!!!!!!!!!!!!!'
+               WRITE(6,*) '  REGCOIL Namelist not found     '
+               WRITE(6,*) '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+            END IF
+         END IF
+      END IF
 !DEC$ ENDIF      
 
-!      RETURN
+      RETURN
 !----------------------------------------------------------------------
 !     END SUBROUTINE
 !----------------------------------------------------------------------
-!      END SUBROUTINE chisq_regcoil_chi2_b
+      END SUBROUTINE chisq_regcoil_chi2_b
