@@ -2163,7 +2163,7 @@
               lregcoil_winding_surface_separation_opt ) THEN
              DO ii = 1,UBOUND(target_regcoil_chi2_b, 1)
                 IF (sigma_regcoil_chi2_b(ii) < bigno) THEN
-                    WRITE(iunit,"2(2X,A,I4.3,A,E22.14))") &
+                    WRITE(iunit,"(2(2X,A,I4.3,A,E22.14))") &
                            'TARGET_REGCOIL_CHI2_B(',ii,') = ', target_regcoil_chi2_b(ii), &
                            'SIGMA_REGCOIL_CHI2_B(',ii,') = ', sigma_regcoil_chi2_b(ii)
                 END IF
