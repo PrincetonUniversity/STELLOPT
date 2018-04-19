@@ -1,0 +1,342 @@
+#!/usr/bin/env python
+
+print "usage: vmecPlot <woutXXX.nc>"
+
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+from matplotlib import cm
+import numpy as np
+from scipy.io import netcdf
+import sys
+import math
+
+if len(sys.argv) != 2:
+    print "Error! You must specify 1 argument: the woutXXX.nc file."
+    exit(1)
+
+def maximizeWindow():
+    # Maximize window. The command for this depends on the backend.
+    mng = plt.get_current_fig_manager()
+    try:
+        mng.resize(*mng.window.maxsize())
+    except AttributeError:
+        try:
+            mng.window.showMaximized()
+        except AttributeError:
+            pass
+
+f = netcdf.netcdf_file(sys.argv[1],'r',mmap=False)
+phi = f.variables['phi'][()]
+iotaf = f.variables['iotaf'][()]
+presf = f.variables['presf'][()]
+iotas = f.variables['iotas'][()]
+pres = f.variables['pres'][()]
+ns = f.variables['ns'][()]
+nfp = f.variables['nfp'][()]
+xn = f.variables['xn'][()]
+xm = f.variables['xm'][()]
+xn_nyq = f.variables['xn_nyq'][()]
+xm_nyq = f.variables['xm_nyq'][()]
+rmnc = f.variables['rmnc'][()]
+zmns = f.variables['zmns'][()]
+bmnc = f.variables['bmnc'][()]
+raxis_cc = f.variables['raxis_cc'][()]
+zaxis_cs = f.variables['zaxis_cs'][()]
+buco = f.variables['buco'][()]
+bvco = f.variables['bvco'][()]
+jcuru = f.variables['jcuru'][()]
+jcurv = f.variables['jcurv'][()]
+lasym = f.variables['lasym__logical__'][()]
+if lasym==1:
+    rmns = f.variables['rmns'][()]
+    zmnc = f.variables['zmnc'][()]
+    bmns = f.variables['bmns'][()]
+    raxis_cs = f.variables['raxis_cs'][()]
+    zaxis_cc = f.variables['zaxis_cc'][()]
+else:
+    rmns = 0*rmnc
+    zmnc = 0*rmnc
+    bmns = 0*bmnc
+    raxis_cs = 0*raxis_cc
+    zaxis_cc = 0*raxis_cc
+
+try:
+    ac = f.variables['ac'][()]
+except:
+    ac = []
+
+try:
+    pcurr_type = f.variables['pcurr_type'][()]
+except:
+    pcurr_type = ""
+
+ac_aux_s = f.variables['ac_aux_s'][()]
+ac_aux_f = f.variables['ac_aux_f'][()]
+
+#print type(pcurr_type)
+#print pcurr_type
+#print str(pcurr_type)
+#exit(0)
+
+print "nfp: ",nfp
+print "ns: ",ns
+
+mpol = f.variables['mpol'][()]
+print "mpol: ",mpol
+
+ntor = f.variables['ntor'][()]
+print "ntor: ",ntor
+
+Aminor_p = f.variables['Aminor_p'][()]
+print "Aminor_p: ",Aminor_p
+
+Rmajor_p = f.variables['Rmajor_p'][()]
+print "Rmajor_p: ",Rmajor_p
+
+data = f.variables['aspect'][()]
+print "aspect:            ",data
+print "Rmajor_p/Aminor_p: ",Rmajor_p/Aminor_p
+
+data = f.variables['betatotal'][()]
+print "betatotal: ",data
+
+data = f.variables['betapol'][()]
+print "betapol:   ",data
+
+data = f.variables['betator'][()]
+print "betator:   ",data
+
+data = f.variables['betaxis'][()]
+print "betaxis:   ",data
+
+ctor = f.variables['ctor'][()]
+print "ctor:   ",ctor
+
+f.close()
+nmodes = len(xn)
+
+s = np.linspace(0,1,ns)
+s_half = [(i-0.5)/(ns-1) for i in range(1,ns)]
+
+phiedge = phi[-1]
+phi_half = [(i-0.5)*phiedge/(ns-1) for i in range(1,ns)]
+
+ntheta = 200
+nzeta = 4
+theta = np.linspace(0,2*np.pi,num=ntheta)
+zeta = np.linspace(0,2*np.pi/nfp,num=nzeta,endpoint=False)
+iradius = ns-1
+R = np.zeros((ntheta,nzeta))
+Z = np.zeros((ntheta,nzeta))
+for itheta in range(ntheta):
+    for izeta in range(nzeta):
+        for imode in range(nmodes):
+            angle = xm[imode]*theta[itheta] - xn[imode]*zeta[izeta]
+            R[itheta,izeta] = R[itheta,izeta] + rmnc[iradius,imode]*math.cos(angle) + rmns[iradius,imode]*math.sin(angle)
+            Z[itheta,izeta] = Z[itheta,izeta] + zmns[iradius,imode]*math.sin(angle) + zmnc[iradius,imode]*math.cos(angle)
+
+Raxis = np.zeros(nzeta)
+Zaxis = np.zeros(nzeta)
+for izeta in range(nzeta):
+    for n in range(ntor+1):
+        angle = -n*nfp*zeta[izeta]
+        Raxis[izeta] += raxis_cc[n]*math.cos(angle) + raxis_cs[n]*math.sin(angle)
+        Zaxis[izeta] += zaxis_cs[n]*math.sin(angle) + zaxis_cc[n]*math.cos(angle)
+
+xLabel = r'$s = \psi_N$'
+
+
+fig = plt.figure()
+fig.patch.set_facecolor('white')
+
+numCols = 3
+numRows = 3
+plotNum = 1
+
+plt.subplot(numRows,numCols,plotNum)
+plotNum += 1
+#plt.plot(phi, iotaf, '.-',label='iotaf')
+#plt.plot(phi_half, iotas[1:],'.-',label='iotas')
+plt.plot(s, iotaf, '.-',label='iotaf')
+plt.plot(s_half, iotas[1:],'.-',label='iotas')
+plt.legend(fontsize='x-small')
+plt.xlabel(xLabel)
+
+plt.subplot(numRows,numCols,plotNum)
+plotNum += 1
+#plt.plot(phi, presf, '.-',label='presf')
+#plt.plot(phi_half, pres[1:], '.-',label='pres')
+plt.plot(s, presf, '.-',label='presf')
+plt.plot(s_half, pres[1:], '.-',label='pres')
+plt.legend(fontsize='x-small')
+plt.xlabel(xLabel)
+
+plt.subplot(numRows,numCols,plotNum)
+plotNum += 1
+#plt.plot(phi_half, buco[1:], '.-',label='buco')
+plt.plot(s_half, buco[1:], '.-',label='buco')
+plt.title('buco')
+plt.xlabel(xLabel)
+
+plt.subplot(numRows,numCols,plotNum)
+plotNum += 1
+#plt.plot(phi_half, bvco[1:], '.-',label='bvco')
+plt.plot(s_half, bvco[1:], '.-',label='bvco')
+plt.title('bvco')
+plt.xlabel(xLabel)
+
+plt.subplot(numRows,numCols,plotNum)
+plotNum += 1
+#plt.plot(phi, jcuru, '.-',label='jcuru')
+plt.plot(s, jcuru, '.-',label='jcuru')
+plt.title('jcuru')
+plt.xlabel(xLabel)
+
+plt.subplot(numRows,numCols,plotNum)
+plotNum += 1
+#plt.plot(phi, jcurv, '.-',label='jcurv')
+plt.plot(s, jcurv, '.-',label='jcurv')
+plt.title('jcurv')
+plt.xlabel(xLabel)
+
+plt.subplot(numRows,numCols,plotNum)
+plotNum += 1
+if 'power_series' in pcurr_type:
+    ac_profile = phi*0.0
+    for i in range(len(ac)):
+        ac_profile += ac[i]*(s**i)
+    plt.plot(s, ac_profile, '.-')
+else:
+    mask = (ac_aux_s >= 0)
+    plt.plot(ac_aux_s[mask], ac_aux_f[mask],'.-')
+plt.title('ac profile')
+plt.xlabel(xLabel)
+
+titles = ['|B| at half radius','|B| at LCFS']
+iradii = [int((ns*0.25).round()), ns-1]
+print "bmnc.shape:",bmnc.shape
+print "bmns.shape:",bmns.shape
+for i in range(2):
+    iradius = iradii[i]
+    Ntheta = 30
+    Nzeta = 65
+    theta = np.linspace(0,2*np.pi,num=Ntheta)
+    zeta = np.linspace(0,2*np.pi,num=Nzeta)
+    b = np.zeros([Ntheta,Nzeta])
+    zeta2D,theta2D = np.meshgrid(zeta,theta)
+    iota = iotaf[iradius]
+    for imode in range(len(xn_nyq)):
+        angle = xm_nyq[imode]*theta2D - xn_nyq[imode]*zeta2D
+        b += bmnc[iradius,imode]*np.cos(angle) + bmns[iradius,imode]*np.sin(angle)
+
+    plt.subplot(numRows,numCols,plotNum)
+    plotNum += 1
+    plt.contourf(zeta2D,theta2D,b,20)
+    plt.title(titles[i]+'\n1-based index='+str(iradius+1))
+    plt.xlabel('zeta')
+    plt.ylabel('theta')
+    plt.colorbar()
+    # Plot a field line:
+    if iota>0:
+        plt.plot([0,zeta.max()],[0,zeta.max()*iota],'k')
+    else:
+        plt.plot([0,zeta.max()],[-zeta.max()*iota,0],'k')
+    plt.xlim([0,2*np.pi])
+    plt.ylim([0,2*np.pi])
+
+maximizeWindow()
+
+plt.tight_layout()
+
+########################################################
+# Now make plot of flux surface shapes
+########################################################
+
+fig = plt.figure()
+fig.patch.set_facecolor('white')
+
+numCols = 3
+numRows = 2
+plotNum = 1
+
+plt.subplot(numRows,numCols,plotNum)
+plotNum += 1
+plt.plot(R[:,0], Z[:,0], '-',label='zeta=0')
+plt.plot(R[:,1], Z[:,1], '-',label='1/4')
+plt.plot(R[:,2], Z[:,2], '-',label='1/2')
+plt.plot(R[:,3], Z[:,3], '-',label='3/4')
+plt.gca().set_aspect('equal',adjustable='box')
+plt.legend(fontsize='x-small')
+plt.xlabel('R')
+plt.ylabel('Z')
+
+
+ntheta = 200
+nzeta = 4
+nradius = 10
+theta = np.linspace(0,2*np.pi,num=ntheta)
+zeta = np.linspace(0,2*np.pi/nfp,num=nzeta,endpoint=False)
+iradii = np.linspace(0,ns-1,num=nradius).round()
+iradii = [int(i) for i in iradii]
+R = np.zeros((ntheta,nzeta,nradius))
+Z = np.zeros((ntheta,nzeta,nradius))
+for itheta in range(ntheta):
+    for izeta in range(nzeta):
+        for iradius in range(nradius):
+            for imode in range(nmodes):
+                angle = xm[imode]*theta[itheta] - xn[imode]*zeta[izeta]
+                R[itheta,izeta,iradius] = R[itheta,izeta,iradius] + rmnc[iradii[iradius],imode]*math.cos(angle) \
+                                                                  + rmns[iradii[iradius],imode]*math.sin(angle)
+                Z[itheta,izeta,iradius] = Z[itheta,izeta,iradius] + zmns[iradii[iradius],imode]*math.sin(angle) \
+                                                                  + zmnc[iradii[iradius],imode]*math.cos(angle)
+
+for izeta in range(nzeta):
+    plt.subplot(numRows,numCols,plotNum)
+    plotNum += 1
+    for iradius in range(nradius):
+        plt.plot(R[:,izeta,iradius], Z[:,izeta,iradius], '-')
+    plt.plot(Raxis[izeta],Zaxis[izeta],'xr')
+    plt.gca().set_aspect('equal',adjustable='box')
+    plt.xlabel('R')
+    plt.ylabel('Z')
+    plt.title('zeta = '+str(zeta[izeta]))
+
+maximizeWindow()
+
+#plt.tight_layout()
+
+########################################################
+# Now make 3D surface plot
+########################################################
+
+fig = plt.figure()
+
+ntheta = 40
+nzeta = 150
+theta1D = np.linspace(0,2*np.pi,num=ntheta)
+zeta1D = np.linspace(0,2*np.pi,num=nzeta)
+zeta2D, theta2D = np.meshgrid(zeta1D,theta1D)
+iradius = ns-1
+R = np.zeros((ntheta,nzeta))
+Z = np.zeros((ntheta,nzeta))
+B = np.zeros((ntheta,nzeta))
+for imode in range(nmodes):
+    angle = xm[imode]*theta2D - xn[imode]*zeta2D
+    R = R + rmnc[iradius,imode]*np.cos(angle) + rmns[iradius,imode]*np.sin(angle)
+    Z = Z + zmns[iradius,imode]*np.sin(angle) + zmnc[iradius,imode]*np.cos(angle)
+
+for imode in range(len(xn_nyq)):
+    angle = xm_nyq[imode]*theta2D - xn_nyq[imode]*zeta2D
+    B = B + bmnc[iradius,imode]*np.cos(angle) + bmns[iradius,imode]*np.sin(angle)
+
+X = R * np.cos(zeta2D)
+Y = R * np.sin(zeta2D)
+# Rescale to lie in [0,1]:
+B_rescaled = (B - B.min()) / (B.max() - B.min())
+
+fig.patch.set_facecolor('white')
+ax = fig.gca(projection='3d')
+ax.plot_surface(X, Y, Z, facecolors = cm.jet(B_rescaled), rstride=1, cstride=1, antialiased=False)
+ax.auto_scale_xyz([X.min(), X.max()], [X.min(), X.max()], [X.min(), X.max()])
+plt.show()
+

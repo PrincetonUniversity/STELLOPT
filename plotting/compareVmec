@@ -1,0 +1,231 @@
+#!/usr/bin/env python
+
+import matplotlib
+import matplotlib.pyplot as plt
+import numpy as np
+from scipy.io import netcdf
+import inspect, math, os
+import pickle
+import sys
+import glob
+import string
+
+print "This is "+ inspect.getfile(inspect.currentframe())
+print "usage:"
+print "  compareVmec <listOfWoutFiles> <pdf>"
+print "[If any of the arguments are 'pdf', no matter where they occur, a PDF file will be saved."
+
+makePDF = False
+for arg in sys.argv:
+   if arg.lower()=='pdf':
+      makePDF = True
+
+if makePDF:
+   matplotlib.use('PDF')
+   # Change default font size
+   font = {'size':6}
+   matplotlib.rc('font', **font)
+   matplotlib.rc('lines',markeredgewidth=0,markersize=3,linewidth=0.5)
+   matplotlib.rc('axes',linewidth=0.7)
+
+def maximizeWindow():
+    # Maximize window. The command for this depends on the backend.
+    mng = plt.get_current_fig_manager()
+    try:
+        mng.resize(*mng.window.maxsize())
+    except AttributeError:
+        try:
+            mng.window.showMaximized()
+        except AttributeError:
+            pass
+
+numRuns = 0
+
+phis = []
+iotafs = []
+runNames = []
+Rs = []
+Zs = []
+birdseye_Xs = []
+birdseye_Ys = []
+ss = []
+jcurvs = []
+presfs = []
+
+for arg in sys.argv[1:]:
+    if arg.lower() == 'pdf':
+       continue
+
+    #if arg[:4] != 'wout':
+    #   print "WARNING: An argument was found that is neither 'pdf' nor a wout file: "+arg
+    #   continue
+
+    try:
+       f = netcdf.netcdf_file(arg,'r',mmap=False)
+       mpol = f.variables['mpol'][()]
+       ntor = f.variables['ntor'][()]
+       ns = f.variables['ns'][()]
+       ftol = f.variables['ftolv'][()]
+       nfp = f.variables['nfp'][()]
+       iotaf = f.variables['iotaf'][()]
+       phi = f.variables['phi'][()]
+       raxis_cc = f.variables['raxis_cc'][()]
+       zaxis_cs = f.variables['zaxis_cs'][()]
+       niter = f.variables['niter'][()]
+       xn = f.variables['xn'][()]
+       xm = f.variables['xm'][()]
+       xn_nyq = f.variables['xn_nyq'][()]
+       xm_nyq = f.variables['xm_nyq'][()]
+       rmnc = f.variables['rmnc'][()]
+       zmns = f.variables['zmns'][()]
+       bmnc = f.variables['bmnc'][()]
+       jcurv = f.variables['jcurv'][()]
+       ac = f.variables['ac'][()]
+       buco = f.variables['buco'][()]
+       presf = f.variables['presf'][()]
+       Aminor_p = f.variables['Aminor_p'][()]
+
+       f.close()
+
+    except:
+       print "Unable to read data from file " + arg
+       continue
+
+    if Aminor_p < 1e-3:
+       print "In file "+arg+", Aminor_p=",Aminor_p," so I think this run did not converge. Skipping it."
+       continue
+
+    print "Read file " + arg
+    numRuns += 1
+
+    nmodes = len(xn)
+
+    ntheta = 250
+    nzeta = 4
+    theta = np.linspace(0,2*np.pi,num=ntheta)
+    zeta = np.linspace(0,2*np.pi/nfp,num=nzeta,endpoint=False)
+    iradius = ns-1
+    R = np.zeros((ntheta,nzeta))
+    Z = np.zeros((ntheta,nzeta))
+    for itheta in range(ntheta):
+       for izeta in range(nzeta):
+          for imode in range(nmodes):
+             angle = xm[imode]*theta[itheta] - xn[imode]*zeta[izeta]
+             R[itheta,izeta] = R[itheta,izeta] + rmnc[iradius,imode]*math.cos(angle)
+             Z[itheta,izeta] = Z[itheta,izeta] + zmns[iradius,imode]*math.sin(angle)
+
+
+    phis.append(phi)
+    s = np.linspace(0,1,ns)
+    ss.append(s)
+    iotafs.append(iotaf)
+    runNames.append(arg)
+    Rs.append(R)
+    Zs.append(Z)
+    jcurvs.append(jcurv)
+    presfs.append(presf)
+
+    ntheta = 4
+    nzeta = 100
+    theta = np.linspace(0,2*np.pi,num=ntheta,endpoint=False)
+    zeta = np.linspace(0,2*np.pi,num=nzeta)
+    iradius = ns-1
+    X = np.zeros((ntheta,nzeta))
+    Y = np.zeros((ntheta,nzeta))
+    for itheta in range(ntheta):
+       for izeta in range(nzeta):
+          for imode in range(nmodes):
+             angle = xm[imode]*theta[itheta] - xn[imode]*zeta[izeta]
+             X[itheta,izeta] = X[itheta,izeta] + rmnc[iradius,imode]*math.cos(angle)*math.cos(zeta[izeta])
+             Y[itheta,izeta] = Y[itheta,izeta] + rmnc[iradius,imode]*math.cos(angle)*math.sin(zeta[izeta])
+
+
+    birdseye_Xs.append(X)
+    birdseye_Ys.append(Y)
+
+    # Compute location of magnetic axis:
+    nzeta = 4
+    zeta = np.linspace(0,2*np.pi/nfp,num=nzeta,endpoint=False)
+    Raxis = np.zeros(nzeta)
+    Zaxis = np.zeros(nzeta)
+    for izeta in range(nzeta):
+       for n in range(ntor+1):
+          angle = -n*nfp*zeta[izeta]
+          Raxis[izeta] += raxis_cc[n]*math.cos(angle)
+          Zaxis[izeta] += zaxis_cs[n]*math.sin(angle)
+
+
+#############################################################3
+# Begin figure
+#############################################################3
+
+colors = ['red','green','blue','darkorange','black','magenta','gray','darkturquoise','y','pink']
+
+fig = plt.figure()
+fig.patch.set_facecolor('white')
+
+numRows = 2
+numCols = 4
+plotNum = 1
+
+plt.subplot(numRows,numCols,plotNum); plotNum += 1
+for i in range(numRuns):
+   plt.plot(ss[i],presfs[i],'.-',label=runNames[i],color=colors[i])
+plt.xlabel('s = normalized toroidal flux')
+plt.title('pressure')
+plt.legend(fontsize=8,loc=0)
+
+plt.subplot(numRows,numCols,plotNum); plotNum += 1
+for i in range(numRuns):
+   plt.plot(ss[i],jcurvs[i],'.-',label=runNames[i],color=colors[i])
+plt.xlabel('s = normalized toroidal flux')
+plt.title('toroidal current (jcurv)')
+
+plt.subplot(numRows,numCols,plotNum); plotNum += 1
+for i in range(numRuns):
+   plt.plot(ss[i],iotafs[i],'.-',label=runNames[i],color=colors[i])
+plt.xlabel('s = normalized toroidal flux')
+plt.title('iota')
+plt.legend(fontsize=8,loc=0)
+
+plt.subplot(numRows,numCols,plotNum); plotNum += 1
+for i in range(numRuns):
+   for itheta in range(2):
+      plt.plot(birdseye_Xs[i][itheta,:],birdseye_Ys[i][itheta,:],'-',label=runNames[i],color=colors[i])
+plt.xlabel('X')
+plt.ylabel('Y')
+plt.title(r'Top view of $\theta=0$ and $\theta=\pi/2$ curves',fontsize=9)
+plt.gca().set_aspect('equal',adjustable='box')
+
+plt.subplot(numRows,numCols,plotNum); plotNum += 1
+for i in range(numRuns):
+   for itheta in range(2,4):
+      plt.plot(birdseye_Xs[i][itheta,:],birdseye_Ys[i][itheta,:],'-',label=runNames[i],color=colors[i])
+plt.xlabel('X')
+plt.ylabel('Y')
+plt.title(r'Top view of $\theta=\pi$ and $\theta=3\pi/2$ curves',fontsize=9)
+plt.gca().set_aspect('equal',adjustable='box')
+
+for whichZeta in range(3):
+   plt.subplot(numRows,numCols,plotNum); plotNum += 1
+   for i in range(numRuns):
+      plt.plot(Rs[i][:,whichZeta],Zs[i][:,whichZeta],'-',label=runNames[i],color=colors[i])
+   plt.xlabel('R')
+   plt.ylabel('Z')
+   #plt.title('$\zeta$='+str(zetas[whichZeta]))
+   plt.gca().set_aspect('equal',adjustable='box')
+
+titleString = "Plot generated by "+ os.path.abspath(inspect.getfile(inspect.currentframe())) + "     Run in "+os.getcwd()
+ax = fig.add_axes([0,0,1,1], frameon=False)
+ax.text(0.5,0.01,titleString,horizontalalignment='center',verticalalignment='bottom',fontsize=8)
+
+maximizeWindow()
+
+# If this script was called with any command-line arguments, then do not actually display the plot:
+if not makePDF:
+   plt.show()
+
+if makePDF:
+   print "Saving PDF"
+   plt.savefig('compareVmec.pdf', orientation = 'landscape', papertype='letter')
+   #plt.savefig('sfincsScanPlot_1.pdf', orientation = 'landscape', papertype='letter',bbox_inches='tight',pad_inches=0)

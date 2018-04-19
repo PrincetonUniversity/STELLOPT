@@ -145,8 +145,8 @@
 #            SFINCS Options
 #######################################################################
 
-LSFINCS = F
-#LSFINCS = T
+#LSFINCS = F
+LSFINCS = T
 SFINCS_DIR = /Users/mattland/sfincs/fortran/version3
 SFINCS_INC = -I$(SFINCS_DIR)
 LIB_SFINCS = libsfincs.a
@@ -362,7 +362,8 @@ LIB_LINK+= $(LIB_DIR)/$(LOCTYPE)/$(LIB) $(LIBS)
 # 3rd Party Libs
 ifeq ($(LMPI),T)
   PRECOMP += -DMPI_OPT
-  VMEC_DIR = ../../PARVMEC
+  VMEC_DIR = ../../VMEC2000
+#  VMEC_DIR = ../../PARVMEC
   COMPILE = $(MPI_COMPILE)
   COMPILE_FREE = $(MPI_COMPILE_FREE)
   LINK    = $(MPI_COMPILE) $(FLAGS) -o 

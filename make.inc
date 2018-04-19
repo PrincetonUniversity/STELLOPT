@@ -1,1 +1,1 @@
-BENCHMARKS/make_macports_landreman.inc
+SHARE/make_macports_landreman.inc

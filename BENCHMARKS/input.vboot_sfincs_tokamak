@@ -1,3 +1,19 @@
+# This input file tests the equil_type='vboot' system, in which stellopt iterates between
+# VMEC and a bootstrap current code to obtain a self-consistent profile of bootstrap current.
+# In this file, SFINCS is used as the bootstrap current code.
+#
+# To make this test as fast as possible, the equilibrium is a simplified ITER-like axisymmetric geometry.
+#
+# This input file takes just ~ 64 seconds to run on 1 processor on a ~2015 MacBook laptop.
+#
+# If you 'grep Vboot' on the output, the expected results are:
+# Vboot iteration   0: ctor=-5.386E+06, vboot convergence factor= 9.560E-01
+# Vboot iteration   1: ctor=-7.492E+06, vboot convergence factor= 4.689E-01
+# Vboot iteration   2: ctor=-6.485E+06, vboot convergence factor= 2.890E-01
+# Vboot iteration   3: ctor=-6.849E+06, vboot convergence factor= 9.451E-02
+# Vboot iteration   4: ctor=-6.728E+06, vboot convergence factor= 3.227E-02
+# Vboot iteration   5: ctor=-6.764E+06, vboot convergence factor= 9.377E-03. Tolerance achieved.
+
 &INDATA
   LWOUTTXT=F
   MGRID_FILE = 'NONE                                                        '
@@ -19,6 +35,7 @@
   CURTOR = -9.0e6
   AM = 3.2044e5 -2.88396e5
   AI =  11*0.0
+
   ! ITER-like geometry, with simpler elliptical cross-section:
   RAXIS = 6.2
   ZAXIS = 0.0
@@ -80,6 +97,7 @@ sfincs_s = 0.012536, 0.0495156, 0.109084, 0.188255, 0.283058, 0.38874, 0.5, 0.61
 sfincs_min_procs=1
 vboot_tolerance = 1.e-2
 
+! Note in the next couple lines that we include 'beam' current, since the bootstrap current is insufficient by itself for this axisymmetric case:
 beamj_type = 'power_series'
 beamj_aux_f = -6.0e6 6.0e6
 !------------------------------------------------------------------------

@@ -1,0 +1,126 @@
+#!/usr/bin/env python
+
+import numpy as np
+import sys, os
+from scipy.io import netcdf
+
+print "Usage: "+ __file__ + " boot_fit.<extension> wout_<extension>_vboot0000.nc"
+
+if len(sys.argv) != 3:
+    print "Error! Wrong number of arguments."
+    exit(1)
+
+#boot_fit_filename = 'boot_fit.'+sys.argv[1][5:-13]
+#data = np.loadtxt(sys.argv[1])
+f = open(sys.argv[1])
+data = f.readlines()
+f.close()
+
+# Read in the vmec files
+#for j in range(10000):
+dIds_vmec = []
+curtor_vmec = []
+jdotb_vmec = []
+mu0 = 4*np.pi*(1.0e-7)
+
+for j in range(100):
+    filename = sys.argv[2][:-7] + "{:04d}".format(j) + ".nc"
+    print "Reading vmec file "+filename
+    if not os.path.isfile(filename):
+        break
+    f = netcdf.netcdf_file(filename,'r',mmap=False)
+    ns = f.variables['ns'][()]
+    curtor_vmec.append(f.variables['ctor'][()])
+    bsubumnc = f.variables['bsubumnc'][()]
+    jdotb_vmec.append(f.variables['jdotb'][()])
+    f.close()
+
+    s_full = np.linspace(0,1,ns)
+    ds = s_full[1] - s_full[0]
+    s_half = (s_full[1:] + s_full[:-1])/2
+    # I(s) = 2*pi/mu0*bsubumnc(m=0,n=0)
+    I = 2*np.pi/mu0*bsubumnc[1:,0]
+    # bsubumnc is on the half mesh, so its derivative is on the full mesh.
+    dIds = (I[1:] - I[:-1]) / ds
+    dIds_vmec.append(dIds)
+
+print "Evolution of curtor:"
+for j in range(len(curtor_vmec)):
+    print "  ",curtor_vmec[j]
+
+import matplotlib.pyplot as plt
+
+colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+
+plt.figure(figsize=(14,7))
+
+numRows=2
+numCols=2
+
+# The variables sarr, farr, and sfarr correspond to Sam L's variables in stellopt_vboot.f90.
+s_fine = data[0].split()[1:]
+
+print "len(data):",len(data)
+num_iterations = (len(data)-2)/3
+print "num_iterations:",num_iterations
+
+plt.subplot(numRows,numCols,1)
+plt.plot(s_fine, data[1].split()[1:], 'x:', color = colors[0], label='Input to VMEC, iteration 0')
+for j in range(num_iterations):
+    plt.plot(s_fine, data[j*3+2].split()[1:], '+-', color = colors[np.mod(j+1,len(colors))], label='Output from SFINCS, iteration '+str(j))
+    plt.plot(s_fine, data[j*3+4].split()[1:], 'x:', color = colors[np.mod(j+1,len(colors))], label='Input to VMEC, iteration '+str(j+1))
+
+plt.legend(fontsize=6,loc=0)
+plt.xlabel('s')
+plt.title('AC = signgs * d I / d s')
+
+plt.subplot(numRows,numCols,2)
+for j in range(len(dIds_vmec)):
+    plt.plot(s_full[1:-1], dIds_vmec[j],  color = colors[np.mod(j,len(colors))], label='Iteration '+str(j))
+
+plt.legend(fontsize=6,loc=0)
+plt.xlabel('s')
+plt.title('dI/ds from bsupumnc(0,0) from vmec')
+
+plt.subplot(numRows,numCols,3)
+for j in range(len(dIds_vmec)):
+    plt.plot(s_full, jdotb_vmec[j], '+-', color = colors[np.mod(j,len(colors))], label='vmec, iteration '+str(j))
+
+for j in range(100):
+    filename = 'sfincs_results_before_profile_fitting.' + sys.argv[2][5:-7] + "{:04d}".format(j)
+    print "Reading sfincs results file "+filename
+    if not os.path.isfile(filename):
+        break
+    sfincs_data = np.loadtxt(filename,skiprows=1)
+    plt.plot(sfincs_data[:,0], sfincs_data[:,1], 'o', color = colors[np.mod(j,len(colors))], label='sfincs iteration '+str(j))
+    
+plt.legend(fontsize=6,loc=0)
+plt.xlabel('s')
+plt.title('<j dot B>')
+
+plt.subplot(2,4,7)
+#plt.subplot(numRows,numCols,4)
+plt.plot(curtor_vmec,'o-')
+plt.xlabel('vmec iteration')
+plt.title('curtor')
+
+import os
+titleString = 'File '+os.path.abspath(sys.argv[1])+'\nPlotted using '+os.path.abspath(__file__)
+plt.figtext(0.5,0.995,titleString,ha='center',va='top',fontsize=6)
+
+#plt.tight_layout()
+
+
+#plt.figure()
+
+vboot_convergence_factors = [float(data[j*3+3].split()[-1]) for j in range(num_iterations)]
+print "vboot_convergence_factors:",vboot_convergence_factors
+
+plt.subplot(2,4,8)
+plt.semilogy(vboot_convergence_factors,'o-')
+plt.xlabel('iteration')
+plt.title('vboot convergence factor')
+
+plt.tight_layout()
+
+plt.show()
