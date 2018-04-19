@@ -2193,7 +2193,7 @@
              DO m = LBOUND(lregcoil_rcws_rbound_s_opt,DIM=1), UBOUND(lregcoil_rcws_rbound_s_opt,DIM=1)
                  DO n = LBOUND(lregcoil_rcws_rbound_s_opt,DIM=2), UBOUND(lregcoil_rcws_rbound_s_opt,DIM=2)
                      IF(lregcoil_rcws_rbound_s_opt(m,n)  ) THEN
-                         WRITE(iunit,outflt) '! REGCOIL Winding surface R-boundary sin component?'
+                         WRITE(iunit,'(A)') '! REGCOIL Winding surface R-boundary sin component?'
                          WRITE(iunit,"(2X,A,I4.3,A,I4.3,A,1X,'=',1X,L1,4(2X,A,I4.3,A,I4.3,A,1X,'=',1X,E18.12))") &
                                 'LREGCOIL_RCWS_RBOUND_S_OPT(',m,',',n,')', lregcoil_rcws_rbound_s_opt(m, n), &
                                 'REGCOIL_RCWS_RBOUND_S(',m,',',n,')', regcoil_rcws_rbound_s(m, n), &
