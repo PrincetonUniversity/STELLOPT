@@ -90,8 +90,8 @@ C-----------------------------------------------
          lz  = lz  - tcos*lmns(mn,js)*xn(mn)
          lam = lam + tsin*lmns(mn,js)
          IF (lasym) THEN
-            rs = t1*rmns(mn,js) + t2*rmns(mn,js)
-            zc = t1*zmnc(mn,js) + t2*zmnc(mn,js)
+            rs = t1*rmns(mn,js) + t2*rmns(mn,js1)
+            zc = t1*zmnc(mn,js) + t2*zmnc(mn,js1)
             r   = r   + tsin*rs
             z   = z   + tcos*zc
             lt  = lt  - tsin*lmnc(mn,js)*xm(mn)

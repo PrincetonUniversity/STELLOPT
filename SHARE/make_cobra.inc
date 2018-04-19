@@ -3,7 +3,7 @@
 #######################################################################
   SHELL = /bin/sh
   PWD1 = `pwd`
-  MYHOME = /hydra/u/sul/bin
+  MYHOME = $(HOME)/bin
   PRECOMP:= fpp -C -P -DLINUX
   COMPILE = ifort
   COMPILE_FREE = ifort
@@ -34,7 +34,7 @@
 #######################################################################
 #            NAG Options
 #######################################################################
-  LNAG = T
+  LNAG = F
   NAG_LIB = $(NAGFLIB) $(NAGMKLLIB)
 
 #######################################################################
@@ -137,7 +137,7 @@
 #######################################################################
 #            LIBSTELL Shared Options
 #######################################################################
-LIB_SHARE = 
+LIB_SHARE = -lc -lgfortran -lstdc++ -lmpi -lmpi_mpifh -lz -lc -lm -lpthread $(LIBS) -lc
 
 #######################################################################
 #######################################################################
@@ -303,7 +303,11 @@ endif
 LIB_LINK += $(GENE_LIB) $(COILOPT_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB) $(REGCOIL_LIB)
 
 # Add libraries to LIB_LINK
+# LIB_LINK+= $(MYHOME)/libstell.a $(LIBS)
+# This version avoids referencing the bin directory for the symbolic link to lib.
+# Which we can't reference since we now have the awk file in the main directory.
 LIB_LINK+= $(LIB_DIR)/$(LOCTYPE)/$(LIB) $(LIBS)
+
 
 # 3rd Party Libs
 ifeq ($(LMPI),T)
@@ -322,7 +326,7 @@ ifeq ($(LNETCDF),T)
 endif
 ifeq ($(LHDF5),T)
   MOD1_PATH += $(HDF5_INC)
-  PRECOMP += -DLHDF5 -DH5_USE_16_API -DHDF5_PAR
+  PRECOMP += -DLHDF5 -DH5_USE_16_API  -DHDF5_PAR 
   LIB_LINK += $(HDF5_LIB)
   MOD_PATH += $(HDF5_INC)
   LIB_SHARE += $(HDF5_LIB)
@@ -363,3 +367,4 @@ endif
 
 #This must come here
 MOD_PATH+= -I
+

@@ -12,7 +12,8 @@
 !-----------------------------------------------------------------------
 !     Libraries
 !-----------------------------------------------------------------------
-      USE vparams, ONLY: ndatafmax, mpol1d,ntord
+      USE vparams, ONLY: ndatafmax, mpol1d, ntord, &
+                         ntor_rcws, mpol_rcws
       USE vsvd0
 !-----------------------------------------------------------------------
 !     Module Variables
@@ -45,8 +46,6 @@
 !            lphi_s_opt         Logical array to control PHI_AUX_S variation
 !            lphi_f_opt         Logical array to control PHI_AUX_F variation
 !            lbound_opt         Logical array to control Boudnary variation
-!            lregcoil_winding_surface_separation_opt Logical to control the
-!                    distance between the plasma and the winding surface
 !            equil_type         Name of Equilibrium Code
 !            ne_aux_f           Spline Knots for NE Profile (normalized to 1E19)
 !            te_aux_f           Spline Knots for TE Profile
@@ -54,11 +53,20 @@
 !            th_aux_f           Spline Knots for T-Hot Profile
 !            beamj_aux_f        Spline Knots for Beam Current Profile
 !            bootj_aux_f        Spline Knots for Bootstrap Current profile.
+!            REGCOIL specific variables
+!              regcoil_winding_surface_separation
+!              regcoil_current_density
+!              regcoil_nlambda
+!              regcoil_num_field_periods
+!              lregcoil_rcws_rbound_c_opt, lregcoil_rcws_rbound_s_opt,
+!              lregcoil_rcws_zbound_c_opt, lregcoil_rcws_zbound_s_opt
+!              dregcoil_rcws_rbound_c_opt, dregcoil_rcws_rbound_s_opt,
+!              dregcoil_rcws_zbound_c_opt, dregcoil_rcws_zbound_s_opt
 !
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       LOGICAL  ::  lphiedge_opt, lcurtor_opt, lpscale_opt, lbcrit_opt,&
-                   lmix_ece_opt, lregcoil_winding_surface_separation_opt, &
+                   lmix_ece_opt, lregcoil_winding_surface_separation_opt,&
                    lregcoil_current_density_opt
       LOGICAL, DIMENSION(nigroup)  ::  lextcur_opt
       LOGICAL, DIMENSION(1:20)  ::  laphi_opt
@@ -111,7 +119,17 @@
       REAL(rprec)                       :: mix_ece
       REAL(rprec)                       :: regcoil_winding_surface_separation
       REAL(rprec)                       :: regcoil_current_density
-      INTEGER :: regcoil_nlambda
+      INTEGER :: regcoil_nlambda, regcoil_num_field_periods
+      LOGICAL, DIMENSION(-mpol_rcws:mpol_rcws, &
+                         -ntor_rcws:ntor_rcws) :: lregcoil_rcws_rbound_c_opt , &
+                                                  lregcoil_rcws_rbound_s_opt, &
+                                                  lregcoil_rcws_zbound_c_opt, &
+                                                  lregcoil_rcws_zbound_s_opt
+      REAL(rprec), DIMENSION(-mpol_rcws:mpol_rcws, &
+                             -ntor_rcws:ntor_rcws) :: dregcoil_rcws_rbound_c_opt , &
+                                                      dregcoil_rcws_rbound_s_opt, &
+                                                      dregcoil_rcws_zbound_c_opt, &
+                                                      dregcoil_rcws_zbound_s_opt
       REAL(rprec), DIMENSION(0:20)      ::  te_opt, ti_opt, ne_opt, th_opt, zeff_opt                                     
       REAL(rprec), DIMENSION(ndatafmax) ::  ne_aux_s, te_aux_s, &
                                             ti_aux_s, th_aux_s, &
@@ -164,8 +182,18 @@
       REAL(rprec), DIMENSION(nigroup,maxcoilknots) :: dcoil_spline
       REAL(rprec), DIMENSION(nigroup,maxcoilknots) :: coil_splinefx_min,coil_splinefy_min,coil_splinefz_min,&
                                                       coil_splinefx_max,coil_splinefy_max,coil_splinefz_max
+
+      ! Regcoil Winding Surface (rcws): Boundary+min/max
+      REAL(rprec), DIMENSION(-mpol_rcws:mpol_rcws, -ntor_rcws:ntor_rcws) :: regcoil_rcws_rbound_c, regcoil_rcws_rbound_s
+      REAL(rprec), DIMENSION(-mpol_rcws:mpol_rcws, -ntor_rcws:ntor_rcws) :: regcoil_rcws_rbound_c_min, regcoil_rcws_rbound_s_min
+      REAL(rprec), DIMENSION(-mpol_rcws:mpol_rcws, -ntor_rcws:ntor_rcws) :: regcoil_rcws_rbound_c_max, regcoil_rcws_rbound_s_max
+      REAL(rprec), DIMENSION(-mpol_rcws:mpol_rcws, -ntor_rcws:ntor_rcws) :: regcoil_rcws_zbound_c, regcoil_rcws_zbound_s
+      REAL(rprec), DIMENSION(-mpol_rcws:mpol_rcws, -ntor_rcws:ntor_rcws) :: regcoil_rcws_zbound_c_min, regcoil_rcws_zbound_s_min
+      REAL(rprec), DIMENSION(-mpol_rcws:mpol_rcws, -ntor_rcws:ntor_rcws) :: regcoil_rcws_zbound_c_max, regcoil_rcws_zbound_s_max
+
       CHARACTER(256)  ::  equil_type, te_type, ne_type, ti_type, th_type, &
-                          beamj_type, bootj_type, zeff_type, emis_xics_type, windsurfname
+                          beamj_type, bootj_type, zeff_type, emis_xics_type, windsurfname, &
+                          regcoil_nescin_filename
       
       ! These are not really variable parameters as we don't vary them
       ! yet
@@ -228,10 +256,15 @@
       INTEGER, PARAMETER ::  izaxis_cs  = 914
       INTEGER, PARAMETER ::  iregcoil_winding_surface_separation   = 5150
       INTEGER, PARAMETER ::  iregcoil_current_density   = 5151
+      ! 5152 - 5159 reserved for future REGCOIIL options
+      INTEGER, PARAMETER ::  iregcoil_rcws_rbound_c = 5160
+      INTEGER, PARAMETER ::  iregcoil_rcws_rbound_s = 5161
+      INTEGER, PARAMETER ::  iregcoil_rcws_zbound_c = 5162
+      INTEGER, PARAMETER ::  iregcoil_rcws_zbound_s = 5163
       
       REAL(rprec), PARAMETER :: ne_norm = 1.0E18
       
-      CONTAINS
+      CONTAINS      
       
       SUBROUTINE write_vars(iunit,var_num,var_dex1,var_dex2)
       INTEGER, INTENT(in) :: iunit, var_num, var_dex1, var_dex2
@@ -240,10 +273,7 @@
       CHARACTER*(*), PARAMETER ::  out_format_2D = '(5X,A,I3.3,A,I3.3,A)'
       CHARACTER*(*), PARAMETER ::  out_format_2DB = '(5X,A,I4.3,A,I4.3,A)'
       SELECT CASE(var_num)
-         CASE(iregcoil_winding_surface_separation)
-            WRITE(iunit,out_format) 'REGCOIL_SEPARATION: Coil winding surface separation'
-         CASE(iregcoil_current_density)
-            WRITE(iunit,out_format) 'REGCOIL_CURRENT_DENSITY: Current density on winding surface'
+
          CASE(iphiedge)
             WRITE(iunit,out_format) 'PHIEDGE:  Total Enclosed Toroidal Flux'
          CASE(imixece)
@@ -442,6 +472,21 @@
             WRITE(iunit,out_format_2DB) 'COIL_SPLINEY(',var_dex1,',',var_dex2,'):  Coil Spline Knots (Y)'
          CASE(icoil_splinefz)
             WRITE(iunit,out_format_2DB) 'COIL_SPLINEZ(',var_dex1,',',var_dex2,'):  Coil Spline Knots (Z)'
+
+         ! REGCOIL cases
+         CASE(iregcoil_winding_surface_separation)
+            WRITE(iunit,out_format) 'REGCOIL_SEPARATION: Coil winding surface separation'
+         CASE(iregcoil_current_density)
+            WRITE(iunit,out_format) 'REGCOIL_SEPARATION: Winding surface current density'
+         CASE(iregcoil_rcws_rbound_c)
+            WRITE(iunit,out_format_2DB) 'REGCOIL_RCWS_rbound_c(',var_dex1,',',var_dex2,'):  REGCOIL Winding Surface Boundary Radial Specification (COS MN)'
+         CASE(iregcoil_rcws_rbound_s)
+            WRITE(iunit,out_format_2DB) 'REGCOIL_RCWS_rbound_s(',var_dex1,',',var_dex2,'):  REGCOIL Winding Surface Boundary Radial Specification (SIN MN)'
+         CASE(iregcoil_rcws_zbound_c)
+            WRITE(iunit,out_format_2DB) 'REGCOIL_RCWS_zbound_c(',var_dex1,',',var_dex2,'):  REGCOIL Winding Surface Boundary Vertical Specification (COS MN)'
+         CASE(iregcoil_rcws_zbound_s)
+            WRITE(iunit,out_format_2DB) 'REGCOIL_RCWS_zbound_s(',var_dex1,',',var_dex2,'):  REGCOIL Winding Surface Boundary Vertical Specification (SIN MN)'
+         ! END of REGCOIL cases
       END SELECT
       END SUBROUTINE write_vars
 
