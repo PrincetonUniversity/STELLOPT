@@ -237,8 +237,8 @@ C-----------------------------------------------
       eqsolve_time = eqsolve_time + (teqsoloff-teqsolon)
 #endif
 
-   60 FORMAT(/,' MHD Energy = ',1p,e12.6,3x, 'd(ln W)/dt = ',1p,e9.3,
-     1         3x,'d(ln R0)/dt = ',e9.3)
+   60 FORMAT(/,' MHD Energy = ',1p,e13.6,3x, 'd(ln W)/dt = ',1p,e10.3,
+     1         3x,'d(ln R0)/dt = ',e10.3)
    70 FORMAT(' Average radial force balance: Int[FR(m=0)]',
      1   '/Int(B**2/R) = ',1p,e12.5,' (should tend to zero)'/)
    80 FORMAT(' Function calls in GMRES: ',i5)
