@@ -109,6 +109,12 @@ chisq_rbtor.o : \
       equil_vals.o 
       
       
+chisq_b0.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      equil_vals.o 
+      
+      
 chisq_r0.o : \
       stellopt_runtime.o \
       stellopt_targets.o \
