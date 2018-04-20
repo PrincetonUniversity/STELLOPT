@@ -240,6 +240,9 @@
       IF (ANY(sigma_regcoil_chi2_b < bigno)) THEN
          CALL chisq_regcoil_chi2_b(target_regcoil_chi2_b, sigma_regcoil_chi2_b, ncnt,iflag)
       END IF
+      IF (sigma_curvature_p2 < bigno) &
+         CALL chisq_curvature_p2(target_curvature_p2, sigma_curvature_p2, ncnt, iflag)
+
       ! Kink
       IF (ANY(sigma_kink < bigno)) &
          CALL chisq_kink(target_kink, sigma_kink, ncnt,iflag)
