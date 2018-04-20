@@ -70,8 +70,7 @@
       integer :: tag, dummy(1), file_status, unit_in, unit_out
       integer :: mpi_status(MPI_STATUS_SIZE)
       LOGICAL :: lfile_check
-      LOGICAL :: found_inputRadialCoordinate, found_inputRadialCoordinateForGradients, found_psiN_wish, added_scanType
-      LOGICAL :: found_nHats, found_THats, found_dnHatdpsiNs, found_dTHatdpsiNs, found_equilibriumFile
+      LOGICAL :: added_scanType
       REAL(rprec) :: sfincs_ne, sfincs_ni, sfincs_Te, sfincs_Ti, sfincs_d_ne_d_s, sfincs_d_ni_d_s, sfincs_d_Te_d_s, sfincs_d_Ti_d_s, delta_s
       INTEGER :: numProcs_eff, myRank_eff
       REAL(rprec) :: temp1, temp2
@@ -241,14 +240,6 @@
                      PRINT *,"Error opening new sfincs input.namelist file. iostat=",file_status
                      STOP
                   END IF
-                  found_equilibriumFile = .false.
-                  found_inputRadialCoordinate = .false.
-                  found_inputRadialCoordinateForGradients = .false.
-                  found_psiN_wish = .false.
-                  found_nHats = .false.
-                  found_THats = .false.
-                  found_dnHatdpsiNs = .false.
-                  found_dTHatdpsiNs = .false.
                   added_scanType = .false.
                   DO
                      file_line = ''
@@ -258,61 +249,67 @@
                      CALL tolower(file_line_lower)
                      file_line_lower = ADJUSTL(TRIM(file_line_lower))
 
+                     IF (TRIM(file_line_lower)=='&geometryparameters') THEN
+                        WRITE(UNIT=unit_out,FMT='(A)') '&geometryParameters'
+                        WRITE(UNIT=unit_out,FMT='(A)') '  geometryScheme = 5'
+                        WRITE(UNIT=unit_out,FMT='(A)') '  VMECRadialOption = 0'
+                        WRITE(UNIT=unit_out,FMT='(A)') '  inputRadialCoordinate = 1'
+                        WRITE(UNIT=unit_out,FMT='(A)') '  inputRadialCoordinateForGradients = 1'
+                        WRITE(UNIT=unit_out,FMT='(a, es24.14)') '  psiN_wish = ',sfincs_s(radius_index)
+                        WRITE(UNIT=unit_out,FMT='(A)') '  equilibriumFile = "'//TRIM(working_directory)//'/wout_'//TRIM(proc_string)//'.nc"'
+                        CYCLE
+                     END IF
+
+                     IF (TRIM(file_line_lower)=='&speciesparameters') THEN
+                        WRITE (UNIT=unit_out,FMT='(A)') '&speciesParameters'
+                        WRITE (UNIT=unit_out,FMT='(a, es24.14, es24.14, a)') '  nHats = ',sfincs_ne, sfincs_ni,' ! From stellopt'
+                        WRITE (UNIT=unit_out,FMT='(a, es24.14, es24.14, a)') '  THats = ',sfincs_Te, sfincs_Ti,' ! From stellopt'
+                        WRITE (UNIT=unit_out,FMT='(a, es24.14, es24.14, a)') '  dnHatdpsiNs = ',sfincs_d_ne_d_s, sfincs_d_ni_d_s,' ! From stellopt'
+                        WRITE (UNIT=unit_out,FMT='(a, es24.14, es24.14, a)') '  dTHatdpsiNs = ',sfincs_d_Te_d_s, sfincs_d_Ti_d_s,' ! From stellopt'
+                        CYCLE
+                     END IF
+
                      ! Change any parameters as needed for this particular radius.
                      IF (file_line_lower(1:3)=='!ss') THEN
                         file_line_lower2 = ADJUSTL(file_line_lower(4:))
-                        IF (file_line_lower2(1:8)=='scantype') file_line = '' ! Remove any existing scanType setting.
+                        IF (file_line_lower2(1:8)=='scantype') CYCLE ! Remove any previous scanType setting.
                      ELSE
                         IF ((.not. file_line_lower(1:1)=='!') .and. (.not.added_scanType)) THEN
                            added_scanType = .true.
                            WRITE(UNIT=unit_out,FMT='(A)') '!ss scanType = 4' ! Set scanType=4 on the first non-comment line.
                         END IF
                      END IF
-                     IF (file_line_lower(1:15)=='equilibriumfile') THEN
-                        found_equilibriumFile = .true.
-                        !file_line = 'equilibriumFile = "../../wout_'//TRIM(proc_string)//'.nc"'
-                        file_line = 'equilibriumFile = "'//TRIM(working_directory)//'/wout_'//TRIM(proc_string)//'.nc"'
-                     END IF
-                     IF (file_line_lower(1:22)=='inputradialcoordinate ' .or. file_line_lower(1:22)=='inputradialcoordinate=') THEN
-                        found_inputRadialCoordinate = .true.
-                        file_line='inputRadialCoordinate = 1'
-                     END IF
-                     IF (file_line_lower(1:33)=='inputradialcoordinateforgradients') THEN
-                        found_inputRadialCoordinateForGradients = .true.
-                        file_line='inputRadialCoordinateForGradients = 1'
-                     end IF
-                     IF (file_line_lower(1:9)=='psin_wish') THEN
-                        found_psiN_wish = .true.
-                        WRITE (file_line,'(a, es24.14)') 'psiN_wish = ',sfincs_s(radius_index)
-                     END IF
-                     IF (file_line_lower(1:5)=='nhats') THEN
-                        found_nHats = .true.
-                        WRITE (file_line,'(a, es24.14, es24.14, a)') 'nHats = ',sfincs_ne, sfincs_ni,' ! From stellopt'
-                     END IF
-                     IF (file_line_lower(1:5)=='thats') THEN
-                        found_THats = .true.
-                        WRITE (file_line,'(a, es24.14, es24.14, a)') 'THats = ',sfincs_Te, sfincs_Ti,' ! From stellopt'
-                     END IF
-                     IF (file_line_lower(1:11)=='dnhatdpsins') THEN
-                        found_dnHatdpsiNs = .true.
-                        WRITE (file_line,'(a, es24.14, es24.14, a)') 'dnHatdpsiNs = ',sfincs_d_ne_d_s, sfincs_d_ni_d_s,' ! From stellopt'
-                     END IF
-                     IF (file_line_lower(1:11)=='dthatdpsins') THEN
-                        found_dtHatdpsiNs = .true.
-                        WRITE (file_line,'(a, es24.14, es24.14, a)') 'dTHatdpsiNs = ',sfincs_d_Te_d_s, sfincs_d_Ti_d_s,' ! From stellopt'
-                     END IF
 
+                     ! Handle variables that should NOT be copied:
+                     IF (file_line_lower(1: 7)=='rhsmode') CYCLE
+                     IF (file_line_lower(1:14)=='geometryscheme') CYCLE
+                     IF (file_line_lower(1:15)=='equilibriumfile') CYCLE
+                     IF (file_line_lower(1:16)=='vmecradialoption') CYCLE
+                     IF (file_line_lower(1:22)=='inputradialcoordinate ' .or. file_line_lower(1:22)=='inputradialcoordinate=') CYCLE
+                     IF (file_line_lower(1:33)=='inputradialcoordinateforgradients') CYCLE
+                     IF (file_line_lower(1: 9)=='psin_wish') CYCLE
+                     IF (file_line_lower(1:11)=='psihat_wish') CYCLE
+                     IF (file_line_lower(1: 7)=='rn_wish') CYCLE
+                     IF (file_line_lower(1: 9)=='rhat_wish') CYCLE
+                     IF (file_line_lower(1: 5)=='nhats') CYCLE
+                     IF (file_line_lower(1: 5)=='thats') CYCLE
+                     IF (file_line_lower(1:11)=='dnhatdpsins') CYCLE
+                     IF (file_line_lower(1:11)=='dthatdpsins') CYCLE
+                     IF (file_line_lower(1:13)=='dnhatdpsihats') CYCLE
+                     IF (file_line_lower(1:13)=='dthatdpsihats') CYCLE
+                     IF (file_line_lower(1: 9)=='dnhatdrns') CYCLE
+                     IF (file_line_lower(1: 9)=='dthatdrns') CYCLE
+                     IF (file_line_lower(1:11)=='dnhatdrhats') CYCLE
+                     IF (file_line_lower(1:11)=='dthatdrhats') CYCLE
+                     IF (file_line_lower(1: 3)=='er ' .or. file_line_lower(1:3)=='er=') CYCLE
+                     IF (file_line_lower(1:10)=='dphihatdrn') CYCLE
+                     IF (file_line_lower(1:12)=='dphihatdrhat') CYCLE
+                     IF (file_line_lower(1:14)=='dphihatdpsihat') CYCLE
+
+                     ! If we've made it this far, copy the line from the old to new file:
                      WRITE(UNIT=unit_out,FMT='(A)',IOSTAT=file_status) TRIM(file_line)
                      IF (file_status .gt. 0) PRINT *,'Error writing new sfincs input.namelist file. IOSTAT=',file_status
                   END DO
-                  IF (.not. found_equilibriumFile) STOP "Error! The parameter equilibriumFile must appear in the SFINCS input.namelist file."
-                  IF (.not. found_inputRadialCoordinate) STOP "Error! The parameter inputRadialCoordinate must appear in the SFINCS input.namelist file."
-                  IF (.not. found_inputRadialCoordinateForGradients) STOP "Error! The parameter inputRadialCoordinateForGradients must appear in the SFINCS input.namelist file."
-                  IF (.not. found_psiN_wish) STOP "Error! The parameter psiN_wish must appear in the SFINCS input.namelist file."
-                  IF (.not. found_nHats) STOP "Error! The parameter nHats must appear in the SFINCS input.namelist file."
-                  IF (.not. found_THats) STOP "Error! The parameter THats must appear in the SFINCS input.namelist file."
-                  IF (.not. found_dnHatdpsiNs) STOP "Error! The parameter dnHatdpsiNs must appear in the SFINCS input.namelist file."
-                  IF (.not. found_dTHatdpsiNs) STOP "Error! The parameter dTHatdpsiNs must appear in the SFINCS input.namelist file."
                   CLOSE (unit_in)
                   CLOSE (unit_out)
 

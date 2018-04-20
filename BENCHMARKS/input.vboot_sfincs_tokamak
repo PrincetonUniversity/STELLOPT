@@ -1,18 +1,19 @@
-# This input file tests the equil_type='vboot' system, in which stellopt iterates between
-# VMEC and a bootstrap current code to obtain a self-consistent profile of bootstrap current.
-# In this file, SFINCS is used as the bootstrap current code.
-#
-# To make this test as fast as possible, the equilibrium is a simplified ITER-like axisymmetric geometry.
-#
-# This input file takes just ~ 64 seconds to run on 1 processor on a ~2015 MacBook laptop.
-#
-# If you 'grep Vboot' on the output, the expected results are:
-# Vboot iteration   0: ctor=-5.386E+06, vboot convergence factor= 9.560E-01
-# Vboot iteration   1: ctor=-7.492E+06, vboot convergence factor= 4.689E-01
-# Vboot iteration   2: ctor=-6.485E+06, vboot convergence factor= 2.890E-01
-# Vboot iteration   3: ctor=-6.849E+06, vboot convergence factor= 9.451E-02
-# Vboot iteration   4: ctor=-6.728E+06, vboot convergence factor= 3.227E-02
-# Vboot iteration   5: ctor=-6.764E+06, vboot convergence factor= 9.377E-03. Tolerance achieved.
+! This input file tests the equil_type='vboot' system, in which stellopt iterates between
+! VMEC and a bootstrap current code to obtain a self-consistent profile of bootstrap current.
+! In this file, SFINCS is used as the bootstrap current code.
+!
+! To make this test as fast as possible, the equilibrium is a simplified ITER-like axisymmetric geometry.
+!
+! This input file takes just ~ 64 seconds to run on 1 processor on a ~2015 MacBook laptop.
+! This file should work fine with any number of processors.
+!
+! If you 'grep Vboot' on the output, the expected results are:
+! Vboot iteration   0: ctor=-5.387E+06, vboot convergence factor= 9.560E-01
+! Vboot iteration   1: ctor=-7.492E+06, vboot convergence factor= 4.687E-01
+! Vboot iteration   2: ctor=-6.485E+06, vboot convergence factor= 2.891E-01
+! Vboot iteration   3: ctor=-6.850E+06, vboot convergence factor= 9.482E-02
+! Vboot iteration   4: ctor=-6.728E+06, vboot convergence factor= 3.257E-02
+! Vboot iteration   5: ctor=-6.764E+06, vboot convergence factor= 9.541E-03. Tolerance achieved.
 
 &INDATA
   LWOUTTXT=F
@@ -269,22 +270,14 @@ damp_bs=0.1
 &general
 /
 &geometryParameters
-  geometryScheme=5
-  inputRadialCoordinate = 1
-  inputRadialCoordinateForGradients = 1
-  psiN_wish =     1.00000000000000E-01
-  equilibriumFile = "/Users/mattland/Box Sync/work17/20170816-01-stellopt/20170816-01-025-stellopt-tokamak/wout_tokamak_opt0.nc"
+ ! All geometry parameters will be added by stellopt.
 /
 &speciesParameters
   Zs = -1 1
   mHats = 0.000544617 1
-nHats =     4.99999992153375E-01    4.99999992153375E-01 ! From stellopt
-THats =     9.10000000000000E+00    9.10000000000000E+00 ! From stellopt
-dnHatdpsiNs =     0.00000000000000E+00    0.00000000000000E+00 ! From stellopt
-dTHatdpsiNs =    -8.99999999999636E+00   -8.99999999999636E+00 ! From stellopt
+  ! Densities, temperatures, density gradients, and temperature gradients will be added by stellopt.
 /
 &physicsParameters
-  Er   = 0.0d+0
 /
 &resolutionParameters
   Ntheta = 35

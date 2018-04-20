@@ -1,18 +1,19 @@
-# This input file tests the equil_type='vboot' system, in which stellopt iterates between
-# VMEC and a bootstrap current code to obtain a self-consistent profile of bootstrap current.
-# In this file, BOOTSJ is used as the bootstrap current code.
-#
-# To make this test as fast as possible, the equilibrium is a simplified ITER-like axisymmetric geometry.
-#
-# This input file takes just ~ 42 seconds to run on 1 processor on a ~2015 MacBook laptop.
-#
-# If you 'grep Vboot' on the output, the expected results are:
-# Vboot iteration   0: ctor=-5.017E+06, vboot convergence factor= 9.479E-01
-# Vboot iteration   1: ctor=-6.862E+06, vboot convergence factor= 4.778E-01
-# Vboot iteration   2: ctor=-6.138E+06, vboot convergence factor= 2.308E-01
-# Vboot iteration   3: ctor=-6.349E+06, vboot convergence factor= 6.301E-02
-# Vboot iteration   4: ctor=-6.291E+06, vboot convergence factor= 1.753E-02
-# Vboot iteration   5: ctor=-6.305E+06, vboot convergence factor= 4.264E-03. Tolerance achieved.
+! This input file tests the equil_type='vboot' system, in which stellopt iterates between
+! VMEC and a bootstrap current code to obtain a self-consistent profile of bootstrap current.
+! In this file, BOOTSJ is used as the bootstrap current code.
+!
+! To make this test as fast as possible, the equilibrium is a simplified ITER-like axisymmetric geometry.
+!
+! This input file takes just ~ 42 seconds to run on 1 processor on a ~2015 MacBook laptop.
+! This file should work fine with any number of processors.
+!
+! If you 'grep Vboot' on the output, the expected results are:
+! Vboot iteration   0: ctor=-5.017E+06, vboot convergence factor= 9.479E-01
+! Vboot iteration   1: ctor=-6.862E+06, vboot convergence factor= 4.778E-01
+! Vboot iteration   2: ctor=-6.138E+06, vboot convergence factor= 2.308E-01
+! Vboot iteration   3: ctor=-6.349E+06, vboot convergence factor= 6.301E-02
+! Vboot iteration   4: ctor=-6.291E+06, vboot convergence factor= 1.753E-02
+! Vboot iteration   5: ctor=-6.305E+06, vboot convergence factor= 4.264E-03. Tolerance achieved.
 
 &INDATA
   LWOUTTXT=F
