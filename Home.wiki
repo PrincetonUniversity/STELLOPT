@@ -42,3 +42,7 @@ The wiki is designed to provide user documentation for various equilibrium magne
 [[TERPSICHORE]]
 
 [[TORLINES]]
+
+[[VMEC]]
+
+[[VMEC2PIES]]
