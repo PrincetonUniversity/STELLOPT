@@ -1,9 +1,12 @@
+# -*- mode: makefile -*-
+
 #######################################################################
 #            Define Basic Utilities
 #######################################################################
   SHELL = /bin/sh
   PWD1 = `pwd`
-  MYHOME = $(HOME)/bin
+  #MYHOME = $(HOME)/bin
+  MYHOME = $(HOME)/stellopt/bin
   PRECOMP:= fpp -C -P -DLINUX
   COMPILE = ifort
   COMPILE_FREE = ifort
@@ -34,7 +37,7 @@
 #######################################################################
 #            NAG Options
 #######################################################################
-  LNAG = T
+  LNAG = F
   NAG_LIB = $(NAGFLIB) $(NAGMKLLIB)
 
 #######################################################################
@@ -118,12 +121,29 @@
 #######################################################################
 #            TRAVIS Options
 #######################################################################
-  LTRAVIS= T
+  LTRAVIS= F
   TRAVIS_DIR = $(TRAVIS_PATH)
   LIB_TRAVIS = libtravis64_sopt.a
   LIB_MCONF  = libmconf64.a
   TRAVIS_LIB = $(TRAVIS_DIR)/lib/$(LIB_TRAVIS) \
                $(TRAVIS_DIR)/mag_conf/lib/$(LIB_MCONF) -lstdc++
+
+#######################################################################
+#            SFINCS Options
+#######################################################################
+
+#LSFINCS = F
+LSFINCS = T
+SFINCS_DIR = /u/mlan/sfincs/fortran/version3
+SFINCS_INC = -I$(SFINCS_DIR)
+LIB_SFINCS = libsfincs.a
+
+#PETSC_DIR=/opt/local/lib/petsc
+include ${PETSC_DIR}/lib/petsc/conf/variables
+# The above line defines the PETSC make variables PETSC_LIB, FC_LINKER_FLAGS, and FFLAGS, which are used below in SFINCS_LIB.
+
+SFINCS_LIB = $(SFINCS_DIR)/$(LIB_SFINCS) \
+        $(PETSC_LIB) $(FC_LINKER_FLAGS) $(FFLAGS)
 
 #######################################################################
 #            REGCOIL Options
@@ -231,6 +251,7 @@ else
   LCOILOPT = F
   LTERPSICHORE = F
   LTRAVIS = F
+  LSFINCS = F
 endif
 ifeq ($(MAKECMDGOALS),xanimec)
   PRECOMP += -D_ANIMEC
@@ -289,6 +310,17 @@ else
   TRAVIS_DIR = 
   LIB_TRAVIS = 
 endif
+
+ifeq ($(LSFINCS),T)
+  MOD1_PATH += $(SFINCS_INC)
+  PRECOMP += -DSFINCS
+  MOD_PATH += -I$(SFINCS_DIR)
+else
+  SFINCS_LIB =
+  SFINCS_DIR =
+  LIB_SFINCS =
+endif
+
 ifeq ($(LREGCOIL),T)
   MOD1_PATH += $(REGCOIL_INC)
   PRECOMP += -DREGCOIL
@@ -300,7 +332,7 @@ else
 endif
 
 # Handle other codes
-LIB_LINK += $(GENE_LIB) $(COILOPT_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB) $(REGCOIL_LIB)
+LIB_LINK += $(GENE_LIB) $(COILOPT_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB) $(SFINCS_LIB) $(REGCOIL_LIB)
 
 # Add libraries to LIB_LINK
 #LIB_LINK+= $(HOME_BIN)/libstell.a $(LIBS)

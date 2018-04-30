@@ -4,11 +4,21 @@ import numpy as np
 import sys, os
 from scipy.io import netcdf
 
+print
 print "Usage: "+ __file__ + " boot_fit.<extension> wout_<extension>_vboot0000.nc"
+print "If the last argument is 'pdf' then a pdf will be saved."
 
-if len(sys.argv) != 3:
+if len(sys.argv) != 3 and len(sys.argv) != 4:
     print "Error! Wrong number of arguments."
     exit(1)
+
+makePDF = False
+if len(sys.argv) == 4 and sys.argv[3] == 'pdf':
+    makePDF = True
+
+import matplotlib
+if makePDF:
+   matplotlib.use('PDF')
 
 #boot_fit_filename = 'boot_fit.'+sys.argv[1][5:-13]
 #data = np.loadtxt(sys.argv[1])
@@ -21,6 +31,7 @@ f.close()
 dIds_vmec = []
 curtor_vmec = []
 jdotb_vmec = []
+iotafs = []
 mu0 = 4*np.pi*(1.0e-7)
 
 for j in range(100):
@@ -33,6 +44,7 @@ for j in range(100):
     curtor_vmec.append(f.variables['ctor'][()])
     bsubumnc = f.variables['bsubumnc'][()]
     jdotb_vmec.append(f.variables['jdotb'][()])
+    iotafs.append(f.variables['iotaf'][()])
     f.close()
 
     s_full = np.linspace(0,1,ns)
@@ -50,7 +62,18 @@ for j in range(len(curtor_vmec)):
 
 import matplotlib.pyplot as plt
 
+# Another possible way to choose colors: use matplotlib's default color cycle:
 colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+
+# Generate colors to span the number of iterations found.
+# Taken from https://stackoverflow.com/questions/8931268/using-colormaps-to-set-color-of-line-in-matplotlib
+import matplotlib.colors as colors
+import matplotlib.cm as cmx
+my_colormap = cm = plt.get_cmap('gnuplot') 
+N = len(iotafs)
+cNorm  = colors.Normalize(vmin=0, vmax=(N-1)/0.90)
+scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=my_colormap)
+colors = map(scalarMap.to_rgba,range(N))
 
 plt.figure(figsize=(14,7))
 
@@ -73,14 +96,22 @@ for j in range(num_iterations):
 plt.legend(fontsize=6,loc=0)
 plt.xlabel('s')
 plt.title('AC = signgs * d I / d s')
+plt.xlim([-0.003,1.003])
+
+#plt.subplot(numRows,numCols,2)
+#for j in range(len(dIds_vmec)):
+#    plt.plot(s_full[1:-1], dIds_vmec[j],  color = colors[np.mod(j,len(colors))], label='Iteration '+str(j))
+#plt.legend(fontsize=6,loc=0)
+#plt.xlabel('s')
+#plt.title('dI/ds from bsupumnc(0,0) from vmec')
 
 plt.subplot(numRows,numCols,2)
-for j in range(len(dIds_vmec)):
-    plt.plot(s_full[1:-1], dIds_vmec[j],  color = colors[np.mod(j,len(colors))], label='Iteration '+str(j))
-
+for j in range(len(iotafs)):
+    plt.plot(s_full, iotafs[j],  color = colors[np.mod(j,len(colors))], label='Iteration '+str(j))
 plt.legend(fontsize=6,loc=0)
 plt.xlabel('s')
-plt.title('dI/ds from bsupumnc(0,0) from vmec')
+plt.title('iota from vmec')
+plt.xlim([0,1])
 
 plt.subplot(numRows,numCols,3)
 for j in range(len(dIds_vmec)):
@@ -92,11 +123,12 @@ for j in range(100):
     if not os.path.isfile(filename):
         break
     sfincs_data = np.loadtxt(filename,skiprows=1)
-    plt.plot(sfincs_data[:,0], sfincs_data[:,1], 'o', color = colors[np.mod(j,len(colors))], label='sfincs iteration '+str(j))
+    plt.plot(sfincs_data[:,0], sfincs_data[:,1], 'o', color = colors[np.mod(j+1,len(colors))], label='sfincs iteration '+str(j))
     
 plt.legend(fontsize=6,loc=0)
 plt.xlabel('s')
 plt.title('<j dot B>')
+plt.xlim([-0.003,1.003])
 
 plt.subplot(2,4,7)
 #plt.subplot(numRows,numCols,4)
@@ -105,8 +137,10 @@ plt.xlabel('vmec iteration')
 plt.title('curtor')
 
 import os
-titleString = 'File '+os.path.abspath(sys.argv[1])+'\nPlotted using '+os.path.abspath(__file__)
+titleString = 'File '+os.path.abspath(sys.argv[1])
 plt.figtext(0.5,0.995,titleString,ha='center',va='top',fontsize=6)
+titleString = 'Plotted using '+os.path.abspath(__file__)
+plt.figtext(0.5,0.005,titleString,ha='center',va='bottom',fontsize=6)
 
 #plt.tight_layout()
 
@@ -123,4 +157,9 @@ plt.title('vboot convergence factor')
 
 plt.tight_layout()
 
-plt.show()
+if makePDF:
+    filename = "vbootPlot_" + sys.argv[2][5:-14] + ".pdf"
+    print "Saving PDF: "+filename 
+    plt.savefig(filename)
+else:
+    plt.show()
