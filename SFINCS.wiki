@@ -94,17 +94,26 @@ It is important to tune the SFINCS resolution parameters Ntheta, Nzeta, Nxi, and
 
 ----
 
+===Examples=== 
+
+Several example input files are provided in subdirectories {{{vboot_...}}} of
+the BENCHMARKS directory.
+The first few lines of each input file provides some information about
+the number of processors required, expected output, etc.
+Each of the subdirectories also contains a .pdf file showing
+the expected convergence of the vboot iterations.
+
+
+----
+
 ===Plotting output=== 
 
 Once a vboot calculation (using either BOOTSJ or SFINCS) has run, you can plot
-several quantities using the {{{vboot_plot}}} script in the {{{scripts}}} directory.
+several quantities using the {{{vbootPlot}}} script in the {{{plotting}}} directory.
 This script will plot, for instance, how the total toroidal current and the profile
 of toroidal current vary over the vboot iterations. 
 Some of the data this script plots is saved in the {{{boot_fit.<extension>}}} file.
 The syntax for calling the plotting script is
 {{{vboot_plot boot_fit.<extension> wout_<extension>_vboot0000.nc}}}
-
-----
-
-===Tutorials=== 
-Put links to tutorial pages here.
+You can add {{{pdf}}} at the end of this line to save a .pdf file.
+Some example plots are provided in the vboot examples in the BENCHMARKS directory.
