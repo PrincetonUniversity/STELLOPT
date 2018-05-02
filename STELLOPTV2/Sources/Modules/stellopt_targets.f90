@@ -120,6 +120,7 @@
                                         r_mse, z_mse, phi_mse, s_mse,&
                                         a1_mse, a2_mse, a3_mse, a4_mse,&
                                         a5_mse, a6_mse, a7_mse, vac_mse
+      REAL(rprec), DIMENSION(nprof) :: target_sfincs_J_dot_B_flux_surface_average, sigma_sfincs_J_dot_B_flux_surface_average
       LOGICAL,     DIMENSION(nprof) ::  lmse_extcur
       REAL(rprec), DIMENSION(nprobes)  ::  target_bprobe, sigma_bprobe       ! Note this number is hardcoded in chisq_brobes SAL 2/10/14
       REAL(rprec), DIMENSION(nprof) ::  target_segrog, sigma_segrog, &
@@ -246,7 +247,7 @@
       INTEGER, PARAMETER :: jtarget_coilself   = 617
       INTEGER, PARAMETER :: jtarget_regcoil_chi2_b = 5150
       INTEGER, PARAMETER :: jtarget_regcoil_current_density = 5151
-      
+      INTEGER, PARAMETER :: jtarget_sfincs_J_dot_B_flux_surface_average = 5152
 
       CONTAINS
       
@@ -384,6 +385,8 @@
             WRITE(iunit, out_format) 'Minimum Coil Separation'
          CASE(jtarget_coilself)
             WRITE(iunit, out_format) 'Number of Coil Self-intersections'
+         CASE(jtarget_sfincs_J_dot_B_flux_surface_average)
+            WRITE(iunit, out_format) 'SFINCS bootstrap current'
       END SELECT
       END SUBROUTINE write_targets
       
