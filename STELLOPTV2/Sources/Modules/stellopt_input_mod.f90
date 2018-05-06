@@ -629,7 +629,8 @@
       bootj_aux_s(1:5) = (/0.0,0.25,0.50,0.75,1.0/)
       bootj_aux_f(:)  = 0.0
       sfincs_s        = -1 
-      sfincs_s(1:4)   = (/ 0.2, 0.4, 0.6, 0.8 /)
+      !sfincs_s(1:4)   = (/ 0.2, 0.4, 0.6, 0.8 /)
+      sfincs_s(1) = 0.5
       vboot_tolerance = 0.01
       sfincs_min_procs = 1
       emis_xics_s(1:5) = (/0.0,0.25,0.50,0.75,1.0/)
