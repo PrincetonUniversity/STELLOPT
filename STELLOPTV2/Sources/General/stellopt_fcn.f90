@@ -312,7 +312,6 @@
          ! functions should handle iflag by returning immediately if
          ! iflag is set to a negative number upon entry.
          CALL stellopt_load_equil(lscreen,iflag)
-
          ! Calls to secondary codes
          proc_string_old = proc_string ! So we can find the DIAGNO files
          !IF (ANY(lbooz)) CALL stellopt_toboozer(lscreen,iflag)
@@ -358,6 +357,11 @@
          IF (ANY(sigma_regcoil_chi2_b < bigno)) then
            CALL stellopt_regcoil_chi2_b(lscreen, iflag)
          end if
+!DEC$ ENDIF
+!DEC$ IF DEFINED (SFINCS)
+        IF (ANY(sigma_sfincs_J_dot_B_flux_surface_average < bigno)) THEN
+          CALL stellopt_sfincs(lscreen, iflag)
+        END IF
 !DEC$ ENDIF
 
          ! Now we load target values if an error was found then
