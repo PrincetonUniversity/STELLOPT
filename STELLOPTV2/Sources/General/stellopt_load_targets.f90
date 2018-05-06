@@ -241,7 +241,7 @@
       IF (ANY(sigma_kink < bigno)) &
          CALL chisq_kink(target_kink, sigma_kink, ncnt,iflag)
       ! SFINCS bootstrap optimization
-      IF (ANY(sigma_sfincs_J_dot_B_flux_surface_average)) THEN
+      IF (ANY(sigma_sfincs_J_dot_B_flux_surface_average < bigno)) &
         CALL chisq_sfincs_bootstrap(target_sfincs_J_dot_B_flux_surface_average, sigma_sfincs_J_dot_B_flux_surface_average, ncnt, iflag)
 
       ! Return if an initialization call
