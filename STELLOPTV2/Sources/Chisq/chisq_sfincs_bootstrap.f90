@@ -10,7 +10,7 @@
 !-----------------------------------------------------------------------
       USE stellopt_runtime
       USE stellopt_targets
-      USE stellopt_vars, ONLY: sfincs_s
+      USE stellopt_vars, ONLY: sfincs_s, sfincs_J_dot_B_flux_surface_average
       USE safe_open_mod, ONLY: safe_open
       USE mpi_params, ONLY: myid, master
       
@@ -32,33 +32,42 @@
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
-      print *,"Hello world from chisq_bootstrap_sfincs.f90. niter=",niter
+      !print *,"Hello world from chisq_sfincs_bootstrap.f90. niter=",niter
       IF (iflag < 0) RETURN
 
       ! This counts the number of elements of sigma that are < bigno
       ik   = COUNT(sigma < bigno)
-      IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'BOOTSTRAP ',ik,10
-      IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA  VAL  RHO  AVG_JDOTB  BEAM_JDOTB  BOOT_JDOTB  AJBBS  FACNU  BSNORM'
+      IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'SFINCS BOOTSTRAP ',ik,10
+      IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA  VAL'
+      ! Compute length of sfincs_s array
+      Nradii = MINLOC(sfincs_s(2:),DIM=1)
       IF (niter >= 0) THEN
-         ! Compute length of sfincs_s array
-         Nradii = MINLOC(sfincs_s(2:),DIM=1)
-         print *,"In the chisq_sfincs_bootstrap (niter >= 0) block."
+         !print *,"In the chisq_sfincs_bootstrap (niter >= 0) block."
          ! Iterate over sfincs_s
          DO ik = 1, Nradii
             IF (sigma(ik) < bigno) THEN
                mtargets = mtargets + 1
                targets(mtargets) = target(ik)
                sigmas(mtargets)  = sigma(ik)
-         END DO
-      ELSE
-         print *,"In the chisq_sfincs_bootstrap (niter < 0) block."
-         DO ik = 1, Nradii
-            IF (sigma(ik) < bigno) THEN
-               mtargets = mtargets + 1
+               vals(mtargets) = sfincs_J_dot_B_flux_surface_average(ik)
+               IF (iflag == 1) WRITE(iunit_out,'(4ES22.12E3)') target(ik), &
+                  sigma(ik), vals(mtargets)
             END IF
          END DO
+      ELSE
+         !print *,"In the chisq_sfincs_bootstrap (niter < 0) block."
+         IF (ANY(sigma < bigno)) THEN
+           DO ik = 1, Nradii
+              IF (sigma(ik) < bigno) THEN
+                 mtargets = mtargets + 1
+                 IF (niter == -2) THEN
+                    target_dex(mtargets)=jtarget_sfincs_J_dot_B_flux_surface_average
+                 END IF
+              END IF
+           END DO
+         END IF
       END IF
-
+      !print *,"End of chisq_sfincs_bootstrap."
       RETURN
 !----------------------------------------------------------------------
 !     END SUBROUTINE
