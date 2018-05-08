@@ -359,8 +359,10 @@
          end if
 !DEC$ ENDIF
 !DEC$ IF DEFINED (SFINCS)
-        IF (ANY(sigma_sfincs_J_dot_B_flux_surface_average < bigno)) THEN
-          CALL stellopt_sfincs(lscreen, iflag)
+        ctemp_str = 'sfincs'
+        IF (ANY(sigma_sfincs_bootstrap < bigno) .and. (iflag>=0)) THEN
+          CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
+          !CALL stellopt_sfincs(lscreen, iflag)
         END IF
 !DEC$ ENDIF
 

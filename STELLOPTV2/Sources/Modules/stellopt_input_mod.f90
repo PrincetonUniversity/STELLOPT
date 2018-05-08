@@ -393,8 +393,8 @@
                          regcoil_rcws_zbound_c_min, regcoil_rcws_zbound_s_min, &
                          regcoil_rcws_rbound_c_max, regcoil_rcws_rbound_s_max, &
                          regcoil_rcws_zbound_c_max, regcoil_rcws_zbound_s_max, &
-                         target_sfincs_J_dot_B_flux_surface_average, &
-                         sigma_sfincs_J_dot_B_flux_surface_average
+                         target_sfincs_bootstrap, &
+                         sigma_sfincs_bootstrap
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -589,8 +589,8 @@
       target_regcoil_current_density = 8.0e6
       sigma_regcoil_current_density  = bigno
       ! SFINCS options
-      target_sfincs_J_dot_B_flux_surface_average = 0.0
-      sigma_sfincs_J_dot_B_flux_surface_average = bigno
+      target_sfincs_bootstrap = 0.0
+      sigma_sfincs_bootstrap = bigno
       
       ne_type         = 'akima_spline'
       zeff_type       = 'akima_spline'
@@ -1947,18 +1947,18 @@
          END DO
       END IF
 
-      IF (ANY(sigma_sfincs_J_dot_B_flux_surface_average < bigno)) THEN
+      IF (ANY(sigma_sfincs_bootstrap < bigno)) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          WRITE(iunit,'(A)') '!          BOOTSTRAP Optimization (SFINCS)'
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          n=0
-         DO ik = 1,UBOUND(sigma_sfincs_J_dot_B_flux_surface_average,DIM=1)
-            IF(sigma_sfincs_J_dot_B_flux_surface_average(ik) < bigno) n=ik
+         DO ik = 1,UBOUND(sigma_sfincs_bootstrap,DIM=1)
+            IF(sigma_sfincs_bootstrap(ik) < bigno) n=ik
          END DO
          DO ik = 1, n
-           IF (sigma_sfincs_J_dot_B_flux_surface_average(ik) < bigno)  WRITE(iunit,"(2(2X,A,I3.3,A,E22.14))") &
-                          'TARGET_SFINCS_J_dot_B_flux_surface_average(',ik,') = ',target_sfincs_J_dot_B_flux_surface_average(ik), &
-                          'SIGMA_SFINCS_J_dot_B_flux_surface_average(',ik,') = ',sigma_sfincs_J_dot_B_flux_surface_average(ik)
+           IF (sigma_sfincs_bootstrap(ik) < bigno)  WRITE(iunit,"(2(2X,A,I3.3,A,E22.14))") &
+                          'TARGET_SFINCS_J_dot_B_flux_surface_average(',ik,') = ',target_sfincs_bootstrap(ik), &
+                          'SIGMA_SFINCS_J_dot_B_flux_surface_average(',ik,') = ',sigma_sfincs_bootstrap(ik)
          END DO
       END IF
       IF (ANY(sigma_neo < bigno)) THEN
