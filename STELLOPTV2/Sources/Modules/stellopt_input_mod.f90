@@ -1957,8 +1957,8 @@
          END DO
          DO ik = 1, n
            IF (sigma_sfincs_bootstrap(ik) < bigno)  WRITE(iunit,"(2(2X,A,I3.3,A,E22.14))") &
-                          'TARGET_SFINCS_J_dot_B_flux_surface_average(',ik,') = ',target_sfincs_bootstrap(ik), &
-                          'SIGMA_SFINCS_J_dot_B_flux_surface_average(',ik,') = ',sigma_sfincs_bootstrap(ik)
+                          'TARGET_SFINCS_BOOTSTRAP(',ik,') = ',target_sfincs_bootstrap(ik), &
+                          'SIGMA_SFINCS_BOOTSTRAP(',ik,') = ',sigma_sfincs_bootstrap(ik)
          END DO
       END IF
       IF (ANY(sigma_neo < bigno)) THEN
