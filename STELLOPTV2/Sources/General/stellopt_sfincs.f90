@@ -107,7 +107,6 @@
             CALL MPI_COMM_SIZE(MPI_COMM_MYWORLD, numProcs_myworld, ierr_mpi)
             CALL MPI_COMM_RANK(MPI_COMM_MYWORLD, myRank_myworld, ierr_mpi)
             !print "(a,i3,a,i3,a,i3,a,i3,a,i3,a,i3)", "World: rank",myRank_world," of",numProcs_world,". Myworld: rank",myRank_myworld," of",numProcs_myworld,". myworkid=",myworkid,". master=",master
-
             IF (sfincs_min_procs > numProcs_myworld) THEN
                IF (myworkid==master) THEN
                   PRINT *,"WARNING! The number of procs in MPI_COMM_MYWORLD is smaller than sfincs_min_procs."
@@ -117,6 +116,7 @@
                END IF
                sfincs_min_procs = numProcs_myWorld
             END IF
+            ! Here sfincs_s is initialized to -1
             Nradii = MINLOC(sfincs_s(2:),DIM=1)
             IF (myworkid==master .and. lscreen) PRINT *,"Number of radii for SFINCS:",Nradii
             DO j=1,Nradii
@@ -157,7 +157,8 @@
 
             color = radius_index_min ! This choice ensures that all procs handling the same radii get grouped into one MPI communicator.
             key = myworkid
-            CALL MPI_COMM_SPLIT(MPI_COMM_WORLD, color, key, MPI_COMM_SFINCS, ierr_mpi)
+!              CALL MPI_COMM_SPLIT(MPI_COMM_WORLD, color, key, MPI_COMM_SFINCS, ierr_mpi)
+            CALL MPI_COMM_SPLIT(MPI_COMM_MYWORLD, color, key, MPI_COMM_SFINCS, ierr_mpi)
             CALL MPI_COMM_SIZE(MPI_COMM_SFINCS, numProcs_sfincs, ierr_mpi)
             CALL MPI_COMM_RANK(MPI_COMM_SFINCS, myRank_sfincs, ierr_mpi)
             WRITE (proc_assignments_string,fmt="(a,i5,a,i5,a,i4,a,i4,a,i5,a,i5,a)"),"Proc ",myRank_myWorld," of",numProcs_myWorld," in MPI_COMM_MYWORLD will handle radius",radius_index_min," to",radius_index_max," and has rank",myRank_sfincs," of",numProcs_sfincs," in MPI_COMM_SFINCS."
