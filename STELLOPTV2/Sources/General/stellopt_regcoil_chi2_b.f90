@@ -152,6 +152,7 @@
       call regcoil_read_bnorm()
       ! write(6,'(a)') '<----build matrices'
       call regcoil_build_matrices()
+      call regcoil_prepare_solve()
 
       ! JCS: I disabled all options except for #5 (for now)
       ! As REGCOIL development continues, future cases can 
