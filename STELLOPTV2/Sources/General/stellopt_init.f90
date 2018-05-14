@@ -59,7 +59,7 @@
       ! Read the Equilibrium input
       CALL tolower(equil_type)
       SELECT CASE (TRIM(equil_type))
-         CASE('vmec2000','animec','flow','satire','parvmec','paravmec')
+         CASE('vmec2000','animec','flow','satire','parvmec','paravmec','vmec2000_oneeq')
               ! Now convert id_string to extension
               id_string = id_string(7:LEN(id_string))
               ! Now make initializing VMEC call which preforms allocations
@@ -112,7 +112,7 @@
       iter  = 0
       nvars = 0
       SELECT CASE (TRIM(equil_type))
-         CASE('vmec2000','flow','animec','satire','paravmec','parvmec','vboot')
+         CASE('vmec2000','flow','animec','satire','paravmec','parvmec','vboot','vmec2000_oneeq')
               IF (lphiedge_opt) nvars = nvars + 1
               IF (lcurtor_opt)  nvars = nvars + 1
               IF (lpscale_opt)  nvars = nvars + 1
@@ -274,7 +274,7 @@
 !DEC$ ENDIF
       ! Read the Equilibrium Namelist and initalize the var arrays
       SELECT CASE (TRIM(equil_type))
-         CASE('vmec2000','animec','flow','satire','paravmec','parvmec','vboot')
+         CASE('vmec2000','animec','flow','satire','paravmec','parvmec','vboot','vmec2000_oneeq')
               ! Set some defaults
               phiedge_old = phiedge
               IF (ncurr /= 0 .and. ANY(lai_opt)) lai_opt(:) = .false.

@@ -72,7 +72,7 @@
       iunit_out = 12
       ier = 0
       SELECT CASE(TRIM(equil_type))
-         CASE('vmec2000','animec','flow','satire','parvmec','paravmec','vboot')
+         CASE('vmec2000','animec','flow','satire','parvmec','paravmec','vboot','vmec2000_oneeq')
             IF (ctype == PSO_CLEANUP) THEN
                IF (ncnt /= 1) THEN
                   WRITE(temp_str,'(i5.5)') ncnt
