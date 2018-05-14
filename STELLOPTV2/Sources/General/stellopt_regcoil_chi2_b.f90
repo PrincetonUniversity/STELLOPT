@@ -17,17 +17,8 @@
       use vparams, only: my_mpol => mpol_rcws, my_ntor => ntor_rcws
 
 !DEC$ IF DEFINED (REGCOIL)
-      ! REGCOIL files
       USE regcoil_variables
-      USE regcoil_input_mod, ONLY: regcoil_write_input
-      USE regcoil_validate_input
-      USE regcoil_compute_lambda
-      USE regcoil_init_plasma
-      USE regcoil_init_coil_surface
-      USE regcoil_read_bnorm
-      USE regcoil_build_matrices
-      USE regcoil_auto_regularization_solve
-      USE regcoil_write_output
+      USE regcoil_init_plasma_mod
 !DEC$ ENDIF
 
 !-----------------------------------------------------------------------
@@ -57,6 +48,9 @@
       IF (lscreen) then
          WRITE(6,'(a)') ' -------------  REGCOIL CALCULATION  ---------'
       ENDIF
+
+      verbose = lscreen ! Suppress REGCOIL stdout if needed
+
       ! WRITE(6,'(a,a)') '<---- proc_string=', proc_string
       ! WRITE(6,'(a,i4.2)') ' -------------  REGCOIL: iflag=', iflag
 !DEC$ IF DEFINED (REGCOIL)
@@ -126,16 +120,16 @@
       ! write(6,'(a)') '<----Validate'
 
       ! check to make sure this doesn't muck up the winding surface
-      call validate_input()
+      call regcoil_validate_input()
       ! check to make sure this doesn't muck up the winding surface
       ! write(6,'(a)') '<----Compute lambda'
-      call compute_lambda(lscreen)
+      call regcoil_compute_lambda()
 
       ! Define the position vector and normal vector at each grid point for
       ! the surfaces:
       ! write(6,'(a)') '<----init_plasma'
       ! check to make sure this doesn't muck up the winding surface
-      call init_plasma(lscreen)
+      call regcoil_init_plasma()
       ! write(6,'(a)') '<----init coil surfs'
       IF ( (lregcoil_winding_surface_separation_opt) .and. &
            ((ANY(lregcoil_rcws_rbound_s_opt)) .or. (ANY(lregcoil_rcws_rbound_c_opt)) .or. &
@@ -144,20 +138,21 @@
       END IF
 
       IF (lregcoil_winding_surface_separation_opt) then 
-         call init_coil_surface(lscreen)
+         call regcoil_init_coil_surface()
       END IF
 
       IF ((ANY(lregcoil_rcws_rbound_s_opt)) .or. (ANY(lregcoil_rcws_rbound_c_opt)) .or. &
           (ANY(lregcoil_rcws_zbound_s_opt)) .or. (ANY(lregcoil_rcws_zbound_c_opt)) ) THEN 
          !write(6,'(a)') '<----regcoil initupdate_nescin_coil_surface'
-         call regcoil_initupdate_nescin_coil_surface(lscreen)
+         call regcoil_initupdate_nescin_coil_surface()
       END IF
 
       ! Initialize some of the vectors and matrices needed:
       !write(6,'(a)') '<----read bnorm'
-      call read_bnorm(lscreen)
+      call regcoil_read_bnorm()
       ! write(6,'(a)') '<----build matrices'
-      call build_matrices(lscreen)
+      call regcoil_build_matrices()
+      call regcoil_prepare_solve()
 
       ! JCS: I disabled all options except for #5 (for now)
       ! As REGCOIL development continues, future cases can 
@@ -165,16 +160,16 @@
       ! write(6,'(a)') '<----select a case'
       select case (general_option)
       !case (1)
-      !   call solve()
+      !   call regcoil_solve()
       !case (2)
-      !   call compute_diagnostics_for_nescout_potential()
+      !   call regcoil_compute_diagnostics_for_nescout_potential()
       !case (3)
-      !   call svd_scan()
+      !   call regcoil_svd_scan()
       !case (4)
-      !   call auto_regularization_solve()
+      !   call regcoil_auto_regularization_solve()
       case (5)
          ! write(6,'(a)') '<----auto_reg solve'
-         call auto_regularization_solve(lscreen)
+         call regcoil_auto_regularization_solve(lscreen)
          ! Now, the value we want should be in the variable
          ! 'chi2_B_target'. Normal termination of regcoil returns the
          ! achieved chi2_B (miniumum). If there is an 'error' (too high
