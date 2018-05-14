@@ -88,7 +88,7 @@
       IF (iflag < 0) RETURN
       ier = 0
       SELECT CASE (TRIM(equil_type))
-         CASE('vmec2000','animec','flow','satire','parvmec','paravmec','vboot')
+         CASE('vmec2000','animec','flow','satire','parvmec','paravmec','vboot','vmec2000_oneeq')
             ! Read the VMEC output
             CALL read_wout_deallocate
             CALL read_wout_file(TRIM(proc_string),ier)
