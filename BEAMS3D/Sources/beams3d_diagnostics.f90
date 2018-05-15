@@ -62,6 +62,8 @@
          beam = 1
          nbeams = 1
       END IF
+
+      PRINT *,myworkid,mystart,myend,mystart_save,myend_save
       CALL FLUSH(6)
 
       mystart = mystart_save
@@ -72,25 +74,14 @@
       IF (ALLOCATED(nlost)) DEALLOCATE(nlost)
       ALLOCATE(shine_through(nbeams))
       ALLOCATE(nlost(nbeams))
-!      IF (myworkid == master) THEN
-!         ALLOCATE(partmask(1:nparticles))
-!         ALLOCATE(partmask2(0:npoinc,1:nparticles))
-!         ALLOCATE(partmask2t(0:npoinc,1:nparticles))
-!         ALLOCATE(int_mask(1:nparticles))
-!         ALLOCATE(int_mask2(0:npoinc,1:nparticles))
-!         ALLOCATE(real_mask(1:nparticles))
-!         maxdist=MAXVAl(MAXVAL(vll_lines,DIM=2),DIM=1)
-!         mindist=MINVAl(MINVAL(vll_lines,DIM=2),DIM=1)
-!      ELSE
-         ALLOCATE(partmask(mystart:myend))
-         ALLOCATE(partmask2(0:npoinc,mystart:myend))
-         ALLOCATE(partmask2t(0:npoinc,mystart:myend))
-         ALLOCATE(int_mask(mystart:myend))
-         ALLOCATE(int_mask2(0:npoinc,mystart:myend))
-         ALLOCATE(real_mask(mystart:myend))
-         maxdist=MAXVAl(MAXVAL(vll_lines,DIM=2),DIM=1)
-         mindist=MINVAl(MINVAL(vll_lines,DIM=2),DIM=1)
-!      END IF
+      ALLOCATE(partmask(mystart:myend))
+      ALLOCATE(partmask2(0:npoinc,mystart:myend))
+      ALLOCATE(partmask2t(0:npoinc,mystart:myend))
+      ALLOCATE(int_mask(mystart:myend))
+      ALLOCATE(int_mask2(0:npoinc,mystart:myend))
+      ALLOCATE(real_mask(mystart:myend))
+      maxdist=MAXVAl(MAXVAL(vll_lines,DIM=2),DIM=1)
+      mindist=MINVAl(MINVAL(vll_lines,DIM=2),DIM=1)
 !DEC$ IF DEFINED (MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_BEAMS, ierr_mpi)
       IF (ierr_mpi /= 0) CALL handle_err(MPI_BARRIER_ERR, 'beams3d_follow', ierr_mpi)
@@ -108,9 +99,8 @@
              .or. (neut_lines(:,mystart:myend)) ) int_mask2(:,mystart:myend) = 0  ! Mask the neutral and lost particles
       int_mask(mystart:myend) = 0
       IF (lbeam) int_mask(mystart:myend) = 3
-      int_mask(mystart:myend)  = COUNT(neut_lines(:,mystart:myend),DIM=1)-1                  ! Starting index of every charge particle (dont ask why we need -2 but we do)
-      !int_mask(mystart:myend)  = MINLOC(neut_lines(:,mystart:myend),DIM=1)-2                  ! Starting index of every charge particle (dont ask why we need -2 but we do)
-      !WHERE(int_mask < 0) int_mask = 0
+      int_mask(mystart:myend)  = COUNT(neut_lines(:,mystart:myend),DIM=1)-1                  ! Starting index of every charge particle
+      WHERE(int_mask < 0) int_mask = 0
       FORALL(j=mystart:myend) real_mask(j) = S_lines(int_mask(j),j) ! Starting points in s
 
       ! Don't need R_lines or PHI_lines after this point
