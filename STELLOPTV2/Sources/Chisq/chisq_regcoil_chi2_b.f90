@@ -44,7 +44,7 @@
       USE stellopt_vars, ONLY: regcoil_nlambda
       USE vparams, ONLY: mnprod_x4_rcws
 !DEC$ IF DEFINED (REGCOIL)
-      USE regcoil_input_mod 
+      USE regcoil_variables, ONLY:  chi2_B_target, nlambda, regcoil_nml
 !DEC$ ENDIF      
 !-----------------------------------------------------------------------
 !     Input/Output Variables
@@ -106,7 +106,10 @@
                END IF
             END DO
             CALL safe_open(iunit, iflag, TRIM('input.'//TRIM(id_string)), 'old', 'formatted')
-            CALL regcoil_read_input(iunit, iflag)
+
+            !CALL regcoil_read_input(iunit, iflag)
+            READ(iunit, nml=regcoil_nml, iostat=iflag)
+
             ! save an internal copy of the value of nlambda here (regcoil may
             ! overwrite it)
             regcoil_nlambda = nlambda

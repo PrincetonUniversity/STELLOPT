@@ -30,9 +30,6 @@
       USE beams3d_runtime, ONLY: BEAMS3D_VERSION
 !DEC$ ENDIF        
 !DEC$ IF DEFINED (REGCOIL)
-      !USE regcoil_nescin_utils_1
-      !USE regcoil_nescin_utils_2
-      USE regcoil_init_coil_surface
       USE regcoil_variables, ONLY: rc_rmnc_stellopt, rc_rmns_stellopt, &
                                    rc_zmnc_stellopt, rc_zmns_stellopt, &
                                    rc_nfp => nfp
