@@ -151,6 +151,7 @@
       CALL stellopt_paraexe(beam_str,proc_string,lscreen)
       IF (lscreen) WRITE(6,'(a)') '------------------------  ORBIT CALCULATION (DONE)  ----------------------'
       CALL FLUSH(6)
+      
 
       ! Now analyze the results
       IF (ALLOCATED(orbit_lost_frac)) DEALLOCATE(orbit_lost_frac)
