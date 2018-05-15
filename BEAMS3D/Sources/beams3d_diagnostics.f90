@@ -63,7 +63,6 @@
          nbeams = 1
       END IF
 
-      PRINT *,myworkid,mystart,myend,mystart_save,myend_save
       CALL FLUSH(6)
 
       mystart = mystart_save
