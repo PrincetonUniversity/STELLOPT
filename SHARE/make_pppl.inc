@@ -15,7 +15,7 @@
 #            Define Compiler Flags
 #######################################################################
   FLAGS_R = -O2 -fexternal-blas
-#  FLAGS_R = -O0 -g -fexternal-blas -fbacktrace
+#  FLAGS_R = -g -O0 -fexternal-blas -fcheck=all -fbacktrace
   FLAGS_D = -g -O0 -fexternal-blas -fcheck=all -fbacktrace
 
 # Crutch for broken module vars
