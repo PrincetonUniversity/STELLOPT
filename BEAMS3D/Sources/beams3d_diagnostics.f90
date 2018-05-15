@@ -247,6 +247,23 @@
 
       END IF
 
+      ! Give master a full copy of lost_lines (for STELLOPT interface)
+      partmask(mystart:myend) = lost_lines(mystart:myend)
+      IF (myworkid == master) THEN
+           DEALLOCATE(lost_lines)
+           ALLOCATE(lost_lines(1:nparticles),revcounts(nprocs_beams),displs(nprocs_beams))
+           lost_lines(mystart:myend) = partmask(mystart:myend)
+      ELSE
+           ALLOCATE(revcounts(nprocs_beams),displs(nprocs_beams))
+      END IF
+      CALL MPI_GATHER(mystart,1,MPI_INTEGER,displs,1,MPI_INTEGER,master, MPI_COMM_BEAMS, ierr_mpi)
+      CALL MPI_GATHER(myend-mystart+1,1,MPI_INTEGER,revcounts,1,MPI_INTEGER,master, MPI_COMM_BEAMS, ierr_mpi)
+      CALL MPI_GATHERV(partmask(mystart:myend),myend-mystart+1,MPI_LOGICAL,&
+                       lost_lines,revcounts,displs,MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
+      IF (ALLOCATED(revcounts)) DEALLOCATE(revcounts)
+      IF (ALLOCATED(displs)) DEALLOCATE(displs)
+      IF (myworkid /= master) DEALLOCATE(lost_lines)
+
       CALL beams3d_write('DIAG')
 
       DEALLOCATE(int_mask2,int_mask)
