@@ -17,8 +17,17 @@
       use vparams, only: my_mpol => mpol_rcws, my_ntor => ntor_rcws
 
 !DEC$ IF DEFINED (REGCOIL)
-      USE regcoil_variables
+      !USE regcoil_auto_regularization_solve
+      !USE regcoil_build_matrices
+      !USE regcoil_compute_lambda 
+      !USE regcoil_init_coil_surface
       USE regcoil_init_plasma_mod
+      !USE regcoil_initupdate_nescin_coil_surface
+      !USE regcoil_prepare_solve
+      !USE regcoil_read_bnorm
+      !USE regcoil_read_nescin_spectrum
+      !USE regcoil_validate_input
+      USE regcoil_variables
 !DEC$ ENDIF
 
 !-----------------------------------------------------------------------
@@ -115,20 +124,18 @@
       ! the original value here
       nlambda = regcoil_nlambda
 
-      ! This should be *almost* a duplicate of the main code from
+      ! This should *almost* be a duplicate of the main code from
       ! regcoil.f90
-      ! write(6,'(a)') '<----Validate'
 
-      ! check to make sure this doesn't muck up the winding surface
+      ! Validate the input
+      ! write(6,'(a)') '<----Validate'
       call regcoil_validate_input()
-      ! check to make sure this doesn't muck up the winding surface
       ! write(6,'(a)') '<----Compute lambda'
       call regcoil_compute_lambda()
 
       ! Define the position vector and normal vector at each grid point for
       ! the surfaces:
       ! write(6,'(a)') '<----init_plasma'
-      ! check to make sure this doesn't muck up the winding surface
       call regcoil_init_plasma()
       ! write(6,'(a)') '<----init coil surfs'
       IF ( (lregcoil_winding_surface_separation_opt) .and. &
@@ -138,17 +145,18 @@
       END IF
 
       IF (lregcoil_winding_surface_separation_opt) then 
+         ! write(6,'(a)') '<----regcoil_init_coil_surface'
          call regcoil_init_coil_surface()
       END IF
 
       IF ((ANY(lregcoil_rcws_rbound_s_opt)) .or. (ANY(lregcoil_rcws_rbound_c_opt)) .or. &
           (ANY(lregcoil_rcws_zbound_s_opt)) .or. (ANY(lregcoil_rcws_zbound_c_opt)) ) THEN 
-         !write(6,'(a)') '<----regcoil initupdate_nescin_coil_surface'
-         call regcoil_initupdate_nescin_coil_surface()
+         ! write(6,'(a)') '<----regcoil initupdate_nescin_coil_surface'
+         call regcoil_initupdate_nescin_coil_surface(verbose)
       END IF
 
       ! Initialize some of the vectors and matrices needed:
-      !write(6,'(a)') '<----read bnorm'
+      ! write(6,'(a)') '<----read bnorm'
       call regcoil_read_bnorm()
       ! write(6,'(a)') '<----build matrices'
       call regcoil_build_matrices()
@@ -169,13 +177,13 @@
       !   call regcoil_auto_regularization_solve()
       case (5)
          ! write(6,'(a)') '<----auto_reg solve'
-         call regcoil_auto_regularization_solve(lscreen)
-         ! Now, the value we want should be in the variable
-         ! 'chi2_B_target'. Normal termination of regcoil returns the
-         ! achieved chi2_B (miniumum). If there is an 'error' (too high
-         ! or too low of current), the chi2_B will contain the chi2_B
-         ! that was achieved with infinite regularization 
-         ! (spaced apart, straight-ish) coils
+         call regcoil_auto_regularization_solve()
+         ! After regcoil_auto_reg...solve, the value we want should be
+         ! in the variable 'chi2_B_target'. Normal termination of regcoil
+         ! returns the achieved chi2_B (miniumum). If there is an
+         ! 'error' (too high or too low of current), the chi2_B will
+         ! contain the chi2_B that was achieved with infinite
+         ! regularization ! (well-spaced apart, straight-ish) coils
       case default
          print *,"Invalid general_option:",general_option
          stop
@@ -188,51 +196,48 @@
       !  working job directory and an output statement(s) will be displaed
       !  to the screen, regardless of the value of 'lscreen'
       !  - JCS
-      !IF ((ANY(lregcoil_rcws_rbound_s_opt)) .or. (ANY(lregcoil_rcws_rbound_c_opt)) .or. &
+      ! IF ((ANY(lregcoil_rcws_rbound_s_opt)) .or. (ANY(lregcoil_rcws_rbound_c_opt)) .or. &
       !    (ANY(lregcoil_rcws_zbound_s_opt)) .or. (ANY(lregcoil_rcws_zbound_c_opt)) ) THEN 
       ! write(6,'(a)') '<----REGCOIL DEBUG safe_open'
-      !CALL safe_open(iunit, istat, TRIM('regcoil_nescout.'// &
-      !          TRIM(proc_string)), 'replace', 'formatted')
-      !write(6,'(a)'), '<----JCSwrite_output'
-      !write(iunit,*), "Number of fourier modes in table"
-      !write(iunit,*), nummodes1
-      !write(iunit,*), "Table of fourier coefficients"
-      !write(iunit,*), "m,n,crc2,czs2,crs2,czc2"
+      ! CALL safe_open(iunit, istat, TRIM('regcoil_nescout.'// &
+      !           TRIM(proc_string)), 'replace', 'formatted')
+      ! write(6,'(a)'), '<----JCSwrite_output'
+      ! write(iunit,*), "Number of fourier modes in table"
+      ! write(iunit,*), nummodes1
+      ! write(iunit,*), "Table of fourier coefficients"
+      ! write(iunit,*), "m,n,crc2,czs2,crs2,czc2"
 
-      !ii = 0
-      !nummodes2 = 0
-      !DO m = -mpol_rcws, mpol_rcws
-      !    DO n = -ntor_rcws, ntor_rcws
-      !       if ( (regcoil_rcws_rbound_c(m,n) .ne. 0) .or. &
-      !            (regcoil_rcws_rbound_s(m,n) .ne. 0) .or. &
-      !            (regcoil_rcws_zbound_c(m,n) .ne. 0) .or. &
-      !            (regcoil_rcws_zbound_s(m,n) .ne. 0) ) THEN
-      !         ii = ii+1
-      !         rc_xm_stellopt(ii) = m
-      !         rc_xn_stellopt(ii) = n
-      !         rc_rmnc_stellopt(ii) = regcoil_rcws_rbound_c(m,n)
-      !         rc_rmns_stellopt(ii) = regcoil_rcws_rbound_s(m,n)
-      !         rc_zmnc_stellopt(ii) = regcoil_rcws_zbound_c(m,n)
-      !         rc_zmns_stellopt(ii) = regcoil_rcws_zbound_s(m,n)
-      !         if ( (rc_rmnc_stellopt(ii) .ne. 0) .or.  (rc_rmns_stellopt(ii) .ne. 0) .or. &
-      !              (rc_zmnc_stellopt(ii) .ne. 0) .or.  (rc_zmns_stellopt(ii) .ne. 0) ) THEN
-      !            nummodes2 = nummodes2 + 1
-      !            write(iunit,*), m, n, &
-      !                   rc_rmnc_stellopt(m,n), rc_rmns_stellopt(m,n), &
-      !                   rc_zmnc_stellopt(m,n), rc_zmns_stellopt(m,n)
-      !         END if
-      !     END DO
-      !END DO
-      !if (nummodes1 .ne. nummodes2) then
-      !  write(6,'(a)') '<----Hmmm....different number of modes???'
-      !END if
-      !END if
-
-      !print *, chi2_B_target
-      !print *,"REGCOIL complete. Total time=",totalTime,"sec."
-       
+      ! ii = 0
+      ! nummodes2 = 0
+      ! DO m = -mpol_rcws, mpol_rcws
+      !     DO n = -ntor_rcws, ntor_rcws
+      !        if ( (regcoil_rcws_rbound_c(m,n) .ne. 0) .or. &
+      !             (regcoil_rcws_rbound_s(m,n) .ne. 0) .or. &
+      !             (regcoil_rcws_zbound_c(m,n) .ne. 0) .or. &
+      !             (regcoil_rcws_zbound_s(m,n) .ne. 0) ) THEN
+      !          ii = ii+1
+      !          rc_xm_stellopt(ii) = m
+      !          rc_xn_stellopt(ii) = n
+      !          rc_rmnc_stellopt(ii) = regcoil_rcws_rbound_c(m,n)
+      !          rc_rmns_stellopt(ii) = regcoil_rcws_rbound_s(m,n)
+      !          rc_zmnc_stellopt(ii) = regcoil_rcws_zbound_c(m,n)
+      !          rc_zmns_stellopt(ii) = regcoil_rcws_zbound_s(m,n)
+      !          if ( (rc_rmnc_stellopt(ii) .ne. 0) .or.  (rc_rmns_stellopt(ii) .ne. 0) .or. &
+      !               (rc_zmnc_stellopt(ii) .ne. 0) .or.  (rc_zmns_stellopt(ii) .ne. 0) ) THEN
+      !             nummodes2 = nummodes2 + 1
+      !             write(iunit,*), m, n, &
+      !                    rc_rmnc_stellopt(m,n), rc_rmns_stellopt(m,n), &
+      !                    rc_zmnc_stellopt(m,n), rc_zmns_stellopt(m,n)
+      !          END if
+      !      END DO
+      ! END DO
+      ! if (nummodes1 .ne. nummodes2) then
+      !   write(6,'(a)') '<----Hmmm....different number of modes???'
+      ! END if
+      ! END if
+      ! print *, chi2_B_target
+      ! print *,"REGCOIL complete. Total time=",totalTime,"sec."
       !=================END OF DEBUG SECTION==========================
-
 
       IF (lscreen) WRITE(6,'(a)') ' ---------------------------  REGCOIL CALCULATION DONE  ---------------------'
 !DEC$ ENDIF

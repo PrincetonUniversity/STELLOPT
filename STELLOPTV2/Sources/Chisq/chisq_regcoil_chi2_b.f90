@@ -44,7 +44,7 @@
       USE stellopt_vars, ONLY: regcoil_nlambda
       USE vparams, ONLY: mnprod_x4_rcws
 !DEC$ IF DEFINED (REGCOIL)
-      USE regcoil_variables, ONLY: regcoil_nml, nlambda, chi2_B_target
+      USE regcoil_variables, ONLY:  chi2_B_target, nlambda, regcoil_nml
 !DEC$ ENDIF      
 !-----------------------------------------------------------------------
 !     Input/Output Variables
