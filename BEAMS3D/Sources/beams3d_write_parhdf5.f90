@@ -122,13 +122,20 @@
       IF (lfvar) CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, FLTVAR, dimsf, ier, mem_space_id = mspace_id, file_space_id = fspace_id, xfer_prp = dxpl_id)
       IF (ldvar) CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, DBLVAR, dimsf, ier, mem_space_id = mspace_id, file_space_id = fspace_id, xfer_prp = dxpl_id)
 
-      ! Close Property list      CALL h5pclose_f(fapl_id, ier)      CALL h5pclose_f(dcpl_id, ier)      CALL h5pclose_f(dxpl_id, ier)      CALL h5sclose_f(mspace_id, ier)      CALL h5sclose_f(fspace_id, ier)      CALL h5dclose_f(dset_id, ier)
+      ! Close Property list
+      CALL h5pclose_f(fapl_id, ier)
+      CALL h5pclose_f(dcpl_id, ier)
+      CALL h5pclose_f(dxpl_id, ier)
+      CALL h5sclose_f(mspace_id, ier)
+      CALL h5sclose_f(fspace_id, ier)
+      CALL h5dclose_f(dset_id, ier)
 
       ! Deallocate Helpers
       DEALLOCATE(dimsf,chunk_dims,counts,offset)
 
 !!!!!!!CLOSE FILE
-      ! Close the file      CALL h5fclose_f(file_id, ier)
+      ! Close the file
+      CALL h5fclose_f(file_id, ier)
       ! Close the fortran interface
       CALL h5close_f(ier)
 
@@ -138,39 +145,53 @@
          IF (myworkid == i) THEN
             ! Open the fotran interface
             CALL h5open_f(ier)
+            !PRINT *,'h5open ',ier
 
             ! Setup File access
             CALL h5pcreate_f(H5P_FILE_ACCESS_F, fapl_id, ier)
+            !PRINT *,'h5pcreate_f ',ier
 
             ! Open file
             CALL h5fopen_f('beams3d_'//TRIM(id_string)//'.h5', H5F_ACC_RDWR_F, file_id, ier, access_prp = H5P_DEFAULT_F)
+            !PRINT *,'h5fopen_f ',ier
 
             ! Open or create the dataset and get/create dataspace identifer
             IF  (myworkid == master) THEN
                CALL h5screate_simple_f(rank, dimsf, fspace_id, ier)
+            !PRINT *,'h5screate_simple_f ',ier
                IF (livar) CALL h5dcreate_f(file_id, TRIM(var_name), H5T_NATIVE_INTEGER, fspace_id, dset_id, ier)
                IF (lfvar) CALL h5dcreate_f(file_id, TRIM(var_name), H5T_NATIVE_DOUBLE, fspace_id, dset_id, ier)
                IF (ldvar) CALL h5dcreate_f(file_id, TRIM(var_name), H5T_NATIVE_DOUBLE, fspace_id, dset_id, ier)
+            !PRINT *,'h5dcreate_f ',ier
             ELSE
                CALL h5dopen_f(file_id, TRIM(var_name), dset_id, ier)
+            !PRINT *,'h5dopen_f ',ier
                CALL h5dget_space_f(dset_id, fspace_id, ier)
+            !PRINT *,'h5dget_space_f ',ier
             END IF
 
-            ! Select Hyperslab            CALL h5sselect_hyperslab_f(fspace_id, H5S_SELECT_SET_F,offset, chunk_dims, ier) 
+            ! Select Hyperslab
+            CALL h5sselect_hyperslab_f(fspace_id, H5S_SELECT_SET_F,offset, chunk_dims, ier) 
+            !PRINT *,'h5sselect_hyperslab_f ',ier
  
             ! Get Memory Space
             CALL h5screate_simple_f(rank, chunk_dims, mspace_id, ier)
+            !PRINT *,'h5screate_simple_f ',ier
             
             ! Enable Chunking
             CALL h5pcreate_f(H5P_DATASET_CREATE_F, dcpl_id, ier)
+            !PRINT *,'h5pcreate_f ',ier
             CALL h5pset_chunk_f(dcpl_id, rank, chunk_dims, ier)
+            !PRINT *,'h5pset_chunk_f ',ier
 
             ! Write dataset
             IF (livar) CALL h5dwrite_f(dset_id, H5T_NATIVE_INTEGER, INTVAR, dimsf, ier, mem_space_id = mspace_id, file_space_id = fspace_id)
             IF (lfvar) CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, FLTVAR, dimsf, ier, mem_space_id = mspace_id, file_space_id = fspace_id)
             IF (ldvar) CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, DBLVAR, dimsf, ier, mem_space_id = mspace_id, file_space_id = fspace_id)
+            !PRINT *,'h5dwrite_f ',ier
             
-            ! Close down            CALL h5sclose_f(fspace_id, ier)
+            ! Close down
+            CALL h5sclose_f(fspace_id, ier)
             CALL h5sclose_f(mspace_id, ier)
             CALL h5dclose_f(dset_id, ier)
       
@@ -182,6 +203,7 @@
          END IF
          CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
          IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'beams3d_init_coil',ierr_mpi)
+         !IF (i == 1) STOP
       END DO
 
 !DEC$ ENDIF
