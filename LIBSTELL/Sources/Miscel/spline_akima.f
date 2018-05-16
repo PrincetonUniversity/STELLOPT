@@ -70,16 +70,28 @@
       m(iv+1) = (yloc(iv+2)-yloc(iv+1))/(xloc(iv+2)-xloc(iv+1))
 ! calculate weights for derivatives
       dm(-1:iv)= abs(m(0:iv+1)-m(-1:iv))
-      where (dm /= 0._DP) !exclude division by zero
-        p(1:iv) = dm(1:iv)/(dm(1:iv)+dm(-1:iv-2))
-      end where
-      where (dm /= 0._DP) !exclude division by zero
-        q(1:iv) = dm(-1:iv-2)/(dm(1:iv)+dm(-1:iv-2))
-      end where
-      t(1:iv) = p(1:iv)*m(0:iv-1)+q(1:iv)*m(1:iv)
-      where ( p(1:iv)+q(1:iv) < TINY(1._DP)) ! in case of two zeros give equal weight
-        t(1:iv) = 0.5_DP*m(0:iv-1)+0.5_DP*m(1:iv)
-      end where
+! This appears very ambiguous
+!      where (dm /= 0._DP) !exclude division by zero
+!        p(1:iv) = dm(1:iv)/(dm(1:iv)+dm(-1:iv-2))
+!      end where
+!      where (dm /= 0._DP) !exclude division by zero
+!        q(1:iv) = dm(-1:iv-2)/(dm(1:iv)+dm(-1:iv-2))
+!      end where
+!      t(1:iv) = p(1:iv)*m(0:iv-1)+q(1:iv)*m(1:iv)
+!      where ( p(1:iv)+q(1:iv) < TINY(1._DP)) ! in case of two zeros give equal weight
+!        t(1:iv) = 0.5_DP*m(0:iv-1)+0.5_DP*m(1:iv)
+!      end where
+! Fix to make things work better
+      DO i = 1, iv
+         cl = dm(i)+dm(i-2)
+         IF (cl == 0._DP) CYCLE
+         p(i) = dm(i)/cl
+         q(i) = dm(i-2)/cl
+      END DO
+      DO i = 1, iv
+         t(i) = p(i)*m(i-1)+q(i)*m(i)
+         IF (p(i)+q(i) < TINY(1._DP)) t(i) = 0.5_DP*(m(i-1)+m(i))
+      END DO
 ! fix coefficients
       a = yloc
       b = t
