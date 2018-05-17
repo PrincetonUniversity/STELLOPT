@@ -252,12 +252,30 @@
 
                      IF (TRIM(file_line_lower)=='&geometryparameters') THEN
                         WRITE(UNIT=unit_out,FMT='(A)') '&geometryParameters'
-                        WRITE(UNIT=unit_out,FMT='(A)') '  geometryScheme = 5'
-                        WRITE(UNIT=unit_out,FMT='(A)') '  VMECRadialOption = 0'
-                        WRITE(UNIT=unit_out,FMT='(A)') '  inputRadialCoordinate = 1'
-                        WRITE(UNIT=unit_out,FMT='(A)') '  inputRadialCoordinateForGradients = 1'
-                        WRITE(UNIT=unit_out,FMT='(a, es24.14)') '  psiN_wish = ',sfincs_s(radius_index)
-                        WRITE(UNIT=unit_out,FMT='(A)') '  equilibriumFile = "'//TRIM(working_directory)//'/wout_'//TRIM(proc_string)//'.nc"'
+												WRITE(UNIT=unit_out,FMT='(A)') '  inputRadialCoordinate = 1'
+												WRITE(UNIT=unit_out,FMT='(A)') '  inputRadialCoordinateForGradients = 1'
+												WRITE(UNIT=unit_out,FMT='(a, es24.14)') '  psiN_wish = ',sfincs_s(radius_index)
+												IF (ANY(lsfincs_boozer_bmnc_opt)) THEN
+													WRITE(UNIT=unit_out,FMT='(A)') '  geometryScheme = 13'
+													WRITE(UNIT=unit_out,FMT='(a, es24.14)') '  iota = ',sfincs_iota(radius_index)
+													WRITE(UNIT=unit_out,FMT='(a, es24.14)') '  GHat = ',sfincs_GHat(radius_index)
+													WRITE(UNIT=unit_out,FMT='(a, es24.14)') '  IHat = ',sfincs_IHat(radius_index)
+													WRITE(UNIT=unit_out,FMT='(a, es24.14)') '  aHat = ',sfincs_aHat(radius_index)
+													WRITE(UNIT=unit_out,FMT='(a, es24.14)') '  psiAHat = ',sfincs_psiAHat(radius_index)
+													WRITE(UNIT=unit_out,FMT='(A, I3)') '  NPeriods = ',sfincs_nperiods
+													! Write bmnc's for this surface
+													DO m=0,sfincs_mmax
+														DO n=-sfincs_nmax,sfincs_nmax
+															IF (sfincs_boozer_bmnc(m,n,radius_index)/=0) THEN
+																WRITE(UNIT=unit_out,FMT='(5X,A,I1,A,I1,A,es24.14)') 'BOOZER_BMNC(',m,',',n,') = ',sfincs_boozer_bmnc(m,n,radius_index)
+															END IF
+														END DO
+													END DO
+												ELSE
+													WRITE(UNIT=unit_out,FMT='(A)') '  geometryScheme = 5'
+													WRITE(UNIT=unit_out,FMT='(A)') '  VMECRadialOption = 0'
+													WRITE(UNIT=unit_out,FMT='(A)') '  equilibriumFile = "'//TRIM(working_directory)//'/wout_'//TRIM(proc_string)//'.nc"'
+												END IF
                         CYCLE
                      END IF
 

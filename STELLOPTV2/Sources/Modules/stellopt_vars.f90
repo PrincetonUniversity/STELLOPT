@@ -13,7 +13,7 @@
 !     Libraries
 !-----------------------------------------------------------------------
       USE vparams, ONLY: ndatafmax, mpol1d, ntord, &
-                         ntor_rcws, mpol_rcws
+                         ntor_rcws, mpol_rcws, sfincs_nmax, sfincs_mmax
       USE vsvd0
 !-----------------------------------------------------------------------
 !     Module Variables
@@ -62,6 +62,9 @@
 !              lregcoil_rcws_zbound_c_opt, lregcoil_rcws_zbound_s_opt
 !              dregcoil_rcws_rbound_c_opt, dregcoil_rcws_rbound_s_opt,
 !              dregcoil_rcws_zbound_c_opt, dregcoil_rcws_zbound_s_opt
+!						 SFINCS specific variables
+!							 sfincs_boozer_bmnc
+!							 lsfincs_boozer_bmnc_opt, dsfincs_boozer_bmnc_opt
 !
 !-----------------------------------------------------------------------
       IMPLICIT NONE
@@ -197,7 +200,17 @@
                           beamj_type, bootj_type, zeff_type, emis_xics_type, windsurfname, &
                           regcoil_nescin_filename, bootcalc_type
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: sfincs_J_dot_B_flux_surface_average, sfincs_B_squared_flux_surface_average
-      
+
+			! SFINCS quantities
+			! sfincs_ns should not be input - determined from sfincs_s
+			INTEGER :: sfincs_ns, sfincs_nperiods
+			REAL(rprec), DIMENSION(ndatafmax) :: sfincs_iota, sfincs_GHat, sfincs_IHat
+			REAL(rprec), DIMENSION(ndatafmax) :: sfincs_aHat, sfincs_psiAHat
+			LOGICAL, DIMENSION(0:sfincs_mmax,-sfincs_nmax:sfincs_nmax,ndatafmax) :: lsfincs_boozer_bmnc_opt
+			REAL(rprec), DIMENSION(0:sfincs_mmax,-sfincs_nmax:sfincs_nmax,ndatafmax) :: sfincs_boozer_bmnc
+			REAL(rprec), DIMENSION(0:sfincs_mmax,-sfincs_nmax:sfincs_nmax,ndatafmax) :: dsfincs_boozer_bmnc_opt
+			REAL(rprec), DIMENSION(0:sfincs_mmax,-sfincs_nmax:sfincs_nmax,ndatafmax) :: sfincs_boozer_bmnc_min, sfincs_boozer_bmnc_max
+
       ! These are not really variable parameters as we don't vary them
       ! yet
       REAL(rprec), DIMENSION(ndatafmax) :: nustar_s, nustar_f
@@ -264,17 +277,19 @@
       INTEGER, PARAMETER ::  iregcoil_rcws_rbound_s = 5161
       INTEGER, PARAMETER ::  iregcoil_rcws_zbound_c = 5162
       INTEGER, PARAMETER ::  iregcoil_rcws_zbound_s = 5163
+			INTEGER, PARAMETER ::  isfincs_boozer_bmnc = 5164
       
       REAL(rprec), PARAMETER :: ne_norm = 1.0E18
       
       CONTAINS      
       
-      SUBROUTINE write_vars(iunit,var_num,var_dex1,var_dex2)
-      INTEGER, INTENT(in) :: iunit, var_num, var_dex1, var_dex2
+      SUBROUTINE write_vars(iunit,var_num,var_dex1,var_dex2,var_dex3)
+      INTEGER, INTENT(in) :: iunit, var_num, var_dex1, var_dex2, var_dex3
       CHARACTER*(*), PARAMETER ::  out_format = '(5X,A)'
       CHARACTER*(*), PARAMETER ::  out_format_1D = '(5X,A,I3.3,A)'
       CHARACTER*(*), PARAMETER ::  out_format_2D = '(5X,A,I3.3,A,I3.3,A)'
       CHARACTER*(*), PARAMETER ::  out_format_2DB = '(5X,A,I4.3,A,I4.3,A)'
+			CHARACTER*(*), PARAMETER ::  out_format_3D = '(5X,A,I1,A,I1,A,I1,A)'
       SELECT CASE(var_num)
 
          CASE(iphiedge)
@@ -490,6 +505,8 @@
          CASE(iregcoil_rcws_zbound_s)
             WRITE(iunit,out_format_2DB) 'REGCOIL_RCWS_zbound_s(',var_dex1,',',var_dex2,'):  REGCOIL Winding Surface Boundary Vertical Specification (SIN MN)'
          ! END of REGCOIL cases
+				 CASE(isfincs_boozer_bmnc)
+						WRITE(iunit,out_format_3D) 'SFINCS_BOOZER_BMNC(',var_dex1,',',var_dex2,',',var_dex3,'): SFINCS Boozer Bmnc'
       END SELECT
       END SUBROUTINE write_vars
 

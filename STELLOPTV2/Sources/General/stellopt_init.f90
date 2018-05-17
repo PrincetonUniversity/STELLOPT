@@ -15,7 +15,7 @@
       USE stellopt_input_mod
       USE stellopt_targets, ONLY: write_targets
       USE stellopt_vars
-      USE vparams, ONLY: ntor_rcws, mpol_rcws
+      USE vparams, ONLY: ntor_rcws, mpol_rcws, sfincs_mmax, sfincs_nmax
       USE vmec_input
       USE safe_open_mod, ONLY: safe_open
       USE equil_utils, ONLY: profile_norm
@@ -34,7 +34,7 @@
 !        iunit       File unit number
 !----------------------------------------------------------------------
       IMPLICIT NONE
-      INTEGER ::  i,n,m,ier, iunit,nvar_in,knot_dofs,nknots
+      INTEGER ::  i,n,m,ier, iunit,nvar_in,knot_dofs,nknots,s
       INTEGER ::  ictrl(5)
       REAL(rprec) :: norm, delta
       REAL(rprec) :: fvec_temp(1)
@@ -260,13 +260,25 @@
                     END IF
                  END DO
               END DO
-     
+
+							! SFINCS options - optimization of Boozer bmnc's
+							DO m = 0, sfincs_mmax
+								DO n = -sfincs_nmax,sfincs_nmax
+									sfincs_ns = MINLOC(sfincs_s(2:),DIM=1)
+									DO s = 1,sfincs_ns
+										IF (lsfincs_boozer_bmnc_opt(m,n,s)) THEN
+											nvars = nvars + 1
+										END IF
+									END DO
+								END DO
+							END DO
+
          CASE('spec')
       END SELECT
 
       ! Allocate Arrays
       ALLOCATE(vars(1:nvars),var_dex(1:nvars),diag(1:nvars),&
-               vars_min(1:nvars),vars_max(1:nvars),arr_dex(1:nvars,2))
+               vars_min(1:nvars),vars_max(1:nvars),arr_dex(1:nvars,3))
       vars = 0.0; var_dex(:) = 0; diag = -1.0; arr_dex(:,:) = 0
 !DEC$ IF DEFINED (MPI_OPT)
       CALL MPI_BARRIER( MPI_COMM_STEL, ierr_mpi )                   ! MPI
@@ -411,6 +423,32 @@
                     END DO
                  END DO
               END IF
+							! SFINCS Boozer bmnc's 
+							IF (ANY(lsfincs_boozer_bmnc_opt)) THEN
+								DO m = 0, sfincs_mmax
+									DO n = -sfincs_nmax, sfincs_nmax
+										DO s = 1,sfincs_ns
+											IF (lsfincs_boozer_bmnc_opt(m,n,s)) THEN
+												IF (lauto_domain) THEN
+													sfincs_boozer_bmnc_min(m,n,s) = sfincs_boozer_bmnc(m,n,s) - ABS(pct_domain*sfincs_boozer_bmnc(m,n,s))
+													sfincs_boozer_bmnc_max(m,n,s) = sfincs_boozer_bmnc(m,n,s) + ABS(pct_domain*sfincs_boozer_bmnc(m,n,s))
+												END IF
+												print *,"sfincs_boozer_bmnc_min: ", sfincs_boozer_bmnc_min(m,n,s)
+												print *,"sfincs_boozer_bmnc_max: ", sfincs_boozer_bmnc_max(m,n,s)
+												nvar_in = nvar_in + 1
+												vars(nvar_in) = sfincs_boozer_bmnc(m,n,s)
+												vars_min(nvar_in) = sfincs_boozer_bmnc_min(m,n,s)
+												vars_max(nvar_in) = sfincs_boozer_bmnc_max(m,n,s)
+												var_dex(nvar_in) = isfincs_boozer_bmnc
+												diag(nvar_in) = dsfincs_boozer_bmnc_opt(m,n,s)
+												arr_dex(nvar_in,1) = m
+												arr_dex(nvar_in,2) = n
+												arr_dex(nvar_in,3) = s
+											END IF
+										END DO
+									END DO
+								END DO
+							END IF
               IF (lphiedge_opt) THEN
                  IF (lauto_domain) THEN
                     phiedge_min = phiedge - ABS(pct_domain*phiedge)
@@ -1540,7 +1578,7 @@
          WRITE(6,*) '-----  Optimization  -----'
          WRITE(6,*) '   =======VARS======='
          DO i = 1, nvars
-            CALL write_vars(6,var_dex(i),arr_dex(i,1),arr_dex(i,2))
+            CALL write_vars(6,var_dex(i),arr_dex(i,1),arr_dex(i,2),arr_dex(i,3))
          END DO
          ! Check H-B represenation
          IF (ANY(lrho_opt)) THEN
@@ -1609,7 +1647,7 @@
          CALL safe_open(iunit,ier,'var_labels','unknown','formatted')
          WRITE(iunit,'(I4.4)') nvars
          DO i = 1, nvars
-            CALL write_vars(iunit,var_dex(i),arr_dex(i,1),arr_dex(i,2))
+            CALL write_vars(iunit,var_dex(i),arr_dex(i,1),arr_dex(i,2),arr_dex(i,3))
          END DO
          WRITE(iunit,'(I8.8)') mtargets
          DO i = 1, mtargets
@@ -1617,8 +1655,7 @@
          END DO
          CLOSE(iunit)
       END IF
-      
-      
+
 !DEC$ IF DEFINED (MPI_OPT)
       CALL MPI_BARRIER( MPI_COMM_STEL, ierr_mpi )                   ! MPI
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'stellot_init',ierr_mpi)

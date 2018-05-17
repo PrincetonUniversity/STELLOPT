@@ -56,5 +56,9 @@
       INTEGER, PARAMETER :: mpol_rcws = 32    ! maximum poloidal mode number (min = -max)
       INTEGER, PARAMETER :: ntor_rcws = 32    ! maximum toroidal mode number (min = -max)
 
+! 		FOR SFINCS BOOZER BMNC
+			INTEGER, PARAMETER :: sfincs_nmax = 32
+			INTEGER, PARAMETER :: sfincs_mmax = 32
+
 
       END MODULE vparams

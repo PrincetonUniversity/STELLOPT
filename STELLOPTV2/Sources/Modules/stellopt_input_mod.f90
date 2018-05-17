@@ -11,7 +11,7 @@
 !     Libraries
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
-      USE vparams, ONLY: ntor_rcws, mpol_rcws
+      USE vparams, ONLY: ntor_rcws, mpol_rcws, sfincs_nmax, sfincs_mmax
       USE stellopt_runtime
       USE stellopt_vars
       USE windingsurface
@@ -228,6 +228,10 @@
 !                         target_regcoil_current_density, sigma_regcoil_current_density, &
 !                         regcoil_winding_surface_separation, &
 !                         regcoil_current_density
+!						 SFINCS related variables
+!													lsfincs_boozer_bmnc_opt, &
+!													dsfincs_boozer_bmnc_opt, sfincs_boozer_bmnc_min, &
+!													sfincs_boozer_bmnc_max
 !      
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -393,8 +397,11 @@
                          regcoil_rcws_zbound_c_min, regcoil_rcws_zbound_s_min, &
                          regcoil_rcws_rbound_c_max, regcoil_rcws_rbound_s_max, &
                          regcoil_rcws_zbound_c_max, regcoil_rcws_zbound_s_max, &
-                         target_sfincs_bootstrap, &
-                         sigma_sfincs_bootstrap
+                         target_sfincs_bootstrap, sigma_sfincs_bootstrap, &
+												 lsfincs_boozer_bmnc_opt, dsfincs_boozer_bmnc_opt, &
+												 sfincs_boozer_bmnc_max, sfincs_boozer_bmnc_min, &
+												 sfincs_boozer_bmnc, sfincs_iota, sfincs_IHat, sfincs_GHat, &
+												 sfincs_aHat, sfincs_psiAHat, sfincs_nperiods
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -526,6 +533,8 @@
       dregcoil_rcws_rbound_s_opt = -1.0
       dregcoil_rcws_zbound_c_opt = -1.0
       dregcoil_rcws_zbound_s_opt = -1.0
+			lsfincs_boozer_bmnc_opt = .FALSE.
+			dsfincs_boozer_bmnc_opt = -1.0
 
       IF (.not.ltriangulate) THEN  ! This is done because values may be set by trinagulate
          phiedge_min     = -bigno;  phiedge_max     = bigno
@@ -1002,6 +1011,7 @@
             WRITE(6,*) '<----STELLOPT_INPUT_MOD: Finished parsing nescoil data and', &
                        ' assigning stellopt variables'
          end if
+				 call sfincs_read_boozer_spectrum(sfincs_bc_filename, (myid == master))
       END IF
 !DEC$ ENDIF
       ! End of REGCOIL winding surface optimization initializion steps
@@ -1282,6 +1292,27 @@
          END IF
       END IF
 !DEC$ ENDIF
+!DEC$ IF DEFINED (SFINCS)
+	IF (myid == master .and. ANY(sigma_sfincs_bootstrap < bigno)) THEN
+		WRITE(6,*)        " Neoclassical Transport calculation provided by: "
+		WRITE(6,"(2X,A)") "================================================================================="
+		WRITE(6,"(2X,A)") "=========                      SFINCS                              ========="
+		WRITE(6,"(2X,A)") "================================================================================="
+		WRITE(6,*)        "    "
+	END IF
+!DEC$ ELSE
+	IF (ANY(sigma_sfincs_bootstrap < bigno)) THEN
+		 sigma_sfincs_bootstrap(:) = bigno
+		 IF (myid == master) THEN
+				WRITE(6,*) '!!!!!!!!!!!!!!!!!!!! WARNING !!!!!!!!!!!!!!!!!!!!!!!!!'
+				WRITE(6,*) '  Neoclassical transport optimization with the SFINCS'
+				WRITE(6,*) '  code has been disabled.  Neoclassical optimziation'
+				WRITE(6,*) '  has been turned off.  Contact your vendor for'
+				WRITE(6,*) '  further information.'
+		 END IF
+	END IF
+!DEC$ ENDIF
+
       ! Force some behavior
       lbooz(1) = .FALSE.
       target_balloon(1)   = 0.0;  sigma_balloon(1)   = bigno
@@ -1296,7 +1327,7 @@
       SUBROUTINE write_optimum_namelist(iunit,istat)
       INTEGER, INTENT(in) :: iunit
       INTEGER, INTENT(in) :: istat
-      INTEGER :: ik, n, m, u, v, ii
+      INTEGER :: ik, n, m, u, v, ii, s
       CHARACTER(LEN=*), PARAMETER :: outboo  = "(2X,A,1X,'=',1X,L1)"
       CHARACTER(LEN=*), PARAMETER :: outint  = "(2X,A,1X,'=',1X,I0)"
       CHARACTER(LEN=*), PARAMETER :: outflt  = "(2X,A,1X,'=',1X,ES22.12E3)"
@@ -1843,6 +1874,7 @@
       END IF
       WRITE(iunit,outstr) 'BOOTCALC_TYPE',TRIM(bootcalc_type)
       ik = MINLOC(sfincs_s(2:),DIM=1)
+			sfincs_ns = ik
       IF (ik > 2) THEN
          WRITE(iunit,"(2X,A,1X,'=',5(1X,E22.14))") 'SFINCS_S',(sfincs_s(n), n=1,ik)
       END IF
@@ -2268,6 +2300,28 @@
         END IF
         ! end of Options for winding surface (Fourier Series) variation
       END IF  ! End of REGCOIL options
+
+			! SFINCS Boozer bmnc
+			IF (ANY(lsfincs_boozer_bmnc_opt)) THEN
+				WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+				WRITE(iunit,'(A)') '!         SFINCS BOOZER BMNC PARAMETERS'
+				WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+
+				DO m = LBOUND(lsfincs_boozer_bmnc_opt,DIM=1), UBOUND(lsfincs_boozer_bmnc_opt,DIM=1)
+					DO n = LBOUND(lsfincs_boozer_bmnc_opt,DIM=2), UBOUND(lsfincs_boozer_bmnc_opt,DIM=2)
+						DO s = 1,MINLOC(sfincs_s(2:),DIM=1)
+							IF(lsfincs_boozer_bmnc_opt(m,n,s) ) THEN
+								WRITE(iunit,"(2X,A,I4.3,A,I4.3,A,1X,'=',1X,L1,4(2X,A,I4.3,A,I4.3,A,1X,'=',1X,E18.12))") &
+								'LSFINCS_BOOZER_BMNC_OPT(',m,n,s,')', lsfincs_boozer_bmnc_opt(m,n,s), &
+								'SFINCS_BOOZER_BMNC(',m,n,s,')', sfincs_boozer_bmnc(m,n,s), &
+								'DSFINCS_BOOZER_BMNC_OPT(',m,n,s,')', dsfincs_boozer_bmnc_opt(m,n,s), &
+								'SFINCS_BOOZER_BMNC_MIN(',m,n,s,')', sfincs_boozer_bmnc_min(m,n,s), &
+								'SFINCS_BOOZER_BMNC_MAX(',m,n,s,')', sfincs_boozer_bmnc_max(m,n,s)
+							END IF
+						END DO
+					END DO
+				END DO
+			END IF
 
 
       WRITE(iunit,'(A)') '!----------------------------------------------------------------------'

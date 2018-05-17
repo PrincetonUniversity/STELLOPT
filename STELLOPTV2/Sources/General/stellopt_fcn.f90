@@ -145,6 +145,7 @@
          IF (var_dex(nvar_in) == icoil_splinefx)   coil_splinefx(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
          IF (var_dex(nvar_in) == icoil_splinefy)   coil_splinefy(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
          IF (var_dex(nvar_in) == icoil_splinefz)   coil_splinefz(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
+				 IF (var_dex(nvar_in) == isfincs_boozer_bmnc) sfincs_boozer_bmnc(arr_dex(nvar_in,1),arr_dex(nvar_in,2),arr_dex(nvar_in,3)) = x(nvar_in)
       END DO
 
       ! Adust Boundary Representation
