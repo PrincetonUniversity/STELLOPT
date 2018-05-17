@@ -3,7 +3,7 @@
 ----
 ==Runtime Control== 
 The following parameters control how the code runs. Depending on the type of optimization the parameters may change functionality. For a characterization of some optimization choices please see the page [[STELLOPT Optimizer Comparison]].
-[[code]]
+{{{
 &OPTIMUM
 !------------------------------------------------------------------------
 !       Optimizer Run Control Parameters
@@ -22,7 +22,7 @@ The following parameters control how the code runs. Depending on the type of opt
   LKEEP_MINS   = T                          ! Logical to keep minimum states
   LREFIT       = F                          ! Logical for profile refitting (reconstruction only)
 
-[[code]]
+}}}
 ===LMDIF=== 
 Levenberg-Marquardt algorithm with finite difference derivative evaluation. Note that the user should not set the NPOPULATION parameter unless they're running parallel codes.
 || FTOL || Desired relative error in sum of squares. Termination occurs when both the actual and predicted relative <span style="line-height: 1.5;">reductions in the sum of squares are at most FTOL. T</span>herefore, FTOL measures the relative error desired <span style="line-height: 1.5;">in the sum of squares.</span> ||
@@ -48,7 +48,7 @@ The algorithm begin by evaluating NPOPULATION equilibria, where the first member
 || 5 || X_NEW=X_5+FACTOR*(X_1-X_2+X_3-X_4) ||
 Here X_BEST is the GENE from the 'BEST' previous equilibrium (lowest chi-squared), X_(1,2,3,4,5) are randomly chosen members of the population, and X_OLD is the original GENE. Remember that only specific 'GENES' are being mutated.
 Notes from code on choice of MODE.
-[[code]]
+{{{
 !=======Choice of strategy=================================================
 !  We have tried to come up with a sensible naming-convention: DE/x/y/z
 !    DE :  stands for Differential Evolution
@@ -86,7 +86,7 @@ Notes from code on choice of MODE.
 ! (5) DE/rand/2/'z' seems to be a robust optimizer for many functions
 !
 !===========================================================================
-[[code]]
+}}}
 To preform a restart from a previous run first setup a new directory, with the input file and any auxiliary files you may need. Then copy in the gade_restart.ext file from your previous run. Then when you execute STELLOPT, include the -restart flag on the command line to tell the system that this is a restart.
 ===PSO=== 
 Particle Swarm evolution.
@@ -107,7 +107,7 @@ The STELLOPT code can perform a gridded mapping using a 2D hyperspace plane as d
 ==Variables== 
 The quantities we wish to optimize (variables) are specified on an individual basis. There is a one to one correspondance between a parameter below and the value varied in the equilibrium input namelist. All values are defaulted to false. It should be noted that a min and max value are available for each variable along with a scaling value (D). The MIN and MAX values are used to bound the optimization (necessary for the global searches: PSO,GADE; but optional for the Levenberg) . The scaling values are only utilized for the Levenber-Marquardt algorithm with MODE set to 2.
 
-[[code]]
+{{{
 !------------------------------------------------------------------------
 !       Optimized Quantities
 !------------------------------------------------------------------------
@@ -141,12 +141,12 @@ The quantities we wish to optimize (variables) are specified on an individual ba
   LBOUND_OPT(1,0) = T      ! Optimize RBC,ZBS Arrays
   LRHO_OPT(1,0) = T        ! Optimize RHOMN (Hirshman/Breslau representation)
   LDELTAMN_OPT(1,0) = T    ! Optimize DELTAMN (Garabedian representation)
-[[code]]
+}}}
 Care should be taken not to enable conflicting profiles (ex. NE and AM). Note when optimizing boundary harmonics that LRHO_OPT and LDELTAMN_OPT will first recalculate the rhomn or deltamn represenation based on the RBC and ZBS arrays, then vary these coefficients. Hirshman-Breslau<ref>S. P. Hirshman and J. Breslau, [[http://link.aip.org/link/doi/10.1063/1.872954|Phys. Plasmas 5, 2664 (1998)]].</ref> and Garabedian representations only support stellarator symmetry (up-down) at this time.
 ==Profile Functions== 
 As seen in the above section, various non-equilibrium profiles have been introduced. These profiles include electron density (NE), effective ion charge (ZEFF), electron temperature (TE), ion temperature (TI), electrostatic potential (PHI), driven current (BEAMJ), and bootstrap current (BOOTJ). These profiles are utilized to calculate pressure and current profiles which are then used to calculate the equilibrium. Two profile variables exist for most profiles these are parameterized XX_OPT and spline XX_AUX_S, XX_AUX_F. The available profile types for NE, TE, TI, and ZEFF are: GAUSS_TRUNC, TWO_LORENTZ, TWO_POWER, POWER_SERIES, PEDESTAL, and SPLINE. The BEAMJ and BOOTJ profiles are summed together to provide the AC_AUX_F array (where it is assumed we are providing I-prime not I). The BEAMJ profile has the types: TWO_POWER and SPLINE. The BOOTJ profile has the types: BUMP, TWO_POWER, SPLINE. Note that the BEAMJ and BOOTJ profiles do not have XX_OPT type profile specification but rather use the spline array values when parameterized. Note that NE is normalized to 1.0E+18.
 
-[[code]]
+{{{
 !------------------------------------------------------------------------
 !       Profile Functions
 !------------------------------------------------------------------------
@@ -172,7 +172,7 @@ As seen in the above section, various non-equilibrium profiles have been introdu
   BOOTJ_TYPE = 'BUMP'
   BOOTJ_AUX_S   = 0.0  0.1  0.5  0.9  1.0
   BOOTJ_AUX_F   = 1.0  1.0  1.0  1.2  0.0
-[[code]]
+}}}
 
 ||~ Profile Type (XX_TYPE) ||~ Functional form ||~ Description ||
 ||< AKIMA_SPLINE ||< See desciption ||< 3rd order Akima spline. Minimum of five knots required.
@@ -187,17 +187,17 @@ C20 = 1.0/(TANH(2*c18/c19)-TANH(2*(c18-1)/c19)) ||
 ==Boozer Spectrum Parameters== 
 General values are placed in the next section which may effect the various chi-squared calculations not defined in another namelist
 
-[[code]]
+{{{
 !------------------------------------------------------------------------
 !       Boozer Coordinate Transformation
 !------------------------------------------------------------------------
   MBOZ = 65
   NBOZ = 24
-[[code]]
+}}}
 ==Targets== 
 There are various chi-squared functionals and each is a unique set of parameters. In general for each target value there is a sigma associated with it. Here they are broken down by specialty
 
-[[code]]
+{{{
 !------------------------------------------------------------------------
 !       Equilibrium / Geometry Optimization Targets
 !------------------------------------------------------------------------
@@ -392,4 +392,4 @@ There are various chi-squared functionals and each is a unique set of parameters
   TARGET_SEPARATRIX(02,01) = 0.0  SIGMA_SEPARATRIX(02,01) = 1.0E-3
     R_SEPARATRIX(02,01) = 5.0  PHI_SEPARATRIX(02,01) = 0.0  Z_SEPARATRIX(02,01) = 0.0
 /
-[[code]]
+}}}
