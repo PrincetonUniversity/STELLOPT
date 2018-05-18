@@ -57,12 +57,10 @@
       IF (lscreen) then
          WRITE(6,'(a)') ' -------------  REGCOIL CALCULATION  ---------'
       ENDIF
-
-      verbose = lscreen ! Suppress REGCOIL stdout if needed
-
       ! WRITE(6,'(a,a)') '<---- proc_string=', proc_string
       ! WRITE(6,'(a,i4.2)') ' -------------  REGCOIL: iflag=', iflag
 !DEC$ IF DEFINED (REGCOIL)
+      verbose = lscreen ! Suppress REGCOIL stdout if needed
 
       ! IF (lscreen) WRITE(6,'(a,a)') '<---- proc_string=', proc_string
       wout_filename = 'wout_'//TRIM(proc_string)//'.nc'
