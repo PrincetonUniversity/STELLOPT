@@ -60,6 +60,7 @@
             lvessel_beams => lvessel, lcoil_beams => lcoil, &
             lrestart_beams => lrestart, lbeam_simple_beams => lbeam_simple, &
             lflux_beams => lflux, lplasma_only_beams => lplasma_only, &
+            lcollision_beams => lcollision, &
             coil_string_beams => coil_string, mgrid_string_beams => mgrid_string,&
             vessel_string_beams => vessel_string, restart_string_beams => restart_string, &
             lraw_beams => lraw, nbeams_beams => nbeams, &
@@ -289,6 +290,7 @@
                lplasma_only_beams = .TRUE.
                lbeam_beams        = .FALSE.
                lread_input_beams  = .FALSE.
+               lcollision_beams   = .FALSE.
                id_string_beams    = TRIM(file_str)
                coil_string_beams  = ''
                mgrid_string_beams = ''

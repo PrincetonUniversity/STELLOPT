@@ -62,6 +62,7 @@
          beam = 1
          nbeams = 1
       END IF
+
       CALL FLUSH(6)
 
       mystart = mystart_save
@@ -72,25 +73,14 @@
       IF (ALLOCATED(nlost)) DEALLOCATE(nlost)
       ALLOCATE(shine_through(nbeams))
       ALLOCATE(nlost(nbeams))
-!      IF (myworkid == master) THEN
-!         ALLOCATE(partmask(1:nparticles))
-!         ALLOCATE(partmask2(0:npoinc,1:nparticles))
-!         ALLOCATE(partmask2t(0:npoinc,1:nparticles))
-!         ALLOCATE(int_mask(1:nparticles))
-!         ALLOCATE(int_mask2(0:npoinc,1:nparticles))
-!         ALLOCATE(real_mask(1:nparticles))
-!         maxdist=MAXVAl(MAXVAL(vll_lines,DIM=2),DIM=1)
-!         mindist=MINVAl(MINVAL(vll_lines,DIM=2),DIM=1)
-!      ELSE
-         ALLOCATE(partmask(mystart:myend))
-         ALLOCATE(partmask2(0:npoinc,mystart:myend))
-         ALLOCATE(partmask2t(0:npoinc,mystart:myend))
-         ALLOCATE(int_mask(mystart:myend))
-         ALLOCATE(int_mask2(0:npoinc,mystart:myend))
-         ALLOCATE(real_mask(mystart:myend))
-         maxdist=MAXVAl(MAXVAL(vll_lines,DIM=2),DIM=1)
-         mindist=MINVAl(MINVAL(vll_lines,DIM=2),DIM=1)
-!      END IF
+      ALLOCATE(partmask(mystart:myend))
+      ALLOCATE(partmask2(0:npoinc,mystart:myend))
+      ALLOCATE(partmask2t(0:npoinc,mystart:myend))
+      ALLOCATE(int_mask(mystart:myend))
+      ALLOCATE(int_mask2(0:npoinc,mystart:myend))
+      ALLOCATE(real_mask(mystart:myend))
+      maxdist=MAXVAl(MAXVAL(vll_lines,DIM=2),DIM=1)
+      mindist=MINVAl(MINVAL(vll_lines,DIM=2),DIM=1)
 !DEC$ IF DEFINED (MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_BEAMS, ierr_mpi)
       IF (ierr_mpi /= 0) CALL handle_err(MPI_BARRIER_ERR, 'beams3d_follow', ierr_mpi)
@@ -108,9 +98,8 @@
              .or. (neut_lines(:,mystart:myend)) ) int_mask2(:,mystart:myend) = 0  ! Mask the neutral and lost particles
       int_mask(mystart:myend) = 0
       IF (lbeam) int_mask(mystart:myend) = 3
-      int_mask(mystart:myend)  = COUNT(neut_lines(:,mystart:myend),DIM=1)-1                  ! Starting index of every charge particle (dont ask why we need -2 but we do)
-      !int_mask(mystart:myend)  = MINLOC(neut_lines(:,mystart:myend),DIM=1)-2                  ! Starting index of every charge particle (dont ask why we need -2 but we do)
-      !WHERE(int_mask < 0) int_mask = 0
+      int_mask(mystart:myend)  = COUNT(neut_lines(:,mystart:myend),DIM=1)-1                  ! Starting index of every charge particle
+      WHERE(int_mask < 0) int_mask = 0
       FORALL(j=mystart:myend) real_mask(j) = S_lines(int_mask(j),j) ! Starting points in s
 
       ! Don't need R_lines or PHI_lines after this point
@@ -257,6 +246,23 @@
          END IF
 
       END IF
+
+      ! Give master a full copy of lost_lines (for STELLOPT interface)
+      partmask(mystart:myend) = lost_lines(mystart:myend)
+      IF (myworkid == master) THEN
+           DEALLOCATE(lost_lines)
+           ALLOCATE(lost_lines(1:nparticles),revcounts(nprocs_beams),displs(nprocs_beams))
+           lost_lines(mystart:myend) = partmask(mystart:myend)
+      ELSE
+           ALLOCATE(revcounts(nprocs_beams),displs(nprocs_beams))
+      END IF
+      CALL MPI_GATHER(mystart,1,MPI_INTEGER,displs,1,MPI_INTEGER,master, MPI_COMM_BEAMS, ierr_mpi)
+      CALL MPI_GATHER(myend-mystart+1,1,MPI_INTEGER,revcounts,1,MPI_INTEGER,master, MPI_COMM_BEAMS, ierr_mpi)
+      CALL MPI_GATHERV(partmask(mystart:myend),myend-mystart+1,MPI_LOGICAL,&
+                       lost_lines,revcounts,displs,MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
+      IF (ALLOCATED(revcounts)) DEALLOCATE(revcounts)
+      IF (ALLOCATED(displs)) DEALLOCATE(displs)
+      IF (myworkid /= master) DEALLOCATE(lost_lines)
 
       CALL beams3d_write('DIAG')
 
