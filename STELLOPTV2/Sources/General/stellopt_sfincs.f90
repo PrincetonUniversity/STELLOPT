@@ -17,7 +17,7 @@
       USE equil_utils
 
       USE sfincs_main, only: sfincs_init, sfincs_prepare, sfincs_run
-      USE globalVariables, only: sfincs_inputFilename => inputFilename, sfincs_outputFilename => outputFilename, equilibriumFile, FSABjHat, FSABHat2
+      USE globalVariables, only: sfincs_inputFilename => inputFilename, sfincs_outputFilename => outputFilename, equilibriumFile, FSABjHat, FSABHat2, dbootstrapdlambda, ms_sensitivity, ns_sensitivity, nmodesadjoint
       USE equil_vals, only: phiedge
 !!$      ! BOOTSJ LIBRARIES
 !!$      USE bootsj_input
@@ -50,7 +50,7 @@
       REAL(rprec) :: t1, t2
       integer, dimension(nfax) :: ifaxu, ifaxv
       integer :: ntrigu, ntrigv, i1
-      integer :: ntheta_min, nzeta_min, ir, mn, m, n
+      integer :: ntheta_min, nzeta_min, ir, mn, m, n, imn
       integer :: irho, irho1, ierr, iunit, ijbs, ians, ians_plot
       real(rprec), dimension(:), allocatable :: cputimes
       real(rprec) :: time1, timecpu, unit, file, status, err,&
@@ -74,6 +74,8 @@
       REAL(rprec) :: sfincs_ne, sfincs_ni, sfincs_Te, sfincs_Ti, sfincs_d_ne_d_s, sfincs_d_ni_d_s, sfincs_d_Te_d_s, sfincs_d_Ti_d_s, delta_s
       INTEGER :: numProcs_eff, myRank_eff
       REAL(rprec) :: temp1, temp2
+			INTEGER :: sfincs_nMaxAdjoint=0
+			INTEGER :: sfincs_mMaxAdjoint=0
 !!$      REAL(rprec) :: temp1, temp2, ds_fine, scale_factor
 !!$      REAL(rprec), DIMENSION(:), ALLOCATABLE :: sfincs_s_with_0
 !!$      INTEGER, PARAMETER :: Ns_fine = 1000
@@ -288,6 +290,32 @@
                         CYCLE
                      END IF
 
+										 IF (lsfincs_bootstrap_analytic) THEN
+												IF (TRIM(file_line_lower)=='&general') THEN
+													WRITE (UNIT=unit_out,FMT='(A)') '&general'
+													WRITE (UNIT=unit_out,FMT='(A)') '   RHSMode = 4'
+												ELSE IF (TRIM(file_line_lower)=='&sensitivityoptions') THEN
+													DO m = 0, sfincs_mmax
+														DO n = -sfincs_nmax,sfincs_nmax
+															IF (lsfincs_boozer_bmnc_opt(m,n,radius_index)) THEN
+																IF (m > sfincs_mMaxAdjoint) THEN
+																	sfincs_mMaxAdjoint = m
+																END IF
+																IF (ABS(n) > sfincs_nMaxAdjoint) THEN
+																	sfincs_nMaxAdjoint = ABS(n)
+																END IF
+															END IF
+														END DO
+													END DO
+													WRITE (UNIT=unit_out,FMT='(A)') '&sensitivityOptions'
+													WRITE (UNIT=unit_out,FMT='(A)') '   adjointBootstrapOption = .true.'
+													WRITE (UNIT=unit_out,FMT='(A)') '		nMinAdjoint = 0'
+													WRITE (UNIT=unit_out,FMT='(A,I3)') '		nMaxAdjoint = ',sfincs_nMaxAdjoint
+													WRITE (UNIT=unit_out,FMT='(A)') '		mMinAdjoint = 0'
+													WRITE (UNIT=unit_out,FMT='(A,I3)') '		mMaxAdjoint = ',sfincs_mMaxAdjoint
+												END IF
+										 END IF
+
                      ! Change any parameters as needed for this particular radius.
                      IF (file_line_lower(1:3)=='!ss') THEN
                         file_line_lower2 = ADJUSTL(file_line_lower(4:))
@@ -300,7 +328,9 @@
                      END IF
 
                      ! Handle variables that should NOT be copied:
-                     IF (file_line_lower(1: 7)=='rhsmode') CYCLE
+                     IF (file_line_lower(1:7)=='rhsmode') CYCLE
+										 IF (file_line_lower(1:8)=='&general') CYCLE
+										 IF (file_line_lower(1:19)=='&sensitivityoptions') CYCLE
                      IF (file_line_lower(1:14)=='geometryscheme') CYCLE
                      IF (file_line_lower(1:15)=='equilibriumfile') CYCLE
                      IF (file_line_lower(1:16)=='vmecradialoption') CYCLE
@@ -324,6 +354,11 @@
                      IF (file_line_lower(1:10)=='dphihatdrn') CYCLE
                      IF (file_line_lower(1:12)=='dphihatdrhat') CYCLE
                      IF (file_line_lower(1:14)=='dphihatdpsihat') CYCLE
+										 IF (file_line_lower(1:22)=='adjointbootstrapoption') CYCLE
+										 IF (file_line_lower(1:11)=='nminadjoint') CYCLE
+										 IF (file_line_lower(1:11)=='mminadjoint') CYCLE
+										 IF (file_line_lower(1:11)=='nmaxadjoint') CYCLE
+										 IF (file_line_lower(1:11)=='mmaxadjoint') CYCLE
 
                      ! If we've made it this far, copy the line from the old to new file:
                      WRITE(UNIT=unit_out,FMT='(A)',IOSTAT=file_status) TRIM(file_line)
@@ -362,6 +397,21 @@
                   sfincs_J_dot_B_flux_surface_average(radius_index+1) = FSABjHat * 437695 * 1e20 * 1.602177e-19 ! vBar * nBar * e
                   ! Above, the +1 is so there is a point with <j dot B>=0 at s=0.
                   sfincs_B_squared_flux_surface_average(radius_index+1) = FSABHat2
+									IF (lsfincs_bootstrap_analytic) THEN
+										DO m = 0, sfincs_mmax
+											DO n = -sfincs_nmax,sfincs_nmax
+												DO imn = 1,NModesAdjoint
+													IF (ns_sensitivity(imn)==n .and. ms_sensitivity(imn)==m) THEN
+													! First dimension of dbootstrapdlambda is NLambdas (=1 for boozer)
+														sfincs_dBootstrapdBmnc(m,n,radius_index) = dbootstrapdlambda(1,imn) * 437695 * 1e20 * 1.602177e-19
+													END IF
+												END DO
+											END DO
+										END DO
+										IF (ALLOCATED(dbootstrapdlambda)) DEALLOCATE(dbootstrapdlambda)
+										IF (ALLOCATED(ns_sensitivity)) DEALLOCATE(ns_sensitivity)
+										IF (ALLOCATED(ms_sensitivity)) DEALLOCATE(ms_sensitivity)
+									END IF
                END IF
 
             END DO ! Loop over radii
@@ -379,14 +429,16 @@
                        + (sfincs_B_squared_flux_surface_average(3)-sfincs_B_squared_flux_surface_average(2)) * (-sfincs_s(1)) / (sfincs_s(2) - sfincs_s(1))
                END IF
                !PRINT *,"Final <j dot B> profile from sfincs (in Tesla Amperes / m^2):",sfincs_J_dot_B_flux_surface_average(1:(Nradii+1))
-               ierr=0
-               CALL safe_open(unit_out,ierr,'sfincs_results_before_profile_fitting.'//TRIM(proc_string),'REPLACE','formatted')
-               WRITE (unit_out,"(a)") "s (normalized toroidal flux), <j dot B> (Tesla Amperes / meters^2), <B^2> (Tesla^2)"
-               WRITE (unit_out,*) 0.0d+0,0.0d+0,sfincs_B_squared_flux_surface_average(1)
-               DO radius_index = 1, Nradii
-                  WRITE (unit_out,*) sfincs_s(radius_index), sfincs_J_dot_B_flux_surface_average(radius_index+1), sfincs_B_squared_flux_surface_average(radius_index+1)
-               END DO
-               CLOSE (unit_out)
+							 IF (TRIM(bootcalc_type)=='sfincs') THEN
+								 ierr=0
+								 CALL safe_open(unit_out,ierr,'sfincs_results_before_profile_fitting.'//TRIM(proc_string),'REPLACE','formatted')
+								 WRITE (unit_out,"(a)") "s (normalized toroidal flux), <j dot B> (Tesla Amperes / meters^2), <B^2> (Tesla^2)"
+								 WRITE (unit_out,*) 0.0d+0,0.0d+0,sfincs_B_squared_flux_surface_average(1)
+								 DO radius_index = 1, Nradii
+										WRITE (unit_out,*) sfincs_s(radius_index), sfincs_J_dot_B_flux_surface_average(radius_index+1), sfincs_B_squared_flux_surface_average(radius_index+1)
+								 END DO
+								 CLOSE (unit_out)
+							END IF
             ELSE
                CALL MPI_REDUCE(sfincs_J_dot_B_flux_surface_average,sfincs_J_dot_B_flux_surface_average,Nradii+1,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
                CALL MPI_REDUCE(sfincs_B_squared_flux_surface_average,sfincs_B_squared_flux_surface_average,Nradii+1,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
