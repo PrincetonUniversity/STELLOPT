@@ -401,7 +401,8 @@
 												 lsfincs_boozer_bmnc_opt, dsfincs_boozer_bmnc_opt, &
 												 sfincs_boozer_bmnc_max, sfincs_boozer_bmnc_min, &
 												 sfincs_boozer_bmnc, sfincs_iota, sfincs_IHat, sfincs_GHat, &
-												 sfincs_aHat, sfincs_psiAHat, sfincs_nperiods
+												 sfincs_aHat, sfincs_psiAHat, sfincs_nperiods, &
+												 lsfincs_bootstrap_analytic
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -1011,7 +1012,6 @@
             WRITE(6,*) '<----STELLOPT_INPUT_MOD: Finished parsing nescoil data and', &
                        ' assigning stellopt variables'
          end if
-				 call sfincs_read_boozer_spectrum(sfincs_bc_filename, (myid == master))
       END IF
 !DEC$ ENDIF
       ! End of REGCOIL winding surface optimization initializion steps

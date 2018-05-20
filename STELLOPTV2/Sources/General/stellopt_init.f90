@@ -433,8 +433,6 @@
 													sfincs_boozer_bmnc_min(m,n,s) = sfincs_boozer_bmnc(m,n,s) - ABS(pct_domain*sfincs_boozer_bmnc(m,n,s))
 													sfincs_boozer_bmnc_max(m,n,s) = sfincs_boozer_bmnc(m,n,s) + ABS(pct_domain*sfincs_boozer_bmnc(m,n,s))
 												END IF
-												print *,"sfincs_boozer_bmnc_min: ", sfincs_boozer_bmnc_min(m,n,s)
-												print *,"sfincs_boozer_bmnc_max: ", sfincs_boozer_bmnc_max(m,n,s)
 												nvar_in = nvar_in + 1
 												vars(nvar_in) = sfincs_boozer_bmnc(m,n,s)
 												vars_min(nvar_in) = sfincs_boozer_bmnc_min(m,n,s)

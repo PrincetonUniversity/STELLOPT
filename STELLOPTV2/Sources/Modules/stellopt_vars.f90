@@ -204,12 +204,15 @@
 			! SFINCS quantities
 			! sfincs_ns should not be input - determined from sfincs_s
 			INTEGER :: sfincs_ns, sfincs_nperiods
+			! Logical determining if analytic gradients used
+			LOGICAL :: lsfincs_bootstrap_analytic = .false.
 			REAL(rprec), DIMENSION(ndatafmax) :: sfincs_iota, sfincs_GHat, sfincs_IHat
 			REAL(rprec), DIMENSION(ndatafmax) :: sfincs_aHat, sfincs_psiAHat
 			LOGICAL, DIMENSION(0:sfincs_mmax,-sfincs_nmax:sfincs_nmax,ndatafmax) :: lsfincs_boozer_bmnc_opt
 			REAL(rprec), DIMENSION(0:sfincs_mmax,-sfincs_nmax:sfincs_nmax,ndatafmax) :: sfincs_boozer_bmnc
 			REAL(rprec), DIMENSION(0:sfincs_mmax,-sfincs_nmax:sfincs_nmax,ndatafmax) :: dsfincs_boozer_bmnc_opt
 			REAL(rprec), DIMENSION(0:sfincs_mmax,-sfincs_nmax:sfincs_nmax,ndatafmax) :: sfincs_boozer_bmnc_min, sfincs_boozer_bmnc_max
+			REAL(rprec), DIMENSION(0:sfincs_mmax,-sfincs_nmax:sfincs_nmax,ndatafmax) :: sfincs_dBootstrapdBmnc
 
       ! These are not really variable parameters as we don't vary them
       ! yet
