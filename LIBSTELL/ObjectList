@@ -208,6 +208,7 @@ unique_boundary.o \
 lmdif.o \
 lmpar_parallel.o \
 lmdif1.o \
+lmanalytic.o \
 ga_micro.o \
 ga_fitness_parallel.o \
 fdjac_mod.o \
