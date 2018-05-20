@@ -10,11 +10,13 @@
 !-----------------------------------------------------------------------
       SUBROUTINE stellopt_jacfcn(m, n, x, fvec, x_min, fnorm, fjac, ncnt, wa, fnorm_min, epsfcn)
 
-			USE stellopt_vars
-			USE stellopt_runtime, ONLY: arr_dex, target_dex, var_dex
-			USE stellopt_targets
-			USE fdjac_mod, ONLY: jac_index, jac_err, n_red, jac_order, ix_min, h_order
+			USE stellopt_vars, ONLY: isfincs_boozer_bmnc, sfincs_dBootstrapdBmnc
+			USE stellopt_runtime, ONLY: arr_dex, target_dex, var_dex, rprec
+			USE stellopt_targets, ONLY: jtarget_sfincs_bootstrap
+			USE fdjac_mod, ONLY: jac_index, jac_err, n_red, jac_order, ix_min, h_order, flip
 			USE safe_open_mod, ONLY: safe_open
+
+			EXTERNAL dpmpar
 
 !-----------------------------------------------------------------------
 !   I've used the same naming convention as fdjac_mod
@@ -65,7 +67,7 @@
 			logical, dimension(n) :: lmask
 			integer, dimension(1) :: isort
 			REAL(rprec), DIMENSION(n) :: h
-			REAL(rprec) :: eps, epsmch
+			REAL(rprec) :: eps, epsmch, temp_norm
 			REAL(rprec), DIMENSION(m,n) :: fvec_array
 			REAL(rprec), DIMENSION(n) :: fnorm_array
 			INTEGER :: ierr_mpi
@@ -102,6 +104,7 @@
       eps = SQRT(MAX(epsfcn,epsmch))
       h(1:n) = eps*ABS(x(1:n))
       WHERE (h .eq. zero) h=eps
+			WHERE (flip) h = -h
 
 			! fvec_array can be computed from fjac
 			DO nvar = 1,n
@@ -118,43 +121,39 @@
          IF ((temp_norm >= 1.0E12).or.(temp_norm/=temp_norm)) THEN
             jac_err(i) = 0
             fjac(:m,i) = 0.0
-!	No need to flip
-!            flip(i) = .not. flip(i)
+            flip(i) = .not. flip(i)
          ELSE
             jac_err(i) = 1
-! No need to flip
-!            IF (temp_norm > fnorm) flip(i) = .not. flip(i)
+            IF (temp_norm > fnorm) flip(i) = .not. flip(i)
             END IF
       END DO
 
 !
 !     Output Function Evaluations, Jacobian, and reorder jacobian
 !
-      IF (myid .eq. master) THEN
-         ! ADDED by S. Lazerson (dump feval then Jacobian to file)
-         IF (ncnt == 0) THEN
-            WRITE(temp_string,'(i6.6)') ncnt
-         ELSE
-            WRITE(temp_string,'(i6.6)') ncnt+1
-         END IF
-         jac_file = 'fevals.' // TRIM(temp_string)
-         iunit = 27; j=0;
-         CALL safe_open(iunit,j,TRIM(jac_file),'new','formatted')
-         WRITE(iunit,'(2X,i6,2X,i6)') m,n
-         WRITE(iunit,'(1p,4e22.14)') (fvec(i), i=1,m)
-         DO i = 1, m
-            WRITE(iunit,'(1p,4e22.14)') (fvec_array(i,j), j=1,n)
-         END DO
-         CLOSE(iunit)
-         jac_file = ''
-         jac_file = 'jacobian.' // TRIM(temp_string)
-         CALL safe_open(iunit,j,TRIM(jac_file),'new','formatted')
-         WRITE(iunit,'(2X,i6,2X,i6)') m,n
-         DO i = 1, m
-            WRITE(iunit,'(1p,4e22.14)') (fjac(i,j), j=1,n)
-         END DO
-         CLOSE(iunit)
-      END IF
+			 ! ADDED by S. Lazerson (dump feval then Jacobian to file)
+			 IF (ncnt == 0) THEN
+					WRITE(temp_string,'(i6.6)') ncnt
+			 ELSE
+					WRITE(temp_string,'(i6.6)') ncnt+1
+			 END IF
+			 jac_file = 'fevals.' // TRIM(temp_string)
+			 iunit = 27; j=0;
+			 CALL safe_open(iunit,j,TRIM(jac_file),'new','formatted')
+			 WRITE(iunit,'(2X,i6,2X,i6)') m,n
+			 WRITE(iunit,'(1p,4e22.14)') (fvec(i), i=1,m)
+			 DO i = 1, m
+					WRITE(iunit,'(1p,4e22.14)') (fvec_array(i,j), j=1,n)
+			 END DO
+			 CLOSE(iunit)
+			 jac_file = ''
+			 jac_file = 'jacobian.' // TRIM(temp_string)
+			 CALL safe_open(iunit,j,TRIM(jac_file),'new','formatted')
+			 WRITE(iunit,'(2X,i6,2X,i6)') m,n
+			 DO i = 1, m
+					WRITE(iunit,'(1p,4e22.14)') (fjac(i,j), j=1,n)
+			 END DO
+			 CLOSE(iunit)
 
 !			! If no errors in computing jac
 !			jac_err = 1
