@@ -252,6 +252,13 @@
                      CALL tolower(file_line_lower)
                      file_line_lower = ADJUSTL(TRIM(file_line_lower))
 
+										 IF (TRIM(file_line_lower)=='&general') THEN
+												WRITE (UNIT=unit_out,FMT='(A)') '&general'
+										 		IF (lsfincs_bootstrap_analytic) THEN
+													WRITE (UNIT=unit_out,FMT='(A)') '   RHSMode = 4'
+												END IF
+										 END IF
+
                      IF (TRIM(file_line_lower)=='&geometryparameters') THEN
                         WRITE(UNIT=unit_out,FMT='(A)') '&geometryParameters'
 												WRITE(UNIT=unit_out,FMT='(A)') '  inputRadialCoordinate = 1'
@@ -269,7 +276,7 @@
 													DO m=0,sfincs_mmax
 														DO n=-sfincs_nmax,sfincs_nmax
 															IF (sfincs_boozer_bmnc(m,n,radius_index)/=0) THEN
-																WRITE(UNIT=unit_out,FMT='(5X,A,I1,A,I1,A,es24.14)') 'BOOZER_BMNC(',m,',',n,') = ',sfincs_boozer_bmnc(m,n,radius_index)
+																WRITE(UNIT=unit_out,FMT='(5X,A,I4.3,A,I4.3,A,es24.14)') 'BOOZER_BMNC(',m,',',n,') = ',sfincs_boozer_bmnc(m,n,radius_index)
 															END IF
 														END DO
 													END DO
@@ -290,11 +297,8 @@
                         CYCLE
                      END IF
 
-										 IF (lsfincs_bootstrap_analytic) THEN
-												IF (TRIM(file_line_lower)=='&general') THEN
-													WRITE (UNIT=unit_out,FMT='(A)') '&general'
-													WRITE (UNIT=unit_out,FMT='(A)') '   RHSMode = 4'
-												ELSE IF (TRIM(file_line_lower)=='&sensitivityoptions') THEN
+										 IF (TRIM(file_line_lower)=='&sensitivityoptions') THEN
+												IF (lsfincs_bootstrap_analytic) THEN
 													DO m = 0, sfincs_mmax
 														DO n = -sfincs_nmax,sfincs_nmax
 															IF (lsfincs_boozer_bmnc_opt(m,n,radius_index)) THEN
@@ -308,7 +312,7 @@
 														END DO
 													END DO
 													WRITE (UNIT=unit_out,FMT='(A)') '&sensitivityOptions'
-													WRITE (UNIT=unit_out,FMT='(A)') '   adjointBootstrapOption = .true.'
+													WRITE (UNIT=unit_out,FMT='(A,L)') '   adjointBootstrapOption = T'
 													WRITE (UNIT=unit_out,FMT='(A)') '		nMinAdjoint = 0'
 													WRITE (UNIT=unit_out,FMT='(A,I3)') '		nMaxAdjoint = ',sfincs_nMaxAdjoint
 													WRITE (UNIT=unit_out,FMT='(A)') '		mMinAdjoint = 0'
@@ -328,6 +332,8 @@
                      END IF
 
                      ! Handle variables that should NOT be copied:
+IF (file_line_lower(1:7)=='rhsmode') CYCLE
+
                      IF (file_line_lower(1:7)=='rhsmode') CYCLE
 										 IF (file_line_lower(1:8)=='&general') CYCLE
 										 IF (file_line_lower(1:19)=='&sensitivityoptions') CYCLE
@@ -421,6 +427,9 @@
 
                CALL MPI_REDUCE(MPI_IN_PLACE,sfincs_J_dot_B_flux_surface_average,Nradii+1,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
                CALL MPI_REDUCE(MPI_IN_PLACE,sfincs_B_squared_flux_surface_average,Nradii+1,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
+							 IF (lsfincs_bootstrap_analytic) THEN
+									CALL MPI_REDUCE(MPI_IN_PLACE,sfincs_dBootstrapdBmnc,(1+sfincs_mmax)*(2*sfincs_nmax+1)*ndatafmax,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
+							 END IF
                ! Extrapolate to get <B^2> on axis:
                IF (Nradii<2) THEN
                   sfincs_B_squared_flux_surface_average(1) = sfincs_B_squared_flux_surface_average(2) ! If only 1 radius, you can't linearly extrapolate.
@@ -442,10 +451,24 @@
             ELSE
                CALL MPI_REDUCE(sfincs_J_dot_B_flux_surface_average,sfincs_J_dot_B_flux_surface_average,Nradii+1,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
                CALL MPI_REDUCE(sfincs_B_squared_flux_surface_average,sfincs_B_squared_flux_surface_average,Nradii+1,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
+							 IF (lsfincs_bootstrap_analytic) THEN
+							 		CALL MPI_REDUCE(sfincs_dBootstrapdBmnc,sfincs_dBootstrapdBmnc,(1+sfincs_mmax)*(2*sfincs_nmax+1)*ndatafmax,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
+							 END IF
             END IF
+
 
             CALL MPI_COMM_FREE(MPI_COMM_SFINCS,ierr_mpi)
             CALL MPI_BARRIER(MPI_COMM_MYWORLD,ierr_mpi) ! Weird things might happen if some procs move on while others are still running sfincs.
+!				if (myid==master) then
+!					print *,"sfincs_dBootstrapdBmnc(1,0,:) ", sfincs_dBootstrapdBmnc(1,0,:)
+!				end if
+!print *,"myRank_sfincs: ",myRank_sfincs
+!print *,"master: ", master
+!print *,"myid: ", myid
+!print *,"myworkid: ", myworkid
+!print *,"sfincs_dBootstrapdBmnc(1,0,:) ", sfincs_dBootstrapdBmnc(1,0,:)
+!print *,"sfincs_J_dot_B_flux_surface_average: ", sfincs_J_dot_B_flux_surface_average
+!stop
 
 !!$            ! Here we use the same convention as in VMEC: half-mesh quantities use arrays with the same size as full-mesh quantities,
 !!$            ! but the first array element is 0.
