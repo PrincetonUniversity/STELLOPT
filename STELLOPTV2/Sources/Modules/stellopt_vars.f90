@@ -292,7 +292,7 @@
       CHARACTER*(*), PARAMETER ::  out_format_1D = '(5X,A,I3.3,A)'
       CHARACTER*(*), PARAMETER ::  out_format_2D = '(5X,A,I3.3,A,I3.3,A)'
       CHARACTER*(*), PARAMETER ::  out_format_2DB = '(5X,A,I4.3,A,I4.3,A)'
-			CHARACTER*(*), PARAMETER ::  out_format_3D = '(5X,A,I1,A,I1,A,I1,A)'
+			CHARACTER*(*), PARAMETER ::  out_format_3D = '(5X,A,I4.3,A,I4.3,A,I4.3,A)'
       SELECT CASE(var_num)
 
          CASE(iphiedge)
