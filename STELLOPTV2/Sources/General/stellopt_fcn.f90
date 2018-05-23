@@ -27,7 +27,7 @@
 !                             animec_flag, flow_flag
       USE vmec_main, ONLY:  multi_ns_grid
       USE mpi_params ! MPI
-			USE lmpar_mod, ONLY: fjac
+			USE jacfcn_mod, ONLY: fjac_curr
       IMPLICIT NONE
       
 !-----------------------------------------------------------------------
@@ -38,7 +38,6 @@
 !        fvec    Output array of function values
 !        iflag   Processor number
 !        ncnt    Current function evaluation
-!			   fjac		 Jacobian matrix (optional)
 !----------------------------------------------------------------------
       INTEGER, INTENT(in)      ::  m, n, ncnt
       INTEGER, INTENT(inout)   :: iflag
@@ -369,9 +368,9 @@
         IF (ANY(sigma_sfincs_bootstrap < bigno) .and. (iflag>=0)) THEN
           CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
         END IF
-				! Populate fjac
+				! Populate fjac_curr
 				IF (lsfincs_bootstrap_analytic .AND. TRIM(opt_type)=='lmanalytic') THEN
-						fjac = 0
+						fjac_curr = 0
 						DO nvar = 1,n
 							 IF (var_dex(nvar) == isfincs_boozer_bmnc) THEN
 									DO mtarget = 1,m
@@ -383,14 +382,14 @@
 											! Check for corresponding radius_index for targets and variables
 											IF (arr_dex(nvar,3) == (mtarget-mtarget_begin+1)) THEN
 												! arr_dex corresponds to sfincs_boozer_bmnc index
-												fjac(mtarget,nvar) = sfincs_dBootstrapdBmnc(arr_dex(nvar,1),arr_dex(nvar,2),arr_dex(nvar,3))
+												fjac_curr(mtarget,nvar) = sfincs_dBootstrapdBmnc(arr_dex(nvar,1),arr_dex(nvar,2),arr_dex(nvar,3))
 											END IF
 										ELSE
-											STOP "Error! stellopt_jacfcn must be called for variables with analytic derivatives implemented."
+											STOP "Error! lmanalytic must be called for variables with analytic derivatives implemented."
 										END IF
 									END DO
 							 ELSE
-									STOP "Error! stellopt_jacfcn must be called for variables with analytic derivatives implemented."
+									STOP "Error! lmanalytic must be called for variables with analytic derivatives implemented."
 							 END IF
 						END DO
 				END IF

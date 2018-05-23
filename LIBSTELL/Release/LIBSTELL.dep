@@ -724,7 +724,8 @@ lmpar_mod.o : \
       safe_open_mod.o \
       fdjac_mod.o \
       mpi_params.o \
-      stel_kinds.o 
+      stel_kinds.o \
+      jacfcn_mod.o
       
 
 lmpar_parallel.o : \
@@ -1211,7 +1212,14 @@ stepopt_mp.o : \
       stel_kinds.o \
       fdjac_mod.o \
       safe_open_mod.o \
-      mpi_params.o
+      mpi_params.o \
+	 jacfcn_mod.o
+
+jacfcn_mod.o : \
+    stel_kinds.o \
+    fdjac_mod.o \
+    safe_open_mod.o \
+    vparams.o
       
 
 mgrid_field_mod.o : \

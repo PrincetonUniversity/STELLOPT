@@ -563,17 +563,11 @@ c     Get mpi parameters
 !
 !DEC$ IF DEFINED (MPI_OPT)
            IF (PRESENT(xvmin) .and. PRESENT(xvmax)) THEN
-              ! Begin MJL
-              print *,"Calling levmarq_param_mp WITH xvmin,xvmax."
-              print *,"Here comes xvmin:"
-              print *,xvmin
-              ! End MJL
               CALL levmarq_param_mp (x, wa1, wa2, wa3, wa4,
      1                               nfev, m, n, iflag, fcn, 
      2                               lev_step_range,fnorm_min,
      3                               xvmin,xvmax)   !PPPL
            ELSE
-              print *,"Calling levmarq_param_mp WITHOUT xvmin,xvmax."
               CALL levmarq_param_mp (x, wa1, wa2, wa3, wa4,
      1                               nfev, m, n, iflag, fcn, 
      2                               lev_step_range,fnorm_min)   !PPPL

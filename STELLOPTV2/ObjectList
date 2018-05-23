@@ -73,7 +73,6 @@ chisq_coilself.o \
 chisq_sfincs_bootstrap.o \
 stellopt_neo.o \
 stellopt_fcn.o \
-stellopt_jacfcn.o \
 stellopt_load_targets.o \
 stellopt_toboozer.o \
 stellopt_init.o \

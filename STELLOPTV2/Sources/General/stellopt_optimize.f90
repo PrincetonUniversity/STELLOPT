@@ -35,7 +35,7 @@
       REAL(rprec), ALLOCATABLE ::  fjac(:,:)
       
       REAL(rprec), EXTERNAL :: enorm
-      EXTERNAL stellopt_fcn, stellopt_jacfcn
+      EXTERNAL stellopt_fcn
       
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
@@ -123,7 +123,7 @@
             vars_min = -bigno; vars_max = bigno
             WHERE(vars > bigno) vars_max = 1E30
             CALL lmanalytic(stellopt_fcn, mtargets, nvars, vars, fvec, &
-                       ftol, xtol, gtol, nfunc_max, epsfcn, stellopt_jacfcn, diag, mode, &
+                       ftol, xtol, gtol, nfunc_max, epsfcn, diag, mode, &
                        factor, nprint, info, nfev, fjac, ldfjac, ipvt, &
                        qtf, wa1, wa2, wa3, wa4,vars_min,vars_max)
          CASE('eval_xvec')

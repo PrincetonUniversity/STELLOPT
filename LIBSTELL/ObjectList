@@ -208,7 +208,6 @@ unique_boundary.o \
 lmdif.o \
 lmpar_parallel.o \
 lmdif1.o \
-lmanalytic.o \
 ga_micro.o \
 ga_fitness_parallel.o \
 fdjac_mod.o \
@@ -223,6 +222,8 @@ ga_mutate.o \
 ROCKET_Evolve.o \
 de_mpi.o \
 MAP_PLANE.o \
+lmanalytic.o \
+jacfcn_mod.o \
 lmpar_mod.o \
 unique_boundary_PG.o \
 DE_preset.o \

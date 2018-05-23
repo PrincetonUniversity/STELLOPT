@@ -1,10 +1,16 @@
-       SUBROUTINE lmanalytic(fcn, m, n, x, fvec, ftol, xtol, gtol, maxfev, epsfcn, &
-        jacfcn, diag, mode, factor, nprint, info, nfev, fjac, &
+
+SUBROUTINE lmanalytic(fcn, m, n, x, fvec, ftol, xtol, gtol, maxfev, epsfcn, &
+        diag, mode, factor, nprint, info, nfev, fjac, &
         ldfjac, ipvt, qtf, wa1, wa2, wa3, wa4, xvmin, xvmax)
-      USE stel_kinds
+
+      USE mpi_params
+      USE safe_open_mod
+
+			USE stel_kinds
 			USE vparams, ONLY: sfincs_nmax, sfincs_mmax, ndatafmax
-      USE lmpar_mod, fjac_mod=>fjac, ldfjac_mod=>ldfjac, &
-        ipvt_mod=>ipvt, qtf_mod=>qtf, diag_mod=>diag
+      USE lmpar_mod, ONLY: fjac_mod=>fjac, ldfjac_mod=>ldfjac, &
+        ipvt_mod=>ipvt, qtf_mod=>qtf, diag_mod=>diag, delta, fnorm1, &
+				lfirst_lm, par, pnorm, spread_ratio, levmarq_param_mp
 !DEC$ IF DEFINED (MPI_OPT)
       USE fdjac_mod, ONLY: flip,flag_singletask,flag_cleanup, &
                           fdjac2_mp_queue, jac_order, jac_count, &
@@ -16,8 +22,9 @@
                           jac_err, jac_index, flag_cleanup_lev, &
 												 ix_min, jac_count, n_red
 !DEC$ ENDIF
-      USE mpi_params
-      USE safe_open_mod
+
+			USE jacfcn_mod, ONLY: jac_analytic, fjac_curr, jacfcn
+
       IMPLICIT NONE
 !DEC$ IF DEFINED (MPI_OPT)
       INCLUDE 'mpif.h'                                       !mpi stuff
@@ -63,7 +70,6 @@
 !   E x t e r n a l   F u n c t i o n s
 !-----------------------------------------------
       EXTERNAL fcn
-			EXTERNAL jacfcn
       REAL(rprec), EXTERNAL :: dpmpar, enorm
 !-----------------------------------------------
 
@@ -277,8 +283,10 @@
 
 !     check the input parameters for errors.
 
-      ALLOCATE (flip(n),jac_order(n), fnorm_array(n),h_order(n),jac_err(n),jac_index(n), stat=istat)
+      ALLOCATE (flip(n),jac_order(n), fnorm_array(n),h_order(n),jac_err(n),jac_index(n),fjac_curr(m,n), stat=istat)
       IF (istat .ne. 0) STOP 'Allocation error in lmdif'
+
+			jac_analytic = .TRUE.
 
 !     epsmch is the machine precision.
 !     flip is control for direction flipping in fdjac2!
@@ -420,7 +428,7 @@
 
 !!!!        calculate the jacobian matrix.
 !				IF (myid .eq. master) THEN
-				CALL jacfcn(m,n,x,fvec,x_min,fnorm,nfev,fvec_min,fnorm_min,epsfcn)
+				CALL jacfcn(m,n,x,fvec,fjac,x_min,fnorm,nfev,fvec_min,fnorm_min,epsfcn)
 !				END IF
 
 !!DEC$ IF DEFINED (MPI_OPT)
@@ -763,5 +771,4 @@
           ' Total wall clock time in lev param multi-process call = ', &
           wall_time_lev
 !DEC$ ENDIF
-      END SUBROUTINE lmanalytic
-
+END SUBROUTINE lmanalytic
