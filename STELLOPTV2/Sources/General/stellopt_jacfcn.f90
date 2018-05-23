@@ -6,15 +6,19 @@
 !										 function which is minimized by STELLOPT. This is
 ! 									 intended to be used with the lmanalytic subroutine
 !										 in the case that the jacobian matrix is not computed
-!										 purely with forward differencing.
+!										 purely with forward differencing. When this subroutine
+!										 is called, fjac should contain the jacobian matrix
+! 									 which is reordered here.
 !-----------------------------------------------------------------------
-      SUBROUTINE stellopt_jacfcn(m, n, x, fvec, x_min, fnorm, fjac, ncnt, wa, fnorm_min, epsfcn)
+      SUBROUTINE stellopt_jacfcn(m, n, x, fvec, x_min, fnorm, ncnt, wa, fnorm_min, epsfcn)
 
 			USE stellopt_vars, ONLY: isfincs_boozer_bmnc, sfincs_dBootstrapdBmnc
 			USE stellopt_runtime, ONLY: arr_dex, target_dex, var_dex, rprec
 			USE stellopt_targets, ONLY: jtarget_sfincs_bootstrap
 			USE fdjac_mod, ONLY: jac_index, jac_err, n_red, jac_order, ix_min, h_order, flip
 			USE safe_open_mod, ONLY: safe_open
+			USE	vparams, ONLY: sfincs_nmax, sfincs_mmax, ndatafmax
+			USE lmpar_mod, ONLY: fjac
 
 			EXTERNAL dpmpar
 
@@ -41,8 +45,6 @@
 !
 !			Output Variables
 !				 x_min	 finite diff direction with minimal fcnß
-!        fjac    is an output m by n array which contains the
-!         			 approximation to the jacobian matrix evaluated at x.
 !			   wa		   working array of length m.
 !				 fnorm_min norm of fcn evaluated at x_min
 !----------------------------------------------------------------------
@@ -51,7 +53,6 @@
       INTEGER, INTENT(in)      ::  m, n
       INTEGER, INTENT(inout)   :: ncnt
       REAL(rprec), INTENT(inout), DIMENSION(n)  :: x
-      REAL(rprec), INTENT(out), DIMENSION(m,n) :: fjac
 			REAL(rprec), INTENT(in), DIMENSION(m) :: fvec
 			REAL(rprec), INTENT(in) :: fnorm
 			REAL(rprec), INTENT(out) :: wa(m), x_min(n)
@@ -59,7 +60,7 @@
 			REAL(rprec) ::  epsfcn
 
 		 ! Local variables
-			INTEGER :: nvar, mtarget, mtarget_begin, iunit, j, i, ix_temp
+			INTEGER :: iunit, j, i, ix_temp
 			CHARACTER(16) ::  temp_string
 			CHARACTER(256) ::  jac_file
 			REAL(rprec) :: temp
@@ -71,29 +72,6 @@
 			REAL(rprec), DIMENSION(m,n) :: fvec_array
 			REAL(rprec), DIMENSION(n) :: fnorm_array
 			INTEGER :: ierr_mpi
-
-			fjac = 0
-			DO nvar = 1,n
-				 IF (var_dex(nvar) == isfincs_boozer_bmnc) THEN
-						DO mtarget = 1,m
-							IF (target_dex(mtarget) == jtarget_sfincs_bootstrap) THEN
-								! Find mtarget corresponding to first radius
-								IF (target_dex(mtarget-1) /= jtarget_sfincs_bootstrap) THEN
-									mtarget_begin = mtarget
-								END IF
-								! Check for corresponding radius_index for targets and variables
-								IF (arr_dex(nvar,3) == (mtarget-mtarget_begin+1)) THEN
-									! arr_dex corresponds to sfincs_boozer_bmnc index
-									fjac(mtarget,nvar) = sfincs_dBootstrapdBmnc(arr_dex(nvar,1),arr_dex(nvar,2),arr_dex(nvar,3))
-								END IF
-							ELSE
-								STOP "Error! stellopt_jacfcn must be called for variables with analytic derivatives implemented."
-							END IF
-						END DO
-				 ELSE
-						STOP "Error! stellopt_jacfcn must be called for variables with analytic derivatives implemented."
-				 END IF
-			END DO
 
 			! Instead of using fnorm_array, we could look at norm of colomns of Jacobian
 			! for sorting
@@ -192,8 +170,8 @@
       temp = 0
       lmask = .true.
       DO WHILE (ix_temp <= n_red)
-!         isort = MINLOC(fnorm_array, MASK=lmask) ! find element w/ min. value
-				 isort = MINLOC(jacnorm_array, MASK=lmask)
+         isort = MINLOC(fnorm_array, MASK=lmask) ! find element w/ min. value
+!				 isort = MINLOC(jacnorm_array, MASK=lmask)
          temp = jacnorm_array(isort(1)) ! min value
          jac_order(ix_temp) = isort(1)
          IF(isort(1) <= 0 .or. isort(1) > n_red) THEN

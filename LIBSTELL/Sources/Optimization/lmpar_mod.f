@@ -13,12 +13,11 @@
       SUBROUTINE levmarq_param_mp(x, wa1, wa2, wa3, wa4,
      1     nfev, m, n, iflag, fcn, lev_step_range,fnorm_min,
      2     xvmin,xvmax)
-!      SUBROUTINE levmarq_param_mp(x, wa1, wa2, wa3, wa4,
-!     1     nfev, m, n, iflag, fcn)
       USE fdjac_mod, ONLY: flag_cleanup, flag_cleanup_lev, jac_index,
      1                     n_red
       USE mpi_params
       USE safe_open_mod
+			USE vparams, ONLY: sfincs_nmax, sfincs_mmax, ndatafmax
       IMPLICIT NONE
 !DEC$ IF DEFINED (MPI_OPT)
       INCLUDE 'mpif.h'                                       !mpi stuff
@@ -34,7 +33,10 @@ C-----------------------------------------------
       REAL(rprec) :: wa1(n), wa2(n), wa3(n), wa4(m)
       REAL(rprec), INTENT(in), OPTIONAL :: xvmin(n)
       REAL(rprec), INTENT(in), OPTIONAL :: xvmax(n)
+
       EXTERNAL fcn
+
+
 !DEC$ IF DEFINED (MPI_OPT)
 C-----------------------------------------------
 C   L o c a l   P a r a m e t e r s
@@ -63,6 +65,7 @@ C-----------------------------------------------
      2                                          par_array,
      3                                          diag_red !PPPL
       CHARACTER(LEN=1) :: ext, low_mark
+
 C-----------------------------------------------
 C   E x t e r n a l   F u n c t i o n s
 C-----------------------------------------------
@@ -113,6 +116,7 @@ C-----------------------------------------------
          diag_red(i) = diag(j)
       END DO
 
+
       CALL lmpar (n_red, fjac, ldfjac, ipvt, diag_red, qtf,
      1            delta, par, wa1, wa2, wa3, wa4)
      
@@ -160,12 +164,11 @@ C-----------------------------------------------
 !     Only do for 0 < myid < n processors (the MPI_COMM_WORKERS group),
       iflag = iproc
       CALL MPI_BARRIER(MPI_COMM_STEL,ierr)
-      IF (ierr .ne. 0) CALL mpi_stel_abort(ierr)   
-      CALL fcn (m, n, wa2, wa4, iflag, nfev)
+      IF (ierr .ne. 0) CALL mpi_stel_abort(ierr)
+			CALL fcn (m, n, wa2, wa4, iflag, nfev)
       CALL MPI_BARRIER(MPI_COMM_STEL,ierr)
       IF (ierr .ne. 0) CALL mpi_stel_abort(ierr)      
       fnorm1 = enorm(m,wa4)
-     
 
 !
 !     Create the xvec.dat file
@@ -261,6 +264,7 @@ C-----------------------------------------------
 !     overwriting their data. Note: diag, ipvt are same already on
 !     ALL processors. wa3 is overwritten...
 !
+
       CALL MPI_BCAST(pnorm,1,MPI_REAL8,iproc_min,
      1     MPI_COMM_STEL,ierr)
       IF (ierr .ne. 0) GOTO 3000
@@ -276,6 +280,9 @@ C-----------------------------------------------
       CALL MPI_BCAST(wa4,m,MPI_REAL8,iproc_min,
      1     MPI_COMM_STEL,ierr)
       IF (ierr .ne. 0) GOTO 3000
+			CALL MPI_BCAST(fjac,m*n,MPI_REAL8,iproc_min,
+     1			MPI_COMM_STEL,ierr)
+			IF (ierr .ne. 0) GOTO 3000
 
 !
 !     CLEANUP AFTER LEVENBERG-MARQUARDT LOOP AS NEEDED (WA4 IS NOT CHANGED)
@@ -315,6 +322,7 @@ C-----------------------------------------------
       REAL(rprec) :: time
       REAL(rprec), TARGET :: x(n1), wa1(n1), wa2(n1), wa3(n1), wa4(m1)
       EXTERNAL fcn
+
 !DEC$ IF .NOT.DEFINED (MPI_OPT)
 C-----------------------------------------------
 C   L o c a l   P a r a m e t e r s

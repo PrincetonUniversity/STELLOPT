@@ -2,6 +2,7 @@
         jacfcn, diag, mode, factor, nprint, info, nfev, fjac, &
         ldfjac, ipvt, qtf, wa1, wa2, wa3, wa4, xvmin, xvmax)
       USE stel_kinds
+			USE vparams, ONLY: sfincs_nmax, sfincs_mmax, ndatafmax
       USE lmpar_mod, fjac_mod=>fjac, ldfjac_mod=>ldfjac, &
         ipvt_mod=>ipvt, qtf_mod=>qtf, diag_mod=>diag
 !DEC$ IF DEFINED (MPI_OPT)
@@ -331,8 +332,9 @@
       IF (myid .eq. master) THEN
          iflag = flag_singletask
          if (nfev .ne. 0) iflag = 0
-         CALL fcn (m, n, x, fvec, iflag, nfev)
-         IF (iflag .ne. 0) THEN
+         !CALL fcn (m, n, x, fvec, iflag, nfev, fjac)
+						CALL fcn (m, n, x, fvec, iflag, nfev)
+				 IF (iflag .ne. 0) THEN
             WRITE(6,*) "FIRST RUN FAILS!  IMPROVE INPUT!"
             STOP "ERRROR!"
          END IF
@@ -351,12 +353,15 @@
 !DEC$ IF DEFINED (MPI_OPT)
       CALL MPI_BCAST(x,n, MPI_REAL8, master, &
                     MPI_COMM_STEL, ierr_mpi)
-      !CALL MPI_BARRIER(MPI_COMM_STEL,ierr_mpi)
-      IF (ierr_mpi /= MPI_SUCCESS) CALL mpi_stel_abort(ierr_mpi)
+			!CALL MPI_BARRIER(MPI_COMM_STEL,ierr_mpi)
+			IF (ierr_mpi /= MPI_SUCCESS) CALL mpi_stel_abort(ierr_mpi)
+			CALL MPI_BCAST(fjac,m*n,MPI_DOUBLE_PRECISION,master,MPI_COMM_STEL,ierr_mpi)
+			IF (ierr_mpi /= MPI_SUCCESS) CALL mpi_stel_abort(ierr_mpi)
 !DEC$ ENDIF
       iflag = FLAG_CLEANUP
       IF (myid == master) iflag = flag_cleanup_lev
-      call fcn (m, n, x, fvec, iflag, nfev)
+      !call fcn (m, n, x, fvec, iflag, nfev, fjac)
+			call fcn (m, n, x, fvec, iflag, nfev)
 
 !DEC$ IF DEFINED (MPI_OPT)
       CALL MPI_BCAST(iflag,1, MPI_INTEGER, master, &
@@ -364,6 +369,11 @@
       IF (ierr_mpi /= MPI_SUCCESS) CALL mpi_stel_abort(ierr_mpi)
       IF (iflag .ge. 0) CALL &
           MPI_BCAST(fvec, m, MPI_REAL8, master, &
+                    MPI_COMM_STEL, ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL mpi_stel_abort(ierr_mpi)
+			! Jacobian computed in call to fcn
+			IF (iflag .ge. 0) CALL &
+          MPI_BCAST(fjac, m*n, MPI_REAL8, master, &
                     MPI_COMM_STEL, ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL mpi_stel_abort(ierr_mpi)
 !DEC$ ENDIF
@@ -409,44 +419,44 @@
 !DEC$ ENDIF
 
 !!!!        calculate the jacobian matrix.
-				IF (myid .eq. master) THEN
-					CALL jacfcn(m,n,x,fvec,x_min,fnorm,fjac,nfev,fvec_min,fnorm_min,epsfcn)
-				END IF
-!DEC$ IF DEFINED (MPI_OPT)
-				CALL MPI_BCAST(fjac,m*n,MPI_DOUBLE_PRECISION, &
-											master,MPI_COMM_STEL,ierr_mpi)
-				CALL MPI_BCAST(x_min,n,MPI_DOUBLE_PRECISION, &
-						master,MPI_COMM_STEL,ierr_mpi)
-				CALL MPI_BCAST(fvec_min,m,MPI_DOUBLE_PRECISION, &
-						master,MPI_COMM_STEL,ierr_mpi)
-				CALL MPI_BCAST(jac_index,n,MPI_DOUBLE_PRECISION, &
-						master,MPI_COMM_STEL,ierr_mpi)
-				CALL MPI_BCAST(jac_err,n,MPI_INTEGER, &
-						master,MPI_COMM_STEL,ierr_mpi)
-				CALL MPI_BCAST(n_red,1,MPI_INTEGER, &
-						master,MPI_COMM_STEL,ierr_mpi)
-				CALL MPI_BCAST(jac_order,n,MPI_INTEGER, &
-						master,MPI_COMM_STEL,ierr_mpi)
-				CALL MPI_BCAST(ix_min,1,MPI_INTEGER, &
-						master,MPI_COMM_STEL,ierr_mpi)
-				CALL MPI_BCAST(fnorm,1,MPI_DOUBLE_PRECISION, &
-						master,MPI_COMM_STEL,ierr_mpi)
-				CALL MPI_BCAST(h_order,n,MPI_DOUBLE_PRECISION, &
-						master,MPI_COMM_STEL,ierr_mpi)
-				CALL MPI_BCAST(fnorm_min,1,MPI_DOUBLE_PRECISION, &
-						master,MPI_COMM_STEL,ierr_mpi)
-!DEC$ ENDIF
+!				IF (myid .eq. master) THEN
+				CALL jacfcn(m,n,x,fvec,x_min,fnorm,nfev,fvec_min,fnorm_min,epsfcn)
+!				END IF
 
-         IF (iflag .lt. 0) EXIT outerloop
+!!DEC$ IF DEFINED (MPI_OPT)
+!				CALL MPI_BCAST(fjac,m*n,MPI_DOUBLE_PRECISION, &
+!											master,MPI_COMM_STEL,ierr_mpi)
+!				CALL MPI_BCAST(x_min,n,MPI_DOUBLE_PRECISION, &
+!						master,MPI_COMM_STEL,ierr_mpi)
+!				CALL MPI_BCAST(fvec_min,m,MPI_DOUBLE_PRECISION, &
+!						master,MPI_COMM_STEL,ierr_mpi)
+!				CALL MPI_BCAST(jac_index,n,MPI_DOUBLE_PRECISION, &
+!						master,MPI_COMM_STEL,ierr_mpi)
+!				CALL MPI_BCAST(jac_err,n,MPI_INTEGER, &
+!						master,MPI_COMM_STEL,ierr_mpi)
+!				CALL MPI_BCAST(n_red,1,MPI_INTEGER, &
+!						master,MPI_COMM_STEL,ierr_mpi)
+!				CALL MPI_BCAST(jac_order,n,MPI_INTEGER, &
+!						master,MPI_COMM_STEL,ierr_mpi)
+!				CALL MPI_BCAST(ix_min,1,MPI_INTEGER, &
+!						master,MPI_COMM_STEL,ierr_mpi)
+!				CALL MPI_BCAST(fnorm,1,MPI_DOUBLE_PRECISION, &
+!						master,MPI_COMM_STEL,ierr_mpi)
+!				CALL MPI_BCAST(h_order,n,MPI_DOUBLE_PRECISION, &
+!						master,MPI_COMM_STEL,ierr_mpi)
+!				CALL MPI_BCAST(fnorm_min,1,MPI_DOUBLE_PRECISION, &
+!						master,MPI_COMM_STEL,ierr_mpi)
+!!DEC$ ENDIF
 
-         ipvt = 0
-         wa1  = 0
-         wa2  = 0
-         wa3  = 0
+				 IF (iflag .lt. 0) EXIT outerloop
 
-         CALL qrfac(m, n_red, fjac, ldfjac, .true., ipvt, &
-                   n_red, wa1, wa2, wa3)
+				 ipvt = 0
+				 wa1  = 0
+				 wa2  = 0
+				 wa3  = 0
 
+				 CALL qrfac(m, n_red, fjac, ldfjac, .true., ipvt, &
+									 n_red, wa1, wa2, wa3)
 
 !        on the first iteration and if mode is 1, scale according
 !        to the norms of the columns of the initial jacobian.
@@ -506,10 +516,10 @@
          END IF
          !IF (mode .ne. 2) diag = MAX(diag,wa2)
 
-!        If maxfev == 2 then we calculate the Jacobian and stop the code
+!        If maxfev == 1 (for analytic gradients) then we calculate the Jacobian and stop the code
 !        10/15/12 - SAL (PPPL)
 
-         IF (maxfev.eq.2) info = 5
+         IF (maxfev.eq.1) info = 5
          IF (info .ne. 0) GOTO 300
 
 !        set up for inner loop (levmarqloop) to determine x update.
@@ -536,10 +546,10 @@
               print *,"Here comes xvmin:"
               print *,xvmin
               ! End MJL
-              CALL levmarq_param_mp (x, wa1, wa2, wa3, wa4, &
+							CALL levmarq_param_mp (x, wa1, wa2, wa3, wa4, &
                                    nfev, m, n, iflag, fcn, &
-                                    lev_step_range,fnorm_min, &
-                                    xvmin,xvmax)   !PPPL
+																	 lev_step_range,fnorm_min, &
+																	 xvmin,xvmax)
            ELSE
               print *,"Calling levmarq_param_mp WITHOUT xvmin,xvmax."
               CALL levmarq_param_mp (x, wa1, wa2, wa3, wa4, &
@@ -547,10 +557,11 @@
                                     lev_step_range,fnorm_min)   !PPPL
            END IF
 !DEC$ ELSE
-           CALL levmarq_param(x, wa1, wa2, wa3, wa4, &
-               wall_time_lev, nfev, m, n, iflag, fcn)
+					 CALL levmarq_param(x, wa1, wa2, wa3, wa4, &
+								wall_time_lev, nfev, m, n, iflag, fcn)
 !DEC$ ENDIF
            IF (iflag .lt. 0) EXIT
+
 
 !        compute the scaled actual reduction.
 
@@ -611,7 +622,7 @@
 !DEC$ ENDIF
 
               CALL stepopt_mp(fcn, wa2, wa4, m, n, x_min, fvec_min, &
-                              fnorm_min, iflag, nfev, epsfcn)
+															 fnorm_min, iflag, nfev, epsfcn)
 
               IF (myid .eq. master) THEN
                  WRITE(6,'(a,i6,a)') &
@@ -703,7 +714,7 @@
          DEALLOCATE (fjac_save)
          IF (info.ne.0 .or. iflag.ne.0) EXIT outerloop
 
-         first_jacobian = .true.                                         !PPPL
+         first_jacobian = .true.  !PPPL
 
       END DO outerloop
 

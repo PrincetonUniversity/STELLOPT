@@ -1,11 +1,12 @@
 !PPPL
       SUBROUTINE stepopt_mp(fcn, wa2, wa4, m, n, x, fvec, fnorm, iflag, 
-     1                      nfev, epsfcn )
+     1                      nfev, epsfcn)
       USE stel_kinds
       USE fdjac_mod, ONLY: flip, ix_min, jac_order, jac_count, h_order,
      1                     jac_index, flag_cleanup_lev
 C      USE lmpar_mod, ONLY: wa2, wa4, myid, numprocs
       USE safe_open_mod
+			USE lmpar_mod, ONLY: fjac
       USE mpi_params
       IMPLICIT NONE
 !DEC$ IF DEFINED (MPI_OPT)
@@ -21,6 +22,7 @@ C-----------------------------------------------
       REAL(rprec) :: fnorm
       REAL(rprec), DIMENSION(n) :: x, wa2
       REAL(rprec), DIMENSION(m) :: fvec, wa4
+
 C-----------------------------------------------
 C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
@@ -227,6 +229,9 @@ c
          CALL MPI_BCAST(wa4,m,MPI_REAL8,iproc_min,
      1     MPI_COMM_STEL,ierr)
          IF (ierr .ne. 0) GOTO 3000
+				 CALL MPI_BCAST(fjac,m*n,MPI_REAL8,iproc_min,
+     1   MPI_COMM_STEL,ierr)
+				 IF (ierr .ne. 0) GOTO 3000
 !DEC$ ENDIF
 
          x = wa2
