@@ -47,7 +47,7 @@
 !        istat         Error status
 !        iunit         File unit number
       ! FOR REGCOIL
-      INTEGER :: istat, iunit, m, n, ii, nummodes1, nummodes2
+      INTEGER :: istat, iunit, m, n, ii, imn, nummodes1, nummodes2
 
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
@@ -103,17 +103,31 @@
                      (regcoil_rcws_rbound_s(m,n) .ne. 0) .or. &
                      (regcoil_rcws_zbound_c(m,n) .ne. 0) .or. &
                      (regcoil_rcws_zbound_s(m,n) .ne. 0) ) THEN
-                   rc_rmnc_stellopt(m,n) = regcoil_rcws_rbound_c(m,n)
-                   rc_rmns_stellopt(m,n) = regcoil_rcws_rbound_s(m,n)
-                   rc_zmnc_stellopt(m,n) = regcoil_rcws_zbound_c(m,n)
-                   rc_zmns_stellopt(m,n) = regcoil_rcws_zbound_s(m,n)
+                   !rc_rmnc_stellopt(m,n) = regcoil_rcws_rbound_c(m,n)
+                   !rc_rmns_stellopt(m,n) = regcoil_rcws_rbound_s(m,n)
+                   !rc_zmnc_stellopt(m,n) = regcoil_rcws_zbound_c(m,n)
+                   !rc_zmns_stellopt(m,n) = regcoil_rcws_zbound_s(m,n)
                    ! These are written in the same order as in a NESCIN
                    ! file: M N RC ZS RS ZC
                    write(iunit,*), m, n, &
-                                   rc_rmnc_stellopt(m,n), rc_zmns_stellopt(m,n), &
-                                   rc_rmns_stellopt(m,n), rc_zmnc_stellopt(m,n)
+                        regcoil_rcws_rbound_c(m,n), regcoil_rcws_zbound_s(m,n), &
+                        regcoil_rcws_rbound_s(m,n), regcoil_rcws_zbound_c(m,n)
+                        !rc_rmnc_stellopt(m,n), rc_zmns_stellopt(m,n), &
+                        !rc_rmns_stellopt(m,n), rc_zmnc_stellopt(m,n)
                 END IF
               END DO
+          END DO
+          DO imn = 1, mnmax_coil
+             m = xm_coil(imn)
+             n = xn_coil(imn)
+             IF (m < -my_mpol .or. m > my_mpol .or. n < -my_ntor .or. n > my_ntor) THEN
+                WRITE(6,*) "Error! (m,n) in regcoil coil surface exceeds mpol_rcws or ntor_rcws."
+                STOP
+             END IF
+             rmnc_coil(imn) = regcoil_rcws_rbound_c(m,n)
+             rmns_coil(imn) = regcoil_rcws_rbound_s(m,n)
+             zmnc_coil(imn) = regcoil_rcws_zbound_c(m,n)
+             zmns_coil(imn) = regcoil_rcws_zbound_s(m,n)
           END DO
           CLOSE(iunit)
       END IF
@@ -150,7 +164,8 @@
       IF ((ANY(lregcoil_rcws_rbound_s_opt)) .or. (ANY(lregcoil_rcws_rbound_c_opt)) .or. &
           (ANY(lregcoil_rcws_zbound_s_opt)) .or. (ANY(lregcoil_rcws_zbound_c_opt)) ) THEN 
          ! write(6,'(a)') '<----regcoil initupdate_nescin_coil_surface'
-         call regcoil_initupdate_nescin_coil_surface(verbose)
+         !call regcoil_initupdate_nescin_coil_surface(verbose)
+         CALL regcoil_evaluate_coil_surface()
       END IF
 
       ! Initialize some of the vectors and matrices needed:
