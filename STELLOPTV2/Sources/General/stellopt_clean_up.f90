@@ -12,7 +12,7 @@
       USE stellopt_runtime
       USE stellopt_input_mod
       USE stellopt_vars
-      USE stellopt_targets, ONLY: sigma_bootstrap, lbooz, numws
+      USE stellopt_targets, ONLY: sigma_bootstrap, lbooz, numws, sigma_sfincs_bootstrap
       USE safe_open_mod, ONLY: safe_open
       USE diagno_input_mod, ONLY: write_diagno_input
       USE gist_mod, ONLY: write_gist_namelist
@@ -37,7 +37,7 @@
                            JAC_CLEANUP => flag_cleanup_jac,&
                            LEV_CLEANUP => flag_cleanup_lev
       USE gade_mod, ONLY: GADE_CLEANUP, PSO_CLEANUP
-      
+
 !-----------------------------------------------------------------------
 !     Subroutine Parameters
 !        iflag         Error flag
@@ -63,6 +63,8 @@
       INTEGER, PARAMETER :: LAST_GO     = -500
       
       LOGICAL, PARAMETER :: lkeep_extra = .TRUE.  ! For debugging the code will keep the _optXXX files
+      integer, parameter :: buffer_length = 1000
+      character(len=buffer_length) :: base_directory_string
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
@@ -287,6 +289,17 @@
                                        'coil_spline'//TRIM(temp_str)//'_'//TRIM(proc_string)//'.out')
                   END DO
                END IF
+!DEC$ ENDIF
+!DEC$ IF DEFINED (SFINCS)
+              IF (ANY(sigma_sfincs_bootstrap < bigno)) THEN
+                 ! Move
+                 WRITE(temp_str,'(i5.5)') ncnt
+                 base_directory_string = 'out_sfincs_'//TRIM(temp_str)
+                IF (myworkid == master) THEN
+                  CALL execute_command_line('mkdir -p ' //TRIM(base_directory_string))
+                  CALL execute_command_line('mv sfincs* ' //TRIM(base_directory_string))
+                END IF
+              END IF
 !DEC$ ENDIF
                ! Keep minimum states
                IF (lkeep_mins) THEN
