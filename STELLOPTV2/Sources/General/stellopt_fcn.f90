@@ -368,31 +368,6 @@
         IF (ANY(sigma_sfincs_bootstrap < bigno) .and. (iflag>=0)) THEN
           CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
         END IF
-				! Populate fjac_curr
-				IF (lsfincs_bootstrap_analytic .AND. TRIM(opt_type)=='lmanalytic') THEN
-						fjac_curr = 0
-						DO nvar = 1,n
-							 IF (var_dex(nvar) == isfincs_boozer_bmnc) THEN
-									DO mtarget = 1,m
-										IF (target_dex(mtarget) == jtarget_sfincs_bootstrap) THEN
-											! Find mtarget corresponding to first radius
-											IF (target_dex(mtarget-1) /= jtarget_sfincs_bootstrap) THEN
-												mtarget_begin = mtarget
-											END IF
-											! Check for corresponding radius_index for targets and variables
-											IF (arr_dex(nvar,3) == (mtarget-mtarget_begin+1)) THEN
-												! arr_dex corresponds to sfincs_boozer_bmnc index
-												fjac_curr(mtarget,nvar) = sfincs_dBootstrapdBmnc(arr_dex(nvar,1),arr_dex(nvar,2),arr_dex(nvar,3))
-											END IF
-										ELSE
-											STOP "Error! lmanalytic must be called for variables with analytic derivatives implemented."
-										END IF
-									END DO
-							 ELSE
-									STOP "Error! lmanalytic must be called for variables with analytic derivatives implemented."
-							 END IF
-						END DO
-				END IF
 !DEC$ ENDIF
 
          ! Now we load target values if an error was found then
@@ -430,6 +405,35 @@
       ah_aux_f = ah_aux_f / norm_ah
       at_aux_f = at_aux_f / norm_at
       emis_xics_f = emis_xics_f / norm_emis_xics
+
+
+!! Population of fjac_curr for analytic derivatives
+!DEC$ IF DEFINED(SFINCS)
+    IF (lsfincs_bootstrap_analytic .AND. (TRIM(opt_type)=='lmanalytic' .or. TRIM(opt_type)=='bfgs_analytic')) THEN
+        fjac_curr = 0
+        DO nvar = 1,n
+           IF (var_dex(nvar) == isfincs_boozer_bmnc) THEN
+              DO mtarget = 1,m
+                IF (target_dex(mtarget) == jtarget_sfincs_bootstrap) THEN
+                  ! Find mtarget corresponding to first radius
+                  IF (target_dex(mtarget-1) /= jtarget_sfincs_bootstrap) THEN
+                    mtarget_begin = mtarget
+                  END IF
+                  ! Check for corresponding radius_index for targets and variables
+                  IF (arr_dex(nvar,3) == (mtarget-mtarget_begin+1)) THEN
+                    ! arr_dex corresponds to sfincs_boozer_bmnc index
+                    fjac_curr(mtarget,nvar) = sfincs_dBootstrapdBmnc(arr_dex(nvar,1),arr_dex(nvar,2),arr_dex(nvar,3))/sigmas(mtarget)
+                  END IF
+                ELSE
+                  STOP "Error! lmanalytic and BFGS_analytic must be called for variables with analytic derivatives implemented."
+                END IF
+              END DO
+           ELSE
+              STOP "Error! lmanalytic and BFGS_analytic must be called for variables with analytic derivatives implemented."
+           END IF
+        END DO
+    END IF
+!DEC$ ENDIF
 
       RETURN
 !----------------------------------------------------------------------
