@@ -5,7 +5,7 @@
 #######################################################################
   SHELL = /bin/sh
   PWD1 = `pwd`
-  MYHOME = /global/u2/e/ejpaul/stellopt/bin
+  MYHOME = /global/homes/e/epaul/stellopt/STELLOPTV2
 #  MYHOME = /global/u2/l/lazerson/bin_cori
   PRECOMP:= fpp -C -P -DLINUX
   COMPILE = ftn
@@ -123,7 +123,7 @@
 
 #LSFINCS = F
 LSFINCS = T
-SFINCS_DIR = /global/homes/e/epaul/sfincsThings/sfincs_cori/sfincs/fortran/version3
+SFINCS_DIR = /global/homes/e/epaul/sfincsThings/sfincs_adjoint_merge/sfincs/fortran/version3
 SFINCS_INC = -I$(SFINCS_DIR)
 LIB_SFINCS = libsfincs.a
 
