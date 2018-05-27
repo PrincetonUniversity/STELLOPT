@@ -403,7 +403,7 @@
 												 sfincs_boozer_bmnc, sfincs_iota, sfincs_IHat, sfincs_GHat, &
 												 sfincs_aHat, sfincs_psiAHat, sfincs_nperiods, &
 												 lsfincs_bootstrap_analytic, c_armijo, rho_backtrack, &
-                         alpha_backtrack
+                         alpha_backtrack, beta_hess
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -432,6 +432,7 @@
       rho_backtrack   = 0.9
       alpha_backtrack = 1.0
       c_armijo        = 1.0D-04
+      beta_hess       = 0.1
       mode            = 1       ! Default in case user forgets
       factor          = 100.
       cr_strategy     = 0
@@ -1357,9 +1358,10 @@
       WRITE(iunit,outint) 'NPOPULATION',npopulation
       WRITE(iunit,outint) 'NOPTIMIZERS',noptimizers
       WRITE(iunit,outboo) 'LKEEP_MINS',lkeep_mins
-      WRITE(iunit,outflt) 'ALPHA',alpha_backtrack
+      WRITE(iunit,outflt) 'ALPHA_BACKTRACK',alpha_backtrack
       WRITE(iunit,outflt) 'C_ARMIJO',c_armijo
-      WRITE(iunit,outflt) 'RHO',rho_backtrack
+      WRITE(iunit,outflt) 'RHO_BACKTRACK',rho_backtrack
+      WRITE(iunit,outflt) 'BETA_HESS', beta_hess
       !WRITE(iunit,outboo) 'LREFIT',lrefit
       !WRITE(iunit,outflt) 'REFIT_PARAM',refit_param
       WRITE(iunit,'(A)') '!----------------------------------------------------------------------'

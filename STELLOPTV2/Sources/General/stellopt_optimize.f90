@@ -138,9 +138,10 @@
               WRITE(6,'(A,2X,1ES12.4)') '         ALPHA_BACKTRACK: ',alpha_backtrack
               WRITE(6,'(A,2X,1ES12.4)') '         C_BACKTRACK: ',c_armijo
               WRITE(6,'(A,2X,1ES12.4)') '         RHO_BACKTRACK: ',rho_backtrack
+              WRITE(6,'(A,2X,1ES12.4)') '         BETA_HESS: ',beta_hess
             END IF
             CALL BFGS_analytic(stellopt_fcn,mtargets,nvars,vars,fvec, &
-                    ftol,gtol,nfunc_max,info,nfev,alpha_backtrack,c_armijo,rho_backtrack)
+                    ftol,gtol,nfunc_max,info,nfev,alpha_backtrack,c_armijo,rho_backtrack,beta_hess)
          CASE('eval_xvec')
             IF (lverb) THEN
                WRITE(6,*) '    OPTIMIZER: XVEC Evlauation'
