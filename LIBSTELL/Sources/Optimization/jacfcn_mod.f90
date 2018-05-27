@@ -11,22 +11,24 @@ MODULE jacfcn_mod
 			! Are analytic gradients avaiable? (maybe should have same dimension as
 			! fjac_curr eventually
 			LOGICAL :: jac_analytic = .FALSE.
+      ! Is this being used in the context of lmanalytic?
+      LOGICAL :: l_lmanalytic = .FALSE.
 
-!-----------------------------------------------------------------------
-!     Subroutine:    stellopt_jacfcn
-!     Authors:       E. J. Paul (ejpaul@umd.edu)
-!     Date:          05/17/2018
-!     Description:   This subroutine calculates the jacobian matrix for the
-!										 function which is minimized by STELLOPT. This is
-! 									 intended to be used with the lmanalytic subroutine
-!										 in the case that the jacobian matrix is not computed
-!										 purely with forward differencing. When this subroutine
-!										 is called, fjac should contain the jacobian matrix
-! 									 which is reordered here.
-!-----------------------------------------------------------------------
 		CONTAINS
 
       SUBROUTINE jacfcn(m, n, x, fvec, fjac, x_min, fnorm, ncnt, wa, fnorm_min, epsfcn)
+!-----------------------------------------------------------------------
+!     Subroutine:    jacfcn
+!     Authors:       E. J. Paul (ejpaul@umd.edu)
+!     Date:          05/17/2018
+!     Description:   This subroutine calculates the jacobian matrix for the
+!                    function which is minimized by STELLOPT. This is
+!                    intended to be used with the lmanalytic subroutine
+!                    in the case that the jacobian matrix is not computed
+!                    purely with forward differencing. When this subroutine
+!                    is called, fjac_curr should be populated. fjac is
+!                    returned, which has been reordered.
+!-----------------------------------------------------------------------
 
 			EXTERNAL dpmpar
 
@@ -83,31 +85,31 @@ MODULE jacfcn_mod
 			REAL(rprec), DIMENSION(n) :: fnorm_array
 			INTEGER :: ierr_mpi
 
-			! Use jacobian from current iteration
-			fjac = fjac_curr
-
 			! Instead of using fnorm_array, we could look at norm of colomns of Jacobian
 			! for sorting
 			!			jacnorm_array = SQRT(SUM(fjac*fjac,DIM=1))
 
-			! h needs to be computed for fvec_array
-			epsmch = dpmpar(1)
+      ! Use jacobian from current iteration
+      fjac = fjac_curr
+
+      ! h needs to be computed for fvec_array
+      epsmch = dpmpar(1)
       eps = SQRT(MAX(epsfcn,epsmch))
       h(1:n) = eps*ABS(x(1:n))
       WHERE (h .eq. zero) h=eps
-			WHERE (flip) h = -h
+      WHERE (flip) h = -h
 
-			! fvec_array can be computed from fjac
-			DO nvar = 1,n
-				DO mtarget = 1,m
-					fvec_array(mtarget,nvar) = fjac(mtarget,nvar)*h(nvar) + fvec(mtarget)
-				END DO
-			END DO
-			fnorm_array = SQRT(SUM(fvec_array*fvec_array,DIM=1))
+      ! fvec_array can be computed from fjac
+      DO nvar = 1,n
+        DO mtarget = 1,m
+          fvec_array(mtarget,nvar) = fjac(mtarget,nvar)*h(nvar) + fvec(mtarget)
+        END DO
+      END DO
+      fnorm_array = SQRT(SUM(fvec_array*fvec_array,DIM=1))
 
-			! The following is modified from fdjac_mod.f
-		  ! Check fjac for errors
-			DO i = 1, n
+      ! The following is modified from fdjac_mod.f
+      ! Check fjac for errors
+      DO i = 1, n
          temp_norm = fnorm_array(i)*fnorm_array(i)
          IF ((temp_norm >= 1.0E12).or.(temp_norm/=temp_norm)) THEN
             jac_err(i) = 0
@@ -153,7 +155,7 @@ MODULE jacfcn_mod
       DO i = 1, n
          jac_index(i) = i
       END DO
-		! The following should not modify Jacobian if free of errors
+    ! The following should not modify Jacobian if free of errors
       i = 1
       DO WHILE(i <= COUNT(jac_err > 0))
          IF (jac_err(i) == 0) THEN
@@ -189,9 +191,9 @@ MODULE jacfcn_mod
          jac_order(ix_temp) = isort(1)
          IF(isort(1) <= 0 .or. isort(1) > n_red) THEN
             EXIT
-				 ! fnorm_array - norm of forward diff step function evaluation
-				 ! fnorm - norm of function evaluation
-				 ! If smallest element of fnorm_array is larger than fnorm
+         ! fnorm_array - norm of forward diff step function evaluation
+         ! fnorm - norm of function evaluation
+         ! If smallest element of fnorm_array is larger than fnorm
          ELSE IF(fnorm_array(isort(1)) > fnorm) THEN
             EXIT
          ELSE
@@ -214,5 +216,40 @@ MODULE jacfcn_mod
       x_min(j) = x(j) + h(j)
 
 			END SUBROUTINE jacfcn
+
+      SUBROUTINE write_jacobian(ncnt,m,n)
+!-----------------------------------------------------------------------
+!     Subroutine:    jacfcn
+!     Authors:       E. J. Paul (ejpaul@umd.edu)
+!     Date:          05/26/2018
+!     Description:   This subroutine writes the jacobian to a jacobian.x
+!                    file for the most recent function evaluations. This
+!                    is called by the BFGS_analytic and backtrack
+!                    subroutines.
+!-----------------------------------------------------------------------
+        IMPLICIT NONE
+
+        ! Input
+        INTEGER, INTENT(in)      ::  m, n
+        INTEGER, INTENT(inout)   :: ncnt
+        ! Local variables
+        INTEGER :: iunit, j, i, ix_temp
+        CHARACTER(16) ::  temp_string
+        CHARACTER(256) ::  jac_file
+
+        IF (ncnt == 0) THEN
+          WRITE(temp_string,'(i6.6)') ncnt
+        ELSE
+          WRITE(temp_string,'(i6.6)') ncnt+1
+        END IF
+        jac_file = 'jacobian.' // TRIM(temp_string)
+        CALL safe_open(iunit,j,TRIM(jac_file),'new','formatted')
+        WRITE(iunit,'(2X,i6,2X,i6)') m,n
+        DO i = 1, m
+          WRITE(iunit,'(1p,4e22.14)') (fjac_curr(i,j), j=1,n)
+        END DO
+        CLOSE(iunit)
+
+      END SUBROUTINE write_jacobian
 
 END MODULE jacfcn_mod

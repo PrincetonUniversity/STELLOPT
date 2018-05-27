@@ -223,6 +223,8 @@ ROCKET_Evolve.o \
 de_mpi.o \
 MAP_PLANE.o \
 lmanalytic.o \
+BFGS_analytic.o \
+backtrack.o \
 jacfcn_mod.o \
 lmpar_mod.o \
 unique_boundary_PG.o \

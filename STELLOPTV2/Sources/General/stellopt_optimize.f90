@@ -107,7 +107,6 @@
             fvec     = 0.0
             nprint   = 0
             info     = 0
-            nfev     = 0
             ldfjac   = mtargets
             nfev     = 0
             IF (lverb) THEN
@@ -126,6 +125,22 @@
                        ftol, xtol, gtol, nfunc_max, epsfcn, diag, mode, &
                        factor, nprint, info, nfev, fjac, ldfjac, ipvt, &
                        qtf, wa1, wa2, wa3, wa4,vars_min,vars_max)
+         CASE('bfgs_analytic')
+            ALLOCATE(fvec(mtargets))
+            fvec     = 0.0
+            info     = 0
+            nfev     = 0
+            IF (lverb) THEN
+              WRITE(6,*) '    OPTIMIZER: BFGS (with analytic gradients)'
+              WRITE(6,*) '    NFUNC_MAX: ',nfunc_max
+              WRITE(6,'(A,2X,1ES12.4)') '         FTOL: ',ftol
+              WRITE(6,'(A,2X,1ES12.4)') '         GTOL: ',gtol
+              WRITE(6,'(A,2X,1ES12.4)') '         ALPHA_BACKTRACK: ',alpha_backtrack
+              WRITE(6,'(A,2X,1ES12.4)') '         C_BACKTRACK: ',c_armijo
+              WRITE(6,'(A,2X,1ES12.4)') '         RHO_BACKTRACK: ',rho_backtrack
+            END IF
+            CALL BFGS_analytic(stellopt_fcn,mtargets,nvars,vars,fvec, &
+                    ftol,gtol,nfunc_max,info,nfev,alpha_backtrack,c_armijo,rho_backtrack)
          CASE('eval_xvec')
             IF (lverb) THEN
                WRITE(6,*) '    OPTIMIZER: XVEC Evlauation'

@@ -402,7 +402,8 @@
 												 sfincs_boozer_bmnc_max, sfincs_boozer_bmnc_min, &
 												 sfincs_boozer_bmnc, sfincs_iota, sfincs_IHat, sfincs_GHat, &
 												 sfincs_aHat, sfincs_psiAHat, sfincs_nperiods, &
-												 lsfincs_bootstrap_analytic
+												 lsfincs_bootstrap_analytic, c_armijo, rho_backtrack, &
+                         alpha_backtrack
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -428,6 +429,9 @@
       xtol            = 1.0D-06
       gtol            = 0.0
       epsfcn          = 1.0D-06
+      rho_backtrack   = 0.9
+      alpha_backtrack = 1.0
+      c_armijo        = 1.0D-04
       mode            = 1       ! Default in case user forgets
       factor          = 100.
       cr_strategy     = 0
@@ -1353,6 +1357,9 @@
       WRITE(iunit,outint) 'NPOPULATION',npopulation
       WRITE(iunit,outint) 'NOPTIMIZERS',noptimizers
       WRITE(iunit,outboo) 'LKEEP_MINS',lkeep_mins
+      WRITE(iunit,outflt) 'ALPHA',alpha_backtrack
+      WRITE(iunit,outflt) 'C_ARMIJO',c_armijo
+      WRITE(iunit,outflt) 'RHO',rho_backtrack
       !WRITE(iunit,outboo) 'LREFIT',lrefit
       !WRITE(iunit,outflt) 'REFIT_PARAM',refit_param
       WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
