@@ -17,7 +17,7 @@
       USE equil_utils
 
       USE sfincs_main, only: sfincs_init, sfincs_prepare, sfincs_run
-      USE globalVariables, only: sfincs_inputFilename => inputFilename, sfincs_outputFilename => outputFilename, equilibriumFile, FSABjHat, FSABHat2, dbootstrapdlambda, ms_sensitivity, ns_sensitivity, nmodesadjoint
+      USE globalVariables, only: sfincs_inputFilename => inputFilename, sfincs_outputFilename => outputFilename, equilibriumFile, FSABjHat, FSABHat2, dbootstrapdlambda, ms_sensitivity, ns_sensitivity, nmodesadjoint, dPhidPsidLambda, boozer_bmnc, ddrHat2ddpsiHat
       USE equil_vals, only: phiedge
 
       USE, intrinsic :: iso_fortran_env, only : stdout=>output_unit, stderr=>error_unit
@@ -236,9 +236,11 @@
 
 										 IF (TRIM(file_line_lower)=='&general') THEN
 												WRITE (UNIT=unit_out,FMT='(A)') '&general'
-										 		IF (lsfincs_bootstrap_analytic) THEN
+										 		IF (lsfincs_bootstrap_analytic .and. (lsfincs_ambipolar_option .eqv. .false.)) THEN
 													WRITE (UNIT=unit_out,FMT='(A)') '   RHSMode = 4'
-												END IF
+												ELSE IF (lsfincs_bootstrap_analytic .and. lsfincs_ambipolar_option) THEN
+                          WRITE (UNIT=unit_out,FMT='(A)') '   RHSMode = 5'
+                        END IF
 										 END IF
 
                      IF (TRIM(file_line_lower)=='&geometryparameters') THEN
@@ -258,6 +260,8 @@
 													DO m=0,sfincs_mmax
 														DO n=-sfincs_nmax,sfincs_nmax
 															IF (sfincs_boozer_bmnc(m,n,radius_index)/=0) THEN
+                                print *,"sfincs_boozer_bmnc: ", sfincs_boozer_bmnc(m,n,radius_index)
+                                print *,"boozer_bmnc: ", boozer_bmnc(m,n)
 																WRITE(UNIT=unit_out,FMT='(5X,A,I4.3,A,I4.3,A,es24.14)') 'BOOZER_BMNC(',m,',',n,') = ',sfincs_boozer_bmnc(m,n,radius_index)
 															END IF
 														END DO
@@ -277,6 +281,20 @@
                         WRITE (UNIT=unit_out,FMT='(a, es24.14, es24.14, a)') '  dnHatdpsiNs = ',sfincs_d_ne_d_s, sfincs_d_ni_d_s,' ! From stellopt'
                         WRITE (UNIT=unit_out,FMT='(a, es24.14, es24.14, a)') '  dTHatdpsiNs = ',sfincs_d_Te_d_s, sfincs_d_Ti_d_s,' ! From stellopt'
                         CYCLE
+                     END IF
+
+                     IF (TRIM(file_line_lower)=='&physicsparameters') THEN
+                        WRITE (UNIT=unit_out,FMT='(A)') '&physicsParameters'
+                        ! Compute change in Er
+                        IF (lsfincs_ambipolar_option .and. lsfincs_bootstrap_analytic) THEN
+                          ! Check if this is the initial evaluation
+                          IF (maxval(abs(boozer_bmnc)) > 0) THEN
+                            ! dPhiHatdpsiHat = ddrHat2ddpsiHat * (-Er)
+                            sfincs_Er(radius_index) = sfincs_Er(radius_index) - (1/ddrHat2ddpsiHat)*sum((sfincs_boozer_bmnc(:,:,radius_index)-boozer_bmnc)*sfincs_dphidpsidlambda(:,:,radius_index))
+!                            print *,"sfincs_Er(radius_index) : ", sfincs_Er(radius_index)
+                          END IF
+                        END IF
+                        WRITE (UNIT=unit_out,FMT='(A,ES24.14)') '  Er = ',sfincs_Er(radius_index)
                      END IF
 
 										 IF (TRIM(file_line_lower)=='&sensitivityoptions') THEN
@@ -315,10 +333,9 @@
 
                      ! Handle variables that should NOT be copied:
 										 IF (file_line_lower(1:7)=='rhsmode') CYCLE
-
-                     IF (file_line_lower(1:7)=='rhsmode') CYCLE
-										 IF (file_line_lower(1:8)=='&general') CYCLE
-										 IF (file_line_lower(1:19)=='&sensitivityoptions') CYCLE
+                     IF (file_line_lower(1:8)=='&general') CYCLE
+                     IF (file_line_lower(1:19)=='&sensitivityoptions') CYCLE
+                     IF (file_line_lower(1:18)=='&physicsparameters') CYCLE
                      IF (file_line_lower(1:14)=='geometryscheme') CYCLE
                      IF (file_line_lower(1:15)=='equilibriumfile') CYCLE
                      IF (file_line_lower(1:16)=='vmecradialoption') CYCLE
@@ -393,6 +410,9 @@
 													IF (ns_sensitivity(imn)==n .and. ms_sensitivity(imn)==m) THEN
 													! First dimension of dbootstrapdlambda is NLambdas (=1 for boozer)
 														sfincs_dBootstrapdBmnc(m,n,radius_index) = dbootstrapdlambda(1,imn) * 437695 * 1e20 * 1.602177e-19
+                            IF (lsfincs_ambipolar_option) THEN
+                              sfincs_dPhidPsidLambda(m,n,radius_index) = dPhidPsidLambda(1,imn)
+                            END IF
 													END IF
 												END DO
 											END DO
@@ -402,15 +422,18 @@
 							 IF (ALLOCATED(ns_sensitivity)) DEALLOCATE(ns_sensitivity)
 							 IF (ALLOCATED(ms_sensitivity)) DEALLOCATE(ms_sensitivity)
 							 IF (ALLOCATED(dbootstrapdlambda)) DEALLOCATE(dbootstrapdlambda)
+               IF (ALLOCATED(dphidpsidlambda)) DEALLOCATE(dphidpsidlambda)
             END DO ! Loop over radii
 
             ! Send results from all procs to master so master can compute the new radial current profile:
             IF (myworkid == master) THEN
-
                CALL MPI_REDUCE(MPI_IN_PLACE,sfincs_J_dot_B_flux_surface_average,Nradii+1,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
                CALL MPI_REDUCE(MPI_IN_PLACE,sfincs_B_squared_flux_surface_average,Nradii+1,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
 							 IF (lsfincs_bootstrap_analytic) THEN
 									CALL MPI_REDUCE(MPI_IN_PLACE,sfincs_dBootstrapdBmnc,(1+sfincs_mmax)*(2*sfincs_nmax+1)*ndatafmax,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
+                  IF (lsfincs_ambipolar_option) THEN
+                    CALL MPI_REDUCE(MPI_IN_PLACE,sfincs_dPhidPsidLambda,(1+sfincs_mmax)*(2*sfincs_nmax+1)*ndatafmax,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
+                  END IF
 							 END IF
                ! Extrapolate to get <B^2> on axis:
                IF (Nradii<2) THEN
@@ -435,9 +458,11 @@
                CALL MPI_REDUCE(sfincs_B_squared_flux_surface_average,sfincs_B_squared_flux_surface_average,Nradii+1,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
 							 IF (lsfincs_bootstrap_analytic) THEN
 							 		CALL MPI_REDUCE(sfincs_dBootstrapdBmnc,sfincs_dBootstrapdBmnc,(1+sfincs_mmax)*(2*sfincs_nmax+1)*ndatafmax,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
+                  IF (lsfincs_ambipolar_option) THEN
+                    CALL MPI_REDUCE(sfincs_dPhidPsidLambda, sfincs_dPhidPsidLambda,(1+sfincs_mmax)*(2*sfincs_nmax+1)*ndatafmax,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
+                  END IF
 							 END IF
             END IF
-
 
             CALL MPI_COMM_FREE(MPI_COMM_SFINCS,ierr_mpi)
             CALL MPI_BARRIER(MPI_COMM_MYWORLD,ierr_mpi) ! Weird things might happen if some procs move on while others are still running sfincs.

@@ -403,7 +403,8 @@
 												 sfincs_boozer_bmnc, sfincs_iota, sfincs_IHat, sfincs_GHat, &
 												 sfincs_aHat, sfincs_psiAHat, sfincs_nperiods, &
 												 lsfincs_bootstrap_analytic, c_armijo, rho_backtrack, &
-                         alpha_backtrack, beta_hess
+                         alpha_backtrack, beta_hess, lsfincs_ambipolar_option, &
+                         sfincs_Er
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -541,6 +542,7 @@
       dregcoil_rcws_zbound_s_opt = -1.0
 			lsfincs_boozer_bmnc_opt = .FALSE.
 			dsfincs_boozer_bmnc_opt = -1.0
+      sfincs_Er = 0 
 
       IF (.not.ltriangulate) THEN  ! This is done because values may be set by trinagulate
          phiedge_min     = -bigno;  phiedge_max     = bigno
