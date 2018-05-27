@@ -369,16 +369,6 @@
 							 ! Broadcast items needed for input namelist w/ geometryScheme = 13
 							 IF (ANY(lsfincs_boozer_bmnc_opt)) THEN
 							 		CALL MPI_BCAST(sfincs_boozer_bmnc,(sfincs_mmax+1)*(2*sfincs_nmax+1)*ndatafmax,MPI_REAL8,master,MPI_COMM_MYWORLD,ierr_mpi)
-!									CALL MPI_BCAST(sfincs_s,ndatafmax,MPI_REAL8,master,MPI_COMM_MYWORLD,ierr_mpi)
-!									CALL MPI_BCAST(sfincs_iota,ndatafmax,MPI_REAL8,master,MPI_COMM_MYWORLD,ierr_mpi)
-!									CALL MPI_BCAST(sfincs_GHat,ndatafmax,MPI_REAL8,master,MPI_COMM_MYWORLD,ierr_mpi)
-!									CALL MPI_BCAST(sfincs_IHat,ndatafmax,MPI_REAL8,master,MPI_COMM_MYWORLD,ierr_mpi)
-!									CALL MPI_BCAST(sfincs_aHat,ndatafmax,MPI_REAL8,master,MPI_COMM_MYWORLD,ierr_mpi)
-!									CALL MPI_BCAST(sfincs_psiAHat,ndatafmax,MPI_REAL8,master,MPI_COMM_MYWORLD,ierr_mpi)
-!									CALL MPI_BCAST(sfincs_nperiods,ndatafmax,MPI_REAL8,master,MPI_COMM_MYWORLD,ierr_mpi)
-!									CALL MPI_BCAST(sfincs_mmax,1,MPI_REAL8,master,MPI_COMM_MYWORLD,ierr_mpi)
-!									CALL MPI_BCAST(sfincs_mmax,1,MPI_REAL8,master,MPI_COMM_MYWORLD,ierr_mpi)
-!									CALL MPI_BCAST(equil_type,1,MPI_REAL8,master,MPI_COMM_MYWORLD,ierr_mpi)
 							 END IF
 
                proc_string = file_str

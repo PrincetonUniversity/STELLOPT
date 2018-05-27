@@ -6,8 +6,8 @@ SUBROUTINE lmanalytic(fcn, m, n, x, fvec, ftol, xtol, gtol, maxfev, epsfcn, &
       USE mpi_params
       USE safe_open_mod
 
-			USE stel_kinds
-			USE vparams, ONLY: sfincs_nmax, sfincs_mmax, ndatafmax
+      USE stel_kinds
+      USE vparams, ONLY: sfincs_nmax, sfincs_mmax, ndatafmax
       USE lmpar_mod, ONLY: fjac_mod=>fjac, ldfjac_mod=>ldfjac, &
         ipvt_mod=>ipvt, qtf_mod=>qtf, diag_mod=>diag, delta, fnorm1, &
 				lfirst_lm, par, pnorm, spread_ratio, levmarq_param_mp
@@ -23,7 +23,7 @@ SUBROUTINE lmanalytic(fcn, m, n, x, fvec, ftol, xtol, gtol, maxfev, epsfcn, &
 												 ix_min, jac_count, n_red
 !DEC$ ENDIF
 
-			USE jacfcn_mod, ONLY: jac_analytic, fjac_curr, jacfcn
+      USE jacfcn_mod, ONLY: jac_analytic, fjac_curr, jacfcn, l_lmanalytic
 
       IMPLICIT NONE
 !DEC$ IF DEFINED (MPI_OPT)
@@ -287,6 +287,7 @@ SUBROUTINE lmanalytic(fcn, m, n, x, fvec, ftol, xtol, gtol, maxfev, epsfcn, &
       IF (istat .ne. 0) STOP 'Allocation error in lmdif'
 
 			jac_analytic = .TRUE.
+      l_lmanalytic = .TRUE.
 
 !     epsmch is the machine precision.
 !     flip is control for direction flipping in fdjac2!
@@ -340,8 +341,7 @@ SUBROUTINE lmanalytic(fcn, m, n, x, fvec, ftol, xtol, gtol, maxfev, epsfcn, &
       IF (myid .eq. master) THEN
          iflag = flag_singletask
          if (nfev .ne. 0) iflag = 0
-         !CALL fcn (m, n, x, fvec, iflag, nfev, fjac)
-						CALL fcn (m, n, x, fvec, iflag, nfev)
+				 CALL fcn (m, n, x, fvec, iflag, nfev)
 				 IF (iflag .ne. 0) THEN
             WRITE(6,*) "FIRST RUN FAILS!  IMPROVE INPUT!"
             STOP "ERRROR!"
@@ -361,14 +361,13 @@ SUBROUTINE lmanalytic(fcn, m, n, x, fvec, ftol, xtol, gtol, maxfev, epsfcn, &
 !DEC$ IF DEFINED (MPI_OPT)
       CALL MPI_BCAST(x,n, MPI_REAL8, master, &
                     MPI_COMM_STEL, ierr_mpi)
-			!CALL MPI_BARRIER(MPI_COMM_STEL,ierr_mpi)
-			IF (ierr_mpi /= MPI_SUCCESS) CALL mpi_stel_abort(ierr_mpi)
-			CALL MPI_BCAST(fjac,m*n,MPI_DOUBLE_PRECISION,master,MPI_COMM_STEL,ierr_mpi)
-			IF (ierr_mpi /= MPI_SUCCESS) CALL mpi_stel_abort(ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL mpi_stel_abort(ierr_mpi)
+      CALL MPI_BCAST(fjac_curr,m*n,MPI_DOUBLE_PRECISION, &
+          master,MPI_COMM_STEL,ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL mpi_stel_abort(ierr_mpi)
 !DEC$ ENDIF
       iflag = FLAG_CLEANUP
       IF (myid == master) iflag = flag_cleanup_lev
-      !call fcn (m, n, x, fvec, iflag, nfev, fjac)
 			call fcn (m, n, x, fvec, iflag, nfev)
 
 !DEC$ IF DEFINED (MPI_OPT)
@@ -377,11 +376,6 @@ SUBROUTINE lmanalytic(fcn, m, n, x, fvec, ftol, xtol, gtol, maxfev, epsfcn, &
       IF (ierr_mpi /= MPI_SUCCESS) CALL mpi_stel_abort(ierr_mpi)
       IF (iflag .ge. 0) CALL &
           MPI_BCAST(fvec, m, MPI_REAL8, master, &
-                    MPI_COMM_STEL, ierr_mpi)
-      IF (ierr_mpi /= MPI_SUCCESS) CALL mpi_stel_abort(ierr_mpi)
-			! Jacobian computed in call to fcn
-			IF (iflag .ge. 0) CALL &
-          MPI_BCAST(fjac, m*n, MPI_REAL8, master, &
                     MPI_COMM_STEL, ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL mpi_stel_abort(ierr_mpi)
 !DEC$ ENDIF
@@ -426,35 +420,35 @@ SUBROUTINE lmanalytic(fcn, m, n, x, fvec, ftol, xtol, gtol, maxfev, epsfcn, &
          IF (ierr_mpi /= MPI_SUCCESS) CALL mpi_stel_abort(ierr_mpi)
 !DEC$ ENDIF
 
-!!!!        calculate the jacobian matrix.
-!				IF (myid .eq. master) THEN
-				CALL jacfcn(m,n,x,fvec,fjac,x_min,fnorm,nfev,fvec_min,fnorm_min,epsfcn)
-!				END IF
+!!!!        Perform manipulations on Jacobian matrix obtained at minimum
+				IF (myid .eq. master) THEN
+					CALL jacfcn(m,n,x,fvec,fjac,x_min,fnorm,nfev,fvec_min,fnorm_min,epsfcn)
+				END IF
 
-!!DEC$ IF DEFINED (MPI_OPT)
-!				CALL MPI_BCAST(fjac,m*n,MPI_DOUBLE_PRECISION, &
-!											master,MPI_COMM_STEL,ierr_mpi)
-!				CALL MPI_BCAST(x_min,n,MPI_DOUBLE_PRECISION, &
-!						master,MPI_COMM_STEL,ierr_mpi)
-!				CALL MPI_BCAST(fvec_min,m,MPI_DOUBLE_PRECISION, &
-!						master,MPI_COMM_STEL,ierr_mpi)
-!				CALL MPI_BCAST(jac_index,n,MPI_DOUBLE_PRECISION, &
-!						master,MPI_COMM_STEL,ierr_mpi)
-!				CALL MPI_BCAST(jac_err,n,MPI_INTEGER, &
-!						master,MPI_COMM_STEL,ierr_mpi)
-!				CALL MPI_BCAST(n_red,1,MPI_INTEGER, &
-!						master,MPI_COMM_STEL,ierr_mpi)
-!				CALL MPI_BCAST(jac_order,n,MPI_INTEGER, &
-!						master,MPI_COMM_STEL,ierr_mpi)
-!				CALL MPI_BCAST(ix_min,1,MPI_INTEGER, &
-!						master,MPI_COMM_STEL,ierr_mpi)
-!				CALL MPI_BCAST(fnorm,1,MPI_DOUBLE_PRECISION, &
-!						master,MPI_COMM_STEL,ierr_mpi)
-!				CALL MPI_BCAST(h_order,n,MPI_DOUBLE_PRECISION, &
-!						master,MPI_COMM_STEL,ierr_mpi)
-!				CALL MPI_BCAST(fnorm_min,1,MPI_DOUBLE_PRECISION, &
-!						master,MPI_COMM_STEL,ierr_mpi)
-!!DEC$ ENDIF
+!DEC$ IF DEFINED (MPI_OPT)
+				CALL MPI_BCAST(fjac,m*n,MPI_DOUBLE_PRECISION, &
+											master,MPI_COMM_STEL,ierr_mpi)
+				CALL MPI_BCAST(x_min,n,MPI_DOUBLE_PRECISION, &
+						master,MPI_COMM_STEL,ierr_mpi)
+				CALL MPI_BCAST(fvec_min,m,MPI_DOUBLE_PRECISION, &
+						master,MPI_COMM_STEL,ierr_mpi)
+				CALL MPI_BCAST(jac_index,n,MPI_DOUBLE_PRECISION, &
+						master,MPI_COMM_STEL,ierr_mpi)
+				CALL MPI_BCAST(jac_err,n,MPI_INTEGER, &
+						master,MPI_COMM_STEL,ierr_mpi)
+				CALL MPI_BCAST(n_red,1,MPI_INTEGER, &
+						master,MPI_COMM_STEL,ierr_mpi)
+				CALL MPI_BCAST(jac_order,n,MPI_INTEGER, &
+						master,MPI_COMM_STEL,ierr_mpi)
+				CALL MPI_BCAST(ix_min,1,MPI_INTEGER, &
+						master,MPI_COMM_STEL,ierr_mpi)
+				CALL MPI_BCAST(fnorm,1,MPI_DOUBLE_PRECISION, &
+						master,MPI_COMM_STEL,ierr_mpi)
+				CALL MPI_BCAST(h_order,n,MPI_DOUBLE_PRECISION, &
+						master,MPI_COMM_STEL,ierr_mpi)
+				CALL MPI_BCAST(fnorm_min,1,MPI_DOUBLE_PRECISION, &
+						master,MPI_COMM_STEL,ierr_mpi)
+!DEC$ ENDIF
 
 				 IF (iflag .lt. 0) EXIT outerloop
 
@@ -554,10 +548,10 @@ SUBROUTINE lmanalytic(fcn, m, n, x, fvec, ftol, xtol, gtol, maxfev, epsfcn, &
               print *,"Here comes xvmin:"
               print *,xvmin
               ! End MJL
-							CALL levmarq_param_mp (x, wa1, wa2, wa3, wa4, &
-                                   nfev, m, n, iflag, fcn, &
-																	 lev_step_range,fnorm_min, &
-																	 xvmin,xvmax)
+			  CALL levmarq_param_mp (x, wa1, wa2, wa3, wa4, &
+								  nfev, m, n, iflag, fcn, &
+								  lev_step_range,fnorm_min, &
+								  xvmin,xvmax)
            ELSE
               print *,"Calling levmarq_param_mp WITHOUT xvmin,xvmax."
               CALL levmarq_param_mp (x, wa1, wa2, wa3, wa4, &
@@ -565,11 +559,10 @@ SUBROUTINE lmanalytic(fcn, m, n, x, fvec, ftol, xtol, gtol, maxfev, epsfcn, &
                                     lev_step_range,fnorm_min)   !PPPL
            END IF
 !DEC$ ELSE
-					 CALL levmarq_param(x, wa1, wa2, wa3, wa4, &
-								wall_time_lev, nfev, m, n, iflag, fcn)
+			  CALL levmarq_param(x, wa1, wa2, wa3, wa4, &
+					wall_time_lev, nfev, m, n, iflag, fcn)
 !DEC$ ENDIF
            IF (iflag .lt. 0) EXIT
-
 
 !        compute the scaled actual reduction.
 

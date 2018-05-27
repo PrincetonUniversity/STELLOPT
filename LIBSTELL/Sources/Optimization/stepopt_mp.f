@@ -6,7 +6,7 @@
      1                     jac_index, flag_cleanup_lev
       USE safe_open_mod
       USE mpi_params
-			USE jacfcn_mod, ONLY: jac_analytic, fjac_curr
+      USE jacfcn_mod, ONLY: jac_analytic, fjac_curr
       IMPLICIT NONE
 !DEC$ IF DEFINED (MPI_OPT)
       INCLUDE 'mpif.h'                                       !mpi stuff
@@ -116,10 +116,6 @@ c
          iflag = j
          CALL fcn (m, n, wa2, wa4, iflag, nfev)
          fnorm1 = enorm(m, wa4)
-         !PRINT *,'jac_count',jac_count
-         !PRINT *,'jac_order',jac_order
-         !PRINT *,'h_order',h_order
-         !PRINT *,'fnorm_array',fnorm_array
       END IF
 
 !DEC$ IF DEFINED (MPI_OPT)
@@ -227,11 +223,11 @@ c
          CALL MPI_BCAST(wa4,m,MPI_REAL8,iproc_min,
      1     MPI_COMM_STEL,ierr)
          IF (ierr .ne. 0) GOTO 3000
-				 IF (jac_analytic) THEN
-         CALL MPI_BCAST(fjac_curr,n*m,MPI_REAL8,iproc_min,
+         IF (jac_analytic) THEN
+           CALL MPI_BCAST(fjac_curr,n*m,MPI_REAL8,iproc_min,
      1     MPI_COMM_STEL,ierr)
-         IF (ierr .ne. 0) GOTO 3000
-				 END IF
+           IF (ierr .ne. 0) GOTO 3000
+		 END IF
 !DEC$ ENDIF
 
          x = wa2

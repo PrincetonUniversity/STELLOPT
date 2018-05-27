@@ -19,14 +19,6 @@
       USE sfincs_main, only: sfincs_init, sfincs_prepare, sfincs_run
       USE globalVariables, only: sfincs_inputFilename => inputFilename, sfincs_outputFilename => outputFilename, equilibriumFile, FSABjHat, FSABHat2, dbootstrapdlambda, ms_sensitivity, ns_sensitivity, nmodesadjoint
       USE equil_vals, only: phiedge
-			USE	vparams, ONLY: sfincs_nmax, sfincs_mmax, ndatafmax
-!!$      ! BOOTSJ LIBRARIES
-!!$      USE bootsj_input
-!!$      use parambs, lscreen_bootsj=>lscreen
-!!$      use vmec0
-!!$      use read_boozer_mod
-!!$      use trig
-      ! VMEC
 
       USE, intrinsic :: iso_fortran_env, only : stdout=>output_unit, stderr=>error_unit
 !-----------------------------------------------------------------------
@@ -77,17 +69,6 @@
       REAL(rprec) :: temp1, temp2
 			INTEGER :: sfincs_nMaxAdjoint=0
 			INTEGER :: sfincs_mMaxAdjoint=0
-!!$      REAL(rprec) :: temp1, temp2, ds_fine, scale_factor
-!!$      REAL(rprec), DIMENSION(:), ALLOCATABLE :: sfincs_s_with_0
-!!$      INTEGER, PARAMETER :: Ns_fine = 1000
-!!$      REAL(rprec), DIMENSION(Ns_fine) :: s_fine_full, s_fine_half, J_dot_B_flux_surface_average_fine, d_p_d_s_fine_half
-!!$      REAL(rprec), DIMENSION(Ns_fine) :: B_squared_flux_surface_average_fine_half, B_squared_flux_surface_average_fine_full
-!!$      REAL(rprec), DIMENSION(Ns_fine) :: integrating_factor_full, integrating_factor_half, d_p_d_s_fine, integrand, isigng_I_F_full, isigng_I_full
-!!$      REAL(rprec), DIMENSION(Ns_fine) :: integrating_factor_half_approximate, pressure_fine_half
-!!$      REAL(rprec), DIMENSION(21) :: J_dot_B_flux_surface_average_fit, B_squared_flux_surface_average_fit, sfincs_AC_fit
-!!$      REAL(rprec), DIMENSION(Ns_fine) :: sfincs_ac_half, sfincs_ac_low_beta_limit, sfincs_ac_fit_results
-!!$      CHARACTER(LEN=32) :: B_squared_flux_surface_average_profile_type
-
 !-----------------------------------------------
 !   E x t e r n a l   F u n c t i o n s
 !-----------------------------------------------
@@ -460,7 +441,6 @@
 
             CALL MPI_COMM_FREE(MPI_COMM_SFINCS,ierr_mpi)
             CALL MPI_BARRIER(MPI_COMM_MYWORLD,ierr_mpi) ! Weird things might happen if some procs move on while others are still running sfincs.
-
          CASE('spec')
       END SELECT
       IF (lscreen) WRITE(6,'(a)') ' --------------------  SFINCS BOOTSTRAP CALCULATION DONE  --------------------'
