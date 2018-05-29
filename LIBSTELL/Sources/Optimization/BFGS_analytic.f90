@@ -104,7 +104,7 @@ INCLUDE 'mpif.h'
     nfev = nfev+1
 
     ! Compute value of objective function
-    f_curr = (sum(fvec))**2
+    f_curr = (sum(fvec**2))
     write(*,"(A,E22.14)") "Initial function value: ", f_curr
 
     ! Compute gradient of objective function
@@ -151,9 +151,9 @@ INCLUDE 'mpif.h'
       end do
 
       ! Rescale if this is the initial Hessian (see Nocedal & Wright 6.20)
-      if (iter==0) then
-        hess = (sum(y_curr*s_curr)/sum(y_curr*y_curr))*eye
-      end if
+!      if (iter==0) then
+!        hess = (sum(y_curr*s_curr)/sum(y_curr*y_curr))*eye
+!      end if
 
       ! Update approximate Hessian (See Nocedal & Wright 6.17)
       mat1 = eye - rho_curr*s_y_outer

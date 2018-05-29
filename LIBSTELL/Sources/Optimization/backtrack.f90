@@ -68,7 +68,7 @@
   CALL fcn (m,n,x_new,fvec_new,iflag,nfev)
   nfev = nfev+1
 
-  f_new = (sum(fvec_new))**2
+  f_new = (sum(fvec_new**2))
   write(*,"(A,E22.14)") "New function value: ",f_new
 
   niter = 0
@@ -96,7 +96,7 @@
     CALL fcn (m,n,x_new,fvec_new,iflag,nfev)
     nfev = nfev+1
 
-    f_new = (sum(fvec_new))**2
+    f_new = (sum(fvec_new**2))
     niter = niter + 1
   end do
   write(*,"(A,I2,A)") "Backtracking line search completed in ",niter," iterations."
