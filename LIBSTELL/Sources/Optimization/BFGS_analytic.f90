@@ -1,9 +1,9 @@
-SUBROUTINE BFGS_analytic(fcn,m,n,x,fvec,ftol,gtol,maxfev,info,nfev,alpha,c,rho,beta)
+SUBROUTINE BFGS_analytic(fcn,m,n,x,ftol,gtol,maxfev,nfev,alpha_backtrack,&
+      c_armijo,rho_backtrack,beta_hess)
 
   USE mpi_params
   USE safe_open_mod
   USE stel_kinds
-  USE vparams, ONLY: sfincs_nmax, sfincs_mmax, ndatafmax
   USE fdjac_mod, ONLY: FLAG_CLEANUP, FLAG_CLEANUP_LEV, flag_singletask
   ! flag_singletask = -1, flag_cleanup = -100, flag_cleanup_lev = -101
   USE jacfcn_mod, ONLY: fjac_curr, write_jacobian, jac_analytic
@@ -15,6 +15,24 @@ SUBROUTINE BFGS_analytic(fcn,m,n,x,fvec,ftol,gtol,maxfev,info,nfev,alpha,c,rho,b
 !     Description:   This subroutine performs a BFGS quasi-newton
 !                    optimization of user-supplied fcn beginning at
 !                    x. This is based off of Nocedal & Wright Algorithm 6.1.
+!
+!    Input parameters
+!    fcn             User-specified subroutine to compute objective function
+!    m               Number of target functions.
+!    n               Number of variables.
+!    x               Vector of variables.
+!    ftol            Tolerance on norm of function value.
+!    gtol            Tolerance on norm of gradient.
+!    maxfev          Maximum number of function evals.
+!    alpha_backtrack Initial step size for line search. Should typically be 1.
+!    c_armijo        Parameter used to test significant decrease condition.
+!    rho_backtrack   Factor by which step size is shrunk in backtracking line
+!                    search.
+!    beta_hess       Scaling used for initial Hessian approximation. This
+!                    sets the initial stepsize and is used to scale the
+!                    stepsize if a reasonable descent direction is not
+!                    obtained.
+!
 !-----------------------------------------------------------------------
 
   IMPLICIT NONE
@@ -26,17 +44,16 @@ INCLUDE 'mpif.h'
 !-----------------------------------------------
 !   D u m m y   A r g u m e n t s
 !-----------------------------------------------
-  INTEGER :: m, n, maxfev, info, nfev
+  INTEGER :: m, n, maxfev, nfev
   REAL(rprec), INTENT(in) ::  ftol, gtol
   REAL(rprec), DIMENSION(n) :: x
-  REAL(rprec), DIMENSION(m) :: fvec
-  REAL(rprec), INTENT(IN) :: alpha, c, rho, beta
+  REAL(rprec), INTENT(IN) :: alpha_backtrack, c_armijo, &
+      rho_backtrack, beta_hess
 
 !-----------------------------------------------
 !   L o c a l   V a r i a b l e s
 !-----------------------------------------------
-  REAL(rprec) :: epsmch
-  REAL(rprec) :: fnorm, f_new
+  REAL(rprec) :: fnorm, f_new, fvec(m)
   INTEGER :: iflag, istat, iunit, ikey, nvar, iter, nvar1, nvar2
   REAL(rprec) :: hess(n,n), f_curr, grad_curr(n), y_curr(m), s_curr(n)
   REAL(rprec) :: eye(n,n), rho_curr, p_curr(n), x_new(n)
@@ -63,20 +80,17 @@ INCLUDE 'mpif.h'
 !DEC$ ENDIF
 
   IF (numprocs>1) THEN
-    print *,"WARNING! BFGS_analytic is a serial optizer. The additional NOPTIMIZERS will be wasted."
+    print *,"WARNING! BFGS_analytic is a serial optimizer. The additional NOPTIMIZERS will be wasted."
   END IF
-
-  info = 0
 
   ! Check the input parameters for errors.
 
   IF ((n<0) .or. (m<0) .or. (ftol<0) .or. (gtol<0) &
-    .or. (maxfev<0) .or. (alpha<0) .or. (c>1) .or. (c<0) .or. &
-    (rho<0) .or. (rho>1) .or. (beta<0)) THEN
+    .or. (maxfev<0) .or. (alpha_backtrack<0) .or. (c_armijo>1) .or. &
+    (c_armijo<0) .or. (rho_backtrack<0) .or. (rho_backtrack>1) &
+    .or. (beta_hess<0)) THEN
      STOP "Error! BFGS_analytic called with improper arguments."
   END IF
-
-  epsmch = dpmpar(1)
 
   ! Evaluate function at intial point
   IF (myid .eq. master) THEN
@@ -104,41 +118,37 @@ INCLUDE 'mpif.h'
     nfev = nfev+1
 
     ! Compute value of objective function
-    f_curr = (sum(fvec**2))
+    f_curr = fnorm**2
     write(*,"(A,E22.14)") "Initial function value: ", f_curr
 
     ! Compute gradient of objective function
-    ! f_curr = sum(fvec)^2
+    ! f_curr = sum(fvec^2)
     ! fvec = (vals(1:m)-targets(1:m))/abs(sigmas(1:m))
     ! fjac = d(fvec)/d(vars)
     ! d(f_curr)/d(vars) = sum(2*fvec*fjac)
-    DO nvar = 1,n
-      grad_curr(nvar) = 2*sum(fvec*fjac_curr(:,nvar))
-    END DO
+    grad_curr = 2*matmul(fvec,fjac_curr)
 
     ! Initial Hessian set to multiple of identity
     eye = 0
     DO nvar = 1,n
       eye(nvar,nvar) = 1
     END DO
-    hess = beta*eye
+    hess = beta_hess*eye
 
     iter = 0
     ! Main BFGS loop - See algorithm 6.1 Nocedal & Wright
     do while ((enorm(n,grad_curr)>gtol) .and. (f_curr > ftol) .and. (nfev < maxfev))
       ! Compute search direction
-      do nvar = 1,n
-        p_curr(nvar) = -sum(hess(nvar,:)*grad_curr(:))
-      end do
+      p_curr = -matmul(hess,grad_curr)
 
-      ! Line search to compute x_new
+      ! Line search to compute x_new, grad_new, f_new
       CALL backtrack(m,n,nfev,fcn,p_curr,f_curr,x, &
-        grad_curr,f_new,x_new,grad_new,alpha,c,rho)
+        grad_curr,f_new,x_new,grad_new,alpha_backtrack,c_armijo,rho_backtrack,beta_hess)
 
       ! Form quantities needed for Hessian update
       s_curr = x_new - x
       y_curr = grad_new - grad_curr
-      rho_curr = 1/(sum(y_curr*s_curr))
+      rho_curr = 1/dot_product(y_curr,s_curr)
 
       ! Form outer products needed for Hessian update
       s_y_outer = 0
@@ -151,9 +161,9 @@ INCLUDE 'mpif.h'
       end do
 
       ! Rescale if this is the initial Hessian (see Nocedal & Wright 6.20)
-!      if (iter==0) then
-!        hess = (sum(y_curr*s_curr)/sum(y_curr*y_curr))*eye
-!      end if
+      if (iter==0) then
+        hess = (dot_product(y_curr,s_curr)/dot_product(y_curr,y_curr))*eye
+      end if
 
       ! Update approximate Hessian (See Nocedal & Wright 6.17)
       mat1 = eye - rho_curr*s_y_outer
@@ -169,7 +179,6 @@ INCLUDE 'mpif.h'
 
     write(*,"(A,I2,A)") "BFGS_analytic terminated in ", iter, " iterations."
     write(*,"(A,E22.14)") "Function value: ", f_curr
-    write(*,"(A,E22.14)") "Minimum: ", x
     write(*,"(A,E22.14)") "New gradient norm: ", enorm(n,grad_curr)
     write(*,"(A,I2,A)") "Function evaluations: ", nfev
   END IF
