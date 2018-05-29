@@ -70,8 +70,9 @@ INCLUDE 'mpif.h'
 
   ! Check the input parameters for errors.
 
-  IF ((n<0) .or. (m<n) .or. (ftol<0) .or. (gtol<0) &
-    .or. (maxfev<0)) THEN
+  IF ((n<0) .or. (m<0) .or. (ftol<0) .or. (gtol<0) &
+    .or. (maxfev<0) .or. (alpha<0) .or. (c>1) .or. (c<0) .or. &
+    (rho<0) .or. (rho>1) .or. (beta<0)) THEN
      STOP "Error! BFGS_analytic called with improper arguments."
   END IF
 
