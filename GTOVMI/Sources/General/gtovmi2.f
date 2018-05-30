@@ -173,7 +173,7 @@ c ******      initialize vmec input file   *******
      .  '  NVACSKIP = 3'
       line(08) = 
      .  '  GAMMA =   0.000000E+00'  
-      WRITE(xlabel,FMT='(es14.8)')g2%fraction_bndry
+      WRITE(xlabel,FMT='(es15.8)')g2%fraction_bndry
       line(14) = 
      .  '! mapcode boundary fraction is '//TRIM(xlabel)
       OPEN  (unit = 67, file = vmecinput , status = 'UNKNOWN')
@@ -304,7 +304,7 @@ CDESCUR  j=1,itht1 points g2%rs(j,1),float(ij),g2%zs(j,1)
       WRITE(porder,FMT='(i2.2)')nfit
       mlabel = 'mapping & svd['//porder//'] of Itor(s) vs sqrt(s)'
         slabel = TRIM(filename)
-        WRITE(slabel,FMT='(a,"  DFF=",1pe12.6)')TRIM(geqdskfile),
+        WRITE(slabel,FMT='(a,"  DFF=",1pe13.6)')TRIM(geqdskfile),
      . 2*sum(abs(yfit2-yfit))/sum(abs(yfit2+yfit))
       CALL graf2pt
      &  (xpl,xpl,ypl,ypl2,m,xlabel,ylabel,' ',mlabel,slabel)

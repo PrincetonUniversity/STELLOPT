@@ -503,9 +503,13 @@
                nobd, nextcur
          nstore_seq = 100
       END IF
-
-      IF (ierr_vmec.ne.norm_term_flag .and.                             &
-          ierr_vmec.ne.more_iter_flag) GOTO 1000
+     
+      IF ((ierr_vmec .ne. norm_term_flag) .and.                         &
+          (ierr_vmec .ne. more_iter_flag) .and.                         &
+          (ierr_vmec .ne. jac75_flag)) THEN
+        ierr = -2
+        GOTO 1000
+      ENDIF
 
       IF (nextcur .gt. nigroup) istat(15) = -1
 
@@ -924,9 +928,13 @@
 
 ! Read in scalar variables
       CALL cdf_read(nwout, vn_error, ierr_vmec)
-      
-      IF (ierr_vmec.ne.norm_term_flag .and.                             &
-          ierr_vmec.ne.more_iter_flag) GOTO 1000
+            
+      IF ((ierr_vmec .ne. norm_term_flag) .and.                         &
+          (ierr_vmec .ne. more_iter_flag) .and.                         &
+          (ierr_vmec .ne. jac75_flag)) THEN
+        ierr = -2
+        GOTO 1000
+      ENDIF
 
       CALL cdf_read(nwout, vn_version, version_)
       CALL cdf_read(nwout, vn_extension, input_extension)
@@ -1564,11 +1572,13 @@
       ELSE
          WRITE (iounit, *) imse, itse, nbsets, nobd, nextcur
       END IF
-
-      IF (ierr_vmec .ne. norm_term_flag .and.                                  &
-     &    ierr_vmec .ne. more_iter_flag) THEN
-         GOTO 1000
-      END IF
+      
+      IF ((ierr_vmec .ne. norm_term_flag) .and.                                &
+          (ierr_vmec .ne. more_iter_flag) .and.                                &
+          (ierr_vmec .ne. jac75_flag)) THEN
+        ierr = -2
+        GOTO 1000
+      ENDIF
 
       IF (nbsets .gt. 0) THEN
          WRITE (iounit, *) nbfld(1:nbsets)

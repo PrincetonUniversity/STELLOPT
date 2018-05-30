@@ -4,99 +4,76 @@
   SHELL = /bin/sh
   PWD1 = `pwd`
   MYHOME = $(HOME)/bin
-  PRECOMP:= /lib/cpp -traditional -DLINUX
-  COMPILE = $(FC)
-  COMPILE_FREE = $(FC) -ffree-form -ffree-line-length-none -ffixed-line-length-none
-  LINK    = ld $(FLAGS) -o
+  PRECOMP:= fpp -C -P -DLINUX
+  COMPILE = ifort
+  COMPILE_FREE = ifort
+  LINK    = ftn -Bstatic -o
   LINK_AR = ar -ruv
-  LINK_C  = $(CC) -shared -Wl,--no-undefined -Wl,-export-dynamic 
+  LINK_C  = $(CC) -shared -Wl,-z-defs
 
 #######################################################################
 #            Define Compiler Flags
 #######################################################################
-  FLAGS_R = -O2 -fexternal-blas
-#  FLAGS_R = -g -O0 -fexternal-blas -fcheck=all -fbacktrace
-  FLAGS_D = -g -O0 -fexternal-blas -fcheck=all -fbacktrace
-
-# Crutch for broken module vars
-  FFTWHOME = /usr/pppl/gcc/6.1-pkgs/openmpi-1.10.3-pkgs/fftw-3.3.4
-  HDF5_HOME = /usr/pppl/gcc/6.1-pkgs/openmpi-1.10.3-pkgs/hdf5-parallel-1.10.0-patch1
-  BLACS_HOME = /usr/pppl/gcc/6.1-pkgs/openmpi-1.10.3-pkgs/blacs-1.1alpha
-  NETCDF_F = /usr/pppl/gcc/6.1-pkgs/netcdf-fortran-4.4.4
-  NETCDF_C = /usr/pppl/gcc/6.1-pkgs/netcdf-c-4.4.1
-
-  LIBS    = -L$(ACML_HOME)/lib -lacml \
-            -L$(SCALAPACK_HOME)/lib -lscalapack 
-
-# BLACS requires full links to library files
-  LIBS    += ${BLACS_HOME}/lib/blacs_MPI-LINUX-0.a
-  LIBS    += ${BLACS_HOME}/lib/blacsF77init_MPI-LINUX-0.a
-  LIBS    += ${BLACS_HOME}/lib/blacsCinit_MPI-LINUX-0.a
+  FLAGS_R = -I$(MKL_HOME)/include -O2 -fp-model strict -xAVX -ip \
+            -assume noold_unit_star 
+  FLAGS_D = -g -I$(MKL_HOME)/include
+  LIBS    = -Wl,-rpath,$(MKL_HOME)/lib/intel64 \
+            -L$(MKL_HOME)/lib/intel64 -lmkl_scalapack_lp64 \
+            -lmkl_intel_lp64 -lmkl_core -lmkl_sequential \
+            -lmkl_blacs_intelmpi_lp64  -lpthread -lm -lpthread
 
 #######################################################################
 #            MPI Options
 #######################################################################
   LMPI    = T
-  MPI_COMPILE = mpifort
-  MPI_COMPILE_FREE = mpifort -ffree-form \
-                     -ffree-line-length-none -ffixed-line-length-none
-  MPI_COMPILE_C = mpicc
-  MPI_LINK = mpicc -shared -pthread -Wl,--no-undefined -Wl,-export-dynamic
+  MPI_COMPILE = mpiifort
+  MPI_COMPILE_FREE = mpiifort
+  MPI_COMPILE_C = 
+  MPI_LINK = mpiifort
 
 #######################################################################
 #            NAG Options
 #######################################################################
   LNAG = F
-  NAG_LIB = -L$(NAG_ROOT)/lib -lnag_nag
+  NAG_LIB = $(NAGFLIB) $(NAGMKLLIB)
 
 #######################################################################
 #            NETCDF Options
 #######################################################################
   LNETCDF = T
-  NETCDF_INC = -I$(NETCDF_F)/include -I$(NETCDF_C)/include 
-  NETCDF_LIB = -L$(NETCDF_C)/lib -lnetcdf -L$(NETCDF_F)/lib -lnetcdff
+  NETCDF_INC = -I$(NETCDF_HOME)/include 
+  NETCDF_LIB = -Wl,-rpath,$(NETCDF_HOME)/lib -L$(NETCDF_HOME)/lib \
+               -lnetcdf -lnetcdff 
 
 #######################################################################
 #            NTCC Options
 #######################################################################
-  LNTCC = T
+  LNTCC = F
   NTCC_INC = -I$(NTCCHOME)/mod
-#  NTCC_LIB = -L$(NTCCHOME)/lib -laladdinsub -lr8slatec -ladpak\
-#             -lcppsub -lcomput -lpspline -lportlib -lezcdf -lmds_sub \
-#             -lmdstransp -lvaxonly
-  NTCC_LIB = $(NTCCHOME)/lib/aladdinsub.a
-  NTCC_LIB += $(NTCCHOME)/lib/r8slatec.a
-  NTCC_LIB += $(NTCCHOME)/lib/adpak.a
-  NTCC_LIB += $(NTCCHOME)/lib/cppsub.a
-  NTCC_LIB += $(NTCCHOME)/lib/comput.a
-  NTCC_LIB += $(NTCCHOME)/lib/pspline.a
-  NTCC_LIB += $(NTCCHOME)/lib/portlib.a
-  NTCC_LIB += $(NTCCHOME)/lib/ezcdf.a
-  NTCC_LIB += $(NTCCHOME)/lib/mds_sub.a
-  NTCC_LIB += $(NTCCHOME)/lib/mdstransp.a
-  NTCC_LIB += $(NTCCHOME)/lib/vaxonly.a
+  NTCC_LIB = -L$(NTCCHOME)/lib -laladdinsub -ladpak -lcppsub \
+             -lcomput -lportlib 
 
 #######################################################################
 #            HDF5 Options
 #######################################################################
   LHDF5 = T
-  HDF5_INC =  -I$(HDF5_HOME)/include
-  HDF5_LIB = -L$(HDF5_HOME)/lib -lhdf5_hl -lhdf5_fortran -lhdf5 \
-             -lhdf5hl_fortran -lpthread -lz -lm
+  HDF5_INC = -I$(HDF5_HOME)/include 
+  HDF5_LIB = -Wl,-rpath,$(HDF5_HOME)/lib -L$(HDF5_HOME)/lib \
+             -lhdf5 -lhdf5_fortran -lhdf5_hl -lhdf5hl_fortran 
 
 #######################################################################
 #             PGPLOT Options
 #######################################################################
-  LPGPLOT = T
-  PGPLOT_INC = 
-  PGPLOT_LIB = -L$(PGPLOT_DIR) -lpgplot -L/usr/X11R6/lib -lX11
+  LPGPLOT = F
+  PGPLOT_INC =
+  PGPLOT_LIB = 
 
 #######################################################################
 #             SILO Options
 #######################################################################
-  LSILO = T
-  SILO_INC = -I$(SILOHOME)/include
-  SILO_LIB = -L$(SILOHOME)/lib -lsilo
+  LSILO = F
+  SILO_INC = -I$(SILO_DIR)/include
+  SILO_LIB = -L$(SILO_DIR)/lib -lsilo
 
 #######################################################################
 #            DKES/NEO Options
@@ -107,29 +84,32 @@
 #######################################################################
 #            GENE Options
 #######################################################################
-  LGENE = T
+  LGENE = F
   GENE_INC = -I$(GENE_PATH)
   GENE_DIR = $(GENE_PATH)
   LIB_GENE = libgene.a
-  GENE_LIB = $(GENE_DIR)/$(LIB_GENE) \
-             -L$(FFTWHOME)/lib -lfftw3 \
-             -L$(SLEPC_DIR)/$(PETSC_ARCH)/lib -lslepc \
-             -L$(PETSC_DIR)/$(PETSC_ARCH)/lib -lpetsc -lX11
+  GENE_LIB = -L$(FFTW_HOME)/lib -lfftw3 -lfftw3f -Xlinker \
+             -rpath=$(FFTW_HOME)/lib \
+             -Wl,-rpath,$(SLEPC_HOME)/intel14.0-mpi.ibm1308-double-cplx/lib \
+             -L$(SLEPC_HOME)/intel14.0-mpi.ibm1308-double-cplx/lib -lslepc \
+             -Wl,-rpath,$(PETSC_HOME)/lib -L$(PETSC_HOME)/lib -lpetsc \
+             -Wl,-rpath,$(MKL_HOME)/lib/intel64 -L$(MKL_HOME)/lib/intel64 \
+             -lmkl_scalapack_lp64 -lmkl_intel_lp64 -lmkl_core \
+             -lmkl_sequential -lmkl_blacs_intelmpi_lp64 -lpthread -lm 
 
 #######################################################################
 #            COILOPT++ Options
 #######################################################################
-  LCOILOPT = T
+  LCOILOPT = F
   COILOPT_INC = -I$(COILOPT_PATH)
   COILOPTPP_DIR = $(COILOPT_PATH)
   LIB_COILOPTPP = libcoilopt++.a
-  COILOPT_LIB = $(COILOPT_PATH)/$(LIB_COILOPTPP) \
-                -L$(GSLHOME)/lib -lgsl -lgslcblas -lstdc++ -lmpi_cxx
+  COILOPT_LIB = $(COILOPT_PATH)/$(LIB_COILOPTPP) 
 
 #######################################################################
 #            TERPSICHORE Options
 #######################################################################
-  LTERPSICHORE= T
+  LTERPSICHORE= F
   TERPSICHORE_INC = -I$(TERPSICHORE_PATH)
   TERPSICHORE_DIR = $(TERPSICHORE_PATH)
   LIB_TERPSICHORE = libterpsichore.a
@@ -138,7 +118,7 @@
 #######################################################################
 #            TRAVIS Options
 #######################################################################
-  LTRAVIS= T
+  LTRAVIS= F
   TRAVIS_DIR = $(TRAVIS_PATH)
   LIB_TRAVIS = libtravis64_sopt.a
   LIB_MCONF  = libmconf64.a
@@ -148,7 +128,7 @@
 #######################################################################
 #            REGCOIL Options
 #######################################################################
-  LREGCOIL= T
+  LREGCOIL= F
   REGCOIL_DIR = $(REGCOIL_PATH)
   REGCOIL_INC = -I$(REGCOIL_DIR) 
   LIB_REGCOIL = libregcoil.a
@@ -178,8 +158,8 @@ LIB_SHARE = -lc -lgfortran -lstdc++ -lmpi -lmpi_mpifh -lz -lc -lm -lpthread $(LI
 #######################################################################
 #######################################################################
 
-# Some Initial stuff
-# HOME_BIN = $(MYHOME)
+# This is where we find the cawk script
+#HOME_BIN = $(MYHOME)
 HOME_BIN = ../../
 MOD1_PATH = -I$(MYHOME)/libstell_dir
 MOD_PATH = 
@@ -251,8 +231,6 @@ else
   LCOILOPT = F
   LTERPSICHORE = F
   LTRAVIS = F
-  LREGCOIL= F
-#  LYOURNEWCODE = F
 endif
 ifeq ($(MAKECMDGOALS),xanimec)
   PRECOMP += -D_ANIMEC
@@ -330,6 +308,7 @@ LIB_LINK += $(GENE_LIB) $(COILOPT_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB) $(REGCOI
 # Which we can't reference since we now have the awk file in the main directory.
 LIB_LINK+= $(LIB_DIR)/$(LOCTYPE)/$(LIB) $(LIBS)
 
+
 # 3rd Party Libs
 ifeq ($(LMPI),T)
   PRECOMP += -DMPI_OPT
@@ -347,7 +326,7 @@ ifeq ($(LNETCDF),T)
 endif
 ifeq ($(LHDF5),T)
   MOD1_PATH += $(HDF5_INC)
-  PRECOMP += -DLHDF5 -DH5_USE_16_API
+  PRECOMP += -DLHDF5 -DH5_USE_16_API  -DHDF5_PAR 
   LIB_LINK += $(HDF5_LIB)
   MOD_PATH += $(HDF5_INC)
   LIB_SHARE += $(HDF5_LIB)
@@ -388,3 +367,4 @@ endif
 
 #This must come here
 MOD_PATH+= -I
+
