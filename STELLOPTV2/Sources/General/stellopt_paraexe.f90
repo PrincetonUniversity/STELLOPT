@@ -28,7 +28,7 @@
             InitializeParallel, FinalizeParallel, grank, &
             PARVMEC, LV3FITCALL,&
             InitRunVmec,FinalizeRunVmec,RUNVMEC_COMM_WORLD,NS_RESLTN,&
-            FinalizeSurfaceComm, NS_COMM !, parvmecinfo_file
+            FinalizeSurfaceComm, NS_COMM, LIFFREEB
 !DEC$ ENDIF
       USE vmec_params, ONLY: norm_term_flag, bad_jacobian_flag,&
                              more_iter_flag, jac75_flag, input_error_flag,&
@@ -149,33 +149,20 @@
                   ! Setup reset_string
                   reset_string =''
                   lhit = .FALSE.
-                  ! Execution Loop (2 times)
-                  !DO dex = 1, 2
-                     CALL InitRunVmec(MPI_COMM_MYWORLD,lfreeb)
-                     CALL runvmec(ictrl,file_str,lscreen,RUNVMEC_COMM_WORLD,reset_string)
-                     CALL FinalizeRunVmec(RUNVMEC_COMM_WORLD)
-                     ier=ictrl(2)
-                     CALL MPI_BCAST(ier,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
-                     IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_paraexe: BCAST2d',ierr_mpi)
-                     IF (  ier == successful_term_flag  .or. &
-                           ier == norm_term_flag) THEN
-                        IF (myworkid == master) CLOSE(UNIT=iunit,STATUS='delete')
-                        ier = 0
-                     !   EXIT  ! success
-                     !ELSE IF (lfreeb .and. dex == 1) THEN ! Try recalcing from the beginning
-                     !   CALL stellopt_prof_to_vmec(file_str,ier)
-                     !   ictrl(1) = restart_flag+timestep_flag+reset_jacdt_flag
-                     !   ictrl(2) = 0     ! vmec error flag  
-                     !   ictrl(3) = -1    ! Use multigrid
-                     !   ictrl(4) = 0
-                     !   ictrl(5) = myseq 
-                     !   reset_string =''
-                     ELSE
-                        IF (myworkid == master) CLOSE(UNIT=iunit)
-                        ier = -1
-                     !   EXIT  ! failure
-                     END IF
-                  !END DO
+                  CALL runvmec(ictrl,file_str,lscreen,MPI_COMM_MYWORLD,reset_string)
+                  CALL FinalizeSurfaceComm(NS_COMM)
+                  CALL FinalizeRunVmec(RUNVMEC_COMM_WORLD)
+                  ier=ictrl(2)
+                  CALL MPI_BCAST(ier,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
+                  IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_paraexe: BCAST2d',ierr_mpi)
+                  IF (  ier == successful_term_flag  .or. &
+                        ier == norm_term_flag) THEN
+                     IF (myworkid == master) CLOSE(UNIT=iunit,STATUS='delete')
+                     ier = 0
+                  ELSE
+                     IF (myworkid == master) CLOSE(UNIT=iunit)
+                     ier = -1
+                  END IF
                END IF
                in_parameter_2 = TRIM(file_str)
                ier_paraexe = ier
@@ -190,14 +177,12 @@
                ictrl(4) = 0
                ictrl(5) = myseq ! Output file sequence number
                reset_string =''
-               CALL InitRunVmec(MPI_COMM_MYWORLD,lfreeb)
-               CALL runvmec(ictrl,file_str,lscreen,RUNVMEC_COMM_WORLD,reset_string)
-               !CALL FinalizeRunVmec(RUNVMEC_COMM_WORLD) ! We don't allocate the vacuum communicator when we write
+               CALL runvmec(ictrl,file_str,lscreen,MPI_COMM_MYWORLD,reset_string)
+               LIFFREEB  = .FALSE. ! Already deallocated from before and we need to reset stuff
+               CALL FinalizeRunVmec(RUNVMEC_COMM_WORLD) ! We don't allocate the vacuum communicator when we write
                ier=ictrl(2)
                CALL MPI_BCAST(ier,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
                IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_paraexe: BCAST2d',ierr_mpi)
-               CALL MPI_COMM_FREE(RUNVMEC_COMM_WORLD,ierr_mpi)
-               IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_paraexe: MPI_COMM_FREE',ierr_mpi)
                ier_paraexe = ier
 !DEC$ ENDIF
             CASE('gene_parallel')  ! Parallel Gene

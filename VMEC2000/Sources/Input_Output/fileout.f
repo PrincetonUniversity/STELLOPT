@@ -110,7 +110,7 @@ C-----------------------------------------------
       IF (grank .EQ. 0) THEN
          CALL fileout(iseq, ictrl_flag, ier_flag, lscreen) 
       ENDIF
-      CALL MPI_Barrier(NS_COMM, MPI_ERR)
+!      CALL MPI_Barrier(NS_COMM, MPI_ERR) !SAL
       CALL second0(tfileoff)
       fileout_time = fileout_time + (tfileoff-tfileon)
       fo_par_call_time = fileout_time
