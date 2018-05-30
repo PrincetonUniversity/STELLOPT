@@ -94,6 +94,24 @@ It is important to tune the SFINCS resolution parameters Ntheta, Nzeta, Nxi, and
 
 ----
 
+===Radial electric field=== 
+
+The radial electric field Er typically has a small effect on the bootstrap current, on the order of 10%
+for W7-X and NCSX. Accurate computation of Er requires running SFINCS several times at each radius for various
+values of Er to solve for the ambipolar value. However, accurate calculation of Er may not be necessary
+due to its weak effect on the bootstrap current. The parameter
+{{{sfincs_Er_option}}} in the STELLOPT {{{&optimum}}} namelist controls how
+Er is determined in the STELLOPT-SFINCS system.  Presently, two options are available. If {{{sfincs_Er_option="zero"}}}, Er is set to zero. (Actually Er is set to a very small nonzero value, since SFINCS is slightly more robust when Er is not exactly zero.)  Alternatively, if {{{sfincs_Er_option="estimate"}}},
+Er is set to an estimate for the ambipolar radial electric field based on the sqrt(nu)-regime radial ion flux:
+
+d phi / d s = - (1/e) [(T_i / n) (d n / d s) + 1.34 (d T_i / d s)]
+
+where phi is the electrostatic potential and s is any radial coordinate. (This formula is obtained
+from eq (74.a) of Ho & Kulsrud, Phys Fluids 30, 442 (1987).) Full calculation of the ambipolar Er
+is not available yet within STELLOPT, but will be available in the future.
+
+----
+
 ===Examples=== 
 
 Several example input files are provided in subdirectories {{{vboot_...}}} of
