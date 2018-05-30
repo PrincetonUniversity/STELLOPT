@@ -64,6 +64,7 @@ boundary_T.o \
 math_utilities.o \
 mpi_inc.o \
 stel_tools.o \
+vmec2gs2.o \
 mir_tools.o \
 read_response.o \
 date_and_computer.o \

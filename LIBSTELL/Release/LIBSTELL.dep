@@ -1334,8 +1334,6 @@ coordinate_utilities.o : \
       stel_kinds.o \
       stel_constants.o 
 
-      
-
-
-
+vmec2gs2.o : \
+      read_wout_mod.o
 

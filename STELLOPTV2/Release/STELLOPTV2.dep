@@ -430,6 +430,11 @@ stellopt_txport.o : \
       $(BOOZ_DIR)/Release/booz_persistent.o \
       $(LIB_DIR)/Release/gist_mod.o \
       $(LIB_DIR)/Release/read_boozer_mod.o
+
+chisq_vmec2gs2.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      $(LIB_DIR)/Release/vmec2gs2.o 
       
       
 stellopt_prof_to_vmec.o : \

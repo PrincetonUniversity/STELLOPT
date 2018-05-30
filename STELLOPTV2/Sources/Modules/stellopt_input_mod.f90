@@ -213,6 +213,7 @@
 !            z_limiter          Array of (ntheta,nzeta) vertical limiter values [m] 
 !            phi_limiter        Array of (ntheta,nzeta) toroidal angle limiter values [rad]
 !            txport_proxy       String of proxy function name.
+!            gs2_ptsm3d         Energy transfer between stable and unstable modes
 !            curvature_P2       Min value of 2nd principal curvature
 !
 !             REGCOIL related variables
@@ -354,6 +355,7 @@
                          r_limiter, z_limiter, phi_limiter, &
                          lglobal_txport, nz_txport, nalpha_txport, alpha_start_txport, alpha_end_txport, &
                          target_txport, sigma_txport, s_txport, txport_proxy,&
+                         target_gs2_ptsm3d, sigma_gs2_ptsm3d, &
                          target_dkes, sigma_dkes, nu_dkes, &
                          target_jdotb,sigma_jdotb,target_bmin,sigma_bmin,&
                          target_bmax,sigma_bmax,target_jcurv,sigma_jcurv,&
@@ -862,6 +864,8 @@
       sigma_txport      = bigno
       s_txport          = -1.0
       txport_proxy      = 'prox1f'
+      target_gs2_ptsm3d = 0.0
+      sigma_gs2_ptsm3d  = bigno
       target_orbit      = 0.0
       sigma_orbit       = bigno
       mass_orbit        = 6.64465675E-27 ! Default to He4
@@ -2298,7 +2302,11 @@
       IF (sigma_curvature < bigno) THEN
          WRITE(iunit,outflt) 'TARGET_CURVATURE',target_curvature
          WRITE(iunit,outflt) 'SIGMA_CURVATURE',sigma_curvature
-      END IF 
+      END IF
+      IF (sigma_gs2_ptsm3d < bigno) THEN
+         WRITE(iunit,outflt) 'TARGET_GS2_PTSM3D',target_gs2_ptsm3d
+         WRITE(iunit,outflt) 'SIGMA_GS2_PTSM3D',sigma_gs2_ptsm3d
+      END IF
       IF (sigma_kappa < bigno) THEN
          WRITE(iunit,outflt) 'TARGET_KAPPA',target_kappa
          WRITE(iunit,outflt) 'SIGMA_KAPPA',sigma_kappa
