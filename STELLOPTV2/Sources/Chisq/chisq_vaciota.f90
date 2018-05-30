@@ -44,7 +44,7 @@
       IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'VACIOTA ',ik,7
       IF (iflag == 1) WRITE(iunit_out,'(A)') 'R  PHI  Z  S  TARGET  SIGMA  VACIOTA'
       IF (niter >= 0) THEN
-         IF (ANY(s_iota >= 0)) lreset_s = .false.
+         IF (ANY(s_vaciota >= 0)) lreset_s = .false.
          ! GET s if necessary
          DO ik = 1, nprof
             IF (sigma(ik) >= bigno) CYCLE
@@ -54,7 +54,6 @@
             END IF
             IF (s_vaciota(ik) <= 1.0 .and. s_vaciota(ik) >= 0.0 .and. ier == 0) THEN
                ier = 0
-               !CALL get_equil_iota(s_iota(ik),iota_val,ier)
                CALL get_equil_sus(s_vaciota(ik),s11,s12,s21,s22,ier)
                iota_val = -s12/s11
             ELSE
@@ -71,7 +70,7 @@
          DO ik = 1, nprof
             IF (sigma(ik) < bigno) THEN
                mtargets = mtargets + 1
-               IF (niter == -2) target_dex(mtargets) = jtarget_iota
+               IF (niter == -2) target_dex(mtargets) = jtarget_vaciota
             END IF
          END DO
       END IF

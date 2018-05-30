@@ -30,9 +30,6 @@
       USE beams3d_runtime, ONLY: BEAMS3D_VERSION
 !DEC$ ENDIF        
 !DEC$ IF DEFINED (REGCOIL)
-      !USE regcoil_nescin_utils_1
-      !USE regcoil_nescin_utils_2
-      USE regcoil_init_coil_surface
       USE regcoil_variables, ONLY: rc_rmnc_stellopt, rc_rmns_stellopt, &
                                    rc_zmnc_stellopt, rc_zmns_stellopt, &
                                    rc_nfp => nfp
@@ -216,6 +213,7 @@
 !            z_limiter          Array of (ntheta,nzeta) vertical limiter values [m] 
 !            phi_limiter        Array of (ntheta,nzeta) toroidal angle limiter values [rad]
 !            txport_proxy       String of proxy function name.
+!            curvature_P2       Min value of 2nd principal curvature
 !
 !             REGCOIL related variables
 !                         lregcoil_winding_surface_separation_opt, &
@@ -290,7 +288,7 @@
                          coil_splinefx_max,coil_splinefy_max,coil_splinefz_max,&
                          target_phiedge, sigma_phiedge, &
                          target_rbtor, sigma_rbtor, &
-                         target_r0, sigma_r0, target_z0, sigma_z0, &
+                         target_r0, sigma_r0, target_z0, sigma_z0, target_b0, sigma_b0, &
                          target_curtor, sigma_curtor, &
                          target_curtor_max, sigma_curtor_max, &
                          target_volume, sigma_volume, &
@@ -391,7 +389,8 @@
                          regcoil_rcws_rbound_c_min, regcoil_rcws_rbound_s_min, &
                          regcoil_rcws_zbound_c_min, regcoil_rcws_zbound_s_min, &
                          regcoil_rcws_rbound_c_max, regcoil_rcws_rbound_s_max, &
-                         regcoil_rcws_zbound_c_max, regcoil_rcws_zbound_s_max
+                         regcoil_rcws_zbound_c_max, regcoil_rcws_zbound_s_max, &
+                         target_curvature_P2, sigma_curvature_P2
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -640,6 +639,8 @@
       sigma_phiedge   = bigno
       target_rbtor    = 0.0
       sigma_rbtor     = bigno
+      target_b0       = 0.0
+      sigma_b0        = bigno
       target_r0       = 0.0
       sigma_r0        = bigno
       target_z0       = 0.0
@@ -902,6 +903,8 @@
       target_coilself   = 0.0
       sigma_coilself    = bigno
       npts_cself        = 360
+      target_curvature_P2    = 0.0
+      sigma_curvature_P2     = bigno
       ! Read name list
       lexist            = .false.
       istat=0
@@ -2161,7 +2164,7 @@
               lregcoil_winding_surface_separation_opt ) THEN
              DO ii = 1,UBOUND(target_regcoil_chi2_b, 1)
                 IF (sigma_regcoil_chi2_b(ii) < bigno) THEN
-                    WRITE(iunit,"(2X,A,I4.3,A,E22.14))") &
+                    WRITE(iunit,"(2(2X,A,I4.3,A,E22.14))") &
                            'TARGET_REGCOIL_CHI2_B(',ii,') = ', target_regcoil_chi2_b(ii), &
                            'SIGMA_REGCOIL_CHI2_B(',ii,') = ', sigma_regcoil_chi2_b(ii)
                 END IF
@@ -2177,7 +2180,8 @@
              DO m = LBOUND(lregcoil_rcws_rbound_c_opt,DIM=1), UBOUND(lregcoil_rcws_rbound_s_opt,DIM=1)
                  DO n = LBOUND(lregcoil_rcws_rbound_c_opt,DIM=2), UBOUND(lregcoil_rcws_rbound_s_opt,DIM=2)
                      IF(lregcoil_rcws_rbound_c_opt(m,n) ) THEN
-                         WRITE(iunit,"(2X,A,I4.3,A,I4.3,A,1X,'=',1X,L1,4(2X,A,I4.3,A,I4.3,A,1X,'=',1X,E18.12))") &
+                         WRITE(iunit,'(A)') '! REGCOIL Winding surface R-boundary cos component'
+                         WRITE(iunit,"(2X,A,I4.3,A,I4.3,A,1X,'=',1X,L1,4(2X,A,I4.3,A,I4.3,A,1X,'=',1X,E19.12))") &
                                 'LREGCOIL_RCWS_RBOUND_C_OPT(',m,',',n,')', lregcoil_rcws_rbound_c_opt(m, n), &
                                 'REGCOIL_RCWS_RBOUND_C(',m,',',n,')', regcoil_rcws_rbound_c(m, n), &
                                 'DREGCOIL_RCWS_RBOUND_C_OPT(',m,',',n,')', dregcoil_rcws_rbound_c_opt(m,n), &
@@ -2187,12 +2191,12 @@
                  END DO
              END DO
 
-             ! r-boundary sin components - not implemented yet
+             ! r-boundary sin components 
              DO m = LBOUND(lregcoil_rcws_rbound_s_opt,DIM=1), UBOUND(lregcoil_rcws_rbound_s_opt,DIM=1)
                  DO n = LBOUND(lregcoil_rcws_rbound_s_opt,DIM=2), UBOUND(lregcoil_rcws_rbound_s_opt,DIM=2)
                      IF(lregcoil_rcws_rbound_s_opt(m,n)  ) THEN
-                         WRITE(iunit,outflt) '! REGCOIL Winding surface R-boundary sin component?'
-                         WRITE(iunit,"(2X,A,I4.3,A,I4.3,A,1X,'=',1X,L1,4(2X,A,I4.3,A,I4.3,A,1X,'=',1X,E18.12))") &
+                         WRITE(iunit,'(A)') '! REGCOIL Winding surface R-boundary sin component'
+                         WRITE(iunit,"(2X,A,I4.3,A,I4.3,A,1X,'=',1X,L1,4(2X,A,I4.3,A,I4.3,A,1X,'=',1X,E19.12))") &
                                 'LREGCOIL_RCWS_RBOUND_S_OPT(',m,',',n,')', lregcoil_rcws_rbound_s_opt(m, n), &
                                 'REGCOIL_RCWS_RBOUND_S(',m,',',n,')', regcoil_rcws_rbound_s(m, n), &
                                 'DREGCOIL_RCWS_RBOUND_S_OPT(',m,',',n,')', dregcoil_rcws_rbound_s_opt(m,n), &
@@ -2206,8 +2210,8 @@
              DO m = LBOUND(lregcoil_rcws_zbound_c_opt,DIM=1), UBOUND(lregcoil_rcws_zbound_c_opt,DIM=1)
                  DO n = LBOUND(lregcoil_rcws_zbound_c_opt,DIM=2), UBOUND(lregcoil_rcws_zbound_c_opt,DIM=2)
                      IF(lregcoil_rcws_zbound_c_opt(m,n) ) THEN
-                         WRITE(iunit,outflt) '! REGCOIL Winding surface Z-boundary cos component?'
-                         WRITE(iunit,"(2X,A,I4.3,A,I4.3,A,1X,'=',1X,L1,4(2X,A,I4.3,A,I4.3,A,1X,'=',1X,E18.12))") &
+                         WRITE(iunit,'(A)') '! REGCOIL Winding surface Z-boundary cos component'
+                         WRITE(iunit,"(2X,A,I4.3,A,I4.3,A,1X,'=',1X,L1,4(2X,A,I4.3,A,I4.3,A,1X,'=',1X,E19.12))") &
                                 'LREGCOIL_RCWS_ZBOUND_C_OPT(',m,',',n,')', lregcoil_rcws_zbound_c_opt(m, n), &
                                 'REGCOIL_RCWS_ZBOUND_C(',m,',',n,')', regcoil_rcws_zbound_c(m, n), &
                                 'DREGCOIL_RCWS_ZBOUND_C_OPT(',m,',',n,')', dregcoil_rcws_zbound_c_opt(m,n), &
@@ -2221,7 +2225,8 @@
              DO m = LBOUND(lregcoil_rcws_zbound_s_opt,DIM=1), UBOUND(lregcoil_rcws_zbound_s_opt,DIM=1)
                  DO n = LBOUND(lregcoil_rcws_zbound_s_opt,DIM=2), UBOUND(lregcoil_rcws_zbound_s_opt,DIM=2)
                      IF( lregcoil_rcws_zbound_s_opt(m,n) ) THEN
-                         WRITE(iunit,"(2X,A,I4.3,A,I4.3,A,1X,'=',1X,L1,4(2X,A,I4.3,A,I4.3,A,1X,'=',1X,E18.12))") &
+                         WRITE(iunit,'(A)') '! REGCOIL Winding surface Z-boundary sin component'
+                         WRITE(iunit,"(2X,A,I4.3,A,I4.3,A,1X,'=',1X,L1,4(2X,A,I4.3,A,I4.3,A,1X,'=',1X,E19.12))") &
                                 'LREGCOIL_RCWS_ZBOUND_S_OPT(',m,',',n,')', lregcoil_rcws_zbound_s_opt(m, n), &
                                 'REGCOIL_RCWS_ZBOUND_S(',m,',',n,')', regcoil_rcws_zbound_s(m, n), &
                                 'DREGCOIL_RCWS_ZBOUND_S_OPT(',m,',',n,')', dregcoil_rcws_zbound_s_opt(m,n), &
@@ -2253,6 +2258,10 @@
       IF (sigma_rbtor < bigno) THEN
          WRITE(iunit,outflt) 'TARGET_RBTOR',target_rbtor
          WRITE(iunit,outflt) 'SIGMA_RBTOR',sigma_rbtor
+      END IF 
+      IF (sigma_b0 < bigno) THEN
+         WRITE(iunit,outflt) 'TARGET_B0',target_b0
+         WRITE(iunit,outflt) 'SIGMA_B0',sigma_b0
       END IF 
       IF (sigma_r0 < bigno) THEN
          WRITE(iunit,outflt) 'TARGET_R0',target_r0
@@ -2319,6 +2328,10 @@
          WRITE(iunit,outflt) 'SIGMA_PMIN',sigma_pmin
          WRITE(iunit,outflt) 'WIDTH_PMIN',width_pmin
       END IF
+      IF (sigma_curvature_P2 < bigno) THEN
+         WRITE(iunit,outflt) 'TARGET_CURVATURE_P2',target_curvature_P2
+         WRITE(iunit,outflt) 'SIGMA_CURVATURE_P2',sigma_curvature_P2
+      END IF          
       IF (ANY(sigma_extcur < bigno)) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          WRITE(iunit,'(A)') '!          Coil Current Optimization'

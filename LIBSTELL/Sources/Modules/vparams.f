@@ -55,6 +55,13 @@
 !
       INTEGER, PARAMETER :: mpol_rcws = 32    ! maximum poloidal mode number (min = -max)
       INTEGER, PARAMETER :: ntor_rcws = 32    ! maximum toroidal mode number (min = -max)
+      ! Reserving space for the maximum number of Fourier components
+      ! that might be varied/optimized. Each of RC, RS, ZC, ZS may have
+      ! spectral components spanning the range of m and n in:
+      !       (-mpol_rcws:mpmol_rcws,  -ntor_rcws:ntor_rcws)
+      ! (this is slightly different than what is used in nescoil, where
+      ! the m<0 components are not used)
+      INTEGER, PARAMETER ::  mnprod_x4_rcws = 4 * (2*32+1) * (2*32+1)
 
 
       END MODULE vparams
