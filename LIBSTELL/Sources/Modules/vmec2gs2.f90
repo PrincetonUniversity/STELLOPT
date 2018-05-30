@@ -6,14 +6,16 @@
 
 module vmec2gs2_mod
 
+  USE stel_kinds, ONLY: rprec
   implicit none
 
   private
 
   public :: vmec2gs2
 
-  real :: theta_pest_target, zeta0
-  real, dimension(2) :: vmec_radial_weight_full, vmec_radial_weight_half
+
+  real(rprec) :: theta_pest_target, zeta0
+  real(rprec), dimension(2) :: vmec_radial_weight_full, vmec_radial_weight_half
   integer, dimension(2) :: vmec_radial_index_full, vmec_radial_index_half
 
 contains
@@ -42,16 +44,16 @@ contains
 
     ! The zeta domain is centered at zeta_center. Setting zeta_center = 2*pi*N/nfp for any integer N should
     ! yield identical results to setting zeta_center = 0, where nfp is the number of field periods (as in VMEC).
-    real, intent(in) :: zeta_center
+    real(rprec), intent(in) :: zeta_center
 
     ! If number_of_field_periods_to_include is > 0, then this parameter does what you think:
     ! the extent of the toroidal in zeta will be 2*pi*number_of_field_periods_to_include/nfp.
     ! If number_of_field_periods_to_include is <= 0, the entire 2*pi toroidal domain will be included.
-    real, intent(in) :: number_of_field_periods_to_include
+    real(rprec), intent(in) :: number_of_field_periods_to_include
 
     ! The parameter desired_normalized_toroidal_flux determines which flux surface from the VMEC file will be used
     ! for the computation. This parameter should lie in the interval [0,1].
-    real, intent(in) :: desired_normalized_toroidal_flux
+    real(rprec), intent(in) :: desired_normalized_toroidal_flux
 
     ! If vmec_surface_option = 0, the magnetic surface specified by desired_normalized_toroidal_flux will be used,
     ! by interpolating between the surfaces available in the vmec file.
@@ -69,71 +71,71 @@ contains
 
     ! On exit, normalized_toroidal_flux_used holds the flux surface that was actually used for the geometry,
     ! as measured by psi_toroidal / psi_{toroidal,edge}
-    real, intent(out) :: normalized_toroidal_flux_used
+    real(rprec), intent(out) :: normalized_toroidal_flux_used
 
     ! Safety factor q = 1/iota
-    real, intent(out) :: safety_factor_q
+    real(rprec), intent(out) :: safety_factor_q
 
     ! Magnetic shear shat = (x/q) * (d q / d x) where x = Aminor_p * sqrt(psi_toroidal / psi_{toroidal,edge})
     ! and Aminor_p is the minor radius calculated by VMEC.
-    real, intent(out) :: shat
+    real(rprec), intent(out) :: shat
 
     ! L_reference is the reference length used for gs2's normalization, in meters.
-    real, intent(out) :: L_reference
+    real(rprec), intent(out) :: L_reference
 
     ! B_reference is the reference magnetic field strength used for gs2's normalization, in Tesla.
-    real, intent(out) :: B_reference
+    real(rprec), intent(out) :: B_reference
 
     ! On exit, alpha holds the grid points in alpha = theta_p - iota * zeta, where theta_p is the PEST toroidal angle
-    real, dimension(nalpha), intent(out) :: alpha
+    real(rprec), dimension(nalpha), intent(out) :: alpha
 
     ! On exit, zeta holds the grid points in the toroidal angle zeta
-    real, dimension(-nzgrid:nzgrid), intent(out) :: zeta
+    real(rprec), dimension(-nzgrid:nzgrid), intent(out) :: zeta
 
-    real, dimension(nalpha, -nzgrid:nzgrid), intent(out) :: bmag, gradpar, gds2, gds21, gds22, gbdrift, gbdrift0, cvdrift, cvdrift0
+    real(rprec), dimension(nalpha, -nzgrid:nzgrid), intent(out) :: bmag, gradpar, gds2, gds21, gds22, gbdrift, gbdrift0, cvdrift, cvdrift0
 
     !*********************************************************************
     ! Variables used internally by this subroutine
     !*********************************************************************
 
-    real, parameter :: pi = 3.1415926535897932d+0
-    real, parameter :: zero = 0.0d+0
-    real, parameter :: one = 1.0d+0
-    real, parameter :: mu_0 = 4*pi*(1.0d-7)
+    real(rprec), parameter :: pi = 3.1415926535897932d+0
+    real(rprec), parameter :: zero = 0.0d+0
+    real(rprec), parameter :: one = 1.0d+0
+    real(rprec), parameter :: mu_0 = 4*pi*(1.0d-7)
 
     integer :: j, index, izeta, ialpha, which_surface, isurf, m, n, imn, imn_nyq
-    real :: angle, sin_angle, cos_angle, temp, edge_toroidal_flux_over_2pi
-    real, dimension(:,:), allocatable :: theta_vmec
+    real(rprec) :: angle, sin_angle, cos_angle, temp, edge_toroidal_flux_over_2pi
+    real(rprec), dimension(:,:), allocatable :: theta_vmec
     integer :: ierr, iopen, fzero_flag
-    real :: number_of_field_periods_to_include_final
-    real :: dphi, iota, min_dr2, ds, d_pressure_d_s, d_iota_d_s, scale_factor
-    real :: theta_vmec_min, theta_vmec_max, sqrt_s
-    real, dimension(:), allocatable :: dr2, normalized_toroidal_flux_full_grid, normalized_toroidal_flux_half_grid
-    real, dimension(:), allocatable :: d_pressure_d_s_on_half_grid, d_iota_d_s_on_half_grid
-    real :: root_solve_absolute_tolerance, root_solve_relative_tolerance
+    real(rprec) :: number_of_field_periods_to_include_final
+    real(rprec) :: dphi, iota, min_dr2, ds, d_pressure_d_s, d_iota_d_s, scale_factor
+    real(rprec) :: theta_vmec_min, theta_vmec_max, sqrt_s
+    real(rprec), dimension(:), allocatable :: dr2, normalized_toroidal_flux_full_grid, normalized_toroidal_flux_half_grid
+    real(rprec), dimension(:), allocatable :: d_pressure_d_s_on_half_grid, d_iota_d_s_on_half_grid
+    real(rprec) :: root_solve_absolute_tolerance, root_solve_relative_tolerance
     logical :: non_Nyquist_mode_available, found_imn
-    real, dimension(:,:), allocatable :: B, sqrt_g, R, B_dot_grad_theta_pest_over_B_dot_grad_zeta, temp2D
-    real, dimension(:,:), allocatable :: d_B_d_theta_vmec, d_B_d_zeta, d_B_d_s
-    real, dimension(:,:), allocatable :: d_R_d_theta_vmec, d_R_d_zeta, d_R_d_s
-    real, dimension(:,:), allocatable :: d_Z_d_theta_vmec, d_Z_d_zeta, d_Z_d_s
-    real, dimension(:,:), allocatable :: d_X_d_theta_vmec, d_X_d_zeta, d_X_d_s
-    real, dimension(:,:), allocatable :: d_Y_d_theta_vmec, d_Y_d_zeta, d_Y_d_s
-    real, dimension(:,:), allocatable :: d_Lambda_d_theta_vmec, d_Lambda_d_zeta, d_Lambda_d_s
-    real, dimension(:,:), allocatable :: B_sub_s, B_sub_theta_vmec, B_sub_zeta
-    real, dimension(:,:), allocatable :: B_sup_theta_vmec, B_sup_zeta
-    real, dimension(:), allocatable :: d_B_d_s_mnc, d_B_d_s_mns
-    real, dimension(:), allocatable :: d_R_d_s_mnc, d_R_d_s_mns
-    real, dimension(:), allocatable :: d_Z_d_s_mnc, d_Z_d_s_mns
-    real, dimension(:), allocatable :: d_Lambda_d_s_mnc, d_Lambda_d_s_mns
-    real, dimension(:,:), allocatable :: grad_s_X, grad_s_Y, grad_s_Z
-    real, dimension(:,:), allocatable :: grad_theta_vmec_X, grad_theta_vmec_Y, grad_theta_vmec_Z
-    real, dimension(:,:), allocatable :: grad_zeta_X, grad_zeta_Y, grad_zeta_Z
-    real, dimension(:,:), allocatable :: grad_psi_X, grad_psi_Y, grad_psi_Z
-    real, dimension(:,:), allocatable :: grad_alpha_X, grad_alpha_Y, grad_alpha_Z
-    real, dimension(:,:), allocatable :: B_cross_grad_B_dot_grad_alpha, B_cross_grad_B_dot_grad_alpha_alternate
-    real, dimension(:,:), allocatable :: B_cross_grad_s_dot_grad_alpha, B_cross_grad_s_dot_grad_alpha_alternate
-    real, dimension(:,:), allocatable :: grad_B_X, grad_B_Y, grad_B_Z
-    real, dimension(:,:), allocatable :: B_X, B_Y, B_Z
+    real(rprec), dimension(:,:), allocatable :: B, sqrt_g, R, B_dot_grad_theta_pest_over_B_dot_grad_zeta, temp2D
+    real(rprec), dimension(:,:), allocatable :: d_B_d_theta_vmec, d_B_d_zeta, d_B_d_s
+    real(rprec), dimension(:,:), allocatable :: d_R_d_theta_vmec, d_R_d_zeta, d_R_d_s
+    real(rprec), dimension(:,:), allocatable :: d_Z_d_theta_vmec, d_Z_d_zeta, d_Z_d_s
+    real(rprec), dimension(:,:), allocatable :: d_X_d_theta_vmec, d_X_d_zeta, d_X_d_s
+    real(rprec), dimension(:,:), allocatable :: d_Y_d_theta_vmec, d_Y_d_zeta, d_Y_d_s
+    real(rprec), dimension(:,:), allocatable :: d_Lambda_d_theta_vmec, d_Lambda_d_zeta, d_Lambda_d_s
+    real(rprec), dimension(:,:), allocatable :: B_sub_s, B_sub_theta_vmec, B_sub_zeta
+    real(rprec), dimension(:,:), allocatable :: B_sup_theta_vmec, B_sup_zeta
+    real(rprec), dimension(:), allocatable :: d_B_d_s_mnc, d_B_d_s_mns
+    real(rprec), dimension(:), allocatable :: d_R_d_s_mnc, d_R_d_s_mns
+    real(rprec), dimension(:), allocatable :: d_Z_d_s_mnc, d_Z_d_s_mns
+    real(rprec), dimension(:), allocatable :: d_Lambda_d_s_mnc, d_Lambda_d_s_mns
+    real(rprec), dimension(:,:), allocatable :: grad_s_X, grad_s_Y, grad_s_Z
+    real(rprec), dimension(:,:), allocatable :: grad_theta_vmec_X, grad_theta_vmec_Y, grad_theta_vmec_Z
+    real(rprec), dimension(:,:), allocatable :: grad_zeta_X, grad_zeta_Y, grad_zeta_Z
+    real(rprec), dimension(:,:), allocatable :: grad_psi_X, grad_psi_Y, grad_psi_Z
+    real(rprec), dimension(:,:), allocatable :: grad_alpha_X, grad_alpha_Y, grad_alpha_Z
+    real(rprec), dimension(:,:), allocatable :: B_cross_grad_B_dot_grad_alpha, B_cross_grad_B_dot_grad_alpha_alternate
+    real(rprec), dimension(:,:), allocatable :: B_cross_grad_s_dot_grad_alpha, B_cross_grad_s_dot_grad_alpha_alternate
+    real(rprec), dimension(:,:), allocatable :: grad_B_X, grad_B_Y, grad_B_Z
+    real(rprec), dimension(:,:), allocatable :: B_X, B_Y, B_Z
 
 
     !*********************************************************************
@@ -1139,8 +1141,6 @@ contains
 
     cvdrift0 = gbdrift0
 
-    !debuggin
-    write(*,*) 'dbds', d_B_d_s
 
     !*********************************************************************
     ! Free all arrays that were allocated.
@@ -1229,11 +1229,11 @@ contains
 
       implicit none
 
-      real, dimension(nalpha,-nzgrid:nzgrid) :: array1, array2
+      real(rprec), dimension(nalpha,-nzgrid:nzgrid) :: array1, array2
       real :: tolerance
       character(len=*) :: name
       logical :: should_be_0
-      real :: max_value, max_difference
+      real(rprec) :: max_value, max_difference
 
       if (should_be_0) then
          max_value = maxval(abs(array1))
@@ -1283,8 +1283,8 @@ contains
 
     implicit none
     
-    real :: theta_vmec_try, fzero_residual
-    real :: angle, sinangle, cosangle
+    real(rprec) :: theta_vmec_try, fzero_residual
+    real(rprec) :: angle, sinangle, cosangle
     integer :: imn, which_surface
 
     ! residual = (theta_pest based on theta_vmec_try) - theta_pest_target = theta_vmec_try + Lambda - theta_pest_target
