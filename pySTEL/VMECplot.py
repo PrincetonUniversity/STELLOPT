@@ -6,17 +6,12 @@ import matplotlib.pyplot as _plt
 import numpy as np                    #For Arrays
 from math import pi
 from PyQt4 import uic, QtGui
-from PyQt4.QtGui import QMainWindow, QApplication, qApp, QApplication, QVBoxLayout, \
-                        QSizePolicy, QWidget
+from PyQt4.QtGui import QMainWindow, QApplication, qApp, QApplication, QVBoxLayout, QSizePolicy
 from PyQt4.QtGui import QIcon
 from libstell.libstell import read_vmec, cfunct, sfunct, torocont, isotoro, calc_jll
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from mpl_toolkits import mplot3d
-# MayaVi stuff
-#os.environ['ETS_TOOLKIT'] = 'qt4'
-#from mayavi.core.ui.api import MayaviScene
-#from mayavi import mlab
 
 try:
 	qtCreatorPath=os.environ["STELLOPT_PATH"]
@@ -33,8 +28,7 @@ class MyApp(QMainWindow):
 		super(MyApp, self).__init__()
 		self.ui = Ui_MainWindow()
 		self.ui.setupUi(self) 
-		self.setStyleSheet("background-color: white;");
-		#self.ui.PlotButtons.setStyleSheet("background-color: white;");
+		#self.setStyleSheet("background-color: white;");
 		self.statusBar().showMessage('Ready')
 		self.ui.plot_list = ['Summary','-----1D-----','Iota','q','Pressure',\
 		'<Buco>','<Bvco>','<jcuru>','<jcurv>','<j.B>',  '-----3D------','|B|','sqrt(g)',\
@@ -51,6 +45,10 @@ class MyApp(QMainWindow):
 		self.nu = self.vmec_data['mpol']*4
 		self.nv = self.vmec_data['ntor']*4*self.vmec_data['nfp']
 		self.nv2 = self.vmec_data['ntor']*4
+		if self.nu < 32:
+			self.nu = 32
+		if self.nv < 16:
+			self.nv = 16
 		self.TransformVMEC(self)
 		self.s=0
 		self.u=0
@@ -58,16 +56,11 @@ class MyApp(QMainWindow):
 		self.ui.rhoslider.setMaximum(self.ns-1)
 		self.ui.uslider.setMaximum(self.nu-1)
 		self.ui.vslider.setMaximum((self.nv/self.vmec_data['nfp']))
-		# Matplotlib figure
+		# Plot figure
 		self.fig = Figure(figsize=(2,2),dpi=100)
 		self.ax = self.fig.add_subplot(111)
 		self.canvas = FigureCanvas(self.fig)
 		self.ui.plot_widget.addWidget(self.canvas)
-		# Mayvi figure
-		#self.mayavis = mlab.figure()
-		#self.ui.plot_widget.addWidget(self.mayavis)
-		#self.canvas.hide()
-		#self.canvas.hide()
 		#self.canvas.draw()
 		# Callbacks		
 		self.ui.FileName.currentIndexChanged.connect(self.FileSelect)
@@ -82,7 +75,6 @@ class MyApp(QMainWindow):
 		self.ui.rhoslider.valueChanged.connect(self.CutSelect)
 		self.ui.uslider.valueChanged.connect(self.CutSelect)
 		self.ui.vslider.valueChanged.connect(self.CutSelect)
-		self.ui.savebutton.clicked.connect(self.SaveImg)
 
 	def FileSelect(self,i):
 		self.vmec_data=read_vmec(self.ui.FileName.currentText())
@@ -91,6 +83,10 @@ class MyApp(QMainWindow):
 		self.nu = self.vmec_data['mpol']*4
 		self.nv = self.vmec_data['ntor']*4*self.vmec_data['nfp']
 		self.nv2 = self.vmec_data['ntor']*4
+		if self.nu < 32:
+			self.nu = 32
+		if self.nv < 16:
+			self.nv = 16
 		self.TransformVMEC(self)
 		self.s=0
 		self.u=0
@@ -174,7 +170,7 @@ class MyApp(QMainWindow):
 		self.update_plot(self)
 
 	def update_plot(self,i):
-		self.canvas.show()
+
 		plot_name = self.ui.PlotList.currentText();
 		self.fig.clf()
 		#self.fig.delaxes(self.ax)
@@ -285,17 +281,12 @@ class MyApp(QMainWindow):
 				self.ax.set_ylabel('Z [m]')
 				self.ax.set_aspect('equal')
 			elif (self.ui.ThreeD_button.isChecked()):
-				#mayavi_widget = MayaviQWidget(self.plot_widget)
-				#self.ui.plot_widget.addWidget(self.canvas)
-				#self.canvas.hide() # Hide matplotlib
+				self.fig.delaxes(self.ax)
+				self.canvas.draw()
 				self.ax = isotoro(self.r,self.z,self.zeta,self.s,val,fig=self.fig)
 				self.ax.grid(False)
 				self.ax.set_axis_off()
 		self.canvas.draw()
-
-	def SaveImg(self,i):
-		filename=self.ui.saveas_filename.toPlainText()
-		self.canvas.print_figure(filename)
 
 	def TransformVMEC(self, i):
 		self.nflux = np.ndarray((self.ns,1))
@@ -308,15 +299,15 @@ class MyApp(QMainWindow):
 		self.zeta2=self.zeta[0:self.nv2+1]
 		self.r=cfunct(self.theta,self.zeta,self.vmec_data['rmnc'],self.vmec_data['xm'],self.vmec_data['xn'])
 		self.z=sfunct(self.theta,self.zeta,self.vmec_data['zmns'],self.vmec_data['xm'],self.vmec_data['xn'])
-		self.b=cfunct(self.theta,self.zeta,self.vmec_data['bmnc'],self.vmec_data['xm_nyq'],self.vmec_data['xn_nyq'])
-		self.g=cfunct(self.theta,self.zeta,self.vmec_data['gmnc'],self.vmec_data['xm_nyq'],self.vmec_data['xn_nyq'])
-		self.bu=cfunct(self.theta,self.zeta,self.vmec_data['bsupumnc'],self.vmec_data['xm_nyq'],self.vmec_data['xn_nyq'])
-		self.bv=cfunct(self.theta,self.zeta,self.vmec_data['bsupvmnc'],self.vmec_data['xm_nyq'],self.vmec_data['xn_nyq'])
-		self.cu=cfunct(self.theta,self.zeta,self.vmec_data['currumnc'],self.vmec_data['xm_nyq'],self.vmec_data['xn_nyq'])
-		self.cv=cfunct(self.theta,self.zeta,self.vmec_data['currvmnc'],self.vmec_data['xm_nyq'],self.vmec_data['xn_nyq'])
-		self.b_s=sfunct(self.theta,self.zeta,self.vmec_data['bsubsmns'],self.vmec_data['xm_nyq'],self.vmec_data['xn_nyq'])
-		self.b_u=cfunct(self.theta,self.zeta,self.vmec_data['bsubumnc'],self.vmec_data['xm_nyq'],self.vmec_data['xn_nyq'])
-		self.b_v=cfunct(self.theta,self.zeta,self.vmec_data['bsubvmnc'],self.vmec_data['xm_nyq'],self.vmec_data['xn_nyq'])
+		self.b=cfunct(self.theta,self.zeta,self.vmec_data['bmnc'],self.vmec_data['xm'],self.vmec_data['xn'])
+		self.g=cfunct(self.theta,self.zeta,self.vmec_data['gmnc'],self.vmec_data['xm'],self.vmec_data['xn'])
+		self.bu=cfunct(self.theta,self.zeta,self.vmec_data['bsupumnc'],self.vmec_data['xm'],self.vmec_data['xn'])
+		self.bv=cfunct(self.theta,self.zeta,self.vmec_data['bsupvmnc'],self.vmec_data['xm'],self.vmec_data['xn'])
+		self.cu=cfunct(self.theta,self.zeta,self.vmec_data['currumnc'],self.vmec_data['xm'],self.vmec_data['xn'])
+		self.cv=cfunct(self.theta,self.zeta,self.vmec_data['currvmnc'],self.vmec_data['xm'],self.vmec_data['xn'])
+		self.b_s=sfunct(self.theta,self.zeta,self.vmec_data['bsubsmns'],self.vmec_data['xm'],self.vmec_data['xn'])
+		self.b_u=cfunct(self.theta,self.zeta,self.vmec_data['bsubumnc'],self.vmec_data['xm'],self.vmec_data['xn'])
+		self.b_v=cfunct(self.theta,self.zeta,self.vmec_data['bsubvmnc'],self.vmec_data['xm'],self.vmec_data['xn'])
 
 
 if __name__ == "__main__":
