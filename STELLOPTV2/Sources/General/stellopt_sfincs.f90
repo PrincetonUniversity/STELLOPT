@@ -253,8 +253,8 @@
 													WRITE(UNIT=unit_out,FMT='(a, es24.14)') '  iota = ',sfincs_iota(radius_index)
 													WRITE(UNIT=unit_out,FMT='(a, es24.14)') '  GHat = ',sfincs_GHat(radius_index)
 													WRITE(UNIT=unit_out,FMT='(a, es24.14)') '  IHat = ',sfincs_IHat(radius_index)
-													WRITE(UNIT=unit_out,FMT='(a, es24.14)') '  aHat = ',sfincs_aHat(radius_index)
-													WRITE(UNIT=unit_out,FMT='(a, es24.14)') '  psiAHat = ',sfincs_psiAHat(radius_index)
+													WRITE(UNIT=unit_out,FMT='(a, es24.14)') '  aHat = ',sfincs_aHat
+													WRITE(UNIT=unit_out,FMT='(a, es24.14)') '  psiAHat = ',sfincs_psiAHat
 													WRITE(UNIT=unit_out,FMT='(A, I3)') '  NPeriods = ',sfincs_nperiods
 													! Write bmnc's for this surface
 													DO m=0,sfincs_mmax
@@ -389,7 +389,6 @@
                !equilibriumFile = 'wout_'//TRIM(proc_string)//'.nc'
                CALL sfincs_prepare()
                CALL sfincs_run()
-
                CALL sfincs_finalize()
                !CALL SYSTEM('cd ../..')
                ! Return stdout and stderr to normal:
@@ -419,10 +418,6 @@
 										END DO
 									END IF
                END IF
-							 IF (ALLOCATED(ns_sensitivity)) DEALLOCATE(ns_sensitivity)
-							 IF (ALLOCATED(ms_sensitivity)) DEALLOCATE(ms_sensitivity)
-							 IF (ALLOCATED(dbootstrapdlambda)) DEALLOCATE(dbootstrapdlambda)
-               IF (ALLOCATED(dphidpsidlambda)) DEALLOCATE(dphidpsidlambda)
             END DO ! Loop over radii
 
             ! Send results from all procs to master so master can compute the new radial current profile:

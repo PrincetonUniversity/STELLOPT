@@ -209,7 +209,7 @@
       ! Logical determining if RHSMode = 5 used (derivatives at ambipolarity)
       LOGICAL :: lsfincs_ambipolar_option = .false.
 			REAL(rprec), DIMENSION(ndatafmax) :: sfincs_iota, sfincs_GHat, sfincs_IHat
-			REAL(rprec), DIMENSION(ndatafmax) :: sfincs_aHat, sfincs_psiAHat
+			REAL(rprec) :: sfincs_aHat, sfincs_psiAHat
       REAL(rprec), DIMENSION(ndatafmax) :: sfincs_Er
 			LOGICAL, DIMENSION(0:sfincs_mmax,-sfincs_nmax:sfincs_nmax,ndatafmax) :: lsfincs_boozer_bmnc_opt
 			REAL(rprec), DIMENSION(0:sfincs_mmax,-sfincs_nmax:sfincs_nmax,ndatafmax) :: sfincs_boozer_bmnc
