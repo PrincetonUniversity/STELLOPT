@@ -73,7 +73,7 @@
       LOGICAL :: added_scanType
       REAL(rprec) :: sfincs_ne, sfincs_ni, sfincs_Te, sfincs_Ti, sfincs_d_ne_d_s, sfincs_d_ni_d_s, sfincs_d_Te_d_s, sfincs_d_Ti_d_s, delta_s
       INTEGER :: numProcs_eff, myRank_eff
-      REAL(rprec) :: temp1, temp2
+      REAL(rprec) :: temp1, temp2, sfincs_dPhiHatdpsiN
 !!$      REAL(rprec) :: temp1, temp2, ds_fine, scale_factor
 !!$      REAL(rprec), DIMENSION(:), ALLOCATABLE :: sfincs_s_with_0
 !!$      INTEGER, PARAMETER :: Ns_fine = 1000
@@ -223,6 +223,20 @@
                sfincs_d_Te_d_s = sfincs_d_Te_d_s / 1000
                sfincs_d_Ti_d_s = sfincs_d_Ti_d_s / 1000
 
+               ! Handle radial electric field
+               CALL tolower(sfincs_Er_option)
+               select case (trim(sfincs_Er_option))
+               case ("zero")
+                  sfincs_dPhiHatdpsiN = 0.001 ! Sfincs sometimes has roundoff error problems when Er is exactly 0, so use a tiny nonzero value instead.
+               case ("estimate")
+                  sfincs_dPhiHatdpsiN = -((sfincs_Ti / sfincs_ni) * sfincs_d_ni_d_s + 1.34 * sfincs_d_Ti_d_s)
+                  ! The number 1.34 comes from eq (74a) in Ho & Kulsrud: 1.34 = (4.63/1.63) - (3/2).
+               case default
+                  print *,"Error! Unrecognized sfincs_Er_option:",sfincs_Er_option
+                  print *,"Allowed settings are 'zero' or 'estimate'."
+                  stop
+               end select
+
                IF (myRank_sfincs == 0) THEN
                   CALL SYSTEM('mkdir -p '//TRIM(directory_string)) ! -p mutes the warning printed if the directory already exists.
 
@@ -269,6 +283,12 @@
                         CYCLE
                      END IF
 
+                     IF (TRIM(file_line_lower)=='&physicsparameters') THEN
+                        WRITE (UNIT=unit_out,FMT='(A)') '&physicsParameters'
+                        WRITE (UNIT=unit_out,FMT='(a, es24.14, a)') '  dPhiHatdpsiN = ', sfincs_dPhiHatdpsiN,' ! From stellopt'
+                        CYCLE
+                     END IF
+
                      ! Change any parameters as needed for this particular radius.
                      IF (file_line_lower(1:3)=='!ss') THEN
                         file_line_lower2 = ADJUSTL(file_line_lower(4:))
@@ -304,6 +324,7 @@
                      IF (file_line_lower(1: 3)=='er ' .or. file_line_lower(1:3)=='er=') CYCLE
                      IF (file_line_lower(1:10)=='dphihatdrn') CYCLE
                      IF (file_line_lower(1:12)=='dphihatdrhat') CYCLE
+                     IF (file_line_lower(1:12)=='dphihatdpsin') CYCLE
                      IF (file_line_lower(1:14)=='dphihatdpsihat') CYCLE
 
                      ! If we've made it this far, copy the line from the old to new file:

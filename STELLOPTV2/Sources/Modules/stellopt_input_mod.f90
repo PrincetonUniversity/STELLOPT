@@ -270,7 +270,7 @@
                          ne_opt, te_opt, ti_opt, th_opt, zeff_opt, &
                          ne_type, te_type, ti_type, th_type, &
                          beamj_type, bootj_type, zeff_type, &
-                         bootcalc_type, sfincs_s, sfincs_min_procs, vboot_tolerance, & ! This line added by MJL
+                         bootcalc_type, sfincs_s, sfincs_min_procs, sfincs_Er_option, vboot_tolerance, & ! This line added by MJL
                          ne_min, te_min, ti_min, th_min, beamj_f_min, &
                          bootj_f_min, zeff_min, zeff_f_min, &
                          ne_max, te_max, ti_max, th_max, beamj_f_max, &

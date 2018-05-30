@@ -9,11 +9,11 @@
 !
 ! If you 'grep Vboot' on the output, the expected results are:
 ! Vboot iteration   0: ctor=-5.387E+06, vboot convergence factor= 9.560E-01
-! Vboot iteration   1: ctor=-7.492E+06, vboot convergence factor= 4.687E-01
-! Vboot iteration   2: ctor=-6.485E+06, vboot convergence factor= 2.891E-01
-! Vboot iteration   3: ctor=-6.850E+06, vboot convergence factor= 9.482E-02
-! Vboot iteration   4: ctor=-6.728E+06, vboot convergence factor= 3.257E-02
-! Vboot iteration   5: ctor=-6.764E+06, vboot convergence factor= 9.541E-03. Tolerance achieved.
+! Vboot iteration   1: ctor=-7.490E+06, vboot convergence factor= 4.685E-01
+! Vboot iteration   2: ctor=-6.485E+06, vboot convergence factor= 2.883E-01
+! Vboot iteration   3: ctor=-6.849E+06, vboot convergence factor= 9.443E-02
+! Vboot iteration   4: ctor=-6.728E+06, vboot convergence factor= 3.236E-02
+! Vboot iteration   5: ctor=-6.764E+06, vboot convergence factor= 9.457E-03. Tolerance achieved.
 
 &INDATA
   LWOUTTXT=F
@@ -94,6 +94,7 @@ opt_type='single'
 bootj_type='power_series'
 bootj_aux_f = 0 -1.0e+6 1.0e+6 1.0e5 1.0e5 1.0e5 ! For type power_series
 bootcalc_type='sfincs'
+sfincs_Er_option = 'zero'  ! Allowed values are 'zero' or 'estimate'
 sfincs_s = 0.012536, 0.0495156, 0.109084, 0.188255, 0.283058, 0.38874, 0.5, 0.61126, 0.716942, 0.811745, 0.890916, 0.950484, 0.987464, 1. ! Chebyshev points, deleting 0 since it is automatically included.
 sfincs_min_procs=1
 vboot_tolerance = 1.e-2

@@ -130,6 +130,7 @@ bootj_type='power_series'
 bootj_aux_f = 8*1.0e-10
 
 bootcalc_type='sfincs'
+sfincs_Er_option = 'zero'
 
 ! Chebyshev points, deleting s=0 since it is automatically included,
 ! (sfincs is not run at s=0 since j_bootstrap always vanishes there),

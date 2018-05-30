@@ -137,6 +137,7 @@
                                             phi_aux_s, beamj_aux_s,&
                                             bootj_aux_s, sfincs_s, emis_xics_s
       INTEGER                           ::  sfincs_min_procs
+      CHARACTER(256)  ::  sfincs_Er_option
       REAL(rprec)                       ::  vboot_tolerance
       REAL(rprec), DIMENSION(ndatafmax) ::  ne_aux_f, te_aux_f, &
                                             ti_aux_f, th_aux_f,&
