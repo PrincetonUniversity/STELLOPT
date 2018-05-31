@@ -92,7 +92,7 @@ contains
     ! On exit, zeta holds the grid points in the toroidal angle zeta
     real(rprec), dimension(-nzgrid:nzgrid), intent(out) :: zeta
 
-    real(rprec), dimension(nalpha, -nzgrid:nzgrid), intent(out) :: bmag, gradpar, gds2, gds21, gds22, gbdrift, gbdrift0, cvdrift, cvdrift0
+    real(rprec), dimension(nalpha, -nzgrid:nzgrid), intent(out) :: bmag, gradpar, gds2, gds21, gds22, gbdrift, gbdrift0, cvdrift, cvdrift0, sqrt_g
 
     !*********************************************************************
     ! Variables used internally by this subroutine
@@ -114,7 +114,7 @@ contains
     real(rprec), dimension(:), allocatable :: d_pressure_d_s_on_half_grid, d_iota_d_s_on_half_grid
     real(rprec) :: root_solve_absolute_tolerance, root_solve_relative_tolerance
     logical :: non_Nyquist_mode_available, found_imn
-    real(rprec), dimension(:,:), allocatable :: B, sqrt_g, R, B_dot_grad_theta_pest_over_B_dot_grad_zeta, temp2D
+    real(rprec), dimension(:,:), allocatable :: B, R, B_dot_grad_theta_pest_over_B_dot_grad_zeta, temp2D
     real(rprec), dimension(:,:), allocatable :: d_B_d_theta_vmec, d_B_d_zeta, d_B_d_s
     real(rprec), dimension(:,:), allocatable :: d_R_d_theta_vmec, d_R_d_zeta, d_R_d_s
     real(rprec), dimension(:,:), allocatable :: d_Z_d_theta_vmec, d_Z_d_zeta, d_Z_d_s
@@ -533,7 +533,6 @@ contains
 
     allocate(B(nalpha,-nzgrid:nzgrid))
     allocate(temp2D(nalpha,-nzgrid:nzgrid))
-    allocate(sqrt_g(nalpha,-nzgrid:nzgrid))
     allocate(R(nalpha,-nzgrid:nzgrid))
     allocate(d_B_d_theta_vmec(nalpha,-nzgrid:nzgrid))
     allocate(d_B_d_zeta(nalpha,-nzgrid:nzgrid))
@@ -1148,7 +1147,6 @@ contains
 
     deallocate(B)
     deallocate(temp2D)
-    deallocate(sqrt_g)
     deallocate(R)
     deallocate(d_B_d_theta_vmec)
     deallocate(d_B_d_zeta)
