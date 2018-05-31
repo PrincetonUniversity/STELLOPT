@@ -21,6 +21,9 @@ def read_vmec(file):
     read_wout(file.encode('UTF-8'), ct.byref(ierr), ct.byref(iopen), len(file))
     # Setup Arrays
     vmec_data={}
+    # Check
+    if not (ierr.value == 0):
+        return vmec_data
     # Logical
     varlist=['lasym','lthreed','lwout_opened']
     for temp in varlist:
