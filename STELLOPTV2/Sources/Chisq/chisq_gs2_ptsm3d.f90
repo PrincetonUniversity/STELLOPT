@@ -29,16 +29,16 @@
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: alpha, zeta
       REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: bmag, gradpar, &
                           gds2, gds21, gds22, gbdrift, gbdrift0, cvdrift, &
-                          cvdrift0
+                          cvdrift0, sqrt_g
 
       !----------------BEGIN SUBROUTINE --------------
 
       !For now hard code the parameter settings - can be moved to input file or
       !calculated here later
 
-      nalpha = 5
-      nzgrid = 7
-      periods = 10
+      nalpha = 1
+      nzgrid = 6400
+      periods = 400
       s = 0.5
       zeta_center = 0.0
       vmec_option = 0
@@ -55,6 +55,7 @@
       ALLOCATE(gbdrift0(nalpha, -nzgrid:nzgrid))
       ALLOCATE(cvdrift(nalpha, -nzgrid:nzgrid))
       ALLOCATE(cvdrift0(nalpha, -nzgrid:nzgrid))
+      ALLOCATE(sqrt_g(nalpha, -nzgrid:nzgrid))
 
 
       IF (iflag < 0) RETURN
@@ -65,7 +66,7 @@
         CALL vmec2gs2('wout_'//TRIM(PROC_STRING)//'.nc', nalpha, nzgrid,&
              zeta_center, periods, s, vmec_option, verbose, s_used, q, shat, &
              L_ref, B_ref, alpha, zeta, bmag, gradpar, gds2, gds21, gds22, & 
-             gbdrift, gbdrift0, cvdrift, cvdrift0)
+             gbdrift, gbdrift0, cvdrift, cvdrift0, sqrt_g)
         mtargets = mtargets + 1
         targets(mtargets) = target
         sigmas(mtargets) = sigma
@@ -91,5 +92,6 @@
       DEALLOCATE(gbdrift0)
       DEALLOCATE(cvdrift)
       DEALLOCATE(cvdrift0)
+      DEALLOCATE(sqrt_g)
 
       END SUBROUTINE chisq_gs2_ptsm3d
