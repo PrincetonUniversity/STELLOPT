@@ -57,6 +57,9 @@
       ! Z0
       IF (sigma_z0 < bigno)  &
          CALL chisq_z0(target_z0,sigma_z0,ncnt,iflag)
+      ! B0
+      IF (sigma_b0 < bigno)  &
+         CALL chisq_b0(target_b0,sigma_b0,ncnt,iflag)
       ! VOLUME
       IF (sigma_volume < bigno)  &
          CALL chisq_volume(target_volume,sigma_volume,ncnt,iflag)
@@ -237,6 +240,9 @@
       IF (ANY(sigma_regcoil_chi2_b < bigno)) THEN
          CALL chisq_regcoil_chi2_b(target_regcoil_chi2_b, sigma_regcoil_chi2_b, ncnt,iflag)
       END IF
+      IF (sigma_curvature_p2 < bigno) &
+         CALL chisq_curvature_p2(target_curvature_p2, sigma_curvature_p2, ncnt, iflag)
+
       ! Kink
       IF (ANY(sigma_kink < bigno)) &
          CALL chisq_kink(target_kink, sigma_kink, ncnt,iflag)
