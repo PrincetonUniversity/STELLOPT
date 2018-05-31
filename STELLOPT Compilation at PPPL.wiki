@@ -1,4 +1,6 @@
-=STELLOPT Compilation at the PPPL cluster[[image:PPPL-LOGO-FNLWH-GRADIENT_300px_WEB.jpg align="right"]]= 
+=STELLOPT Compilation at the PPPL cluster
+
+{{images/PPPL-LOGO-FNLWH-GRADIENT_300px_WEB.jpg}}
 
 This page details how to compile the STELLOPT family of codes at the [[@http://www.pppl.gov/|PPPL]] cluster. The proper modules need to be loaded then compilation can begin. Please note that if you require additional module to be loaded you should do this before loading the compiler. This will prevent the $PATH variable from searching the wrong directories.
 ----
