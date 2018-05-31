@@ -19,14 +19,14 @@
   FLAGS_D = -g -O0 -fexternal-blas -fcheck=all -fbacktrace
 
 # Crutch for broken module vars
-  FFTWHOME = /usr/pppl/gcc/6.1-pkgs/openmpi-1.10.3-pkgs/fftw-3.3.4
-  HDF5_HOME = /usr/pppl/gcc/6.1-pkgs/openmpi-1.10.3-pkgs/hdf5-parallel-1.10.0-patch1
-  BLACS_HOME = /usr/pppl/gcc/6.1-pkgs/openmpi-1.10.3-pkgs/blacs-1.1alpha
+#  FFTWHOME = /usr/pppl/gcc/6.1-pkgs/openmpi-1.10.3-pkgs/fftw-3.3.4
+#  HDF5_HOME = /usr/pppl/gcc/6.1-pkgs/openmpi-1.10.3-pkgs/hdf5-parallel-1.10.0-patch1
+#  BLACS_HOME = /usr/pppl/gcc/6.1-pkgs/openmpi-1.10.3-pkgs/blacs-1.1alpha
   NETCDF_F = /usr/pppl/gcc/6.1-pkgs/netcdf-fortran-4.4.4
   NETCDF_C = /usr/pppl/gcc/6.1-pkgs/netcdf-c-4.4.1
 
-  LIBS    = -L$(ACML_HOME)/lib -lacml \
-            -L$(SCALAPACK_HOME)/lib -lscalapack 
+  LIBS    = -L$(ACML_HOME)/lib -lacml #\
+#            -L$(SCALAPACK_HOME)/lib -lscalapack 
 
 # BLACS requires full links to library files
   LIBS    += ${BLACS_HOME}/lib/blacs_MPI-LINUX-0.a
