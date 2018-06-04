@@ -183,6 +183,7 @@
       REAL(rprec), DIMENSION(nigroup)    :: target_coilcrv,  sigma_coilcrv
       REAL(rprec), DIMENSION(nigroup)    :: target_coilself, sigma_coilself
       REAL(rprec)                        :: target_coilsep,  sigma_coilsep
+      REAL(rprec) :: target_ptsm3d, sigma_ptsm3d
 
       INTEGER, PARAMETER :: jtarget_aspect     = 100
       INTEGER, PARAMETER :: jtarget_rbtor      = 1001
@@ -238,6 +239,7 @@
       INTEGER, PARAMETER :: jtarget_resjac     = 606
       INTEGER, PARAMETER :: jtarget_txport     = 607
       INTEGER, PARAMETER :: jtarget_gs2_ptsm3d = 6071
+      INTEGER, PARAMETER :: jtarget_ptsm3d     = 6072
       INTEGER, PARAMETER :: jtarget_dkes       = 608
       INTEGER, PARAMETER :: jtarget_jdotb      = 609
       INTEGER, PARAMETER :: jtarget_jcurv      = 6091
@@ -252,7 +254,7 @@
       INTEGER, PARAMETER :: jtarget_regcoil_chi2_b = 5150
       INTEGER, PARAMETER :: jtarget_regcoil_current_density = 5151
       INTEGER, PARAMETER :: jtarget_curvature_P2 = 5200
-      
+
 
       CONTAINS
       
@@ -314,6 +316,7 @@
             WRITE(iunit, out_format) 'Line Integrated Electron Density'
          CASE(jtarget_line_te)
             WRITE(iunit, out_format) 'Line Integrated Electron Temperature'
+
          CASE(jtarget_line_ti)
             WRITE(iunit, out_format) 'Line Integrated Ion Temperature'
          CASE(jtarget_xics)
@@ -360,6 +363,8 @@
             WRITE(iunit, out_format) 'Boozer Spectrum Helicity'
          CASE(jtarget_txport)
             WRITE(iunit, out_format) 'Turbulent Transport'
+         CASE(jtarget_ptsm3d)
+            WRITE(iunit, out_format) '3D turbulence saturation model'
          CASE(jtarget_gs2_ptsm3d)
             WRITE(iunit, out_format) 'Turbulent transport using ptsm3d'
          CASE(jtarget_orbit)

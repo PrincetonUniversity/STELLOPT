@@ -24,6 +24,7 @@ chisq_phiedge.o \
 chisq_resjac.o \
 chisq_txport.o \
 chisq_gs2_ptsm3d.o \
+chisq_ptsm3d.o \
 chisq_betator.o \
 chisq_bprobes.o \
 chisq_vphi.o \
@@ -92,6 +93,7 @@ stellopt_optimize.o \
 stellopt_recon_opt.o \
 stellopt_triangulate.o \
 stellopt_txport.o \
+stellopt_ptsm3d.o \
 stellopt_bcast_vmec.o \
 stellopt_paraexe.o \
 stellopt_prof_to_vmec.o \
