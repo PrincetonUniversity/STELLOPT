@@ -31,7 +31,7 @@
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: alpha, zeta
       REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: bmag, gradpar, &
                           gds2, gds21, gds22, gbdrift, gbdrift0, cvdrift, &
-                          cvdrift0, sqrt_jac
+                          cvdrift0, jac_gist_inv, d_B_d_par
 
       !----------------BEGIN SUBROUTINE --------------
 
@@ -59,7 +59,8 @@
       ALLOCATE(gbdrift0(nalpha, -nzgrid:nzgrid))
       ALLOCATE(cvdrift(nalpha, -nzgrid:nzgrid))
       ALLOCATE(cvdrift0(nalpha, -nzgrid:nzgrid))
-      ALLOCATE(sqrt_jac(nalpha, -nzgrid:nzgrid))
+      ALLOCATE(jac_gist_inv(nalpha, -nzgrid:nzgrid))
+      ALLOCATE(d_B_d_par(nalpha, -nzgrid:nzgrid))
 
 
       IF (iflag < 0) RETURN
@@ -70,7 +71,7 @@
         CALL vmec2gs2('wout_'//TRIM(PROC_STRING)//'.nc', nalpha, nzgrid,&
              zeta_center, periods, s, vmec_option, verbose, s_used, q, shat, &
              L_ref, B_ref, alpha, zeta, bmag, gradpar, gds2, gds21, gds22, & 
-             gbdrift, gbdrift0, cvdrift, cvdrift0, sqrt_jac)
+             gbdrift, gbdrift0, cvdrift, cvdrift0, jac_gist_inv, d_B_d_par)
         write (*,*) 'Calculated gs2 coordinates'
         IF (should_print_gs2) THEN
             CALL safe_open(iunit, ierr, 'gs2_stell_'//TRIM(PROC_STRING)//'.txt', &
@@ -89,7 +90,7 @@
                 WRITE(iunit, "(A)") "/"
                 DO j = -nzgrid,nzgrid
                     WRITE(iunit, "(9ES22.12E3)") gds2(i,j), gds21(i,j), &
-                          gds22(i,j), bmag(i,j), sqrt_jac(i,j), cvdrift(i,j), &
+                          gds22(i,j), bmag(i,j), jac_gist_inv(i,j), cvdrift(i,j), &
                           cvdrift0(i,j), gradpar(i,j), zeta(j)
                 END DO
             END DO
@@ -122,6 +123,7 @@
       DEALLOCATE(gbdrift0)
       DEALLOCATE(cvdrift)
       DEALLOCATE(cvdrift0)
-      DEALLOCATE(sqrt_jac)
+      DEALLOCATE(jac_gist_inv)
+      DEALLOCATE(d_B_d_par)
 
       END SUBROUTINE chisq_gs2_ptsm3d

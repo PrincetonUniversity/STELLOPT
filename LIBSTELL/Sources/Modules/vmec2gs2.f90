@@ -23,7 +23,8 @@ contains
   subroutine vmec2gs2(vmec_filename, nalpha, nzgrid, zeta_center, number_of_field_periods_to_include, &
        desired_normalized_toroidal_flux, vmec_surface_option, verbose, &
        normalized_toroidal_flux_used, safety_factor_q, shat, L_reference, B_reference, &
-       alpha, zeta, bmag, gradpar, gds2, gds21, gds22, gbdrift, gbdrift0, cvdrift, cvdrift0, sqrt_g)
+       alpha, zeta, bmag, gradpar, gds2, gds21, gds22, gbdrift, gbdrift0, cvdrift, cvdrift0, &
+       jac_gist_inv, d_B_d_par)
 
     use read_wout_mod, nzgrid_vmec => nzgrid  ! VMEC has a variable nzgrid which conflicts with our nzgrid, so rename vmec's version.
 
@@ -92,7 +93,7 @@ contains
     ! On exit, zeta holds the grid points in the toroidal angle zeta
     real(rprec), dimension(-nzgrid:nzgrid), intent(out) :: zeta
 
-    real(rprec), dimension(nalpha, -nzgrid:nzgrid), intent(out) :: bmag, gradpar, gds2, gds21, gds22, gbdrift, gbdrift0, cvdrift, cvdrift0, sqrt_g
+    real(rprec), dimension(nalpha, -nzgrid:nzgrid), intent(out) :: bmag, gradpar, gds2, gds21, gds22, gbdrift, gbdrift0, cvdrift, cvdrift0, jac_gist_inv, d_B_d_par
 
     !*********************************************************************
     ! Variables used internally by this subroutine
@@ -114,7 +115,7 @@ contains
     real(rprec), dimension(:), allocatable :: d_pressure_d_s_on_half_grid, d_iota_d_s_on_half_grid
     real(rprec) :: root_solve_absolute_tolerance, root_solve_relative_tolerance
     logical :: non_Nyquist_mode_available, found_imn
-    real(rprec), dimension(:,:), allocatable :: B, R, B_dot_grad_theta_pest_over_B_dot_grad_zeta, temp2D
+    real(rprec), dimension(:,:), allocatable :: B, sqrt_g, R, B_dot_grad_theta_pest_over_B_dot_grad_zeta, temp2D
     real(rprec), dimension(:,:), allocatable :: d_B_d_theta_vmec, d_B_d_zeta, d_B_d_s
     real(rprec), dimension(:,:), allocatable :: d_R_d_theta_vmec, d_R_d_zeta, d_R_d_s
     real(rprec), dimension(:,:), allocatable :: d_Z_d_theta_vmec, d_Z_d_zeta, d_Z_d_s
@@ -533,6 +534,7 @@ contains
 
     allocate(B(nalpha,-nzgrid:nzgrid))
     allocate(temp2D(nalpha,-nzgrid:nzgrid))
+    allocate(sqrt_g(nalpha,-nzgrid:nzgrid))
     allocate(R(nalpha,-nzgrid:nzgrid))
     allocate(d_B_d_theta_vmec(nalpha,-nzgrid:nzgrid))
     allocate(d_B_d_zeta(nalpha,-nzgrid:nzgrid))
@@ -1052,7 +1054,11 @@ contains
          - grad_s_X * grad_theta_vmec_Z * grad_zeta_Y &
          - grad_s_Y * grad_theta_vmec_X * grad_zeta_Z
     call test_arrays(1/sqrt_g, temp2D, .false., 1.0e-2, '1/sqrt_g')
-    
+   
+    jac_gist_inv = (L_reference**3)/(2*safety_factor_q)*&
+           (1 + d_Lambda_d_theta_vmec)/sqrt_g
+    d_B_d_par = -safety_factor_q/L_reference * jac_gist_inv/B * d_B_d_zeta
+
     !*********************************************************************
     ! Sanity tests: Verify that 
     ! \vec{B} dot (each of the covariant and contravariant basis vectors)
@@ -1147,6 +1153,7 @@ contains
 
     deallocate(B)
     deallocate(temp2D)
+    deallocate(sqrt_g)
     deallocate(R)
     deallocate(d_B_d_theta_vmec)
     deallocate(d_B_d_zeta)
