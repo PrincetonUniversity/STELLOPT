@@ -259,12 +259,10 @@ else
   LCOILOPT = F
   LTERPSICHORE = F
   LTRAVIS = F
-<<<<<<< HEAD
+
   LREGCOIL= F
 #  LYOURNEWCODE = F
-=======
   LPTSM3D = F
->>>>>>> stellopt_ptsm3d
 endif
 ifeq ($(MAKECMDGOALS),xanimec)
   PRECOMP += -D_ANIMEC
@@ -323,7 +321,6 @@ else
   TRAVIS_DIR = 
   LIB_TRAVIS = 
 endif
-<<<<<<< HEAD
 ifeq ($(LREGCOIL),T)
   MOD1_PATH += $(REGCOIL_INC)
   PRECOMP += -DREGCOIL
@@ -336,7 +333,6 @@ endif
 
 # Handle other codes
 LIB_LINK += $(GENE_LIB) $(COILOPT_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB) $(REGCOIL_LIB)
-=======
 ifeq ($(LPTSM3D),T)
   MOD1_PATH += $(PTSM3D_INC)
   PRECOMP += -DPTSM3D
@@ -349,7 +345,6 @@ endif
 
 # Handle other codes
 LIB_LINK += $(GENE_LIB) $(COILOPT_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB) $(PTSM3D_LIB)
->>>>>>> stellopt_ptsm3d
 
 # Add libraries to LIB_LINK
 # LIB_LINK+= $(MYHOME)/libstell.a $(LIBS)

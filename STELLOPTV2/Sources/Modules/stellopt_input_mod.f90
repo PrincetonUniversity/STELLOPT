@@ -394,7 +394,6 @@
                          regcoil_rcws_rbound_c_max, regcoil_rcws_rbound_s_max, &
                          regcoil_rcws_zbound_c_max, regcoil_rcws_zbound_s_max, &
                          target_curvature_P2, sigma_curvature_P2
-                         nj_kink, nk_kink, lssl_kink, lssd_kink, mmaxdf_kink, nmaxdf_kink
       
 !-----------------------------------------------------------------------
 !     Subroutines
