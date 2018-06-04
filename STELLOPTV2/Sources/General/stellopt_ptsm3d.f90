@@ -298,11 +298,23 @@
 !        END IF
 !        
 !      ENDDO ! End loop over field line
-      i = 1
+      
+      i = 1 !eventually we may allow for multiple s values
+      g11 = gds22(i,:)/shat**2
+      g12 = gds21(i,:)/shat
+      g22 = gds2(i,:)
+      Bhat = Bmag(i,:)
+      abs_jac = 1.0/abs(jac_gist_inv(i,:))
+      L2 = Bhat/2 * cvdrift(i,:)
+      L1 = Bhat/2/shat**2 * cvdrift0(i,:)
+      dBdt = d_B_d_par(i,:)
+     
       DO j = -nzgrid,nzgrid
-         WRITE(iunit, "(9ES22.12E3)") gds2(i,j), gds21(i,j), &
-             gds22(i,j), bmag(i,j), jac_gist_inv(i,j), &
-             cvdrift(i,j), cvdrift0(i,j), gradpar(i,j), zeta(j)
+         !WRITE(iunit, "(9ES22.12E3)") gds2(i,j), gds21(i,j), &
+         !    gds22(i,j), bmag(i,j), jac_gist_inv(i,j), &
+         !    cvdrift(i,j), cvdrift0(i,j), gradpar(i,j), zeta(j)
+         WRITE(iunit, "(9ES22.12E3)") g11(j), g12(j), g22(j), Bhat(j), &
+                     abs_jac(j), L2(j), L1(j), dBdt(j), zeta(j)
       END DO
     
       IF (write_gist) CLOSE(iunit)
