@@ -25,8 +25,8 @@ module load gsl/1.16 silo nag/fll6a24dfl pgplot szip/2.1 ntcc/gcc6.1.0
 module load acml/6.1.0/gfortran64 hdf/4.2.12
 module load openmpi/3.0.0
 module load blacs fftw hdf5-parallel/1.10.1 scalapack
-module load petsc_complex/3.9.0
-module load slepc_complex/3.9.0
+module load petsc_complex/3.8.3
+module load slepc_complex/3.8.3
 module load curl/7.59.0 netcdf-c/4.4.1
 module load netcdf-fortran/4.4.4 netcdf-cxx4/4.3.0
 module load qt/4.8.3
