@@ -30,7 +30,7 @@
       USE beams3d_runtime, ONLY: BEAMS3D_VERSION
 !DEC$ ENDIF        
 !DEC$ IF DEFINED (REGCOIL)
-      USE regcoil_variables, ONLY: rc_nfp => nfp, rmnc_coil, rmns_coil, zmns_coil, zmnc_coil, mnmax_coil, xm_coil, xn_coil, verbose
+      USE regcoil_variables, ONLY: rc_nfp => nfp, rmnc_coil, rmns_coil, zmns_coil, zmnc_coil, mnmax_coil, xm_coil, xn_coil, verbose, regcoil_nml
       !USE regcoil_variables, ONLY: rc_rmnc_stellopt, rc_rmns_stellopt, &
       !                             rc_zmnc_stellopt, rc_zmns_stellopt, &
       !                             rc_nfp => nfp
@@ -976,6 +976,10 @@
          end if
          !call regcoil_read_nescin_spectrum(regcoil_nescin_filename, (myid == master)) 
          verbose = (myid == master)
+         ! We need to read geometry_option_coil and nescin_filename from the input namelist before the coil surface can be loaded.
+         CALL safe_open(iunit, istat, TRIM(filename), 'old', 'formatted')
+         READ(iunit, nml=regcoil_nml, iostat=istat)
+         CLOSE(iunit)
          call regcoil_init_coil_surface() 
          IF (myid == master) THEN
             WRITE(6,*) '<----REGCOIL: Initializing winding surface with NESCIN Spectrum'
@@ -992,9 +996,11 @@
          !end do
          do imn = 1, mnmax_coil
             m = xm_coil(imn)
-            n = xn_coil(imn)
+            n = xn_coil(imn)/(-regcoil_num_field_periods) ! Convert from regcoil/vmec to nescin convention
             IF (m < -mpol_rcws .or. m > mpol_rcws .or. n < -ntor_rcws .or. n > ntor_rcws) THEN
                WRITE(6,*) "Error! (m,n) values in nescin file exceed mpol_rcws or ntor_rcws."
+               WRITE(6,*) "mpol_rcws=",mpol_rcws," ntor_rcws=",ntor_rcws
+               WRITE(6,*) "m=",m,"  n=",n
                STOP
             END IF
             regcoil_rcws_rbound_c(m, n) = rmnc_coil(imn)
