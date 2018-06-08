@@ -45,7 +45,7 @@
       REAL(rprec) :: zeta_center, s_used
       REAL(rprec) :: L_ref, B_ref, periods
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: g11,g12,g22,Bhat,abs_jac,L1,L2, &
-                                                dBdt,zeta,alpha
+                                                dBdt,zeta,alpha,th
       REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: bmag, gradpar, gds2, gds21, &
          gds22, gbdrift, gbdrift0, cvdrift, cvdrift0, jac_gist_inv, d_B_d_par
       character(len=128) :: temp_str, gist_filename, num_str
@@ -114,14 +114,21 @@
       ALLOCATE(cvdrift0(nalpha, -nzgrid:nzgrid))
       ALLOCATE(jac_gist_inv(nalpha, -nzgrid:nzgrid))
       ALLOCATE(d_B_d_par(nalpha, -nzgrid:nzgrid))
-      ALLOCATE(g11(-nzgrid:nzgrid))
-      ALLOCATE(g12(-nzgrid:nzgrid))
-      ALLOCATE(g22(-nzgrid:nzgrid))
-      ALLOCATE(Bhat(-nzgrid:nzgrid))
-      ALLOCATE(abs_jac(-nzgrid:nzgrid))
-      ALLOCATE(L1(-nzgrid:nzgrid))
-      ALLOCATE(L2(-nzgrid:nzgrid))
-      ALLOCATE(dBdt(-nzgrid:nzgrid))
+      ALLOCATE(g11(0:2*nzgrid))
+      ALLOCATE(g12(0:2*nzgrid))
+      ALLOCATE(g22(0:2*nzgrid))
+      ALLOCATE(Bhat(0:2*nzgrid))
+      ALLOCATE(abs_jac(0:2*nzgrid))
+      ALLOCATE(L1(0:2*nzgrid))
+      ALLOCATE(L2(0:2*nzgrid))
+      ALLOCATE(dBdt(0:2*nzgrid))
+      ALLOCATE(th(0:2*nzgrid))
+
+      CALL PTSM3D_initialize_geom(2*nzgrid+1)
+
+      CALL PTSM3D_set_norms 
+
+      CALL PTSM3D_initialize_itg_solve
 
 
 
@@ -131,11 +138,36 @@
              L_ref, B_ref, alpha, zeta, bmag, gradpar, gds2, gds21, gds22, & 
              gbdrift, gbdrift0, cvdrift, cvdrift0, jac_gist_inv, d_B_d_par)
 
-      CALL PTSM3D_initialize_geom(nzgrid)
 
-      CALL PTSM3D_set_norms 
+      ! Convert to GIST-GENE coordinates
 
-      CALL PTSM3D_initialize_itg_solve
+      i = 1 !eventually we may allow for multiple s values
+      g11 = gds22(i,:)/shat**2
+      g12 = gds21(i,:)/shat
+      g22 = gds2(i,:)
+      Bhat = Bmag(i,:)
+      abs_jac = 1.0/abs(jac_gist_inv(i,:))
+      L2 = Bhat/2 * cvdrift(i,:)
+      L1 = -Bhat/2/shat * cvdrift0(i,:)
+      dBdt = d_B_d_par(i,:)
+
+      !Set the parameters in PTSM3D
+      gxx = g11
+      gxy = g12
+      gyy = g22
+      modB = Bhat
+      jac = abs_jac
+      dBdy = L2
+      dBdx = L1
+      
+
+
+      !zeta_center is 0 always, so assume theta_center is 0 too
+      !Then conversion between theta and zeta is simply
+      !theta = zeta/q
+      th = zeta/q
+
+
 
       temp_str = TRIM('gist_genet_'//TRIM(proc_string))
       ncnt = 0
@@ -166,30 +198,12 @@
         WRITE(iunit,"(A)") "/"
       end if
 
-      CALL PTSM3D_initialize_geom(maxPnt)
-
-      CALL PTSM3D_set_norms 
-
-      CALL PTSM3D_initialize_itg_solve
-
-      ! Convert to GIST-GENE coordinates
-
-      i = 1 !eventually we may allow for multiple s values
-      g11 = gds22(i,:)/shat**2
-      g12 = gds21(i,:)/shat
-      g22 = gds2(i,:)
-      Bhat = Bmag(i,:)
-      abs_jac = 1.0/abs(jac_gist_inv(i,:))
-      L2 = Bhat/2 * cvdrift(i,:)
-      L1 = -Bhat/2/shat * cvdrift0(i,:)
-      dBdt = d_B_d_par(i,:)
-     
       DO j = -nzgrid,nzgrid
          !WRITE(iunit, "(9ES22.12E3)") gds2(i,j), gds21(i,j), &
          !    gds22(i,j), bmag(i,j), jac_gist_inv(i,j), &
          !    cvdrift(i,j), cvdrift0(i,j), gradpar(i,j), zeta(j)
          WRITE(iunit, "(9ES22.12E3)") g11(j), g12(j), g22(j), Bhat(j), &
-                     abs_jac(j), L2(j), L1(j), dBdt(j), zeta(j)
+                     abs_jac(j), L2(j), L1(j), dBdt(j), th(j)
       END DO
     
       IF (write_gist) CLOSE(iunit)
@@ -227,12 +241,6 @@
           & "PTSM3D_TARGET   : ",ptsm3d_target
       END IF
 
-      CALL PTSM3D_finalize_triplets
-
-      CALL PTSM3D_finalize_itg_solve
-
-      CALL PTSM3D_finalize_geom
-
       IF (lscreen) WRITE(6,'(a)') &
       &  ' -------------------------  END PTSM3D CALCULATION &
       & --------------------------'
@@ -258,6 +266,7 @@
       DEALLOCATE(L1)
       DEALLOCATE(L2)
       DEALLOCATE(dBdt)
+      DEALLOCATE(th)
 
 
       END SUBROUTINE stellopt_ptsm3d
