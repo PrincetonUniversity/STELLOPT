@@ -113,7 +113,7 @@
       REAL(rprec), ALLOCATABLE :: fnorm_array(:), fnorm_new(:),
      1                            temp_fvec(:), x_temp(:)
       REAL(rprec), ALLOCATABLE :: x_array(:,:), fval_array(:,:),
-     1                            x_new(:,:)
+     1                            x_new(:,:), help2d(:,:), help2d2(:,:)
 !DEC$ IF DEFINED (MPI_OPT)
       INTEGER :: status(MPI_STATUS_size)                     !mpi stuff
       INTEGER :: sender
@@ -142,7 +142,7 @@
          IF (ierr .ne. 0) STOP 'DE2_Evolve Error ALLOC(4)'
          x_array(1,:) = x(:)
          DO i = 2, NP
-            DO j = 1, n
+            DO j = 1, n 
                CALL random_number(rand_C1)
                fnorm=XCmin(j)+rand_C1*(XCmax(j)-XCmin(j))
                x_array(i,j)=fnorm
@@ -212,73 +212,77 @@
          CALL FLUSH(6)
       ELSE
 !DEC$ IF DEFINED (MPI_OPT)
-         CALL MPI_BARRIER(MPI_COMM_STEL, ierr_mpi)
-         IF (ierr_mpi .ne. 0) CALL mpi_stel_abort(ierr_mpi)
-         IF (myid == master) THEN
-            numsent = 1
-            DO j = 1,MIN(numprocs-1,NP-1)
-               CALL MPI_SSEND(j+1,1,MPI_INTEGER,j,j,MPI_COMM_STEL,
-     1                        ierr_mpi)
-               IF (ierr_mpi /= MPI_SUCCESS) 
-     1                        CALL mpi_stel_abort(ierr_mpi)
-               numsent = numsent + 1
-            END DO
-            DO j = 1, NP-1
-               CALL MPI_RECV(temp_fvec,m,MPI_REAL8,MPI_ANY_SOURCE,
-     1                       MPI_ANY_TAG,MPI_COMM_STEL,status,
-     2                       ierr_mpi)
-               IF (ierr_mpi /= MPI_SUCCESS) 
-     1                        CALL mpi_stel_abort(ierr_mpi)
-               sender = status(MPI_SOURCE)
-               i      = status(MPI_TAG)
-               fval_array(i,:) = temp_fvec
-               fnorm = SUM(temp_fvec*temp_fvec)
-               fnorm_array(i) = fnorm
-               write (6, '(2x,i6,8x,i3,7x,1es12.4)') i,
-     1             sender, fnorm
-               CALL FLUSH(6)
-               IF (numsent < NP) THEN
-                  numsent = numsent + 1
-                  CALL MPI_SSEND(numsent, 1, MPI_INTEGER,
-     1                      sender, numsent, MPI_COMM_STEL, ierr_mpi)
-                  IF (ierr_mpi /= MPI_SUCCESS) 
-     1                        CALL mpi_stel_abort(ierr_mpi)
-               ELSE
-                  i = 0
-                  CALL MPI_SSEND(i, 1, MPI_INTEGER,
-     1                      sender, numsent, MPI_COMM_STEL, ierr_mpi)
-                  IF (ierr_mpi /= MPI_SUCCESS) 
-     1                        CALL mpi_stel_abort(ierr_mpi)
-               END IF
-            END DO
-         ELSE IF (myid <= NP-1) THEN
-            DO
-               CALL MPI_RECV(j,1,MPI_INTEGER,master,MPI_ANY_TAG,
-     1                       MPI_COMM_STEL,status,ierr_mpi)
-               IF (ierr_mpi /= MPI_SUCCESS) 
-     1                        CALL mpi_stel_abort(ierr_mpi)
-               IF (j > 0) THEN
-                  x_temp     = x_array(j,:)
-                  temp_fvec  = 0
-                  iflag = j
-                  CALL fcn(m, n, x_temp, temp_fvec, iflag, iter)
-                  fnorm = SUM(temp_fvec*temp_fvec)
-                  CALL MPI_SSEND(temp_fvec,m, MPI_REAL8, master,
-     1                       j, MPI_COMM_STEL, ierr_mpi)
-                  IF (ierr_mpi /= MPI_SUCCESS) 
-     1                        CALL mpi_stel_abort(ierr_mpi)
-               ELSE
-                  EXIT
-               END IF
-            END DO
-         ELSE
-         END IF
-         
-         CALL MPI_BARRIER(MPI_COMM_STEL, ierr_mpi)
-         IF (ierr_mpi /= MPI_SUCCESS) CALL mpi_stel_abort(ierr_mpi)
-         CALL MPI_BCAST(fnorm_array,NP,MPI_REAL8,
+         ! Eval the x array
+         ALLOCATE(help2d(n,NP-1),help2d2(m,NP-1))
+         FORALL (i=2:NP) help2d(:,i-1) = x_array(i,:)
+         i=1
+         CALL eval_x_queued(fcn,m,n,NP-1,help2d,
+     1                      help2d2,i,MPI_COMM_STEL)
+         ! Evaluate chisq
+         FORALL (i=2:NP) fval_array(i,:) = help2d2(:,i-1)
+         DEALLOCATE(help2d,help2d2)
+         CALL MPI_BCAST(fval_array,m*NP,MPI_DOUBLE_PRECISION,
      1                  master,MPI_COMM_STEL,ierr_mpi)
-         IF (ierr_mpi /= MPI_SUCCESS) CALL mpi_stel_abort(ierr_mpi)
+         fnorm_array = SUM(fval_array*fval_array,DIM=2)
+         ! Make sure the population is good
+         i= COUNT(fnorm_array >= 1E12)
+         DO WHILE (REAL(i)/REAL(NP) > 0.05)
+            IF (myid == master) THEN
+               WRITE(6,*) '  Recomputing ',i,' vecs'
+               ! Sort X
+               ALLOCATE(help2d(2:NP,n))
+               j = 2
+               DO i = 2, NP
+                  IF (fnorm_array(i) < 1E12) THEN
+                     help2d(j,:) = x_array(i,:)
+                     j=j+1
+                  END IF
+               END DO
+               x_array(2:NP,:) = help2d(2:NP,:)
+               DEALLOCATE(help2d)
+               ! Sort FVEC
+               ALLOCATE(help2d(2:NP,m))
+               help2d = 1E12
+               j = 2
+               DO i = 2, NP
+                  IF (fnorm_array(i) < 1E12) THEN
+                     help2d(j,:) = fval_array(i,:)
+                     j=j+1
+                  END IF
+               END DO
+               fval_array(2:NP,:) = help2d(2:NP,:)
+               fnorm_array = SUM(fval_array*fval_array,DIM=2)
+               DEALLOCATE(help2d)
+               ! Redefine the subarray
+               numsent= COUNT(fnorm_array < 1E12)+1
+               DO i = numsent, NP
+                  DO j = 1, n
+                     CALL random_number(rand_C1)
+                     fnorm=XCmin(j)+rand_C1*(XCmax(j)-XCmin(j))
+                     x_array(i,j)=fnorm
+                  END DO
+               END DO
+            END IF
+            CALL MPI_BCAST(x_array,NP*n,MPI_REAL8,master,
+     1                     MPI_COMM_STEL,ierr_mpi)
+            CALL MPI_BCAST(fval_array,NP*m,MPI_REAL8,master,
+     1                     MPI_COMM_STEL,ierr_mpi)
+            CALL MPI_BCAST(numsent,1,MPI_INTEGER,master,
+     1                     MPI_COMM_STEL,ierr_mpi)
+            ! Recalc the subarray
+            ALLOCATE(help2d(n,NP-numsent+1),help2d2(m,NP-numsent+1))
+            FORALL (i=numsent:NP) help2d(:,i-numsent+1) = x_array(i,:)
+            i=1
+            CALL eval_x_queued(fcn,m,n,NP-numsent+1,help2d,
+     1                      help2d2,i,MPI_COMM_STEL)
+            FORALL (i=numsent:NP) 
+     1                 fval_array(i,:) = help2d2(:,i-numsent+1)
+            DEALLOCATE(help2d,help2d2)
+            CALL MPI_BCAST(fval_array,m*NP,MPI_DOUBLE_PRECISION,
+     1               master,MPI_COMM_STEL,ierr_mpi)
+            fnorm_array = SUM(fval_array*fval_array,DIM=2)     
+            i= COUNT(fnorm_array >= 1E12)
+         END DO
 !DEC$ ELSE
          DO i = 1, NP
             x_temp = x_array(i,:)
@@ -467,70 +471,18 @@
      1               ierr_mpi)
          IF (ierr_mpi .ne. 0) CALL mpi_stel_abort(ierr_mpi)
 !DEC$ ENDIF
+!DEC$ IF DEFINED (MPI_OPT)
          
          ! Evaluate Population (new)
-!DEC$ IF DEFINED (MPI_OPT)
-         CALL MPI_BARRIER(MPI_COMM_STEL, ierr_mpi)
-         IF (ierr_mpi .ne. 0) CALL mpi_stel_abort(ierr_mpi)
-         IF (myid == master) THEN
-            numsent = 0
-            DO j = 1,MIN(numprocs-1,NP)
-               CALL MPI_SEND(j,1,MPI_INTEGER,j,j,MPI_COMM_STEL,
-     1                        ierr_mpi)
-               IF (ierr_mpi /= MPI_SUCCESS) 
-     1                        CALL mpi_stel_abort(ierr_mpi)
-               numsent = numsent + 1
-            END DO
-            DO j = 1, NP
-               CALL MPI_RECV(temp_fvec,m,MPI_REAL8,MPI_ANY_SOURCE,
-     1                       MPI_ANY_TAG,MPI_COMM_STEL,status,
-     2                       ierr_mpi)
-               IF (ierr_mpi /= MPI_SUCCESS) 
-     1                        CALL mpi_stel_abort(ierr_mpi)
-               sender = status(MPI_SOURCE)
-               i      = status(MPI_TAG)
-               fval_array(i,:) = temp_fvec
-               fnorm = SUM(temp_fvec*temp_fvec)
-               fnorm_new(i) = fnorm
-               write (6, '(2x,i6,8x,i3,7x,1es12.4)') i,
-     1             sender, fnorm
-               CALL FLUSH(6)
-               IF (numsent < NP) THEN
-                  numsent = numsent + 1
-                  CALL MPI_SEND(numsent, 1, MPI_INTEGER,
-     1                      sender, numsent, MPI_COMM_STEL, ierr_mpi)
-                  IF (ierr_mpi /= MPI_SUCCESS) 
-     1                        CALL mpi_stel_abort(ierr_mpi)
-               ELSE
-                  i = 0
-                  CALL MPI_SEND(i, 1, MPI_INTEGER,
-     1                      sender, numsent, MPI_COMM_STEL, ierr_mpi)
-                  IF (ierr_mpi /= MPI_SUCCESS) 
-     1                        CALL mpi_stel_abort(ierr_mpi)
-               END IF
-            END DO
-         ELSE IF (myid < NP) THEN
-            DO
-               CALL MPI_RECV(j,1,MPI_INTEGER,master,MPI_ANY_TAG,
-     1                       MPI_COMM_STEL,status,ierr_mpi)
-               IF (ierr_mpi /= MPI_SUCCESS) 
-     1                        CALL mpi_stel_abort(ierr_mpi)
-               IF (j > 0) THEN
-                  x_temp     = x_new(j,:)
-                  temp_fvec  = 0
-                  iflag = j
-                  CALL fcn(m, n, x_temp, temp_fvec, iflag, iter)
-                  fnorm = SUM(temp_fvec*temp_fvec)
-                  CALL MPI_SEND(temp_fvec,m, MPI_REAL8, master,
-     1                       j, MPI_COMM_STEL, ierr_mpi)
-                  IF (ierr_mpi /= MPI_SUCCESS) 
-     1                        CALL mpi_stel_abort(ierr_mpi)
-               ELSE
-                  EXIT
-               END IF
-            END DO
-         ELSE
-         END IF
+         ALLOCATE(help2d(n,NP),help2d2(m,NP))
+         FORALL (j=1:NP) help2d(:,j) = x_new(j,:)
+         i=1
+         CALL eval_x_queued(fcn,m,n,NP-numsent,help2d,
+     1                      help2d2,i,MPI_COMM_STEL)
+         FORALL (j=1:NP) fval_array(j,:) = help2d2(:,j)
+         CALL MPI_BCAST(fval_array,m*NP,MPI_DOUBLE_PRECISION,
+     1                  master,MPI_COMM_STEL,ierr_mpi)
+         DEALLOCATE(help2d,help2d2)
          
          CALL MPI_BARRIER(MPI_COMM_STEL, ierr_mpi)
          IF (ierr_mpi /= MPI_SUCCESS) CALL mpi_stel_abort(ierr_mpi)
@@ -545,6 +497,7 @@
 !DEC$ ENDIF
       
          IF (myid == master) THEN
+            fnorm_new = SUM(fval_array*fval_array,DIM=2)
             ! Output to the xvec.dat file
             CALL safe_open(iunitx,ierr,'xvec.dat','unknown',
      1                     'formatted',ACCESS_IN='APPEND')
