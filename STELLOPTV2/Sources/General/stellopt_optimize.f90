@@ -74,6 +74,7 @@
                        ftol, xtol, gtol, nfunc_max, epsfcn, diag, mode, &
                        factor, nprint, info, nfev, fjac, ldfjac, ipvt, &
                        qtf, wa1, wa2, wa3, wa4,vars_min,vars_max)
+            DEALLOCATE(ipvt, qtf, wa1, wa2, wa3, wa4, fvec, fjac)
          CASE('lmdif_bounded')
             ALLOCATE(ipvt(nvars))
             ALLOCATE(qtf(nvars),wa1(nvars),wa2(nvars),wa3(nvars),&
@@ -99,6 +100,7 @@
                        ftol, xtol, gtol, nfunc_max, epsfcn, diag, mode, &
                        factor, nprint, info, nfev, fjac, ldfjac, ipvt, &
                        qtf, wa1, wa2, wa3, wa4,vars_min,vars_max)
+            DEALLOCATE(ipvt, qtf, wa1, wa2, wa3, wa4, fvec, fjac)
          CASE('eval_xvec')
             IF (lverb) THEN
                WRITE(6,*) '    OPTIMIZER: XVEC Evlauation'
@@ -125,7 +127,9 @@
             info = FLAG_CLEANUP
             IF (myid == master) info = flag_cleanup_lev
             call stellopt_fcn(mtargets, nvars, vars, fvec, info, nfev)
+            DEALLOCATE(fvec)
          CASE('gade')
+            ALLOCATE(fvec(mtargets))
          !   Notes on this
          !   factor: Mutation Scaling Factor
          !   epsfcn: Crossover Factor
@@ -171,6 +175,7 @@
             !               numprocs,lrestart,vars,chisq_min,nfev)
             CLOSE(iunit)
             CLOSE(iunit_restart)
+            DEALLOCATE(fvec)
          CASE('map')
             nprint = 6
             npop   = npopulation
@@ -277,6 +282,7 @@
             END IF
             CALL PSO_Evolve(stellopt_fcn,mtargets,nvars,npop,vars_min,vars_max,&
                             wa1,fvec,c1,c2,factor,ftol,xtol,nfunc_max)
+            DEALLOCATE(wa1, fvec)
          CASE('rocket')
             ALLOCATE(wa1(nvars))
             wa1 = vars
@@ -297,6 +303,7 @@
             END IF
             CALL ROCKET_Evolve(stellopt_fcn,mtargets,nvars,npop,vars_min,vars_max,&
                             wa1,fvec,c1,c2,factor,ftol,xtol,nfunc_max)
+            DEALLOCATE(wa1)
          CASE('recon')
             IF (lverb) THEN
                WRITE(6,*) '    OPTIMIZER: RECONSTRUCTION'
@@ -329,6 +336,7 @@
                        ftol, xtol, gtol, nfunc_max, epsfcn, diag, mode, &
                        factor, nprint, info, nfev, fjac, ldfjac, ipvt, &
                        qtf, wa1, wa2, wa3, wa4)
+            DEALLOCATE(ipvt, qtf, wa1, wa2, wa3, wa4, fvec, fjac)
          CASE DEFAULT
             WRITE(6,*) '!!!!!  UNKNOWN OPTIMIZATION TYPE  !!!!!'
             WRITE(6,*) '       OPT_TYPE: ',TRIM(opt_type)
