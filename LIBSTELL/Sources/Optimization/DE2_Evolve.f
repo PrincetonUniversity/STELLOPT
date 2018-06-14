@@ -477,7 +477,7 @@
          ALLOCATE(help2d(n,NP),help2d2(m,NP))
          FORALL (j=1:NP) help2d(:,j) = x_new(j,:)
          i=1
-         CALL eval_x_queued(fcn,m,n,NP-numsent,help2d,
+         CALL eval_x_queued(fcn,m,n,NP,help2d,
      1                      help2d2,i,MPI_COMM_STEL)
          FORALL (j=1:NP) fval_array(j,:) = help2d2(:,j)
          CALL MPI_BCAST(fval_array,m*NP,MPI_DOUBLE_PRECISION,
