@@ -270,18 +270,15 @@
 !DEC$ IF DEFINED (MPI_OPT)
       IF (ALLOCATED(ihit_array)) THEN
         IF (myid == master) THEN
-!           CALL MPI_REDUCE(MPI_IN_PLACE,ihit_array,nface,MPI_INTEGER,MPI_SUM,master,MPI_COMM_FIELDLINES,ierr_mpi)
+           CALL MPI_REDUCE(MPI_IN_PLACE,ihit_array,nface,MPI_INTEGER,MPI_SUM,master,MPI_COMM_FIELDLINES,ierr_mpi)
         ELSE
-!           CALL MPI_REDUCE(ihit_array,ihit_array,nface,MPI_INTEGER,MPI_SUM,master,MPI_COMM_FIELDLINES,ierr_mpi)
+           CALL MPI_REDUCE(ihit_array,ihit_array,nface,MPI_INTEGER,MPI_SUM,master,MPI_COMM_FIELDLINES,ierr_mpi)
            CALL wall_free(ier) ! Only master needs it.
         END IF
       END IF
       
-      WRITE(6,*) myid,'done following'
-      CALL FLUSH(6)
-!      
-      CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
-      IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_follow',ierr_mpi)
+!      CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
+!      IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_follow',ierr_mpi)
 !      ! Don't worry about telling the slaves, they won't do any writing.
 !DEC$ ENDIF
    
