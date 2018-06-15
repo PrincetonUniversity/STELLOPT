@@ -93,7 +93,7 @@
       ig = ig - 1
       ! First do volint
       lvc_field = .false.
-      vc_adapt_tol = 0.0E-00
+      vc_adapt_tol = 1.0E-06
       vc_adapt_rel = my_rtol
       CALL diagno_init_vmec
       MIN_CLS = 0
@@ -178,46 +178,44 @@
       chunk  = mnum(mylocalid+1)
       myend   = mystart + chunk - 1
 #endif
-      PRINT *,myworkid, mystart,myend,ig
 
-      if(lverb) write(6,*)' ---VOLINT'
+      if(lverb) write(6,*)' ---B-PROBES (VOLINT)'
       bfield_data(:,4:15) = 0
-!      IF (myworkid == master) THEN
-         DO i = mystart, myend
-         !DO i = 1, ig
-            bxp = 0.0; byp = 0.0; bzp = 0.0;
-            axp = 0.0; ayp = 0.0; azp = 0.0;
-            xp  = bfield_data(i,1)
-            yp  = bfield_data(i,2)
-            zp  = bfield_data(i,3)
-            ier = 1
-            !CALL bfield_vc(xp,yp,zp,bxp,byp,bzp,ier)
-            ier1 = 1
-            !CALL vecpot_vc(xp,yp,zp,axp,ayp,azp,ier1)
-            !PRINT *,myworkid,xp,yp,zp,ier,ier1,nlastcall
-            bfield_data(i,4)=axp
-            bfield_data(i,5)=ayp
-            bfield_data(i,6)=azp
-            bfield_data(i,7)=bxp
-            bfield_data(i,8)=byp
-            bfield_data(i,9)=bzp
-         END DO
-!      END IF
+      DO i = mystart, myend
+         bxp = 0.0; byp = 0.0; bzp = 0.0;
+         axp = 0.0; ayp = 0.0; azp = 0.0;
+         xp  = bfield_data(i,1)
+         yp  = bfield_data(i,2)
+         zp  = bfield_data(i,3)
+         ier = 1
+         CALL bfield_vc(xp,yp,zp,bxp,byp,bzp,ier)
+         ier1 = 1
+         CALL vecpot_vc(xp,yp,zp,axp,ayp,azp,ier1)
+         bfield_data(i,4)=axp
+         bfield_data(i,5)=ayp
+         bfield_data(i,6)=azp
+         bfield_data(i,7)=bxp
+         bfield_data(i,8)=byp
+         bfield_data(i,9)=bzp
+      END DO
+
 #if defined(MPI_OPT)
       ! Broadcast Array sizes
       CALL MPI_BARRIER(MPI_COMM_DIAGNO,ierr_mpi)
       IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'diagno_flux1',ierr_mpi)
       DEALLOCATE(mnum, moffsets)
 #endif
+
       flux_diag_file = 'test_loops_j.'//TRIM(id_string)
       id_string_temp = id_string
       id_string = TRIM(id_string) // '_j'
-!      CALL diagno_flux
+      if(lverb) write(6,*)' ---FLUXLOOPS (VOLINT)'
+      CALL diagno_flux
       id_string = id_string_temp
       CALL free_virtual_casing
       ! Now do VC
-      if(lverb) write(6,*)' ---VIRTUAL CASING'
-      vc_adapt_tol = 0.0
+      if(lverb) write(6,*)' -------------------------------'
+      vc_adapt_tol = 1.0E-06
       vc_adapt_rel = 1.0E-03
       lvc_field = .true.
       CALL diagno_init_vmec
@@ -245,28 +243,25 @@
       chunk  = mnum(mylocalid+1)
       myend   = mystart + chunk - 1
 #endif
-      PRINT *,myworkid, mystart,myend,ig
-!      IF (myworkid == master) THEN
-         DO i = mystart, myend
-         !DO i = 1, ig
-            bxp = 0.0; byp = 0.0; bzp = 0.0;
-            axp = 0.0; ayp = 0.0; azp = 0.0;
-            xp  = bfield_data(i,1)
-            yp  = bfield_data(i,2)
-            zp  = bfield_data(i,3)
-            ier = 1
-            CALL bfield_vc(xp,yp,zp,bxp,byp,bzp,ier)
-            ier1 = 1
-            CALL vecpot_vc(xp,yp,zp,axp,ayp,azp,ier1)
-            !PRINT *,'*',xp,yp,zp,ier,ier1,nlastcall
-            bfield_data(i,10)=axp
-            bfield_data(i,11)=ayp
-            bfield_data(i,12)=azp
-            bfield_data(i,13)=bxp
-            bfield_data(i,14)=byp
-            bfield_data(i,15)=bzp
-         END DO
-!      END IF
+
+      if(lverb) write(6,*)' ---B-PROBES (VIRTUAL_CASING)'
+      DO i = mystart, myend
+         bxp = 0.0; byp = 0.0; bzp = 0.0;
+         axp = 0.0; ayp = 0.0; azp = 0.0;
+         xp  = bfield_data(i,1)
+         yp  = bfield_data(i,2)
+         zp  = bfield_data(i,3)
+         ier = 1
+         CALL bfield_vc(xp,yp,zp,bxp,byp,bzp,ier)
+         ier1 = 1
+         CALL vecpot_vc(xp,yp,zp,axp,ayp,azp,ier1)
+         bfield_data(i,10)=axp
+         bfield_data(i,11)=ayp
+         bfield_data(i,12)=azp
+         bfield_data(i,13)=bxp
+         bfield_data(i,14)=byp
+         bfield_data(i,15)=bzp
+      END DO
 
 #if defined(MPI_OPT)
       ! Broadcast Array sizes
@@ -284,6 +279,7 @@
       flux_diag_file = 'test_loops_b.'//TRIM(id_string)
       id_string_temp = id_string
       id_string = TRIM(id_string) // '_b'
+      if(lverb) write(6,*)' ---FLUXLOOPS (VIRTUAL_CASING)'
       CALL diagno_flux
       id_string = id_string_temp
       IF (myworkid == master) THEN
@@ -297,6 +293,7 @@
          CLOSE(iunit_out)
       END IF
 
+      CALL free_virtual_casing
       DEALLOCATE(bfield_data,bfield_data2)
 
 #if defined(MPI_OPT)
@@ -304,8 +301,6 @@
       CALL MPI_BARRIER(MPI_COMM_DIAGNO,ierr_mpi)
       IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'diagno_flux1',ierr_mpi)
 #endif
-      
-!      STOP
  
       RETURN
 !-----------------------------------------------------------------------
