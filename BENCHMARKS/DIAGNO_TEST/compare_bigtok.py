@@ -4,10 +4,11 @@ from math import sqrt
 
 lfail = 0
 failtol = 1.0
-filename='diagno_bench.bigtok'
+fileext='bigtok'
+filename='diagno_bench.'+fileext
 data = np.loadtxt(filename)
 
-print('==== B-Field ====')
+print('===== B-Field ======')
 for i in range(0, 75):
     cal = sqrt(data[i][6]*data[i][6] + data[i][7]*data[i][7] + data[i][8]*data[i][8])
     act = sqrt(data[i][12]*data[i][12] + data[i][13]*data[i][13] + data[i][14]*data[i][14])
@@ -15,6 +16,12 @@ for i in range(0, 75):
     print('   '+str(cal)+'   '+str(act)+'   '+str(int(perct))+'%')
     if perct > failtol:
         lfail = 1
+print('==== Flux Loops ====')
+filename='diagno_flux.'+fileext+'_j'
+#with open(filename) as myfile:
+#    head = myfile.next()
+#print(head)
+filename='diagno_flux.'+fileext+'_b'
 print('=================')
 
 if (lfail):
