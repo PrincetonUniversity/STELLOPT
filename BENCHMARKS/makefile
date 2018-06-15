@@ -1,22 +1,52 @@
 #Type "make release(debug)" at command line to make release(debug) version  
 #DO NOT alter the directory structure or move this makefile (must be in first subdirectory below top_level_dir)
   include ../make.inc
-  DBG = Debug
-  REL = Release
-  REL_PATH = $(PWD1)/$(REL)
-  DBG_PATH = $(PWD1)/$(DBG)
-  EXE_F = xvmec2000
-  MAKE = makevmec2000
   LIB_DIR = $(MYHOME)/libstell_dir
+
+  VMEC_TEST_DIR = VMEC_TEST
+  DIAGNO_TEST_DIR = DIAGNO_TEST
 
 .PHONY: test_vmec
 
 test_vmec:
 	@echo "Beginning testing of VMEC2000"
-	@cd VMEC_TEST
-	@rm -f jxbout* mercier* threed1* wout*
-	@srun -n 8 -p dawson -t 20:00:00 ~/bin/xvmec2000 input.DSHAPE
-	@./compare_DSHARE.py
+	@cd $(VMEC_TEST_DIR); rm -f jxbout* mercier* threed1* wout*; 
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS) ~/bin/xvmec2000 input.DSHAPE
+	@cd $(VMEC_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS) ~/bin/xvmec2000 input.DSHAPE
+	@cd $(VMEC_TEST_DIR) && ./compare_DSHAPE.py
+	@echo ""
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS) ~/bin/xvmec2000 input.SOLOVEV
+	@cd $(VMEC_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS) ~/bin/xvmec2000 input.SOLOVEV
+	@cd $(VMEC_TEST_DIR); ./compare_SOLOVEV.py
+	@echo ""
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS) ~/bin/xvmec2000 input.HELIOTRON
+	@cd $(VMEC_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS) ~/bin/xvmec2000 input.HELIOTRON
+	@cd $(VMEC_TEST_DIR); ./compare_HELIOTRON.py
+	@echo ""
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS) ~/bin/xvmec2000 input.ATF
+	@cd $(VMEC_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS) ~/bin/xvmec2000 input.ATF
+	@cd $(VMEC_TEST_DIR); ./compare_ATF.py
+	@echo ""
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS) ~/bin/xvmec2000 input.QAS
+	@cd $(VMEC_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS) ~/bin/xvmec2000 input.QAS
+	@cd $(VMEC_TEST_DIR); ./compare_QAS.py
 	@echo "Tesing of VMEC2000 complete"
 	@echo ""
 
+test_diagno:
+	@echo "Beginning testing of DIAGNO"
+	@cd $(DIAGNO_TEST_DIR); rm -f diagno_bench.* diagno_flux.* diagno_surf.* test_loops_b.* test_loops_j.*; 
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS) ~/bin/xdiagno -vmec bigtok -bench
+	@cd $(DIAGNO_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS) ~/bin/xdiagno -bench -vmec bigtok
+	@cd $(DIAGNO_TEST_DIR); ./compare_bigtok.py
+	@echo ""
+
+help:
+	@echo "TESTING OF STELLOPT BUILDS"
+	@echo "   ENVIRONMENT VARIABLES (make.inc)"
+	@echo "      MPI_RUN: " $(MPI_RUN)
+	@echo "      MPI_RUN_OPTS: " $(MPI_RUN_OPTS)
+	@echo ""
+	@echo "   COMMANDS"
+	@echo "      test_vmec Tesing of VMEC"
+	@echo "      test_diagno Tesing of DIAGNO"
