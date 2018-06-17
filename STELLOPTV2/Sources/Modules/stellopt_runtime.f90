@@ -208,7 +208,7 @@
       CHARACTER(256)           :: id_string, opt_type, proc_string, &
                                   proc_string_old, screen_str, xvec_file
       
-      REAL(rprec), PARAMETER :: STELLOPT_VERSION = 2.51
+      REAL(rprec), PARAMETER :: STELLOPT_VERSION = 2.65
       
       REAL(rprec), PARAMETER :: bigno = 1.0E+10
 !-----------------------------------------------------------------------
