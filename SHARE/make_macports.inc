@@ -41,6 +41,9 @@
   MPI_LINK = /opt/local/bin/mpif90
   MPI_LINK = mpicc -shared  -Wl,-no_compact_unwind
 
+  MPI_RUN = mpirun
+  MPI_RUN_OPTS = -np 2 
+
 #######################################################################
 #            NAG Options
 #######################################################################
