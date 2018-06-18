@@ -146,6 +146,7 @@
                   ! Setup ICTRL Array
                   ictrl(1) = restart_flag+timestep_flag+output_flag+reset_jacdt_flag
                   ictrl(2) = 0; ictrl(3) = -1; ictrl(4) = -1; ictrl(5) = myseq
+                  PARVMEC = .TRUE.
                   ! Setup reset_string
                   reset_string =''
                   lhit = .FALSE.

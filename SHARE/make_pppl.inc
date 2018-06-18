@@ -19,9 +19,6 @@
   FLAGS_D = -g -O0 -fexternal-blas -fcheck=all -fbacktrace
 
 # Crutch for broken module vars
-  FFTWHOME = /usr/pppl/gcc/6.1-pkgs/openmpi-1.10.3-pkgs/fftw-3.3.4
-  HDF5_HOME = /usr/pppl/gcc/6.1-pkgs/openmpi-1.10.3-pkgs/hdf5-parallel-1.10.0-patch1
-  BLACS_HOME = /usr/pppl/gcc/6.1-pkgs/openmpi-1.10.3-pkgs/blacs-1.1alpha
   NETCDF_F = /usr/pppl/gcc/6.1-pkgs/netcdf-fortran-4.4.4
   NETCDF_C = /usr/pppl/gcc/6.1-pkgs/netcdf-c-4.4.1
 
@@ -42,6 +39,8 @@
                      -ffree-line-length-none -ffixed-line-length-none
   MPI_COMPILE_C = mpicc
   MPI_LINK = mpicc -shared -pthread -Wl,--no-undefined -Wl,-export-dynamic
+  MPI_RUN = srun
+  MPI_RUN_OPTS = -n 16 -p dawson -t 1:00:00
 
 #######################################################################
 #            NAG Options
@@ -112,7 +111,7 @@
   GENE_DIR = $(GENE_PATH)
   LIB_GENE = libgene.a
   GENE_LIB = $(GENE_DIR)/$(LIB_GENE) \
-             -L$(FFTWHOME)/lib -lfftw3 \
+             -L$(FFTW_HOME)/lib -lfftw3 \
              -L$(SLEPC_DIR)/$(PETSC_ARCH)/lib -lslepc \
              -L$(PETSC_DIR)/$(PETSC_ARCH)/lib -lpetsc -lX11
 
@@ -124,7 +123,7 @@
   COILOPTPP_DIR = $(COILOPT_PATH)
   LIB_COILOPTPP = libcoilopt++.a
   COILOPT_LIB = $(COILOPT_PATH)/$(LIB_COILOPTPP) \
-                -L$(GSLHOME)/lib -lgsl -lgslcblas -lstdc++ -lmpi_cxx
+                -L$(GSLHOME)/lib -lgsl -lgslcblas -lstdc++
 
 #######################################################################
 #            TERPSICHORE Options
@@ -148,7 +147,7 @@
 #######################################################################
 #            REGCOIL Options
 #######################################################################
-  LREGCOIL= T
+  LREGCOIL= F
   REGCOIL_DIR = $(REGCOIL_PATH)
   REGCOIL_INC = -I$(REGCOIL_DIR) 
   LIB_REGCOIL = libregcoil.a
