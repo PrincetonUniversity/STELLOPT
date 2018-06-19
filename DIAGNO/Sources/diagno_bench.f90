@@ -21,8 +21,12 @@
 !          iunit          File ID Number
 !-----------------------------------------------------------------------
       IMPLICIT NONE
+      INTEGER, PARAMETER :: BYTE_8 = SELECTED_INT_KIND (8)
 #if defined(MPI_OPT)
       INCLUDE 'mpif.h'
+      INTEGER(KIND=BYTE_8),ALLOCATABLE :: mnum(:), moffsets(:)
+      INTEGER :: numprocs_local, mylocalid, mylocalmaster
+      INTEGER :: MPI_COMM_LOCAL
 #endif
       INTEGER :: ier, iunit, ncoils, i, ig, iunit_out, ier1
       REAL(rprec) :: xp, yp, rp, phip, zp, bx, by, br, bphi, bz, modb,&
@@ -37,6 +41,12 @@
 !-----------------------------------------------------------------------
 !     Begin Subroutine
 !-----------------------------------------------------------------------
+      ! Basic copy of MPI_COMM_DIANGO
+      mylocalid = myworkid
+      mylocalmaster = master
+      MPI_COMM_LOCAL = MPI_COMM_DIAGNO
+      numprocs_local = nprocs_diagno
+
       if(lverb) write(6,*)' -BENCHMARK CALCULATION'
       !CALL free_virtual_casing
       npts=10
@@ -147,9 +157,28 @@
 #endif
 
       ! Divide up the work
-      chunk = FLOOR(REAL(ig) / REAL(nprocs_diagno))
+      chunk = FLOOR(REAL(ig) / REAL(numprocs_local))
       mystart = myworkid*chunk + 1
       myend = mystart + chunk - 1
+#if defined(MPI_OPT)
+      IF (ALLOCATED(mnum)) DEALLOCATE(mnum)
+      IF (ALLOCATED(moffsets)) DEALLOCATE(moffsets)
+      ALLOCATE(mnum(numprocs_local), moffsets(numprocs_local))
+      CALL MPI_ALLGATHER(chunk,1,MPI_INTEGER,mnum,1,MPI_INTEGER,MPI_COMM_LOCAL,ierr_mpi)
+      CALL MPI_ALLGATHER(mystart,1,MPI_INTEGER,moffsets,1,MPI_INTEGER,MPI_COMM_LOCAL,ierr_mpi)
+      i = 1
+      DO
+         IF ((moffsets(numprocs_local)+mnum(numprocs_local)-1) == ig) EXIT
+         IF (i == numprocs_local) i = 1
+         mnum(i) = mnum(i) + 1
+         moffsets(i+1:numprocs_local) = moffsets(i+1:numprocs_local) + 1
+         i=i+1
+      END DO
+      mystart = moffsets(mylocalid+1)
+      chunk  = mnum(mylocalid+1)
+      myend   = mystart + chunk - 1
+#endif
+      PRINT *,myworkid, mystart,myend,ig
 
       if(lverb) write(6,*)' ---VOLINT'
       bfield_data(:,4:15) = 0
@@ -162,9 +191,9 @@
             yp  = bfield_data(i,2)
             zp  = bfield_data(i,3)
             ier = 1
-            CALL bfield_vc(xp,yp,zp,bxp,byp,bzp,ier)
+            !CALL bfield_vc(xp,yp,zp,bxp,byp,bzp,ier)
             ier1 = 1
-            CALL vecpot_vc(xp,yp,zp,axp,ayp,azp,ier1)
+            !CALL vecpot_vc(xp,yp,zp,axp,ayp,azp,ier1)
             !PRINT *,myworkid,xp,yp,zp,ier,ier1,nlastcall
             bfield_data(i,4)=axp
             bfield_data(i,5)=ayp
@@ -178,11 +207,12 @@
       ! Broadcast Array sizes
       CALL MPI_BARRIER(MPI_COMM_DIAGNO,ierr_mpi)
       IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'diagno_flux1',ierr_mpi)
+      DEALLOCATE(mnum, moffsets)
 #endif
       flux_diag_file = 'test_loops_j.'//TRIM(id_string)
       id_string_temp = id_string
       id_string = TRIM(id_string) // '_j'
-      CALL diagno_flux
+!      CALL diagno_flux
       id_string = id_string_temp
       CALL free_virtual_casing
       ! Now do VC
@@ -194,9 +224,28 @@
       MIN_CLS = 0
 
       ! Divide up the work
-      chunk = FLOOR(REAL(ig) / REAL(nprocs_diagno))
+      chunk = FLOOR(REAL(ig) / REAL(numprocs_local))
       mystart = myworkid*chunk + 1
       myend = mystart + chunk - 1
+#if defined(MPI_OPT)
+      IF (ALLOCATED(mnum)) DEALLOCATE(mnum)
+      IF (ALLOCATED(moffsets)) DEALLOCATE(moffsets)
+      ALLOCATE(mnum(numprocs_local), moffsets(numprocs_local))
+      CALL MPI_ALLGATHER(chunk,1,MPI_INTEGER,mnum,1,MPI_INTEGER,MPI_COMM_LOCAL,ierr_mpi)
+      CALL MPI_ALLGATHER(mystart,1,MPI_INTEGER,moffsets,1,MPI_INTEGER,MPI_COMM_LOCAL,ierr_mpi)
+      i = 1
+      DO
+         IF ((moffsets(numprocs_local)+mnum(numprocs_local)-1) == ig) EXIT
+         IF (i == numprocs_local) i = 1
+         mnum(i) = mnum(i) + 1
+         moffsets(i+1:numprocs_local) = moffsets(i+1:numprocs_local) + 1
+         i=i+1
+      END DO
+      mystart = moffsets(mylocalid+1)
+      chunk  = mnum(mylocalid+1)
+      myend   = mystart + chunk - 1
+#endif
+      PRINT *,myworkid, mystart,myend,ig
 !      IF (myworkid == master) THEN
          DO i = mystart, myend
          !DO i = 1, ig
@@ -229,6 +278,7 @@
          CALL MPI_REDUCE(bfield_data,bfield_data,15*ig,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_DIAGNO,ierr_mpi)
       END IF
       bfield_data(:,1:3)=bfield_data2(:,1:3)
+      DEALLOCATE(mnum, moffsets)
 #endif
 
       flux_diag_file = 'test_loops_b.'//TRIM(id_string)
