@@ -145,6 +145,10 @@
          IF (var_dex(nvar_in) == icoil_splinefx)   coil_splinefx(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
          IF (var_dex(nvar_in) == icoil_splinefy)   coil_splinefy(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
          IF (var_dex(nvar_in) == icoil_splinefz)   coil_splinefz(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
+         IF (var_dex(nvar_in) == iregcoil_rcws_rbound_c) regcoil_rcws_rbound_c(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
+         IF (var_dex(nvar_in) == iregcoil_rcws_rbound_s) regcoil_rcws_rbound_s(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
+         IF (var_dex(nvar_in) == iregcoil_rcws_zbound_c) regcoil_rcws_zbound_c(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
+         IF (var_dex(nvar_in) == iregcoil_rcws_zbound_s) regcoil_rcws_zbound_s(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
       END DO
 
       ! Adust Boundary Representation
@@ -172,17 +176,6 @@
             END IF
          END IF
       END DO
-
-      ! REGCOIIL winding surface - Unpack RBC/ZBS/RBS/ZBC winding
-      ! surface components -
-      DO nvar_in = 1, n
-         !print *, "regcoil: m,n, id, val", arr_dex(nvar_in,1), arr_dex(nvar_in,2), var_dex(nvar_in), x(nvar_in)
-         IF (var_dex(nvar_in) == iregcoil_rcws_rbound_c) regcoil_rcws_rbound_c(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
-         IF (var_dex(nvar_in) == iregcoil_rcws_rbound_s) regcoil_rcws_rbound_s(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
-         IF (var_dex(nvar_in) == iregcoil_rcws_zbound_c) regcoil_rcws_zbound_c(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
-         IF (var_dex(nvar_in) == iregcoil_rcws_zbound_s) regcoil_rcws_zbound_s(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
-      END DO
-
 
       ! Apply normalization
       aphi = aphi * norm_aphi
@@ -296,6 +289,16 @@
             CASE('vboot')
                iflag = 0
                CALL stellopt_vboot(lscreen,iflag)
+            CASE('vmec2000_oneeq')
+               IF (iflag .eq. -1) THEN
+                  iflag = 0
+                  CALL stellopt_paraexe('paravmec_run',proc_string,lscreen)
+                  iflag = ier_paraexe
+                  IF (lscreen .and. lverb) WRITE(6,*)  '-------------------------  PARAVMEC CALCULATION DONE  -----------------------'
+               ELSE
+                  proc_string = TRIM(id_string) // '_opt0'
+                  ier = 0
+               END IF
             CASE('spec')
          END SELECT
          ! Check profiles for negative values of pressure
