@@ -150,6 +150,7 @@
                   ! Setup reset_string
                   reset_string =''
                   lhit = .FALSE.
+                  NS_RESLTN = 0 ! Need to do this otherwise situations arrise which cause problems.
                   CALL runvmec(ictrl,file_str,lscreen,MPI_COMM_MYWORLD,reset_string)
                   CALL FinalizeSurfaceComm(NS_COMM)
                   CALL FinalizeRunVmec(RUNVMEC_COMM_WORLD)
@@ -178,6 +179,7 @@
                ictrl(4) = 0
                ictrl(5) = myseq ! Output file sequence number
                reset_string =''
+               NS_RESLTN = 0 ! Need to do this otherwise situations arrise which cause problems.
                CALL runvmec(ictrl,file_str,lscreen,MPI_COMM_MYWORLD,reset_string)
                LIFFREEB  = .FALSE. ! Already deallocated from before and we need to reset stuff
                CALL FinalizeRunVmec(RUNVMEC_COMM_WORLD) ! We don't allocate the vacuum communicator when we write
