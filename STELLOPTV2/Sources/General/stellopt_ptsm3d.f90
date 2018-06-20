@@ -38,12 +38,12 @@
 !     Local variables
 !
 !----------------------------------------------------------------------
-      INTEGER :: maxPnt, nalpha0_, i, iunit, ier, ncnt 
+      INTEGER :: maxPnt, nalpha0_, i, iunit, ier, ncnt, periods 
       INTEGER :: j, k, global_npol, nzgrid, nalpha, vmec_option
       REAL(rprec) :: a, s, Ba, Fa, iot, iotp, q, qprim
       REAL(rprec) :: dpdx, maxTheta, pval, pprime
       REAL(rprec) :: zeta_center, s_used
-      REAL(rprec) :: L_ref, B_ref, periods
+      REAL(rprec) :: L_ref, B_ref, periodszeta
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: g11,g12,g22,Bhat,abs_jac,L1,L2, &
                                                 dBdt,zeta,alpha,th
       REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: bmag, gradpar, gds2, gds21, &
@@ -99,7 +99,7 @@
       !debugging
       nzgrid = 6400
       periods = 400
-
+      periodszeta = periods*q
 
       ALLOCATE(alpha(nalpha))
       ALLOCATE(zeta(-nzgrid:nzgrid))
@@ -134,7 +134,7 @@
 
       !Call Matt's program to calculate the quantities on a gs2 grid
       CALL vmec2gs2('wout_'//TRIM(PROC_STRING)//'.nc', nalpha, nzgrid,&
-             zeta_center, periods, s, vmec_option, verbose, s_used, q, shat, &
+             zeta_center, periodszeta, s, vmec_option, verbose, s_used, q, shat, &
              L_ref, B_ref, alpha, zeta, bmag, gradpar, gds2, gds21, gds22, & 
              gbdrift, gbdrift0, cvdrift, cvdrift0, jac_gist_inv, d_B_d_par)
 
@@ -193,12 +193,12 @@
         WRITE(iunit,"(A,F12.7)") "Bref = ", B_ref
         WRITE(iunit,"(A,F12.7)") "q0 = ",ABS(q)
         WRITE(iunit,"(A,F12.7)") "shat = ",shat 
-        WRITE(iunit,"(A,I5)") "gridpoints = ",nzgrid
-        WRITE(iunit,"(A,F12.7)") "n_pol = ",periods
+        WRITE(iunit,"(A,I5)") "gridpoints = ",nzgrid*2
+        WRITE(iunit,"(A,I7)") "n_pol = ",periods/nfp
         WRITE(iunit,"(A)") "/"
       end if
 
-      DO j = -nzgrid,nzgrid
+      DO j = 0,2*nzgrid
          !WRITE(iunit, "(9ES22.12E3)") gds2(i,j), gds21(i,j), &
          !    gds22(i,j), bmag(i,j), jac_gist_inv(i,j), &
          !    cvdrift(i,j), cvdrift0(i,j), gradpar(i,j), zeta(j)
