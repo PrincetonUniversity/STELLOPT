@@ -12,6 +12,15 @@
   LINK_C  = $(CC) -shared -Wl,-z-defs
 
 #######################################################################
+#            Local PPPL paths
+#######################################################################
+  GENE_PATH = /u/slazerso/src/GENE17_2016/bin/obj_pppl_cluster
+  TERPSICHORE_PATH = /u/slazerso/src/TERPSICHORE_17
+  COILOPT_PATH = /u/slazerso/src/COILOPT++
+  TRAVIS_PATH = /u/slazerso/src/TRAVIS_16.08.19/TRAVIS-src
+  ADASDIR = /p/xshare/transp/adas/
+
+#######################################################################
 #            Define Compiler Flags
 #######################################################################
   FLAGS_R = -O2 -fexternal-blas
@@ -107,7 +116,7 @@
 #######################################################################
 #            GENE Options
 #######################################################################
-  LGENE = T
+  LGENE = F
   GENE_INC = -I$(GENE_PATH)
   GENE_DIR = $(GENE_PATH)
   LIB_GENE = libgene.a
@@ -119,7 +128,7 @@
 #######################################################################
 #            COILOPT++ Options
 #######################################################################
-  LCOILOPT = T
+  LCOILOPT = F
   COILOPT_INC = -I$(COILOPT_PATH)
   COILOPTPP_DIR = $(COILOPT_PATH)
   LIB_COILOPTPP = libcoilopt++.a
@@ -129,7 +138,7 @@
 #######################################################################
 #            TERPSICHORE Options
 #######################################################################
-  LTERPSICHORE= T
+  LTERPSICHORE= F
   TERPSICHORE_INC = -I$(TERPSICHORE_PATH)
   TERPSICHORE_DIR = $(TERPSICHORE_PATH)
   LIB_TERPSICHORE = libterpsichore.a
