@@ -1466,7 +1466,7 @@
       nvp = nv * nfp
       nuvp = nu * nv * nfp
       norm_3d = 1.0D-7 ! Worked for integration 0 to 2pi
-      norm_3d = 2*pi2*1.0D-7
+      norm_3d = pi2*pi2*1.0D-7
       vc_type_str='Volume Integral'
       ! Alloocations
       ALLOCATE(xu(nu),xv(nvp))
