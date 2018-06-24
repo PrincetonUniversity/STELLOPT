@@ -150,7 +150,7 @@
          END IF
          IF (lnyquist) THEN
             xm_temp = xm_nyq
-            xn_temp = -xn_nyq ! Because init_virtual_casing uses (mu+nv) not (mu-nv*nfp)
+            xn_temp = -xn_nyq/nfp ! Because init_virtual_casing uses (mu+nv) not (mu-nv*nfp)
             DO u = 1,mnmax_temp
                DO v = 1, mnmax
                   IF ((xm(v) .eq. xm_nyq(u)) .and. (xn(v) .eq. xn_nyq(u))) THEN
@@ -169,7 +169,7 @@
             END DO
          ELSE
             xm_temp = xm
-            xn_temp = -xn
+            xn_temp = -xn/nfp
             rmnc_temp = rmnc
             zmns_temp = zmns
             jumnc_temp = isigng*currumnc
@@ -178,14 +178,14 @@
          IF (lasym) THEN
             jumns_temp = isigng*currumns
             jvmns_temp = isigng*currvmns
-            CALL init_volint(mnmax,nu2,nv2,ns,xm_temp,xn_temp,rmnc_temp,zmns_temp,nfp,&
+            CALL init_volint(mnmax_temp,nu2,nv2,ns,xm_temp,xn_temp,rmnc_temp,zmns_temp,nfp,&
                               JUMNC=jumnc_temp, JVMNC=jvmnc_temp,&
                               RMNS=rmns_temp,ZMNC=zmnc_temp,&
                               JUMNS=jumns_temp, JVMNS=jvmns_temp)
             DEALLOCATE(rmns_temp,zmnc_temp)
             DEALLOCATE(jumns_temp,jvmns_temp)
          ELSE
-            CALL init_volint(mnmax,nu2,nv2,ns,xm_temp,xn_temp,rmnc_temp,zmns_temp,nfp,&
+            CALL init_volint(mnmax_temp,nu2,nv2,ns,xm_temp,xn_temp,rmnc_temp,zmns_temp,nfp,&
                               JUMNC=jumnc_temp, JVMNC=jvmnc_temp)
          END IF
          DEALLOCATE(rmnc_temp,zmns_temp)
