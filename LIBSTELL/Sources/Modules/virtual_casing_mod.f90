@@ -1465,7 +1465,6 @@
       nuv = nu * nv
       nvp = nv * nfp
       nuvp = nu * nv * nfp
-      norm_3d = 1.0D-7 ! Worked for integration 0 to 2pi
       norm_3d = pi2*pi2*1.0D-7
       vc_type_str='Volume Integral'
       ! Alloocations
@@ -1802,7 +1801,6 @@
       END IF
       a_nag(1:3) = zero
       b_nag(1:3) = one
-      !b_nag(3)   = one
       mincls_nag = MIN_CLS
       maxcls_nag = IWRK
       absreq_nag = adapt_tol       ! Talk to Stuart about proper values
@@ -2046,7 +2044,6 @@
       END IF
       a_nag(1:3) = zero
       b_nag(1:3) = one
-      !b_nag(3)   = one
       mincls_nag = MIN_CLS
       maxcls_nag = IWRK
       absreq_nag = adapt_tol       ! Talk to Stuart about proper values

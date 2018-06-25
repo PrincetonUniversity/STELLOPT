@@ -144,7 +144,7 @@
          ALLOCATE(xm_temp(mnmax_temp),xn_temp(mnmax_temp))
          ALLOCATE(rmnc_temp(mnmax_temp,ns),zmns_temp(mnmax_temp,ns))
          ALLOCATE(jumnc_temp(mnmax_temp,ns),jvmnc_temp(mnmax_temp,ns))
-         IF (lnyquist) THEN
+         IF (lasym) THEN
             ALLOCATE(rmns_temp(mnmax_temp,ns),zmnc_temp(mnmax_temp,ns))
             ALLOCATE(jumns_temp(mnmax_temp,ns),jvmns_temp(mnmax_temp,ns))
          END IF
