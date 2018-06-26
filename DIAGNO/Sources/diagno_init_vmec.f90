@@ -55,20 +55,21 @@
       nv2 = nv
       MIN_CLS = 0
       eq_sgns = isigng
+
+      ! Handle Nyquist issues
+      IF (SIZE(xm_nyq) > SIZE(xm)) THEN
+         mnmax_temp = SIZE(xm_nyq)
+         lnyquist = .true.
+      ELSE
+         mnmax_temp = mnmax
+         lnyquist = .false.
+      END IF
       
       ! Handle free boundary and Virtual casing
       !    After calling read_wout, B is on the half grid
       !    and j*g is on the full grid, verified in vmec_utils
       !    and read_wout_mod
       IF (lvc_field) THEN
-         ! Handle Nyquist issues
-         IF (SIZE(xm_nyq) > SIZE(xm)) THEN
-            mnmax_temp = SIZE(xm_nyq)
-            lnyquist = .true.
-         ELSE
-            mnmax_temp = mnmax
-            lnyquist = .false.
-         END IF
          ! Load Variables
          ALLOCATE(xm_temp(mnmax_temp),xn_temp(mnmax_temp))
          ALLOCATE(rmnc_temp(mnmax_temp,2),zmns_temp(mnmax_temp,2))
@@ -132,15 +133,6 @@
          DEALLOCATE(rmnc_temp,zmns_temp)
          DEALLOCATE(bumnc_temp,bvmnc_temp)
       ELSE   ! Initialize Volume Integral
-         ! Handle Nyquist issues
-         IF (SIZE(xm_nyq) > SIZE(xm)) THEN
-            mnmax_temp = SIZE(xm_nyq)
-            lnyquist = .true.
-         ELSE
-            mnmax_temp = mnmax
-            lnyquist = .false.
-         END IF
-         MIN_CLS = 0
          ALLOCATE(xm_temp(mnmax_temp),xn_temp(mnmax_temp))
          ALLOCATE(rmnc_temp(mnmax_temp,ns),zmns_temp(mnmax_temp,ns))
          ALLOCATE(jumnc_temp(mnmax_temp,ns),jvmnc_temp(mnmax_temp,ns))
@@ -154,15 +146,11 @@
             DO u = 1,mnmax_temp
                DO v = 1, mnmax
                   IF ((xm(v) .eq. xm_nyq(u)) .and. (xn(v) .eq. xn_nyq(u))) THEN
-                     rmnc_temp(u,1) = rmnc(v,ns-1)
-                     zmns_temp(u,1) = zmns(v,ns-1)
-                     rmnc_temp(u,2) = rmnc(v,ns)
-                     zmns_temp(u,2) = zmns(v,ns)
+                     rmnc_temp(u,:) = rmnc(v,:)
+                     zmns_temp(u,:) = zmns(v,:)
                      IF (lasym) THEN
-                        rmns_temp(u,1) = rmns(v,ns-1)
-                        zmnc_temp(u,1) = zmnc(v,ns-1)
-                        rmns_temp(u,2) = rmns(v,ns)
-                        zmnc_temp(u,2) = zmnc(v,ns)
+                        rmns_temp(u,:) = rmns(v,:)
+                        zmnc_temp(u,:) = zmnc(v,:)
                      END IF
                   END IF
                END DO
@@ -172,9 +160,9 @@
             xn_temp = -xn/nfp
             rmnc_temp = rmnc
             zmns_temp = zmns
-            jumnc_temp = isigng*currumnc
-            jvmnc_temp = isigng*currvmnc
          END IF
+         jumnc_temp = isigng*currumnc
+         jvmnc_temp = isigng*currvmnc
          IF (lasym) THEN
             jumns_temp = isigng*currumns
             jvmns_temp = isigng*currvmns
