@@ -1862,18 +1862,19 @@
             ay = zero
             az = zero
             adapt_rerun=.false.
+            nlastcall=funcls
             DEALLOCATE(vrtwrk)
          ELSE
             ax = finest_nag(1)
             ay = finest_nag(2)
             az = finest_nag(3)
             adapt_rerun=.false.
+            nlastcall=funcls
             DEALLOCATE(vrtwrk)
          END IF
 
 #endif
       END DO
-      nlastcall=mincls_nag
       RETURN
       ! END SUBROUTINE
       END SUBROUTINE vecpot_volint_adapt_dbl
@@ -2105,18 +2106,19 @@
             by = zero
             bz = zero
             adapt_rerun=.false.
+            nlastcall=funcls
             DEALLOCATE(vrtwrk)
          ELSE
             bx = finest_nag(1)
             by = finest_nag(2)
             bz = finest_nag(3)
             adapt_rerun=.false.
+            nlastcall=funcls
             DEALLOCATE(vrtwrk)
          END IF
 
 #endif
       END DO
-      nlastcall=mincls_nag
       RETURN
       ! END SUBROUTINE
       END SUBROUTINE bfield_volint_adapt_dbl
