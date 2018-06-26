@@ -1044,7 +1044,7 @@ contains
          - d_Z_d_s * d_Y_d_theta_vmec * d_X_d_zeta &
          - d_X_d_s * d_Z_d_theta_vmec * d_Y_d_zeta &
          - d_Y_d_s * d_X_d_theta_vmec * d_Z_d_zeta
-    call test_arrays(sqrt_g, temp2D, .false., 3.0e-3, 'sqrt_g')
+    call test_arrays(sqrt_g, temp2D, .false., 3.0e-2, 'sqrt_g')
 
     temp2D = 0 &
          + grad_s_X * grad_theta_vmec_Y * grad_zeta_Z &
