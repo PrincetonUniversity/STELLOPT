@@ -47,8 +47,8 @@
       MPI_COMM_LOCAL = MPI_COMM_DIAGNO
       numprocs_local = nprocs_diagno
 
+      ! Default values
       if(lverb) write(6,*)' -BENCHMARK CALCULATION'
-      !CALL free_virtual_casing
       npts=10
       nsect=3
       SELECT CASE (TRIM(id_string))
@@ -69,6 +69,7 @@
          CASE('hsx') !HSX
             r1 = 1.55;   r2 = 2.0;   z1 = 0.000; z2 = 0.300; nrad = 5 ; nzed = 5; c_loop = 1.35; r_loop = 0.3; my_rtol = 1.0E-2
       END SELECT
+
       ! Setup Grid
       ig = 1
       dr = r2-r1
@@ -91,12 +92,14 @@
       END DO
       bfield_data2(:,1:3)=bfield_data(:,1:3)
       ig = ig - 1
+
       ! First do volint
       lvc_field = .false.
       vc_adapt_tol = 1.0E-06
       vc_adapt_rel = my_rtol
       CALL diagno_init_vmec
       MIN_CLS = 0
+
       ! Create a fluxloop files
       ! Note that for DIA_LOOP we need to subtract off PHIEDGE if using VC but not J
       IF (myworkid == master) THEN
@@ -179,6 +182,7 @@
       myend   = mystart + chunk - 1
 #endif
 
+      ! Calc the Field values at points in space
       if(lverb) write(6,*)' ---B-PROBES (VOLINT)'
       bfield_data(:,4:15) = 0
       DO i = mystart, myend
@@ -206,13 +210,17 @@
       DEALLOCATE(mnum, moffsets)
 #endif
 
+      ! Calc the Fluxloops
       flux_diag_file = 'test_loops_j.'//TRIM(id_string)
       id_string_temp = id_string
       id_string = TRIM(id_string) // '_j'
       if(lverb) write(6,*)' ---FLUXLOOPS (VOLINT)'
       CALL diagno_flux
+
+      ! Cleanup
       id_string = id_string_temp
       CALL free_virtual_casing
+
       ! Now do VC
       if(lverb) write(6,*)' -------------------------------'
       vc_adapt_tol = 1.0E-06
@@ -244,6 +252,7 @@
       myend   = mystart + chunk - 1
 #endif
 
+      ! Calc the Field values at points in space
       if(lverb) write(6,*)' ---B-PROBES (VIRTUAL_CASING)'
       DO i = mystart, myend
          bxp = 0.0; byp = 0.0; bzp = 0.0;
@@ -276,11 +285,14 @@
       DEALLOCATE(mnum, moffsets)
 #endif
 
+      ! Calc the fluxloop values
       flux_diag_file = 'test_loops_b.'//TRIM(id_string)
       id_string_temp = id_string
       id_string = TRIM(id_string) // '_b'
       if(lverb) write(6,*)' ---FLUXLOOPS (VIRTUAL_CASING)'
       CALL diagno_flux
+
+      ! Write the test points file
       id_string = id_string_temp
       IF (myworkid == master) THEN
          CALL safe_open(iunit_out,ier,'diagno_bench.'//TRIM(id_string),'replace','formatted')
@@ -293,6 +305,7 @@
          CLOSE(iunit_out)
       END IF
 
+      ! Cleanup
       CALL free_virtual_casing
       DEALLOCATE(bfield_data,bfield_data2)
 
