@@ -193,7 +193,7 @@
         WRITE(iunit,"(A,F12.7)") "Bref = ", B_ref
         WRITE(iunit,"(A,F12.7)") "q0 = ",ABS(q)
         WRITE(iunit,"(A,F12.7)") "shat = ",shat 
-        WRITE(iunit,"(A,I5)") "gridpoints = ",nzgrid*2
+        WRITE(iunit,"(A,I5)") "gridpoints = ",nzgrid*2+1
         WRITE(iunit,"(A,I7)") "n_pol = ",periods/nfp
         WRITE(iunit,"(A)") "/"
       end if
