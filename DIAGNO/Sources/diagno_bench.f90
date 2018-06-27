@@ -196,7 +196,6 @@
          CALL bfield_vc(xp,yp,zp,bxp,byp,bzp,ier)
          ier1 = 1
          CALL vecpot_vc(xp,yp,zp,axp,ayp,azp,ier1)
-         PRINT *,myid,nlastcall,axp,ayp,azp
          bfield_data(i,4)=axp
          bfield_data(i,5)=ayp
          bfield_data(i,6)=azp
