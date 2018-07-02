@@ -84,22 +84,32 @@
       Bref = Ba
       minor_a = a
       dtheta = pi2/real(nz0,rprec)
-      maxTheta = nint(abs(1.0/qprim*1.0/dky))+local_npol*pi
+      !maxTheta = nint(abs(1.0/qprim*1.0/dky))+local_npol*pi
+      maxTheta = nint(abs(1.0/shat/dky)) + 2*local_npol*pi
       maxPnt = nint(2.0/dtheta*maxTheta)
       global_npol = nint(maxTheta/pi)
+      !make sure global_npol is even
+      if (modulo(global_npol,2) == 1) global_npol = global_npol + 1
+
+      maxTheta = global_npol*pi
+      maxPnt = global_npol*nz0
+
+
       
-      
-      periods = float(global_npol)
-      nzgrid = maxPnt
+      periods = float(global_npol)*nfp
+      nzgrid = maxPnt/2
+      periodszeta = periods*q
       zeta_center = 0.0
       vmec_option = 0
       verbose = .false.
       nalpha = 1
       
       !debugging
-      nzgrid = 6400
-      periods = 400
-      periodszeta = periods*q
+      !nzgrid = 6400
+      !periods = 400
+      !write (*,*) 'maxTheta', maxTheta
+      !write (*,*) 'periods', periods
+      !write (*,*) 'periodszeta', periodszeta
 
       ALLOCATE(alpha(nalpha))
       ALLOCATE(zeta(-nzgrid:nzgrid))
@@ -223,21 +233,24 @@
         ptsm3d_target = target_12f
         !IF (lscreen) WRITE(6,"(2A,F12.7)"),&
         WRITE(6,"(2A,F12.7)"),&
-          & TRIM(TRIM(proc_string)//"."//TRIM(num_str)),&
+          & TRIM(gist_filename),&
+          !& TRIM(TRIM(proc_string)//"."//TRIM(num_str)),&
           &", TARGET_12F  : ",target_12f 
       END IF
       IF (opt_target == 'nzf') THEN
         ptsm3d_target = target_qst
         !IF (lscreen) WRITE(6,"(A,F12.7)"),"TARGET_QST  : ",target_qst 
         WRITE(6,"(2A,F12.7)"),&
-          & TRIM(TRIM(proc_string)//"."//TRIM(num_str)),&
+          & TRIM(gist_filename),&
+         ! & TRIM(TRIM(proc_string)//"."//TRIM(num_str)),&
           & "TARGET_QST  : ",target_qst
       END IF
       IF (opt_target == 'combo') THEN
         ptsm3d_target = target_12f+target_qst 
         !IF (lscreen) WRITE(6,"(A,F12.7)"),"PTSM3D_TARGET   : ",ptsm3d_target
         WRITE(6,"(2A,F12.7)"),&
-          & TRIM(TRIM(proc_string)//"."//TRIM(num_str)),&
+          !& TRIM(TRIM(proc_string)//"."//TRIM(num_str)),&
+          & TRIM(gist_filename),&
           & "PTSM3D_TARGET   : ",ptsm3d_target
       END IF
 
