@@ -41,3 +41,6 @@ module load fftw-mpi
 module load petsc-complex
 module load slepc-complex
 }}}
+
+==General Notes
+You will need to repoint the make.inc file in the main directory at the appropriate file in SHARE.  For example make.inc should point at SHARE/make_cobra.inc to compile on Cobra.  Also take care that you compile other codes (like GENE, SFINCS, etc.) first before compiling STELLOPT.
