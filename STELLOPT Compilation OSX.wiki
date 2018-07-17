@@ -37,7 +37,7 @@ make FORTRAN_VARIANT=GCC
 # Now you should be able to run the setup script and compile the STELLOPT family of codes.
 
 If you run into problems regarding HDF5 or NetCDF durring compilation please verify that you've loaded the proper groups in MacPorts. This is accomplished by typing
-[[code]]
+{{{
 >sudo port select --summary
 Name    Selected               Options
 ====    ========               =======
@@ -46,5 +46,5 @@ gcc     mp-gcc49               dragonegg-3.3-gcc48 mp-gcc48 mp-gcc49 none
 llvm    none                   mp-llvm-3.3 mp-llvm-3.5 none
 mpi     openmpi-gcc49-fortran  mpich-mp-fortran openmpi-gcc49-fortran openmpi-mp-fortran none
 python  none                   python25-apple python26-apple python27 python27-apple none
-[[code]]
+}}}
 The important part is that the GCC and MPI groups are selected properly.
