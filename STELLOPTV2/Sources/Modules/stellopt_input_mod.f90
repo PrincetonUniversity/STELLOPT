@@ -2322,12 +2322,13 @@
 					DO n = LBOUND(lsfincs_boozer_bmnc_opt,DIM=2), UBOUND(lsfincs_boozer_bmnc_opt,DIM=2)
 						DO s = 1,MINLOC(sfincs_s(2:),DIM=1)
 							IF(lsfincs_boozer_bmnc_opt(m,n,s) ) THEN
-								WRITE(iunit,"(2X,A,I4.3,A,I4.3,A,1X,'=',1X,L1,4(2X,A,I4.3,A,I4.3,A,1X,'=',1X,E18.12))") &
-								'LSFINCS_BOOZER_BMNC_OPT(',m,n,s,')', lsfincs_boozer_bmnc_opt(m,n,s), &
-								'SFINCS_BOOZER_BMNC(',m,n,s,')', sfincs_boozer_bmnc(m,n,s), &
-								'DSFINCS_BOOZER_BMNC_OPT(',m,n,s,')', dsfincs_boozer_bmnc_opt(m,n,s), &
-								'SFINCS_BOOZER_BMNC_MIN(',m,n,s,')', sfincs_boozer_bmnc_min(m,n,s), &
-								'SFINCS_BOOZER_BMNC_MAX(',m,n,s,')', sfincs_boozer_bmnc_max(m,n,s)
+                WRITE(iunit,"(2X,A,I4.3,A,I4.3,A,I4.3,A,1X,'=',1X,L1,4(2X,A,I4.3,A,I4.3,A,I4.3,A,1X,'=',1X,E18.12))") &
+!                WRITE(iunit,"(2X,A,I4.3,A,I4.3,A,1X,'=',1X,L1,4(2X,A,I4.3,A,I4.3,A,1X,'=',1X,E18.12))") &
+								'LSFINCS_BOOZER_BMNC_OPT(',m,',',n,',',s,')', lsfincs_boozer_bmnc_opt(m,n,s), &
+								'SFINCS_BOOZER_BMNC(',m,',',n,',',s,')', sfincs_boozer_bmnc(m,n,s), &
+								'DSFINCS_BOOZER_BMNC_OPT(',m,',',n,',',s,')', dsfincs_boozer_bmnc_opt(m,n,s), &
+								'SFINCS_BOOZER_BMNC_MIN(',m,',',n,',',s,')', sfincs_boozer_bmnc_min(m,n,s), &
+								'SFINCS_BOOZER_BMNC_MAX(',m,',',n,',',s,')', sfincs_boozer_bmnc_max(m,n,s)
 							END IF
 						END DO
 					END DO
