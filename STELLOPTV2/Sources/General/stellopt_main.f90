@@ -153,7 +153,11 @@
          WRITE(6,*) '   Number of Optimization Threads:  ',noptimizers
          WRITE(6,*) '   Workers per optimizer thread:      ',numprocs/noptimizers
       END IF
-      IF (noptimizers == -1) noptimizers = numprocs + 1
+      IF (noptimizers <= 0) then   ! default
+         noptimizers = numprocs + 1
+      ELSE                         ! user-specified and round to even divider
+         noptimizers = numprocs / NINT(REAL(numprocs, rprec)/noptimizers)
+      END IF
       color = MOD(myid,noptimizers)
       key = myid
       CALL MPI_COMM_SPLIT(MPI_COMM_WORLD, color, key,MPI_COMM_MYWORLD, ierr_mpi)
