@@ -39,6 +39,8 @@
                      -ffree-line-length-none -ffixed-line-length-none
   MPI_COMPILE_C = mpicc
   MPI_LINK = mpicc -shared -pthread -Wl,--no-undefined -Wl,-export-dynamic
+  MPI_RUN = srun
+  MPI_RUN_OPTS = -n 16 -p dawson -t 1:00:00
 
 #######################################################################
 #            NAG Options

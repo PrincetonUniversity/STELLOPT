@@ -55,20 +55,21 @@
       nv2 = nv
       MIN_CLS = 0
       eq_sgns = isigng
+
+      ! Handle Nyquist issues
+      IF (SIZE(xm_nyq) > SIZE(xm)) THEN
+         mnmax_temp = SIZE(xm_nyq)
+         lnyquist = .true.
+      ELSE
+         mnmax_temp = mnmax
+         lnyquist = .false.
+      END IF
       
       ! Handle free boundary and Virtual casing
       !    After calling read_wout, B is on the half grid
       !    and j*g is on the full grid, verified in vmec_utils
       !    and read_wout_mod
       IF (lvc_field) THEN
-         ! Handle Nyquist issues
-         IF (SIZE(xm_nyq) > SIZE(xm)) THEN
-            mnmax_temp = SIZE(xm_nyq)
-            lnyquist = .true.
-         ELSE
-            mnmax_temp = mnmax
-            lnyquist = .false.
-         END IF
          ! Load Variables
          ALLOCATE(xm_temp(mnmax_temp),xn_temp(mnmax_temp))
          ALLOCATE(rmnc_temp(mnmax_temp,2),zmns_temp(mnmax_temp,2))
@@ -132,31 +133,47 @@
          DEALLOCATE(rmnc_temp,zmns_temp)
          DEALLOCATE(bumnc_temp,bvmnc_temp)
       ELSE   ! Initialize Volume Integral
-         MIN_CLS = 0
-         ALLOCATE(xm_temp(mnmax),xn_temp(mnmax))
-         ALLOCATE(rmnc_temp(mnmax,ns),zmns_temp(mnmax,ns))
-         ALLOCATE(jumnc_temp(mnmax,ns),jvmnc_temp(mnmax,ns))
-         xm_temp = xm
-         xn_temp = -xn
-         rmnc_temp = rmnc
-         zmns_temp = zmns
+         ALLOCATE(xm_temp(mnmax_temp),xn_temp(mnmax_temp))
+         ALLOCATE(rmnc_temp(mnmax_temp,ns),zmns_temp(mnmax_temp,ns))
+         ALLOCATE(jumnc_temp(mnmax_temp,ns),jvmnc_temp(mnmax_temp,ns))
+         IF (lasym) THEN
+            ALLOCATE(rmns_temp(mnmax_temp,ns),zmnc_temp(mnmax_temp,ns))
+            ALLOCATE(jumns_temp(mnmax_temp,ns),jvmns_temp(mnmax_temp,ns))
+         END IF
+         IF (lnyquist) THEN
+            xm_temp = xm_nyq
+            xn_temp = -xn_nyq/nfp ! Because init_virtual_casing uses (mu+nv) not (mu-nv*nfp)
+            DO u = 1,mnmax_temp
+               DO v = 1, mnmax
+                  IF ((xm(v) .eq. xm_nyq(u)) .and. (xn(v) .eq. xn_nyq(u))) THEN
+                     rmnc_temp(u,:) = rmnc(v,:)
+                     zmns_temp(u,:) = zmns(v,:)
+                     IF (lasym) THEN
+                        rmns_temp(u,:) = rmns(v,:)
+                        zmnc_temp(u,:) = zmnc(v,:)
+                     END IF
+                  END IF
+               END DO
+            END DO
+         ELSE
+            xm_temp = xm
+            xn_temp = -xn/nfp
+            rmnc_temp = rmnc
+            zmns_temp = zmns
+         END IF
          jumnc_temp = isigng*currumnc
          jvmnc_temp = isigng*currvmnc
          IF (lasym) THEN
-            ALLOCATE(rmns_temp(mnmax,ns),zmnc_temp(mnmax,ns))
-            ALLOCATE(jumns_temp(mnmax,ns),jvmns_temp(mnmax,ns))
-            rmns_temp = rmns
-            zmnc_temp = zmnc
             jumns_temp = isigng*currumns
             jvmns_temp = isigng*currvmns
-            CALL init_volint(mnmax,nu2,nv2,ns,xm_temp,xn_temp,rmnc_temp,zmns_temp,nfp,&
+            CALL init_volint(mnmax_temp,nu2,nv2,ns,xm_temp,xn_temp,rmnc_temp,zmns_temp,nfp,&
                               JUMNC=jumnc_temp, JVMNC=jvmnc_temp,&
                               RMNS=rmns_temp,ZMNC=zmnc_temp,&
                               JUMNS=jumns_temp, JVMNS=jvmns_temp)
             DEALLOCATE(rmns_temp,zmnc_temp)
             DEALLOCATE(jumns_temp,jvmns_temp)
          ELSE
-            CALL init_volint(mnmax,nu2,nv2,ns,xm_temp,xn_temp,rmnc_temp,zmns_temp,nfp,&
+            CALL init_volint(mnmax_temp,nu2,nv2,ns,xm_temp,xn_temp,rmnc_temp,zmns_temp,nfp,&
                               JUMNC=jumnc_temp, JVMNC=jvmnc_temp)
          END IF
          DEALLOCATE(rmnc_temp,zmns_temp)
@@ -179,6 +196,7 @@
          END IF
          WRITE(6,'(3X,A,F10.5,A)')       'Flux    =',phiedge, '[Wb]'
          IF(lnyquist) WRITE(6,'(3X,A)')  'NYQUIST DETECTED IN WOUT FILE!'
+         IF(lasym) WRITE(6,'(3X,A)')     'NON-STELLARATOR SYMMETRIC'
          WRITE(6,'(3X,A,F7.2)')          'VMEC v.',version_
          CALL FLUSH(6)
       END IF
