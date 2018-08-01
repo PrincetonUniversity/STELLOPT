@@ -146,9 +146,11 @@
                   ! Setup ICTRL Array
                   ictrl(1) = restart_flag+timestep_flag+output_flag+reset_jacdt_flag
                   ictrl(2) = 0; ictrl(3) = -1; ictrl(4) = -1; ictrl(5) = myseq
+                  PARVMEC = .TRUE.
                   ! Setup reset_string
                   reset_string =''
                   lhit = .FALSE.
+                  NS_RESLTN = 0 ! Need to do this otherwise situations arrise which cause problems.
                   CALL runvmec(ictrl,file_str,lscreen,MPI_COMM_MYWORLD,reset_string)
                   CALL FinalizeSurfaceComm(NS_COMM)
                   CALL FinalizeRunVmec(RUNVMEC_COMM_WORLD)
@@ -177,6 +179,7 @@
                ictrl(4) = 0
                ictrl(5) = myseq ! Output file sequence number
                reset_string =''
+               NS_RESLTN = 0 ! Need to do this otherwise situations arrise which cause problems.
                CALL runvmec(ictrl,file_str,lscreen,MPI_COMM_MYWORLD,reset_string)
                LIFFREEB  = .FALSE. ! Already deallocated from before and we need to reset stuff
                CALL FinalizeRunVmec(RUNVMEC_COMM_WORLD) ! We don't allocate the vacuum communicator when we write

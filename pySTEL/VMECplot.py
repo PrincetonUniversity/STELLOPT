@@ -45,6 +45,10 @@ class MyApp(QMainWindow):
 		self.nu = self.vmec_data['mpol']*4
 		self.nv = self.vmec_data['ntor']*4*self.vmec_data['nfp']
 		self.nv2 = self.vmec_data['ntor']*4
+		if self.nu < 32:
+			self.nu = 32
+		if self.nv < 16:
+			self.nv = 16
 		self.TransformVMEC(self)
 		self.s=0
 		self.u=0
@@ -77,7 +81,12 @@ class MyApp(QMainWindow):
 		#self.ui.PlotList.addItems(self.ui.plot_list)
 		self.ns = self.vmec_data['ns']
 		self.nu = self.vmec_data['mpol']*4
-		self.nv = self.vmec_data['ntor']*4
+		self.nv = self.vmec_data['ntor']*4*self.vmec_data['nfp']
+		self.nv2 = self.vmec_data['ntor']*4
+		if self.nu < 32:
+			self.nu = 32
+		if self.nv < 16:
+			self.nv = 16
 		self.TransformVMEC(self)
 		self.s=0
 		self.u=0
