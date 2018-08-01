@@ -1,5 +1,5 @@
 SUBROUTINE BFGS_analytic(fcn,m,n,x,ftol,gtol,maxfev,nfev,alpha_backtrack,&
-      c_armijo,rho_backtrack,beta_hess)
+      c_armijo,rho_backtrack,beta_hess,alpha_min)
 
   USE mpi_params
   USE safe_open_mod
@@ -32,6 +32,7 @@ SUBROUTINE BFGS_analytic(fcn,m,n,x,ftol,gtol,maxfev,nfev,alpha_backtrack,&
 !                    sets the initial stepsize and is used to scale the
 !                    stepsize if a reasonable descent direction is not
 !                    obtained.
+!		 alpha_min	     Minimum allowed step size for line search.
 !
 !-----------------------------------------------------------------------
 
@@ -48,7 +49,7 @@ INCLUDE 'mpif.h'
   REAL(rprec), INTENT(in) ::  ftol, gtol
   REAL(rprec), DIMENSION(n) :: x
   REAL(rprec), INTENT(IN) :: alpha_backtrack, c_armijo, &
-      rho_backtrack, beta_hess
+      rho_backtrack, beta_hess, alpha_min
 
 !-----------------------------------------------
 !   L o c a l   V a r i a b l e s
@@ -143,7 +144,7 @@ INCLUDE 'mpif.h'
 
       ! Line search to compute x_new, grad_new, f_new
       CALL backtrack(m,n,nfev,fcn,p_curr,f_curr,x, &
-        grad_curr,f_new,x_new,grad_new,alpha_backtrack,c_armijo,rho_backtrack,beta_hess)
+        grad_curr,f_new,x_new,grad_new,alpha_backtrack,c_armijo,rho_backtrack,beta_hess,alpha_min)
 
       ! Form quantities needed for Hessian update
       s_curr = x_new - x

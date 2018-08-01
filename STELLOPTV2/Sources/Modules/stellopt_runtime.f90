@@ -203,7 +203,7 @@
       INTEGER, ALLOCATABLE     :: arr_dex(:,:)
       REAL(rprec)              :: pi, pi2, mu0, ftol, xtol, gtol, epsfcn,&
                                   factor, chisq_min, refit_param, pct_domain
-      REAL(rprec)              :: c_armijo, rho_backtrack, alpha_backtrack,beta_hess
+      REAL(rprec)              :: c_armijo, rho_backtrack, alpha_backtrack, beta_hess, alpha_min
       REAL(rprec), ALLOCATABLE :: vars(:),targets(:),sigmas(:),vals(:),&
                                   diag(:),vars_min(:),vars_max(:)
       CHARACTER(256)           :: id_string, opt_type, proc_string, &

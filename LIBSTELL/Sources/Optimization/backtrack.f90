@@ -1,7 +1,7 @@
 
   SUBROUTINE backtrack(m,n,nfev,fcn,p_curr,f_curr,x,grad_curr, &
              f_new,x_new,grad_new,alpha_backtrack,c_armijo,&
-             rho_backtrack,beta_hess)
+             rho_backtrack,beta_hess,alpha_min)
   USE stel_kinds
   USE fdjac_mod, ONLY: FLAG_CLEANUP, FLAG_CLEANUP_LEV, flag_singletask
   USE mpi_params
@@ -28,6 +28,7 @@
 !     x               Vector of variables.
 !     grad_curr       Vector of objective function gradients.
 !     alpha_backtrack Initial step size for line search. Should typically be 1.
+!			alpha_min				Minimum allowed step size for line search.
 !     c_armijo        Parameter used to test significant decrease condition.
 !     rho_backtrack   Factor by which step size is shrunk.
 !     beta_hess       Scaling of steepest descent direction. This is only
@@ -49,6 +50,8 @@
   REAL(rprec), INTENT(INOUT) :: p_curr(n)
   REAL(rprec), INTENT(OUT) :: x_new(n), grad_new(n), f_new
   REAL(rprec), INTENT(IN) :: alpha_backtrack, c_armijo, rho_backtrack, beta_hess
+	REAL(rprec), INTENT(IN) :: alpha_min
+
 
   !-----------------------------------------------
   !   E x t e r n a l   F u n c t i o n s
@@ -60,7 +63,7 @@
   !   L o c a l   V a r i a b l e s
   !-----------------------------------------------
   REAL(rprec) :: fvec_new(m), grad_dot_p, fnorm_new, alpha
-  INTEGER :: iflag, niter, nvar
+  INTEGER :: iflag, niter, nvar, exit_flag
 
   ! Set initial step length
   alpha = alpha_backtrack
@@ -99,9 +102,14 @@
   niter = 0
   ! Test Armijo condition
   print *,"f_curr + c_armijo*alpha*grad_dot_p: ", f_curr + c_armijo*alpha*grad_dot_p
-  print *,"f_new: ", f_new
+	print *,"f_new: ", f_new
+	exit_flag = 0
   do while (f_new > (f_curr + c_armijo*alpha*grad_dot_p))
     alpha = rho_backtrack*alpha
+		if (alpha < alpha_min) then
+			exit_flag = -1
+			exit
+		end if
 
     x_new = x + alpha*p_curr
     call fcn(m,n,x_new,fvec_new,iflag,nfev)
@@ -134,5 +142,12 @@
   ! Compute new gradient
   grad_new = 2*matmul(fvec_new,fjac_curr)
   write(*,"(A,E22.14)") "New gradient norm: ", enorm(n,grad_new)
+  select case (exit_flag)
+  case (0)
+    write(*,"(A)") "Reason for linesearch termination: Armijo condition satisfied."
+  case (-1)
+    write(*,"(A)") "Reason for linesearch termination: stepsize became too small."
+    stop
+  end select
 
   END SUBROUTINE backtrack
