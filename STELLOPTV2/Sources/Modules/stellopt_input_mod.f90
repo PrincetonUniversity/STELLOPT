@@ -56,6 +56,7 @@
 !            opt_type           Optimizer Type
 !                                  'LMDIF'    (default)
 !                                  'GADE'
+!                                  'BFGS_FD'
 !            ftol               Determines tollerance in sum of squares (LMDIF)
 !            xtol               Determines relative errror in approximate solution (LMDIF)
 !            gtol               Determines orthagonality of solution (LMDIF)
@@ -70,6 +71,16 @@
 !                               Determines number of divisions if > numprocs (MAP)
 !            cr_strategy        Crossover strategy (GADE, 0:exponential, 1: binomial)
 !            npopulation        Size of population (defaults to nproc if -1 or not set)
+!                               Variables for BFGS_FD - these may
+!                               get merged with others above to reduce the total
+!                               number of variables
+!                         c_armijo
+!                         rho_backtrack
+!                         alpha_backtrack, 
+!                         beta_hessian
+!                         alpha_min
+!                         dx_init
+!
 !            lkeep_mins         Keep minimum files.
 !            lphiedge_opt       Logical to control PHIEDGE variation
 !            lcurtor_opt        Logical to control CURTOR variation
@@ -235,7 +246,9 @@
 !          varaible starting with sigma which defines the error bars.
 !-----------------------------------------------------------------------
       NAMELIST /optimum/ nfunc_max, equil_type, opt_type,&
-                         ftol, xtol, gtol, epsfcn, factor, refit_param, &
+                         ftol, xtol, gtol, epsfcn, factor, &
+                         c_armijo, rho_backtrack, alpha_backtrack, &
+                         beta_hessian, alpha_min, dx_init, refit_param, &
                          cr_strategy, mode, lkeep_mins, lrefit,&
                          npopulation, noptimizers, &
                          lphiedge_opt, lcurtor_opt, lbcrit_opt, &
@@ -425,6 +438,12 @@
       xtol            = 1.0D-06
       gtol            = 0.0
       epsfcn          = 1.0D-06
+      rho_backtrack   = 0.9D-0
+      alpha_backtrack = 1.0
+      c_armijo        = 1.0D-04
+      dx_init         = 1.0D-06
+      beta_hessian    = 0.1D-0
+      alpha_min       = 1.0D-10
       mode            = 1       ! Default in case user forgets
       factor          = 100.
       cr_strategy     = 0
@@ -2324,6 +2343,14 @@
                       'SIGMA_ANALYTIC(',ii,') = ', sigma_analytic(ii)
             END IF
          END DO
+         WRITE(iunit,"(3X,A,E22.14)") &
+               'danalytic_x_opt = ', danalytic_x_opt, &
+               'danalytic_y_opt = ', danalytic_y_opt, &
+               'danalytic_z_opt = ', danalytic_z_opt
+         WRITE(iunit,"(3X,A,E22.14)") &
+               'analytic_x = ', analytic_x, &
+               'analytic_y = ', analytic_y, &
+               'analytic_z = ', analytic_z
          DO ii = 1,INT(analytic_fcnt)
             WRITE(iunit,"(7X,A,I4.3,A,E22.14)") &
                   'analytic_coeff(',ii,') = ', analytic_coeff(ii), &
