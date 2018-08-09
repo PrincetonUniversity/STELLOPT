@@ -247,6 +247,12 @@
       IF (ANY(sigma_kink < bigno)) &
          CALL chisq_kink(target_kink, sigma_kink, ncnt,iflag)
 
+      ! Analytic
+      IF (ANY(sigma_analytic < bigno)) &
+         CALL chisq_analytic(target_analytic, sigma_analytic, &
+                             ncnt, iflag)
+
+
       ! Return if an initialization call
       IF (ncnt < 0) RETURN
       

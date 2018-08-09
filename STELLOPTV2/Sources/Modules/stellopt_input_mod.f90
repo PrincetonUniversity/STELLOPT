@@ -391,7 +391,15 @@
                          regcoil_rcws_zbound_c_min, regcoil_rcws_zbound_s_min, &
                          regcoil_rcws_rbound_c_max, regcoil_rcws_rbound_s_max, &
                          regcoil_rcws_zbound_c_max, regcoil_rcws_zbound_s_max, &
-                         target_curvature_P2, sigma_curvature_P2
+                         target_curvature_P2, sigma_curvature_P2, &
+                         target_analytic, sigma_analytic, &
+                         lanalytic_x_opt, lanalytic_y_opt, lanalytic_z_opt, &
+                         analytic_x, analytic_y, analytic_z, &
+                         danalytic_x_opt, danalytic_y_opt, danalytic_z_opt
+
+      NAMELIST /analytic_nml/ analytic_fcnt, analytic_coeff, analytic_x_pow, &
+                         analytic_y_pow, analytic_z_pow, analytic_x_off, &
+                         analytic_y_off, analytic_z_off
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -523,6 +531,12 @@
       dregcoil_rcws_rbound_s_opt = -1.0
       dregcoil_rcws_zbound_c_opt = -1.0
       dregcoil_rcws_zbound_s_opt = -1.0
+      lanalytic_x_opt = .FALSE.
+      lanalytic_y_opt = .FALSE.
+      lanalytic_z_opt = .FALSE.
+      danalytic_x_opt = -1.0
+      danalytic_y_opt = -1.0
+      danalytic_z_opt = -1.0
 
       IF (.not.ltriangulate) THEN  ! This is done because values may be set by trinagulate
          phiedge_min     = -bigno;  phiedge_max     = bigno
@@ -585,7 +599,13 @@
       sigma_regcoil_chi2_b  = bigno
       target_regcoil_current_density = 8.0e6
       sigma_regcoil_current_density  = bigno
-      
+      ! Analytic options
+      target_analytic = 0.0
+      sigma_analytic = bigno
+      analytic_x = 5;  analytic_x_min = -bigno;  analytic_x_max = bigno
+      analytic_y = 5;  analytic_y_min = -bigno;  analytic_y_max = bigno
+      analytic_z = 5;  analytic_z_min = -bigno;  analytic_z_max = bigno
+
       ne_type         = 'akima_spline'
       zeff_type       = 'akima_spline'
       te_type         = 'akima_spline'
@@ -1017,6 +1037,27 @@
 !DEC$ ENDIF
       ! End of REGCOIL winding surface optimization initializion steps
 
+      ! Analytic optimization
+      IF (ANY(sigma_analytic < bigno)) THEN
+        IF (myid == master) THEN
+        !  WRITE(6, *) '<----Analytic optimization'
+        END IF
+        verbose = (myid == master)
+        CALL safe_open(iunit, istat, TRIM(filename), 'old', 'formatted')
+        READ(iunit, nml=analytic_nml, iostat=istat)
+        CLOSE(iunit)
+        IF (myid == master) THEN
+          !WRITE(6,*) '<----Analytic: Read in namelist'
+          !WRITE(6,*) 'analytic_coeff=',analytic_coeff
+          !WRITE(6,*) 'analytic_x_pow=',analytic_x_pow
+          !WRITE(6,*) 'analytic_y_pow=',analytic_y_pow
+          !WRITE(6,*) 'analytic_z_pow=',analytic_z_pow
+          !WRITE(6,*) 'analytic_x_off=',analytic_x_off
+          !WRITE(6,*) 'analytic_y_off=',analytic_y_off
+          !WRITE(6,*) 'analytic_z_off=',analytic_z_off
+        END IF
+      END IF
+
       ! If fixed boundary optimization or mapping turn off restart
       IF (ANY(ANY(lbound_opt,2),1) .or. opt_type=='map') lno_restart = .true.
       ! Test for proper normalization on ne profile
@@ -1184,6 +1225,15 @@
          WRITE(6,*) '  further information.'
       END IF
 !DEC$ ENDIF
+
+      IF (myid == master .and. ANY(sigma_analytic < bigno)) THEN
+         WRITE(6,*)        " Analytic expressions provided by: "
+         WRITE(6,"(2X,A)") "================================================================================="
+         WRITE(6,"(2X,A)") "=========                           Analytic                            ========="
+         WRITE(6,"(2X,A)") "================================================================================="
+         WRITE(6,*)        "    "
+      END IF
+
 !DEC$ IF DEFINED (DKES_OPT)
       IF (myid == master .and. ANY(sigma_dkes < bigno)) THEN
          WRITE(6,*)        " Drift-Kinetic Equation Solver (DKES) provided by: "
@@ -2259,6 +2309,33 @@
         END IF
         ! end of Options for winding surface (Fourier Series) variation
       END IF  ! End of REGCOIL options
+
+      ! Analytic options
+      IF ((lanalytic_x_opt) .or. &
+          (lanalytic_y_opt) .or. &
+          (lanalytic_z_opt)) THEN
+         WRITE(iunit,'(A)') '!--------------------------------'
+         WRITE(iunit,'(A)') '!  ANALYTIC OPTIMIZATION        !'
+         WRITE(iunit,'(A)') '!--------------------------------'
+         DO ii = 1,UBOUND(target_analytic, 1)
+            IF (sigma_analytic(ii) < bigno) THEN
+                WRITE(iunit,"(2X,A,I4.3,A,E22.14)") &
+                      'TARGET_ANALYTIC(',ii,') = ', target_analytic(ii), &
+                      'SIGMA_ANALYTIC(',ii,') = ', sigma_analytic(ii)
+            END IF
+         END DO
+         DO ii = 1,INT(analytic_fcnt)
+            WRITE(iunit,"(7X,A,I4.3,A,E22.14)") &
+                  'analytic_coeff(',ii,') = ', analytic_coeff(ii), &
+                  'analytic_x_pow(',ii,') = ', analytic_x_pow(ii), &
+                  'analytic_y_pow(',ii,') = ', analytic_y_pow(ii), &
+                  'analytic_z_pow(',ii,') = ', analytic_z_pow(ii), &
+                  'analytic_x_off(',ii,') = ', analytic_x_off(ii), &
+                  'analytic_y_off(',ii,') = ', analytic_y_off(ii), &
+                  'analytic_z_off(',ii,') = ', analytic_z_off(ii)
+         END DO
+      END IF
+  
 
 
       WRITE(iunit,'(A)') '!----------------------------------------------------------------------'

@@ -195,6 +195,17 @@
                           beamj_type, bootj_type, zeff_type, emis_xics_type, windsurfname, &
                           regcoil_nescin_filename
       
+      ! Analytic:
+      LOGICAL :: lanalytic_x_opt, lanalytic_y_opt, lanalytic_z_opt
+      REAL(rprec) :: danalytic_x_opt, danalytic_y_opt, danalytic_z_opt
+      REAL(rprec) :: analytic_x, analytic_y, analytic_z, &
+                analytic_x_min, analytic_x_max, analytic_y_min, &
+                analytic_y_max, analytic_z_min, analytic_z_max, &
+                analytic_fcnt, analytic_eval
+      REAL(rprec), DIMENSION(10) :: analytic_coeff, analytic_x_pow, &
+                analytic_y_pow, analytic_z_pow, analytic_x_off, &
+                analytic_y_off, analytic_z_off
+
       ! These are not really variable parameters as we don't vary them
       ! yet
       REAL(rprec), DIMENSION(ndatafmax) :: nustar_s, nustar_f
@@ -262,6 +273,11 @@
       INTEGER, PARAMETER ::  iregcoil_rcws_zbound_c = 5162
       INTEGER, PARAMETER ::  iregcoil_rcws_zbound_s = 5163
       
+      ! Analytic
+      INTEGER, PARAMETER ::  ianalytic_x = 5170
+      INTEGER, PARAMETER ::  ianalytic_y = 5171
+      INTEGER, PARAMETER ::  ianalytic_z = 5172
+
       REAL(rprec), PARAMETER :: ne_norm = 1.0E18
       
       CONTAINS      
@@ -487,6 +503,13 @@
          CASE(iregcoil_rcws_zbound_s)
             WRITE(iunit,out_format_2DB) 'REGCOIL_RCWS_zbound_s(',var_dex1,',',var_dex2,'):  REGCOIL Winding Surface Boundary Vertical Specification (SIN MN)'
          ! END of REGCOIL cases
+         ! Analytic cases
+         CASE(ianalytic_x)
+            WRITE(iunit,out_format) 'Analytic X'
+         CASE(ianalytic_y)
+            WRITE(iunit,out_format) 'Analytic Y'
+         CASE(ianalytic_z)
+            WRITE(iunit,out_format) 'Analytic Z'
       END SELECT
       END SUBROUTINE write_vars
 

@@ -182,6 +182,7 @@
       REAL(rprec), DIMENSION(nigroup)    :: target_coilcrv,  sigma_coilcrv
       REAL(rprec), DIMENSION(nigroup)    :: target_coilself, sigma_coilself
       REAL(rprec)                        :: target_coilsep,  sigma_coilsep
+      REAL(rprec), DIMENSION(3)          :: target_analytic, sigma_analytic
 
       INTEGER, PARAMETER :: jtarget_aspect     = 100
       INTEGER, PARAMETER :: jtarget_rbtor      = 1001
@@ -250,6 +251,7 @@
       INTEGER, PARAMETER :: jtarget_regcoil_chi2_b = 5150
       INTEGER, PARAMETER :: jtarget_regcoil_current_density = 5151
       INTEGER, PARAMETER :: jtarget_curvature_P2 = 5200
+      INTEGER, PARAMETER :: jtarget_analytic = 5170
       
 
       CONTAINS
@@ -392,6 +394,8 @@
             WRITE(iunit, out_format) 'Number of Coil Self-intersections'
          CASE(jtarget_curvature_p2)
             WRITE(iunit, out_format) 'Maximum 2nd Principal Curvature'
+         CASE(jtarget_analytic)
+            WRITE(iunit, out_format) 'Analytic'
       END SELECT
       END SUBROUTINE write_targets
       
