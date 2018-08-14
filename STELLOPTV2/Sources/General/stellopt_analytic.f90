@@ -45,8 +45,6 @@
 
       verbose = lscreen 
 
-      mysum = 0.0
-
       DO ii = 1, INT(analytic_fcnt)
         !print *, '<---analytic: coeff:', analytic_coeff(ii), &
         !        'x:', analytic_x,',  x_off:', analytic_x_off(ii), &
@@ -55,14 +53,16 @@
         !        'y_pow:', analytic_y_pow(ii), &
         !        'z:', analytic_z,',  z_off:', analytic_z_off(ii), &
         !        'z_pow:', analytic_z_pow(ii)
+
+        mysum = 0.0
         mysum = mysum + analytic_coeff(ii) * &
                 (analytic_x - analytic_x_off(ii))**analytic_x_pow(ii) * &
                 (analytic_y - analytic_y_off(ii))**analytic_y_pow(ii) * &
                 (analytic_z - analytic_z_off(ii))**analytic_z_pow(ii) 
         !print *, '<====sum = ', mysum
+        analytic_eval(ii) = mysum
       END DO
 
-      analytic_eval = mysum
 
       IF (lscreen) WRITE(6,'(a)') ' ---------------------------  Analytic CALCULATION DONE  ---------------------'
 

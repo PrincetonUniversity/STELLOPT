@@ -201,10 +201,10 @@
       REAL(rprec) :: analytic_x, analytic_y, analytic_z, &
                 analytic_x_min, analytic_x_max, analytic_y_min, &
                 analytic_y_max, analytic_z_min, analytic_z_max, &
-                analytic_fcnt, analytic_eval
+                analytic_fcnt
       REAL(rprec), DIMENSION(10) :: analytic_coeff, analytic_x_pow, &
                 analytic_y_pow, analytic_z_pow, analytic_x_off, &
-                analytic_y_off, analytic_z_off
+                analytic_y_off, analytic_z_off, analytic_eval
 
       ! These are not really variable parameters as we don't vary them
       ! yet

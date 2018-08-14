@@ -12,6 +12,7 @@
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
       USE vparams, ONLY: ntor_rcws, mpol_rcws
+      USE bfgs_params, ONLY: enable_flip, enable_tr_red
       USE stellopt_runtime
       USE stellopt_vars
       USE windingsurface
@@ -80,6 +81,8 @@
 !                         beta_hessian
 !                         alpha_min
 !                         dx_init
+!                         enable_flip
+!                         enable_tr_red
 !
 !            lkeep_mins         Keep minimum files.
 !            lphiedge_opt       Logical to control PHIEDGE variation
@@ -248,8 +251,10 @@
       NAMELIST /optimum/ nfunc_max, equil_type, opt_type,&
                          ftol, xtol, gtol, epsfcn, factor, &
                          c_armijo, rho_backtrack, alpha_backtrack, &
-                         beta_hessian, alpha_min, dx_init, refit_param, &
-                         cr_strategy, mode, lkeep_mins, lrefit,&
+                         beta_hessian, alpha_min, dx_init, enable_flip, &
+                         enable_tr_red, &
+                         refit_param, &
+                         cr_strategy, mode, lkeep_mins, lrefit, &
                          npopulation, noptimizers, &
                          lphiedge_opt, lcurtor_opt, lbcrit_opt, &
                          lpscale_opt, lmix_ece_opt,&
@@ -444,6 +449,8 @@
       dx_init         = 1.0D-06
       beta_hessian    = 0.1D-0
       alpha_min       = 1.0D-10
+      enable_flip     = .false.
+      enable_tr_red   = .false.
       mode            = 1       ! Default in case user forgets
       factor          = 100.
       cr_strategy     = 0
@@ -1101,7 +1108,7 @@
       IF ((myid == master) .and. (TRIM(equil_type(1:4)) == 'vmec') ) THEN
          WRITE(6,*)        " Equilibrium calculation provided by: "
          WRITE(6,"(2X,A)") "================================================================================="
-         WRITE(6,"(2X,A)") "=========   Parallel Variational Moments Equilibrium Code (v "//TRIM(version_vmec)//")      ========="
+         WRITE(6,"(2X,A)") "=========   Parallel Variational Moments Equilibrium Code (v "//TRIM(version_vmec)//")       ========="
          WRITE(6,"(2X,A)") "=========                (S. Hirshman, J. Whitson)                      ========="
          WRITE(6,"(2X,A)") "=========         http://vmecwiki.pppl.wikispaces.net/VMEC              ========="
          WRITE(6,"(2X,A)") "================================================================================="
@@ -1249,6 +1256,7 @@
          WRITE(6,*)        " Analytic expressions provided by: "
          WRITE(6,"(2X,A)") "================================================================================="
          WRITE(6,"(2X,A)") "=========                           Analytic                            ========="
+         WRITE(6,"(2X,A)") "=========             j dot c dot schmitt at auburn dot edu             ========="
          WRITE(6,"(2X,A)") "================================================================================="
          WRITE(6,*)        "    "
       END IF

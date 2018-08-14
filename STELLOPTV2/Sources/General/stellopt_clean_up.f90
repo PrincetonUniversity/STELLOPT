@@ -34,8 +34,9 @@
                              output_flag, cleanup_flag, reset_jacdt_flag
 !                             animec_flag, flow_flag
       USE fdjac_mod, ONLY: flag_singletask, flag_cleanup, &
-                           JAC_CLEANUP => flag_cleanup_jac,&
-                           LEV_CLEANUP => flag_cleanup_lev
+                           JAC_CLEANUP => flag_cleanup_jac, &
+                           LEV_CLEANUP => flag_cleanup_lev, &
+                           BFGS_CLEANUP => flag_cleanup_bfgs
       USE gade_mod, ONLY: GADE_CLEANUP, PSO_CLEANUP
       
 !-----------------------------------------------------------------------
@@ -66,6 +67,8 @@
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
+      ! set ctype to iflag (which contains the 'cleanup' flag.
+      ! Re-use iflag for other things in the rest of routine
       ctype = iflag
       iflag = 0
       iunit = 10
@@ -239,7 +242,9 @@
                WRITE(iunit_out,'(ES22.12E3)') vals(1:mtargets)
                CLOSE(iunit_out)
                DEALLOCATE(fvec_temp)
-            ELSE IF ((ctype == LEV_CLEANUP) .or. (ctype == GADE_CLEANUP)) THEN
+            ELSE IF ((ctype == LEV_CLEANUP) .or. &
+                     (ctype == GADE_CLEANUP) .or. &
+                     (ctype == BFGS_CLEANUP) ) THEN
                IF (ncnt /= 1 .or. ctype == GADE_CLEANUP) THEN
                   ! Write the input file
                   WRITE(temp_str,'(i5.5)') ncnt
@@ -384,12 +389,12 @@
                   END IF
 !DEC$ ENDIF
 !DEC$ IF DEFINED (REGCOIL)
-                  ! Currently inside of LEV and GADE cleanup loop, and 
-                  ! 'Keeping the mins' section
+                  ! Currently inside of the LEV/BFGS/GADE cleanup loop,
+                  ! and 'Keeping the mins' section
                   IF ( ANY(sigma_regcoil_chi2_b < bigno) .and. &
                      ( ANY(lregcoil_rcws_rbound_c_opt) .or. ANY(lregcoil_rcws_rbound_s_opt) .or. &
                        ANY(lregcoil_rcws_zbound_c_opt) .or. ANY(lregcoil_rcws_zbound_s_opt) ) ) THEN
-                     !print *, '<---In LEV/GADE cleanup.'
+                     !print *, '<---In LEV/BFGS/GADE REGCOIL cleanup.'
                      !print *, '<---proc_string_old = ', proc_string_old
                      !print *, '<---proc_string = ', proc_string
                      CALL copy_txtfile('regcoil_nescout.'//TRIM(proc_string_old),&
@@ -458,6 +463,7 @@
                CLOSE(iunit_out)
                DEALLOCATE(fvec_temp)
             ELSE IF (ctype == JAC_CLEANUP) THEN
+               ! Not doing anything in the Jacobian cleanup section
             ELSE IF (ctype == JUST_INPUT) THEN
                ! Write the input file
                WRITE(temp_str,'(i5.5)') ncnt

@@ -222,6 +222,9 @@ ga_mutate.o \
 ROCKET_Evolve.o \
 de_mpi.o \
 MAP_PLANE.o \
+BFGS_params.o \
+BFGS_FD.o \
+BFGS_backtrack.o \
 lmpar_mod.o \
 unique_boundary_PG.o \
 DE_preset.o \

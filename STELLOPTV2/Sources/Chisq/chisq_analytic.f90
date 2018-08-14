@@ -66,7 +66,7 @@
 
       IF (iflag == 1) THEN
           counter = 0
-          DO ii = 1,3
+          DO ii = 1,INT(analytic_fcnt)
             IF (sigma(ii) < bigno) counter=counter +1
           END DO
           WRITE(iunit_out,'(A,2(2X,I7))') 'ANALYTIC ', counter, 4
@@ -75,14 +75,14 @@
 
       IF (niter >= 0) THEN
          ! Now fill in the targets, sigmas and chi_sq
-         DO ii = 1, 3
+         DO ii = 1, INT(analytic_fcnt)
             !IF (sigma(ii) >= bigno) CYCLE
             IF (sigma(ii) < bigno) THEN
               mtargets = mtargets + 1
               targets(mtargets) = target(ii)
               sigmas(mtargets)  = sigma(ii)
               ! The value of the results is in the analytic_eval variable
-              vals(mtargets)    = analytic_eval
+              vals(mtargets)    = analytic_eval(ii)
               IF (iflag == 1) WRITE(iunit_out,'(4ES22.12E3)') target(ii), &
                                     sigma(ii), 0.0, vals(mtargets)
             END IF
@@ -90,7 +90,7 @@
       ELSE
          IF (ANY(sigma < bigno)) THEN
             ! Fill in the targets
-            DO ii = 1, 3
+            DO ii = 1, INT(analytic_fcnt)
                IF (sigma(ii) < bigno) THEN
                   mtargets = mtargets + 1
                   IF (niter == -2) THEN
