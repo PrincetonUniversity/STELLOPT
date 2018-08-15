@@ -177,6 +177,7 @@
       REAL(rprec),DIMENSION((2*ntor_rcws+1)*(2*mpol_rcws+1)*4) ::  target_regcoil_chi2_b, sigma_regcoil_chi2_b
       REAL(rprec) ::  target_regcoil_current_density, sigma_regcoil_current_density
       REAL(rprec) ::  target_curvature_p2, sigma_curvature_P2
+      REAL(rprec) ::  target_alpha_gc, sigma_alpha_gc
       REAL(rprec), DIMENSION(nigroup)    :: target_coillen, sigma_coillen
       INTEGER     :: npts_curv, npts_csep, npts_cself
       REAL(rprec), DIMENSION(nigroup)    :: target_coilcrv,  sigma_coilcrv
@@ -250,6 +251,7 @@
       INTEGER, PARAMETER :: jtarget_regcoil_chi2_b = 5150
       INTEGER, PARAMETER :: jtarget_regcoil_current_density = 5151
       INTEGER, PARAMETER :: jtarget_curvature_P2 = 5200
+      INTEGER, PARAMETER :: jtarget_alpha_gc = 5300
       
 
       CONTAINS
@@ -392,6 +394,8 @@
             WRITE(iunit, out_format) 'Number of Coil Self-intersections'
          CASE(jtarget_curvature_p2)
             WRITE(iunit, out_format) 'Maximum 2nd Principal Curvature'
+         CASE(jtarget_alpha_gc)
+            WRITE(iunit, out_format) 'Alpha particles using gc orbits'
       END SELECT
       END SUBROUTINE write_targets
       

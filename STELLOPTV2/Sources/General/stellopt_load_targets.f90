@@ -242,6 +242,9 @@
       END IF
       IF (sigma_curvature_p2 < bigno) &
          CALL chisq_curvature_p2(target_curvature_p2, sigma_curvature_p2, ncnt, iflag)
+      ! Alpha particle optimization
+      IF (sigma_alpha_gc < bigno) &
+         CALL chisq_alpha_gc(target_alpha_gc, sigma_alpha_gc, ncnt, iflag)
 
       ! Kink
       IF (ANY(sigma_kink < bigno)) &

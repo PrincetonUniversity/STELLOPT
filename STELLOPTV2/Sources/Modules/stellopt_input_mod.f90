@@ -215,6 +215,7 @@
 !            phi_limiter        Array of (ntheta,nzeta) toroidal angle limiter values [rad]
 !            txport_proxy       String of proxy function name.
 !            curvature_P2       Min value of 2nd principal curvature
+!            alpha_gc           alpha confinement using Nemov guiding center calculation
 !
 !             REGCOIL related variables
 !                         lregcoil_winding_surface_separation_opt, &
@@ -391,7 +392,8 @@
                          regcoil_rcws_zbound_c_min, regcoil_rcws_zbound_s_min, &
                          regcoil_rcws_rbound_c_max, regcoil_rcws_rbound_s_max, &
                          regcoil_rcws_zbound_c_max, regcoil_rcws_zbound_s_max, &
-                         target_curvature_P2, sigma_curvature_P2
+                         target_curvature_P2, sigma_curvature_P2, &
+                         target_alpha_gc, sigma_alpha_gc
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -906,6 +908,8 @@
       npts_cself        = 360
       target_curvature_P2    = 0.0
       sigma_curvature_P2     = bigno
+      target_alpha_gc   = 0.0
+      sigma_alpha_gc    = bigno
       ! Read name list
       lexist            = .false.
       istat=0
@@ -2352,7 +2356,11 @@
       IF (sigma_curvature_P2 < bigno) THEN
          WRITE(iunit,outflt) 'TARGET_CURVATURE_P2',target_curvature_P2
          WRITE(iunit,outflt) 'SIGMA_CURVATURE_P2',sigma_curvature_P2
-      END IF          
+      END IF     
+      IF (sigma_alpha_gc < bigno) THEN
+         WRITE(iunit, outflt) 'TARGET_ALPHA_GC', target_alpha_gc
+         WRITE(iunit, outflt) 'SIGMA_ALPHA_GC', sigma_alpha_gc
+      END IF
       IF (ANY(sigma_extcur < bigno)) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          WRITE(iunit,'(A)') '!          Coil Current Optimization'
