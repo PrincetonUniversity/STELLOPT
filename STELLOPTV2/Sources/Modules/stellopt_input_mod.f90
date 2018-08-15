@@ -908,8 +908,8 @@
       npts_cself        = 360
       target_curvature_P2    = 0.0
       sigma_curvature_P2     = bigno
-      target_alpha_gc   = 0.0
-      sigma_alpha_gc    = bigno
+      target_alpha_gc(:)   = 0.0
+      sigma_alpha_gc(:)    = bigno
       ! Read name list
       lexist            = .false.
       istat=0
@@ -2357,9 +2357,19 @@
          WRITE(iunit,outflt) 'TARGET_CURVATURE_P2',target_curvature_P2
          WRITE(iunit,outflt) 'SIGMA_CURVATURE_P2',sigma_curvature_P2
       END IF     
-      IF (sigma_alpha_gc < bigno) THEN
-         WRITE(iunit, outflt) 'TARGET_ALPHA_GC', target_alpha_gc
-         WRITE(iunit, outflt) 'SIGMA_ALPHA_GC', sigma_alpha_gc
+      IF (ANY(sigma_alpha_gc < bigno)) THEN
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,'(A)') '!          ALPHA PARTICLE TRANSPORT'  
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         n=0
+         DO ik = 1,UBOUND(sigma_alpha_gc,DIM=1)
+            IF(sigma_alpha_gc(ik) < bigno) n=ik
+         END DO
+         DO ik = 1, n
+            IF (sigma_alpha_gc(ik) < bigno) WRITE(iunit,"(2(2X,A,I3.3,A,E22.14))") &
+                          'TARGET_ALPHA_GC(',ik,') = ',target_alpha_gc(ik), &
+                          'SIGMA_ALPHA_GC(',ik,') = ',sigma_alpha_gc(ik)
+         END DO
       END IF
       IF (ANY(sigma_extcur < bigno)) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
