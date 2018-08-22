@@ -81,6 +81,7 @@ class MyApp(QMainWindow):
 		self.ui.TableOPTVarsExtcur.cellChanged.connect(self.OPTVarsExtcur)
 		self.ui.comboBoxStelVarsBoundType.currentIndexChanged.connect(self.UpdateOPTVarsBound)
 		self.ui.TableOPTVarsBound.cellChanged.connect(self.OPTVarsBound)
+		# Callbacks (OPT_plot Tab)
 
 	def UpdateMpol(self):
 		strtmp = self.ui.TextMpol.text()
@@ -398,7 +399,7 @@ class MyApp(QMainWindow):
 			for j in range(nv): zeta[j]=pi*j/(nv*self.indata['nfp'])
 			r=cfunct(theta,zeta,rmnc,xm,xn)
 			z=sfunct(theta,zeta,zmns,xm,xn)
-			#self.ax = self.fig.add_subplot(111,projection='3d')
+			self.ax = self.fig.add_subplot(111,projection='3d')
 			self.ax = isotoro(r,z,zeta,0,fig=self.fig)
 			self.ax.grid(False)
 			self.ax.set_axis_off()
