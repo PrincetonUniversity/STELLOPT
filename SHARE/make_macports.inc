@@ -34,8 +34,8 @@
 #            MPI Options
 #######################################################################
   LMPI    = T
-  MPI_COMPILE = /opt/local/bin/mpif90 
-  MPI_COMPILE_FREE = /opt/local/bin/mpif90 -ffree-form \
+  MPI_COMPILE = mpifort 
+  MPI_COMPILE_FREE = mpifort -ffree-form \
                      -ffree-line-length-none -ffixed-line-length-none
   MPI_COMPILE_C = mpicc 
   MPI_LINK = /opt/local/bin/mpif90
@@ -165,6 +165,7 @@ LIB_SHARE = /opt/local/lib/libnetcdf.dylib \
          /usr/lib/libm.dylib \
          /usr/lib/libpthread.dylib
 LIB_SHARE = -L/opt/local/lib/gcc7 -lstdc++ -lgfortran -L/usr/lib -lz -lc -lm -lpthread -L/opt/local/lib/openmpi-gcc7 -lmpi -lmpi_mpifh $(LIBS)
+
 
 #######################################################################
 #######################################################################

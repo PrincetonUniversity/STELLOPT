@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import sys, os
+os.environ['ETS_TOOLKIT'] = 'qt4'
 import matplotlib
 matplotlib.use("Qt4Agg")
 import matplotlib.pyplot as _plt
@@ -46,10 +47,10 @@ class MyApp(QMainWindow):
 		self.nu = self.vmec_data['mpol']*4
 		self.nv = self.vmec_data['ntor']*4*self.vmec_data['nfp']
 		self.nv2 = self.vmec_data['ntor']*4
-		if self.nu < 32:
-			self.nu = 32
-		if self.nv < 16:
-			self.nv = 16
+		if self.nu < 64:
+			self.nu = 64
+		if self.nv < 64:
+			self.nv = 64
 		self.TransformVMEC(self)
 		self.s=0
 		self.u=0

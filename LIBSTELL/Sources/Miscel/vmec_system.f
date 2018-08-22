@@ -5,11 +5,11 @@
 
 #if defined(CRAY)
       INTEGER, EXTERNAL :: ishell
-      ireturn = ishell(TRIM(cmd))
+      !ireturn = ishell(TRIM(cmd))
 #elif defined(RISC)
-      CALL system(TRIM(cmd), ireturn)
+      !CALL system(TRIM(cmd), ireturn)
 #elif defined(IRIX64)
-      CALL system(TRIM(cmd))
+      !CALL system(TRIM(cmd))
       ireturn = 0
 #elif defined(LINUX) || defined(OSF1) || defined(DARWIN)
 !      INTEGER, EXTERNAL :: system
