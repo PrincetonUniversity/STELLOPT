@@ -34,8 +34,8 @@
 #            MPI Options
 #######################################################################
   LMPI    = T
-  MPI_COMPILE = mpifort 
-  MPI_COMPILE_FREE = mpifort -ffree-form \
+  MPI_COMPILE = mpif90
+  MPI_COMPILE_FREE = mpif90 -ffree-form \
                      -ffree-line-length-none -ffixed-line-length-none
   MPI_COMPILE_C = mpicc 
   MPI_LINK = /opt/local/bin/mpif90
