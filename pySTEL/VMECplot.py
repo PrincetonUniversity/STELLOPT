@@ -171,7 +171,7 @@ class MyApp(QMainWindow):
 		self.update_plot(self)
 
 	def update_plot(self,i):
-
+		#self.ui.plot_widget.addWidget(self.canvas)
 		plot_name = self.ui.PlotList.currentText();
 		self.fig.clf()
 		#self.fig.delaxes(self.ax)
@@ -283,7 +283,8 @@ class MyApp(QMainWindow):
 				self.ax.set_aspect('equal')
 			elif (self.ui.ThreeD_button.isChecked()):
 				self.fig.delaxes(self.ax)
-				self.canvas.draw()
+				#self.canvas.draw()
+				#self.ui.plot_widget.removeWidget(self.canvas)
 				self.ax = isotoro(self.r,self.z,self.zeta,self.s,val,fig=self.fig)
 				self.ax.grid(False)
 				self.ax.set_axis_off()

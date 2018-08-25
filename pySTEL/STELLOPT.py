@@ -12,7 +12,7 @@ from PyQt4.QtGui import QIcon, QTableWidget, QTableWidgetItem
 from libstell.libstell import safe_open, read_indata_namelist, pmass, pcurr, piota, \
                               set_module_var, safe_close, cfunct, sfunct, isotoro, \
                               write_indata_namelist, read_stellopt
-from libstell.stellopt import read_stellopt_namelist
+from libstell.stellopt import read_stellopt_namelist, write_stellopt_namelist
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from mpl_toolkits import mplot3d
