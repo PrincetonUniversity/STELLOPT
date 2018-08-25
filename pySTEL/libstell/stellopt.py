@@ -164,7 +164,7 @@ def read_stellopt(filename):
             continue
         elif 'ITER' == item:
             continue
-        elif item in ['ASPECT','ASPECT_MAX','BETA','CURTOR','PHIEDGE', \
+        elif item in ['ASPECT','ASPECT_MAX','BETA','CURTOR','KAPPA','PHIEDGE', \
                     'VOLUME','WP','RBTOR','R0','Z0','BETATOR','BETAPOL']:
             stel_data[item+'_target'] = np.squeeze(stel_data[item][:,:,0])
             stel_data[item+'_sigma'] = np.squeeze(stel_data[item][:,:,1])
@@ -207,7 +207,7 @@ def read_stellopt(filename):
             stel_data[item+'_R'] = np.squeeze(stel_data[item][:,:,4])
             stel_data[item+'_PHI'] = np.squeeze(stel_data[item][:,:,5])
             stel_data[item+'_Z'] = np.squeeze(stel_data[item][:,:,6])
-        elif item in ['TI','TE','IOTA','VPHI','PRESS','NE']:
+        elif item in ['NE','TI','TE','IOTA','VPHI','PRESS','VACIOTA']:
             stel_data[item+'_target'] = np.squeeze(stel_data[item][:,:,4])
             stel_data[item+'_sigma'] = np.squeeze(stel_data[item][:,:,5])
             stel_data[item+'_equil'] = np.squeeze(stel_data[item][:,:,6])
@@ -215,8 +215,8 @@ def read_stellopt(filename):
             stel_data[item+'_R'] = np.squeeze(stel_data[item][:,:,0])
             stel_data[item+'_PHI'] = np.squeeze(stel_data[item][:,:,1])
             stel_data[item+'_Z'] = np.squeeze(stel_data[item][:,:,2])
-            stel_data[item+'_S'] = np.squeeze(stel_data[item][:,:,3])
-        elif item in ['NELINE','FARADAY','SXR']:
+            stel_data[item+'_s'] = np.squeeze(stel_data[item][:,:,3])
+        elif item in ['NELINE','TELINE','TILINE','FARADAY','SXR','XICS','XICS_BRIGHT']:
             stel_data[item+'_target'] = np.squeeze(stel_data[item][:,:,0])
             stel_data[item+'_sigma'] = np.squeeze(stel_data[item][:,:,1])
             stel_data[item+'_equil'] = np.squeeze(stel_data[item][:,:,2])
@@ -235,7 +235,7 @@ def read_stellopt(filename):
             stel_data[item+'_R'] = np.squeeze(stel_data[item][:,:,0])
             stel_data[item+'_PHI'] = np.squeeze(stel_data[item][:,:,1])
             stel_data[item+'_Z'] = np.squeeze(stel_data[item][:,:,2])
-            stel_data[item+'_S'] = np.squeeze(stel_data[item][:,:,3])
+            stel_data[item+'_s'] = np.squeeze(stel_data[item][:,:,3])
             stel_data[item+'_ER'] = np.squeeze(stel_data[item][:,:,6])
             stel_data[item+'_EZ'] = np.squeeze(stel_data[item][:,:,7])
         elif item == 'BOOTSTRAP':
@@ -243,7 +243,7 @@ def read_stellopt(filename):
             stel_data[item+'_sigma'] = np.squeeze(stel_data[item][:,:,1])
             stel_data[item+'_equil'] = np.squeeze(stel_data[item][:,:,2])
             stel_data[item+'_chisq'] = ((stel_data[item+'_target'] - stel_data[item+'_equil'])/stel_data[item+'_sigma'])**2
-            stel_data[item+'_S'] = np.squeeze(stel_data[item][:,:,3])
+            stel_data[item+'_s'] = np.squeeze(stel_data[item][:,:,3])
             stel_data[item+'_avg_jdotb'] = np.squeeze(stel_data[item][:,:,4])
             stel_data[item+'_beam_jdotb'] = np.squeeze(stel_data[item][:,:,5])
             stel_data[item+'_boot_jdotb'] = np.squeeze(stel_data[item][:,:,6])
@@ -256,14 +256,29 @@ def read_stellopt(filename):
             stel_data[item+'_equil'] = np.squeeze(stel_data[item][:,:,2])
             stel_data[item+'_chisq'] = ((stel_data[item+'_target'] - stel_data[item+'_equil'])/stel_data[item+'_sigma'])**2
             stel_data[item+'_bnorm'] = np.squeeze(stel_data[item][:,:,3])
-            stel_data[item+'_m'] = np.squeeze(stel_data[item][:,:,4])
-            stel_data[item+'_n'] = np.squeeze(stel_data[item][:,:,5])
+        elif item == 'HELICITY_FULL':
+            stel_data[item+'_target'] = np.squeeze(stel_data[item][:,:,0])
+            stel_data[item+'_sigma'] = np.squeeze(stel_data[item][:,:,1])
+            stel_data[item+'_equil'] = np.squeeze(stel_data[item][:,:,2])
+            stel_data[item+'_chisq'] = ((stel_data[item+'_target'] - stel_data[item+'_equil'])/stel_data[item+'_sigma'])**2
+            stel_data[item+'_bnorm'] = np.squeeze(stel_data[item][:,:,3])
+            stel_data[item+'_k'] = np.squeeze(stel_data[item][:,:,4])
+            stel_data[item+'_m'] = np.squeeze(stel_data[item][:,:,5])
+            stel_data[item+'_n'] = np.squeeze(stel_data[item][:,:,6])
         elif item == 'TXPORT':
             stel_data[item+'_target'] = np.squeeze(stel_data[item][:,:,0])
             stel_data[item+'_sigma'] = np.squeeze(stel_data[item][:,:,1])
             stel_data[item+'_equil'] = np.squeeze(stel_data[item][:,:,2])
             stel_data[item+'_chisq'] = ((stel_data[item+'_target'] - stel_data[item+'_equil'])/stel_data[item+'_sigma'])**2
-            stel_data[item+'_S'] = np.squeeze(stel_data[item][:,:,3])
+            stel_data[item+'_s'] = np.squeeze(stel_data[item][:,:,3])
+        elif item == 'KINK':
+            stel_data[item+'_target'] = np.squeeze(stel_data[item][:,:,0])
+            stel_data[item+'_sigma'] = np.squeeze(stel_data[item][:,:,1])
+            stel_data[item+'_equil'] = np.squeeze(stel_data[item][:,:,2])
+            stel_data[item+'_chisq'] = ((stel_data[item+'_target'] - stel_data[item+'_equil'])/stel_data[item+'_sigma'])**2
+            stel_data[item+'_wp'] = np.squeeze(stel_data[item][:,:,3])
+            stel_data[item+'_wk'] = np.squeeze(stel_data[item][:,:,4])
+            stel_data[item+'_omega'] = np.squeeze(stel_data[item][:,:,5])
         elif item == 'COIL_BNORM':
             stel_data[item+'_target'] = np.squeeze(stel_data[item][:,:,0])
             stel_data[item+'_sigma'] = np.squeeze(stel_data[item][:,:,1])
@@ -278,7 +293,7 @@ def read_stellopt(filename):
             stel_data[item+'_sigma'] = np.squeeze(stel_data[item][:,:,1])
             stel_data[item+'_equil'] = np.squeeze(stel_data[item][:,:,2])
             stel_data[item+'_chisq'] = ((stel_data[item+'_target'] - stel_data[item+'_equil'])/stel_data[item+'_sigma'])**2
-            stel_data[item+'_S'] = np.squeeze(stel_data[item][:,:,3])
+            stel_data[item+'_s'] = np.squeeze(stel_data[item][:,:,3])
         elif item == 'J_STAR':
             stel_data[item+'_target'] = np.squeeze(stel_data[item][:,:,0])
             stel_data[item+'_sigma'] = np.squeeze(stel_data[item][:,:,1])
@@ -294,36 +309,45 @@ def read_stellopt(filename):
             stel_data[item+'_sigma'] = np.squeeze(stel_data[item][:,:,1])
             stel_data[item+'_equil'] = np.squeeze(stel_data[item][:,:,2])
             stel_data[item+'_chisq'] = ((stel_data[item+'_target'] - stel_data[item+'_equil'])/stel_data[item+'_sigma'])**2
-            stel_data[item+'_K'] = np.squeeze(stel_data[item][:,:,3])
+            stel_data[item+'_k'] = np.squeeze(stel_data[item][:,:,3])
         elif item == 'JDOTB':
             stel_data[item+'_target'] = np.squeeze(stel_data[item][:,:,0])
             stel_data[item+'_sigma'] = np.squeeze(stel_data[item][:,:,1])
             stel_data[item+'_equil'] = np.squeeze(stel_data[item][:,:,2])
             stel_data[item+'_chisq'] = ((stel_data[item+'_target'] - stel_data[item+'_equil'])/stel_data[item+'_sigma'])**2
-            stel_data[item+'_S'] = np.squeeze(stel_data[item][:,:,3])
+            stel_data[item+'_s'] = np.squeeze(stel_data[item][:,:,3])
         elif item == 'JTOR':
             stel_data[item+'_target'] = np.squeeze(stel_data[item][:,:,0])
             stel_data[item+'_sigma'] = np.squeeze(stel_data[item][:,:,1])
             stel_data[item+'_equil'] = np.squeeze(stel_data[item][:,:,2])
             stel_data[item+'_chisq'] = ((stel_data[item+'_target'] - stel_data[item+'_equil'])/stel_data[item+'_sigma'])**2
-            stel_data[item+'_S'] = np.squeeze(stel_data[item][:,:,3])
+            stel_data[item+'_s'] = np.squeeze(stel_data[item][:,:,3])
         elif item == 'DKES':
             stel_data[item+'_target'] = np.squeeze(stel_data[item][:,:,0])
             stel_data[item+'_sigma'] = np.squeeze(stel_data[item][:,:,1])
             stel_data[item+'_equil'] = np.squeeze(stel_data[item][:,:,2])
             stel_data[item+'_chisq'] = ((stel_data[item+'_target'] - stel_data[item+'_equil'])/stel_data[item+'_sigma'])**2
-            stel_data[item+'_S'] = np.squeeze(stel_data[item][:,:,3])
-            stel_data[item+'_NU'] = np.squeeze(stel_data[item][:,:,4])
-            stel_data[item+'_ER'] = np.squeeze(stel_data[item][:,:,5])
-            stel_data[item+'_L11P'] = np.squeeze(stel_data[item][:,:,6])
-            stel_data[item+'_L11M'] = np.squeeze(stel_data[item][:,:,7])
-            stel_data[item+'_L33P'] = np.squeeze(stel_data[item][:,:,8])
-            stel_data[item+'_L33M'] = np.squeeze(stel_data[item][:,:,9])
-            stel_data[item+'_L31P'] = np.squeeze(stel_data[item][:,:,10])
-            stel_data[item+'_L31M'] = np.squeeze(stel_data[item][:,:,11])
-            stel_data[item+'_SCAL11'] = np.squeeze(stel_data[item][:,:,12])
-            stel_data[item+'_SCAL33'] = np.squeeze(stel_data[item][:,:,13])
-            stel_data[item+'_SCAL31'] = np.squeeze(stel_data[item][:,:,14])
+            stel_data[item+'_s'] = np.squeeze(stel_data[item][:,:,3])
+            stel_data[item+'_nu'] = np.squeeze(stel_data[item][:,:,4])
+            stel_data[item+'_er'] = np.squeeze(stel_data[item][:,:,5])
+            stel_data[item+'_L11p'] = np.squeeze(stel_data[item][:,:,6])
+            stel_data[item+'_L11m'] = np.squeeze(stel_data[item][:,:,7])
+            stel_data[item+'_L33p'] = np.squeeze(stel_data[item][:,:,8])
+            stel_data[item+'_L33m'] = np.squeeze(stel_data[item][:,:,9])
+            stel_data[item+'_L31p'] = np.squeeze(stel_data[item][:,:,10])
+            stel_data[item+'_L31m'] = np.squeeze(stel_data[item][:,:,11])
+            stel_data[item+'_scal11'] = np.squeeze(stel_data[item][:,:,12])
+            stel_data[item+'_scal33'] = np.squeeze(stel_data[item][:,:,13])
+            stel_data[item+'_scal31'] = np.squeeze(stel_data[item][:,:,14])
+        elif item == 'ECEREFLECT':
+            stel_data[item+'_target'] = np.squeeze(stel_data[item][:,:,0])
+            stel_data[item+'_sigma'] = np.squeeze(stel_data[item][:,:,1])
+            stel_data[item+'_equil'] = np.squeeze(stel_data[item][:,:,2])
+            stel_data[item+'_chisq'] = ((stel_data[item+'_target'] - stel_data[item+'_equil'])/stel_data[item+'_sigma'])**2
+            stel_data[item+'_freq'] = np.squeeze(stel_data[item][:,:,3])
+            stel_data[item+'_tradx'] = np.squeeze(stel_data[item][:,:,4])
+            stel_data[item+'_trado'] = np.squeeze(stel_data[item][:,:,5])
+            stel_data[item+'_mix'] = np.squeeze(stel_data[item][:,:,6])
 
     return stel_data;
 
