@@ -11,7 +11,7 @@ from PyQt4.QtGui import QMainWindow, QApplication, qApp, QApplication, QVBoxLayo
 from PyQt4.QtGui import QIcon, QTableWidget, QTableWidgetItem
 from libstell.libstell import safe_open, read_indata_namelist, pmass, pcurr, piota, \
                               set_module_var, safe_close, cfunct, sfunct, isotoro, \
-                              write_indata_namelist
+                              write_indata_namelist, read_stellopt
 from libstell.stellopt import read_stellopt_namelist
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
@@ -50,12 +50,16 @@ class MyApp(QMainWindow):
 		self.ui.TableArrays.setColumnCount(20)
 		for num,item in enumerate(self.indata['am'], start=0):
 			self.ui.TableArrays.setItem(0,num, QTableWidgetItem(str(item)))
-		# Setup Plot
+		# Setup Plot VMEC
 		self.fig = Figure(figsize=(2,2),dpi=100)
 		self.ax = self.fig.add_subplot(111)
 		self.canvas = FigureCanvas(self.fig)
 		self.ui.Plotbox.addWidget(self.canvas)
-		self.DrawArrays()
+		# Setup Plot STELLOPT
+		self.fig2 = Figure(figsize=(2,2),dpi=100)
+		self.ax2 = self.fig2.add_subplot(111)
+		self.canvas2 = FigureCanvas(self.fig2)
+		self.ui.OPTplot_box.addWidget(self.canvas2)
 		# Setup STELLOPT Pannels
 		self.UpdateOPTtype()
 		self.UpdateOPTVarsScalar()
@@ -82,6 +86,8 @@ class MyApp(QMainWindow):
 		self.ui.comboBoxStelVarsBoundType.currentIndexChanged.connect(self.UpdateOPTVarsBound)
 		self.ui.TableOPTVarsBound.cellChanged.connect(self.OPTVarsBound)
 		# Callbacks (OPT_plot Tab)
+		self.ui.ButtonLoadSTELLOPT.clicked.connect(self.LoadSTELLOPT)
+		self.ui.ComboBoxOPTplot_type.currentIndexChanged.connect(self.UpdateOptplot)
 
 	def UpdateMpol(self):
 		strtmp = self.ui.TextMpol.text()
@@ -761,6 +767,70 @@ class MyApp(QMainWindow):
 		temp = self.optimum[field]
 		temp[dex1,dex2] = val
 		self.optimum[field]=temp
+
+	def LoadSTELLOPT(self):
+		# Handles loading an stellopt file.
+		w = QWidget()
+		w.resize(320, 240)
+		w.setWindowTitle("Hello World!")
+		filename = QFileDialog.getOpenFileName(w, 'Open File', '.')
+		w.destroy
+		# Read the file
+		self.stel_data=read_stellopt(filename)
+		self.optplot_list = ['ASPECT','BETA','CURTOR','EXTCUR','SEPARATRIX',\
+					'PHIEDGE','RBTOR','R0','Z0','VOLUME',\
+					'B_PROBES','FARADAY','FLUXLOOPS','MSE','NE','NELINE','TE','TI','VPHI',\
+					'BALLOON','BOOTSTRAP','DKES','HELICITY','JDOTB','J_STAR','NEO','TXPORT',\
+					'ORBIT']
+		self.ui.ComboBoxOPTplot_type.clear()
+		self.ui.ComboBoxOPTplot_type.addItem('Chi-Squared')
+		# Handle Chisquared plots
+		for name in self.optplot_list:
+			for item in self.stel_data:
+				if (name+'_target' == item):
+					self.ui.ComboBoxOPTplot_type.addItem(name)
+		# Handle Special Plots
+		self.ui.ComboBoxOPTplot_type.addItem('-----SPECIAL-----')
+		for item in self.stel_data:
+			if ('BALLOON_target' == item):
+				self.ui.ComboBoxOPTplot_type.addItem('BALLOON_evolution')
+		# Handle Wout Comparrison Plots
+		workdir,ext = filename.split('stellopt.',1)
+		print(workdir)
+		files = os.listdir(workdir)
+		print(files)
+
+
+	def UpdateOptplot(self):
+		# Handle plotting of 
+		plot_name = self.ui.ComboBoxOPTplot_type.currentText()
+		self.fig2.clf()
+		#self.fig.delaxes(self.ax)
+		self.ax2 = self.fig2.add_subplot(111)
+		if (plot_name == 'Chi-Squared'):
+			chisq = ((self.stel_data['TARGETS'] - self.stel_data['VALS'])/self.stel_data['SIGMAS'])**2
+			self.ax2.plot(self.stel_data['ITER'],np.sum(chisq,axis=1),'ok')
+			self.ax2.set_xlabel('Iteration')
+			self.ax2.set_ylabel('Chi-Squared')
+			self.ax2.set_title('Chi-Sqaured')
+			self.ax2.set_yscale('log',basey=10)
+		elif (plot_name in self.optplot_list):
+			f = self.stel_data[plot_name+'_chisq']
+			if len(f.shape) > 1:
+				f = np.sum(f,axis=1)
+			self.ax2.plot(self.stel_data['ITER'],f,'ok')
+			self.ax2.set_xlabel('Iteration')
+			self.ax2.set_ylabel('Chi-Squared')
+			self.ax2.set_title(plot_name+' Chi-Sqaured')
+			self.ax2.set_yscale('log',basey=10)
+		elif (plot_name == 'BALLOON_evolution'):
+			self.ax2.plot(self.stel_data['BALLOON_k'].T,self.stel_data['BALLOON_grate'].T)
+			self.ax2.set_xlabel('Radial Grid')
+			self.ax2.set_ylabel('Growth Rate')
+			self.ax2.set_title('COBRA Ballooning Stability (<0 Stable)')
+
+		self.canvas2.draw()
+
 
 
 

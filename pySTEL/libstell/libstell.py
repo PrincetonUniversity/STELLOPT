@@ -594,6 +594,33 @@ def read_stellopt(filename):
             citer = citer+1
             stel_data[ttype][citer] = int(hw)
             continue
+        elif ttype == 'VERSION':
+            stel_data[ttype][citer] = float(hw)
+            continue
+        elif ttype == 'TARGETS':
+            h,w = hw.split()
+            h = int(h)
+            w = int(w)
+            if h == 1:
+                h=w
+                w=1
+            line = file_handle.readline()
+        elif ttype == 'SIGMAS':
+            h,w = hw.split()
+            h = int(h)
+            w = int(w)
+            if h == 1:
+                h=w
+                w=1
+            line = file_handle.readline()
+        elif ttype == 'VALS':
+            h,w = hw.split()
+            h = int(h)
+            w = int(w)
+            if h == 1:
+                h=w
+                w=1
+            line = file_handle.readline()
         else:
             h,w = hw.split()
             h = int(h)
@@ -607,7 +634,7 @@ def read_stellopt(filename):
             stel_data[ttype][citer,i,:] = val       
     file_handle.close()
     for item in list(stel_data):
-        print(item)
+        #print(item)
         if 'VERSION' == item:
             continue
         elif 'ITER' == item:
