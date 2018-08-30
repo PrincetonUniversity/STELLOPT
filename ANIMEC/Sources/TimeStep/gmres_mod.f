@@ -4,6 +4,7 @@
       INTEGER :: nfcn = 0
       INTEGER :: ier_flag_res
       LOGICAL :: lqmr, lfirst
+			LOGICAL, PARAMETER :: lscreen0 = .FALSE.
 
 !
 !     nfcn :  number of calls to function (funct3d)
@@ -48,6 +49,9 @@ C-----------------------------------------------
 
       SUBROUTINE gmres_fun (ier_flag, itype)
       USE xstuff
+			USE gmres_lib, only: gmres_info, gmres_ser
+			USE vmec_main, ONLY: ftolv
+			USE precon2d, ONLY: block_precond
       IMPLICIT NONE
 C-----------------------------------------------
 C   D u m m y   A r g u m e n t s
@@ -61,6 +65,7 @@ C-----------------------------------------------
       INTEGER :: n, m
       INTEGER :: icntl(9), info(3)
       REAL(rprec) :: cntl(5)
+			TYPE (gmres_info) :: gi
       CHARACTER(LEN=*), PARAMETER :: qmr_message = 
      1                              'Beginning GMRES iterations'
 C-----------------------------------------------
@@ -133,7 +138,14 @@ C-----------------------------------------------
 !
       m = 20
       gc = -gc          !RHS
-      CALL gmres (n, m, icntl, cntl, matvec, xcdot, gc, info)
+			! Load gmres_info structure
+			info = 0
+			gi%m = m
+			gi%icntl=icntl
+			gi%cntl=cntl
+			gi%info=info
+			gi%ftol=ftolv
+      CALL gmres_ser(n,gi,matvec,block_precond,getnlforce,xcdot,gc)
 
 100   CONTINUE
 
@@ -299,5 +311,24 @@ C-----------------------------------------------
       xc(1:ndim) = xsave(1:ndim) + vecs(1:ndim,1)
 
       END SUBROUTINE qmr_fun
+
+			SUBROUTINE GetNLForce(xcstate, fsq_nl, bnorm)
+      USE xstuff, ONLY: xc, gc, x0=>xsave
+			USE vmec_main, ONLY: fsql, fsqr, fsqz
+!-----------------------------------------------
+!   D u m m y   A r g u m e n t s
+!-----------------------------------------------
+      REAL(dp),INTENT(IN)  :: xcstate(neqs), bnorm
+      REAL(dp),INTENT(OUT) :: fsq_nl
+!-----------------------------------------------
+!undo internal gmres normalization
+      xc(1:neqs) = x0(1:neqs)+bnorm*xcstate(1:neqs)
+
+      CALL funct3d(lscreen0, ier_flag_res)
+      fsq_nl = fsqr+fsqz+fsql
+
+      nfcn = nfcn + 1
+
+      END SUBROUTINE GetNLForce
 
       END MODULE gmres_mod
