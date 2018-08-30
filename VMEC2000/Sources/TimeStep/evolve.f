@@ -125,6 +125,7 @@ C-----------------------------------------------
 !
 #if defined (SKS)      
       CALL second0(f3dt1)
+      IF (NS_RESLTN > num_grids) NS_RESLTN = num_grids
       f3d_num(NS_RESLTN) = f3d_num(NS_RESLTN)+1
       IF (PARVMEC) THEN
         CALL funct3d_par (lscreen, ier_flag)

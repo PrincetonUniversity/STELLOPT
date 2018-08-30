@@ -241,7 +241,7 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
           write(*,*) 'Performing linear interpolation in Er,cmul'
         endif
         if ( use_quanc8 .eqv. .true. ) then
-          write(*,'(a,2(a,e10.4))') 
+          write(*,'(a,2(a,e11.4))') 
      1     ' Using quanc8 integrator with tolerances: ',
      2      'abs: ',epsabs,' rel: ', epsrel
         else
