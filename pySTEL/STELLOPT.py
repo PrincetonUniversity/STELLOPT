@@ -11,7 +11,7 @@ from PyQt4.QtGui import QMainWindow, QApplication, qApp, QApplication, QVBoxLayo
 from PyQt4.QtGui import QIcon, QTableWidget, QTableWidgetItem
 from libstell.libstell import safe_open, read_indata_namelist, pmass, pcurr, piota, \
                               set_module_var, safe_close, cfunct, sfunct, isotoro, \
-                              write_indata_namelist
+                              write_indata_namelist, read_vmec, cfunct, sfunct
 from libstell.stellopt import read_stellopt_namelist, write_stellopt_namelist, read_stellopt
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
@@ -802,11 +802,24 @@ class MyApp(QMainWindow):
 				if (name+'_target' == item):
 					self.ui.ComboBoxOPTplot_type.addItem(name+'_evolution')
 		# Handle Wout Comparrison Plots
-		#workdir,ext = filename.split('stellopt.',1)
+		self.workdir,ext = filename.split('stellopt.',1)
 		#print(workdir)
-		#files = os.listdir(workdir)
-		#print(files)
-
+		files = os.listdir(self.workdir)
+		#print(type(files))
+		if any('wout' in mystring for mystring in files):
+			#print('wout_found')
+			self.ui.ComboBoxOPTplot_type.addItem('----- VMEC -----')
+			self.ui.ComboBoxOPTplot_type.addItem('Flux0')
+			self.ui.ComboBoxOPTplot_type.addItem('FluxPI')
+			self.ui.ComboBoxOPTplot_type.addItem('Pressure')
+			self.ui.ComboBoxOPTplot_type.addItem('I-prime')
+			self.ui.ComboBoxOPTplot_type.addItem('Current')
+			self.ui.ComboBoxOPTplot_type.addItem('Iota')
+			self.ui.ComboBoxOPTplot_type.addItem('<j*B>')
+			self.wout_files = sorted([k for k in files if 'wout' in k])
+		#print("\n".join(mystring for mystring in files if 'wout' in mystring))
+		print("\n".join(self.wout_files))
+		
 
 	def UpdateOptplot(self):
 		# Handle plotting of 
@@ -817,7 +830,7 @@ class MyApp(QMainWindow):
 		self.ax2 = self.fig2.add_axes([0.2,0.2,0.7,0.7])
 		if (plot_name == 'Chi-Squared'):
 			chisq = ((self.stel_data['TARGETS'] - self.stel_data['VALS'])/self.stel_data['SIGMAS'])**2
-			self.ax2.plot(self.stel_data['ITER'],np.sum(chisq,axis=1),'ok')
+			self.ax2.plot(self.stel_data['ITER'],np.sum(chisq,axis=1),'ok',label='Chisq Total')
 			self.ax2.set_xlabel('Iteration')
 			self.ax2.set_ylabel('Chi-Squared')
 			self.ax2.set_title('Chi-Sqaured')
@@ -831,7 +844,8 @@ class MyApp(QMainWindow):
 							chisq_temp = np.sum(chisq_temp,axis=0)
 					elif len(chisq_temp.shape) > 1:
 						chisq_temp = np.sum(chisq_temp,axis=1)
-					self.ax2.plot(self.stel_data['ITER'],chisq_temp,'o',fillstyle='none')
+					self.ax2.plot(self.stel_data['ITER'],chisq_temp,'o',fillstyle='none',label=name)
+			self.ax2.legend()
 		elif (plot_name in self.optplot_list):
 			f = self.stel_data[plot_name+'_chisq']
 			n = f.shape
@@ -982,6 +996,7 @@ class MyApp(QMainWindow):
 			self.ax2.set_xlabel('Normalized Flux')
 			self.ax2.set_ylabel('Electron Density (norm)')
 			self.ax2.set_title('Electron Density Reconstruction')
+			self.ax2.set_xlim((0,1.6))
 		elif (plot_name == 'TE_evolution'):
 			x=self.stel_data['TE_s'].T
 			y=self.stel_data['TE_target'].T
@@ -994,6 +1009,7 @@ class MyApp(QMainWindow):
 			self.ax2.set_xlabel('Normalized Flux')
 			self.ax2.set_ylabel('Electron Temperature [keV]')
 			self.ax2.set_title('Electron Temperature Reconstruction')
+			self.ax2.set_xlim((0,1.6))
 		elif (plot_name == 'TI_evolution'):
 			x=self.stel_data['TI_s'].T
 			y=self.stel_data['TI_target'].T
@@ -1006,6 +1022,7 @@ class MyApp(QMainWindow):
 			self.ax2.set_xlabel('Normalized Flux')
 			self.ax2.set_ylabel('Ion Temperature [keV]')
 			self.ax2.set_title('Ion Temperature Reconstruction')
+			self.ax2.set_xlim((0,1.6))
 		elif (plot_name == 'IOTA_evolution'):
 			x=self.stel_data['IOTA_s'].T
 			y=self.stel_data['IOTA_target'].T
@@ -1163,6 +1180,66 @@ class MyApp(QMainWindow):
 			self.ax2.set_xlabel('Channel')
 			self.ax2.set_ylabel('Signal [Arb.]')
 			self.ax2.set_title('XICS Brightness Reconstruction')
+		elif (plot_name == 'Pressure'):
+			for string in self.wout_files:
+				if 'wout' in string:
+					vmec_data=read_vmec(self.workdir+string)
+					ns = vmec_data['ns']
+					nflux = np.ndarray((ns,1))
+					for j in range(ns): nflux[j]=j/(ns-1)
+					self.ax2.plot(nflux,vmec_data['presf']/1000)
+			self.ax2.set_xlabel('Norm Tor. Flux (s)')
+			self.ax2.set_ylabel('Pressure [kPa]')
+			self.ax2.set_title('VMEC Pressure Evolution')
+			self.ax2.set_xlim((0,1))
+		elif (plot_name == 'I-prime'):
+			for string in self.wout_files:
+				if 'wout' in string:
+					vmec_data=read_vmec(self.workdir+string)
+					ns = vmec_data['ns']
+					nflux = np.ndarray((ns,1))
+					for j in range(ns): nflux[j]=j/(ns-1)
+					self.ax2.plot(nflux,vmec_data['jcurv']/1000)
+			self.ax2.set_xlabel('Norm Tor. Flux (s)')
+			self.ax2.set_ylabel('Current Density [kA/m^{-2}]')
+			self.ax2.set_title('VMEC Current Density Evolution')
+			self.ax2.set_xlim((0,1))
+		elif (plot_name == 'Iota'):
+			for string in self.wout_files:
+				if 'wout' in string:
+					vmec_data=read_vmec(self.workdir+string)
+					ns = vmec_data['ns']
+					nflux = np.ndarray((ns,1))
+					for j in range(ns): nflux[j]=j/(ns-1)
+					self.ax2.plot(nflux,vmec_data['iotaf'])
+			self.ax2.set_xlabel('Norm Tor. Flux (s)')
+			self.ax2.set_ylabel('Rotational Transform \iota')
+			self.ax2.set_title('VMEC Rotational Transform Evolution')
+			self.ax2.set_xlim((0,1))
+		elif (plot_name == 'Current'):
+			for string in self.wout_files:
+				if 'wout' in string:
+					vmec_data=read_vmec(self.workdir+string)
+					ns = vmec_data['ns']
+					nflux = np.ndarray((ns,1))
+					for j in range(ns): nflux[j]=j/(ns-1)
+					self.ax2.plot(nflux,np.cumsum(vmec_data['jcurv']))
+			self.ax2.set_xlabel('Norm Tor. Flux (s)')
+			self.ax2.set_ylabel('Current [kA]')
+			self.ax2.set_title('VMEC Current Evolution')
+			self.ax2.set_xlim((0,1))
+		elif (plot_name == '<j*B>'):
+			for string in self.wout_files:
+				if 'wout' in string:
+					vmec_data=read_vmec(self.workdir+string)
+					ns = vmec_data['ns']
+					nflux = np.ndarray((ns,1))
+					for j in range(ns): nflux[j]=j/(ns-1)
+					self.ax2.plot(nflux,vmec_data['jdotb'])
+			self.ax2.set_xlabel('Norm Tor. Flux (s)')
+			self.ax2.set_ylabel('<j.B>')
+			self.ax2.set_title('VMEC <j.B> Evolution')
+			self.ax2.set_xlim((0,1))
 		#print(type(self.ax2))
 		#self.ax2.set_cmap('Spectral')
 		#self.ax2.set(cmap='Spectral')
