@@ -43,6 +43,8 @@ class MyApp(QMainWindow):
 		self.indata['ntor']=4
 		self.indata['mpol']=9
 		self.indata['nfp']=3
+		self.ui.tabMain.setTabEnabled(0,False)
+		self.ui.tabMain.setTabEnabled(2,False)
 		# Set the OPTIMUM DEFAULTS (will repalce with something like read_indata_namelist)
 		self.optimum=read_stellopt_namelist(iunit,istat)
 		# Setup Components
@@ -803,9 +805,7 @@ class MyApp(QMainWindow):
 					self.ui.ComboBoxOPTplot_type.addItem(name+'_evolution')
 		# Handle Wout Comparrison Plots
 		self.workdir,ext = filename.split('stellopt.',1)
-		#print(workdir)
 		files = os.listdir(self.workdir)
-		#print(type(files))
 		if any('wout' in mystring for mystring in files):
 			#print('wout_found')
 			self.ui.ComboBoxOPTplot_type.addItem('----- VMEC -----')
@@ -817,8 +817,7 @@ class MyApp(QMainWindow):
 			self.ui.ComboBoxOPTplot_type.addItem('Iota')
 			self.ui.ComboBoxOPTplot_type.addItem('<j*B>')
 			self.wout_files = sorted([k for k in files if 'wout' in k])
-		#print("\n".join(mystring for mystring in files if 'wout' in mystring))
-		print("\n".join(self.wout_files))
+		#print("\n".join(self.wout_files))
 		
 
 	def UpdateOptplot(self):

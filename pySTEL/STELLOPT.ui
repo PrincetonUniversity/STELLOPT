@@ -20,7 +20,7 @@
       <x>0</x>
       <y>0</y>
       <width>891</width>
-      <height>591</height>
+      <height>611</height>
      </rect>
     </property>
     <property name="currentIndex">
@@ -1100,7 +1100,7 @@
       </widget>
      </widget>
     </widget>
-    <widget class="QWidget" name="tab">
+    <widget class="QWidget" name="tabOPTplot">
      <attribute name="title">
       <string>OPTplot</string>
      </attribute>
@@ -1110,7 +1110,7 @@
         <x>309</x>
         <y>49</y>
         <width>561</width>
-        <height>501</height>
+        <height>521</height>
        </rect>
       </property>
       <layout class="QGridLayout" name="OPTplot_box"/>
@@ -1147,7 +1147,7 @@
      <x>0</x>
      <y>0</y>
      <width>893</width>
-     <height>22</height>
+     <height>20</height>
     </rect>
    </property>
   </widget>
