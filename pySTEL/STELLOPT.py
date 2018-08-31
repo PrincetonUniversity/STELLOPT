@@ -822,6 +822,16 @@ class MyApp(QMainWindow):
 			self.ax2.set_ylabel('Chi-Squared')
 			self.ax2.set_title('Chi-Sqaured')
 			self.ax2.set_yscale('log',basey=10)
+			for name in self.optplot_list:
+				if name+'_chisq' in self.stel_data:
+					chisq_temp = self.stel_data[name+'_chisq']
+					n = chisq_temp.shape;
+					if (len(chisq_temp.shape) == 1):
+						if n[0] > len(self.stel_data['ITER']):
+							chisq_temp = np.sum(chisq_temp,axis=0)
+					elif len(chisq_temp.shape) > 1:
+						chisq_temp = np.sum(chisq_temp,axis=1)
+					self.ax2.plot(self.stel_data['ITER'],chisq_temp,'o',fillstyle='none')
 		elif (plot_name in self.optplot_list):
 			f = self.stel_data[plot_name+'_chisq']
 			n = f.shape
