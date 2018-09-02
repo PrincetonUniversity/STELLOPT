@@ -333,7 +333,11 @@ chisq_wp.o : \
       stellopt_runtime.o \
       stellopt_targets.o \
       equil_vals.o 
-      
+
+chisq_curvature_p2.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      ../../LIBSTELL/Debug/read_wout_mod.o
 
 stellopt_balloon.o : \
       stellopt_runtime.o \

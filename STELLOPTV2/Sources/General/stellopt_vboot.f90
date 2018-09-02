@@ -1,6 +1,6 @@
 !-----------------------------------------------------------------------
 !     Subroutine:    stellopt_vboot
-!     Authors:       S. Lazerson (lazerson@pppl.gov)
+!     Authors:       S. Lazerson (lazerson@pppl.gov) and Matt Landreman
 !     Date:          02/24/2017
 !     Description:   This subroutine calculates a (par)VMEC equilibrium
 !                    with self-consistent bootstrap current profile, by
@@ -23,15 +23,12 @@
       USE parambs, ONLY: rhoar, dibs, irup, aibs, d_rho
 !-----------------------------------------------------------------------
 !     Subroutine Parameters
-!        iflag         Error flag
 !----------------------------------------------------------------------
       IMPLICIT NONE
       LOGICAL, INTENT(in)    :: lscreen
       INTEGER, INTENT(inout) :: iflag
 !-----------------------------------------------------------------------
 !     Local Variables
-!        ier         Error flag
-!        iunit       File unit number
 !----------------------------------------------------------------------
       LOGICAL :: lscreen_local, lfirst_pass
       INTEGER :: ik, nc, ibootlog, ier, j, radius_index, unit_out=12, Nradii
@@ -43,8 +40,8 @@
       REAL(rprec), DIMENSION(5) :: f_out
       REAL(rprec), PARAMETER :: smooth_frac=0.75
       REAL(rprec), DIMENSION(5), PARAMETER :: s_out=(/0.0,0.25,0.50,0.75,1.0/)
-      INTEGER :: vboot_iteration ! MJL
-      CHARACTER(len=4) :: iteration_string ! MJL
+      INTEGER :: vboot_iteration
+      CHARACTER(len=4) :: iteration_string
       REAL(rprec) :: temp1, temp2, ds_fine, scale_factor, curtor_beam, curtor_bootstrap
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: sfincs_s_with_0
       INTEGER, PARAMETER :: Ns_fine = 1000
@@ -170,83 +167,11 @@
             !Test if the vboot iterations have converged, by comparing "L_1 norm of the difference between the last two AC profiles" to "L_1 norm of the latest AC profile":
             vboot_convergence_factor = SUM(ABS(AC_fit_results(1:irup) - AC_profile_fine(1:irup))) / SUM(ABS(AC_fit_results(1:irup)))
             AC_profile_fine = AC_fit_results
-            
-!!$            ! Set up fitting arrays
-!!$            ALLOCATE(sarr(irup+2), farr(irup+2))
-!!$            sarr(1) = 0; sarr(irup+2) = 1;
-!!$            sarr(2:irup+1) = rhoar
-!!$            farr(2:irup+1) = dibs
-!!$            farr(1) = farr(2) + (sarr(1)-sarr(2))*(farr(3)-farr(2))/(sarr(3)-sarr(2))
-!!$            farr(irup+2) = farr(irup+1) + (sarr(irup+2)-sarr(irup+1))*(farr(irup+1)-farr(irup))/(sarr(irup+1)-sarr(irup))
-!!$            
-!!$            ! Print Bootstrap to Log
-!!$            ALLOCATE(sfarr(irup+2))
-!!$            DO ik = 1, irup+2
-!!$               CALL get_equil_bootj(sarr(ik),sfarr(ik),iflag)
-!!$            END DO
-!!$            IF (lfirst_pass) WRITE(ibootlog,'(512(1X,E20.10))')  (sarr(ik),ik=1,irup+2)
-!!$            !WRITE(ibootlog,'(512(1X,E20.10))')  0.0,(dibs(ik),  ik=1,irup)  ! Bootstrap
-!!$            WRITE(ibootlog,'(512(1X,E20.10))')  (farr(ik),  ik=1,irup+2)  ! Bootstrap
-!!$            WRITE(ibootlog,'(512(1X,E20.10))')  (sfarr(ik), ik=1,irup+2) ! Current Fit
-!!$            CALL FLUSH(ibootlog)
-!!$            DEALLOCATE(sfarr)
-            
-!!$            ! Print to screen
-!!$            IF (lscreen) THEN ! Only on first pass through
-!!$               DO ik = 1, 5
-!!$                  jboot = s_out(ik) ! First argument declared in/out
-!!$                  CALL get_equil_bootj(jboot,f_out(ik),iflag)
-!!$               END DO
-!!$               IF (lfirst_pass) WRITE(6,'(A,5f10.2,A20,A20)') 'S:   ',s_out,'Total [MA]','Error'
-!!$               WRITE(6,'(5X,5f10.2,2E20.10)') f_out/1E3,aibs(irup)/1E6, val
-!!$               CALL FLUSH(6)
-!!$            END IF
-            
-!!$            !Test for exit
-!!$            ! MJL: I think the next line should be normalized differently- to the AC profile, rather than to the difference between the bootsj and stellopt profiles.
-!!$            ! Also, why consider val-val_last rather than AC - AC_last?
-!!$            IF (ABS(val-val_last)/ABS(val) < vboot_tolerance) EXIT
-!!$            val_last = val
-!!$            !IF (val < 0.5E3) EXIT
-
-            ! MJL: this next step does not make sense because farr has dimensions (Amps) and is ~ 10^6, whereas jboot (returned by get_equil_bootj)
-            ! on the 1st iteration is ~1 since it has not yet been scaled by curtor. And if you wanted to blend the old and new current profiles, there should be a (1-smooth_frac) factor too.
-!!$         ! Modify the bootstrap current for the fit
-!!$         DO ik = 1, irup+2
-!!$            CALL get_equil_bootj(sarr(ik),jboot,iflag)
-!!$            !farr(ik) = jboot + (farr(ik) - jboot)*smooth_frac
-!!$            farr(ik) = jboot*(1-smooth_frac) + (farr(ik) - jboot)*smooth_frac
-!!$         END DO
-            
-            
-            
-!!$            print *,"bootj_aux_f before fitting:",bootj_aux_f ! MJL
-!!$            !  Fit profile to bootstrap
-!!$            nc = 21
-!!$            coefs(1:nc) = bootj_aux_f(1:nc)
-!!$            ik = irup+2
-!!$            CALL fit_profile(bootj_type,ik,sarr,farr,nc,coefs(1:nc))
-!!$            DEALLOCATE(sarr,farr)
-!!$            
-!!$            ! Update Coefficients
-!!$            bootj_aux_f(1:21) = coefs(1:21)
-!!$            print *,"bootj_aux_f after fitting:",bootj_aux_f ! MJL
-!!$            
-!!$            ! Update curtor
-!!$            ! This guarantees that curtor is consistent with the bootstrap profile.
-!!$            ! Note that in the future we can adjust for the fraction here.
-!!$            val = 0
-!!$            DO ik = 1, irup
-!!$               CALL get_equil_bootj(rhoar(ik),jboot,iflag)
-!!$               val = val + jboot*d_rho(ik)
-!!$            END DO
-!!$            curtor_vmec = val 
-            
+                        
             ! In this next line, perhaps the first and last point should be treated differently for greater accuracy?
             ds_fine = rhoar(2)-rhoar(1)
             curtor_bootstrap = SUM(AC_fit_results(1:irup)) * ds_fine
             curtor_vmec = curtor_bootstrap + curtor_beam
-            !WRITE(6,"(3(a,es10.3))") "curtor_bootstrap = ",curtor_bootstrap," curtor_beam = ",curtor_beam," curtor_total = ",curtor_vmec
 
             IF (vboot_convergence_factor < vboot_tolerance) THEN
                WRITE(6,"(a,i4,a,es10.3,a,es10.3,a)") "Vboot iteration",vboot_iteration,": ctor=",curtor_vmec,", vboot convergence factor=",vboot_convergence_factor,". Tolerance achieved."
@@ -298,18 +223,10 @@
             ! For an initial guess at the fit coefficients for <j dot B>, use the previous dI/ds profile:
             ! AC = -d I / d s = -2 pi (d psi / d s) <j dot B> / <B^2> + (small d p / d s term)
             J_dot_B_flux_surface_average_fit = bootj_aux_f(1:21)
-            !IF (myworkid==master) PRINT *,"fit before scaling:",J_dot_B_flux_surface_average_fit
-            !PRINT *,"fit before scaling:",J_dot_B_flux_surface_average_fit
             scale_factor = -SUM(sfincs_B_squared_flux_surface_average(2:(Nradii+1)))/(Nradii*(-phiedge))
-            !IF (myworkid==master) PRINT *,"Scale factor:",scale_factor
-            !PRINT *,"Scale factor:",scale_factor
             CALL scale_profile(bootj_type, J_dot_B_flux_surface_average_fit, scale_factor)
-            !IF (myworkid==master) PRINT *,"fit after scaling:",J_dot_B_flux_surface_average_fit
-            !PRINT *,"fit after scaling:",J_dot_B_flux_surface_average_fit
             CALL fit_profile(bootj_type, Nradii+1, sfincs_s_with_0, sfincs_J_dot_B_flux_surface_average, 21, &
                  J_dot_B_flux_surface_average_fit)
-            !IF (myworkid==master) PRINT *,"New fit to <j dot B>:",J_dot_B_flux_surface_average_fit
-            !PRINT *,"New fit to <j dot B>:",J_dot_B_flux_surface_average_fit
             DEALLOCATE(sfincs_s_with_0)
 
             ! Fit a profile to <B^2>:
@@ -317,11 +234,8 @@
             B_squared_flux_surface_average_profile_type = 'power_series'
             B_squared_flux_surface_average_fit(1) = SUM(sfincs_B_squared_flux_surface_average(2:(Nradii+1))) / Nradii ! Initial guess for constant term in the polynomial fit.
             B_squared_flux_surface_average_fit(2:3) = B_squared_flux_surface_average_fit(1) / 10 ! Set to a small nonzero value, so 'fit_profile' detects the correct polynomial order.
-            !IF (myworkid==master) PRINT *,"Guess for fit to <B^2>:",B_squared_flux_surface_average_fit,"ier=",ier
             CALL fit_profile(B_squared_flux_surface_average_profile_type, Nradii, sfincs_s, sfincs_B_squared_flux_surface_average(2:(Nradii+1)), 21, &
                  B_squared_flux_surface_average_fit)
-            !IF (myworkid==master) PRINT *,"New fit to <B^2>:",B_squared_flux_surface_average_fit,"ier=",ier
-            !PRINT *,"New fit to <B^2>:",B_squared_flux_surface_average_fit,"ier=",ier
             DO radius_index = 1,Ns_fine
                CALL eval_profile(s_fine_half(radius_index), B_squared_flux_surface_average_profile_type, &
                     B_squared_flux_surface_average_fine_half(radius_index), bootj_aux_s, B_squared_flux_surface_average_fit, ier)
@@ -378,12 +292,9 @@
             CALL FLUSH(ibootlog)
 
             ! Fit the resulting AC profile
-            !sfincs_AC_fit = bootj_aux_f(1:21)
-            !CALL fit_profile(bootj_type, Ns_fine-1, s_fine_half(2:Ns_fine), sfincs_AC_half(2:Ns_fine), 21, sfincs_AC_fit)
             CALL fit_profile(bootj_type, Ns_fine-1, s_fine_half(2:Ns_fine), sfincs_AC_half(2:Ns_fine), 21, bootj_aux_f)
             ! Evaluate the fit:
             DO radius_index = 2,Ns_fine
-               !CALL eval_profile(s_fine_half(radius_index), bootj_type, AC_fit_results(radius_index), bootj_aux_s, sfincs_AC_fit, ier)
                CALL eval_profile(s_fine_half(radius_index), bootj_type, AC_fit_results(radius_index), bootj_aux_s, bootj_aux_f, ier)
             END DO
             AC_fit_results(1) = 0
@@ -419,7 +330,6 @@
             ! In this next line, perhaps the first and last point should be treated differently for greater accuracy?
             curtor_bootstrap = SUM(AC_fit_results) * ds_fine
             curtor_vmec = curtor_bootstrap + curtor_beam
-            !WRITE(6,"(3(a,es10.3))") "curtor_bootstrap = ",curtor_bootstrap," curtor_beam = ",curtor_beam," curtor_total = ",curtor_vmec
 
             IF (vboot_convergence_factor < vboot_tolerance) THEN
                WRITE(6,"(a,i4,a,es10.3,a,es10.3,a)") "Vboot iteration",vboot_iteration,": ctor=",curtor_vmec,", vboot convergence factor=",vboot_convergence_factor,". Tolerance achieved."
