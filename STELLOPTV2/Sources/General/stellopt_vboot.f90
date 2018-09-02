@@ -8,6 +8,11 @@
 !                    code, either BOOTSJ or SFINCS. This subroutine is
 !                    used when EQUIL_OPTION='VBOOT' in the OPTIMUM
 !                    namelist.
+!
+!                    Some details of the equations implemented in this
+!                    subroutine are given in the note
+!                    doc/computing_vmec_AC_profile_from_a_bootstrap_current_code/
+!
 !-----------------------------------------------------------------------
       SUBROUTINE stellopt_vboot(lscreen,iflag)
 !-----------------------------------------------------------------------
