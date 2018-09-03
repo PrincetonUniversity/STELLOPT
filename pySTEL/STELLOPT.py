@@ -807,17 +807,23 @@ class MyApp(QMainWindow):
 		self.workdir,ext = filename.split('stellopt.',1)
 		files = os.listdir(self.workdir)
 		if any('wout' in mystring for mystring in files):
-			#print('wout_found')
 			self.ui.ComboBoxOPTplot_type.addItem('----- VMEC -----')
-			self.ui.ComboBoxOPTplot_type.addItem('Flux0')
-			self.ui.ComboBoxOPTplot_type.addItem('FluxPI')
+			#self.ui.ComboBoxOPTplot_type.addItem('Flux0')
+			#self.ui.ComboBoxOPTplot_type.addItem('FluxPI')
 			self.ui.ComboBoxOPTplot_type.addItem('Pressure')
 			self.ui.ComboBoxOPTplot_type.addItem('I-prime')
 			self.ui.ComboBoxOPTplot_type.addItem('Current')
 			self.ui.ComboBoxOPTplot_type.addItem('Iota')
 			self.ui.ComboBoxOPTplot_type.addItem('<j*B>')
 			self.wout_files = sorted([k for k in files if 'wout' in k])
-		#print("\n".join(self.wout_files))
+		# Handle Kinetic Profiles
+		if any('tprof.' in mystring for mystring in files):
+			self.ui.ComboBoxOPTplot_type.addItem('----- Kinetics -----')
+			self.ui.ComboBoxOPTplot_type.addItem('Electron Temperature')
+			self.ui.ComboBoxOPTplot_type.addItem('Electron Density')
+			self.ui.ComboBoxOPTplot_type.addItem('Ion Temperature')
+			self.ui.ComboBoxOPTplot_type.addItem('Z Effective')
+			self.tprof_files = sorted([k for k in files if 'tprof.' in k])
 		
 
 	def UpdateOptplot(self):

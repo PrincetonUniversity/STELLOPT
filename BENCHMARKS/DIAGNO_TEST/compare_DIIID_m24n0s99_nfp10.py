@@ -4,7 +4,7 @@ from math import sqrt
 
 lfail = 0
 failtol = 1.0
-fileext='bigtok'
+fileext='DIIID_m24n0s99_nfp10'
 filename='diagno_bench.'+fileext
 data = np.loadtxt(filename)
 
