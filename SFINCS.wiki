@@ -127,7 +127,7 @@ the expected convergence of the vboot iterations.
 ===Plotting output=== 
 
 Once a vboot calculation (using either BOOTSJ or SFINCS) has run, you can plot
-several quantities using the {{{vbootPlot}}} script in the {{{plotting}}} directory.
+several quantities using the {{{vbootPlot}}} script in the {{{pySTEL}}} directory.
 This script will plot, for instance, how the total toroidal current and the profile
 of toroidal current vary over the vboot iterations. 
 Some of the data this script plots is saved in the {{{boot_fit.<extension>}}} file.
