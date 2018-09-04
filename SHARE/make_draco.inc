@@ -37,7 +37,7 @@
 #######################################################################
 #            NAG Options
 #######################################################################
-  LNAG = F
+  LNAG = T
   NAG_LIB = $(NAGFLIB) $(NAGMKLLIB)
 
 #######################################################################
@@ -134,13 +134,15 @@
 
 #LSFINCS = F
 LSFINCS = T
+
 SFINCS_DIR = /u/mlan/sfincs/fortran/version3
-SFINCS_INC = -I$(SFINCS_DIR)
-LIB_SFINCS = libsfincs.a
 
 #PETSC_DIR=/opt/local/lib/petsc
 include ${PETSC_DIR}/lib/petsc/conf/variables
 # The above line defines the PETSC make variables PETSC_LIB, FC_LINKER_FLAGS, and FFLAGS, which are used below in SFINCS_LIB.
+
+SFINCS_INC = -I$(SFINCS_DIR) -I${PETSC_DIR}/include -I${PETSC_DIR}/${PETSC_ARCH}/include
+LIB_SFINCS = libsfincs.a
 
 SFINCS_LIB = $(SFINCS_DIR)/$(LIB_SFINCS) \
         $(PETSC_LIB) $(FC_LINKER_FLAGS) $(FFLAGS)
@@ -314,7 +316,7 @@ endif
 ifeq ($(LSFINCS),T)
   MOD1_PATH += $(SFINCS_INC)
   PRECOMP += -DSFINCS
-  MOD_PATH += -I$(SFINCS_DIR)
+  MOD_PATH += $(SFINCS_INC)
 else
   SFINCS_LIB =
   SFINCS_DIR =
