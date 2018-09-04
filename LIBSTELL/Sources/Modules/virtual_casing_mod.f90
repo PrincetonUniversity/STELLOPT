@@ -1465,7 +1465,7 @@
       nuv = nu * nv
       nvp = nv * nfp
       nuvp = nu * nv * nfp
-      norm_3d = 1.0D-7
+      norm_3d = pi2*pi2*1.0D-7
       vc_type_str='Volume Integral'
       ! Alloocations
       ALLOCATE(xu(nu),xv(nvp))
@@ -1515,9 +1515,9 @@
          CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,fmn_temp,xm,xn,zv,1,0)
       END IF
       ! Calculate jr, jphi, jz, jx, jy
-      jr   = ju_temp*ru+jv_temp*rv
+      jr   = ju_temp*ru+jv_temp*rv*nfp
       jphi = r_temp * jv_temp
-      jz   = ju_temp*zu+jv_temp*zv
+      jz   = ju_temp*zu+jv_temp*zv*nfp
       DO u = 1, nu
          DO v = 1, nvp
             cop = DCOS(pi2*xv(v))
@@ -1550,18 +1550,18 @@
       CALL EZspline_init(jx3d_spl,nu,nvp,ns,bcs1,bcs2,bcs3,ier)
       CALL EZspline_init(jy3d_spl,nu,nvp,ns,bcs1,bcs2,bcs3,ier)
       CALL EZspline_init(jz3d_spl,nu,nvp,ns,bcs1,bcs2,bcs3,ier)
-      x3d_spl%x1=xu*pi2
-      y3d_spl%x1=xu*pi2
-      z3d_spl%x1=xu*pi2
-      jx3d_spl%x1=xu*pi2
-      jy3d_spl%x1=xu*pi2
-      jz3d_spl%x1=xu*pi2
-      x3d_spl%x2=xv*pi2
-      y3d_spl%x2=xv*pi2
-      z3d_spl%x2=xv*pi2
-      jx3d_spl%x2=xv*pi2
-      jy3d_spl%x2=xv*pi2
-      jz3d_spl%x2=xv*pi2
+      x3d_spl%x1=xu
+      y3d_spl%x1=xu
+      z3d_spl%x1=xu
+      jx3d_spl%x1=xu
+      jy3d_spl%x1=xu
+      jz3d_spl%x1=xu
+      x3d_spl%x2=xv
+      y3d_spl%x2=xv
+      z3d_spl%x2=xv
+      jx3d_spl%x2=xv
+      jy3d_spl%x2=xv
+      jz3d_spl%x2=xv
       ! default [0 1] x3
       x3d_spl%isHermite = 1
       y3d_spl%isHermite = 1
@@ -1800,8 +1800,7 @@
          RETURN
       END IF
       a_nag(1:3) = zero
-      b_nag(1:2) = one*pi2
-      b_nag(3)   = one
+      b_nag(1:3) = one
       mincls_nag = MIN_CLS
       maxcls_nag = IWRK
       absreq_nag = adapt_tol       ! Talk to Stuart about proper values
@@ -1863,18 +1862,19 @@
             ay = zero
             az = zero
             adapt_rerun=.false.
+            nlastcall=funcls
             DEALLOCATE(vrtwrk)
          ELSE
             ax = finest_nag(1)
             ay = finest_nag(2)
             az = finest_nag(3)
             adapt_rerun=.false.
+            nlastcall=funcls
             DEALLOCATE(vrtwrk)
          END IF
 
 #endif
       END DO
-      nlastcall=mincls_nag
       RETURN
       ! END SUBROUTINE
       END SUBROUTINE vecpot_volint_adapt_dbl
@@ -2044,8 +2044,7 @@
          RETURN
       END IF
       a_nag(1:3) = zero
-      b_nag(1:2) = one*pi2
-      b_nag(3)   = one
+      b_nag(1:3) = one
       mincls_nag = MIN_CLS
       maxcls_nag = IWRK
       absreq_nag = adapt_tol       ! Talk to Stuart about proper values
@@ -2107,18 +2106,19 @@
             by = zero
             bz = zero
             adapt_rerun=.false.
+            nlastcall=funcls
             DEALLOCATE(vrtwrk)
          ELSE
             bx = finest_nag(1)
             by = finest_nag(2)
             bz = finest_nag(3)
             adapt_rerun=.false.
+            nlastcall=funcls
             DEALLOCATE(vrtwrk)
          END IF
 
 #endif
       END DO
-      nlastcall=mincls_nag
       RETURN
       ! END SUBROUTINE
       END SUBROUTINE bfield_volint_adapt_dbl

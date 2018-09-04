@@ -5,8 +5,8 @@
 #######################################################################
   SHELL = /bin/sh
   PWD1 = `pwd`
-  MYHOME = /global/u2/l/landrema/stellopt/bin
-#  MYHOME = /global/u2/l/lazerson/bin_cori
+#  MYHOME = /global/u2/l/landrema/stellopt/bin
+  MYHOME = /global/u2/l/lazerson/bin_cori
   PRECOMP:= fpp -C -P -DLINUX
   COMPILE = ftn
   COMPILE_FREE = ftn
@@ -121,8 +121,8 @@
 #            SFINCS Options
 #######################################################################
 
-#LSFINCS = F
-LSFINCS = T
+LSFINCS = F
+#LSFINCS = T
 SFINCS_DIR = /global/homes/l/landrema/sfincs/fortran/version3
 SFINCS_INC = -I$(SFINCS_DIR)
 LIB_SFINCS = libsfincs.a

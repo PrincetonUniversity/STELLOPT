@@ -290,6 +290,10 @@
             val = 0
             val = (coefs(1)/(one - EXP(-(one/coefs(2))**2)))*&
                   (EXP(-(s_val/coefs(2))**2)-EXP(-(one/coefs(2))**2))
+         CASE ('gauss_trunc_offset')
+            val = 0
+            val = coefs(3)+(coefs(1)/(one - EXP(-(one/coefs(2))**2)))*&
+                  (EXP(-(s_val/coefs(2))**2)-EXP(-(one/coefs(2))**2))
          CASE ('two_lorentz')
             val = 0
             val = coefs(1)*(coefs(2)*(one/(one+(  s_val/coefs(3)**2)**coefs(4))**coefs(5) &
@@ -304,6 +308,9 @@
          CASE ('two_power_hollow')
             val = 0
             val = s_val * coefs(1) * (one - s_val**coefs(2))**coefs(3)
+         CASE ('two_power_offset')
+            val = 0
+            val = coefs(4) + coefs(1) * (one - s_val**coefs(2))**coefs(3)
          CASE ('power_series')
             val = 0
             DO i = UBOUND(coefs,DIM=1), LBOUND(coefs,DIM=1), -1
@@ -802,7 +809,7 @@
       CALL tolower(prof_type)
       profile_norm = 0.0_rprec
       SELECT CASE (prof_type)
-         CASE ('two_power','two_power_hollow','two_lorentz','gauss_trunc','sum_atan','pedestal','bump','hollow')
+         CASE ('two_power','two_power_hollow','two_power_offset','two_lorentz','gauss_trunc','gauss_trunc_offset','sum_atan','pedestal','bump','hollow')
             profile_norm = 0.0_rprec  ! Don't normalize as we don't want to screw up our coefficients
          CASE ('power_series','power_series_edge0','power_series_0_boundaries')
             DO ik = LBOUND(x,DIM=1), UBOUND(x,DIM=1)

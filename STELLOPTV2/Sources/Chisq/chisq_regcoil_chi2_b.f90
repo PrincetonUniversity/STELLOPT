@@ -41,10 +41,10 @@
       USE stellopt_runtime
       USE stellopt_targets
       USE stellopt_input_mod
-      USE stellopt_vars, ONLY: regcoil_nlambda, &
-                               my_ntor => ntor_rcws, my_mpol => mpol_rcws
+      USE stellopt_vars, ONLY: regcoil_nlambda
+      USE vparams, ONLY: mnprod_x4_rcws
 !DEC$ IF DEFINED (REGCOIL)
-      USE regcoil_input_mod 
+      USE regcoil_variables, ONLY:  chi2_B_target, nlambda, regcoil_nml
 !DEC$ ENDIF      
 !-----------------------------------------------------------------------
 !     Input/Output Variables
@@ -52,14 +52,8 @@
 !-----------------------------------------------------------------------
       IMPLICIT NONE
 
-      ! Reserving space for the maximum number of Fourier components
-      ! that might be varied/optimized. Each of RC, RS, ZC, ZS can have
-      ! spectral components spanning the range of m and n in:
-      !       (-mpol_rcws:mpmol_rcws,  -ntor_rcws:ntor_rcws)
-      INTEGER, PARAMETER ::  mnprod_x4 = 4*(2*my_ntor+1)*(2*my_mpol+1)
-
-      REAL(rprec), INTENT(in)    :: target(mnprod_x4)
-      REAL(rprec), INTENT(in)    :: sigma(mnprod_x4)
+      REAL(rprec), INTENT(in)    :: target(mnprod_x4_rcws)
+      REAL(rprec), INTENT(in)    :: sigma(mnprod_x4_rcws)
       INTEGER,     INTENT(in)    ::  niter
       INTEGER,     INTENT(inout) ::  iflag
 
@@ -77,7 +71,7 @@
 !DEC$ IF DEFINED (REGCOIL)
       IF (iflag == 1) THEN
           counter = 0
-          DO ii = 1,mnprod_x4
+          DO ii = 1,mnprod_x4_rcws
             IF (sigma(ii) < bigno) counter=counter +1
           END DO
           WRITE(iunit_out,'(A,2(2X,I7))') 'REGCOIL_CHI2_B ', counter, 4
@@ -86,7 +80,7 @@
 
       IF (niter >= 0) THEN
          ! Now fill in the targets, sigmas and chi_sq
-         DO ii = 1, mnprod_x4
+         DO ii = 1, mnprod_x4_rcws
             !IF (sigma(ii) >= bigno) CYCLE
             IF (sigma(ii) < bigno) THEN
               mtargets = mtargets + 1
@@ -103,7 +97,7 @@
       ELSE
          IF (ANY(sigma < bigno)) THEN
             ! Fill in the targets
-            DO ii = 1, mnprod_x4
+            DO ii = 1, mnprod_x4_rcws
                IF (sigma(ii) < bigno) THEN
                   mtargets = mtargets + 1
                   IF (niter == -2) THEN
@@ -112,7 +106,10 @@
                END IF
             END DO
             CALL safe_open(iunit, iflag, TRIM('input.'//TRIM(id_string)), 'old', 'formatted')
-            CALL regcoil_read_input(iunit, iflag)
+
+            !CALL regcoil_read_input(iunit, iflag)
+            READ(iunit, nml=regcoil_nml, iostat=iflag)
+
             ! save an internal copy of the value of nlambda here (regcoil may
             ! overwrite it)
             regcoil_nlambda = nlambda

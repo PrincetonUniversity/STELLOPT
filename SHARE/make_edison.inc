@@ -3,11 +3,11 @@
 #######################################################################
   SHELL = /bin/sh
   PWD1 = `pwd`
-  MYHOME = /global/u2/l/lazerson/bin
-  PRECOMP:= /lib/cpp -traditional -DLINUX
+  MYHOME = /global/u2/l/lazerson/bin_edison
+  PRECOMP:= fpp -C -P -DLINUX
   COMPILE = ftn
   COMPILE_FREE = ftn
-  LINK    = ld -Bstatic -o
+  LINK    = ftn -Bstatic -o
   LINK_AR = ar -ruv
   LINK_C  = $(CC) -shared -Wl,-z-defs
 
@@ -66,7 +66,7 @@
 #######################################################################
 #             SILO Options
 #######################################################################
-  LSILO = T
+  LSILO = F
   SILO_INC = -I$(SILO_DIR)/include
   SILO_LIB = -L$(SILO_DIR)/lib -lsilo
 
@@ -79,7 +79,7 @@
 #######################################################################
 #            GENE Options
 #######################################################################
-  LGENE = T
+  LGENE = F
   GENE_INC = -I$(GENE_PATH)
   GENE_DIR = $(GENE_PATH)
   LIB_GENE = libgene.a
@@ -90,7 +90,7 @@
 #######################################################################
 #            COILOPT++ Options
 #######################################################################
-  LCOILOPT = T
+  LCOILOPT = F
   COILOPT_INC = -I$(COILOPT_PATH)
   COILOPTPP_DIR = $(COILOPT_PATH)
   LIB_COILOPTPP = libcoilopt++.a
@@ -127,19 +127,8 @@
 #######################################################################
 #            LIBSTELL Shared Options
 #######################################################################
-LIB_SHARE = $(BLASHOME)/lib/libopenblas.so \
-          $(SCALAPACK_HOME)/lib/libscalapack.a \
-          $(BLACS_HOME)/lib/libmpiblacs.a  $(BLACS_HOME)/lib/libmpiblacsCinit.a $(BLACS_HOME)/lib/libmpiblacsF77init.a \
-          $(NTCCHOME)/lib/libaladdinsub.a $(NTCCHOME)/lib/libr8slatec.a $(NTCCHOME)/lib/libadpak.a $(NTCCHOME)/lib/libcppsub.a $(NTCCHOME)/lib/libcomput.a \
-          $(NTCCHOME)/lib/libpspline.a $(NTCCHOME)/lib/libportlib.a $(NTCCHOME)/lib/libezcdf.a $(NTCCHOME)/lib/libmds_sub.a $(NTCCHOME)/lib/libmdstransp.a $(NTCCHOME)/lib/libvaxonly.a \
-          $(HDF5_HOME)/lib/libhdf5_hl.so $(HDF5_HOME)/lib/libhdf5_fortran.so $(HDF5_HOME)/lib/libhdf5hl_fortran.so $(HDF5_HOME)/lib/libhdf5.so \
-          $(NAG_ROOT)/lib/libnag_nag.so  \
-          $(NETCDFHOME)/lib/libnetcdf.so $(NETCDFHOME)/lib/libnetcdff.so $(NETCDFHOME)/lib/libnetcdf_c++.so \
-          $(SILOHOME)/lib/libsilo.a \
-          $(GSLHOME)/lib/libgsl.so \
-          $(GCC4_HOME)/lib64/libgfortran.so $(GCC4_HOME)/lib64/libstdc++.so \
-          $(MPIHOME)/lib/libmpi.so $(MPIHOME)/lib/libmpi_f77.so $(MPIHOME)/lib/libmpi_f90.so 
-#          /usr/lib/libc.so /usr/lib/libm.so /usr/lib/libpthread.so 
+
+LIB_SHARE = 
 
 #######################################################################
 #######################################################################
@@ -236,7 +225,7 @@ endif
 ifeq ($(MAKECMDGOALS),xanimec)
   PRECOMP += -D_ANIMEC
 endif
-ifeq ($(MAKECMDGOALS),xparvmec)
+ifeq ($(MAKECMDGOALS),xvmec2000)
   PRECOMP += -DSKS  -DSKS2
 endif
 ifeq ($(MAKECMDGOALS),xsiesta)
@@ -304,12 +293,12 @@ endif
 LIB_LINK += $(GENE_LIB) $(COILOPT_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB) $(REGCOIL_LIB)
 
 # Add libraries to LIB_LINK
-LIB_LINK+= $(HOME_BIN)/libstell.a $(LIBS)
+LIB_LINK+= $(LIB_DIR)/$(LOCTYPE)/$(LIB) $(LIBS)
 
 # 3rd Party Libs
 ifeq ($(LMPI),T)
   PRECOMP += -DMPI_OPT
-  VMEC_DIR = ../../PARVMEC
+  VMEC_DIR = ../../VMEC2000
   COMPILE = $(MPI_COMPILE)
   COMPILE_FREE = $(MPI_COMPILE_FREE)
   LINK    = $(MPI_COMPILE) $(FLAGS) -o 

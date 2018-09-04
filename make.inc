@@ -1,1 +1,1 @@
-SHARE/make_macports_landreman.inc
+SHARE/make_cori.inc
