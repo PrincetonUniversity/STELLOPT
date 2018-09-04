@@ -203,6 +203,7 @@
             ! Now we get TI and TE on VMEC mesh (our way)
             ! Notes: This part of the code wants quantities in 10^20 [m^-3] and
             !        [keV]
+            ier = 0
             IF (myworkid == master) THEN
                IF (tempres < 0) THEN
                   DO ir = 1, irup
