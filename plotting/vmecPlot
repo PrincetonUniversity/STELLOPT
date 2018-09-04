@@ -7,7 +7,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import cm
 import numpy as np
 from scipy.io import netcdf
-import sys
+import sys, os
 import math
 
 if len(sys.argv) != 2:
@@ -25,7 +25,8 @@ def maximizeWindow():
         except AttributeError:
             pass
 
-f = netcdf.netcdf_file(sys.argv[1],'r',mmap=False)
+filename = sys.argv[1]
+f = netcdf.netcdf_file(filename,'r',mmap=False)
 phi = f.variables['phi'][()]
 iotaf = f.variables['iotaf'][()]
 presf = f.variables['presf'][()]
@@ -146,7 +147,7 @@ for izeta in range(nzeta):
 xLabel = r'$s = \psi_N$'
 
 
-fig = plt.figure()
+fig = plt.figure(figsize=(14,7))
 fig.patch.set_facecolor('white')
 
 numCols = 3
@@ -244,15 +245,17 @@ for i in range(2):
     plt.xlim([0,2*np.pi])
     plt.ylim([0,2*np.pi])
 
-maximizeWindow()
+#maximizeWindow()
 
 plt.tight_layout()
+plt.figtext(0.5,0.99,os.path.abspath(filename),ha='center',va='top',fontsize=6)
+
 
 ########################################################
 # Now make plot of flux surface shapes
 ########################################################
 
-fig = plt.figure()
+fig = plt.figure(figsize=(14,7))
 fig.patch.set_facecolor('white')
 
 numCols = 3
@@ -301,9 +304,10 @@ for izeta in range(nzeta):
     plt.ylabel('Z')
     plt.title('zeta = '+str(zeta[izeta]))
 
-maximizeWindow()
+#maximizeWindow()
 
 #plt.tight_layout()
+plt.figtext(0.5,0.99,os.path.abspath(filename),ha='center',va='top',fontsize=6)
 
 ########################################################
 # Now make 3D surface plot
@@ -338,5 +342,8 @@ fig.patch.set_facecolor('white')
 ax = fig.gca(projection='3d')
 ax.plot_surface(X, Y, Z, facecolors = cm.jet(B_rescaled), rstride=1, cstride=1, antialiased=False)
 ax.auto_scale_xyz([X.min(), X.max()], [X.min(), X.max()], [X.min(), X.max()])
+
+
+plt.figtext(0.5,0.99,os.path.abspath(filename),ha='center',va='top',fontsize=6)
 plt.show()
 
