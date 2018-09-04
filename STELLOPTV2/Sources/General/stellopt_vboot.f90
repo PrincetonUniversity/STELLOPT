@@ -78,7 +78,7 @@
       s_fine_half(1) = 0
       s_fine_half(2:Ns_fine) = s_fine_full(1:(Ns_fine-1)) + ds_fine/2
 
-      ! Evaluate the total beam current, which we will need later for computing the new CURTOR for vmec:
+      ier = 0
       DO radius_index = 1,Ns_fine
          CALL eval_profile(s_fine_full(radius_index), beamj_type, AC_profile_fine(radius_index), beamj_aux_s, beamj_aux_f, ier)
       END DO
