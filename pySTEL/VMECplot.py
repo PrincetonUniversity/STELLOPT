@@ -34,7 +34,7 @@ class MyApp(QMainWindow):
 		self.ui.plot_list = ['Summary','-----1D-----','Iota','q','Pressure',\
 		'<Buco>','<Bvco>','<jcuru>','<jcurv>','<j.B>',  '-----3D------','|B|','sqrt(g)',\
 		'B^u','B^v','B_s','B_u','B_v','j^u','j^v', 'jll', 'j.B','---Special---','LPK']
-		files = os.listdir('.')
+		files = sorted(os.listdir('.'))
 		for name in files:
 			if(name[0:4]=='wout'):
 				self.ui.FileName.addItem(name)
@@ -46,8 +46,8 @@ class MyApp(QMainWindow):
 		self.nu = self.vmec_data['mpol']*4
 		self.nv = self.vmec_data['ntor']*4*self.vmec_data['nfp']
 		self.nv2 = self.vmec_data['ntor']*4
-		if self.nu < 64:
-			self.nu = 64
+		if self.nu < 128:
+			self.nu = 128
 		if self.nv < 64:
 			self.nv = 64
 		self.TransformVMEC(self)
