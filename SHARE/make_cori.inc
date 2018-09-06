@@ -3,7 +3,7 @@
 #######################################################################
   SHELL = /bin/sh
   PWD1 = `pwd`
-  MYHOME = /global/u2/l/lazerson/bin_cori
+  MYHOME = $(HOME)/bin_cori
   PRECOMP:= fpp -C -P -DLINUX
   COMPILE = ftn
   COMPILE_FREE = ftn
