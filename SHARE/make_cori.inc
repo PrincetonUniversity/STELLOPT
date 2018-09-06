@@ -26,6 +26,8 @@
   MPI_COMPILE_FREE = ftn
   MPI_COMPILE_C = cc
   MPI_LINK = ftn
+  MPI_RUN = srun
+  MPI_RUN_OPTS = -n 8 -c 16
 
 #######################################################################
 #            NAG Options
