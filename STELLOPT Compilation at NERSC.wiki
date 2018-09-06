@@ -52,3 +52,7 @@ module load silo
 # Now create a directory in which you wish to compile STELLOPT and place the STELLOPT ZIP file in that directory. Then unzip it.
 # Unzip stellinstall
 # Now you should be able to run the setup script and compile the STELLOPT family of codes.
+---
+**Compiling NTCC on Cori**
+gmake FORTRAN_VARIANT=Intel INTEL_CC=Y USEFC=Y _64=Y GCC_VERSION=492
+TERMCAP=/usr/lib64/libtermcap.so.2.0.8
