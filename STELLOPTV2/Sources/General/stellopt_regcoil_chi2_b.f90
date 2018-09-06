@@ -47,7 +47,7 @@
 !        istat         Error status
 !        iunit         File unit number
       ! FOR REGCOIL
-      INTEGER :: istat, iunit, m, n, ii, nummodes1, nummodes2
+      INTEGER :: istat, iunit, m, n, ii, imn, nummodes1, nummodes2
 
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
@@ -71,7 +71,7 @@
       ! determiend, control variables are set, and the regcoil-functions
       ! are called
       separation = regcoil_winding_surface_separation
-      current_density_target = regcoil_current_density
+      target_value = regcoil_current_density
      
       ! Loop over all of the spectral components of the winding surface
       ! and update the rc_*_stellopt  
@@ -93,27 +93,41 @@
          CALL safe_open(iunit, istat, TRIM('regcoil_nescout.'// &
                    TRIM(proc_string)), 'replace', 'formatted')
          !write(6,'(a)'), '<----JCSwrite_output'
-         write(iunit,*), "Number of fourier modes in table"
-         write(iunit,*), nummodes1
-         write(iunit,*), "Table of fourier coefficients"
-         write(iunit,*), "m,n,crc2,czs2,crs2,czc2"
+         write(iunit,*) "Number of fourier modes in table"
+         write(iunit,*) nummodes1
+         write(iunit,*) "Table of fourier coefficients"
+         write(iunit,*) "m,n,crc2,czs2,crs2,czc2"
          DO m = -my_mpol, my_mpol
              DO n = -my_ntor, my_ntor
                 if ( (regcoil_rcws_rbound_c(m,n) .ne. 0) .or. &
                      (regcoil_rcws_rbound_s(m,n) .ne. 0) .or. &
                      (regcoil_rcws_zbound_c(m,n) .ne. 0) .or. &
                      (regcoil_rcws_zbound_s(m,n) .ne. 0) ) THEN
-                   rc_rmnc_stellopt(m,n) = regcoil_rcws_rbound_c(m,n)
-                   rc_rmns_stellopt(m,n) = regcoil_rcws_rbound_s(m,n)
-                   rc_zmnc_stellopt(m,n) = regcoil_rcws_zbound_c(m,n)
-                   rc_zmns_stellopt(m,n) = regcoil_rcws_zbound_s(m,n)
+                   !rc_rmnc_stellopt(m,n) = regcoil_rcws_rbound_c(m,n)
+                   !rc_rmns_stellopt(m,n) = regcoil_rcws_rbound_s(m,n)
+                   !rc_zmnc_stellopt(m,n) = regcoil_rcws_zbound_c(m,n)
+                   !rc_zmns_stellopt(m,n) = regcoil_rcws_zbound_s(m,n)
                    ! These are written in the same order as in a NESCIN
                    ! file: M N RC ZS RS ZC
-                   write(iunit,*), m, n, &
-                                   rc_rmnc_stellopt(m,n), rc_zmns_stellopt(m,n), &
-                                   rc_rmns_stellopt(m,n), rc_zmnc_stellopt(m,n)
+                   write(iunit,*) m, n, &
+                        regcoil_rcws_rbound_c(m,n), regcoil_rcws_zbound_s(m,n), &
+                        regcoil_rcws_rbound_s(m,n), regcoil_rcws_zbound_c(m,n)
+                        !rc_rmnc_stellopt(m,n), rc_zmns_stellopt(m,n), &
+                        !rc_rmns_stellopt(m,n), rc_zmnc_stellopt(m,n)
                 END IF
               END DO
+          END DO
+          DO imn = 1, mnmax_coil
+             m = xm_coil(imn)
+             n = xn_coil(imn)/(-nfp)
+             IF (m < -my_mpol .or. m > my_mpol .or. n < -my_ntor .or. n > my_ntor) THEN
+                WRITE(6,*) "Error! (m,n) in regcoil coil surface exceeds mpol_rcws or ntor_rcws."
+                STOP
+             END IF
+             rmnc_coil(imn) = regcoil_rcws_rbound_c(m,n)
+             rmns_coil(imn) = regcoil_rcws_rbound_s(m,n)
+             zmnc_coil(imn) = regcoil_rcws_zbound_c(m,n)
+             zmns_coil(imn) = regcoil_rcws_zbound_s(m,n)
           END DO
           CLOSE(iunit)
       END IF
@@ -150,7 +164,8 @@
       IF ((ANY(lregcoil_rcws_rbound_s_opt)) .or. (ANY(lregcoil_rcws_rbound_c_opt)) .or. &
           (ANY(lregcoil_rcws_zbound_s_opt)) .or. (ANY(lregcoil_rcws_zbound_c_opt)) ) THEN 
          ! write(6,'(a)') '<----regcoil initupdate_nescin_coil_surface'
-         call regcoil_initupdate_nescin_coil_surface(verbose)
+         !call regcoil_initupdate_nescin_coil_surface(verbose)
+         CALL regcoil_evaluate_coil_surface()
       END IF
 
       ! Initialize some of the vectors and matrices needed:
@@ -187,6 +202,8 @@
          stop
       END select
 
+      output_filename = 'regcoil_out.'// TRIM(proc_string)//'.nc'
+      !call regcoil_write_output() ! For debugging it can be useful to write the regcoil_out file.
 
       !=================DEBUG SECTION==========================
       !  This section is for debugging purposes. If

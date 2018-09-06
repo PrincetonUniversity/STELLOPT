@@ -30,9 +30,10 @@
       USE beams3d_runtime, ONLY: BEAMS3D_VERSION
 !DEC$ ENDIF        
 !DEC$ IF DEFINED (REGCOIL)
-      USE regcoil_variables, ONLY: rc_rmnc_stellopt, rc_rmns_stellopt, &
-                                   rc_zmnc_stellopt, rc_zmns_stellopt, &
-                                   rc_nfp => nfp
+      USE regcoil_variables, ONLY: rc_nfp => nfp, rmnc_coil, rmns_coil, zmns_coil, zmnc_coil, mnmax_coil, xm_coil, xn_coil, verbose, regcoil_nml
+      !USE regcoil_variables, ONLY: rc_rmnc_stellopt, rc_rmns_stellopt, &
+      !                             rc_zmnc_stellopt, rc_zmns_stellopt, &
+      !                             rc_nfp => nfp
 !DEC$ ENDIF
       
 !-----------------------------------------------------------------------
@@ -406,7 +407,7 @@
       INTEGER :: i, ierr, iunit, local_master
 
       ! Variables used in regcoil section to parse nescin spectrum
-      INTEGER :: ii, jj
+      INTEGER :: imn, m, n
 
       ! Initializations to default values
       nfunc_max       = 5000
@@ -963,34 +964,54 @@
 
 !DEC$ IF DEFINED (REGCOIL)
       IF ( ANY(sigma_regcoil_chi2_b < bigno) .and. &
-            ( ANY(lregcoil_rcws_rbound_c_opt) .or. ANY(lregcoil_rcws_rbound_s_opt) .or. &
-              ANY(lregcoil_rcws_zbound_c_opt) .or. ANY(lregcoil_rcws_zbound_s_opt) ) ) THEN
-           rc_nfp = regcoil_num_field_periods
-           regcoil_rcws_rbound_c = 0
-           regcoil_rcws_rbound_s = 0
-           regcoil_rcws_zbound_c = 0
-           regcoil_rcws_zbound_s = 0
-           IF (myid == master) THEN
-             WRITE(6,*) '<----REGCOIL: Reading NESCIN Spectrum from file'
-           end if
-             call regcoil_read_nescin_spectrum(regcoil_nescin_filename, (myid == master)) 
-           IF (myid == master) THEN
-             WRITE(6,*) '<----REGCOIL: Initializing winding surface with NESCIN Spectrum'
-           end if
-           call regcoil_initupdate_nescin_coil_surface((myid == master))
-           ! parse the rc_(r/z)mn(c/s)_stellopt arrays and populate the regcoil_rcws_(r/z)bound_(c/s) 2D arrays
-           do ii = -mpol_rcws,mpol_rcws
-             do jj = -ntor_rcws,ntor_rcws
-              regcoil_rcws_rbound_c(ii, jj) = rc_rmnc_stellopt(ii,jj)
-              regcoil_rcws_rbound_s(ii, jj) = rc_rmns_stellopt(ii,jj)
-              regcoil_rcws_zbound_c(ii, jj) = rc_zmnc_stellopt(ii,jj)
-              regcoil_rcws_zbound_s(ii, jj) = rc_zmns_stellopt(ii,jj)
-           end do
+           ( ANY(lregcoil_rcws_rbound_c_opt) .or. ANY(lregcoil_rcws_rbound_s_opt) .or. &
+           ANY(lregcoil_rcws_zbound_c_opt) .or. ANY(lregcoil_rcws_zbound_s_opt) ) ) THEN
+         rc_nfp = regcoil_num_field_periods
+         regcoil_rcws_rbound_c = 0
+         regcoil_rcws_rbound_s = 0
+         regcoil_rcws_zbound_c = 0
+         regcoil_rcws_zbound_s = 0
+         IF (myid == master) THEN
+            WRITE(6,*) '<----REGCOIL: Reading NESCIN Spectrum from file'
+         end if
+         !call regcoil_read_nescin_spectrum(regcoil_nescin_filename, (myid == master)) 
+         verbose = (myid == master)
+         ! We need to read geometry_option_coil and nescin_filename from the input namelist before the coil surface can be loaded.
+         CALL safe_open(iunit, istat, TRIM(filename), 'old', 'formatted')
+         READ(iunit, nml=regcoil_nml, iostat=istat)
+         CLOSE(iunit)
+         call regcoil_init_coil_surface() 
+         IF (myid == master) THEN
+            WRITE(6,*) '<----REGCOIL: Initializing winding surface with NESCIN Spectrum'
+         end if
+         !call regcoil_initupdate_nescin_coil_surface((myid == master))
+         ! parse the rc_(r/z)mn(c/s)_stellopt arrays and populate the regcoil_rcws_(r/z)bound_(c/s) 2D arrays
+         !do ii = -mpol_rcws,mpol_rcws
+         !   do jj = -ntor_rcws,ntor_rcws
+         !      regcoil_rcws_rbound_c(ii, jj) = rc_rmnc_stellopt(ii,jj)
+         !      regcoil_rcws_rbound_s(ii, jj) = rc_rmns_stellopt(ii,jj)
+         !      regcoil_rcws_zbound_c(ii, jj) = rc_zmnc_stellopt(ii,jj)
+         !      regcoil_rcws_zbound_s(ii, jj) = rc_zmns_stellopt(ii,jj)
+         !   end do
+         !end do
+         do imn = 1, mnmax_coil
+            m = xm_coil(imn)
+            n = xn_coil(imn)/(-regcoil_num_field_periods) ! Convert from regcoil/vmec to nescin convention
+            IF (m < -mpol_rcws .or. m > mpol_rcws .or. n < -ntor_rcws .or. n > ntor_rcws) THEN
+               WRITE(6,*) "Error! (m,n) values in nescin file exceed mpol_rcws or ntor_rcws."
+               WRITE(6,*) "mpol_rcws=",mpol_rcws," ntor_rcws=",ntor_rcws
+               WRITE(6,*) "m=",m,"  n=",n
+               STOP
+            END IF
+            regcoil_rcws_rbound_c(m, n) = rmnc_coil(imn)
+            regcoil_rcws_rbound_s(m, n) = rmns_coil(imn)
+            regcoil_rcws_zbound_c(m, n) = zmnc_coil(imn)
+            regcoil_rcws_zbound_s(m, n) = zmns_coil(imn)
          end do
          
          if (myid==master) then
             WRITE(6,*) '<----STELLOPT_INPUT_MOD: Finished parsing nescoil data and', &
-                       ' assigning stellopt variables'
+                 ' assigning stellopt variables'
          end if
       END IF
 !DEC$ ENDIF
