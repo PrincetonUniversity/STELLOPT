@@ -45,7 +45,7 @@
 #######################################################################
 #            NTCC Options
 #######################################################################
-  LNTCC = T
+  LNTCC = F
   NTCC_INC = -I/global/homes/l/lazerson/pub_cori/preact/mod 
   NTCC_LIB = -L/global/homes/l/lazerson/pub_cori/preact/lib \
              -lpreact -lsigsub -laladdinsub -lpreact -lportlib
@@ -348,7 +348,11 @@ ifeq ($(MAKECMDGOALS),libstell.a)
 endif
 ifeq ($(MAKECMDGOALS),libstell.so)
   LINK = $(LINK_C)
-  LIB_LINK = $(LIB_SHARE)
+  LIB_LINK = $(LIB_SHARE) 
+# Note this is needed for Cori for reasons
+  LIB_LINK += -L$(NETCDF_DIR)/lib -lnetcdf -lnetcdff
+  LIB_LINK += -L$(HDF5_DIR)/lib -lhdf5_hl -lhdf5_fortran -lhdf5 \
+             -lhdf5hl_fortran 
   COMPILE += -fPIC
   COMPILE_FREE += -fPIC
   INC_PATH = 
