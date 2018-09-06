@@ -2,7 +2,7 @@
 #DO NOT alter the directory structure or move this makefile (must be in first subdirectory below top_level_dir)
   include ../make.inc
   LIB_DIR = $(MYHOME)/libstell_dir
-
+  BIN_DIR = ~/bin_cori
   VMEC_TEST_DIR = VMEC_TEST
   DIAGNO_TEST_DIR = DIAGNO_TEST
 
@@ -11,24 +11,24 @@
 test_vmec:
 	@echo "Beginning testing of VMEC2000"
 	@cd $(VMEC_TEST_DIR); rm -f jxbout* mercier* threed1* wout*; 
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS) ~/bin/xvmec2000 input.DSHAPE
-	@cd $(VMEC_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS) ~/bin/xvmec2000 input.DSHAPE
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xvmec2000 input.DSHAPE
+	@cd $(VMEC_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xvmec2000 input.DSHAPE
 	@cd $(VMEC_TEST_DIR) && ./compare_DSHAPE.py
 	@echo ""
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS) ~/bin/xvmec2000 input.SOLOVEV
-	@cd $(VMEC_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS) ~/bin/xvmec2000 input.SOLOVEV
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xvmec2000 input.SOLOVEV
+	@cd $(VMEC_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xvmec2000 input.SOLOVEV
 	@cd $(VMEC_TEST_DIR); ./compare_SOLOVEV.py
 	@echo ""
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS) ~/bin/xvmec2000 input.HELIOTRON
-	@cd $(VMEC_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS) ~/bin/xvmec2000 input.HELIOTRON
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xvmec2000 input.HELIOTRON
+	@cd $(VMEC_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xvmec2000 input.HELIOTRON
 	@cd $(VMEC_TEST_DIR); ./compare_HELIOTRON.py
 	@echo ""
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS) ~/bin/xvmec2000 input.ATF
-	@cd $(VMEC_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS) ~/bin/xvmec2000 input.ATF
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xvmec2000 input.ATF
+	@cd $(VMEC_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xvmec2000 input.ATF
 	@cd $(VMEC_TEST_DIR); ./compare_ATF.py
 	@echo ""
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS) ~/bin/xvmec2000 input.QAS
-	@cd $(VMEC_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS) ~/bin/xvmec2000 input.QAS
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xvmec2000 input.QAS
+	@cd $(VMEC_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xvmec2000 input.QAS
 	@cd $(VMEC_TEST_DIR); ./compare_QAS.py
 	@echo "Tesing of VMEC2000 complete"
 	@echo ""
