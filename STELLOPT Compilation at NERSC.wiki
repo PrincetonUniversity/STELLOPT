@@ -1,10 +1,10 @@
-=<span style="background-color: #ffffff;">STELLOPT Compilation at NERSC</span>= 
+= STELLOPT Compilation at NERSC = 
 
-<span style="background-color: #ffffff;">This page details how to compile the STELLOPT family of codes on machines at [[@http://www.nersc.gov/|NERSC]]. Note that for the BEAMS3D code you will need to compile ADAS separately.</span>
+This page details how to compile the STELLOPT family of codes on machines at [[@http://www.nersc.gov/|NERSC]]. Note that for the BEAMS3D code you will need to compile ADAS separately.
 ----
-**<span style="background-color: #ffffff;">Edison</span>**
+**Edison**
 # Load the necessary module files
-[[code]]
+{{{
 module load cray-hdf5-parallel
 module load cray-netcdf-hdf5parallel
 module load fftw/3.3.4.0
@@ -13,14 +13,14 @@ module load slepc-complex
 module load cray-tpsl
 module load gsl
 module load silo
-[[code]]
-# <span style="background-color: #ffffff;">Now create a directory in which you wish to compile STELLOPT and place the STELLOPT ZIP file in that directory. Then unzip it.</span>
-# <span style="background-color: #ffffff;">Unzip stellinstall</span>
-# <span style="background-color: #ffffff;">Now you should be able to run the setup script and compile the STELLOPT family of codes.</span>
+}}}
+# Now create a directory in which you wish to compile STELLOPT and place the STELLOPT ZIP file in that directory. Then unzip it.
+# Unzip stellinstall
+# Now you should be able to run the setup script and compile the STELLOPT family of codes.
 
-**<span style="background-color: #ffffff;">Hopper</span>**
-# <span style="background-color: #ffffff;">Load the necessary modules files</span>
-[[code]]
+** Hopper **
+# Load the necessary modules files
+{{{
 module swap PrgEnv-pgi PrgEnv-intel
 module load cray-hdf5-parallel
 module load cray-netcdf-hdf5parallel
@@ -31,14 +31,14 @@ module load slepc-complex
 module load cray-tpsl
 module load gsl
 module load silo
-[[code]]
-# <span style="background-color: #ffffff;">Now create a directory in which you wish to compile STELLOPT and place the STELLOPT ZIP file in that directory. Then unzip it.</span>
-# <span style="background-color: #ffffff;">Unzip stellinstall</span>
-# <span style="background-color: #ffffff;">Now you should be able to run the setup script and compile the STELLOPT family of codes.</span>
+}}}
+# Now create a directory in which you wish to compile STELLOPT and place the STELLOPT ZIP file in that directory. Then unzip it.
+# Unzip stellinstall
+# Now you should be able to run the setup script and compile the STELLOPT family of codes.
 
 **Cori**
 # Load the necessary module files (Intel is the default compiler)
-[[code]]
+{{{
 module load cray-hdf5-parallel
 module load cray-netcdf-hdf5parallel
 module load fftw/3.3.4.5
@@ -47,8 +47,8 @@ module load slepc-complex
 module load cray-tpsl
 module load gsl
 module load silo
+}}}
 
-[[code]]
-# <span style="background-color: #ffffff;">Now create a directory in which you wish to compile STELLOPT and place the STELLOPT ZIP file in that directory. Then unzip it.</span>
-# <span style="background-color: #ffffff;">Unzip stellinstall</span>
-# <span style="background-color: #ffffff;">Now you should be able to run the setup script and compile the STELLOPT family of codes.</span>
+# Now create a directory in which you wish to compile STELLOPT and place the STELLOPT ZIP file in that directory. Then unzip it.
+# Unzip stellinstall
+# Now you should be able to run the setup script and compile the STELLOPT family of codes.
