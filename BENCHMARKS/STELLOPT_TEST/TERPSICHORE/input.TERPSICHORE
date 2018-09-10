@@ -201,6 +201,14 @@
   BALLOON_ZETA    = 0.0
   TARGET_BALLOON(1:99) = 99*0.0  SIGMA_BALLOON(1:99) = 99*1.0
 !------------------------------------------------------------------------
+!       Kink Stability (as calculated by TERPSICHORE)
+!         Requires STELLOPT to be linked to TERPSICHORE.
+!         Also requires the terpsichore_input file.
+!------------------------------------------------------------------------
+  MLMNB_KINK =   264  IVAC_KINK =    24
+  TARGET_KINK(001) =  -1.0  SIGMA_KINK(001) =   1.0   MLMNS_KINK(001) =   76
+  TARGET_KINK(002) =  -1.0  SIGMA_KINK(002) =   1.0   MLMNS_KINK(002) =   91
+!------------------------------------------------------------------------
 !       Neoclassical Transport Calculation (as calculated by NEO)
 !         Note that neoclassical transport is by surface. Axis (01) is ignored.
 !------------------------------------------------------------------------
@@ -234,7 +242,7 @@
   TARGET_TXPORT(13) = 0.0E+00  SIGMA_TXPORT(13) = 1.0  S_TXPORT(13) = 0.70
   TARGET_TXPORT(14) = 0.0E+00  SIGMA_TXPORT(14) = 1.0  S_TXPORT(14) = 0.75
   TARGET_TXPORT(15) = 0.0E+00  SIGMA_TXPORT(15) = 1.0  S_TXPORT(15) = 0.80
-  TXPORT_PROXY = 'gene'
+  TXPORT_PROXY = 'prox1d'
 !-----------------------------------------------------------------------
 !          DIAGNO OPTIMIZATION PARAMETERS
 !-----------------------------------------------------------------------
