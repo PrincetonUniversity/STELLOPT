@@ -31,6 +31,10 @@ test_vmec:
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xvmec2000 input.QAS
 	@cd $(VMEC_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xvmec2000 input.QAS
 	@cd $(VMEC_TEST_DIR); ./compare_QAS.py
+	@echo ""
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xvmec2000 input.DIII-D
+	@cd $(VMEC_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xvmec2000 input.DIII-D
+	@cd $(VMEC_TEST_DIR); ./compare_DIII-D.py
 	@echo "Tesing of VMEC2000 complete"
 	@echo ""
 
