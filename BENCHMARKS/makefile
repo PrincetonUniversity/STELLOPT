@@ -72,5 +72,6 @@ help:
 	@echo "      MPI_RUN_OPTS: " $(MPI_RUN_OPTS)
 	@echo ""
 	@echo "   COMMANDS"
-	@echo "      test_vmec Tesing of VMEC"
-	@echo "      test_diagno Tesing of DIAGNO"
+	@echo "      test_vmec     Tesing of VMEC"
+	@echo "      test_diagno   Tesing of DIAGNO"
+	@echo "      test_stellopt Tesing of STELLOPT"
