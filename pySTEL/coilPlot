@@ -1,0 +1,113 @@
+#!/usr/bin/env python
+
+# The format for coils files is defined in LIBSTELL/Sources/Modules/biotsavart.f
+
+print "usage: coilPlot coils.XXXX"
+
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+import numpy as np
+#from scipy.io import netcdf
+import sys
+#import math
+
+if len(sys.argv) != 2:
+    print "Error! You must specify 1 argument: the coils.XXX file."
+    exit(1)
+
+f = open(sys.argv[1],'r')
+lines = f.readlines()
+f.close()
+
+if lines[0][:8] != "periods ":
+    print "Error! First line should begin with 'periods '"
+    exit(1)
+
+nfp = int(lines[0][8:])
+print "nfp =",nfp
+
+if lines[1][:14] != "begin filament":
+    print "Error! First line should be 'begin filament'"
+    exit(1)
+
+currentLine = 3
+coils = []
+thresh = 1e-13
+while lines[currentLine][:3] != "end":
+    x=[]
+    y=[]
+    z=[]
+    whichLineOfCoil = -1
+    keepGoing = True
+    while keepGoing:
+        whichLineOfCoil += 1
+        splitLine = lines[currentLine].split()
+        currentLine += 1
+        last_x = float(splitLine[0])
+        last_y = float(splitLine[1])
+        last_z = float(splitLine[2])
+        x.append(last_x)
+        y.append(last_y)
+        z.append(last_z)
+        thisCurrent = float(splitLine[3])
+        if whichLineOfCoil == 0:
+            current = thisCurrent
+            start_x = last_x
+            start_y = last_y
+            start_z = last_z
+        nvals = len(splitLine)
+        #print whichLineOfCoil, nvals
+        if nvals == 6:
+            # This must be the last line of the coil.
+            currentGroup = int(splitLine[4])
+            currentGroupName = splitLine[5]
+            numPointsInCoil = whichLineOfCoil + 1
+            if numPointsInCoil == 1:
+                print "Found a coil in group ",currentGroup," containing 1 point: circular coil."
+            elif numPointsInCoil == 2:
+                print "Found a coil in group ",currentGroup," containing 2 points: infinite straight line current."
+            else:
+                print "Found a coil in group ",currentGroup," containing ",numPointsInCoil," points."
+            keepGoing = False
+            if numPointsInCoil > 2:
+                # Make sure coil ends where it started:
+                if (last_x-start_x) > thresh:
+                    print "Error! Coil is not closed in x."
+                    print "initial x: ",start_x
+                    print "final x:   ",last_x
+                    exit(1)
+                if (last_y-start_y) > thresh:
+                    print "Error! Coil is not closed in y."
+                    print "initial y: ",start_y
+                    print "final y:   ",last_y
+                    exit(1)
+                if (last_z-start_z) > thresh:
+                    print "Error! Coil is not closed in z."
+                    print "initial z: ",start_z
+                    print "final z:   ",last_z
+                    exit(1)
+                
+        elif len(splitLine) != 4:
+                print "Error! This line should have either 4 or 6 elements, but it has ",len(splitLine)
+                print lines[currentLine]
+                exit(1)
+
+    coil = {'x':x, 'y':y, 'z':z, 'group':currentGroup, 'groupName':currentGroupName, 'n':numPointsInCoil}
+    coils.append(coil)
+#exit(0)
+
+colors = ['red','green','blue','black','darkorange','magenta','gray','darkturquoise','y','pink']
+
+fig = plt.figure()
+fig.patch.set_facecolor('white')
+ax = fig.gca(projection='3d')
+
+for coil in coils:
+    ax.plot(coil['x'], coil['y'], coil['z'],'.-', color=colors[coil['group']-1])
+
+#coil = coils[0]
+#ax.plot(coil['x'], coil['y'], coil['z'],'.-',color=colors[coil['group']-1])
+
+#plt.tight_layout()
+plt.show()
+

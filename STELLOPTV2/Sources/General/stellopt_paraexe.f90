@@ -354,6 +354,11 @@
                ier = 0
                CALL stellopt_bootsj(lscreen,ier)
                ier_paraexe = ier
+            CASE('sfincs')
+               proc_string = file_str
+               ier = 0
+               CALL stellopt_sfincs(lscreen,ier)
+               ier_paraexe = ier
             CASE('cobra')
                proc_string = file_str
                ier = 0
@@ -376,6 +381,9 @@
                CALL MPI_COMM_FREE(MPI_COMM_MYWORLD,ierr_mpi)
                IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_paraexe: FREE',ierr_mpi)
                RETURN
+            CASE DEFAULT
+               PRINT *,"Error! stellopt_paraexe called with unknown argument: ",TRIM(code_str)
+               STOP
          END SELECT
          !lscreen = .false.
          IF (myworkid == master) RETURN ! The master process of the Communicator can leave

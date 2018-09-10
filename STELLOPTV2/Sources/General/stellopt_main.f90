@@ -33,6 +33,7 @@
 !-----------------------------------------------------------------------
 !     Begin Program
 !-----------------------------------------------------------------------
+
       
       myid = master
 !DEC$ IF DEFINED (MPI_OPT)
@@ -177,6 +178,7 @@
          IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_main',ierr_mpi)
       END IF
       IF (lverb)  WRITE(6,*) '   Number of Optimizer Threads:    ',numprocs
+
 !DEC$ ENDIF
 
       ! Run optimization

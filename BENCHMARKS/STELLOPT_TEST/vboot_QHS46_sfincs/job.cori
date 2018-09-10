@@ -1,0 +1,11 @@
+#!/bin/bash -l
+
+##SBATCH -p debug
+#SBATCH -q premium
+#SBATCH -N 8
+#SBATCH -t 00:30:00
+#SBATCH -J stellopt
+#SBATCH -C haswell
+
+srun -n 256 /global/homes/l/landrema/stellopt/bin/xstelloptv2 input.vboot_QHS46_sfincs
+

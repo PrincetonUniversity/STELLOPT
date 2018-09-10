@@ -269,6 +269,7 @@
                          ne_opt, te_opt, ti_opt, th_opt, zeff_opt, &
                          ne_type, te_type, ti_type, th_type, &
                          beamj_type, bootj_type, zeff_type, &
+                         bootcalc_type, sfincs_s, sfincs_min_procs, sfincs_Er_option, vboot_tolerance, &
                          ne_min, te_min, ti_min, th_min, beamj_f_min, &
                          bootj_f_min, zeff_min, zeff_f_min, &
                          ne_max, te_max, ti_max, th_max, beamj_f_max, &
@@ -593,6 +594,7 @@
       th_type         = 'akima_spline'
       beamj_type      = 'power_series'
       bootj_type      = 'power_series'
+      bootcalc_type   = 'bootsj'
       emis_xics_type  = 'power_series'
       ne_opt(0:20)       = 0.0
       zeff_opt(0:20)     = 0.0
@@ -621,6 +623,10 @@
       bootj_aux_s(:)   = -1.0
       ! bootj_aux_s(1:5) = (/0.0,0.25,0.50,0.75,1.0/)
       bootj_aux_f(:)   = 0.0
+      sfincs_s        = -1 
+      sfincs_s(1:4)   = (/ 0.2, 0.4, 0.6, 0.8 /)
+      vboot_tolerance = 0.01
+      sfincs_min_procs = 1
       emis_xics_s(1:5) = (/0.0,0.25,0.50,0.75,1.0/)
       emis_xics_f(:)   = 0.0
       coil_splinesx(:,:) = -1
@@ -932,6 +938,7 @@
       th_type = ADJUSTL(th_type)
       beamj_type = ADJUSTL(beamj_type)
       bootj_type = ADJUSTL(bootj_type)
+      bootcalc_type = ADJUSTL(bootcalc_type)
 
       ! Coil Optimization
       IF (ANY(ANY(lcoil_spline,2),1)) THEN
@@ -1852,6 +1859,13 @@
          WRITE(iunit,"(2X,A,1X,'=',5(1X,E22.14))") 'BOOTJ_AUX_S',(bootj_aux_s(n), n=1,ik)
          WRITE(iunit,"(2X,A,1X,'=',5(1X,E22.14))") 'BOOTJ_AUX_F',(bootj_aux_f(n), n=1,ik)
       END IF
+      WRITE(iunit,outstr) 'BOOTCALC_TYPE',TRIM(bootcalc_type)
+      ik = MINLOC(sfincs_s(2:),DIM=1)
+      IF (ik > 2) THEN
+         WRITE(iunit,"(2X,A,1X,'=',5(1X,E22.14))") 'SFINCS_S',(sfincs_s(n), n=1,ik)
+      END IF
+      WRITE(iunit,*) 'SFINCS_MIN_PROCS =',sfincs_min_procs
+      WRITE(iunit,*) 'VBOOT_TOLERANCE =',vboot_tolerance
       ! Emissivities
       ik = MINLOC(emis_xics_s(2:),DIM=1)
       IF (ik > 2) THEN
