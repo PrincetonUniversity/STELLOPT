@@ -5,8 +5,7 @@
 #######################################################################
   SHELL = /bin/sh
   PWD1 = `pwd`
-  #MYHOME = $(HOME)/bin
-  MYHOME = $(HOME)/stellopt/bin
+  MYHOME = $(HOME)/bin
   PRECOMP:= fpp -C -P -DLINUX
   COMPILE = ifort
   COMPILE_FREE = ifort
@@ -132,19 +131,18 @@
 #            SFINCS Options
 #######################################################################
 
-#LSFINCS = F
-LSFINCS = T
+  #LSFINCS = F
+  LSFINCS = T
 
-SFINCS_DIR = /u/mlan/sfincs/fortran/version3
+  SFINCS_DIR = $(SFINCS_PATH)
 
-#PETSC_DIR=/opt/local/lib/petsc
-include ${PETSC_DIR}/lib/petsc/conf/variables
-# The above line defines the PETSC make variables PETSC_LIB, FC_LINKER_FLAGS, and FFLAGS, which are used below in SFINCS_LIB.
+  include ${PETSC_DIR}/lib/petsc/conf/variables
+  # The above line defines the PETSC make variables PETSC_LIB, FC_LINKER_FLAGS, and FFLAGS, which are used below in SFINCS_LIB.
 
-SFINCS_INC = -I$(SFINCS_DIR) -I${PETSC_DIR}/include -I${PETSC_DIR}/${PETSC_ARCH}/include
-LIB_SFINCS = libsfincs.a
+  SFINCS_INC = -I$(SFINCS_DIR) -I${PETSC_DIR}/include -I${PETSC_DIR}/${PETSC_ARCH}/include
+  LIB_SFINCS = libsfincs.a
 
-SFINCS_LIB = $(SFINCS_DIR)/$(LIB_SFINCS) \
+  SFINCS_LIB = $(SFINCS_DIR)/$(LIB_SFINCS) \
         $(PETSC_LIB) $(FC_LINKER_FLAGS) $(FFLAGS)
 
 #######################################################################

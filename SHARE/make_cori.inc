@@ -5,8 +5,7 @@
 #######################################################################
   SHELL = /bin/sh
   PWD1 = `pwd`
-#  MYHOME = /global/u2/l/landrema/stellopt/bin
-  MYHOME = /global/u2/l/lazerson/bin_cori
+  MYHOME = $(HOME)/bin_cori
   PRECOMP:= fpp -C -P -DLINUX
   COMPILE = ftn
   COMPILE_FREE = ftn
@@ -121,17 +120,11 @@
 #            SFINCS Options
 #######################################################################
 
-LSFINCS = F
-#LSFINCS = T
-SFINCS_DIR = /global/homes/l/landrema/sfincs/fortran/version3
-SFINCS_INC = -I$(SFINCS_DIR)
-LIB_SFINCS = libsfincs.a
-
-#PETSC_DIR=/opt/local/lib/petsc
-#include ${PETSC_DIR}/lib/petsc/conf/variables
-# The above line defines the PETSC make variables PETSC_LIB, FC_LINKER_FLAGS, and FFLAGS, which are used below in SFINCS_LIB.
-
-SFINCS_LIB = $(SFINCS_DIR)/$(LIB_SFINCS) \
+  LSFINCS = F
+  SFINCS_DIR = $(SFINCS_PATH)
+  SFINCS_INC = -I$(SFINCS_DIR)
+  LIB_SFINCS = libsfincs.a
+  SFINCS_LIB = $(SFINCS_DIR)/$(LIB_SFINCS) \
 	$(PETSC_LIB) $(FC_LINKER_FLAGS) $(FFLAGS)
 
 #######################################################################
