@@ -202,14 +202,6 @@
   BALLOON_ZETA    = 0.0
   TARGET_BALLOON(1:99) = 99*0.0  SIGMA_BALLOON(1:99) = 99*1.0
 !------------------------------------------------------------------------
-!       Kink Stability (as calculated by TERPSICHORE)
-!         Requires STELLOPT to be linked to TERPSICHORE.
-!         Also requires the terpsichore_input file.
-!------------------------------------------------------------------------
-  MLMNB_KINK =   264  IVAC_KINK =    24
-  TARGET_KINK(001) =  -1.0  SIGMA_KINK(001) =   1.0   MLMNS_KINK(001) =   76
-  TARGET_KINK(002) =  -1.0  SIGMA_KINK(002) =   1.0   MLMNS_KINK(002) =   91
-!------------------------------------------------------------------------
 !       Neoclassical Transport Calculation (as calculated by NEO)
 !         Note that neoclassical transport is by surface. Axis (01) is ignored.
 !------------------------------------------------------------------------
@@ -218,7 +210,7 @@
 !       Drift Kinetic Equation Solver (DKES)
 !         Axis (01) is ignored.
 !------------------------------------------------------------------------
-  TARGET_DKES(1:99) = 99*0.0  SIGMA_DKES(1:99) = 99*1.0
+!  TARGET_DKES(1:99) = 99*0.0  SIGMA_DKES(1:99) = 99*1.0
 !  TARGET_DKES(3) = 0.0  SIGMA_DKES(3) = 1.0
 !  TARGET_DKES(3:99) = 97*0.0  SIGMA_DKES(3:99) = 97*1.0
 !------------------------------------------------------------------------
