@@ -8,7 +8,7 @@ The LBOUND_OPT(N,M) logical array controls the ability to directly vary the VMEC
 The LRHO_OPT(N,M) logical array controls the ability to utilize the Hirshman-Breslau representation of the VMEC boundary. This representation utilizes a rho coordinate to define the boundary. Thus for every LRHO_OPT set to true, only one variable is loaded if LASYM=F in the VMEC INDATA namelist. In order to transform to this representation the code must first take the VMEC boundary definition and convert is to Hirshman-Breslau. This is done by the code if any LRHO_OPT is set. STELLOPT will output a conversion accuracy message to the screen when this is done. The resulting spectrum in RHO will have one less poloidal mode than VMEC. Once the RHO(N,M) array is calculated, the modes are loaded into the optimization vector. The major radius is stored in the RHO(0,0) array element so if one wishes this variable to be varied LRHO_OPT(0,0)=T should be set. This representation does not treat the m=0 modes so if the user wishes STELLOPT to vary the m=0 modes the LBOUND_OPT(N,0) modes should be set to true (ignoring the N=0 mode). Setting any of these modes to false is equivalent to setting LFIX_NTOR(N) in the older version of STELLOPT to true. A DRHO_OPT(N,M) may also be set to control the associated auxiliary variable (see LMDIF options).
 
 In the following example an MPOL=5, NTOR = 2 equilibrium is loaded into STELLOPT using the Hirshman-Breslau representation
-[[code]]
+{{{
 &INDATA
   .....
   MPOL = 5
@@ -47,7 +47,8 @@ In the following example an MPOL=5, NTOR = 2 equilibrium is loaded into STELLOPT
   ...
 /
 &END
-[[code]]
+}}}
+
 For optimizer choices requiring minimum and maximum bounds on each variable, the BOUND_MIN(N,M) and BOUND_MAX(N,M) arrays will control extent lower and upper bounds for each variable. The default behavior in the old version of STELLOPT was to set BOUND_MIN(N,M) = RHO(N,M)*0.3 and BOUND_MAX(N,M) = 2.0*RHO(N,M) with a check to make sure that BOUND_MAX(M,N) > BOUND_MIN(N,M) (if not true, the value were flipped).
 
 
@@ -56,7 +57,7 @@ For optimizer choices requiring minimum and maximum bounds on each variable, the
 The LDELTAMN_OPT(N,M) logical array controls the ability to utilize the Garabedian representation of the VMEC boundary. This representation utilizes a rho coordinate to define the boundary. Thus for every LDELTAMN_OPT set to true, only one variable is loaded if LASYM=F in the VMEC INDATA namelist. In order to transform to this representation the code must first take the VMEC boundary definition and convert it to that of Garabedian. This is done by the code if any LDELTAMN_OPT is set. STELLOPT will output a conversion accuracy message to the screen when this is done. The resulting spectrum in RHO will have one less poloidal mode than VMEC. Once the RHO(N,M) array is calculated, the modes are loaded into the optimization vector. The major radius is stored in the RHO(0,0) array element so if one wishes this variable to be varied LDELTAMN_OPT(0,0)=T should be set. A DDELTAMN_OPT(N,M) may also be set to control the associated auxiliary variable (see LMDIF options).
 
 In the following example a MPOL=4, NTOR = 2 equilibrium is loaded into STELLOPT using the Garabedian representation
-[[code]]
+{{{
 &INDATA
   .....
   MPOL = 4
@@ -94,4 +95,4 @@ In the following example a MPOL=4, NTOR = 2 equilibrium is loaded into STELLOPT 
   ...
 /
 &END
-[[code]]
+}}}
