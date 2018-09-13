@@ -49,50 +49,119 @@ test_diagno:
 
 test_stellopt:
 	@echo "Beginning testing of STELLOPT"
-	@cd $(STELLOPT_TEST_DIR)
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.BASIC
-	@cd $(STELLOPT_TEST_DIR)/BASIC; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.BASIC; rm -f *_opt*
-	@echo ""
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.IOTA_LMDIF
-	@cd $(STELLOPT_TEST_DIR)/IOTA_LMDIF; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.IOTA_LMDIF; rm -f *_opt*
-	@echo ""
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.TOK_R0_DELTA
-	@cd $(STELLOPT_TEST_DIR)/TOK_R0_DELTA; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.TOK_R0_DELTA; rm -f *_opt*
-	@echo ""
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.TOK_R0_RHO
-	@cd $(STELLOPT_TEST_DIR)/TOK_R0_RHO; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.TOK_R0_RHO; rm -f *_opt*
-	@echo ""
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.QHS_LMDIF
-	@cd $(STELLOPT_TEST_DIR)/QHS_LMDIF; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.QHS_LMDIF; rm -f *_opt*
-	@echo ""
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.vboot_tokamak_bootsj
-	@cd $(STELLOPT_TEST_DIR)/vboot_tokamak_bootsj; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.vboot_tokamak_bootsj; rm -f *_opt*
+	$(MAKE) test_stellopt_basic
+	$(MAKE) test_stellopt_iota_lmdif
+	$(MAKE) test_stellopt_tok_r0_delta
+	$(MAKE) test_stellopt_tok_r0_rho
+	$(MAKE) test_stellopt_qhs_lmdif
+	#$(MAKE) test_stellopt_beams3d
+	$(MAKE) test_stellopt_vboot_tokamak_bootsj
 	@if [ $LCOILOPT ]; then\
 		@echo "----COILOPT OPTION----"
-		@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.COILOPTPP
-		@cd $(STELLOPT_TEST_DIR)/COILOPTPP; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.COILOPTPP; rm -f *_opt*
-		@echo ""
+		$(MAKE) test_stellopt_coilopt
 	fi
 	@if [ $LGENE ]; then\
 		@echo "----GENE OPTION----"
-		@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.GENE;
-		@cd $(STELLOPT_TEST_DIR)/GENE; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.GENE; rm -f *_opt*
-		@echo ""
+		$(MAKE) test_stellopt_gene
 	fi
+	#@if [ $LREGCOIL ]; then\
+	#	@echo "----REGCOIL OPTION----"
+	#	$(MAKE) test_stellopt_regcoil
+	#fi
 	@if [ $LSFINCS ]; then\
 		@echo "----SFINCS OPTION----"
-		@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.vboot_tokamak_sfincs;
-		@cd $(STELLOPT_TEST_DIR)/vboot_tokamak_sfincs; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.vboot_tokamak_sfincs; rm -f *_opt*
-		@echo ""
+		$(MAKE) test_stellopt_sfincs
 	fi
 	@if [ $LTERPSICHORE ]; then\
 		@echo "----TERPSICHORE OPTION----"
-		@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.TERPSICHORE
-		@cd $(STELLOPT_TEST_DIR)/TERPSICHORE; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.TERPSICHORE; rm -f *_opt*
-		@echo ""
+		$(MAKE) test_stellopt_terpsichore
 	fi
+	#@if [ $LTRAVIS ]; then\
+	#	@echo "----TRAVIS OPTION----"
+	#	$(MAKE) test_stellopt_travis
+	#fi
 	@echo "Tesing of STELLOPT complete"
 	@echo ""
+
+test_stellopt_basic:
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.BASIC
+	@cd $(STELLOPT_TEST_DIR)/BASIC; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.BASIC; rm -f *_opt*
+	@echo ""
+
+test_stellopt_beams3d:
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.BEAMS3D
+	@cd $(STELLOPT_TEST_DIR)/BEAMS3D; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.BEAMS3D; rm -f *_opt*
+	@echo ""
+
+test_stellopt_iota_lmdif:
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.IOTA_LMDIF
+	@cd $(STELLOPT_TEST_DIR)/IOTA_LMDIF; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.IOTA_LMDIF; rm -f *_opt*
+	@echo ""
+
+test_stellopt_tok_r0_delta:
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.TOK_R0_DELTA
+	@cd $(STELLOPT_TEST_DIR)/TOK_R0_DELTA; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.TOK_R0_DELTA; rm -f *_opt*
+	@echo ""
+
+test_stellpt_tok_r0_rho:
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.TOK_R0_RHO
+	@cd $(STELLOPT_TEST_DIR)/TOK_R0_RHO; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.TOK_R0_RHO; rm -f *_opt*
+	@echo ""
+
+test_stellopt_qhs_lmdif:
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.QHS_LMDIF
+	@cd $(STELLOPT_TEST_DIR)/QHS_LMDIF; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.QHS_LMDIF; rm -f *_opt*
+	@echo ""
+
+test_stellopt_vboot_tokamak_bootsj:
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.vboot_tokamak_bootsj
+	@cd $(STELLOPT_TEST_DIR)/vboot_tokamak_bootsj; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.vboot_tokamak_bootsj; rm -f *_opt*
+	@echo ""
+
+test_stellopt_coilopt:
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.COILOPTPP
+	@cd $(STELLOPT_TEST_DIR)/COILOPTPP; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.COILOPTPP; rm -f *_opt*
+	@echo ""
+
+test_stellopt_gene:
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.GENE;
+	@cd $(STELLOPT_TEST_DIR)/GENE; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.GENE; rm -f *_opt*
+	@echo ""
+
+test_stellopt_sfincs:
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.vboot_tokamak_sfincs;
+	@cd $(STELLOPT_TEST_DIR)/vboot_tokamak_sfincs; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.vboot_tokamak_sfincs; rm -f *_opt*
+	@echo ""
+
+test_stellopt_terpsichore:
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.TERPSICHORE
+	@cd $(STELLOPT_TEST_DIR)/TERPSICHORE; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.TERPSICHORE; rm -f *_opt*
+	@echo ""
+
+clean_test:
+	@cd $(VMEC_TEST_DIR); @rm jxbout* mercier* threed1* parvmecinfo* wout*
+	@cd $(DIAGNO_TEST_DIR); @rm diagno_bench* diagno_flux* diagno_surf* test_loops_j* test_loops_b*
+	@cd $(STELLOPT_TEST_DIR)/BASIC; $(MAKE) stellopt_cleanup_dir
+	@cd $(STELLOPT_TEST_DIR)/BEAMS3D; $(MAKE) stellopt_cleanup_dir
+	@cd $(STELLOPT_TEST_DIR)/COILOPTPP; $(MAKE) stellopt_cleanup_dir
+	@cd $(STELLOPT_TEST_DIR)/GENE; $(MAKE) stellopt_cleanup_dir
+	@cd $(STELLOPT_TEST_DIR)/IOTA_LMDIF; $(MAKE) stellopt_cleanup_dir
+	@cd $(STELLOPT_TEST_DIR)/ONE_ITER; $(MAKE) stellopt_cleanup_dir
+	@cd $(STELLOPT_TEST_DIR)/QHS_LMDIF; $(MAKE) stellopt_cleanup_dir
+	@cd $(STELLOPT_TEST_DIR)/TERPSICHORE; $(MAKE) stellopt_cleanup_dir
+	@cd $(STELLOPT_TEST_DIR)/TOK_R0_DELTA; $(MAKE) stellopt_cleanup_dir
+	@cd $(STELLOPT_TEST_DIR)/TOK_R0_RHO; $(MAKE) stellopt_cleanup_dir
+	@cd $(STELLOPT_TEST_DIR)/vboot_tokamak_sfincs; $(MAKE) stellopt_cleanup_dir
+
+stellopt_cleanup_dir:
+	@rm answers* auto* beams3d* b_norm_eq_* b_norm_init_* b_norm_final_* bnorm.* boot_fit.* boozmn* checkpoint_* \
+		coilopt_params.* coils.* coil_spline*.out curv* dcon* deltamn.* diagno_flux.* diagno_bth.* diagno_seg.* \
+		dkes* dprof* fevals* field* fort.* gade* gist* eigenvalues* input.*.***** input_dkes.* jacobian.* jprof.* \
+		jxb* jBbs* LMsave* log_gene.* map.* map_plane.* mgrid_*.nc mercier* mom* neo* nrg* opt* parameters_* \
+		parvmecinfo* results* rhomn* RZ* stellopt.* tprof* wout* temp_input.* terpsichore_eq.* terpsichore_16.* \
+		terpsichore_17.* terpsichore_19.* terpsichore_22.* terpsichore_23.* threed1.* tv_out_* txport* xvec.* uv_* \
+		var_* vsp*
+	
 
 help:
 	@echo "TESTING OF STELLOPT BUILDS"
