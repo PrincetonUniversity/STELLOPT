@@ -130,17 +130,7 @@
 !-----------------------------------------------------------------------
 !          OPTIMIZED QUANTITIES
 !-----------------------------------------------------------------------
-!  LCURTOR_OPT = T   CURTOR_MIN  = -1.0E6  CURTOR_MAX  = -1.0E4
-!  LPHIEDGE_OPT = T  PHIEDGE_MIN = 0.20  PHIEDGE_MAX = 1.0
-  LRHO_OPT(-5:5,0) = 11*T
-  LRHO_OPT(-5:5,1) = 11*T
-  LRHO_OPT(-5:5,2) = 11*T
-  LRHO_OPT(-5:5,3) = 11*T
-  LRHO_OPT(-5:5,4) = 11*T
-  LRHO_OPT(-5:5,5) = 11*T
-  LRHO_OPT(-5:5,6) = 11*T
-  LRHO_OPT(-5:5,7) = 11*T
-  LBOUND_OPT(1:4,0) = 4*T
+  LCURTOR_OPT = T   CURTOR_MIN  = -1.0E6  CURTOR_MAX  = -1.0E4
   RHO_EXP = 4
 !------------------------------------------------------------------------
 !       COIL OPTIMIZATION
