@@ -55,6 +55,7 @@ test_stellopt:
 	$(MAKE) test_stellopt_tok_r0_rho
 	$(MAKE) test_stellopt_qhs_lmdif
 	#$(MAKE) test_stellopt_beams3d
+	#$(MAKE) test_stellopt_tok_recon
 	$(MAKE) test_stellopt_vboot_tokamak_bootsj
 	@if [ $LCOILOPT ]; then\
 		@echo "----COILOPT OPTION----"
@@ -64,10 +65,10 @@ test_stellopt:
 		@echo "----GENE OPTION----"
 		$(MAKE) test_stellopt_gene
 	fi
-	#@if [ $LREGCOIL ]; then\
-	#	@echo "----REGCOIL OPTION----"
-	#	$(MAKE) test_stellopt_regcoil
-	#fi
+	@if [ $LREGCOIL ]; then\
+		@echo "----REGCOIL OPTION----"
+		$(MAKE) test_stellopt_regcoil
+	fi
 	@if [ $LSFINCS ]; then\
 		@echo "----SFINCS OPTION----"
 		$(MAKE) test_stellopt_sfincs
