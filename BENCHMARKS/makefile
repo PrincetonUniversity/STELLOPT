@@ -1,5 +1,6 @@
 #Type "make release(debug)" at command line to make release(debug) version  
 #DO NOT alter the directory structure or move this makefile (must be in first subdirectory below top_level_dir)
+  MAKECMDGOALS = xstelloptv2
   include ../make.inc
   LIB_DIR = $(MYHOME)/libstell_dir
   BIN_DIR = ~/bin_cori
@@ -50,50 +51,44 @@ test_stellopt:
 	@echo "Beginning testing of STELLOPT"
 	@cd $(STELLOPT_TEST_DIR)
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.BASIC
-	@cd $(STELLOPT_TEST_DIR)/BASIC; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.BASIC
-	@rm -f *_opt*
+	@cd $(STELLOPT_TEST_DIR)/BASIC; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.BASIC; rm -f *_opt*
 	@echo ""
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.IOTA_LMDIF
-	@cd $(STELLOPT_TEST_DIR)/IOTA_LMDIF; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.IOTA_LMDIF
-	@rm -f *_opt*
+	@cd $(STELLOPT_TEST_DIR)/IOTA_LMDIF; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.IOTA_LMDIF; rm -f *_opt*
 	@echo ""
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.TOK_R0_DELTA
-	@cd $(STELLOPT_TEST_DIR)/TOK_R0_DELTA; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.TOK_R0_DELTA
-	@rm -f *_opt*
+	@cd $(STELLOPT_TEST_DIR)/TOK_R0_DELTA; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.TOK_R0_DELTA; rm -f *_opt*
 	@echo ""
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.TOK_R0_RHO
-	@cd $(STELLOPT_TEST_DIR)/TOK_R0_RHO; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.TOK_R0_RHO
-	@rm -f *_opt*
+	@cd $(STELLOPT_TEST_DIR)/TOK_R0_RHO; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.TOK_R0_RHO; rm -f *_opt*
+	@echo ""
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.QHS_LMDIF
+	@cd $(STELLOPT_TEST_DIR)/QHS_LMDIF; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.QHS_LMDIF; rm -f *_opt*
 	@echo ""
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.vboot_tokamak_bootsj
-	@cd $(STELLOPT_TEST_DIR)/vboot_tokamak_bootsj; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.vboot_tokamak_bootsj
-	@rm -f *_opt*
+	@cd $(STELLOPT_TEST_DIR)/vboot_tokamak_bootsj; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.vboot_tokamak_bootsj; rm -f *_opt*
 	@if [ $LCOILOPT ]; then\
 		@echo "----COILOPT OPTION----"
 		@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.COILOPTPP
-		@cd $(STELLOPT_TEST_DIR)/COILOPTPP; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.COILOPTPP
-		@rm -f *_opt*
+		@cd $(STELLOPT_TEST_DIR)/COILOPTPP; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.COILOPTPP; rm -f *_opt*
 		@echo ""
 	fi
 	@if [ $LGENE ]; then\
 		@echo "----GENE OPTION----"
-		@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.GENE;\
-		@cd $(STELLOPT_TEST_DIR)/GENE; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.GENE;\
-		@rm -f *_opt*
+		@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.GENE;
+		@cd $(STELLOPT_TEST_DIR)/GENE; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.GENE; rm -f *_opt*
 		@echo ""
 	fi
 	@if [ $LSFINCS ]; then\
 		@echo "----SFINCS OPTION----"
-		@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.vboot_tokamak_sfincs;\
-		@cd $(STELLOPT_TEST_DIR)/vboot_tokamak_sfincs; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.vboot_tokamak_sfincs;\
-		@rm -f *_opt*
+		@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.vboot_tokamak_sfincs;
+		@cd $(STELLOPT_TEST_DIR)/vboot_tokamak_sfincs; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.vboot_tokamak_sfincs; rm -f *_opt*
 		@echo ""
 	fi
 	@if [ $LTERPSICHORE ]; then\
 		@echo "----TERPSICHORE OPTION----"
 		@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.TERPSICHORE
-		@cd $(STELLOPT_TEST_DIR)/TERPSICHORE; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.TERPSICHORE
-		@rm -f *_opt*
+		@cd $(STELLOPT_TEST_DIR)/TERPSICHORE; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.TERPSICHORE; rm -f *_opt*
 		@echo ""
 	fi
 	@echo "Tesing of STELLOPT complete"
@@ -102,8 +97,15 @@ test_stellopt:
 help:
 	@echo "TESTING OF STELLOPT BUILDS"
 	@echo "   ENVIRONMENT VARIABLES (make.inc)"
-	@echo "      MPI_RUN: " $(MPI_RUN)
+	@echo "      MPI_RUN:      " $(MPI_RUN)
 	@echo "      MPI_RUN_OPTS: " $(MPI_RUN_OPTS)
+	@echo ""
+	@echo "      LCOILOPT:     " $(LCOILOPT)
+	@echo "      LGENE:        " $(LGENE)
+	@echo "      LREGCOIL:     " $(LREGCOIL)
+	@echo "      LSINFCS:      " $(LSFINCS)
+	@echo "      LTERPSICHORE: " $(LTERPSICHORE)
+	@echo "      LTRAVIS:      " $(LTRAVIS)
 	@echo ""
 	@echo "   COMMANDS"
 	@echo "      test_vmec     Tesing of VMEC"
