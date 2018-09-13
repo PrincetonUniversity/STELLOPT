@@ -14,7 +14,7 @@ CMakeLists.txt
 */Release/*.f
 */Debug/*.f90
 */Debug/*.f
-*/BENCHMARKS/STELLOPT_TEST/*/*
+BENCHMARKS/STELLOPT_TEST/*/*
 update*
 COILGEOM
 bin
