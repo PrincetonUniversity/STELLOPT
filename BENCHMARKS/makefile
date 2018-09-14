@@ -77,10 +77,10 @@ test_stellopt:
 		@echo "----TERPSICHORE OPTION----"
 		$(MAKE) test_stellopt_terpsichore
 	fi
-	#@if [ $LTRAVIS ]; then\
-	#	@echo "----TRAVIS OPTION----"
-	#	$(MAKE) test_stellopt_travis
-	#fi
+	@if [ $LTRAVIS ]; then\
+		@echo "----TRAVIS OPTION----"
+		$(MAKE) test_stellopt_travis
+	fi
 	@echo "Tesing of STELLOPT complete"
 	@echo ""
 
@@ -109,7 +109,7 @@ test_stellopt_tok_r0_delta:
 	@cd $(STELLOPT_TEST_DIR)/TOK_R0_DELTA; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.TOK_R0_DELTA; rm -f *_opt*
 	@echo ""
 
-test_stellpt_tok_r0_rho:
+test_stellopt_tok_r0_rho:
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.TOK_R0_RHO
 	@cd $(STELLOPT_TEST_DIR)/TOK_R0_RHO; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.TOK_R0_RHO; rm -f *_opt*
 	@echo ""
@@ -144,6 +144,11 @@ test_stellopt_terpsichore:
 	@cd $(STELLOPT_TEST_DIR)/TERPSICHORE; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.TERPSICHORE; rm -f *_opt*
 	@echo ""
 
+test_stellopt_travis:
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.TRAVIS
+	@cd $(STELLOPT_TEST_DIR)/TRAVIS; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.TRAVIS; rm -f *_opt*
+	@echo ""
+
 clean_test:
 	@cd $(VMEC_TEST_DIR); rm -f dcon* jxbout* mercier* threed1* parvmecinfo* wout*
 	@cd $(DIAGNO_TEST_DIR); rm -f diagno_bench* diagno_flux* diagno_surf* test_loops_j* test_loops_b*
@@ -154,11 +159,11 @@ clean_test:
 	@$(MAKE) SUBDIR=$(STELLOPT_TEST_DIR)/IOTA_LMDIF stellopt_cleanup_dir
 	@$(MAKE) SUBDIR=$(STELLOPT_TEST_DIR)/ONE_ITER stellopt_cleanup_dir
 	@$(MAKE) SUBDIR=$(STELLOPT_TEST_DIR)/QHS_LMDIF stellopt_cleanup_dir
-	@$(MAKE) SUBDIR=$(STELLOPT_TEST_DIR)/TERPSICHORE stellopt_cleanup_dir
-	@$(MAKE) SUBDIR=$(STELLOPT_TEST_DIR)/BASIC stellopt_cleanup_dir
 	@$(MAKE) SUBDIR=$(STELLOPT_TEST_DIR)/RECON_TOK stellopt_cleanup_dir
+	@$(MAKE) SUBDIR=$(STELLOPT_TEST_DIR)/TERPSICHORE stellopt_cleanup_dir
 	@$(MAKE) SUBDIR=$(STELLOPT_TEST_DIR)/TOK_R0_DELTA stellopt_cleanup_dir
 	@$(MAKE) SUBDIR=$(STELLOPT_TEST_DIR)/TOK_R0_RHO stellopt_cleanup_dir
+	@$(MAKE) SUBDIR=$(STELLOPT_TEST_DIR)/TRAVIS stellopt_cleanup_dir
 	@$(MAKE) SUBDIR=$(STELLOPT_TEST_DIR)/vboot_tokamak_sfincs stellopt_cleanup_dir
 
 stellopt_cleanup_dir:
