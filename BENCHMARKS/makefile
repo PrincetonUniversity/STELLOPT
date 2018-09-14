@@ -54,7 +54,7 @@ test_stellopt:
 	$(MAKE) test_stellopt_tok_r0_delta
 	$(MAKE) test_stellopt_tok_r0_rho
 	$(MAKE) test_stellopt_qhs_lmdif
-	#$(MAKE) test_stellopt_beams3d
+	$(MAKE) test_stellopt_beams3d
 	$(MAKE) test_stellopt_recon_tok
 	$(MAKE) test_stellopt_vboot_tokamak_bootsj
 	@if [ $LCOILOPT ]; then\
