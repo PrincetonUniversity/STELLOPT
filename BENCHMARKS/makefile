@@ -99,7 +99,7 @@ test_stellopt_iota_lmdif:
 	@cd $(STELLOPT_TEST_DIR)/IOTA_LMDIF; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.IOTA_LMDIF; rm -f *_opt*
 	@echo ""
 
-test_stellpt_recon_tok:
+test_stellopt_recon_tok:
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.RECON_TOK
 	@cd $(STELLOPT_TEST_DIR)/RECON_TOK; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.RECON_TOK; rm -f *_opt*
 	@echo ""
