@@ -55,7 +55,7 @@ test_stellopt:
 	$(MAKE) test_stellopt_tok_r0_rho
 	$(MAKE) test_stellopt_qhs_lmdif
 	#$(MAKE) test_stellopt_beams3d
-	#$(MAKE) test_stellopt_tok_recon
+	$(MAKE) test_stellopt_recon_tok
 	$(MAKE) test_stellopt_vboot_tokamak_bootsj
 	@if [ $LCOILOPT ]; then\
 		@echo "----COILOPT OPTION----"
@@ -97,6 +97,11 @@ test_stellopt_beams3d:
 test_stellopt_iota_lmdif:
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.IOTA_LMDIF
 	@cd $(STELLOPT_TEST_DIR)/IOTA_LMDIF; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.IOTA_LMDIF; rm -f *_opt*
+	@echo ""
+
+test_stellpt_recon_tok:
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.RECON_TOK
+	@cd $(STELLOPT_TEST_DIR)/RECON_TOK; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.RECON_TOK; rm -f *_opt*
 	@echo ""
 
 test_stellopt_tok_r0_delta:
@@ -151,6 +156,7 @@ clean_test:
 	@$(MAKE) SUBDIR=$(STELLOPT_TEST_DIR)/QHS_LMDIF stellopt_cleanup_dir
 	@$(MAKE) SUBDIR=$(STELLOPT_TEST_DIR)/TERPSICHORE stellopt_cleanup_dir
 	@$(MAKE) SUBDIR=$(STELLOPT_TEST_DIR)/BASIC stellopt_cleanup_dir
+	@$(MAKE) SUBDIR=$(STELLOPT_TEST_DIR)/RECON_TOK stellopt_cleanup_dir
 	@$(MAKE) SUBDIR=$(STELLOPT_TEST_DIR)/TOK_R0_DELTA stellopt_cleanup_dir
 	@$(MAKE) SUBDIR=$(STELLOPT_TEST_DIR)/TOK_R0_RHO stellopt_cleanup_dir
 	@$(MAKE) SUBDIR=$(STELLOPT_TEST_DIR)/vboot_tokamak_sfincs stellopt_cleanup_dir
