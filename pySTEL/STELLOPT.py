@@ -1186,66 +1186,83 @@ class MyApp(QMainWindow):
 			self.ax2.set_ylabel('Signal [Arb.]')
 			self.ax2.set_title('XICS Brightness Reconstruction')
 		elif (plot_name == 'Pressure'):
+			l=0
+			dl = len(self.wout_files)
 			for string in self.wout_files:
 				if 'wout' in string:
 					vmec_data=read_vmec(self.workdir+string)
 					ns = vmec_data['ns']
 					nflux = np.ndarray((ns,1))
 					for j in range(ns): nflux[j]=j/(ns-1)
-					self.ax2.plot(nflux,vmec_data['presf']/1000)
+					self.ax2.plot(nflux,vmec_data['presf']/1000,color=_plt.cm.brg(l/dl))
+					l=l+1
 			self.ax2.set_xlabel('Norm Tor. Flux (s)')
 			self.ax2.set_ylabel('Pressure [kPa]')
 			self.ax2.set_title('VMEC Pressure Evolution')
 			self.ax2.set_xlim((0,1))
 		elif (plot_name == 'I-prime'):
+			l=0
+			dl = len(self.wout_files)
 			for string in self.wout_files:
 				if 'wout' in string:
 					vmec_data=read_vmec(self.workdir+string)
 					ns = vmec_data['ns']
 					nflux = np.ndarray((ns,1))
 					for j in range(ns): nflux[j]=j/(ns-1)
-					self.ax2.plot(nflux,vmec_data['jcurv']/1000)
+					self.ax2.plot(nflux,vmec_data['jcurv']/1000,color=_plt.cm.brg(l/dl))
+					l=l+1
 			self.ax2.set_xlabel('Norm Tor. Flux (s)')
 			self.ax2.set_ylabel('Current Density [kA/m^{-2}]')
 			self.ax2.set_title('VMEC Current Density Evolution')
 			self.ax2.set_xlim((0,1))
 		elif (plot_name == 'Iota'):
+			l=0
+			dl = len(self.wout_files)
 			for string in self.wout_files:
 				if 'wout' in string:
 					vmec_data=read_vmec(self.workdir+string)
 					ns = vmec_data['ns']
 					nflux = np.ndarray((ns,1))
 					for j in range(ns): nflux[j]=j/(ns-1)
-					self.ax2.plot(nflux,vmec_data['iotaf'])
+					self.ax2.plot(nflux,vmec_data['iotaf'],color=_plt.cm.brg(l/dl))
+					l=l+1
 			self.ax2.set_xlabel('Norm Tor. Flux (s)')
 			self.ax2.set_ylabel('Rotational Transform \iota')
 			self.ax2.set_title('VMEC Rotational Transform Evolution')
 			self.ax2.set_xlim((0,1))
 		elif (plot_name == 'Current'):
+			l=0
+			dl = len(self.wout_files)
 			for string in self.wout_files:
 				if 'wout' in string:
 					vmec_data=read_vmec(self.workdir+string)
 					ns = vmec_data['ns']
 					nflux = np.ndarray((ns,1))
 					for j in range(ns): nflux[j]=j/(ns-1)
-					self.ax2.plot(nflux,np.cumsum(vmec_data['jcurv']))
+					self.ax2.plot(nflux,np.cumsum(vmec_data['jcurv']),color=_plt.cm.brg(l/dl))
+					l=l+1
 			self.ax2.set_xlabel('Norm Tor. Flux (s)')
 			self.ax2.set_ylabel('Current [kA]')
 			self.ax2.set_title('VMEC Current Evolution')
 			self.ax2.set_xlim((0,1))
 		elif (plot_name == '<j*B>'):
+			l=0
+			dl = len(self.wout_files)
 			for string in self.wout_files:
 				if 'wout' in string:
 					vmec_data=read_vmec(self.workdir+string)
 					ns = vmec_data['ns']
 					nflux = np.ndarray((ns,1))
 					for j in range(ns): nflux[j]=j/(ns-1)
-					self.ax2.plot(nflux,vmec_data['jdotb'])
+					self.ax2.plot(nflux,vmec_data['jdotb'],color=_plt.cm.brg(l/dl))
+					l=l+1
 			self.ax2.set_xlabel('Norm Tor. Flux (s)')
 			self.ax2.set_ylabel('<j.B>')
 			self.ax2.set_title('VMEC <j.B> Evolution')
 			self.ax2.set_xlim((0,1))
 		elif (plot_name == 'Flux0'):
+			l=0
+			dl = len(self.wout_files)
 			for string in self.wout_files:
 				if 'wout' in string:
 					vmec_data=read_vmec(self.workdir+string)
@@ -1260,13 +1277,16 @@ class MyApp(QMainWindow):
 					zeta[0]=0;
 					r=cfunct(theta,zeta,vmec_data['rmnc'],vmec_data['xm'],vmec_data['xn'])
 					z=sfunct(theta,zeta,vmec_data['zmns'],vmec_data['xm'],vmec_data['xn'])
-					self.ax2.plot(r[ns-1,:,0],z[ns-1,:,0])
-					self.ax2.plot(r[0,0,0],z[0,0,0],'+')
+					self.ax2.plot(r[ns-1,:,0],z[ns-1,:,0],color=_plt.cm.brg(l/dl))
+					self.ax2.plot(r[0,0,0],z[0,0,0],'+',color=_plt.cm.brg(l/dl))
+					l=l+1
 			self.ax2.set_xlabel('R [m]')
 			self.ax2.set_ylabel('Z [m]')
 			self.ax2.set_title('VMEC Flux Surface Evolution (phi=0)')
 			self.ax2.set_aspect('equal')
 		elif (plot_name == 'FluxPI'):
+			l=0
+			dl = len(self.wout_files)
 			for string in self.wout_files:
 				if 'wout' in string:
 					vmec_data=read_vmec(self.workdir+string)
@@ -1281,8 +1301,9 @@ class MyApp(QMainWindow):
 					zeta[0]=pi/vmec_data['nfp'];
 					r=cfunct(theta,zeta,vmec_data['rmnc'],vmec_data['xm'],vmec_data['xn'])
 					z=sfunct(theta,zeta,vmec_data['zmns'],vmec_data['xm'],vmec_data['xn'])
-					self.ax2.plot(r[ns-1,:,0],z[ns-1,:,0])
-					self.ax2.plot(r[0,0,0],z[0,0,0],'+')
+					self.ax2.plot(r[ns-1,:,0],z[ns-1,:,0],color=_plt.cm.brg(l/dl))
+					self.ax2.plot(r[0,0,0],z[0,0,0],'+',color=_plt.cm.brg(l/dl))
+					l=l+1
 			self.ax2.set_xlabel('R [m]')
 			self.ax2.set_ylabel('Z [m]')
 			self.ax2.set_title('VMEC Flux Surface Evolution (phi=0)')
