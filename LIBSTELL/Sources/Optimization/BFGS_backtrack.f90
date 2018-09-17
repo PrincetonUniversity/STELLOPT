@@ -122,6 +122,7 @@ SUBROUTINE BFGS_backtrack(m,n,nfev,fcn,p_curr,f_curr,x,grad_curr, &
   ! nfev = nfev+1
 
   f_new = (enorm(m,fvec_new))**2
+  f_new = (enorm(m,fvec_new))
   
   if (DEBUG_BFGS .and. (myid .eq. master)) then
     print *, '<---------------------------->'
@@ -208,7 +209,8 @@ SUBROUTINE BFGS_backtrack(m,n,nfev,fcn,p_curr,f_curr,x,grad_curr, &
         write(*,"(A)") "<----Linesearch terminated: Armijo condition satisfied."
         ! Save to xvec.dat
         fnorm_new = enorm(m,fvec_new)
-        nfev = nfev + niter
+        ! JCS Temporary comment out
+        ! nfev = nfev + niter
         if (myid .eq. master) then
           iunit = 12; istat = 0
           CALL safe_open(iunit,istat,'xvec.dat','unknown','formatted', ACCESS_IN='APPEND')
@@ -220,10 +222,16 @@ SUBROUTINE BFGS_backtrack(m,n,nfev,fcn,p_curr,f_curr,x,grad_curr, &
 
 
         ! Cleanup after fcn call
+        if (myid .eq. master) print *, "<----In BFGS_backtrack. Will do bfgs cleanup"
+
         iflag =  FLAG_CLEANUP_BFGS
         !nfev = nfev+1
+        if (myid .eq. master) write (6,'(A30,i5,a6,i5)'), '<----Before cleanup: myid=', myid, 'iflag=', iflag
         CALL fcn (m,n,x_new,fvec_new,iflag,nfev)
+        if (myid .eq. master) write (6,'(A30,i5,a6,i5)'), '<----After cleanup: myid=', myid, 'iflag=', iflag
+        if (myid .eq. master) print *, "<----In BFGS_backtrack. Just did bfgs cleanup"
         f_new = (enorm(m,fvec_new))**2
+        f_new = (enorm(m,fvec_new))
       end if
 
   if (DEBUG_BFGS .and. (myid .eq. master)) then
@@ -249,7 +257,8 @@ SUBROUTINE BFGS_backtrack(m,n,nfev,fcn,p_curr,f_curr,x,grad_curr, &
                        m, iflag, nfev, dx_init, fnorm_min, x_min, &
                        fvec_min, fnorm_array, .true.)
   !nfev = nfev + n
-  grad_new = 2*matmul(fvec_new, fjac_curr)
+  !grad_new = 2*matmul(fvec_new, fjac_curr)
+  grad_new = sum(fjac_curr, 1)
 
   ! Check the flag to see if 'flipping' is permitted
   if (enable_flip .eqv. .false.) flip = .false. 

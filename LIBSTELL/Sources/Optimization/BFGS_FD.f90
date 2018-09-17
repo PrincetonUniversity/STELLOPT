@@ -189,11 +189,13 @@ SUBROUTINE BFGS_FD(fcn, m, n, x, ftol, gtol, maxfev, nfev, &
   ! Cleanup after fcn call
   IF (myid .eq. master) iflag = FLAG_CLEANUP_BFGS
 
+  if (myid .eq. master)  print *, "<----In BFGS_FD. Master will do bfgs cleanup"
   ! The master will do the bfgs cleanup.
   ! The workers will do 'something else'?.
-  !write (6,'(A6,i5,a6,i5)'), 'myid=', myid, 'iflag=', iflag
+  if (myid .eq. master)  write (6,'(A30,i5,a6,i5)'), '<----Before cleanup: myid=', myid, 'iflag=', iflag
   CALL fcn (m, n, x, fvec, iflag, nfev)
-  !write (6,'(A6,i5,a6,i5)'), 'myid=', myid, 'iflag=', iflag
+  if (myid .eq. master)  write (6,'(A30,i5,a6,i5)'), '<----After cleanup: myid=', myid, 'iflag=', iflag
+  if (myid .eq. master)  print *, "<----In BFGS_FD. Master just did bfgs cleanup"
 
   ! Increment nfev by 1 (why? JCS)
   nfev = nfev + 1
@@ -217,8 +219,10 @@ SUBROUTINE BFGS_FD(fcn, m, n, x, ftol, gtol, maxfev, nfev, &
   fnorm = enorm(m, fvec)
 
   ! Compute value of objective function
-  f_curr = fnorm**2
-  !f_curr = fnorm
+  ! not using fnorm squrared.  just using fnorm
+  ! f_curr = fnorm**2
+   f_curr = fnorm
+  
   if (DEBUG_BFGS .and. (myid .eq. master)) then
     write(*,"(A,1ES12.4E2)") "K=Initial function value: ", f_curr
   end if
@@ -253,7 +257,12 @@ SUBROUTINE BFGS_FD(fcn, m, n, x, ftol, gtol, maxfev, nfev, &
   ! fvec = (vals(1:m)-targets(1:m))/abs(sigmas(1:m))
   ! fjac = d(fvec)/d(vars)
   ! d(f_curr)/d(vars) = sum(2*fvec*fjac)
-  grad_curr = 2*matmul(fvec, fjac_curr)
+  !grad_curr = 2*matmul(fvec, fjac_curr)
+  grad_curr = sum(fjac_curr, 1)
+
+  ! to do: print out the grad to a file
+  ! to do: calculate the regualr hessian, and print it out to a file
+
 
   ! Initial Hessian set to multiple of identity
   eye = 0
