@@ -808,8 +808,8 @@ class MyApp(QMainWindow):
 		files = os.listdir(self.workdir)
 		if any('wout' in mystring for mystring in files):
 			self.ui.ComboBoxOPTplot_type.addItem('----- VMEC -----')
-			#self.ui.ComboBoxOPTplot_type.addItem('Flux0')
-			#self.ui.ComboBoxOPTplot_type.addItem('FluxPI')
+			self.ui.ComboBoxOPTplot_type.addItem('Flux0')
+			self.ui.ComboBoxOPTplot_type.addItem('FluxPI')
 			self.ui.ComboBoxOPTplot_type.addItem('Pressure')
 			self.ui.ComboBoxOPTplot_type.addItem('I-prime')
 			self.ui.ComboBoxOPTplot_type.addItem('Current')
@@ -1245,6 +1245,48 @@ class MyApp(QMainWindow):
 			self.ax2.set_ylabel('<j.B>')
 			self.ax2.set_title('VMEC <j.B> Evolution')
 			self.ax2.set_xlim((0,1))
+		elif (plot_name == 'Flux0'):
+			for string in self.wout_files:
+				if 'wout' in string:
+					vmec_data=read_vmec(self.workdir+string)
+					ns = vmec_data['ns']
+					nu = 256
+					nv = 1
+					nflux = np.ndarray((ns,1))
+					theta = np.ndarray((nu,1))
+					zeta = np.ndarray((nv,1))
+					for j in range(ns): nflux[j]=j/(ns-1)
+					for j in range(nu): theta[j]=2*pi*j/(nu-1)
+					zeta[0]=0;
+					r=cfunct(theta,zeta,vmec_data['rmnc'],vmec_data['xm'],vmec_data['xn'])
+					z=sfunct(theta,zeta,vmec_data['zmns'],vmec_data['xm'],vmec_data['xn'])
+					self.ax2.plot(r[ns-1,:,0],z[ns-1,:,0])
+					self.ax2.plot(r[0,0,0],z[0,0,0],'+')
+			self.ax2.set_xlabel('R [m]')
+			self.ax2.set_ylabel('Z [m]')
+			self.ax2.set_title('VMEC Flux Surface Evolution (phi=0)')
+			self.ax2.set_aspect('equal')
+		elif (plot_name == 'FluxPI'):
+			for string in self.wout_files:
+				if 'wout' in string:
+					vmec_data=read_vmec(self.workdir+string)
+					ns = vmec_data['ns']
+					nu = 256
+					nv = 1
+					nflux = np.ndarray((ns,1))
+					theta = np.ndarray((nu,1))
+					zeta = np.ndarray((nv,1))
+					for j in range(ns): nflux[j]=j/(ns-1)
+					for j in range(nu): theta[j]=2*pi*j/(nu-1)
+					zeta[0]=pi/vmec_data['nfp'];
+					r=cfunct(theta,zeta,vmec_data['rmnc'],vmec_data['xm'],vmec_data['xn'])
+					z=sfunct(theta,zeta,vmec_data['zmns'],vmec_data['xm'],vmec_data['xn'])
+					self.ax2.plot(r[ns-1,:,0],z[ns-1,:,0])
+					self.ax2.plot(r[0,0,0],z[0,0,0],'+')
+			self.ax2.set_xlabel('R [m]')
+			self.ax2.set_ylabel('Z [m]')
+			self.ax2.set_title('VMEC Flux Surface Evolution (phi=0)')
+			self.ax2.set_aspect('equal')
 		#print(type(self.ax2))
 		#self.ax2.set_cmap('Spectral')
 		#self.ax2.set(cmap='Spectral')
