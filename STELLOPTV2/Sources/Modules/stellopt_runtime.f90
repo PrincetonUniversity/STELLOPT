@@ -289,11 +289,11 @@
       ELSEIF (error_num .eq. KNOT_MISMATCH_ERR) THEN
             WRITE(6,*) '  STELLOPT ENCOUNTERED A COIL COORDINATE SPLINE KNOT COUNT MISMATCH'
             WRITE(6,*) '  ROUTINE:   ',TRIM(string_val)
-            WRITE(6,*) '  KNOT COUNT:      ',ierr
+            WRITE(6,*) '  CTRL PT COUNT:      ',ierr
       ELSEIF (error_num .eq. KNOT_DEF_ERR) THEN
             WRITE(6,*) '  STELLOPT ENCOUNTERED A COIL SPLINE WITH LESS THAN FOUR KNOTS'
             WRITE(6,*) '  ROUTINE:   ',TRIM(string_val)
-            WRITE(6,*) '  KNOT COUNT:      ',ierr
+            WRITE(6,*) '  KNOT COUNT:      ',ierr + 4
       ELSEIF (error_num .eq. D02CJF_ERR) THEN
             WRITE(6,*) '  STELLOPT ENCOUNTERED A NAG ERROR (D02CJF)'
             WRITE(6,*) '     CALLING FUNCTION ',TRIM(string_val)

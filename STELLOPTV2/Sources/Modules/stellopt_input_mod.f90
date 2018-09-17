@@ -92,7 +92,7 @@
 !            lphi_f_opt         Logical array to control PHI_AUX_F variation (Electrostatic potential)
 !            lah_f_opt          Logical array to control AH_AUX_F variation
 !            lat_f_opt          Logical array to control AT_AUX_F variation
-!            lcoil_spline       Logical array to control coil spline knot variation
+!            lcoil_spline       Logical array to control coil spline control point variation
 !            lwindsurf          Logical to embed splined coils in a winding surface
 !            windsurfname       Character string naming file containing winding surface
 !            lbound_opt         Logical array to control Boundary variation
@@ -635,7 +635,7 @@
       coil_splinefx(:,:) = 0
       coil_splinefy(:,:) = 0
       coil_splinefz(:,:) = 0
-      coil_nknots(:)  = 0
+      coil_nctrl(:)  = 0
       coil_type(:)    = 'U'    ! Default to "unknown"
       windsurfname    = ''
       windsurf%mmax   = -1
@@ -952,15 +952,15 @@
 
          ! Count knots, error check
          DO i=1,nigroup
-            coil_nknots(i) = COUNT(coil_splinesx(i,:) >= 0)
-            IF ((coil_nknots(i) > 0).AND.(coil_nknots(i) < 4)) &
-                 CALL handle_err(KNOT_DEF_ERR, 'read_stellopt_input', coil_nknots(i))
-            IF (COUNT(coil_splinesy(i,:) >= 0) .NE. coil_nknots(i)) &
-                 CALL handle_err(KNOT_MISMATCH_ERR, 'read_stellopt_input', coil_nknots(i))
-            IF ((.NOT.lwindsurf) .AND. (COUNT(coil_splinesz(i,:) >= 0) .NE. coil_nknots(i))) &
-                 CALL handle_err(KNOT_MISMATCH_ERR, 'read_stellopt_input', coil_nknots(i))
-            IF (ANY(lcoil_spline(i,coil_nknots(i)+1:maxcoilknots))) &
-                 CALL handle_err(KNOT_MISMATCH_ERR, 'read_stellopt_input', coil_nknots(i))
+            coil_nctrl(i) = COUNT(coil_splinesx(i,:) >= 0.0) - 4
+            IF ((coil_nctrl(i) > -4).AND.(coil_nctrl(i) < 0)) &
+                 CALL handle_err(KNOT_DEF_ERR, 'read_stellopt_input', coil_nctrl(i))
+            IF (COUNT(coil_splinesy(i,:) >= 0.0) - 4 .NE. coil_nctrl(i)) &
+                 CALL handle_err(KNOT_MISMATCH_ERR, 'read_stellopt_input', coil_nctrl(i))
+            IF ((.NOT.lwindsurf) .AND. (COUNT(coil_splinesz(i,:) >= 0.0) - 4 .NE. coil_nctrl(i))) &
+                 CALL handle_err(KNOT_MISMATCH_ERR, 'read_stellopt_input', coil_nctrl(i))
+            IF (ANY(lcoil_spline(i,coil_nctrl(i)+1:maxcoilctrl))) &
+                 CALL handle_err(KNOT_MISMATCH_ERR, 'read_stellopt_input', coil_nctrl(i))
          END DO
       ENDIF
 

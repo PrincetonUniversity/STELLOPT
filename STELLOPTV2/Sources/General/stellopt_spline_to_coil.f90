@@ -180,8 +180,7 @@
         USE stellopt_vars
         USE windingsurface
         USE vmec_input,  ONLY : nfp
-        USE EZspline_obj
-        USE EZspline
+        USE stellopt_cbspline
         IMPLICIT NONE
 
         ! Arguments
@@ -189,26 +188,24 @@
         REAL(rprec), DIMENSION(nseg), INTENT(OUT) :: xarr, yarr, zarr
         LOGICAL, INTENT(OUT)                      :: lmod  ! Does the coil close on itself within a field period?
                                                            ! Note: this is true for saddle coils as well.
-        ! Constants
-        INTEGER, DIMENSION(2), PARAMETER :: ezpbc = (/-1,-1/) ! Periodic boundary condition in EZspline
-
         ! Local variables
-        TYPE(EZspline1_r8) :: XC_spl, YC_spl, ZC_spl
+        TYPE(cbspline)     :: XC_spl, YC_spl, ZC_spl
         REAL(rprec)        :: s_val, u, v
-        INTEGER            :: nknots, ier, j
+        INTEGER            :: nknots, ncoefs, ier, j
 
         ! Handle spline boundary conditions
         CALL enforce_spline_bcs(icoil, lmod)
-        nknots = coil_nknots(icoil)
+        ncoefs = coil_nctrl(icoil)
+        nknots = ncoefs + 4
 
         ! Set up splines
-        CALL EZspline_init(XC_spl, nknots, ezpbc, ier)
-        XC_spl%x1 = coil_splinesx(icoil,1:nknots)
-        CALL EZspline_setup(XC_spl, coil_splinefx(icoil,1:nknots), ier)
+        CALL cbspline_init(XC_spl, ncoefs, ier)
+        CALL cbspline_setup(XC_spl, ncoefs, &
+             coil_splinesx(icoil,1:nknots), coil_splinefx(icoil,1:ncoefs), ier)
 
-        CALL EZspline_init(YC_spl, nknots, ezpbc, ier)
-        YC_spl%x1 = coil_splinesy(icoil,1:nknots)
-        CALL EZspline_setup(YC_spl, coil_splinefy(icoil,1:nknots), ier)
+        CALL cbspline_init(YC_spl, ncoefs, ier)
+        CALL cbspline_setup(YC_spl, ncoefs, &
+             coil_splinesy(icoil,1:nknots), coil_splinefy(icoil,1:ncoefs), ier)
 
         IF (lwindsurf) THEN !Interpret coil_splinefx as u, coil_splinefy as v
            windsurf%nfp = nfp
@@ -216,34 +213,34 @@
            ! Evaluate the coil
            DO j = 1, nseg
               s_val = REAL(j-1)/REAL(nseg-1)
-              CALL EZspline_interp(XC_spl, s_val, u, ier)
-              CALL EZspline_interp(YC_spl, s_val, v, ier)
+              CALL cbspline_eval(XC_spl, s_val, u, ier)
+              CALL cbspline_eval(YC_spl, s_val, v, ier)
               CALL stellopt_uv_to_xyz(u, v, xarr(j), yarr(j), zarr(j))
            END DO
         ELSE  !Interpret coil_splinefx as x, coil_splinefy as y, coil_splinefz as z.
-           CALL EZspline_init(ZC_spl, nknots, ezpbc, ier)
-           ZC_spl%x1 = coil_splinesz(icoil,1:nknots)
-           CALL EZspline_setup(ZC_spl, coil_splinefz(icoil,1:nknots), ier)
+           CALL cbspline_init(ZC_spl, ncoefs, ier)
+           CALL cbspline_setup(ZC_spl, ncoefs, &
+                coil_splinesz(icoil,1:nknots), coil_splinefz(icoil,1:ncoefs), ier)
 
            ! Evaluate the coil
            DO j = 1, nseg
               s_val = REAL(j-1)/REAL(nseg-1)
-              CALL EZspline_interp(XC_spl, s_val, xarr(j), ier)
-              CALL EZspline_interp(YC_spl, s_val, yarr(j), ier)
-              CALL EZspline_interp(ZC_spl, s_val, zarr(j), ier)
+              CALL cbspline_eval(XC_spl, s_val, xarr(j), ier)
+              CALL cbspline_eval(YC_spl, s_val, yarr(j), ier)
+              CALL cbspline_eval(ZC_spl, s_val, zarr(j), ier)
            END DO
 
-           CALL EZspline_free(ZC_spl, ier)
+           CALL cbspline_delete(ZC_spl)
         END IF
 
-        CALL EZspline_free(XC_spl, ier);  CALL EZspline_free(YC_spl, ier)
+        CALL cbspline_delete(XC_spl);  CALL cbspline_delete(YC_spl)
       END SUBROUTINE spline_to_coil
 
 !-----------------------------------------------------------------------
       SUBROUTINE enforce_spline_bcs(icoil, isper)
         USE stel_kinds, ONLY: rprec
         USE stellopt_vars, ONLY : coil_splinefx, coil_splinefy, coil_splinefz, &
-             coil_nknots, coil_type, lwindsurf
+             coil_nctrl, coil_type, lwindsurf
         USE vmec_input,  ONLY : nfp
         IMPLICIT NONE
         INTRINSIC ABS, MODULO
@@ -252,42 +249,42 @@
         LOGICAL, INTENT(OUT) :: isper  !Does the coil repeat each field period?
 
         REAL(rprec), PARAMETER :: zero=0.0d0, one=1.0d0, abstol=2.0d-15
-        INTEGER nknots
-        nknots = coil_nknots(icoil)
+        INTEGER ncoefs
+        ncoefs = coil_nctrl(icoil)
 
         SELECT CASE (coil_type(icoil))
         CASE ('M') ! Modular coil
            isper = .TRUE. ! Modular coils repeat each field period.
-           coil_splinefy(icoil,nknots) = coil_splinefy(icoil,1)
+           coil_splinefy(icoil,ncoefs) = coil_splinefy(icoil,1)
            IF (lwindsurf) THEN !u0=0,uf=1,vf=v0
-              coil_splinefx(icoil,1) = zero;  coil_splinefx(icoil,nknots) = one
+              coil_splinefx(icoil,1) = zero;  coil_splinefx(icoil,ncoefs) = one
            ELSE  !z0=z(t=0), zf=z0,xf=x0,yf=y0
-              coil_splinefx(icoil,nknots) = coil_splinefx(icoil,1)
-              coil_splinefz(icoil,nknots) = coil_splinefz(icoil,1)
+              coil_splinefx(icoil,ncoefs) = coil_splinefx(icoil,1)
+              coil_splinefz(icoil,ncoefs) = coil_splinefz(icoil,1)
            END IF
         CASE ('S') ! Saddle coil
            isper = .TRUE. ! Saddle coils repeat each field period like modular coils.
-           coil_splinefx(icoil,nknots) = coil_splinefx(icoil,1)
-           coil_splinefy(icoil,nknots) = coil_splinefy(icoil,1)
-           IF (.NOT.lwindsurf) coil_splinefz(icoil,nknots) = coil_splinefz(icoil,1)
+           coil_splinefx(icoil,ncoefs) = coil_splinefx(icoil,1)
+           coil_splinefy(icoil,ncoefs) = coil_splinefy(icoil,1)
+           IF (.NOT.lwindsurf) coil_splinefz(icoil,ncoefs) = coil_splinefz(icoil,1)
         CASE ('P') ! Wavy PF coil
            isper = .FALSE. ! PF coils wrap around, do not repeat.
-           coil_splinefx(icoil,nknots) = coil_splinefx(icoil,1)
+           coil_splinefx(icoil,ncoefs) = coil_splinefx(icoil,1)
            IF (lwindsurf) THEN !v0=0,vf=N,uf=u0
-              coil_splinefy(icoil,1) = zero;  coil_splinefy(icoil,nknots) = nfp
+              coil_splinefy(icoil,1) = zero;  coil_splinefy(icoil,ncoefs) = nfp
            ELSE
-              coil_splinefy(icoil,nknots) = coil_splinefy(icoil,1)
-              coil_splinefz(icoil,nknots) = coil_splinefz(icoil,1)
+              coil_splinefy(icoil,ncoefs) = coil_splinefy(icoil,1)
+              coil_splinefz(icoil,ncoefs) = coil_splinefz(icoil,1)
            END IF
         CASE DEFAULT
            IF (lwindsurf) THEN
               isper = ((ABS(MODULO(coil_splinefx(icoil,1),one) - &
-                   MODULO(coil_splinefx(icoil,nknots),one)).LE.abstol) &
-                    .AND.(coil_splinefy(icoil,1) == coil_splinefy(icoil,nknots)) )
+                   MODULO(coil_splinefx(icoil,ncoefs),one)).LE.abstol) &
+                    .AND.(coil_splinefy(icoil,1) == coil_splinefy(icoil,ncoefs)) )
            ELSE
-              isper = ((coil_splinefx(icoil,1) == coil_splinefx(icoil,nknots)) &
-                  .AND.(coil_splinefy(icoil,1) == coil_splinefy(icoil,nknots)) &
-                  .AND.(coil_splinefz(icoil,1) == coil_splinefz(icoil,nknots)))
+              isper = ((coil_splinefx(icoil,1) == coil_splinefx(icoil,ncoefs)) &
+                  .AND.(coil_splinefy(icoil,1) == coil_splinefy(icoil,ncoefs)) &
+                  .AND.(coil_splinefz(icoil,1) == coil_splinefz(icoil,ncoefs)))
            END IF
         END SELECT
       END SUBROUTINE enforce_spline_bcs
@@ -377,8 +374,7 @@
         USE windingsurface
         USE stellopt_targets, ONLY : npts_curv
         USE vmec_input,  ONLY : nfp
-        USE EZspline_obj
-        USE EZspline
+        USE stellopt_cbspline
         IMPLICIT NONE
         INTRINSIC SQRT
 
@@ -386,37 +382,35 @@
         INTEGER, INTENT(IN)      :: icoil
         REAL(rprec), INTENT(OUT) :: maxcurv, s_max
 
-        ! Constants
-        INTEGER, DIMENSION(2), PARAMETER :: ezpbc = (/-1,-1/) ! Periodic boundary condition in EZspline
-
         ! Local variables
-        TYPE(EZspline1_r8) :: XC_spl, YC_spl, ZC_spl
+        TYPE(cbspline)     :: XC_spl, YC_spl, ZC_spl
         REAL(rprec)        :: xprime(3,5)
         REAL(rprec)        :: s_val, u, duds, d2uds2, v, dvds, d2vds2
         REAL(rprec)        :: dxds, dyds, dzds, d2xds2, d2yds2, d2zds2
         REAL(rprec)        :: cx, cy, cz, norm, kappa
-        INTEGER            :: ier, ipt, nknots
+        INTEGER            :: ier, ipt, nknots, ncoefs
         LOGICAL            :: ldum
 
         ! Handle spline boundary conditions
         CALL enforce_spline_bcs(icoil, ldum)
-        nknots = coil_nknots(icoil)
+        ncoefs = coil_nctrl(icoil)
+        nknots = ncoefs + 4
 
         ! Set up splines
-        CALL EZspline_init(XC_spl, nknots, ezpbc, ier)
-        XC_spl%x1 = coil_splinesx(icoil,1:nknots)
-        CALL EZspline_setup(XC_spl, coil_splinefx(icoil,1:nknots), ier)
+        CALL cbspline_init(XC_spl, ncoefs, ier)
+        CALL cbspline_setup(XC_spl, ncoefs, &
+             coil_splinesx(icoil,1:nknots), coil_splinefx(icoil,1:ncoefs), ier)
 
-        CALL EZspline_init(YC_spl, nknots, ezpbc, ier)
-        YC_spl%x1 = coil_splinesy(icoil,1:nknots)
-        CALL EZspline_setup(YC_spl, coil_splinefy(icoil,1:nknots), ier)
+        CALL cbspline_init(YC_spl, ncoefs, ier)
+        CALL cbspline_setup(YC_spl, ncoefs, &
+             coil_splinesy(icoil,1:nknots), coil_splinefy(icoil,1:ncoefs), ier)
 
         IF (lwindsurf) THEN
            windsurf%nfp = nfp
         ELSE
-           CALL EZspline_init(ZC_spl, nknots, ezpbc, ier)
-           ZC_spl%x1 = coil_splinesz(icoil,1:nknots)
-           CALL EZspline_setup(ZC_spl, coil_splinefz(icoil,1:nknots), ier)
+           CALL cbspline_init(ZC_spl, ncoefs, ier)
+           CALL cbspline_setup(ZC_spl, ncoefs, &
+                coil_splinesz(icoil,1:nknots), coil_splinefz(icoil,1:ncoefs), ier)
         END IF
 
         ! Find maximum curvature along coil
@@ -427,13 +421,8 @@
            ! We need 1st and 2nd derivatives of (x,y,z) w/r/t s to compute curvature:
            IF (lwindsurf) THEN ! Interpret splinefx as u, splinefy as v
               ! First get 1st and 2nd derivs of u,v w/r/t s...
-              CALL EZspline_interp(XC_spl, s_val, u, ier)
-              CALL EZspline_derivative(XC_spl, 1, s_val, duds, ier)
-              CALL EZspline_derivative(XC_spl, 2, s_val, d2uds2, ier)
-
-              CALL EZspline_interp(YC_spl, s_val, v, ier)
-              CALL EZspline_derivative(YC_spl, 1, s_val, dvds, ier)
-              CALL EZspline_derivative(YC_spl, 2, s_val, d2vds2, ier)
+              CALL cbspline_derivs(XC_spl, s_val, u, duds, d2uds2, ier)
+              CALL cbspline_derivs(YC_spl, s_val, v, dvds, d2vds2, ier)
 
               ! Next get 1st & 2nd derivs of (x,y,z) w/r/t (u,v)...
               CALL stellopt_uv_to_xyz_prime(u, v, xprime)
@@ -450,12 +439,9 @@
               d2zds2 = xprime(3,1)*d2uds2 + xprime(3,2)*d2vds2 + xprime(3,3)*(duds**2) + &
                    2.0*xprime(3,4)*duds*dvds + xprime(3,5)*(dvds**2)
            ELSE                ! Interpret splinefx as x, splinefy as y, splinefz as z
-              CALL EZspline_derivative(XC_spl, 1, s_val,   dxds, ier)
-              CALL EZspline_derivative(XC_spl, 2, s_val, d2xds2, ier)
-              CALL EZspline_derivative(YC_spl, 1, s_val,   dyds, ier)
-              CALL EZspline_derivative(YC_spl, 2, s_val, d2yds2, ier)
-              CALL EZspline_derivative(ZC_spl, 1, s_val,   dzds, ier)
-              CALL EZspline_derivative(ZC_spl, 2, s_val, d2zds2, ier)
+              CALL cbspline_derivs(XC_spl, s_val, u, dxds, d2xds2, ier)
+              CALL cbspline_derivs(YC_spl, s_val, u, dyds, d2yds2, ier)
+              CALL cbspline_derivs(ZC_spl, s_val, u, dzds, d2zds2, ier)
            END IF ! winding surface?
 
            ! c is the cross-product (dx/ds) x (d2x/ds2)
@@ -470,8 +456,8 @@
         END DO !ipt
 
         ! Clean up
-        CALL EZspline_free(XC_spl, ier);  CALL EZspline_free(YC_spl, ier)
-        IF (.NOT.lwindsurf) CALL EZspline_free(ZC_spl, ier)
+        CALL cbspline_delete(XC_spl);  CALL cbspline_delete(YC_spl)
+        IF (.NOT.lwindsurf) CALL cbspline_delete(ZC_spl)
       END SUBROUTINE get_coil_maxcurv
 
 !-----------------------------------------------------------------------
@@ -485,8 +471,7 @@
       SUBROUTINE get_coil_self_int(icoil, nselfint)
         USE stellopt_vars
         USE stellopt_targets, ONLY : npts_cself
-        USE EZspline_obj
-        USE EZspline
+        USE stellopt_cbspline
         IMPLICIT NONE
         LOGICAL, EXTERNAL :: uvintersect
 
@@ -494,14 +479,11 @@
         INTEGER, INTENT(IN)  :: icoil
         INTEGER, INTENT(OUT) :: nselfint
 
-        ! Constants
-        INTEGER, DIMENSION(2), PARAMETER :: ezpbc = (/-1,-1/) ! Periodic boundary condition in EZspline
-
         ! Local variables
-        TYPE(EZspline1_r8)                     :: C_spl
+        TYPE(cbspline)                         :: C_spl
         REAL(rprec), DIMENSION(:), ALLOCATABLE :: uc, vc
         REAL(rprec)                            :: s_val
-        INTEGER                                :: ier, iseg, iseg2, nknots
+        INTEGER                                :: ier, iseg, iseg2, nknots, ncoefs
         LOGICAL                                :: ldum
 
         IF (.NOT.lwindsurf) THEN
@@ -510,28 +492,27 @@
 
         ! Handle spline boundary conditions
         CALL enforce_spline_bcs(icoil, ldum)
-        nknots = coil_nknots(icoil)
+        ncoefs = coil_nctrl(icoil)
+        nknots = ncoefs + 4
 
         ! Get u,v coords along coil
         ALLOCATE(uc(0:npts_cself-1), vc(0:npts_cself-1))
 
-        CALL EZspline_init(C_spl, nknots, ezpbc, ier)
-        C_spl%x1 = coil_splinesx(icoil,1:nknots)
-        CALL EZspline_setup(C_spl, coil_splinefx(icoil,1:nknots), ier)
+        CALL cbspline_init(C_spl, ncoefs, ier)
+        CALL cbspline_setup(C_spl, ncoefs, &
+             coil_splinesx(icoil,1:nknots), coil_splinefx(icoil,1:ncoefs), ier)
         DO iseg=1,npts_cself
            s_val = REAL(iseg-1)/REAL(npts_cself-1)
-           CALL EZspline_interp(C_spl, s_val, uc(iseg-1), ier)
+           CALL cbspline_eval(C_spl, s_val, uc(iseg-1), ier)
         END DO !iseg
-        CALL EZspline_free(C_spl, ier)
 
-        CALL EZspline_init(C_spl, nknots, ezpbc, ier)
-        C_spl%x1 = coil_splinesy(icoil,1:nknots)
-        CALL EZspline_setup(C_spl, coil_splinefy(icoil,1:nknots), ier)
+        CALL cbspline_setup(C_spl, ncoefs, &
+             coil_splinesy(icoil,1:nknots), coil_splinefy(icoil,1:ncoefs), ier)
         DO iseg=1,npts_cself
            s_val = REAL(iseg-1)/REAL(npts_cself-1)
-           CALL EZspline_interp(C_spl, s_val, vc(iseg-1), ier)
+           CALL cbspline_eval(C_spl, s_val, vc(iseg-1), ier)
         END DO !iseg
-        CALL EZspline_free(C_spl, ier)
+        CALL cbspline_delete(C_spl)
 
         ! Check for self-intersections
         nselfint = 0
