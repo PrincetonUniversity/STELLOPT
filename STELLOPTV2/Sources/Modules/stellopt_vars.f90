@@ -135,7 +135,10 @@
                                             ti_aux_s, th_aux_s, &
                                             zeff_aux_s, &
                                             phi_aux_s, beamj_aux_s,&
-                                            bootj_aux_s, emis_xics_s
+                                            bootj_aux_s, sfincs_s, emis_xics_s
+      INTEGER                           ::  sfincs_min_procs
+      CHARACTER(256)  ::  sfincs_Er_option
+      REAL(rprec)                       ::  vboot_tolerance
       REAL(rprec), DIMENSION(ndatafmax) ::  ne_aux_f, te_aux_f, &
                                             ti_aux_f, th_aux_f,&
                                             zeff_aux_f, &
@@ -193,7 +196,8 @@
 
       CHARACTER(256)  ::  equil_type, te_type, ne_type, ti_type, th_type, &
                           beamj_type, bootj_type, zeff_type, emis_xics_type, windsurfname, &
-                          regcoil_nescin_filename
+                          regcoil_nescin_filename, bootcalc_type
+      REAL(rprec), DIMENSION(:), ALLOCATABLE :: sfincs_J_dot_B_flux_surface_average, sfincs_B_squared_flux_surface_average
       
       ! These are not really variable parameters as we don't vary them
       ! yet

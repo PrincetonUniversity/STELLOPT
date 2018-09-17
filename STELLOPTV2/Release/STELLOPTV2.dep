@@ -420,6 +420,20 @@ stellopt_bootsj.o : \
       $(LIB_DIR)/Release/read_boozer_mod.o
       
 
+stellopt_sfincs.o : \
+      stellopt_runtime.o \
+      stellopt_input_mod.o \
+      stellopt_vars.o \
+      stellopt_targets.o \
+      equil_utils.o \
+      $(BOOZ_DIR)/Release/booz_persistent.o \
+      $(LIB_DIR)/Release/bootsj_input.o \
+      $(BOOTSJ_DIR)/Release/parambs.o \
+      $(BOOTSJ_DIR)/Release/vmec0.o \
+      $(BOOTSJ_DIR)/Release/trig.o \
+      $(LIB_DIR)/Release/read_boozer_mod.o
+      
+
 stellopt_txport.o : \
       stellopt_runtime.o \
       stellopt_input_mod.o \
