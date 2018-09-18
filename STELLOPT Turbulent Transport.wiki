@@ -17,7 +17,7 @@ The STELLOPT code can optimize equilibria for reduced turbulent transport using 
 || gene || Runs the GENE code in linear mode in serial mode (see next section) ||
 || gene_parallel || Runs the GENE code in linear mode in parallel mode (see next section) ||
 At each radial location you wish to evaluate the turbulent transport proxy you'll need to set a target (TARGET_TXPORT), sigma (SIGMA_TXPORT), and normalized toroidal flux value (S_TXPORT). Additional name lists for the GIST code will also need to be included in the input file an abridged version of the input file is shown below
-[[code]]
+{{{
 &INDATA
 ......
 /
@@ -46,7 +46,7 @@ At each radial location you wish to evaluate the turbulent transport proxy you'l
 /
 
 
-[[code]]
+}}}
 Note that the STELLOPT version of GIST only supports PEST coordinates. While the full version of the GIST input namelists can be read in, STELLOPT overrides many of the namelist parameters (for example S0 in the &SETUP namelist will be over-ridden by the values in S_TXPORT).
 ----
 ==Compiling STELLOPT with GENE== 
@@ -62,7 +62,7 @@ To optimize and equilibrium with the GENE code you will need to set the TXPORT_P
 Some clusters may require that the environment variable MP_DEBUG_NOTIMEOUT=yes to avoid a segmentation fault as some processors may have to wait at a barrier statement for a few minutes.
 
 Here is an example parameters file:
-[[code]]
+{{{
 &parallelization
 ! Defines number of MPI processes handling each dimension
 ! must evenly divide the resolution number (value)
@@ -205,4 +205,4 @@ temp =    1.0
 dens =    1.0
 /
 
-[[code]]
+}}}
