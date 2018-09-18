@@ -134,26 +134,12 @@
 !-----------------------------------------------------------------------
 !          TURBULENT TRANSPORT
 !-----------------------------------------------------------------------
-  TARGET_TXPORT(01) = 0.0E+00  SIGMA_TXPORT(01) = 1.0  S_TXPORT(01) = 0.50
   TXPORT_PROXY = 'gene_parallel'
-/
-&COORDINATES
- pest=.t.
- boozer=.f.
-/
-&IN_OUT
- global_y=.f.
- vmec_dir='~/VMECfiles'
- vmec_file='wout_W7X.txt'
- out_tag='s07'
- /
-&SETUP
- s0=.7
- alpha0=0.
- alpha0_start=-.6283   
- alpha0_end=.6283   
- nalpha0=1 
- pol_turns=1. 
- nz0=128
+  LGLOBAL_TXPORT = F
+  NZ_TXPORT = 256
+  NALPHA_TXPORT = 1
+  ALPHA_START_TXPORT =    0.000000000000E+000
+  ALPHA_END_TXPORT =    1.047197580338E+000
+  TARGET_TXPORT(01) = 0.0E+00  SIGMA_TXPORT(01) = 1.0  S_TXPORT(01) = 0.50
 /
 &END
