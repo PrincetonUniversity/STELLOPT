@@ -4,7 +4,7 @@ n_procs_v =    1
 n_procs_w =    1
 n_procs_y =    1
 n_procs_x =    1
-n_procs_z =    8  !should be a divisor of nz0 (maximum: 0.5*nz0)
+n_procs_z =   64  !should be a divisor of nz0 (maximum: 0.5*nz0)
 /
 
 &box
@@ -13,7 +13,7 @@ n_procs_z =    8  !should be a divisor of nz0 (maximum: 0.5*nz0)
 n_spec = 1
 nx0 =  15
 nky0 = 1 ! 1 mode at a time
-nz0 =  160
+nz0 =  256
 nv0 =  32
 nw0 =   8
 

@@ -33,18 +33,11 @@
 #            MPI Options
 #######################################################################
   LMPI    = T
-  MPI_COMPILE = /opt/local/bin/mpif90 
-  MPI_COMPILE_FREE = /opt/local/bin/mpif90 -ffree-form \
+  MPI_COMPILE = mpifort 
+  MPI_COMPILE_FREE = mpifort -ffree-form \
                      -ffree-line-length-none -ffixed-line-length-none
-  MPI_COMPILE_C = gcc -shared -Wl,-no_compact_unwind
-  MPI_LINK = /opt/local/bin/mpif90
-
-  # For GCC6
-  #MPI_COMPILE = mpif90
-  #MPI_COMPILE_FREE = mpif90 -ffree-form \
-  #                   -ffree-line-length-none -ffixed-line-length-none
-  #MPI_COMPILE_C = mpicc
-  #MPI_LINK = mpif90
+  MPI_COMPILE_C = mpicc
+  MPI_LINK = mpicc -shared -Wl,-no_compact_unwind
 
 #######################################################################
 #            NAG Options
@@ -153,22 +146,10 @@
 #######################################################################
 #            LIBSTELL Shared Options
 #######################################################################
-LIB_SHARE = /opt/local/lib/libnetcdf.dylib \
-         /opt/local/lib/libnetcdff.dylib \
-         /opt/local/lib/libnetcdf_c++4.dylib \
-         /opt/local/lib/libhdf5.dylib \
-         /opt/local/lib/libhdf5hl_fortran.dylib\
-         /opt/local/lib/libhdf5_hl.dylib \
-         /opt/local/lib/libhdf5_fortran.dylib\
-         /opt/local/lib/gcc6/libgfortran.dylib \
-         /opt/local/lib/gcc6/libstdc++.dylib \
-         /opt/local/lib/libopenblas.dylib \
-         /opt/local/lib/openmpi-gcc6/libmpi.dylib \
-         /opt/local/lib/openmpi-gcc6/libmpi_mpifh.12.dylib \
-         /opt/local/lib/libz.dylib \
-         /usr/lib/libc.dylib \
-         /usr/lib/libm.dylib \
-         /usr/lib/libpthread.dylib
+
+LIB_SHARE = -L/opt/local/lib/gcc7 -lgfortran -lstdc++ \
+            -L/opt/local/lib/openmpi-gcc7 -lmpi -lmpi_mpifh \
+            -L/usr/lib -lc -lm -lpthread $(LIBS) -lz
 
 #######################################################################
 #######################################################################
@@ -346,34 +327,39 @@ ifeq ($(LMPI),T)
   COMPILE = $(MPI_COMPILE)
   COMPILE_FREE = $(MPI_COMPILE_FREE)
   LINK    = $(MPI_COMPILE) $(FLAGS) -o 
-  LINK_C  = $(MPI_COMPILE_C) -shared 
+  LINK_C  = $(MPI_LINK) 
 endif
 ifeq ($(LNETCDF),T)
   MOD1_PATH += $(NETCDF_INC)
   PRECOMP += -DNETCDF
   LIB_LINK += $(NETCDF_LIB)
   MOD_PATH += $(NETCDF_INC)
+  LIB_SHARE += $(NETCDF_LIB)
 endif
 ifeq ($(LHDF5),T)
   MOD1_PATH += $(HDF5_INC)
   PRECOMP += -DLHDF5 -DH5_USE_16_API
   LIB_LINK += $(HDF5_LIB)
   MOD_PATH += $(HDF5_INC)
+  LIB_SHARE += $(HDF5_LIB)
 endif
 ifeq ($(LNAG),T)
   PRECOMP += -DNAG
   LIB_LINK += $(NAG_LIB)
+  LIB_SHARE += $(NAG_LIB)
 endif
 ifeq ($(LNTCC),T)
   MOD1_PATH += $(NTCC_INC)
   PRECOMP += -DLADAS -DNTCC
   LIB_LINK += $(NTCC_LIB)
   MOD_PATH += $(NTCC_INC)
+  LIB_SHARE += $(NTCC_LIB)
 endif
 ifeq ($(LSILO),T)
   MOD1_PATH += $(SILO_INC)
   PRECOMP += -DSILO_AVAI
   LIB_LINK += $(SILO_LIB)
+  LIB_SHARE += $(SILO_LIB)
 endif
 
 # This is hear because of MPI above resetting LINK
@@ -384,6 +370,7 @@ ifeq ($(MAKECMDGOALS),libstell.a)
   INC_PATH = 
 endif
 ifeq ($(MAKECMDGOALS),libstell.so)
+  LINK = $(LINK_C)
   LIB_LINK = $(LIB_SHARE)
   COMPILE += -fPIC
   COMPILE_FREE += -fPIC
