@@ -34,7 +34,7 @@
 !        iunit       File unit number
 !----------------------------------------------------------------------
       IMPLICIT NONE
-      INTEGER ::  i,n,m,ier, iunit,nvar_in,knot_dofs,nknots
+      INTEGER ::  i,n,m,ier, iunit,nvar_in,ctrl_dofs,nknots
       INTEGER ::  ictrl(5)
       REAL(rprec) :: norm, delta
       REAL(rprec) :: fvec_temp(1)
@@ -227,16 +227,16 @@
                     END IF
                  END DO
               END DO
-              knot_dofs = 3
-              IF (lwindsurf) knot_dofs = 2
+              ctrl_dofs = 3                 !x,y,z at each point
+              IF (lwindsurf) ctrl_dofs = 2  ! u,v  at each point
               DO n = LBOUND(lcoil_spline,DIM=1), UBOUND(lcoil_spline,DIM=1)
-                 nknots = COUNT(coil_splinesx(n,:) >= 0.0)    ! Actual size of coil spline n
+                 nknots = COUNT(coil_splinesx(n,:) >= 0.0)    ! Actual no. of knots for coil spline n
                  IF ((coil_type(n).eq.'M')) THEN
-                    nknots = nknots - 1                       ! Last knot of modular is never free.
-                    IF (lcoil_spline(n,1)) nvars = nvars - 1  ! First knot of modular loses one dof.
+                    nknots = nknots - 1                       ! Last ctrl pt of modular is never free.
+                    IF (lcoil_spline(n,1)) nvars = nvars - 1  ! First ctrl of modular loses one dof (u or z).
                  END IF
-                 DO m = 1,nknots
-                    IF (lcoil_spline(n,m)) nvars = nvars + knot_dofs
+                 DO m = 1,nknots-4
+                    IF (lcoil_spline(n,m)) nvars = nvars + ctrl_dofs
                  END DO
               END DO
               ier = 0
@@ -1472,9 +1472,9 @@
               END IF
               IF (ANY(lcoil_spline)) THEN
                  DO n = LBOUND(lcoil_spline,1), UBOUND(lcoil_spline,1)
-                    nknots = COUNT(coil_splinesx(n,:) >= 0.0)       ! Actual size of coil spline n
-                    IF ((coil_type(n).eq.'M')) nknots = nknots - 1  ! Last knot of modular is never free.
-                    DO m = 1,nknots
+                    nknots = COUNT(coil_splinesx(n,:) >= 0.0)       ! Actual no. of knots for coil spline n
+                    IF ((coil_type(n).eq.'M')) nknots = nknots - 1  ! Last ctrl pt of modular is never free.
+                    DO m = 1,nknots-4
                        IF (lcoil_spline(n,m)) THEN
                           IF (lauto_domain) THEN
                              coil_splinefx_min(n,m) = coil_splinefx(n,m) - ABS(pct_domain*coil_splinefx(n,m))

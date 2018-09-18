@@ -419,15 +419,26 @@
                ! Now open the Output file
                ALLOCATE(fvec_temp(mtargets))
 
-               !WRITE COIL KNOT FILE
+               !WRITE COIL KNOTS, CONTROL POINTS TO FILE
                IF (ANY(lcoil_spline)) THEN
-                  CALL safe_open(iunit_out,iflag,TRIM('knots.'//TRIM(id_string)),'unknown','formatted',ACCESS_IN='APPEND')
-                  IF (ncnt == 0) WRITE(iunit_out,'(A)') 'COIL KNOTS'
-                  WRITE(iunit_out,'(A,1X,I5.5)') 'ITER',ncnt
+                  CALL safe_open(iunit_out,iflag,TRIM('cbspline.'//TRIM(id_string)),'unknown','formatted',ACCESS_IN='APPEND')
+
+                  IF (ncnt == 0) THEN
+                     WRITE(iunit_out,'(A)') 'COIL KNOTS'
+                     DO n = LBOUND(lcoil_spline,DIM=1), UBOUND(lcoil_spline,DIM=1)
+                        IF (ANY(lcoil_spline(n,:))) THEN
+                           WRITE(iunit_out,'(2X,A,2X,I5.5)') 'COIL', n
+                           ik = coil_nctrl(n) + 4
+                           WRITE(iunit_out,"(4X,'k =',4(2X,ES22.12E3))") (coil_splinesx(n,m), m = 1, ik)
+                        ENDIF
+                     END DO !n
+                  ENDIF
+
+                  WRITE(iunit_out,'(A,1X,I5.5)') 'COIL CTRL PTS, ITER',ncnt
                   DO n = LBOUND(lcoil_spline,DIM=1), UBOUND(lcoil_spline,DIM=1)
                      IF (ANY(lcoil_spline(n,:))) THEN
                         WRITE(iunit_out,'(2X,A,2X,I5.5)') 'COIL', n
-                        ik = MINLOC(coil_splinesx(n,:),DIM=1) - 1
+                        ik = coil_nctrl(n)
                         IF (lwindsurf) THEN
                            WRITE(iunit_out,"(4X,'u =',4(2X,ES22.12E3))") (coil_splinefx(n,m), m = 1, ik)
                            WRITE(iunit_out,"(4X,'v =',4(2X,ES22.12E3))") (coil_splinefy(n,m), m = 1, ik)
@@ -439,7 +450,7 @@
                      END IF
                   END DO !n
                   CLOSE(iunit_out)
-               END IF
+               END IF !lcoil_spline
 
                CALL safe_open(iunit_out,iflag,TRIM('stellopt.'//TRIM(id_string)),'unknown','formatted',ACCESS_IN='APPEND')
                iflag = 1
