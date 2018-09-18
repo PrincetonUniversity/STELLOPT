@@ -1,5 +1,5 @@
 =Tutorial: Using STELLOPT to minimize turbulent transport= 
-The STELLOPT code can optimize equilibria for reduced turbulent transport using either analytic proxy functions <ref>[[@http://dx.doi.org/10.1088/0741-3335/56/9/094001|H. Mynick, P. Xanthopoulos, B. Faber, M. Lucia, M. Rorvig, and J. Talmadge "Turbulent optimization of toroidal configurations." Plasma Phys. Control. Fusion 56 (2014)]]</ref> or linear growth rates as calculated by the [[@http://genecode.org/|GENE]] code. This page describes the various proxy functions available to the user and how to compile STELLOPT with the [[@http://genecode.org/|GENE]] code. It should also be noted that this feature of STELLOPT replicates the functionality of the [[@http://www2.ipp.mpg.de/~pax/GIST/gist.html|GIST]] code for interfacing the VMEC equilibria to GENE.
+The STELLOPT code can optimize equilibria for reduced turbulent transport using either analytic proxy functions <ref>[[http://dx.doi.org/10.1088/0741-3335/56/9/094001|H. Mynick, P. Xanthopoulos, B. Faber, M. Lucia, M. Rorvig, and J. Talmadge "Turbulent optimization of toroidal configurations." Plasma Phys. Control. Fusion 56 (2014)]]</ref> or linear growth rates as calculated by the [[http://genecode.org/|GENE]] code. This page describes the various proxy functions available to the user and how to compile STELLOPT with the [[http://genecode.org/|GENE]] code. It should also be noted that this feature of STELLOPT replicates the functionality of the [[http://www2.ipp.mpg.de/~pax/GIST/gist.html|GIST]] code for interfacing the VMEC equilibria to GENE.
 ----
 ==Turbulent transport proxy functions== 
 The STELLOPT code can optimize equilibria for reduced turbulent transport using various proxy functions. These functions do rely on a direct calculation of turbulence, instead they return quantities which are related to the growth rates. This results in much simpler (faster) calculations. The idea being that if the quantities which influence growth rates are minimized, so will the growth rates. The following table lists the available proxies
@@ -24,33 +24,22 @@ At each radial location you wish to evaluate the turbulent transport proxy you'l
 &OPTIMUM
 ......
   TXPORT_PROXY = 'PROX1D'
+  TXPORT_NZ = 128 ! Must match nz0 in parameters file (for GENE)
+  LTXPORT_GLOBAL = F
+  NALPHA = 1 ! Number of flux tubes
+  ALPHA_START = -0.6283 ! Start of flux tube
+  ALPHA_END   =  0.6283 ! END of flux tube
   TARGET_TXPORT(01) = 0.0E+00  SIGMA_TXPORT(01) = 1.0E-03  S_TXPORT(01) = 0.25
   TARGET_TXPORT(02) = 0.0E+00  SIGMA_TXPORT(02) = 1.0E-03  S_TXPORT(02) = 0.50
   TARGET_TXPORT(03) = 0.0E+00  SIGMA_TXPORT(03) = 1.0E-03  S_TXPORT(03) = 0.66
 ......
 /
-&COORDINATES
-  PEST = .TRUE.  ! Only supported value by STELLOPT version of GIST
-  BOOZER = .FALSE.
-/
-&IN_OUT
-  GLOBAL_Y = .FALSE.
-/
-&SETUP
-  ALPHA0 = 0.0            ! Midpoint along flux tube
-  ALPHA0_START = -0.6283  ! Start of flux tube
-  ALPHA0_END = 0.6283     ! End of flux tube
-  NALPHA0 = 1             ! Number of flux tubes (per surface)
-  POL_TURNS = 1.0         ! Number of poloidal turns
-  NZ0 = 128               ! Grid points along flux tube
-/
-
 
 }}}
 Note that the STELLOPT version of GIST only supports PEST coordinates. While the full version of the GIST input namelists can be read in, STELLOPT overrides many of the namelist parameters (for example S0 in the &SETUP namelist will be over-ridden by the values in S_TXPORT).
 ----
 ==Compiling STELLOPT with GENE== 
-Please note that the STELLOPT setup script must be modified to properly link [[@http://www2.ipp.mpg.de/~fsj/gene/|GENE]] into STELLOPT (currently supported on the PPPL cluster and NERSC-hopper). The following steps outline what must be done to compile the STELLOPT code with GENE support.
+Please note that the STELLOPT setup script must be modified to properly link [[http://www2.ipp.mpg.de/~fsj/gene/|GENE]] into STELLOPT (currently supported on the PPPL cluster and NERSC-hopper). The following steps outline what must be done to compile the STELLOPT code with GENE support.
 # Obtain and compile the GENE code.
 # Set an environment variable titles GENE_PATH which points to the <GENE>/bin/<obj> directory where the .o and .mod files are.
 # Run the STELLOPT setup script. Please note that you must have TXPORT support in your version.
