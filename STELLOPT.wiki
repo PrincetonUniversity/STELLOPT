@@ -105,7 +105,7 @@ The final output of the STELLOPT routine is a combination of STELLOPT files, [[V
 
 [[Optimization of Iota using LMDIF]]
 
-[[STELLOPT Turblent Transport|STELLOPT Turbulent Transport]]
+[[STELLOPT Turbulent Transport]]
 
 [[STELLOPT Coil Optimization]]
 
