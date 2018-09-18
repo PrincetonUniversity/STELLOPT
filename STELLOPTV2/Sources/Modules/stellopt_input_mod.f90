@@ -1340,6 +1340,8 @@
       WRITE(iunit,outint) 'NPOPULATION',npopulation
       WRITE(iunit,outint) 'NOPTIMIZERS',noptimizers
       WRITE(iunit,outboo) 'LKEEP_MINS',lkeep_mins
+      WRITE(iunit,outint) 'SFINCS_MIN_PROCS =',sfincs_min_procs
+      WRITE(iunit,outflt) 'VBOOT_TOLERANCE =',vboot_tolerance
       !WRITE(iunit,outboo) 'LREFIT',lrefit
       !WRITE(iunit,outflt) 'REFIT_PARAM',refit_param
       WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
@@ -1864,8 +1866,6 @@
       IF (ik > 2) THEN
          WRITE(iunit,"(2X,A,1X,'=',5(1X,E22.14))") 'SFINCS_S',(sfincs_s(n), n=1,ik)
       END IF
-      WRITE(iunit,*) 'SFINCS_MIN_PROCS =',sfincs_min_procs
-      WRITE(iunit,*) 'VBOOT_TOLERANCE =',vboot_tolerance
       ! Emissivities
       ik = MINLOC(emis_xics_s(2:),DIM=1)
       IF (ik > 2) THEN
