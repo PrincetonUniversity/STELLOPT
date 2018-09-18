@@ -928,18 +928,18 @@
             WRITE(6,target2) 'VLL_ORBIT',i,1.0,'VPERP_ORBIT',i,1.0
          END DO
       END IF
-      IF (lkink) THEN
+      IF (ltxport) THEN
          WRITE(6,'(A)')'!------------------------------------------------------------------------'
-         WRITE(6,'(A)')'!       Kink Stability Calculation (as calculated by TERPSICHORE)'
-         WRITE(6,'(A)')'!           terpsichore_input file required in run directory!'
+         WRITE(6,'(A)')'!       TURBULENT TRANSPORT'
          WRITE(6,'(A)')'!------------------------------------------------------------------------'
-         WRITE(6,'(2X,A)') 'MLMNB_KINK = 264 IVAC_KINK = 24'
-         WRITE(6,'(2X,A)') 'TARGET_KINK(01) = 1.0E-3  SIGMA_KINK(01) = 1.0   ! terpsichore_input_00'
-         WRITE(6,'(4X,A)') 'NJ_KINK(01) = 256 NK_KINK(01) = 256'
-         WRITE(6,'(4X,A)') 'MLMNS_KINK(01) = 76 LSSD_KINK(01) = 4096 LSSL_KINK(01) = 4096'
-         WRITE(6,'(2X,A)') 'TARGET_KINK(02) = 1.0E-3  SIGMA_KINK(02) = 1.0   ! terpsichore_input_01'
-         WRITE(6,'(4X,A)') 'NJ_KINK(02) = 256 NK_KINK(02) = 256'
-         WRITE(6,'(4X,A)') 'MLMNS_KINK(02) = 76 LSSD_KINK(02) = 4096 LSSL_KINK(02) = 4096'
+         WRITE(6,'(2X,A)') 'TXPORT_PROXY = ''prox1d'''
+         WRITE(6,'(2X,A)') 'LGLOBAL_TXPORT = F'
+         WRITE(6,'(2X,A)') 'NZ_TXPORT = 128'
+         WRITE(6,'(2X,A)') 'NALPHA_TXPORT = 1'
+         WRITE(6,'(2X,A)') 'ALPHA0_TXPORT = 0.0'
+         DO i = 2, ns
+            WRITE(6,target3) 'TARGET_TXPORT',i,0.0,'SIGMA_TXPORT',i,1.0,'S_TXPORT',i,REAL(i)/REAL(ns)
+         END DO
       END IF
       IF (ljdotb0) THEN
          WRITE(6,'(A)')'!------------------------------------------------------------------------'
