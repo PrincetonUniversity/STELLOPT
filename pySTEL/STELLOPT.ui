@@ -1,0 +1,1158 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>893</width>
+    <height>634</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <widget class="QTabWidget" name="tabMain">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>0</y>
+      <width>891</width>
+      <height>611</height>
+     </rect>
+    </property>
+    <property name="currentIndex">
+     <number>3</number>
+    </property>
+    <widget class="QWidget" name="TabOverview">
+     <attribute name="title">
+      <string>Overivew</string>
+     </attribute>
+    </widget>
+    <widget class="QWidget" name="TabVMEC">
+     <attribute name="title">
+      <string>VMEC</string>
+     </attribute>
+     <widget class="QLineEdit" name="TextTcon0">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>30</y>
+        <width>51</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>1.0</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>10</y>
+        <width>59</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>TCON0</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_2">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>60</y>
+        <width>59</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>DELT</string>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="TextDelt">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>80</y>
+        <width>51</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>1.0</string>
+      </property>
+     </widget>
+     <widget class="QTableWidget" name="TableNsArray">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>130</y>
+        <width>441</width>
+        <height>111</height>
+       </rect>
+      </property>
+      <row>
+       <property name="text">
+        <string>NS</string>
+       </property>
+      </row>
+      <row>
+       <property name="text">
+        <string>NITER</string>
+       </property>
+      </row>
+      <row>
+       <property name="text">
+        <string>FTOL</string>
+       </property>
+      </row>
+      <column>
+       <property name="text">
+        <string>I</string>
+       </property>
+      </column>
+      <column>
+       <property name="text">
+        <string>II</string>
+       </property>
+      </column>
+      <column>
+       <property name="text">
+        <string>III</string>
+       </property>
+      </column>
+      <column>
+       <property name="text">
+        <string>IV</string>
+       </property>
+      </column>
+     </widget>
+     <widget class="QLabel" name="label_3">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>110</y>
+        <width>81</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Radial Grid</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_4">
+      <property name="geometry">
+       <rect>
+        <x>80</x>
+        <y>10</y>
+        <width>59</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>MPOL</string>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="TextMpol">
+      <property name="geometry">
+       <rect>
+        <x>80</x>
+        <y>30</y>
+        <width>61</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>9</string>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="TextNtor">
+      <property name="geometry">
+       <rect>
+        <x>80</x>
+        <y>80</y>
+        <width>61</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>4</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_5">
+      <property name="geometry">
+       <rect>
+        <x>80</x>
+        <y>60</y>
+        <width>59</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>NTOR</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_6">
+      <property name="geometry">
+       <rect>
+        <x>240</x>
+        <y>10</y>
+        <width>59</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>NFP</string>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="TextNfp">
+      <property name="geometry">
+       <rect>
+        <x>240</x>
+        <y>30</y>
+        <width>31</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>3</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_7">
+      <property name="geometry">
+       <rect>
+        <x>160</x>
+        <y>10</y>
+        <width>59</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>NTHETA</string>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="TextNtheta">
+      <property name="geometry">
+       <rect>
+        <x>160</x>
+        <y>30</y>
+        <width>61</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>24</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_8">
+      <property name="geometry">
+       <rect>
+        <x>160</x>
+        <y>60</y>
+        <width>59</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>NZETA</string>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="TextNzeta">
+      <property name="geometry">
+       <rect>
+        <x>160</x>
+        <y>80</y>
+        <width>61</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>36</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_9">
+      <property name="geometry">
+       <rect>
+        <x>240</x>
+        <y>60</y>
+        <width>81</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>MGRID_FILE</string>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="TextMgridFile">
+      <property name="geometry">
+       <rect>
+        <x>240</x>
+        <y>80</y>
+        <width>211</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>none</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_10">
+      <property name="geometry">
+       <rect>
+        <x>280</x>
+        <y>10</y>
+        <width>71</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>NVACSKIP</string>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="TextNvacSkip">
+      <property name="geometry">
+       <rect>
+        <x>280</x>
+        <y>30</y>
+        <width>61</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>6</string>
+      </property>
+     </widget>
+     <widget class="QCheckBox" name="CheckboxLfreeb">
+      <property name="geometry">
+       <rect>
+        <x>360</x>
+        <y>30</y>
+        <width>87</width>
+        <height>20</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>LFREEB</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_11">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>250</y>
+        <width>59</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>GAMMA</string>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="TextGamma">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>270</y>
+        <width>61</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>0.0</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_12">
+      <property name="geometry">
+       <rect>
+        <x>100</x>
+        <y>250</y>
+        <width>59</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>PHIEDGE</string>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="TextPhiEdge">
+      <property name="geometry">
+       <rect>
+        <x>100</x>
+        <y>270</y>
+        <width>91</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>1.0</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_13">
+      <property name="geometry">
+       <rect>
+        <x>280</x>
+        <y>310</y>
+        <width>59</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>CURTOR</string>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="TextCurtor">
+      <property name="geometry">
+       <rect>
+        <x>280</x>
+        <y>330</y>
+        <width>91</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>0.0</string>
+      </property>
+     </widget>
+     <widget class="QComboBox" name="ComboBoxNcurr">
+      <property name="geometry">
+       <rect>
+        <x>340</x>
+        <y>270</y>
+        <width>104</width>
+        <height>26</height>
+       </rect>
+      </property>
+      <item>
+       <property name="text">
+        <string>0 - Iota</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>1 - Current</string>
+       </property>
+      </item>
+     </widget>
+     <widget class="QLabel" name="label_14">
+      <property name="geometry">
+       <rect>
+        <x>340</x>
+        <y>250</y>
+        <width>59</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>NCURR</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_15">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>310</y>
+        <width>81</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>PRES_SCALE</string>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="TextPresScale">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>330</y>
+        <width>81</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>1.0</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_16">
+      <property name="geometry">
+       <rect>
+        <x>110</x>
+        <y>310</y>
+        <width>59</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>BLOAT</string>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="TextBloat">
+      <property name="geometry">
+       <rect>
+        <x>110</x>
+        <y>330</y>
+        <width>61</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>1.0</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_17">
+      <property name="geometry">
+       <rect>
+        <x>190</x>
+        <y>310</y>
+        <width>81</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>SPRES_PED</string>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="TextSpresPed">
+      <property name="geometry">
+       <rect>
+        <x>190</x>
+        <y>330</y>
+        <width>71</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>1.0</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="ButtonLoadIndata">
+      <property name="geometry">
+       <rect>
+        <x>480</x>
+        <y>10</y>
+        <width>113</width>
+        <height>32</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>LOAD INDATA</string>
+      </property>
+     </widget>
+     <widget class="QTableWidget" name="TableArrays">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>391</y>
+        <width>861</width>
+        <height>161</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QComboBox" name="ComboBoxArrays">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>360</y>
+        <width>171</width>
+        <height>26</height>
+       </rect>
+      </property>
+      <item>
+       <property name="text">
+        <string>AM</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>AC</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>AI</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>APHI</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>AM_AUX</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>AC_AUX</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>AI_AUX</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>RBC</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>ZBS</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>RBS</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>ZBC</string>
+       </property>
+      </item>
+     </widget>
+     <widget class="QWidget" name="gridLayoutWidget">
+      <property name="geometry">
+       <rect>
+        <x>540</x>
+        <y>50</y>
+        <width>341</width>
+        <height>251</height>
+       </rect>
+      </property>
+      <layout class="QGridLayout" name="Plotbox"/>
+     </widget>
+     <widget class="QComboBox" name="ComboBoxPType">
+      <property name="geometry">
+       <rect>
+        <x>190</x>
+        <y>360</y>
+        <width>191</width>
+        <height>26</height>
+       </rect>
+      </property>
+      <item>
+       <property name="text">
+        <string>power_series</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>two_power</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>gauss_trunc</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>akima_spline</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>sum_atan</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>power_series_i</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>akima_spline_i</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>akima_spline_ip</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>pedestal</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>rational</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>nice_quadratic</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>two_lorentz</string>
+       </property>
+      </item>
+     </widget>
+     <widget class="QPushButton" name="ButtonWriteIndata">
+      <property name="geometry">
+       <rect>
+        <x>610</x>
+        <y>10</y>
+        <width>121</width>
+        <height>32</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>WRITE INDATA</string>
+      </property>
+     </widget>
+    </widget>
+    <widget class="QWidget" name="tabSTELLOPT">
+     <attribute name="title">
+      <string>STELLOPT</string>
+     </attribute>
+     <widget class="QComboBox" name="ComboBoxOPTtype">
+      <property name="geometry">
+       <rect>
+        <x>20</x>
+        <y>40</y>
+        <width>191</width>
+        <height>26</height>
+       </rect>
+      </property>
+      <item>
+       <property name="text">
+        <string>ONE_ITER</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>LMDIF</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>LMDIF_BOUNDED</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>GADE</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>PSO</string>
+       </property>
+      </item>
+     </widget>
+     <widget class="QTableWidget" name="TableOPTtype">
+      <property name="geometry">
+       <rect>
+        <x>20</x>
+        <y>70</y>
+        <width>191</width>
+        <height>192</height>
+       </rect>
+      </property>
+      <row>
+       <property name="text">
+        <string>NPOPULATION</string>
+       </property>
+      </row>
+      <column>
+       <property name="text">
+        <string>Value</string>
+       </property>
+      </column>
+      <item row="0" column="0">
+       <property name="text">
+        <string>1</string>
+       </property>
+      </item>
+     </widget>
+     <widget class="QTabWidget" name="tabStelVars">
+      <property name="geometry">
+       <rect>
+        <x>240</x>
+        <y>40</y>
+        <width>621</width>
+        <height>221</height>
+       </rect>
+      </property>
+      <property name="currentIndex">
+       <number>1</number>
+      </property>
+      <widget class="QWidget" name="tabStelVarsGlobal">
+       <attribute name="title">
+        <string>Global</string>
+       </attribute>
+       <widget class="QTableWidget" name="TableOPTVarsScalar">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>10</y>
+          <width>601</width>
+          <height>181</height>
+         </rect>
+        </property>
+        <row>
+         <property name="text">
+          <string>PHIEDGE</string>
+         </property>
+        </row>
+        <row>
+         <property name="text">
+          <string>PRES_SCALE</string>
+         </property>
+        </row>
+        <row>
+         <property name="text">
+          <string>CURTOR</string>
+         </property>
+        </row>
+        <column>
+         <property name="text">
+          <string>OPTIMIZED</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>Value</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>DValue</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>Minimum</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>Maximum</string>
+         </property>
+        </column>
+       </widget>
+      </widget>
+      <widget class="QWidget" name="tabStelVarsProfile">
+       <attribute name="title">
+        <string>Profiles</string>
+       </attribute>
+       <widget class="QComboBox" name="comboBoxStelVarsProfType">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>10</y>
+          <width>151</width>
+          <height>26</height>
+         </rect>
+        </property>
+        <item>
+         <property name="text">
+          <string>Pressure (AM)</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Current (AC)</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Iota (AI)</string>
+         </property>
+        </item>
+       </widget>
+       <widget class="QTableWidget" name="TableOPTVarsProf">
+        <property name="geometry">
+         <rect>
+          <x>20</x>
+          <y>40</y>
+          <width>571</width>
+          <height>141</height>
+         </rect>
+        </property>
+        <row>
+         <property name="text">
+          <string>AM(0)</string>
+         </property>
+        </row>
+        <row>
+         <property name="text">
+          <string>AM(1)</string>
+         </property>
+        </row>
+        <row>
+         <property name="text">
+          <string>AM(2)</string>
+         </property>
+        </row>
+        <row>
+         <property name="text">
+          <string>AM(3)</string>
+         </property>
+        </row>
+        <row>
+         <property name="text">
+          <string>AM(4)</string>
+         </property>
+        </row>
+        <row>
+         <property name="text">
+          <string>AM(5)</string>
+         </property>
+        </row>
+        <row>
+         <property name="text">
+          <string>AM(6)</string>
+         </property>
+        </row>
+        <row>
+         <property name="text">
+          <string>AM(7)</string>
+         </property>
+        </row>
+        <row>
+         <property name="text">
+          <string>AM(8)</string>
+         </property>
+        </row>
+        <row>
+         <property name="text">
+          <string>AM(9)</string>
+         </property>
+        </row>
+        <row>
+         <property name="text">
+          <string>AM(10)</string>
+         </property>
+        </row>
+        <column>
+         <property name="text">
+          <string>Optimized</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>Value</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>DValue</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>Minimum</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>Maximum</string>
+         </property>
+        </column>
+       </widget>
+      </widget>
+      <widget class="QWidget" name="tabStelVarsExtcur">
+       <attribute name="title">
+        <string>Vacuum Current</string>
+       </attribute>
+       <widget class="QTableWidget" name="TableOPTVarsExtcur">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>10</y>
+          <width>601</width>
+          <height>171</height>
+         </rect>
+        </property>
+        <row>
+         <property name="text">
+          <string>EXTCUR(1)</string>
+         </property>
+        </row>
+        <row>
+         <property name="text">
+          <string>EXTCUR(2)</string>
+         </property>
+        </row>
+        <row>
+         <property name="text">
+          <string>EXTCUR(2)</string>
+         </property>
+        </row>
+        <row>
+         <property name="text">
+          <string>EXTCUR(3)</string>
+         </property>
+        </row>
+        <row>
+         <property name="text">
+          <string>EXTCUR(5)</string>
+         </property>
+        </row>
+        <column>
+         <property name="text">
+          <string>Optimized</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>Value</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>DValue</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>Minimum</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>Maximum</string>
+         </property>
+        </column>
+       </widget>
+      </widget>
+      <widget class="QWidget" name="tabStelVarsBound">
+       <attribute name="title">
+        <string>Boundary</string>
+       </attribute>
+       <widget class="QComboBox" name="comboBoxStelVarsBoundType">
+        <property name="geometry">
+         <rect>
+          <x>0</x>
+          <y>0</y>
+          <width>201</width>
+          <height>26</height>
+         </rect>
+        </property>
+        <item>
+         <property name="text">
+          <string>VMEC</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Hirshman-Breslau</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Garabedian</string>
+         </property>
+        </item>
+       </widget>
+       <widget class="QTableWidget" name="TableOPTVarsBound">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>30</y>
+          <width>601</width>
+          <height>161</height>
+         </rect>
+        </property>
+        <row>
+         <property name="text">
+          <string>(0,1)</string>
+         </property>
+        </row>
+        <column>
+         <property name="text">
+          <string>Optimized</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>Value</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>DValue</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>Minimum</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>Maximum</string>
+         </property>
+        </column>
+       </widget>
+      </widget>
+     </widget>
+    </widget>
+    <widget class="QWidget" name="tabOPTplot">
+     <attribute name="title">
+      <string>OPTplot</string>
+     </attribute>
+     <widget class="QWidget" name="gridLayoutWidget_2">
+      <property name="geometry">
+       <rect>
+        <x>309</x>
+        <y>49</y>
+        <width>561</width>
+        <height>521</height>
+       </rect>
+      </property>
+      <layout class="QGridLayout" name="OPTplot_box"/>
+     </widget>
+     <widget class="QComboBox" name="ComboBoxOPTplot_type">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>20</y>
+        <width>271</width>
+        <height>26</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="ButtonLoadSTELLOPT">
+      <property name="geometry">
+       <rect>
+        <x>340</x>
+        <y>10</y>
+        <width>110</width>
+        <height>32</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Load stellopt</string>
+      </property>
+     </widget>
+    </widget>
+   </widget>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>893</width>
+     <height>20</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

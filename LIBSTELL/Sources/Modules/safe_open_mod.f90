@@ -166,4 +166,9 @@
 
       END SUBROUTINE safe_open
 
+      SUBROUTINE safe_close(iunit)
+      INTEGER :: iunit
+      CLOSE(iunit)
+      END SUBROUTINE safe_close
+
       END MODULE safe_open_mod
