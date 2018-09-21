@@ -6,7 +6,9 @@ This tutorial will walk the user through running the FIELDLINES code for a vacuu
 
 # __**Edit the input namelist text file.**__
 > The input namelist (input.ncsx_c09r00_free) will need to be modified for the [[FIELDLINES]] code. The [[FIELDLINES]] code utilizes the EXTCUR array from the [[VMEC]] INDATA namelist and reads it's own FIELDLINES_INPUT namelist from this file. For other codes ([[PIES]]/[[SPEC]]) the namelist should be added to the corresponding input file. Since we will be following fieldlines in vacuum there is no need to have an output (wout file) present in the working directory. The namelist should look like the following:
-> [[code format="fortran"]]
+> 
+
+{{{
  &INDATA
  .
  .
@@ -53,11 +55,12 @@ This tutorial will walk the user through running the FIELDLINES code for a vacuu
  FOLLOW_TOL = 1.0E-9
  VC_ADAPT_TOL = 1.0E-7
  &END
-[[code]]
+}}}
 > This will follow 40 field lines for ~1000 toroidal transits. The NPOINC parameter indicates that we wish to save the location of the field lines 120 times per field period (approximately every degree in phi). The code will use the NAG routines for following field lines. If the user does not have access to the NAG libraries, they should replace NAG with LSODE and use the Livermore solver. The VC_ADAPT_TOL parameter will be ignored as we will be following field lines in vacuum and do not need to preform a virtual casing.
 # __**Execute the code.**__
 > We execute the code by providing the type of equilibria followed by the input file extension. Vacuum fields can either be specified by coil or mgrid, here we've utilized our mgrid file. Finally, we instruct the code that we wish to calculate vacuum field via the -vac command line option.
-> [[code format="bash"]]
+> 
+{{{
  >~/bin_847/xfieldlines -vmec ncsx_c09r00_free -mgrid mgrid_c09r00.nc -vac
  FIELDLINES Version 0.50
  ----- Input Parameters -----
@@ -81,7 +84,7 @@ This tutorial will walk the user through running the FIELDLINES code for a vacuu
  ----- WRITING DATA TO FILE -----
  FILE: fieldlines_ncsx_c09r00_free.h5
  ----- FIELDLINES DONE -----
-[[code]]
+}}}
 > The code outputs an HDF5 file with the fieldline data and grid as the contents. Note that the code is parallelized, so when running the code on parallel machines, the mpirun command must be used.
 # __**Examine the output.**__
 > The output of the [[FIELDLINES]] code is stored in an HDF5 file called fieldlines_ext.h5 where ext is the input extension of the input file. The field line data is saved NPOINC steps per field period. To construct a Poincaré plot the user must simply chose the index of the cross section they'd like and step by NPOINC indexes to find the next point. This assumes the user started all field lines from the same phi plane. Additionally, the grid and field (B_R/B_PHI and B_Z/B_PHI) are stored in the file, this is done to aide in restarts.
