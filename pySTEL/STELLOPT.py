@@ -915,9 +915,10 @@ class MyApp(QMainWindow):
 			e = self.stel_data['FLUXLOOPS_equil'].T
 			b = s < 1E10
 			if len(n) > 1:
+				b = b[:,0]
 				x = np.ndarray((n[1],1))
 				for j in range(len(x)): x[j]=j+1
-				self.ax2.errorbar(x[b],y[b],s[b],fmt='sk',fillstyle='none')
+				self.ax2.errorbar(x[b],y[b,0],s[b,0],fmt='sk',fillstyle='none')
 				self.ax2.plot(x[b,:],e[b,:],'o',fillstyle='none')
 			else:
 				x = np.ndarray((n[0],1))
@@ -934,9 +935,10 @@ class MyApp(QMainWindow):
 			e = self.stel_data['SEGROG_equil'].T
 			b = s < 1E10
 			if len(n) > 1:
+				b = b[:,0]
 				x = np.ndarray((n[1],1))
 				for j in range(len(x)): x[j]=j+1
-				self.ax2.errorbar(x[b],y[b],s[b],fmt='sk',fillstyle='none')
+				self.ax2.errorbar(x[b],y[b,0],s[b,0],fmt='sk',fillstyle='none')
 				self.ax2.plot(x[b,:],e[b,:],'o',fillstyle='none')
 			else:
 				x = np.ndarray((n[0],1))
