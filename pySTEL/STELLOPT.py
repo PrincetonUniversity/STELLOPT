@@ -824,6 +824,11 @@ class MyApp(QMainWindow):
 			self.ui.ComboBoxOPTplot_type.addItem('Ion Temperature')
 			self.ui.ComboBoxOPTplot_type.addItem('Z Effective')
 			self.tprof_files = sorted([k for k in files if 'tprof.' in k])
+		# Handle Diagnostic Profiles
+		if any('dprof.' in mystring for mystring in files):
+			self.ui.ComboBoxOPTplot_type.addItem('----- Diagnostic -----')
+			self.ui.ComboBoxOPTplot_type.addItem('XICS Emissivity')
+			self.dprof_files = sorted([k for k in files if 'dprof.' in k])
 		
 
 	def UpdateOptplot(self):
@@ -1358,9 +1363,66 @@ class MyApp(QMainWindow):
 			self.ax2.set_ylabel('Z [m]')
 			self.ax2.set_title('VMEC Flux Surface Evolution (phi=0)')
 			self.ax2.set_aspect('equal')
-		#print(type(self.ax2))
-		#self.ax2.set_cmap('Spectral')
-		#self.ax2.set(cmap='Spectral')
+		elif (plot_name == 'Electron Temperature'):
+			l=0
+			dl = len(self.tprof_files)
+			for string in self.tprof_files:
+				if 'tprof' in string:
+					tprof = np.loadtxt(self.workdir+string,skiprows=1)
+					self.ax2.plot(tprof[:,0],tprof[:,2]/1E3,color=_plt.cm.brg(l/dl))
+					l=l+1
+			self.ax2.set_xlabel('Norm Tor. Flux (s)')
+			self.ax2.set_ylabel('Temperature [keV]')
+			self.ax2.set_title('Electron Temperature Profile')
+			self.ax2.set_xlim((0,1))
+		elif (plot_name == 'Electron Density'):
+			l=0
+			dl = len(self.tprof_files)
+			for string in self.tprof_files:
+				if 'tprof' in string:
+					tprof = np.loadtxt(self.workdir+string,skiprows=1)
+					self.ax2.plot(tprof[:,0],tprof[:,1]/1E19,color=_plt.cm.brg(l/dl))
+					l=l+1
+			self.ax2.set_xlabel('Norm Tor. Flux (s)')
+			self.ax2.set_ylabel('Density [m^{-3}]')
+			self.ax2.set_title('Electron Density Profile')
+			self.ax2.set_xlim((0,1))
+		elif (plot_name == 'Ion Temperature'):
+			l=0
+			dl = len(self.tprof_files)
+			for string in self.tprof_files:
+				if 'tprof' in string:
+					tprof = np.loadtxt(self.workdir+string,skiprows=1)
+					self.ax2.plot(tprof[:,0],tprof[:,3]/1E3,color=_plt.cm.brg(l/dl))
+					l=l+1
+			self.ax2.set_xlabel('Norm Tor. Flux (s)')
+			self.ax2.set_ylabel('Temperature [keV]')
+			self.ax2.set_title('Ion Temperature Profile')
+			self.ax2.set_xlim((0,1))
+		elif (plot_name == 'Z Effective'):
+			l=0
+			dl = len(self.tprof_files)
+			for string in self.tprof_files:
+				if 'tprof' in string:
+					tprof = np.loadtxt(self.workdir+string,skiprows=1)
+					self.ax2.plot(tprof[:,0],tprof[:,4],color=_plt.cm.brg(l/dl))
+					l=l+1
+			self.ax2.set_xlabel('Norm Tor. Flux (s)')
+			self.ax2.set_ylabel('Z_{Eff}')
+			self.ax2.set_title('Z Effective Profile')
+			self.ax2.set_xlim((0,1))
+		elif (plot_name == 'XICS Emissivity'):
+			l=0
+			dl = len(self.dprof_files)
+			for string in self.dprof_files:
+				if 'dprof' in string:
+					dprof = np.loadtxt(self.workdir+string,skiprows=1)
+					self.ax2.plot(dprof[:,0],dprof[:,1],color=_plt.cm.brg(l/dl))
+					l=l+1
+			self.ax2.set_xlabel('Norm Tor. Flux (s)')
+			self.ax2.set_ylabel('Effective Emissivity')
+			self.ax2.set_title('XICS Emissivity Profile')
+			self.ax2.set_xlim((0,1))
 		self.canvas2.draw()
 
 
