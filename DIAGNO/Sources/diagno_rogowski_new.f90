@@ -357,6 +357,7 @@
             WRITE(iunit,'(1X,I4.4)') nfl
             CALL FLUSH(iunit)
             DO i = 1, nfl
+               flux(i) = flux(i) * segrog_turns(i)
                WRITE(iunit,'(1X,1ES22.12E3)') flux(i)
                CALL FLUSH(iunit)
             END DO

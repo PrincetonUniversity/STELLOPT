@@ -32,6 +32,8 @@
 !       v3.52        Improved load balancing when skiping calcuations
 !                    Increased size of skip variables
 !                    Addressed bug regarding short EXTCUR arrays
+!       v3.52        Paralle Benchmarks now working
+!                    SEGROG_TURNS added
 !-----------------------------------------------------------------------
       MODULE diagno_runtime
 !-----------------------------------------------------------------------
@@ -105,7 +107,7 @@
       LOGICAL         :: luse_extcur(512),lskip_flux(2048),lskip_rogo(2048)
       INTEGER         :: nextcur, int_step, nu, nv, nfp_diagno, eq_sgns,&
                          nprocs_diagno, mystart, myend
-      REAL(rprec)     :: flux_turns(512), bprobe_turns(2048)
+      REAL(rprec)     :: flux_turns(512), bprobe_turns(2048), segrog_turns(256)
       REAL(rprec)     :: vc_adapt_tol, units, phiedge, vc_adapt_rel
       REAL(rprec), ALLOCATABLE :: extcur(:)
       CHARACTER(256)  :: id_string, flux_diag_file, bprobes_file, &
@@ -113,7 +115,7 @@
                          int_type, coil_string, flux_mut_file, rog_mut_file,&
                          mir_mut_file, bprobes_mut_file
                          
-      REAL(rprec), PARAMETER :: DIAGNO_VERSION = 3.52
+      REAL(rprec), PARAMETER :: DIAGNO_VERSION = 3.53
       REAL(rprec), PARAMETER ::      pi = 3.14159265358979312D+00
       REAL(rprec), PARAMETER ::     pi2 = 6.28318530717958623
       REAL(rprec), PARAMETER ::  onerad = 1.74532925199432955E-02
