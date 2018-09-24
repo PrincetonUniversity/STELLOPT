@@ -77,6 +77,7 @@
                IF (ncnt /= 1) THEN
                   WRITE(temp_str,'(i5.5)') ncnt
                   proc_string = TRIM(id_string) // '.' // TRIM(ADJUSTL(temp_str))
+                  IF (lfreeb) mgrid_file = 'mgrid_'//TRIM(proc_string)//'.nc'
                   CALL safe_open(iunit_out,iflag,TRIM('input.'//TRIM(proc_string)),'unknown','formatted')
                   CALL write_indata_namelist(iunit_out,ier)
                   CALL write_optimum_namelist(iunit_out,ier)
@@ -155,6 +156,7 @@
                   CALL move_txtfile('boot_fit.'//TRIM(proc_string_old),'boot_fit.'//TRIM(proc_string))
                   IF (lcoil_geom) THEN
                      CALL move_txtfile('coils.'//TRIM(proc_string_old),'coils.'//TRIM(proc_string))
+                     CALL SYSTEM('cp mgrid_'//TRIM(proc_string_old)//'.nc mgrid_'//TRIM(proc_string)//'.nc')
                   END IF
                   DO ik = 1, nsd
                      WRITE(temp_str,'(A,I3.3)') '_s',ik
@@ -245,6 +247,7 @@
                   ! Write the input file
                   WRITE(temp_str,'(i5.5)') ncnt
                   proc_string = TRIM(id_string) // '.' // TRIM(ADJUSTL(temp_str))
+                  IF (lfreeb) mgrid_file = 'mgrid_'//TRIM(proc_string)//'.nc'
                   CALL safe_open(iunit_out,iflag,TRIM('input.'//TRIM(proc_string)),'unknown','formatted')
                   CALL write_indata_namelist(iunit_out,ier)
                   CALL write_optimum_namelist(iunit_out,ier)
@@ -342,7 +345,8 @@
                   CALL move_txtfile('boot_fit.'//TRIM(proc_string_old),'boot_fit.'//TRIM(proc_string))
                   CALL copy_boozer_file(TRIM(proc_string_old),TRIM(proc_string))
                   IF (lcoil_geom) THEN
-                     CALL SYSTEM('mv coils.'//TRIM(proc_string_old)//' coils.'//TRIM(proc_string))
+                     CALL move_txtfile('coils.'//TRIM(proc_string_old),'coils.'//TRIM(proc_string))
+                     CALL SYSTEM('cp mgrid_'//TRIM(proc_string_old)//'.nc mgrid_'//TRIM(proc_string)//'.nc')
                   END IF
                   IF (ANY(sigma_dkes < bigno)) THEN
                      DO ik = 1, nsd
@@ -475,6 +479,7 @@
                ! Write the input file
                WRITE(temp_str,'(i5.5)') ncnt
                proc_string = TRIM(id_string) // '.' // TRIM(ADJUSTL(temp_str))
+               IF (lfreeb) mgrid_file = 'mgrid_'//TRIM(proc_string)//'.nc'
                CALL safe_open(iunit_out,iflag,TRIM('input.'//TRIM(proc_string)),'unknown','formatted')
                CALL write_indata_namelist(iunit_out,ier)
                CALL write_optimum_namelist(iunit_out,ier)
