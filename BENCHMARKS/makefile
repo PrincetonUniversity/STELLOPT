@@ -58,28 +58,28 @@ test_stellopt:
 	$(MAKE) test_stellopt_recon_tok
 	$(MAKE) test_stellopt_vboot_tokamak_bootsj
 	@if [ $LCOILOPT ]; then\
-		@echo "----COILOPT OPTION----"
-		$(MAKE) test_stellopt_coilopt
+		echo "----COILOPT OPTION----"; \
+		$(MAKE) test_stellopt_coilopt;\
 	fi
 	@if [ $LGENE ]; then\
-		@echo "----GENE OPTION----"
-		$(MAKE) test_stellopt_gene
+		@echo "----GENE OPTION----";\
+		$(MAKE) test_stellopt_gene;\
 	fi
 	@if [ $LREGCOIL ]; then\
-		@echo "----REGCOIL OPTION----"
-		$(MAKE) test_stellopt_regcoil
+		@echo "----REGCOIL OPTION----";\
+		$(MAKE) test_stellopt_regcoil;\
 	fi
 	@if [ $LSFINCS ]; then\
-		@echo "----SFINCS OPTION----"
-		$(MAKE) test_stellopt_sfincs
+		@echo "----SFINCS OPTION----";\
+		$(MAKE) test_stellopt_sfincs;\
 	fi
 	@if [ $LTERPSICHORE ]; then\
-		@echo "----TERPSICHORE OPTION----"
-		$(MAKE) test_stellopt_terpsichore
+		@echo "----TERPSICHORE OPTION----";\
+		$(MAKE) test_stellopt_terpsichore;\
 	fi
 	@if [ $LTRAVIS ]; then\
-		@echo "----TRAVIS OPTION----"
-		$(MAKE) test_stellopt_travis
+		@echo "----TRAVIS OPTION----";\
+		$(MAKE) test_stellopt_travis;\
 	fi
 	@echo "Tesing of STELLOPT complete"
 	@echo ""
