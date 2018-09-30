@@ -829,6 +829,13 @@ class MyApp(QMainWindow):
 			self.ui.ComboBoxOPTplot_type.addItem('----- Diagnostic -----')
 			self.ui.ComboBoxOPTplot_type.addItem('XICS Emissivity')
 			self.dprof_files = sorted([k for k in files if 'dprof.' in k])
+		# Handle Current Density Profiles
+		if any('jprof.' in mystring for mystring in files):
+			self.ui.ComboBoxOPTplot_type.addItem('----- Current Density -----')
+			self.ui.ComboBoxOPTplot_type.addItem('Bootstrap Profile')
+			self.ui.ComboBoxOPTplot_type.addItem('Beam Profile')
+			self.ui.ComboBoxOPTplot_type.addItem('Total Current Profile')
+			self.jprof_files = sorted([k for k in files if 'jprof.' in k])
 		
 
 	def UpdateOptplot(self):
@@ -1429,6 +1436,45 @@ class MyApp(QMainWindow):
 			self.ax2.set_xlabel('Norm Tor. Flux (s)')
 			self.ax2.set_ylabel('Effective Emissivity')
 			self.ax2.set_title('XICS Emissivity Profile')
+			self.ax2.set_xlim((0,1))
+		elif (plot_name == 'Bootstrap Profile'):
+			l=0
+			dl = len(self.jprof_files)
+			for string in self.jprof_files:
+				if 'jprof' in string:
+					jprof = np.loadtxt(self.workdir+string,skiprows=1)
+					self.ax2.plot(jprof[:,0],jprof[:,2],color=_plt.cm.brg(l/dl))
+					l=l+1
+			self.ax2.set_xlabel('Norm Tor. Flux (s)')
+			self.ax2.set_ylabel('Current Density [kA/m^-2]')
+			self.ax2.set_title('Bootstrap Current Profile')
+			self.ax2.set_xlim((0,1))
+		elif (plot_name == 'Beam Profile'):
+			l=0
+			dl = len(self.jprof_files)
+			for string in self.jprof_files:
+				if 'jprof' in string:
+					jprof = np.loadtxt(self.workdir+string,skiprows=1)
+					self.ax2.plot(jprof[:,0],jprof[:,1],color=_plt.cm.brg(l/dl))
+					l=l+1
+			self.ax2.set_xlabel('Norm Tor. Flux (s)')
+			self.ax2.set_ylabel('Current Density [kA/m^-2]')
+			self.ax2.set_title('Beam Current Profile')
+			self.ax2.set_xlim((0,1))
+		elif (plot_name == 'Total Current Profile'):
+			l=0
+			dl = len(self.jprof_files)
+			jprof = np.loadtxt(self.workdir+self.jprof_files[0],skiprows=1)
+			self.ax2.plot(jprof[:,0],jprof[:,2],'--b')
+			self.ax2.plot(jprof[:,0],jprof[:,1],':b')
+			self.ax2.plot(jprof[:,0],jprof[:,3],'b')
+			jprof = np.loadtxt(self.workdir+self.jprof_files[dl-1],skiprows=1)
+			self.ax2.plot(jprof[:,0],jprof[:,2],'--g')
+			self.ax2.plot(jprof[:,0],jprof[:,1],':g')
+			self.ax2.plot(jprof[:,0],jprof[:,3],'g')
+			self.ax2.set_xlabel('Norm Tor. Flux (s)')
+			self.ax2.set_ylabel('Current Density [kA/m^-2]')
+			self.ax2.set_title('Total Current Profile')
 			self.ax2.set_xlim((0,1))
 		self.canvas2.draw()
 
