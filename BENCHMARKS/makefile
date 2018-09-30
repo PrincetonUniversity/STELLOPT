@@ -87,6 +87,7 @@ test_stellopt:
 test_stellopt_basic:
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.BASIC
 	@cd $(STELLOPT_TEST_DIR)/BASIC; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.BASIC; rm -f *_opt*
+	@cd $(VMEC_TEST_DIR); ./compare_BASIC.py
 	@echo ""
 
 test_stellopt_beams3d:
