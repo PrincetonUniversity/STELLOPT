@@ -23,7 +23,7 @@
       USE stellopt_targets
       USE stellopt_input_mod
 
-      USE PTSM3D_par
+      USE PTSM3D_setup
       USE PTSM3D_targets
       
 !-----------------------------------------------------------------------

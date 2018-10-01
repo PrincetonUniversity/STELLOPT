@@ -23,7 +23,7 @@
       USE vmec2gs2_mod
       
       !PTSM3D Files
-      USE PTSM3D_par
+      USE PTSM3D_setup
       USE PTSM3D_geom
       USE PTSM3D_itg
       USE PTSM3D_triplets
@@ -77,27 +77,32 @@
       shat = two*s/q*qprim
       CALL get_equil_p(s,pval,ier,pprime)
       dpdx = -4.0_rprec*sqrt(s)/Ba**2 * pprime*mu0
+      nz0 = points_per_turn
+print *, nz0
       !maxPnt = nz0*local_npol
       
       q0 = q
-      qprime = q0*shat/(2.0*s0) 
       Bref = Ba
       minor_a = a
-      dtheta = pi2/real(nz0,rprec)
+      deta = pi2/real(nz0,rprec)
+      write(*,*) 'deta ', deta
       !maxTheta = nint(abs(1.0/qprim*1.0/dky))+local_npol*pi
-      maxTheta = nint(abs(1.0/shat/dky)) + 2*local_npol*pi
-      maxPnt = nint(2.0/dtheta*maxTheta)
+      !maxTheta = nint(abs(1.0/shat/dky)) + 2*local_npol*pi
+      maxTheta = abs(1.0/shat/dky) + 2*local_npol*pi
+      !maxPnt = nint(2.0/deta*maxTheta)
+      maxPnt = nint(maxTheta/deta)
       global_npol = nint(maxTheta/pi)
+      write(*,*) 'global_npol', global_npol
       !make sure global_npol is even
       if (modulo(global_npol,2) == 1) global_npol = global_npol + 1
-
       maxTheta = global_npol*pi
       maxPnt = global_npol*nz0
-
+!'
 
       
       periods = float(global_npol)*nfp
       nzgrid = maxPnt/2
+      write(*,*) 'nzgrid', nzgrid
       periodszeta = periods*q
       zeta_center = 0.0
       vmec_option = 0
@@ -133,14 +138,11 @@
       ALLOCATE(L2(0:2*nzgrid))
       ALLOCATE(dBdt(0:2*nzgrid))
       ALLOCATE(th(0:2*nzgrid))
-
-      CALL PTSM3D_initialize_geom(2*nzgrid+1)
-
-      CALL PTSM3D_set_norms 
-
-      CALL PTSM3D_initialize_itg_solve
-
-
+      
+      nz = 2*nzgrid+1
+      li1 = 0
+      li2 = 2*nzgrid
+      CALL PTSM3D_initialize_geom
 
       !Call Matt's program to calculate the quantities on a gs2 grid
       CALL vmec2gs2('wout_'//TRIM(PROC_STRING)//'.nc', nalpha, nzgrid,&
@@ -176,7 +178,7 @@
       !Then conversion between theta and zeta is simply
       !theta = zeta/q
       th = zeta/q
-
+      eta = th 
 
 
       temp_str = TRIM('gist_genet_'//TRIM(proc_string))
@@ -218,6 +220,9 @@
     
       IF (write_gist) CLOSE(iunit)
 
+      CALL PTSM3D_set_norms 
+
+      CALL PTSM3D_initialize_itg_solve
       ! Solve ITG dispersion relation for each (kx,ky)
       !CALL PTSM3D_itg_solve(j,k)
       CALL PTSM3D_itg_solve
@@ -243,7 +248,7 @@
         WRITE(6,"(2A,F12.7)"),&
           & TRIM(gist_filename),&
          ! & TRIM(TRIM(proc_string)//"."//TRIM(num_str)),&
-          & "TARGET_QST  : ",target_qst
+          & " TARGET_QST  : ",target_qst
       END IF
       IF (opt_target == 'combo') THEN
         ptsm3d_target = target_12f+target_qst 

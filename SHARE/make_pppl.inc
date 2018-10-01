@@ -148,7 +148,7 @@
 #######################################################################
 #            REGCOIL Options
 #######################################################################
-  LREGCOIL= T
+  LREGCOIL= F
   REGCOIL_DIR = $(REGCOIL_PATH)
   REGCOIL_INC = -I$(REGCOIL_DIR) 
   LIB_REGCOIL = libregcoil.a
@@ -157,8 +157,8 @@
 #            PTSM3D Options
 #######################################################################
   LPTSM3D = T
-  PTSM3D_PATH = /p/stellopt/ANALYSIS/bfaber/ptsm3d_opt
-  PTSM3D_INC = -I($PTSM3D_PATH)
+  PTSM3D_PATH = /p/stellopt/ANALYSIS/bfaber/ptsm3d
+  PTSM3D_INC = -I$(PTSM3D_PATH)/objs
   PTSM3D_DIR = $(PTSM3D_PATH)
   LIB_PTSM3D = libptsm3d.a
   PTSM3D_LIB = $(PTSM3D_DIR)/$(LIB_PTSM3D)
@@ -336,7 +336,7 @@ LIB_LINK += $(GENE_LIB) $(COILOPT_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB) $(REGCOI
 ifeq ($(LPTSM3D),T)
   MOD1_PATH += $(PTSM3D_INC)
   PRECOMP += -DPTSM3D
-  MOD_PATH += -I$(PTSM3D_DIR)
+  MOD_PATH += -I$(PTSM3D_DIR)/objs
 else
   PTSM3D_LIB =
   PTSM3D_DIR =
