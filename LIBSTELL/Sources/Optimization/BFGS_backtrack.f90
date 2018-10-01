@@ -144,7 +144,7 @@ SUBROUTINE BFGS_backtrack(m,n,nfev,fcn,p_curr,f_curr,x,grad_curr, &
   ! Initialize the exit status to 'normal'
   bt_exit_flag = BT_EXIT_NORMAL
 
-  do while (f_new > (f_curr + c_armijo*alpha*grad_dot_p))
+  do while ((alpha>alpha_min) .and. (f_new > (f_curr + c_armijo*alpha*grad_dot_p)))
     niter = niter + 1
     alpha = rho_backtrack*alpha
     if (alpha < alpha_min) then
