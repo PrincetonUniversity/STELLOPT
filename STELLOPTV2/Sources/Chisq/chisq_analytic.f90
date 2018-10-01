@@ -48,8 +48,8 @@
 !-----------------------------------------------------------------------
       IMPLICIT NONE
 
-      REAL(rprec), INTENT(in)    :: target(3)
-      REAL(rprec), INTENT(in)    :: sigma(3)
+      REAL(rprec), INTENT(in)    :: target(9)
+      REAL(rprec), INTENT(in)    :: sigma(9)
       INTEGER,     INTENT(in)    ::  niter
       INTEGER,     INTENT(inout) ::  iflag
 

@@ -189,12 +189,12 @@ SUBROUTINE BFGS_FD(fcn, m, n, x, ftol, gtol, maxfev, nfev, &
   ! Cleanup after fcn call
   IF (myid .eq. master) iflag = FLAG_CLEANUP_BFGS
 
-  if (myid .eq. master)  print *, "<----In BFGS_FD. Master will do bfgs cleanup"
+  if (myid .eq. master)  print *, "<----In BFGS_FD. Master will do first bfgs cleanup"
   ! The master will do the bfgs cleanup.
   ! The workers will do 'something else'?.
-  if (myid .eq. master)  write (6,'(A30,i5,a6,i5)'), '<----Before cleanup: myid=', myid, 'iflag=', iflag
+  !if (myid .eq. master)  write (6,'(A30,i5,a6,i5)'), '<----Before cleanup: myid=', myid, 'iflag=', iflag
   CALL fcn (m, n, x, fvec, iflag, nfev)
-  if (myid .eq. master)  write (6,'(A30,i5,a6,i5)'), '<----After cleanup: myid=', myid, 'iflag=', iflag
+  !if (myid .eq. master)  write (6,'(A30,i5,a6,i5)'), '<----After cleanup: myid=', myid, 'iflag=', iflag
   if (myid .eq. master)  print *, "<----In BFGS_FD. Master just did bfgs cleanup"
 
   ! Increment nfev by 1 (why? JCS)
@@ -219,9 +219,9 @@ SUBROUTINE BFGS_FD(fcn, m, n, x, ftol, gtol, maxfev, nfev, &
   fnorm = enorm(m, fvec)
 
   ! Compute value of objective function
-  ! not using fnorm squrared.  just using fnorm
-  ! f_curr = fnorm**2
-   f_curr = fnorm
+   f_curr = fnorm**2
+  ! if not using fnorm squrared,  just using fnorm
+  ! f_curr = fnorm
   
   if (DEBUG_BFGS .and. (myid .eq. master)) then
     write(*,"(A,1ES12.4E2)") "K=Initial function value: ", f_curr
@@ -257,11 +257,11 @@ SUBROUTINE BFGS_FD(fcn, m, n, x, ftol, gtol, maxfev, nfev, &
   ! fvec = (vals(1:m)-targets(1:m))/abs(sigmas(1:m))
   ! fjac = d(fvec)/d(vars)
   ! d(f_curr)/d(vars) = sum(2*fvec*fjac)
-  !grad_curr = 2*matmul(fvec, fjac_curr)
-  grad_curr = sum(fjac_curr, 1)
+  grad_curr = 2*matmul(fvec, fjac_curr)
+  !grad_curr = sum(fjac_curr, 1)
 
   ! to do: print out the grad to a file
-  ! to do: calculate the regualr hessian, and print it out to a file
+  ! to do: calculate the regular hessian, and print it out to a file
 
 
   ! Initial Hessian set to multiple of identity
@@ -276,7 +276,7 @@ SUBROUTINE BFGS_FD(fcn, m, n, x, ftol, gtol, maxfev, nfev, &
 
   iter = 0
   if (DEBUG_BFGS .and. (myid .eq. master)) then
-    print *, 'K====Step BFGS_FD_9: Entering BFGS main loop'
+    print *, 'K====Entering BFGS main loop'
     print *, 'K====iter = ', iter
     print *, 'K====x = ', x
     print *, 'K====f_curr = ', f_curr
@@ -289,7 +289,7 @@ SUBROUTINE BFGS_FD(fcn, m, n, x, ftol, gtol, maxfev, nfev, &
   end if
 
   ! Main BFGS loop - See algorithm 6.1 Nocedal & Wright
-  do while ((enorm(n,grad_curr)>gtol) .and. (sqrt(f_curr) > ftol) &
+  do while ((enorm(n,grad_curr)>gtol) .and. ((f_curr*f_curr) > ftol) &
             .and. (nfev < maxfev))
     ! Compute search direction, Eq. 6.18 (or 3.2)
     p_curr = -matmul(invHessian, grad_curr)
@@ -320,7 +320,7 @@ SUBROUTINE BFGS_FD(fcn, m, n, x, ftol, gtol, maxfev, nfev, &
     if (DEBUG_BFGS .and. (myid .eq. master)) then
       print *, '<======================================='
       print *, '<----Backtrack exit flag: ', BT_EXIT_FLAG
-      print *, '<----Step BFGS_FD_11: Master, nfev=', nfev
+      print *, '<----nfev=', nfev
       print *, '<======================================='
     end if
 
@@ -332,7 +332,7 @@ SUBROUTINE BFGS_FD(fcn, m, n, x, ftol, gtol, maxfev, nfev, &
     rho_curr = 1/dot_product(y_curr,s_curr)
     if (DEBUG_BFGS .and. (myid .eq. master)) then
       print *, '<======================================='
-      print *, '<----Step BFGS_FD_12:'
+      print *, '<----Preparing to update Inverse Hessian'
       print *, '<----x_old=', x
       print *, '<----x_new=', x_new
       print *, '<----s_curr = ', s_curr
@@ -379,7 +379,7 @@ SUBROUTINE BFGS_FD(fcn, m, n, x, ftol, gtol, maxfev, nfev, &
     mat2 = eye - rho_curr*transpose(s_y_outer)
     if (DEBUG_BFGS .and. (myid .eq. master)) then
       print *, '<==========================---------============='
-      print *, '<----In BFGS main loop, Step 13a'
+      print *, '<----Updating Inverse Hessian'
       print *, '<----iter = ', iter
       print *, '<----s_y_outer = ', s_y_outer
       print *, '<----s_s_outer = ', s_s_outer
@@ -394,7 +394,7 @@ SUBROUTINE BFGS_FD(fcn, m, n, x, ftol, gtol, maxfev, nfev, &
 
     if (DEBUG_BFGS .and. (myid .eq. master)) then
       print *, '<======================================='
-      print *, '<----In BFGS main loop, Step 13b'
+      print *, '<----Printing out inverse Hessian'
       print *, '<----invHessian = ', invHessian
       print *, '<======================================='
     end if
@@ -428,8 +428,10 @@ SUBROUTINE BFGS_FD(fcn, m, n, x, ftol, gtol, maxfev, nfev, &
       IF (ALLOCATED(h_order)) DEALLOCATE(h_order)
   if (myid .eq. master) then
     write(*,"(A,I2,A)") "<----BFGS_FD terminated after ", iter, " iterations."
-    write(*,"(A,E22.14)") "<----Function value: ", f_curr
-    write(*,"(A,E22.14)") "<----New gradient norm: ", enorm(n,grad_curr)
+    write(*,"(A,10E22.14)") "<----New x value: ", x
+    write(*,"(A,10E22.14)") "<----Function value: ", f_curr
+    write(*,"(A,10E22.14)") "<----Function graidant: ", grad_curr
+    write(*,"(A,10E22.14)") "<----New gradient norm: ", enorm(n,grad_curr)
     write(*,"(A,I6)") "<----Function evaluations: ", nfev
   end if
 END SUBROUTINE BFGS_FD
