@@ -2118,6 +2118,7 @@
          m = NINT(xm_nyq(mn));  n = NINT(xn_nyq(mn))/nfp
          n1 = ABS(n);   sgn = SIGN(1,n)
          tcosmn = cosmu(m)*cosnv(n1) + sgn*sinmu(m)*sinnv(n1)   
+         tsinmn = sinmu(m)*cosnv(n1) - sgn*cosmu(m)*sinnv(n1)
          IF (lgsqrt) gsqrt = gsqrt + gmnc1(mn)*tcosmn
          IF (lbsupu) bsupu = bsupu + bsupumnc1(mn)*tcosmn
          IF (lbsupv) bsupv = bsupv + bsupvmnc1(mn)*tcosmn
@@ -2129,6 +2130,7 @@
       DO mn = 1, mnmax_nyq
          m = NINT(xm_nyq(mn));  n = NINT(xn_nyq(mn))/nfp
          n1 = ABS(n);   sgn = SIGN(1,n)
+         tcosmn = cosmu(m)*cosnv(n1) + sgn*sinmu(m)*sinnv(n1)   
          tsinmn = sinmu(m)*cosnv(n1) - sgn*cosmu(m)*sinnv(n1)
          IF (lgsqrt) gsqrt = gsqrt + gmns1(mn)*tsinmn
          IF (lbsupu) bsupu = bsupu + bsupumns1(mn)*tsinmn
