@@ -799,11 +799,11 @@ class MyApp(QMainWindow):
 		for name in ['BALLOON','KINK','ORBIT','NEO','HELICITY','HELICITY_FULL',\
 					'TXPORT','B_PROBES','FLUXLOOPS','SEGROG',\
 					'NELINE','TELINE','TILINE','XICS','XICS_BRIGHT',\
-					'ECEREFLECT','SXR','IOTA','MSE','PRESS']:
+					'ECEREFLECT','SXR','IOTA','PRESS']:
 			for item in self.stel_data:
 				if (name+'_target' == item):
 					self.ui.ComboBoxOPTplot_type.addItem(name+'_evolution')
-		for name in ['NE','TE','TI']:
+		for name in ['NE','TE','TI','MSE']:
 			for item in self.stel_data:
 				if (name+'_target' == item):
 					self.ui.ComboBoxOPTplot_type.addItem(name+'_evolution')
