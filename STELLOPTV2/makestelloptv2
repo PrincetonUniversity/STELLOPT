@@ -15,7 +15,7 @@ VPATH = $(SPATH):$(SPATH)/Chisq:$(SPATH)/General:$(SPATH)/Modules
 
 .SUFFIXES :
 .SUFFIXES : .f .f90 .o
-xstelloptv2:  $(LIB) $(LIB_VMEC) $(LIB_BEAMS3D) $(LIB_BNORM) $(LIB_BOOTSJ) $(LIB_BOOZ) $(LIB_COBRA) $(LIB_DIAGNO) $(LIB_DKES) $(LIB_JINV) $(LIB_MGRID) $(LIB_NEO) $(LIB_GENE) $(LIB_COILOPTPP) $(LIB_REGCOIL) $(LIB_TERPSICHORE) $(LIB_PTSM3D) $(ObjectFiles)
+xstelloptv2:  $(LIB) $(LIB_VMEC) $(LIB_BEAMS3D) $(LIB_BNORM) $(LIB_BOOTSJ) $(LIB_BOOZ) $(LIB_COBRA) $(LIB_DIAGNO) $(LIB_DKES) $(LIB_JINV) $(LIB_MGRID) $(LIB_NEO) $(LIB_GENE) $(LIB_COILOPTPP) $(LIB_REGCOIL) $(LIB_TERPSICHORE) $(LIB_VMEC2SFL) $(LIB_PTSM3D) $(ObjectFiles)
 	$(LINK) $@ $(ObjectFiles) $(LIB_LINK)
 ifdef VMEC_DIR
 	@rm $(VMEC_DIR)/$(LOCTYPE)/$(LIB_VMEC)
@@ -61,6 +61,9 @@ ifdef REGCOIL_DIR
 endif
 ifdef TERPSICHORE_DIR
 	@rm $(TERPSICHORE_DIR)/$(LIB_TERPSICHORE)
+endif
+ifdef VMEC2SFL_DIR
+	@rm $(VMEC2SFL_DIR)/$(LIB_VMEC2SFL)
 endif
 ifdef PTSM3D_DIR
 	@rm $(PTSM3D_DIR)/$(LIB_PTSM3D)
@@ -171,6 +174,10 @@ $(LIB_REGCOIL) :
 $(LIB_TERPSICHORE) :
 	@cd $(TERPSICHORE_DIR);make; ar -cruv $(LIB_TERPSICHORE) *.o *.mod
 
+#Construct VMEC2SFL library
+$(LIB_VMEC2SFL) :
+	@cd $(VMEC2SFL_DIR); make; ar -cruv $(LIB_VMEC2SFL) *.o *.mod
+  
 #Construct PTSM3D library.
 $(LIB_PTSM3D) :
 	@cd $(PTSM3D_DIR); make; ar -cruv $(LIB_PTSM3D) objs/*.o objs/*.mod
