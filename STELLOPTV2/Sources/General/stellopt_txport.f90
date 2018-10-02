@@ -131,7 +131,7 @@
       IF (ALLOCATED(txport_q)) DEALLOCATE(txport_q)
       IF (ALLOCATED(txport_q_all)) DEALLOCATE(txport_q_all)
       SELECT CASE(TRIM(equil_type))
-         CASE('vmec2000','animec','flow','satire','parvmec','paravmec')
+         CASE('vmec2000','animec','flow','satire','parvmec','paravmec','vboot')
             !IF (lscreen) WRITE(6,'(A)') '     s    alpha0   iota    shear    Bref    Lref  Q_turb'
             maxPnt = nz_txport
             dtheta = pi2/maxPnt

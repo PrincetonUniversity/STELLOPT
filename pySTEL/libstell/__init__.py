@@ -1,2 +1,2 @@
 from libstell import libstell
-__all__ = ["libstell"]
+__all__ = ["libstell","stellopt"]

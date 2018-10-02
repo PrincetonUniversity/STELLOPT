@@ -1,0 +1,147 @@
+#!/usr/bin/env python
+
+print "usage: nescinPlot nescin.XXX"
+
+import matplotlib.pyplot as plt
+import numpy as np
+from scipy.io import netcdf
+import sys
+import math
+
+if len(sys.argv) != 2:
+    print "Error! You must specify 1 argument: the nescin file."
+    exit(1)
+
+ntheta = 100
+nzeta = 4
+theta = np.linspace(0,2*np.pi,num=ntheta)
+#zeta = np.linspace(0,2*np.pi/nfp,num=nzeta,endpoint=False)
+zeta = np.linspace(0,2*np.pi,num=nzeta,endpoint=False)
+print "zeta:",zeta
+
+nescinFilename = sys.argv[1]
+vmecFilename = "wout_" + nescinFilename[7:] + ".nc"
+
+try:
+    f = netcdf.netcdf_file(vmecFilename,'r',mmap=False)
+    vmecAvailable = True
+except:
+    vmecAvailable = False
+
+if vmecAvailable:
+    phi = f.variables['phi'][()]
+    iotaf = f.variables['iotaf'][()]
+    presf = f.variables['presf'][()]
+    iotas = f.variables['iotas'][()]
+    pres = f.variables['pres'][()]
+    ns = f.variables['ns'][()]
+    nfp = f.variables['nfp'][()]
+    xn = f.variables['xn'][()]
+    xm = f.variables['xm'][()]
+    xn_nyq = f.variables['xn_nyq'][()]
+    xm_nyq = f.variables['xm_nyq'][()]
+    rmnc = f.variables['rmnc'][()]
+    zmns = f.variables['zmns'][()]
+    bmnc = f.variables['bmnc'][()]
+    f.close()
+    nmodes = len(xn)
+
+    phiedge = phi[-1]
+    phi_half = [(i-0.5)*phiedge/(ns-1) for i in range(1,ns)]
+
+    iradius = ns-1
+    R_vmec = np.zeros((ntheta,nzeta))
+    Z_vmec = np.zeros((ntheta,nzeta))
+    for itheta in range(ntheta):
+        for izeta in range(nzeta):
+            for imode in range(nmodes):
+                angle = xm[imode]*theta[itheta] - xn[imode]*zeta[izeta]/nfp
+                R_vmec[itheta,izeta] = R_vmec[itheta,izeta] + rmnc[iradius,imode]*math.cos(angle)
+                Z_vmec[itheta,izeta] = Z_vmec[itheta,izeta] + zmns[iradius,imode]*math.sin(angle)
+
+
+f=open(nescinFilename,'r')
+
+R_nescin_plasma = np.zeros((ntheta,nzeta))
+Z_nescin_plasma = np.zeros((ntheta,nzeta))
+line = ''
+while "np     iota_edge       phip_edge       curpol" not in line:
+    line = f.readline()
+line = f.readline()
+nfp = int(line.split()[0])
+print "nfp:",nfp
+line = ''
+while "Number of fourier modes in table" not in line:
+    line = f.readline()
+line = f.readline()
+print "Number of Fourier modes in plasma surface from nescin file: ",line
+nmodes = int(line)
+line = f.readline()
+line = f.readline()
+for imode in range(nmodes):
+    data = f.readline().split()
+    m = int(data[0])
+    #n = -int(data[1])*nfp
+    n = -int(data[1])
+    # Sign flip in n because bnormal uses NESCOIL convention.
+    # See bn_read_vmecf90.f line 89.
+    crc = float(data[2])
+    czs = float(data[3])
+    # Skip remaining columns
+    for itheta in range(ntheta):
+        for izeta in range(nzeta):
+            angle = m*theta[itheta] - n*zeta[izeta]
+            R_nescin_plasma[itheta,izeta] = R_nescin_plasma[itheta,izeta] + crc*math.cos(angle)
+            Z_nescin_plasma[itheta,izeta] = Z_nescin_plasma[itheta,izeta] + czs*math.sin(angle)
+
+R_nescin_coil = np.zeros((ntheta,nzeta))
+Z_nescin_coil = np.zeros((ntheta,nzeta))
+line = ''
+while "Number of fourier modes in table" not in line:
+    line = f.readline()
+line = f.readline()
+print "Number of Fourier modes in coil surface from nescin file: ",line
+nmodes = int(line)
+line = f.readline()
+line = f.readline()
+for imode in range(nmodes):
+    data = f.readline().split()
+    m = int(data[0])
+    #n = -int(data[1])*nfp
+    n = -int(data[1])
+    # Sign flip in n because bnormal uses NESCOIL convention.
+    # See bn_read_vmecf90.f line 89.
+    crc = float(data[2])
+    czs = float(data[3])
+    # Skip remaining columns
+    for itheta in range(ntheta):
+        for izeta in range(nzeta):
+            angle = m*theta[itheta] - n*zeta[izeta]
+            R_nescin_coil[itheta,izeta] = R_nescin_coil[itheta,izeta] + crc*math.cos(angle)
+            Z_nescin_coil[itheta,izeta] = Z_nescin_coil[itheta,izeta] + czs*math.sin(angle)
+f.close()
+
+fig = plt.figure()
+fig.patch.set_facecolor('white')
+
+numCols = 2
+numRows = 2
+plotNum = 1
+
+for whichPlot in range(4):
+    plt.subplot(numRows,numCols,plotNum)
+    plotNum += 1
+    if vmecAvailable:
+        plt.plot(R_vmec[:,whichPlot], Z_vmec[:,whichPlot], '-',label='vmec')
+    plt.plot(R_nescin_plasma[:,whichPlot], Z_nescin_plasma[:,whichPlot], ':r',label='nescin plasma')
+    plt.plot(R_nescin_coil[:,whichPlot], Z_nescin_coil[:,whichPlot], '.-c',label='nescin coil')
+    plt.gca().set_aspect('equal',adjustable='box')
+    plt.legend(fontsize='x-small')
+    plt.title('zeta = '+str(zeta[whichPlot]/np.pi)+'pi')
+    plt.xlabel('R')
+    plt.ylabel('Z')
+
+
+plt.tight_layout()
+plt.show()
+

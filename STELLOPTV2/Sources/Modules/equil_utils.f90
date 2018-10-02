@@ -305,6 +305,9 @@
          CASE ('two_power')
             val = 0
             val = coefs(1) * (one - s_val**coefs(2))**coefs(3)
+         CASE ('two_power_hollow')
+            val = 0
+            val = s_val * coefs(1) * (one - s_val**coefs(2))**coefs(3)
          CASE ('two_power_offset')
             val = 0
             val = coefs(4) + coefs(1) * (one - s_val**coefs(2))**coefs(3)
@@ -313,6 +316,12 @@
             DO i = UBOUND(coefs,DIM=1), LBOUND(coefs,DIM=1), -1
                val = s_val*val + coefs(i)
             END DO
+         CASE ('power_series_0_boundaries')
+            val = 0
+            DO i = UBOUND(coefs,DIM=1), LBOUND(coefs,DIM=1), -1
+               val = s_val*val + coefs(i)
+            END DO
+            val = val * s_val * (1 - s_val)
          CASE ('power_series_0i0')
             val = 0
             DO i = UBOUND(coefs,DIM=1), LBOUND(coefs,DIM=1), -1
@@ -405,6 +414,9 @@
             xp  = s_val**coefs(3)
             x1  = 8*coefs(2)-2*coefs(1)
             val = (coefs(1)+x1*xp)*(xp-1)**2
+         CASE DEFAULT
+            PRINT *,"Error! Unknown profile type in subroutine eval_prof_stel:",type
+            STOP
       END SELECT
       RETURN
       END SUBROUTINE eval_prof_stel
@@ -797,9 +809,10 @@
       CALL tolower(prof_type)
       profile_norm = 0.0_rprec
       SELECT CASE (prof_type)
-         CASE ('two_power','two_power_offset','two_lorentz','gauss_trunc','gauss_trunc_offset','sum_atan','pedestal','bump','hollow')
+         CASE ('two_power','two_power_hollow','two_power_offset','two_lorentz','gauss_trunc', &
+               'gauss_trunc_offset','sum_atan','pedestal','bump','hollow','hollow2')
             profile_norm = 0.0_rprec  ! Don't normalize as we don't want to screw up our coefficients
-         CASE ('power_series','power_series_edge0')
+         CASE ('power_series','power_series_edge0','power_series_0_boundaries')
             DO ik = LBOUND(x,DIM=1), UBOUND(x,DIM=1)
                profile_norm = profile_norm + x(ik)/(ik+1)
             END DO
@@ -807,11 +820,39 @@
             DO ik = LBOUND(x,DIM=1), UBOUND(x,DIM=1)
                profile_norm = profile_norm + x(ik)
             END DO
+         CASE DEFAULT
+            PRINT *,"Error! Unknown profile type in subroutine profile_norm:",prof_type
+            STOP
       END SELECT
       IF (ltriangulate) profile_norm = 0.0_rprec ! Don't use normalization in triangulation mode
       RETURN
       END FUNCTION profile_norm
       
+
+      SUBROUTINE scale_profile(profile_type, profile_coefficients, factor)
+        ! This subroutine takes a profile and scales it by 'factor'.
+        ! For some profiles types like 'power_series', this involves multiplying all the profile coefficients
+        ! by factor. For other profile types like 'two_power', only certain profile coefficients get scaled.
+        IMPLICIT NONE
+        CHARACTER(LEN=*) :: profile_type
+        REAL(rprec), DIMENSION(:) :: profile_coefficients
+        REAL(rprec), INTENT(IN) :: factor
+
+        CALL tolower(profile_type)
+        SELECT CASE (profile_type)
+        CASE ('power_series','spline','akima_spline','akima_spline_ip','power_series_0_boundaries')
+           profile_coefficients = profile_coefficients * factor
+        CASE ('two_power','two_power_hollow')
+           profile_coefficients(1) = profile_coefficients(1) * factor
+        CASE DEFAULT
+           PRINT *,"Error! Unknown profile type in subroutine scale_profile:",profile_type
+           STOP
+        END SELECT
+        
+      END SUBROUTINE scale_profile
+
+
+
       SUBROUTINE get_equil_beamj(s_val,val,ier)
       IMPLICIT NONE
       REAL(rprec), INTENT(inout) ::  s_val
@@ -936,6 +977,26 @@
       RETURN
       END SUBROUTINE get_equil_bootj
 
+      SUBROUTINE eval_profile(s_val, profile_type, val, profile_aux_s, profile_aux_f, ier)
+        ! s_val = Value of normalized flux s at which you wish to evaluate the profile.
+        ! On return, 'val' stores the value of the profile function at the selected s.
+        IMPLICIT NONE
+        REAL(rprec) ::  s_val, val
+        INTEGER ::  ier, dex
+        CHARACTER(LEN=*) :: profile_type
+        REAL(rprec), DIMENSION(21) :: profile_aux_s, profile_aux_f
+        IF (ier < 0) RETURN
+        CALL tolower(profile_type)
+        SELECT CASE(TRIM(profile_type))
+        CASE('spline','akima_spline')
+           dex = MINLOC(profile_aux_s(2:),DIM=1)
+           CALL eval_prof_spline(dex, profile_aux_s(1:dex), profile_aux_f(1:dex), s_val, val, ier)
+        CASE DEFAULT
+           CALL eval_prof_stel(s_val, profile_type, val, 21, profile_aux_f(1:21), ier)
+        END SELECT
+        RETURN
+      END SUBROUTINE eval_profile
+
 !     J_STAR by DA Spong
 !     computes the trapped branch of jstar on a single flux surface
 !     and for a single value of ep/mu.  jstar is only non-zero for
@@ -1017,68 +1078,116 @@
       RETURN
       END SUBROUTINE smoothg
       
-      function polyfit(vx, vy, d)
-      !  From http://rosettacode.org/wiki/Polynomial_regression
+      FUNCTION polyfit(vx, vy, d)
+      ! Fit a polynomial of degree d to data (vx,vy) using one of the LAPACK
+      ! subroutines for least-squares fitting, DGELS.
       implicit none
       integer, intent(in)                   :: d
       integer, parameter                    :: dp = selected_real_kind(15, 307)
       real(dp), dimension(d+1)              :: polyfit
       real(dp), dimension(:), intent(in)    :: vx, vy
       
-      real(dp), dimension(:,:), allocatable :: X
-      real(dp), dimension(:,:), allocatable :: XT
-      real(dp), dimension(:,:), allocatable :: XTX
-      
-      integer :: i, j
-      
-      integer     :: n, lda, lwork
-      integer :: info
-      integer, dimension(:), allocatable :: ipiv
-      real(dp), dimension(:), allocatable :: work
-      
+      real(dp), dimension(:,:), allocatable :: matrix
+      integer :: n, m, j, lwork, info, ldb
+      real(dp), dimension(:), allocatable :: work, b
+
       n = d+1
-      lda = n
-      lwork = n
+      m = SIZE(vx)
+      IF (SIZE(vy) .ne. m) STOP "Error in polyfit: sizes of vx and vy do not match"
+
+      ! Form the Vandermonde matrix:
+      ALLOCATE(matrix(m,n))
+      matrix(:,1) = 1
+      DO j = 1,d
+         matrix(:,j+1) = matrix(:,j) * vx
+      END DO
+
+      ldb = MAX(m,n)
+      ALLOCATE(b(ldb))
+      b(1:m) = vy
+      ! The DGELS argument b stores the data vector b on input, and it gets over-written with the solution vector.
+      ! Note that the sizes of the input and solution vector can be different.
+
+      ! Get size of work array:
+      lwork = -1
+      ALLOCATE(work(1))
+      CALL DGELS('N',m,n,1,matrix,m,b,ldb,work,lwork,info)
+      IF (info .ne. 0) THEN
+         PRINT *,"Error 1 in polyfit LAPACK DGELS: info=",info
+         STOP
+      END IF
+      lwork = work(1)
+      DEALLOCATE(work)
+      ALLOCATE(work(lwork))
+
+      ! Main LAPACK call:
+      CALL DGELS('N',m,n,1,matrix,m,b,ldb,work,lwork,info)
+      IF (info .ne. 0) THEN
+         PRINT *,"Error 2 in polyfit LAPACK DGELS: info=",info
+         STOP
+      END IF
+
+      polyfit = b(1:n)
+      DEALLOCATE(matrix,work,b)
+
+      END FUNCTION polyfit
+
+
+      FUNCTION polyfit_0_boundaries(vx, vy, d)
+      ! Fit a polynomial of the form p(x) * x * (1-x) to data (vx,vy), where p(s) is a polynomial
+      ! of degree d, using one of the LAPACK subroutines for least-squares fitting, DGELS.
+      implicit none
+      integer, intent(in)                   :: d
+      integer, parameter                    :: dp = selected_real_kind(15, 307)
+      real(dp), dimension(d+1)              :: polyfit_0_boundaries
+      real(dp), dimension(:), intent(in)    :: vx, vy
       
-      allocate(ipiv(n))
-      allocate(work(lwork))
-      allocate(XT(n, size(vx)))
-      allocate(X(size(vx), n))
-      allocate(XTX(n, n))
-      
-      ! prepare the matrix
-      do i = 0, d
-       do j = 1, size(vx)
-          X(j, i+1) = vx(j)**i
-       end do
-      end do
-      
-      XT  = transpose(X)
-      XTX = matmul(XT, X)
-      
-      ! calls to LAPACK subs DGETRF and DGETRI
-      call DGETRF(n, n, XTX, lda, ipiv, info)
-      if ( info /= 0 ) then
-       print *, "problem"
-       return
-      end if
-      call DGETRI(n, XTX, lda, ipiv, work, lwork, info)
-      if ( info /= 0 ) then
-       print *, "problem"
-       return
-      end if
-      
-      polyfit = matmul( matmul(XTX, XT), vy)
-      
-      deallocate(ipiv)
-      deallocate(work)
-      deallocate(X)
-      deallocate(XT)
-      deallocate(XTX)
-      RETURN
-      
-      end function polyfit
-      
+      real(dp), dimension(:,:), allocatable :: matrix
+      integer :: n, m, j, lwork, info, ldb
+      real(dp), dimension(:), allocatable :: work, b
+
+      n = d + 1
+      m = SIZE(vx)
+      IF (SIZE(vy) .ne. m) STOP "Error in polyfit: sizes of vx and vy do not match"
+
+      ! Form the Vandermonde matrix * vx * (1-vx):
+      ALLOCATE(matrix(m,n))
+      matrix(:,1) = vx * (1 - vx)
+      DO j = 1,d
+         matrix(:,j+1) = matrix(:,j) * vx
+      END DO
+
+      ldb = MAX(m,n)
+      ALLOCATE(b(ldb))
+      b(1:m) = vy
+      ! The DGELS argument b stores the data vector b on input, and it gets over-written with the solution vector.
+      ! Note that the sizes of the input and solution vector can be different.
+
+      ! Get size of work array:
+      lwork = -1
+      ALLOCATE(work(1))
+      CALL DGELS('N',m,n,1,matrix,m,b,ldb,work,lwork,info)
+      IF (info .ne. 0) THEN
+         PRINT *,"Error 1 in polyfit LAPACK DGELS: info=",info
+         STOP
+      END IF
+      lwork = work(1)
+      DEALLOCATE(work)
+      ALLOCATE(work(lwork))
+
+      ! Main LAPACK call:
+      CALL DGELS('N',m,n,1,matrix,m,b,ldb,work,lwork,info)
+      IF (info .ne. 0) THEN
+         PRINT *,"Error 2 in polyfit LAPACK DGELS: info=",info
+         STOP
+      END IF
+
+      polyfit_0_boundaries = b(1:n)
+      DEALLOCATE(matrix,work,b)
+
+      END FUNCTION polyfit_0_boundaries
+
+
       function polyval(c,s,d)
       integer, intent(in)                   :: d
       integer, parameter                    :: dp = selected_real_kind(15, 307)
@@ -1285,23 +1394,20 @@
       DOUBLE PRECISION, ALLOCATABLE :: xc_opt(:), diag(:), qtf(:), wa1(:), wa2(:), wa3(:)
       DOUBLE PRECISION, ALLOCATABLE :: fval(:),wa4(:)
       DOUBLE PRECISION, ALLOCATABLE :: fjac(:,:)
-      nfit_targs = ntarg+1
-      ALLOCATE(fit_targs(nfit_targs,2))
-      fit_targs(:,1) = sarr
-      fit_targs(:,2) = farr
-      SUM_target = SUM(farr)
-      fit_type = ptype
+
       ! Adjust number of coefficients per fit type
       nc = ncoefs
-      CALL tolower(bootj_type)
-      SELECT CASE (bootj_type)
+      CALL tolower(ptype)
+      SELECT CASE (ptype)
          CASE('two_power')
+            nc = 3
+         CASE('two_power_hollow')
             nc = 3
          CASE('two_lorentz')
             nc = 8
          CASE('gauss_trunc')
             nc = 2
-         CASE('power_series','power_series_0i0','power_series_edge0','power_series_i','power_series_i_edge0')
+         CASE('power_series','power_series_0i0','power_series_edge0','power_series_i','power_series_i_edge0','power_series_0_boundaries')
             DO ik = 1, ncoefs
                IF (coefs(ik) /=0 ) nc = ik
             END DO
@@ -1309,7 +1415,25 @@
             nc = 21
          CASE('bump')
             nc = 3
+         CASE DEFAULT
+            PRINT *,"Error! Unknown profile type in subroutine fit_profile:",ptype
+            STOP
       END SELECT
+      IF (ptype == 'power_series') THEN
+         ! For fitting polynomials, 'polyfit' is more robust than LMDER, so use polyfit.
+         coefs(1:nc) = polyfit(sarr,farr,nc-1)
+         RETURN
+      ELSEIF (ptype == 'power_series_0_boundaries') THEN
+         coefs(1:nc) = polyfit_0_boundaries(sarr,farr,nc-1)
+         RETURN
+      END IF
+
+      nfit_targs = ntarg+1
+      ALLOCATE(fit_targs(nfit_targs,2))
+      fit_targs(:,1) = sarr
+      fit_targs(:,2) = farr
+      SUM_target = SUM(farr)
+      fit_type = ptype
       ! ALLOCATE Vars
       ALLOCATE(xc_opt(nc),diag(nc),qtf(nc),wa1(nc),wa2(nc),wa3(nc),fjac(nfit_targs,nc),&
                fval(nfit_targs),wa4(nfit_targs))
@@ -1331,9 +1455,57 @@
       ipvt   = 0
       qtf    = 0.0
       wa1 = 0; wa2 = 0; wa3 = 0; wa4 = 0
+!!$      print *,"About to call lmder_serial."
+!!$      print *,"  nfit_targs:",nfit_targs
+!!$      print *,"  nc:",nc
+!!$      print *,"  xc_opt:",xc_opt
+!!$      print *,"  fval:",fval
+!!$      print *,"  fjac:",fjac
+!!$      print *,"  nfit_targs:",nfit_targs
+!!$      print *,"  ftol:",ftol
+!!$      print *,"  xtol:",xtol
+!!$      print *,"  gtol:",gtol
+!!$      print *,"  maxfev_local:",maxfev_local
+!!$      print *,"  diag:",diag
+!!$      print *,"  mode:",mode
+!!$      print *,"  factor:",factor
+!!$      print *,"  nprint:",nprint
+!!$      print *,"  info:",info
+!!$      print *,"  nfev:",nfev
+!!$      print *,"  njev:",njev
+!!$      print *,"  ipvt:",ipvt
+!!$      print *,"  qtf:",qtf
+!!$      print *,"  wa1:",wa1
+!!$      print *,"  wa2:",wa2
+!!$      print *,"  wa3:",wa3
+!!$      print *,"  wa4:",wa4
       CALL lmder_serial(fit_prof_fcn,nfit_targs,nc,xc_opt,fval,fjac,nfit_targs,ftol,xtol,gtol,&
                     maxfev_local,diag,mode,factor,nprint,info,nfev,njev,ipvt,qtf,&
                     wa1,wa2,wa3,wa4)
+!!$      print *,"After call to lmder_serial:"
+!!$      print *,"  nfit_targs:",nfit_targs
+!!$      print *,"  nc:",nc
+!!$      print *,"  xc_opt:",xc_opt
+!!$      print *,"  fval:",fval
+!!$      print *,"  fjac:",fjac
+!!$      print *,"  nfit_targs:",nfit_targs
+!!$      print *,"  ftol:",ftol
+!!$      print *,"  xtol:",xtol
+!!$      print *,"  gtol:",gtol
+!!$      print *,"  maxfev_local:",maxfev_local
+!!$      print *,"  diag:",diag
+!!$      print *,"  mode:",mode
+!!$      print *,"  factor:",factor
+!!$      print *,"  nprint:",nprint
+!!$      print *,"  info:",info
+!!$      print *,"  nfev:",nfev
+!!$      print *,"  njev:",njev
+!!$      print *,"  ipvt:",ipvt
+!!$      print *,"  qtf:",qtf
+!!$      print *,"  wa1:",wa1
+!!$      print *,"  wa2:",wa2
+!!$      print *,"  wa3:",wa3
+!!$      print *,"  wa4:",wa4
       coefs(1:nc) = xc_opt(1:nc)
       DEALLOCATE(fit_targs,xc_opt,diag,qtf,wa1,wa2,wa3,fjac,fval,wa4)
       RETURN

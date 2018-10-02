@@ -1,0 +1,360 @@
+! This input file tests the equil_type='vboot' system, in which stellopt iterates between
+! VMEC and a bootstrap current code to obtain a self-consistent profile of bootstrap current.
+! In this file, SFINCS is used as the bootstrap current code.
+!
+! The magnetic geometry "QHS46" is a quasi-helically symmetric configuration.
+!
+! As of 2018, on 8 nodes (=256 processors) of the IPP computer Draco,
+! this input file takes about 15 minutes to run.
+! Each sfincs job takes 120-150 seconds.
+!
+! If you 'grep Vboot' on the output, the expected results are:
+! Vboot iteration   0: ctor=-9.722E+04, vboot convergence factor= 1.000E+00
+! Vboot iteration   1: ctor=-9.121E+04, vboot convergence factor= 8.761E-02
+! Vboot iteration   2: ctor=-9.133E+04, vboot convergence factor= 9.874E-03
+! Vboot iteration   3: ctor=-9.137E+04, vboot convergence factor= 1.653E-03
+! Vboot iteration   4: ctor=-9.138E+04, vboot convergence factor= 2.459E-04. Tolerance achieved.
+
+&INDATA
+!----- Runtime Parameters -----
+  DELT =   0.80
+  NSTEP =  200
+  TCON0 =   2.00E+00
+  NS_ARRAY    = 20 51 101
+  NITER_ARRAY = 2000 5000 5000
+  FTOL_ARRAY  = 1.0e-8 1.0E-11 1e-12
+  PRECON_TYPE = 'none'
+  PREC2D_THRESHOLD =   1.000000E-19
+!----- Grid Parameters -----
+  LASYM = F
+  NFP = 0004
+  MPOL = 0012
+  NTOR = 0008
+  PHIEDGE =   -0.4444
+!----- Free Boundary Parameters -----
+  LFREEB = F
+  MGRID_FILE = ''
+  NZETA  =   50
+  NVACSKIP =    6
+  EXTCUR(01) =  -1.10177100000000E+04
+!----- Pressure Parameters -----
+  GAMMA =    0.000000000000E+000
+  BLOAT =    1.000000000000E+000
+  SPRES_PED =    1.000000000000E+000
+  PRES_SCALE = 1
+  PMASS_TYPE = 'power_series'
+  AM = 122033 -122033 0 0 0 -122033 122033
+!----- Current/Iota Parameters -----
+  CURTOR =   0.000000000000E+000
+  NCURR = 1
+  PCURR_TYPE = 'power_series'
+  AC = 0.0 0.0
+!----- Axis Parameters -----
+RAXIS = 2.0456 0.3743 0.0334133333333 -0.000989333333333 -0.000317066666667 1.35393333333e-05 -2.5105e-06 -1.486e-06 2.0936e-07 
+ZAXIS = 0.0 -0.282613333333 -0.0296546666667 0.00107433333333 0.000419733333333 -9.73233333333e-06 -1.6118e-07 1.26803333333e-06 -6.9e-08 
+!----- Boundary Parameters -----
+RBC(0,0) = 2.0 ZBS(0,0) = 0.0
+RBC(1,0) = 0.333213333333 ZBS(1,0) = -0.217973333333
+RBC(2,0) = 0.0353933333333 ZBS(2,0) = -0.0353933333333
+RBC(3,0) = 0.00584166666667 ZBS(3,0) = -0.00584166666667
+RBC(-2,1) = -0.00665033333333 ZBS(-2,1) = -0.00665033333333
+RBC(-1,1) = 0.00791066666667 ZBS(-1,1) = 0.00791033333333
+RBC(0,1) = 0.312843333333 ZBS(0,1) = 0.353833333333
+RBC(1,1) = -0.137303333333 ZBS(1,1) = 0.137303333333
+RBC(2,1) = -0.0349633333333 ZBS(2,1) = 0.0349633333333
+RBC(3,1) = 0.0012218 ZBS(3,1) = -0.0012218
+RBC(-1,2) = -0.00349466666667 ZBS(-1,2) = -0.00349466666667
+RBC(0,2) = 0.030571 ZBS(0,2) = 0.0424133333333
+RBC(1,2) = 0.0187363333333 ZBS(1,2) = 0.0601133333333
+RBC(2,2) = 0.0533333333333 ZBS(2,2) = -0.0533333333333
+RBC(3,2) = -0.006042 ZBS(3,2) = 0.00172406666667
+RBC(4,2) = -0.00194723333333 ZBS(4,2) = 0.00194723333333
+RBC(0,3) = 0.00296453333333 ZBS(0,3) = 0.00296453333333
+RBC(1,3) = 0.00368233333333 ZBS(1,3) = -0.00368233333333
+RBC(2,3) = 0.00408166666667 ZBS(2,3) = 0.00408166666667
+RBC(4,3) = -0.00022206 ZBS(4,3) = 0.00022206
+RBC(3,4) = -0.003559 ZBS(3,4) = 0.003559
+/
+
+&OPTIMUM
+!-----------------------------------------------------------------------
+!          OPTIMIZER RUN CONTROL PARAMETERS
+!-----------------------------------------------------------------------
+noptimizers=1
+  NFUNC_MAX = 10
+!  EQUIL_TYPE = 'VMEC2000'
+  EQUIL_TYPE = 'vboot'
+!  OPT_TYPE   = 'LMDIF'
+!  OPT_TYPE   = 'LMDIF_bounded'
+opt_type='single'
+  FTOL =  1.00000000000000E-06
+  XTOL =  1.00000000000000E-30
+  GTOL =  1.00000000000000E-30
+  FACTOR =   100.0
+  EPSFCN =   1.0E-05
+  LKEEP_MINS = T
+!-----------------------------------------------------------------------
+!          OPTIMIZED QUANTITIES
+!-----------------------------------------------------------------------
+!  LCURTOR_OPT = T   CURTOR_MIN  = -1.0E6  CURTOR_MAX  = -1.0E4
+!  LPHIEDGE_OPT = T  PHIEDGE_MIN = 0.20  PHIEDGE_MAX = 1.0
+!  LRHO_OPT(-5:5,0) = 11*T
+!  LRHO_OPT(-5:5,1) = 11*T
+!  LRHO_OPT(-5:5,2) = 11*T
+!  LRHO_OPT(-5:5,3) = 11*T
+!  LRHO_OPT(-5:5,4) = 11*T
+!  LRHO_OPT(-5:5,5) = 11*T
+!  LRHO_OPT(-5:5,6) = 11*T
+!  LRHO_OPT(-5:5,7) = 11*T
+!  LBOUND_OPT(1:4,0) = 4*T
+!  LBOUND_OPT(0,0) = T ! Varies just the major radius
+  RHO_EXP = 4
+!----------------------------------------------------------------------
+!       Profile Functions
+!----------------------------------------------------------------------
+
+  ! Note that ne_opt is normalized to 1e18 meters^{-3}.
+  ! n = (1e20/m^3) * (1 - s^5)
+  NE_TYPE = 'power_series'
+  NE_OPT = 100.0 0.0 0.0 0.0 0.0 -100.0
+
+! TE_OPT and TI_OPT are in units of 1 eV.
+  ! T  = 3.80835 keV * (1 - s)
+  TE_TYPE = 'power_series'
+  TE_OPT = 3.80835e3 -3.80835e3
+  TI_TYPE = 'power_series'
+  TI_OPT = 3.80835e3 -3.80835e3
+
+bootj_type='power_series'
+! The number of nonzero entries in bootj_aux_f sets the degree of the polynomial fit!
+bootj_aux_f = 8*1.0e-10
+
+bootcalc_type='sfincs'
+sfincs_Er_option = 'zero'
+
+! Chebyshev points, deleting s=0 since it is automatically included,
+! (sfincs is not run at s=0 since j_bootstrap always vanishes there),
+! and excluding s=1 since n=0 and T=0 there.
+sfincs_s = 0.0301537, 0.116978, 0.25, 0.413176, 0.586824, 0.75, 0.883022, 0.969846 ! 8 points
+! sfincs_s = 0.00851345, 0.0337639, 0.0748914, 0.130496, 0.198683, 0.277131, 0.363169, 0.453866, 0.546134, 0.636831, 0.722869, 0.801317, 0.869504, 0.925109, 0.966236, 0.991487 ! 16 points
+
+sfincs_min_procs=32
+vboot_tolerance = 1.e-3
+
+beamj_aux_f = 0 ! No beam current
+
+!------------------------------------------------------------------------
+!       Boozer Coordinate Transformation
+!------------------------------------------------------------------------
+!  MBOZ = 64
+!  NBOZ = 32
+MBOZ=32
+NBOZ=16
+!-----------------------------------------------------------------------
+!          COIL OPTIMIZATION PARAMETERS
+!-----------------------------------------------------------------------
+!-----------------------------------------------------------------------
+!          PLASMA PROPERTIES
+!-----------------------------------------------------------------------
+!  TARGET_ASPECT  = 4.370  SIGMA_ASPECT  = 1.0
+!  TARGET_BETA    = 0.042  SIGMA_BETA    = 1.0
+!  TARGET_CURTOR  = 2.0E5  SIGMA_CURTOR  = 1.0E5
+!  TARGET_PHIEDGE = 0.500  SIGMA_PHIEDGE = 1.0
+!  TARGET_RBTOR   = 2.380  SIGMA_RBTOR   = 1.0
+!  TARGET_R0      = 1.600  SIGMA_R0      = 1.0
+!  TARGET_VOLUME  = 1.0E2  SIGMA_VOLUME  = 1.0E2
+!  TARGET_WP      = 1.0E3  SIGMA_WP      = 1.0E3
+!------------------------------------------------------------------------
+!       Boozer Coordinate Helicity
+!         Note that helicity targeting is by surface.  Axis (01) is ignored.
+!         (X,0): Quasi-Axisymetry
+!         (0,X): Quasi-Poloidal Symmetry
+!         (L,K): Quasi-Helical Symmetry (m *K + n*L)
+!------------------------------------------------------------------------
+  HELICITY = (1,0)
+!  TARGET_HELICITY(1:49) = 49*0.0  SIGMA_HELICITY(1:49) = 49*1.0
+!------------------------------------------------------------------------
+!       Ballooning Stability (as calculated by COBRA_VMEC)
+!         Note that ballooning stability is by surface.  Axis (01) is ignored.
+!         THETA, ZETA: Ballooning angle perturbations
+!------------------------------------------------------------------------
+!  BALLOON_THETA   = 0.0
+!  BALLOON_ZETA    = 0.0
+!  TARGET_BALLOON(1:99) = 99*0.0  SIGMA_BALLOON(1:99) = 99*1.0
+!------------------------------------------------------------------------
+!       Kink Stability (as calculated by TERPSICHORE)
+!         Requires STELLOPT to be linked to TERPSICHORE.
+!         Also requires the terpsichore_input file.
+!------------------------------------------------------------------------
+!  MLMNB_KINK =   264  IVAC_KINK =    24
+!  TARGET_KINK(001) =  -1.0  SIGMA_KINK(001) =   1.0   MLMNS_KINK(001) =   76
+!  TARGET_KINK(002) =  -1.0  SIGMA_KINK(002) =   1.0   MLMNS_KINK(002) =   91
+!------------------------------------------------------------------------
+!       Neoclassical Transport Calculation (as calculated by NEO)
+!         Note that neoclassical transport is by surface. Axis (01) is ignored.
+!------------------------------------------------------------------------
+!  TARGET_NEO(1:99) = 99*0.0  SIGMA_NEO(1:99) = 99*1.0
+!------------------------------------------------------------------------
+!       Drift Kinetic Equation Solver (DKES)
+!         Axis (01) is ignored.
+!------------------------------------------------------------------------
+!  TARGET_DKES(1:99) = 99*0.0  SIGMA_DKES(1:99) = 99*1.0
+!  TARGET_DKES(3) = 0.0  SIGMA_DKES(3) = 1.0
+!  TARGET_DKES(3:99) = 97*0.0  SIGMA_DKES(3:99) = 97*1.0
+!------------------------------------------------------------------------
+!       Bootstrap Current Calculation (as calculated by BOOTSJ)
+!------------------------------------------------------------------------
+!  TARGET_BOOTSTRAP(1:99) = 49*0.0  SIGMA_BOOTSTRAP(1:49) = 49*1.0
+!  TARGET_BOOTSTRAP(10) = 0.0   SIGMA_BOOTSTRAP(10) = 1.0e+6
+!  TARGET_BOOTSTRAP(20) = 0.0   SIGMA_BOOTSTRAP(20) = 1.0e+6
+!  TARGET_BOOTSTRAP(30) = 0.0   SIGMA_BOOTSTRAP(30) = 1.0e+6
+!  TARGET_BOOTSTRAP(40) = 0.0   SIGMA_BOOTSTRAP(40) = 1.0e+6
+!-----------------------------------------------------------------------
+!          TURBULENT TRANSPORT
+!-----------------------------------------------------------------------
+!  TARGET_TXPORT(01) = 0.0E+00  SIGMA_TXPORT(01) = 1.0  S_TXPORT(01) = 0.10
+!  TARGET_TXPORT(02) = 0.0E+00  SIGMA_TXPORT(02) = 1.0  S_TXPORT(02) = 0.15
+!  TARGET_TXPORT(03) = 0.0E+00  SIGMA_TXPORT(03) = 1.0  S_TXPORT(03) = 0.20
+!  TARGET_TXPORT(04) = 0.0E+00  SIGMA_TXPORT(04) = 1.0  S_TXPORT(04) = 0.25
+!  TARGET_TXPORT(05) = 0.0E+00  SIGMA_TXPORT(05) = 1.0  S_TXPORT(05) = 0.30
+!  TARGET_TXPORT(06) = 0.0E+00  SIGMA_TXPORT(06) = 1.0  S_TXPORT(06) = 0.35
+!  TARGET_TXPORT(07) = 0.0E+00  SIGMA_TXPORT(07) = 1.0  S_TXPORT(07) = 0.40
+!  TARGET_TXPORT(09) = 0.0E+00  SIGMA_TXPORT(08) = 1.0  S_TXPORT(08) = 0.45
+!  TARGET_TXPORT(09) = 0.0E+00  SIGMA_TXPORT(09) = 1.0  S_TXPORT(09) = 0.50
+!  TARGET_TXPORT(10) = 0.0E+00  SIGMA_TXPORT(10) = 1.0  S_TXPORT(10) = 0.55
+!  TARGET_TXPORT(11) = 0.0E+00  SIGMA_TXPORT(11) = 1.0  S_TXPORT(11) = 0.60
+!  TARGET_TXPORT(12) = 0.0E+00  SIGMA_TXPORT(12) = 1.0  S_TXPORT(12) = 0.65
+!  TARGET_TXPORT(13) = 0.0E+00  SIGMA_TXPORT(13) = 1.0  S_TXPORT(13) = 0.70
+!  TARGET_TXPORT(14) = 0.0E+00  SIGMA_TXPORT(14) = 1.0  S_TXPORT(14) = 0.75
+!  TARGET_TXPORT(15) = 0.0E+00  SIGMA_TXPORT(15) = 1.0  S_TXPORT(15) = 0.80
+!  TXPORT_PROXY = 'prox1d'
+!-----------------------------------------------------------------------
+!          DIAGNO OPTIMIZATION PARAMETERS
+!-----------------------------------------------------------------------
+!  TARGET_FLUXLOOP(1:205) = 205*0.0  SIGMA_FLUXLOOP(1:205) = 205*1.0
+/ 
+&BOOTIN 
+   NRHO    =  99
+   MBUSE   =  64
+   NBUSE   =  32
+   ZEFF1   =  1.00
+   DENS0   =  0.50
+   TETI    =  1.00
+   TEMPRES = -1.0
+!   DAMP    = -0.01
+!   DAMP_BS = -0.01
+damp_bs=0.1
+   ISYMM0  =  0
+   ATE=  4.5774107358E+00   -3.4189656529E-01   -2.4139157095E+00   -3.1667990087E+01    1.1944243495E+02   -2.1468460416E+02    1.7964690946E+02   -5.4556914438E+01   -1.4341821998E-03
+   ATI=  4.5774107358E+00   -3.4189656529E-01   -2.4139157095E+00   -3.1667990087E+01    1.1944243495E+02   -2.1468460416E+02    1.7964690946E+02   -5.4556914438E+01   -1.4341821998E-03
+/
+&NEO_IN
+  THETA_N = 200
+  PHI_N = 200
+  MAX_M_MODE = 63
+  MAX_N_MODE = 96
+  NPART = 75
+  MULTRA = 1
+  ACC_req = 0.01
+  NO_BINS = 100
+  NSTEP_PER = 75
+  NSTEP_MIN = 500
+  NSTEP_MAX = 2000
+  CALC_NSTEP_MAX = 0
+  EOUT_SWI = 1
+  LAB_SWI = 0
+  INP_SWI = 0
+  REF_SWI = 2
+  WRITE_PROGRESS = 1
+  WRITE_OUTPUT_FILES = 0
+  SPLINE_TEST = 0
+  WRITE_INTEGRATE = 0
+  WRITE_DIAGNOSTIC = 0
+  CALC_CUR = 1
+  NPART_CUR = 200
+  CALC_CUR = 1
+  CALC_CUR = 1
+/
+&COORDINATES
+ pest=.t.
+ boozer=.f.
+/
+&IN_OUT
+ global_y=.f.
+ vmec_dir='~/VMECfiles'
+ vmec_file='wout_W7X.txt'
+ out_tag='s07'
+ /
+&SETUP
+ s0=.7
+ alpha0=0.
+ alpha0_start=-.6283   
+ alpha0_end=.6283   
+ nalpha0=1 
+ pol_turns=1. 
+ nz0=128
+/
+&DIAGNO_IN
+  NU = 128
+  NV = 128
+  FLUX_DIAG_FILE = '/u/slazerso/Sims/NCSX/probes/diagno_fluxloops_n36.NCSX'
+  INT_TYPE = 'simpson'
+  INT_STEP = 2
+  LRPHIZ = F
+  VC_ADAPT_TOL =  0.0
+  VC_ADAPT_REL =  1.0E-3
+  LVC_FIELD = T
+/
+
+!**********************************
+! Beginning of SFINCS namelists
+!**********************************
+&general
+/
+&geometryParameters
+/
+&speciesParameters
+  Zs = -1 1
+  mHats = 0.000544617 1
+/
+&physicsParameters
+  dPhiHatdpsiN = 0.001d+0
+/
+&resolutionParameters
+  Ntheta = 55
+!ss NthetaMinFactor = 0.95
+!ss NthetaMaxFactor = 1.4
+!ss NthetaNumRuns = 150
+
+  Nzeta = 63
+!ss NzetaMinFactor = 0.7
+!ss NzetaMaxFactor = 2
+!ss NzetaNumRuns = 0
+
+  Nxi = 75
+!ss NxiMinFactor = 0.8
+!ss NxiMaxFactor = 2
+!ss NxiNumRuns = 0
+  
+  Nx = 5
+!ss NxMinFactor = 1
+!ss NxMaxFactor = 1.6
+!ss NxNumRuns = 0
+
+  solverTolerance = 1e-05
+!ss solverToleranceMinFactor = 0.01
+!ss solverToleranceMaxFactor = 1
+!ss solverToleranceNumRuns = 0
+/
+&otherNumericalParameters
+/
+&preconditionerOptions
+/
+&export_f
+/
+!**********************************
+! End of SFINCS namelists
+!**********************************
+
+
+&END

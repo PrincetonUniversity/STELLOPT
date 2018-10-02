@@ -1,0 +1,59 @@
+weights.bnorm = 1.0
+weights.bmax = 1.0
+weights.curvature = 0.1
+weights.length = 0.1
+weights.modtorvar = 0.05
+weights.coilcoil = 0.1
+weights.selfint = 100.0
+weights.torsion = 0.1
+
+# Set to zero to base matching pts on no of Fourier modes in bnorm
+Bmatch.nu = 0
+Bmatch.nv = 0
+Bmatch.normalize = 1
+
+DE.xtype = rnd
+DE.ndifvecs = 1
+DE.F = 0.8
+DE.CR = 0.9
+DE.A = 10
+DE.B = 2
+DE.NPmax = 128
+DE.maxgen = 0
+DE.savefreq = 50
+
+SA.nodocr = 0
+
+PS.poprat = 10.0
+PS.maxiter = 0
+PS.updatefreq = 16
+
+LM.maxit = 40
+LM.printflags = 0
+LM.stepbound = 1.0
+LM.savefreq = 25
+
+lverbose = 1
+ncwss = 1
+lmodcur[0] = 1
+lmodgeom[0] = 1
+curautoscal = 1
+curscal[0] = 1.0
+targlenfactor[0] = 0.5
+lconstrainIp[0] = 1
+lsamecur[0] = 0
+curvar = 0.5
+nseg_coil = 256
+nseg_curv = 768
+dphiguess = 0.175
+maxcurv = 0.0
+smartcc = 0
+minccsep = 0.025
+powccsep = 2.0
+ssexcfracw = 0.1
+bgtfR0B0 = -0.0
+
+Bmatch.cdfname = wout_li383.nc
+Bmatch.bnormname = bnorm.li383
+cwsfilename[0] = li383ws.nes
+modsplinename[0] = fd.spline

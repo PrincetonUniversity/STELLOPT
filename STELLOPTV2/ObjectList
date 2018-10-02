@@ -81,6 +81,7 @@ stellopt_init.o \
 stellopt_coiloptpp.o \
 stellopt_regcoil_chi2_b.o \
 stellopt_bootsj.o \
+stellopt_sfincs.o \
 stellopt_clean_up.o \
 stellopt_main.o \
 stellopt_analytic.o \
