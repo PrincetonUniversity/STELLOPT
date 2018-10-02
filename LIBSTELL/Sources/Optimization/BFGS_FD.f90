@@ -188,7 +188,7 @@ SUBROUTINE BFGS_FD(fcn, m, n, x, ftol, gtol, maxfev, nfev, &
   ! Cleanup after fcn call
   IF (myid .eq. master) iflag = FLAG_CLEANUP_BFGS
 
-  if (myid .eq. master)  print *, "<----In BFGS_FD. Master will do first bfgs cleanup"
+  !if (myid .eq. master)  print *, "<----In BFGS_FD. Master will do first bfgs cleanup"
   ! The master will do the bfgs cleanup.
   CALL fcn (m, n, x, fvec, iflag, nfev)
 

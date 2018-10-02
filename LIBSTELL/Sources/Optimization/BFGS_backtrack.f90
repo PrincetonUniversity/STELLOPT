@@ -144,9 +144,12 @@ SUBROUTINE BFGS_backtrack(m,n,nfev,fcn,p_curr,f_curr,x,grad_curr, &
     call fcn(m,n,x_new,fvec_new,iflag,nfev)
     nfev = nfev + 1
 
+    fnorm_new = enorm(m,fvec_new)
+    f_new = fnorm_new**2
+
     if (myid .eq. master) then
       write(6, '(2X,I6,2X,I6,4X,1ES12.4,3X,1ES12.4)') &
-            nfev, niter, alpha, fnorm_new*fnorm_new
+            nfev, niter, alpha, f_new
     end if
 
   if (DEBUG_BFGS .and. (myid .eq. master)) then
@@ -186,12 +189,12 @@ SUBROUTINE BFGS_backtrack(m,n,nfev,fcn,p_curr,f_curr,x,grad_curr, &
 
 
         ! Cleanup after fcn call
-        if (myid .eq. master) print *, "<----In BFGS_backtrack. Will do bfgs cleanup"
+        !if (myid .eq. master) print *, "<----In BFGS_backtrack. Will do bfgs cleanup"
 
         iflag =  FLAG_CLEANUP_BFGS
         !nfev = nfev+1
         CALL fcn (m,n,x_new,fvec_new,iflag,nfev)
-        if (myid .eq. master) print *, "<----In BFGS_backtrack. Just did bfgs cleanup"
+        !if (myid .eq. master) print *, "<----In BFGS_backtrack. Just did bfgs cleanup"
         f_new = (enorm(m,fvec_new))**2
       end if
 
