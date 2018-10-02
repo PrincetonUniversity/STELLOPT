@@ -164,6 +164,7 @@ SUBROUTINE BFGS_backtrack(m,n,nfev,fcn,p_curr,f_curr,x,grad_curr, &
       print *, "<----f_new: ", f_new
       print *, "<----f_curr: ", f_curr
       print *, "<----f_curr + c_armijo*alpha*grad_dot_p: ", f_curr + c_armijo*alpha*grad_dot_p
+      print *, "<----f_new - (f_curr+...): ", f_new - f_curr - c_armijo*alpha*grad_dot_p
       print *, '<---------------------------->>>>>>>>'
   end if
   bt_exit_flag = BT_EXIT_NORMAL

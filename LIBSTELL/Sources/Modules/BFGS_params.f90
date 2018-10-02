@@ -37,8 +37,8 @@
   ! Logical flag used to control debugging statements in the BFGS subroutines
   ! .true. turns the debbuging on.
   ! .false. turns the debugging off.
-  LOGICAL :: DEBUG_BFGS = .true.
-  !LOGICAL :: DEBUG_BFGS = .false.
+  !LOGICAL :: DEBUG_BFGS = .true.
+  LOGICAL :: DEBUG_BFGS = .false.
 
   ! Exit flags for the Armijo backtracking line search
   INTEGER :: BT_EXIT_FLAG
