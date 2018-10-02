@@ -79,10 +79,13 @@ SUBROUTINE BFGS_backtrack(m,n,nfev,fcn,p_curr,f_curr,x,grad_curr, &
   niter = 0
 
   if (grad_dot_p >= 0) then
-    if (myid .eq. master) then
-      write(*,"(A)") "Warning. Backtrack was not called with a descent direction. A steepest descent step will be taken (scaled by beta_hessian)"
-    end if
     p_curr = -grad_curr*beta_hessian
+    if (myid .eq. master) then
+      write(*,"(A)") "<---Warning. Backtrack was not called with a descent direction. A steepest descent step will be taken (scaled by beta_hessian)"
+      print *, "<---grad_curr = ", grad_curr
+      print *, "<---beta_hessian = ", beta_hessian
+      print *, "<---p_curr = ", p_curr
+    end if
   end if
 
   x_new = x + alpha*p_curr
@@ -92,37 +95,22 @@ SUBROUTINE BFGS_backtrack(m,n,nfev,fcn,p_curr,f_curr,x,grad_curr, &
 
   ! Save to xvec.dat
   fnorm_new = enorm(m,fvec_new)
-!  if (myid .eq. master) then
-!    iunit = 12; istat = 0
-!    CALL safe_open(iunit,istat,'xvec.dat','unknown','formatted', ACCESS_IN='APPEND')
-!    WRITE(iunit,'(2(2X,I5.5))') n,nfev
-!    WRITE(iunit,'(10ES22.12E3)') x_new(1:n)
-!    WRITE(iunit,'(ES22.12E3)') fnorm_new
-!    CLOSE(iunit)
-!  end if
+  f_new = fnorm_new**2
 
   if (myid .eq. master) then
     write (6, 56) 'Preparing Armijo Backtracking Search', &
                   'Previous f_curr = ', f_curr, 'Target f <=  ', &
                    f_curr+c_armijo*alpha*grad_dot_p, &
                   'nfev', 'Iteration', 'Alpha', 'Chi-Sq'
-56  FORMAT (/, A, /, A, 1es12.4, /, A, 1ES12.4, /, 50('='), /, &
+56  FORMAT (/, A, /, A, 1es18.10, /, A, 1ES18.10, /, 50('='), /, &
             4x, A, 3x, A, 6X, A, 8X, A, /, 50('='))
   end if
 
   if (myid .eq. master) then
     write(6, '(2X,I6,2X,I6,4X,1ES12.4,3X,1ES12.4)') &
-        nfev, niter, alpha, fnorm_new*fnorm_new
+        nfev, niter, alpha, f_new
   end if
 
-  ! Cleanup after fcn call
-  !IF (myid .eq. master)  iflag = FLAG_CLEANUP_BFGS
-  !nfev = nfev+1
-  !CALL fcn (m,n,x_new,fvec_new,iflag,nfev)
-  ! nfev = nfev+1
-
-  f_new = (enorm(m,fvec_new))**2
-  !f_new = (enorm(m,fvec_new))
   
   ! Test Armijo condition
   if (DEBUG_BFGS .and. (myid .eq. master)) then
@@ -204,14 +192,13 @@ SUBROUTINE BFGS_backtrack(m,n,nfev,fcn,p_curr,f_curr,x,grad_curr, &
         !nfev = nfev+1
         CALL fcn (m,n,x_new,fvec_new,iflag,nfev)
         if (myid .eq. master) print *, "<----In BFGS_backtrack. Just did bfgs cleanup"
-        !f_new = (enorm(m,fvec_new))**2
-        f_new = (enorm(m,fvec_new))
+        f_new = (enorm(m,fvec_new))**2
       end if
 
   if (DEBUG_BFGS .and. (myid .eq. master)) then
     print *, '<========Exiting Armijo search'
     write(*,"(A,I6,A)") "Backtracking line search completed in ",niter," iterations."
-    write(*,"(A,E22.14)") "New function value: ",f_new
+    write(*,"(A,E22.14)") "New Chi-squared value: ",f_new
     print *, '<----Calculating Finite Differences'
     print *, '<----x_new=', x_new
     print *, '<----dx_init=', dx_init
@@ -223,7 +210,7 @@ SUBROUTINE BFGS_backtrack(m,n,nfev,fcn,p_curr,f_curr,x,grad_curr, &
                 40('='), / ,2x, &
                'Iteration', 3x, 'Processor', 7x, 'Chi-Sq', 7x, &
                /, 40('='))
-        WRITE(6, '(2x,i6,8x,i3,7x,1es12.4)'), 0, myid, f_new*f_new
+        WRITE(6, '(2x,i6,8x,i3,7x,1es12.4)'), 0, myid, f_new
     END IF
 
   ! Compute new gradient
@@ -237,9 +224,6 @@ SUBROUTINE BFGS_backtrack(m,n,nfev,fcn,p_curr,f_curr,x,grad_curr, &
   ! Check the flag to see if 'flipping' is permitted
   if (enable_flip .eqv. .false.) flip = .false. 
 
-!  if ((myid .eq. master)) then
-!      print *, "<----Finite Differences Calculated"
-!  end if
   if (DEBUG_BFGS .and. (myid .eq. master)) then
       print *, '<---------------------------------'
       print *, "<----Finite Differences Calculated"

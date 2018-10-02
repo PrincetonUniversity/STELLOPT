@@ -33,8 +33,7 @@ SUBROUTINE BFGS_FD(fcn, m, n, x, ftol, gtol, maxfev, nfev, &
 !                    stepsize if a reasonable descent direction is not
 !                    obtained.
 !    alpha_min	     Minimum allowed step size for line search.
-!    dx_init         The inital step 'dx' for the change in variables 
-!                    used for the inital Jacobian calculation
+!    dx_init         The step-size 'dx' used for the Jacobian calculation
 !-----------------------------------------------------------------------
 
   IMPLICIT NONE
@@ -191,11 +190,7 @@ SUBROUTINE BFGS_FD(fcn, m, n, x, ftol, gtol, maxfev, nfev, &
 
   if (myid .eq. master)  print *, "<----In BFGS_FD. Master will do first bfgs cleanup"
   ! The master will do the bfgs cleanup.
-  ! The workers will do 'something else'?.
-  !if (myid .eq. master)  write (6,'(A30,i5,a6,i5)'), '<----Before cleanup: myid=', myid, 'iflag=', iflag
   CALL fcn (m, n, x, fvec, iflag, nfev)
-  !if (myid .eq. master)  write (6,'(A30,i5,a6,i5)'), '<----After cleanup: myid=', myid, 'iflag=', iflag
-  if (myid .eq. master)  print *, "<----In BFGS_FD. Master just did bfgs cleanup"
 
   ! Increment nfev by 1 (why? JCS)
   nfev = nfev + 1
@@ -219,9 +214,7 @@ SUBROUTINE BFGS_FD(fcn, m, n, x, ftol, gtol, maxfev, nfev, &
   fnorm = enorm(m, fvec)
 
   ! Compute value of objective function
-   f_curr = fnorm**2
-  ! if not using fnorm squrared,  just using fnorm
-  ! f_curr = fnorm
+  f_curr = fnorm**2
   
   if (DEBUG_BFGS .and. (myid .eq. master)) then
     write(*,"(A,1ES12.4E2)") "K=Initial function value: ", f_curr
@@ -233,7 +226,7 @@ SUBROUTINE BFGS_FD(fcn, m, n, x, ftol, gtol, maxfev, nfev, &
                ' Number of Processors: ', i6, //, 40('='), / ,2x, &
                'Iteration', 3x, 'Processor', 7x, 'Chi-Sq', 7x, &
                /, 40('='))
-        WRITE(6, '(2x,i6,8x,i3,7x,1es12.4)'), 0, myid, fnorm*fnorm
+        WRITE(6, '(2x,i6,8x,i3,7x,1es12.4)'), 0, myid, f_curr
     END IF
  
 !DEC$ IF DEFINED (MPI_OPT)
@@ -258,18 +251,16 @@ SUBROUTINE BFGS_FD(fcn, m, n, x, ftol, gtol, maxfev, nfev, &
   ! fjac = d(fvec)/d(vars)
   ! d(f_curr)/d(vars) = sum(2*fvec*fjac)
   grad_curr = 2*matmul(fvec, fjac_curr)
-  !grad_curr = sum(fjac_curr, 1)
 
   ! to do: print out the grad to a file
   ! to do: calculate the regular hessian, and print it out to a file
-
 
   ! Initial Hessian set to multiple of identity
   eye = 0
   DO nvar = 1,n
     eye(nvar,nvar) = 1
   END DO
-  hessian = (1.0/beta_hessian)*eye
+  !hessian = (1.0/beta_hessian)*eye
   
   ! Initial inverse Hessian set to multiple of identity
   invHessian = beta_hessian*eye
@@ -279,17 +270,17 @@ SUBROUTINE BFGS_FD(fcn, m, n, x, ftol, gtol, maxfev, nfev, &
     print *, 'K====Entering BFGS main loop'
     print *, 'K====iter = ', iter
     print *, 'K====x = ', x
-    print *, 'K====f_curr = ', f_curr
     print *, 'K====fvec = ', fvec
+    print *, 'K====f_curr = ', f_curr
     print *, 'K====fjac_curr = ', fjac_curr
     print *, 'K====grad_curr = ', grad_curr
     print *, 'K====norm(grad_curr) = ', enorm(n,grad_curr)
     print *, 'K====Inverse Hessian=', invHessian
-    print *, 'K=============================================================='
+    print *, 'K============================================'
   end if
 
   ! Main BFGS loop - See algorithm 6.1 Nocedal & Wright
-  do while ((enorm(n,grad_curr)>gtol) .and. ((f_curr*f_curr) > ftol) &
+  do while ((enorm(n,grad_curr)>gtol) .and. (f_curr > ftol) &
             .and. (nfev < maxfev))
     ! Compute search direction, Eq. 6.18 (or 3.2)
     p_curr = -matmul(invHessian, grad_curr)
@@ -299,8 +290,8 @@ SUBROUTINE BFGS_FD(fcn, m, n, x, ftol, gtol, maxfev, nfev, &
       print *, '<----In BFGS main loop'
       print *, '<----iter = ', iter
       print *, '<----x = ', x
-      print *, '<----f_curr = ', f_curr
       print *, '<----fvec = ', fvec
+      print *, '<----f_curr = ', f_curr
       print *, '<----fjac_curr = ', fjac_curr
       print *, '<----grad_curr = ', grad_curr
       print *, '<----norm(grad_curr) = ', enorm(n,grad_curr)
@@ -362,7 +353,7 @@ SUBROUTINE BFGS_FD(fcn, m, n, x, ftol, gtol, maxfev, nfev, &
       ! write the inverse Hessian
       if (myid .eq. master) then
         write(string1,'(A)') '-1'
-        string2 = 'invHess.' // TRIM(string1)
+        string2 = 'HessianInverse.' // TRIM(string1)
         iunit = 28; ii=0
         CALL safe_open(iunit, ii, TRIM(string2), 'new', 'formatted')
         WRITE(iunit,'(2X,i6,2x,i6)'), m, n
@@ -385,7 +376,7 @@ SUBROUTINE BFGS_FD(fcn, m, n, x, ftol, gtol, maxfev, nfev, &
       print *, '<----s_s_outer = ', s_s_outer
       print *, '<----mat1 = ', mat1
       print *, '<----mat2 = ', mat2
-      print *, '<----invHessian = ', invHessian
+      print *, '<----invHessian, before update = ', invHessian
       print *, '<==========================---------============='
     end if
 
@@ -395,14 +386,14 @@ SUBROUTINE BFGS_FD(fcn, m, n, x, ftol, gtol, maxfev, nfev, &
     if (DEBUG_BFGS .and. (myid .eq. master)) then
       print *, '<======================================='
       print *, '<----Printing out inverse Hessian'
-      print *, '<----invHessian = ', invHessian
+      print *, '<----invHessian, after update = ', invHessian
       print *, '<======================================='
     end if
 
     ! write the inverse Hessian
     if (myid .eq. master) then
       write(string1,'(i6.6)') nfev
-      string2 = 'invHess.' // TRIM(string1)
+      string2 = 'HessianInverse.' // TRIM(string1)
       iunit = 28; ii=0
       CALL safe_open(iunit, ii, TRIM(string2), 'new', 'formatted')
       WRITE(iunit,'(2X,i6,2x,i6)'), m,n
