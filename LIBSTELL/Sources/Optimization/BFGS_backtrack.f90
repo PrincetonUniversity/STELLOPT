@@ -4,6 +4,7 @@ SUBROUTINE BFGS_backtrack(m,n,nfev,fcn,p_curr,f_curr,x,grad_curr, &
              x_min, fvec_min, fnorm_array)
 
   USE BFGS_params
+  USE MPI_params
   IMPLICIT NONE
 !-----------------------------------------------------------------------
 !     Subroutine:    BFGS_backtrack
@@ -38,6 +39,9 @@ SUBROUTINE BFGS_backtrack(m,n,nfev,fcn,p_curr,f_curr,x,grad_curr, &
 !     x_new           Vector of variables at optimal point in line search.
 !     grad_new        Objective function gradient at optimal point in line search.
 !-----------------------------------------------------------------------
+!DEC$ IF DEFINED (MPI_OPT)
+    INCLUDE 'mpif.h'
+!DEC$ ENDIF
 
   !-----------------------------------------------
   !   D u m m y   A r g u m e n t s
@@ -61,10 +65,12 @@ SUBROUTINE BFGS_backtrack(m,n,nfev,fcn,p_curr,f_curr,x,grad_curr, &
   !-----------------------------------------------
   !   L o c a l   V a r i a b l e s
   !-----------------------------------------------
-  REAL(rprec) :: fvec_new(m), grad_dot_p, fnorm_new, alpha
-  INTEGER :: iflag, niter, nvar, istat, iunit
+  REAL(rprec) :: fvec_new(m), grad_dot_p, fnorm_new, alpha, alpha_start, f_best
+  REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: x_global,fvec_global
+  INTEGER :: iflag, niter, ii, ii_best, nvar, istat, iunit
   REAL(rprec) :: fjac_curr(m,n)  ! the current jacobian
   REAL(rprec) :: fnorm_min !, epsfcn0, epsfcn_temp
+  LOGICAL :: KEEP_BACKTRACKING
  
  
   ! Set initial step length
@@ -77,6 +83,8 @@ SUBROUTINE BFGS_backtrack(m,n,nfev,fcn,p_curr,f_curr,x,grad_curr, &
   end if
 
   niter = 0
+  ! Allocate dynamic variables
+  ALLOCATE (x_global(n,n), fvec_global(m,n))
 
   if (grad_dot_p >= 0) then
     p_curr = -grad_curr*beta_hessian
@@ -132,41 +140,69 @@ SUBROUTINE BFGS_backtrack(m,n,nfev,fcn,p_curr,f_curr,x,grad_curr, &
   ! Initialize the exit status to 'normal'
   bt_exit_flag = BT_EXIT_NORMAL
 
-  do while ((alpha>alpha_min) .and. (f_new > (f_curr + c_armijo*alpha*grad_dot_p)))
-    niter = niter + 1
-    alpha = rho_backtrack*alpha
+  if (f_new > (f_curr + c_armijo*alpha*grad_dot_p)) then
+    KEEP_BACKTRACKING = .true.
+  else
+    KEEP_BACKTRACKING = .false.
+  end if
+   
+!  do while ((alpha>alpha_min) .and. (f_new > (f_curr + c_armijo*alpha*grad_dot_p)))
+  do while (KEEP_BACKTRACKING)
+
     if (alpha < alpha_min) then
       bt_exit_flag = BT_EXIT_STEPTOOSMALL
       exit
     end if
 
-    x_new = x + alpha*p_curr
-    call fcn(m,n,x_new,fvec_new,iflag,nfev)
-    nfev = nfev + 1
+    alpha_start = alpha * rho_backtrack
+    DO ii = 1, n
+      niter = niter + 1
+      alpha = rho_backtrack*alpha
+      x_global(:, ii) = x(:) + alpha*p_curr
+    END DO
 
-    fnorm_new = enorm(m,fvec_new)
-    f_new = fnorm_new**2
-
-    if (myid .eq. master) then
-      write(6, '(2X,I6,2X,I6,4X,1ES12.4,3X,1ES12.4)') &
+    call eval_x_queued(fcn, m, n, n, x_global, fvec_global, niter, &
+                       MPI_COMM_STEL)
+    call MPI_BCAST(fvec_global, m*n, MPI_DOUBLE_PRECISION, master, &
+                   MPI_COMM_STEL, ierr_mpi)
+    !x_new = x + alpha*p_curr
+    !call fcn(m,n,x_new,fvec_new,iflag,nfev)
+    !nfev = nfev + 1
+    alpha = alpha_start 
+    DO ii = 1,n
+      fnorm_new = enorm(m,fvec_global(:, ii))
+      f_new = fnorm_new**2
+      if (myid .eq. master) then
+        write(6, '(2X,I6,2X,I6,4X,1ES12.4,3X,1ES12.4)') &
             nfev, niter, alpha, f_new
-    end if
+      end if
 
-  if (DEBUG_BFGS .and. (myid .eq. master)) then
-      print *, '<---------------------------->>>>>>>>'
-      print *, "<----Backtrack Step"
-      print *, "<----niter: ", niter
-      print *, '<----Tried alpha=', alpha
-      print *, '<----with c_armijo=', c_armijo
-      print *, '<----and grad_dot_p=', grad_dot_p
-      print *, '<----x_new=', x_new
-      print *, "<----fvec_new: ",fvec_new
-      print *, "<----f_new: ", f_new
-      print *, "<----f_curr: ", f_curr
-      print *, "<----f_curr + c_armijo*alpha*grad_dot_p: ", f_curr + c_armijo*alpha*grad_dot_p
-      print *, '<---------------------------->>>>>>>>'
-  end if
-  bt_exit_flag = BT_EXIT_NORMAL
+      if (f_new < (f_curr + c_armijo*alpha*grad_dot_p) .and. &
+          KEEP_BACKTRACKING) then
+        KEEP_BACKTRACKING = .false.
+        ii_best = ii
+        x_new = x_global(:, ii_best)
+        f_best = f_new
+        fvec_new = fvec_global(:, ii_best)
+      end if
+      alpha = alpha * rho_backtrack
+    end do
+
+!  if (DEBUG_BFGS .and. (myid .eq. master)) then
+!      print *, '<---------------------------->>>>>>>>'
+!      print *, "<----Backtrack Step"
+!      print *, "<----niter: ", niter
+!      print *, '<----Tried alpha=', alpha
+!      print *, '<----with c_armijo=', c_armijo
+!      print *, '<----and grad_dot_p=', grad_dot_p
+!      print *, '<----x_new=', x_new
+!      print *, "<----fvec_new: ",fvec_new
+!      print *, "<----f_new: ", f_new
+!      print *, "<----f_curr: ", f_curr
+!      print *, "<----f_curr + c_armijo*alpha*grad_dot_p: ", f_curr + c_armijo*alpha*grad_dot_p
+!      print *, '<---------------------------->>>>>>>>'
+!  end if
+!  bt_exit_flag = BT_EXIT_NORMAL
 
   end do
 
