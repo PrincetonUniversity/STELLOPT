@@ -161,7 +161,7 @@ SUBROUTINE BFGS_backtrack(m,n,nfev,fcn,p_curr,f_curr,x,grad_curr, &
       x_global(:, ii) = x(:) + alpha*p_curr
     END DO
 
-    call eval_x_queued(fcn, m, n, n, x_global, fvec_global, niter, &
+    call eval_x_queued(fcn, m, n, numprocs, x_global, fvec_global, niter, &
                        MPI_COMM_STEL)
     call MPI_BCAST(fvec_global, m*n, MPI_DOUBLE_PRECISION, master, &
                    MPI_COMM_STEL, ierr_mpi)
