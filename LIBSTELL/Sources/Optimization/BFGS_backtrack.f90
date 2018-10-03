@@ -87,6 +87,7 @@ SUBROUTINE BFGS_backtrack(m,n,nfev,fcn,p_curr,f_curr,x,grad_curr, &
   ALLOCATE (x_global(n,n), fvec_global(m,n))
 
   if (grad_dot_p >= 0) then
+    ! To Do: Fix this 
     p_curr = -grad_curr*beta_hessian
     if (myid .eq. master) then
       write(*,"(A)") "<---Warning. Backtrack was not called with a descent direction. A steepest descent step will be taken (scaled by beta_hessian)"
