@@ -155,7 +155,7 @@ SUBROUTINE BFGS_backtrack(m,n,nfev,fcn,p_curr,f_curr,x,grad_curr, &
     end if
 
     alpha_start = alpha * rho_backtrack
-    DO ii = 1, n
+    DO ii = 1, numprocs
       niter = niter + 1
       alpha = rho_backtrack*alpha
       x_global(:, ii) = x(:) + alpha*p_curr
@@ -169,7 +169,7 @@ SUBROUTINE BFGS_backtrack(m,n,nfev,fcn,p_curr,f_curr,x,grad_curr, &
     !call fcn(m,n,x_new,fvec_new,iflag,nfev)
     !nfev = nfev + 1
     alpha = alpha_start 
-    DO ii = 1,n
+    DO ii = 1,numprocs
       fnorm_new = enorm(m,fvec_global(:, ii))
       f_new = fnorm_new**2
       if (myid .eq. master) then
