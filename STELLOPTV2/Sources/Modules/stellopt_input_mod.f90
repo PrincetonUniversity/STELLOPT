@@ -406,6 +406,7 @@
       INTEGER, INTENT(in) :: ithread
       LOGICAL :: lexist
       INTEGER :: i, ierr, iunit, local_master
+      CHARACTER(LEN=1000) :: line
 
       ! Variables used in regcoil section to parse nescin spectrum
       INTEGER :: imn, m, n
@@ -921,6 +922,12 @@
       CALL safe_open(iunit,istat,TRIM(filename),'old','formatted')
       IF (istat /= 0) CALL handle_err(FILE_OPEN_ERR,TRIM(filename),istat)
       READ(iunit,NML=optimum,IOSTAT=istat)
+      IF (istat /= 0) THEN
+         backspace(iunit)
+         read(iunit,fmt='(A)') line
+         write(6,'(A)') &
+              'Invalid line in namelist: '//TRIM(line)
+      END IF
       IF (istat /= 0) CALL handle_err(NAMELIST_READ_ERR,'OPTIMUM in: '//TRIM(filename),istat)
       CALL FLUSH(iunit)
       CLOSE(iunit)
@@ -1340,8 +1347,8 @@
       WRITE(iunit,outint) 'NPOPULATION',npopulation
       WRITE(iunit,outint) 'NOPTIMIZERS',noptimizers
       WRITE(iunit,outboo) 'LKEEP_MINS',lkeep_mins
-      WRITE(iunit,outint) 'SFINCS_MIN_PROCS =',sfincs_min_procs
-      WRITE(iunit,outflt) 'VBOOT_TOLERANCE =',vboot_tolerance
+      WRITE(iunit,outint) 'SFINCS_MIN_PROCS',sfincs_min_procs
+      WRITE(iunit,outflt) 'VBOOT_TOLERANCE',vboot_tolerance
       !WRITE(iunit,outboo) 'LREFIT',lrefit
       !WRITE(iunit,outflt) 'REFIT_PARAM',refit_param
       WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
@@ -1780,7 +1787,7 @@
             IF (ANY(coil_splinesx(n,:)>-1)) THEN
                WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
                WRITE(iunit,'(A,I4.3)') '!       Coil Number ',n
-               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',1X,A)") 'COIL_TYPE(',n,')',COIL_TYPE(n)
+               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',1X,A)") 'COIL_TYPE(',n,')',"'"//COIL_TYPE(n)//"'"
                ik = MINLOC(coil_splinesx(n,:),DIM=1) - 1
                WRITE(iunit,"(2X,A,I4.3,A,1X,'=',10(2X,L1))") 'LCOIL_SPLINE(',n,',:)',(lcoil_spline(n,m), m = 1, ik-4)
                WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'DCOIL_SPLINE(',n,',:)',(dcoil_spline(n,m), m = 1, ik-4)
