@@ -139,7 +139,8 @@ SUBROUTINE BFGS_backtrack(m,n,nfev,fcn,p_curr,f_curr,x,grad_curr, &
   end if
   ! Initialize the exit status to 'normal'
   bt_exit_flag = BT_EXIT_NORMAL
-
+  ! Initialize f_best to the current value
+  f_best = f_curr
   if (f_new > (f_curr + c_armijo*alpha*grad_dot_p)) then
     KEEP_BACKTRACKING = .true.
   else
@@ -177,13 +178,17 @@ SUBROUTINE BFGS_backtrack(m,n,nfev,fcn,p_curr,f_curr,x,grad_curr, &
             nfev, niter, alpha, f_new
       end if
 
-      if (f_new < (f_curr + c_armijo*alpha*grad_dot_p) .and. &
-          KEEP_BACKTRACKING) then
+      !if (f_new < (f_curr + c_armijo*alpha*grad_dot_p) .and. &
+      !    KEEP_BACKTRACKING) then
+      if (f_new < (f_curr + c_armijo*alpha*grad_dot_p)) then
         KEEP_BACKTRACKING = .false.
-        ii_best = ii
-        x_new = x_global(:, ii_best)
-        f_best = f_new
-        fvec_new = fvec_global(:, ii_best)
+        ! Select the 'best', not the first acceptable
+        if f_new < f_best then
+          ii_best = ii
+          x_new = x_global(:, ii_best)
+          f_best = f_new
+          fvec_new = fvec_global(:, ii_best)
+        end if
       end if
       alpha = alpha * rho_backtrack
     end do
