@@ -797,12 +797,18 @@ class MyApp(QMainWindow):
 		# Handle Special Plots
 		self.ui.ComboBoxOPTplot_type.addItem('-----SPECIAL-----')
 		for name in ['BALLOON','KINK','ORBIT','NEO','HELICITY','HELICITY_FULL',\
-					'TXPORT','B_PROBES','FLUXLOOPS','SEGROG','NE','TE','TI',\
-					'NELINE','TELINE','TILINE','XICS','XICS_BRIGHT','IOTA',\
-					'ECEREFLECT','MSE','SXR','PRESS']:
+					'TXPORT','B_PROBES','FLUXLOOPS','SEGROG',\
+					'NELINE','TELINE','TILINE','XICS','XICS_BRIGHT',\
+					'ECEREFLECT','SXR','IOTA','PRESS']:
 			for item in self.stel_data:
 				if (name+'_target' == item):
 					self.ui.ComboBoxOPTplot_type.addItem(name+'_evolution')
+		for name in ['NE','TE','TI','MSE']:
+			for item in self.stel_data:
+				if (name+'_target' == item):
+					self.ui.ComboBoxOPTplot_type.addItem(name+'_evolution')
+					self.ui.ComboBoxOPTplot_type.addItem(name+'_evolution_R')
+					self.ui.ComboBoxOPTplot_type.addItem(name+'_evolution_Z')
 		# Handle Wout Comparrison Plots
 		self.workdir,ext = filename.split('stellopt.',1)
 		files = os.listdir(self.workdir)
@@ -1027,6 +1033,40 @@ class MyApp(QMainWindow):
 			self.ax2.set_ylabel('Electron Density (norm)')
 			self.ax2.set_title('Electron Density Reconstruction')
 			self.ax2.set_xlim((0,1.6))
+		elif (plot_name == 'NE_evolution_R'):
+			x = self.stel_data['NE_R'].T
+			y = self.stel_data['NE_target'].T
+			s = self.stel_data['NE_sigma'].T
+			e = self.stel_data['NE_equil'].T
+			n = y.shape
+			if len(x.shape)>1:
+				dl = n[1]
+				self.ax2.errorbar(x[:,0],y[:,0],s[:,0],fmt='sk',fillstyle='none')
+				for l in range(dl):
+					self.ax2.plot(x[:,l-1],e[:,l-1],'o',fillstyle='none',color=_plt.cm.brg(l/(dl-1)))
+			else:
+				self.ax2.errorbar(x[:],y[:],s[:],fmt='sk',fillstyle='none')
+				self.ax2.plot(x[:],e[:],'o',fillstyle='none',color='g')
+			self.ax2.set_xlabel('R [m]')
+			self.ax2.set_ylabel('Electron Density (norm)')
+			self.ax2.set_title('Electron Density Reconstruction')
+		elif (plot_name == 'NE_evolution_Z'):
+			x = self.stel_data['NE_Z'].T
+			y = self.stel_data['NE_target'].T
+			s = self.stel_data['NE_sigma'].T
+			e = self.stel_data['NE_equil'].T
+			n = y.shape
+			if len(x.shape)>1:
+				dl = n[1]
+				self.ax2.errorbar(x[:,0],y[:,0],s[:,0],fmt='sk',fillstyle='none')
+				for l in range(dl):
+					self.ax2.plot(x[:,l-1],e[:,l-1],'o',fillstyle='none',color=_plt.cm.brg(l/(dl-1)))
+			else:
+				self.ax2.errorbar(x[:],y[:],s[:],fmt='sk',fillstyle='none')
+				self.ax2.plot(x[:],e[:],'o',fillstyle='none',color='g')
+			self.ax2.set_xlabel('Z [m]')
+			self.ax2.set_ylabel('Electron Density (norm)')
+			self.ax2.set_title('Electron Density Reconstruction')
 		elif (plot_name == 'TE_evolution'):
 			x=self.stel_data['TE_s'].T
 			y=self.stel_data['TE_target'].T
@@ -1045,6 +1085,40 @@ class MyApp(QMainWindow):
 			self.ax2.set_ylabel('Electron Temperature [keV]')
 			self.ax2.set_title('Electron Temperature Reconstruction')
 			self.ax2.set_xlim((0,1.6))
+		elif (plot_name == 'TE_evolution_R'):
+			x=self.stel_data['TE_R'].T
+			y=self.stel_data['TE_target'].T
+			s=self.stel_data['TE_sigma'].T
+			e = self.stel_data['TE_equil'].T
+			n = y.shape
+			if len(x.shape)>1:
+				dl = n[1]
+				self.ax2.errorbar(x[:,0],y[:,0],s[:,0],fmt='sk',fillstyle='none')
+				for l in range(dl):
+					self.ax2.plot(x[:,l-1],e[:,l-1],'o',fillstyle='none',color=_plt.cm.brg(l/(dl-1)))
+			else:
+				self.ax2.errorbar(x[:],y[:],s[:],fmt='sk',fillstyle='none')
+				self.ax2.plot(x[:],e[:],'o',fillstyle='none',color='g')
+			self.ax2.set_xlabel('R [m]')
+			self.ax2.set_ylabel('Electron Temperature [keV]')
+			self.ax2.set_title('Electron Temperature Reconstruction')
+		elif (plot_name == 'TE_evolution_Z'):
+			x=self.stel_data['TE_Z'].T
+			y=self.stel_data['TE_target'].T
+			s=self.stel_data['TE_sigma'].T
+			e = self.stel_data['TE_equil'].T
+			n = y.shape
+			if len(x.shape)>1:
+				dl = n[1]
+				self.ax2.errorbar(x[:,0],y[:,0],s[:,0],fmt='sk',fillstyle='none')
+				for l in range(dl):
+					self.ax2.plot(x[:,l-1],e[:,l-1],'o',fillstyle='none',color=_plt.cm.brg(l/(dl-1)))
+			else:
+				self.ax2.errorbar(x[:],y[:],s[:],fmt='sk',fillstyle='none')
+				self.ax2.plot(x[:],e[:],'o',fillstyle='none',color='g')
+			self.ax2.set_xlabel('Z [m]')
+			self.ax2.set_ylabel('Electron Temperature [keV]')
+			self.ax2.set_title('Electron Temperature Reconstruction')
 		elif (plot_name == 'TI_evolution'):
 			x=self.stel_data['TI_s'].T
 			y=self.stel_data['TI_target'].T
@@ -1063,6 +1137,92 @@ class MyApp(QMainWindow):
 			self.ax2.set_ylabel('Ion Temperature [keV]')
 			self.ax2.set_title('Ion Temperature Reconstruction')
 			self.ax2.set_xlim((0,1.6))
+		elif (plot_name == 'TI_evolution_R'):
+			x=self.stel_data['TI_R'].T
+			y=self.stel_data['TI_target'].T
+			s=self.stel_data['TI_sigma'].T
+			e = self.stel_data['TI_equil'].T
+			n = y.shape
+			if len(x.shape)>1:
+				dl = n[1]
+				self.ax2.errorbar(x[:,0],y[:,0],s[:,0],fmt='sk',fillstyle='none')
+				for l in range(dl):
+					self.ax2.plot(x[:,l-1],e[:,l-1],'o',fillstyle='none',color=_plt.cm.brg(l/(dl-1)))
+			else:
+				self.ax2.errorbar(x[:],y[:],s[:],fmt='sk',fillstyle='none')
+				self.ax2.plot(x[:],e[:],'o',fillstyle='none',color='g')
+			self.ax2.set_xlabel('R [m]')
+			self.ax2.set_ylabel('Ion Temperature [keV]')
+			self.ax2.set_title('Ion Temperature Reconstruction')
+		elif (plot_name == 'TI_evolution_Z'):
+			x=self.stel_data['TI_Z'].T
+			y=self.stel_data['TI_target'].T
+			s=self.stel_data['TI_sigma'].T
+			e = self.stel_data['TI_equil'].T
+			n = y.shape
+			if len(x.shape)>1:
+				dl = n[1]
+				self.ax2.errorbar(x[:,0],y[:,0],s[:,0],fmt='sk',fillstyle='none')
+				for l in range(dl):
+					self.ax2.plot(x[:,l-1],e[:,l-1],'o',fillstyle='none',color=_plt.cm.brg(l/(dl-1)))
+			else:
+				self.ax2.errorbar(x[:],y[:],s[:],fmt='sk',fillstyle='none')
+				self.ax2.plot(x[:],e[:],'o',fillstyle='none',color='g')
+			self.ax2.set_xlabel('Z [m]')
+			self.ax2.set_ylabel('Ion Temperature [keV]')
+			self.ax2.set_title('Ion Temperature Reconstruction')
+		elif (plot_name == 'MSE_evolution'):
+			x=self.stel_data['MSE_s'].T
+			y=self.stel_data['MSE_target'].T
+			s=self.stel_data['MSE_sigma'].T
+			e = self.stel_data['MSE_equil'].T
+			n = y.shape
+			if len(x.shape)>1:
+				dl = n[1]
+				self.ax2.errorbar(x[:,0],y[:,0],s[:,0],fmt='sk',fillstyle='none')
+				for l in range(dl):
+					self.ax2.plot(x[:,l-1],e[:,l-1],'o',fillstyle='none',color=_plt.cm.brg(l/(dl-1)))
+			else:
+				self.ax2.errorbar(x[:],y[:],s[:],fmt='sk',fillstyle='none')
+				self.ax2.plot(x[:],e[:],'o',fillstyle='none',color='g')
+			self.ax2.set_xlabel('Normalized Flux')
+			self.ax2.set_ylabel('Pitch Angle')
+			self.ax2.set_title('Motional Stark Effect')
+			self.ax2.set_xlim((0,1.6))
+		elif (plot_name == 'MSE_evolution_R'):
+			x=self.stel_data['MSE_R'].T
+			y=self.stel_data['MSE_target'].T
+			s=self.stel_data['MSE_sigma'].T
+			e = self.stel_data['MSE_equil'].T
+			n = y.shape
+			if len(x.shape)>1:
+				dl = n[1]
+				self.ax2.errorbar(x[:,0],y[:,0],s[:,0],fmt='sk',fillstyle='none')
+				for l in range(dl):
+					self.ax2.plot(x[:,l-1],e[:,l-1],'o',fillstyle='none',color=_plt.cm.brg(l/(dl-1)))
+			else:
+				self.ax2.errorbar(x[:],y[:],s[:],fmt='sk',fillstyle='none')
+				self.ax2.plot(x[:],e[:],'o',fillstyle='none',color='g')
+			self.ax2.set_xlabel('R [m]')
+			self.ax2.set_ylabel('Pitch Angle')
+			self.ax2.set_title('Motional Stark Effect')
+		elif (plot_name == 'MSE_evolution_Z'):
+			x=self.stel_data['MSE_Z'].T
+			y=self.stel_data['MSE_target'].T
+			s=self.stel_data['MSE_sigma'].T
+			e = self.stel_data['MSE_equil'].T
+			n = y.shape
+			if len(x.shape)>1:
+				dl = n[1]
+				self.ax2.errorbar(x[:,0],y[:,0],s[:,0],fmt='sk',fillstyle='none')
+				for l in range(dl):
+					self.ax2.plot(x[:,l-1],e[:,l-1],'o',fillstyle='none',color=_plt.cm.brg(l/(dl-1)))
+			else:
+				self.ax2.errorbar(x[:],y[:],s[:],fmt='sk',fillstyle='none')
+				self.ax2.plot(x[:],e[:],'o',fillstyle='none',color='g')
+			self.ax2.set_xlabel('Z [m]')
+			self.ax2.set_ylabel('Pitch Angle')
+			self.ax2.set_title('Motional Stark Effect')
 		elif (plot_name == 'IOTA_evolution'):
 			x=self.stel_data['IOTA_s'].T
 			y=self.stel_data['IOTA_target'].T
