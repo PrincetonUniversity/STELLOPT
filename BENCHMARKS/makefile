@@ -104,6 +104,7 @@ test_stellopt_iota_lmdif:
 test_stellopt_recon_tok:
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.RECON_TOK
 	@cd $(STELLOPT_TEST_DIR)/RECON_TOK; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.RECON_TOK; rm -f *_opt*
+	@cd $(STELLOPT_TEST_DIR)/RECON_TOK; ./compare_RECON_TOK.py
 	@echo ""
 
 test_stellopt_tok_r0_delta:
