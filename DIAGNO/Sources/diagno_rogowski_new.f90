@@ -251,14 +251,11 @@
       chunk  = mnum(myworkid+1)
       myend   = mystart + chunk - 1
       IF (myend > nhelp) myend = nhelp
-      PRINT *,myworkid,mystart,myend,nhelp
 #endif
 
       CALL MPI_BARRIER(MPI_COMM_DIAGNO,ierr_mpi)
       ! Loop over work (need to imlement skipping)
       DO i2 = mystart, myend
-         PRINT *,myworkid, i2
-         CALL FLUSH(6)
          SELECT CASE (int_type)
             CASE('midpoint')
                IF (lcoil) THEN
