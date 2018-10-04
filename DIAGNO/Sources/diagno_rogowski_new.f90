@@ -68,6 +68,9 @@
       DOUBLE PRECISION, ALLOCATABLE :: xfl(:,:), yfl(:,:), zfl(:,:), &
                                   dx(:,:), dy(:,:), dz(:,:),&
                                   flux_mut(:,:), eff_area(:,:)
+      DOUBLE PRECISION, ALLOCATABLE :: FLUX_HELP(:), MUT_HELP(:,:)
+      DOUBLE PRECISION, ALLOCATABLE :: XP_HELP(:), YP_HELP(:), ZP_HELP(:)
+      DOUBLE PRECISION, ALLOCATABLE :: XP1_HELP(:), YP1_HELP(:), ZP1_HELP(:)
       CHARACTER(256) :: format_flux_headers
       CHARACTER(48), DIMENSION(:), ALLOCATABLE :: title
 !      TYPE(EZspline1_r8) :: x_spl,y_spl,z_spl
@@ -172,8 +175,6 @@
       IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'diagno_rogow2', ierr_mpi)
       CALL MPI_BCAST(idia,    nfl, MPI_INTEGER, master, MPI_COMM_DIAGNO,ierr_mpi)
       IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'diagno_rogow2', ierr_mpi)
-      !CALL MPI_BCAST(title,nfl*48,MPI_CHARACTER, master, MPI_COMM_DIAGNO,ierr_mpi)
-      !IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'diagno_rogow2',ierr_mpi)
 
       ! Broadcast Arrays (2D)
       CALL MPI_BCAST(xfl,      nfl*nsegmx,MPI_DOUBLE_PRECISION, master, MPI_COMM_DIAGNO,ierr_mpi)
@@ -200,14 +201,13 @@
 !!!!!!!!!!!!!!     NEW PART   !!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! Count amount of work to do
       nhelp = 0
-      DO i = 1:nfl
-         DO j = 1, nseg-1
-            nhelp = nhelp + int_step
-         END DO
+      DO i = 1,nfl
+         IF (lskip_rogo(i)) CYCLE
+         nhelp = nhelp + int_step*(nseg_ar(i)-1)
       END DO
 
       ! Allocate the helper
-      ALLOCATE(FLUX_HELP(nhelp), MUT_HELP(nhelp,ncg)
+      ALLOCATE(FLUX_HELP(nhelp), MUT_HELP(nhelp,ncg))
       ALLOCATE(XP_HELP(nhelp),  YP_HELP(nhelp),  ZP_HELP(nhelp))
       ALLOCATE(XP1_HELP(nhelp), YP1_HELP(nhelp), ZP1_HELP(nhelp))
       FLUX_HELP = 0; MUT_HELP = 0
@@ -215,7 +215,8 @@
       ! Calculate helpers
       i2 = 1
       DO i = 1, nfl
-         DO j = 1, nseg-1
+         IF (lskip_rogo(i)) CYCLE
+         DO j = 1, nseg_ar(i)-1
             DO k = 1, int_step
                XP_HELP(i2)  = xfl(i,j) + (k-1)*int_fac*dx(i,j)
                YP_HELP(i2)  = yfl(i,j) + (k-1)*int_fac*dy(i,j)
@@ -249,10 +250,15 @@
       mystart = moffsets(myworkid+1)
       chunk  = mnum(myworkid+1)
       myend   = mystart + chunk - 1
+      IF (myend > nhelp) myend = nhelp
+      PRINT *,myworkid,mystart,myend,nhelp
 #endif
 
+      CALL MPI_BARRIER(MPI_COMM_DIAGNO,ierr_mpi)
       ! Loop over work (need to imlement skipping)
       DO i2 = mystart, myend
+         PRINT *,myworkid, i2
+         CALL FLUSH(6)
          SELECT CASE (int_type)
             CASE('midpoint')
                IF (lcoil) THEN
@@ -288,6 +294,7 @@
                IF (lvac) CYCLE
                FLUX_HELP(i2) = db_bode(XP_HELP(i2),YP_HELP(i2), ZP_HELP(i2), &
                                            XP1_HELP(i2),YP1_HELP(i2), ZP1_HELP(i2),ig)
+         END SELECT
       END DO
       DEALLOCATE(XP_HELP, YP_HELP, ZP_HELP, XP1_HELP, YP1_HELP, ZP1_HELP)
 
@@ -317,166 +324,23 @@
       i = 1
       IF (myworkid == master) THEN
          DO i2 = 1, nfl
-            flux(i) = 0
-            nseg = nseg_ar(i)
-            IF (lskip_rogo(i)) THEN
-               i = i + (nseg-1)*int_step
-               CYCLE
-            END IF
+            flux(i2) = 0
+            nseg = nseg_ar(i2)
+            IF (lskip_rogo(i2)) CYCLE
             DO j = 1, nseg-1
                DO k = 1, int_step
                   flux(i2)=flux(i2) + FLUX_HELP(i)*eff_area(i2,j)
                   DO ig = 1, ncg
                      flux_mut(i2,ig)=flux_mut(i2,ig) + MUT_HELP(i,ig)*eff_area(i2,j)
                   END DO
+                  i = i + 1
                END DO
             END DO
          END DO
-         DEALLOCATE(FLUX_HELP)
+         DEALLOCATE(FLUX_HELP, MUT_HELP)
       END IF
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-      ! Only work on correct number of flux loops
-      i = COUNT(lskip_rogo(1:nfl))
-      j = nfl - i
-      ALLOCATE(workdex(j))
-      k=1
-      DO i = 1, nfl
-         IF (lskip_rogo(i)) CYCLE
-         workdex(k) = i
-         k=k+1
-      END DO
- 
-      ! Divide up the work
-      i2 = nfl - COUNT(lskip_rogo(1:nfl))
-      chunk = FLOOR(REAL(i2) / REAL(nprocs_diagno))
-      mystart = myworkid*chunk + 1
-      myend = mystart + chunk - 1
-#if defined(MPI_OPT)
-      IF (ALLOCATED(mnum)) DEALLOCATE(mnum)
-      IF (ALLOCATED(moffsets)) DEALLOCATE(moffsets)
-      ALLOCATE(mnum(nprocs_diagno), moffsets(nprocs_diagno))
-      CALL MPI_ALLGATHER(chunk,1,MPI_INTEGER,mnum,1,MPI_INTEGER,MPI_COMM_DIAGNO,ierr_mpi)
-      CALL MPI_ALLGATHER(mystart,1,MPI_INTEGER,moffsets,1,MPI_INTEGER,MPI_COMM_DIAGNO,ierr_mpi)
-      i = 1
-      DO
-         IF ((moffsets(nprocs_diagno)+mnum(nprocs_diagno)-1) == i2) EXIT
-         IF (i == nprocs_diagno) i = 1
-         mnum(i) = mnum(i) + 1
-         moffsets(i+1:nprocs_diagno) = moffsets(i+1:nprocs_diagno) + 1
-         i=i+1
-      END DO
-      mystart = moffsets(myworkid+1)
-      chunk  = mnum(myworkid+1)
-      myend   = mystart + chunk - 1
-#endif
-
-      ! Read the mutual induction file if present
-      iunit = 36
-      IF (luse_mut) THEN
-         CALL safe_open(iunit,ier,TRIM(rog_mut_file),'old','formatted')
-         READ(iunit,'(2I4)') nfl_mut, nextcur
-         IF (ALLOCATED(flux_mut)) DEALLOCATE(flux_mut)
-         ALLOCATE(flux_mut(nfl,nextcur), STAT=ier)
-         DO i = 1, nfl
-            DO ig = 1, nextcur
-               READ(iunit,'(1X,I4,1X,I4,E22.14)') i1,i2,xp
-               flux_mut(i1,i2) = xp
-            END DO
-            IF (i<mystart .or. i>myend) flux_mut(i,:)=0
-         END DO
-         CLOSE(iunit)
-         DO ig = 1, nextcur
-            IF (luse_extcur(ig)) THEN
-               flux_mut(:,ig) = flux_mut(:,ig) * extcur(ig)
-            ELSE
-               flux_mut(:,ig) = 0
-            END IF
-         END DO
-         ncg = nextcur+1
-      END IF
-
-      flux = 0
-      ! Calculate the fields
-      DO i2 = mystart, myend
-         i = workdex(i2)
-         flux(i) = 0
-         !IF (lskip_rogo(i)) CYCLE
-         nseg = nseg_ar(i)
-         DO j = 1, nseg-1
-            DO k = 1, int_step
-               xp = xfl(i,j) + (k-1)*int_fac*dx(i,j)
-               yp = yfl(i,j) + (k-1)*int_fac*dy(i,j)
-               zp = zfl(i,j) + (k-1)*int_fac*dz(i,j)
-               xp1 = xfl(i,j) + k*int_fac*dx(i,j)
-               yp1 = yfl(i,j) + k*int_fac*dy(i,j)
-               zp1 = zfl(i,j) + k*int_fac*dz(i,j)
-               SELECT CASE (int_type)
-                  CASE('midpoint')
-                     IF (lcoil) THEN
-                        DO ig = 1, ncg
-                           IF (.not.luse_extcur(ig)) CYCLE
-                           dtemp = db_midpoint(xp,yp,zp,xp1,yp1,zp1,ig)
-                           flux_mut(i,ig)=flux_mut(i,ig) + dtemp*eff_area(i,j)
-                        END DO
-                     END IF
-                     IF (lvac) CYCLE
-                     ier = 0
-                     dtemp = db_midpoint(xp,yp,zp,xp1,yp1,zp1,ier)
-                     flux(i)=flux(i) + dtemp*eff_area(i,j)
-                  CASE('simpson')
-                     IF (lcoil) THEN
-                        DO ig = 1, ncg
-                           IF (.not.luse_extcur(ig)) CYCLE 
-                           dtemp = db_simpson(xp,yp,zp,xp1,yp1,zp1,ig)
-                           flux_mut(i,ig)=flux_mut(i,ig) + dtemp*eff_area(i,j)
-                        END DO 
-                     END IF
-                     IF (lvac) CYCLE
-                     ier = 0
-                     !IF (myworkid == master) WRITE(6,*) myworkid,i,j,k,xp,yp,zp,xp1,yp1,zp1,eff_area(i,j); CALL FLUSH(6)
-                     dtemp = db_simpson(xp,yp,zp,xp1,yp1,zp1,ier)
-                     flux(i)=flux(i) + dtemp*eff_area(i,j)
-                  CASE('bode')
-                     IF (lcoil) THEN
-                        DO ig = 1, ncg
-                           IF (.not.luse_extcur(ig)) CYCLE
-                           dtemp = db_bode(xp,yp,zp,xp1,yp1,zp1,ig)
-                           flux_mut(i,ig)=flux_mut(i,ig) + dtemp*eff_area(i,j)
-                        END DO
-                     END IF
-                     IF (lvac) CYCLE
-                     ier = 0
-                     dtemp = db_bode(xp,yp,zp,xp1,yp1,zp1,ier)
-                     flux(i)=flux(i) + dtemp*eff_area(i,j)
-               END SELECT
-            END DO
-         END DO
-         !WRITE(6,*) i,flux(i); CALL FLUSH(6)
-      END DO
-      DEALLOCATE(workdex)
-
-      ! Now handle the arrays
-#if defined(MPI_OPT)
-      CALL MPI_BARRIER(MPI_COMM_DIAGNO,ierr_mpi)
-      IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'diagno_rogo3',ierr_mpi)
-      IF (lmut) THEN ! Vacuum part
-         IF (myworkid == master) THEN
-            CALL MPI_REDUCE(MPI_IN_PLACE,flux_mut,nfl*ncg,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_DIAGNO,ierr_mpi)
-         ELSE
-            CALL MPI_REDUCE(flux_mut,flux_mut,nfl*ncg,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_DIAGNO,ierr_mpi)
-         END IF
-      ELSE ! Plasma part
-         IF (myworkid == master) THEN
-            CALL MPI_REDUCE(MPI_IN_PLACE,flux,nfl,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_DIAGNO,ierr_mpi)
-         ELSE
-            CALL MPI_REDUCE(flux,flux,nfl,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_DIAGNO,ierr_mpi)
-         END IF
-      END IF
-      IF (ALLOCATED(mnum)) DEALLOCATE(mnum)
-      IF (ALLOCATED(moffsets)) DEALLOCATE(moffsets)
-#endif
 
       ! Get the total flux
       flux = flux + SUM(flux_mut, DIM=2)
