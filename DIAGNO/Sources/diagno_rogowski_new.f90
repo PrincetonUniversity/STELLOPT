@@ -60,7 +60,7 @@
 #endif
       INTEGER(KIND=BYTE_8) :: chunk
       INTEGER :: ier, i, j, k, iunit, nfl, nsegmx, nseg, ig,&
-                 i1, i2, nfl_mut, ncg
+                 i1, i2, nfl_mut, ncg, nhelp
       INTEGER, ALLOCATABLE :: nseg_ar(:), iflflg(:), idia(:), workdex(:)
       REAL(rprec) :: xp, yp, zp, xp1, yp1, zp1, int_fac
       DOUBLE PRECISION :: dtemp
@@ -195,6 +195,147 @@
          dy(i,1:nseg-1) = yfl(i,2:nseg)-yfl(i,1:nseg-1)
          dz(i,1:nseg-1) = zfl(i,2:nseg)-zfl(i,1:nseg-1)
       END DO
+
+
+!!!!!!!!!!!!!!     NEW PART   !!!!!!!!!!!!!!!!!!!!!!!!!!!
+      ! Count amount of work to do
+      nhelp = 0
+      DO i = 1:nfl
+         DO j = 1, nseg-1
+            nhelp = nhelp + int_step
+         END DO
+      END DO
+
+      ! Allocate the helper
+      ALLOCATE(FLUX_HELP(nhelp), MUT_HELP(nhelp,ncg)
+      ALLOCATE(XP_HELP(nhelp),  YP_HELP(nhelp),  ZP_HELP(nhelp))
+      ALLOCATE(XP1_HELP(nhelp), YP1_HELP(nhelp), ZP1_HELP(nhelp))
+      FLUX_HELP = 0; MUT_HELP = 0
+
+      ! Calculate helpers
+      i2 = 1
+      DO i = 1, nfl
+         DO j = 1, nseg-1
+            DO k = 1, int_step
+               XP_HELP(i2)  = xfl(i,j) + (k-1)*int_fac*dx(i,j)
+               YP_HELP(i2)  = yfl(i,j) + (k-1)*int_fac*dy(i,j)
+               ZP_HELP(i2)  = zfl(i,j) + (k-1)*int_fac*dz(i,j)
+               XP1_HELP(i2) = xfl(i,j) + k*int_fac*dx(i,j)
+               YP1_HELP(i2) = yfl(i,j) + k*int_fac*dy(i,j)
+               ZP1_HELP(i2) = zfl(i,j) + k*int_fac*dz(i,j)
+               i2 = i2 + 1
+            END DO
+         END DO
+      END DO
+
+      ! Divide up work
+      chunk = FLOOR(REAL(nhelp) / REAL(nprocs_diagno))
+      mystart = myworkid*chunk + 1
+      myend = mystart + chunk - 1
+#if defined(MPI_OPT)
+      IF (ALLOCATED(mnum)) DEALLOCATE(mnum)
+      IF (ALLOCATED(moffsets)) DEALLOCATE(moffsets)
+      ALLOCATE(mnum(nprocs_diagno), moffsets(nprocs_diagno))
+      CALL MPI_ALLGATHER(chunk,1,MPI_INTEGER,mnum,1,MPI_INTEGER,MPI_COMM_DIAGNO,ierr_mpi)
+      CALL MPI_ALLGATHER(mystart,1,MPI_INTEGER,moffsets,1,MPI_INTEGER,MPI_COMM_DIAGNO,ierr_mpi)
+      i = 1
+      DO
+         IF ((moffsets(nprocs_diagno)+mnum(nprocs_diagno)-1) == i2) EXIT
+         IF (i == nprocs_diagno) i = 1
+         mnum(i) = mnum(i) + 1
+         moffsets(i+1:nprocs_diagno) = moffsets(i+1:nprocs_diagno) + 1
+         i=i+1
+      END DO
+      mystart = moffsets(myworkid+1)
+      chunk  = mnum(myworkid+1)
+      myend   = mystart + chunk - 1
+#endif
+
+      ! Loop over work (need to imlement skipping)
+      DO i2 = mystart, myend
+         SELECT CASE (int_type)
+            CASE('midpoint')
+               IF (lcoil) THEN
+                  DO ig = 1, ncg
+                     IF (.not.luse_extcur(ig)) CYCLE
+                     MUT_HELP(i2,ig) = db_midpoint(XP_HELP(i2),YP_HELP(i2), ZP_HELP(i2), &
+                                                   XP1_HELP(i2),YP1_HELP(i2), ZP1_HELP(i2),ig)
+                  END DO
+               END IF
+               IF (lvac) CYCLE
+               ig = 0
+               FLUX_HELP(i2) = db_midpoint(XP_HELP(i2),YP_HELP(i2), ZP_HELP(i2), &
+                                           XP1_HELP(i2),YP1_HELP(i2), ZP1_HELP(i2),ig)
+            CASE('simpson')
+               IF (lcoil) THEN
+                  DO ig = 1, ncg
+                     IF (.not.luse_extcur(ig)) CYCLE
+                     MUT_HELP(i2,ig) = db_simpson(XP_HELP(i2),YP_HELP(i2), ZP_HELP(i2), &
+                                                   XP1_HELP(i2),YP1_HELP(i2), ZP1_HELP(i2),ig)
+                  END DO
+               END IF
+               IF (lvac) CYCLE
+               FLUX_HELP(i2) = db_simpson(XP_HELP(i2),YP_HELP(i2), ZP_HELP(i2), &
+                                           XP1_HELP(i2),YP1_HELP(i2), ZP1_HELP(i2),ig)
+            CASE('bode')
+               IF (lcoil) THEN
+                  DO ig = 1, ncg
+                     IF (.not.luse_extcur(ig)) CYCLE
+                     MUT_HELP(i2,ig) = db_bode(XP_HELP(i2),YP_HELP(i2), ZP_HELP(i2), &
+                                                   XP1_HELP(i2),YP1_HELP(i2), ZP1_HELP(i2),ig)
+                  END DO
+               END IF
+               IF (lvac) CYCLE
+               FLUX_HELP(i2) = db_bode(XP_HELP(i2),YP_HELP(i2), ZP_HELP(i2), &
+                                           XP1_HELP(i2),YP1_HELP(i2), ZP1_HELP(i2),ig)
+      END DO
+      DEALLOCATE(XP_HELP, YP_HELP, ZP_HELP, XP1_HELP, YP1_HELP, ZP1_HELP)
+
+      ! Now handle the arrays
+#if defined(MPI_OPT)
+      CALL MPI_BARRIER(MPI_COMM_DIAGNO,ierr_mpi)
+      IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'diagno_rogo3',ierr_mpi)
+      IF (myworkid == master) THEN
+         CALL MPI_REDUCE(MPI_IN_PLACE,FLUX_HELP,nhelp,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_DIAGNO,ierr_mpi)
+      ELSE
+         CALL MPI_REDUCE(FLUX_HELP,FLUX_HELP,nhelp,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_DIAGNO,ierr_mpi)
+         DEALLOCATE(FLUX_HELP)
+      END IF
+      CALL MPI_BARRIER(MPI_COMM_DIAGNO,ierr_mpi)
+      IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'diagno_rogo4',ierr_mpi)
+      IF (myworkid == master) THEN
+         CALL MPI_REDUCE(MPI_IN_PLACE,MUT_HELP,nhelp*ncg,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_DIAGNO,ierr_mpi)
+      ELSE
+         CALL MPI_REDUCE(MUT_HELP,MUT_HELP,nhelp*ncg,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_DIAGNO,ierr_mpi)
+         DEALLOCATE(MUT_HELP)
+      END IF
+      IF (ALLOCATED(mnum)) DEALLOCATE(mnum)
+      IF (ALLOCATED(moffsets)) DEALLOCATE(moffsets)
+#endif
+
+      ! Reasemble the arrays
+      i = 1
+      IF (myworkid == master) THEN
+         DO i2 = 1, nfl
+            flux(i) = 0
+            nseg = nseg_ar(i)
+            IF (lskip_rogo(i)) THEN
+               i = i + (nseg-1)*int_step
+               CYCLE
+            END IF
+            DO j = 1, nseg-1
+               DO k = 1, int_step
+                  flux(i2)=flux(i2) + FLUX_HELP(i)*eff_area(i2,j)
+                  DO ig = 1, ncg
+                     flux_mut(i2,ig)=flux_mut(i2,ig) + MUT_HELP(i,ig)*eff_area(i2,j)
+                  END DO
+               END DO
+            END DO
+         END DO
+         DEALLOCATE(FLUX_HELP)
+      END IF
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       ! Only work on correct number of flux loops
       i = COUNT(lskip_rogo(1:nfl))
