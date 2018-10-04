@@ -1171,6 +1171,58 @@ class MyApp(QMainWindow):
 			self.ax2.set_xlabel('Z [m]')
 			self.ax2.set_ylabel('Ion Temperature [keV]')
 			self.ax2.set_title('Ion Temperature Reconstruction')
+		elif (plot_name == 'MSE_evolution'):
+			x=self.stel_data['MSE_s'].T
+			y=self.stel_data['MSE_target'].T
+			s=self.stel_data['MSE_sigma'].T
+			e = self.stel_data['MSE_equil'].T
+			n = y.shape
+			if len(x.shape)>1:
+				dl = n[1]
+				self.ax2.errorbar(x[:,0],y[:,0],s[:,0],fmt='sk',fillstyle='none')
+				for l in range(dl):
+					self.ax2.plot(x[:,l-1],e[:,l-1],'o',fillstyle='none',color=_plt.cm.brg(l/(dl-1)))
+			else:
+				self.ax2.errorbar(x[:],y[:],s[:],fmt='sk',fillstyle='none')
+				self.ax2.plot(x[:],e[:],'o',fillstyle='none',color='g')
+			self.ax2.set_xlabel('Normalized Flux')
+			self.ax2.set_ylabel('Pitch Angle')
+			self.ax2.set_title('Motional Stark Effect')
+			self.ax2.set_xlim((0,1.6))
+		elif (plot_name == 'MSE_evolution_R'):
+			x=self.stel_data['MSE_R'].T
+			y=self.stel_data['MSE_target'].T
+			s=self.stel_data['MSE_sigma'].T
+			e = self.stel_data['MSE_equil'].T
+			n = y.shape
+			if len(x.shape)>1:
+				dl = n[1]
+				self.ax2.errorbar(x[:,0],y[:,0],s[:,0],fmt='sk',fillstyle='none')
+				for l in range(dl):
+					self.ax2.plot(x[:,l-1],e[:,l-1],'o',fillstyle='none',color=_plt.cm.brg(l/(dl-1)))
+			else:
+				self.ax2.errorbar(x[:],y[:],s[:],fmt='sk',fillstyle='none')
+				self.ax2.plot(x[:],e[:],'o',fillstyle='none',color='g')
+			self.ax2.set_xlabel('R [m]')
+			self.ax2.set_ylabel('Pitch Angle')
+			self.ax2.set_title('Motional Stark Effect')
+		elif (plot_name == 'MSE_evolution_Z'):
+			x=self.stel_data['MSE_Z'].T
+			y=self.stel_data['MSE_target'].T
+			s=self.stel_data['MSE_sigma'].T
+			e = self.stel_data['MSE_equil'].T
+			n = y.shape
+			if len(x.shape)>1:
+				dl = n[1]
+				self.ax2.errorbar(x[:,0],y[:,0],s[:,0],fmt='sk',fillstyle='none')
+				for l in range(dl):
+					self.ax2.plot(x[:,l-1],e[:,l-1],'o',fillstyle='none',color=_plt.cm.brg(l/(dl-1)))
+			else:
+				self.ax2.errorbar(x[:],y[:],s[:],fmt='sk',fillstyle='none')
+				self.ax2.plot(x[:],e[:],'o',fillstyle='none',color='g')
+			self.ax2.set_xlabel('Z [m]')
+			self.ax2.set_ylabel('Pitch Angle')
+			self.ax2.set_title('Motional Stark Effect')
 		elif (plot_name == 'IOTA_evolution'):
 			x=self.stel_data['IOTA_s'].T
 			y=self.stel_data['IOTA_target'].T
