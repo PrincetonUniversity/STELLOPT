@@ -87,7 +87,7 @@ test_stellopt:
 test_stellopt_basic:
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.BASIC
 	@cd $(STELLOPT_TEST_DIR)/BASIC; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.BASIC; rm -f *_opt*
-	@cd $(STELLOPT_TEST_DIR); ./compare_BASIC.py
+	@cd $(STELLOPT_TEST_DIR)/BASIC; ./compare_BASIC.py
 	@echo ""
 
 test_stellopt_beams3d:
@@ -98,7 +98,7 @@ test_stellopt_beams3d:
 test_stellopt_iota_lmdif:
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.IOTA_LMDIF
 	@cd $(STELLOPT_TEST_DIR)/IOTA_LMDIF; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.IOTA_LMDIF; rm -f *_opt*
-	@cd $(STELLOPT_TEST_DIR); ./compare_IOTA_LMDIF.py
+	@cd $(STELLOPT_TEST_DIR)/IOTA_LMDIF; ./compare_IOTA_LMDIF.py
 	@echo ""
 
 test_stellopt_recon_tok:
@@ -109,11 +109,13 @@ test_stellopt_recon_tok:
 test_stellopt_tok_r0_delta:
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.TOK_R0_DELTA
 	@cd $(STELLOPT_TEST_DIR)/TOK_R0_DELTA; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.TOK_R0_DELTA; rm -f *_opt*
+	@cd $(STELLOPT_TEST_DIR)/TOK_R0_DELTA; ./compare_TOK_R0_DELTA.py
 	@echo ""
 
 test_stellopt_tok_r0_rho:
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.TOK_R0_RHO
 	@cd $(STELLOPT_TEST_DIR)/TOK_R0_RHO; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.TOK_R0_RHO; rm -f *_opt*
+	@cd $(STELLOPT_TEST_DIR)/TOK_R0_RHO; ./compare_TOK_R0_RHO.py
 	@echo ""
 
 test_stellopt_qhs_lmdif:
