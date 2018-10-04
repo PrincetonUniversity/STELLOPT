@@ -153,11 +153,8 @@
         WRITE(iunit,"(A)") "/"
       end if
 
-      DO j = li1,li2 
-         !WRITE(iunit, "(9ES22.12E3)") gds2(i,j), gds21(i,j), &
-         !    gds22(i,j), bmag(i,j), jac_gist_inv(i,j), &
-         !    cvdrift(i,j), cvdrift0(i,j), gradpar(i,j), zeta(j)
-         WRITE(iunit, "(9ES22.12E3)") geom(1,j), geom(2,j), geom(3,j), geom(4,j), &
+      DO j = li1,li2-1 
+         WRITE(iunit, "(9(E22.12,2x))") geom(1,j), geom(2,j), geom(3,j), geom(4,j), &
                      geom(5,j), geom(6,j), geom(7,j), geom(8,j), geom(9,j)
       END DO
     
@@ -180,7 +177,7 @@
       IF (opt_target == 'zf') THEN
         ptsm3d_target = target_12f
         !IF (lscreen) WRITE(6,"(2A,F12.7)"),&
-        WRITE(6,"(2A,F12.7)"),&
+        WRITE(6,"(2A,F12.7)")&
           & TRIM(gist_filename),&
           !& TRIM(TRIM(proc_string)//"."//TRIM(num_str)),&
           &", TARGET_12F  : ",target_12f 
@@ -188,18 +185,26 @@
       IF (opt_target == 'nzf') THEN
         ptsm3d_target = target_qst
         !IF (lscreen) WRITE(6,"(A,F12.7)"),"TARGET_QST  : ",target_qst 
-        WRITE(6,"(2A,F12.7)"),&
-          & TRIM(gist_filename),&
+        WRITE(6,"(2A,F12.7)")&
+          & TRIM(gist_filename), &
          ! & TRIM(TRIM(proc_string)//"."//TRIM(num_str)),&
           & " TARGET_QST  : ",target_qst
       END IF
       IF (opt_target == 'combo') THEN
         ptsm3d_target = target_12f+target_qst 
         !IF (lscreen) WRITE(6,"(A,F12.7)"),"PTSM3D_TARGET   : ",ptsm3d_target
-        WRITE(6,"(2A,F12.7)"),&
-          !& TRIM(TRIM(proc_string)//"."//TRIM(num_str)),&
+        WRITE(6,"(2A,F12.7)")&
           & TRIM(gist_filename),&
-          & "PTSM3D_TARGET   : ",ptsm3d_target
+          !& TRIM(TRIM(proc_string)//"."//TRIM(num_str)),&
+          &", TARGET_12F  : ",target_12f 
+        WRITE(6,"(2A,F12.7)")&
+          & TRIM(gist_filename), &
+         ! & TRIM(TRIM(proc_string)//"."//TRIM(num_str)),&
+          & " TARGET_QST  : ",target_qst
+        WRITE(6,"(2A,F12.7)")&
+          !& TRIM(TRIM(proc_string)//"."//TRIM(num_str)),&
+          & TRIM(gist_filename), &
+          & ", PTSM3D_TARGET   : ",ptsm3d_target
       END IF
 
       IF (lscreen) WRITE(6,'(a)') &
