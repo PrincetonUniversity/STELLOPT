@@ -221,7 +221,7 @@
       nhelp = 0
       DO i = 1,nfl
          IF (lskip_flux(i)) CYCLE
-         nhelp = nhelp + int_step*(nseg_ar(i))
+         nhelp = nhelp + int_step*nseg_ar(i)
       END DO
 
       ! Allocate the helper
@@ -269,11 +269,13 @@
       chunk  = mnum(myworkid+1)
       myend   = mystart + chunk - 1
       IF (myend > nhelp) myend = nhelp
+      PRINT *, myworkid, mystart, myend, nhelp
 #endif
 
-      CALL MPI_BARRIER(MPI_COMM_DIAGNO,ierr_mpi)
       ! Loop over work (need to imlement skipping)
       DO i2 = mystart, myend
+         PRINT *, myworkid, i2
+         CALL FLUSH(6)
          SELECT CASE (int_type)
             CASE('midpoint')
                IF (lcoil) THEN
@@ -316,7 +318,7 @@
       ! Now handle the arrays
 #if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_DIAGNO,ierr_mpi)
-      IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'diagno_rogo3',ierr_mpi)
+      IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'diagno_flux3',ierr_mpi)
       IF (myworkid == master) THEN
          CALL MPI_REDUCE(MPI_IN_PLACE,FLUX_HELP,nhelp,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_DIAGNO,ierr_mpi)
       ELSE
@@ -324,7 +326,7 @@
          DEALLOCATE(FLUX_HELP)
       END IF
       CALL MPI_BARRIER(MPI_COMM_DIAGNO,ierr_mpi)
-      IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'diagno_rogo4',ierr_mpi)
+      IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'diagno_flux4',ierr_mpi)
       IF (myworkid == master) THEN
          CALL MPI_REDUCE(MPI_IN_PLACE,MUT_HELP,nhelp*ncg,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_DIAGNO,ierr_mpi)
       ELSE

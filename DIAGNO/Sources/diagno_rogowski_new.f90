@@ -253,7 +253,6 @@
       IF (myend > nhelp) myend = nhelp
 #endif
 
-      CALL MPI_BARRIER(MPI_COMM_DIAGNO,ierr_mpi)
       ! Loop over work (need to imlement skipping)
       DO i2 = mystart, myend
          SELECT CASE (int_type)
