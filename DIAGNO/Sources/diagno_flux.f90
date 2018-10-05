@@ -269,13 +269,10 @@
       chunk  = mnum(myworkid+1)
       myend   = mystart + chunk - 1
       IF (myend > nhelp) myend = nhelp
-      PRINT *, myworkid, mystart, myend, nhelp
 #endif
 
       ! Loop over work (need to imlement skipping)
       DO i2 = mystart, myend
-         PRINT *, myworkid, i2
-         CALL FLUSH(6)
          SELECT CASE (int_type)
             CASE('midpoint')
                IF (lcoil) THEN
@@ -298,6 +295,7 @@
                   END DO
                END IF
                IF (lvac) CYCLE
+               ig = 0
                FLUX_HELP(i2) = dflux_simpson(XP_HELP(i2),YP_HELP(i2), ZP_HELP(i2), &
                                            XP1_HELP(i2),YP1_HELP(i2), ZP1_HELP(i2),ig)
             CASE('bode')
@@ -309,6 +307,7 @@
                   END DO
                END IF
                IF (lvac) CYCLE
+               ig = 0
                FLUX_HELP(i2) = dflux_bode(XP_HELP(i2),YP_HELP(i2), ZP_HELP(i2), &
                                            XP1_HELP(i2),YP1_HELP(i2), ZP1_HELP(i2),ig)
          END SELECT

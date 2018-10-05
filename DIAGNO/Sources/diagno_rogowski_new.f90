@@ -277,6 +277,7 @@
                   END DO
                END IF
                IF (lvac) CYCLE
+               ig = 0
                FLUX_HELP(i2) = db_simpson(XP_HELP(i2),YP_HELP(i2), ZP_HELP(i2), &
                                            XP1_HELP(i2),YP1_HELP(i2), ZP1_HELP(i2),ig)
             CASE('bode')
@@ -288,6 +289,7 @@
                   END DO
                END IF
                IF (lvac) CYCLE
+               ig = 0
                FLUX_HELP(i2) = db_bode(XP_HELP(i2),YP_HELP(i2), ZP_HELP(i2), &
                                            XP1_HELP(i2),YP1_HELP(i2), ZP1_HELP(i2),ig)
          END SELECT
