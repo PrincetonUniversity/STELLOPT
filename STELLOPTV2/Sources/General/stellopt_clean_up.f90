@@ -33,6 +33,7 @@
                              restart_flag, readin_flag, timestep_flag, &
                              output_flag, cleanup_flag, reset_jacdt_flag
 !                             animec_flag, flow_flag
+      USE read_wout_mod, ONLY: read_wout_file, write_wout_file, read_wout_deallocate
       USE fdjac_mod, ONLY: flag_singletask, flag_cleanup, &
                            JAC_CLEANUP => flag_cleanup_jac,&
                            LEV_CLEANUP => flag_cleanup_lev
@@ -107,8 +108,12 @@
                           !IF (TRIM(equil_type)=='animec') vctrl_array(1) = vctrl_array(1) + animec_flag
                           !IF (TRIM(equil_type)=='flow' .or. TRIM(equil_type)=='satire') vctrl_array(1) = vctrl_array(1) + flow_flag
                          CALL runvmec(vctrl_array,proc_string,.false.,MPI_COMM_SELF,'')
-                     CASE('parvmec','paravmec','vmec2000','vboot','vmec2000_oneeq')
+                     CASE('parvmec','paravmec','vmec2000','vboot')
                          CALL stellopt_paraexe('paravmec_write',proc_string,.false.)
+                     CASE('vmec2000_oneeq')
+                         CALL read_wout_deallocate
+                         CALL read_wout_file(TRIM(proc_string_old),iflag)
+                         CALL write_wout_file('wout_'//TRIM(proc_string)//'.nc',iflag)
                   END SELECT
                   ier=vctrl_array(2)
                   iflag = ier
@@ -273,8 +278,12 @@
                      !IF (TRIM(equil_type)=='animec') vctrl_array(1) = vctrl_array(1) + animec_flag
                      !IF (TRIM(equil_type)=='flow' .or. TRIM(equil_type)=='satire') vctrl_array(1) = vctrl_array(1) + flow_flag
                      CALL runvmec(vctrl_array,proc_string,.false.,MPI_COMM_SELF,'')
-                  CASE('parvmec','paravmec','vmec2000','vboot','vmec2000_oneeq')
-                     CALL stellopt_paraexe('paravmec_write',proc_string,.false.)
+                     CASE('parvmec','paravmec','vmec2000','vboot')
+                         CALL stellopt_paraexe('paravmec_write',proc_string,.false.)
+                     CASE('vmec2000_oneeq')
+                         CALL read_wout_deallocate
+                         CALL read_wout_file(TRIM(proc_string_old),iflag)
+                         CALL write_wout_file('wout_'//TRIM(proc_string)//'.nc',iflag)
                END SELECT
                iflag = ier_paraexe
                iflag = ier
