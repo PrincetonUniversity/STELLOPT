@@ -370,6 +370,44 @@
 
       END SUBROUTINE readw_and_open
 
+      SUBROUTINE write_wout_file(file_or_extension, ierr)
+      USE safe_open_mod
+      IMPLICIT NONE
+!------------------------------------------------
+!   D u m m y   A r g u m e n t s
+!------------------------------------------------
+      INTEGER, INTENT(out) :: ierr
+      CHARACTER(LEN=*), INTENT(in) :: file_or_extension
+!------------------------------------------------
+!   L o c a l   V a r i a b l e s
+!------------------------------------------------
+      INTEGER, PARAMETER :: iunit_init = 10
+      INTEGER :: iunit
+      LOGICAL :: isnc
+      CHARACTER(len=LEN_TRIM(file_or_extension)+10) :: filename
+!------------------------------------------------
+!
+!     THIS SUBROUTINE WRITES THE WOUT FILE FROM 
+!     THE DATA IN THE READ_WOUT MODULE
+!
+!     FIRST, CHECK IF THIS IS A FULLY-QUALIFIED PATH NAME
+!     MAKE SURE wout IS NOT EMBEDDED IN THE NAME (PERVERSE USER...)
+!
+      filename = 'wout'
+      CALL parse_extension(filename, file_or_extension, isnc)
+      IF (isnc) THEN
+#if defined(NETCDF)
+         CALL write_wout_nc(filename, ierr)
+#else
+         PRINT *, "NETCDF wout file can not be opened on this platform"
+         ierr = -100
+#endif
+      ELSE
+         IF (ierr .eq. 0) CALL write_wout_text(filename, ierr)
+      END IF
+
+      END SUBROUTINE write_wout_file
+
 
       SUBROUTINE readw_only(iunit, ierr, iopen)
       IMPLICIT NONE
@@ -1530,7 +1568,7 @@
       iounit = 0
       ierr = 0
       CALL safe_open(iounit, ierr,                                             &
-     &               'wout_' // TRIM(filename) // '.txt',                      &
+     &               TRIM(filename),                      &
      &               'replace', 'formatted')
 
       CALL assert_eq(0, ierr, 'Error opening text wout file in ' //            &
@@ -1837,7 +1875,7 @@
 !     already been read in.
 
       iwout0 = 0     
-      CALL cdf_open(nwout,'wout_' // TRIM(filename) // '.nc','w',iwout0)
+      CALL cdf_open(nwout,TRIM(filename),'w',iwout0)
       IF (iwout0 .ne. 0) STOP 'Error opening wout.nc file VMEC WROUT'
 
 !      IF (.not. lrecon) THEN
