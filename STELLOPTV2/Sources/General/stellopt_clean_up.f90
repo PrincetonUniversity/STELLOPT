@@ -107,7 +107,7 @@
                           !IF (TRIM(equil_type)=='animec') vctrl_array(1) = vctrl_array(1) + animec_flag
                           !IF (TRIM(equil_type)=='flow' .or. TRIM(equil_type)=='satire') vctrl_array(1) = vctrl_array(1) + flow_flag
                          CALL runvmec(vctrl_array,proc_string,.false.,MPI_COMM_SELF,'')
-                     CASE('parvmec','paravmec','vmec2000','vboot')
+                     CASE('parvmec','paravmec','vmec2000','vboot','vmec2000_oneeq')
                          CALL stellopt_paraexe('paravmec_write',proc_string,.false.)
                   END SELECT
                   ier=vctrl_array(2)
@@ -273,7 +273,7 @@
                      !IF (TRIM(equil_type)=='animec') vctrl_array(1) = vctrl_array(1) + animec_flag
                      !IF (TRIM(equil_type)=='flow' .or. TRIM(equil_type)=='satire') vctrl_array(1) = vctrl_array(1) + flow_flag
                      CALL runvmec(vctrl_array,proc_string,.false.,MPI_COMM_SELF,'')
-                  CASE('parvmec','paravmec','vmec2000','vboot')
+                  CASE('parvmec','paravmec','vmec2000','vboot','vmec2000_oneeq')
                      CALL stellopt_paraexe('paravmec_write',proc_string,.false.)
                END SELECT
                iflag = ier_paraexe
