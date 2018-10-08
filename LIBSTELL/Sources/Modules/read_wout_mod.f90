@@ -305,9 +305,9 @@
       END INTERFACE
 
 #if defined(NETCDF)
-      PRIVATE :: read_wout_text, read_wout_nc
+      PRIVATE :: read_wout_text, read_wout_nc, write_wout_text, write_wout_nc
 #else
-      PRIVATE :: read_wout_text
+      PRIVATE :: read_wout_text, write_wout_text
 #endif
       PRIVATE :: norm_term_flag, bad_jacobian_flag,                     &
                  more_iter_flag, jac75_flag
@@ -1878,6 +1878,8 @@
       CALL cdf_open(nwout,TRIM(filename),'w',iwout0)
       IF (iwout0 .ne. 0) STOP 'Error opening wout.nc file VMEC WROUT'
 
+
+      nstore_seq = 100
 !      IF (.not. lrecon) THEN
 !         itse = 0
 !         imse2 = 0
