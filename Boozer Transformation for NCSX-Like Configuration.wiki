@@ -4,7 +4,7 @@ This tutorial will walk the user through running [[BOOZ_XFORM]] on the free boun
 ----
 
 =Edit the input text file.=
-The input file ([[examples\in_booz.ncsx_c09r00_free]]) controls the execution of the [[BOOZ_XFORM]] code. The suffix of the input file will be appended to each of the output files as we will see after execution. Our input file looks something like
+The input file ([[examples/in_booz.ncsx_c09r00_free|in_booz.ncsx_c09r00_free]]) controls the execution of the [[BOOZ_XFORM]] code. The suffix of the input file will be appended to each of the output files as we will see after execution. Our input file looks something like
 {{{
 72 24
 'ncsx_c09r00_free'
