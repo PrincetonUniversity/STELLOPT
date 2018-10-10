@@ -31,7 +31,7 @@
                                 lfix_ntor, llmdif, lgade, lswarm, lmap, lbasic, &
                                 lqas, lneed_booz, lqps, lhelical, lballoon, lneo, &
                                 ldkes, lbootsj, ltxport, lmap_plane, ljdotb0, liota, &
-                                lkink, lvaciota, ljcurv, loutput_harm, lmode
+                                lkink, lvaciota, ljcurv, loutput_harm, lmode, lorbit
       INTEGER                :: m,n,ns
       REAL(rprec)            :: bound_min, bound_max, var, var_min, var_max, &
                                 temp, rho_exp,r1t,r2t,z1t, delta, filter_harm
@@ -46,6 +46,7 @@
       CHARACTER(LEN=*), PARAMETER :: vecvar2 = "(21X,2(2X,A,'(',I3.3,')',1X,'=',1X,ES22.12E3))"
       CHARACTER(LEN=*), PARAMETER :: arrvar  = "(2X,A,'(',I4.3,',',I4.3,') = T',3(2X,A,'(',I4.3,',',I4.3,') = ',1X,ES22.12E3))"
       CHARACTER(LEN=*), PARAMETER :: arrvar2 = "(27x,3(2X,A,'(',I4.3,',',I4.3,') = ',1X,ES22.12E3))"
+      CHARACTER(LEN=*), PARAMETER :: target2 = "(2(2X,A,'(',I3.3,')',1X,'=',1X,F8.4))"
       CHARACTER(LEN=*), PARAMETER :: target3 = "(3(2X,A,'(',I3.3,')',1X,'=',1X,F8.4))"
       
       REAL(rprec), PARAMETER :: VMEC2STEL_VERSION = 1.31_rprec
@@ -84,6 +85,7 @@
       ljcurv = .FALSE.
       lkink = .FALSE.
       lvaciota = .FALSE.
+      lorbit = .FALSE.
       loutput_harm = .FALSE.
       bound_min = -1.0
       bound_max = 2.0
@@ -206,6 +208,8 @@
                liota = .TRUE.
             CASE ("-kink")
                lkink = .TRUE.
+            CASE ("-orbit")
+               lorbit = .TRUE.
             CASE ("-harm")
                loutput_harm = .TRUE.
             CASE ("-help","-h")
@@ -241,6 +245,7 @@
                WRITE(6,*) '   -jdotb0           Minimize <JdotB>'
                WRITE(6,*) '   -jcurv            Minimize <Jcurv>'
                WRITE(6,*) '   -vaciota          Vacuum Iota (-S12/S11)'
+               WRITE(6,*) '   -orbit            Orbit (BEAMS3D) Target'
                WRITE(6,*) '   -help             This help message'
                STOP
             CASE DEFAULT
@@ -706,6 +711,30 @@
                      END IF
                   END DO
                END DO
+               ! Add in RBC(n,m=0) modes
+               m=0
+               DO n = 0, ntor
+                  IF (rbc(n,0) .ne. 0 .or. zbs(n,0) .ne. 0) THEN
+                  var = rbc(n,0)
+                     var_min = bound_min*var
+                     var_max = bound_max*var
+                     IF (var_max < var_min) THEN
+                        temp = var_max
+                        var_max = var_min
+                        var_min = temp
+                     END IF
+                     WRITE(6,arrvar) 'LBOUND_OPT',n,m,'RBC_MIN',n,m,var_min,'RBC_MAX',n,m,var_max,'DBOUND_OPT',n,m,1.0
+                     var = zbs(n,0)
+                     var_min = bound_min*var
+                     var_max = bound_max*var
+                     IF (var_max < var_min) THEN
+                        temp = var_max
+                        var_max = var_min
+                        var_min = temp
+                     END IF
+                     WRITE(6,arrvar2) 'ZBS_MIN',n,m,var_min,'ZBS_MAX',n,m,var_max
+                  END IF
+               END DO
             END IF
          END IF
       ELSE IF (lvmec .and. lmap_plane) THEN
@@ -883,6 +912,21 @@
          WRITE(6,'(2X,A)') 'TARGET_KINK(02) = 1.0E-3  SIGMA_KINK(02) = 1.0   ! terpsichore_input_01'
          WRITE(6,'(4X,A)') 'NJ_KINK(02) = 256 NK_KINK(02) = 256'
          WRITE(6,'(4X,A)') 'MLMNS_KINK(02) = 76 LSSD_KINK(02) = 4096 LSSL_KINK(02) = 4096'
+      END IF
+      IF (lorbit) THEN
+         WRITE(6,'(A)')'!------------------------------------------------------------------------'
+         WRITE(6,'(A)')'!       ORBIT (BEAMS3D) OPTIMIZATION'
+         WRITE(6,'(A)')'!          ASSUMES ALPHAS'
+         WRITE(6,'(A)')'!------------------------------------------------------------------------'
+         WRITE(6,'(2X,A)') 'MASS_ORBIT = 6.64465675E-27'
+         WRITE(6,'(2X,A)') 'Z_ORBIT = 2'
+         WRITE(6,'(2X,A)') 'NU_ORBIT = 16'
+         WRITE(6,'(2X,A)') 'NV_ORBIT = 16'
+         WRITE(6,target2) 'TARGET_ORBIT',2,0.0,'SIGMA_ORBIT',2,1.0
+         WRITE(6,'(2X,A)') 'NP_ORBIT = 8'
+         DO i = 1, 8
+            WRITE(6,target2) 'VLL_ORBIT',i,1.0,'VPERP_ORBIT',i,1.0
+         END DO
       END IF
       IF (ltxport) THEN
          WRITE(6,'(A)')'!------------------------------------------------------------------------'
