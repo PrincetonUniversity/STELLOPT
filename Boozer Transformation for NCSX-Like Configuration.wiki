@@ -1,21 +1,21 @@
-=Tutorial: Boozer Transformation[[image:ncsx_fieldlines.jpg width="240" height="172" align="right"]]= 
+=Tutorial: Boozer Transformation{{images/ncsx_fieldlines.jpg}}= 
 This tutorial will walk the user through running [[BOOZ_XFORM]] on the free boundary equilibrium generated in the [[VMEC Free Boundary Run|VMEC Free Boundary Tutorial]]. For this example the National Compact Stellarator Experiment (NCSX) configuration will be used. This machine is stellarator symmetric with a periodicity of three.
 
 ----
 
 # __**Edit the input text file.**__
 > ﻿The input file ([[file:in_booz.ncsx_c09r00_free]]) controls the execution of the [[BOOZ_XFORM]] code. The suffix of the input file will be appended to each of the output files as we will see after execution. Our input file looks something like
-> [[code format="fortran"]]
+{{{
 72 24
 'ncsx_c09r00_free'
 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 
 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 
 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 
 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99
-[[code]]
+}}}
 # __**Execute the code.**__
 > To execute the code simply pass the name of the in_booz file to the executable.
-> [[code format="bash"]]
+{{{
 >~/bin_847/xbooz_xform in_booz.ncsx_c09r00_free
   0 <= mboz <=   71    -24 <= nboz <=   24
   nu_boz =   290 nv_boz =    98
@@ -221,10 +221,11 @@ This tutorial will walk the user through running [[BOOZ_XFORM]] on the free boun
  TIME IN BOOZER TRANSFORM CODE:    3.12E+02 SEC
             
 >                                                                   
-[[code]]
+}}}
+
 # __**Examine the output.**__
 > For this example three files were created (boozmn.ncsx_c09r00_free, RZ_BOOZER_VPLANE 1.txt, and RZ_VMEC_VPLANE 1.txt). The RZ files contain a set of points defining the VMEC and BOOZER boundaries respectively. The boozmn file contains the output from the BOOZ_XFORM code. Examination of the netCDF file shows it has the following format
-> [[code format="c"]]
+{{{
  netcdf boozmn_ncsx_c09r00_free {
  dimensions:
  dim_00038 = 38 ;
@@ -261,4 +262,4 @@ This tutorial will walk the user through running [[BOOZ_XFORM]] on the free boun
  double pmns_b(pack_rad, mn_modes) ;
  double gmn_b(pack_rad, mn_modes) ;
  }
-[[code]]
+}}}
