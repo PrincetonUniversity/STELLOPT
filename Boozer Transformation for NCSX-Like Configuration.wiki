@@ -3,8 +3,8 @@ This tutorial will walk the user through running [[BOOZ_XFORM]] on the free boun
 
 ----
 
-# __**Edit the input text file.**__
-> ﻿The input file ([[file:in_booz.ncsx_c09r00_free]]) controls the execution of the [[BOOZ_XFORM]] code. The suffix of the input file will be appended to each of the output files as we will see after execution. Our input file looks something like
+=Edit the input text file.=
+The input file ([[examples\in_booz.ncsx_c09r00_free]]) controls the execution of the [[BOOZ_XFORM]] code. The suffix of the input file will be appended to each of the output files as we will see after execution. Our input file looks something like
 {{{
 72 24
 'ncsx_c09r00_free'
@@ -13,8 +13,8 @@ This tutorial will walk the user through running [[BOOZ_XFORM]] on the free boun
 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 
 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99
 }}}
-# __**Execute the code.**__
-> To execute the code simply pass the name of the in_booz file to the executable.
+=Execute the code.=
+To execute the code simply pass the name of the in_booz file to the executable.
 {{{
 >~/bin_847/xbooz_xform in_booz.ncsx_c09r00_free
   0 <= mboz <=   71    -24 <= nboz <=   24
@@ -223,8 +223,8 @@ This tutorial will walk the user through running [[BOOZ_XFORM]] on the free boun
 >                                                                   
 }}}
 
-# __**Examine the output.**__
-> For this example three files were created (boozmn.ncsx_c09r00_free, RZ_BOOZER_VPLANE 1.txt, and RZ_VMEC_VPLANE 1.txt). The RZ files contain a set of points defining the VMEC and BOOZER boundaries respectively. The boozmn file contains the output from the BOOZ_XFORM code. Examination of the netCDF file shows it has the following format
+=Examine the output.=
+For this example three files were created (boozmn.ncsx_c09r00_free, RZ_BOOZER_VPLANE 1.txt, and RZ_VMEC_VPLANE 1.txt). The RZ files contain a set of points defining the VMEC and BOOZER boundaries respectively. The boozmn file contains the output from the BOOZ_XFORM code. Examination of the netCDF file shows it has the following format
 {{{
  netcdf boozmn_ncsx_c09r00_free {
  dimensions:
