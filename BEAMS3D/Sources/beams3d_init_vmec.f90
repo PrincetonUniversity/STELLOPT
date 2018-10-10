@@ -254,6 +254,7 @@
             IF (uflx<0)  uflx = uflx+pi2
             U_ARR(i,j,k) = uflx
             ! Maybe assume s<1 here so in domain? Then leave commented below.
+            IF (sflx > 1) sflx = 1
             IF (nte > 0) CALL EZspline_interp(TE_spl_s,sflx,TE(i,j,k),ier)
             IF (nne > 0) CALL EZspline_interp(NE_spl_s,sflx,NE(i,j,k),ier)
             IF (nti > 0) CALL EZspline_interp(TI_spl_s,sflx,TI(i,j,k),ier)
@@ -340,54 +341,54 @@
       DEALLOCATE(moffsets)
 
       ! Smooth edge data
-      IF (lplasma_only .and. (mylocalid == mylocalmaster)) THEN
-         DO j = 1, nphi
-            DO i = 2, nr-1
-               DO k = 2, nz-1
-                  IF ((S_ARR(i,j,k+1) .lt. 1.5)) THEN
-                     B_R(i,j,k) = B_R(i,j,k+1)
-                     B_PHI(i,j,k) = B_PHI(i,j,k+1)
-                     B_Z(i,j,k) = B_Z(i,j,k+1)
-                     EXIT
-                  END IF
-               END DO
-               DO k = nz-1, 2,-1
-                  IF ((S_ARR(i,j,k-1) .lt. 1.5)) THEN
-                     B_R(i,j,k) = B_R(i,j,k-1)
-                     B_PHI(i,j,k) = B_PHI(i,j,k-1)
-                     B_Z(i,j,k) = B_Z(i,j,k-1)
-                     EXIT
-                  END IF
-               END DO
-            END DO
-            DO k = 2,nz-1
-               DO i = 2, nr-1
-                  IF ((S_ARR(i+1,j,k) .lt. 1.5)) THEN
-                     B_R(i,j,k) = B_R(i+1,j,k)
-                     B_PHI(i,j,k) = B_PHI(i+1,j,k)
-                     B_Z(i,j,k) = B_Z(i+1,j,k)
-                     EXIT
-                  END IF
-               END DO
-               DO i = nr-1, 2, -1
-                  IF ((S_ARR(i-1,j,k) .lt. 1.5)) THEN
-                     B_R(i,j,k) = B_R(i-1,j,k)
-                     B_PHI(i,j,k) = B_PHI(i-1,j,k)
-                     B_Z(i,j,k) = B_Z(i-1,j,k)
-                     EXIT
-                  END IF
-               END DO
-            END DO
-         END DO
-      END IF   
+!      IF (lplasma_only .and. (mylocalid == mylocalmaster)) THEN
+!         DO j = 1, nphi
+!            DO i = 2, nr-1
+!               DO k = 2, nz-1
+!                  IF ((S_ARR(i,j,k+1) .lt. 1.5)) THEN
+!                     B_R(i,j,k) = B_R(i,j,k+1)
+!                     B_PHI(i,j,k) = B_PHI(i,j,k+1)
+!                     B_Z(i,j,k) = B_Z(i,j,k+1)
+!                     EXIT
+!                  END IF
+!               END DO
+!               DO k = nz-1, 2,-1
+!                  IF ((S_ARR(i,j,k-1) .lt. 1.5)) THEN
+!                     B_R(i,j,k) = B_R(i,j,k-1)
+!                     B_PHI(i,j,k) = B_PHI(i,j,k-1)
+!                     B_Z(i,j,k) = B_Z(i,j,k-1)
+!                     EXIT
+!                  END IF
+!               END DO
+!            END DO
+!            DO k = 2,nz-1
+!               DO i = 2, nr-1
+!                  IF ((S_ARR(i+1,j,k) .lt. 1.5)) THEN
+!                     B_R(i,j,k) = B_R(i+1,j,k)
+!                     B_PHI(i,j,k) = B_PHI(i+1,j,k)
+!                     B_Z(i,j,k) = B_Z(i+1,j,k)
+!                     EXIT
+!                  END IF
+!               END DO
+!               DO i = nr-1, 2, -1
+!                  IF ((S_ARR(i-1,j,k) .lt. 1.5)) THEN
+!                     B_R(i,j,k) = B_R(i-1,j,k)
+!                     B_PHI(i,j,k) = B_PHI(i-1,j,k)
+!                     B_Z(i,j,k) = B_Z(i-1,j,k)
+!                     EXIT
+!                  END IF
+!               END DO
+!            END DO
+!         END DO
+!      END IF   
       
       ! Broadcast the updated magnetic field to other members
-      IF (lplasma_only) THEN
-         CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
-         CALL MPI_BCAST(B_R,nr*nphi*nz,MPI_DOUBLE_PRECISION,mylocalmaster,MPI_COMM_LOCAL,ierr_mpi)
-         CALL MPI_BCAST(B_PHI,nr*nphi*nz,MPI_DOUBLE_PRECISION,mylocalmaster,MPI_COMM_LOCAL,ierr_mpi)
-         CALL MPI_BCAST(B_Z,nr*nphi*nz,MPI_DOUBLE_PRECISION,mylocalmaster,MPI_COMM_LOCAL,ierr_mpi)
-      END IF
+!      IF (lplasma_only) THEN
+!         CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
+!         CALL MPI_BCAST(B_R,nr*nphi*nz,MPI_DOUBLE_PRECISION,mylocalmaster,MPI_COMM_LOCAL,ierr_mpi)
+!         CALL MPI_BCAST(B_PHI,nr*nphi*nz,MPI_DOUBLE_PRECISION,mylocalmaster,MPI_COMM_LOCAL,ierr_mpi)
+!         CALL MPI_BCAST(B_Z,nr*nphi*nz,MPI_DOUBLE_PRECISION,mylocalmaster,MPI_COMM_LOCAL,ierr_mpi)
+!      END IF
 
       CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)
       CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
