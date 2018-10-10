@@ -52,7 +52,7 @@
       IF (iflag < 0) RETURN
       IF (lscreen) WRITE(6,'(a)') ' ----------------------------  ECE (TRAVIS) CALCULATION  -------------------------'
       SELECT CASE(TRIM(equil_type))
-         CASE('vmec2000','animec','flow','satire','parvmec','paravmec','vboot')
+         CASE('vmec2000','animec','flow','satire','parvmec','paravmec','vboot','vmec2000_oneeq')
 !DEC$ IF DEFINED (TRAVIS)
             ! Load equilibrium
             equiname = 'wout_'//TRIM(proc_string)//'.nc'
