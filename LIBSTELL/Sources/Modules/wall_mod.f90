@@ -177,9 +177,7 @@
          DO v = 1, nv
             DO i = 1, mn
                th = pi2*DBLE(u-1)/DBLE(nu)
-               !zt = pi2*DBLE(v-1)/DBLE(nv)
-               zt = pi2*DBLE(v-1-nv2)/DBLE(nv)
-               !PRINT *,zt
+               zt = pi2*DBLE(v-1)/DBLE(nv)
                r_temp(u,v) = r_temp(u,v) + Rmn(i)*DCOS(xm(i)*th+xn(i)*zt)
                z_temp(u,v) = z_temp(u,v) + Zmn(i)*DSIN(xm(i)*th+xn(i)*zt)
             END DO
