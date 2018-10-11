@@ -93,7 +93,7 @@
 #######################################################################
 #            COILOPT++ Options
 #######################################################################
-  LCOILOPT = F
+  LCOILOPT = T
   COILOPT_INC = -I$(COILOPT_PATH)
   COILOPTPP_DIR = $(COILOPT_PATH)
   LIB_COILOPTPP = libcoilopt++.a
@@ -111,7 +111,7 @@
 #######################################################################
 #            TRAVIS Options
 #######################################################################
-  LTRAVIS= F
+  LTRAVIS= T
   TRAVIS_DIR = $(TRAVIS_PATH)
   LIB_TRAVIS = libtravis64_sopt.a
   LIB_MCONF  = libmconf64.a
