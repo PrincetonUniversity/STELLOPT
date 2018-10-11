@@ -70,7 +70,7 @@
       IF (iflag < 0) RETURN
       IF (lscreen) WRITE(6,'(a)') ' ---------------------  BOOTSTRAP CALCULATION USING SFINCS  ------------------'
       SELECT CASE(TRIM(equil_type))
-         CASE('vmec2000','animec','flow','satire','parvmec','paravmec','vboot')
+         CASE('vmec2000','animec','flow','satire','parvmec','paravmec','vboot','vmec2000_oneeq')
 
             base_directory_string = 'sfincs_'//TRIM(proc_string)
             IF (myworkid == master) CALL execute_command_line('mkdir -p ' //TRIM(base_directory_string)) ! The -p blocks a warning message if the directory already exists.

@@ -25,6 +25,7 @@
                              output_flag, cleanup_flag, reset_jacdt_flag
 !                             animec_flag, flow_flag
       USE vmec_main, ONLY:  multi_ns_grid
+      USE read_wout_mod, ONLY: read_wout_file, write_wout_file, read_wout_deallocate
       USE mpi_params                                                    ! MPI
       IMPLICIT NONE
       
@@ -44,11 +45,11 @@
       
 !-----------------------------------------------------------------------
 !     Local Variables
-!        ier         Error flag
+!        iflag       Error flag
 !        iunit       File unit number
 !----------------------------------------------------------------------
       LOGICAL ::  lscreen
-      INTEGER ::  ier, nvar_in, dex, dex2, ik, istat, iunit, pass, mf,nf
+      INTEGER ::  nvar_in, dex, dex2, ik, istat, iunit, pass, mf,nf
       INTEGER ::  vctrl_array(5)
       REAL(rprec) :: norm_aphi, norm_am, norm_ac, norm_ai, norm_ah,&
                      norm_at, norm_ne, norm_te, norm_ti, norm_th, &
@@ -296,8 +297,11 @@
                   iflag = ier_paraexe
                   IF (lscreen .and. lverb) WRITE(6,*)  '-------------------------  PARAVMEC CALCULATION DONE  -----------------------'
                ELSE
-                  proc_string = TRIM(id_string) // '_opt0'
-                  ier = 0
+                  CALL read_wout_deallocate
+                  CALL read_wout_file(TRIM(id_string)//'_opt0',iflag)
+                  CALL write_wout_file('wout_'//TRIM(proc_string)//'.nc',iflag)
+                  CALL stellopt_prof_to_vmec(proc_string,iflag)
+                  iflag = 0
                END IF
             CASE('spec')
          END SELECT
