@@ -246,15 +246,22 @@
          ! outside the VMEC domain.
          CALL GetBcyl(raxis_g(i),phiaxis(j),zaxis_g(k),&
                       br, bphi, bz, SFLX=sflx,UFLX=uflx,info=ier)
-         IF (ier == 0 .and. bphi /= 0) THEN
-            B_R(i,j,k)   = br
-            B_PHI(i,j,k) = bphi
-            B_Z(i,j,k)   = bz
+         IF (ier == 0 .and. bphi /= 0) THEN ! We have field data
+            ! Save Grid data
             S_ARR(i,j,k) = sflx
             IF (uflx<0)  uflx = uflx+pi2
             U_ARR(i,j,k) = uflx
-            ! Maybe assume s<1 here so in domain? Then leave commented below.
-            IF (sflx > 1) sflx = 1
+            ! Handle equilibrium data
+            IF (sflx <=1.0) THEN ! Inside equilibrium
+               B_R(i,j,k)   = br
+               B_PHI(i,j,k) = bphi
+               B_Z(i,j,k)   = bz
+            ELSE IF (lplasma_only) THEN  ! Overwrite data outside
+               B_R(i,j,k)   = br
+               B_PHI(i,j,k) = bphi
+               B_Z(i,j,k)   = bz
+               sflx = 1 ! Assume s=1 for lplasma_only
+            END IF
             IF (nte > 0) CALL EZspline_interp(TE_spl_s,sflx,TE(i,j,k),ier)
             IF (nne > 0) CALL EZspline_interp(NE_spl_s,sflx,NE(i,j,k),ier)
             IF (nti > 0) CALL EZspline_interp(TI_spl_s,sflx,TI(i,j,k),ier)
@@ -263,7 +270,9 @@
             B_R(i,j,k)   = 0
             B_PHI(i,j,k) = 1
             B_Z(i,j,k)   = 0
-         ELSE IF (ier == -3 .or. bphi == 0) THEN
+         END IF
+         ! virtual casing
+         IF (.not. lplasma_only .and. sflx > 1) THEN
             xaxis_vc = raxis_g(i)*cos(phiaxis(j))
             yaxis_vc = raxis_g(i)*sin(phiaxis(j))
             zaxis_vc = zaxis_g(k)
