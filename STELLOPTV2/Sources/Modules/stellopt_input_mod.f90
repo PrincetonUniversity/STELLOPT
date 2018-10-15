@@ -925,10 +925,9 @@
       IF (istat /= 0) THEN
          backspace(iunit)
          read(iunit,fmt='(A)') line
-         write(6,'(A)') &
-              'Invalid line in namelist: '//TRIM(line)
+         write(6,'(A)') 'Invalid line in namelist: '//TRIM(line)
+         CALL handle_err(NAMELIST_READ_ERR,'OPTIMUM in: '//TRIM(filename),istat)
       END IF
-      IF (istat /= 0) CALL handle_err(NAMELIST_READ_ERR,'OPTIMUM in: '//TRIM(filename),istat)
       CALL FLUSH(iunit)
       CLOSE(iunit)
 

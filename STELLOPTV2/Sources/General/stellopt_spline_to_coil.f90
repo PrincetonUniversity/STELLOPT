@@ -240,7 +240,7 @@
       SUBROUTINE enforce_spline_bcs(icoil, isper)
         USE stel_kinds, ONLY: rprec
         USE stellopt_vars, ONLY : coil_splinefx, coil_splinefy, coil_splinefz, &
-             coil_nctrl, coil_type, lwindsurf
+             coil_splinesx, coil_nctrl, coil_type, lwindsurf
         USE vmec_input,  ONLY : nfp
         IMPLICIT NONE
         INTRINSIC ABS, MODULO
@@ -249,6 +249,7 @@
         LOGICAL, INTENT(OUT) :: isper  !Does the coil repeat each field period?
 
         REAL(rprec), PARAMETER :: zero=0.0d0, one=1.0d0, abstol=2.0d-15
+        REAL(rprec) krat
         INTEGER ncoefs
         ncoefs = coil_nctrl(icoil)
 
@@ -287,6 +288,17 @@
                   .AND.(coil_splinefz(icoil,1) == coil_splinefz(icoil,ncoefs)))
            END IF
         END SELECT
+
+        !Enforce continuity of 1st derivatives at s=0
+        krat = (coil_splinesx(icoil,ncoefs+1) - coil_splinesx(icoil,ncoefs))/&
+             (coil_splinesx(icoil,5) - coil_splinesx(icoil,4))
+        coil_splinefx(icoil,ncoefs-1) = coil_splinefx(icoil,ncoefs) - &
+             krat*(coil_splinefx(icoil,2) - coil_splinefx(icoil,1))
+        coil_splinefy(icoil,ncoefs-1) = coil_splinefy(icoil,ncoefs) - &
+             krat*(coil_splinefy(icoil,2) - coil_splinefy(icoil,1))
+        IF (.NOT.lwindsurf) &
+           coil_splinefz(icoil,ncoefs-1) = coil_splinefz(icoil,ncoefs) - &
+                krat*(coil_splinefz(icoil,2) - coil_splinefz(icoil,1))
       END SUBROUTINE enforce_spline_bcs
 
 !-----------------------------------------------------------------------

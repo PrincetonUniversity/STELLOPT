@@ -230,11 +230,12 @@
               ctrl_dofs = 3                 !x,y,z at each point
               IF (lwindsurf) ctrl_dofs = 2  ! u,v  at each point
               DO n = LBOUND(lcoil_spline,DIM=1), UBOUND(lcoil_spline,DIM=1)
-                 nknots = COUNT(coil_splinesx(n,:) >= 0.0)    ! Actual no. of knots for coil spline n
-                 IF ((coil_type(n).eq.'M')) THEN
-                    nknots = nknots - 1                       ! Last ctrl pt of modular is never free.
-                    IF (lcoil_spline(n,1)) nvars = nvars - 1  ! First ctrl of modular loses one dof (u or z).
-                 END IF
+                 ! Actual no. of knots for coil spline n, less two to enforce periodicity of f,f'
+                 nknots = COUNT(coil_splinesx(n,:) >= 0.0) - 2
+
+                 ! First ctrl of modular loses one dof (u or z).
+                 IF ((coil_type(n).eq.'M').AND.lcoil_spline(n,1)) nvars = nvars - 1
+
                  DO m = 1,nknots-4
                     IF (lcoil_spline(n,m)) nvars = nvars + ctrl_dofs
                  END DO
@@ -1472,8 +1473,9 @@
               END IF
               IF (ANY(lcoil_spline)) THEN
                  DO n = LBOUND(lcoil_spline,1), UBOUND(lcoil_spline,1)
-                    nknots = COUNT(coil_splinesx(n,:) >= 0.0)       ! Actual no. of knots for coil spline n
-                    IF ((coil_type(n).eq.'M')) nknots = nknots - 1  ! Last ctrl pt of modular is never free.
+                    ! Actual no. of knots for coil spline n, less two to enforce periodicity of f,f'
+                    nknots = COUNT(coil_splinesx(n,:) >= 0.0) - 2
+
                     DO m = 1,nknots-4
                        IF (lcoil_spline(n,m)) THEN
                           IF (lauto_domain) THEN
