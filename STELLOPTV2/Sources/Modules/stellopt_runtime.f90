@@ -166,6 +166,8 @@
       INTEGER, PARAMETER ::  BAD_CWS_ERR       = 15
       INTEGER, PARAMETER ::  KNOT_MISMATCH_ERR = 16
       INTEGER, PARAMETER ::  KNOT_DEF_ERR      = 17
+      INTEGER, PARAMETER ::  KNOT_ORDER_ERR    = 18
+      INTEGER, PARAMETER ::  KNOT_CONST_ERR    = 19
       INTEGER, PARAMETER ::  VMEC_INPUT_ERR    = 2
       INTEGER, PARAMETER ::  VMEC_WOUT_ERR     = 21
       INTEGER, PARAMETER ::  MGRID_ERR         = 22
@@ -293,7 +295,15 @@
       ELSEIF (error_num .eq. KNOT_DEF_ERR) THEN
             WRITE(6,*) '  STELLOPT ENCOUNTERED A COIL SPLINE WITH LESS THAN FOUR KNOTS'
             WRITE(6,*) '  ROUTINE:   ',TRIM(string_val)
-            WRITE(6,*) '  KNOT COUNT:      ',ierr + 4
+            WRITE(6,*) '  KNOT COUNT:      ',ierr
+      ELSEIF (error_num .eq. KNOT_ORDER_ERR) THEN
+            WRITE(6,*) '  STELLOPT ENCOUNTERED A COIL SPLINE WITH DESCENDING KNOTS'
+            WRITE(6,*) '  ROUTINE:   ',TRIM(string_val)
+            WRITE(6,*) '  KNOT:      ',ierr
+      ELSEIF (error_num .eq. KNOT_CONST_ERR) THEN
+            WRITE(6,*) '  FIRST AND LAST FOUR COIL SPLINE KNOTS MUST BE IDENTICAL'
+            WRITE(6,*) '  ROUTINE:   ',TRIM(string_val)
+            WRITE(6,*) '  COIL:      ',ierr
       ELSEIF (error_num .eq. D02CJF_ERR) THEN
             WRITE(6,*) '  STELLOPT ENCOUNTERED A NAG ERROR (D02CJF)'
             WRITE(6,*) '     CALLING FUNCTION ',TRIM(string_val)

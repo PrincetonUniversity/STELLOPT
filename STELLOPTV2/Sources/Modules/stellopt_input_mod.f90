@@ -958,17 +958,42 @@
 
          ! Count knots, error check
          DO i=1,nigroup
-            coil_nctrl(i) = COUNT(coil_splinesx(i,:) >= 0.0) - 4
-            IF ((coil_nctrl(i) > -4).AND.(coil_nctrl(i) < 0)) &
-                 CALL handle_err(KNOT_DEF_ERR, 'read_stellopt_input', coil_nctrl(i))
+            n = COUNT(coil_splinesx(i,:) >= 0.0)
+            coil_nctrl(i) = n - 4
+            IF ((n > 0).AND.(n < 4)) &
+                 CALL handle_err(KNOT_DEF_ERR, 'read_stellopt_input', n)
             IF (COUNT(coil_splinesy(i,:) >= 0.0) - 4 .NE. coil_nctrl(i)) &
                  CALL handle_err(KNOT_MISMATCH_ERR, 'read_stellopt_input', coil_nctrl(i))
             IF ((.NOT.lwindsurf) .AND. (COUNT(coil_splinesz(i,:) >= 0.0) - 4 .NE. coil_nctrl(i))) &
                  CALL handle_err(KNOT_MISMATCH_ERR, 'read_stellopt_input', coil_nctrl(i))
             IF (ANY(lcoil_spline(i,coil_nctrl(i)+1:maxcoilctrl))) &
                  CALL handle_err(KNOT_MISMATCH_ERR, 'read_stellopt_input', coil_nctrl(i))
-         END DO
-      ENDIF
+            IF (n.GE.4) THEN
+               DO m=2,n
+                  IF (coil_splinesx(i,m).LT.coil_splinesx(i,m-1)) &
+                       CALL handle_err(KNOT_ORDER_ERR, 'read_stellopt_input', m)
+                  IF (coil_splinesy(i,m).LT.coil_splinesy(i,m-1)) &
+                       CALL handle_err(KNOT_ORDER_ERR, 'read_stellopt_input', m)
+               ENDDO
+               IF ((coil_splinesx(i,2).NE.coil_splinesx(i,1)) .OR. &
+                   (coil_splinesx(i,3).NE.coil_splinesx(i,1)) .OR. &
+                   (coil_splinesx(i,4).NE.coil_splinesx(i,1))) &
+                  CALL handle_err(KNOT_CONST_ERR, 'read_stellopt_input', i)
+               IF ((coil_splinesx(i,n-1).NE.coil_splinesx(i,n)) .OR. &
+                   (coil_splinesx(i,n-2).NE.coil_splinesx(i,n)) .OR. &
+                   (coil_splinesx(i,n-3).NE.coil_splinesx(i,n))) &
+                  CALL handle_err(KNOT_CONST_ERR, 'read_stellopt_input', i)
+               IF ((coil_splinesy(i,2).NE.coil_splinesy(i,1)) .OR. &
+                   (coil_splinesy(i,3).NE.coil_splinesy(i,1)) .OR. &
+                   (coil_splinesy(i,4).NE.coil_splinesy(i,1))) &
+                  CALL handle_err(KNOT_CONST_ERR, 'read_stellopt_input', i)
+               IF ((coil_splinesy(i,n-1).NE.coil_splinesy(i,n)) .OR. &
+                   (coil_splinesy(i,n-2).NE.coil_splinesy(i,n)) .OR. &
+                   (coil_splinesy(i,n-3).NE.coil_splinesy(i,n))) &
+                  CALL handle_err(KNOT_CONST_ERR, 'read_stellopt_input', i)
+            ENDIF !n ge 4
+         END DO !i
+      ENDIF !lcoil_spline
 
       ! REGCOIL winding surface optimization
       ! If targeting chi2_b on the plasma boundary AND varying the winding
