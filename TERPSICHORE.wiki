@@ -172,7 +172,7 @@ The following table explains each of these variables
 || EPSPAM || Relative errof ro eigenvalue convergence. ||
 || IGREEN || Intended for Green's function solution in vacuum (not implemented) ||
 || MPINT || The stability mode table is shifted in m by MPINIT. The table usually goes from 0 to 55, with MPIINIT=20 it goes from 20 to 75. ||
-[[examples/Wiki_TERPS.pdf]]
+[[docs/Wiki_TERPS.pdf]]
 ----
 
 ===Execution=== 
