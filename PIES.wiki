@@ -1,23 +1,27 @@
 =Code Name= 
-[[toc]]
 The Princeton Iterative Equilibrium Solver (PIES) code calculates MHD equilibria for fusion devices with magnetic islands and stochastic regions.
 
 ----
 
-===Theory[[#Theory]]=== 
-The PIES <ref>Reiman, A. and Greenside H. "Calculation of three-dimensional MHD equilibria with islands and stochastic regions." Comp. Phys. Comm., 43 (1986)</ref> <ref>Reiman, A. H. and Greenside, H. S. "Numerical solution of three-dimensional magnetic differential equations." Journal of Comp. Phys., 75 (1988)</ref> <ref>Greenside, H.S., Reiman, A. H., and Salas, A. "Convergence properties of a nonvariational 3D MHD equilibrium code." Journal of Comp. Phys., 81 (1989)</ref> <ref>Reiman, A. H. and Greenside, H. S. "Computation of ß three-dimensional equilibria with magnetic islands." Journal of Comp. Phys., 87 (1990)</ref> code solves for MHD force balance using an iterative technique. This iterative technique can be summed up in three steps:
-# The current perpendicular to the field lines is calculated from
+===Theory=== 
+The PIES (Reiman, A. and Greenside H. "Calculation of three-dimensional MHD equilibria with islands and stochastic regions." Comp. Phys. Comm., 43 (1986), Reiman, A. H. and Greenside, H. S. "Numerical solution of three-dimensional magnetic differential equations." Journal of Comp. Phys., 75 (1988), Greenside, H.S., Reiman, A. H., and Salas, A. "Convergence properties of a nonvariational 3D MHD equilibrium code." Journal of Comp. Phys., 81 (1989), Reiman, A. H. and Greenside, H. S. "Computation of ß three-dimensional equilibria with magnetic islands." Journal of Comp. Phys., 87 (1990)) code solves for MHD force balance using an iterative technique. This iterative technique can be summed up in three steps:
+> 1. The current perpendicular to the field lines is calculated from
+
 > [[math]]
  \vec{j}_\perp = \frac{\vec{B}\times\nabla p}{B^2}
 [[math]]
-# The parallel current is then solved on good flux surface (flattened in islands and stochastic regions) by:
+
+> 2. The parallel current is then solved on good flux surface (flattened in islands and stochastic regions) by:
+
 > [[math]]
  \vec{B}\cdot\nabla\left(\frac{j_\parallel}{B}\right)=-\nabla\cdot\vec{j}_\perp
 [[math]]
-# The current is then used to solve for the magnetic field
+
+> 3. The current is then used to solve for the magnetic field
 > [[math]]
  \nabla\times\vec{B} = \vec{j}
 [[math]]
+
 The code uses two coordinate systems. The first is a background coordinates system which is similar to the VMEC coordinate system. Here the coordinates are Fourier decomposed in the poloidal and toroidal angle (using the kernel nv-mu, PIES coordinates), and discretized in the radial direction. The second coordinate system is magnetic, obtained by field-line following.
 
 ====The PIES Coordinate systems==== 
@@ -32,7 +36,8 @@ This is the coordinate grid upon which the currents are calculated. This is done
 where b/B is very small on good flux surfaces.
 
 ====Field Line following==== 
-[[image:PIES_polar_coordinates.jpg width="480" height="426" align="right" caption="PIES Poincare plot in quasi-magnetic polar coordinates"]]
+{{images/PIES_polar_coordinates.jpg}}
+
 The PIES magnetic coordinate system is constructed from field line tracing. Tracing of the field lines is accomplished through integration of two ordinary differential equations
 [[math]]
 \frac{d\theta}{d\Phi}=\frac{\vec{B}\cdot\nabla\theta}{\vec{B}\cdot\nabla\Phi}
@@ -63,14 +68,14 @@ An assumption of a fixed outer flux surface provides a Neumann boundary conditio
 The secondary method for solving Ampere's law involves solving for the vector potential from the currents. Here the current gives rise to the vector potential and the vector potential gives rise to a divergence free magnetic field.
 ----
 
-===Compilation[[#Compilation]]=== 
+===Compilation=== 
 The PIES code is maintained in a CVS repository. Once the code is check out into a sandbox the user must execute a setup script called makemake. Once makemake has been run the user should create a compilation directory. This is the directory in which the PIES source, objects, and executable will be compiled. The code is then compiled using gmake. At compilation time the user must provide gmake with the path to the compilation directory, and which machine the code will be compiled on. Durring the compilation process a series of macros are expanded in the code, along with conversion of the files from RATFOR Fortran to Fortran90.
 
 ----
 
-===Input Data Format[[#Input]]=== 
+===Input Data Format=== 
 The PIES input file is a text file containing various name lists and data which sets up the coordinate system and initializes the fields. The PIES code was written to be a development environment so the name lists can have many variables. Only the basics of how to run the code are presented here. The first line of the input file is a string which indicates if the code should be restarted from
-[[code format="fortran"]]
+{{{
 'begin'
 &INPUT
   ITER2 = 5000   ! Max number of iterations
@@ -288,31 +293,31 @@ The PIES input file is a text file containing various name lists and data which 
   CHEBYF = 0                          ! Use Chebyshev Blending
   NCYC = 0                            ! Length of Chebyshev cycle to use
 /
-[[code]]
+}}}
 ----
 
-===Execution[[#Execution]]=== 
+===Execution=== 
 The code is executed by passing it the name of an input file as a command line argument to the code. For example to run PIES for a case specified by test.in the command would look like:
-[[code format="bash"]]
+{{{
 > ~/bin/pies test
-[[code]]
+}}}
 If run in free boundary the PIES code will also require a coil definition file coil_data in the same directory as the input file. If the code is to be run as a restart then an [[https://www.unidata.ucar.edu/software/netcdf/|netCDF]] file will also be required. For example, if you wish to run test.in as a restart you'll also need a test_old.nc file.
 
 The PIES code can be run as a single iteration field line tracer. To do this the POINCMG should be set in the PLTFLG name list (along with WRITE_POINCARE_COORDINATES) to the desired value. The ISTOP variable should be set to 37 in the EXLSTA name list. The ITER2 variable (in the INPUT name list) should be set to 1 or one iteration larger than is stored in the restart file. The code will then produce the Poincaré plots and exit.
 
 ----
 
-===Output Data Format[[#Output]]=== 
-The PIES code produces 3 main output files. The first is a '.out' file which contains more verbose output for the run than that printed to the screen durring execution. The '.gmeta' file contains the various plots that the code produces durring execution. It is an <span style="background-attachment: initial; background-clip: initial; background-color: initial; background-origin: initial; background-position: 100% 50%; background-repeat: no-repeat no-repeat; cursor: pointer; padding-right: 10px;">[[http://www.ncarg.ucar.edu/|NCAR Command Language (NCL) Computer Graphics Metafile]]</span>. It can be read with the <span style="background-attachment: initial; background-clip: initial; background-color: initial; background-origin: initial; background-position: 100% 50%; background-repeat: no-repeat no-repeat; cursor: pointer; padding-right: 10px;">[[http://www.ncl.ucar.edu/Document/Tools/ctrans.shtml|ctrans]]</span> (or <span style="background-attachment: initial; background-clip: initial; background-color: initial; background-origin: initial; background-position: 100% 50%; background-repeat: no-repeat no-repeat; cursor: pointer; padding-right: 10px;">[[http://www.ncl.ucar.edu/Document/Tools/ictrans.shtml|ictrans]]</span>) applications. The '.toc' file contains a list of the plots in the '.gmeta' file. The code also outputs it's data to a [[https://www.unidata.ucar.edu/software/netcdf/|netCDF]] file by the name 'test_save.nc'. Also the NSAVE parameter in the EXLSTA input namelist can be set so that every NSAVE iterations the [[https://www.unidata.ucar.edu/software/netcdf/|netCDF]] file copied to an file with the iteration number appended as a suffix. The netCDF file contains various variables describing the equilibria. Of particular interest are the variables 'relbup_old' which contains the contravariant Fourier components (B_rho, B_theta, B_phi) of the magnetic field, and 'x' which contains the Fourier components of the background coordinates.
+===Output Data Format=== 
+The PIES code produces 3 main output files. The first is a '.out' file which contains more verbose output for the run than that printed to the screen durring execution. The '.gmeta' file contains the various plots that the code produces durring execution. It is an [[http://www.ncarg.ucar.edu/|NCAR Command Language (NCL) Computer Graphics Metafile]]. It can be read with the [[http://www.ncl.ucar.edu/Document/Tools/ctrans.shtml|ctrans]] (or [[http://www.ncl.ucar.edu/Document/Tools/ictrans.shtml|ictrans]]) applications. The '.toc' file contains a list of the plots in the '.gmeta' file. The code also outputs it's data to a [[https://www.unidata.ucar.edu/software/netcdf/|netCDF]] file by the name 'test_save.nc'. Also the NSAVE parameter in the EXLSTA input namelist can be set so that every NSAVE iterations the [[https://www.unidata.ucar.edu/software/netcdf/|netCDF]] file copied to an file with the iteration number appended as a suffix. The netCDF file contains various variables describing the equilibria. Of particular interest are the variables 'relbup_old' which contains the contravariant Fourier components (B_rho, B_theta, B_phi) of the magnetic field, and 'x' which contains the Fourier components of the background coordinates.
 
 ----
 
-===Visualization[[#Visualization]]=== 
-The PIES code preforms it's own data visualization. The '.gmeta' file contains the plots and can be view with the <span style="background-attachment: initial; background-clip: initial; background-color: initial; background-origin: initial; background-position: 100% 50%; background-repeat: no-repeat no-repeat; cursor: pointer; padding-right: 10px;">[[http://www.ncl.ucar.edu/Document/Tools/ctrans.shtml|ctrans]]</span> (or <span style="background-attachment: initial; background-clip: initial; background-color: initial; background-origin: initial; background-position: 100% 50%; background-repeat: no-repeat no-repeat; cursor: pointer; padding-right: 10px;">[[http://www.ncl.ucar.edu/Document/Tools/ictrans.shtml|ictrans]]</span>) applications. The '.toc' file contains a list of the plots in the '.gmeta' file. The plotting of the code is controlled by the PLTFLG input namelist. A common request for a user is to create a real-space Poincaré plot from an output. This is usually only done on the final iteration as it does take some time to render in the code and is not necessary part of the codes computation. See the tutorials below. Also note that the user may add to the real space plots through the vvsect routine.
+===Visualization=== 
+The PIES code preforms it's own data visualization. The '.gmeta' file contains the plots and can be view with the [[http://www.ncl.ucar.edu/Document/Tools/ctrans.shtml|ctrans]] (or [[http://www.ncl.ucar.edu/Document/Tools/ictrans.shtml|ictrans]]) applications. The '.toc' file contains a list of the plots in the '.gmeta' file. The plotting of the code is controlled by the PLTFLG input namelist. A common request for a user is to create a real-space Poincaré plot from an output. This is usually only done on the final iteration as it does take some time to render in the code and is not necessary part of the codes computation. See the tutorials below. Also note that the user may add to the real space plots through the vvsect routine.
 
 The [[http://www.mathworks.com/matlabcentral/fileexchange/29031-matlabvmec|matlabVMEC]] routine can visualize quantities on the background coordinates from a PIES netCDF file. In order to do this the user must first read the PIES netCDF file in MATLAB using the read_pies_netcdf function. The user then passes the pies data structure to VMECplot and the relevant quantities are plotted.
 
 ----
 
-===Tutorials[[#Tutorials]]=== 
+===Tutorials=== 
 Put links to tutorial pages here.
