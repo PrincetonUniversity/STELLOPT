@@ -4,7 +4,7 @@ This tutorial will walk the user through running VMEC with a free boundary condi
 ----
 
 1. __**Create the 'mgrid' file**__
-> First one must use the [[MAKEGRID]] (XGRID) routine to process the coils definition file and produce an 'mgrid' file. For this example we will use the 'coils.c09r00' file which has been developed for the NCSX device ([[file:coils.c09r00]]). We create a text file 'input_xgrid.dat' which contains:
+> First one must use the [[MAKEGRID]] (XGRID) routine to process the coils definition file and produce an 'mgrid' file. For this example we will use the 'coils.c09r00' file which has been developed for the NCSX device ([[examples/coils.c09r00]]). We create a text file 'input_xgrid.dat' which contains:
 {{{
 c09r00
 S
@@ -93,7 +93,7 @@ or
 > This choice of parameters gives us [cm] scale resolution and provides us with enough toroidal resolution to run with 8 toroidal modes per field period. At the end of the run you should have produced the following files: mgrid_c09r00.nc (or mgrid.c09r00), extcur.c09r00, and log_xgrid.c09r00.
 > 
 2. __**Edit the input namelist text file.**__
-> ﻿The input namelist ([[file:input.ncsx_c09r00_free]]) controls the execution of the VMEC code. The suffix of the input file will be appended to each of the output files as we will see after execution. The Fourier coefficient in this file have been generated through an optimization routine. In general, more simple initial conditions will suffice for the axis position and outer most flux surface. The name of the mgrid file must now be specified, along with setting LFREEB to true. The NZETA variable must match the value you selected for mgrid creation (see 7th line in the 'input_xgrid.dat' file). You'll notice that for the free boundary run the user must also specify the EXTCUR array. This array specifies the current running through each coil group. There should be one entry per coil group. The 'extcur' file contains suggestions for these values based on the values it read from the 'coils' file. These values can be copied and pasted directly into the VMEC 'input' file. Note that the traditional polynomial form of the current profile (NCURR=1) and pressure profile are being used. Note that if you have a binary 'mgrid' file then you'll need to modify the MGRID_FILE variable to match the proper name.
+> ﻿The input namelist ([[examples/input.ncsx_c09r00_free]]) controls the execution of the VMEC code. The suffix of the input file will be appended to each of the output files as we will see after execution. The Fourier coefficient in this file have been generated through an optimization routine. In general, more simple initial conditions will suffice for the axis position and outer most flux surface. The name of the mgrid file must now be specified, along with setting LFREEB to true. The NZETA variable must match the value you selected for mgrid creation (see 7th line in the 'input_xgrid.dat' file). You'll notice that for the free boundary run the user must also specify the EXTCUR array. This array specifies the current running through each coil group. There should be one entry per coil group. The 'extcur' file contains suggestions for these values based on the values it read from the 'coils' file. These values can be copied and pasted directly into the VMEC 'input' file. Note that the traditional polynomial form of the current profile (NCURR=1) and pressure profile are being used. Note that if you have a binary 'mgrid' file then you'll need to modify the MGRID_FILE variable to match the proper name.
 {{{
 #!fortran
 &INDATA
