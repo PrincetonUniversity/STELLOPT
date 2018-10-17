@@ -35,7 +35,7 @@ The wiki is designed to provide user documentation for various equilibrium magne
 
 [[PIES]]
 
-[[SPEC]]
+[[https://princetonuniversity.github.io/SPEC/|SPEC]]
 
 [[SFINCS]]
 
