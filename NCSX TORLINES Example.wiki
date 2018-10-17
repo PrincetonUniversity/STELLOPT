@@ -1,11 +1,11 @@
-=Tutorial: TORLINES NCSX Run[[image:ncsx_fieldlines.jpg width="240" height="172" align="right"]]= 
+=Tutorial: TORLINES NCSX Run= 
 This tutorial will walk the user through running TORLINES using the VMEC equilibrium file generated in the tutorial: [[VMEC Free Boundary Run]].
 
 ----
 
-# __**Edit the input file to include the TORLINES_INPUT namelist.**__
+> 1. __**Edit the input file to include the TORLINES_INPUT namelist.**__
 > The TORLINES code will read the VMEC input file for two namelists. It will use the INDATA namelist to specify the EXTCUR array for the vacuum field. It will then read the TORLINES_INPUT nameslist for information controlling the runtime behaviour of TORLINES
-> [[code format="fortran"]]
+{{{
 &INDATA
 .
 .
@@ -23,10 +23,10 @@ This tutorial will walk the user through running TORLINES using the VMEC equilib
  FOLLOW_TOL = 1.0E-09
  BOUND_SEPARATION = 1.2
 /
-[[code]]
-# __**Execute the code.**__
+}}}
+> 2. __**Execute the code.**__
 > To execute the code we need to supply the input extension for the input file and wout file (they must match). The code will also require vacuum field information, which can be supplied by a coils file or MAKEGRID file.
-> [[code format="bash"]]
+{{{
 >mpirun -np 32 ~/bin/xtorlines -vmec ncsx_c09r00_free -coil coils.c09r00
 TORLINES Version 1.20
  -----TORLINES File Parameters-----
@@ -78,12 +78,11 @@ TORLINES Version 1.20
      Fieldline Calculation [100]% 
 ---------- TORLINES DONE ----------              
 >                                                                   
-[[code]]
-# __**Examine the output.**__
+}}}
+>3. __**Examine the output.**__
 > In it's most basic form the code launches 256 field lines equally spaced from axis to edge (from the outboard side of the simulation at PHI=0). The background grid information is output in the HDF5 file:
-[[image:torlines_ncsx_grid.jpg align="center"]]
+{{images/torlines_ncsx_grid.jpg}}
 The contravariant components of the magnetic field are also stored in the HDF5 file:
-[[image:torlines_ncsx_field0.jpg align="center"]]
+{{images/torlines_ncsx_field0.jpg}}
 Finally, Poinccaré data is also stored in the HDF5 file:
-[[image:torlines_ncsx_poincpi.jpg align="center"]]
-> 
+{{images/torlines_ncsx_poincpi.jpg}}
