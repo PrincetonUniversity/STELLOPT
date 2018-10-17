@@ -1,16 +1,15 @@
 =DIAGNO= 
-[[toc]]
-The DIAGNO code<ref>[[http://dx.doi.org/10.1088/0741-3335/55/2/025014|S A Lazerson //et al// 2013 //Plasma Phys. Control. Fusion// **55** 025014]]</ref> simulates magnetic diagnostic measurements for a given run of [[VMEC]], PIES or SPEC codes. It is useful for making comparisons between a given calculated equilibrium and experimental measurements of the magnetic field. DIAGNO is an essential part of the STELLOPT magnetic reconstruction capability.
+The DIAGNO code simulates magnetic diagnostic measurements for a given run of [[VMEC]], PIES or SPEC codes ([[http://dx.doi.org/10.1088/0741-3335/55/2/025014|S A Lazerson //et al// 2013 //Plasma Phys. Control. Fusion// **55** 025014]]). It is useful for making comparisons between a given calculated equilibrium and experimental measurements of the magnetic field. DIAGNO is an essential part of the STELLOPT magnetic reconstruction capability.
 
 ----
 
-===Theory[[#Theory]]=== 
+===Theory=== 
 
 The DIAGNO code simulates various magnetic measurements given a simulated equilibrium. The field at a point in space, a fixed orientation magnetic probe, flux loops, and Rogowski coils can be simulated by the DIAGNO code. The code has been interfaced to equilibrium from the VMEC and PIES codes. The code can simulate the vacuum, plasma, or total diagnostic responses.
 
-The plasma magnetic fields (magnetic induction and vector potential) are calculated utilizing one of two methods. The first method allows the code to preform a volume integral over the plasma currents. The second method utilizes the virtual casing principle<ref>[[http://dx.doi.org/10.1088/0741-3335/54/12/122002|S A Lazerson 2012 //Plasma Phys. Control. Fusion// **54** 122002]]</ref> to calculate a representative surface current on the equilibrium boundary. Both methods construct spline representations of the integrated quantities and then use adaptive integration techniques to achieve a desired relative and absolute tolerance in the field evaluated at a point in space. An accurate calculation of the fields utilizing a virtual casing principle requires that only the plasma field be used to construct the surface current. At this time, this limits the virtual casing principle to free boundary equilibria.
+The plasma magnetic fields (magnetic induction and vector potential) are calculated utilizing one of two methods. The first method allows the code to preform a volume integral over the plasma currents. The second method utilizes the virtual casing principle to calculate a representative surface current on the equilibrium boundary ([[http://dx.doi.org/10.1088/0741-3335/54/12/122002|S A Lazerson 2012 //Plasma Phys. Control. Fusion// **54** 122002]]). Both methods construct spline representations of the integrated quantities and then use adaptive integration techniques to achieve a desired relative and absolute tolerance in the field evaluated at a point in space. An accurate calculation of the fields utilizing a virtual casing principle requires that only the plasma field be used to construct the surface current. At this time, this limits the virtual casing principle to free boundary equilibria.
 
-The calculation of the magnetic field due to the coils utilizes a compact expression for the Biot-Savart fields of a filament<ref>[[http://link.aip.org/link/PHPAEN/v9/i10/p4410/s1|Hanson, J. D. & Hirshman S. P., //Compact expressions for the Biot-Savart fields of a filamentary segment// Phys. of Plas. **9**, 4410-4412 (2002).]]</ref> . Here the vector potential can be represented by
+The calculation of the magnetic field due to the coils utilizes a compact expression for the Biot-Savart fields of a filament ([[http://link.aip.org/link/PHPAEN/v9/i10/p4410/s1|Hanson, J. D. & Hirshman S. P., //Compact expressions for the Biot-Savart fields of a filamentary segment// Phys. of Plas. **9**, 4410-4412 (2002).]]) . Here the vector potential can be represented by
 
 [[math]]
 \vec{A}\left(\vec{x}\right) = \frac{\mu_0 I}{4\pi}\hat{e}\ln\left[\frac{R_i+R_f+L}{R_i+R+f-L}\right]
@@ -25,14 +24,15 @@ Simulation of the diagnostic response of the flux loops and Rogowski coil requir
 
 ----
 
-===Compilation[[#Compilation]]=== 
-DIAGNO is a component of the STELLOPT suite of codes. It is contained within the 'stellopt.zip' file. Compilation of the STELLOPT suite is discussed on the <span style="cursor: pointer;">[[STELLOPT Compilation|STELLOPT Compilation Page]]</span>.
+===Compilation=== 
+DIAGNO is a component of the STELLOPT suite of codes. Compilation of the STELLOPT suite is discussed on the [[STELLOPT Compilation|STELLOPT Compilation Page]].
 
 ----
 
-===Input Data Format[[#Input]]=== 
+===Input Data Format=== 
 The DIAGNO code is controlled in part by command line options and an additional fortran input namelist 'DIAGNO_IN' in the equilibrium input file. If the total or vacuum response is desired then a MAKEGRID style coils file must also be supplied. The input namelist has the following format:
-[[code format="fortran"]]
+
+{{{
 &DIAGNO_IN
    NU = 360                             ! Number of poloidal spline knots
    NV = 360                             ! Number of toroidal spline knots (per period)
@@ -49,9 +49,11 @@ The DIAGNO code is controlled in part by command line options and an additional 
    INT_STEP = 2                         ! Integration substep
    LRPHIZ   = .false.                   ! Use cylindrical coordinates (default: cartesian)
 /
-[[code]]
+}}}
+
 The call to the DIAGNO code requires the user pass an equilibrium input file at all times. The following options are available:
-[[code format="bash"]]
+
+{{{
 Usage: xdiagno <options>
      <options>
       -vmec ext:    VMEC input/wout extension
@@ -61,11 +63,14 @@ Usage: xdiagno <options>
       -noverb:      Supress all screen output
       -help:        Output help message
 
-[[code]]
+}}}
+
 A note should be made that when calculating the vacuum response the VMEC 'INDATA' namelist must be supplied in the input file but need only contain the EXTCUR array the user wishes to energize the vacuum coil with. It should also be noted that if the virtual casing is utilized with VMEC, the MAKEGRID mgrid file used for the calculation will be used to subtract off the vacuum field at the plasma boundary. In PIES this is handled differently.
 
-[[image:probe_example.jpg width="240" height="191" align="right" caption="Example Diagnostics. B-Field Point measurements (blue), flux loops (white and yellow), segmented loops (green/purple)."]]
+{{image/probe_example.jpg}}
+
 There are four types of magnetic diagnostics which DIAGNO can calculate:
+
 # B-Field Test Points ('BFIELD_POINTS_FILE')
 # Magnetic Field Probes ('BPROBES_FILE')
 # Segmented Rogowski Coils ('SEG_ROG_FILE')
@@ -77,59 +82,35 @@ The DIAGNO code utilizes the MAKEGRID style of coils file. The EXTCUR array pres
 
 ====B-Field Test Points File==== 
 Of the five diagnostic types the B-Field Test Points are the simplest. If this file is specified in the 'DIAGNO_IN' namelist, the values of the magnetic field at specific points in space are calculated and displayed on the screen. The format of this file is very simple. The first line specifies the number of points in the file and the next lines specify the x,y, and z coordinates of each point. Here is an example for 5 points
-[[code]]
+
+{{{
 5
 1000.0  0.0  0.0
 0.0  1000.0  0.0
 -1000.0  0.0  0.0
 0.0  -1000.0  0.0
 0.0  0.0  1000.0
-[[code]]
+}}}
+
 This file has five points, the last point lying on the z coordinate axis at z=1.0. No output file is created as a result of specifying this file.
 
 ====Magnetic Field Probes==== 
 The Magnetic Field Probes diagnostic is used to simulate measurements of the magnetic field at a point in space (often referred to as 'B-dot probes'). If this file is specified in the 'DIAGNO.CONTROL' file then magnetic measurements are simulated (where the measuring probe effective area, and orientation are taken into account). The format is similar to that of the B-Field Test Points file with more orientation information specified. The first line of the file indicates the number of probes in the file. Then for each line the x,y,z coordinate information is specified, along with the poloidal and toroidal orientation (spherical coordinates), and finally the effective area. Here is an example for five probes
-[[code]]
+
+{{{
 5
 3500.0  0.0  0.0  0.0  0.0  0.25
 3000.0  0.0  500.0  90.0  0.0  0.25
 2500.0  0.0  0.0  180.0  0.0  0.25
 3000.0  0.0  -500.0  270.0  0.0  0.25
 0000.0  3500.0  0.0  0.0  90.0  0.25
-[[code]]
+}}}
 The first 4 points of this file are located on a circle of radius 0.5 centered at 3.0 in the X-Z plane. They all point in the direction perpendicular to the circle. The last point is located at y=3.5 and is pointed in the Y direction. All probes have an effective area of 0.25. Simulated values for the points are stored in the file 'diagno_bth.' file.
-
-====Segmented Rogowski Coils==== 
-The Segmented Rogowski Coils diagnostic is used to simulate the output from Rogowski coils in which have been cut into segments for current profile measurments (also known as cos2theta coils). If this file is specified in the 'DIAGNO_IN' namelist then magnetic measurements are simulated. These diagnostics are specified in a similar manner to that of the 'coils' file. Each loop is segment of a loop is specified by a series of points along with an effective area for each point. Each segment must be specified by the same number of points. The first line of the file indicates the number of segments in the file and the number of points per segment. The points are then listed in order (for each segment) by x,y,z, and area (where phi indicates toroidal angle). Here is an example for one loop with four segments and five points per segment:
-[[code]]
-4  5
-3498.0  44.0  45  .025
-3453.0  211.0  45  .025
-3354.0  354.0  45  .025
-3211.0  453.0  45  .025
-3044.0  498.0  45  .025
-2956.0  498.0  45  .025
-2789.0  453.0  45  .025
-2646.0  354.0  45  .025
-2547.0  211.0  45  .025
-2502.0  44.0  45  .025
-2502.0  -44.0  45  .025
-2547.0  -211.0  45  .025
-2646.0  -354.0  45  .025
-2789.0  -453.0  45  .025
-2956.0  -498.0  45  .025
-3044.0  -498.0  45  .025
-3211.0  -453.0  45  .025
-3354.0  -354.0  45  .025
-3453.0  -211.0  45  .025
-3498.0  -44.0  45  .025
-
-[[code]]
-These 20 points describe four segments composed of 5 points each on a circle of radius 0.5 centered at R=3. The coil is located at toroidal angle of 45° and each segment has an effective area of 0.025. Here values have been specified in R, phi, Z so the LRPHIZ flag must be set to true in the 'DIAGNO_IN' namelist. Simulated values are output to the 'diagno_seg.' file.
 
 ====Flux Loops==== 
 The flux loop diagnostic allows the simulation of various types of flux loops. If this file is specified in the 'DIAGNO_IN' namelist then simulated flux loop values will be calculated. This file has a similar format to that of the coils file. Here each loops is specified by a number of points where the first and last points are considered closed if a closed loop is specified. The first line of the file indicates the total number of flux loops in the file. Then for each loop a header followed by a number of points (x,y,z) are specified. The header is composed of the number of points defining the loop, a flag to indicate if the loop is closed (0) or open (1), a flag to control total flux contribution to the measurement, and a label for the loop. The x, y, and z coordinates for each point in the loop are then specified. Here is an example specification of a single saddle coil:
-[[code]]
+
+{{{
 1
    16     0     1 TEST_COIL
 -580.000000 -2880.000000 -380.000000
@@ -148,32 +129,36 @@ The flux loop diagnostic allows the simulation of various types of flux loops. I
 -1020.000000 -3070.000000 -30.000000
 -770.000000 -3070.000000 -180.000000
 -580.000000 -2940.000000 -280.000000
-[[code]]
+}}}
+
 In this file one coil is specified. That coil is composed of 16 points, is a closed loop, should have the toroidal flux subtracted from the measurement, and has the name TEST_COIL. The user should also specify 'flux_turns' in the 'DIAGNO_IN' namelist. This specifies the number of turns in each flux loop and can be used to control polarity. A note should be made about 'open' vs. 'closed' loops. The 'open' option should only be specified if the loop is periodic in shape with respect to a plasma period. This option is provided to speed up computation. Otherwise toroidal loops should be fully specified if they contain a complex shape.
 
+====Segmented Rogowski Coils==== 
+The Segmented Rogowski Coils diagnostic is used to simulate the output from Rogowski coils in which have been cut into segments for current profile measurments (also known as cos2theta coils). If this file is specified in the 'DIAGNO_IN' namelist then magnetic measurements are simulated. These diagnostics are specified in the same manner as the flux loops. 
+
 ----
 
-===Execution[[#Execution]]=== 
+===Execution=== 
 The DIAGNO code is executed by calling XDIAGNO from the command line in a directory containing the previously mentioned files. DIAGNO requires that the run suffix (provided by the VMEC file) be passed to it via the command line call. Additionally, the '-noverb' flag may be passed after the suffix to suppress screen output. Here is an example call to DIAGNO:
-[[code format="bash"]]
+{{{
 > ~/bin/xdiagno -vmec test >& log.diagno &
-[[code]]
+}}}
 Here it has been assumed that a 'DIAGNO_IN' namelist is present in the 'input.test' file. As no coils file was provided, only the plasma field will be calculated. To calculate a vacuum field then use the following:
-[[code format="bash"]]
+{{{
 > ~/bin/xdiagno -vmec test -coil coils.test_machine -vac >& log.diagno &
-[[code]]
+}}}
 
 ----
 
-===Output Data Format[[#Output]]=== 
+===Output Data Format=== 
 The DIAGNO code outputs data to files for each type of magnetic diagnostic it simulates. Output is switched on for a given diagnostic through specification of said diagnostic in the 'diagno.control' input namelist. The B-Field Test Points diagnostic produces no file output and only displays the magnetic field at points in space to the screen. The Magnetic Field Probes diagnostic outputs data to a file called 'diagno_bth.' The Segmented Rogowski Coils diagnostic outputs data to a file called 'diagno_seg.' The Flux Loops diagnostic outputs data to the 'diagno_flux.' file. Examples of these files can be found in the tutorials below.
 
 ----
 
-===Visualization[[#Visualization]]=== 
+===Visualization=== 
 The data output by DIAGNO is simulated magnetic measurements. DIAGNO is in essence a utility for the STELLOPT codes to aid in magnetic reconstruction. At this time no DIAGNO visualization routines exist. All output from DIAGNO is in the form of tables stored in text files.
 
 ----
 
-===Tutorials[[#Tutorials]]=== 
+===Tutorials=== 
 [[DIAGNO v2.0 Tutorial|DIAGNO NCSX Tutorial]]
