@@ -1,7 +1,7 @@
 =Tutorial: DIAGNO NCSX Tutorial= 
 This tutorial will walk the user running the DIAGNO code for a [[VMEC Free Boundary Run|VMEC free boundary equilibrium]]. It is assumed the user has a converged free boundary equilibrium (wout file).
 
-{{image/NCSX_fluxloops_plasma.jpg}}
+{{images/NCSX_fluxloops_plasma.jpg}}
 
 ----
 
