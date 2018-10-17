@@ -1,15 +1,15 @@
-=Tutorial: VMEC2PIES NCSX Example[[image:ncsx_fieldlines.jpg width="240" height="172" align="right"]]= 
+=Tutorial: VMEC2PIES NCSX Example= 
 This tutorial will walk the user through running VMEC2PIES from a free boundary VMEC calculation. For this example the National Compact Stellarator Experiment (NCSX) configuration will be used. This machine is stellarator symmetric with a periodicity of three. If not already done, please see the [[VMEC Free Boundary Run|VMEC Free Boundary NCSX tutorial]] to generate the necessary input files.
 
 ----
 
-# **__Setup files.__**
+> 1. **__Setup files.__**
 > We will be generating a fixed boundary and free boundary PIES .in file from the free boundary VMEC tutorial. Begin by creating a PIES_NCSX_fixed and a PIES_NCSX_free directory. Copy the wout and input files from VMEC to each directory.
-> 
-# **__Create a fixed boundary PIES .in file__**
-> In the PIES_NCSX_fixed directory we should now have a wout_ncsx_c09r00_free.nc and input.ncsx_c09r00_free files. We now generate the PIES input file by envoking VMEC2PIES with the wout file and fixed attributes. The PIES run will have the same radial and Fourier resolution as that of the VMEC run. This should generate an ncsx_c09r00_free.in file (which you should rename ncsx_c09r00_fixed.in to avoid confusion, [[file:ncsx_c09r00_fixed.in]]).
-> 
-> [[code format="bash"]]
+ 
+> 2. **__Create a fixed boundary PIES .in file__**
+> In the PIES_NCSX_fixed directory we should now have a wout_ncsx_c09r00_free.nc and input.ncsx_c09r00_free files. We now generate the PIES input file by envoking VMEC2PIES with the wout file and fixed attributes. The PIES run will have the same radial and Fourier resolution as that of the VMEC run. This should generate an ncsx_c09r00_free.in file (which you should rename ncsx_c09r00_fixed.in to avoid confusion, [[examples/ncsx_c09r00_fixed.in]]).
+
+{{{
  ~/bin_847/xvmec2pies wout_ncsx_c09r00_free.nc -fixed
  -----PIES File Parameters-----
    extsurfs:  0
@@ -36,11 +36,11 @@ Total Current: -178.653 [kA]
    betai: 0.13223628597144E-01
     iote: -.35730636631292E-01
 mustochf:   0
-[[code]]
-> 
-# **__Create a free bondary PIES .in file__**
+}}}
+
+> 3. **__Create a free bondary PIES .in file__**
 > In the PIES_NCSX_free directory we should now have a wout_ncsx_c09r00_free.nc and input.ncsx_c09r00_free files. We will also need a coils file, so create a symbolic link (ln -s) to the coils.c09r00 file. We run VMEC2PIES as before but with the -fixed attribute omitted and a coils file. Additionally we wish to add 10 external surfaces so we ask for 10 surfaces.
-> [[code format="bash"]]
+{{{
 >~/bin/xvmec2pies wout_ncsx_c09r00_free.nc -c coils.c09r00 -extsurf 10
-[[code]]
+}}}
 > This should generate a coil_data file and a pies.ncsx_c09r00_free.in file.
