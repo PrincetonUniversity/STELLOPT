@@ -305,9 +305,9 @@
       END INTERFACE
 
 #if defined(NETCDF)
-      PRIVATE :: read_wout_text, read_wout_nc
+      PRIVATE :: read_wout_text, read_wout_nc, write_wout_text, write_wout_nc
 #else
-      PRIVATE :: read_wout_text
+      PRIVATE :: read_wout_text, write_wout_text
 #endif
       PRIVATE :: norm_term_flag, bad_jacobian_flag,                     &
                  more_iter_flag, jac75_flag
@@ -369,6 +369,44 @@
       END IF
 
       END SUBROUTINE readw_and_open
+
+      SUBROUTINE write_wout_file(file_or_extension, ierr)
+      USE safe_open_mod
+      IMPLICIT NONE
+!------------------------------------------------
+!   D u m m y   A r g u m e n t s
+!------------------------------------------------
+      INTEGER, INTENT(out) :: ierr
+      CHARACTER(LEN=*), INTENT(in) :: file_or_extension
+!------------------------------------------------
+!   L o c a l   V a r i a b l e s
+!------------------------------------------------
+      INTEGER, PARAMETER :: iunit_init = 10
+      INTEGER :: iunit
+      LOGICAL :: isnc
+      CHARACTER(len=LEN_TRIM(file_or_extension)+10) :: filename
+!------------------------------------------------
+!
+!     THIS SUBROUTINE WRITES THE WOUT FILE FROM 
+!     THE DATA IN THE READ_WOUT MODULE
+!
+!     FIRST, CHECK IF THIS IS A FULLY-QUALIFIED PATH NAME
+!     MAKE SURE wout IS NOT EMBEDDED IN THE NAME (PERVERSE USER...)
+!
+      filename = 'wout'
+      CALL parse_extension(filename, file_or_extension, isnc)
+      IF (isnc) THEN
+#if defined(NETCDF)
+         CALL write_wout_nc(filename, ierr)
+#else
+         PRINT *, "NETCDF wout file can not be opened on this platform"
+         ierr = -100
+#endif
+      ELSE
+         IF (ierr .eq. 0) CALL write_wout_text(filename, ierr)
+      END IF
+
+      END SUBROUTINE write_wout_file
 
 
       SUBROUTINE readw_only(iunit, ierr, iopen)
@@ -1530,7 +1568,7 @@
       iounit = 0
       ierr = 0
       CALL safe_open(iounit, ierr,                                             &
-     &               'wout_' // TRIM(filename) // '.txt',                      &
+     &               TRIM(filename),                      &
      &               'replace', 'formatted')
 
       CALL assert_eq(0, ierr, 'Error opening text wout file in ' //            &
@@ -1796,6 +1834,497 @@
      &               'write_wout_text of read_wout_mod.')
 
       END SUBROUTINE
+
+#if defined(NETCDF)
+      SUBROUTINE write_wout_nc(filename, ierr)
+      USE v3_utilities
+      USE vsvd0, ONLY: nparts
+      USE stel_constants, ONLY: mu0, zero, one
+      USE ezcdf
+
+      IMPLICIT NONE
+!------------------------------------------------
+!   D u m m y   A r g u m e n t s
+!------------------------------------------------
+      CHARACTER (len=*)    :: filename
+      INTEGER, INTENT(out) :: ierr
+!------------------------------------------------
+!   L o c a l   P a r a m e t e r s
+!------------------------------------------------
+      REAL(rprec), PARAMETER :: eps_w = 1.e-4_dp
+!------------------------------------------------
+!   L o c a l   V a r i a b l e s
+!------------------------------------------------
+      INTEGER              :: nwout, js, mn, i, j, k, m, n, iasymm, iwout0
+      LOGICAL              :: lcurr
+#ifdef NETCDF
+      CHARACTER(LEN=*), PARAMETER, DIMENSION(1) ::  &
+                   r1dim = (/'radius'/), mn1dim = (/'mn_mode'/), &
+                   mn2dim = (/'mn_mode_nyq'/), &
+                   mnpotdim = (/'mn_mode_pot'/), &
+                   currg = (/'ext_current'/), &
+                   currl = (/'current_label'/)
+      CHARACTER(LEN=*), DIMENSION(2), PARAMETER :: &
+                   r2dim = (/'mn_mode','radius '/), &
+                   r3dim = (/'mn_mode_nyq','radius     '/)
+#endif
+!------------------------------------------------
+!
+!     THIS SUBROUTINE WRITES A netCDF FILE WOUT CREATED BY STORED THE INFORMATION 
+!     IN THE read_WOUT MODULE. This routine can only be called if the wout has 
+!     already been read in.
+
+      iwout0 = 0     
+      CALL cdf_open(nwout,TRIM(filename),'w',iwout0)
+      IF (iwout0 .ne. 0) STOP 'Error opening wout.nc file VMEC WROUT'
+
+
+      nstore_seq = 100
+!      IF (.not. lrecon) THEN
+!         itse = 0
+!         imse2 = 0
+!      END IF
+      
+!================================
+! Define Variables
+!================================
+!  Scalars 
+      CALL cdf_define(nwout, vn_version, version_)
+      CALL cdf_define(nwout, vn_extension, input_extension)
+      CALL cdf_define(nwout, vn_mgrid, mgrid_file)
+      CALL cdf_define(nwout, vn_pcurr_type, pcurr_type)
+      CALL cdf_define(nwout, vn_pmass_type, pmass_type)
+      CALL cdf_define(nwout, vn_piota_type, piota_type)
+      CALL cdf_define(nwout, vn_magen, wb)
+      CALL cdf_define(nwout, vn_therm, wp)
+      CALL cdf_define(nwout, vn_gam, gamma)
+      CALL cdf_define(nwout, vn_maxr, rmax_surf)
+      CALL cdf_define(nwout, vn_minr, rmin_surf)
+      CALL cdf_define(nwout, vn_maxz, zmax_surf)
+      CALL cdf_define(nwout, vn_fp, nfp)
+      CALL cdf_define(nwout, vn_radnod, ns)
+      CALL cdf_define(nwout, vn_polmod, mpol)
+      CALL cdf_define(nwout, vn_tormod, ntor)
+      CALL cdf_define(nwout, vn_maxmod, mnmax)
+      CALL cdf_define(nwout, vn_maxmod_nyq, mnmax_nyq)
+      CALL cdf_define(nwout, vn_maxit, niter)
+      CALL cdf_define(nwout, vn_actit, itfsq)
+      CALL cdf_define(nwout, vn_asym, lasym)
+      CALL cdf_define(nwout, vn_recon, lrecon)
+      CALL cdf_define(nwout, vn_free, lfreeb)
+      CALL cdf_define(nwout, vn_rfp, lrfp)
+      CALL cdf_define(nwout, vn_error, ierr_vmec)
+      CALL cdf_define(nwout, vn_aspect, aspect)
+      CALL cdf_define(nwout, vn_beta, betatot)
+      CALL cdf_define(nwout, vn_pbeta, betapol)
+      CALL cdf_define(nwout, vn_tbeta, betator)
+      CALL cdf_define(nwout, vn_abeta, betaxis)
+      CALL cdf_define(nwout, vn_b0, b0)
+      CALL cdf_define(nwout, vn_rbt0, rbtor0)
+      CALL cdf_define(nwout, vn_rbt1, rbtor)
+      CALL cdf_define(nwout, vn_sgs, isigng)
+      CALL cdf_define(nwout, vn_lar, IonLarmor)
+      CALL cdf_define(nwout, vn_modB, volAvgB)
+      CALL cdf_define(nwout, vn_ctor, Itor)
+      CALL cdf_define(nwout, vn_amin, Aminor)
+      CALL cdf_define(nwout, vn_Rmaj, Rmajor)
+      CALL cdf_define(nwout, vn_vol, Volume)
+      CALL cdf_define(nwout, vn_ftolv, ftolv)
+      CALL cdf_define(nwout, vn_fsql, fsql)
+      CALL cdf_define(nwout, vn_fsqr, fsqr)
+      CALL cdf_define(nwout, vn_fsqz, fsqz)
+
+!      IF (lrecon) THEN
+!         CALL cdf_define(nwout, vn_mse, imse2)
+!         CALL cdf_define(nwout, vn_thom, itse)
+!      END IF
+
+      CALL cdf_define(nwout, vn_nextcur, nextcur)
+      CALL cdf_define(nwout, vn_extcur, extcur(1:nextcur),dimname=currg)
+      CALL cdf_define(nwout, vn_mgmode, mgrid_mode)
+!      IF (lfreeb) THEN
+!         CALL cdf_define(nwout, vn_maxpot, mnpd)
+!         CALL cdf_define(nwout, vn_flp, nobser)
+!         CALL cdf_define(nwout, vn_nobd, nobd)
+!         CALL cdf_define(nwout, vn_nbset, nbsets)
+!         IF (nbsets .gt. 0) CALL cdf_define(nwout,vn_nbfld,nbfld(1:nbsets))
+!      END IF
+      CALL cdf_define(nwout, vn_pmod, xm, dimname=mn1dim)
+      CALL cdf_setatt(nwout, vn_pmod, ln_pmod)
+      CALL cdf_define(nwout, vn_tmod, xn, dimname=mn1dim)
+      CALL cdf_setatt(nwout, vn_tmod, ln_tmod)
+      CALL cdf_define(nwout, vn_pmod_nyq, xm_nyq, dimname=mn2dim)
+      CALL cdf_setatt(nwout, vn_pmod_nyq, ln_pmod_nyq)
+      CALL cdf_define(nwout, vn_tmod_nyq, xn_nyq, dimname=mn2dim)
+      CALL cdf_setatt(nwout, vn_tmod_nyq, ln_tmod_nyq)
+
+      CALL cdf_define(nwout, vn_racc, raxis(0:ntor,1),dimname=(/'n_tor'/))
+      CALL cdf_setatt(nwout, vn_racc, ln_racc)
+      CALL cdf_define(nwout, vn_zacs, zaxis(0:ntor,1),dimname=(/'n_tor'/))
+      CALL cdf_setatt(nwout, vn_zacs, ln_zacs)
+      IF (lasym) THEN
+         CALL cdf_define(nwout, vn_racs, raxis(0:ntor,2),dimname=(/'n_tor'/))
+         CALL cdf_setatt(nwout, vn_racs, ln_racs)
+         CALL cdf_define(nwout, vn_zacc, zaxis(0:ntor,2),dimname=(/'n_tor'/))
+         CALL cdf_setatt(nwout, vn_zacc, ln_zacc)
+      END IF
+
+      j = SIZE(am)-1
+      CALL cdf_define(nwout, vn_am, am(0:j),dimname=(/'preset'/))
+      j = SIZE(ac)-1
+      CALL cdf_define(nwout, vn_ac, ac(0:j),dimname=(/'preset'/))
+      j = SIZE(ai)-1
+      CALL cdf_define(nwout, vn_ai, ai(0:j),dimname=(/'preset'/))
+     
+      j = SIZE(am_aux_s)
+      CALL cdf_define(nwout, vn_am_aux_s, am_aux_s(1:j),dimname=(/'ndfmax'/))
+      j = SIZE(am_aux_f)
+      CALL cdf_define(nwout, vn_am_aux_f, am_aux_f(1:j),dimname=(/'ndfmax'/))
+      j = SIZE(ai_aux_s)
+      CALL cdf_define(nwout, vn_ai_aux_s, ai_aux_s(1:j),dimname=(/'ndfmax'/))
+      j = SIZE(ai_aux_f)
+      CALL cdf_define(nwout, vn_ai_aux_f, ai_aux_f(1:j),dimname=(/'ndfmax'/))
+      j = SIZE(ac_aux_s)
+      CALL cdf_define(nwout, vn_ac_aux_s, ac_aux_s(1:j),dimname=(/'ndfmax'/))
+      j = SIZE(ac_aux_f)
+      CALL cdf_define(nwout, vn_ac_aux_f, ac_aux_f(1:j),dimname=(/'ndfmax'/))
+
+
+      CALL cdf_define(nwout, vn_iotaf, iotaf(1:ns),dimname=r1dim)
+      CALL cdf_setatt(nwout, vn_iotaf, ln_iotaf)
+
+      qfact=HUGE(qfact)
+      WHERE (iotaf(1:ns) .NE. zero) qfact=one/iotaf(1:ns)
+
+      CALL cdf_define(nwout, vn_qfact, qfact(1:ns),dimname=r1dim)
+      CALL cdf_setatt(nwout, vn_iotaf, ln_qfact)
+      CALL cdf_define(nwout, vn_presf, presf,dimname=r1dim)
+      CALL cdf_setatt(nwout, vn_presf, ln_presf, units='Pa')
+      CALL cdf_define(nwout, vn_phi, phi,dimname=r1dim)
+      CALL cdf_setatt(nwout, vn_phi, ln_phi, units='wb')
+      CALL cdf_define(nwout, vn_phipf,phipf, dimname=r1dim)
+      CALL cdf_setatt(nwout, vn_phipf, ln_phipf)
+      CALL cdf_define(nwout, vn_chi, chi,dimname=r1dim)
+      CALL cdf_setatt(nwout, vn_chi, ln_chi, units='wb')
+      CALL cdf_define(nwout, vn_chipf,phipf, dimname=r1dim)
+      CALL cdf_setatt(nwout, vn_chipf, ln_chipf)
+      CALL cdf_define(nwout, vn_jcuru,jcuru, dimname=r1dim)
+      CALL cdf_define(nwout, vn_jcurv,jcurv, dimname=r1dim)
+ 
+      CALL cdf_define(nwout, vn_iotah, iotas(1:ns),dimname=r1dim)
+      CALL cdf_setatt(nwout, vn_iotah, ln_iotah)
+      CALL cdf_define(nwout, vn_mass, mass,dimname=r1dim)
+      CALL cdf_setatt(nwout, vn_mass, ln_mass)
+      CALL cdf_define(nwout, vn_presh, pres(1:ns),dimname=r1dim)
+      CALL cdf_setatt(nwout, vn_presh, ln_presh, units='Pa')
+      CALL cdf_define(nwout, vn_betah, beta_vol,dimname=r1dim)
+      CALL cdf_define(nwout, vn_buco, buco,dimname=r1dim)
+      CALL cdf_define(nwout, vn_bvco, bvco,dimname=r1dim)
+      CALL cdf_define(nwout, vn_vp, vp(1:ns),dimname=r1dim)
+      CALL cdf_define(nwout, vn_specw, specw,dimname=r1dim)
+      CALL cdf_define(nwout, vn_phip,phip(1:ns), dimname=r1dim)
+      CALL cdf_define(nwout, vn_overr,overr(1:ns), dimname=r1dim)
+
+      CALL cdf_define(nwout, vn_jdotb, jdotb,dimname=r1dim)
+      CALL cdf_define(nwout, vn_bdotb, bdotb,dimname=r1dim)
+      CALL cdf_define(nwout, vn_bgrv, bdotgradv,dimname=r1dim)
+
+      CALL cdf_define(nwout, vn_merc, Dmerc,dimname=r1dim)
+      CALL cdf_define(nwout, vn_mshear, Dshear,dimname=r1dim)
+      CALL cdf_define(nwout, vn_mwell, Dwell,dimname=r1dim)
+      CALL cdf_define(nwout, vn_mcurr, Dcurr,dimname=r1dim)
+      CALL cdf_define(nwout, vn_mgeo,Dgeod, dimname=r1dim)
+      CALL cdf_define(nwout, vn_equif,equif, dimname=r1dim)
+
+      CALL cdf_define(nwout, vn_fsq, fsqt(1:nstore_seq),dimname=(/'time'/))
+      CALL cdf_define(nwout, vn_wdot, wdot(1:nstore_seq),dimname=(/'time'/))
+
+!      IF (lfreeb) THEN
+!         CALL cdf_define(nwout, vn_potsin, potvac(1:mnpd),dimname=mnpotdim)
+!         CALL cdf_setatt(nwout, vn_potsin, ln_potsin)
+!         CALL cdf_define(nwout, vn_xmpot, xmpot(1:mnpd),dimname=mnpotdim)
+!         CALL cdf_define(nwout, vn_xnpot, xnpot(1:mnpd),dimname=mnpotdim)
+!         IF (lasym) THEN 
+!            CALL cdf_define(nwout, vn_potcos,potvac(1+mnpd:2*mnpd), dimname=mnpotdim)
+!            CALL cdf_setatt(nwout, vn_potcos, ln_potcos)
+!         END IF
+!
+!         IF (nextcur.gt.0 .and. ALLOCATED(curlabel)) CALL cdf_define(nwout, vn_curlab,curlabel(1:nextcur), dimname=currl)
+!      ENDIF
+! 2D Arrays
+      CALL cdf_define(nwout, vn_rmnc, rmnc, dimname=r2dim)
+      CALL cdf_setatt(nwout, vn_rmnc, ln_rmnc, units='m')
+      CALL cdf_define(nwout, vn_zmns, zmns, dimname=r2dim)
+      CALL cdf_setatt(nwout, vn_zmns, ln_zmns, units='m')
+      CALL cdf_define(nwout, vn_lmns, lmns, dimname=r2dim)
+      CALL cdf_setatt(nwout, vn_lmns, ln_lmns)
+      CALL cdf_define(nwout, vn_gmnc, gmnc, dimname=r3dim)
+      CALL cdf_setatt(nwout, vn_gmnc, ln_gmnc)
+      CALL cdf_define(nwout, vn_bmnc, bmnc, dimname=r3dim)
+      CALL cdf_setatt(nwout, vn_bmnc, ln_bmnc)
+      CALL cdf_define(nwout, vn_bsubumnc, bsubumnc, dimname=r3dim)
+      CALL cdf_setatt(nwout, vn_bsubumnc, ln_bsubumnc)
+      CALL cdf_define(nwout, vn_bsubvmnc, bsubvmnc, dimname=r3dim)
+      CALL cdf_setatt(nwout, vn_bsubvmnc, ln_bsubvmnc)
+      CALL cdf_define(nwout, vn_bsubsmns, bsubsmns, dimname=r3dim)
+      CALL cdf_setatt(nwout, vn_bsubsmns, ln_bsubsmns)
+
+      CALL cdf_define(nwout, vn_currumnc, currumnc, dimname=r3dim)    !MRC 8-12-16
+      CALL cdf_setatt(nwout, vn_currumnc, ln_currumnc)
+      CALL cdf_define(nwout, vn_currvmnc, currvmnc, dimname=r3dim)
+      CALL cdf_setatt(nwout, vn_currvmnc, ln_currvmnc)
+
+      IF (lfreeb) THEN
+         CALL cdf_define(nwout, vn_bsubumnc_sur, bsubumnc_sur,dimname=mn2dim)
+         CALL cdf_setatt(nwout, vn_bsubumnc_sur, ln_bsubumnc_sur)
+         CALL cdf_define(nwout, vn_bsubvmnc_sur, bsubvmnc_sur,dimname=mn2dim)
+         CALL cdf_setatt(nwout, vn_bsubvmnc_sur, ln_bsubvmnc_sur)
+         CALL cdf_define(nwout, vn_bsupumnc_sur, bsupumnc_sur,dimname=mn2dim)
+         CALL cdf_setatt(nwout, vn_bsupumnc_sur, ln_bsupumnc_sur)
+         CALL cdf_define(nwout, vn_bsupvmnc_sur, bsupvmnc_sur,dimname=mn2dim)
+         CALL cdf_setatt(nwout, vn_bsupvmnc_sur, ln_bsupvmnc_sur)
+      END IF
+
+!     ELIMINATE THESE EVENTUALLY: DON'T NEED THEM - CAN COMPUTE FROM GSQRT
+      CALL cdf_define(nwout, vn_bsupumnc, bsupumnc, dimname=r3dim)
+      CALL cdf_define(nwout, vn_bsupvmnc, bsupvmnc, dimname=r3dim)
+
+      IF (lasym) THEN
+         CALL cdf_define(nwout, vn_rmns, rmns, dimname=r2dim)
+         CALL cdf_setatt(nwout, vn_rmns, ln_rmns, units='m')
+         CALL cdf_define(nwout, vn_zmnc, zmnc, dimname=r2dim)
+         CALL cdf_setatt(nwout, vn_zmnc, ln_zmnc, units='m')
+         CALL cdf_define(nwout, vn_lmnc, lmnc, dimname=r2dim)
+         CALL cdf_setatt(nwout, vn_lmnc, ln_lmnc)
+         CALL cdf_define(nwout, vn_gmns, gmns, dimname=r3dim)
+         CALL cdf_setatt(nwout, vn_gmns, ln_gmns)
+         CALL cdf_define(nwout, vn_bmns, bmns, dimname=r3dim)
+         CALL cdf_setatt(nwout, vn_bmns, ln_bmns)
+         CALL cdf_define(nwout, vn_bsubumns, bsubumns, dimname=r3dim)
+         CALL cdf_setatt(nwout, vn_bsubumns, ln_bsubumns)
+         CALL cdf_define(nwout, vn_bsubvmns, bsubvmns, dimname=r3dim)
+         CALL cdf_setatt(nwout, vn_bsubvmns, ln_bsubvmns)
+         CALL cdf_define(nwout, vn_bsubsmnc, bsubsmnc, dimname=r3dim)
+         CALL cdf_setatt(nwout, vn_bsubsmnc, ln_bsubsmnc)
+
+         CALL cdf_define(nwout, vn_currumns, currumns, dimname=r3dim)
+         CALL cdf_setatt(nwout, vn_currumns, ln_currumns)
+         CALL cdf_define(nwout, vn_currvmns, currvmns, dimname=r3dim)
+         CALL cdf_setatt(nwout, vn_currvmns, ln_currvmns)
+
+         IF (lfreeb) THEN
+            CALL cdf_define(nwout, vn_bsubumns_sur, bsubumns_sur,dimname=mn2dim)
+            CALL cdf_setatt(nwout, vn_bsubumns_sur, ln_bsubumns_sur)
+            CALL cdf_define(nwout, vn_bsubvmns_sur, bsubvmns_sur,dimname=mn2dim)
+            CALL cdf_setatt(nwout, vn_bsubvmns_sur, ln_bsubvmns_sur)
+            CALL cdf_define(nwout, vn_bsupumns_sur, bsupumns_sur,dimname=mn2dim)
+            CALL cdf_setatt(nwout, vn_bsupumns_sur, ln_bsupumns_sur)
+            CALL cdf_define(nwout, vn_bsupvmns_sur, bsupvmns_sur,dimname=mn2dim)
+            CALL cdf_setatt(nwout, vn_bsupvmns_sur, ln_bsupvmns_sur)
+         END IF
+
+         CALL cdf_define(nwout, vn_bsupumns, bsupumns, dimname=r3dim)
+         CALL cdf_define(nwout, vn_bsupvmns, bsupvmns, dimname=r3dim)
+      END IF
+
+! Write Vars
+! Scalars
+      CALL cdf_write(nwout, vn_version, version_)
+      CALL cdf_write(nwout, vn_extension, input_extension)
+      CALL cdf_write(nwout, vn_mgrid, mgrid_file)
+      CALL cdf_write(nwout, vn_pcurr_type, pcurr_type)
+      CALL cdf_write(nwout, vn_piota_type, piota_type)
+      CALL cdf_write(nwout, vn_pmass_type, pmass_type)
+      CALL cdf_write(nwout, vn_magen, wb)
+      CALL cdf_write(nwout, vn_therm, wp)
+      CALL cdf_write(nwout, vn_gam, gamma)
+      CALL cdf_write(nwout, vn_maxr, rmax_surf)
+      CALL cdf_write(nwout, vn_minr, rmin_surf)
+      CALL cdf_write(nwout, vn_maxz, zmax_surf)
+      CALL cdf_write(nwout, vn_fp, nfp)
+      CALL cdf_write(nwout, vn_radnod, ns)
+      CALL cdf_write(nwout, vn_polmod, mpol)
+      CALL cdf_write(nwout, vn_tormod, ntor)
+      CALL cdf_write(nwout, vn_maxmod, mnmax)
+      CALL cdf_write(nwout, vn_maxmod_nyq, mnmax_nyq)
+      CALL cdf_write(nwout, vn_maxit, niter)
+      CALL cdf_write(nwout, vn_actit, itfsq)
+      CALL cdf_write(nwout, vn_asym, lasym)
+      CALL cdf_write(nwout, vn_recon, lrecon)
+      CALL cdf_write(nwout, vn_free, lfreeb)
+      CALL cdf_write(nwout, vn_rfp, lrfp)
+      CALL cdf_write(nwout, vn_error, ierr_vmec)
+!
+      CALL cdf_write(nwout, vn_aspect, aspect)
+      CALL cdf_write(nwout, vn_beta, betatot)
+      CALL cdf_write(nwout, vn_pbeta, betapol)
+      CALL cdf_write(nwout, vn_tbeta, betator)
+      CALL cdf_write(nwout, vn_abeta, betaxis)
+      CALL cdf_write(nwout, vn_b0, b0)
+      CALL cdf_write(nwout, vn_rbt0, rbtor0)
+      CALL cdf_write(nwout, vn_rbt1, rbtor)
+      CALL cdf_write(nwout, vn_sgs, isigng)
+      CALL cdf_write(nwout, vn_lar, IonLarmor)
+      CALL cdf_write(nwout, vn_modB, volAvgB)
+      CALL cdf_write(nwout, vn_ctor, Itor)
+      CALL cdf_write(nwout, vn_amin, Aminor)
+      CALL cdf_write(nwout, vn_rmaj, Rmajor)
+      CALL cdf_write(nwout, vn_vol, Volume)
+      CALL cdf_write(nwout, vn_ftolv, ftolv)
+      CALL cdf_write(nwout, vn_fsql, fsql)
+      CALL cdf_write(nwout, vn_fsqr, fsqr)
+      CALL cdf_write(nwout, vn_fsqz, fsqz)
+
+!      IF (lrecon) THEN
+!         CALL cdf_write(nwout, vn_mse, imse2-1)
+!         CALL cdf_write(nwout, vn_thom, itse)
+!      END IF
+
+      CALL cdf_write(nwout, vn_nextcur, nextcur)
+      IF (nextcur .gt. 0) THEN
+         CALL cdf_write(nwout, vn_extcur, extcur(1:nextcur))
+         CALL cdf_write(nwout, vn_mgmode, mgrid_mode)
+      ENDIF
+!      IF (lfreeb) THEN
+!         CALL cdf_write(nwout, vn_flp, nobser)
+!         CALL cdf_write(nwout, vn_maxpot, mnpd)
+!         CALL cdf_write(nwout, vn_nobd, nobd)
+!         CALL cdf_write(nwout, vn_nbset, nbsets)
+!         IF (nextcur.gt.0 .and. ALLOCATED(curlabel)) CALL cdf_write(nwout, vn_curlab, curlabel(1:nextcur))
+!      END IF
+! 1D Arrays
+      IF (nbsets .gt. 0) CALL cdf_write(nwout,vn_nbfld,nbfld(1:nbsets))
+
+      CALL cdf_write(nwout, vn_pmod, xm)
+      CALL cdf_write(nwout, vn_tmod, xn)
+      CALL cdf_write(nwout, vn_pmod_nyq, xm_nyq)
+      CALL cdf_write(nwout, vn_tmod_nyq, xn_nyq)
+
+!      IF (lfreeb) THEN
+!         CALL cdf_write(nwout, vn_potsin, potvac(1:mnpd))
+!         IF (lasym) CALL cdf_write(nwout, vn_potcos, potvac(1+mnpd:2*mnpd))
+!         CALL cdf_write(nwout, vn_xmpot, xmpot)
+!         CALL cdf_write(nwout, vn_xnpot, xnpot)
+!      END IF
+
+      CALL cdf_write(nwout, vn_racc, raxis(0:ntor,1))
+      CALL cdf_write(nwout, vn_zacs, zaxis(0:ntor,1)) 
+      CALL cdf_write(nwout, vn_rmnc, rmnc)
+      CALL cdf_write(nwout, vn_zmns, zmns)
+      CALL cdf_write(nwout, vn_lmns, lmns)
+      CALL cdf_write(nwout, vn_gmnc, gmnc)              !Half mesh
+      CALL cdf_write(nwout, vn_bmnc, bmnc)              !Half mesh
+      CALL cdf_write(nwout, vn_bsubumnc, bsubumnc)      !Half mesh
+      CALL cdf_write(nwout, vn_bsubvmnc, bsubvmnc)      !Half mesh
+      CALL cdf_write(nwout, vn_bsubsmns, bsubsmns)      !Full mesh
+
+      CALL cdf_write(nwout, vn_currumnc, currumnc)      !MRK 8-12-16
+      CALL cdf_write(nwout, vn_currvmnc, currvmnc)
+
+!     GET RID OF THESE EVENTUALLY: DON'T NEED THEM (can express in terms of lambdas)
+      CALL cdf_write(nwout, vn_bsupumnc, bsupumnc)
+      CALL cdf_write(nwout, vn_bsupvmnc, bsupvmnc)
+
+      IF (lfreeb) THEN        !MRC    10-15-15
+         CALL cdf_write(nwout, vn_bsubumnc_sur, bsubumnc_sur)
+         CALL cdf_write(nwout, vn_bsubvmnc_sur, bsubvmnc_sur)
+         CALL cdf_write(nwout, vn_bsupumnc_sur, bsupumnc_sur)
+         CALL cdf_write(nwout, vn_bsupvmnc_sur, bsupvmnc_sur)
+      END IF
+
+!     FULL-MESH quantities
+!     NOTE: jdotb is in units_of_A (1/mu0 incorporated in jxbforce...)
+!     prior to version 6.00, this was output in internal VMEC units...
+
+      j = SIZE(am)-1
+      CALL cdf_write(nwout, vn_am, am(0:j))
+      j = SIZE(ac)-1
+      CALL cdf_write(nwout, vn_ac, ac(0:j))
+      j = SIZE(ai)-1
+      CALL cdf_write(nwout, vn_ai, ai(0:j))
+
+      j = SIZE(am_aux_s)
+      CALL cdf_write(nwout, vn_am_aux_s, am_aux_s(1:j))
+      j = SIZE(am_aux_f)
+      CALL cdf_write(nwout, vn_am_aux_f, am_aux_f(1:j))
+      j = SIZE(ac_aux_s)
+      CALL cdf_write(nwout, vn_ac_aux_s, ac_aux_s(1:j))
+      j = SIZE(ac_aux_f)
+      CALL cdf_write(nwout, vn_ac_aux_f, ac_aux_f(1:j))
+      j = SIZE(ai_aux_s)
+      CALL cdf_write(nwout, vn_ai_aux_s, ai_aux_s(1:j))
+      j = SIZE(ai_aux_f)
+      CALL cdf_write(nwout, vn_ai_aux_f, ai_aux_f(1:j))
+
+      CALL cdf_write(nwout, vn_iotaf, iotaf(1:ns))
+      CALL cdf_write(nwout, vn_qfact, qfact(1:ns))
+      CALL cdf_write(nwout, vn_presf, presf) 
+      CALL cdf_write(nwout, vn_phi, phi) 
+      CALL cdf_write(nwout, vn_phipf, phipf)
+      CALL cdf_write(nwout, vn_chi, chi) 
+      CALL cdf_write(nwout, vn_chipf, chipf)
+      CALL cdf_write(nwout, vn_jcuru, jcuru)
+      CALL cdf_write(nwout, vn_jcurv, jcurv)
+      CALL cdf_write(nwout, vn_jdotb, jdotb)
+      CALL cdf_write(nwout, vn_bdotb, bdotb)
+      CALL cdf_write(nwout, vn_bgrv, bdotgradv)
+ 
+!     HALF-MESH quantities
+      iotas(1) = 0; mass(1) = 0; pres(1) = 0; phip(1) = 0; 
+      buco(1) = 0; bvco(1) = 0; vp(1) = 0; overr(1) = 0;  specw(1) = 1
+      beta_vol(1) = 0
+      CALL cdf_write(nwout, vn_iotah, iotas(1:ns))
+      CALL cdf_write(nwout, vn_mass, mass/mu0) 
+      CALL cdf_write(nwout, vn_presh, pres(1:ns)/mu0)
+      CALL cdf_write(nwout, vn_betah, beta_vol)
+      CALL cdf_write(nwout, vn_buco, buco)
+      CALL cdf_write(nwout, vn_bvco, bvco) 
+      CALL cdf_write(nwout, vn_vp, vp(1:ns))
+      CALL cdf_write(nwout, vn_specw, specw)
+      CALL cdf_write(nwout, vn_phip, phip(1:ns))
+      CALL cdf_write(nwout, vn_overr, overr(1:ns))
+
+!     MERCIER_CRITERION
+      CALL cdf_write(nwout, vn_merc, Dmerc)
+      CALL cdf_write(nwout, vn_mshear, Dshear)
+      CALL cdf_write(nwout, vn_mwell, Dwell)
+      CALL cdf_write(nwout, vn_mcurr, Dcurr)
+      CALL cdf_write(nwout, vn_mgeo, Dgeod)
+      CALL cdf_write(nwout, vn_equif, equif)
+
+      CALL cdf_write(nwout, vn_fsq, fsqt(1:nstore_seq))
+      CALL cdf_write(nwout, vn_wdot, wdot(1:nstore_seq))  
+      IF (lasym) THEN
+         CALL cdf_write(nwout, vn_racs, raxis(0:ntor,2))
+         CALL cdf_write(nwout, vn_zacc, zaxis(0:ntor,2)) 
+         CALL cdf_write(nwout, vn_rmns, rmns)
+         CALL cdf_write(nwout, vn_zmnc, zmnc)
+         CALL cdf_write(nwout, vn_lmnc, lmnc)
+         CALL cdf_write(nwout, vn_gmns, gmns)
+         CALL cdf_write(nwout, vn_bmns, bmns) 
+         CALL cdf_write(nwout, vn_bsubumns, bsubumns)
+         CALL cdf_write(nwout, vn_bsubvmns, bsubvmns)
+         CALL cdf_write(nwout, vn_bsubsmnc, bsubsmnc)
+
+         CALL cdf_write(nwout, vn_currumns, currumns)     !MRC  8-12-16
+         CALL cdf_write(nwout, vn_currvmns, currvmns)
+
+!     GET RID OF THESE EVENTUALLY: DON'T NEED THEM
+         CALL cdf_write(nwout, vn_bsupumns, bsupumns)
+         CALL cdf_write(nwout, vn_bsupvmns, bsupvmns)
+
+         IF (lfreeb) THEN     !MRC    10-15-15
+            CALL cdf_write(nwout, vn_bsubumns_sur, bsubumns_sur)
+            CALL cdf_write(nwout, vn_bsubvmns_sur, bsubvmns_sur)
+            CALL cdf_write(nwout, vn_bsupumns_sur, bsupumns_sur)
+            CALL cdf_write(nwout, vn_bsupvmns_sur, bsupvmns_sur)
+         END IF
+      END IF
+      CALL cdf_close(nwout)
+
+      END SUBROUTINE
+#endif
+
 
       SUBROUTINE Compute_Currents(bsubsmnc_, bsubsmns_,                          &
      &                            bsubumnc_, bsubumns_,                          &
@@ -2118,6 +2647,7 @@
          m = NINT(xm_nyq(mn));  n = NINT(xn_nyq(mn))/nfp
          n1 = ABS(n);   sgn = SIGN(1,n)
          tcosmn = cosmu(m)*cosnv(n1) + sgn*sinmu(m)*sinnv(n1)   
+         tsinmn = sinmu(m)*cosnv(n1) - sgn*cosmu(m)*sinnv(n1)
          IF (lgsqrt) gsqrt = gsqrt + gmnc1(mn)*tcosmn
          IF (lbsupu) bsupu = bsupu + bsupumnc1(mn)*tcosmn
          IF (lbsupv) bsupv = bsupv + bsupvmnc1(mn)*tcosmn
@@ -2129,6 +2659,7 @@
       DO mn = 1, mnmax_nyq
          m = NINT(xm_nyq(mn));  n = NINT(xn_nyq(mn))/nfp
          n1 = ABS(n);   sgn = SIGN(1,n)
+         tcosmn = cosmu(m)*cosnv(n1) + sgn*sinmu(m)*sinnv(n1)   
          tsinmn = sinmu(m)*cosnv(n1) - sgn*cosmu(m)*sinnv(n1)
          IF (lgsqrt) gsqrt = gsqrt + gmns1(mn)*tsinmn
          IF (lbsupu) bsupu = bsupu + bsupumns1(mn)*tsinmn

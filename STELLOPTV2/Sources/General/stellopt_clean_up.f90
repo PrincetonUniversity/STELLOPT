@@ -33,6 +33,7 @@
                              restart_flag, readin_flag, timestep_flag, &
                              output_flag, cleanup_flag, reset_jacdt_flag
 !                             animec_flag, flow_flag
+      USE read_wout_mod, ONLY: read_wout_file, write_wout_file, read_wout_deallocate
       USE fdjac_mod, ONLY: flag_singletask, flag_cleanup, &
                            JAC_CLEANUP => flag_cleanup_jac,&
                            LEV_CLEANUP => flag_cleanup_lev
@@ -109,10 +110,16 @@
                           !IF (TRIM(equil_type)=='animec') vctrl_array(1) = vctrl_array(1) + animec_flag
                           !IF (TRIM(equil_type)=='flow' .or. TRIM(equil_type)=='satire') vctrl_array(1) = vctrl_array(1) + flow_flag
                          CALL runvmec(vctrl_array,proc_string,.false.,MPI_COMM_SELF,'')
+                         ier=vctrl_array(2)
                      CASE('parvmec','paravmec','vmec2000','vboot')
                          CALL stellopt_paraexe('paravmec_write',proc_string,.false.)
+                         ier = ier_paraexe
+                     CASE('vmec2000_oneeq')
+                         CALL read_wout_deallocate
+                         CALL read_wout_file(TRIM(proc_string_old),iflag)
+                         CALL write_wout_file('wout_'//TRIM(proc_string)//'.nc',iflag)
+                         ier = successful_term_flag
                   END SELECT
-                  ier=vctrl_array(2)
                   iflag = ier
                   IF (ier == successful_term_flag) iflag = 0
                   ier = 0
@@ -278,10 +285,13 @@
                      !IF (TRIM(equil_type)=='animec') vctrl_array(1) = vctrl_array(1) + animec_flag
                      !IF (TRIM(equil_type)=='flow' .or. TRIM(equil_type)=='satire') vctrl_array(1) = vctrl_array(1) + flow_flag
                      CALL runvmec(vctrl_array,proc_string,.false.,MPI_COMM_SELF,'')
+                     ier = vctrl_array(2)
                   CASE('parvmec','paravmec','vmec2000','vboot')
-                     CALL stellopt_paraexe('paravmec_write',proc_string,.false.)
+                      CALL stellopt_paraexe('paravmec_write',proc_string,.false.)
+                      ier = ier_paraexe
+                  CASE('vmec2000_oneeq')
+                      ! Do nothing, no reset file generated
                END SELECT
-               iflag = ier_paraexe
                iflag = ier
                IF (ier_paraexe == successful_term_flag) iflag = 0
 !DEC$ IF DEFINED (COILOPTPP)
@@ -300,6 +310,12 @@
                   SELECT CASE(TRIM(equil_type))
                      CASE('parvmec','paravmec','vmec2000','vboot')
                          CALL stellopt_paraexe('paravmec_write',proc_string,.false.)
+                         ier = ier_paraexe
+                      CASE('vmec2000_oneeq')
+                         CALL read_wout_deallocate
+                         CALL read_wout_file(TRIM(proc_string_old),iflag)
+                         CALL write_wout_file('wout_'//TRIM(proc_string)//'.nc',iflag)
+                         ier = successful_term_flag
                   END SELECT
                   ier=vctrl_array(2)
                   iflag = ier

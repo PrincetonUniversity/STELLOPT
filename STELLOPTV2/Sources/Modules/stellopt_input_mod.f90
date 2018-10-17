@@ -1373,8 +1373,7 @@
       WRITE(iunit,outboo) 'LKEEP_MINS',lkeep_mins
       WRITE(iunit,outint) 'SFINCS_MIN_PROCS',sfincs_min_procs
       WRITE(iunit,outflt) 'VBOOT_TOLERANCE',vboot_tolerance
-      !WRITE(iunit,outboo) 'LREFIT',lrefit
-      !WRITE(iunit,outflt) 'REFIT_PARAM',refit_param
+      WRITE(iunit,outstr) 'BOOTCALC_TYPE',TRIM(bootcalc_type)
       WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
       WRITE(iunit,'(A)') '!       Optimized Quantities'
       WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
@@ -1892,7 +1891,6 @@
          WRITE(iunit,"(2X,A,1X,'=',5(1X,E22.14))") 'BOOTJ_AUX_S',(bootj_aux_s(n), n=1,ik)
          WRITE(iunit,"(2X,A,1X,'=',5(1X,E22.14))") 'BOOTJ_AUX_F',(bootj_aux_f(n), n=1,ik)
       END IF
-      WRITE(iunit,outstr) 'BOOTCALC_TYPE',TRIM(bootcalc_type)
       ik = MINLOC(sfincs_s(2:),DIM=1)
       IF (ik > 2) THEN
          WRITE(iunit,"(2X,A,1X,'=',5(1X,E22.14))") 'SFINCS_S',(sfincs_s(n), n=1,ik)

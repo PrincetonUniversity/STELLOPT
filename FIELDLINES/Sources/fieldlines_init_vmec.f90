@@ -178,7 +178,7 @@
                sflx = 0.0
                CALL GetAcyl(raxis_g(i),phiaxis(j),zaxis_g(k),&
                             br, bphi, bz, SFLX=sflx,info=ier)
-               IF (ier == 0 .and. bphi /= 0) THEN
+               IF (ier == 0 .and. bphi /= 0 .and. sflx<=1) THEN
                   B_R(i,j,k)   = br
                   B_PHI(i,j,k) = bphi
                   B_Z(i,j,k)   = bz
@@ -186,7 +186,7 @@
                   B_R(i,j,k)   = 0.0
                   B_PHI(i,j,k) = 1.0
                   B_Z(i,j,k)   = 0.0
-               ELSE IF (ier == -3 .or. bphi == 0) THEN
+               ELSE IF (ier == -3 .or. bphi == 0 .or. s>1) THEN
                   xaxis_vc = raxis_g(i)*cos(phiaxis(j))
                   yaxis_vc = raxis_g(i)*sin(phiaxis(j))
                   zaxis_vc = zaxis_g(k)
@@ -227,7 +227,7 @@
                ! outside the VMEC domain.
                CALL GetBcyl(raxis_g(i),phiaxis(j),zaxis_g(k),&
                                   br, bphi, bz, SFLX=sflx,info=ier)
-               IF (ier == 0 .and. bphi /= 0) THEN
+               IF (ier == 0 .and. bphi /= 0 .and. sflx<=1) THEN
                   B_R(i,j,k)   = br
                   B_PHI(i,j,k) = bphi
                   B_Z(i,j,k)   = bz
@@ -235,7 +235,7 @@
                   B_R(i,j,k)   = 0.0
                   B_PHI(i,j,k) = 1.0
                   B_Z(i,j,k)   = 0.0
-               ELSE IF (ier == -3 .or. bphi == 0) THEN
+               ELSE IF (ier == -3 .or. bphi == 0 .or. s>1) THEN
                   xaxis_vc = raxis_g(i)*cos(phiaxis(j))
                   yaxis_vc = raxis_g(i)*sin(phiaxis(j))
                   zaxis_vc = zaxis_g(k)

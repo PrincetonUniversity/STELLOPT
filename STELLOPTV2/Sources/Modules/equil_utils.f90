@@ -809,7 +809,8 @@
       CALL tolower(prof_type)
       profile_norm = 0.0_rprec
       SELECT CASE (prof_type)
-         CASE ('two_power','two_power_hollow','two_power_offset','two_lorentz','gauss_trunc','gauss_trunc_offset','sum_atan','pedestal','bump','hollow')
+         CASE ('two_power','two_power_hollow','two_power_offset','two_lorentz','gauss_trunc', &
+               'gauss_trunc_offset','sum_atan','pedestal','bump','hollow','hollow2')
             profile_norm = 0.0_rprec  ! Don't normalize as we don't want to screw up our coefficients
          CASE ('power_series','power_series_edge0','power_series_0_boundaries')
             DO ik = LBOUND(x,DIM=1), UBOUND(x,DIM=1)
