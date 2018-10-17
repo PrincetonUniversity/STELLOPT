@@ -1,6 +1,7 @@
 =Tutorial: FIELDLINES Vacuum NCSX Tutorial= 
 This tutorial will walk the user through running the FIELDLINES code for a vacuum NCSX configuration.
-[[image:vmecwiki/poinc3d_ncsx_c09r00_vac.jpg width="480" height="360" align="right"]]
+
+{{images/poinc3d_ncsx_c09r00_vac.jpg}}
 
 ----
 
