@@ -1,6 +1,8 @@
 =Tutorial: NCSX Neutral Beam Injection Example=
 {{images/ncsx_fieldlines.jpg}}
 
+<img src="images/ncsx_fieldlines.jpg" alt="this is my image" />
+
 This tutorial will walk the user through running the BEAMS3D code for neutral beam injection. If the user is unfamiliar with the VMEC input namelist, please see the VMEC tutorials.
 
 ----
