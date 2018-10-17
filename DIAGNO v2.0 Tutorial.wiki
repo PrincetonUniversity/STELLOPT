@@ -1,11 +1,13 @@
-=Tutorial: DIAGNO NCSX Tutorial[[image:NCSX_fluxloops_plasma.jpg width="275" height="210" align="right"]]= 
+=Tutorial: DIAGNO NCSX Tutorial= 
 This tutorial will walk the user running the DIAGNO code for a [[VMEC Free Boundary Run|VMEC free boundary equilibrium]]. It is assumed the user has a converged free boundary equilibrium (wout file).
+
+{{image/NCSX_fluxloops_plasma.jpg}}
 
 ----
 
-# **__The diagnostic files.__**
+1. **__The diagnostic files.__**
 > Each type of diagnostic requires a diagnostic definition file. For this case we will be using the NCSX flux loops as our diagnostic ([[file:diagno_fluxloops.NCSX]]). This file contains the specification of the 205 saddle type flux loops on NCSX. Below is a sample from this file.
-> [[code]]
+{{{
 205
    301     0     0   1_AA_1
 -1.727866496 -0.196865519 -0.244078684
@@ -37,10 +39,10 @@ This tutorial will walk the user running the DIAGNO code for a [[VMEC Free Bound
 -1.744854194 -0.155077897 -0.232978350
 -1.745526075 -0.153480160 -0.232542512
 -1.746197549 -0.151881891 -0.232108019
-[[code]]
-# __**Add the DIAGNO_IN name list to the input file**__
+}}}
+2. __**Add the DIAGNO_IN name list to the input file**__
 > The DIAGNO code looks for the 'DIAGNO_IN' namelist in the VMEC input file (). The 'DIAGNO_IN' namelist is shown below
-> [[code format="fortran"]]
+{{{
 &diagno_in
   NU = 96
   NV = 48
@@ -51,10 +53,10 @@ This tutorial will walk the user running the DIAGNO code for a [[VMEC Free Bound
   LRPHIZ = .false.
 /
                                                            
-[[code]]
-# __**Run DIAGNO**__
+}}}
+3 __**Run DIAGNO**__
 > The DIAGNO code takes the VMEC input extension from the command line as so
-> [[code format="bash"]]
+{{{
  > ~/bin/xdiagno -vmec ncsx_c09r00_free
 ===========================================
 =========  D I A G N O  (v.3.10)  =========
@@ -83,6 +85,6 @@ This tutorial will walk the user running the DIAGNO code for a [[VMEC Free Bound
        5            301              0.22268368E-03
        6            301             -0.15810012E-03
 
-[[code]]
-# __**Examine the Output**__
+}}}
+4. __**Examine the Output**__
 > The DIAGNO code will produce a diagno_flux.NCSX_c09r00_free file which contains the flux loop values and names.
