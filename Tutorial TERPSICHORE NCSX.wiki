@@ -1,13 +1,13 @@
-=Tutorial: TERPSICHORE NCSX Example[[image:ncsx_fieldlines.jpg width="240" height="172" align="right"]]= 
+=Tutorial: TERPSICHORE NCSX Example= 
 This tutorial walks the user through running TERPSICHORE on an NCSX equilibrium.
 
 ----
 
-# __**Generate the equilibrium file**__
-> TERPSICHORE in standalone mode requires the user to provide a text file (named fort.18) which described the VMEC equilibrium. One can run STELLOPT (with kink targeting turned on) to generate these files (terpsichore_eq.ext files). In this example we provide one based on the LI383 equilibrium.[[file:fort.18]]
-# __**Modify and recompile TERPSICHORE**__
+> 1. __**Generate the equilibrium file**__
+> TERPSICHORE in standalone mode requires the user to provide a text file (named fort.18) which described the VMEC equilibrium. One can run STELLOPT (with kink targeting turned on) to generate these files (terpsichore_eq.ext files). In this example we provide one based on the LI383 equilibrium.[[examples/fort.18]]
+> 2. __**Modify and recompile TERPSICHORE**__
 > The TERPSICHORE source must be modified for a given set of parameters. The file to edit is tpr_modules_ap.f. Edit the header as so
-> [[code format="fortran"]]
+{{{
        NI = 48
        NJ=151
        NK=151
@@ -19,12 +19,12 @@ This tutorial walks the user through running TERPSICHORE on an NCSX equilibrium.
        LSSD=2745
        MMAXDF=127
        NMAXDF=31
-[[code]]
+}}}
 > The simply rebuild the code by running the 'make' command.
 > 
-# __**Setup the input file**__
+> 2. __**Setup the input file**__
 > With the code compiled you'll need to generate an input file. The one below can be used to examine the n=1 family of modes in the equilibrium. You'll notice in the stability mode table that not just the n=1 modes are examined. This is because in stellarator geometry the modes couple by +/-NFP so for NFP=3 we have n=...-5,-2,1,4,7...
-> [[code]]
+{{{
                QAS-3n0
 C
 C        MM  NMIN  NMAX   MMS NSMIN NSMAX NPROCS INSOL
@@ -123,14 +123,15 @@ C
 C   NEV NITMAX         AL0     EPSPAM  IGREEN MPINIT
       1   4500  -0.500E-04   1.000E-04      0      0
 C
-[[code]]
-# __**Run the code**__
+}}}
+
+> 3. __**Run the code**__
 > Now we can execute the code by passing the TERPSICHORE input file to the code through standard in
-> [[code format="bash"]]
+{{{
 >> ./tpr_ap.x < terpsichore_input_01
-[[code]]
+}}}
 > First some information from the input files is printed on the screen.
-> [[code format="bash"]]
+{{{
 1
  ###### TERPSICHORE #########  EQINVM  ######### TERPSICHORE #### 
                                    QAS-3n0                 
@@ -764,5 +765,5 @@ Total running time = 3.514094E+02 seconds
 14 7 2.46410908E-03
 20 10 1.15232245E-03
 9 4 4.51602990E-04
-[[code]]
-> 
+}}}
+>
