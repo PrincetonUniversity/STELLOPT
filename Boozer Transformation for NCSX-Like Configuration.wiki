@@ -1,4 +1,4 @@
-=Tutorial: Boozer Transformation{{images/ncsx_fieldlines.jpg}}= 
+=Tutorial: Boozer Transformation= 
 This tutorial will walk the user through running [[BOOZ_XFORM]] on the free boundary equilibrium generated in the [[VMEC Free Boundary Run|VMEC Free Boundary Tutorial]]. For this example the National Compact Stellarator Experiment (NCSX) configuration will be used. This machine is stellarator symmetric with a periodicity of three.
 
 ----
