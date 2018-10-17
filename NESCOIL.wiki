@@ -1,22 +1,21 @@
 =NESCOIL= 
-[[toc]]
-The NESCOIL (NEumann Solver for fields produced by externals COILs) <ref>[[http://dx.doi.org/10.1088/0029-5515/27/5/018|P. Merkel 1987 //Nucl. Fusion// **27** 867]]</ref> code calculates a surface current on the exterior surface of two toroidally closed surfaces such that the normal field on the interior surface is minimized.
+The NESCOIL (NEumann Solver for fields produced by externals COILs) ([[http://dx.doi.org/10.1088/0029-5515/27/5/018|P. Merkel 1987 //Nucl. Fusion// **27** 867]]) code calculates a surface current on the exterior surface of two toroidally closed surfaces such that the normal field on the interior surface is minimized.
 
 ----
 
-===Theory[[#Theory]]=== 
+===Theory=== 
 Here's the section to explain the theory behind the code.
 
 ----
 
-===Compilation[[#Compilation]]=== 
+===Compilation=== 
 Here's the section to explain how to compile the code.
 
 ----
 
-===Input Data Format[[#Input]]=== 
+===Input Data Format=== 
 The NESCOIL code takes an input file 'nescin.ext' where ext is the extension appended to each run. An input file is generated with each run of the [[BNORM]] code. There must also be a bnorm file with the same extension in the directory from which the code is run. The input file has the following format
-[[code]]
+{{{
 ------ Spatial dimensions ----
 nu, nv, nu1, nv1, npol, ntor, lasym_bn
  180 180 180 180 20 10 F
@@ -48,7 +47,7 @@ Table of fourier coefficients
 m,n,crc,czs,cls,crs,czc,clc
       0     0  1.378200000000E+00  0.000000000000E+00  0.000000000000E+00  0.000000000000E+00  0.000000000000E+00  0.000000000000E+00
       0    -1 -4.145200000000E-03  7.163400000000E-03  3.337515916590E-02  0.000000000000E+00  0.000000000000E+00  0.000000000000E+00
-[[code]]
+}}}
 The following table explains each parameter as defined by the preceding line:
 
 || Input Parameter Name || Description ||
@@ -71,7 +70,7 @@ The following table explains each parameter as defined by the preceding line:
 || ibex || External field supplied if IBEX = 1 ||
 || mstrt || Method + svdscan start if > 1, >=0 Berr, <=0 Least square ||
 || mstep || Method + svdscan stepsize <=0 least square, =0 use F04ABE, no svd ||
-|| mkeep || svd/scan control 0 svdscan, else keep |nkeep| wgts ||
+|| mkeep || svd/scan control 0 svdscan, else keep nkeep wgts ||
 || mdspw || 2 + exponent of dsur multiplying bfn, ben ||
 || curwt || Weight for surface current minimization (only in LSQ branch) ||
 || trgwt || Not yet implemented ||
@@ -85,20 +84,20 @@ The following table explains each parameter as defined by the preceding line:
 
 ----
 
-===Execution[[#Execution]]=== 
+===Execution=== 
 The code is executed from the command line by passing the name of the 'nescin.ext' file to the code
 
 ----
 
-===Output Data Format[[#Output]]=== 
+===Output Data Format=== 
 A text file is output with the name 'nescout.ext' where 'ext' in the same extension as the input file which generated the output. In the file, the various input parameters are output in tables along with the Fourier harmonics of the surface potential. Setting the w_psurf, w_csurf, w_bnuv, w_jsurf, w_xerr, and w_svd flags can modify the parameters which are output to this file. This file is essentially a self-documenting text file.
 
 ----
 
-===Visualization[[#Visualization]]=== 
+===Visualization=== 
 Explain how to visualize the data.
 
 ----
 
-===Tutorials[[#Tutorials]]=== 
+===Tutorials=== 
 Put links to tutorial pages here.
