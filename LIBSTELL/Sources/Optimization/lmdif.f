@@ -655,6 +655,10 @@ c     Get mpi parameters
                  delta = MAX(delta, delta_old)
                  par = MIN(par, par_old)
               END IF
+              
+              ! By deffinition we need to try smaller bounds now   
+              delta = 0.25 * MIN(delta, delta_old)
+              par   = 4 * par
 
               actred = 1 - (fnorm1/fnorm)**2
               ratio = actred/prered
