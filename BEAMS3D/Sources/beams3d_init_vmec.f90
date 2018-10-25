@@ -289,13 +289,13 @@
             ELSE
                WRITE(6,*) myworkid,mylocalid,i,j,k,ier
             END IF
-         ELSE
+         !ELSE
             ! This is an error code check
-            PRINT *,'ERROR in GetBcyl Detected'
-            PRINT *,'R,PHI,Z',raxis_g(i),phiaxis(j),zaxis_g(k)
-            print *,'br,bphi,bz,myworkid',br,bphi,bz,mylocalid
-            CALL FLUSH(6)
-            stop 'ERROR in GetBcyl'
+            !PRINT *,'ERROR in GetBcyl Detected'
+            !PRINT *,'R,PHI,Z',raxis_g(i),phiaxis(j),zaxis_g(k)
+            !print *,'br,bphi,bz,myworkid',br,bphi,bz,mylocalid
+            !CALL FLUSH(6)
+            !stop 'ERROR in GetBcyl'
          END IF
          IF (lverb .and. (MOD(s,nr) == 0)) THEN
             CALL backspace_out(6,6)
