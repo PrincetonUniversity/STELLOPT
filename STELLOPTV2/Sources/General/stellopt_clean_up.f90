@@ -33,6 +33,7 @@
                              restart_flag, readin_flag, timestep_flag, &
                              output_flag, cleanup_flag, reset_jacdt_flag
 !                             animec_flag, flow_flag
+      USE read_wout_mod, ONLY: read_wout_file, write_wout_file, read_wout_deallocate
       USE fdjac_mod, ONLY: flag_singletask, flag_cleanup, &
                            JAC_CLEANUP => flag_cleanup_jac,&
                            LEV_CLEANUP => flag_cleanup_lev
@@ -72,7 +73,7 @@
       iunit_out = 12
       ier = 0
       SELECT CASE(TRIM(equil_type))
-         CASE('vmec2000','animec','flow','satire','parvmec','paravmec','vboot')
+         CASE('vmec2000','animec','flow','satire','parvmec','paravmec','vboot','vmec2000_oneeq')
             IF (ctype == PSO_CLEANUP) THEN
                IF (ncnt /= 1) THEN
                   WRITE(temp_str,'(i5.5)') ncnt
@@ -107,10 +108,16 @@
                           !IF (TRIM(equil_type)=='animec') vctrl_array(1) = vctrl_array(1) + animec_flag
                           !IF (TRIM(equil_type)=='flow' .or. TRIM(equil_type)=='satire') vctrl_array(1) = vctrl_array(1) + flow_flag
                          CALL runvmec(vctrl_array,proc_string,.false.,MPI_COMM_SELF,'')
+                         ier=vctrl_array(2)
                      CASE('parvmec','paravmec','vmec2000','vboot')
                          CALL stellopt_paraexe('paravmec_write',proc_string,.false.)
+                         ier = ier_paraexe
+                     CASE('vmec2000_oneeq')
+                         CALL read_wout_deallocate
+                         CALL read_wout_file(TRIM(proc_string_old),iflag)
+                         CALL write_wout_file('wout_'//TRIM(proc_string)//'.nc',iflag)
+                         ier = successful_term_flag
                   END SELECT
-                  ier=vctrl_array(2)
                   iflag = ier
                   IF (ier == successful_term_flag) iflag = 0
                   ier = 0
@@ -196,20 +203,10 @@
 !DEC$ ENDIF
 !DEC$ IF DEFINED (REGCOIL)
                  ! OUTPUT FILES SHOULD BE WRITTEN HERE - Use the regcoil
-                 ! write_output functions to write the hdf5 output file
-                  IF (sigma_coil_bnorm < bigno) THEN
-                     CALL move_txtfile('bnorm.'//TRIM(proc_string_old),&
-                                       'bnorm.'//TRIM(proc_string))
-                     CALL move_txtfile('regcoil_params.'//TRIM(proc_string_old),&
-                                       'regcoil_params.'//TRIM(proc_string))
-                     ! CALL copy_txtfile('Bnormal_from_plasma_current'//TRIM(proc_string_old)//'.dat',&
-                     !                   'Bnormal_from_plasma_current'//TRIM(proc_string)//'.dat')
-                     ! CALL copy_txtfile('Bnormal_total_'//TRIM(proc_string_old)//'.dat',&
-                     !                   'Bnormal_total'//TRIM(proc_string)//'.dat')
-                     ! CALL move_txtfile('Bnormal_from_plasma_current'//TRIM(proc_string_old)//'.dat',&
-                     !                   'Bnormal_from_plasma_current'//TRIM(proc_string)//'.dat')
-                     ! Need to write out the winding surface.
-                  END IF
+                 ! functions to write the hdf5 output file
+                 ! This is inside of the PSO loop. Should be
+                 ! duplicated, or broken out to a subroutine
+                 ! WRITE *, '<----- REGCOIL Output files missing -----'
 !DEC$ ENDIF
 !DEC$ IF DEFINED (TERPSICHORE)
                   IF (ANY(sigma_kink < bigno)) THEN
@@ -283,10 +280,13 @@
                      !IF (TRIM(equil_type)=='animec') vctrl_array(1) = vctrl_array(1) + animec_flag
                      !IF (TRIM(equil_type)=='flow' .or. TRIM(equil_type)=='satire') vctrl_array(1) = vctrl_array(1) + flow_flag
                      CALL runvmec(vctrl_array,proc_string,.false.,MPI_COMM_SELF,'')
+                     ier = vctrl_array(2)
                   CASE('parvmec','paravmec','vmec2000','vboot')
-                     CALL stellopt_paraexe('paravmec_write',proc_string,.false.)
+                      CALL stellopt_paraexe('paravmec_write',proc_string,.false.)
+                      ier = ier_paraexe
+                  CASE('vmec2000_oneeq')
+                      ! Do nothing, no reset file generated
                END SELECT
-               iflag = ier_paraexe
                iflag = ier
                IF (ier_paraexe == successful_term_flag) iflag = 0
 !DEC$ IF DEFINED (COILOPTPP)
@@ -298,14 +298,6 @@
                   END DO
                END IF
 !DEC$ ENDIF
-!DEC$ IF DEFINED (REGCOIL)
-               IF (sigma_regcoil_bnorm < bigno .and. (proc_string.ne.proc_string_old) ) THEN
-                  ! MUST Call 'regcoil_write in'
-                  !CALL regcoil_write_namelist(iunit_out,ier)
-                  ! MUST Write out winding surface
-
-               END IF
-!DEC$ ENDIF
                ! Keep minimum states
                IF (lkeep_mins) THEN
                   WRITE(temp_str,'(i5.5)') ncnt
@@ -313,6 +305,12 @@
                   SELECT CASE(TRIM(equil_type))
                      CASE('parvmec','paravmec','vmec2000','vboot')
                          CALL stellopt_paraexe('paravmec_write',proc_string,.false.)
+                         ier = ier_paraexe
+                      CASE('vmec2000_oneeq')
+                         CALL read_wout_deallocate
+                         CALL read_wout_file(TRIM(proc_string_old),iflag)
+                         CALL write_wout_file('wout_'//TRIM(proc_string)//'.nc',iflag)
+                         ier = successful_term_flag
                   END SELECT
                   ier=vctrl_array(2)
                   iflag = ier
@@ -402,18 +400,16 @@
                   END IF
 !DEC$ ENDIF
 !DEC$ IF DEFINED (REGCOIL)
-                  IF (sigma_coil_bnorm < bigno) THEN
-                     ! CALL move_txtfile('bnorm.'//TRIM(proc_string_old),&
-                     !                   'bnorm.'//TRIM(proc_string))
-                     ! CALL move_txtfile('regcoil_params.'//TRIM(proc_string_old),&
-                     !                   'regcoil_params.'//TRIM(proc_string))
-                     ! CALL copy_txtfile('Bnormal_from_plasma_current'//TRIM(proc_string_old)//'.dat',&
-                     !                   'Bnormal_from_plasma_current'//TRIM(proc_string)//'.dat')
-                     ! CALL copy_txtfile('Bnormal_total_'//TRIM(proc_string_old)//'.dat',&
-                     !                   'Bnormal_total'//TRIM(proc_string)//'.dat')
-                     ! CALL move_txtfile('Bnormal_from_plasma_current'//TRIM(proc_string_old)//'.dat',&
-                     !                   'Bnormal_from_plasma_current'//TRIM(proc_string)//'.dat')
-                     ! Need to write out the winding surface.
+                  ! Currently inside of LEV and GADE cleanup loop, and 
+                  ! 'Keeping the mins' section
+                  IF ( ANY(sigma_regcoil_chi2_b < bigno) .and. &
+                     ( ANY(lregcoil_rcws_rbound_c_opt) .or. ANY(lregcoil_rcws_rbound_s_opt) .or. &
+                       ANY(lregcoil_rcws_zbound_c_opt) .or. ANY(lregcoil_rcws_zbound_s_opt) ) ) THEN
+                     !print *, '<---In LEV/GADE cleanup.'
+                     !print *, '<---proc_string_old = ', proc_string_old
+                     !print *, '<---proc_string = ', proc_string
+                     CALL copy_txtfile('regcoil_nescout.'//TRIM(proc_string_old),&
+                                       'regcoil_nescout.'//TRIM(proc_string))
                   END IF
 !DEC$ ENDIF
 !DEC$ IF DEFINED (TERPSICHORE)
@@ -513,6 +509,10 @@
 !DEC$ IF DEFINED (BEAMS3D_OPT)
                   IF (ANY(sigma_orbit < bigno)) CALL write_beams3d_namelist(iunit_out,ier)
 !DEC$ ENDIF
+!DEC$ IF DEFINED (REGCOIL)
+                 ! JCS to do: If needed put regcoil items here.
+!DEC$ ENDIF
+
                WRITE(iunit_out,'(A)') '&END'
                CLOSE(iunit_out)
                ! Overwrite the restart file

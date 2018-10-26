@@ -99,9 +99,11 @@ C-----------------------------------------------
       IF (PRESENT(sflx)) sflx = c_flx(1)  
       IF (PRESENT(uflx)) uflx = c_flx(2)
 
-      IF (c_flx(1) .gt. one) THEN
+      IF (c_flx(1) .gt. 2) THEN
          Br = 0;  Bphi = 0;  Bz = 0
          RETURN
+      ELSE IF (c_flx(1) .gt. one) THEN
+         c_flx(1) = one
       END IF
 !
 !     2. Evaluate Bsupu, Bsupv at this point
@@ -1102,6 +1104,7 @@ C-----------------------------------------------
       factor = 1
       nfe = 0
       edge_value = one + one/(ns_loc-1)
+      edge_value = 2*one
       isgt1 = 0
 
       DO ieval = 1, niter

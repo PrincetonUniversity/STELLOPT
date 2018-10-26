@@ -25,6 +25,7 @@
                              output_flag, cleanup_flag, reset_jacdt_flag
 !                             animec_flag, flow_flag
       USE vmec_main, ONLY:  multi_ns_grid
+      USE read_wout_mod, ONLY: read_wout_file, write_wout_file, read_wout_deallocate
       USE mpi_params                                                    ! MPI
       IMPLICIT NONE
       
@@ -44,11 +45,11 @@
       
 !-----------------------------------------------------------------------
 !     Local Variables
-!        ier         Error flag
+!        iflag       Error flag
 !        iunit       File unit number
 !----------------------------------------------------------------------
       LOGICAL ::  lscreen
-      INTEGER ::  ier, nvar_in, dex, dex2, ik, istat, iunit, pass, mf,nf
+      INTEGER ::  nvar_in, dex, dex2, ik, istat, iunit, pass, mf,nf
       INTEGER ::  vctrl_array(5)
       REAL(rprec) :: norm_aphi, norm_am, norm_ac, norm_ai, norm_ah,&
                      norm_at, norm_ne, norm_te, norm_ti, norm_th, &
@@ -145,6 +146,10 @@
          IF (var_dex(nvar_in) == icoil_splinefx)   coil_splinefx(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
          IF (var_dex(nvar_in) == icoil_splinefy)   coil_splinefy(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
          IF (var_dex(nvar_in) == icoil_splinefz)   coil_splinefz(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
+         IF (var_dex(nvar_in) == iregcoil_rcws_rbound_c) regcoil_rcws_rbound_c(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
+         IF (var_dex(nvar_in) == iregcoil_rcws_rbound_s) regcoil_rcws_rbound_s(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
+         IF (var_dex(nvar_in) == iregcoil_rcws_zbound_c) regcoil_rcws_zbound_c(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
+         IF (var_dex(nvar_in) == iregcoil_rcws_zbound_s) regcoil_rcws_zbound_s(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
       END DO
 
       ! Adust Boundary Representation
@@ -285,6 +290,19 @@
             CASE('vboot')
                iflag = 0
                CALL stellopt_vboot(lscreen,iflag)
+            CASE('vmec2000_oneeq')
+               IF (iflag .eq. -1) THEN
+                  iflag = 0
+                  CALL stellopt_paraexe('paravmec_run',proc_string,lscreen)
+                  iflag = ier_paraexe
+                  IF (lscreen .and. lverb) WRITE(6,*)  '-------------------------  PARAVMEC CALCULATION DONE  -----------------------'
+               ELSE
+                  CALL read_wout_deallocate
+                  CALL read_wout_file(TRIM(id_string)//'_opt0',iflag)
+                  CALL write_wout_file('wout_'//TRIM(proc_string)//'.nc',iflag)
+                  CALL stellopt_prof_to_vmec(proc_string,iflag)
+                  iflag = 0
+               END IF
             CASE('spec')
          END SELECT
          ! Check profiles for negative values of pressure
@@ -341,11 +359,12 @@
          IF (sigma_coil_bnorm < bigno .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
 !DEC$ ENDIF
 !DEC$ IF DEFINED (REGCOIL)
-         ! JCS: skipping parallelization for now - gonna try to do this
-         ! in serial
+         ! JCS: skipping parallelization for now 
          ! ctemp_str = 'regcoil_chi2_b'
          ! IF (sigma_regcoil_chi2_b < bigno .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen)
-         IF (sigma_regcoil_chi2_b < bigno) CALL stellopt_regcoil_chi2_b(lscreen, iflag)
+         IF (ANY(sigma_regcoil_chi2_b < bigno)) then
+           CALL stellopt_regcoil_chi2_b(lscreen, iflag)
+         end if
 !DEC$ ENDIF
 
          ! Now we load target values if an error was found then

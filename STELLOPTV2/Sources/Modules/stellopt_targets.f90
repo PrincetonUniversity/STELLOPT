@@ -9,7 +9,7 @@
 !     Libraries
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
-      USE vparams, ONLY: nsd
+      USE vparams, ONLY: nsd, ntor_rcws, mpol_rcws
       USE vsvd0, ONLY : nigroup
 
 !-----------------------------------------------------------------------
@@ -72,6 +72,7 @@
       REAL(rprec) ::  target_rbtor, sigma_rbtor
       REAL(rprec) ::  target_r0, sigma_r0
       REAL(rprec) ::  target_z0, sigma_z0
+      REAL(rprec) ::  target_b0, sigma_b0
       REAL(rprec) ::  target_aspect_max, sigma_aspect_max, width_aspect_max
       REAL(rprec) ::  target_gradp_max, sigma_gradp_max, width_gradp_max
       REAL(rprec) ::  target_pmin, sigma_pmin, width_pmin
@@ -173,9 +174,9 @@
       INTEGER     ::  nu_bnorm,nv_bnorm
       REAL(rprec) ::  target_regcoil_winding_surface_separation
       REAL(rprec) ::  sigma_regcoil_winding_surface_separation
-      REAL(rprec) ::  target_regcoil_bnorm, sigma_regcoil_bnorm
-      REAL(rprec) ::  target_regcoil_chi2_b, sigma_regcoil_chi2_b
+      REAL(rprec),DIMENSION((2*ntor_rcws+1)*(2*mpol_rcws+1)*4) ::  target_regcoil_chi2_b, sigma_regcoil_chi2_b
       REAL(rprec) ::  target_regcoil_current_density, sigma_regcoil_current_density
+      REAL(rprec) ::  target_curvature_p2, sigma_curvature_P2
       REAL(rprec), DIMENSION(nigroup)    :: target_coillen, sigma_coillen
       INTEGER     :: npts_curv, npts_csep, npts_cself
       REAL(rprec), DIMENSION(nigroup)    :: target_coilcrv,  sigma_coilcrv
@@ -190,6 +191,7 @@
       INTEGER, PARAMETER :: jtarget_kappa      = 1005
       INTEGER, PARAMETER :: jtarget_kappa_box  = 10051
       INTEGER, PARAMETER :: jtarget_kappa_avg  = 10052
+      INTEGER, PARAMETER :: jtarget_b0         = 1006
       INTEGER, PARAMETER :: jtarget_beta       = 101
       INTEGER, PARAMETER :: jtarget_betapol    = 1011
       INTEGER, PARAMETER :: jtarget_betator    = 1012
@@ -245,9 +247,9 @@
       INTEGER, PARAMETER :: jtarget_coilcrv    = 615
       INTEGER, PARAMETER :: jtarget_coilsep    = 616
       INTEGER, PARAMETER :: jtarget_coilself   = 617
-      INTEGER, PARAMETER :: jtarget_regcoil_bnorm = 5150
-      INTEGER, PARAMETER :: jtarget_regcoil_chi2_b = 5151
-      INTEGER, PARAMETER :: jtarget_regcoil_current_density = 5152
+      INTEGER, PARAMETER :: jtarget_regcoil_chi2_b = 5150
+      INTEGER, PARAMETER :: jtarget_regcoil_current_density = 5151
+      INTEGER, PARAMETER :: jtarget_curvature_P2 = 5200
       
 
       CONTAINS
@@ -294,6 +296,8 @@
             WRITE(iunit, out_format) 'Min Pressure'
          CASE(jtarget_rbtor)
             WRITE(iunit, out_format) 'R*Btor'
+         CASE(jtarget_b0)
+            WRITE(iunit, out_format) 'B0 (phi=0)'
          CASE(jtarget_r0)
             WRITE(iunit, out_format) 'R0 (phi=0)'
          CASE(jtarget_z0)
@@ -374,8 +378,6 @@
             WRITE(iunit, out_format) 'Limiter'
          CASE(jtarget_coil_bnorm)
             WRITE(iunit, out_format) 'COILOPT++ Normal Field'
-         CASE(jtarget_regcoil_bnorm)
-            WRITE(iunit, out_format) 'REGCOIL Normal Field (or something useful)'
          CASE(jtarget_regcoil_chi2_b)
             WRITE(iunit, out_format) 'REGCOIL Chi^2 B'
          CASE(jtarget_regcoil_current_density)
@@ -388,6 +390,8 @@
             WRITE(iunit, out_format) 'Minimum Coil Separation'
          CASE(jtarget_coilself)
             WRITE(iunit, out_format) 'Number of Coil Self-intersections'
+         CASE(jtarget_curvature_p2)
+            WRITE(iunit, out_format) 'Maximum 2nd Principal Curvature'
       END SELECT
       END SUBROUTINE write_targets
       

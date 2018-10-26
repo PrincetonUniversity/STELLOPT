@@ -278,7 +278,7 @@
       DEALLOCATE(xp,yp,zp,rp,phip)
       DEALLOCATE(bx,by,bz,br,bphi,modb)
       DEALLOCATE(th_inc,phi_inc,eff_area)
-      DEALLOCATE(bn,flux)
+      DEALLOCATE(flux)
       DEALLOCATE(bx_mut,by_mut,bz_mut,br_mut,&
                   bphi_mut,modb_mut,bn_mut)
       

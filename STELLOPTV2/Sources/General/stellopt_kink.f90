@@ -51,7 +51,7 @@
       wp_kink = 0; wk_kink = 0; growth_kink = 0; omega_kink = 0;
       IF (lscreen) WRITE(6,'(a)') ' ---------------------------  KINK STABILITY  -------------------------'
       SELECT CASE(TRIM(equil_type))
-         CASE('vmec2000','parvmec','paravmec')
+         CASE('vmec2000','parvmec','paravmec','vboot','vmec2000_oneeq')
 !DEC$ IF DEFINED (TERPSICHORE)
             ! Setup TERPSICHORE Variables
 !DEC$ IF DEFINED (MPI_OPT)

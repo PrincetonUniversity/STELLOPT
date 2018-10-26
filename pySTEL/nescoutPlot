@@ -1,0 +1,169 @@
+#!/usr/bin/env python
+
+print "usage: nescoutPlot nescout.XXX"
+
+import matplotlib.pyplot as plt
+import numpy as np
+import sys
+import math
+
+if len(sys.argv) != 2:
+    print "Error! You must specify 1 argument: the nescout file."
+    exit(1)
+
+nescoutFilename = sys.argv[1]
+
+ntheta = 150
+nzeta = 4
+theta = np.linspace(0,2*np.pi,num=ntheta)
+zeta = np.linspace(0,2*np.pi,num=nzeta,endpoint=False)
+
+f=open(nescoutFilename,'r')
+
+R_nescout_plasma = np.zeros((ntheta,nzeta))
+Z_nescout_plasma = np.zeros((ntheta,nzeta))
+
+line = f.readline()
+line = f.readline()
+line = f.readline()
+# At this point "line" contains values of nu, nv, nu1, nv1, npol, ntor
+
+
+line = f.readline()
+line = f.readline()
+line = f.readline()
+# At this point, "line" contains values of mf, nf, md, nd
+data = line.split()
+# mf and nf are the number of Fourier modes for the current potential.
+mf = int(data[0])
+nf = int(data[1])
+print "Number of modes in current potential: mf=",mf,",  nf=",nf
+
+line = f.readline()
+line = f.readline()
+line = f.readline()
+# At this point, "line" contains values of np, iota_edge, phip_edge, curpol
+data = line.split()
+nfp = int(data[0])
+print "Number of field periods nfp=",nfp
+
+line = f.readline()
+line = f.readline()
+line = f.readline()
+# At this point, "line" contains values of cut, cup, ibex
+data = line.split()
+cut = float(data[0])
+cup = float(data[1])
+print "Net toroidal and poloidal currents: cut=",cut,",  cup=",cup
+
+while "Number of fourier modes in table" not in line:
+    line = f.readline()
+line = f.readline()
+nmodes = int(line)
+print "Number of Fourier modes in plasma surface from nescout file: ",nmodes
+line = f.readline()
+line = f.readline()
+for imode in range(nmodes):
+    data = f.readline().split()
+    m = int(data[0])
+    n = int(data[1])
+    crc = float(data[2])
+    czs = float(data[3])
+    # Skip remaining columns
+    for itheta in range(ntheta):
+        for izeta in range(nzeta):
+            # NESCOIL convention is m theta + n zeta, not m theta - n zeta!!
+            angle = m*theta[itheta] + n*zeta[izeta]
+            R_nescout_plasma[itheta,izeta] = R_nescout_plasma[itheta,izeta] + crc*math.cos(angle)
+            Z_nescout_plasma[itheta,izeta] = Z_nescout_plasma[itheta,izeta] + czs*math.sin(angle)
+
+R_nescout_coil = np.zeros((ntheta,nzeta))
+Z_nescout_coil = np.zeros((ntheta,nzeta))
+line = ''
+while "Number of fourier modes in table" not in line:
+    line = f.readline()
+line = f.readline()
+nmodes = int(line)
+print "Number of Fourier modes in coil surface from nescout file: ",nmodes
+line = f.readline()
+line = f.readline()
+for imode in range(nmodes):
+    data = f.readline().split()
+    m = int(data[0])
+    n = int(data[1])
+    crc = float(data[2])
+    czs = float(data[3])
+    # Skip remaining columns
+    for itheta in range(ntheta):
+        for izeta in range(nzeta):
+            angle = m*theta[itheta] + n*zeta[izeta]
+            R_nescout_coil[itheta,izeta] = R_nescout_coil[itheta,izeta] + crc*np.cos(angle)
+            Z_nescout_coil[itheta,izeta] = Z_nescout_coil[itheta,izeta] + czs*np.sin(angle)
+
+
+# Prepare to build the current potential:
+nu_cp = 64
+nv_cp = 64
+#nu_cp = 90
+#nv_cp = 100
+u_cp = np.linspace(0,1,num=nu_cp)
+v_cp = np.linspace(0,1,num=nv_cp)
+v2D_cp,u2D_cp = np.meshgrid(v_cp,u_cp)
+# Convert from nescoil code parameters to the variables in Merkel's papers:
+It = cut
+Ip = cup*nfp
+#cp = np.zeros([nu_cp,nv_cp])
+cp = Ip*v2D_cp/nfp + It*u2D_cp
+#cp = -Ip*v2D_cp/nfp - It*u2D_cp # This line was the original.
+
+# Now skip down to where the current potential harmonics are given.
+while "Phi(m,n)" not in line:
+    line = f.readline()
+for i in range((mf+1) * (2*nf+1)):
+    data = f.readline().split()
+    #print data
+    m = int(data[0])
+    n = int(data[1])
+    amplitude = float(data[2])
+    angle = 2*np.pi*(m*u2D_cp + n*v2D_cp)
+    cp += amplitude*np.sin(angle)
+
+f.close()
+
+fig = plt.figure()
+fig.patch.set_facecolor('white')
+
+numCols = 2
+numRows = 2
+plotNum = 1
+
+for whichPlot in range(4):
+    plt.subplot(numRows,numCols,plotNum)
+    plotNum += 1
+    plt.plot(R_nescout_plasma[:,whichPlot], Z_nescout_plasma[:,whichPlot], ':r',label='plasma')
+    plt.plot(R_nescout_coil[:,whichPlot], Z_nescout_coil[:,whichPlot], '-c',label='coil')
+    plt.gca().set_aspect('equal',adjustable='box')
+    plt.legend(fontsize='x-small')
+    plt.title('zeta = '+str(zeta[whichPlot]/np.pi)+'pi')
+    plt.xlabel('R')
+    plt.ylabel('Z')
+
+plt.tight_layout()
+
+my_clim = (-1.2,0.2)
+fig = plt.figure(2)
+fig.patch.set_facecolor('white')
+colorbar_levels = np.linspace(-1.2,0.2,15)
+print colorbar_levels
+#plt.contourf(v_cp,u_cp,cp,colorbar_levels,clim=my_clim)
+plt.contourf(v_cp,u_cp,cp,20)
+#plt.imshow(v_cp,u_cp,cp,clim=my_clim)
+#plt.imshow(v_cp,u_cp,cp)
+plt.title('Current potential')
+plt.xlabel('v')
+plt.ylabel('u')
+plt.colorbar(ticks=colorbar_levels)
+
+
+plt.show()
+

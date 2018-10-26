@@ -14,7 +14,7 @@
                                     lhitonly, lmu, mu, lwall_trans, lmodb
       USE fieldlines_lines, ONLY: R_lines, Z_lines, PHI_lines, myline,&
                                   nsteps,nlines,myldex, B_lines, xlast,&
-                                  ylast, zlast, myend
+                                  ylast, zlast, myend, L_lines
       USE fieldlines_grid, ONLY: delta_phi, MU_spl, MODB_spl
       USE wall_mod, ONLY: collide
       USE random, ONLY: random_normal
@@ -60,6 +60,10 @@
             R_lines(myline,myldex) = SQRT(xw*xw+yw*yw)
             PHI_lines(myline,myldex) = ATAN2(yw,xw)
             Z_lines(myline,myldex) = zw
+            L_lines(myline) = L_lines(myline) + &
+                              sqrt((xw-x0)*(xw-x0) + &
+                                   (yw-y0)*(yw-y0) + &
+                                   (zw-z0)*(zw-z0))
             IF (lhitonly) THEN
                R_lines(myline,0) = SQRT(xlast*xlast+ylast*ylast)
                PHI_lines(myline,0) = ATAN2(ylast,xlast)
@@ -70,9 +74,13 @@
             END IF
             IF (.not. lwall_trans) phi = phi_end(myline)+dphi ! End the line
          ELSE 
-           xlast = x1
-           ylast = y1
-           zlast = z1
+            L_lines(myline) = L_lines(myline) + &
+                              sqrt((x1-x0)*(x1-x0) + &
+                                   (y1-y0)*(y1-y0) + &
+                                   (z1-z0)*(z1-z0))
+            xlast = x1
+            ylast = y1
+            zlast = z1
          END IF
       ELSE
          xlast = q(1)*cos(phi)

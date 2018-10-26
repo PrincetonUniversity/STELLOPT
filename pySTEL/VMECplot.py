@@ -1,22 +1,18 @@
 #!/usr/bin/env python3
 import sys, os
+os.environ['ETS_TOOLKIT'] = 'qt4'
 import matplotlib
 matplotlib.use("Qt4Agg")
 import matplotlib.pyplot as _plt
 import numpy as np                    #For Arrays
 from math import pi
 from PyQt4 import uic, QtGui
-from PyQt4.QtGui import QMainWindow, QApplication, qApp, QApplication, QVBoxLayout, \
-                        QSizePolicy, QWidget
+from PyQt4.QtGui import QMainWindow, QApplication, qApp, QApplication, QVBoxLayout, QSizePolicy
 from PyQt4.QtGui import QIcon
 from libstell.libstell import read_vmec, cfunct, sfunct, torocont, isotoro, calc_jll
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from mpl_toolkits import mplot3d
-# MayaVi stuff
-#os.environ['ETS_TOOLKIT'] = 'qt4'
-#from mayavi.core.ui.api import MayaviScene
-#from mayavi import mlab
 
 try:
 	qtCreatorPath=os.environ["STELLOPT_PATH"]
@@ -33,13 +29,12 @@ class MyApp(QMainWindow):
 		super(MyApp, self).__init__()
 		self.ui = Ui_MainWindow()
 		self.ui.setupUi(self) 
-		self.setStyleSheet("background-color: white;");
-		#self.ui.PlotButtons.setStyleSheet("background-color: white;");
+		#self.setStyleSheet("background-color: white;");
 		self.statusBar().showMessage('Ready')
 		self.ui.plot_list = ['Summary','-----1D-----','Iota','q','Pressure',\
 		'<Buco>','<Bvco>','<jcuru>','<jcurv>','<j.B>',  '-----3D------','|B|','sqrt(g)',\
 		'B^u','B^v','B_s','B_u','B_v','j^u','j^v', 'jll', 'j.B','---Special---','LPK']
-		files = os.listdir('.')
+		files = sorted(os.listdir('.'))
 		for name in files:
 			if(name[0:4]=='wout'):
 				self.ui.FileName.addItem(name)
@@ -51,6 +46,10 @@ class MyApp(QMainWindow):
 		self.nu = self.vmec_data['mpol']*4
 		self.nv = self.vmec_data['ntor']*4*self.vmec_data['nfp']
 		self.nv2 = self.vmec_data['ntor']*4
+		if self.nu < 128:
+			self.nu = 128
+		if self.nv < 64:
+			self.nv = 64
 		self.TransformVMEC(self)
 		self.s=0
 		self.u=0
@@ -58,16 +57,11 @@ class MyApp(QMainWindow):
 		self.ui.rhoslider.setMaximum(self.ns-1)
 		self.ui.uslider.setMaximum(self.nu-1)
 		self.ui.vslider.setMaximum((self.nv/self.vmec_data['nfp']))
-		# Matplotlib figure
+		# Plot figure
 		self.fig = Figure(figsize=(2,2),dpi=100)
 		self.ax = self.fig.add_subplot(111)
 		self.canvas = FigureCanvas(self.fig)
 		self.ui.plot_widget.addWidget(self.canvas)
-		# Mayvi figure
-		#self.mayavis = mlab.figure()
-		#self.ui.plot_widget.addWidget(self.mayavis)
-		#self.canvas.hide()
-		#self.canvas.hide()
 		#self.canvas.draw()
 		# Callbacks		
 		self.ui.FileName.currentIndexChanged.connect(self.FileSelect)
@@ -82,14 +76,18 @@ class MyApp(QMainWindow):
 		self.ui.rhoslider.valueChanged.connect(self.CutSelect)
 		self.ui.uslider.valueChanged.connect(self.CutSelect)
 		self.ui.vslider.valueChanged.connect(self.CutSelect)
-		self.ui.savebutton.clicked.connect(self.SaveImg)
 
 	def FileSelect(self,i):
 		self.vmec_data=read_vmec(self.ui.FileName.currentText())
 		#self.ui.PlotList.addItems(self.ui.plot_list)
 		self.ns = self.vmec_data['ns']
 		self.nu = self.vmec_data['mpol']*4
-		self.nv = self.vmec_data['ntor']*4
+		self.nv = self.vmec_data['ntor']*4*self.vmec_data['nfp']
+		self.nv2 = self.vmec_data['ntor']*4
+		if self.nu < 32:
+			self.nu = 32
+		if self.nv < 16:
+			self.nv = 16
 		self.TransformVMEC(self)
 		self.s=0
 		self.u=0
@@ -173,7 +171,7 @@ class MyApp(QMainWindow):
 		self.update_plot(self)
 
 	def update_plot(self,i):
-		self.canvas.show()
+		#self.ui.plot_widget.addWidget(self.canvas)
 		plot_name = self.ui.PlotList.currentText();
 		self.fig.clf()
 		#self.fig.delaxes(self.ax)
@@ -284,17 +282,13 @@ class MyApp(QMainWindow):
 				self.ax.set_ylabel('Z [m]')
 				self.ax.set_aspect('equal')
 			elif (self.ui.ThreeD_button.isChecked()):
-				#mayavi_widget = MayaviQWidget(self.plot_widget)
-				#self.ui.plot_widget.addWidget(self.canvas)
-				#self.canvas.hide() # Hide matplotlib
+				self.fig.delaxes(self.ax)
+				#self.canvas.draw()
+				#self.ui.plot_widget.removeWidget(self.canvas)
 				self.ax = isotoro(self.r,self.z,self.zeta,self.s,val,fig=self.fig)
 				self.ax.grid(False)
 				self.ax.set_axis_off()
 		self.canvas.draw()
-
-	def SaveImg(self,i):
-		filename=self.ui.saveas_filename.toPlainText()
-		self.canvas.print_figure(filename)
 
 	def TransformVMEC(self, i):
 		self.nflux = np.ndarray((self.ns,1))

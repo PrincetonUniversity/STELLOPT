@@ -1,9 +1,11 @@
+# -*- mode: makefile -*-
+
 #######################################################################
 #            Define Basic Utilities
 #######################################################################
   SHELL = /bin/sh
   PWD1 = `pwd`
-  MYHOME = /global/u2/l/lazerson/bin_cori
+  MYHOME = $(HOME)/bin_cori
   PRECOMP:= fpp -C -P -DLINUX
   COMPILE = ftn
   COMPILE_FREE = ftn
@@ -26,6 +28,8 @@
   MPI_COMPILE_FREE = ftn
   MPI_COMPILE_C = cc
   MPI_LINK = ftn
+  MPI_RUN = srun
+  MPI_RUN_OPTS = -n 8 -c 16
 
 #######################################################################
 #            NAG Options
@@ -43,7 +47,7 @@
 #######################################################################
 #            NTCC Options
 #######################################################################
-  LNTCC = T
+  LNTCC = F
   NTCC_INC = -I/global/homes/l/lazerson/pub_cori/preact/mod 
   NTCC_LIB = -L/global/homes/l/lazerson/pub_cori/preact/lib \
              -lpreact -lsigsub -laladdinsub -lpreact -lportlib
@@ -115,6 +119,17 @@
                $(TRAVIS_DIR)/mag_conf/lib/$(LIB_MCONF) -lstdc++
 
 #######################################################################
+#            SFINCS Options
+#######################################################################
+
+  LSFINCS = F
+  SFINCS_DIR = $(SFINCS_PATH)
+  SFINCS_INC = -I$(SFINCS_DIR)
+  LIB_SFINCS = libsfincs.a
+  SFINCS_LIB = $(SFINCS_DIR)/$(LIB_SFINCS) \
+	$(PETSC_LIB) $(FC_LINKER_FLAGS) $(FFLAGS)
+
+#######################################################################
 #            REGCOIL Options
 #######################################################################
   LREGCOIL= F
@@ -126,7 +141,7 @@
 #######################################################################
 #            LIBSTELL Shared Options
 #######################################################################
-LIB_SHARE = 
+LIB_SHARE = $(LIBS)
 
 #######################################################################
 #######################################################################
@@ -220,6 +235,7 @@ else
   LCOILOPT = F
   LTERPSICHORE = F
   LTRAVIS = F
+  LSFINCS = F
 endif
 ifeq ($(MAKECMDGOALS),xanimec)
   PRECOMP += -D_ANIMEC
@@ -278,6 +294,15 @@ else
   TRAVIS_DIR = 
   LIB_TRAVIS = 
 endif
+ifeq ($(LSFINCS),T)
+  MOD1_PATH += $(SFINCS_INC)
+  PRECOMP += -DSFINCS
+  MOD_PATH += -I$(SFINCS_DIR)
+else
+  SFINCS_LIB = 
+  SFINCS_DIR = 
+  LIB_SFINCS = 
+endif
 ifeq ($(LREGCOIL),T)
   MOD1_PATH += $(REGCOIL_INC)
   PRECOMP += -DREGCOIL
@@ -289,7 +314,7 @@ else
 endif
 
 # Handle other codes
-LIB_LINK += $(GENE_LIB) $(COILOPT_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB) $(REGCOIL_LIB)
+LIB_LINK += $(GENE_LIB) $(COILOPT_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB) $(SFINCS_LIB) $(REGCOIL_LIB)
 
 # Add libraries to LIB_LINK
 #LIB_LINK+= $(HOME_BIN)/libstell.a $(LIBS)
@@ -309,27 +334,32 @@ ifeq ($(LNETCDF),T)
   PRECOMP += -DNETCDF
   LIB_LINK += $(NETCDF_LIB)
   MOD_PATH += $(NETCDF_INC)
+  LIB_SHARE += $(NETCDF_LIB)
 endif
 ifeq ($(LHDF5),T)
   MOD1_PATH += $(HDF5_INC)
   PRECOMP += -DLHDF5 -DH5_USE_16_API
   LIB_LINK += $(HDF5_LIB)
   MOD_PATH += $(HDF5_INC)
+  LIB_SHARE += $(HDF5_LIB)
 endif
 ifeq ($(LNAG),T)
   PRECOMP += -DNAG
   LIB_LINK += $(NAG_LIB)
+  LIB_SHARE += $(NAG_LIB)
 endif
 ifeq ($(LNTCC),T)
   MOD1_PATH += $(NTCC_INC)
   PRECOMP += -DLADAS -DNTCC
   LIB_LINK += $(NTCC_LIB)
   MOD_PATH += $(NTCC_INC)
+  LIB_SHARE += $(NTCC_LIB)
 endif
 ifeq ($(LSILO),T)
   MOD1_PATH += $(SILO_INC)
   PRECOMP += -DSILO_AVAI
   LIB_LINK += $(SILO_LIB)
+  LIB_SHARE += $(SILO_LIB)
 endif
 
 # This is hear because of MPI above resetting LINK
@@ -340,7 +370,12 @@ ifeq ($(MAKECMDGOALS),libstell.a)
   INC_PATH = 
 endif
 ifeq ($(MAKECMDGOALS),libstell.so)
-  LIB_LINK = $(LIB_SHARE)
+  LINK = $(LINK_C)
+  LIB_LINK = $(LIB_SHARE) 
+# Note this is needed for Cori for reasons
+  LIB_LINK += -L$(NETCDF_DIR)/lib -lnetcdf -lnetcdff
+  LIB_LINK += -L$(HDF5_DIR)/lib -lhdf5_hl -lhdf5_fortran -lhdf5 \
+             -lhdf5hl_fortran 
   COMPILE += -fPIC
   COMPILE_FREE += -fPIC
   INC_PATH = 
