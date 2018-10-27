@@ -1,0 +1,21 @@
+#!/bin/bash -l
+
+# Standard output and error:
+##SBATCH -o ./sfincsJob.out.%j
+##SBATCH -e ./sfincsJob.err.%j
+# Initial working directory:
+#SBATCH -D ./
+# Job Name:
+#SBATCH -J parvmec
+
+# Queue (Partition):
+#SBATCH --partition=express
+
+#SBATCH --nodes=8
+#SBATCH --ntasks-per-node=32
+
+# Wall clock limit:
+#SBATCH --time=00:30:00
+
+#srun ../../sfincs -ksp_view
+time srun /u/mlan/stellopt/bin/xstelloptv2 input.vboot_QHS46_sfincs

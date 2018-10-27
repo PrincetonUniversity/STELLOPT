@@ -103,6 +103,7 @@
       ! Create a fluxloop files
       ! Note that for DIA_LOOP we need to subtract off PHIEDGE if using VC but not J
       IF (myworkid == master) THEN
+         iunit_out = 27
          CALL safe_open(iunit_out,ier,'test_loops_j.'//TRIM(id_string),'replace','formatted')
          WRITE(iunit_out,'(I6)') 3
          WRITE(iunit_out,'(3I6,A48)') 36,0,0,'DIA_LOOP'
@@ -127,6 +128,7 @@
             WRITE(iunit_out,'(3ES22.12E3)') xp,yp,zp
          END DO
          CLOSE(iunit_out)
+         iunit_out = 28
          CALL safe_open(iunit_out,ier,'test_loops_b.'//TRIM(id_string),'replace','formatted')
          WRITE(iunit_out,'(I6)') 3
          WRITE(iunit_out,'(3I6,A48)') 36,0,1,'DIA_LOOP'
@@ -297,6 +299,7 @@
       ! Write the test points file
       id_string = id_string_temp
       IF (myworkid == master) THEN
+         iunit_out = 29
          CALL safe_open(iunit_out,ier,'diagno_bench.'//TRIM(id_string),'replace','formatted')
          DO i = 1, ig
                WRITE(iunit_out,'(15E20.10)') bfield_data(i,1:15)

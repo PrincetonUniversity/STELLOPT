@@ -85,7 +85,7 @@
       INTEGER :: itab_out                     !record file addition
       LOGICAL :: lscreen
 
-      NAMELIST /dkes_indata/mpol, ntor, lalpha, ipmb, mmnn, meshtz, idisk,
+      NAMELIST /dkes_indata/mpol, ntor, lalpha, ipmb,mmnn,meshtz,idisk,
      1   lfout, ifscl, nrun, cmul, efield, nzperiod, chip, psip, mpolb,
      2   ntorb, nvalsb, borbi, btheta, bzeta, ibbi
 

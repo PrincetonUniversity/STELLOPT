@@ -20,7 +20,7 @@
       <x>0</x>
       <y>0</y>
       <width>891</width>
-      <height>591</height>
+      <height>611</height>
      </rect>
     </property>
     <property name="currentIndex">
@@ -1100,22 +1100,22 @@
       </widget>
      </widget>
     </widget>
-    <widget class="QWidget" name="tab">
+    <widget class="QWidget" name="tabOPTplot">
      <attribute name="title">
       <string>OPTplot</string>
      </attribute>
      <widget class="QWidget" name="gridLayoutWidget_2">
       <property name="geometry">
        <rect>
-        <x>339</x>
-        <y>19</y>
-        <width>531</width>
-        <height>531</height>
+        <x>309</x>
+        <y>49</y>
+        <width>561</width>
+        <height>521</height>
        </rect>
       </property>
       <layout class="QGridLayout" name="OPTplot_box"/>
      </widget>
-     <widget class="QComboBox" name="OPTplot_type">
+     <widget class="QComboBox" name="ComboBoxOPTplot_type">
       <property name="geometry">
        <rect>
         <x>10</x>
@@ -1123,6 +1123,19 @@
         <width>271</width>
         <height>26</height>
        </rect>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="ButtonLoadSTELLOPT">
+      <property name="geometry">
+       <rect>
+        <x>340</x>
+        <y>10</y>
+        <width>110</width>
+        <height>32</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Load stellopt</string>
       </property>
      </widget>
     </widget>
@@ -1134,7 +1147,7 @@
      <x>0</x>
      <y>0</y>
      <width>893</width>
-     <height>22</height>
+     <height>20</height>
     </rect>
    </property>
   </widget>

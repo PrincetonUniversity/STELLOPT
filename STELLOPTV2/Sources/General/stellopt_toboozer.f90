@@ -56,7 +56,7 @@
       IF (iflag < 0) RETURN
       IF (lscreen) WRITE(6,'(a)') ' ---------------------------  BOOZER TRANSFORMATION  -------------------------'
       SELECT CASE(TRIM(equil_type))
-         CASE('vmec2000','animec','flow','satire','parvmec','paravmec','vboot')
+         CASE('vmec2000','animec','flow','satire','parvmec','paravmec','vboot','vmec2000_oneeq')
             lscreen_xboozer = lscreen
             ! We need to pass mboz and nboz to the boozer routines
             mboz_xboozer = mboz

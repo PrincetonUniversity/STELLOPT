@@ -1,0 +1,87 @@
+&parallelization
+n_procs_s =    1
+n_procs_v =    1
+n_procs_w =    1
+n_procs_y =    1
+n_procs_x =    1
+n_procs_z =   64  !should be a divisor of nz0 (maximum: 0.5*nz0)
+/
+
+&box
+!these are typical values for a nonlinear run with adiabatic
+!electrons:
+n_spec = 1
+nx0 =  15
+nky0 = 1 ! 1 mode at a time
+nz0 =  256
+nv0 =  32
+nw0 =   8
+
+lx =  	  125.628
+kymin =     0.9 
+lv =        3.0    
+lw =        9.0    
+
+adapt_lx = .t.  
+/
+
+&in_out
+diagdir = './' 
+
+write_checkpoint = .t.
+istep_field =   100
+istep_mom =     100
+istep_nrg =      10
+istep_vsp =     5000
+istep_schpt =  10000
+/
+
+&general
+nonlinear = .f. !main difference
+calc_dt   = .t. ! if true, dt_max will be calculated by SLEPC or
+		! if not available approximated by CFL limit
+comp_type = 'EV'  ! 2/10/12.for use of SLEPC.
+n_ev = 1  
+ev_prec = 1.e-2  
+ev_max_it = 500  
+
+ntimesteps = 50000  
+timelim =   500  
+dt_max = 0.0385
+courant = 0.4  
+
+beta =    0.000
+hyp_z =   0.25
+hyp_v =   0.2
+init_cond = 'alm'  
+pressure_off=.f.  
+/
+
+&geometry
+q0 =      1.4
+trpeps =  0.18
+shat =   0.6565
+magn_geometry = 'gist'  
+geomdir = '.'   
+geomfile = 'parameters'  
+/
+
+&species
+name =   'ions'      
+omn =    0.0
+omt =    4.0
+mass =    1.0
+charge =    1    
+temp =    1.0
+dens =    1.0
+/
+
+&species
+name =   'electrons' 
+omn =    2.22
+omt =    6.92
+mass =   0.0025
+charge =   -1
+temp =    1.0
+dens =    1.0
+/

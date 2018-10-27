@@ -11,8 +11,8 @@ from PyQt4.QtGui import QMainWindow, QApplication, qApp, QApplication, QVBoxLayo
 from PyQt4.QtGui import QIcon, QTableWidget, QTableWidgetItem
 from libstell.libstell import safe_open, read_indata_namelist, pmass, pcurr, piota, \
                               set_module_var, safe_close, cfunct, sfunct, isotoro, \
-                              write_indata_namelist
-from libstell.stellopt import read_stellopt_namelist
+                              write_indata_namelist, read_vmec, cfunct, sfunct
+from libstell.stellopt import read_stellopt_namelist, write_stellopt_namelist, read_stellopt
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from mpl_toolkits import mplot3d
@@ -43,6 +43,8 @@ class MyApp(QMainWindow):
 		self.indata['ntor']=4
 		self.indata['mpol']=9
 		self.indata['nfp']=3
+		self.ui.tabMain.setTabEnabled(0,False)
+		self.ui.tabMain.setTabEnabled(2,False)
 		# Set the OPTIMUM DEFAULTS (will repalce with something like read_indata_namelist)
 		self.optimum=read_stellopt_namelist(iunit,istat)
 		# Setup Components
@@ -50,12 +52,16 @@ class MyApp(QMainWindow):
 		self.ui.TableArrays.setColumnCount(20)
 		for num,item in enumerate(self.indata['am'], start=0):
 			self.ui.TableArrays.setItem(0,num, QTableWidgetItem(str(item)))
-		# Setup Plot
+		# Setup Plot VMEC
 		self.fig = Figure(figsize=(2,2),dpi=100)
 		self.ax = self.fig.add_subplot(111)
 		self.canvas = FigureCanvas(self.fig)
 		self.ui.Plotbox.addWidget(self.canvas)
-		self.DrawArrays()
+		# Setup Plot STELLOPT
+		self.fig2 = Figure(figsize=(2,2),dpi=100)
+		self.ax2 = self.fig2.add_subplot(111)
+		self.canvas2 = FigureCanvas(self.fig2)
+		self.ui.OPTplot_box.addWidget(self.canvas2)
 		# Setup STELLOPT Pannels
 		self.UpdateOPTtype()
 		self.UpdateOPTVarsScalar()
@@ -82,6 +88,8 @@ class MyApp(QMainWindow):
 		self.ui.comboBoxStelVarsBoundType.currentIndexChanged.connect(self.UpdateOPTVarsBound)
 		self.ui.TableOPTVarsBound.cellChanged.connect(self.OPTVarsBound)
 		# Callbacks (OPT_plot Tab)
+		self.ui.ButtonLoadSTELLOPT.clicked.connect(self.LoadSTELLOPT)
+		self.ui.ComboBoxOPTplot_type.currentIndexChanged.connect(self.UpdateOptplot)
 
 	def UpdateMpol(self):
 		strtmp = self.ui.TextMpol.text()
@@ -761,6 +769,875 @@ class MyApp(QMainWindow):
 		temp = self.optimum[field]
 		temp[dex1,dex2] = val
 		self.optimum[field]=temp
+
+	def LoadSTELLOPT(self):
+		# Handles loading an stellopt file.
+		w = QWidget()
+		w.resize(320, 240)
+		w.setWindowTitle("Hello World!")
+		filename = QFileDialog.getOpenFileName(w, 'Open File', '.','STELLOPT (stellopt.*)')
+		w.destroy
+		# Read the file
+		self.stel_data=read_stellopt(filename)
+		self.optplot_list = ['ASPECT','BETA','CURTOR','EXTCUR','SEPARATRIX',\
+					'PHIEDGE','RBTOR','R0','Z0','VOLUME','WP','KAPPA',\
+					'B_PROBES','FARADAY','FLUXLOOPS','SEGROG','MSE',\
+					'NE','NELINE','TE','TELINE','TI','TILINE',\
+					'XICS','XICS_BRIGHT','SXR','VPHI',\
+					'IOTA','BALLOON','BOOTSTRAP','DKES','HELICITY','HELICITY_FULL',\
+					'KINK','ORBIT','JDOTB','J_STAR','NEO','TXPORT','ECEREFLECT',\
+					]
+		self.ui.ComboBoxOPTplot_type.clear()
+		self.ui.ComboBoxOPTplot_type.addItem('Chi-Squared')
+		# Handle Chisquared plots
+		for name in self.optplot_list:
+			for item in self.stel_data:
+				if (name+'_target' == item):
+					self.ui.ComboBoxOPTplot_type.addItem(name)
+		# Handle Special Plots
+		self.ui.ComboBoxOPTplot_type.addItem('-----SPECIAL-----')
+		for name in ['BALLOON','KINK','ORBIT','NEO','HELICITY','HELICITY_FULL',\
+					'TXPORT','B_PROBES','FLUXLOOPS','SEGROG',\
+					'NELINE','TELINE','TILINE','XICS','XICS_BRIGHT',\
+					'ECEREFLECT','SXR','IOTA','PRESS']:
+			for item in self.stel_data:
+				if (name+'_target' == item):
+					self.ui.ComboBoxOPTplot_type.addItem(name+'_evolution')
+		for name in ['NE','TE','TI','MSE']:
+			for item in self.stel_data:
+				if (name+'_target' == item):
+					self.ui.ComboBoxOPTplot_type.addItem(name+'_evolution')
+					self.ui.ComboBoxOPTplot_type.addItem(name+'_evolution_R')
+					self.ui.ComboBoxOPTplot_type.addItem(name+'_evolution_Z')
+		# Handle Wout Comparrison Plots
+		self.workdir,ext = filename.split('stellopt.',1)
+		files = os.listdir(self.workdir)
+		if any('wout' in mystring for mystring in files):
+			self.ui.ComboBoxOPTplot_type.addItem('----- VMEC -----')
+			self.ui.ComboBoxOPTplot_type.addItem('Flux0')
+			self.ui.ComboBoxOPTplot_type.addItem('FluxPI')
+			self.ui.ComboBoxOPTplot_type.addItem('Pressure')
+			self.ui.ComboBoxOPTplot_type.addItem('I-prime')
+			self.ui.ComboBoxOPTplot_type.addItem('Current')
+			self.ui.ComboBoxOPTplot_type.addItem('Iota')
+			self.ui.ComboBoxOPTplot_type.addItem('<j*B>')
+			self.wout_files = sorted([k for k in files if 'wout' in k])
+		# Handle Kinetic Profiles
+		if any('tprof.' in mystring for mystring in files):
+			self.ui.ComboBoxOPTplot_type.addItem('----- Kinetics -----')
+			self.ui.ComboBoxOPTplot_type.addItem('Electron Temperature')
+			self.ui.ComboBoxOPTplot_type.addItem('Electron Density')
+			self.ui.ComboBoxOPTplot_type.addItem('Ion Temperature')
+			self.ui.ComboBoxOPTplot_type.addItem('Z Effective')
+			self.tprof_files = sorted([k for k in files if 'tprof.' in k])
+		# Handle Diagnostic Profiles
+		if any('dprof.' in mystring for mystring in files):
+			self.ui.ComboBoxOPTplot_type.addItem('----- Diagnostic -----')
+			self.ui.ComboBoxOPTplot_type.addItem('XICS Emissivity')
+			self.dprof_files = sorted([k for k in files if 'dprof.' in k])
+		# Handle Current Density Profiles
+		if any('jprof.' in mystring for mystring in files):
+			self.ui.ComboBoxOPTplot_type.addItem('----- Current Density -----')
+			self.ui.ComboBoxOPTplot_type.addItem('Bootstrap Profile')
+			self.ui.ComboBoxOPTplot_type.addItem('Beam Profile')
+			self.ui.ComboBoxOPTplot_type.addItem('Total Current Profile')
+			self.jprof_files = sorted([k for k in files if 'jprof.' in k])
+		
+
+	def UpdateOptplot(self):
+		# Handle plotting of 
+		plot_name = self.ui.ComboBoxOPTplot_type.currentText()
+		self.fig2.clf()
+		#self.fig.delaxes(self.ax)
+		#self.ax2 = self.fig2.add_subplot(111)
+		self.ax2 = self.fig2.add_axes([0.2,0.2,0.7,0.7])
+		if (plot_name == 'Chi-Squared'):
+			chisq = ((self.stel_data['TARGETS'] - self.stel_data['VALS'])/self.stel_data['SIGMAS'])**2
+			self.ax2.plot(self.stel_data['ITER'],np.sum(chisq,axis=1),'ok',label='Chisq Total')
+			self.ax2.set_xlabel('Iteration')
+			self.ax2.set_ylabel('Chi-Squared')
+			self.ax2.set_title('Chi-Sqaured')
+			self.ax2.set_yscale('log',basey=10)
+			for name in self.optplot_list:
+				if name+'_chisq' in self.stel_data:
+					chisq_temp = self.stel_data[name+'_chisq']
+					n = chisq_temp.shape;
+					if (len(chisq_temp.shape) == 1):
+						if n[0] > len(self.stel_data['ITER']):
+							chisq_temp = np.sum(chisq_temp,axis=0)
+					elif len(chisq_temp.shape) > 1:
+						chisq_temp = np.sum(chisq_temp,axis=1)
+					self.ax2.plot(self.stel_data['ITER'],chisq_temp,'o',fillstyle='none',label=name)
+			self.ax2.legend()
+		elif (plot_name in self.optplot_list):
+			f = self.stel_data[plot_name+'_chisq']
+			n = f.shape
+			if (len(n)==0):
+				# Single Time slice Single point
+				n=0
+			elif (len(n)==1):
+				# Could be either mutli-time or single time
+				if len(self.stel_data['ITER']) == n[0]:
+					# Mutl-time single point
+					n=0
+				else:
+					# Multi-channel single time
+					f = np.sum(f,axis=0)
+			else:
+				# Multiple Time slices
+				f = np.sum(f,axis=1)
+			self.ax2.plot(self.stel_data['ITER'],f,'ok',fillstyle='none')
+			self.ax2.set_xlabel('Iteration')
+			self.ax2.set_ylabel('Chi-Squared')
+			self.ax2.set_title(plot_name+' Chi-Sqaured')
+			self.ax2.set_yscale('log',basey=10)
+		elif (plot_name == 'BALLOON_evolution'):
+			self.ax2.plot(self.stel_data['BALLOON_k'].T,self.stel_data['BALLOON_grate'].T,'o',fillstyle='none')
+			self.ax2.set_xlabel('Radial Grid')
+			self.ax2.set_ylabel('Growth Rate')
+			self.ax2.set_title('COBRA Ballooning Stability (<0 Stable)')
+		elif (plot_name == 'TXPORT_evolution'):
+			self.ax2.plot(self.stel_data['TXPORT_s'].T,self.stel_data['TXPORT_equil'].T,'o',fillstyle='none')
+			self.ax2.set_xlabel('Normalized Flux')
+			self.ax2.set_ylabel('Proxy Function')
+			self.ax2.set_title('Turbulent Transport Proxy')
+			self.ax2.set_xlim((0,1))
+		elif (plot_name == 'ORBIT_evolution'):
+			self.ax2.plot(self.stel_data['ORBIT_s'].T,self.stel_data['ORBIT_equil'].T,'o',fillstyle='none')
+			self.ax2.set_xlabel('Normalized Flux')
+			self.ax2.set_ylabel('Orbit Losses')
+			self.ax2.set_title('Gyro Particle Losses')
+			self.ax2.set_xlim((0,1))
+		elif (plot_name == 'NEO_evolution'):
+			self.ax2.plot(self.stel_data['NEO_k'].T,self.stel_data['NEO_equil'].T,'o',fillstyle='none')
+			self.ax2.set_xlabel('Radial Grid')
+			self.ax2.set_ylabel('Epsilon Effective')
+			self.ax2.set_title('Neoclassical Helical Ripple (NEO)')
+		elif (plot_name == 'HELICITY_evolution'):
+			self.ax2.plot(self.stel_data['HELICITY_equil'].T,'o',fillstyle='none')
+			self.ax2.set_ylabel('Helicity')
+			self.ax2.set_title('Boozer Spectrum Helicity')
+		elif (plot_name == 'B_PROBE_evolution'):
+			n=self.stel_data['B_PROBE_target'].shape
+			x = np.ndarray((n[1],1))
+			for j in range(n[1]): x[j]=j+1
+			self.ax2.errorbar(x,self.stel_data['B_PROBE_target'].T,self.stel_data['B_PROBE_sigma'].T,marker='o',fillstyle='none')
+			self.ax2.plot(x,self.stel_data['BPROBES_equil'].T,fillstyle='none')
+			self.ax2.set_xlabel('B-Probe')
+			self.ax2.set_ylabel('Signal')
+			self.ax2.set_title('B-Probe Reconstruction')
+		elif (plot_name == 'FLUXLOOPS_evolution'):
+			n=self.stel_data['FLUXLOOPS_target'].shape
+			y = self.stel_data['FLUXLOOPS_target'].T
+			s = self.stel_data['FLUXLOOPS_sigma'].T
+			e = self.stel_data['FLUXLOOPS_equil'].T
+			b = s < 1E10
+			dl = n[0]
+			if len(n) > 1:
+				b = b[:,0]
+				x = np.ndarray((n[1],1))
+				for j in range(len(x)): x[j]=j+1
+				self.ax2.errorbar(x[b],y[b,0],s[b,0],fmt='sk',fillstyle='none')
+				for l in range(dl):
+					self.ax2.plot(x[b],e[b,l-1],'o',fillstyle='none',color=_plt.cm.brg(l/(dl-1)))
+			else:
+				x = np.ndarray((n[0],1))
+				for j in range(len(x)): x[j]=j+1
+				self.ax2.errorbar(x[b],y[b],s[b],fmt='sk',fillstyle='none')
+				self.ax2.plot(x[b],e[b],'o',fillstyle='none')
+			self.ax2.set_xlabel('Fluxloop')
+			self.ax2.set_ylabel('Signal')
+			self.ax2.set_title('Fluxloop Reconstruction')
+		elif (plot_name == 'SEGROG_evolution'):
+			n=self.stel_data['SEGROG_target'].shape
+			y = self.stel_data['SEGROG_target'].T
+			s = self.stel_data['SEGROG_sigma'].T
+			e = self.stel_data['SEGROG_equil'].T
+			b = s < 1E10
+			dl = n[0]
+			if len(n) > 1:
+				b = b[:,0]
+				x = np.ndarray((n[1],1))
+				for j in range(len(x)): x[j]=j+1
+				self.ax2.errorbar(x[b],y[b,0],s[b,0],fmt='sk',fillstyle='none')
+				for l in range(dl):
+					self.ax2.plot(x[b],e[b,l-1],'o',fillstyle='none',color=_plt.cm.brg(l/(dl-1)))
+			else:
+				x = np.ndarray((n[0],1))
+				for j in range(len(x)): x[j]=j+1
+				self.ax2.errorbar(x[b],y[b],s[b],fmt='sk',fillstyle='none')
+				self.ax2.plot(x[b],e[b],'o',fillstyle='none')
+			self.ax2.set_xlabel('Rogowski Coil')
+			self.ax2.set_ylabel('Signal')
+			self.ax2.set_title('Rogowski Reconstruction')
+		elif (plot_name == 'ECEREFLECT_evolution'):
+			n=self.stel_data['ECEREFLECT_target'].shape
+			y = self.stel_data['ECEREFLECT_target'].T
+			s = self.stel_data['ECEREFLECT_sigma'].T
+			e = self.stel_data['ECEREFLECT_equil'].T
+			dl = n[0]
+			if (len(n)==0):
+				# Single Time slice Single point
+				x=np.ndarray((1,1))*0+1
+				self.ax2.errorbar(x,y,s,fmt='sk',fillstyle='none')
+				x = 1;
+				self.ax2.plot(x,e,'o',fillstyle='none')
+			elif (len(n)==1):
+				# Could be either mutli-time or single time
+				if len(self.stel_data['ITER']) == n[0]:
+					# Mutl-time single point
+					x = np.ndarray((n[0],1))*0+1
+					self.ax2.errorbar(x[0],y[0],s[0],fmt='sk',fillstyle='none')
+					self.ax2.plot(x,e,'o',fillstyle='none')
+				else:
+					# Multi-channel single time
+					b = s < 1E10
+					x = np.ndarray((n[0],1))
+					for j in range(n[0]): x[j]=j+1
+					self.ax2.errorbar(x[b],y[b],s[b],fmt='sk',fillstyle='none')
+					self.ax2.plot(x[b],e[b],'o',fillstyle='none')
+			else:
+				# Multiple Time slices
+				b = s[:,0] < 1E10
+				x = np.ndarray((n[1],1))
+				for j in range(n[1]): x[j]=j+1
+				self.ax2.errorbar(x[b,0],y[b,0],s[b,0],fmt='sk',fillstyle='none')
+				for l in range(dl):
+					self.ax2.plot(x[b],e[b,l-1],'o',fillstyle='none',color=_plt.cm.brg(l/(dl-1)))
+			self.ax2.set_xlabel('ECE Channel')
+			self.ax2.set_ylabel('Radiative Temp [eV]')
+			self.ax2.set_title('ECE Reconstruction')
+		elif (plot_name == 'KINK_evolution'):
+			self.ax2.plot(self.stel_data['KINK_equil'],fmt='ok',fillstyle='none')
+			self.ax2.plot(self.stel_data['KINK_target'],fmt='k')
+			self.ax2.plot(self.stel_data['KINK_target']+self.stel_data['KINK_sigma'],fmt='k')
+			self.ax2.plot(self.stel_data['KINK_target']-self.stel_data['KINK_sigma'],fmt='k')
+			self.ax2.set_xlabel('Iteration')
+			self.ax2.set_ylabel('???')
+			self.ax2.set_title('?????KINK Evolution????')
+		elif (plot_name == 'NE_evolution'):
+			x = self.stel_data['NE_s'].T
+			y = self.stel_data['NE_target'].T
+			s = self.stel_data['NE_sigma'].T
+			e = self.stel_data['NE_equil'].T
+			n = y.shape
+			if len(x.shape)>1:
+				dl = n[1]
+				self.ax2.errorbar(x[:,0],y[:,0],s[:,0],fmt='sk',fillstyle='none')
+				for l in range(dl):
+					self.ax2.plot(x[:,l-1],e[:,l-1],'o',fillstyle='none',color=_plt.cm.brg(l/(dl-1)))
+			else:
+				self.ax2.errorbar(x[:],y[:],s[:],fmt='sk',fillstyle='none')
+				self.ax2.plot(x[:],e[:],'o',fillstyle='none',color='g')
+			self.ax2.set_xlabel('Normalized Flux')
+			self.ax2.set_ylabel('Electron Density (norm)')
+			self.ax2.set_title('Electron Density Reconstruction')
+			self.ax2.set_xlim((0,1.6))
+		elif (plot_name == 'NE_evolution_R'):
+			x = self.stel_data['NE_R'].T
+			y = self.stel_data['NE_target'].T
+			s = self.stel_data['NE_sigma'].T
+			e = self.stel_data['NE_equil'].T
+			n = y.shape
+			if len(x.shape)>1:
+				dl = n[1]
+				self.ax2.errorbar(x[:,0],y[:,0],s[:,0],fmt='sk',fillstyle='none')
+				for l in range(dl):
+					self.ax2.plot(x[:,l-1],e[:,l-1],'o',fillstyle='none',color=_plt.cm.brg(l/(dl-1)))
+			else:
+				self.ax2.errorbar(x[:],y[:],s[:],fmt='sk',fillstyle='none')
+				self.ax2.plot(x[:],e[:],'o',fillstyle='none',color='g')
+			self.ax2.set_xlabel('R [m]')
+			self.ax2.set_ylabel('Electron Density (norm)')
+			self.ax2.set_title('Electron Density Reconstruction')
+		elif (plot_name == 'NE_evolution_Z'):
+			x = self.stel_data['NE_Z'].T
+			y = self.stel_data['NE_target'].T
+			s = self.stel_data['NE_sigma'].T
+			e = self.stel_data['NE_equil'].T
+			n = y.shape
+			if len(x.shape)>1:
+				dl = n[1]
+				self.ax2.errorbar(x[:,0],y[:,0],s[:,0],fmt='sk',fillstyle='none')
+				for l in range(dl):
+					self.ax2.plot(x[:,l-1],e[:,l-1],'o',fillstyle='none',color=_plt.cm.brg(l/(dl-1)))
+			else:
+				self.ax2.errorbar(x[:],y[:],s[:],fmt='sk',fillstyle='none')
+				self.ax2.plot(x[:],e[:],'o',fillstyle='none',color='g')
+			self.ax2.set_xlabel('Z [m]')
+			self.ax2.set_ylabel('Electron Density (norm)')
+			self.ax2.set_title('Electron Density Reconstruction')
+		elif (plot_name == 'TE_evolution'):
+			x=self.stel_data['TE_s'].T
+			y=self.stel_data['TE_target'].T
+			s=self.stel_data['TE_sigma'].T
+			e = self.stel_data['TE_equil'].T
+			n = y.shape
+			if len(x.shape)>1:
+				dl = n[1]
+				self.ax2.errorbar(x[:,0],y[:,0],s[:,0],fmt='sk',fillstyle='none')
+				for l in range(dl):
+					self.ax2.plot(x[:,l-1],e[:,l-1],'o',fillstyle='none',color=_plt.cm.brg(l/(dl-1)))
+			else:
+				self.ax2.errorbar(x[:],y[:],s[:],fmt='sk',fillstyle='none')
+				self.ax2.plot(x[:],e[:],'o',fillstyle='none',color='g')
+			self.ax2.set_xlabel('Normalized Flux')
+			self.ax2.set_ylabel('Electron Temperature [keV]')
+			self.ax2.set_title('Electron Temperature Reconstruction')
+			self.ax2.set_xlim((0,1.6))
+		elif (plot_name == 'TE_evolution_R'):
+			x=self.stel_data['TE_R'].T
+			y=self.stel_data['TE_target'].T
+			s=self.stel_data['TE_sigma'].T
+			e = self.stel_data['TE_equil'].T
+			n = y.shape
+			if len(x.shape)>1:
+				dl = n[1]
+				self.ax2.errorbar(x[:,0],y[:,0],s[:,0],fmt='sk',fillstyle='none')
+				for l in range(dl):
+					self.ax2.plot(x[:,l-1],e[:,l-1],'o',fillstyle='none',color=_plt.cm.brg(l/(dl-1)))
+			else:
+				self.ax2.errorbar(x[:],y[:],s[:],fmt='sk',fillstyle='none')
+				self.ax2.plot(x[:],e[:],'o',fillstyle='none',color='g')
+			self.ax2.set_xlabel('R [m]')
+			self.ax2.set_ylabel('Electron Temperature [keV]')
+			self.ax2.set_title('Electron Temperature Reconstruction')
+		elif (plot_name == 'TE_evolution_Z'):
+			x=self.stel_data['TE_Z'].T
+			y=self.stel_data['TE_target'].T
+			s=self.stel_data['TE_sigma'].T
+			e = self.stel_data['TE_equil'].T
+			n = y.shape
+			if len(x.shape)>1:
+				dl = n[1]
+				self.ax2.errorbar(x[:,0],y[:,0],s[:,0],fmt='sk',fillstyle='none')
+				for l in range(dl):
+					self.ax2.plot(x[:,l-1],e[:,l-1],'o',fillstyle='none',color=_plt.cm.brg(l/(dl-1)))
+			else:
+				self.ax2.errorbar(x[:],y[:],s[:],fmt='sk',fillstyle='none')
+				self.ax2.plot(x[:],e[:],'o',fillstyle='none',color='g')
+			self.ax2.set_xlabel('Z [m]')
+			self.ax2.set_ylabel('Electron Temperature [keV]')
+			self.ax2.set_title('Electron Temperature Reconstruction')
+		elif (plot_name == 'TI_evolution'):
+			x=self.stel_data['TI_s'].T
+			y=self.stel_data['TI_target'].T
+			s=self.stel_data['TI_sigma'].T
+			e = self.stel_data['TI_equil'].T
+			n = y.shape
+			if len(x.shape)>1:
+				dl = n[1]
+				self.ax2.errorbar(x[:,0],y[:,0],s[:,0],fmt='sk',fillstyle='none')
+				for l in range(dl):
+					self.ax2.plot(x[:,l-1],e[:,l-1],'o',fillstyle='none',color=_plt.cm.brg(l/(dl-1)))
+			else:
+				self.ax2.errorbar(x[:],y[:],s[:],fmt='sk',fillstyle='none')
+				self.ax2.plot(x[:],e[:],'o',fillstyle='none',color='g')
+			self.ax2.set_xlabel('Normalized Flux')
+			self.ax2.set_ylabel('Ion Temperature [keV]')
+			self.ax2.set_title('Ion Temperature Reconstruction')
+			self.ax2.set_xlim((0,1.6))
+		elif (plot_name == 'TI_evolution_R'):
+			x=self.stel_data['TI_R'].T
+			y=self.stel_data['TI_target'].T
+			s=self.stel_data['TI_sigma'].T
+			e = self.stel_data['TI_equil'].T
+			n = y.shape
+			if len(x.shape)>1:
+				dl = n[1]
+				self.ax2.errorbar(x[:,0],y[:,0],s[:,0],fmt='sk',fillstyle='none')
+				for l in range(dl):
+					self.ax2.plot(x[:,l-1],e[:,l-1],'o',fillstyle='none',color=_plt.cm.brg(l/(dl-1)))
+			else:
+				self.ax2.errorbar(x[:],y[:],s[:],fmt='sk',fillstyle='none')
+				self.ax2.plot(x[:],e[:],'o',fillstyle='none',color='g')
+			self.ax2.set_xlabel('R [m]')
+			self.ax2.set_ylabel('Ion Temperature [keV]')
+			self.ax2.set_title('Ion Temperature Reconstruction')
+		elif (plot_name == 'TI_evolution_Z'):
+			x=self.stel_data['TI_Z'].T
+			y=self.stel_data['TI_target'].T
+			s=self.stel_data['TI_sigma'].T
+			e = self.stel_data['TI_equil'].T
+			n = y.shape
+			if len(x.shape)>1:
+				dl = n[1]
+				self.ax2.errorbar(x[:,0],y[:,0],s[:,0],fmt='sk',fillstyle='none')
+				for l in range(dl):
+					self.ax2.plot(x[:,l-1],e[:,l-1],'o',fillstyle='none',color=_plt.cm.brg(l/(dl-1)))
+			else:
+				self.ax2.errorbar(x[:],y[:],s[:],fmt='sk',fillstyle='none')
+				self.ax2.plot(x[:],e[:],'o',fillstyle='none',color='g')
+			self.ax2.set_xlabel('Z [m]')
+			self.ax2.set_ylabel('Ion Temperature [keV]')
+			self.ax2.set_title('Ion Temperature Reconstruction')
+		elif (plot_name == 'MSE_evolution'):
+			x=self.stel_data['MSE_s'].T
+			y=self.stel_data['MSE_target'].T
+			s=self.stel_data['MSE_sigma'].T
+			e = self.stel_data['MSE_equil'].T
+			n = y.shape
+			if len(x.shape)>1:
+				dl = n[1]
+				self.ax2.errorbar(x[:,0],y[:,0],s[:,0],fmt='sk',fillstyle='none')
+				for l in range(dl):
+					self.ax2.plot(x[:,l-1],e[:,l-1],'o',fillstyle='none',color=_plt.cm.brg(l/(dl-1)))
+			else:
+				self.ax2.errorbar(x[:],y[:],s[:],fmt='sk',fillstyle='none')
+				self.ax2.plot(x[:],e[:],'o',fillstyle='none',color='g')
+			self.ax2.set_xlabel('Normalized Flux')
+			self.ax2.set_ylabel('Pitch Angle')
+			self.ax2.set_title('Motional Stark Effect')
+			self.ax2.set_xlim((0,1.6))
+		elif (plot_name == 'MSE_evolution_R'):
+			x=self.stel_data['MSE_R'].T
+			y=self.stel_data['MSE_target'].T
+			s=self.stel_data['MSE_sigma'].T
+			e = self.stel_data['MSE_equil'].T
+			n = y.shape
+			if len(x.shape)>1:
+				dl = n[1]
+				self.ax2.errorbar(x[:,0],y[:,0],s[:,0],fmt='sk',fillstyle='none')
+				for l in range(dl):
+					self.ax2.plot(x[:,l-1],e[:,l-1],'o',fillstyle='none',color=_plt.cm.brg(l/(dl-1)))
+			else:
+				self.ax2.errorbar(x[:],y[:],s[:],fmt='sk',fillstyle='none')
+				self.ax2.plot(x[:],e[:],'o',fillstyle='none',color='g')
+			self.ax2.set_xlabel('R [m]')
+			self.ax2.set_ylabel('Pitch Angle')
+			self.ax2.set_title('Motional Stark Effect')
+		elif (plot_name == 'MSE_evolution_Z'):
+			x=self.stel_data['MSE_Z'].T
+			y=self.stel_data['MSE_target'].T
+			s=self.stel_data['MSE_sigma'].T
+			e = self.stel_data['MSE_equil'].T
+			n = y.shape
+			if len(x.shape)>1:
+				dl = n[1]
+				self.ax2.errorbar(x[:,0],y[:,0],s[:,0],fmt='sk',fillstyle='none')
+				for l in range(dl):
+					self.ax2.plot(x[:,l-1],e[:,l-1],'o',fillstyle='none',color=_plt.cm.brg(l/(dl-1)))
+			else:
+				self.ax2.errorbar(x[:],y[:],s[:],fmt='sk',fillstyle='none')
+				self.ax2.plot(x[:],e[:],'o',fillstyle='none',color='g')
+			self.ax2.set_xlabel('Z [m]')
+			self.ax2.set_ylabel('Pitch Angle')
+			self.ax2.set_title('Motional Stark Effect')
+		elif (plot_name == 'IOTA_evolution'):
+			x=self.stel_data['IOTA_s'].T
+			y=self.stel_data['IOTA_target'].T
+			s=self.stel_data['IOTA_sigma'].T
+			e = self.stel_data['IOTA_equil'].T
+			n = y.shape
+			if len(x.shape)>1:
+				dl = n[1]
+				self.ax2.errorbar(x[:,0],y[:,0],s[:,0],fmt='sk',fillstyle='none')
+				for l in range(dl):
+					self.ax2.plot(x[:,l-1],e[:,l-1],'o',fillstyle='none',color=_plt.cm.brg(l/(dl-1)))
+			else:
+				self.ax2.errorbar(x[:],y[:],s[:],fmt='sk',fillstyle='none')
+				self.ax2.plot(x[:],e[:],'o',fillstyle='none',color='g')
+			self.ax2.set_xlabel('Normalized Flux')
+			self.ax2.set_ylabel('Iota')
+			self.ax2.set_title('Rotational Transform')
+		elif (plot_name == 'NELINE_evolution'):
+			y=self.stel_data['NELINE_target'].T
+			s=self.stel_data['NELINE_sigma'].T
+			e = self.stel_data['NELINE_equil'].T
+			n = y.shape
+			if (len(n)==0):
+				# Single Time slice Single point
+				x=np.ndarray((1,1))*0+1
+				self.ax2.errorbar(x,y,s,fmt='sk',fillstyle='none')
+				self.ax2.plot(x,e,'og',fillstyle='none')
+			elif (len(n)==1):
+				# Could be either mutli-time or single time
+				if len(self.stel_data['ITER']) == n[0]:
+					# Mutl-time single point
+					dl = n[0]
+					x = np.ndarray((n[0],1))*0+1
+					self.ax2.errorbar(x[0],y[0],s[0],fmt='sk',fillstyle='none')
+					for l in range(dl): self.ax2.plot(x[l],e[l],'o',fillstyle='none',color=_plt.cm.brg(l/(dl-1)))
+				else:
+					# Multi-channel single time
+					x = np.ndarray((n[0],1))
+					for j in range(n[0]): x[j]=j+1
+					self.ax2.errorbar(x,y,s,fmt='sk',fillstyle='none')
+					self.ax2.plot(x,e,'og',fillstyle='none')
+			else:
+				# Multiple Time slices
+				dl = n[0]
+				x = np.ndarray((n[1],1))
+				for j in range(n[1]): x[j]=j+1
+				self.ax2.errorbar(x[:,0],y[:,0],s[:,0],fmt='sk',fillstyle='none')
+				for l in range(dl):
+					self.ax2.plot(x,e[:,l-1],'o',fillstyle='none',color=_plt.cm.brg(l/(dl-1)))
+			self.ax2.set_xlabel('Channel')
+			self.ax2.set_ylabel('Signal [m^{-2}]')
+			self.ax2.set_title('Line-Int. Electron Density')
+		elif (plot_name == 'TELINE_evolution'):
+			y=self.stel_data['TELINE_target'].T
+			s=self.stel_data['TELINE_sigma'].T
+			e = self.stel_data['TELINE_equil'].T
+			n = y.shape
+			dl = n[0]
+			if (len(n)==0):
+				# Single Time slice Single point
+				x=np.ndarray((1,1))*0+1
+				self.ax2.errorbar(x,y,s,fmt='sk',fillstyle='none')
+				self.ax2.plot(x,e,'og',fillstyle='none')
+			elif (len(n)==1):
+				# Could be either mutli-time or single time
+				if len(self.stel_data['ITER']) == n[0]:
+					# Mutl-time single point
+					dl = n[0]
+					x = np.ndarray((n[0],1))*0+1
+					self.ax2.errorbar(x[0],y[0],s[0],fmt='sk',fillstyle='none')
+					for l in range(dl): self.ax2.plot(x[l],e[l],'o',fillstyle='none',color=_plt.cm.brg(l/(dl-1)))
+				else:
+					# Multi-channel single time
+					x = np.ndarray((n[0],1))
+					for j in range(n[0]): x[j]=j+1
+					self.ax2.errorbar(x,y,s,fmt='sk',fillstyle='none')
+					self.ax2.plot(x,e,'og',fillstyle='none')
+			else:
+				# Multiple Time slices
+				dl = n[0]
+				x = np.ndarray((n[1],1))
+				for j in range(n[1]): x[j]=j+1
+				self.ax2.errorbar(x[:,0],y[:,0],s[:,0],fmt='sk',fillstyle='none')
+				for l in range(dl):
+					self.ax2.plot(x,e[:,l-1],'o',fillstyle='none',color=_plt.cm.brg(l/(dl-1)))
+			self.ax2.set_xlabel('Channel')
+			self.ax2.set_ylabel('Signal')
+			self.ax2.set_title('Line-Int. Electron Temperature')
+		elif (plot_name == 'TILINE_evolution'):
+			y=self.stel_data['TILINE_target'].T
+			s=self.stel_data['TILINE_sigma'].T
+			e = self.stel_data['TILINE_equil'].T
+			n = y.shape
+			if (len(n)==0):
+				# Single Time slice Single point
+				x=np.ndarray((1,1))*0+1
+				self.ax2.errorbar(x,y,s,fmt='sk',fillstyle='none')
+				self.ax2.plot(x,e,'og',fillstyle='none')
+			elif (len(n)==1):
+				# Could be either mutli-time or single time
+				if len(self.stel_data['ITER']) == n[0]:
+					# Mutl-time single point
+					dl = n[0]
+					x = np.ndarray((n[0],1))*0+1
+					self.ax2.errorbar(x[0],y[0],s[0],fmt='sk',fillstyle='none')
+					for l in range(dl): self.ax2.plot(x[l],e[l],'o',fillstyle='none',color=_plt.cm.brg(l/(dl-1)))
+				else:
+					# Multi-channel single time
+					x = np.ndarray((n[0],1))
+					for j in range(n[0]): x[j]=j+1
+					self.ax2.errorbar(x,y,s,fmt='sk',fillstyle='none')
+					self.ax2.plot(x,e,'og',fillstyle='none')
+			else:
+				# Multiple Time slices
+				dl = n[0]
+				x = np.ndarray((n[1],1))
+				for j in range(n[1]): x[j]=j+1
+				self.ax2.errorbar(x[:,0],y[:,0],s[:,0],fmt='sk',fillstyle='none')
+				for l in range(dl):
+					self.ax2.plot(x,e[:,l-1],'o',fillstyle='none',color=_plt.cm.brg(l/(dl-1)))
+			self.ax2.set_xlabel('Channel')
+			self.ax2.set_ylabel('Signal')
+			self.ax2.set_title('Line-Int. Ion Temperature')
+		elif (plot_name == 'XICS_evolution'):
+			y=self.stel_data['XICS_target'].T
+			s=self.stel_data['XICS_sigma'].T
+			e = self.stel_data['XICS_equil'].T
+			n = y.shape
+			if (len(n)==0):
+				# Single Time slice Single point
+				x=np.ndarray((1,1))*0+1
+				self.ax2.errorbar(x,y,s,fmt='sk',fillstyle='none')
+				self.ax2.plot(x,e,'og',fillstyle='none')
+			elif (len(n)==1):
+				# Could be either mutli-time or single time
+				if len(self.stel_data['ITER']) == n[0]:
+					# Mutl-time single point
+					x = np.ndarray((n[0],1))*0+1
+					self.ax2.errorbar(x[0],y[0],s[0],fmt='sk',fillstyle='none')
+					for l in range(dl): self.ax2.plot(x[l],e[l],'o',fillstyle='none',color=_plt.cm.brg(l/(dl-1)))
+				else:
+					# Multi-channel single time
+					x = np.ndarray((n[0],1))
+					for j in range(n[0]): x[j]=j+1
+					self.ax2.errorbar(x,y,s,fmt='sk',fillstyle='none')
+					self.ax2.plot(x,e,'og',fillstyle='none')
+			else:
+				# Multiple Time slices
+				dl = n[1]
+				x = np.ndarray((n[0],1))
+				for j in range(n[0]): x[j]=j+1
+				self.ax2.errorbar(x,y[:,0],s[:,0],fmt='sk',fillstyle='none')
+				for l in range(dl):
+					self.ax2.plot(x,e[:,l-1],'o',fillstyle='none',color=_plt.cm.brg(l/(dl-1)))
+			self.ax2.set_xlabel('Channel')
+			self.ax2.set_ylabel('Signal [Arb.]')
+			self.ax2.set_title('XICS Reconstruction')
+		elif (plot_name == 'XICS_BRIGHT_evolution'):
+			y=self.stel_data['XICS_BRIGHT_target'].T
+			s=self.stel_data['XICS_BRIGHT_sigma'].T
+			e = self.stel_data['XICS_BRIGHT_equil'].T
+			n = y.shape
+			if (len(n)==0):
+				# Single Time slice Single point
+				x=np.ndarray((1,1))*0+1
+				self.ax2.errorbar(x,y,s,fmt='sk',fillstyle='none')
+				self.ax2.plot(x,e,'og',fillstyle='none')
+			elif (len(n)==1):
+				# Could be either mutli-time or single time
+				if len(self.stel_data['ITER']) == n[0]:
+					# Mutl-time single point
+					x = np.ndarray((n[0],1))*0+1
+					self.ax2.errorbar(x[0],y[0],s[0],fmt='sk',fillstyle='none')
+					for l in range(dl): self.ax2.plot(x[l],e[l],'o',fillstyle='none',color=_plt.cm.brg(l/(dl-1)))
+				else:
+					# Multi-channel single time
+					x = np.ndarray((n[0],1))
+					for j in range(n[0]): x[j]=j+1
+					self.ax2.errorbar(x,y,s,fmt='sk',fillstyle='none')
+					self.ax2.plot(x,e,'og',fillstyle='none')
+			else:
+				# Multiple Time slices
+				dl = n[1]
+				x = np.ndarray((n[0],1))
+				for j in range(n[0]): x[j]=j+1
+				self.ax2.errorbar(x[:,0],y[:,0],s[:,0],fmt='sk',fillstyle='none')
+				for l in range(dl):
+					self.ax2.plot(x,e[:,l-1],'o',fillstyle='none',color=_plt.cm.brg(l/(dl-1)))
+			self.ax2.set_xlabel('Channel')
+			self.ax2.set_ylabel('Signal [Arb.]')
+			self.ax2.set_title('XICS Brightness Reconstruction')
+		elif (plot_name == 'Pressure'):
+			l=0
+			dl = len(self.wout_files)
+			for string in self.wout_files:
+				if 'wout' in string:
+					vmec_data=read_vmec(self.workdir+string)
+					ns = vmec_data['ns']
+					nflux = np.ndarray((ns,1))
+					for j in range(ns): nflux[j]=j/(ns-1)
+					self.ax2.plot(nflux,vmec_data['presf']/1000,color=_plt.cm.brg(l/dl))
+					l=l+1
+			self.ax2.set_xlabel('Norm Tor. Flux (s)')
+			self.ax2.set_ylabel('Pressure [kPa]')
+			self.ax2.set_title('VMEC Pressure Evolution')
+			self.ax2.set_xlim((0,1))
+		elif (plot_name == 'I-prime'):
+			l=0
+			dl = len(self.wout_files)
+			for string in self.wout_files:
+				if 'wout' in string:
+					vmec_data=read_vmec(self.workdir+string)
+					ns = vmec_data['ns']
+					nflux = np.ndarray((ns,1))
+					for j in range(ns): nflux[j]=j/(ns-1)
+					self.ax2.plot(nflux,vmec_data['jcurv']/1000,color=_plt.cm.brg(l/dl))
+					l=l+1
+			self.ax2.set_xlabel('Norm Tor. Flux (s)')
+			self.ax2.set_ylabel('Current Density [kA/m^{-2}]')
+			self.ax2.set_title('VMEC Current Density Evolution')
+			self.ax2.set_xlim((0,1))
+		elif (plot_name == 'Iota'):
+			l=0
+			dl = len(self.wout_files)
+			for string in self.wout_files:
+				if 'wout' in string:
+					vmec_data=read_vmec(self.workdir+string)
+					ns = vmec_data['ns']
+					nflux = np.ndarray((ns,1))
+					for j in range(ns): nflux[j]=j/(ns-1)
+					self.ax2.plot(nflux,vmec_data['iotaf'],color=_plt.cm.brg(l/dl))
+					l=l+1
+			self.ax2.set_xlabel('Norm Tor. Flux (s)')
+			self.ax2.set_ylabel('Rotational Transform \iota')
+			self.ax2.set_title('VMEC Rotational Transform Evolution')
+			self.ax2.set_xlim((0,1))
+		elif (plot_name == 'Current'):
+			l=0
+			dl = len(self.wout_files)
+			for string in self.wout_files:
+				if 'wout' in string:
+					vmec_data=read_vmec(self.workdir+string)
+					ns = vmec_data['ns']
+					nflux = np.ndarray((ns,1))
+					for j in range(ns): nflux[j]=j/(ns-1)
+					self.ax2.plot(nflux,np.cumsum(vmec_data['jcurv']),color=_plt.cm.brg(l/dl))
+					l=l+1
+			self.ax2.set_xlabel('Norm Tor. Flux (s)')
+			self.ax2.set_ylabel('Current [kA]')
+			self.ax2.set_title('VMEC Current Evolution')
+			self.ax2.set_xlim((0,1))
+		elif (plot_name == '<j*B>'):
+			l=0
+			dl = len(self.wout_files)
+			for string in self.wout_files:
+				if 'wout' in string:
+					vmec_data=read_vmec(self.workdir+string)
+					ns = vmec_data['ns']
+					nflux = np.ndarray((ns,1))
+					for j in range(ns): nflux[j]=j/(ns-1)
+					self.ax2.plot(nflux,vmec_data['jdotb'],color=_plt.cm.brg(l/dl))
+					l=l+1
+			self.ax2.set_xlabel('Norm Tor. Flux (s)')
+			self.ax2.set_ylabel('<j.B>')
+			self.ax2.set_title('VMEC <j.B> Evolution')
+			self.ax2.set_xlim((0,1))
+		elif (plot_name == 'Flux0'):
+			l=0
+			dl = len(self.wout_files)
+			for string in self.wout_files:
+				if 'wout' in string:
+					vmec_data=read_vmec(self.workdir+string)
+					ns = vmec_data['ns']
+					nu = 256
+					nv = 1
+					nflux = np.ndarray((ns,1))
+					theta = np.ndarray((nu,1))
+					zeta = np.ndarray((nv,1))
+					for j in range(ns): nflux[j]=j/(ns-1)
+					for j in range(nu): theta[j]=2*pi*j/(nu-1)
+					zeta[0]=0;
+					r=cfunct(theta,zeta,vmec_data['rmnc'],vmec_data['xm'],vmec_data['xn'])
+					z=sfunct(theta,zeta,vmec_data['zmns'],vmec_data['xm'],vmec_data['xn'])
+					self.ax2.plot(r[ns-1,:,0],z[ns-1,:,0],color=_plt.cm.brg(l/dl))
+					self.ax2.plot(r[0,0,0],z[0,0,0],'+',color=_plt.cm.brg(l/dl))
+					l=l+1
+			self.ax2.set_xlabel('R [m]')
+			self.ax2.set_ylabel('Z [m]')
+			self.ax2.set_title('VMEC Flux Surface Evolution (phi=0)')
+			self.ax2.set_aspect('equal')
+		elif (plot_name == 'FluxPI'):
+			l=0
+			dl = len(self.wout_files)
+			for string in self.wout_files:
+				if 'wout' in string:
+					vmec_data=read_vmec(self.workdir+string)
+					ns = vmec_data['ns']
+					nu = 256
+					nv = 1
+					nflux = np.ndarray((ns,1))
+					theta = np.ndarray((nu,1))
+					zeta = np.ndarray((nv,1))
+					for j in range(ns): nflux[j]=j/(ns-1)
+					for j in range(nu): theta[j]=2*pi*j/(nu-1)
+					zeta[0]=pi/vmec_data['nfp'];
+					r=cfunct(theta,zeta,vmec_data['rmnc'],vmec_data['xm'],vmec_data['xn'])
+					z=sfunct(theta,zeta,vmec_data['zmns'],vmec_data['xm'],vmec_data['xn'])
+					self.ax2.plot(r[ns-1,:,0],z[ns-1,:,0],color=_plt.cm.brg(l/dl))
+					self.ax2.plot(r[0,0,0],z[0,0,0],'+',color=_plt.cm.brg(l/dl))
+					l=l+1
+			self.ax2.set_xlabel('R [m]')
+			self.ax2.set_ylabel('Z [m]')
+			self.ax2.set_title('VMEC Flux Surface Evolution (phi=0)')
+			self.ax2.set_aspect('equal')
+		elif (plot_name == 'Electron Temperature'):
+			l=0
+			dl = len(self.tprof_files)
+			for string in self.tprof_files:
+				if 'tprof' in string:
+					tprof = np.loadtxt(self.workdir+string,skiprows=1)
+					self.ax2.plot(tprof[:,0],tprof[:,2]/1E3,color=_plt.cm.brg(l/dl))
+					l=l+1
+			self.ax2.set_xlabel('Norm Tor. Flux (s)')
+			self.ax2.set_ylabel('Temperature [keV]')
+			self.ax2.set_title('Electron Temperature Profile')
+			self.ax2.set_xlim((0,1))
+		elif (plot_name == 'Electron Density'):
+			l=0
+			dl = len(self.tprof_files)
+			for string in self.tprof_files:
+				if 'tprof' in string:
+					tprof = np.loadtxt(self.workdir+string,skiprows=1)
+					self.ax2.plot(tprof[:,0],tprof[:,1]/1E19,color=_plt.cm.brg(l/dl))
+					l=l+1
+			self.ax2.set_xlabel('Norm Tor. Flux (s)')
+			self.ax2.set_ylabel('Density [m^{-3}]')
+			self.ax2.set_title('Electron Density Profile')
+			self.ax2.set_xlim((0,1))
+		elif (plot_name == 'Ion Temperature'):
+			l=0
+			dl = len(self.tprof_files)
+			for string in self.tprof_files:
+				if 'tprof' in string:
+					tprof = np.loadtxt(self.workdir+string,skiprows=1)
+					self.ax2.plot(tprof[:,0],tprof[:,3]/1E3,color=_plt.cm.brg(l/dl))
+					l=l+1
+			self.ax2.set_xlabel('Norm Tor. Flux (s)')
+			self.ax2.set_ylabel('Temperature [keV]')
+			self.ax2.set_title('Ion Temperature Profile')
+			self.ax2.set_xlim((0,1))
+		elif (plot_name == 'Z Effective'):
+			l=0
+			dl = len(self.tprof_files)
+			for string in self.tprof_files:
+				if 'tprof' in string:
+					tprof = np.loadtxt(self.workdir+string,skiprows=1)
+					self.ax2.plot(tprof[:,0],tprof[:,4],color=_plt.cm.brg(l/dl))
+					l=l+1
+			self.ax2.set_xlabel('Norm Tor. Flux (s)')
+			self.ax2.set_ylabel('Z_{Eff}')
+			self.ax2.set_title('Z Effective Profile')
+			self.ax2.set_xlim((0,1))
+		elif (plot_name == 'XICS Emissivity'):
+			l=0
+			dl = len(self.dprof_files)
+			for string in self.dprof_files:
+				if 'dprof' in string:
+					dprof = np.loadtxt(self.workdir+string,skiprows=1)
+					self.ax2.plot(dprof[:,0],dprof[:,1],color=_plt.cm.brg(l/dl))
+					l=l+1
+			self.ax2.set_xlabel('Norm Tor. Flux (s)')
+			self.ax2.set_ylabel('Effective Emissivity')
+			self.ax2.set_title('XICS Emissivity Profile')
+			self.ax2.set_xlim((0,1))
+		elif (plot_name == 'Bootstrap Profile'):
+			l=0
+			dl = len(self.jprof_files)
+			for string in self.jprof_files:
+				if 'jprof' in string:
+					jprof = np.loadtxt(self.workdir+string,skiprows=1)
+					self.ax2.plot(jprof[:,0],jprof[:,2],color=_plt.cm.brg(l/dl))
+					l=l+1
+			self.ax2.set_xlabel('Norm Tor. Flux (s)')
+			self.ax2.set_ylabel('Current Density [kA/m^-2]')
+			self.ax2.set_title('Bootstrap Current Profile')
+			self.ax2.set_xlim((0,1))
+		elif (plot_name == 'Beam Profile'):
+			l=0
+			dl = len(self.jprof_files)
+			for string in self.jprof_files:
+				if 'jprof' in string:
+					jprof = np.loadtxt(self.workdir+string,skiprows=1)
+					self.ax2.plot(jprof[:,0],jprof[:,1],color=_plt.cm.brg(l/dl))
+					l=l+1
+			self.ax2.set_xlabel('Norm Tor. Flux (s)')
+			self.ax2.set_ylabel('Current Density [kA/m^-2]')
+			self.ax2.set_title('Beam Current Profile')
+			self.ax2.set_xlim((0,1))
+		elif (plot_name == 'Total Current Profile'):
+			l=0
+			dl = len(self.jprof_files)
+			jprof = np.loadtxt(self.workdir+self.jprof_files[0],skiprows=1)
+			self.ax2.plot(jprof[:,0],jprof[:,2],'--b')
+			self.ax2.plot(jprof[:,0],jprof[:,1],':b')
+			self.ax2.plot(jprof[:,0],jprof[:,3],'b')
+			jprof = np.loadtxt(self.workdir+self.jprof_files[dl-1],skiprows=1)
+			self.ax2.plot(jprof[:,0],jprof[:,2],'--g')
+			self.ax2.plot(jprof[:,0],jprof[:,1],':g')
+			self.ax2.plot(jprof[:,0],jprof[:,3],'g')
+			self.ax2.set_xlabel('Norm Tor. Flux (s)')
+			self.ax2.set_ylabel('Current Density [kA/m^-2]')
+			self.ax2.set_title('Total Current Profile')
+			self.ax2.set_xlim((0,1))
+		self.canvas2.draw()
+
 
 
 

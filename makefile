@@ -30,3 +30,9 @@ pre_build:
 
 
 
+test_make:
+	@echo FC_LINKER_FLAGS is $(FC_LINKER_FLAGS)
+	@echo FFLAGS is $(FFLAGS)
+	@echo FLINKER is $(FLINKER)
+	@echo PETSC_LIB is $(PETSC_LIB)
+	@echo SFINCS_LIB is $(SFINCS_LIB)

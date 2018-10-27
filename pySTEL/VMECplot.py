@@ -35,7 +35,7 @@ class MyApp(QMainWindow):
 		self.ui.plot_list = ['Summary','-----1D-----','Iota','q','Pressure',\
 		'<Buco>','<Bvco>','<jcuru>','<jcurv>','<j.B>',  '-----3D------','|B|','sqrt(g)',\
 		'B^u','B^v','B_s','B_u','B_v','j^u','j^v', 'jll', 'j.B','---Special---','LPK']
-		files = os.listdir('.')
+		files = sorted(os.listdir('.'))
 		for name in files:
 			if(name[0:4]=='wout'):
 				self.ui.FileName.addItem(name)
@@ -47,8 +47,8 @@ class MyApp(QMainWindow):
 		self.nu = self.vmec_data['mpol']*4
 		self.nv = self.vmec_data['ntor']*4*self.vmec_data['nfp']
 		self.nv2 = self.vmec_data['ntor']*4
-		if self.nu < 64:
-			self.nu = 64
+		if self.nu < 128:
+			self.nu = 128
 		if self.nv < 64:
 			self.nv = 64
 		self.TransformVMEC(self)
@@ -172,7 +172,7 @@ class MyApp(QMainWindow):
 		self.update_plot(self)
 
 	def update_plot(self,i):
-
+		#self.ui.plot_widget.addWidget(self.canvas)
 		plot_name = self.ui.PlotList.currentText();
 		self.fig.clf()
 		#self.fig.delaxes(self.ax)
@@ -284,9 +284,14 @@ class MyApp(QMainWindow):
 				self.ax.set_aspect('equal')
 			elif (self.ui.ThreeD_button.isChecked()):
 				self.fig.delaxes(self.ax)
+<<<<<<< HEAD
 				self.canvas.draw()
 				#mayavi_widget = MayaviQWidget(self.plot_widget)
 				#self.ui.plot_widget.addWidget(self.canvas)
+=======
+				#self.canvas.draw()
+				#self.ui.plot_widget.removeWidget(self.canvas)
+>>>>>>> master
 				self.ax = isotoro(self.r,self.z,self.zeta,self.s,val,fig=self.fig)
 				self.ax.grid(False)
 				self.ax.set_axis_off()
