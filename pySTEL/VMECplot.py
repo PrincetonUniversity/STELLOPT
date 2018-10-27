@@ -284,14 +284,6 @@ class MyApp(QMainWindow):
 				self.ax.set_aspect('equal')
 			elif (self.ui.ThreeD_button.isChecked()):
 				self.fig.delaxes(self.ax)
-<<<<<<< HEAD
-				self.canvas.draw()
-				#mayavi_widget = MayaviQWidget(self.plot_widget)
-				#self.ui.plot_widget.addWidget(self.canvas)
-=======
-				#self.canvas.draw()
-				#self.ui.plot_widget.removeWidget(self.canvas)
->>>>>>> master
 				self.ax = isotoro(self.r,self.z,self.zeta,self.s,val,fig=self.fig)
 				self.ax.grid(False)
 				self.ax.set_axis_off()
