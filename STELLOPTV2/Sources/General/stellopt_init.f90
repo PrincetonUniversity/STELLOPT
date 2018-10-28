@@ -105,7 +105,8 @@
                  STOP
               END IF
               CLOSE(iunit)
-              
+         CASE('test')
+              id_string = id_string(7:LEN(id_string))
       END SELECT
       
       ! Count the number of variables and allocate the array
@@ -260,8 +261,10 @@
                     END IF
                  END DO
               END DO
-     
          CASE('spec')
+         CASE('test')
+            IF (lxval_opt)  nvars = nvars + 1
+            IF (lyval_opt)  nvars = nvars + 1
       END SELECT
 
       ! Allocate Arrays
@@ -1523,6 +1526,33 @@
               END IF
               ier = -327
               CALL stellopt_prof_to_vmec('init',ier)
+         CASE('test')
+              IF (lxval_opt) THEN
+                 IF (lauto_domain) THEN
+                    xval_min = phiedge - ABS(pct_domain*xval)
+                    xval_max = phiedge + ABS(pct_domain*xval)
+                 END IF
+                 nvar_in = nvar_in + 1
+                 vars(nvar_in) = xval
+                 vars_min(nvar_in) = xval_min
+                 vars_max(nvar_in) = xval_max
+                 var_dex(nvar_in) = ixval
+                 diag(nvar_in)    = dxval_opt
+                 arr_dex(nvar_in,1) = 1
+              END IF
+              IF (lyval_opt) THEN
+                 IF (lauto_domain) THEN
+                    yval_min = phiedge - ABS(pct_domain*yval)
+                    yval_max = phiedge + ABS(pct_domain*yval)
+                 END IF
+                 nvar_in = nvar_in + 1
+                 vars(nvar_in) = yval
+                 vars_min(nvar_in) = yval_min
+                 vars_max(nvar_in) = yval_max
+                 var_dex(nvar_in) = iyval
+                 diag(nvar_in)    = dyval_opt
+                 arr_dex(nvar_in,1) = 1
+              END IF
       END SELECT
 !DEC$ IF DEFINED (MPI_OPT)
       CALL MPI_BARRIER( MPI_COMM_STEL, ierr_mpi )                   ! MPI

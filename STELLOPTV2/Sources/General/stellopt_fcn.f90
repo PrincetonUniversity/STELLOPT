@@ -68,8 +68,8 @@
       norm_ah   = 1; norm_at = 1; norm_phi = 1; norm_zeff = 1
       norm_ne   = 1; norm_te = 1; norm_ti  = 1; norm_th = 1
       norm_emis_xics = 1
-      ! Save variables
 
+      ! Save variables
       DO nvar_in = 1, n
          IF (var_dex(nvar_in) == iaphi .and. arr_dex(nvar_in,2) == norm_dex) norm_aphi = x(nvar_in)
          IF (var_dex(nvar_in) == iam .and. arr_dex(nvar_in,2) == norm_dex) norm_am = x(nvar_in)
@@ -99,6 +99,8 @@
       ! Unpack array (minus RBC/ZBS/RBS/ZBC)
       DO nvar_in = 1, n
          IF (arr_dex(nvar_in,2) == norm_dex) cycle
+         IF (var_dex(nvar_in) == ixval) xval = x(nvar_in)
+         IF (var_dex(nvar_in) == iyval) yval = x(nvar_in)
          IF (var_dex(nvar_in) == iphiedge) phiedge = x(nvar_in)
          IF (var_dex(nvar_in) == icurtor) curtor = x(nvar_in)
          IF (var_dex(nvar_in) == ipscale) pres_scale = x(nvar_in)
@@ -304,6 +306,8 @@
                   iflag = 0
                END IF
             CASE('spec')
+            CASE('test')
+               !Do Nothing
          END SELECT
          ! Check profiles for negative values of pressure
          dex = MINLOC(am_aux_s(2:),DIM=1)

@@ -67,7 +67,7 @@
       IMPLICIT NONE
       LOGICAL  ::  lphiedge_opt, lcurtor_opt, lpscale_opt, lbcrit_opt,&
                    lmix_ece_opt, lregcoil_winding_surface_separation_opt,&
-                   lregcoil_current_density_opt
+                   lregcoil_current_density_opt, lxval_opt, lyval_opt
       LOGICAL, DIMENSION(nigroup)  ::  lextcur_opt
       LOGICAL, DIMENSION(1:20)  ::  laphi_opt
       LOGICAL, DIMENSION(0:20)  ::  lam_opt, lac_opt, lai_opt,&
@@ -92,15 +92,15 @@
       LOGICAL  ::  lwindsurf
       INTEGER  ::  nfunc_max
       REAL(rprec)     ::  dphiedge_opt, dcurtor_opt, dbcrit_opt, &
-                          dpscale_opt, dmix_ece_opt, &
+                          dpscale_opt, dmix_ece_opt, dxval_opt, dyval_opt, &
                           dregcoil_winding_surface_separation_opt, &
                           dregcoil_current_density_opt
       REAL(rprec)     ::  phiedge_min, curtor_min, bcrit_min, &
-                          pscale_min, mix_ece_min, &
+                          pscale_min, mix_ece_min, xval_min, yval_min, &
                           regcoil_winding_surface_separation_min, &
                           regcoil_current_density_min
       REAL(rprec)     ::  phiedge_max, curtor_max, bcrit_max, &
-                          pscale_max, mix_ece_max, &
+                          pscale_max, mix_ece_max, xval_max, yval_max, &
                           regcoil_winding_surface_separation_max, &
                           regcoil_current_density_max
       REAL(rprec), DIMENSION(nigroup)  ::  dextcur_opt,extcur_min,extcur_max
@@ -116,7 +116,7 @@
                                            te_min, ne_min, ti_min, th_min, &
                                            te_max, ne_max, ti_max, th_max, &
                                            zeff_max, zeff_min
-      REAL(rprec)                       :: mix_ece
+      REAL(rprec)                       :: mix_ece, xval, yval
       REAL(rprec)                       :: regcoil_winding_surface_separation
       REAL(rprec)                       :: regcoil_current_density
       INTEGER :: regcoil_nlambda, regcoil_num_field_periods
@@ -214,6 +214,8 @@
       INTEGER, PARAMETER ::  ibcrit     = 13
       INTEGER, PARAMETER ::  ipscale    = 14
       INTEGER, PARAMETER ::  imixece    = 15
+      INTEGER, PARAMETER ::  ixval      = 16
+      INTEGER, PARAMETER ::  iyval      = 17
       INTEGER, PARAMETER ::  iextcur    = 21
       INTEGER, PARAMETER ::  iaphi      = 31
       INTEGER, PARAMETER ::  iam        = 32
@@ -278,6 +280,10 @@
       CHARACTER*(*), PARAMETER ::  out_format_2DB = '(5X,A,I4.3,A,I4.3,A)'
       SELECT CASE(var_num)
 
+         CASE(ixval)
+            WRITE(iunit,out_format) 'X_VAL:  X Variable Test'
+         CASE(iyval)
+            WRITE(iunit,out_format) 'Y_VAL:  Y Variable Test'
          CASE(iphiedge)
             WRITE(iunit,out_format) 'PHIEDGE:  Total Enclosed Toroidal Flux'
          CASE(imixece)
