@@ -1,14 +1,35 @@
 # Microsoft Developer Studio Generated Dependency File, included by STELLOPT.mak
 
 stellopt_vmec_bcast.o : \
-      ../LIBSTELL/Debug/mpi_params.o \
-      ../LIBSTELL/Debug/vmec_input.o 
+      $(LIB_DIR)/Debug/mpi_params.o \
+      $(LIB_DIR)/Debug/vmec_input.o 
 
 
 chisq_orbit.o : \
       stellopt_runtime.o \
       stellopt_targets.o \
       equil_vals.o
+
+
+chisq_kappa.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      $(LIB_DIR)/Debug/stel_tools.o \
+      equil_utils.o
+
+
+chisq_kappa_box.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      $(LIB_DIR)/Debug/stel_tools.o \
+      equil_utils.o
+
+
+chisq_kappa_avg.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      $(LIB_DIR)/Debug/stel_tools.o \
+      equil_utils.o
 
 
 chisq_kink.o : \
@@ -56,33 +77,39 @@ chisq_bmax.o : \
       stellopt_runtime.o \
       stellopt_targets.o \
       equil_utils.o \
-      ../../LIBSTELL/Debug/read_boozer_mod.o
+      $(LIB_DIR)/Debug/read_boozer_mod.o
 
       
 chisq_bmin.o : \
       stellopt_runtime.o \
       stellopt_targets.o \
       equil_utils.o \
-      ../../LIBSTELL/Debug/read_boozer_mod.o
+      $(LIB_DIR)/Debug/read_boozer_mod.o
       
 
 chisq_coil_bnorm.o : \
       stellopt_runtime.o \
       stellopt_targets.o \
       equil_vals.o \
-      ../../LIBSTELL/Debug/safe_open_mod.o \
-      ../../LIBSTELL/Debug/mpi_params.o
+      $(LIB_DIR)/Debug/safe_open_mod.o \
+      $(LIB_DIR)/Debug/mpi_params.o
+
       
-      
-chisq_regcoil_bnorm.o : \
+chisq_regcoil_chi2_b.o : \
       stellopt_runtime.o \
       stellopt_targets.o \
-      equil_vals.o \
-      ../../LIBSTELL/Debug/safe_open_mod.o \
-      ../../LIBSTELL/Debug/mpi_params.o
+      stellopt_input_mod.o \
+      stellopt_vars.o \
+      equil_vals.o
       
       
 chisq_rbtor.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      equil_vals.o 
+      
+      
+chisq_b0.o : \
       stellopt_runtime.o \
       stellopt_targets.o \
       equil_vals.o 
@@ -110,16 +137,16 @@ chisq_bootstrap.o : \
       stellopt_runtime.o \
       stellopt_targets.o \
       equil_utils.o \
-      ../../BOOTSJ/Debug/parambs.o \
-      ../../LIBSTELL/Debug/safe_open_mod.o 
+      $(BOOTSJ_DIR)/Debug/parambs.o \
+      $(LIB_DIR)/Debug/safe_open_mod.o 
       
 
 chisq_txport.o : \
       stellopt_runtime.o \
       stellopt_targets.o \
       equil_vals.o \
-      ../../LIBSTELL/Debug/gist_mod.o \
-      ../../LIBSTELL/Debug/safe_open_mod.o 
+      $(LIB_DIR)/Debug/gist_mod.o \
+      $(LIB_DIR)/Debug/safe_open_mod.o 
       
 
 chisq_jdotb.o : \
@@ -134,11 +161,17 @@ chisq_jcurv.o : \
       equil_utils.o
       
 
+chisq_magwell.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      equil_utils.o
+      
+
 chisq_bprobes.o : \
       stellopt_runtime.o \
       stellopt_targets.o \
-      ../../DIAGNO/Debug/diagno_input_mod.o \
-      ../../LIBSTELL/Debug/safe_open_mod.o 
+      $(DIAGNO_DIR)/Debug/diagno_input_mod.o \
+      $(LIB_DIR)/Debug/safe_open_mod.o 
       
 
 chisq_curtor.o : \
@@ -162,23 +195,36 @@ chisq_extcur.o : \
 chisq_fluxloops.o : \
       stellopt_runtime.o \
       stellopt_targets.o \
-      ../../DIAGNO/Debug/diagno_input_mod.o \
-      ../../LIBSTELL/Debug/safe_open_mod.o 
+      $(DIAGNO_DIR)/Debug/diagno_input_mod.o \
+      $(LIB_DIR)/Debug/safe_open_mod.o 
 
 
 chisq_helicity.o : \
       stellopt_runtime.o \
       stellopt_targets.o \
       equil_vals.o \
-      ../../LIBSTELL/Debug/read_boozer_mod.o
+      $(LIB_DIR)/Debug/read_boozer_mod.o
+
+
+chisq_helicity_ornl.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      equil_vals.o \
+      $(LIB_DIR)/Debug/read_boozer_mod.o
 
 chisq_resjac.o : \
       stellopt_runtime.o \
       stellopt_targets.o \
       equil_vals.o \
-      ../../LIBSTELL/Debug/read_boozer_mod.o
+      $(LIB_DIR)/Debug/read_boozer_mod.o
 
 chisq_iota.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      equil_utils.o \
+      equil_vals.o 
+
+chisq_vaciota.o : \
       stellopt_runtime.o \
       stellopt_targets.o \
       equil_utils.o \
@@ -188,7 +234,7 @@ chisq_jstar.o : \
       stellopt_runtime.o \
       stellopt_targets.o \
       equil_utils.o \
-      ../../LIBSTELL/Debug/read_boozer_mod.o
+      $(LIB_DIR)/Debug/read_boozer_mod.o
       
 
 chisq_line_ne.o : \
@@ -215,6 +261,18 @@ chisq_line_ti.o : \
       equil_utils.o 
       
 
+chisq_xics.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      equil_utils.o 
+      
+
+chisq_xics_bright.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      equil_utils.o 
+      
+
 chisq_faraday.o : \
       stellopt_runtime.o \
       stellopt_targets.o \
@@ -226,7 +284,7 @@ chisq_mse.o : \
       stellopt_targets.o \
       stellopt_vars.o \
       equil_utils.o \
-      ../../LIBSTELL/Debug/biotsavart.o
+      $(LIB_DIR)/Debug/biotsavart.o
       
 
 chisq_neo.o : \
@@ -238,8 +296,7 @@ chisq_neo.o : \
 chisq_dkes.o : \
       stellopt_runtime.o \
       stellopt_targets.o \
-      equil_vals.o \
-      ../../NEO/Debug/neo_input_mod.o
+      equil_vals.o 
       
 
 chisq_ne.o : \
@@ -294,8 +351,8 @@ chisq_gradp_max.o : \
 chisq_segrog.o : \
       stellopt_runtime.o \
       stellopt_targets.o \
-      ../../DIAGNO/Debug/diagno_input_mod.o \
-      ../../LIBSTELL/Debug/safe_open_mod.o 
+      $(DIAGNO_DIR)/Debug/diagno_input_mod.o \
+      $(LIB_DIR)/Debug/safe_open_mod.o 
       
 
 chisq_separatrix.o : \
@@ -320,7 +377,7 @@ chisq_vessel.o : \
       stellopt_runtime.o \
       stellopt_targets.o \
       equil_utils.o \
-      ../../LIBSTELL/Debug/vessel_mod.o 
+      $(LIB_DIR)/Debug/vessel_mod.o 
       
 
 chisq_volume.o : \
@@ -333,19 +390,20 @@ chisq_wp.o : \
       stellopt_runtime.o \
       stellopt_targets.o \
       equil_vals.o 
+      
 
 chisq_curvature_p2.o : \
       stellopt_runtime.o \
       stellopt_targets.o \
-      ../../LIBSTELL/Debug/read_wout_mod.o
-
+      $(LIB_DIR)/Debug/read_wout_mod.o
+      
 stellopt_balloon.o : \
       stellopt_runtime.o \
       stellopt_input_mod.o \
       stellopt_vars.o \
       stellopt_targets.o \
-      ../../COBRAVMEC/Debug/readin_data.o \
-      ../../COBRAVMEC/Debug/ballooning_data.o
+      $(COBRA_DIR)/Debug/readin_data.o \
+      $(COBRA_DIR)/Debug/ballooning_data.o
       
 
 stellopt_bootsj.o : \
@@ -354,12 +412,26 @@ stellopt_bootsj.o : \
       stellopt_vars.o \
       stellopt_targets.o \
       equil_utils.o \
-      ../../BOOZ_XFORM/Debug/booz_persistent.o \
-      ../../LIBSTELL/Debug/bootsj_input.o \
-      ../../BOOTSJ/Debug/parambs.o \
-      ../../BOOTSJ/Debug/vmec0.o \
-      ../../BOOTSJ/Debug/trig.o \
-      ../../LIBSTELL/Debug/read_boozer_mod.o
+      $(BOOZ_DIR)/Debug/booz_persistent.o \
+      $(LIB_DIR)/Debug/bootsj_input.o \
+      $(BOOTSJ_DIR)/Debug/parambs.o \
+      $(BOOTSJ_DIR)/Debug/vmec0.o \
+      $(BOOTSJ_DIR)/Debug/trig.o \
+      $(LIB_DIR)/Debug/read_boozer_mod.o
+      
+
+stellopt_sfincs.o : \
+      stellopt_runtime.o \
+      stellopt_input_mod.o \
+      stellopt_vars.o \
+      stellopt_targets.o \
+      equil_utils.o \
+      $(BOOZ_DIR)/Debug/booz_persistent.o \
+      $(LIB_DIR)/Debug/bootsj_input.o \
+      $(BOOTSJ_DIR)/Debug/parambs.o \
+      $(BOOTSJ_DIR)/Debug/vmec0.o \
+      $(BOOTSJ_DIR)/Debug/trig.o \
+      $(LIB_DIR)/Debug/read_boozer_mod.o
       
 
 stellopt_txport.o : \
@@ -369,9 +441,9 @@ stellopt_txport.o : \
       stellopt_targets.o \
       equil_vals.o \
       equil_utils.o \
-      ../../BOOZ_XFORM/Debug/booz_persistent.o \
-      ../../LIBSTELL/Debug/gist_mod.o \
-      ../../LIBSTELL/Debug/read_boozer_mod.o
+      $(BOOZ_DIR)/Debug/booz_persistent.o \
+      $(LIB_DIR)/Debug/gist_mod.o \
+      $(LIB_DIR)/Debug/read_boozer_mod.o
       
       
 stellopt_prof_to_vmec.o : \
@@ -380,8 +452,8 @@ stellopt_prof_to_vmec.o : \
       stellopt_vars.o \
       stellopt_targets.o \
       equil_utils.o \
-      ../../LIBSTELL/Debug/stel_kinds.o \
-      ../../LIBSTELL/Debug/vmec_input.o 
+      $(LIB_DIR)/Debug/stel_kinds.o \
+      $(LIB_DIR)/Debug/vmec_input.o 
       
       
 stellopt_magdiags.o : \
@@ -390,12 +462,12 @@ stellopt_magdiags.o : \
       stellopt_vars.o \
       stellopt_targets.o \
       equil_utils.o \
-      ../../DIAGNO/Debug/diagno_input_mod.o \
-      ../../DIAGNO/Debug/diagno_runtime.o \
-      ../../LIBSTELL/Debug/virtual_casing_mod.o \
-      ../../LIBSTELL/Debug/biotsavart.o \
-      ../../LIBSTELL/Debug/read_wout_mod.o \
-      ../../LIBSTELL/Debug/vmec_input.o 
+      $(DIAGNO_DIR)/Debug/diagno_input_mod.o \
+      $(DIAGNO_DIR)/Debug/diagno_runtime.o \
+      $(LIB_DIR)/Debug/virtual_casing_mod.o \
+      $(LIB_DIR)/Debug/biotsavart.o \
+      $(LIB_DIR)/Debug/read_wout_mod.o \
+      $(LIB_DIR)/Debug/vmec_input.o 
       
       
 stellopt_fcn.o : \
@@ -404,23 +476,23 @@ stellopt_fcn.o : \
       stellopt_vars.o \
       stellopt_targets.o \
       equil_utils.o \
-      ../../LIBSTELL/Debug/stel_kinds.o \
-      ../../LIBSTELL/Debug/vmec_input.o \
-      ../../VMEC2000/Debug/vmec_main.o \
-      ../../VMEC2000/Debug/vmec_params.o 
+      $(LIB_DIR)/Debug/stel_kinds.o \
+      $(LIB_DIR)/Debug/vmec_input.o \
+      $(VMEC_DIR)/Debug/vmec_main.o \
+      $(VMEC_DIR)/Debug/vmec_params.o 
       
       
 stellopt_main.o : \
       stellopt_runtime.o \
-      ../../LIBSTELL/Debug/mpi_params.o
+      $(LIB_DIR)/Debug/mpi_params.o
       
       
 stellopt_input_mod.o : \
       stellopt_runtime.o \
       stellopt_vars.o \
       stellopt_targets.o \
-      ../../LIBSTELL/Debug/safe_open_mod.o \
-      ../../LIBSTELL/Debug/stel_kinds.o 
+      $(LIB_DIR)/Debug/safe_open_mod.o \
+      $(LIB_DIR)/Debug/stel_kinds.o 
       
       
 stellopt_init.o : \
@@ -428,9 +500,9 @@ stellopt_init.o : \
       stellopt_vars.o \
       stellopt_input_mod.o \
       equil_utils.o \
-      ../../LIBSTELL/Debug/safe_open_mod.o \
-      ../../LIBSTELL/Debug/vmec_input.o \
-      ../../VMEC2000/Debug/vmec_params.o
+      $(LIB_DIR)/Debug/safe_open_mod.o \
+      $(LIB_DIR)/Debug/vmec_input.o \
+      $(VMEC_DIR)/Debug/vmec_params.o
       
 
 stellopt_kink.o : \
@@ -438,9 +510,9 @@ stellopt_kink.o : \
       stellopt_input_mod.o \
       stellopt_vars.o \
       equil_vals.o \
-      ../../LIBSTELL/Debug/safe_open_mod.o \
-      ../../LIBSTELL/Debug/read_wout_mod.o \
-      ../../LIBSTELL/Debug/vmec_input.o 
+      $(LIB_DIR)/Debug/safe_open_mod.o \
+      $(LIB_DIR)/Debug/read_wout_mod.o \
+      $(LIB_DIR)/Debug/vmec_input.o 
       
 
 stellopt_neo.o : \
@@ -448,26 +520,17 @@ stellopt_neo.o : \
       stellopt_vars.o \
       equil_vals.o \
       stellopt_targets.o \
-      ../../NEO/Debug/neo_precision.o \
-      ../../NEO/Debug/neo_units.o \
-      ../../NEO/Debug/neo_parameters.o \
-      ../../NEO/Debug/neo_control.o \
-      ../../NEO/Debug/neo_input.o \
-      ../../NEO/Debug/neo_work.o \
-      ../../NEO/Debug/neo_exchange.o \
-      ../../NEO/Debug/neo_output.o \
-      ../../NEO/Debug/sizey_bo.o \
-      ../../LIBSTELL/Debug/read_boozer_mod.o \
-      ../../LIBSTELL/Debug/safe_open_mod.o
+      $(LIB_DIR)/Debug/read_boozer_mod.o \
+      $(LIB_DIR)/Debug/safe_open_mod.o
       
 
 stellopt_runtime.o : \
-      ../../LIBSTELL/Debug/stel_kinds.o 
+      $(LIB_DIR)/Debug/stel_kinds.o 
       
 
 stellopt_targets.o : \
-      ../../LIBSTELL/Debug/stel_kinds.o \
-      ../../LIBSTELL/Debug/vparams.o 
+      $(LIB_DIR)/Debug/stel_kinds.o \
+      $(LIB_DIR)/Debug/vparams.o 
       
 
 stellopt_travis.o : \
@@ -478,7 +541,7 @@ stellopt_travis.o : \
       
 
 equil_vals.o : \
-      ../../LIBSTELL/Debug/stel_kinds.o 
+      $(LIB_DIR)/Debug/stel_kinds.o 
       
 
 stellopt_toboozer.o : \
@@ -487,15 +550,32 @@ stellopt_toboozer.o : \
       stellopt_vars.o \
       equil_vals.o \
       equil_utils.o \
-      ../../LIBSTELL/Debug/vmec_input.o \
-      ../../VMEC2000/Debug/vmec_params.o
+      $(LIB_DIR)/Debug/vmec_input.o \
+      $(VMEC_DIR)/Debug/vmec_params.o
+      
+
+stellopt_vboot.o : \
+      stellopt_runtime.o \
+      stellopt_vars.o \
+      equil_utils.o \
+      $(LIB_DIR)/Debug/vmec_input.o \
+      $(LIB_DIR)/Debug/read_wout_mod.o \
+      $(BOOTSJ_DIR)/Debug/parambs.o
       
 
 stellopt_dkes.o : \
       stellopt_runtime.o \
       stellopt_targets.o \
       equil_utils.o \
-      ../../LIBSTELL/Debug/safe_open_mod.o 
+      $(LIB_DIR)/Debug/safe_open_mod.o 
+      
+
+stellopt_cas3d.o : \
+      stellopt_runtime.o \
+      stellopt_input_mod.o \
+      stellopt_vars.o \
+      equil_utils.o \
+      $(LIB_DIR)/Debug/safe_open_mod.o 
       
       
 stellopt_load_equil.o : \
@@ -504,10 +584,10 @@ stellopt_load_equil.o : \
       stellopt_vars.o \
       equil_vals.o \
       equil_utils.o \
-      ../../LIBSTELL/Debug/read_wout_mod.o \
-      ../../LIBSTELL/Debug/vmec_input.o \
-      ../../LIBSTELL/Debug/mgrid_mod.o \
-      ../../LIBSTELL/Debug/safe_open_mod.o 
+      $(LIB_DIR)/Debug/read_wout_mod.o \
+      $(LIB_DIR)/Debug/vmec_input.o \
+      $(LIB_DIR)/Debug/mgrid_mod.o \
+      $(LIB_DIR)/Debug/safe_open_mod.o 
       
       
 stellopt_load_targets.o : \
@@ -527,8 +607,8 @@ stellopt_optimize.o : \
       stellopt_runtime.o \
       stellopt_input_mod.o \
       stellopt_vars.o \
-      ../../LIBSTELL/Debug/safe_open_mod.o \
-      ../../LIBSTELL/Debug/de_mod.o 
+      $(LIB_DIR)/Debug/safe_open_mod.o \
+      $(LIB_DIR)/Debug/de_mod.o 
       
       
 stellopt_recon_opt.o : \
@@ -536,25 +616,28 @@ stellopt_recon_opt.o : \
       stellopt_runtime.o \
       stellopt_input_mod.o \
       stellopt_vars.o \
-      ../../LIBSTELL/Debug/safe_open_mod.o 
+      $(LIB_DIR)/Debug/safe_open_mod.o 
       
       
 stellopt_paraexe.o : \
       stellopt_runtime.o \
       stellopt_input_mod.o \
       stellopt_vars.o \
-      ../../LIBSTELL/Debug/mpi_params.o 
+      equil_vals.o \
+      $(VMEC_DIR)/Debug/vmec_params.o \
+      $(LIB_DIR)/Debug/wall_mod.o \
+      $(LIB_DIR)/Debug/mpi_params.o 
       
       
 stellopt_prof_refit.o : \
       stellopt_runtime.o \
       stellopt_input_mod.o \
       stellopt_vars.o \
-      ../../LIBSTELL/Debug/vmec_input.o \
-      ../../LIBSTELL/Debug/read_wout_mod.o \
-      ../../DIAGNO/Debug/diagno_input_mod.o \
-      ../../DIAGNO/Debug/diagno_runtime.o \
-      ../../LIBSTELL/Debug/biotsavart.o
+      $(LIB_DIR)/Debug/vmec_input.o \
+      $(LIB_DIR)/Debug/read_wout_mod.o \
+      $(DIAGNO_DIR)/Debug/diagno_input_mod.o \
+      $(DIAGNO_DIR)/Debug/diagno_runtime.o \
+      $(LIB_DIR)/Debug/biotsavart.o
       
 
 stellopt_clean_up.o : \
@@ -563,62 +646,97 @@ stellopt_clean_up.o : \
       stellopt_vars.o \
       stellopt_targets.o \
       equil_utils.o \
-      ../../LIBSTELL/Debug/vmec_input.o \
-      ../../VMEC2000/Debug/vmec_params.o \
-      ../../BOOZ_XFORM/Debug/booz_params.o \
-      ../../LIBSTELL/Debug/read_wout_mod.o \
-      ../../DIAGNO/Debug/diagno_input_mod.o \
-      ../../LIBSTELL/Debug/gist_mod.o \
-      ../../LIBSTELL/Debug/bootsj_input.o \
-      ../../LIBSTELL/Debug/fdjac_mod.o \
-      ../../LIBSTELL/Debug/safe_open_mod.o 
+      $(LIB_DIR)/Debug/vmec_input.o \
+      $(VMEC_DIR)/Debug/vmec_params.o \
+      $(BOOZ_DIR)/Debug/booz_params.o \
+      $(LIB_DIR)/Debug/read_wout_mod.o \
+      $(DIAGNO_DIR)/Debug/diagno_input_mod.o \
+      $(LIB_DIR)/Debug/gist_mod.o \
+      $(LIB_DIR)/Debug/bootsj_input.o \
+      $(LIB_DIR)/Debug/fdjac_mod.o \
+      $(LIB_DIR)/Debug/safe_open_mod.o 
+      
+
+stellopt_regcoil_chi2_b.o : \
+      stellopt_runtime.o \
+      stellopt_input_mod.o \
+      stellopt_vars.o \
+      equil_utils.o
       
 
 stellopt_reinit_vmec.o : \
-      ../../LIBSTELL/Debug/mgrid_mod.o \
-      ../../VMEC2000/Debug/vmec_main.o \
-      ../../VMEC2000/Debug/vmec_params.o \
-      ../../VMEC2000/Debug/vacmod.o \
-      ../../VMEC2000/Debug/vsvd.o \
-      ../../VMEC2000/Debug/vspline.o \
-      ../../VMEC2000/Debug/timer_sub.o 
+      $(LIB_DIR)/Debug/mgrid_mod.o \
+      $(VMEC_DIR)/Debug/vmec_main.o \
+      $(VMEC_DIR)/Debug/vmec_params.o \
+      $(VMEC_DIR)/Debug/vacmod.o \
+      $(VMEC_DIR)/Debug/vsvd.o \
+      $(VMEC_DIR)/Debug/vspline.o \
+      $(VMEC_DIR)/Debug/timer_sub.o 
       
 
 stellopt_triangulate.o : \
       stellopt_runtime.o \
       stellopt_vars.o \
-      ../../LIBSTELL/Debug/vmec_input.o \
-      ../../LIBSTELL/Debug/safe_open_mod.o 
+      $(LIB_DIR)/Debug/vmec_input.o \
+      $(LIB_DIR)/Debug/safe_open_mod.o 
       
 
 equil_utils.o : \
-      ../../LIBSTELL/Debug/stel_kinds.o \
+      $(LIB_DIR)/Debug/stel_kinds.o \
       equil_vals.o \
       stellopt_runtime.o \
       stellopt_vars.o \
       stellopt_targets.o \
-      ../../LIBSTELL/Debug/vmec_utils.o \
-      ../../LIBSTELL/Debug/vmec_input.o \
-      ../../LIBSTELL/Debug/vparams.o \
-      ../../LIBSTELL/Debug/stel_tools.o \
-      ../../VMEC2000/Debug/vmec_main.o \
-      ../../VMEC2000/Debug/vmec_params.o \
-      ../../VMEC2000/Debug/vmec_dim.o \
-      ../../VMEC2000/Debug/xstuff.o 
+      $(LIB_DIR)/Debug/vmec_utils.o \
+      $(LIB_DIR)/Debug/vmec_input.o \
+      $(LIB_DIR)/Debug/vparams.o \
+      $(LIB_DIR)/Debug/stel_tools.o \
+      $(VMEC_DIR)/Debug/vmec_main.o \
+      $(VMEC_DIR)/Debug/vmec_params.o \
+      $(VMEC_DIR)/Debug/vmec_dim.o \
+      $(VMEC_DIR)/Debug/xstuff.o 
 
 stellopt_coiloptpp.o : \
       stellopt_runtime.o \
       stellopt_input_mod.o \
       stellopt_vars.o \
-      ../../LIBSTELL/Debug/mpi_params.o
+      $(LIB_DIR)/Debug/mpi_params.o
       
       
 equil_vals.o : \
-      ../../LIBSTELL/Debug/stel_kinds.o 
+      $(LIB_DIR)/Debug/stel_kinds.o 
 
 
 stellopt_orbits.o : \
       stellopt_runtime.o \
       stellopt_targets.o \
       equil_utils.o \
-      ../../LIBSTELL/Debug/mpi_params.o 
+      $(LIB_DIR)/Debug/mpi_params.o 
+
+
+stellopt_spline_to_coil.o : \
+      stellopt_vars.o \
+      equil_utils.o \
+      $(LIB_DIR)/Debug/vmec_input.o \
+      $(LIB_DIR)/Debug/safe_open_mod.o \
+      $(LIB_DIR)/Debug/stel_kinds.o 
+
+
+stellopt_coil_to_vac.o : \
+      stellopt_vars.o \
+      stellopt_runtime.o \
+      $(MGRID_DIR)/Debug/write_mgrid.o \
+      $(MGRID_DIR)/Debug/makegrid_global.o 
+
+
+stellopt_write_mgrid.o : \
+      equil_vals.o \
+      stellopt_runtime.o \
+      $(LIB_DIR)/Debug/stel_kinds.o \
+      $(LIB_DIR)/Debug/vmec_input.o \
+      $(LIB_DIR)/Debug/biotsavart.o \
+      $(LIB_DIR)/Debug/mgrid_mod.o \
+      $(LIB_DIR)/Debug/mpi_params.o \
+      $(LIB_DIR)/Debug/ezcdf.o \
+      $(MGRID_DIR)/Debug/write_mgrid.o \
+      $(MGRID_DIR)/Debug/makegrid_global.o 
