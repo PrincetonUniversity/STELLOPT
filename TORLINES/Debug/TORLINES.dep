@@ -4,21 +4,21 @@ backspace_out.o:
       
 
 calc_metrics.o: \
-      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Release/stel_kinds.o \
       torlines_runtime.o \
       torlines_realspace.o \
       torlines_background.o
       
 
 cyl2suv.o: \
-      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Release/stel_kinds.o \
       torlines_realspace.o
       
 
 fblin_lsode.o: 
 
 fblin.o: \
-      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Release/stel_kinds.o \
       torlines_runtime.o \
       torlines_realspace.o \
       torlines_background.o \
@@ -26,7 +26,7 @@ fblin.o: \
       
 
 torlines_follow.o: \
-      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Release/stel_kinds.o \
       torlines_runtime.o \
       torlines_realspace.o \
       torlines_background.o \
@@ -34,14 +34,14 @@ torlines_follow.o: \
       
 
 torlines_gridtest.o: \
-      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Release/stel_kinds.o \
       torlines_runtime.o \
       torlines_realspace.o 
       
 
 torlines_emc3.o: \
-      ../../LIBSTELL/Debug/stel_kinds.o \
-      ../../LIBSTELL/Debug/safe_open_mod.o \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Release/safe_open_mod.o \
       torlines_runtime.o \
       torlines_realspace.o \
       torlines_background.o \
@@ -49,7 +49,7 @@ torlines_emc3.o: \
       
 
 torlines_write.o: \
-      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Release/stel_kinds.o \
       torlines_runtime.o \
       torlines_realspace.o \
       torlines_background.o \
@@ -57,7 +57,7 @@ torlines_write.o: \
       
 
 follow.o: \
-      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Release/stel_kinds.o \
       torlines_runtime.o \
       torlines_realspace.o \
       torlines_background.o \
@@ -74,11 +74,11 @@ Map_v.o: \
       
 
 mntouv.o: \
-      ../../LIBSTELL/Debug/stel_kinds.o 
+      ../../LIBSTELL/Release/stel_kinds.o 
 
 
 normal_vector.o: \
-      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Release/stel_kinds.o \
       torlines_realspace.o \
       torlines_runtime.o \
       torlines_background.o
@@ -92,35 +92,35 @@ out_torlines.o: \
       
 
 scaleup_boundary.o: \
-      ../../LIBSTELL/Debug/stel_kinds.o \
-      ../../LIBSTELL/Debug/vessel_mod.o \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Release/vessel_mod.o \
       torlines_runtime.o \
       torlines_background.o 
 
 
 torlines_background.o: \
-      ../../LIBSTELL/Debug/stel_kinds.o 
+      ../../LIBSTELL/Release/stel_kinds.o 
       
 
 torlines_fieldlines.o: \
-      ../../LIBSTELL/Debug/stel_kinds.o 
+      ../../LIBSTELL/Release/stel_kinds.o 
       
 
 torlines_init_external.o: \
-      ../../LIBSTELL/Debug/stel_kinds.o \
-      ../../LIBSTELL/Debug/read_wout_mod.o \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Release/read_wout_mod.o \
       torlines_background.o \
       torlines_realspace.o \
       torlines_runtime.o \
       torlines_fieldlines.o \
-      ../../LIBSTELL/Debug/virtual_casing_mod.o \
-      ../../LIBSTELL/Debug/mgrid_field_mod.o \
-      ../../LIBSTELL/Debug/biotsavart.o 
+      ../../LIBSTELL/Release/virtual_casing_mod.o \
+      ../../LIBSTELL/Release/mgrid_field_mod.o \
+      ../../LIBSTELL/Release/biotsavart.o 
       
 
 torlines_init_wout.o: \
-      ../../LIBSTELL/Debug/stel_kinds.o \
-      ../../LIBSTELL/Debug/read_wout_mod.o \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Release/read_wout_mod.o \
       torlines_background.o \
       torlines_realspace.o \
       torlines_runtime.o 
@@ -131,21 +131,21 @@ torlines_init.o: \
       torlines_fieldlines.o \
       torlines_background.o \
       torlines_realspace.o \
-      ../../LIBSTELL/Debug/vmec_input.o \
-      ../../LIBSTELL/Debug/vessel_mod.o \
+      ../../LIBSTELL/Release/vmec_input.o \
+      ../../LIBSTELL/Release/vessel_mod.o \
       torlines_input_mod.o
       
 
 torlines_init_input.o: \
-      ../../LIBSTELL/Debug/stel_kinds.o \
-      ../../LIBSTELL/Debug/vmec_input.o \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Release/vmec_input.o \
       torlines_background.o \
       torlines_runtime.o 
       
 
 torlines_input_mod.o: \
-      ../../LIBSTELL/Debug/virtual_casing_mod.o \
-      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Release/virtual_casing_mod.o \
+      ../../LIBSTELL/Release/stel_kinds.o \
       torlines_realspace.o \
       torlines_fieldlines.o \
       torlines_background.o \
@@ -157,11 +157,11 @@ torlines_main.o: \
       
 
 torlines_realspace.o: \
-      ../../LIBSTELL/Debug/stel_kinds.o 
+      ../../LIBSTELL/Release/stel_kinds.o 
       
 
 torlines_realspace.o: \
-      ../../LIBSTELL/Debug/stel_kinds.o 
+      ../../LIBSTELL/Release/stel_kinds.o 
       
      
       
