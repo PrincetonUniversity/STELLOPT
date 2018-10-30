@@ -1,8 +1,8 @@
 # Microsoft Developer Studio Generated Dependency File, included by DKES.mak
 
 blk5d.o : \
-      ../../LIBSTELL/Debug/safe_open_mod.o \
-      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Release/safe_open_mod.o \
+      ../../LIBSTELL/Release/stel_kinds.o \
       dkes_input.o \
       dkes_realspace.o \
       vimatrix.o \
@@ -29,13 +29,13 @@ dkes2.o : \
       
 
 dkes_input.o : \
-      ../../LIBSTELL/Debug/safe_open_mod.o \
-      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Release/safe_open_mod.o \
+      ../../LIBSTELL/Release/stel_kinds.o \
       vimatrix.o 
       
 
 dkes_realspace.o : \
-      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Release/stel_kinds.o \
       dkes_input.o \
       vimatrix.o \
       vnamecl2.o 
@@ -62,7 +62,7 @@ printout.o : \
       
 
 rddisk.o : \
-      ../../LIBSTELL/Debug/stel_kinds.o 
+      ../../LIBSTELL/Release/stel_kinds.o 
       
 
 residue.o : \
@@ -72,7 +72,7 @@ residue.o : \
       
 
 vcmain.o : \
-      ../../LIBSTELL/Debug/stel_kinds.o 
+      ../../LIBSTELL/Release/stel_kinds.o 
       
 
 vnamecl2.o : \
@@ -80,20 +80,20 @@ vnamecl2.o : \
       
 
 wrdisk.o : \
-      ../../LIBSTELL/Debug/stel_kinds.o 
+      ../../LIBSTELL/Release/stel_kinds.o 
       
 
 wrout.o : \
-      ../../LIBSTELL/Debug/safe_open_mod.o \
+      ../../LIBSTELL/Release/safe_open_mod.o \
       dkes_input.o \
       dkes_realspace.o \
       vnamecl2.o 
       
 
 dkes_input_prepare.o : \
-      ../../LIBSTELL/Debug/date_and_computer.o \
-      ../../LIBSTELL/Debug/read_boozer_mod.o \
-      ../../LIBSTELL/Debug/read_wout_mod.o \
-      ../../LIBSTELL/Debug/safe_open_mod.o \
-      ../../LIBSTELL/Debug/stel_kinds.o 
+      ../../LIBSTELL/Release/date_and_computer.o \
+      ../../LIBSTELL/Release/read_boozer_mod.o \
+      ../../LIBSTELL/Release/read_wout_mod.o \
+      ../../LIBSTELL/Release/safe_open_mod.o \
+      ../../LIBSTELL/Release/stel_kinds.o 
       
