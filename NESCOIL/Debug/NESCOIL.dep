@@ -60,7 +60,7 @@ bnfld.o : \
       Vprecal7.o \
       Vsurfac13.o \
       LoopCtrl.o \
-      ../../LIBSTELL/Release/safe_open_mod.o
+      ../../LIBSTELL/Debug/safe_open_mod.o
 
 calc_percent_errs.o : \
       Vmeshes.o
@@ -86,7 +86,7 @@ matrix.o : \
       LoopCtrl.o
 
 min_xerr_phimn.o : \
-      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
       NumParams.o \
       OutCtrl.o \
       LoopCtrl.o \
@@ -129,8 +129,8 @@ nescoil_cleanup.o : \
       NumParams.o
 
 nescoil.o : \
-      ../../LIBSTELL/Release/stel_kinds.o \
-      ../../LIBSTELL/Release/safe_open_mod.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Debug/safe_open_mod.o \
       Vvacuum2.o \
       Vvacuum3.o \
       Vprecal1.o \
@@ -146,17 +146,17 @@ nescoil_help.o : \
       NumParams.o
 
 nesopt.o : \
-      ../../LIBSTELL/Release/stel_kinds.o
+      ../../LIBSTELL/Debug/stel_kinds.o
 
 NumParams.o : \
-      ../../LIBSTELL/Release/stel_kinds.o
+      ../../LIBSTELL/Debug/stel_kinds.o
 
 OutCtrl.o : \
-      ../../LIBSTELL/Release/stel_kinds.o
+      ../../LIBSTELL/Debug/stel_kinds.o
 
 precal.o : \
-      ../../LIBSTELL/Release/fftfax.o \
-      ../../LIBSTELL/Release/cftfax.o \
+      ../../LIBSTELL/Debug/fftfax.o \
+      ../../LIBSTELL/Debug/cftfax.o \
       Vmeshes.o \
       NumParams.o \
       LoopCtrl.o \
@@ -173,7 +173,7 @@ precal.o : \
       Vfourier2.o
 
 read_nescoil_input.o : \
-      ../../LIBSTELL/Release/safe_open_mod.o \
+      ../../LIBSTELL/Debug/safe_open_mod.o \
       SvdCtrl.o \
       OutCtrl.o \
       LoopCtrl.o \
@@ -275,7 +275,7 @@ surfcur_diag.o : \
       Vsurfcurdiag.o
 
 SvdCtrl.o : \
-      ../../LIBSTELL/Release/stel_kinds.o
+      ../../LIBSTELL/Debug/stel_kinds.o
 
 Vbiopre.o : \
       Vmeshes.o
@@ -284,7 +284,7 @@ Vbnorm.o : \
       Vmeshes.o
 
 Vcen.o : \
-      ../../LIBSTELL/Release/stel_kinds.o
+      ../../LIBSTELL/Debug/stel_kinds.o
 
 Vculine1.o : \
       Vmeshes.o
@@ -296,10 +296,10 @@ Vdiagno3.o : \
       Vmeshes.o
 
 Vfourier2.o : \
-      ../../LIBSTELL/Release/stel_kinds.o
+      ../../LIBSTELL/Debug/stel_kinds.o
 
 Vmeshes.o : \
-      ../../LIBSTELL/Release/stel_kinds.o
+      ../../LIBSTELL/Debug/stel_kinds.o
 
 Voptim1.o : \
       Vmeshes.o 
@@ -308,10 +308,10 @@ Vprecal10.o : \
       Vmeshes.o
 
 Vprecal1.o : \
-      ../../LIBSTELL/Release/stel_kinds.o
+      ../../LIBSTELL/Debug/stel_kinds.o
 
 Vprecal2.o : \
-      ../../LIBSTELL/Release/stel_kinds.o
+      ../../LIBSTELL/Debug/stel_kinds.o
 
 Vprecal3.o : \
       Vmeshes.o
@@ -389,7 +389,7 @@ Vvacuum2.o : \
       Vmeshes.o
 
 Vvacuum3.o : \
-      ../../LIBSTELL/Release/stel_kinds.o
+      ../../LIBSTELL/Debug/stel_kinds.o
 
 Vvacuum4.o : \
       Vmeshes.o

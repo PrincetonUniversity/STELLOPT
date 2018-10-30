@@ -25,7 +25,7 @@ flint_bo.o : \
      neo_output.o \
      partpa_bo.o \
      neo_rk4dbo.o \
-     ../../LIBSTELL/Release/safe_open_mod.o
+     ../../LIBSTELL/Debug/safe_open_mod.o
      
      
 flint_cur.o : \
@@ -87,7 +87,7 @@ neo.o : \
      neo_exchange.o \
      neo_output.o \
      sizey_bo.o \
-     ../../LIBSTELL/Release/safe_open_mod.o
+     ../../LIBSTELL/Debug/safe_open_mod.o
      
      
 neo_fourier.o : \
@@ -156,7 +156,7 @@ neo_read_control.o : \
      neo_exchange.o \
      sizey_bo.o \
      sizey_cur.o \
-     ../../LIBSTELL/Release/safe_open_mod.o
+     ../../LIBSTELL/Debug/safe_open_mod.o
      
      
 neo_read.o : \
@@ -241,7 +241,7 @@ read_booz_in.o : \
      neo_units.o \
      neo_control.o \
      neo_exchange.o \
-     ../../LIBSTELL/Release/read_boozer_mod.o 
+     ../../LIBSTELL/Debug/read_boozer_mod.o 
      
      
 rhs_bo1.o : \
@@ -297,8 +297,8 @@ neo_input_mod.o : \
      neo_exchange.o \
      sizey_bo.o \
      sizey_cur.o \
-     ../../LIBSTELL/Release/stel_kinds.o \
-     ../../LIBSTELL/Release/vparams.o \
-     ../../LIBSTELL/Release/safe_open_mod.o
+     ../../LIBSTELL/Debug/stel_kinds.o \
+     ../../LIBSTELL/Debug/vparams.o \
+     ../../LIBSTELL/Debug/safe_open_mod.o
      
      

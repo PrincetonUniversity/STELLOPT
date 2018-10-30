@@ -26,7 +26,7 @@ debug:
 	@echo "Beginning debug compilation and linking of beams3d"
 	@cd $(DBG); rm -f *.f90 *.c; rm -f $(MAKE); ln -fs ../$(MAKE) .; make -f $(MAKE) $(EXE_F) FLAGS="$(FLAGS_D) $(MOD1_PATH)" TYPE="debug" LOCTYPE="Debug" 
 	@rm -f $(MYHOME)/$(EXE_F)
-o	@-(umask 022; rm -f $(MYHOME)/$(EXE_F); ln -fs $(DBG_PATH)/$(EXE_F) $(MYHOME) 2> /dev/null; umask 077)
+	@-(umask 022; rm -f $(MYHOME)/$(EXE_F); ln -fs $(DBG_PATH)/$(EXE_F) $(MYHOME) 2> /dev/null; umask 077)
 	@echo "Debug version - xbeams3d - is now updated"
 	@echo "To free up space, delete all *.o files from Debug"
 	@echo ""

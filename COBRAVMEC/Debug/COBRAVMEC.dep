@@ -1,37 +1,37 @@
 ballooning_data.o : \
       general_dimensions.o \
       fmesh_quantities.o \
-      ../../LIBSTELL/Release/stel_kinds.o
+      ../../LIBSTELL/Debug/stel_kinds.o
 
 
 cobra.o : \
-      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
       normalize_data.o \
       ballooning_data.o \
       readin_data.o \
-      ../../LIBSTELL/Release/safe_open_mod.o \
-      ../../LIBSTELL/Release/date_and_computer.o \
+      ../../LIBSTELL/Debug/safe_open_mod.o \
+      ../../LIBSTELL/Debug/date_and_computer.o \
       fmesh_quantities.o
       
 
 
 coeffs.o : \
-      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
       normalize_data.o \
       ballooning_data.o \
       fmesh_quantities.o
 
 
 CP.o : \
-      ../../LIBSTELL/Release/stel_kinds.o
+      ../../LIBSTELL/Debug/stel_kinds.o
 
 
 EQL.o : \
-      ../../LIBSTELL/Release/stel_kinds.o
+      ../../LIBSTELL/Debug/stel_kinds.o
 
 
 fmesh_quantities.o : \
-      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
       general_dimensions.o \
       readin_data.o
 
@@ -40,7 +40,7 @@ general_dimensions.o : \
 
 
 get_ballooning_grate.o : \
-      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
       ballooning_data.o \
       normalize_data.o \
       readin_data.o \
@@ -49,7 +49,7 @@ get_ballooning_grate.o : \
 
 
 get_lambda.o : \
-      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
       ballooning_data.o \
       normalize_data.o \
       readin_data.o \
@@ -58,25 +58,25 @@ get_lambda.o : \
 
 
 geteigm.o : \
-      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
       ballooning_data.o
 
 
 getmatrix.o : \
-      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
       ballooning_data.o
 
 
 INP.o : \
-      ../../LIBSTELL/Release/stel_kinds.o
+      ../../LIBSTELL/Debug/stel_kinds.o
 
 
 normalize_data.o : \
-      ../../LIBSTELL/Release/stel_kinds.o
+      ../../LIBSTELL/Debug/stel_kinds.o
 
 
 obtain_field_line.o : \
-      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
       normalize_data.o \
       ballooning_data.o \
       general_dimensions.o \
@@ -84,7 +84,7 @@ obtain_field_line.o : \
 
 
 obtain_theta.o : \
-      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
       ballooning_data.o \
       general_dimensions.o \
       normalize_data.o \
@@ -92,40 +92,40 @@ obtain_theta.o : \
 
 
 obtain_zeta.o : \
-      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
       ballooning_data.o \
       general_dimensions.o \
       fmesh_quantities.o
 
 
 order_input.o : \
-      ../../LIBSTELL/Release/stel_kinds.o \
-      ../../LIBSTELL/Release/read_wout_mod.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Debug/read_wout_mod.o \
       normalize_data.o \
       readin_data.o \
       fmesh_quantities.o \
-      ../../LIBSTELL/Release/vparams.o      
+      ../../LIBSTELL/Debug/vparams.o      
 
 
 polint.o : \
-      ../../LIBSTELL/Release/stel_kinds.o
+      ../../LIBSTELL/Debug/stel_kinds.o
 
 
 readin_data.o : \
-      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
       general_dimensions.o 
 
 
 STM.o : \
-      ../../LIBSTELL/Release/stel_kinds.o
+      ../../LIBSTELL/Debug/stel_kinds.o
 
 
 summod.o : \
-      ../../LIBSTELL/Release/stel_kinds.o
+      ../../LIBSTELL/Debug/stel_kinds.o
 
 
 summodosd.o : \
-      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
       normalize_data.o \
       ballooning_data.o \
       general_dimensions.o \
@@ -134,15 +134,15 @@ summodosd.o : \
 
 
 TVAL.o : \
-      ../../LIBSTELL/Release/stel_kinds.o
+      ../../LIBSTELL/Debug/stel_kinds.o
 
 
 TVECT.o : \
-      ../../LIBSTELL/Release/stel_kinds.o
+      ../../LIBSTELL/Debug/stel_kinds.o
 
 
 variat_eig_full.o : \
-      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
       ballooning_data.o
 
 

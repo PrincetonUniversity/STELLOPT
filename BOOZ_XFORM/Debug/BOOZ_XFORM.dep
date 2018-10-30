@@ -6,21 +6,21 @@ allocate_boozer.o : \
       
 
 booz_jac.o : \
-      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
       booz_params.o \
       booz_persistent.o 
       
 
 booz_params.o : \
-      ../../LIBSTELL/Release/stel_kinds.o 
+      ../../LIBSTELL/Debug/stel_kinds.o 
       
 
 booz_persistent.o : \
-      ../../LIBSTELL/Release/stel_kinds.o 
+      ../../LIBSTELL/Debug/stel_kinds.o 
       
 
 boozer.o : \
-      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
       booz_params.o 
       
 
@@ -30,12 +30,12 @@ boozer_coords.o : \
       
 
 boozer_xform.o : \
-      ../../LIBSTELL/Release/safe_open_mod.o \
+      ../../LIBSTELL/Debug/safe_open_mod.o \
       booz_params.o 
       
 
 foranl.o : \
-      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
       booz_params.o \
       booz_persistent.o 
       
@@ -46,40 +46,40 @@ free_mem_boozer.o : \
       
 
 harfun.o : \
-      ../../LIBSTELL/Release/stel_kinds.o 
+      ../../LIBSTELL/Debug/stel_kinds.o 
       
 
 read_wout_booz.o : \
-      ../../LIBSTELL/Release/read_wout_mod.o \
+      ../../LIBSTELL/Debug/read_wout_mod.o \
       booz_params.o \
       booz_persistent.o 
       
 
 setup_booz.o : \
-      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
       booz_persistent.o 
       
 
 transpmn.o : \
-      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
       booz_params.o 
       
 
 trigfunc.o : \
-      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
       booz_params.o 
       
 
 vcoords.o : \
-      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
       booz_persistent.o 
       
 
 write_boozmn.o : \
-      ../../LIBSTELL/Release/ezcdf.o \
-      ../../LIBSTELL/Release/read_boozer_mod.o \
-      ../../LIBSTELL/Release/read_wout_mod.o \
-      ../../LIBSTELL/Release/safe_open_mod.o \
+      ../../LIBSTELL/Debug/ezcdf.o \
+      ../../LIBSTELL/Debug/read_boozer_mod.o \
+      ../../LIBSTELL/Debug/read_wout_mod.o \
+      ../../LIBSTELL/Debug/safe_open_mod.o \
       booz_params.o \
       booz_persistent.o 
       

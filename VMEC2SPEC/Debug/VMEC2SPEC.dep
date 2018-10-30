@@ -10,52 +10,52 @@ spec_init.o: \
       
 
 spec_init_input.o: \
-      ../../LIBSTELL/Release/stel_kinds.o \
-      ../../LIBSTELL/Release/vmec_input.o \
-      ../../LIBSTELL/Release/profile_functions.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Debug/vmec_input.o \
+      ../../LIBSTELL/Debug/profile_functions.o \
       spec_background.o \
       spec_runtime.o \
       spec_profile.o
       
 
 spec_rat_prof.o: \
-      ../../LIBSTELL/Release/read_wout_mod.o \
+      ../../LIBSTELL/Debug/read_wout_mod.o \
       spec_background.o \
       spec_runtime.o \
       spec_input_mod.o 
       
 
 spec_init_wout.o: \
-      ../../LIBSTELL/Release/stel_kinds.o \
-      ../../LIBSTELL/Release/read_wout_mod.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Debug/read_wout_mod.o \
       spec_background.o \
       spec_profile.o \
       spec_runtime.o
       
 
 spec_background.o: \
-      ../../LIBSTELL/Release/stel_kinds.o 
+      ../../LIBSTELL/Debug/stel_kinds.o 
       
 
 spec_runtime.o: \
-      ../../LIBSTELL/Release/stel_kinds.o 
+      ../../LIBSTELL/Debug/stel_kinds.o 
       
 
 spec_input_mod.o: \
-      ../../LIBSTELL/Release/stel_kinds.o \
-      ../../LIBSTELL/Release/safe_open_mod.o \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Debug/safe_open_mod.o \
       spec_runtime.o \
       spec_background.o 
       
 
 spec_input_mod.o: \
-      ../../LIBSTELL/Release/stel_kinds.o \
-      ../../LIBSTELL/Release/stel_constants.o \
-      ../../LIBSTELL/Release/vmec_input.o
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Debug/stel_constants.o \
+      ../../LIBSTELL/Debug/vmec_input.o
       
 
 write_spec_input.o: \
-      ../../LIBSTELL/Release/write_array_generic.o \
+      ../../LIBSTELL/Debug/write_array_generic.o \
       spec_background.o \
       spec_runtime.o \
       spec_profile.o
