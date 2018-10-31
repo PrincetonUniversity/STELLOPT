@@ -86,9 +86,9 @@
       LOGICAL, DIMENSION(0:ntord)                ::  laxis_opt
       LOGICAL, DIMENSION(-ntord:ntord,0:mpol1d)  ::  lbound_opt, lrho_opt, lmode_opt
       LOGICAL, DIMENSION(-ntord:ntord,-mpol1d:mpol1d) :: ldeltamn_opt
-      INTEGER, PARAMETER :: maxcoilknots=40
-      LOGICAL, DIMENSION(nigroup,maxcoilknots)        ::  lcoil_spline
-      INTEGER, DIMENSION(nigroup)                     ::  coil_nknots
+      INTEGER, PARAMETER :: maxcoilctrl=40
+      LOGICAL, DIMENSION(nigroup,maxcoilctrl)        ::  lcoil_spline
+      INTEGER, DIMENSION(nigroup)                     ::  coil_nctrl
       LOGICAL  ::  lwindsurf
       INTEGER  ::  nfunc_max
       REAL(rprec)     ::  dphiedge_opt, dcurtor_opt, dbcrit_opt, &
@@ -180,11 +180,11 @@
       REAL(rprec), DIMENSION(-ntord:ntord,-mpol1d:mpol1d) ::  deltamn
       REAL(rprec), DIMENSION(-ntord:ntord,-mpol1d:mpol1d) ::  ddeltamn_opt
       REAL(rprec), DIMENSION(-ntord:ntord,-mpol1d:mpol1d) ::  delta_min, delta_max
-      REAL(rprec), DIMENSION(nigroup,maxcoilknots) :: coil_splinesx,coil_splinesy,coil_splinesz,&
-                                                      coil_splinefx,coil_splinefy,coil_splinefz
-      REAL(rprec), DIMENSION(nigroup,maxcoilknots) :: dcoil_spline
-      REAL(rprec), DIMENSION(nigroup,maxcoilknots) :: coil_splinefx_min,coil_splinefy_min,coil_splinefz_min,&
-                                                      coil_splinefx_max,coil_splinefy_max,coil_splinefz_max
+      REAL(rprec), DIMENSION(nigroup,maxcoilctrl+4)       :: coil_splinesx,coil_splinesy,coil_splinesz
+      REAL(rprec), DIMENSION(nigroup,maxcoilctrl)         :: coil_splinefx,coil_splinefy,coil_splinefz
+      REAL(rprec), DIMENSION(nigroup,maxcoilctrl) :: dcoil_spline
+      REAL(rprec), DIMENSION(nigroup,maxcoilctrl) :: coil_splinefx_min,coil_splinefy_min,coil_splinefz_min,&
+                                                     coil_splinefx_max,coil_splinefy_max,coil_splinefz_max
 
       ! Regcoil Winding Surface (rcws): Boundary+min/max
       REAL(rprec), DIMENSION(-mpol_rcws:mpol_rcws, -ntor_rcws:ntor_rcws) :: regcoil_rcws_rbound_c, regcoil_rcws_rbound_s
@@ -477,11 +477,11 @@
          CASE(imodemn)
             WRITE(iunit,out_format_2DB) 'MODE(',var_dex1,',',var_dex2,'):  Boundary Specifiction (Lazerson)'
          CASE(icoil_splinefx)
-            WRITE(iunit,out_format_2DB) 'COIL_SPLINEX(',var_dex1,',',var_dex2,'):  Coil Spline Knots (X)'
+            WRITE(iunit,out_format_2DB) 'COIL_SPLINEX(',var_dex1,',',var_dex2,'):  Coil Spline Ctrl Pts (X)'
          CASE(icoil_splinefy)
-            WRITE(iunit,out_format_2DB) 'COIL_SPLINEY(',var_dex1,',',var_dex2,'):  Coil Spline Knots (Y)'
+            WRITE(iunit,out_format_2DB) 'COIL_SPLINEY(',var_dex1,',',var_dex2,'):  Coil Spline Ctrl Pts (Y)'
          CASE(icoil_splinefz)
-            WRITE(iunit,out_format_2DB) 'COIL_SPLINEZ(',var_dex1,',',var_dex2,'):  Coil Spline Knots (Z)'
+            WRITE(iunit,out_format_2DB) 'COIL_SPLINEZ(',var_dex1,',',var_dex2,'):  Coil Spline Ctrl Pts (Z)'
 
          ! REGCOIL cases
          CASE(iregcoil_winding_surface_separation)

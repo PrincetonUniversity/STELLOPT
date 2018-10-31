@@ -92,7 +92,7 @@
 !            lphi_f_opt         Logical array to control PHI_AUX_F variation (Electrostatic potential)
 !            lah_f_opt          Logical array to control AH_AUX_F variation
 !            lat_f_opt          Logical array to control AT_AUX_F variation
-!            lcoil_spline       Logical array to control coil spline knot variation
+!            lcoil_spline       Logical array to control coil spline control point variation
 !            lwindsurf          Logical to embed splined coils in a winding surface
 !            windsurfname       Character string naming file containing winding surface
 !            lbound_opt         Logical array to control Boundary variation
@@ -409,6 +409,7 @@
       INTEGER, INTENT(in) :: ithread
       LOGICAL :: lexist
       INTEGER :: i, ierr, iunit, local_master
+      CHARACTER(LEN=1000) :: line
 
       ! Variables used in regcoil section to parse nescin spectrum
       INTEGER :: imn, m, n
@@ -641,7 +642,7 @@
       coil_splinefx(:,:) = 0
       coil_splinefy(:,:) = 0
       coil_splinefz(:,:) = 0
-      coil_nknots(:)  = 0
+      coil_nctrl(:)  = 0
       coil_type(:)    = 'U'    ! Default to "unknown"
       windsurfname    = ''
       windsurf%mmax   = -1
@@ -931,7 +932,12 @@
       CALL safe_open(iunit,istat,TRIM(filename),'old','formatted')
       IF (istat /= 0) CALL handle_err(FILE_OPEN_ERR,TRIM(filename),istat)
       READ(iunit,NML=optimum,IOSTAT=istat)
-      IF (istat /= 0) CALL handle_err(NAMELIST_READ_ERR,'OPTIMUM in: '//TRIM(filename),istat)
+      IF (istat /= 0) THEN
+         backspace(iunit)
+         read(iunit,fmt='(A)') line
+         write(6,'(A)') 'Invalid line in namelist: '//TRIM(line)
+         CALL handle_err(NAMELIST_READ_ERR,'OPTIMUM in: '//TRIM(filename),istat)
+      END IF
       CALL FLUSH(iunit)
       CLOSE(iunit)
 
@@ -962,17 +968,42 @@
 
          ! Count knots, error check
          DO i=1,nigroup
-            coil_nknots(i) = COUNT(coil_splinesx(i,:) >= 0)
-            IF ((coil_nknots(i) > 0).AND.(coil_nknots(i) < 4)) &
-                 CALL handle_err(KNOT_DEF_ERR, 'read_stellopt_input', coil_nknots(i))
-            IF (COUNT(coil_splinesy(i,:) >= 0) .NE. coil_nknots(i)) &
-                 CALL handle_err(KNOT_MISMATCH_ERR, 'read_stellopt_input', coil_nknots(i))
-            IF ((.NOT.lwindsurf) .AND. (COUNT(coil_splinesz(i,:) >= 0) .NE. coil_nknots(i))) &
-                 CALL handle_err(KNOT_MISMATCH_ERR, 'read_stellopt_input', coil_nknots(i))
-            IF (ANY(lcoil_spline(i,coil_nknots(i)+1:maxcoilknots))) &
-                 CALL handle_err(KNOT_MISMATCH_ERR, 'read_stellopt_input', coil_nknots(i))
-         END DO
-      ENDIF
+            n = COUNT(coil_splinesx(i,:) >= 0.0)
+            coil_nctrl(i) = n - 4
+            IF ((n > 0).AND.(n < 4)) &
+                 CALL handle_err(KNOT_DEF_ERR, 'read_stellopt_input', n)
+            IF (COUNT(coil_splinesy(i,:) >= 0.0) - 4 .NE. coil_nctrl(i)) &
+                 CALL handle_err(KNOT_MISMATCH_ERR, 'read_stellopt_input', coil_nctrl(i))
+            IF ((.NOT.lwindsurf) .AND. (COUNT(coil_splinesz(i,:) >= 0.0) - 4 .NE. coil_nctrl(i))) &
+                 CALL handle_err(KNOT_MISMATCH_ERR, 'read_stellopt_input', coil_nctrl(i))
+            IF (ANY(lcoil_spline(i,coil_nctrl(i)+1:maxcoilctrl))) &
+                 CALL handle_err(KNOT_MISMATCH_ERR, 'read_stellopt_input', coil_nctrl(i))
+            IF (n.GE.4) THEN
+               DO m=2,n
+                  IF (coil_splinesx(i,m).LT.coil_splinesx(i,m-1)) &
+                       CALL handle_err(KNOT_ORDER_ERR, 'read_stellopt_input', m)
+                  IF (coil_splinesy(i,m).LT.coil_splinesy(i,m-1)) &
+                       CALL handle_err(KNOT_ORDER_ERR, 'read_stellopt_input', m)
+               ENDDO
+               IF ((coil_splinesx(i,2).NE.coil_splinesx(i,1)) .OR. &
+                   (coil_splinesx(i,3).NE.coil_splinesx(i,1)) .OR. &
+                   (coil_splinesx(i,4).NE.coil_splinesx(i,1))) &
+                  CALL handle_err(KNOT_CONST_ERR, 'read_stellopt_input', i)
+               IF ((coil_splinesx(i,n-1).NE.coil_splinesx(i,n)) .OR. &
+                   (coil_splinesx(i,n-2).NE.coil_splinesx(i,n)) .OR. &
+                   (coil_splinesx(i,n-3).NE.coil_splinesx(i,n))) &
+                  CALL handle_err(KNOT_CONST_ERR, 'read_stellopt_input', i)
+               IF ((coil_splinesy(i,2).NE.coil_splinesy(i,1)) .OR. &
+                   (coil_splinesy(i,3).NE.coil_splinesy(i,1)) .OR. &
+                   (coil_splinesy(i,4).NE.coil_splinesy(i,1))) &
+                  CALL handle_err(KNOT_CONST_ERR, 'read_stellopt_input', i)
+               IF ((coil_splinesy(i,n-1).NE.coil_splinesy(i,n)) .OR. &
+                   (coil_splinesy(i,n-2).NE.coil_splinesy(i,n)) .OR. &
+                   (coil_splinesy(i,n-3).NE.coil_splinesy(i,n))) &
+                  CALL handle_err(KNOT_CONST_ERR, 'read_stellopt_input', i)
+            ENDIF !n ge 4
+         END DO !i
+      ENDIF !lcoil_spline
 
       ! REGCOIL winding surface optimization
       ! If targeting chi2_b on the plasma boundary AND varying the winding
@@ -1798,23 +1829,23 @@
             IF (ANY(coil_splinesx(n,:)>-1)) THEN
                WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
                WRITE(iunit,'(A,I4.3)') '!       Coil Number ',n
-               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',1X,A)") 'COIL_TYPE(',n,')',COIL_TYPE(n)
+               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',1X,A)") 'COIL_TYPE(',n,')',"'"//COIL_TYPE(n)//"'"
                ik = MINLOC(coil_splinesx(n,:),DIM=1) - 1
-               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',10(2X,L1))") 'LCOIL_SPLINE(',n,',:)',(lcoil_spline(n,m), m = 1, ik)
-               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'DCOIL_SPLINE(',n,',:)',(dcoil_spline(n,m), m = 1, ik)
+               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',10(2X,L1))") 'LCOIL_SPLINE(',n,',:)',(lcoil_spline(n,m), m = 1, ik-4)
+               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'DCOIL_SPLINE(',n,',:)',(dcoil_spline(n,m), m = 1, ik-4)
                WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINESX(',n,',:)',(coil_splinesx(n,m), m = 1, ik)
-               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINEFX(',n,',:)',(coil_splinefx(n,m), m = 1, ik)
+               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINEFX(',n,',:)',(coil_splinefx(n,m), m = 1, ik-4)
                WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINESY(',n,',:)',(coil_splinesy(n,m), m = 1, ik)
-               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINEFY(',n,',:)',(coil_splinefy(n,m), m = 1, ik)
+               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINEFY(',n,',:)',(coil_splinefy(n,m), m = 1, ik-4)
                WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINESZ(',n,',:)',(coil_splinesz(n,m), m = 1, ik)
-               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINEFZ(',n,',:)',(coil_splinefz(n,m), m = 1, ik)
+               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINEFZ(',n,',:)',(coil_splinefz(n,m), m = 1, ik-4)
                ! Min/Max
-               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINEFX_MIN(',n,',:)',(coil_splinefx_min(n,m), m = 1, ik)
-               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINEFX_MAX(',n,',:)',(coil_splinefx_max(n,m), m = 1, ik)
-               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINEFY_MIN(',n,',:)',(coil_splinefy_min(n,m), m = 1, ik)
-               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINEFY_MAX(',n,',:)',(coil_splinefy_max(n,m), m = 1, ik)
-               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINEFZ_MIN(',n,',:)',(coil_splinefz_min(n,m), m = 1, ik)
-               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINEFZ_MAX(',n,',:)',(coil_splinefz_max(n,m), m = 1, ik)
+               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINEFX_MIN(',n,',:)',(coil_splinefx_min(n,m), m = 1, ik-4)
+               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINEFX_MAX(',n,',:)',(coil_splinefx_max(n,m), m = 1, ik-4)
+               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINEFY_MIN(',n,',:)',(coil_splinefy_min(n,m), m = 1, ik-4)
+               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINEFY_MAX(',n,',:)',(coil_splinefy_max(n,m), m = 1, ik-4)
+               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINEFZ_MIN(',n,',:)',(coil_splinefz_min(n,m), m = 1, ik-4)
+               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINEFZ_MAX(',n,',:)',(coil_splinefz_max(n,m), m = 1, ik-4)
             END IF
          END DO
       END IF
