@@ -288,6 +288,9 @@
                          coil_splinefx,coil_splinefy,coil_splinefz,&
                          coil_splinefx_min,coil_splinefy_min,coil_splinefz_min,&
                          coil_splinefx_max,coil_splinefy_max,coil_splinefz_max,&
+                         lxval_opt, xval, dxval_opt, xval_min, xval_max, &
+                         lyval_opt, yval, dyval_opt, yval_min, yval_max, &
+                         target_x, sigma_x, target_y, sigma_y, &
                          target_phiedge, sigma_phiedge, &
                          target_rbtor, sigma_rbtor, &
                          target_r0, sigma_r0, target_z0, sigma_z0, target_b0, sigma_b0, &
@@ -426,6 +429,8 @@
       noptimizers     = -1
       refit_param     = 0.75
       rho_exp         = 4
+      lxval_opt       = .FALSE.
+      lyval_opt       = .FALSE.
       lkeep_mins      = .FALSE.
       lrefit          = .FALSE.
       lphiedge_opt    = .FALSE.
@@ -551,6 +556,7 @@
          bound_min       = -bigno;  bound_max       = bigno
          delta_min       = -bigno;  delta_max       = bigno
       END IF
+      xval            = 0.0   ;  yval            = 0.0
       mix_ece_min     = 0.0   ;  mix_ece_max     = 1.0
       ne_min          = -bigno;  ne_max          = bigno
       zeff_min        = -bigno;  zeff_max        = bigno
@@ -643,6 +649,10 @@
       windsurf%nmax   = -1
       mboz            = 64
       nboz            = 64
+      target_x        = 0.0
+      sigma_x         = bigno
+      target_y        = 0.0
+      sigma_y         = bigno
       target_phiedge  = 0.0
       sigma_phiedge   = bigno
       target_rbtor    = 0.0
@@ -1377,7 +1387,16 @@
       WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
       WRITE(iunit,'(A)') '!       Optimized Quantities'
       WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
-
+      IF (lxval_opt) THEN
+         WRITE(iunit,onevar) 'LXVAL_OPT',lxval_opt,'XVAL_MIN',xval_min,'XVAL_MAX',xval_max
+         IF (dxval_opt > 0) WRITE(iunit,outflt) 'DXVAL_OPT',dxval_opt
+         WRITE(iunit,outflt) 'XVAL',xval
+      END IF
+      IF (lyval_opt) THEN
+         WRITE(iunit,onevar) 'LYVAL_OPT',lyval_opt,'YVAL_MIN',yval_min,'YVAL_MAX',yval_max
+         IF (dyval_opt > 0) WRITE(iunit,outflt) 'DYVAL_OPT',dyval_opt
+         WRITE(iunit,outflt) 'YVAL',yval
+      END IF
       IF (lphiedge_opt) THEN
          WRITE(iunit,onevar) 'LPHIEDGE_OPT',lphiedge_opt,'PHIEDGE_MIN',phiedge_min,'PHIEDGE_MAX',phiedge_max
          IF (dphiedge_opt > 0) WRITE(iunit,outflt) 'DPHIEDGE_OPT',dphiedge_opt
@@ -1908,6 +1927,106 @@
          WRITE(iunit,"(2X,A,1X,'=',5(1X,E22.14))") 'PHI_AUX_S',(phi_aux_s(n), n=1,ik)
          WRITE(iunit,"(2X,A,1X,'=',5(1X,E22.14))") 'PHI_AUX_F',(phi_aux_f(n), n=1,ik)
       END IF
+      WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+      WRITE(iunit,'(A)') '!         EQUILIBRIUM/GEOMETRY OPTIMIZATION PARAMETERS' 
+      WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+      IF (target_x < bigno) THEN
+         WRITE(iunit,outflt) 'TARGET_X',target_x
+         WRITE(iunit,outflt) 'SIGMA_X',sigma_x
+      END IF 
+      IF (target_y < bigno) THEN
+         WRITE(iunit,outflt) 'TARGET_Y',target_y
+         WRITE(iunit,outflt) 'SIGMA_Y',sigma_y
+      END IF 
+      IF (sigma_phiedge < bigno) THEN
+         WRITE(iunit,outflt) 'TARGET_PHIEDGE',target_phiedge
+         WRITE(iunit,outflt) 'SIGMA_PHIEDGE',sigma_phiedge
+      END IF 
+      IF (sigma_curtor < bigno) THEN
+         WRITE(iunit,outflt) 'TARGET_CURTOR',target_curtor
+         WRITE(iunit,outflt) 'SIGMA_CURTOR',sigma_curtor
+      END IF 
+      IF (sigma_curtor_max < bigno) THEN
+         WRITE(iunit,outflt) 'TARGET_CURTOR_MAX',target_curtor_max
+         WRITE(iunit,outflt) 'SIGMA_CURTOR_MAX',sigma_curtor_max
+      END IF 
+      IF (sigma_rbtor < bigno) THEN
+         WRITE(iunit,outflt) 'TARGET_RBTOR',target_rbtor
+         WRITE(iunit,outflt) 'SIGMA_RBTOR',sigma_rbtor
+      END IF 
+      IF (sigma_b0 < bigno) THEN
+         WRITE(iunit,outflt) 'TARGET_B0',target_b0
+         WRITE(iunit,outflt) 'SIGMA_B0',sigma_b0
+      END IF 
+      IF (sigma_r0 < bigno) THEN
+         WRITE(iunit,outflt) 'TARGET_R0',target_r0
+         WRITE(iunit,outflt) 'SIGMA_R0',sigma_r0
+      END IF 
+      IF (sigma_z0 < bigno) THEN
+         WRITE(iunit,outflt) 'TARGET_Z0',target_z0
+         WRITE(iunit,outflt) 'SIGMA_Z0',sigma_z0
+      END IF 
+      IF (sigma_volume < bigno) THEN
+         WRITE(iunit,outflt) 'TARGET_VOLUME',target_volume
+         WRITE(iunit,outflt) 'SIGMA_VOLUME',sigma_volume
+      END IF 
+      IF (sigma_beta < bigno) THEN
+         WRITE(iunit,outflt) 'TARGET_BETA',target_beta
+         WRITE(iunit,outflt) 'SIGMA_BETA',sigma_beta
+      END IF 
+      IF (sigma_betapol < bigno) THEN
+         WRITE(iunit,outflt) 'TARGET_BETAPOL',target_betapol
+         WRITE(iunit,outflt) 'SIGMA_BETAPOL',sigma_betapol
+      END IF 
+      IF (sigma_betator < bigno) THEN
+         WRITE(iunit,outflt) 'TARGET_BETATOR',target_betator
+         WRITE(iunit,outflt) 'SIGMA_BETATOR',sigma_betator
+      END IF 
+      IF (sigma_wp < bigno) THEN
+         WRITE(iunit,outflt) 'TARGET_WP',target_wp
+         WRITE(iunit,outflt) 'SIGMA_WP',sigma_wp
+      END IF 
+      IF (sigma_aspect < bigno) THEN
+         WRITE(iunit,outflt) 'TARGET_ASPECT',target_aspect
+         WRITE(iunit,outflt) 'SIGMA_ASPECT',sigma_aspect
+      END IF 
+      IF (sigma_curvature < bigno) THEN
+         WRITE(iunit,outflt) 'TARGET_CURVATURE',target_curvature
+         WRITE(iunit,outflt) 'SIGMA_CURVATURE',sigma_curvature
+      END IF 
+      IF (sigma_kappa < bigno) THEN
+         WRITE(iunit,outflt) 'TARGET_KAPPA',target_kappa
+         WRITE(iunit,outflt) 'SIGMA_KAPPA',sigma_kappa
+         WRITE(iunit,outflt) 'PHI_KAPPA',phi_kappa
+      END IF 
+      IF (sigma_kappa_box < bigno) THEN
+         WRITE(iunit,outflt) 'TARGET_KAPPA_BOX',target_kappa_box
+         WRITE(iunit,outflt) 'SIGMA_KAPPA_BOX',sigma_kappa_box
+         WRITE(iunit,outflt) 'PHI_KAPPA_BOX',phi_kappa_box
+      END IF 
+      IF (sigma_kappa_avg < bigno) THEN
+         WRITE(iunit,outflt) 'TARGET_KAPPA_AVG',target_kappa_avg
+         WRITE(iunit,outflt) 'SIGMA_KAPPA_AVG',sigma_kappa_avg
+      END IF 
+      IF (sigma_aspect_max < bigno) THEN
+         WRITE(iunit,outflt) 'TARGET_ASPECT_MAX',target_aspect_max
+         WRITE(iunit,outflt) 'SIGMA_ASPECT_MAX',sigma_aspect_max
+         WRITE(iunit,outflt) 'WIDTH_ASPECT_MAX',width_aspect_max
+      END IF          
+      IF (sigma_gradp_max < bigno) THEN
+         WRITE(iunit,outflt) 'TARGET_GRADP_MAX',target_gradp_max
+         WRITE(iunit,outflt) 'SIGMA_GRADP_MAX',sigma_gradp_max
+         WRITE(iunit,outflt) 'WIDTH_GRADP_MAX',width_gradp_max
+      END IF          
+      IF (sigma_pmin < bigno) THEN
+         WRITE(iunit,outflt) 'TARGET_PMIN',target_pmin
+         WRITE(iunit,outflt) 'SIGMA_PMIN',sigma_pmin
+         WRITE(iunit,outflt) 'WIDTH_PMIN',width_pmin
+      END IF
+      IF (sigma_curvature_P2 < bigno) THEN
+         WRITE(iunit,outflt) 'TARGET_CURVATURE_P2',target_curvature_P2
+         WRITE(iunit,outflt) 'SIGMA_CURVATURE_P2',sigma_curvature_P2
+      END IF          
       IF (ANY(lbooz)) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          WRITE(iunit,'(A)') '!          BOOZER COORDINATE TRANSFORMATION'  
@@ -2303,99 +2422,6 @@
         ! end of Options for winding surface (Fourier Series) variation
       END IF  ! End of REGCOIL options
 
-
-      WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
-      WRITE(iunit,'(A)') '!         EQUILIBRIUM/GEOMETRY OPTIMIZATION PARAMETERS' 
-      WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
-      IF (sigma_phiedge < bigno) THEN
-         WRITE(iunit,outflt) 'TARGET_PHIEDGE',target_phiedge
-         WRITE(iunit,outflt) 'SIGMA_PHIEDGE',sigma_phiedge
-      END IF 
-      IF (sigma_curtor < bigno) THEN
-         WRITE(iunit,outflt) 'TARGET_CURTOR',target_curtor
-         WRITE(iunit,outflt) 'SIGMA_CURTOR',sigma_curtor
-      END IF 
-      IF (sigma_curtor_max < bigno) THEN
-         WRITE(iunit,outflt) 'TARGET_CURTOR_MAX',target_curtor_max
-         WRITE(iunit,outflt) 'SIGMA_CURTOR_MAX',sigma_curtor_max
-      END IF 
-      IF (sigma_rbtor < bigno) THEN
-         WRITE(iunit,outflt) 'TARGET_RBTOR',target_rbtor
-         WRITE(iunit,outflt) 'SIGMA_RBTOR',sigma_rbtor
-      END IF 
-      IF (sigma_b0 < bigno) THEN
-         WRITE(iunit,outflt) 'TARGET_B0',target_b0
-         WRITE(iunit,outflt) 'SIGMA_B0',sigma_b0
-      END IF 
-      IF (sigma_r0 < bigno) THEN
-         WRITE(iunit,outflt) 'TARGET_R0',target_r0
-         WRITE(iunit,outflt) 'SIGMA_R0',sigma_r0
-      END IF 
-      IF (sigma_z0 < bigno) THEN
-         WRITE(iunit,outflt) 'TARGET_Z0',target_z0
-         WRITE(iunit,outflt) 'SIGMA_Z0',sigma_z0
-      END IF 
-      IF (sigma_volume < bigno) THEN
-         WRITE(iunit,outflt) 'TARGET_VOLUME',target_volume
-         WRITE(iunit,outflt) 'SIGMA_VOLUME',sigma_volume
-      END IF 
-      IF (sigma_beta < bigno) THEN
-         WRITE(iunit,outflt) 'TARGET_BETA',target_beta
-         WRITE(iunit,outflt) 'SIGMA_BETA',sigma_beta
-      END IF 
-      IF (sigma_betapol < bigno) THEN
-         WRITE(iunit,outflt) 'TARGET_BETAPOL',target_betapol
-         WRITE(iunit,outflt) 'SIGMA_BETAPOL',sigma_betapol
-      END IF 
-      IF (sigma_betator < bigno) THEN
-         WRITE(iunit,outflt) 'TARGET_BETATOR',target_betator
-         WRITE(iunit,outflt) 'SIGMA_BETATOR',sigma_betator
-      END IF 
-      IF (sigma_wp < bigno) THEN
-         WRITE(iunit,outflt) 'TARGET_WP',target_wp
-         WRITE(iunit,outflt) 'SIGMA_WP',sigma_wp
-      END IF 
-      IF (sigma_aspect < bigno) THEN
-         WRITE(iunit,outflt) 'TARGET_ASPECT',target_aspect
-         WRITE(iunit,outflt) 'SIGMA_ASPECT',sigma_aspect
-      END IF 
-      IF (sigma_curvature < bigno) THEN
-         WRITE(iunit,outflt) 'TARGET_CURVATURE',target_curvature
-         WRITE(iunit,outflt) 'SIGMA_CURVATURE',sigma_curvature
-      END IF 
-      IF (sigma_kappa < bigno) THEN
-         WRITE(iunit,outflt) 'TARGET_KAPPA',target_kappa
-         WRITE(iunit,outflt) 'SIGMA_KAPPA',sigma_kappa
-         WRITE(iunit,outflt) 'PHI_KAPPA',phi_kappa
-      END IF 
-      IF (sigma_kappa_box < bigno) THEN
-         WRITE(iunit,outflt) 'TARGET_KAPPA_BOX',target_kappa_box
-         WRITE(iunit,outflt) 'SIGMA_KAPPA_BOX',sigma_kappa_box
-         WRITE(iunit,outflt) 'PHI_KAPPA_BOX',phi_kappa_box
-      END IF 
-      IF (sigma_kappa_avg < bigno) THEN
-         WRITE(iunit,outflt) 'TARGET_KAPPA_AVG',target_kappa_avg
-         WRITE(iunit,outflt) 'SIGMA_KAPPA_AVG',sigma_kappa_avg
-      END IF 
-      IF (sigma_aspect_max < bigno) THEN
-         WRITE(iunit,outflt) 'TARGET_ASPECT_MAX',target_aspect_max
-         WRITE(iunit,outflt) 'SIGMA_ASPECT_MAX',sigma_aspect_max
-         WRITE(iunit,outflt) 'WIDTH_ASPECT_MAX',width_aspect_max
-      END IF          
-      IF (sigma_gradp_max < bigno) THEN
-         WRITE(iunit,outflt) 'TARGET_GRADP_MAX',target_gradp_max
-         WRITE(iunit,outflt) 'SIGMA_GRADP_MAX',sigma_gradp_max
-         WRITE(iunit,outflt) 'WIDTH_GRADP_MAX',width_gradp_max
-      END IF          
-      IF (sigma_pmin < bigno) THEN
-         WRITE(iunit,outflt) 'TARGET_PMIN',target_pmin
-         WRITE(iunit,outflt) 'SIGMA_PMIN',sigma_pmin
-         WRITE(iunit,outflt) 'WIDTH_PMIN',width_pmin
-      END IF
-      IF (sigma_curvature_P2 < bigno) THEN
-         WRITE(iunit,outflt) 'TARGET_CURVATURE_P2',target_curvature_P2
-         WRITE(iunit,outflt) 'SIGMA_CURVATURE_P2',sigma_curvature_P2
-      END IF          
       IF (ANY(sigma_extcur < bigno)) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          WRITE(iunit,'(A)') '!          Coil Current Optimization'

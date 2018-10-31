@@ -1,4 +1,6 @@
 ObjectFiles = \
+chisq_x.o \
+chisq_y.o \
 chisq_xics.o \
 chisq_xics_bright.o \
 chisq_magwell.o \

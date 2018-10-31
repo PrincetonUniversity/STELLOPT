@@ -128,7 +128,7 @@
 
                ! Set Profiles
                labelType = 'tor_rho'
-               CALL set_nTZ_profs_f77(nrad, rho, ne_prof, te_prof, z_prof, labelType)
+               CALL set_nTZ_profs_f77(nrad, sqrt(rho), ne_prof, te_prof, z_prof, labelType)
 
                ! Set Configuration
                !maxSteps     = 5000   ! upper number of steps on the trajectory
