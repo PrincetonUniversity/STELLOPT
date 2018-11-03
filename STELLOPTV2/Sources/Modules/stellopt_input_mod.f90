@@ -1654,7 +1654,7 @@
         DO ik = 1, n
            WRITE(iunit,vecvar) 'LTI_F_OPT',ik,lti_f_opt(ik),'TI_F_MIN',ik,ti_f_min(ik),'TI_F_MAX',ik,ti_f_max(ik)
         END DO
-        IF (ANY(dti_f_opt > 0)) WRITE(iunit,"(2X,A,1X,'=',10(1X,E22.14))") 'dti_f_opt',(dti_f_opt(ik), ik = 1, n)
+        IF (ANY(dti_f_opt > 0)) WRITE(iunit,"(2X,A,1X,'=',10(1X,E22.14))") 'DTI_F_OPT',(dti_f_opt(ik), ik = 1, n)
       END IF
       
       IF (ANY(lth_f_opt)) THEN
