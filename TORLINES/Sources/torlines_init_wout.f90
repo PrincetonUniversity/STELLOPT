@@ -52,7 +52,7 @@
 !-----------------------------------------------------------------------
       IMPLICIT NONE
 !DEC$ IF DEFINED (MPI_OPT)
-      INCLUDE 'mpif.h'
+!      INCLUDE 'mpif.h'
 !DEC$ ENDIF  
       INTEGER :: iunit, ier, mn, im, in, ik , i, j, ns1, k1,mn0,&
                  u,v
