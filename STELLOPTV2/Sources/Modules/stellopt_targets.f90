@@ -141,6 +141,8 @@
       REAL(rprec), DIMENSION(nsd)   ::  target_neo, sigma_neo
       REAL(rprec), DIMENSION(nsd)   ::  target_Jstar, sigma_Jstar
       REAL(rprec), DIMENSION(nsd)   ::  target_magwell, sigma_magwell
+      INTEGER                       ::  num_ep_mu
+      REAL(rprec), DIMENSION(nsd)   ::  target_jinvariant, sigma_jinvariant
       REAL(rprec), DIMENSION(nsd)   ::  target_helicity, sigma_helicity
       REAL(rprec), DIMENSION(nsd)   ::  target_helicity_old, sigma_helicity_old
       COMPLEX                       ::  helicity
@@ -203,6 +205,7 @@
       INTEGER, PARAMETER :: jtarget_volume     = 104
       INTEGER, PARAMETER :: jtarget_wp         = 105
       INTEGER, PARAMETER :: jtarget_magwell    = 1051
+      INTEGER, PARAMETER :: jtarget_jinvariant = 1052
       INTEGER, PARAMETER :: jtarget_aspect_max = 106
       INTEGER, PARAMETER :: jtarget_gradp_max  = 107
       INTEGER, PARAMETER :: jtarget_pmin       = 108
@@ -400,6 +403,8 @@
             WRITE(iunit, out_format) 'Number of Coil Self-intersections'
          CASE(jtarget_curvature_p2)
             WRITE(iunit, out_format) 'Maximum 2nd Principal Curvature'
+         CASE(jtarget_jinvariant)
+            WRITE(iunit, out_format) 'J_INVARIANT Constraint'
       END SELECT
       END SUBROUTINE write_targets
       

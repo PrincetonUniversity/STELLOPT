@@ -237,6 +237,9 @@
       ! J*
       IF (ANY(sigma_Jstar < bigno)) &
          CALL chisq_jstar(target_Jstar, sigma_Jstar, ncnt,iflag)
+      ! J-Invariant
+      IF (ANY(sigma_jinvariant < bigno)) &
+         CALL chisq_jinvariant(target_jinvariant, sigma_jinvariant, ncnt,iflag)
       ! Resonant Jacobian
       IF (ANY(sigma_resjac < bigno)) &
          CALL chisq_resjac(target_resjac, sigma_resjac, ncnt,iflag)

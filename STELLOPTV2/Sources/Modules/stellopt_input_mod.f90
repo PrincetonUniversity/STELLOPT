@@ -311,6 +311,7 @@
                          target_kappa_box, sigma_kappa_box, phi_kappa_box, &
                          target_kappa_avg, sigma_kappa_avg, &
                          target_magwell, sigma_magwell, &
+                         target_jinvariant, sigma_jinvariant, num_ep_mu, &
                          target_press, sigma_press, r_press, z_press, phi_press, s_press,&
                          target_te, sigma_te, r_te, z_te, phi_te, s_te,&
                          target_ne, sigma_ne, r_ne, z_ne, phi_ne, s_ne,&
@@ -857,6 +858,9 @@
       target_Jstar(:) = 0.0
       sigma_Jstar(:)  = bigno
       NumJstar        = 4
+      target_jinvariant(:) = 0.0
+      sigma_jinvariant(:)  = bigno
+      num_ep_mu            = 10
       target_helicity(:) = 0.0
       sigma_helicity(:)  = bigno
       helicity           = CMPLX(0.0,0.0)
@@ -1095,15 +1099,6 @@
          WRITE(6,"(2X,A)") "================================================================================="
          WRITE(6,*)        "    "
       END IF
-      !IF ((myid == master) .and. (TRIM(equil_type(1:8)) == 'paravmec') ) THEN
-      !   WRITE(6,*)        " Equilibrium calculation provided by: "
-      !   WRITE(6,"(2X,A)") "================================================================================="
-      !   WRITE(6,"(2X,A)") "=========   Parallel Variational Moments Equilibrium Code (v "//TRIM(version_vmec)//")      ========="
-      !   WRITE(6,"(2X,A)") "=========                (S. Hirshman, J. Whitson)                      ========="
-      !   WRITE(6,"(2X,A)") "=========         http://vmecwiki.pppl.wikispaces.net/VMEC              ========="
-      !   WRITE(6,"(2X,A)") "================================================================================="
-      !   WRITE(6,*)        "    "
-      !END IF
 !DEC$ IF DEFINED (BEAMS3D_OPT)
       IF (myid == master .and. ANY(sigma_orbit < bigno) ) THEN
          WRITE(6,*)               " Energetic Particle calculation provided by: "
@@ -1281,6 +1276,28 @@
             WRITE(6,*) '!!!!!!!!!!!!!!!!!!!! WARNING !!!!!!!!!!!!!!!!!!!!!!!!!'
             WRITE(6,*) '  Neoclassical transport optimization with the NEO'
             WRITE(6,*) '  code has been disabled.  Neoclassical optimziation'
+            WRITE(6,*) '  has been turned off.  Contact your vendor for'
+            WRITE(6,*) '  further information.'
+         END IF
+      END IF
+!DEC$ ENDIF
+!DEC$ IF DEFINED (JINV_OPT)
+      IF (myid == master .and. ANY(sigma_jinvariant < bigno)) THEN
+         WRITE(6,*)        " J-Invariant calculation provided by: "
+         WRITE(6,"(2X,A)") "================================================================================="
+         WRITE(6,"(2X,A)") "=========                    J-INVARIANT (v1.00)                        ========="
+         WRITE(6,"(2X,A)") "=========              (D. Spong and M. Zarnstorff)                     ========="
+         WRITE(6,"(2X,A)") "=========                      spong@ornl.gov                           ========="
+         WRITE(6,"(2X,A)") "================================================================================="
+         WRITE(6,*)        "    "
+      END IF
+!DEC$ ELSE
+      IF (ANY(sigma_jinvariant < bigno)) THEN
+         sigma_jinvariant(:) = bigno
+         IF (myid == master) THEN
+            WRITE(6,*) '!!!!!!!!!!!!!!!!!!!! WARNING !!!!!!!!!!!!!!!!!!!!!!!!!'
+            WRITE(6,*) '  J Invariant optimization with the J-INVARIANT'
+            WRITE(6,*) '  code has been disabled.  J-Invariant optimziation'
             WRITE(6,*) '  has been turned off.  Contact your vendor for'
             WRITE(6,*) '  further information.'
          END IF
@@ -2241,6 +2258,22 @@
             IF (sigma_Jstar(ik) < bigno) WRITE(iunit,"(2(2X,A,I3.3,A,E22.14))") &
                           'TARGET_JSTAR(',ik,') = ',target_Jstar(ik), &
                           'SIGMA_JSTAR(',ik,') = ',sigma_Jstar(ik)
+         END DO
+      END IF
+      IF (ANY(sigma_jinvariant < bigno)) THEN
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,'(A)') '!          J-INVARIANT Calculation'  
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,"(2X,A,1X,'=',1(2X,I4.4))") 'NumJstar',NumJstar
+         WRITE(iunit,"(2X,A,1X,'=',1(2X,I4.4))") 'NUM_EP_MU',num_ep_mu
+         n=0
+         DO ik = 1,UBOUND(sigma_jinvariant,DIM=1)
+            IF(sigma_jinvariant(ik) < bigno) n=ik
+         END DO
+         DO ik = 1, n
+            IF (sigma_jinvariant(ik) < bigno) WRITE(iunit,"(2(2X,A,I3.3,A,E22.14))") &
+                          'TARGET_JINVARIANT(',ik,') = ',target_jinvariant(ik), &
+                          'SIGMA_JINVARIANT(',ik,') = ',sigma_jinvariant(ik)
          END DO
       END IF
       IF (ANY(sigma_txport < bigno)) THEN
