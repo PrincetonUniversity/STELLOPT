@@ -7,7 +7,7 @@
       USE realspace, ONLY: pextra1, pextra2, pextra3, pextra4,
      1                     pguu, pguv, pgvv, pru, pzu,
      2                     pr1, prv, pzv, pshalf, pwint, pz1,
-     3                     pru0, pzu0, psqrts
+     3                     pru0, pzu0, psqrts, pperp, ppar
       USE vforces, r12 => parmn_o, ru12 => pazmn_e, gsqrt => pazmn_o,
      1             rs => pbzmn_e, zs => pbrmn_e, zu12 => parmn_e,
      2             bsubu_e => pclmn_e, bsubv_e => pblmn_e, 
@@ -683,8 +683,8 @@
      1           +     bsupv(:nrzt)*bsubvh(:nrzt))
 
       wb = hs*ABS(SUM(wint(:nrzt)*gsqrt(:nrzt)*bsq(:nrzt)))
-
 #ifdef _ANIMEC
+
 !SPH: MAKE CALL HERE (bsubX_e are used for scratch arrays)
       CALL an_pressure(bsubu_e, bsubv_e)
 
@@ -903,4 +903,197 @@
       lu(2:nrzt,0) = bsq(2:nrzt)*r12(2:nrzt)
 
       END SUBROUTINE bcovar
+
+#ifdef _ANIMEC
+      SUBROUTINE an_pressure(gp, scratch1)
+      USE stel_kinds, ONLY: rprec, dp
+      USE realspace, ONLY: sigma_an, wint, pperp, ppar, onembc
+      USE vforces, r12 => armn_o, gsqrt => azmn_o,
+     &             bsq => bzmn_o
+      USE vmec_main, ONLY: phot, tpotb, pppr, pmap, mass, pres, vp,
+     &                     wp, gamma, wpar, wper, ns, nznt, nrzt,
+     &                     zero, one, nthreed, pperp_ns1=>dbsq,
+     &                     bcrit, medge, phedg, hs, pperp_ns
+      USE vmec_params, ONLY: signgs
+      USE fbal
+!
+!     WAC (11/30/07): See description of anisotropic pressure below
+!     SPH (12/24/07): Replaced "gp" with bsubu_e to avoid overwriting phipog
+!
+      IMPLICIT NONE
+!-----------------------------------------------
+!   D u m m y   A r g u m e n t s
+!-----------------------------------------------
+      REAL(rprec), DIMENSION(nrzt)               :: gp, scratch1
+!-----------------------------------------------
+!   L o c a l   P a r a m e t e r s
+!-----------------------------------------------
+      INTEGER     :: js   , lk   , l
+      REAL        :: pparden, pres_pv, pppr_pv
+!-----------------------------------------------
+!
+!********0*********0*********0*********0*********0*********0*********0**
+!                                                                      *
+!                 Anisotropic Pressure Model                           *
+!                  specific to case where:                             *
+!          a Bi-Maxwellian distribution is considered (by J. Graves)   *
+!          p_parallel(s,B) = pth(1 + phot(s)*H(s,B))                     *
+!      H(s,B)=(B/B_crit)/[1-(T_perp/T_par)(1-B/B_crit)] for B>B_crit   *
+!      For B<B_crit,                                                   *
+!      H(s,B)=H(s,B>B_crit){1-2[(T_perp/T_par)(1-B/B_crit)]^(5/2) /    *
+!                                    [1+(T_perp/T_par)(1-B/B_crit)]}   *
+!                                                                      *
+!********0*********0*********0*********0*********0*********0*********0**
+!
+!********0*********0*********0*********0*********0*********0*********0**
+!   1.  Compute Thermal Pressure and Hot Particle Pressure Amplitude.  *
+!********0*********0*********0*********0*********0*********0*********0**
+      DO js = 1,ns
+         gp(js:nrzt:ns) = tpotb(js)
+         scratch1(js:nrzt:ns) = phot(js)
+      END DO
+
+      bsq(1:nrzt:ns) = 0
+			onembc = one - SQRT(2*bsq(1:nrzt))/bcrit ! (1 - B/B_crit)
+
+			!! sigma_an = H(s,B) as defined in comments above
+
+			! Where (1 /= Tperp/Tpar*(1-B/Bcrit)
+			! sigma_an = (B/B_crit)/(1-Tperp/Tpar*(1-B/crit))
+      WHERE (one .ne. gp*onembc) sigma_an = (one-onembc)/(one-gp*onembc)
+			! Where (B < Bcrit)
+			! sigma_an = sigma_an*(1-2*(B/B_crit)/(1-Tperp/Tpar*(1-B/crit))**2.5/(1+(B/B_crit)/(1-Tperp/Tpar*(1-B/crit))
+      WHERE (onembc .gt. zero) sigma_an = sigma_an*
+     1      (one-2*(gp*onembc)**2.5_dp/(one+gp*onembc))
+
+			! thermal pressure given by
+			! p(s) = M(s)*(Phi'(s))^(gamma)/<1+ph(s)*H(s,B)>^(gamma)
+
+			! Here gsqrt is the Jacobian
+      pperp = (1 + scratch1*sigma_an)*gsqrt(1:nrzt)
+
+			! Perform flux surface average <1+ph(s)*H(s,B)>
+      DO js = 2,ns
+         pmap(js) = DOT_PRODUCT(pperp(js:nrzt:ns), wint(js:nrzt:ns))
+      END DO
+
+      DO js = 2,ns
+					! signgs = sign of Jacobian
+           pmap(js) = signgs*pmap(js)
+           pres(js) = mass(js) / pmap(js)**gamma
+           pppr(js) = pres(js) * phot(js)
+      END DO
+			! pppr = M(s)*ph(s)/<1+ph(s)*H(s,B)>^(gamma)
+!
+!********0*********0*********0*********0*********0*********0*********0**
+!   3.  Compute P-Parallel, P-Perp.                                    *
+!********0*********0*********0*********0*********0*********0*********0**
+
+      DO js = 2,ns
+         scratch1(js:nrzt:ns) = pppr(js)
+      END DO
+
+			! pppr = M(s)*ph(s)*H(s,B)/<1+ph(s)*H(s,B)>^(gamma)
+      ppar = scratch1*sigma_an
+
+			! pperp determined from parallel force balance
+!FORTRAN 95 CONSTRUCT ALLOWS ELSEWHERE (TEST), F90 DOES NOT
+#if defined(WIN32)
+      WHERE (onembc .le. zero)
+         pperp = gp*(one-onembc)/(one-gp*onembc)*ppar
+      ELSEWHERE
+         WHERE (onembc*gp .eq. one)
+            ppar = 2*scratch1*(one - onembc)
+            pperp= (7*ppar*(gp-one))/16
+         ELSEWHERE
+            pperp = (one - (5-(gp*onembc)**2)*
+     &              (gp*onembc)**1.5_dp/(one+gp*onembc)**2)*scratch1
+     &              *gp*(one-onembc)**2/(one-gp*onembc)**2
+         ENDWHERE
+      ENDWHERE
+
+#else
+			! B > Bcrit
+      WHERE (onembc .le. zero)
+				 ! pppr = M(s)*ph(s)*H(s,B)/<1+ph(s)*H(s,B)>^(gamma)
+				 ! Tperp/Tpar*(B/Bcrit)/(1-tperp/Tpar*(1-B/Bcrit))*ppar
+         pperp = gp*(one-onembc)/(one-gp*onembc)*ppar
+
+
+      ELSEWHERE (onembc*gp .eq. one)
+
+         ppar = 2*scratch1*(one - onembc)
+         pperp= (7*ppar*(gp-one))/16
+
+      ELSEWHERE
+
+         pperp = (one - (5-(gp*onembc)**2)*
+     &           (gp*onembc)**1.5_dp/(one+gp*onembc)**2)*scratch1
+     &           *gp*(one-onembc)**2/(one-gp*onembc)**2
+
+      END WHERE
+#endif
+
+      DO js = 2,ns
+         scratch1(js:nrzt:ns) = pres(js)
+      END DO
+
+			! add contribution from thermal species to total pressure
+      ppar = ppar + scratch1
+      pperp= pperp+ scratch1
+
+!
+!********0*********0*********0*********0*********0*********0*********0**
+!   4.  Compute P_perp at the plasma-vacuum interface.                 *
+!********0*********0*********0*********0*********0*********0*********0**
+!
+      pparden = MAX(pppr(ns-1),1.e-30_dp)
+      DO lk=1,nznt
+         l = ns-1 + ns*(lk-1)
+         pperp_ns1(lk) = (pperp(l)-pres(ns-1))/pparden
+      END DO
+      pparden = MAX(pppr(ns),1.e-30_dp)
+      DO lk=1,nznt
+         l = ns + ns*(lk-1)                             !!SPH12-27-12: l = ns, not ns-1
+         pperp_ns(lk) = (pperp(l)-pres(ns))/pparden
+      END DO
+
+      pres_pv = medge / (1.5_dp*pmap(ns)-0.5_dp*pmap(ns-1))**gamma
+      pppr_pv = pres_pv * phedg
+
+      DO lk=1,nznt
+         pperp_ns(lk)=(1.5_dp*pperp_ns(lk)-
+     &                 0.5_dp*pperp_ns1(lk))*pppr_pv + pres_pv
+      END DO
+!
+!********0*********0*********0*********0*********0*********0*********0**
+!   5.  Compute Sigma_an. Determine Volume Averaged Pressures.            *
+!********0*********0*********0*********0*********0*********0*********0**
+!
+      wper = 0
+      gp = gsqrt(1:nrzt)*pperp
+      sigma_an = one + (pperp-ppar)/(2*bsq(1:nrzt))
+
+      pperp(1:nrzt:ns) = 0
+      sigma_an(1:nrzt:ns) = 1
+
+      IF (ALL(phot.eq.zero) .AND. ANY(sigma_an.ne.one))
+     1   STOP 'SIGMA_AN != 1'
+
+      pppr(1) = 0
+      DO js = 2,ns
+         pppr(js) = DOT_PRODUCT(gp(js:nrzt:ns),wint(js:nrzt:ns))
+      END DO
+      pppr(2:ns) = signgs*pppr(2:ns)/vp(2:ns)
+
+      wp    = hs*DOT_PRODUCT(vp(2:ns),pres(2:ns))
+      wpar  = hs*DOT_PRODUCT(pmap(2:ns),pres(2:ns))
+!      whpar = wpar - wp
+      wper  = hs*DOT_PRODUCT(vp(2:ns),pppr(2:ns))
+!      whper = wper - wp
+
+
+      END SUBROUTINE an_pressure
+#endif
+
 
