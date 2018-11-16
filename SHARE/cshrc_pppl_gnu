@@ -1,23 +1,41 @@
 # Modules to load
+# As of September 31, 2018
 module load autoconf/2.69 idl matlab valgrind git
 module load gcc/6.1.0
-module load gsl 
+module load gsl/1.16
 module load silo nag/fll6a24dfl pgplot szip/2.1 ntcc/gcc6.1.0
 module load acml/6.1.0/gfortran64
 module load hdf/4.2.12
-module load openmpi/1.10.3
-module load blacs fftw hdf5-parallel/1.10.0p1 scalapack
+module load openmpi/3.0.0
+module load blacs fftw hdf5-parallel/1.10.1 scalapack
+module load petsc_complex/3.8.3
+module load slepc_complex/3.8.3
 module load curl/7.59.0 netcdf-c/4.4.1
 module load netcdf-fortran/4.4.4 netcdf-cxx4/4.3.0
-module load petsc_complex/3.7.7
-module load slepc_complex/3.7.4
 module load qt/4.8.3
-#module load qt/5.10.0
 module load python/3.6.4
+
+# Because the ADAS package wasn't built right
+setenv ADASDIR /p/xshare/transp/adas/
+
+# Set this to the directory for STELLOPT (needed for python routines)
+setenv STELLOPT_PATH /u/slazerso/src/STELLOPT_GCC
+
+# Path to your build of GENE
+setenv GENE_PATH /u/slazerso/src/GENE/bin/obj_pppl_cluster
+# Path to your build of TERPSICHORE
+setenv TERPSICHORE_PATH /u/slazerso/src/TERPSICHORE_17
+# Path to your build of COILOPT++
+setenv COILOPT_PATH /u/slazerso/src/COILOPT++
+# Path to your build of TRAVIS (note directory)
+setenv TRAVIS_PATH /u/slazerso/src/TRAVIS_16.08.19/TRAVIS-src
+# Path to your build of REGCOIL
+setenv REGCOIL_PATH /u/slazerso/src/REGCOIL
+# Path to your build of SFINCS (note either LSFINCS or LGENE works right now, not both)
+setenv SFINCS_PATH /u/slazerso/src/SFINCS/fortran/version3/
 
 # This is to suppress messages on non Infiniband systems
 setenv NOIB "-mca btl ^openib"
-
 
 # To make deleting a run easy
 alias stellopt_cleanup "rm answers* auto* beams3d* b_norm_eq_* b_norm_init_* b_norm_final_* bnorm.* boozmn* checkpoint_* coilopt_params.* coil_spline*.out curv* dcon* deltamn.* diagno_flux.* diagno_bth.* diagno_seg.* dkes* fevals* field* fort.* gade* gist* eigenvalues* input.*.***** input_dkes.* jacobian.* jprof.* jxb* jBbs* LMsave* log_gene.* map.* map_plane.* mercier* mom* neo* nrg* opt* parameters_* results* rhomn* RZ* stellopt.* tprof* wout* temp_input.* terpsichore_eq.* terpsichore_16.* terpsichore_17.* terpsichore_19.* terpsichore_22.* terpsichore_23.* threed1.* tv_out_* txport* xvec.* uv_* var_* vsp*"

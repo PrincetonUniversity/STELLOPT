@@ -27,7 +27,7 @@
 !----------------------------------------------------------------------
       CALL tolower(equil_type)
       SELECT CASE(TRIM(equil_type))
-         CASE('vmec2000','animec','flow','satire','parvmec','paravmec')
+         CASE('vmec2000','animec','flow','satire','parvmec','paravmec','vboot')
             ! Adjust the namelist variables
             task='MGRID'
             mgrid_ext=TRIM(proc_string)

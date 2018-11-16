@@ -44,7 +44,7 @@
            bfield_points_file, flux_turns, units, int_type, &
            int_step, lrphiz, vc_adapt_tol, vc_adapt_rel,&
            flux_mut_file, lvc_field, bprobe_turns, luse_extcur, &
-           bprobes_mut_file, mir_mut_file, rog_mut_file
+           bprobes_mut_file, mir_mut_file, rog_mut_file, segrog_turns
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -70,6 +70,7 @@
       flux_mut_file      = ''
       flux_turns     = 1.0_rprec
       bprobe_turns   = 1.0_rprec
+      segrog_turns   = 1.0_rprec
       units          = 1.0_rprec
       int_type       = 'simpson'
       int_step       = 2.0_rprec
@@ -176,6 +177,7 @@
       WRITE(iunit,outstr) 'FLUX_MUT_FILE',TRIM(flux_mut_file)
       WRITE(iunit,"(2X,A,1X,'=',10(1X,E22.14))") 'BPROBE_TURNS',(bprobe_turns(n), n=1,256)
       WRITE(iunit,"(2X,A,1X,'=',10(1X,E22.14))") 'FLUX_TURNS',(flux_turns(n), n=1,256)
+      WRITE(iunit,"(2X,A,1X,'=',10(1X,E22.14))") 'SEGROG_TURNS',(segrog_turns(n), n=1,256)
       WRITE(iunit,"(2X,A,1X,'=',1X,L1)") 'LRPHIZ',lrphiz
       WRITE(iunit,"(2X,A,1X,'=',1X,L1)") 'LVC_FIELD',lvc_field
       WRITE(iunit,'(A)') '/'

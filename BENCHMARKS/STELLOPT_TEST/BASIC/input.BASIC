@@ -119,28 +119,18 @@
 !-----------------------------------------------------------------------
   NFUNC_MAX = 1
   EQUIL_TYPE = 'VMEC2000'
-  OPT_TYPE   = 'LMDIF'
+  OPT_TYPE   = 'ONE_ITER'
   FTOL =  1.00000000000000E-06
   XTOL =  1.00000000000000E-30
   GTOL =  1.00000000000000E-30
   FACTOR =   100.0
   EPSFCN =   1.0E-05
   LKEEP_MINS = T
+  NOPTIMIZERS = 1
 !-----------------------------------------------------------------------
 !          OPTIMIZED QUANTITIES
 !-----------------------------------------------------------------------
   LCURTOR_OPT = T   CURTOR_MIN  = -1.0E6  CURTOR_MAX  = -1.0E4
-  LPHIEDGE_OPT = T  PHIEDGE_MIN = 0.20  PHIEDGE_MAX = 1.0
-  LRHO_OPT(-5:5,0) = 11*T
-  LRHO_OPT(-5:5,1) = 11*T
-  LRHO_OPT(-5:5,2) = 11*T
-  LRHO_OPT(-5:5,3) = 11*T
-  LRHO_OPT(-5:5,4) = 11*T
-  LRHO_OPT(-5:5,5) = 11*T
-  LRHO_OPT(-5:5,6) = 11*T
-  LRHO_OPT(-5:5,7) = 11*T
-  LBOUND_OPT(1:4,0) = 4*T
-  RHO_EXP = 4
 !----------------------------------------------------------------------
 !       Profile Functions
 !----------------------------------------------------------------------
@@ -170,9 +160,6 @@
   MBOZ = 64
   NBOZ = 32
 !-----------------------------------------------------------------------
-!          COIL OPTIMIZATION PARAMETERS
-!-----------------------------------------------------------------------
-!-----------------------------------------------------------------------
 !          PLASMA PROPERTIES
 !-----------------------------------------------------------------------
   TARGET_ASPECT  = 4.370  SIGMA_ASPECT  = 1.0
@@ -201,14 +188,6 @@
   BALLOON_ZETA    = 0.0
   TARGET_BALLOON(1:99) = 99*0.0  SIGMA_BALLOON(1:99) = 99*1.0
 !------------------------------------------------------------------------
-!       Kink Stability (as calculated by TERPSICHORE)
-!         Requires STELLOPT to be linked to TERPSICHORE.
-!         Also requires the terpsichore_input file.
-!------------------------------------------------------------------------
-  MLMNB_KINK =   264  IVAC_KINK =    24
-  TARGET_KINK(001) =  -1.0  SIGMA_KINK(001) =   1.0   MLMNS_KINK(001) =   76
-  TARGET_KINK(002) =  -1.0  SIGMA_KINK(002) =   1.0   MLMNS_KINK(002) =   91
-!------------------------------------------------------------------------
 !       Neoclassical Transport Calculation (as calculated by NEO)
 !         Note that neoclassical transport is by surface. Axis (01) is ignored.
 !------------------------------------------------------------------------
@@ -217,7 +196,7 @@
 !       Drift Kinetic Equation Solver (DKES)
 !         Axis (01) is ignored.
 !------------------------------------------------------------------------
-  TARGET_DKES(1:99) = 99*0.0  SIGMA_DKES(1:99) = 99*1.0
+!  TARGET_DKES(1:99) = 99*0.0  SIGMA_DKES(1:99) = 99*1.0
 !  TARGET_DKES(3) = 0.0  SIGMA_DKES(3) = 1.0
 !  TARGET_DKES(3:99) = 97*0.0  SIGMA_DKES(3:99) = 97*1.0
 !------------------------------------------------------------------------
@@ -250,7 +229,6 @@
 !-----------------------------------------------------------------------
 !          THOMSON (PRESS) PROFILE OPTIMIZATION PARAMETERS
 !-----------------------------------------------------------------------
-
   R_PRESS(001) =     1.5500000000E+00  PHI_PRESS(001) =     4.1887902048E+00  Z_PRESS(001) =     7.5000000000E-01  TARGET_PRESS(001) =     1.8000000000E+03  
 SIGMA_PRESS(001) =     3.6000000000E+02
   R_PRESS(002) =     1.5500000000E+00  PHI_PRESS(002) =     4.1887902048E+00  Z_PRESS(002) =     7.3484848485E-01  TARGET_PRESS(002) =     1.8000000000E+03  

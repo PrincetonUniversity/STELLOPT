@@ -228,8 +228,10 @@ def isotoro(r,z,zeta,svals,*args,**kwargs):
             tsurf.set_array(colors)
             tsurf.autoscale()
             #MAYAVI Way (need to figure out how to embed)
+            #h    = mlab.figure()
             #vals = args[0][s[k],:,:].T.flatten()
-            #tsurf=mlab.triangular_mesh(vertex[:,0,k],vertex[:,1,k],vertex[:,2,k], tri.triangles, scalars=vals, colormap='jet')
+            #tsurf=mlab.triangular_mesh(vertex[:,0,k],vertex[:,1,k],vertex[:,2,k], tri.triangles, scalars=vals, colormap='jet',figure=h)
+            #print(type(tsurf))
     if (test==0):
         pyplot.show()
     return h
