@@ -1,5 +1,5 @@
 # Tutorial: Optimization of iota using Levenberg-Marquardt
-<img src="images/ncsx_fieldlines.jpg" alt="NCSX filed-lines" width="240px"/>
+![](images/ncsx_fieldlines.jpg | width=240)
 
 This tutorial walks the user through using STELLOPT to optimize a simple configuration throught fixed boundary shaping.
 
