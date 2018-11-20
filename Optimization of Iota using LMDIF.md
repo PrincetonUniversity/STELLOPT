@@ -1,11 +1,14 @@
-=Tutorial: Optimization of iota using Levenberg-Marquardt[[image:ncsx_fieldlines.jpg width="240" height="172" align="right"]]= 
+# Tutorial: Optimization of iota using Levenberg-Marquardt
+![ ](images/ncsx_fieldlines.jpg "ncsx_fieldlines")
+
 This tutorial walks the user through using STELLOPT to optimize a simple configuration throught fixed boundary shaping.
 
 ----
 
-# __**Edit the input namelist text file.**__
-> The input namelist (input.STELLOPT_IOTA_LMDIF) contains the VMEC INDATA name list for a simple rotating ellipse equilibrium. And the STELLOPT OPTIMUM name which optimizes this equilibrium (varying the boundary harmonics and targeting the rotational transform).
-> [[code format="fortran"]]
+## Edit the input namelist text file.
+The input namelist (input.STELLOPT_IOTA_LMDIF) contains the VMEC INDATA name list for a simple rotating ellipse equilibrium. And the STELLOPT OPTIMUM name which optimizes this equilibrium (varying the boundary harmonics and targeting the rotational transform).
+
+```
 &INDATA
 !----- Runtime Parameters -----
   DELT =    0.9000000000000E+000
@@ -72,10 +75,12 @@ This tutorial walks the user through using STELLOPT to optimize a simple configu
   TARGET_IOTA(003) =   0.1000  SIGMA_IOTA(003) =   0.0100  S_IOTA(003) =   0.50
   TARGET_IOTA(004) =   0.1000  SIGMA_IOTA(004) =   0.0100  S_IOTA(004) =   1.0
 /
-[[code]]
-# __**Execute the code.**__
-> The STELLOPT code is executed by passing the input file as an argument to the STELLOPT code. Note that since STELLOPT is a parallel code, it should be executed using a wrapper (such as mpirun, mpiexec, srun, etc.)
-> [[code format="bash"]]
+```
+
+## Execute the code.
+The STELLOPT code is executed by passing the input file as an argument to the STELLOPT code. Note that since STELLOPT is a parallel code, it should be executed using a wrapper (such as mpirun, mpiexec, srun, etc.)
+
+```
 >mpirun -np 8 ~/bin/xstelloptv2 input.STELLOPT_IOTA_LMDIF
 STELLOPT Version  2.49
   Equilibrium calculation provided by: 
@@ -181,11 +186,14 @@ STELLOPT Version  2.49
   .
   .
   .                                                                  
-[[code]]
-> The screen output begins with basic information about the input parameters and how STELLOPT will be run. Then for the first iteration, the full VMEC screen output is shown along with information about the equilibrium. If secondary codes had been run, their output would be printed to the screen as well. Once the code enters the full optimization loop, only the values relevant to optimization are printed. For the OPT_TYPE="LMDIF" there are two phases for each minima. First three numbers are output: iteration number, processor number and chi-squared. These are the forward finite difference of the parameter space jacobian. The sign after each evaluation indicates if the resulting finite difference is uphill (+) or downhill (-). After which each processor evaluates a point along the descent direction, varying the Levenberg-Marquardt parameter. The minimum value is denoted by an asterisk. A message regarding the discovery of the new minima is then printed (if found) and the process repeats. It is possible that this step will fail to find a minima with smaller chi-squared than found during the parameter space jacobian step. If this occurs, a routine which searches finite difference combinations of the jacobian evaluation is executed.
-# __**Examine the output.**__
-> The code outputs various 'temporary' files which can be removed at the end of a run. These files can easily be removed by the command 'rm *_opt*'. What remains are files for each minimum found by the VMEC (input, mercier, jxbout, and wout). In addition, STELLOPT outputs the fevals, jacobian, stellopt, var_labels, and xvec files. The STELLOPT file contains an ordered output of the various minima found.
-> [[code format="BASH"]]
+```
+
+The screen output begins with basic information about the input parameters and how STELLOPT will be run. Then for the first iteration, the full VMEC screen output is shown along with information about the equilibrium. If secondary codes had been run, their output would be printed to the screen as well. Once the code enters the full optimization loop, only the values relevant to optimization are printed. For the OPT_TYPE="LMDIF" there are two phases for each minima. First three numbers are output: iteration number, processor number and chi-squared. These are the forward finite difference of the parameter space jacobian. The sign after each evaluation indicates if the resulting finite difference is uphill (+) or downhill (-). After which each processor evaluates a point along the descent direction, varying the Levenberg-Marquardt parameter. The minimum value is denoted by an asterisk. A message regarding the discovery of the new minima is then printed (if found) and the process repeats. It is possible that this step will fail to find a minima with smaller chi-squared than found during the parameter space jacobian step. If this occurs, a routine which searches finite difference combinations of the jacobian evaluation is executed.
+
+## Examine the output.
+The code outputs various 'temporary' files which can be removed at the end of a run. These files can easily be removed by the command 'rm *_opt*'. What remains are files for each minimum found by the VMEC (input, mercier, jxbout, and wout). In addition, STELLOPT outputs the fevals, jacobian, stellopt, var_labels, and xvec files. The STELLOPT file contains an ordered output of the various minima found.
+
+```
 VERSION  2.49
 ITER 00000
 IOTA   004  007
@@ -216,5 +224,6 @@ VALUES
    3.002488050290E-002
    3.471811472812E-002
    4.480065323289E-002
-[[code]]
->  Every iteration is stored in this file.  Each chi-squared module outputs detailed information into the file and the full components of the chi-squared vector are output as well.
+```
+
+Every iteration is stored in this file.  Each chi-squared module outputs detailed information into the file and the full components of the chi-squared vector are output as well.
