@@ -1,5 +1,4 @@
 # Tutorial: Optimization of iota using Levenberg-Marquardt
-![](images/ncsx_fieldlines.jpg | width=240)
 
 This tutorial walks the user through using STELLOPT to optimize a simple configuration throught fixed boundary shaping.
 
