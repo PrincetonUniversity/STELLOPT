@@ -92,8 +92,8 @@
 
       ! Create Spaces
       CALL h5screate_simple_f(rank, dimsf, fspace_id, ier)
-      !CALL h5screate_simple_f(rank, dimsf, mspace_id, ier)
-      CALL h5screate_simple_f(rank, chunk_dims, mspace_id, ier)
+      CALL h5screate_simple_f(rank, dimsf, mspace_id, ier)
+!      CALL h5screate_simple_f(rank, chunk_dims, mspace_id, ier)
 
 
       ! Enable Chunking
