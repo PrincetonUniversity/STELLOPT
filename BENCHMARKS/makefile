@@ -42,8 +42,8 @@ test_vmec:
 test_diagno:
 	@echo "Beginning testing of DIAGNO"
 	@cd $(DIAGNO_TEST_DIR); rm -f diagno_bench.* diagno_flux.* diagno_surf.* test_loops_b.* test_loops_j.*; 
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS) ~/bin/xdiagno -vmec bigtok -bench
-	@cd $(DIAGNO_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS) ~/bin/xdiagno -bench -vmec bigtok
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xdiagno -vmec bigtok -bench
+	@cd $(DIAGNO_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xdiagno -bench -vmec bigtok
 	@cd $(DIAGNO_TEST_DIR); ./compare_bigtok.py
 	@echo ""
 
