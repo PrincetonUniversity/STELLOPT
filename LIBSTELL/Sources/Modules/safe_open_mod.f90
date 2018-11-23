@@ -72,8 +72,8 @@
 !
       linvalid = .true.
       IF (iunit < 0) THEN
-         WRITE (6, *) 'In safe_open, requested unit was uninitialized: IUNIT=', iunit
-         iunit = 10
+!         WRITE (6, *) 'In safe_open, requested unit was uninitialized: IUNIT=', iunit
+         iunit = 411
       END IF
       DO WHILE (linvalid)
          INQUIRE(iunit, exist=lexist, opened=lopen, iostat=istat)

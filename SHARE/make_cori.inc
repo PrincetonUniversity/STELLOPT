@@ -30,6 +30,7 @@
   MPI_LINK = ftn
   MPI_RUN = srun
   MPI_RUN_OPTS = -n 8 -c 16
+  MPI_RUN_OPTS = -n 1088 -c 1
 
 #######################################################################
 #            NAG Options
@@ -122,12 +123,11 @@
 #            SFINCS Options
 #######################################################################
 
-  LSFINCS = F
+  LSFINCS = T
   SFINCS_DIR = $(SFINCS_PATH)
   SFINCS_INC = -I$(SFINCS_DIR)
   LIB_SFINCS = libsfincs.a
-  SFINCS_LIB = $(SFINCS_DIR)/$(LIB_SFINCS) \
-	$(PETSC_LIB) $(FC_LINKER_FLAGS) $(FFLAGS)
+  SFINCS_LIB = $(SFINCS_DIR)/$(LIB_SFINCS)
 
 #######################################################################
 #            REGCOIL Options
@@ -338,7 +338,7 @@ ifeq ($(LNETCDF),T)
 endif
 ifeq ($(LHDF5),T)
   MOD1_PATH += $(HDF5_INC)
-  PRECOMP += -DLHDF5 -DH5_USE_16_API
+  PRECOMP += -DLHDF5 -DH5_USE_16_API -DHDF5_PAR
   LIB_LINK += $(HDF5_LIB)
   MOD_PATH += $(HDF5_INC)
   LIB_SHARE += $(HDF5_LIB)
