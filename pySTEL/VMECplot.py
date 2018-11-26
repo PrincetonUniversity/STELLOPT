@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 import sys, os
+#### set no Qstring
+import sip
+sip.setapi('QString', 2)
+##### 
 os.environ['ETS_TOOLKIT'] = 'qt4'
 import matplotlib
 matplotlib.use("Qt4Agg")

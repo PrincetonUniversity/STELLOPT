@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 import sys, os
+#### set no Qstring
+import sip
+sip.setapi('QString', 2)
+##### 
 import matplotlib
 matplotlib.use("Qt4Agg")
 import matplotlib.pyplot as _plt
