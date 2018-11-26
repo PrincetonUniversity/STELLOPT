@@ -17,7 +17,7 @@
 #            Define Compiler Flags
 #######################################################################
   FLAGS_R = -fp-model strict -assume noold_unit_star -cxxlib
-  FLAGS_D = -g -O0 -fp-model strict -assume noold_unit_star -cxxlib
+  FLAGS_D = -g -O0 -traceback -fp-model strict -assume noold_unit_star -cxxlib
   LIBS    = 
 
 #######################################################################
@@ -30,6 +30,7 @@
   MPI_LINK = ftn
   MPI_RUN = srun
   MPI_RUN_OPTS = -n 8 -c 16
+  MPI_RUN_OPTS = -n 1088 -c 1
 
 #######################################################################
 #            NAG Options
@@ -47,9 +48,9 @@
 #######################################################################
 #            NTCC Options
 #######################################################################
-  LNTCC = F
-  NTCC_INC = -I/global/homes/l/lazerson/pub_cori/preact/mod 
-  NTCC_LIB = -L/global/homes/l/lazerson/pub_cori/preact/lib \
+  LNTCC = T
+  NTCC_INC = -I/global/homes/l/lazerson/pub/mod 
+  NTCC_LIB = -L/global/homes/l/lazerson/pub/lib \
              -lpreact -lsigsub -laladdinsub -lpreact -lportlib
 
 #######################################################################
@@ -93,7 +94,7 @@
 #######################################################################
 #            COILOPT++ Options
 #######################################################################
-  LCOILOPT = F
+  LCOILOPT = T
   COILOPT_INC = -I$(COILOPT_PATH)
   COILOPTPP_DIR = $(COILOPT_PATH)
   LIB_COILOPTPP = libcoilopt++.a
@@ -102,7 +103,7 @@
 #######################################################################
 #            TERPSICHORE Options
 #######################################################################
-  LTERPSICHORE= F
+  LTERPSICHORE= T
   TERPSICHORE_INC = -I$(TERPSICHORE_PATH)
   TERPSICHORE_DIR = $(TERPSICHORE_PATH)
   LIB_TERPSICHORE = libterpsichore.a
@@ -111,7 +112,7 @@
 #######################################################################
 #            TRAVIS Options
 #######################################################################
-  LTRAVIS= F
+  LTRAVIS= T
   TRAVIS_DIR = $(TRAVIS_PATH)
   LIB_TRAVIS = libtravis64_sopt.a
   LIB_MCONF  = libmconf64.a
@@ -122,12 +123,11 @@
 #            SFINCS Options
 #######################################################################
 
-  LSFINCS = F
+  LSFINCS = T
   SFINCS_DIR = $(SFINCS_PATH)
   SFINCS_INC = -I$(SFINCS_DIR)
   LIB_SFINCS = libsfincs.a
-  SFINCS_LIB = $(SFINCS_DIR)/$(LIB_SFINCS) \
-	$(PETSC_LIB) $(FC_LINKER_FLAGS) $(FFLAGS)
+  SFINCS_LIB = $(SFINCS_DIR)/$(LIB_SFINCS)
 
 #######################################################################
 #            REGCOIL Options
@@ -338,7 +338,7 @@ ifeq ($(LNETCDF),T)
 endif
 ifeq ($(LHDF5),T)
   MOD1_PATH += $(HDF5_INC)
-  PRECOMP += -DLHDF5 -DH5_USE_16_API
+  PRECOMP += -DLHDF5 -DH5_USE_16_API -DHDF5_PAR
   LIB_LINK += $(HDF5_LIB)
   MOD_PATH += $(HDF5_INC)
   LIB_SHARE += $(HDF5_LIB)
