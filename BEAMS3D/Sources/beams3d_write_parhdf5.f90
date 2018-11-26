@@ -122,13 +122,17 @@
       IF (lfvar) CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, FLTVAR, dimsf, ier, mem_space_id = mspace_id, file_space_id = fspace_id, xfer_prp = dxpl_id)
       IF (ldvar) CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, DBLVAR, dimsf, ier, mem_space_id = mspace_id, file_space_id = fspace_id, xfer_prp = dxpl_id)
 
-      ! Close Property list      CALL h5pclose_f(fapl_id, ier)      CALL h5pclose_f(dcpl_id, ier)      CALL h5pclose_f(dxpl_id, ier)      CALL h5sclose_f(mspace_id, ier)      CALL h5sclose_f(fspace_id, ier)      CALL h5dclose_f(dset_id, ier)
-
-      ! Deallocate Helpers
-      DEALLOCATE(dimsf,chunk_dims,counts,offset)
+      ! Close Property list
+      CALL h5pclose_f(fapl_id, ier)
+      CALL h5pclose_f(dcpl_id, ier)
+      CALL h5pclose_f(dxpl_id, ier)
+      CALL h5sclose_f(mspace_id, ier)
+      CALL h5sclose_f(fspace_id, ier)
+      CALL h5dclose_f(dset_id, ier)
 
 !!!!!!!CLOSE FILE
-      ! Close the file      CALL h5fclose_f(file_id, ier)
+      ! Close the file
+      CALL h5fclose_f(file_id, ier)
       ! Close the fortran interface
       CALL h5close_f(ier)
 
@@ -156,7 +160,8 @@
                CALL h5dget_space_f(dset_id, fspace_id, ier)
             END IF
 
-            ! Select Hyperslab            CALL h5sselect_hyperslab_f(fspace_id, H5S_SELECT_SET_F,offset, chunk_dims, ier) 
+            ! Select Hyperslab
+            CALL h5sselect_hyperslab_f(fspace_id, H5S_SELECT_SET_F,offset, chunk_dims, ier) 
  
             ! Get Memory Space
             CALL h5screate_simple_f(rank, chunk_dims, mspace_id, ier)
@@ -170,7 +175,8 @@
             IF (lfvar) CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, FLTVAR, dimsf, ier, mem_space_id = mspace_id, file_space_id = fspace_id)
             IF (ldvar) CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, DBLVAR, dimsf, ier, mem_space_id = mspace_id, file_space_id = fspace_id)
             
-            ! Close down            CALL h5sclose_f(fspace_id, ier)
+            ! Close down
+            CALL h5sclose_f(fspace_id, ier)
             CALL h5sclose_f(mspace_id, ier)
             CALL h5dclose_f(dset_id, ier)
       
