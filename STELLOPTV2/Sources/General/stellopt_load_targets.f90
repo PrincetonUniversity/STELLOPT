@@ -38,6 +38,13 @@
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
       mtargets=0
+      !------------- TEST TARGETS ----------------------------
+      ! X
+      IF (sigma_x < bigno)  &
+         CALL chisq_x(target_x,sigma_x,ncnt,iflag)
+      ! Y
+      IF (sigma_y < bigno)  &
+         CALL chisq_y(target_y,sigma_y,ncnt,iflag)
       !------------- SCALAR TARGETS ----------------------------
       ! PHIEDGE
       IF (sigma_phiedge < bigno)  &
