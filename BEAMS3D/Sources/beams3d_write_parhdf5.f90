@@ -88,13 +88,10 @@
       CALL h5fopen_f('beams3d_'//TRIM(id_string)//'.h5', H5F_ACC_RDWR_F, file_id, ier, access_prp = fapl_id)
 !!!!!!! Begin writing
 
-      WRITE(6,*) myworkid,dimsf,chunk_dims,counts,offset; CALL FLUSH(6)
+!      WRITE(6,*) myworkid,dimsf,chunk_dims,counts,offset; CALL FLUSH(6)
 
-      ! Create Spaces
+      ! Create Data Space
       CALL h5screate_simple_f(rank, dimsf, fspace_id, ier)
-      CALL h5screate_simple_f(rank, dimsf, mspace_id, ier)
-!      CALL h5screate_simple_f(rank, chunk_dims, mspace_id, ier)
-
 
       ! Enable Chunking
       CALL h5pcreate_f(H5P_DATASET_CREATE_F, dcpl_id, ier)
@@ -105,17 +102,19 @@
       IF (lfvar) CALL h5dcreate_f(file_id, TRIM(var_name), H5T_NATIVE_DOUBLE, fspace_id, dset_id, ier, dcpl_id)
       IF (ldvar) CALL h5dcreate_f(file_id, TRIM(var_name), H5T_NATIVE_DOUBLE, fspace_id, dset_id, ier, dcpl_id)
 
+      ! Close the file space
+      CALL h5sclose_f(fspace_id, ier)
 
-      ! Select Hyperslab in memory
-      CALL h5sselect_hyperslab_f(mspace_id, H5S_SELECT_SET_F, offset, chunk_dims, ier)
+      ! Create the Memore Space
+      CALL h5screate_simple_f(rank, chunk_dims, mspace_id, ier)
 
-      ! Select Hyperslab in File
+      ! Select the Hyperslab in data
+      CALL h5dget_space_f(dset_id, fspace_id, ier)
       CALL h5sselect_hyperslab_f(fspace_id, H5S_SELECT_SET_F, offset, chunk_dims, ier)
 
       ! Create Properties
       CALL h5pcreate_f(H5P_DATASET_XFER_F, dxpl_id, ier)
       CALL h5pset_dxpl_mpio_f(dxpl_id, H5FD_MPIO_COLLECTIVE_F, ier)
-
 
       ! Write dataset
       IF (livar) CALL h5dwrite_f(dset_id, H5T_NATIVE_INTEGER, INTVAR, dimsf, ier, mem_space_id = mspace_id, file_space_id = fspace_id, xfer_prp = dxpl_id)
@@ -129,9 +128,6 @@
       CALL h5sclose_f(mspace_id, ier)
       CALL h5sclose_f(fspace_id, ier)
       CALL h5dclose_f(dset_id, ier)
-
-      ! Deallocate Helpers
-      DEALLOCATE(dimsf,chunk_dims,counts,offset)
 
 !!!!!!!CLOSE FILE
       ! Close the file
