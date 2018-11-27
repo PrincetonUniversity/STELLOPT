@@ -118,6 +118,11 @@
           END IF
           ! NE
           IF (nne>0) THEN
+             ! Check values
+             IF (ALL(NE_AUX_F(1:nne) < 1E4)) THEN
+                WRITE(6,'(A)') '   Rescaling Electron Density (1E18)'
+                NE_AUX_F(1:nne) = NE_AUX_F(1:nne)*1E18
+             END IF
              CALL EZspline_init(NE_spl_s,nne,bcs1_s,ier)
              IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init5',ier)
              NE_spl_s%x1          = NE_AUX_S(1:nne)
