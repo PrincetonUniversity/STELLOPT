@@ -18,7 +18,7 @@
       USE stel_kinds, ONLY: rprec
       USE beams3d_grid, ONLY: BR_spl, BZ_spl, delta_t, BPHI_spl, MODB_spl, &
                               POT_spl, phimax, rmin, rmax
-      USE beams3d_runtime, ONLY: lmu, mu, lneut
+      USE beams3d_runtime, ONLY: lneut
       USE beams3d_lines, ONLY: moment, mycharge, mymass, myv_neut, B_temp
       USE EZspline_obj
       USE EZspline
