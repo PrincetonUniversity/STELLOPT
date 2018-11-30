@@ -1,5 +1,3 @@
-# -*- mode: makefile -*-
-
 #######################################################################
 #            Define Basic Utilities
 #######################################################################
@@ -9,14 +7,14 @@
   PRECOMP:= fpp -C -P -DLINUX
   COMPILE = ifort
   COMPILE_FREE = ifort
-  LINK    = ftn -Bstatic -o
+  LINK    = icc -Bstatic -o
   LINK_AR = ar -ruv
-  LINK_C  = $(CC) -shared -Wl,-z-defs
+  LINK_C  = icc -shared -Wl,-z-defs
 
 #######################################################################
 #            Define Compiler Flags
 #######################################################################
-  FLAGS_R = -I$(MKL_HOME)/include -O2 -fp-model strict -xAVX -ip \
+  FLAGS_R = -I$(MKL_HOME)/include -O2 -fp-model strict -ip \
             -assume noold_unit_star 
   FLAGS_D = -g -I$(MKL_HOME)/include
   LIBS    = -Wl,-rpath,$(MKL_HOME)/lib/intel64 \
@@ -30,13 +28,13 @@
   LMPI    = T
   MPI_COMPILE = mpiifort
   MPI_COMPILE_FREE = mpiifort
-  MPI_COMPILE_C = 
+  MPI_COMPILE_C = mpiifort 
   MPI_LINK = mpiifort
 
 #######################################################################
 #            NAG Options
 #######################################################################
-  LNAG = T
+  LNAG = F
   NAG_LIB = $(NAGFLIB) $(NAGMKLLIB)
 
 #######################################################################
@@ -50,10 +48,11 @@
 #######################################################################
 #            NTCC Options
 #######################################################################
-  LNTCC = F
+  LNTCC = T
   NTCC_INC = -I$(NTCCHOME)/mod
-  NTCC_LIB = -L$(NTCCHOME)/lib -laladdinsub -ladpak -lcppsub \
-             -lcomput -lportlib 
+  NTCC_LIB = -L$(NTCCHOME)/lib -lpreact -lsigsub \
+                               -laladdinsub -lpreact -lportlib \
+                               -ladas310_fortran_driver
 
 #######################################################################
 #            HDF5 Options
@@ -120,7 +119,7 @@
 #######################################################################
 #            TRAVIS Options
 #######################################################################
-  LTRAVIS= F
+  LTRAVIS= T
   TRAVIS_DIR = $(TRAVIS_PATH)
   LIB_TRAVIS = libtravis64_sopt.a
   LIB_MCONF  = libmconf64.a
@@ -131,14 +130,8 @@
 #            SFINCS Options
 #######################################################################
 
-  #LSFINCS = F
-  LSFINCS = T
-
+  LSFINCS = F
   SFINCS_DIR = $(SFINCS_PATH)
-
-  include ${PETSC_DIR}/lib/petsc/conf/variables
-  # The above line defines the PETSC make variables PETSC_LIB, FC_LINKER_FLAGS, and FFLAGS, which are used below in SFINCS_LIB.
-
   SFINCS_INC = -I$(SFINCS_DIR) -I${PETSC_DIR}/include -I${PETSC_DIR}/${PETSC_ARCH}/include
   LIB_SFINCS = libsfincs.a
 
@@ -157,7 +150,10 @@
 #######################################################################
 #            LIBSTELL Shared Options
 #######################################################################
-LIB_SHARE = 
+  LIB_SHARE = $(LIBS) $(NTCC_LIB) $(NETCDF_LIB) $(HDF5_LIB) \
+             -lifport -lifcoremt -limf -lm -lc \
+             -lpthread -lirc -lunwind -lirc_s
+
 
 #######################################################################
 #######################################################################
@@ -383,7 +379,12 @@ ifeq ($(MAKECMDGOALS),libstell.a)
   INC_PATH = 
 endif
 ifeq ($(MAKECMDGOALS),libstell.so)
-  LIB_LINK = $(LIB_SHARE)
+  LINK = $(LINK_C)
+  LIB_LINK = $(LIB_SHARE) 
+# Note this is needed for reasons
+#  LIB_LINK += -L$(NETCDF_HOME)/lib -lnetcdf -lnetcdff
+#  LIB_LINK += -L$(HDF5_HOME)/lib -lhdf5_hl -lhdf5_fortran -lhdf5 \
+#             -lhdf5hl_fortran 
   COMPILE += -fPIC
   COMPILE_FREE += -fPIC
   INC_PATH = 
