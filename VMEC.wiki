@@ -1,10 +1,11 @@
 =VMEC= 
-<ref>[[http://aip.scitation.org/doi/abs/10.1063/1.864116|Hirshman, S.P. and Whitson, J.C. "Steepest-descent moment method for three-dimensional magnetohydrodynamic equilibria." Phys. Fluids 26, 3353 (1983).]]</ref> <ref>[[http://link.aip.org/link/PFLDAS/v28/i5/p1387/s1|Hirshman, S.P. and Whitson, J.C. "Optimized Fourier representations for three-dimensional magnetic surfaces." Phys. Fluids 28, 1387 (1985).]]</ref> <ref>[[http://dx.doi.org/10.1016/0010-4655%2886%2990127-X|Hirshman, S.P. and Lee D.K. "Momcon: A spectral code for obtaining three-dimensional magnetohydrodynamic equilibria." Comp. Phys. Comm. 39, 161 (1986).]]</ref> <ref>[[http://dx.doi.org/10.1016/0010-4655%2886%2990058-5|Hirshman, S.P., van Rij, W.I., and Merkel P. "Three-dimensional free boundary calculations using a spectral green's function method." Comp. Phys. Comm. 43, 143 (1986).]]</ref> <ref>[[http://dx.doi.org/10.1016/0021-9991%2891%2990267-O|Hirshman, S.P. and Betancourt O. "Preconditioned descent algorithm for rapid calculations of magnetohydrodynamic equilibria." J. Comp. Phys. 96, 99 (1991)]]</ref> . The code uses a variational method to find a minimum in the total energy of the system. The code assumes that quantities may be Fourier expanded in terms of the poloidal and toroidal coordinates. This produces a parabolic set of equations (with second-order spatial derivatives in the radial coordinate, rho), which are converted to hyperbolic form through a Richardson scheme. The VMEC code is able to rapidly solve for MHD equilibrium configurations in magnetically confined fusion devices.
+(Hirshman, S.P. and Whitson, J.C. "Steepest-descent moment method for three-dimensional magnetohydrodynamic equilibria." Phys. Fluids 26, 3353 (1983).)(Hirshman, S.P. and Whitson, J.C. "Optimized Fourier representations for three-dimensional magnetic surfaces." Phys. Fluids 28, 1387 (1985).)(Hirshman, S.P. and Lee D.K. "Momcon: A spectral code for obtaining three-dimensional magnetohydrodynamic equilibria." Comp. Phys. Comm. 39, 161 (1986).) (Hirshman, S.P., van Rij, W.I., and Merkel P. "Three-dimensional free boundary calculations using a spectral green's function method." Comp. Phys. Comm. 43, 143 (1986).) (Hirshman, S.P. and Betancourt O. "Preconditioned descent algorithm for rapid calculations of magnetohydrodynamic equilibria." J. Comp. Phys. 96, 99 (1991)) . The code uses a variational method to find a minimum in the total energy of the system. The code assumes that quantities may be Fourier expanded in terms of the poloidal and toroidal coordinates. This produces a parabolic set of equations (with second-order spatial derivatives in the radial coordinate, rho), which are converted to hyperbolic form through a Richardson scheme. The VMEC code is able to rapidly solve for MHD equilibrium configurations in magnetically confined fusion devices.
 
 ----
 
-<span style="font-size: 14px; line-height: 21px;">**Theory[[#Theory]]**</span>
-[[image:Toroidal_coordinates.png width="400" height="297" align="right" caption="Figure 1 VMEC Toroidal Coordinate System, Note that the phi coordinate is labeled wrong (should be right handed)."]]The VMEC code seeks to solve a set of MHD force balance equations in a toroidal domain:
+===Theory=== 
+{{images/Toroidal_coordinates.png}}
+The VMEC code seeks to solve a set of MHD force balance equations in a toroidal domain:
 [[math]]
 \vec{F}=-\vec{j}\times\vec{B}+\vec{\nabla}p=0,
 [[math]]
@@ -128,33 +129,21 @@ the flux surface constraint. At the vacuum-plasma interface the total pressure m
 \frac{\partial \nu}{\partial \beta}=F_\nu\equiv-\vec{\nabla}\cdot\vec{B_\nu}=\nabla^2\nu.
 [[math]]
 The free boundary condition requires the calculation of the initial vacuum magnetic field from data involving the coil configuration. The MAKEGRID code is used to produce an 'mgrid' file. This file contains the vacuum field on an R-Z grid for a series of toroidal angles.
-[[media type="youtube" key="nS3mNC9RdY8?fs=1" height="420" width="715" align="center"]]
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 ----
 
-===Compilation[[#Compilation]]=== 
+===Compilation=== 
 
 VMEC is a component of the STELLOPT suite of codes. It is contained within the 'stellopt.zip' file. Compilation of the STELLOPT suite is discussed on the [[STELLOPT Compilation|STELLOPT Compilation Page]].
 
 ----
 
-===Input Data Format[[#Input]]=== 
+===Input Data Format=== 
 
 The VMEC input file has the name `input.name' where `name' is a descriptive name of the user's choosing. This input file is a Fortran namelist file which specifies how the code is to be run. A full listing of variable can be found in the [[VMEC Input Namelist (v8.47)|input variable namelist page]]. The input file in general looks like:
-[[code format="fortran"]]
+
+{{{
+#!fortran
 &INDATA
  LFREEB = F
  MGRID_FILE = "none"
@@ -184,7 +173,8 @@ The VMEC input file has the name `input.name' where `name' is a descriptive name
  RBC(1,4) =  -0.01     ZBS(1,4) =   0.01
  RBC(1,6) =  -0.01     ZBS(1,6) =  -0.01
 /
-[[code]]
+}}}
+
 The first line simply defines the Fortran namelist and the last line ends it. The `LFREEB' is a boolean value which specifies if the code should be run in free boundary mode. If `LFREEB' is set to 'T' then the next variable `MGRID_FILE' must specify the name of an mgrid file created by the xgrid package. This file contains information regarding the fields created by the various field coils. If `LFREEB' is set to `F' then `MGRID_FILE' is ignored and may be omitted. The `DELT' parameter determines the amount of blending from previous iterations (value from 0.0 to 1.0). The `NFP' variable specifies the number of field periods in the toroidal direction (number of times the plasma cross-section repeats itself). The `NCURR' variable specifies that the rotational transform (NCURR=0, iota) or the toroidal current (NCURR=1) is specified at the boundary. The `MPOL' variable specifies the maximum poloidal mode number for the run. The `NTOR' variable specifies the minimum and maximum toroidal mode number for the run. The `NZETA' variable specifies the number of planes on which the mgrid file has calculated the magnetic field. The `NITER' variable specifies the maximum number of iterations for the VMEC code. Note that if this number is exceeded VMEC will continue to run for double this number to see if convergence can be met. The `NSTEP' variable determines how often the code should output diagnostics to the screen and `threed1' file. The `NVACSKIP' variable is used for a free boundary run to indicate how often to update the vacuum field solution. The `GAMMA' variable is used to set the adiabatic (compressional) index. Note that for GAMMA=0.0 the code assumes it is being supplied a pressure not a mass. The `PHIEDGE' variable specifies the total enclosed toroidal flux for a fixed boundary run. For a free boundary run, this variable limits the radius of the plasma. The `CURTOR' variable specifies the scaling for the toroidal current in Amps.
 
 The `NS\_ARRAY' and `FTOL_ARRAY' specify the radial grid refinement that the code uses. In general the code iterates on a given radial grid. Once a specified tolerance is met, the code uses a more refined grid and restarts it's iterative cycle for a new tolerance. The `NS_ARRAY' is an array of integers specifying the number of radial grid points for each cycle of the code. The `FTOL_ARRAY' variable specifies the tolerance for a given radial grid discretization. These arrays should have the same number of elements. In this way the user control the gird refinement of the code.
@@ -199,33 +189,37 @@ It is worthwhile to note that the array indices in VMEC use toroidal angle prece
 
 ----
 
-===Execution[[#Execution]]=== 
+===Execution=== 
 
-<span style="margin: 0px; padding: 0px;">To run VMEC with a given input file simply pass the suffix of the file to VMEC like so (input file named input.test):</span>
-[[code format="bash"]]
+To run VMEC with a given input file simply pass the suffix of the file to VMEC like so (input file named input.test):
+{{{
 yourmachine:0005> ~/bin/xvmec2000 test >& log.test &
-[[code]]
-<span style="margin: 0px; padding: 0px;">Here we've redirected screen output (trapping error messages) to 'log.test' and put the process in the background.</span>
+}}}
+Here we've redirected screen output (trapping error messages) to 'log.test' and put the process in the background.
 
 ----
 
-===Output Data Format[[#Output]]=== 
+===Output Data Format=== 
 The VMEC code outputs some runtime and diagnostic data to the screen along with the creation of four files (jxbout, mercier, threed1, and wout). The data output to the screen is also indicated (in greater detail) in the threed1 file. It is suggested that the user redirect the output of the run to a log file. The wout file is a text file containing data from plotting of the final configuration. Details of reading the 'wout' file can be found in 'LIB_OPT/vsource/readw_only_priv.f.' If 'LDIAGNO' was set to true in the input namelist, a 'diagno_in' file will be created. This file contains information regarding the outer flux surface and currents for the DIAGNO routine (which calculate the field at a point for magnetic reconstruction).
 
 ----
 
-===Visualization[[#Visualization]]=== 
+===Visualization=== 
 The datafiles output by VMEC are text files which explain the quantities they contain, the exception being the 'wout' file. This file contains a reduced form of the Fourier coefficients for various quantities, along with radial profiles of specific quantities. This file can be in text or netCDF format. The user is encourage to examine the files in the matlabVMEC package to better understand how to handle these quantities. In general, VMEC stores the R and Z data in the variables 'rmnc' and 'zmns'. These variables are two dimensional. One dimension indexes the radial surface the other is a vectorization over the poloidal and toroidal modes. The 'xn' and 'xm' variables store the m and n information for a given index. It is important to note that VMEC calculates values over one field period, thus for a full torus one must multiply the toroidal mode number (n) by the number of field periods for a given machine. Strumberger provides an explanation of how to map the VMEC contravariant vectors to cylindrical space.<ref>[[http://dx.doi.org/10.1088/0029-5515/42/7/305|E. Strumberger, S. Günter, P. Merkel, E. Schwarz, C. Tichmann and H.-P. Zehrfeld "Numerical computation of magnetic fields of two- and three-dimensional equilibria with net toroidal current." Nuclear Fusion 42, 7 (2002)]]</ref> A few packages exist to ease the user into plotting the VMEC data. A discussion of toroidal coordinate systems can be found [[Toroidal Coordinates|here]]. A FORTRAN library for manipulation of toroidal equilibria AJAX<ref>[[http://www.sciencedirect.com/science/article/pii/0021999187900921|S.E. Attenberger, W. A. Houlberg and S.P Hirshman. "Some practical considerations involving spectral representations of 3D plasma equilibria." J. Comp. Phys. 72, 435 (1987)]]</ref> does exist and is distributed as part of the LIBSTELL package.
 
-MATLAB: matlabVMEC, provides a series of functions to read the VMEC data files into MATLAB, transform from Fourier to 'toroidal' coordinates, and provides a Graphical User Interace (GUI) for data exploration. It can be obtained from the MATLAB Central File Exchange (http://www.mathworks.com/matlabcentral/fileexchange/29031-matlabvmec).
+MATLAB: matlabVMEC, provides a series of functions to read the VMEC data files into MATLAB, transform from Fourier to 'toroidal' coordinates, and provides a Graphical User Interface (GUI) for data exploration. It can be obtained from the MATLAB Central File Exchange (http://www.mathworks.com/matlabcentral/fileexchange/29031-matlabvmec).
 
 IDL: ECHIDNA, provides a GUI for execution and visualization of VMEC via IDL.
 
 ----
 
-===Tutorials[[#Tutorials]]=== 
+===Tutorials=== 
 [[VMEC Fixed Boundary Run| Fixed Boundary Run for NCSX-like configuration.]]
+
 [[VMEC Free Boundary Run| Free Boundary Run for NCSX-like configuration.]]
+
 [[Tutorial VMEC Input Namelist|VMEC Input Namelist]]
+
 [[VMEC Advanced Profiles]]
+
 [[VMEC PEST1 Coordinates]]
