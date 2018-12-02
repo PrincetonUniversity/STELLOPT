@@ -9,12 +9,12 @@
   COMPILE_FREE = ifort
   LINK    = ftn -Bstatic -o
   LINK_AR = ar -ruv
-  LINK_C  = $(CC) -shared -Wl,-z-defs
+  LINK_C  = icc -shared -Wl,-z-defs
 
 #######################################################################
 #            Define Compiler Flags
 #######################################################################
-  FLAGS_R = -I$(MKL_HOME)/include -O2 -fp-model strict -xAVX -ip \
+  FLAGS_R = -I$(MKL_HOME)/include -O2 -fp-model strict -ip \
             -assume noold_unit_star 
   FLAGS_D = -g -I$(MKL_HOME)/include
   LIBS    = -Wl,-rpath,$(MKL_HOME)/lib/intel64 \
@@ -28,8 +28,10 @@
   LMPI    = T
   MPI_COMPILE = mpiifort
   MPI_COMPILE_FREE = mpiifort
-  MPI_COMPILE_C = 
+  MPI_COMPILE_C = mpiifort
   MPI_LINK = mpiifort
+  MPI_RUN  = srun
+  MPI_RUN_OPTS = -n 8
 
 #######################################################################
 #            NAG Options
@@ -48,10 +50,10 @@
 #######################################################################
 #            NTCC Options
 #######################################################################
-  LNTCC = F
+  LNTCC = T
   NTCC_INC = -I$(NTCCHOME)/mod
-  NTCC_LIB = -L$(NTCCHOME)/lib -laladdinsub -ladpak -lcppsub \
-             -lcomput -lportlib 
+  NTCC_LIB = -L$(NTCCHOME)/lib -lpreact -lsigsub -laladdinsub -lpreact\
+                               -lportlib -ladas310_fortran_driver
 
 #######################################################################
 #            HDF5 Options
@@ -109,7 +111,7 @@
 #######################################################################
 #            TERPSICHORE Options
 #######################################################################
-  LTERPSICHORE= F
+  LTERPSICHORE= T
   TERPSICHORE_INC = -I$(TERPSICHORE_PATH)
   TERPSICHORE_DIR = $(TERPSICHORE_PATH)
   LIB_TERPSICHORE = libterpsichore.a
@@ -118,7 +120,7 @@
 #######################################################################
 #            TRAVIS Options
 #######################################################################
-  LTRAVIS= F
+  LTRAVIS= T
   TRAVIS_DIR = $(TRAVIS_PATH)
   LIB_TRAVIS = libtravis64_sopt.a
   LIB_MCONF  = libmconf64.a
@@ -137,7 +139,9 @@
 #######################################################################
 #            LIBSTELL Shared Options
 #######################################################################
-LIB_SHARE = -lc -lgfortran -lstdc++ -lmpi -lmpi_mpifh -lz -lc -lm -lpthread $(LIBS) -lc
+  LIB_SHARE = $(LIBS) $(NTCC_LIB) $(NETCDF_LIB) $(HDF5_LIB) \
+             -lifport -lifcoremt -limf -lm -lc \
+             -lpthread -lirc -lunwind -lirc_s
 
 #######################################################################
 #######################################################################
