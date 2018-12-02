@@ -28,14 +28,15 @@ c ----------------------------------------------------------------------
          coil_separation = 0
          read (separation, *, iostat=istat) coil_separation
          if (istat .ne. 0) stop 'BNORM Error reading coil_separation'
-      else if (numargs .eq. 8) then
+      else if (numargs .gt. 2) then
+         print *,'please enter customized dimensions: nu,nv,mf,nf,md,nd'
          READ (*,*) nu
          READ (*,*) nv
          READ (*,*) mf
          READ (*,*) nf
          READ (*,*) md
          READ (*,*) nd
-         call getcarg(8, separation, numargs)
+         call getcarg(2, separation, numargs)
          coil_separation = 0
          read (separation, *, iostat=istat) coil_separation
          if (istat .ne. 0) stop 'BNORM Error reading coil_separation'

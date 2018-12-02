@@ -187,6 +187,7 @@
       CALL read_coils_pass2(iou_coil, nmaxnodes, coil_group, ngroup,           &
      &                      local_lgrps, n_line_skip)
  
+      CALL safe_close(iou_coil) !Close the file when done
       END SUBROUTINE parse_coils_file
 
 !----------------------------------------------------------------------

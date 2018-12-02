@@ -39,6 +39,8 @@
                      -ffree-line-length-none -ffixed-line-length-none
   MPI_COMPILE_C = mpicc
   MPI_LINK = mpicc -shared -pthread -Wl,--no-undefined -Wl,-export-dynamic
+  MPI_RUN = srun
+  MPI_RUN_OPTS = -n 64 -p dawson -t 5:00:00
 
 #######################################################################
 #            NAG Options
@@ -152,6 +154,17 @@
   REGCOIL_LIB = $(REGCOIL_DIR)/$(LIB_REGCOIL) -fopenmp
 
 #######################################################################
+#            SFINCS Options
+#######################################################################
+
+  LSFINCS = F
+  SFINCS_DIR = $(SFINCS_PATH)
+  SFINCS_INC = -I$(SFINCS_DIR)
+  LIB_SFINCS = libsfincs.a
+  SFINCS_LIB = $(SFINCS_DIR)/$(LIB_SFINCS) \
+             -L$(PETSC_DIR)/$(PETSC_ARCH)/lib -lpetsc -lX11
+
+#######################################################################
 #            LIBSTELL Shared Options
 #######################################################################
 LIB_SHARE = -lc -lgfortran -lstdc++ -lmpi -lmpi_mpifh -lz -lc -lm -lpthread $(LIBS) -lc
@@ -249,6 +262,7 @@ else
   LTERPSICHORE = F
   LTRAVIS = F
   LREGCOIL= F
+  LSFINCS = F
 #  LYOURNEWCODE = F
 endif
 ifeq ($(MAKECMDGOALS),xanimec)
@@ -308,6 +322,15 @@ else
   TRAVIS_DIR = 
   LIB_TRAVIS = 
 endif
+ifeq ($(LSFINCS),T)
+  MOD1_PATH += $(SFINCS_INC)
+  PRECOMP += -DSFINCS
+  MOD_PATH += -I$(SFINCS_DIR)
+else
+  SFINCS_LIB = 
+  SFINCS_DIR = 
+  LIB_SFINCS = 
+endif
 ifeq ($(LREGCOIL),T)
   MOD1_PATH += $(REGCOIL_INC)
   PRECOMP += -DREGCOIL
@@ -319,7 +342,7 @@ else
 endif
 
 # Handle other codes
-LIB_LINK += $(GENE_LIB) $(COILOPT_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB) $(REGCOIL_LIB)
+LIB_LINK += $(GENE_LIB) $(COILOPT_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB) $(SFINCS_LIB) $(REGCOIL_LIB)
 
 # Add libraries to LIB_LINK
 # LIB_LINK+= $(MYHOME)/libstell.a $(LIBS)

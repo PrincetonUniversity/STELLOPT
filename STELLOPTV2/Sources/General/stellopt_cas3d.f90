@@ -34,7 +34,7 @@
       IF (iflag < 0) RETURN
       IF (lscreen) WRITE(6,'(a)') ' ---------------------------  STABILITY (CAS3D) CALCULATION  -------------------------'
       SELECT CASE(TRIM(equil_type))
-         CASE('vmec2000','animec','flow','satire')
+         CASE('vmec2000','animec','flow','satire','vmec2000_oneeq')
             CALL safe_open(iunit_rzuv, ier, 'for_cas3d_rzuv.dat','replace','formatted')
             WRITE(iunit_rzuv,*) 
 

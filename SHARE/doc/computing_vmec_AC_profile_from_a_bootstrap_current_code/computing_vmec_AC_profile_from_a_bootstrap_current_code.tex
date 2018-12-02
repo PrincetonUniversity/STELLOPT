@@ -1,0 +1,380 @@
+\documentclass[11pt,letter]{article}
+
+\usepackage{latexsym, color, graphicx, comment}
+\usepackage[top=1in,bottom=1in,left=1in,right=1in]{geometry}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{hyperref}
+\usepackage{empheq}
+\hypersetup{colorlinks=true,linkcolor=blue}
+
+\newcommand{\vect}[1]{\mbox{\boldmath $#1$}}
+\newcommand{\gyrophase}{\varphi}
+\newcommand{\energy}{\varepsilon}
+\renewcommand{\Re}{\mathrm{Re}}
+\renewcommand{\Im}{\mathrm{Im}}
+\newcommand{\todo}[1]{\textcolor{red}{#1}}
+%\newcommand{\kxfac}{\kappa_x}
+\newcommand{\kxfac}{\mathtt{kxfac}}
+\newcommand{\bmag}{\mathtt{bmag}}
+\newcommand{\smz}{\mathtt{smz}}
+\newcommand{\gdstwo}{\mathtt{gds2}}
+\newcommand{\gdstwoone}{\mathtt{gds21}}
+\newcommand{\gdstwotwo}{\mathtt{gds22}}
+\newcommand{\gbdrift}{\mathtt{gbdrift}}
+\newcommand{\gbdriftO}{\mathtt{gbdrift0}}
+\newcommand{\cvdrift}{\mathtt{cvdrift}}
+\newcommand{\cvdriftO}{\mathtt{cvdrift0}}
+\newcommand{\fprim}{\mathtt{fprim}}
+\newcommand{\tprim}{\mathtt{tprim}}
+\newcommand{\gradpar}{\mathtt{gradpar}}
+\newcommand{\delthet}{\mathtt{delthet}}
+\newcommand{\codedt}{\mathtt{code\_dt}}
+\newcommand{\stellopt}{{\ttfamily stellopt}}
+\newcommand{\vboot}{{\ttfamily vboot}}
+\newcommand{\vmec}{{\ttfamily vmec}}
+\newcommand{\bootsj}{{\ttfamily bootsj}}
+\newcommand{\sfincs}{{\ttfamily sfincs}}
+\newcommand{\curtor}{{\ttfamily curtor}}
+\newcommand{\ac}{{\ttfamily ac}}
+
+
+\title{Computing \vmec's \ac~current profile and \curtor~from a bootstrap current code}
+\author{Matt Landreman}
+\date{March 1, 2018}
+
+\begin{document}
+\maketitle
+
+In this note, we detail how to compute the \vmec~input parameters \curtor~and \ac~(or {\ttfamily ac\_aux\_f})
+from the averaged parallel current computed by neoclassical codes, $\langle \vect{j}\cdot\vect{B} \rangle$. Here,
+$\langle \ldots \rangle$ denotes a flux surface average,  $\vect{j}$ is the current density, and $\vect{B}$ is the magnetic field. 
+The proper result involves a term that is neglected by the \bootsj~code. This term is small
+in $\beta = 2 \mu_0 p / B^2$, but it does not require much work to keep, so we may as well keep it.
+Physically, neoclassical codes compute a gyrophase-averaged distribution function and so the current they obtain
+is parallel to $\vect{B}$, whereas the total toroidal current also has a contribution from the diamagnetic
+current perpendicular to $\vect{B}$. The purpose of this note is to compute the proper relationship between these 
+parallel and perpendicular currents and the net toroidal current.
+
+
+The calculation here is a more detailed version of Appendix C of \cite{LandremanCatto},
+except that Gaussian units were used in that paper whereas
+SI units are used throughout this note. 
+
+
+\section{Overview}
+Bootstrap current codes like \bootsj~and \sfincs~solve the drift kinetic equation
+for the gyrophase-averaged distribution function $f$. The parallel velocity moment of $f$, weighted by species charge and summed over
+species, yields the parallel current $j_{||} = \vect{j}\cdot\vect{b}$, where $\vect{b} = \vect{B} / |\vect{B}|$.
+The spatial variation of $j_{||}$ over a magnetic surface can be determined analytically for any geometry and collisionality using mass conservation, so the results of a drift-kinetic calculation can be summarized by any weighted average of the parallel current over a flux surface. By convention, the average typically
+reported is $\langle \vect{j}\cdot\vect{B}\rangle$.
+
+The \vmec~code takes as an input the profile of net toroidal current inside a flux surface.
+Therefore, to interface a bootstrap current code with \vmec, the relationship between this
+net toroidal current and the parallel current must be calculated. We now calculate this relationship.
+
+\section{Derivation}
+
+Let $I(s)$ denote the total toroidal current inside a flux surface labelled by any flux function $s$,
+where we require that $s=0$ on the magnetic axis.
+This total current is the flux (area integral) of the current density $\vect{j}$ through a surface of constant toroidal angle $\zeta$:
+\begin{equation}
+I(s) = \int d^2\vect{a} \cdot \vect{j}
+=\int_0^{s} ds' \int_0^{2\pi}d\theta \sqrt{g} \vect{j}\cdot\nabla\zeta,
+\label{eq:I_definition}
+\end{equation}
+where $\theta$ is a poloidal angle, the integrand is evaluated at $s'$ rather than $s$, and
+\begin{equation}
+\sqrt{g} = \frac{\partial \vect{r}}{\partial s} \cdot \frac{\partial\vect{r}}{\partial\theta} \times \frac{\partial\vect{r}}{\partial\zeta}
+= \frac{1} {\nabla s \cdot \nabla\theta\times\nabla\zeta}
+\end{equation}
+is the Jacobian of the $(s,\theta,\zeta)$ coordinates. 
+It turns out to be convenient to write (\ref{eq:I_definition}) in differential rather than integral form, by applying $d/ds$:
+\begin{equation}
+\frac{dI}{ds}
+= \int_0^{2\pi}d\theta \sqrt{g} \vect{j}\cdot\nabla\zeta.
+\label{eq:I_differential}
+\end{equation}
+These expressions so far are all valid for any angle coordinates $(\theta,\zeta)$ (\vmec, Boozer, {\ttfamily pest}, Hamada, etc.)
+
+Next, consider that to leading order in $\rho/L \ll 1$, where $\rho$ is a typical gyroradius and $L$ is a typical equilibrium scale length,
+the current perpendicular to $\vect{B}$ is given by the diamagnetic current:
+\begin{equation}
+\vect{j}_\perp = \frac{1}{B^2} \frac{dp}{ds} \vect{B}\times\nabla s,
+\end{equation}
+where $p(s)$ is the total pressure.
+This result can be obtained, for example, by applying $\vect{B}\times(\ldots)$ to the MHD equilibrium relation 
+$\vect{j}\times\vect{B} = \nabla p$. Therefore the total current vector is
+\begin{equation}
+\vect{j} = \frac{j_{||}}{B} \vect{B} +  \frac{1}{B^2} \frac{dp}{ds} \vect{B}\times\nabla s.
+\end{equation}
+Substituting this result into (\ref{eq:I_differential}),
+\begin{equation}
+\frac{dI}{ds}=
+\int_0^{2\pi}d\theta \sqrt{g} 
+\left[
+\frac{j_{||}}{B} \vect{B} \cdot\nabla\zeta +  \frac{B_\theta}{B^2} \frac{dp}{ds} \nabla\theta \times\nabla s\cdot\nabla\zeta
+\right],
+\label{eq:I2}
+\end{equation}
+where to get the last term we have expressed $\vect{B}$ in components
+\begin{equation}
+\vect{B} = B_s \nabla s + B_\theta \nabla \theta + B_\zeta \nabla\zeta.
+\label{eq:B_components}
+\end{equation}
+The important message from (\ref{eq:I2}) is that the total toroidal current $I$ needed for \vmec~consists
+ not only of the parallel current determined by neoclassical physics (the first right-hand-side term), but
+also by the diamagnetic current $\propto dp/ds$ in the last term.
+
+While the calculation so far is true for any angle coordinates $(\theta,\zeta)$,
+for the rest of this section it is convenient to use Boozer coordinates.
+The main result will turn out to be independent of the choice of angle coordinates.
+In any straight-field-line coordinates such as Boozer coordinates, the magnetic field can be written as
+\begin{equation}
+\vect{B} = \frac{d\psi}{ds} \left[ \nabla s \times\nabla \theta + \iota \nabla \zeta\times\nabla s\right],
+\label{eq:straight_field_lines}
+\end{equation}
+where $2\pi\psi$ is the toroidal flux enclosed by surface $s$, and $\iota(s)$ is the rotational transform. Hence, the geometric factor appearing
+in the first right-hand-side term of (\ref{eq:I2}) is
+\begin{equation}
+\vect{B}\cdot\nabla\zeta =  \frac{d\psi}{ds}  \nabla s \times\nabla \theta \cdot\nabla\zeta = \frac{d\psi}{ds} \frac{1}{\sqrt{g}},
+\end{equation}
+and so (\ref{eq:I2}) reduces to
+\begin{equation}
+\frac{dI}{ds} =
+ \int_0^{2\pi}d\theta 
+\left[
+\frac{d\psi}{ds}
+\frac{j_{||}}{B}  -  \frac{B_\theta}{B^2} \frac{dp}{ds} 
+\right].
+\label{eq:I3}
+\end{equation}
+
+Furthermore, in Boozer coordinates, $B_\theta$ and $B_\zeta$ in (\ref{eq:B_components})
+are flux functions, i.e. they depend only on $s$,
+and we can show that $B_\theta$ is related to $I(s)$ as follows.
+The curl of (\ref{eq:B_components}) is
+\begin{equation}
+\nabla\times\vect{B} =\nabla B_s \times \nabla s + \frac{d B_\theta}{ds} \nabla s \times \nabla \theta + \frac{d B_\zeta}{ds} \nabla s \times \nabla\zeta.
+\end{equation}
+Substituting this expression into Ampere's Law $\mu_0 \vect{j} = \nabla\times\vect{B}$,
+and using the result to eliminate $\vect{j}$ in 
+(\ref{eq:I_definition}),
+\begin{align}
+\mu_0 I(s) &= \int_0^{s} ds' \int_0^{2\pi}d\theta \sqrt{g} 
+\left[ 
+\frac{\partial B_s}{\partial\theta}
+\nabla \theta \times \nabla s \cdot\nabla\zeta + \frac{d B_\theta}{ds} \nabla s \times \nabla \theta \cdot\nabla\zeta
+\right] \\
+&= \int_0^{s} ds' \int_0^{2\pi}d\theta 
+\left[ -
+\frac{\partial B_s}{\partial\theta}
++ \frac{d B_\theta}{ds} 
+\right] = \int_0^{s} ds' \int_0^{2\pi}d\theta 
+ \frac{d B_\theta}{ds}  \nonumber \\
+ &=2\pi [ B_\theta(s) - B_\theta(0) ]. \nonumber
+\end{align}
+At the magnetic axis ($s=0$), $B_\theta$ must vanish, since in (\ref{eq:B_components}) it multiplies $\nabla\theta$ which diverges on axis, and the product
+must be regular. Hence,
+\begin{equation}
+B_\theta (s) = \frac{\mu_0 I(s)}{2\pi}.
+\end{equation}
+Using this result in (\ref{eq:I3}), and applying a toroidal average $(2\pi)^{-1} \int_0^{2\pi} d\zeta (\ldots)$,
+\begin{equation}
+ \frac{dI}{ds} =
+ \frac{1}{2\pi}
+\frac{d\psi}{ds}
+\int_0^{2\pi}d\theta  \int_0^{2\pi} d\zeta \frac{j_{||}}{B}
+-
+\frac{\mu_0 I}{4\pi^2}
+\frac{dp}{ds} 
+\int_0^{2\pi}d\theta  \int_0^{2\pi} d\zeta
+ \frac{1}{B^2} .
+\label{eq:I4}
+\end{equation}
+
+The angular averages in this last expression can be written in terms of the flux surface average, which for any quantity $Q$
+is
+\begin{equation}
+\langle Q \rangle
+= \frac{ \int_0^{2\pi}d\theta \int_0^{2\pi} d\zeta \sqrt{g} Q}{ \int_0^{2\pi}d\theta \int_0^{2\pi} d\zeta \sqrt{g}}
+=\frac{ \int_0^{2\pi}d\theta \int_0^{2\pi} d\zeta \sqrt{g} (Q/B^2)}{ \int_0^{2\pi}d\theta \int_0^{2\pi} d\zeta /B^2}.
+\label{eq:FSA}
+\end{equation}
+In the last equation, we have used the fact that the Jacobian in Boozer coordinates is $\sqrt{g} = (d\psi / ds) (B_\zeta + \iota B_\theta) / B^2$,
+which follows from the product of (\ref{eq:B_components}) and (\ref{eq:straight_field_lines}).
+From (\ref{eq:FSA}) we see that
+\begin{equation}
+\langle B^2 \rangle = \frac{ 4 \pi^2}{ \int_0^{2\pi}d\theta \int_0^{2\pi} d\zeta /B^2}.
+\label{eq:FSAB2}
+\end{equation}
+Using (\ref{eq:FSA})-(\ref{eq:FSAB2}), (\ref{eq:I4}) can be written
+\begin{equation}
+\boxed{
+ \frac{dI}{ds} 
+ +\frac{\mu_0 I}{\langle B^2 \rangle}
+\frac{dp}{ds} 
+ =
+2\pi
+\frac{d\psi}{ds}
+\frac{ \langle j_{||} B \rangle} {\langle B^2 \rangle}.
+}
+\label{eq:I5}
+\end{equation}
+This result is the key equation for relating
+the current density $\langle j_{||} B \rangle$ from a neoclassical code to the radial profile 
+of total current in an MHD equilibrium code.
+While we used Boozer angles to derive this result,% main result (\ref{eq:main_result}),
+%all the expressions from (\ref{eq:I5})-(\ref{eq:main_result}) are 
+it is independent of any particular choice of angles.
+
+%Since $I$ appears both with and without a radial derivative in (\ref{eq:I5}), some thought needs to be given to
+There are several ways to implement (\ref{eq:I5}) numerically, which we will now describe.
+In each case, an iteration must be performed between the MHD equilibrium code and the bootstrap current code.
+We will use a subscript $i$ to denote the iteration step.
+
+\subsection{Low $\beta$ approximation}
+It can be seen that the $dp/ds$ term in (\ref{eq:I5}) is smaller than the $dI/ds$ term preceding it by a factor of $\beta$.
+Therefore for $\beta\ll 1$ it is a reasonable approximation to neglect the $dp/ds$ term. Then
+the current profile is updated according to
+\begin{equation}
+ \frac{dI_{i+1}}{ds} 
+ =
+2\pi
+\frac{d\psi}{ds}
+\frac{ \langle j_{||} B \rangle_i} {\langle B_i^2 \rangle}.
+\label{eq:iteration_low_beta}
+\end{equation}
+This is the approach adopted in \bootsj.
+
+\subsection{Lagging the $dp/ds$ term}
+A more accurate approach to solving (\ref{eq:I5}) numerically is to evaluate the updated $dI/ds$ term using the $dp/ds$ term
+from the previous iteration:
+\begin{equation}
+ \frac{dI_{i+1}}{ds} 
+ =-\frac{\mu_0 I_i}{\langle B_{i}^2 \rangle}
+\frac{dp}{ds} 
++
+2\pi
+\frac{d\psi}{ds}
+\frac{ \langle j_{||} B \rangle_{i}} {\langle B_{i}^2 \rangle}.
+\label{eq:iteration_lag}
+\end{equation}
+ For $\beta\ll1$ this iteration should converge rapidly since the $dp/ds$ term is small, and since the factor of $I$ in the $dp/ds$ term is smoother than $dI/ds$. This is the approach that is used for the \stellopt~\vboot~iteration using \sfincs.
+
+\subsection{Integrating factor}
+A third approach to solving (\ref{eq:I5}) is to interpret this expression as an ordinary differential equation for $I(s)$, introducing an integrating factor:
+\begin{equation}
+\frac{d}{ds} \left( I F\right)  =
+2\pi F
+\frac{d\psi}{ds}
+\frac{ \langle j_{||} B \rangle} {\langle B^2 \rangle},
+\label{eq:main_result_differential}
+\end{equation}
+where the integrating factor is
+\begin{equation}
+F(s) =   \exp\left( \mu_0 \int_0^s \frac{ds'}{\langle B^2 \rangle} \frac{dp}{ds} \right).
+\end{equation}
+(Again, the integrand is evaluated at $s'$ rather than $s$.)
+One can see from this definition that $F = 1 + \mathcal{O}(\beta)$.
+Imposing the boundary condition $I(0)=0$
+(there is no enclosed toroidal current on the magnetic axis),
+the solution to (\ref{eq:main_result_differential}) is then
+\begin{equation}
+ I(s)  = \frac{2\pi}{F(s)} \int_0^s ds''
+F
+\frac{d\psi}{ds}
+\frac{ \langle j_{||} B \rangle} {\langle B^2 \rangle},
+\label{eq:main_result}
+\end{equation}
+where the integrand is evaluated at $s''$. From this expression,
+we obtain the iterative scheme
+\begin{equation}
+ I_{i+1}(s)  = \frac{2\pi}{F_i(s)} \int_0^s ds''
+F_i
+\frac{d\psi}{ds}
+\frac{ \langle j_{||} B \rangle_i} {\langle B_i^2 \rangle},
+\label{eq:iteration_integrating_factor}
+\end{equation}
+
+\section{VMEC definitions}
+
+
+
+The current profile is provided to \vmec~using two quantities. The first is the number \curtor, which is
+the total toroidal current inside the outermost \vmec~magnetic surface. My understanding of \vmec's sign convention is
+that \curtor~is positive when the current is in the $\nabla\zeta$ direction, where $\zeta$ is the toroidal angle
+used in \vmec~(also called $\phi$ or $v$ in the code and its documentation).
+I also believe \vmec's $\zeta$ always increases in the counter-clockwise direction when the plasma
+is viewed from above, so $(R,\zeta,Z)$ is a right-handed system.
+For comparison, (\ref{eq:I_definition}) indicates that $I(s)$ is positive if the current is in the direction
+$\sqrt{g} \nabla\zeta$, which is opposite to the $\nabla \zeta$ direction if $\sqrt{g} < 0$. 
+In my understanding, $\sqrt{g}$ is \emph{always} $<0$ in
+\vmec~output.
+(The notation $\sqrt{g}$ is confusing, since square roots are normally defined to be positive.)
+Thus, 
+\begin{equation}
+\mathtt{curtor} = \mathtt{signgs} \;I(1),
+\label{eq:curtor}
+\end{equation}
+where {\ttfamily signgs}$=- 1$ is the 
+name for the sign of $\sqrt{g}$ in the \vmec~{\ttfamily wout*.nc} output file.
+In (\ref{eq:curtor}) we have used the \vmec~convention that $s=1$ is the
+outermost magnetic surface in the code.
+The particular definition of $s$ used in \vmec~is that $s$ is the toroidal flux
+normalized to range from 0 on the magnetic axis to 1 at the outermost surface.
+
+
+The other relevant \vmec~input parameters are \ac~or {\ttfamily ac\_aux\_f}; I'll write just \ac~here 
+to denote whichever one is used based on the {\ttfamily pcurr\_type} parameter. The profile determined by \ac~(using a power series, spline, or other function) corresponds to 
+$dI/ds$ up to an overall scale factor.
+The \ac~profile is always scaled by \vmec~so the total current at the outermost surface is \curtor.
+Hence,
+\begin{equation}
+\frac{dI/ds}{(dI/ds)_{s=1}}
+=\frac{\mathtt{ac}(s)}{\mathtt{ac}(1)}.
+\end{equation}
+We can therefore set \ac~equal to (\ref{eq:iteration_low_beta}), to (\ref{eq:iteration_lag}), or to the radial derivative
+of (\ref{eq:main_result}) (times any constant.)
+
+To evaluate any of these three expressions, we need $d\psi/ds$.
+Since $s\propto \psi$ in \vmec,
+$d\psi/ds$ is just the constant $\psi_{edge}$,
+the toroidal flux at the outermost magnetic surface.
+However, we must be careful about the sign.
+Applying the operation
+$ \int_0^1 ds \int_0^{2\pi} d\theta \sqrt{g} \nabla\zeta \cdot (\ldots)$
+to (\ref{eq:straight_field_lines}) gives
+\begin{equation}
+\int_0^1 ds \int_0^{2\pi} d\theta \sqrt{g} \vect{B} \cdot \nabla\zeta
+= 
+\int_0^1 ds \int_0^{2\pi} d\theta \sqrt{g} 
+\frac{d\psi}{ds}  \nabla s \times\nabla \theta \cdot \nabla\zeta
+=2 \pi \frac{d\psi}{ds} = 2\pi \psi_{edge}.
+\end{equation}
+From this equation, we see the sign convention for $d\psi/ds$ in (\ref{eq:main_result})
+is that a positive value corresponds to the magnetic field pointing in the direction
+$\sqrt{g} \nabla\zeta$.
+In contrast, I believe \vmec's convention is that the output toroidal flux variable {\ttfamily phi}
+is positive if the magnetic field points in the direction
+$\nabla\zeta$. Also, {\ttfamily phi} is the flux \emph{not} divided by $2\pi$, in contrast to $\psi$ in this note.
+Hence, the value of $d\psi/ds$ to use in (\ref{eq:main_result}) is
+\begin{equation}
+\frac{d\psi}{ds} = \mathtt{signgs}\frac{\mathtt{phi}(s=1)}{2\pi}.
+\end{equation}
+Note that the output quantity {\ttfamily phips} differs from {\ttfamily phi}
+by a factor $2\pi${\ttfamily signgs}, so we could equivalently use $d\psi/ds = \mathtt{phips}$.
+
+
+%\bibliographystyle{plain}
+%\bibliography{computing_vmec_ac_profile_from_a_bootstrap_current_code}
+
+\begin{thebibliography}{1}
+
+\bibitem{LandremanCatto}
+M~Landreman and P~J Catto.
+\newblock {\em Phys. Plasmas}, {\bf 19}, 056103 (2012).
+
+\end{thebibliography}
+
+\end{document} 

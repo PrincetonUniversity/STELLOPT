@@ -30,9 +30,10 @@
       USE beams3d_runtime, ONLY: BEAMS3D_VERSION
 !DEC$ ENDIF        
 !DEC$ IF DEFINED (REGCOIL)
-      USE regcoil_variables, ONLY: rc_rmnc_stellopt, rc_rmns_stellopt, &
-                                   rc_zmnc_stellopt, rc_zmns_stellopt, &
-                                   rc_nfp => nfp
+      USE regcoil_variables, ONLY: rc_nfp => nfp, rmnc_coil, rmns_coil, zmns_coil, zmnc_coil, mnmax_coil, xm_coil, xn_coil, verbose, regcoil_nml
+      !USE regcoil_variables, ONLY: rc_rmnc_stellopt, rc_rmns_stellopt, &
+      !                             rc_zmnc_stellopt, rc_zmns_stellopt, &
+      !                             rc_nfp => nfp
 !DEC$ ENDIF
       
 !-----------------------------------------------------------------------
@@ -91,7 +92,7 @@
 !            lphi_f_opt         Logical array to control PHI_AUX_F variation (Electrostatic potential)
 !            lah_f_opt          Logical array to control AH_AUX_F variation
 !            lat_f_opt          Logical array to control AT_AUX_F variation
-!            lcoil_spline       Logical array to control coil spline knot variation
+!            lcoil_spline       Logical array to control coil spline control point variation
 !            lwindsurf          Logical to embed splined coils in a winding surface
 !            windsurfname       Character string naming file containing winding surface
 !            lbound_opt         Logical array to control Boundary variation
@@ -268,6 +269,7 @@
                          ne_opt, te_opt, ti_opt, th_opt, zeff_opt, &
                          ne_type, te_type, ti_type, th_type, &
                          beamj_type, bootj_type, zeff_type, &
+                         bootcalc_type, sfincs_s, sfincs_min_procs, sfincs_Er_option, vboot_tolerance, &
                          ne_min, te_min, ti_min, th_min, beamj_f_min, &
                          bootj_f_min, zeff_min, zeff_f_min, &
                          ne_max, te_max, ti_max, th_max, beamj_f_max, &
@@ -286,6 +288,9 @@
                          coil_splinefx,coil_splinefy,coil_splinefz,&
                          coil_splinefx_min,coil_splinefy_min,coil_splinefz_min,&
                          coil_splinefx_max,coil_splinefy_max,coil_splinefz_max,&
+                         lxval_opt, xval, dxval_opt, xval_min, xval_max, &
+                         lyval_opt, yval, dyval_opt, yval_min, yval_max, &
+                         target_x, sigma_x, target_y, sigma_y, &
                          target_phiedge, sigma_phiedge, &
                          target_rbtor, sigma_rbtor, &
                          target_r0, sigma_r0, target_z0, sigma_z0, target_b0, sigma_b0, &
@@ -404,9 +409,10 @@
       INTEGER, INTENT(in) :: ithread
       LOGICAL :: lexist
       INTEGER :: i, ierr, iunit, local_master
+      CHARACTER(LEN=1000) :: line
 
       ! Variables used in regcoil section to parse nescin spectrum
-      INTEGER :: ii, jj
+      INTEGER :: imn, m, n
 
       ! Initializations to default values
       nfunc_max       = 5000
@@ -423,6 +429,8 @@
       noptimizers     = -1
       refit_param     = 0.75
       rho_exp         = 4
+      lxval_opt       = .FALSE.
+      lyval_opt       = .FALSE.
       lkeep_mins      = .FALSE.
       lrefit          = .FALSE.
       lphiedge_opt    = .FALSE.
@@ -548,6 +556,7 @@
          bound_min       = -bigno;  bound_max       = bigno
          delta_min       = -bigno;  delta_max       = bigno
       END IF
+      xval            = 0.0   ;  yval            = 0.0
       mix_ece_min     = 0.0   ;  mix_ece_max     = 1.0
       ne_min          = -bigno;  ne_max          = bigno
       zeff_min        = -bigno;  zeff_max        = bigno
@@ -592,6 +601,7 @@
       th_type         = 'akima_spline'
       beamj_type      = 'power_series'
       bootj_type      = 'power_series'
+      bootcalc_type   = 'bootsj'
       emis_xics_type  = 'power_series'
       ne_opt(0:20)       = 0.0
       zeff_opt(0:20)     = 0.0
@@ -615,11 +625,15 @@
       phi_aux_s(:)    = -1.0
       phi_aux_f(:)    = 0.0
       beamj_aux_s(:)   = -1.0
-      beamj_aux_s(1:5) = (/0.0,0.25,0.50,0.75,1.0/)
+      ! beamj_aux_s(1:5) = (/0.0,0.25,0.50,0.75,1.0/)
       beamj_aux_f(:)   = 0.0
       bootj_aux_s(:)   = -1.0
-      bootj_aux_s(1:5) = (/0.0,0.25,0.50,0.75,1.0/)
+      ! bootj_aux_s(1:5) = (/0.0,0.25,0.50,0.75,1.0/)
       bootj_aux_f(:)   = 0.0
+      sfincs_s        = -1 
+      sfincs_s(1:4)   = (/ 0.2, 0.4, 0.6, 0.8 /)
+      vboot_tolerance = 0.01
+      sfincs_min_procs = 1
       emis_xics_s(1:5) = (/0.0,0.25,0.50,0.75,1.0/)
       emis_xics_f(:)   = 0.0
       coil_splinesx(:,:) = -1
@@ -628,13 +642,17 @@
       coil_splinefx(:,:) = 0
       coil_splinefy(:,:) = 0
       coil_splinefz(:,:) = 0
-      coil_nknots(:)  = 0
+      coil_nctrl(:)  = 0
       coil_type(:)    = 'U'    ! Default to "unknown"
       windsurfname    = ''
       windsurf%mmax   = -1
       windsurf%nmax   = -1
       mboz            = 64
       nboz            = 64
+      target_x        = 0.0
+      sigma_x         = bigno
+      target_y        = 0.0
+      sigma_y         = bigno
       target_phiedge  = 0.0
       sigma_phiedge   = bigno
       target_rbtor    = 0.0
@@ -914,7 +932,12 @@
       CALL safe_open(iunit,istat,TRIM(filename),'old','formatted')
       IF (istat /= 0) CALL handle_err(FILE_OPEN_ERR,TRIM(filename),istat)
       READ(iunit,NML=optimum,IOSTAT=istat)
-      IF (istat /= 0) CALL handle_err(NAMELIST_READ_ERR,'OPTIMUM in: '//TRIM(filename),istat)
+      IF (istat /= 0) THEN
+         backspace(iunit)
+         read(iunit,fmt='(A)') line
+         write(6,'(A)') 'Invalid line in namelist: '//TRIM(line)
+         CALL handle_err(NAMELIST_READ_ERR,'OPTIMUM in: '//TRIM(filename),istat)
+      END IF
       CALL FLUSH(iunit)
       CLOSE(iunit)
 
@@ -931,6 +954,7 @@
       th_type = ADJUSTL(th_type)
       beamj_type = ADJUSTL(beamj_type)
       bootj_type = ADJUSTL(bootj_type)
+      bootcalc_type = ADJUSTL(bootcalc_type)
 
       ! Coil Optimization
       IF (ANY(ANY(lcoil_spline,2),1)) THEN
@@ -944,17 +968,42 @@
 
          ! Count knots, error check
          DO i=1,nigroup
-            coil_nknots(i) = COUNT(coil_splinesx(i,:) >= 0)
-            IF ((coil_nknots(i) > 0).AND.(coil_nknots(i) < 4)) &
-                 CALL handle_err(KNOT_DEF_ERR, 'read_stellopt_input', coil_nknots(i))
-            IF (COUNT(coil_splinesy(i,:) >= 0) .NE. coil_nknots(i)) &
-                 CALL handle_err(KNOT_MISMATCH_ERR, 'read_stellopt_input', coil_nknots(i))
-            IF ((.NOT.lwindsurf) .AND. (COUNT(coil_splinesz(i,:) >= 0) .NE. coil_nknots(i))) &
-                 CALL handle_err(KNOT_MISMATCH_ERR, 'read_stellopt_input', coil_nknots(i))
-            IF (ANY(lcoil_spline(i,coil_nknots(i)+1:maxcoilknots))) &
-                 CALL handle_err(KNOT_MISMATCH_ERR, 'read_stellopt_input', coil_nknots(i))
-         END DO
-      ENDIF
+            n = COUNT(coil_splinesx(i,:) >= 0.0)
+            coil_nctrl(i) = n - 4
+            IF ((n > 0).AND.(n < 4)) &
+                 CALL handle_err(KNOT_DEF_ERR, 'read_stellopt_input', n)
+            IF (COUNT(coil_splinesy(i,:) >= 0.0) - 4 .NE. coil_nctrl(i)) &
+                 CALL handle_err(KNOT_MISMATCH_ERR, 'read_stellopt_input', coil_nctrl(i))
+            IF ((.NOT.lwindsurf) .AND. (COUNT(coil_splinesz(i,:) >= 0.0) - 4 .NE. coil_nctrl(i))) &
+                 CALL handle_err(KNOT_MISMATCH_ERR, 'read_stellopt_input', coil_nctrl(i))
+            IF (ANY(lcoil_spline(i,coil_nctrl(i)+1:maxcoilctrl))) &
+                 CALL handle_err(KNOT_MISMATCH_ERR, 'read_stellopt_input', coil_nctrl(i))
+            IF (n.GE.4) THEN
+               DO m=2,n
+                  IF (coil_splinesx(i,m).LT.coil_splinesx(i,m-1)) &
+                       CALL handle_err(KNOT_ORDER_ERR, 'read_stellopt_input', m)
+                  IF (coil_splinesy(i,m).LT.coil_splinesy(i,m-1)) &
+                       CALL handle_err(KNOT_ORDER_ERR, 'read_stellopt_input', m)
+               ENDDO
+               IF ((coil_splinesx(i,2).NE.coil_splinesx(i,1)) .OR. &
+                   (coil_splinesx(i,3).NE.coil_splinesx(i,1)) .OR. &
+                   (coil_splinesx(i,4).NE.coil_splinesx(i,1))) &
+                  CALL handle_err(KNOT_CONST_ERR, 'read_stellopt_input', i)
+               IF ((coil_splinesx(i,n-1).NE.coil_splinesx(i,n)) .OR. &
+                   (coil_splinesx(i,n-2).NE.coil_splinesx(i,n)) .OR. &
+                   (coil_splinesx(i,n-3).NE.coil_splinesx(i,n))) &
+                  CALL handle_err(KNOT_CONST_ERR, 'read_stellopt_input', i)
+               IF ((coil_splinesy(i,2).NE.coil_splinesy(i,1)) .OR. &
+                   (coil_splinesy(i,3).NE.coil_splinesy(i,1)) .OR. &
+                   (coil_splinesy(i,4).NE.coil_splinesy(i,1))) &
+                  CALL handle_err(KNOT_CONST_ERR, 'read_stellopt_input', i)
+               IF ((coil_splinesy(i,n-1).NE.coil_splinesy(i,n)) .OR. &
+                   (coil_splinesy(i,n-2).NE.coil_splinesy(i,n)) .OR. &
+                   (coil_splinesy(i,n-3).NE.coil_splinesy(i,n))) &
+                  CALL handle_err(KNOT_CONST_ERR, 'read_stellopt_input', i)
+            ENDIF !n ge 4
+         END DO !i
+      ENDIF !lcoil_spline
 
       ! REGCOIL winding surface optimization
       ! If targeting chi2_b on the plasma boundary AND varying the winding
@@ -963,34 +1012,54 @@
 
 !DEC$ IF DEFINED (REGCOIL)
       IF ( ANY(sigma_regcoil_chi2_b < bigno) .and. &
-            ( ANY(lregcoil_rcws_rbound_c_opt) .or. ANY(lregcoil_rcws_rbound_s_opt) .or. &
-              ANY(lregcoil_rcws_zbound_c_opt) .or. ANY(lregcoil_rcws_zbound_s_opt) ) ) THEN
-           rc_nfp = regcoil_num_field_periods
-           regcoil_rcws_rbound_c = 0
-           regcoil_rcws_rbound_s = 0
-           regcoil_rcws_zbound_c = 0
-           regcoil_rcws_zbound_s = 0
-           IF (myid == master) THEN
-             WRITE(6,*) '<----REGCOIL: Reading NESCIN Spectrum from file'
-           end if
-             call regcoil_read_nescin_spectrum(regcoil_nescin_filename, (myid == master)) 
-           IF (myid == master) THEN
-             WRITE(6,*) '<----REGCOIL: Initializing winding surface with NESCIN Spectrum'
-           end if
-           call regcoil_initupdate_nescin_coil_surface((myid == master))
-           ! parse the rc_(r/z)mn(c/s)_stellopt arrays and populate the regcoil_rcws_(r/z)bound_(c/s) 2D arrays
-           do ii = -mpol_rcws,mpol_rcws
-             do jj = -ntor_rcws,ntor_rcws
-              regcoil_rcws_rbound_c(ii, jj) = rc_rmnc_stellopt(ii,jj)
-              regcoil_rcws_rbound_s(ii, jj) = rc_rmns_stellopt(ii,jj)
-              regcoil_rcws_zbound_c(ii, jj) = rc_zmnc_stellopt(ii,jj)
-              regcoil_rcws_zbound_s(ii, jj) = rc_zmns_stellopt(ii,jj)
-           end do
+           ( ANY(lregcoil_rcws_rbound_c_opt) .or. ANY(lregcoil_rcws_rbound_s_opt) .or. &
+           ANY(lregcoil_rcws_zbound_c_opt) .or. ANY(lregcoil_rcws_zbound_s_opt) ) ) THEN
+         rc_nfp = regcoil_num_field_periods
+         regcoil_rcws_rbound_c = 0
+         regcoil_rcws_rbound_s = 0
+         regcoil_rcws_zbound_c = 0
+         regcoil_rcws_zbound_s = 0
+         IF (myid == master) THEN
+            WRITE(6,*) '<----REGCOIL: Reading NESCIN Spectrum from file'
+         end if
+         !call regcoil_read_nescin_spectrum(regcoil_nescin_filename, (myid == master)) 
+         verbose = (myid == master)
+         ! We need to read geometry_option_coil and nescin_filename from the input namelist before the coil surface can be loaded.
+         CALL safe_open(iunit, istat, TRIM(filename), 'old', 'formatted')
+         READ(iunit, nml=regcoil_nml, iostat=istat)
+         CLOSE(iunit)
+         call regcoil_init_coil_surface() 
+         IF (myid == master) THEN
+            WRITE(6,*) '<----REGCOIL: Initializing winding surface with NESCIN Spectrum'
+         end if
+         !call regcoil_initupdate_nescin_coil_surface((myid == master))
+         ! parse the rc_(r/z)mn(c/s)_stellopt arrays and populate the regcoil_rcws_(r/z)bound_(c/s) 2D arrays
+         !do ii = -mpol_rcws,mpol_rcws
+         !   do jj = -ntor_rcws,ntor_rcws
+         !      regcoil_rcws_rbound_c(ii, jj) = rc_rmnc_stellopt(ii,jj)
+         !      regcoil_rcws_rbound_s(ii, jj) = rc_rmns_stellopt(ii,jj)
+         !      regcoil_rcws_zbound_c(ii, jj) = rc_zmnc_stellopt(ii,jj)
+         !      regcoil_rcws_zbound_s(ii, jj) = rc_zmns_stellopt(ii,jj)
+         !   end do
+         !end do
+         do imn = 1, mnmax_coil
+            m = xm_coil(imn)
+            n = xn_coil(imn)/(-regcoil_num_field_periods) ! Convert from regcoil/vmec to nescin convention
+            IF (m < -mpol_rcws .or. m > mpol_rcws .or. n < -ntor_rcws .or. n > ntor_rcws) THEN
+               WRITE(6,*) "Error! (m,n) values in nescin file exceed mpol_rcws or ntor_rcws."
+               WRITE(6,*) "mpol_rcws=",mpol_rcws," ntor_rcws=",ntor_rcws
+               WRITE(6,*) "m=",m,"  n=",n
+               STOP
+            END IF
+            regcoil_rcws_rbound_c(m, n) = rmnc_coil(imn)
+            regcoil_rcws_rbound_s(m, n) = rmns_coil(imn)
+            regcoil_rcws_zbound_c(m, n) = zmnc_coil(imn)
+            regcoil_rcws_zbound_s(m, n) = zmns_coil(imn)
          end do
          
          if (myid==master) then
             WRITE(6,*) '<----STELLOPT_INPUT_MOD: Finished parsing nescoil data and', &
-                       ' assigning stellopt variables'
+                 ' assigning stellopt variables'
          end if
       END IF
 !DEC$ ENDIF
@@ -1312,12 +1381,22 @@
       WRITE(iunit,outint) 'NPOPULATION',npopulation
       WRITE(iunit,outint) 'NOPTIMIZERS',noptimizers
       WRITE(iunit,outboo) 'LKEEP_MINS',lkeep_mins
-      !WRITE(iunit,outboo) 'LREFIT',lrefit
-      !WRITE(iunit,outflt) 'REFIT_PARAM',refit_param
+      WRITE(iunit,outint) 'SFINCS_MIN_PROCS',sfincs_min_procs
+      WRITE(iunit,outflt) 'VBOOT_TOLERANCE',vboot_tolerance
+      WRITE(iunit,outstr) 'BOOTCALC_TYPE',TRIM(bootcalc_type)
       WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
       WRITE(iunit,'(A)') '!       Optimized Quantities'
       WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
-
+      IF (lxval_opt) THEN
+         WRITE(iunit,onevar) 'LXVAL_OPT',lxval_opt,'XVAL_MIN',xval_min,'XVAL_MAX',xval_max
+         IF (dxval_opt > 0) WRITE(iunit,outflt) 'DXVAL_OPT',dxval_opt
+         WRITE(iunit,outflt) 'XVAL',xval
+      END IF
+      IF (lyval_opt) THEN
+         WRITE(iunit,onevar) 'LYVAL_OPT',lyval_opt,'YVAL_MIN',yval_min,'YVAL_MAX',yval_max
+         IF (dyval_opt > 0) WRITE(iunit,outflt) 'DYVAL_OPT',dyval_opt
+         WRITE(iunit,outflt) 'YVAL',yval
+      END IF
       IF (lphiedge_opt) THEN
          WRITE(iunit,onevar) 'LPHIEDGE_OPT',lphiedge_opt,'PHIEDGE_MIN',phiedge_min,'PHIEDGE_MAX',phiedge_max
          IF (dphiedge_opt > 0) WRITE(iunit,outflt) 'DPHIEDGE_OPT',dphiedge_opt
@@ -1575,7 +1654,7 @@
         DO ik = 1, n
            WRITE(iunit,vecvar) 'LTI_F_OPT',ik,lti_f_opt(ik),'TI_F_MIN',ik,ti_f_min(ik),'TI_F_MAX',ik,ti_f_max(ik)
         END DO
-        IF (ANY(dti_f_opt > 0)) WRITE(iunit,"(2X,A,1X,'=',10(1X,E22.14))") 'dti_f_opt',(dti_f_opt(ik), ik = 1, n)
+        IF (ANY(dti_f_opt > 0)) WRITE(iunit,"(2X,A,1X,'=',10(1X,E22.14))") 'DTI_F_OPT',(dti_f_opt(ik), ik = 1, n)
       END IF
       
       IF (ANY(lth_f_opt)) THEN
@@ -1750,23 +1829,23 @@
             IF (ANY(coil_splinesx(n,:)>-1)) THEN
                WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
                WRITE(iunit,'(A,I4.3)') '!       Coil Number ',n
-               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',1X,A)") 'COIL_TYPE(',n,')',COIL_TYPE(n)
+               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',1X,A)") 'COIL_TYPE(',n,')',"'"//COIL_TYPE(n)//"'"
                ik = MINLOC(coil_splinesx(n,:),DIM=1) - 1
-               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',10(2X,L1))") 'LCOIL_SPLINE(',n,',:)',(lcoil_spline(n,m), m = 1, ik)
-               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'DCOIL_SPLINE(',n,',:)',(dcoil_spline(n,m), m = 1, ik)
+               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',10(2X,L1))") 'LCOIL_SPLINE(',n,',:)',(lcoil_spline(n,m), m = 1, ik-4)
+               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'DCOIL_SPLINE(',n,',:)',(dcoil_spline(n,m), m = 1, ik-4)
                WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINESX(',n,',:)',(coil_splinesx(n,m), m = 1, ik)
-               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINEFX(',n,',:)',(coil_splinefx(n,m), m = 1, ik)
+               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINEFX(',n,',:)',(coil_splinefx(n,m), m = 1, ik-4)
                WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINESY(',n,',:)',(coil_splinesy(n,m), m = 1, ik)
-               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINEFY(',n,',:)',(coil_splinefy(n,m), m = 1, ik)
+               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINEFY(',n,',:)',(coil_splinefy(n,m), m = 1, ik-4)
                WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINESZ(',n,',:)',(coil_splinesz(n,m), m = 1, ik)
-               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINEFZ(',n,',:)',(coil_splinefz(n,m), m = 1, ik)
+               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINEFZ(',n,',:)',(coil_splinefz(n,m), m = 1, ik-4)
                ! Min/Max
-               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINEFX_MIN(',n,',:)',(coil_splinefx_min(n,m), m = 1, ik)
-               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINEFX_MAX(',n,',:)',(coil_splinefx_max(n,m), m = 1, ik)
-               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINEFY_MIN(',n,',:)',(coil_splinefy_min(n,m), m = 1, ik)
-               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINEFY_MAX(',n,',:)',(coil_splinefy_max(n,m), m = 1, ik)
-               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINEFZ_MIN(',n,',:)',(coil_splinefz_min(n,m), m = 1, ik)
-               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINEFZ_MAX(',n,',:)',(coil_splinefz_max(n,m), m = 1, ik)
+               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINEFX_MIN(',n,',:)',(coil_splinefx_min(n,m), m = 1, ik-4)
+               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINEFX_MAX(',n,',:)',(coil_splinefx_max(n,m), m = 1, ik-4)
+               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINEFY_MIN(',n,',:)',(coil_splinefy_min(n,m), m = 1, ik-4)
+               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINEFY_MAX(',n,',:)',(coil_splinefy_max(n,m), m = 1, ik-4)
+               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINEFZ_MIN(',n,',:)',(coil_splinefz_min(n,m), m = 1, ik-4)
+               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINEFZ_MAX(',n,',:)',(coil_splinefz_max(n,m), m = 1, ik-4)
             END IF
          END DO
       END IF
@@ -1831,6 +1910,10 @@
          WRITE(iunit,"(2X,A,1X,'=',5(1X,E22.14))") 'BOOTJ_AUX_S',(bootj_aux_s(n), n=1,ik)
          WRITE(iunit,"(2X,A,1X,'=',5(1X,E22.14))") 'BOOTJ_AUX_F',(bootj_aux_f(n), n=1,ik)
       END IF
+      ik = MINLOC(sfincs_s(2:),DIM=1)
+      IF (ik > 2) THEN
+         WRITE(iunit,"(2X,A,1X,'=',5(1X,E22.14))") 'SFINCS_S',(sfincs_s(n), n=1,ik)
+      END IF
       ! Emissivities
       ik = MINLOC(emis_xics_s(2:),DIM=1)
       IF (ik > 2) THEN
@@ -1844,6 +1927,106 @@
          WRITE(iunit,"(2X,A,1X,'=',5(1X,E22.14))") 'PHI_AUX_S',(phi_aux_s(n), n=1,ik)
          WRITE(iunit,"(2X,A,1X,'=',5(1X,E22.14))") 'PHI_AUX_F',(phi_aux_f(n), n=1,ik)
       END IF
+      WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+      WRITE(iunit,'(A)') '!         EQUILIBRIUM/GEOMETRY OPTIMIZATION PARAMETERS' 
+      WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+      IF (target_x < bigno) THEN
+         WRITE(iunit,outflt) 'TARGET_X',target_x
+         WRITE(iunit,outflt) 'SIGMA_X',sigma_x
+      END IF 
+      IF (target_y < bigno) THEN
+         WRITE(iunit,outflt) 'TARGET_Y',target_y
+         WRITE(iunit,outflt) 'SIGMA_Y',sigma_y
+      END IF 
+      IF (sigma_phiedge < bigno) THEN
+         WRITE(iunit,outflt) 'TARGET_PHIEDGE',target_phiedge
+         WRITE(iunit,outflt) 'SIGMA_PHIEDGE',sigma_phiedge
+      END IF 
+      IF (sigma_curtor < bigno) THEN
+         WRITE(iunit,outflt) 'TARGET_CURTOR',target_curtor
+         WRITE(iunit,outflt) 'SIGMA_CURTOR',sigma_curtor
+      END IF 
+      IF (sigma_curtor_max < bigno) THEN
+         WRITE(iunit,outflt) 'TARGET_CURTOR_MAX',target_curtor_max
+         WRITE(iunit,outflt) 'SIGMA_CURTOR_MAX',sigma_curtor_max
+      END IF 
+      IF (sigma_rbtor < bigno) THEN
+         WRITE(iunit,outflt) 'TARGET_RBTOR',target_rbtor
+         WRITE(iunit,outflt) 'SIGMA_RBTOR',sigma_rbtor
+      END IF 
+      IF (sigma_b0 < bigno) THEN
+         WRITE(iunit,outflt) 'TARGET_B0',target_b0
+         WRITE(iunit,outflt) 'SIGMA_B0',sigma_b0
+      END IF 
+      IF (sigma_r0 < bigno) THEN
+         WRITE(iunit,outflt) 'TARGET_R0',target_r0
+         WRITE(iunit,outflt) 'SIGMA_R0',sigma_r0
+      END IF 
+      IF (sigma_z0 < bigno) THEN
+         WRITE(iunit,outflt) 'TARGET_Z0',target_z0
+         WRITE(iunit,outflt) 'SIGMA_Z0',sigma_z0
+      END IF 
+      IF (sigma_volume < bigno) THEN
+         WRITE(iunit,outflt) 'TARGET_VOLUME',target_volume
+         WRITE(iunit,outflt) 'SIGMA_VOLUME',sigma_volume
+      END IF 
+      IF (sigma_beta < bigno) THEN
+         WRITE(iunit,outflt) 'TARGET_BETA',target_beta
+         WRITE(iunit,outflt) 'SIGMA_BETA',sigma_beta
+      END IF 
+      IF (sigma_betapol < bigno) THEN
+         WRITE(iunit,outflt) 'TARGET_BETAPOL',target_betapol
+         WRITE(iunit,outflt) 'SIGMA_BETAPOL',sigma_betapol
+      END IF 
+      IF (sigma_betator < bigno) THEN
+         WRITE(iunit,outflt) 'TARGET_BETATOR',target_betator
+         WRITE(iunit,outflt) 'SIGMA_BETATOR',sigma_betator
+      END IF 
+      IF (sigma_wp < bigno) THEN
+         WRITE(iunit,outflt) 'TARGET_WP',target_wp
+         WRITE(iunit,outflt) 'SIGMA_WP',sigma_wp
+      END IF 
+      IF (sigma_aspect < bigno) THEN
+         WRITE(iunit,outflt) 'TARGET_ASPECT',target_aspect
+         WRITE(iunit,outflt) 'SIGMA_ASPECT',sigma_aspect
+      END IF 
+      IF (sigma_curvature < bigno) THEN
+         WRITE(iunit,outflt) 'TARGET_CURVATURE',target_curvature
+         WRITE(iunit,outflt) 'SIGMA_CURVATURE',sigma_curvature
+      END IF 
+      IF (sigma_kappa < bigno) THEN
+         WRITE(iunit,outflt) 'TARGET_KAPPA',target_kappa
+         WRITE(iunit,outflt) 'SIGMA_KAPPA',sigma_kappa
+         WRITE(iunit,outflt) 'PHI_KAPPA',phi_kappa
+      END IF 
+      IF (sigma_kappa_box < bigno) THEN
+         WRITE(iunit,outflt) 'TARGET_KAPPA_BOX',target_kappa_box
+         WRITE(iunit,outflt) 'SIGMA_KAPPA_BOX',sigma_kappa_box
+         WRITE(iunit,outflt) 'PHI_KAPPA_BOX',phi_kappa_box
+      END IF 
+      IF (sigma_kappa_avg < bigno) THEN
+         WRITE(iunit,outflt) 'TARGET_KAPPA_AVG',target_kappa_avg
+         WRITE(iunit,outflt) 'SIGMA_KAPPA_AVG',sigma_kappa_avg
+      END IF 
+      IF (sigma_aspect_max < bigno) THEN
+         WRITE(iunit,outflt) 'TARGET_ASPECT_MAX',target_aspect_max
+         WRITE(iunit,outflt) 'SIGMA_ASPECT_MAX',sigma_aspect_max
+         WRITE(iunit,outflt) 'WIDTH_ASPECT_MAX',width_aspect_max
+      END IF          
+      IF (sigma_gradp_max < bigno) THEN
+         WRITE(iunit,outflt) 'TARGET_GRADP_MAX',target_gradp_max
+         WRITE(iunit,outflt) 'SIGMA_GRADP_MAX',sigma_gradp_max
+         WRITE(iunit,outflt) 'WIDTH_GRADP_MAX',width_gradp_max
+      END IF          
+      IF (sigma_pmin < bigno) THEN
+         WRITE(iunit,outflt) 'TARGET_PMIN',target_pmin
+         WRITE(iunit,outflt) 'SIGMA_PMIN',sigma_pmin
+         WRITE(iunit,outflt) 'WIDTH_PMIN',width_pmin
+      END IF
+      IF (sigma_curvature_P2 < bigno) THEN
+         WRITE(iunit,outflt) 'TARGET_CURVATURE_P2',target_curvature_P2
+         WRITE(iunit,outflt) 'SIGMA_CURVATURE_P2',sigma_curvature_P2
+      END IF          
       IF (ANY(lbooz)) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          WRITE(iunit,'(A)') '!          BOOZER COORDINATE TRANSFORMATION'  
@@ -2239,99 +2422,6 @@
         ! end of Options for winding surface (Fourier Series) variation
       END IF  ! End of REGCOIL options
 
-
-      WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
-      WRITE(iunit,'(A)') '!         EQUILIBRIUM/GEOMETRY OPTIMIZATION PARAMETERS' 
-      WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
-      IF (sigma_phiedge < bigno) THEN
-         WRITE(iunit,outflt) 'TARGET_PHIEDGE',target_phiedge
-         WRITE(iunit,outflt) 'SIGMA_PHIEDGE',sigma_phiedge
-      END IF 
-      IF (sigma_curtor < bigno) THEN
-         WRITE(iunit,outflt) 'TARGET_CURTOR',target_curtor
-         WRITE(iunit,outflt) 'SIGMA_CURTOR',sigma_curtor
-      END IF 
-      IF (sigma_curtor_max < bigno) THEN
-         WRITE(iunit,outflt) 'TARGET_CURTOR_MAX',target_curtor_max
-         WRITE(iunit,outflt) 'SIGMA_CURTOR_MAX',sigma_curtor_max
-      END IF 
-      IF (sigma_rbtor < bigno) THEN
-         WRITE(iunit,outflt) 'TARGET_RBTOR',target_rbtor
-         WRITE(iunit,outflt) 'SIGMA_RBTOR',sigma_rbtor
-      END IF 
-      IF (sigma_b0 < bigno) THEN
-         WRITE(iunit,outflt) 'TARGET_B0',target_b0
-         WRITE(iunit,outflt) 'SIGMA_B0',sigma_b0
-      END IF 
-      IF (sigma_r0 < bigno) THEN
-         WRITE(iunit,outflt) 'TARGET_R0',target_r0
-         WRITE(iunit,outflt) 'SIGMA_R0',sigma_r0
-      END IF 
-      IF (sigma_z0 < bigno) THEN
-         WRITE(iunit,outflt) 'TARGET_Z0',target_z0
-         WRITE(iunit,outflt) 'SIGMA_Z0',sigma_z0
-      END IF 
-      IF (sigma_volume < bigno) THEN
-         WRITE(iunit,outflt) 'TARGET_VOLUME',target_volume
-         WRITE(iunit,outflt) 'SIGMA_VOLUME',sigma_volume
-      END IF 
-      IF (sigma_beta < bigno) THEN
-         WRITE(iunit,outflt) 'TARGET_BETA',target_beta
-         WRITE(iunit,outflt) 'SIGMA_BETA',sigma_beta
-      END IF 
-      IF (sigma_betapol < bigno) THEN
-         WRITE(iunit,outflt) 'TARGET_BETAPOL',target_betapol
-         WRITE(iunit,outflt) 'SIGMA_BETAPOL',sigma_betapol
-      END IF 
-      IF (sigma_betator < bigno) THEN
-         WRITE(iunit,outflt) 'TARGET_BETATOR',target_betator
-         WRITE(iunit,outflt) 'SIGMA_BETATOR',sigma_betator
-      END IF 
-      IF (sigma_wp < bigno) THEN
-         WRITE(iunit,outflt) 'TARGET_WP',target_wp
-         WRITE(iunit,outflt) 'SIGMA_WP',sigma_wp
-      END IF 
-      IF (sigma_aspect < bigno) THEN
-         WRITE(iunit,outflt) 'TARGET_ASPECT',target_aspect
-         WRITE(iunit,outflt) 'SIGMA_ASPECT',sigma_aspect
-      END IF 
-      IF (sigma_curvature < bigno) THEN
-         WRITE(iunit,outflt) 'TARGET_CURVATURE',target_curvature
-         WRITE(iunit,outflt) 'SIGMA_CURVATURE',sigma_curvature
-      END IF 
-      IF (sigma_kappa < bigno) THEN
-         WRITE(iunit,outflt) 'TARGET_KAPPA',target_kappa
-         WRITE(iunit,outflt) 'SIGMA_KAPPA',sigma_kappa
-         WRITE(iunit,outflt) 'PHI_KAPPA',phi_kappa
-      END IF 
-      IF (sigma_kappa_box < bigno) THEN
-         WRITE(iunit,outflt) 'TARGET_KAPPA_BOX',target_kappa_box
-         WRITE(iunit,outflt) 'SIGMA_KAPPA_BOX',sigma_kappa_box
-         WRITE(iunit,outflt) 'PHI_KAPPA_BOX',phi_kappa_box
-      END IF 
-      IF (sigma_kappa_avg < bigno) THEN
-         WRITE(iunit,outflt) 'TARGET_KAPPA_AVG',target_kappa_avg
-         WRITE(iunit,outflt) 'SIGMA_KAPPA_AVG',sigma_kappa_avg
-      END IF 
-      IF (sigma_aspect_max < bigno) THEN
-         WRITE(iunit,outflt) 'TARGET_ASPECT_MAX',target_aspect_max
-         WRITE(iunit,outflt) 'SIGMA_ASPECT_MAX',sigma_aspect_max
-         WRITE(iunit,outflt) 'WIDTH_ASPECT_MAX',width_aspect_max
-      END IF          
-      IF (sigma_gradp_max < bigno) THEN
-         WRITE(iunit,outflt) 'TARGET_GRADP_MAX',target_gradp_max
-         WRITE(iunit,outflt) 'SIGMA_GRADP_MAX',sigma_gradp_max
-         WRITE(iunit,outflt) 'WIDTH_GRADP_MAX',width_gradp_max
-      END IF          
-      IF (sigma_pmin < bigno) THEN
-         WRITE(iunit,outflt) 'TARGET_PMIN',target_pmin
-         WRITE(iunit,outflt) 'SIGMA_PMIN',sigma_pmin
-         WRITE(iunit,outflt) 'WIDTH_PMIN',width_pmin
-      END IF
-      IF (sigma_curvature_P2 < bigno) THEN
-         WRITE(iunit,outflt) 'TARGET_CURVATURE_P2',target_curvature_P2
-         WRITE(iunit,outflt) 'SIGMA_CURVATURE_P2',sigma_curvature_P2
-      END IF          
       IF (ANY(sigma_extcur < bigno)) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          WRITE(iunit,'(A)') '!          Coil Current Optimization'
@@ -2447,7 +2537,7 @@
          WRITE(iunit,'(A)') '!              Signal is line integrated product of emis. and ion temp.'
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          DO ik = 1, UBOUND(sigma_xics,DIM=1)
-            IF (sigma_xics(ik) < bigno .and. sigma_xics_bright(ik) < bigno) THEN
+            IF (sigma_xics(ik) < bigno .or. sigma_xics_bright(ik) < bigno) THEN
                WRITE(iunit,"(10(2X,A,I3.3,A,1X,'=',1X,E22.14))") &
                   'TARGET_XICS(',ik,')',target_xics(ik),&
                   'SIGMA_XICS(',ik,')',sigma_xics(ik),&

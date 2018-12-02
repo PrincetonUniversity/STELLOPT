@@ -26,8 +26,7 @@ release:
 debug:
 	@echo "Beginning debug compilation and archiving of libstell"
 	@-(umask 022; rm -f $(LIB_DIR); ln -fs $(DBG_PATH) $(LIB_DIR) 2> /dev/null; umask 077)
-	@touch_debug
-	@cd $(DBG); rm -f *.f90 *.c; rm -f $(MAKE); ln -fs ../$(MAKE) .; make -f $(MAKE) $(EXE_F) FLAGS="$(FLAGS_D) $(MOD1_PATH)" TYPE="debug" LOCTYPE="Debug" 
+	@cd $(DBG); rm -f *.f *.f90 *.c; rm -f $(MAKE); ln -fs ../$(MAKE) .; make -f $(MAKE) $(EXE_F) FLAGS="$(FLAGS_D) $(MOD1_PATH)" TYPE="debug" LOCTYPE="Debug" 
 	@rm -f $(MYHOME)/$(EXE_F)
 	@-(umask 022; rm -f $(MYHOME)/$(EXE_F); ln -fs $(DBG_PATH)/$(EXE_F) $(MYHOME) 2> /dev/null; umask 077)
 	@echo "Debug version - libstell.a - is now updated"
@@ -61,8 +60,8 @@ shared_release:
 	@cd $(REL); rm -f *.f *.f90 *.c; rm -f $(MAKE); ln -fs ../$(MAKE) .; make -f $(MAKE) $(EXE_F_SHARE) FLAGS="$(FLAGS_R) $(MOD1_PATH)" TYPE="release" LOCTYPE="Release"
 	@rm -f $(REL)\*.f; rm -f $(REL)\*.f90
 	@rm -f $(MYHOME)/$(EXE_F)
-	@-(umask 022; rm -f $(MYHOME)/$(EXE_F); ln -fs $(REL_PATH)/$(EXE_F) $(MYHOME) 2> /dev/null; umask 077)
-	@-(umask 022; rm -f $(MYHOME)/$(EXE_F_SHARE); ln -fs $(REL_PATH)/$(EXE_F_SHARE) $(MYHOME) 2> /dev/null; umask 077)
+	@-(umask 022; rm -f $(MYHOME)/$(EXE_F); ln -fs $(REL_PATH)/$(EXE_F) $(MYHOME) 2> /dev/null; ln -fs $(PWD1)/../pySTEL/VMECplot.py $(MYHOME)/VMECplot 2> /dev/null; umask 077)
+	@-(umask 022; rm -f $(MYHOME)/$(EXE_F_SHARE); ln -fs $(REL_PATH)/$(EXE_F_SHARE) $(MYHOME) 2> /dev/null; ln -fs $(PWD1)/../pySTEL/STELLOPT.py $(MYHOME)/STELLOPT 2> /dev/null; umask 077)
 	@echo "Shared release version - libstell.so - is now updated"
 	@echo "To free up space, delete all *.o files from Release"
 	@echo ""

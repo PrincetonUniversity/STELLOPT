@@ -292,6 +292,8 @@
          CASE('spec')
          CASE('pies')
          CASE('siesta')
+         CASE('test')
+            ! Do nothing
       END SELECT
       ! Setup the internal STELLOPT arrays
       IF (EZspline_allocated(phi_spl)) CALL EZspline_free(phi_spl,iflag)

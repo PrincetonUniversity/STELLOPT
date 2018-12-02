@@ -150,6 +150,7 @@
                   ! Setup reset_string
                   reset_string =''
                   lhit = .FALSE.
+                  NS_RESLTN = 0 ! Need to do this otherwise situations arrise which cause problems.
                   CALL runvmec(ictrl,file_str,lscreen,MPI_COMM_MYWORLD,reset_string)
                   CALL FinalizeSurfaceComm(NS_COMM)
                   CALL FinalizeRunVmec(RUNVMEC_COMM_WORLD)
@@ -178,6 +179,7 @@
                ictrl(4) = 0
                ictrl(5) = myseq ! Output file sequence number
                reset_string =''
+               NS_RESLTN = 0 ! Need to do this otherwise situations arrise which cause problems.
                CALL runvmec(ictrl,file_str,lscreen,MPI_COMM_MYWORLD,reset_string)
                LIFFREEB  = .FALSE. ! Already deallocated from before and we need to reset stuff
                CALL FinalizeRunVmec(RUNVMEC_COMM_WORLD) ! We don't allocate the vacuum communicator when we write
@@ -352,6 +354,11 @@
                ier = 0
                CALL stellopt_bootsj(lscreen,ier)
                ier_paraexe = ier
+            CASE('sfincs')
+               proc_string = file_str
+               ier = 0
+               CALL stellopt_sfincs(lscreen,ier)
+               ier_paraexe = ier
             CASE('cobra')
                proc_string = file_str
                ier = 0
@@ -374,6 +381,9 @@
                CALL MPI_COMM_FREE(MPI_COMM_MYWORLD,ierr_mpi)
                IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_paraexe: FREE',ierr_mpi)
                RETURN
+            CASE DEFAULT
+               PRINT *,"Error! stellopt_paraexe called with unknown argument: ",TRIM(code_str)
+               STOP
          END SELECT
          !lscreen = .false.
          IF (myworkid == master) RETURN ! The master process of the Communicator can leave

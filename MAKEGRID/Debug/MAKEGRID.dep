@@ -27,4 +27,54 @@ write_mgrid.o : \
       ../../LIBSTELL/Debug/mgrid_mod.o \
       ../../LIBSTELL/Debug/safe_open_mod.o 
 
+
+
+namelist_input_makegrid.o : \
+      ../../LIBSTELL/Debug/stel_constants.o \
+      makegrid_global.o \
+      sym_check.o \
+      write_mgrid.o
+
+
+interactive_input.o : \
+      makegrid_global.o \
+      write_mgrid.o
+
+
+task_mgrid.o : \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Debug/biotsavart.o \
+      ../../LIBSTELL/Debug/safe_open_mod.o \
+      makegrid_global.o \
+      sym_check.o \
+      write_mgrid.o
+
+
+task_mgrid_rs.o : \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Debug/bsc_T.o \
+      ../../LIBSTELL/Debug/biotsavart.o \
+      ../../LIBSTELL/Debug/safe_open_mod.o \
+      makegrid_global.o \
+      sym_check.o \
+      write_mgrid.o
+
+
+task_circ_tor_grid.o : \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Debug/stel_constants.o \
+      ../../LIBSTELL/Debug/biotsavart.o \
+      makegrid_global.o \
+      write_mgrid.o
+
+
+coil_group_report.o : \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Debug/stel_constants.o \
+      ../../LIBSTELL/Debug/bsc_T.o \
+      sym_check.o 
+
+
+fft_local.o : \
+      ../../LIBSTELL/Debug/stel_kinds.o 
       

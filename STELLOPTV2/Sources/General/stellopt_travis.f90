@@ -52,7 +52,7 @@
       IF (iflag < 0) RETURN
       IF (lscreen) WRITE(6,'(a)') ' ----------------------------  ECE (TRAVIS) CALCULATION  -------------------------'
       SELECT CASE(TRIM(equil_type))
-         CASE('vmec2000','animec','flow','satire','parvmec','paravmec')
+         CASE('vmec2000','animec','flow','satire','parvmec','paravmec','vboot','vmec2000_oneeq')
 !DEC$ IF DEFINED (TRAVIS)
             ! Load equilibrium
             equiname = 'wout_'//TRIM(proc_string)//'.nc'
@@ -128,7 +128,7 @@
 
                ! Set Profiles
                labelType = 'tor_rho'
-               CALL set_nTZ_profs_f77(nrad, rho, ne_prof, te_prof, z_prof, labelType)
+               CALL set_nTZ_profs_f77(nrad, sqrt(rho), ne_prof, te_prof, z_prof, labelType)
 
                ! Set Configuration
                !maxSteps     = 5000   ! upper number of steps on the trajectory
