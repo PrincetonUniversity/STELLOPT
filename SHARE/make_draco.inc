@@ -112,7 +112,7 @@
 #######################################################################
 #            TERPSICHORE Options
 #######################################################################
-  LTERPSICHORE= F
+  LTERPSICHORE= T
   TERPSICHORE_INC = -I$(TERPSICHORE_PATH)
   TERPSICHORE_DIR = $(TERPSICHORE_PATH)
   LIB_TERPSICHORE = libterpsichore.a
@@ -330,10 +330,9 @@ else
 endif
 
 # Handle other codes
-LIB_LINK += $(GENE_LIB) $(COILOPT_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB) $(SFINCS_LIB) $(REGCOIL_LIB)
+LIB_LINK += $(GENE_LIB) $(COILOPT_LIB) $(REGCOIL_LIB) $(SFINCS_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB)
 
 # Add libraries to LIB_LINK
-#LIB_LINK+= $(HOME_BIN)/libstell.a $(LIBS)
 LIB_LINK+= $(LIB_DIR)/$(LOCTYPE)/$(LIB) $(LIBS)
 
 # 3rd Party Libs
@@ -383,10 +382,6 @@ endif
 ifeq ($(MAKECMDGOALS),libstell.so)
   LINK = $(LINK_C)
   LIB_LINK = $(LIB_SHARE) 
-# Note this is needed for reasons
-#  LIB_LINK += -L$(NETCDF_HOME)/lib -lnetcdf -lnetcdff
-#  LIB_LINK += -L$(HDF5_HOME)/lib -lhdf5_hl -lhdf5_fortran -lhdf5 \
-#             -lhdf5hl_fortran 
   COMPILE += -fPIC
   COMPILE_FREE += -fPIC
   INC_PATH = 
