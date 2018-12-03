@@ -30,6 +30,8 @@
   MPI_COMPILE_FREE = mpiifort
   MPI_COMPILE_C = mpiifort 
   MPI_LINK = mpiifort
+  MPI_RUN = srun
+  MPI_RUN_OPTS = -n 8
 
 #######################################################################
 #            NAG Options
