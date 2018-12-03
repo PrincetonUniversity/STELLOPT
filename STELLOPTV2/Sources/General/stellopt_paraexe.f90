@@ -267,7 +267,6 @@
                lcoil_beams        = .FALSE.
                lmgrid_beams       = .FALSE.
                lraw_beams         = .FALSE.
-               lmu_beams          = .FALSE.
                lvessel_beams      = .FALSE.
                lvac_beams         = .FALSE.
                lrestart_beams     = .FALSE.
