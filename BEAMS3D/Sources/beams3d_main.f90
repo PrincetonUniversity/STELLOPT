@@ -60,7 +60,6 @@ PROGRAM BEAMS3D
         lspec = .false.
         lcoil = .false.
         lmgrid = .false.
-        lmu = .false.
         lvessel = .false.
         lvac = .false.
         lrestart = .false.
@@ -202,8 +201,6 @@ PROGRAM BEAMS3D
     CALL MPI_BCAST(lvessel, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
     IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
     CALL MPI_BCAST(lvac, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
-    IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
-    CALL MPI_BCAST(lmu, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
     IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
     CALL MPI_BCAST(lrestart, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
     IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)

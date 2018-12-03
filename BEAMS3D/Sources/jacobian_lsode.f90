@@ -12,7 +12,6 @@
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
       USE beams3d_grid, ONLY: BR_spl, BZ_spl, delta_t
-      USE beams3d_runtime, ONLY: lmu, mu
       USE EZspline_obj
       USE EZspline                                            ! MPI
 !-----------------------------------------------------------------------
