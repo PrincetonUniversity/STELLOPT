@@ -77,15 +77,12 @@ SUBROUTINE beams3d_physics(t, q)
     DOUBLE PRECISION, PARAMETER :: half = 0.5D0
     DOUBLE PRECISION, PARAMETER :: electron_mass = 9.10938356D-31
     DOUBLE PRECISION, PARAMETER :: e_charge      = 1.60217662E-19
-!    DOUBLE PRECISION, PARAMETER :: e_charge_4    = 6.5893345788E-76
-!    DOUBLE PRECISION, PARAMETER :: sqrt_emass    = 9.5443090688E-16
     DOUBLE PRECISION, PARAMETER :: sqrt_pi       = 1.7724538509
-!    DOUBLE PRECISION, PARAMETER :: inv_emass     = 1.0977691228E+30
-      ! For splines
-      INTEGER :: i,j,k
-      REAL*8 :: xparam, yparam, zparam, hx, hy, hz, hxi, hyi, hzi
-      INTEGER, parameter :: ict(8)=(/1,0,0,0,0,0,0,0/)
-      REAL*8 :: fval(1)
+    ! For splines
+    INTEGER :: i,j,k
+    REAL*8 :: xparam, yparam, zparam, hx, hy, hz, hxi, hyi, hzi
+    INTEGER, parameter :: ict(8)=(/1,0,0,0,0,0,0,0/)
+    REAL*8 :: fval(1)
     !-----------------------------------------------------------------------
     !     Begin Function
     !-----------------------------------------------------------------------
@@ -167,56 +164,50 @@ SUBROUTINE beams3d_physics(t, q)
           vcrit_cube = 0
           tau_spit_inv = 0
        END IF
-
-!       IF (.not. lneut) THEN  
-          v_s = 1.5*sqrt(e_charge*ti_temp*inv_mymass)
-          speed = sqrt( vll*vll + 2*moment*modb*inv_mymass )
-          !dve   = speed/tau_spit
-          !dvi   = vcrit_cube/(tau_spit*speed*speed)
-          dve   = speed*tau_spit_inv
-          dvi   = vcrit_cube*tau_spit_inv/(speed*speed)
-          reduction = dve + dvi
+       v_s = 1.5*sqrt(e_charge*ti_temp*inv_mymass)
+       speed = sqrt( vll*vll + 2*moment*modb*inv_mymass )
+       dve   = speed*tau_spit_inv
+       dvi   = vcrit_cube*tau_spit_inv/(speed*speed)
+       reduction = dve + dvi
+       newspeed = speed - reduction*dt
+       !Ebench = half*mymass*newspeed*newspeed/e_charge
+       !IF ((Ebench <= 1000.) .or. (Ebench <= 1.5*te_temp)) THEN !Benchmark Thermalize
+       IF (newspeed < v_s) THEN  ! Thermalize
+          dve       = dve/reduction
+          dvi       = dvi/reduction
+          reduction = (speed - v_s)/dt  ! Thermalize
+          dve       = dve*reduction
+          dvi       = dvi*reduction
           newspeed = speed - reduction*dt
-          !Ebench = half*mymass*newspeed*newspeed/e_charge
-          !IF ((Ebench <= 1000.) .or. (Ebench <= 1.5*te_temp)) THEN !Benchmark Thermalize
-          IF (newspeed < v_s) THEN  ! Thermalize
-             dve       = dve/reduction
-             dvi       = dvi/reduction
-             reduction = (speed - v_s)/dt  ! Thermalize
-             dve       = dve*reduction
-             dvi       = dvi*reduction
-             newspeed = speed - reduction*dt
-             ltherm = .true.
-             PE_lines(mytdex,myline) = PE_lines(mytdex,myline)+half*mymass*dve*dve*dt
-             PI_lines(mytdex,myline) = PI_lines(mytdex,myline)+half*mymass*dvi*dve*dt
-             vll = (newspeed/speed)*vll
-             moment = newspeed*newspeed*moment/(speed*speed)
-             q(4) = vll
-             RETURN
-          END IF
+          ltherm = .true.
           PE_lines(mytdex,myline) = PE_lines(mytdex,myline)+half*mymass*dve*dve*dt
-          PI_lines(mytdex,myline) = PI_lines(mytdex,myline)+half*mymass*dvi*dvi*dt
+          PI_lines(mytdex,myline) = PI_lines(mytdex,myline)+half*mymass*dvi*dve*dt
           vll = (newspeed/speed)*vll
           moment = newspeed*newspeed*moment/(speed*speed)
-          speed = newspeed
+          q(4) = vll
+          RETURN
+       END IF
+       PE_lines(mytdex,myline) = PE_lines(mytdex,myline)+half*mymass*dve*dve*dt
+       PI_lines(mytdex,myline) = PI_lines(mytdex,myline)+half*mymass*dvi*dvi*dt
+       vll = (newspeed/speed)*vll
+       moment = newspeed*newspeed*moment/(speed*speed)
+       speed = newspeed
+
        !---------------------------------------------------------------
        !  Pitch Angle Scattering
        !---------------------------------------------------------------
-          !v_s = half*vcrit_cube/tau_spit
-          v_s = half*vcrit_cube*tau_spit_inv
-          speed_cube = speed*speed*speed
-          zeta_o = vll/speed   ! Record the current pitch.
-          CALL gauss_rand(1,zeta)  ! A random from a standard normal (1,1)
-          sigma = sqrt( 2*v_s*(1.0D0-zeta_o*zeta_o)*dt/speed_cube ) ! The standard deviation.
-          zeta_mean = zeta_o !*(1.0 - (2*v_s*dt)/(speed*speed*speed) )  ! The new mean in the distribution.
-          !zeta_mean = zeta_o *(1.0D0 - (2*v_s*dt)/(speed_cube) )  ! The new mean in the distribution.
-          zeta = zeta*sigma + zeta_mean  ! The new pitch angle.
-!         The pitch angle MUST NOT go outside [-1,1] nor be NaN; but could happen accidentally with the distribution.
-          IF (ABS(zeta) >  0.999999999D+00) zeta =  SIGN(0.999999999D+00,zeta)
-!         Comment out the next 4 lines to turn off pitch angle scattering.
-          vll = zeta*speed
-          moment = half*mymass*(speed*speed - vll*vll)/modb
-!       END IF
+       v_s = half*vcrit_cube*tau_spit_inv
+       speed_cube = speed*speed*speed
+       zeta_o = vll/speed   ! Record the current pitch.
+       CALL gauss_rand(1,zeta)  ! A random from a standard normal (1,1)
+       sigma = sqrt( 2*v_s*(1.0D0-zeta_o*zeta_o)*dt/speed_cube ) ! The standard deviation.
+       zeta_mean = zeta_o !*(1.0 - (2*v_s*dt)/(speed*speed*speed) )  ! The new mean in the distribution.
+       !zeta_mean = zeta_o *(1.0D0 - (2*v_s*dt)/(speed_cube) )  ! The new mean in the distribution.
+       zeta = zeta*sigma + zeta_mean  ! The new pitch angle.
+       !The pitch angle MUST NOT go outside [-1,1] nor be NaN; but could happen accidentally with the distribution.
+       IF (ABS(zeta) >  0.999999999D+00) zeta =  SIGN(0.999999999D+00,zeta)
+       vll = zeta*speed
+       moment = half*mymass*(speed*speed - vll*vll)/modb
 
        ! Now update parallel velocity
        q(4) = vll
@@ -243,63 +234,99 @@ SUBROUTINE beams3d_follow_neut(t, q)
     DOUBLE PRECISION, INTENT(inout) :: t
     DOUBLE PRECISION, INTENT(inout) :: q(4)
     LOGICAL          :: ltest
-    INTEGER          :: ier
-    DOUBLE PRECISION :: rinv, phi_temp, dt_local, ti_temp, ne_temp, tau_inv, &
+    INTEGER          :: ier, l
+    DOUBLE PRECISION :: rinv, phi_temp, dt_local, ti_temp, ne_temp,&
                         s_temp, x0, y0, z0, xw, yw, zw, te_temp
-    DOUBLE PRECISION :: qf(3)
-    REAL*8           :: energy(1), temp(1), sigvii(1), sigvcx(1), sigvcxn(1), tempA(1), sigvei(1)
-    DOUBLE PRECISION, PARAMETER :: dl = 1D-3
+    DOUBLE PRECISION :: qf(3),qs(3),qe(3)
+    INTEGER, PARAMETER :: num_depo = 250
+    DOUBLE PRECISION, PARAMETER :: dl = 5D-3
     DOUBLE PRECISION, PARAMETER :: one = 1
     DOUBLE PRECISION, PARAMETER :: half = 0.5D0
+    DOUBLE PRECISION, parameter :: stepsize(3)=(/0.25,0.05,0.01/)
+    DOUBLE PRECISION :: rlocal(num_depo), plocal(num_depo), zlocal(num_depo)
+    DOUBLE PRECISION :: tilocal(num_depo), telocal(num_depo), nelocal(num_depo)
+    DOUBLE PRECISION :: tau_inv(num_depo), energy(num_depo)
+    DOUBLE PRECISION :: sigvii(num_depo), sigvcx(num_depo), sigvei(num_depo)
     ! For splines
     INTEGER :: i,j,k
     REAL*8 :: xparam, yparam, zparam, hx, hy, hz, hxi, hyi, hzi
     INTEGER, parameter :: ict(8)=(/1,0,0,0,0,0,0,0/)
     REAL*8 :: fval(1)
-!
 
-    dt_local = 10*dl/q(4)  ! Timestep (10 times larger than in plasma)
-    energy(1) = half*mymass*q(4)*q(4)/1000  ! Vll = V_neut (doesn't change durring integration) needed in keV
+    IF (myworkid == master) WRITE(6,*) ' MYID READY TO FOLLOW(0.25): ',myworkid; CALL FLUSH(6);
+
+    energy = half*mymass*q(4)*q(4)*1E-3  ! Vll = V_neut (doesn't change durring integration) needed in keV
     qf(1) = q(1)*cos(q(2))
     qf(2) = q(1)*sin(q(2))
     qf(3) = q(3)
-    ! First follow into plasma
-    DO
-       qf = qf + myv_neut*dt_local
-       q(1) = sqrt(qf(1)*qf(1)+qf(2)*qf(2))
-       q(2) = ATAN2(qf(2),qf(1))
-       q(3) = qf(3)
-       t = t + dt_local
-       phi_temp = MODULO(q(2), phimax)
-       IF (phi_temp < 0) phi_temp = phi_temp + phimax
-       CALL EZspline_isInDomain(S_spl,q(1),phi_temp,q(3),ier)
-       IF (ier==0) THEN
-          s_temp =1.5
-          CALL EZspline_interp(S_spl,q(1),phi_temp,q(3),s_temp,ier)
-          IF (s_temp < one) EXIT
-       END IF
-       IF ((q(1) > 5*rmax)  .or. (q(1) < rmin)) THEN; t = t_end(myline)+dt_local; RETURN; END IF  ! We're outside the grid
+    ! FOLLOW INTO PLASMA
+    DO i = 1, 3
+       dt_local = stepsize(i)/q(4)
+       DO
+          qf = qf + myv_neut*dt_local
+          q(1) = sqrt(qf(1)*qf(1)+qf(2)*qf(2))
+          q(2) = ATAN2(qf(2),qf(1))
+          q(3) = qf(3)
+          t = t + dt_local
+          phi_temp = MODULO(q(2), phimax)
+          IF (phi_temp < 0) phi_temp = phi_temp + phimax
+          CALL EZspline_isInDomain(S_spl,q(1),phi_temp,q(3),ier)
+          IF (ier==0) THEN
+             s_temp =1.5
+             CALL EZspline_interp(S_spl,q(1),phi_temp,q(3),s_temp,ier)
+             IF (s_temp < one) EXIT
+          END IF
+          IF ((q(1) > 5*rmax)  .or. (q(1) < rmin)) THEN; t = t_end(myline)+dt_local; RETURN; END IF  ! We're outside the grid
+       END DO
+      ! Take a step back
+      qf = qf - myv_neut*dt_local
+      t  =  t - dt_local
     END DO
-    ! Take a step back
-    qf = qf - myv_neut*dt_local
-    t  =  t - dt_local
-    ! Setup for high resolution stepping
-    dt_local = dl/q(4)  ! Set high res timestep
-    CALL RANDOM_NUMBER(rand_prob)
-    cum_prob = one
-    ltest = .false.
-    ! Follow into plasma
-    DO
-       qf = qf + myv_neut*dt_local
-       CALL FLUSH(6)
-       q(1) = sqrt(qf(1)*qf(1)+qf(2)*qf(2))
-       q(2) = ATAN2(qf(2),qf(1))
-       q(3) = qf(3)
-       t = t + dt_local
-       phi_temp = MODULO(q(2), phimax)
-       IF (phi_temp < 0) phi_temp = phi_temp + phimax
-       IF ((q(1) > 5*rmax)  .or. (q(1) < rmin)) THEN; t = t_end(myline)+dt_local; RETURN; END IF  ! We're outside the grid
-       CALL R8HERM3xyz(q(1),phi_temp,q(3),&
+    qs=qf
+
+    ! FOLLOW OUT OF PLASMA (note we don't track time)
+    DO i = 1, 3
+       dt_local = stepsize(i)/q(4)
+       DO
+          qf = qf + myv_neut*dt_local
+          q(1) = sqrt(qf(1)*qf(1)+qf(2)*qf(2))
+          q(2) = ATAN2(qf(2),qf(1))
+          q(3) = qf(3)
+          phi_temp = MODULO(q(2), phimax)
+          IF (phi_temp < 0) phi_temp = phi_temp + phimax
+          CALL EZspline_isInDomain(S_spl,q(1),phi_temp,q(3),ier)
+          IF (ier==0) THEN
+             s_temp =0.1
+             CALL EZspline_interp(S_spl,q(1),phi_temp,q(3),s_temp,ier)
+             IF (s_temp > one) EXIT
+          END IF
+          IF ((q(1) > 5*rmax)  .or. (q(1) < rmin)) THEN; t = t_end(myline)+dt_local; RETURN; END IF  ! We're outside the grid
+       END DO
+      ! Take a step back
+      qf = qf - myv_neut*dt_local
+    END DO
+    qe=qf + myv_neut*dt_local
+    
+
+    IF (myworkid == master) WRITE(6,*) '     Setup Arrays: ',myworkid; CALL FLUSH(6);
+    ! Setup Arrays
+    rlocal(1) = SQRT(qs(1)*qs(1)+qs(2)*qs(2))
+    plocal(1) = ATAN2(qs(2),qs(1))
+    zlocal(1) = qs(3)
+    rlocal(num_depo) = SQRT(qe(1)*qe(1)+qe(2)*qe(2))
+    plocal(num_depo) = ATAN2(qe(2),qe(1))
+    zlocal(num_depo) = qe(3)
+    DO i = 2, num_depo-1
+       rlocal(i) = (i-1)*(rlocal(num_depo)-rlocal(1))/REAL(num_depo-1) + rlocal(1)
+       plocal(i) = (i-1)*(plocal(num_depo)-plocal(1))/REAL(num_depo-1) + plocal(1)
+       zlocal(i) = (i-1)*(zlocal(num_depo)-zlocal(1))/REAL(num_depo-1) + zlocal(1)
+    END DO
+    plocal = MODULO(plocal, phimax)
+
+    IF (myworkid == master) WRITE(6,*) '     Comp_profs: ',myworkid; CALL FLUSH(6);
+    ! Compute Profiles
+    DO l = 1, num_depo
+       CALL R8HERM3xyz(rlocal(l),plocal(l),zlocal(l),&
                             TI_spl%x1(1),TI_spl%n1,&
                             TI_spl%x2(1),TI_spl%n2,&
                             TI_spl%x3(1),TI_spl%n3,&
@@ -309,58 +336,65 @@ SUBROUTINE beams3d_follow_neut(t, q)
        CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                        hx,hxi,hy,hyi,hz,hzi,&
                        TI_spl%fspl(1,1,1,1),TI_spl%n1,TI_spl%n2,TI_spl%n3)
-       ti_temp = fval(1)/1000
+       tilocal(l) = fval(1)
        CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                        hx,hxi,hy,hyi,hz,hzi,&
                        TE_spl%fspl(1,1,1,1),TE_spl%n1,TE_spl%n2,TE_spl%n3)
-       te_temp = fval(1)/1000
+       telocal(l) = fval(1)
        CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                        hx,hxi,hy,hyi,hz,hzi,&
                        NE_spl%fspl(1,1,1,1),NE_spl%n1,NE_spl%n2,NE_spl%n3)
-       ne_temp = fval(1)
-       CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
-                       hx,hxi,hy,hyi,hz,hzi,&
-                       S_spl%fspl(1,1,1,1),S_spl%n1,S_spl%n2,S_spl%n3)
-       s_temp = fval(1)
-       IF ((s_temp > one) .and. ltest) EXIT
-       IF ((ti_temp>0).and.(ne_temp>0)) THEN
-          IF (s_temp <= one) ltest = .true.
-          temp(1) = ti_temp! KeV
-          ! This formula comes from the ADAS description of how to use the functions. (M. Gorelenkova)
-          tempA(1) = te_temp + to3*0.000544602984424355*energy(1)
-          ! Arguments to btsigv(irtype,beamchrg,eabeam,tatarg,n,izbeam,iztarg,btsigv, istat )hatom_btsigv.f90
-          ! irtype 1:CX, 2:II
-          ! beamchrg 1:neutral, 2:ion
-          ! eabeam beam energy in keV/nucleon
-          ! tatarg target energy in keV/nucleon
-          ! n array size
-          ! izbeam  Beam Z
-          ! iztarg  Target Z
-          ! btsigv  cross section
-!DEC$ IF DEFINED (NTCC)
-          CALL adas_btsigv(2,1,energy,temp,1,1,1,sigvii,ier)  ! Ion Impact ionization cross-section term.
-          CALL adas_btsigv(1,1,energy,temp,1,1,1,sigvcx,ier)  ! Charge Exchange ionization cross-section term.
-!DEC$ ENDIF
-          ! Arguments to sigvte(zneut,tevec,n1,sigv_adas,istat)
-          ! zneut charge (=1)
-          ! tevec electron temperature [keV]
-          ! n1 array size
-!DEC$ IF DEFINED (NTCC)
-          CALL adas_sigvte_ioniz(1,tempA,1,sigvei,ier)        ! Electron Impact ionization cross-section term.
-!DEC$ ENDIF
-          tau_inv = ((sigvii(1) + sigvcx(1) + sigvei(1))*ne_temp) ! Delete a term if desired. (save a comment)
-          cum_prob = cum_prob*exp(-dt_local*tau_inv)
-          IF (cum_prob < rand_prob) THEN
-             lneut = .false.
-             RETURN
-          END IF
-       END IF
+       nelocal(l) = fval(1)
     END DO
+    tilocal = tilocal*1D-3
+    telocal = telocal*1D-3
+
+    IF (myworkid == master) WRITE(6,*) '     Collisions: ',myworkid; CALL FLUSH(6);
+!DEC$ IF DEFINED (NTCC)
+    ! Arguments to btsigv(irtype,beamchrg,eabeam,tatarg,n,izbeam,iztarg,btsigv, istat )hatom_btsigv.f90
+    ! irtype 1:CX, 2:II
+    ! beamchrg 1:neutral, 2:ion
+    ! eabeam beam energy in keV/nucleon
+    ! tatarg target energy in keV/nucleon
+    ! n array size
+    ! izbeam  Beam Z
+    ! iztarg  Target Z
+    ! btsigv  cross section
+    CALL adas_btsigv(2,1,energy,tilocal,num_depo,1,1,sigvii,ier)  ! Ion Impact ionization cross-section term.
+    CALL adas_btsigv(1,1,energy,tilocal,num_depo,1,1,sigvcx,ier)  ! Charge Exchange ionization cross-section term.
+    ! Arguments to sigvte(zneut,tevec,n1,sigv_adas,istat)
+    ! zneut charge (=1)
+    ! tevec electron temperature [keV]
+    ! n1 array size
+    ! This formula comes from the ADAS description of how to use the functions. (M. Gorelenkova)
+    telocal = telocal + to3*0.000544602984424355*energy
+    CALL adas_sigvte_ioniz(1,telocal,num_depo,sigvei,ier)        ! Electron Impact ionization cross-section term.
+!DEC$ ENDIF
+    tau_inv = ((sigvii + sigvcx + sigvei)*nelocal) ! Delete a term if desired. (save a comment)
+
+    IF (myworkid == master) WRITE(6,*) '     Ionize: ',myworkid; CALL FLUSH(6);
+    ! Calculate Ionization
+    CALL RANDOM_NUMBER(rand_prob)
+    cum_prob = one
+    dt_local = SQRT(SUM((qe-qs)*(qe-qs)))/((num_depo-1)*q(4))
+    tau_inv = EXP(-dt_local*tau_inv)
+    DO i = 1, num_depo
+       cum_prob = cum_prob*tau_inv(i)
+       IF (cum_prob < rand_prob) EXIT
+    END DO
+    qf = qs - myv_neut*dt_local*(i-1)
+    t  =  t - dt_local*(i-1)
+    IF (i < num_depo) THEN
+       lneut=.false.
+       RETURN
+    END IF
+
+    IF (myworkid == master) WRITE(6,*) ' MYID READY TO FINISH: ',myworkid; CALL FLUSH(6);
     ! Follow to wall
     qf = qf - myv_neut*dt_local
     t  =  t - dt_local
     x0 = qf(1); y0 = qf(2); z0 = qf(3)
-    dt_local = 100*dl/q(4)  ! Timestep (100 times larger than in plasma)
+    dt_local = 0.25/q(4)  ! Timestep (100 times larger than in plasma)
     ltest = .FALSE.
     DO
        qf = qf + myv_neut*dt_local
@@ -385,6 +419,7 @@ SUBROUTINE beams3d_follow_neut(t, q)
        q(3) = qf(3)
        IF ((q(1) > 5*rmax)  .or. (q(1) < rmin)) THEN; t = t_end(myline)+dt_local; RETURN; END IF  ! We're outside the grid
     END DO
+    IF (myworkid == master) WRITE(6,*) ' MYID READY TO DONE: ',myworkid; CALL FLUSH(6);
 
     RETURN
 END SUBROUTINE beams3d_follow_neut
