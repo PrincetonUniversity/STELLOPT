@@ -373,16 +373,16 @@ SUBROUTINE beams3d_follow_neut(t, q)
     cum_prob = one
     dt_local = SQRT(SUM((qe-qs)*(qe-qs)))/((num_depo-1)*q(4))
     tau_inv = EXP(-dt_local*tau_inv)
-    DO i = 1, num_depo
+    DO i = 2, num_depo-1
        cum_prob = cum_prob*tau_inv(i)
        IF (cum_prob < rand_prob) EXIT
     END DO
-    qf = qs - myv_neut*dt_local*(i-1)
-    q(1) = rlocal(i)
-    q(2) = plocal(i)
-    q(3) = zlocal(i)
-    t  =  t - dt_local*(i-1)
-    IF (i < num_depo) THEN
+    qf = qs + myv_neut*dt_local*(i-1)
+    t  =  t + dt_local*(i-1)
+    q(1) = SQRT(qf(1)*qf(1)+qf(2)*qf(2))
+    q(2) = ATAN2(qf(2),qf(1))
+    q(3) = qf(3)
+    IF (i < num_depo-1) THEN
        s_temp =1.5
        CALL EZspline_interp(S_spl,rlocal(i),plocal(i),zlocal(i),s_temp,ier)
        lneut=.false.
@@ -390,10 +390,8 @@ SUBROUTINE beams3d_follow_neut(t, q)
     END IF
 
     ! Follow to wall
-    qf = qf - myv_neut*dt_local
-    t  =  t - dt_local
     x0 = qf(1); y0 = qf(2); z0 = qf(3)
-    dt_local = 0.25/q(4)  ! Timestep (100 times larger than in plasma)
+    dt_local = 0.25/q(4)  
     ltest = .FALSE.
     DO
        qf = qf + myv_neut*dt_local
@@ -401,19 +399,19 @@ SUBROUTINE beams3d_follow_neut(t, q)
        IF (lvessel) CALL collide(x0,y0,z0,qf(1),qf(2),qf(3),xw,yw,zw,ltest)
        !WRITE(328,*) x0,y0,z0,qf(1),qf(2),qf(3),xw,yw,zw,ltest
        IF (ltest) THEN
-          q(1) = sqrt(xw*xw+yw*yw)
-          q(2) = atan2(yw,xw)
+          q(1) = SQRT(xw*xw+yw*yw)
+          q(2) = ATAN2(yw,xw)
           q(3) = zw
           ! Next lines are so that out_beams3d_nag detects the wall.
           xlast = x0; ylast=y0; zlast=z0
-          q(1) = sqrt(qf(1)*qf(1)+qf(2)*qf(2))
+          q(1) = SQRT(qf(1)*qf(1)+qf(2)*qf(2))
           q(2) = ATAN2(qf(2),qf(1))
           q(3) = qf(3)
           RETURN
        END IF
        xlast = x0; ylast=y0; zlast=z0
        x0 = qf(1); y0 = qf(2); z0 = qf(3)
-       q(1) = sqrt(qf(1)*qf(1)+qf(2)*qf(2))
+       q(1) = SQRT(qf(1)*qf(1)+qf(2)*qf(2))
        q(2) = ATAN2(qf(2),qf(1))
        q(3) = qf(3)
        IF ((q(1) > 5*rmax)  .or. (q(1) < rmin)) THEN; t = t_end(myline)+dt_local; RETURN; END IF  ! We're outside the grid
