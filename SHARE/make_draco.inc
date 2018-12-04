@@ -132,8 +132,9 @@
 #            SFINCS Options
 #######################################################################
 
-  LSFINCS = F
-  SFINCS_DIR = $(SFINCS_PATH)
+  LSFINCS = T
+  include ${PETSC_DIR}/lib/petsc/conf/variables
+  SFINCS_DIR = $(SFINCS_PATH)/fortran/version3
   SFINCS_INC = -I$(SFINCS_DIR) -I${PETSC_DIR}/include -I${PETSC_DIR}/${PETSC_ARCH}/include
   LIB_SFINCS = libsfincs.a
 
@@ -147,7 +148,7 @@
   REGCOIL_DIR = $(REGCOIL_PATH)
   REGCOIL_INC = -I$(REGCOIL_DIR) 
   LIB_REGCOIL = libregcoil.a
-  REGCOIL_LIB = $(REGCOIL_DIR)/$(LIB_REGCOIL) -fopenmp
+  REGCOIL_LIB = $(REGCOIL_DIR)/$(LIB_REGCOIL) -qopenmp
 
 #######################################################################
 #            LIBSTELL Shared Options
