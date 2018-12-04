@@ -378,6 +378,9 @@ SUBROUTINE beams3d_follow_neut(t, q)
        IF (cum_prob < rand_prob) EXIT
     END DO
     qf = qs - myv_neut*dt_local*(i-1)
+    q(1) = rlocal(i)
+    q(2) = plocal(i)
+    q(3) = zlocal(i)
     t  =  t - dt_local*(i-1)
     IF (i < num_depo) THEN
        s_temp =1.5
