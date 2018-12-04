@@ -253,7 +253,6 @@ SUBROUTINE beams3d_follow_neut(t, q)
     INTEGER, parameter :: ict(8)=(/1,0,0,0,0,0,0,0/)
     REAL*8 :: fval(1)
 
-    IF (myworkid == master) WRITE(6,*) ' MYID READY TO FOLLOW(0.25): ',myworkid; CALL FLUSH(6);
 
     energy = half*mymass*q(4)*q(4)*1E-3  ! Vll = V_neut (doesn't change durring integration) needed in keV
     qf(1) = q(1)*cos(q(2))
@@ -308,7 +307,6 @@ SUBROUTINE beams3d_follow_neut(t, q)
     qe=qf + myv_neut*dt_local
     
 
-    IF (myworkid == master) WRITE(6,*) '     Setup Arrays: ',myworkid; CALL FLUSH(6);
     ! Setup Arrays
     rlocal(1) = SQRT(qs(1)*qs(1)+qs(2)*qs(2))
     plocal(1) = ATAN2(qs(2),qs(1))
@@ -323,7 +321,6 @@ SUBROUTINE beams3d_follow_neut(t, q)
     END DO
     plocal = MODULO(plocal, phimax)
 
-    IF (myworkid == master) WRITE(6,*) '     Comp_profs: ',myworkid; CALL FLUSH(6);
     ! Compute Profiles
     DO l = 1, num_depo
        CALL R8HERM3xyz(rlocal(l),plocal(l),zlocal(l),&
@@ -349,7 +346,6 @@ SUBROUTINE beams3d_follow_neut(t, q)
     tilocal = tilocal*1D-3
     telocal = telocal*1D-3
 
-    IF (myworkid == master) WRITE(6,*) '     Collisions: ',myworkid; CALL FLUSH(6);
 !DEC$ IF DEFINED (NTCC)
     ! Arguments to btsigv(irtype,beamchrg,eabeam,tatarg,n,izbeam,iztarg,btsigv, istat )hatom_btsigv.f90
     ! irtype 1:CX, 2:II
@@ -372,7 +368,6 @@ SUBROUTINE beams3d_follow_neut(t, q)
 !DEC$ ENDIF
     tau_inv = ((sigvii + sigvcx + sigvei)*nelocal) ! Delete a term if desired. (save a comment)
 
-    IF (myworkid == master) WRITE(6,*) '     Ionize: ',myworkid; CALL FLUSH(6);
     ! Calculate Ionization
     CALL RANDOM_NUMBER(rand_prob)
     cum_prob = one
@@ -385,11 +380,12 @@ SUBROUTINE beams3d_follow_neut(t, q)
     qf = qs - myv_neut*dt_local*(i-1)
     t  =  t - dt_local*(i-1)
     IF (i < num_depo) THEN
+       s_temp =1.5
+       CALL EZspline_interp(S_spl,rlocal(i),plocal(i),zlocal(i),s_temp,ier)
        lneut=.false.
        RETURN
     END IF
 
-    IF (myworkid == master) WRITE(6,*) ' MYID READY TO FINISH: ',myworkid; CALL FLUSH(6);
     ! Follow to wall
     qf = qf - myv_neut*dt_local
     t  =  t - dt_local
@@ -419,7 +415,6 @@ SUBROUTINE beams3d_follow_neut(t, q)
        q(3) = qf(3)
        IF ((q(1) > 5*rmax)  .or. (q(1) < rmin)) THEN; t = t_end(myline)+dt_local; RETURN; END IF  ! We're outside the grid
     END DO
-    IF (myworkid == master) WRITE(6,*) ' MYID READY TO DONE: ',myworkid; CALL FLUSH(6);
 
     RETURN
 END SUBROUTINE beams3d_follow_neut
