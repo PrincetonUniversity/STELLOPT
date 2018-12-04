@@ -340,7 +340,6 @@ SUBROUTINE beams3d_follow
                     IF (lbeam) lneut = .TRUE.
                     CALL out_beams3d_nag(tf_nag,q)
                     IF (lbeam) THEN
-                       IF (myworkid==master) WRITE(6,*) "FOLLOWING Particle ",l,"/",myend; CALL FLUSH(6)
                        lcollision = .FALSE.
                        ! Follow into plasma
                        CALL beams3d_follow_neut(t_nag,q)
@@ -413,7 +412,6 @@ SUBROUTINE beams3d_follow
     END IF
 !DEC$ ENDIF
 
-    WRITE(6,*) '       MYID READY TO WRITE: ',myworkid; CALL FLUSH(6);
 !DEC$ IF DEFINED (MPI_OPT)
     CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend,      'R_lines', DBLVAR=R_lines)
     CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend,    'PHI_lines', DBLVAR=PHI_lines)
