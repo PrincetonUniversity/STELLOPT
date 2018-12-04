@@ -170,68 +170,28 @@ SUBROUTINE beams3d_follow
     ! Allocations
     ALLOCATE(q(neqs_nag), STAT = ier)
     IF (ier /= 0) CALL handle_err(ALLOC_ERR, 'Q', ier)
-!    IF (myworkid == master) THEN
-!        ALLOCATE(R_lines(0:npoinc, nparticles), Z_lines(0:npoinc, nparticles), &
-!          PHI_lines(0:npoinc, nparticles), vll_lines(0:npoinc, nparticles), moment_lines(0:npoinc, nparticles), &
-!          neut_lines(0:npoinc, nparticles),PE_lines(0:npoinc, nparticles),PI_lines(0:npoinc, nparticles),&
-!          S_lines(0:npoinc,nparticles), U_lines(0:npoinc,nparticles), B_lines(0:npoinc,nparticles), STAT = ier)
-!        IF (ier /= 0) CALL handle_err(ALLOC_ERR, 'R_LINES, PHI_LINES, Z_LINES', ier)
-!        ALLOCATE(lost_lines(nparticles), STAT = ier)
-!        IF (ier /= 0) CALL handle_err(ALLOC_ERR, 'LOST_LINES', ier)
-!        R_lines = 0.0
-!        Z_lines = 0.0
-!        PHI_lines = -1.0
-!        vll_lines = 0.0
-!        moment_lines = 0.0
-!        PE_lines = 0.0
-!        PI_lines = 0.0
-!        lost_lines = .FALSE.
-!        S_lines = 1.5
-!        U_lines = 0.0
-!        B_lines = -1.0
-!        R_lines(0, 1:nparticles) = R_start(1:nparticles)
-!        Z_lines(0, 1:nparticles) = Z_start(1:nparticles)
-!        PHI_lines(0, 1:nparticles) = phi_start(1:nparticles)
-!        vll_lines(0, 1:nparticles) = vll_start(1:nparticles)
-!        moment_lines(0, 1:nparticles) = mu_start(1:nparticles)
-!        IF (lbeam) THEN
-!            neut_lines(0, 1:nparticles) = .TRUE.
-!        ELSE
-!            neut_lines(0, 1:nparticles) = .FALSE.
-!        END IF
-!    ELSE
-!        IF (mystart <= nparticles) THEN
-           ALLOCATE(R_lines(0:npoinc, mystart:myend), Z_lines(0:npoinc, mystart:myend), &
-              PHI_lines(0:npoinc, mystart:myend), vll_lines(0:npoinc, mystart:myend), moment_lines(0:npoinc, mystart:myend), &
-              neut_lines(0:npoinc, mystart:myend),PE_lines(0:npoinc, mystart:myend),PI_lines(0:npoinc, mystart:myend), &
-              S_lines(0:npoinc, mystart:myend), U_lines(0:npoinc, mystart:myend), B_lines(0:npoinc, mystart:myend), STAT = ier)
-           IF (ier /= 0) CALL handle_err(ALLOC_ERR, 'R_LINES, PHI_LINES, Z_LINES', ier)
-           ALLOCATE(lost_lines(mystart:myend), STAT = ier)
-           IF (ier /= 0) CALL handle_err(ALLOC_ERR, 'LOST_LINES', ier)
-           R_lines = 0.0
-           Z_lines = 0.0
-           PHI_lines = -1.0
-           vll_lines = 0.0
-           moment_lines = 0.0
-           PE_lines = 0.0
-           PI_lines = 0.0
-           lost_lines = .FALSE.
-           S_lines = 1.5
-           U_lines = 0.0
-           B_lines = -1.0
-           R_lines(0, mystart:myend) = R_start(mystart:myend)
-           Z_lines(0, mystart:myend) = Z_start(mystart:myend)
-           PHI_lines(0, mystart:myend) = phi_start(mystart:myend)
-           vll_lines(0, mystart:myend) = vll_start(mystart:myend)
-           moment_lines(0, mystart:myend) = mu_start(mystart:myend)
-           IF (lbeam) THEN
-               neut_lines(0, mystart:myend) = .TRUE.
-           ELSE
-               neut_lines(0, mystart:myend) = .FALSE.
-           END IF
-!        END IF
-!    END IF
-        
+    ALLOCATE(R_lines(0:npoinc, mystart:myend), Z_lines(0:npoinc, mystart:myend), &
+             PHI_lines(0:npoinc, mystart:myend), vll_lines(0:npoinc, mystart:myend), moment_lines(0:npoinc, mystart:myend), &
+             neut_lines(0:npoinc, mystart:myend),PE_lines(0:npoinc, mystart:myend),PI_lines(0:npoinc, mystart:myend), &
+             S_lines(0:npoinc, mystart:myend), U_lines(0:npoinc, mystart:myend), B_lines(0:npoinc, mystart:myend), STAT = ier)
+    IF (ier /= 0) CALL handle_err(ALLOC_ERR, 'R_LINES, PHI_LINES, Z_LINES', ier)
+    ALLOCATE(lost_lines(mystart:myend), STAT = ier)
+    IF (ier /= 0) CALL handle_err(ALLOC_ERR, 'LOST_LINES', ier)
+
+    ! Initializations
+    R_lines = 0.0; Z_lines = 0.0; PHI_lines = -1.0
+    vll_lines = 0.0; moment_lines = 0.0
+    PE_lines = 0.0; PI_lines = 0.0
+    lost_lines = .FALSE.
+    S_lines = 1.5; U_lines = 0.0; B_lines = -1.0
+    R_lines(0, mystart:myend) = R_start(mystart:myend)
+    Z_lines(0, mystart:myend) = Z_start(mystart:myend)
+    PHI_lines(0, mystart:myend) = phi_start(mystart:myend)
+    vll_lines(0, mystart:myend) = vll_start(mystart:myend)
+    moment_lines(0, mystart:myend) = mu_start(mystart:myend)
+    neut_lines(0, mystart:myend) = .FALSE.
+    IF (lbeam) neut_lines(0, mystart:myend) = .TRUE.
+
     ! Follow Trajectories
     IF (mystart <= nparticles) THEN
         SELECT CASE (TRIM(int_type))
@@ -380,6 +340,7 @@ SUBROUTINE beams3d_follow
                     IF (lbeam) lneut = .TRUE.
                     CALL out_beams3d_nag(tf_nag,q)
                     IF (lbeam) THEN
+                       IF (myworkid==master) WRITE(6,*) "FOLLOWING Particle ",l,"/",myend; CALL FLUSH(6)
                        lcollision = .FALSE.
                        ! Follow into plasma
                        CALL beams3d_follow_neut(t_nag,q)
@@ -441,6 +402,7 @@ SUBROUTINE beams3d_follow
 
     ! Handle WALL Heat MAp
 !DEC$ IF DEFINED (MPI_OPT)
+    ier = 0
     IF (ALLOCATED(ihit_array)) THEN
       IF (myworkid == master) THEN
          CALL MPI_REDUCE(MPI_IN_PLACE,ihit_array,nface,MPI_INTEGER,MPI_SUM,master,MPI_COMM_BEAMS,ierr_mpi)
@@ -451,18 +413,8 @@ SUBROUTINE beams3d_follow
     END IF
 !DEC$ ENDIF
 
-    ier = 0
-
-!   Clean up progress bar
-!    IF (lverb) THEN
-!        CALL backspace_out(6, 33)
-!        WRITE(6, '(33X)', ADVANCE = 'no')
-!        CALL backspace_out(6, 33)
-!        CALL FLUSH(6)
-!    END IF
-
+    WRITE(6,*) '       MYID READY TO WRITE: ',myworkid; CALL FLUSH(6);
 !DEC$ IF DEFINED (MPI_OPT)
-
     CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend,      'R_lines', DBLVAR=R_lines)
     CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend,    'PHI_lines', DBLVAR=PHI_lines)
     CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend,      'Z_lines', DBLVAR=Z_lines)
@@ -477,33 +429,6 @@ SUBROUTINE beams3d_follow
     itemp = 0; WHERE(neut_lines) itemp=1;
     CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend,   'neut_lines', INTVAR=itemp)
     DEALLOCATE(itemp)
-
-!   OLD memory hungry way
-!    IF (myworkid==master) THEN
-!       mystart = 1; myend=nparticles
-!    END IF
-!    CALL BEAMS3D_TRANSMIT_2DDBL(0,npoinc,mystart,myend,R_lines(0:npoinc,mystart:myend),&
-!                                nprocs_beams,mnum,moffsets,myworkid,master,MPI_COMM_BEAMS,ier)
-!    CALL BEAMS3D_TRANSMIT_2DDBL(0,npoinc,mystart,myend,PHI_lines(0:npoinc,mystart:myend),&
-!                                nprocs_beams,mnum,moffsets,myworkid,master,MPI_COMM_BEAMS,ier)
-!    CALL BEAMS3D_TRANSMIT_2DDBL(0,npoinc,mystart,myend,Z_lines(0:npoinc,mystart:myend),&
-!                                nprocs_beams,mnum,moffsets,myworkid,master,MPI_COMM_BEAMS,ier)
-!    CALL BEAMS3D_TRANSMIT_2DDBL(0,npoinc,mystart,myend,vll_lines(0:npoinc,mystart:myend),&
-!                                nprocs_beams,mnum,moffsets,myworkid,master,MPI_COMM_BEAMS,ier)
-!    CALL BEAMS3D_TRANSMIT_2DDBL(0,npoinc,mystart,myend,moment_lines(0:npoinc,mystart:myend),&
-!                                nprocs_beams,mnum,moffsets,myworkid,master,MPI_COMM_BEAMS,ier)
-!    CALL BEAMS3D_TRANSMIT_2DDBL(0,npoinc,mystart,myend,PE_lines(0:npoinc,mystart:myend),&
-!                                nprocs_beams,mnum,moffsets,myworkid,master,MPI_COMM_BEAMS,ier)
-!    CALL BEAMS3D_TRANSMIT_2DDBL(0,npoinc,mystart,myend,PI_lines(0:npoinc,mystart:myend),&
-!                                nprocs_beams,mnum,moffsets,myworkid,master,MPI_COMM_BEAMS,ier)
-!    CALL BEAMS3D_TRANSMIT_2DDBL(0,npoinc,mystart,myend,S_lines(0:npoinc,mystart:myend),&
-!                                nprocs_beams,mnum,moffsets,myworkid,master,MPI_COMM_BEAMS,ier)
-!    CALL BEAMS3D_TRANSMIT_2DDBL(0,npoinc,mystart,myend,U_lines(0:npoinc,mystart:myend),&
-!                                nprocs_beams,mnum,moffsets,myworkid,master,MPI_COMM_BEAMS,ier)
-!    CALL BEAMS3D_TRANSMIT_2DDBL(0,npoinc,mystart,myend,B_lines(0:npoinc,mystart:myend),&
-!                                nprocs_beams,mnum,moffsets,myworkid,master,MPI_COMM_BEAMS,ier)
-!    CALL BEAMS3D_TRANSMIT_2DLOG(0,npoinc,mystart,myend,neut_lines(0:npoinc,mystart:myend),&
-!                                nprocs_beams,mnum,moffsets,myworkid,master,MPI_COMM_BEAMS,ier)
     DEALLOCATE(mnum)
     DEALLOCATE(moffsets)
     CALL MPI_BARRIER(MPI_COMM_BEAMS, ierr_mpi)
