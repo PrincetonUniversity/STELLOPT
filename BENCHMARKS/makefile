@@ -49,6 +49,8 @@ test_diagno:
 
 test_stellopt:
 	@echo "Beginning testing of STELLOPT"
+	$(MAKE) test_stellopt_lmdif
+	$(MAKE) test_stellopt_gade
 	$(MAKE) test_stellopt_basic
 	$(MAKE) test_stellopt_iota_lmdif
 	$(MAKE) test_stellopt_tok_r0_delta
@@ -82,6 +84,16 @@ test_stellopt:
 		$(MAKE) test_stellopt_travis;\
 	fi
 	@echo "Tesing of STELLOPT complete"
+	@echo ""
+
+test_stellopt_lmdif:
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.LMDIF_TEST
+	@cd $(STELLOPT_TEST_DIR)/LMDIF_TEST; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.LMDIF_TEST; rm -f *_opt*
+	@echo ""
+
+test_stellopt_gade:
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.GADE_TEST
+	@cd $(STELLOPT_TEST_DIR)/GADE_TEST; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.GADE_TEST; rm -f *_opt*
 	@echo ""
 
 test_stellopt_basic:
@@ -157,6 +169,8 @@ test_stellopt_travis:
 clean_test:
 	@cd $(VMEC_TEST_DIR); rm -f dcon* jxbout* mercier* threed1* parvmecinfo* wout*
 	@cd $(DIAGNO_TEST_DIR); rm -f diagno_bench* diagno_flux* diagno_surf* test_loops_j* test_loops_b*
+	@$(MAKE) SUBDIR=$(STELLOPT_TEST_DIR)/LMDIF_TEST stellopt_cleanup_dir
+	@$(MAKE) SUBDIR=$(STELLOPT_TEST_DIR)/GADE_TEST stellopt_cleanup_dir
 	@$(MAKE) SUBDIR=$(STELLOPT_TEST_DIR)/BASIC stellopt_cleanup_dir
 	@$(MAKE) SUBDIR=$(STELLOPT_TEST_DIR)/BEAMS3D stellopt_cleanup_dir
 	@$(MAKE) SUBDIR=$(STELLOPT_TEST_DIR)/COILOPTPP stellopt_cleanup_dir

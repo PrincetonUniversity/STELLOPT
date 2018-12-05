@@ -16,7 +16,7 @@
       USE beams3d_grid, ONLY: nr, nphi, nz, B_R, B_PHI, B_Z, raxis, &
                                  zaxis, phiaxis, S_ARR, U_ARR, POT_ARR
       USE beams3d_runtime, ONLY: id_string, npoinc, nbeams, beam, t_end, lverb, lflux, &
-                                    lvmec, lpies, lspec, lcoil, lmgrid, lmu, lbeam, &
+                                    lvmec, lpies, lspec, lcoil, lmgrid, lbeam, &
                                     lvessel, lvac, lbeam_simple, handle_err, nparticles_start, &
                                     HDF5_OPEN_ERR,HDF5_READ_ERR,&
                                     HDF5_CLOSE_ERR, BEAMS3D_VERSION, weight, e_beams, p_beams,&

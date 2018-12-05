@@ -1,29 +1,24 @@
-# ADD this section to your .cshrc.ext file on NERSC
 if ($NERSC_HOST ==  "cori") then
-#  Replace the following line with personal settings for davinci
-  touch /dev/null
-  set prompt = "%m:\! "
-  alias run_matlab "qsub -I -V -q ccm_int -l walltime=30:00"
-  alias que "qstat -u lazerson"
-  alias stellopt_cleanup "rm answers* auto* beams3d* b_norm_eq_* b_norm_init_* b_norm_final_* bnorm.* boozmn* checkpoint_* coilopt_params.* coil_spline*.out curv* dcon* deltamn.* diagno_flux.* diagno_bth.* dkes* fevals* field* gade* gist* eigenvalues* input.*.***** input_dkes.* jacobian.* jprof.* jxb* jBbs* LMsave* log_gene.* map.* map_plane.* mercier* mom* neo* nrg* opt* parameters_* results* rhomn* RZ* stellopt.* tprof* wout* temp_input.* threed1.* tv_out_* txport* xvec.* uv_* var_* vsp*"
+  alias stellopt_cleanup "rm answers* auto* beams3d* b_norm_eq_* b_norm_init_* b_norm_final_* bnorm.* boozmn* checkpoint_* coilopt_params.* coil_spline*.out curv* dcon* deltamn.* diagno_seg.* diagno_flux.* diagno_bth.* dkes* dprof* fevals* field* gade* gist* eigenvalues* input.*.***** input_dkes.* jacobian.* jprof.* jxb* jBbs* LMsave* log_gene.* map.* map_plane.* mercier* mom* neo* nrg* opt* parvmecinfo.txt parameters_* results* rhomn* RZ* stellopt.* tprof* wout* temp_input.* threed1.* tv_out_* txport* xvec.* uv_* var_* vsp*"
 
-  module load cray-hdf5-parallel
+  module load cray-hdf5-parallel/1.10.1.1
   module load cray-netcdf-hdf5parallel
-  module load fftw/3.3.4.5
-  module load cray-petsc-complex
-  module load slepc-complex
+  module load cray-fftw
+  module load cray-petsc/3.7.6.0
   module load cray-tpsl
   module load gsl
-  module load silo
-  # Modify this to match your path to GENE
-#  setenv GENE_PATH /global/u2/l/lazerson/src/GENE_1.7/bin/obj_cori
-  # Modify this to match your path to COILOPT++
-  setenv COILOPT_PATH /global/u2/l/lazerson/src/COILOPT++
-  # Modify this to match your path to MATLAB
-  setenv LANG en_US.UTF-8
-  setenv LC_ALL en_US
-  # These you should be able to access
-  setenv PREACTDIR /global/u2/l/lazerson/pub/preact
-  setenv ADASDIR /global/u2/l/lazerson/pub/adas
+# For python interface and qt4
+  module load python/3.6-anaconda-4.4
+# For KNL architecture
+  module swap craype-haswell craype-mic-knl
 
+# These should be turned off until built
+  setenv PREACTDIR $HOME/pub/PREACT
+  setenv ADASDIR $HOME/pub/ADAS/
+  setenv GENE_PATH $HOME/src/GENE17/bin/obj_cori
+  setenv TERPSICHORE_PATH $HOME/src/TERPSICHORE
+  setenv TRAVIS_PATH $HOME/src/TRAVIS
+  setenv COILOPT_PATH $HOME/src/COILOPT++
+  setenv SFINCS_PATH $HOME/src/SFINCS/fortran/version3
+  setenv STELLOPT_PATH $HOME/src/
 endif
