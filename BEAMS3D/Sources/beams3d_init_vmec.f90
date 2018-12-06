@@ -257,10 +257,12 @@
                B_Z(i,j,k)   = bz
                sflx = 1 ! Assume s=1 for lplasma_only
             END IF
-            IF (nte > 0) CALL EZspline_interp(TE_spl_s,sflx,TE(i,j,k),ier)
-            IF (nne > 0) CALL EZspline_interp(NE_spl_s,sflx,NE(i,j,k),ier)
-            IF (nti > 0) CALL EZspline_interp(TI_spl_s,sflx,TI(i,j,k),ier)
-            IF (npot > 0) CALL EZspline_interp(POT_spl_s,sflx,POT_ARR(i,j,k),ier)
+            IF (sflx <= 1) THEN
+               IF (nte > 0) CALL EZspline_interp(TE_spl_s,sflx,TE(i,j,k),ier)
+               IF (nne > 0) CALL EZspline_interp(NE_spl_s,sflx,NE(i,j,k),ier)
+               IF (nti > 0) CALL EZspline_interp(TI_spl_s,sflx,TI(i,j,k),ier)
+               IF (npot > 0) CALL EZspline_interp(POT_spl_s,sflx,POT_ARR(i,j,k),ier)
+            END IF
          ELSE IF (lplasma_only) THEN
             B_R(i,j,k)   = 0
             B_PHI(i,j,k) = 1
