@@ -3,7 +3,6 @@ This code calculates the transformation to Boozer coordinates <ref>[[http://link
 
 {{images/bmod_ncsx_c09r00_free.jpg}}
 
-<<toc>>
 ----
 
 ===Theory=== 
