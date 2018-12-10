@@ -1,23 +1,23 @@
 =BOOZ_XFORM= 
-This code calculates the transformation to Boozer coordinates <ref>[[http://link.aip.org/link/doi/10.1063/1.863297|Boozer A. H. "Plasma equilibrium with rational magnetic surfaces." Phys. Fluids 24, 1999 (1981).]]</ref> of a [[VMEC]] equilibria.
+This code calculates the transformation to Boozer coordinates [[http://link.aip.org/link/doi/10.1063/1.863297|(Boozer A. H. "Plasma equilibrium with rational magnetic surfaces." Phys. Fluids 24, 1999 (1981)).]] of a [[VMEC]] equilibria.
 
 {{images/bmod_ncsx_c09r00_free.jpg}}
 
 ----
 
 ===Theory=== 
-The BOOZ_XFORM code <ref>[[http://iopscience.iop.org/0741-3335/42/6/303|Sanchez R., Hirshman S.P., Ware A. S., Berry L. A., and Spong D.A. "Ballooning stability optimization of low-aspect-ratio stellarators." Plas. Phys. Cont. Fusion 42, 641 (2000).]]</ref> transforms the [[VMEC]] field-line coordinate system to the [[http://www-fusion.ciemat.es/wiki/Flux_coordinates|straight field-line coordinates]] introduced by Boozer ([[http://www-fusion.ciemat.es/wiki/Boozer_coordinates|Fusionwiki link]]). The Boozer coordinates allow the magnetic field to be written in the form
+The BOOZ_XFORM code [[http://iopscience.iop.org/0741-3335/42/6/303|Sanchez R., Hirshman S.P., Ware A. S., Berry L. A., and Spong D.A. "Ballooning stability optimization of low-aspect-ratio stellarators." Plas. Phys. Cont. Fusion 42, 641 (2000).]] transforms the [[VMEC]] field-line coordinate system to the [[http://www-fusion.ciemat.es/wiki/Flux_coordinates|straight field-line coordinates]] introduced by Boozer ([[http://www-fusion.ciemat.es/wiki/Boozer_coordinates|Fusionwiki link]]). The Boozer coordinates allow the magnetic field to be written in the form
 [[math]]
 \vec{B}=\nabla\psi\left(s\right)\times\nabla\zeta_b+\nabla\theta_b\times\nabla\chi\left(s\right)
 [[math]]
-where the subscript indicates the quantities are generalized toroidal and poloidal coordinates (xi and theta respectively). The code transforms the coordinates and magnetic field. The output quantities are in terms of the Fourier coefficients of the transformed quantities. It is important to note that Boozer coordinates may require many more Fourier modes than the equivalent [[VMEC]] representation to maintain accuracy. In general, it is useful to choose between 5 and 6 times more poloidal and 2-3 times more toroidal Fourier resolution than those found in the [[VMEC]] equilibria. The following file provides a detailed description of the Boozer transformation preformed by the code: [[file:Transformation from VMEC to Boozer Coordinates.pdf]].
+where the subscript indicates the quantities are generalized toroidal and poloidal coordinates (xi and theta respectively). The code transforms the coordinates and magnetic field. The output quantities are in terms of the Fourier coefficients of the transformed quantities. It is important to note that Boozer coordinates may require many more Fourier modes than the equivalent [[VMEC]] representation to maintain accuracy. In general, it is useful to choose between 5 and 6 times more poloidal and 2-3 times more toroidal Fourier resolution than those found in the [[VMEC]] equilibria.
 
 Note: As of v6.9 only stellarator symmetric equilibria can be transformed. The version distributed with [[VMEC]] 8.47 can handle non-stellarator symmetric equilibria.
 
 ----
 
 ===Compilation=== 
-BOOZ_XFORM is a component of the STELLOPT suite of codes. It is contained within the 'stellopt.zip' file. Compilation of the STELLOPT suite is discussed on the [[STELLOPT Compilation|STELLOPT Compilation Page]].
+BOOZ_XFORM is a component of the STELLOPT suite of codes.  Compilation of the STELLOPT suite is discussed on the [[STELLOPT Compilation|STELLOPT Compilation Page]].
 
 ----
 
@@ -100,3 +100,5 @@ Once read from the output file the BOOZ_XFORM data can be transformed to real sp
 
 ===Tutorials=== 
 [[Boozer Transformation for NCSX-Like Configuration]]
+
+[[https://bitbucket.org/lazerson_princeton/stellopt/wiki/docs/Transformation%20from%20VMEC%20to%20Boozer%20Coordinates.pdf|Explanation of the VMEC to Boozer coordinate transformation]]
