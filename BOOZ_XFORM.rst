@@ -1,7 +1,11 @@
-=BOOZ_XFORM= 
+===========
+BOOZ_XFORM
+===========
+
 This code calculates the transformation to Boozer coordinates [[http://link.aip.org/link/doi/10.1063/1.863297|(Boozer A. H. "Plasma equilibrium with rational magnetic surfaces." Phys. Fluids 24, 1999 (1981)).]] of a [[VMEC]] equilibria.
 
-{{images/bmod_ncsx_c09r00_free.jpg}}
+.. image :: https://bitbucket.org/lazerson_princeton/stellopt/wiki/browse/images/bmod_ncsx_c09r00_free.jpg
+   :alt: Mod-B NCSX
 
 ----
 
