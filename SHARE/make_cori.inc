@@ -31,6 +31,8 @@
   MPI_RUN = srun
   MPI_RUN_OPTS = -n 8 -c 16
   MPI_RUN_OPTS = -n 1088 -c 1
+  # KNL 64 Nodes
+  MPI_RUN_OPTS = -n 8704 -c 2
 
 #######################################################################
 #            NAG Options
