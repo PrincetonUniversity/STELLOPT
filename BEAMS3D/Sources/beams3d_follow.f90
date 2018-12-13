@@ -302,15 +302,16 @@ SUBROUTINE beams3d_follow
                 iunit = myworkid+400
                 ier = 0
                 IF (ldebug) THEN
-                   CALL safe_open(iunit,ier,'lsode_err_'//TRIM(id_string),'replace','formatted')
+                   !CALL safe_open(iunit,ier,'lsode_err_'//TRIM(id_string),'replace','formatted')
+                   iunit = 6
                    CALL xsetun(iunit)
+                   iunit = 1
+                   CALL xsetf(iunit)
                 ELSE
                    iunit = 0
                    CALL xsetf(iunit)
                 END IF
-                ! Set tolerances to match NAG
-                itol = 2; rtol = follow_tol; atol(:) = follow_tol
-                iopt = 0 ! No optional output
+                ! Allocate helpers
                 lrw = 20 + 16 * neqs_nag
                 liw = 20
                 ALLOCATE(w(lrw))
@@ -318,10 +319,11 @@ SUBROUTINE beams3d_follow
                 ier = 0
                 DO l = mystart, myend
                     ! Setup LSODE parameters
+                    iopt = 0 ! No optional output
                     w = 0; iwork = 0; itask = 1; istate = 1;
+                    itol = 2; rtol = follow_tol; atol(:) = follow_tol
                     myline = l
                     mytdex = 0
-                    ! For debugging
                     ! Initialize the calculation
                     ltherm = .false.
                     lneut  = .false.
@@ -357,13 +359,28 @@ SUBROUTINE beams3d_follow
                        mytdex = 3
                        tf_nag = tf_nag - dt  ! Because out advances t by dt
                        dt_out = (t_end(l) - t_nag)/(npoinc-2) ! Adjust dt slightly to keep indexing correct.
+                       CALL FLUSH(6)
                     END IF
                     DO
                         IF (lcollision) istate = 1
+                        CALL FLUSH(6)
                         CALL DLSODE(fpart_lsode, neqs_nag, q, t_nag, tf_nag, itol, rtol, atol, itask, istate, &
                                    iopt, w, lrw, iwork, liw, jacobian_lsode, mf)
                         IF ((istate == -3) .or. (istate == -4)) THEN
-                           !IF (myworkid==0) PRINT *,myworkid,neqs_nag, q, t_nag, tf_nag, itol, rtol, atol, itask, istate,iopt, w, lrw, iwork, liw,mf
+                           ! BIG  DEBUG MESSAGE
+                           CALL FLUSH(6)
+                           WRITE(6,*) '------------------'
+                           WRITE(6,*) '     ',myworkid, l, myline,mf
+                           WRITE(6,*) '     ',myworkid, neqs_nag, t_nag, tf_nag
+                           WRITE(6,*) '     ',myworkid, q, moment
+                           WRITE(6,*) '     ',myworkid, itol, rtol, atol
+                           WRITE(6,*) '     ',myworkid, itask,istate,iopt
+                           WRITE(6,*) '     ',myworkid, w(5),w(6),w(7)
+                           WRITE(6,*) '     ',myworkid, iwork(5),iwork(6),iwork(7)
+                           WRITE(6,*) '     ',myworkid, w(11:14)
+                           WRITE(6,*) '     ',myworkid, iwork(11:18)
+                           WRITE(6,*) '------------------'
+                           CALL FLUSH(6)
                            CALL handle_err(LSODE_ERR, 'beams3d_follow', istate)
                         END IF
                         iwork(11) = 0; iwork(12) = 0; iwork(13) = 0
