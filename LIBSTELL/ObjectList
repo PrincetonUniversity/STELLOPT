@@ -127,7 +127,7 @@ li_gefa.o \
 second0.o \
 getcarg.o \
 vmec_chdir.o \
-power_to_legendre.o \
+legendre_profile.o \
 PCHDF.o \
 spline_cubic.o \
 fmax.o \
@@ -136,7 +136,6 @@ bextrema.o \
 spline_akima_int.o \
 spline.o \
 pxffork.o \
-build_matrices_legendre.o \
 PCHEZ.o \
 spline_akima.o \
 PCHSP.o \
@@ -147,7 +146,6 @@ vmec_getenv.o \
 vmec_system.o \
 line_segment.o \
 spline_cubic_int.o \
-legendre_to_power.o \
 pxfwait.o \
 point_wise_to_power.o \
 integral.o \

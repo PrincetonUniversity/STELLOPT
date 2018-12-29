@@ -29,6 +29,7 @@
 !    rational         _    Rational function (ratio of polynomials)
 !    line_segment_Ip  X    Line segments for I-prime(s)
 !    line_segment_I   _    Line segments for I(s)
+!    legendre_Ip      X    Legendre polynomials for I-prime(s)
 !    power_series     X    Power Series for I-prime(s) (Default)
 
 !    Local Variables
@@ -54,6 +55,8 @@
       USE vmec_input, ONLY: ac, bloat, pcurr_type, ac_aux_s, ac_aux_f
       USE line_segment
       USE functions
+      USE legendre_profile
+
       IMPLICIT NONE
 ! ac assumed to be dimensioned (0:n), with n >= 20 
 !-----------------------------------------------
@@ -295,6 +298,33 @@
 !!  current.
          i = minloc(ac_aux_s(2:),dim=1)
          CALL line_seg(x,pcurr,ac_aux_s,ac_aux_f,i)
+
+      CASE('legendre_ip')
+!!  Legendre polynomials for I-prime
+!!  I(s) = Sum(i,0,n)[ac(i)*Integra(LegendreP(i, 2*s-1), ds, 0<s<1)~s
+!!  The 0th component should be set to 1 and the normalization (curtor)
+!!  sets the overall current.
+         n_leg = 0
+         DO i = 0,UBOUND(ac,1)
+           if (ac(i) .ne. 0) n_leg = i+1
+         END DO
+         
+         IF (ALLOCATED(a_leg)) DEALLOCATE(a_leg)
+         IF (ALLOCATED(b_leg)) DEALLOCATE(b_leg)
+         IF (ALLOCATED(a_leg_inv)) DEALLOCATE(a_leg_inv)
+         IF (ALLOCATED(b_leg_inv)) DEALLOCATE(b_leg_inv)
+         IF (ALLOCATED(c_leg_int)) DEALLOCATE(c_leg_int)
+         IF (ALLOCATED(tc)) DEALLOCATE(tc)
+
+         ALLOCATE(a_leg(0:n_leg,0:n_leg), b_leg(0:n_leg,0:n_leg),
+     1         a_leg_inv(0:n_leg,0:n_leg), b_leg_inv(0:n_leg,0:n_leg),
+     2         c_leg_int(0:n_leg,0:(n_leg+1)), tc(0:n_leg))
+
+         CALL build_matrices_legendre(n_leg, a_leg, b_leg,
+     1          a_leg_inv, b_leg_inv, c_leg_int)  ! see legendre_profile.f
+         CALL legendre_poly_int(n_leg, c_leg_int, x, pcurr, ac, ioff,
+     1          n_leg)
+         ! pcurr now holds the output value
 
       CASE DEFAULT
 !  Power series

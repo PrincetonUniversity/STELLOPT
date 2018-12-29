@@ -2,7 +2,7 @@
 !     Subroutine:    stellopt_optimize
 !     Authors:       S. Lazerson (lazerson@pppl.gov)
 !     Date:          05/26/2012
-!     Description:   This subroutine call the optimization routine.
+!     Description:   This subroutine calls the optimization routine.
 !-----------------------------------------------------------------------
       SUBROUTINE stellopt_optimize
 !-----------------------------------------------------------------------

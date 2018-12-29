@@ -334,10 +334,6 @@ bextrema.o : \
       stel_kinds.o 
       
 
-build_matrices_legendre.o : \
-      stel_kinds.o 
-      
-
 CHFDV.o : \
       stel_kinds.o 
       
@@ -374,7 +370,7 @@ integral.o : \
       stel_kinds.o 
       
 
-legendre_to_power.o : \
+legendre_profile.o : \
       stel_kinds.o 
       
 
@@ -414,10 +410,6 @@ point_wise_to_power.o : \
       stel_kinds.o 
       
 
-power_to_legendre.o : \
-      stel_kinds.o 
-      
-
 line_segment.o : \
       stel_constants.o \
       stel_kinds.o 
@@ -428,7 +420,8 @@ profile_functions.o : \
       stel_kinds.o \
       stel_constants.o \
       functions.o \
-      vmec_input.o
+      vmec_input.o \
+      legendre_profile.o
 
 mpi_inc.o : \
       mpi_params.o

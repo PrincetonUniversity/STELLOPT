@@ -19,6 +19,7 @@
       USE EZspline_obj
       USE EZspline
       USE stel_tools
+      USE legendre_profile
       
 !-----------------------------------------------------------------------
 !     Module Variables
@@ -270,7 +271,7 @@
       REAL(rprec),      INTENT(inout)          :: coefs(ncoefs)
       INTEGER,          INTENT(inout)          ::  ier
       TYPE(EZspline1_r8),OPTIONAL              :: spl_obj
-      INTEGER :: i
+      INTEGER :: i, ioff
       REAL(rprec) :: x0,x1, x2, h, x3, xp
       REAL(rprec), PARAMETER :: one = 1.0_rprec
       REAL(rprec), DIMENSION(10), PARAMETER :: glx = (/                       &
@@ -414,6 +415,32 @@
             xp  = s_val**coefs(3)
             x1  = 8*coefs(2)-2*coefs(1)
             val = (coefs(1)+x1*xp)*(xp-1)**2
+         CASE ('legendre_ip')
+            !!  Legendre polynomials for I-prime
+            !!  I(s) = Sum(i,0,n)[coefs(i)*Integra(LegendreP(i, 2*s-1), ds, 0<s<1)~s
+            !!  The 0th component should be set to 1 and the normalization (curtor)
+            !!  sets the overall current.
+            ioff = LBOUND(coefs,1)            ! Expected to be zero.
+            n_leg = 0
+            DO i = 0,UBOUND(coefs,1)
+              if (coefs(i) .ne. 0) n_leg = i+1
+            END DO
+         
+            IF (ALLOCATED(a_leg)) DEALLOCATE(a_leg)
+            IF (ALLOCATED(b_leg)) DEALLOCATE(b_leg)
+            IF (ALLOCATED(a_leg_inv)) DEALLOCATE(a_leg_inv)
+            IF (ALLOCATED(b_leg_inv)) DEALLOCATE(b_leg_inv)
+            IF (ALLOCATED(c_leg_int)) DEALLOCATE(c_leg_int)
+            IF (ALLOCATED(tc)) DEALLOCATE(tc)
+
+            ALLOCATE(a_leg(0:n_leg,0:n_leg), b_leg(0:n_leg,0:n_leg), &
+               a_leg_inv(0:n_leg,0:n_leg), b_leg_inv(0:n_leg,0:n_leg), &
+               c_leg_int(0:n_leg,0:(n_leg+1)), tc(0:n_leg))
+
+            CALL build_matrices_legendre(n_leg, a_leg, b_leg, &
+               a_leg_inv, b_leg_inv, c_leg_int)  ! see legendre_profile.f
+            CALL legendre_poly_int(n_leg, c_leg_int, s_val, val, coefs, ioff, n_leg)
+            ! val now holds the output value
          CASE DEFAULT
             PRINT *,"Error! Unknown profile type in subroutine eval_prof_stel:",type
             STOP
@@ -820,6 +847,10 @@
             DO ik = LBOUND(x,DIM=1), UBOUND(x,DIM=1)
                profile_norm = profile_norm + x(ik)
             END DO
+         CASE ('legendre_ip')
+            ! ik = LBOUND(x,DIM=1)
+            ! profile_norm = x(ik)
+            profile_norm = 0.0_rprec  ! Don't normalize as we don't want to screw up our coefficients
          CASE DEFAULT
             PRINT *,"Error! Unknown profile type in subroutine profile_norm:",prof_type
             STOP
@@ -844,6 +875,8 @@
            profile_coefficients = profile_coefficients * factor
         CASE ('two_power','two_power_hollow')
            profile_coefficients(1) = profile_coefficients(1) * factor
+        CASE ('legendre_ip')
+           profile_coefficients = profile_coefficients * factor
         CASE DEFAULT
            PRINT *,"Error! Unknown profile type in subroutine scale_profile:",profile_type
            STOP
@@ -1415,6 +1448,10 @@
             nc = 21
          CASE('bump')
             nc = 3
+         CASE('legendre_ip')
+            DO ik = 1, ncoefs
+               IF (coefs(ik) /=0 ) nc = ik+1
+            END DO
          CASE DEFAULT
             PRINT *,"Error! Unknown profile type in subroutine fit_profile:",ptype
             STOP
