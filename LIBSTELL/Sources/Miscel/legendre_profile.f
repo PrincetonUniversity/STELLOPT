@@ -20,14 +20,13 @@
 
       CONTAINS
      
-      SUBROUTINE build_matrices_legendre(n, a, b, a_inv, b_inv, c)
+      SUBROUTINE build_matrices_legendre(n, a, b, a_inv, b_inv)
 !-----------------------------------------------
 !   D u m m y   A r g u m e n t s
 !-----------------------------------------------
       INTEGER, INTENT(IN) :: n
       REAL(rprec), INTENT(OUT), DIMENSION(0:n,0:n) :: a, b
       REAL(rprec), INTENT(OUT), DIMENSION(0:n,0:n) :: a_inv, b_inv
-      REAL(rprec), INTENT(OUT), DIMENSION(0:n,0:(n+1)) :: c
 !-----------------------------------------------
       INTEGER :: idx, idx_2, i, j
       REAL(rprec) :: factorial
@@ -98,8 +97,35 @@
 !
 !
 !      NOTICE that:   A_inv = (A)**(-1);  B_inv = (B)**(-1)
-!
-!
+!         
+!--------------------------------------------------------------------------------------------------
+
+      IF (n > 12) STOP 'N(legendre) CANNOT be larger than 12!!!'
+
+      DO i = 0, n
+        idx = 13*i
+        DO j = 0, i
+          a(i,j) = b_legend(idx+j+1)/norm_legend(i+1)
+          a_inv(i,j) = b_legend_inv(idx+j+1)/norm_inv_legend(i+1)
+          b(i,j) = 2._dp**(-i) * factorial(i)/
+     1      (factorial(j)*factorial(i-j))
+          b_inv(i,j) = 2._dp**j*(-1._dp)**(i-j)* factorial(i)/
+     1      (factorial(j)*factorial(i-j))
+        END DO
+      END DO
+
+      END SUBROUTINE build_matrices_legendre
+
+
+      SUBROUTINE build_matrices_legendre_int(n, c)
+!-----------------------------------------------
+!   D u m m y   A r g u m e n t s
+!-----------------------------------------------
+      INTEGER, INTENT(IN) :: n
+      REAL(rprec), INTENT(OUT), DIMENSION(0:n,0:(n+1)) :: c
+!-----------------------------------------------
+      INTEGER :: idx, i, j
+!--------------------------------------------------------------------------------------------------
 !      C_legend_int: Pre-evaluated integrals of the Legendre polynomials
 !      from 0<=s<=x. Coefficients calculated with Mathematica
 !           {Integrate[LegendreP[0, 2*x - 1], x],
@@ -143,28 +169,16 @@
 
       IF (n > 12) STOP 'N(legendre) CANNOT be larger than 12!!!'
 
-      DO i = 0, n
-        idx = 13*i
-        DO j = 0, i
-          a(i,j) = b_legend(idx+j+1)/norm_legend(i+1)
-          a_inv(i,j) = b_legend_inv(idx+j+1)/norm_inv_legend(i+1)
-          b(i,j) = 2._dp**(-i) * factorial(i)/
-     1      (factorial(j)*factorial(i-j))
-          b_inv(i,j) = 2._dp**j*(-1._dp)**(i-j)* factorial(i)/
-     1      (factorial(j)*factorial(i-j))
-        END DO
-      END DO
-
       ! Initialize c to zero
       c = 0
       DO i = 0, n
-        idx_2 = 14*i
+        idx = 14*i
         DO j = 0, (i+1)
-          c(i,j) = c_legend_int(idx_2+j+1)
+          c(i,j) = c_legend_int(idx+j+1)
         END DO
       END DO
 
-      END SUBROUTINE build_matrices_legendre
+      END SUBROUTINE build_matrices_legendre_int
 
 
       SUBROUTINE legendre_poly_int(n_leg, c_leg_int, xx, yy, aa, 

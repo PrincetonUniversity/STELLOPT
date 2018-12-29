@@ -691,6 +691,7 @@ equil_utils.o : \
       $(LIB_DIR)/Release/vmec_input.o \
       $(LIB_DIR)/Release/vparams.o \
       $(LIB_DIR)/Release/stel_tools.o \
+      $(LIB_DIR)/Release/legendre_profile.o \
       $(VMEC_DIR)/Release/vmec_main.o \
       $(VMEC_DIR)/Release/vmec_params.o \
       $(VMEC_DIR)/Release/vmec_dim.o \

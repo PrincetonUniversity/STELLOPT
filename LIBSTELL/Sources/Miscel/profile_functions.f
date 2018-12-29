@@ -320,8 +320,9 @@
      1         a_leg_inv(0:n_leg,0:n_leg), b_leg_inv(0:n_leg,0:n_leg),
      2         c_leg_int(0:n_leg,0:(n_leg+1)), tc(0:n_leg))
 
-         CALL build_matrices_legendre(n_leg, a_leg, b_leg,
-     1          a_leg_inv, b_leg_inv, c_leg_int)  ! see legendre_profile.f
+!         CALL build_matrices_legendre(n_leg, a_leg, b_leg,
+!     1          a_leg_inv, b_leg_inv, c_leg_int)  ! see legendre_profile.f
+         CALL build_matrices_legendre_int(n_leg, c_leg_int)  ! see legendre_profile.f
          CALL legendre_poly_int(n_leg, c_leg_int, x, pcurr, ac, ioff,
      1          n_leg)
          ! pcurr now holds the output value

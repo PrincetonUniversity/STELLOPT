@@ -1,6 +1,8 @@
       SUBROUTINE point_wise_to_power(npts, x, f, n, ac, i_full,
      1                               nsp_pts)
       USE stel_kinds
+      USE legendre_profile, ONLY : build_matrices_legendre,
+     1                             legendre_to_power
       IMPLICIT NONE
 !-----------------------------------------------
 !   D u m m y   A r g u m e n t s

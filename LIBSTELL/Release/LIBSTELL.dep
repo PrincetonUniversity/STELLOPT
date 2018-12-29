@@ -407,7 +407,8 @@ PCHST.o : \
       
 
 point_wise_to_power.o : \
-      stel_kinds.o 
+      stel_kinds.o  \
+      legendre_profile.o
       
 
 line_segment.o : \
