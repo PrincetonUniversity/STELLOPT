@@ -4,7 +4,8 @@
      1                         rmnc_opt, zmns_opt, lmns_opt
       USE vparams, ONLY: zero
       USE system_mod
-      USE legendre_params
+!      USE legendre_params
+      USE legendre_profile
       USE mpi_params
       IMPLICIT NONE
 !DEC$ IF DEFINED (MPI_OPT)

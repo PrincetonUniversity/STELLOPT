@@ -3,7 +3,8 @@
       USE bootsj_input
       USE optim_params, ONLY: optimum
       USE safe_open_mod
-      USE legendre_params
+      !USE legendre_params ! Contents moved to legendre_profile.f
+      USE legendre_profile
       USE vmec_input
       USE vparams, ONLY: zero
       USE coilsnamin, ONLY: lmodular, lsaddle, lbcoil, lvf, lsurfv,

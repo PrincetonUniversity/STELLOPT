@@ -341,16 +341,11 @@ initialize_opt.o : \
       ../../LIBSTELL/Debug/vacfield_mod.o \
       ../../LIBSTELL/Debug/vmec_input.o \
       ../../LIBSTELL/Debug/vparams.o \
-      legendre_params.o \
       optim.o 
       
 
 j_star.o : \
       ../../LIBSTELL/Debug/mpi_params.o \
-      ../../LIBSTELL/Debug/stel_kinds.o 
-      
-
-legendre_params.o : \
       ../../LIBSTELL/Debug/stel_kinds.o 
       
 
@@ -364,7 +359,6 @@ load_params.o : \
       ../../LIBSTELL/Debug/vacfield_mod.o \
       ../../LIBSTELL/Debug/vmec_input.o \
       ../../LIBSTELL/Debug/vparams.o \
-      legendre_params.o \
       optim.o 
       
 
@@ -456,7 +450,6 @@ optimize.o : \
       ../../LIBSTELL/Debug/system_mod.o \
       ../../LIBSTELL/Debug/vparams.o \
       boozer_params.o \
-      legendre_params.o \
       optim.o 
       
 

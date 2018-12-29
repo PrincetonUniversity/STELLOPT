@@ -31,7 +31,6 @@ load_target.o \
 optim.o \
 chk_rzmnb.o \
 initialize_opt.o \
-legendre_params.o \
 init_ajax.o \
 generate_mgrid.o \
 j_star.o \

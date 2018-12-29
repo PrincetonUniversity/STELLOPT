@@ -1,6 +1,7 @@
       SUBROUTINE initialize_opt(xc_opt, var_descript, nvar, nopt)
       USE optim
-      USE legendre_params                                                !LEGENDRE
+      !USE legendre_params                                                !LEGENDRE
+      USE legendre_profile  ! changed to account for changes in LIBSTELL
       USE vmec_input, ONLY : rbc, zbs, ai, am, ac, ncurr, lfreeb,
      1     curtor, extcur, phiedge, nfp, bcrit, at, ah,
      2     pmass_type,pcurr_type,piota_type,
