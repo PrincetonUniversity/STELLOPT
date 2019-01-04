@@ -1002,6 +1002,7 @@
       DOUBLE PRECISION :: s_val, u_val, v_val, Bs, Bu, Bv, Br, Bphi
       DOUBLE PRECISION :: R_grad(3), Z_grad(3)
       IF (ier < 0) RETURN
+      s_val = 0.5
       CALL get_equil_s(r_val,phi_val,z_val,s_val,ier,u_val)
       IF (ier < 0) RETURN
       v_val = PHI_target
