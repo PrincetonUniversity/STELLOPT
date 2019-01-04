@@ -24,11 +24,13 @@ export FLAG_CALLED_FROM_BUILD_ALL=true
 
 # Set the default.
 #RELEASE_TYPE=--clean_release
-RELEASE_TYPE=--release
+#RELEASE_TYPE=--release
+#RELEASE_TYPE=--clean_debug
+RELEASE_TYPE=--debug
 
 # Check to see if a build options was givin
 if [ $# -ne 0 ]; then
-  for OPTION in --release --clean_release
+  for OPTION in --release --clean_release --debug --clean_debug
   do
     # If command line arguments were given, then check to see
     # which codes should be compiled.  Otherwise compile everything.
@@ -50,7 +52,7 @@ make $MAKE_OPTIONS
 
 # Loop through all the available codes and make the ones specified on the
 # command line.  If no codes were specified, then make all of them.
-for CODE in LIBSTELL ANIMEC BCYCLIC BEAMS3D BOOTSJ BNORM BOOZ_XFORM COBRAVMEC COILOPT DESCUR DESCUR_PLOT DIAGNO DKES FIELDLINES GTOVMI IPIES J_INVARIANT JMC MAKEGRID NEO NESCOIL PENTA SIESTA STELLOPT STELLTRANS TORLINES V3FITA VMEC2000 VMEC2PIES VMEC2SPEC VMEC2STEL VMEC2V690 VMEC2XGC STELLOPTV2
+for CODE in LIBSTELL ANIMEC BCYCLIC BEAMS3D BOOTSJ BNORM BOOZ_XFORM COBRAVMEC COILOPT DESCUR DESCUR_PLOT DIAGNO DKES FIELDLINES GTOVMI IPIES J_INVARIANT JMC MAKEGRID NEO NESCOIL PENTA QSC SIESTA STELLOPT STELLTRANS TORLINES V3FITA VMEC2000 VMEC2PIES VMEC2SPEC VMEC2STEL VMEC2V690 VMEC2XGC STELLOPTV2
 do
   match=0
 

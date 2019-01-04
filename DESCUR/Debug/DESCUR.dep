@@ -55,7 +55,7 @@ printit.o : \
       
 
 read_wout_curve.o : \
-      ../../LIBSTELL/Debug/read_wout_mod.o \
+      ../../LIBSTELL/Release/read_wout_mod.o \
       vname0.o \
       vname1.o 
       
@@ -71,7 +71,7 @@ scrunch.o : \
       
 
 vname0.o : \
-      ../../LIBSTELL/Debug/stel_kinds.o 
+      ../../LIBSTELL/Release/stel_kinds.o 
       
 
 vname1.o : \

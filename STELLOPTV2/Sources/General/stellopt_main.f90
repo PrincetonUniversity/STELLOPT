@@ -44,6 +44,7 @@
       CALL MPI_ERRHANDLER_SET(MPI_COMM_WORLD,MPI_ERRORS_RETURN,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_main',ierr_mpi)
 !DEC$ ENDIF
+      write(0,*)'stel_main. myid,numprocs=',myid,numprocs  !hm-12/5/18. (7l23h)
       pi = 4.0 * ATAN(1.0)
       pi2 = 8.0 * ATAN(1.0)
       mu0 = 16.0E-7 * ATAN(1.0)
@@ -138,6 +139,8 @@
       CALL MPI_BARRIER( MPI_COMM_STEL, ierr_mpi )                   ! MPI
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'stellopt_main',ierr_mpi)
 !DEC$ ENDIF
+
+      write(0,*)'hm-9/12/18-1.stellopt_main. unit=0.'
       ! Initialize the Calculation
       CALL stellopt_init
 

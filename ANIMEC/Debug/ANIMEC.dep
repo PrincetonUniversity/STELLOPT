@@ -39,17 +39,17 @@ movieout.o : \
       
 
 csplinx.o : \
-      ../../LIBSTELL/Debug/stel_kinds.o 
+      ../../LIBSTELL/Release/stel_kinds.o 
       
 
 directaccess.o : \
-      ../../LIBSTELL/Debug/safe_open_mod.o \
-      ../../LIBSTELL/Debug/stel_kinds.o 
+      ../../LIBSTELL/Release/safe_open_mod.o \
+      ../../LIBSTELL/Release/stel_kinds.o 
       
 
 fbal.o : \
-      ../../LIBSTELL/Debug/stel_kinds.o \
-      ../../LIBSTELL/Debug/vmec_input.o \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Release/vmec_input.o \
       vforces.o \
       precon2d.o \
       realspace.o \
@@ -66,8 +66,8 @@ forces.o : \
       
 
 funct3d.o : \
-      ../../LIBSTELL/Debug/vmec_utils.o \
-      ../../LIBSTELL/Debug/vparams.o \
+      ../../LIBSTELL/Release/vmec_utils.o \
+      ../../LIBSTELL/Release/vparams.o \
       precon2d.o \
       realspace.o \
       timer_sub.o \
@@ -111,7 +111,7 @@ precondn.o : \
       
 
 realspace.o : \
-      ../../LIBSTELL/Debug/stel_kinds.o 
+      ../../LIBSTELL/Release/stel_kinds.o 
       
 
 residue.o : \
@@ -162,28 +162,28 @@ totzsp_mod.o : \
       
 
 vforces.o : \
-      ../../LIBSTELL/Debug/stel_kinds.o 
+      ../../LIBSTELL/Release/stel_kinds.o 
       
 
 vmec_main.o : \
-      ../../LIBSTELL/Debug/vmec_input.o \
-      ../../LIBSTELL/Debug/vparams.o \
+      ../../LIBSTELL/Release/vmec_input.o \
+      ../../LIBSTELL/Release/vparams.o \
       vmec_dim.o \
       vmec_params.o \
       vmec_persistent.o 
       
 
 vmec_params.o : \
-      ../../LIBSTELL/Debug/stel_kinds.o \
-      ../../LIBSTELL/Debug/vparams.o 
+      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Release/vparams.o 
       
 
 vmec_persistent.o : \
-      ../../LIBSTELL/Debug/stel_kinds.o 
+      ../../LIBSTELL/Release/stel_kinds.o 
       
 
 xstuff.o : \
-      ../../LIBSTELL/Debug/stel_kinds.o 
+      ../../LIBSTELL/Release/stel_kinds.o 
       
 
 allocate_funct3d.o : \
@@ -194,7 +194,7 @@ allocate_funct3d.o : \
       
 
 allocate_ns.o : \
-      ../../LIBSTELL/Debug/mgrid_mod.o \
+      ../../LIBSTELL/Release/mgrid_mod.o \
       csplinx.o \
       fbal.o \
       realspace.o \
@@ -212,7 +212,7 @@ allocate_nunv.o : \
       
 
 close_all_files.o : \
-      ../../LIBSTELL/Debug/vparams.o 
+      ../../LIBSTELL/Release/vparams.o 
       
 
 fixaray.o : \
@@ -249,7 +249,7 @@ free_mem_recon.o : \
       
 
 free_persistent_mem.o : \
-      ../../LIBSTELL/Debug/mgrid_mod.o \
+      ../../LIBSTELL/Release/mgrid_mod.o \
       vmec_main.o \
       vsvd.o \
       xstuff.o 
@@ -262,8 +262,8 @@ guess_axis.o : \
       
 
 heading.o : \
-      ../../LIBSTELL/Debug/date_and_computer.o \
-      ../../LIBSTELL/Debug/vparams.o \
+      ../../LIBSTELL/Release/date_and_computer.o \
+      ../../LIBSTELL/Release/vparams.o \
       vmec_main.o \
       vmec_params.o 
       
@@ -282,22 +282,22 @@ initialize_radial.o : \
       
 
 load_xc_from_wout.o : \
-      ../../LIBSTELL/Debug/read_wout_mod.o \
-      ../../LIBSTELL/Debug/vmec_input.o \
-      ../../LIBSTELL/Debug/vparams.o \
+      ../../LIBSTELL/Release/read_wout_mod.o \
+      ../../LIBSTELL/Release/vmec_input.o \
+      ../../LIBSTELL/Release/vparams.o \
       vmec_dim.o \
       vmec_main.o \
       vmec_params.o 
       
 
 magnetic_fluxes.o : \
-      ../../LIBSTELL/Debug/stel_kinds.o \
-      ../../LIBSTELL/Debug/vmec_input.o 
+      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Release/vmec_input.o 
       
 
 open_output_files.o : \
-      ../../LIBSTELL/Debug/safe_open_mod.o \
-      ../../LIBSTELL/Debug/vparams.o 
+      ../../LIBSTELL/Release/safe_open_mod.o \
+      ../../LIBSTELL/Release/vparams.o 
       
 
 profil1d.o : \
@@ -326,7 +326,7 @@ reset_params.o : \
       
 
 vsetup.o : \
-      ../../LIBSTELL/Debug/mgrid_mod.o \
+      ../../LIBSTELL/Release/mgrid_mod.o \
       gmres_mod.o \
       realspace.o \
       vacmod.o \
@@ -350,7 +350,7 @@ elongation.o : \
       
 
 eqfor.o : \
-      ../../LIBSTELL/Debug/mgrid_mod.o \
+      ../../LIBSTELL/Release/mgrid_mod.o \
       csplinx.o \
       fbal.o \
       realspace.o \
@@ -390,37 +390,37 @@ fsym_invfft.o : \
       
 
 getbrho.o : \
-      ../../LIBSTELL/Debug/stel_kinds.o \
-      ../../LIBSTELL/Debug/vmec_input.o \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Release/vmec_input.o \
       vmec_dim.o \
       vmec_main.o \
       vmec_persistent.o 
       
 
 getcurmid.o : \
-      ../../LIBSTELL/Debug/vmec_input.o \
+      ../../LIBSTELL/Release/vmec_input.o \
       vmec_dim.o 
       
 
 jxbforce.o : \
-      ../../LIBSTELL/Debug/ezcdf.o \
-      ../../LIBSTELL/Debug/safe_open_mod.o \
+      ../../LIBSTELL/Release/ezcdf.o \
+      ../../LIBSTELL/Release/safe_open_mod.o \
       realspace.o \
       vmec_main.o \
       vmec_params.o 
       
 
 magnetics_data.o : \
-      ../../LIBSTELL/Debug/mgrid_mod.o \
+      ../../LIBSTELL/Release/mgrid_mod.o \
       vacmod.o \
       vmec_main.o \
       vsvd.o 
       
 
 mercier.o : \
-      ../../LIBSTELL/Debug/safe_open_mod.o \
-      ../../LIBSTELL/Debug/vmec_input.o \
-      ../../LIBSTELL/Debug/vparams.o \
+      ../../LIBSTELL/Release/safe_open_mod.o \
+      ../../LIBSTELL/Release/vmec_input.o \
+      ../../LIBSTELL/Release/vparams.o \
       vmercier.o 
       
 
@@ -432,15 +432,15 @@ printout.o : \
       
 
 read_indata.o : \
-      ../../LIBSTELL/Debug/safe_open_mod.o \
-      ../../LIBSTELL/Debug/vmec_input.o \
+      ../../LIBSTELL/Release/safe_open_mod.o \
+      ../../LIBSTELL/Release/vmec_input.o \
       vacmod.o \
       vmec_main.o \
       vmec_params.o 
       
 
 readin.o : \
-      ../../LIBSTELL/Debug/mgrid_mod.o \
+      ../../LIBSTELL/Release/mgrid_mod.o \
       init_geometry.o \
       timer_sub.o \
       vacmod.o \
@@ -451,11 +451,11 @@ readin.o : \
       
 
 TestWout.o : \
-      ../../LIBSTELL/Debug/read_wout_mod.o \
-      ../../LIBSTELL/Debug/stel_constants.o \
-      ../../LIBSTELL/Debug/stel_kinds.o \
-      ../../LIBSTELL/Debug/vmec_input.o \
-      ../../LIBSTELL/Debug/vmec_utils.o \
+      ../../LIBSTELL/Release/read_wout_mod.o \
+      ../../LIBSTELL/Release/stel_constants.o \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Release/vmec_input.o \
+      ../../LIBSTELL/Release/vmec_utils.o \
       realspace.o \
       vforces.o \
       vmec_dim.o \
@@ -464,15 +464,15 @@ TestWout.o : \
       
 
 timer_sub.o : \
-      ../../LIBSTELL/Debug/stel_kinds.o 
+      ../../LIBSTELL/Release/stel_kinds.o 
       
 
 vmec_io.o : \
-      ../../LIBSTELL/Debug/stel_kinds.o 
+      ../../LIBSTELL/Release/stel_kinds.o 
       
 
 vmercier.o : \
-      ../../LIBSTELL/Debug/vparams.o 
+      ../../LIBSTELL/Release/vparams.o 
       
 
 write_dcon.o : \
@@ -482,11 +482,11 @@ write_dcon.o : \
       
 
 wrout.o : \
-      ../../LIBSTELL/Debug/ezcdf.o \
-      ../../LIBSTELL/Debug/mgrid_mod.o \
-      ../../LIBSTELL/Debug/read_wout_mod.o \
-      ../../LIBSTELL/Debug/safe_open_mod.o \
-      ../../LIBSTELL/Debug/vmec_input.o \
+      ../../LIBSTELL/Release/ezcdf.o \
+      ../../LIBSTELL/Release/mgrid_mod.o \
+      ../../LIBSTELL/Release/read_wout_mod.o \
+      ../../LIBSTELL/Release/safe_open_mod.o \
+      ../../LIBSTELL/Release/vmec_input.o \
       realspace.o \
       totzsp_mod.o \
       vforces.o \
@@ -501,7 +501,7 @@ wrout.o : \
       
 
 wroutlim.o : \
-      ../../LIBSTELL/Debug/mgrid_mod.o \
+      ../../LIBSTELL/Release/mgrid_mod.o \
       vmec_main.o \
       vsvd.o 
       
@@ -519,17 +519,17 @@ analyt.o : \
       
 
 becoil.o : \
-      ../../LIBSTELL/Debug/vparams.o \
+      ../../LIBSTELL/Release/vparams.o \
       vacmod.o 
       
 
 belicu.o : \
-      ../../LIBSTELL/Debug/biotsavart.o \
+      ../../LIBSTELL/Release/biotsavart.o \
       vacmod.o 
       
 
 bextern.o : \
-      ../../LIBSTELL/Debug/mgrid_mod.o \
+      ../../LIBSTELL/Release/mgrid_mod.o \
       vacmod.o 
       
 
@@ -542,12 +542,12 @@ fourp.o : \
       
 
 greenf.o : \
-      ../../LIBSTELL/Debug/vparams.o \
+      ../../LIBSTELL/Release/vparams.o \
       vacmod.o 
       
 
 precal.o : \
-      ../../LIBSTELL/Debug/vparams.o \
+      ../../LIBSTELL/Release/vparams.o \
       vacmod.o 
       
 
@@ -560,37 +560,37 @@ surface.o : \
       
 
 tolicu.o : \
-      ../../LIBSTELL/Debug/biotsavart.o \
-      ../../LIBSTELL/Debug/vparams.o \
+      ../../LIBSTELL/Release/biotsavart.o \
+      ../../LIBSTELL/Release/vparams.o \
       vacmod.o 
       
 
 vac_persistent.o : \
-      ../../LIBSTELL/Debug/stel_kinds.o 
+      ../../LIBSTELL/Release/stel_kinds.o 
       
 
 vacmod.o : \
-      ../../LIBSTELL/Debug/mgrid_mod.o \
-      ../../LIBSTELL/Debug/vmec_input.o \
-      ../../LIBSTELL/Debug/vparams.o \
+      ../../LIBSTELL/Release/mgrid_mod.o \
+      ../../LIBSTELL/Release/vmec_input.o \
+      ../../LIBSTELL/Release/vparams.o \
       vac_persistent.o \
       vacmod0.o \
       vmec_params.o 
       
 
 vacuum.o : \
-      ../../LIBSTELL/Debug/vparams.o \
+      ../../LIBSTELL/Release/vparams.o \
       vacmod.o \
       vmec_params.o 
       
 
 axisopt.o : \
-      ../../LIBSTELL/Debug/vparams.o \
+      ../../LIBSTELL/Release/vparams.o \
       vsvd.o 
       
 
 cauchy.o : \
-      ../../LIBSTELL/Debug/vparams.o 
+      ../../LIBSTELL/Release/vparams.o 
       
 
 chisq.o : \
@@ -605,7 +605,7 @@ findphi.o : \
       
 
 fixrecon.o : \
-      ../../LIBSTELL/Debug/mgrid_mod.o \
+      ../../LIBSTELL/Release/mgrid_mod.o \
       vmec_main.o \
       vspline.o \
       vsvd.o 
@@ -620,7 +620,7 @@ flux_init.o : \
       
 
 getbfld.o : \
-      ../../LIBSTELL/Debug/mgrid_mod.o \
+      ../../LIBSTELL/Release/mgrid_mod.o \
       realspace.o \
       vmec_main.o \
       vmec_params.o \
@@ -638,8 +638,8 @@ getdiam.o : \
       
 
 getflux.o : \
-      ../../LIBSTELL/Debug/mgrid_mod.o \
-      ../../LIBSTELL/Debug/vparams.o \
+      ../../LIBSTELL/Release/mgrid_mod.o \
+      ../../LIBSTELL/Release/vparams.o \
       realspace.o \
       vmec_main.o \
       vmec_params.o \
@@ -648,12 +648,12 @@ getflux.o : \
       
 
 getgreen.o : \
-      ../../LIBSTELL/Debug/vparams.o \
+      ../../LIBSTELL/Release/vparams.o \
       vsvd.o 
       
 
 getlim.o : \
-      ../../LIBSTELL/Debug/mgrid_mod.o \
+      ../../LIBSTELL/Release/mgrid_mod.o \
       realspace.o \
       vmec_main.o \
       vsvd.o 
@@ -683,13 +683,13 @@ getthom.o : \
       
 
 grnbfld.o : \
-      ../../LIBSTELL/Debug/mgrid_mod.o \
-      ../../LIBSTELL/Debug/vparams.o \
+      ../../LIBSTELL/Release/mgrid_mod.o \
+      ../../LIBSTELL/Release/vparams.o \
       vsvd.o 
       
 
 grnflx.o : \
-      ../../LIBSTELL/Debug/mgrid_mod.o \
+      ../../LIBSTELL/Release/mgrid_mod.o \
       vsvd.o 
       
 
@@ -699,7 +699,7 @@ movephi1.o : \
       
 
 newphi.o : \
-      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Release/stel_kinds.o \
       realspace.o \
       vmec_main.o \
       vsvd.o \
@@ -707,7 +707,7 @@ newphi.o : \
       
 
 newprofil.o : \
-      ../../LIBSTELL/Debug/mgrid_mod.o \
+      ../../LIBSTELL/Release/mgrid_mod.o \
       realspace.o \
       timer_sub.o \
       vacmod.o \
@@ -719,11 +719,11 @@ newprofil.o : \
       
 
 pofs.o : \
-      ../../LIBSTELL/Debug/stel_kinds.o 
+      ../../LIBSTELL/Release/stel_kinds.o 
       
 
 printmatrix.o : \
-      ../../LIBSTELL/Debug/vparams.o 
+      ../../LIBSTELL/Release/vparams.o 
       
 
 radfor.o : \
@@ -735,13 +735,13 @@ radfor.o : \
       
 
 readrecon.o : \
-      ../../LIBSTELL/Debug/mgrid_mod.o \
+      ../../LIBSTELL/Release/mgrid_mod.o \
       vmec_main.o \
       vsvd.o 
       
 
 sgemvmm.o : \
-      ../../LIBSTELL/Debug/stel_kinds.o 
+      ../../LIBSTELL/Release/stel_kinds.o 
       
 
 smoothdata.o : \
@@ -762,7 +762,7 @@ storesvd.o : \
       
 
 vsvd.o : \
-      ../../LIBSTELL/Debug/vmec_input.o 
+      ../../LIBSTELL/Release/vmec_input.o 
       
 
 add_tension.o : \
@@ -770,8 +770,8 @@ add_tension.o : \
       
 
 getspline.o : \
-      ../../LIBSTELL/Debug/vparams.o \
-      ../../LIBSTELL/Debug/vsvd0.o 
+      ../../LIBSTELL/Release/vparams.o \
+      ../../LIBSTELL/Release/vsvd0.o 
       
 
 gety2.o : \
@@ -787,44 +787,44 @@ jacprod.o : \
       
 
 set_dual.o : \
-      ../../LIBSTELL/Debug/vmec_input.o \
-      ../../LIBSTELL/Debug/vparams.o \
+      ../../LIBSTELL/Release/vmec_input.o \
+      ../../LIBSTELL/Release/vparams.o \
       vspline.o 
       
 
 setspline.o : \
-      ../../LIBSTELL/Debug/vparams.o \
+      ../../LIBSTELL/Release/vparams.o \
       vspline.o 
       
 
 setup_int.o : \
-      ../../LIBSTELL/Debug/stel_kinds.o \
-      ../../LIBSTELL/Debug/vparams.o 
+      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Release/vparams.o 
       
 
 sort_data.o : \
-      ../../LIBSTELL/Debug/stel_kinds.o 
+      ../../LIBSTELL/Release/stel_kinds.o 
       
 
 splinint.o : \
-      ../../LIBSTELL/Debug/vparams.o \
+      ../../LIBSTELL/Release/vparams.o \
       vspline.o \
       vsvd.o 
       
 
 splints.o : \
-      ../../LIBSTELL/Debug/vmec_input.o \
+      ../../LIBSTELL/Release/vmec_input.o \
       vspline.o 
       
 
 splintx.o : \
-      ../../LIBSTELL/Debug/vparams.o \
+      ../../LIBSTELL/Release/vparams.o \
       csplinx.o \
       vsvd.o 
       
 
 vspline.o : \
-      ../../LIBSTELL/Debug/vsvd0.o 
+      ../../LIBSTELL/Release/vsvd0.o 
       
 
 eqsolve.o : \
@@ -848,7 +848,7 @@ evolve.o : \
       
 
 gmres_mod.o : \
-      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Release/stel_kinds.o \
       vmec_dim.o \
       vmec_main.o \
       vmec_params.o \
@@ -874,27 +874,27 @@ runvmec.o : \
       
 
 vmec.o : \
-      ../../LIBSTELL/Debug/safe_open_mod.o \
-      ../../LIBSTELL/Debug/vmec_input.o \
-      ../../LIBSTELL/Debug/vmec_seq.o \
-      ../../LIBSTELL/Debug/vparams.o \
+      ../../LIBSTELL/Release/safe_open_mod.o \
+      ../../LIBSTELL/Release/vmec_input.o \
+      ../../LIBSTELL/Release/vmec_seq.o \
+      ../../LIBSTELL/Release/vparams.o \
       vmec_params.o 
       
 
 vmec_history.o : \
-      ../../LIBSTELL/Debug/safe_open_mod.o \
-      ../../LIBSTELL/Debug/stel_kinds.o \
-      ../../LIBSTELL/Debug/vmec_input.o \
+      ../../LIBSTELL/Release/safe_open_mod.o \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Release/vmec_input.o \
       precon2d.o \
       vmec_dim.o \
       vmec_main.o 
       
 
 precon2d.o : \
-      ../../LIBSTELL/Debug/safe_open_mod.o \
-      ../../LIBSTELL/Debug/stel_kinds.o \
-      ../../LIBSTELL/Debug/vmec_input.o \
-      ../../LIBSTELL/Debug/vparams.o \
+      ../../LIBSTELL/Release/safe_open_mod.o \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Release/vmec_input.o \
+      ../../LIBSTELL/Release/vparams.o \
       directaccess.o \
       realspace.o \
       timer_sub.o \

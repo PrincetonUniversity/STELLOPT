@@ -24,8 +24,10 @@
                              restart_flag, readin_flag, timestep_flag, &
                              output_flag, cleanup_flag, reset_jacdt_flag
 !                             animec_flag, flow_flag
-      USE vmec_main, ONLY:  multi_ns_grid
+!      USE vmec_main, ONLY:  multi_ns_grid
+      USE vmec_main, ONLY:  multi_ns_grid,nzeta,ntheta3,nznt  !11/26/18.(7l19f)
       USE mpi_params                                                    ! MPI
+      use quasisymmetry_variables, only: xtqsc  !hm-10/14/18.
       IMPLICIT NONE
       
 !-----------------------------------------------------------------------
@@ -58,6 +60,7 @@
       CHARACTER(len = 16)     :: temp_str
       CHARACTER(len = 128)    :: reset_string
       CHARACTER(len = 256)    :: ctemp_str
+!      integer :: nzeta_tmp,ntheta3_tmp,nznt_tmp   !hm-11/26/18.(7l19g). out-12/4/18.
       
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
@@ -151,6 +154,7 @@
          CALL unique_boundary_PG(rbc,zbs,deltamn,ntord,mpol1d,mpol-1,ntor)
       END IF
 
+      write(0,*)'unpack RBC/ZBS/RBS/ZBC'  !hm-11/13/18.
       ! Unpack RBC/ZBS/RBS/ZBC
       DO nvar_in = 1, n
          IF (var_dex(nvar_in) == ibound_rbc) rbc(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
@@ -168,6 +172,28 @@
             END IF
          END IF
       END DO
+
+!12/18/18.(7m10a)place-2 for Handle-2 =setting istat.
+      ! Handle lscreen       =(12/18/18)Handle-2
+      lscreen = .false.
+      if (iflag < 0) lscreen=.true.
+      istat = iflag
+
+!11/14/18.(7l6).place-2 for Handle-3 =proc_string calc.
+      ! Handle making a temporary string   =(12/18/18)Handle-3
+      IF (iflag .eq. -1) istat = 0
+      WRITE(temp_str,'(i5)') istat
+      proc_string = TRIM(TRIM(id_string) // '_opt' // TRIM(ADJUSTL(temp_str)))
+
+!10/18/18.place-1 for QSC(), mved blw. mved back-11/14/18(7l6), along w calc of proc_string.
+      if (iflg1.ne.0)  then
+         rbc = 0.   !hm-11/13/18.diagn.
+         write(0,*)'stel_fcn > QSC. proc_string=',trim(proc_string) !hm-9/23-1,10/18/18.
+!    write(0,*)'bfr QSC: nzeta,ntheta3,nznt=',nzeta,ntheta3,nznt !11/26/18.(7l19f).1/2.out
+         call QSC(proc_string)  !9/26/18. 10/18/18.chged arg xtqsc->proc_string. (7k2)c-out.
+         write(0,*)'f QSC,bfr restore: nzeta,ntheta3,nznt=',nzeta,ntheta3,nznt !11/26,28/18.(7l19f, 7l21c)
+!      end if  !out-12/4/18.
+      else  ! JBres-12/4/18.(7l22g)
 
       ! Apply normalization
       aphi = aphi * norm_aphi
@@ -192,7 +218,9 @@
       at_aux_f = at_aux_f * norm_at
       emis_xics_f = emis_xics_f * norm_emis_xics
 
-      ! Handle cleanup
+   endif
+
+      ! Handle cleanup    =(12/18/18)Handle-1
       IF (iflag < -2) THEN
          CALL stellopt_clean_up(ncnt,iflag)
          iflag = 0
@@ -221,10 +249,8 @@
          RETURN
       END IF
 
-      ! Handle lscreen
-      lscreen = .false.
-      if (iflag < 0) lscreen=.true.
-      istat = iflag
+!12/18/18.place-1 for Handle-2 =setting istat. mved abv.
+
       !PRINT *,myid,iflag,iflag+myid,MOD(iflag+myid,4)
       ! Generate Random errors
 !      IF (ncnt > n) THEN
@@ -253,12 +279,11 @@
 !         END IF
 !      END IF
 
-      ! Handle making a temporary string
-      IF (iflag .eq. -1) istat = 0
-      WRITE(temp_str,'(i5)') istat
-      proc_string = TRIM(TRIM(id_string) // '_opt' // TRIM(ADJUSTL(temp_str)))
+!11/14/18.place-1 for Handle-3 =proc_string calc. mved abv.
 
-      ! Handle coil geometry variations
+!11/13/18.place-3 for QSC().
+
+      ! Handle coil geometry variations      =(12/18/18)Handle-4
       IF (lcoil_geom) THEN
          CALL stellopt_spline_to_coil(lscreen)
          ctemp_str = 'write_mgrid'
@@ -274,6 +299,8 @@
          SELECT CASE (TRIM(equil_type))
             CASE('vmec2000_old','animec','flow','satire')
             CASE('paravmec','parvmec','vmec2000')
+!10/18/18.place-2 for QSC(), mved here fra place-1 abv, arg chged xtqsc->proc_string.
+
                iflag = 0
                CALL stellopt_paraexe('paravmec_run',proc_string,lscreen)
                iflag = ier_paraexe

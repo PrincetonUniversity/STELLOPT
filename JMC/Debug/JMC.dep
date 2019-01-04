@@ -1,8 +1,8 @@
 # Microsoft Developer Studio Generated Dependency File, included by VMEC2000.mak
 
 jmc.o: \
-      ../../LIBSTELL/Debug/stel_kinds.o \
-      ../../LIBSTELL/Debug/read_boozer_mod.o
+      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Release/read_boozer_mod.o
       
       
 

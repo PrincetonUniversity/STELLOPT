@@ -97,8 +97,7 @@
       !------------- ARRAY TARGETS ----------------------------
       ! EXTERNAL CURRENTS
       IF (ANY(sigma_extcur < bigno))  &
-         CALL chisq_extcur(target_extcur,sigma_extcur,ncnt,iflag)
-         
+         CALL chisq_extcur(target_extcur,sigma_extcur,ncnt,iflag)         
       !------------- LINE INTEGRATED TARGETS -------------------
       ! LINE ELECTRON DENSITY
       IF (ANY(sigma_ne_line < bigno_ne)) &
@@ -206,15 +205,19 @@
       ! Boostrap
       IF (ANY(sigma_bootstrap < bigno)) &
          CALL chisq_bootstrap(target_bootstrap, sigma_bootstrap, ncnt,iflag)
+      write(0,*)'stel_load_targ-1. ncnt,iflag,m,mtargets=',ncnt,iflag,m,mtargets   !hm-10/26/18.
       ! NEO
       IF (ANY(sigma_neo < bigno)) &
          CALL chisq_neo(target_neo, sigma_neo, ncnt,iflag)
+!      write(0,*)'stel_load_targ-2. ncnt,iflag,m,mtargets=',ncnt,iflag,m,mtargets   !hm-10/26/18.
       ! DKES
       IF (ANY(sigma_dkes < bigno)) &
          CALL chisq_dkes(target_dkes, sigma_dkes, ncnt,iflag)
+!      write(0,*)'stel_load_targ-3. ncnt,iflag,m,mtargets=',ncnt,iflag,m,mtargets   !hm-10/26/18.
       ! TXPORT
       IF (ANY(sigma_txport < bigno)) &
          CALL chisq_txport(target_txport, sigma_txport, ncnt,iflag)
+!      write(0,*)'stel_load_targ-4. ncnt,iflag,m,mtargets=',ncnt,iflag,m,mtargets   !hm-10/26/18.
       ! Orbit
       IF (ANY(sigma_orbit < bigno)) &
          CALL chisq_orbit(target_orbit, sigma_orbit, ncnt,iflag)

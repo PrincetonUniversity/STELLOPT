@@ -8,6 +8,11 @@ SPATH   = ../Sources
 DEPLIST = NEO.dep
 OBJLIST = ../ObjectList
 
+#hm-10/8/18.echo vals of these vrbls.
+#@echo "DEPLIST=" $(DEPLIST)
+#echo "OBJLIST=" $(OBJLIST)
+#echo "ObjectFiles=" $(ObjectFiles)
+
 #Includes source files and dependency list
 include $(DEPLIST)
 include $(OBJLIST)
@@ -17,6 +22,9 @@ VPATH = $(SPATH)
 .SUFFIXES : .f .f90 .o
 xneo:  $(LIB) $(ObjectFiles)
 	$(LINK) $@ $(ObjectFiles) $(LIB_LINK)
+	@echo "DEPLIST=" $(DEPLIST)
+	@echo "OBJLIST=" $(OBJLIST)
+	@echo "ObjectFiles=" $(ObjectFiles)
 #Compile object files defined in OBJLIST.
 .f.o :
 	@if grep -q '^!DEC\$$' $<; \

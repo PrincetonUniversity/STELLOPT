@@ -38,6 +38,7 @@ C-----------------------------------------------
       INTEGER :: i, j, k, nsmin, nsmax, m
       REAL(dp), ALLOCATABLE, DIMENSION(:) :: bcastbuf
       INTEGER, DIMENSION(4) :: bbuf
+!      integer :: iz   !hm-11/22/18. out-11/26/18.
 C-----------------------------------------------
       CALL second0 (tfunon)
 !
@@ -107,6 +108,12 @@ C-----------------------------------------------
          pzcon(:,l,0) = pzcon(:,l,0) + pzcon(:,l,1)*psqrts(:,l)
          pru0(:,l) = pru(:,l,0) + pru(:,l,1)*psqrts(:,l)
          pzu0(:,l) = pzu(:,l,0) +  pzu(:,l,1)*psqrts(:,l)
+!         write(0,*)'hm-11/22.funct3d pru0(:,) calc. l=',l   !11/26/18.outen for (7l19g)
+!         do iz=1,nznt
+!            if (pru0(iz,l).ne.0) then
+!               write(0,*)'iz,pru,psqrts=',iz,pru(iz,l,:),psqrts(iz,l)
+!           endif
+!         enddo
       END DO
 
 !     COMPUTE RCON0, ZCON0 FOR FIXED BOUNDARY BY SCALING EDGE VALUES

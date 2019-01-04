@@ -520,6 +520,30 @@ MAP.o : \
       safe_open_mod.o \
       gade_mod.o \
       stel_kinds.o 
+
+
+eval_x_queued.o : \
+      safe_open_mod.o \
+      stel_kinds.o
+
+
+MAP_HYPERS.o : \
+      safe_open_mod.o \
+      stel_kinds.o
+      
+
+MAP_LINEAR.o : \
+      mpi_params.o \
+      safe_open_mod.o \
+      gade_mod.o \
+      stel_kinds.o 
+      
+
+GENERIC_Evolve.o : \
+      mpi_params.o \
+      safe_open_mod.o \
+      gade_mod.o \
+      stel_kinds.o 
       
 
 MAP_PLANE.o : \
@@ -924,6 +948,7 @@ cyl_flux.o : \
       
 
 sxrch_T.o : \
+      integration_path.o \
       stel_constants.o \
       stel_kinds.o \
       safe_open_mod.o 
@@ -1046,6 +1071,7 @@ tf_coils.o : \
       
 
 v3_utilities.o : \
+      mpi_inc.o \
       stel_kinds.o 
       
 
@@ -1083,6 +1109,7 @@ gist_mod.o : \
       
 
 vmec_utils.o : \
+      cyl_flux.o \
       read_wout_mod.o \
       stel_constants.o \
       stel_kinds.o 

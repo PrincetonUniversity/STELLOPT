@@ -10,15 +10,15 @@ pies_init.o: \
       
 
 pies_init_input.o: \
-      ../../LIBSTELL/Debug/stel_kinds.o \
-      ../../LIBSTELL/Debug/vmec_input.o \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Release/vmec_input.o \
       pies_background.o \
       pies_runtime.o 
       
 
 pies_init_wout.o: \
-      ../../LIBSTELL/Debug/stel_kinds.o \
-      ../../LIBSTELL/Debug/read_wout_mod.o \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Release/read_wout_mod.o \
       pies_background.o \
       pies_realspace.o \
       pies_profile.o \
@@ -26,59 +26,59 @@ pies_init_wout.o: \
       
 
 pies_background.o: \
-      ../../LIBSTELL/Debug/stel_kinds.o 
+      ../../LIBSTELL/Release/stel_kinds.o 
       
 
 pies_realspace.o: \
-      ../../LIBSTELL/Debug/stel_kinds.o 
+      ../../LIBSTELL/Release/stel_kinds.o 
       
 
 pies_magco.o: \
-      ../../LIBSTELL/Debug/stel_kinds.o 
+      ../../LIBSTELL/Release/stel_kinds.o 
       
 
 pies_fieldlines.o: \
-      ../../LIBSTELL/Debug/stel_kinds.o 
+      ../../LIBSTELL/Release/stel_kinds.o 
       
 
 virtual_casing.o: \
-      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Release/stel_kinds.o \
       pies_runtime.o \
       pies_realspace.o \
       pies_background.o
       
 
 mntouv.o: \
-      ../../LIBSTELL/Debug/stel_kinds.o 
+      ../../LIBSTELL/Release/stel_kinds.o 
       
 
 linetomn.o: \
-      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Release/stel_kinds.o \
       pies_fieldlines.o
       
 
 mgrid_field.o: \
-      ../../LIBSTELL/Debug/stel_kinds.o \
-      ../../LIBSTELL/Debug/mgrid_mod.o \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Release/mgrid_mod.o \
       pies_runtime.o \
       pies_realspace.o \
       pies_background.o
       
 
 uvtomn.o: \
-      ../../LIBSTELL/Debug/stel_kinds.o 
+      ../../LIBSTELL/Release/stel_kinds.o 
       
 
 pies_input_mod.o: \
-      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Release/stel_kinds.o \
       pies_runtime.o \
       pies_realspace.o \
-      ../../LIBSTELL/Debug/virtual_casing_mod.o \
+      ../../LIBSTELL/Release/virtual_casing_mod.o \
       pies_background.o
       
 
 follow.o: \
-      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Release/stel_kinds.o \
       pies_runtime.o \
       pies_realspace.o \
       pies_background.o \
@@ -87,7 +87,7 @@ follow.o: \
       
 
 magaxis.o: \
-      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Release/stel_kinds.o \
       pies_runtime.o \
       pies_realspace.o \
       pies_background.o \
@@ -95,7 +95,7 @@ magaxis.o: \
       
 
 faxis.o: \
-      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Release/stel_kinds.o \
       pies_runtime.o \
       pies_realspace.o \
       pies_background.o \
@@ -103,7 +103,7 @@ faxis.o: \
       
 
 pies_iotaslv.o: \
-      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Release/stel_kinds.o \
       pies_fieldlines.o \
       pies_background.o \
       pies_realspace.o \
@@ -112,7 +112,7 @@ pies_iotaslv.o: \
       
 
 ftheta.o: \
-      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Release/stel_kinds.o \
       pies_fieldlines.o \
       pies_background.o \
       pies_realspace.o \
@@ -120,7 +120,7 @@ ftheta.o: \
       
 
 fblin.o: \
-      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Release/stel_kinds.o \
       pies_runtime.o \
       pies_realspace.o \
       pies_background.o \
@@ -128,7 +128,7 @@ fblin.o: \
       
 
 follow_fieldlines.o: \
-      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Release/stel_kinds.o \
       pies_runtime.o \
       pies_realspace.o \
       pies_background.o \
@@ -136,7 +136,7 @@ follow_fieldlines.o: \
       
 
 magco_recon.o: \
-      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Release/stel_kinds.o \
       pies_runtime.o \
       pies_realspace.o \
       pies_background.o \
@@ -154,7 +154,7 @@ out_fieldlines.o: \
       
 
 func_surf.o: \
-      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Release/stel_kinds.o \
       pies_runtime.o \
       pies_fieldlines.o \
       pies_background.o 
@@ -164,7 +164,7 @@ monit_surf.o: \
       
 
 objfun_surf.o: \
-      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Release/stel_kinds.o \
       pies_runtime.o \
       pies_fieldlines.o \
       pies_background.o 
@@ -175,7 +175,7 @@ current_density.o: \
       
 
 toroidal_flux.o: \
-      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Release/stel_kinds.o \
       pies_runtime.o \
       pies_realspace.o \
       pies_background.o \
@@ -189,7 +189,7 @@ init_profiles.o: \
       
 
 toroidal_flux.o: \
-      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Release/stel_kinds.o \
       pies_background.o \
       pies_realspace.o \
       pies_runtime.o \
@@ -197,19 +197,19 @@ toroidal_flux.o: \
       
 
 calc_metrics.o: \
-      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Release/stel_kinds.o \
       pies_runtime.o \
       pies_realspace.o \
       pies_background.o
       
 
 cyl2suv.o: \
-      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Release/stel_kinds.o \
       pies_realspace.o
       
 
 jperp.o: \
-      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Release/stel_kinds.o \
       pies_runtime.o \
       pies_realspace.o \
       pies_profile.o \
@@ -217,7 +217,7 @@ jperp.o: \
       
 
 jpara.o: \
-      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Release/stel_kinds.o \
       pies_runtime.o \
       pies_realspace.o \
       pies_profile.o \

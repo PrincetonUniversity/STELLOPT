@@ -100,4 +100,4 @@ equil_utils.o \
 stellopt_input_mod.o \
 equil_vals.o \
 stellopt_runtime.o \
-stellopt_targets.o 
+stellopt_targets.o

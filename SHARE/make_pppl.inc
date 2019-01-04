@@ -155,6 +155,12 @@
                $(TRAVIS_DIR)/mag_conf/lib/$(LIB_MCONF) -lstdc++
 
 #######################################################################
+#            QSC Options  (HM-10/9/18)
+#######################################################################
+  LQSC  = T
+
+
+#######################################################################
 #            LIBSTELL Shared Options
 #######################################################################
 LIB_SHARE = $(BLASHOME)/lib/libopenblas.so \
@@ -257,6 +263,16 @@ ifeq ($(MAKECMDGOALS),xstelloptv2)
   else
     NEO_DIR = 
     LIB_NEO = 
+  endif
+  ifeq ($(LQSC),T)
+    QSC_DIR = ../../QSC
+    LIB_QSC = libqsc.a
+    MOD_PATH += -I$(QSC_DIR)/$(LOCTYPE)
+    PRECOMP += -DQSC_OPT
+    LIB_LINK += $(QSC_DIR)/$(LOCTYPE)/$(LIB_QSC)
+  else
+    QSC_DIR = 
+    LIB_QSC = 
   endif
 else
   LGENE = F

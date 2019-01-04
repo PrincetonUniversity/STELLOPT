@@ -155,6 +155,10 @@
       CHARACTER(256)  ::  equil_type, te_type, ne_type, ti_type, th_type, &
                           beamj_type, bootj_type, zeff_type, emis_xics_type, windsurfname
       
+!hm-9/23/18.
+      integer ::  iflg1       !hm-9/23/18.0=orig, 1= w QSC.
+      character(len=120) :: cmd1  !hm-9/23/18.
+
       ! These are not really variable parameters as we don't vary them
       ! yet
       REAL(rprec), DIMENSION(ndatafmax) :: nustar_s, nustar_f

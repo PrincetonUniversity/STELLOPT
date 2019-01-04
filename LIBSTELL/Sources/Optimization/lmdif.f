@@ -277,7 +277,6 @@ c     Get mpi parameters
          GOTO 400
       END IF
 !DEC$ ENDIF
-
 !
 !     check the input parameters for errors.
 !

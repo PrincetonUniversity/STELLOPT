@@ -51,7 +51,7 @@
                IF (iflag == 1) CALL FLUSH(iunit_out)
             END IF
          END DO
-      ELSE
+      ELSE            !12/28/18.so niter < 0 (stel_init > load_targ calls)
          DO ik = 1, nsd
             IF (sigma(ik) < bigno) THEN
                lbooz(ik) = .TRUE.
@@ -60,7 +60,7 @@
             END IF
          END DO
 !DEC$ IF DEFINED (NEO_OPT)
-         CALL read_neoin_input(TRIM(id_string),iflag)
+!         CALL read_neoin_input(TRIM(id_string),iflag)  !12/28/18.(7m14b)mv to stel_init.
          IF (iflag < 0 .and. niter == -2 .and. myid == master) THEN
             WRITE(6,*) '!!!!!!!!!!!!ERRROR!!!!!!!!!!!!!!'
             WRITE(6,*) '  NEO_IN Namelist not found     '

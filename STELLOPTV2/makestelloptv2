@@ -15,7 +15,7 @@ VPATH = $(SPATH):$(SPATH)/Chisq:$(SPATH)/General:$(SPATH)/Modules
 
 .SUFFIXES :
 .SUFFIXES : .f .f90 .o
-xstelloptv2:  $(LIB) $(LIB_VMEC) $(LIB_BEAMS3D) $(LIB_BNORM) $(LIB_BOOTSJ) $(LIB_BOOZ) $(LIB_COBRA) $(LIB_DIAGNO) $(LIB_DKES) $(LIB_JINV) $(LIB_MGRID) $(LIB_NEO) $(LIB_GENE) $(LIB_COILOPTPP) $(LIB_TERPSICHORE) $(ObjectFiles)
+xstelloptv2:  $(LIB) $(LIB_VMEC) $(LIB_BEAMS3D) $(LIB_BNORM) $(LIB_BOOTSJ) $(LIB_BOOZ) $(LIB_COBRA) $(LIB_DIAGNO) $(LIB_DKES) $(LIB_JINV) $(LIB_MGRID) $(LIB_NEO) $(LIB_QSC) $(LIB_GENE) $(LIB_COILOPTPP) $(LIB_TERPSICHORE) $(ObjectFiles)
 	$(LINK) $@ $(ObjectFiles) $(LIB_LINK)
 ifdef VMEC_DIR
 	@rm $(VMEC_DIR)/$(LOCTYPE)/$(LIB_VMEC)
@@ -49,6 +49,9 @@ ifdef MGRID_DIR
 endif
 ifdef NEO_DIR
 	@rm $(NEO_DIR)/$(LOCTYPE)/$(LIB_NEO)
+endif
+ifdef QSC_DIR
+	@rm $(QSC_DIR)/$(LOCTYPE)/$(LIB_QSC)
 endif
 ifdef GENE_DIR
 	@rm $(GENE_DIR)/$(LIB_GENE)
@@ -146,6 +149,10 @@ $(LIB_MGRID) :
 #Construct NEO library. 
 $(LIB_NEO) :
 	@cd $(NEO_DIR); make $(TYPE); cd $(LOCTYPE); ar -cruv $(LIB_NEO) *.o *.mod
+
+#Construct QSC library. HM-10/9/18.
+$(LIB_QSC) :
+	@cd $(QSC_DIR); make $(TYPE); cd $(LOCTYPE); ar -cruv $(LIB_QSC) *.o *.mod
 
 #Construct GENE library
 ifdef LIB_GENE

@@ -1,6 +1,6 @@
 # Microsoft Developer Studio Generated Dependency File, included by CYCLICR.mak
 
 cyclicr_MPI_real.o : \
-      ../../LIBSTELL/Debug/stel_constants.o \
-      ../../LIBSTELL/Debug/stel_kinds.o 
+      ../../LIBSTELL/Release/stel_constants.o \
+      ../../LIBSTELL/Release/stel_kinds.o 
       

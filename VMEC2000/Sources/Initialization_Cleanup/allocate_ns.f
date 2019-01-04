@@ -76,6 +76,9 @@ C-----------------------------------------------
       IF(PARVMEC) THEN
         ALLOCATE(pshalf(nznt,ns),stat=istat1)
         ALLOCATE(pwint(nznt,ns),stat=istat1)
+!        write(0,*)'hm-11/20/18.allocate_ns:78.allocatg pwint.nznt,ns=',  !out-12/22/18
+!     +        nznt,ns
+!        write(0,*)'pwint(0,:)=',pwint(0,:)     !out-12/14/18
         ALLOCATE(pwint_ns(nznt),stat=istat1)
         ALLOCATE(ireflect_par(nzeta),stat=istat1)
         ALLOCATE(pchip(nznt,ns),stat=istat1)
@@ -187,10 +190,16 @@ C-----------------------------------------------
 !     Allocate nrzt-dependent arrays (persistent) for funct3d
 !
       IF (PARVMEC) THEN
+!        write(0,*)'allocate_ns:191.funct3d_par.parvmec=',parvmec  !hm-11/20/18.
         CALL allocate_funct3d_par
       ELSE
+!        write(0,*)'allocate_ns:193.funct3d.parvmec=',parvmec  !hm-11/20/18.
         CALL allocate_funct3d
       END IF
+!hm-11/20/18.
+!      write(0,*)'alloc_ns > alloc_funct3d:allocated(pru0)=',  -out-12/22/18
+!     +     allocated(pru0)
+!      write(0,*)'nznt,ns=',nznt,ns,'  pru0(0,:)=',pru0(0,:)  -out-12/14/18
 
 #if defined(SKS)
       CALL second0(talloff)

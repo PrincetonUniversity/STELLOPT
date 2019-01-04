@@ -27,6 +27,8 @@
 !                             animec_flag, flow_flag
       USE parallel_vmec_module, ONLY: PARVMEC, gnranks
       USE mpi_params                                                    ! MPI
+      USE neo_input_mod, ONLY: read_neoin_input   !12/28/18.(7m14b)
+      USE neo_exchange, ONLY: nstep_max   !12/31/18.(7m15c)for diagn
 !-----------------------------------------------------------------------
 !     Local Variables
 !        ier         Error flag
@@ -40,18 +42,39 @@
       REAL(rprec), DIMENSION(-ntord:ntord,0:mpol1d) :: rbc_temp,zbs_temp
       REAL(rprec), PARAMETER :: norm_fac = 0.5_rprec   ! Used to set bounds for nomalization
 !      REAL(rprec), PARAMETER :: pct_domain = 0.05 ! USed to auto-determine domain
+
+!      integer ::  iflg1       !hm-9/11/18.0=orig, 1= w QSC. 9/23.xferred to stellopt_vars.
+      character(len=120) :: input_file   !hm-9/12/18,9/13. 9/23.cmd1 xferred to stellopt_vars.
+      REAL(rprec), DIMENSION(0:ntord) :: raxis_cc_tmp,raxis_cs_tmp,zaxis_cc_tmp,zaxis_cs_tmp  !12/21/18.
       
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
+!      iflg1=1  !hm-9/11/18. 9/23/18(4b2).mved to &optimum.
+!      write(0,*)'hm-9/11/18-0.unit=0.iflg1=',iflg1
+
       chisq_min = bigno
       ier = 0
 
       ! Read the OPTIMUM Namelist
       CALL read_stellopt_input(TRIM(id_string),ier,myid)
+      write(0,*)'stel_init @ rd_neoin. iflg1,sg_neo(16),sigma_txport(1),nstep_max=', &
+           iflg1,sigma_neo(16),sigma_txport(1),nstep_max  !hm-12/31/18-1.
+      CALL read_neoin_input(TRIM(id_string(7:LEN(id_string))),ier)  !12/28/18.(7m14b)fra chisq_neo().
+      write(0,*)'stel_init f rd_neoin. iflg1,sg_neo(16),sigma_txport(1),nstep_max=', &
+           iflg1,sigma_neo(16),sigma_txport(1),nstep_max  !hm-12/31/18-2.
+      if (iflg1 == 1) then
+         call quasisymmetry_read_input(id_string(7:LEN(id_string))) !12/5/18.(7l23e)
+!12/21/18.save init vals for [raxis_cc,..]=[R0c,..] to restore after rd_indata_namelist.
+         raxis_cc_tmp=raxis_cc; raxis_cs_tmp=raxis_cs
+         zaxis_cc_tmp=zaxis_cc; zaxis_cs_tmp=zaxis_cs
+      endif
+!      write(0,*)'stel_init f read_stel_input.iflg1=',iflg1  !hm-9/23/18-0
+      write(0,*)'stel_init f qs_rd_input. iflg1,sg_neo(16),sigma_txport(1),nstep_max=', &
+           iflg1,sigma_neo(16),sigma_txport(1),nstep_max  !hm-12/31/18-3.
+
       CALL bcast_vars(master,MPI_COMM_STEL,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'stellot_init:bcast_vars',ierr_mpi)
-
       ! Handle coil geometry
       IF (lcoil_geom) CALL namelist_input_makegrid(id_string)
 
@@ -72,9 +95,40 @@
               IF (myid==master) THEN
                  CALL safe_open(iunit,ier,'threed1.'//TRIM(id_string),'unknown','formatted')
                  CLOSE(iunit)
+!  hm-10/21/18.(6e20.e)iflg1=1 sec mved here fra blw.
+                 if (iflg1 == 1) then  !hm-9/11/18.rd in init input file, & call QSC.
+                    input_file= "input."//TRIM(id_string)
+                    write(0,*)'id_string=',trim(id_string),'  input_file=',trim(input_file) !hm-9/13-1,10/24-1
+                    write(0,*)'stel_init,just bfr read_indata()'  !hm-9/11-1.
+                    CALL safe_open(iunit,ier,'input.'//TRIM(id_string),'old','formatted') !out-(3k1).in-(6e20j)
+!                    CALL vsetup (myid)       !10/22/18.(6e20f)fra runvmec(). out-(6e20g)
+!                    CALL readin (input_file, myid, ier,.false.)     !(6e20f). out-(6e20h)
+!                 CALL read_indata(input_file, iunit, ier)  !hm-9/13/18.(3i1,3k1).6/20/18.out(6e20).
+!                 CALL read_namelist (iunit, ier, 'indata')  !hm-9/11,13/18.(3h,3i2).
+                    write(0,*)'@ read_indata_namelist. iunit,input_file=',iunit,trim(input_file)!(6e20j)
+                    CALL read_indata_namelist(iunit,ier)   !hm-9/14/18(3i3),10/20(6e20b),10/23(6e20h).
+                    close(iunit)
+!12/21/18.(7m12c)restore vals of [raxis_cc,..] to [R0c,..] fra qs_rd_input.
+                    raxis_cc=raxis_cc_tmp; raxis_cs=raxis_cs_tmp
+                    zaxis_cc=zaxis_cc_tmp; zaxis_cs=zaxis_cs_tmp
+
+                    write(0,*)'stel_init. raxis(0:2),raxis_cc(0:2)=',  &      !hm-9/20-1.
+                         raxis(0:2),raxis_cc(0:2)
+                    write(0,*)'rbc()=',rbc(0,0)
+                    !                 write(0,*)'hm-9/11-2.unit=0. raxis(1)=',raxis_cc(1)
+                    cmd1 = "cp ../input.qsc0 input."//TRIM(id_string)
+                    write(0,*)"stel_init, bfr QSC: iunit,cmd1=",iunit,trim(cmd1)  !10/24/18.(6e20j)
+                    !                 call system(cmd1) !dummy for QSC
+!                    call quasisymmetry_read_input(id_string)!10/28/18.(6e21d).(7k1,7l23e)c-out
+                    call QSC(id_string)   !9/26/18. 10/14/18.id_string in.       "
+                 endif
+
               END IF
               CALL MPI_BARRIER(MPI_COMM_STEL,ierr_mpi)
               IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_init: BARRIER',ierr_mpi)
+
+! hm-10/21/18.(6e20.e)iflg1=1 sec mved abv fra here.
+
               CALL runvmec(ictrl,id_string,.false.,MPI_COMM_SELF,'')
          CASE('vboot')
               ! Now convert id_string to extension
@@ -189,6 +243,8 @@
                     !END IF
                  END IF
               END DO
+!hm-9/22/18.skip [RBC,ZBS] count if iflg1=1.
+              if (iflg1.ne.0) goto 10
               IF (lbound_opt(0,0)) THEN
                  nvars = nvars + 1
                  IF (lasym) nvars = nvars + 1
@@ -226,6 +282,8 @@
                     END IF
                  END DO
               END DO
+10            continue   !end of [RBC,ZBS] count skip
+
               knot_dofs = 3
               IF (lwindsurf) knot_dofs = 2
               DO n = LBOUND(lcoil_spline,DIM=1), UBOUND(lcoil_spline,DIM=1)
@@ -1174,6 +1232,9 @@
                     END IF
                  END DO
               END IF
+!hm-9/22/18.skip [RBC,ZBS] assignmt if iflg1=1.
+!              if (iflg1.ne.0) goto 20     !out-11/25/18.
+              if (iflg1.ne.0) goto 24   !11/25/18.(7l19d)
               IF (ANY(lmode_opt)) THEN
                  DO n = LBOUND(lmode_opt,1), UBOUND(lmode_opt,1)
                     DO m = LBOUND(lmode_opt,2), UBOUND(lmode_opt,2)
@@ -1220,6 +1281,7 @@
                     END DO
                  END DO
               END IF
+24            continue    !11/25/18.(7l19d)
               IF (ANY(ldeltamn_opt)) THEN
                  deltamn = 0.0_rprec
                  rbc_temp = rbc
@@ -1228,22 +1290,28 @@
                  DO n = LBOUND(ldeltamn_opt,1), UBOUND(ldeltamn_opt,1)
                     DO m = LBOUND(ldeltamn_opt,2), UBOUND(ldeltamn_opt,2)
                        IF (ldeltamn_opt(n,m) .and. .not.(n == 0 .and. m==0)) THEN
-                          nvar_in = nvar_in + 1
-                          vars(nvar_in) = deltamn(n,m)
+!                          nvar_in = nvar_in + 1
+!                          vars(nvar_in) = deltamn(n,m)
                           IF (lauto_domain) THEN
                              delta_min(n,m) = deltamn(n,m) - ABS(pct_domain*deltamn(n,m))
                              delta_max(n,m) = deltamn(n,m) + ABS(pct_domain*deltamn(n,m))
                           END IF
-                          vars_min(nvar_in) = delta_min(n,m)
-                          vars_max(nvar_in) = delta_max(n,m)
-                          var_dex(nvar_in)  = ideltamn
-                          diag(nvar_in)     = ddeltamn_opt(n,m)
-                          arr_dex(nvar_in,1) = n
-                          arr_dex(nvar_in,2) = m
+                          if (iflg1.eq.0) then    !11/25/18.(7l19d)
+                             nvar_in = nvar_in + 1
+                             vars(nvar_in) = deltamn(n,m)
+!
+                             vars_min(nvar_in) = delta_min(n,m)
+                             vars_max(nvar_in) = delta_max(n,m)
+                             var_dex(nvar_in)  = ideltamn
+                             diag(nvar_in)     = ddeltamn_opt(n,m)
+                             arr_dex(nvar_in,1) = n
+                             arr_dex(nvar_in,2) = m
+                          endif
                        END IF
                     END DO
                  END DO
               END IF
+              if (iflg1.ne.0) goto 20    !12/21/18.(7m12b)
               IF (ANY(lbound_opt)) THEN
                  IF (lbound_opt(0,0)) THEN
                     IF (lauto_domain) THEN
@@ -1331,6 +1399,7 @@
                     END DO
                  END DO
               END IF
+20            continue   !end of [RBC,ZBS] assignmt skip.
               IF (ANY(lcoil_spline)) THEN
                  DO n = LBOUND(lcoil_spline,1), UBOUND(lcoil_spline,1)
                     nknots = COUNT(coil_splinesx(n,:) >= 0.0)       ! Actual size of coil spline n
@@ -1392,10 +1461,13 @@
 
       ! Now initalize the targets
       mtargets = 1
+      write(0,*)'@ stel_load_targ-1. mtargets,ier=',mtargets,ier  !hm-10/24/18.(6e20j)
       CALL stellopt_load_targets(mtargets,fvec_temp,ier,-1)          ! Count
+!      write(0,*)'@ stel_load_targ-2. mtargets,ier=',mtargets,ier  !hm-10/24/18.(6e20j)
       ALLOCATE(vals(mtargets),targets(mtargets),sigmas(mtargets),target_dex(mtargets))
       mtargets = 1
       CALL stellopt_load_targets(mtargets,fvec_temp,ier,-2)          ! Load index
+!      write(0,*)'@ stel_load_targ-3. mtargets,ier=',mtargets,ier  !hm-10/24/18.(6e20j)
       IF (ier /=0) CALL handle_err(NAMELIST_READ_ERR,'IN STELLOPT_LOAD_TARGETS',ier)
       IF (lverb) THEN
          WRITE(6,*) '-----  Optimization  -----'
