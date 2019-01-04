@@ -181,7 +181,9 @@
       !------------- COIL GEOMETRY TARGETS ---------------------
       ! Coil lengths
       IF (ANY(sigma_coillen < bigno)) &
-         CALL chisq_coillen(target_coillen, sigma_coillen, ncnt, iflag)
+         CALL chisq_coillen(target_coillen, sigma_coillen, &
+                            target_coilsegvar, sigma_coilsegvar, &
+                            ncnt, iflag)
       IF (sigma_coilsep < bigno) &
          CALL chisq_coilsep(target_coilsep, sigma_coilsep, ncnt, iflag)
       IF (ANY(sigma_coilcrv < bigno)) &

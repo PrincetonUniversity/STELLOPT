@@ -365,8 +365,9 @@
                          target_orbit,sigma_orbit,nu_orbit,nv_orbit,&
                          mass_orbit,Z_orbit,vperp_orbit,&
                          np_orbit,vll_orbit,mu_orbit, target_coil_bnorm,&
-                         sigma_coil_bnorm, nu_bnorm, nv_bnorm,&
-                         target_coillen, sigma_coillen, &
+                         sigma_coil_bnorm, nu_bnorm, nv_bnorm, npts_biot,&
+                         target_coillen, sigma_coillen, npts_clen, &
+                         target_coilsegvar, sigma_coilsegvar, &
                          target_coilsep, sigma_coilsep, npts_csep, &
                          target_coilcrv, sigma_coilcrv, npts_curv, &
                          target_coilself, sigma_coilself, npts_cself, &
@@ -910,8 +911,12 @@
       sigma_coil_bnorm  = bigno
       nu_bnorm          = 256
       nv_bnorm          = 64
+      npts_biot         = 128
       target_coillen    = 0.0
       sigma_coillen     = bigno
+      npts_clen         = 360
+      target_coilsegvar = 0.0
+      sigma_coilsegvar  = bigno
       target_coilcrv    = 0.0
       sigma_coilcrv     = bigno
       npts_curv         = 256

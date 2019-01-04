@@ -5,7 +5,7 @@
 !     Description:   This subroutine generates a coil data structure from
 !                    the stellopt splines and writes it to a file.
 !-----------------------------------------------------------------------
-      SUBROUTINE stellopt_spline_to_coil(lscreen)
+      SUBROUTINE stellopt_spline_to_coil(nseg, lscreen)
 !-----------------------------------------------------------------------
 !     Libraries
 !-----------------------------------------------------------------------
@@ -18,6 +18,7 @@
 !-----------------------------------------------------------------------
 !     Subroutine Parameters
 !----------------------------------------------------------------------
+      INTEGER, INTENT(in)           :: nseg
       LOGICAL, INTENT(inout)        :: lscreen
 !-----------------------------------------------------------------------
 !     Local Variables
@@ -30,12 +31,11 @@
       REAL(rprec), ALLOCATABLE :: x_coil(:),y_coil(:),z_coil(:),c_coil(:), &
                                   p_coil(:), r_coil(:)
       CHARACTER(LEN=8) :: coil_name
-
-      INTEGER, PARAMETER :: nseg = 128
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
       IF (lscreen) WRITE(6,*) '---------------------------  WRITING COIL  ------------------------'
+      IF (nseg.lt.3) CALL handle_err(0, 'stellopt_spline_to_coil: nseg', nseg)
       ! Allocate coil helpers
       ALLOCATE(x_coil(nseg),y_coil(nseg),z_coil(nseg),c_coil(nseg))
       IF (.not. lasym) ALLOCATE(r_coil(nseg),p_coil(nseg))
@@ -309,33 +309,43 @@
 !     Input:         Coil index icoil
 !     Output:        Length of coil
 !-----------------------------------------------------------------------
-      SUBROUTINE get_coil_length(icoil, length)
+      SUBROUTINE get_coil_length(icoil, length, relvar)
         USE stel_kinds, ONLY : rprec
+        USE stellopt_targets, ONLY : npts_clen
         IMPLICIT NONE
         INTRINSIC SQRT
 
         ! Arguments
         INTEGER, INTENT(IN)      :: icoil
-        REAL(rprec), INTENT(OUT) :: length
+        REAL(rprec), INTENT(OUT) :: length, relvar
 
         ! Constants
-        INTEGER, PARAMETER :: nseg_len = 360
+        REAL(rprec), PARAMETER :: one=1.0d0
 
         ! Local variables
-        REAL(rprec), DIMENSION(nseg_len) :: xc, yc, zc
-        INTEGER                          :: iseg
-        LOGICAL                          :: ldum
+        REAL(rprec), DIMENSION(:), ALLOCATABLE :: xc, yc, zc
+        REAL(rprec)                            :: seglen
+        INTEGER                                :: iseg
+        LOGICAL                                :: ldum
+
+        ! Allocate x,y,z storage
+        ALLOCATE(xc(npts_clen), yc(npts_clen), zc(npts_clen))
 
         ! Get x,y,z coords along coil
-        CALL spline_to_coil(icoil, nseg_len, xc, yc, zc, ldum)
+        CALL spline_to_coil(icoil, npts_clen, xc, yc, zc, ldum)
 
         ! Compute length
-        length = 0.0
-        DO iseg=1,nseg_len-1  ! Assumes xc(nseg) == xc(1), etc.
-           length = length + SQRT((xc(iseg+1) - xc(iseg))**2 + &
-                                  (yc(iseg+1) - yc(iseg))**2 + &
-                                  (zc(iseg+1) - zc(iseg))**2)
+        length = 0.0;  relvar = 0.0
+        DO iseg=1,npts_clen-1  ! Assumes xc(nseg) == xc(1), etc.
+           seglen = SQRT((xc(iseg+1) - xc(iseg))**2 + &
+                         (yc(iseg+1) - yc(iseg))**2 + &
+                         (zc(iseg+1) - zc(iseg))**2)
+           length = length + seglen
+           relvar = relvar + seglen**2
         END DO !iseg
+        relvar = SQRT((npts_clen-1)*relvar/(length**2) - one)
+
+        DEALLOCATE(xc, yc, zc)
       END SUBROUTINE get_coil_length
 
 !-------------------------------------------------------------------------------

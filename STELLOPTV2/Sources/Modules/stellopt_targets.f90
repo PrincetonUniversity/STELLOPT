@@ -180,7 +180,8 @@
       REAL(rprec) ::  target_regcoil_current_density, sigma_regcoil_current_density
       REAL(rprec) ::  target_curvature_p2, sigma_curvature_P2
       REAL(rprec), DIMENSION(nigroup)    :: target_coillen, sigma_coillen
-      INTEGER     :: npts_curv, npts_csep, npts_cself
+      REAL(rprec), DIMENSION(nigroup)    :: target_coilsegvar, sigma_coilsegvar
+      INTEGER     :: npts_biot, npts_clen, npts_curv, npts_csep, npts_cself
       REAL(rprec), DIMENSION(nigroup)    :: target_coilcrv,  sigma_coilcrv
       REAL(rprec), DIMENSION(nigroup)    :: target_coilself, sigma_coilself
       REAL(rprec)                        :: target_coilsep,  sigma_coilsep
@@ -252,6 +253,7 @@
       INTEGER, PARAMETER :: jtarget_coilcrv    = 615
       INTEGER, PARAMETER :: jtarget_coilsep    = 616
       INTEGER, PARAMETER :: jtarget_coilself   = 617
+      INTEGER, PARAMETER :: jtarget_coilsegvar = 618
       INTEGER, PARAMETER :: jtarget_x          = 900
       INTEGER, PARAMETER :: jtarget_y          = 901
       
@@ -392,6 +394,8 @@
             WRITE(iunit, out_format) 'REGCOIL Current Density on Winding Surface'
          CASE(jtarget_coillen)
             WRITE(iunit, out_format) 'Coil Lengths'
+         CASE(jtarget_coilsegvar)
+            WRITE(iunit, out_format) 'Relative Coil Segment Length Variations'
          CASE(jtarget_coilcrv)
             WRITE(iunit, out_format) 'Maximum Coil Curvature'
          CASE(jtarget_coilsep)
