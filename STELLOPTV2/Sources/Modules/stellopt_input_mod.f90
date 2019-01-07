@@ -14,6 +14,7 @@
       USE vparams, ONLY: ntor_rcws, mpol_rcws
       USE stellopt_runtime
       USE stellopt_vars
+      USE equil_utils, ONLY: profile_norm
       USE windingsurface
       USE stellopt_targets
       USE safe_open_mod, ONLY: safe_open
@@ -1355,7 +1356,8 @@
       SUBROUTINE write_optimum_namelist(iunit,istat)
       INTEGER, INTENT(in) :: iunit
       INTEGER, INTENT(in) :: istat
-      INTEGER :: ik, n, m, u, v, ii
+      INTEGER     :: ik, n, m, u, v, ii
+      REAL(rprec) :: norm
       CHARACTER(LEN=*), PARAMETER :: outboo  = "(2X,A,1X,'=',1X,L1)"
       CHARACTER(LEN=*), PARAMETER :: outint  = "(2X,A,1X,'=',1X,I0)"
       CHARACTER(LEN=*), PARAMETER :: outflt  = "(2X,A,1X,'=',1X,ES22.12E3)"
@@ -1614,45 +1616,53 @@
       END IF
       
       IF (ANY(lne_f_opt)) THEN
+        norm = profile_norm(ne_aux_f,ne_type)
+        IF (norm == 0) norm = 1
         n=0
         DO ik = 1,UBOUND(lne_f_opt,DIM=1)
            IF(lne_f_opt(ik)) n=ik
         END DO
         DO ik = 1, n
-           WRITE(iunit,vecvar) 'LNE_F_OPT',ik,lne_f_opt(ik),'NE_F_MIN',ik,ne_f_min(ik),'NE_F_MAX',ik,ne_f_max(ik)
+           WRITE(iunit,vecvar) 'LNE_F_OPT',ik,lne_f_opt(ik),'NE_F_MIN',ik,ne_f_min(ik)*norm,'NE_F_MAX',ik,ne_f_max(ik)*norm
         END DO
         IF (ANY(dne_f_opt > 0)) WRITE(iunit,"(2X,A,1X,'=',10(1X,E22.14))") 'DNE_F_OPT',(dne_f_opt(ik), ik = 1, n)
       END IF
       
       IF (ANY(lzeff_f_opt)) THEN
+        norm = profile_norm(zeff_aux_f,zeff_type)
+        IF (norm == 0) norm = 1
         n=0
         DO ik = 1,UBOUND(lzeff_f_opt,DIM=1)
            IF(lzeff_f_opt(ik)) n=ik
         END DO
         DO ik = 1, n
-           WRITE(iunit,vecvar) 'LZEFF_F_OPT',ik,lzeff_f_opt(ik),'ZEFF_F_MIN',ik,zeff_f_min(ik),'ZEFF_F_MAX',ik,zeff_f_max(ik)
+           WRITE(iunit,vecvar) 'LZEFF_F_OPT',ik,lzeff_f_opt(ik),'ZEFF_F_MIN',ik,zeff_f_min(ik)*norm,'ZEFF_F_MAX',ik,zeff_f_max(ik)*norm
         END DO
         IF (ANY(dne_f_opt > 0)) WRITE(iunit,"(2X,A,1X,'=',10(1X,E22.14))") 'DZEFF_F_OPT',(dzeff_f_opt(ik), ik = 1, n)
       END IF
       
       IF (ANY(lte_f_opt)) THEN
+        norm = profile_norm(te_aux_f,te_type)
+        IF (norm == 0) norm = 1
         n=0
         DO ik = 1,UBOUND(lte_f_opt,DIM=1)
            IF(lte_f_opt(ik)) n=ik
         END DO
         DO ik = 1, n
-           WRITE(iunit,vecvar) 'LTE_F_OPT',ik,lte_f_opt(ik),'TE_F_MIN',ik,te_f_min(ik),'TE_F_MAX',ik,te_f_max(ik)
+           WRITE(iunit,vecvar) 'LTE_F_OPT',ik,lte_f_opt(ik),'TE_F_MIN',ik,te_f_min(ik)*norm,'TE_F_MAX',ik,te_f_max(ik)*norm
         END DO
         IF (ANY(dte_f_opt > 0)) WRITE(iunit,"(2X,A,1X,'=',10(1X,E22.14))") 'DTE_F_OPT',(dte_f_opt(ik), ik = 1, n)
       END IF
       
       IF (ANY(lti_f_opt)) THEN
+        norm = profile_norm(ti_aux_f,ti_type)
+        IF (norm == 0) norm = 1
         n=0
         DO ik = 1,UBOUND(lti_f_opt,DIM=1)
            IF(lti_f_opt(ik)) n=ik
         END DO
         DO ik = 1, n
-           WRITE(iunit,vecvar) 'LTI_F_OPT',ik,lti_f_opt(ik),'TI_F_MIN',ik,ti_f_min(ik),'TI_F_MAX',ik,ti_f_max(ik)
+           WRITE(iunit,vecvar) 'LTI_F_OPT',ik,lti_f_opt(ik),'TI_F_MIN',ik,ti_f_min(ik)*norm,'TI_F_MAX',ik,ti_f_max(ik)*norm
         END DO
         IF (ANY(dti_f_opt > 0)) WRITE(iunit,"(2X,A,1X,'=',10(1X,E22.14))") 'DTI_F_OPT',(dti_f_opt(ik), ik = 1, n)
       END IF
@@ -1713,12 +1723,14 @@
       END IF
       
       IF (ANY(lemis_xics_f_opt)) THEN
+        norm = profile_norm(emis_xics_f,emis_xics_type)
+        IF (norm == 0) norm = 1
         n=0
         DO ik = 1,UBOUND(lemis_xics_f_opt,DIM=1)
            IF(lemis_xics_f_opt(ik)) n=ik
         END DO
         DO ik = 1, n
-           WRITE(iunit,vecvar) 'LEMIS_XICS_F_OPT',ik,lemis_xics_f_opt(ik),'EMIS_XICS_F_MIN',ik,emis_xics_f_min(ik),'EMIS_XICS_F_MAX',ik,emis_xics_f_max(ik)
+           WRITE(iunit,vecvar) 'LEMIS_XICS_F_OPT',ik,lemis_xics_f_opt(ik),'EMIS_XICS_F_MIN',ik,emis_xics_f_min(ik)*norm,'EMIS_XICS_F_MAX',ik,emis_xics_f_max(ik)*norm
         END DO
         IF (ANY(demis_xics_f_opt > 0)) WRITE(iunit,"(2X,A,1X,'=',10(1X,E22.14))") 'DEMIS_XICS_F_OPT',(demis_xics_f_opt(ik), ik = 1, n)
       END IF
