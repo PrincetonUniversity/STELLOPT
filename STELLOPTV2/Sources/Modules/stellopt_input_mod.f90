@@ -14,6 +14,7 @@
       USE vparams, ONLY: ntor_rcws, mpol_rcws
       USE stellopt_runtime
       USE stellopt_vars
+      USE equil_utils, ONLY: profile_norm
       USE windingsurface
       USE stellopt_targets
       USE safe_open_mod, ONLY: safe_open
@@ -1355,7 +1356,8 @@
       SUBROUTINE write_optimum_namelist(iunit,istat)
       INTEGER, INTENT(in) :: iunit
       INTEGER, INTENT(in) :: istat
-      INTEGER :: ik, n, m, u, v, ii
+      INTEGER     :: ik, n, m, u, v, ii
+      REAL(rprec) :: norm
       CHARACTER(LEN=*), PARAMETER :: outboo  = "(2X,A,1X,'=',1X,L1)"
       CHARACTER(LEN=*), PARAMETER :: outint  = "(2X,A,1X,'=',1X,I0)"
       CHARACTER(LEN=*), PARAMETER :: outflt  = "(2X,A,1X,'=',1X,ES22.12E3)"
