@@ -190,8 +190,8 @@
                                                            ! Note: this is true for saddle coils as well.
         ! Local variables
         TYPE(cbspline)     :: XC_spl, YC_spl, ZC_spl
-        REAL(rprec)        :: s_val, u, v
-        INTEGER            :: nknots, ncoefs, ier, j
+        REAL(rprec)        :: s_val, u, v, v0
+        INTEGER            :: nknots, ncoefs, ier, j, js1, js2
 
         ! Handle spline boundary conditions
         CALL enforce_spline_bcs(icoil, lmod)
@@ -211,11 +211,22 @@
            windsurf%nfp = nfp
 
            ! Evaluate the coil
-           DO j = 1, nseg
+           v0 = coil_splinefy(icoil,1)
+           js1 =   FLOOR(1.0 + coil_splinesx(icoil,1)*(nseg - 1))
+           js2 = CEILING(1.0 + coil_splinesx(icoil,nknots)*(nseg - 1))
+           DO j = 1, js1  ! Straight section above midplane
+              u = REAL(j-1)/REAL(nseg-1)
+              CALL stellopt_uv_to_xyz(u, v0, xarr(j), yarr(j), zarr(j))
+           END DO
+           DO j = js1+1, js2-1
               s_val = REAL(j-1)/REAL(nseg-1)
               CALL cbspline_eval(XC_spl, s_val, u, ier)
               CALL cbspline_eval(YC_spl, s_val, v, ier)
               CALL stellopt_uv_to_xyz(u, v, xarr(j), yarr(j), zarr(j))
+           END DO
+           DO j = js2, nseg  ! Straight section below midplane
+              u = REAL(j-1)/REAL(nseg-1)
+              CALL stellopt_uv_to_xyz(u, v0, xarr(j), yarr(j), zarr(j))
            END DO
         ELSE  !Interpret coil_splinefx as x, coil_splinefy as y, coil_splinefz as z.
            CALL cbspline_init(ZC_spl, ncoefs, ier)
@@ -257,8 +268,9 @@
         CASE ('M') ! Modular coil
            isper = .TRUE. ! Modular coils repeat each field period.
            coil_splinefy(icoil,ncoefs) = coil_splinefy(icoil,1)
-           IF (lwindsurf) THEN !u0=0,uf=1,vf=v0
-              coil_splinefx(icoil,1) = zero;  coil_splinefx(icoil,ncoefs) = one
+           IF (lwindsurf) THEN !u0=k0,uf=kf,vf=v0
+              coil_splinefx(icoil,1)      = coil_splinesx(icoil,1)
+              coil_splinefx(icoil,ncoefs) = coil_splinesx(icoil,ncoefs+4)
            ELSE  !z0=z(t=0), zf=z0,xf=x0,yf=y0
               coil_splinefx(icoil,ncoefs) = coil_splinefx(icoil,1)
               coil_splinefz(icoil,ncoefs) = coil_splinefz(icoil,1)
@@ -306,8 +318,9 @@
 !     Author:        J. Breslau (jbreslau@pppl.gov)
 !     Date:          8/22/2017
 !     Description:   Computes the length of a coil.
+!                    Also computes normalized standard dev. of seg length.
 !     Input:         Coil index icoil
-!     Output:        Length of coil
+!     Output:        Length of coil, (segment length s.d.)/(mean length)
 !-----------------------------------------------------------------------
       SUBROUTINE get_coil_length(icoil, length, relvar)
         USE stel_kinds, ONLY : rprec
@@ -418,7 +431,7 @@
         ncoefs = coil_nctrl(icoil)
         nknots = ncoefs + 4
 
-        ! Set up splines
+        ! Set up splines -- cannot use spline_to_coil b/c we also need derivatives
         CALL cbspline_init(XC_spl, ncoefs, ier)
         CALL cbspline_setup(XC_spl, ncoefs, &
              coil_splinesx(icoil,1:nknots), coil_splinefx(icoil,1:ncoefs), ier)
@@ -443,8 +456,14 @@
            ! We need 1st and 2nd derivatives of (x,y,z) w/r/t s to compute curvature:
            IF (lwindsurf) THEN ! Interpret splinefx as u, splinefy as v
               ! First get 1st and 2nd derivs of u,v w/r/t s...
-              CALL cbspline_derivs(XC_spl, s_val, u, duds, d2uds2, ier)
-              CALL cbspline_derivs(YC_spl, s_val, v, dvds, d2vds2, ier)
+              IF ((s_val.LT.coil_splinesx(icoil,1)) .OR. &
+                  (s_val.GT.coil_splinesx(icoil,nknots))) THEN  ! Straight section
+                 u = s_val;  duds = 1.0;  d2uds2 = 0.0
+                 v = coil_splinefy(icoil,1);  dvds = 0.0;  d2vds2 = 0.0
+              ELSE
+                 CALL cbspline_derivs(XC_spl, s_val, u, duds, d2uds2, ier)
+                 CALL cbspline_derivs(YC_spl, s_val, v, dvds, d2vds2, ier)
+              END IF
 
               ! Next get 1st & 2nd derivs of (x,y,z) w/r/t (u,v)...
               CALL stellopt_uv_to_xyz_prime(u, v, xprime)
@@ -505,7 +524,7 @@
         TYPE(cbspline)                         :: C_spl
         REAL(rprec), DIMENSION(:), ALLOCATABLE :: uc, vc
         REAL(rprec)                            :: s_val
-        INTEGER                                :: ier, iseg, iseg2, nknots, ncoefs
+        INTEGER                                :: ier, iseg, iseg2, nknots, ncoefs, js1, js2
         LOGICAL                                :: ldum
 
         IF (.NOT.lwindsurf) THEN
@@ -517,29 +536,39 @@
         ncoefs = coil_nctrl(icoil)
         nknots = ncoefs + 4
 
-        ! Get u,v coords along coil
-        ALLOCATE(uc(0:npts_cself-1), vc(0:npts_cself-1))
+        ! Get u,v coords along coil -- don't use spline_to_coil b/c we don't need x,y,z coords
+        ALLOCATE(uc(npts_cself), vc(npts_cself))
+
+        js1 =   FLOOR(1.0 + coil_splinesx(icoil,1)*(npts_cself - 1))
+        js2 = CEILING(1.0 + coil_splinesx(icoil,nknots)*(npts_cself - 1))
 
         CALL cbspline_init(C_spl, ncoefs, ier)
         CALL cbspline_setup(C_spl, ncoefs, &
              coil_splinesx(icoil,1:nknots), coil_splinefx(icoil,1:ncoefs), ier)
-        DO iseg=1,npts_cself
+        DO iseg = 1, js1  ! Straight section above midplane
+           uc(iseg) = REAL(iseg-1)/REAL(npts_cself-1)
+        END DO
+        DO iseg = js1+1, js2-1
            s_val = REAL(iseg-1)/REAL(npts_cself-1)
-           CALL cbspline_eval(C_spl, s_val, uc(iseg-1), ier)
+           CALL cbspline_eval(C_spl, s_val, uc(iseg), ier)
         END DO !iseg
+        DO iseg = js2, npts_cself  ! Straight section below midplane
+           uc(iseg) = REAL(iseg-1)/REAL(npts_cself-1)
+        END DO
 
         CALL cbspline_setup(C_spl, ncoefs, &
              coil_splinesy(icoil,1:nknots), coil_splinefy(icoil,1:ncoefs), ier)
-        DO iseg=1,npts_cself
+        DO iseg = js1+1, js2-1
            s_val = REAL(iseg-1)/REAL(npts_cself-1)
-           CALL cbspline_eval(C_spl, s_val, vc(iseg-1), ier)
+           CALL cbspline_eval(C_spl, s_val, vc(iseg), ier)
         END DO !iseg
+        vc(1:js1) = coil_splinefy(icoil,1);  vc(js2:npts_cself) = coil_splinefy(icoil,1)
         CALL cbspline_delete(C_spl)
 
         ! Check for self-intersections
         nselfint = 0
-        DO iseg=0,npts_cself-2
-           DO iseg2=iseg+2, npts_cself-2
+        DO iseg=1,npts_cself-1
+           DO iseg2=iseg+2, npts_cself-1
               IF (uvintersect(uc(iseg),  vc(iseg),  uc(iseg+1),  vc(iseg+1), &
                               uc(iseg2), vc(iseg2), uc(iseg2+1), vc(iseg2+1))) &
                 nselfint = nselfint + 1
