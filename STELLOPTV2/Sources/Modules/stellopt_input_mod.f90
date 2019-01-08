@@ -1096,15 +1096,6 @@
          WRITE(6,"(2X,A)") "================================================================================="
          WRITE(6,*)        "    "
       END IF
-      !IF ((myid == master) .and. (TRIM(equil_type(1:8)) == 'paravmec') ) THEN
-      !   WRITE(6,*)        " Equilibrium calculation provided by: "
-      !   WRITE(6,"(2X,A)") "================================================================================="
-      !   WRITE(6,"(2X,A)") "=========   Parallel Variational Moments Equilibrium Code (v "//TRIM(version_vmec)//")      ========="
-      !   WRITE(6,"(2X,A)") "=========                (S. Hirshman, J. Whitson)                      ========="
-      !   WRITE(6,"(2X,A)") "=========         http://vmecwiki.pppl.wikispaces.net/VMEC              ========="
-      !   WRITE(6,"(2X,A)") "================================================================================="
-      !   WRITE(6,*)        "    "
-      !END IF
 !DEC$ IF DEFINED (BEAMS3D_OPT)
       IF (myid == master .and. ANY(sigma_orbit < bigno) ) THEN
          WRITE(6,*)               " Energetic Particle calculation provided by: "
@@ -1383,9 +1374,12 @@
       WRITE(iunit,outint) 'NPOPULATION',npopulation
       WRITE(iunit,outint) 'NOPTIMIZERS',noptimizers
       WRITE(iunit,outboo) 'LKEEP_MINS',lkeep_mins
-      WRITE(iunit,outint) 'SFINCS_MIN_PROCS',sfincs_min_procs
-      WRITE(iunit,outflt) 'VBOOT_TOLERANCE',vboot_tolerance
-      WRITE(iunit,outstr) 'BOOTCALC_TYPE',TRIM(bootcalc_type)
+      CALL tolower(equil_type)
+      IF (TRIM(equil_type(1:5)) == 'vboot') THEN
+         WRITE(iunit,outint) 'SFINCS_MIN_PROCS',sfincs_min_procs
+         WRITE(iunit,outflt) 'VBOOT_TOLERANCE',vboot_tolerance
+         WRITE(iunit,outstr) 'BOOTCALC_TYPE',TRIM(bootcalc_type)
+      END IF
       WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
       WRITE(iunit,'(A)') '!       Optimized Quantities'
       WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
@@ -1942,11 +1936,11 @@
       WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
       WRITE(iunit,'(A)') '!         EQUILIBRIUM/GEOMETRY OPTIMIZATION PARAMETERS' 
       WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
-      IF (target_x < bigno) THEN
+      IF (sigma_x < bigno) THEN
          WRITE(iunit,outflt) 'TARGET_X',target_x
          WRITE(iunit,outflt) 'SIGMA_X',sigma_x
       END IF 
-      IF (target_y < bigno) THEN
+      IF (sigma_y < bigno) THEN
          WRITE(iunit,outflt) 'TARGET_Y',target_y
          WRITE(iunit,outflt) 'SIGMA_Y',sigma_y
       END IF 
