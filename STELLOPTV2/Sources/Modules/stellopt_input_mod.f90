@@ -1842,17 +1842,22 @@
                WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINEFX(',n,',:)',(coil_splinefx(n,m), m = 1, ik-4)
                WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINESY(',n,',:)',(coil_splinesy(n,m), m = 1, ik)
                WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINEFY(',n,',:)',(coil_splinefy(n,m), m = 1, ik-4)
-               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINESZ(',n,',:)',(coil_splinesz(n,m), m = 1, ik)
-               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINEFZ(',n,',:)',(coil_splinefz(n,m), m = 1, ik-4)
+               IF (ANY(coil_splinesz(n,:)>-1)) THEN
+                  WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINESZ(',n,',:)',(coil_splinesz(n,m), m = 1, ik)
+                  WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINEFZ(',n,',:)',(coil_splinefz(n,m), m = 1, ik-4)
+               END IF
                ! Min/Max
                WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINEFX_MIN(',n,',:)',(coil_splinefx_min(n,m), m = 1, ik-4)
                WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINEFX_MAX(',n,',:)',(coil_splinefx_max(n,m), m = 1, ik-4)
                WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINEFY_MIN(',n,',:)',(coil_splinefy_min(n,m), m = 1, ik-4)
                WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINEFY_MAX(',n,',:)',(coil_splinefy_max(n,m), m = 1, ik-4)
-               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINEFZ_MIN(',n,',:)',(coil_splinefz_min(n,m), m = 1, ik-4)
-               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINEFZ_MAX(',n,',:)',(coil_splinefz_max(n,m), m = 1, ik-4)
+               IF (ANY(coil_splinesz(n,:)>-1)) THEN
+                  WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINEFZ_MIN(',n,',:)',(coil_splinefz_min(n,m), m = 1, ik-4)
+                  WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINEFZ_MAX(',n,',:)',(coil_splinefz_max(n,m), m = 1, ik-4)
+               END IF
             END IF
          END DO
+         WRITE(iunit,outint) 'NPTS_BIOT',npts_biot
       END IF
       
       WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
@@ -2032,6 +2037,45 @@
          WRITE(iunit,outflt) 'TARGET_CURVATURE_P2',target_curvature_P2
          WRITE(iunit,outflt) 'SIGMA_CURVATURE_P2',sigma_curvature_P2
       END IF          
+      IF ((ANY(sigma_coillen < bigno)).OR.(ANY(sigma_coilsegvar < bigno)).OR.&
+           (ANY(sigma_coilcrv < bigno)).OR.(sigma_coilsep < bigno).OR.&
+           (ANY(sigma_coilself < bigno))) THEN
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,'(A)') '!          COIL TARGETS'
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         DO n = LBOUND(sigma_coillen,DIM=1), UBOUND(sigma_coillen,DIM=1)
+            IF (sigma_coillen(n) < bigno) THEN
+               WRITE(iunit,"(2X,A,I4.3,A,ES22.12E3)") 'TARGET_COILLEN(',n,') = ',target_coillen(n)
+               WRITE(iunit,"(2X,A,I4.3,A,ES22.12E3)") 'SIGMA_COILLEN(',n,') = ',sigma_coillen(n)
+            END IF
+         END DO !n
+         DO n = LBOUND(sigma_coilsegvar,DIM=1), UBOUND(sigma_coilsegvar,DIM=1)
+            IF (sigma_coilsegvar(n) < bigno) THEN
+               WRITE(iunit,"(2X,A,I4.3,A,ES22.12E3)") 'TARGET_COILSEGVAR(',n,') = ',target_coilsegvar(n)
+               WRITE(iunit,"(2X,A,I4.3,A,ES22.12E3)") 'SIGMA_COILSEGVAR(',n,') = ',sigma_coilsegvar(n)
+            END IF
+         END DO !n
+         WRITE(iunit,outint) 'NPTS_CLEN',npts_clen
+         DO n = LBOUND(sigma_coilcrv,DIM=1), UBOUND(sigma_coilcrv,DIM=1)
+            IF (sigma_coilcrv(n) < bigno) THEN
+               WRITE(iunit,"(2X,A,I4.3,A,ES22.12E3)") 'TARGET_COILCRV(',n,') = ',target_coilcrv(n)
+               WRITE(iunit,"(2X,A,I4.3,A,ES22.12E3)") 'SIGMA_COILCRV(',n,') = ',sigma_coilcrv(n)
+            END IF
+         END DO !n
+         WRITE(iunit,outint) 'NPTS_CURV',npts_curv
+         IF (sigma_coilsep < bigno) THEN
+            WRITE(iunit,outflt) 'TARGET_COILSEP',target_coilsep
+            WRITE(iunit,outflt) 'SIGMA_COILSEP',sigma_coilsep
+            WRITE(iunit,outint) 'NPTS_CSEP',npts_csep
+         END IF
+         DO n = LBOUND(sigma_coilself,DIM=1), UBOUND(sigma_coilself,DIM=1)
+            IF (sigma_coilself(n) < bigno) THEN
+               WRITE(iunit,"(2X,A,I4.3,A,ES22.12E3)") 'TARGET_COILSELF(',n,') = ',target_coilself(n)
+               WRITE(iunit,"(2X,A,I4.3,A,ES22.12E3)") 'SIGMA_COILSELF(',n,') = ',sigma_coilself(n)
+            END IF
+         END DO !n
+         WRITE(iunit,outint) 'NPTS_CSELF',npts_cself
+      END IF
       IF (ANY(lbooz)) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          WRITE(iunit,'(A)') '!          BOOZER COORDINATE TRANSFORMATION'  
