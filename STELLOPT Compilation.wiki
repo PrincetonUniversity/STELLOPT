@@ -25,4 +25,4 @@ For those wishing to develop the code please create a new branch based on **mast
 
 [[STELLOPT Compilation on Hydra (RZG-MPG)|Compiling on the RZG-MPE Cluster (Hydra, Draco, Cobra)]]
 
-[[vmecwiki/STELLOPT Compilation Ubuntu|Compiling on an Ubuntu (Debian) Machine]]
+[[STELLOPT Compilation Ubuntu|Compiling on an Ubuntu (Debian) Machine]]
