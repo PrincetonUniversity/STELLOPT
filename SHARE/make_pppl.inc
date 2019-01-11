@@ -73,17 +73,17 @@
 #  NTCC_LIB = -L$(NTCCHOME)/lib -laladdinsub -lr8slatec -ladpak\
 #             -lcppsub -lcomput -lpspline -lportlib -lezcdf -lmds_sub \
 #             -lmdstransp -lvaxonly
-  NTCC_LIB = $(NTCCHOME)/lib/aladdinsub.a
-  NTCC_LIB += $(NTCCHOME)/lib/r8slatec.a
-  NTCC_LIB += $(NTCCHOME)/lib/adpak.a
-  NTCC_LIB += $(NTCCHOME)/lib/cppsub.a
-  NTCC_LIB += $(NTCCHOME)/lib/comput.a
-  NTCC_LIB += $(NTCCHOME)/lib/pspline.a
-  NTCC_LIB += $(NTCCHOME)/lib/portlib.a
-  NTCC_LIB += $(NTCCHOME)/lib/ezcdf.a
-  NTCC_LIB += $(NTCCHOME)/lib/mds_sub.a
-  NTCC_LIB += $(NTCCHOME)/lib/mdstransp.a
-  NTCC_LIB += $(NTCCHOME)/lib/vaxonly.a
+  NTCC_LIB = $(NTCCHOME)/lib/libaladdinsub.a
+  NTCC_LIB += $(NTCCHOME)/lib/libr8slatec.a
+  NTCC_LIB += $(NTCCHOME)/lib/libadpak.a
+  NTCC_LIB += $(NTCCHOME)/lib/libcppsub.a
+  NTCC_LIB += $(NTCCHOME)/lib/libcomput.a
+  NTCC_LIB += $(NTCCHOME)/lib/libpspline.a
+  NTCC_LIB += $(NTCCHOME)/lib/libportlib.a
+  NTCC_LIB += $(NTCCHOME)/lib/libezcdf.a
+  NTCC_LIB += $(NTCCHOME)/lib/libmds_sub.a
+  NTCC_LIB += $(NTCCHOME)/lib/libmdstransp.a
+  NTCC_LIB += $(NTCCHOME)/lib/libvaxonly.a
 
 #######################################################################
 #            HDF5 Options
