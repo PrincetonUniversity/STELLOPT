@@ -34,7 +34,7 @@
 !----------------------------------------------------------------------
       IF (iflag < 0) RETURN
       ik   = COUNT(sigma < bigno)
-      IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'CRV ',ik,4
+      IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'MAX. COIL CURVATURE ',ik,4
       IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA  VAL  LOC'
       IF (niter >= 0) THEN
          DO ik = 1, nigroup
@@ -43,7 +43,7 @@
                CALL get_coil_maxcurv(ik, maxcurv, smax)
                targets(mtargets) = target(ik)
                sigmas(mtargets)  = sigma(ik)
-               vals(mtargets)    = maxcurv
+               vals(mtargets)    = MAX(maxcurv, target(ik))  ! One-sided barrier
                IF (iflag == 1) WRITE(iunit_out,'(I5,4ES22.12E3)') ik,target(ik),sigma(ik),maxcurv,smax
             END IF
          END DO
