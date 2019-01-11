@@ -6,7 +6,7 @@ The BNORM code calculates the Fourier coefficients of the magnetic field normal 
 \vec{B}\cdot\hat{n}=\frac{1}{4\pi}\int\frac{\vec{j}' dA}{|\vec{x}-\vec{x}'|^{3/2}}
 [[math]]
 It achieves this by utilizing the covariant magnetic field on the VMEC surface to construct a surface current. It creates input files for the NESCOIL program.
-<<toc>>
+
 
 ----
 
@@ -44,12 +44,12 @@ Here we've redirected screen output (trapping error messages) to 'bnorm_log.test
 ===Output Data Format=== 
 The BNORM code outputs two files the 'bnorm.suffix' file and 'nescin.suffix' file (where suffix is the suffix of the VMEC 'wout' file). The first file contains the Fourier coefficients of the normal B-Field. The second file is the input file for the NESCOIL code.
 
-The 'bnorm' file has a list of the m, n, and bnormal Fourier coefficients. For information on the 'nescin' file please see the NESCOIL page.
+The 'bnorm' file has a list of the m, n, and bnormal (sine) Fourier coefficients. For information on the 'nescin' file please see the NESCOIL page.
 
 ----
 
 ===Visualization=== 
-There are no specific routines to visualize the data in the 'bnorm' file. However, the matlabVMEC routines should allow a user to plot the values stored in the 'bnorm' file. The bnorm values are calculated from the covariant components of the magnetic field from VMEC. Thus, the Fourier coefficients should have the same parity (cosine) as the covariant components.
+There are no specific routines to visualize the data in the 'bnorm' file. However, the matlabVMEC routines should allow a user to plot the values stored in the 'bnorm' file. The bnorm values are calculated from the covariant components of the magnetic field from VMEC. Thus, the Fourier coefficients should have the same parity (sine) as the covariant components.
 
 ----
 
