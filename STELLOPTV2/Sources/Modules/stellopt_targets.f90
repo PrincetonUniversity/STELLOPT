@@ -181,10 +181,11 @@
       REAL(rprec) ::  target_curvature_p2, sigma_curvature_P2
       REAL(rprec), DIMENSION(nigroup)    :: target_coillen, sigma_coillen
       REAL(rprec), DIMENSION(nigroup)    :: target_coilsegvar, sigma_coilsegvar
-      INTEGER     :: npts_biot, npts_clen, npts_curv, npts_csep, npts_cself
+      INTEGER     :: npts_biot, npts_clen, npts_torx, npts_curv, npts_csep, npts_cself
       REAL(rprec), DIMENSION(nigroup)    :: target_coilcrv,  sigma_coilcrv
       REAL(rprec), DIMENSION(nigroup)    :: target_coilself, sigma_coilself
       REAL(rprec)                        :: target_coilsep,  sigma_coilsep
+      REAL(rprec), DIMENSION(nigroup)    :: target_coiltorvar, sigma_coiltorvar, thwt_coiltorvar
 
       INTEGER, PARAMETER :: jtarget_aspect     = 100
       INTEGER, PARAMETER :: jtarget_rbtor      = 1001
@@ -254,6 +255,7 @@
       INTEGER, PARAMETER :: jtarget_coilsep    = 616
       INTEGER, PARAMETER :: jtarget_coilself   = 617
       INTEGER, PARAMETER :: jtarget_coilsegvar = 618
+      INTEGER, PARAMETER :: jtarget_coiltorvar = 619
       INTEGER, PARAMETER :: jtarget_x          = 900
       INTEGER, PARAMETER :: jtarget_y          = 901
       
@@ -396,6 +398,8 @@
             WRITE(iunit, out_format) 'Coil Lengths'
          CASE(jtarget_coilsegvar)
             WRITE(iunit, out_format) 'Relative Coil Segment Length Variations'
+         CASE(jtarget_coiltorvar)
+            WRITE(iunit, out_format) 'RMS Coil Toroidal Excursions'
          CASE(jtarget_coilcrv)
             WRITE(iunit, out_format) 'Maximum Coil Curvature'
          CASE(jtarget_coilsep)

@@ -370,7 +370,7 @@
 !     Inputs:       Coil coordinate arrays and sizes
 !     Output:       Shortest distance between any two coordinate pairs.
 !-------------------------------------------------------------------------------
-      SUBROUTINE get_coil_sep(x1, y1, z1, n1, x2, y2, z2, n2, minsep)
+      SUBROUTINE get_coil_sep(x1, y1, z1, n1, x2, y2, z2, n2, minsep, s1, s2)
         USE stel_kinds, ONLY : rprec        
         IMPLICIT NONE
         INTRINSIC SQRT
@@ -378,21 +378,27 @@
         INTEGER, INTENT(IN)                    :: n1, n2
         REAL(rprec), DIMENSION(n1), INTENT(IN) :: x1, y1, z1
         REAL(rprec), DIMENSION(n2), INTENT(IN) :: x2, y2, z2
-        REAL(rprec), INTENT(OUT)               :: minsep
+        REAL(rprec), INTENT(OUT)               :: minsep, s1, s2
 
         REAL(rprec) :: dsq
-        INTEGER     :: j1, j2
+        INTEGER     :: j1, j2, sl1, sl2
 
         minsep = 1.0D+60
+        sl1 = 1;  sl2 = 1
 
         DO j1=1,n1-1     ! Assumes 1st and last pts are identical.
            DO j2=1,n2-1
               dsq = (x1(j1) - x2(j2))**2 + (y1(j1) - y2(j2))**2 + (z1(j1) - z2(j2))**2
-              IF (dsq < minsep) minsep = dsq
+              IF (dsq < minsep) THEN
+                 minsep = dsq
+                 sl1 = j1;  sl2 = j2
+              END IF
            END DO !j2
         END DO !j1
 
         minsep = SQRT(minsep)
+        s1 = REAL(sl1 - 1)/REAL(n1 - 1)
+        s2 = REAL(sl2 - 1)/REAL(n2 - 1)
       END SUBROUTINE get_coil_sep
 
 !-------------------------------------------------------------------------------
@@ -602,3 +608,135 @@
         beta  = ((v11 - v12)*(u21 - u11) + (u12 - u11)*(v21 - v11))/det
         IF ((beta.ge.zero).AND.(beta.le.one)) uvintersect = .TRUE.
       END FUNCTION uvintersect
+
+!-----------------------------------------------------------------------
+!     Subroutine:    get_coil_tor_excur
+!     Author:        J. Breslau (jbreslau@pppl.gov)
+!     Date:          1/11/2019
+!     Description:   Computes the weighted RMS excursion of a coil from a
+!                    constant-phi plane.
+!     Input:         Coil index icoil, theta weighting coefficient
+!     Output:        RMS excursion in radians
+!-----------------------------------------------------------------------
+      SUBROUTINE get_coil_tor_excur(icoil, nu, excur)
+        USE stel_kinds, ONLY : rprec
+        USE stellopt_targets, ONLY : npts_torx
+        USE stellopt_vars
+        USE windingsurface
+        USE vmec_input,  ONLY : nfp
+        USE stellopt_cbspline
+        IMPLICIT NONE
+        INTRINSIC ATAN2, COS, SQRT
+
+        ! Arguments
+        INTEGER, INTENT(IN)      :: icoil  ! Coil index
+        REAL(rprec), INTENT(IN)  :: nu     ! Theta non-uniformity of penalty weight
+        REAL(rprec), INTENT(OUT) :: excur  ! RMS excursion
+
+        ! Constants
+        REAL(rprec), PARAMETER :: zero=0.0D0, pi2r = 1.5707963267948966192313216916398_rprec
+
+        ! Local variables
+        TYPE(cbspline)                         :: XC_spl, YC_spl, ZC_spl
+        REAL(rprec), DIMENSION(:), ALLOCATABLE :: dl, wt, va
+        REAL(rprec)                            :: s_val, u00, u0, u1, v00, v0, v1
+        REAL(rprec)                            :: x00, y00, z00, x0, y0, z0, x1, y1, z1
+        REAL(rprec)                            :: hsgn, len, vbar, vvar
+        INTEGER                                :: nknots, ncoefs, ier, j
+        LOGICAL                                :: lmod
+
+        IF (coil_type(icoil).NE.'M') THEN
+           excur = zero
+           RETURN
+        END IF
+
+        ! Allocate storage
+        ALLOCATE(dl(npts_torx), wt(npts_torx), va(npts_torx))
+
+        ! Handle spline boundary conditions
+        CALL enforce_spline_bcs(icoil, lmod)
+        ncoefs = coil_nctrl(icoil)
+        nknots = ncoefs + 4
+
+        ! Set up splines
+        CALL cbspline_init(XC_spl, ncoefs, ier)
+        CALL cbspline_setup(XC_spl, ncoefs, &
+             coil_splinesx(icoil,1:nknots), coil_splinefx(icoil,1:ncoefs), ier)
+
+        CALL cbspline_init(YC_spl, ncoefs, ier)
+        CALL cbspline_setup(YC_spl, ncoefs, &
+             coil_splinesy(icoil,1:nknots), coil_splinefy(icoil,1:ncoefs), ier)
+
+        len = zero;  vbar = zero
+        IF (lwindsurf) THEN !Interpret coil_splinefx as u, coil_splinefy as v
+           windsurf%nfp = nfp
+
+           u0 = zero;  v0 = coil_splinefy(icoil,1)
+           CALL stellopt_uv_to_xyz(u0, v0, x0, y0, z0)
+           u00 = u0; v00 = v0;  x00 = x0; y00 = y0; z00 = z0
+           DO j = 2, npts_torx
+              s_val = REAL(j-1)/REAL(npts_torx-1)
+              IF ((s_val.GT.coil_splinesx(icoil,1)) .AND. (s_val.LT.coil_splinesx(icoil,nknots))) THEN
+                 CALL cbspline_eval(XC_spl, s_val, u1, ier)
+                 CALL cbspline_eval(YC_spl, s_val, v1, ier)
+              ELSE
+                 u1 = s_val
+                 v1 = coil_splinefy(icoil,1)
+              END IF
+              CALL stellopt_uv_to_xyz(u1, v1, x1, y1, z1)
+              dl(j) = SQRT((x1 - x0)**2 + (y1 - y0)**2 + (z1 - z0)**2)
+              x0 = x1;  y0 = y1;  z0 = z1
+              len = len + dl(j)
+              va(j) = 0.5d0*(v0 + v1)
+              vbar = vbar + dl(j)*va(j)
+              wt(j) = (1.0d0 - nu) + nu*COS(pi2r*(u0 + u1))**4
+              u0 = u1;  v0 = v1
+           END DO !j
+
+           va(1) = 0.5d0*(v00 + v0)
+           wt(1) = (1.0d0 - nu) + nu*COS(pi2r*(u00 + u0))**4
+        ELSE  !Interpret coil_splinefx as x, coil_splinefy as y, coil_splinefz as z.
+           CALL cbspline_init(ZC_spl, ncoefs, ier)
+           CALL cbspline_setup(ZC_spl, ncoefs, &
+                coil_splinesz(icoil,1:nknots), coil_splinefz(icoil,1:ncoefs), ier)
+
+           CALL cbspline_eval(XC_spl, zero, x0, ier);  x00 = x0
+           IF (x0 < zero) THEN
+              hsgn = -0.5d0
+           ELSE
+              hsgn = 0.5d0
+           END IF
+           CALL cbspline_eval(YC_spl, zero, y0, ier);  y00 = y0
+           CALL cbspline_eval(ZC_spl, zero, z0, ier);  z00 = z0
+           DO j = 2, npts_torx
+              s_val = REAL(j-1)/REAL(npts_torx-1)
+              CALL cbspline_eval(XC_spl, s_val, x1, ier)
+              CALL cbspline_eval(YC_spl, s_val, y1, ier)
+              CALL cbspline_eval(ZC_spl, s_val, z1, ier)
+              dl(j) = SQRT((x1 - x0)**2 + (y1 - y0)**2 + (z1 - z0)**2)
+              va(j) = ATAN2(0.5*(y0 + y1), hsgn*(x0 + x1))
+              x0 = x1;  y0 = y1;  z0 = z1
+              len = len + dl(j)
+              vbar = vbar + dl(j)*va(j)
+           END DO !j
+
+           CALL cbspline_delete(ZC_spl)
+
+           va(1) = ATAN2(0.5*(y00 + y0), hsgn*(x00 + x0))
+           wt = 1.0d0  ! Theta is not well defined for general 3D coil curves
+        END IF !lwindsurf
+
+        !Last segment
+        dl(1) = SQRT((x00 - x0)**2 + (y00 - y0)**2 + (z00 - z0)**2)
+        len = len + dl(1)
+        vbar = (vbar + dl(1)*va(1))/len
+        
+        vvar = 0.0
+        DO j=1, npts_torx
+           vvar = vvar + dl(j)*wt(j)*(va(j) - vbar)**2
+        END DO !j
+        excur = SQRT(vvar/len)
+
+        CALL cbspline_delete(XC_spl);  CALL cbspline_delete(YC_spl)
+        DEALLOCATE(dl, wt, va)
+      END SUBROUTINE get_coil_tor_excur

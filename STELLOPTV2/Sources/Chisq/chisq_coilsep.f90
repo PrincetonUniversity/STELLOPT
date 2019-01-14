@@ -33,7 +33,7 @@
       REAL(rprec), PARAMETER                     :: twopi = 6.283185307179586476925286766559D0
       REAL(rprec), DIMENSION(:,:,:), ALLOCATABLE :: xyzuniq
       REAL(rprec), DIMENSION(:,:), ALLOCATABLE   :: ctarg
-      REAL(rprec)                                :: deltaphi, cdp, sdp, coilsep
+      REAL(rprec)                                :: deltaphi, cdp, sdp, coilsep, s1, s2
       INTEGER                                    :: ic, itarg, iu, n_uniq
       LOGICAL                                    :: lmod
 
@@ -42,9 +42,11 @@
 !----------------------------------------------------------------------
       IF (iflag < 0) RETURN
       IF (iflag == 1) WRITE(iunit_out,'(A)') 'MIN. COIL SEP. '
-      IF (iflag == 1) WRITE(iunit_out,'(A)') 'C1 C2  SIGMA  VAL'
+      IF (iflag == 1) WRITE(iunit_out,'(A)') 'C1 C2  TARGET  SIGMA  VAL  SLOC_1  SLOC_2'
       IF (sigma.ge.bigno) RETURN  !No targets if function is switched off.
       IF (.NOT.lcoil_geom) RETURN  !No targets if coils cannot be modified.
+
+10    FORMAT(2I5,3ES22.12E3,2F11.4)
 
       ! Count unique coils
       n_uniq = 0
@@ -69,12 +71,13 @@
          ! Determine distance of adjacent coils from each other
          DO itarg=1,n_uniq-1
            CALL get_coil_sep(xyzuniq(:,1,itarg), xyzuniq(:,2,itarg), xyzuniq(:,3,itarg), npts_csep, &
-                 xyzuniq(:,1,itarg+1), xyzuniq(:,2,itarg+1), xyzuniq(:,3,itarg+1), npts_csep, coilsep)
+                 xyzuniq(:,1,itarg+1), xyzuniq(:,2,itarg+1), xyzuniq(:,3,itarg+1), npts_csep, &
+                 coilsep, s1, s2)
             mtargets = mtargets + 1
             targets(mtargets) = targ
             sigmas(mtargets)  = sigma
             vals(mtargets) = MIN(coilsep, targ)  ! One-sided barrier
-            IF (iflag == 1) WRITE(iunit_out,'(2I5,3ES22.12E3)') itarg,itarg+1,targ,sigma,coilsep
+            IF (iflag == 1) WRITE(iunit_out,10) itarg,itarg+1,targ,sigma,coilsep,s1,s2
          END DO !itarg
 
          ! Now target 1-1'
@@ -83,12 +86,11 @@
          ctarg(:,3) = -xyzuniq(:,3,1)
          mtargets = mtargets + 1
          CALL get_coil_sep(xyzuniq(:,1,1), xyzuniq(:,2,1), xyzuniq(:,3,1), npts_csep, &
-              ctarg(:,1), ctarg(:,2), ctarg(:,3), npts_csep, coilsep)
+              ctarg(:,1), ctarg(:,2), ctarg(:,3), npts_csep, coilsep, s1, s2)
          targets(mtargets) = targ
          sigmas(mtargets)  = sigma
          vals(mtargets) = MIN(coilsep, targ)  ! One-sided barrier
-         IF (iflag == 1) WRITE(iunit_out,'(2I5,3ES22.12E3)')&
-              1,2*n_uniq*nfp,targ,sigma,coilsep
+         IF (iflag == 1) WRITE(iunit_out,10) 1,2*n_uniq*nfp,targ,sigma,coilsep,s1,s2
 
          ! Now target N-N'
          deltaphi = twopi / REAL(nfp, rprec)
@@ -98,12 +100,11 @@
          ctarg(:,3) = -xyzuniq(:,3,n_uniq)
          mtargets = mtargets + 1
          CALL get_coil_sep(xyzuniq(:,1,n_uniq), xyzuniq(:,2,n_uniq), xyzuniq(:,3,n_uniq), npts_csep, &
-              ctarg(:,1), ctarg(:,2), ctarg(:,3), npts_csep, coilsep)
+              ctarg(:,1), ctarg(:,2), ctarg(:,3), npts_csep, coilsep, s1, s2)
          targets(mtargets) = targ
          sigmas(mtargets)  = sigma
          vals(mtargets) = MIN(coilsep, targ)  ! One-sided barrier
-         IF (iflag == 1) WRITE(iunit_out,'(2I5,3ES22.12E3)')&
-              n_uniq,n_uniq+1,targ,sigma,coilsep
+         IF (iflag == 1) WRITE(iunit_out,10) n_uniq,n_uniq+1,targ,sigma,coilsep,s1,s2
 
          DEALLOCATE(xyzuniq, ctarg)
       ELSE ! Just count targets

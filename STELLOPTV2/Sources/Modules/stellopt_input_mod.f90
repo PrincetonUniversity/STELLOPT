@@ -368,6 +368,7 @@
                          sigma_coil_bnorm, nu_bnorm, nv_bnorm, npts_biot,&
                          target_coillen, sigma_coillen, npts_clen, &
                          target_coilsegvar, sigma_coilsegvar, &
+                         target_coiltorvar, sigma_coiltorvar, thwt_coiltorvar, npts_torx, &
                          target_coilsep, sigma_coilsep, npts_csep, &
                          target_coilcrv, sigma_coilcrv, npts_curv, &
                          target_coilself, sigma_coilself, npts_cself, &
@@ -917,6 +918,10 @@
       npts_clen         = 360
       target_coilsegvar = 0.0
       sigma_coilsegvar  = bigno
+      target_coiltorvar = 0.0
+      sigma_coiltorvar  = bigno
+      thwt_coiltorvar   = 0.9
+      npts_torx         = 128
       target_coilcrv    = 0.0
       sigma_coilcrv     = bigno
       npts_curv         = 256
@@ -2039,7 +2044,7 @@
       END IF          
       IF ((ANY(sigma_coillen < bigno)).OR.(ANY(sigma_coilsegvar < bigno)).OR.&
            (ANY(sigma_coilcrv < bigno)).OR.(sigma_coilsep < bigno).OR.&
-           (ANY(sigma_coilself < bigno))) THEN
+           (ANY(sigma_coilself < bigno)).OR.(ANY(sigma_coiltorvar < bigno))) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          WRITE(iunit,'(A)') '!          COIL TARGETS'
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
@@ -2056,6 +2061,14 @@
             END IF
          END DO !n
          WRITE(iunit,outint) 'NPTS_CLEN',npts_clen
+         DO n = LBOUND(sigma_coiltorvar,DIM=1), UBOUND(sigma_coiltorvar,DIM=1)
+            IF (sigma_coiltorvar(n) < bigno) THEN
+               WRITE(iunit,"(2X,A,I4.3,A,ES22.12E3)") 'TARGET_COILTORVAR(',n,') = ',target_coiltorvar(n)
+               WRITE(iunit,"(2X,A,I4.3,A,ES22.12E3)") 'SIGMA_COILTORVAR(',n,') = ',sigma_coiltorvar(n)
+               WRITE(iunit,"(2X,A,I4.3,A,ES22.12E3)") 'THWT_COILTORVAR(',n,') = ',thwt_coiltorvar(n)
+            END IF
+         END DO !n
+         WRITE(iunit,outint) 'NPTS_TORX',npts_torx
          DO n = LBOUND(sigma_coilcrv,DIM=1), UBOUND(sigma_coilcrv,DIM=1)
             IF (sigma_coilcrv(n) < bigno) THEN
                WRITE(iunit,"(2X,A,I4.3,A,ES22.12E3)") 'TARGET_COILCRV(',n,') = ',target_coilcrv(n)
