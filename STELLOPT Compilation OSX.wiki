@@ -7,7 +7,7 @@ Installation Steps
 # Download and install [[@https://www.macports.org/|MacPorts]]. Please note we're assuming you'll be using the default location for installation of the various ports. If not you'll need to change the path to the variable MACPORTS in the setup script (and rezip).
 # Use MacPorts to install your packages. For this example we're using gfortran 4.9 but you may substitute any other version. I've also chosen OpenMPI but the sources could also be built with MPICH.
 {{{
-gcc7 version
+<===gcc7 version===>
 
 sudo port install gcc7
 sudo port install openmpi
@@ -32,13 +32,14 @@ sudo port install slepc +gcc7 +openmpi +openblas +arpack -accelerate
 }}}
 
 {{{
-gcc8 version
+<===gcc8 version===>
+
 Tested on: 
 MacBook Pro (Retina, 15-inch, Mid 2015), 2.5 GHz Intel Core i7, 16 GB 1600 MHz DDR3
 AMD Radeon R9 M370X 2048 MG Intel Iris Pro 1536 MB
 macOS Mojave, Version 10.14.2
 
-MacPorts-2.5.4-10.14-Mojave 17-35-43-409.pkg
+MacPorts installation version: MacPorts-2.5.4-10.14-Mojave 17-35-43-409.pkg
 
 sudo port install gcc8
 sudo port install openmpi
@@ -51,7 +52,6 @@ sudo port install pgplot
    (C bindings broken in gcc8)
 sudo port install OpenBLAS +gcc8 
 sudo port install scalapack +gcc8 +openmpi +openblas
-
 }}}
 
 
