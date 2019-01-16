@@ -14,6 +14,7 @@
       USE vparams, ONLY: ntor_rcws, mpol_rcws
       USE stellopt_runtime
       USE stellopt_vars
+      USE equil_vals, ONLY: mercier_criterion
       USE equil_utils, ONLY: profile_norm
       USE windingsurface
       USE stellopt_targets
@@ -32,9 +33,6 @@
 !DEC$ ENDIF        
 !DEC$ IF DEFINED (REGCOIL)
       USE regcoil_variables, ONLY: rc_nfp => nfp, rmnc_coil, rmns_coil, zmns_coil, zmnc_coil, mnmax_coil, xm_coil, xn_coil, verbose, regcoil_nml
-      !USE regcoil_variables, ONLY: rc_rmnc_stellopt, rc_rmns_stellopt, &
-      !                             rc_zmnc_stellopt, rc_zmns_stellopt, &
-      !                             rc_nfp => nfp
 !DEC$ ENDIF
       
 !-----------------------------------------------------------------------
@@ -270,7 +268,8 @@
                          ne_opt, te_opt, ti_opt, th_opt, zeff_opt, &
                          ne_type, te_type, ti_type, th_type, &
                          beamj_type, bootj_type, zeff_type, &
-                         bootcalc_type, sfincs_s, sfincs_min_procs, sfincs_Er_option, vboot_tolerance, &
+                         bootcalc_type, sfincs_s, sfincs_min_procs, sfincs_Er_option, &
+                         vboot_max_bootsj_iterations, vboot_tolerance, &
                          ne_min, te_min, ti_min, th_min, beamj_f_min, &
                          bootj_f_min, zeff_min, zeff_f_min, &
                          ne_max, te_max, ti_max, th_max, beamj_f_max, &
@@ -348,8 +347,9 @@
                          am_f_max, ac_f_max, ai_f_max, phi_f_max, ne_f_max, &
                          te_f_max, ti_f_max, th_f_max, bound_min, bound_max, &
                          delta_min, delta_max, &
-                         target_balloon, sigma_balloon, balloon_theta, balloon_zeta,&
-                         target_bootstrap,sigma_bootstrap, target_neo, sigma_neo,&
+                         target_balloon, sigma_balloon, balloon_theta, balloon_zeta, &
+			 target_mercier_criterion, sigma_mercier_criterion, mercier_criterion, &
+                         target_bootstrap, sigma_bootstrap, target_neo, sigma_neo, &
                          target_Jstar, sigma_Jstar, NumJstar,&
                          target_helicity, sigma_helicity, helicity,&
                          target_helicity_old, sigma_helicity_old, &
@@ -634,6 +634,7 @@
       sfincs_s        = -1 
       sfincs_s(1:4)   = (/ 0.2, 0.4, 0.6, 0.8 /)
       vboot_tolerance = 0.01
+      vboot_max_bootsj_iterations = 8
       sfincs_min_procs = 1
       emis_xics_s(1:5) = (/0.0,0.25,0.50,0.75,1.0/)
       emis_xics_f(:)   = 0.0
@@ -851,6 +852,8 @@
       sigma_balloon(:) = bigno
       balloon_theta(:)= -1.0
       balloon_zeta(:) = -1.0
+      target_mercier_criterion(:) = 0.0
+      sigma_mercier_criterion(:) = bigno
       target_bootstrap(:) = 0.0
       sigma_bootstrap(:) = bigno
       target_neo(:)   = 0.0
@@ -1136,6 +1139,13 @@
          WRITE(6,"(2X,A)") "================================================================================="
          WRITE(6,*)        "    "
       END IF
+      IF (myid == master .and. ANY(sigma_mercier_criterion < bigno)) THEN
+         WRITE(6,*)        " Mercier stability calculation provided by: "
+         WRITE(6,"(2X,A)") "===================================================================="
+         WRITE(6,"(2X,A)") "=========                    VMEC                          ========="
+         WRITE(6,"(2X,A)") "===================================================================="
+         WRITE(6,*)        "    "
+      END IF
 !DEC$ IF DEFINED (TERPSICHORE)
       IF (myid == master .and. ANY(sigma_kink < bigno)) THEN
          WRITE(6,*)        " Kink stability calculation provided by: "
@@ -1335,12 +1345,13 @@
 !DEC$ ENDIF
       ! Force some behavior
       lbooz(1) = .FALSE.
-      target_balloon(1)   = 0.0;  sigma_balloon(1)   = bigno
-      target_bootstrap(1) = 0.0;  sigma_bootstrap(1) = bigno
-      target_neo(1)       = 0.0;  sigma_neo(1)       = bigno
-      target_dkes(1)      = 0.0;  sigma_dkes(1)      = bigno
-      target_dkes(2)      = 0.0;  sigma_dkes(2)      = bigno
-      target_helicity(1)  = 0.0;  sigma_helicity(1)  = bigno
+      target_balloon(1)    = 0.0;  sigma_balloon(1)    = bigno
+      target_mercier_criterion(1)   = 0.0;  sigma_mercier_criterion(1)   = bigno
+      target_bootstrap(1)  = 0.0;  sigma_bootstrap(1)  = bigno
+      target_neo(1)        = 0.0;  sigma_neo(1)        = bigno
+      target_dkes(1)       = 0.0;  sigma_dkes(1)       = bigno
+      target_dkes(2)       = 0.0;  sigma_dkes(2)       = bigno
+      target_helicity(1)   = 0.0;  sigma_helicity(1)   = bigno
       END SUBROUTINE read_stellopt_input
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1378,6 +1389,7 @@
       IF (TRIM(equil_type(1:5)) == 'vboot') THEN
          WRITE(iunit,outint) 'SFINCS_MIN_PROCS',sfincs_min_procs
          WRITE(iunit,outflt) 'VBOOT_TOLERANCE',vboot_tolerance
+         WRITE(iunit,outint) 'VBOOT_MAX_BOOTSJ_ITERATIONS',vboot_max_bootsj_iterations
          WRITE(iunit,outstr) 'BOOTCALC_TYPE',TRIM(bootcalc_type)
       END IF
       WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
@@ -2104,6 +2116,20 @@
                           'SIGMA_BALLOON(',ik,') = ',sigma_balloon(ik)
          END DO
       END IF
+      IF (ANY(sigma_mercier_criterion < bigno)) THEN
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,'(A)') '!          MERCIER STABILITY CALCULATION'  
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         DO ik = 1,UBOUND(sigma_mercier_criterion,DIM=1)
+            IF(sigma_mercier_criterion(ik) < bigno) n=ik
+         END DO
+         DO ik = 1, n
+            IF (sigma_mercier_criterion(ik) < bigno) WRITE(iunit,"(2(2X,A,I3.3,A,E22.14))") &
+                          'TARGET_MERCIER_CRITERION(',ik,') = ',target_mercier_criterion(ik), &
+                          'SIGMA_MERCIER_CRITERION(',ik,') = ',sigma_mercier_criterion(ik)
+         END DO
+      END IF
+
       IF (ANY(sigma_bootstrap < bigno)) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          WRITE(iunit,'(A)') '!          BOOTSTRAP CALCULATION'  

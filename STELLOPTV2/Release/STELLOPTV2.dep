@@ -396,7 +396,22 @@ chisq_curvature_p2.o : \
       stellopt_runtime.o \
       stellopt_targets.o \
       $(LIB_DIR)/Release/read_wout_mod.o
-      
+
+
+chisq_mercier.o :\
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      equil_vals.o
+
+
+stellopt_mercier.o: \
+      stellopt_runtime.o \
+      stellopt_input_mod.o \
+      stellopt_vars.o \
+      stellopt_targets.o \
+      equil_vals.o
+ 
+
 stellopt_balloon.o : \
       stellopt_runtime.o \
       stellopt_input_mod.o \

@@ -74,8 +74,7 @@
       target_value = regcoil_current_density
      
       ! Loop over all of the spectral components of the winding surface
-      ! and update the rc_*_stellopt  
-      ! write(6,'(a)') '<----Looping over m and n'
+      ! and determine the  number of modes
 
       IF ((ANY(lregcoil_rcws_rbound_s_opt)) .or. (ANY(lregcoil_rcws_rbound_c_opt)) .or. &
           (ANY(lregcoil_rcws_zbound_s_opt)) .or. (ANY(lregcoil_rcws_zbound_c_opt)) ) THEN 
@@ -90,9 +89,10 @@
                 END IF
              END do
          END do
+
+         ! Now, write the modes
          CALL safe_open(iunit, istat, TRIM('regcoil_nescout.'// &
                    TRIM(proc_string)), 'replace', 'formatted')
-         !write(6,'(a)'), '<----JCSwrite_output'
          write(iunit,*) "Number of fourier modes in table"
          write(iunit,*) nummodes1
          write(iunit,*) "Table of fourier coefficients"
@@ -103,10 +103,6 @@
                      (regcoil_rcws_rbound_s(m,n) .ne. 0) .or. &
                      (regcoil_rcws_zbound_c(m,n) .ne. 0) .or. &
                      (regcoil_rcws_zbound_s(m,n) .ne. 0) ) THEN
-                   !rc_rmnc_stellopt(m,n) = regcoil_rcws_rbound_c(m,n)
-                   !rc_rmns_stellopt(m,n) = regcoil_rcws_rbound_s(m,n)
-                   !rc_zmnc_stellopt(m,n) = regcoil_rcws_zbound_c(m,n)
-                   !rc_zmns_stellopt(m,n) = regcoil_rcws_zbound_s(m,n)
                    ! These are written in the same order as in a NESCIN
                    ! file: M N RC ZS RS ZC
                    write(iunit,*) m, n, &
@@ -163,8 +159,6 @@
 
       IF ((ANY(lregcoil_rcws_rbound_s_opt)) .or. (ANY(lregcoil_rcws_rbound_c_opt)) .or. &
           (ANY(lregcoil_rcws_zbound_s_opt)) .or. (ANY(lregcoil_rcws_zbound_c_opt)) ) THEN 
-         ! write(6,'(a)') '<----regcoil initupdate_nescin_coil_surface'
-         !call regcoil_initupdate_nescin_coil_surface(verbose)
          CALL regcoil_evaluate_coil_surface()
       END IF
 
@@ -216,7 +210,7 @@
       ! write(6,'(a)') '<----REGCOIL DEBUG safe_open'
       ! CALL safe_open(iunit, istat, TRIM('regcoil_nescout.'// &
       !           TRIM(proc_string)), 'replace', 'formatted')
-      ! write(6,'(a)'), '<----JCSwrite_output'
+      ! write(6,'(a)'), '<----debug write_output'
       ! write(iunit,*), "Number of fourier modes in table"
       ! write(iunit,*), nummodes1
       ! write(iunit,*), "Table of fourier coefficients"

@@ -137,6 +137,7 @@
       REAL(rprec), DIMENSION(nsd)   ::  target_jcurv, sigma_jcurv
       REAL(rprec), DIMENSION(nsd)   ::  target_jdotb, sigma_jdotb
       REAL(rprec), DIMENSION(nsd)   ::  target_balloon, sigma_balloon
+      REAL(rprec), DIMENSION(nsd)   ::  target_mercier_criterion, sigma_mercier_criterion
       REAL(rprec), DIMENSION(nsd)   ::  target_bootstrap, sigma_bootstrap
       REAL(rprec), DIMENSION(nsd)   ::  target_neo, sigma_neo
       REAL(rprec), DIMENSION(nsd)   ::  target_Jstar, sigma_Jstar
@@ -235,6 +236,7 @@
       INTEGER, PARAMETER :: jtarget_curvature_P2            = 505
       INTEGER, PARAMETER :: jtarget_balloon    = 601
       INTEGER, PARAMETER :: jtarget_kink       = 6011
+      INTEGER, PARAMETER :: jtarget_mercier_criterion   = 6012
       INTEGER, PARAMETER :: jtarget_bootstrap  = 602
       INTEGER, PARAMETER :: jtarget_neo        = 603
       INTEGER, PARAMETER :: jtarget_Jstar      = 604
@@ -356,6 +358,8 @@
             WRITE(iunit, out_format) 'Ballooning Stability'
          CASE(jtarget_kink)
             WRITE(iunit, out_format) 'Kink Stability'
+         CASE(jtarget_mercier_criterion)
+            WRITE(iunit, out_format) 'Mercier Stability'
          CASE(jtarget_bootstrap)
             WRITE(iunit, out_format) 'Bootstrap Current'
          CASE(jtarget_neo)

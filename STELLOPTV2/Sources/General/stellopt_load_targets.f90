@@ -213,6 +213,9 @@
       ! Ballooning
       IF (ANY(sigma_balloon < bigno)) &
          CALL chisq_balloon(target_balloon, sigma_balloon, ncnt,iflag)
+      ! Mercier Stability (DMERC)
+      IF (ANY(sigma_mercier_criterion < bigno)) &
+         CALL chisq_mercier(target_mercier_criterion, sigma_mercier_criterion, ncnt,iflag)
       ! Boostrap
       IF (ANY(sigma_bootstrap < bigno)) &
          CALL chisq_bootstrap(target_bootstrap, sigma_bootstrap, ncnt,iflag)

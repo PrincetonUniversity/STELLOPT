@@ -44,7 +44,8 @@
                                jcurv_vmec => jcurv, rmax_vmec => rmax_surf, &
                                rmin_vmec => rmin_surf, zmax_vmec => zmax_surf, &
                                omega_vmec => omega, machsq_vmec => machsq, &
-                               tpotb_vmec => tpotb, b0_vmec => b0
+                               tpotb_vmec => tpotb, b0_vmec => b0, &
+			       Dmerc_vmec => Dmerc
       USE vmec_input,    ONLY: rbc_vmec => rbc, rbs_vmec => rbs, &
                                zbc_vmec => zbc, zbs_vmec => zbs, &
                                raxis_cc_vmec => raxis_cc, raxis_cs_vmec => raxis_cs, &
@@ -121,6 +122,13 @@
             IF (ALLOCATED(rho)) DEALLOCATE(rho)
             ALLOCATE(rho(ns_vmec))
             FORALL(u=1:ns_vmec) rho(u) = REAL(u-1)/REAL(ns_vmec-1)
+	    ! Retrieve the Mercier stability (radial array)
+            !IF (.not. ALLOCATED(mercier_criterion)) PRINT *, "<----mercier_criterion not allocated"
+            !IF (ALLOCATED(mercier_criterion)) PRINT *, "<----mercier_criterion is allocated"
+            IF (ALLOCATED(mercier_criterion)) DEALLOCATE(mercier_criterion)
+            IF (.not. ALLOCATED(mercier_criterion)) ALLOCATE(mercier_criterion(ns_vmec))
+            ! The Mercier growth rate is calculated by VMEC and stored in Dmerc_vmec. Copy it now.
+            mercier_criterion = Dmerc_vmec
             nfp     = nfp_vmec
             ! Get the external currents
             IF (ALLOCATED(extcur)) DEALLOCATE(extcur)

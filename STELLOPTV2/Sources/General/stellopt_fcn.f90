@@ -333,6 +333,7 @@
          ctemp_str = 'bootsj'
          IF (ANY(sigma_bootstrap < bigno) .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
          IF (ANY(sigma_balloon < bigno)) CALL stellopt_balloon(lscreen,iflag)
+         IF (ANY(sigma_mercier_criterion < bigno)) CALL stellopt_mercier(lscreen,iflag)
          !IF (lneed_magdiag) CALL stellopt_magdiag(lscreen,iflag)
          ctemp_str = 'diagno'
          IF (lneed_magdiag .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
@@ -363,7 +364,7 @@
          IF (sigma_coil_bnorm < bigno .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
 !DEC$ ENDIF
 !DEC$ IF DEFINED (REGCOIL)
-         ! JCS: skipping parallelization for now 
+         ! Skipping parallelization for now.
          ! ctemp_str = 'regcoil_chi2_b'
          ! IF (sigma_regcoil_chi2_b < bigno .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen)
          IF (ANY(sigma_regcoil_chi2_b < bigno)) then

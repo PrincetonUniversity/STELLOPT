@@ -160,7 +160,7 @@ endif
 $(LIB_COILOPTPP) :
 	@cd $(COILOPTPP_DIR); make; ar -cruv $(LIB_COILOPTPP) *.o 
 
-#Construct COILOPT library. 
+#Construct REGCOIL library. 
 $(LIB_REGCOIL) :
 	@cd $(REGCOIL_DIR); make; ar -cruv $(LIB_REGCOIL) *.o 
 

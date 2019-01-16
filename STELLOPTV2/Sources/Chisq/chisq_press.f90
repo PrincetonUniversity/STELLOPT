@@ -2,8 +2,8 @@
 !     Subroutine:    chisq_press
 !     Authors:       S. Lazerson (lazerson@pppl.gov)
 !     Date:          05/26/2012
-!     Description:   Calculate difference between equilbrium electron
-!                    density and target electron density
+!     Description:   Calculate difference between equilbrium total
+!                    plasma pressure and target total plams pressure
 !-----------------------------------------------------------------------
       SUBROUTINE chisq_press(target,sigma,niter,iflag)
 !-----------------------------------------------------------------------

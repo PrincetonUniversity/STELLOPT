@@ -19,7 +19,7 @@
       real(rprec), dimension(-1:size(xx)+2) :: xloc, yloc,dxloc
       real(rprec), dimension(-1:size(xx)+2) :: m, t, dm, p, q
       real(rprec), dimension(-1:size(xx)+2) :: int_f
-      integer :: i, ix, iv, ivm1
+      integer :: i, ix, iv, ivm1, jj
       real(rprec) :: cl,bl,cr,br,dx
       real(rprec), parameter :: onethird = 1._DP/3._DP
 !-----------------------------------------------
@@ -67,13 +67,19 @@
       m(iv  ) = (yloc(iv+1)-yloc(iv  ))/(xloc(iv+1)-xloc(iv  ))
       m(iv+1) = (yloc(iv+2)-yloc(iv+1))/(xloc(iv+2)-xloc(iv+1))
 ! calculate weights for derivatives
-      dm(-1:iv)= abs(m(0:iv+1)-m(-1:iv))
-      where (dm /= 0._DP) !exclude division by zero
-        p(1:iv) = dm(1:iv)/(dm(1:iv)+dm(-1:iv-2))
-      end where
-      where (dm /= 0._DP) !exclude division by zero
-        q(1:iv) = dm(-1:iv-2)/(dm(1:iv)+dm(-1:iv-2))
-      end where
+      dm(-1:iv)= abs(m(0:(iv+1))-m(-1:iv))
+      ! where (dm /= 0._DP) !exclude division by zero
+      !   p(1:iv) = dm(1:iv)/(dm(1:iv)+dm(-1:iv-2))
+      ! end where
+      !where (dm /= 0._DP) !exclude division by zero
+      !  q(1:iv) = dm(-1:iv-2)/(dm(1:iv)+dm(-1:iv-2))
+      !end where
+      do jj = 1,iv
+        if (dm(jj) /= 0._DP) then
+          p(jj) = dm(jj)/(dm(jj)+dm(jj-2))
+          q(jj) = dm(jj-2)/(dm(jj)+dm(jj-2))
+        end if
+      end do
       t(1:iv) = p(1:iv)*m(0:iv-1)+q(1:iv)*m(1:iv)
       where ( p(1:iv)+q(1:iv) < TINY(1._DP)) ! in case of two zeros give equal weight
         t(1:iv) = 0.5_DP*m(0:iv-1)+0.5_DP*m(1:iv)
