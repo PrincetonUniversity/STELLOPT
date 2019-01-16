@@ -30,27 +30,6 @@ sudo port install petsc +gcc7 +openmpi +openblas -accelerate +metis +mumps +parm
 sudo port install slepc +gcc7 +openmpi +openblas +arpack -accelerate
 }}}
 
-{{{gcc8 version
-Tested on: 
-MacBook Pro (Retina, 15-inch, Mid 2015), 2.5 GHz Intel Core i7, 16 GB 1600 MHz DDR3
-AMD Radeon R9 M370X 2048 MG Intel Iris Pro 1536 MB
-macOS Mojave, Version 10.14.2
-
-MacPorts-2.5.4-10.14-Mojave 17-35-43-409.pkg
-
-sudo port install gcc8
-sudo port install openmpi
-sudo port install hdf5 +fortran +gcc8 +hl +openmpi
-  (also asks for openmpi-gcc8. say yes.)
- sudo port select --set mpi openmpi-gcc8-fortran
-sudo port install netcdf +gcc8 +openmpi 
-sudo port install netcdf-fortran +gcc8 +openmpi
-sudo port install pgplot 
-   (C bindings broken in gcc8)
-sudo port install OpenBLAS +gcc8 
-sudo port install scalapack +gcc8 +openmpi +openblas
-
-}}}
 
 
 # Now the NCARG package broken as of this writing but there's a workaround. Download the tarball from the [[@http://www.ncarg.ucar.edu/|NCAR website]] the place the tarball in the appropriate location ([[@https://trac.macports.org/ticket/42541|see ticket #43615]]). Then rerun the port install command for ncarg.
