@@ -52,6 +52,8 @@ sudo port install pgplot
    (C bindings broken in gcc8)
 sudo port install OpenBLAS +gcc8 
 sudo port install scalapack +gcc8 +openmpi +openblas
+# COILOPT++, Python support, and GENE support packaged not installed/tested
+
 }}}
 
 
