@@ -54,7 +54,8 @@ sudo port install OpenBLAS +gcc8
 sudo port install scalapack +gcc8 +openmpi +openblas
 
 # NOTE!!!!
-# COILOPT++, Python support, and GENE support packaged not installed/tested
+# COILOPT++, Python support, and GENE support packaged not installed/tested. 
+# To Do:   Upate for gcc8
 
 }}}
 
