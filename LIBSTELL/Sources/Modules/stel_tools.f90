@@ -754,58 +754,6 @@
       RETURN
       END SUBROUTINE get_equil_guess_flx_sgl
       
-      SUBROUTINE get_equil_nhat_dbl(s_val,u_val,v_val,nhat,ier)
-      USE EZspline
-      IMPLICIT NONE
-      DOUBLE PRECISION, INTENT(in)    ::  s_val
-      DOUBLE PRECISION, INTENT(in)    ::  u_val
-      DOUBLE PRECISION, INTENT(in)    ::  v_val
-      DOUBLE PRECISION, INTENT(out)   ::  nhat(3)
-      INTEGER, INTENT(inout)     ::  ier
-      DOUBLE PRECISION :: rho_val, x_val, y_val, xu,yu, xv, yv, R_val
-      DOUBLE PRECISION ::  R_grad(3),Z_grad(3)
-      R_val = 0; nhat = 0
-      IF (ier < 0) RETURN
-      rho_val = SQRT(s_val)
-      CALL EZspline_isInDomain(R_spl,u_val,v_val,rho_val,ier)
-      IF (ier == 0) THEN
-         CALL EZspline_interp(R_spl,u_val,v_val,rho_val,R_val,ier)
-         CALL EZspline_gradient(R_spl,u_val,v_val,rho_val,R_grad,ier)
-         CALL EZspline_gradient(Z_spl,u_val,v_val,rho_val,Z_grad,ier)
-         x_val = R_val * DCOS(v_val)
-         y_val = R_val * DSIN(v_val)
-         xu    = R_grad(1)*DCOS(v_val)
-         yu    = R_grad(1)*DSIN(v_val)
-         xv    = R_grad(2)*DCOS(v_val) - y_val*pi2/nfp
-         yv    = R_grad(2)*DSIN(v_val) - x_val*pi2/nfp
-         ! returns snx,sny,snz
-         nhat(1) = -yu*Z_grad(2) + yv*Z_grad(1)
-         nhat(2) = -xv*Z_grad(1) + xu*Z_grad(2)
-         nhat(3) = -xu*yv        + yu*xv
-      ELSE
-         ier=9
-      END IF
-      RETURN
-      END SUBROUTINE get_equil_nhat_dbl
-      
-      SUBROUTINE get_equil_nhat_sgl(s_val,u_val,v_val,nhat,ier)
-      IMPLICIT NONE
-      REAL,    INTENT(in)    ::  s_val
-      REAL,    INTENT(in)    ::  u_val
-      REAL,    INTENT(in)    ::  v_val
-      REAL,    INTENT(out)   ::  nhat(3)
-      INTEGER, INTENT(inout) ::  ier
-      DOUBLE PRECISION    ::  s_dbl
-      DOUBLE PRECISION    ::  u_dbl
-      DOUBLE PRECISION    ::  v_dbl
-      DOUBLE PRECISION    ::  nhat_dbl(3)
-      s_dbl = s_val; u_dbl = u_val; v_dbl = v_val
-      nhat_dbl = 0; nhat = 0
-      CALL get_equil_nhat_dbl(s_dbl,u_dbl,v_dbl,nhat_dbl,ier)
-      nhat = nhat_dbl
-      RETURN
-      END SUBROUTINE get_equil_nhat_sgl
-      
       SUBROUTINE get_equil_RZ_dbl(s_val,u_val,v_val,R_val,Z_val,ier,R_grad,Z_grad)
       USE EZspline
       IMPLICIT NONE
@@ -947,6 +895,58 @@
       rho = rho_dbl; vp = vp_dbl; gradrho = gradrho_dbl; gradrho2 = gradrho2_dbl
       RETURN
       END SUBROUTINE get_equil_rho_sgl
+      
+      SUBROUTINE get_equil_nhat_dbl(s_val,u_val,v_val,nhat,ier)
+      USE EZspline
+      IMPLICIT NONE
+      DOUBLE PRECISION, INTENT(in)    ::  s_val
+      DOUBLE PRECISION, INTENT(in)    ::  u_val
+      DOUBLE PRECISION, INTENT(in)    ::  v_val
+      DOUBLE PRECISION, INTENT(out)   ::  nhat(3)
+      INTEGER, INTENT(inout)     ::  ier
+      DOUBLE PRECISION :: rho_val, x_val, y_val, xu,yu, xv, yv, R_val
+      DOUBLE PRECISION ::  R_grad(3),Z_grad(3)
+      R_val = 0; nhat = 0
+      IF (ier < 0) RETURN
+      rho_val = SQRT(s_val)
+      CALL EZspline_isInDomain(R_spl,u_val,v_val,rho_val,ier)
+      IF (ier == 0) THEN
+         CALL EZspline_interp(R_spl,u_val,v_val,rho_val,R_val,ier)
+         CALL EZspline_gradient(R_spl,u_val,v_val,rho_val,R_grad,ier)
+         CALL EZspline_gradient(Z_spl,u_val,v_val,rho_val,Z_grad,ier)
+         x_val = R_val * DCOS(v_val)
+         y_val = R_val * DSIN(v_val)
+         xu    = R_grad(1)*DCOS(v_val)
+         yu    = R_grad(1)*DSIN(v_val)
+         xv    = R_grad(2)*DCOS(v_val) - y_val*pi2/nfp
+         yv    = R_grad(2)*DSIN(v_val) - x_val*pi2/nfp
+         ! returns snx,sny,snz
+         nhat(1) = -yu*Z_grad(2) + yv*Z_grad(1)
+         nhat(2) = -xv*Z_grad(1) + xu*Z_grad(2)
+         nhat(3) = -xu*yv        + yu*xv
+      ELSE
+         ier=9
+      END IF
+      RETURN
+      END SUBROUTINE get_equil_nhat_dbl
+      
+      SUBROUTINE get_equil_nhat_sgl(s_val,u_val,v_val,nhat,ier)
+      IMPLICIT NONE
+      REAL,    INTENT(in)    ::  s_val
+      REAL,    INTENT(in)    ::  u_val
+      REAL,    INTENT(in)    ::  v_val
+      REAL,    INTENT(out)   ::  nhat(3)
+      INTEGER, INTENT(inout) ::  ier
+      DOUBLE PRECISION    ::  s_dbl
+      DOUBLE PRECISION    ::  u_dbl
+      DOUBLE PRECISION    ::  v_dbl
+      DOUBLE PRECISION    ::  nhat_dbl(3)
+      s_dbl = s_val; u_dbl = u_val; v_dbl = v_val
+      nhat_dbl = 0; nhat = 0
+      CALL get_equil_nhat_dbl(s_dbl,u_dbl,v_dbl,nhat_dbl,ier)
+      nhat = nhat_dbl
+      RETURN
+      END SUBROUTINE get_equil_nhat_sgl
       
       SUBROUTINE get_equil_sus_dbl(s_val,s11,s12,s21,s22,ier)
       USE EZspline
