@@ -420,6 +420,24 @@
       END SELECT
       RETURN
       END SUBROUTINE eval_prof_stel
+
+      SUBROUTINE setup_prof_spline(spl_obj,l_aux,s_aux,f_aux,ier)
+      IMPLICIT NONE
+      TYPE(EZspline1_r8), INTENT(inout) :: spl_obj
+      INTEGER,            INTENT(inout) :: l_aux
+      REAL(rprec),        INTENT(inout) :: s_aux(l_aux)
+      REAL(rprec),        INTENT(inout) :: f_aux(l_aux)
+      INTEGER,            INTENT(inout) ::  ier
+      ier = 0
+      IF (EZspline_allocated(spl_obj)) CALL EZspline_free(spl_obj,ier)
+      IF (ier /= 0) RETURN
+      CALL EZspline_init(spl_obj,l_aux,bcs0,ier)
+      IF (ier /= 0) RETURN
+      spl_obj%x1        = s_aux(1:l_aux)
+      spl_obj%isHermite = 1
+      CALL EZspline_setup(spl_obj,f_aux,ier)
+      RETURN
+      END SUBROUTINE setup_prof_spline
       
       SUBROUTINE get_equil_ne(s_val,type,val,ier)
       IMPLICIT NONE
@@ -434,14 +452,6 @@
       SELECT CASE (type)
          CASE ('spline','akima_spline','akima_spline_ip')
             CALL eval_prof_stel(s_val,type,val,21,ne_opt(0:20),ier,ne_spl)
-            !IF (EZspline_allocated(ne_spl)) THEN
-            !   CALL EZspline_isInDomain(ne_spl,s_val,ier)
-            !   IF (ier .ne. 0) RETURN
-            !   CALL EZspline_interp(ne_spl,s_val,val,ier)
-            !ELSE
-            !   ier = -1
-            !   val = -ne_norm
-            !END IF
          CASE DEFAULT
             CALL eval_prof_stel(s_val,type,val,21,ne_opt(0:20),ier)
       END SELECT
