@@ -56,79 +56,28 @@
       lno_file = .false.
       IF (iflag==-327) lno_file = .true.
       iflag = 0
-      ! Setup the internal STELLOPT arrays
-      IF (EZspline_allocated(phi_spl)) CALL EZspline_free(phi_spl,iflag)
-      IF (EZspline_allocated(ne_spl)) CALL EZspline_free(ne_spl,iflag)
-      IF (EZspline_allocated(te_spl)) CALL EZspline_free(te_spl,iflag)
-      IF (EZspline_allocated(ti_spl)) CALL EZspline_free(ti_spl,iflag)
-      IF (EZspline_allocated(th_spl)) CALL EZspline_free(th_spl,iflag)
-      IF (EZspline_allocated(nustar_spl)) CALL EZspline_free(nustar_spl,iflag)
-      IF (EZspline_allocated(emis_xics_spl)) CALL EZspline_free(emis_xics_spl,iflag)
-      IF (EZspline_allocated(zeff_spl)) CALL EZspline_free(zeff_spl,iflag)
-      IF (EZspline_allocated(omega_spl)) CALL EZspline_free(omega_spl,iflag)
+
+      ! Setup Splines if necessary (these also free)
       dex = MINLOC(phi_aux_s(2:),DIM=1)
-      IF (dex > 4) THEN
-         CALL EZspline_init(phi_spl,dex,bcs0,iflag)
-         phi_spl%x1 = phi_aux_s
-         phi_spl%isHermite = 1
-         CALL EZspline_setup(phi_spl,phi_aux_f,ier)
-      END IF
+      IF (dex > 4) CALL setup_prof_spline(phi_spl,dex,phi_aux_s(1:dex),phi_aux_f(1:dex),ier)
       dex = MINLOC(ne_aux_s(2:),DIM=1)
-      IF (dex > 4) THEN
-         CALL EZspline_init(ne_spl,dex,bcs0,iflag)
-         ne_spl%x1 = ne_aux_s(1:dex)
-         ne_spl%isHermite = 1
-         CALL EZspline_setup(ne_spl,ne_aux_f,ier)
-      END IF
+      IF (dex > 4) CALL setup_prof_spline(ne_spl,dex,ne_aux_s(1:dex),ne_aux_f(1:dex),ier)
       dex = MINLOC(te_aux_s(2:),DIM=1)
-      IF (dex > 4) THEN
-         CALL EZspline_init(te_spl,dex,bcs0,iflag)
-         te_spl%x1 = te_aux_s(1:dex)
-         te_spl%isHermite = 1
-         CALL EZspline_setup(te_spl,te_aux_f,ier)
-      END IF
+      IF (dex > 4) CALL setup_prof_spline(te_spl,dex,te_aux_s(1:dex),te_aux_f(1:dex),ier)
       dex = MINLOC(ti_aux_s(2:),DIM=1)
-      IF (dex > 4) THEN
-         CALL EZspline_init(ti_spl,dex,bcs0,iflag)
-         ti_spl%x1 = ti_aux_s(1:dex)
-         ti_spl%isHermite = 1
-         CALL EZspline_setup(ti_spl,ti_aux_f,ier)
-      END IF
+      IF (dex > 4) CALL setup_prof_spline(ti_spl,dex,ti_aux_s(1:dex),ti_aux_f(1:dex),ier)
       dex = MINLOC(th_aux_s(2:),DIM=1)
-      IF (dex > 4) THEN
-         CALL EZspline_init(th_spl,dex,bcs0,iflag)
-         th_spl%x1 = th_aux_s(1:dex)
-         th_spl%isHermite = 1
-         CALL EZspline_setup(th_spl,phi_aux_f,ier)
-      END IF
+      IF (dex > 4) CALL setup_prof_spline(th_spl,dex,th_aux_s(1:dex),th_aux_f(1:dex),ier)
       dex = MINLOC(nustar_s(2:),DIM=1)
-      IF (dex > 4) THEN
-         CALL EZspline_init(nustar_spl,dex,bcs0,iflag)
-         nustar_spl%x1 = nustar_s(1:dex)
-         nustar_spl%isHermite = 1
-         CALL EZspline_setup(nustar_spl,nustar_f,ier)
-      END IF
+      IF (dex > 4) CALL setup_prof_spline(nustar_spl,dex,nustar_s(1:dex),nustar_f(1:dex),ier)
       dex = MINLOC(zeff_aux_s(2:),DIM=1)
-      IF (dex > 4) THEN
-         CALL EZspline_init(zeff_spl,dex,bcs0,iflag)
-         zeff_spl%x1 = zeff_aux_s(1:dex)
-         zeff_spl%isHermite = 1
-         CALL EZspline_setup(zeff_spl,zeff_aux_f,ier)
-      END IF
+      IF (dex > 4) CALL setup_prof_spline(zeff_spl,dex,zeff_aux_s(1:dex),zeff_aux_f(1:dex),ier)
       dex = MINLOC(ah_aux_s(2:),DIM=1)
-      IF (dex > 4) THEN
-         CALL EZspline_init(omega_spl,dex,bcs0,iflag)
-         omega_spl%x1 = ah_aux_s(1:dex)
-         omega_spl%isHermite = 1
-         CALL EZspline_setup(omega_spl,ah_aux_f,ier)
-      END IF
+      IF (dex > 4) CALL setup_prof_spline(ah_spl,dex,ah_aux_s(1:dex),ah_aux_f(1:dex),ier)
       dex = MINLOC(emis_xics_s(2:),DIM=1)
-      IF (dex > 4) THEN
-         CALL EZspline_init(emis_xics_spl,dex,bcs0,iflag)
-         emis_xics_spl%x1 = emis_xics_s(1:dex)
-         emis_xics_spl%isHermite = 1
-         CALL EZspline_setup(emis_xics_spl,emis_xics_f,ier)
-      END IF
+      IF (dex > 4) CALL setup_prof_spline(emis_xics_spl,dex,emis_xics_s(1:dex),emis_xics_f(1:dex),ier)
+!      dex = MINLOC(omega_spl_s(2:),DIM=1) ! this is a vmec varaible
+!      IF (dex > 4) CALL setup_prof_spline(omega_spl,dex,rho(1:dex),omega(1:dex),ier)
       
       
       ! First get indexes of component arrays
