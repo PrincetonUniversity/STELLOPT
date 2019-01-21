@@ -1501,7 +1501,7 @@
         DO ik = 0, n
            WRITE(iunit,vecvar) 'LZEFF_OPT',ik,lzeff_opt(ik),'ZEFF_MIN',ik,zeff_min(ik),'ZEFF_MAX',ik,zeff_max(ik)
         END DO
-        IF (ANY(dne_opt > 0)) WRITE(iunit,"(2X,A,1X,'=',10(1X,E22.14))") 'DZEFF_OPT',(dne_opt(ik), ik = 0, n)
+        IF (ANY(dne_opt > 0)) WRITE(iunit,"(2X,A,1X,'=',10(1X,E22.14))") 'DZEFF_OPT',(dzeff_opt(ik), ik = 0, n)
       END IF
       IF (ANY(lte_opt)) THEN
         n=0
