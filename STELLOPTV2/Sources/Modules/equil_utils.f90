@@ -575,9 +575,9 @@
       RETURN
       END SUBROUTINE get_equil_zeff
 
-      SUBROUTINE fcn_linene(s,dx,dy,dz,fval,ier)
+      SUBROUTINE fcn_linene(s,u,v,dx,dy,dz,fval,ier)
       IMPLICIT NONE
-      REAL(rprec), INTENT(in) :: s,dx,dy,dz
+      REAL(rprec), INTENT(in) :: s,u,v,dx,dy,dz
       REAL(rprec), INTENT(out) :: fval
       INTEGER, INTENT(inout) :: ier
       CALL get_equil_ne(s,TRIM(ne_type),fval,ier)
@@ -586,9 +586,9 @@
       RETURN
       END SUBROUTINE fcn_linene
 
-      SUBROUTINE fcn_linete(s,dx,dy,dz,fval,ier)
+      SUBROUTINE fcn_linete(s,u,v,dx,dy,dz,fval,ier)
       IMPLICIT NONE
-      REAL(rprec), INTENT(in) :: s,dx,dy,dz
+      REAL(rprec), INTENT(in) :: s,u,v,dx,dy,dz
       REAL(rprec), INTENT(out) :: fval
       INTEGER, INTENT(inout) :: ier
       CALL get_equil_te(s,TRIM(te_type),fval,ier)
@@ -598,9 +598,9 @@
       RETURN
       END SUBROUTINE fcn_linete
 
-      SUBROUTINE fcn_lineti(s,dx,dy,dz,fval,ier)
+      SUBROUTINE fcn_lineti(s,u,v,dx,dy,dz,fval,ier)
       IMPLICIT NONE
-      REAL(rprec), INTENT(in) :: s,dx,dy,dz
+      REAL(rprec), INTENT(in) :: s,u,v,dx,dy,dz
       REAL(rprec), INTENT(out) :: fval
       INTEGER, INTENT(inout) :: ier
       CALL get_equil_ti(s,TRIM(ti_type),fval,ier)
@@ -609,9 +609,9 @@
       RETURN
       END SUBROUTINE fcn_lineti
 
-      SUBROUTINE fcn_xics_bright(s,dx,dy,dz,fval,ier)
+      SUBROUTINE fcn_xics_bright(s,u,v,dx,dy,dz,fval,ier)
       IMPLICIT NONE
-      REAL(rprec), INTENT(in) :: s,dx,dy,dz
+      REAL(rprec), INTENT(in) :: s,u,v,dx,dy,dz
       REAL(rprec), INTENT(out) :: fval
       INTEGER, INTENT(inout) :: ier
       CALL get_equil_emis_xics(s,TRIM(emis_xics_type),fval,ier)
@@ -620,9 +620,9 @@
       RETURN
       END SUBROUTINE fcn_xics_bright
 
-      SUBROUTINE fcn_xics(s,dx,dy,dz,fval,ier)
+      SUBROUTINE fcn_xics(s,u,v,dx,dy,dz,fval,ier)
       IMPLICIT NONE
-      REAL(rprec), INTENT(in) :: s,dx,dy,dz
+      REAL(rprec), INTENT(in) :: s,u,v,dx,dy,dz
       REAL(rprec), INTENT(out) :: fval
       REAL(rprec) :: f1, f2
       INTEGER, INTENT(inout) :: ier
@@ -634,9 +634,9 @@
       RETURN
       END SUBROUTINE fcn_xics
 
-      SUBROUTINE fcn_xics_w3(s,dx,dy,dz,fval,ier)
+      SUBROUTINE fcn_xics_w3(s,u,v,dx,dy,dz,fval,ier)
       IMPLICIT NONE
-      REAL(rprec), INTENT(in) :: s,dx,dy,dz
+      REAL(rprec), INTENT(in) :: s,u,v,dx,dy,dz
       REAL(rprec), INTENT(out) :: fval
       INTEGER, INTENT(inout) :: ier
       CALL get_equil_w3_xics(s,TRIM(w3_xics_type),fval,ier)
@@ -645,9 +645,9 @@
       RETURN
       END SUBROUTINE fcn_xics_w3
 
-      SUBROUTINE fcn_xics_te(s,dx,dy,dz,fval,ier)
+      SUBROUTINE fcn_xics_te(s,u,v,dx,dy,dz,fval,ier)
       IMPLICIT NONE
-      REAL(rprec), INTENT(in) :: s,dx,dy,dz
+      REAL(rprec), INTENT(in) :: s,u,v,dx,dy,dz
       REAL(rprec), INTENT(out) :: fval
       REAL(rprec) :: f1, f2
       INTEGER, INTENT(inout) :: ier
@@ -659,9 +659,35 @@
       RETURN
       END SUBROUTINE fcn_xics_te
 
-      SUBROUTINE fcn_sxr(s,dx,dy,dz,fval,ier)
+      SUBROUTINE fcn_xics_v(s,u,v,dx,dy,dz,fval,ier)
       IMPLICIT NONE
-      REAL(rprec), INTENT(in) :: s,dx,dy,dz
+      REAL(rprec), INTENT(inout) :: s,u,v,dx,dy,dz
+      REAL(rprec), INTENT(out) :: fval
+      REAL(rprec) :: phi_val, phi_prime,Bav,Bavsq, &
+                     rho,vp,grho,grho2,&
+                     br,bp,bx,by,bz,modb
+      REAL(rprec) :: nhat(3), uperp(3)
+      INTEGER, INTENT(inout) :: ier
+      CALL get_equil_phi(s,phi_val,ier,phi_prime)
+      CALL get_equil_Bav(s,Bav,Bavsq,ier) !<B>,<B^2>
+      CALL get_equil_rho(s,rho,vp,grho,grho2,ier)
+      ! To make these lines work we need to implement
+      ! passing u and v
+      CALL get_equil_nhat(s,u,v,nhat,ier)
+      CALL get_equil_Bcylsuv(s,u,v,br,bp,bz,ier,modb)
+      bx = br * cos(v) - bp * sin(v)
+      by = br * sin(v) + bp * cos(v)
+      uperp(1) = by*nhat(3)-bz*nhat(2)
+      uperp(2) = bz*nhat(1)-bx*nhat(1)
+      uperp(3) = bx*nhat(2)-by*nhat(1)
+      uperp    = uperp*phi_prime/(modb*modb*grho)
+      fval = uperp(1)*dx+uperp(2)*dy+uperp(3)*dz
+      RETURN
+      END SUBROUTINE fcn_xics_v
+
+      SUBROUTINE fcn_sxr(s,u,v,dx,dy,dz,fval,ier)
+      IMPLICIT NONE
+      REAL(rprec), INTENT(in) :: s,u,v,dx,dy,dz
       REAL(rprec), INTENT(out) :: fval
       INTEGER, INTENT(inout) :: ier
       REAL(rprec) :: ne_val,te_val,zeff_val
