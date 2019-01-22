@@ -48,7 +48,6 @@
             xics_val = 0.0
             CALL line_int(fcn_xics_te,x0,x1,xics_val)
             CALL line_int(fcn_xics_w3,x0,x1,xics_bright)
-            !PRINT *,'TI_LENGTH (',ik,')',xics_length
             mtargets = mtargets + 1
             targets(mtargets) = target(ik)
             sigmas(mtargets)  = sigma(ik)
@@ -59,7 +58,7 @@
          DO ik = 1, nprof
             IF (sigma(ik) < bigno) THEN
                mtargets = mtargets + 1
-               IF (niter == -2) target_dex(mtargets) = jtarget_xics
+               IF (niter == -2) target_dex(mtargets) = jtarget_xics_te
             END IF
          END DO
       END IF
