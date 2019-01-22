@@ -530,6 +530,25 @@
       RETURN
       END SUBROUTINE get_equil_emis_xics
       
+      SUBROUTINE get_equil_w3_xics(s_val,type,val,ier)
+      IMPLICIT NONE
+      REAL(rprec), INTENT(in) ::  s_val
+      CHARACTER(LEN=*), INTENT(in)   :: type
+      REAL(rprec), INTENT(inout)   ::  val
+      INTEGER, INTENT(inout)     ::  ier
+      INTEGER :: i
+      REAL(rprec), PARAMETER :: one = 1.0_rprec
+      IF (ier < 0) RETURN
+      CALL tolower(type)
+      SELECT CASE (type)
+         CASE ('spline','akima_spline','akima_spline_ip')
+            CALL eval_prof_stel(s_val,type,val,20,w3_xics_f(1:20),ier,w3_xics_spl)
+         CASE DEFAULT
+            CALL eval_prof_stel(s_val,type,val,20,w3_xics_f(1:20),ier)
+      END SELECT
+      RETURN
+      END SUBROUTINE get_equil_w3_xics
+      
       SUBROUTINE get_equil_zeff(s_val,type,val,ier)
       IMPLICIT NONE
       REAL(rprec), INTENT(in) ::  s_val
@@ -614,6 +633,31 @@
       fval = f1*f2*sqrt(dx*dx+dy*dy+dz*dz)
       RETURN
       END SUBROUTINE fcn_xics
+
+      SUBROUTINE fcn_xics_w3(s,dx,dy,dz,fval,ier)
+      IMPLICIT NONE
+      REAL(rprec), INTENT(in) :: s,dx,dy,dz
+      REAL(rprec), INTENT(out) :: fval
+      INTEGER, INTENT(inout) :: ier
+      CALL get_equil_w3_xics(s,TRIM(w3_xics_type),fval,ier)
+      IF (ier /= 0) fval = 0
+      fval = fval*sqrt(dx*dx+dy*dy+dz*dz)
+      RETURN
+      END SUBROUTINE fcn_xics_w3
+
+      SUBROUTINE fcn_xics_te(s,dx,dy,dz,fval,ier)
+      IMPLICIT NONE
+      REAL(rprec), INTENT(in) :: s,dx,dy,dz
+      REAL(rprec), INTENT(out) :: fval
+      REAL(rprec) :: f1, f2
+      INTEGER, INTENT(inout) :: ier
+      CALL get_equil_te(s,TRIM(ti_type),f1,ier)
+      IF (ier /= 0) fval = 0
+      CALL get_equil_w3_xics(s,TRIM(w3_xics_type),f2,ier)
+      IF (ier /= 0) fval = 0
+      fval = f1*f2*sqrt(dx*dx+dy*dy+dz*dz)
+      RETURN
+      END SUBROUTINE fcn_xics_te
 
       SUBROUTINE fcn_sxr(s,dx,dy,dz,fval,ier)
       IMPLICIT NONE

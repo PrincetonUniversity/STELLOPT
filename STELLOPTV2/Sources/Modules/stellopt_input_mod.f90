@@ -250,7 +250,7 @@
                          lrho_opt, ldeltamn_opt, lbound_opt, laxis_opt, lmode_opt, &
                          lne_opt, lte_opt, lti_opt, lth_opt, lzeff_opt, &
                          lah_f_opt, lat_f_opt, lcoil_spline, lemis_xics_f_opt, &
-                         windsurfname, &
+                         lw3_xics_f_opt, windsurfname, &
                          dphiedge_opt, dcurtor_opt, dbcrit_opt, &
                          dpscale_opt, dmix_ece_opt,&
                          dextcur_opt, daphi_opt, dam_opt, dac_opt, &
@@ -262,7 +262,7 @@
                          drho_opt, ddeltamn_opt, &
                          dne_opt, dte_opt, dti_opt, dth_opt, dzeff_opt, &
                          dah_f_opt, dat_f_opt, daxis_opt, &
-                         dmix_ece_opt, dcoil_spline, demis_xics_f_opt, &
+                         dmix_ece_opt, dcoil_spline, demis_xics_f_opt, dw3_xics_f_opt, &
                          ne_aux_s, te_aux_s, ti_aux_s, th_aux_s, phi_aux_s,&
                          beamj_aux_s, bootj_aux_s, zeff_aux_s, &
                          ne_aux_f, te_aux_f, ti_aux_f, th_aux_f, phi_aux_f,&
@@ -279,6 +279,8 @@
                          ah_f_max, at_f_max, &
                          emis_xics_s, emis_xics_f, emis_xics_type,&
                          emis_xics_f_min, emis_xics_f_max, &
+                         w3_xics_s, w3_xics_f, w3_xics_type,&
+                         w3_xics_f_min, w3_xics_f_max, &
                          raxis_min, raxis_max, &
                          zaxis_min, zaxis_max, &
                          rbc_min, rbc_max, zbs_min, zbs_max, &
@@ -324,6 +326,8 @@
                          target_ti, sigma_ti, r_ti, z_ti, phi_ti, s_ti,&
                          target_xics, sigma_xics, r0_xics, phi0_xics, z0_xics,&
                          r1_xics, phi1_xics, z1_xics, target_xics_bright, sigma_xics_bright, &
+                         target_xics_w3, sigma_xics_w3, target_xics_te, sigma_xics_te, &
+                         target_xics_v, sigma_xics_v, &
                          target_vphi, sigma_vphi, r_vphi, z_vphi, phi_vphi, s_vphi, qm_ratio,&
                          target_iota, sigma_iota, r_iota, z_iota, phi_iota, s_iota,&
                          target_vaciota, sigma_vaciota, r_vaciota, z_vaciota, phi_vaciota, s_vaciota,&
@@ -469,6 +473,7 @@
       lah_f_opt(:)        = .FALSE.
       lat_f_opt(:)        = .FALSE.
       lemis_xics_f_opt(:) = .FALSE.
+      lw3_xics_f_opt(:)   = .FALSE.
       lbound_opt(:,:)     = .FALSE.
       lrho_opt(:,:)       = .FALSE.
       ldeltamn_opt(:,:)   = .FALSE.
@@ -512,8 +517,9 @@
       dat_f_opt(:)    = -1.0
       daxis_opt(:)    = -1.0
       demis_xics_f_opt(:) = -1.0
-      dbound_opt(:,:) = -1.0
-      drho_opt(:,:) = -1.0
+      dw3_xics_f_opt(:)   = -1.0
+      dbound_opt(:,:)   = -1.0
+      drho_opt(:,:)     = -1.0
       ddeltamn_opt(:,:) = -1.0
       dcoil_spline(:,:) = -1.0
       ! REGCOIL Winding surface options
@@ -572,6 +578,7 @@
       beamj_f_min     = -bigno;  beamj_f_max     = bigno
       bootj_f_min     = -bigno;  bootj_f_max     = bigno
       emis_xics_f_min = -bigno;  emis_xics_f_max = bigno
+      w3_xics_f_min   = -bigno;  w3_xics_f_max   = bigno
       coil_splinefx_min       = -bigno;  coil_splinefx_max       = bigno
       coil_splinefy_min       = -bigno;  coil_splinefy_max       = bigno
       coil_splinefz_min       = -bigno;  coil_splinefz_max       = bigno
@@ -604,6 +611,7 @@
       bootj_type      = 'power_series'
       bootcalc_type   = 'bootsj'
       emis_xics_type  = 'power_series'
+      w3_xics_type    = 'power_series'
       ne_opt(0:20)       = 0.0
       zeff_opt(0:20)     = 0.0
       te_opt(0:20)       = 0.0
@@ -637,6 +645,8 @@
       sfincs_min_procs = 1
       emis_xics_s(1:5) = (/0.0,0.25,0.50,0.75,1.0/)
       emis_xics_f(:)   = 0.0
+      w3_xics_s(1:5)   = (/0.0,0.25,0.50,0.75,1.0/)
+      w3_xics_f(:)     = 0.0
       coil_splinesx(:,:) = -1
       coil_splinesy(:,:) = -1
       coil_splinesz(:,:) = -1
@@ -761,10 +771,16 @@
       r1_ti_line(:)   = 0.0
       phi1_ti_line(:) = 0.0
       z1_ti_line(:)   = 0.0
-      target_xics(:)  = 0.0
-      sigma_xics(:)   = bigno
+      target_xics(:)        = 0.0
+      sigma_xics(:)         = bigno
       target_xics_bright(:) = 0.0
       sigma_xics_bright(:)  = bigno
+      target_xics_w3(:)     = 0.0
+      sigma_xics_w3(:)      = bigno
+      target_xics_te(:)     = 0.0
+      sigma_xics_te(:)      = bigno
+      target_xics_v(:)      = 0.0
+      sigma_xics_v(:)       = bigno
       r0_xics(:)            = 0.0
       phi0_xics(:)          = 0.0
       z0_xics(:)            = 0.0
@@ -1729,6 +1745,19 @@
         IF (ANY(demis_xics_f_opt > 0)) WRITE(iunit,"(2X,A,1X,'=',10(1X,E22.14))") 'DEMIS_XICS_F_OPT',(demis_xics_f_opt(ik), ik = 1, n)
       END IF
       
+      IF (ANY(lw3_xics_f_opt)) THEN
+        norm = profile_norm(w3_xics_f,w3_xics_type)
+        IF (norm == 0) norm = 1
+        n=0
+        DO ik = 1,UBOUND(lw3_xics_f_opt,DIM=1)
+           IF(lw3_xics_f_opt(ik)) n=ik
+        END DO
+        DO ik = 1, n
+           WRITE(iunit,vecvar) 'LW3_XICS_F_OPT',ik,lw3_xics_f_opt(ik),'W3_XICS_F_MIN',ik,w3_xics_f_min(ik)*norm,'W3_XICS_F_MAX',ik,w3_xics_f_max(ik)*norm
+        END DO
+        IF (ANY(dw3_xics_f_opt > 0)) WRITE(iunit,"(2X,A,1X,'=',10(1X,E22.14))") 'DW3_XICS_F_OPT',(dw3_xics_f_opt(ik), ik = 1, n)
+      END IF
+      
       IF (ANY(laxis_opt)) THEN
          DO n = LBOUND(laxis_opt,DIM=1), UBOUND(laxis_opt,DIM=1)
             IF (laxis_opt(n) .and. (raxis_min(n)>-bigno .or. raxis_max(n)<bigno .or. zaxis_min(n)>-bigno .or. zaxis_max(n)<bigno)) THEN
@@ -1920,12 +1949,19 @@
       IF (ik > 2) THEN
          WRITE(iunit,"(2X,A,1X,'=',5(1X,E22.14))") 'SFINCS_S',(sfincs_s(n), n=1,ik)
       END IF
-      ! Emissivities
+      ! Emissivities (XICS)
       ik = MINLOC(emis_xics_s(2:),DIM=1)
       IF (ik > 2) THEN
          WRITE(iunit,outstr) 'EMIS_XICS_TYPE',TRIM(emis_xics_type)
          WRITE(iunit,"(2X,A,1X,'=',5(1X,E22.14))") 'EMIS_XICS_S',(emis_xics_s(n), n=1,ik)
          WRITE(iunit,"(2X,A,1X,'=',5(1X,E22.14))") 'EMIS_XICS_F',(emis_xics_f(n), n=1,ik)
+      END IF
+      ! W3 Factor (XICS)
+      ik = MINLOC(w3_xics_s(2:),DIM=1)
+      IF (ik > 2) THEN
+         WRITE(iunit,outstr) 'W3_XICS_TYPE',TRIM(w3_xics_type)
+         WRITE(iunit,"(2X,A,1X,'=',5(1X,E22.14))") 'W3_XICS_S',(w3_xics_s(n), n=1,ik)
+         WRITE(iunit,"(2X,A,1X,'=',5(1X,E22.14))") 'W3_XICS_F',(w3_xics_f(n), n=1,ik)
       END IF
       ! E-static potential
       ik = MINLOC(phi_aux_s(2:),DIM=1)
@@ -2536,26 +2572,42 @@
             END IF
          END DO
       END IF
-      IF (ANY(sigma_xics < bigno)) THEN
+      IF (ANY(sigma_xics < bigno) .or. ANY(sigma_xics_bright < bigno) .or. &
+          ANY(sigma_xics_w3 < bigno) .or. ANY(sigma_xics_te < bigno)  .or. &
+          ANY(sigma_xics_v < bigno)) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          WRITE(iunit,'(A)') '!          XICS Signal Optimization'
          WRITE(iunit,'(A)') '!              Brightness is line integrated emissivity'
          WRITE(iunit,'(A)') '!              Signal is line integrated product of emis. and ion temp.'
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          DO ik = 1, UBOUND(sigma_xics,DIM=1)
-            IF (sigma_xics(ik) < bigno .or. sigma_xics_bright(ik) < bigno) THEN
-               WRITE(iunit,"(10(2X,A,I3.3,A,1X,'=',1X,E22.14))") &
-                  'TARGET_XICS(',ik,')',target_xics(ik),&
-                  'SIGMA_XICS(',ik,')',sigma_xics(ik),&
-                  'TARGET_XICS_BRIGHT(',ik,')',target_xics_bright(ik),&
-                  'SIGMA_XICS_BRIGHT(',ik,')',sigma_xics_bright(ik),&
+            IF (sigma_xics(ik)    < bigno .or. sigma_xics_bright(ik) < bigno .or. &
+                sigma_xics_te(ik) < bigno .or. sigma_xics_w3(ik)     < bigno .or. &
+                sigma_xics_v(ik)  < bigno ) &
+                WRITE(iunit,"(6(2X,A,I3.3,A,1X,'=',1X,E22.14))") &
                   'R0_XICS(',ik,')',r0_xics(ik),&
                   'PHI0_XICS(',ik,')',phi0_xics(ik),&
                   'Z0_XICS(',ik,')',z0_xics(ik),&
                   'R1_XICS(',ik,')',r1_xics(ik),&
                   'PHI1_XICS(',ik,')',phi1_xics(ik),&
                   'Z1_XICS(',ik,')',z1_xics(ik)
+            IF (sigma_xics(ik) < bigno .or. sigma_xics_bright(ik) < bigno) THEN
+               WRITE(iunit,"(4(4X,A,I3.3,A,1X,'=',1X,E22.14))") &
+                  'TARGET_XICS(',ik,')',target_xics(ik),&
+                  'SIGMA_XICS(',ik,')',sigma_xics(ik),&
+                  'TARGET_XICS_BRIGHT(',ik,')',target_xics_bright(ik),&
+                  'SIGMA_XICS_BRIGHT(',ik,')',sigma_xics_bright(ik)
             END IF
+            IF (sigma_xics_te(ik) < bigno .or. sigma_xics_w3(ik) < bigno) &
+               WRITE(iunit,"(4(4X,A,I3.3,A,1X,'=',1X,E22.14))") &
+                  'TARGET_XICS_TE(',ik,')',target_xics_te(ik),&
+                  'SIGMA_XICS_TE(',ik,')',sigma_xics_te(ik),&
+                  'TARGET_XICS_W3(',ik,')',target_xics_w3(ik),&
+                  'SIGMA_XICS_W3(',ik,')',sigma_xics_w3(ik)
+            IF (sigma_xics_te(ik) < bigno) &
+               WRITE(iunit,"(2(4X,A,I3.3,A,1X,'=',1X,E22.14))") &
+                  'TARGET_XICS_V(',ik,')',target_xics_v(ik),&
+                  'SIGMA_XICS_V(',ik,')',sigma_xics_v(ik)
          END DO
       END IF
       IF (ANY(sigma_te < bigno)) THEN
