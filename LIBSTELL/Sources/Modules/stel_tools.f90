@@ -115,8 +115,8 @@
       INTERFACE get_equil_B
          MODULE PROCEDURE get_equil_B_dbl, get_equil_B_sgl
       END INTERFACE
-      INTERFACE get_equil_Bsuv
-         MODULE PROCEDURE get_equil_Bsuv_dbl, get_equil_Bsuv_sgl
+      INTERFACE get_equil_Bcylsuv
+         MODULE PROCEDURE get_equil_Bcylsuv_dbl, get_equil_Bcylsuv_sgl
       END INTERFACE
       INTERFACE get_equil_Bcyl
          MODULE PROCEDURE get_equil_Bcyl_dbl, get_equil_Bcyl_sgl
@@ -1052,7 +1052,7 @@
       RETURN
       END SUBROUTINE get_equil_kappa_sgl
       
-      SUBROUTINE get_equil_Bsuv_dbl(s_val,u_val,v_val,br,bphi,bz,ier,modb_val,B_grad)
+      SUBROUTINE get_equil_Bcylsuv_dbl(s_val,u_val,v_val,br,bphi,bz,ier,modb_val,B_grad)
       USE EZspline
       IMPLICIT NONE
       DOUBLE PRECISION, INTENT(in)    ::  s_val
@@ -1093,9 +1093,9 @@
       END IF
       IF (PRESENT(modb_val)) modb_val = sqrt(br*br+bphi*bphi+bz*bz)
       RETURN
-      END SUBROUTINE get_equil_Bsuv_dbl
+      END SUBROUTINE get_equil_Bcylsuv_dbl
       
-      SUBROUTINE get_equil_Bsuv_sgl(s_val,u_val,v_val,br,bphi,bz,ier,modb_val,B_grad)
+      SUBROUTINE get_equil_Bcylsuv_sgl(s_val,u_val,v_val,br,bphi,bz,ier,modb_val,B_grad)
       IMPLICIT NONE
       REAL, INTENT(in)    ::  s_val
       REAL, INTENT(in)    ::  u_val
@@ -1120,7 +1120,7 @@
       IF(PRESENT(modb_val)) modb_val = modb_dbl
       IF(PRESENT(B_grad)) B_grad = B_grad_dbl
       RETURN
-      END SUBROUTINE get_equil_Bsuv_sgl
+      END SUBROUTINE get_equil_Bcylsuv_sgl
       
       SUBROUTINE get_equil_B_dbl(r_val,phi_val,z_val,bx,by,bz,ier,modb_val,B_grad)
       USE EZspline
@@ -1142,7 +1142,7 @@
       CALL get_equil_s(r_val,phi_val,z_val,s_val,ier,u_val)
       IF (ier < 0) RETURN
       v_val = PHI_target
-      CALL get_equil_Bsuv_dbl(s_val,u_val,v_val,br,bphi,bz,ier,modb_val,B_grad)
+      CALL get_equil_Bcylsuv_dbl(s_val,u_val,v_val,br,bphi,bz,ier,modb_val,B_grad)
       bx = br * cos(v_val) - bphi * sin(phi_val)
       by = br * sin(v_val) + bphi * cos(phi_val)
       RETURN
