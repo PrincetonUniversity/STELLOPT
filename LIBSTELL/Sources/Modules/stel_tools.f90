@@ -115,6 +115,9 @@
       INTERFACE get_equil_B
          MODULE PROCEDURE get_equil_B_dbl, get_equil_B_sgl
       END INTERFACE
+      INTERFACE get_equil_Bsuv
+         MODULE PROCEDURE get_equil_Bsuv_dbl, get_equil_Bsuv_sgl
+      END INTERFACE
       INTERFACE get_equil_Bcyl
          MODULE PROCEDURE get_equil_Bcyl_dbl, get_equil_Bcyl_sgl
       END INTERFACE
@@ -1049,6 +1052,76 @@
       RETURN
       END SUBROUTINE get_equil_kappa_sgl
       
+      SUBROUTINE get_equil_Bsuv_dbl(s_val,u_val,v_val,br,bphi,bz,ier,modb_val,B_grad)
+      USE EZspline
+      IMPLICIT NONE
+      DOUBLE PRECISION, INTENT(in)    ::  s_val
+      DOUBLE PRECISION, INTENT(in)    ::  u_val
+      DOUBLE PRECISION, INTENT(in)    ::  v_val
+      DOUBLE PRECISION, INTENT(out)   ::  br
+      DOUBLE PRECISION, INTENT(out)   ::  bphi
+      DOUBLE PRECISION, INTENT(out)   ::  bz
+      DOUBLE PRECISION, INTENT(out), OPTIONAL   ::  modb_val
+      DOUBLE PRECISION, INTENT(out), OPTIONAL   ::  B_grad(3)
+      INTEGER, INTENT(inout)     ::  ier
+      DOUBLE PRECISION :: rho_val
+      DOUBLE PRECISION :: Bs, Bu, Bv, r_val
+      DOUBLE PRECISION :: R_grad(3), Z_grad(3)
+      IF (ier < 0) RETURN
+      rho_val = SQRT(s_val)
+      CALL EZSPLINE_isInDomain(R_spl,u_val,v_val,rho_val,ier)
+      IF (ier == 0) THEN
+         R_grad = 0; Z_grad = 0
+         CALL EZspline_interp(R_spl,u_val,v_val,rho_val,r_val,ier)
+         CALL EZspline_interp(Bs_spl,u_val,v_val,rho_val,Bs,ier)
+         CALL EZspline_interp(Bu_spl,u_val,v_val,rho_val,Bu,ier)
+         CALL EZspline_interp(Bv_spl,u_val,v_val,rho_val,Bv,ier)
+         CALL EZspline_interp(Ru_spl,u_val,v_val,rho_val,R_grad(1),ier)
+         CALL EZspline_interp(Rv_spl,u_val,v_val,rho_val,R_grad(2),ier)
+         CALL EZspline_interp(Zu_spl,u_val,v_val,rho_val,Z_grad(1),ier)
+         CALL EZspline_interp(Zv_spl,u_val,v_val,rho_val,Z_grad(2),ier)
+         br = R_grad(3)*Bs + R_grad(1)*Bu + R_grad(2)*Bv*nfp
+         bphi = r_val * Bv
+         bz = Z_grad(3)*Bs + Z_grad(1)*Bu + Z_grad(2)*Bv*nfp
+         IF (PRESENT(B_grad)) CALL EZspline_gradient(B_spl,u_val,v_val,s_val,B_grad,ier)
+      ELSE
+         ier   = 9
+         br    = 0
+         bphi  = 0
+         bz    = 0
+         IF (PRESENT(B_grad)) B_grad = 0
+      END IF
+      IF (PRESENT(modb_val)) modb_val = sqrt(br*br+bphi*bphi+bz*bz)
+      RETURN
+      END SUBROUTINE get_equil_Bsuv_dbl
+      
+      SUBROUTINE get_equil_Bsuv_sgl(s_val,u_val,v_val,br,bphi,bz,ier,modb_val,B_grad)
+      IMPLICIT NONE
+      REAL, INTENT(in)    ::  s_val
+      REAL, INTENT(in)    ::  u_val
+      REAL, INTENT(in)    ::  v_val
+      REAL, INTENT(out)   ::  br
+      REAL, INTENT(out)   ::  bphi
+      REAL, INTENT(out)   ::  bz
+      REAL, INTENT(out), OPTIONAL   ::  modb_val
+      REAL, INTENT(out), OPTIONAL   ::  B_grad(3)
+      INTEGER, INTENT(inout)     ::  ier
+      DOUBLE PRECISION    ::  s_dbl
+      DOUBLE PRECISION    ::  u_dbl
+      DOUBLE PRECISION    ::  v_dbl
+      DOUBLE PRECISION    ::  br_dbl
+      DOUBLE PRECISION    ::  bphi_dbl
+      DOUBLE PRECISION    ::  bz_dbl
+      DOUBLE PRECISION    ::  modb_dbl
+      DOUBLE PRECISION    ::  B_grad_dbl(3)
+      s_dbl = s_val; u_dbl = u_val; v_dbl = v_val
+      CALL get_equil_Bsuv_dbl(s_dbl,u_dbl,v_dbl,br_dbl,bphi_dbl,bz_dbl,ier,modb_dbl,B_grad_dbl)
+      br = br_dbl; bphi = bphi_dbl; bz = bz_dbl
+      IF(PRESENT(modb_val)) modb_val = modb_dbl
+      IF(PRESENT(B_grad)) B_grad = B_grad_dbl
+      RETURN
+      END SUBROUTINE get_equil_Bsuv_sgl
+      
       SUBROUTINE get_equil_B_dbl(r_val,phi_val,z_val,bx,by,bz,ier,modb_val,B_grad)
       USE EZspline
       IMPLICIT NONE
@@ -1062,38 +1135,16 @@
       DOUBLE PRECISION, INTENT(out), OPTIONAL   ::  B_grad(3)
       INTEGER, INTENT(inout)     ::  ier
       DOUBLE PRECISION :: rho_val
-      DOUBLE PRECISION :: s_val, u_val, v_val, Bs, Bu, Bv, Br, Bphi
+      DOUBLE PRECISION :: s_val, u_val, v_val, br, bphi
       DOUBLE PRECISION :: R_grad(3), Z_grad(3)
       IF (ier < 0) RETURN
       s_val = 0.5
       CALL get_equil_s(r_val,phi_val,z_val,s_val,ier,u_val)
       IF (ier < 0) RETURN
       v_val = PHI_target
-      rho_val = SQRT(s_val)
-      CALL EZSPLINE_isInDomain(R_spl,u_val,v_val,rho_val,ier)
-      IF (ier == 0) THEN
-         R_grad = 0; Z_grad = 0
-         CALL EZspline_interp(Bs_spl,u_val,v_val,rho_val,Bs,ier)
-         CALL EZspline_interp(Bu_spl,u_val,v_val,rho_val,Bu,ier)
-         CALL EZspline_interp(Bv_spl,u_val,v_val,rho_val,Bv,ier)
-         CALL EZspline_interp(Ru_spl,u_val,v_val,rho_val,R_grad(1),ier)
-         CALL EZspline_interp(Rv_spl,u_val,v_val,rho_val,R_grad(2),ier)
-         CALL EZspline_interp(Zu_spl,u_val,v_val,rho_val,Z_grad(1),ier)
-         CALL EZspline_interp(Zv_spl,u_val,v_val,rho_val,Z_grad(2),ier)
-         Br = R_grad(3)*Bs + R_grad(1)*Bu + R_grad(2)*Bv*nfp
-         Bphi = r_val * Bv
-         bz = Z_grad(3)*Bs + Z_grad(1)*Bu + Z_grad(2)*Bv*nfp
-         bx = Br * cos(phi_val) - Bphi * sin(phi_val)
-         by = Br * sin(phi_val) + Bphi * cos(phi_val)
-         IF (PRESENT(B_grad)) CALL EZspline_gradient(B_spl,u_val,v_val,s_val,B_grad,ier)
-      ELSE
-         ier = 9
-         bx  = 0
-         by  = 0
-         bz  = 0
-         IF (PRESENT(B_grad)) B_grad = 0
-      END IF
-      IF (PRESENT(modb_val)) modb_val = sqrt(bx*bx+by*by+bz*bz)
+      CALL get_equil_Bsuv_dbl(s_val,u_val,v_val,br,bphi,bz,ier,modb_val,B_grad)
+      bx = br * cos(v_val) - bphi * sin(phi_val)
+      by = br * sin(v_val) + bphi * cos(phi_val)
       RETURN
       END SUBROUTINE get_equil_B_dbl
       
@@ -1449,7 +1500,7 @@
       DOUBLE PRECISION, INTENT(out), OPTIONAL :: length
       INTEGER     :: i, j, k, ier
       DOUBLE PRECISION :: x1, y1, z1, x2, y2, z2, dx, dy, dz, xp, yp, zp, int_fac
-      DOUBLE PRECISION :: xp1, yp1, zp1, delf, delt, rp, phip,s, dx2, dy2, dz2
+      DOUBLE PRECISION :: xp1, yp1, zp1, delf, delt, rp, phip,s, dx2, dy2, dz2,uval
       DOUBLE PRECISION :: f_val
       INTEGER, PARAMETER :: nop=3
       INTEGER, PARAMETER :: int_step=2
@@ -1529,10 +1580,10 @@
                rp = sqrt(xp*xp+yp*yp)
                phip = ATAN2(yp,xp)
                IF (phip < 0) phip = phip+pi2
-               CALL get_equil_s(rp,phip,zp,s,ier)
+               CALL get_equil_s(rp,phip,zp,s,ier,uval)
                IF (s <= 1 .and. s >= 0) THEN
                   ier = 0
-                  CALL fcn(s,dx2,dy2,dz2,f_val,ier)
+                  CALL fcn(s,uval,dx2,dy2,dz2,f_val,ier)
                   IF (ier /= 0) f_val = 0
                ELSE
                   f_val = 0
