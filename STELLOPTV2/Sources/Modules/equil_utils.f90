@@ -99,34 +99,6 @@
       RETURN
       END SUBROUTINE eval_prof_spline
       
-      SUBROUTINE get_equil_E(r_val,phi_val,z_val,er,ez,ier)
-      IMPLICIT NONE
-      REAL(rprec), INTENT(in)    ::  r_val
-      REAL(rprec), INTENT(in)    ::  phi_val
-      REAL(rprec), INTENT(in)    ::  z_val
-      REAL(rprec), INTENT(out)   ::  er
-      REAL(rprec), INTENT(out)   ::  ez
-      INTEGER, INTENT(inout)     ::  ier
-      REAL(rprec) :: s_val, u_val, v_val, phi_prime, phi2_val,R1,Z1
-      REAL(rprec) :: R_grad(3), Z_grad(3)
-      IF (ier < 0) RETURN
-      CALL get_equil_s(r_val,phi_val,z_val,s_val,ier,u_val)
-      IF (ier < 0) RETURN
-      v_val = MOD(phi_val,pi2/nfp)*nfp
-      CALL get_equil_RZ(s_val,u_val,v_val,R1,Z1,ier,&
-            R_GRAD=R_grad,Z_GRAD=Z_grad)
-      IF (ier == 0) THEN
-         CALL get_equil_phi(s_val,phi2_val,ier,phi_prime)
-         er = R_grad(3)*phi_prime
-         ez = Z_grad(3)*phi_prime
-      ELSE
-        er  = 0
-        ez  = 0
-      END IF
-      RETURN
-      END SUBROUTINE get_equil_E
-      
-      
       SUBROUTINE get_equil_iota(s_val,val,ier)
       IMPLICIT NONE
       REAL(rprec), INTENT(inout) ::  s_val
@@ -242,24 +214,6 @@
       END IF
       RETURN
       END SUBROUTINE get_equil_nustar
-      
-      SUBROUTINE get_equil_phi(s_val,val,ier,pval)
-      IMPLICIT NONE
-      REAL(rprec), INTENT(inout) ::  s_val
-      REAL(rprec), INTENT(out)   ::  val
-      REAL(rprec), INTENT(out), OPTIONAL :: pval ! Phi'=dphi/ds
-      INTEGER, INTENT(inout)     ::  ier
-      IF (ier < 0) RETURN
-      IF (EZspline_allocated(phi_spl)) THEN
-         CALL EZspline_isInDomain(phi_spl,s_val,ier)
-         IF (ier .ne. 0) RETURN
-         CALL EZspline_interp(phi_spl,s_val,val,ier)
-         IF (PRESENT(pval)) CALL EZspline_derivative(phi_spl,1,s_val,pval,ier)
-      ELSE
-         ier = -1
-      END IF
-      RETURN
-      END SUBROUTINE get_equil_phi
       
       SUBROUTINE eval_prof_stel(s_val,type,val,ncoefs,coefs,ier,spl_obj)
       IMPLICIT NONE
@@ -438,6 +392,62 @@
       CALL EZspline_setup(spl_obj,f_aux,ier)
       RETURN
       END SUBROUTINE setup_prof_spline
+      
+      SUBROUTINE get_equil_phi(s_val,type,val,ier,pval)
+      IMPLICIT NONE
+      REAL(rprec), INTENT(in) ::  s_val
+      CHARACTER(LEN=*), INTENT(in)   :: type
+      REAL(rprec), INTENT(inout)   ::  val
+      REAL(rprec), INTENT(inout),OPTIONAL   ::  pval
+      INTEGER, INTENT(inout)     ::  ier
+      INTEGER :: i
+      REAL(rprec), PARAMETER :: one = 1.0_rprec
+      IF (ier < 0) RETURN
+      CALL tolower(type)
+      SELECT CASE (type)
+         CASE ('spline','akima_spline','akima_spline_ip')
+            CALL eval_prof_stel(s_val,type,val,20,phi_aux_f(1:20),ier,phi_spl)
+            IF (PRESENT(pval)) THEN
+               CALL EZspline_derivative(phi_spl,1,s_val,pval,ier)
+               IF (s_val>one) pval=0
+            END IF
+         CASE DEFAULT
+            CALL eval_prof_stel(s_val,type,val,20,phi_aux_f(1:20),ier)
+            IF (PRESENT(pval)) THEN
+               CALL eval_prof_stel(s_val+1E-6,type,pval,20,phi_aux_f(1:20),ier)
+               pval = (pval-val)*1E6
+               IF (s_val>=one) pval=0
+            END IF
+      END SELECT
+      RETURN
+      END SUBROUTINE get_equil_phi
+      
+      SUBROUTINE get_equil_E(r_val,phi_val,z_val,er,ez,ier)
+      IMPLICIT NONE
+      REAL(rprec), INTENT(in)    ::  r_val
+      REAL(rprec), INTENT(in)    ::  phi_val
+      REAL(rprec), INTENT(in)    ::  z_val
+      REAL(rprec), INTENT(out)   ::  er
+      REAL(rprec), INTENT(out)   ::  ez
+      INTEGER, INTENT(inout)     ::  ier
+      REAL(rprec) :: s_val, u_val, v_val, phi_prime, phi2,R1,Z1
+      REAL(rprec) :: R_grad(3), Z_grad(3)
+      IF (ier < 0) RETURN
+      CALL get_equil_s(r_val,phi_val,z_val,s_val,ier,u_val)
+      IF (ier < 0) RETURN
+      v_val = MOD(phi_val,pi2/nfp)*nfp
+      CALL get_equil_RZ(s_val,u_val,v_val,R1,Z1,ier,&
+            R_GRAD=R_grad,Z_GRAD=Z_grad)
+      IF (ier == 0) THEN
+         CALL get_equil_phi(s_val,phi_type,phi2,ier,phi_prime)
+         er = R_grad(3)*phi_prime
+         ez = Z_grad(3)*phi_prime
+      ELSE
+        er  = 0
+        ez  = 0
+      END IF
+      RETURN
+      END SUBROUTINE get_equil_E
       
       SUBROUTINE get_equil_ne(s_val,type,val,ier)
       IMPLICIT NONE
@@ -668,7 +678,7 @@
                      br,bp,bx,by,bz,modb
       REAL(rprec) :: nhat(3), uperp(3)
       INTEGER, INTENT(inout) :: ier
-      CALL get_equil_phi(s,phi_val,ier,phi_prime)
+      CALL get_equil_phi(s,phi_type,phi_val,ier,phi_prime)
       CALL get_equil_Bav(s,Bav,Bavsq,ier) !<B>,<B^2>
       CALL get_equil_rho(s,rho,vp,grho,grho2,ier)
       ! To make these lines work we need to implement
@@ -907,6 +917,18 @@
       IF (ltriangulate) profile_norm = 0.0_rprec ! Don't use normalization in triangulation mode
       RETURN
       END FUNCTION profile_norm
+
+      INTEGER FUNCTION count_vars(lvar,xvar,profile_type)
+      LOGICAL, INTENT(inout) :: lvar(:)
+      REAL(rprec), INTENT(inout) :: xvar(:)
+      CHARACTER(LEN=*), INTENT(inout) :: profile_type
+      REAL(rprec) :: norm
+      count_vars = 0; norm = 0
+      count_vars = COUNT(lvar)
+      norm = profile_norm(xvar,profile_type)
+      IF (norm /= 0) count_vars = count_vars + 1
+      RETURN
+      END FUNCTION count_vars
       
 
       SUBROUTINE scale_profile(profile_type, profile_coefficients, factor)

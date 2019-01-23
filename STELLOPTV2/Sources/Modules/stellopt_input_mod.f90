@@ -269,12 +269,12 @@
                          beamj_aux_f, bootj_aux_f, zeff_aux_f, &
                          ne_opt, te_opt, ti_opt, th_opt, zeff_opt, &
                          ne_type, te_type, ti_type, th_type, &
-                         beamj_type, bootj_type, zeff_type, &
+                         beamj_type, bootj_type, zeff_type, phi_type, &
                          bootcalc_type, sfincs_s, sfincs_min_procs, sfincs_Er_option, vboot_tolerance, &
                          ne_min, te_min, ti_min, th_min, beamj_f_min, &
-                         bootj_f_min, zeff_min, zeff_f_min, &
+                         bootj_f_min, zeff_min, zeff_f_min, phi_f_min, &
                          ne_max, te_max, ti_max, th_max, beamj_f_max, &
-                         bootj_f_max, zeff_max, zeff_f_max, &
+                         bootj_f_max, zeff_max, zeff_f_max, phi_f_max, &
                          ah_f_min, at_f_min, &
                          ah_f_max, at_f_max, &
                          emis_xics_s, emis_xics_f, emis_xics_type,&
@@ -553,7 +553,6 @@
          am_f_min        = 0.0;     am_f_max        = bigno
          ac_f_min        = -bigno;  ac_f_max        = bigno
          ai_f_min        = -bigno;  ai_f_max        = bigno
-         phi_f_min       = -bigno;  phi_f_max       = bigno
          ah_f_min        = -bigno;  ah_f_max        = bigno
          at_f_min        = -bigno;  at_f_max        = bigno
          raxis_min        = -bigno; raxis_max        = bigno
@@ -572,6 +571,7 @@
       th_min          = -bigno;  th_max          = bigno
       ne_f_min        = 0.0;     ne_f_max        = bigno_ne
       zeff_f_min      = 0.0;     zeff_f_max      = bigno
+      phi_f_min       = -bigno;  phi_f_max       = bigno
       te_f_min        = 0.0;     te_f_max        = bigno
       ti_f_min        = 0.0;     ti_f_max        = bigno
       th_f_min        = 0.0;     th_f_max        = bigno
@@ -604,6 +604,7 @@
       
       ne_type         = 'akima_spline'
       zeff_type       = 'akima_spline'
+      phi_type        = 'akima_spline'
       te_type         = 'akima_spline'
       ti_type         = 'akima_spline'
       th_type         = 'akima_spline'
@@ -969,6 +970,8 @@
       te_type = ADJUSTL(te_type)
       ti_type = ADJUSTL(ti_type)
       th_type = ADJUSTL(th_type)
+      zeff_type = ADJUSTL(zeff_type)
+      phi_type = ADJUSTL(phi_type)
       beamj_type = ADJUSTL(beamj_type)
       bootj_type = ADJUSTL(bootj_type)
       bootcalc_type = ADJUSTL(bootcalc_type)
@@ -1966,6 +1969,7 @@
       ! E-static potential
       ik = MINLOC(phi_aux_s(2:),DIM=1)
       IF (ik > 4) THEN
+         WRITE(iunit,outstr) 'PHI_TYPE',TRIM(phi_type)
          WRITE(iunit,"(2X,A,1X,'=',5(1X,E22.14))") 'PHI_AUX_S',(phi_aux_s(n), n=1,ik)
          WRITE(iunit,"(2X,A,1X,'=',5(1X,E22.14))") 'PHI_AUX_F',(phi_aux_f(n), n=1,ik)
       END IF
