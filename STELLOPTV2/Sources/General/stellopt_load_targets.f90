@@ -128,9 +128,6 @@
       ! XICS W3
       IF (ANY(sigma_xics_w3 < bigno)) &
          CALL chisq_xics_w3(target_xics_w3, sigma_xics_w3, ncnt,iflag)
-      ! XICS Te
-      IF (ANY(sigma_xics_te < bigno)) &
-         CALL chisq_xics_te(target_xics_te, sigma_xics_te, ncnt,iflag)
       ! XICS V
       IF (ANY(sigma_xics_v < bigno)) &
          CALL chisq_xics_v(target_xics_v, sigma_xics_v, ncnt,iflag)

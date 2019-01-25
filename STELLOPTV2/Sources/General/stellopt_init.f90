@@ -150,7 +150,6 @@
               IF (ANY(lth_f_opt)) nvars = nvars + count_vars(lth_f_opt,th_aux_f,th_type)
               IF (ANY(lzeff_f_opt)) nvars = nvars + count_vars(lzeff_f_opt,zeff_aux_f,zeff_type)
               IF (ANY(lemis_xics_f_opt)) nvars = nvars + count_vars(lemis_xics_f_opt,emis_xics_f,emis_xics_type)
-              IF (ANY(lw3_xics_f_opt)) nvars = nvars + count_vars(lw3_xics_f_opt,w3_xics_f,w3_xics_type)
               IF (ANY(lphi_f_opt)) nvars = nvars + count_vars(lphi_f_opt,phi_aux_f,phi_type)
               IF (ANY(lbeamj_f_opt)) nvars = nvars + count_vars(lbeamj_f_opt,beamj_aux_f,beamj_type)
               IF (ANY(lbootj_f_opt)) nvars = nvars + count_vars(lbootj_f_opt,bootj_aux_f,bootj_type)
@@ -977,36 +976,6 @@
                        vars_max(nvar_in) = emis_xics_f_max(i)
                        var_dex(nvar_in) = iemis_xics_f
                        diag(nvar_in)    = demis_xics_f_opt(i)
-                       arr_dex(nvar_in,1) = i
-                    END IF
-                 END DO
-              END IF
-              IF (ANY(lw3_xics_f_opt)) THEN
-                 norm = profile_norm(w3_xics_f,w3_xics_type)
-                 IF (norm /=0) THEN
-                    nvar_in = nvar_in + 1
-                    vars(nvar_in) = norm
-                    vars_min(nvar_in) = norm - abs(norm_fac*norm)
-                    vars_max(nvar_in) = norm + abs(norm_fac*norm)
-                    var_dex(nvar_in) = iw3_xics_f
-                    diag(nvar_in)    = 1.0_rprec
-                    arr_dex(nvar_in,2) = norm_dex
-                    w3_xics_f = w3_xics_f / norm
-                    w3_xics_f_min = w3_xics_f_min/norm
-                    w3_xics_f_max = w3_xics_f_max/norm
-                 END IF
-                 DO i = LBOUND(lw3_xics_f_opt,DIM=1), UBOUND(lw3_xics_f_opt,DIM=1)
-                    IF (lw3_xics_f_opt(i)) THEN
-                       IF (lauto_domain) THEN
-                          w3_xics_f_min(i) = w3_xics_f(i) - ABS(pct_domain*w3_xics_f(i))
-                          w3_xics_f_max(i) = w3_xics_f(i) + ABS(pct_domain*w3_xics_f(i))
-                       END IF
-                       nvar_in = nvar_in + 1
-                       vars(nvar_in) = w3_xics_f(i)
-                       vars_min(nvar_in) = w3_xics_f_min(i)
-                       vars_max(nvar_in) = w3_xics_f_max(i)
-                       var_dex(nvar_in) = iw3_xics_f
-                       diag(nvar_in)    = dw3_xics_f_opt(i)
                        arr_dex(nvar_in,1) = i
                     END IF
                  END DO

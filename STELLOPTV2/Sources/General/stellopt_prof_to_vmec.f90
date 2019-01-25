@@ -76,8 +76,6 @@
       IF (dex > 4) CALL setup_prof_spline(ah_spl,dex,ah_aux_s(1:dex),ah_aux_f(1:dex),ier)
       dex = MINLOC(emis_xics_s(2:),DIM=1)
       IF (dex > 4) CALL setup_prof_spline(emis_xics_spl,dex,emis_xics_s(1:dex),emis_xics_f(1:dex),ier)
-      dex = MINLOC(w3_xics_s(2:),DIM=1)
-      IF (dex > 4) CALL setup_prof_spline(w3_xics_spl,dex,w3_xics_s(1:dex),w3_xics_f(1:dex),ier)
 !      dex = MINLOC(omega_spl_s(2:),DIM=1) ! this is a vmec varaible
 !      IF (dex > 4) CALL setup_prof_spline(omega_spl,dex,rho(1:dex),omega(1:dex),ier)
       
@@ -101,7 +99,6 @@
       IF (ANY(bootj_aux_f /= 0.0_rprec)) lnew_ac = .true.
       IF (ANY(beamj_aux_f /= 0.0_rprec)) lnew_ac = .true.
       IF (ANY(emis_xics_f /= 0.0_rprec)) lnew_diag = .true.
-      IF (ANY(w3_xics_f /= 0.0_rprec))   lnew_diag = .true.
       IF (ANY(phi_aux_f /= 0.0_rprec))   lnew_diag = .true.
       IF (dex_te > 3) lnew_am = .true.
       IF (dex_ti > 3) lnew_am = .true.
@@ -282,12 +279,11 @@
          ne_temp(new_prof) = 1.0_rprec
          IF (.not. lno_file) THEN
             CALL safe_open(iunit,iflag,TRIM('dprof.'//TRIM(file_str)),'unknown','formatted')
-            WRITE(iunit,*) 's     emis_xics       w3_xics       phi'
+            WRITE(iunit,*) 's     emis_xics       phi'
             DO ik = 1, new_prof
                CALL get_equil_emis_xics(ne_temp(ik),TRIM(emis_xics_type),emis_xics_temp,ier)
-               CALL get_equil_w3_xics(ne_temp(ik),TRIM(w3_xics_type),w3_xics_temp,ier)
                CALL get_equil_phi(ne_temp(ik),TRIM(phi_type),phi_temp,ier)
-               WRITE(iunit,'(4es12.4)') ne_temp(ik),emis_xics_temp,w3_xics_temp,phi_temp
+               WRITE(iunit,'(3es12.3)') ne_temp(ik),emis_xics_temp,phi_temp
             END DO
             CLOSE(iunit)
          END IF

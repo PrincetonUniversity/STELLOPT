@@ -525,25 +525,6 @@
       RETURN
       END SUBROUTINE get_equil_emis_xics
       
-      SUBROUTINE get_equil_w3_xics(s_val,type,val,ier)
-      IMPLICIT NONE
-      REAL(rprec), INTENT(in) ::  s_val
-      CHARACTER(LEN=*), INTENT(in)   :: type
-      REAL(rprec), INTENT(inout)   ::  val
-      INTEGER, INTENT(inout)     ::  ier
-      INTEGER :: i
-      REAL(rprec), PARAMETER :: one = 1.0_rprec
-      IF (ier < 0) RETURN
-      CALL tolower(type)
-      SELECT CASE (type)
-         CASE ('spline','akima_spline','akima_spline_ip')
-            CALL eval_prof_stel(s_val,type,val,20,w3_xics_f(1:20),ier,w3_xics_spl)
-         CASE DEFAULT
-            CALL eval_prof_stel(s_val,type,val,20,w3_xics_f(1:20),ier)
-      END SELECT
-      RETURN
-      END SUBROUTINE get_equil_w3_xics
-      
       SUBROUTINE get_equil_zeff(s_val,type,val,ier)
       IMPLICIT NONE
       REAL(rprec), INTENT(in) ::  s_val
@@ -634,25 +615,20 @@
       REAL(rprec), INTENT(in) :: s,u,v,dx,dy,dz
       REAL(rprec), INTENT(out) :: fval
       INTEGER, INTENT(inout) :: ier
-      CALL get_equil_w3_xics(s,TRIM(w3_xics_type),fval,ier)
+      REAL(rprec) :: w, te, ifactor
+      ! natural log fit from VAINSHTEIN_2011 and MARCHUCK_2004
+      REAL(rprec), PARAMETER :: c3 = -7.5306337062E-02
+      REAL(rprec), PARAMETER :: c2 = 1.7282006139E+00
+      REAL(rprec), PARAMETER :: c1 = -1.4811899942E+01
+      REAL(rprec), PARAMETER :: c0 = 2.6778400158E+01
+      CALL get_equil_emis_xics(s,TRIM(emis_xics_type),w,ier)
+      CALL get_equil_te(s,TRIM(te_type),te,ier)
+      te = LOG(te) ! interpolation in log of te
+      fval = w*EXP(c0+te*(c1+te*(c2+te*c3)))
       IF (ier /= 0) fval = 0
       fval = fval*sqrt(dx*dx+dy*dy+dz*dz)
       RETURN
       END SUBROUTINE fcn_xics_w3
-
-      SUBROUTINE fcn_xics_te(s,u,v,dx,dy,dz,fval,ier)
-      IMPLICIT NONE
-      REAL(rprec), INTENT(in) :: s,u,v,dx,dy,dz
-      REAL(rprec), INTENT(out) :: fval
-      REAL(rprec) :: f1, f2
-      INTEGER, INTENT(inout) :: ier
-      CALL get_equil_te(s,TRIM(ti_type),f1,ier)
-      IF (ier /= 0) fval = 0
-      CALL get_equil_w3_xics(s,TRIM(w3_xics_type),f2,ier)
-      IF (ier /= 0) fval = 0
-      fval = f1*f2*sqrt(dx*dx+dy*dy+dz*dz)
-      RETURN
-      END SUBROUTINE fcn_xics_te
 
       SUBROUTINE fcn_xics_v(s,u,v,dx,dy,dz,fval,ier)
       IMPLICIT NONE
@@ -665,12 +641,12 @@
       INTEGER, INTENT(inout) :: ier
       CALL get_equil_phi(s,phi_type,phi_val,ier,phi_prime)
       !CALL get_equil_Bav(s,Bav,Bavsq,ier) !<B>,<B^2>
-      !CALL get_equil_rho(s,rho,vp,grho,grho2,ier)
+      CALL get_equil_rho(s,rho,vp,grho,grho2,ier)
       ! To make these lines work we need to implement
       ! passing u and v
       CALL get_equil_nhat(s,u,v,nhat,ier)
       CALL get_equil_Bcylsuv(s,u,v,br,bp,bz,ier,modb)
-      phi_prime = phi_prime * 2 * sqrt(s) !dphi/drho=dphi/ds*ds/drho
+      phi_prime = phi_prime * 2 * rho * grho !dphi/drho=dphi/ds*ds/drho
       IF (s > 1) phi_prime=0
       nhat = nhat / SQRT(SUM(nhat*nhat))
       bx = br * cos(v) - bp * sin(v)

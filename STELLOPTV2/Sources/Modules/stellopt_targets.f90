@@ -104,7 +104,6 @@
       REAL(rprec), DIMENSION(nprof) ::  target_xics,sigma_xics, &
                                         target_xics_bright,sigma_xics_bright, &
                                         target_xics_w3,sigma_xics_w3, &
-                                        target_xics_te,sigma_xics_te, &
                                         target_xics_v,sigma_xics_v, &
                                         r0_xics, phi0_xics, z0_xics, &
                                         r1_xics, phi1_xics, z1_xics
@@ -222,8 +221,7 @@
       INTEGER, PARAMETER :: jtarget_xics       = 2022
       INTEGER, PARAMETER :: jtarget_xics_bright= 2023
       INTEGER, PARAMETER :: jtarget_xics_w3    = 2024
-      INTEGER, PARAMETER :: jtarget_xics_te    = 2025
-      INTEGER, PARAMETER :: jtarget_xics_v     = 2026
+      INTEGER, PARAMETER :: jtarget_xics_v     = 2025
       INTEGER, PARAMETER :: jtarget_press      = 203
       INTEGER, PARAMETER :: jtarget_vphi       = 204
       INTEGER, PARAMETER :: jtarget_iota       = 300  
@@ -334,8 +332,6 @@
             WRITE(iunit, out_format) 'XICS Brightness'
          CASE(jtarget_xics_w3)
             WRITE(iunit, out_format) 'XICS W3 Factor'
-         CASE(jtarget_xics_te)
-            WRITE(iunit, out_format) 'XICS Electron Temperature'
          CASE(jtarget_xics_v)
             WRITE(iunit, out_format) 'XICS Perp. Velocity'
          CASE(jtarget_te)
