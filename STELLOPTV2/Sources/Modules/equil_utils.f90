@@ -237,19 +237,17 @@
      &   0.1346333596549982, 0.1477621123573764, 0.1477621123573764,           &
      &   0.1346333596549982, 0.1095431812579910, 0.0747256745752903,           &
      &   0.03333567215434407 /)
+      val = 0
       IF (ier < 0) RETURN
       CALL tolower(type)
       SELECT CASE (type)
          CASE ('gauss_trunc')
-            val = 0
             val = (coefs(1)/(one - EXP(-(one/coefs(2))**2)))*&
                   (EXP(-(s_val/coefs(2))**2)-EXP(-(one/coefs(2))**2))
          CASE ('gauss_trunc_offset')
-            val = 0
             val = coefs(3)+(coefs(1)/(one - EXP(-(one/coefs(2))**2)))*&
                   (EXP(-(s_val/coefs(2))**2)-EXP(-(one/coefs(2))**2))
          CASE ('two_lorentz')
-            val = 0
             val = coefs(1)*(coefs(2)*(one/(one+(  s_val/coefs(3)**2)**coefs(4))**coefs(5) &
                                        -one/(one+(one/coefs(3)**2)**coefs(4))**coefs(5))/   &
                                    (one-one/(one+(one/coefs(3)**2)**coefs(4))**coefs(5))+   &
@@ -257,33 +255,26 @@
                                    -one/(one+(one/coefs(6)**2)**coefs(7))**coefs(8))/       &
                                (one-one/(one+(one/coefs(6)**2)**coefs(7))**coefs(8)))
          CASE ('two_power')
-            val = 0
             val = coefs(1) * (one - s_val**coefs(2))**coefs(3)
          CASE ('two_power_hollow')
-            val = 0
             val = s_val * coefs(1) * (one - s_val**coefs(2))**coefs(3)
          CASE ('two_power_offset')
-            val = 0
             val = coefs(4) + coefs(1) * (one - s_val**coefs(2))**coefs(3)
          CASE ('power_series')
-            val = 0
             DO i = UBOUND(coefs,DIM=1), LBOUND(coefs,DIM=1), -1
                val = s_val*val + coefs(i)
             END DO
          CASE ('power_series_0_boundaries')
-            val = 0
             DO i = UBOUND(coefs,DIM=1), LBOUND(coefs,DIM=1), -1
                val = s_val*val + coefs(i)
             END DO
             val = val * s_val * (1 - s_val)
          CASE ('power_series_0i0')
-            val = 0
             DO i = UBOUND(coefs,DIM=1), LBOUND(coefs,DIM=1), -1
                val = val*s_val**0.25 + coefs(i)
             END DO
             val = 4*val*s_val*(1-s_val)
          CASE ('power_series_edge0')
-            val = 0
             i=UBOUND(coefs,DIM=1)
             !coefs(i) = -SUM(coefs(LBOUND(coefs,DIM=1):i-1))
             val = -SUM(coefs(LBOUND(coefs,DIM=1):i))
@@ -291,13 +282,11 @@
                val = s_val*val + coefs(i)
             END DO
          CASE ('power_series_i') ! dI/ds = a1+2*a2*x+a
-            val = 0
             DO i = UBOUND(coefs,DIM=1), LBOUND(coefs,DIM=1), -1
                val = s_val*val + coefs(i)*(i-1) ! OK (1-1)=0
             END DO
             IF (s_val >0) val = val / s_val
          CASE ('power_series_i_edge0') ! dI/ds = a1+2*a2*x+a
-            val = 0
             DO i = UBOUND(coefs,DIM=1), LBOUND(coefs,DIM=1), -1
                val = val - coefs(i)*(i-1)
             END DO
@@ -313,10 +302,8 @@
                CALL EZspline_interp(spl_obj,s_val,val,ier)
             ELSE
                ier = -1
-               val = 0.0
             END IF
          CASE ('pedestal')
-            val = 0
             DO i=15, LBOUND(coefs,1),-1
                val = s_val*val+coefs(i)
             END DO
@@ -330,7 +317,6 @@
             val = val + coefs(i+4) * coefs(i+1) * ( TANH(2*(coefs(i+2)-SQRT(s_val))/coefs(i+3) )    &
                                                      -TANH(2*(coefs(i+2)-one)/coefs(i+3)      ) )
          CASE('sum_atan')
-            val = 0
             IF (s_val >= 1) THEN
                val = coefs(1)+coefs(2)+coefs(6)+coefs(10)+coefs(14)+coefs(18)
             ELSE
@@ -350,7 +336,6 @@
             x2  = 1.0_rprec
             x3  = bootj_aux_f(3)
             h   = bootj_aux_f(2)/((x0-x1)*(x0-x2))
-            val = 0
             if ((s_val > x1) .and. (s_val < 1.0_rprec)) val = h*(s_val-x1)*(s_val-x2)
             val = val + x3*s_val*(s_val-1)/(-0.25_rprec)
          CASE ('hollow')
@@ -679,18 +664,21 @@
       REAL(rprec) :: nhat(3), uperp(3)
       INTEGER, INTENT(inout) :: ier
       CALL get_equil_phi(s,phi_type,phi_val,ier,phi_prime)
-      CALL get_equil_Bav(s,Bav,Bavsq,ier) !<B>,<B^2>
-      CALL get_equil_rho(s,rho,vp,grho,grho2,ier)
+      !CALL get_equil_Bav(s,Bav,Bavsq,ier) !<B>,<B^2>
+      !CALL get_equil_rho(s,rho,vp,grho,grho2,ier)
       ! To make these lines work we need to implement
       ! passing u and v
       CALL get_equil_nhat(s,u,v,nhat,ier)
       CALL get_equil_Bcylsuv(s,u,v,br,bp,bz,ier,modb)
+      phi_prime = phi_prime * 2 * sqrt(s) !dphi/drho=dphi/ds*ds/drho
+      IF (s > 1) phi_prime=0
+      nhat = nhat / SQRT(SUM(nhat*nhat))
       bx = br * cos(v) - bp * sin(v)
       by = br * sin(v) + bp * cos(v)
       uperp(1) = by*nhat(3)-bz*nhat(2)
       uperp(2) = bz*nhat(1)-bx*nhat(1)
       uperp(3) = bx*nhat(2)-by*nhat(1)
-      uperp    = uperp*phi_prime/(modb*modb*grho)
+      uperp    = uperp*phi_prime/(modb*modb)
       fval = uperp(1)*dx+uperp(2)*dy+uperp(3)*dz
       RETURN
       END SUBROUTINE fcn_xics_v

@@ -131,6 +131,9 @@
       ! XICS Te
       IF (ANY(sigma_xics_te < bigno)) &
          CALL chisq_xics_te(target_xics_te, sigma_xics_te, ncnt,iflag)
+      ! XICS V
+      IF (ANY(sigma_xics_v < bigno)) &
+         CALL chisq_xics_v(target_xics_v, sigma_xics_v, ncnt,iflag)
       ! SOFT X-RAYS
       IF (ANY(sigma_sxr < bigno)) &
          CALL chisq_sxr(target_sxr, sigma_sxr, ncnt,iflag)

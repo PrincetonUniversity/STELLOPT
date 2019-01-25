@@ -111,6 +111,7 @@
          lnew_ah = .true.
          lnew_at = .true.
       END IF
+
       ! Now create the new arrays
       IF (lnew_am) THEN
          iunit = 66
@@ -272,17 +273,25 @@
       ! Now make table
       IF (lnew_diag) THEN
          iunit = 68
+         ALLOCATE(ne_temp(new_prof)) ! Use ne_temp for s
+         ne_temp = -1
+         DO ik = 1, new_prof
+            ne_temp(ik) = REAL(ik-1)/REAL(new_prof-1)
+         END DO
+         ne_temp(1) = 0.0_rprec
+         ne_temp(new_prof) = 1.0_rprec
          IF (.not. lno_file) THEN
             CALL safe_open(iunit,iflag,TRIM('dprof.'//TRIM(file_str)),'unknown','formatted')
             WRITE(iunit,*) 's     emis_xics       w3_xics       phi'
-            DO ik = 1, dex_am
-               CALL get_equil_emis_xics(am_aux_s(ik),TRIM(emis_xics_type),emis_xics_temp,ier)
-               CALL get_equil_w3_xics(am_aux_s(ik),TRIM(w3_xics_type),w3_xics_temp,ier)
-               CALL get_equil_phi(am_aux_s(ik),TRIM(phi_type),phi_temp,ier)
-               WRITE(iunit,'(4es12.4)') am_aux_s(ik),emis_xics_temp,w3_xics_temp,phi_temp
+            DO ik = 1, new_prof
+               CALL get_equil_emis_xics(ne_temp(ik),TRIM(emis_xics_type),emis_xics_temp,ier)
+               CALL get_equil_w3_xics(ne_temp(ik),TRIM(w3_xics_type),w3_xics_temp,ier)
+               CALL get_equil_phi(ne_temp(ik),TRIM(phi_type),phi_temp,ier)
+               WRITE(iunit,'(4es12.4)') ne_temp(ik),emis_xics_temp,w3_xics_temp,phi_temp
             END DO
             CLOSE(iunit)
          END IF
+         DEALLOCATE(ne_temp)
       END IF
       
       RETURN
