@@ -603,9 +603,9 @@
       REAL(rprec) :: f1, f2
       INTEGER, INTENT(inout) :: ier
       CALL get_equil_ti(s,TRIM(ti_type),f1,ier)
-      IF (ier /= 0) fval = 0
+      IF (ier /= 0) f1 = 0
       CALL get_equil_emis_xics(s,TRIM(emis_xics_type),f2,ier)
-      IF (ier /= 0) fval = 0
+      IF (ier /= 0) f2 = 0
       fval = f1*f2*sqrt(dx*dx+dy*dy+dz*dz)
       RETURN
       END SUBROUTINE fcn_xics
@@ -618,14 +618,17 @@
       REAL(rprec) :: w, te, ifactor
       ! natural log fit from VAINSHTEIN_2011 and MARCHUCK_2004
       REAL(rprec), PARAMETER :: c3 = -7.5306337062E-02
-      REAL(rprec), PARAMETER :: c2 = 1.7282006139E+00
+      REAL(rprec), PARAMETER :: c2 =  1.7282006139E+00
       REAL(rprec), PARAMETER :: c1 = -1.4811899942E+01
-      REAL(rprec), PARAMETER :: c0 = 2.6778400158E+01
+      REAL(rprec), PARAMETER :: c0 =  2.6778400158E+01
+      fval = 0
+      IF (s>1) RETURN
       CALL get_equil_emis_xics(s,TRIM(emis_xics_type),w,ier)
+      IF (ier /= 0) w = 0
       CALL get_equil_te(s,TRIM(te_type),te,ier)
+      IF (ier /= 0) te = 100
       te = LOG(te) ! interpolation in log of te
       fval = w*EXP(c0+te*(c1+te*(c2+te*c3)))
-      IF (ier /= 0) fval = 0
       fval = fval*sqrt(dx*dx+dy*dy+dz*dz)
       RETURN
       END SUBROUTINE fcn_xics_w3
