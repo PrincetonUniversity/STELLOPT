@@ -1115,7 +1115,7 @@
       DOUBLE PRECISION    ::  modb_dbl
       DOUBLE PRECISION    ::  B_grad_dbl(3)
       s_dbl = s_val; u_dbl = u_val; v_dbl = v_val
-      CALL get_equil_Bsuv_dbl(s_dbl,u_dbl,v_dbl,br_dbl,bphi_dbl,bz_dbl,ier,modb_dbl,B_grad_dbl)
+      CALL get_equil_Bcylsuv_dbl(s_dbl,u_dbl,v_dbl,br_dbl,bphi_dbl,bz_dbl,ier,modb_dbl,B_grad_dbl)
       br = br_dbl; bphi = bphi_dbl; bz = bz_dbl
       IF(PRESENT(modb_val)) modb_val = modb_dbl
       IF(PRESENT(B_grad)) B_grad = B_grad_dbl
@@ -1583,7 +1583,7 @@
                CALL get_equil_s(rp,phip,zp,s,ier,uval)
                IF (s <= 1 .and. s >= 0) THEN
                   ier = 0
-                  CALL fcn(s,uval,dx2,dy2,dz2,f_val,ier)
+                  CALL fcn(s,uval,phip,dx2,dy2,dz2,f_val,ier)
                   IF (ier /= 0) f_val = 0
                ELSE
                   f_val = 0
