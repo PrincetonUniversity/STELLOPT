@@ -4,6 +4,14 @@
 !     Date:          01/22/2019
 !     Description:   Calculate difference measured and equilibrium
 !                    XICS W3 Factor Signals.
+!                    The W3 Factor is actually the ratio between
+!                    the main W line and n=3 satellite line intensities.
+!                    The ratio of the W3 emissivity and the n=3
+!                    emissivities is related to the electron
+!                    temperature through a formula which is hardcoded
+!                    into fcn_xics_w3 (basically linear in log/log).
+!                    So we line integrate over the n=3 emissivity,
+!                    which is just the W emissivity times this formula.
 !-----------------------------------------------------------------------
       SUBROUTINE chisq_xics_w3(target,sigma,niter,iflag)
 !-----------------------------------------------------------------------

@@ -1,9 +1,10 @@
 !-----------------------------------------------------------------------
-!     Subroutine:    chisq_xics_f
+!     Subroutine:    chisq_xics_v
 !     Authors:       S. Lazerson (lazerson@pppl.gov)
 !     Date:          05/26/2012
 !     Description:   Calculate difference measured and equilibrium
 !                    XICS Velocity Signal.
+!                    u_perp = -dPhi/ds *(1/B)*(nhatxbhat)
 !-----------------------------------------------------------------------
       SUBROUTINE chisq_xics_v(target,sigma,niter,iflag)
 !-----------------------------------------------------------------------
