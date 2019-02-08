@@ -27,7 +27,7 @@
 !      USE vmec_main, ONLY:  multi_ns_grid
       USE vmec_main, ONLY:  multi_ns_grid,nzeta,ntheta3,nznt  !11/26/18.(7l19f)
       USE mpi_params                                                    ! MPI
-      use quasisymmetry_variables, only: xtqsc  !hm-10/14/18.
+      use quasisymmetry_variables, only: xtqsc,max_n  !hm-10/14/18,2/4/19.
       IMPLICIT NONE
       
 !-----------------------------------------------------------------------
@@ -61,6 +61,7 @@
       CHARACTER(len = 128)    :: reset_string
       CHARACTER(len = 256)    :: ctemp_str
 !      integer :: nzeta_tmp,ntheta3_tmp,nznt_tmp   !hm-11/26/18.(7l19g). out-12/4/18.
+      REAL(rprec), DIMENSION(0:ntord) :: raxis_cc_tmp,raxis_cs_tmp,zaxis_cc_tmp,zaxis_cs_tmp  !2/1/19.(8r4)
       
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
@@ -189,7 +190,16 @@
       if (iflg1.ne.0)  then
          rbc = 0.   !hm-11/13/18.diagn.
          write(0,*)'stel_fcn > QSC. proc_string=',trim(proc_string) !hm-9/23-1,10/18/18.
-!    write(0,*)'bfr QSC: nzeta,ntheta3,nznt=',nzeta,ntheta3,nznt !11/26/18.(7l19f).1/2.out
+!2/4/19.(8u3)
+         if (any(raxis_cc(max_n+1:ntor).ne.0.0).or.any(zaxis_cs(max_n+1:ntor).ne.0.0)) then
+            write(0,*)'0-ing RZaxis:raxis_cc=',raxis_cc(0:ntor)
+            raxis_cc(max_n+1:ntor)=0.0 ; raxis_cs(max_n+1:ntor)=0.0
+            zaxis_cc(max_n+1:ntor)=0.0 ; zaxis_cs(max_n+1:ntor)=0.0 
+         endif
+!2/3/19.(8u1)place-2 to save vals for [raxis_cc,..] to restore after paravmec.
+         raxis_cc_tmp=raxis_cc; raxis_cs_tmp=raxis_cs
+         zaxis_cc_tmp=zaxis_cc; zaxis_cs_tmp=zaxis_cs
+
          call QSC(proc_string)  !9/26/18. 10/18/18.chged arg xtqsc->proc_string. (7k2)c-out.
          write(0,*)'f QSC,bfr restore: nzeta,ntheta3,nznt=',nzeta,ntheta3,nznt !11/26,28/18.(7l19f, 7l21c)
 !      end if  !out-12/4/18.
@@ -300,11 +310,19 @@
             CASE('vmec2000_old','animec','flow','satire')
             CASE('paravmec','parvmec','vmec2000')
 !10/18/18.place-2 for QSC(), mved here fra place-1 abv, arg chged xtqsc->proc_string.
+!2/1/19.(8r4)place-1 to save vals for [raxis_cc,..] to restore after paravmec. out-(8u1)
+!               raxis_cc_tmp=raxis_cc; raxis_cs_tmp=raxis_cs
+!               zaxis_cc_tmp=zaxis_cc; zaxis_cs_tmp=zaxis_cs
 
                iflag = 0
                CALL stellopt_paraexe('paravmec_run',proc_string,lscreen)
                iflag = ier_paraexe
                IF (lscreen .and. lverb) WRITE(6,*)  '-------------------------  PARAVMEC CALCULATION DONE  -----------------------'
+!2/1/19.(8r4)again restore [raxis_cc,..] to [raxis_cc_tmp].
+               if (iflg1 == 1) then
+                  raxis_cc=raxis_cc_tmp; raxis_cs=raxis_cs_tmp
+                  zaxis_cc=zaxis_cc_tmp; zaxis_cs=zaxis_cs_tmp
+               endif
             CASE('vboot')
                iflag = 0
                CALL stellopt_vboot(lscreen,iflag)

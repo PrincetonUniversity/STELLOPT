@@ -130,6 +130,11 @@
 ! hm-10/21/18.(6e20.e)iflg1=1 sec mved abv fra here.
 
               CALL runvmec(ictrl,id_string,.false.,MPI_COMM_SELF,'')
+!2/1/19.(8r4)again restore [raxis_cc,..] to [raxis_cc_tmp]<-[R0c,..]
+              if (iflg1 == 1) then
+                 raxis_cc=raxis_cc_tmp; raxis_cs=raxis_cs_tmp
+                 zaxis_cc=zaxis_cc_tmp; zaxis_cs=zaxis_cs_tmp
+              endif
          CASE('vboot')
               ! Now convert id_string to extension
               id_string = id_string(7:LEN(id_string))
