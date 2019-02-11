@@ -3,6 +3,8 @@ chisq_x.o \
 chisq_y.o \
 chisq_xics.o \
 chisq_xics_bright.o \
+chisq_xics_w3.o \
+chisq_xics_v.o \
 chisq_magwell.o \
 chisq_helicity_ornl.o \
 stellopt_vboot.o \

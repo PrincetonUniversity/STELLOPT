@@ -104,7 +104,7 @@
                           regcoil_winding_surface_separation_max, &
                           regcoil_current_density_max
       REAL(rprec), DIMENSION(nigroup)  ::  dextcur_opt,extcur_min,extcur_max
-      REAL(rprec), DIMENSION(1:20)     ::  daphi_opt,aphi_min,aphi_max
+      REAL(rprec), DIMENSION(1:20)     ::  daphi_opt, aphi_min, aphi_max
       REAL(rprec), DIMENSION(0:20)     ::  dam_opt, dac_opt, dai_opt,&
                                            dah_opt, dat_opt,&
                                            dte_opt, dne_opt, dti_opt, dth_opt,&
@@ -143,7 +143,7 @@
                                             ti_aux_f, th_aux_f,&
                                             zeff_aux_f, &
                                             phi_aux_f, beamj_aux_f, &
-                                            bootj_aux_f, emis_xics_f
+                                            bootj_aux_f, emis_xics_f 
       REAL(rprec), DIMENSION(ndatafmax) ::  dam_s_opt, dam_f_opt, &
                                             dac_s_opt, dac_f_opt, &
                                             dai_s_opt, dai_f_opt, &
@@ -195,8 +195,8 @@
       REAL(rprec), DIMENSION(-mpol_rcws:mpol_rcws, -ntor_rcws:ntor_rcws) :: regcoil_rcws_zbound_c_max, regcoil_rcws_zbound_s_max
 
       CHARACTER(256)  ::  equil_type, te_type, ne_type, ti_type, th_type, &
-                          beamj_type, bootj_type, zeff_type, emis_xics_type, windsurfname, &
-                          regcoil_nescin_filename, bootcalc_type
+                          beamj_type, bootj_type, zeff_type, emis_xics_type,windsurfname, &
+                          regcoil_nescin_filename, bootcalc_type, phi_type
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: sfincs_J_dot_B_flux_surface_average, sfincs_B_squared_flux_surface_average
       
       ! These are not really variable parameters as we don't vary them

@@ -38,13 +38,13 @@
 !        ier         Error flag
 !        iunit       File unit number
 !----------------------------------------------------------------------
-      LOGICAL ::  lnew_am, lnew_ac, lnew_at, lnew_ah, lno_file
+      LOGICAL ::  lnew_am, lnew_ac, lnew_at, lnew_ah, lno_file, lnew_diag
       INTEGER ::  dex_ne, dex_te, dex_ti, dex_zeff, &
                   dex_beamj, dex_bootj, dex_am, dex_ac, &
                   dex_ah, dex_at
       INTEGER ::  ier,ik, iunit, dex
       REAL(rprec), PARAMETER :: ec  = 1.60217653D-19
-      REAL(rprec) :: emis_xics_temp
+      REAL(rprec) :: emis_xics_temp, w3_xics_temp, phi_temp
       REAL(rprec), ALLOCATABLE :: ne_temp(:), zeff_temp(:), te_temp(:), ti_temp(:),&
                                   th_temp(:), beamj_temp(:), bootj_temp(:), dump_temp(:)
       
@@ -90,7 +90,7 @@
       dex_ah    = MINLOC(ah_aux_s(2:),DIM=1)
       dex_at    = MINLOC(at_aux_s(2:),DIM=1)
       ! Now check if we need new am and ac arrays
-      lnew_am = .false.; lnew_ac = .false.
+      lnew_am = .false.; lnew_ac = .false.; lnew_diag = .false.
       lnew_ah = .false.; lnew_at = .false.
       IF (ANY(ne_opt /= 0.0_rprec)) lnew_am = .true.
       IF (ANY(te_opt /= 0.0_rprec)) lnew_am = .true.
@@ -98,6 +98,8 @@
       IF (ANY(th_opt /= 0.0_rprec)) lnew_am = .true.
       IF (ANY(bootj_aux_f /= 0.0_rprec)) lnew_ac = .true.
       IF (ANY(beamj_aux_f /= 0.0_rprec)) lnew_ac = .true.
+      IF (ANY(emis_xics_f /= 0.0_rprec)) lnew_diag = .true.
+      IF (ANY(phi_aux_f /= 0.0_rprec))   lnew_diag = .true.
       IF (dex_te > 3) lnew_am = .true.
       IF (dex_ti > 3) lnew_am = .true.
       !IF (dex_beamj > 1) lnew_ac = .true.
@@ -106,6 +108,7 @@
          lnew_ah = .true.
          lnew_at = .true.
       END IF
+
       ! Now create the new arrays
       IF (lnew_am) THEN
          iunit = 66
@@ -265,17 +268,26 @@
 
       ! Output a diagnostic table
       ! Now make table
-      IF (lnew_am) THEN
+      IF (lnew_diag) THEN
          iunit = 68
+         ALLOCATE(ne_temp(new_prof)) ! Use ne_temp for s
+         ne_temp = -1
+         DO ik = 1, new_prof
+            ne_temp(ik) = REAL(ik-1)/REAL(new_prof-1)
+         END DO
+         ne_temp(1) = 0.0_rprec
+         ne_temp(new_prof) = 1.0_rprec
          IF (.not. lno_file) THEN
             CALL safe_open(iunit,iflag,TRIM('dprof.'//TRIM(file_str)),'unknown','formatted')
-            WRITE(iunit,*) 's     emis_xics'
-            DO ik = 1, dex_am
-               CALL get_equil_emis_xics(am_aux_s(ik),TRIM(emis_xics_type),emis_xics_temp,ier)
-               WRITE(iunit,'(2es12.4)') am_aux_s(ik),emis_xics_temp
+            WRITE(iunit,*) 's     emis_xics       phi'
+            DO ik = 1, new_prof
+               CALL get_equil_emis_xics(ne_temp(ik),TRIM(emis_xics_type),emis_xics_temp,ier)
+               CALL get_equil_phi(ne_temp(ik),TRIM(phi_type),phi_temp,ier)
+               WRITE(iunit,'(3es12.3)') ne_temp(ik),emis_xics_temp,phi_temp
             END DO
             CLOSE(iunit)
          END IF
+         DEALLOCATE(ne_temp)
       END IF
       
       RETURN
