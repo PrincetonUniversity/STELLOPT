@@ -881,6 +881,7 @@
             END DO
          CASE DEFAULT
             PRINT *,"Error! Unknown profile type in subroutine profile_norm:",prof_type
+            PRINT *,x(1:10)
             STOP
       END SELECT
       IF (ltriangulate) profile_norm = 0.0_rprec ! Don't use normalization in triangulation mode
