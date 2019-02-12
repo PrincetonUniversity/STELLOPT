@@ -783,7 +783,7 @@ class MyApp(QMainWindow):
 					'PHIEDGE','RBTOR','R0','Z0','VOLUME','WP','KAPPA',\
 					'B_PROBES','FARADAY','FLUXLOOPS','SEGROG','MSE',\
 					'NE','NELINE','TE','TELINE','TI','TILINE',\
-					'XICS','XICS_BRIGHT','SXR','VPHI',\
+					'XICS','XICS_BRIGHT','XICS_W3','XICS_V','SXR','VPHI',\
 					'IOTA','BALLOON','BOOTSTRAP','DKES','HELICITY','HELICITY_FULL',\
 					'KINK','ORBIT','JDOTB','J_STAR','NEO','TXPORT','ECEREFLECT',\
 					]
@@ -798,7 +798,8 @@ class MyApp(QMainWindow):
 		self.ui.ComboBoxOPTplot_type.addItem('-----SPECIAL-----')
 		for name in ['BALLOON','KINK','ORBIT','NEO','HELICITY','HELICITY_FULL',\
 					'TXPORT','B_PROBES','FLUXLOOPS','SEGROG',\
-					'NELINE','TELINE','TILINE','XICS','XICS_BRIGHT',\
+					'NELINE','TELINE','TILINE',\
+					'XICS','XICS_BRIGHT','XICS_W3','XICS_V',\
 					'ECEREFLECT','SXR','IOTA','PRESS']:
 			for item in self.stel_data:
 				if (name+'_target' == item):
@@ -820,6 +821,7 @@ class MyApp(QMainWindow):
 			self.ui.ComboBoxOPTplot_type.addItem('I-prime')
 			self.ui.ComboBoxOPTplot_type.addItem('Current')
 			self.ui.ComboBoxOPTplot_type.addItem('Iota')
+			self.ui.ComboBoxOPTplot_type.addItem('q-prof')
 			self.ui.ComboBoxOPTplot_type.addItem('<j*B>')
 			self.wout_files = sorted([k for k in files if 'wout' in k])
 		# Handle Kinetic Profiles
@@ -834,6 +836,7 @@ class MyApp(QMainWindow):
 		if any('dprof.' in mystring for mystring in files):
 			self.ui.ComboBoxOPTplot_type.addItem('----- Diagnostic -----')
 			self.ui.ComboBoxOPTplot_type.addItem('XICS Emissivity')
+			self.ui.ComboBoxOPTplot_type.addItem('E-Static Potential')
 			self.dprof_files = sorted([k for k in files if 'dprof.' in k])
 		# Handle Current Density Profiles
 		if any('jprof.' in mystring for mystring in files):
@@ -1414,6 +1417,74 @@ class MyApp(QMainWindow):
 			self.ax2.set_xlabel('Channel')
 			self.ax2.set_ylabel('Signal [Arb.]')
 			self.ax2.set_title('XICS Brightness Reconstruction')
+		elif (plot_name == 'XICS_W3_evolution'):
+			y=self.stel_data['XICS_W3_target'].T
+			s=self.stel_data['XICS_W3_sigma'].T
+			e = self.stel_data['XICS_W3_equil'].T
+			n = y.shape
+			if (len(n)==0):
+				# Single Time slice Single point
+				x=np.ndarray((1,1))*0+1
+				self.ax2.errorbar(x,y,s,fmt='sk',fillstyle='none')
+				self.ax2.plot(x,e,'og',fillstyle='none')
+			elif (len(n)==1):
+				# Could be either mutli-time or single time
+				if len(self.stel_data['ITER']) == n[0]:
+					# Mutl-time single point
+					x = np.ndarray((n[0],1))*0+1
+					self.ax2.errorbar(x[0],y[0],s[0],fmt='sk',fillstyle='none')
+					for l in range(dl): self.ax2.plot(x[l],e[l],'o',fillstyle='none',color=_plt.cm.brg(l/(dl-1)))
+				else:
+					# Multi-channel single time
+					x = np.ndarray((n[0],1))
+					for j in range(n[0]): x[j]=j+1
+					self.ax2.errorbar(x,y,s,fmt='sk',fillstyle='none')
+					self.ax2.plot(x,e,'og',fillstyle='none')
+			else:
+				# Multiple Time slices
+				dl = n[1]
+				x = np.ndarray((n[0],1))
+				for j in range(n[0]): x[j]=j+1
+				self.ax2.errorbar(x[:,0],y[:,0],s[:,0],fmt='sk',fillstyle='none')
+				for l in range(dl):
+					self.ax2.plot(x,e[:,l-1],'o',fillstyle='none',color=_plt.cm.brg(l/(dl-1)))
+			self.ax2.set_xlabel('Channel')
+			self.ax2.set_ylabel('Signal [Arb.]')
+			self.ax2.set_title('XICS W3 (Te) Reconstruction')
+		elif (plot_name == 'XICS_V_evolution'):
+			y=self.stel_data['XICS_V_target'].T
+			s=self.stel_data['XICS_V_sigma'].T
+			e = self.stel_data['XICS_V_equil'].T
+			n = y.shape
+			if (len(n)==0):
+				# Single Time slice Single point
+				x=np.ndarray((1,1))*0+1
+				self.ax2.errorbar(x,y,s,fmt='sk',fillstyle='none')
+				self.ax2.plot(x,e,'og',fillstyle='none')
+			elif (len(n)==1):
+				# Could be either mutli-time or single time
+				if len(self.stel_data['ITER']) == n[0]:
+					# Mutl-time single point
+					x = np.ndarray((n[0],1))*0+1
+					self.ax2.errorbar(x[0],y[0],s[0],fmt='sk',fillstyle='none')
+					for l in range(dl): self.ax2.plot(x[l],e[l],'o',fillstyle='none',color=_plt.cm.brg(l/(dl-1)))
+				else:
+					# Multi-channel single time
+					x = np.ndarray((n[0],1))
+					for j in range(n[0]): x[j]=j+1
+					self.ax2.errorbar(x,y,s,fmt='sk',fillstyle='none')
+					self.ax2.plot(x,e,'og',fillstyle='none')
+			else:
+				# Multiple Time slices
+				dl = n[1]
+				x = np.ndarray((n[0],1))
+				for j in range(n[0]): x[j]=j+1
+				self.ax2.errorbar(x[:,0],y[:,0],s[:,0],fmt='sk',fillstyle='none')
+				for l in range(dl):
+					self.ax2.plot(x,e[:,l-1],'o',fillstyle='none',color=_plt.cm.brg(l/(dl-1)))
+			self.ax2.set_xlabel('Channel')
+			self.ax2.set_ylabel('Signal [Arb.]')
+			self.ax2.set_title('XICS Velocity Reconstruction')
 		elif (plot_name == 'Pressure'):
 			l=0
 			dl = len(self.wout_files)
@@ -1458,6 +1529,21 @@ class MyApp(QMainWindow):
 			self.ax2.set_xlabel('Norm Tor. Flux (s)')
 			self.ax2.set_ylabel('Rotational Transform \iota')
 			self.ax2.set_title('VMEC Rotational Transform Evolution')
+			self.ax2.set_xlim((0,1))
+		elif (plot_name == 'q-prof'):
+			l=0
+			dl = len(self.wout_files)
+			for string in self.wout_files:
+				if 'wout' in string:
+					vmec_data=read_vmec(self.workdir+string)
+					ns = vmec_data['ns']
+					nflux = np.ndarray((ns,1))
+					for j in range(ns): nflux[j]=j/(ns-1)
+					self.ax2.plot(nflux,1.0/vmec_data['iotaf'],color=_plt.cm.brg(l/dl))
+					l=l+1
+			self.ax2.set_xlabel('Norm Tor. Flux (s)')
+			self.ax2.set_ylabel('Safety Factor q')
+			self.ax2.set_title('VMEC Safety Factor Evolution')
 			self.ax2.set_xlim((0,1))
 		elif (plot_name == 'Current'):
 			l=0
@@ -1596,6 +1682,18 @@ class MyApp(QMainWindow):
 			self.ax2.set_xlabel('Norm Tor. Flux (s)')
 			self.ax2.set_ylabel('Effective Emissivity')
 			self.ax2.set_title('XICS Emissivity Profile')
+			self.ax2.set_xlim((0,1))
+		elif (plot_name == 'E-Static Potential'):
+			l=0
+			dl = len(self.dprof_files)
+			for string in self.dprof_files:
+				if 'dprof' in string:
+					dprof = np.loadtxt(self.workdir+string,skiprows=1)
+					self.ax2.plot(dprof[:,0],dprof[:,2],color=_plt.cm.brg(l/dl))
+					l=l+1
+			self.ax2.set_xlabel('Norm Tor. Flux (s)')
+			self.ax2.set_ylabel('E-Static Potential (V/m)')
+			self.ax2.set_title('Electrostatic Potential Profile')
 			self.ax2.set_xlim((0,1))
 		elif (plot_name == 'Bootstrap Profile'):
 			l=0
