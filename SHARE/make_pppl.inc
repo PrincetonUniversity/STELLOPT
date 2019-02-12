@@ -40,7 +40,7 @@
   MPI_COMPILE_C = mpicc
   MPI_LINK = mpicc -shared -pthread -Wl,--no-undefined -Wl,-export-dynamic
   MPI_RUN = srun
-  MPI_RUN_OPTS = -n 64 -p dawson -t 5:00:00
+  MPI_RUN_OPTS = -n 64 -p dawson -t 5:00:00 -J STELLOPT_BENCH
 
 #######################################################################
 #            NAG Options
