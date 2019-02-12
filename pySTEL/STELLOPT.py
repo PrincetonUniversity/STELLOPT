@@ -821,6 +821,7 @@ class MyApp(QMainWindow):
 			self.ui.ComboBoxOPTplot_type.addItem('I-prime')
 			self.ui.ComboBoxOPTplot_type.addItem('Current')
 			self.ui.ComboBoxOPTplot_type.addItem('Iota')
+			self.ui.ComboBoxOPTplot_type.addItem('q-prof')
 			self.ui.ComboBoxOPTplot_type.addItem('<j*B>')
 			self.wout_files = sorted([k for k in files if 'wout' in k])
 		# Handle Kinetic Profiles
@@ -1528,6 +1529,21 @@ class MyApp(QMainWindow):
 			self.ax2.set_xlabel('Norm Tor. Flux (s)')
 			self.ax2.set_ylabel('Rotational Transform \iota')
 			self.ax2.set_title('VMEC Rotational Transform Evolution')
+			self.ax2.set_xlim((0,1))
+		elif (plot_name == 'q-prof'):
+			l=0
+			dl = len(self.wout_files)
+			for string in self.wout_files:
+				if 'wout' in string:
+					vmec_data=read_vmec(self.workdir+string)
+					ns = vmec_data['ns']
+					nflux = np.ndarray((ns,1))
+					for j in range(ns): nflux[j]=j/(ns-1)
+					self.ax2.plot(nflux,1.0/vmec_data['iotaf'],color=_plt.cm.brg(l/dl))
+					l=l+1
+			self.ax2.set_xlabel('Norm Tor. Flux (s)')
+			self.ax2.set_ylabel('Safety Factor q')
+			self.ax2.set_title('VMEC Safety Factor Evolution')
 			self.ax2.set_xlim((0,1))
 		elif (plot_name == 'Current'):
 			l=0
