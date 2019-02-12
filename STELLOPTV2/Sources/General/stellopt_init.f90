@@ -108,6 +108,12 @@
               CLOSE(iunit)
          CASE('test')
               id_string = id_string(7:LEN(id_string))
+              ! We don't read indata but use it later so need to do some defaulting
+              pcurr_type = 'power_series'
+              piota_type = 'power_series'
+              pmass_type = 'power_series'
+              ph_type = 'power_series'
+              pt_type = 'power_series'
       END SELECT
       
       ! Count the number of variables and allocate the array
