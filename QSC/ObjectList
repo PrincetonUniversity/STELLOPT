@@ -1,0 +1,17 @@
+ObjectFiles = 	quasisymmetry_variables.o \
+	quasisymmetry.o \
+	QSC.o \
+	quasisymmetry_read_input.o \
+	quasisymmetry_init_phi.o \
+	quasisymmetry_init_axis.o \
+	quasisymmetry_validate_input.o \
+	quasisymmetry_single_solve.o \
+	quasisymmetry_solve.o \
+	quasisymmetry_Jacobian.o \
+	quasisymmetry_residual.o \
+	quasisymmetry_elongation.o \
+	quasisymmetry_differentiation_matrix.o \
+	quasisymmetry_fmin.o \
+	quasisymmetry_determine_helicity.o \
+	quasisymmetry_write_vmec_input.o \
+	quasisymmetry_write_output.o
