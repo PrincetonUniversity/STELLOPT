@@ -411,9 +411,6 @@
 
          tcon_mul = tcon_mul/((4*r0scale**2)**2)                   !!Scaling of ard, azd (2*r0scale**2); 
                                                                    !!Scaling of cos**2 in alias (4*r0scale**2)
-!         write(0,*)'bcovar. pwint(1,:)=',pwint(1,:)  !hm-11/20/18. out-11/26/18(7l19g).
-!         write(0,*)'pru0(1,:)=',pru0(1,:)
-
          tcon = tcon0
          DO js = MAX(2,tlglob), MIN(ns-1,trglob)
            arnorm = SUM(pwint(:,js)*pru0(:,js)**2)

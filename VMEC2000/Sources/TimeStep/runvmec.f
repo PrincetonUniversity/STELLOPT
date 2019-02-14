@@ -196,14 +196,8 @@ C-----------------------------------------------
 !
         CALL vsetup (iseq_count)
 
-        write(0,*)'hm-10/16.runvmec @ readin. input_file,iseq_count=',
-     +       trim(input_file),iseq_count
         CALL readin (input_file, iseq_count, ier_flag, lscreen)
         max_grid_size = ns_array(multi_ns_grid)
-
-        write(0,*)'runvmec aftr readin. raxis(0:2),raxis_cc(0:2)=',  !hm-9/20-2,10/18/18.
-     +       raxis(0:2),raxis_cc(0:2)
-        write(0,*)'rbc()=',rbc(0,0)
 
         IF (ier_flag .NE. 0) GOTO 1000
 !

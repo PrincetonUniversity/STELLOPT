@@ -29,8 +29,6 @@ subroutine quasisymmetry_write_vmec_input
 !!  call read_indata_namelist(iunit, istat)  !11/28/18.c-out
 !  read(iunit,nml=indata,iostat=istat)  !11/28/18.(7l21c) = core of rd_indata_namelist.
 
- write(0,*)'11/27-2.qs_wr_vm_inp f rd_indata_namelist. nzeta,ntor,ntord=',nzeta,ntor,ntord
-
 !  if (istat /= 0) then
 !     print "(a,a)"," Error reading &indata namelist from vmec_template_filename: ",trim(vmec_template_filename)
 !     stop
@@ -125,7 +123,6 @@ subroutine quasisymmetry_write_vmec_input
   write(iunit,'(a,a)') "! Based on template file ",trim(vmec_template_filename)
   write(iunit,'(a,es22.12)') "! r =",r
 
-  write(0,*)'11/27-3.qs_wr_vm_inp@ wr_indata. nzeta,ntor,ntord=',nzeta,ntor,ntord
   call write_indata_namelist(iunit, istat)
   if (istat /= 0) then
      print "(a,a)"," Error writing &indata namelist to new_vmec_filename: ",trim(new_vmec_filename)

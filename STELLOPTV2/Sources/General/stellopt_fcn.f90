@@ -155,7 +155,7 @@
          CALL unique_boundary_PG(rbc,zbs,deltamn,ntord,mpol1d,mpol-1,ntor)
       END IF
 
-      write(0,*)'unpack RBC/ZBS/RBS/ZBC'  !hm-11/13/18.
+!      write(0,*)'stel_fcn: unpack RBC/ZBS/RBS/ZBC'  !hm-11/13/18.
       ! Unpack RBC/ZBS/RBS/ZBC
       DO nvar_in = 1, n
          IF (var_dex(nvar_in) == ibound_rbc) rbc(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
@@ -189,7 +189,7 @@
 !10/18/18.place-1 for QSC(), mved blw. mved back-11/14/18(7l6), along w calc of proc_string.
       if (iflg1.ne.0)  then
          rbc = 0.   !hm-11/13/18.diagn.
-         write(0,*)'stel_fcn > QSC. proc_string=',trim(proc_string) !hm-9/23-1,10/18/18.
+         write(0,*)'stel_fcn @ QSC. proc_string=',trim(proc_string) !hm-9/23-1,10/18/18.
 !2/4/19.(8u3)
          if (any(raxis_cc(max_n+1:ntor).ne.0.0).or.any(zaxis_cs(max_n+1:ntor).ne.0.0)) then
             write(0,*)'0-ing RZaxis:raxis_cc=',raxis_cc(0:ntor)

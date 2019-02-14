@@ -50,28 +50,20 @@
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
-!      iflg1=1  !hm-9/11/18. 9/23/18(4b2).mved to &optimum.
-!      write(0,*)'hm-9/11/18-0.unit=0.iflg1=',iflg1
 
       chisq_min = bigno
       ier = 0
 
       ! Read the OPTIMUM Namelist
       CALL read_stellopt_input(TRIM(id_string),ier,myid)
-      write(0,*)'stel_init @ rd_neoin. iflg1,sg_neo(16),sigma_txport(1),nstep_max=', &
-           iflg1,sigma_neo(16),sigma_txport(1),nstep_max  !hm-12/31/18-1.
       CALL read_neoin_input(TRIM(id_string(7:LEN(id_string))),ier)  !12/28/18.(7m14b)fra chisq_neo().
-      write(0,*)'stel_init f rd_neoin. iflg1,sg_neo(16),sigma_txport(1),nstep_max=', &
-           iflg1,sigma_neo(16),sigma_txport(1),nstep_max  !hm-12/31/18-2.
       if (iflg1 == 1) then
          call quasisymmetry_read_input(id_string(7:LEN(id_string))) !12/5/18.(7l23e)
 !12/21/18.save init vals for [raxis_cc,..]=[R0c,..] to restore after rd_indata_namelist.
          raxis_cc_tmp=raxis_cc; raxis_cs_tmp=raxis_cs
          zaxis_cc_tmp=zaxis_cc; zaxis_cs_tmp=zaxis_cs
       endif
-!      write(0,*)'stel_init f read_stel_input.iflg1=',iflg1  !hm-9/23/18-0
-      write(0,*)'stel_init f qs_rd_input. iflg1,sg_neo(16),sigma_txport(1),nstep_max=', &
-           iflg1,sigma_neo(16),sigma_txport(1),nstep_max  !hm-12/31/18-3.
+      write(0,*)'stel_init f qs_rd_input. iflg1,nstep_max=',iflg1,nstep_max  !hm-12/31/18.
 
       CALL bcast_vars(master,MPI_COMM_STEL,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'stellot_init:bcast_vars',ierr_mpi)
@@ -98,27 +90,20 @@
 !  hm-10/21/18.(6e20.e)iflg1=1 sec mved here fra blw.
                  if (iflg1 == 1) then  !hm-9/11/18.rd in init input file, & call QSC.
                     input_file= "input."//TRIM(id_string)
-                    write(0,*)'id_string=',trim(id_string),'  input_file=',trim(input_file) !hm-9/13-1,10/24-1
-                    write(0,*)'stel_init,just bfr read_indata()'  !hm-9/11-1.
+                    write(0,*)'stel_init. id_string=',trim(id_string) !hm-9/13-1,10/24-1
                     CALL safe_open(iunit,ier,'input.'//TRIM(id_string),'old','formatted') !out-(3k1).in-(6e20j)
 !                    CALL vsetup (myid)       !10/22/18.(6e20f)fra runvmec(). out-(6e20g)
 !                    CALL readin (input_file, myid, ier,.false.)     !(6e20f). out-(6e20h)
 !                 CALL read_indata(input_file, iunit, ier)  !hm-9/13/18.(3i1,3k1).6/20/18.out(6e20).
 !                 CALL read_namelist (iunit, ier, 'indata')  !hm-9/11,13/18.(3h,3i2).
-                    write(0,*)'@ read_indata_namelist. iunit,input_file=',iunit,trim(input_file)!(6e20j)
                     CALL read_indata_namelist(iunit,ier)   !hm-9/14/18(3i3),10/20(6e20b),10/23(6e20h).
                     close(iunit)
 !12/21/18.(7m12c)restore vals of [raxis_cc,..] to [R0c,..] fra qs_rd_input.
                     raxis_cc=raxis_cc_tmp; raxis_cs=raxis_cs_tmp
                     zaxis_cc=zaxis_cc_tmp; zaxis_cs=zaxis_cs_tmp
 
-                    write(0,*)'stel_init. raxis(0:2),raxis_cc(0:2)=',  &      !hm-9/20-1.
-                         raxis(0:2),raxis_cc(0:2)
-                    write(0,*)'rbc()=',rbc(0,0)
-                    !                 write(0,*)'hm-9/11-2.unit=0. raxis(1)=',raxis_cc(1)
-                    cmd1 = "cp ../input.qsc0 input."//TRIM(id_string)
-                    write(0,*)"stel_init, bfr QSC: iunit,cmd1=",iunit,trim(cmd1)  !10/24/18.(6e20j)
-                    !                 call system(cmd1) !dummy for QSC
+!                    cmd1 = "cp ../input.qsc0 input."//TRIM(id_string) !10/24/18.(6e20j).out-2/12/19.
+!                    call system(cmd1) !dummy for QSC
 !                    call quasisymmetry_read_input(id_string)!10/28/18.(6e21d).(7k1,7l23e)c-out
                     call QSC(id_string)   !9/26/18. 10/14/18.id_string in.       "
                  endif
@@ -1466,7 +1451,6 @@
 
       ! Now initalize the targets
       mtargets = 1
-      write(0,*)'@ stel_load_targ-1. mtargets,ier=',mtargets,ier  !hm-10/24/18.(6e20j)
       CALL stellopt_load_targets(mtargets,fvec_temp,ier,-1)          ! Count
 !      write(0,*)'@ stel_load_targ-2. mtargets,ier=',mtargets,ier  !hm-10/24/18.(6e20j)
       ALLOCATE(vals(mtargets),targets(mtargets),sigmas(mtargets),target_dex(mtargets))

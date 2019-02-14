@@ -50,7 +50,7 @@ subroutine quasisymmetry_single_solve
      last_max_elongation = max_elongation
 
      new_N_phi = N_phi * 2 + 1
-     write(0,*)'qs_single. new_N_phi,N_phi,ntor=',new_N_phi,N_phi,ntor  !1/23/19.(8k11g)
+!     write(0,*)'qs_single. new_N_phi,N_phi,ntor=',new_N_phi,N_phi,ntor  !1/23/19.(8k11g)
      if (new_N_phi > max_N_phi) then
         if (verbose) print *,"Stopping N_phi refinement since max_N_phi exceeded."
         exit
