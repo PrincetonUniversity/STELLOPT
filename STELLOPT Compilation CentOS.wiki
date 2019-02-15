@@ -5,31 +5,31 @@ This page details how to compile the STELLOPT family of codes on [[@https://www.
 Installation Steps
 # Verify that your version of CentOS is up to date.
 # Use [[@http://yum.baseurl.org/|yum]] to install your packages. For this example we're using gfortran 4.4 but you may substitute any other version.
-# [[code]]
+{{{
 yum install gcc*
 yum install openmpi*
 yum install lapack*
-[[code]]
+}}}
 # Now we need to install external packages. Pleas visit the [[@http://fedoraproject.org/wiki/EPEL|Fedora page]] for the latest stable version of the EPEL.
-# [[code]]
+{{{
 wget http://mirrors.mit.edu/epel/6/i386/epel-release-6-8.noarch.rpm
 rpm -Uvh epel-release-6-8.noarch.rpm
 yum -assumeyes install netcdf*
 yum install ncl*
 yum install hdf5*
-[[code]]
+}}}
 # Before compiling you'll need to load openmpi
-> [[code]]
+{{{
 module load openmpi-x86_64
-[[code]]
+}}}
 # Now create a directory in which you wish to compile STELLOPT and place the STELLOPT ZIP file in that directory. Then unzip it.
 # You'll need to install the [[@http://w3.pppl.gov/ntcc/PSPLINE/|PSPLINE library]] so create a new directory call PSPLINE and download the PSPLINE tarball into it. Then run the following commands (note use gmake, make causes problems)
-# [[code]]
+{{{
 mkdir PSPLINE
 cd PSPLINE
 cp <PATH_TO_PSLINE>/pspline.tar.gz .
 tar xvf pspline.tar.gz
 gmake FORTRAN_VARIANT=GCC LIBDIR=/usr/lib64 NETCDF_DIR=/usr/
-[[code]]
+}}}
 # Unzip stellinstall
 # Now you should be able to run the setup script and compile the STELLOPT family of codes.
