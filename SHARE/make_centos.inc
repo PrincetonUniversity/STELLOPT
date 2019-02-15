@@ -1,6 +1,9 @@
 #######################################################################
 #            Define Basic Utilities
 #######################################################################
+  CC = /usr/lib64/openmpi/bin/mpicc
+  FC = /usr/lib64/openmpi/bin/mpifort
+
   SHELL = /bin/sh
   PWD1 = `pwd`
   MYHOME = /bin
@@ -23,11 +26,11 @@
 #            MPI Options
 #######################################################################
   LMPI    = T
-  MPI_COMPILE = mpif90
+  MPI_COMPILE = $(FC)
   MPI_COMPILE_FREE = mpif90 -ffree-form \
                      -ffree-line-length-none -ffixed-line-length-none
-  MPI_COMPILE_C = mpicc
-  MPI_LINK = mpif90
+  MPI_COMPILE_C = $(CC)
+  MPI_LINK = $(FC)
 
 #######################################################################
 #            NAG Options
