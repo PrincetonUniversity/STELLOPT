@@ -17,6 +17,8 @@ pipelines:
           - ln -Ffs SHARE/make_centos.inc make.inc
           - cd LIBSTELL
           - make clean_release
+          - cd ../VMEC2000
+          - make clean_release
 #          - ./build_all
 #          - cd LIBSTELL
 #          - make shared_release
