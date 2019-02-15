@@ -18,7 +18,7 @@
 #  FLAGS_R = -O2 -g -fexternal-blas -fbacktrace -fcheck=all 
   FLAGS_R = -g -O2 -fexternal-blas -fbacktrace -I/usr/include
   FLAGS_D = -g -O0 -fexternal-blas -fcheck=all -I/usr/include
-  LIBS    = 
+  LIBS    = /lib64/libopenblas.so.0
 
 #######################################################################
 #            MPI Options
