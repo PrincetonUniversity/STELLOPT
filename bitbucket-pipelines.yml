@@ -10,7 +10,6 @@ pipelines:
     - step:
         script: # Modify the commands below to build your repository.
           - echo "Test"
-          - rm make.inc
           - ln -Ff SHARE/make_centos.inc make.inc
           - cd LIBSTELL
           - make clean_release
