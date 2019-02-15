@@ -10,7 +10,7 @@ Installation Steps
 <===gcc7 version===>
 
 sudo port install gcc7
-sudo port install openmpi
+sudo port install openmpi       (may want to specify +gcc7 variant as it lists gcc8 as a dependency) 
 sudo port install hdf5 +fortran +gcc7 +hl +openmpi
 sudo port install netcdf +gcc7 +openmpi 
 sudo port install netcdf-fortran +gcc7 +openmpi
