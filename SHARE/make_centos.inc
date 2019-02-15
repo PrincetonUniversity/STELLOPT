@@ -58,7 +58,12 @@
 #######################################################################
   LHDF5 = T
   HDF5_INC = 
-  HDF5_LIB = 
+  HDF5_LIB = -L/usr/lib64/openmpi/lib \
+              /usr/lib64/openmpi/lib/libhdf5hl_fortran.so \
+              /usr/lib64/openmpi/lib/libhdf5_hl.so \
+              /usr/lib64/openmpi/lib/libhdf5_fortran.so \
+              /usr/lib64/openmpi/lib/libhdf5.so \
+              -Wl,-z,relro -lsz -lz -ldl -lm -Wl,-rpath -Wl,/usr/lib64/openmpi/lib
 
 #######################################################################
 #             PGPLOT Options
