@@ -1,8 +1,6 @@
 #######################################################################
 #            Define Basic Utilities
 #######################################################################
-  CC = /usr/lib64/openmpi/bin/mpicc
-  FC = /usr/lib64/openmpi/bin/mpifort
 
   SHELL = /bin/sh
   PWD1 = `pwd`
