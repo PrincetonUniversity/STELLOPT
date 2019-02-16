@@ -61,6 +61,8 @@ sudo port install scalapack +gcc8 +openmpi +openblas
 # NOTE2:  the soft-link for mpifort is broken here.  Redirect it to mpifort-openmpi-gcc8 using
 # sudo rm /opt/local/bin/mpifort
 # sudo ln -sf /opt/local/bin/mpifort-openmpi-gcc8 /opt/local/bin/mpifort
+# 
+# NOTE3: if you run into ld x86-64 architecture linking errors, remove all object / mod files (*.o/*.mod) and recompile.
 
 # MOJAVE SUPPORT: 
 OSX MOJAVE does not support universal build architectures (64-bit only). Change the line in /opt/local/macports.conf to x86_64 or bust.  Also to avoid x86_64 linking errors, you must remove all precompiled *.o files before building clean. 
