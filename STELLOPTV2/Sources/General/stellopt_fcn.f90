@@ -189,7 +189,6 @@
 !10/18/18.place-1 for QSC(), mved blw. mved back-11/14/18(7l6), along w calc of proc_string.
       if (iflg1.ne.0)  then
          rbc = 0.   !hm-11/13/18.diagn.
-         write(0,*)'stel_fcn @ QSC. proc_string=',trim(proc_string) !hm-9/23-1,10/18/18.
 !2/4/19.(8u3)
          if (any(raxis_cc(max_n+1:ntor).ne.0.0).or.any(zaxis_cs(max_n+1:ntor).ne.0.0)) then
             write(0,*)'0-ing RZaxis:raxis_cc=',raxis_cc(0:ntor)
@@ -201,7 +200,6 @@
          zaxis_cc_tmp=zaxis_cc; zaxis_cs_tmp=zaxis_cs
 
          call QSC(proc_string)  !9/26/18. 10/18/18.chged arg xtqsc->proc_string. (7k2)c-out.
-         write(0,*)'f QSC,bfr restore: nzeta,ntheta3,nznt=',nzeta,ntheta3,nznt !11/26,28/18.(7l19f, 7l21c)
 !      end if  !out-12/4/18.
       else  ! JBres-12/4/18.(7l22g)
 

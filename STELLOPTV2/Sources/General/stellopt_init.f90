@@ -63,7 +63,6 @@
          raxis_cc_tmp=raxis_cc; raxis_cs_tmp=raxis_cs
          zaxis_cc_tmp=zaxis_cc; zaxis_cs_tmp=zaxis_cs
       endif
-      write(0,*)'stel_init f qs_rd_input. iflg1,nstep_max=',iflg1,nstep_max  !hm-12/31/18.
 
       CALL bcast_vars(master,MPI_COMM_STEL,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'stellot_init:bcast_vars',ierr_mpi)

@@ -27,8 +27,6 @@ subroutine quasisymmetry_read_input(xt)
   ! getcarg is in LIBSTELL
   !  call getcarg(1, input_filename, numargs)
   numargs=1   !hm-10/15/18.
-  write(0,*)'qs_rd_input. xtqsc=',trim(xtqsc)
-!  input_filename="quasisymmetry_in." // xtqsc
   input_filename="input." // xtqsc  !10/28/18.(6e21d)
 
 !  if (numargs<1) then  !c-out-10/28/18.
