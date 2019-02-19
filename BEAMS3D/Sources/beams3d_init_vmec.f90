@@ -226,18 +226,13 @@
       myend   = mystart + chunk - 1
 !DEC$ ENDIF
 	
+      TE = 0; NE = 0; TI=0; S_ARR=1.5; U_ARR=0; POT_ARR=0
       DO s = mystart, myend
          i = MOD(s-1,nr)+1
          j = MOD(s-1,nr*nphi)
          j = FLOOR(REAL(j) / REAL(nr))+1
          k = CEILING(REAL(s) / REAL(nr*nphi))
          sflx = 0.0
-         TE(i,j,k) = 0
-         NE(i,j,k) = 0
-         TI(i,j,k) = 0
-         S_ARR(i,j,k) = 1.5
-         U_ARR(i,j,k) = 0
-         POT_ARR(i,j,k) = 0
          ! The GetBcyl Routine returns -3 if cyl2flx thinks s>1
          ! however, if cyl2flx fails to converge then s may be
          ! greater than 1 but cyl2flux won't throw the -3 code.
@@ -262,10 +257,12 @@
                B_Z(i,j,k)   = bz
                sflx = 1 ! Assume s=1 for lplasma_only
             END IF
-            IF (nte > 0) CALL EZspline_interp(TE_spl_s,sflx,TE(i,j,k),ier)
-            IF (nne > 0) CALL EZspline_interp(NE_spl_s,sflx,NE(i,j,k),ier)
-            IF (nti > 0) CALL EZspline_interp(TI_spl_s,sflx,TI(i,j,k),ier)
-            IF (npot > 0) CALL EZspline_interp(POT_spl_s,sflx,POT_ARR(i,j,k),ier)
+            IF (sflx <= 1) THEN
+               IF (nte > 0) CALL EZspline_interp(TE_spl_s,sflx,TE(i,j,k),ier)
+               IF (nne > 0) CALL EZspline_interp(NE_spl_s,sflx,NE(i,j,k),ier)
+               IF (nti > 0) CALL EZspline_interp(TI_spl_s,sflx,TI(i,j,k),ier)
+               IF (npot > 0) CALL EZspline_interp(POT_spl_s,sflx,POT_ARR(i,j,k),ier)
+            END IF
          ELSE IF (lplasma_only) THEN
             B_R(i,j,k)   = 0
             B_PHI(i,j,k) = 1
@@ -289,13 +286,13 @@
             ELSE
                WRITE(6,*) myworkid,mylocalid,i,j,k,ier
             END IF
-         ELSE
+         !ELSE
             ! This is an error code check
-            PRINT *,'ERROR in GetBcyl Detected'
-            PRINT *,'R,PHI,Z',raxis_g(i),phiaxis(j),zaxis_g(k)
-            print *,'br,bphi,bz,myworkid',br,bphi,bz,mylocalid
-            CALL FLUSH(6)
-            stop 'ERROR in GetBcyl'
+            !PRINT *,'ERROR in GetBcyl Detected'
+            !PRINT *,'R,PHI,Z',raxis_g(i),phiaxis(j),zaxis_g(k)
+            !print *,'br,bphi,bz,myworkid',br,bphi,bz,mylocalid
+            !CALL FLUSH(6)
+            !stop 'ERROR in GetBcyl'
          END IF
          IF (lverb .and. (MOD(s,nr) == 0)) THEN
             CALL backspace_out(6,6)
