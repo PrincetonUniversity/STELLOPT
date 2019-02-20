@@ -29,7 +29,7 @@ sudo port install silo +gccX -hdf5
 sudo port install gsl +gccX +optimize
 # The following is for Python support
 sudo port install python37 +gccX
-sudo port install py37-pyqt4 +gcc7
+sudo port install py37-pyqt4 +gccX     (Note there is a weird issue with dbus requireing the port to be force installed)
 sudo port install py37-matplotlib +dvipng +pyside +qt4 +gccX
 # The following are needed for GENE
 sudo port install fftw-3 +gccX +openmpi
