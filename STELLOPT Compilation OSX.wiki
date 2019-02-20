@@ -22,7 +22,8 @@ sudo port install netcdf-fortran +gccX +openmpi
 sudo port install pgplot +gccX
 sudo port install OpenBLAS +gccX +lapack
 sudo port install scalapack +gccX +openmpi +openblas
-sudo port install ncarg +gccX +openmpi
+# NCARG has in issue with ESMF, but you don't need it for STELLOPT just XGTOVMI
+#sudo port install ncarg +gccX +openmpi
 # The following are needed for COILOPT++
 sudo port install silo +gccX +hdf5
 sudo port install gsl +gccX +optimize
