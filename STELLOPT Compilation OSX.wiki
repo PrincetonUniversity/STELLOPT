@@ -8,7 +8,7 @@ Installation Steps
 
      2. Download and install [[@https://www.macports.org/|MacPorts]]. Please note we're assuming you'll be using the default location for installation of the various ports. If not you'll need to change the path to the variable MACPORTS in the setup script (and rezip).
 
-     3. Use MacPorts to install your packages. For this example we're using gfortran 4.9 but you may substitute any other version. I've also chosen OpenMPI but the sources could also be built with MPICH.
+     3. Use MacPorts to install your packages. Note you should probably used gcc7 or gcc8 and replace the gccX's with the consistent version.  I've also chosen OpenMPI but the sources could also be built with MPICH.
 {{{
 <===gccX version===>
 
