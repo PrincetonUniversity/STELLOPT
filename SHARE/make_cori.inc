@@ -14,7 +14,7 @@
 #######################################################################
 #            Define Compiler Flags
 #######################################################################
-  FLAGS_R = -fp-model strict -assume noold_unit_star -cxxlib
+  FLAGS_R = -fp-model strict -assume noold_unit_star -cxxlib 
   FLAGS_D = -g -dynamic -traceback -fp-model strict -assume noold_unit_star -cxxlib
   LIBS    = 
 
