@@ -139,7 +139,7 @@ INCLUDE 'mpif.h'
     iter = 0
     ! Main BFGS loop - See algorithm 6.1 Nocedal & Wright
 		exit_code = -1
-    do while ((enorm(n,grad_curr)>gtol) .and. (f_curr > ftol) .and. (nfev < maxfev))
+    do while (nfev < maxfev)
 			if (enorm(n,grad_curr)<gtol) then
 				exit_code = 1
 				exit
