@@ -1721,7 +1721,8 @@
          WRITE(iunit,"(2X,A,1X,'=',5(1X,E22.14))") 'EMIS_XICS_F',(emis_xics_f(n), n=1,ik)
       END IF
       ! E-static potential
-      ik = MINLOC(phi_aux_s(2:),DIM=1)
+      ik = find_last_nonzero(phi_aux_s)
+      !ik = MINLOC(phi_aux_s(2:),DIM=1)
       IF (ik > 2) THEN
          WRITE(iunit,outstr) 'PHI_TYPE',TRIM(phi_type)
          WRITE(iunit,"(2X,A,1X,'=',5(1X,E22.14))") 'PHI_AUX_S',(phi_aux_s(n), n=1,ik)
@@ -2633,6 +2634,7 @@
       INTEGER :: n, ik
       CHARACTER(LEN=*), PARAMETER :: vecvar  = "(2X,A,'(',I3.3,')',1X,'=',1X,L1,2(2X,A,'(',I3.3,')',1X,'=',1X,ES22.12E3))"
       
+      norm = ABS(norm)
       IF (norm == 0) norm = 1
       IF (ANY(lvar)) THEN
         lname   = 'L'//TRIM(str_name)//'_OPT'
@@ -2650,5 +2652,16 @@
       END IF
       RETURN
       END SUBROUTINE write_stel_lvar_vec
+
+      INTEGER FUNCTION find_last_nonzero(arr_in)
+      IMPLICIT NONE
+      REAL(rprec), INTENT(in) :: arr_in(:)
+      INTEGER :: n, ik
+      find_last_nonzero = 0
+      DO ik = LBOUND(arr_in,DIM=1), UBOUND(arr_in,DIM=1)
+         IF (arr_in(ik) .ne. 0) find_last_nonzero=ik
+      END DO
+      RETURN
+      END FUNCTION find_last_nonzero
       
       END MODULE stellopt_input_mod
