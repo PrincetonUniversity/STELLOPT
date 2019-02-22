@@ -69,7 +69,6 @@
   alpha = alpha_backtrack
 
   grad_dot_p = dot_product(grad_curr,p_curr)
-  print *,"grad_dot_p: ", grad_dot_p
   if (grad_dot_p >= 0) then
     write(*,"(A)") "Warning. Backtrack was not called with a descent direction. A steepest descent step will be taken (scaled by beta_hess)"
     p_curr = -grad_curr*beta_hess
@@ -101,8 +100,6 @@
 
   niter = 0
   ! Test Armijo condition
-  print *,"f_curr + c_armijo*alpha*grad_dot_p: ", f_curr + c_armijo*alpha*grad_dot_p
-	print *,"f_new: ", f_new
 	exit_flag = 0
   do while (f_new > (f_curr + c_armijo*alpha*grad_dot_p))
     alpha = rho_backtrack*alpha
@@ -130,10 +127,6 @@
     iflag =  FLAG_CLEANUP_LEV
     CALL fcn (m,n,x_new,fvec_new,iflag,nfev)
     nfev = nfev+1
-    print *,"niter: ", niter
-    print *,"alpha: ", alpha
-    print *,"f_curr + c_armijo*alpha*grad_dot_p: ", f_curr + c_armijo*alpha*grad_dot_p
-    print *,"f_new: ", f_new
     f_new = (enorm(m,fvec_new))**2
     niter = niter + 1
   end do
