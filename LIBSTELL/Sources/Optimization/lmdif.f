@@ -40,7 +40,7 @@ C   L o c a l   P a r a m e t e r s
 C-----------------------------------------------
       REAL(rprec), PARAMETER :: zero = 0, one = 1,
      1   p1=0.1_dp, p5=0.5_dp, p25=0.25_dp, p75=0.75_dp, p0001=1.e-4_dp
-      CHARACTER(LEN=130), DIMENSION(0:12) :: info_array 
+      CHARACTER(LEN=130), DIMENSION(0:13) :: info_array 
 C-----------------------------------------------
 C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
@@ -265,6 +265,10 @@ c     Get mpi parameters
      A"Levenberg-Marquardt terminated prematurely: " //
      A"because of bad Jacobian" 
 
+      info_array(13) = 
+     1"improper input parameters " //
+     1"X_MIN < X_MAX"
+
 
 !DEC$ IF DEFINED (MPI_OPT)
       IF (numprocs > n) THEN
@@ -322,6 +326,13 @@ c     Get mpi parameters
          DO j = 1, n
             IF (diag(j) .le. zero) GOTO 300
          END DO
+      END IF
+
+      IF (PRESENT(xvmin) .AND. PRESENT(xvmax)) THEN
+         DO j = 1, n
+            IF (xvmin(j) .ge. xvmax(j)) info = 13
+         END DO
+         IF (info > 0) GOTO 400
       END IF
 
 !     Set up workers communicator (only master processor here) for initial run
