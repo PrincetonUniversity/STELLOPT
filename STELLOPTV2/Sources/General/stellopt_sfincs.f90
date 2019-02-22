@@ -297,7 +297,7 @@
                         WRITE (UNIT=unit_out,FMT='(A,ES24.14)') '  Er = ',sfincs_Er(radius_index)
                      END IF
 
-										 IF (TRIM(file_line_lower)=='&sensitivityoptions') THEN
+										 IF (TRIM(file_line_lower)=='&adjointoptions') THEN
 												IF (lsfincs_bootstrap_analytic) THEN
 													DO m = 0, sfincs_mmax
 														DO n = -sfincs_nmax,sfincs_nmax
@@ -311,7 +311,7 @@
 															END IF
 														END DO
 													END DO
-													WRITE (UNIT=unit_out,FMT='(A)') '&sensitivityOptions'
+													WRITE (UNIT=unit_out,FMT='(A)') '&adjointOptions'
 													WRITE (UNIT=unit_out,FMT='(A,L)') '   adjointBootstrapOption = T'
 													WRITE (UNIT=unit_out,FMT='(A)') '		nMinAdjoint = 0'
 													WRITE (UNIT=unit_out,FMT='(A,I3)') '		nMaxAdjoint = ',sfincs_nMaxAdjoint
@@ -334,7 +334,7 @@
                      ! Handle variables that should NOT be copied:
 										 IF (file_line_lower(1:7)=='rhsmode') CYCLE
                      IF (file_line_lower(1:8)=='&general') CYCLE
-                     IF (file_line_lower(1:19)=='&sensitivityoptions') CYCLE
+                     IF (file_line_lower(1:19)=='&adjointoptions') CYCLE
                      IF (file_line_lower(1:18)=='&physicsparameters') CYCLE
                      IF (file_line_lower(1:14)=='geometryscheme') CYCLE
                      IF (file_line_lower(1:15)=='equilibriumfile') CYCLE
