@@ -55,7 +55,7 @@ INCLUDE 'mpif.h'
 !   L o c a l   V a r i a b l e s
 !-----------------------------------------------
   REAL(rprec) :: fnorm, f_new, fvec(m)
-  INTEGER :: iflag, istat, iunit, ikey, nvar, iter, nvar1, nvar2
+  INTEGER :: iflag, istat, iunit, ikey, nvar, iter, nvar1, nvar2, exit_code
   REAL(rprec) :: hess(n,n), f_curr, grad_curr(n), y_curr(m), s_curr(n)
   REAL(rprec) :: eye(n,n), rho_curr, p_curr(n), x_new(n)
   REAL(rprec) :: s_s_outer(n,n), s_y_outer(n,n), mat1(n,n), mat2(n,n)
@@ -138,7 +138,16 @@ INCLUDE 'mpif.h'
 
     iter = 0
     ! Main BFGS loop - See algorithm 6.1 Nocedal & Wright
+		exit_code = -1
     do while ((enorm(n,grad_curr)>gtol) .and. (f_curr > ftol) .and. (nfev < maxfev))
+			if (enorm(n,grad_curr)<gtol) then
+				exit_code = 1
+				exit
+			end if
+			if (f_curr<ftol) then
+				exit_code = 2
+				exit
+			end if
       ! Compute search direction
       p_curr = -matmul(hess,grad_curr)
 
@@ -177,6 +186,15 @@ INCLUDE 'mpif.h'
       grad_curr = grad_new
       iter = iter + 1
     end do
+		if (exit_code==1) then
+			write(*,"(A)") "BFGS_analytic terminated due to gtol."
+		elseif (exit_code==2) then
+			write(*,"(A)") "BFGS_analaytic terminated due to ftol."
+		elseif (exit_code==-1) then
+			write(*,"(A)") "BFGS_analytic terminated due to nfev."
+		else
+			write(*,"(A)") "BFGS_analytic terminated for an unknown reason."
+		end if
 
     write(*,"(A,I2,A)") "BFGS_analytic terminated in ", iter, " iterations."
     write(*,"(A,E22.14)") "Function value: ", f_curr
