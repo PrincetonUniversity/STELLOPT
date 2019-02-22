@@ -1689,10 +1689,10 @@ class MyApp(QMainWindow):
 			for string in self.dprof_files:
 				if 'dprof' in string:
 					dprof = np.loadtxt(self.workdir+string,skiprows=1)
-					self.ax2.plot(dprof[:,0],dprof[:,2],color=_plt.cm.brg(l/dl))
+					self.ax2.plot(dprof[:,0],dprof[:,2]/1000,color=_plt.cm.brg(l/dl))
 					l=l+1
 			self.ax2.set_xlabel('Norm Tor. Flux (s)')
-			self.ax2.set_ylabel('E-Static Potential (V/m)')
+			self.ax2.set_ylabel('E-Static Potential (kV)')
 			self.ax2.set_title('Electrostatic Potential Profile')
 			self.ax2.set_xlim((0,1))
 		elif (plot_name == 'Bootstrap Profile'):
