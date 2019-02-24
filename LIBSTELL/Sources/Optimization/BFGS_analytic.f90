@@ -56,7 +56,7 @@ INCLUDE 'mpif.h'
 !-----------------------------------------------
   REAL(rprec) :: fnorm, f_new, fvec(m)
   INTEGER :: iflag, istat, iunit, ikey, nvar, iter, nvar1, nvar2, exit_code
-  REAL(rprec) :: hess(n,n), f_curr, grad_curr(n), y_curr(m), s_curr(n)
+  REAL(rprec) :: hess(n,n), f_curr, grad_curr(n), y_curr(n), s_curr(n)
   REAL(rprec) :: eye(n,n), rho_curr, p_curr(n), x_new(n)
   REAL(rprec) :: s_s_outer(n,n), s_y_outer(n,n), mat1(n,n), mat2(n,n)
   REAL(rprec) :: grad_new(n)
@@ -120,7 +120,6 @@ INCLUDE 'mpif.h'
 
     ! Compute value of objective function
     f_curr = fnorm**2
-    write(*,"(A,E22.14)") "Initial function value: ", f_curr
 
     ! Compute gradient of objective function
     ! f_curr = sum(fvec^2)
