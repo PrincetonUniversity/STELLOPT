@@ -208,6 +208,7 @@
 			LOGICAL :: lsfincs_bootstrap_analytic = .false.
       ! Logical determining if RHSMode = 5 used (derivatives at ambipolarity)
       LOGICAL :: lsfincs_ambipolar_option = .false.
+			LOGICAL :: lsfincs_evaluate_profiles = .false.
 			REAL(rprec), DIMENSION(ndatafmax) :: sfincs_iota, sfincs_GHat, sfincs_IHat
 			REAL(rprec) :: sfincs_aHat, sfincs_psiAHat
       REAL(rprec), DIMENSION(ndatafmax) :: sfincs_Er

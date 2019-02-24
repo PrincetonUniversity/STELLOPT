@@ -231,7 +231,7 @@
 !						 SFINCS related variables
 !													lsfincs_boozer_bmnc_opt, &
 !													dsfincs_boozer_bmnc_opt, sfincs_boozer_bmnc_min, &
-!													sfincs_boozer_bmnc_max
+!													sfincs_boozer_bmnc_max, lsfincs_evaluate_profiles
 !      
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -404,7 +404,7 @@
 												 sfincs_aHat, sfincs_psiAHat, sfincs_nperiods, &
 												 lsfincs_bootstrap_analytic, c_armijo, rho_backtrack, &
                          alpha_backtrack, beta_hess, alpha_min, lsfincs_ambipolar_option, &
-                         sfincs_Er
+                         sfincs_Er, lsfincs_evaluate_profiles
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -542,6 +542,7 @@
       dregcoil_rcws_zbound_c_opt = -1.0
       dregcoil_rcws_zbound_s_opt = -1.0
 			lsfincs_boozer_bmnc_opt = .FALSE.
+			lsfincs_evaluate_profiles = .FALSE.
 			dsfincs_boozer_bmnc_opt = -1.0
       sfincs_Er = 0 
 

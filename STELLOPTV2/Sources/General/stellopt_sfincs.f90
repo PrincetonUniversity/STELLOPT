@@ -179,34 +179,36 @@
                !print *,directory_string
                ier=0 ! This variable needs to be initialized to 0. Otherwise the get_equil_* routines randomly quit.
 
-               ! Evaluate density, temperature, and their gradients at the flux surface of interest:
-               ! For now, use finite differencing to get gradients.
-               delta_s = 1.0d-4
-               CALL get_equil_ne(sfincs_s(radius_index) + delta_s,TRIM(ne_type),temp1,ier)
-               CALL get_equil_ne(sfincs_s(radius_index) - delta_s,TRIM(ne_type),temp2,ier)
-               sfincs_d_ne_d_s = (temp1-temp2) / (2*delta_s)
+							 if (lsfincs_evaluate_profiles) then
+								 ! Evaluate density, temperature, and their gradients at the flux surface of interest:
+								 ! For now, use finite differencing to get gradients.
+								 delta_s = 1.0d-4
+								 CALL get_equil_ne(sfincs_s(radius_index) + delta_s,TRIM(ne_type),temp1,ier)
+								 CALL get_equil_ne(sfincs_s(radius_index) - delta_s,TRIM(ne_type),temp2,ier)
+								 sfincs_d_ne_d_s = (temp1-temp2) / (2*delta_s)
 
-               CALL get_equil_Te(sfincs_s(radius_index) + delta_s,TRIM(Te_type),temp1,ier)
-               CALL get_equil_Te(sfincs_s(radius_index) - delta_s,TRIM(Te_type),temp2,ier)
-               sfincs_d_Te_d_s = (temp1-temp2) / (2*delta_s)
+								 CALL get_equil_Te(sfincs_s(radius_index) + delta_s,TRIM(Te_type),temp1,ier)
+								 CALL get_equil_Te(sfincs_s(radius_index) - delta_s,TRIM(Te_type),temp2,ier)
+								 sfincs_d_Te_d_s = (temp1-temp2) / (2*delta_s)
 
-               CALL get_equil_Ti(sfincs_s(radius_index) + delta_s,TRIM(Ti_type),temp1,ier)
-               CALL get_equil_Ti(sfincs_s(radius_index) - delta_s,TRIM(Ti_type),temp2,ier)
-               sfincs_d_Ti_d_s = (temp1-temp2) / (2*delta_s)
+								 CALL get_equil_Ti(sfincs_s(radius_index) + delta_s,TRIM(Ti_type),temp1,ier)
+								 CALL get_equil_Ti(sfincs_s(radius_index) - delta_s,TRIM(Ti_type),temp2,ier)
+								 sfincs_d_Ti_d_s = (temp1-temp2) / (2*delta_s)
 
-               CALL get_equil_ne(sfincs_s(radius_index),TRIM(ne_type),sfincs_ne,ier)
-               CALL get_equil_Te(sfincs_s(radius_index),TRIM(Te_type),sfincs_Te,ier)
-               CALL get_equil_Ti(sfincs_s(radius_index),TRIM(Ti_type),sfincs_Ti,ier)
-               ! Convert density and temperature to SFINCS normalization.
-               sfincs_ne = sfincs_ne / (1.0d+20)
-               sfincs_d_ne_d_s = sfincs_d_ne_d_s / (1.0d+20)
-               sfincs_ni = sfincs_ne
-               sfincs_d_ni_d_s = sfincs_d_ne_d_s
-               ! Stellopt temperature normalization is 1 
-               sfincs_Te = sfincs_Te / 1000
-               sfincs_Ti = sfincs_Ti / 1000
-               sfincs_d_Te_d_s = sfincs_d_Te_d_s / 1000
-               sfincs_d_Ti_d_s = sfincs_d_Ti_d_s / 1000
+								 CALL get_equil_ne(sfincs_s(radius_index),TRIM(ne_type),sfincs_ne,ier)
+								 CALL get_equil_Te(sfincs_s(radius_index),TRIM(Te_type),sfincs_Te,ier)
+								 CALL get_equil_Ti(sfincs_s(radius_index),TRIM(Ti_type),sfincs_Ti,ier)
+								 ! Convert density and temperature to SFINCS normalization.
+								 sfincs_ne = sfincs_ne / (1.0d+20)
+								 sfincs_d_ne_d_s = sfincs_d_ne_d_s / (1.0d+20)
+								 sfincs_ni = sfincs_ne
+								 sfincs_d_ni_d_s = sfincs_d_ne_d_s
+								 ! Stellopt temperature normalization is 1
+								 sfincs_Te = sfincs_Te / 1000
+								 sfincs_Ti = sfincs_Ti / 1000
+								 sfincs_d_Te_d_s = sfincs_d_Te_d_s / 1000
+								 sfincs_d_Ti_d_s = sfincs_d_Ti_d_s / 1000
+							 end if
 
                IF (myRank_sfincs == 0) THEN
                   CALL SYSTEM('mkdir -p '//TRIM(directory_string)) ! -p mutes the warning printed if the directory already exists.
@@ -260,8 +262,8 @@
 													DO m=0,sfincs_mmax
 														DO n=-sfincs_nmax,sfincs_nmax
 															IF (sfincs_boozer_bmnc(m,n,radius_index)/=0) THEN
-                                print *,"sfincs_boozer_bmnc: ", sfincs_boozer_bmnc(m,n,radius_index)
-                                print *,"boozer_bmnc: ", boozer_bmnc(m,n)
+!                                print *,"sfincs_boozer_bmnc: ", sfincs_boozer_bmnc(m,n,radius_index)
+!                                print *,"boozer_bmnc: ", boozer_bmnc(m,n)
 																WRITE(UNIT=unit_out,FMT='(5X,A,I4.3,A,I4.3,A,es24.14)') 'BOOZER_BMNC(',m,',',n,') = ',sfincs_boozer_bmnc(m,n,radius_index)
 															END IF
 														END DO
@@ -274,14 +276,16 @@
                         CYCLE
                      END IF
 
-                     IF (TRIM(file_line_lower)=='&speciesparameters') THEN
-                        WRITE (UNIT=unit_out,FMT='(A)') '&speciesParameters'
-                        WRITE (UNIT=unit_out,FMT='(a, es24.14, es24.14, a)') '  nHats = ',sfincs_ne, sfincs_ni,' ! From stellopt'
-                        WRITE (UNIT=unit_out,FMT='(a, es24.14, es24.14, a)') '  THats = ',sfincs_Te, sfincs_Ti,' ! From stellopt'
-                        WRITE (UNIT=unit_out,FMT='(a, es24.14, es24.14, a)') '  dnHatdpsiNs = ',sfincs_d_ne_d_s, sfincs_d_ni_d_s,' ! From stellopt'
-                        WRITE (UNIT=unit_out,FMT='(a, es24.14, es24.14, a)') '  dTHatdpsiNs = ',sfincs_d_Te_d_s, sfincs_d_Ti_d_s,' ! From stellopt'
-                        CYCLE
-                     END IF
+										 if (lsfincs_evaluate_profiles) then
+											 IF (TRIM(file_line_lower)=='&speciesparameters') THEN
+													WRITE (UNIT=unit_out,FMT='(A)') '&speciesParameters'
+													WRITE (UNIT=unit_out,FMT='(a, es24.14, es24.14, a)') '  nHats = ',sfincs_ne, sfincs_ni,' ! From stellopt'
+													WRITE (UNIT=unit_out,FMT='(a, es24.14, es24.14, a)') '  THats = ',sfincs_Te, sfincs_Ti,' ! From stellopt'
+													WRITE (UNIT=unit_out,FMT='(a, es24.14, es24.14, a)') '  dnHatdpsiNs = ',sfincs_d_ne_d_s, sfincs_d_ni_d_s,' ! From stellopt'
+													WRITE (UNIT=unit_out,FMT='(a, es24.14, es24.14, a)') '  dTHatdpsiNs = ',sfincs_d_Te_d_s, sfincs_d_Ti_d_s,' ! From stellopt'
+													CYCLE
+											 END IF
+										 end if
 
                      IF (TRIM(file_line_lower)=='&physicsparameters') THEN
                         WRITE (UNIT=unit_out,FMT='(A)') '&physicsParameters'
@@ -345,16 +349,18 @@
                      IF (file_line_lower(1:11)=='psihat_wish') CYCLE
                      IF (file_line_lower(1: 7)=='rn_wish') CYCLE
                      IF (file_line_lower(1: 9)=='rhat_wish') CYCLE
-                     IF (file_line_lower(1: 5)=='nhats') CYCLE
-                     IF (file_line_lower(1: 5)=='thats') CYCLE
-                     IF (file_line_lower(1:11)=='dnhatdpsins') CYCLE
-                     IF (file_line_lower(1:11)=='dthatdpsins') CYCLE
-                     IF (file_line_lower(1:13)=='dnhatdpsihats') CYCLE
-                     IF (file_line_lower(1:13)=='dthatdpsihats') CYCLE
-                     IF (file_line_lower(1: 9)=='dnhatdrns') CYCLE
-                     IF (file_line_lower(1: 9)=='dthatdrns') CYCLE
-                     IF (file_line_lower(1:11)=='dnhatdrhats') CYCLE
-                     IF (file_line_lower(1:11)=='dthatdrhats') CYCLE
+										 if (lsfincs_evaluate_profiles) then
+											 IF (file_line_lower(1: 5)=='nhats') CYCLE
+											 IF (file_line_lower(1: 5)=='thats') CYCLE
+											 IF (file_line_lower(1:11)=='dnhatdpsins') CYCLE
+											 IF (file_line_lower(1:11)=='dthatdpsins') CYCLE
+											 IF (file_line_lower(1:13)=='dnhatdpsihats') CYCLE
+											 IF (file_line_lower(1:13)=='dthatdpsihats') CYCLE
+											 IF (file_line_lower(1: 9)=='dnhatdrns') CYCLE
+											 IF (file_line_lower(1: 9)=='dthatdrns') CYCLE
+											 IF (file_line_lower(1:11)=='dnhatdrhats') CYCLE
+											 IF (file_line_lower(1:11)=='dthatdrhats') CYCLE
+										 end if
                      IF (file_line_lower(1: 3)=='er ' .or. file_line_lower(1:3)=='er=') CYCLE
                      IF (file_line_lower(1:10)=='dphihatdrn') CYCLE
                      IF (file_line_lower(1:12)=='dphihatdrhat') CYCLE
