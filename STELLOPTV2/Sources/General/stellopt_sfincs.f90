@@ -247,9 +247,11 @@
 
                      IF (TRIM(file_line_lower)=='&geometryparameters') THEN
                         WRITE(UNIT=unit_out,FMT='(A)') '&geometryParameters'
-												WRITE(UNIT=unit_out,FMT='(A)') '  inputRadialCoordinate = 1'
-												WRITE(UNIT=unit_out,FMT='(A)') '  inputRadialCoordinateForGradients = 1'
-												WRITE(UNIT=unit_out,FMT='(a, es24.14)') '  psiN_wish = ',sfincs_s(radius_index)
+												if (lsfincs_evaluate_profiles) then
+													WRITE(UNIT=unit_out,FMT='(A)') '  inputRadialCoordinate = 1'
+													WRITE(UNIT=unit_out,FMT='(A)') '  inputRadialCoordinateForGradients = 1'
+													WRITE(UNIT=unit_out,FMT='(a, es24.14)') '  psiN_wish = ',sfincs_s(radius_index)
+												end if
 												IF (ANY(lsfincs_boozer_bmnc_opt)) THEN
 													WRITE(UNIT=unit_out,FMT='(A)') '  geometryScheme = 13'
 													WRITE(UNIT=unit_out,FMT='(a, es24.14)') '  iota = ',sfincs_iota(radius_index)
@@ -343,13 +345,13 @@
                      IF (file_line_lower(1:14)=='geometryscheme') CYCLE
                      IF (file_line_lower(1:15)=='equilibriumfile') CYCLE
                      IF (file_line_lower(1:16)=='vmecradialoption') CYCLE
-                     IF (file_line_lower(1:22)=='inputradialcoordinate ' .or. file_line_lower(1:22)=='inputradialcoordinate=') CYCLE
-                     IF (file_line_lower(1:33)=='inputradialcoordinateforgradients') CYCLE
-                     IF (file_line_lower(1: 9)=='psin_wish') CYCLE
-                     IF (file_line_lower(1:11)=='psihat_wish') CYCLE
-                     IF (file_line_lower(1: 7)=='rn_wish') CYCLE
-                     IF (file_line_lower(1: 9)=='rhat_wish') CYCLE
 										 if (lsfincs_evaluate_profiles) then
+											IF (file_line_lower(1:22)=='inputradialcoordinate ' .or. file_line_lower(1:22)=='inputradialcoordinate=') CYCLE
+											IF (file_line_lower(1:33)=='inputradialcoordinateforgradients') CYCLE
+                     	IF (file_line_lower(1: 9)=='psin_wish') CYCLE
+                     	IF (file_line_lower(1:11)=='psihat_wish') CYCLE
+                     	IF (file_line_lower(1: 7)=='rn_wish') CYCLE
+                     	IF (file_line_lower(1: 9)=='rhat_wish') CYCLE
 											 IF (file_line_lower(1: 5)=='nhats') CYCLE
 											 IF (file_line_lower(1: 5)=='thats') CYCLE
 											 IF (file_line_lower(1:11)=='dnhatdpsins') CYCLE
