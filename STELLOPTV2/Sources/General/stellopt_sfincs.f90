@@ -17,7 +17,7 @@
       USE equil_utils
 
       USE sfincs_main, only: sfincs_init, sfincs_prepare, sfincs_run
-      USE globalVariables, only: sfincs_inputFilename => inputFilename, sfincs_outputFilename => outputFilename, equilibriumFile, FSABjHat, FSABHat2, dbootstrapdlambda, ms_sensitivity, ns_sensitivity, nmodesadjoint, dPhidPsidLambda, boozer_bmnc, ddrHat2ddpsiHat
+      USE globalVariables, only: sfincs_inputFilename => inputFilename, sfincs_outputFilename => outputFilename, equilibriumFile, FSABjHat, FSABHat2, dbootstrapdlambda, ms_sensitivity, ns_sensitivity, nmodesadjoint, dPhidPsidLambda, boozer_bmnc, ddrHat2ddpsiHat, Er
       USE equil_vals, only: phiedge
 
       USE, intrinsic :: iso_fortran_env, only : stdout=>output_unit, stderr=>error_unit
@@ -292,14 +292,14 @@
                      IF (TRIM(file_line_lower)=='&physicsparameters') THEN
                         WRITE (UNIT=unit_out,FMT='(A)') '&physicsParameters'
                         ! Compute change in Er
-                        IF (lsfincs_ambipolar_option .and. lsfincs_bootstrap_analytic) THEN
-                          ! Check if this is the initial evaluation
-                          IF (maxval(abs(boozer_bmnc)) > 0) THEN
-                            ! dPhiHatdpsiHat = ddrHat2ddpsiHat * (-Er)
-                            sfincs_Er(radius_index) = sfincs_Er(radius_index) - (1/ddrHat2ddpsiHat)*sum((sfincs_boozer_bmnc(:,:,radius_index)-boozer_bmnc)*sfincs_dphidpsidlambda(:,:,radius_index))
-!                            print *,"sfincs_Er(radius_index) : ", sfincs_Er(radius_index)
-                          END IF
-                        END IF
+!                        IF (lsfincs_ambipolar_option .and. lsfincs_bootstrap_analytic) THEN
+!                          ! Check if this is the initial evaluation
+!                          IF (maxval(abs(boozer_bmnc)) > 0) THEN
+!                            ! dPhiHatdpsiHat = ddrHat2ddpsiHat * (-Er)
+!                            sfincs_Er(radius_index) = sfincs_Er(radius_index) - (1/ddrHat2ddpsiHat)*sum((sfincs_boozer_bmnc(:,:,radius_index)-boozer_bmnc)*sfincs_dphidpsidlambda(:,:,radius_index))
+!!                            print *,"sfincs_Er(radius_index) : ", sfincs_Er(radius_index)
+!                          END IF
+!                        END IF
                         WRITE (UNIT=unit_out,FMT='(A,ES24.14)') '  Er = ',sfincs_Er(radius_index)
                      END IF
 
@@ -424,6 +424,9 @@
 												END DO
 											END DO
 										END DO
+											IF (lsfincs_ambipolar_option) then
+											sfincs_Er(radius_index) = Er
+											END IF
 									END IF
                END IF
             END DO ! Loop over radii
