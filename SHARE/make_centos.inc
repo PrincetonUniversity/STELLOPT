@@ -1,95 +1,83 @@
 #######################################################################
-#            Define User Specific Output Paths
-#######################################################################
-  # Set a default directory if one has not already been defined.
-  STELLOPT_HOME ?= $(HOME)/bin
-
-
-#######################################################################
 #            Define Basic Utilities
 #######################################################################
-  # Temporaryily copy STELLOPT_HOME to MYHOME since MYHOME is currently
-  # used in all the makefiles.
-  MYHOME = $(STELLOPT_HOME)
-  
+
   SHELL = /bin/sh
   PWD1 = `pwd`
-  PRECOMP:= cpp -traditional-cpp -E -P -C -DMACOSX
-  COMPILE = gfortran
-  COMPILE_FREE = gfortran -ffree-form -ffree-line-length-none -ffixed-line-length-none
-  LINK    = mpif90 $(FLAGS) -o
-  LINK_AR = ar -ruvs
-  LINK_C  = gcc -shared -Wl,-no_compact_unwind
-#  LINK_C  = gcc -shared -Wl,--no-undefined -Wl,-export-dynamic 
+  MYHOME = /bin
+  PRECOMP:= /lib/cpp -traditional -DLINUX
+  COMPILE = $(FC)
+  COMPILE_FREE = $(FC) -ffree-form -ffree-line-length-none -ffixed-line-length-none
+  LINK    = ld $(FLAGS) -o
+  LINK_AR = ar -ruv
+  LINK_C  = $(CC) -shared -Wl,-z-defs
 
 #######################################################################
 #            Define Compiler Flags
 #######################################################################
 #  FLAGS_R = -O2 -g -fexternal-blas -fbacktrace -fcheck=all 
-  FLAGS_R = -O2 -fexternal-blas -Wmissing-include-dirs
-  FLAGS_D = -g -O0 -fcheck=all 
-  LIBS    = -L/opt/local/lib -lopenblas -lscalapack  
+  FLAGS_R = -g -O2 -fexternal-blas -fbacktrace -I/usr/include
+  FLAGS_D = -g -O0 -fexternal-blas -fcheck=all -I/usr/include
+  LIBS    = -L/lib64/openmpi/lib -lmpiblacs /lib64/libopenblas.so.0 \
+            /lib64/openmpi/lib/libscalapack.so.2
 
 #######################################################################
 #            MPI Options
 #######################################################################
   LMPI    = T
-  MPI_COMPILE = mpif90
-  MPI_COMPILE_FREE = mpif90 -ffree-form \
+  MPI_COMPILE = mpifort
+  MPI_COMPILE_FREE = mpifort -ffree-form \
                      -ffree-line-length-none -ffixed-line-length-none
-  MPI_COMPILE_C = mpicc 
-  MPI_LINK = /opt/local/bin/mpif90
-  MPI_LINK = mpif90 -shared  -Wl,-no_compact_unwind
-
-  MPI_RUN = mpirun
-  MPI_RUN_OPTS = -np 2 
+  MPI_COMPILE_C = mpicc
+  MPI_LINK = mpifort
 
 #######################################################################
 #            NAG Options
 #######################################################################
   LNAG = F
-  NAG_LIB = -L$(NAG_ROOT)/lib -lnag_nag
+  NAG_LIB = 
 
 #######################################################################
 #            NETCDF Options
 #######################################################################
   LNETCDF = T
-  NETCDF_INC = -I/opt/local/include
-  NETCDF_LIB = -L/opt/local/lib -lnetcdf -lnetcdff
+  NETCDF_INC = 
+  NETCDF_LIB = -L/lib64/openmpi/lib -lnetcdff
 
 #######################################################################
 #            NTCC Options
 #######################################################################
-  LNTCC = T
-  NTCC_INC = -I/opt/local/mod
-  NTCC_LIB = -L/opt/local/lib -lpreact -lsigsub -laladdinsub \
-             -lpreact -lpspline -lportlib -lezcdf
-#  NTCC_INC = -I/Users/slazerso/Sims_PPPL/STELLOPT/NTCC/MAC/mod
-#  NTCC_LIB = -L/Users/slazerso/Sims_PPPL/STELLOPT/NTCC/MAC/lib \
-#             -lpreact -lsigsub -laladdinsub -lpreact -lpspline \
-#             -lportlib -lezcdf
+  LNTCC = F
+  NTCC_INC = -I$(NTCCHOME)/mod
+  NTCC_LIB = -L$(NTCCHOME)/lib -laladdinsub -lr8slatec -ladpak\
+             -lcppsub -lcomput -lpspline -lportlib -lezcdf -lmds_sub \
+             -lmdstransp -lvaxonly
 
 #######################################################################
 #            HDF5 Options
 #######################################################################
   LHDF5 = T
-  HDF5_INC = -I/opt/local/include
-  HDF5_LIB = -L/opt/local/lib -lhdf5 -lhdf5hl_fortran -lhdf5_hl \
-             -lhdf5_fortran
+  HDF5_INC = 
+  HDF5_LIB = -L/usr/lib64/openmpi/lib \
+              /usr/lib64/openmpi/lib/libhdf5hl_fortran.so \
+              /usr/lib64/openmpi/lib/libhdf5_hl.so \
+              /usr/lib64/openmpi/lib/libhdf5_fortran.so \
+              /usr/lib64/openmpi/lib/libhdf5.so \
+              -Wl,-z,relro -lsz -lz -ldl -lm -Wl,-rpath -Wl,/usr/lib64/openmpi/lib
 
 #######################################################################
 #             PGPLOT Options
 #######################################################################
-  LPGPLOT = T
-  PGPLOT_INC = -I/opt/local/include
-  PGPLOT_LIB = -L/opt/local/lib -lpgplot -lX11
+  LPGPLOT = F
+  PGPLOT_INC = 
+  PGPLOT_LIB = 
 
 #######################################################################
 #             SILO Options
 #######################################################################
   LSILO = F
-  SILO_INC = -I/opt/local/include
-  SILO_LIB = -L/opt/local/lib -lsilo
+  SILO_INC = 
+  SILO_LIB = 
 
 #######################################################################
 #            DKES/NEO Options
@@ -118,7 +106,7 @@
   COILOPTPP_DIR = $(COILOPT_PATH)
   LIB_COILOPTPP = libcoilopt++.a
   COILOPT_LIB = $(COILOPT_PATH)/$(LIB_COILOPTPP) \
-                -L$(GSLHOME)/lib -lgsl -lgslcblas -lstdc++ -lmpi_cxx
+                -L$(GSLHOME)/lib/x86_64-linux-gnu -lgsl -lgslcblas -lstdc++ -lmpi_cxx
 
 #######################################################################
 #            TERPSICHORE Options
@@ -151,23 +139,7 @@
 #######################################################################
 #            LIBSTELL Shared Options
 #######################################################################
-LIB_SHARE = /opt/local/lib/libnetcdf.dylib \
-         /opt/local/lib/libnetcdff.dylib \
-         /opt/local/lib/libnetcdf_c++4.dylib \
-         /opt/local/lib/libhdf5.dylib \
-         /opt/local/lib/libhdf5hl_fortran.dylib\
-         /opt/local/lib/libhdf5_hl.dylib \
-         /opt/local/lib/libhdf5_fortran.dylib\
-         /opt/local/lib/gcc6/libgfortran.dylib \
-         /opt/local/lib/gcc6/libstdc++.dylib \
-         /opt/local/lib/libopenblas.dylib \
-         /opt/local/lib/openmpi-gcc6/libmpi.dylib \
-         /opt/local/lib/openmpi-gcc6/libmpi_mpifh.12.dylib \
-         /opt/local/lib/libz.dylib \
-         /usr/lib/libc.dylib \
-         /usr/lib/libm.dylib \
-         /usr/lib/libpthread.dylib
-LIB_SHARE = -L/opt/local/lib/gcc8 -lstdc++ -lgfortran -L/usr/lib -lz -lc -lm -lpthread -L/opt/local/lib/openmpi-gcc8 -lmpi -lmpi_mpifh $(LIBS)
+LIB_SHARE = -lc -lgfortran -lstdc++ -lmpi -lmpi_mpifh -lz -lc -lm -lpthread $(LIBS) -lc
 
 
 #######################################################################
@@ -189,8 +161,8 @@ LIB_SHARE = -L/opt/local/lib/gcc8 -lstdc++ -lgfortran -L/usr/lib -lz -lc -lm -lp
 #######################################################################
 #######################################################################
 
-# Home bin specifies where the build scripts are located,
-# for example awk_cdir.awk.
+# Some Initial stuff
+# HOME_BIN = $(MYHOME)
 HOME_BIN = ../../
 MOD1_PATH = -I$(MYHOME)/libstell_dir
 MOD_PATH = 
@@ -200,8 +172,8 @@ LIB = libstell.a
 
 # Handle Which Code is being CALLED
 ifeq ($(MAKECMDGOALS),xstelloptv2)
-  PRECOMP += -DBNORM -DBEAMS3D_OPT -DJINV_OPT -DTXPORT_OPT -DDIAGNO_OPT -DSKS  -DSKS2
-  VMEC_DIR = ../../VMEC2000
+  PRECOMP += -DBNORM -DBEAMS3D_OPT -DJINV_OPT -DTXPORT_OPT -DDIAGNO_OPT -DSKS -DSKS2
+  VMEC_DIR ?= ../../VMEC2000
   LIB_VMEC= libvmec.a
   MOD_PATH+= -I$(VMEC_DIR)/$(LOCTYPE)
   BEAMS3D_DIR = ../../BEAMS3D
@@ -266,7 +238,7 @@ endif
 ifeq ($(MAKECMDGOALS),xanimec)
   PRECOMP += -D_ANIMEC
 endif
-ifeq ($(MAKECMDGOALS),xvmec2000)
+ifeq ($(MAKECMDGOALS),xparvmec)
   PRECOMP += -DSKS  -DSKS2
 endif
 ifeq ($(MAKECMDGOALS),xsiesta)
@@ -319,6 +291,15 @@ else
   TRAVIS_LIB = 
   TRAVIS_DIR = 
   LIB_TRAVIS = 
+endif
+ifeq ($(LSFINCS),T)
+  MOD1_PATH += $(SFINCS_INC)
+  PRECOMP += -DSFINCS
+  MOD_PATH += -I$(SFINCS_DIR)
+else
+  SFINCS_LIB = 
+  SFINCS_DIR = 
+  LIB_SFINCS = 
 endif
 ifeq ($(LREGCOIL),T)
   MOD1_PATH += $(REGCOIL_INC)
