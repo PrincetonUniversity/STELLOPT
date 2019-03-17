@@ -127,6 +127,7 @@
               IF (lpscale_opt)  nvars = nvars + 1
               IF (lbcrit_opt)   nvars = nvars + 1
               IF (lmix_ece_opt)   nvars = nvars + 1
+              IF (lxics_v0_opt)   nvars = nvars + 1
               ! Arrays
               IF (ANY(lextcur_opt)) nvars = nvars + COUNT(lextcur_opt)
               IF (ANY(laphi_opt)) nvars = nvars + COUNT(laphi_opt)
@@ -457,6 +458,19 @@
                  vars_max(nvar_in) = mix_ece_max
                  var_dex(nvar_in) = imixece
                  diag(nvar_in)    = dmix_ece_opt
+                 arr_dex(nvar_in,1) = 1
+              END IF
+              IF (lxics_v0_opt) THEN
+                 IF (lauto_domain) THEN
+                    xics_v0_min = MAX(xics_v0 - ABS(pct_domain*xics_v0),5.0E3)
+                    xics_v0_max = MIN(xics_v0 + ABS(pct_domain*xics_v0),5.0E3)
+                 END IF
+                 nvar_in = nvar_in + 1
+                 vars(nvar_in) = xics_v0
+                 vars_min(nvar_in) = xics_v0_min
+                 vars_max(nvar_in) = xics_v0_max
+                 var_dex(nvar_in) = ixics_v0
+                 diag(nvar_in)    = dxics_v0_opt
                  arr_dex(nvar_in,1) = 1
               END IF
               IF (ANY(lextcur_opt)) THEN

@@ -245,7 +245,7 @@
                          cr_strategy, mode, lkeep_mins, lrefit,&
                          npopulation, noptimizers, &
                          lphiedge_opt, lcurtor_opt, lbcrit_opt, &
-                         lpscale_opt, lmix_ece_opt,&
+                         lpscale_opt, lmix_ece_opt, lxics_v0_opt, &
                          lextcur_opt, laphi_opt, lam_opt, lac_opt, &
                          lai_opt, lah_opt, lat_opt, lam_s_opt, &
                          lam_f_opt, lac_s_opt, lac_f_opt, lai_s_opt, &
@@ -257,7 +257,7 @@
                          lah_f_opt, lat_f_opt, lcoil_spline, lemis_xics_f_opt, &
                          windsurfname, &
                          dphiedge_opt, dcurtor_opt, dbcrit_opt, &
-                         dpscale_opt, dmix_ece_opt,&
+                         dpscale_opt, dmix_ece_opt, dxics_v0_opt, &
                          dextcur_opt, daphi_opt, dam_opt, dac_opt, &
                          dai_opt, dah_opt, dat_opt, dam_s_opt, &
                          dam_f_opt, dac_s_opt, dac_f_opt, dai_s_opt, &
@@ -267,7 +267,7 @@
                          drho_opt, ddeltamn_opt, &
                          dne_opt, dte_opt, dti_opt, dth_opt, dzeff_opt, &
                          dah_f_opt, dat_f_opt, daxis_opt, &
-                         dmix_ece_opt, dcoil_spline, demis_xics_f_opt, &
+                         dcoil_spline, demis_xics_f_opt, &
                          ne_aux_s, te_aux_s, ti_aux_s, th_aux_s, phi_aux_s,&
                          beamj_aux_s, bootj_aux_s, zeff_aux_s, &
                          ne_aux_f, te_aux_f, ti_aux_f, th_aux_f, phi_aux_f,&
@@ -345,7 +345,8 @@
                          target_vessel, sigma_vessel, vessel_string, &
                          phiedge_min, phiedge_max, curtor_min, curtor_max, &
                          bcrit_min, bcrit_max, pscale_min, pscale_max, &
-                         mix_ece_min, mix_ece_max, &
+                         mix_ece_min, mix_ece_max, xics_v0_min, xics_v0_max, &
+                         xics_v0, &
                          extcur_min, extcur_max, &
                          am_min, am_max, ac_min, ac_max, ai_min, ai_max, &
                          ah_min, ah_max, at_min, at_max, aphi_min, aphi_max, &
@@ -445,6 +446,7 @@
       lpscale_opt     = .FALSE.
       lbcrit_opt      = .FALSE.
       lmix_ece_opt    = .FALSE.
+      lxics_v0_opt    = .FALSE.
       lextcur_opt(:)  = .FALSE.
       laphi_opt(:)    = .FALSE.
       lam_opt(:)      = .FALSE.
@@ -487,6 +489,7 @@
       dpscale_opt     = -1.0
       dbcrit_opt      = -1.0
       dmix_ece_opt    = -1.0
+      dxics_v0_opt    = -1.0
       dextcur_opt(:)  = -1.0
       daphi_opt(:)    = -1.0
       dam_opt(:)      = -1.0
@@ -564,6 +567,7 @@
       END IF
       xval            = 0.0   ;  yval            = 0.0
       mix_ece_min     = 0.0   ;  mix_ece_max     = 1.0
+      xics_v0_min     = -bigno;  xics_v0_max     = bigno
       ne_min          = -bigno;  ne_max          = bigno
       zeff_min        = -bigno;  zeff_max        = bigno
       te_min          = -bigno;  te_max          = bigno
@@ -642,6 +646,7 @@
       sfincs_s(1:4)   = (/ 0.2, 0.4, 0.6, 0.8 /)
       vboot_tolerance = 0.01
       sfincs_min_procs = 1
+      xics_v0          = 0.0
       emis_xics_s(1:5) = (/0.0,0.25,0.50,0.75,1.0/)
       emis_xics_f(:)   = 0.0
       coil_splinesx(:,:) = -1
@@ -1425,6 +1430,10 @@
       IF (lmix_ece_opt) THEN
          WRITE(iunit,onevar) 'LMIX_ECE_OPT',lmix_ece_opt,'MIX_ECE_MIN',mix_ece_min,'MIX_ECE_MAX',mix_ece_max
          IF (dmix_ece_opt > 0)   WRITE(iunit,outflt) 'DMIX_ECE_OPT',dmix_ece_opt
+      END IF
+      IF (lxics_v0_opt) THEN
+         WRITE(iunit,onevar) 'LXICS_V0_OPT',lxics_v0_opt,'XICS_V0_MIN',xics_v0_min,'XICS_V0_MAX',xics_v0_max
+         IF (dxics_v0_opt > 0)   WRITE(iunit,outflt) 'DXICS_V0_OPT',dxics_v0_opt
       END IF
 
       ! Vector quantities
@@ -2335,11 +2344,13 @@
           ANY(sigma_xics_w3 < bigno) .or. ANY(sigma_xics_v < bigno)) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          WRITE(iunit,'(A)') '!          XICS Signal Optimization'
-         WRITE(iunit,'(A)') '!              BRIGHT: Line integrated emissivity'
-         WRITE(iunit,'(A)') '!              XICS:   Line integrated product of Ti and emissivity'
-         WRITE(iunit,'(A)') '!              V:      Line integrated perp velocity (function of ExB)'
-         WRITE(iunit,'(A)') '!              W3:     Line integrated sat. emissivity (function of Te)'
+         WRITE(iunit,'(A)') '!              BRIGHT:  Line integrated emissivity'
+         WRITE(iunit,'(A)') '!              XICS:    Line integrated product of Ti and emissivity'
+         WRITE(iunit,'(A)') '!              V:       Line integrated perp velocity (function of ExB)'
+         WRITE(iunit,'(A)') '!              W3:      Line integrated sat. emissivity (function of Te)'
+         WRITE(iunit,'(A)') '!              XICS_V0: Offset for XICS V0 measurement'
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         IF (ANY(sigma_xics_v < bigno)) WRITE(iunit,'(2X,A,E22.14)') 'XICS_V0 = ',xics_v0
          DO ik = 1, UBOUND(sigma_xics,DIM=1)
             IF (sigma_xics(ik)    < bigno .or. sigma_xics_bright(ik) < bigno .or. &
                 sigma_xics_w3(ik)     < bigno .or. sigma_xics_v(ik)  < bigno ) &
