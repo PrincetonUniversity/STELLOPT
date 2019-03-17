@@ -365,8 +365,8 @@ endif
 # This is hear because of MPI above resetting LINK
 ifeq ($(MAKECMDGOALS),libstell.a)
   LINK = $(LINK_AR)
-  COMPILE += -fPIC
-  COMPILE_FREE += -fPIC
+  COMPILE += -fPIC -axMIC-AVX512,AVX
+  COMPILE_FREE += -fPIC -axMIC-AVX512,AVX
   INC_PATH = 
 endif
 ifeq ($(MAKECMDGOALS),libstell.so)
