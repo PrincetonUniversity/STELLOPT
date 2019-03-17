@@ -486,20 +486,16 @@
       CHARACTER(LEN=*), INTENT(in)   :: type
       REAL(rprec), INTENT(inout)   ::  val
       INTEGER, INTENT(inout)     ::  ier
-      INTEGER :: i
-      REAL(rprec), PARAMETER :: one = 1.0_rprec
+      REAL(rprec) :: val2
       IF (ier < 0) RETURN
       CALL tolower(type)
       SELECT CASE (type)
          CASE ('spline','akima_spline','akima_spline_ip')
             CALL eval_prof_stel(s_val,type,val,21,ti_opt(0:20),ier,ti_spl)
-            !IF (EZspline_allocated(ti_spl)) THEN
-            !   CALL EZspline_isInDomain(ti_spl,s_val,ier)
-            !   IF (ier .ne. 0) RETURN
-            !   CALL EZspline_interp(ti_spl,s_val,val,ier)
-            !ELSE
-            !   ier = -1
-            !END IF
+         CASE ('te_ratio')
+            CALL eval_prof_stel(s_val,type,val,21,ti_opt(0:20),ier,ti_spl)
+            CALL get_equil_te(s_val,te_type,val2,ier)
+            val = val*val2 
          CASE DEFAULT
             CALL eval_prof_stel(s_val,type,val,21,ti_opt(0:20),ier)
       END SELECT
