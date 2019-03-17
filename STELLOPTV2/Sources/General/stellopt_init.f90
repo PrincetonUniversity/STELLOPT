@@ -34,7 +34,7 @@
 !        iunit       File unit number
 !----------------------------------------------------------------------
       IMPLICIT NONE
-      INTEGER ::  i,n,m,ier, iunit,nvar_in,knot_dofs,nknots
+      INTEGER ::  i,n,m,ier, iunit,nvar_in,ctrl_dofs,nknots
       INTEGER ::  ictrl(5)
       REAL(rprec) :: norm, delta
       REAL(rprec) :: fvec_temp(1)
@@ -105,7 +105,8 @@
                  STOP
               END IF
               CLOSE(iunit)
-              
+         CASE('test')
+              id_string = id_string(7:LEN(id_string))
       END SELECT
       
       ! Count the number of variables and allocate the array
@@ -227,16 +228,17 @@
                     END IF
                  END DO
               END DO
-              knot_dofs = 3
-              IF (lwindsurf) knot_dofs = 2
+              ctrl_dofs = 3                 !x,y,z at each point
+              IF (lwindsurf) ctrl_dofs = 2  ! u,v  at each point
               DO n = LBOUND(lcoil_spline,DIM=1), UBOUND(lcoil_spline,DIM=1)
-                 nknots = COUNT(coil_splinesx(n,:) >= 0.0)    ! Actual size of coil spline n
-                 IF ((coil_type(n).eq.'M')) THEN
-                    nknots = nknots - 1                       ! Last knot of modular is never free.
-                    IF (lcoil_spline(n,1)) nvars = nvars - 1  ! First knot of modular loses one dof.
-                 END IF
-                 DO m = 1,nknots
-                    IF (lcoil_spline(n,m)) nvars = nvars + knot_dofs
+                 ! Actual no. of knots for coil spline n, less two to enforce periodicity of f,f'
+                 nknots = COUNT(coil_splinesx(n,:) >= 0.0) - 2
+
+                 ! First ctrl of modular loses one dof (u or z).
+                 IF ((coil_type(n).eq.'M').AND.lcoil_spline(n,1)) nvars = nvars - 1
+
+                 DO m = 1,nknots-4
+                    IF (lcoil_spline(n,m)) nvars = nvars + ctrl_dofs
                  END DO
               END DO
               ier = 0
@@ -261,11 +263,15 @@
                  END DO
               END DO
 
-              IF (lanalytic_x_opt) nvars = nvars + 1    
-              IF (lanalytic_y_opt) nvars = nvars + 1    
-              IF (lanalytic_z_opt) nvars = nvars + 1    
+         ! Added by JCS
+         !     IF (lanalytic_x_opt) nvars = nvars + 1    
+         !     IF (lanalytic_y_opt) nvars = nvars + 1    
+         !     IF (lanalytic_z_opt) nvars = nvars + 1    
  
          CASE('spec')
+         CASE('test')
+            IF (lxval_opt)  nvars = nvars + 1
+            IF (lyval_opt)  nvars = nvars + 1
       END SELECT
 
       ! Allocate Arrays
@@ -1525,9 +1531,10 @@
               END IF
               IF (ANY(lcoil_spline)) THEN
                  DO n = LBOUND(lcoil_spline,1), UBOUND(lcoil_spline,1)
-                    nknots = COUNT(coil_splinesx(n,:) >= 0.0)       ! Actual size of coil spline n
-                    IF ((coil_type(n).eq.'M')) nknots = nknots - 1  ! Last knot of modular is never free.
-                    DO m = 1,nknots
+                    ! Actual no. of knots for coil spline n, less two to enforce periodicity of f,f'
+                    nknots = COUNT(coil_splinesx(n,:) >= 0.0) - 2
+
+                    DO m = 1,nknots-4
                        IF (lcoil_spline(n,m)) THEN
                           IF (lauto_domain) THEN
                              coil_splinefx_min(n,m) = coil_splinefx(n,m) - ABS(pct_domain*coil_splinefx(n,m))
@@ -1576,6 +1583,33 @@
               END IF
               ier = -327
               CALL stellopt_prof_to_vmec('init',ier)
+         CASE('test')
+              IF (lxval_opt) THEN
+                 IF (lauto_domain) THEN
+                    xval_min = phiedge - ABS(pct_domain*xval)
+                    xval_max = phiedge + ABS(pct_domain*xval)
+                 END IF
+                 nvar_in = nvar_in + 1
+                 vars(nvar_in) = xval
+                 vars_min(nvar_in) = xval_min
+                 vars_max(nvar_in) = xval_max
+                 var_dex(nvar_in) = ixval
+                 diag(nvar_in)    = dxval_opt
+                 arr_dex(nvar_in,1) = 1
+              END IF
+              IF (lyval_opt) THEN
+                 IF (lauto_domain) THEN
+                    yval_min = phiedge - ABS(pct_domain*yval)
+                    yval_max = phiedge + ABS(pct_domain*yval)
+                 END IF
+                 nvar_in = nvar_in + 1
+                 vars(nvar_in) = yval
+                 vars_min(nvar_in) = yval_min
+                 vars_max(nvar_in) = yval_max
+                 var_dex(nvar_in) = iyval
+                 diag(nvar_in)    = dyval_opt
+                 arr_dex(nvar_in,1) = 1
+              END IF
       END SELECT
 !DEC$ IF DEFINED (MPI_OPT)
       CALL MPI_BARRIER( MPI_COMM_STEL, ierr_mpi )                   ! MPI

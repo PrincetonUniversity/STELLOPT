@@ -63,7 +63,7 @@
 !DEC$ IF DEFINED (NEO_OPT)
       IF (lscreen) WRITE(6,'(a)') ' ---------------------  NEOCLASSICAL TRANSPORT CALCULATION  ------------------'
       SELECT CASE(TRIM(equil_type))
-         CASE('vmec2000','animec','flow','satire','parvmec','paravmec','vboot')
+         CASE('vmec2000','animec','flow','satire','parvmec','paravmec','vboot','vmec2000_oneeq')
 !DEC$ IF DEFINED (MPI_OPT)
             CALL MPI_COMM_SIZE( MPI_COMM_MYWORLD, numprocs_local, ierr_mpi )
             CALL MPI_BCAST(mnboz_b,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)

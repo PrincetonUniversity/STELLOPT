@@ -17,9 +17,10 @@
   PRECOMP:= cpp -traditional-cpp -E -P -C -DMACOSX
   COMPILE = gfortran
   COMPILE_FREE = gfortran -ffree-form -ffree-line-length-none -ffixed-line-length-none
-  LINK    = ld $(FLAGS) -o
+  LINK    = mpif90 $(FLAGS) -o
   LINK_AR = ar -ruvs
   LINK_C  = gcc -shared -Wl,-no_compact_unwind
+#  LINK_C  = gcc -shared -Wl,--no-undefined -Wl,-export-dynamic 
 
 #######################################################################
 #            Define Compiler Flags
@@ -33,11 +34,15 @@
 #            MPI Options
 #######################################################################
   LMPI    = T
-  MPI_COMPILE = mpifort 
-  MPI_COMPILE_FREE = mpifort -ffree-form \
+  MPI_COMPILE = mpif90
+  MPI_COMPILE_FREE = mpif90 -ffree-form \
                      -ffree-line-length-none -ffixed-line-length-none
-  MPI_COMPILE_C = mpicc
-  MPI_LINK = mpicc -shared -Wl,-no_compact_unwind
+  MPI_COMPILE_C = mpicc 
+  MPI_LINK = /opt/local/bin/mpif90
+  MPI_LINK = mpif90 -shared  -Wl,-no_compact_unwind
+
+  MPI_RUN = mpirun
+  MPI_RUN_OPTS = -np 2 
 
 #######################################################################
 #            NAG Options
@@ -52,17 +57,17 @@
   NETCDF_INC = -I/opt/local/include
   NETCDF_LIB = -L/opt/local/lib -lnetcdf -lnetcdff
 
-  # FOR GCC6
-  #NETCDF_LIB = -L$(NETCDF_HOME)/lib -lnetcdff
-
 #######################################################################
 #            NTCC Options
 #######################################################################
-  LNTCC = F
-  NTCC_INC = -I/Users/slazerso/Sims_PPPL/STELLOPT/NTCC/MAC/mod
-  NTCC_LIB = -L/Users/slazerso/Sims_PPPL/STELLOPT/NTCC/MAC/lib \
-             -lpreact -lsigsub -laladdinsub -lpreact -lpspline \
-             -lportlib -lezcdf
+  LNTCC = T
+  NTCC_INC = -I/opt/local/mod
+  NTCC_LIB = -L/opt/local/lib -lpreact -lsigsub -laladdinsub \
+             -lpreact -lpspline -lportlib -lezcdf
+#  NTCC_INC = -I/Users/slazerso/Sims_PPPL/STELLOPT/NTCC/MAC/mod
+#  NTCC_LIB = -L/Users/slazerso/Sims_PPPL/STELLOPT/NTCC/MAC/lib \
+#             -lpreact -lsigsub -laladdinsub -lpreact -lpspline \
+#             -lportlib -lezcdf
 
 #######################################################################
 #            HDF5 Options
@@ -75,16 +80,16 @@
 #######################################################################
 #             PGPLOT Options
 #######################################################################
-  LPGPLOT = F
-  PGPLOT_INC = -I$(PGPLOT_DIR)
-  PGPLOT_LIB = -L$(PGPLOT_DIR) -lpgplot -L/usr/X11R6/lib -lX11
+  LPGPLOT = T
+  PGPLOT_INC = -I/opt/local/include
+  PGPLOT_LIB = -L/opt/local/lib -lpgplot -lX11
 
 #######################################################################
 #             SILO Options
 #######################################################################
   LSILO = F
-  SILO_INC = -I$(SILOHOME)/include
-  SILO_LIB = -L$(SILOHOME)/lib -lsilo
+  SILO_INC = -I/opt/local/include
+  SILO_LIB = -L/opt/local/lib -lsilo
 
 #######################################################################
 #            DKES/NEO Options
@@ -146,10 +151,24 @@
 #######################################################################
 #            LIBSTELL Shared Options
 #######################################################################
+LIB_SHARE = /opt/local/lib/libnetcdf.dylib \
+         /opt/local/lib/libnetcdff.dylib \
+         /opt/local/lib/libnetcdf_c++4.dylib \
+         /opt/local/lib/libhdf5.dylib \
+         /opt/local/lib/libhdf5hl_fortran.dylib\
+         /opt/local/lib/libhdf5_hl.dylib \
+         /opt/local/lib/libhdf5_fortran.dylib\
+         /opt/local/lib/gcc6/libgfortran.dylib \
+         /opt/local/lib/gcc6/libstdc++.dylib \
+         /opt/local/lib/libopenblas.dylib \
+         /opt/local/lib/openmpi-gcc6/libmpi.dylib \
+         /opt/local/lib/openmpi-gcc6/libmpi_mpifh.12.dylib \
+         /opt/local/lib/libz.dylib \
+         /usr/lib/libc.dylib \
+         /usr/lib/libm.dylib \
+         /usr/lib/libpthread.dylib
+LIB_SHARE = -L/opt/local/lib/gcc8 -lstdc++ -lgfortran -L/usr/lib -lz -lc -lm -lpthread -L/opt/local/lib/openmpi-gcc8 -lmpi -lmpi_mpifh $(LIBS)
 
-LIB_SHARE = -L/opt/local/lib/gcc7 -lgfortran -lstdc++ \
-            -L/opt/local/lib/openmpi-gcc7 -lmpi -lmpi_mpifh \
-            -L/usr/lib -lc -lm -lpthread $(LIBS) -lz
 
 #######################################################################
 #######################################################################
@@ -173,7 +192,6 @@ LIB_SHARE = -L/opt/local/lib/gcc7 -lgfortran -lstdc++ \
 # Home bin specifies where the build scripts are located,
 # for example awk_cdir.awk.
 HOME_BIN = ../../
-
 MOD1_PATH = -I$(MYHOME)/libstell_dir
 MOD_PATH = 
 CLEAN_ARCH = 

@@ -747,3 +747,15 @@ stellopt_write_mgrid.o : \
       $(LIB_DIR)/Release/ezcdf.o \
       $(MGRID_DIR)/Release/write_mgrid.o \
       $(MGRID_DIR)/Release/makegrid_global.o 
+
+
+chisq_x.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      stellopt_vars.o
+
+
+chisq_y.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      stellopt_vars.o

@@ -80,6 +80,8 @@
       REAL(rprec) ::  target_kappa, sigma_kappa, phi_kappa
       REAL(rprec) ::  target_kappa_box, sigma_kappa_box, phi_kappa_box
       REAL(rprec) ::  target_kappa_avg, sigma_kappa_avg
+      REAL(rprec) ::  target_x, sigma_x
+      REAL(rprec) ::  target_y, sigma_y
       REAL(rprec), PARAMETER ::  bigno_ne = 1.0E27
       REAL(rprec) ::  norm_press
       REAL(rprec) ::  qm_ratio
@@ -229,6 +231,9 @@
       INTEGER, PARAMETER :: jtarget_bprobe     = 501
       INTEGER, PARAMETER :: jtarget_segrog     = 502
       INTEGER, PARAMETER :: jtarget_fluxloop   = 503
+      INTEGER, PARAMETER :: jtarget_regcoil_chi2_b          = 504
+      INTEGER, PARAMETER :: jtarget_regcoil_current_density = 5041
+      INTEGER, PARAMETER :: jtarget_curvature_P2            = 505
       INTEGER, PARAMETER :: jtarget_balloon    = 601
       INTEGER, PARAMETER :: jtarget_kink       = 6011
       INTEGER, PARAMETER :: jtarget_bootstrap  = 602
@@ -248,6 +253,8 @@
       INTEGER, PARAMETER :: jtarget_coilcrv    = 615
       INTEGER, PARAMETER :: jtarget_coilsep    = 616
       INTEGER, PARAMETER :: jtarget_coilself   = 617
+      INTEGER, PARAMETER :: jtarget_x          = 900
+      INTEGER, PARAMETER :: jtarget_y          = 901
       INTEGER, PARAMETER :: jtarget_regcoil_chi2_b = 5150
       INTEGER, PARAMETER :: jtarget_regcoil_current_density = 5151
       INTEGER, PARAMETER :: jtarget_curvature_P2 = 5200
@@ -262,6 +269,10 @@
       CHARACTER*(*), PARAMETER ::  out_format_1D = '(5X,A,I3.3,A)'
       CHARACTER*(*), PARAMETER ::  out_format_2D = '(5X,A,I3.3,A,I3.3,A)'
       SELECT CASE(var_num)
+         CASE(jtarget_x)
+            WRITE(iunit, out_format) 'X'
+         CASE(jtarget_y)
+            WRITE(iunit, out_format) 'Y'
          CASE(jtarget_aspect)
             WRITE(iunit, out_format) 'Aspect Ratio'
          CASE(jtarget_aspect_max)

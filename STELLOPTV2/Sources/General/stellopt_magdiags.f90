@@ -66,7 +66,7 @@
       IF (lverb_diagno) write(6,'(A)')' - Loading equilibrium surface'
       IF (lverb_diagno) CALL FLUSH(6)
       SELECT CASE(TRIM(equil_type))
-         CASE('vmec2000','animec','flow','satire','parvmec','paravmec','vboot')
+         CASE('vmec2000','animec','flow','satire','parvmec','paravmec','vboot','vmec2000_oneeq')
             ! Assume diagno_input namelist already read
             !id_string_diagno=TRIM(input_extension)
             CALL diagno_init_vmec

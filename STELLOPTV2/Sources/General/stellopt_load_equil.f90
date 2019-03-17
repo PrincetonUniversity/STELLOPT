@@ -292,6 +292,8 @@
          CASE('spec')
          CASE('pies')
          CASE('siesta')
+         CASE('test')
+            ! Do nothing
       END SELECT
       ! Setup the internal STELLOPT arrays
       IF (EZspline_allocated(phi_spl)) CALL EZspline_free(phi_spl,iflag)
@@ -372,17 +374,7 @@
          WRITE(6,'(A,E20.12)')   '    STORED ENERGY:  ',wp
          CALL FLUSH(6)
       END IF
-      
-      ! Testing output
-      !DO u = 1, 20
-      !      temp = 0.0+(0.05*u)
-      !      phi_temp = pi2/3
-      !      ier=0
-      !      CALL get_equil_s(1.8_rprec,phi_temp,temp,s_temp,ier,u_temp)
-      !      WRITE(77,*) temp,phi_temp,1.8,s_temp,u_temp,ier
-      !      PRINT *,'r=',1.8,'phi=',phi_temp,'z=',temp,'s=',s_temp,ier, u_temp
-      !END DO
-      !stop
+
       RETURN
 !----------------------------------------------------------------------
 !     END SUBROUTINE
