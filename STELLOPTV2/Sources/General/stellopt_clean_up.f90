@@ -227,7 +227,7 @@
                END DO
             END IF
 !DEC$ ENDIF
-<<<<<<< HEAD
+!<<<<<<< HEAD
                END IF
                ! Now open the Output file
                ALLOCATE(fvec_temp(mtargets))
@@ -255,35 +255,11 @@
                   WRITE(temp_str,'(i5.5)') ncnt
                   proc_string = TRIM(id_string) // '.' // TRIM(ADJUSTL(temp_str))
                   CALL safe_open(iunit_out,iflag,TRIM('input.'//TRIM(proc_string)),'unknown','formatted')
-=======
-         END IF
-         ! Now open the Output file
-         ALLOCATE(fvec_temp(mtargets))
-         CALL safe_open(iunit_out,iflag,TRIM('stellopt.'//TRIM(id_string)),'unknown','formatted',ACCESS_IN='APPEND')
-         iflag = 1
-         IF (ncnt == 0) WRITE(iunit_out,'(A,1X,F5.2)') 'VERSION',STELLOPT_VERSION
-         WRITE(iunit_out,'(A,1X,I5.5)') 'ITER',ncnt
-         CALL stellopt_load_targets(mtargets,fvec_temp,iflag,ncnt)          ! Count
-         WRITE(iunit_out,'(A,2(2X,I8))') 'TARGETS ',mtargets,1
-         WRITE(iunit_out,'(A)') 'TARGETS'
-         WRITE(iunit_out,'(ES22.12E3)') targets(1:mtargets)
-         WRITE(iunit_out,'(A,2(2X,I8))') 'SIGMAS ',mtargets,1
-         WRITE(iunit_out,'(A)') 'SIGMAS'
-         WRITE(iunit_out,'(ES22.12E3)') sigmas(1:mtargets)
-         WRITE(iunit_out,'(A,2(2X,I8))') 'VALS ',mtargets,1
-         WRITE(iunit_out,'(A)') 'VALUES'
-         WRITE(iunit_out,'(ES22.12E3)') vals(1:mtargets)
-         CLOSE(iunit_out)
-         DEALLOCATE(fvec_temp)
-      ELSE IF ((ctype == LEV_CLEANUP) .or. (ctype == GADE_CLEANUP)) THEN
-          IF (ncnt /= 1 .or. ctype == GADE_CLEANUP) THEN
-             ! Write the input file
-             WRITE(temp_str,'(i5.5)') ncnt
-             proc_string = TRIM(id_string) // '.' // TRIM(ADJUSTL(temp_str))
+!=======
              CALL safe_open(iunit_out,iflag,TRIM('input.'//TRIM(proc_string)),'unknown','formatted')
              SELECT CASE(TRIM(equil_type))
                CASE('vmec2000','animec','flow','satire','parvmec','paravmec','vboot','vmec2000_oneeq')
->>>>>>> origin
+!>>>>>>> origin
                   CALL write_indata_namelist(iunit_out,ier)
                CASE('test')
              END SELECT
@@ -497,7 +473,7 @@
              CLOSE(iunit_out)
           END IF !lcoil_spline
 
-<<<<<<< HEAD
+!<<<<<<< HEAD
                CALL safe_open(iunit_out,iflag,TRIM('stellopt.'//TRIM(id_string)),'unknown','formatted',ACCESS_IN='APPEND')
                iflag = 1
                IF (ncnt == 0) WRITE(iunit_out,'(A,1X,F5.2)') 'VERSION',STELLOPT_VERSION
@@ -521,32 +497,10 @@
                WRITE(temp_str,'(i5.5)') ncnt
                proc_string = TRIM(id_string) // '.' // TRIM(ADJUSTL(temp_str))
                CALL safe_open(iunit_out,iflag,TRIM('input.'//TRIM(proc_string)),'unknown','formatted')
-=======
-          CALL safe_open(iunit_out,iflag,TRIM('stellopt.'//TRIM(id_string)),'unknown','formatted',ACCESS_IN='APPEND')
-          iflag = 1
-          IF (ncnt == 0) WRITE(iunit_out,'(A,1X,F5.2)') 'VERSION',STELLOPT_VERSION
-          WRITE(iunit_out,'(A,1X,I5.5)') 'ITER',ncnt
-          CALL stellopt_load_targets(mtargets,fvec_temp,iflag,ncnt)          ! Count
-          WRITE(iunit_out,'(A,2(2X,I8))') 'TARGETS ',mtargets,1
-          WRITE(iunit_out,'(A)') 'TARGETS'
-          WRITE(iunit_out,'(ES22.12E3)') targets(1:mtargets)
-          WRITE(iunit_out,'(A,2(2X,I8))') 'SIGMAS ',mtargets,1
-          WRITE(iunit_out,'(A)') 'SIGMAS'
-          WRITE(iunit_out,'(ES22.12E3)') sigmas(1:mtargets)
-          WRITE(iunit_out,'(A,2(2X,I8))') 'VALS ',mtargets,1
-          WRITE(iunit_out,'(A)') 'VALUES'
-          WRITE(iunit_out,'(ES22.12E3)') vals(1:mtargets)
-          CLOSE(iunit_out)
-          DEALLOCATE(fvec_temp)
-      ELSE IF (ctype == JAC_CLEANUP) THEN
-      ELSE IF (ctype == JUST_INPUT) THEN
-         ! Write the input file
-         WRITE(temp_str,'(i5.5)') ncnt
-         proc_string = TRIM(id_string) // '.' // TRIM(ADJUSTL(temp_str))
-         CALL safe_open(iunit_out,iflag,TRIM('input.'//TRIM(proc_string)),'unknown','formatted')
+!=======
          SELECT CASE(TRIM(equil_type))
             CASE('vmec2000','animec','flow','satire','parvmec','paravmec','vboot','vmec2000_oneeq')
->>>>>>> origin
+!>>>>>>> origin
                CALL write_indata_namelist(iunit_out,ier)
             CASE('test')
          END SELECT
