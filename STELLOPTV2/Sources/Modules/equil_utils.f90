@@ -264,6 +264,18 @@
             DO i = UBOUND(coefs,DIM=1), LBOUND(coefs,DIM=1), -1
                val = s_val*val + coefs(i)
             END DO
+         CASE ('power_series_rho2')
+            x0 = MIN(MAX(s_val,0.0),1.0)**0.25
+            IF (s_val .eq. 0) x0 = 0
+            DO i = UBOUND(coefs,DIM=1), LBOUND(coefs,DIM=1), -1
+               val = x0*val + coefs(i)
+            END DO
+         CASE ('power_series_rho')
+            x0 = MIN(MAX(s_val,0.0),1.0)**0.5
+            IF (s_val .eq. 0) x0 = 0
+            DO i = UBOUND(coefs,DIM=1), LBOUND(coefs,DIM=1), -1
+               val = x0*val + coefs(i)
+            END DO
          CASE ('power_series_0_boundaries')
             DO i = UBOUND(coefs,DIM=1), LBOUND(coefs,DIM=1), -1
                val = s_val*val + coefs(i)
@@ -425,8 +437,8 @@
             R_GRAD=R_grad,Z_GRAD=Z_grad)
       IF (ier == 0) THEN
          CALL get_equil_phi(s_val,phi_type,phi2,ier,phi_prime)
-         er = R_grad(3)*phi_prime
-         ez = Z_grad(3)*phi_prime
+         er = -R_grad(3)*phi_prime
+         ez = -Z_grad(3)*phi_prime
       ELSE
         er  = 0
         ez  = 0
@@ -870,7 +882,8 @@
          CASE ('two_power','two_power_hollow','two_power_offset','two_lorentz','gauss_trunc', &
                'gauss_trunc_offset','sum_atan','pedestal','bump','hollow','hollow2')
             profile_norm = 0.0_rprec  ! Don't normalize as we don't want to screw up our coefficients
-         CASE ('power_series','power_series_edge0','power_series_0_boundaries')
+         CASE ('power_series','power_series_edge0','power_series_0_boundaries', &
+               'power_series_rho','power_series_rho2')
             DO ik = LBOUND(x,DIM=1), UBOUND(x,DIM=1)
                profile_norm = profile_norm + x(ik)/(ik+1)
             END DO
