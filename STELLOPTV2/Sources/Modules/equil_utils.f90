@@ -665,7 +665,7 @@
       CALL get_equil_nhat(s,u,v,nhat,ier)
       CALL get_equil_Bcylsuv(s,u,v,br,bp,bz,ier,modb)
       phi_prime = phi_prime * 2 * rho * grho !dphi/drho=dphi/ds*ds/drho
-      nhat = nhat / SQRT(SUM(nhat*nhat))
+      nhat = -nhat / SQRT(SUM(nhat*nhat))
       bx = br * cos(v) - bp * sin(v)
       by = br * sin(v) + bp * cos(v)
       uperp(1) = by*nhat(3)-bz*nhat(2)
