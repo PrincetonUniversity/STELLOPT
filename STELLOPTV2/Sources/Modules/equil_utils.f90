@@ -896,6 +896,7 @@
             PRINT *,x(1:10)
             STOP
       END SELECT
+      profile_norm = ABS(profile_norm) ! Do this so we don't screw up MIN/MAX
       IF (ltriangulate) profile_norm = 0.0_rprec ! Don't use normalization in triangulation mode
       RETURN
       END FUNCTION profile_norm
