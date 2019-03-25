@@ -1108,7 +1108,7 @@
       IF ((myid == master) .and. (TRIM(equil_type(1:4)) == 'vmec') ) THEN
          WRITE(6,*)        " Equilibrium calculation provided by: "
          WRITE(6,"(2X,A)") "================================================================================="
-         WRITE(6,"(2X,A)") "=========   Parallel Variational Moments Equilibrium Code (v "//TRIM(version_vmec)//")      ========="
+         WRITE(6,"(2X,A)") "=========   Parallel Variational Moments Equilibrium Code (v "//TRIM(version_vmec)//")       ========="
          WRITE(6,"(2X,A)") "=========                (S. Hirshman, J. Whitson)                      ========="
          WRITE(6,"(2X,A)") "=========         http://vmecwiki.pppl.wikispaces.net/VMEC              ========="
          WRITE(6,"(2X,A)") "================================================================================="
@@ -1178,9 +1178,9 @@
 !DEC$ IF DEFINED (TRAVIS)
       IF (myid == master .and. ANY(sigma_ece < bigno)) THEN
          WRITE(6,*)        " ECE Radiation calculation provided by: "
+         CALL printversion_f77
          WRITE(6,"(2X,A)")        "================================================================================="
          WRITE(6,"(2X,A,F5.2,A)") "=========                            TRAVIS                             ========="
-         CALL printversion_f77
          WRITE(6,"(2X,A)")        "=========                    (N. Marushchenko)                          ========="
          WRITE(6,"(2X,A)")        "=========              nikolai.marushchenko@ipp.mpg.de                  ========="
          WRITE(6,"(2X,A)")        "================================================================================="
