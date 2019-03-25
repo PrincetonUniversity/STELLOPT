@@ -332,9 +332,10 @@ c     Get mpi parameters
          DO j = 1, n
             IF (xvmin(j) .ge. xvmax(j)) THEN
                info = 13
-               IF (myid .eq. master) WRITE(6,*) '   AT j=',j,
-     1            '; MIN=',xvmin(j),
-     2            '; X=',x(j),'; MAX=',xvmax(j)
+               IF (myid .eq. master) WRITE(6,'(A,I3,3(A,ES20.10))') 
+     1            '   AT j=',j,
+     2            '; MIN=',xvmin(j),
+     3            '; X=',x(j),'; MAX=',xvmax(j)
             END IF
          END DO
          IF (info > 0) GOTO 400
