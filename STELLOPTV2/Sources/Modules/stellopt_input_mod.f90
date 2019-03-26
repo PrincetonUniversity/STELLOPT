@@ -2319,7 +2319,7 @@
          ! Options for uniform winding surface separations
          IF (lregcoil_winding_surface_separation_opt) THEN
             WRITE(iunit,outflt) &
-                   'REGCOIL_WINDING_SURFACE_SEPARATION = ', &
+                   'REGCOIL_WINDING_SURFACE_SEPARATION', &
                    regcoil_winding_surface_separation
             WRITE(iunit,outboo) 'LREGCOIL_WINDING_SURFACE_SEPARATION', &
                    lregcoil_winding_surface_separation_opt
