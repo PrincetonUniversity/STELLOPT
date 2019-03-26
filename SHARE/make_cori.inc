@@ -1,5 +1,3 @@
-# -*- mode: makefile -*-
-
 #######################################################################
 #            Define Basic Utilities
 #######################################################################
@@ -16,8 +14,8 @@
 #######################################################################
 #            Define Compiler Flags
 #######################################################################
-  FLAGS_R = -fp-model strict -assume noold_unit_star -cxxlib
-  FLAGS_D = -g -O0 -traceback -fp-model strict -assume noold_unit_star -cxxlib
+  FLAGS_R = -fp-model strict -assume noold_unit_star -cxxlib 
+  FLAGS_D = -g -dynamic -traceback -fp-model strict -assume noold_unit_star -cxxlib
   LIBS    = 
 
 #######################################################################
@@ -367,8 +365,8 @@ endif
 # This is hear because of MPI above resetting LINK
 ifeq ($(MAKECMDGOALS),libstell.a)
   LINK = $(LINK_AR)
-  COMPILE += -fPIC
-  COMPILE_FREE += -fPIC
+  COMPILE += -fPIC -axMIC-AVX512,AVX
+  COMPILE_FREE += -fPIC -axMIC-AVX512,AVX
   INC_PATH = 
 endif
 ifeq ($(MAKECMDGOALS),libstell.so)
