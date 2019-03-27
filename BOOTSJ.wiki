@@ -79,7 +79,7 @@ The BOOTSJ code outputs three text files jBds.ext, answers.ext, and answers_plot
 {{{
 R  GNORM  AMAIN  LAMINT  OTHER  dI/ds  J_GRAD_NE  J_GRAD_NI  J_GRAD_TE  J_GRAD_TI  Q  FTRAPPED  <Jbs>/<Jbs-tok>  TE  TI  NE  NE/Zeff  BETA  <Jbs_dot_B>
 }}}
-
+The column dI/ds is the current density profile in units normalized to mu0.  The total current is the sum of this column divided by mu0=4*pi*1E-6.
 
 ----
 
