@@ -337,7 +337,8 @@
 !DEC$ ENDIF
 !DEC$ IF DEFINED (TRAVIS)
             CASE('travis')
-               CALL stellopt_travis(file_str,lscreen)
+               proc_string = file_str
+               CALL stellopt_travis(lscreen,ier)
 !DEC$ ENDIF
             CASE('coilopt++')
                CALL stellopt_coiloptpp(file_str,lscreen)
