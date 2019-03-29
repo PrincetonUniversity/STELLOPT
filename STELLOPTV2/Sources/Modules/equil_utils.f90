@@ -633,7 +633,7 @@
       REAL(rprec), PARAMETER :: c1 = -1.4811899942E+01
       !REAL(rprec), PARAMETER :: c0 =  3.9207616355E+01  ! From equations
       REAL(rprec), PARAMETER :: c0 =  3.8707616355E+01  ! From Fitting
-      REAL(rprec), PARAMETER :: temin =  1000.0  ! Comes from table (sort of)
+      REAL(rprec), PARAMETER :: temin =  750.0  ! Comes from table (sort of)
       fval = 0
       IF (s>1) RETURN
       CALL get_equil_emis_xics(s,TRIM(emis_xics_type),w,ier)
