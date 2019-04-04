@@ -96,7 +96,7 @@ MODULE beams3d_runtime
     INTEGER, PARAMETER :: MPI_FINE_ERR = 89
 
     INTEGER, PARAMETER :: MAXPARTICLES = 2**18
-    INTEGER, PARAMETER :: NLOCAL = 128  ! Number of local processors
+    INTEGER, PARAMETER :: NLOCAL = 136  ! Number of local processors
     INTEGER, PARAMETER :: MAXBEAMS = 16
     INTEGER, PARAMETER :: MAXPROFLEN = 512
 

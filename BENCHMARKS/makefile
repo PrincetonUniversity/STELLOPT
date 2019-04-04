@@ -1,40 +1,47 @@
-#Type "make release(debug)" at command line to make release(debug) version  
-#DO NOT alter the directory structure or move this makefile (must be in first subdirectory below top_level_dir)
-  MAKECMDGOALS = xstelloptv2
+#Basic files
   include ../make.inc
+
+# BINARY DIRECTORIES
   LIB_DIR = $(MYHOME)/libstell_dir
   BIN_DIR = ~/bin_cori
+
+# Setup Subdirectories
   VMEC_TEST_DIR = VMEC_TEST
   DIAGNO_TEST_DIR = DIAGNO_TEST
   STELLOPT_TEST_DIR = STELLOPT_TEST
+
+# We do the following to handle Testing on Large Systems (CORI)
+  MPI_RUN_OPTS_SM ?= $(MPI_RUN_OPTS)
+  MPI_RUN_OPTS_MD ?= $(MPI_RUN_OPTS)
+  MPI_RUN_OPTS_LG ?= $(MPI_RUN_OPTS)
 
 .PHONY: test_vmec
 
 test_vmec:
 	@echo "Beginning testing of VMEC2000"
 	@cd $(VMEC_TEST_DIR); rm -f jxbout* mercier* threed1* wout*; 
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xvmec2000 input.DSHAPE
-	@cd $(VMEC_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xvmec2000 input.DSHAPE
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xvmec2000 input.DSHAPE
+	@cd $(VMEC_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xvmec2000 input.DSHAPE
 	@cd $(VMEC_TEST_DIR) && ./compare_DSHAPE.py
 	@echo ""
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xvmec2000 input.SOLOVEV
-	@cd $(VMEC_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xvmec2000 input.SOLOVEV
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xvmec2000 input.SOLOVEV
+	@cd $(VMEC_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xvmec2000 input.SOLOVEV
 	@cd $(VMEC_TEST_DIR); ./compare_SOLOVEV.py
 	@echo ""
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xvmec2000 input.HELIOTRON
-	@cd $(VMEC_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xvmec2000 input.HELIOTRON
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xvmec2000 input.HELIOTRON
+	@cd $(VMEC_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xvmec2000 input.HELIOTRON
 	@cd $(VMEC_TEST_DIR); ./compare_HELIOTRON.py
 	@echo ""
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xvmec2000 input.ATF
-	@cd $(VMEC_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xvmec2000 input.ATF
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xvmec2000 input.ATF
+	@cd $(VMEC_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xvmec2000 input.ATF
 	@cd $(VMEC_TEST_DIR); ./compare_ATF.py
 	@echo ""
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xvmec2000 input.QAS
-	@cd $(VMEC_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xvmec2000 input.QAS
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xvmec2000 input.QAS
+	@cd $(VMEC_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xvmec2000 input.QAS
 	@cd $(VMEC_TEST_DIR); ./compare_QAS.py
 	@echo ""
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xvmec2000 input.DIII-D
-	@cd $(VMEC_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xvmec2000 input.DIII-D
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xvmec2000 input.DIII-D
+	@cd $(VMEC_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xvmec2000 input.DIII-D
 	@cd $(VMEC_TEST_DIR); ./compare_DIII-D.py
 	@echo "Tesing of VMEC2000 complete"
 	@echo ""
@@ -42,8 +49,8 @@ test_vmec:
 test_diagno:
 	@echo "Beginning testing of DIAGNO"
 	@cd $(DIAGNO_TEST_DIR); rm -f diagno_bench.* diagno_flux.* diagno_surf.* test_loops_b.* test_loops_j.*; 
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS) ~/bin/xdiagno -vmec bigtok -bench
-	@cd $(DIAGNO_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS) ~/bin/xdiagno -bench -vmec bigtok
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xdiagno -vmec bigtok -bench
+	@cd $(DIAGNO_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xdiagno -bench -vmec bigtok
 	@cd $(DIAGNO_TEST_DIR); ./compare_bigtok.py
 	@echo ""
 
@@ -87,38 +94,38 @@ test_stellopt:
 	@echo ""
 
 test_stellopt_lmdif:
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.LMDIF_TEST
-	@cd $(STELLOPT_TEST_DIR)/LMDIF_TEST; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.LMDIF_TEST; rm -f *_opt*
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.LMDIF_TEST
+	@cd $(STELLOPT_TEST_DIR)/LMDIF_TEST; $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.LMDIF_TEST; rm -f *_opt*
 	@echo ""
 
 test_stellopt_gade:
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.GADE_TEST
-	@cd $(STELLOPT_TEST_DIR)/GADE_TEST; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.GADE_TEST; rm -f *_opt*
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.GADE_TEST
+	@cd $(STELLOPT_TEST_DIR)/GADE_TEST; $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.GADE_TEST; rm -f *_opt*
 	@echo ""
 
 test_stellopt_basic:
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.BASIC
-	@cd $(STELLOPT_TEST_DIR)/BASIC; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.BASIC; rm -f *_opt*
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.BASIC
+	@cd $(STELLOPT_TEST_DIR)/BASIC; $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.BASIC; rm -f *_opt*
 	@echo ""
 
 test_stellopt_beams3d:
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.BEAMS3D
-	@cd $(STELLOPT_TEST_DIR)/BEAMS3D; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.BEAMS3D; rm -f *_opt*
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xstelloptv2 input.BEAMS3D
+	@cd $(STELLOPT_TEST_DIR)/BEAMS3D; $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xstelloptv2 input.BEAMS3D; rm -f *_opt*
 	@echo ""
 
 test_stellopt_iota_lmdif:
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.IOTA_LMDIF
-	@cd $(STELLOPT_TEST_DIR)/IOTA_LMDIF; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.IOTA_LMDIF; rm -f *_opt*
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.IOTA_LMDIF
+	@cd $(STELLOPT_TEST_DIR)/IOTA_LMDIF; $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.IOTA_LMDIF; rm -f *_opt*
 	@echo ""
 
 test_stellopt_recon_tok:
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.RECON_TOK
-	@cd $(STELLOPT_TEST_DIR)/RECON_TOK; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.RECON_TOK; rm -f *_opt*
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.RECON_TOK
+	@cd $(STELLOPT_TEST_DIR)/RECON_TOK; $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.RECON_TOK; rm -f *_opt*
 	@echo ""
 
 test_stellopt_tok_r0_delta:
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.TOK_R0_DELTA
-	@cd $(STELLOPT_TEST_DIR)/TOK_R0_DELTA; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.TOK_R0_DELTA; rm -f *_opt*
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.TOK_R0_DELTA
+	@cd $(STELLOPT_TEST_DIR)/TOK_R0_DELTA; $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.TOK_R0_DELTA; rm -f *_opt*
 	@echo ""
 
 test_stellopt_tok_r0_rho:
@@ -157,8 +164,8 @@ test_stellopt_terpsichore:
 	@echo ""
 
 test_stellopt_travis:
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.TRAVIS
-	@cd $(STELLOPT_TEST_DIR)/TRAVIS; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.TRAVIS; rm -f *_opt*
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.TRAVIS
+	@cd $(STELLOPT_TEST_DIR)/TRAVIS; $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.TRAVIS; rm -f *_opt*
 	@echo ""
 
 clean_test:
@@ -193,15 +200,18 @@ stellopt_cleanup_dir:
 help:
 	@echo "TESTING OF STELLOPT BUILDS"
 	@echo "   ENVIRONMENT VARIABLES (make.inc)"
-	@echo "      MPI_RUN:      " $(MPI_RUN)
-	@echo "      MPI_RUN_OPTS: " $(MPI_RUN_OPTS)
+	@echo "      MPI_RUN:         " $(MPI_RUN)
+	@echo "      MPI_RUN_OPTS:    " $(MPI_RUN_OPTS)
+	@echo "      MPI_RUN_OPTS_SM: " $(MPI_RUN_OPTS_SM)
+	@echo "      MPI_RUN_OPTS_MD: " $(MPI_RUN_OPTS_MD)
+	@echo "      MPI_RUN_OPTS_LG: " $(MPI_RUN_OPTS_LG)
 	@echo ""
-	@echo "      LCOILOPT:     " $(LCOILOPT)
-	@echo "      LGENE:        " $(LGENE)
-	@echo "      LREGCOIL:     " $(LREGCOIL)
-	@echo "      LSINFCS:      " $(LSFINCS)
-	@echo "      LTERPSICHORE: " $(LTERPSICHORE)
-	@echo "      LTRAVIS:      " $(LTRAVIS)
+	@echo "      LCOILOPT:        " $(LCOILOPT)
+	@echo "      LGENE:           " $(LGENE)
+	@echo "      LREGCOIL:        " $(LREGCOIL)
+	@echo "      LSINFCS:         " $(LSFINCS)
+	@echo "      LTERPSICHORE:    " $(LTERPSICHORE)
+	@echo "      LTRAVIS:         " $(LTRAVIS)
 	@echo ""
 	@echo "   COMMANDS"
 	@echo "      test_vmec     Tesing of VMEC"

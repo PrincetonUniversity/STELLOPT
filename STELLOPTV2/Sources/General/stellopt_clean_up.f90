@@ -35,9 +35,8 @@
 !                             animec_flag, flow_flag
       USE read_wout_mod, ONLY: read_wout_file, write_wout_file, read_wout_deallocate
       USE fdjac_mod, ONLY: flag_singletask, flag_cleanup, &
-                           JAC_CLEANUP => flag_cleanup_jac, &
-                           LEV_CLEANUP => flag_cleanup_lev, &
-                           BFGS_CLEANUP => flag_cleanup_bfgs
+                           JAC_CLEANUP => flag_cleanup_jac,&
+                           LEV_CLEANUP => flag_cleanup_lev
       USE gade_mod, ONLY: GADE_CLEANUP, PSO_CLEANUP
       
 !-----------------------------------------------------------------------
@@ -68,8 +67,6 @@
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
-      ! set ctype to iflag (which contains the 'cleanup' flag.
-      ! Re-use iflag for other things in the rest of routine
       ctype = iflag
       iflag = 0
       iunit = 10
@@ -227,6 +224,7 @@
                END DO
             END IF
 !DEC$ ENDIF
+<<<<<<< HEAD
 !<<<<<<< HEAD
                END IF
                ! Now open the Output file
@@ -260,6 +258,35 @@
              SELECT CASE(TRIM(equil_type))
                CASE('vmec2000','animec','flow','satire','parvmec','paravmec','vboot','vmec2000_oneeq')
 !>>>>>>> origin
+=======
+         END IF
+         ! Now open the Output file
+         ALLOCATE(fvec_temp(mtargets))
+         CALL safe_open(iunit_out,iflag,TRIM('stellopt.'//TRIM(id_string)),'unknown','formatted',ACCESS_IN='APPEND')
+         iflag = 1
+         IF (ncnt == 0) WRITE(iunit_out,'(A,1X,F5.2)') 'VERSION',STELLOPT_VERSION
+         WRITE(iunit_out,'(A,1X,I5.5)') 'ITER',ncnt
+         CALL stellopt_load_targets(mtargets,fvec_temp,iflag,ncnt)          ! Count
+         WRITE(iunit_out,'(A,2(2X,I8))') 'TARGETS ',mtargets,1
+         WRITE(iunit_out,'(A)') 'TARGETS'
+         WRITE(iunit_out,'(ES22.12E3)') targets(1:mtargets)
+         WRITE(iunit_out,'(A,2(2X,I8))') 'SIGMAS ',mtargets,1
+         WRITE(iunit_out,'(A)') 'SIGMAS'
+         WRITE(iunit_out,'(ES22.12E3)') sigmas(1:mtargets)
+         WRITE(iunit_out,'(A,2(2X,I8))') 'VALS ',mtargets,1
+         WRITE(iunit_out,'(A)') 'VALUES'
+         WRITE(iunit_out,'(ES22.12E3)') vals(1:mtargets)
+         CLOSE(iunit_out)
+         DEALLOCATE(fvec_temp)
+      ELSE IF ((ctype == LEV_CLEANUP) .or. (ctype == GADE_CLEANUP)) THEN
+          IF (ncnt /= 1 .or. ctype == GADE_CLEANUP) THEN
+             ! Write the input file
+             WRITE(temp_str,'(i5.5)') ncnt
+             proc_string = TRIM(id_string) // '.' // TRIM(ADJUSTL(temp_str))
+             CALL safe_open(iunit_out,iflag,TRIM('input.'//TRIM(proc_string)),'unknown','formatted')
+             SELECT CASE(TRIM(equil_type))
+               CASE('vmec2000','animec','flow','satire','parvmec','paravmec','vboot','vmec2000_oneeq')
+>>>>>>> f892badb24fd1f5b036c831835ac3993631960da
                   CALL write_indata_namelist(iunit_out,ier)
                CASE('test')
              END SELECT
@@ -407,19 +434,17 @@
               END IF
 !DEC$ ENDIF
 !DEC$ IF DEFINED (REGCOIL)
-
-                  ! Currently inside of the LEV/BFGS/GADE cleanup loop,
-                  ! and 'Keeping the mins' section
-                  IF ( ANY(sigma_regcoil_chi2_b < bigno) .and. &
-                     ( ANY(lregcoil_rcws_rbound_c_opt) .or. ANY(lregcoil_rcws_rbound_s_opt) .or. &
-                       ANY(lregcoil_rcws_zbound_c_opt) .or. ANY(lregcoil_rcws_zbound_s_opt) ) ) THEN
-                     !print *, '<---In LEV/BFGS/GADE REGCOIL cleanup.'
-                     !print *, '<---proc_string_old = ', proc_string_old
-                     !print *, '<---proc_string = ', proc_string
-                     CALL copy_txtfile('regcoil_nescout.'//TRIM(proc_string_old),&
-                                       'regcoil_nescout.'//TRIM(proc_string))
-                  END IF
-
+              ! Currently inside of LEV and GADE cleanup loop, and 
+              ! 'Keeping the mins' section
+              IF ( ANY(sigma_regcoil_chi2_b < bigno) .and. &
+                 ( ANY(lregcoil_rcws_rbound_c_opt) .or. ANY(lregcoil_rcws_rbound_s_opt) .or. &
+                   ANY(lregcoil_rcws_zbound_c_opt) .or. ANY(lregcoil_rcws_zbound_s_opt) ) ) THEN
+                   !print *, '<---In LEV/GADE cleanup.'
+                   !print *, '<---proc_string_old = ', proc_string_old
+                   !print *, '<---proc_string = ', proc_string
+                   CALL copy_txtfile('regcoil_nescout.'//TRIM(proc_string_old),&
+                                     'regcoil_nescout.'//TRIM(proc_string))
+              END IF
 !DEC$ ENDIF
 !DEC$ IF DEFINED (TERPSICHORE)
               IF (ANY(sigma_kink < bigno)) THEN
@@ -473,34 +498,30 @@
              CLOSE(iunit_out)
           END IF !lcoil_spline
 
-!<<<<<<< HEAD
-               CALL safe_open(iunit_out,iflag,TRIM('stellopt.'//TRIM(id_string)),'unknown','formatted',ACCESS_IN='APPEND')
-               iflag = 1
-               IF (ncnt == 0) WRITE(iunit_out,'(A,1X,F5.2)') 'VERSION',STELLOPT_VERSION
-               WRITE(iunit_out,'(A,1X,I5.5)') 'ITER',ncnt
-               CALL stellopt_load_targets(mtargets,fvec_temp,iflag,ncnt)          ! Count
-               WRITE(iunit_out,'(A,2(2X,I8))') 'TARGETS ',mtargets,1
-               WRITE(iunit_out,'(A)') 'TARGETS'
-               WRITE(iunit_out,'(ES22.12E3)') targets(1:mtargets)
-               WRITE(iunit_out,'(A,2(2X,I8))') 'SIGMAS ',mtargets,1
-               WRITE(iunit_out,'(A)') 'SIGMAS'
-               WRITE(iunit_out,'(ES22.12E3)') sigmas(1:mtargets)
-               WRITE(iunit_out,'(A,2(2X,I8))') 'VALS ',mtargets,1
-               WRITE(iunit_out,'(A)') 'VALUES'
-               WRITE(iunit_out,'(ES22.12E3)') vals(1:mtargets)
-               CLOSE(iunit_out)
-               DEALLOCATE(fvec_temp)
-            ELSE IF (ctype == JAC_CLEANUP) THEN
-               ! Not doing anything in the Jacobian cleanup section
-            ELSE IF (ctype == JUST_INPUT) THEN
-               ! Write the input file
-               WRITE(temp_str,'(i5.5)') ncnt
-               proc_string = TRIM(id_string) // '.' // TRIM(ADJUSTL(temp_str))
-               CALL safe_open(iunit_out,iflag,TRIM('input.'//TRIM(proc_string)),'unknown','formatted')
-!=======
+          CALL safe_open(iunit_out,iflag,TRIM('stellopt.'//TRIM(id_string)),'unknown','formatted',ACCESS_IN='APPEND')
+          iflag = 1
+          IF (ncnt == 0) WRITE(iunit_out,'(A,1X,F5.2)') 'VERSION',STELLOPT_VERSION
+          WRITE(iunit_out,'(A,1X,I5.5)') 'ITER',ncnt
+          CALL stellopt_load_targets(mtargets,fvec_temp,iflag,ncnt)          ! Count
+          WRITE(iunit_out,'(A,2(2X,I8))') 'TARGETS ',mtargets,1
+          WRITE(iunit_out,'(A)') 'TARGETS'
+          WRITE(iunit_out,'(ES22.12E3)') targets(1:mtargets)
+          WRITE(iunit_out,'(A,2(2X,I8))') 'SIGMAS ',mtargets,1
+          WRITE(iunit_out,'(A)') 'SIGMAS'
+          WRITE(iunit_out,'(ES22.12E3)') sigmas(1:mtargets)
+          WRITE(iunit_out,'(A,2(2X,I8))') 'VALS ',mtargets,1
+          WRITE(iunit_out,'(A)') 'VALUES'
+          WRITE(iunit_out,'(ES22.12E3)') vals(1:mtargets)
+          CLOSE(iunit_out)
+          DEALLOCATE(fvec_temp)
+      ELSE IF (ctype == JAC_CLEANUP) THEN
+      ELSE IF (ctype == JUST_INPUT) THEN
+         ! Write the input file
+         WRITE(temp_str,'(i5.5)') ncnt
+         proc_string = TRIM(id_string) // '.' // TRIM(ADJUSTL(temp_str))
+         CALL safe_open(iunit_out,iflag,TRIM('input.'//TRIM(proc_string)),'unknown','formatted')
          SELECT CASE(TRIM(equil_type))
             CASE('vmec2000','animec','flow','satire','parvmec','paravmec','vboot','vmec2000_oneeq')
-!>>>>>>> origin
                CALL write_indata_namelist(iunit_out,ier)
             CASE('test')
          END SELECT

@@ -103,6 +103,8 @@
                                         r1_ti_line, phi1_ti_line, z1_ti_line
       REAL(rprec), DIMENSION(nprof) ::  target_xics,sigma_xics, &
                                         target_xics_bright,sigma_xics_bright, &
+                                        target_xics_w3,sigma_xics_w3, &
+                                        target_xics_v,sigma_xics_v, &
                                         r0_xics, phi0_xics, z0_xics, &
                                         r1_xics, phi1_xics, z1_xics
       REAL(rprec), DIMENSION(nprof) ::  target_faraday,sigma_faraday, &
@@ -184,7 +186,6 @@
       REAL(rprec), DIMENSION(nigroup)    :: target_coilcrv,  sigma_coilcrv
       REAL(rprec), DIMENSION(nigroup)    :: target_coilself, sigma_coilself
       REAL(rprec)                        :: target_coilsep,  sigma_coilsep
-      REAL(rprec), DIMENSION(3)          :: target_analytic, sigma_analytic
 
       INTEGER, PARAMETER :: jtarget_aspect     = 100
       INTEGER, PARAMETER :: jtarget_rbtor      = 1001
@@ -219,6 +220,8 @@
       INTEGER, PARAMETER :: jtarget_line_ti    = 2021
       INTEGER, PARAMETER :: jtarget_xics       = 2022
       INTEGER, PARAMETER :: jtarget_xics_bright= 2023
+      INTEGER, PARAMETER :: jtarget_xics_w3    = 2024
+      INTEGER, PARAMETER :: jtarget_xics_v     = 2025
       INTEGER, PARAMETER :: jtarget_press      = 203
       INTEGER, PARAMETER :: jtarget_vphi       = 204
       INTEGER, PARAMETER :: jtarget_iota       = 300  
@@ -255,7 +258,10 @@
       INTEGER, PARAMETER :: jtarget_coilself   = 617
       INTEGER, PARAMETER :: jtarget_x          = 900
       INTEGER, PARAMETER :: jtarget_y          = 901
+
       INTEGER, PARAMETER :: jtarget_analytic = 5170
+
+
       
 
       CONTAINS
@@ -328,6 +334,10 @@
             WRITE(iunit, out_format) 'XICS Signal'
          CASE(jtarget_xics_bright)
             WRITE(iunit, out_format) 'XICS Brightness'
+         CASE(jtarget_xics_w3)
+            WRITE(iunit, out_format) 'XICS W3 Factor'
+         CASE(jtarget_xics_v)
+            WRITE(iunit, out_format) 'XICS Perp. Velocity'
          CASE(jtarget_te)
             WRITE(iunit, out_format) 'Electron Temperature'
          CASE(jtarget_ti)
@@ -402,8 +412,6 @@
             WRITE(iunit, out_format) 'Number of Coil Self-intersections'
          CASE(jtarget_curvature_p2)
             WRITE(iunit, out_format) 'Maximum 2nd Principal Curvature'
-         CASE(jtarget_analytic)
-            WRITE(iunit, out_format) 'Analytic'
       END SELECT
       END SUBROUTINE write_targets
       
