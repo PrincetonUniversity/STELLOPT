@@ -151,6 +151,7 @@
          DO ik = 1, dex_am
             ier = 0
             CALL get_equil_zeff(am_aux_s(ik),TRIM(zeff_type),zeff_temp(ik),ier)
+            zeff_temp(ik) = MAX(zeff_temp(ik),1.0)
          END DO
          pmass_type = 'akima_spline'
          ! Create p
