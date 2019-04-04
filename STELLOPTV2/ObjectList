@@ -43,7 +43,6 @@ chisq_balloon.o \
 chisq_pmin.o \
 chisq_coil_bnorm.o \
 chisq_regcoil_chi2_b.o \
-chisq_analytic.o \
 chisq_vessel.o \
 chisq_b0.o \
 chisq_z0.o \
@@ -89,7 +88,6 @@ stellopt_bootsj.o \
 stellopt_sfincs.o \
 stellopt_clean_up.o \
 stellopt_main.o \
-stellopt_analytic.o \
 stellopt_balloon.o \
 stellopt_magdiags.o \
 stellopt_orbits.o \

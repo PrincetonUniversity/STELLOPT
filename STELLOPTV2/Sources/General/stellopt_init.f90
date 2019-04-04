@@ -242,12 +242,6 @@
                     END IF
                  END DO
               END DO
-
-         ! Added by JCS
-         !     IF (lanalytic_x_opt) nvars = nvars + 1    
-         !     IF (lanalytic_y_opt) nvars = nvars + 1    
-         !     IF (lanalytic_z_opt) nvars = nvars + 1    
- 
          CASE('spec')
          CASE('test')
             IF (lxval_opt)  nvars = nvars + 1
@@ -401,55 +395,6 @@
                     END DO
                  END DO
               END IF
-
-              IF (lanalytic_x_opt) THEN
-                 IF (lauto_domain) THEN
-                    analytic_x_min = analytic_x - &
-                        ABS(pct_domain*analytic_x)
-                    analytic_x_max = analytic_x + &
-                        ABS(pct_domain*analytic_x)
-                 END IF
-                 nvar_in = nvar_in + 1
-                 vars(nvar_in) = analytic_x
-                 vars_min(nvar_in) = analytic_x_min
-                 vars_max(nvar_in) = analytic_x_max
-                 var_dex(nvar_in) = ianalytic_x
-                 diag(nvar_in) = danalytic_x_opt
-                 arr_dex(nvar_in,1) = 1
-              END IF
-
-              IF (lanalytic_y_opt) THEN
-                 IF (lauto_domain) THEN
-                    analytic_y_min = analytic_y - &
-                        ABS(pct_domain*analytic_y)
-                    analytic_y_max = analytic_y + &
-                        ABS(pct_domain*analytic_y)
-                 END IF
-                 nvar_in = nvar_in + 1
-                 vars(nvar_in) = analytic_y
-                 vars_min(nvar_in) = analytic_y_min
-                 vars_max(nvar_in) = analytic_y_max
-                 var_dex(nvar_in) = ianalytic_y
-                 diag(nvar_in) = danalytic_y_opt
-                 arr_dex(nvar_in,1) = 1
-              END IF
-
-              IF (lanalytic_z_opt) THEN
-                 IF (lauto_domain) THEN
-                    analytic_z_min = analytic_z - &
-                        ABS(pct_domain*analytic_z)
-                    analytic_z_max = analytic_z + &
-                        ABS(pct_domain*analytic_z)
-                 END IF
-                 nvar_in = nvar_in + 1
-                 vars(nvar_in) = analytic_z
-                 vars_min(nvar_in) = analytic_z_min
-                 vars_max(nvar_in) = analytic_z_max
-                 var_dex(nvar_in) = ianalytic_z
-                 diag(nvar_in) = danalytic_z_opt
-                 arr_dex(nvar_in,1) = 1
-              END IF
-
               IF (lphiedge_opt) THEN
                  IF (lauto_domain) THEN
                     phiedge_min = phiedge - ABS(pct_domain*phiedge)
