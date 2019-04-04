@@ -180,6 +180,7 @@
          CALL backspace_out(6,36)
          WRITE(6,'(38X)',ADVANCE='no')
          CALL backspace_out(6,36)
+         WRITE(6,*)
          CALL FLUSH(6)
       END IF    
       
