@@ -50,6 +50,9 @@
             INTEGER(8)   :: mconf
             CHARACTER(*) :: name
          END FUNCTION mcLoad
+         SUBROUTINE mcFree(mconf) 
+            INTEGER(8)   :: mconf
+         END SUBROUTINE mcFree
       END INTERFACE
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
@@ -110,11 +113,11 @@
             CALL set_VesselMirrors_f77(vessel_ece,mirror_ece)
 
             ! Allocate Arrays
-            narr = SUM(COUNT(sigma_ece < bigno,DIM=2))
+            narr = MAXVAL(COUNT(sigma_ece < bigno,DIM=2),DIM=1)
             IF (ALLOCATED(radto_ece)) DEALLOCATE(radto_ece)
             IF (ALLOCATED(radtx_ece)) DEALLOCATE(radtx_ece)
-            ALLOCATE(radto_ece(nsys,nprof))
-            ALLOCATE(radtx_ece(nsys,nprof))
+            ALLOCATE(radto_ece(nsys,narr))
+            ALLOCATE(radtx_ece(nsys,narr))
             radto_ece = 0.0; radtx_ece = 0.0
  
 !DEC$ IF DEFINED (MPI_OPT)
@@ -125,7 +128,7 @@
             mnum=0
             i = 1
             DO
-               IF (SUM(mnum,DIM=1) == nprof) EXIT  ! Have to use ns_b because of logic
+               IF (SUM(mnum,DIM=1) == narr) EXIT  ! Have to use ns_b because of logic
                IF (i > numprocs_local) i = 1
                mnum(i) = mnum(i) + 1
                i=i+1
@@ -147,7 +150,11 @@
             nra = nra_ece
             nphi = nphi_ece
             DO i = 1,nsys
+
+               ! Don't evaluate if not set or not in [mystart,myend]
                IF (ALL(sigma_ece(i,:) >= bigno)) CYCLE
+               IF (sigma_ece(i,mystart) >= bigno) CYCLE
+
                ! Set Antenna Position
                antennaPosition(1:3) = antennaPosition_ece(i,1:3)
                targetPosition(1:3) = targetPosition_ece(i,1:3)
@@ -190,39 +197,41 @@
                !           maxHarm, umax, nu, nrho)
 
                ! Cycle over frequencies
-               !j = CEILING(REAL(s) / REAL(nsys))
                DO j = mystart,myend
-               IF (sigma_ece(i,j) >= bigno) CYCLE
-               wmode = 0 ! O-mode
-               CALL run_ECE_Beam_f77m(n,freq_ece(i,j), wmode, radto_ece(i,j))
-               wmode = 1 ! X-mode
-               CALL run_ECE_Beam_f77m(n,freq_ece(i,j), wmode, radtx_ece(i,j))
+                  IF (sigma_ece(i,j) >= bigno) CYCLE
+                  wmode = 0 ! O-mode
+                  CALL run_ECE_Beam_f77m(n,freq_ece(i,j), wmode, radto_ece(i,j))
+                  wmode = 1 ! X-mode
+                  CALL run_ECE_Beam_f77m(n,freq_ece(i,j), wmode, radtx_ece(i,j))
                END DO
             END DO
 
 !DEC$ IF DEFINED (MPI_OPT)
             IF (myworkid == master) THEN
-               CALL MPI_REDUCE(MPI_IN_PLACE,radto_ece,nsys*nprof,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
-               CALL MPI_REDUCE(MPI_IN_PLACE,radtx_ece,nsys*nprof,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
+               CALL MPI_REDUCE(MPI_IN_PLACE,radto_ece,nsys*narr,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
+               CALL MPI_REDUCE(MPI_IN_PLACE,radtx_ece,nsys*narr,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
             ELSE
-               CALL MPI_REDUCE(radto_ece,radto_ece,nsys*nprof,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
-               CALL MPI_REDUCE(radtx_ece,radtx_ece,nsys*nprof,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
+               CALL MPI_REDUCE(radto_ece,radto_ece,nsys*narr,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
+               CALL MPI_REDUCE(radtx_ece,radtx_ece,nsys*narr,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
             END IF
 !DEC$ ENDIF
 
+            ! Deallocate variables
+            CALL MCFREE(mconf8)
+            DEALLOCATE(te_prof,ne_prof,z_prof)
+            IF (myworkid /= master) DEALLOCATE(radto_ece,radtx_ece,rho)
+
+            ! Print to screen
             IF (lscreen) THEN
                WRITE(6,'(5X,A,3X,A,3X,A,3X,A)') 'Beam','Freq [GHz]','Trad (0) [keV]','Trad (X) [keV]'
                DO i = 1, nsys
                   IF (ALL(sigma_ece(i,:) >= bigno)) CYCLE
-                  DO j = 1, nprof
+                  DO j = 1, narr
                      IF (sigma_ece(i,j) >= bigno) CYCLE
                      WRITE(6,'(5X,i3,3x,f8.2,2(5x,f10.3))') i,freq_ece(i,j),radto_ece(i,j),radtx_ece(i,j)
                   END DO
                END DO
             END IF
-
-            DEALLOCATE(te_prof,ne_prof,z_prof)
-            IF (myworkid /= master) DEALLOCATE(radto_ece,radtx_ece,rho)
 !DEC$ ENDIF
          CASE('spec')
       END SELECT
