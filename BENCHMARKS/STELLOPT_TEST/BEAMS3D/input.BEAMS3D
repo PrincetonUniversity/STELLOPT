@@ -135,8 +135,8 @@
 !       Particle Transport
 !       Mu = 0.5*m*v*v/B or (Thermal Energy)/B
 !------------------------------------------------------------------------
-  NU_ORBIT = 10
-  NV_ORBIT = 10
+  NU_ORBIT = 20
+  NV_ORBIT = 20
   NP_ORBIT = 20
   VLL_ORBIT = 20*7.76E5  ! 50 [keV]
   VLL_ORBIT = 20*5.00E5

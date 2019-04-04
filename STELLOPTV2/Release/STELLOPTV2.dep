@@ -280,6 +280,18 @@ chisq_xics_bright.o : \
       equil_utils.o 
       
 
+chisq_xics_w3.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      equil_utils.o 
+      
+
+chisq_xics_v.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      equil_utils.o 
+      
+
 chisq_faraday.o : \
       stellopt_runtime.o \
       stellopt_targets.o \

@@ -67,7 +67,8 @@
       IMPLICIT NONE
       LOGICAL  ::  lphiedge_opt, lcurtor_opt, lpscale_opt, lbcrit_opt,&
                    lmix_ece_opt, lregcoil_winding_surface_separation_opt,&
-                   lregcoil_current_density_opt, lxval_opt, lyval_opt
+                   lregcoil_current_density_opt, lxval_opt, lyval_opt, &
+                   lxics_v0_opt
       LOGICAL, DIMENSION(nigroup)  ::  lextcur_opt
       LOGICAL, DIMENSION(1:20)  ::  laphi_opt
       LOGICAL, DIMENSION(0:20)  ::  lam_opt, lac_opt, lai_opt,&
@@ -94,17 +95,17 @@
       REAL(rprec)     ::  dphiedge_opt, dcurtor_opt, dbcrit_opt, &
                           dpscale_opt, dmix_ece_opt, dxval_opt, dyval_opt, &
                           dregcoil_winding_surface_separation_opt, &
-                          dregcoil_current_density_opt
+                          dregcoil_current_density_opt, dxics_v0_opt
       REAL(rprec)     ::  phiedge_min, curtor_min, bcrit_min, &
                           pscale_min, mix_ece_min, xval_min, yval_min, &
                           regcoil_winding_surface_separation_min, &
-                          regcoil_current_density_min
+                          regcoil_current_density_min, xics_v0_min
       REAL(rprec)     ::  phiedge_max, curtor_max, bcrit_max, &
                           pscale_max, mix_ece_max, xval_max, yval_max, &
                           regcoil_winding_surface_separation_max, &
-                          regcoil_current_density_max
+                          regcoil_current_density_max, xics_v0_max
       REAL(rprec), DIMENSION(nigroup)  ::  dextcur_opt,extcur_min,extcur_max
-      REAL(rprec), DIMENSION(1:20)     ::  daphi_opt,aphi_min,aphi_max
+      REAL(rprec), DIMENSION(1:20)     ::  daphi_opt, aphi_min, aphi_max
       REAL(rprec), DIMENSION(0:20)     ::  dam_opt, dac_opt, dai_opt,&
                                            dah_opt, dat_opt,&
                                            dte_opt, dne_opt, dti_opt, dth_opt,&
@@ -116,7 +117,7 @@
                                            te_min, ne_min, ti_min, th_min, &
                                            te_max, ne_max, ti_max, th_max, &
                                            zeff_max, zeff_min
-      REAL(rprec)                       :: mix_ece, xval, yval
+      REAL(rprec)                       :: mix_ece, xval, yval, xics_v0
       REAL(rprec)                       :: regcoil_winding_surface_separation
       REAL(rprec)                       :: regcoil_current_density
       INTEGER :: regcoil_nlambda, regcoil_num_field_periods
@@ -143,7 +144,7 @@
                                             ti_aux_f, th_aux_f,&
                                             zeff_aux_f, &
                                             phi_aux_f, beamj_aux_f, &
-                                            bootj_aux_f, emis_xics_f
+                                            bootj_aux_f, emis_xics_f 
       REAL(rprec), DIMENSION(ndatafmax) ::  dam_s_opt, dam_f_opt, &
                                             dac_s_opt, dac_f_opt, &
                                             dai_s_opt, dai_f_opt, &
@@ -195,8 +196,8 @@
       REAL(rprec), DIMENSION(-mpol_rcws:mpol_rcws, -ntor_rcws:ntor_rcws) :: regcoil_rcws_zbound_c_max, regcoil_rcws_zbound_s_max
 
       CHARACTER(256)  ::  equil_type, te_type, ne_type, ti_type, th_type, &
-                          beamj_type, bootj_type, zeff_type, emis_xics_type, windsurfname, &
-                          regcoil_nescin_filename, bootcalc_type
+                          beamj_type, bootj_type, zeff_type, emis_xics_type,windsurfname, &
+                          regcoil_nescin_filename, bootcalc_type, phi_type
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: sfincs_J_dot_B_flux_surface_average, sfincs_B_squared_flux_surface_average
       
       ! Analytic:
@@ -227,6 +228,7 @@
       INTEGER, PARAMETER ::  imixece    = 15
       INTEGER, PARAMETER ::  ixval      = 16
       INTEGER, PARAMETER ::  iyval      = 17
+      INTEGER, PARAMETER ::  ixics_v0   = 18
       INTEGER, PARAMETER ::  iextcur    = 21
       INTEGER, PARAMETER ::  iaphi      = 31
       INTEGER, PARAMETER ::  iam        = 32
@@ -300,6 +302,8 @@
             WRITE(iunit,out_format) 'X_VAL:  X Variable Test'
          CASE(iyval)
             WRITE(iunit,out_format) 'Y_VAL:  Y Variable Test'
+         CASE(ixics_v0)
+            WRITE(iunit,out_format) 'xics_v0:  XICS V0'
          CASE(iphiedge)
             WRITE(iunit,out_format) 'PHIEDGE:  Total Enclosed Toroidal Flux'
          CASE(imixece)
