@@ -12,6 +12,7 @@
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
       USE vparams, ONLY: ntor_rcws, mpol_rcws
+      USE bfgs_params, ONLY: enable_flip, enable_tr_red
       USE stellopt_runtime
       USE stellopt_vars
       USE equil_utils, ONLY: profile_norm
@@ -62,6 +63,7 @@
 !            opt_type           Optimizer Type
 !                                  'LMDIF'    (default)
 !                                  'GADE'
+!                                  'BFGS_FD'
 !            ftol               Determines tollerance in sum of squares (LMDIF)
 !            xtol               Determines relative errror in approximate solution (LMDIF)
 !            gtol               Determines orthagonality of solution (LMDIF)
@@ -76,6 +78,18 @@
 !                               Determines number of divisions if > numprocs (MAP)
 !            cr_strategy        Crossover strategy (GADE, 0:exponential, 1: binomial)
 !            npopulation        Size of population (defaults to nproc if -1 or not set)
+!                               Variables for BFGS_FD - these may
+!                               get merged with others above to reduce the total
+!                               number of variables
+!                         c_armijo
+!                         rho_backtrack
+!                         alpha_backtrack, 
+!                         beta_hessian
+!                         alpha_min
+!                         dx_init
+!                         enable_flip
+!                         enable_tr_red
+!
 !            lkeep_mins         Keep minimum files.
 !            lphiedge_opt       Logical to control PHIEDGE variation
 !            lcurtor_opt        Logical to control CURTOR variation
@@ -241,8 +255,12 @@
 !          varaible starting with sigma which defines the error bars.
 !-----------------------------------------------------------------------
       NAMELIST /optimum/ nfunc_max, equil_type, opt_type,&
-                         ftol, xtol, gtol, epsfcn, factor, refit_param, &
-                         cr_strategy, mode, lkeep_mins, lrefit,&
+                         ftol, xtol, gtol, epsfcn, factor, &
+                         c_armijo, rho_backtrack, alpha_backtrack, &
+                         beta_hessian, alpha_min, dx_init, enable_flip, &
+                         enable_tr_red, &
+                         refit_param, &
+                         cr_strategy, mode, lkeep_mins, lrefit, &
                          npopulation, noptimizers, &
                          lphiedge_opt, lcurtor_opt, lbcrit_opt, &
                          lpscale_opt, lmix_ece_opt, lxics_v0_opt, &
@@ -403,7 +421,15 @@
                          regcoil_rcws_zbound_c_min, regcoil_rcws_zbound_s_min, &
                          regcoil_rcws_rbound_c_max, regcoil_rcws_rbound_s_max, &
                          regcoil_rcws_zbound_c_max, regcoil_rcws_zbound_s_max, &
-                         target_curvature_P2, sigma_curvature_P2
+                         target_curvature_P2, sigma_curvature_P2, &
+                         target_analytic, sigma_analytic, &
+                         lanalytic_x_opt, lanalytic_y_opt, lanalytic_z_opt, &
+                         analytic_x, analytic_y, analytic_z, &
+                         danalytic_x_opt, danalytic_y_opt, danalytic_z_opt
+
+      NAMELIST /analytic_nml/ analytic_fcnt, analytic_coeff, analytic_x_pow, &
+                         analytic_y_pow, analytic_z_pow, analytic_x_off, &
+                         analytic_y_off, analytic_z_off
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -430,6 +456,14 @@
       xtol            = 1.0D-06
       gtol            = 0.0
       epsfcn          = 1.0D-06
+      rho_backtrack   = 0.9D-0
+      alpha_backtrack = 1.0
+      c_armijo        = 1.0D-04
+      dx_init         = 1.0D-06
+      beta_hessian    = 0.1D-0
+      alpha_min       = 1.0D-10
+      enable_flip     = .false.
+      enable_tr_red   = .false.
       mode            = 1       ! Default in case user forgets
       factor          = 100.
       cr_strategy     = 0
@@ -540,6 +574,12 @@
       dregcoil_rcws_rbound_s_opt = -1.0
       dregcoil_rcws_zbound_c_opt = -1.0
       dregcoil_rcws_zbound_s_opt = -1.0
+      lanalytic_x_opt = .FALSE.
+      lanalytic_y_opt = .FALSE.
+      lanalytic_z_opt = .FALSE.
+      danalytic_x_opt = -1.0
+      danalytic_y_opt = -1.0
+      danalytic_z_opt = -1.0
 
       IF (.not.ltriangulate) THEN  ! This is done because values may be set by trinagulate
          phiedge_min     = -bigno;  phiedge_max     = bigno
@@ -604,7 +644,13 @@
       sigma_regcoil_chi2_b  = bigno
       target_regcoil_current_density = 8.0e6
       sigma_regcoil_current_density  = bigno
-      
+      ! Analytic options
+      target_analytic = 0.0
+      sigma_analytic = bigno
+      analytic_x = 5;  analytic_x_min = -bigno;  analytic_x_max = bigno
+      analytic_y = 5;  analytic_y_min = -bigno;  analytic_y_max = bigno
+      analytic_z = 5;  analytic_z_min = -bigno;  analytic_z_max = bigno
+
       ne_type         = 'akima_spline'
       zeff_type       = 'akima_spline'
       phi_type        = 'akima_spline'
@@ -1084,6 +1130,27 @@
 !DEC$ ENDIF
       ! End of REGCOIL winding surface optimization initializion steps
 
+      ! Analytic optimization
+      IF (ANY(sigma_analytic < bigno)) THEN
+        IF (myid == master) THEN
+        !  WRITE(6, *) '<----Analytic optimization'
+        END IF
+        verbose = (myid == master)
+        CALL safe_open(iunit, istat, TRIM(filename), 'old', 'formatted')
+        READ(iunit, nml=analytic_nml, iostat=istat)
+        CLOSE(iunit)
+        IF (myid == master) THEN
+          !WRITE(6,*) '<----Analytic: Read in namelist'
+          !WRITE(6,*) 'analytic_coeff=',analytic_coeff
+          !WRITE(6,*) 'analytic_x_pow=',analytic_x_pow
+          !WRITE(6,*) 'analytic_y_pow=',analytic_y_pow
+          !WRITE(6,*) 'analytic_z_pow=',analytic_z_pow
+          !WRITE(6,*) 'analytic_x_off=',analytic_x_off
+          !WRITE(6,*) 'analytic_y_off=',analytic_y_off
+          !WRITE(6,*) 'analytic_z_off=',analytic_z_off
+        END IF
+      END IF
+
       ! If fixed boundary optimization or mapping turn off restart
       IF (ANY(ANY(lbound_opt,2),1) .or. opt_type=='map') lno_restart = .true.
       ! Test for proper normalization on ne profile
@@ -1242,6 +1309,16 @@
          WRITE(6,*) '  further information.'
       END IF
 !DEC$ ENDIF
+
+      IF (myid == master .and. ANY(sigma_analytic < bigno)) THEN
+         WRITE(6,*)        " Analytic expressions provided by: "
+         WRITE(6,"(2X,A)") "================================================================================="
+         WRITE(6,"(2X,A)") "=========                           Analytic                            ========="
+         WRITE(6,"(2X,A)") "=========             j dot c dot schmitt at auburn dot edu             ========="
+         WRITE(6,"(2X,A)") "================================================================================="
+         WRITE(6,*)        "    "
+      END IF
+
 !DEC$ IF DEFINED (DKES_OPT)
       IF (myid == master .and. ANY(sigma_dkes < bigno)) THEN
          WRITE(6,*)        " Drift-Kinetic Equation Solver (DKES) provided by: "
@@ -2232,6 +2309,41 @@
         ! end of Options for winding surface (Fourier Series) variation
       END IF  ! End of REGCOIL options
 
+      ! Analytic options - Simply, and not so flexible test functions added by
+      ! JCS
+      !IF ((lanalytic_x_opt) .or. &
+      !    (lanalytic_y_opt) .or. &
+      !    (lanalytic_z_opt)) THEN
+      !   WRITE(iunit,'(A)') '!--------------------------------'
+      !   WRITE(iunit,'(A)') '!  ANALYTIC OPTIMIZATION        !'
+      !   WRITE(iunit,'(A)') '!--------------------------------'
+      !   DO ii = 1,UBOUND(target_analytic, 1)
+      !      IF (sigma_analytic(ii) < bigno) THEN
+      !          WRITE(iunit,"(2X,A,I4.3,A,E22.14)") &
+      !                'TARGET_ANALYTIC(',ii,') = ', target_analytic(ii), &
+      !                'SIGMA_ANALYTIC(',ii,') = ', sigma_analytic(ii)
+      !      END IF
+      !   END DO
+      !   WRITE(iunit,"(3X,A,E22.14)") &
+      !         'danalytic_x_opt = ', danalytic_x_opt, &
+      !         'danalytic_y_opt = ', danalytic_y_opt, &
+      !         'danalytic_z_opt = ', danalytic_z_opt
+      !   WRITE(iunit,"(3X,A,E22.14)") &
+      !         'analytic_x = ', analytic_x, &
+      !         'analytic_y = ', analytic_y, &
+      !         'analytic_z = ', analytic_z
+      !   DO ii = 1,INT(analytic_fcnt)
+      !      WRITE(iunit,"(7X,A,I4.3,A,E22.14)") &
+      !            'analytic_coeff(',ii,') = ', analytic_coeff(ii), &
+      !            'analytic_x_pow(',ii,') = ', analytic_x_pow(ii), &
+      !            'analytic_y_pow(',ii,') = ', analytic_y_pow(ii), &
+      !            'analytic_z_pow(',ii,') = ', analytic_z_pow(ii), &
+      !            'analytic_x_off(',ii,') = ', analytic_x_off(ii), &
+      !            'analytic_y_off(',ii,') = ', analytic_y_off(ii), &
+      !            'analytic_z_off(',ii,') = ', analytic_z_off(ii)
+      !   END DO
+      !END IF
+  
       IF (ANY(sigma_extcur < bigno)) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          WRITE(iunit,'(A)') '!          Coil Current Optimization'

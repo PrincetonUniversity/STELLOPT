@@ -209,6 +209,9 @@
                                   diag(:),vars_min(:),vars_max(:)
       CHARACTER(256)           :: id_string, opt_type, proc_string, &
                                   proc_string_old, screen_str, xvec_file
+      REAL(rprec)              :: c_armijo, rho_backtrack, &
+                                  alpha_backtrack, beta_hessian, &
+                                  alpha_min, dx_init
       
       REAL(rprec), PARAMETER :: STELLOPT_VERSION = 2.65
       

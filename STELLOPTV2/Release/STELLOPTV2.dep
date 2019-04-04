@@ -103,6 +103,13 @@ chisq_regcoil_chi2_b.o : \
       equil_vals.o
       
       
+chisq_analytic.o : \
+      stellopt_runtime.o \
+      stellopt_input_mod.o \
+      stellopt_vars.o \
+      equil_vals.o 
+      
+      
 chisq_rbtor.o : \
       stellopt_runtime.o \
       stellopt_targets.o \

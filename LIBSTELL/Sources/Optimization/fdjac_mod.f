@@ -4,6 +4,7 @@
       INTEGER, PARAMETER :: flag_singletask = -1, flag_cleanup = -100
       INTEGER, PARAMETER :: flag_cleanup_jac = -100
       INTEGER, PARAMETER :: flag_cleanup_lev = -101
+      INTEGER, PARAMETER :: flag_cleanup_bfgs = -102
 
       INTEGER :: m, n, ncnt, max_processors, num_lm_params
       INTEGER :: ix_min, jac_count, n_red                                !PPPL
@@ -401,13 +402,11 @@ c*************** Updated by SAL****************************************
       epsmch = dpmpar(1)
       eps = SQRT(MAX(epsfcn,epsmch))
       if( epsfcn < 0 ) eps = - eps
-
       h = eps*ABS(x)
       WHERE (h .le. eps/100.) h = eps/100.
       WHERE (h .eq. zero) h=eps
       WHERE (flip) h = -h
       h_order = h
-
       DO i = 1, n
          x_global(:,i) = x(:)
          x_global(i,i) = x(i) + h(i)
@@ -420,6 +419,7 @@ c*************** Updated by SAL****************************************
      1                   MPI_COMM_STEL)
       CALL MPI_BCAST(fvec_array,m*n,MPI_DOUBLE_PRECISION,
      1               master,MPI_COMM_STEL,ierr_mpi)
+
 
 !
 !     Calculate Jacobian
@@ -437,6 +437,7 @@ c*************** Updated by SAL****************************************
             IF (temp_norm > fnorm) flip(i) = .not. flip(i)
             END IF
       END DO
+
 
 !
 !     Check to make sure there is a search direction (PPPL)

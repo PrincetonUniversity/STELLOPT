@@ -16,6 +16,7 @@ c                    differently.
       MODULE mpi_params
       INTEGER, PARAMETER :: master=0
       INTEGER, PARAMETER :: WORKER_SPLIT_KEY = 3
+      INTEGER, PARAMETER :: WORKER_INITIAL_RUN_SPLIT_KEY = 4
       INTEGER :: myid=master, numprocs, ierr_mpi, numworkers
       INTEGER :: myworkid=master, my_master=master
       ! Communicators
@@ -24,10 +25,10 @@ c                    differently.
       INTEGER :: MPI_COMM_STEL = 327                               !communicator which is a copy of MPI_COMM_WORLD (user must set this up)
       INTEGER :: MPI_COMM_MYWORLD = 411                            !communicator 
       INTEGER :: MPI_COMM_FIELDLINES = 328                         !communicator for FIELDLINES code
-      INTEGER :: MPI_COMM_TORLINES = 329                         !communicator for FIELDLINES code
+      INTEGER :: MPI_COMM_TORLINES = 329                         !communicator for TORLINES code
       INTEGER :: MPI_COMM_BEAMS = 330                            !communicator for BEAMS3D code
       INTEGER :: MPI_COMM_BOOZER = 331                           !communicator for BOOZ_XFORM code
-      INTEGER :: MPI_COMM_DIAGNO = 332                           !communicator for BOOZ_XFORM code
+      INTEGER :: MPI_COMM_DIAGNO = 332                           !communicator for DIAGNO code
       INTEGER :: MPI_COMM_PARVMEC = 101                           !communicator for PARVMEC code
 
 !DEC$ IF DEFINED (MPI_OPT)

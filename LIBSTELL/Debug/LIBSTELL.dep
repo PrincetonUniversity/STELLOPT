@@ -699,6 +699,22 @@ ga_sp.o : \
       safe_open_mod.o 
       
 
+bfgs_params.o : \
+      safe_open_mod.o \
+      mpi_params.o \
+      stel_kinds.o \
+      fdjac_mod.o 
+
+
+bfgs_backtrack.o : \
+      bfgs_params.o 
+
+
+bfgs_fd.o : \
+      bfgs_params.o \
+      bfgs_backtrack.o
+
+
 lmdif.o : \
       fdjac_mod.o \
       lmpar_mod.o \
