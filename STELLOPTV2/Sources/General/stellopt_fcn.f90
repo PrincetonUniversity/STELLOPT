@@ -153,9 +153,6 @@
          IF (var_dex(nvar_in) == iregcoil_rcws_rbound_s) regcoil_rcws_rbound_s(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
          IF (var_dex(nvar_in) == iregcoil_rcws_zbound_c) regcoil_rcws_zbound_c(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
          IF (var_dex(nvar_in) == iregcoil_rcws_zbound_s) regcoil_rcws_zbound_s(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
-         IF (var_dex(nvar_in) == ianalytic_x) analytic_x = x(nvar_in)
-         IF (var_dex(nvar_in) == ianalytic_y) analytic_y = x(nvar_in)
-         IF (var_dex(nvar_in) == ianalytic_z) analytic_z = x(nvar_in)
       END DO
 
       ! Adust Boundary Representation
@@ -374,7 +371,6 @@
            CALL stellopt_regcoil_chi2_b(lscreen, iflag)
          end if
 !DEC$ ENDIF
-         IF (ANY(sigma_analytic < bigno)) CALL stellopt_analytic(lscreen, iflag)
 
          ! Now we load target values if an error was found then
          ! exagerate the fvec values so that those directions are not

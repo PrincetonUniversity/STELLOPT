@@ -33,18 +33,11 @@
 !        iunit       File unit number
 !----------------------------------------------------------------------
       INTEGER ::  ier, iunit,m_sav
-
+      
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
       mtargets=0
-      !------------- TEST TARGETS ----------------------------
-      ! X
-      IF (sigma_x < bigno)  &
-         CALL chisq_x(target_x,sigma_x,ncnt,iflag)
-      ! Y
-      IF (sigma_y < bigno)  &
-         CALL chisq_y(target_y,sigma_y,ncnt,iflag)
       !------------- SCALAR TARGETS ----------------------------
       ! PHIEDGE
       IF (sigma_phiedge < bigno)  &
@@ -64,9 +57,6 @@
       ! Z0
       IF (sigma_z0 < bigno)  &
          CALL chisq_z0(target_z0,sigma_z0,ncnt,iflag)
-      ! B0
-      IF (sigma_b0 < bigno)  &
-         CALL chisq_b0(target_b0,sigma_b0,ncnt,iflag)
       ! VOLUME
       IF (sigma_volume < bigno)  &
          CALL chisq_volume(target_volume,sigma_volume,ncnt,iflag)
@@ -87,16 +77,7 @@
          CALL chisq_aspect(target_aspect,sigma_aspect,ncnt,iflag)
       ! CURVATURE (kertosis)
       IF (sigma_curvature < bigno)  &
-         CALL chisq_curvature(target_curvature,sigma_curvature,ncnt,iflag)
-      ! KAPPA (ellipticity)
-      IF (sigma_kappa < bigno)  &
-         CALL chisq_kappa(target_kappa,sigma_kappa,ncnt,iflag)
-      ! KAPPA (ellipticity box)
-      IF (sigma_kappa_box < bigno)  &
-         CALL chisq_kappa_box(target_kappa_box,sigma_kappa_box,ncnt,iflag)
-      ! KAPPA (ellipticity avg)
-      IF (sigma_kappa_avg < bigno)  &
-         CALL chisq_kappa_avg(target_kappa_avg,sigma_kappa_avg,ncnt,iflag)
+         CALL chisq(target_curvature,sigma_curvature,ncnt,iflag)
       ! ASPECT RATIO (MAX)
       IF (sigma_aspect_max < bigno)  &
          CALL chisq_aspect(target_aspect_max,sigma_aspect_max,ncnt,iflag)
@@ -119,18 +100,6 @@
       ! LINE ION TEMPERATURE
       IF (ANY(sigma_ti_line < bigno)) &
          CALL chisq_line_ti(target_ti_line, sigma_ti_line, ncnt,iflag)
-      ! XICS Brightness
-      IF (ANY(sigma_xics_bright < bigno)) &
-         CALL chisq_xics_bright(target_xics_bright, sigma_xics_bright, ncnt,iflag)
-      ! XICS Ti
-      IF (ANY(sigma_xics < bigno)) &
-         CALL chisq_xics(target_xics, sigma_xics, ncnt,iflag)
-      ! XICS W3
-      IF (ANY(sigma_xics_w3 < bigno)) &
-         CALL chisq_xics_w3(target_xics_w3, sigma_xics_w3, ncnt,iflag)
-      ! XICS V
-      IF (ANY(sigma_xics_v < bigno)) &
-         CALL chisq_xics_v(target_xics_v, sigma_xics_v, ncnt,iflag)
       ! SOFT X-RAYS
       IF (ANY(sigma_sxr < bigno)) &
          CALL chisq_sxr(target_sxr, sigma_sxr, ncnt,iflag)
@@ -168,9 +137,6 @@
       ! Parallel Current <J.B>
       IF (ANY(sigma_jdotb < bigno)) &
          CALL chisq_jdotb(target_jdotb, sigma_jdotb, ncnt,iflag)
-      ! Magnetic Well
-      IF (ANY(sigma_magwell < bigno)) &
-         CALL chisq_magwell(target_magwell, sigma_magwell, ncnt,iflag)
       ! B_min
       IF (ANY(sigma_bmin < bigno)) &
          CALL chisq_bmin(target_bmin, sigma_bmin, ncnt,iflag)
@@ -184,17 +150,6 @@
       IF (ANY(sigma_jcurv < bigno)) &
          CALL chisq_jcurv(target_jcurv, sigma_jcurv, ncnt,iflag)
          
-      !------------- COIL GEOMETRY TARGETS ---------------------
-      ! Coil lengths
-      IF (ANY(sigma_coillen < bigno)) &
-         CALL chisq_coillen(target_coillen, sigma_coillen, ncnt, iflag)
-      IF (sigma_coilsep < bigno) &
-         CALL chisq_coilsep(target_coilsep, sigma_coilsep, ncnt, iflag)
-      IF (ANY(sigma_coilcrv < bigno)) &
-         CALL chisq_coilcrv(target_coilcrv, sigma_coilcrv, ncnt, iflag)
-      IF (ANY(sigma_coilself < bigno)) &
-         CALL chisq_coilself(target_coilself, sigma_coilself, ncnt, iflag)
-
       !------------- EXTERNAL TARGETS --------------------------
       !  This section of the code relys upon external libraries
       !  for calculation of target parameters
@@ -237,9 +192,6 @@
       ! |Bmn| Helicity
       IF (ANY(sigma_helicity < bigno)) &
          CALL chisq_helicity(target_helicity, sigma_helicity, ncnt,iflag)
-      ! |Bmn| Helicity (OLD)
-      IF (ANY(sigma_helicity_old < bigno)) &
-         CALL chisq_helicity_ornl(target_helicity_old, sigma_helicity_old, ncnt,iflag)
       ! J*
       IF (ANY(sigma_Jstar < bigno)) &
          CALL chisq_jstar(target_Jstar, sigma_Jstar, ncnt,iflag)
@@ -249,13 +201,6 @@
       ! Coil Optimization
       IF (sigma_coil_bnorm < bigno) &
          CALL chisq_coil_bnorm(target_coil_bnorm, sigma_coil_bnorm, ncnt,iflag)
-      ! REGCOIL Coil Optimization (CHI2_B targets)
-      IF (ANY(sigma_regcoil_chi2_b < bigno)) THEN
-         CALL chisq_regcoil_chi2_b(target_regcoil_chi2_b, sigma_regcoil_chi2_b, ncnt,iflag)
-      END IF
-      IF (sigma_curvature_p2 < bigno) &
-         CALL chisq_curvature_p2(target_curvature_p2, sigma_curvature_p2, ncnt, iflag)
-
       ! Kink
       IF (ANY(sigma_kink < bigno)) &
          CALL chisq_kink(target_kink, sigma_kink, ncnt,iflag)
