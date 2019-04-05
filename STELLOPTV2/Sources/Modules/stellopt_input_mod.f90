@@ -275,7 +275,8 @@
                          ne_opt, te_opt, ti_opt, th_opt, zeff_opt, &
                          ne_type, te_type, ti_type, th_type, &
                          beamj_type, bootj_type, zeff_type, phi_type, &
-                         bootcalc_type, sfincs_s, sfincs_min_procs, sfincs_Er_option, vboot_tolerance, &
+                         bootcalc_type, sfincs_s, sfincs_min_procs, sfincs_Er_option, &
+                         vboot_tolerance, vboot_max_bootsj_iterations, &
                          ne_min, te_min, ti_min, th_min, beamj_f_min, &
                          bootj_f_min, zeff_min, zeff_f_min, phi_f_min, &
                          ne_max, te_max, ti_max, th_max, beamj_f_max, &
@@ -645,6 +646,9 @@
       sfincs_s        = -1 
       sfincs_s(1:4)   = (/ 0.2, 0.4, 0.6, 0.8 /)
       vboot_tolerance = 0.01
+      ! This default setting is very high - set it to 8 to 20 if bootsj is
+      ! having issues converging 
+      vboot_max_bootsj_iterations = 1e4
       sfincs_min_procs = 1
       xics_v0          = 0.0
       emis_xics_s(1:5) = (/0.0,0.25,0.50,0.75,1.0/)
@@ -1397,6 +1401,7 @@
          WRITE(iunit,outint) 'SFINCS_MIN_PROCS',sfincs_min_procs
          WRITE(iunit,outflt) 'VBOOT_TOLERANCE',vboot_tolerance
          WRITE(iunit,outstr) 'BOOTCALC_TYPE',TRIM(bootcalc_type)
+         WRITE(iunit,outint) 'VBOOT_MAX_BOOTSJ_ITERATIONS',vboot_max_bootsj_iterations
       END IF
       WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
       WRITE(iunit,'(A)') '!       Optimized Quantities'

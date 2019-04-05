@@ -178,8 +178,11 @@
             curtor_bootstrap = SUM(AC_fit_results(1:irup)) * ds_fine
             curtor_vmec = curtor_bootstrap + curtor_beam
 
-            IF (vboot_convergence_factor < vboot_tolerance) THEN
+            IF ((vboot_convergence_factor < vboot_tolerance) .or. (vboot_iteration >= vboot_max_bootsj_iterations)) THEN
                WRITE(6,"(a,i4,a,es10.3,a,es10.3,a)") "Vboot iteration",vboot_iteration,": ctor=",curtor_vmec,", vboot convergence factor=",vboot_convergence_factor,". Tolerance achieved."
+               IF (vboot_iteration >= vboot_max_bootsj_iterations) THEN
+                  WRITE(6,"(a,i4)") "<---Maximum Vboot bootsj iterations reached:", vboot_max_bootsj_iterations
+               END IF
                exit_after_next_vmec_run = .true. ! VMEC is cheap, so always finish the vboot iteration with 1 last vmec run.
             ELSE
                WRITE(6,"(a,i4,a,es10.3,a,es10.3)")   "Vboot iteration",vboot_iteration,": ctor=",curtor_vmec,", vboot convergence factor=",vboot_convergence_factor
