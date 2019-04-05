@@ -88,6 +88,9 @@
          ELSE
             WRITE(6,'(A,I6)')               '   # of Particles to Start: ', nparticles
          END IF
+         IF (lvessel) WRITE(6,'(A)')    '   VESSEL: ' // TRIM(vessel_string)
+         IF (lcoil) WRITE(6,'(A)')    '   COIL: ' // TRIM(coil_string)
+         IF (lmgrid) WRITE(6,'(A)')    '   MGRID: ' // TRIM(mgrid_string)
          IF (lcollision) WRITE(6,'(A)') '   COLLISION OPERATOR ON!'
          IF (lvac)  WRITE(6,'(A)') '   VACUUM FIELDS ONLY!'
          IF (ldepo) WRITE(6,'(A)') '   DEPOSITION ONLY!'
@@ -238,7 +241,6 @@
       
       ! Get setup vessel
       IF (lvessel .and. (.not. lplasma_only .or. ldepo)) THEN
-         IF (myworkid == master) PRINT *,'Loading vessel:',TRIM(vessel_string)
          CALL wall_load_txt(TRIM(vessel_string),ier)
          IF (myworkid /= master) DEALLOCATE(vertex,face) ! Do this to save memory
          IF (lverb) CALL wall_info(6)

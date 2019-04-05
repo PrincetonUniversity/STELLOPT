@@ -633,15 +633,20 @@
       REAL(rprec), PARAMETER :: c1 = -1.4811899942E+01
       !REAL(rprec), PARAMETER :: c0 =  3.9207616355E+01  ! From equations
       REAL(rprec), PARAMETER :: c0 =  3.8707616355E+01  ! From Fitting
-      REAL(rprec), PARAMETER :: temin =  1000.0  ! Comes from table (sort of)
+      REAL(rprec), PARAMETER :: temin =  100.0  ! The database ends here
       fval = 0
       IF (s>1) RETURN
       CALL get_equil_emis_xics(s,TRIM(emis_xics_type),w,ier)
       w = MAX(w,0.0)
       CALL get_equil_te(s,TRIM(te_type),te,ier)
       te = MAX(te,temin)
-      te = LOG(te) ! interpolation in log of te
-      fval = w*EXP((((c3*te)+c2)*te+c1)*te+c0)
+      IF (te > temin) THEN
+      	te = LOG(te) ! interpolation in log of te
+      	fval = w*EXP((((c3*te)+c2)*te+c1)*te+c0)
+      ELSE
+!        fval = w*8.1262088954E-01*(EXP(te)).*1E-3
+        fval = w*8.1262088954E-01*(te/temin)
+      END IF
       fval = MAX(fval,0.0)*SQRT(dx*dx+dy*dy+dz*dz)
       RETURN
       END SUBROUTINE fcn_xics_w3

@@ -335,6 +335,11 @@
                IF (lverb_beams) WRITE(6, '(A)') '----- BEAMS3D DONE -----'
 
 !DEC$ ENDIF
+!DEC$ IF DEFINED (TRAVIS)
+            CASE('travis')
+               proc_string = file_str
+               CALL stellopt_travis(lscreen,ier)
+!DEC$ ENDIF
             CASE('coilopt++')
                CALL stellopt_coiloptpp(file_str,lscreen)
             CASE('regcoil_chi2_b')
