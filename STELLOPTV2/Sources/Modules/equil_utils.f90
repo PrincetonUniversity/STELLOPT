@@ -652,26 +652,30 @@
       REAL(rprec), INTENT(out) :: fval
       REAL(rprec) :: phi_val, phi_prime,Bav,Bavsq, &
                      rho,vp,grho,grho2,&
-                     br,bp,bx,by,bz,modb
-      REAL(rprec) :: nhat(3), uperp(3)
+                     br,bp,bx,by,bz,modb,&
+                     rt,zt,h
+      REAL(rprec) :: nhat(3), uperp(3),Rg(3),Zg(3)
       INTEGER, INTENT(inout) :: ier
       fval = 0
       IF (s>1) RETURN
       CALL get_equil_phi(s,phi_type,phi_val,ier,phi_prime)
+      CALL get_equil_RZ(s,u,v,Rt,Zt,ier,Rg,Zg)
       !CALL get_equil_Bav(s,Bav,Bavsq,ier) !<B>,<B^2>
-      CALL get_equil_rho(s,rho,vp,grho,grho2,ier)
+      !CALL get_equil_rho(s,rho,vp,grho,grho2,ier)
       ! To make these lines work we need to implement
       ! passing u and v
       CALL get_equil_nhat(s,u,v,nhat,ier)
       CALL get_equil_Bcylsuv(s,u,v,br,bp,bz,ier,modb)
-      phi_prime = phi_prime * 2 * rho * grho !dphi/drho=dphi/ds*ds/drho
+      !h = SQRT(Rg(3)*Rg(3)+Zg(3)*Zg(3))*0.5/sqrt(s)
+      !phi_prime = phi_prime / (modb*h)
+      phi_prime = 2*phi_prime*sqrt(s) / (modb*SQRT(Rg(3)*Rg(3)+Zg(3)*Zg(3)))
       nhat = -nhat / SQRT(SUM(nhat*nhat))
       bx = br * cos(v) - bp * sin(v)
       by = br * sin(v) + bp * cos(v)
       uperp(1) = by*nhat(3)-bz*nhat(2)
       uperp(2) = bz*nhat(1)-bx*nhat(1)
       uperp(3) = bx*nhat(2)-by*nhat(1)
-      uperp    = uperp*phi_prime/(modb*modb)
+      uperp    = uperp*phi_prime/modb
       fval = uperp(1)*dx+uperp(2)*dy+uperp(3)*dz
       RETURN
       END SUBROUTINE fcn_xics_v
