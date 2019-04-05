@@ -1182,9 +1182,9 @@
 !DEC$ IF DEFINED (TRAVIS)
       IF (myid == master .and. ANY(sigma_ece < bigno)) THEN
          WRITE(6,*)        " ECE Radiation calculation provided by: "
-         CALL printversion_f77
          WRITE(6,"(2X,A)")        "================================================================================="
-         WRITE(6,"(2X,A,F5.2,A)") "=========                            TRAVIS                             ========="
+         CALL printversion_sopt_f77
+         !WRITE(6,"(2X,A,F5.2,A)") "=========                            TRAVIS                             ========="
          WRITE(6,"(2X,A)")        "=========                    (N. Marushchenko)                          ========="
          WRITE(6,"(2X,A)")        "=========              nikolai.marushchenko@ipp.mpg.de                  ========="
          WRITE(6,"(2X,A)")        "================================================================================="

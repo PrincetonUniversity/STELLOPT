@@ -283,7 +283,7 @@
                IF (ABS(br_vc) > 0)   B_R(i,j,k)   = B_R(i,j,k) + br_vc
                IF (ABS(bphi_vc) > 0) B_PHI(i,j,k) = B_PHI(i,j,k) + bphi_vc
                IF (ABS(bz_vc) > 0)   B_Z(i,j,k)   = B_Z(i,j,k) + bz_vc
-            ELSE
+            ELSE IF (ier > 1) THEN ! Only report real errors not failure to find tolerance errors
                WRITE(6,*) myworkid,mylocalid,i,j,k,ier
             END IF
          !ELSE
@@ -311,6 +311,7 @@
          WRITE(6,'(36X)',ADVANCE='no')
          CALL FLUSH(6)
          CALL backspace_out(6,36)
+         WRITE(6,*)
          CALL FLUSH(6)
       END IF    
       
