@@ -346,7 +346,8 @@
          IF (ANY(sigma_kink < bigno) .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
 !DEC$ ENDIF
 !DEC$ IF DEFINED (TRAVIS)
-         IF (ANY(sigma_ece < bigno)) CALL stellopt_travis(lscreen,iflag)
+         ctemp_str = 'travis'
+         IF (ANY(sigma_ece < bigno) .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
 !DEC$ ENDIF
 !DEC$ IF DEFINED (DKES_OPT)
          IF (ANY(sigma_dkes < bigno)) CALL stellopt_dkes(lscreen,iflag)
