@@ -140,7 +140,7 @@
       INTEGER                           ::  sfincs_min_procs
       CHARACTER(256)  ::  sfincs_Er_option
       REAL(rprec)                       ::  vboot_tolerance
-      INTEGER                           ::  vboot_max_bootsj_iterations
+      INTEGER                           ::  vboot_max_iterations
       REAL(rprec), DIMENSION(ndatafmax) ::  ne_aux_f, te_aux_f, &
                                             ti_aux_f, th_aux_f,&
                                             zeff_aux_f, &

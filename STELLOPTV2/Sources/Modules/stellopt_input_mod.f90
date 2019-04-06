@@ -276,7 +276,7 @@
                          ne_type, te_type, ti_type, th_type, &
                          beamj_type, bootj_type, zeff_type, phi_type, &
                          bootcalc_type, sfincs_s, sfincs_min_procs, sfincs_Er_option, &
-                         vboot_tolerance, vboot_max_bootsj_iterations, &
+                         vboot_tolerance, vboot_max_iterations, &
                          ne_min, te_min, ti_min, th_min, beamj_f_min, &
                          bootj_f_min, zeff_min, zeff_f_min, phi_f_min, &
                          ne_max, te_max, ti_max, th_max, beamj_f_max, &
@@ -648,7 +648,7 @@
       vboot_tolerance = 0.01
       ! This default setting is very high - set it to 8 to 20 if bootsj is
       ! having issues converging 
-      vboot_max_bootsj_iterations = 1e4
+      vboot_max_iterations = 1e4
       sfincs_min_procs = 1
       xics_v0          = 0.0
       emis_xics_s(1:5) = (/0.0,0.25,0.50,0.75,1.0/)
