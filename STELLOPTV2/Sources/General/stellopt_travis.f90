@@ -53,6 +53,9 @@
          SUBROUTINE mcFree(mconf) 
             INTEGER(8)   :: mconf
          END SUBROUTINE mcFree
+         SUBROUTINE VesselFree(mconf) 
+            INTEGER(8)   :: mconf
+         END SUBROUTINE VesselFree
       END INTERFACE
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
@@ -218,6 +221,7 @@
 
             ! Deallocate variables
             CALL MCFREE(mconf8)
+            CALL VesselFree(mVessel)
             DEALLOCATE(te_prof,ne_prof,z_prof)
             IF (myworkid /= master) DEALLOCATE(radto_ece,radtx_ece,rho)
 
