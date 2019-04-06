@@ -1403,7 +1403,7 @@
          WRITE(iunit,outint) 'SFINCS_MIN_PROCS',sfincs_min_procs
          WRITE(iunit,outflt) 'VBOOT_TOLERANCE',vboot_tolerance
          WRITE(iunit,outstr) 'BOOTCALC_TYPE',TRIM(bootcalc_type)
-         WRITE(iunit,outint) 'VBOOT_MAX_BOOTSJ_ITERATIONS',vboot_max_bootsj_iterations
+         WRITE(iunit,outint) 'VBOOT_MAX_ITERATIONS',vboot_max_iterations
       END IF
       WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
       WRITE(iunit,'(A)') '!       Optimized Quantities'
