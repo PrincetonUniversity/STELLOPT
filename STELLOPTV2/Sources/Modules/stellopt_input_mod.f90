@@ -646,9 +646,11 @@
       sfincs_s        = -1 
       sfincs_s(1:4)   = (/ 0.2, 0.4, 0.6, 0.8 /)
       vboot_tolerance = 0.01
-      ! This default setting is very high - set it to 8 to 20 if bootsj is
-      ! having issues converging 
-      vboot_max_iterations = 1e4
+      ! The default setting for VBOOT_MAX_ITERATIONS is very high (1e4).
+      ! If VBOOT is not converging, try setting this to a smaller number.
+      ! For BOOTSJ, a setting of 8-20 works.
+      ! For SFINCS, this setting has not been tested.
+      vboot_max_iterations = 1e4  ! The maximum number of VBOOT iterations.
       sfincs_min_procs = 1
       xics_v0          = 0.0
       emis_xics_s(1:5) = (/0.0,0.25,0.50,0.75,1.0/)
