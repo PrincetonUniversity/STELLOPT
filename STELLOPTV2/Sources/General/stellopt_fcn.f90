@@ -368,7 +368,7 @@
          ! JCS: skipping parallelization for now 
          ! ctemp_str = 'regcoil_chi2_b'
          ! IF (sigma_regcoil_chi2_b < bigno .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen)
-         IF (ANY(sigma_regcoil_chi2_b < bigno)) then
+         IF (ANY(sigma_regcoil_chi2_b < bigno) .and. (iflag >=0)) then
            CALL stellopt_regcoil_chi2_b(lscreen, iflag)
          end if
 !DEC$ ENDIF
