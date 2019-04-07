@@ -475,6 +475,9 @@
                      vkp1fac = zero
                      WHERE(rkp1av < zero) vkp1fac = - rkp1av
                      vqqprox = (dk/rkp_p)*sqrt(tau*vkp1fac*dkpfac)*qqfac
+                  CASE('prox_l2')
+                     vqqprox = L2
+                     WHERE(vqqprox > zero) vqqprox=vqqprox*0.01
                   CASE('prox_tem_proll','temproxy','tem_overlap')
                      DO ialpha = 1, nalpha0_
                         bmax = MAXVAL(Bhat(ialpha,:))
