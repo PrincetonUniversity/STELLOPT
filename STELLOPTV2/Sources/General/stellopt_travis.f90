@@ -207,6 +207,9 @@
                   wmode = 1 ! X-mode
                   CALL run_ECE_Beam_f77m(n,freq_ece(i,j), wmode, radtx_ece(i,j))
                END DO
+
+               ! Free the vessel here (only loaded if we get to here)
+               CALL VesselFree(mVessel)
             END DO
 
 !DEC$ IF DEFINED (MPI_OPT)
@@ -221,7 +224,6 @@
 
             ! Deallocate variables
             CALL MCFREE(mconf8)
-            CALL VesselFree(mVessel)
             DEALLOCATE(te_prof,ne_prof,z_prof)
             IF (myworkid /= master) DEALLOCATE(radto_ece,radtx_ece,rho)
 
