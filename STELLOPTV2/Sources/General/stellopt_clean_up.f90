@@ -243,7 +243,10 @@
          WRITE(iunit_out,'(ES22.12E3)') vals(1:mtargets)
          CLOSE(iunit_out)
          DEALLOCATE(fvec_temp)
-      ELSE IF ((ctype == LEV_CLEANUP) .or. (ctype == GADE_CLEANUP)) THEN
+      # ELSE IF ((ctype == LEV_CLEANUP) .or. (ctype == GADE_CLEANUP)) THEN
+      ELSE IF ((ctype == LEV_CLEANUP) .or. &
+               (ctype == GADE_CLEANUP) .or. &
+               (ctype == BFGS_CLEANUP) ) THEN
           IF (ncnt /= 1 .or. ctype == GADE_CLEANUP) THEN
              ! Write the input file
              WRITE(temp_str,'(i5.5)') ncnt
