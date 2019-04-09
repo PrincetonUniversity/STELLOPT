@@ -259,9 +259,6 @@
       INTEGER, PARAMETER :: jtarget_x          = 900
       INTEGER, PARAMETER :: jtarget_y          = 901
 
-      INTEGER, PARAMETER :: jtarget_analytic = 5170
-
-
       
 
       CONTAINS
