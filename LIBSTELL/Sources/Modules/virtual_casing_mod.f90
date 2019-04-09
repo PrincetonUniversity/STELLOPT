@@ -1009,7 +1009,7 @@
 
 #else
          IF (.not.ALLOCATED(vrtwrk)) THEN
-            wrklen = ((maxcls_nag-ndim_nag)/(2*ndim_nag) + 1)*(2*ndim_nag+2*nfun_nag+2) + 17*nfun_nag + 256
+            wrklen = ((maxcls_nag-ndim_nag)/(2*ndim_nag) + 1)*(2*ndim_nag+2*nfun_nag+2) + 17*nfun_nag + 1
             ALLOCATE(vrtwrk(wrklen),STAT=istat)
             IF (istat .ne. 0) THEN
                WRITE(6,*) ' ALLOCATION ERROR IN: bfield_virtual_casing_adapt_dbl'
@@ -1022,10 +1022,16 @@
                      relreq_nag,0,wrklen,restar,finest_nag,absest_nag,funcls,istat,vrtwrk)
          !PRINT *,istat,mincls_nag,funcls,maxcls_nag,finest_nag(1),finest_nag(2),finest_nag(3)
          IF (istat == 1) THEN
-            maxcls_nag = maxcls_nag*10
-            mincls_nag = funcls
-            restar = 1
-            istat = 0
+            ! For now we don't try to restart and just live with the result
+            !maxcls_nag = maxcls_nag*10
+            !mincls_nag = funcls
+            !restar = 1
+            !istat = 0
+            bx = finest_nag(1)
+            by = finest_nag(2)
+            bz = finest_nag(3)
+            adapt_rerun=.false.
+            DEALLOCATE(vrtwrk)
          ELSE IF (istat > 1) THEN
             bx = zero
             by = zero

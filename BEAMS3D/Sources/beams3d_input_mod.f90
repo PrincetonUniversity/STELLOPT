@@ -69,7 +69,8 @@
                                   z_beams, phi_beams, TE_AUX_S, TE_AUX_F,&
                                   NE_AUX_S, NE_AUX_F, TI_AUX_S, TI_AUX_F, &
                                   POT_AUX_S, POT_AUX_F, &
-                                  P_beams, ldebug
+                                  P_beams, ldebug, ne_scale, te_scale, ti_scale, &
+                                  zeff_scale
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -129,6 +130,10 @@
       vc_adapt_tol = 1.0D-5
       int_type = "LSODE"
       ldebug = .false.
+      ne_scale = 1.0
+      te_scale = 1.0
+      ti_scale = 1.0
+      zeff_scale = 1.0
       ! Read namelist
 !      IF (ithread == local_master) THEN
          istat=0
@@ -140,6 +145,9 @@
          READ(iunit,NML=beams3d_input,IOSTAT=istat)
          IF (istat /= 0) CALL handle_err(NAMELIST_READ_ERR,'beams3d_input in: input.'//TRIM(id_string),istat)
          CLOSE(iunit)
+         NE_AUX_F = NE_AUX_F*ne_scale
+         TE_AUX_F = TE_AUX_F*te_scale
+         TI_AUX_F = TI_AUX_F*ti_scale
          lbeam = .true.
          IF (r_start_in(1) /= -1) lbeam = .false.
          IF (lbeam) lcollision = .true.
