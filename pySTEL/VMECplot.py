@@ -6,11 +6,16 @@ matplotlib.use("Qt4Agg")
 import matplotlib.pyplot as _plt
 import numpy as np                    #For Arrays
 from math import pi
+#QT4
 from PyQt4 import uic, QtGui
-from PyQt4.QtGui import QMainWindow, QApplication, qApp, QApplication, QVBoxLayout, QSizePolicy
-from PyQt4.QtGui import QIcon
-from libstell.libstell import read_vmec, cfunct, sfunct, torocont, isotoro, calc_jll
+from PyQt4.QtGui import QMainWindow, QApplication, qApp, QVBoxLayout, QSizePolicy,QIcon
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
+#QT5
+#from PyQt5 import uic, QtGui, QtWidgets
+#from PyQt5.QtWidgets import QMainWindow, QApplication, QVBoxLayout, QSizePolicy
+#from PyQt5.QtGui import QIcon
+#from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from libstell.libstell import read_vmec, cfunct, sfunct, torocont, isotoro, calc_jll
 from matplotlib.figure import Figure
 from mpl_toolkits import mplot3d
 
@@ -29,7 +34,8 @@ class MyApp(QMainWindow):
 		super(MyApp, self).__init__()
 		self.ui = Ui_MainWindow()
 		self.ui.setupUi(self) 
-		#self.setStyleSheet("background-color: white;");
+		self.setStyleSheet("background-color: white;");
+		#self.ui.PlotButtons.setStyleSheet("background-color: white;");
 		self.statusBar().showMessage('Ready')
 		self.ui.plot_list = ['Summary','-----1D-----','Iota','q','Pressure',\
 		'<Buco>','<Bvco>','<jcuru>','<jcurv>','<j.B>',  '-----3D------','|B|','sqrt(g)',\
@@ -283,8 +289,6 @@ class MyApp(QMainWindow):
 				self.ax.set_aspect('equal')
 			elif (self.ui.ThreeD_button.isChecked()):
 				self.fig.delaxes(self.ax)
-				#self.canvas.draw()
-				#self.ui.plot_widget.removeWidget(self.canvas)
 				self.ax = isotoro(self.r,self.z,self.zeta,self.s,val,fig=self.fig)
 				self.ax.grid(False)
 				self.ax.set_axis_off()

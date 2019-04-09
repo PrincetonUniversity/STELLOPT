@@ -14,7 +14,6 @@
       USE safe_open_mod, ONLY: safe_open
       USE de_mod, ONLY: nopt, n_pop, n_free
       USE fdjac_mod, ONLY: FLAG_CLEANUP, FLAG_CLEANUP_LEV, FLAG_SINGLETASK
-      USE bfgs_params, ONLY: enable_flip, enable_tr_red
 !DEC$ IF DEFINED (MPI_OPT)
       USE mpi_params
 !DEC$ ENDIF
@@ -102,30 +101,6 @@
                        factor, nprint, info, nfev, fjac, ldfjac, ipvt, &
                        qtf, wa1, wa2, wa3, wa4,vars_min,vars_max)
             DEALLOCATE(ipvt, qtf, wa1, wa2, wa3, wa4, fvec, fjac)
-         CASE('bfgs_fd')
-            nfev     = 0
-            IF (lverb) THEN
-              WRITE(6,*) '    OPTIMIZER: BFGS (with Finite Differences)'
-              WRITE(6,*) '    NFUNC_MAX: ', nfunc_max
-              WRITE(6,'(A,2X,1ES12.4)') '         FTOL: ', ftol
-              WRITE(6,'(A,2X,1ES12.4)') '         GTOL: ', gtol
-              WRITE(6,'(A,2X,1ES12.4)') '         ALPHA_BACKTRACK: ', &
-                alpha_backtrack
-              WRITE(6,'(A,2X,1ES12.4)') '         C_ARMIJO: ', c_armijo
-              WRITE(6,'(A,2X,1ES12.4)') '         RHO_BACKTRACK: ', &
-                rho_backtrack
-              WRITE(6,'(A,2X,1ES12.4)') '         BETA_HESSIAN: ', &
-                beta_hessian
-              WRITE(6,'(A,2X,1ES12.4)') '         ALPHA_MIN: ', alpha_min
-              WRITE(6,'(A,2X,1ES12.4)') '         DX_INIT: ', dx_init
-              WRITE(6,'(A,2X,L4)') '         ENABLE_FLIP: ', enable_flip
-              WRITE(6,'(A,2X,L4)') '         ENABLE_TR_RED: ', enable_tr_red
-            END IF
-            CALL BFGS_FD(stellopt_fcn, mtargets, nvars, vars, &
-                    ftol, gtol, nfunc_max, nfev, alpha_backtrack, &
-                    c_armijo, rho_backtrack, beta_hessian, alpha_min, &
-                    dx_init)
-            ! DEALLOCATE statement should go here
          CASE('eval_xvec')
             IF (lverb) THEN
                WRITE(6,*) '    OPTIMIZER: XVEC Evlauation'

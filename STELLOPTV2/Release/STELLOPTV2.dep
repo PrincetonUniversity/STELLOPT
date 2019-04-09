@@ -103,13 +103,6 @@ chisq_regcoil_chi2_b.o : \
       equil_vals.o
       
       
-chisq_analytic.o : \
-      stellopt_runtime.o \
-      stellopt_input_mod.o \
-      stellopt_vars.o \
-      equil_vals.o 
-      
-      
 chisq_rbtor.o : \
       stellopt_runtime.o \
       stellopt_targets.o \
@@ -275,6 +268,18 @@ chisq_xics.o : \
       
 
 chisq_xics_bright.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      equil_utils.o 
+      
+
+chisq_xics_w3.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      equil_utils.o 
+      
+
+chisq_xics_v.o : \
       stellopt_runtime.o \
       stellopt_targets.o \
       equil_utils.o 
@@ -747,3 +752,15 @@ stellopt_write_mgrid.o : \
       $(LIB_DIR)/Release/ezcdf.o \
       $(MGRID_DIR)/Release/write_mgrid.o \
       $(MGRID_DIR)/Release/makegrid_global.o 
+
+
+chisq_x.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      stellopt_vars.o
+
+
+chisq_y.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      stellopt_vars.o

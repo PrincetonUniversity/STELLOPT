@@ -25,6 +25,7 @@
                              output_flag, cleanup_flag, reset_jacdt_flag
 !                             animec_flag, flow_flag
       USE vmec_main, ONLY:  multi_ns_grid
+      USE read_wout_mod, ONLY: read_wout_file, write_wout_file, read_wout_deallocate
       USE mpi_params                                                    ! MPI
       IMPLICIT NONE
       
@@ -44,11 +45,11 @@
       
 !-----------------------------------------------------------------------
 !     Local Variables
-!        ier         Error flag
+!        iflag       Error flag
 !        iunit       File unit number
 !----------------------------------------------------------------------
       LOGICAL ::  lscreen
-      INTEGER ::  ier, nvar_in, dex, dex2, ik, istat, iunit, pass, mf,nf
+      INTEGER ::  nvar_in, dex, dex2, ik, istat, iunit, pass, mf,nf
       INTEGER ::  vctrl_array(5)
       REAL(rprec) :: norm_aphi, norm_am, norm_ac, norm_ai, norm_ah,&
                      norm_at, norm_ne, norm_te, norm_ti, norm_th, &
@@ -67,8 +68,8 @@
       norm_ah   = 1; norm_at = 1; norm_phi = 1; norm_zeff = 1
       norm_ne   = 1; norm_te = 1; norm_ti  = 1; norm_th = 1
       norm_emis_xics = 1
-      ! Save variables
 
+      ! Save variables
       DO nvar_in = 1, n
          IF (var_dex(nvar_in) == iaphi .and. arr_dex(nvar_in,2) == norm_dex) norm_aphi = x(nvar_in)
          IF (var_dex(nvar_in) == iam .and. arr_dex(nvar_in,2) == norm_dex) norm_am = x(nvar_in)
@@ -98,10 +99,13 @@
       ! Unpack array (minus RBC/ZBS/RBS/ZBC)
       DO nvar_in = 1, n
          IF (arr_dex(nvar_in,2) == norm_dex) cycle
+         IF (var_dex(nvar_in) == ixval) xval = x(nvar_in)
+         IF (var_dex(nvar_in) == iyval) yval = x(nvar_in)
          IF (var_dex(nvar_in) == iphiedge) phiedge = x(nvar_in)
          IF (var_dex(nvar_in) == icurtor) curtor = x(nvar_in)
          IF (var_dex(nvar_in) == ipscale) pres_scale = x(nvar_in)
          IF (var_dex(nvar_in) == imixece) mix_ece = x(nvar_in)
+         IF (var_dex(nvar_in) == ixics_v0) xics_v0 = x(nvar_in)
          IF (var_dex(nvar_in) == iregcoil_winding_surface_separation) &
                 regcoil_winding_surface_separation = x(nvar_in)
          IF (var_dex(nvar_in) == iregcoil_current_density) &
@@ -149,9 +153,6 @@
          IF (var_dex(nvar_in) == iregcoil_rcws_rbound_s) regcoil_rcws_rbound_s(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
          IF (var_dex(nvar_in) == iregcoil_rcws_zbound_c) regcoil_rcws_zbound_c(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
          IF (var_dex(nvar_in) == iregcoil_rcws_zbound_s) regcoil_rcws_zbound_s(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
-         IF (var_dex(nvar_in) == ianalytic_x) analytic_x = x(nvar_in)
-         IF (var_dex(nvar_in) == ianalytic_y) analytic_y = x(nvar_in)
-         IF (var_dex(nvar_in) == ianalytic_z) analytic_z = x(nvar_in)
       END DO
 
       ! Adust Boundary Representation
@@ -299,10 +300,15 @@
                   iflag = ier_paraexe
                   IF (lscreen .and. lverb) WRITE(6,*)  '-------------------------  PARAVMEC CALCULATION DONE  -----------------------'
                ELSE
-                  proc_string = TRIM(id_string) // '_opt0'
-                  ier = 0
+                  CALL read_wout_deallocate
+                  CALL read_wout_file(TRIM(id_string)//'_opt0',iflag)
+                  CALL write_wout_file('wout_'//TRIM(proc_string)//'.nc',iflag)
+                  CALL stellopt_prof_to_vmec(proc_string,iflag)
+                  iflag = 0
                END IF
             CASE('spec')
+            CASE('test')
+               !Do Nothing
          END SELECT
          ! Check profiles for negative values of pressure
          dex = MINLOC(am_aux_s(2:),DIM=1)
@@ -340,7 +346,8 @@
          IF (ANY(sigma_kink < bigno) .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
 !DEC$ ENDIF
 !DEC$ IF DEFINED (TRAVIS)
-         IF (ANY(sigma_ece < bigno)) CALL stellopt_travis(lscreen,iflag)
+         ctemp_str = 'travis'
+         IF (ANY(sigma_ece < bigno) .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
 !DEC$ ENDIF
 !DEC$ IF DEFINED (DKES_OPT)
          IF (ANY(sigma_dkes < bigno)) CALL stellopt_dkes(lscreen,iflag)
@@ -361,11 +368,10 @@
          ! JCS: skipping parallelization for now 
          ! ctemp_str = 'regcoil_chi2_b'
          ! IF (sigma_regcoil_chi2_b < bigno .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen)
-         IF (ANY(sigma_regcoil_chi2_b < bigno)) then
+         IF (ANY(sigma_regcoil_chi2_b < bigno) .and. (iflag >=0)) then
            CALL stellopt_regcoil_chi2_b(lscreen, iflag)
          end if
 !DEC$ ENDIF
-         IF (ANY(sigma_analytic < bigno)) CALL stellopt_analytic(lscreen, iflag)
 
          ! Now we load target values if an error was found then
          ! exagerate the fvec values so that those directions are not

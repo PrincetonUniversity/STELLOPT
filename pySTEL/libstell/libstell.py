@@ -1,5 +1,9 @@
 # LIBSTELL Module
 
+s1 = ""
+s2 = "mp"
+s3 = "_"
+
 def read_vmec(file):
     import os, sys
     import ctypes as ct
@@ -13,7 +17,7 @@ def read_vmec(file):
         print("Please set environment variable STELLOPT_PATH")
         sys.exit(1)
     # Read File
-    read_wout = getattr(libstell,'__read_wout_mod_MOD_readw_and_open')
+    read_wout = getattr(libstell,s1+'read_wout_mod_'+s2+'_readw_and_open'+s3)
     read_wout.argtypes=[ct.c_char_p, ct.POINTER(ct.c_int), ct.POINTER(ct.c_int), ct.c_long]
     read_wout.restype=None
     ierr = ct.c_int(0)
@@ -27,18 +31,18 @@ def read_vmec(file):
     # Logical
     varlist=['lasym','lthreed','lwout_opened']
     for temp in varlist:
-        vmec_data[temp]=ct.c_bool.in_dll(libstell,'__read_wout_mod_MOD_'+temp).value
+        vmec_data[temp]=ct.c_bool.in_dll(libstell,s1+'read_wout_mod_'+s2+'_'+temp+s3).value
     # Integers
     varlist=['ns','nfp','mpol','ntor','mnmax','mnmax_nyq','iasym','ierr_vmec']
     for temp in varlist:
-        vmec_data[temp]=ct.c_int.in_dll(libstell,'__read_wout_mod_MOD_'+temp).value
+        vmec_data[temp]=ct.c_int.in_dll(libstell,s1+'read_wout_mod_'+s2+'_'+temp+s3).value
     # Doubles
     varlist=['wb','wp','gamma','pfac','rmax_surf','rmin_surf','zmax_surf',\
              'aspect','betatot','betapol','betator','betaxis','b0','version_',\
              'ionlarmor','volavgb','fsql','fsqr','fsqz','ftolv','aminor','rmajor',\
              'volume','rbtor','rbtor0','itor','machsq']
     for temp in varlist:
-        vmec_data[temp]=ct.c_double.in_dll(libstell,'__read_wout_mod_MOD_'+temp).value
+        vmec_data[temp]=ct.c_double.in_dll(libstell,s1+'read_wout_mod_'+s2+'_'+temp+s3).value
     # REAL Arrays (ns)
     varlist = ['iotas','iotaf','presf','phipf','chipf','chi','phi','mass',\
                'pres','beta_vol','phip','buco','bvco','vp','overr','jcuru',\
@@ -46,13 +50,13 @@ def read_vmec(file):
     arr_size = vmec_data['ns']
     ftemp = ct.POINTER(ct.c_double)
     for temp in varlist:
-        vmec_data[temp]=npct.as_array(ftemp.in_dll(libstell,'__read_wout_mod_MOD_'+temp),(arr_size,1))
+        vmec_data[temp]=npct.as_array(ftemp.in_dll(libstell,s1+'read_wout_mod_'+s2+'_'+temp+s3),(arr_size,1))
     # REAL Arrays (mnmax)
     ftemp = ct.POINTER(ct.c_double)
-    vmec_data['xm']=npct.as_array(ftemp.in_dll(libstell,'__read_wout_mod_MOD_xm'),(vmec_data['mnmax'],1))
-    vmec_data['xn']=npct.as_array(ftemp.in_dll(libstell,'__read_wout_mod_MOD_xn'),(vmec_data['mnmax'],1))
-    vmec_data['xm_nyq']=npct.as_array(ftemp.in_dll(libstell,'__read_wout_mod_MOD_xm_nyq'),(vmec_data['mnmax_nyq'],1))
-    vmec_data['xn_nyq']=npct.as_array(ftemp.in_dll(libstell,'__read_wout_mod_MOD_xn_nyq'),(vmec_data['mnmax_nyq'],1))
+    vmec_data['xm']=npct.as_array(ftemp.in_dll(libstell,s1+'read_wout_mod_'+s2+'_xm'+s3),(vmec_data['mnmax'],1))
+    vmec_data['xn']=npct.as_array(ftemp.in_dll(libstell,s1+'read_wout_mod_'+s2+'_xn'+s3),(vmec_data['mnmax'],1))
+    vmec_data['xm_nyq']=npct.as_array(ftemp.in_dll(libstell,s1+'read_wout_mod_'+s2+'_xm_nyq'+s3),(vmec_data['mnmax_nyq'],1))
+    vmec_data['xn_nyq']=npct.as_array(ftemp.in_dll(libstell,s1+'read_wout_mod_'+s2+'_xn_nyq'+s3),(vmec_data['mnmax_nyq'],1))
     ## Array values 1D
     ftemp=ct.POINTER(ct.c_double)
     ns = vmec_data['ns']
@@ -65,33 +69,33 @@ def read_vmec(file):
     mn2d_size = (ns, mnmax)
     mn2d_nyq_size = (ns, mnmax_nyq)
     fmn=ct.POINTER(ct.c_double)
-    vmec_data['rmnc']=npct.as_array(fmn.in_dll(libstell,'__read_wout_mod_MOD_rmnc'),mn2d_size) #ns,mnmax format
-    vmec_data['zmns']=npct.as_array(fmn.in_dll(libstell,'__read_wout_mod_MOD_zmns'),mn2d_size) #ns,mnmax format
-    vmec_data['lmns']=npct.as_array(fmn.in_dll(libstell,'__read_wout_mod_MOD_lmns'),mn2d_size) #ns,mnmax format
-    vmec_data['bmnc']=npct.as_array(fmn.in_dll(libstell,'__read_wout_mod_MOD_bmnc'),mn2d_nyq_size) #ns,mnmax format
-    vmec_data['gmnc']=npct.as_array(fmn.in_dll(libstell,'__read_wout_mod_MOD_gmnc'),mn2d_nyq_size) #ns,mnmax format
-    vmec_data['bsupumnc']=npct.as_array(fmn.in_dll(libstell,'__read_wout_mod_MOD_bsupumnc'),mn2d_nyq_size) #ns,mnmax format
-    vmec_data['bsupvmnc']=npct.as_array(fmn.in_dll(libstell,'__read_wout_mod_MOD_bsupvmnc'),mn2d_nyq_size) #ns,mnmax format
-    vmec_data['bsubsmns']=npct.as_array(fmn.in_dll(libstell,'__read_wout_mod_MOD_bsubsmns'),mn2d_nyq_size) #ns,mnmax format
-    vmec_data['bsubumnc']=npct.as_array(fmn.in_dll(libstell,'__read_wout_mod_MOD_bsubumnc'),mn2d_nyq_size) #ns,mnmax format
-    vmec_data['bsubvmnc']=npct.as_array(fmn.in_dll(libstell,'__read_wout_mod_MOD_bsubvmnc'),mn2d_nyq_size) #ns,mnmax format
-    vmec_data['currumnc']=npct.as_array(fmn.in_dll(libstell,'__read_wout_mod_MOD_currumnc'),mn2d_nyq_size) #ns,mnmax format
-    vmec_data['currvmnc']=npct.as_array(fmn.in_dll(libstell,'__read_wout_mod_MOD_currvmnc'),mn2d_nyq_size) #ns,mnmax format
+    vmec_data['rmnc']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_rmnc'+s3),mn2d_size) #ns,mnmax format
+    vmec_data['zmns']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_zmns'+s3),mn2d_size) #ns,mnmax format
+    vmec_data['lmns']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_lmns'+s3),mn2d_size) #ns,mnmax format
+    vmec_data['bmnc']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_bmnc'+s3),mn2d_nyq_size) #ns,mnmax format
+    vmec_data['gmnc']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_gmnc'+s3),mn2d_nyq_size) #ns,mnmax format
+    vmec_data['bsupumnc']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_bsupumnc'+s3),mn2d_nyq_size) #ns,mnmax format
+    vmec_data['bsupvmnc']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_bsupvmnc'+s3),mn2d_nyq_size) #ns,mnmax format
+    vmec_data['bsubsmns']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_bsubsmns'+s3),mn2d_nyq_size) #ns,mnmax format
+    vmec_data['bsubumnc']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_bsubumnc'+s3),mn2d_nyq_size) #ns,mnmax format
+    vmec_data['bsubvmnc']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_bsubvmnc'+s3),mn2d_nyq_size) #ns,mnmax format
+    vmec_data['currumnc']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_currumnc'+s3),mn2d_nyq_size) #ns,mnmax format
+    vmec_data['currvmnc']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_currvmnc'+s3),mn2d_nyq_size) #ns,mnmax format
     if vmec_data['iasym']:
-        vmec_data['rmns']=npct.as_array(fmn.in_dll(libstell,'__read_wout_mod_MOD_rmns'),mn2d_size) #ns,mnmax format
-        vmec_data['zmnc']=npct.as_array(fmn.in_dll(libstell,'__read_wout_mod_MOD_zmnc'),mn2d_size) #ns,mnmax format
-        vmec_data['lmnc']=npct.as_array(fmn.in_dll(libstell,'__read_wout_mod_MOD_lmnc'),mn2d_size) #ns,mnmax format
-        vmec_data['bmns']=npct.as_array(fmn.in_dll(libstell,'__read_wout_mod_MOD_bmns'),mn2d_nyq_size) #ns,mnmax format
-        vmec_data['gmns']=npct.as_array(fmn.in_dll(libstell,'__read_wout_mod_MOD_gmns'),mn2d_nyq_size) #ns,mnmax format
-        vmec_data['bsupumns']=npct.as_array(fmn.in_dll(libstell,'__read_wout_mod_MOD_bsupumns'),mn2d_nyq_size) #ns,mnmax format
-        vmec_data['bsupvmns']=npct.as_array(fmn.in_dll(libstell,'__read_wout_mod_MOD_bsupvmns'),mn2d_nyq_size) #ns,mnmax format
-        vmec_data['bsubsmnc']=npct.as_array(fmn.in_dll(libstell,'__read_wout_mod_MOD_bsubsmnc'),mn2d_nyq_size) #ns,mnmax format
-        vmec_data['bsubumns']=npct.as_array(fmn.in_dll(libstell,'__read_wout_mod_MOD_bsubumns'),mn2d_nyq_size) #ns,mnmax format
-        vmec_data['bsubvmns']=npct.as_array(fmn.in_dll(libstell,'__read_wout_mod_MOD_bsubvmns'),mn2d_nyq_size) #ns,mnmax format
-        vmec_data['currumns']=npct.as_array(fmn.in_dll(libstell,'__read_wout_mod_MOD_currumns'),mn2d_nyq_size) #ns,mnmax format
-        vmec_data['currvmns']=npct.as_array(fmn.in_dll(libstell,'__read_wout_mod_MOD_currvmns'),mn2d_nyq_size) #ns,mnmax format
+        vmec_data['rmns']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_rmns'+s3),mn2d_size) #ns,mnmax format
+        vmec_data['zmnc']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_zmnc'+s3),mn2d_size) #ns,mnmax format
+        vmec_data['lmnc']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_lmnc'+s3),mn2d_size) #ns,mnmax format
+        vmec_data['bmns']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_bmns'+s3),mn2d_nyq_size) #ns,mnmax format
+        vmec_data['gmns']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_gmns'+s3),mn2d_nyq_size) #ns,mnmax format
+        vmec_data['bsupumns']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_bsupumns'+s3),mn2d_nyq_size) #ns,mnmax format
+        vmec_data['bsupvmns']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_bsupvmns'+s3),mn2d_nyq_size) #ns,mnmax format
+        vmec_data['bsubsmnc']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_bsubsmnc'+s3),mn2d_nyq_size) #ns,mnmax format
+        vmec_data['bsubumns']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_bsubumns'+s3),mn2d_nyq_size) #ns,mnmax format
+        vmec_data['bsubvmns']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_bsubvmns'+s3),mn2d_nyq_size) #ns,mnmax format
+        vmec_data['currumns']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_currumns'+s3),mn2d_nyq_size) #ns,mnmax format
+        vmec_data['currvmns']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_currvmns'+s3),mn2d_nyq_size) #ns,mnmax format
     # Free memory (don't do this as python accesses this memory)
-    #read_wout_dealloc = getattr(libstell,'__read_wout_mod_MOD_read_wout_deallocate')
+    #read_wout_dealloc = getattr(libstell,s1+'read_wout_mod_'+s2+'_read_wout_deallocate'+s3)
     #read_wout_dealloc()
     # Correct Arrays (mn-nv) to (mn+nv)
     vmec_data['xn'] = -vmec_data['xn']
@@ -287,7 +291,7 @@ def safe_close(iunit):
         print("Please set environment variable STELLOPT_PATH")
         sys.exit(1)
     # Handle interface
-    safe_close_h = getattr(libstell,'__safe_open_mod_MOD_safe_close')
+    safe_close_h = getattr(libstell,s1+'safe_open_mod_'+s2+'_safe_close'+s3)
     safe_close_h.restype=None
     iunit_temp = ct.c_int(iunit)
     safe_close_h(ct.byref(iunit_temp))
@@ -304,7 +308,7 @@ def safe_open(iunit,istat,filename,filestat,fileform,record_in,access_in,delim_i
         print("Please set environment variable STELLOPT_PATH")
         sys.exit(1)
     # Handle interface
-    safe_open_h = getattr(libstell,'__safe_open_mod_MOD_safe_open')
+    safe_open_h = getattr(libstell,s1+'safe_open_mod_'+s2+'_safe_open'+s3)
     # SUBROUTINE safe_open(int iunit, int istat, char filename, char filestat, char fileform, int record_in, char access_in, char delim_in)
     safe_open_h.argtypes= [ ct.POINTER(ct.c_int), ct.POINTER(ct.c_int), ct.c_char_p, ct.c_char_p, ct.c_char_p, \
         ct.POINTER(ct.c_int), ct.c_char_p, ct.c_char_p, \
@@ -337,7 +341,7 @@ def read_indata_namelist(iunit,istat):
         print("Please set environment variable STELLOPT_PATH")
         sys.exit(1)
     # Handle interface
-    read_indata_namelist = getattr(libstell,'__vmec_input_MOD_read_indata_namelist')
+    read_indata_namelist = getattr(libstell,s1+'vmec_input_'+s2+'_read_indata_namelist'+s3)
     #SUBROUTINE read_indata_namelist (iunit, istat)
     read_indata_namelist.argtypes = [ct.POINTER(ct.c_int),ct.POINTER(ct.c_int)]
     read_indata_namelist.restype=None
@@ -353,28 +357,28 @@ def read_indata_namelist(iunit,istat):
              'lmovie','lmove_axis','lwouttxt','ldiagno','lmoreiter','lfull3d1out','l_v3fit',\
              'lspectrum_dump','loptim','lgiveup','lbsubs','lgiveup']
     for temp in varlist:
-        indata_namelist[temp]=ct.c_bool.in_dll(libstell,'__vmec_input_MOD_'+temp).value
+        indata_namelist[temp]=ct.c_bool.in_dll(libstell,s1+'vmec_input_'+s2+'_'+temp+s3).value
     # Integers
     varlist=['nfp','ncurr','nsin','niter','nstep','nvacskip','mpol','ntor','ntheta','nzeta', \
              'mfilter_fbdy','nfilter_fbdy','max_main_iterations','omp_num_threads',\
              'imse','isnodes','itse','ipnodes','iopt_raxis','imatch_phiedge','nflxs']
     for temp in varlist:
-        indata_namelist[temp]=ct.c_int.in_dll(libstell,'__vmec_input_MOD_'+temp).value
+        indata_namelist[temp]=ct.c_int.in_dll(libstell,s1+'vmec_input_'+s2+'_'+temp+s3).value
     # Reals
     varlist=['time_slice','curtor','delt','ftol','tcon0','gamma','phiedge','phidiam',\
              'sigma_current','sigma_delphid','tensi','tensp','tensi2','fpolyi','presfac',\
              'mseangle_offset','pres_offset','mseangle_offsetm','spres_ped','bloat',\
              'pres_scale','prec2d_threshold','bcrit','fgiveup']
     for temp in varlist:
-        indata_namelist[temp]=ct.c_double.in_dll(libstell,'__vmec_input_MOD_'+temp).value
+        indata_namelist[temp]=ct.c_double.in_dll(libstell,s1+'vmec_input_'+s2+'_'+temp+s3).value
     # Get integers defined elsewhere (Hardcode for now, not sure how to get them)
-    #indata_namelist['nbsetsp']=ct.c_int.in_dll(libstell,'__vsvd0_MOD_nbsetsp').value
+    #indata_namelist['nbsetsp']=ct.c_int.in_dll(libstell,s1+'vsvd0_'+s2+'_nbsetsp').value
     # Integer Arrays (100)
     varlist = ['ns_array','niter_array']
     arr_size=100
     ftemp = ct.c_int*arr_size
     for temp in varlist:
-        indata_namelist[temp]=npct.as_array(ftemp.in_dll(libstell,'__vmec_input_MOD_'+temp),(arr_size,1))
+        indata_namelist[temp]=npct.as_array(ftemp.in_dll(libstell,s1+'vmec_input_'+s2+'_'+temp+s3),(arr_size,1))
     # Note that we skip some arrays related to recon stuff because we don't need them and we
     # need to figure out how to pull stuff from other modules see the above issue.
     # Real 2D Arrays (ntord=101,mpol1d=100)
@@ -383,60 +387,60 @@ def read_indata_namelist(iunit,istat):
     arr_size2=100+1
     ftemp = ct.c_double*arr_size1*arr_size2
     for temp in varlist:
-        indata_namelist[temp]=npct.as_array(ftemp.in_dll(libstell,'__vmec_input_MOD_'+temp),(arr_size1,arr_size2))
+        indata_namelist[temp]=npct.as_array(ftemp.in_dll(libstell,s1+'vmec_input_'+s2+'_'+temp+s3),(arr_size1,arr_size2))
     # REAL Arrays (21)
     varlist = ['am','ai','ac','ah','at']
     arr_size=21
     ftemp = ct.c_double*arr_size
     for temp in varlist:
-        indata_namelist[temp]=npct.as_array(ftemp.in_dll(libstell,'__vmec_input_MOD_'+temp),(arr_size,1))
+        indata_namelist[temp]=npct.as_array(ftemp.in_dll(libstell,s1+'vmec_input_'+s2+'_'+temp+s3),(arr_size,1))
     # REAL Arrays (20)
     varlist = ['aphi']
     arr_size=20
     ftemp = ct.c_double*arr_size
     for temp in varlist:
-        indata_namelist[temp]=npct.as_array(ftemp.in_dll(libstell,'__vmec_input_MOD_'+temp),(arr_size,1))
+        indata_namelist[temp]=npct.as_array(ftemp.in_dll(libstell,s1+'vmec_input_'+s2+'_'+temp+s3),(arr_size,1))
     # REAL Arrays (ndatafmax=101)
     varlist = ['am_aux_s','am_aux_f','ac_aux_s','ac_aux_f','ai_aux_s','ai_aux_f',\
                'ah_aux_s','ah_aux_f','at_aux_s','at_aux_f']
     arr_size=101
     ftemp = ct.c_double*arr_size
     for temp in varlist:
-        indata_namelist[temp]=npct.as_array(ftemp.in_dll(libstell,'__vmec_input_MOD_'+temp),(arr_size,1))
+        indata_namelist[temp]=npct.as_array(ftemp.in_dll(libstell,s1+'vmec_input_'+s2+'_'+temp+s3),(arr_size,1))
     # REAL Arrays (ntord+1=102)
     varlist = ['raxis','zaxis','raxis_cc','raxis_cs','zaxis_cc','zaxis_cs']
     arr_size=102
     ftemp = ct.c_double*arr_size
     for temp in varlist:
-        indata_namelist[temp]=npct.as_array(ftemp.in_dll(libstell,'__vmec_input_MOD_'+temp),(arr_size,1))
+        indata_namelist[temp]=npct.as_array(ftemp.in_dll(libstell,s1+'vmec_input_'+s2+'_'+temp+s3),(arr_size,1))
     # REAL Arrays (100)
     varlist = ['ftol_array']
     arr_size=100
     ftemp = ct.c_double*arr_size
     for temp in varlist:
-        indata_namelist[temp]=npct.as_array(ftemp.in_dll(libstell,'__vmec_input_MOD_'+temp),(arr_size,1))
+        indata_namelist[temp]=npct.as_array(ftemp.in_dll(libstell,s1+'vmec_input_'+s2+'_'+temp+s3),(arr_size,1))
     # REAL Arrays (nigroup=300)
     varlist = ['extcur']
     arr_size=300
     ftemp = ct.c_double*arr_size
     for temp in varlist:
-        indata_namelist[temp]=npct.as_array(ftemp.in_dll(libstell,'__vmec_input_MOD_'+temp),(arr_size,1))
+        indata_namelist[temp]=npct.as_array(ftemp.in_dll(libstell,s1+'vmec_input_'+s2+'_'+temp+s3),(arr_size,1))
     # Charater arrays
     varlist = ['pcurr_type','piota_type','pmass_type','pt_type','ph_type']
     arr_size=20
     ftemp = ct.c_char*arr_size
     for temp in varlist:
-        indata_namelist[temp]=ftemp.in_dll(libstell,'__vmec_input_MOD_'+temp).value.decode('UTF-8')
+        indata_namelist[temp]=ftemp.in_dll(libstell,s1+'vmec_input_'+s2+'_'+temp+s3).value.decode('UTF-8')
     ftemp = ct.c_char*200
-    indata_namelist['mgrid_file']=ftemp.in_dll(libstell,'__vmec_input_MOD_mgrid_file').value.decode('UTF-8')
+    indata_namelist['mgrid_file']=ftemp.in_dll(libstell,s1+'vmec_input_'+s2+'_mgrid_file'+s3).value.decode('UTF-8')
     ftemp = ct.c_char*200
-    indata_namelist['trip3d_file']=ftemp.in_dll(libstell,'__vmec_input_MOD_trip3d_file').value.decode('UTF-8')
+    indata_namelist['trip3d_file']=ftemp.in_dll(libstell,s1+'vmec_input_'+s2+'_trip3d_file'+s3).value.decode('UTF-8')
     ftemp = ct.c_char*10
-    indata_namelist['precon_type']=ftemp.in_dll(libstell,'__vmec_input_MOD_precon_type').value.decode('UTF-8')
+    indata_namelist['precon_type']=ftemp.in_dll(libstell,s1+'vmec_input_'+s2+'_precon_type'+s3).value.decode('UTF-8')
     ftemp = ct.c_char*120
-    indata_namelist['arg1']=ftemp.in_dll(libstell,'__vmec_input_MOD_arg1').value.decode('UTF-8')
+    indata_namelist['arg1']=ftemp.in_dll(libstell,s1+'vmec_input_'+s2+'_arg1'+s3).value.decode('UTF-8')
     ftemp = ct.c_char*100
-    indata_namelist['input_extension']=ftemp.in_dll(libstell,'__vmec_input_MOD_input_extension').value.decode('UTF-8')
+    indata_namelist['input_extension']=ftemp.in_dll(libstell,s1+'vmec_input_'+s2+'_input_extension'+s3).value.decode('UTF-8')
     return indata_namelist
 
 def set_module_var(module,var,val):
@@ -476,7 +480,7 @@ def set_module_var(module,var,val):
     else:
         print('   Unrecognized type:',type(val))
         return
-    temp=f.in_dll(libstell,'__'+module+'_MOD_'+var)
+    temp=f.in_dll(libstell,s1+''+module+'_'+s2+'_'+var)
     if type(val) == np.ndarray:
         if n==1:
             for i,col in enumerate(val):
@@ -500,7 +504,7 @@ def write_indata_namelist(iunit,istat):
         print("Please set environment variable STELLOPT_PATH")
         sys.exit(1)
     # Handle interface
-    write_indata_namelist = getattr(libstell,'__vmec_input_MOD_write_indata_namelist')
+    write_indata_namelist = getattr(libstell,s1+'vmec_input_'+s2+'_write_indata_namelist'+s3)
     #SUBROUTINE read_indata_namelist (iunit, istat)
     write_indata_namelist.argtypes = [ct.POINTER(ct.c_int),ct.POINTER(ct.c_int)]
     write_indata_namelist.restype=None
@@ -568,212 +572,6 @@ def piota(xx):
     val = piota_func(ct.byref(xx_temp))
     return val;
 
-def read_stellopt(filename):
-    import numpy as np
-    #    import numpy as np
-    file_handle = open(filename,'r')
-    stel_data={}
-    niter = 0
-    for line in file_handle:
-        if 'ITER' in line:
-            niter=niter+1
-    stel_data['ITER'] = np.ndarray((niter,1));
-    file_handle.seek(0)
-    line = file_handle.readline()
-    ttype,wh=line.split()
-    stel_data[ttype] = float(wh)
-
-    # Enter Loop
-    citer = -1
-    while True:
-        line = file_handle.readline()
-        if line == '':
-            break
-        ttype,hw = line.split(' ',1)
-        if ttype == 'ITER':
-            citer = citer+1
-            stel_data[ttype][citer] = int(hw)
-            continue
-        else:
-            h,w = hw.split()
-            h = int(h)
-            w = int(w)
-            line = file_handle.readline()
-        if ttype not in stel_data:
-            stel_data[ttype]=np.ndarray((niter,h,w))
-        for i in range(h):
-            line = file_handle.readline()
-            val = np.fromstring(line,sep=' ')
-            stel_data[ttype][citer,i,:] = val       
-    file_handle.close()
-    for item in list(stel_data):
-        print(item)
-        if 'VERSION' == item:
-            continue
-        elif 'ITER' == item:
-            continue
-        elif item in ['ASPECT','ASPECT_MAX','BETA','CURTOR','PHIEDGE', \
-                    'VOLUME','WP','RBTOR','R0','Z0','BETATOR','BETAPOL']:
-            stel_data[item+'_target'] = np.squeeze(stel_data[item][:,:,0])
-            stel_data[item+'_sigma'] = np.squeeze(stel_data[item][:,:,1])
-            stel_data[item+'_equil'] = np.squeeze(stel_data[item][:,:,2])
-            stel_data[item+'_chisq'] = ((stel_data[item+'_target'] - stel_data[item+'_equil'])/stel_data[item+'_sigma'])**2
-        elif item == 'BALLOON':
-            stel_data[item+'_target'] = np.squeeze(stel_data[item][:,:,0])
-            stel_data[item+'_sigma'] = np.squeeze(stel_data[item][:,:,1])
-            stel_data[item+'_equil'] = np.squeeze(stel_data[item][:,:,2])
-            stel_data[item+'_chisq'] = ((stel_data[item+'_target'] - stel_data[item+'_equil'])/stel_data[item+'_sigma'])**2
-            stel_data[item+'_grate'] = np.squeeze(stel_data[item][:,:,3])
-            stel_data[item+'_theta'] = np.squeeze(stel_data[item][:,:,4])
-            stel_data[item+'_zeta'] = np.squeeze(stel_data[item][:,:,5])
-            stel_data[item+'_k'] = np.squeeze(stel_data[item][:,:,6])
-        elif item == 'B_PROBES':
-            stel_data[item+'_target'] = np.squeeze(stel_data[item][:,:,4])
-            stel_data[item+'_sigma'] = np.squeeze(stel_data[item][:,:,5])
-            stel_data[item+'_equil'] = np.squeeze(stel_data[item][:,:,6])
-            stel_data[item+'_chisq'] = ((stel_data[item+'_target'] - stel_data[item+'_equil'])/stel_data[item+'_sigma'])**2
-            stel_data[item+'_X'] = np.squeeze(stel_data[item][:,:,0])
-            stel_data[item+'_Y'] = np.squeeze(stel_data[item][:,:,1])
-            stel_data[item+'_Z'] = np.squeeze(stel_data[item][:,:,2])
-            stel_data[item+'_MODB'] = np.squeeze(stel_data[item][:,:,3])
-        elif item in ['FLUXLOOPS','SEGROG']:
-            stel_data[item+'_target'] = np.squeeze(stel_data[item][:,:,0])
-            stel_data[item+'_sigma'] = np.squeeze(stel_data[item][:,:,1])
-            stel_data[item+'_equil'] = np.squeeze(stel_data[item][:,:,2])
-            stel_data[item+'_chisq'] = ((stel_data[item+'_target'] - stel_data[item+'_equil'])/stel_data[item+'_sigma'])**2
-        elif item == 'EXTCUR':
-            stel_data[item+'_target'] = np.squeeze(stel_data[item][:,:,0])
-            stel_data[item+'_sigma'] = np.squeeze(stel_data[item][:,:,1])
-            stel_data[item+'_equil'] = np.squeeze(stel_data[item][:,:,2])
-            stel_data[item+'_chisq'] = ((stel_data[item+'_target'] - stel_data[item+'_equil'])/stel_data[item+'_sigma'])**2
-            stel_data[item+'_dex'] = np.squeeze(stel_data[item][:,:,3])
-        elif item in ['SEPARATRIX','LIMITER']:
-            stel_data[item+'_target'] = np.squeeze(stel_data[item][:,:,0])
-            stel_data[item+'_sigma'] = np.squeeze(stel_data[item][:,:,1])
-            stel_data[item+'_equil'] = np.squeeze(stel_data[item][:,:,2])
-            stel_data[item+'_chisq'] = ((stel_data[item+'_target'] - stel_data[item+'_equil'])/stel_data[item+'_sigma'])**2
-            stel_data[item+'_R'] = np.squeeze(stel_data[item][:,:,4])
-            stel_data[item+'_PHI'] = np.squeeze(stel_data[item][:,:,5])
-            stel_data[item+'_Z'] = np.squeeze(stel_data[item][:,:,6])
-        elif item in ['TI','TE','IOTA','VPHI','PRESS','NE']:
-            stel_data[item+'_target'] = np.squeeze(stel_data[item][:,:,4])
-            stel_data[item+'_sigma'] = np.squeeze(stel_data[item][:,:,5])
-            stel_data[item+'_equil'] = np.squeeze(stel_data[item][:,:,6])
-            stel_data[item+'_chisq'] = ((stel_data[item+'_target'] - stel_data[item+'_equil'])/stel_data[item+'_sigma'])**2
-            stel_data[item+'_R'] = np.squeeze(stel_data[item][:,:,0])
-            stel_data[item+'_PHI'] = np.squeeze(stel_data[item][:,:,1])
-            stel_data[item+'_Z'] = np.squeeze(stel_data[item][:,:,2])
-            stel_data[item+'_S'] = np.squeeze(stel_data[item][:,:,3])
-        elif item in ['NELINE','FARADAY','SXR']:
-            stel_data[item+'_target'] = np.squeeze(stel_data[item][:,:,0])
-            stel_data[item+'_sigma'] = np.squeeze(stel_data[item][:,:,1])
-            stel_data[item+'_equil'] = np.squeeze(stel_data[item][:,:,2])
-            stel_data[item+'_chisq'] = ((stel_data[item+'_target'] - stel_data[item+'_equil'])/stel_data[item+'_sigma'])**2
-            stel_data[item+'_R0'] = np.squeeze(stel_data[item][:,:,3])
-            stel_data[item+'_PHI0'] = np.squeeze(stel_data[item][:,:,4])
-            stel_data[item+'_Z0'] = np.squeeze(stel_data[item][:,:,5])
-            stel_data[item+'_R1'] = np.squeeze(stel_data[item][:,:,6])
-            stel_data[item+'_PHI1'] = np.squeeze(stel_data[item][:,:,7])
-            stel_data[item+'_Z1'] = np.squeeze(stel_data[item][:,:,8])
-        elif item == 'MSE':
-            stel_data[item+'_target'] = np.squeeze(stel_data[item][:,:,4])
-            stel_data[item+'_sigma'] = np.squeeze(stel_data[item][:,:,5])
-            stel_data[item+'_equil'] = np.squeeze(stel_data[item][:,:,8])
-            stel_data[item+'_chisq'] = ((stel_data[item+'_target'] - stel_data[item+'_equil'])/stel_data[item+'_sigma'])**2
-            stel_data[item+'_R'] = np.squeeze(stel_data[item][:,:,0])
-            stel_data[item+'_PHI'] = np.squeeze(stel_data[item][:,:,1])
-            stel_data[item+'_Z'] = np.squeeze(stel_data[item][:,:,2])
-            stel_data[item+'_S'] = np.squeeze(stel_data[item][:,:,3])
-            stel_data[item+'_ER'] = np.squeeze(stel_data[item][:,:,6])
-            stel_data[item+'_EZ'] = np.squeeze(stel_data[item][:,:,7])
-        elif item == 'BOOTSTRAP':
-            stel_data[item+'_target'] = np.squeeze(stel_data[item][:,:,0])
-            stel_data[item+'_sigma'] = np.squeeze(stel_data[item][:,:,1])
-            stel_data[item+'_equil'] = np.squeeze(stel_data[item][:,:,2])
-            stel_data[item+'_chisq'] = ((stel_data[item+'_target'] - stel_data[item+'_equil'])/stel_data[item+'_sigma'])**2
-            stel_data[item+'_S'] = np.squeeze(stel_data[item][:,:,3])
-            stel_data[item+'_avg_jdotb'] = np.squeeze(stel_data[item][:,:,4])
-            stel_data[item+'_beam_jdotb'] = np.squeeze(stel_data[item][:,:,5])
-            stel_data[item+'_boot_jdotb'] = np.squeeze(stel_data[item][:,:,6])
-            stel_data[item+'_jBbs'] = np.squeeze(stel_data[item][:,:,7])
-            stel_data[item+'_facnu'] = np.squeeze(stel_data[item][:,:,8])
-            stel_data[item+'_bsnorm'] = np.squeeze(stel_data[item][:,:,9])
-        elif item == 'HELICITY':
-            stel_data[item+'_target'] = np.squeeze(stel_data[item][:,:,0])
-            stel_data[item+'_sigma'] = np.squeeze(stel_data[item][:,:,1])
-            stel_data[item+'_equil'] = np.squeeze(stel_data[item][:,:,2])
-            stel_data[item+'_chisq'] = ((stel_data[item+'_target'] - stel_data[item+'_equil'])/stel_data[item+'_sigma'])**2
-            stel_data[item+'_bnorm'] = np.squeeze(stel_data[item][:,:,3])
-            stel_data[item+'_m'] = np.squeeze(stel_data[item][:,:,4])
-            stel_data[item+'_n'] = np.squeeze(stel_data[item][:,:,5])
-        elif item == 'TXPORT':
-            stel_data[item+'_target'] = np.squeeze(stel_data[item][:,:,0])
-            stel_data[item+'_sigma'] = np.squeeze(stel_data[item][:,:,1])
-            stel_data[item+'_equil'] = np.squeeze(stel_data[item][:,:,2])
-            stel_data[item+'_chisq'] = ((stel_data[item+'_target'] - stel_data[item+'_equil'])/stel_data[item+'_sigma'])**2
-            stel_data[item+'_S'] = np.squeeze(stel_data[item][:,:,3])
-        elif item == 'COIL_BNORM':
-            stel_data[item+'_target'] = np.squeeze(stel_data[item][:,:,0])
-            stel_data[item+'_sigma'] = np.squeeze(stel_data[item][:,:,1])
-            stel_data[item+'_equil'] = np.squeeze(stel_data[item][:,:,2])
-            stel_data[item+'_chisq'] = ((stel_data[item+'_target'] - stel_data[item+'_equil'])/stel_data[item+'_sigma'])**2
-            stel_data[item+'_U'] = np.squeeze(stel_data[item][:,:,3])
-            stel_data[item+'_V'] = np.squeeze(stel_data[item][:,:,4])
-            stel_data[item+'_BNEQ'] = np.squeeze(stel_data[item][:,:,5])
-            stel_data[item+'_BNF'] = np.squeeze(stel_data[item][:,:,6])
-        elif item == 'ORBIT':
-            stel_data[item+'_target'] = np.squeeze(stel_data[item][:,:,0])
-            stel_data[item+'_sigma'] = np.squeeze(stel_data[item][:,:,1])
-            stel_data[item+'_equil'] = np.squeeze(stel_data[item][:,:,2])
-            stel_data[item+'_chisq'] = ((stel_data[item+'_target'] - stel_data[item+'_equil'])/stel_data[item+'_sigma'])**2
-            stel_data[item+'_S'] = np.squeeze(stel_data[item][:,:,3])
-        elif item == 'J_STAR':
-            stel_data[item+'_target'] = np.squeeze(stel_data[item][:,:,0])
-            stel_data[item+'_sigma'] = np.squeeze(stel_data[item][:,:,1])
-            stel_data[item+'_equil'] = np.squeeze(stel_data[item][:,:,2])
-            stel_data[item+'_chisq'] = ((stel_data[item+'_target'] - stel_data[item+'_equil'])/stel_data[item+'_sigma'])**2
-            stel_data[item+'_AVGJSTAR'] = np.squeeze(stel_data[item][:,:,3])
-            stel_data[item+'_TRAPSJSTAR'] = np.squeeze(stel_data[item][:,:,4])
-            stel_data[item+'_UJSTAR'] = np.squeeze(stel_data[item][:,:,5])
-            stel_data[item+'_K'] = np.squeeze(stel_data[item][:,:,6])
-            stel_data[item+'_IJSTAR'] = np.squeeze(stel_data[item][:,:,7])
-        elif item == 'NEO':
-            stel_data[item+'_target'] = np.squeeze(stel_data[item][:,:,0])
-            stel_data[item+'_sigma'] = np.squeeze(stel_data[item][:,:,1])
-            stel_data[item+'_equil'] = np.squeeze(stel_data[item][:,:,2])
-            stel_data[item+'_chisq'] = ((stel_data[item+'_target'] - stel_data[item+'_equil'])/stel_data[item+'_sigma'])**2
-            stel_data[item+'_K'] = np.squeeze(stel_data[item][:,:,3])
-        elif item == 'JDOTB':
-            stel_data[item+'_target'] = np.squeeze(stel_data[item][:,:,0])
-            stel_data[item+'_sigma'] = np.squeeze(stel_data[item][:,:,1])
-            stel_data[item+'_equil'] = np.squeeze(stel_data[item][:,:,2])
-            stel_data[item+'_chisq'] = ((stel_data[item+'_target'] - stel_data[item+'_equil'])/stel_data[item+'_sigma'])**2
-            stel_data[item+'_S'] = np.squeeze(stel_data[item][:,:,3])
-        elif item == 'JTOR':
-            stel_data[item+'_target'] = np.squeeze(stel_data[item][:,:,0])
-            stel_data[item+'_sigma'] = np.squeeze(stel_data[item][:,:,1])
-            stel_data[item+'_equil'] = np.squeeze(stel_data[item][:,:,2])
-            stel_data[item+'_chisq'] = ((stel_data[item+'_target'] - stel_data[item+'_equil'])/stel_data[item+'_sigma'])**2
-            stel_data[item+'_S'] = np.squeeze(stel_data[item][:,:,3])
-        elif item == 'DKES':
-            stel_data[item+'_target'] = np.squeeze(stel_data[item][:,:,0])
-            stel_data[item+'_sigma'] = np.squeeze(stel_data[item][:,:,1])
-            stel_data[item+'_equil'] = np.squeeze(stel_data[item][:,:,2])
-            stel_data[item+'_chisq'] = ((stel_data[item+'_target'] - stel_data[item+'_equil'])/stel_data[item+'_sigma'])**2
-            stel_data[item+'_S'] = np.squeeze(stel_data[item][:,:,3])
-            stel_data[item+'_NU'] = np.squeeze(stel_data[item][:,:,4])
-            stel_data[item+'_ER'] = np.squeeze(stel_data[item][:,:,5])
-            stel_data[item+'_L11P'] = np.squeeze(stel_data[item][:,:,6])
-            stel_data[item+'_L11M'] = np.squeeze(stel_data[item][:,:,7])
-            stel_data[item+'_L33P'] = np.squeeze(stel_data[item][:,:,8])
-            stel_data[item+'_L33M'] = np.squeeze(stel_data[item][:,:,9])
-            stel_data[item+'_L31P'] = np.squeeze(stel_data[item][:,:,10])
-            stel_data[item+'_L31M'] = np.squeeze(stel_data[item][:,:,11])
-            stel_data[item+'_SCAL11'] = np.squeeze(stel_data[item][:,:,12])
-            stel_data[item+'_SCAL33'] = np.squeeze(stel_data[item][:,:,13])
-            stel_data[item+'_SCAL31'] = np.squeeze(stel_data[item][:,:,14])
-
-    return stel_data;
 
 
 

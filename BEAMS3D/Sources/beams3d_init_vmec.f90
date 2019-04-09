@@ -226,18 +226,13 @@
       myend   = mystart + chunk - 1
 !DEC$ ENDIF
 	
+      TE = 0; NE = 0; TI=0; S_ARR=1.5; U_ARR=0; POT_ARR=0
       DO s = mystart, myend
          i = MOD(s-1,nr)+1
          j = MOD(s-1,nr*nphi)
          j = FLOOR(REAL(j) / REAL(nr))+1
          k = CEILING(REAL(s) / REAL(nr*nphi))
          sflx = 0.0
-         TE(i,j,k) = 0
-         NE(i,j,k) = 0
-         TI(i,j,k) = 0
-         S_ARR(i,j,k) = 1.5
-         U_ARR(i,j,k) = 0
-         POT_ARR(i,j,k) = 0
          ! The GetBcyl Routine returns -3 if cyl2flx thinks s>1
          ! however, if cyl2flx fails to converge then s may be
          ! greater than 1 but cyl2flux won't throw the -3 code.
@@ -246,23 +241,35 @@
          ! outside the VMEC domain.
          CALL GetBcyl(raxis_g(i),phiaxis(j),zaxis_g(k),&
                       br, bphi, bz, SFLX=sflx,UFLX=uflx,info=ier)
-         IF (ier == 0 .and. bphi /= 0) THEN
-            B_R(i,j,k)   = br
-            B_PHI(i,j,k) = bphi
-            B_Z(i,j,k)   = bz
+         IF (ier == 0 .and. bphi /= 0) THEN ! We have field data
+            ! Save Grid data
             S_ARR(i,j,k) = sflx
             IF (uflx<0)  uflx = uflx+pi2
             U_ARR(i,j,k) = uflx
-            ! Maybe assume s<1 here so in domain? Then leave commented below.
-            IF (nte > 0) CALL EZspline_interp(TE_spl_s,sflx,TE(i,j,k),ier)
-            IF (nne > 0) CALL EZspline_interp(NE_spl_s,sflx,NE(i,j,k),ier)
-            IF (nti > 0) CALL EZspline_interp(TI_spl_s,sflx,TI(i,j,k),ier)
-            IF (npot > 0) CALL EZspline_interp(POT_spl_s,sflx,POT_ARR(i,j,k),ier)
+            ! Handle equilibrium data
+            IF (sflx <=1.0) THEN ! Inside equilibrium
+               B_R(i,j,k)   = br
+               B_PHI(i,j,k) = bphi
+               B_Z(i,j,k)   = bz
+            ELSE IF (lplasma_only) THEN  ! Overwrite data outside
+               B_R(i,j,k)   = br
+               B_PHI(i,j,k) = bphi
+               B_Z(i,j,k)   = bz
+               sflx = 1 ! Assume s=1 for lplasma_only
+            END IF
+            IF (sflx <= 1) THEN
+               IF (nte > 0) CALL EZspline_interp(TE_spl_s,sflx,TE(i,j,k),ier)
+               IF (nne > 0) CALL EZspline_interp(NE_spl_s,sflx,NE(i,j,k),ier)
+               IF (nti > 0) CALL EZspline_interp(TI_spl_s,sflx,TI(i,j,k),ier)
+               IF (npot > 0) CALL EZspline_interp(POT_spl_s,sflx,POT_ARR(i,j,k),ier)
+            END IF
          ELSE IF (lplasma_only) THEN
             B_R(i,j,k)   = 0
             B_PHI(i,j,k) = 1
             B_Z(i,j,k)   = 0
-         ELSE IF (ier == -3 .or. bphi == 0) THEN
+         END IF
+         ! virtual casing
+         IF (.not. lplasma_only .and. sflx > 1) THEN
             xaxis_vc = raxis_g(i)*cos(phiaxis(j))
             yaxis_vc = raxis_g(i)*sin(phiaxis(j))
             zaxis_vc = zaxis_g(k)
@@ -276,16 +283,16 @@
                IF (ABS(br_vc) > 0)   B_R(i,j,k)   = B_R(i,j,k) + br_vc
                IF (ABS(bphi_vc) > 0) B_PHI(i,j,k) = B_PHI(i,j,k) + bphi_vc
                IF (ABS(bz_vc) > 0)   B_Z(i,j,k)   = B_Z(i,j,k) + bz_vc
-            ELSE
+            ELSE IF (ier > 1) THEN ! Only report real errors not failure to find tolerance errors
                WRITE(6,*) myworkid,mylocalid,i,j,k,ier
             END IF
-         ELSE
+         !ELSE
             ! This is an error code check
-            PRINT *,'ERROR in GetBcyl Detected'
-            PRINT *,'R,PHI,Z',raxis_g(i),phiaxis(j),zaxis_g(k)
-            print *,'br,bphi,bz,myworkid',br,bphi,bz,mylocalid
-            CALL FLUSH(6)
-            stop 'ERROR in GetBcyl'
+            !PRINT *,'ERROR in GetBcyl Detected'
+            !PRINT *,'R,PHI,Z',raxis_g(i),phiaxis(j),zaxis_g(k)
+            !print *,'br,bphi,bz,myworkid',br,bphi,bz,mylocalid
+            !CALL FLUSH(6)
+            !stop 'ERROR in GetBcyl'
          END IF
          IF (lverb .and. (MOD(s,nr) == 0)) THEN
             CALL backspace_out(6,6)
@@ -304,6 +311,7 @@
          WRITE(6,'(36X)',ADVANCE='no')
          CALL FLUSH(6)
          CALL backspace_out(6,36)
+         WRITE(6,*)
          CALL FLUSH(6)
       END IF    
       
@@ -340,54 +348,54 @@
       DEALLOCATE(moffsets)
 
       ! Smooth edge data
-      IF (lplasma_only .and. (mylocalid == mylocalmaster)) THEN
-         DO j = 1, nphi
-            DO i = 2, nr-1
-               DO k = 2, nz-1
-                  IF ((S_ARR(i,j,k+1) .lt. 1.5)) THEN
-                     B_R(i,j,k) = B_R(i,j,k+1)
-                     B_PHI(i,j,k) = B_PHI(i,j,k+1)
-                     B_Z(i,j,k) = B_Z(i,j,k+1)
-                     EXIT
-                  END IF
-               END DO
-               DO k = nz-1, 2,-1
-                  IF ((S_ARR(i,j,k-1) .lt. 1.5)) THEN
-                     B_R(i,j,k) = B_R(i,j,k-1)
-                     B_PHI(i,j,k) = B_PHI(i,j,k-1)
-                     B_Z(i,j,k) = B_Z(i,j,k-1)
-                     EXIT
-                  END IF
-               END DO
-            END DO
-            DO k = 2,nz-1
-               DO i = 2, nr-1
-                  IF ((S_ARR(i+1,j,k) .lt. 1.5)) THEN
-                     B_R(i,j,k) = B_R(i+1,j,k)
-                     B_PHI(i,j,k) = B_PHI(i+1,j,k)
-                     B_Z(i,j,k) = B_Z(i+1,j,k)
-                     EXIT
-                  END IF
-               END DO
-               DO i = nr-1, 2, -1
-                  IF ((S_ARR(i-1,j,k) .lt. 1.5)) THEN
-                     B_R(i,j,k) = B_R(i-1,j,k)
-                     B_PHI(i,j,k) = B_PHI(i-1,j,k)
-                     B_Z(i,j,k) = B_Z(i-1,j,k)
-                     EXIT
-                  END IF
-               END DO
-            END DO
-         END DO
-      END IF   
+!      IF (lplasma_only .and. (mylocalid == mylocalmaster)) THEN
+!         DO j = 1, nphi
+!            DO i = 2, nr-1
+!               DO k = 2, nz-1
+!                  IF ((S_ARR(i,j,k+1) .lt. 1.5)) THEN
+!                     B_R(i,j,k) = B_R(i,j,k+1)
+!                     B_PHI(i,j,k) = B_PHI(i,j,k+1)
+!                     B_Z(i,j,k) = B_Z(i,j,k+1)
+!                     EXIT
+!                  END IF
+!               END DO
+!               DO k = nz-1, 2,-1
+!                  IF ((S_ARR(i,j,k-1) .lt. 1.5)) THEN
+!                     B_R(i,j,k) = B_R(i,j,k-1)
+!                     B_PHI(i,j,k) = B_PHI(i,j,k-1)
+!                     B_Z(i,j,k) = B_Z(i,j,k-1)
+!                     EXIT
+!                  END IF
+!               END DO
+!            END DO
+!            DO k = 2,nz-1
+!               DO i = 2, nr-1
+!                  IF ((S_ARR(i+1,j,k) .lt. 1.5)) THEN
+!                     B_R(i,j,k) = B_R(i+1,j,k)
+!                     B_PHI(i,j,k) = B_PHI(i+1,j,k)
+!                     B_Z(i,j,k) = B_Z(i+1,j,k)
+!                     EXIT
+!                  END IF
+!               END DO
+!               DO i = nr-1, 2, -1
+!                  IF ((S_ARR(i-1,j,k) .lt. 1.5)) THEN
+!                     B_R(i,j,k) = B_R(i-1,j,k)
+!                     B_PHI(i,j,k) = B_PHI(i-1,j,k)
+!                     B_Z(i,j,k) = B_Z(i-1,j,k)
+!                     EXIT
+!                  END IF
+!               END DO
+!            END DO
+!         END DO
+!      END IF   
       
       ! Broadcast the updated magnetic field to other members
-      IF (lplasma_only) THEN
-         CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
-         CALL MPI_BCAST(B_R,nr*nphi*nz,MPI_DOUBLE_PRECISION,mylocalmaster,MPI_COMM_LOCAL,ierr_mpi)
-         CALL MPI_BCAST(B_PHI,nr*nphi*nz,MPI_DOUBLE_PRECISION,mylocalmaster,MPI_COMM_LOCAL,ierr_mpi)
-         CALL MPI_BCAST(B_Z,nr*nphi*nz,MPI_DOUBLE_PRECISION,mylocalmaster,MPI_COMM_LOCAL,ierr_mpi)
-      END IF
+!      IF (lplasma_only) THEN
+!         CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
+!         CALL MPI_BCAST(B_R,nr*nphi*nz,MPI_DOUBLE_PRECISION,mylocalmaster,MPI_COMM_LOCAL,ierr_mpi)
+!         CALL MPI_BCAST(B_PHI,nr*nphi*nz,MPI_DOUBLE_PRECISION,mylocalmaster,MPI_COMM_LOCAL,ierr_mpi)
+!         CALL MPI_BCAST(B_Z,nr*nphi*nz,MPI_DOUBLE_PRECISION,mylocalmaster,MPI_COMM_LOCAL,ierr_mpi)
+!      END IF
 
       CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)
       CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)

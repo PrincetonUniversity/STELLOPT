@@ -88,6 +88,9 @@
          ELSE
             WRITE(6,'(A,I6)')               '   # of Particles to Start: ', nparticles
          END IF
+         IF (lvessel) WRITE(6,'(A)')    '   VESSEL: ' // TRIM(vessel_string)
+         IF (lcoil) WRITE(6,'(A)')    '   COIL: ' // TRIM(coil_string)
+         IF (lmgrid) WRITE(6,'(A)')    '   MGRID: ' // TRIM(mgrid_string)
          IF (lcollision) WRITE(6,'(A)') '   COLLISION OPERATOR ON!'
          IF (lvac)  WRITE(6,'(A)') '   VACUUM FIELDS ONLY!'
          IF (ldepo) WRITE(6,'(A)') '   DEPOSITION ONLY!'
@@ -118,6 +121,11 @@
           END IF
           ! NE
           IF (nne>0) THEN
+             ! Check values
+             IF (ALL(NE_AUX_F(1:nne) < 1E4)) THEN
+                IF (lverb) WRITE(6,'(A)') '   Rescaling Electron Density (1E18)'
+                NE_AUX_F(1:nne) = NE_AUX_F(1:nne)*1E18
+             END IF
              CALL EZspline_init(NE_spl_s,nne,bcs1_s,ier)
              IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init5',ier)
              NE_spl_s%x1          = NE_AUX_S(1:nne)
@@ -233,7 +241,6 @@
       
       ! Get setup vessel
       IF (lvessel .and. (.not. lplasma_only .or. ldepo)) THEN
-         IF (myworkid == master) PRINT *,'Loading vessel:',TRIM(vessel_string)
          CALL wall_load_txt(TRIM(vessel_string),ier)
          IF (myworkid /= master) DEALLOCATE(vertex,face) ! Do this to save memory
          IF (lverb) CALL wall_info(6)

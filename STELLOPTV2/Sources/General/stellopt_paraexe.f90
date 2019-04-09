@@ -56,7 +56,7 @@
             lread_input_beams => lread_input, lvmec_beams => lvmec, &
             lverb_beams => lverb, lbeam_beams => lbeam, &
             lpies_beams => lpies, lspec_beams => lspec, &
-            lmgrid_beams => lmgrid, lmu_beams => lmu,&
+            lmgrid_beams => lmgrid, &
             lvessel_beams => lvessel, lcoil_beams => lcoil, &
             lrestart_beams => lrestart, lbeam_simple_beams => lbeam_simple, &
             lflux_beams => lflux, lplasma_only_beams => lplasma_only, &
@@ -267,7 +267,6 @@
                lcoil_beams        = .FALSE.
                lmgrid_beams       = .FALSE.
                lraw_beams         = .FALSE.
-               lmu_beams          = .FALSE.
                lvessel_beams      = .FALSE.
                lvac_beams         = .FALSE.
                lrestart_beams     = .FALSE.
@@ -335,6 +334,11 @@
                CALL wall_free(ier)
                IF (lverb_beams) WRITE(6, '(A)') '----- BEAMS3D DONE -----'
 
+!DEC$ ENDIF
+!DEC$ IF DEFINED (TRAVIS)
+            CASE('travis')
+               proc_string = file_str
+               CALL stellopt_travis(lscreen,ier)
 !DEC$ ENDIF
             CASE('coilopt++')
                CALL stellopt_coiloptpp(file_str,lscreen)

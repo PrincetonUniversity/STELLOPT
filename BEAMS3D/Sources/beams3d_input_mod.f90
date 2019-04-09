@@ -58,7 +58,7 @@
 !                   field period.
 !-----------------------------------------------------------------------
       NAMELIST /beams3d_input/ nr, nphi, nz, rmin, rmax, zmin, zmax,&
-                                  phimin, phimax, mu,nparticles_start,&
+                                  phimin, phimax, nparticles_start,&
                                   r_start_in, phi_start_in, z_start_in,&
                                   vll_start_in,&
                                   npoinc, follow_tol, t_end_in, mu_start_in,&
@@ -69,7 +69,8 @@
                                   z_beams, phi_beams, TE_AUX_S, TE_AUX_F,&
                                   NE_AUX_S, NE_AUX_F, TI_AUX_S, TI_AUX_F, &
                                   POT_AUX_S, POT_AUX_F, &
-                                  P_beams, ldebug
+                                  P_beams, ldebug, ne_scale, te_scale, ti_scale, &
+                                  zeff_scale
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -81,7 +82,7 @@
       CHARACTER(*), INTENT(in) :: filename
       INTEGER, INTENT(out) :: istat
       LOGICAL :: lexist
-      INTEGER :: iunit, local_master
+      INTEGER :: iunit, local_master, i1
       ! Initializations
       local_master = 0
       nr     = 101
@@ -93,7 +94,6 @@
       zmax   =  1.0_rprec
       phimin =  0.0_rprec
       phimax =  pi2
-      mu     =  0.0_rprec
       nparticles_start = 10
 
       r_start_in   = -1
@@ -128,8 +128,12 @@
       npoinc = 1
       follow_tol   = 1.0D-7
       vc_adapt_tol = 1.0D-5
-      int_type = "NAG"
+      int_type = "LSODE"
       ldebug = .false.
+      ne_scale = 1.0
+      te_scale = 1.0
+      ti_scale = 1.0
+      zeff_scale = 1.0
       ! Read namelist
 !      IF (ithread == local_master) THEN
          istat=0
@@ -141,6 +145,9 @@
          READ(iunit,NML=beams3d_input,IOSTAT=istat)
          IF (istat /= 0) CALL handle_err(NAMELIST_READ_ERR,'beams3d_input in: input.'//TRIM(id_string),istat)
          CLOSE(iunit)
+         NE_AUX_F = NE_AUX_F*ne_scale
+         TE_AUX_F = TE_AUX_F*te_scale
+         TI_AUX_F = TI_AUX_F*ti_scale
          lbeam = .true.
          IF (r_start_in(1) /= -1) lbeam = .false.
          IF (lbeam) lcollision = .true.
@@ -170,6 +177,18 @@
             nparticles = nparticles + 1
          END DO
 !      END IF
+
+!DEC$ IF DEFINED (HDF5_PAR)
+      ! Makes sure that NPARTICLES is divisible by the number of processes
+      ! Needed for HDF5 parallel writes.
+      IF (lbeam) THEN
+         i1 = nparticles_start/nprocs_beams
+         IF (i1*nprocs_beams .ne. nparticles_start) THEN
+            nparticles_start = (i1+1)*nprocs_beams
+         END IF
+      END IF
+!DEC$ ENDIF
+
 !     mu_start = 0.5*mass*vll_start*vll_start/3.58
 !DEC$ IF DEFINED (MPI_OPT)
 !      CALL MPI_BARRIER(MPI_COMM_BEAMS,istat)
@@ -228,7 +247,6 @@
 !      CALL MPI_BCAST(follow_tol,1,MPI_REAL8, local_master, MPI_COMM_BEAMS,istat)
 !      CALL MPI_BCAST(int_type, 256, MPI_CHARACTER, local_master, MPI_COMM_BEAMS,istat)
 !DEC$ ENDIF
-      IF (mu > 0.0) lmu=.true.
       END SUBROUTINE read_beams3d_input
 
       SUBROUTINE write_beams3d_namelist(iunit_out, istat)

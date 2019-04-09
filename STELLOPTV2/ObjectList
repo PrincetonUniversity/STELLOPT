@@ -1,6 +1,10 @@
 ObjectFiles = \
+chisq_x.o \
+chisq_y.o \
 chisq_xics.o \
 chisq_xics_bright.o \
+chisq_xics_w3.o \
+chisq_xics_v.o \
 chisq_magwell.o \
 chisq_helicity_ornl.o \
 stellopt_vboot.o \
@@ -10,6 +14,7 @@ chisq_kappa_avg.o \
 stellopt_write_mgrid.o \
 stellopt_coil_to_vac.o \
 stellopt_winding_surface.o \
+stellopt_cbspline.o \
 stellopt_spline_to_coil.o \
 chisq_line_te.o \
 chisq_bmin.o \
@@ -38,7 +43,6 @@ chisq_balloon.o \
 chisq_pmin.o \
 chisq_coil_bnorm.o \
 chisq_regcoil_chi2_b.o \
-chisq_analytic.o \
 chisq_vessel.o \
 chisq_b0.o \
 chisq_z0.o \
@@ -84,7 +88,6 @@ stellopt_bootsj.o \
 stellopt_sfincs.o \
 stellopt_clean_up.o \
 stellopt_main.o \
-stellopt_analytic.o \
 stellopt_balloon.o \
 stellopt_magdiags.o \
 stellopt_orbits.o \

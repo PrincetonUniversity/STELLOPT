@@ -115,7 +115,7 @@
                          int_type, coil_string, flux_mut_file, rog_mut_file,&
                          mir_mut_file, bprobes_mut_file
                          
-      REAL(rprec), PARAMETER :: DIAGNO_VERSION = 3.53
+      REAL(rprec), PARAMETER :: DIAGNO_VERSION = 4.00
       REAL(rprec), PARAMETER ::      pi = 3.14159265358979312D+00
       REAL(rprec), PARAMETER ::     pi2 = 6.28318530717958623
       REAL(rprec), PARAMETER ::  onerad = 1.74532925199432955E-02

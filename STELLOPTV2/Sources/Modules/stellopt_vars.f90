@@ -67,7 +67,8 @@
       IMPLICIT NONE
       LOGICAL  ::  lphiedge_opt, lcurtor_opt, lpscale_opt, lbcrit_opt,&
                    lmix_ece_opt, lregcoil_winding_surface_separation_opt,&
-                   lregcoil_current_density_opt
+                   lregcoil_current_density_opt, lxval_opt, lyval_opt, &
+                   lxics_v0_opt
       LOGICAL, DIMENSION(nigroup)  ::  lextcur_opt
       LOGICAL, DIMENSION(1:20)  ::  laphi_opt
       LOGICAL, DIMENSION(0:20)  ::  lam_opt, lac_opt, lai_opt,&
@@ -86,25 +87,25 @@
       LOGICAL, DIMENSION(0:ntord)                ::  laxis_opt
       LOGICAL, DIMENSION(-ntord:ntord,0:mpol1d)  ::  lbound_opt, lrho_opt, lmode_opt
       LOGICAL, DIMENSION(-ntord:ntord,-mpol1d:mpol1d) :: ldeltamn_opt
-      INTEGER, PARAMETER :: maxcoilknots=40
-      LOGICAL, DIMENSION(nigroup,maxcoilknots)        ::  lcoil_spline
-      INTEGER, DIMENSION(nigroup)                     ::  coil_nknots
+      INTEGER, PARAMETER :: maxcoilctrl=40
+      LOGICAL, DIMENSION(nigroup,maxcoilctrl)        ::  lcoil_spline
+      INTEGER, DIMENSION(nigroup)                     ::  coil_nctrl
       LOGICAL  ::  lwindsurf
       INTEGER  ::  nfunc_max
       REAL(rprec)     ::  dphiedge_opt, dcurtor_opt, dbcrit_opt, &
-                          dpscale_opt, dmix_ece_opt, &
+                          dpscale_opt, dmix_ece_opt, dxval_opt, dyval_opt, &
                           dregcoil_winding_surface_separation_opt, &
-                          dregcoil_current_density_opt
+                          dregcoil_current_density_opt, dxics_v0_opt
       REAL(rprec)     ::  phiedge_min, curtor_min, bcrit_min, &
-                          pscale_min, mix_ece_min, &
+                          pscale_min, mix_ece_min, xval_min, yval_min, &
                           regcoil_winding_surface_separation_min, &
-                          regcoil_current_density_min
+                          regcoil_current_density_min, xics_v0_min
       REAL(rprec)     ::  phiedge_max, curtor_max, bcrit_max, &
-                          pscale_max, mix_ece_max, &
+                          pscale_max, mix_ece_max, xval_max, yval_max, &
                           regcoil_winding_surface_separation_max, &
-                          regcoil_current_density_max
+                          regcoil_current_density_max, xics_v0_max
       REAL(rprec), DIMENSION(nigroup)  ::  dextcur_opt,extcur_min,extcur_max
-      REAL(rprec), DIMENSION(1:20)     ::  daphi_opt,aphi_min,aphi_max
+      REAL(rprec), DIMENSION(1:20)     ::  daphi_opt, aphi_min, aphi_max
       REAL(rprec), DIMENSION(0:20)     ::  dam_opt, dac_opt, dai_opt,&
                                            dah_opt, dat_opt,&
                                            dte_opt, dne_opt, dti_opt, dth_opt,&
@@ -116,7 +117,7 @@
                                            te_min, ne_min, ti_min, th_min, &
                                            te_max, ne_max, ti_max, th_max, &
                                            zeff_max, zeff_min
-      REAL(rprec)                       :: mix_ece
+      REAL(rprec)                       :: mix_ece, xval, yval, xics_v0
       REAL(rprec)                       :: regcoil_winding_surface_separation
       REAL(rprec)                       :: regcoil_current_density
       INTEGER :: regcoil_nlambda, regcoil_num_field_periods
@@ -139,11 +140,12 @@
       INTEGER                           ::  sfincs_min_procs
       CHARACTER(256)  ::  sfincs_Er_option
       REAL(rprec)                       ::  vboot_tolerance
+      INTEGER                           ::  vboot_max_iterations
       REAL(rprec), DIMENSION(ndatafmax) ::  ne_aux_f, te_aux_f, &
                                             ti_aux_f, th_aux_f,&
                                             zeff_aux_f, &
                                             phi_aux_f, beamj_aux_f, &
-                                            bootj_aux_f, emis_xics_f
+                                            bootj_aux_f, emis_xics_f 
       REAL(rprec), DIMENSION(ndatafmax) ::  dam_s_opt, dam_f_opt, &
                                             dac_s_opt, dac_f_opt, &
                                             dai_s_opt, dai_f_opt, &
@@ -180,11 +182,11 @@
       REAL(rprec), DIMENSION(-ntord:ntord,-mpol1d:mpol1d) ::  deltamn
       REAL(rprec), DIMENSION(-ntord:ntord,-mpol1d:mpol1d) ::  ddeltamn_opt
       REAL(rprec), DIMENSION(-ntord:ntord,-mpol1d:mpol1d) ::  delta_min, delta_max
-      REAL(rprec), DIMENSION(nigroup,maxcoilknots) :: coil_splinesx,coil_splinesy,coil_splinesz,&
-                                                      coil_splinefx,coil_splinefy,coil_splinefz
-      REAL(rprec), DIMENSION(nigroup,maxcoilknots) :: dcoil_spline
-      REAL(rprec), DIMENSION(nigroup,maxcoilknots) :: coil_splinefx_min,coil_splinefy_min,coil_splinefz_min,&
-                                                      coil_splinefx_max,coil_splinefy_max,coil_splinefz_max
+      REAL(rprec), DIMENSION(nigroup,maxcoilctrl+4)       :: coil_splinesx,coil_splinesy,coil_splinesz
+      REAL(rprec), DIMENSION(nigroup,maxcoilctrl)         :: coil_splinefx,coil_splinefy,coil_splinefz
+      REAL(rprec), DIMENSION(nigroup,maxcoilctrl) :: dcoil_spline
+      REAL(rprec), DIMENSION(nigroup,maxcoilctrl) :: coil_splinefx_min,coil_splinefy_min,coil_splinefz_min,&
+                                                     coil_splinefx_max,coil_splinefy_max,coil_splinefz_max
 
       ! Regcoil Winding Surface (rcws): Boundary+min/max
       REAL(rprec), DIMENSION(-mpol_rcws:mpol_rcws, -ntor_rcws:ntor_rcws) :: regcoil_rcws_rbound_c, regcoil_rcws_rbound_s
@@ -195,21 +197,10 @@
       REAL(rprec), DIMENSION(-mpol_rcws:mpol_rcws, -ntor_rcws:ntor_rcws) :: regcoil_rcws_zbound_c_max, regcoil_rcws_zbound_s_max
 
       CHARACTER(256)  ::  equil_type, te_type, ne_type, ti_type, th_type, &
-                          beamj_type, bootj_type, zeff_type, emis_xics_type, windsurfname, &
-                          regcoil_nescin_filename, bootcalc_type
+                          beamj_type, bootj_type, zeff_type, emis_xics_type,windsurfname, &
+                          regcoil_nescin_filename, bootcalc_type, phi_type
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: sfincs_J_dot_B_flux_surface_average, sfincs_B_squared_flux_surface_average
       
-      ! Analytic:
-      LOGICAL :: lanalytic_x_opt, lanalytic_y_opt, lanalytic_z_opt
-      REAL(rprec) :: danalytic_x_opt, danalytic_y_opt, danalytic_z_opt
-      REAL(rprec) :: analytic_x, analytic_y, analytic_z, &
-                analytic_x_min, analytic_x_max, analytic_y_min, &
-                analytic_y_max, analytic_z_min, analytic_z_max, &
-                analytic_fcnt
-      REAL(rprec), DIMENSION(10) :: analytic_coeff, analytic_x_pow, &
-                analytic_y_pow, analytic_z_pow, analytic_x_off, &
-                analytic_y_off, analytic_z_off, analytic_eval
-
       ! These are not really variable parameters as we don't vary them
       ! yet
       REAL(rprec), DIMENSION(ndatafmax) :: nustar_s, nustar_f
@@ -225,6 +216,9 @@
       INTEGER, PARAMETER ::  ibcrit     = 13
       INTEGER, PARAMETER ::  ipscale    = 14
       INTEGER, PARAMETER ::  imixece    = 15
+      INTEGER, PARAMETER ::  ixval      = 16
+      INTEGER, PARAMETER ::  iyval      = 17
+      INTEGER, PARAMETER ::  ixics_v0   = 18
       INTEGER, PARAMETER ::  iextcur    = 21
       INTEGER, PARAMETER ::  iaphi      = 31
       INTEGER, PARAMETER ::  iam        = 32
@@ -277,11 +271,6 @@
       INTEGER, PARAMETER ::  iregcoil_rcws_zbound_c = 5162
       INTEGER, PARAMETER ::  iregcoil_rcws_zbound_s = 5163
       
-      ! Analytic
-      INTEGER, PARAMETER ::  ianalytic_x = 5170
-      INTEGER, PARAMETER ::  ianalytic_y = 5171
-      INTEGER, PARAMETER ::  ianalytic_z = 5172
-
       REAL(rprec), PARAMETER :: ne_norm = 1.0E18
       
       CONTAINS      
@@ -294,6 +283,12 @@
       CHARACTER*(*), PARAMETER ::  out_format_2DB = '(5X,A,I4.3,A,I4.3,A)'
       SELECT CASE(var_num)
 
+         CASE(ixval)
+            WRITE(iunit,out_format) 'X_VAL:  X Variable Test'
+         CASE(iyval)
+            WRITE(iunit,out_format) 'Y_VAL:  Y Variable Test'
+         CASE(ixics_v0)
+            WRITE(iunit,out_format) 'xics_v0:  XICS V0'
          CASE(iphiedge)
             WRITE(iunit,out_format) 'PHIEDGE:  Total Enclosed Toroidal Flux'
          CASE(imixece)
@@ -487,11 +482,11 @@
          CASE(imodemn)
             WRITE(iunit,out_format_2DB) 'MODE(',var_dex1,',',var_dex2,'):  Boundary Specifiction (Lazerson)'
          CASE(icoil_splinefx)
-            WRITE(iunit,out_format_2DB) 'COIL_SPLINEX(',var_dex1,',',var_dex2,'):  Coil Spline Knots (X)'
+            WRITE(iunit,out_format_2DB) 'COIL_SPLINEX(',var_dex1,',',var_dex2,'):  Coil Spline Ctrl Pts (X)'
          CASE(icoil_splinefy)
-            WRITE(iunit,out_format_2DB) 'COIL_SPLINEY(',var_dex1,',',var_dex2,'):  Coil Spline Knots (Y)'
+            WRITE(iunit,out_format_2DB) 'COIL_SPLINEY(',var_dex1,',',var_dex2,'):  Coil Spline Ctrl Pts (Y)'
          CASE(icoil_splinefz)
-            WRITE(iunit,out_format_2DB) 'COIL_SPLINEZ(',var_dex1,',',var_dex2,'):  Coil Spline Knots (Z)'
+            WRITE(iunit,out_format_2DB) 'COIL_SPLINEZ(',var_dex1,',',var_dex2,'):  Coil Spline Ctrl Pts (Z)'
 
          ! REGCOIL cases
          CASE(iregcoil_winding_surface_separation)
@@ -507,13 +502,6 @@
          CASE(iregcoil_rcws_zbound_s)
             WRITE(iunit,out_format_2DB) 'REGCOIL_RCWS_zbound_s(',var_dex1,',',var_dex2,'):  REGCOIL Winding Surface Boundary Vertical Specification (SIN MN)'
          ! END of REGCOIL cases
-         ! Analytic cases
-         CASE(ianalytic_x)
-            WRITE(iunit,out_format) 'Analytic X'
-         CASE(ianalytic_y)
-            WRITE(iunit,out_format) 'Analytic Y'
-         CASE(ianalytic_z)
-            WRITE(iunit,out_format) 'Analytic Z'
       END SELECT
       END SUBROUTINE write_vars
 

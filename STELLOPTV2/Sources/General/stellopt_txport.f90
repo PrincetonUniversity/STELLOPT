@@ -131,7 +131,7 @@
       IF (ALLOCATED(txport_q)) DEALLOCATE(txport_q)
       IF (ALLOCATED(txport_q_all)) DEALLOCATE(txport_q_all)
       SELECT CASE(TRIM(equil_type))
-         CASE('vmec2000','animec','flow','satire','parvmec','paravmec','vboot')
+         CASE('vmec2000','animec','flow','satire','parvmec','paravmec','vboot','vmec2000_oneeq')
             !IF (lscreen) WRITE(6,'(A)') '     s    alpha0   iota    shear    Bref    Lref  Q_turb'
             maxPnt = nz_txport
             dtheta = pi2/maxPnt
@@ -475,6 +475,9 @@
                      vkp1fac = zero
                      WHERE(rkp1av < zero) vkp1fac = - rkp1av
                      vqqprox = (dk/rkp_p)*sqrt(tau*vkp1fac*dkpfac)*qqfac
+                  CASE('prox_l2')
+                     vqqprox = L2
+                     WHERE(vqqprox > zero) vqqprox=vqqprox*0.01
                   CASE('prox_tem_proll','temproxy','tem_overlap')
                      DO ialpha = 1, nalpha0_
                         bmax = MAXVAL(Bhat(ialpha,:))

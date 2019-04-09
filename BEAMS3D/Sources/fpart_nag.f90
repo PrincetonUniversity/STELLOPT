@@ -18,7 +18,7 @@
       USE stel_kinds, ONLY: rprec
       USE beams3d_grid, ONLY: BR_spl, BZ_spl, delta_t, BPHI_spl, MODB_spl, &
                               POT_spl, phimax, rmin, rmax
-      USE beams3d_runtime, ONLY: lmu, mu, lneut
+      USE beams3d_runtime, ONLY: lneut
       USE beams3d_lines, ONLY: moment, mycharge, mymass, myv_neut, B_temp
       USE EZspline_obj
       USE EZspline
@@ -72,88 +72,62 @@
       z_temp   = q(3)
       vll      = q(4)
       rinv = one/r_temp
-      !IF (.not.lneut) THEN
-         CALL EZspline_isInDomain(BR_spl,r_temp,phi_temp,z_temp,ier)
-         IF (ier == 0) THEN
-            ! This is the old way, however, since every grid is the same
-            ! it usues may redundant calls.
-            !CALL EZspline_interp(BR_spl,r_temp,phi_temp,z_temp,br_temp,ier)
-            !CALL EZspline_interp(BZ_spl,r_temp,phi_temp,z_temp,bz_temp,ier)
-            !CALL EZspline_interp(BPHI_spl,r_temp,phi_temp,z_temp,bphi_temp,ier)
-            !CALL EZspline_interp(MODB_spl,r_temp,phi_temp,z_temp,modb_temp,ier)
-            !CALL EZspline_gradient(BR_spl,r_temp,phi_temp,z_temp,gradbr,ier)
-            !CALL EZspline_gradient(BPHI_spl,r_temp,phi_temp,z_temp,gradbphi,ier)
-            !CALL EZspline_gradient(BZ_spl,r_temp,phi_temp,z_temp,gradbz,ier)
-            !CALL EZspline_gradient(MODB_spl,r_temp,phi_temp,z_temp,gradb,ier)
-            ! We could calculate modb_temp but because the SQRT is so slow
-            ! the many multiplications in spline win out in the end.
-            !modb_temp = SQRT(br_temp*br_temp+bphi_temp*bphi_temp+bz_temp*bz_temp)
-            !binv     = 1/modb_temp
-            !gradb(1) = (br_temp*gradbr(1)+bphi_temp*gradbphi(1)+bz_temp*gradbz(1))*binv
-            !gradb(2) = (br_temp*gradbr(2)+bphi_temp*gradbphi(2)+bz_temp*gradbz(2))*binv
-            !gradb(3) = (br_temp*gradbr(3)+bphi_temp*gradbphi(3)+bz_temp*gradbz(3))*binv
-            ! Get the gridpoint info
-            CALL R8HERM3xyz(r_temp,phi_temp,z_temp,&
-                            BR_spl%x1(1),BR_spl%n1,&
-                            BR_spl%x2(1),BR_spl%n2,&
-                            BR_spl%x3(1),BR_spl%n3,&
-                            BR_spl%ilin1,BR_spl%ilin2,BR_spl%ilin3,&
-                            i,j,k,xparam,yparam,zparam,&
-                            hx,hxi,hy,hyi,hz,hzi,ier)
-            ! Evaluate the Splines
-            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
-                            hx,hxi,hy,hyi,hz,hzi,&
-                            BR_spl%fspl(1,1,1,1),BR_spl%n1,BR_spl%n2,BR_spl%n3)
-            br_temp = fval(1); gradbr(1:3) = fval(2:4)
-            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
-                            hx,hxi,hy,hyi,hz,hzi,&
-                            BPHI_spl%fspl(1,1,1,1),BPHI_spl%n1,BPHI_spl%n2,BPHI_spl%n3)
-            bphi_temp = fval(1); gradbphi(1:3) = fval(2:4)
-            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
-                            hx,hxi,hy,hyi,hz,hzi,&
-                            BZ_spl%fspl(1,1,1,1),BZ_spl%n1,BZ_spl%n2,BZ_spl%n3)
-            bz_temp = fval(1); gradbz(1:3) = fval(2:4)
-            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
-                            hx,hxi,hy,hyi,hz,hzi,&
-                            MODB_spl%fspl(1,1,1,1),MODB_spl%n1,MODB_spl%n2,MODB_spl%n3)
-            modb_temp = fval(1); gradb(1:3) = fval(2:4)
-            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
-                            hx,hxi,hy,hyi,hz,hzi,&
-                            POT_spl%fspl(1,1,1,1),POT_spl%n1,POT_spl%n2,POT_spl%n3)
-            pot_temp = fval(1); Efield(1:3) = fval(2:4)
-            ! Calculated some helpers
-            binv    = one/modb_temp
-            cinv    = one/mycharge
-            A       = moment*binv*binv*cinv
-            B       = mymass*vll*vll*binv*binv*binv*binv*cinv
-            qdot(1) = A*( bphi_temp*gradb(3)-bz_temp*rinv*gradb(2) )  -  (bphi_temp*Efield(3)-bz_temp*rinv*Efield(2))*binv*binv + &
-                      B*( bphi_temp*br_temp*gradbz(1) + bphi_temp*bphi_temp*rinv*gradbz(2) + bphi_temp*bz_temp*gradbz(3) &
-                          - bz_temp*br_temp*gradbphi(1) - bz_temp*bphi_temp*rinv*gradbphi(2) - bz_temp*bz_temp*gradbphi(3) &
-                          - bz_temp*bphi_temp*br_temp*rinv) + vll*br_temp*binv
+      CALL EZspline_isInDomain(BR_spl,r_temp,phi_temp,z_temp,ier)
+      IF (ier == 0) THEN
+         ! Get the gridpoint info
+         CALL R8HERM3xyz(r_temp,phi_temp,z_temp,&
+                         BR_spl%x1(1),BR_spl%n1,&
+                         BR_spl%x2(1),BR_spl%n2,&
+                         BR_spl%x3(1),BR_spl%n3,&
+                         BR_spl%ilin1,BR_spl%ilin2,BR_spl%ilin3,&
+                         i,j,k,xparam,yparam,zparam,&
+                         hx,hxi,hy,hyi,hz,hzi,ier)
+         ! Evaluate the Splines
+         CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                         hx,hxi,hy,hyi,hz,hzi,&
+                         BR_spl%fspl(1,1,1,1),BR_spl%n1,BR_spl%n2,BR_spl%n3)
+         br_temp = fval(1); gradbr(1:3) = fval(2:4)
+         CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                         hx,hxi,hy,hyi,hz,hzi,&
+                         BPHI_spl%fspl(1,1,1,1),BPHI_spl%n1,BPHI_spl%n2,BPHI_spl%n3)
+         bphi_temp = fval(1); gradbphi(1:3) = fval(2:4)
+         CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                         hx,hxi,hy,hyi,hz,hzi,&
+                         BZ_spl%fspl(1,1,1,1),BZ_spl%n1,BZ_spl%n2,BZ_spl%n3)
+         bz_temp = fval(1); gradbz(1:3) = fval(2:4)
+         CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                         hx,hxi,hy,hyi,hz,hzi,&
+                         MODB_spl%fspl(1,1,1,1),MODB_spl%n1,MODB_spl%n2,MODB_spl%n3)
+         modb_temp = fval(1); gradb(1:3) = fval(2:4)
+         CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                         hx,hxi,hy,hyi,hz,hzi,&
+                         POT_spl%fspl(1,1,1,1),POT_spl%n1,POT_spl%n2,POT_spl%n3)
+         pot_temp = fval(1); Efield(1:3) = fval(2:4)
+         ! Calculated some helpers
+         binv    = one/modb_temp
+         cinv    = one/mycharge
+         A       = moment*binv*binv*cinv
+         B       = mymass*vll*vll*binv*binv*binv*binv*cinv
+         qdot(1) = A*( bphi_temp*gradb(3)-bz_temp*rinv*gradb(2) )  -  (bphi_temp*Efield(3)-bz_temp*rinv*Efield(2))*binv*binv + &
+                   B*( bphi_temp*br_temp*gradbz(1) + bphi_temp*bphi_temp*rinv*gradbz(2) + bphi_temp*bz_temp*gradbz(3) &
+                       - bz_temp*br_temp*gradbphi(1) - bz_temp*bphi_temp*rinv*gradbphi(2) - bz_temp*bz_temp*gradbphi(3) &
+                       - bz_temp*bphi_temp*br_temp*rinv) + vll*br_temp*binv
              
-            qdot(2) = rinv*A*( bz_temp*gradb(1)-br_temp*gradb(3) )    - rinv*(bz_temp*Efield(1)-br_temp*Efield(3))*binv*binv +  &
-                      rinv*B*( bz_temp*br_temp*gradbr(1) + bz_temp*bphi_temp*rinv*gradbr(2) + bz_temp*bz_temp*gradbr(3) &
-                           - bz_temp*bphi_temp*bphi_temp*rinv - br_temp*br_temp*gradbz(1) - br_temp*bphi_temp*rinv*gradbz(2) &
-                           - br_temp*bz_temp*gradbz(3) ) + vll*bphi_temp*binv*rinv
-             
-            qdot(3) = A*( br_temp*rinv*gradb(2)-bphi_temp*gradb(1) )  - (br_temp*rinv*Efield(2)-bphi_temp*Efield(1))*binv*binv +  &
-                      B*( br_temp*br_temp*gradbphi(1) + br_temp*bphi_temp*rinv*gradbphi(2) + br_temp*bz_temp*gradbphi(3) &
-                          + br_temp*br_temp*bphi_temp*rinv - bphi_temp*br_temp*gradbr(1) - bphi_temp*bphi_temp*rinv*gradbr(2) &
-                          - bphi_temp*bz_temp*gradbr(3) + bphi_temp*bphi_temp*bphi_temp*rinv ) + vll*bz_temp*binv
-             
-            qdot(4) = -moment*binv*( br_temp*gradb(1) + bphi_temp*rinv*gradb(2) + bz_temp*gradb(3) )/mymass &
-                     +mycharge*binv*(br_temp*Efield(1) + bphi_temp*rinv*Efield(2) + bz_temp*Efield(3) )/mymass
-         ELSE
-            qdot(1:4) = 0
-         END IF
-      !ELSE
-      !   qdot(1) = myv_neut(1)*cos(q(2)) + myv_neut(2)*sin(q(2))
-      !   qdot(2) = rinv*( myv_neut(2)*cos(q(2)) - myv_neut(1)*sin(q(2)) )
-      !   qdot(3) = myv_neut(3)
-      !   qdot(4) = 0
-      !   IF (r_temp <= rmin) qdot(1:4) = 0
-      !   IF (r_temp > 5*rmax) qdot(1:4) = 0
-      !END IF
+         qdot(2) = rinv*A*( bz_temp*gradb(1)-br_temp*gradb(3) )    - rinv*(bz_temp*Efield(1)-br_temp*Efield(3))*binv*binv +  &
+                   rinv*B*( bz_temp*br_temp*gradbr(1) + bz_temp*bphi_temp*rinv*gradbr(2) + bz_temp*bz_temp*gradbr(3) &
+                        - bz_temp*bphi_temp*bphi_temp*rinv - br_temp*br_temp*gradbz(1) - br_temp*bphi_temp*rinv*gradbz(2) &
+                        - br_temp*bz_temp*gradbz(3) ) + vll*bphi_temp*binv*rinv
+          
+         qdot(3) = A*( br_temp*rinv*gradb(2)-bphi_temp*gradb(1) )  - (br_temp*rinv*Efield(2)-bphi_temp*Efield(1))*binv*binv +  &
+                   B*( br_temp*br_temp*gradbphi(1) + br_temp*bphi_temp*rinv*gradbphi(2) + br_temp*bz_temp*gradbphi(3) &
+                       + br_temp*br_temp*bphi_temp*rinv - bphi_temp*br_temp*gradbr(1) - bphi_temp*bphi_temp*rinv*gradbr(2) &
+                       - bphi_temp*bz_temp*gradbr(3) + bphi_temp*bphi_temp*bphi_temp*rinv ) + vll*bz_temp*binv
+          
+         qdot(4) = -moment*binv*( br_temp*gradb(1) + bphi_temp*rinv*gradb(2) + bz_temp*gradb(3) )/mymass &
+                  +mycharge*binv*(br_temp*Efield(1) + bphi_temp*rinv*Efield(2) + bz_temp*Efield(3) )/mymass
+      ELSE
+         qdot(1:4) = 0
+      END IF
       
       RETURN
 !-----------------------------------------------------------------------

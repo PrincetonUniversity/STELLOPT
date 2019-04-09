@@ -108,6 +108,7 @@
 
       ! Calculate distribution function
       ALLOCATE(dist_func(1:nbeams,1:ndist,0:npoinc))
+      dist_func = 0
       dist = maxdist-mindist
       ddist = dist/ndist
       sbeam = MINVAL(beam(mystart:myend), DIM=1)

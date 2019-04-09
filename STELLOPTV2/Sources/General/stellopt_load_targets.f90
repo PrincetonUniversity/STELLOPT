@@ -38,6 +38,13 @@
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
       mtargets=0
+      !------------- TEST TARGETS ----------------------------
+      ! X
+      IF (sigma_x < bigno)  &
+         CALL chisq_x(target_x,sigma_x,ncnt,iflag)
+      ! Y
+      IF (sigma_y < bigno)  &
+         CALL chisq_y(target_y,sigma_y,ncnt,iflag)
       !------------- SCALAR TARGETS ----------------------------
       ! PHIEDGE
       IF (sigma_phiedge < bigno)  &
@@ -115,9 +122,15 @@
       ! XICS Brightness
       IF (ANY(sigma_xics_bright < bigno)) &
          CALL chisq_xics_bright(target_xics_bright, sigma_xics_bright, ncnt,iflag)
-      ! XICS
+      ! XICS Ti
       IF (ANY(sigma_xics < bigno)) &
          CALL chisq_xics(target_xics, sigma_xics, ncnt,iflag)
+      ! XICS W3
+      IF (ANY(sigma_xics_w3 < bigno)) &
+         CALL chisq_xics_w3(target_xics_w3, sigma_xics_w3, ncnt,iflag)
+      ! XICS V
+      IF (ANY(sigma_xics_v < bigno)) &
+         CALL chisq_xics_v(target_xics_v, sigma_xics_v, ncnt,iflag)
       ! SOFT X-RAYS
       IF (ANY(sigma_sxr < bigno)) &
          CALL chisq_sxr(target_sxr, sigma_sxr, ncnt,iflag)
@@ -246,12 +259,6 @@
       ! Kink
       IF (ANY(sigma_kink < bigno)) &
          CALL chisq_kink(target_kink, sigma_kink, ncnt,iflag)
-
-      ! Analytic
-      IF (ANY(sigma_analytic < bigno)) &
-         CALL chisq_analytic(target_analytic, sigma_analytic, &
-                             ncnt, iflag)
-
 
       ! Return if an initialization call
       IF (ncnt < 0) RETURN
