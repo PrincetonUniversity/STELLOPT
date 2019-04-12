@@ -128,7 +128,7 @@
 #            SFINCS Options
 #######################################################################
 
-  LSFINCS = T
+  LSFINCS = F
   SFINCS_DIR = $(SFINCS_PATH)
   SFINCS_INC = -I$(SFINCS_DIR)
   LIB_SFINCS = libsfincs.a
