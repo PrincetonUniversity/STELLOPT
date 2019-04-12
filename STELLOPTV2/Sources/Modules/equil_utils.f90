@@ -674,7 +674,7 @@
       !h = SQRT(Rg(3)*Rg(3)+Zg(3)*Zg(3))*0.5/sqrt(s)
       !phi_prime = phi_prime / (modb*h)
       phi_prime = 2*phi_prime*sqrt(s) / (modb*SQRT(Rg(3)*Rg(3)+Zg(3)*Zg(3)))
-      nhat = -nhat / SQRT(SUM(nhat*nhat))
+      nhat = nhat / SQRT(SUM(nhat*nhat)) ! removed negative sign for postive phi B-field
       bx = br * cos(v) - bp * sin(v)
       by = br * sin(v) + bp * cos(v)
       uperp(1) = by*nhat(3)-bz*nhat(2)
