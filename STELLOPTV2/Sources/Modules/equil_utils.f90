@@ -896,10 +896,12 @@
             DO ik = LBOUND(x,DIM=1), UBOUND(x,DIM=1)
                profile_norm = profile_norm + x(ik)/(ik+1)
             END DO
+            IF (profile_norm == 0) profile_norm = 1 ! avoid zero integral
          CASE ('spline','akima_spline','akima_spline_ip')
             DO ik = LBOUND(x,DIM=1), UBOUND(x,DIM=1)
                profile_norm = profile_norm + x(ik)
             END DO
+            IF (profile_norm == 0) profile_norm = 1 ! avoid zero integral
          CASE DEFAULT
             PRINT *,"Error! Unknown profile type in subroutine profile_norm:",prof_type
             PRINT *,x(1:10)
