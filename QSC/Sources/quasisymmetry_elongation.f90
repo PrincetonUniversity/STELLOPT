@@ -12,11 +12,23 @@ subroutine quasisymmetry_elongation
   allocate(q(N_phi))
   allocate(p(N_phi))
 
+
+  ! Use (R,Z) for elongation in the (R,Z) plane,
+  ! or use (X,Y) for elongation in the plane perpendicular to the magnetic axis.
+
+  p = X1s*X1s + X1c*X1c + Y1s*Y1s + Y1c*Y1c
+  q = X1s*Y1c - X1c*Y1s
+
   ! See my note 20180329-03 for derivation of the formula below for elongation:
-  p = R1s*R1s + R1c*R1c + Z1s*Z1s + Z1c*Z1c
-  q = R1s*Z1c - R1c*Z1s
   !elongation = 2*abs(q) / (p - sqrt(p*p-4*q*q)) ! This version suffers precision loss for large elongation.
   elongation = (p + sqrt(p*p-4*q*q))/(2*abs(q)) ! This version is more stable numerically.
+
+  p = R1s*R1s + R1c*R1c + Z1s*Z1s + Z1c*Z1c
+  q = R1s*Z1c - R1c*Z1s
+
+  elongation_in_Rz_plane = (p + sqrt(p*p-4*q*q))/(2*abs(q)) ! This version is more stable numerically.
+
+  if (verbose) print *,"maxval(elongation_in_Rz_plane):",maxval(elongation_in_Rz_plane)
 
   ! Search for maximum using Fourier interpolation...
   index_of_max = maxloc(elongation,1)
@@ -69,8 +81,8 @@ subroutine quasisymmetry_elongation
      print *,"max elongation from fmin:",max_elongation
   end if
   if (maxval_elongation > max_elongation * (1 + 1.0d-10)) then
-     print *,"Error! Something went wrong with the max_elongation search."
-     if (maxval_elongation < max_precise_elongation) stop ! If the elongation is larger than this, we don't care about the solution much, so don't bother aborting.
+     print *,"Error! Something went wrong with the max_elongation search on proc",mpi_rank,". maxval_elongation=",maxval_elongation,", max_elongation=",max_elongation,", elongation=",elongation
+     !if (maxval_elongation < max_precise_elongation) stop ! If the elongation is larger than this, we don't care about the solution much, so don't bother aborting.
   end if
 
   deallocate(p,q)

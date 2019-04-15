@@ -42,8 +42,8 @@
       REAL(rprec), DIMENSION(-ntord:ntord,0:mpol1d) :: rbc_temp,zbs_temp
       REAL(rprec), PARAMETER :: norm_fac = 0.5_rprec   ! Used to set bounds for nomalization
 !      REAL(rprec), PARAMETER :: pct_domain = 0.05 ! USed to auto-determine domain
-
-!      integer ::  iflg1       !hm-9/11/18.0=orig, 1= w QSC. 9/23.xferred to stellopt_vars.
+! 4/11/19.(9s3)rename iflg1->iqsc.
+!      integer ::  iqsc  !hm-9/11/18.0=orig, 1= w QSC. 9/23.xferred to stellopt_vars.
       character(len=120) :: input_file   !hm-9/12/18,9/13. 9/23.cmd1 xferred to stellopt_vars.
       REAL(rprec), DIMENSION(0:ntord) :: raxis_cc_tmp,raxis_cs_tmp,zaxis_cc_tmp,zaxis_cs_tmp  !12/21/18.
       
@@ -57,7 +57,7 @@
       ! Read the OPTIMUM Namelist
       CALL read_stellopt_input(TRIM(id_string),ier,myid)
       CALL read_neoin_input(TRIM(id_string(7:LEN(id_string))),ier)  !12/28/18.(7m14b)fra chisq_neo().
-      if (iflg1 == 1) then
+      if (iqsc == 1) then
          call quasisymmetry_read_input(id_string(7:LEN(id_string))) !12/5/18.(7l23e)
 !12/21/18.save init vals for [raxis_cc,..]=[R0c,..] to restore after rd_indata_namelist.
          raxis_cc_tmp=raxis_cc; raxis_cs_tmp=raxis_cs
@@ -86,8 +86,8 @@
               IF (myid==master) THEN
                  CALL safe_open(iunit,ier,'threed1.'//TRIM(id_string),'unknown','formatted')
                  CLOSE(iunit)
-!  hm-10/21/18.(6e20.e)iflg1=1 sec mved here fra blw.
-                 if (iflg1 == 1) then  !hm-9/11/18.rd in init input file, & call QSC.
+!  hm-10/21/18.(6e20.e)iqsc=1 sec mved here fra blw.
+                 if (iqsc == 1) then  !hm-9/11/18.rd in init input file, & call QSC.
                     input_file= "input."//TRIM(id_string)
                     write(0,*)'stel_init. id_string=',trim(id_string) !hm-9/13-1,10/24-1
                     CALL safe_open(iunit,ier,'input.'//TRIM(id_string),'old','formatted') !out-(3k1).in-(6e20j)
@@ -111,11 +111,11 @@
               CALL MPI_BARRIER(MPI_COMM_STEL,ierr_mpi)
               IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_init: BARRIER',ierr_mpi)
 
-! hm-10/21/18.(6e20.e)iflg1=1 sec mved abv fra here.
+! hm-10/21/18.(6e20.e)iqsc=1 sec mved abv fra here.
 
               CALL runvmec(ictrl,id_string,.false.,MPI_COMM_SELF,'')
 !2/1/19.(8r4)again restore [raxis_cc,..] to [raxis_cc_tmp]<-[R0c,..]
-              if (iflg1 == 1) then
+              if (iqsc == 1) then
                  raxis_cc=raxis_cc_tmp; raxis_cs=raxis_cs_tmp
                  zaxis_cc=zaxis_cc_tmp; zaxis_cs=zaxis_cs_tmp
               endif
@@ -226,14 +226,14 @@
                  IF (laxis_opt(n)) THEN
                     nvars = nvars + 1
                     IF (n/=0) nvars = nvars + 1
-                    !IF (lasym) THEN
-                    !   nvars = nvars + 1
-                    !   IF (n/=0) nvars = nvars + 1
-                    !END IF
+                    IF (lasym) THEN        !4/8/19.(9r3)these back in.
+                       nvars = nvars + 1
+                       IF (n/=0) nvars = nvars + 1
+                    END IF                 !4/8/19.(9r3)end back in.
                  END IF
               END DO
-!hm-9/22/18.skip [RBC,ZBS] count if iflg1=1.
-              if (iflg1.ne.0) goto 10
+!hm-9/22/18.skip [RBC,ZBS] count if iqsc=1.
+              if (iqsc.ne.0) goto 10
               IF (lbound_opt(0,0)) THEN
                  nvars = nvars + 1
                  IF (lasym) nvars = nvars + 1
@@ -1221,9 +1221,9 @@
                     END IF
                  END DO
               END IF
-!hm-9/22/18.skip [RBC,ZBS] assignmt if iflg1=1.
-!              if (iflg1.ne.0) goto 20     !out-11/25/18.
-              if (iflg1.ne.0) goto 24   !11/25/18.(7l19d)
+!hm-9/22/18.skip [RBC,ZBS] assignmt if iqsc=1.
+!              if (iqsc.ne.0) goto 20     !out-11/25/18.
+              if (iqsc.ne.0) goto 24   !11/25/18.(7l19d)
               IF (ANY(lmode_opt)) THEN
                  DO n = LBOUND(lmode_opt,1), UBOUND(lmode_opt,1)
                     DO m = LBOUND(lmode_opt,2), UBOUND(lmode_opt,2)
@@ -1285,7 +1285,7 @@
                              delta_min(n,m) = deltamn(n,m) - ABS(pct_domain*deltamn(n,m))
                              delta_max(n,m) = deltamn(n,m) + ABS(pct_domain*deltamn(n,m))
                           END IF
-                          if (iflg1.eq.0) then    !11/25/18.(7l19d)
+                          if (iqsc.eq.0) then    !11/25/18.(7l19d)
                              nvar_in = nvar_in + 1
                              vars(nvar_in) = deltamn(n,m)
 !
@@ -1300,7 +1300,7 @@
                     END DO
                  END DO
               END IF
-              if (iflg1.ne.0) goto 20    !12/21/18.(7m12b)
+              if (iqsc.ne.0) goto 20    !12/21/18.(7m12b)
               IF (ANY(lbound_opt)) THEN
                  IF (lbound_opt(0,0)) THEN
                     IF (lauto_domain) THEN

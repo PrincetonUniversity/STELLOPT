@@ -9,6 +9,7 @@ subroutine quasisymmetry_init_axis
   real(dp), dimension(:), allocatable :: d2_l_d_phi2, torsion_numerator, torsion_denominator
   real(dp), dimension(:,:), allocatable :: d_r_d_phi_cylindrical, d2_r_d_phi2_cylindrical, d3_r_d_phi3_cylindrical
   real(dp), dimension(:,:), allocatable :: d_tangent_d_l_cylindrical
+  real(dp) :: mean_of_R, mean_of_Z
 
   if (allocated(R0)) deallocate(R0)
   if (allocated(Z0)) deallocate(Z0)
@@ -95,6 +96,7 @@ subroutine quasisymmetry_init_axis
   d_l_d_phi = sqrt(R0 * R0 + R0p * R0p + Z0p * Z0p)
   d2_l_d_phi2 = (R0 * R0p + R0p * R0pp + Z0p * Z0pp) / d_l_d_phi
   B0_over_abs_G0 = N_phi / sum(d_l_d_phi)
+  abs_G0_over_B0 = 1 / B0_over_abs_G0
 
   d_r_d_phi_cylindrical(:,1) = R0p
   d_r_d_phi_cylindrical(:,2) = R0
@@ -122,6 +124,16 @@ subroutine quasisymmetry_init_axis
        d_tangent_d_l_cylindrical(:,2) * d_tangent_d_l_cylindrical(:,2) + &
        d_tangent_d_l_cylindrical(:,3) * d_tangent_d_l_cylindrical(:,3))
 
+  axis_length = sum(d_l_d_phi) * d_phi * nfp
+  rms_curvature = sqrt((sum(curvature * curvature * d_l_d_phi) * d_phi * nfp) / axis_length)
+  !max_curvature = maxval(curvature)
+  if (.not. already_found_max_curvature) call quasisymmetry_max_curvature()
+  mean_of_R = sum(R0 * d_l_d_phi) * d_phi * nfp / axis_length
+  mean_of_Z = sum(Z0 * d_l_d_phi) * d_phi * nfp / axis_length
+  standard_deviation_of_R = sqrt(sum((R0 - mean_of_R) ** 2 * d_l_d_phi) * d_phi * nfp / axis_length)
+  standard_deviation_of_Z = sqrt(sum((Z0 - mean_of_Z) ** 2 * d_l_d_phi) * d_phi * nfp / axis_length)
+  if (verbose) print "(a,2(es10.3))"," Standard deviation of R, Z:",standard_deviation_of_R, standard_deviation_of_Z
+
   do j = 1,3
      normal_cylindrical(:,j) = d_tangent_d_l_cylindrical(:,j) / curvature
   end do
@@ -131,9 +143,9 @@ subroutine quasisymmetry_init_axis
   binormal_cylindrical(:,2) = tangent_cylindrical(:,3) * normal_cylindrical(:,1) - tangent_cylindrical(:,1) * normal_cylindrical(:,3)
   binormal_cylindrical(:,3) = tangent_cylindrical(:,1) * normal_cylindrical(:,2) - tangent_cylindrical(:,2) * normal_cylindrical(:,1)
 
-  ! The minus sign in the next line is absent in wikipedia and mathworld.wolfram.com/Torsion.html but
-  ! present in Garren & Boozer's sign convention.
-  torsion_numerator = -(0 &
+  ! We use the same sign convention for torsion as the Landreman-Sengupta-Plunk paper, wikipedia, and mathworld.wolfram.com/Torsion.html.
+  ! This sign convention is opposite to Garren & Boozer's sign convention!
+  torsion_numerator = (0 &
        + d_r_d_phi_cylindrical(:,1) * (d2_r_d_phi2_cylindrical(:,2) * d3_r_d_phi3_cylindrical(:,3) - d2_r_d_phi2_cylindrical(:,3) * d3_r_d_phi3_cylindrical(:,2)) &
        + d_r_d_phi_cylindrical(:,2) * (d2_r_d_phi2_cylindrical(:,3) * d3_r_d_phi3_cylindrical(:,1) - d2_r_d_phi2_cylindrical(:,1) * d3_r_d_phi3_cylindrical(:,3)) &
        + d_r_d_phi_cylindrical(:,3) * (d2_r_d_phi2_cylindrical(:,1) * d3_r_d_phi3_cylindrical(:,2) - d2_r_d_phi2_cylindrical(:,2) * d3_r_d_phi3_cylindrical(:,1)))
@@ -161,7 +173,8 @@ subroutine quasisymmetry_init_axis
   binormal_Cartesian(:,2) = binormal_cylindrical(:,1) * sinangle + binormal_cylindrical(:,2) * cosangle
   binormal_Cartesian(:,3) = binormal_cylindrical(:,3)
 
-  B1Squared_over_curvatureSquared = (B1s_over_B0*B1s_over_B0 + B1c_over_B0*B1c_over_B0) / (curvature * curvature)
+  !B1Squared_over_curvatureSquared = (B1s_over_B0*B1s_over_B0 + B1c_over_B0*B1c_over_B0) / (curvature * curvature)
+  B1Squared_over_curvatureSquared = eta_bar * eta_bar / (curvature * curvature)
 
   if (allocated(d_d_zeta)) deallocate(d_d_zeta)
   allocate(d_d_zeta(N_phi, N_phi))
@@ -169,12 +182,38 @@ subroutine quasisymmetry_init_axis
      d_d_zeta(j,:) = d_d_phi(j,:) / (B0_over_abs_G0 * d_l_d_phi(j))
   end do
 
-  X1s = B1s_over_B0 / curvature
-  X1c = B1c_over_B0 / curvature
+  X1s = 0
+  X1c = eta_bar / curvature
+  
+  ! Compute the Boozer toroidal angle along the axis, which is proportional (for QA or QH) to arclength along the axis.
+  if (allocated(Boozer_toroidal_angle)) deallocate(Boozer_toroidal_angle)
+  allocate(Boozer_toroidal_angle(N_phi))
+  Boozer_toroidal_angle(1) = 0
+  do j = 2, N_phi
+     ! To get toroidal angle on the full mesh, we need d_l_d_phi on the half mesh.
+     Boozer_toroidal_angle(j) = Boozer_toroidal_angle(j-1) + (d_l_d_phi(j-1) + d_l_d_phi(j))
+  end do
+  Boozer_toroidal_angle = Boozer_toroidal_angle * (0.5*d_phi*2*pi/(axis_length))
 
   deallocate(sinangle, cosangle)
   deallocate(d2_l_d_phi2, torsion_numerator, torsion_denominator)
   deallocate(d_r_d_phi_cylindrical, d2_r_d_phi2_cylindrical, d3_r_d_phi3_cylindrical)
 
+!!$  print *,"tangent_cylindrical:"
+!!$  do j=1,3
+!!$     print *,tangent_cylindrical(:,j)
+!!$  end do
+!!$
+!!$  print *,"normal_cylindrical:"
+!!$  do j=1,3
+!!$     print *,normal_cylindrical(:,j)
+!!$  end do
+!!$
+!!$  print *,"binormal_cylindrical:"
+!!$  do j=1,3
+!!$     print *,binormal_cylindrical(:,j)
+!!$  end do
+
+  call quasisymmetry_determine_axis_helicity()
 
 end subroutine quasisymmetry_init_axis

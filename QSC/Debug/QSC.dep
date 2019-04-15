@@ -1,20 +1,26 @@
 # Dependencies:
 quasisymmetry.o: quasisymmetry_variables.o
 QSC.o: quasisymmetry_variables.o   #10/12/18.(6b)
+quasisymmetry_fzero.o:
 quasisymmetry_elongation.o: quasisymmetry_variables.o
 quasisymmetry_read_input.o: quasisymmetry_variables.o
 quasisymmetry_init_phi.o: quasisymmetry_variables.o
 quasisymmetry_init_axis.o: quasisymmetry_variables.o
 quasisymmetry_validate_input.o: quasisymmetry_variables.o
 quasisymmetry_single_solve.o: quasisymmetry_variables.o
-#QSC.o: quasisymmetry_variables.o  #renamed quasisymmetry_single_solve.o->QSC.o
 quasisymmetry_solve.o: quasisymmetry_variables.o
 quasisymmetry_Jacobian.o: quasisymmetry_variables.o
 quasisymmetry_residual.o: quasisymmetry_variables.o
 quasisymmetry_variables.o:
 quasisymmetry_differentiation_matrix.o: 
 quasisymmetry_fmin.o:
-#quasisymmetry_scan.o: quasisymmetry_variables.o
-quasisymmetry_determine_helicity.o: quasisymmetry_variables.o
-quasisymmetry_write_vmec_input.o: quasisymmetry_variables.o
+quasisymmetry_scan.o: quasisymmetry_variables.o
+quasisymmetry_determine_axis_helicity.o: quasisymmetry_variables.o
+quasisymmetry_determine_B_helicity.o: quasisymmetry_variables.o
+quasisymmetry_max_curvature.o: quasisymmetry_variables.o
+quasisymmetry_Frenet_to_cylindrical.o: quasisymmetry_splines.o quasisymmetry_variables.o
+quasisymmetry_splines.o: quasisymmetry_variables.o
+quasisymmetry_order_r_squared.o: quasisymmetry_variables.o
+quasisymmetry_grad_B_tensor.o: quasisymmetry_variables.o
+quasisymmetry_write_vmec_input.o: quasisymmetry_Frenet_to_cylindrical.o quasisymmetry_variables.o
 quasisymmetry_write_output.o: quasisymmetry_variables.o

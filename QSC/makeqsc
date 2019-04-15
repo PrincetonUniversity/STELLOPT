@@ -122,7 +122,7 @@ $(LIBSTELL_DIR)/mini_libstell.a:
 
 clean:
 	rm -f *.o *.mod *.MOD *~ $(TARGET)
-	cd mini_libstell; rm -f *.o *.mod *.MOD *.a
+#	cd mini_libstell; rm -f *.o *.mod *.MOD *.a    #out-4/14/19.
 
 test: $(TARGET)
 	@echo "Beginning functional tests." && cd examples && export REGCOIL_RETEST=no && ./runExamples.py
