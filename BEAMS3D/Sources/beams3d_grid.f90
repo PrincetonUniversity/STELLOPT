@@ -46,7 +46,7 @@
                                   TE(:,:,:), NE(:,:,:), TI(:,:,:), ZEFF_ARR(:,:,:), &
                                   S_ARR(:,:,:), U_ARR(:,:,:), POT_ARR(:,:,:)
       TYPE(EZspline3_r8) :: BR_spl, BPHI_spl, BZ_spl, MODB_spl, TE_spl, NE_spl, &
-                            TI_spl, S_spl, U_spl, POT_spl
-      TYPE(EZspline1_r8) :: TE_spl_s, NE_spl_s, TI_spl_S, Vp_spl_s, POT_spl_s
+                            TI_spl, ZEFF_spl, S_spl, U_spl, POT_spl
+      TYPE(EZspline1_r8) :: TE_spl_s, NE_spl_s, TI_spl_S, ZEFF_spl_s, Vp_spl_s, POT_spl_s
 
       END MODULE beams3d_grid

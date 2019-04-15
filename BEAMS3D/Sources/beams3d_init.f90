@@ -14,14 +14,16 @@
                              nv_in => nzeta, nfp_in => nfp, nigroup
       USE beams3d_runtime
       USE beams3d_grid, ONLY: raxis,phiaxis,zaxis, nr, nphi, nz, nte, &
-                                 nne, nti, npot, &
+                                 nne, nti, nzeff, npot, &
                                  rmin, rmax, zmin, zmax, phimin, &
                                  phimax, B_R, B_Z, B_PHI, MODB, &
                                  BR_spl, BZ_spl, BPHI_spl, MODB_spl, &
-                                 TE_spl, NE_spl, TI_spl, TE, NE, TI, &
-                                 TE_spl_s, NE_spl_s, TI_spl_s, S_ARR,&
-                                 S_spl, U_ARR, U_spl, &
-                                 POT_ARR, POT_spl_s, POT_spl
+                                 TE_spl, NE_spl, TI_spl, ZEFF_spl, &
+                                 TE, NE, TI, ZEFF_ARR, &
+                                 TE_spl_s, NE_spl_s, TI_spl_s, ZEFF_spl_s, &
+                                 POT_spl_s, &
+                                 S_ARR, U_ARR, POT_ARR, &
+                                 S_spl, U_spl, POT_spl
       USE beams3d_input_mod, ONLY: read_beams3d_input
       USE beams3d_lines, ONLY: nparticles
       USE wall_mod
@@ -133,14 +135,23 @@
              CALL EZspline_setup(NE_spl_s,NE_AUX_F(1:nne),ier,EXACT_DIM=.true.)
              IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init6',ier)
           END IF
+          ! ZEFF
+          IF (nzeff>0) THEN
+             CALL EZspline_init(ZEFF_spl_s,nti,bcs1_s,ier)
+             IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init7',ier)
+             ZEFF_spl_s%isHermite   = 1
+             ZEFF_spl_s%x1          = ZEFF_AUX_S(1:nzeff)
+             CALL EZspline_setup(ZEFF_spl_s,ZEFF_AUX_F(1:nti),ier,EXACT_DIM=.true.)
+             IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init8',ier)
+          END IF
           ! POTENTIAL
           IF (npot>0) THEN
              CALL EZspline_init(POT_spl_s,npot,bcs1_s,ier)
-             IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init7',ier)
+             IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init9',ier)
              POT_spl_s%x1          = POT_AUX_S(1:npot)
              POT_spl_s%isHermite   = 1
              CALL EZspline_setup(POT_spl_s,POT_AUX_F(1:npot),ier,EXACT_DIM=.true.)
-             IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init8',ier)
+             IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init10',ier)
           END IF
          
       END IF
@@ -176,6 +187,8 @@
          IF (ier /= 0) CALL handle_err(ALLOC_ERR,'NE',ier)
          ALLOCATE(TI(nr,nphi,nz),STAT=ier)
          IF (ier /= 0) CALL handle_err(ALLOC_ERR,'TI',ier)
+         ALLOCATE(ZEFF_ARR(nr,nphi,nz),STAT=ier)
+         IF (ier /= 0) CALL handle_err(ALLOC_ERR,'ZEFF_ARR',ier)
          ALLOCATE(POT_ARR(nr,nphi,nz),STAT=ier)
          IF (ier /= 0) CALL handle_err(ALLOC_ERR,'POT_ARR',ier)
          ALLOCATE(S_ARR(nr,nphi,nz),STAT=ier)
@@ -215,25 +228,33 @@
          IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init: NE',ier)
          CALL EZspline_init(TI_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
          IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init: TI',ier)
+         CALL EZspline_init(ZEFF_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
+         IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init: ZEFF',ier)
          TE_spl%isHermite   = 1
          NE_spl%isHermite   = 1
          TI_spl%isHermite   = 1
+         ZEFF_spl%isHermite = 1
          TE_spl%x1   = raxis
          NE_spl%x1   = raxis
          TI_spl%x1   = raxis
+         ZEFF_spl%x1 = raxis
          TE_spl%x2   = phiaxis
          NE_spl%x2   = phiaxis
          TI_spl%x2   = phiaxis
+         ZEFF_spl%x2 = phiaxis
          TE_spl%x3   = zaxis
          NE_spl%x3   = zaxis
          TI_spl%x3   = zaxis
+         ZEFF_spl%x3 = zaxis
          CALL EZspline_setup(TE_spl,TE,ier,EXACT_DIM=.true.)
          IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init: TE',ier)
          CALL EZspline_setup(NE_spl,NE,ier,EXACT_DIM=.true.)
          IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init: NE',ier)
          CALL EZspline_setup(TI_spl,TI,ier,EXACT_DIM=.true.)
          IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init: TI',ier)
-         IF (myworkid /= master) DEALLOCATE(TE, NE, TI)
+         CALL EZspline_setup(ZEFF_spl,ZEFF_ARR,ier,EXACT_DIM=.true.)
+         IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init: ZEFF_ARR',ier)
+         IF (myworkid /= master) DEALLOCATE(TE, NE, TI, ZEFF_ARR)
       END IF
          
       ! Construct MODB
@@ -384,6 +405,7 @@
          IF (nne > 0) CALL EZspline_free(NE_spl_s,ier)
          IF (nti > 0) CALL EZspline_free(TI_spl_s,ier)
          IF (npot > 0) CALL EZspline_free(POT_spl_s,ier)
+         IF (nzeff > 0) CALL EZspline_free(ZEFF_spl_s,ier)
       END IF
 !DEC$ IF DEFINED (MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)

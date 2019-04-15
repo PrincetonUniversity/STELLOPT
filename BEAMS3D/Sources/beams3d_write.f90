@@ -15,7 +15,8 @@
 !DEC$ ENDIF  
       USE beams3d_lines
       USE beams3d_grid, ONLY: nr, nphi, nz, B_R, B_PHI, B_Z, raxis, &
-                                 zaxis, phiaxis, S_ARR, U_ARR, POT_ARR
+                                 zaxis, phiaxis, S_ARR, U_ARR, POT_ARR, &
+                                 ZEFF_ARR
       USE beams3d_runtime, ONLY: id_string, npoinc, nbeams, beam, t_end, lverb, lflux, &
                                     lvmec, lpies, lspec, lcoil, lmgrid, lbeam, &
                                     lvessel, lvac, lbeam_simple, handle_err, nparticles_start, &
@@ -96,6 +97,8 @@
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'U_ARR',ier)
                CALL write_var_hdf5(fid,'POT_ARR',nr,nphi,nz,ier,DBLVAR=POT_ARR,ATT='Electrostatic Potential [V]',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'POT_ARR',ier)
+               CALL write_var_hdf5(fid,'ZEFF_ARR',nr,nphi,nz,ier,DBLVAR=ZEFF_ARR,ATT='Effective Ion Charge',ATT_NAME='description')
+               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ZEFF_ARR',ier)
                IF (lbeam) THEN
 !                  CALL open_hdf5('beams3d_'//TRIM(id_string)//'.h5',fid,ier,LCREATE=.false.)
 !                  IF (ier /= 0) CALL handle_err(HDF5_OPEN_ERR,'beams3d_'//TRIM(id_string)//'.h5',ier)

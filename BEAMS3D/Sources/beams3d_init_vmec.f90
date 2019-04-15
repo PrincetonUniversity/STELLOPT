@@ -22,7 +22,8 @@
                                  phimax, vc_adapt_tol, B_R, B_Z, B_PHI,&
                                  BR_spl, BZ_spl, TE_spl_s, NE_spl_s, TI_spl_s, &
                                  nte, nne, nti, TE, NE, TI, Vp_spl_s, S_ARR,&
-                                 U_ARR, POT_ARR, POT_spl_s, nne, nte, nti, npot
+                                 U_ARR, POT_ARR, POT_spl_s, nne, nte, nti, npot, &
+                                 ZEFF_spl_s, nzeff, ZEFF_ARR
       USE wall_mod, ONLY: wall_load_mn, wall_info,vertex,face
       USE mpi_params                                                    ! MPI
 !-----------------------------------------------------------------------
@@ -226,7 +227,7 @@
       myend   = mystart + chunk - 1
 !DEC$ ENDIF
 	
-      TE = 0; NE = 0; TI=0; S_ARR=1.5; U_ARR=0; POT_ARR=0
+      TE = 0; NE = 0; TI=0; S_ARR=1.5; U_ARR=0; POT_ARR=0; ZEFF_ARR = 0;
       DO s = mystart, myend
          i = MOD(s-1,nr)+1
          j = MOD(s-1,nr*nphi)
@@ -262,6 +263,7 @@
                IF (nne > 0) CALL EZspline_interp(NE_spl_s,sflx,NE(i,j,k),ier)
                IF (nti > 0) CALL EZspline_interp(TI_spl_s,sflx,TI(i,j,k),ier)
                IF (npot > 0) CALL EZspline_interp(POT_spl_s,sflx,POT_ARR(i,j,k),ier)
+               IF (nzeff > 0) CALL EZspline_interp(ZEFF_spl_s,sflx,ZEFF_ARR(i,j,k),ier)
             END IF
          ELSE IF (lplasma_only) THEN
             B_R(i,j,k)   = 0
@@ -344,8 +346,14 @@
       CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
                         POT_ARR,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
                         MPI_COMM_LOCAL,ierr_mpi)
+      CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
+                        ZEFF_ARR,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
+                        MPI_COMM_LOCAL,ierr_mpi)
       DEALLOCATE(mnum)
       DEALLOCATE(moffsets)
+
+      ! Fix ZEFF
+      WHERE(ZEFF_ARR < 1) ZEFF_ARR = 1
 
       ! Smooth edge data
 !      IF (lplasma_only .and. (mylocalid == mylocalmaster)) THEN
