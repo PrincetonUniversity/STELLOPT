@@ -17,7 +17,7 @@ MODULE beams3d_physics_mod
                                nsteps, nparticles, vll_lines, moment_lines, mybeam, mycharge, myZ, &
                                mymass, myv_neut, B_temp, rand_prob, cum_prob, tau, PE_lines, PI_lines
       USE beams3d_grid, ONLY: BR_spl, BZ_spl, delta_t, BPHI_spl, MODB_spl, &
-                              phimax, TE_spl, NE_spl, TI_spl
+                              phimax, TE_spl, NE_spl, TI_spl, ZEFF_spl
       USE EZspline_obj
       USE EZspline
 !DEC$ IF DEFINED (NTCC)
@@ -260,10 +260,11 @@ MODULE beams3d_physics_mod
          LOGICAL          :: ltest
          INTEGER          :: ier, l
          DOUBLE PRECISION :: rinv, phi_temp, dt_local, ti_temp, ne_temp,&
-                             s_temp, x0, y0, z0, xw, yw, zw, te_temp
+                             s_temp, x0, y0, z0, xw, yw, zw, te_temp, Zeff_temp
          DOUBLE PRECISION :: qf(3),qs(3),qe(3)
          DOUBLE PRECISION :: rlocal(num_depo), plocal(num_depo), zlocal(num_depo)
          DOUBLE PRECISION :: tilocal(num_depo), telocal(num_depo), nelocal(num_depo)
+         DOUBLE PRECISION :: zefflocal(num_depo)
          DOUBLE PRECISION :: tau_inv(num_depo), energy(num_depo)
          DOUBLE PRECISION :: sigvii(num_depo), sigvcx(num_depo), sigvei(num_depo)
          ! For splines
@@ -368,9 +369,14 @@ MODULE beams3d_physics_mod
                             hx,hxi,hy,hyi,hz,hzi,&
                             NE_spl%fspl(1,1,1,1),NE_spl%n1,NE_spl%n2,NE_spl%n3)
             nelocal(l) = fval(1)
+            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                            hx,hxi,hy,hyi,hz,hzi,&
+                            ZEFF_spl%fspl(1,1,1,1),ZEFF_spl%n1,ZEFF_spl%n2,ZEFF_spl%n3)
+            zefflocal(l) = fval(1)
          END DO
          tilocal = tilocal*1D-3
          telocal = telocal*1D-3
+         zeff_temp = SUM(zefflocal)/DBLE(num_depo)
 
 !DEC$ IF DEFINED (NTCC)
          !--------------------------------------------------------------
@@ -385,8 +391,8 @@ MODULE beams3d_physics_mod
          ! izbeam  Beam Z
          ! iztarg  Target Z
          ! btsigv  cross section
-         CALL adas_btsigv(2,1,energy,tilocal,num_depo,1,1,sigvii,ier)  ! Ion Impact ionization cross-section term.
-         CALL adas_btsigv(1,1,energy,tilocal,num_depo,1,1,sigvcx,ier)  ! Charge Exchange ionization cross-section term.
+         CALL adas_btsigv(2,1,energy,tilocal,num_depo,myZ,zeff_temp,sigvii,ier)  ! Ion Impact ionization cross-section term.
+         CALL adas_btsigv(1,1,energy,tilocal,num_depo,myZ,zeff_temp,sigvcx,ier)  ! Charge Exchange ionization cross-section term.
          ! Arguments to sigvte(zneut,tevec,n1,sigv_adas,istat)
          ! zneut charge (=1)
          ! tevec electron temperature [keV]
