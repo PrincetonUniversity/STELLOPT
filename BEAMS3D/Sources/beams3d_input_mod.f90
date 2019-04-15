@@ -15,7 +15,7 @@
       USE beams3d_lines, ONLY: nparticles
       USE beams3d_grid, ONLY: nr, nphi, nz, rmin, rmax, zmin, zmax, &
                               phimin, phimax, vc_adapt_tol, nte, nne, nti,&
-                              npot
+                              nzeff, npot
       USE safe_open_mod, ONLY: safe_open
       USE mpi_params
 
@@ -68,7 +68,7 @@
                                   mass_beams, charge_beams, Zatom_beams, r_beams,&
                                   z_beams, phi_beams, TE_AUX_S, TE_AUX_F,&
                                   NE_AUX_S, NE_AUX_F, TI_AUX_S, TI_AUX_F, &
-                                  POT_AUX_S, POT_AUX_F, &
+                                  POT_AUX_S, POT_AUX_F, ZEFF_AUX_S, ZEFF_AUX_F, &
                                   P_beams, ldebug, ne_scale, te_scale, ti_scale, &
                                   zeff_scale
       
@@ -123,6 +123,8 @@
       NE_AUX_F = -1
       TI_AUX_S = -1
       TI_AUX_F = -1
+      ZEFF_AUX_S = -1
+      ZEFF_AUX_F = -1
       POT_AUX_S = -1
       POT_AUX_F = -1
       npoinc = 1
@@ -148,6 +150,7 @@
          NE_AUX_F = NE_AUX_F*ne_scale
          TE_AUX_F = TE_AUX_F*te_scale
          TI_AUX_F = TI_AUX_F*ti_scale
+         ZEFF_AUX_F = ZEFF_AUX_F*zeff_scale
          lbeam = .true.
          IF (r_start_in(1) /= -1) lbeam = .false.
          IF (lbeam) lcollision = .true.
@@ -166,6 +169,10 @@
          nti = 0
          DO WHILE ((TI_AUX_S(nti+1) >= 0.0).and.(nti<MAXPROFLEN))
             nti = nti + 1
+         END DO
+         nzeff = 0
+         DO WHILE ((ZEFF_AUX_S(nti+1) >= 0.0).and.(nzeff<MAXPROFLEN))
+            nzeff = nzeff + 1
          END DO
          npot = 0
          DO WHILE ((POT_AUX_S(nti+1) >= 0.0).and.(npot<MAXPROFLEN))

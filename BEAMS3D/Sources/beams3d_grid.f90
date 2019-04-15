@@ -38,12 +38,12 @@
 !         MODB_spl       EZSpline Object for MODB
 !-----------------------------------------------------------------------
       IMPLICIT NONE
-      INTEGER  ::    nr, nphi, nz, nte, nne, nti, npot
+      INTEGER  ::    nr, nphi, nz, nte, nne, nti, nzeff, npot
       REAL(rprec) :: rmin, rmax, zmin, zmax, phimin, phimax, tmin, tmax, delta_t, &
                      vc_adapt_tol
       REAL(rprec), ALLOCATABLE :: raxis(:), zaxis(:), phiaxis(:)
       REAL(rprec), ALLOCATABLE :: B_R(:,:,:), B_PHI(:,:,:), B_Z(:,:,:), MODB(:,:,:),&
-                                  TE(:,:,:), NE(:,:,:), TI(:,:,:), &
+                                  TE(:,:,:), NE(:,:,:), TI(:,:,:), ZEFF_ARR(:,:,:), &
                                   S_ARR(:,:,:), U_ARR(:,:,:), POT_ARR(:,:,:)
       TYPE(EZspline3_r8) :: BR_spl, BPHI_spl, BZ_spl, MODB_spl, TE_spl, NE_spl, &
                             TI_spl, S_spl, U_spl, POT_spl
