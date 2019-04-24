@@ -110,8 +110,9 @@
                rad_sigma = sj*sj
             END IF
 
-            vals(num0:mtargets) = vals(num0:mtargets)/bnorm
-            sigmas(num0:mtargets)  = ABS(sigma(ik))*rad_sigma*sigmas(num0:mtargets)
+            vals(ik) = vals(ik)/bnorm
+            sigmas(ik)  = ABS(sigma(ik))
+            targets(ik) = target(ik)
             IF (iflag ==1) THEN
                WRITE(iunit_out,'(4ES22.12E3,3(1X,I5))') targets(ik),sigmas(ik),vals(ik),bnorm,ik
             END IF
