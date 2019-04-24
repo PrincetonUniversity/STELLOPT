@@ -112,11 +112,8 @@
 
             vals(num0:mtargets) = vals(num0:mtargets)/bnorm
             sigmas(num0:mtargets)  = ABS(sigma(ik))*rad_sigma*sigmas(num0:mtargets)
-            
             IF (iflag ==1) THEN
-               DO mn = num0,mtargets
-                  WRITE(iunit_out,'(4ES22.12E3,3(1X,I5))') targets(mn),sigmas(mn),vals(mn),SQRT(bnorm),ik,ixm_b(mn-num0+1),ixn_b(mn-num0+1)/nfp_b
-               END DO
+               WRITE(iunit_out,'(4ES22.12E3,3(1X,I5))') targets(ik),sigmas(ik),vals(ik),bnorm,ik
             END IF
          END DO
          
