@@ -3,4 +3,4 @@ To request improvements or if you have any questions, please request access to t
 
 https://bitbucket.org/lazerson_princeton/stellopt/branch/regcoilstellopt_v0
 
-[[file:Adding REGCOIL to STELLOPT.pdf]]
+[[docs/Adding REGCOIL to STELLOPT.pdf]]
