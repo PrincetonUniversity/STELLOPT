@@ -34,7 +34,7 @@
 !----------------------------------------------------------------------
       IF (iflag < 0) RETURN
       ik   = COUNT(sigma < bigno)
-      IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'MAX. COIL CURVATURE ',ik,4
+      IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'MAX. COIL CURVATURE ',ik,5
       IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA  VAL  LOC'
       IF (niter >= 0) THEN
          DO ik = 1, nigroup
