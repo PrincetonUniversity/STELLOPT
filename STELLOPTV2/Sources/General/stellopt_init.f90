@@ -231,8 +231,15 @@
               ctrl_dofs = 3                 !x,y,z at each point
               IF (lwindsurf) ctrl_dofs = 2  ! u,v  at each point
               DO n = LBOUND(lcoil_spline,DIM=1), UBOUND(lcoil_spline,DIM=1)
-                 ! Actual no. of knots for coil spline n, less two to enforce periodicity of f,f'
-                 nknots = COUNT(coil_splinesx(n,:) >= 0.0) - 2
+                 nknots = COUNT(coil_splinesx(n,:) >= 0.0)
+                 IF (lwindsurf.AND.(coil_type(n).eq.'A')) THEN
+                    lcoil_spline(n,1:3) = .FALSE.
+                    lcoil_spline(n,nknots-6:nknots-4) = .FALSE.
+                    if (lcoil_spline(n,nknots-7)) nvars = nvars - 1
+                 ELSE
+                    ! Actual no. of knots for coil spline n, less two to enforce periodicity of f,f'
+                    nknots = nknots - 2
+                 ENDIF
 
                  ! First ctrl of modular loses one dof (u or z).
                  IF ((coil_type(n).eq.'M').AND.lcoil_spline(n,1)) nvars = nvars - 1
@@ -1501,14 +1508,17 @@
                              arr_dex(nvar_in,2) = m
                           END IF
 
-                          nvar_in = nvar_in + 1
-                          vars(nvar_in) = coil_splinefy(n,m)
-                          vars_min(nvar_in) = coil_splinefy_min(n,m)
-                          vars_max(nvar_in) = coil_splinefy_max(n,m)
-                          var_dex(nvar_in) = icoil_splinefy
-                          diag(nvar_in)    = dcoil_spline(n,m)
-                          arr_dex(nvar_in,1) = n
-                          arr_dex(nvar_in,2) = m
+                          ! v fixed for all-spline mod on ws @ pt n-4
+                          IF ((m.NE.nknots-5).OR.(coil_type(n).NE.'A').OR.(.NOT.lwindsurf)) THEN
+                             nvar_in = nvar_in + 1
+                             vars(nvar_in) = coil_splinefy(n,m)
+                             vars_min(nvar_in) = coil_splinefy_min(n,m)
+                             vars_max(nvar_in) = coil_splinefy_max(n,m)
+                             var_dex(nvar_in) = icoil_splinefy
+                             diag(nvar_in)    = dcoil_spline(n,m)
+                             arr_dex(nvar_in,1) = n
+                             arr_dex(nvar_in,2) = m
+                          END IF
 
                           ! z gets ignored if winding surface is present;
                           !  z0 is held fixed for modular coils.

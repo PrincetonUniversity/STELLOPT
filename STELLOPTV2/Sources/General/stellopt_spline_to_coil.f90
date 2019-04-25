@@ -275,6 +275,22 @@
               coil_splinefx(icoil,ncoefs) = coil_splinefx(icoil,1)
               coil_splinefz(icoil,ncoefs) = coil_splinefz(icoil,1)
            END IF
+        CASE ('A') ! Modular coil with straight section represented by spline
+           isper = .TRUE. ! Modular coils repeat each field period.
+           IF (lwindsurf) THEN
+              coil_splinefy(icoil,1) = coil_splinefy(icoil,4)
+              coil_splinefy(icoil,2) = coil_splinefy(icoil,4)
+              coil_splinefy(icoil,3) = coil_splinefy(icoil,4)
+              coil_splinefy(icoil,ncoefs) = coil_splinefy(icoil,4)
+              coil_splinefy(icoil,ncoefs-1) = coil_splinefy(icoil,4)
+              coil_splinefy(icoil,ncoefs-2) = coil_splinefy(icoil,4)
+              coil_splinefy(icoil,ncoefs-3) = coil_splinefy(icoil,4)
+              RETURN
+           ELSE  !Just treat this the same as type 'M' for now...
+              coil_splinefx(icoil,ncoefs) = coil_splinefx(icoil,1)
+              coil_splinefy(icoil,ncoefs) = coil_splinefy(icoil,1)
+              coil_splinefz(icoil,ncoefs) = coil_splinefz(icoil,1)
+          END IF
         CASE ('S') ! Saddle coil
            isper = .TRUE. ! Saddle coils repeat each field period like modular coils.
            coil_splinefx(icoil,ncoefs) = coil_splinefx(icoil,1)
@@ -645,7 +661,7 @@
         INTEGER                                :: nknots, ncoefs, ier, j
         LOGICAL                                :: lmod
 
-        IF (coil_type(icoil).NE.'M') THEN
+        IF ((coil_type(icoil).NE.'M').AND.(coil_type(icoil).NE.'A')) THEN
            excur = zero
            RETURN
         END IF
