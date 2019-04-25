@@ -91,6 +91,7 @@
 !DEC$ IF DEFINED (BEAMS3D_OPT)
             IF (ANY(sigma_orbit < bigno)) CALL write_beams3d_namelist(iunit_out,ier)
 !DEC$ ENDIF
+            IF (lfreeb) CALL write_mgrid_namelist(iunit_out,ier)
             WRITE(iunit_out,'(A)') '&END'
             CLOSE(iunit_out)
          END IF
@@ -263,6 +264,7 @@
 !DEC$ IF DEFINED (BEAMS3D_OPT)
              IF (ANY(sigma_orbit < bigno)) CALL write_beams3d_namelist(iunit_out,ier)
 !DEC$ ENDIF
+             IF (lfreeb) CALL write_mgrid_namelist(iunit_out,ier)
              WRITE(iunit_out,'(A)') '&END'
              CLOSE(iunit_out)
           END IF
@@ -498,6 +500,7 @@
 !DEC$ IF DEFINED (BEAMS3D_OPT)
          IF (ANY(sigma_orbit < bigno)) CALL write_beams3d_namelist(iunit_out,ier)
 !DEC$ ENDIF
+         IF (lfreeb) CALL write_mgrid_namelist(iunit_out,ier)
          WRITE(iunit_out,'(A)') '&END'
          CLOSE(iunit_out)
       ELSE IF (ctype == LAST_GO) THEN
@@ -519,6 +522,7 @@
 !DEC$ IF DEFINED (REGCOIL)
          ! JCS to do: If needed put regcoil items here.
 !DEC$ ENDIF
+         IF (lfreeb) CALL write_mgrid_namelist(iunit_out,ier)
          WRITE(iunit_out,'(A)') '&END'
          CLOSE(iunit_out)
 !               ! Overwrite the restart file
