@@ -111,4 +111,4 @@ The final output of the STELLOPT routine is a combination of STELLOPT files, [[V
 
 [[STELLOPT Energetic Particles|STELLOPT Energetic Particle Optimization]]
 
-[[vmecwiki/Stellopt_Adding_new_code|Adding Additional Constraints/Codes into STELLOPT]]
+[[STELLOPT Adding A New Code]]
