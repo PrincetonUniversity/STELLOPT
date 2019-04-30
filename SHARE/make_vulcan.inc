@@ -3,7 +3,7 @@
 #######################################################################
   SHELL = /bin/sh
   PWD1 = `pwd`
-  MYHOME = $(HOME)/stellopt/bin
+  MYHOME = /home/stellopt/bin
   PRECOMP:= /lib/cpp -traditional -DLINUX
   COMPILE = $(FC)
   COMPILE_FREE = $(FC) -ffree-form -ffree-line-length-none -ffixed-line-length-none
@@ -16,7 +16,8 @@
 #######################################################################
   FLAGS_R = -O3 -fexternal-blas
   FLAGS_D = -g -O0 -fexternal-blas -fbacktrace -fcheck=all 
-  LIBS    = -L/home/bfaber/build/scalapack-2.0.2 -lscalapack -lopenblas
+  LIBS    = -L/opt/gcc/scalapack-2.0.2 -lscalapack \
+            -L/opt/gcc/openblas-0.3.5/lib -lopenblas
 
 #######################################################################
 #            MPI Options
@@ -78,7 +79,7 @@
 #            DKES/NEO Options
 #######################################################################
   LDKES = F
-  LNEO  = F
+  LNEO  = T
 
 #######################################################################
 #            GENE Options
