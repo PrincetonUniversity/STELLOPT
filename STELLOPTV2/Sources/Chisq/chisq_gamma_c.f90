@@ -36,11 +36,21 @@
 !        te_val      Holds profile evaulation
 !-----------------------------------------------------------------------
       LOGICAL :: lsym
-      INTEGER :: dex, ik, j, nsteps
-      REAL(rprec) :: s, theta, zeta,  delzeta, u, v
-      REAL(rprec) :: iota, iotap
+      INTEGER :: dex, ik, i, j, ier
+      REAL(rprec) :: s, theta, zeta, delzeta, u, v
+      REAL(rprec) :: iota, iotap, minB, maxB
 
       REAL(rprec), DIMENSION(3) :: sflCrd
+      INTEGER, PARAMETER :: nsteps = 100
+      INTEGER :: delzetadiv =200
+      INTEGER, PARAMETER :: bpstep = 101 !division in b'
+
+
+      REAL(rprec), DIMENSION(nsteps) :: R, Z, Bx, By, Bz, modB
+      real(rprec), DIMENSION(nsteps,3) :: gradR, gradZ, gradB
+
+      REAL(rprec) :: deltabp
+      REAL(rprec), DIMENSION(bpstep) :: bp
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
@@ -49,8 +59,8 @@
       IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I8))') 'GAMMA_C     ',dex,3
  
       IF (niter >= 0) THEN
-        delzeta = Rmajor/200 !step size
-        nsteps = 100 !somewhat arbitrary number of steps
+        delzeta = Rmajor/delzetadiv !step size
+        !nsteps = 100 !somewhat arbitrary number of steps
 
         DO ik = 1,nsd !go through each surface
           IF (sigma(ik) >= bigno) CYCLE
@@ -69,10 +79,18 @@
           sflCrd(2) = theta
           sflCrd(3) = zeta
 
+          !first time through calculate fields and some basic parameters
           DO j = 1,nsteps
             CALL pest2vmec(sflCrd) !convert to VMEC coordinates
             u = sflCrd(2)
             v = sflCrd(3)
+
+            !Get rz values and gradients, store gradients in temporary arrays
+            CALL get_equil_RZ(s, u, v, R(j), Z(j), ier, gradR(j,:), gradZ(j,:))
+
+            !Get B field
+            CALL get_equil_B(R(j), zeta, Z(j), Bx(j), By(j), Bz(j), ier, modB(j), gradB(j,:))
+            !Max and min along field line
 
 
             !advance the step
@@ -82,6 +100,19 @@
             sflCrd(2) = theta
             sflCrd(3) = zeta
           END DO
+          minB = MINVAL(modB)
+          maxB = MAXVAL(modB)
+          
+          !Make the bp array
+          DO j=1,bpstep
+            bp(j) = (1.0_rprec*(j-1))/(bpstep-1)
+          END DO
+
+          !DO j=1,nsteps
+          !  write(*,*) j, R(j), Z(j), modB(j)
+          !END DO
+          !write(*,*) 'MinB, maxB'
+          !write(*,*) minB, maxB
         END DO
       ELSE !This is the initialization loop that just counts targets
         DO ik = 1, nsd
