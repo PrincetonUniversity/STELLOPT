@@ -1,4 +1,5 @@
 ObjectFiles = \
+mpialloc_2d_dbl.o \
 GENERIC_Evolve.o \
 eval_x_queued.o \
 MAP_HYPERS.o \
