@@ -1,5 +1,6 @@
 ObjectFiles = \
 mpialloc_1d_dbl.o \
+mpialloc_1d_int.o \
 mpialloc_2d_int.o \
 mpialloc_2d_dbl.o \
 GENERIC_Evolve.o \

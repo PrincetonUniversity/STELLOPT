@@ -13,7 +13,9 @@
 !     Libraries
 !-----------------------------------------------------------------------
       USE safe_open_mod
-      USE MPI
+!DEC$ IF DEFINED (MPI_OPT)
+      USE mpi
+!DEC$ ENDIF
       
 !-----------------------------------------------------------------------
 !     Module Variables

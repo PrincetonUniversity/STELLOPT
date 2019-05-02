@@ -34,8 +34,8 @@ c                    differently.
       CONTAINS
       
       SUBROUTINE mpi_stel_abort(error)
-      IMPLICIT NONE
-      INCLUDE 'mpif.h'         
+      USE MPI
+      IMPLICIT NONE        
       INTEGER, INTENT(in)                 :: error
       INTEGER                             :: length, temp
       CHARACTER(LEN=MPI_MAX_ERROR_STRING) :: message
