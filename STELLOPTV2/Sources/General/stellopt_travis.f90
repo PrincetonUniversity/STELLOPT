@@ -53,6 +53,9 @@
          SUBROUTINE mcFree(mconf) 
             INTEGER(8)   :: mconf
          END SUBROUTINE mcFree
+         SUBROUTINE VesselFree(mconf) 
+            INTEGER(8)   :: mconf
+         END SUBROUTINE VesselFree
       END INTERFACE
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
@@ -204,6 +207,9 @@
                   wmode = 1 ! X-mode
                   CALL run_ECE_Beam_f77m(n,freq_ece(i,j), wmode, radtx_ece(i,j))
                END DO
+
+               ! Free the vessel here (only loaded if we get to here)
+               !CALL VesselFree(mVessel)
             END DO
 
 !DEC$ IF DEFINED (MPI_OPT)
