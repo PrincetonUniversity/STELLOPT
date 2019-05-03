@@ -3,7 +3,7 @@
 #######################################################################
   SHELL = /bin/sh
   PWD1 = `pwd`
-  MYHOME = /home/stellopt/bin
+  MYHOME = /home/abader/bin
   PRECOMP:= /lib/cpp -traditional -DLINUX
   COMPILE = $(FC)
   COMPILE_FREE = $(FC) -ffree-form -ffree-line-length-none -ffixed-line-length-none
