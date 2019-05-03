@@ -220,9 +220,10 @@
       RETURN
       END SUBROUTINE wall_load_txt
 
-      SUBROUTINE wall_load_mn(Rmn,Zmn,xm,xn,mn,nu,nv)
+      SUBROUTINE wall_load_mn(Rmn,Zmn,xm,xn,mn,nu,nv,shared_comm)
       DOUBLE PRECISION, INTENT(in) :: Rmn(mn), Zmn(mn), xm(mn), xn(mn)
       INTEGER, INTENT(in) :: mn, nu, nv
+      INTEGER, INTENT(inout), OPTIONAL :: shared_comm
       INTEGER :: u, v, i, j, istat, dex1, dex2, dex3, ik, bubble, nv2
       DOUBLE PRECISION :: pi2, th, zt, pi
       DOUBLE PRECISION, DIMENSION(3) :: temp
@@ -233,6 +234,10 @@
       pi2 = 8.0D+00 * ATAN(one)
       pi  = 4.0E+00 * ATAN(one)
       nv2 = nv/2
+      IF (PRESENT(shared_comm)) THEN
+         CALL MPI_COMM_RANK( shared_comm, myid_wall, istat )
+         CALL MPI_COMM_SIZE( shared_comm, nproc_wall, istat)
+      END IF
       ALLOCATE(r_temp(nu,nv),z_temp(nu,nv),x_temp(nu,nv),y_temp(nu,nv))
       r_temp(:,:) = 0
       z_temp(:,:) = 0
@@ -255,7 +260,19 @@
       nvertex = nu*nv
       nface   = 2*nu*nv
       istat = 0
-      ALLOCATE(vertex(nvertex,3),face(nface,3),STAT=istat)
+      IF (PRESENT(shared_comm)) THEN
+         CALL mpialloc_1d_dbl(PHI,nface,myid_wall,0,shared_comm,win_phi)
+         CALL mpialloc_2d_dbl(vertex,nvertex,3,myid_wall,0,shared_comm,win_vertex)
+         CALL mpialloc_2d_int(face,nvertex,3,myid_wall,0,shared_comm,win_face)
+         mydelta = CEILING(REAL(nface) / REAL(nproc_wall))
+         mystart = 1 + (myid_wall-1)*mydelta
+         myend   = mystart + mydelta
+         IF (myend > nface) myend=nface
+      ELSE
+         ALLOCATE(PHI(nface),STAT=istat)
+         ALLOCATE(vertex(nvertex,3),face(nface,3),STAT=istat)
+         mystart = 1; myend=nface
+      END IF
       i = 1  ! Tracks vertex index
       j = 1 ! Tracks face index
       DO v = 1, nv-1
@@ -316,14 +333,15 @@
       j = j + 1
       i=i+1
       DEALLOCATE(r_temp,z_temp,x_temp,y_temp)
+      IF (PRESENT(shared_comm)) CALL MPI_WIN_FENCE(0, win_face, istat)
+      IF (PRESENT(shared_comm)) CALL MPI_WIN_FENCE(0, win_vertex, istat)
 
       ! Sort the array by toroidal angle
-      ALLOCATE(PHI(nface),STAT=istat)
-      IF (istat/=0) RETURN
-      DO ik = 1, nface
+      DO ik = mystart, myend
          dex1 = face(ik,1)
          PHI(ik) = ATAN2(vertex(dex1,2),vertex(dex1,1))
       END DO
+      IF (PRESENT(shared_comm)) CALL MPI_WIN_FENCE(0, win_phi, istat)
 !      dex3 = nface
 !      DO WHILE (dex3 > 1)
 !         bubble = 0 !bubble in the greatest element out of order
@@ -353,14 +371,27 @@
 
 !      ALLOCATE(A0(nface,3),V0(nface,3),V1(nface,3),&
 !               V2(nface,3),FN(nface,3),STAT=istat)
-      ALLOCATE(A0(nface,3),V0(nface,3),V1(nface,3),&
-               FN(nface,3),STAT=istat)
+      IF (PRESENT(shared_comm)) THEN
+         CALL mpialloc_2d_dbl(A0,nface,3,myid_wall,0,shared_comm,win_a0)
+         CALL mpialloc_2d_dbl(V0,nface,3,myid_wall,0,shared_comm,win_v0)
+         CALL mpialloc_2d_dbl(V1,nface,3,myid_wall,0,shared_comm,win_v1)
+         CALL mpialloc_2d_dbl(FN,nface,3,myid_wall,0,shared_comm,win_fn)
+         mydelta = CEILING(REAL(nface) / REAL(nproc_wall))
+         mystart = 1 + (myid_wall-1)*mydelta
+         myend   = mystart + mydelta
+         IF (myend > nface) myend=nface
+      ELSE
+         ALLOCATE(A0(nface,3),V0(nface,3),V1(nface,3),&
+                  FN(nface,3),STAT=istat)
+         mystart = 1; myend = nface
+      END IF
+      IF (istat/=0) RETURN
       ! Calculate the face normal
       ! W  = Vertex1-Vertex0
       ! W  = Vertex2-Vertex0
       ! FN = VxW/|VxW|
       ! d  = -Vertex0.FN (. is dot product) (not we've dropped the minus in our formulation)
-      DO ik = 1, nface
+      DO ik = mystart, myend
          dex1 = face(ik,1)
          dex2 = face(ik,2)
          dex3 = face(ik,3)
@@ -371,26 +402,46 @@
          FN(ik,2) = (V1(ik,3)*V0(ik,1))-(V1(ik,1)*V0(ik,3))
          FN(ik,3) = (V1(ik,1)*V0(ik,2))-(V1(ik,2)*V0(ik,1))
       END DO
-      !DEALLOCATE(vertex,face)
-!      ALLOCATE(DOT00(nface), DOT01(nface), DOT02(nface),&
-!               DOT11(nface), DOT12(nface),invDenom(nface),&
-!               STAT=istat)
-      ALLOCATE(DOT00(nface), DOT01(nface),&
-               DOT11(nface), invDenom(nface),&
-               STAT=istat)
-      DOT00 = SUM(V0*V0,DIM=2)
-      DOT01 = SUM(V0*V1,DIM=2)
-      DOT11 = SUM(V1*V1,DIM=2)
-      invDenom = one/(DOT00*DOT11-DOT01*DOT01)
-!      ALLOCATE(d(nface),t(nface),alpha(nface),&
-!               beta(nface),lmask(nface),STAT=istat)
-      ALLOCATE(d(nface),STAT=istat)
-!      ALLOCATE(dr(nface,3),r0(nface,3),STAT=istat)
-      d  = SUM(FN*A0,DIM=2)
-!      r0 = zero
-!      dr = zero
-      ALLOCATE(ihit_array(nface),STAT=istat)
-      ihit_array = 0
+      IF (PRESENT(shared_comm)) CALL MPI_WIN_FENCE(0, win_a0, istat)
+      IF (PRESENT(shared_comm)) CALL MPI_WIN_FENCE(0, win_v0, istat)
+      IF (PRESENT(shared_comm)) CALL MPI_WIN_FENCE(0, win_v1, istat)
+      IF (PRESENT(shared_comm)) CALL MPI_WIN_FENCE(0, win_fn, istat)
+      IF (PRESENT(shared_comm)) THEN
+         CALL mpialloc_1d_dbl(DOT00,nface,myid_wall,0,shared_comm,win_dot00)
+         CALL mpialloc_1d_dbl(DOT01,nface,myid_wall,0,shared_comm,win_dot01)
+         CALL mpialloc_1d_dbl(DOT11,nface,myid_wall,0,shared_comm,win_dot11)
+         CALL mpialloc_1d_dbl(invDenom,nface,myid_wall,0,shared_comm,win_invDenom)
+         CALL mpialloc_1d_dbl(d,nface,myid_wall,0,shared_comm,win_d)
+         CALL mpialloc_1d_int(ihit_array,nface,myid_wall,0,shared_comm,win_ihit)
+         mydelta = CEILING(REAL(nface) / REAL(nproc_wall))
+         mystart = 1 + (myid_wall-1)*mydelta
+         myend   = mystart + mydelta
+         IF (myend > nface) myend=nface
+      ELSE
+         ALLOCATE(DOT00(nface), DOT01(nface),&
+                  DOT11(nface), invDenom(nface),&
+                  STAT=istat)
+         ALLOCATE(d(nface),STAT=istat)
+         ALLOCATE(ihit_array(nface),STAT=istat)
+         mystart = 1; myend = nface
+      END IF
+      IF (istat/=0) RETURN
+      DO ik = mystart, myend
+         ihit_array(ik) = 0
+         DOT00(ik) = V0(ik,1)*V0(ik,1) + V0(ik,2)*V0(ik,2) + V0(ik,3)*V0(ik,3)
+         DOT01(ik) = V0(ik,1)*V1(ik,1) + V0(ik,2)*V1(ik,2) + V0(ik,3)*V1(ik,3)
+         DOT11(ik) = V1(ik,1)*V1(ik,1) + V1(ik,2)*V1(ik,2) + V1(ik,3)*V1(ik,3)
+         d(ik)     = FN(ik,1)*A0(ik,1) + FN(ik,2)*A0(ik,2) + FN(ik,3)*A0(ik,3)
+      END DO
+      IF (PRESENT(shared_comm)) CALL MPI_WIN_FENCE(0, win_dot00, istat)
+      IF (PRESENT(shared_comm)) CALL MPI_WIN_FENCE(0, win_dot01, istat)
+      IF (PRESENT(shared_comm)) CALL MPI_WIN_FENCE(0, win_dot11, istat)
+      IF (PRESENT(shared_comm)) CALL MPI_WIN_FENCE(0, win_d, istat)
+      IF (PRESENT(shared_comm)) CALL MPI_WIN_FENCE(0, win_ihit, istat)
+      DO ik = mystart, myend
+         invDenom(ik) = one / (DOT00(ik)*DOT11(ik) - DOT01(ik)*DOT01(ik))
+      END DO
+      IF (PRESENT(shared_comm)) CALL MPI_WIN_FENCE(0, win_invDenom, istat)
       RETURN
       END SUBROUTINE wall_load_mn
 
