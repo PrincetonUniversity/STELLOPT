@@ -1,8 +1,5 @@
 ObjectFiles = \
-mpialloc_1d_dbl.o \
-mpialloc_1d_int.o \
-mpialloc_2d_int.o \
-mpialloc_2d_dbl.o \
+mpi_sharmem.o \
 GENERIC_Evolve.o \
 eval_x_queued.o \
 MAP_HYPERS.o \

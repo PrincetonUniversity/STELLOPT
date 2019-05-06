@@ -1,12 +1,6 @@
 # Microsoft Developer Studio Generated Dependency File, included by LIBSTELL.mak
       
-mpialloc_1d_int.o : 
-
-mpialloc_1d_dbl.o : 
-
-mpialloc_2d_int.o : 
-
-mpialloc_2d_dbl.o : 
+mpi_sharmem.o :  
       
 xvec_eval.o : \
       safe_open_mod.o \
