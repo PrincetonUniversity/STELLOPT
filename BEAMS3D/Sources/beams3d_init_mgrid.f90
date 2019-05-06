@@ -40,19 +40,10 @@
 !-----------------------------------------------------------------------
 
       ! Divide up Work
-      IF (nprocs_beams > nlocal) THEN
-         i = myworkid/nlocal
-         CALL MPI_COMM_SPLIT( MPI_COMM_BEAMS,i,myworkid,MPI_COMM_LOCAL,ierr_mpi)
-         CALL MPI_COMM_RANK( MPI_COMM_LOCAL, mylocalid, ierr_mpi )              ! MPI
-         CALL MPI_COMM_SIZE( MPI_COMM_LOCAL, numprocs_local, ierr_mpi )          ! MPI
-         mylocalmaster = master
-      ELSE
-         ! Basic copy of MPI_COMM_FIELDLINES
-         CALL MPI_COMM_DUP( MPI_COMM_BEAMS, MPI_COMM_LOCAL, ierr_mpi)
-         mylocalid = myworkid
-         mylocalmaster = master
-         numprocs_local = nprocs_beams
-      END IF
+      CALL MPI_COMM_DUP( MPI_COMM_SHARMEM, MPI_COMM_LOCAL, ierr_mpi)
+      CALL MPI_COMM_RANK( MPI_COMM_LOCAL, mylocalid, ierr_mpi )              ! MPI
+      CALL MPI_COMM_SIZE( MPI_COMM_LOCAL, numprocs_local, ierr_mpi )          ! MPI
+      mylocalmaster = master
 
       ! Read the input file for the EXTCUR array, NV, and NFP
       IF (.not. ALLOCATED(extcur) .and. lmgrid) THEN
@@ -103,7 +94,10 @@
       ! Reset the phi grid limit to match mgrid
       phimin = 0.0
       phimax = pi2 / nfp_in
-      FORALL(i = 1:nphi) phiaxis(i) = (i-1)*(phimax-phimin)/(nphi-1) + phimin
+      IF (mylocalid == mylocalmaster) FORALL(i = 1:nphi) phiaxis(i) = (i-1)*(phimax-phimin)/(nphi-1) + phimin
+!DEC$ IF DEFINED (MPI_OPT)
+      CALL MPI_BARRIER(MPI_COMM_LOCAL, ierr_mpi)
+!DEC$ ENDIF
       
       ! Break up the Work
       chunk = FLOOR(REAL(nr*nphi*nz) / REAL(numprocs_local))
@@ -128,6 +122,8 @@
       mystart = moffsets(mylocalid+1)
       chunk  = mnum(mylocalid+1)
       myend   = mystart + chunk - 1
+      DEALLOCATE(mnum)
+      DEALLOCATE(moffsets)
 !DEC$ ENDIF
       
       ! Get the fields
@@ -165,17 +161,17 @@
       CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
       
       ! Send Data
-      CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
-                        B_R,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
-                        MPI_COMM_LOCAL,ierr_mpi)
-      CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
-                        B_PHI,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
-                        MPI_COMM_LOCAL,ierr_mpi)
-      CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
-                        B_Z,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
-                        MPI_COMM_LOCAL,ierr_mpi)
-      DEALLOCATE(mnum)
-      DEALLOCATE(moffsets)
+!      CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
+!                        B_R,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
+!                        MPI_COMM_LOCAL,ierr_mpi)
+!      CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
+!                        B_PHI,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
+!                        MPI_COMM_LOCAL,ierr_mpi)
+!      CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
+!                        B_Z,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
+!                        MPI_COMM_LOCAL,ierr_mpi)
+!      DEALLOCATE(mnum)
+!      DEALLOCATE(moffsets)
 
       CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)
       CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)

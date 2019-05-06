@@ -419,12 +419,12 @@ SUBROUTINE beams3d_follow
     ! Handle WALL Heat MAp
 !DEC$ IF DEFINED (MPI_OPT)
     ier = 0
-    IF (ALLOCATED(ihit_array)) THEN
+    IF (ASSOCIATED(ihit_array)) THEN
       IF (myworkid == master) THEN
          CALL MPI_REDUCE(MPI_IN_PLACE,ihit_array,nface,MPI_INTEGER,MPI_SUM,master,MPI_COMM_BEAMS,ierr_mpi)
       ELSE
          CALL MPI_REDUCE(ihit_array,ihit_array,nface,MPI_INTEGER,MPI_SUM,master,MPI_COMM_BEAMS,ierr_mpi)
-         CALL wall_free(ier)
+         CALL wall_free(ier,MPI_COMM_SHARMEM)
       END IF
     END IF
 !DEC$ ENDIF

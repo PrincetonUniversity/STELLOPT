@@ -22,6 +22,7 @@
 !                    - S and U coordinate now defaulted on.  -flux depreicated
 !     v1.51 09/13/16 - Substep size implemnted for neutral deposition
 !     v1.52 11/22/16 - Added ability to model W7-X injector geometry
+!     v2.00 05/06/19 - Shared Memory model implemented
 !-----------------------------------------------------------------------
 MODULE beams3d_runtime
     !-----------------------------------------------------------------------
@@ -120,7 +121,7 @@ MODULE beams3d_runtime
     CHARACTER(256) :: id_string, mgrid_string, coil_string, &
     vessel_string, int_type, restart_string
 
-    REAL(rprec), PARAMETER :: BEAMS3D_VERSION = 1.50
+    REAL(rprec), PARAMETER :: BEAMS3D_VERSION = 2.00
     !-----------------------------------------------------------------------
     !     Subroutines
     !          handle_err  Controls Program Termination
@@ -129,9 +130,8 @@ CONTAINS
 
     SUBROUTINE handle_err(error_num, string_val, ierr)
         USE mpi_params
-        IMPLICIT NONE
 !DEC$ IF DEFINED (MPI_OPT)
-      INCLUDE 'mpif.h'   ! MPI - Don't need because of beams3d_runtime
+        USE mpi
 !DEC$ ENDIF
         INTEGER, INTENT(in) :: error_num
         INTEGER, INTENT(in) :: ierr
@@ -325,8 +325,8 @@ CONTAINS
 !DEC$ IF DEFINED (MPI_OPT)
     SUBROUTINE BEAMS3D_TRANSMIT_2DDBL(n1,n2,m1,m2,data_in,nproc,mnum,moffsets,id,root,COMM_local,ier)
     USE stel_kinds, ONLY: rprec
+    USE MPI
     IMPLICIT NONE
-    INCLUDE 'mpif.h' ! MPI
     INTEGER, INTENT(in)           :: n1,n2,m1,m2,nproc,id,root,COMM_local
     INTEGER, INTENT(in)           :: mnum(nproc), moffsets(nproc)
     REAL(rprec), INTENT(inout)    :: data_in(n1:n2,m1:m2)
@@ -383,8 +383,8 @@ CONTAINS
 
     SUBROUTINE BEAMS3D_TRANSMIT_2DLOG(n1,n2,m1,m2,data_in,nproc,mnum,moffsets,id,root,COMM_local,ier)
     USE stel_kinds, ONLY: rprec
+    USE mpi
     IMPLICIT NONE
-    INCLUDE 'mpif.h' ! MPI
     INTEGER, INTENT(in)           :: n1,n2,m1,m2,nproc,id,root,COMM_local
     INTEGER, INTENT(in)           :: mnum(nproc), moffsets(nproc)
     LOGICAL, INTENT(inout)    :: data_in(n1:n2,m1:m2)

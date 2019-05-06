@@ -57,19 +57,10 @@
 !-----------------------------------------------------------------------
 
       ! Divide up Work
-      IF (nprocs_beams > nlocal) THEN
-         i = myworkid/nlocal
-         CALL MPI_COMM_SPLIT( MPI_COMM_BEAMS,i,myworkid,MPI_COMM_LOCAL,ierr_mpi)
-         CALL MPI_COMM_RANK( MPI_COMM_LOCAL, mylocalid, ierr_mpi )              ! MPI
-         CALL MPI_COMM_SIZE( MPI_COMM_LOCAL, numprocs_local, ierr_mpi )          ! MPI
-         mylocalmaster = master
-      ELSE
-         ! Basic copy of MPI_COMM_BEAMS
-         CALL MPI_COMM_DUP( MPI_COMM_BEAMS, MPI_COMM_LOCAL, ierr_mpi)
-         mylocalid = myworkid
-         mylocalmaster = master
-         numprocs_local = nprocs_beams
-      END IF
+      CALL MPI_COMM_DUP( MPI_COMM_SHARMEM, MPI_COMM_LOCAL, ierr_mpi)
+      CALL MPI_COMM_RANK( MPI_COMM_LOCAL, mylocalid, ierr_mpi )              ! MPI
+      CALL MPI_COMM_SIZE( MPI_COMM_LOCAL, numprocs_local, ierr_mpi )          ! MPI
+      mylocalmaster = master
       bx_vc = 0.0; by_vc = 0.0; bz_vc = 0.0
 
       ! Open VMEC file
@@ -225,9 +216,14 @@
       mystart = moffsets(mylocalid+1)
       chunk  = mnum(mylocalid+1)
       myend   = mystart + chunk - 1
+      DEALLOCATE(mnum)
+      DEALLOCATE(moffsets)
 !DEC$ ENDIF
 	
-      TE = 0; NE = 0; TI=0; S_ARR=1.5; U_ARR=0; POT_ARR=0; ZEFF_ARR = 0;
+      IF (mylocalid == mylocalmaster) THEN
+         TE = 0; NE = 0; TI=0; S_ARR=1.5; U_ARR=0; POT_ARR=0; ZEFF_ARR = 0;
+      END IF
+      CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
       DO s = mystart, myend
          i = MOD(s-1,nr)+1
          j = MOD(s-1,nr*nphi)
@@ -319,41 +315,41 @@
       
 !DEC$ IF DEFINED (MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
-      CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
-                        B_R,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
-                        MPI_COMM_LOCAL,ierr_mpi)
-      CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
-                        B_PHI,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
-                        MPI_COMM_LOCAL,ierr_mpi)
-      CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
-                        B_Z,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
-                        MPI_COMM_LOCAL,ierr_mpi)
-      CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
-                        TE,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
-                        MPI_COMM_LOCAL,ierr_mpi)
-      CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
-                        NE,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
-                        MPI_COMM_LOCAL,ierr_mpi)
-      CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
-                        TI,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
-                        MPI_COMM_LOCAL,ierr_mpi)
-      CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
-                        S_ARR,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
-                        MPI_COMM_LOCAL,ierr_mpi)
-      CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
-                        U_ARR,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
-                        MPI_COMM_LOCAL,ierr_mpi)
-      CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
-                        POT_ARR,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
-                        MPI_COMM_LOCAL,ierr_mpi)
-      CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
-                        ZEFF_ARR,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
-                        MPI_COMM_LOCAL,ierr_mpi)
-      DEALLOCATE(mnum)
-      DEALLOCATE(moffsets)
+!      CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
+!                        B_R,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
+!                        MPI_COMM_LOCAL,ierr_mpi)
+!      CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
+!                        B_PHI,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
+!                        MPI_COMM_LOCAL,ierr_mpi)
+!      CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
+!                        B_Z,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
+!                        MPI_COMM_LOCAL,ierr_mpi)
+!      CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
+!                        TE,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
+!                        MPI_COMM_LOCAL,ierr_mpi)
+!      CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
+!                        NE,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
+!                        MPI_COMM_LOCAL,ierr_mpi)
+!      CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
+!                        TI,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
+!                        MPI_COMM_LOCAL,ierr_mpi)
+!      CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
+!                        S_ARR,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
+!                        MPI_COMM_LOCAL,ierr_mpi)
+!      CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
+!                        U_ARR,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
+!                        MPI_COMM_LOCAL,ierr_mpi)
+!      CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
+!                        POT_ARR,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
+!                        MPI_COMM_LOCAL,ierr_mpi)
+!      CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
+!                        ZEFF_ARR,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
+!                        MPI_COMM_LOCAL,ierr_mpi)
+!      DEALLOCATE(mnum)
+!      DEALLOCATE(moffsets)
 
       ! Fix ZEFF
-      WHERE(ZEFF_ARR < 1) ZEFF_ARR = 1
+      IF (mylocalid == mylocalmaster) WHERE(ZEFF_ARR < 1) ZEFF_ARR = 1
 
       ! Smooth edge data
 !      IF (lplasma_only .and. (mylocalid == mylocalmaster)) THEN
@@ -399,7 +395,7 @@
       
       ! Broadcast the updated magnetic field to other members
 !      IF (lplasma_only) THEN
-!         CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
+         CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
 !         CALL MPI_BCAST(B_R,nr*nphi*nz,MPI_DOUBLE_PRECISION,mylocalmaster,MPI_COMM_LOCAL,ierr_mpi)
 !         CALL MPI_BCAST(B_PHI,nr*nphi*nz,MPI_DOUBLE_PRECISION,mylocalmaster,MPI_COMM_LOCAL,ierr_mpi)
 !         CALL MPI_BCAST(B_Z,nr*nphi*nz,MPI_DOUBLE_PRECISION,mylocalmaster,MPI_COMM_LOCAL,ierr_mpi)

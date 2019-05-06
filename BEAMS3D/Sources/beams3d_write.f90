@@ -114,19 +114,19 @@
                   CALL write_var_hdf5(fid,'Energy',nbeams,ier,DBLVAR=e_beams,ATT='Beam Energy [J]',ATT_NAME='description')
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'E_BEAMS',ier)
                END IF
-               IF (ALLOCATED(vertex)) THEN
+               IF (ASSOCIATED(vertex)) THEN
                   CALL write_scalar_hdf5(fid,'nvertex',ier,INTVAR=nvertex,ATT='Number of Wall Vertices',ATT_NAME='description')
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'nvertex',ier)
                   CALL write_var_hdf5(fid,'wall_vertex',nvertex,3,ier,DBLVAR=vertex,ATT='Wall Verticies (x,y,z) [m]',ATT_NAME='description')
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'wall_vertex',ier)
-                  DEALLOCATE(vertex)
+                  !DEALLOCATE(vertex)
                END IF
-               IF (ALLOCATED(face)) THEN
+               IF (ASSOCIATED(face)) THEN
                   CALL write_scalar_hdf5(fid,'nface',ier,INTVAR=nface,ATT='Number of Wall Faces',ATT_NAME='description')
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'nface',ier)
                   CALL write_var_hdf5(fid,'wall_faces',nface,3,ier,INTVAR=face,ATT='Wall Faces',ATT_NAME='description')
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'wall_faces',ier)
-                  DEALLOCATE(face)
+                  !DEALLOCATE(face)
                END IF
             CASE('TRAJECTORY_PARTIAL')
                CALL open_hdf5('beams3d_'//TRIM(id_string)//'.h5',fid,ier,LCREATE=.false.)
@@ -152,11 +152,11 @@
                CALL write_var_hdf5(fid,'Zatom',nparticles,ier,DBLVAR=Zatom,ATT='Particle Charge Number',&
                                    ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'Zatom',ier)
-               IF (ALLOCATED(ihit_array)) THEN
+               IF (ASSOCIATED(ihit_array)) THEN
                   CALL write_var_hdf5(fid,'wall_strikes',nface,ier,INTVAR=ihit_array,&
                                    ATT='Wall Strikes',ATT_NAME='description')
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'wall_strikes',ier)
-                  CALL wall_free(ier)
+                  CALL wall_free(ier,MPI_COMM_SHARMEM)
                END IF
             CASE('TRAJECTORY_FULL')
                CALL open_hdf5('beams3d_'//TRIM(id_string)//'.h5',fid,ier,LCREATE=.false.)
@@ -215,11 +215,11 @@
                CALL write_var_hdf5(fid,'PI_lines',npoinc+1,nparticles,ier,DBLVAR=PI_lines,ATT='Deposited Power to Ions [W]',&
                                    ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'PI_lines',ier)
-               IF (ALLOCATED(ihit_array)) THEN
+               IF (ASSOCIATED(ihit_array)) THEN
                   CALL write_var_hdf5(fid,'wall_strikes',nface,ier,INTVAR=ihit_array,&
                                    ATT='Wall Strikes',ATT_NAME='description')
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'wall_strikes',ier)
-                  CALL wall_free(ier)
+                  CALL wall_free(ier,MPI_COMM_SHARMEM)
                END IF
             CASE('DIAG')
                CALL open_hdf5('beams3d_'//TRIM(id_string)//'.h5',fid,ier,LCREATE=.false.)

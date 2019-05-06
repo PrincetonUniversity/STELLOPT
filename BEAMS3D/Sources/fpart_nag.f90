@@ -16,8 +16,7 @@
 !     Libraries
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
-      USE beams3d_grid, ONLY: BR_spl, BZ_spl, delta_t, BPHI_spl, MODB_spl, &
-                              POT_spl, phimax, rmin, rmax
+      USE beams3d_grid
       USE beams3d_runtime, ONLY: lneut
       USE beams3d_lines, ONLY: moment, mycharge, mymass, myv_neut, B_temp
       USE EZspline_obj
@@ -54,6 +53,8 @@
                       vll, A, B, rinv, binv, cinv, pot_temp
       REAL(rprec) :: gradb(3),gradbr(3),gradbz(3),gradbphi(3),Efield(3)
       ! For splines
+      REAL*8 :: eps1, eps2, eps3
+      REAL*8, parameter :: small = 1.e-10_ezspline_r8
       INTEGER :: i,j,k
       REAL*8 :: xparam, yparam, zparam, hx, hy, hz, hxi, hyi, hzi
       REAL*8 :: fval(4)
@@ -73,35 +74,56 @@
       vll      = q(4)
       rinv = one/r_temp
       CALL EZspline_isInDomain(BR_spl,r_temp,phi_temp,z_temp,ier)
-      IF (ier == 0) THEN
+      eps1 = (rmax-rmin)*small
+      eps2 = (phimax-phimin)*small
+      eps3 = (zmax-zmin)*small
+      IF ((r_temp >= rmin-eps1) .and. (r_temp <= rmax+eps1) .and. &
+          (phi_temp >= phimin-eps2) .and. (phi_temp <= phimax+eps2) .and. &
+          (z_temp >= zmin-eps3) .and. (z_temp <= zmax+eps3)) THEN
+!      IF (ier == 0) THEN
          ! Get the gridpoint info
-         CALL R8HERM3xyz(r_temp,phi_temp,z_temp,&
-                         BR_spl%x1(1),BR_spl%n1,&
-                         BR_spl%x2(1),BR_spl%n2,&
-                         BR_spl%x3(1),BR_spl%n3,&
-                         BR_spl%ilin1,BR_spl%ilin2,BR_spl%ilin3,&
-                         i,j,k,xparam,yparam,zparam,&
-                         hx,hxi,hy,hyi,hz,hzi,ier)
+         i = COUNT(raxis < r_temp)
+         j = COUNT(phiaxis < phi_temp)
+         k = COUNT(zaxis < z_temp)
+         IF (i==0) i=1
+         IF (j==0) j=1
+         IF (k==0) k=1
+         hx     = raxis(i+1) - raxis(i)
+         hy     = phiaxis(j+1) - phiaxis(j)
+         hz     = zaxis(k+1) - zaxis(k)
+         hxi    = one / hx
+         hyi    = one / hy
+         hzi    = one / hz
+         xparam = (raxis(i+1) - r_temp) * hxi
+         yparam = (phiaxis(j+1) - phi_temp) * hyi
+         zparam = (zaxis(k+1) - z_temp) * hzi
+         !CALL R8HERM3xyz(r_temp,phi_temp,z_temp,&
+         !                BR_spl%x1(1),BR_spl%n1,&
+         !                BR_spl%x2(1),BR_spl%n2,&
+         !                BR_spl%x3(1),BR_spl%n3,&
+         !                BR_spl%ilin1,BR_spl%ilin2,BR_spl%ilin3,&
+         !                i,j,k,xparam,yparam,zparam,&
+         !                hx,hxi,hy,hyi,hz,hzi,ier)
          ! Evaluate the Splines
          CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                          hx,hxi,hy,hyi,hz,hzi,&
-                         BR_spl%fspl(1,1,1,1),BR_spl%n1,BR_spl%n2,BR_spl%n3)
+                         BR4D(1,1,1,1),nr,nphi,nz)
          br_temp = fval(1); gradbr(1:3) = fval(2:4)
          CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                          hx,hxi,hy,hyi,hz,hzi,&
-                         BPHI_spl%fspl(1,1,1,1),BPHI_spl%n1,BPHI_spl%n2,BPHI_spl%n3)
+                         BPHI4D(1,1,1,1),nr,nphi,nz)
          bphi_temp = fval(1); gradbphi(1:3) = fval(2:4)
          CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                          hx,hxi,hy,hyi,hz,hzi,&
-                         BZ_spl%fspl(1,1,1,1),BZ_spl%n1,BZ_spl%n2,BZ_spl%n3)
+                         BZ4D(1,1,1,1),nr,nphi,nz)
          bz_temp = fval(1); gradbz(1:3) = fval(2:4)
          CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                          hx,hxi,hy,hyi,hz,hzi,&
-                         MODB_spl%fspl(1,1,1,1),MODB_spl%n1,MODB_spl%n2,MODB_spl%n3)
+                         MODB4D(1,1,1,1),nr,nphi,nz)
          modb_temp = fval(1); gradb(1:3) = fval(2:4)
          CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                          hx,hxi,hy,hyi,hz,hzi,&
-                         POT_spl%fspl(1,1,1,1),POT_spl%n1,POT_spl%n2,POT_spl%n3)
+                         POT4D(1,1,1,1),nr,nphi,nz)
          pot_temp = fval(1); Efield(1:3) = fval(2:4)
          ! Calculated some helpers
          binv    = one/modb_temp
