@@ -588,6 +588,7 @@ MODULE MPI_SHARMEM
       LOGICAL, POINTER, INTENT(inout) :: array(:)
       INTEGER, INTENT(inout) :: win
       INTEGER :: ier
+      CALL MPI_WIN_FENCE(0,win,ier)
       CALL MPI_WIN_FREE(win,ier)
       IF (ASSOCIATED(array)) NULLIFY(array)
       RETURN
@@ -603,6 +604,7 @@ MODULE MPI_SHARMEM
       INTEGER, POINTER, INTENT(inout) :: array(:)
       INTEGER, INTENT(inout) :: win
       INTEGER :: ier
+      CALL MPI_WIN_FENCE(0,win,ier)
       CALL MPI_WIN_FREE(win,ier)
       IF (ASSOCIATED(array)) NULLIFY(array)
       RETURN
@@ -618,6 +620,7 @@ MODULE MPI_SHARMEM
       REAL, POINTER, INTENT(inout) :: array(:)
       INTEGER, INTENT(inout) :: win
       INTEGER :: ier
+      CALL MPI_WIN_FENCE(0,win,ier)
       CALL MPI_WIN_FREE(win,ier)
       IF (ASSOCIATED(array)) NULLIFY(array)
       RETURN
@@ -633,6 +636,7 @@ MODULE MPI_SHARMEM
       DOUBLE PRECISION, POINTER, INTENT(inout) :: array(:)
       INTEGER, INTENT(inout) :: win
       INTEGER :: ier
+      CALL MPI_WIN_FENCE(0,win,ier)
       CALL MPI_WIN_FREE(win,ier)
       IF (ASSOCIATED(array)) NULLIFY(array)
       RETURN
@@ -648,6 +652,7 @@ MODULE MPI_SHARMEM
       LOGICAL, POINTER, INTENT(inout) :: array(:,:)
       INTEGER, INTENT(inout) :: win
       INTEGER :: ier
+      CALL MPI_WIN_FENCE(0,win,ier)
       CALL MPI_WIN_FREE(win,ier)
       IF (ASSOCIATED(array)) NULLIFY(array)
       RETURN
@@ -663,6 +668,7 @@ MODULE MPI_SHARMEM
       INTEGER, POINTER, INTENT(inout) :: array(:,:)
       INTEGER, INTENT(inout) :: win
       INTEGER :: ier
+      CALL MPI_WIN_FENCE(0,win,ier)
       CALL MPI_WIN_FREE(win,ier)
       IF (ASSOCIATED(array)) NULLIFY(array)
       RETURN
@@ -678,6 +684,7 @@ MODULE MPI_SHARMEM
       REAL, POINTER, INTENT(inout) :: array(:,:)
       INTEGER, INTENT(inout) :: win
       INTEGER :: ier
+      CALL MPI_WIN_FENCE(0,win,ier)
       CALL MPI_WIN_FREE(win,ier)
       IF (ASSOCIATED(array)) NULLIFY(array)
       RETURN
@@ -693,6 +700,7 @@ MODULE MPI_SHARMEM
       DOUBLE PRECISION, POINTER, INTENT(inout) :: array(:,:)
       INTEGER, INTENT(inout) :: win
       INTEGER :: ier
+      CALL MPI_WIN_FENCE(0,win,ier)
       CALL MPI_WIN_FREE(win,ier)
       IF (ASSOCIATED(array)) NULLIFY(array)
       RETURN
@@ -708,6 +716,7 @@ MODULE MPI_SHARMEM
       LOGICAL, POINTER, INTENT(inout) :: array(:,:,:)
       INTEGER, INTENT(inout) :: win
       INTEGER :: ier
+      CALL MPI_WIN_FENCE(0,win,ier)
       CALL MPI_WIN_FREE(win,ier)
       IF (ASSOCIATED(array)) NULLIFY(array)
       RETURN
@@ -723,6 +732,7 @@ MODULE MPI_SHARMEM
       INTEGER, POINTER, INTENT(inout) :: array(:,:,:)
       INTEGER, INTENT(inout) :: win
       INTEGER :: ier
+      CALL MPI_WIN_FENCE(0,win,ier)
       CALL MPI_WIN_FREE(win,ier)
       IF (ASSOCIATED(array)) NULLIFY(array)
       RETURN
@@ -738,6 +748,7 @@ MODULE MPI_SHARMEM
       REAL, POINTER, INTENT(inout) :: array(:,:,:)
       INTEGER, INTENT(inout) :: win
       INTEGER :: ier
+      CALL MPI_WIN_FENCE(0,win,ier)
       CALL MPI_WIN_FREE(win,ier)
       IF (ASSOCIATED(array)) NULLIFY(array)
       RETURN
@@ -753,6 +764,7 @@ MODULE MPI_SHARMEM
       DOUBLE PRECISION, POINTER, INTENT(inout) :: array(:,:,:)
       INTEGER, INTENT(inout) :: win
       INTEGER :: ier
+      CALL MPI_WIN_FENCE(0,win,ier)
       CALL MPI_WIN_FREE(win,ier)
       IF (ASSOCIATED(array)) NULLIFY(array)
       RETURN
@@ -768,6 +780,7 @@ MODULE MPI_SHARMEM
       LOGICAL, POINTER, INTENT(inout) :: array(:,:,:,:)
       INTEGER, INTENT(inout) :: win
       INTEGER :: ier
+      CALL MPI_WIN_FENCE(0,win,ier)
       CALL MPI_WIN_FREE(win,ier)
       IF (ASSOCIATED(array)) NULLIFY(array)
       RETURN
@@ -783,6 +796,7 @@ MODULE MPI_SHARMEM
       INTEGER, POINTER, INTENT(inout) :: array(:,:,:,:)
       INTEGER, INTENT(inout) :: win
       INTEGER :: ier
+      CALL MPI_WIN_FENCE(0,win,ier)
       CALL MPI_WIN_FREE(win,ier)
       IF (ASSOCIATED(array)) NULLIFY(array)
       RETURN
@@ -798,6 +812,7 @@ MODULE MPI_SHARMEM
       REAL, POINTER, INTENT(inout) :: array(:,:,:,:)
       INTEGER, INTENT(inout) :: win
       INTEGER :: ier
+      CALL MPI_WIN_FENCE(0,win,ier)
       CALL MPI_WIN_FREE(win,ier)
       IF (ASSOCIATED(array)) NULLIFY(array)
       RETURN
@@ -813,6 +828,7 @@ MODULE MPI_SHARMEM
       DOUBLE PRECISION, POINTER, INTENT(inout) :: array(:,:,:,:)
       INTEGER, INTENT(inout) :: win
       INTEGER :: ier
+      CALL MPI_WIN_FENCE(0,win,ier)
       CALL MPI_WIN_FREE(win,ier)
       IF (ASSOCIATED(array)) NULLIFY(array)
       RETURN
