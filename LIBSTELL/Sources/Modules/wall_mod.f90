@@ -86,7 +86,7 @@
          CALL mpialloc_2d_dbl(vertex,nvertex,3,myid_wall,0,shared_comm,win_vertex)
          CALL mpialloc_2d_int(face,nface,3,myid_wall,0,shared_comm,win_face)
          mydelta = CEILING(REAL(nface) / REAL(nproc_wall))
-         mystart = 1 + (myid_wall-1)*mydelta
+         mystart = 1 + myid_wall*mydelta
          myend   = mystart + mydelta
          IF (myend > nface) myend=nface
       ELSE
@@ -146,7 +146,7 @@
          CALL mpialloc_2d_dbl(V1,nface,3,myid_wall,0,shared_comm,win_v1)
          CALL mpialloc_2d_dbl(FN,nface,3,myid_wall,0,shared_comm,win_fn)
          mydelta = CEILING(REAL(nface) / REAL(nproc_wall))
-         mystart = 1 + (myid_wall-1)*mydelta
+         mystart = 1 + myid_wall*mydelta
          myend   = mystart + mydelta
          IF (myend > nface) myend=nface
       ELSE
@@ -185,7 +185,7 @@
          CALL mpialloc_1d_dbl(d,nface,myid_wall,0,shared_comm,win_d)
          CALL mpialloc_1d_int(ihit_array,nface,myid_wall,0,shared_comm,win_ihit)
          mydelta = CEILING(REAL(nface) / REAL(nproc_wall))
-         mystart = 1 + (myid_wall-1)*mydelta
+         mystart = 1 + myid_wall*mydelta
          myend   = mystart + mydelta
          IF (myend > nface) myend=nface
       ELSE
@@ -665,7 +665,7 @@
       array_shape(1) = n1
       disp_unit = 1
       window_size = 0_MPI_ADDRESS_KIND
-      IF (subid == mymaster) window_size = INT(n1,MPI_ADDRESS_KIND)*8_MPI_ADDRESS_KIND
+      IF (subid == mymaster) window_size = INT(n1,MPI_ADDRESS_KIND)*4_MPI_ADDRESS_KIND
       CALL MPI_WIN_ALLOCATE_SHARED(window_size, disp_unit, MPI_INFO_NULL, share_comm, baseptr, win ,ier)
       IF (subid /= mymaster) CALL MPI_WIN_SHARED_QUERY(win, 0, window_size, disp_unit, baseptr, ier)
       CALL C_F_POINTER(baseptr, array, array_shape)
@@ -725,7 +725,7 @@
       array_shape(2) = n2
       disp_unit = 1
       window_size = 0_MPI_ADDRESS_KIND
-      IF (subid == mymaster) window_size = INT(n1*n2,MPI_ADDRESS_KIND)*8_MPI_ADDRESS_KIND
+      IF (subid == mymaster) window_size = INT(n1*n2,MPI_ADDRESS_KIND)*4_MPI_ADDRESS_KIND
       CALL MPI_WIN_ALLOCATE_SHARED(window_size, disp_unit, MPI_INFO_NULL, share_comm, baseptr, win ,ier)
       IF (subid /= mymaster) CALL MPI_WIN_SHARED_QUERY(win, 0, window_size, disp_unit, baseptr, ier)
       CALL C_F_POINTER(baseptr, array, array_shape)
