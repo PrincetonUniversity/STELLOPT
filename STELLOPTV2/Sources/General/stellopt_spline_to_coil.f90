@@ -424,9 +424,9 @@
 !     Description:   Computes the curvature at several points along a selected
 !                    coil and returns the maximum value and its location.
 !     Input:         Coil index icoil
-!     Outputs:       Max. curvature, parametric position of max. curvature.
+!     Outputs:       Max. curvature, parametric position & u,v of max. curvature.
 !-------------------------------------------------------------------------------
-      SUBROUTINE get_coil_maxcurv(icoil, maxcurv, s_max)
+      SUBROUTINE get_coil_maxcurv(icoil, maxcurv, s_max, u_max, v_max, uout)
         USE stellopt_vars
         USE windingsurface
         USE stellopt_targets, ONLY : npts_curv
@@ -436,8 +436,9 @@
         INTRINSIC SQRT
 
         ! Arguments
-        INTEGER, INTENT(IN)      :: icoil
-        REAL(rprec), INTENT(OUT) :: maxcurv, s_max
+        INTEGER, INTENT(IN)           :: icoil
+        REAL(rprec), INTENT(OUT)      :: maxcurv, s_max, u_max, v_max
+        INTEGER, INTENT(IN), OPTIONAL :: uout
 
         ! Local variables
         TYPE(cbspline)     :: XC_spl, YC_spl, ZC_spl
@@ -470,8 +471,11 @@
                 coil_splinesz(icoil,1:nknots), coil_splinefz(icoil,1:ncoefs), ier)
         END IF
 
+        ! Write header to optional output file
+        IF (PRESENT(uout)) WRITE(uout,'(A)') 's  K  u  v  x  y  z'
+
         ! Find maximum curvature along coil
-        maxcurv = -1.0;  s_max = -1.0
+        maxcurv = -1.0;  s_max = -1.0;  u_max = -1.0;  v_max = -1.0
         DO ipt=1,npts_curv
            s_val = REAL(ipt-1)/REAL(npts_curv)
 
@@ -513,8 +517,13 @@
            cz = dxds*d2yds2 - dyds*d2xds2
            norm = dxds**2 + dyds**2 + dzds**2
            kappa = SQRT((cx**2 + cy**2 + cz**2)/(norm**3))
+           IF (PRESENT(uout)) THEN  ! Write curvature to optional output file
+              CALL stellopt_uv_to_xyz(u, v, xprime(1,1), xprime(2,1), xprime(3,1))
+              WRITE(uout,'(7ES17.8E2)') s_val,kappa,u,v,xprime(1,1),xprime(2,1),xprime(3,1)
+           END IF
            IF (kappa > maxcurv) THEN
               maxcurv = kappa;  s_max = s_val
+              u_max = u;  v_max = v
            END IF
         END DO !ipt
 

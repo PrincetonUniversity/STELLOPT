@@ -12,7 +12,7 @@
       USE stellopt_runtime
       USE stellopt_input_mod
       USE stellopt_vars
-      USE stellopt_targets, ONLY: sigma_bootstrap, lbooz, numws
+      USE stellopt_targets, ONLY: sigma_bootstrap, lbooz, numws, nigroup, sigma_coilcrv
       USE safe_open_mod, ONLY: safe_open
       USE diagno_input_mod, ONLY: write_diagno_input
       USE gist_mod, ONLY: write_gist_namelist
@@ -55,6 +55,7 @@
       INTEGER ::  ier, ik, iunit, ctype, temp_max, ialpha, m, n
       INTEGER ::  vctrl_array(5)
       CHARACTER(len = 256)   :: temp_str, reset_string
+      REAL(rprec) :: mdum, sdum, udum, vdum
       REAL(rprec), ALLOCATABLE :: fvec_temp(:)
       
 !      INTEGER, PARAMETER :: JAC_CLEANUP = -100
@@ -581,6 +582,18 @@
                IF (ier == 0) CLOSE(iunit,STATUS='delete')
             END DO
          END IF
+      END IF
+      IF ((ctype.ne.JAC_CLEANUP).and.(myid.eq.0)) THEN
+         DO ik=1,nigroup
+            IF (sigma_coilcrv(ik) < bigno) THEN
+               WRITE(temp_str,'(i3.3)'),ik
+               CALL safe_open(iunit_out,iflag,TRIM('coilcrv.'//TRIM(ADJUSTL(temp_str))//'.'//TRIM(id_string)),&
+                    'unknown','formatted',ACCESS_IN='APPEND')
+               WRITE(iunit_out,'(A,2X,I6.6)') 'IT',ncnt
+               CALL get_coil_maxcurv(ik, mdum, sdum, udum, vdum, iunit_out)
+               CLOSE(iunit_out)
+            END IF
+         END DO
       END IF
       RETURN
 !----------------------------------------------------------------------
