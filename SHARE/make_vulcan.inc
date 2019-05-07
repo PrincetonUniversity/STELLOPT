@@ -16,7 +16,7 @@
 #######################################################################
   FLAGS_R = -O3 -fexternal-blas
   FLAGS_D = -g -O0 -fexternal-blas -fbacktrace -fcheck=all 
-  LIBS    = -L/home/bfaber/build/scalapack-2.0.2 -lscalapack -lopenblas
+  LIBS    = -lscalapack -lopenblas
 
 #######################################################################
 #            MPI Options
