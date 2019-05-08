@@ -260,6 +260,8 @@
 
                ! Set vars so BEAMS3D knows it's being called from stellopt
                MPI_COMM_BEAMS     = MPI_COMM_MYWORLD
+               CALL MPI_COMM_SPLIT_TYPE(MPI_COMM_BEAMS, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, MPI_COMM_SHARMEM, ierr_mpi)
+               CALL MPI_COMM_RANK(MPI_COMM_SHARMEM, myid_sharmem, ierr_mpi)
                lverb_beams        = .FALSE.
                lvmec_beams        = .TRUE.  ! Use VMEC Equilibria
                lpies_beams        = .FALSE.
@@ -331,7 +333,11 @@
 
                ! Deallocate Arrays
                CALL beams3d_free
-               CALL wall_free(ier)
+               CALL wall_free(ier,MPI_COMM_SHARMEM)
+              
+               ! Free the Shared Memory region
+               CALL MPI_COMM_FREE(MPI_COMM_SHARMEM,ierr_mpi)
+
                IF (lverb_beams) WRITE(6, '(A)') '----- BEAMS3D DONE -----'
 
 !DEC$ ENDIF
