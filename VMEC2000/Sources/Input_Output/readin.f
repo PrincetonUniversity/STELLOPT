@@ -10,7 +10,7 @@
       USE init_geometry
       USE parallel_include_module, ONLY: grank, mgrid_file_read_time,
      1                                   LPRECOND
-      USE parallel_vmec_module, ONLY: RUNVMEC_COMM_WORLD
+      USE parallel_vmec_module, ONLY: RUNVMEC_COMM_SHARMEM
       IMPLICIT NONE
 C-----------------------------------------------
 C   D u m m y   A r g u m e n t s
@@ -292,7 +292,7 @@ C-----------------------------------------------
       IF (lfreeb) THEN
          CALL second0(trc)
          CALL read_mgrid (mgrid_file, extcur, nzeta, nfp, 
-     1                    lscreen, ier_flag, comm = RUNVMEC_COMM_WORLD)
+     1               lscreen, ier_flag, comm = RUNVMEC_COMM_SHARMEM)
          CALL second0(tzc)
          mgrid_file_read_time = mgrid_file_read_time + (tzc - trc)
 
@@ -401,14 +401,14 @@ C-----------------------------------------------
          IF (nextcur .gt. 0) THEN
             WRITE(nthreed, "(' EXTERNAL CURRENTS',/,1x,17('-'))")
             ni = 0
-            IF (ALLOCATED(curlabel))
+            IF (ASSOCIATED(curlabel))
      1         ni = MAXVAL(LEN_TRIM(curlabel(1:nextcur)))
             ni = MAX(ni+4, 14)
             WRITE (line,  '(a,i2.2,a)') "(5a",ni,")"
             WRITE (line2, '(a,i2.2,a)') "(5(",ni-12,"x,1p,e12.4))"
             DO i = 1,nextcur,5
                ni = MIN(i+4, nextcur)
-               IF (ALLOCATED(curlabel))
+               IF (ASSOCIATED(curlabel))
      1         WRITE (nthreed, line, iostat=mj) 
      2               (TRIM(curlabel(n)),n=i,ni)
                WRITE (nthreed, line2,iostat=mj) 
