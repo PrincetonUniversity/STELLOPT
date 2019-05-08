@@ -315,91 +315,10 @@
       
 !DEC$ IF DEFINED (MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
-!      CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
-!                        B_R,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
-!                        MPI_COMM_LOCAL,ierr_mpi)
-!      CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
-!                        B_PHI,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
-!                        MPI_COMM_LOCAL,ierr_mpi)
-!      CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
-!                        B_Z,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
-!                        MPI_COMM_LOCAL,ierr_mpi)
-!      CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
-!                        TE,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
-!                        MPI_COMM_LOCAL,ierr_mpi)
-!      CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
-!                        NE,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
-!                        MPI_COMM_LOCAL,ierr_mpi)
-!      CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
-!                        TI,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
-!                        MPI_COMM_LOCAL,ierr_mpi)
-!      CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
-!                        S_ARR,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
-!                        MPI_COMM_LOCAL,ierr_mpi)
-!      CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
-!                        U_ARR,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
-!                        MPI_COMM_LOCAL,ierr_mpi)
-!      CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
-!                        POT_ARR,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
-!                        MPI_COMM_LOCAL,ierr_mpi)
-!      CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
-!                        ZEFF_ARR,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
-!                        MPI_COMM_LOCAL,ierr_mpi)
-!      DEALLOCATE(mnum)
-!      DEALLOCATE(moffsets)
 
       ! Fix ZEFF
       IF (mylocalid == mylocalmaster) WHERE(ZEFF_ARR < 1) ZEFF_ARR = 1
-
-      ! Smooth edge data
-!      IF (lplasma_only .and. (mylocalid == mylocalmaster)) THEN
-!         DO j = 1, nphi
-!            DO i = 2, nr-1
-!               DO k = 2, nz-1
-!                  IF ((S_ARR(i,j,k+1) .lt. 1.5)) THEN
-!                     B_R(i,j,k) = B_R(i,j,k+1)
-!                     B_PHI(i,j,k) = B_PHI(i,j,k+1)
-!                     B_Z(i,j,k) = B_Z(i,j,k+1)
-!                     EXIT
-!                  END IF
-!               END DO
-!               DO k = nz-1, 2,-1
-!                  IF ((S_ARR(i,j,k-1) .lt. 1.5)) THEN
-!                     B_R(i,j,k) = B_R(i,j,k-1)
-!                     B_PHI(i,j,k) = B_PHI(i,j,k-1)
-!                     B_Z(i,j,k) = B_Z(i,j,k-1)
-!                     EXIT
-!                  END IF
-!               END DO
-!            END DO
-!            DO k = 2,nz-1
-!               DO i = 2, nr-1
-!                  IF ((S_ARR(i+1,j,k) .lt. 1.5)) THEN
-!                     B_R(i,j,k) = B_R(i+1,j,k)
-!                     B_PHI(i,j,k) = B_PHI(i+1,j,k)
-!                     B_Z(i,j,k) = B_Z(i+1,j,k)
-!                     EXIT
-!                  END IF
-!               END DO
-!               DO i = nr-1, 2, -1
-!                  IF ((S_ARR(i-1,j,k) .lt. 1.5)) THEN
-!                     B_R(i,j,k) = B_R(i-1,j,k)
-!                     B_PHI(i,j,k) = B_PHI(i-1,j,k)
-!                     B_Z(i,j,k) = B_Z(i-1,j,k)
-!                     EXIT
-!                  END IF
-!               END DO
-!            END DO
-!         END DO
-!      END IF   
-      
-      ! Broadcast the updated magnetic field to other members
-!      IF (lplasma_only) THEN
-         CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
-!         CALL MPI_BCAST(B_R,nr*nphi*nz,MPI_DOUBLE_PRECISION,mylocalmaster,MPI_COMM_LOCAL,ierr_mpi)
-!         CALL MPI_BCAST(B_PHI,nr*nphi*nz,MPI_DOUBLE_PRECISION,mylocalmaster,MPI_COMM_LOCAL,ierr_mpi)
-!         CALL MPI_BCAST(B_Z,nr*nphi*nz,MPI_DOUBLE_PRECISION,mylocalmaster,MPI_COMM_LOCAL,ierr_mpi)
-!      END IF
+      CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
 
       CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)
       CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
