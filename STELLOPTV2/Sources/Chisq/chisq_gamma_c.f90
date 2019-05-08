@@ -40,7 +40,7 @@
       INTEGER :: dex, ik, i, j, k, ier
       REAL(rprec) :: s, rovera, theta, zeta, delzeta, u, v, coszeta, sinzeta
       REAL(rprec) :: iota, iotap, minB, maxB, B_refl, psi_a, B_zeta
-      REAL(rprec) :: X, Y, dpsidr, dpsidz, Br, Bphi
+      REAL(rprec) :: X, Y, Xp, Yp, dpsidr, dpsidz, Br, Bphi
 
       REAL(rprec), DIMENSION(3) :: sflCrd, Bxyz, crossnum, crossden
       REAL(rprec), DIMENSION(3) :: e_phi, e_r, e_z, grads
@@ -53,7 +53,7 @@
       REAL(rprec), DIMENSION(nsteps) :: kappa_g, e_theta_norm, grad_psi_norm
       real(rprec), DIMENSION(nsteps,3) :: gradR, gradZ, gradB, grad_psi
       real(rprec), DIMENSION(nsteps,3) :: dxyzdu, dxyzdv, dxyzds, dBsupv 
-      real(rprec), DIMENSION(nsteps) :: grad_psi_i, e_theta_i
+      real(rprec), DIMENSION(nsteps) :: grad_psi_i, e_theta_i, ds
       integer, parameter :: maxwells = 100
 
       integer, dimension(maxwells) :: well_start, well_stop
@@ -117,6 +117,16 @@
             !write (*,*) j,s,u,v
             !write (*,*) s,theta,zeta
             !write (*,*) R(j), X, Y, Z(j)
+
+            !Calculate crude arclength
+            IF (j > 1) THEN
+              ds(j) = sqrt((X-Xp)*(X-Xp) + (Y-Yp)*(Y-Yp) + (Z(j) - Z(j-1))*(Z(j) - Z(j-1)))
+              IF (j == 2) ds(1) = ds(j)
+            END IF
+            Xp = X
+            Yp = Y
+
+
             !Note, the R and Z derivatives are with respect to rho and not s
             !drds = drdrho/2sqrt(s)  
             gradR(j,3) = gradR(j,3)/2/sqrt(s)
