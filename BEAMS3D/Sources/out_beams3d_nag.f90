@@ -17,7 +17,7 @@ SUBROUTINE out_beams3d_nag(t, q)
                              vll_lines, neut_lines, mytdex, next_t,&
                              lost_lines, dt_out, xlast, ylast, zlast,&
                              ltherm, S_lines, U_lines, B_lines
-    USE beams3d_grid, ONLY: delta_t, S_spl, U_spl, MODB_spl, phimax
+    USE beams3d_grid
 !DEC$ IF DEFINED (NTCC)
     USE beams3d_physics_mod, ONLY: beams3d_physics
 !DEC$ ENDIF
@@ -41,6 +41,12 @@ SUBROUTINE out_beams3d_nag(t, q)
     INTEGER             :: ier
     DOUBLE PRECISION         :: x0,y0,z0,x1,y1,z1,xw,yw,zw,delta,dl
     LOGICAL             :: lhit
+    ! For splines
+    INTEGER :: i,j,k
+    REAL*8 :: xparam, yparam, zparam, hx, hy, hz, hxi, hyi, hzi
+    REAL*8 :: fval(4)
+    INTEGER, parameter :: ict(8)=(/1,0,0,0,0,0,0,0/)
+    REAL*8, PARAMETER :: one = 1
     !-----------------------------------------------------------------------
     !     Begin Function
     !-----------------------------------------------------------------------
@@ -52,15 +58,42 @@ SUBROUTINE out_beams3d_nag(t, q)
     neut_lines(mytdex,myline)     = lneut
     x0 = MOD(q(2), phimax)
     IF (x0 < 0) x0 = x0 + phimax
-    CALL EZspline_isInDomain(S_spl,q(1),x0,q(3),ier)
+    !CALL EZspline_isInDomain(S_spl,q(1),x0,q(3),ier)
     y0 = 0  ! If we're out of domain then don't worry about collisions
-    IF (ier==0) THEN
-       CALL EZspline_interp(S_spl,q(1),x0,q(3),y0,ier)
-       CALL EZspline_interp(U_spl,q(1),x0,q(3),z0,ier)
-       CALL EZspline_interp(MODB_spl,q(1),x0,q(3),x1,ier)
-       S_lines(mytdex, myline) = y0
-       U_lines(mytdex, myline) = z0
-       B_lines(mytdex, myline) = x1
+    !IF (ier==0) THEN
+    IF ((q(1) >= rmin-eps1) .and. (q(1) <= rmax+eps1) .and. &
+        (x0 >= phimin-eps2) .and. (x0 <= phimax+eps2) .and. &
+        (q(3) >= zmin-eps3) .and. (q(3) <= zmax+eps3)) THEN
+       i = COUNT(raxis < q(1))
+       j = COUNT(phiaxis < x0)
+       k = COUNT(zaxis < q(3))
+       IF (i==0) i=1
+       IF (j==0) j=1
+       IF (k==0) k=1
+       hx     = raxis(i+1) - raxis(i)
+       hy     = phiaxis(j+1) - phiaxis(j)
+       hz     = zaxis(k+1) - zaxis(k)
+       hxi    = one / hx
+       hyi    = one / hy
+       hzi    = one / hz
+       xparam = (raxis(i+1) - q(1)) * hxi
+       yparam = (phiaxis(j+1) - x0) * hyi
+       zparam = (zaxis(k+1) - q(3)) * hzi
+       CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                       hx,hxi,hy,hyi,hz,hzi,&
+                       S4D(1,1,1,1),nr,nphi,nz)
+       S_lines(mytdex, myline) = fval(1)
+       CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                       hx,hxi,hy,hyi,hz,hzi,&
+                       U4D(1,1,1,1),nr,nphi,nz)
+       U_lines(mytdex, myline) = fval(1)
+       CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                       hx,hxi,hy,hyi,hz,hzi,&
+                       MODB4D(1,1,1,1),nr,nphi,nz)
+       B_lines(mytdex, myline) = fval(1)
+       !CALL EZspline_interp(S_spl,q(1),x0,q(3),y0,ier)
+       !CALL EZspline_interp(U_spl,q(1),x0,q(3),z0,ier)
+       !CALL EZspline_interp(MODB_spl,q(1),x0,q(3),x1,ier)
        !IF (myworkid == 0) PRINT *,'--',y0,z0,x1
     END IF
 !DEC$ IF DEFINED (NTCC)

@@ -50,12 +50,6 @@
       
       ! Handle Consistency checks
       !IF (ldepo .and. lvessel) lplasma_only = .FALSE.
-
-      ! Create the shared memory communicator
-      CALL MPI_COMM_SPLIT_TYPE(MPI_COMM_BEAMS, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, MPI_COMM_SHARMEM, ierr_mpi)
-      CALL MPI_COMM_RANK(MPI_COMM_SHARMEM, myid_sharmem, ierr_mpi)
-      CALL MPI_COMM_SIZE(MPI_COMM_SHARMEM, nshar, ierr_mpi) ! MPI
-      
       
       ! First Read The Input Namelist
       iunit = 11
@@ -81,7 +75,6 @@
          WRITE(6,'(A,F9.5,A,F9.5,A,I4)') '   R   = [',rmin,',',rmax,'];  NR:   ',nr
          WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   PHI = [',phimin,',',phimax,'];  NPHI: ',nphi
          WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   Z   = [',zmin,',',zmax,'];  NZ:   ',nz
-         WRITE(6,'(A,I4)')               '                               N_SHAR: ', nshar
          IF (lbeam) THEN
             WRITE(6,'(A,I6)')               '   # of Particles to Start: ', nparticles_start
             WRITE(6,'(A,I6)')                          '   # of Beams: ', nbeams
@@ -200,7 +193,6 @@
 
 
       ! Construct 3D Profile Splines
-      !    Things get complicated here
       IF (.not. lvac) THEN
          ! First Allocated Spline on master threads
          IF (myid_sharmem == 0) THEN
@@ -237,15 +229,13 @@
             CALL EZspline_setup(ZEFF_spl,ZEFF_ARR,ier,EXACT_DIM=.true.)
             IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init: ZEFF_ARR',ier)
          END IF
+         ! Now allocate the 4D spline array (which is all we need)
          CALL MPI_BARRIER(MPI_COMM_SHARMEM, ier)
-         CALL mpidealloc(TE,win_TE)
-         CALL mpidealloc(NE,win_NE)
-         CALL mpidealloc(TI,win_TI)
-         CALL mpidealloc(ZEFF_ARR,win_ZEFF_ARR)
          CALL mpialloc(TE4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_TE4D)
          CALL mpialloc(NE4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_NE4D)
          CALL mpialloc(TI4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_TI4D)
          CALL mpialloc(ZEFF4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_ZEFF4D)
+         ! Now have master copy data over and free the splines
          IF (myid_sharmem == master) THEN
             TE4D = TE_SPL%fspl
             NE4D = NE_SPL%fspl
@@ -258,8 +248,6 @@
          END IF
          CALL MPI_BARRIER(MPI_COMM_SHARMEM, ier)
       END IF
-
-      CALL MPI_BARRIER(MPI_COMM_BEAMS, ier)
          
       ! Construct MODB
       IF (myid_sharmem == master) MODB = SQRT(B_R*B_R+B_PHI*B_PHI+B_Z*B_Z)
@@ -300,7 +288,7 @@
           mu_start = mu_start_in(1:nparticles)
           t_end = t_end_in(1:nparticles)
           beam  = 0
-      END IF; CALL FLUSH(6)
+      END IF
 
       ! Do a reality check
       IF (ANY(ABS(vll_start)>3E8) .and. lverb) THEN
@@ -312,7 +300,7 @@
       END IF
 
 
-      ! Construct Splines One by one for memeory reasons
+      ! Construct Splines on shared memory master nodes
       IF (myid_sharmem == master) THEN
          bcs1=(/ 0, 0/)
          bcs2=(/-1,-1/)
@@ -374,6 +362,7 @@
          CALL EZspline_setup(POT_spl,POT_ARR,ier,EXACT_DIM=.true.)
          IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init:POT_spl',ier)
       END IF
+      ! Allocate Shared memory space
       CALL MPI_BARRIER(MPI_COMM_SHARMEM, ier)
       CALL mpialloc(BR4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_BR4D)
       CALL mpialloc(BPHI4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_BPHI4D)
@@ -382,6 +371,7 @@
       CALL mpialloc(S4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_S4D)
       CALL mpialloc(U4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_U4D)
       CALL mpialloc(POT4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_POT4D)
+      ! Copy Spline info to shared memory and Free
       IF (myid_sharmem == master) THEN
          BR4D = BR_SPL%fspl
          BPHI4D = BPHI_SPL%fspl
@@ -394,32 +384,40 @@
          CALL EZspline_free(BPHI_spl,ier)
          CALL EZspline_free(BZ_spl,ier)
          CALL EZspline_free(MODB_spl,ier)
-         CALL EZspline_free(S4D_spl,ier)
-         CALL EZspline_free(U4D_spl,ier)
+         CALL EZspline_free(S_spl,ier)
+         CALL EZspline_free(U_spl,ier)
          CALL EZspline_free(POT_spl,ier)
       END IF
+      ! These are helpers for range
+      eps1 = (rmax-rmin)*small
+      eps2 = (phimax-phimin)*small
+      eps3 = (zmax-zmin)*small
 
       ! Print Grid info to screen
       IF (lverb) THEN
          WRITE(6,'(A)')'----- Constructing Splines -----'
-         WRITE(6,'(A,F9.5,A,F9.5,A,I4)') '   R   = [',MINVAL(raxis),',',MAXVAL(raxis),'];  NR:   ',BR_spl%n1
-         WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   PHI = [',MINVAL(phiaxis),',',MAXVAL(phiaxis),'];  NPHI: ',BR_spl%n2
-         WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   Z   = [',MINVAL(zaxis),',',MAXVAL(zaxis),'];  NZ:   ',BR_spl%n3
-         WRITE(6,'(A,I1)')               '   HERMITE FORM: ',BR_spl%isHermite
+         WRITE(6,'(A,F9.5,A,F9.5,A,I4)') '   R   = [',MINVAL(raxis),',',MAXVAL(raxis),'];  NR:   ',nr
+         WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   PHI = [',MINVAL(phiaxis),',',MAXVAL(phiaxis),'];  NPHI: ',nphi
+         WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   Z   = [',MINVAL(zaxis),',',MAXVAL(zaxis),'];  NZ:   ',nz
+         WRITE(6,'(A,I1)')               '   HERMITE FORM: ',1
          CALL FLUSH(6)
       END IF
       !IF (myworkid /= master) DEALLOCATE(raxis,zaxis,phiaxis)
 
       ! Output Grid
       CALL beams3d_write('GRID_INIT')
-      IF (myid_sharmem == master) THEN
-         CALL mpidealloc(B_R,win_B_R)
-         CALL mpidealloc(B_PHI,win_B_PHI)
-         CALL mpidealloc(B_Z,win_B_Z)
-         CALL mpidealloc(MODB,win_MODB)
-         CALL mpidealloc(S_ARR,win_S_ARR)
-         CALL mpidealloc(U_ARR,win_U_ARR)
-         CALL mpidealloc(POT_ARR,win_POT_ARR)
+      CALL mpidealloc(B_R,win_B_R)
+      CALL mpidealloc(B_PHI,win_B_PHI)
+      CALL mpidealloc(B_Z,win_B_Z)
+      CALL mpidealloc(MODB,win_MODB)
+      CALL mpidealloc(S_ARR,win_S_ARR)
+      CALL mpidealloc(U_ARR,win_U_ARR)
+      CALL mpidealloc(POT_ARR,win_POT_ARR)
+      IF (.not. lvac) THEN
+         CALL mpidealloc(TE,win_TE)
+         CALL mpidealloc(NE,win_NE)
+         CALL mpidealloc(TI,win_TI)
+         CALL mpidealloc(ZEFF_ARR,win_ZEFF_ARR)
       END IF
 
       ! DEALLOCATE Variables

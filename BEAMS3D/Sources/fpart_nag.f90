@@ -53,8 +53,6 @@
                       vll, A, B, rinv, binv, cinv, pot_temp
       REAL(rprec) :: gradb(3),gradbr(3),gradbz(3),gradbphi(3),Efield(3)
       ! For splines
-      REAL*8 :: eps1, eps2, eps3
-      REAL*8, parameter :: small = 1.e-10_ezspline_r8
       INTEGER :: i,j,k
       REAL*8 :: xparam, yparam, zparam, hx, hy, hz, hxi, hyi, hzi
       REAL*8 :: fval(4)
@@ -73,10 +71,7 @@
       z_temp   = q(3)
       vll      = q(4)
       rinv = one/r_temp
-      CALL EZspline_isInDomain(BR_spl,r_temp,phi_temp,z_temp,ier)
-      eps1 = (rmax-rmin)*small
-      eps2 = (phimax-phimin)*small
-      eps3 = (zmax-zmin)*small
+!      CALL EZspline_isInDomain(BR_spl,r_temp,phi_temp,z_temp,ier)
       IF ((r_temp >= rmin-eps1) .and. (r_temp <= rmax+eps1) .and. &
           (phi_temp >= phimin-eps2) .and. (phi_temp <= phimax+eps2) .and. &
           (z_temp >= zmin-eps3) .and. (z_temp <= zmax+eps3)) THEN

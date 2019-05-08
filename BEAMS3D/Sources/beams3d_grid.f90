@@ -53,6 +53,8 @@
       REAL(rprec), DIMENSION(:,:,:,:), POINTER :: BR4D, BPHI4D, BZ4D, MODB4D, &
                                   TE4D, NE4D, TI4D, ZEFF4D, &
                                   S4D, U4D, POT4D
+      REAL*8 ::      eps1, eps2, eps3
+      REAL*8, parameter :: small = 1.e-10_ezspline_r8
       TYPE(EZspline3_r8) :: BR_spl, BPHI_spl, BZ_spl, MODB_spl, TE_spl, NE_spl, &
                             TI_spl, ZEFF_spl, S_spl, U_spl, POT_spl
       TYPE(EZspline1_r8) :: TE_spl_s, NE_spl_s, TI_spl_S, ZEFF_spl_s, Vp_spl_s, POT_spl_s

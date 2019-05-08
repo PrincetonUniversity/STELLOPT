@@ -27,6 +27,9 @@ SUBROUTINE beams3d_follow
     USE beams3d_write_par
     USE safe_open_mod, ONLY: safe_open
     USE wall_mod, ONLY: wall_free, ihit_array, nface
+!DEC$ IF DEFINED (MPI_OPT)
+    USE mpi
+!DEC$ ENDIF
     !-----------------------------------------------------------------------
     !     Local Variables
     !          status       MPI stats indicator
@@ -45,7 +48,6 @@ SUBROUTINE beams3d_follow
     !-----------------------------------------------------------------------
     IMPLICIT NONE
 !DEC$ IF DEFINED (MPI_OPT)
-    INCLUDE 'mpif.h' ! MPI
     INTEGER :: status(MPI_STATUS_size) !mpi stuff
     INTEGER :: mystart, mypace, i, j, sender
     INTEGER,ALLOCATABLE :: mnum(:), moffsets(:)
@@ -393,7 +395,7 @@ SUBROUTINE beams3d_follow
                 DO l = 0, npoinc
                    R_lines(l,mystart:myend) = REAL(l)
                 END DO
-                B_lines(0:npoinc,mystart:myend) = REAL(myid)
+                B_lines(0:npoinc,mystart:myend) = REAL(myworkid)
         END SELECT
     END IF
 
@@ -405,26 +407,16 @@ SUBROUTINE beams3d_follow
     IF (ALLOCATED(q)) DEALLOCATE(q)
     IF (ALLOCATED(w)) DEALLOCATE(w)
     IF (ALLOCATED(iwork)) DEALLOCATE(iwork)
-    ! Do this here to conserve on memory
-    IF (EZspline_allocated(BR_spl))   CALL EZspline_free(BR_spl,ier)
-    IF (EZspline_allocated(BZ_spl))   CALL EZspline_free(BZ_spl,ier)
-    IF (EZspline_allocated(BPHI_spl)) CALL EZspline_free(BPHI_spl,ier)
-    IF (EZspline_allocated(MODB_spl)) CALL EZspline_free(MODB_spl,ier)
-    IF (EZspline_allocated(S_spl)) CALL EZspline_free(S_spl,ier)
-    IF (EZspline_allocated(U_spl)) CALL EZspline_free(U_spl,ier)
-    IF (EZspline_allocated(TE_spl))   CALL EZspline_free(TE_spl,ier)
-    IF (EZspline_allocated(NE_spl))   CALL EZspline_free(NE_spl,ier)
-    IF (EZspline_allocated(TI_spl))   CALL EZspline_free(TI_spl,ier)
 
     ! Handle WALL Heat MAp
 !DEC$ IF DEFINED (MPI_OPT)
     ier = 0
     IF (ASSOCIATED(ihit_array)) THEN
       IF (myworkid == master) THEN
-         CALL MPI_REDUCE(MPI_IN_PLACE,ihit_array,nface,MPI_INTEGER,MPI_SUM,master,MPI_COMM_BEAMS,ierr_mpi)
+!         CALL MPI_REDUCE(MPI_IN_PLACE,ihit_array,nface,MPI_INTEGER,MPI_SUM,master,MPI_COMM_BEAMS,ierr_mpi)
       ELSE
-         CALL MPI_REDUCE(ihit_array,ihit_array,nface,MPI_INTEGER,MPI_SUM,master,MPI_COMM_BEAMS,ierr_mpi)
-         CALL wall_free(ier,MPI_COMM_SHARMEM)
+!         CALL MPI_REDUCE(ihit_array,ihit_array,nface,MPI_INTEGER,MPI_SUM,master,MPI_COMM_BEAMS,ierr_mpi)
+!         CALL wall_free(ier,MPI_COMM_SHARMEM)
       END IF
     END IF
 !DEC$ ENDIF
@@ -444,12 +436,13 @@ SUBROUTINE beams3d_follow
     itemp = 0; WHERE(neut_lines) itemp=1;
     CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend,   'neut_lines', INTVAR=itemp)
     DEALLOCATE(itemp)
-    DEALLOCATE(mnum)
-    DEALLOCATE(moffsets)
+    IF (ALLOCATED(mnum)) DEALLOCATE(mnum)
+    IF (ALLOCATED(moffsets)) DEALLOCATE(moffsets)
     CALL MPI_BARRIER(MPI_COMM_BEAMS, ierr_mpi)
     IF (ierr_mpi /= 0) CALL handle_err(MPI_BARRIER_ERR, 'beams3d_follow', ierr_mpi)
 
 !DEC$ ENDIF
+    RETURN
     !-----------------------------------------------------------------------
     !     End Subroutine
     !-----------------------------------------------------------------------

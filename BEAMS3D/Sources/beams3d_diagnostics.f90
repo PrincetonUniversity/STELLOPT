@@ -22,6 +22,7 @@
       USE EZspline
 !DEC$ IF DEFINED (MPI_OPT)
       USE mpi_params ! MPI
+      USE mpi
 !DEC$ ENDIF
 !-----------------------------------------------------------------------
 !     Local Variables
@@ -39,7 +40,6 @@
       REAL, ALLOCATABLE     :: real_mask(:)
       INTEGER, PARAMETER :: ndist = 100
 !DEC$ IF DEFINED (MPI_OPT)
-      INCLUDE 'mpif.h' ! MPI
       INTEGER :: status(MPI_STATUS_size) !mpi stuff
       INTEGER :: mystart, mypace, sender
       INTEGER, ALLOCATABLE :: revcounts(:), displs(:)

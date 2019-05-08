@@ -16,8 +16,9 @@ MODULE beams3d_physics_mod
                                myline, mytdex, moment, ltherm, &
                                nsteps, nparticles, vll_lines, moment_lines, mybeam, mycharge, myZ, &
                                mymass, myv_neut, B_temp, rand_prob, cum_prob, tau, PE_lines, PI_lines
-      USE beams3d_grid, ONLY: BR_spl, BZ_spl, delta_t, BPHI_spl, MODB_spl, &
-                              phimax, TE_spl, NE_spl, TI_spl, ZEFF_spl
+      USE beams3d_grid, ONLY: BR_spl, BZ_spl, delta_t, BPHI_spl, MODB_spl, MODB4D, &
+                              phimax, S4D, TE4D, NE4D, TI4D, ZEFF4D, nr, nphi, nz, rmax, rmin, zmax, zmin, &
+                              phimin, eps1, eps2, eps3, raxis, phiaxis, zaxis
       USE EZspline_obj
       USE EZspline
 !DEC$ IF DEFINED (NTCC)
@@ -74,6 +75,7 @@ MODULE beams3d_physics_mod
          !     Local Parameters
          !--------------------------------------------------------------
          DOUBLE PRECISION, PARAMETER :: half = 0.5D0 ! 1/2
+         DOUBLE PRECISION, PARAMETER :: one  = 1.0D0 ! 1.0
          DOUBLE PRECISION, PARAMETER :: electron_mass = 9.10938356D-31 !m_e
          DOUBLE PRECISION, PARAMETER :: e_charge      = 1.60217662E-19 !e_c
          DOUBLE PRECISION, PARAMETER :: sqrt_pi       = 1.7724538509   !pi^(1/2)
@@ -98,32 +100,50 @@ MODULE beams3d_physics_mod
          tau_inv = 10.0
 
          ! Check that we're inside the domain then proceed
-         CALL EZspline_isInDomain(BR_spl,r_temp,phi_temp,z_temp,ier)
-         IF (ier == 0) THEN
+         !CALL EZspline_isInDomain(BR_spl,r_temp,phi_temp,z_temp,ier)
+         IF ((r_temp >= rmin-eps1) .and. (r_temp <= rmax+eps1) .and. &
+             (phi_temp >= phimin-eps2) .and. (phi_temp <= phimax+eps2) .and. &
+             (z_temp >= zmin-eps3) .and. (z_temp <= zmax+eps3)) THEN
+!         IF (ier == 0) THEN
             ! Get the gridpoint info (this is possible since all grids are the same)
-            CALL R8HERM3xyz(r_temp,phi_temp,z_temp,&
-                            MODB_spl%x1(1),MODB_spl%n1,&
-                            MODB_spl%x2(1),MODB_spl%n2,&
-                            MODB_spl%x3(1),MODB_spl%n3,&
-                            MODB_spl%ilin1,MODB_spl%ilin2,MODB_spl%ilin3,&
-                            i,j,k,xparam,yparam,zparam,&
-                            hx,hxi,hy,hyi,hz,hzi,ier)
+            i = COUNT(raxis < r_temp)
+            j = COUNT(phiaxis < phi_temp)
+            k = COUNT(zaxis < z_temp)
+            IF (i==0) i=1
+            IF (j==0) j=1
+            IF (k==0) k=1
+            hx     = raxis(i+1) - raxis(i)
+            hy     = phiaxis(j+1) - phiaxis(j)
+            hz     = zaxis(k+1) - zaxis(k)
+            hxi    = one / hx
+            hyi    = one / hy
+            hzi    = one / hz
+            xparam = (raxis(i+1) - r_temp) * hxi
+            yparam = (phiaxis(j+1) - phi_temp) * hyi
+            zparam = (zaxis(k+1) - z_temp) * hzi
+            !CALL R8HERM3xyz(r_temp,phi_temp,z_temp,&
+            !                MODB_spl%x1(1),MODB_spl%n1,&
+            !                MODB_spl%x2(1),MODB_spl%n2,&
+            !                MODB_spl%x3(1),MODB_spl%n3,&
+            !                MODB_spl%ilin1,MODB_spl%ilin2,MODB_spl%ilin3,&
+            !                i,j,k,xparam,yparam,zparam,&
+            !                hx,hxi,hy,hyi,hz,hzi,ier)
             ! Evaluate the Splines
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hx,hxi,hy,hyi,hz,hzi,&
-                            MODB_spl%fspl(1,1,1,1),MODB_spl%n1,MODB_spl%n2,MODB_spl%n3)
+                            MODB4D(1,1,1,1),nr,nphi,nz)
             modb = fval(1)
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hx,hxi,hy,hyi,hz,hzi,&
-                            TE_spl%fspl(1,1,1,1),TE_spl%n1,TE_spl%n2,TE_spl%n3)
+                            TE4D(1,1,1,1),nr,nphi,nz)
             te_temp = fval(1)
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hx,hxi,hy,hyi,hz,hzi,&
-                            NE_spl%fspl(1,1,1,1),NE_spl%n1,NE_spl%n2,NE_spl%n3)
+                            NE4D(1,1,1,1),nr,nphi,nz)
             ne_temp = fval(1)
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hx,hxi,hy,hyi,hz,hzi,&
-                            TI_spl%fspl(1,1,1,1),TI_spl%n1,TI_spl%n2,TI_spl%n3)
+                            TI4D(1,1,1,1),nr,nphi,nz)
             ti_temp = fval(1)
 
             ! Helpers
@@ -284,8 +304,8 @@ MODULE beams3d_physics_mod
          !--------------------------------------------------------------
          !     Follow neutral into plasma using subgrid
          !--------------------------------------------------------------
-         DO i = 1, 3
-            dt_local = stepsize(i)/q(4)
+         DO l = 1, 3
+            dt_local = stepsize(l)/q(4)
             DO
                qf = qf + myv_neut*dt_local
                q(1) = sqrt(qf(1)*qf(1)+qf(2)*qf(2))
@@ -294,10 +314,29 @@ MODULE beams3d_physics_mod
                t = t + dt_local
                phi_temp = MODULO(q(2), phimax)
                IF (phi_temp < 0) phi_temp = phi_temp + phimax
-               CALL EZspline_isInDomain(S_spl,q(1),phi_temp,q(3),ier)
-               IF (ier==0) THEN
+               !CALL EZspline_isInDomain(S_spl,q(1),phi_temp,q(3),ier)
+               !IF (ier==0) THEN
+               IF ((q(1) >= rmin-eps1) .and. (q(1) <= rmax+eps1) .and. &
+                   (phi_temp >= phimin-eps2) .and. (phi_temp <= phimax+eps2) .and. &
+                   (q(3) >= zmin-eps3) .and. (q(3) <= zmax+eps3)) THEN
+                  i = MAX(COUNT(raxis < q(1)),1)
+                  j = MAX(COUNT(phiaxis < phi_temp),1)
+                  k = MAX(COUNT(zaxis < q(3)),1)
+                  hx     = raxis(i+1) - raxis(i)
+                  hy     = phiaxis(j+1) - phiaxis(j)
+                  hz     = zaxis(k+1) - zaxis(k)
+                  hxi    = one / hx
+                  hyi    = one / hy
+                  hzi    = one / hz
+                  xparam = (raxis(i+1) - q(1)) * hxi
+                  yparam = (phiaxis(j+1) - phi_temp) * hyi
+                  zparam = (zaxis(k+1) - q(3)) * hzi
                   s_temp =1.5
-                  CALL EZspline_interp(S_spl,q(1),phi_temp,q(3),s_temp,ier)
+                  !CALL EZspline_interp(S_spl,q(1),phi_temp,q(3),s_temp,ier)
+                  CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                                  hx,hxi,hy,hyi,hz,hzi,&
+                                  S4D(1,1,1,1),nr,nphi,nz)
+                  s_temp = fval(1)
                   IF (s_temp < one) EXIT
                END IF
                IF ((q(1) > 5*rmax)  .or. (q(1) < rmin)) THEN; t = t_end(myline)+dt_local; RETURN; END IF  ! We're outside the grid
@@ -311,8 +350,8 @@ MODULE beams3d_physics_mod
          !--------------------------------------------------------------
          !     Follow particle track out of plasma
          !--------------------------------------------------------------
-         DO i = 1, 3
-            dt_local = stepsize(i)/q(4)
+         DO l = 1, 3
+            dt_local = stepsize(l)/q(4)
             DO
                qf = qf + myv_neut*dt_local
                q(1) = sqrt(qf(1)*qf(1)+qf(2)*qf(2))
@@ -320,10 +359,29 @@ MODULE beams3d_physics_mod
                q(3) = qf(3)
                phi_temp = MODULO(q(2), phimax)
                IF (phi_temp < 0) phi_temp = phi_temp + phimax
-               CALL EZspline_isInDomain(S_spl,q(1),phi_temp,q(3),ier)
-               IF (ier==0) THEN
+               !CALL EZspline_isInDomain(S_spl,q(1),phi_temp,q(3),ier)
+               !IF (ier==0) THEN
+               IF ((q(1) >= rmin-eps1) .and. (q(1) <= rmax+eps1) .and. &
+                   (phi_temp >= phimin-eps2) .and. (phi_temp <= phimax+eps2) .and. &
+                   (q(3) >= zmin-eps3) .and. (q(3) <= zmax+eps3)) THEN
+                  i = MAX(COUNT(raxis < q(1)),1)
+                  j = MAX(COUNT(phiaxis < phi_temp),1)
+                  k = MAX(COUNT(zaxis < q(3)),1)
+                  hx     = raxis(i+1) - raxis(i)
+                  hy     = phiaxis(j+1) - phiaxis(j)
+                  hz     = zaxis(k+1) - zaxis(k)
+                  hxi    = one / hx
+                  hyi    = one / hy
+                  hzi    = one / hz
+                  xparam = (raxis(i+1) - q(1)) * hxi
+                  yparam = (phiaxis(j+1) - phi_temp) * hyi
+                  zparam = (zaxis(k+1) - q(3)) * hzi
                   s_temp =0.1
-                  CALL EZspline_interp(S_spl,q(1),phi_temp,q(3),s_temp,ier)
+                  !CALL EZspline_interp(S_spl,q(1),phi_temp,q(3),s_temp,ier)
+                  CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                                  hx,hxi,hy,hyi,hz,hzi,&
+                                  S4D(1,1,1,1),nr,nphi,nz)
+                  s_temp = fval(1)
                   IF (s_temp > one) EXIT
                END IF
                IF ((q(1) > 5*rmax)  .or. (q(1) < rmin)) THEN; t = t_end(myline)+dt_local; RETURN; END IF  ! We're outside the grid
@@ -350,28 +408,40 @@ MODULE beams3d_physics_mod
          plocal = MODULO(plocal, phimax)
          ! Compute temp/density along path
          DO l = 1, num_depo
-            CALL R8HERM3xyz(rlocal(l),plocal(l),zlocal(l),&
-                            TI_spl%x1(1),TI_spl%n1,&
-                            TI_spl%x2(1),TI_spl%n2,&
-                            TI_spl%x3(1),TI_spl%n3,&
-                            TI_spl%ilin1,TI_spl%ilin2,TI_spl%ilin3,&
-                            i,j,k,xparam,yparam,zparam,&
-                            hx,hxi,hy,hyi,hz,hzi,ier)
+            !CALL R8HERM3xyz(rlocal(l),plocal(l),zlocal(l),&
+            !                TI_spl%x1(1),TI_spl%n1,&
+            !                TI_spl%x2(1),TI_spl%n2,&
+            !                TI_spl%x3(1),TI_spl%n3,&
+            !                TI_spl%ilin1,TI_spl%ilin2,TI_spl%ilin3,&
+            !                i,j,k,xparam,yparam,zparam,&
+            !                hx,hxi,hy,hyi,hz,hzi,ier)
+            i = MAX(COUNT(raxis < rlocal(l)),1)
+            j = MAX(COUNT(phiaxis < plocal(l)),1)
+            k = MAX(COUNT(zaxis < zlocal(l)),1)
+            hx     = raxis(i+1) - raxis(i)
+            hy     = phiaxis(j+1) - phiaxis(j)
+            hz     = zaxis(k+1) - zaxis(k)
+            hxi    = one / hx
+            hyi    = one / hy
+            hzi    = one / hz
+            xparam = (raxis(i+1) - rlocal(l)) * hxi
+            yparam = (phiaxis(j+1) - plocal(l)) * hyi
+            zparam = (zaxis(k+1) - zlocal(l)) * hzi
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hx,hxi,hy,hyi,hz,hzi,&
-                            TI_spl%fspl(1,1,1,1),TI_spl%n1,TI_spl%n2,TI_spl%n3)
+                            TI4D(1,1,1,1),nr,nphi,nz)
             tilocal(l) = fval(1)
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hx,hxi,hy,hyi,hz,hzi,&
-                            TE_spl%fspl(1,1,1,1),TE_spl%n1,TE_spl%n2,TE_spl%n3)
+                            TE4D(1,1,1,1),nr,nphi,nz)
             telocal(l) = fval(1)
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hx,hxi,hy,hyi,hz,hzi,&
-                            NE_spl%fspl(1,1,1,1),NE_spl%n1,NE_spl%n2,NE_spl%n3)
+                            NE4D(1,1,1,1),nr,nphi,nz)
             nelocal(l) = fval(1)
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hx,hxi,hy,hyi,hz,hzi,&
-                            ZEFF_spl%fspl(1,1,1,1),ZEFF_spl%n1,ZEFF_spl%n2,ZEFF_spl%n3)
+                            ZEFF4D(1,1,1,1),nr,nphi,nz)
             zefflocal(l) = fval(1)
          END DO
          tilocal = tilocal*1D-3
@@ -410,18 +480,34 @@ MODULE beams3d_physics_mod
          cum_prob = one
          dt_local = SQRT(SUM((qe-qs)*(qe-qs)))/((num_depo-1)*q(4))
          tau_inv = EXP(-dt_local*tau_inv)
-         DO i = 2, num_depo-1
-            cum_prob = cum_prob*tau_inv(i)
+         DO l = 2, num_depo-1
+            cum_prob = cum_prob*tau_inv(l)
             IF (cum_prob < rand_prob) EXIT
          END DO
-         qf = qs + myv_neut*dt_local*(i-1)
-         t  =  t + dt_local*(i-1)
+         qf = qs + myv_neut*dt_local*(l-1)
+         t  =  t + dt_local*(l-1)
          q(1) = SQRT(qf(1)*qf(1)+qf(2)*qf(2))
          q(2) = ATAN2(qf(2),qf(1))
          q(3) = qf(3)
-         IF (i < num_depo-1) THEN
+         IF (l < num_depo-1) THEN
+            i = MAX(COUNT(raxis < rlocal(l)),1)
+            j = MAX(COUNT(phiaxis < plocal(l)),1)
+            k = MAX(COUNT(zaxis < zlocal(l)),1)
+            hx     = raxis(i+1) - raxis(i)
+            hy     = phiaxis(j+1) - phiaxis(j)
+            hz     = zaxis(k+1) - zaxis(k)
+            hxi    = one / hx
+            hyi    = one / hy
+            hzi    = one / hz
+            xparam = (raxis(i+1) - rlocal(l)) * hxi
+            yparam = (phiaxis(j+1) - plocal(l)) * hyi
+            zparam = (zaxis(k+1) - zlocal(l)) * hzi
             s_temp =1.5
-            CALL EZspline_interp(S_spl,rlocal(i),plocal(i),zlocal(i),s_temp,ier)
+            !CALL EZspline_interp(S_spl,rlocal(l),plocal(l),zlocal(l),s_temp,ier)
+            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                            hx,hxi,hy,hyi,hz,hzi,&
+                            S4D(1,1,1,1),nr,nphi,nz)
+            s_temp = fval(1)
             lneut=.false.
             RETURN
          END IF
