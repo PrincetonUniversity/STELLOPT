@@ -608,7 +608,6 @@
          CALL MPI_WIN_FREE(win_invdenom,istat)
          CALL MPI_WIN_FENCE(0,win_ihit,istat)
          CALL MPI_WIN_FREE(win_ihit,istat)
-         IF (ASSOCIATED(vertex)) PRINT *,'ASSOCATED'
          IF (ASSOCIATED(vertex)) NULLIFY(vertex)
          IF (ASSOCIATED(face)) NULLIFY(face)
          IF (ASSOCIATED(PHI)) NULLIFY(PHI)
