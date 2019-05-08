@@ -46,7 +46,7 @@ MODULE MPI_SHARMEM
       INTEGER, INTENT(in) :: n1
       INTEGER, INTENT(in) :: subid
       INTEGER, INTENT(in) :: mymaster
-      INTEGER, INTENT(inout) :: share_comm
+      INTEGER, INTENT(in) :: share_comm
       INTEGER, INTENT(inout) :: win
       ! Variables
       INTEGER :: disp_unit, ier
@@ -77,7 +77,7 @@ MODULE MPI_SHARMEM
       INTEGER, INTENT(in) :: n1
       INTEGER, INTENT(in) :: subid
       INTEGER, INTENT(in) :: mymaster
-      INTEGER, INTENT(inout) :: share_comm
+      INTEGER, INTENT(in) :: share_comm
       INTEGER, INTENT(inout) :: win
       ! Variables
       INTEGER :: disp_unit, ier
@@ -108,7 +108,7 @@ MODULE MPI_SHARMEM
       INTEGER, INTENT(in) :: n1
       INTEGER, INTENT(in) :: subid
       INTEGER, INTENT(in) :: mymaster
-      INTEGER, INTENT(inout) :: share_comm
+      INTEGER, INTENT(in) :: share_comm
       INTEGER, INTENT(inout) :: win
       ! Variables
       INTEGER :: disp_unit, ier
@@ -139,7 +139,7 @@ MODULE MPI_SHARMEM
       INTEGER, INTENT(in) :: n1
       INTEGER, INTENT(in) :: subid
       INTEGER, INTENT(in) :: mymaster
-      INTEGER, INTENT(inout) :: share_comm
+      INTEGER, INTENT(in) :: share_comm
       INTEGER, INTENT(inout) :: win
       ! Variables
       INTEGER :: disp_unit, ier
@@ -171,7 +171,7 @@ MODULE MPI_SHARMEM
       INTEGER, INTENT(in) :: n2
       INTEGER, INTENT(in) :: subid
       INTEGER, INTENT(in) :: mymaster
-      INTEGER, INTENT(inout) :: share_comm
+      INTEGER, INTENT(in) :: share_comm
       INTEGER, INTENT(inout) :: win
       ! Variables
       INTEGER :: disp_unit, ier
@@ -204,7 +204,7 @@ MODULE MPI_SHARMEM
       INTEGER, INTENT(in) :: n2
       INTEGER, INTENT(in) :: subid
       INTEGER, INTENT(in) :: mymaster
-      INTEGER, INTENT(inout) :: share_comm
+      INTEGER, INTENT(in) :: share_comm
       INTEGER, INTENT(inout) :: win
       ! Variables
       INTEGER :: disp_unit, ier
@@ -237,7 +237,7 @@ MODULE MPI_SHARMEM
       INTEGER, INTENT(in) :: n2
       INTEGER, INTENT(in) :: subid
       INTEGER, INTENT(in) :: mymaster
-      INTEGER, INTENT(inout) :: share_comm
+      INTEGER, INTENT(in) :: share_comm
       INTEGER, INTENT(inout) :: win
       ! Variables
       INTEGER :: disp_unit, ier
@@ -270,7 +270,7 @@ MODULE MPI_SHARMEM
       INTEGER, INTENT(in) :: n2
       INTEGER, INTENT(in) :: subid
       INTEGER, INTENT(in) :: mymaster
-      INTEGER, INTENT(inout) :: share_comm
+      INTEGER, INTENT(in) :: share_comm
       INTEGER, INTENT(inout) :: win
       ! Variables
       INTEGER :: disp_unit, ier
@@ -304,7 +304,7 @@ MODULE MPI_SHARMEM
       INTEGER, INTENT(in) :: n3
       INTEGER, INTENT(in) :: subid
       INTEGER, INTENT(in) :: mymaster
-      INTEGER, INTENT(inout) :: share_comm
+      INTEGER, INTENT(in) :: share_comm
       INTEGER, INTENT(inout) :: win
       ! Variables
       INTEGER :: disp_unit, ier
@@ -339,7 +339,7 @@ MODULE MPI_SHARMEM
       INTEGER, INTENT(in) :: n3
       INTEGER, INTENT(in) :: subid
       INTEGER, INTENT(in) :: mymaster
-      INTEGER, INTENT(inout) :: share_comm
+      INTEGER, INTENT(in) :: share_comm
       INTEGER, INTENT(inout) :: win
       ! Variables
       INTEGER :: disp_unit, ier
@@ -374,7 +374,7 @@ MODULE MPI_SHARMEM
       INTEGER, INTENT(in) :: n3
       INTEGER, INTENT(in) :: subid
       INTEGER, INTENT(in) :: mymaster
-      INTEGER, INTENT(inout) :: share_comm
+      INTEGER, INTENT(in) :: share_comm
       INTEGER, INTENT(inout) :: win
       ! Variables
       INTEGER :: disp_unit, ier
@@ -409,7 +409,7 @@ MODULE MPI_SHARMEM
       INTEGER, INTENT(in) :: n3
       INTEGER, INTENT(in) :: subid
       INTEGER, INTENT(in) :: mymaster
-      INTEGER, INTENT(inout) :: share_comm
+      INTEGER, INTENT(in) :: share_comm
       INTEGER, INTENT(inout) :: win
       ! Variables
       INTEGER :: disp_unit, ier
@@ -445,7 +445,7 @@ MODULE MPI_SHARMEM
       INTEGER, INTENT(in) :: n4
       INTEGER, INTENT(in) :: subid
       INTEGER, INTENT(in) :: mymaster
-      INTEGER, INTENT(inout) :: share_comm
+      INTEGER, INTENT(in) :: share_comm
       INTEGER, INTENT(inout) :: win
       ! Variables
       INTEGER :: disp_unit, ier
@@ -482,7 +482,7 @@ MODULE MPI_SHARMEM
       INTEGER, INTENT(in) :: n4
       INTEGER, INTENT(in) :: subid
       INTEGER, INTENT(in) :: mymaster
-      INTEGER, INTENT(inout) :: share_comm
+      INTEGER, INTENT(in) :: share_comm
       INTEGER, INTENT(inout) :: win
       ! Variables
       INTEGER :: disp_unit, ier
@@ -519,7 +519,7 @@ MODULE MPI_SHARMEM
       INTEGER, INTENT(in) :: n4
       INTEGER, INTENT(in) :: subid
       INTEGER, INTENT(in) :: mymaster
-      INTEGER, INTENT(inout) :: share_comm
+      INTEGER, INTENT(in) :: share_comm
       INTEGER, INTENT(inout) :: win
       ! Variables
       INTEGER :: disp_unit, ier
@@ -556,7 +556,7 @@ MODULE MPI_SHARMEM
       INTEGER, INTENT(in) :: n4
       INTEGER, INTENT(in) :: subid
       INTEGER, INTENT(in) :: mymaster
-      INTEGER, INTENT(inout) :: share_comm
+      INTEGER, INTENT(in) :: share_comm
       INTEGER, INTENT(inout) :: win
       ! Variables
       INTEGER :: disp_unit, ier

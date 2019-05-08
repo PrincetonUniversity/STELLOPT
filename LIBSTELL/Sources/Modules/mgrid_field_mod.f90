@@ -64,13 +64,13 @@
       mgrid_filename=TRIM(filename)
       nv_temp = nv
       nfp_temp = nfp
-      IF (.not.ALLOCATED(bvac)) THEN
+      IF (.not.ASSOCIATED(bvac)) THEN
 !      IF (ithread == local_master) THEN
          CALL read_mgrid(TRIM(mgrid_filename),extcur,nv_temp,nfp_temp,lbug,istat,MPI_COMM_SELF)
          nv_temp = np0b
          nfp_temp = nfper0
          IF (istat == 9) THEN
-            IF (ALLOCATED(curlabel)) DEALLOCATE(curlabel)
+            IF (ASSOCIATED(curlabel)) DEALLOCATE(curlabel)
             mgrid_path_old = " "
             nv_temp  = np0b
             nfp_temp = nfper0
@@ -206,7 +206,7 @@
       CALL EZspline_free(bphim_spl,istat)
       CALL EZspline_free(bzm_spl,istat)
       CALL free_mgrid(istat)
-      IF (ALLOCATED(curlabel)) DEALLOCATE(curlabel)
+      IF (ASSOCIATED(curlabel)) DEALLOCATE(curlabel)
       mgrid_path_old = " "
       END SUBROUTINE
       
