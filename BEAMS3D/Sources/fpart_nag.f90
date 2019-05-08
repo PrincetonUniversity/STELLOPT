@@ -77,12 +77,9 @@
           (z_temp >= zmin-eps3) .and. (z_temp <= zmax+eps3)) THEN
 !      IF (ier == 0) THEN
          ! Get the gridpoint info
-         i = COUNT(raxis < r_temp)
-         j = COUNT(phiaxis < phi_temp)
-         k = COUNT(zaxis < z_temp)
-         IF (i==0) i=1
-         IF (j==0) j=1
-         IF (k==0) k=1
+         i = MIN(MAX(COUNT(raxis < r_temp),1),nr-1)
+         j = MIN(MAX(COUNT(phiaxis < phi_temp),1),nphi-1)
+         k = MIN(MAX(COUNT(zaxis < z_temp),1),nz-1)
          hx     = raxis(i+1) - raxis(i)
          hy     = phiaxis(j+1) - phiaxis(j)
          hz     = zaxis(k+1) - zaxis(k)

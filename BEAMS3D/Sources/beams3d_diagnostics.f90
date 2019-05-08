@@ -113,6 +113,7 @@
       ddist = dist/ndist
       sbeam = MINVAL(beam(mystart:myend), DIM=1)
       ebeam = MAXVAL(beam(mystart:myend), DIM=1)
+      IF (myworkid==master) PRINT *,dist,ddist,sbeam,ebeam
       DO k = 1, ndist
          v1 = mindist+(k-1)*ddist
          v2 = mindist+(k)*ddist

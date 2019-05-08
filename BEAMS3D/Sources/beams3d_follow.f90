@@ -51,6 +51,7 @@ SUBROUTINE beams3d_follow
     INTEGER :: status(MPI_STATUS_size) !mpi stuff
     INTEGER :: mystart, mypace, i, j, sender
     INTEGER,ALLOCATABLE :: mnum(:), moffsets(:)
+    INTEGER :: MPI_COMM_LOCAL
 !DEC$ ENDIF
     INTEGER :: ier, l, neqs_nag, l2, itol, itask, &
                istate, iopt, lrw, liw, mf, out, iunit
@@ -412,12 +413,14 @@ SUBROUTINE beams3d_follow
 !DEC$ IF DEFINED (MPI_OPT)
     ier = 0
     IF (ASSOCIATED(ihit_array)) THEN
-      IF (myworkid == master) THEN
-!         CALL MPI_REDUCE(MPI_IN_PLACE,ihit_array,nface,MPI_INTEGER,MPI_SUM,master,MPI_COMM_BEAMS,ierr_mpi)
-      ELSE
-!         CALL MPI_REDUCE(ihit_array,ihit_array,nface,MPI_INTEGER,MPI_SUM,master,MPI_COMM_BEAMS,ierr_mpi)
-!         CALL wall_free(ier,MPI_COMM_SHARMEM)
+      i = MPI_UNDEFINED
+      IF (myid_sharmem == master) i = 0
+      CALL MPI_COMM_SPLIT( MPI_COMM_BEAMS,i,myworkid,MPI_COMM_LOCAL,ierr_mpi)
+      IF (myid_sharmem == master) THEN
+         CALL MPI_ALLREDUCE(MPI_IN_PLACE,ihit_array,nface,MPI_INTEGER,MPI_SUM,MPI_COMM_LOCAL,ierr_mpi)
+         CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)
       END IF
+      CALL MPI_BARRIER(MPI_COMM_BEAMS, ierr_mpi)
     END IF
 !DEC$ ENDIF
 

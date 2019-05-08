@@ -64,12 +64,9 @@ SUBROUTINE out_beams3d_nag(t, q)
     IF ((q(1) >= rmin-eps1) .and. (q(1) <= rmax+eps1) .and. &
         (x0 >= phimin-eps2) .and. (x0 <= phimax+eps2) .and. &
         (q(3) >= zmin-eps3) .and. (q(3) <= zmax+eps3)) THEN
-       i = COUNT(raxis < q(1))
-       j = COUNT(phiaxis < x0)
-       k = COUNT(zaxis < q(3))
-       IF (i==0) i=1
-       IF (j==0) j=1
-       IF (k==0) k=1
+       i = MIN(MAX(COUNT(raxis < q(1)),1),nr-1)
+       j = MIN(MAX(COUNT(phiaxis < x0),1),nphi-1)
+       k = MIN(MAX(COUNT(zaxis < q(3)),1),nz-1)
        hx     = raxis(i+1) - raxis(i)
        hy     = phiaxis(j+1) - phiaxis(j)
        hz     = zaxis(k+1) - zaxis(k)
