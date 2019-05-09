@@ -70,7 +70,7 @@
       END IF
       
       ! Read the mgrid file
-      CALL mgrid_load(mgrid_string,extcur,nextcur,nv_in,nfp_in,ier,myworkid)
+      CALL mgrid_load(mgrid_string,extcur,nextcur,nv_in,nfp_in,ier,myworkid,MPI_COMM_LOCAL)
       IF (lverb) THEN
          CALL mgrid_info(6)
          WRITE(6,'(5X,A,I3.3,A)',ADVANCE='no') 'Vacuum Field Calculation [',0,']%'

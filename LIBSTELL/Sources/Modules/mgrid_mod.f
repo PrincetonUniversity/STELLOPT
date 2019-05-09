@@ -353,14 +353,14 @@ C-----------------------------------------------
       sh(1) = nbvac
       
       IF (mylocalid == 0) THEN
-      DO ig = 1,nextcur
-         IF (lstyle_2000) THEN
-            READ(iunit, iostat=istat) brtemp, bptemp, bztemp
-         ELSE
-            READ(iunit, iostat=istat) (((brtemp(i,j,k), bztemp(i,j,k),
-     1                                   bptemp(i,j,k), i= 1,nr0b), 
-     2                                   j=1,nz0b), k=1,np0b)
-         END IF
+         DO ig = 1,nextcur
+            IF (lstyle_2000) THEN
+               READ(iunit, iostat=istat) brtemp, bptemp, bztemp
+            ELSE
+               READ(iunit, iostat=istat) (((brtemp(i,j,k),
+     1                                   bztemp(i,j,k),bptemp(i,j,k), 
+     2                               i= 1,nr0b),j=1,nz0b), k=1,np0b)
+            END IF
 !
 !        STORE SUMMED BFIELD (OVER COIL GROUPS) IN BVAC
 !         
@@ -368,26 +368,30 @@ C-----------------------------------------------
          !CALL sum_bfield(bvac(1,2), bptemp, extcur(ig), nv)
          !CALL sum_bfield(bvac(1,3), bztemp, extcur(ig), nv)
          
-         bvac(:,1) = bvac(:,1) + extcur(ig) * 
+            bvac(:,1) = bvac(:,1) + extcur(ig) * 
      1               RESHAPE(brtemp(:,:,1:np0b:nskip),sh)
          
-         bvac(:,2) = bvac(:,2) + extcur(ig) * 
+            bvac(:,2) = bvac(:,2) + extcur(ig) * 
      1               RESHAPE(bptemp(:,:,1:np0b:nskip),sh)
          
-         bvac(:,3) = bvac(:,3) + extcur(ig) * 
+            bvac(:,3) = bvac(:,3) + extcur(ig) * 
      1               RESHAPE(bztemp(:,:,1:np0b:nskip),sh)
 
-      END DO
+         END DO
+         CALL FTELL(iunit,ig)
       END IF
 
       IF (PRESENT(comm)) THEN
+         CALL MPI_BCAST(ig,1,MPI_INTEGER,0,comm,istat)
          CALL MPIDEALLOC(brtemp,win_brtemp)
          CALL MPIDEALLOC(bptemp,win_bptemp)
          CALL MPIDEALLOC(bztemp,win_bztemp)
+         IF (mylocalid /= 0) CALL FSEEK(iunit,ig,1)
       ELSE
          DEALLOCATE (brtemp, bztemp, bptemp)
       END IF
-	np0b = nv
+	
+      np0b = nv
 
       CALL assign_bptrs(bvac)
 
@@ -863,12 +867,18 @@ C-----------------------------------------------
 
       END SUBROUTINE assign_bptrs
 
-      SUBROUTINE free_mgrid (istat)
+      SUBROUTINE free_mgrid (istat,comm)
+      USE mpi_sharmem
       INTEGER :: istat 
+      INTEGER, INTENT(in), OPTIONAL :: comm 
      
       istat = 0
 
-      IF (ASSOCIATED(bvac)) DEALLOCATE (bvac,stat=istat)
+      IF (PRESENT(comm)) THEN
+         CALL mpidealloc(bvac,win_bvac)
+      ELSE
+         IF (ASSOCIATED(bvac)) DEALLOCATE (bvac,stat=istat)
+      END IF
       IF (ASSOCIATED(xobser))
      1   DEALLOCATE (xobser, xobsqr, zobser, unpsiext, dsiext,
      2      psiext,plflux, iconnect, needflx, needbfld, plbfld,
