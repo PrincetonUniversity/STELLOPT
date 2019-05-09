@@ -421,6 +421,7 @@ CONTAINS
     INTEGER, INTENT(INOUT)  :: INCOMM
 #if defined(MPI_OPT)
     CALL MPI_Comm_free(INCOMM,MPI_ERR)
+    CALL MPI_Comm_free(RUNVMEC_COMM_SHARMEM,MPI_ERR)
     IF(LIFFREEB) CALL MPI_Comm_free(VAC_COMM,MPI_ERR)
     INCOMM=0; VAC_COMM = 0
     rank = 0; par_ns = 0; nranks = 1 !SAL
