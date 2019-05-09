@@ -41,28 +41,27 @@
 !----------------------------------------------------------------------
       IF (iflag < 0 ) RETURN
       IF (lasym) STOP 'ERROR: Helicity targeting requires lasym = .FALSE.'
-      dex = COUNT(sigma < bigno)*mnboz_b
+      dex = COUNT(sigma < bigno)
       l_heli = NINT(REAL(helicity))
       k_heli = NINT(AIMAG(helicity))
       IF (niter >= 0) THEN   
          ! Get total number of modes for output
          IF (iflag == 1) THEN
-            WRITE(iunit_out,'(A,2(2X,I8))') 'HELICITY_FULL ',dex,7
-            WRITE(iunit_out,'(A)') 'TARGET  SIGMA  VALS  BNORM  K  MBOZ  NBOZ'
+            WRITE(iunit_out,'(A,2(2X,I8))') 'HELICITY_FULL ',dex,5
+            WRITE(iunit_out,'(A)') 'TARGET  SIGMA  VALS  BNORM  K'
             CALL FLUSH(iunit_out)
          END IF
          ! Now calculate chi_sq
+         mtargets = 0
+         vals = 0
+         sigmas = bigno
          DO ik = 1, nsd
             IF (sigma(ik) >= bigno) CYCLE
             bmax  = MAXVAL(ABS(bmnc_b(1:mnboz_b,ik)))
             sj = (real(ik,rprec) - 1.5_dp)/REAL((ns_b-1),rprec)            !!This is correct (SPH)
-            bnorm = 0.0
-            num0 = mtargets + 1
+            mtargets = mtargets + 1
+            num0 = ik
             DO mn = 1, mnboz_b
-               mtargets = mtargets + 1
-               targets(mtargets) = target(ik)
-               vals(mtargets)    = 0
-               sigmas(mtargets)  = bigno
                n = ixn_b(mn)/nfp_b
                m = ixm_b(mn)
                bmn = bmnc_b(mn,ik)
@@ -81,15 +80,22 @@
                ELSE IF (MOD(m,l_heli) == 0) THEN   !!quasi-helical symmetry (lu + kv)
                   IF ((m*k_heli+n*l_heli) == 0) lsym = .TRUE.
                END IF
+               
+               !set normalizing field to b_00 rather than the symmetric modes
+               IF ((n==0) .and. (m==0)) THEN
+                  bnorm = bmn
+               END IF
 
+               !ignore symmetric modes
                IF (lsym) THEN
-                  bnorm = bnorm + bmn*bmn
+               !   bnorm = bnorm + bmn*bmn
                   CYCLE
                END IF
 
-               sigmas(mtargets)  = 1
-               vals(mtargets)    = bmn
+               vals(ik) = vals(ik) + bmn*bmn
             END DO
+            vals(ik) = sqrt(vals(ik))
+            sigmas(mtargets) = 1
 
             bnorm = sqrt(bnorm)
             IF (bnorm == 0.0) bnorm = bmax
@@ -104,15 +110,14 @@
                rad_sigma = sj*sj
             END IF
 
-            vals(num0:mtargets) = vals(num0:mtargets)/bnorm
-            sigmas(num0:mtargets)  = ABS(sigma(ik))*rad_sigma*sigmas(num0:mtargets)
-            
+            vals(ik) = vals(ik)/bnorm
+            sigmas(ik)  = ABS(sigma(ik))
+            targets(ik) = target(ik)
             IF (iflag ==1) THEN
-               DO mn = num0,mtargets
-                  WRITE(iunit_out,'(4ES22.12E3,3(1X,I5))') targets(mn),sigmas(mn),vals(mn),SQRT(bnorm),ik,ixm_b(mn-num0+1),ixn_b(mn-num0+1)/nfp_b
-               END DO
+               WRITE(iunit_out,'(4ES22.12E3,3(1X,I5))') targets(ik),sigmas(ik),vals(ik),bnorm,ik
             END IF
          END DO
+         
       ELSE
          ! Consistency check
          mboz = MAX(6*mpol, 2, mboz)             
@@ -122,13 +127,12 @@
          DO ik = 1, nsd
             IF (sigma(ik) < bigno) THEN
                lbooz(ik) = .TRUE.
-               DO mn = 1, mnboz_b
-                  mtargets = mtargets + 1
-                  IF (niter == -2) target_dex(mtargets) = jtarget_helicity
-               END DO
+               mtargets = mtargets + 1
+               IF (niter == -2) target_dex(mtargets) = jtarget_helicity
             END IF
          END DO
       END IF
+
       RETURN
 !----------------------------------------------------------------------
 !     END SUBROUTINE
