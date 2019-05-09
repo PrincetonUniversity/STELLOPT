@@ -14,7 +14,7 @@
 #######################################################################
 #            Define Compiler Flags
 #######################################################################
-  FLAGS_R = -fPIC -O3 -fexternal-blas
+  FLAGS_R = --O3 -fexternal-blas
   FLAGS_D = -g -O0 -fexternal-blas -fbacktrace -fcheck=all 
   LIBS    = -lscalapack -lopenblas
 
