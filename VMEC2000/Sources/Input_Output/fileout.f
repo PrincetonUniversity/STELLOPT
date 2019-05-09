@@ -110,6 +110,7 @@ C-----------------------------------------------
       IF (grank .EQ. 0) THEN
          CALL fileout(iseq, ictrl_flag, ier_flag, lscreen) 
       ENDIF
+      CALL free_persistent_mem ! MOVED HERE SO ALL CALL IT
 !      CALL MPI_Barrier(NS_COMM, MPI_ERR) !SAL
       CALL second0(tfileoff)
       fileout_time = fileout_time + (tfileoff-tfileon)
@@ -339,7 +340,7 @@ C-----------------------------------------------
       CALL free_mem_funct3d
       CALL free_mem_ns (lreset_xc)
       CALL free_mem_nunv
-      CALL free_persistent_mem
+!      CALL free_persistent_mem
 
       CALL close_all_files
 
