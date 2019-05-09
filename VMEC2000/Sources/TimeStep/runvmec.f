@@ -236,9 +236,9 @@ C-----------------------------------------------
       imovephi = 0
       jacob_off = 0
 
-      IF(lfreeb) CALL SetVacuumCommunicator(nuv, nuv3, max_grid_size) !Moved here by JAB
-
       IF (IAND(ictrl_flag, timestep_flag) == 0) GOTO 1000
+
+      IF(lfreeb) CALL SetVacuumCommunicator(nuv, nuv3, max_grid_size) !Moved here by SAL
 
   50  CONTINUE
       iequi = 0
