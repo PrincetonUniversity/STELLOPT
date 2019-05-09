@@ -50,6 +50,7 @@
       CONTAINS
       
       SUBROUTINE mgrid_load(filename,extcur,ncur,nv,nfp,istat,ithread,comm)
+      USE mpi_sharmem
       IMPLICIT NONE
       CHARACTER(LEN=*), INTENT(in) :: filename
       INTEGER, INTENT(inout)        :: ncur, nv, nfp
@@ -252,6 +253,7 @@
       END SUBROUTINE mgrid_bcyl
       
       SUBROUTINE mgrid_free(istat,comm)
+      USE mpi_sharmem
       IMPLICIT NONE
       INTEGER, INTENT(out) :: istat
       INTEGER, INTENT(in), OPTIONAL :: comm

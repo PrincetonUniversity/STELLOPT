@@ -146,7 +146,7 @@
       END DO
       
       ! Free Variables (put this here to make room)
-      CALL mgrid_free(ier)
+      CALL mgrid_free(ier,MPI_COMM_LOCAL)
       
       ! Clean up the progress bar
       IF (lverb) THEN
@@ -159,20 +159,6 @@
       ! Now recompose the array and send to everyone.
 !DEC$ IF DEFINED (MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
-      
-      ! Send Data
-!      CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
-!                        B_R,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
-!                        MPI_COMM_LOCAL,ierr_mpi)
-!      CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
-!                        B_PHI,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
-!                        MPI_COMM_LOCAL,ierr_mpi)
-!      CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
-!                        B_Z,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
-!                        MPI_COMM_LOCAL,ierr_mpi)
-!      DEALLOCATE(mnum)
-!      DEALLOCATE(moffsets)
-
       CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)
       CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
       IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'beams3d_init_mgrid',ierr_mpi)

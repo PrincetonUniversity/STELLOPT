@@ -44,7 +44,7 @@ SUBROUTINE out_beams3d_nag(t, q)
     ! For splines
     INTEGER :: i,j,k
     REAL*8 :: xparam, yparam, zparam, hx, hy, hz, hxi, hyi, hzi
-    REAL*8 :: fval(4)
+    REAL*8 :: fval(1)
     INTEGER, parameter :: ict(8)=(/1,0,0,0,0,0,0,0/)
     REAL*8, PARAMETER :: one = 1
     !-----------------------------------------------------------------------
@@ -79,7 +79,8 @@ SUBROUTINE out_beams3d_nag(t, q)
        CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                        hx,hxi,hy,hyi,hz,hzi,&
                        S4D(1,1,1,1),nr,nphi,nz)
-       S_lines(mytdex, myline) = fval(1)
+       y0 = fval(1)
+       S_lines(mytdex, myline) = y0 
        CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                        hx,hxi,hy,hyi,hz,hzi,&
                        U4D(1,1,1,1),nr,nphi,nz)
