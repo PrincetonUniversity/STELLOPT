@@ -631,7 +631,7 @@ C-----------------------------------------------
       INTEGER :: nskip, sh(1)
 #if defined(MPI_OPT)
       INTEGER :: mpi_rank, mpi_size, lMPIInit, MPI_ERR
-      INTEGER :: mylocalid, temp_comm,
+      INTEGER :: mylocalid, temp_comm, temp_rank, temp_size,
      1           win_brtemp, win_bptemp, win_bztemp
 
       CALL MPI_INITIALIZED(lMPIInit, MPI_ERR)
@@ -738,20 +738,35 @@ C-----------------------------------------------
 
       nskip = np0b/nv
       sh(1) = nbvac
+
+     
+#if defined(MPI_OPT)
+      ! Setup a sub-communicator between shared memory masters
+      ig = MPI_UNDEFINED
+      IF (mylocalid == 0) ig = 0
+      CALL MPI_COMM_SPLIT( comm,ig,mylocalid,temp_comm,istat)
+      IF (mylocalid == 0) THEN
+         CALL MPI_COMM_RANK(temp_comm, temp_rank, istat)
+         CALL MPI_COMM_SIZE(temp_comm, temp_size, istat)
+      END IF
+#endif
+
+      ! Only the master process on each shared memory communicator reads
       IF (mylocalid == 0) THEN
 #if defined(MPI_OPT)
-      DO ig = mpi_rank + 1, nextcur, mpi_size
+!         DO ig = mpi_rank + 1, nextcur, mpi_size
+         DO ig = temp_rank + 1, nextcur, temp_size
 #else
-      DO ig = 1, nextcur
+         DO ig = 1, nextcur
 #endif
-         WRITE (temp, 1000) vn_br0, ig
-         CALL cdf_read(ngrid, temp, brtemp)
+            WRITE (temp, 1000) vn_br0, ig
+            CALL cdf_read(ngrid, temp, brtemp)
 
-         WRITE (temp, 1000) vn_bp0, ig
-         CALL cdf_read(ngrid, temp, bptemp)
+            WRITE (temp, 1000) vn_bp0, ig
+            CALL cdf_read(ngrid, temp, bptemp)
 
-         WRITE (temp, 1000) vn_bz0, ig
-         CALL cdf_read(ngrid, temp, bztemp)
+            WRITE (temp, 1000) vn_bz0, ig
+            CALL cdf_read(ngrid, temp, bztemp)
 
 !
 !        STORE SUMMED BFIELD (OVER COIL GROUPS) IN BVAC
@@ -760,23 +775,20 @@ C-----------------------------------------------
          !CALL sum_bfield(bvac(1,2), bptemp, extcur(ig), nv)
          !CALL sum_bfield(bvac(1,3), bztemp, extcur(ig), nv)
          
-         bvac(:,1) = bvac(:,1) + extcur(ig) * 
-     1               RESHAPE(brtemp(:,:,1:np0b:nskip),sh)
+            bvac(:,1) = bvac(:,1) + extcur(ig) * 
+     1                  RESHAPE(brtemp(:,:,1:np0b:nskip),sh)
          
-         bvac(:,2) = bvac(:,2) + extcur(ig) * 
-     1               RESHAPE(bptemp(:,:,1:np0b:nskip),sh)
+            bvac(:,2) = bvac(:,2) + extcur(ig) * 
+     1                  RESHAPE(bptemp(:,:,1:np0b:nskip),sh)
          
-         bvac(:,3) = bvac(:,3) + extcur(ig) * 
-     1               RESHAPE(bztemp(:,:,1:np0b:nskip),sh)
-      END DO
+            bvac(:,3) = bvac(:,3) + extcur(ig) * 
+     1                  RESHAPE(bztemp(:,:,1:np0b:nskip),sh)
+         END DO
       END IF
 	np0b = nv
 
 #if defined(MPI_OPT)
       IF (lMPIInit.NE.0) THEN
-         ig = MPI_UNDEFINED
-         IF (mylocalid == 0) ig = 0
-         CALL MPI_COMM_SPLIT( comm,ig,mylocalid,temp_comm,istat)
          IF (mylocalid == 0) THEN
             CALL MPI_ALLREDUCE(MPI_IN_PLACE, bvac, SIZE(bvac), 
      1                         MPI_REAL8, MPI_SUM, temp_comm, istat)
