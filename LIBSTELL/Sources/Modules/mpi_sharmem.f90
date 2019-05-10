@@ -19,6 +19,7 @@ MODULE MPI_SHARMEM
 !         mpialloc:       Allocate a 1D/2D/3D array (logical/integer/real/double)
 !         mpidealloc:     Deallocate a 1D/2D/3D array (logical/integer/real/double)
 !-----------------------------------------------------------------------
+#if defined(MPI_OPT)
    INTERFACE mpialloc
       MODULE PROCEDURE mpialloc_1d_boo, mpialloc_1d_int, mpialloc_1d_sgl, mpialloc_1d_dbl, &
                        mpialloc_2d_boo, mpialloc_2d_int, mpialloc_2d_sgl, mpialloc_2d_dbl, &
@@ -36,9 +37,7 @@ MODULE MPI_SHARMEM
 
       SUBROUTINE mpialloc_1d_boo(array,n1,subid,mymaster,share_comm,win)
       ! Libraries
-!DEC$ IF DEFINED (MPI_OPT)
       USE MPI
-!DEC$ ENDIF
       USE ISO_C_BINDING
       IMPLICIT NONE
       ! Arguments
@@ -67,9 +66,7 @@ MODULE MPI_SHARMEM
 
       SUBROUTINE mpialloc_1d_int(array,n1,subid,mymaster,share_comm,win)
       ! Libraries
-!DEC$ IF DEFINED (MPI_OPT)
       USE MPI
-!DEC$ ENDIF
       USE ISO_C_BINDING
       IMPLICIT NONE
       ! Arguments
@@ -98,9 +95,7 @@ MODULE MPI_SHARMEM
 
       SUBROUTINE mpialloc_1d_sgl(array,n1,subid,mymaster,share_comm,win)
       ! Libraries
-!DEC$ IF DEFINED (MPI_OPT)
       USE MPI
-!DEC$ ENDIF
       USE ISO_C_BINDING
       IMPLICIT NONE
       ! Arguments
@@ -129,9 +124,7 @@ MODULE MPI_SHARMEM
 
       SUBROUTINE mpialloc_1d_dbl(array,n1,subid,mymaster,share_comm,win)
       ! Libraries
-!DEC$ IF DEFINED (MPI_OPT)
       USE MPI
-!DEC$ ENDIF
       USE ISO_C_BINDING
       IMPLICIT NONE
       ! Arguments
@@ -160,9 +153,7 @@ MODULE MPI_SHARMEM
 
       SUBROUTINE mpialloc_2d_boo(array,n1,n2,subid,mymaster,share_comm,win)
       ! Libraries
-!DEC$ IF DEFINED (MPI_OPT)
       USE MPI
-!DEC$ ENDIF
       USE ISO_C_BINDING
       IMPLICIT NONE
       ! Arguments
@@ -193,9 +184,7 @@ MODULE MPI_SHARMEM
 
       SUBROUTINE mpialloc_2d_int(array,n1,n2,subid,mymaster,share_comm,win)
       ! Libraries
-!DEC$ IF DEFINED (MPI_OPT)
       USE MPI
-!DEC$ ENDIF
       USE ISO_C_BINDING
       IMPLICIT NONE
       ! Arguments
@@ -226,9 +215,7 @@ MODULE MPI_SHARMEM
 
       SUBROUTINE mpialloc_2d_sgl(array,n1,n2,subid,mymaster,share_comm,win)
       ! Libraries
-!DEC$ IF DEFINED (MPI_OPT)
       USE MPI
-!DEC$ ENDIF
       USE ISO_C_BINDING
       IMPLICIT NONE
       ! Arguments
@@ -259,9 +246,7 @@ MODULE MPI_SHARMEM
 
       SUBROUTINE mpialloc_2d_dbl(array,n1,n2,subid,mymaster,share_comm,win)
       ! Libraries
-!DEC$ IF DEFINED (MPI_OPT)
       USE MPI
-!DEC$ ENDIF
       USE ISO_C_BINDING
       IMPLICIT NONE
       ! Arguments
@@ -292,9 +277,7 @@ MODULE MPI_SHARMEM
 
       SUBROUTINE mpialloc_3d_boo(array,n1,n2,n3,subid,mymaster,share_comm,win)
       ! Libraries
-!DEC$ IF DEFINED (MPI_OPT)
       USE MPI
-!DEC$ ENDIF
       USE ISO_C_BINDING
       IMPLICIT NONE
       ! Arguments
@@ -327,9 +310,7 @@ MODULE MPI_SHARMEM
 
       SUBROUTINE mpialloc_3d_int(array,n1,n2,n3,subid,mymaster,share_comm,win)
       ! Libraries
-!DEC$ IF DEFINED (MPI_OPT)
       USE MPI
-!DEC$ ENDIF
       USE ISO_C_BINDING
       IMPLICIT NONE
       ! Arguments
@@ -362,9 +343,7 @@ MODULE MPI_SHARMEM
 
       SUBROUTINE mpialloc_3d_sgl(array,n1,n2,n3,subid,mymaster,share_comm,win)
       ! Libraries
-!DEC$ IF DEFINED (MPI_OPT)
       USE MPI
-!DEC$ ENDIF
       USE ISO_C_BINDING
       IMPLICIT NONE
       ! Arguments
@@ -432,9 +411,7 @@ MODULE MPI_SHARMEM
 
       SUBROUTINE mpialloc_4d_boo(array,n1,n2,n3,n4,subid,mymaster,share_comm,win)
       ! Libraries
-!DEC$ IF DEFINED (MPI_OPT)
       USE MPI
-!DEC$ ENDIF
       USE ISO_C_BINDING
       IMPLICIT NONE
       ! Arguments
@@ -469,9 +446,7 @@ MODULE MPI_SHARMEM
 
       SUBROUTINE mpialloc_4d_int(array,n1,n2,n3,n4,subid,mymaster,share_comm,win)
       ! Libraries
-!DEC$ IF DEFINED (MPI_OPT)
       USE MPI
-!DEC$ ENDIF
       USE ISO_C_BINDING
       IMPLICIT NONE
       ! Arguments
@@ -506,9 +481,7 @@ MODULE MPI_SHARMEM
 
       SUBROUTINE mpialloc_4d_sgl(array,n1,n2,n3,n4,subid,mymaster,share_comm,win)
       ! Libraries
-!DEC$ IF DEFINED (MPI_OPT)
       USE MPI
-!DEC$ ENDIF
       USE ISO_C_BINDING
       IMPLICIT NONE
       ! Arguments
@@ -543,9 +516,7 @@ MODULE MPI_SHARMEM
 
       SUBROUTINE mpialloc_4d_dbl(array,n1,n2,n3,n4,subid,mymaster,share_comm,win)
       ! Libraries
-!DEC$ IF DEFINED (MPI_OPT)
       USE MPI
-!DEC$ ENDIF
       USE ISO_C_BINDING
       IMPLICIT NONE
       ! Arguments
@@ -580,9 +551,7 @@ MODULE MPI_SHARMEM
 
       SUBROUTINE mpidealloc_1d_boo(array,win)
       ! Libraries
-!DEC$ IF DEFINED (MPI_OPT)
       USE MPI
-!DEC$ ENDIF
       IMPLICIT NONE
       ! Arguments
       LOGICAL, POINTER, INTENT(inout) :: array(:)
@@ -596,9 +565,7 @@ MODULE MPI_SHARMEM
 
       SUBROUTINE mpidealloc_1d_int(array,win)
       ! Libraries
-!DEC$ IF DEFINED (MPI_OPT)
       USE MPI
-!DEC$ ENDIF
       IMPLICIT NONE
       ! Arguments
       INTEGER, POINTER, INTENT(inout) :: array(:)
@@ -612,9 +579,7 @@ MODULE MPI_SHARMEM
 
       SUBROUTINE mpidealloc_1d_sgl(array,win)
       ! Libraries
-!DEC$ IF DEFINED (MPI_OPT)
       USE MPI
-!DEC$ ENDIF
       IMPLICIT NONE
       ! Arguments
       REAL, POINTER, INTENT(inout) :: array(:)
@@ -628,9 +593,7 @@ MODULE MPI_SHARMEM
 
       SUBROUTINE mpidealloc_1d_dbl(array,win)
       ! Libraries
-!DEC$ IF DEFINED (MPI_OPT)
       USE MPI
-!DEC$ ENDIF
       IMPLICIT NONE
       ! Arguments
       DOUBLE PRECISION, POINTER, INTENT(inout) :: array(:)
@@ -644,9 +607,7 @@ MODULE MPI_SHARMEM
 
       SUBROUTINE mpidealloc_2d_boo(array,win)
       ! Libraries
-!DEC$ IF DEFINED (MPI_OPT)
       USE MPI
-!DEC$ ENDIF
       IMPLICIT NONE
       ! Arguments
       LOGICAL, POINTER, INTENT(inout) :: array(:,:)
@@ -660,9 +621,7 @@ MODULE MPI_SHARMEM
 
       SUBROUTINE mpidealloc_2d_int(array,win)
       ! Libraries
-!DEC$ IF DEFINED (MPI_OPT)
       USE MPI
-!DEC$ ENDIF
       IMPLICIT NONE
       ! Arguments
       INTEGER, POINTER, INTENT(inout) :: array(:,:)
@@ -676,9 +635,7 @@ MODULE MPI_SHARMEM
 
       SUBROUTINE mpidealloc_2d_sgl(array,win)
       ! Libraries
-!DEC$ IF DEFINED (MPI_OPT)
       USE MPI
-!DEC$ ENDIF
       IMPLICIT NONE
       ! Arguments
       REAL, POINTER, INTENT(inout) :: array(:,:)
@@ -692,9 +649,7 @@ MODULE MPI_SHARMEM
 
       SUBROUTINE mpidealloc_2d_dbl(array,win)
       ! Libraries
-!DEC$ IF DEFINED (MPI_OPT)
       USE MPI
-!DEC$ ENDIF
       IMPLICIT NONE
       ! Arguments
       DOUBLE PRECISION, POINTER, INTENT(inout) :: array(:,:)
@@ -708,9 +663,7 @@ MODULE MPI_SHARMEM
 
       SUBROUTINE mpidealloc_3d_boo(array,win)
       ! Libraries
-!DEC$ IF DEFINED (MPI_OPT)
       USE MPI
-!DEC$ ENDIF
       IMPLICIT NONE
       ! Arguments
       LOGICAL, POINTER, INTENT(inout) :: array(:,:,:)
@@ -724,9 +677,7 @@ MODULE MPI_SHARMEM
 
       SUBROUTINE mpidealloc_3d_int(array,win)
       ! Libraries
-!DEC$ IF DEFINED (MPI_OPT)
       USE MPI
-!DEC$ ENDIF
       IMPLICIT NONE
       ! Arguments
       INTEGER, POINTER, INTENT(inout) :: array(:,:,:)
@@ -740,9 +691,7 @@ MODULE MPI_SHARMEM
 
       SUBROUTINE mpidealloc_3d_sgl(array,win)
       ! Libraries
-!DEC$ IF DEFINED (MPI_OPT)
       USE MPI
-!DEC$ ENDIF
       IMPLICIT NONE
       ! Arguments
       REAL, POINTER, INTENT(inout) :: array(:,:,:)
@@ -756,9 +705,7 @@ MODULE MPI_SHARMEM
 
       SUBROUTINE mpidealloc_3d_dbl(array,win)
       ! Libraries
-!DEC$ IF DEFINED (MPI_OPT)
       USE MPI
-!DEC$ ENDIF
       IMPLICIT NONE
       ! Arguments
       DOUBLE PRECISION, POINTER, INTENT(inout) :: array(:,:,:)
@@ -772,9 +719,7 @@ MODULE MPI_SHARMEM
 
       SUBROUTINE mpidealloc_4d_boo(array,win)
       ! Libraries
-!DEC$ IF DEFINED (MPI_OPT)
       USE MPI
-!DEC$ ENDIF
       IMPLICIT NONE
       ! Arguments
       LOGICAL, POINTER, INTENT(inout) :: array(:,:,:,:)
@@ -788,9 +733,7 @@ MODULE MPI_SHARMEM
 
       SUBROUTINE mpidealloc_4d_int(array,win)
       ! Libraries
-!DEC$ IF DEFINED (MPI_OPT)
       USE MPI
-!DEC$ ENDIF
       IMPLICIT NONE
       ! Arguments
       INTEGER, POINTER, INTENT(inout) :: array(:,:,:,:)
@@ -804,9 +747,7 @@ MODULE MPI_SHARMEM
 
       SUBROUTINE mpidealloc_4d_sgl(array,win)
       ! Libraries
-!DEC$ IF DEFINED (MPI_OPT)
       USE MPI
-!DEC$ ENDIF
       IMPLICIT NONE
       ! Arguments
       REAL, POINTER, INTENT(inout) :: array(:,:,:,:)
@@ -820,9 +761,7 @@ MODULE MPI_SHARMEM
 
       SUBROUTINE mpidealloc_4d_dbl(array,win)
       ! Libraries
-!DEC$ IF DEFINED (MPI_OPT)
       USE MPI
-!DEC$ ENDIF
       IMPLICIT NONE
       ! Arguments
       DOUBLE PRECISION, POINTER, INTENT(inout) :: array(:,:,:,:)
@@ -833,5 +772,6 @@ MODULE MPI_SHARMEM
       IF (ASSOCIATED(array)) NULLIFY(array)
       RETURN
       END SUBROUTINE mpidealloc_4d_dbl
+#endif
    
 END MODULE MPI_SHARMEM
