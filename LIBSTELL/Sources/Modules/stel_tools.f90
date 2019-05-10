@@ -97,7 +97,7 @@
 !-----------------------------------------------------------------------
 !     Private Subroutines
 !-----------------------------------------------------------------------
-      PRIVATE :: mntouv
+      PRIVATE :: mntouv, isingrid, lookupgrid1d, lookupgrid3d
 !-----------------------------------------------------------------------
 !     INTERFACE Modules
 !-----------------------------------------------------------------------
@@ -721,11 +721,11 @@
          CALL lookupgrid3d(x(2),PHI_Target,one,i,j,k,hx,hy,hz,hxi,hyi,hzi,xparam,yparam,zparam)
          CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
                          hx, hxi, hy, hyi, hz, hzi, &
-                         R4D, nx1, nx2, nx3)
+                         R4D(1,1,1,1), nx1, nx2, nx3)
          R_temp = fval(1); R_grad(1:3) = fval(2:4)
          CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
                          hx, hxi, hy, hyi, hz, hzi, &
-                         Z4D, nx1, nx2, nx3)
+                         Z4D(1,1,1,1), nx1, nx2, nx3)
          Z_temp = fval(1); Z_grad(1:3) = fval(2:4)
          IF (iflag == 1) THEN
             R_temp = R_temp + R_grad(3)*(x(1)-one)
@@ -748,11 +748,11 @@
          CALL lookupgrid3d(x(2),PHI_Target,x(1),i,j,k,hx,hy,hz,hxi,hyi,hzi,xparam,yparam,zparam)
          CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
                          hx, hxi, hy, hyi, hz, hzi, &
-                         R4D, nx1, nx2, nx3)
+                         R4D(1,1,1,1), nx1, nx2, nx3)
          R_temp = fval(1)
          CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
                          hx, hxi, hy, hyi, hz, hzi, &
-                         Z4D, nx1, nx2, nx3)
+                         Z4D(1,1,1,1), nx1, nx2, nx3)
          Z_temp = fval(1)
          fvec(1) = (R_temp - R_target)
          fvec(2) = (Z_temp - Z_target)
@@ -762,11 +762,11 @@
          CALL lookupgrid3d(x(2),PHI_Target,x(1),i,j,k,hx,hy,hz,hxi,hyi,hzi,xparam,yparam,zparam)
          CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
                          hx, hxi, hy, hyi, hz, hzi, &
-                         R4D, nx1, nx2, nx3)
+                         R4D(1,1,1,1), nx1, nx2, nx3)
          R_temp = fval(1); R_grad(1:3) = fval(2:4)
          CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
                          hx, hxi, hy, hyi, hz, hzi, &
-                         Z4D, nx1, nx2, nx3)
+                         Z4D(1,1,1,1), nx1, nx2, nx3)
          Z_temp = fval(1); Z_grad(1:3) = fval(2:4)
          fvec(1) = (R_temp - R_target)
          fvec(2) = (Z_temp - Z_target)
@@ -1016,12 +1016,12 @@
          CALL lookupgrid3d(u_val,v_val,rho_val,i,j,k,hx,hy,hz,hxi,hyi,hzi,xparam,yparam,zparam)
          CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
                          hx, hxi, hy, hyi, hz, hzi, &
-                         R4D, nx1, nx2, nx3)
+                         R4D(1,1,1,1), nx1, nx2, nx3)
          R_val = fval(1)
          IF (PRESENT(R_grad)) R_grad = fval(2:4)
          CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
                          hx, hxi, hy, hyi, hz, hzi, &
-                         Z4D, nx1, nx2, nx3)
+                         Z4D(1,1,1,1), nx1, nx2, nx3)
          Z_val = fval(1)
          IF (PRESENT(Z_grad)) Z_grad = fval(2:4)
       ELSE
@@ -1082,7 +1082,7 @@
          CALL lookupgrid3d(u_val,v_val,rho_val,i,j,k,hx,hy,hz,hxi,hyi,hzi,xparam,yparam,zparam)
          CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
                          hx, hxi, hy, hyi, hz, hzi, &
-                         L4D, nx1, nx2, nx3)
+                         L4D(1,1,1,1), nx1, nx2, nx3)
          L_val = fval(1)
          IF (PRESENT(L_grad)) L_grad = fval(2:4)
       ELSE
@@ -1135,11 +1135,11 @@
          !CALL EZspline_interp(grho_spl,rho_val,gradrho,ier)
          !CALL EZspline_interp(grho2_spl,rho_val,gradrho2,ier)
          CALL lookupgrid1d(rho_val,k,hz,hzi,zparam)
-         CALL r8fvspline(ict,1,1,fval,k,zparam,hz,hzi,VP2D,nx3)
+         CALL r8fvspline(ict,1,1,fval,k,zparam,hz,hzi,VP2D(1,1),nx3)
          vp = fval(1);
-         CALL r8fvspline(ict,1,1,fval,k,zparam,hz,hzi,GRHO2D,nx3)
+         CALL r8fvspline(ict,1,1,fval,k,zparam,hz,hzi,GRHO2D(1,1),nx3)
          gradrho = fval(1);
-         CALL r8fvspline(ict,1,1,fval,k,zparam,hz,hzi,GRHO22D,nx3)
+         CALL r8fvspline(ict,1,1,fval,k,zparam,hz,hzi,GRHO22D(1,1),nx3)
          gradrho2 = fval(1);
       ELSE
          ier=-1
@@ -1193,11 +1193,11 @@
          !CALL EZspline_gradient(Z_spl,u_val,v_val,rho_val,Z_grad,ier)
          CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
                          hx, hxi, hy, hyi, hz, hzi, &
-                         R4D, nx1, nx2, nx3)
+                         R4D(1,1,1,1), nx1, nx2, nx3)
          R_val = fval(1); R_grad = fval(2:4)
          CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
                          hx, hxi, hy, hyi, hz, hzi, &
-                         Z4D, nx1, nx2, nx3)
+                         Z4D(1,1,1,1), nx1, nx2, nx3)
          Z_grad = fval(2:4)
          x_val = R_val * DCOS(v_val)
          y_val = R_val * DSIN(v_val)
@@ -1252,13 +1252,13 @@
       rho_val = SQRT(s_val)
       IF (s_val >= 0 .and. s_val <= 1) THEN
          CALL lookupgrid1d(rho_val,k,hz,hzi,zparam)
-         CALL r8fvspline(ict,1,1,fval,k,zparam,hz,hzi,S112D,nx3)
+         CALL r8fvspline(ict,1,1,fval,k,zparam,hz,hzi,S112D(1,1),nx3)
          s11 = fval(1);
-         CALL r8fvspline(ict,1,1,fval,k,zparam,hz,hzi,S122D,nx3)
+         CALL r8fvspline(ict,1,1,fval,k,zparam,hz,hzi,S122D(1,1),nx3)
          s12 = fval(1);
-         CALL r8fvspline(ict,1,1,fval,k,zparam,hz,hzi,S212D,nx3)
+         CALL r8fvspline(ict,1,1,fval,k,zparam,hz,hzi,S212D(1,1),nx3)
          s21 = fval(1);
-         CALL r8fvspline(ict,1,1,fval,k,zparam,hz,hzi,S222D,nx3)
+         CALL r8fvspline(ict,1,1,fval,k,zparam,hz,hzi,S222D(1,1),nx3)
          s22 = fval(1);
          !CALL EZspline_interp(S11_spl,rho_val,s11,ier)
          !CALL EZspline_interp(S12_spl,rho_val,s12,ier)
@@ -1319,11 +1319,11 @@
          CALL lookupgrid3d(u_val,v_val,rho_val,i,j,k,hx,hy,hz,hxi,hyi,hzi,xparam,yparam,zparam)
          CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
                          hx, hxi, hy, hyi, hz, hzi, &
-                         RU4D, nx1, nx2, nx3)
+                         RU4D(1,1,1,1), nx1, nx2, nx3)
          xp = fval(1); xpp = fval(2)
          CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
                          hx, hxi, hy, hyi, hz, hzi, &
-                         ZU4D, nx1, nx2, nx3)
+                         ZU4D(1,1,1,1), nx1, nx2, nx3)
          zp = fval(1); zpp = fval(2)
          denom = (xp*xp+zp*zp)**1.5
          IF (ABS(denom) > 0) THEN
@@ -1389,35 +1389,35 @@
          CALL lookupgrid3d(u_val,v_val,rho_val,i,j,k,hx,hy,hz,hxi,hyi,hzi,xparam,yparam,zparam)
          CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
                          hx, hxi, hy, hyi, hz, hzi, &
-                         R4D, nx1, nx2, nx3)
+                         R4D(1,1,1,1), nx1, nx2, nx3)
          r_val = fval(1)
          CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
                          hx, hxi, hy, hyi, hz, hzi, &
-                         BS4D, nx1, nx2, nx3)
+                         BS4D(1,1,1,1), nx1, nx2, nx3)
          Bs = fval(1)
          CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
                          hx, hxi, hy, hyi, hz, hzi, &
-                         BU4D, nx1, nx2, nx3)
+                         BU4D(1,1,1,1), nx1, nx2, nx3)
          Bu = fval(1)
          CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
                          hx, hxi, hy, hyi, hz, hzi, &
-                         BV4D, nx1, nx2, nx3)
+                         BV4D(1,1,1,1), nx1, nx2, nx3)
          Bv = fval(1)
          CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
                          hx, hxi, hy, hyi, hz, hzi, &
-                         RU4D, nx1, nx2, nx3)
+                         RU4D(1,1,1,1), nx1, nx2, nx3)
          R_grad(1) = fval(1)
          CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
                          hx, hxi, hy, hyi, hz, hzi, &
-                         RV4D, nx1, nx2, nx3)
+                         RV4D(1,1,1,1), nx1, nx2, nx3)
          R_grad(2) = fval(1)
          CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
                          hx, hxi, hy, hyi, hz, hzi, &
-                         ZU4D, nx1, nx2, nx3)
+                         ZU4D(1,1,1,1), nx1, nx2, nx3)
          Z_grad(1) = fval(1)
          CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
                          hx, hxi, hy, hyi, hz, hzi, &
-                         ZV4D, nx1, nx2, nx3)
+                         ZV4D(1,1,1,1), nx1, nx2, nx3)
          Z_grad(2) = fval(1)
          br = R_grad(3)*Bs + R_grad(1)*Bu + R_grad(2)*Bv*nfp
          bphi = r_val * Bv
@@ -1426,7 +1426,7 @@
          IF (PRESENT(B_grad))  THEN
             CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
                            hx, hxi, hy, hyi, hz, hzi, &
-                           B4D, nx1, nx2, nx3)
+                           B4D(1,1,1,1), nx1, nx2, nx3)
             B_grad = fval(2:4)
          END IF
       ELSE
@@ -1556,31 +1556,31 @@
          CALL lookupgrid3d(u_val,v_val,rho_val,i,j,k,hx,hy,hz,hxi,hyi,hzi,xparam,yparam,zparam)
          CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
                          hx, hxi, hy, hyi, hz, hzi, &
-                         BS4D, nx1, nx2, nx3)
+                         BS4D(1,1,1,1), nx1, nx2, nx3)
          Bs = fval(1)
          CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
                          hx, hxi, hy, hyi, hz, hzi, &
-                         BU4D, nx1, nx2, nx3)
+                         BU4D(1,1,1,1), nx1, nx2, nx3)
          Bu = fval(1)
          CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
                          hx, hxi, hy, hyi, hz, hzi, &
-                         BV4D, nx1, nx2, nx3)
+                         BV4D(1,1,1,1), nx1, nx2, nx3)
          Bv = fval(1)
          CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
                          hx, hxi, hy, hyi, hz, hzi, &
-                         RU4D, nx1, nx2, nx3)
+                         RU4D(1,1,1,1), nx1, nx2, nx3)
          R_grad(1) = fval(1)
          CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
                          hx, hxi, hy, hyi, hz, hzi, &
-                         RV4D, nx1, nx2, nx3)
+                         RV4D(1,1,1,1), nx1, nx2, nx3)
          R_grad(2) = fval(1)
          CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
                          hx, hxi, hy, hyi, hz, hzi, &
-                         ZU4D, nx1, nx2, nx3)
+                         ZU4D(1,1,1,1), nx1, nx2, nx3)
          Z_grad(1) = fval(1)
          CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
                          hx, hxi, hy, hyi, hz, hzi, &
-                         ZV4D, nx1, nx2, nx3)
+                         ZV4D(1,1,1,1), nx1, nx2, nx3)
          Z_grad(2) = fval(1)
          Br = R_grad(3)*Bs + R_grad(1)*Bu + R_grad(2)*Bv*nfp
          Bphi = r_val * Bv
@@ -1642,20 +1642,20 @@
       CALL lookupgrid3d(u_val,v_val,rho_val,i,j,k,hx,hy,hz,hxi,hyi,hzi,xparam,yparam,zparam)
       CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
                       hx, hxi, hy, hyi, hz, hzi, &
-                      BS4D, nx1, nx2, nx3)
+                      BS4D(1,1,1,1), nx1, nx2, nx3)
       bs = fval(1)
       CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
                       hx, hxi, hy, hyi, hz, hzi, &
-                      BU4D, nx1, nx2, nx3)
+                      BU4D(1,1,1,1), nx1, nx2, nx3)
       bu = fval(1)
       CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
                       hx, hxi, hy, hyi, hz, hzi, &
-                      BV4D, nx1, nx2, nx3)
+                      BV4D(1,1,1,1), nx1, nx2, nx3)
       bv = fval(1)
       IF (PRESENT(modb_val) .or. PRESENT(B_GRAD)) &
          CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
                          hx, hxi, hy, hyi, hz, hzi, &
-                         B4D, nx1, nx2, nx3)
+                         B4D(1,1,1,1), nx1, nx2, nx3)
       IF (PRESENT(modb_val)) modb_val = fval(1)
       IF (PRESENT(B_grad)) B_grad = fval(2:4)
       RETURN
@@ -1708,15 +1708,15 @@
       !CALL EZspline_interp(Bav_spl,rho_val,Bav,ier)
       !CALL EZspline_interp(Bsq_spl,rho_val,Bsqav,ier)
       CALL lookupgrid1d(rho_val,k,hz,hzi,zparam)
-      CALL r8fvspline(ict,1,1,fval,k,zparam,hz,hzi,BAV2D,nx3)
+      CALL r8fvspline(ict,1,1,fval,k,zparam,hz,hzi,BAV2D(1,1),nx3)
       Bav = fval(1)
-      CALL r8fvspline(ict,1,1,fval,k,zparam,hz,hzi,BSQ2D,nx3)
+      CALL r8fvspline(ict,1,1,fval,k,zparam,hz,hzi,BSQ2D(1,1),nx3)
       Bsqav = fval(1)
       IF (PRESENT(Bsqavp_val))  THEN
          !CALL EZspline_derivative(Bsq_spl,1,rho_val,Bsqavp_val,ier)
          !CALL EZspline_interp(Vp_spl,rho_val,vp_val,ier)
          Bsqavp_val = fval(2)
-         CALL r8fvspline(ict,1,1,fval,k,zparam,hz,hzi,VP2D,nx3)
+         CALL r8fvspline(ict,1,1,fval,k,zparam,hz,hzi,VP2D(1,1),nx3)
          vp_val = fval(1)
          Bsqavp_val = 2*rho_val*Bsqavp_val/vp_val  ! d/dV = (dPhi/drho)*(dV/dPhi)^-1 * d/drho
       END IF
@@ -1781,11 +1781,11 @@
          CALL lookupgrid3d(th,phi,rho_val,i,j,k,hx,hy,hz,hxi,hyi,hzi,xparam,yparam,zparam)
          CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
                          hx, hxi, hy, hyi, hz, hzi, &
-                         L4D, nx1, nx2, nx3)
+                         L4D(1,1,1,1), nx1, nx2, nx3)
          lam = fval(1)
          CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
                          hx, hxi, hy, hyi, hz, hzi, &
-                         LU4D, nx1, nx2, nx3)
+                         LU4D(1,1,1,1), nx1, nx2, nx3)
          dlam = fval(1)
          dth = -(th + lam - th1)/(one+dlam)
          n1 = n1 + 1
