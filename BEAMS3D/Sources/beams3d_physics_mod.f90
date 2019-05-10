@@ -212,16 +212,16 @@ MODULE beams3d_physics_mod
            !------------------------------------------------------------
            !  Pitch Angle Scattering
            !------------------------------------------------------------
-           v_s = half*vcrit_cube*tau_spit_inv
-           speed_cube = speed*speed*speed
-           zeta_o = vll/speed   ! Record the current pitch.
-           CALL gauss_rand(1,zeta)  ! A random from a standard normal (1,1)
-           sigma = sqrt( ABS(2*v_s*(1.0D0-zeta_o*zeta_o)*dt/speed_cube) ) ! The standard deviation.
-           zeta_mean = zeta_o *(1.0D0 - (2*v_s*dt)/(speed_cube) )  ! The new mean in the distribution.
-           zeta = zeta*sigma + zeta_mean  ! The new pitch angle.
-           !The pitch angle MUST NOT go outside [-1,1] nor be NaN; but could happen accidentally with the distribution.
-           IF (ABS(zeta) >  0.999D+00) zeta =  SIGN(0.999D+00,zeta)
-           vll = zeta*speed
+           !v_s = half*vcrit_cube*tau_spit_inv
+           !speed_cube = speed*speed*speed
+           !zeta_o = vll/speed   ! Record the current pitch.
+           !CALL gauss_rand(1,zeta)  ! A random from a standard normal (1,1)
+           !sigma = sqrt( ABS(2*v_s*(1.0D0-zeta_o*zeta_o)*dt/speed_cube) ) ! The standard deviation.
+           !zeta_mean = zeta_o *(1.0D0 - (2*v_s*dt)/(speed_cube) )  ! The new mean in the distribution.
+           !zeta = zeta*sigma + zeta_mean  ! The new pitch angle.
+           !!The pitch angle MUST NOT go outside [-1,1] nor be NaN; but could happen accidentally with the distribution.
+           !IF (ABS(zeta) >  0.999D+00) zeta =  SIGN(0.999D+00,zeta)
+           !vll = zeta*speed
 
            !------------------------------------------------------------
            !  Final Moment and vll update (return q(4))

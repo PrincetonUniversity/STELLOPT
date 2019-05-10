@@ -12,8 +12,8 @@
       USE stellopt_runtime
       USE stellopt_input_mod
       USE stellopt_vars
-      USE vmec_input
-      USE read_wout_mod
+      !USE vmec_input
+      !USE read_wout_mod
       USE diagno_input_mod, ONLY: bfield_points_file, bprobes_file,&
                                   mirnov_file, seg_rog_file, &
                                   flux_diag_file
@@ -48,6 +48,8 @@
       MPI_COMM_DIAGNO = MPI_COMM_MYWORLD
       CALL MPI_COMM_RANK(MPI_COMM_DIAGNO, myworkid, ierr_mpi)
       CALL MPI_COMM_SIZE(MPI_COMM_DIAGNO, nprocs_diagno, ierr_mpi)
+      CALL MPI_COMM_SPLIT_TYPE(MPI_COMM_DIAGNO, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, MPI_COMM_SHARMEM, ierr_mpi)
+      CALL MPI_COMM_RANK(MPI_COMM_SHARMEM, myid_sharmem, ierr_mpi)
 #endif
 
       IF (iflag < 0) RETURN
@@ -83,7 +85,7 @@
       IF ((LEN_TRIM(flux_diag_file) > 1) .AND. ANY(sigma_fluxloop<bigno)) CALL diagno_flux
       ! Clean up
       IF (lcoil_diagno) CALL cleanup_biotsavart
-      CALL free_virtual_casing
+      CALL free_virtual_casing(MPI_COMM_SHARMEM)
       IF (lverb_diagno) write(6,*)'============  DIAGNO Complete  ============'
       IF (lverb_diagno) write(6,*)'==========================================='
       IF (lverb_diagno) CALL FLUSH(6)
