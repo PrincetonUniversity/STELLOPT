@@ -223,7 +223,7 @@
 
       ! Cleanup
       id_string = id_string_temp
-      CALL free_virtual_casing
+      CALL free_virtual_casing(MPI_COMM_SHARMEM)
 
       ! Now do VC
       if(lverb) write(6,*)' -------------------------------'
@@ -311,7 +311,8 @@
       END IF
 
       ! Cleanup
-      CALL free_virtual_casing
+      CALL MPI_BARRIER(MPI_COMM_SHARMEM)
+      CALL free_virtual_casing(MPI_COMM_SHARMEM)
       DEALLOCATE(bfield_data,bfield_data2)
 
 #if defined(MPI_OPT)

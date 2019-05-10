@@ -26,8 +26,10 @@
 !     Libraries
 !-----------------------------------------------------------------------
       USE read_wout_mod, extcur_in => extcur
-      USE virtual_casing_mod, pi2_vc => pi2, mntouv => mntouv_local
+      USE virtual_casing_mod, pi2_vc => pi2
       USE diagno_runtime, nextcur_diagno => nextcur
+      USE mpi_params
+      USE mpi
 !-----------------------------------------------------------------------
 !     Local Variables
 !          ier            Error Flag
@@ -122,13 +124,13 @@
                                          rmnc_temp,zmns_temp,nfp,&
                                          RMNS=rmns_temp, ZMNC=zmnc_temp,&
                                          BUMNC=bumnc_temp,BVMNC=bvmnc_temp,&
-                                         BUMNS=bumns_temp,BVMNS=bvmns_temp)
+                                         BUMNS=bumns_temp,BVMNS=bvmns_temp,COMM=MPI_COMM_SHARMEM)
             DEALLOCATE(rmns_temp,zmnc_temp)
             DEALLOCATE(bumns_temp,bvmns_temp)
          ELSE
             CALL init_virtual_casing(mnmax_temp,nu2,nv2,xm_temp,xn_temp,&
                                          rmnc_temp,zmns_temp,nfp,&
-                                         BUMNC=bumnc_temp,BVMNC=bvmnc_temp)
+                                         BUMNC=bumnc_temp,BVMNC=bvmnc_temp,COMM=MPI_COMM_SHARMEM)
          END IF
          DEALLOCATE(rmnc_temp,zmns_temp)
          DEALLOCATE(bumnc_temp,bvmnc_temp)
@@ -169,16 +171,18 @@
             CALL init_volint(mnmax_temp,nu2,nv2,ns,xm_temp,xn_temp,rmnc_temp,zmns_temp,nfp,&
                               JUMNC=jumnc_temp, JVMNC=jvmnc_temp,&
                               RMNS=rmns_temp,ZMNC=zmnc_temp,&
-                              JUMNS=jumns_temp, JVMNS=jvmns_temp)
+                              JUMNS=jumns_temp, JVMNS=jvmns_temp,COMM=MPI_COMM_SHARMEM)
             DEALLOCATE(rmns_temp,zmnc_temp)
             DEALLOCATE(jumns_temp,jvmns_temp)
          ELSE
             CALL init_volint(mnmax_temp,nu2,nv2,ns,xm_temp,xn_temp,rmnc_temp,zmns_temp,nfp,&
-                              JUMNC=jumnc_temp, JVMNC=jvmnc_temp)
+                              JUMNC=jumnc_temp, JVMNC=jvmnc_temp,COMM=MPI_COMM_SHARMEM)
          END IF
          DEALLOCATE(rmnc_temp,zmns_temp)
          DEALLOCATE(jumnc_temp,jvmnc_temp)
       END IF
+
+      CALL MPI_BARRIER(MPI_COMM_SHARMEM,ier)
       
       adapt_tol = vc_adapt_tol
       adapt_rel = vc_adapt_rel
