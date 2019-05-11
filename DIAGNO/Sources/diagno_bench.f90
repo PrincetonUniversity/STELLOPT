@@ -53,7 +53,7 @@
       nsect=3
       SELECT CASE (TRIM(id_string))
          CASE ('bigtok','bigtok_phi1') ! BIGTOK
-            r1 = 101.01; r2 = 102.01; z1 = 0.000; z2 = 1.000; nrad = 5 ; nzed = 5; c_loop = 100; r_loop = 1.5; my_rtol = 1.0E-3
+            r1 = 101.01; r2 = 102.01; z1 = 0.000; z2 = 1.000; nrad = 5 ; nzed = 5; c_loop = 100; r_loop = 1.5; my_rtol =  1.0E-3
          CASE ('a3tok') ! A3TOK
             r1 = 4.01;   r2 = 5.01;   z1 = 0.000; z2 = 1.000; nrad = 5 ; nzed = 5; c_loop = 3;   r_loop = 1.25; my_rtol = 1.0E-3
          CASE ('DIIID_m24n0s99_nfp1','DIIID_m24n0s99_nfp10','DIIID_m20n0s128_nfp1_lasym')
@@ -95,7 +95,7 @@
 
       ! First do volint
       lvc_field = .false.
-      vc_adapt_tol = 1.0E-06
+      vc_adapt_tol = 1.0E-04
       vc_adapt_rel = my_rtol
       CALL diagno_init_vmec
       MIN_CLS = 0
@@ -311,7 +311,6 @@
       END IF
 
       ! Cleanup
-      CALL MPI_BARRIER(MPI_COMM_SHARMEM)
       CALL free_virtual_casing(MPI_COMM_SHARMEM)
       DEALLOCATE(bfield_data,bfield_data2)
 

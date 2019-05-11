@@ -1166,6 +1166,12 @@
          IF (ASSOCIATED(btopy))  CALL mpidealloc(btopy,  win_btopy)
          IF (ASSOCIATED(btopz))  CALL mpidealloc(btopz,  win_btopz)
          IF (ASSOCIATED(btops))  CALL mpidealloc(btops,  win_btops)
+         IF (ASSOCIATED(X4D))    CALL mpidealloc(X4D,    win_X4D)
+         IF (ASSOCIATED(Y4D))    CALL mpidealloc(Y4D,    win_Y4D)
+         IF (ASSOCIATED(Z4D))    CALL mpidealloc(Z4D,    win_Z4D)
+         IF (ASSOCIATED(JX4D))    CALL mpidealloc(JX4D,    win_JX4D)
+         IF (ASSOCIATED(JY4D))    CALL mpidealloc(JY4D,    win_JY4D)
+         IF (ASSOCIATED(JZ4D))    CALL mpidealloc(JZ4D,    win_JZ4D)
          IF (ASSOCIATED(jx_3d))  CALL mpidealloc(jx_3d,  win_jx3d)
          IF (ASSOCIATED(jy_3d))  CALL mpidealloc(jy_3d,  win_jy3d)
          IF (ASSOCIATED(jz_3d))  CALL mpidealloc(jz_3d,  win_jz3d)
@@ -1616,9 +1622,16 @@
                      relreq_nag,0,wrklen,restar,finest_nag,absest_nag,funcls,istat,vrtwrk)
          !DEALLOCATE(vrtwrk)
          IF (istat == 1) THEN
-            maxcls_nag = maxcls_nag*10
-            mincls_nag = -1
-            restar = 1
+            ! For now we don't try to restart and just live with the result
+            !maxcls_nag = maxcls_nag*10
+            !mincls_nag = funcls
+            !restar = 1
+            !istat = 0
+            ax = finest_nag(1)
+            ay = finest_nag(2)
+            az = finest_nag(3)
+            adapt_rerun=.false.
+            DEALLOCATE(vrtwrk)
          ELSE IF (istat > 1) THEN
             ax = zero
             ay = zero
@@ -1895,21 +1908,21 @@
          IF (ASSOCIATED(jy_3d)) CALL mpidealloc(jy_3d, win_jy3d)
          IF (ASSOCIATED(jz_3d)) CALL mpidealloc(jz_3d, win_jz3d) 
          ! ALLOCATE
-         CALL mpialloc(X4D,  8, nu, nvp, ns, myidlocal, 0, comm, win_X4D)
-         CALL mpialloc(Y4D,  8, nu, nvp, ns, myidlocal, 0, comm, win_Y4D)
-         CALL mpialloc(Z4D,  8, nu, nvp, ns, myidlocal, 0, comm, win_Z4D)
-         CALL mpialloc(JX4D, 8, nu, nvp, ns, myidlocal, 0, comm, win_JX4D)
-         CALL mpialloc(JY4D, 8, nu, nvp, ns, myidlocal, 0, comm, win_JY4D)
-         CALL mpialloc(JZ4D, 8, nu, nvp, ns, myidlocal, 0, comm, win_JZ4D)
-         CALL mpialloc(x1, nu,  myidlocal, 0, comm, win_x1)
-         CALL mpialloc(x2, nvp, myidlocal, 0, comm, win_x2)
-         CALL mpialloc(x3, ns, myidlocal, 0, comm, win_x3)
-         CALL mpialloc(xsurf, nu*nvp*ns, myidlocal, 0, comm, win_xsurf)
-         CALL mpialloc(ysurf, nu*nvp*ns, myidlocal, 0, comm, win_ysurf)
-         CALL mpialloc(zsurf, nu*nvp*ns, myidlocal, 0, comm, win_zsurf)
-         CALL mpialloc(jx_3d, nu*nvp*ns, myidlocal, 0, comm, win_jx3d)
-         CALL mpialloc(jy_3d, nu*nvp*ns, myidlocal, 0, comm, win_jy3d)
-         CALL mpialloc(jz_3d, nu*nvp*ns, myidlocal, 0, comm, win_jz3d)
+         CALL mpialloc(X4D,  8, nx1, nx2, nx3, myidlocal, 0, comm, win_X4D)
+         CALL mpialloc(Y4D,  8, nx1, nx2, nx3, myidlocal, 0, comm, win_Y4D)
+         CALL mpialloc(Z4D,  8, nx1, nx2, nx3, myidlocal, 0, comm, win_Z4D)
+         CALL mpialloc(JX4D, 8, nx1, nx2, nx3, myidlocal, 0, comm, win_JX4D)
+         CALL mpialloc(JY4D, 8, nx1, nx2, nx3, myidlocal, 0, comm, win_JY4D)
+         CALL mpialloc(JZ4D, 8, nx1, nx2, nx3, myidlocal, 0, comm, win_JZ4D)
+         CALL mpialloc(x1, nx1, myidlocal, 0, comm, win_x1)
+         CALL mpialloc(x2, nx2, myidlocal, 0, comm, win_x2)
+         CALL mpialloc(x3, nx3, myidlocal, 0, comm, win_x3)
+         CALL mpialloc(xsurf, nx1*nx2*nx3, myidlocal, 0, comm, win_xsurf)
+         CALL mpialloc(ysurf, nx1*nx2*nx3, myidlocal, 0, comm, win_ysurf)
+         CALL mpialloc(zsurf, nx1*nx2*nx3, myidlocal, 0, comm, win_zsurf)
+         CALL mpialloc(jx_3d, nx1*nx2*nx3, myidlocal, 0, comm, win_jx3d)
+         CALL mpialloc(jy_3d, nx1*nx2*nx3, myidlocal, 0, comm, win_jy3d)
+         CALL mpialloc(jz_3d, nx1*nx2*nx3, myidlocal, 0, comm, win_jz3d)
          ! Now kick out everyone who isn't doing work (you'll need to barrier after this call)
          IF (myidlocal /= 0) RETURN
       ELSE
@@ -1925,21 +1938,21 @@
          IF (ASSOCIATED(jx_3d)) DEALLOCATE(jx_3d)
          IF (ASSOCIATED(jy_3d)) DEALLOCATE(jy_3d)
          IF (ASSOCIATED(jz_3d)) DEALLOCATE(jz_3d) 
-         ALLOCATE(X4D(8,  nu, nvp, ns))
-         ALLOCATE(Y4D(8,  nu, nvp, ns))
-         ALLOCATE(Z4D(8,  nu, nvp, ns))
-         ALLOCATE(JX4D(8, nu, nvp, ns))
-         ALLOCATE(JY4D(8, nu, nvp, ns))
-         ALLOCATE(JZ4D(8, nu, nvp, ns))
+         ALLOCATE(X4D(8,  nx1, nx2, nx3))
+         ALLOCATE(Y4D(8,  nx1, nx2, nx3))
+         ALLOCATE(Z4D(8,  nx1, nx2, nx3))
+         ALLOCATE(JX4D(8, nx1, nx2, nx3))
+         ALLOCATE(JY4D(8, nx1, nx2, nx3))
+         ALLOCATE(JZ4D(8, nx1, nx2, nx3))
          ALLOCATE(x1(nu))
          ALLOCATE(x2(nvp))
          ALLOCATE(x3(ns))
-         ALLOCATE(xsurf(nu*nvp*ns))
-         ALLOCATE(ysurf(nu*nvp*ns))
-         ALLOCATE(zsurf(nu*nvp*ns))
-         ALLOCATE(jx_3d(nu*nvp*ns))
-         ALLOCATE(jy_3d(nu*nvp*ns))
-         ALLOCATE(jz_3d(nu*nvp*ns))
+         ALLOCATE(xsurf(nx1*nx2*nx3))
+         ALLOCATE(ysurf(nx1*nx2*nx3))
+         ALLOCATE(zsurf(nx1*nx2*nx3))
+         ALLOCATE(jx_3d(nx1*nx2*nx3))
+         ALLOCATE(jy_3d(nx1*nx2*nx3))
+         ALLOCATE(jz_3d(nx1*nx2*nx3))
       END IF
 
       ! Deallocate anything globally allocated
@@ -2182,7 +2195,7 @@
       CALL r8herm3fcn(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
                       hx, hxi, hy, hyi, hz, hzi, JY4D(1,1,1,1), nx1, nx2, nx3)
       ay = fval(1)
-      CALL r8herm2fcn(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
+      CALL r8herm3fcn(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
                       hx, hxi, hy, hyi, hz, hzi, JZ4D(1,1,1,1), nx1, nx2, nx3)
       az = fval(1)
 
@@ -2246,7 +2259,7 @@
       f(1) = norm_3d*(ay*(z_nag-zs)-az*(y_nag-ys))*gf3
       f(2) = norm_3d*(az*(x_nag-xs)-ax*(z_nag-zs))*gf3
       f(3) = norm_3d*(ax*(y_nag-ys)-ay*(x_nag-xs))*gf3
-      !WRITE(427,*) xs,ys,zs
+      !WRITE(427,*) ax, ay, az
       RETURN
       ! END SUBROUTINE
       END SUBROUTINE funsub_nag_b3d
@@ -2406,9 +2419,16 @@
                      relreq_nag,0,wrklen,restar,finest_nag,absest_nag,funcls,istat,vrtwrk)
          !DEALLOCATE(vrtwrk)
          IF (istat == 1) THEN
-            maxcls_nag = maxcls_nag*10
-            mincls_nag = -1
-            restar = 1
+            ! For now we don't try to restart and just live with the result
+            !maxcls_nag = maxcls_nag*10
+            !mincls_nag = funcls
+            !restar = 1
+            !istat = 0
+            ax = finest_nag(1)
+            ay = finest_nag(2)
+            az = finest_nag(3)
+            adapt_rerun=.false.
+            DEALLOCATE(vrtwrk)
          ELSE IF (istat > 1) THEN
             ax = zero
             ay = zero
@@ -2650,9 +2670,16 @@
                      relreq_nag,0,wrklen,restar,finest_nag,absest_nag,funcls,istat,vrtwrk)
          !DEALLOCATE(vrtwrk)
          IF (istat == 1) THEN
-            maxcls_nag = maxcls_nag*10
-            mincls_nag = funcls
-            restar = 1
+            ! For now we don't try to restart and just live with the result
+            !maxcls_nag = maxcls_nag*10
+            !mincls_nag = funcls
+            !restar = 1
+            !istat = 0
+            bx = finest_nag(1)
+            by = finest_nag(2)
+            bz = finest_nag(3)
+            adapt_rerun=.false.
+            DEALLOCATE(vrtwrk)
          ELSE IF (istat > 1) THEN
             bx = zero
             by = zero
@@ -2846,7 +2873,7 @@
       IMPLICIT NONE
       DOUBLE PRECISION, INTENT(in) :: x1_in, x2_in
       INTEGER, INTENT(out) :: i,j
-      DOUBLE PRECISION, INTENT(out) :: hx, hy, hxi, hyi, xparam, yparam
+      REAL*8, INTENT(out) :: hx, hy, hxi, hyi, xparam, yparam
       i = MIN(MAX(COUNT(x1 < x1_in),1),nx1-1)
       j = MIN(MAX(COUNT(x2 < x2_in),1),nx2-1)
       hx     = x1(i+1) - x1(i)
@@ -2864,7 +2891,7 @@
       IMPLICIT NONE
       DOUBLE PRECISION, INTENT(in) :: x1_in, x2_in, x3_in
       INTEGER, INTENT(out) :: i,j,k
-      DOUBLE PRECISION, INTENT(out) :: hx, hy, hz, hxi, hyi, hzi, xparam, yparam, zparam
+      REAL*8, INTENT(out) :: hx, hy, hz, hxi, hyi, hzi, xparam, yparam, zparam
       i = MIN(MAX(COUNT(x1 < x1_in),1),nx1-1)
       j = MIN(MAX(COUNT(x2 < x2_in),1),nx2-1)
       k = MIN(MAX(COUNT(x3 < x3_in),1),nx3-1)
