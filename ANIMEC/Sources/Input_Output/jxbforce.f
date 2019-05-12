@@ -1,4 +1,4 @@
-      SUBROUTINE jxbforce(bsupu, bsupv, bsubu, bsubv, bsubs, bsubsu,
+      SUBROUTINE jxbforce(bsupu, bsupv, bsubu, bsubv, bsubsh, bsubsu,
      1   bsubsv, gsqrt, bsq, itheta, izeta, brho, sigma_an, ier_flag 
 #ifdef _ANIMEC
      2  ,pp1, pp2, ppar, onembc
@@ -12,9 +12,9 @@
      1                       zu   , zv  , phip
 #ifdef _ANIMEC
      2                      ,pp3 
-      USE fbal, ONLY: bimax_ppargrad
+      USE fbal, ONLY: EPwell_ppargrad     
 #endif
-!!#undef NETCDF
+#undef NETCDF
 #ifdef NETCDF
       USE ezcdf
 #endif
@@ -29,13 +29,14 @@
 #endif
       REAL(rprec), DIMENSION(ns,nznt,0:1), TARGET, INTENT(inout) ::
      1  bsubu, bsubv
-      REAL(rprec), DIMENSION(ns,nznt), INTENT(inout), TARGET :: bsubs
+      REAL(rprec), DIMENSION(ns,nznt), INTENT(in)  :: bsubsh
       REAL(rprec), DIMENSION(ns,nznt), INTENT(out) ::
      1  itheta, brho, izeta
 #ifdef _ANIMEC
      1 ,pp1, pp2
 #endif
       REAL(rprec), DIMENSION(ns,nznt,0:1) :: bsubsu, bsubsv
+      REAL(rprec), DIMENSION(ns,nznt), TARGET :: bsubs
       INTEGER, INTENT(in) :: ier_flag
 !-----------------------------------------------
 !   L o c a l   P a r a m e t e r s
@@ -139,9 +140,9 @@
       legend(1) = " S = normalized toroidal flux (0 - 1)"
       IF (lasym) THEN
          legend(2) = " U = VMEC poloidal angle (0 - 2*pi, FULL period)"
-	ELSE
+      ELSE
          legend(2) = " U = VMEC poloidal angle (0 - pi, HALF a period)"
-	END IF
+      END IF
       legend(3) = " V = VMEC (geometric) toroidal angle (0 - 2*pi)"
       legend(4) = " SQRT(g') = |SQRT(g-VMEC)| / VOL':" //
      1  " Cylindrical-to-s,u,v Jacobian normed to volume derivative"
@@ -152,7 +153,7 @@
      1   " radial unit vector (based on volume radial coordinate)"
       legend(8) = " BSUP{U,V} = sigma_an B DOT GRAD{U,V}:" //
      1   "  contravariant components of B"
-      legend(9) = " JSUP{U,V} = SQRT(g') J DOT GRAD{U,V}"
+      legend(9) = " JSUP{U,V} = SQRT(g) J DOT GRAD{U,V}"
       legend(10)=
      1  " K X B = Es DOT [K X B]: covariant component of K X B force"
       legend(11)= " K * B = K DOT B * SQRT(g')"
@@ -198,7 +199,7 @@
 !     Put bsubs on full mesh
 !
          IF (js.gt.1 .and. js.lt.ns) THEN     
-            bsubs(js,:) = p5*(bsubs(js,:) + bsubs(js+1,:))
+            bsubs(js,:) = p5*(bsubsh(js,:) + bsubsh(js+1,:))
          END IF
 
          bsubu(js,:,1) = bsubu(js,:,1)/shalf(js)
@@ -229,6 +230,7 @@
                IF (n.eq.nnyq .and. n.ne.0) dnorm1 = p5*dnorm1
                bsubsmn1 = 0;  bsubsmn2 = 0
                IF (lasym) THEN
+                  dnorm1 = 2*dnorm1              !SPH012314 in FixAray
                   bsubsmn3 = 0;  bsubsmn4 = 0
                END IF
                bsubumn1 = 0;  bsubumn2 = 0;  bsubvmn1 = 0;  bsubvmn2 = 0
@@ -357,8 +359,7 @@
       IF (lasym) CALL fsym_invfft (bsubsu, bsubsv)
 
 #ifdef _ANIMEC
-      CALL bimax_ppargrad(pp1, pp2, gsqrt, ppar, onembc, pres, 
-     1                    phot,tpotb)
+      CALL EPwell_ppargrad(pp2, gsqrt, bsq, pres) 
 #endif
 
 !     SKIPS Bsubs Correction - uses Bsubs from metric elements
@@ -382,9 +383,11 @@
      2   + bsupv1(:)*(bsubv(js+1,:,0) - bsubv(js,:,0)))
      3   + (pres(js+1) - pres(js))*ohs*jxb(:)
 #ifdef _ANIMEC
-!WAC Last two lines of brho contain hot particle parallel pressure gradients
-     4   + ohs*((pres(js+1)*phot(js+1) - pres(js)*phot(js)) * pp2(js,:)
-     5   +      (tpotb(js+1)           - tpotb(js)      ) * pp1(js,:))
+!   WAC Last two lines of brho contain parallel pressure gradients from magnetic
+!   well figure of merit of the adjoint on the full integer mesh        
+     4   + ohs*((pres(js+1) - pres(js))
+     5          * p5 * (gsqrt(js,:) * pd(js) + gsqrt(js+1,:) * pd(js+1))
+     6   +      (pd(js+1)   - pd(js)  ) * pp2(js,:))
 #endif
 !
 !     SUBTRACT FLUX-SURFACE AVERAGE FORCE BALANCE FROM brho, OTHERWISE
@@ -583,19 +586,40 @@
       DO js = 2, ns1
          ovp = two/(vp(js+1) + vp(js))/dnorm1
          tjnorm = ovp*signgs
-         sqgb2(:nznt) = sigma_an(js+1,:nznt)*gsqrt(js+1,:nznt)*
-     1                  (bsq(js+1,:nznt)- pres(js+1))
-     2                + sigma_an(js,:nznt)*gsqrt(js,:nznt)    *
-     3                  (bsq(js,:nznt) - pres(js))
+         sqgb2(:nznt) = sigma_an(js+1,:)*gsqrt(js+1,:)*
+     1                  (bsq(js+1,:)- pres(js+1))
+     2                + sigma_an(js,:)*gsqrt(js,:)    *
+     3                  (bsq(js,:) - pres(js))
+#ifdef _ANIMEC
+         sqgb2(:nznt) = sigma_an(js+1,:nznt)*gsqrt(js+1,:nznt)
+     1                * bsq(js+1,:nznt)
+     2                + sigma_an(js  ,:nznt)*gsqrt(js  ,:nznt)
+     3                * bsq(js  ,:nznt)
+#elif defined _FLOW
+!         sqgb2(:nznt) = sigma_an(js+1,:nznt)*gsqrt(js+1,:nznt)
+!     1                * (bsq(js+1,:nznt)-prot(js+1,:nznt))
+!     2                + sigma_an(js  ,:nznt)*gsqrt(js  ,:nznt)
+!     3                * (bsq(js  ,:nznt)-prot(js  ,:nznt))
+#else
+         sqgb2(:nznt) = sigma_an(js+1,:nznt)*gsqrt(js+1,:nznt)
+     1                * (bsq(js+1,:nznt)-pres(js+1))
+     2                + sigma_an(js  ,:nznt)*gsqrt(js  ,:nznt)
+     3                * (bsq(js  ,:nznt)-pres(js  ))
+#endif
 !        TAKE THIS OUT: MAY BE POORLY CONVERGED AT THIS POINT....
 !         IF (ANY(sqgb2(:nznt)*signgs .le. zero)) 
 !     1       STOP ' SQGB2 <= 0 in JXBFORCE'
+!#ifdef _ANIMEC
+!         pp3(:nrzt) = one
+!         CALL EPwell_ppargrad(pp2, pp3, bsq, pres) 
+!#endif
          pprime(:) = ohs*(pres(js+1)-pres(js))/mu0              !dp/ds here
 #ifdef _ANIMEC
-!WAC  Last two lines of 'pprime' contain the hot particle parallel pressure
-     1 + ohs*((pres(js+1)*phot(js+1) - pres(js)*phot(js))*pp2(js,:nznt) 
-     2 +      (tpotb(js+1)           - tpotb(js)      )  *pp1(js,:nznt))
-     3  / mu0
+!   WAC  Last two lines of 'pprime' contain the adjoint method figure of merit
+!   parallel pressure term on the full integer mesh
+     1 + ohs*(pd(js+1) - pd(js)) * pp2(js,:nznt) / (gsqrt(js,:nznt)*mu0)
+     2 + ohs*(pres(js+1) - pres(js)) * p5 * (pd(js+1) + pd(js)) / mu0
+!    3       / mu0      !Use only if call to   EPwell_ppargrad is active
 #endif
          kperpu(:nznt) = p5*(bsubv(js+1,:nznt,0) + bsubv(js,:nznt,0))*
      1                       pprime(:)/sqgb2
@@ -632,16 +656,16 @@
 !        Compute <K dot B>, <B sup v> = signgs*phip
 !        jpar2 = <j||**2>, jperp2 = <j-perp**2>,  with <...> = flux surface average
 
-         jdotb(js) = dnorm1*tjnorm*SUM(bdotk(js,:nznt)*wint(2:nrzt:ns)
+         jdotb(js) = tjnorm*SUM(bdotk(js,:nznt)*wint(2:nrzt:ns)
      1                               / sigma_an(js,:nznt))
-         bdotb(js) = dnorm1*tjnorm*SUM(sqgb2(:nznt)*wint(2:nrzt:ns)
+         bdotb(js) = tjnorm*SUM(sqgb2(:nznt)*wint(2:nrzt:ns)
      1                               / sigma_an(js,:nznt))
               
          bdotgradv(js) = p5*dnorm1*tjnorm*(phip(js) + phip(js+1))
-         jpar2(js) = dnorm1*tjnorm*
+         jpar2(js) = tjnorm*
      1            SUM(bdotk(js,:nznt)**2*wint(2:nrzt:ns)
      2              /(sigma_an(js,:nznt)*sqgb2(:nznt)))
-         jperp2(js)= dnorm1*tjnorm*
+         jperp2(js)= tjnorm*
      1            SUM(kp2(:nznt)*wint(2:nrzt:ns)*sqrtg(:nznt))
 
          IF (MOD(js,ns_skip) .eq. 0 .and. lprint_flag) THEN
@@ -670,8 +694,8 @@ C                 lu (js,lz,lt ) =  lt
 #else
             WRITE (njxbout, 200) phi(js), avforce(js), jdotb(js),
      1         bdotgradv(js), pprime(1), one/ovp, 
-     2         (twopi**2)*tjnorm*SUM(itheta(js,:)*wint(js:nrzt:ns)),
-     3         (twopi**2)*tjnorm*SUM(izeta (js,:)*wint(js:nrzt:ns)),
+     2         tjnorm*SUM(itheta(js,:)*wint(js:nrzt:ns)),
+     3         tjnorm*SUM(izeta (js,:)*wint(js:nrzt:ns)),
      4         amaxfor(js), aminfor(js)
             WRITE (njxbout, 90)
             DO lz = 1, nzeta, nv_skip

@@ -472,23 +472,36 @@
       END DO
 
       bsq(1:nrzt:ns) = 0
-      onembc = one - SQRT(2*bsq(1:nrzt))/bcrit
-      WHERE (one .ne. gp*onembc) sigma_an = (one-onembc)/(one-gp*onembc)
+			onembc = one - SQRT(2*bsq(1:nrzt))/bcrit ! (1 - B/B_crit)
 
+			!! sigma_an = H(s,B) as defined in comments above
+
+			! Where (1 /= Tperp/Tpar*(1-B/Bcrit)
+			! sigma_an = (B/B_crit)/(1-Tperp/Tpar*(1-B/crit))
+      WHERE (one .ne. gp*onembc) sigma_an = (one-onembc)/(one-gp*onembc)
+			! Where (B < Bcrit)
+			! sigma_an = sigma_an*(1-2*(B/B_crit)/(1-Tperp/Tpar*(1-B/crit))**2.5/(1+(B/B_crit)/(1-Tperp/Tpar*(1-B/crit))
       WHERE (onembc .gt. zero) sigma_an = sigma_an*
      1      (one-2*(gp*onembc)**2.5_dp/(one+gp*onembc))
 
+			! thermal pressure given by
+			! p(s) = M(s)*(Phi'(s))^(gamma)/<1+ph(s)*H(s,B)>^(gamma)
+
+			! Here gsqrt is the Jacobian
       pperp = (1 + scratch1*sigma_an)*gsqrt(1:nrzt)
 
+			! Perform flux surface average <1+ph(s)*H(s,B)>
       DO js = 2,ns
          pmap(js) = DOT_PRODUCT(pperp(js:nrzt:ns), wint(js:nrzt:ns))
       END DO
         
       DO js = 2,ns
+					! signgs = sign of Jacobian
            pmap(js) = signgs*pmap(js)
            pres(js) = mass(js) / pmap(js)**gamma
            pppr(js) = pres(js) * phot(js)
       END DO
+			! pppr = M(s)*ph(s)/<1+ph(s)*H(s,B)>^(gamma)
 !
 !********0*********0*********0*********0*********0*********0*********0**
 !   3.  Compute P-Parallel, P-Perp.                                    *
@@ -498,8 +511,10 @@
          scratch1(js:nrzt:ns) = pppr(js)
       END DO
 
+			! pppr = M(s)*ph(s)*H(s,B)/<1+ph(s)*H(s,B)>^(gamma)
       ppar = scratch1*sigma_an
 
+			! pperp determined from parallel force balance
 !FORTRAN 95 CONSTRUCT ALLOWS ELSEWHERE (TEST), F90 DOES NOT
 #if defined(WIN32)
       WHERE (onembc .le. zero)
@@ -516,9 +531,12 @@
       ENDWHERE
 
 #else
+			! B > Bcrit
       WHERE (onembc .le. zero)
- 
+				 ! pppr = M(s)*ph(s)*H(s,B)/<1+ph(s)*H(s,B)>^(gamma)
+				 ! Tperp/Tpar*(B/Bcrit)/(1-tperp/Tpar*(1-B/Bcrit))*ppar
          pperp = gp*(one-onembc)/(one-gp*onembc)*ppar
+
 
       ELSEWHERE (onembc*gp .eq. one)
 
@@ -538,6 +556,7 @@
          scratch1(js:nrzt:ns) = pres(js)
       END DO
 
+			! add contribution from thermal species to total pressure
       ppar = ppar + scratch1
       pperp= pperp+ scratch1
 

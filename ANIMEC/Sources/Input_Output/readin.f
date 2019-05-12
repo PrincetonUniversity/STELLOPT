@@ -1,30 +1,36 @@
       SUBROUTINE readin(input_file, iseq_count, ier_flag, lscreen)
       USE vmec_main
       USE vmec_params
+#ifdef _VACUUM2
+      USE vac2_vacmod
+#else
       USE vacmod
+#endif
       USE vsvd
       USE vspline
       USE timer_sub
-      USE mgrid_mod, ONLY: nextcur, curlabel, nfper0, read_mgrid
+      USE mgrid_mod, ONLY: nextcur, curlabel, nfper0, read_mgrid, 
+     1                     nr0b, nz0b, np0b, rminb, rmaxb,
+     2                     zminb, zmaxb
       USE init_geometry
 #ifdef _HBANGLE
       USE angle_constraints, ONLY: HB_EXP=>pexp
 #endif
       IMPLICIT NONE
-C-----------------------------------------------
-C   D u m m y   A r g u m e n t s
-C-----------------------------------------------
+!-----------------------------------------------
+!   D u m m y   A r g u m e n t s
+!-----------------------------------------------
       INTEGER :: iseq_count, ier_flag
       LOGICAL :: lscreen
       CHARACTER(LEN=*) :: input_file
-C-----------------------------------------------
-C   L o c a l   V a r i a b l e s
-C-----------------------------------------------
+!-----------------------------------------------
+!   L o c a l   V a r i a b l e s
+!-----------------------------------------------
       INTEGER :: iexit, ipoint, n, iunit, ier_flag_init,
      1   i, ni, m, nsmin, igrid, mj, isgn, ioff, joff
       REAL(rprec), DIMENSION(:,:), POINTER ::
      1  rbcc, rbss, rbcs, rbsc, zbcs, zbsc, zbcc, zbss
-      REAL(rprec) :: rtest, ztest, tzc, trc, delta
+      REAL(rprec) :: rtest, ztest, tzc, trc, delta, sumphi
       REAL(rprec), ALLOCATABLE :: temp(:)
       CHARACTER(LEN=100) :: line, line2
       CHARACTER(LEN=1)   :: ch1, ch2
@@ -420,28 +426,30 @@ C-----------------------------------------------
       WRITE(nthreed,130)
       WRITE(nthreed,131) TRIM(pmass_type)
       WRITE(nthreed,132)
- 130  FORMAT(' MASS PROFILE COEFFICIENTS am - newton/m**2',
+ 130  FORMAT(' MASS PROFILE COEFFICIENTS - newton/m**2',
      1  ' (EXPANSION IN NORMALIZED RADIUS):')
  131  FORMAT(' PMASS parameterization type is ''', a,'''')
  132  FORMAT(1x,35('-'))
-      WRITE(nthreed,135)(am(i-1),i=1, SIZE(am))
  135  FORMAT(1p,6e12.3)
+
       SELECT CASE(TRIM(pmass_type))
       CASE ('Akima_spline','cubic_spline')
          WRITE(nthreed,"(' am_aux_s is' )")
          WRITE(nthreed,135)(am_aux_s(i),i=1, SIZE(am_aux_s))
          WRITE(nthreed,"(' am_aux_f is' )")
          WRITE(nthreed,135)(am_aux_f(i),i=1, SIZE(am_aux_f))
+      CASE DEFAULT
+         WRITE(nthreed,"(' am is' )")
+         WRITE(nthreed,135)(am(i-1),i=1, SIZE(am))
       END SELECT
 
-      IF (ncurr.eq.0) THEN
+      IF (ncurr .EQ. 0) THEN
           IF (lRFP) THEN
              WRITE (nthreed,142)
           ELSE
              WRITE (nthreed,140)
           END IF
 !  Print out ai array          
-          WRITE(nthreed,135)(ai(i-1),i=1, SIZE(ai))
           WRITE(nthreed,143) TRIM(piota_type)
           SELECT CASE(TRIM(piota_type))
           CASE ('Akima_spline','cubic_spline')
@@ -449,13 +457,15 @@ C-----------------------------------------------
              WRITE(nthreed,135)(ai_aux_s(i),i=1, SIZE(ai_aux_s))
              WRITE(nthreed,"(' ai_aux_f is' )")
              WRITE(nthreed,135)(ai_aux_f(i),i=1, SIZE(ai_aux_f))
+          CASE DEFAULT
+             WRITE(nthreed,"(' ai is' )")
+             WRITE(nthreed,135)(ai(i-1),i=1, SIZE(ai))
           END SELECT
       ELSE
 !  Print out ac array
           WRITE(nthreed,145)
           WRITE(nthreed,146) TRIM(pcurr_type)
           WRITE(nthreed,147)
-          WRITE(nthreed,135)(ac(i-1),i=1, SIZE(ac))
           SELECT CASE(TRIM(pcurr_type))
           CASE ('Akima_spline_Ip','Akima_spline_I',                            &
      &           'cubic_spline_Ip','cubic_spline_I')
@@ -463,20 +473,26 @@ C-----------------------------------------------
              WRITE(nthreed,135)(ac_aux_s(i),i=1, SIZE(ac_aux_s))
              WRITE(nthreed,"(' ac_aux_f is' )")
              WRITE(nthreed,135)(ac_aux_f(i),i=1, SIZE(ac_aux_f))
+          CASE DEFAULT
+             WRITE(nthreed,"(' ac is' )")
+             WRITE(nthreed,135)(ac(i-1),i=1, SIZE(ac))
           END SELECT
       ENDIF
 
- 140  FORMAT(/' IOTA PROFILE COEFFICIENTS ai',
+ 140  FORMAT(/' IOTA PROFILE COEFFICIENTS',
      1   ' (EXPANSION IN NORMALIZED RADIUS):',/,1x,35('-'))
- 142  FORMAT(/' SAFETY-FACTOR (q) PROFILE COEFFICIENTS ai',
+ 142  FORMAT(/' SAFETY-FACTOR (q) PROFILE COEFFICIENTS',
      1   ' (EXPANSION IN NORMALIZED RADIUS):',/,1x,35('-'))
  143  FORMAT(' PIOTA parameterization type is ''', a,'''')
  145  FORMAT(/' TOROIDAL CURRENT DENSITY (*V'') COEFFICIENTS',
-     1        ' ac (EXPANSION IN NORMALIZED RADIUS):')
+     1        ' (EXPANSION IN NORMALIZED RADIUS):')
  146  FORMAT(' PCURR parameterization type is ''', a,'''')
  147  FORMAT(1x,38('-'))
 
       WRITE(nthreed,150)
+!NORMALIZE APHI
+      sumphi=SUM(aphi)
+      IF (sumphi .NE. zero) aphi = aphi/sumphi
       WRITE(nthreed,135)(aphi(i),i=1, SIZE(aphi))
  150  FORMAT(/' NORMALIZED TOROIDAL FLUX COEFFICIENTS aphi',
      1   ' (EXPANSION IN S):',/,1x,35('-'))
@@ -488,10 +504,10 @@ C-----------------------------------------------
          WRITE(nthreed,135)(at(i-1),i=1, SIZE(at))
       END IF
 
- 160  FORMAT(' HOT PARTICLE PRESSURE COEFFICIENTS ah',
+ 160  FORMAT(' MAGNETIC WELL RADIAL WEIGHT FUNCTION COEFFICIENTS ah',
      1  ' (EXPANSION IN TOROIDAL FLUX):',/,1x,35('-'))
- 165  FORMAT(' HOT PARTICLE TPERP/T|| COEFFICIENTS at',
-     1  ' (EXPANSION IN TOROIDAL FLUX):',/,1x,35('-'))
+ 165  FORMAT(' HOT PARTICLE TPERP/T|| COEFFICIENTS at (EXPANSION',
+     1  ' IN TOROIDAL FLUX -- not used for this model):',/,1x,35('-'))
 #endif
 
 !  Fourier Boundary Coefficients

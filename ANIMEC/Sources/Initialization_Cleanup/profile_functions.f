@@ -346,7 +346,8 @@
 ! ai assumed to be dimensioned (0:n), with n >= 20 
 !-----------------------------------------------
       INTEGER     :: i, iflag, ioff
-      REAL(rprec) :: x, piota, temp_num, temp_denom
+      REAL(rprec), INTENT(IN) :: x
+      REAL(rprec) :: piota, temp_num, temp_denom
       CHARACTER(len=20) :: piota_type_lc
 !-----------------------------------------------
       piota = 0
@@ -639,7 +640,7 @@ C-----------------------------------------------
       REAL(rprec) :: xx, photp, x
 C-----------------------------------------------
 !     NOTE: On entry, ah is dimensionless
-!     HOT PARTICLE PRESSURE (RATIO TO ISOTROPIC PRESSURE)
+!     Radial weight function for figure of merit based on magnetic well         
 
       x = MIN (ABS(xx * bloat), 1._dp)
 
@@ -655,20 +656,20 @@ C-----------------------------------------------
 
       FUNCTION ptrat (xx)
       USE stel_kinds
-      USE vmec_input, ONLY: at, bloat
+      USE vmec_input, ONLY: ah, bloat
 C-----------------------------------------------
-      INTEGER     :: i
+      INTEGER     :: i, ioff
       REAL(rprec) :: xx, ptrat, x
 C-----------------------------------------------
-!     NOTE: On entry, at is dimensionless
-!     HOT PARTICLE T-perp/T-par
+!     NOTE: On entry, ah is dimensionless
+!     Radial derivative of radial weight function for magnetic well figure of merit
 
       x = MIN (ABS(xx * bloat), 1._dp)
 
       ptrat = 0
-
-      DO i = UBOUND(at,1), LBOUND(at,1), -1
-         ptrat = x*ptrat + at(i)
+      ioff = UBOUND(ah,1)-1
+      DO i = ioff, LBOUND(ah,1), -1
+         ptrat = x*ptrat + (i+1)*ah(i+1)
       END DO
 
       ptrat = ptrat
