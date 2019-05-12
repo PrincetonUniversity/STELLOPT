@@ -32,10 +32,11 @@
 !   L o c a l   V a r i a b l e s
 !-----------------------------------------------
       INTEGER :: l, js, ndim
-      REAL(rprec) :: r2
-      REAL(rprec) :: arnorm, aznorm, volume, tcon_mul
+      REAL(rprec) :: r2, volume, curpol_temp
+#ifndef _HBANGLE
+      REAL(rprec) :: arnorm, aznorm, tcon_mul
+#endif
       REAL(rprec), POINTER, DIMENSION(:) :: luu, luv, lvv, tau
-      REAL(rprec) :: curpol_temp
       REAL(rprec), DIMENSION(:), POINTER :: bsupu, bsubuh, 
      1                                      bsupv, bsubvh, r12sq
       LOGICAL :: lctor
@@ -152,8 +153,8 @@
       bsupv(2:nrzt) = p5*phipog(2:nrzt)*(lu(2:nrzt,0) + lu(1:nrzt-1,0) 
      1              + shalf(2:nrzt)*(lu(2:nrzt,1) + lu(1:nrzt-1,1)))
 !v8.49: add ndim points
-      bsupu(1) =0;  bsupu(ndim) = 0
-      bsupv(1) =0;  bsupv(ndim) = 0
+      bsupu(1)=0;  bsupu(ndim)=0
+      bsupv(1)=0;  bsupv(ndim)=0
 
 !
 !     UPDATE IOTA EITHER OF TWO WAYS:
@@ -280,11 +281,8 @@
          lvv(l:nrzt:ns) = bdamp(l)
       END DO
 
-!     SAL EDIT 07/25/14
-!      IF (ANY(bsubuh(1:ndim:ns) .ne. zero)) STOP 'BSUBUH != 0 AT JS=1'
-!      IF (ANY(bsubvh(1:ndim:ns) .ne. zero)) STOP 'BSUBVH != 0 AT JS=1'
-      IF (ANY(bsubuh(1:ndim:ns) .ne. zero)) bsubuh(1:ndim:ns) = zero
-      IF (ANY(bsubvh(1:ndim:ns) .ne. zero)) bsubvh(1:ndim:ns) = zero
+      IF (ANY(bsubuh(1:ndim:ns) .ne. zero)) STOP 'BSUBUH != 0 AT JS=1'
+      IF (ANY(bsubvh(1:ndim:ns) .ne. zero)) STOP 'BSUBVH != 0 AT JS=1'
 
       bsubu_e(1:nrzt) = p5*(bsubuh(1:nrzt) + bsubuh(2:ndim))
       bsubv_e(1:nrzt) = bsubv_e(1:nrzt)*lvv(1:nrzt) + p5*(1-lvv(1:nrzt))
@@ -371,10 +369,6 @@
 !     COMPUTE COVARIANT BSUBU,V (EVEN, ODD) ON HALF RADIAL MESH
 !     FOR FORCE BALANCE AND RETURN (IEQUI=1)
 !
-!
-!     COMPUTE COVARIANT BSUBU,V (EVEN, ODD) ON HALF RADIAL MESH
-!     FOR FORCE BALANCE AND RETURN (IEQUI=1)
-!
       IF (iequi .eq. 1) THEN
 
 !         IF (.FALSE.) THEN
@@ -428,10 +422,10 @@
       USE realspace, ONLY: sigma_an, wint, pperp, ppar, onembc
       USE vforces, r12 => armn_o, gsqrt => azmn_o,
      &             bsq => bzmn_o
-      USE vmec_main, ONLY: phot, tpotb, pppr, pmap, mass, pres, vp,
-     &                     wp, gamma, wpar, wper, ns, nznt, nrzt, 
-     &                     zero, one, nthreed, pperp_ns1=>dbsq,
-     &                     bcrit, medge, phedg, hs, pperp_ns
+      USE vmec_main, ONLY: phot, tpotb, pppr, pmap, mass, pres, vp, pd
+     &                    ,wp, gamma, wpar, wper, ns, nznt, nrzt, vpphi,
+     &                     zero, one, nthreed, pperp_ns1=>dbsq, p5=> cp5
+     &                    ,bcrit, medge, phedg, hs, pperp_ns, ohs
       USE vmec_params, ONLY: signgs
       USE fbal
 !
@@ -448,60 +442,72 @@
 !-----------------------------------------------
       INTEGER     :: js   , lk   , l
       REAL        :: pparden, pres_pv, pppr_pv
+      REAL(dp)    :: eps
+      REAL(rprec), PARAMETER :: c1p5 = (one + p5)
 !-----------------------------------------------
 !
 !********0*********0*********0*********0*********0*********0*********0**
 !                                                                      *
 !                 Anisotropic Pressure Model                           *
-!                  specific to case where:                             *
-!          a Bi-Maxwellian distribution is considered (by J. Graves)   *
-!          p_parallel(s,B) = pth(1 + phot(s)*H(s,B))                     *
-!      H(s,B)=(B/B_crit)/[1-(T_perp/T_par)(1-B/B_crit)] for B>B_crit   *
-!      For B<B_crit,                                                   *
-!      H(s,B)=H(s,B>B_crit){1-2[(T_perp/T_par)(1-B/B_crit)]^(5/2) /    *
-!                                    [1+(T_perp/T_par)(1-B/B_crit)]}   *
-!                                                                      *
+!          The adjoint method for the shape gradient figure of merit   *
+!          proposed by Antonsen, Paul and Landreman. An anisotropic    *
+!          pressure based on a magnetic well figure of merit given by  * 
+!          p_parallel(s,B) = pth[1 + phot(s)*H(s,B)]                   *
+!          H(s,B)={B^2/[2 mu_0 p(s)]+1}                                *
+!          phot(s)=-Delta_p{omega'+[V"(s)/V'(s)]omega} constitutes the *
+!          the flux surface averaged 'hot' particle contibution to     *
+!          p_parallel. We use the bcrit parameter to identify Delta_p, *
+!          omega is the radial weight function, V' is the differential *
+!          volume, V" is the well. phot is used internally for omega,  *
+!          tpotb is used for omega' in the routine profile_functions.  *      
 !********0*********0*********0*********0*********0*********0*********0**
 !
 !********0*********0*********0*********0*********0*********0*********0**
-!   1.  Compute Thermal Pressure and Hot Particle Pressure Amplitude.  *
+!   1.  Compute magnetic well.                                         *
 !********0*********0*********0*********0*********0*********0*********0**
-      DO js = 1,ns
-         gp(js:nrzt:ns) = tpotb(js)
-         scratch1(js:nrzt:ns) = phot(js)
+      eps = EPSILON(eps)
+!     
+      do js=2,ns-1
+        vpphi(js)=ohs*(vp(js+1)-vp(js))  !vpphi temporarily contains V" on integer mesh
+      end do
+      vpphi(1)=c1p5*vpphi(2)-p5*vpphi(3) !extrapolate V" to 1st half integer point
+      vpphi(ns)=c1p5*vpphi(ns-1)-p5*vpphi(ns-2) !extrapolate V" to last half integer point
+      do js=ns-1,3,-1
+         vpphi(js)=p5*(vpphi(js-1)+vpphi(js)) !interpolate V"to half mesh
+      end do
+      vpphi(2)=vpphi(1)           !V" at 1st half mesh point transferred to index 2
+      vpphi(1)=zero
+!
+!********0*********0*********0*********0*********0*********0*********0**
+!   2.  Compute Thermal Pressure and Hot Particle Pressure Amplitude.  *
+!********0*********0*********0*********0*********0*********0*********0**
+!
+!...Initial setup for pressure required to calculate [B^2/(2mu_0p)+1]
+      if (ALL(pres.eq.0))pres(2:ns) = mass(2:ns)/vp(2:ns)**gamma
+!
+!...DETERMINE -Delta_p(omega'+omega*V"/V') ==> -bcrit*(tpotb+phot*pppr/vp)
+       pd(2:ns) = -bcrit*(tpotb(2:ns)+phot(2:ns)*vpphi(2:ns)/vp(2:ns))
+      do js = 1,ns
+         gp(js:nrzt:ns)      = pres(js)  !pressure from previous iteration
+         scratch1(js:nrzt:ns)= pd(js)
       END DO
-
+!
       bsq(1:nrzt:ns) = 0
-			onembc = one - SQRT(2*bsq(1:nrzt))/bcrit ! (1 - B/B_crit)
-
-			!! sigma_an = H(s,B) as defined in comments above
-
-			! Where (1 /= Tperp/Tpar*(1-B/Bcrit)
-			! sigma_an = (B/B_crit)/(1-Tperp/Tpar*(1-B/crit))
-      WHERE (one .ne. gp*onembc) sigma_an = (one-onembc)/(one-gp*onembc)
-			! Where (B < Bcrit)
-			! sigma_an = sigma_an*(1-2*(B/B_crit)/(1-Tperp/Tpar*(1-B/crit))**2.5/(1+(B/B_crit)/(1-Tperp/Tpar*(1-B/crit))
-      WHERE (onembc .gt. zero) sigma_an = sigma_an*
-     1      (one-2*(gp*onembc)**2.5_dp/(one+gp*onembc))
-
-			! thermal pressure given by
-			! p(s) = M(s)*(Phi'(s))^(gamma)/<1+ph(s)*H(s,B)>^(gamma)
-
-			! Here gsqrt is the Jacobian
-      pperp = (1 + scratch1*sigma_an)*gsqrt(1:nrzt)
-
-			! Perform flux surface average <1+ph(s)*H(s,B)>
+!...  USE array sigma_an to temporarily store B^2/[2mu_0p(s)]+1;
+!...  Note here p(s) is from previous iteration
+      sigma_an = bsq/(gp+eps)+one               !Recall that here bsq==>B^2/2
+      onembc   = one + one - sigma_an     !needed to compute pperp
+      pperp = (one + scratch1*sigma_an)*gsqrt(1:nrzt)
+ 
       DO js = 2,ns
          pmap(js) = DOT_PRODUCT(pperp(js:nrzt:ns), wint(js:nrzt:ns))
       END DO
         
       DO js = 2,ns
-					! signgs = sign of Jacobian
            pmap(js) = signgs*pmap(js)
-           pres(js) = mass(js) / pmap(js)**gamma
-           pppr(js) = pres(js) * phot(js)
+           pres(js) = mass(js) / pmap(js)**gamma    !updated thermal pressure
+           pppr(js) = pres(js) * pd(js)    !parallel pressure modification to thermal pressure
       END DO
-			! pppr = M(s)*ph(s)/<1+ph(s)*H(s,B)>^(gamma)
 !
 !********0*********0*********0*********0*********0*********0*********0**
 !   3.  Compute P-Parallel, P-Perp.                                    *
@@ -509,54 +515,20 @@
 
       DO js = 2,ns
          scratch1(js:nrzt:ns) = pppr(js)
+!         gp(js:nrzt:ns) = pd(js)
       END DO
 
-			! pppr = M(s)*ph(s)*H(s,B)/<1+ph(s)*H(s,B)>^(gamma)
-      ppar = scratch1*sigma_an
-
-			! pperp determined from parallel force balance
-!FORTRAN 95 CONSTRUCT ALLOWS ELSEWHERE (TEST), F90 DOES NOT
-#if defined(WIN32)
-      WHERE (onembc .le. zero)
-         pperp = gp*(one-onembc)/(one-gp*onembc)*ppar
-      ELSEWHERE
-         WHERE (onembc*gp .eq. one)
-            ppar = 2*scratch1*(one - onembc)
-            pperp= (7*ppar*(gp-one))/16
-         ELSEWHERE
-            pperp = (one - (5-(gp*onembc)**2)*
-     &              (gp*onembc)**1.5_dp/(one+gp*onembc)**2)*scratch1
-     &              *gp*(one-onembc)**2/(one-gp*onembc)**2
-         ENDWHERE
-      ENDWHERE
-
-#else
-			! B > Bcrit
-      WHERE (onembc .le. zero)
-				 ! pppr = M(s)*ph(s)*H(s,B)/<1+ph(s)*H(s,B)>^(gamma)
-				 ! Tperp/Tpar*(B/Bcrit)/(1-tperp/Tpar*(1-B/Bcrit))*ppar
-         pperp = gp*(one-onembc)/(one-gp*onembc)*ppar
-
-
-      ELSEWHERE (onembc*gp .eq. one)
-
-         ppar = 2*scratch1*(one - onembc)
-         pperp= (7*ppar*(gp-one))/16
-
-      ELSEWHERE
-
-         pperp = (one - (5-(gp*onembc)**2)*
-     &           (gp*onembc)**1.5_dp/(one+gp*onembc)**2)*scratch1
-     &           *gp*(one-onembc)**2/(one-gp*onembc)**2
-
-      END WHERE
-#endif
-
+      ppar = scratch1*sigma_an    !magnetic well figure of merit component to parallel pressure
+!
+!...  Perpendicular pressure obtained from parallel force balance
+!     pperp =  gp*onembc
+            pperp =  scratch1*onembc 
+!
+!
       DO js = 2,ns
          scratch1(js:nrzt:ns) = pres(js)
       END DO
 
-			! add contribution from thermal species to total pressure
       ppar = ppar + scratch1
       pperp= pperp+ scratch1
 
@@ -568,20 +540,23 @@
       pparden = MAX(pppr(ns-1),1.e-30_dp)
       DO lk=1,nznt
          l = ns-1 + ns*(lk-1)
-         pperp_ns1(lk) = (pperp(l)-pres(ns-1))/pparden
+!     pperp_ns1(lk) = (pperp(l)-pres(ns-1))/pparden
+                  pperp_ns1(lk) = pperp(l)
       END DO
       pparden = MAX(pppr(ns),1.e-30_dp)
       DO lk=1,nznt
          l = ns + ns*(lk-1)                             !!SPH12-27-12: l = ns, not ns-1
-         pperp_ns(lk) = (pperp(l)-pres(ns))/pparden
+!     pperp_ns(lk) = (pperp(l)-pres(ns))/pparden
+                  pperp_ns(lk) = pperp(l)
       END DO
             
-      pres_pv = medge / (1.5_dp*pmap(ns)-0.5_dp*pmap(ns-1))**gamma
-      pppr_pv = pres_pv * phedg
+      pres_pv = medge / (c1p5*pmap(ns)-p5*pmap(ns-1))**gamma
+!      pppr_pv = pres_pv * phedg
 
       DO lk=1,nznt
-         pperp_ns(lk)=(1.5_dp*pperp_ns(lk)-
-     &                 0.5_dp*pperp_ns1(lk))*pppr_pv + pres_pv
+         pperp_ns(lk)=c1p5 * pperp_ns(lk) - p5 * pperp_ns1(lk)
+ !        pperp_ns(lk)=(c1p5*pperp_ns(lk)-
+!     &                 p5*pperp_ns1(lk))*pppr_pv + pres_pv
       END DO
 !
 !********0*********0*********0*********0*********0*********0*********0**
