@@ -18,7 +18,10 @@
       USE vmec_input,  ONLY: extcur_in => extcur, read_indata_namelist,&
                              nv_in => nzeta, nfp_in => nfp, nigroup
       USE biotsavart
-      USE mpi_params                       
+      USE mpi_params  
+!DEC$ IF DEFINED (MPI_OPT)
+      USE mpi             
+!DEC$ ENDIF        
 !-----------------------------------------------------------------------
 !     Local Variables
 !          ier            Error Flag
@@ -27,7 +30,7 @@
       IMPLICIT NONE
       INTEGER, PARAMETER :: BYTE_8 = SELECTED_INT_KIND (8)
 !DEC$ IF DEFINED (MPI_OPT)
-      INCLUDE 'mpif.h'   ! MPI - Don't need because of beams3d_runtime
+!      INCLUDE 'mpif.h'   ! MPI - Don't need because of beams3d_runtime
       INTEGER(KIND=BYTE_8),ALLOCATABLE :: mnum(:), moffsets(:)
       INTEGER :: numprocs_local, mylocalid, mylocalmaster
       INTEGER :: MPI_COMM_LOCAL
@@ -41,9 +44,11 @@
 !-----------------------------------------------------------------------
 
       ! Divide up Work
+!DEC$ IF DEFINED (MPI_OPT)
       CALL MPI_COMM_DUP( MPI_COMM_SHARMEM, MPI_COMM_LOCAL, ierr_mpi)
       CALL MPI_COMM_RANK( MPI_COMM_LOCAL, mylocalid, ierr_mpi )              ! MPI
       CALL MPI_COMM_SIZE( MPI_COMM_LOCAL, numprocs_local, ierr_mpi )          ! MPI
+!DEC$ ENDIF
       mylocalmaster = master
 
       ! Read the input file for the EXTCUR array, NV, and NFP
@@ -186,20 +191,6 @@
 
 !DEC$ IF DEFINED (MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
-
-      ! Adjust indexing to send 2D arrays
-!      CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
-!                        B_R,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
-!                        MPI_COMM_LOCAL,ierr_mpi)
-!      CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
-!                        B_PHI,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
-!                        MPI_COMM_LOCAL,ierr_mpi)
-!      CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
-!                        B_Z,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
-!                        MPI_COMM_LOCAL,ierr_mpi)
-!      DEALLOCATE(mnum)
-!      DEALLOCATE(moffsets)
-
       CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)
       CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
       IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'beams3d_init_coil',ierr_mpi)

@@ -191,7 +191,6 @@
          !CALL beams3d_init_spec
       END IF
 
-
       ! Construct 3D Profile Splines
       IF (.not. lvac) THEN
          ! First Allocated Spline on master threads
@@ -230,7 +229,6 @@
             IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init: ZEFF_ARR',ier)
          END IF
          ! Now allocate the 4D spline array (which is all we need)
-         CALL MPI_BARRIER(MPI_COMM_SHARMEM, ier)
          CALL mpialloc(TE4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_TE4D)
          CALL mpialloc(NE4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_NE4D)
          CALL mpialloc(TI4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_TI4D)
