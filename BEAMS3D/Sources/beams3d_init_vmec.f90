@@ -226,7 +226,7 @@
          DEALLOCATE(rmnc_temp,zmns_temp)
          DEALLOCATE(bumnc_temp,bvmnc_temp)
          
-         adapt_tol = vc_adapt_tol
+         adapt_tol = 0.0
          adapt_rel = vc_adapt_tol
          DEALLOCATE(xm_temp,xn_temp)
       END IF
@@ -348,6 +348,10 @@
          END IF
       END DO
       
+#if defined(MPI_OPT)
+      CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
+#endif
+      
       ! Free variables
       IF (.not. lplasma_only) CALL free_virtual_casing(MPI_COMM_LOCAL)
       IF (myworkid == master) THEN
@@ -369,10 +373,6 @@
          WRITE(6,*)
          CALL FLUSH(6)
       END IF    
-      
-#if defined(MPI_OPT)
-      CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
-#endif
 
       ! Fix ZEFF
       IF (mylocalid == mylocalmaster) WHERE(ZEFF_ARR < 1) ZEFF_ARR = 1
