@@ -261,7 +261,7 @@
       ! Initialize Random Number generator
       CALL RANDOM_SEED
       
-!      Initialize beams (define a distribution of directions and weights)
+      ! Initialize beams (define a distribution of directions and weights)
       IF (lbeam) THEN
           IF (lw7x) THEN
              CALL beams3d_init_beams_w7x
@@ -400,7 +400,6 @@
          WRITE(6,'(A,I1)')               '   HERMITE FORM: ',1
          CALL FLUSH(6)
       END IF
-      !IF (myworkid /= master) DEALLOCATE(raxis,zaxis,phiaxis)
 
       ! Output Grid
       CALL beams3d_write('GRID_INIT')
