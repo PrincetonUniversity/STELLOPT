@@ -42,7 +42,8 @@
       REAL(rprec) :: iota, iotap, minB, maxB, B_refl, psi_a, B_zeta
       REAL(rprec) :: X, Y, Xp, Yp, dpsidr, dpsidz, Br, Bphi
       REAL(rprec) :: temp, sqrt_bbb, modbp, modbm, del 
-      REAL(rprec) :: dIdb, dgdb, dbigGdb, dVdb, gamma_c, bigGamma_c
+      REAL(rprec) :: dIdb, dgdb, dbigGdb, dVdb, vrovervt, dloverb 
+      REAL(rprec) :: gamma_c, dsoverb, wellGamma_c, bigGamma_c
       REAL(rprec) :: dBds, dBdr, dBdphi, dBdz
       REAL(rprec) :: phip, phim, Bxt, Byt, Bzt, Brt, Bpt
       REAL(rprec) :: g,dsdx,dudx,dvdx,dsdy,dudy,dvdy,dsdz,dudz,dvdz
@@ -50,7 +51,7 @@
       REAL(rprec), DIMENSION(3) :: sflCrd, Bxyz, crossnum, crossden
       REAL(rprec), DIMENSION(3) :: e_phi, e_r, e_z, grads, gradbtest, gradB
       REAL(rprec), DIMENSION(3) :: grad_zeta, grad_psi_x_b, grad_psi_xyz
-      INTEGER, PARAMETER :: nsteps = 10
+      INTEGER, PARAMETER :: nsteps = 10000
       INTEGER :: delzetadiv =200
       INTEGER, PARAMETER :: bpstep = 2 !division in b'
 
@@ -79,10 +80,10 @@
       IF (niter >= 0) THEN
         pi2 = 2.0_rprec*3.14159265358979_rprec
         !delzeta = Rmajor/delzetadiv !step size
-        !delzeta = -0.00345175 !for comparison with ROSE
-        delzeta = -0.0034433355_rprec
+        delzeta = -0.0034433355_rprec !for comparison with ROSE
         rovera = sqrt(s) !rho = r/a
         psi_a = phiedge !Toroidal flux at the edge
+        dloverb = 0.0_rprec
 
         DO ik = 1,nsd !go through each surface
           IF (sigma(ik) >= bigno) CYCLE
@@ -93,9 +94,9 @@
           
           CALL EZspline_interp(iota_spl,s,iota,iflag) !get iota
           CALL EZspline_derivative(iota_spl,1,s,iotap,iflag) !get iota' necessary for later
-          write (*,*) 'iota', iota
-          write (*,*) 'iota', iotap
-          write (*,*) 'psi_a', psi_a
+          !write (*,*) 'iota', iota
+          !write (*,*) 'iota', iotap
+          !write (*,*) 'psi_a', psi_a
 
           !Initialize starting point
           theta = 0.0_rprec
@@ -132,9 +133,9 @@
             X=R(j)*cos(zeta)
             Y=R(j)*sin(zeta)
             !write (*,*) '--------------'
+            !write (*,*) R(j), X, Y, Z(j)
             !write (*,*) j,s,u,v
             !write (*,*) s,theta,zeta
-            !write (*,*) R(j), X, Y, Z(j)
 
             !Calculate crude arclength
             IF (j > 1) THEN
@@ -190,7 +191,6 @@
             !Get B field
             !TODO figure out why exactly the code (copied from get_equil_B) divides
             !by nfp in the Bphi terms only. It seems weird but agrees with ROSE
-            CALL get_equil_Bcyl(R(j),zeta,Z(j),Br,Bphi,Bz(j),ier)
 
             CALL get_equil_Bcylsuv(s,u,v,Br,Bphi,Bz(j),ier,modB(j))
             Bx(j) = Br*cos(v) - Bphi*sin(zeta)
@@ -332,6 +332,9 @@
             !Bsupv(j) = dot_product(Bxyz,e_phi)/R(j)
             !write(*,*) 'Bsupv rose',Bsupv(j)
 
+            !integrate dloverb
+            dloverb = dloverb + ds(j)/modB(j)
+
             !advance the step
             zeta = zeta + delzeta
             theta = theta + (iota * delzeta)
@@ -341,6 +344,10 @@
             sflCrd(2) = theta
             sflCrd(3) = zeta
           END DO
+
+
+
+          bigGamma_c = 0.0_rprec
           minB = MINVAL(modB)
           maxB = MAXVAL(modB)
           
@@ -465,6 +472,9 @@
 
             !We've assembled all the info we need to compute the major quantities
             !for each well, we integrate the various quantities, dgdb, dGdb, dIdb, and dVdb
+            gamma_c = 0.0_rprec
+            vrovervt = 0.0_rprec
+            wellgamma_c = 0.0_rprec
             DO k = 1,nwells
 
               dIdb = 0.0_rprec
@@ -498,12 +508,24 @@
                 temp = dVdb_t1(j) - (2.0_rprec * dBdpsi(j) - modB(j)/Bsupv(j)*dBsupvdpsi(j)) 
                 temp = temp * 1.5_rprec * ds(j) / modB(j) / B_refl * sqrt_bbb
                 dVdb = dVdb + temp
-                
+              
 
-              END DO
-            END DO 
+              END DO !end integration over a single well
+              !vrovervt ratio of radial to poloidal drifts
+              !write (*,*) 'post well k', dIdb, dgdb, dbigGdb, dVdb
+              temp = dgdb/grad_psi_i(well_start(k))/dIdb * minB * e_theta_i(well_start(k))
+              temp = temp * (dbigGdb/dIdb + 0.666666_rprec * dVdb/dIdb)
+              vrovervt = temp
+              !write (*,*)' vrovervt', vrovervt
 
-          END DO
+              gamma_c = 4.0_rprec/pi2 * atan(vrovervt)
+              wellGamma_c = wellGamma_c + (gamma_c * gamma_c * dIdb)
+              !write (*,*) 'gamma_c, wellGamma_c', gamma_c, wellGamma_c
+            END DO !end sum over all wells           
+            bigGamma_c = bigGamma_c + wellGamma_c * pi2/4.0_rprec/sqrt(2.0_rprec)*bpstep
+          END DO !end integration over bp
+          bigGamma_c = bigGamma_c/dloverb
+          !write (*,*) 'bigGamma_c',bigGamma_c
         END DO
       ELSE !This is the initialization loop that just counts targets
         DO ik = 1, nsd
