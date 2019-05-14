@@ -41,19 +41,25 @@
       REAL(rprec) :: s, rovera, theta, zeta, delzeta, u, v, coszeta, sinzeta
       REAL(rprec) :: iota, iotap, minB, maxB, B_refl, psi_a, B_zeta
       REAL(rprec) :: X, Y, Xp, Yp, dpsidr, dpsidz, Br, Bphi
+      REAL(rprec) :: temp, sqrt_bbb, modbp, modbm, del 
+      REAL(rprec) :: dIdb, dgdb, dbigGdb, dVdb, gamma_c, bigGamma_c
+      REAL(rprec) :: dBds, dBdr, dBdphi, dBdz
+      REAL(rprec) :: phip, phim, Bxt, Byt, Bzt, Brt, Bpt
+      REAL(rprec) :: g,dsdx,dudx,dvdx,dsdy,dudy,dvdy,dsdz,dudz,dvdz
 
       REAL(rprec), DIMENSION(3) :: sflCrd, Bxyz, crossnum, crossden
-      REAL(rprec), DIMENSION(3) :: e_phi, e_r, e_z, grads
-      INTEGER, PARAMETER :: nsteps = 10000
+      REAL(rprec), DIMENSION(3) :: e_phi, e_r, e_z, grads, gradbtest, gradB
+      REAL(rprec), DIMENSION(3) :: grad_zeta, grad_psi_x_b, grad_psi_xyz
+      INTEGER, PARAMETER :: nsteps = 10
       INTEGER :: delzetadiv =200
       INTEGER, PARAMETER :: bpstep = 2 !division in b'
 
 
       REAL(rprec), DIMENSION(nsteps) :: R, Z, Bx, By, Bz, Bsupv, dBsupvdpsi, modB
-      REAL(rprec), DIMENSION(nsteps) :: kappa_g, e_theta_norm, grad_psi_norm
-      real(rprec), DIMENSION(nsteps,3) :: gradR, gradZ, gradB, grad_psi
-      real(rprec), DIMENSION(nsteps,3) :: dxyzdu, dxyzdv, dxyzds, dBsupv 
-      real(rprec), DIMENSION(nsteps) :: grad_psi_i, e_theta_i, ds
+      REAL(rprec), DIMENSION(nsteps) :: kappa_g, e_theta_norm, grad_psi_norm, dBdpsi
+      real(rprec), DIMENSION(nsteps,3) :: gradR, gradZ, grad_psi
+      real(rprec), DIMENSION(nsteps,3) :: dxyzdu, dxyzdv, dxyzds, dBsupv
+      real(rprec), DIMENSION(nsteps) :: grad_psi_i, e_theta_i, ds, dVdb_t1
       integer, parameter :: maxwells = 100
 
       integer, dimension(maxwells) :: well_start, well_stop
@@ -72,11 +78,11 @@
  
       IF (niter >= 0) THEN
         pi2 = 2*3.14159265358979
-        delzeta = Rmajor/delzetadiv !step size
-        !delzeta = -0.0034518 for comparison with ROSE
+        !delzeta = Rmajor/delzetadiv !step size
+        !delzeta = -0.00345175 !for comparison with ROSE
+        delzeta = -0.0034433355
         rovera = sqrt(s) !rho = r/a
         psi_a = phiedge !Toroidal flux at the edge
-        !nsteps = 100 !somewhat arbitrary number of steps
 
         DO ik = 1,nsd !go through each surface
           IF (sigma(ik) >= bigno) CYCLE
@@ -87,8 +93,9 @@
           
           CALL EZspline_interp(iota_spl,s,iota,iflag) !get iota
           CALL EZspline_derivative(iota_spl,1,s,iotap,iflag) !get iota' necessary for later
-          !write (*,*) 'iota', iota
-          !write (*,*) 'iota', iotap
+          write (*,*) 'iota', iota
+          write (*,*) 'iota', iotap
+          write (*,*) 'psi_a', psi_a
 
           !Initialize starting point
           theta = 0.0
@@ -97,6 +104,15 @@
           sflCrd(1) = s
           sflCrd(2) = theta
           sflCrd(3) = zeta
+
+          
+          !Do to some shitty behaviors in Stellopt, initializations may prevent
+          !random crashes
+          !Note that initializing to 0 instead of 0.0_rprec will definitely cause crashes
+          gradR = 0.0_rprec
+          gradZ = 0.0_rprec
+          modB = 0.0_rprec 
+          gradB = 0.0_rprec
 
           !first time through calculate fields and some basic parameters
           DO j = 1,nsteps
@@ -170,28 +186,89 @@
                                   & + grad_psi(j,3)*grad_psi(j,3))
 
             !Get B field
-            !TODO there's some weird stuff going on here. get_equil_B sometimes
-            !fails and gives 0.00 for the fields. So instead, I call the suv form
-            !which is what get_equil_B calls, and then it doesn't fail
             !TODO figure out why exactly the code (copied from get_equil_B) divides
-            !by nfp in the Bphi terms only. It seems weird
-            !CALL get_equil_B(R(j), zeta, Z(j), Bx(j), By(j), Bz(j), ier, modB(j), gradB(j,:))
-            CALL get_equil_Bcylsuv(s,u,v,Br,Bphi,Bz(j),ier,modB(j),gradB(j,:))
-            Bx(j) = Br*cos(v) - Bphi*sin(v/nfp)
-            By(j) = Br*sin(v) + Bphi*cos(v/nfp)
+            !by nfp in the Bphi terms only. It seems weird but agrees with ROSE
+            CALL get_equil_Bcyl(R(j),zeta,Z(j),Br,Bphi,Bz(j),ier)
+
+            CALL get_equil_Bcylsuv(s,u,v,Br,Bphi,Bz(j),ier,modB(j))
+            Bx(j) = Br*cos(v) - Bphi*sin(zeta)
+            By(j) = Br*sin(y) + Bphi*cos(zeta)
             Bxyz(1) = Bx(j)
             Bxyz(2) = By(j)
             Bxyz(3) = Bz(j)
-
-
-            !write(*,*) 'modB',modB(j)
             !write(*,*) 'Bxyz',Bxyz(1),Bxyz(2),Bxyz(3),modB(j), ier
+            
+            
+            
+            !get_equil_xxx are supposed to return derivatives
+            !but they seem to return nonsense, so let's just
+            !create our own finite differences
+            del = 0.005_rprec
+            
+            CALL get_equil_Bcylsuv(s-del,u,v,Brt,Bpt,Bzt,ier,modbm,gradbtest)
+            CALL get_equil_Bcylsuv(s+del,u,v,Brt,Bpt,Bzt,ier,modbp,gradbtest)
+            dBds = (modbp-modbm)/2/del
+            dBdpsi(j) = dBds*pi2/psi_a !This has been verified with ROSE
+            write(*,*) 'dBdpsi',dBdpsi(j)
+            
+            !Handling u and v derivatives require dealing with boundaries
+            !up = u+del
+            !IF (up > pi2) up = up - pi2
+            !CALL get_equil_Bcylsuv(s,up,v,Br,Bphi,Bz(j),ier,modbp,gradbtest)
+            !um = u-del
+            !IF (um < 0) um = um + pi2
+            !CALL get_equil_Bcylsuv(s,um,v,Br,Bphi,Bz(j),ier,modbm,gradbtest)
+            !dBdu = (modbp-modbm)/2/del
+            !write(*,*) 'dBdu',dBdu,modbp,modbm
+            ! 
+            !vp = v+del
+            !IF (vp > pi2) vp = vp - pi2
+            !CALL get_equil_Bcylsuv(s,u,vp,Br,Bphi,Bz(j),ier,modbp,gradbtest)
+            !vm = v-del
+            !IF (vm < 0) vm = vm + pi2
+            !CALL get_equil_Bcylsuv(s,u,vm,Br,Bphi,Bz(j),ier,modbm,gradbtest)
+            !dBdv = (modbp-modbm)/2/del
+            !write(*,*) 'dBdv', dBdv,modbp,modbm
 
-            !Get gaussian curvature
-            CALL get_equil_kappa(s,u,v,kappa_g(j),ier)
-            !write(*,*) 'kappa_g',kappa_g(j)
-            !kappa_g disagrees with ROSE, need to look further
-            !I think this kappa is the curvature of the surface, not the field line
+            !Calculate dB/dr, dB/dth and dB/dz
+            Brt = 0.0_rprec
+            Bpt = 0.0_rprec
+            Bzt = 0.0_rprec
+            CALL get_equil_B(R(j)+del,MODULO(zeta, pi2), Z(j),Bxt,Byt,Bzt,ier)
+            modbp = sqrt(Bxt*Bxt + Byt*Byt + Bzt*Bzt)
+            CALL get_equil_B(R(j)-del,MODULO(zeta, pi2), Z(j),Bxt,Byt,Bzt,ier)
+            modbm = sqrt(Bxt*Bxt + Byt*Byt + Bzt*Bzt)
+            dBdr = (modbp-modbm)/2.0_rprec/del
+
+            CALL get_equil_B(R(j),MODULO(zeta, pi2), Z(j)+del,Bxt,Byt,Bzt,ier)
+            modbp = sqrt(Bxt*Bxt + Byt*Byt + Bzt*Bzt)
+            CALL get_equil_B(R(j),MODULO(zeta, pi2), Z(j)-del,Bxt,Byt,Bzt,ier)
+            modbm = sqrt(Bxt*Bxt + Byt*Byt + Bzt*Bzt)
+            dBdz = (modbp-modbm)/2.0_rprec/del
+
+            !TODO check to see if you need to restrict this to one field period
+            phip = MODULO(zeta+del, pi2)
+            CALL get_equil_B(R(j), phip, Z(j),Bxt,Byt,Bzt,ier)
+            modbp = sqrt(Bxt*Bxt + Byt*Byt + Bzt*Bzt)
+            phim = MODULO(zeta-del, pi2)
+            CALL get_equil_B(R(j), phim, Z(j),Bxt,Byt,Bzt,ier)
+            modbm = sqrt(Bxt*Bxt + Byt*Byt + Bzt*Bzt)
+            dBdphi = (modbp-modbm)/2.0_rprec/del
+
+            gradB(3) = dBdz
+            gradB(1) = dBdr*X/R(j) - dBdphi*Y/R(j)
+            gradB(2) = dBdr*Y/R(j) + dBdphi*X/R(j)
+            
+            !modbtest = modB(j)
+            !CALL get_equil_Bcylsuv(s,ut+del,vt,Br,Bphi,Bz(j),ier,modB(j),gradbtest)
+            
+            !CALL get_equil_Bcylsuv(s,ut,vt-del,Br,Bphi,Bz(j),ier,modB(j),gradbtest)
+            !modbtest = modB(j)
+            !CALL get_equil_Bcylsuv(s,ut,vt+del,Br,Bphi,Bz(j),ier,modB(j),gradbtest)
+            
+            !write(*,*) 'modB',modB(j)
+            !write(*,*) 'gradB', gradB(j,1), gradB(j,2), gradB(j,3)
+
 
             !Calculate |e_theta| 
 
@@ -224,6 +301,21 @@
             e_theta_norm(j) = sqrt(dpsidr*dpsidr + dpsidz*dpsidz)/Bphi
             !write(*,*) j,'e_theta_norm, B_zeta, Bphi',e_theta_norm(j),Bphi
 
+            !geodesic curvature
+            !TODO gradB is not in the correct coordinates
+            kappa_g(j) = dot_product(Bxyz, gradB)/modB(j)/modB(j)
+            !write (*,*) 'gradB', gradB
+            !write (*,*) 'kappa_g', kappa_g(j)
+
+            !The terms that go into gV
+            grad_zeta(1) = -Y/R(j)/R(j)
+            grad_zeta(2) = X/R(j)/R(j)
+            grad_zeta(3) = 0.0_rprec
+
+            !dvdB_t1 is the first term in the brackets of dVdb
+            ! = iota' ( grad_psi cross b_hat) dot grad_zeta
+            CALL cross_product(grad_psi(j,:), Bxyz, grad_psi_x_b)
+            dVdb_t1(j) = iotap*dot_product(grad_psi_x_b, grad_zeta)/modB(j)
 
             !Get B^v and derivatives
             CALL get_equil_Bsupv(s,u,v,Bsupv(j),ier,dBsupv(j,:))
@@ -359,15 +451,48 @@
             END IF 
             
             nwells = cur_well - 1
-
             !Write some test output
             !write(*,*) 'well number',nwells
-            !DO j = 1,nwells
-            !  write(*,*) 'well',j,well_start(j), well_stop(j)
+            !DO k = 1,nwells
+            !  write(*,*) 'well',k,well_start(k), well_stop(k)
             !END DO 
             !DO j = 1,nsteps
             !  write(*,*) j,B_refl,modB(j),grad_psi_norm(j),grad_psi_i(j),e_theta_norm(j),e_theta_i(j)
             !END DO
+
+            !We've assembled all the info we need to compute the major quantities
+            !for each well, we integrate the various quantities, dgdb, dGdb, dIdb, and dVdb
+            DO k = 1,nwells
+
+              dIdb = 0
+              dgdb = 0
+              dbigGdb = 0
+              dVdb = 0
+
+              DO j = well_start(k),well_stop(k)
+                !double check that we're in a valid well
+                if (grad_psi_i(j) > 1.0E8) CYCLE
+                if (e_theta_i(j) == 0.0) CYCLE
+
+                sqrt_bbb = sqrt(1 - modB(j)/B_refl)
+
+                !dIdb
+                temp = ds(j)*minB/B_refl/B_refl / sqrt_bbb
+                dIdb = dIdb + temp
+                
+                !dgdb
+                temp = ds(j) * grad_psi_norm(j) * kappa_g(j) * minB * minB
+                temp = temp/B_refl/B_refl/2/modB(j)
+                temp = temp*(sqrt_bbb + 1.0/sqrt_bbb)
+                dgdb = dgdb + temp
+
+                !dbigGdb TODO check the dBdpsi term as gradB(j,1)
+                temp = dBdpsi(j) *ds(j) * minB / B_refl / B_refl / 2
+                temp = temp*(sqrt_bbb + 1.0/sqrt_bbb)
+                dbigGdb = dbigGdb + temp
+
+              END DO
+            END DO 
 
           END DO
         END DO
