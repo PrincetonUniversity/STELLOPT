@@ -58,7 +58,7 @@
       REAL(rprec), DIMENSION(nsteps) :: R, Z, Bx, By, Bz, Bsupv, dBsupvdpsi, modB
       REAL(rprec), DIMENSION(nsteps) :: kappa_g, e_theta_norm, grad_psi_norm, dBdpsi
       real(rprec), DIMENSION(nsteps,3) :: gradR, gradZ, grad_psi
-      real(rprec), DIMENSION(nsteps,3) :: dxyzdu, dxyzdv, dxyzds, dBsupv
+      real(rprec), DIMENSION(nsteps,3) :: dxyzdu, dxyzdv, dxyzds
       real(rprec), DIMENSION(nsteps) :: grad_psi_i, e_theta_i, ds, dVdb_t1
       integer, parameter :: maxwells = 100
 
@@ -77,10 +77,10 @@
       IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I8))') 'GAMMA_C     ',dex,3
  
       IF (niter >= 0) THEN
-        pi2 = 2*3.14159265358979
+        pi2 = 2.0_rprec*3.14159265358979_rprec
         !delzeta = Rmajor/delzetadiv !step size
         !delzeta = -0.00345175 !for comparison with ROSE
-        delzeta = -0.0034433355
+        delzeta = -0.0034433355_rprec
         rovera = sqrt(s) !rho = r/a
         psi_a = phiedge !Toroidal flux at the edge
 
@@ -98,8 +98,8 @@
           write (*,*) 'psi_a', psi_a
 
           !Initialize starting point
-          theta = 0.0
-          zeta = 0.0
+          theta = 0.0_rprec
+          zeta = 0.0_rprec
           !zeta = -0.0034
           sflCrd(1) = s
           sflCrd(2) = theta
@@ -113,6 +113,8 @@
           gradZ = 0.0_rprec
           modB = 0.0_rprec 
           gradB = 0.0_rprec
+          R = 0.0_rprec
+          Z = 0.0_rprec
 
           !first time through calculate fields and some basic parameters
           DO j = 1,nsteps
@@ -209,7 +211,7 @@
             CALL get_equil_Bcylsuv(s+del,u,v,Brt,Bpt,Bzt,ier,modbp,gradbtest)
             dBds = (modbp-modbm)/2/del
             dBdpsi(j) = dBds*pi2/psi_a !This has been verified with ROSE
-            write(*,*) 'dBdpsi',dBdpsi(j)
+            !write(*,*) 'dBdpsi',dBdpsi(j)
             
             !Handling u and v derivatives require dealing with boundaries
             !up = u+del
@@ -318,12 +320,13 @@
             dVdb_t1(j) = iotap*dot_product(grad_psi_x_b, grad_zeta)/modB(j)
 
             !Get B^v and derivatives
-            CALL get_equil_Bsupv(s,u,v,Bsupv(j),ier,dBsupv(j,:))
-            dBsupvdpsi(j) = dBsupv(j,3)*2*s/psi_a
-            !write(*,*) 's',s,'psi_a',psi_a
-            !write(*,*) 'Bsupv',Bsupv(j)
-            !write(*,*) 'dBsupvdpsi', dBsupvdpsi(j)
-            !DBsupvdpsi differs with ROSE, but I'm not sure which is correct
+            CALL get_equil_Bsupv(s,u,v,Bsupv(j),ier)
+            !Use finite derivatives because ezspline derivs are broken
+            CALL get_equil_Bsupv(s+del,u,v,modbp,ier)
+            CALL get_equil_Bsupv(s-del,u,v,modbm,ier)
+            dBsupvdpsi(j) = (modbp - modbm)/2.0_rprec/del
+            dBsupvdpsi(j) = dBsupvdpsi(j)*pi2/psi_a
+            !Both values verified with ROSE
 
             !Rose version of BPHI, verified that these agree
             !Bsupv(j) = dot_product(Bxyz,e_phi)/R(j)
@@ -464,15 +467,15 @@
             !for each well, we integrate the various quantities, dgdb, dGdb, dIdb, and dVdb
             DO k = 1,nwells
 
-              dIdb = 0
-              dgdb = 0
-              dbigGdb = 0
-              dVdb = 0
+              dIdb = 0.0_rprec
+              dgdb = 0.0_rprec
+              dbigGdb = 0.0_rprec
+              dVdb = 0.0_rprec
 
               DO j = well_start(k),well_stop(k)
                 !double check that we're in a valid well
-                if (grad_psi_i(j) > 1.0E8) CYCLE
-                if (e_theta_i(j) == 0.0) CYCLE
+                if (grad_psi_i(j) > 1.0E8_rprec) CYCLE
+                if (e_theta_i(j) == 0.0_rprec) CYCLE
 
                 sqrt_bbb = sqrt(1 - modB(j)/B_refl)
 
@@ -482,14 +485,20 @@
                 
                 !dgdb
                 temp = ds(j) * grad_psi_norm(j) * kappa_g(j) * minB * minB
-                temp = temp/B_refl/B_refl/2/modB(j)
-                temp = temp*(sqrt_bbb + 1.0/sqrt_bbb)
+                temp = temp/B_refl/B_refl/2.0_rprec/modB(j)
+                temp = temp*(sqrt_bbb + 1.0_rprec/sqrt_bbb)
                 dgdb = dgdb + temp
 
                 !dbigGdb TODO check the dBdpsi term as gradB(j,1)
-                temp = dBdpsi(j) *ds(j) * minB / B_refl / B_refl / 2
-                temp = temp*(sqrt_bbb + 1.0/sqrt_bbb)
+                temp = dBdpsi(j) *ds(j) * minB / B_refl / B_refl / 2.0_rprec
+                temp = temp*(sqrt_bbb + 1.0_rprec/sqrt_bbb)
                 dbigGdb = dbigGdb + temp
+
+                !dVdb
+                temp = dVdb_t1(j) - (2.0_rprec * dBdpsi(j) - modB(j)/Bsupv(j)*dBsupvdpsi(j)) 
+                temp = temp * 1.5_rprec * ds(j) / modB(j) / B_refl * sqrt_bbb
+                dVdb = dVdb + temp
+                
 
               END DO
             END DO 
