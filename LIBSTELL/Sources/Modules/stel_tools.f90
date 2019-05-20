@@ -2130,7 +2130,7 @@
       k = MIN(MAX(COUNT(x3 < x3_in),1),nx3-1)
       hz     = x3(k+1) - x3(k)
       hzi    = 1 / hz
-      zparam = (x3(k+1) - x3_in) * hzi
+      zparam = (x3_in - x3(k)) * hzi
       RETURN
       END SUBROUTINE lookupgrid1d
 
@@ -2148,9 +2148,9 @@
       hxi    = 1 / hx
       hyi    = 1 / hy
       hzi    = 1 / hz
-      xparam = (x1(i+1) - x1_in) * hxi
-      yparam = (x2(j+1) - x2_in) * hyi
-      zparam = (x3(k+1) - x3_in) * hzi
+      xparam = (x1_in - x1(i)) * hxi
+      yparam = (x2_in - x2(j)) * hyi
+      zparam = (x3_in - x3(k)) * hzi
       RETURN
       END SUBROUTINE lookupgrid3d
       !-----------------------------------------------------------------
