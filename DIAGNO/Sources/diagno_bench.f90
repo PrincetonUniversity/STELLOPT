@@ -95,7 +95,7 @@
 
       ! First do volint
       lvc_field = .false.
-      vc_adapt_tol = 1.0E-04
+      vc_adapt_tol = 1.0E-06
       vc_adapt_rel = my_rtol
       CALL diagno_init_vmec
       MIN_CLS = 0
