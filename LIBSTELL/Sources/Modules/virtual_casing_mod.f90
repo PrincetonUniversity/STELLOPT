@@ -2880,8 +2880,8 @@
       hy     = x2(j+1) - x2(j)
       hxi    = one / hx
       hyi    = one / hy
-      xparam = (x1(i+1) - x1_in) * hxi
-      yparam = (x2(j+1) - x2_in) * hyi
+      xparam = (x1_in - x1(i)) * hxi
+      yparam = (x2_in - x2(j)) * hyi
       RETURN
       END SUBROUTINE lookupgrid2d
       !-----------------------------------------------------------------
@@ -2901,9 +2901,9 @@
       hxi    = one / hx
       hyi    = one / hy
       hzi    = one / hz
-      xparam = (x1(i+1) - x1_in) * hxi
-      yparam = (x2(j+1) - x2_in) * hyi
-      zparam = (x3(k+1) - x3_in) * hzi
+      xparam = (x1_in - x1(i)) * hxi
+      yparam = (x2_in - x2(j)) * hyi
+      zparam = (x3_in - x3(k)) * hzi
       RETURN
       END SUBROUTINE lookupgrid3d
       !-----------------------------------------------------------------
