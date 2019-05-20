@@ -73,9 +73,9 @@ SUBROUTINE out_beams3d_nag(t, q)
        hxi    = one / hx
        hyi    = one / hy
        hzi    = one / hz
-       xparam = (raxis(i+1) - q(1)) * hxi
-       yparam = (phiaxis(j+1) - x0) * hyi
-       zparam = (zaxis(k+1) - q(3)) * hzi
+       xparam = (q(1) - raxis(i)) * hxi
+       yparam = (x0 - phiaxis(j)) * hyi
+       zparam = (q(3) - zaxis(k)) * hzi
        CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                        hx,hxi,hy,hyi,hz,hzi,&
                        S4D(1,1,1,1),nr,nphi,nz)

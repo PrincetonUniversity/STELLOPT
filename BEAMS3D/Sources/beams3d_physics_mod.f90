@@ -115,9 +115,9 @@ MODULE beams3d_physics_mod
             hxi    = one / hx
             hyi    = one / hy
             hzi    = one / hz
-            xparam = (raxis(i+1) - r_temp) * hxi
-            yparam = (phiaxis(j+1) - phi_temp) * hyi
-            zparam = (zaxis(k+1) - z_temp) * hzi
+            xparam = (r_temp - raxis(i)) * hxi
+            yparam = (phi_temp - phiaxis(j)) * hyi
+            zparam = (z_temp - zaxis(k)) * hzi
             !CALL R8HERM3xyz(r_temp,phi_temp,z_temp,&
             !                MODB_spl%x1(1),MODB_spl%n1,&
             !                MODB_spl%x2(1),MODB_spl%n2,&
@@ -267,7 +267,7 @@ MODULE beams3d_physics_mod
          !--------------------------------------------------------------
          INTEGER, PARAMETER :: num_depo = 250
          DOUBLE PRECISION, PARAMETER :: dl = 5D-3
-         DOUBLE PRECISION, PARAMETER :: one = 1
+         DOUBLE PRECISION, PARAMETER :: one = 1.0D0
          DOUBLE PRECISION, PARAMETER :: half = 0.5D0
          DOUBLE PRECISION, PARAMETER :: stepsize(3)=(/0.25,0.05,0.01/)
 
@@ -325,9 +325,9 @@ MODULE beams3d_physics_mod
                   hxi    = one / hx
                   hyi    = one / hy
                   hzi    = one / hz
-                  xparam = (raxis(i+1) - q(1)) * hxi
-                  yparam = (phiaxis(j+1) - phi_temp) * hyi
-                  zparam = (zaxis(k+1) - q(3)) * hzi
+                  xparam = (q(1) - raxis(i)) * hxi
+                  yparam = (phi_temp - phiaxis(j)) * hyi
+                  zparam = (q(3) - zaxis(k)) * hzi
                   s_temp =1.5
                   !CALL EZspline_interp(S_spl,q(1),phi_temp,q(3),s_temp,ier)
                   CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
@@ -370,9 +370,9 @@ MODULE beams3d_physics_mod
                   hxi    = one / hx
                   hyi    = one / hy
                   hzi    = one / hz
-                  xparam = (raxis(i+1) - q(1)) * hxi
-                  yparam = (phiaxis(j+1) - phi_temp) * hyi
-                  zparam = (zaxis(k+1) - q(3)) * hzi
+                  xparam = (q(1) - raxis(i)) * hxi
+                  yparam = (phi_temp - phiaxis(j)) * hyi
+                  zparam = (q(3) - zaxis(k)) * hzi
                   !CALL EZspline_interp(S_spl,q(1),phi_temp,q(3),s_temp,ier)
                   CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                                   hx,hxi,hy,hyi,hz,hzi,&
@@ -420,9 +420,9 @@ MODULE beams3d_physics_mod
             hxi    = one / hx
             hyi    = one / hy
             hzi    = one / hz
-            xparam = (raxis(i+1) - rlocal(l)) * hxi
-            yparam = (phiaxis(j+1) - plocal(l)) * hyi
-            zparam = (zaxis(k+1) - zlocal(l)) * hzi
+            xparam = (rlocal(l) - raxis(i)) * hxi
+            yparam = (plocal(l) - phiaxis(j)) * hyi
+            zparam = (zlocal(l) - zaxis(k)) * hzi
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hx,hxi,hy,hyi,hz,hzi,&
                             TI4D(1,1,1,1),nr,nphi,nz)
@@ -443,6 +443,7 @@ MODULE beams3d_physics_mod
          tilocal = tilocal*1D-3
          telocal = telocal*1D-3
          zeff_temp = SUM(zefflocal)/DBLE(num_depo)
+         zeff_temp = 1
 
 !DEC$ IF DEFINED (NTCC)
          !--------------------------------------------------------------
@@ -457,8 +458,8 @@ MODULE beams3d_physics_mod
          ! izbeam  Beam Z
          ! iztarg  Target Z
          ! btsigv  cross section
-         CALL adas_btsigv(2,1,energy,tilocal,num_depo,myZ,zeff_temp,sigvii,ier)  ! Ion Impact ionization cross-section term.
-         CALL adas_btsigv(1,1,energy,tilocal,num_depo,myZ,zeff_temp,sigvcx,ier)  ! Charge Exchange ionization cross-section term.
+         CALL adas_btsigv(2,1,energy,tilocal,num_depo,1,1,sigvii,ier)  ! Ion Impact ionization cross-section term.
+         CALL adas_btsigv(1,1,energy,tilocal,num_depo,1,1,sigvcx,ier)  ! Charge Exchange ionization cross-section term.
          ! Arguments to sigvte(zneut,tevec,n1,sigv_adas,istat)
          ! zneut charge (=1)
          ! tevec electron temperature [keV]
@@ -495,9 +496,9 @@ MODULE beams3d_physics_mod
             hxi    = one / hx
             hyi    = one / hy
             hzi    = one / hz
-            xparam = (raxis(i+1) - rlocal(l)) * hxi
-            yparam = (phiaxis(j+1) - plocal(l)) * hyi
-            zparam = (zaxis(k+1) - zlocal(l)) * hzi
+            xparam = (rlocal(l) - raxis(i)) * hxi
+            yparam = (plocal(l) - phiaxis(j)) * hyi
+            zparam = (zlocal(l) - zaxis(k)) * hzi
             !CALL EZspline_interp(S_spl,rlocal(l),plocal(l),zlocal(l),s_temp,ier)
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hx,hxi,hy,hyi,hz,hzi,&
@@ -597,9 +598,9 @@ MODULE beams3d_physics_mod
          hxi    = one / hx
          hyi    = one / hy
          hzi    = one / hz
-         xparam = (raxis(i+1) - r_temp) * hxi
-         yparam = (phiaxis(j+1) - phi_temp) * hyi
-         zparam = (zaxis(k+1) - z_temp) * hzi
+         xparam = (r_temp - raxis(i)) * hxi
+         yparam = (phi_temp - phiaxis(j)) * hyi
+         zparam = (z_temp - zaxis(k)) * hzi
          !CALL EZspline_interp(BR_spl,r_temp,phi_temp,z_temp,br_temp,ier)
          !CALL EZspline_interp(BPHI_spl,r_temp,phi_temp,z_temp,bp_temp,ier)
          !CALL EZspline_interp(BZ_spl,r_temp,phi_temp,z_temp,bz_temp,ier)

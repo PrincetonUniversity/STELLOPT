@@ -86,9 +86,9 @@
          hxi    = one / hx
          hyi    = one / hy
          hzi    = one / hz
-         xparam = (raxis(i+1) - r_temp) * hxi
-         yparam = (phiaxis(j+1) - phi_temp) * hyi
-         zparam = (zaxis(k+1) - z_temp) * hzi
+         xparam = (r_temp - raxis(i)) * hxi
+         yparam = (phi_temp - phiaxis(j)) * hyi
+         zparam = (z_temp - zaxis(k)) * hzi
          !CALL R8HERM3xyz(r_temp,phi_temp,z_temp,&
          !                BR_spl%x1(1),BR_spl%n1,&
          !                BR_spl%x2(1),BR_spl%n2,&

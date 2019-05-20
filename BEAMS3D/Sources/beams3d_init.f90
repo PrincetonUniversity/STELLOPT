@@ -170,10 +170,10 @@
             FORALL(i = 1:nr) raxis(i) = (i-1)*(rmax-rmin)/(nr-1) + rmin
             FORALL(i = 1:nz) zaxis(i) = (i-1)*(zmax-zmin)/(nz-1) + zmin
             FORALL(i = 1:nphi) phiaxis(i) = (i-1)*(phimax-phimin)/(nphi-1) + phimin
+            S_ARR = 1.5
+            POT_ARR = 0
          END IF
          CALL MPI_BARRIER(MPI_COMM_SHARMEM, ier)
-         S_ARR = 1.5
-         POT_ARR = 0
          ! Put the vacuum field on the background grid
          IF (lmgrid) THEN
             CALL beams3d_init_mgrid
@@ -425,6 +425,7 @@
          IF (npot > 0) CALL EZspline_free(POT_spl_s,ier)
          IF (nzeff > 0) CALL EZspline_free(ZEFF_spl_s,ier)
       END IF
+
 !DEC$ IF DEFINED (MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'beams3d_init',ierr_mpi)

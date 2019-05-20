@@ -56,7 +56,6 @@ PROGRAM BEAMS3D
     lverb = .true.
     lread_input = .true.
     IF (myworkid == master) THEN
-        !OPEN(6, RECL = 2**24)
         numargs = 0
         i = 0
         arg1 = ''
@@ -182,8 +181,8 @@ PROGRAM BEAMS3D
         WRITE(6,'(A)')      '-----  MPI Parameters  -----'
          WRITE(6,'(A,I2,A,I2.2)')  '   MPI_version:  ', vmajor,'.',vminor
          WRITE(6,'(A,A)')  '   ', TRIM(mpi_lib_name(1:liblen))
-         WRITE(6,'(A,I4)')  '   Nproc_total:  ', nprocs_beams
-         WRITE(6,'(A,I4)')  '   Nproc_shared: ', nshar
+         WRITE(6,'(A,I8)')  '   Nproc_total:  ', nprocs_beams
+         WRITE(6,'(A,3X,I5)')  '   Nproc_shared: ', nshar
     ELSE
         lverb = .false. ! Shutup the workers
     END IF
