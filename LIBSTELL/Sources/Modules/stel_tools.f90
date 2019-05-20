@@ -543,50 +543,50 @@
          CALL EZspline_setup(grho2_spl,grho2,iflag)
          f_temp = 0; grho = 0
          ! Calc S11
-         f_temp = (Ru_spl%fspl(1,:,:,:)*Ru_spl%fspl(1,:,:,:)+ &
-                   Zu_spl%fspl(1,:,:,:)*Zu_spl%fspl(1,:,:,:))
-         f_temp = f_temp / G_spl%fspl(1,:,:,:)
+         f_temp = (RU4D(1,:,:,:)*RU4D(1,:,:,:)+ &
+                   ZU4D(1,:,:,:)*ZU4D(1,:,:,:))
+         f_temp = f_temp / G4D(1,:,:,:)
          grho   = SUM(SUM(f_temp,DIM=1),DIM=1)/(nu*nv)
          grho(1) = 2*grho(2) - grho(3)
          CALL EZspline_setup(S11_spl,grho,iflag); f_temp = 0; grho = 0
          ! Calc S21
-         f_temp = (Ru_spl%fspl(1,:,:,:)*Rv_spl%fspl(1,:,:,:)+ &
-                   Zu_spl%fspl(1,:,:,:)*Zv_spl%fspl(1,:,:,:))*nfp
-         f_temp = f_temp / G_spl%fspl(1,:,:,:)
+         f_temp = (RU4D(1,:,:,:)*RV4D(1,:,:,:)+ &
+                   ZU4D(1,:,:,:)*ZV4D(1,:,:,:))*nfp
+         f_temp = f_temp / G4D(1,:,:,:)
          grho   = SUM(SUM(f_temp,DIM=1),DIM=1)/(nu*nv)
          grho(1) = 2*grho(2) - grho(3)
          CALL EZspline_setup(S21_spl,grho,iflag); f_temp = 0; grho = 0
          ! Calc S12
-         f_temp = (Ru_spl%fspl(1,:,:,:)*Rv_spl%fspl(1,:,:,:)+ &
-                   Zu_spl%fspl(1,:,:,:)*Zv_spl%fspl(1,:,:,:))* &
-                  (one+Lu_spl%fspl(1,:,:,:))*nfp
-         f_temp = f_temp - (Ru_spl%fspl(1,:,:,:)*Ru_spl%fspl(1,:,:,:)+ &
-                            Zu_spl%fspl(1,:,:,:)*Zu_spl%fspl(1,:,:,:))*&
-                           Lv_spl%fspl(1,:,:,:)
-         f_temp = f_temp / G_spl%fspl(1,:,:,:)
+         f_temp = (RU4D(1,:,:,:)*RV4D(1,:,:,:)+ &
+                   ZU4D(1,:,:,:)*ZV4D(1,:,:,:))* &
+                  (one+LU4D(1,:,:,:))*nfp
+         f_temp = f_temp - (RU4D(1,:,:,:)*RU4D(1,:,:,:)+ &
+                            ZU4D(1,:,:,:)*ZU4D(1,:,:,:))*&
+                           LV4D(1,:,:,:)
+         f_temp = f_temp / G4D(1,:,:,:)
          grho   = SUM(SUM(f_temp,DIM=1),DIM=1)/(nu*nv)
          grho(1) = 2*grho(2) - grho(3)
          CALL EZspline_setup(S12_spl,grho,iflag); f_temp = 0; grho = 0
          ! Calc S22
-         f_temp = (Rv_spl%fspl(1,:,:,:)*Rv_spl%fspl(1,:,:,:)*nfp*nfp+ &
-                   Zv_spl%fspl(1,:,:,:)*Zv_spl%fspl(1,:,:,:)*nfp*nfp+ &
-                   R_spl%fspl(1,:,:,:)* R_spl%fspl(1,:,:,:))* &
-                  (one+Lu_spl%fspl(1,:,:,:))
-         f_temp = f_temp - (Ru_spl%fspl(1,:,:,:)*Rv_spl%fspl(1,:,:,:)+ &
-                            Zu_spl%fspl(1,:,:,:)*Zv_spl%fspl(1,:,:,:))*&
-                           Lv_spl%fspl(1,:,:,:)*nfp
-         f_temp = f_temp / G_spl%fspl(1,:,:,:)
+         f_temp = (RV4D(1,:,:,:)*RV4D(1,:,:,:)*nfp*nfp+ &
+                   ZV4D(1,:,:,:)*ZV4D(1,:,:,:)*nfp*nfp+ &
+                   R4D(1,:,:,:)* R4D(1,:,:,:))* &
+                  (one+LU4D(1,:,:,:))
+         f_temp = f_temp - (RU4D(1,:,:,:)*RV4D(1,:,:,:)+ &
+                            ZU4D(1,:,:,:)*ZV4D(1,:,:,:))*&
+                           LV4D(1,:,:,:)*nfp
+         f_temp = f_temp / G4D(1,:,:,:)
          grho   = SUM(SUM(f_temp,DIM=1),DIM=1)/(nu*nv)
          !grho(1) = 2*grho(2) - grho(3)
          CALL EZspline_setup(S22_spl,grho,iflag); f_temp = 0; grho = 0
          ! Bav
-         f_temp = B_spl%fspl(1,:,:,:)*G_spl%fspl(1,:,:,:)
+         f_temp = B4D(1,:,:,:)*G4D(1,:,:,:)
          grho   = SUM(SUM(f_temp,DIM=1),DIM=1)/(nu*nv)
          grho2 = grho2 / Vp
          grho2(1) = 2*grho2(2) - grho2(3)
          CALL EZspline_setup(Bav_spl,grho,iflag); f_temp = 0; grho = 0
          ! Bsq
-         f_temp = B_spl%fspl(1,:,:,:)*B_spl%fspl(1,:,:,:)*G_spl%fspl(1,:,:,:)
+         f_temp = B4D(1,:,:,:)*B4D(1,:,:,:)*G4D(1,:,:,:)
          grho   = SUM(SUM(f_temp,DIM=1),DIM=1)/(nu*nv)
          grho2 = grho2 / Vp
          grho2(1) = 2*grho2(2) - grho2(3)
