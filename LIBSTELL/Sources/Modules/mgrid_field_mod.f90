@@ -230,9 +230,9 @@
          hxi    = one / hx
          hyi    = one / hy
          hzi    = one / hz
-         xparam = (r_vac(i+1) - rp) * hxi
-         yparam = (phi_vac(j+1) - phi2) * hyi
-         zparam = (z_vac(k+1) - zp) * hzi
+         xparam = (rp - r_vac(i)) * hxi
+         yparam = (phi2 - phi_vac(j)) * hyi
+         zparam = (zp - z_vac(k)) * hzi
          CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                          hx,hxi,hy,hyi,hz,hzi,&
                          BRV4D(1,1,1,1),nr_mgrid,nphi_mgrid,nz_mgrid)
