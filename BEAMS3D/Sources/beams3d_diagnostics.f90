@@ -79,8 +79,8 @@
       ALLOCATE(int_mask(mystart:myend))
       ALLOCATE(int_mask2(0:npoinc,mystart:myend))
       ALLOCATE(real_mask(mystart:myend))
-      maxdist=MAXVAl(MAXVAL(vll_lines,DIM=2),DIM=1)
-      mindist=MINVAl(MINVAL(vll_lines,DIM=2),DIM=1)
+      maxdist=MAXVAl(MAXVAL(vll_lines,DIM=2,MASK=(ABS(vll_lines)<1E8)),DIM=1)
+      mindist=MINVAl(MINVAL(vll_lines,DIM=2,MASK=(ABS(vll_lines)<1E8)),DIM=1)
 !DEC$ IF DEFINED (MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_BEAMS, ierr_mpi)
       IF (ierr_mpi /= 0) CALL handle_err(MPI_BARRIER_ERR, 'beams3d_follow', ierr_mpi)
@@ -113,7 +113,6 @@
       ddist = dist/ndist
       sbeam = MINVAL(beam(mystart:myend), DIM=1)
       ebeam = MAXVAL(beam(mystart:myend), DIM=1)
-      IF (myworkid==master) PRINT *,dist,ddist,sbeam,ebeam
       DO k = 1, ndist
          v1 = mindist+(k-1)*ddist
          v2 = mindist+(k)*ddist
