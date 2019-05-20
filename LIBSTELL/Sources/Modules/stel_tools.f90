@@ -519,10 +519,10 @@
                   gs(nu,nv,k1:k2))
          ! Calc grad(s) components dR/du X dR/dv / sqrt(g)
          !    Note component of R_spl comes from dphi/dphi and cyl coordinates
-         gsr = - Zu_spl%fspl(1,:,:,:)*R_spl%fspl(1,:,:,:)
-         gsp = (Zu_spl%fspl(1,:,:,:)*Rv_spl%fspl(1,:,:,:) - Ru_spl%fspl(1,:,:,:)*Zv_spl%fspl(1,:,:,:))*nfp
-         gsz =   Ru_spl%fspl(1,:,:,:)*R_spl%fspl(1,:,:,:)
-         f_temp   = G_spl%fspl(1,:,:,:)
+         gsr = - ZU4D(1,:,:,:)*R4D(1,:,:,:)
+         gsp = (ZU4D(1,:,:,:)*RV4D(1,:,:,:) - RU4D(1,:,:,:)*ZV4D(1,:,:,:))*nfp
+         gsz =   RU4D(1,:,:,:)*R4D(1,:,:,:)
+         f_temp   = G4D(1,:,:,:)
          gs  = (gsr*gsr+gsp*gsp+gsz*gsz)/(f_temp*f_temp)  !|grad(s)|^2
          FORALL(u=k1:k2) gs(:,:,u) = gs(:,:,u)/(4*rho(u)*rho(u)) !|grad(rho)|^2
          ! dV/ds
