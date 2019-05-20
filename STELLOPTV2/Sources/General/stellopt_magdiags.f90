@@ -45,7 +45,7 @@
 !----------------------------------------------------------------------
       myworkid = master
 #if defined(MPI_OPT)
-      MPI_COMM_DIAGNO = MPI_COMM_MYWORLD
+      CALL MPI_COMM_DUP( MPI_COMM_MYWORLD, MPI_COMM_DIAGNO, ierr_mpi)
       CALL MPI_COMM_RANK(MPI_COMM_DIAGNO, myworkid, ierr_mpi)
       CALL MPI_COMM_SIZE(MPI_COMM_DIAGNO, nprocs_diagno, ierr_mpi)
       CALL MPI_COMM_SPLIT_TYPE(MPI_COMM_DIAGNO, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, MPI_COMM_SHARMEM, ierr_mpi)
@@ -86,6 +86,8 @@
       ! Clean up
       IF (lcoil_diagno) CALL cleanup_biotsavart
       CALL free_virtual_casing(MPI_COMM_SHARMEM)
+      CALL MPI_COMM_FREE(MPI_COMM_SHARMEM,ierr_mpi)
+      CALL MPI_COMM_FREE(MPI_COMM_DIAGNO,ierr_mpi)
       IF (lverb_diagno) write(6,*)'============  DIAGNO Complete  ============'
       IF (lverb_diagno) write(6,*)'==========================================='
       IF (lverb_diagno) CALL FLUSH(6)
