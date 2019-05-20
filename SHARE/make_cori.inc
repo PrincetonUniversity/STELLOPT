@@ -17,7 +17,7 @@
   FLAGS_R = -fp-model strict -assume noold_unit_star -cxxlib 
   FLAGS_D = -g -dynamic -traceback -fp-model strict -assume noold_unit_star -cxxlib
   LIBS    = 
-#  FLAGS_R += -g -traceback -dynamic
+  FLAGS_R += -g -traceback -dynamic
 
 #######################################################################
 #            MPI Options
@@ -31,9 +31,10 @@
   MPI_RUN_OPTS = -n 8 -c 16
   MPI_RUN_OPTS = -n 1088 -c 1
   # KNL 64 Nodes
-  MPI_RUN_OPTS_SM = -n 136 -n 2  --cpu_bind=threads
-  MPI_RUN_OPTS_MD = -n 2176 -n 2  --cpu_bind=threads
-  MPI_RUN_OPTS_LG = -n 8704 -n 2  --cpu_bind=threads
+  MPI_RUN_OPTS = -n 272 -c 1
+  MPI_RUN_OPTS_SM = -n 272 -c 1  --cpu_bind=threads
+  MPI_RUN_OPTS_MD = -n 4352 -c 1  --cpu_bind=threads
+  MPI_RUN_OPTS_LG = -n 17408 -c 1  --cpu_bind=threads
 
 #######################################################################
 #            NAG Options
