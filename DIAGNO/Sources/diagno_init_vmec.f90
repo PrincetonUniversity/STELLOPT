@@ -124,13 +124,13 @@
                                          rmnc_temp,zmns_temp,nfp,&
                                          RMNS=rmns_temp, ZMNC=zmnc_temp,&
                                          BUMNC=bumnc_temp,BVMNC=bvmnc_temp,&
-                                         BUMNS=bumns_temp,BVMNS=bvmns_temp,COMM=MPI_COMM_SHARMEM)
+                                         BUMNS=bumns_temp,BVMNS=bvmns_temp,COMM=MPI_COMM_DIAGNO)
             DEALLOCATE(rmns_temp,zmnc_temp)
             DEALLOCATE(bumns_temp,bvmns_temp)
          ELSE
             CALL init_virtual_casing(mnmax_temp,nu2,nv2,xm_temp,xn_temp,&
                                          rmnc_temp,zmns_temp,nfp,&
-                                         BUMNC=bumnc_temp,BVMNC=bvmnc_temp,COMM=MPI_COMM_SHARMEM)
+                                         BUMNC=bumnc_temp,BVMNC=bvmnc_temp,COMM=MPI_COMM_DIAGNO)
          END IF
          DEALLOCATE(rmnc_temp,zmns_temp)
          DEALLOCATE(bumnc_temp,bvmnc_temp)
@@ -181,8 +181,6 @@
          DEALLOCATE(rmnc_temp,zmns_temp)
          DEALLOCATE(jumnc_temp,jvmnc_temp)
       END IF
-
-      CALL MPI_BARRIER(MPI_COMM_SHARMEM,ier)
       
       adapt_tol = vc_adapt_tol
       adapt_rel = vc_adapt_rel
