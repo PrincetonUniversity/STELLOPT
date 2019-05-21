@@ -17,7 +17,7 @@
       USE stellopt_input_mod
       USE read_boozer_mod
       USE read_wout_mod, ONLY: ns
-      USE math_utilities
+      USE equil_utils 
       IMPLICIT NONE
       
 !-----------------------------------------------------------------------
@@ -46,12 +46,16 @@
       REAL(rprec) :: gamma_c, dsoverb, wellGamma_c, bigGamma_c
       REAL(rprec) :: dBds, dBdr, dBdphi, dBdz
       REAL(rprec) :: phip, phim, Bxt, Byt, Bzt, Brt, Bpt
+      REAL(rprec) :: Bxt2, Byt2, Bzt2
+      !REAL(rprec) :: dBxdr, dBxdp, dBxdz, dBydr, dBydp, dBydz, dBzdx, dBzdy
+      !REAL(rprec) :: dBzdr, dBzdp, dBzdz, dBxdx, dBxdy, dBydx, dBydy
       REAL(rprec) :: g,dsdx,dudx,dvdx,dsdy,dudy,dvdy,dsdz,dudz,dvdz
 
       REAL(rprec), DIMENSION(3) :: sflCrd, Bxyz, crossnum, crossden
       REAL(rprec), DIMENSION(3) :: e_phi, e_r, e_z, grads, gradbtest, gradB
       REAL(rprec), DIMENSION(3) :: grad_zeta, grad_psi_x_b, grad_psi_xyz
-      INTEGER, PARAMETER :: nsteps = 10000
+      REAL(rprec), DIMENSION(3) :: bdotgradb
+      INTEGER, PARAMETER :: nsteps = 10
       INTEGER :: delzetadiv =200
       INTEGER, PARAMETER :: bpstep = 2 !division in b'
 
@@ -59,7 +63,7 @@
       REAL(rprec), DIMENSION(nsteps) :: R, Z, Bx, By, Bz, Bsupv, dBsupvdpsi, modB
       REAL(rprec), DIMENSION(nsteps) :: kappa_g, e_theta_norm, grad_psi_norm, dBdpsi
       real(rprec), DIMENSION(nsteps,3) :: gradR, gradZ, grad_psi
-      real(rprec), DIMENSION(nsteps,3) :: dxyzdu, dxyzdv, dxyzds
+      real(rprec), DIMENSION(nsteps,3) :: dxyzdu, dxyzdv, dxyzds, binormal
       real(rprec), DIMENSION(nsteps) :: grad_psi_i, e_theta_i, ds, dVdb_t1
       integer, parameter :: maxwells = 100
 
@@ -126,16 +130,16 @@
             v = modulo(v,pi2)
 
 
+            !write (*,*) '--------------------------------------------'
+            !write (*,*) 'jsuv',j,s,u,v
             !Get rz values and gradients
             CALL get_equil_RZ(s, u, v, R(j), Z(j), ier, gradR(j,:), gradZ(j,:))
 
             !X and Y values from cyclindrical
             X=R(j)*cos(zeta)
             Y=R(j)*sin(zeta)
-            !write (*,*) '--------------'
-            !write (*,*) R(j), X, Y, Z(j)
-            !write (*,*) j,s,u,v
-            !write (*,*) s,theta,zeta
+            !write (*,*) 'rxyz',R(j), X, Y, Z(j)
+            !write (*,*) 's,th,ze',s,theta,zeta
 
             !Calculate crude arclength
             IF (j > 1) THEN
@@ -193,12 +197,12 @@
             !by nfp in the Bphi terms only. It seems weird but agrees with ROSE
 
             CALL get_equil_Bcylsuv(s,u,v,Br,Bphi,Bz(j),ier,modB(j))
-            Bx(j) = Br*cos(v) - Bphi*sin(zeta)
-            By(j) = Br*sin(y) + Bphi*cos(zeta)
+            Bx(j) = Br*cos(zeta) - Bphi*sin(zeta)
+            By(j) = Br*sin(zeta) + Bphi*cos(zeta)
             Bxyz(1) = Bx(j)
             Bxyz(2) = By(j)
             Bxyz(3) = Bz(j)
-            !write(*,*) 'Bxyz',Bxyz(1),Bxyz(2),Bxyz(3),modB(j), ier
+            write(*,*) 'Bxyz',Bxyz(1),Bxyz(2),Bxyz(3),modB(j), ier
             
             
             
@@ -206,6 +210,7 @@
             !but they seem to return nonsense, so let's just
             !create our own finite differences
             del = 0.005_rprec
+
             
             CALL get_equil_Bcylsuv(s-del,u,v,Brt,Bpt,Bzt,ier,modbm,gradbtest)
             CALL get_equil_Bcylsuv(s+del,u,v,Brt,Bpt,Bzt,ier,modbp,gradbtest)
@@ -233,33 +238,52 @@
             !write(*,*) 'dBdv', dBdv,modbp,modbm
 
             !Calculate dB/dr, dB/dth and dB/dz
+            !Also calculate dB(xyz)d(rthetaz) which we'll need later
             Brt = 0.0_rprec
             Bpt = 0.0_rprec
             Bzt = 0.0_rprec
             CALL get_equil_B(R(j)+del,MODULO(zeta, pi2), Z(j),Bxt,Byt,Bzt,ier)
             modbp = sqrt(Bxt*Bxt + Byt*Byt + Bzt*Bzt)
-            CALL get_equil_B(R(j)-del,MODULO(zeta, pi2), Z(j),Bxt,Byt,Bzt,ier)
-            modbm = sqrt(Bxt*Bxt + Byt*Byt + Bzt*Bzt)
+            CALL get_equil_B(R(j)-del,MODULO(zeta, pi2), Z(j),Bxt2,Byt2,Bzt2,ier)
+            modbm = sqrt(Bxt2*Bxt2 + Byt2*Byt2 + Bzt2*Bzt2)
             dBdr = (modbp-modbm)/2.0_rprec/del
+            !dbxdr = (Bxt/modbp-Bxt2/modbm)/2.0_rprec/del
+            !dbydr = (Byt/modbp-Byt2/modbm)/2.0_rprec/del
+            !dbzdr = (Bzt/modbp-Bzt2/modbm)/2.0_rprec/del
 
             CALL get_equil_B(R(j),MODULO(zeta, pi2), Z(j)+del,Bxt,Byt,Bzt,ier)
             modbp = sqrt(Bxt*Bxt + Byt*Byt + Bzt*Bzt)
-            CALL get_equil_B(R(j),MODULO(zeta, pi2), Z(j)-del,Bxt,Byt,Bzt,ier)
-            modbm = sqrt(Bxt*Bxt + Byt*Byt + Bzt*Bzt)
+            CALL get_equil_B(R(j),MODULO(zeta, pi2), Z(j)-del,Bxt2,Byt2,Bzt2,ier)
+            modbm = sqrt(Bxt2*Bxt2 + Byt2*Byt2 + Bzt2*Bzt2)
             dBdz = (modbp-modbm)/2.0_rprec/del
+            !dbxdz = (Bxt/modbp-Bxt2/modbm)/2.0_rprec/del
+            !dbydz = (Byt/modbp-Byt2/modbm)/2.0_rprec/del
+            !dbzdz = (Bzt/modbp-Bzt2/modbm)/2.0_rprec/del
+            
 
             !TODO check to see if you need to restrict this to one field period
             phip = MODULO(zeta+del, pi2)
             CALL get_equil_B(R(j), phip, Z(j),Bxt,Byt,Bzt,ier)
             modbp = sqrt(Bxt*Bxt + Byt*Byt + Bzt*Bzt)
             phim = MODULO(zeta-del, pi2)
-            CALL get_equil_B(R(j), phim, Z(j),Bxt,Byt,Bzt,ier)
-            modbm = sqrt(Bxt*Bxt + Byt*Byt + Bzt*Bzt)
+            CALL get_equil_B(R(j), phim, Z(j),Bxt2,Byt2,Bzt2,ier)
+            modbm = sqrt(Bxt2*Bxt2 + Byt2*Byt2 + Bzt2*Bzt2)
             dBdphi = (modbp-modbm)/2.0_rprec/del
+            !dbxdp = (Bxt/modbp-Bxt2/modbm)/2.0_rprec/del
+            !dbydp = (Byt/modbp-Byt2/modbm)/2.0_rprec/del
+            !dbzdp = (Bzt/modbp-Bzt2/modbm)/2.0_rprec/del
+
 
             gradB(3) = dBdz
             gradB(1) = dBdr*X/R(j) - dBdphi*Y/R(j)
             gradB(2) = dBdr*Y/R(j) + dBdphi*X/R(j)
+
+            !dbxdx = dbxdr*X/R(j) - dbxdp*Y/R(j)
+            !dbxdy = dbxdr*Y/R(j) + dbxdp*X/R(j)
+            !dbydx = dbydr*X/R(j) - dbydp*Y/R(j)
+            !dbydy = dbydr*Y/R(j) + dbydp*X/R(j)
+            !dbzdx = dbzdr*X/R(j) - dbzdp*Y/R(j)
+            !dbzdy = dbzdr*Y/R(j) + dbzdp*X/R(j)
             
             !modbtest = modB(j)
             !CALL get_equil_Bcylsuv(s,ut+del,vt,Br,Bphi,Bz(j),ier,modB(j),gradbtest)
@@ -304,8 +328,46 @@
             !write(*,*) j,'e_theta_norm, B_zeta, Bphi',e_theta_norm(j),Bphi
 
             !geodesic curvature
-            !TODO gradB is not in the correct coordinates
-            kappa_g(j) = dot_product(Bxyz, gradB)/modB(j)/modB(j)
+            !calculate bdotgradb = partial b/ partial s
+            bdotgradb = 0.0_rprec
+            kappa_g(j) = 0.0_rprec
+            binormal(j,:) = 0.0_rprec
+            CALL cross_product(grad_psi(j,:)/grad_psi_norm(j), Bxyz/modB(j), binormal(j,:))
+            !write (*,*) 'tangential', Bxyz/modB(j)
+            !write (*,*) 'normal',grad_psi(j,:)/grad_psi_norm(j)
+            !write (*,*) 'nxb',binormal(j,:)
+            !write (*,*) 'bdotgradb',bdotgradb
+            !write (*,*) 'kappa_g', kappa_g(j)
+
+            IF (j > 2) THEN
+              bdotgradb(1) = (Bx(j)/modB(j) - Bx(j-2)/modB(j-2))/(ds(j-1)+ds(j))
+              bdotgradb(2) = (By(j)/modB(j) - By(j-2)/modB(j-2))/(ds(j-1)+ds(j))
+              bdotgradb(3) = (Bz(j)/modB(j) - Bz(j-2)/modB(j-2))/(ds(j-1)+ds(j))
+              !write (*,*) 'bdotgradb2 j=',j-1,bdotgradb
+              kappa_g(j-1) = dot_product(bdotgradb, binormal(j-1, :))
+              !write (*,*) 'kappa_g2 j=',j-1, kappa_g(j-1)
+              IF (j == nsteps) THEN
+                bdotgradb(1) = (Bx(j)/modB(j) - Bx(j-1)/modB(j-1))/(ds(j))
+                bdotgradb(2) = (By(j)/modB(j) - By(j-1)/modB(j-1))/(ds(j))
+                bdotgradb(3) = (Bz(j)/modB(j) - Bz(j-1)/modB(j-1))/(ds(j))
+                kappa_g(j) = dot_product(bdotgradb, binormal(j,:))
+                !write (*,*) 'bdotgrad b, j=',nsteps,bdotgradb
+                !write (*,*) 'kappa_g, j=',nsteps, kappa_g(j)
+              END IF  
+               
+            END IF
+            IF (j == 2) THEN !handle the first index
+              bdotgradb(1) = (Bx(j)/modB(j) - Bx(j-1)/modB(j-1))/(ds(j-1))
+              bdotgradb(2) = (By(j)/modB(j) - By(j-1)/modB(j-1))/(ds(j-1))
+              bdotgradb(3) = (Bz(j)/modB(j) - Bz(j-1)/modB(j-1))/(ds(j-1))
+
+              kappa_g(j-1) = dot_product(bdotgradb, binormal(j-1,:))
+              !write (*,*) 'bdotgrad b, j=1',bdotgradb
+              !write (*,*) 'kappa_g, j=1', kappa_g(j-1)
+            END IF 
+              
+
+            !kappa_g(j) = dot_product(Bxyz, gradB)/modB(j)/modB(j)
             !write (*,*) 'gradB', gradB
             !write (*,*) 'kappa_g', kappa_g(j)
 
@@ -344,7 +406,6 @@
             sflCrd(2) = theta
             sflCrd(3) = zeta
           END DO
-
 
 
           bigGamma_c = 0.0_rprec
