@@ -140,9 +140,9 @@
       IF (lplasma_only .and. .not.ldepo) THEN
          lvessel = .TRUE.  ! Do this so the other parts of the code know there is a vessel
          k = ns
-         CALL wall_load_mn(DBLE(rmnc(1:mnmax,k)),DBLE(zmns(1:mnmax,k)),DBLE(xm),-DBLE(xn),mnmax,120,120)
+         CALL wall_load_mn(DBLE(rmnc(1:mnmax,k)),DBLE(zmns(1:mnmax,k)),DBLE(xm),-DBLE(xn),mnmax,120,120,COMM=MPI_COMM_BEAMS)
          IF (lverb) CALL wall_info(6)
-         IF (mylocalid /= master) DEALLOCATE(vertex,face)
+         !IF (mylocalid /= master) DEALLOCATE(vertex,face)
       END IF
 
       ! Initialize Virtual Casing
@@ -214,14 +214,14 @@
                                          RMNS=rmns_temp, ZMNC=zmnc_temp,&
                                          BUMNC=bumnc_temp,BVMNC=bvmnc_temp,&
                                          BUMNS=bumns_temp,BVMNS=bvmns_temp,&
-                                         COMM=MPI_COMM_LOCAL)
+                                         COMM=MPI_COMM_BEAMS)
             DEALLOCATE(rmns_temp,zmnc_temp)
             DEALLOCATE(bumns_temp,bvmns_temp)
          ELSE
             CALL init_virtual_casing(mnmax_temp,nu,nv,xm_temp,xn_temp,&
                                          rmnc_temp,zmns_temp,nfp,&
                                          BUMNC=bumnc_temp,BVMNC=bvmnc_temp,&
-                                         COMM=MPI_COMM_LOCAL)
+                                         COMM=MPI_COMM_BEAMS)
          END IF
          DEALLOCATE(rmnc_temp,zmns_temp)
          DEALLOCATE(bumnc_temp,bvmnc_temp)
@@ -353,7 +353,7 @@
 #endif
       
       ! Free variables
-      IF (.not. lplasma_only) CALL free_virtual_casing(MPI_COMM_LOCAL)
+      IF (.not. lplasma_only) CALL free_virtual_casing(MPI_COMM_BEAMS)
       IF (myworkid == master) THEN
          CALL read_wout_deallocate
       ELSE

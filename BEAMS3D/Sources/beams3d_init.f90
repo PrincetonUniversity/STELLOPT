@@ -252,7 +252,7 @@
       
       ! Get setup vessel
       IF (lvessel .and. (.not. lplasma_only .or. ldepo)) THEN
-         CALL wall_load_txt(TRIM(vessel_string),ier,MPI_COMM_SHARMEM)
+         CALL wall_load_txt(TRIM(vessel_string),ier,MPI_COMM_BEAMS)
          !IF (myworkid /= master) DEALLOCATE(vertex,face) ! Do this to save memory
          IF (lverb) CALL wall_info(6)
          CALL FLUSH(6)
