@@ -292,7 +292,7 @@ C-----------------------------------------------
       IF (lfreeb) THEN
          CALL second0(trc)
          CALL read_mgrid (mgrid_file, extcur, nzeta, nfp, 
-     1               lscreen, ier_flag, comm = RUNVMEC_COMM_SHARMEM)
+     1               lscreen, ier_flag, comm = RUNVMEC_COMM_WORLD)
          CALL second0(tzc)
          mgrid_file_read_time = mgrid_file_read_time + (tzc - trc)
 
