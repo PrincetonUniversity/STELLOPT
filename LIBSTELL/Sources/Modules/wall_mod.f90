@@ -13,9 +13,9 @@
 !     Libraries
 !-----------------------------------------------------------------------
       USE safe_open_mod
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
       USE mpi
-!DEC$ ENDIF
+#endif
       
 !-----------------------------------------------------------------------
 !     Module Variables
@@ -31,7 +31,7 @@
 
 
       LOGICAL, PRIVATE, ALLOCATABLE            :: lmask(:)
-      INTEGER, PRIVATE                         :: myid_wall, nproc_wall, mystart, myend, mydelta
+      INTEGER, PRIVATE                         :: mystart, myend, mydelta
       INTEGER, PRIVATE                         :: win_vertex, win_face, win_phi, &
                                                   win_fn, win_a0, win_v0, win_v1, &
                                                   win_dot00, win_dot01, win_dot11, &
@@ -60,33 +60,36 @@
       PRIVATE :: mpialloc_1d_int,mpialloc_1d_dbl,mpialloc_2d_int,mpialloc_2d_dbl
       CONTAINS
       
-      SUBROUTINE wall_load_txt(filename,istat,shared_comm)
+      SUBROUTINE wall_load_txt(filename,istat,comm)
       IMPLICIT NONE
       CHARACTER(LEN=*), INTENT(in) :: filename
       INTEGER, INTENT(inout)       :: istat
-      INTEGER, INTENT(inout), OPTIONAL :: shared_comm
+      INTEGER, INTENT(inout), OPTIONAL :: comm
       INTEGER :: iunit, ik, dex1, dex2, dex3, bubble
+      INTEGER :: shar_comm, shar_rank, shar_size
       DOUBLE PRECISION :: rt1,rt2,rt3
       DOUBLE PRECISION, DIMENSION(3) :: temp
       DOUBLE PRECISION, ALLOCATABLE :: r_temp(:,:),z_temp(:,:)
       
-      myid_wall = 0; nproc_wall = 1;
-      IF (PRESENT(shared_comm)) THEN
-         CALL MPI_COMM_RANK( shared_comm, myid_wall, istat )
-         CALL MPI_COMM_SIZE( shared_comm, nproc_wall, istat)
+      shar_rank = 0; shar_size = 1;
+#if defined(MPI_OPT)
+      IF (PRESENT(comm)) THEN
+         CALL MPI_COMM_SPLIT_TYPE(comm, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, shar_comm, istat)
+         CALL MPI_COMM_RANK( shar_comm, shar_rank, istat )
+         CALL MPI_COMM_SIZE( shar_comm, shar_size, istat)
       END IF
+#endif
       CALL safe_open(iunit,istat,TRIM(filename),'old','formatted')
       IF (istat/=0) RETURN
       READ(iunit,'(A)') machine_string
       READ(iunit,'(A)') date
       READ(iunit,*) nvertex,nface
-      IF (PRESENT(shared_comm)) THEN
-         CALL mpialloc_1d_dbl(PHI,nface,myid_wall,0,shared_comm,win_phi)
-         CALL MPI_BARRIER(MPI_COMM_WORLD, istat)
-         CALL mpialloc_2d_dbl(vertex,nvertex,3,myid_wall,0,shared_comm,win_vertex)
-         CALL mpialloc_2d_int(face,nface,3,myid_wall,0,shared_comm,win_face)
-         mydelta = CEILING(REAL(nface) / REAL(nproc_wall))
-         mystart = 1 + myid_wall*mydelta
+      IF (PRESENT(comm)) THEN
+         CALL mpialloc_1d_dbl(PHI,nface,shar_rank,0,shar_comm,win_phi)
+         CALL mpialloc_2d_dbl(vertex,nvertex,3,shar_rank,0,shar_comm,win_vertex)
+         CALL mpialloc_2d_int(face,nface,3,shar_rank,0,shar_comm,win_face)
+         mydelta = CEILING(REAL(nface) / REAL(shar_size))
+         mystart = 1 + shar_rank*mydelta
          myend   = mystart + mydelta
          IF (myend > nface) myend=nface
       ELSE
@@ -95,7 +98,7 @@
          mystart = 1; myend=nface
       END IF
       IF (istat/=0) RETURN
-      IF (myid_wall == 0) THEN
+      IF (shar_rank == 0) THEN
          DO ik = 1, nvertex
             READ(iunit,*) vertex(ik,1),vertex(ik,2),vertex(ik,3)
          END DO
@@ -104,14 +107,14 @@
          END DO
       END IF
       CLOSE(iunit)
-      IF (PRESENT(shared_comm)) CALL MPI_BARRIER(shared_comm,istat)
+      IF (PRESENT(comm)) CALL MPI_BARRIER(comm,istat)
       IF (istat/=0) RETURN
       ! Sort the array by toroidal angle
       DO ik = mystart, myend
          dex1 = face(ik,1)
          PHI(ik) = ATAN2(vertex(dex1,2),vertex(dex1,1))
       END DO
-      IF (PRESENT(shared_comm)) CALL MPI_BARRIER(shared_comm,istat)
+      IF (PRESENT(comm)) CALL MPI_BARRIER(comm,istat)
       ! Bubble Sort
 !      dex3 = nface
 !      DO WHILE (dex3 > 1)
@@ -140,13 +143,13 @@
 !      END DO
 !      ALLOCATE(A0(nface,3),V0(nface,3),V1(nface,3),&
 !               V2(nface,3),FN(nface,3),STAT=istat)
-      IF (PRESENT(shared_comm)) THEN
-         CALL mpialloc_2d_dbl(A0,nface,3,myid_wall,0,shared_comm,win_a0)
-         CALL mpialloc_2d_dbl(V0,nface,3,myid_wall,0,shared_comm,win_v0)
-         CALL mpialloc_2d_dbl(V1,nface,3,myid_wall,0,shared_comm,win_v1)
-         CALL mpialloc_2d_dbl(FN,nface,3,myid_wall,0,shared_comm,win_fn)
-         mydelta = CEILING(REAL(nface) / REAL(nproc_wall))
-         mystart = 1 + myid_wall*mydelta
+      IF (PRESENT(comm)) THEN
+         CALL mpialloc_2d_dbl(A0,nface,3,shar_rank,0,shar_comm,win_a0)
+         CALL mpialloc_2d_dbl(V0,nface,3,shar_rank,0,shar_comm,win_v0)
+         CALL mpialloc_2d_dbl(V1,nface,3,shar_rank,0,shar_comm,win_v1)
+         CALL mpialloc_2d_dbl(FN,nface,3,shar_rank,0,shar_comm,win_fn)
+         mydelta = CEILING(REAL(nface) / REAL(shar_size))
+         mystart = 1 + shar_rank*mydelta
          myend   = mystart + mydelta
          IF (myend > nface) myend=nface
       ELSE
@@ -171,21 +174,21 @@
          FN(ik,2) = (V1(ik,3)*V0(ik,1))-(V1(ik,1)*V0(ik,3))
          FN(ik,3) = (V1(ik,1)*V0(ik,2))-(V1(ik,2)*V0(ik,1))
       END DO
-      IF (PRESENT(shared_comm)) CALL MPI_BARRIER(shared_comm,istat)
+      IF (PRESENT(comm)) CALL MPI_BARRIER(comm,istat)
       ! Check for zero area
       IF (ANY(SUM(FN*FN,DIM=2)==zero)) THEN
          istat=-327
          RETURN
       END IF
-      IF (PRESENT(shared_comm)) THEN
-         CALL mpialloc_1d_dbl(DOT00,nface,myid_wall,0,shared_comm,win_dot00)
-         CALL mpialloc_1d_dbl(DOT01,nface,myid_wall,0,shared_comm,win_dot01)
-         CALL mpialloc_1d_dbl(DOT11,nface,myid_wall,0,shared_comm,win_dot11)
-         CALL mpialloc_1d_dbl(invDenom,nface,myid_wall,0,shared_comm,win_invDenom)
-         CALL mpialloc_1d_dbl(d,nface,myid_wall,0,shared_comm,win_d)
-         CALL mpialloc_1d_int(ihit_array,nface,myid_wall,0,shared_comm,win_ihit)
-         mydelta = CEILING(REAL(nface) / REAL(nproc_wall))
-         mystart = 1 + myid_wall*mydelta
+      IF (PRESENT(comm)) THEN
+         CALL mpialloc_1d_dbl(DOT00,nface,shar_rank,0,shar_comm,win_dot00)
+         CALL mpialloc_1d_dbl(DOT01,nface,shar_rank,0,shar_comm,win_dot01)
+         CALL mpialloc_1d_dbl(DOT11,nface,shar_rank,0,shar_comm,win_dot11)
+         CALL mpialloc_1d_dbl(invDenom,nface,shar_rank,0,shar_comm,win_invDenom)
+         CALL mpialloc_1d_dbl(d,nface,shar_rank,0,shar_comm,win_d)
+         CALL mpialloc_1d_int(ihit_array,nface,shar_rank,0,shar_comm,win_ihit)
+         mydelta = CEILING(REAL(nface) / REAL(shar_size))
+         mystart = 1 + shar_rank*mydelta
          myend   = mystart + mydelta
          IF (myend > nface) myend=nface
       ELSE
@@ -205,15 +208,19 @@
          d(ik)     = FN(ik,1)*A0(ik,1) + FN(ik,2)*A0(ik,2) + FN(ik,3)*A0(ik,3)
          invDenom(ik) = one / (DOT00(ik)*DOT11(ik) - DOT01(ik)*DOT01(ik))
       END DO
-      IF (PRESENT(shared_comm)) CALL MPI_BARRIER(shared_comm,istat)
+      IF (PRESENT(comm)) THEN
+         CALL MPI_BARRIER(shar_comm, istat)
+         CALL MPI_COMM_FREE(shar_comm, istat)
+      END IF
       RETURN
       END SUBROUTINE wall_load_txt
 
-      SUBROUTINE wall_load_mn(Rmn,Zmn,xm,xn,mn,nu,nv,shared_comm)
+      SUBROUTINE wall_load_mn(Rmn,Zmn,xm,xn,mn,nu,nv,comm)
       DOUBLE PRECISION, INTENT(in) :: Rmn(mn), Zmn(mn), xm(mn), xn(mn)
       INTEGER, INTENT(in) :: mn, nu, nv
-      INTEGER, INTENT(inout), OPTIONAL :: shared_comm
+      INTEGER, INTENT(inout), OPTIONAL :: comm
       INTEGER :: u, v, i, j, istat, dex1, dex2, dex3, ik, bubble, nv2
+      INTEGER :: shar_comm, shar_rank, shar_size
       DOUBLE PRECISION :: pi2, th, zt, pi
       DOUBLE PRECISION, DIMENSION(3) :: temp
       DOUBLE PRECISION, ALLOCATABLE :: r_temp(:,:),z_temp(:,:),x_temp(:,:),y_temp(:,:)
@@ -223,10 +230,14 @@
       pi2 = 8.0D+00 * ATAN(one)
       pi  = 4.0E+00 * ATAN(one)
       nv2 = nv/2
-      IF (PRESENT(shared_comm)) THEN
-         CALL MPI_COMM_RANK( shared_comm, myid_wall, istat )
-         CALL MPI_COMM_SIZE( shared_comm, nproc_wall, istat)
+      shar_rank = 0; shar_size = 1;
+#if defined(MPI_OPT)
+      IF (PRESENT(comm)) THEN
+         CALL MPI_COMM_SPLIT_TYPE(comm, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, shar_comm, istat)
+         CALL MPI_COMM_RANK( shar_comm, shar_rank, istat )
+         CALL MPI_COMM_SIZE( shar_comm, shar_size, istat)
       END IF
+#endif
       ALLOCATE(r_temp(nu,nv),z_temp(nu,nv),x_temp(nu,nv),y_temp(nu,nv))
       r_temp(:,:) = 0
       z_temp(:,:) = 0
@@ -249,12 +260,12 @@
       nvertex = nu*nv
       nface   = 2*nu*nv
       istat = 0
-      IF (PRESENT(shared_comm)) THEN
-         CALL mpialloc_1d_dbl(PHI,nface,myid_wall,0,shared_comm,win_phi)
-         CALL mpialloc_2d_dbl(vertex,nvertex,3,myid_wall,0,shared_comm,win_vertex)
-         CALL mpialloc_2d_int(face,nface,3,myid_wall,0,shared_comm,win_face)
-         mydelta = CEILING(REAL(nface) / REAL(nproc_wall))
-         mystart = 1 + (myid_wall-1)*mydelta
+      IF (PRESENT(comm)) THEN
+         CALL mpialloc_1d_dbl(PHI,nface,shar_rank,0,shar_comm,win_phi)
+         CALL mpialloc_2d_dbl(vertex,nvertex,3,shar_rank,0,shar_comm,win_vertex)
+         CALL mpialloc_2d_int(face,nface,3,shar_rank,0,shar_comm,win_face)
+         mydelta = CEILING(REAL(nface) / REAL(shar_size))
+         mystart = 1 + (shar_rank-1)*mydelta
          myend   = mystart + mydelta
          IF (myend > nface) myend=nface
       ELSE
@@ -322,14 +333,14 @@
       j = j + 1
       i=i+1
       DEALLOCATE(r_temp,z_temp,x_temp,y_temp)
-      IF (PRESENT(shared_comm)) CALL MPI_BARRIER(shared_comm,istat)
+      IF (PRESENT(comm)) CALL MPI_BARRIER(shar_comm,istat)
 
       ! Sort the array by toroidal angle
       DO ik = mystart, myend
          dex1 = face(ik,1)
          PHI(ik) = ATAN2(vertex(dex1,2),vertex(dex1,1))
       END DO
-      IF (PRESENT(shared_comm)) CALL MPI_BARRIER(shared_comm,istat)
+      IF (PRESENT(comm)) CALL MPI_BARRIER(shar_comm,istat)
 !      dex3 = nface
 !      DO WHILE (dex3 > 1)
 !         bubble = 0 !bubble in the greatest element out of order
@@ -359,13 +370,13 @@
 
 !      ALLOCATE(A0(nface,3),V0(nface,3),V1(nface,3),&
 !               V2(nface,3),FN(nface,3),STAT=istat)
-      IF (PRESENT(shared_comm)) THEN
-         CALL mpialloc_2d_dbl(A0,nface,3,myid_wall,0,shared_comm,win_a0)
-         CALL mpialloc_2d_dbl(V0,nface,3,myid_wall,0,shared_comm,win_v0)
-         CALL mpialloc_2d_dbl(V1,nface,3,myid_wall,0,shared_comm,win_v1)
-         CALL mpialloc_2d_dbl(FN,nface,3,myid_wall,0,shared_comm,win_fn)
-         mydelta = CEILING(REAL(nface) / REAL(nproc_wall))
-         mystart = 1 + (myid_wall-1)*mydelta
+      IF (PRESENT(comm)) THEN
+         CALL mpialloc_2d_dbl(A0,nface,3,shar_rank,0,shar_comm,win_a0)
+         CALL mpialloc_2d_dbl(V0,nface,3,shar_rank,0,shar_comm,win_v0)
+         CALL mpialloc_2d_dbl(V1,nface,3,shar_rank,0,shar_comm,win_v1)
+         CALL mpialloc_2d_dbl(FN,nface,3,shar_rank,0,shar_comm,win_fn)
+         mydelta = CEILING(REAL(nface) / REAL(shar_size))
+         mystart = 1 + (shar_rank-1)*mydelta
          myend   = mystart + mydelta
          IF (myend > nface) myend=nface
       ELSE
@@ -390,16 +401,16 @@
          FN(ik,2) = (V1(ik,3)*V0(ik,1))-(V1(ik,1)*V0(ik,3))
          FN(ik,3) = (V1(ik,1)*V0(ik,2))-(V1(ik,2)*V0(ik,1))
       END DO
-      IF (PRESENT(shared_comm)) CALL MPI_BARRIER(shared_comm,istat)
-      IF (PRESENT(shared_comm)) THEN
-         CALL mpialloc_1d_dbl(DOT00,nface,myid_wall,0,shared_comm,win_dot00)
-         CALL mpialloc_1d_dbl(DOT01,nface,myid_wall,0,shared_comm,win_dot01)
-         CALL mpialloc_1d_dbl(DOT11,nface,myid_wall,0,shared_comm,win_dot11)
-         CALL mpialloc_1d_dbl(invDenom,nface,myid_wall,0,shared_comm,win_invDenom)
-         CALL mpialloc_1d_dbl(d,nface,myid_wall,0,shared_comm,win_d)
-         CALL mpialloc_1d_int(ihit_array,nface,myid_wall,0,shared_comm,win_ihit)
-         mydelta = CEILING(REAL(nface) / REAL(nproc_wall))
-         mystart = 1 + (myid_wall-1)*mydelta
+      IF (PRESENT(comm)) THEN
+         CALL MPI_BARRIER(shar_comm, istat)
+         CALL mpialloc_1d_dbl(DOT00,nface,shar_rank,0,shar_comm,win_dot00)
+         CALL mpialloc_1d_dbl(DOT01,nface,shar_rank,0,shar_comm,win_dot01)
+         CALL mpialloc_1d_dbl(DOT11,nface,shar_rank,0,shar_comm,win_dot11)
+         CALL mpialloc_1d_dbl(invDenom,nface,shar_rank,0,shar_comm,win_invDenom)
+         CALL mpialloc_1d_dbl(d,nface,shar_rank,0,shar_comm,win_d)
+         CALL mpialloc_1d_int(ihit_array,nface,shar_rank,0,shar_comm,win_ihit)
+         mydelta = CEILING(REAL(nface) / REAL(shar_size))
+         mystart = 1 + (shar_rank-1)*mydelta
          myend   = mystart + mydelta
          IF (myend > nface) myend=nface
       ELSE
@@ -419,7 +430,10 @@
          d(ik)     = FN(ik,1)*A0(ik,1) + FN(ik,2)*A0(ik,2) + FN(ik,3)*A0(ik,3)
          invDenom(ik) = one / (DOT00(ik)*DOT11(ik) - DOT01(ik)*DOT01(ik))
       END DO
-      IF (PRESENT(shared_comm)) CALL MPI_BARRIER(shared_comm,istat)
+      IF (PRESENT(comm)) THEN
+         CALL MPI_BARRIER(shar_comm, istat)
+         CALL MPI_COMM_FREE(shar_comm, istat)
+      END IF
       RETURN
       END SUBROUTINE wall_load_mn
 

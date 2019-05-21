@@ -108,12 +108,7 @@
       DOUBLE PRECISION                 :: norm, min_delta_x, x_nag, y_nag, z_nag, &
                                             adapt_tol, norm_nag, norm_3d, adapt_rel, &
                                           surf_area
-!      DOUBLE PRECISION, ALLOCATABLE    :: xsurf(:),ysurf(:),zsurf(:)
-!      DOUBLE PRECISION, ALLOCATABLE    :: nxsurf(:),nysurf(:),nzsurf(:)
-!      DOUBLE PRECISION, ALLOCATABLE    :: btopx(:),btopy(:),btopz(:),btops(:)
-!      DOUBLE PRECISION, ALLOCATABLE    :: jx_3d(:), jy_3d(:),jz_3d(:)
       DOUBLE PRECISION, PARAMETER      :: pi2 = 6.283185482025146D+00
-!      INTEGER, PARAMETER               :: IWRK = 67108864 ! 2^26
       INTEGER, PARAMETER               :: IWRK = 16777216 ! 2^24
       CHARACTER(LEN=256)               :: vc_type_str=''
       DOUBLE PRECISION, PRIVATE, PARAMETER      :: zero = 0.0D+0
@@ -191,7 +186,9 @@
       SUBROUTINE init_virtual_casing_dbl(mnmax,nu,nv,xm,xn,rmnc,zmns,nfp,bumnc,bvmnc,&
                                      rmns,zmnc,bsmns,bsmnc,bumns,bvmns,dr,comm)
       USE mpi_sharmem
+#if defined(MPI_OPT)
       USE mpi
+#endif
       USE EZspline_obj
       USE EZspline
       IMPLICIT NONE
@@ -207,7 +204,8 @@
       INTEGER, INTENT(in), OPTIONAL :: comm
       
       ! LOCAL VARIABLES
-      INTEGER :: nuv, mn, uv, i, u, v, dex1, dex2, ier, nuvm, myidlocal
+      INTEGER :: nuv, mn, uv, i, u, v, dex1, dex2, ier, nuvm
+      INTEGER :: shar_comm, shar_rank, shar_size
       INTEGER :: bcs1(2), bcs2(2)
       DOUBLE PRECISION :: snr, snphi,snz,snx,sny,brs,bphis,bzs,bxs,bys,&
                      factor, cop, sip, dx, dy, dz, sn, signs,xt,yt,zt, dr_temp,&
@@ -248,9 +246,12 @@
       eps2 = (x2_max-x2_min)*small
       eps3 = (x3_max-x3_min)*small
       !Handle shared memory
+#if defined(MPI_OPT)
       IF (PRESENT(comm)) THEN
          ! Get rank
-         CALL MPI_COMM_RANK(comm, myidlocal, ier)
+         CALL MPI_COMM_SPLIT_TYPE(comm, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, shar_comm, ier)
+         CALL MPI_COMM_RANK(shar_comm, shar_rank, ier)
+         CALL MPI_COMM_SIZE(shar_comm, shar_size, ier)
          ! Free if allocated
          IF (ASSOCIATED(X3D))    CALL mpidealloc(X3D,    win_X3D)
          IF (ASSOCIATED(Y3D))    CALL mpidealloc(Y3D,    win_Y3D)
@@ -276,32 +277,32 @@
          IF (ASSOCIATED(btopz))  CALL mpidealloc(btopz,  win_btopz)
          IF (ASSOCIATED(btops))  CALL mpidealloc(btops,  win_btops)
          ! ALLOCATE
-         CALL mpialloc(X3D, 4,  nx1, nx2, myidlocal, 0, comm, win_X3D)
-         CALL mpialloc(Y3D, 4,  nx1, nx2, myidlocal, 0, comm, win_Y3D)
-         CALL mpialloc(Z3D, 4,  nx1, nx2, myidlocal, 0, comm, win_Z3D)
-         CALL mpialloc(NX3D, 4, nx1, nx2, myidlocal, 0, comm, win_NX3D)
-         CALL mpialloc(NY3D, 4, nx1, nx2, myidlocal, 0, comm, win_NY3D)
-         CALL mpialloc(NZ3D, 4, nx1, nx2, myidlocal, 0, comm, win_NZ3D)
-         CALL mpialloc(KX3D, 4, nx1, nx2, myidlocal, 0, comm, win_KX3D)
-         CALL mpialloc(KY3D, 4, nx1, nx2, myidlocal, 0, comm, win_KY3D)
-         CALL mpialloc(KZ3D, 4, nx1, nx2, myidlocal, 0, comm, win_KZ3D)
-         CALL mpialloc(BN3D, 4, nx1, nx2, myidlocal, 0, comm, win_BN3D)
-         CALL mpialloc(BN3D, 4, nx1, nx2, myidlocal, 0, comm, win_BN3D)
-         CALL mpialloc(x1, nx1, myidlocal, 0, comm, win_x1)
-         CALL mpialloc(x2, nx2, myidlocal, 0, comm, win_x2)
-         CALL mpialloc(xsurf, nuvp, myidlocal, 0, comm, win_xsurf)
-         CALL mpialloc(ysurf, nuvp, myidlocal, 0, comm, win_ysurf)
-         CALL mpialloc(zsurf, nuvp, myidlocal, 0, comm, win_zsurf)
-         CALL mpialloc(nxsurf, nuvp, myidlocal, 0, comm, win_nxsurf)
-         CALL mpialloc(nysurf, nuvp, myidlocal, 0, comm, win_nysurf)
-         CALL mpialloc(nzsurf, nuvp, myidlocal, 0, comm, win_nzsurf)
-         CALL mpialloc(btopx, nuvp, myidlocal, 0, comm, win_btopx)
-         CALL mpialloc(btopy, nuvp, myidlocal, 0, comm, win_btopy)
-         CALL mpialloc(btopz, nuvp, myidlocal, 0, comm, win_btopz)
-         CALL mpialloc(btops, nuvp, myidlocal, 0, comm, win_btops)
-         ! Now kick out everyone who isn't doing work (you'll need to barrier after this call)
-         IF (myidlocal /= 0) RETURN
+         CALL mpialloc(X3D, 4,  nx1, nx2, shar_rank, 0, shar_comm, win_X3D)
+         CALL mpialloc(Y3D, 4,  nx1, nx2, shar_rank, 0, shar_comm, win_Y3D)
+         CALL mpialloc(Z3D, 4,  nx1, nx2, shar_rank, 0, shar_comm, win_Z3D)
+         CALL mpialloc(NX3D, 4, nx1, nx2, shar_rank, 0, shar_comm, win_NX3D)
+         CALL mpialloc(NY3D, 4, nx1, nx2, shar_rank, 0, shar_comm, win_NY3D)
+         CALL mpialloc(NZ3D, 4, nx1, nx2, shar_rank, 0, shar_comm, win_NZ3D)
+         CALL mpialloc(KX3D, 4, nx1, nx2, shar_rank, 0, shar_comm, win_KX3D)
+         CALL mpialloc(KY3D, 4, nx1, nx2, shar_rank, 0, shar_comm, win_KY3D)
+         CALL mpialloc(KZ3D, 4, nx1, nx2, shar_rank, 0, shar_comm, win_KZ3D)
+         CALL mpialloc(BN3D, 4, nx1, nx2, shar_rank, 0, shar_comm, win_BN3D)
+         CALL mpialloc(BN3D, 4, nx1, nx2, shar_rank, 0, shar_comm, win_BN3D)
+         CALL mpialloc(x1, nx1, shar_rank, 0, shar_comm, win_x1)
+         CALL mpialloc(x2, nx2, shar_rank, 0, shar_comm, win_x2)
+         CALL mpialloc(xsurf, nuvp, shar_rank, 0, shar_comm, win_xsurf)
+         CALL mpialloc(ysurf, nuvp, shar_rank, 0, shar_comm, win_ysurf)
+         CALL mpialloc(zsurf, nuvp, shar_rank, 0, shar_comm, win_zsurf)
+         CALL mpialloc(nxsurf, nuvp, shar_rank, 0, shar_comm, win_nxsurf)
+         CALL mpialloc(nysurf, nuvp, shar_rank, 0, shar_comm, win_nysurf)
+         CALL mpialloc(nzsurf, nuvp, shar_rank, 0, shar_comm, win_nzsurf)
+         CALL mpialloc(btopx, nuvp, shar_rank, 0, shar_comm, win_btopx)
+         CALL mpialloc(btopy, nuvp, shar_rank, 0, shar_comm, win_btopy)
+         CALL mpialloc(btopz, nuvp, shar_rank, 0, shar_comm, win_btopz)
+         CALL mpialloc(btops, nuvp, shar_rank, 0, shar_comm, win_btops)
       ELSE
+#endif
+         shar_rank = 0; shar_size = 1
          IF (ASSOCIATED(X3D))  DEALLOCATE(X3D)
          IF (ASSOCIATED(Y3D))  DEALLOCATE(Y3D)
          IF (ASSOCIATED(Z3D))  DEALLOCATE(Z3D)
@@ -347,304 +348,315 @@
          ALLOCATE(btopy(nuvp))
          ALLOCATE(btopz(nuvp))
          ALLOCATE(btops(nuvp))
+#if defined(MPI_OPT)
       END IF
-      ! Deallocate anything globally allocated
-      IF (EZspline_allocated(x_spl)) CALL EZspline_free(x_spl,ier)
-      IF (EZspline_allocated(y_spl)) CALL EZspline_free(y_spl,ier)
-      IF (EZspline_allocated(z_spl)) CALL EZspline_free(z_spl,ier)
-      IF (EZspline_allocated(nx_spl)) CALL EZspline_free(nx_spl,ier)
-      IF (EZspline_allocated(ny_spl)) CALL EZspline_free(ny_spl,ier)
-      IF (EZspline_allocated(nz_spl)) CALL EZspline_free(nz_spl,ier)
-      IF (EZspline_allocated(kx_spl)) CALL EZspline_free(kx_spl,ier)
-      IF (EZspline_allocated(ky_spl)) CALL EZspline_free(ky_spl,ier)
-      IF (EZspline_allocated(kz_spl)) CALL EZspline_free(kz_spl,ier)
-      IF (EZspline_allocated(bn_spl)) CALL EZspline_free(bn_spl,ier)
-      ALLOCATE(xreal(1:nu+1,1:nvp+1),yreal(1:nu+1,1:nvp+1),zreal(1:nu+1,1:nvp+1))
-      ALLOCATE(nxreal(1:nu+1,1:nvp+1),nyreal(1:nu+1,1:nvp+1),nzreal(1:nu+1,1:nvp+1))
-      ALLOCATE(kxreal(1:nu+1,1:nvp+1),kyreal(1:nu+1,1:nvp+1),kzreal(1:nu+1,1:nvp+1))
-      ALLOCATE(btopreal(1:nu+1,1:nvp+1))
+#endif
+      IF (shar_rank == 0) THEN
+         ! Deallocate anything globally allocated
+         IF (EZspline_allocated(x_spl)) CALL EZspline_free(x_spl,ier)
+         IF (EZspline_allocated(y_spl)) CALL EZspline_free(y_spl,ier)
+         IF (EZspline_allocated(z_spl)) CALL EZspline_free(z_spl,ier)
+         IF (EZspline_allocated(nx_spl)) CALL EZspline_free(nx_spl,ier)
+         IF (EZspline_allocated(ny_spl)) CALL EZspline_free(ny_spl,ier)
+         IF (EZspline_allocated(nz_spl)) CALL EZspline_free(nz_spl,ier)
+         IF (EZspline_allocated(kx_spl)) CALL EZspline_free(kx_spl,ier)
+         IF (EZspline_allocated(ky_spl)) CALL EZspline_free(ky_spl,ier)
+         IF (EZspline_allocated(kz_spl)) CALL EZspline_free(kz_spl,ier)
+         IF (EZspline_allocated(bn_spl)) CALL EZspline_free(bn_spl,ier)
+         ALLOCATE(xreal(1:nu+1,1:nvp+1),yreal(1:nu+1,1:nvp+1),zreal(1:nu+1,1:nvp+1))
+         ALLOCATE(nxreal(1:nu+1,1:nvp+1),nyreal(1:nu+1,1:nvp+1),nzreal(1:nu+1,1:nvp+1))
+         ALLOCATE(kxreal(1:nu+1,1:nvp+1),kyreal(1:nu+1,1:nvp+1),kzreal(1:nu+1,1:nvp+1))
+         ALLOCATE(btopreal(1:nu+1,1:nvp+1))
 
-      ! Alloocations
-      ALLOCATE(xu(1:nu),xv(1:nv))
-      ALLOCATE(r_temp(1:nu,1:nv,2),z_temp(1:nu,1:nv,2))
-      ALLOCATE(bs_temp(1:nu,1:nv,1),bu_temp(1:nu,1:nv,1),bv_temp(1:nu,1:nv,1))
-      ALLOCATE(rs(1:nu,1:nv,1),ru(1:nu,1:nv,1),rv(1:nu,1:nv,1))
-      ALLOCATE(zs(1:nu,1:nv,1),zu(1:nu,1:nv,1),zv(1:nu,1:nv,1))
-      r_temp=zero; z_temp=zero; bs_temp=zero; bu_temp=zero; bv_temp=zero
-      dr_temp=one;
-      FORALL(u=1:nu) xu(u) = DBLE(u-1)/DBLE(nu)
-      FORALL(v=1:nv) xv(v) = DBLE(v-1)/DBLE(nv)
-      CALL mntouv_local(1,2,mnmax,nu,nv,xu,xv,rmnc,xm,xn,r_temp,0,1)
-      CALL mntouv_local(1,2,mnmax,nu,nv,xu,xv,zmns,xm,xn,z_temp,1,0)
-      IF (PRESENT(bsmns)) CALL mntouv_local(1,1,mnmax,nu,nv,xu,xv,bsmns,xm,xn,bs_temp,1,0)
-      IF (PRESENT(bumnc)) CALL mntouv_local(1,1,mnmax,nu,nv,xu,xv,bumnc,xm,xn,bu_temp,0,0)
-      IF (PRESENT(bvmnc)) CALL mntouv_local(1,1,mnmax,nu,nv,xu,xv,bvmnc,xm,xn,bv_temp,0,0)
-      IF (PRESENT(rmns)) CALL mntouv_local(1,2,mnmax,nu,nv,xu,xv,rmns,xm,xn,r_temp,1,0)
-      IF (PRESENT(zmnc)) CALL mntouv_local(1,2,mnmax,nu,nv,xu,xv,zmnc,xm,xn,z_temp,0,0)
-      IF (PRESENT(bsmnc)) CALL mntouv_local(1,1,mnmax,nu,nv,xu,xv,bsmnc,xm,xn,bs_temp,0,0)
-      IF (PRESENT(bumns)) CALL mntouv_local(1,1,mnmax,nu,nv,xu,xv,bumns,xm,xn,bu_temp,1,0)
-      IF (PRESENT(bvmns)) CALL mntouv_local(1,1,mnmax,nu,nv,xu,xv,bvmns,xm,xn,bv_temp,1,0)
-      IF (PRESENT(dr)) dr_temp = dr
-      
-      xreal = zero; yreal = zero; zreal=zero
-      uv = 1
-      DO v = 1, nv
-         DO u = 1, nu
-            xsurf(uv) = r_temp(u,v,2)*DCOS(factor*xv(v))
-            ysurf(uv) = r_temp(u,v,2)*DSIN(factor*xv(v))
-            zsurf(uv) = z_temp(u,v,2)
-            xreal(u,v) = xsurf(uv)
-            yreal(u,v) = ysurf(uv)
-            zreal(u,v) = zsurf(uv)
-            uv = uv + 1
+         ! Alloocations
+         ALLOCATE(xu(1:nu),xv(1:nv))
+         ALLOCATE(r_temp(1:nu,1:nv,2),z_temp(1:nu,1:nv,2))
+         ALLOCATE(bs_temp(1:nu,1:nv,1),bu_temp(1:nu,1:nv,1),bv_temp(1:nu,1:nv,1))
+         ALLOCATE(rs(1:nu,1:nv,1),ru(1:nu,1:nv,1),rv(1:nu,1:nv,1))
+         ALLOCATE(zs(1:nu,1:nv,1),zu(1:nu,1:nv,1),zv(1:nu,1:nv,1))
+         r_temp=zero; z_temp=zero; bs_temp=zero; bu_temp=zero; bv_temp=zero
+         dr_temp=one;
+         FORALL(u=1:nu) xu(u) = DBLE(u-1)/DBLE(nu)
+         FORALL(v=1:nv) xv(v) = DBLE(v-1)/DBLE(nv)
+         CALL mntouv_local(1,2,mnmax,nu,nv,xu,xv,rmnc,xm,xn,r_temp,0,1)
+         CALL mntouv_local(1,2,mnmax,nu,nv,xu,xv,zmns,xm,xn,z_temp,1,0)
+         IF (PRESENT(bsmns)) CALL mntouv_local(1,1,mnmax,nu,nv,xu,xv,bsmns,xm,xn,bs_temp,1,0)
+         IF (PRESENT(bumnc)) CALL mntouv_local(1,1,mnmax,nu,nv,xu,xv,bumnc,xm,xn,bu_temp,0,0)
+         IF (PRESENT(bvmnc)) CALL mntouv_local(1,1,mnmax,nu,nv,xu,xv,bvmnc,xm,xn,bv_temp,0,0)
+         IF (PRESENT(rmns)) CALL mntouv_local(1,2,mnmax,nu,nv,xu,xv,rmns,xm,xn,r_temp,1,0)
+         IF (PRESENT(zmnc)) CALL mntouv_local(1,2,mnmax,nu,nv,xu,xv,zmnc,xm,xn,z_temp,0,0)
+         IF (PRESENT(bsmnc)) CALL mntouv_local(1,1,mnmax,nu,nv,xu,xv,bsmnc,xm,xn,bs_temp,0,0)
+         IF (PRESENT(bumns)) CALL mntouv_local(1,1,mnmax,nu,nv,xu,xv,bumns,xm,xn,bu_temp,1,0)
+         IF (PRESENT(bvmns)) CALL mntouv_local(1,1,mnmax,nu,nv,xu,xv,bvmns,xm,xn,bv_temp,1,0)
+         IF (PRESENT(dr)) dr_temp = dr
+         
+         xreal = zero; yreal = zero; zreal=zero
+         uv = 1
+         DO v = 1, nv
+            DO u = 1, nu
+               xsurf(uv) = r_temp(u,v,2)*DCOS(factor*xv(v))
+               ysurf(uv) = r_temp(u,v,2)*DSIN(factor*xv(v))
+               zsurf(uv) = z_temp(u,v,2)
+               xreal(u,v) = xsurf(uv)
+               yreal(u,v) = ysurf(uv)
+               zreal(u,v) = zsurf(uv)
+               uv = uv + 1
+            END DO
          END DO
-      END DO
-      ! Note we need to extend to nu+1
-      xreal(nu+1,:) = xreal(1,:)
-      yreal(nu+1,:) = yreal(1,:)
-      zreal(nu+1,:) = zreal(1,:)
-      
-      ! Now we calculate the edge metric elements
-      ALLOCATE(fmn_temp(1:mnmax,1))
-      rs = zero; zs = zero; ru = zero; zu = zero; rv = zero; zv = zero
-      FORALL(mn = 1:mnmax) fmn_temp(mn,1) = -rmnc(mn,2)*xm(mn)
-      CALL mntouv_local(1,1,mnmax,nu,nv,xu,xv,fmn_temp,xm,xn,ru,1,0)
-      FORALL(mn = 1:mnmax) fmn_temp(mn,1) = -rmnc(mn,2)*xn(mn)
-      CALL mntouv_local(1,1,mnmax,nu,nv,xu,xv,fmn_temp,xm,xn,rv,1,0)  
-      FORALL(mn = 1:mnmax) fmn_temp(mn,1) = zmns(mn,2)*xm(mn)
-      CALL mntouv_local(1,1,mnmax,nu,nv,xu,xv,fmn_temp,xm,xn,zu,0,0) 
-      FORALL(mn = 1:mnmax) fmn_temp(mn,1) = zmns(mn,2)*xn(mn)
-      CALL mntouv_local(1,1,mnmax,nu,nv,xu,xv,fmn_temp,xm,xn,zv,0,0)  
-      IF (PRESENT(rmns)) THEN
-         FORALL(mn = 1:mnmax) fmn_temp(mn,1) = rmns(mn,2)*xm(mn)
-         CALL mntouv_local(1,1,mnmax,nu,nv,xu,xv,fmn_temp,xm,xn,ru,0,0)
-         FORALL(mn = 1:mnmax) fmn_temp(mn,1) = rmns(mn,2)*xn(mn)
-         CALL mntouv_local(1,1,mnmax,nu,nv,xu,xv,fmn_temp,xm,xn,rv,0,0)
+         ! Note we need to extend to nu+1
+         xreal(nu+1,:) = xreal(1,:)
+         yreal(nu+1,:) = yreal(1,:)
+         zreal(nu+1,:) = zreal(1,:)
+         
+         ! Now we calculate the edge metric elements
+         ALLOCATE(fmn_temp(1:mnmax,1))
+         rs = zero; zs = zero; ru = zero; zu = zero; rv = zero; zv = zero
+         FORALL(mn = 1:mnmax) fmn_temp(mn,1) = -rmnc(mn,2)*xm(mn)
+         CALL mntouv_local(1,1,mnmax,nu,nv,xu,xv,fmn_temp,xm,xn,ru,1,0)
+         FORALL(mn = 1:mnmax) fmn_temp(mn,1) = -rmnc(mn,2)*xn(mn)
+         CALL mntouv_local(1,1,mnmax,nu,nv,xu,xv,fmn_temp,xm,xn,rv,1,0)  
+         FORALL(mn = 1:mnmax) fmn_temp(mn,1) = zmns(mn,2)*xm(mn)
+         CALL mntouv_local(1,1,mnmax,nu,nv,xu,xv,fmn_temp,xm,xn,zu,0,0) 
+         FORALL(mn = 1:mnmax) fmn_temp(mn,1) = zmns(mn,2)*xn(mn)
+         CALL mntouv_local(1,1,mnmax,nu,nv,xu,xv,fmn_temp,xm,xn,zv,0,0)  
+         IF (PRESENT(rmns)) THEN
+            FORALL(mn = 1:mnmax) fmn_temp(mn,1) = rmns(mn,2)*xm(mn)
+            CALL mntouv_local(1,1,mnmax,nu,nv,xu,xv,fmn_temp,xm,xn,ru,0,0)
+            FORALL(mn = 1:mnmax) fmn_temp(mn,1) = rmns(mn,2)*xn(mn)
+            CALL mntouv_local(1,1,mnmax,nu,nv,xu,xv,fmn_temp,xm,xn,rv,0,0)
+         END IF
+         IF (PRESENT(zmnc)) THEN
+            FORALL(mn = 1:mnmax) fmn_temp(mn,1) = -zmnc(mn,2)*xm(mn)
+            CALL mntouv_local(1,1,mnmax,nu,nv,xu,xv,fmn_temp,xm,xn,zu,1,0)  
+            FORALL(mn = 1:mnmax) fmn_temp(mn,1) = -zmnc(mn,2)*xn(mn)
+            CALL mntouv_local(1,1,mnmax,nu,nv,xu,xv,fmn_temp,xm,xn,zv,1,0)
+         END IF
+         DO u=1,nu
+            DO v=1,nv
+               rs(u,v,1)     = (r_temp(u,v,2) - r_temp(u,v,1))
+               zs(u,v,1)     = (z_temp(u,v,2) - z_temp(u,v,1))
+            END DO
+         END DO
+         
+         btopx = zero; btopy = zero; btopz = zero; btops = zero; btopreal = zero
+         kxreal = zero; kyreal = zero; kzreal = zero;
+         nxreal = zero; nyreal = zero; nzreal = zero;
+         uv = 1
+         ! Check sign of jacobian
+         signs = one
+         stotal = zero
+         IF (zreal(2,1)-zreal(1,1) < 0) signs = -one
+         ! u then v if not outputting
+         DO v = 1, nv
+            DO u = 1, nu
+               cop   = DCOS(factor*xv(v))
+               sip   = DSIN(factor*xv(v))
+               xu_temp = pi2*ru(u,v,1)*cop
+               yu      = pi2*ru(u,v,1)*sip
+               xv_temp = pi2*rv(u,v,1)*cop - factor*yreal(u,v)
+               yv      = pi2*rv(u,v,1)*sip + factor*xreal(u,v)
+               snx     = -yu*zv(u,v,1)*pi2      + zu(u,v,1)*yv*pi2
+               sny     = -xv_temp*zu(u,v,1)*pi2 + zv(u,v,1)*xu_temp*pi2
+               snz     = -xu_temp*yv        + yu*xv_temp
+               sn      = DSQRT(snx*snx+sny*sny+snz*snz)
+               stotal = stotal + sn
+               brs   = bs_temp(u,v,1)*rs(u,v,1)+bu_temp(u,v,1)*ru(u,v,1)+bv_temp(u,v,1)*rv(u,v,1)*nfp
+               bphis = bv_temp(u,v,1)*r_temp(u,v,2)
+               bzs   = bs_temp(u,v,1)*zs(u,v,1)+bu_temp(u,v,1)*zu(u,v,1)+bv_temp(u,v,1)*zv(u,v,1)*nfp
+               bxs   = brs*cop - bphis*sip
+               bys   = brs*sip + bphis*cop
+               btopx(uv) = -( bys * snz - bzs * sny )
+               btopy(uv) = -( bzs * snx - bxs * snz )
+               btopz(uv) = -( bxs * sny - bys * snx )
+               kxreal(u,v) = btopx(uv)
+               kyreal(u,v) = btopy(uv)
+               kzreal(u,v) = btopz(uv)
+               nxsurf(uv)  = snx/sn
+               nysurf(uv)  = sny/sn
+               nzsurf(uv)  = snz/sn
+               nxreal(u,v) = snx/sn
+               nyreal(u,v) = sny/sn
+               nzreal(u,v) = snz/sn
+               uv = uv + 1
+            END DO
+         END DO
+         surf_area = nfp*stotal/nuv
+         CALL FLUSH(6)
+         ! NUMAX
+         kxreal(nu+1,:) = kxreal(1,:)
+         kyreal(nu+1,:) = kyreal(1,:)
+         kzreal(nu+1,:) = kzreal(1,:)
+         nxreal(nu+1,:) = nxreal(1,:)
+         nyreal(nu+1,:) = nyreal(1,:)
+         nzreal(nu+1,:) = nzreal(1,:)
+         btopreal(nu+1,:) = btopreal(1,:)
+         ! NVMAX
+         kxreal(:,nv+1) = kxreal(:,1)
+         kyreal(:,nv+1) = kyreal(:,1)
+         kzreal(:,nv+1) = kzreal(:,1)
+         nxreal(:,nv+1) = nxreal(:,1)
+         nyreal(:,nv+1) = nyreal(:,1)
+         nzreal(:,nv+1) = nzreal(:,1)
+         btopreal(:,nv+1) = btopreal(:,1)
+         ! Last point
+         kxreal(nu+1,nv+1) = kxreal(1,1)
+         kyreal(nu+1,nv+1) = kyreal(1,1)
+         kzreal(nu+1,nv+1) = kzreal(1,1)
+         nxreal(nu+1,nv+1) = nxreal(1,1)
+         nyreal(nu+1,nv+1) = nyreal(1,1)
+         nzreal(nu+1,nv+1) = nzreal(1,1)
+         btopreal(nu+1,nv+1) = btopreal(nu+1,nv+1)
+         ! Finish off
+         DO v = 2, nfp
+            cop  = DCOS((v-1)*factor)
+            sip  = DSIN((v-1)*factor)
+            dex1 = (v-1)*nuv+1
+            dex2 = v*nuv
+            btopx(dex1:dex2) = btopx(1:nuv)*cop - btopy(1:nuv)*sip
+            btopy(dex1:dex2) = btopy(1:nuv)*cop + btopx(1:nuv)*sip
+            btopz(dex1:dex2) = btopz(1:nuv)
+            btops(dex1:dex2) = btops(1:nuv)
+            xsurf(dex1:dex2) = xsurf(1:nuv)*cop - ysurf(1:nuv)*sip
+            ysurf(dex1:dex2) = ysurf(1:nuv)*cop + xsurf(1:nuv)*sip
+            zsurf(dex1:dex2) = zsurf(1:nuv)
+            nxsurf(dex1:dex2) = nxsurf(1:nuv)*cop - nysurf(1:nuv)*sip
+            nysurf(dex1:dex2) = nysurf(1:nuv)*cop + nxsurf(1:nuv)*sip
+            nzsurf(dex1:dex2) = nzsurf(1:nuv)
+            dex1 = (v-1)*nv+1
+            dex2 = v*nv
+            xreal(1:nu+1,dex1:dex2) = xreal(1:nu+1,1:nv)*cop - yreal(1:nu+1,1:nv)*sip
+            yreal(1:nu+1,dex1:dex2) = yreal(1:nu+1,1:nv)*cop + xreal(1:nu+1,1:nv)*sip
+            zreal(1:nu+1,dex1:dex2) = zreal(1:nu+1,1:nv)
+            kxreal(1:nu+1,dex1:dex2) = kxreal(1:nu+1,1:nv)*cop - kyreal(1:nu+1,1:nv)*sip
+            kyreal(1:nu+1,dex1:dex2) = kyreal(1:nu+1,1:nv)*cop + kxreal(1:nu+1,1:nv)*sip
+            kzreal(1:nu+1,dex1:dex2) = kzreal(1:nu+1,1:nv)
+            nxreal(1:nu+1,dex1:dex2) = nxreal(1:nu+1,1:nv)*cop - nyreal(1:nu+1,1:nv)*sip
+            nyreal(1:nu+1,dex1:dex2) = nyreal(1:nu+1,1:nv)*cop + nxreal(1:nu+1,1:nv)*sip
+            nzreal(1:nu+1,dex1:dex2) = nzreal(1:nu+1,1:nv)
+            btopreal(1:nu+1,dex1:dex2) = btopreal(1:nu+1,1:nv)
+         END DO
+         xreal(:,nvp+1)  = xreal(:,1)
+         yreal(:,nvp+1)  = yreal(:,1)
+         zreal(:,nvp+1)  = zreal(:,1)
+         kxreal(:,nvp+1) = kxreal(:,1)
+         kyreal(:,nvp+1) = kyreal(:,1)
+         kzreal(:,nvp+1) = kzreal(:,1)
+         nxreal(:,nvp+1) = nxreal(:,1)
+         nyreal(:,nvp+1) = nyreal(:,1)
+         nzreal(:,nvp+1) = nzreal(:,1)
+         btopreal(:,nvp+1) = btopreal(:,1)
+         ! Calculate Return map
+         min_delta_x = 1.0D+10
+         DO v = 2, nv-1
+            DO u = 2, nu-1
+                dx = xreal(nu+1,nv) - xreal(nu-1,nv)
+                dy = yreal(nu+1,nv) - yreal(nu-1,nv)
+                dz = zreal(nu+1,nv) - zreal(nu-1,nv)
+                min_delta_x=MIN(min_delta_x,SQRT(dx*dx+dy*dy+dz*dz))
+                dx = xreal(nu,nv+1) - xreal(nu,nv-1)
+                dy = yreal(nu,nv+1) - yreal(nu,nv-1)
+                dz = zreal(nu,nv+1) - zreal(nu,nv-1)
+                min_delta_x=MIN(min_delta_x,SQRT(dx*dx+dy*dy+dz*dz))
+            END DO
+         END DO
+         ! Construct Splines
+         CALL EZspline_init(x_spl,nu+1,nvp+1,bcs1,bcs2,ier)
+         CALL EZspline_init(y_spl,nu+1,nvp+1,bcs1,bcs2,ier)
+         CALL EZspline_init(z_spl,nu+1,nvp+1,bcs1,bcs2,ier)
+         CALL EZspline_init(nx_spl,nu+1,nvp+1,bcs1,bcs2,ier)
+         CALL EZspline_init(ny_spl,nu+1,nvp+1,bcs1,bcs2,ier)
+         CALL EZspline_init(nz_spl,nu+1,nvp+1,bcs1,bcs2,ier)
+         CALL EZspline_init(kx_spl,nu+1,nvp+1,bcs1,bcs2,ier)
+         CALL EZspline_init(ky_spl,nu+1,nvp+1,bcs1,bcs2,ier)
+         CALL EZspline_init(kz_spl,nu+1,nvp+1,bcs1,bcs2,ier)
+         CALL EZspline_init(bn_spl,nu+1,nvp+1,bcs1,bcs2,ier)
+         ! Define arrays from 0 to 1 because integrand already contains
+         ! dA information.
+         DO  u = 1, nu+1
+            x_spl%x1(u) = DBLE(u-1)/DBLE(nu)
+            y_spl%x1(u) = DBLE(u-1)/DBLE(nu)
+            z_spl%x1(u) = DBLE(u-1)/DBLE(nu)
+            nx_spl%x1(u) = DBLE(u-1)/DBLE(nu)
+            ny_spl%x1(u) = DBLE(u-1)/DBLE(nu)
+            nz_spl%x1(u) = DBLE(u-1)/DBLE(nu)
+            kx_spl%x1(u) = DBLE(u-1)/DBLE(nu)
+            ky_spl%x1(u) = DBLE(u-1)/DBLE(nu)
+            kz_spl%x1(u) = DBLE(u-1)/DBLE(nu)
+            bn_spl%x1(u) = DBLE(u-1)/DBLE(nu)
+         END DO
+         DO  v = 1, nvp+1
+            x_spl%x2(v) = DBLE(v-1)/DBLE(nvp)
+            y_spl%x2(v) = DBLE(v-1)/DBLE(nvp)
+            z_spl%x2(v) = DBLE(v-1)/DBLE(nvp)
+            nx_spl%x2(v) = DBLE(v-1)/DBLE(nvp)
+            ny_spl%x2(v) = DBLE(v-1)/DBLE(nvp)
+            nz_spl%x2(v) = DBLE(v-1)/DBLE(nvp)
+            kx_spl%x2(v) = DBLE(v-1)/DBLE(nvp)
+            ky_spl%x2(v) = DBLE(v-1)/DBLE(nvp)
+            kz_spl%x2(v) = DBLE(v-1)/DBLE(nvp)
+            bn_spl%x2(v) = DBLE(v-1)/DBLE(nvp)
+         END DO
+         x_spl%isHermite  = 1
+         y_spl%isHermite  = 1
+         z_spl%isHermite  = 1
+         nx_spl%isHermite = 1
+         ny_spl%isHermite = 1
+         nz_spl%isHermite = 1
+         kx_spl%isHermite = 1
+         ky_spl%isHermite = 1
+         kz_spl%isHermite = 1
+         bn_spl%isHermite = 1
+         CALL EZspline_setup(x_spl,xreal,ier)
+         CALL EZspline_setup(y_spl,yreal,ier)
+         CALL EZspline_setup(z_spl,zreal,ier)
+         CALL EZspline_setup(nx_spl,nxreal,ier)
+         CALL EZspline_setup(ny_spl,nyreal,ier)
+         CALL EZspline_setup(nz_spl,nzreal,ier)
+         CALL EZspline_setup(kx_spl,kxreal,ier)
+         CALL EZspline_setup(ky_spl,kyreal,ier)
+         CALL EZspline_setup(kz_spl,kzreal,ier)
+         CALL EZspline_setup(bn_spl,btopreal,ier)
+         ! Setup shared memory arrays
+         x1   = x_spl%x1
+         x2   = x_spl%x2
+         X3D  = x_spl%fspl
+         Y3D  = y_spl%fspl
+         Z3D  = z_spl%fspl
+         NX3D = nx_spl%fspl
+         NY3D = ny_spl%fspl
+         NZ3D = nz_spl%fspl
+         KX3D = kx_spl%fspl
+         KY3D = ky_spl%fspl
+         KZ3D = kz_spl%fspl
+         BN3D = bn_spl%fspl
+         CALL EZspline_free(x_spl,ier)
+         CALL EZspline_free(y_spl,ier)
+         CALL EZspline_free(z_spl,ier)
+         CALL EZspline_free(kx_spl,ier)
+         CALL EZspline_free(ky_spl,ier)
+         CALL EZspline_free(kz_spl,ier)
+         CALL EZspline_free(nx_spl,ier)
+         CALL EZspline_free(ny_spl,ier)
+         CALL EZspline_free(nz_spl,ier)
+         CALL EZspline_free(bn_spl,ier)
+         ! Deallocations
+         DEALLOCATE(xu,xv)
+         DEALLOCATE(r_temp,z_temp)
+         DEALLOCATE(bs_temp,bu_temp,bv_temp)
+         DEALLOCATE(rs,ru,rv)
+         DEALLOCATE(zs,zu,zv)
+         DEALLOCATE(xreal,yreal,zreal)
+         DEALLOCATE(nxreal,nyreal,nzreal)
+         DEALLOCATE(kxreal,kyreal,kzreal,btopreal)
+         DEALLOCATE(fmn_temp)
+      END IF !So shared memory doesn't do work
+#if defined(MPI_OPT)
+      IF (PRESENT(comm)) THEN
+         CALL MPI_BARRIER(shar_comm,ier)
+         CALL MPI_COMM_FREE(shar_comm,ier)
       END IF
-      IF (PRESENT(zmnc)) THEN
-         FORALL(mn = 1:mnmax) fmn_temp(mn,1) = -zmnc(mn,2)*xm(mn)
-         CALL mntouv_local(1,1,mnmax,nu,nv,xu,xv,fmn_temp,xm,xn,zu,1,0)  
-         FORALL(mn = 1:mnmax) fmn_temp(mn,1) = -zmnc(mn,2)*xn(mn)
-         CALL mntouv_local(1,1,mnmax,nu,nv,xu,xv,fmn_temp,xm,xn,zv,1,0)
-      END IF
-      DO u=1,nu
-         DO v=1,nv
-            rs(u,v,1)     = (r_temp(u,v,2) - r_temp(u,v,1))
-            zs(u,v,1)     = (z_temp(u,v,2) - z_temp(u,v,1))
-         END DO
-      END DO
-      
-      btopx = zero; btopy = zero; btopz = zero; btops = zero; btopreal = zero
-      kxreal = zero; kyreal = zero; kzreal = zero;
-      nxreal = zero; nyreal = zero; nzreal = zero;
-      uv = 1
-      ! Check sign of jacobian
-      signs = one
-      stotal = zero
-      IF (zreal(2,1)-zreal(1,1) < 0) signs = -one
-      ! u then v if not outputting
-      DO v = 1, nv
-         DO u = 1, nu
-            cop   = DCOS(factor*xv(v))
-            sip   = DSIN(factor*xv(v))
-            xu_temp = pi2*ru(u,v,1)*cop
-            yu      = pi2*ru(u,v,1)*sip
-            xv_temp = pi2*rv(u,v,1)*cop - factor*yreal(u,v)
-            yv      = pi2*rv(u,v,1)*sip + factor*xreal(u,v)
-            snx     = -yu*zv(u,v,1)*pi2      + zu(u,v,1)*yv*pi2
-            sny     = -xv_temp*zu(u,v,1)*pi2 + zv(u,v,1)*xu_temp*pi2
-            snz     = -xu_temp*yv        + yu*xv_temp
-            sn      = DSQRT(snx*snx+sny*sny+snz*snz)
-            stotal = stotal + sn
-            brs   = bs_temp(u,v,1)*rs(u,v,1)+bu_temp(u,v,1)*ru(u,v,1)+bv_temp(u,v,1)*rv(u,v,1)*nfp
-            bphis = bv_temp(u,v,1)*r_temp(u,v,2)
-            bzs   = bs_temp(u,v,1)*zs(u,v,1)+bu_temp(u,v,1)*zu(u,v,1)+bv_temp(u,v,1)*zv(u,v,1)*nfp
-            bxs   = brs*cop - bphis*sip
-            bys   = brs*sip + bphis*cop
-            btopx(uv) = -( bys * snz - bzs * sny )
-            btopy(uv) = -( bzs * snx - bxs * snz )
-            btopz(uv) = -( bxs * sny - bys * snx )
-            kxreal(u,v) = btopx(uv)
-            kyreal(u,v) = btopy(uv)
-            kzreal(u,v) = btopz(uv)
-            nxsurf(uv)  = snx/sn
-            nysurf(uv)  = sny/sn
-            nzsurf(uv)  = snz/sn
-            nxreal(u,v) = snx/sn
-            nyreal(u,v) = sny/sn
-            nzreal(u,v) = snz/sn
-            uv = uv + 1
-         END DO
-      END DO
-      surf_area = nfp*stotal/nuv
-      CALL FLUSH(6)
-      ! NUMAX
-      kxreal(nu+1,:) = kxreal(1,:)
-      kyreal(nu+1,:) = kyreal(1,:)
-      kzreal(nu+1,:) = kzreal(1,:)
-      nxreal(nu+1,:) = nxreal(1,:)
-      nyreal(nu+1,:) = nyreal(1,:)
-      nzreal(nu+1,:) = nzreal(1,:)
-      btopreal(nu+1,:) = btopreal(1,:)
-      ! NVMAX
-      kxreal(:,nv+1) = kxreal(:,1)
-      kyreal(:,nv+1) = kyreal(:,1)
-      kzreal(:,nv+1) = kzreal(:,1)
-      nxreal(:,nv+1) = nxreal(:,1)
-      nyreal(:,nv+1) = nyreal(:,1)
-      nzreal(:,nv+1) = nzreal(:,1)
-      btopreal(:,nv+1) = btopreal(:,1)
-      ! Last point
-      kxreal(nu+1,nv+1) = kxreal(1,1)
-      kyreal(nu+1,nv+1) = kyreal(1,1)
-      kzreal(nu+1,nv+1) = kzreal(1,1)
-      nxreal(nu+1,nv+1) = nxreal(1,1)
-      nyreal(nu+1,nv+1) = nyreal(1,1)
-      nzreal(nu+1,nv+1) = nzreal(1,1)
-      btopreal(nu+1,nv+1) = btopreal(nu+1,nv+1)
-      ! Finish off
-      DO v = 2, nfp
-         cop  = DCOS((v-1)*factor)
-         sip  = DSIN((v-1)*factor)
-         dex1 = (v-1)*nuv+1
-         dex2 = v*nuv
-         btopx(dex1:dex2) = btopx(1:nuv)*cop - btopy(1:nuv)*sip
-         btopy(dex1:dex2) = btopy(1:nuv)*cop + btopx(1:nuv)*sip
-         btopz(dex1:dex2) = btopz(1:nuv)
-         btops(dex1:dex2) = btops(1:nuv)
-         xsurf(dex1:dex2) = xsurf(1:nuv)*cop - ysurf(1:nuv)*sip
-         ysurf(dex1:dex2) = ysurf(1:nuv)*cop + xsurf(1:nuv)*sip
-         zsurf(dex1:dex2) = zsurf(1:nuv)
-         nxsurf(dex1:dex2) = nxsurf(1:nuv)*cop - nysurf(1:nuv)*sip
-         nysurf(dex1:dex2) = nysurf(1:nuv)*cop + nxsurf(1:nuv)*sip
-         nzsurf(dex1:dex2) = nzsurf(1:nuv)
-         dex1 = (v-1)*nv+1
-         dex2 = v*nv
-         xreal(1:nu+1,dex1:dex2) = xreal(1:nu+1,1:nv)*cop - yreal(1:nu+1,1:nv)*sip
-         yreal(1:nu+1,dex1:dex2) = yreal(1:nu+1,1:nv)*cop + xreal(1:nu+1,1:nv)*sip
-         zreal(1:nu+1,dex1:dex2) = zreal(1:nu+1,1:nv)
-         kxreal(1:nu+1,dex1:dex2) = kxreal(1:nu+1,1:nv)*cop - kyreal(1:nu+1,1:nv)*sip
-         kyreal(1:nu+1,dex1:dex2) = kyreal(1:nu+1,1:nv)*cop + kxreal(1:nu+1,1:nv)*sip
-         kzreal(1:nu+1,dex1:dex2) = kzreal(1:nu+1,1:nv)
-         nxreal(1:nu+1,dex1:dex2) = nxreal(1:nu+1,1:nv)*cop - nyreal(1:nu+1,1:nv)*sip
-         nyreal(1:nu+1,dex1:dex2) = nyreal(1:nu+1,1:nv)*cop + nxreal(1:nu+1,1:nv)*sip
-         nzreal(1:nu+1,dex1:dex2) = nzreal(1:nu+1,1:nv)
-         btopreal(1:nu+1,dex1:dex2) = btopreal(1:nu+1,1:nv)
-      END DO
-      xreal(:,nvp+1)  = xreal(:,1)
-      yreal(:,nvp+1)  = yreal(:,1)
-      zreal(:,nvp+1)  = zreal(:,1)
-      kxreal(:,nvp+1) = kxreal(:,1)
-      kyreal(:,nvp+1) = kyreal(:,1)
-      kzreal(:,nvp+1) = kzreal(:,1)
-      nxreal(:,nvp+1) = nxreal(:,1)
-      nyreal(:,nvp+1) = nyreal(:,1)
-      nzreal(:,nvp+1) = nzreal(:,1)
-      btopreal(:,nvp+1) = btopreal(:,1)
-      ! Calculate Return map
-      min_delta_x = 1.0D+10
-      DO v = 2, nv-1
-         DO u = 2, nu-1
-             dx = xreal(nu+1,nv) - xreal(nu-1,nv)
-             dy = yreal(nu+1,nv) - yreal(nu-1,nv)
-             dz = zreal(nu+1,nv) - zreal(nu-1,nv)
-             min_delta_x=MIN(min_delta_x,SQRT(dx*dx+dy*dy+dz*dz))
-             dx = xreal(nu,nv+1) - xreal(nu,nv-1)
-             dy = yreal(nu,nv+1) - yreal(nu,nv-1)
-             dz = zreal(nu,nv+1) - zreal(nu,nv-1)
-             min_delta_x=MIN(min_delta_x,SQRT(dx*dx+dy*dy+dz*dz))
-         END DO
-      END DO
-      ! Construct Splines
-      CALL EZspline_init(x_spl,nu+1,nvp+1,bcs1,bcs2,ier)
-      CALL EZspline_init(y_spl,nu+1,nvp+1,bcs1,bcs2,ier)
-      CALL EZspline_init(z_spl,nu+1,nvp+1,bcs1,bcs2,ier)
-      CALL EZspline_init(nx_spl,nu+1,nvp+1,bcs1,bcs2,ier)
-      CALL EZspline_init(ny_spl,nu+1,nvp+1,bcs1,bcs2,ier)
-      CALL EZspline_init(nz_spl,nu+1,nvp+1,bcs1,bcs2,ier)
-      CALL EZspline_init(kx_spl,nu+1,nvp+1,bcs1,bcs2,ier)
-      CALL EZspline_init(ky_spl,nu+1,nvp+1,bcs1,bcs2,ier)
-      CALL EZspline_init(kz_spl,nu+1,nvp+1,bcs1,bcs2,ier)
-      CALL EZspline_init(bn_spl,nu+1,nvp+1,bcs1,bcs2,ier)
-      ! Define arrays from 0 to 1 because integrand already contains
-      ! dA information.
-      DO  u = 1, nu+1
-         x_spl%x1(u) = DBLE(u-1)/DBLE(nu)
-         y_spl%x1(u) = DBLE(u-1)/DBLE(nu)
-         z_spl%x1(u) = DBLE(u-1)/DBLE(nu)
-         nx_spl%x1(u) = DBLE(u-1)/DBLE(nu)
-         ny_spl%x1(u) = DBLE(u-1)/DBLE(nu)
-         nz_spl%x1(u) = DBLE(u-1)/DBLE(nu)
-         kx_spl%x1(u) = DBLE(u-1)/DBLE(nu)
-         ky_spl%x1(u) = DBLE(u-1)/DBLE(nu)
-         kz_spl%x1(u) = DBLE(u-1)/DBLE(nu)
-         bn_spl%x1(u) = DBLE(u-1)/DBLE(nu)
-      END DO
-      DO  v = 1, nvp+1
-         x_spl%x2(v) = DBLE(v-1)/DBLE(nvp)
-         y_spl%x2(v) = DBLE(v-1)/DBLE(nvp)
-         z_spl%x2(v) = DBLE(v-1)/DBLE(nvp)
-         nx_spl%x2(v) = DBLE(v-1)/DBLE(nvp)
-         ny_spl%x2(v) = DBLE(v-1)/DBLE(nvp)
-         nz_spl%x2(v) = DBLE(v-1)/DBLE(nvp)
-         kx_spl%x2(v) = DBLE(v-1)/DBLE(nvp)
-         ky_spl%x2(v) = DBLE(v-1)/DBLE(nvp)
-         kz_spl%x2(v) = DBLE(v-1)/DBLE(nvp)
-         bn_spl%x2(v) = DBLE(v-1)/DBLE(nvp)
-      END DO
-      x_spl%isHermite  = 1
-      y_spl%isHermite  = 1
-      z_spl%isHermite  = 1
-      nx_spl%isHermite = 1
-      ny_spl%isHermite = 1
-      nz_spl%isHermite = 1
-      kx_spl%isHermite = 1
-      ky_spl%isHermite = 1
-      kz_spl%isHermite = 1
-      bn_spl%isHermite = 1
-      CALL EZspline_setup(x_spl,xreal,ier)
-      CALL EZspline_setup(y_spl,yreal,ier)
-      CALL EZspline_setup(z_spl,zreal,ier)
-      CALL EZspline_setup(nx_spl,nxreal,ier)
-      CALL EZspline_setup(ny_spl,nyreal,ier)
-      CALL EZspline_setup(nz_spl,nzreal,ier)
-      CALL EZspline_setup(kx_spl,kxreal,ier)
-      CALL EZspline_setup(ky_spl,kyreal,ier)
-      CALL EZspline_setup(kz_spl,kzreal,ier)
-      CALL EZspline_setup(bn_spl,btopreal,ier)
-      ! Setup shared memory arrays
-      x1   = x_spl%x1
-      x2   = x_spl%x2
-      X3D  = x_spl%fspl
-      Y3D  = y_spl%fspl
-      Z3D  = z_spl%fspl
-      NX3D = nx_spl%fspl
-      NY3D = ny_spl%fspl
-      NZ3D = nz_spl%fspl
-      KX3D = kx_spl%fspl
-      KY3D = ky_spl%fspl
-      KZ3D = kz_spl%fspl
-      BN3D = bn_spl%fspl
-      CALL EZspline_free(x_spl,ier)
-      CALL EZspline_free(y_spl,ier)
-      CALL EZspline_free(z_spl,ier)
-      CALL EZspline_free(kx_spl,ier)
-      CALL EZspline_free(ky_spl,ier)
-      CALL EZspline_free(kz_spl,ier)
-      CALL EZspline_free(nx_spl,ier)
-      CALL EZspline_free(ny_spl,ier)
-      CALL EZspline_free(nz_spl,ier)
-      CALL EZspline_free(bn_spl,ier)
-      ! Deallocations
-      DEALLOCATE(xu,xv)
-      DEALLOCATE(r_temp,z_temp)
-      DEALLOCATE(bs_temp,bu_temp,bv_temp)
-      DEALLOCATE(rs,ru,rv)
-      DEALLOCATE(zs,zu,zv)
-      DEALLOCATE(xreal,yreal,zreal)
-      DEALLOCATE(nxreal,nyreal,nzreal)
-      DEALLOCATE(kxreal,kyreal,kzreal,btopreal)
-      DEALLOCATE(fmn_temp)
+#endif
+      RETURN
       ! END SUBROUTINE
       END SUBROUTINE init_virtual_casing_dbl
       !-----------------------------------------------------------------
@@ -667,7 +679,8 @@
       DOUBLE PRECISION, INTENT(in) :: brreal(nu,nv), bphireal(nu,nv), bzreal(nu,nv)
       INTEGER, INTENT(in), OPTIONAL :: comm
       ! LOCAL VARIABLES
-      INTEGER :: nuv, mn, uv, i, u, v, dex1, dex2, ier, nuvm, myidlocal
+      INTEGER :: nuv, mn, uv, i, u, v, dex1, dex2, ier, nuvm
+      INTEGER :: shar_comm, shar_rank, shar_size
       INTEGER :: bcs1(2), bcs2(2)
       DOUBLE PRECISION :: snx,sny,bzs,bxs,bys,&
                      factor, cop, sip, dx, dy, dz, sn, signs,xt,yt,zt, dr_temp
@@ -702,9 +715,12 @@
       eps2 = (x2_max-x2_min)*small
       eps3 = (x3_max-x3_min)*small
       !Handle shared memory
+#if defined(MPI_OPT)
       IF (PRESENT(comm)) THEN
          ! Get rank
-         CALL MPI_COMM_RANK(comm, myidlocal, ier)
+         CALL MPI_COMM_SPLIT_TYPE(comm, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, shar_comm, ier)
+         CALL MPI_COMM_RANK(shar_comm, shar_rank, ier)
+         CALL MPI_COMM_SIZE(shar_comm, shar_size, ier)
          ! Free if allocated
          IF (ASSOCIATED(X3D))    CALL mpidealloc(X3D,  win_X3D)
          IF (ASSOCIATED(Y3D))    CALL mpidealloc(Y3D,  win_Y3D)
@@ -730,32 +746,32 @@
          IF (ASSOCIATED(btopz))  CALL mpidealloc(btopz,  win_btopz)
          IF (ASSOCIATED(btops))  CALL mpidealloc(btops,  win_btops)
          ! ALLOCATE
-         CALL mpialloc(X3D, 4,  nx1, nx2, myidlocal, 0, comm, win_X3D)
-         CALL mpialloc(Y3D, 4,  nx1, nx2, myidlocal, 0, comm, win_Y3D)
-         CALL mpialloc(Z3D, 4,  nx1, nx2, myidlocal, 0, comm, win_Z3D)
-         CALL mpialloc(NX3D, 4, nx1, nx2, myidlocal, 0, comm, win_NX3D)
-         CALL mpialloc(NY3D, 4, nx1, nx2, myidlocal, 0, comm, win_NY3D)
-         CALL mpialloc(NZ3D, 4, nx1, nx2, myidlocal, 0, comm, win_NZ3D)
-         CALL mpialloc(KX3D, 4, nx1, nx2, myidlocal, 0, comm, win_KX3D)
-         CALL mpialloc(KY3D, 4, nx1, nx2, myidlocal, 0, comm, win_KY3D)
-         CALL mpialloc(KZ3D, 4, nx1, nx2, myidlocal, 0, comm, win_KZ3D)
-         CALL mpialloc(BN3D, 4, nx1, nx2, myidlocal, 0, comm, win_BN3D)
-         CALL mpialloc(BN3D, 4, nx1, nx2, myidlocal, 0, comm, win_BN3D)
-         CALL mpialloc(x1, nx1, myidlocal, 0, comm, win_x1)
-         CALL mpialloc(x2, nx2, myidlocal, 0, comm, win_x2)
-         CALL mpialloc(xsurf, nuvp, myidlocal, 0, comm, win_xsurf)
-         CALL mpialloc(ysurf, nuvp, myidlocal, 0, comm, win_ysurf)
-         CALL mpialloc(zsurf, nuvp, myidlocal, 0, comm, win_zsurf)
-         CALL mpialloc(nxsurf, nuvp, myidlocal, 0, comm, win_nxsurf)
-         CALL mpialloc(nysurf, nuvp, myidlocal, 0, comm, win_nysurf)
-         CALL mpialloc(nzsurf, nuvp, myidlocal, 0, comm, win_nzsurf)
-         CALL mpialloc(btopx, nuvp, myidlocal, 0, comm, win_btopx)
-         CALL mpialloc(btopy, nuvp, myidlocal, 0, comm, win_btopy)
-         CALL mpialloc(btopz, nuvp, myidlocal, 0, comm, win_btopz)
-         CALL mpialloc(btops, nuvp, myidlocal, 0, comm, win_btops)
-         ! Now kick out everyone who isn't doing work (you'll need to barrier after this call)
-         IF (myidlocal /= 0) RETURN
+         CALL mpialloc(X3D, 4,  nx1, nx2, shar_rank, 0, shar_comm, win_X3D)
+         CALL mpialloc(Y3D, 4,  nx1, nx2, shar_rank, 0, shar_comm, win_Y3D)
+         CALL mpialloc(Z3D, 4,  nx1, nx2, shar_rank, 0, shar_comm, win_Z3D)
+         CALL mpialloc(NX3D, 4, nx1, nx2, shar_rank, 0, shar_comm, win_NX3D)
+         CALL mpialloc(NY3D, 4, nx1, nx2, shar_rank, 0, shar_comm, win_NY3D)
+         CALL mpialloc(NZ3D, 4, nx1, nx2, shar_rank, 0, shar_comm, win_NZ3D)
+         CALL mpialloc(KX3D, 4, nx1, nx2, shar_rank, 0, shar_comm, win_KX3D)
+         CALL mpialloc(KY3D, 4, nx1, nx2, shar_rank, 0, shar_comm, win_KY3D)
+         CALL mpialloc(KZ3D, 4, nx1, nx2, shar_rank, 0, shar_comm, win_KZ3D)
+         CALL mpialloc(BN3D, 4, nx1, nx2, shar_rank, 0, shar_comm, win_BN3D)
+         CALL mpialloc(BN3D, 4, nx1, nx2, shar_rank, 0, shar_comm, win_BN3D)
+         CALL mpialloc(x1, nx1, shar_rank, 0, shar_comm, win_x1)
+         CALL mpialloc(x2, nx2, shar_rank, 0, shar_comm, win_x2)
+         CALL mpialloc(xsurf, nuvp, shar_rank, 0, shar_comm, win_xsurf)
+         CALL mpialloc(ysurf, nuvp, shar_rank, 0, shar_comm, win_ysurf)
+         CALL mpialloc(zsurf, nuvp, shar_rank, 0, shar_comm, win_zsurf)
+         CALL mpialloc(nxsurf, nuvp, shar_rank, 0, shar_comm, win_nxsurf)
+         CALL mpialloc(nysurf, nuvp, shar_rank, 0, shar_comm, win_nysurf)
+         CALL mpialloc(nzsurf, nuvp, shar_rank, 0, shar_comm, win_nzsurf)
+         CALL mpialloc(btopx, nuvp, shar_rank, 0, shar_comm, win_btopx)
+         CALL mpialloc(btopy, nuvp, shar_rank, 0, shar_comm, win_btopy)
+         CALL mpialloc(btopz, nuvp, shar_rank, 0, shar_comm, win_btopz)
+         CALL mpialloc(btops, nuvp, shar_rank, 0, shar_comm, win_btops)
       ELSE
+#endif
+         shar_rank = 0; shar_size = 1
          IF (ASSOCIATED(X3D))  DEALLOCATE(X3D)
          IF (ASSOCIATED(Y3D))  DEALLOCATE(Y3D)
          IF (ASSOCIATED(Z3D))  DEALLOCATE(Z3D)
@@ -801,218 +817,229 @@
          ALLOCATE(btopy(nuvp))
          ALLOCATE(btopz(nuvp))
          ALLOCATE(btops(nuvp))
+#if defined(MPI_OPT)
       END IF
-      ! Deallocate anything globally allocated
-      IF (EZspline_allocated(x_spl)) CALL EZspline_free(x_spl,ier)
-      IF (EZspline_allocated(y_spl)) CALL EZspline_free(y_spl,ier)
-      IF (EZspline_allocated(z_spl)) CALL EZspline_free(z_spl,ier)
-      IF (EZspline_allocated(nx_spl)) CALL EZspline_free(nx_spl,ier)
-      IF (EZspline_allocated(ny_spl)) CALL EZspline_free(ny_spl,ier)
-      IF (EZspline_allocated(nz_spl)) CALL EZspline_free(nz_spl,ier)
-      IF (EZspline_allocated(kx_spl)) CALL EZspline_free(kx_spl,ier)
-      IF (EZspline_allocated(ky_spl)) CALL EZspline_free(ky_spl,ier)
-      IF (EZspline_allocated(kz_spl)) CALL EZspline_free(kz_spl,ier)
-      IF (EZspline_allocated(bn_spl)) CALL EZspline_free(bn_spl,ier)
-      ! Alloocations
-      ALLOCATE(r_temp(2,1:nu,1:nv),z_temp(2,1:nu,1:nv))
-      ALLOCATE(xreal(1:nu+1,1:nvp+1),yreal(1:nu+1,1:nvp+1),zreal2(1:nu+1,1:nvp+1))
-      ALLOCATE(nxreal(1:nu+1,1:nvp+1),nyreal(1:nu+1,1:nvp+1),nzreal(1:nu+1,1:nvp+1))
-      ALLOCATE(kxreal(1:nu+1,1:nvp+1),kyreal(1:nu+1,1:nvp+1),kzreal(1:nu+1,1:nvp+1))
-      ALLOCATE(btopreal(1:nu+1,1:nvp+1))
-      dr_temp=one;
-      uv = 1
-      DO v = 1, nv
-         DO u = 1, nu
-            xsurf(uv)   = rreal(u,v)*dcos(phi(nv))
-            ysurf(uv)   = rreal(u,v)*dsin(phi(nv))
-            zsurf(uv)   = zreal(u,v)
-            xreal(u,v)  = xsurf(uv)
-            yreal(u,v)  = ysurf(uv)
-            zreal2(u,v) = zsurf(uv)
-            uv = uv + 1
+#endif
+      IF (shar_rank == 0) THEN
+         ! Deallocate anything globally allocated
+         IF (EZspline_allocated(x_spl)) CALL EZspline_free(x_spl,ier)
+         IF (EZspline_allocated(y_spl)) CALL EZspline_free(y_spl,ier)
+         IF (EZspline_allocated(z_spl)) CALL EZspline_free(z_spl,ier)
+         IF (EZspline_allocated(nx_spl)) CALL EZspline_free(nx_spl,ier)
+         IF (EZspline_allocated(ny_spl)) CALL EZspline_free(ny_spl,ier)
+         IF (EZspline_allocated(nz_spl)) CALL EZspline_free(nz_spl,ier)
+         IF (EZspline_allocated(kx_spl)) CALL EZspline_free(kx_spl,ier)
+         IF (EZspline_allocated(ky_spl)) CALL EZspline_free(ky_spl,ier)
+         IF (EZspline_allocated(kz_spl)) CALL EZspline_free(kz_spl,ier)
+         IF (EZspline_allocated(bn_spl)) CALL EZspline_free(bn_spl,ier)
+         ! Alloocations
+         ALLOCATE(r_temp(2,1:nu,1:nv),z_temp(2,1:nu,1:nv))
+         ALLOCATE(xreal(1:nu+1,1:nvp+1),yreal(1:nu+1,1:nvp+1),zreal2(1:nu+1,1:nvp+1))
+         ALLOCATE(nxreal(1:nu+1,1:nvp+1),nyreal(1:nu+1,1:nvp+1),nzreal(1:nu+1,1:nvp+1))
+         ALLOCATE(kxreal(1:nu+1,1:nvp+1),kyreal(1:nu+1,1:nvp+1),kzreal(1:nu+1,1:nvp+1))
+         ALLOCATE(btopreal(1:nu+1,1:nvp+1))
+         dr_temp=one;
+         uv = 1
+         DO v = 1, nv
+            DO u = 1, nu
+               xsurf(uv)   = rreal(u,v)*dcos(phi(nv))
+               ysurf(uv)   = rreal(u,v)*dsin(phi(nv))
+               zsurf(uv)   = zreal(u,v)
+               xreal(u,v)  = xsurf(uv)
+               yreal(u,v)  = ysurf(uv)
+               zreal2(u,v) = zsurf(uv)
+               uv = uv + 1
+            END DO
          END DO
-      END DO
-      ! Note we need to extend to nu+1
-      xreal(nu+1,:) = xreal(1,:)
-      yreal(nu+1,:) = yreal(1,:)
-      zreal2(nu+1,:) = zreal2(1,:)
-      
-      btopx = zero; btopy = zero; btopz = zero; btops = zero; btopreal = zero
-      uv = 1
-      ! Check sign of jacobian
-      signs = -one
-      IF (zreal2(2,1) < 0) signs = 1.0
-      ! u then v if not outputting
-      DO v = 1, nv
-         DO u = 1, nu
-            cop   = dcos(phi(v))
-            sip   = dsin(phi(v))
-            snx   = snr(u,v)*cop - snphi(u,v)*sip
-            sny   = snr(u,v)*sip + snphi(u,v)*cop
-            sn    = DSQRT(snx*snx+sny*sny+snz(u,v)*snz(u,v))
-            bxs   = brreal(u,v)*cop - bphireal(u,v)*sip
-            bys   = brreal(u,v)*sip + bphireal(u,v)*cop
-            bzs   = bzreal(u,v)
-            btopx(uv) = signs * ( bys * snz(u,v) - bzs * sny )
-            btopy(uv) = signs * ( bzs * snx - bxs * snz(u,v) )
-            btopz(uv) = signs * ( bxs * sny - bys * snx )
-            kxreal(u,v) = btopx(uv)
-            kyreal(u,v) = btopy(uv)
-            kzreal(u,v) = btopz(uv)
-            nxsurf(uv)  = snx/sn
-            nysurf(uv)  = sny/sn
-            nzsurf(uv)  = snz(u,v)/sn
-            nxreal(u,v) = snx/sn
-            nyreal(u,v) = sny/sn
-            nzreal(u,v) = snz(u,v)/sn
-            btops(uv) = bxs*snx+bys*sny+bzs*snz(u,v)
-            btopreal(u,v) = btops(uv)
-            uv = uv + 1
+         ! Note we need to extend to nu+1
+         xreal(nu+1,:) = xreal(1,:)
+         yreal(nu+1,:) = yreal(1,:)
+         zreal2(nu+1,:) = zreal2(1,:)
+         
+         btopx = zero; btopy = zero; btopz = zero; btops = zero; btopreal = zero
+         uv = 1
+         ! Check sign of jacobian
+         signs = -one
+         IF (zreal2(2,1) < 0) signs = 1.0
+         ! u then v if not outputting
+         DO v = 1, nv
+            DO u = 1, nu
+               cop   = dcos(phi(v))
+               sip   = dsin(phi(v))
+               snx   = snr(u,v)*cop - snphi(u,v)*sip
+               sny   = snr(u,v)*sip + snphi(u,v)*cop
+               sn    = DSQRT(snx*snx+sny*sny+snz(u,v)*snz(u,v))
+               bxs   = brreal(u,v)*cop - bphireal(u,v)*sip
+               bys   = brreal(u,v)*sip + bphireal(u,v)*cop
+               bzs   = bzreal(u,v)
+               btopx(uv) = signs * ( bys * snz(u,v) - bzs * sny )
+               btopy(uv) = signs * ( bzs * snx - bxs * snz(u,v) )
+               btopz(uv) = signs * ( bxs * sny - bys * snx )
+               kxreal(u,v) = btopx(uv)
+               kyreal(u,v) = btopy(uv)
+               kzreal(u,v) = btopz(uv)
+               nxsurf(uv)  = snx/sn
+               nysurf(uv)  = sny/sn
+               nzsurf(uv)  = snz(u,v)/sn
+               nxreal(u,v) = snx/sn
+               nyreal(u,v) = sny/sn
+               nzreal(u,v) = snz(u,v)/sn
+               btops(uv) = bxs*snx+bys*sny+bzs*snz(u,v)
+               btopreal(u,v) = btops(uv)
+               uv = uv + 1
+            END DO
          END DO
-      END DO
-      kxreal(nu+1,:) = kxreal(1,:)
-      kyreal(nu+1,:) = kyreal(1,:)
-      kzreal(nu+1,:) = kzreal(1,:)
-      nxreal(nu+1,:) = nxreal(1,:)
-      nyreal(nu+1,:) = nyreal(1,:)
-      nzreal(nu+1,:) = nzreal(1,:)
-      DO v = 2, nfp
-         cop  = dcos((v-1)*factor)
-         sip  = dsin((v-1)*factor)
-         dex1 = (v-1)*nuv+1
-         dex2 = v*nuv
-         btopx(dex1:dex2) = btopx(1:nuv)*cop - btopy(1:nuv)*sip
-         btopy(dex1:dex2) = btopy(1:nuv)*cop + btopx(1:nuv)*sip
-         btopz(dex1:dex2) = btopz(1:nuv)
-         btops(dex1:dex2) = btops(1:nuv)
-         xsurf(dex1:dex2) = xsurf(1:nuv)*cop - ysurf(1:nuv)*sip
-         ysurf(dex1:dex2) = ysurf(1:nuv)*cop + xsurf(1:nuv)*sip
-         zsurf(dex1:dex2) = zsurf(1:nuv)
-         nxsurf(dex1:dex2) = nxsurf(1:nuv)*cop - nysurf(1:nuv)*sip
-         nysurf(dex1:dex2) = nysurf(1:nuv)*cop + nxsurf(1:nuv)*sip
-         nzsurf(dex1:dex2) = nzsurf(1:nuv)
-         dex1 = (v-1)*nv+1
-         dex2 = v*nv
-         xreal(1:nu+1,dex1:dex2) = xreal(1:nu+1,1:nv)*cop - yreal(1:nu+1,1:nv)*sip
-         yreal(1:nu+1,dex1:dex2) = yreal(1:nu+1,1:nv)*cop + xreal(1:nu+1,1:nv)*sip
-         zreal2(1:nu+1,dex1:dex2) = zreal2(1:nu+1,1:nv)
-         kxreal(1:nu+1,dex1:dex2) = kxreal(1:nu+1,1:nv)*cop - kyreal(1:nu+1,1:nv)*sip
-         kyreal(1:nu+1,dex1:dex2) = kyreal(1:nu+1,1:nv)*cop + kxreal(1:nu+1,1:nv)*sip
-         kzreal(1:nu+1,dex1:dex2) = kzreal(1:nu+1,1:nv)
-         nxreal(1:nu+1,dex1:dex2) = nxreal(1:nu+1,1:nv)*cop - nyreal(1:nu+1,1:nv)*sip
-         nyreal(1:nu+1,dex1:dex2) = nyreal(1:nu+1,1:nv)*cop + nxreal(1:nu+1,1:nv)*sip
-         nzreal(1:nu+1,dex1:dex2) = nzreal(1:nu+1,1:nv)
-         btopreal(1:nu+1,dex1:dex2) = btopreal(1:nu+1,1:nv)
-      END DO
-      xreal(:,nvp+1)  = xreal(:,1)
-      yreal(:,nvp+1)  = yreal(:,1)
-      zreal2(:,nvp+1)  = zreal2(:,1)
-      kxreal(:,nvp+1) = kxreal(:,1)
-      kyreal(:,nvp+1) = kyreal(:,1)
-      kzreal(:,nvp+1) = kzreal(:,1)
-      nxreal(:,nvp+1) = nxreal(:,1)
-      nyreal(:,nvp+1) = nyreal(:,1)
-      nzreal(:,nvp+1) = nzreal(:,1)
-      btopreal(:,nvp+1) = btopreal(:,1)
-      ! Calculate Return map
-      min_delta_x = 1.0D+10
-      DO v = 2, nv-1
-         DO u = 2, nu-1
-             dx = xreal(nu+1,nv) - xreal(nu-1,nv)
-             dy = yreal(nu+1,nv) - yreal(nu-1,nv)
-             dz = zreal2(nu+1,nv) - zreal2(nu-1,nv)
-             min_delta_x=MIN(min_delta_x,SQRT(dx*dx+dy*dy+dz*dz))
-             dx = xreal(nu,nv+1) - xreal(nu,nv-1)
-             dy = yreal(nu,nv+1) - yreal(nu,nv-1)
-             dz = zreal2(nu,nv+1) - zreal2(nu,nv-1)
-             min_delta_x=MIN(min_delta_x,SQRT(dx*dx+dy*dy+dz*dz))
+         kxreal(nu+1,:) = kxreal(1,:)
+         kyreal(nu+1,:) = kyreal(1,:)
+         kzreal(nu+1,:) = kzreal(1,:)
+         nxreal(nu+1,:) = nxreal(1,:)
+         nyreal(nu+1,:) = nyreal(1,:)
+         nzreal(nu+1,:) = nzreal(1,:)
+         DO v = 2, nfp
+            cop  = dcos((v-1)*factor)
+            sip  = dsin((v-1)*factor)
+            dex1 = (v-1)*nuv+1
+            dex2 = v*nuv
+            btopx(dex1:dex2) = btopx(1:nuv)*cop - btopy(1:nuv)*sip
+            btopy(dex1:dex2) = btopy(1:nuv)*cop + btopx(1:nuv)*sip
+            btopz(dex1:dex2) = btopz(1:nuv)
+            btops(dex1:dex2) = btops(1:nuv)
+            xsurf(dex1:dex2) = xsurf(1:nuv)*cop - ysurf(1:nuv)*sip
+            ysurf(dex1:dex2) = ysurf(1:nuv)*cop + xsurf(1:nuv)*sip
+            zsurf(dex1:dex2) = zsurf(1:nuv)
+            nxsurf(dex1:dex2) = nxsurf(1:nuv)*cop - nysurf(1:nuv)*sip
+            nysurf(dex1:dex2) = nysurf(1:nuv)*cop + nxsurf(1:nuv)*sip
+            nzsurf(dex1:dex2) = nzsurf(1:nuv)
+            dex1 = (v-1)*nv+1
+            dex2 = v*nv
+            xreal(1:nu+1,dex1:dex2) = xreal(1:nu+1,1:nv)*cop - yreal(1:nu+1,1:nv)*sip
+            yreal(1:nu+1,dex1:dex2) = yreal(1:nu+1,1:nv)*cop + xreal(1:nu+1,1:nv)*sip
+            zreal2(1:nu+1,dex1:dex2) = zreal2(1:nu+1,1:nv)
+            kxreal(1:nu+1,dex1:dex2) = kxreal(1:nu+1,1:nv)*cop - kyreal(1:nu+1,1:nv)*sip
+            kyreal(1:nu+1,dex1:dex2) = kyreal(1:nu+1,1:nv)*cop + kxreal(1:nu+1,1:nv)*sip
+            kzreal(1:nu+1,dex1:dex2) = kzreal(1:nu+1,1:nv)
+            nxreal(1:nu+1,dex1:dex2) = nxreal(1:nu+1,1:nv)*cop - nyreal(1:nu+1,1:nv)*sip
+            nyreal(1:nu+1,dex1:dex2) = nyreal(1:nu+1,1:nv)*cop + nxreal(1:nu+1,1:nv)*sip
+            nzreal(1:nu+1,dex1:dex2) = nzreal(1:nu+1,1:nv)
+            btopreal(1:nu+1,dex1:dex2) = btopreal(1:nu+1,1:nv)
          END DO
-      END DO
-      ! Construct Splines
-      CALL EZspline_init(x_spl,nu+1,nvp+1,bcs1,bcs2,ier)
-      CALL EZspline_init(y_spl,nu+1,nvp+1,bcs1,bcs2,ier)
-      CALL EZspline_init(z_spl,nu+1,nvp+1,bcs1,bcs2,ier)
-      CALL EZspline_init(nx_spl,nu+1,nvp+1,bcs1,bcs2,ier)
-      CALL EZspline_init(ny_spl,nu+1,nvp+1,bcs1,bcs2,ier)
-      CALL EZspline_init(nz_spl,nu+1,nvp+1,bcs1,bcs2,ier)
-      CALL EZspline_init(kx_spl,nu+1,nvp+1,bcs1,bcs2,ier)
-      CALL EZspline_init(ky_spl,nu+1,nvp+1,bcs1,bcs2,ier)
-      CALL EZspline_init(kz_spl,nu+1,nvp+1,bcs1,bcs2,ier)
-      CALL EZspline_init(bn_spl,nu+1,nvp+1,bcs1,bcs2,ier)
-      ! Define arrays from 0 to 1 because integrand already contains
-      ! dA information.
-      DO  u = 1, nu+1
-         x_spl%x1(u) = DBLE(u-1)/DBLE(nu)
-         y_spl%x1(u) = DBLE(u-1)/DBLE(nu)
-         z_spl%x1(u) = DBLE(u-1)/DBLE(nu)
-         nx_spl%x1(u) = DBLE(u-1)/DBLE(nu)
-         ny_spl%x1(u) = DBLE(u-1)/DBLE(nu)
-         nz_spl%x1(u) = DBLE(u-1)/DBLE(nu)
-         kx_spl%x1(u) = DBLE(u-1)/DBLE(nu)
-         ky_spl%x1(u) = DBLE(u-1)/DBLE(nu)
-         kz_spl%x1(u) = DBLE(u-1)/DBLE(nu)
-         bn_spl%x1(u) = DBLE(u-1)/DBLE(nu)
-      END DO
-      DO  v = 1, nvp+1
-         x_spl%x2(v) = DBLE(v-1)/DBLE(nvp)
-         y_spl%x2(v) = DBLE(v-1)/DBLE(nvp)
-         z_spl%x2(v) = DBLE(v-1)/DBLE(nvp)
-         nx_spl%x2(v) = DBLE(v-1)/DBLE(nvp)
-         ny_spl%x2(v) = DBLE(v-1)/DBLE(nvp)
-         nz_spl%x2(v) = DBLE(v-1)/DBLE(nvp)
-         kx_spl%x2(v) = DBLE(v-1)/DBLE(nvp)
-         ky_spl%x2(v) = DBLE(v-1)/DBLE(nvp)
-         kz_spl%x2(v) = DBLE(v-1)/DBLE(nvp)
-         bn_spl%x2(v) = DBLE(v-1)/DBLE(nvp)
-      END DO
-      x_spl%isHermite  = 0
-      y_spl%isHermite  = 0
-      z_spl%isHermite  = 0
-      nx_spl%isHermite = 0
-      ny_spl%isHermite = 0
-      nz_spl%isHermite = 0
-      kx_spl%isHermite = 0
-      ky_spl%isHermite = 0
-      kz_spl%isHermite = 0
-      bn_spl%isHermite = 0
-      CALL EZspline_setup(x_spl,xreal,ier)
-      CALL EZspline_setup(y_spl,yreal,ier)
-      CALL EZspline_setup(z_spl,zreal2,ier)
-      CALL EZspline_setup(kx_spl,kxreal,ier)
-      CALL EZspline_setup(ky_spl,kyreal,ier)
-      CALL EZspline_setup(kz_spl,kzreal,ier)
-      CALL EZspline_setup(nx_spl,nxreal,ier)
-      CALL EZspline_setup(ny_spl,nyreal,ier)
-      CALL EZspline_setup(nz_spl,nzreal,ier)
-      CALL EZspline_setup(bn_spl,btopreal,ier)
-      ! Setup shared memory arrays
-      x1   = x_spl%x1
-      x2   = x_spl%x2
-      X3D  = x_spl%fspl
-      Y3D  = y_spl%fspl
-      Z3D  = z_spl%fspl
-      NX3D = nx_spl%fspl
-      NY3D = ny_spl%fspl
-      NZ3D = nz_spl%fspl
-      KX3D = kx_spl%fspl
-      KY3D = ky_spl%fspl
-      KZ3D = kz_spl%fspl
-      BN3D = bn_spl%fspl
-      CALL EZspline_free(x_spl,ier)
-      CALL EZspline_free(y_spl,ier)
-      CALL EZspline_free(z_spl,ier)
-      CALL EZspline_free(kx_spl,ier)
-      CALL EZspline_free(ky_spl,ier)
-      CALL EZspline_free(kz_spl,ier)
-      CALL EZspline_free(nx_spl,ier)
-      CALL EZspline_free(ny_spl,ier)
-      CALL EZspline_free(nz_spl,ier)
-      CALL EZspline_free(bn_spl,ier)
+         xreal(:,nvp+1)  = xreal(:,1)
+         yreal(:,nvp+1)  = yreal(:,1)
+         zreal2(:,nvp+1)  = zreal2(:,1)
+         kxreal(:,nvp+1) = kxreal(:,1)
+         kyreal(:,nvp+1) = kyreal(:,1)
+         kzreal(:,nvp+1) = kzreal(:,1)
+         nxreal(:,nvp+1) = nxreal(:,1)
+         nyreal(:,nvp+1) = nyreal(:,1)
+         nzreal(:,nvp+1) = nzreal(:,1)
+         btopreal(:,nvp+1) = btopreal(:,1)
+         ! Calculate Return map
+         min_delta_x = 1.0D+10
+         DO v = 2, nv-1
+            DO u = 2, nu-1
+                dx = xreal(nu+1,nv) - xreal(nu-1,nv)
+                dy = yreal(nu+1,nv) - yreal(nu-1,nv)
+                dz = zreal2(nu+1,nv) - zreal2(nu-1,nv)
+                min_delta_x=MIN(min_delta_x,SQRT(dx*dx+dy*dy+dz*dz))
+                dx = xreal(nu,nv+1) - xreal(nu,nv-1)
+                dy = yreal(nu,nv+1) - yreal(nu,nv-1)
+                dz = zreal2(nu,nv+1) - zreal2(nu,nv-1)
+                min_delta_x=MIN(min_delta_x,SQRT(dx*dx+dy*dy+dz*dz))
+            END DO
+         END DO
+         ! Construct Splines
+         CALL EZspline_init(x_spl,nu+1,nvp+1,bcs1,bcs2,ier)
+         CALL EZspline_init(y_spl,nu+1,nvp+1,bcs1,bcs2,ier)
+         CALL EZspline_init(z_spl,nu+1,nvp+1,bcs1,bcs2,ier)
+         CALL EZspline_init(nx_spl,nu+1,nvp+1,bcs1,bcs2,ier)
+         CALL EZspline_init(ny_spl,nu+1,nvp+1,bcs1,bcs2,ier)
+         CALL EZspline_init(nz_spl,nu+1,nvp+1,bcs1,bcs2,ier)
+         CALL EZspline_init(kx_spl,nu+1,nvp+1,bcs1,bcs2,ier)
+         CALL EZspline_init(ky_spl,nu+1,nvp+1,bcs1,bcs2,ier)
+         CALL EZspline_init(kz_spl,nu+1,nvp+1,bcs1,bcs2,ier)
+         CALL EZspline_init(bn_spl,nu+1,nvp+1,bcs1,bcs2,ier)
+         ! Define arrays from 0 to 1 because integrand already contains
+         ! dA information.
+         DO  u = 1, nu+1
+            x_spl%x1(u) = DBLE(u-1)/DBLE(nu)
+            y_spl%x1(u) = DBLE(u-1)/DBLE(nu)
+            z_spl%x1(u) = DBLE(u-1)/DBLE(nu)
+            nx_spl%x1(u) = DBLE(u-1)/DBLE(nu)
+            ny_spl%x1(u) = DBLE(u-1)/DBLE(nu)
+            nz_spl%x1(u) = DBLE(u-1)/DBLE(nu)
+            kx_spl%x1(u) = DBLE(u-1)/DBLE(nu)
+            ky_spl%x1(u) = DBLE(u-1)/DBLE(nu)
+            kz_spl%x1(u) = DBLE(u-1)/DBLE(nu)
+            bn_spl%x1(u) = DBLE(u-1)/DBLE(nu)
+         END DO
+         DO  v = 1, nvp+1
+            x_spl%x2(v) = DBLE(v-1)/DBLE(nvp)
+            y_spl%x2(v) = DBLE(v-1)/DBLE(nvp)
+            z_spl%x2(v) = DBLE(v-1)/DBLE(nvp)
+            nx_spl%x2(v) = DBLE(v-1)/DBLE(nvp)
+            ny_spl%x2(v) = DBLE(v-1)/DBLE(nvp)
+            nz_spl%x2(v) = DBLE(v-1)/DBLE(nvp)
+            kx_spl%x2(v) = DBLE(v-1)/DBLE(nvp)
+            ky_spl%x2(v) = DBLE(v-1)/DBLE(nvp)
+            kz_spl%x2(v) = DBLE(v-1)/DBLE(nvp)
+            bn_spl%x2(v) = DBLE(v-1)/DBLE(nvp)
+         END DO
+         x_spl%isHermite  = 0
+         y_spl%isHermite  = 0
+         z_spl%isHermite  = 0
+         nx_spl%isHermite = 0
+         ny_spl%isHermite = 0
+         nz_spl%isHermite = 0
+         kx_spl%isHermite = 0
+         ky_spl%isHermite = 0
+         kz_spl%isHermite = 0
+         bn_spl%isHermite = 0
+         CALL EZspline_setup(x_spl,xreal,ier)
+         CALL EZspline_setup(y_spl,yreal,ier)
+         CALL EZspline_setup(z_spl,zreal2,ier)
+         CALL EZspline_setup(kx_spl,kxreal,ier)
+         CALL EZspline_setup(ky_spl,kyreal,ier)
+         CALL EZspline_setup(kz_spl,kzreal,ier)
+         CALL EZspline_setup(nx_spl,nxreal,ier)
+         CALL EZspline_setup(ny_spl,nyreal,ier)
+         CALL EZspline_setup(nz_spl,nzreal,ier)
+         CALL EZspline_setup(bn_spl,btopreal,ier)
+         ! Setup shared memory arrays
+         x1   = x_spl%x1
+         x2   = x_spl%x2
+         X3D  = x_spl%fspl
+         Y3D  = y_spl%fspl
+         Z3D  = z_spl%fspl
+         NX3D = nx_spl%fspl
+         NY3D = ny_spl%fspl
+         NZ3D = nz_spl%fspl
+         KX3D = kx_spl%fspl
+         KY3D = ky_spl%fspl
+         KZ3D = kz_spl%fspl
+         BN3D = bn_spl%fspl
+         CALL EZspline_free(x_spl,ier)
+         CALL EZspline_free(y_spl,ier)
+         CALL EZspline_free(z_spl,ier)
+         CALL EZspline_free(kx_spl,ier)
+         CALL EZspline_free(ky_spl,ier)
+         CALL EZspline_free(kz_spl,ier)
+         CALL EZspline_free(nx_spl,ier)
+         CALL EZspline_free(ny_spl,ier)
+         CALL EZspline_free(nz_spl,ier)
+         CALL EZspline_free(bn_spl,ier)
 
-      DEALLOCATE(r_temp,z_temp)
-      DEALLOCATE(xreal,yreal,zreal2)
-      DEALLOCATE(kxreal,kyreal,kzreal,btopreal)
-      DEALLOCATE(nxreal,nyreal,nzreal)
+         DEALLOCATE(r_temp,z_temp)
+         DEALLOCATE(xreal,yreal,zreal2)
+         DEALLOCATE(kxreal,kyreal,kzreal,btopreal)
+         DEALLOCATE(nxreal,nyreal,nzreal)
+      END IF !So shared memory doesn't do work
+#if defined(MPI_OPT)
+      IF (PRESENT(comm)) THEN
+         CALL MPI_BARRIER(shar_comm,ier)
+         CALL MPI_COMM_FREE(shar_comm,ier)
+      END IF
+#endif
+      RETURN
       ! END SUBROUTINE
       END SUBROUTINE init_virtual_casing_realspace_dbl
       !-----------------------------------------------------------------        
@@ -1133,7 +1160,9 @@
       !-----------------------------------------------------------------
       SUBROUTINE free_virtual_casing(comm)
       USE mpi_sharmem
+#if defined(MPI_OPT)
       USE mpi
+#endif
       IMPLICIT NONE
       INTEGER, INTENT(in), OPTIONAL :: comm
       INTEGER :: ier
@@ -1141,6 +1170,7 @@
       nuvp = 0
       norm = -one
 
+#if defined(MPI_OPT)
       IF (PRESENT(comm)) THEN
          CALL MPI_BARRIER(comm,ier)
          IF (ASSOCIATED(xsurf))  CALL mpidealloc(xsurf,  win_xsurf)
@@ -1177,6 +1207,7 @@
          IF (ASSOCIATED(JZ4D))   CALL mpidealloc(JZ4D,   win_JZ4D)
          CALL MPI_BARRIER(comm,ier)
       ELSE
+#endif
          IF (ASSOCIATED(xsurf)) DEALLOCATE(xsurf)
          IF (ASSOCIATED(ysurf)) DEALLOCATE(ysurf)
          IF (ASSOCIATED(zsurf)) DEALLOCATE(zsurf)
@@ -1209,7 +1240,9 @@
          IF (ASSOCIATED(JX4D)) DEALLOCATE(JX4D)
          IF (ASSOCIATED(JY4D)) DEALLOCATE(JY4D)
          IF (ASSOCIATED(JZ4D)) DEALLOCATE(JZ4D)
+#if defined(MPI_OPT)
       END IF
+#endif
       
       RETURN
       ! END SUBROUTINE
@@ -1840,7 +1873,9 @@
                                      rmns,zmnc,jumns,jvmns,comm)
       USE EZspline_obj
       USE EZspline
+#if defined(MPI_OPT)
       USE MPI
+#endif
       USE mpi_sharmem
       IMPLICIT NONE
       ! INPUT VARIABLES
@@ -1852,7 +1887,8 @@
       DOUBLE PRECISION, INTENT(in), OPTIONAL :: rmns(1:mnmax,ns),zmnc(1:mnmax,ns)
       INTEGER, INTENT(in),OPTIONAL :: comm
       ! LOCAL VARIABLES
-      INTEGER :: mn, uv, i, u, v, dex1, dex2, ier, nuv, k, myidlocal
+      INTEGER :: mn, uv, i, u, v, dex1, dex2, ier, nuv, k
+      INTEGER :: shar_comm, shar_rank, shar_size
       INTEGER :: bcs1(2), bcs2(2), bcs3(2)
       DOUBLE PRECISION :: cop, sip
       DOUBLE PRECISION, ALLOCATABLE :: xu(:), xv(:)
@@ -1888,9 +1924,12 @@
       eps2 = (x2_max-x2_min)*small
       eps3 = (x3_max-x3_min)*small
       !Handle shared memory
+#if defined(MPI_OPT)
       IF (PRESENT(comm)) THEN
          ! Get rank
-         CALL MPI_COMM_RANK(comm, myidlocal, ier)
+         CALL MPI_COMM_SPLIT_TYPE(comm, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, shar_comm, ier)
+         CALL MPI_COMM_RANK(shar_comm, shar_rank, ier)
+         CALL MPI_COMM_SIZE(shar_comm, shar_size, ier)
          ! Free if allocated
          IF (ASSOCIATED(X4D))  CALL mpidealloc(X4D,  win_X4D)
          IF (ASSOCIATED(Y4D))  CALL mpidealloc(Y4D,  win_Y4D)
@@ -1908,24 +1947,24 @@
          IF (ASSOCIATED(jy_3d)) CALL mpidealloc(jy_3d, win_jy3d)
          IF (ASSOCIATED(jz_3d)) CALL mpidealloc(jz_3d, win_jz3d) 
          ! ALLOCATE
-         CALL mpialloc(X4D,  8, nx1, nx2, nx3, myidlocal, 0, comm, win_X4D)
-         CALL mpialloc(Y4D,  8, nx1, nx2, nx3, myidlocal, 0, comm, win_Y4D)
-         CALL mpialloc(Z4D,  8, nx1, nx2, nx3, myidlocal, 0, comm, win_Z4D)
-         CALL mpialloc(JX4D, 8, nx1, nx2, nx3, myidlocal, 0, comm, win_JX4D)
-         CALL mpialloc(JY4D, 8, nx1, nx2, nx3, myidlocal, 0, comm, win_JY4D)
-         CALL mpialloc(JZ4D, 8, nx1, nx2, nx3, myidlocal, 0, comm, win_JZ4D)
-         CALL mpialloc(x1, nx1, myidlocal, 0, comm, win_x1)
-         CALL mpialloc(x2, nx2, myidlocal, 0, comm, win_x2)
-         CALL mpialloc(x3, nx3, myidlocal, 0, comm, win_x3)
-         CALL mpialloc(xsurf, nx1*nx2*nx3, myidlocal, 0, comm, win_xsurf)
-         CALL mpialloc(ysurf, nx1*nx2*nx3, myidlocal, 0, comm, win_ysurf)
-         CALL mpialloc(zsurf, nx1*nx2*nx3, myidlocal, 0, comm, win_zsurf)
-         CALL mpialloc(jx_3d, nx1*nx2*nx3, myidlocal, 0, comm, win_jx3d)
-         CALL mpialloc(jy_3d, nx1*nx2*nx3, myidlocal, 0, comm, win_jy3d)
-         CALL mpialloc(jz_3d, nx1*nx2*nx3, myidlocal, 0, comm, win_jz3d)
-         ! Now kick out everyone who isn't doing work (you'll need to barrier after this call)
-         IF (myidlocal /= 0) RETURN
+         CALL mpialloc(X4D,  8, nx1, nx2, nx3, shar_rank, 0, shar_comm, win_X4D)
+         CALL mpialloc(Y4D,  8, nx1, nx2, nx3, shar_rank, 0, shar_comm, win_Y4D)
+         CALL mpialloc(Z4D,  8, nx1, nx2, nx3, shar_rank, 0, shar_comm, win_Z4D)
+         CALL mpialloc(JX4D, 8, nx1, nx2, nx3, shar_rank, 0, shar_comm, win_JX4D)
+         CALL mpialloc(JY4D, 8, nx1, nx2, nx3, shar_rank, 0, shar_comm, win_JY4D)
+         CALL mpialloc(JZ4D, 8, nx1, nx2, nx3, shar_rank, 0, shar_comm, win_JZ4D)
+         CALL mpialloc(x1, nx1, shar_rank, 0, shar_comm, win_x1)
+         CALL mpialloc(x2, nx2, shar_rank, 0, shar_comm, win_x2)
+         CALL mpialloc(x3, nx3, shar_rank, 0, shar_comm, win_x3)
+         CALL mpialloc(xsurf, nx1*nx2*nx3, shar_rank, 0, shar_comm, win_xsurf)
+         CALL mpialloc(ysurf, nx1*nx2*nx3, shar_rank, 0, shar_comm, win_ysurf)
+         CALL mpialloc(zsurf, nx1*nx2*nx3, shar_rank, 0, shar_comm, win_zsurf)
+         CALL mpialloc(jx_3d, nx1*nx2*nx3, shar_rank, 0, shar_comm, win_jx3d)
+         CALL mpialloc(jy_3d, nx1*nx2*nx3, shar_rank, 0, shar_comm, win_jy3d)
+         CALL mpialloc(jz_3d, nx1*nx2*nx3, shar_rank, 0, shar_comm, win_jz3d)
       ELSE
+#endif
+         shar_rank = 0; shar_size = 1
          IF (ASSOCIATED(X4D))  DEALLOCATE(X4D)
          IF (ASSOCIATED(Y4D))  DEALLOCATE(Y4D)
          IF (ASSOCIATED(Z4D))  DEALLOCATE(Z4D)
@@ -1953,148 +1992,159 @@
          ALLOCATE(jx_3d(nx1*nx2*nx3))
          ALLOCATE(jy_3d(nx1*nx2*nx3))
          ALLOCATE(jz_3d(nx1*nx2*nx3))
+#if defined(MPI_OPT)
       END IF
+#endif
 
-      ! Deallocate anything globally allocated
-      IF (EZspline_allocated(x3d_spl)) CALL EZspline_free(x3d_spl,ier)
-      IF (EZspline_allocated(y3d_spl)) CALL EZspline_free(y3d_spl,ier)
-      IF (EZspline_allocated(z3d_spl)) CALL EZspline_free(z3d_spl,ier)
-      IF (EZspline_allocated(jx3d_spl)) CALL EZspline_free(jx3d_spl,ier)
-      IF (EZspline_allocated(jy3d_spl)) CALL EZspline_free(jy3d_spl,ier)
-      IF (EZspline_allocated(jz3d_spl)) CALL EZspline_free(jz3d_spl,ier)
+      IF (shar_rank == 0) THEN
+         ! Deallocate anything globally allocated
+         IF (EZspline_allocated(x3d_spl)) CALL EZspline_free(x3d_spl,ier)
+         IF (EZspline_allocated(y3d_spl)) CALL EZspline_free(y3d_spl,ier)
+         IF (EZspline_allocated(z3d_spl)) CALL EZspline_free(z3d_spl,ier)
+         IF (EZspline_allocated(jx3d_spl)) CALL EZspline_free(jx3d_spl,ier)
+         IF (EZspline_allocated(jy3d_spl)) CALL EZspline_free(jy3d_spl,ier)
+         IF (EZspline_allocated(jz3d_spl)) CALL EZspline_free(jz3d_spl,ier)
 
-      ! Alloocations
-      ALLOCATE(xu(nu),xv(nvp))
-      ALLOCATE(fmn_temp(mnmax,ns))
-      ALLOCATE(r_temp(nu,nvp,ns),z_temp(nu,nvp,ns))
-      ALLOCATE(x_temp(nu,nvp,ns),y_temp(nu,nvp,ns))
-      ALLOCATE(ju_temp(nu,nvp,ns),jv_temp(nu,nvp,ns))
-      ALLOCATE(ru(nu,nvp,ns),rv(nu,nvp,ns))
-      ALLOCATE(zu(nu,nvp,ns),zv(nu,nvp,ns))
-      ALLOCATE(jx(nu,nvp,ns),jy(nu,nvp,ns))
-      ALLOCATE(jr(nu,nvp,ns),jphi(nu,nvp,ns),jz(nu,nvp,ns))
-      
-      ! Get the major quantities (not require use the VMEC convenction of j of j=j*jac
-      r_temp=zero; z_temp=zero; ju_temp=zero; jv_temp=zero
-      FORALL(u=1:nu) xu(u) = DBLE(u-1)/DBLE(nu-1)
-      FORALL(v=1:nvp) xv(v) = DBLE(v-1)/DBLE(nvp-1)
-      CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,rmnc,xm,xn,r_temp,0,1)
-      CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,zmns,xm,xn,z_temp,1,0)
-      CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,jumnc,xm,xn,ju_temp,0,0)
-      CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,jvmnc,xm,xn,jv_temp,0,0)
-      IF (PRESENT(rmns)) CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,rmns,xm,xn,r_temp,1,0)
-      IF (PRESENT(zmnc)) CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,zmnc,xm,xn,z_temp,0,0)
-      IF (PRESENT(jumns)) CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,jumns,xm,xn,ju_temp,1,0)
-      IF (PRESENT(jvmns)) CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,jvmns,xm,xn,jv_temp,1,0)
-      ! Now we calculate the edge metric elements
-      ru = zero; zu = zero; rv = zero; zv = zero
-      FORALL(mn = 1:mnmax) fmn_temp(mn,:) = -rmnc(mn,:)*xm(mn)
-      CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,fmn_temp,xm,xn,ru,1,0)
-      FORALL(mn = 1:mnmax) fmn_temp(mn,:) = -rmnc(mn,:)*xn(mn)
-      CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,fmn_temp,xm,xn,rv,1,0)  
-      FORALL(mn = 1:mnmax) fmn_temp(mn,:) = zmns(mn,:)*xm(mn)
-      CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,fmn_temp,xm,xn,zu,0,0) 
-      FORALL(mn = 1:mnmax) fmn_temp(mn,:) = zmns(mn,:)*xn(mn)
-      CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,fmn_temp,xm,xn,zv,0,0)  
-      IF (PRESENT(rmns)) THEN
-         FORALL(mn = 1:mnmax) fmn_temp(mn,:) = rmns(mn,:)*xm(mn)
-         CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,fmn_temp,xm,xn,ru,0,0)
-         FORALL(mn = 1:mnmax) fmn_temp(mn,:) = rmns(mn,:)*xn(mn)
-         CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,fmn_temp,xm,xn,rv,0,0)  
-      END IF 
-      IF (PRESENT(zmnc)) THEN
-         FORALL(mn = 1:mnmax) fmn_temp(mn,:) = -zmnc(mn,:)*xm(mn)
-         CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,fmn_temp,xm,xn,zu,1,0)  
-         FORALL(mn = 1:mnmax) fmn_temp(mn,:) = -zmnc(mn,:)*xn(mn)
-         CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,fmn_temp,xm,xn,zv,1,0)
-      END IF
-      ! Calculate jr, jphi, jz, jx, jy
-      jr   = ju_temp*ru+jv_temp*rv*nfp
-      jphi = r_temp * jv_temp
-      jz   = ju_temp*zu+jv_temp*zv*nfp
-      DO u = 1, nu
-         DO v = 1, nvp
-            cop = DCOS(pi2*xv(v))
-            sip = DSIN(pi2*xv(v))
-            x_temp(u,v,:) = r_temp(u,v,:) * cop
-            y_temp(u,v,:) = r_temp(u,v,:) * sip
-            jx(u,v,:) = jr(u,v,:) * cop - jphi(u,v,:) * sip
-            jy(u,v,:) = jr(u,v,:) * sip + jphi(u,v,:) * cop
-         END DO
-      END DO
-      i=1
-      DO u = 1, nu
-         DO v = 1, nvp
-            DO k = 1, ns
-               jx_3d(i) = jx(u,v,k)
-               jy_3d(i) = jy(u,v,k)
-               jz_3d(i) = jz(u,v,k)
-               xsurf(i) = x_temp(u,v,k)
-               ysurf(i) = y_temp(u,v,k)
-               zsurf(i) = z_temp(u,v,k)
-               i = i + 1
+         ! Alloocations
+         ALLOCATE(xu(nu),xv(nvp))
+         ALLOCATE(fmn_temp(mnmax,ns))
+         ALLOCATE(r_temp(nu,nvp,ns),z_temp(nu,nvp,ns))
+         ALLOCATE(x_temp(nu,nvp,ns),y_temp(nu,nvp,ns))
+         ALLOCATE(ju_temp(nu,nvp,ns),jv_temp(nu,nvp,ns))
+         ALLOCATE(ru(nu,nvp,ns),rv(nu,nvp,ns))
+         ALLOCATE(zu(nu,nvp,ns),zv(nu,nvp,ns))
+         ALLOCATE(jx(nu,nvp,ns),jy(nu,nvp,ns))
+         ALLOCATE(jr(nu,nvp,ns),jphi(nu,nvp,ns),jz(nu,nvp,ns))
+         
+         ! Get the major quantities (not require use the VMEC convenction of j of j=j*jac
+         r_temp=zero; z_temp=zero; ju_temp=zero; jv_temp=zero
+         FORALL(u=1:nu) xu(u) = DBLE(u-1)/DBLE(nu-1)
+         FORALL(v=1:nvp) xv(v) = DBLE(v-1)/DBLE(nvp-1)
+         CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,rmnc,xm,xn,r_temp,0,1)
+         CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,zmns,xm,xn,z_temp,1,0)
+         CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,jumnc,xm,xn,ju_temp,0,0)
+         CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,jvmnc,xm,xn,jv_temp,0,0)
+         IF (PRESENT(rmns)) CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,rmns,xm,xn,r_temp,1,0)
+         IF (PRESENT(zmnc)) CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,zmnc,xm,xn,z_temp,0,0)
+         IF (PRESENT(jumns)) CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,jumns,xm,xn,ju_temp,1,0)
+         IF (PRESENT(jvmns)) CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,jvmns,xm,xn,jv_temp,1,0)
+         ! Now we calculate the edge metric elements
+         ru = zero; zu = zero; rv = zero; zv = zero
+         FORALL(mn = 1:mnmax) fmn_temp(mn,:) = -rmnc(mn,:)*xm(mn)
+         CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,fmn_temp,xm,xn,ru,1,0)
+         FORALL(mn = 1:mnmax) fmn_temp(mn,:) = -rmnc(mn,:)*xn(mn)
+         CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,fmn_temp,xm,xn,rv,1,0)  
+         FORALL(mn = 1:mnmax) fmn_temp(mn,:) = zmns(mn,:)*xm(mn)
+         CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,fmn_temp,xm,xn,zu,0,0) 
+         FORALL(mn = 1:mnmax) fmn_temp(mn,:) = zmns(mn,:)*xn(mn)
+         CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,fmn_temp,xm,xn,zv,0,0)  
+         IF (PRESENT(rmns)) THEN
+            FORALL(mn = 1:mnmax) fmn_temp(mn,:) = rmns(mn,:)*xm(mn)
+            CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,fmn_temp,xm,xn,ru,0,0)
+            FORALL(mn = 1:mnmax) fmn_temp(mn,:) = rmns(mn,:)*xn(mn)
+            CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,fmn_temp,xm,xn,rv,0,0)  
+         END IF 
+         IF (PRESENT(zmnc)) THEN
+            FORALL(mn = 1:mnmax) fmn_temp(mn,:) = -zmnc(mn,:)*xm(mn)
+            CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,fmn_temp,xm,xn,zu,1,0)  
+            FORALL(mn = 1:mnmax) fmn_temp(mn,:) = -zmnc(mn,:)*xn(mn)
+            CALL mntouv_local(1,ns,mnmax,nu,nvp,xu,xv,fmn_temp,xm,xn,zv,1,0)
+         END IF
+         ! Calculate jr, jphi, jz, jx, jy
+         jr   = ju_temp*ru+jv_temp*rv*nfp
+         jphi = r_temp * jv_temp
+         jz   = ju_temp*zu+jv_temp*zv*nfp
+         DO u = 1, nu
+            DO v = 1, nvp
+               cop = DCOS(pi2*xv(v))
+               sip = DSIN(pi2*xv(v))
+               x_temp(u,v,:) = r_temp(u,v,:) * cop
+               y_temp(u,v,:) = r_temp(u,v,:) * sip
+               jx(u,v,:) = jr(u,v,:) * cop - jphi(u,v,:) * sip
+               jy(u,v,:) = jr(u,v,:) * sip + jphi(u,v,:) * cop
             END DO
          END DO
-      END DO
+         i=1
+         DO u = 1, nu
+            DO v = 1, nvp
+               DO k = 1, ns
+                  jx_3d(i) = jx(u,v,k)
+                  jy_3d(i) = jy(u,v,k)
+                  jz_3d(i) = jz(u,v,k)
+                  xsurf(i) = x_temp(u,v,k)
+                  ysurf(i) = y_temp(u,v,k)
+                  zsurf(i) = z_temp(u,v,k)
+                  i = i + 1
+               END DO
+            END DO
+         END DO
 
-      ! Construct Splines
-      CALL EZspline_init(x3d_spl,nu,nvp,ns,bcs1,bcs2,bcs3,ier)
-      CALL EZspline_init(y3d_spl,nu,nvp,ns,bcs1,bcs2,bcs3,ier)
-      CALL EZspline_init(z3d_spl,nu,nvp,ns,bcs1,bcs2,bcs3,ier)
-      CALL EZspline_init(jx3d_spl,nu,nvp,ns,bcs1,bcs2,bcs3,ier)
-      CALL EZspline_init(jy3d_spl,nu,nvp,ns,bcs1,bcs2,bcs3,ier)
-      CALL EZspline_init(jz3d_spl,nu,nvp,ns,bcs1,bcs2,bcs3,ier)
-      x3d_spl%x1=xu
-      y3d_spl%x1=xu
-      z3d_spl%x1=xu
-      jx3d_spl%x1=xu
-      jy3d_spl%x1=xu
-      jz3d_spl%x1=xu
-      x3d_spl%x2=xv
-      y3d_spl%x2=xv
-      z3d_spl%x2=xv
-      jx3d_spl%x2=xv
-      jy3d_spl%x2=xv
-      jz3d_spl%x2=xv
-      ! default [0 1] x3
-      x3d_spl%isHermite = 1
-      y3d_spl%isHermite = 1
-      z3d_spl%isHermite = 1
-      jx3d_spl%isHermite = 1
-      jy3d_spl%isHermite = 1
-      jz3d_spl%isHermite = 1
-      CALL EZspline_setup(x3d_spl,x_temp,ier)
-      CALL EZspline_setup(y3d_spl,y_temp,ier)
-      CALL EZspline_setup(z3d_spl,z_temp,ier)
-      CALL EZspline_setup(jx3d_spl,jx,ier)
-      CALL EZspline_setup(jy3d_spl,jy,ier)
-      CALL EZspline_setup(jz3d_spl,jz,ier)
-      ! Setup shared memory arrays
-      x1    = x3d_spl%x1
-      x2    = x3d_spl%x2
-      x3    = x3d_spl%x3
-      X4D   = x3d_spl%fspl
-      Y4D   = y3d_spl%fspl
-      Z4D   = z3d_spl%fspl
-      JX4D  = jx3d_spl%fspl
-      JY4D  = jy3d_spl%fspl
-      JZ4D  = jz3d_spl%fspl
-      CALL EZspline_free(x3d_spl,ier)
-      CALL EZspline_free(y3d_spl,ier)
-      CALL EZspline_free(z3d_spl,ier)
-      CALL EZspline_free(jx3d_spl,ier)
-      CALL EZspline_free(jy3d_spl,ier)
-      CALL EZspline_free(jz3d_spl,ier)
+         ! Construct Splines
+         CALL EZspline_init(x3d_spl,nu,nvp,ns,bcs1,bcs2,bcs3,ier)
+         CALL EZspline_init(y3d_spl,nu,nvp,ns,bcs1,bcs2,bcs3,ier)
+         CALL EZspline_init(z3d_spl,nu,nvp,ns,bcs1,bcs2,bcs3,ier)
+         CALL EZspline_init(jx3d_spl,nu,nvp,ns,bcs1,bcs2,bcs3,ier)
+         CALL EZspline_init(jy3d_spl,nu,nvp,ns,bcs1,bcs2,bcs3,ier)
+         CALL EZspline_init(jz3d_spl,nu,nvp,ns,bcs1,bcs2,bcs3,ier)
+         x3d_spl%x1=xu
+         y3d_spl%x1=xu
+         z3d_spl%x1=xu
+         jx3d_spl%x1=xu
+         jy3d_spl%x1=xu
+         jz3d_spl%x1=xu
+         x3d_spl%x2=xv
+         y3d_spl%x2=xv
+         z3d_spl%x2=xv
+         jx3d_spl%x2=xv
+         jy3d_spl%x2=xv
+         jz3d_spl%x2=xv
+         ! default [0 1] x3
+         x3d_spl%isHermite = 1
+         y3d_spl%isHermite = 1
+         z3d_spl%isHermite = 1
+         jx3d_spl%isHermite = 1
+         jy3d_spl%isHermite = 1
+         jz3d_spl%isHermite = 1
+         CALL EZspline_setup(x3d_spl,x_temp,ier)
+         CALL EZspline_setup(y3d_spl,y_temp,ier)
+         CALL EZspline_setup(z3d_spl,z_temp,ier)
+         CALL EZspline_setup(jx3d_spl,jx,ier)
+         CALL EZspline_setup(jy3d_spl,jy,ier)
+         CALL EZspline_setup(jz3d_spl,jz,ier)
+         ! Setup shared memory arrays
+         x1    = x3d_spl%x1
+         x2    = x3d_spl%x2
+         x3    = x3d_spl%x3
+         X4D   = x3d_spl%fspl
+         Y4D   = y3d_spl%fspl
+         Z4D   = z3d_spl%fspl
+         JX4D  = jx3d_spl%fspl
+         JY4D  = jy3d_spl%fspl
+         JZ4D  = jz3d_spl%fspl
+         CALL EZspline_free(x3d_spl,ier)
+         CALL EZspline_free(y3d_spl,ier)
+         CALL EZspline_free(z3d_spl,ier)
+         CALL EZspline_free(jx3d_spl,ier)
+         CALL EZspline_free(jy3d_spl,ier)
+         CALL EZspline_free(jz3d_spl,ier)
 
-      ! DEALLOCATE
-      DEALLOCATE(xu,xv)
-      DEALLOCATE(fmn_temp)
-      DEALLOCATE(r_temp,z_temp)
-      DEALLOCATE(x_temp,y_temp)
-      DEALLOCATE(ju_temp,jv_temp)
-      DEALLOCATE(ru,rv)
-      DEALLOCATE(zu,zv)
-      DEALLOCATE(jx,jy,jr,jphi,jz)
+         ! DEALLOCATE
+         DEALLOCATE(xu,xv)
+         DEALLOCATE(fmn_temp)
+         DEALLOCATE(r_temp,z_temp)
+         DEALLOCATE(x_temp,y_temp)
+         DEALLOCATE(ju_temp,jv_temp)
+         DEALLOCATE(ru,rv)
+         DEALLOCATE(zu,zv)
+         DEALLOCATE(jx,jy,jr,jphi,jz)
+      END IF !So shared memory doesn't do work
+#if defined(MPI_OPT)
+      IF (PRESENT(comm)) THEN
+         CALL MPI_BARRIER(shar_comm,ier)
+         CALL MPI_COMM_FREE(shar_comm,ier)
+      END IF
+#endif
+      RETURN
       ! END SUBROUTINE
       END SUBROUTINE init_volint_dbl
                               

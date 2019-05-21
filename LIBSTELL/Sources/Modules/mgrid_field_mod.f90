@@ -17,19 +17,19 @@
 !                           curlabel, mgrid_path_old
       USE EZspline_obj
       USE EZspline
-!DEC$ IF DEFINED (MPI_OPT)
-      USE mpi_params                                                    ! MPI
+#if defined(MPI_OPT)
+      USE mpi_params 
       USE mpi_inc
-!DEC$ ENDIF  
+#endif
       
 !-----------------------------------------------------------------------
 !     Module Variables
 !         
 !-----------------------------------------------------------------------
       IMPLICIT NONE
-!DEC$ IF DEFINED (MPI_OPT)
-!      INCLUDE 'mpif.h'                                                          ! MPI
-!DEC$ ENDIF  
+#if defined(MPI_OPT)
+!      INCLUDE 'mpif.h'
+#endif
       INTEGER            :: nr_mgrid, nphi_mgrid, nz_mgrid
       REAL(rprec)        :: pi2, rmin_mgrid, rmax_mgrid, zmin_mgrid,&
                             zmax_mgrid, phimin_mgrid, phimax_mgrid
@@ -58,7 +58,8 @@
       INTEGER, INTENT(inout)        :: istat
       INTEGER, INTENT(in)           :: ithread
       INTEGER, INTENT(in), OPTIONAL :: comm
-      INTEGER :: i,j,v,ik, nv_temp, nfp_temp, local_master, mylocalid
+      INTEGER :: i,j,v,ik, nv_temp, nfp_temp
+      INTEGER :: shar_comm, shar_rank, shar_size, local_master, mylocalid
       INTEGER :: bcs1(2), bcs2(2), bcs3(2)
       REAL(rprec), ALLOCATABLE :: br_vac(:,:,:), bphi_vac(:,:,:), bz_vac(:,:,:)
       LOGICAL, PARAMETER :: lbug=.false.
@@ -69,11 +70,27 @@
       mgrid_filename=TRIM(filename)
       nv_temp = nv
       nfp_temp = nfp
+#if defined(MPI_OPT)
+      IF (PRESENT(comm)) THEN
+         CALL MPI_COMM_SPLIT_TYPE(comm, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, shar_comm, istat)
+         CALL MPI_COMM_RANK(shar_comm, shar_rank, istat)
+         CALL MPI_COMM_SIZE(shar_comm, shar_size, istat)
+#else
+         shar_rank = 0; shar_size = 1
+#endif
+      ELSE
+         shar_rank = 0; shar_size = 1
+      END IF
+
       IF (.not.ASSOCIATED(bvac)) THEN
          IF (PRESENT(comm)) THEN
+#if defined(MPI_OPT)
             CALL read_mgrid(TRIM(mgrid_filename),extcur,nv_temp,nfp_temp,lbug,istat,comm)
+#else
+            CALL read_mgrid(TRIM(mgrid_filename),extcur,nv_temp,nfp_temp,lbug,istat)
+#endif
          ELSE
-            CALL read_mgrid(TRIM(mgrid_filename),extcur,nv_temp,nfp_temp,lbug,istat,MPI_COMM_SELF)
+            CALL read_mgrid(TRIM(mgrid_filename),extcur,nv_temp,nfp_temp,lbug,istat)
          END IF
          nv_temp = np0b
          nfp_temp = nfper0
@@ -84,7 +101,11 @@
             nfp_temp = nfper0
             istat = 0
             IF (PRESENT(comm)) THEN
+#if defined(MPI_OPT)
                CALL read_mgrid(TRIM(mgrid_filename),extcur,nv_temp,nfp_temp,lbug,istat,comm)
+#else
+               CALL read_mgrid(TRIM(mgrid_filename),extcur,nv_temp,nfp_temp,lbug,istat)
+#endif
             ELSE
                CALL read_mgrid(TRIM(mgrid_filename),extcur,nv_temp,nfp_temp,lbug,istat)
             END IF
@@ -117,21 +138,26 @@
 !                  bz_vac(1:nr0b,1:2,1:nz0b),STAT=istat)
 !         ALLOCATE(r_vac(1:nr0b),phi_vac(1:2),z_vac(1:nz0b),STAT=istat)
       IF (PRESENT(comm)) THEN
-         CALL MPI_COMM_RANK(comm, mylocalid, ierr_mpi)
-         CALL MPIALLOC(BRV4D,8,nr0b,nphi_mgrid,nz0b,mylocalid,0,comm,win_BRV4D)
-         CALL MPIALLOC(BPV4D,8,nr0b,nphi_mgrid,nz0b,mylocalid,0,comm,win_BPV4D)
-         CALL MPIALLOC(BZV4D,8,nr0b,nphi_mgrid,nz0b,mylocalid,0,comm,win_BZV4D)
-         CALL MPIALLOC(r_vac,nr0b,mylocalid,0,comm,win_rvac)
-         CALL MPIALLOC(phi_vac,nphi_mgrid,mylocalid,0,comm,win_phivac)
-         CALL MPIALLOC(z_vac,nz0b,mylocalid,0,comm,win_zvac)
+#if defined(MPI_OPT)
+         CALL MPIALLOC(BRV4D,8,nr0b,nphi_mgrid,nz0b,shar_rank,0,shar_comm,win_BRV4D)
+         CALL MPIALLOC(BPV4D,8,nr0b,nphi_mgrid,nz0b,shar_rank,0,shar_comm,win_BPV4D)
+         CALL MPIALLOC(BZV4D,8,nr0b,nphi_mgrid,nz0b,shar_rank,0,shar_comm,win_BZV4D)
+         CALL MPIALLOC(r_vac,nr0b,shar_rank,0,shar_comm,win_rvac)
+         CALL MPIALLOC(phi_vac,nphi_mgrid,shar_rank,0,shar_comm,win_phivac)
+         CALL MPIALLOC(z_vac,nz0b,shar_rank,0,shar_comm,win_zvac)
+#else
+         ALLOCATE(BRV4D(8,nr0b,nphi_mgrid,nz0b), STAT=istat)
+         ALLOCATE(BPV4D(8,nr0b,nphi_mgrid,nz0b), STAT=istat)
+         ALLOCATE(BZV4D(8,nr0b,nphi_mgrid,nz0b), STAT=istat)
+         ALLOCATE(r_vac(1:nr0b),phi_vac(1:nphi_mgrid),z_vac(1:nz0b),STAT=istat)
+#endif
       ELSE
-         mylocalid = 0
          ALLOCATE(BRV4D(8,nr0b,nphi_mgrid,nz0b), STAT=istat)
          ALLOCATE(BPV4D(8,nr0b,nphi_mgrid,nz0b), STAT=istat)
          ALLOCATE(BZV4D(8,nr0b,nphi_mgrid,nz0b), STAT=istat)
          ALLOCATE(r_vac(1:nr0b),phi_vac(1:nphi_mgrid),z_vac(1:nz0b),STAT=istat)
       END IF
-      IF (mylocalid == 0) THEN
+      IF (shar_rank == 0) THEN
          ALLOCATE(br_vac(1:nr0b,1:nphi_mgrid,1:nz0b),bphi_vac(1:nr0b,1:nphi_mgrid,1:nz0b),&
                   bz_vac(1:nr0b,1:nphi_mgrid,1:nz0b),STAT=istat)
          v = 1
@@ -181,9 +207,14 @@
          CALL EZspline_free(bphim_spl,istat)
          CALL EZspline_free(bzm_spl,istat)
       END IF
-      IF (PRESENT(comm)) CALL MPI_BARRIER(comm,istat)
+#if defined(MPI_OPT)
+      IF (PRESENT(comm)) THEN
+         CALL MPI_BARRIER(comm,istat)
+         CALL MPI_COMM_FREE(shar_comm,istat) 
+      END IF
+#endif
       phimax_mgrid = MAXVAL(phi_vac)
-      phimin_mgrid = MINVAL(phi_vac)  
+      phimin_mgrid = MINVAL(phi_vac) 
       RETURN
       END SUBROUTINE mgrid_load
       
