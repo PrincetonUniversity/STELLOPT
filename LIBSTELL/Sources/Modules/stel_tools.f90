@@ -1384,8 +1384,10 @@
       DOUBLE PRECISION :: R_grad(3), Z_grad(3)
       INTEGER :: i,j,k
       REAL*8 :: xparam, yparam, zparam, hx, hy, hz, hxi, hyi, hzi
-      REAL*8 :: fval(4)
-      INTEGER, parameter :: ict(10)=(/1,1,1,1,0,0,0,0,0,0/)
+      REAL*8 :: fval1(1)
+      REAL*8 :: fval2(4)
+      INTEGER, parameter :: ict1(10)=(/1,0,0,0,0,0,0,0,0,0/)
+      INTEGER, parameter :: ict2(10)=(/1,1,1,1,0,0,0,0,0,0/)
       IF (ier < 0) RETURN
       rho_val = SQRT(s_val)
 !      CALL EZSPLINE_isInDomain(R_spl,u_val,v_val,rho_val,ier)
@@ -1401,47 +1403,47 @@
 !         CALL EZspline_interp(Zv_spl,u_val,v_val,rho_val,Z_grad(2),ier)
       IF (isingrid(u_val,v_val,rho_val)) THEN
          CALL lookupgrid3d(u_val,v_val,rho_val,i,j,k,hx,hy,hz,hxi,hyi,hzi,xparam,yparam,zparam)
-         CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
+         CALL r8fvtricub(ict1, 1, 1, fval1, i, j, k, xparam, yparam, zparam, &
                          hx, hxi, hy, hyi, hz, hzi, &
                          R4D(1,1,1,1), nx1, nx2, nx3)
-         r_val = fval(1)
-         CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
+         r_val = fval1(1)
+         CALL r8fvtricub(ict1, 1, 1, fval1, i, j, k, xparam, yparam, zparam, &
                          hx, hxi, hy, hyi, hz, hzi, &
                          BS4D(1,1,1,1), nx1, nx2, nx3)
-         Bs = fval(1)
-         CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
+         Bs = fval1(1)
+         CALL r8fvtricub(ict1, 1, 1, fval1, i, j, k, xparam, yparam, zparam, &
                          hx, hxi, hy, hyi, hz, hzi, &
                          BU4D(1,1,1,1), nx1, nx2, nx3)
-         Bu = fval(1)
-         CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
+         Bu = fval1(1)
+         CALL r8fvtricub(ict1, 1, 1, fval1, i, j, k, xparam, yparam, zparam, &
                          hx, hxi, hy, hyi, hz, hzi, &
                          BV4D(1,1,1,1), nx1, nx2, nx3)
-         Bv = fval(1)
-         CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
+         Bv = fval1(1)
+         CALL r8fvtricub(ict1, 1, 1, fval1, i, j, k, xparam, yparam, zparam, &
                          hx, hxi, hy, hyi, hz, hzi, &
                          RU4D(1,1,1,1), nx1, nx2, nx3)
-         R_grad(1) = fval(1)
-         CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
+         R_grad(1) = fval1(1)
+         CALL r8fvtricub(ict1, 1, 1, fval1, i, j, k, xparam, yparam, zparam, &
                          hx, hxi, hy, hyi, hz, hzi, &
                          RV4D(1,1,1,1), nx1, nx2, nx3)
-         R_grad(2) = fval(1)
-         CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
+         R_grad(2) = fval1(1)
+         CALL r8fvtricub(ict1, 1, 1, fval1, i, j, k, xparam, yparam, zparam, &
                          hx, hxi, hy, hyi, hz, hzi, &
                          ZU4D(1,1,1,1), nx1, nx2, nx3)
-         Z_grad(1) = fval(1)
-         CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
+         Z_grad(1) = fval1(1)
+         CALL r8fvtricub(ict1, 1, 1, fval1, i, j, k, xparam, yparam, zparam, &
                          hx, hxi, hy, hyi, hz, hzi, &
                          ZV4D(1,1,1,1), nx1, nx2, nx3)
-         Z_grad(2) = fval(1)
+         Z_grad(2) = fval1(1)
          br = R_grad(3)*Bs + R_grad(1)*Bu + R_grad(2)*Bv*nfp
          bphi = r_val * Bv
          bz = Z_grad(3)*Bs + Z_grad(1)*Bu + Z_grad(2)*Bv*nfp
 !         IF (PRESENT(B_grad)) CALL EZspline_gradient(B_spl,u_val,v_val,s_val,B_grad,ier)
          IF (PRESENT(B_grad))  THEN
-            CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
+            CALL r8fvtricub(ict2, 1, 1, fval2, i, j, k, xparam, yparam, zparam, &
                            hx, hxi, hy, hyi, hz, hzi, &
                            B4D(1,1,1,1), nx1, nx2, nx3)
-            B_grad = fval(2:4)
+            B_grad = fval2(2:4)
          END IF
       ELSE
          ier   = 9
@@ -1644,8 +1646,10 @@
       DOUBLE PRECISION :: rho_val
       INTEGER :: i,j,k
       REAL*8 :: xparam, yparam, zparam, hx, hy, hz, hxi, hyi, hzi
-      REAL*8 :: fval(4)
-      INTEGER, parameter :: ict(10)=(/1,1,1,1,0,0,0,0,0,0/)
+      REAL*8 :: fval1(1)
+      REAL*8 :: fval2(4)
+      INTEGER, parameter :: ict1(10)=(/1,0,0,0,0,0,0,0,0,0/)
+      INTEGER, parameter :: ict2(10)=(/1,1,1,1,0,0,0,0,0,0/)
       IF (ier < 0) RETURN
       rho_val = SQRT(s_val)
 !      CALL EZspline_interp(Bs_spl,u_val,v_val,rho_val,bs,ier)
@@ -1654,24 +1658,24 @@
 !      IF (PRESENT(modb_val)) CALL EZspline_interp(B_spl,u_val,v_val,rho_val,modb_val,ier)
 !      IF (PRESENT(B_grad)) CALL EZspline_gradient(B_spl,u_val,v_val,rho_val,B_grad,ier)
       CALL lookupgrid3d(u_val,v_val,rho_val,i,j,k,hx,hy,hz,hxi,hyi,hzi,xparam,yparam,zparam)
-      CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
+      CALL r8fvtricub(ict1, 1, 1, fval1, i, j, k, xparam, yparam, zparam, &
                       hx, hxi, hy, hyi, hz, hzi, &
                       BS4D(1,1,1,1), nx1, nx2, nx3)
-      bs = fval(1)
-      CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
+      bs = fval1(1)
+      CALL r8fvtricub(ict1, 1, 1, fval1, i, j, k, xparam, yparam, zparam, &
                       hx, hxi, hy, hyi, hz, hzi, &
                       BU4D(1,1,1,1), nx1, nx2, nx3)
-      bu = fval(1)
-      CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
+      bu = fval1(1)
+      CALL r8fvtricub(ict1, 1, 1, fval1, i, j, k, xparam, yparam, zparam, &
                       hx, hxi, hy, hyi, hz, hzi, &
                       BV4D(1,1,1,1), nx1, nx2, nx3)
-      bv = fval(1)
+      bv = fval1(1)
       IF (PRESENT(modb_val) .or. PRESENT(B_GRAD)) &
-         CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
+         CALL r8fvtricub(ict2, 1, 1, fval2, i, j, k, xparam, yparam, zparam, &
                          hx, hxi, hy, hyi, hz, hzi, &
                          B4D(1,1,1,1), nx1, nx2, nx3)
-      IF (PRESENT(modb_val)) modb_val = fval(1)
-      IF (PRESENT(B_grad)) B_grad = fval(2:4)
+      IF (PRESENT(modb_val)) modb_val = fval2(1)
+      IF (PRESENT(B_grad)) B_grad = fval2(2:4)
       RETURN
       END SUBROUTINE get_equil_Bflx_dbl
       
