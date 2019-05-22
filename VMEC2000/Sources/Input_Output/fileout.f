@@ -12,6 +12,7 @@
       USE realspace, ONLY: pphip, psqrts, pshalf, pwint
       USE vacmod, ONLY: bsqvac, brv, bphiv, bzv, nv, nuv3,
      1                  bsupu_sur, bsupv_sur, bsubu_sur, bsubv_sur
+      USE mgrid_mod, ONLY: free_mgrid
       IMPLICIT NONE
 C-----------------------------------------------
 C   D u m m y   A r g u m e n t s
@@ -110,8 +111,7 @@ C-----------------------------------------------
       IF (grank .EQ. 0) THEN
          CALL fileout(iseq, ictrl_flag, ier_flag, lscreen) 
       ENDIF
-      CALL free_persistent_mem ! MOVED HERE SO ALL CALL IT
-!      CALL MPI_Barrier(NS_COMM, MPI_ERR) !SAL
+      CALL free_mgrid (ier_flag,RUNVMEC_COMM_WORLD)
       CALL second0(tfileoff)
       fileout_time = fileout_time + (tfileoff-tfileon)
       fo_par_call_time = fileout_time
@@ -340,7 +340,7 @@ C-----------------------------------------------
       CALL free_mem_funct3d
       CALL free_mem_ns (lreset_xc)
       CALL free_mem_nunv
-!      CALL free_persistent_mem
+      CALL free_persistent_mem
 
       CALL close_all_files
 

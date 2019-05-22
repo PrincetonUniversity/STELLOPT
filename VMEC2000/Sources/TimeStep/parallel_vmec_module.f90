@@ -24,7 +24,6 @@ MODULE parallel_vmec_module
   INTEGER :: VAC_COMM
   INTEGER :: TWODCOMM, px, py
   INTEGER :: NS_RESLTN=0
-  INTEGER :: RUNVMEC_COMM_SHARMEM
   INTEGER :: num_grids
   INTEGER, ALLOCATABLE, DIMENSION(:) :: grid_procs
   INTEGER, ALLOCATABLE, DIMENSION(:) :: grid_size
@@ -136,7 +135,6 @@ CONTAINS
     CALL MPI_Comm_dup(INCOMM,RUNVMEC_COMM_WORLD,MPI_ERR)
     CALL MPI_Comm_rank(RUNVMEC_COMM_WORLD,grank,MPI_ERR) 
     CALL MPI_Comm_size(RUNVMEC_COMM_WORLD,gnranks,MPI_ERR) 
-    CALL MPI_COMM_SPLIT_TYPE(RUNVMEC_COMM_WORLD, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, RUNVMEC_COMM_SHARMEM, MPI_ERR)
 #endif
   END SUBROUTINE InitRunVmec
   !--------------------------------------------------------------------------
@@ -421,7 +419,6 @@ CONTAINS
     INTEGER, INTENT(INOUT)  :: INCOMM
 #if defined(MPI_OPT)
     CALL MPI_Comm_free(INCOMM,MPI_ERR)
-    CALL MPI_Comm_free(RUNVMEC_COMM_SHARMEM,MPI_ERR)
     IF(LIFFREEB) CALL MPI_Comm_free(VAC_COMM,MPI_ERR)
     INCOMM=0; VAC_COMM = 0
     rank = 0; par_ns = 0; nranks = 1 !SAL
