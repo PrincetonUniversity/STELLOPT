@@ -738,6 +738,11 @@ C-----------------------------------------------
       nskip = np0b/nv
       sh(1) = nbvac
 
+      IF (ALLOCATED(brtemp)) DEALLOCATE(brtemp)
+      IF (ALLOCATED(bptemp)) DEALLOCATE(bptemp)
+      IF (ALLOCATED(bztemp)) DEALLOCATE(bztemp)
+      IF (ALLOCATED(bttemp)) DEALLOCATE(bttemp)
+
 #if defined(MPI_OPT)
       IF ((lMPIInit.NE.0) .and. PRESENT(comm)) THEN
          ig = MPI_UNDEFINED
@@ -745,7 +750,8 @@ C-----------------------------------------------
             ig = 0
             ALLOCATE (brtemp(nr0b,nz0b,np0b), bptemp(nr0b,nz0b,np0b),
      1             bztemp(nr0b,nz0b,np0b), bttemp(nbvac,3), stat=istat)
-            IF (istat .ne. 0)STOP 'Error allocating bXtemp in mgrid_mod'
+            IF (istat .ne. 0)
+     1            STOP 'Error allocating bXtemp in mgrid_mod1 '
             brtemp = 0
             bptemp = 0
             bztemp = 0
@@ -756,6 +762,8 @@ C-----------------------------------------------
          IF (ig .eq. 0) THEN
             CALL MPI_COMM_RANK(temp_comm, temp_rank, istat)
             CALL MPI_COMM_SIZE(temp_comm, temp_size, istat)
+         ELSE
+            temp_rank = -1; temp_size = 1
          END IF
       ELSE
          temp_size = 1; temp_rank = 0
@@ -763,7 +771,7 @@ C-----------------------------------------------
 #else
       ALLOCATE (brtemp(nr0b,nz0b,np0b), bptemp(nr0b,nz0b,np0b),
      1          bztemp(nr0b,nz0b,np0b), bttemp(nbvac,3), stat=istat)
-      IF (istat .ne. 0)STOP 'Error allocating bXtemp in mgrid_mod'
+      IF (istat .ne. 0)STOP 'Error allocating bXtemp in mgrid_mod2 '
       brtemp = 0
       bptemp = 0
       bztemp = 0
@@ -805,12 +813,6 @@ C-----------------------------------------------
       END IF
       np0b = nv
 
-
-      IF (ALLOCATED(brtemp)) DEALLOCATE(brtemp)
-      IF (ALLOCATED(bptemp)) DEALLOCATE(bptemp)
-      IF (ALLOCATED(bztemp)) DEALLOCATE(bztemp)
-
-
 #if defined(MPI_OPT)
       IF ((lMPIInit.NE.0) .and. PRESENT(comm)) THEN
 !         CALL MPI_ALLREDUCE(MPI_IN_PLACE, b, SIZE(bvac), MPI_REAL8,  &
@@ -822,14 +824,13 @@ C-----------------------------------------------
             CALL assert_eq(istat,0,'MPI_REDUCE failed in read_mgrid_nc')
             !IF (temp_rank .eq. 0) bvac = bttemp
             CALL MPI_COMM_FREE(temp_comm,istat)
-            IF (ALLOCATED(bttemp)) DEALLOCATE(bttemp)
          END IF
          CALL MPI_BARRIER(comm,istat)
          ig = MPI_UNDEFINED
          temp_rank = -1
          IF (shar_rank .eq. 0) ig = 0
          CALL MPI_COMM_SPLIT(comm, ig, mpi_rank, temp_comm, istat)
-         IF (ig .eq. 0) THEN
+         IF (shar_rank .eq. 0) THEN
             CALL MPI_COMM_RANK(temp_comm, temp_rank, istat)
             CALL MPI_COMM_SIZE(temp_comm, temp_size, istat)
             CALL MPI_BCAST(bvac,SIZE(bvac), MPI_REAL8, 0,
@@ -839,12 +840,14 @@ C-----------------------------------------------
          CALL MPI_BARRIER(comm,istat)
       ELSE
          bvac = bttemp
-         IF (ALLOCATED(bttemp)) DEALLOCATE(bttemp)
       END IF
 #else
       bvac = bttemp
-      IF (ALLOCATED(bttemp)) DEALLOCATE(bttemp)
 #endif
+      IF (ALLOCATED(brtemp)) DEALLOCATE(brtemp)
+      IF (ALLOCATED(bptemp)) DEALLOCATE(bptemp)
+      IF (ALLOCATED(bztemp)) DEALLOCATE(bztemp)
+      IF (ALLOCATED(bttemp)) DEALLOCATE(bttemp)
 
 !
 !     MUST ADD EXTERNAL LOOP STUFF LATER
