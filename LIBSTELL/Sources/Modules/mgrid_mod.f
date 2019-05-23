@@ -918,7 +918,10 @@ C-----------------------------------------------
       istat = 0
 
       IF (PRESENT(comm)) THEN
-         CALL mpidealloc(bvac,win_bvac)
+         IF (ASSOCIATED(bvac)) THEN
+            CALL MPI_BARRIER(comm,istat)
+            CALL mpidealloc(bvac,win_bvac)
+         END IF
       ELSE
          IF (ASSOCIATED(bvac)) DEALLOCATE (bvac,stat=istat)
       END IF
