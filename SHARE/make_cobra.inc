@@ -245,12 +245,14 @@ ifeq ($(MAKECMDGOALS),xstelloptv2)
     NEO_DIR = 
     LIB_NEO = 
   endif
+else ifeq ($(MAKECMDGOALS),help)
 else
   LGENE = F
   LCOILOPT = F
   LTERPSICHORE = F
   LTRAVIS = F
   LSFINCS = F
+  LREGCOIL = F
 endif
 ifeq ($(MAKECMDGOALS),xanimec)
   PRECOMP += -D_ANIMEC
