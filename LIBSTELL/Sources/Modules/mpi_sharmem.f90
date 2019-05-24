@@ -426,7 +426,7 @@ MODULE MPI_SHARMEM
       INTEGER, INTENT(inout) :: win
       ! Variables
       INTEGER :: disp_unit, ier
-      INTEGER :: array_shape(3)
+      INTEGER :: array_shape(4)
       INTEGER(KIND=MPI_ADDRESS_KIND) :: window_size
       TYPE(C_PTR) :: baseptr
       ! Initialization
@@ -461,7 +461,7 @@ MODULE MPI_SHARMEM
       INTEGER, INTENT(inout) :: win
       ! Variables
       INTEGER :: disp_unit, ier
-      INTEGER :: array_shape(3)
+      INTEGER :: array_shape(4)
       INTEGER(KIND=MPI_ADDRESS_KIND) :: window_size
       TYPE(C_PTR) :: baseptr
       ! Initialization
@@ -496,7 +496,7 @@ MODULE MPI_SHARMEM
       INTEGER, INTENT(inout) :: win
       ! Variables
       INTEGER :: disp_unit, ier
-      INTEGER :: array_shape(3)
+      INTEGER :: array_shape(4)
       INTEGER(KIND=MPI_ADDRESS_KIND) :: window_size
       TYPE(C_PTR) :: baseptr
       ! Initialization
@@ -531,7 +531,7 @@ MODULE MPI_SHARMEM
       INTEGER, INTENT(inout) :: win
       ! Variables
       INTEGER :: disp_unit, ier
-      INTEGER :: array_shape(3)
+      INTEGER :: array_shape(4)
       INTEGER(KIND=MPI_ADDRESS_KIND) :: window_size
       TYPE(C_PTR) :: baseptr
       ! Initialization
