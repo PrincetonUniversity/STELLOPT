@@ -61,13 +61,13 @@
          CASE ('ncsx') ! NCSX
             r1 = 1.79;   r2 = 2.79;   z1 = 0.000; z2 = 0.500; nrad = 5 ; nzed = 5; c_loop = 1.4; r_loop = 0.80; my_rtol = 1.0E-3
          CASE ('w7x') ! W7X
-            r1 = 6.50;   r2 = 7.50;   z1 = 0.000; z2 = 0.500; nrad = 5 ; nzed = 5; c_loop = 5.5; r_loop = 1.0; my_rtol = 1.0E-2
+            r1 = 6.50;   r2 = 7.50;   z1 = 0.000; z2 = 0.500; nrad = 5 ; nzed = 5; c_loop = 5.5; r_loop = 1.0; my_rtol = 1.0E-3
          CASE('iter') ! ITER
             r1 = 8.20;   r2 = 9.200;  z1 = 0.000; z2 = 4.000; nrad = 5 ; nzed = 5; c_loop = 6.0; r_loop = 4.5; my_rtol = 1.0E-3
          CASE('lhd')  ! LHD
             r1 = 4.75;   r2 = 5.50;   z1 = 0.000; z2 = 1.000; nrad = 5 ; nzed = 5; c_loop = 3.6; r_loop = 1.0; my_rtol = 1.0E-3
          CASE('hsx') !HSX
-            r1 = 1.55;   r2 = 2.0;   z1 = 0.000; z2 = 0.300; nrad = 5 ; nzed = 5; c_loop = 1.35; r_loop = 0.3; my_rtol = 1.0E-2
+            r1 = 1.55;   r2 = 2.0;   z1 = 0.000; z2 = 0.300; nrad = 5 ; nzed = 5; c_loop = 1.35; r_loop = 0.3; my_rtol = 1.0E-3
       END SELECT
 
       ! Setup Grid
