@@ -184,4 +184,53 @@
       CALL FLUSH(iunit)
       END SUBROUTINE write_diagno_input
 
+      SUBROUTINE BCAST_DIAGNO_INPUT(local_master,comm,istat)
+!DEC$ IF DEFINED (MPI_OPT)
+      USE mpi
+!DEC$ ENDIF
+      IMPLICIT NONE
+      INTEGER, INTENT(inout) :: comm
+      INTEGER, INTENT(in)    :: local_master
+      INTEGER, INTENT(inout) :: istat
+      IF (istat .ne. 0) RETURN
+!DEC$ IF DEFINED (MPI_OPT)
+      CALL MPI_BCAST(nu,1,MPI_INTEGER,local_master,comm,istat)
+      IF (istat .ne. 0) RETURN
+      CALL MPI_BCAST(nv,1,MPI_INTEGER,local_master,comm,istat)
+      IF (istat .ne. 0) RETURN
+      CALL MPI_BCAST(units,1,MPI_DOUBLE_PRECISION,local_master,comm,istat)
+      IF (istat .ne. 0) RETURN
+      CALL MPI_BCAST(vc_adapt_tol,1,MPI_DOUBLE_PRECISION,local_master,comm,istat)
+      IF (istat .ne. 0) RETURN
+      CALL MPI_BCAST(vc_adapt_rel,1,MPI_DOUBLE_PRECISION,local_master,comm,istat)
+      IF (istat .ne. 0) RETURN
+      CALL MPI_BCAST(int_type,256,MPI_CHARACTER,local_master,comm,istat)
+      IF (istat .ne. 0) RETURN
+      CALL MPI_BCAST(int_step,1,MPI_INTEGER,local_master,comm,istat)
+      IF (istat .ne. 0) RETURN
+      CALL MPI_BCAST(bfield_points_file,256,MPI_CHARACTER,local_master,comm,istat)
+      IF (istat .ne. 0) RETURN
+      CALL MPI_BCAST(bprobes_file,256,MPI_CHARACTER,local_master,comm,istat)
+      IF (istat .ne. 0) RETURN
+      CALL MPI_BCAST(mirnov_file,256,MPI_CHARACTER,local_master,comm,istat)
+      IF (istat .ne. 0) RETURN
+      CALL MPI_BCAST(seg_rog_file,256,MPI_CHARACTER,local_master,comm,istat)
+      IF (istat .ne. 0) RETURN
+      CALL MPI_BCAST(flux_diag_file,256,MPI_CHARACTER,local_master,comm,istat)
+      IF (istat .ne. 0) RETURN
+      CALL MPI_BCAST(flux_mut_file,256,MPI_CHARACTER,local_master,comm,istat)
+      IF (istat .ne. 0) RETURN
+      CALL MPI_BCAST(bprobe_turns,SIZE(bprobe_turns),MPI_DOUBLE_PRECISION,local_master,comm,istat)
+      IF (istat .ne. 0) RETURN
+      CALL MPI_BCAST(flux_turns,SIZE(flux_turns),MPI_DOUBLE_PRECISION,local_master,comm,istat)
+      IF (istat .ne. 0) RETURN
+      CALL MPI_BCAST(segrog_turns,SIZE(segrog_turns),MPI_DOUBLE_PRECISION,local_master,comm,istat)
+      IF (istat .ne. 0) RETURN
+      CALL MPI_BCAST(lrphiz,1,MPI_LOGICAL,local_master,comm,istat)
+      IF (istat .ne. 0) RETURN
+      CALL MPI_BCAST(lvc_field,1,MPI_LOGICAL,local_master,comm,istat)
+      IF (istat .ne. 0) RETURN
+!DEC$ ENDIF
+      END SUBROUTINE BCAST_DIAGNO_INPUT
+
       END MODULE diagno_input_mod

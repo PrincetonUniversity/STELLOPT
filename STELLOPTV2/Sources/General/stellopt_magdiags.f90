@@ -16,7 +16,7 @@
       !USE read_wout_mod
       USE diagno_input_mod, ONLY: bfield_points_file, bprobes_file,&
                                   mirnov_file, seg_rog_file, &
-                                  flux_diag_file
+                                  flux_diag_file, BCAST_DIAGNO_INPUT
       USE diagno_runtime, ONLY: lverb_diagno => lverb, &
                                 id_string_diagno => id_string, &
                                 lcoil_diagno => lcoil, &
@@ -63,6 +63,7 @@
          INQUIRE(FILE=TRIM(diagno_coil_string),EXIST=lcoil_diagno,IOSTAT=iflag)
          IF (iflag /= 0) RETURN
       END IF
+      CALL BCAST_DIAGNO_INPUT(master,MPI_COMM_DIAGNO,ierr_mpi)
       IF (lverb_diagno) write(6,'(A)')'==========================================='
       IF (lverb_diagno) write(6,'(A,F5.2,A)')'=========  D I A G N O  (v.',DIAGNO_VERSION,')  ========='
       IF (lverb_diagno) write(6,'(A)')' - Loading equilibrium surface'

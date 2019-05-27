@@ -93,7 +93,10 @@
             ! Read the VMEC output
             CALL read_wout_deallocate
             CALL read_wout_file(TRIM(proc_string),ier)
-            IF (ier .ne. 0) RETURN
+            IF (ier .ne. 0) THEN
+               iflag = -1
+               RETURN
+            END IF
             ! Check for grid size
             IF (lfreeb_vmec .and. ((rmax_vmec >= rmaxb) .or. (rmin_vmec <= rminb) .or. (zmax_vmec >= zmaxb))) THEN
                IF (lscreen) WRITE(6,'(A)')   '!!!!!  VMEC Solution exceeds Vacuum Grid Size  !!!!!'

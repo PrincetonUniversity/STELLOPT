@@ -142,57 +142,7 @@
       ! Initialize the Calculation
       CALL stellopt_init
 
-!DEC$ IF DEFINED (MPI_OPT)
-      CALL MPI_BARRIER( MPI_COMM_STEL, ierr_mpi )                   ! MPI
-      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'stellopt_main',ierr_mpi)
-
-      CALL FLUSH(6)
-      ! Now we create workers
-      IF ((noptimizers == -1) .and. lverb)  THEN
-         WRITE(6,*) '   ========Parallel Code Execution Info======='
-         WRITE(6,*) '   Number of Processors:            ',numprocs
-         WRITE(6,*) '   Number of Optimization Threads:  ',noptimizers
-         WRITE(6,*) '   Workers per optimizer thread:      ',numprocs/noptimizers
-      END IF
-      IF (noptimizers <= 0) then   ! default
-         noptimizers = numprocs + 1
-      ELSE                         ! user-specified and round to even divider
-         noptimizers = numprocs / NINT(REAL(numprocs, rprec)/noptimizers)
-      END IF
-      color = MOD(myid,noptimizers)
-      key = myid
-      CALL MPI_COMM_SPLIT(MPI_COMM_WORLD, color, key,MPI_COMM_MYWORLD, ierr_mpi)
-      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_main',ierr_mpi)
-      CALL MPI_COMM_RANK(MPI_COMM_MYWORLD,myworkid,ierr_mpi)
-
-      ! Now we need to define MPI_COMM_STEL
-      CALL MPI_COMM_FREE(MPI_COMM_STEL, ierr_mpi)
-      IF (myworkid /= master) THEN
-         myid = -1 ! they're not part of MPI_COMM_STEL
-         color = MPI_UNDEFINED
-      ELSE
-         color = 0
-      END IF
-      CALL MPI_COMM_SPLIT(MPI_COMM_WORLD, color,key,MPI_COMM_STEL,ierr_mpi)
-      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_main',ierr_mpi)
-      IF (myworkid == master)THEN
-         CALL MPI_COMM_RANK( MPI_COMM_STEL, myid, ierr_mpi )              ! MPI
-         IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_main',ierr_mpi)
-         CALL MPI_COMM_SIZE( MPI_COMM_STEL, numprocs, ierr_mpi )          ! MPI
-         IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_main',ierr_mpi)
-      END IF
-      IF (lverb)  WRITE(6,*) '   Number of Optimizer Threads:    ',numprocs
-
-!DEC$ ENDIF
-
-      ! Run optimization
-      IF (myworkid .ne. master) THEN
-         ltst  = .false.
-         tstr1 = ''
-         tstr2 = ''
-         ier_paraexe = 0
-         CALL stellopt_paraexe(tstr1,tstr2,ltst)
-      ELSE
+      IF (myworkid == master) THEN
          CALL stellopt_optimize
          ltst  = .false.
          tstr1 = 'exit'

@@ -59,7 +59,6 @@
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
       IF (iflag < 0) RETURN
-      !IF (lscreen) WRITE(6,'(a)') ' ---------------------------  BOOTSTRAP CALCULATION  -------------------------'
       IF (lscreen) WRITE(6,'(a)') ' --------------------  BOOTSTRAP CALCULATION USING BOOTSJ  -------------------'
       SELECT CASE(TRIM(equil_type))
          CASE('vmec2000','animec','flow','satire','parvmec','paravmec','vboot','vmec2000_oneeq')
@@ -78,10 +77,11 @@
                CALL safe_open(ijbs, ierr, 'jBbs.'//trim(proc_string),'replace', 'formatted')
             ELSE
                ians = 12
-               WRITE(temp_str,'(I3.3)') myworkid
+               WRITE(temp_str,'(I8.8)') myworkid
                CALL safe_open(ians, ierr, 'answers_'//TRIM(temp_str)//'.'//trim(proc_string),'replace', 'formatted')
             END IF
 !DEC$ IF DEFINED (MPI_OPT)
+            CALL BCAST_BOOTSJ_INPUT(master,MPI_COMM_MYWORLD,ierr_mpi)
             CALL MPI_COMM_SIZE( MPI_COMM_MYWORLD, numprocs_local, ierr_mpi )
             CALL MPI_BCAST(mnboz_b,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
             CALL MPI_BCAST(mboz_b,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
@@ -443,6 +443,7 @@
                IF (ALLOCATED(cputimes)) DEALLOCATE(cputimes)
                IF (ALLOCATED(bmnc_b)) DEALLOCATE(bmnc_b)
                IF (ALLOCATED(bmns_b)) DEALLOCATE(bmns_b)
+               CALL FLUSH(ians)
                CLOSE(UNIT=ians,STATUS='DELETE')
                CALL deallocate_all
                RETURN
@@ -467,7 +468,6 @@
             CLOSE(ijbs)
          CASE('spec')
       END SELECT
-      !IF (lscreen) WRITE(6,'(a)') ' -------------------------  BOOTSTRAP CALCULATION DONE  ----------------------'
       IF (lscreen) WRITE(6,'(a)') ' -------------------  BOOTSJ BOOTSTRAP CALCULATION DONE  ---------------------'
       RETURN
   90  format(5e16.8)
