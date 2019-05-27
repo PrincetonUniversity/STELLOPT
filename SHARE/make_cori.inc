@@ -236,6 +236,7 @@ ifeq ($(MAKECMDGOALS),xstelloptv2)
     NEO_DIR = 
     LIB_NEO = 
   endif
+else ifeq ($(MAKECMDGOALS),help)
 else
   LGENE = F
   LCOILOPT = F
