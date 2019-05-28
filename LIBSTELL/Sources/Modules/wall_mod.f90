@@ -545,16 +545,16 @@
       ik_min = zero
       tmin = 2
       !LIMIT DOMAIN
-      drx = ATAN2(y0,x0)
+      !drx = ATAN2(y0,x0)
       k1 = 1; k2 = nface
       !k1  = MINLOC(ABS(PHI-drx-0.25),DIM=1)
       !k2  = MINLOC(ABS(PHI-drx+0.25),DIM=1)
-      IF ((k1 == 1) .or. (k2 == nface)) THEN
-         k1 = 1; k2 = nface
-      END IF
-      IF (k1>k2) THEN
-         ik=k1; k1=k2; k2=ik
-      END IF
+      !IF ((k1 == 1) .or. (k2 == nface)) THEN
+      !   k1 = 1; k2 = nface
+      !END IF
+      !IF (k1>k2) THEN
+      !   ik=k1; k1=k2; k2=ik
+      !END IF
       ! Define DR
       drx = x1-x0
       dry = y1-y0
@@ -563,7 +563,7 @@
       DO ik = k1,k2
          alphal = FN(ik,1)*drx + FN(ik,2)*dry + FN(ik,3)*drz
          betal = FN(ik,1)*x0 + FN(ik,2)*y0 + FN(ik,3)*z0
-         IF (alphal < zero) CYCLE
+         !IF (alphal < zero) CYCLE  ! we get wrong face
          tloc = (d(ik)-betal)/alphal
          IF (tloc > one) CYCLE
          IF (tloc <= zero) CYCLE
