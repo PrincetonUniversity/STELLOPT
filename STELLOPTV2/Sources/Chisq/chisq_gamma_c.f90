@@ -146,8 +146,13 @@
             !write (*,*) '--------------------------------------------'
             !write (*,*) 'jsuv',j,s,u,v
             !Get rz values and gradients
-            CALL get_equil_RZ(s, u, v, R, Z, ier, gradR, gradZ)
-
+            ier = 1
+            DO i = 1,100
+              CALL get_equil_RZ(s, u, v, R, Z, ier, gradR, gradZ)
+              if (ier == 0) EXIT
+            END DO
+            if (ier .ne. 0) write (*,*) 'get_equil_RZ failed'
+            if (i > 1) write(*,*) 'Attempts = ',i
             !X and Y values from cyclindrical
             X=R*cos(zeta)
             Y=R*sin(zeta)
@@ -572,9 +577,9 @@
           END DO !end integration over bp
           bigGamma_c = bigGamma_c/dloverb
 
-          vals(ik) = bigGamma_c
-          sigmas(ik) = ABS(sigma(ik))
-          targets(ik) = target(ik)
+          vals(mtargets) = bigGamma_c
+          sigmas(mtargets) = ABS(sigma(ik))
+          targets(mtargets) = target(ik)
           IF (iflag ==1) THEN
             WRITE(iunit_out,'(3ES22.12E3,3(1X,I5))') targets(ik),sigmas(ik),vals(ik),ik
           END IF
@@ -585,6 +590,9 @@
         DO ik = 1, nsd
           IF (sigma(ik) < bigno) THEN
             mtargets = mtargets + 1
+            IF (niter == -2) THEN
+              target_dex(mtargets)=jtarget_gamma_c
+            END IF
           END IF
         END DO
       END IF
