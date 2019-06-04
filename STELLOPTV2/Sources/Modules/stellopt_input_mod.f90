@@ -231,8 +231,8 @@
 !-----------------------------------------------------------------------
 !     Subroutines
 !
-!   NOTE:  All varaibles which start with target have an similar
-!          varaible starting with sigma which defines the error bars.
+!   NOTE:  All variables which start with target have an similar
+!          variable starting with sigma which defines the error bars.
 !-----------------------------------------------------------------------
       NAMELIST /optimum/ nfunc_max, equil_type, opt_type,&
                          ftol, xtol, gtol, epsfcn, factor, refit_param, &
@@ -372,6 +372,8 @@
                          target_coilsep, sigma_coilsep, npts_csep, &
                          target_coilcrv, sigma_coilcrv, npts_curv, &
                          target_coilself, sigma_coilself, npts_cself, &
+                         target_coilrect, sigma_coilrect, coilrectpfw, npts_crect, &
+                         coilrectvmin, coilrectvmax, coilrectduu, coilrectdul, &
                          target_ece,sigma_ece,freq_ece, mix_ece, vessel_ece, mirror_ece, &
                          antennaposition_ece, targetposition_ece, rbeam_ece, rfocus_ece, &
                          targettype_ece, antennatype_ece, nra_ece, nphi_ece, &
@@ -931,8 +933,17 @@
       target_coilself   = 0.0
       sigma_coilself    = bigno
       npts_cself        = 360
+      target_coilrect   = 0.0
+      sigma_coilrect    = bigno
+      coilrectpfw       = 0.02
+      coilrectvmin      = 0.0
+      coilrectvmax      = 1.0
+      coilrectduu       = 0.125
+      coilrectdul       = 0.125
+      npts_crect        = 360
       target_curvature_P2    = 0.0
       sigma_curvature_P2     = bigno
+
       ! Read name list
       lexist            = .false.
       istat=0
@@ -2044,7 +2055,8 @@
       END IF          
       IF ((ANY(sigma_coillen < bigno)).OR.(ANY(sigma_coilsegvar < bigno)).OR.&
            (ANY(sigma_coilcrv < bigno)).OR.(sigma_coilsep < bigno).OR.&
-           (ANY(sigma_coilself < bigno)).OR.(ANY(sigma_coiltorvar < bigno))) THEN
+           (ANY(sigma_coilself < bigno)).OR.(ANY(sigma_coiltorvar < bigno)).OR.&
+           (ANY(sigma_coilrect < bigno))) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          WRITE(iunit,'(A)') '!          COIL TARGETS'
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
@@ -2088,6 +2100,20 @@
             END IF
          END DO !n
          WRITE(iunit,outint) 'NPTS_CSELF',npts_cself
+         DO n = LBOUND(sigma_coilrect,DIM=1), UBOUND(sigma_coilrect,DIM=1)
+            IF (sigma_coilrect(n) < bigno) THEN
+               WRITE(iunit,"(2X,A,I4.3,A,ES22.12E3)") 'TARGET_COILRECT(',n,') = ',target_coilrect(n)
+               WRITE(iunit,"(2X,A,I4.3,A,ES22.12E3)") 'SIGMA_COILRECT(',n,') = ',sigma_coilrect(n)
+               WRITE(iunit,"(2X,A,I4.3,A,ES22.12E3)") 'COILRECTVMIN(',n,') = ',coilrectvmin(n)
+               WRITE(iunit,"(2X,A,I4.3,A,ES22.12E3)") 'COILRECTVMAX(',n,') = ',coilrectvmax(n)
+               WRITE(iunit,"(2X,A,I4.3,A,ES22.12E3)") 'COILRECTDUU(',n,') = ',coilrectduu(n)
+               WRITE(iunit,"(2X,A,I4.3,A,ES22.12E3)") 'COILRECTDUL(',n,') = ',coilrectdul(n)
+            END IF
+         END DO !n
+         IF (ANY(sigma_coilrect < bigno)) THEN
+            WRITE(iunit,"(2X,A,ES22.12E3)") 'COILRECTPFW = ',coilrectpfw
+            WRITE(iunit,"(2X,A,I6.5)") 'NPTS_CRECT = ',npts_crect
+         END IF
       END IF
       IF (ANY(lbooz)) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'

@@ -181,11 +181,14 @@
       REAL(rprec) ::  target_curvature_p2, sigma_curvature_P2
       REAL(rprec), DIMENSION(nigroup)    :: target_coillen, sigma_coillen
       REAL(rprec), DIMENSION(nigroup)    :: target_coilsegvar, sigma_coilsegvar
-      INTEGER     :: npts_biot, npts_clen, npts_torx, npts_curv, npts_csep, npts_cself
+      INTEGER     :: npts_biot, npts_clen, npts_torx, npts_curv, npts_csep, npts_cself, npts_crect
       REAL(rprec), DIMENSION(nigroup)    :: target_coilcrv,  sigma_coilcrv
       REAL(rprec), DIMENSION(nigroup)    :: target_coilself, sigma_coilself
       REAL(rprec)                        :: target_coilsep,  sigma_coilsep
       REAL(rprec), DIMENSION(nigroup)    :: target_coiltorvar, sigma_coiltorvar, thwt_coiltorvar
+      REAL(rprec), DIMENSION(nigroup)    :: coilrectvmin, coilrectvmax, coilrectduu, coilrectdul
+      REAL(rprec), DIMENSION(nigroup)    :: target_coilrect, sigma_coilrect
+      REAL(rprec) :: coilrectpfw
 
       INTEGER, PARAMETER :: jtarget_aspect     = 100
       INTEGER, PARAMETER :: jtarget_rbtor      = 1001
@@ -256,6 +259,7 @@
       INTEGER, PARAMETER :: jtarget_coilself   = 617
       INTEGER, PARAMETER :: jtarget_coilsegvar = 618
       INTEGER, PARAMETER :: jtarget_coiltorvar = 619
+      INTEGER, PARAMETER :: jtarget_coilrect   = 620
       INTEGER, PARAMETER :: jtarget_x          = 900
       INTEGER, PARAMETER :: jtarget_y          = 901
       
@@ -406,6 +410,8 @@
             WRITE(iunit, out_format) 'Minimum Coil Separation'
          CASE(jtarget_coilself)
             WRITE(iunit, out_format) 'Number of Coil Self-intersections'
+         CASE(jtarget_coilrect)
+            WRITE(iunit, out_format) 'Coil Excursion from v Bounds'
          CASE(jtarget_curvature_p2)
             WRITE(iunit, out_format) 'Maximum 2nd Principal Curvature'
       END SELECT

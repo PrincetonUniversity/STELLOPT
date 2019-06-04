@@ -765,3 +765,75 @@
         CALL cbspline_delete(XC_spl);  CALL cbspline_delete(YC_spl)
         DEALLOCATE(dl, wt, va)
       END SUBROUTINE get_coil_tor_excur
+
+!-----------------------------------------------------------------------
+!     Subroutine:    get_coil_vbounds
+!     Author:        J. Breslau (jbreslau@pppl.gov)
+!     Date:          6/4/2019
+!     Description:   Computes the min & max v limits of a ws coil within
+!                     specified du bounds.
+!     Input:         Coil index icoil, u bounds
+!     Output:        v_min, v_max
+!-----------------------------------------------------------------------
+SUBROUTINE get_coil_vbounds(icoil, duu, dul, vmin, vmax)
+  USE stel_kinds, ONLY : rprec
+  USE stellopt_vars
+  USE stellopt_targets, ONLY : npts_crect
+  USE stellopt_cbspline
+  IMPLICIT NONE
+
+  ! Arguments
+  INTEGER, INTENT(IN)      :: icoil
+  REAL(rprec), INTENT(IN)  :: duu, dul
+  REAL(rprec), INTENT(OUT) :: vmin, vmax
+
+  ! Local variables
+  TYPE(cbspline) :: XC_spl, YC_spl
+  REAL(rprec)    :: s_val, u_min, u_val, v_val
+  INTEGER        :: nknots, ncoefs, ier, j
+  LOGICAL        :: lmod
+
+  vmin = 1.0;  vmax = 0.0
+
+  IF (.NOT.lwindsurf) RETURN
+  IF ((coil_type(icoil).NE.'M').AND.(coil_type(icoil).NE.'A')) RETURN
+
+  ! Handle spline boundary conditions
+  CALL enforce_spline_bcs(icoil, lmod)
+  ncoefs = coil_nctrl(icoil)
+  nknots = ncoefs + 4
+
+  ! Set up splines
+  CALL cbspline_init(XC_spl, ncoefs, ier)
+  CALL cbspline_setup(XC_spl, ncoefs, &
+       coil_splinesx(icoil,1:nknots), coil_splinefx(icoil,1:ncoefs), ier)
+
+  CALL cbspline_init(YC_spl, ncoefs, ier)
+  CALL cbspline_setup(YC_spl, ncoefs, &
+       coil_splinesy(icoil,1:nknots), coil_splinefy(icoil,1:ncoefs), ier)
+
+  ! Upper segment
+  DO j=1, npts_crect
+     s_val = REAL(j-1,rprec)/REAL(npts_crect-1,rprec)
+     CALL cbspline_eval(XC_spl, s_val, u_val, ier)
+     IF (u_val > duu) exit
+     CALL cbspline_eval(YC_spl, s_val, v_val, ier)
+     IF (v_val < vmin) vmin = v_val
+     IF (v_val > vmax) vmax = v_val
+  END DO !j
+
+  u_min = MAX(1.0d0 - dul, duu)
+
+  ! Lower segment
+  DO j=npts_crect, 1, -1
+     s_val = REAL(j-1,rprec)/REAL(npts_crect-1,rprec)
+     CALL cbspline_eval(XC_spl, s_val, u_val, ier)
+     IF (u_val < u_min) exit
+     CALL cbspline_eval(YC_spl, s_val, v_val, ier)
+     IF (v_val < vmin) vmin = v_val
+     IF (v_val > vmax) vmax = v_val
+  END DO !j
+
+  ! Clean up
+  CALL cbspline_delete(XC_spl);  CALL cbspline_delete(YC_spl)
+END SUBROUTINE get_coil_vbounds

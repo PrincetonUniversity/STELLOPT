@@ -192,6 +192,8 @@
          CALL chisq_coilself(target_coilself, sigma_coilself, ncnt, iflag)
       IF (ANY(sigma_coiltorvar < bigno)) &
          CALL chisq_coiltorvar(target_coiltorvar, sigma_coiltorvar, ncnt, iflag)
+      IF (ANY(sigma_coilrect < bigno)) &
+           CALL chisq_coilrect(target_coilrect, sigma_coilrect, ncnt, iflag)
 
       !------------- EXTERNAL TARGETS --------------------------
       !  This section of the code relys upon external libraries
