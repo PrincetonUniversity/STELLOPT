@@ -220,6 +220,14 @@
       IF (istat .ne. 0) RETURN
       CALL MPI_BCAST(flux_mut_file,256,MPI_CHARACTER,local_master,comm,istat)
       IF (istat .ne. 0) RETURN
+      CALL MPI_BCAST(bprobes_mut_file,256,MPI_CHARACTER,local_master,comm,istat)
+      IF (istat .ne. 0) RETURN
+      CALL MPI_BCAST(mir_mut_file,256,MPI_CHARACTER,local_master,comm,istat)
+      IF (istat .ne. 0) RETURN
+      CALL MPI_BCAST(rog_mut_file,256,MPI_CHARACTER,local_master,comm,istat)
+      IF (istat .ne. 0) RETURN
+      CALL MPI_BCAST(luse_extcur,SIZE(luse_extcur),MPI_LOGICAL,local_master,comm,istat)
+      IF (istat .ne. 0) RETURN
       CALL MPI_BCAST(bprobe_turns,SIZE(bprobe_turns),MPI_DOUBLE_PRECISION,local_master,comm,istat)
       IF (istat .ne. 0) RETURN
       CALL MPI_BCAST(flux_turns,SIZE(flux_turns),MPI_DOUBLE_PRECISION,local_master,comm,istat)
