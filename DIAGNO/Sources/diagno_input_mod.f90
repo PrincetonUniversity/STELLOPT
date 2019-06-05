@@ -228,6 +228,10 @@
       IF (istat .ne. 0) RETURN
       CALL MPI_BCAST(luse_extcur,SIZE(luse_extcur),MPI_LOGICAL,local_master,comm,istat)
       IF (istat .ne. 0) RETURN
+      CALL MPI_BCAST(lskip_rogo,SIZE(lskip_rogo),MPI_LOGICAL,local_master,comm,istat)
+      IF (istat .ne. 0) RETURN
+      CALL MPI_BCAST(lskip_flux,SIZE(lskip_flux),MPI_LOGICAL,local_master,comm,istat)
+      IF (istat .ne. 0) RETURN
       CALL MPI_BCAST(bprobe_turns,SIZE(bprobe_turns),MPI_DOUBLE_PRECISION,local_master,comm,istat)
       IF (istat .ne. 0) RETURN
       CALL MPI_BCAST(flux_turns,SIZE(flux_turns),MPI_DOUBLE_PRECISION,local_master,comm,istat)
