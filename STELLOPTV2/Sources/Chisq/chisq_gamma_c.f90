@@ -581,7 +581,7 @@
           sigmas(mtargets) = ABS(sigma(ik))
           targets(mtargets) = target(ik)
           IF (iflag ==1) THEN
-            WRITE(iunit_out,'(3ES22.12E3,3(1X,I5))') targets(ik),sigmas(ik),vals(ik),ik
+            WRITE(iunit_out,'(3ES22.12E3,3(1X,I5))') targets(mtargets),sigmas(mtargets),vals(mtargets),ik
           END IF
 
           
