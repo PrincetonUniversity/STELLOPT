@@ -96,7 +96,7 @@
             sigmas(mtargets)  = ABS(sigma(ik))
             targets(mtargets) = target(ik)
             IF (iflag ==1) THEN
-               WRITE(iunit_out,'(4ES22.12E3,3(1X,I5))') targets(ik),sigmas(ik),vals(ik),bnorm,ik
+               WRITE(iunit_out,'(4ES22.12E3,3(1X,I5))') target(ik),sigma(ik),vals(mtargets),bnorm,ik
             END IF
          END DO
          
