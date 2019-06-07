@@ -10,7 +10,8 @@
       INTEGER :: cnt, cnt_rate
 !-----------------------------------------------
 #if defined(MPI_OPT)
-      INTEGER :: lMPIInit, MPI_ERR
+      LOGICAL :: lMPIInit
+      INTEGER :: MPI_ERR
       CALL MPI_INITIALIZED(lMPIInit, MPI_ERR)
       IF (lMPIInit .NE. 0) THEN
          stime=MPI_Wtime()
