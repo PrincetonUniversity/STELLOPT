@@ -26,7 +26,7 @@ C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
       INTEGER :: numargs, ierr_vmec, index_end,
      1   iopen, isnml, iread, iseq, index_seq,
-     2   index_dat, iunit, ncount, nsteps, i
+     2   index_dat, iunit, ncount, nsteps, i, local_code
       INTEGER :: ictrl(5)
       CHARACTER(LEN=120) :: input_file, seq_ext, reset_file_name, arg
       CHARACTER(LEN=120) :: log_file
@@ -345,7 +345,7 @@ C-----------------------------------------------
                WRITE (nthreed, '(1x,a)') "PARVMEC aborting..."
                CALL FLUSH(nthreed)
 #if defined(SKS)
-               CALL MPI_Abort(MPI_COMM_WORLD, MPI_ERR)
+               CALL MPI_Abort(MPI_COMM_WORLD, local_code, MPI_ERR)
 #endif
             END IF
 ! J Geiger: if lmoreiter and lfull3d1out are false

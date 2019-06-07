@@ -248,7 +248,7 @@ CONTAINS
   !------------------------------------------------
   SUBROUTINE SetSurfacePartitions
     
-    INTEGER :: mypart
+    INTEGER :: mypart, code_local
 #if defined(MPI_OPT)
     IF(par_ns.LT.nranks) THEN
       IF(grank.EQ.0) print *,"NS is less than NRANKS. Aborting!"
@@ -285,7 +285,7 @@ CONTAINS
         WRITE(*,*) '***********************************************************' 
         WRITE(*,*)
       END IF
-      CALL MPI_Abort(NS_COMM,MPI_ERR)
+      CALL MPI_Abort(NS_COMM,code_local,MPI_ERR)
     END IF
 #endif
   END SUBROUTINE SetSurfacePartitions
