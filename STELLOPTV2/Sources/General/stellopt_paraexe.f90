@@ -20,9 +20,8 @@
       USE stellopt_vars
       USE equil_vals, ONLY: kx_gene
       USE wall_mod, ONLY: wall_free
-!DEC$ IF DEFINED (MPI_OPT)
-      USE mpi_params     
-!DEC$ ENDIF
+      USE mpi_params
+      USE mpi_inc
 !DEC$ IF DEFINED (SKS2)
       USE parallel_vmec_module, ONLY: &
             InitializeParallel, FinalizeParallel, grank, &

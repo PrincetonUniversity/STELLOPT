@@ -31,7 +31,6 @@
       USE equil_utils
       USE booz_persistent
       USE read_boozer_mod
-!      USE gist_mod
       USE EZspline_obj
       USE EZspline
 !DEC$ IF DEFINED (GENE)

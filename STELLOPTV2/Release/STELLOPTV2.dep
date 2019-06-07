@@ -1,5 +1,11 @@
 # Microsoft Developer Studio Generated Dependency File, included by STELLOPT.mak
 
+stellopt_init_mpi.o : \
+      stellopt_input_mod.o \
+      stellopt_runtime.o \
+      $(LIB_DIR)/Release/mpi_params.o 
+
+
 stellopt_vmec_bcast.o : \
       $(LIB_DIR)/Release/mpi_params.o \
       $(LIB_DIR)/Release/vmec_input.o 
@@ -500,6 +506,8 @@ stellopt_main.o : \
       
       
 stellopt_input_mod.o : \
+      stellopt_winding_surface.o \
+      equil_utils.o \
       stellopt_runtime.o \
       stellopt_vars.o \
       stellopt_targets.o \

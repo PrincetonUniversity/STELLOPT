@@ -21,10 +21,6 @@
       USE init_geometry
       USE mpi_params, ONLY: MPI_COMM_MYWORLD     
       IMPLICIT NONE
-!DEC$ IF DEFINED (MPI_OPT)
-!      Need if linking to serial VMEC
-!      INCLUDE 'mpif.h'
-!DEC$ ENDIF  
 !-----------------------------------------------------------------------
 !     Local Variables
 !        ier         Error flag

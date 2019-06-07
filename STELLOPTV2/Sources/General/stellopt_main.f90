@@ -11,7 +11,8 @@
 !     Libraries
 !-----------------------------------------------------------------------
       USE stellopt_runtime
-      USE mpi_params                                                    ! MPI
+      USE mpi_params
+      USE mpi_inc
 !-----------------------------------------------------------------------
 !     Local Variables
 !          numargs      Number of input arguments
@@ -21,9 +22,6 @@
 !          args         Input arguments
 !-----------------------------------------------------------------------
       IMPLICIT NONE
-!DEC$ IF DEFINED (MPI_OPT)
-      INCLUDE 'mpif.h'                                                          ! MPI
-!DEC$ ENDIF  
       logical                                      :: ltst
       integer                                      :: numargs,i,ier,color,key
       integer, parameter                           :: arg_len =256

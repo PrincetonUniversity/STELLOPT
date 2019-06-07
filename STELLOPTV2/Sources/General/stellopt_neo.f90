@@ -13,7 +13,9 @@
       USE stellopt_vars, ONLY: equil_type
       USE equil_vals, ONLY: eff_ripple
       USE stellopt_targets, ONLY: sigma_neo
+      USE safe_open_mod
       USE mpi_params
+      USE mpi_inc
       ! NEO LIBRARIES
 !DEC$ IF DEFINED (NEO_OPT)
       USE neo_precision
@@ -27,7 +29,6 @@
       USE sizey_bo
       USE neo_input_mod
 !DEC$ ENDIF
-      USE safe_open_mod                          ! SPH
       ! BOOZER_XFORM
       USE read_boozer_mod, dp1 => dp
       
@@ -36,9 +37,6 @@
 !        iflag         Error flag
 !----------------------------------------------------------------------
       IMPLICIT NONE
-!DEC$ IF DEFINED (MPI_OPT)
-      INCLUDE 'mpif.h'
-!DEC$ ENDIF
       LOGICAL, INTENT(in)    :: lscreen
       INTEGER, INTENT(inout) :: iflag
 !-----------------------------------------------------------------------
