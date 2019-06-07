@@ -26,6 +26,7 @@
                                  ZEFF_spl_s, nzeff, ZEFF_ARR
       USE wall_mod, ONLY: wall_load_mn, wall_info,vertex,face
       USE mpi_params
+      USE mpi_inc
 !-----------------------------------------------------------------------
 !     Local Variables
 !          ier            Error Flag
@@ -34,7 +35,6 @@
       IMPLICIT NONE
       INTEGER, PARAMETER :: BYTE_8 = SELECTED_INT_KIND (8)
 !DEC$ IF DEFINED (MPI_OPT)
-!      INCLUDE 'mpif.h'   ! MPI
       INTEGER(KIND=BYTE_8),ALLOCATABLE :: mnum(:), moffsets(:)
       INTEGER :: numprocs_local, mylocalid, mylocalmaster
       INTEGER :: MPI_COMM_LOCAL

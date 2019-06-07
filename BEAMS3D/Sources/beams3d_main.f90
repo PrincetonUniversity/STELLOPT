@@ -12,7 +12,9 @@ PROGRAM BEAMS3D
     !-----------------------------------------------------------------------
     USE beams3d_runtime
     USE wall_mod, ONLY: wall_free
-    USE mpi_params ! MPI
+    USE mpi_params
+    USE mpi_inc
+
     !-----------------------------------------------------------------------
     !     Local Variables
     !          numargs      Number of input arguments
@@ -22,9 +24,6 @@ PROGRAM BEAMS3D
     !          args         Input arguments
     !-----------------------------------------------------------------------
     IMPLICIT NONE
-!DEC$ IF DEFINED (MPI_OPT)
-    INCLUDE 'mpif.h' ! MPI
-!DEC$ ENDIF
     integer :: numargs, i, ier, nshar, vmajor, vminor, liblen
     integer, parameter :: arg_len = 256
     character(LEN=MPI_MAX_LIBRARY_VERSION_STRING) :: mpi_lib_name

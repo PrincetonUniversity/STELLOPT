@@ -19,7 +19,8 @@
       USE vmec_input,  ONLY: extcur_in => extcur, read_indata_namelist,&
                              nv_in => nzeta, nfp_in => nfp, nigroup
       USE mgrid_field_mod, pi2_mgrid => pi2
-      USE mpi_params                       
+      USE mpi_params
+      USE mpi_inc
 !-----------------------------------------------------------------------
 !     Local Variables
 !          ier            Error Flag
