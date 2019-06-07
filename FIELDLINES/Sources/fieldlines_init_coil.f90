@@ -18,7 +18,8 @@
       USE vmec_input,  ONLY: extcur_in => extcur, read_indata_namelist,&
                              nv_in => nzeta, nfp_in => nfp, nigroup
       USE biotsavart
-      USE mpi_params                       
+      USE mpi_params
+      USE mpi_inc            
 !-----------------------------------------------------------------------
 !     Local Variables
 !          ier            Error Flag
@@ -26,12 +27,9 @@
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       INTEGER, PARAMETER :: BYTE_8 = SELECTED_INT_KIND (8)
-!DEC$ IF DEFINED (MPI_OPT)
-      INCLUDE 'mpif.h'   ! MPI - Don't need because of fieldlines_runtime
       INTEGER(KIND=BYTE_8),ALLOCATABLE :: mnum(:), moffsets(:)
       INTEGER :: numprocs_local, mylocalid, mylocalmaster
       INTEGER :: MPI_COMM_LOCAL
-!DEC$ ENDIF  
       INTEGER(KIND=BYTE_8) :: chunk
       INTEGER :: ier, iunit, s, i, j, mystart, myend, k, ik, ig
       REAL(rprec)  :: br, bphi, bz, current, current_first, &

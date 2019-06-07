@@ -22,7 +22,8 @@
       USE fieldlines_grid, ONLY: phimin, phimax, delta_phi,&
                                  BR_spl, BZ_spl, MU_spl, MODB_spl
       USE wall_mod, ONLY: ihit_array, nface, wall_free
-      USE mpi_params                                                    ! MPI
+      USE mpi_params
+      USE mpi_inc
 !-----------------------------------------------------------------------
 !     Local Variables
 !          status       MPI stats indicator
@@ -39,10 +40,7 @@
 !          istate       LSODE restart flag
 !-----------------------------------------------------------------------
       IMPLICIT NONE
-!DEC$ IF DEFINED (MPI_OPT)
-      INCLUDE 'mpif.h'                                                          ! MPI
       INTEGER,ALLOCATABLE :: mnum(:)
-!DEC$ ENDIF  
       INTEGER :: mystart,mypace, i
       INTEGER     :: ier, l, neqs_nag, l2, itol, itask, &
                      istate, iopt, lrw, liw, mf
@@ -268,7 +266,7 @@
 
       ! Handle WALL Heat Map
 !DEC$ IF DEFINED (MPI_OPT)
-      IF (ALLOCATED(ihit_array)) THEN
+      IF (ASSOCIATED(ihit_array)) THEN
         IF (myid == master) THEN
            CALL MPI_REDUCE(MPI_IN_PLACE,ihit_array,nface,MPI_INTEGER,MPI_SUM,master,MPI_COMM_FIELDLINES,ierr_mpi)
         ELSE

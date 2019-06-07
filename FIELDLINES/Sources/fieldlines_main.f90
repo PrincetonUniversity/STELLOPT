@@ -22,7 +22,8 @@
                                   Rhc_lines, Zhc_lines, B_lines
       USE EZspline_obj
       USE EZspline
-      USE mpi_params                                                    ! MPI
+      USE mpi_params
+      USE mpi_inc
 !-----------------------------------------------------------------------
 !     Local Variables
 !          numargs      Number of input arguments
@@ -32,13 +33,11 @@
 !          args         Input arguments
 !-----------------------------------------------------------------------
       IMPLICIT NONE
-!DEC$ IF DEFINED (MPI_OPT)
-      INCLUDE 'mpif.h'                                                          ! MPI
-!DEC$ ENDIF  
-      integer                                      :: numargs,i,ier
+      integer                                      :: numargs,i,ier, vmajor, vminor, liblen, nshar
       integer, parameter                           :: arg_len =256
       character*(arg_len)                          :: arg1
       character*(arg_len),allocatable,dimension(:) :: args
+      character(LEN=MPI_MAX_LIBRARY_VERSION_STRING) :: mpi_lib_name
 !-----------------------------------------------------------------------
 !     Begin Program
 !-----------------------------------------------------------------------
@@ -46,11 +45,19 @@
       myid = master
       ierr_mpi = MPI_SUCCESS
 !DEC$ IF DEFINED (MPI_OPT)
-      CALL MPI_INIT( ierr_mpi )                                         ! MPI
-      CALL MPI_COMM_RANK( MPI_COMM_WORLD, myid, ierr_mpi )              ! MPI
-      CALL MPI_COMM_SPLIT( MPI_COMM_WORLD,0,myid,MPI_COMM_FIELDLINES,ierr_mpi)
+      CALL MPI_INIT(ierr_mpi) ! MPI
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_INIT_ERR, 'fieldlines_main', ierr_mpi)
+      CALL MPI_COMM_DUP( MPI_COMM_WORLD, MPI_COMM_FIELDLINES, ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_RANK_ERR, 'fieldlines_main', ierr_mpi)
       CALL MPI_COMM_RANK( MPI_COMM_FIELDLINES, myid, ierr_mpi )              ! MPI
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_RANK_ERR, 'fieldlines_main', ierr_mpi)
       CALL MPI_COMM_SIZE( MPI_COMM_FIELDLINES, numprocs, ierr_mpi )          ! MPI
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_SIZE_ERR, 'fieldlines_main', ierr_mpi)
+      CALL MPI_COMM_SPLIT_TYPE(MPI_COMM_FIELDLINES, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, MPI_COMM_SHARMEM, ierr_mpi)
+      CALL MPI_COMM_RANK(MPI_COMM_SHARMEM, myid_sharmem, ierr_mpi)
+      CALL MPI_COMM_SIZE(MPI_COMM_SHARMEM, nshar, ierr_mpi) ! MPI
+      CALL MPI_GET_VERSION(vmajor,vminor,ier)
+      CALL MPI_GET_LIBRARY_VERSION(mpi_lib_name,liblen,ier)
       CALL MPI_ERRHANDLER_SET(MPI_COMM_WORLD,MPI_ERRORS_RETURN,ierr_mpi)
 !DEC$ ENDIF
       pi = 4.0 * ATAN(1.0)
@@ -218,6 +225,11 @@
          END DO
          DEALLOCATE(args)
          WRITE(6,'(a,f5.2)') 'FIELDLINES Version ',FIELDLINES_VERSION
+         WRITE(6,'(A)')      '-----  MPI Parameters  -----'
+         WRITE(6,'(A,I2,A,I2.2)')  '   MPI_version:  ', vmajor,'.',vminor
+         WRITE(6,'(A,A)')  '   ', TRIM(mpi_lib_name(1:liblen))
+         WRITE(6,'(A,I8)')  '   Nproc_total:  ', numprocs
+         WRITE(6,'(A,3X,I5)')  '   Nproc_shared: ', nshar
       ELSE IF (myid /= master) THEN
          lverb=.false.   ! Shutup the slaves
       END IF

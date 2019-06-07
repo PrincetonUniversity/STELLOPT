@@ -16,16 +16,14 @@
                                  phimax, B_R, B_Z, B_PHI,&
                                  BR_spl, BZ_spl
       USE fieldlines_lines
-      USE mpi_params                                                    ! MPI
+      USE mpi_params
+      USE mpi_inc
 !-----------------------------------------------------------------------
 !     Local Variables
 !          ier            Error Flag
 !          iunit          File ID Number
 !-----------------------------------------------------------------------
       IMPLICIT NONE
-!DEC$ IF DEFINED (MPI_OPT)
-      INCLUDE 'mpif.h'                                                          ! MPI
-!DEC$ ENDIF  
       INTEGER :: i,j,ier, n1,n2,mystart
       REAL(rprec) :: r1, r2, r0, z0, z1, z2, rinner, zinner, phiend_temp,&
                      phi0, ra, za, phia

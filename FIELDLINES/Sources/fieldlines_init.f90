@@ -23,6 +23,10 @@
       USE wall_mod
       USE random, ONLY: random_normal
       USE mpi_params                                                    ! MPI
+!DEC$ IF DEFINED (MPI_OPT)
+      USE mpi
+      USE mpi_sharmem
+!DEC$ ENDIF
 !-----------------------------------------------------------------------
 !     Local Variables
 !          ier            Error Flag
@@ -30,13 +34,10 @@
 !-----------------------------------------------------------------------
       IMPLICIT NONE
 !DEC$ IF DEFINED (NAG)
-!      LOGICAL        :: licval
-!      INTEGER        :: mkmaj, mkmin
-!      CHARACTER(128) :: impl,prec,pcode,hdware,opsys,fcomp,vend
+      LOGICAL        :: licval
+      INTEGER        :: mkmaj, mkmin
+      CHARACTER(128) :: impl,prec,pcode,hdware,opsys,fcomp,vend
 !DEC$ ENDIF
-!DEC$ IF DEFINED (MPI_OPT)
-      INCLUDE 'mpif.h'                                                          ! MPI
-!DEC$ ENDIF  
       INTEGER :: i,j,k,ier, iunit
       INTEGER :: bcs1(2), bcs2(2), bcs3(2)
       REAL(rprec) :: rmin_temp, rmax_temp, zmin_temp, zmax_temp,&
