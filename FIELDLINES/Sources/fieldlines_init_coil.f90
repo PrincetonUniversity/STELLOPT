@@ -39,21 +39,13 @@
 !-----------------------------------------------------------------------
 
       ! Divide up Work
-      IF ((numprocs) > nlocal) THEN
-         i = myid/nlocal
-         CALL MPI_COMM_SPLIT( MPI_COMM_FIELDLINES,i,myid,MPI_COMM_LOCAL,ierr_mpi)
-         CALL MPI_COMM_RANK( MPI_COMM_LOCAL, mylocalid, ierr_mpi )              ! MPI
-         CALL MPI_COMM_SIZE( MPI_COMM_LOCAL, numprocs_local, ierr_mpi )          ! MPI
-         mylocalmaster = master
-      ELSE
-         ! Basic copy of MPI_COMM_FIELDLINES
-         CALL MPI_COMM_DUP( MPI_COMM_FIELDLINES, MPI_COMM_LOCAL, ierr_mpi)
-         mylocalid = myid
-         mylocalmaster = master
-         numprocs_local = numprocs
-      END IF
-      
-      
+      numprocs_local = 1; mylocalid = master
+!DEC$ IF DEFINED (MPI_OPT)
+      CALL MPI_COMM_DUP( MPI_COMM_SHARMEM, MPI_COMM_LOCAL, ierr_mpi)
+      CALL MPI_COMM_RANK( MPI_COMM_LOCAL, mylocalid, ierr_mpi )              ! MPI
+      CALL MPI_COMM_SIZE( MPI_COMM_LOCAL, numprocs_local, ierr_mpi )          ! MPI
+!DEC$ ENDIF
+      mylocalmaster = master
       
       ! Read the input file for the EXTCUR array, NV, and NFP
       IF (.not. ALLOCATED(extcur) .and. lcoil) THEN
@@ -218,15 +210,15 @@
       CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
       IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_init_coil1',ierr_mpi)
 !       ! Adjust indexing to send 2D arrays
-       CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
-                        B_R,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
-                        MPI_COMM_LOCAL,ierr_mpi)
-       CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
-                        B_PHI,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
-                        MPI_COMM_LOCAL,ierr_mpi)
-       CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
-                        B_Z,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
-                        MPI_COMM_LOCAL,ierr_mpi)
+!       CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
+!                        B_R,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
+!                        MPI_COMM_LOCAL,ierr_mpi)
+!       CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
+!                        B_PHI,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
+!                        MPI_COMM_LOCAL,ierr_mpi)
+!       CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
+!                        B_Z,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
+!                        MPI_COMM_LOCAL,ierr_mpi)
        DEALLOCATE(mnum)
        DEALLOCATE(moffsets)
 !DEC$ ENDIF

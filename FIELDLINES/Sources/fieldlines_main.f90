@@ -16,12 +16,12 @@
 !-----------------------------------------------------------------------
       USE fieldlines_runtime
       USE wall_mod, ONLY: wall_free
-      USE fieldlines_grid, ONLY: raxis, zaxis, phiaxis, B_R, B_PHI, &
-                                 B_Z, BR_spl, BZ_spl, MU_spl, MODB_spl
+      USE fieldlines_grid
       USE fieldlines_lines, ONLY: R_lines, Z_lines, PHI_lines, &
                                   Rhc_lines, Zhc_lines, B_lines
       USE EZspline_obj
       USE EZspline
+      USE mpi_sharmem
       USE mpi_params
       USE mpi_inc
 !-----------------------------------------------------------------------
@@ -343,12 +343,16 @@
 
       ! Clean up
       IF (lvessel) CALL wall_free(ier)
-      IF (ALLOCATED(raxis)) DEALLOCATE(raxis)
-      IF (ALLOCATED(zaxis)) DEALLOCATE(zaxis)
-      IF (ALLOCATED(phiaxis)) DEALLOCATE(phiaxis)
-      IF (ALLOCATED(B_R)) DEALLOCATE(B_R)
-      IF (ALLOCATED(B_PHI)) DEALLOCATE(B_PHI)
-      IF (ALLOCATED(B_Z)) DEALLOCATE(B_Z)
+      IF (ASSOCIATED(raxis)) CALL mpidealloc(raxis,win_raxis)
+      IF (ASSOCIATED(phiaxis)) CALL mpidealloc(phiaxis,win_phiaxis)
+      IF (ASSOCIATED(zaxis)) CALL mpidealloc(zaxis,win_zaxis)
+      IF (ASSOCIATED(B_R)) CALL mpidealloc(B_R,win_B_R)
+      IF (ASSOCIATED(B_PHI)) CALL mpidealloc(B_PHI,win_B_PHI)
+      IF (ASSOCIATED(B_Z)) CALL mpidealloc(B_Z,win_B_Z)
+      IF (ASSOCIATED(BR4D)) CALL mpidealloc(BR4D,win_BR4D)
+      IF (ASSOCIATED(BZ4D)) CALL mpidealloc(BZ4D,win_BZ4D)
+      IF (ASSOCIATED(MU4D)) CALL mpidealloc(MU4D,win_MU4D)
+      IF (ASSOCIATED(MODB4D)) CALL mpidealloc(MODB4D,win_MODB4D)
       IF (ALLOCATED(R_lines)) DEALLOCATE(R_lines)
       IF (ALLOCATED(Z_lines)) DEALLOCATE(Z_lines)
       IF (ALLOCATED(PHI_lines)) DEALLOCATE(PHI_lines)

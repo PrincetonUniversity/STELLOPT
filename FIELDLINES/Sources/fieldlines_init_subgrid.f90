@@ -80,7 +80,7 @@
 
          
       ! Refine grid from outter good to outter bad line
-      nlines = nr
+      !nlines = nr
       phiend_temp = MAXVAL(phi_end)
       r_start = -1
       z_start = -1
@@ -188,7 +188,7 @@
       END IF
          
       ! Final Grid
-      nlines = nr
+      !nlines = nr
       IF (nlines > MAXLINES) nlines = MAXLINES-2
       r_start = -1
       z_start = -1

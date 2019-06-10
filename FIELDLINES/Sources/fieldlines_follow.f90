@@ -45,6 +45,7 @@
       INTEGER     :: ier, l, neqs_nag, l2, itol, itask, &
                      istate, iopt, lrw, liw, mf
       INTEGER, ALLOCATABLE :: iwork(:)
+      INTEGER :: MPI_COMM_LOCAL
       REAL(rprec) :: phif_max
       DOUBLE PRECISION, ALLOCATABLE :: w(:), q(:)
       DOUBLE PRECISION :: phif_nag, phi_nag,&
@@ -257,23 +258,25 @@
       IF (ALLOCATED(w)) DEALLOCATE(w)
       IF (ALLOCATED(iwork)) DEALLOCATE(iwork)
       ! Do this here to conserve on memory
-      IF (nruntype==runtype_old) THEN
-         IF (EZspline_allocated(BR_spl)) CALL EZspline_free(BR_spl,ier)
-         IF (EZspline_allocated(BZ_spl)) CALL EZspline_free(BZ_spl,ier)
-         IF (EZspline_allocated(MU_spl)) CALL EZspline_free(MU_spl,ier)
-         IF (EZspline_allocated(MODB_spl)) CALL EZspline_free(MODB_spl,ier)
-      END IF
+!      IF (nruntype==runtype_old) THEN
+!         IF (EZspline_allocated(BR_spl)) CALL EZspline_free(BR_spl,ier)
+!         IF (EZspline_allocated(BZ_spl)) CALL EZspline_free(BZ_spl,ier)
+!         IF (EZspline_allocated(MU_spl)) CALL EZspline_free(MU_spl,ier)
+!         IF (EZspline_allocated(MODB_spl)) CALL EZspline_free(MODB_spl,ier)
+!      END IF
 
       ! Handle WALL Heat Map
 !DEC$ IF DEFINED (MPI_OPT)
-      IF (ASSOCIATED(ihit_array)) THEN
-        IF (myid == master) THEN
-           CALL MPI_REDUCE(MPI_IN_PLACE,ihit_array,nface,MPI_INTEGER,MPI_SUM,master,MPI_COMM_FIELDLINES,ierr_mpi)
-        ELSE
-           CALL MPI_REDUCE(ihit_array,ihit_array,nface,MPI_INTEGER,MPI_SUM,master,MPI_COMM_FIELDLINES,ierr_mpi)
-           CALL wall_free(ier) ! Only master needs it.
-        END IF
+    IF (ASSOCIATED(ihit_array)) THEN
+      i = MPI_UNDEFINED
+      IF (myid_sharmem == master) i = 0
+      CALL MPI_COMM_SPLIT( MPI_COMM_FIELDLINES,i,myworkid,MPI_COMM_LOCAL,ierr_mpi)
+      IF (myid_sharmem == master) THEN
+         CALL MPI_ALLREDUCE(MPI_IN_PLACE,ihit_array,nface,MPI_INTEGER,MPI_SUM,MPI_COMM_LOCAL,ierr_mpi)
+         CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)
       END IF
+      CALL MPI_BARRIER(MPI_COMM_FIELDLINES, ierr_mpi)
+    END IF
       
       CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
       IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_follow',ierr_mpi)
