@@ -29,7 +29,7 @@
       USE virtual_casing_mod, pi2_vc => pi2
       USE diagno_runtime, nextcur_diagno => nextcur
       USE mpi_params
-      USE mpi
+      USE mpi_inc
 !-----------------------------------------------------------------------
 !     Local Variables
 !          ier            Error Flag

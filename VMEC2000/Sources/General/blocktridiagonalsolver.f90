@@ -6,9 +6,6 @@
 
 !-------------------------------------------------------------------------------
 MODULE blocktridiagonalsolver
-!#if defined(MPI_OPT)
-!INCLUDE 'mpif.h'
-!#endif
 USE mpi_inc
 USE parallel_include_module, ONLY: STOPMPI
 USE parallel_include_module, ONLY: TOFU

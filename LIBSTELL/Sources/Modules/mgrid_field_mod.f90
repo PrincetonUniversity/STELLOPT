@@ -17,19 +17,12 @@
 !                           curlabel, mgrid_path_old
       USE EZspline_obj
       USE EZspline
-#if defined(MPI_OPT)
-      USE mpi_params 
-      USE mpi_inc
-#endif
       
 !-----------------------------------------------------------------------
 !     Module Variables
 !         
 !-----------------------------------------------------------------------
       IMPLICIT NONE
-#if defined(MPI_OPT)
-!      INCLUDE 'mpif.h'
-#endif
       INTEGER            :: nr_mgrid, nphi_mgrid, nz_mgrid
       REAL(rprec)        :: pi2, rmin_mgrid, rmax_mgrid, zmin_mgrid,&
                             zmax_mgrid, phimin_mgrid, phimax_mgrid
@@ -51,6 +44,8 @@
       
       SUBROUTINE mgrid_load(filename,extcur,ncur,nv,nfp,istat,ithread,comm)
       USE mpi_sharmem
+      USE mpi_params 
+      USE mpi_inc
       IMPLICIT NONE
       CHARACTER(LEN=*), INTENT(in) :: filename
       INTEGER, INTENT(inout)        :: ncur, nv, nfp

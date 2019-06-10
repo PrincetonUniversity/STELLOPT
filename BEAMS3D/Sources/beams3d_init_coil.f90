@@ -19,9 +19,7 @@
                              nv_in => nzeta, nfp_in => nfp, nigroup
       USE biotsavart
       USE mpi_params  
-!DEC$ IF DEFINED (MPI_OPT)
-      USE mpi             
-!DEC$ ENDIF        
+      USE mpi_inc      
 !-----------------------------------------------------------------------
 !     Local Variables
 !          ier            Error Flag
@@ -30,7 +28,6 @@
       IMPLICIT NONE
       INTEGER, PARAMETER :: BYTE_8 = SELECTED_INT_KIND (8)
 !DEC$ IF DEFINED (MPI_OPT)
-!      INCLUDE 'mpif.h'   ! MPI - Don't need because of beams3d_runtime
       INTEGER(KIND=BYTE_8),ALLOCATABLE :: mnum(:), moffsets(:)
       INTEGER :: numprocs_local, mylocalid, mylocalmaster
       INTEGER :: MPI_COMM_LOCAL

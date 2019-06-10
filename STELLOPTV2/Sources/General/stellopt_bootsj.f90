@@ -12,6 +12,8 @@
       USE stellopt_input_mod
       USE stellopt_vars
       USE equil_utils
+      USE mpi_params
+      USE mpi_inc
       ! BOOTSJ LIBRARIES
       USE bootsj_input
       use parambs, lscreen_bootsj=>lscreen

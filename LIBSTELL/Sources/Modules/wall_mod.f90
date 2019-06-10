@@ -13,9 +13,6 @@
 !     Libraries
 !-----------------------------------------------------------------------
       USE safe_open_mod
-#if defined(MPI_OPT)
-      USE mpi
-#endif
       
 !-----------------------------------------------------------------------
 !     Module Variables
@@ -61,6 +58,9 @@
       CONTAINS
       
       SUBROUTINE wall_load_txt(filename,istat,comm)
+#if defined(MPI_OPT)
+      USE mpi
+#endif
       IMPLICIT NONE
       CHARACTER(LEN=*), INTENT(in) :: filename
       INTEGER, INTENT(inout)       :: istat
@@ -216,6 +216,10 @@
       END SUBROUTINE wall_load_txt
 
       SUBROUTINE wall_load_mn(Rmn,Zmn,xm,xn,mn,nu,nv,comm)
+#if defined(MPI_OPT)
+      USE mpi
+#endif
+      IMPLICIT NONE
       DOUBLE PRECISION, INTENT(in) :: Rmn(mn), Zmn(mn), xm(mn), xn(mn)
       INTEGER, INTENT(in) :: mn, nu, nv
       INTEGER, INTENT(inout), OPTIONAL :: comm
@@ -591,6 +595,9 @@
       END SUBROUTINE collide_double
 
       SUBROUTINE wall_free(istat,shared_comm)
+#if defined(MPI_OPT)
+      USE mpi
+#endif
       IMPLICIT NONE
       INTEGER, INTENT(inout) :: istat
       INTEGER, INTENT(inout), OPTIONAL :: shared_comm

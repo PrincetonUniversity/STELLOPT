@@ -28,7 +28,8 @@
                              output_flag, cleanup_flag, reset_jacdt_flag
 !                             animec_flag, flow_flag
       USE parallel_vmec_module, ONLY: PARVMEC, gnranks
-      USE mpi_params                                                    ! MPI
+      USE mpi_params
+      USE mpi_inc
 !-----------------------------------------------------------------------
 !     Local Variables
 !        ier         Error flag
@@ -75,7 +76,8 @@
       END IF
       color = MOD(myid,noptimizers)
       key = myid
-      CALL MPI_COMM_SPLIT(MPI_COMM_STEL, color, key,MPI_COMM_MYWORLD, ierr_mpi)
+      !CALL MPI_COMM_SPLIT(MPI_COMM_STEL, color, key,MPI_COMM_MYWORLD, ierr_mpi)
+      CALL MPI_COMM_SPLIT_TYPE(MPI_COMM_STEL, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, MPI_COMM_MYWORLD, ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_main',ierr_mpi)
       CALL MPI_COMM_RANK(MPI_COMM_MYWORLD,myworkid,ierr_mpi)
 
@@ -94,7 +96,9 @@
          IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_main',ierr_mpi)
          CALL MPI_COMM_SIZE( MPI_COMM_STEL, numprocs, ierr_mpi )          ! MPI
          IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_main',ierr_mpi)
+         noptimizers = numprocs
       END IF
+      CALL MPI_BCAST(noptimizers,1,MPI_INTEGER,0,MPI_COMM_MYWORLD,ierr_mpi)
 !DEC$ ENDIF
 
       IF (myworkid .ne. master) THEN
@@ -1684,10 +1688,8 @@
             m=target_dex(i)
          END DO
          WRITE(6,*) '   =================='
-         WRITE(6,*) '   Number of Processors: ',nprocs_total
          WRITE(6,*) '   Number of Parameters: ',nvars
          WRITE(6,*) '   Number of Targets:    ',mtargets
-         WRITE(6,*) '   Number of Optimizer Threads:    ',numprocs
          IF (lno_restart) WRITE(6,*) '   !!!! EQUILIBRIUM RESTARTING NOT UTILIZED !!!!'
       END IF
 

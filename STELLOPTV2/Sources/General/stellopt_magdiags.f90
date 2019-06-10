@@ -25,6 +25,7 @@
       USE biotsavart, ONLY: cleanup_biotsavart
       USE virtual_casing_mod, ONLY: free_virtual_casing, virtual_casing_surf_dump
       USE mpi_params
+      USE mpi_inc
       
 !-----------------------------------------------------------------------
 !     Subroutine Parameters

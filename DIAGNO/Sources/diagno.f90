@@ -24,6 +24,7 @@
       USE diagno_runtime
       USE diagno_input_mod
       USE mpi_params
+      USE mpi_inc
       USE virtual_casing_mod, ONLY: free_virtual_casing
 !-----------------------------------------------------------------------
 !     Local Variables
@@ -34,9 +35,6 @@
 !          args         Input arguments
 !-----------------------------------------------------------------------   
       implicit none
-#if defined(MPI_OPT)
-      INCLUDE 'mpif.h'
-#endif
       logical :: lbench
       integer numargs,i,ier
       integer, parameter :: arg_len =256

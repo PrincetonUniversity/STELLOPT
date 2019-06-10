@@ -152,12 +152,12 @@ C-----------------------------------------------
       INTEGER :: istat, ii
       CHARACTER(LEN=200) :: home_dir
       LOGICAL :: lgrid_exist, lfind
-      INTEGER :: mpi_comm
+      INTEGER :: comm_local
 C-----------------------------------------------
 
 #if defined(MPI_OPT)
-      mpi_comm = MPI_COMM_WORLD
-      IF (PRESENT(comm)) mpi_comm = comm
+      comm_local = MPI_COMM_WORLD
+      IF (PRESENT(comm)) comm_local = comm
 #endif
 
       mgrid_path = TRIM(mgrid_file)
@@ -204,13 +204,13 @@ C-----------------------------------------------
          IF (lfind) THEN
 #if defined(NETCDF)
             CALL read_mgrid_nc (mgrid_path, extcur, nv, nfp, 
-     1                          ier_flag, lscreen, comm)
+     1                          ier_flag, lscreen, comm_local)
 #else
             lgrid_exist = .false.
 #endif
          ELSE
             CALL read_mgrid_bin (mgrid_path, extcur, nv, nfp,
-     1                          ier_flag, lscreen)
+     1                          ier_flag, lscreen, comm_local)
          END IF
 
 !SPH060517         IF (np0b .ne. nv) THEN
@@ -635,7 +635,8 @@ C-----------------------------------------------
       CHARACTER(LEN=100) :: temp
       INTEGER :: nskip, sh(1)
 #if defined(MPI_OPT)
-      INTEGER :: mpi_rank, mpi_size, lMPIInit, MPI_ERR
+      LOGICAL :: lMPIInit
+      INTEGER :: mpi_rank, mpi_size, MPI_ERR
       INTEGER :: shar_rank, shar_comm, temp_comm, temp_size, 
      1           temp_rank, win_brtemp, win_bptemp, win_bztemp
 
