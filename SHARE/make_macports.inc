@@ -25,8 +25,8 @@
 #######################################################################
 #            Define Compiler Flags
 #######################################################################
-#  FLAGS_R = -O2 -g -fexternal-blas -fbacktrace -fcheck=all 
-  FLAGS_R = -O2 -fexternal-blas -Wmissing-include-dirs
+  FLAGS_R = -O2 -g -fexternal-blas -fbacktrace -fcheck=all 
+#  FLAGS_R = -O2 -fexternal-blas -Wmissing-include-dirs
   FLAGS_D = -g -O0 -fcheck=all 
   LIBS    = -L/opt/local/lib -lopenblas -lscalapack  
 
@@ -132,12 +132,12 @@
 #######################################################################
 #            TRAVIS Options
 #######################################################################
-  LTRAVIS= F
+  LTRAVIS= T
   TRAVIS_DIR = $(TRAVIS_PATH)
   LIB_TRAVIS = libtravis64_sopt.a
   LIB_MCONF  = libmconf64.a
   TRAVIS_LIB = $(TRAVIS_DIR)/lib/$(LIB_TRAVIS) \
-               $(TRAVIS_DIR)/mag_conf/lib/$(LIB_MCONF) -lstdc++
+               $(TRAVIS_DIR)/magconf/lib/$(LIB_MCONF) -lstdc++
 
 #######################################################################
 #            REGCOIL Options
