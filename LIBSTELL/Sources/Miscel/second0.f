@@ -13,7 +13,7 @@
       LOGICAL :: lMPIInit
       INTEGER :: MPI_ERR
       CALL MPI_INITIALIZED(lMPIInit, MPI_ERR)
-      IF (lMPIInit .NE. 0) THEN
+      IF (lMPIInit) THEN
          stime=MPI_Wtime()
          RETURN
       END IF

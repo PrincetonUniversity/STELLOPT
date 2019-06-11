@@ -641,7 +641,7 @@ C-----------------------------------------------
      1           temp_rank, win_brtemp, win_bptemp, win_bztemp
 
       CALL MPI_INITIALIZED(lMPIInit, MPI_ERR)
-      IF ((lMPIInit.NE.0) .and. PRESENT(comm)) THEN
+      IF ((lMPIInit) .and. PRESENT(comm)) THEN
          CALL MPI_COMM_RANK(comm, mpi_rank, istat)
          CALL MPI_COMM_SIZE(comm, mpi_size, istat)
          CALL MPI_COMM_SPLIT_TYPE(comm, 
@@ -745,7 +745,7 @@ C-----------------------------------------------
       IF (ALLOCATED(bttemp)) DEALLOCATE(bttemp)
 
 #if defined(MPI_OPT)
-      IF ((lMPIInit.NE.0) .and. PRESENT(comm)) THEN
+      IF ((lMPIInit) .and. PRESENT(comm)) THEN
          ig = MPI_UNDEFINED
          IF (mpi_rank .lt. nextcur) THEN
             ig = 0
@@ -815,7 +815,7 @@ C-----------------------------------------------
       np0b = nv
 
 #if defined(MPI_OPT)
-      IF ((lMPIInit.NE.0) .and. PRESENT(comm)) THEN
+      IF ((lMPIInit) .and. PRESENT(comm)) THEN
 !         CALL MPI_ALLREDUCE(MPI_IN_PLACE, b, SIZE(bvac), MPI_REAL8,  &
 !     &                      MPI_SUM, comm, istat)
          IF (temp_rank .ge. 0) THEN
@@ -877,7 +877,7 @@ C-----------------------------------------------
       CALL cdf_close(ngrid)
 
 #if defined(MPI_OPT)
-      IF ((lMPIInit.NE.0) .and. PRESENT(comm)) THEN
+      IF ((lMPIInit) .and. PRESENT(comm)) THEN
         CALL MPI_COMM_FREE(shar_comm,istat)
       END IF
 #endif
