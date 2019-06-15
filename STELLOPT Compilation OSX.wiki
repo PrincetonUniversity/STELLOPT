@@ -35,6 +35,7 @@ sudo port select --set python python27
 sudo port select --set python3 python37
 sudo port install py37-pyqt4 +gccX     (Note there is a weird issue with dbus requireing the port to be force installed)
 sudo port install py37-matplotlib +dvipng +pyside +qt4 +gccX
+sudo port install py37-h5py
 # The following are needed for GENE
 sudo port install fftw-3 +gccX +openmpi
 sudo port install petsc +gccX +openmpi +openblas -accelerate +metis +mumps +parmetis +suitesparse +superlu_dist +complex
