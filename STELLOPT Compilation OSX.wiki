@@ -15,7 +15,7 @@ Installation Steps
 sudo port install gccX                   (gccX should be gcc7 or gcc8 or another gcc variant)
 sudo port install openmpi-gccX +fortran
 sudo port select --set mpi openmpi-gccX-fortran
-# Sorf link for mpifort is broken for GCC8 as of Feb 20, 2019 ignore next line otherwise
+# Soft link for mpifort is broken for GCC8 as of Feb 20, 2019 ignore next line otherwise
 sudo ln -sf /opt/local/bin/mpifort-openmpi-gcc8 /opt/local/bin/mpifort
 sudo port install hdf5 +fortran +gccX +hl +openmpi
 sudo port install netcdf-fortran +gccX +openmpi
