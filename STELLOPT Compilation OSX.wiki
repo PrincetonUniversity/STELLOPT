@@ -20,7 +20,7 @@ sudo ln -sf /opt/local/bin/mpifort-openmpi-gcc8 /opt/local/bin/mpifort
 sudo port install hdf5 +fortran +gccX +hl +openmpi
 sudo port install netcdf-fortran +gccX +openmpi
 sudo port install pgplot +gccX
-sudo port install OpenBLAS +gccX +lapack
+sudo port install OpenBLAS +gccX +lapack +native
 sudo port install scalapack +gccX +openmpi +openblas
 # NCARG has in issue with ESMF, but you don't need it for STELLOPT just XGTOVMI
 #sudo port install ncarg +gccX +openmpi
