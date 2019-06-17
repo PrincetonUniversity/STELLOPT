@@ -10,10 +10,12 @@ Installation Steps
 
      3. Use MacPorts to install your packages. Note you should probably used gcc7 or gcc8 and replace the gccX's with the consistent version.  I've also chosen OpenMPI but the sources could also be built with MPICH.
 {{{
+<===OSX Version===>
+10.14 Mojave Something appears to be broken in scalapack build (GCC7/GCC8/GCC9)
 <===gccX version===>
 #  gcc7 : Appears to be working
 #  gcc8 : Problems with PetSc so no GENE/SFINCS
-#  gcc9 : Problems with scalapack (17.06.19)
+#  gcc9 : Unable to confirm
 sudo port install gccX                   (gccX should be gcc7 or gcc8 or another gcc variant)
 sudo port install openmpi-gccX +fortran
 sudo port select --set mpi openmpi-gccX-fortran
@@ -24,8 +26,6 @@ sudo port install netcdf-fortran +gccX +openmpi
 sudo port install pgplot +gccX
 sudo port install OpenBLAS +gccX +lapack +native
 sudo port install scalapack +gccX +openmpi +openblas
-# NCARG has in issue with ESMF, but you don't need it for STELLOPT just XGTOVMI
-#sudo port install ncarg +gccX +openmpi
 # The following are needed for TRAVIS
 sudo port install netcdf-cxx4 +gccX +openmpi
 # The following are needed for COILOPT++
@@ -42,6 +42,9 @@ sudo port install py37-h5py
 sudo port install fftw-3 +gccX +openmpi
 sudo port install petsc +gccX +openmpi +openblas -accelerate +metis +mumps +parmetis +suitesparse +superlu_dist +complex
 sudo port install slepc +gccX +openmpi +openblas +arpack -accelerate
+# NCARG has in issue with ESMF, but you don't need it for STELLOPT just XGTOVMI
+# I placed it here since it builds upon GSL and FFTW-3
+#sudo port install ncarg +gccX +openmpi
 }}}
 
 {{{
