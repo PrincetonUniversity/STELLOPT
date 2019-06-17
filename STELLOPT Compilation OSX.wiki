@@ -11,7 +11,9 @@ Installation Steps
      3. Use MacPorts to install your packages. Note you should probably used gcc7 or gcc8 and replace the gccX's with the consistent version.  I've also chosen OpenMPI but the sources could also be built with MPICH.
 {{{
 <===gccX version===>
-
+#  gcc7 : Appears to be working
+#  gcc8 : Problems with PetSc so no GENE/SFINCS
+#  gcc9 : Problems with scalapack (17.06.19)
 sudo port install gccX                   (gccX should be gcc7 or gcc8 or another gcc variant)
 sudo port install openmpi-gccX +fortran
 sudo port select --set mpi openmpi-gccX-fortran
