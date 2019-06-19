@@ -6,16 +6,21 @@ def read_fieldlines(file):
     with h5py.File(file,'r') as f:
         # Logicals
         for temp in ['ladvanced', 'laxis_i', 'lcoil', 'lmgrid', 'lmu', 'lpies', 'lreverse', 'lspec', 'lvac', 'lvessel', 'lvmec']:
-            fieldline_data[temp] = np.int(f[temp][0])
+            if temp in f:
+                fieldline_data[temp] = np.int(f[temp][0])
         # Integers
         for temp in ['nlines', 'nphi', 'npoinc', 'nr', 'nsteps', 'nz']:
-            fieldline_data[temp] = np.int(f[temp][0])
+            if temp in f:
+                fieldline_data[temp] = np.int(f[temp][0])
         # Floats
         for temp in ['VERSION','iota0']:
-            fieldline_data[temp] = np.float(f[temp][0])
-        # 1D Arrays
-        for temp in ['phiaxis', 'raxis', 'zaxis', 'B_lines', 'PHI_lines', 'R_lines', 'Z_lines', 'B_PHI', 'B_R', 'B_Z']:
-            fieldline_data[temp] = np.array(f[temp][:])
+            if temp in f:
+                fieldline_data[temp] = np.float(f[temp][0])
+        # Arrays
+        for temp in ['phiaxis', 'raxis', 'zaxis', 'B_lines', 'PHI_lines', 'R_lines', 'Z_lines', 'B_PHI', 'B_R', 'B_Z',\
+                    'wall_vertex', 'wall_faces', 'wall_strikes', 'A_R', 'A_PHI', 'A_Z', 'L_lines', 'Rhc_lines', 'Zhc_lines']:
+            if temp in f:
+                fieldline_data[temp] = np.array(f[temp][:])
     # Make derived arrays
     fieldline_data['X_lines'] = fieldline_data['R_lines']*np.cos(fieldline_data['PHI_lines'])
     fieldline_data['Y_lines'] = fieldline_data['R_lines']*np.sin(fieldline_data['PHI_lines'])
@@ -44,8 +49,10 @@ def calc_iota(data):
     out         = {}
     out['rho']  = np.mean(np.sqrt(x*x+y*y),axis=0)
     out['iota'] = np.zeros(out['rho'].shape)
+    out['iota_err'] = np.zeros(out['rho'].shape)
     for i in range(data['nlines']):
-        p = np.polyfit(data['PHI_lines'][0:nstep-1,i],theta[:,i],1)
+        p, residuals, rank, singular_values, rcond = np.polyfit(data['PHI_lines'][0:nstep-1,i],theta[:,i],1,full=True)
         out['iota'][i]=p[0]
+        out['iota_err'][i] = np.sqrt(residuals)
     out['iota'][0]=2*out['iota'][1]-out['iota'][2]
     return out
