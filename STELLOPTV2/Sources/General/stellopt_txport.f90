@@ -43,6 +43,7 @@
       USE mpi_params
       USE discretization, ONLY: mype_gl, n_procs_sim
       USE communications, ONLY: omp_level
+      USE mpi_inc
 !DEC$ ENDIF
       
 !-----------------------------------------------------------------------
