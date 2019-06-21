@@ -178,11 +178,11 @@
             curtor_bootstrap = SUM(AC_fit_results(1:irup)) * ds_fine
             curtor_vmec = curtor_bootstrap + curtor_beam
 
-            IF ((vboot_convergence_factor < vboot_tolerance) .or. (vboot_iteration >= vboot_max_iterations)) THEN
+            IF (vboot_convergence_factor < vboot_tolerance) THEN
                WRITE(6,"(a,i4,a,es10.3,a,es10.3,a)") "Vboot iteration",vboot_iteration,": ctor=",curtor_vmec,", vboot convergence factor=",vboot_convergence_factor,". Tolerance achieved."
-               IF (vboot_iteration >= vboot_max_iterations) THEN
-                  WRITE(6,"(a,i4)") "<---VBOOT_MAX_ITERATIONS reached:", vboot_max_iterations
-               END IF
+               exit_after_next_vmec_run = .true. ! VMEC is cheap, so always finish the vboot iteration with 1 last vmec run.
+            ELSE IF (vboot_iteration >= vboot_max_iterations) THEN
+               WRITE(6,"(a,i4,a,es10.3,a,es10.3,a,i5)") "Vboot iteration",vboot_iteration,": ctor=",curtor_vmec,", vboot convergence factor=",vboot_convergence_factor,". VBOOT_MAX_ITERATIONS reached: ", vboot_max_iterations
                exit_after_next_vmec_run = .true. ! VMEC is cheap, so always finish the vboot iteration with 1 last vmec run.
             ELSE
                WRITE(6,"(a,i4,a,es10.3,a,es10.3)")   "Vboot iteration",vboot_iteration,": ctor=",curtor_vmec,", vboot convergence factor=",vboot_convergence_factor
@@ -339,12 +339,12 @@
             curtor_bootstrap = SUM(AC_fit_results) * ds_fine
             curtor_vmec = curtor_bootstrap + curtor_beam
 
-            IF ((vboot_convergence_factor < vboot_tolerance) .or. (vboot_iteration >= vboot_max_iterations)) THEN
+            IF (vboot_convergence_factor < vboot_tolerance) THEN
                WRITE(6,"(a,i4,a,es10.3,a,es10.3,a)") "Vboot iteration",vboot_iteration,": ctor=",curtor_vmec,", vboot convergence factor=",vboot_convergence_factor,". Tolerance achieved."
-               IF (vboot_iteration >= vboot_max_iterations) THEN
-                  WRITE(6,"(a,i4)") "<---VBOOT_MAX_ITERATIONS reached:", vboot_max_iterations
-               END IF
-               exit_after_next_vmec_run = .true. ! VMEC is computationally very cheap compared to sfincs, so always finish the vboot iteration with 1 last vmec run.
+               exit_after_next_vmec_run = .true. ! VMEC is cheap, so always finish the vboot iteration with 1 last vmec run.
+            ELSE IF (vboot_iteration >= vboot_max_iterations) THEN
+               WRITE(6,"(a,i4,a,es10.3,a,es10.3,a,i5)") "Vboot iteration",vboot_iteration,": ctor=",curtor_vmec,", vboot convergence factor=",vboot_convergence_factor,". VBOOT_MAX_ITERATIONS reached: ", vboot_max_iterations
+               exit_after_next_vmec_run = .true. ! VMEC is cheap, so always finish the vboot iteration with 1 last vmec run.
             ELSE
                WRITE(6,"(a,i4,a,es10.3,a,es10.3)")   "Vboot iteration",vboot_iteration,": ctor=",curtor_vmec,", vboot convergence factor=",vboot_convergence_factor
             END IF

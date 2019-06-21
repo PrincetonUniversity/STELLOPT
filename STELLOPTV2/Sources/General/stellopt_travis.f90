@@ -209,7 +209,7 @@
                END DO
 
                ! Free the vessel here (only loaded if we get to here)
-               CALL VesselFree(mVessel)
+               !CALL VesselFree(mVessel)
             END DO
 
 !DEC$ IF DEFINED (MPI_OPT)

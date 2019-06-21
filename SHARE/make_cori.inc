@@ -17,6 +17,7 @@
   FLAGS_R = -fp-model strict -assume noold_unit_star -cxxlib 
   FLAGS_D = -g -dynamic -traceback -fp-model strict -assume noold_unit_star -cxxlib
   LIBS    = 
+#  FLAGS_R += -g -traceback -dynamic
 
 #######################################################################
 #            MPI Options
@@ -30,7 +31,9 @@
   MPI_RUN_OPTS = -n 8 -c 16
   MPI_RUN_OPTS = -n 1088 -c 1
   # KNL 64 Nodes
-  MPI_RUN_OPTS = -n 8704 -c 2
+  MPI_RUN_OPTS_SM = -n 136 -n 2  --cpu_bind=threads
+  MPI_RUN_OPTS_MD = -n 2176 -n 2  --cpu_bind=threads
+  MPI_RUN_OPTS_LG = -n 8704 -n 2  --cpu_bind=threads
 
 #######################################################################
 #            NAG Options
@@ -103,7 +106,7 @@
 #######################################################################
 #            TERPSICHORE Options
 #######################################################################
-  LTERPSICHORE= T
+  LTERPSICHORE = T
   TERPSICHORE_INC = -I$(TERPSICHORE_PATH)
   TERPSICHORE_DIR = $(TERPSICHORE_PATH)
   LIB_TERPSICHORE = libterpsichore.a
@@ -112,7 +115,7 @@
 #######################################################################
 #            TRAVIS Options
 #######################################################################
-  LTRAVIS= T
+  LTRAVIS = T
   TRAVIS_DIR = $(TRAVIS_PATH)
   LIB_TRAVIS = libtravis64_sopt.a
   LIB_MCONF  = libmconf64.a
@@ -125,7 +128,7 @@
 #            SFINCS Options
 #######################################################################
 
-  LSFINCS = T
+  LSFINCS = F
   SFINCS_DIR = $(SFINCS_PATH)
   SFINCS_INC = -I$(SFINCS_DIR)
   LIB_SFINCS = libsfincs.a

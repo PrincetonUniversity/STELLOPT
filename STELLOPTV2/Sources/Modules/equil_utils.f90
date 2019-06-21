@@ -674,7 +674,7 @@
       !h = SQRT(Rg(3)*Rg(3)+Zg(3)*Zg(3))*0.5/sqrt(s)
       !phi_prime = phi_prime / (modb*h)
       phi_prime = 2*phi_prime*sqrt(s) / (modb*SQRT(Rg(3)*Rg(3)+Zg(3)*Zg(3)))
-      nhat = -nhat / SQRT(SUM(nhat*nhat))
+      nhat = nhat / SQRT(SUM(nhat*nhat)) ! removed negative sign for postive phi B-field
       bx = br * cos(v) - bp * sin(v)
       by = br * sin(v) + bp * cos(v)
       uperp(1) = by*nhat(3)-bz*nhat(2)
@@ -896,10 +896,12 @@
             DO ik = LBOUND(x,DIM=1), UBOUND(x,DIM=1)
                profile_norm = profile_norm + x(ik)/(ik+1)
             END DO
+            IF (profile_norm == 0) profile_norm = 1 ! avoid zero integral
          CASE ('spline','akima_spline','akima_spline_ip')
             DO ik = LBOUND(x,DIM=1), UBOUND(x,DIM=1)
                profile_norm = profile_norm + x(ik)
             END DO
+            IF (profile_norm == 0) profile_norm = 1 ! avoid zero integral
          CASE DEFAULT
             PRINT *,"Error! Unknown profile type in subroutine profile_norm:",prof_type
             PRINT *,x(1:10)
