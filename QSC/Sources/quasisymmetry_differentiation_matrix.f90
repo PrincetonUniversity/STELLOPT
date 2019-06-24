@@ -152,8 +152,8 @@ subroutine quasisymmetry_differentiation_matrix(N, xMin, xMax, option, quadratur
   ! Validate input
   ! ***************************************************************
 
-  if (N<2) then
-     print *,"Error! N must be at least 2."
+  if (N<1) then
+     print *,"Error! N must be at least 1."
      print *,"N = ",N
      stop
   end if

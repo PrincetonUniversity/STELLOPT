@@ -187,7 +187,7 @@
       proc_string = TRIM(TRIM(id_string) // '_opt' // TRIM(ADJUSTL(temp_str)))
 
 !10/18/18.place-1 for QSC(), mved blw. mved back-11/14/18(7l6), along w calc of proc_string.
-      if (iflg1.ne.0)  then
+      if (iqsc.ne.0)  then   ! 4/11/19.(9s3)rename iflg1->iqsc.
          rbc = 0.   !hm-11/13/18.diagn.
 !2/4/19.(8u3)
          if (any(raxis_cc(max_n+1:ntor).ne.0.0).or.any(zaxis_cs(max_n+1:ntor).ne.0.0)) then
@@ -317,7 +317,7 @@
                iflag = ier_paraexe
                IF (lscreen .and. lverb) WRITE(6,*)  '-------------------------  PARAVMEC CALCULATION DONE  -----------------------'
 !2/1/19.(8r4)again restore [raxis_cc,..] to [raxis_cc_tmp].
-               if (iflg1 == 1) then
+               if (iqsc == 1) then
                   raxis_cc=raxis_cc_tmp; raxis_cs=raxis_cs_tmp
                   zaxis_cc=zaxis_cc_tmp; zaxis_cs=zaxis_cs_tmp
                endif

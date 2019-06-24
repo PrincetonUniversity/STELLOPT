@@ -1,7 +1,7 @@
 subroutine quasisymmetry_read_input(xt)
 
   use quasisymmetry_variables
-  use mpi_params, only: myid,master
+!  use mpi_params, only: myid,master
   use vmec_input, only: raxis_cc, raxis_cs, zaxis_cc, zaxis_cs  !12/21/18.(7m12c)
   use vparams, only: ntord  !12/22/18.(7m12d)
 
@@ -12,7 +12,6 @@ subroutine quasisymmetry_read_input(xt)
   integer :: fileUnit, didFileAccessWork, i
   integer, parameter :: uninitialized = -9999
   real(dp) :: threshold
-  character(len=120) :: str1  !hm-10/16/18.
   character(len=120) :: xt  !hm-10/24/18.
 !  integer :: max_n  !hm-12/21/18.(7m12c)as qs_wr_vm_input. 1/29/19.(8o7)xfer to qs_vars.
 
@@ -25,7 +24,7 @@ subroutine quasisymmetry_read_input(xt)
   Z0c = 0
 
   ! getcarg is in LIBSTELL
-  !  call getcarg(1, input_filename, numargs)
+  ! call getcarg(1, input_filename, numargs)
   numargs=1   !hm-10/15/18.
   input_filename="input." // xtqsc  !10/28/18.(6e21d)
 
@@ -56,7 +55,6 @@ subroutine quasisymmetry_read_input(xt)
 !  verbose = (trim(verbose_option)==verbose_option_all .or. (proc0 .and. trim(verbose_option)==verbose_option_proc0))       -out-12/21/18.(7m12c)
   verbose=.false.       !12/21/18.(7m12c)
   proc0=.true.       !12/22/18.(7m12d)
-
 
   N_phi_original = N_phi   !12/4/18.(7l23a)xferred in fra qs_validate_input.
 
@@ -112,6 +110,5 @@ subroutine quasisymmetry_read_input(xt)
   raxis_cs(0:max_n) = -R0s(1:max_n+1)
   zaxis_cc(0:max_n) = Z0c(1:max_n+1)
   zaxis_cs(0:max_n) = -Z0s(1:max_n+1)
-
 
 end subroutine quasisymmetry_read_input

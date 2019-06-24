@@ -16,10 +16,6 @@ subroutine quasisymmetry_init_phi
   if (allocated(X1c)) deallocate(X1c)
   if (allocated(Y1s)) deallocate(Y1s)
   if (allocated(Y1c)) deallocate(Y1c)
-  if (allocated(R1s)) deallocate(R1s)
-  if (allocated(R1c)) deallocate(R1c)
-  if (allocated(Z1s)) deallocate(Z1s)
-  if (allocated(Z1c)) deallocate(Z1c)
   if (allocated(sigma)) deallocate(sigma)
   if (allocated(elongation)) deallocate(elongation)
 
@@ -36,10 +32,6 @@ subroutine quasisymmetry_init_phi
   allocate(X1c(N_phi))
   allocate(Y1s(N_phi))
   allocate(Y1c(N_phi))
-  allocate(R1s(N_phi))
-  allocate(R1c(N_phi))
-  allocate(Z1s(N_phi))
-  allocate(Z1c(N_phi))
   allocate(sigma(N_phi))
   allocate(elongation(N_phi))
 

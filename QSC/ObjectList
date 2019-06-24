@@ -1,6 +1,7 @@
 ObjectFiles = 	quasisymmetry_variables.o \
 	quasisymmetry.o \
 	QSC.o \
+	quasisymmetry_fzero.o \
 	quasisymmetry_read_input.o \
 	quasisymmetry_init_phi.o \
 	quasisymmetry_init_axis.o \
@@ -12,6 +13,13 @@ ObjectFiles = 	quasisymmetry_variables.o \
 	quasisymmetry_elongation.o \
 	quasisymmetry_differentiation_matrix.o \
 	quasisymmetry_fmin.o \
-	quasisymmetry_determine_helicity.o \
+	quasisymmetry_scan.o \
+	quasisymmetry_determine_axis_helicity.o \
+	quasisymmetry_determine_B_helicity.o \
+	quasisymmetry_max_curvature.o \
+	quasisymmetry_splines.o \
+	quasisymmetry_Frenet_to_cylindrical.o \
+	quasisymmetry_higher_order_in_r.o \
+	quasisymmetry_grad_B_tensor.o \
 	quasisymmetry_write_vmec_input.o \
 	quasisymmetry_write_output.o

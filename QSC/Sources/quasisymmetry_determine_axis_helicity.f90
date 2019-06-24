@@ -1,4 +1,4 @@
-subroutine quasisymmetry_determine_helicity
+subroutine quasisymmetry_determine_axis_helicity
 
   use quasisymmetry_variables
 
@@ -10,14 +10,14 @@ subroutine quasisymmetry_determine_helicity
   allocate(quadrant(N_phi+1))
 
   do j = 1, N_phi
-     if (R1c(j) >= 0) then
-        if (Z1c(j) >= 0) then 
+     if (normal_cylindrical(j,1) >= 0) then
+        if (normal_cylindrical(j,3) >= 0) then 
            quadrant(j) = 1
         else
            quadrant(j) = 4
         end if
      else
-        if (Z1c(j) >= 0) then 
+        if (normal_cylindrical(j,3) >= 0) then 
            quadrant(j) = 2
         else
            quadrant(j) = 3
@@ -37,10 +37,10 @@ subroutine quasisymmetry_determine_helicity
      end if
   end do
 
-  helicity = counter / 4
-  if (verbose) print *,"Helicity counter:",counter, "  helicity:",helicity
-  if (modulo(counter,4) .ne. 0) stop "Helicity counter was not a multiple of 4"
+  axis_helicity = counter / 4
+  if (verbose) print *,"Axis helicity counter:",counter, "  axis_helicity:",axis_helicity
+  if (modulo(counter,4) .ne. 0) stop "Axis helicity counter was not a multiple of 4"
 
   deallocate(quadrant)
 
-end subroutine quasisymmetry_determine_helicity
+end subroutine quasisymmetry_determine_axis_helicity

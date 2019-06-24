@@ -86,10 +86,11 @@
 !----------------------------------------------------------------------
 !       Optimizer Run Control Parameters
 !----------------------------------------------------------------------
-  iflg1 = 1          !2/12/19.(8x5)
-  NFUNC_MAX = 1      !2/12/19.(8x5)
+  iqsc = 1      !2/12/19.(8x5,8y1).4/17/19.(9k5=9s5).6/21/19.(9k7b)
+!  iflg1 = 1    !6/11/19.(9u10f)
+  NFUNC_MAX = 1      !4/17/19.(9k5=9s5)
   EQUIL_TYPE = 'vmec2000'
-  OPT_TYPE = 'one_iter'    !2/12/19.(8x5)
+  OPT_TYPE = 'one_iter'    !4/17/19.(9k5=9s5)
   FTOL =    1.000000000000E-006
   XTOL =    1.000000000000E-006
   GTOL =    0.000000000000E+000
@@ -164,9 +165,9 @@
 !       Neoclassical Transport Calculation (as calculated by NEO)
 !         Note that neoclassical transport is by surface. Axis (01) is ignored.
 !------------------------------------------------------------------------
-   TARGET_NEO(2)    = 0.0     SIGMA_NEO(2)    = 1.0  !2/12/19.(8x5).
-   TARGET_NEO(16)   = 0.0     SIGMA_NEO(16)   = 1.0
-   TARGET_NEO(40)   = 0.0     SIGMA_NEO(40)   = 1.0
+   TARGET_NEO(2)    = 0.0     SIGMA_NEO(2)    = 1.0e10  !2/12/19.(8y1).
+   TARGET_NEO(16)   = 0.0     SIGMA_NEO(16)   = 1.0e10
+   TARGET_NEO(40)   = 0.0     SIGMA_NEO(40)   = 1.0e10
 !----------------------------------------------------------------------
 !          TURBULENT TRANSPORT
 !----------------------------------------------------------------------
@@ -197,7 +198,7 @@
   TARGET_WP =    1.000000000000E+003
   SIGMA_WP =    1.000000000000E+003
   TARGET_ASPECT =    4.370000000000E+000
-  SIGMA_ASPECT =    1.000000000000E+000
+  SIGMA_ASPECT =    1.0  !4/6/19.(9q9)as (8y1). only diff fra (9q8)<-input.qsc9q3.
 /
 &NEO_IN
   THETA_N = 200
@@ -226,7 +227,10 @@
   CALC_CUR = 1
   CALC_CUR = 1
 /
-&quasisymmetry             !1/8/19.(8k2)diff-2 (of 2) fra input.qsc8k1b.
+&quasisymmetry
+ sign_G=1         !3/6/19.(9k1)fra &qs fra qs_in.8j4, + adjustmts.
+ sign_psi=1
+
  !resolution_option = 'fixed'
  resolution_option = 'adaptive'
 
@@ -237,8 +241,8 @@
  !verbose_option = 'proc0'
  !verbose_option = 'summary'
 
- N_phi = 31   !1/19/19(8k11d). orig=15
- max_N_phi = 62 !1/19/19(8k11d). orig=1000
+ N_phi = 31  !3/4/19.101(9h1,2,9j2), 31(qsc8w1,9h4,9j3).
+ max_N_phi = 62 !3/4/19.1000(9h1,2,9j2),62(qsc8w1,9h4,9j3).
 
  iota_tolerance =  0.001
  elongation_tolerance = 0.001
@@ -246,25 +250,55 @@
 
  max_precise_elongation = 15
  max_elongation_to_keep = 10
+! min_iota_to_keep =  -1                     !6/10/19.(9k7)=(9u10)fra qs_in.test.
+! max_max_modBinv_sqrt_half_grad_B_colon_grad_B_to_keep = 1e100  !6/10/19.(9k7)=(9u10)
 
- vmec_template_filename = 'input.qsc6e'  !10/14/18.(6e1)=input.qsc4b2
+ vmec_template_filename = 'input.qsc8w1'
 
- ! QA example:
+ r = 0.1     !4/2/19,4/17.(9k2,9q3,9k5=9s5).
 
- ! QA example for paper
+! order_r_squared = .false.  !3/6/19,4/2.(9j4,9q3)
+! order_r_option = 'order_r_option_r1'  !6/10/19.(9k7)=(9u10). 6/11/19.(out-9u10g)
+
+ finite_r_option = 'linear'    !3/4/19,3/7,4/2.(9h1,9k2,9q3)
+! finite_r_option = 'nonlinear' !3/7/19.(9k3)
+ sigma_initial = 0.0d+0   !for stel_sym. cf msg[Landr-2/26/19].
+
+! QA example for paper  ! 2/6/19,3/7,4/2.(8v3,9k2,9q3).
  nfp = 3
- R0c =  1  0.045    0.0  0.0    !2/12/19.(8x5)
- Z0s =  0 -0.045    0.0  0.0  
- B1c_over_B0 = -0.90
- sigma_initial = 0.0
+ R0c = 1  0.045 0.0  0.0     
+ Z0s = 0 -0.045 0.0  0.0 
+ eta_bar = -0.9d+0
 
- ! QH example:
- ! QH example for paper
- ! QA without stellarator symmetry example for paper
+! QH example for paper   !3/8/19.(9l2)
+! nfp = 4
+! R0c = 1  0.265d+0 0.0  0.0
+! Z0s = 0  -0.21d+0 0.0  0.0
+! eta_bar = -2.25d+0
+
+! QA without stellarator symmetry example for paper
+ !nfp = 3
+ !R0c = 1  0.042
+ !Z0s = 0  -0.042
+ !R0s = 0 0
+ !Z0c = 0 -0.025
+ !!eta_bar = -0.95
+ !eta_bar = 0.95
+ !sigma_initial = -6.327962586868797d-01
+
  ! Same QA without stellarator symmetry example for paper, but using constraint_option=2
- ! Same QA without stellarator symmetry example for paper, using rounded values for constraint_option=2
+ !..
 
- !! Testing
- ! Scan parameters:
+ ! Same QA without stellarator symmetry example for paper, using rounded values for constraint_option=2
+ !nfp = 3
+ !R0c = 1  0.042
+ !Z0s = 0  -0.042
+ !R0s = 0 0
+ !Z0c = 0 -0.025
+ !eta_bar = -1.1d+0
+ !!!constraint_option = 2
+ !sigma_initial = -0.6d+0
+
+ ! Scan parameters:  (9h2)outen these.
 /
 &END

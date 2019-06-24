@@ -44,7 +44,7 @@ subroutine quasisymmetry_solve
      if (verbose) print "(a,i3)","  Newton iteration ",iteration
      ! We will use the LAPACK subroutine DGESV to solve a general (asymmetric) linear system
      ! step_direction = - matrix \ residual
-     step_direction = -residual ! Note that LAPACK will over-write step_direction and with the solution, and over-write Jacobian with the LU factorization.
+     step_direction = -residual ! Note that LAPACK will over-write step_direction with the solution, and over-write Jacobian with the LU factorization.
      call DGESV(matrix_size, 1, Jacobian, matrix_size, IPIV, step_direction, matrix_size, INFO)
      if (INFO /= 0) then
         print *, "Error in LAPACK call DGESV: info = ", INFO
@@ -68,7 +68,7 @@ subroutine quasisymmetry_solve
      end do line_search
 
      if (residual_norm > last_residual_norm) then
-        print *,"Line search failed to reduce residual."
+        if (verbose) print *,"Line search failed to reduce residual."
         exit Newton
      end if
   end do Newton
@@ -76,17 +76,12 @@ subroutine quasisymmetry_solve
   ! Now compute quantities that are derived from the solution:
 
 
-  Y1s = sign_G * curvature * ( B1c_over_B0 + B1s_over_B0 * sigma) / (B1c_over_B0*B1c_over_B0 + B1s_over_B0*B1s_over_B0);
-  Y1c = sign_G * curvature * (-B1s_over_B0 + B1c_over_B0 * sigma) / (B1c_over_B0*B1c_over_B0 + B1s_over_B0*B1s_over_B0);
-    
-  R1c = (-binormal_cylindrical(:,3) * X1c + normal_cylindrical(:,3) * Y1c) * d_l_d_phi / R0
-  R1s = (-binormal_cylindrical(:,3) * X1s + normal_cylindrical(:,3) * Y1s) * d_l_d_phi / R0
-  Z1c = ( binormal_cylindrical(:,1) * X1c - normal_cylindrical(:,1) * Y1c) * d_l_d_phi / R0
-  Z1s = ( binormal_cylindrical(:,1) * X1s - normal_cylindrical(:,1) * Y1s) * d_l_d_phi / R0
+  !Y1s = sign_G * curvature * ( B1c_over_B0 + B1s_over_B0 * sigma) / (B1c_over_B0*B1c_over_B0 + B1s_over_B0*B1s_over_B0)
+  !Y1c = sign_G * curvature * (-B1s_over_B0 + B1c_over_B0 * sigma) / (B1c_over_B0*B1c_over_B0 + B1s_over_B0*B1s_over_B0)
+  Y1s = sign_G * sign_psi * curvature / eta_bar
+  Y1c = sign_G * sign_psi * curvature * sigma / eta_bar
 
   call quasisymmetry_elongation()
-
-  call quasisymmetry_determine_helicity()
 
   !print *,"elongation:"
   !print *,elongation

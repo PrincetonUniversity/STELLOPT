@@ -156,7 +156,7 @@
                           beamj_type, bootj_type, zeff_type, emis_xics_type, windsurfname
       
 !hm-9/23/18.
-      integer ::  iflg1       !hm-9/23/18.0=orig, 1= w QSC.
+      integer ::  iqsc  !hm-9/23/18.0=orig, 1= w QSC. 4/11/19.(9s3)rename iflg1->iqsc.
       character(len=120) :: cmd1  !hm-9/23/18.
 
       ! These are not really variable parameters as we don't vary them
