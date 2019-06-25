@@ -97,7 +97,7 @@ C-----------------------------------------------
          lfirst_lm = .false.
       ELSE IF (num_lev > 2*nfact) THEN
          scale_factor = (iproc*MAXVAL(factors))/num_lev
-      ELSE IF (iproc .lt. nfact) THEN
+      ELSE IF (iproc .le. nfact) THEN
          scale_factor = factors(iproc)
       ELSE
          scale_factor = ((iproc-nfact)*MINVAL(factors))/
