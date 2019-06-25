@@ -1,1 +1,1 @@
-SHARE/make_pppl.inc
+SHARE/make_cori.inc

@@ -1,34 +1,25 @@
 #######################################################################
 #            Define Basic Utilities
 #######################################################################
+
   SHELL = /bin/sh
   PWD1 = `pwd`
-  MYHOME = $(HOME)/bin
+  MYHOME = /bin
   PRECOMP:= /lib/cpp -traditional -DLINUX
   COMPILE = $(FC)
   COMPILE_FREE = $(FC) -ffree-form -ffree-line-length-none -ffixed-line-length-none
   LINK    = ld $(FLAGS) -o
   LINK_AR = ar -ruv
-  LINK_C  = $(CC) -shared -Wl,--no-undefined -Wl,-export-dynamic 
+  LINK_C  = $(CC) -shared -Wl,-z-defs
 
 #######################################################################
 #            Define Compiler Flags
 #######################################################################
-  FLAGS_R = -O2 -fexternal-blas
-#  FLAGS_R = -g -O0 -fexternal-blas -fcheck=all -fbacktrace
-  FLAGS_D = -g -O0 -fexternal-blas -fcheck=all -fbacktrace
-
-# Crutch for broken module vars
-  NETCDF_F = /usr/pppl/gcc/6.1-pkgs/netcdf-fortran-4.4.4
-  NETCDF_C = /usr/pppl/gcc/6.1-pkgs/netcdf-c-4.4.1
-
-  LIBS    = -L$(ACML_HOME)/lib -lacml \
-            -L$(SCALAPACK_HOME)/lib -lscalapack 
-
-# BLACS requires full links to library files
-  LIBS    += ${BLACS_HOME}/lib/blacs_MPI-LINUX-0.a
-  LIBS    += ${BLACS_HOME}/lib/blacsF77init_MPI-LINUX-0.a
-  LIBS    += ${BLACS_HOME}/lib/blacsCinit_MPI-LINUX-0.a
+#  FLAGS_R = -O2 -g -fexternal-blas -fbacktrace -fcheck=all 
+  FLAGS_R = -g -O2 -fexternal-blas -fbacktrace -I/usr/include
+  FLAGS_D = -g -O0 -fexternal-blas -fcheck=all -I/usr/include
+  LIBS    = -L/lib64/openmpi/lib -lmpiblacs /lib64/libopenblas.so.0 \
+            /lib64/openmpi/lib/libscalapack.so.2
 
 #######################################################################
 #            MPI Options
@@ -38,64 +29,55 @@
   MPI_COMPILE_FREE = mpifort -ffree-form \
                      -ffree-line-length-none -ffixed-line-length-none
   MPI_COMPILE_C = mpicc
-  MPI_LINK = mpicc -shared -pthread -Wl,--no-undefined -Wl,-export-dynamic
-  MPI_RUN = srun
-  MPI_RUN_OPTS = -n 64 -p dawson -t 5:00:00 -J STELLOPT_BENCH
+  MPI_LINK = mpifort
 
 #######################################################################
 #            NAG Options
 #######################################################################
   LNAG = F
-  NAG_LIB = -L$(NAG_ROOT)/lib -lnag_nag
+  NAG_LIB = 
 
 #######################################################################
 #            NETCDF Options
 #######################################################################
   LNETCDF = T
-  NETCDF_INC = -I$(NETCDF_F)/include -I$(NETCDF_C)/include 
-  NETCDF_LIB = -L$(NETCDF_C)/lib -lnetcdf -L$(NETCDF_F)/lib -lnetcdff
+  NETCDF_INC = 
+  NETCDF_LIB = -L/lib64/openmpi/lib -lnetcdff
 
 #######################################################################
 #            NTCC Options
 #######################################################################
-  LNTCC = T
+  LNTCC = F
   NTCC_INC = -I$(NTCCHOME)/mod
   NTCC_LIB = -L$(NTCCHOME)/lib -laladdinsub -lr8slatec -ladpak\
              -lcppsub -lcomput -lpspline -lportlib -lezcdf -lmds_sub \
              -lmdstransp -lvaxonly
-#  NTCC_LIB = $(NTCCHOME)/lib/aladdinsub.a
-#  NTCC_LIB += $(NTCCHOME)/lib/r8slatec.a
-#  NTCC_LIB += $(NTCCHOME)/lib/adpak.a
-#  NTCC_LIB += $(NTCCHOME)/lib/cppsub.a
-#  NTCC_LIB += $(NTCCHOME)/lib/comput.a
-#  NTCC_LIB += $(NTCCHOME)/lib/pspline.a
-#  NTCC_LIB += $(NTCCHOME)/lib/portlib.a
-#  NTCC_LIB += $(NTCCHOME)/lib/ezcdf.a
-#  NTCC_LIB += $(NTCCHOME)/lib/mds_sub.a
-#  NTCC_LIB += $(NTCCHOME)/lib/mdstransp.a
-#  NTCC_LIB += $(NTCCHOME)/lib/vaxonly.a
 
 #######################################################################
 #            HDF5 Options
 #######################################################################
   LHDF5 = T
-  HDF5_INC =  -I$(HDF5_HOME)/include
-  HDF5_LIB = -L$(HDF5_HOME)/lib -lhdf5_hl -lhdf5_fortran -lhdf5 \
-             -lhdf5hl_fortran -lpthread -lz -lm
+  HDF5_INC = 
+  HDF5_LIB = -L/usr/lib64/openmpi/lib \
+              /usr/lib64/openmpi/lib/libhdf5hl_fortran.so \
+              /usr/lib64/openmpi/lib/libhdf5_hl.so \
+              /usr/lib64/openmpi/lib/libhdf5_fortran.so \
+              /usr/lib64/openmpi/lib/libhdf5.so \
+              -Wl,-z,relro -lsz -lz -ldl -lm -Wl,-rpath -Wl,/usr/lib64/openmpi/lib
 
 #######################################################################
 #             PGPLOT Options
 #######################################################################
-  LPGPLOT = T
+  LPGPLOT = F
   PGPLOT_INC = 
-  PGPLOT_LIB = -L$(PGPLOT_DIR) -lpgplot -L/usr/X11R6/lib -lX11
+  PGPLOT_LIB = 
 
 #######################################################################
 #             SILO Options
 #######################################################################
-  LSILO = T
-  SILO_INC = -I$(SILOHOME)/include
-  SILO_LIB = -L$(SILOHOME)/lib -lsilo
+  LSILO = F
+  SILO_INC = 
+  SILO_LIB = 
 
 #######################################################################
 #            DKES/NEO Options
@@ -106,29 +88,30 @@
 #######################################################################
 #            GENE Options
 #######################################################################
-  LGENE = T
+  LGENE = F
   GENE_INC = -I$(GENE_PATH)
   GENE_DIR = $(GENE_PATH)
   LIB_GENE = libgene.a
   GENE_LIB = $(GENE_DIR)/$(LIB_GENE) \
-             -L$(FFTW_HOME)/lib -lfftw3 \
+             -L/u/slazerso/src/GENE17_2016/external/pppl_cluster/futils/src -lfutils \
+             -L$(FFTWHOME)/lib -lfftw3 \
              -L$(SLEPC_DIR)/$(PETSC_ARCH)/lib -lslepc \
              -L$(PETSC_DIR)/$(PETSC_ARCH)/lib -lpetsc -lX11
 
 #######################################################################
 #            COILOPT++ Options
 #######################################################################
-  LCOILOPT = T
+  LCOILOPT = F
   COILOPT_INC = -I$(COILOPT_PATH)
   COILOPTPP_DIR = $(COILOPT_PATH)
   LIB_COILOPTPP = libcoilopt++.a
   COILOPT_LIB = $(COILOPT_PATH)/$(LIB_COILOPTPP) \
-                -L$(GSLHOME)/lib -lgsl -lgslcblas -lstdc++
+                -L$(GSLHOME)/lib/x86_64-linux-gnu -lgsl -lgslcblas -lstdc++ -lmpi_cxx
 
 #######################################################################
 #            TERPSICHORE Options
 #######################################################################
-  LTERPSICHORE= T
+  LTERPSICHORE= F
   TERPSICHORE_INC = -I$(TERPSICHORE_PATH)
   TERPSICHORE_DIR = $(TERPSICHORE_PATH)
   LIB_TERPSICHORE = libterpsichore.a
@@ -137,7 +120,7 @@
 #######################################################################
 #            TRAVIS Options
 #######################################################################
-  LTRAVIS= T
+  LTRAVIS= F
   TRAVIS_DIR = $(TRAVIS_PATH)
   LIB_TRAVIS = libtravis64_sopt.a
   LIB_MCONF  = libmconf64.a
@@ -154,20 +137,10 @@
   REGCOIL_LIB = $(REGCOIL_DIR)/$(LIB_REGCOIL) -fopenmp
 
 #######################################################################
-#            SFINCS Options
-#######################################################################
-
-  LSFINCS = F
-  SFINCS_DIR = $(SFINCS_PATH)
-  SFINCS_INC = -I$(SFINCS_DIR)
-  LIB_SFINCS = libsfincs.a
-  SFINCS_LIB = $(SFINCS_DIR)/$(LIB_SFINCS) \
-             -L$(PETSC_DIR)/$(PETSC_ARCH)/lib -lpetsc -lX11
-
-#######################################################################
 #            LIBSTELL Shared Options
 #######################################################################
 LIB_SHARE = -lc -lgfortran -lstdc++ -lmpi -lmpi_mpifh -lz -lc -lm -lpthread $(LIBS) -lc
+
 
 #######################################################################
 #######################################################################
@@ -261,14 +234,11 @@ else
   LCOILOPT = F
   LTERPSICHORE = F
   LTRAVIS = F
-  LREGCOIL= F
-  LSFINCS = F
-#  LYOURNEWCODE = F
 endif
 ifeq ($(MAKECMDGOALS),xanimec)
   PRECOMP += -D_ANIMEC
 endif
-ifeq ($(MAKECMDGOALS),xvmec2000)
+ifeq ($(MAKECMDGOALS),xparvmec)
   PRECOMP += -DSKS  -DSKS2
 endif
 ifeq ($(MAKECMDGOALS),xsiesta)
@@ -342,7 +312,7 @@ else
 endif
 
 # Handle other codes
-LIB_LINK += $(GENE_LIB) $(COILOPT_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB) $(SFINCS_LIB) $(REGCOIL_LIB)
+LIB_LINK += $(GENE_LIB) $(COILOPT_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB) $(REGCOIL_LIB)
 
 # Add libraries to LIB_LINK
 # LIB_LINK+= $(MYHOME)/libstell.a $(LIBS)

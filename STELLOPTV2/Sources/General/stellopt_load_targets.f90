@@ -122,9 +122,15 @@
       ! XICS Brightness
       IF (ANY(sigma_xics_bright < bigno)) &
          CALL chisq_xics_bright(target_xics_bright, sigma_xics_bright, ncnt,iflag)
-      ! XICS
+      ! XICS Ti
       IF (ANY(sigma_xics < bigno)) &
          CALL chisq_xics(target_xics, sigma_xics, ncnt,iflag)
+      ! XICS W3
+      IF (ANY(sigma_xics_w3 < bigno)) &
+         CALL chisq_xics_w3(target_xics_w3, sigma_xics_w3, ncnt,iflag)
+      ! XICS V
+      IF (ANY(sigma_xics_v < bigno)) &
+         CALL chisq_xics_v(target_xics_v, sigma_xics_v, ncnt,iflag)
       ! SOFT X-RAYS
       IF (ANY(sigma_sxr < bigno)) &
          CALL chisq_sxr(target_sxr, sigma_sxr, ncnt,iflag)
