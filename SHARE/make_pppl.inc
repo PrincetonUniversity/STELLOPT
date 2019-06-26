@@ -40,7 +40,10 @@
   MPI_COMPILE_C = mpicc
   MPI_LINK = mpicc -shared -pthread -Wl,--no-undefined -Wl,-export-dynamic
   MPI_RUN = srun
-  MPI_RUN_OPTS = -n 64 -p dawson -t 5:00:00 -J STELLOPT_BENCH
+  MPI_RUN_OPTS = -N 2 -n 64 -p dawson -t 2:00:00 -J STELLOPT_BENCH
+  MPI_RUN_OPTS_SM = -N 2 -n 64 -p dawson -t 2:00:00 -J STELLOPT_BENCH
+  MPI_RUN_OPTS_MD = -N 4 -n 128 -p dawson -t 2:00:00 -J STELLOPT_BENCH
+  MPI_RUN_OPTS_LG = -N 8 -n 256 -p dawson -t 2:00:00 -J STELLOPT_BENCH
 
 #######################################################################
 #            NAG Options
@@ -137,7 +140,7 @@
 #######################################################################
 #            TRAVIS Options
 #######################################################################
-  LTRAVIS= T
+  LTRAVIS= F
   TRAVIS_DIR = $(TRAVIS_PATH)
   LIB_TRAVIS = libtravis64_sopt.a
   LIB_MCONF  = libmconf64.a
