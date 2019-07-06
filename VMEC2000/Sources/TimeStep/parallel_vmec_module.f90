@@ -410,7 +410,7 @@ INTEGER, INTENT(IN) :: ns, nzeta, ntheta3
   !--------------------------------------------------------------------------
     SUBROUTINE FinalizeRunVmec(INCOMM)
     
-    INTEGER, INTENT(IN)  :: INCOMM
+    INTEGER, INTENT(INOUT)  :: INCOMM
 #if defined(MPI_OPT)
     CALL MPI_Comm_free(INCOMM, MPI_ERR)
     IF(LIFFREEB) CALL MPI_Comm_free(VAC_COMM,MPI_ERR)
