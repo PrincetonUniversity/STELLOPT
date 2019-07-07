@@ -110,7 +110,7 @@ C-----------------------------------------------
    51 FORMAT(' TRYING TO IMPROVE INITIAL MAGNETIC AXIS GUESS')
 
             IF (PARVMEC) THEN
-               CALL guess_axis_par (pr1, pz1, pru0, pzu0)
+               CALL guess_axis_par (pr1, pz1, pru0, pzu0, lscreen)
             ELSE
                CALL guess_axis (r1, z1, ru0, zu0)
             ENDIF
