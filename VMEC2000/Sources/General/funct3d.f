@@ -2,7 +2,7 @@
       USE vmec_main
       USE vacmod, ONLY: bsqvac, bsqvac0, raxis_nestor, zaxis_nestor, 
      &                  nuv, nuv3
-      USE vmec_params, ONLY: ntmax
+      USE vmec_params, ONLY: ntmax, norm_term_flag
       USE realspace
       USE vforces
       USE vsvd, ONLY: router, rinner, gphifac, grmse
