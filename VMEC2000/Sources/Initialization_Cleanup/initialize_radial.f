@@ -68,10 +68,10 @@ C-----------------------------------------------
          IF (lactive) THEN
             IF (lfreeb) THEN
                WRITE(nthreed,1002) nranks, vnranks
-               PRINT 1002, nranks, vnranks
+               IF (lscreen) PRINT 1002, nranks, vnranks
             ELSE
                WRITE (nthreed, 1001) nranks
-               PRINT 1001, nranks
+               IF (lscreen) PRINT 1001, nranks
             END IF
          END IF
 
