@@ -222,6 +222,7 @@
 !            txport_proxy       String of proxy function name.
 !            gs2_ptsm3d         Energy transfer between stable and unstable modes
 !            curvature_P2       Min value of 2nd principal curvature
+!            gamma_c            Gamma_c for energetic particle transport
 !
 !             REGCOIL related variables
 !                         lregcoil_winding_surface_separation_opt, &
@@ -407,7 +408,8 @@
                          regcoil_rcws_zbound_c_min, regcoil_rcws_zbound_s_min, &
                          regcoil_rcws_rbound_c_max, regcoil_rcws_rbound_s_max, &
                          regcoil_rcws_zbound_c_max, regcoil_rcws_zbound_s_max, &
-                         target_curvature_P2, sigma_curvature_P2
+                         target_curvature_P2, sigma_curvature_P2, &
+                         target_gamma_c, sigma_gamma_c
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -953,7 +955,8 @@
       npts_cself        = 360
       target_curvature_P2    = 0.0
       sigma_curvature_P2     = bigno
-
+      target_gamma_c(:) = 0.0
+      sigma_gamma_c(:) = bigno
       ! Read name list
       lexist            = .false.
       istat=0
@@ -1873,7 +1876,16 @@
       IF (sigma_curvature_P2 < bigno) THEN
          WRITE(iunit,outflt) 'TARGET_CURVATURE_P2',target_curvature_P2
          WRITE(iunit,outflt) 'SIGMA_CURVATURE_P2',sigma_curvature_P2
-      END IF          
+      END IF  
+      IF (ANY(sigma_gamma_c < bigno)) THEN
+         DO ik = 1,UBOUND(sigma_gamma_c, DIM=1)
+            IF(sigma_gamma_c(ik) < bigno) THEN
+               WRITE(iunit,"(2(2X,A,I3.3,A,E22.14))") &
+                  'TARGET_GAMMA_C(',ik,') = ',target_gamma_c(ik), &
+                  'SIGMA_GAMMA_C(',ik,') = ',sigma_gamma_c(ik)
+            END IF
+         END DO
+      END IF 
       IF (ANY(lbooz)) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          WRITE(iunit,'(A)') '!          BOOZER COORDINATE TRANSFORMATION'  

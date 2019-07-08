@@ -4,29 +4,20 @@
   SHELL = /bin/sh
   PWD1 = `pwd`
   MYHOME = $(HOME)/bin
-  PRECOMP:= /home/bfaber/gcc/gcc-8.2.0/bin/cpp -traditional -DLINUX
+  PRECOMP:= cpp -traditional -DLINUX
   COMPILE = $(FC)
   COMPILE_FREE = $(FC) -ffree-form -ffree-line-length-none -ffixed-line-length-none
   LINK    = ld $(FLAGS) -o
   LINK_AR = ar -ruv
-  LINK_C  = $(CC) -shared -Wl,--no-undefined -Wl,-export-dynamic 
+  LINK_C  = $(CC) -shared -Wl,-z-defs
 
 #######################################################################
 #            Define Compiler Flags
 #######################################################################
-  FLAGS_R = -O2 -fexternal-blas
-#  FLAGS_R = -g -O0 -fexternal-blas -fcheck=all -fbacktrace
-  FLAGS_D = -g -O0 -fexternal-blas -fcheck=all -fbacktrace
-
-# Crutch for broken module vars
-  NETCDF_F = /home/bfaber/netcdf/netcdf-f-parallel
-  NETCDF_C = /home/bfaber/netcdf/netcdf-c-parallel
-  SCALAPACK_HOME = /home/bfaber/scalapack
-  BLAS_HOME = /home/bfaber/openblas
-  HDF5_HOME = /home/bfaber/hdf5-parallel
-
-  LIBS    = -L$(BLAS_HOME)/lib -lopenblas \
-            -L$(SCALAPACK_HOME) -lscalapack
+  FLAGS_R = -O3 -fexternal-blas
+  FLAGS_D = -g -O0 -fexternal-blas -fbacktrace -fcheck=all 
+  LIBS    = -L/opt/gcc/scalapack-2.0.2 -lscalapack \
+            -lopenblas
 
 #######################################################################
 #            MPI Options
@@ -34,11 +25,9 @@
   LMPI    = T
   MPI_COMPILE = mpifort
   MPI_COMPILE_FREE = mpifort -ffree-form \
-                     -ffree-line-length-none -ffixed-line-length-none
+                     -ffree-line-length-0 -ffixed-line-length-0
   MPI_COMPILE_C = mpicc
-  MPI_LINK = mpicc -shared -pthread -Wl,--no-undefined -Wl,-export-dynamic
-  MPI_RUN = mpiexec 
-  MPI_RUN_OPTS = 
+  MPI_LINK = mpifort
 
 #######################################################################
 #            NAG Options
@@ -50,56 +39,44 @@
 #            NETCDF Options
 #######################################################################
   LNETCDF = T
-  NETCDF_INC = -I$(NETCDF_F)/include -I$(NETCDF_C)/include 
-  NETCDF_LIB = -L$(NETCDF_C)/lib -lnetcdf -L$(NETCDF_F)/lib -lnetcdff
+  NETCDF_INC = -I/opt/gcc/netcdf-fortran-4.4.5/include
+  NETCDF_LIB = -lnetcdf -lnetcdff
 
 #######################################################################
 #            NTCC Options
 #######################################################################
   LNTCC = F
-  NTCC_INC = -I$(NTCCHOME)/mod
-#  NTCC_LIB = -L$(NTCCHOME)/lib -laladdinsub -lr8slatec -ladpak\
-#             -lcppsub -lcomput -lpspline -lportlib -lezcdf -lmds_sub \
-#             -lmdstransp -lvaxonly
-  NTCC_LIB = $(NTCCHOME)/lib/aladdinsub.a
-  NTCC_LIB += $(NTCCHOME)/lib/r8slatec.a
-  NTCC_LIB += $(NTCCHOME)/lib/adpak.a
-  NTCC_LIB += $(NTCCHOME)/lib/cppsub.a
-  NTCC_LIB += $(NTCCHOME)/lib/comput.a
-  NTCC_LIB += $(NTCCHOME)/lib/pspline.a
-  NTCC_LIB += $(NTCCHOME)/lib/portlib.a
-  NTCC_LIB += $(NTCCHOME)/lib/ezcdf.a
-  NTCC_LIB += $(NTCCHOME)/lib/mds_sub.a
-  NTCC_LIB += $(NTCCHOME)/lib/mdstransp.a
-  NTCC_LIB += $(NTCCHOME)/lib/vaxonly.a
+  NTCC_INC = -I/usr/include
+  NTCC_LIB = -L/usr/lib -laladdinsub -lr8slatec -ladpak\
+             -lcppsub -lcomput -lpspline -lportlib -lezcdf -lmds_sub \
+             -lmdstransp -lvaxonly
 
 #######################################################################
 #            HDF5 Options
 #######################################################################
   LHDF5 = T
-  HDF5_INC =  -I$(HDF5_HOME)/include
-  HDF5_LIB = -L$(HDF5_HOME)/lib -lhdf5_hl -lhdf5_fortran -lhdf5 \
-             -lhdf5hl_fortran -lpthread -lz -lm
+  HDF5_INC = -I/opt/gcc/hdf5-parallel-1.10.5/include
+  HDF5_LIB = -lhdf5 -lhdf5hl_fortran -lhdf5_hl -lhdf5_fortran
 
 #######################################################################
 #             PGPLOT Options
 #######################################################################
   LPGPLOT = F
-  PGPLOT_INC = 
-  PGPLOT_LIB = -L$(PGPLOT_DIR) -lpgplot -L/usr/X11R6/lib -lX11
+  PGPLOT_INC = -I$(PGPLOT_DIR)
+  PGPLOT_LIB = -L$(PGPLOT_DIR) -lpgplot -L/usr/lib/x86_64-linux-gnu -lX11
 
 #######################################################################
 #             SILO Options
 #######################################################################
   LSILO = F
   SILO_INC = -I$(SILOHOME)/include
-  SILO_LIB = -L$(SILOHOME)/lib -lsilo
+  SILO_LIB = -L$(SILOHOME)/lib/x86_64-linux-gnu -lsiloh5
 
 #######################################################################
 #            DKES/NEO Options
 #######################################################################
   LDKES = F
-  LNEO  = F
+  LNEO  = T
 
 #######################################################################
 #            GENE Options
@@ -109,6 +86,7 @@
   GENE_DIR = $(GENE_PATH)
   LIB_GENE = libgene.a
   GENE_LIB = $(GENE_DIR)/$(LIB_GENE) \
+             -L/u/slazerso/src/GENE17_2016/external/pppl_cluster/futils/src -lfutils \
              -L$(FFTWHOME)/lib -lfftw3 \
              -L$(SLEPC_DIR)/$(PETSC_ARCH)/lib -lslepc \
              -L$(PETSC_DIR)/$(PETSC_ARCH)/lib -lpetsc -lX11
@@ -121,7 +99,7 @@
   COILOPTPP_DIR = $(COILOPT_PATH)
   LIB_COILOPTPP = libcoilopt++.a
   COILOPT_LIB = $(COILOPT_PATH)/$(LIB_COILOPTPP) \
-                -L$(GSLHOME)/lib -lgsl -lgslcblas -lstdc++ -lmpi_cxx
+                -L$(GSLHOME)/lib/x86_64-linux-gnu -lgsl -lgslcblas -lstdc++ -lmpi_cxx
 
 #######################################################################
 #            TERPSICHORE Options
@@ -146,35 +124,44 @@
 #            REGCOIL Options
 #######################################################################
   LREGCOIL= T
-  REGCOIL_PATH = /home/stellopt/opt/regcoil
   REGCOIL_DIR = $(REGCOIL_PATH)
   REGCOIL_INC = -I$(REGCOIL_DIR) 
   LIB_REGCOIL = libregcoil.a
   REGCOIL_LIB = $(REGCOIL_DIR)/$(LIB_REGCOIL) -fopenmp
 
 #######################################################################
-#            PTSM3D Options
-#######################################################################
-  LPTSM3D = T
-  PTSM3D_PATH = /home/bfaber/PTSM3D
-  PTSM3D_INC = -I$(PTSM3D_PATH)/objs
-  PTSM3D_DIR = $(PTSM3D_PATH)
-  LIB_PTSM3D = libptsm3d.a
-  PTSM3D_LIB = $(PTSM3D_DIR)/$(LIB_PTSM3D)
-
-#######################################################################
-#            VMEC2PEST Options
-#######################################################################
-  LVMEC2PEST = T
-  VMEC2PEST_PATH = /home/bfaber/workspace/vmec2sfl
-  VMEC2PEST_INC = -I$(VMEC2PEST_PATH)
-  VMEC2PEST_DIR = $(VMEC2PEST_PATH)
-  LIB_VMEC2PEST = lib/libvmec2sfl.a
-  VMEC2PEST_LIB = $(VMEC2PEST_DIR)/$(LIB_VMEC2PEST)
-#######################################################################
 #            LIBSTELL Shared Options
 #######################################################################
-LIB_SHARE = -lc -lgfortran -lstdc++ -lmpi -lmpi_mpifh -lz -lc -lm -lpthread $(LIBS) -lc
+#LIB_SHARE = $(BLASHOME)/lib/libblas.so \
+          $(SCALAPACK_HOME)/lib/libscalapack-openmpi.so \
+          $(BLACS_HOME)/lib/libblacs-openmpi.so  $(BLACS_HOME)/lib/libblacsCinit-openmpi.so $(BLACS_HOME)/lib/libblacsF77init-openmpi.so \
+          $(HDF5_HOME)/lib/x86_64-linux-gnu/libhdf5_hl.so $(HDF5_HOME)/lib/x86_64-linux-gnu/libhdf5_fortran.so $(HDF5_HOME)/lib/x86_64-linux-gnu/libhdf5hl_fortran.so $(HDF5_HOME)/lib/x86_64-linux-gnu/libhdf5.so \
+          $(HDF5_HOME)/lib/x86_64-linux-gnu/libmpi_usempif08.so $(HDF5_HOME)/lib/x86_64-linux-gnu/libhdf5_openmpi_fortran.so \
+          $(NETCDF_HOME)/lib/x86_64-linux-gnu/libnetcdf.so $(NETCDF_HOME)/lib/x86_64-linux-gnu/libnetcdff.so $(NETCDF_HOME)/lib/x86_64-linux-gnu/libnetcdf_c++.so \
+          $(SILOHOME)/lib/x86_64-linux-gnu/libsiloh5.so \
+          $(GSLHOME)/lib/x86_64-linux-gnu/libgsl.so \
+          $(GCC6_HOME)/libgfortran.so $(GCC6_HOME)/libstdc++.so \
+          $(MPIHOME)/lib/x86_64-linux-gnu/libmpi.so $(MPIHOME)/lib/x86_64-linux-gnu/libmpi_mpifh.so \
+          /usr/lib/x86_64-linux-gnu/libm.so /usr/lib/liblapack.so /usr/lib/x86_64-linux-gnu/libdl.so
+#LIB_SHARE = $(BLASHOME)/lib/libblas.so \
+          $(SCALAPACK_HOME)/lib/libscalapack-openmpi.so.1 \
+          $(BLACS_HOME)/lib/libblacs-openmpi.so.1 \
+          $(BLACS_HOME)/lib/libblacsCinit-openmpi.so.1 \
+          $(BLACS_HOME)/lib/libblacsF77init-openmpi.so.1 \
+          $(HDF5_HOME)/lib/x86_64-linux-gnu/libhdf5_openmpi_fortran.so \
+          $(NETCDF_HOME)/lib/libnetcdf.so \
+          $(NETCDF_HOME)/lib/libnetcdff.so \
+          $(NETCDF_HOME)/lib/libnetcdf_c++.so \
+          $(SILOHOME)/lib/x86_64-linux-gnu/libsiloh5.so \
+          $(GSLHOME)/lib/x86_64-linux-gnu/libgsl.so \
+          $(GCC49_HOME)/libgfortran.so \
+          $(GCC49_HOME)/libstdc++.so \
+          $(MPIHOME)/lib/libmpi.so \
+          $(MPIHOME)/lib/libmpif77.so \
+          /usr/lib/x86_64-linux-gnu/libm.so \
+          /usr/lib/liblapack.so \
+          /usr/lib/x86_64-linux-gnu/libdl.so
+
 
 #######################################################################
 #######################################################################
@@ -268,18 +255,17 @@ else
   LCOILOPT = F
   LTERPSICHORE = F
   LTRAVIS = F
-
-  LREGCOIL= F
-  LVMEC2PEST = F
-  LPTSM3D = F
 endif
 ifeq ($(MAKECMDGOALS),xanimec)
   PRECOMP += -D_ANIMEC
 endif
-ifeq ($(MAKECMDGOALS),xvmec2000)
+ifeq ($(MAKECMDGOALS),xparvmec)
   PRECOMP += -DSKS  -DSKS2
 endif
 ifeq ($(MAKECMDGOALS),xsiesta)
+  PRECOMP += -DSKS  -DSKS2
+endif
+ifeq ($(MAKECMDGOALS),xvmec2000)
   PRECOMP += -DSKS  -DSKS2
 endif
 ifeq ($(MAKECMDGOALS),xgtovmi)
@@ -341,30 +327,7 @@ else
 endif
 
 # Handle other codes
-#LIB_LINK += $(GENE_LIB) $(COILOPT_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB) $(REGCOIL_LIB)
-
-ifeq ($(LVMEC2PEST),T)
-  MOD1_PATH += $(VMEC2PEST_INC)
-  PRECOMP += -DVMEC2PEST
-  MOD_PATH += -I$(VMEC2PEST_DIR)
-else
-  VMEC2PEST_LIB =
-  VMEC2PEST_DIR =
-  LIB_VMEC2PEST =
-endif
-
-ifeq ($(LPTSM3D),T)
-  MOD1_PATH += $(PTSM3D_INC)
-  PRECOMP += -DPTSM3D
-  MOD_PATH += -I$(PTSM3D_DIR)/objs
-else
-  PTSM3D_LIB =
-  PTSM3D_DIR =
-  LIB_PTSM3D =
-endif
-
-# Handle other codes
-LIB_LINK += $(GENE_LIB) $(COILOPT_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB) $(REGCOIL_LIB) $(VMEC2PEST_LIB) $(PTSM3D_LIB)
+LIB_LINK += $(GENE_LIB) $(COILOPT_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB) $(REGCOIL_LIB)
 
 # Add libraries to LIB_LINK
 # LIB_LINK+= $(MYHOME)/libstell.a $(LIBS)
@@ -375,42 +338,38 @@ LIB_LINK+= $(LIB_DIR)/$(LOCTYPE)/$(LIB) $(LIBS)
 # 3rd Party Libs
 ifeq ($(LMPI),T)
   PRECOMP += -DMPI_OPT
+  VMEC_DIR = ../../VMEC2000
   COMPILE = $(MPI_COMPILE)
   COMPILE_FREE = $(MPI_COMPILE_FREE)
   LINK    = $(MPI_COMPILE) $(FLAGS) -o 
-  LINK_C  = $(MPI_LINK) 
+  LINK_C  = $(MPI_COMPILE_C) -shared -Wl,-z,defs
 endif
 ifeq ($(LNETCDF),T)
   MOD1_PATH += $(NETCDF_INC)
   PRECOMP += -DNETCDF
   LIB_LINK += $(NETCDF_LIB)
   MOD_PATH += $(NETCDF_INC)
-  LIB_SHARE += $(NETCDF_LIB)
 endif
 ifeq ($(LHDF5),T)
   MOD1_PATH += $(HDF5_INC)
   PRECOMP += -DLHDF5 -DH5_USE_16_API
   LIB_LINK += $(HDF5_LIB)
   MOD_PATH += $(HDF5_INC)
-  LIB_SHARE += $(HDF5_LIB)
 endif
 ifeq ($(LNAG),T)
   PRECOMP += -DNAG
   LIB_LINK += $(NAG_LIB)
-  LIB_SHARE += $(NAG_LIB)
 endif
 ifeq ($(LNTCC),T)
   MOD1_PATH += $(NTCC_INC)
   PRECOMP += -DLADAS -DNTCC
   LIB_LINK += $(NTCC_LIB)
   MOD_PATH += $(NTCC_INC)
-  LIB_SHARE += $(NTCC_LIB)
 endif
 ifeq ($(LSILO),T)
   MOD1_PATH += $(SILO_INC)
   PRECOMP += -DSILO_AVAI
   LIB_LINK += $(SILO_LIB)
-  LIB_SHARE += $(SILO_LIB)
 endif
 
 # This is hear because of MPI above resetting LINK
@@ -421,7 +380,6 @@ ifeq ($(MAKECMDGOALS),libstell.a)
   INC_PATH = 
 endif
 ifeq ($(MAKECMDGOALS),libstell.so)
-  LINK = $(LINK_C)
   LIB_LINK = $(LIB_SHARE)
   COMPILE += -fPIC
   COMPILE_FREE += -fPIC

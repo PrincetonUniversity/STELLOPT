@@ -127,6 +127,9 @@
       INTERFACE get_equil_Bav
          MODULE PROCEDURE get_equil_Bav_dbl, get_equil_Bav_sgl
       END INTERFACE
+      INTERFACE get_equil_Bsupv
+         MODULE PROCEDURE get_equil_Bsupv_dbl, get_equil_Bsupv_sgl
+      END INTERFACE
       INTERFACE pest2vmec
          MODULE PROCEDURE pest2vmec_dbl, pest2vmec_sgl
       END INTERFACE
@@ -1328,6 +1331,47 @@
       IF (PRESENT(Bsqavp_val)) Bsqavp_val = Bsqavp_dbl
       RETURN
       END SUBROUTINE get_equil_Bav_sgl
+
+      !Functions to calculate B^v and its derivatives
+      SUBROUTINE get_equil_Bsupv_dbl(s_val,u_val,v_val,Bsupv,ier,dBsupv)
+      USE EZspline
+      IMPLICIT NONE
+      DOUBLE PRECISION, INTENT(in)    ::  s_val
+      DOUBLE PRECISION, INTENT(in)    ::  u_val
+      DOUBLE PRECISION, INTENT(in)    ::  v_val
+      DOUBLE PRECISION, INTENT(out)   ::  Bsupv
+      DOUBLE PRECISION, INTENT(out), OPTIONAL   ::  dBsupv(3)
+      INTEGER, INTENT(inout)     ::  ier
+      DOUBLE PRECISION :: rho_val
+      IF (ier < 0) RETURN
+      rho_val = SQRT(s_val)
+      CALL EZspline_interp(Bv_spl,u_val,v_val,rho_val,Bsupv,ier)
+      IF (PRESENT(dBsupv)) CALL EZspline_gradient(Bv_spl,u_val,v_val,rho_val,dBsupv,ier)
+      RETURN
+      END SUBROUTINE get_equil_Bsupv_dbl
+
+      SUBROUTINE get_equil_Bsupv_sgl(s_val,u_val,v_val,Bsupv,ier,dBsupv)
+      USE EZspline
+      IMPLICIT NONE
+      REAL, INTENT(in)    ::  s_val
+      REAL, INTENT(in)    ::  u_val
+      REAL, INTENT(in)    ::  v_val
+      REAL, INTENT(out)   ::  Bsupv
+      REAL, INTENT(out), OPTIONAL   ::  dBsupv(3)
+      INTEGER, INTENT(inout)     ::  ier
+      DOUBLE PRECISION    ::  s_dbl
+      DOUBLE PRECISION    ::  u_dbl
+      DOUBLE PRECISION    ::  v_dbl
+      DOUBLE PRECISION   ::  Bsupv_dbl
+      DOUBLE PRECISION   ::  dBsupv_dbl(3)
+      s_dbl = s_val; u_dbl = u_val; v_dbl = v_val;
+      CALL get_equil_Bsupv_dbl(s_dbl,u_dbl,v_dbl,Bsupv_dbl,ier,&
+            dBsupv=dBsupv_dbl)
+      Bsupv=Bsupv_dbl
+      IF (PRESENT(dBsupv)) dBsupv = dBsupv_dbl
+      RETURN
+      END SUBROUTINE get_equil_Bsupv_sgl
+
 
       SUBROUTINE pest2vmec_dbl(coord)
       USE EZspline
