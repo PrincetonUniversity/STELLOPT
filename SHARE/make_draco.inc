@@ -7,14 +7,14 @@
   PRECOMP:= fpp -C -P -DLINUX
   COMPILE = ifort
   COMPILE_FREE = ifort
-  LINK    = ftn -Bstatic -o
+  LINK    = icc -Bstatic -o
   LINK_AR = ar -ruv
-  LINK_C  = $(CC) -shared -Wl,-z-defs
+  LINK_C  = icc -shared -Wl,-z-defs
 
 #######################################################################
 #            Define Compiler Flags
 #######################################################################
-  FLAGS_R = -I$(MKL_HOME)/include -O2 -fp-model strict -xAVX -ip \
+  FLAGS_R = -I$(MKL_HOME)/include -O2 -fp-model strict -ip \
             -assume noold_unit_star 
   FLAGS_D = -g -I$(MKL_HOME)/include
   LIBS    = -Wl,-rpath,$(MKL_HOME)/lib/intel64 \
@@ -28,13 +28,15 @@
   LMPI    = T
   MPI_COMPILE = mpiifort
   MPI_COMPILE_FREE = mpiifort
-  MPI_COMPILE_C = 
+  MPI_COMPILE_C = mpiifort 
   MPI_LINK = mpiifort
+  MPI_RUN = srun
+  MPI_RUN_OPTS = -n 8
 
 #######################################################################
 #            NAG Options
 #######################################################################
-  LNAG = T
+  LNAG = F
   NAG_LIB = $(NAGFLIB) $(NAGMKLLIB)
 
 #######################################################################
@@ -48,10 +50,11 @@
 #######################################################################
 #            NTCC Options
 #######################################################################
-  LNTCC = F
+  LNTCC = T
   NTCC_INC = -I$(NTCCHOME)/mod
-  NTCC_LIB = -L$(NTCCHOME)/lib -laladdinsub -ladpak -lcppsub \
-             -lcomput -lportlib 
+  NTCC_LIB = -L$(NTCCHOME)/lib -lpreact -lsigsub \
+                               -laladdinsub -lpreact -lportlib \
+                               -ladas310_fortran_driver
 
 #######################################################################
 #            HDF5 Options
@@ -109,7 +112,7 @@
 #######################################################################
 #            TERPSICHORE Options
 #######################################################################
-  LTERPSICHORE= F
+  LTERPSICHORE= T
   TERPSICHORE_INC = -I$(TERPSICHORE_PATH)
   TERPSICHORE_DIR = $(TERPSICHORE_PATH)
   LIB_TERPSICHORE = libterpsichore.a
@@ -126,18 +129,34 @@
                $(TRAVIS_DIR)/mag_conf/lib/$(LIB_MCONF) -lstdc++
 
 #######################################################################
+#            SFINCS Options
+#######################################################################
+
+  LSFINCS = T
+  include ${PETSC_DIR}/lib/petsc/conf/variables
+  SFINCS_DIR = $(SFINCS_PATH)/fortran/version3
+  SFINCS_INC = -I$(SFINCS_DIR) -I${PETSC_DIR}/include -I${PETSC_DIR}/${PETSC_ARCH}/include
+  LIB_SFINCS = libsfincs.a
+
+  SFINCS_LIB = $(SFINCS_DIR)/$(LIB_SFINCS) \
+        $(PETSC_LIB) $(FC_LINKER_FLAGS) $(FFLAGS)
+
+#######################################################################
 #            REGCOIL Options
 #######################################################################
   LREGCOIL= F
   REGCOIL_DIR = $(REGCOIL_PATH)
   REGCOIL_INC = -I$(REGCOIL_DIR) 
   LIB_REGCOIL = libregcoil.a
-  REGCOIL_LIB = $(REGCOIL_DIR)/$(LIB_REGCOIL) -fopenmp
+  REGCOIL_LIB = $(REGCOIL_DIR)/$(LIB_REGCOIL) -qopenmp
 
 #######################################################################
 #            LIBSTELL Shared Options
 #######################################################################
-LIB_SHARE = 
+  LIB_SHARE = $(LIBS) $(NTCC_LIB) $(NETCDF_LIB) $(HDF5_LIB) \
+             -lifport -lifcoremt -limf -lm -lc \
+             -lpthread -lirc -lunwind -lirc_s
+
 
 #######################################################################
 #######################################################################
@@ -231,6 +250,7 @@ else
   LCOILOPT = F
   LTERPSICHORE = F
   LTRAVIS = F
+  LSFINCS = F
 endif
 ifeq ($(MAKECMDGOALS),xanimec)
   PRECOMP += -D_ANIMEC
@@ -289,6 +309,17 @@ else
   TRAVIS_DIR = 
   LIB_TRAVIS = 
 endif
+
+ifeq ($(LSFINCS),T)
+  MOD1_PATH += $(SFINCS_INC)
+  PRECOMP += -DSFINCS
+  MOD_PATH += $(SFINCS_INC)
+else
+  SFINCS_LIB =
+  SFINCS_DIR =
+  LIB_SFINCS =
+endif
+
 ifeq ($(LREGCOIL),T)
   MOD1_PATH += $(REGCOIL_INC)
   PRECOMP += -DREGCOIL
@@ -300,10 +331,9 @@ else
 endif
 
 # Handle other codes
-LIB_LINK += $(GENE_LIB) $(COILOPT_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB) $(REGCOIL_LIB)
+LIB_LINK += $(GENE_LIB) $(COILOPT_LIB) $(REGCOIL_LIB) $(SFINCS_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB)
 
 # Add libraries to LIB_LINK
-#LIB_LINK+= $(HOME_BIN)/libstell.a $(LIBS)
 LIB_LINK+= $(LIB_DIR)/$(LOCTYPE)/$(LIB) $(LIBS)
 
 # 3rd Party Libs
@@ -351,7 +381,8 @@ ifeq ($(MAKECMDGOALS),libstell.a)
   INC_PATH = 
 endif
 ifeq ($(MAKECMDGOALS),libstell.so)
-  LIB_LINK = $(LIB_SHARE)
+  LINK = $(LINK_C)
+  LIB_LINK = $(LIB_SHARE) 
   COMPILE += -fPIC
   COMPILE_FREE += -fPIC
   INC_PATH = 

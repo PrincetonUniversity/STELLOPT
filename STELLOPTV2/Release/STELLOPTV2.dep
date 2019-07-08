@@ -278,6 +278,18 @@ chisq_xics_bright.o : \
       equil_utils.o 
       
 
+chisq_xics_w3.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      equil_utils.o 
+      
+
+chisq_xics_v.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      equil_utils.o 
+      
+
 chisq_faraday.o : \
       stellopt_runtime.o \
       stellopt_targets.o \
@@ -417,6 +429,20 @@ stellopt_balloon.o : \
       
 
 stellopt_bootsj.o : \
+      stellopt_runtime.o \
+      stellopt_input_mod.o \
+      stellopt_vars.o \
+      stellopt_targets.o \
+      equil_utils.o \
+      $(BOOZ_DIR)/Release/booz_persistent.o \
+      $(LIB_DIR)/Release/bootsj_input.o \
+      $(BOOTSJ_DIR)/Release/parambs.o \
+      $(BOOTSJ_DIR)/Release/vmec0.o \
+      $(BOOTSJ_DIR)/Release/trig.o \
+      $(LIB_DIR)/Release/read_boozer_mod.o
+      
+
+stellopt_sfincs.o : \
       stellopt_runtime.o \
       stellopt_input_mod.o \
       stellopt_vars.o \
@@ -745,3 +771,15 @@ stellopt_write_mgrid.o : \
       $(LIB_DIR)/Release/ezcdf.o \
       $(MGRID_DIR)/Release/write_mgrid.o \
       $(MGRID_DIR)/Release/makegrid_global.o 
+
+
+chisq_x.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      stellopt_vars.o
+
+
+chisq_y.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      stellopt_vars.o

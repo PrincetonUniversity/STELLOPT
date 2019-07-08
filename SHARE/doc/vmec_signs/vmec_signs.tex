@@ -1,0 +1,178 @@
+\documentclass[11pt,letter]{article}
+
+\usepackage{latexsym, color, graphicx, comment}
+\usepackage[top=1in,bottom=1in,left=1in,right=1in]{geometry}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true,linkcolor=blue}
+
+
+%\graphicspath{{../MATLAB/}}
+
+\newcommand{\vect}[1]{\mbox{\boldmath $#1$}}
+\DeclareMathAlphabet{\mathbfsf}{\encodingdefault}{\sfdefault}{bx}{n}
+\newcommand{\tens}[1]{\mathbfsf{#1}}
+
+\newcommand{\red}[1]{\textcolor{red}{#1}}
+\newcommand{\erf}{\mathrm{erf}}
+\newcommand{\PS}{Pfirsch-Schl\"{u}ter~}
+\newcommand{\ExB}{\vect{E}\times\vect{B}}
+\newcommand{\Cnl}{C_{\mathrm{nl}a}}
+\newcommand{\vma}{\vect{v}_{\mathrm{m}a}}
+\newcommand{\vm}{\vect{v}_{\mathrm{m}}}
+\newcommand{\vda}{\vect{v}_{\mathrm{d}a}}
+\newcommand{\vE}{\vect{v}_{E}}
+\newcommand{\vdao}{\vect{v}_{\mathrm{d}a0}}
+\newcommand{\vdo}{\vect{v}_{\mathrm{d}0}}
+\newcommand{\vEo}{\vect{v}_{E0}}
+\newcommand{\vpar}{v_{||}}
+\newcommand{\vperp}{v_{\bot}}
+\newcommand{\rhop}{\rho_{\theta}}
+\newcommand{\rT}{r_{T}}
+\newcommand{\Ti}{T_{\mathrm{i}}}
+\newcommand{\rTi}{r_{T\mathrm{i}}}
+\newcommand{\rTe}{r_{T\mathrm{e}}}
+\newcommand{\reta}{r_{\eta}}
+\newcommand{\rn}{r_{n}}
+\newcommand{\rperp}{r_\bot}
+\newcommand{\fM}{f_{\mathrm{M}}}
+\newcommand{\fMa}{f_{\mathrm{M}a}}
+\newcommand{\fMi}{f_{\mathrm{M}i}}
+\newcommand{\fMe}{f_{\mathrm{Me}}}
+\newcommand{\fe}{f_{\mathrm{e}}}
+\newcommand{\Te}{T_{\mathrm{e}}}
+\newcommand{\vth}{v_{\mathrm{th}}}
+\newcommand{\nuii}{\nu_{ii}}
+\newcommand{\nuPrime}{\hat{\nu}}
+\newcommand{\gradpar}{\nabla_{||}}
+\newcommand{\kpar}{k_{||}}
+\newcommand{\psia}{\psi_0}
+\newcommand{\psiaHat}{\hat{\psi}_0}
+\newcommand{\omegase}{\omega_{*}}
+\newcommand{\nuee}{\nu_{ee}}
+\newcommand{\energy}{\mathcal{E}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\changed}[1]{\textcolor{red}{#1}}
+\newcommand{\todo}[1]{\textcolor{green}{#1}}
+\newcommand{\nescoil}{{\tt NESCOIL}}
+\newcommand{\regcoil}{{\tt REGCOIL}}
+\newcommand{\vmec}{{\tt VMEC}}
+\newcommand{\makegrid}{{\tt MAKEGRID}}
+\newcommand{\currentPot}{\Phi}
+\newcommand{\currentPotSV}{\Phi_{sv}}
+\newcommand{\Bnormal}{B_{\mathrm{normal}}}
+\newcommand{\sincos}{\begin{pmatrix} \sin \\ \cos \end{pmatrix}}
+\newcommand{\cossin}{\begin{pmatrix} \cos \\ -\sin \end{pmatrix}}
+\newcommand{\Bnplasma}{B_{\mathrm{normal}}^{\mathrm{plasma}}}
+\newcommand{\Bnexternal}{B_{\mathrm{normal}}^{\mathrm{external}}}
+\newcommand{\Bncurrentpot}{B_{\mathrm{normal}}^{\Phi}}
+\newcommand{\BnormalSV}{B_{\mathrm{normal}}^{\mathrm{sv}}}
+
+\begin{document}
+
+\title{Sign conventions in VMEC}
+
+
+% repeat the \author .. \affiliation  etc. as needed
+% \email, \thanks, \homepage, \altaffiliation all apply to the current author.
+% Explanatory text should go in the []'s,
+% actual e-mail address or url should go in the {}'s for \email and \homepage.
+% Please use the appropriate macro for the type of information
+
+% \affiliation command applies to all authors since the last \affiliation command.
+% The \affiliation command should follow the other information.
+
+%\author{Pavlos Xanthopoulos}
+%\email[]{mattland@umd.edu}
+%\homepage[]{Your web page}
+%\thanks{}
+%\affiliation{Max Planck Institute for Plasma Physics, Greifswald, Germany}
+
+\author{Matt Landreman}
+%\email[]{mattland@umd.edu}
+%\homepage[]{Your web page}
+%\thanks{}
+%\affiliation{Institute for Research in Electronics and Applied Physics, University of Maryland, College Park, MD, 20742, USA}
+
+% Collaboration name, if desired (requires use of superscriptaddress option in \documentclass).
+% \noaffiliation is required (may also be used with the \author command).
+%\collaboration{}
+%\noaffiliation
+
+\date{September 28, 2017}
+\maketitle %\maketitle must follow title, authors, abstract and \pacs
+
+
+%\section{Summary of main points}
+
+This note is based on some preliminary numerical experiments, and I have not yet been able to confirm them by
+examination of the source code, so there could well be errors.
+
+The following points apply to the case {\ttfamily lrfp=.false.}; I am not sure if anything is different in the {\ttfamily lrfp=.true.} case.
+
+\begin{enumerate}
+\item
+The toroidal angle, variously called $\phi$, $\zeta$, or $v$, always increases in a counter-clockwise direction when the plasma is viewed from above.
+Hence, the cylindrical coordinate system $(R,\zeta,Z)$ is right-handed.
+(I've verified this is true for \makegrid, and hence true for free-boundary \vmec, but I'm not sure it needs to be true for fixed-boundary \vmec.)
+\item
+The direction of the poloidal angle, variously called $\theta$ or $u$, always increases as you move from the outboard to inboard
+side over the top of the plasma. If the boundary shape specified in the input file implies the opposite direction for $\theta$,
+vmec will flip the sign of some of the shape coefficients to flip the sign of $\theta$. As a result, the Jacobian of the $(s,\theta,\zeta)$
+coordinates 
+\begin{equation}
+\sqrt{g} = \frac{\partial \vect{r}}{\partial s} \cdot \frac{\partial\vect{r}}{\partial\theta} \times \frac{\partial\vect{r}}{\partial\zeta}
+= \frac{1} {\nabla s \cdot \nabla\theta\times\nabla\zeta}
+\end{equation}
+is always negative. Here, $\vect{r}$ is the position vector, and $s$ is the toroidal flux normalized to its value at the edge, so $s=0$ on the magnetic axis and $s=1$ at the outermost surface.
+This sign of $\sqrt{g}$ is reflected in the output variable {\ttfamily signgs}, which is always $-1$.
+(Then why is {\ttfamily signgs} saved, if it is always the same?)
+\item
+These previous points imply that the rotational transform $\iota = d(\theta + \lambda) / d\zeta$ is positive if the magnetic
+field lines spiral with a left-handed orientation, whereas $\iota<0$ if the field lines make a right-handed spiral.
+\item
+A positive value for the input toroidal flux variable {\ttfamily phiedge} corresponds to the magnetic field pointing in the $\nabla \zeta$ direction,
+(counter-clockwise when viewed from above.) This flux satisfies
+\begin{equation}
+\mathtt{phiedge} = \int_0^s ds' \int_0^{2\pi} d\theta | \sqrt{g}| \vect{B}\cdot\nabla\zeta,
+\end{equation}
+where the absolute value must be included around the $| \sqrt{g}|$ factor.
+\item
+The output toroidal flux quantities {\ttfamily phi} and {\ttfamily phipf} have the same sign as {\ttfamily phiedge}.
+However, the output toroidal flux quantity {\ttfamily phips} differs in sign by {\ttfamily signgs}, i.e. it has the opposite sign.
+\item
+The toroidal plasma current given by the input parameter {\ttfamily curtor} and output parameter {\ttfamily ctor} is positive if the current points in the $\nabla\zeta$ direction
+(counter-clockwise when viewed from above.) This current satisfies
+\begin{equation}
+\mathtt{curtor} = \int_0^s ds' \int_0^{2\pi} d\theta | \sqrt{g}| \vect{j}\cdot\nabla\zeta,
+\end{equation}
+where $\vect{j}$ is the current density, and the absolute value must be included around the $| \sqrt{g}|$ factor.
+\item
+In the expression for the magnetic field
+\begin{equation}
+\vect{B} = \nabla\psi\times\nabla(\theta + \lambda) + \iota \nabla\zeta\times\nabla\psi,
+\end{equation}
+the sign of the $\psi$, which is the toroidal flux divided by $2\pi$, differs from the sign of vmec's {\ttfamily phi}
+by {\ttfamily signgs}$=-1$.
+\end{enumerate}
+
+\begin{comment}
+\section{Evidence}
+Line 273 of {\ttfamily General/bcovar.f: \\
+\\
+ctor = signgs*twopi*(c1p5*buco(ns) - p5*buco(ns1))
+\\
+}
+where {\ttfamily p5}=0.5 and {\ttfamily c1p5}=1.5.
+\end{comment}
+
+%\appendix
+
+%\bibliography{quasisymmetricEquilibria}
+
+
+\end{document}
+
+
+

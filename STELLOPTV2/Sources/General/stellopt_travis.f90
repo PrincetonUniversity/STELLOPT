@@ -18,7 +18,10 @@
 !        iflag         Error flag
 !----------------------------------------------------------------------
       IMPLICIT NONE
-      LOGICAL, INTENT(in)    :: lscreen
+!DEC$ IF DEFINED (MPI_OPT)
+!      INCLUDE 'mpif.h'
+!DEC$ ENDIF
+      LOGICAL, INTENT(inout) :: lscreen
       INTEGER, INTENT(inout) :: iflag
 !-----------------------------------------------------------------------
 !     Local Variables
@@ -39,12 +42,20 @@
       CHARACTER(4)   :: antennaCoordType,targetPositionType
       CHARACTER(256) :: B0type,labelType,equiname
       CHARACTER(256) :: hamilt,dieltensor
+      INTEGER, ALLOCATABLE :: mnum(:)
+      INTEGER       :: mystart,myend, chunk, numprocs_local,s
 
       INTERFACE
          INTEGER(4) FUNCTION mcload(mconf,name) 
             INTEGER(8)   :: mconf
             CHARACTER(*) :: name
          END FUNCTION mcLoad
+         SUBROUTINE mcFree(mconf) 
+            INTEGER(8)   :: mconf
+         END SUBROUTINE mcFree
+         SUBROUTINE VesselFree(mconf) 
+            INTEGER(8)   :: mconf
+         END SUBROUTINE VesselFree
       END INTERFACE
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
@@ -52,8 +63,9 @@
       IF (iflag < 0) RETURN
       IF (lscreen) WRITE(6,'(a)') ' ----------------------------  ECE (TRAVIS) CALCULATION  -------------------------'
       SELECT CASE(TRIM(equil_type))
-         CASE('vmec2000','animec','flow','satire','parvmec','paravmec')
+         CASE('vmec2000','animec','flow','satire','parvmec','paravmec','vboot','vmec2000_oneeq')
 !DEC$ IF DEFINED (TRAVIS)
+
             ! Load equilibrium
             equiname = 'wout_'//TRIM(proc_string)//'.nc'
             ier = mcLoad(mconf8,equiname)
@@ -61,16 +73,35 @@
                iflag = -1
                RETURN
             END IF
+!DEC$ IF DEFINED (MPI_OPT)
+            CALL MPI_COMM_RANK(MPI_COMM_MYWORLD, myworkid, ierr_mpi)
+            CALL MPI_COMM_SIZE(MPI_COMM_MYWORLD, numprocs_local, ierr_mpi)
+            CALL MPI_BCAST(nrad,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
+            CALL MPI_BCAST(Aminor,1,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
+            CALL MPI_BCAST(Baxis,1,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
+!DEC$ ENDIF
  
             ! Setup profiles
-            CALL FLUSH(6)
             ALLOCATE(te_prof(nrad),ne_prof(nrad),z_prof(nrad))
-            DO i = 1,nrad
-               CALL get_equil_ne(rho(i),TRIM(ne_type),ne_prof(i),ier)
-               CALL get_equil_te(rho(i),TRIM(te_type),te_prof(i),ier)
-               CALL get_equil_zeff(rho(i),TRIM(zeff_type),z_prof(i),ier)
-            END DO
-            te_prof = te_prof*1.0E-3 ! Must be in keV
+            IF (myworkid == master) THEN
+               CALL FLUSH(6)
+               DO i = 1,nrad
+                  CALL get_equil_ne(rho(i),TRIM(ne_type),ne_prof(i),ier)
+                  CALL get_equil_te(rho(i),TRIM(te_type),te_prof(i),ier)
+                  CALL get_equil_zeff(rho(i),TRIM(zeff_type),z_prof(i),ier)
+               END DO
+               te_prof = te_prof*1.0E-3 ! Must be in keV
+            ELSE
+               lscreen = .FALSE.
+               ALLOCATE(rho(nrad))
+            END IF
+
+!DEC$ IF DEFINED (MPI_OPT)
+            CALL MPI_BCAST(rho,nrad,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
+            CALL MPI_BCAST(ne_prof,nrad,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
+            CALL MPI_BCAST(te_prof,nrad,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
+            CALL MPI_BCAST(z_prof,nrad,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
+!DEC$ ENDIF
 
 
             ! Handle Output
@@ -85,11 +116,35 @@
             CALL set_VesselMirrors_f77(vessel_ece,mirror_ece)
 
             ! Allocate Arrays
+            narr = MAXVAL(COUNT(sigma_ece < bigno,DIM=2),DIM=1)
             IF (ALLOCATED(radto_ece)) DEALLOCATE(radto_ece)
             IF (ALLOCATED(radtx_ece)) DEALLOCATE(radtx_ece)
-            narr = SUM(COUNT(sigma_ece < bigno,DIM=2))
-            ALLOCATE(radto_ece(narr))
-            ALLOCATE(radtx_ece(narr))
+            ALLOCATE(radto_ece(nsys,narr))
+            ALLOCATE(radtx_ece(nsys,narr))
+            radto_ece = 0.0; radtx_ece = 0.0
+ 
+!DEC$ IF DEFINED (MPI_OPT)
+            ! Divide up work
+            CALL MPI_COMM_SIZE( MPI_COMM_MYWORLD, numprocs_local, ierr_mpi )
+            IF (ALLOCATED(mnum)) DEALLOCATE(mnum)
+            ALLOCATE(mnum(numprocs_local))
+            mnum=0
+            i = 1
+            DO
+               IF (SUM(mnum,DIM=1) == narr) EXIT  ! Have to use ns_b because of logic
+               IF (i > numprocs_local) i = 1
+               mnum(i) = mnum(i) + 1
+               i=i+1
+            END DO
+            mystart = 1
+            DO i = 1, myworkid
+               mystart = SUM(mnum(1:i))+1
+            END DO
+            myend = mystart + mnum(myworkid+1) - 1
+            IF (myend < mystart) myend = mystart
+            IF (mnum(myworkid+1) == 0) mystart = myend + 1
+            DEALLOCATE(mnum)
+!DEC$ ENDIF
 
             ! Loop over ECE systems
             n=1
@@ -98,7 +153,11 @@
             nra = nra_ece
             nphi = nphi_ece
             DO i = 1,nsys
+
+               ! Don't evaluate if not set or not in [mystart,myend]
                IF (ALL(sigma_ece(i,:) >= bigno)) CYCLE
+               IF (sigma_ece(i,mystart) >= bigno) CYCLE
+
                ! Set Antenna Position
                antennaPosition(1:3) = antennaPosition_ece(i,1:3)
                targetPosition(1:3) = targetPosition_ece(i,1:3)
@@ -107,14 +166,6 @@
                IF (rbeam_ece(i,3) > 0) QOemul = 1
                Rfocus(1:2) = rfocus_ece(i,1:2)
                phibx       = rfocus_ece(i,3)
-               ! TEST BEAM!!!!!!!!!!!!
-               !antennaPosition(1:3) = (/9.0, 0.0, 0.01/)
-               !targetPosition(1:3)  = (/0.5,  0.0, 0.05/)
-               !antennaCoordType     = 'cyl'
-               !targetPositionType   = 'cyl'
-               !Rfocus(1:2) = 10   ! beam focal lengths 
-               !QOemul = 0    ! whether to emulate quasi-optical definition
-               ! TEST BEAM!!!!!!!!!!!
                CALL set_Antenna_f77( rbeam,rfocus,phibx,QOemul, nra, nphi, &
                                      antennaPosition, targetPosition, &
                                      antennaCoordType,targetPositionType)
@@ -128,7 +179,7 @@
 
                ! Set Profiles
                labelType = 'tor_rho'
-               CALL set_nTZ_profs_f77(nrad, rho, ne_prof, te_prof, z_prof, labelType)
+               CALL set_nTZ_profs_f77(nrad, sqrt(rho), ne_prof, te_prof, z_prof, labelType)
 
                ! Set Configuration
                !maxSteps     = 5000   ! upper number of steps on the trajectory
@@ -148,23 +199,45 @@
                !           odetolerance, stopray, npass, hamilt, dieltensor, &
                !           maxHarm, umax, nu, nrho)
 
-               ! Print HEADER
-               IF (lscreen .and. i==1) WRITE(6,'(5X,A,3X,A,3X,A,3X,A)') 'Beam','Freq [GHz]','Trad (0) [keV]','Trad (X) [keV]'
-
                ! Cycle over frequencies
-               DO j = 1, nprof
+               DO j = mystart,myend
                   IF (sigma_ece(i,j) >= bigno) CYCLE
                   wmode = 0 ! O-mode
-                  CALL run_ECE_Beam_f77m(n,freq_ece(i,j), wmode, radto_ece(n))
+                  CALL run_ECE_Beam_f77m(n,freq_ece(i,j), wmode, radto_ece(i,j))
                   wmode = 1 ! X-mode
-                  CALL run_ECE_Beam_f77m(n,freq_ece(i,j), wmode, radtx_ece(n))
-                  IF (lscreen) WRITE(6,'(5X,i3,3x,f8.2,2(5x,f10.3))') n,freq_ece(i,j),radto_ece(n),radtx_ece(n)
-                  n = n + 1
+                  CALL run_ECE_Beam_f77m(n,freq_ece(i,j), wmode, radtx_ece(i,j))
                END DO
 
+               ! Free the vessel here (only loaded if we get to here)
+               !CALL VesselFree(mVessel)
             END DO
 
+!DEC$ IF DEFINED (MPI_OPT)
+            IF (myworkid == master) THEN
+               CALL MPI_REDUCE(MPI_IN_PLACE,radto_ece,nsys*narr,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
+               CALL MPI_REDUCE(MPI_IN_PLACE,radtx_ece,nsys*narr,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
+            ELSE
+               CALL MPI_REDUCE(radto_ece,radto_ece,nsys*narr,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
+               CALL MPI_REDUCE(radtx_ece,radtx_ece,nsys*narr,MPI_DOUBLE_PRECISION,MPI_SUM,master,MPI_COMM_MYWORLD,ierr_mpi)
+            END IF
+!DEC$ ENDIF
+
+            ! Deallocate variables
+            CALL MCFREE(mconf8)
             DEALLOCATE(te_prof,ne_prof,z_prof)
+            IF (myworkid /= master) DEALLOCATE(radto_ece,radtx_ece,rho)
+
+            ! Print to screen
+            IF (lscreen) THEN
+               WRITE(6,'(5X,A,3X,A,3X,A,3X,A)') 'Beam','Freq [GHz]','Trad (0) [keV]','Trad (X) [keV]'
+               DO i = 1, nsys
+                  IF (ALL(sigma_ece(i,:) >= bigno)) CYCLE
+                  DO j = 1, narr
+                     IF (sigma_ece(i,j) >= bigno) CYCLE
+                     WRITE(6,'(5X,i3,3x,f8.2,2(5x,f10.3))') i,freq_ece(i,j),radto_ece(i,j),radtx_ece(i,j)
+                  END DO
+               END DO
+            END IF
 !DEC$ ENDIF
          CASE('spec')
       END SELECT

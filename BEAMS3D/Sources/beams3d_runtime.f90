@@ -96,17 +96,17 @@ MODULE beams3d_runtime
     INTEGER, PARAMETER :: MPI_FINE_ERR = 89
 
     INTEGER, PARAMETER :: MAXPARTICLES = 2**18
-    INTEGER, PARAMETER :: NLOCAL = 128  ! Number of local processors
+    INTEGER, PARAMETER :: NLOCAL = 136  ! Number of local processors
     INTEGER, PARAMETER :: MAXBEAMS = 16
     INTEGER, PARAMETER :: MAXPROFLEN = 512
 
     LOGICAL :: lverb, lvmec, lpies, lspec, lcoil, lmgrid, &
-               lmu, lvessel, lvac, lrestart, lneut, &
+               lvessel, lvac, lrestart, lneut, &
                lflux, lbeam, lhitonly, lread_input, lplasma_only, lraw,&
                ldepo, lbeam_simple, ldebug, lcollision, lw7x
     INTEGER :: nextcur, npoinc, nbeams, nparticles_start, nprocs_beams
     INTEGER, ALLOCATABLE :: beam(:)
-    REAL(rprec) :: mu, dt, follow_tol, pi, pi2, mu0, to3, dt_save
+    REAL(rprec) :: dt, follow_tol, pi, pi2, mu0, to3, dt_save, ne_scale, te_scale, ti_scale, zeff_scale
     REAL(rprec), DIMENSION(MAXBEAMS) :: Adist_beams, Asize_beams, Div_beams, E_beams, mass_beams, &
                                         charge_beams, Zatom_beams, P_beams
     REAL(rprec), DIMENSION(MAXBEAMS, 2) :: r_beams, z_beams, phi_beams

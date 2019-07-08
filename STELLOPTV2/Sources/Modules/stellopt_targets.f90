@@ -80,6 +80,8 @@
       REAL(rprec) ::  target_kappa, sigma_kappa, phi_kappa
       REAL(rprec) ::  target_kappa_box, sigma_kappa_box, phi_kappa_box
       REAL(rprec) ::  target_kappa_avg, sigma_kappa_avg
+      REAL(rprec) ::  target_x, sigma_x
+      REAL(rprec) ::  target_y, sigma_y
       REAL(rprec), PARAMETER ::  bigno_ne = 1.0E27
       REAL(rprec) ::  norm_press
       REAL(rprec) ::  qm_ratio
@@ -101,6 +103,8 @@
                                         r1_ti_line, phi1_ti_line, z1_ti_line
       REAL(rprec), DIMENSION(nprof) ::  target_xics,sigma_xics, &
                                         target_xics_bright,sigma_xics_bright, &
+                                        target_xics_w3,sigma_xics_w3, &
+                                        target_xics_v,sigma_xics_v, &
                                         r0_xics, phi0_xics, z0_xics, &
                                         r1_xics, phi1_xics, z1_xics
       REAL(rprec), DIMENSION(nprof) ::  target_faraday,sigma_faraday, &
@@ -218,6 +222,8 @@
       INTEGER, PARAMETER :: jtarget_line_ti    = 2021
       INTEGER, PARAMETER :: jtarget_xics       = 2022
       INTEGER, PARAMETER :: jtarget_xics_bright= 2023
+      INTEGER, PARAMETER :: jtarget_xics_w3    = 2024
+      INTEGER, PARAMETER :: jtarget_xics_v     = 2025
       INTEGER, PARAMETER :: jtarget_press      = 203
       INTEGER, PARAMETER :: jtarget_vphi       = 204
       INTEGER, PARAMETER :: jtarget_iota       = 300  
@@ -230,6 +236,9 @@
       INTEGER, PARAMETER :: jtarget_bprobe     = 501
       INTEGER, PARAMETER :: jtarget_segrog     = 502
       INTEGER, PARAMETER :: jtarget_fluxloop   = 503
+      INTEGER, PARAMETER :: jtarget_regcoil_chi2_b          = 504
+      INTEGER, PARAMETER :: jtarget_regcoil_current_density = 5041
+      INTEGER, PARAMETER :: jtarget_curvature_P2            = 505
       INTEGER, PARAMETER :: jtarget_balloon    = 601
       INTEGER, PARAMETER :: jtarget_kink       = 6011
       INTEGER, PARAMETER :: jtarget_bootstrap  = 602
@@ -254,7 +263,8 @@
       INTEGER, PARAMETER :: jtarget_regcoil_chi2_b = 5150
       INTEGER, PARAMETER :: jtarget_regcoil_current_density = 5151
       INTEGER, PARAMETER :: jtarget_curvature_P2 = 5200
-
+      INTEGER, PARAMETER :: jtarget_x          = 900
+      INTEGER, PARAMETER :: jtarget_y          = 901
 
       CONTAINS
       
@@ -264,6 +274,10 @@
       CHARACTER*(*), PARAMETER ::  out_format_1D = '(5X,A,I3.3,A)'
       CHARACTER*(*), PARAMETER ::  out_format_2D = '(5X,A,I3.3,A,I3.3,A)'
       SELECT CASE(var_num)
+         CASE(jtarget_x)
+            WRITE(iunit, out_format) 'X'
+         CASE(jtarget_y)
+            WRITE(iunit, out_format) 'Y'
          CASE(jtarget_aspect)
             WRITE(iunit, out_format) 'Aspect Ratio'
          CASE(jtarget_aspect_max)
@@ -323,6 +337,10 @@
             WRITE(iunit, out_format) 'XICS Signal'
          CASE(jtarget_xics_bright)
             WRITE(iunit, out_format) 'XICS Brightness'
+         CASE(jtarget_xics_w3)
+            WRITE(iunit, out_format) 'XICS W3 Factor'
+         CASE(jtarget_xics_v)
+            WRITE(iunit, out_format) 'XICS Perp. Velocity'
          CASE(jtarget_te)
             WRITE(iunit, out_format) 'Electron Temperature'
          CASE(jtarget_ti)

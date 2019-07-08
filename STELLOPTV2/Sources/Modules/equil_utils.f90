@@ -99,34 +99,6 @@
       RETURN
       END SUBROUTINE eval_prof_spline
       
-      SUBROUTINE get_equil_E(r_val,phi_val,z_val,er,ez,ier)
-      IMPLICIT NONE
-      REAL(rprec), INTENT(in)    ::  r_val
-      REAL(rprec), INTENT(in)    ::  phi_val
-      REAL(rprec), INTENT(in)    ::  z_val
-      REAL(rprec), INTENT(out)   ::  er
-      REAL(rprec), INTENT(out)   ::  ez
-      INTEGER, INTENT(inout)     ::  ier
-      REAL(rprec) :: s_val, u_val, v_val, phi_prime, phi2_val,R1,Z1
-      REAL(rprec) :: R_grad(3), Z_grad(3)
-      IF (ier < 0) RETURN
-      CALL get_equil_s(r_val,phi_val,z_val,s_val,ier,u_val)
-      IF (ier < 0) RETURN
-      v_val = MOD(phi_val,pi2/nfp)*nfp
-      CALL get_equil_RZ(s_val,u_val,v_val,R1,Z1,ier,&
-            R_GRAD=R_grad,Z_GRAD=Z_grad)
-      IF (ier == 0) THEN
-         CALL get_equil_phi(s_val,phi2_val,ier,phi_prime)
-         er = R_grad(3)*phi_prime
-         ez = Z_grad(3)*phi_prime
-      ELSE
-        er  = 0
-        ez  = 0
-      END IF
-      RETURN
-      END SUBROUTINE get_equil_E
-      
-      
       SUBROUTINE get_equil_iota(s_val,val,ier)
       IMPLICIT NONE
       REAL(rprec), INTENT(inout) ::  s_val
@@ -243,24 +215,6 @@
       RETURN
       END SUBROUTINE get_equil_nustar
       
-      SUBROUTINE get_equil_phi(s_val,val,ier,pval)
-      IMPLICIT NONE
-      REAL(rprec), INTENT(inout) ::  s_val
-      REAL(rprec), INTENT(out)   ::  val
-      REAL(rprec), INTENT(out), OPTIONAL :: pval ! Phi'=dphi/ds
-      INTEGER, INTENT(inout)     ::  ier
-      IF (ier < 0) RETURN
-      IF (EZspline_allocated(phi_spl)) THEN
-         CALL EZspline_isInDomain(phi_spl,s_val,ier)
-         IF (ier .ne. 0) RETURN
-         CALL EZspline_interp(phi_spl,s_val,val,ier)
-         IF (PRESENT(pval)) CALL EZspline_derivative(phi_spl,1,s_val,pval,ier)
-      ELSE
-         ier = -1
-      END IF
-      RETURN
-      END SUBROUTINE get_equil_phi
-      
       SUBROUTINE eval_prof_stel(s_val,type,val,ncoefs,coefs,ier,spl_obj)
       IMPLICIT NONE
       REAL(rprec),      INTENT(in)             :: s_val
@@ -283,15 +237,17 @@
      &   0.1346333596549982, 0.1477621123573764, 0.1477621123573764,           &
      &   0.1346333596549982, 0.1095431812579910, 0.0747256745752903,           &
      &   0.03333567215434407 /)
+      val = 0
       IF (ier < 0) RETURN
       CALL tolower(type)
       SELECT CASE (type)
          CASE ('gauss_trunc')
-            val = 0
             val = (coefs(1)/(one - EXP(-(one/coefs(2))**2)))*&
                   (EXP(-(s_val/coefs(2))**2)-EXP(-(one/coefs(2))**2))
+         CASE ('gauss_trunc_offset')
+            val = coefs(3)+(coefs(1)/(one - EXP(-(one/coefs(2))**2)))*&
+                  (EXP(-(s_val/coefs(2))**2)-EXP(-(one/coefs(2))**2))
          CASE ('two_lorentz')
-            val = 0
             val = coefs(1)*(coefs(2)*(one/(one+(  s_val/coefs(3)**2)**coefs(4))**coefs(5) &
                                        -one/(one+(one/coefs(3)**2)**coefs(4))**coefs(5))/   &
                                    (one-one/(one+(one/coefs(3)**2)**coefs(4))**coefs(5))+   &
@@ -299,21 +255,38 @@
                                    -one/(one+(one/coefs(6)**2)**coefs(7))**coefs(8))/       &
                                (one-one/(one+(one/coefs(6)**2)**coefs(7))**coefs(8)))
          CASE ('two_power')
-            val = 0
             val = coefs(1) * (one - s_val**coefs(2))**coefs(3)
+         CASE ('two_power_hollow')
+            val = s_val * coefs(1) * (one - s_val**coefs(2))**coefs(3)
+         CASE ('two_power_offset')
+            val = coefs(4) + coefs(1) * (one - s_val**coefs(2))**coefs(3)
          CASE ('power_series')
-            val = 0
             DO i = UBOUND(coefs,DIM=1), LBOUND(coefs,DIM=1), -1
                val = s_val*val + coefs(i)
             END DO
+         CASE ('power_series_rho2')
+            x0 = MIN(MAX(s_val,0.0),1.0)**0.25
+            IF (s_val .eq. 0) x0 = 0
+            DO i = UBOUND(coefs,DIM=1), LBOUND(coefs,DIM=1), -1
+               val = x0*val + coefs(i)
+            END DO
+         CASE ('power_series_rho')
+            x0 = MIN(MAX(s_val,0.0),1.0)**0.5
+            IF (s_val .eq. 0) x0 = 0
+            DO i = UBOUND(coefs,DIM=1), LBOUND(coefs,DIM=1), -1
+               val = x0*val + coefs(i)
+            END DO
+         CASE ('power_series_0_boundaries')
+            DO i = UBOUND(coefs,DIM=1), LBOUND(coefs,DIM=1), -1
+               val = s_val*val + coefs(i)
+            END DO
+            val = val * s_val * (1 - s_val)
          CASE ('power_series_0i0')
-            val = 0
             DO i = UBOUND(coefs,DIM=1), LBOUND(coefs,DIM=1), -1
                val = val*s_val**0.25 + coefs(i)
             END DO
             val = 4*val*s_val*(1-s_val)
          CASE ('power_series_edge0')
-            val = 0
             i=UBOUND(coefs,DIM=1)
             !coefs(i) = -SUM(coefs(LBOUND(coefs,DIM=1):i-1))
             val = -SUM(coefs(LBOUND(coefs,DIM=1):i))
@@ -321,13 +294,11 @@
                val = s_val*val + coefs(i)
             END DO
          CASE ('power_series_i') ! dI/ds = a1+2*a2*x+a
-            val = 0
             DO i = UBOUND(coefs,DIM=1), LBOUND(coefs,DIM=1), -1
                val = s_val*val + coefs(i)*(i-1) ! OK (1-1)=0
             END DO
             IF (s_val >0) val = val / s_val
          CASE ('power_series_i_edge0') ! dI/ds = a1+2*a2*x+a
-            val = 0
             DO i = UBOUND(coefs,DIM=1), LBOUND(coefs,DIM=1), -1
                val = val - coefs(i)*(i-1)
             END DO
@@ -343,10 +314,8 @@
                CALL EZspline_interp(spl_obj,s_val,val,ier)
             ELSE
                ier = -1
-               val = 0.0
             END IF
          CASE ('pedestal')
-            val = 0
             DO i=15, LBOUND(coefs,1),-1
                val = s_val*val+coefs(i)
             END DO
@@ -360,7 +329,6 @@
             val = val + coefs(i+4) * coefs(i+1) * ( TANH(2*(coefs(i+2)-SQRT(s_val))/coefs(i+3) )    &
                                                      -TANH(2*(coefs(i+2)-one)/coefs(i+3)      ) )
          CASE('sum_atan')
-            val = 0
             IF (s_val >= 1) THEN
                val = coefs(1)+coefs(2)+coefs(6)+coefs(10)+coefs(14)+coefs(18)
             ELSE
@@ -380,7 +348,6 @@
             x2  = 1.0_rprec
             x3  = bootj_aux_f(3)
             h   = bootj_aux_f(2)/((x0-x1)*(x0-x2))
-            val = 0
             if ((s_val > x1) .and. (s_val < 1.0_rprec)) val = h*(s_val-x1)*(s_val-x2)
             val = val + x3*s_val*(s_val-1)/(-0.25_rprec)
          CASE ('hollow')
@@ -398,9 +365,86 @@
             xp  = s_val**coefs(3)
             x1  = 8*coefs(2)-2*coefs(1)
             val = (coefs(1)+x1*xp)*(xp-1)**2
+         CASE DEFAULT
+            PRINT *,"Error! Unknown profile type in subroutine eval_prof_stel:",type
+            STOP
       END SELECT
       RETURN
       END SUBROUTINE eval_prof_stel
+
+      SUBROUTINE setup_prof_spline(spl_obj,l_aux,s_aux,f_aux,ier)
+      IMPLICIT NONE
+      TYPE(EZspline1_r8), INTENT(inout) :: spl_obj
+      INTEGER,            INTENT(inout) :: l_aux
+      REAL(rprec),        INTENT(inout) :: s_aux(l_aux)
+      REAL(rprec),        INTENT(inout) :: f_aux(l_aux)
+      INTEGER,            INTENT(inout) ::  ier
+      ier = 0
+      IF (EZspline_allocated(spl_obj)) CALL EZspline_free(spl_obj,ier)
+      IF (ier /= 0) RETURN
+      CALL EZspline_init(spl_obj,l_aux,bcs0,ier)
+      IF (ier /= 0) RETURN
+      spl_obj%x1        = s_aux(1:l_aux)
+      spl_obj%isHermite = 1
+      CALL EZspline_setup(spl_obj,f_aux,ier)
+      RETURN
+      END SUBROUTINE setup_prof_spline
+      
+      SUBROUTINE get_equil_phi(s_val,type,val,ier,pval)
+      IMPLICIT NONE
+      REAL(rprec), INTENT(in) ::  s_val
+      CHARACTER(LEN=*), INTENT(in)   :: type
+      REAL(rprec), INTENT(inout)   ::  val
+      REAL(rprec), INTENT(inout),OPTIONAL   ::  pval
+      INTEGER, INTENT(inout)     ::  ier
+      INTEGER :: i
+      REAL(rprec), PARAMETER :: one = 1.0_rprec
+      IF (ier < 0) RETURN
+      CALL tolower(type)
+      SELECT CASE (type)
+         CASE ('spline','akima_spline','akima_spline_ip')
+            CALL eval_prof_stel(s_val,type,val,20,phi_aux_f(1:20),ier,phi_spl)
+            IF (PRESENT(pval)) THEN
+               CALL EZspline_derivative(phi_spl,1,s_val,pval,ier)
+               IF (s_val>one) pval=0
+            END IF
+         CASE DEFAULT
+            CALL eval_prof_stel(s_val,type,val,20,phi_aux_f(1:20),ier)
+            IF (PRESENT(pval)) THEN
+               CALL eval_prof_stel(s_val+1E-6,type,pval,20,phi_aux_f(1:20),ier)
+               pval = (pval-val)*1E6
+               IF (s_val>=one) pval=0
+            END IF
+      END SELECT
+      RETURN
+      END SUBROUTINE get_equil_phi
+      
+      SUBROUTINE get_equil_E(r_val,phi_val,z_val,er,ez,ier)
+      IMPLICIT NONE
+      REAL(rprec), INTENT(in)    ::  r_val
+      REAL(rprec), INTENT(in)    ::  phi_val
+      REAL(rprec), INTENT(in)    ::  z_val
+      REAL(rprec), INTENT(out)   ::  er
+      REAL(rprec), INTENT(out)   ::  ez
+      INTEGER, INTENT(inout)     ::  ier
+      REAL(rprec) :: s_val, u_val, v_val, phi_prime, phi2,R1,Z1
+      REAL(rprec) :: R_grad(3), Z_grad(3)
+      IF (ier < 0) RETURN
+      CALL get_equil_s(r_val,phi_val,z_val,s_val,ier,u_val)
+      IF (ier < 0) RETURN
+      v_val = MOD(phi_val,pi2/nfp)*nfp
+      CALL get_equil_RZ(s_val,u_val,v_val,R1,Z1,ier,&
+            R_GRAD=R_grad,Z_GRAD=Z_grad)
+      IF (ier == 0) THEN
+         CALL get_equil_phi(s_val,phi_type,phi2,ier,phi_prime)
+         er = -R_grad(3)*phi_prime
+         ez = -Z_grad(3)*phi_prime
+      ELSE
+        er  = 0
+        ez  = 0
+      END IF
+      RETURN
+      END SUBROUTINE get_equil_E
       
       SUBROUTINE get_equil_ne(s_val,type,val,ier)
       IMPLICIT NONE
@@ -415,14 +459,6 @@
       SELECT CASE (type)
          CASE ('spline','akima_spline','akima_spline_ip')
             CALL eval_prof_stel(s_val,type,val,21,ne_opt(0:20),ier,ne_spl)
-            !IF (EZspline_allocated(ne_spl)) THEN
-            !   CALL EZspline_isInDomain(ne_spl,s_val,ier)
-            !   IF (ier .ne. 0) RETURN
-            !   CALL EZspline_interp(ne_spl,s_val,val,ier)
-            !ELSE
-            !   ier = -1
-            !   val = -ne_norm
-            !END IF
          CASE DEFAULT
             CALL eval_prof_stel(s_val,type,val,21,ne_opt(0:20),ier)
       END SELECT
@@ -462,20 +498,16 @@
       CHARACTER(LEN=*), INTENT(in)   :: type
       REAL(rprec), INTENT(inout)   ::  val
       INTEGER, INTENT(inout)     ::  ier
-      INTEGER :: i
-      REAL(rprec), PARAMETER :: one = 1.0_rprec
+      REAL(rprec) :: val2
       IF (ier < 0) RETURN
       CALL tolower(type)
       SELECT CASE (type)
          CASE ('spline','akima_spline','akima_spline_ip')
             CALL eval_prof_stel(s_val,type,val,21,ti_opt(0:20),ier,ti_spl)
-            !IF (EZspline_allocated(ti_spl)) THEN
-            !   CALL EZspline_isInDomain(ti_spl,s_val,ier)
-            !   IF (ier .ne. 0) RETURN
-            !   CALL EZspline_interp(ti_spl,s_val,val,ier)
-            !ELSE
-            !   ier = -1
-            !END IF
+         CASE ('te_ratio')
+            CALL eval_prof_stel(s_val,type,val,21,ti_opt(0:20),ier,ti_spl)
+            CALL get_equil_te(s_val,te_type,val2,ier)
+            val = val*val2 
          CASE DEFAULT
             CALL eval_prof_stel(s_val,type,val,21,ti_opt(0:20),ier)
       END SELECT
@@ -527,77 +559,143 @@
       RETURN
       END SUBROUTINE get_equil_zeff
 
-      SUBROUTINE fcn_linene(s,dx,dy,dz,fval,ier)
+      SUBROUTINE fcn_linene(s,u,v,dx,dy,dz,fval,ier)
       IMPLICIT NONE
-      REAL(rprec), INTENT(in) :: s,dx,dy,dz
+      REAL(rprec), INTENT(in) :: s,u,v,dx,dy,dz
       REAL(rprec), INTENT(out) :: fval
       INTEGER, INTENT(inout) :: ier
+      fval = 0
+      IF (s>1) RETURN
       CALL get_equil_ne(s,TRIM(ne_type),fval,ier)
-      IF (ier /= 0) fval = 0
-      fval = fval*sqrt(dx*dx+dy*dy+dz*dz)
+      fval = MAX(fval,0.0)*sqrt(dx*dx+dy*dy+dz*dz)
       RETURN
       END SUBROUTINE fcn_linene
 
-      SUBROUTINE fcn_linete(s,dx,dy,dz,fval,ier)
+      SUBROUTINE fcn_linete(s,u,v,dx,dy,dz,fval,ier)
       IMPLICIT NONE
-      REAL(rprec), INTENT(in) :: s,dx,dy,dz
+      REAL(rprec), INTENT(in) :: s,u,v,dx,dy,dz
       REAL(rprec), INTENT(out) :: fval
       INTEGER, INTENT(inout) :: ier
+      fval = 0
+      IF (s>1) RETURN
       CALL get_equil_te(s,TRIM(te_type),fval,ier)
-      IF (ier /= 0) fval = 0
-      !IF (fval > cutoff_te_line) fval = 0 ! Model cutoff
-      fval = fval*sqrt(dx*dx+dy*dy+dz*dz)
+      fval = MAX(fval,0.0)*sqrt(dx*dx+dy*dy+dz*dz)
       RETURN
       END SUBROUTINE fcn_linete
 
-      SUBROUTINE fcn_lineti(s,dx,dy,dz,fval,ier)
+      SUBROUTINE fcn_lineti(s,u,v,dx,dy,dz,fval,ier)
       IMPLICIT NONE
-      REAL(rprec), INTENT(in) :: s,dx,dy,dz
+      REAL(rprec), INTENT(in) :: s,u,v,dx,dy,dz
       REAL(rprec), INTENT(out) :: fval
       INTEGER, INTENT(inout) :: ier
+      fval = 0
+      IF (s>1) RETURN
       CALL get_equil_ti(s,TRIM(ti_type),fval,ier)
-      IF (ier /= 0) fval = 0
-      fval = fval*sqrt(dx*dx+dy*dy+dz*dz)
+      fval = MAX(fval,0.0)*sqrt(dx*dx+dy*dy+dz*dz)
       RETURN
       END SUBROUTINE fcn_lineti
 
-      SUBROUTINE fcn_xics_bright(s,dx,dy,dz,fval,ier)
+      SUBROUTINE fcn_xics_bright(s,u,v,dx,dy,dz,fval,ier)
       IMPLICIT NONE
-      REAL(rprec), INTENT(in) :: s,dx,dy,dz
+      REAL(rprec), INTENT(in) :: s,u,v,dx,dy,dz
       REAL(rprec), INTENT(out) :: fval
       INTEGER, INTENT(inout) :: ier
+      fval = 0
+      IF (s>1) RETURN
       CALL get_equil_emis_xics(s,TRIM(emis_xics_type),fval,ier)
-      IF (ier /= 0) fval = 0
-      fval = fval*sqrt(dx*dx+dy*dy+dz*dz)
+      fval = MAX(fval,0.0)*sqrt(dx*dx+dy*dy+dz*dz)
       RETURN
       END SUBROUTINE fcn_xics_bright
 
-      SUBROUTINE fcn_xics(s,dx,dy,dz,fval,ier)
+      SUBROUTINE fcn_xics(s,u,v,dx,dy,dz,fval,ier)
       IMPLICIT NONE
-      REAL(rprec), INTENT(in) :: s,dx,dy,dz
+      REAL(rprec), INTENT(in) :: s,u,v,dx,dy,dz
       REAL(rprec), INTENT(out) :: fval
       REAL(rprec) :: f1, f2
       INTEGER, INTENT(inout) :: ier
+      fval = 0
+      IF (s>1) RETURN
       CALL get_equil_ti(s,TRIM(ti_type),f1,ier)
-      IF (ier /= 0) fval = 0
       CALL get_equil_emis_xics(s,TRIM(emis_xics_type),f2,ier)
-      IF (ier /= 0) fval = 0
-      fval = f1*f2*sqrt(dx*dx+dy*dy+dz*dz)
+      fval = MAX(f1*f2,0.0)*sqrt(dx*dx+dy*dy+dz*dz)
       RETURN
       END SUBROUTINE fcn_xics
 
-      SUBROUTINE fcn_sxr(s,dx,dy,dz,fval,ier)
+      SUBROUTINE fcn_xics_w3(s,u,v,dx,dy,dz,fval,ier)
       IMPLICIT NONE
-      REAL(rprec), INTENT(in) :: s,dx,dy,dz
+      REAL(rprec), INTENT(in) :: s,u,v,dx,dy,dz
+      REAL(rprec), INTENT(out) :: fval
+      INTEGER, INTENT(inout) :: ier
+      REAL(rprec) :: w, te
+      ! natural log fit from VAINSHTEIN_2011 and MARCHUCK_2004
+      REAL(rprec), PARAMETER :: c3 = -7.5306337062E-02
+      REAL(rprec), PARAMETER :: c2 =  1.7282006139E+00
+      REAL(rprec), PARAMETER :: c1 = -1.4811899942E+01
+      !REAL(rprec), PARAMETER :: c0 =  3.9207616355E+01  ! From equations
+      REAL(rprec), PARAMETER :: c0 =  3.8707616355E+01  ! From Fitting
+      REAL(rprec), PARAMETER :: temin =  100.0  ! The database ends here
+      fval = 0
+      IF (s>1) RETURN
+      CALL get_equil_emis_xics(s,TRIM(emis_xics_type),w,ier)
+      w = MAX(w,0.0)
+      CALL get_equil_te(s,TRIM(te_type),te,ier)
+      te = MAX(te,temin)
+      IF (te > temin) THEN
+      	te = LOG(te) ! interpolation in log of te
+      	fval = w*EXP((((c3*te)+c2)*te+c1)*te+c0)
+      ELSE
+!        fval = w*8.1262088954E-01*(EXP(te)).*1E-3
+        fval = w*8.1262088954E-01*(te/temin)
+      END IF
+      fval = MAX(fval,0.0)*SQRT(dx*dx+dy*dy+dz*dz)
+      RETURN
+      END SUBROUTINE fcn_xics_w3
+
+      SUBROUTINE fcn_xics_v(s,u,v,dx,dy,dz,fval,ier)
+      IMPLICIT NONE
+      REAL(rprec), INTENT(inout) :: s,u,v,dx,dy,dz
+      REAL(rprec), INTENT(out) :: fval
+      REAL(rprec) :: phi_val, phi_prime,Bav,Bavsq, &
+                     rho,vp,grho,grho2,&
+                     br,bp,bx,by,bz,modb,&
+                     rt,zt,h
+      REAL(rprec) :: nhat(3), uperp(3),Rg(3),Zg(3)
+      INTEGER, INTENT(inout) :: ier
+      fval = 0
+      IF (s>1) RETURN
+      CALL get_equil_phi(s,phi_type,phi_val,ier,phi_prime)
+      CALL get_equil_RZ(s,u,v,Rt,Zt,ier,Rg,Zg)
+      !CALL get_equil_Bav(s,Bav,Bavsq,ier) !<B>,<B^2>
+      !CALL get_equil_rho(s,rho,vp,grho,grho2,ier)
+      ! To make these lines work we need to implement
+      ! passing u and v
+      CALL get_equil_nhat(s,u,v,nhat,ier)
+      CALL get_equil_Bcylsuv(s,u,v,br,bp,bz,ier,modb)
+      !h = SQRT(Rg(3)*Rg(3)+Zg(3)*Zg(3))*0.5/sqrt(s)
+      !phi_prime = phi_prime / (modb*h)
+      phi_prime = 2*phi_prime*sqrt(s) / (modb*SQRT(Rg(3)*Rg(3)+Zg(3)*Zg(3)))
+      nhat = nhat / SQRT(SUM(nhat*nhat)) ! removed negative sign for postive phi B-field
+      bx = br * cos(v) - bp * sin(v)
+      by = br * sin(v) + bp * cos(v)
+      uperp(1) = by*nhat(3)-bz*nhat(2)
+      uperp(2) = bz*nhat(1)-bx*nhat(1)
+      uperp(3) = bx*nhat(2)-by*nhat(1)
+      uperp    = uperp*phi_prime/modb
+      fval = uperp(1)*dx+uperp(2)*dy+uperp(3)*dz
+      RETURN
+      END SUBROUTINE fcn_xics_v
+
+      SUBROUTINE fcn_sxr(s,u,v,dx,dy,dz,fval,ier)
+      IMPLICIT NONE
+      REAL(rprec), INTENT(in) :: s,u,v,dx,dy,dz
       REAL(rprec), INTENT(out) :: fval
       INTEGER, INTENT(inout) :: ier
       REAL(rprec) :: ne_val,te_val,zeff_val
+      fval = 0
+      IF (s>1) RETURN
       CALL get_equil_ne(s,TRIM(ne_type),ne_val,ier)
-      IF (ier /= 0) ne_val = 0
       CALL get_equil_te(s,TRIM(ne_type),te_val,ier)
-      IF (ier /= 0) te_val = 0
       CALL get_equil_zeff(s,TRIM(ne_type),zeff_val,ier)
-      IF (ier /= 0) zeff_val = 0
       IF (abs(te_val) > 0) THEN
          fval = zeff_val*ne_val*ne_val*sqrt(te_val)
       ELSE
@@ -790,21 +888,67 @@
       CALL tolower(prof_type)
       profile_norm = 0.0_rprec
       SELECT CASE (prof_type)
-         CASE ('two_power','two_lorentz','gauss_trunc','sum_atan','pedestal','bump','hollow')
+         CASE ('two_power','two_power_hollow','two_power_offset','two_lorentz','gauss_trunc', &
+               'gauss_trunc_offset','sum_atan','pedestal','bump','hollow','hollow2')
             profile_norm = 0.0_rprec  ! Don't normalize as we don't want to screw up our coefficients
-         CASE ('power_series','power_series_edge0')
+         CASE ('power_series','power_series_edge0','power_series_0_boundaries', &
+               'power_series_rho','power_series_rho2')
             DO ik = LBOUND(x,DIM=1), UBOUND(x,DIM=1)
                profile_norm = profile_norm + x(ik)/(ik+1)
             END DO
+            IF (profile_norm == 0) profile_norm = 1 ! avoid zero integral
          CASE ('spline','akima_spline','akima_spline_ip')
             DO ik = LBOUND(x,DIM=1), UBOUND(x,DIM=1)
                profile_norm = profile_norm + x(ik)
             END DO
+            IF (profile_norm == 0) profile_norm = 1 ! avoid zero integral
+         CASE DEFAULT
+            PRINT *,"Error! Unknown profile type in subroutine profile_norm:",prof_type
+            PRINT *,x(1:10)
+            STOP
       END SELECT
+      profile_norm = ABS(profile_norm) ! Do this so we don't screw up MIN/MAX
       IF (ltriangulate) profile_norm = 0.0_rprec ! Don't use normalization in triangulation mode
       RETURN
       END FUNCTION profile_norm
+
+      INTEGER FUNCTION count_vars(lvar,xvar,profile_type)
+      LOGICAL, INTENT(inout) :: lvar(:)
+      REAL(rprec), INTENT(inout) :: xvar(:)
+      CHARACTER(LEN=*), INTENT(inout) :: profile_type
+      REAL(rprec) :: norm
+      count_vars = 0; norm = 0
+      count_vars = COUNT(lvar)
+      norm = profile_norm(xvar,profile_type)
+      IF (norm /= 0) count_vars = count_vars + 1
+      RETURN
+      END FUNCTION count_vars
       
+
+      SUBROUTINE scale_profile(profile_type, profile_coefficients, factor)
+        ! This subroutine takes a profile and scales it by 'factor'.
+        ! For some profiles types like 'power_series', this involves multiplying all the profile coefficients
+        ! by factor. For other profile types like 'two_power', only certain profile coefficients get scaled.
+        IMPLICIT NONE
+        CHARACTER(LEN=*) :: profile_type
+        REAL(rprec), DIMENSION(:) :: profile_coefficients
+        REAL(rprec), INTENT(IN) :: factor
+
+        CALL tolower(profile_type)
+        SELECT CASE (profile_type)
+        CASE ('power_series','spline','akima_spline','akima_spline_ip','power_series_0_boundaries')
+           profile_coefficients = profile_coefficients * factor
+        CASE ('two_power','two_power_hollow')
+           profile_coefficients(1) = profile_coefficients(1) * factor
+        CASE DEFAULT
+           PRINT *,"Error! Unknown profile type in subroutine scale_profile:",profile_type
+           STOP
+        END SELECT
+        
+      END SUBROUTINE scale_profile
+
+
+
       SUBROUTINE get_equil_beamj(s_val,val,ier)
       IMPLICIT NONE
       REAL(rprec), INTENT(inout) ::  s_val
@@ -929,6 +1073,26 @@
       RETURN
       END SUBROUTINE get_equil_bootj
 
+      SUBROUTINE eval_profile(s_val, profile_type, val, profile_aux_s, profile_aux_f, ier)
+        ! s_val = Value of normalized flux s at which you wish to evaluate the profile.
+        ! On return, 'val' stores the value of the profile function at the selected s.
+        IMPLICIT NONE
+        REAL(rprec) ::  s_val, val
+        INTEGER ::  ier, dex
+        CHARACTER(LEN=*) :: profile_type
+        REAL(rprec), DIMENSION(21) :: profile_aux_s, profile_aux_f
+        IF (ier < 0) RETURN
+        CALL tolower(profile_type)
+        SELECT CASE(TRIM(profile_type))
+        CASE('spline','akima_spline')
+           dex = MINLOC(profile_aux_s(2:),DIM=1)
+           CALL eval_prof_spline(dex, profile_aux_s(1:dex), profile_aux_f(1:dex), s_val, val, ier)
+        CASE DEFAULT
+           CALL eval_prof_stel(s_val, profile_type, val, 21, profile_aux_f(1:21), ier)
+        END SELECT
+        RETURN
+      END SUBROUTINE eval_profile
+
 !     J_STAR by DA Spong
 !     computes the trapped branch of jstar on a single flux surface
 !     and for a single value of ep/mu.  jstar is only non-zero for
@@ -1010,68 +1174,116 @@
       RETURN
       END SUBROUTINE smoothg
       
-      function polyfit(vx, vy, d)
-      !  From http://rosettacode.org/wiki/Polynomial_regression
+      FUNCTION polyfit(vx, vy, d)
+      ! Fit a polynomial of degree d to data (vx,vy) using one of the LAPACK
+      ! subroutines for least-squares fitting, DGELS.
       implicit none
       integer, intent(in)                   :: d
       integer, parameter                    :: dp = selected_real_kind(15, 307)
       real(dp), dimension(d+1)              :: polyfit
       real(dp), dimension(:), intent(in)    :: vx, vy
       
-      real(dp), dimension(:,:), allocatable :: X
-      real(dp), dimension(:,:), allocatable :: XT
-      real(dp), dimension(:,:), allocatable :: XTX
-      
-      integer :: i, j
-      
-      integer     :: n, lda, lwork
-      integer :: info
-      integer, dimension(:), allocatable :: ipiv
-      real(dp), dimension(:), allocatable :: work
-      
+      real(dp), dimension(:,:), allocatable :: matrix
+      integer :: n, m, j, lwork, info, ldb
+      real(dp), dimension(:), allocatable :: work, b
+
       n = d+1
-      lda = n
-      lwork = n
+      m = SIZE(vx)
+      IF (SIZE(vy) .ne. m) STOP "Error in polyfit: sizes of vx and vy do not match"
+
+      ! Form the Vandermonde matrix:
+      ALLOCATE(matrix(m,n))
+      matrix(:,1) = 1
+      DO j = 1,d
+         matrix(:,j+1) = matrix(:,j) * vx
+      END DO
+
+      ldb = MAX(m,n)
+      ALLOCATE(b(ldb))
+      b(1:m) = vy
+      ! The DGELS argument b stores the data vector b on input, and it gets over-written with the solution vector.
+      ! Note that the sizes of the input and solution vector can be different.
+
+      ! Get size of work array:
+      lwork = -1
+      ALLOCATE(work(1))
+      CALL DGELS('N',m,n,1,matrix,m,b,ldb,work,lwork,info)
+      IF (info .ne. 0) THEN
+         PRINT *,"Error 1 in polyfit LAPACK DGELS: info=",info
+         STOP
+      END IF
+      lwork = work(1)
+      DEALLOCATE(work)
+      ALLOCATE(work(lwork))
+
+      ! Main LAPACK call:
+      CALL DGELS('N',m,n,1,matrix,m,b,ldb,work,lwork,info)
+      IF (info .ne. 0) THEN
+         PRINT *,"Error 2 in polyfit LAPACK DGELS: info=",info
+         STOP
+      END IF
+
+      polyfit = b(1:n)
+      DEALLOCATE(matrix,work,b)
+
+      END FUNCTION polyfit
+
+
+      FUNCTION polyfit_0_boundaries(vx, vy, d)
+      ! Fit a polynomial of the form p(x) * x * (1-x) to data (vx,vy), where p(s) is a polynomial
+      ! of degree d, using one of the LAPACK subroutines for least-squares fitting, DGELS.
+      implicit none
+      integer, intent(in)                   :: d
+      integer, parameter                    :: dp = selected_real_kind(15, 307)
+      real(dp), dimension(d+1)              :: polyfit_0_boundaries
+      real(dp), dimension(:), intent(in)    :: vx, vy
       
-      allocate(ipiv(n))
-      allocate(work(lwork))
-      allocate(XT(n, size(vx)))
-      allocate(X(size(vx), n))
-      allocate(XTX(n, n))
-      
-      ! prepare the matrix
-      do i = 0, d
-       do j = 1, size(vx)
-          X(j, i+1) = vx(j)**i
-       end do
-      end do
-      
-      XT  = transpose(X)
-      XTX = matmul(XT, X)
-      
-      ! calls to LAPACK subs DGETRF and DGETRI
-      call DGETRF(n, n, XTX, lda, ipiv, info)
-      if ( info /= 0 ) then
-       print *, "problem"
-       return
-      end if
-      call DGETRI(n, XTX, lda, ipiv, work, lwork, info)
-      if ( info /= 0 ) then
-       print *, "problem"
-       return
-      end if
-      
-      polyfit = matmul( matmul(XTX, XT), vy)
-      
-      deallocate(ipiv)
-      deallocate(work)
-      deallocate(X)
-      deallocate(XT)
-      deallocate(XTX)
-      RETURN
-      
-      end function polyfit
-      
+      real(dp), dimension(:,:), allocatable :: matrix
+      integer :: n, m, j, lwork, info, ldb
+      real(dp), dimension(:), allocatable :: work, b
+
+      n = d + 1
+      m = SIZE(vx)
+      IF (SIZE(vy) .ne. m) STOP "Error in polyfit: sizes of vx and vy do not match"
+
+      ! Form the Vandermonde matrix * vx * (1-vx):
+      ALLOCATE(matrix(m,n))
+      matrix(:,1) = vx * (1 - vx)
+      DO j = 1,d
+         matrix(:,j+1) = matrix(:,j) * vx
+      END DO
+
+      ldb = MAX(m,n)
+      ALLOCATE(b(ldb))
+      b(1:m) = vy
+      ! The DGELS argument b stores the data vector b on input, and it gets over-written with the solution vector.
+      ! Note that the sizes of the input and solution vector can be different.
+
+      ! Get size of work array:
+      lwork = -1
+      ALLOCATE(work(1))
+      CALL DGELS('N',m,n,1,matrix,m,b,ldb,work,lwork,info)
+      IF (info .ne. 0) THEN
+         PRINT *,"Error 1 in polyfit LAPACK DGELS: info=",info
+         STOP
+      END IF
+      lwork = work(1)
+      DEALLOCATE(work)
+      ALLOCATE(work(lwork))
+
+      ! Main LAPACK call:
+      CALL DGELS('N',m,n,1,matrix,m,b,ldb,work,lwork,info)
+      IF (info .ne. 0) THEN
+         PRINT *,"Error 2 in polyfit LAPACK DGELS: info=",info
+         STOP
+      END IF
+
+      polyfit_0_boundaries = b(1:n)
+      DEALLOCATE(matrix,work,b)
+
+      END FUNCTION polyfit_0_boundaries
+
+
       function polyval(c,s,d)
       integer, intent(in)                   :: d
       integer, parameter                    :: dp = selected_real_kind(15, 307)
@@ -1278,23 +1490,20 @@
       DOUBLE PRECISION, ALLOCATABLE :: xc_opt(:), diag(:), qtf(:), wa1(:), wa2(:), wa3(:)
       DOUBLE PRECISION, ALLOCATABLE :: fval(:),wa4(:)
       DOUBLE PRECISION, ALLOCATABLE :: fjac(:,:)
-      nfit_targs = ntarg+1
-      ALLOCATE(fit_targs(nfit_targs,2))
-      fit_targs(:,1) = sarr
-      fit_targs(:,2) = farr
-      SUM_target = SUM(farr)
-      fit_type = ptype
+
       ! Adjust number of coefficients per fit type
       nc = ncoefs
-      CALL tolower(bootj_type)
-      SELECT CASE (bootj_type)
+      CALL tolower(ptype)
+      SELECT CASE (ptype)
          CASE('two_power')
+            nc = 3
+         CASE('two_power_hollow')
             nc = 3
          CASE('two_lorentz')
             nc = 8
          CASE('gauss_trunc')
             nc = 2
-         CASE('power_series','power_series_0i0','power_series_edge0','power_series_i','power_series_i_edge0')
+         CASE('power_series','power_series_0i0','power_series_edge0','power_series_i','power_series_i_edge0','power_series_0_boundaries')
             DO ik = 1, ncoefs
                IF (coefs(ik) /=0 ) nc = ik
             END DO
@@ -1302,7 +1511,25 @@
             nc = 21
          CASE('bump')
             nc = 3
+         CASE DEFAULT
+            PRINT *,"Error! Unknown profile type in subroutine fit_profile:",ptype
+            STOP
       END SELECT
+      IF (ptype == 'power_series') THEN
+         ! For fitting polynomials, 'polyfit' is more robust than LMDER, so use polyfit.
+         coefs(1:nc) = polyfit(sarr,farr,nc-1)
+         RETURN
+      ELSEIF (ptype == 'power_series_0_boundaries') THEN
+         coefs(1:nc) = polyfit_0_boundaries(sarr,farr,nc-1)
+         RETURN
+      END IF
+
+      nfit_targs = ntarg+1
+      ALLOCATE(fit_targs(nfit_targs,2))
+      fit_targs(:,1) = sarr
+      fit_targs(:,2) = farr
+      SUM_target = SUM(farr)
+      fit_type = ptype
       ! ALLOCATE Vars
       ALLOCATE(xc_opt(nc),diag(nc),qtf(nc),wa1(nc),wa2(nc),wa3(nc),fjac(nfit_targs,nc),&
                fval(nfit_targs),wa4(nfit_targs))
@@ -1324,9 +1551,57 @@
       ipvt   = 0
       qtf    = 0.0
       wa1 = 0; wa2 = 0; wa3 = 0; wa4 = 0
+!!$      print *,"About to call lmder_serial."
+!!$      print *,"  nfit_targs:",nfit_targs
+!!$      print *,"  nc:",nc
+!!$      print *,"  xc_opt:",xc_opt
+!!$      print *,"  fval:",fval
+!!$      print *,"  fjac:",fjac
+!!$      print *,"  nfit_targs:",nfit_targs
+!!$      print *,"  ftol:",ftol
+!!$      print *,"  xtol:",xtol
+!!$      print *,"  gtol:",gtol
+!!$      print *,"  maxfev_local:",maxfev_local
+!!$      print *,"  diag:",diag
+!!$      print *,"  mode:",mode
+!!$      print *,"  factor:",factor
+!!$      print *,"  nprint:",nprint
+!!$      print *,"  info:",info
+!!$      print *,"  nfev:",nfev
+!!$      print *,"  njev:",njev
+!!$      print *,"  ipvt:",ipvt
+!!$      print *,"  qtf:",qtf
+!!$      print *,"  wa1:",wa1
+!!$      print *,"  wa2:",wa2
+!!$      print *,"  wa3:",wa3
+!!$      print *,"  wa4:",wa4
       CALL lmder_serial(fit_prof_fcn,nfit_targs,nc,xc_opt,fval,fjac,nfit_targs,ftol,xtol,gtol,&
                     maxfev_local,diag,mode,factor,nprint,info,nfev,njev,ipvt,qtf,&
                     wa1,wa2,wa3,wa4)
+!!$      print *,"After call to lmder_serial:"
+!!$      print *,"  nfit_targs:",nfit_targs
+!!$      print *,"  nc:",nc
+!!$      print *,"  xc_opt:",xc_opt
+!!$      print *,"  fval:",fval
+!!$      print *,"  fjac:",fjac
+!!$      print *,"  nfit_targs:",nfit_targs
+!!$      print *,"  ftol:",ftol
+!!$      print *,"  xtol:",xtol
+!!$      print *,"  gtol:",gtol
+!!$      print *,"  maxfev_local:",maxfev_local
+!!$      print *,"  diag:",diag
+!!$      print *,"  mode:",mode
+!!$      print *,"  factor:",factor
+!!$      print *,"  nprint:",nprint
+!!$      print *,"  info:",info
+!!$      print *,"  nfev:",nfev
+!!$      print *,"  njev:",njev
+!!$      print *,"  ipvt:",ipvt
+!!$      print *,"  qtf:",qtf
+!!$      print *,"  wa1:",wa1
+!!$      print *,"  wa2:",wa2
+!!$      print *,"  wa3:",wa3
+!!$      print *,"  wa4:",wa4
       coefs(1:nc) = xc_opt(1:nc)
       DEALLOCATE(fit_targs,xc_opt,diag,qtf,wa1,wa2,wa3,fjac,fval,wa4)
       RETURN

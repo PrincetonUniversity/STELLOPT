@@ -19,9 +19,6 @@
   FLAGS_D = -g -O0 -fexternal-blas -fcheck=all -fbacktrace
 
 # Crutch for broken module vars
-  FFTWHOME = /usr/pppl/gcc/6.1-pkgs/openmpi-1.10.3-pkgs/fftw-3.3.4
-  HDF5_HOME = /usr/pppl/gcc/6.1-pkgs/openmpi-1.10.3-pkgs/hdf5-parallel-1.10.0-patch1
-  BLACS_HOME = /usr/pppl/gcc/6.1-pkgs/openmpi-1.10.3-pkgs/blacs-1.1alpha
   NETCDF_F = /usr/pppl/gcc/6.1-pkgs/netcdf-fortran-4.4.4
   NETCDF_C = /usr/pppl/gcc/6.1-pkgs/netcdf-c-4.4.1
 
@@ -42,6 +39,8 @@
                      -ffree-line-length-none -ffixed-line-length-none
   MPI_COMPILE_C = mpicc
   MPI_LINK = mpicc -shared -pthread -Wl,--no-undefined -Wl,-export-dynamic
+  MPI_RUN = srun
+  MPI_RUN_OPTS = -n 64 -p dawson -t 5:00:00 -J STELLOPT_BENCH
 
 #######################################################################
 #            NAG Options
@@ -61,20 +60,20 @@
 #######################################################################
   LNTCC = T
   NTCC_INC = -I$(NTCCHOME)/mod
-#  NTCC_LIB = -L$(NTCCHOME)/lib -laladdinsub -lr8slatec -ladpak\
-#             -lcppsub -lcomput -lpspline -lportlib -lezcdf -lmds_sub \
-#             -lmdstransp -lvaxonly
-  NTCC_LIB = $(NTCCHOME)/lib/aladdinsub.a
-  NTCC_LIB += $(NTCCHOME)/lib/r8slatec.a
-  NTCC_LIB += $(NTCCHOME)/lib/adpak.a
-  NTCC_LIB += $(NTCCHOME)/lib/cppsub.a
-  NTCC_LIB += $(NTCCHOME)/lib/comput.a
-  NTCC_LIB += $(NTCCHOME)/lib/pspline.a
-  NTCC_LIB += $(NTCCHOME)/lib/portlib.a
-  NTCC_LIB += $(NTCCHOME)/lib/ezcdf.a
-  NTCC_LIB += $(NTCCHOME)/lib/mds_sub.a
-  NTCC_LIB += $(NTCCHOME)/lib/mdstransp.a
-  NTCC_LIB += $(NTCCHOME)/lib/vaxonly.a
+  NTCC_LIB = -L$(NTCCHOME)/lib -laladdinsub -lr8slatec -ladpak\
+             -lcppsub -lcomput -lpspline -lportlib -lezcdf -lmds_sub \
+             -lmdstransp -lvaxonly
+#  NTCC_LIB = $(NTCCHOME)/lib/aladdinsub.a
+#  NTCC_LIB += $(NTCCHOME)/lib/r8slatec.a
+#  NTCC_LIB += $(NTCCHOME)/lib/adpak.a
+#  NTCC_LIB += $(NTCCHOME)/lib/cppsub.a
+#  NTCC_LIB += $(NTCCHOME)/lib/comput.a
+#  NTCC_LIB += $(NTCCHOME)/lib/pspline.a
+#  NTCC_LIB += $(NTCCHOME)/lib/portlib.a
+#  NTCC_LIB += $(NTCCHOME)/lib/ezcdf.a
+#  NTCC_LIB += $(NTCCHOME)/lib/mds_sub.a
+#  NTCC_LIB += $(NTCCHOME)/lib/mdstransp.a
+#  NTCC_LIB += $(NTCCHOME)/lib/vaxonly.a
 
 #######################################################################
 #            HDF5 Options
@@ -112,7 +111,7 @@
   GENE_DIR = $(GENE_PATH)
   LIB_GENE = libgene.a
   GENE_LIB = $(GENE_DIR)/$(LIB_GENE) \
-             -L$(FFTWHOME)/lib -lfftw3 \
+             -L$(FFTW_HOME)/lib -lfftw3 \
              -L$(SLEPC_DIR)/$(PETSC_ARCH)/lib -lslepc \
              -L$(PETSC_DIR)/$(PETSC_ARCH)/lib -lpetsc -lX11
 
@@ -124,7 +123,7 @@
   COILOPTPP_DIR = $(COILOPT_PATH)
   LIB_COILOPTPP = libcoilopt++.a
   COILOPT_LIB = $(COILOPT_PATH)/$(LIB_COILOPTPP) \
-                -L$(GSLHOME)/lib -lgsl -lgslcblas -lstdc++ -lmpi_cxx
+                -L$(GSLHOME)/lib -lgsl -lgslcblas -lstdc++
 
 #######################################################################
 #            TERPSICHORE Options
@@ -162,6 +161,17 @@
   PTSM3D_DIR = $(PTSM3D_PATH)
   LIB_PTSM3D = libptsm3d.a
   PTSM3D_LIB = $(PTSM3D_DIR)/$(LIB_PTSM3D)
+#######################################################################
+#            SFINCS Options
+#######################################################################
+
+  LSFINCS = F
+  SFINCS_DIR = $(SFINCS_PATH)
+  SFINCS_INC = -I$(SFINCS_DIR)
+  LIB_SFINCS = libsfincs.a
+  SFINCS_LIB = $(SFINCS_DIR)/$(LIB_SFINCS) \
+             -L$(PETSC_DIR)/$(PETSC_ARCH)/lib -lpetsc -lX11
+
 #######################################################################
 #            LIBSTELL Shared Options
 #######################################################################
@@ -261,6 +271,7 @@ else
   LTRAVIS = F
 
   LREGCOIL= F
+  LSFINCS = F
 #  LYOURNEWCODE = F
   LPTSM3D = F
 endif
@@ -321,6 +332,15 @@ else
   TRAVIS_DIR = 
   LIB_TRAVIS = 
 endif
+ifeq ($(LSFINCS),T)
+  MOD1_PATH += $(SFINCS_INC)
+  PRECOMP += -DSFINCS
+  MOD_PATH += -I$(SFINCS_DIR)
+else
+  SFINCS_LIB = 
+  SFINCS_DIR = 
+  LIB_SFINCS = 
+endif
 ifeq ($(LREGCOIL),T)
   MOD1_PATH += $(REGCOIL_INC)
   PRECOMP += -DREGCOIL
@@ -332,7 +352,6 @@ else
 endif
 
 # Handle other codes
-LIB_LINK += $(GENE_LIB) $(COILOPT_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB) $(REGCOIL_LIB)
 ifeq ($(LPTSM3D),T)
   MOD1_PATH += $(PTSM3D_INC)
   PRECOMP += -DPTSM3D
@@ -343,8 +362,7 @@ else
   LIB_PTSM3D =
 endif
 
-# Handle other codes
-LIB_LINK += $(GENE_LIB) $(COILOPT_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB) $(PTSM3D_LIB)
+LIB_LINK += $(GENE_LIB) $(COILOPT_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB) $(SFINCS_LIB) $(REGCOIL_LIB) $(PTSM3D_LIB)
 
 # Add libraries to LIB_LINK
 # LIB_LINK+= $(MYHOME)/libstell.a $(LIBS)

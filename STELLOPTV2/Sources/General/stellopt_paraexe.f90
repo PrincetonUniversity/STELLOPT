@@ -56,7 +56,7 @@
             lread_input_beams => lread_input, lvmec_beams => lvmec, &
             lverb_beams => lverb, lbeam_beams => lbeam, &
             lpies_beams => lpies, lspec_beams => lspec, &
-            lmgrid_beams => lmgrid, lmu_beams => lmu,&
+            lmgrid_beams => lmgrid, &
             lvessel_beams => lvessel, lcoil_beams => lcoil, &
             lrestart_beams => lrestart, lbeam_simple_beams => lbeam_simple, &
             lflux_beams => lflux, lplasma_only_beams => lplasma_only, &
@@ -146,9 +146,11 @@
                   ! Setup ICTRL Array
                   ictrl(1) = restart_flag+timestep_flag+output_flag+reset_jacdt_flag
                   ictrl(2) = 0; ictrl(3) = -1; ictrl(4) = -1; ictrl(5) = myseq
+                  PARVMEC = .TRUE.
                   ! Setup reset_string
                   reset_string =''
                   lhit = .FALSE.
+                  NS_RESLTN = 0 ! Need to do this otherwise situations arrise which cause problems.
                   CALL runvmec(ictrl,file_str,lscreen,MPI_COMM_MYWORLD,reset_string)
                   CALL FinalizeSurfaceComm(NS_COMM)
                   CALL FinalizeRunVmec(RUNVMEC_COMM_WORLD)
@@ -177,6 +179,7 @@
                ictrl(4) = 0
                ictrl(5) = myseq ! Output file sequence number
                reset_string =''
+               NS_RESLTN = 0 ! Need to do this otherwise situations arrise which cause problems.
                CALL runvmec(ictrl,file_str,lscreen,MPI_COMM_MYWORLD,reset_string)
                LIFFREEB  = .FALSE. ! Already deallocated from before and we need to reset stuff
                CALL FinalizeRunVmec(RUNVMEC_COMM_WORLD) ! We don't allocate the vacuum communicator when we write
@@ -264,7 +267,6 @@
                lcoil_beams        = .FALSE.
                lmgrid_beams       = .FALSE.
                lraw_beams         = .FALSE.
-               lmu_beams          = .FALSE.
                lvessel_beams      = .FALSE.
                lvac_beams         = .FALSE.
                lrestart_beams     = .FALSE.
@@ -333,6 +335,11 @@
                IF (lverb_beams) WRITE(6, '(A)') '----- BEAMS3D DONE -----'
 
 !DEC$ ENDIF
+!DEC$ IF DEFINED (TRAVIS)
+            CASE('travis')
+               proc_string = file_str
+               CALL stellopt_travis(lscreen,ier)
+!DEC$ ENDIF
             CASE('coilopt++')
                CALL stellopt_coiloptpp(file_str,lscreen)
             CASE('regcoil_chi2_b')
@@ -350,6 +357,11 @@
                proc_string = file_str
                ier = 0
                CALL stellopt_bootsj(lscreen,ier)
+               ier_paraexe = ier
+            CASE('sfincs')
+               proc_string = file_str
+               ier = 0
+               CALL stellopt_sfincs(lscreen,ier)
                ier_paraexe = ier
             CASE('cobra')
                proc_string = file_str
@@ -373,6 +385,9 @@
                CALL MPI_COMM_FREE(MPI_COMM_MYWORLD,ierr_mpi)
                IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_paraexe: FREE',ierr_mpi)
                RETURN
+            CASE DEFAULT
+               PRINT *,"Error! stellopt_paraexe called with unknown argument: ",TRIM(code_str)
+               STOP
          END SELECT
          !lscreen = .false.
          IF (myworkid == master) RETURN ! The master process of the Communicator can leave

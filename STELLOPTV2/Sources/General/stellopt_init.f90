@@ -15,6 +15,7 @@
       USE stellopt_input_mod
       USE stellopt_targets, ONLY: write_targets
       USE stellopt_vars
+      USE equil_utils, ONLY: count_vars
       USE vparams, ONLY: ntor_rcws, mpol_rcws
       USE vmec_input
       USE safe_open_mod, ONLY: safe_open
@@ -34,7 +35,7 @@
 !        iunit       File unit number
 !----------------------------------------------------------------------
       IMPLICIT NONE
-      INTEGER ::  i,n,m,ier, iunit,nvar_in,knot_dofs,nknots
+      INTEGER ::  i,n,m,ier, iunit,nvar_in,ctrl_dofs,nknots
       INTEGER ::  ictrl(5)
       REAL(rprec) :: norm, delta
       REAL(rprec) :: fvec_temp(1)
@@ -108,7 +109,14 @@ end if
                  STOP
               END IF
               CLOSE(iunit)
-              
+         CASE('test')
+              id_string = id_string(7:LEN(id_string))
+              ! We don't read indata but use it later so need to do some defaulting
+              pcurr_type = 'power_series'
+              piota_type = 'power_series'
+              pmass_type = 'power_series'
+              ph_type = 'power_series'
+              pt_type = 'power_series'
       END SELECT
       
       ! Count the number of variables and allocate the array
@@ -116,73 +124,46 @@ end if
       nvars = 0
       SELECT CASE (TRIM(equil_type))
          CASE('vmec2000','flow','animec','satire','paravmec','parvmec','vboot','vmec2000_oneeq')
+              ! Single Values
               IF (lphiedge_opt) nvars = nvars + 1
               IF (lcurtor_opt)  nvars = nvars + 1
               IF (lpscale_opt)  nvars = nvars + 1
               IF (lbcrit_opt)   nvars = nvars + 1
               IF (lmix_ece_opt)   nvars = nvars + 1
+              IF (lxics_v0_opt)   nvars = nvars + 1
+              ! Arrays
               IF (ANY(lextcur_opt)) nvars = nvars + COUNT(lextcur_opt)
               IF (ANY(laphi_opt)) nvars = nvars + COUNT(laphi_opt)
-              IF (ANY(lam_opt)) THEN
-                 nvars = nvars + COUNT(lam_opt)
-                 norm = profile_norm(am,pmass_type)
-                 IF (norm /= 0) nvars = nvars + 1
-              END IF
-              IF (ANY(lac_opt)) THEN
-                 nvars = nvars + COUNT(lac_opt)
-                 norm = profile_norm(ac,pcurr_type)
-                 IF (norm /= 0) nvars = nvars + 1
-              END IF
-              IF (ANY(lai_opt))THEN
-                 nvars = nvars + COUNT(lai_opt)
-                 norm = profile_norm(ai,piota_type)
-                 IF (norm /= 0) nvars = nvars + 1
-              END IF
-              IF (ANY(lah_opt)) nvars = nvars + COUNT(lah_opt)+1
-              IF (ANY(lat_opt)) nvars = nvars + COUNT(lat_opt)+1
-              IF (ANY(lne_opt)) THEN
-                 nvars = nvars + COUNT(lne_opt)
-                 norm = profile_norm(ne_opt,ne_type)
-                 IF (norm /= 0) nvars = nvars + 1
-              END IF
-              IF (ANY(lzeff_opt)) THEN
-                 nvars = nvars + COUNT(lzeff_opt)
-                 norm = profile_norm(zeff_opt,zeff_type)
-                 IF (norm /= 0) nvars = nvars + 1
-              END IF
-              IF (ANY(lte_opt)) THEN
-                 nvars = nvars + COUNT(lte_opt)
-                 norm = profile_norm(te_opt,te_type)
-                 IF (norm /= 0) nvars = nvars + 1
-              END IF
-              IF (ANY(lti_opt)) THEN
-                 nvars = nvars + COUNT(lti_opt)
-                 norm = profile_norm(ti_opt,ti_type)
-                 IF (norm /= 0) nvars = nvars + 1
-              END IF
-              IF (ANY(lth_opt)) THEN
-                 nvars = nvars + COUNT(lth_opt)
-                 norm = profile_norm(th_opt,th_type)
-                 IF (norm /= 0) nvars = nvars + 1
-              END IF
+              ! Profiles
+              IF (ANY(lam_opt)) nvars = nvars + count_vars(lam_opt,am,pmass_type)
+              IF (ANY(lac_opt)) nvars = nvars + count_vars(lac_opt,ac,pcurr_type)
+              IF (ANY(lai_opt)) nvars = nvars + count_vars(lai_opt,ai,piota_type)
+              IF (ANY(lah_opt)) nvars = nvars + count_vars(lah_opt,ah,ph_type)
+              IF (ANY(lat_opt)) nvars = nvars + count_vars(lat_opt,at,pt_type)
+              IF (ANY(lne_opt)) nvars = nvars + count_vars(lne_opt,ne_opt,ne_type)
+              IF (ANY(lte_opt)) nvars = nvars + count_vars(lte_opt,te_opt,te_type)
+              IF (ANY(lti_opt)) nvars = nvars + count_vars(lti_opt,ti_opt,ti_type)
+              IF (ANY(lth_opt)) nvars = nvars + count_vars(lth_opt,th_opt,th_type)
+              IF (ANY(lzeff_opt)) nvars = nvars + count_vars(lzeff_opt,zeff_opt,zeff_type)
               IF (ANY(lam_s_opt)) nvars = nvars + COUNT(lam_s_opt)
-              IF (ANY(lam_f_opt)) nvars = nvars + COUNT(lam_f_opt)+1
               IF (ANY(lac_s_opt)) nvars = nvars + COUNT(lac_s_opt)
-              IF (ANY(lac_f_opt)) nvars = nvars + COUNT(lac_f_opt)
-              IF (ANY(lbeamj_f_opt)) nvars = nvars + COUNT(lbeamj_f_opt)
-              IF (ANY(lbootj_f_opt)) nvars = nvars + COUNT(lbootj_f_opt)
-              IF (ANY(lemis_xics_f_opt)) nvars = nvars + COUNT(lemis_xics_f_opt)+1
               IF (ANY(lai_s_opt)) nvars = nvars + COUNT(lai_s_opt)
-              IF (ANY(lai_f_opt)) nvars = nvars + COUNT(lai_f_opt)+1
               IF (ANY(lphi_s_opt)) nvars = nvars + COUNT(lphi_s_opt)
-              IF (ANY(lphi_f_opt)) nvars = nvars + COUNT(lphi_f_opt)+1
-              IF (ANY(lne_f_opt)) nvars = nvars + COUNT(lne_f_opt)+1
-              IF (ANY(lzeff_f_opt)) nvars = nvars + COUNT(lzeff_f_opt)+1
-              IF (ANY(lte_f_opt)) nvars = nvars + COUNT(lte_f_opt)+1
-              IF (ANY(lti_f_opt)) nvars = nvars + COUNT(lti_f_opt)+1
-              IF (ANY(lth_f_opt)) nvars = nvars + COUNT(lth_f_opt)+1
-              IF (ANY(lah_f_opt)) nvars = nvars + COUNT(lah_f_opt)+1
-              IF (ANY(lat_f_opt)) nvars = nvars + COUNT(lat_f_opt)+1
+              IF (ANY(lam_f_opt)) nvars = nvars + count_vars(lam_f_opt,am_aux_f,pmass_type)
+              IF (ANY(lac_f_opt)) nvars = nvars + count_vars(lac_f_opt,ac_aux_f,pcurr_type)
+              IF (ANY(lai_f_opt)) nvars = nvars + count_vars(lai_f_opt,ai_aux_f,piota_type)
+              IF (ANY(lah_f_opt)) nvars = nvars + count_vars(lah_f_opt,ah_aux_f,ph_type)
+              IF (ANY(lat_f_opt)) nvars = nvars + count_vars(lat_f_opt,at_aux_f,pt_type)
+              IF (ANY(lne_f_opt)) nvars = nvars + count_vars(lne_f_opt,ne_aux_f,ne_type)
+              IF (ANY(lte_f_opt)) nvars = nvars + count_vars(lte_f_opt,te_aux_f,te_type)
+              IF (ANY(lti_f_opt)) nvars = nvars + count_vars(lti_f_opt,ti_aux_f,ti_type)
+              IF (ANY(lth_f_opt)) nvars = nvars + count_vars(lth_f_opt,th_aux_f,th_type)
+              IF (ANY(lzeff_f_opt)) nvars = nvars + count_vars(lzeff_f_opt,zeff_aux_f,zeff_type)
+              IF (ANY(lemis_xics_f_opt)) nvars = nvars + count_vars(lemis_xics_f_opt,emis_xics_f,emis_xics_type)
+              IF (ANY(lphi_f_opt)) nvars = nvars + count_vars(lphi_f_opt,phi_aux_f,phi_type)
+              IF (ANY(lbeamj_f_opt)) nvars = nvars + count_vars(lbeamj_f_opt,beamj_aux_f,beamj_type)
+              IF (ANY(lbootj_f_opt)) nvars = nvars + count_vars(lbootj_f_opt,bootj_aux_f,bootj_type)
+              ! Boundary Parameters
               DO n = 0, ntord
                  IF (laxis_opt(n)) THEN
                     nvars = nvars + 1
@@ -230,16 +211,17 @@ end if
                     END IF
                  END DO
               END DO
-              knot_dofs = 3
-              IF (lwindsurf) knot_dofs = 2
+              ctrl_dofs = 3                 !x,y,z at each point
+              IF (lwindsurf) ctrl_dofs = 2  ! u,v  at each point
               DO n = LBOUND(lcoil_spline,DIM=1), UBOUND(lcoil_spline,DIM=1)
-                 nknots = COUNT(coil_splinesx(n,:) >= 0.0)    ! Actual size of coil spline n
-                 IF ((coil_type(n).eq.'M')) THEN
-                    nknots = nknots - 1                       ! Last knot of modular is never free.
-                    IF (lcoil_spline(n,1)) nvars = nvars - 1  ! First knot of modular loses one dof.
-                 END IF
-                 DO m = 1,nknots
-                    IF (lcoil_spline(n,m)) nvars = nvars + knot_dofs
+                 ! Actual no. of knots for coil spline n, less two to enforce periodicity of f,f'
+                 nknots = COUNT(coil_splinesx(n,:) >= 0.0) - 2
+
+                 ! First ctrl of modular loses one dof (u or z).
+                 IF ((coil_type(n).eq.'M').AND.lcoil_spline(n,1)) nvars = nvars - 1
+
+                 DO m = 1,nknots-4
+                    IF (lcoil_spline(n,m)) nvars = nvars + ctrl_dofs
                  END DO
               END DO
               ier = 0
@@ -263,8 +245,10 @@ end if
                     END IF
                  END DO
               END DO
-     
          CASE('spec')
+         CASE('test')
+            IF (lxval_opt)  nvars = nvars + 1
+            IF (lyval_opt)  nvars = nvars + 1
       END SELECT
 
       ! Allocate Arrays
@@ -479,6 +463,19 @@ end if
                  diag(nvar_in)    = dmix_ece_opt
                  arr_dex(nvar_in,1) = 1
               END IF
+              IF (lxics_v0_opt) THEN
+                 IF (lauto_domain) THEN
+                    xics_v0_min = MAX(xics_v0 - ABS(pct_domain*xics_v0),5.0E3)
+                    xics_v0_max = MIN(xics_v0 + ABS(pct_domain*xics_v0),5.0E3)
+                 END IF
+                 nvar_in = nvar_in + 1
+                 vars(nvar_in) = xics_v0
+                 vars_min(nvar_in) = xics_v0_min
+                 vars_max(nvar_in) = xics_v0_max
+                 var_dex(nvar_in) = ixics_v0
+                 diag(nvar_in)    = dxics_v0_opt
+                 arr_dex(nvar_in,1) = 1
+              END IF
               IF (ANY(lextcur_opt)) THEN
                  DO i = LBOUND(lextcur_opt,DIM=1), UBOUND(lextcur_opt,DIM=1)
                     IF (lextcur_opt(i)) THEN
@@ -618,7 +615,7 @@ end if
                  END DO
               END IF
               IF (ANY(lah_opt)) THEN
-                 norm = profile_norm(ah,'power_series')
+                 norm = profile_norm(ah,ph_type)
                  IF (norm /= 0) THEN
                     nvar_in = nvar_in + 1
                     vars(nvar_in) = norm
@@ -648,7 +645,7 @@ end if
                  END DO
               END IF
               IF (ANY(lat_opt)) THEN
-                 norm = profile_norm(at,'power_series')
+                 norm = profile_norm(at,pt_type)
                  IF (norm /= 0) THEN
                     nvar_in = nvar_in + 1
                     vars(nvar_in) = norm
@@ -887,6 +884,19 @@ end if
                  END DO
               END IF
               IF (ANY(lac_f_opt)) THEN
+                 norm = profile_norm(ac_aux_f,pcurr_type)
+                 IF (norm /=0) THEN
+                    nvar_in = nvar_in + 1
+                    vars(nvar_in) = norm
+                    vars_min(nvar_in) = norm - abs(norm_fac*norm)
+                    vars_max(nvar_in) = norm + abs(norm_fac*norm)
+                    var_dex(nvar_in) = iac_aux_f
+                    diag(nvar_in)    = 1.0_rprec
+                    arr_dex(nvar_in,2) = norm_dex
+                    ac_aux_f = ac_aux_f / norm
+                    ac_f_min = ac_f_min/norm
+                    ac_f_max = ac_f_max/norm
+                 END IF
                  DO i = LBOUND(lac_f_opt,DIM=1), UBOUND(lac_f_opt,DIM=1)
                     IF (lac_f_opt(i)) THEN
                        IF (lauto_domain) THEN
@@ -904,6 +914,19 @@ end if
                  END DO
               END IF
               IF (ANY(lbeamj_f_opt)) THEN
+                 norm = profile_norm(beamj_aux_f,beamj_type)
+                 IF (norm /=0) THEN
+                    nvar_in = nvar_in + 1
+                    vars(nvar_in) = norm
+                    vars_min(nvar_in) = norm - abs(norm_fac*norm)
+                    vars_max(nvar_in) = norm + abs(norm_fac*norm)
+                    var_dex(nvar_in) = ibeamj_aux_f
+                    diag(nvar_in)    = 1.0_rprec
+                    arr_dex(nvar_in,2) = norm_dex
+                    beamj_aux_f = beamj_aux_f / norm
+                    beamj_f_min = beamj_f_min/norm
+                    beamj_f_max = beamj_f_max/norm
+                 END IF
                  DO i = LBOUND(lbeamj_f_opt,DIM=1), UBOUND(lbeamj_f_opt,DIM=1)
                     IF (lbeamj_f_opt(i)) THEN
                        IF (lauto_domain) THEN
@@ -921,6 +944,19 @@ end if
                  END DO
               END IF
               IF (ANY(lbootj_f_opt)) THEN
+                 norm = profile_norm(bootj_aux_f,bootj_type)
+                 IF (norm /=0) THEN
+                    nvar_in = nvar_in + 1
+                    vars(nvar_in) = norm
+                    vars_min(nvar_in) = norm - abs(norm_fac*norm)
+                    vars_max(nvar_in) = norm + abs(norm_fac*norm)
+                    var_dex(nvar_in) = ibootj_aux_f
+                    diag(nvar_in)    = 1.0_rprec
+                    arr_dex(nvar_in,2) = norm_dex
+                    bootj_aux_f = bootj_aux_f / norm
+                    bootj_f_min = bootj_f_min/norm
+                    bootj_f_max = bootj_f_max/norm
+                 END IF
                  DO i = LBOUND(lbootj_f_opt,DIM=1), UBOUND(lbootj_f_opt,DIM=1)
                     IF (lbootj_f_opt(i)) THEN
                        IF (lauto_domain) THEN
@@ -1024,7 +1060,7 @@ end if
                  END DO
               END IF
               IF (ANY(lphi_f_opt)) THEN
-                 norm = profile_norm(phi_aux_f,'akima_spline')
+                 norm = profile_norm(phi_aux_f,phi_type)
                  IF (norm /=0) THEN
                     nvar_in = nvar_in + 1
                     vars(nvar_in) = norm
@@ -1475,9 +1511,10 @@ end if
               END IF
               IF (ANY(lcoil_spline)) THEN
                  DO n = LBOUND(lcoil_spline,1), UBOUND(lcoil_spline,1)
-                    nknots = COUNT(coil_splinesx(n,:) >= 0.0)       ! Actual size of coil spline n
-                    IF ((coil_type(n).eq.'M')) nknots = nknots - 1  ! Last knot of modular is never free.
-                    DO m = 1,nknots
+                    ! Actual no. of knots for coil spline n, less two to enforce periodicity of f,f'
+                    nknots = COUNT(coil_splinesx(n,:) >= 0.0) - 2
+
+                    DO m = 1,nknots-4
                        IF (lcoil_spline(n,m)) THEN
                           IF (lauto_domain) THEN
                              coil_splinefx_min(n,m) = coil_splinefx(n,m) - ABS(pct_domain*coil_splinefx(n,m))
@@ -1526,6 +1563,33 @@ end if
               END IF
               ier = -327
               CALL stellopt_prof_to_vmec('init',ier)
+         CASE('test')
+              IF (lxval_opt) THEN
+                 IF (lauto_domain) THEN
+                    xval_min = phiedge - ABS(pct_domain*xval)
+                    xval_max = phiedge + ABS(pct_domain*xval)
+                 END IF
+                 nvar_in = nvar_in + 1
+                 vars(nvar_in) = xval
+                 vars_min(nvar_in) = xval_min
+                 vars_max(nvar_in) = xval_max
+                 var_dex(nvar_in) = ixval
+                 diag(nvar_in)    = dxval_opt
+                 arr_dex(nvar_in,1) = 1
+              END IF
+              IF (lyval_opt) THEN
+                 IF (lauto_domain) THEN
+                    yval_min = phiedge - ABS(pct_domain*yval)
+                    yval_max = phiedge + ABS(pct_domain*yval)
+                 END IF
+                 nvar_in = nvar_in + 1
+                 vars(nvar_in) = yval
+                 vars_min(nvar_in) = yval_min
+                 vars_max(nvar_in) = yval_max
+                 var_dex(nvar_in) = iyval
+                 diag(nvar_in)    = dyval_opt
+                 arr_dex(nvar_in,1) = 1
+              END IF
       END SELECT
 !DEC$ IF DEFINED (MPI_OPT)
       CALL MPI_BARRIER( MPI_COMM_STEL, ierr_mpi )                   ! MPI

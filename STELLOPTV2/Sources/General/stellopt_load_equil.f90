@@ -49,7 +49,8 @@
                                zbc_vmec => zbc, zbs_vmec => zbs, &
                                raxis_cc_vmec => raxis_cc, raxis_cs_vmec => raxis_cs, &
                                zaxis_cc_vmec => zaxis_cc, zaxis_cs_vmec => zaxis_cs, &
-                               lfreeb_vmec => lfreeb
+                               lfreeb_vmec => lfreeb, &
+                               ah_aux_s, ah_aux_f, at_aux_s, at_aux_f 
                                
       USE mgrid_mod,     ONLY: nextcur, rminb, rmaxb, zmaxb
       !USE vparams, ONLY: mu0
@@ -127,48 +128,22 @@
             ALLOCATE(extcur(nextcur))
             extcur(1:nextcur) = extcur_vmec(1:nextcur)
             ! Radial Splines Arrays
-            IF (EZspline_allocated(pres_spl)) CALL EZspline_free(pres_spl,iflag)
-            IF (EZspline_allocated(iota_spl)) CALL EZspline_free(iota_spl,iflag)
-            IF (EZspline_allocated(ip_spl)) CALL EZspline_free(ip_spl,iflag)
-            IF (EZspline_allocated(jdotb_spl)) CALL EZspline_free(jdotb_spl,iflag)
-            IF (EZspline_allocated(jcurv_spl)) CALL EZspline_free(jcurv_spl,iflag)
-            IF (EZspline_allocated(V_spl)) CALL EZspline_free(V_spl,iflag)
-            CALL EZspline_init(pres_spl,ns_vmec,bcs0,iflag)
-            CALL EZspline_init(iota_spl,ns_vmec,bcs0,iflag)
-            CALL EZspline_init(jdotb_spl,ns_vmec,bcs0,iflag)
-            CALL EZspline_init(jcurv_spl,ns_vmec,bcs0,iflag)
-            CALL EZspline_init(V_spl,ns_vmec,bcs0,iflag)
-            !CALL EZspline_init(ip_spl,ns_vmec,bcs0,iflag)
-            pres_spl%x1 = rho
-            iota_spl%x1 = rho
-            jdotb_spl%x1 = rho
-            jcurv_spl%x1 = rho
-            V_spl%x1 = rho
-            !ip_spl%x1 = phi_vmec
-            pres_spl%isHermite = 1
-            iota_spl%isHermite = 1
-            jdotb_spl%isHermite = 1
-            jcurv_spl%isHermite = 1
-            V_spl%isHermite = 1
-            !ip_spl%isHermite = 1
-            CALL EZspline_setup(pres_spl,pres_vmec,ier)
-            CALL EZspline_setup(iota_spl,iota_vmec,ier)
-            CALL EZspline_setup(jdotb_spl,jdotb_vmec,ier)
-            CALL EZspline_setup(jcurv_spl,jcurv_vmec,ier)
+            CALL setup_prof_spline(pres_spl,  ns_vmec, rho, pres_vmec, iflag)
+            CALL setup_prof_spline(iota_spl,  ns_vmec, rho, iota_vmec, iflag)
+            !CALL setup_prof_spline(ip_spl,    ns_vmec, rho, ip_vmec,   iflag)
+            CALL setup_prof_spline(jdotb_spl, ns_vmec, rho, jdotb_vmec, iflag)
+            CALL setup_prof_spline(jcurv_spl, ns_vmec, rho, jcurv_vmec, iflag)
             ALLOCATE(Vol(ns_vmec))
             FORALL(u=1:ns_vmec) Vol(u) = SUM(vp_vmec(1:u))
-            CALL EZspline_setup(V_spl,Vol,ier)
+            CALL setup_prof_spline(V_spl,     ns_vmec, rho, Vol, iflag)
             DEALLOCATE(Vol)
+
             ! Handle the FLOW arrays
             IF (TRIM(equil_type)=='flow' .or. TRIM(equil_type)=='satire') THEN
                mach0 = SQRT(machsq_vmec)
-               IF (EZspline_allocated(omega_spl)) CALL EZspline_free(omega_spl,iflag)
-               CALL EZspline_init(omega_spl,ns_vmec,bcs0,iflag)
-               omega_spl%x1 = rho
-               omega_spl%isHermite = 1
-               CALL EZspline_setup(omega_spl,omega_vmec,ier)
+               CALL setup_prof_spline(omega_spl, ns_vmec, rho, omega_vmec, iflag)
             END IF
-            !CALL EZspline_setup(ip_spl,pres_vmec,ier)
+
             ! Get the realspace R and Z and metric elements
             nu = 8 * mpol_vmec + 1
             nu = 2 ** CEILING(log(REAL(nu))/log(2.0_rprec))
@@ -292,72 +267,30 @@
          CASE('spec')
          CASE('pies')
          CASE('siesta')
+         CASE('test')
+            ! Do nothing
       END SELECT
       ! Setup the internal STELLOPT arrays
-      IF (EZspline_allocated(phi_spl)) CALL EZspline_free(phi_spl,iflag)
-      IF (EZspline_allocated(ne_spl)) CALL EZspline_free(ne_spl,iflag)
-      IF (EZspline_allocated(te_spl)) CALL EZspline_free(te_spl,iflag)
-      IF (EZspline_allocated(ti_spl)) CALL EZspline_free(ti_spl,iflag)
-      IF (EZspline_allocated(th_spl)) CALL EZspline_free(th_spl,iflag)
-      IF (EZspline_allocated(nustar_spl)) CALL EZspline_free(nustar_spl,iflag)
-      IF (EZspline_allocated(zeff_spl)) CALL EZspline_free(zeff_spl,iflag)
-      IF (EZspline_allocated(emis_xics_spl)) CALL EZspline_free(emis_xics_spl,iflag)
       dex = MINLOC(phi_aux_s(2:),DIM=1)
-      IF (dex > 4) THEN
-         CALL EZspline_init(phi_spl,dex,bcs0,iflag)
-         phi_spl%x1 = phi_aux_s
-         phi_spl%isHermite = 1
-         CALL EZspline_setup(phi_spl,phi_aux_f,ier)
-      END IF
+      IF (dex > 4) CALL setup_prof_spline(phi_spl,dex,phi_aux_s(1:dex),phi_aux_f(1:dex),ier)
       dex = MINLOC(ne_aux_s(2:),DIM=1)
-      IF (dex > 4) THEN
-         CALL EZspline_init(ne_spl,dex,bcs0,iflag)
-         ne_spl%x1 = ne_aux_s(1:dex)
-         ne_spl%isHermite = 1
-         CALL EZspline_setup(ne_spl,ne_aux_f,ier)
-      END IF
+      IF (dex > 4) CALL setup_prof_spline(ne_spl,dex,ne_aux_s(1:dex),ne_aux_f(1:dex),ier)
       dex = MINLOC(te_aux_s(2:),DIM=1)
-      IF (dex > 4) THEN
-         CALL EZspline_init(te_spl,dex,bcs0,iflag)
-         te_spl%x1 = te_aux_s(1:dex)
-         te_spl%isHermite = 1
-         CALL EZspline_setup(te_spl,te_aux_f,ier)
-      END IF
+      IF (dex > 4) CALL setup_prof_spline(te_spl,dex,te_aux_s(1:dex),te_aux_f(1:dex),ier)
       dex = MINLOC(ti_aux_s(2:),DIM=1)
-      IF (dex > 4) THEN
-         CALL EZspline_init(ti_spl,dex,bcs0,iflag)
-         ti_spl%x1 = ti_aux_s(1:dex)
-         ti_spl%isHermite = 1
-         CALL EZspline_setup(ti_spl,ti_aux_f,ier)
-      END IF
+      IF (dex > 4) CALL setup_prof_spline(ti_spl,dex,ti_aux_s(1:dex),ti_aux_f(1:dex),ier)
       dex = MINLOC(th_aux_s(2:),DIM=1)
-      IF (dex > 4) THEN
-         CALL EZspline_init(th_spl,dex,bcs0,iflag)
-         th_spl%x1 = th_aux_s(1:dex)
-         th_spl%isHermite = 1
-         CALL EZspline_setup(th_spl,phi_aux_f,ier)
-      END IF
+      IF (dex > 4) CALL setup_prof_spline(th_spl,dex,th_aux_s(1:dex),th_aux_f(1:dex),ier)
       dex = MINLOC(nustar_s(2:),DIM=1)
-      IF (dex > 4) THEN
-         CALL EZspline_init(nustar_spl,dex,bcs0,iflag)
-         nustar_spl%x1 = nustar_s(1:dex)
-         nustar_spl%isHermite = 1
-         CALL EZspline_setup(nustar_spl,nustar_f,ier)
-      END IF
+      IF (dex > 4) CALL setup_prof_spline(nustar_spl,dex,nustar_s(1:dex),nustar_f(1:dex),ier)
       dex = MINLOC(zeff_aux_s(2:),DIM=1)
-      IF (dex > 4) THEN
-         CALL EZspline_init(zeff_spl,dex,bcs0,iflag)
-         zeff_spl%x1 = zeff_aux_s(1:dex)
-         zeff_spl%isHermite = 1
-         CALL EZspline_setup(zeff_spl,zeff_aux_f,ier)
-      END IF
+      IF (dex > 4) CALL setup_prof_spline(zeff_spl,dex,zeff_aux_s(1:dex),zeff_aux_f(1:dex),ier)
+      dex = MINLOC(ah_aux_s(2:),DIM=1)
+      IF (dex > 4) CALL setup_prof_spline(ah_spl,dex,ah_aux_s(1:dex),ah_aux_f(1:dex),ier)
       dex = MINLOC(emis_xics_s(2:),DIM=1)
-      IF (dex > 4) THEN
-         CALL EZspline_init(emis_xics_spl,dex,bcs0,iflag)
-         emis_xics_spl%x1 = emis_xics_s(1:dex)
-         emis_xics_spl%isHermite = 1
-         CALL EZspline_setup(emis_xics_spl,emis_xics_f,ier)
-      END IF
+      IF (dex > 4) CALL setup_prof_spline(emis_xics_spl,dex,emis_xics_s(1:dex),emis_xics_f(1:dex),ier)
+
+      ! Screen output
       IF (lscreen) THEN
          WRITE(6,'(A,F7.3)')   '     ASPECT RATIO:  ',aspect
          WRITE(6,'(A,F7.3,A)') '             BETA:  ',beta,'  (total)'
@@ -372,17 +305,7 @@
          WRITE(6,'(A,E20.12)')   '    STORED ENERGY:  ',wp
          CALL FLUSH(6)
       END IF
-      
-      ! Testing output
-      !DO u = 1, 20
-      !      temp = 0.0+(0.05*u)
-      !      phi_temp = pi2/3
-      !      ier=0
-      !      CALL get_equil_s(1.8_rprec,phi_temp,temp,s_temp,ier,u_temp)
-      !      WRITE(77,*) temp,phi_temp,1.8,s_temp,u_temp,ier
-      !      PRINT *,'r=',1.8,'phi=',phi_temp,'z=',temp,'s=',s_temp,ier, u_temp
-      !END DO
-      !stop
+
       RETURN
 !----------------------------------------------------------------------
 !     END SUBROUTINE

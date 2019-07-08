@@ -59,9 +59,10 @@
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
       IF (iflag < 0) RETURN
-      IF (lscreen) WRITE(6,'(a)') ' ---------------------------  BOOTSTRAP CALCULATION  -------------------------'
+      !IF (lscreen) WRITE(6,'(a)') ' ---------------------------  BOOTSTRAP CALCULATION  -------------------------'
+      IF (lscreen) WRITE(6,'(a)') ' --------------------  BOOTSTRAP CALCULATION USING BOOTSJ  -------------------'
       SELECT CASE(TRIM(equil_type))
-         CASE('vmec2000','animec','flow','satire','parvmec','paravmec','vboot')
+         CASE('vmec2000','animec','flow','satire','parvmec','paravmec','vboot','vmec2000_oneeq')
             ! Get the data into bootsj
             call second0 (time1)
             timecpu = time1
@@ -202,6 +203,7 @@
             ! Now we get TI and TE on VMEC mesh (our way)
             ! Notes: This part of the code wants quantities in 10^20 [m^-3] and
             !        [keV]
+            ier = 0
             IF (myworkid == master) THEN
                IF (tempres < 0) THEN
                   DO ir = 1, irup
@@ -465,7 +467,8 @@
             CLOSE(ijbs)
          CASE('spec')
       END SELECT
-      IF (lscreen) WRITE(6,'(a)') ' -------------------------  BOOTSTRAP CALCULATION DONE  ----------------------'
+      !IF (lscreen) WRITE(6,'(a)') ' -------------------------  BOOTSTRAP CALCULATION DONE  ----------------------'
+      IF (lscreen) WRITE(6,'(a)') ' -------------------  BOOTSJ BOOTSTRAP CALCULATION DONE  ---------------------'
       RETURN
   90  format(5e16.8)
 !----------------------------------------------------------------------
