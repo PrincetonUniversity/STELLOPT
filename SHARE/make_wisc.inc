@@ -145,7 +145,8 @@
 #######################################################################
 #            REGCOIL Options
 #######################################################################
-  LREGCOIL= F
+  LREGCOIL= T
+  REGCOIL_PATH = /home/stellopt/opt/regcoil
   REGCOIL_DIR = $(REGCOIL_PATH)
   REGCOIL_INC = -I$(REGCOIL_DIR) 
   LIB_REGCOIL = libregcoil.a
@@ -160,14 +161,14 @@
   LIB_PTSM3D = libptsm3d.a
   PTSM3D_LIB = $(PTSM3D_DIR)/$(LIB_PTSM3D)
 
-#            VMEC2SFL Options
+#            VMEC2PEST Options
 #######################################################################
-  LVMEC2SFL = T
-  VMEC2SFL_PATH = /home/bfaber/workspace/vmec2sfl
-  VMEC2SFL_INC = -I$(VMEC2SFL_PATH)
-  VMEC2SFL_DIR = $(VMEC2SFL_PATH)
-  LIB_VMEC2SFL = libvmec2sfl.a
-  VMEC2SFL_LIB = $(VMEC2SFL_DIR)/$(LIB_VMEC2SFL)
+  LVMEC2PEST = T
+  VMEC2PEST_PATH = /home/bfaber/workspace/vmec2sfl
+  VMEC2PEST_INC = -I$(VMEC2PEST_PATH)
+  VMEC2PEST_DIR = $(VMEC2PEST_PATH)
+  LIB_VMEC2PEST = lib/libvmec2sfl.a
+  VMEC2PEST_LIB = $(VMEC2PEST_DIR)/$(LIB_VMEC2PEST)
 #######################################################################
 #            LIBSTELL Shared Options
 #######################################################################
@@ -267,7 +268,7 @@ else
   LTRAVIS = F
 
   LREGCOIL= F
-  LVMEC2SFL = F
+  LVMEC2PEST = F
   LPTSM3D = F
 endif
 ifeq ($(MAKECMDGOALS),xanimec)
@@ -340,14 +341,14 @@ endif
 # Handle other codes
 #LIB_LINK += $(GENE_LIB) $(COILOPT_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB) $(REGCOIL_LIB)
 
-ifeq ($(LVMEC2SFL),T)
-  MOD1_PATH += $(VMEC2SFL_INC)
-  PRECOMP += -DVMEC2SFL
-  MOD_PATH += -I$(VMEC2SFL_DIR)
+ifeq ($(LVMEC2PEST),T)
+  MOD1_PATH += $(VMEC2PEST_INC)
+  PRECOMP += -DVMEC2PEST
+  MOD_PATH += -I$(VMEC2PEST_DIR)
 else
-  VMEC2SFL_LIB =
-  VMEC2SFL_DIR =
-  LIB_VMEC2SFL =
+  VMEC2PEST_LIB =
+  VMEC2PEST_DIR =
+  LIB_VMEC2PEST =
 endif
 
 ifeq ($(LPTSM3D),T)
@@ -361,7 +362,7 @@ else
 endif
 
 # Handle other codes
-LIB_LINK += $(GENE_LIB) $(COILOPT_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB) $(VMEC2SFL_LIB) $(PTSM3D_LIB)
+LIB_LINK += $(GENE_LIB) $(COILOPT_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB) $(REGCOIL_LIB) $(VMEC2PEST_LIB) $(PTSM3D_LIB)
 
 # Add libraries to LIB_LINK
 # LIB_LINK+= $(MYHOME)/libstell.a $(LIBS)
