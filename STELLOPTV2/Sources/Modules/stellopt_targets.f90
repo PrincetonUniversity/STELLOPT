@@ -262,9 +262,6 @@
       INTEGER, PARAMETER :: jtarget_coilcrv    = 615
       INTEGER, PARAMETER :: jtarget_coilsep    = 616
       INTEGER, PARAMETER :: jtarget_coilself   = 617
-      INTEGER, PARAMETER :: jtarget_regcoil_chi2_b = 5150
-      INTEGER, PARAMETER :: jtarget_regcoil_current_density = 5151
-      INTEGER, PARAMETER :: jtarget_curvature_P2 = 5200
       INTEGER, PARAMETER :: jtarget_x          = 900
       INTEGER, PARAMETER :: jtarget_y          = 901
 

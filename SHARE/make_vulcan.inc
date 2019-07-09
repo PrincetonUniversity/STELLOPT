@@ -76,7 +76,7 @@
 #            DKES/NEO Options
 #######################################################################
   LDKES = F
-  LNEO  = T
+  LNEO  = F
 
 #######################################################################
 #            GENE Options
@@ -123,45 +123,35 @@
 #######################################################################
 #            REGCOIL Options
 #######################################################################
-  LREGCOIL= T
+  LREGCOIL= F
   REGCOIL_DIR = $(REGCOIL_PATH)
   REGCOIL_INC = -I$(REGCOIL_DIR) 
   LIB_REGCOIL = libregcoil.a
   REGCOIL_LIB = $(REGCOIL_DIR)/$(LIB_REGCOIL) -fopenmp
 
 #######################################################################
+#            PTSM3D Options
+#######################################################################
+  LPTSM3D = F
+  PTSM3D_PATH = /home/bfaber/projects/PTSM3D
+  PTSM3D_INC = -I$(PTSM3D_PATH)/objs
+  PTSM3D_DIR = $(PTSM3D_PATH)
+  LIB_PTSM3D = libptsm3d.a
+  PTSM3D_LIB = $(PTSM3D_DIR)/$(LIB_PTSM3D)
+
+#######################################################################
+#            VMEC2PEST Options
+#######################################################################
+  LVMEC2PEST = T
+  VMEC2PEST_PATH = /home/bfaber/projects/VMECTools
+  VMEC2PEST_INC = -I$(VMEC2PEST_PATH)/obj
+  VMEC2PEST_DIR = $(VMEC2PEST_PATH)
+  LIB_VMEC2PEST = lib/libvmec2pest.a
+  VMEC2PEST_LIB = $(VMEC2PEST_DIR)/$(LIB_VMEC2PEST)
+
+#######################################################################
 #            LIBSTELL Shared Options
 #######################################################################
-#LIB_SHARE = $(BLASHOME)/lib/libblas.so \
-          $(SCALAPACK_HOME)/lib/libscalapack-openmpi.so \
-          $(BLACS_HOME)/lib/libblacs-openmpi.so  $(BLACS_HOME)/lib/libblacsCinit-openmpi.so $(BLACS_HOME)/lib/libblacsF77init-openmpi.so \
-          $(HDF5_HOME)/lib/x86_64-linux-gnu/libhdf5_hl.so $(HDF5_HOME)/lib/x86_64-linux-gnu/libhdf5_fortran.so $(HDF5_HOME)/lib/x86_64-linux-gnu/libhdf5hl_fortran.so $(HDF5_HOME)/lib/x86_64-linux-gnu/libhdf5.so \
-          $(HDF5_HOME)/lib/x86_64-linux-gnu/libmpi_usempif08.so $(HDF5_HOME)/lib/x86_64-linux-gnu/libhdf5_openmpi_fortran.so \
-          $(NETCDF_HOME)/lib/x86_64-linux-gnu/libnetcdf.so $(NETCDF_HOME)/lib/x86_64-linux-gnu/libnetcdff.so $(NETCDF_HOME)/lib/x86_64-linux-gnu/libnetcdf_c++.so \
-          $(SILOHOME)/lib/x86_64-linux-gnu/libsiloh5.so \
-          $(GSLHOME)/lib/x86_64-linux-gnu/libgsl.so \
-          $(GCC6_HOME)/libgfortran.so $(GCC6_HOME)/libstdc++.so \
-          $(MPIHOME)/lib/x86_64-linux-gnu/libmpi.so $(MPIHOME)/lib/x86_64-linux-gnu/libmpi_mpifh.so \
-          /usr/lib/x86_64-linux-gnu/libm.so /usr/lib/liblapack.so /usr/lib/x86_64-linux-gnu/libdl.so
-#LIB_SHARE = $(BLASHOME)/lib/libblas.so \
-          $(SCALAPACK_HOME)/lib/libscalapack-openmpi.so.1 \
-          $(BLACS_HOME)/lib/libblacs-openmpi.so.1 \
-          $(BLACS_HOME)/lib/libblacsCinit-openmpi.so.1 \
-          $(BLACS_HOME)/lib/libblacsF77init-openmpi.so.1 \
-          $(HDF5_HOME)/lib/x86_64-linux-gnu/libhdf5_openmpi_fortran.so \
-          $(NETCDF_HOME)/lib/libnetcdf.so \
-          $(NETCDF_HOME)/lib/libnetcdff.so \
-          $(NETCDF_HOME)/lib/libnetcdf_c++.so \
-          $(SILOHOME)/lib/x86_64-linux-gnu/libsiloh5.so \
-          $(GSLHOME)/lib/x86_64-linux-gnu/libgsl.so \
-          $(GCC49_HOME)/libgfortran.so \
-          $(GCC49_HOME)/libstdc++.so \
-          $(MPIHOME)/lib/libmpi.so \
-          $(MPIHOME)/lib/libmpif77.so \
-          /usr/lib/x86_64-linux-gnu/libm.so \
-          /usr/lib/liblapack.so \
-          /usr/lib/x86_64-linux-gnu/libdl.so
-
 
 #######################################################################
 #######################################################################
@@ -255,6 +245,9 @@ else
   LCOILOPT = F
   LTERPSICHORE = F
   LTRAVIS = F
+  LREGCOIL = F
+  LVMEC2PEST = F
+  LPTSM3D = F
 endif
 ifeq ($(MAKECMDGOALS),xanimec)
   PRECOMP += -D_ANIMEC
@@ -326,8 +319,29 @@ else
   LIB_REGCOIL = 
 endif
 
+ifeq ($(LVMEC2PEST),T)
+  MOD1_PATH += $(VMEC2PEST_INC)
+  PRECOMP += -DVMEC2PEST
+  MOD_PATH += -I$(VMEC2PEST_DIR)/objs
+else
+  VMEC2PEST_LIB =
+  VMEC2PEST_DIR =
+  LIB_VMEC2PEST =
+endif
+
+ifeq ($(LPTSM3D),T)
+  MOD1_PATH += $(PTSM3D_INC)
+  PRECOMP += -DPTSM3D
+  MOD_PATH += -I$(PTSM3D_DIR)/objs
+else
+  PTSM3D_LIB =
+  PTSM3D_DIR =
+  LIB_PTSM3D =
+endif
+
+
 # Handle other codes
-LIB_LINK += $(GENE_LIB) $(COILOPT_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB) $(REGCOIL_LIB)
+LIB_LINK += $(GENE_LIB) $(COILOPT_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB) $(REGCOIL_LIB) $(VMEC2PEST_LIB) $(PTSM3D_LIB)
 
 # Add libraries to LIB_LINK
 # LIB_LINK+= $(MYHOME)/libstell.a $(LIBS)

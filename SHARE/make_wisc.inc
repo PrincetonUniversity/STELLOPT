@@ -155,8 +155,8 @@
 #######################################################################
 #            PTSM3D Options
 #######################################################################
-  LPTSM3D = T
-  PTSM3D_PATH = /home/bfaber/PTSM3D
+  LPTSM3D = F
+  PTSM3D_PATH = /home/bfaber/projects/PTSM3D
   PTSM3D_INC = -I$(PTSM3D_PATH)/objs
   PTSM3D_DIR = $(PTSM3D_PATH)
   LIB_PTSM3D = libptsm3d.a
@@ -165,11 +165,11 @@
 #######################################################################
 #            VMEC2PEST Options
 #######################################################################
-  LVMEC2PEST = T
-  VMEC2PEST_PATH = /home/bfaber/workspace/vmec2sfl
-  VMEC2PEST_INC = -I$(VMEC2PEST_PATH)
+  LVMEC2PEST = F
+  VMEC2PEST_PATH = /home/bfaber/projects/VMECTools
+  VMEC2PEST_INC = -I$(VMEC2PEST_PATH)/obj
   VMEC2PEST_DIR = $(VMEC2PEST_PATH)
-  LIB_VMEC2PEST = lib/libvmec2sfl.a
+  LIB_VMEC2PEST = lib/libvmec2pest.a
   VMEC2PEST_LIB = $(VMEC2PEST_DIR)/$(LIB_VMEC2PEST)
 #######################################################################
 #            LIBSTELL Shared Options

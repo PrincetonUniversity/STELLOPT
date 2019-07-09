@@ -21,16 +21,15 @@
       USE EZspline_obj
       USE EZspline
 
-      !VMEC2SFL
-      USE vmec2sfl_vars_mod, vshat => shat
-      USE vmec2sfl_mod
+      !VMEC2PEST
+      USE interfaces
       
       !PTSM3D Files
-      USE PTSM3D_setup
-      USE PTSM3D_geom
-      USE PTSM3D_itg
-      USE PTSM3D_triplets
-      USE PTSM3D_targets
+      !USE PTSM3D_setup
+      !USE PTSM3D_geom
+      !USE PTSM3D_itg
+      !USE PTSM3D_triplets
+      !USE PTSM3D_targets
 
        
       IMPLICIT NONE
@@ -41,189 +40,60 @@
 !     Local variables
 !
 !----------------------------------------------------------------------
-      INTEGER :: maxPnt, nalpha0_, i, iunit, ier, ncnt, periods 
-      INTEGER :: j, k, global_npol, nzgrid, nalpha, vmec_option
-      REAL(rprec) :: dpdx, maxTheta, pval, pprime
-      REAL(rprec) :: zeta_center, s_used
-      REAL(rprec) :: periodszeta
-      REAL(rprec), DIMENSION(:), ALLOCATABLE :: th
-      character(len=128) :: temp_str, gist_filename, num_str, vmec2sfl_geom_file
-      LOGICAL :: uflag, res!, verbose
- 
-      REAL(rprec), PARAMETER :: zero   = 0.0_rprec
-      REAL(rprec), PARAMETER :: one    = 1.0_rprec
-      REAL(rprec), PARAMETER :: two    = 2.0_rprec
+!      INTEGER :: maxPnt, nalpha0_, i, iunit, ier, ncnt, periods 
+!      INTEGER :: j, k, global_npol, nzgrid, nalpha, vmec_option
+!      REAL(rprec) :: dpdx, maxTheta, pval, pprime
+!      REAL(rprec) :: zeta_center, s_used
+!      REAL(rprec) :: periodszeta
+!      REAL(rprec), DIMENSION(:), ALLOCATABLE :: th
+!      character(len=128) :: temp_str, gist_filename, num_str, vmec2sfl_geom_file
+!      LOGICAL :: uflag, res!, verbose
+! 
+!      REAL(rprec), PARAMETER :: zero   = 0.0_rprec
+!      REAL(rprec), PARAMETER :: one    = 1.0_rprec
+!      REAL(rprec), PARAMETER :: two    = 2.0_rprec
 
 !----------------------------------------------------------------------
 !     Replicate the GIST geometry calculations done in stellopt_txport
 !     Do this for each (kx,ky) pair focusing only on a range defined
 !     by theta_k and local_npol
 !----------------------------------------------------------------------
+      real(rprec), dimension(:), allocatable :: surfaces, data_arr
+      integer :: nx2, nx3, i, j
+      character(len=128) :: x3_coord, norm_type, grid_type
+      real(rprec) :: nfpi, x3_center
+      character(len=16), dimension(7) :: ptsm3d_geom_strings
       IF (lscreen) WRITE(6,'(a)') &
       &  ' -------------------------  BEGIN PTSM3D CALCULATION &
       & ------------------------ '
+      ptsm3d_geom_strings(1) = 'bmag'
+      ptsm3d_geom_strings(2) = 'jac'
+      ptsm3d_geom_strings(3) = 'g11'
+      ptsm3d_geom_strings(4) = 'g12'
+      ptsm3d_geom_strings(5) = 'g22'
+      ptsm3d_geom_strings(6) = 'curv_drift_x1'
+      ptsm3d_geom_strings(7) = 'curv_drift_x2'
 
-      nz0 = points_per_turn
+      ! Move this to the PTSM3D namelist
+      if(allocated(surfaces)) deallocate(surfaces)
+      allocate(surfaces(1))
+      surfaces(1) = 0.5
+      nx2 = 1
+      nx3 = 64
+      allocate(data_arr(nx3+1))
+      x3_center = 0.0
+      nfpi = 5.0
+      norm_type = "minor_r"
+      grid_type = "gene"
+      x3_coord = "theta"
+      call vmec2pest_stellopt_interface(surfaces,nx2,nx3,x3_center,&
+        &trim(x3_coord),nfpi,trim(norm_type),trim(grid_type))
+
+      do j = 1,7
+        call get_pest_data_interface(0,0,trim(ptsm3d_geom_strings(j)),1,nx3+1,data_arr)
+
+      end do
+
+      deallocate(surfaces,data_arr)
       
-      vmec_option = 0
-      verbose = .false.
-
-      call get_surface_quantities(s0,vmec_option)
-      q0 = safety_factor_q
-      shat = vshat
-      maxTheta = abs(1.0/shat/dky) + 2*local_npol*pi
-      global_npol = nint(maxTheta/pi)
-      !make sure global_npol is even
-      if (modulo(global_npol,2) == 1) global_npol = global_npol + 1
-      maxTheta = global_npol*pi
-      maxPnt = global_npol*nz0
-
-      periods = float(global_npol)*nfp
-      nzgrid = maxPnt/2
-      periodszeta = periods*q0
-      zeta_center = 0.0
-      nalpha=1
-
-      ALLOCATE(alpha(nalpha))
-      ALLOCATE(zeta(-nzgrid:nzgrid))
-      ALLOCATE(bmag(nalpha, -nzgrid:nzgrid))
-      ALLOCATE(gradpar(nalpha, -nzgrid:nzgrid))
-      ALLOCATE(gds2(nalpha, -nzgrid:nzgrid))
-      ALLOCATE(gds21(nalpha, -nzgrid:nzgrid))
-      ALLOCATE(gds22(nalpha, -nzgrid:nzgrid))
-      ALLOCATE(gbdrift(nalpha, -nzgrid:nzgrid))
-      ALLOCATE(gbdrift0(nalpha, -nzgrid:nzgrid))
-      ALLOCATE(cvdrift(nalpha, -nzgrid:nzgrid))
-      ALLOCATE(cvdrift0(nalpha, -nzgrid:nzgrid))
-      ALLOCATE(jac_gist_inv(nalpha, -nzgrid:nzgrid))
-      ALLOCATE(d_B_d_par(nalpha, -nzgrid:nzgrid))
-      ALLOCATE(th(0:2*nzgrid))
-      
-      call vmec2sfl(nalpha,nzgrid,zeta_center,periodszeta)
-
-      nz = 2*nzgrid+1
-      li1 = 0
-      li2 = 2*nzgrid
-      CALL PTSM3D_initialize_geom
-      if (allocated(geom)) deallocate(geom)
-      allocate(geom(9,li1:li2))
-
-      i = 1 !eventually we may allow for multiple s values
-      geom(1,:) = gds22(i,:)/shat**2   ! g11
-      geom(2,:) = gds21(i,:)/shat      ! g21
-      geom(3,:) = gds2(i,:)            ! g22
-      geom(4,:) = Bmag(i,:)            ! modB
-      geom(5,:) = 1.0/abs(jac_gist_inv(i,:))  ! Jacobian
-      geom(6,:) = Bmag(i,:)/2 * cvdrift(i,:)       ! L2
-      geom(7,:) = -Bmag(i,:)/2/shat * cvdrift0(i,:) ! L1
-      geom(8,:) = d_B_d_par(i,:)            ! dBdpar
-
-      !zeta_center is 0 always, so assume theta_center is 0 too
-      !Then conversion between theta and zeta is simply
-      !theta = zeta/q
-      th = zeta/q0
-      geom(9,:) = th 
-
-      temp_str = TRIM('gist_genet_'//TRIM(proc_string))
-      ncnt = 0
-      uflag = .false.
-      DO WHILE (uflag .eqv. .false.)
-        WRITE(num_str,"(I5.5)") ncnt 
-        gist_filename = TRIM(temp_str)//&
-        & '.' //TRIM(ADJUSTL(num_str))  
-        INQUIRE(FILE=TRIM(gist_filename),EXIST=res)
-        IF (res) THEN
-          ncnt = ncnt + 1
-        ELSE
-          uflag = .true.
-        END IF
-      END DO 
-      if (write_gist) then
-        iunit = 50000+iflag+100*ncnt
-        CALL safe_open(iunit,iflag,TRIM(gist_filename),&
-          & 'unknown','formatted')
-        WRITE(iunit,'(A)') '&PARAMETERS'
-        WRITE(iunit,"(A,F12.7)") "s0 = ", normalized_toroidal_flux_used
-        WRITE(iunit,"(A,F12.7)") "minor_a = ", L_reference
-        WRITE(iunit,"(A,F12.7)") "Bref = ", B_reference
-        WRITE(iunit,"(A,F12.7)") "q0 = ",ABS(q0)
-        WRITE(iunit,"(A,F12.7)") "shat = ",shat 
-        WRITE(iunit,"(A,I5)") "gridpoints = ",nzgrid*2+1
-        WRITE(iunit,"(A,I7)") "n_pol = ",periods/nfp
-        WRITE(iunit,"(A)") "/"
-      end if
-
-      DO j = li1,li2-1 
-         WRITE(iunit, "(9(E22.12,2x))") geom(1,j), geom(2,j), geom(3,j), geom(4,j), &
-                     geom(5,j), geom(6,j), geom(7,j), geom(8,j), geom(9,j)
-      END DO
-    
-      IF (write_gist) CLOSE(iunit)
-
-      CALL PTSM3D_set_norms 
-
-      CALL PTSM3D_initialize_itg_solve
-      ! Solve ITG dispersion relation for each (kx,ky)
-      !CALL PTSM3D_itg_solve(j,k)
-      CALL PTSM3D_itg_solve
-
-      ! Call the rest of the PTSM3D functions
-      CALL PTSM3D_initialize_triplets
-
-      CALL PTSM3D_compute_triplets
-
-      CALL PTSM3D_compute_targets
-      
-      IF (opt_target == 'zf') THEN
-        ptsm3d_target = target_12f
-        !IF (lscreen) WRITE(6,"(2A,F12.7)"),&
-        WRITE(6,"(2A,F12.7)")&
-          & TRIM(gist_filename),&
-          !& TRIM(TRIM(proc_string)//"."//TRIM(num_str)),&
-          &", TARGET_12F  : ",target_12f 
-      END IF
-      IF (opt_target == 'nzf') THEN
-        ptsm3d_target = target_qst
-        !IF (lscreen) WRITE(6,"(A,F12.7)"),"TARGET_QST  : ",target_qst 
-        WRITE(6,"(2A,F12.7)")&
-          & TRIM(gist_filename), &
-         ! & TRIM(TRIM(proc_string)//"."//TRIM(num_str)),&
-          & " TARGET_QST  : ",target_qst
-      END IF
-      IF (opt_target == 'combo') THEN
-        ptsm3d_target = target_12f+target_qst 
-        !IF (lscreen) WRITE(6,"(A,F12.7)"),"PTSM3D_TARGET   : ",ptsm3d_target
-        WRITE(6,"(2A,F12.7)")&
-          & TRIM(gist_filename),&
-          !& TRIM(TRIM(proc_string)//"."//TRIM(num_str)),&
-          &", TARGET_12F  : ",target_12f 
-        WRITE(6,"(2A,F12.7)")&
-          & TRIM(gist_filename), &
-         ! & TRIM(TRIM(proc_string)//"."//TRIM(num_str)),&
-          & " TARGET_QST  : ",target_qst
-        WRITE(6,"(2A,F12.7)")&
-          !& TRIM(TRIM(proc_string)//"."//TRIM(num_str)),&
-          & TRIM(gist_filename), &
-          & ", PTSM3D_TARGET   : ",ptsm3d_target
-      END IF
-
-      IF (lscreen) WRITE(6,'(a)') &
-      &  ' -------------------------  END PTSM3D CALCULATION &
-      & --------------------------'
-      
-      DEALLOCATE(alpha)
-      DEALLOCATE(zeta)
-      DEALLOCATE(bmag)
-      DEALLOCATE(gradpar)
-      DEALLOCATE(gds2)
-      DEALLOCATE(gds21)
-      DEALLOCATE(gds22)
-      DEALLOCATE(gbdrift)
-      DEALLOCATE(gbdrift0)
-      DEALLOCATE(cvdrift)
-      DEALLOCATE(cvdrift0)
-      DEALLOCATE(jac_gist_inv)
-      DEALLOCATE(d_B_d_par)
-      DEALLOCATE(th)
-
       END SUBROUTINE stellopt_ptsm3d

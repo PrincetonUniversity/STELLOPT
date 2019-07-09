@@ -23,8 +23,8 @@
       USE stellopt_targets
       USE stellopt_input_mod
 
-      USE PTSM3D_setup
-      USE PTSM3D_targets
+!      USE PTSM3D_setup
+!      USE PTSM3D_targets
       
 !-----------------------------------------------------------------------
 !     Input/Output Variables
@@ -59,7 +59,8 @@
          targets(mtargets) = target
          sigmas(mtargets)  = sigma
 ! Need to add case if ptsm3d_target is zero
-         vals(mtargets)    = 1.0/ptsm3d_target
+         !vals(mtargets)    = 1.0/ptsm3d_target
+         vals(mtargets)    = 1.0
          IF (iflag == 1) WRITE(iunit_out,'(3ES22.12E3)') target,sigma,0.0,vals(mtargets)
 !         IF (iflag == 1) WRITE(iunit_out,'(A,ES22.12E3)') &
 !            & "PTSM3D_TARGET = ", ptsm3d_target
@@ -69,7 +70,7 @@
             IF (niter == -2) target_dex(mtargets)=jtarget_ptsm3d
             CALL safe_open(iunit, iflag, &
               & TRIM('input.'//TRIM(id_string)),'old','formatted')
-            CALL PTSM3D_read_stellopt_input(iunit, iflag)
+            !CALL PTSM3D_read_stellopt_input(iunit, iflag)
             close(iunit)
          END IF
       END IF

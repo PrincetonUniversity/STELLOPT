@@ -379,7 +379,7 @@
            CALL stellopt_regcoil_chi2_b(lscreen, iflag)
          end if
 !DEC$ ENDIF
-!DEC$ IF DEFINED (PTSM3D)
+!DEC$ IF DEFINED (VMEC2PEST)
          IF (sigma_ptsm3d < bigno) CALL stellopt_ptsm3d(lscreen,iflag)
 !DEC$ ENDIF
 

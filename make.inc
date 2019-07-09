@@ -1,1 +1,1 @@
-SHARE/make_wisc.inc
+SHARE/make_vulcan.inc
