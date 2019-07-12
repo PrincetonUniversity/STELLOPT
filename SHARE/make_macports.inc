@@ -42,7 +42,7 @@
   MPI_LINK = mpif90 -shared  -Wl,-no_compact_unwind
 
   MPI_RUN = mpirun
-  MPI_RUN_OPTS = -np 2 
+  MPI_RUN_OPTS = -np 4 
 
 #######################################################################
 #            NAG Options
