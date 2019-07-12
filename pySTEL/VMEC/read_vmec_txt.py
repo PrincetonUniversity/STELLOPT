@@ -64,7 +64,7 @@ def read_vmec_orig(fid, fmt):
     # Read Data
 
 
-    data, pos = fscanf(fid,'%g', 13)
+    data = fscanf(fid,'%g', 13)
     f.wb    = data[0]
     f.wp    = data[1]
     f.gamma = data[2]
@@ -79,7 +79,7 @@ def read_vmec_orig(fid, fmt):
     f.iasym = data[11]
     f.ireconstruct[12]
 
-    data, pos = fscanf(fid,'%d', 5)
+    data = fscanf(fid,'%d', 5)
     f.imse    = data[0]
     f.itse    = data[1]
     f.nbsets  = data[2]
@@ -95,12 +95,12 @@ def read_vmec_orig(fid, fmt):
 
     # Read nbfld
     if (f.nbsets > 0):
-        f.nbfld, pos = fscanf(fid,'%g',f.nbsets)
+        f.nbfld = fscanf(fid,'%g',f.nbsets)
     # end if
 
     # Read mgrid filename
     if fmt.find(',')<0:  # isempty(strfind(fmt,',')):
-        f.mgrid_file, pos = fscanf(fid, '%s', 1)
+        f.mgrid_file = fscanf(fid, '%s', 1)
         fmt2 = '%g%g'
         fmt3 = '%g%g%g'
         fmt6 = '%g%g%g%g%g%g'
@@ -111,7 +111,7 @@ def read_vmec_orig(fid, fmt):
         fmt2_11 = '%d%d%g%g%g%g%g%g%g%g%g%g%g'
         fmt2_14 = '%d%d%g%g%g%g%g%g%g%g%g%g%g%g%g%g'
     else:
-        f.mgrid_file, pos = fscanf(fid, '%s,', 1)
+        f.mgrid_file = fscanf(fid, '%s,', 1)
         fmt2 = '%g,%g'
         fmt3 = '%g,%g,%g'
         fmt6 = '%g,%g,%g,%g,%g,%g'
@@ -125,11 +125,11 @@ def read_vmec_orig(fid, fmt):
 
     #Read Arrays
     if f.iasym > 0:
-        data, pos = fscanf(fid, fmt2_14, [16, f.mnmax])
-        data, pos = fscanf(fid, fmt14, [14, f.mnmax*(f.ns-1)])
+        data = fscanf(fid, fmt2_14, [16, f.mnmax])
+        data = fscanf(fid, fmt14, [14, f.mnmax*(f.ns-1)])
     else:
-        data, pos = fscanf(fid,fmt2_11,[13, f.mnmax])
-        data, pos = fscanf(fid,fmt11,[11, f.mnmax*(f.ns-1)])
+        data = fscanf(fid,fmt2_11,[13, f.mnmax])
+        data = fscanf(fid,fmt11,[11, f.mnmax*(f.ns-1)])
     # end
 
     #Extract Data from Arrays
@@ -150,7 +150,7 @@ def read_vmec_orig(fid, fmt):
     f.currvmn = [data1[12, :].T, reshape(data[10, :], f.mnmax, f.ns-1)]
 
     #Read the half-mesh quantities
-    data, pos = fscanf(fid, fmt12, [12, f.ns/2])
+    data = fscanf(fid, fmt12, [12, f.ns/2])
     f.iotas = data[0, :]
     f.mass  = data[1, :]
     f.pres  = data[2, :]
@@ -164,7 +164,7 @@ def read_vmec_orig(fid, fmt):
     f.jcurv = data[10, :]
     f.specw = data[11, :]
 
-    data, pos = fscanf(fid, fmt6, 6)
+    data = fscanf(fid, fmt6, 6)
     f.aspect  = data[0]
     f.betatot = data[1]
     f.betapol = data[2]
@@ -173,7 +173,7 @@ def read_vmec_orig(fid, fmt):
     f.b0      = data[5]
 
     #Mercier Criterion
-    data, pos = fscanf(fid, fmt6, [6, f.ns-2])
+    data = fscanf(fid, fmt6, [6, f.ns-2])
     f.Dmerc  = data[0, :]
     f.Dshear = data[1, :]
     f.Dwell  = data[2, :]
@@ -181,11 +181,11 @@ def read_vmec_orig(fid, fmt):
     f.Dgeod  = data[4, :]
     f.equif  = data[5, :]
     if (f.nextcur > 0):
-        f.extcur, pos = fscanf(fid, fmt, f.nextcur)
-        f.curlabel, pos = fscanf(fid, fmt, f.nextcur)
+        f.extcur = fscanf(fid, fmt, f.nextcur)
+        f.curlabel = fscanf(fid, fmt, f.nextcur)
     #end if
 
-    data, pos = fscanf(fid, fmt2, [2, f.nstore_seq])
+    data = fscanf(fid, fmt2, [2, f.nstore_seq])
     f.sqt  = data[0,:]
     f.wdot = data[1,:]
 
@@ -199,22 +199,22 @@ def read_vmec_orig(fid, fmt):
 
     if (f.ireconstruct > 0):
         if (f.imse >= 2) or (f.itse >0):
-            f.twsgt  , pos = fscanf(fid, fmt, 1)
-            f.msewgt , pos = fscanf(fid, fmt, 1)
-            f.isnodes, pos = fscanf(fid, fmt, 1)
+            f.twsgt   = fscanf(fid, fmt, 1)
+            f.msewgt  = fscanf(fid, fmt, 1)
+            f.isnodes = fscanf(fid, fmt, 1)
 
-            data, pos = fscanf(fid, fmt3, [3, f.isnodes])
+            data = fscanf(fid, fmt3, [3, f.isnodes])
             f.sknots  = data[0, :]
             f.ystark  = data[1, :]
             f.y2stark = data[2, :]
-            f.ipnodes, pos = fscanf(fid, fmt, 1)
+            f.ipnodes = fscanf(fid, fmt, 1)
 
-            data, pos = fscanf(fid, fmt3, [3, f.ipnodes])
+            data = fscanf(fid, fmt3, [3, f.ipnodes])
             f.pknots = data[0, :]
             f.ythom  = data[1, :]
             f.y2thom = data[2, :]
 
-            data, pos = fscanf(fid, fmt7, [7, (2*f.ns)-1])
+            data = fscanf(fid, fmt7, [7, (2*f.ns)-1])
             f.anglemse = data[0, :]
             f.rmid     = data[1, :]
             f.qmid     = data[2, :]
@@ -223,74 +223,74 @@ def read_vmec_orig(fid, fmt):
             f.alfa     = data[5, :]
             f.curmid   = data[6, :]
 
-            data, pos = fscanf(fid, fmt3, [3, f.imse])
+            data = fscanf(fid, fmt3, [3, f.imse])
             f.rstark    = data[0, :]
             f.datastark = data[1, :]
             f.qmeas     = data[2, :]
 
-            data, pos = fscanf(fid, fmt2, [2, f.itse])
+            data = fscanf(fid, fmt2, [2, f.itse])
             f.rthom    = data[0, :]
             f.datathom = data[1, :]
         # end
 
         if (f.nobd > 0):
-            data, pos = fscanf(fid, fmt3, [3, f.nobd])
+            data = fscanf(fid, fmt3, [3, f.nobd])
             f.dsiext = data[0, :]
             f.plflux = data[1, :]
             f.dsiobt = data[2, :]
-            f.flmwgt, pos = fscanf(fid, fmt, 1)
+            f.flmwgt = fscanf(fid, fmt, 1)
         # end
 
         nbfldn = _np.sum( nbldf[:f.nbsets] )
         if (nbfldn > 0):
             for nn in range(nbsets): # n=1:nbsets
-                data, pos = fscanf(fid, fmt3, [3, f.nbfld(nn)])
+                data = fscanf(fid, fmt3, [3, f.nbfld(nn)])
                 f.bcoil[:, nn]  = data[0, :]
                 f.plbfld[:, nn] = data[1, :]
                 f.bbc[:, nn]    = data[2, :]
             # end
-            f.bcwgt, pos = fscanf(fid, fmt, 1)
+            f.bcwgt = fscanf(fid, fmt, 1)
         # end
-        f.phidiam, pos = fscanf(fid, fmt, 1)
-        f.delphid, pos = fscanf(fid, fmt, 1)
+        f.phidiam = fscanf(fid, fmt, 1)
+        f.delphid = fscanf(fid, fmt, 1)
 
         #Read Limiter and Prout Plotting Specs
-        f.nsets  , pos = fscanf(fid, fmt, 1)
-        f.nparts , pos = fscanf(fid, fmt, 1)
-        f.nlim   , pos = fscanf(fid, fmt, 1)
-        f.nsetsn , pos = fscanf(fid, fmt, f.nsets)
+        f.nsets   = fscanf(fid, fmt, 1)
+        f.nparts  = fscanf(fid, fmt, 1)
+        f.nlim    = fscanf(fid, fmt, 1)
+        f.nsetsn  = fscanf(fid, fmt, f.nsets)
         f.pfcspec = _np.zeros( (f.nparts,_np.max(f.nxsetsn),f.nsets), dtype=_np.float64)
 
         for kk in range(f.nsets): # k=1:f.nsets
             for jj in range(f.nsetsn[kk]): # j=1:f.nsetsn(k)
                 for ii in range(f.nparts): # i=1:f.nparts
-                    f.pfcspec[ii, jj, kk], pos = fscanf(fid, fmt, 1)
+                    f.pfcspec[ii, jj, kk] = fscanf(fid, fmt, 1)
                 # end
             # end
         # end
 
-        f.limitr, pos = fscanf(fid, fmt, f.nlim)
+        f.limitr = fscanf(fid, fmt, f.nlim)
         f.rlim   = _np.zeros( (_np.max(f.limitr),f.nlim), dtype=_np.float64)
         f.zlim   = _np.zeros_like(f.rlim)
 
         for jj in range(f.nlim): # j=1:f.nlim
             for ii in range(f.limitr[jj]): # i=1:f.limitr(j)
-                data, pos = fscanf(fid,fmt2,2)
+                data = fscanf(fid,fmt2,2)
                 f.rlim[ii, jj] = data[0]
                 f.zlim[ii, jj] = data[1]
             # end
         # end
 
-        f.nrgrid, pos = fscanf(fid, fmt, 1)
-        f.nzgrid, pos = fscanf(fid, fmt, 1)
+        f.nrgrid = fscanf(fid, fmt, 1)
+        f.nzgrid = fscanf(fid, fmt, 1)
 
-        f.tokid, pos = fscanf(fid, fmt, 1)
-        f.rx1  , pos = fscanf(fid, fmt, 1)
-        f.rx2  , pos = fscanf(fid, fmt, 1)
-        f.zy1  , pos = fscanf(fid, fmt, 1)
-        f.zy2  , pos = fscanf(fid, fmt, 1)
-        f.conif, pos = fscanf(fid, fmt, 1)
-        f.imatch_phiedge, pos = fscanf(fid, fmt, 1)
+        f.tokid = fscanf(fid, fmt, 1)
+        f.rx1   = fscanf(fid, fmt, 1)
+        f.rx2   = fscanf(fid, fmt, 1)
+        f.zy1   = fscanf(fid, fmt, 1)
+        f.zy2   = fscanf(fid, fmt, 1)
+        f.conif = fscanf(fid, fmt, 1)
+        f.imatch_phiedge = fscanf(fid, fmt, 1)
     # end
     return
 # end  def read_vmec_orig
@@ -305,7 +305,7 @@ def read_vmec_605(fid,fmt):
     dmu0=(2.0e-7)/_np.pi
 
     #Read Data
-    data, pos = fscanf(fid,'%g',6)
+    data = fscanf(fid,'%g',6)
     f.wb        = data[0]
     f.wp        = data[1]
     f.gamma     = data[2]
@@ -313,7 +313,7 @@ def read_vmec_605(fid,fmt):
     f.rmax_surf = data[4]
     f.rmin_surf = data[5]
 
-    data, pos = fscanf(fid,'%d',10)
+    data = fscanf(fid,'%d',10)
     f.nfp          = data[0]
     f.ns           = data[1]
     f.mpol         = data[2]
@@ -325,7 +325,7 @@ def read_vmec_605(fid,fmt):
     f.ireconstruct = data[8]
     f.ierr_vmec    = data[9]
 
-    data, pos = fscanf(fid,'%d',5)
+    data = fscanf(fid,'%d',5)
     f.imse       = data[0]
     f.itse       = data[1]
     f.nbsets     = data[2]
@@ -341,19 +341,19 @@ def read_vmec_605(fid,fmt):
 
     #Read nbfld
     if (f.nbsets > 0):
-        f.nbfld, pos = fscanf(fid, '%g', f.nbsets)
+        f.nbfld = fscanf(fid, '%g', f.nbsets)
     # end
 
     #Read mgrid filename
-    f.mgrid_file, pos = fscanf(fid, '%s', 1)
+    f.mgrid_file = fscanf(fid, '%s', 1)
 
     #Read Arrays
     if f.iasym > 0:
-        data, pos = fscanf(fid,'%d%d%g%g%g%g%g%g%g%g%g%g%g%g%g%g',[16, f.mnmax])
-        data , pos = fscanf(fid,'%g%g%g%g%g%g%g%g%g%g%g%g%g%g',[14, f.mnmax*(f.ns-1)])
+        data = fscanf(fid,'%d%d%g%g%g%g%g%g%g%g%g%g%g%g%g%g',[16, f.mnmax])
+        data  = fscanf(fid,'%g%g%g%g%g%g%g%g%g%g%g%g%g%g',[14, f.mnmax*(f.ns-1)])
     else:
-        data, pos = fscanf(fid,'%d%d%g%g%g%g%g%g%g%g%g%g%g',[13, f.mnmax])
-        data , pos = fscanf(fid,'%g%g%g%g%g%g%g%g%g%g%g',[11, f.mnmax*(f.ns-1)])
+        data = fscanf(fid,'%d%d%g%g%g%g%g%g%g%g%g%g%g',[13, f.mnmax])
+        data  = fscanf(fid,'%g%g%g%g%g%g%g%g%g%g%g',[11, f.mnmax*(f.ns-1)])
     # end
 
     #Extract Data from Arrays
@@ -374,7 +374,7 @@ def read_vmec_605(fid,fmt):
     f.currvmnc = [data1[12, :].T, reshape(data[10, :], f.mnmax, f.ns-1)]
 
     #Read the half-mesh quantities
-    data, pos = fscanf(fid,'%g%g%g%g%g%g%g%g%g%g%g%g',[12, f.ns/2])
+    data = fscanf(fid,'%g%g%g%g%g%g%g%g%g%g%g%g',[12, f.ns/2])
     f.iotas = data[0, :]
     f.mass  = data[1, :]
     f.pres  = data[1, :]
@@ -388,7 +388,7 @@ def read_vmec_605(fid,fmt):
     f.jcurv = data[9, :]
     f.specw = data[10, :]
 
-    data, pos = fscanf(fid,'%g%g%g%g%g%g',6)
+    data = fscanf(fid,'%g%g%g%g%g%g',6)
     f.aspect  = data[0]
     f.betatot = data[1]
     f.betapol = data[2]
@@ -397,7 +397,7 @@ def read_vmec_605(fid,fmt):
     f.b0      = data[5]
 
     #Mercier Criterion
-    data, pos = fscanf(fid,'%g%g%g%g%g%g',[6, f.ns-2])
+    data = fscanf(fid,'%g%g%g%g%g%g',[6, f.ns-2])
     f.Dmerc  = data[0, :]
     f.Dshear = data[1, :]
     f.Dwell  = data[2, :]
@@ -406,11 +406,11 @@ def read_vmec_605(fid,fmt):
     f.equif  = data[5, :]
 
     if (f.nextcur > 0):
-        f.extcur, pos = fscanf(fid,'%g',f.nextcur)
-        f.curlabel, pos = fscanf(fid,'%g',f.nextcur)
+        f.extcur = fscanf(fid,'%g',f.nextcur)
+        f.curlabel = fscanf(fid,'%g',f.nextcur)
     # end
 
-    data, pos = fscanf(fid,'%g%g',[2, f.nstore_seq])
+    data = fscanf(fid,'%g%g',[2, f.nstore_seq])
     f.sqt = data[0,:]
     f.wdot = data[1,:]
 
@@ -424,22 +424,22 @@ def read_vmec_605(fid,fmt):
 
     if (f.ireconstruct > 0):
         if (f.imse >= 2) or (f.itse >0):
-            f.twsgt, pos = fscanf(fid, '%g', 1)
-            f.msewgt, pos = fscanf(fid, '%g', 1)
-            f.isnodes, pos = fscanf(fid, '%d', 1)
+            f.twsgt = fscanf(fid, '%g', 1)
+            f.msewgt = fscanf(fid, '%g', 1)
+            f.isnodes = fscanf(fid, '%d', 1)
 
-            data, pos = fscanf(fid,'%g%g%g',[3, f.isnodes])
+            data = fscanf(fid,'%g%g%g',[3, f.isnodes])
             f.sknots = data[0, :]
             f.ystark = data[1, :]
             f.y2stark = data[2, :]
-            f.ipnodes, pos = fscanf(fid, '%d', 1)
+            f.ipnodes = fscanf(fid, '%d', 1)
 
-            data, pos = fscanf(fid,'%g%g%g',[3, f.ipnodes])
+            data = fscanf(fid,'%g%g%g',[3, f.ipnodes])
             f.pknots = data[0, :]
             f.ythom = data[1, :]
             f.y2thom = data[2, :]
 
-            data, pos = fscanf(fid,'%g%g%g%g%g%g%g', [7, (2*f.ns)-1])
+            data = fscanf(fid,'%g%g%g%g%g%g%g', [7, (2*f.ns)-1])
             f.anglemse = data[0, :]
             f.rmid = data[1, :]
             f.qmid = data[2, :]
@@ -448,72 +448,72 @@ def read_vmec_605(fid,fmt):
             f.alfa = data[5, :]
             f.curmid = data[6, :]
 
-            data, pos = fscanf(fid,'%g%g%g',[3, f.imse])
+            data = fscanf(fid,'%g%g%g',[3, f.imse])
             f.rstark = data[0, :]
             f.datastark = data[1, :]
             f.qmeas = data[2, :]
 
-            data, pos = fscanf(fid,'%g%g',[2, f.itse])
+            data = fscanf(fid,'%g%g',[2, f.itse])
             f.rthom = data[0, :]
             f.datathom = data[1, :]
         # end
 
         if (f.nobd > 0):
-            data, pos = fscanf(fid,'%g%g%g',[3, f.nobd])
+            data = fscanf(fid,'%g%g%g',[3, f.nobd])
             f.dsiext = data[0, :]
             f.plflux = data[1, :]
             f.dsiobt = data[2, :]
-            f.flmwgt, pos = fscanf(fid, '%g', 1)
+            f.flmwgt = fscanf(fid, '%g', 1)
         # end
         nbfldn=_np.sum(nbldf[:f.nbsets])
 
         if (nbfldn > 0):
             for nn in range(nbsets): # n=1:nbsets
-                data, pos = fscanf(fid,'%g%g%g', [3, f.nbfld[nn]])
+                data = fscanf(fid,'%g%g%g', [3, f.nbfld[nn]])
                 f.bcoil[:, nn] = data[0, :]
                 f.plbfld[:, nn] = data[1, :]
                 f.bbc[:, nn] = data[2, :]
             # end
-            f.bcwgt, pos = fscanf(fid, '%g', 1)
+            f.bcwgt = fscanf(fid, '%g', 1)
         # end
-        f.phidiam, pos = fscanf(fid, '%g', 1)
-        f.delphid, pos = fscanf(fid, '%g', 1)
+        f.phidiam = fscanf(fid, '%g', 1)
+        f.delphid = fscanf(fid, '%g', 1)
 
         #Read Limiter and Prout Plotting Specs
-        f.nsets, pos = fscanf(fid, '%g', 1)
-        f.nparts, pos = fscanf(fid, '%g', 1)
-        f.nlim, pos = fscanf(fid, '%g', 1)
-        f.nsetsn, pos = fscanf(fid, '%g', f.nsets)
+        f.nsets = fscanf(fid, '%g', 1)
+        f.nparts = fscanf(fid, '%g', 1)
+        f.nlim = fscanf(fid, '%g', 1)
+        f.nsetsn = fscanf(fid, '%g', f.nsets)
         f.pfcspec=_np.zeros( (f.nparts, _np.max(f.nxsetsn), f.nsets), dtype=_np.float64)
 
         for kk in range(f.nsets): # k=1:f.nsets
             for jj in range(f.nsetsn[kk]): # j=1:f.nsetsn(k)
                 for ii in range(f.nparts): # i=1:f.nparts
-                    f.pfcspec[ii, jj, kk], pos = fscanf(fid, '%g', 1)
+                    f.pfcspec[ii, jj, kk] = fscanf(fid, '%g', 1)
                 # end
             # end
         # end
 
-        f.limitr, pos = fscanf(fid,'%g',f.nlim)
+        f.limitr = fscanf(fid,'%g',f.nlim)
         f.rlim = _np.zeros( (_np.max(f.limitr), f.nlim), dtype=_np.float64)
         f.zlim = _np.zeros( (_np.max(f.limitr), f.nlim), dtype=_np.float64)
 
         for jj in range(f.nlim): # j=1:f.nlim
             for ii in range(f.limitr[jj]): #i=1:f.limitr(j)
-                data, pos = fscanf(fid,'%g%g',2)
+                data = fscanf(fid,'%g%g',2)
                 f.rlim[ii, jj] = data[1]
                 f.zlim[ii, jj] = data[2]
             # end
         # end
-        f.nrgrid, pos = fscanf(fid, '%g', 1)
-        f.nzgrid, pos = fscanf(fid, '%g', 1)
-        f.tokid, pos = fscanf(fid, '%g', 1)
-        f.rx1, pos = fscanf(fid, '%g', 1)
-        f.rx2, pos = fscanf(fid, '%g', 1)
-        f.zy1, pos = fscanf(fid, '%g', 1)
-        f.zy2, pos = fscanf(fid, '%g', 1)
-        f.conif, pos = fscanf(fid, '%g', 1)
-        f.imatch_phiedge, pos = fscanf(fid, '%g', 1)
+        f.nrgrid = fscanf(fid, '%g', 1)
+        f.nzgrid = fscanf(fid, '%g', 1)
+        f.tokid = fscanf(fid, '%g', 1)
+        f.rx1 = fscanf(fid, '%g', 1)
+        f.rx2 = fscanf(fid, '%g', 1)
+        f.zy1 = fscanf(fid, '%g', 1)
+        f.zy2 = fscanf(fid, '%g', 1)
+        f.conif = fscanf(fid, '%g', 1)
+        f.imatch_phiedge = fscanf(fid, '%g', 1)
     # end
     return
 # end  def read_vmec_605(fid,fmt)
@@ -528,7 +528,7 @@ def read_vmec_620(fid,fmt):
     dmu0=(2.0e-7)/_np.pi
 
     #Read Data
-    data, pos = fscanf(fid,'%g',6)
+    data = fscanf(fid,'%g',6)
     f.wb = data[0]
     f.wp = data[1]
     f.gamma = data[2]
@@ -536,7 +536,7 @@ def read_vmec_620(fid,fmt):
     f.rmax_surf = data[4]
     f.rmin_surf = data[5]
 
-    data, pos = fscanf(fid,'%d',10)
+    data = fscanf(fid,'%d',10)
     f.nfp = data[0]
     f.ns = data[1]
     f.mpol = data[2]
@@ -548,7 +548,7 @@ def read_vmec_620(fid,fmt):
     f.ireconstruct = data[8]
     f.ierr_vmec = data[9]
 
-    data, pos = fscanf(fid,'%d',5)
+    data = fscanf(fid,'%d',5)
     f.imse = data[0]
     f.itse = data[1]
     f.nbsets = data[2]
@@ -564,19 +564,19 @@ def read_vmec_620(fid,fmt):
 
     #Read nbfld
     if (f.nbsets > 0):
-        f.nbfld, pos = fscanf(fid, '%g', f.nbsets)
+        f.nbfld = fscanf(fid, '%g', f.nbsets)
     # end
 
     #Read mgrid filename
-    f.mgrid_file, pos = fscanf(fid, '%s', 1)
+    f.mgrid_file = fscanf(fid, '%s', 1)
 
     #Read Arrays
     if (f.iasym > 0):
-        data, pos = fscanf(fid, '%d%d%g%g%g%g%g%g%g%g%g%g%g%g%g%g', [16, f.mnmax])
-        data, pos = fscanf(fid,'%g%g%g%g%g%g%g%g%g%g%g%g%g%g',[14, f.mnmax*( f.ns-1 )])
+        data = fscanf(fid, '%d%d%g%g%g%g%g%g%g%g%g%g%g%g%g%g', [16, f.mnmax])
+        data = fscanf(fid,'%g%g%g%g%g%g%g%g%g%g%g%g%g%g',[14, f.mnmax*( f.ns-1 )])
     else:
-        data, pos = fscanf(fid, '%d%d%g%g%g%g%g%g%g%g%g%g%g', [13, f.mnmax])
-        data, pos = fscanf(fid,'%g%g%g%g%g%g%g%g%g%g%g',[11, f.mnmax*( f.ns-1 )])
+        data = fscanf(fid, '%d%d%g%g%g%g%g%g%g%g%g%g%g', [13, f.mnmax])
+        data = fscanf(fid,'%g%g%g%g%g%g%g%g%g%g%g',[11, f.mnmax*( f.ns-1 )])
     # end
 
     #Extract Data from Arrays
@@ -597,7 +597,7 @@ def read_vmec_620(fid,fmt):
     f.currvmnc=[data1[12, :].T, reshape(data[10, :], f.mnmax, f.ns-1)]
 
     #Read the half-mesh quantities
-    data, pos = fscanf(fid,'%g%g%g%g%g%g%g%g%g%g%g%g%g', [13, f.ns/2])
+    data = fscanf(fid,'%g%g%g%g%g%g%g%g%g%g%g%g%g', [13, f.ns/2])
     f.iotas = data[0, :]
     f.mass = data[1, :]
     f.pres = data[2, :]
@@ -612,7 +612,7 @@ def read_vmec_620(fid,fmt):
     f.jcurv = data[11, :]
     f.specw = data[12, :]
 
-    data, pos = fscanf(fid,'%g%g%g%g%g%g',6)
+    data = fscanf(fid,'%g%g%g%g%g%g',6)
     f.aspect = data[0]
     f.betatot = data[1]
     f.betapol = data[2]
@@ -620,10 +620,10 @@ def read_vmec_620(fid,fmt):
     f.betaxis = data[4]
     f.b0 = data[5]
 
-    f.isigna, pos = fscanf(fid, '%d\n', 1)
+    f.isigna = fscanf(fid, '%d\n', 1)
     f.input_extension=strtrim(fgetl(fid))
 
-    data, pos = fscanf(fid,'%g',8)
+    data = fscanf(fid,'%g',8)
     f.IonLarmor = data[0]
     f.VolAvgB = data[1]
     f.RBtor0 = data[2]
@@ -634,7 +634,7 @@ def read_vmec_620(fid,fmt):
     f.Volume = data[7]
 
     #Mercier Criterion
-    data, pos = fscanf(fid,'%g%g%g%g%g%g', [6, f.ns-2])
+    data = fscanf(fid,'%g%g%g%g%g%g', [6, f.ns-2])
     f.Dmerc = data[0, :]
     f.Dshear = data[1, :]
     f.Dwell = data[2, :]
@@ -643,37 +643,37 @@ def read_vmec_620(fid,fmt):
     f.equif = data[5, :]
 
     if (f.nextcur > 0):
-        f.extcur, pos = fscanf(fid, '%g', f.nextcur)
-        f.curlabel, pos = fscanf(fid, '%g', f.nextcur)
+        f.extcur = fscanf(fid, '%g', f.nextcur)
+        f.curlabel = fscanf(fid, '%g', f.nextcur)
     # end
 
-    data, pos = fscanf(fid,'%g%g', [2, f.nstore_seq])
+    data = fscanf(fid,'%g%g', [2, f.nstore_seq])
     f.sqt = data[0, :]
     f.wdot = data[1, :]
 
-    data, pos = fscanf(fid,'%g%g', [2, f.nstore_seq])
+    data = fscanf(fid,'%g%g', [2, f.nstore_seq])
     f.jdotb = data[0, :] #changed indices
     f.bdotgradv = data[1, :]
 
     #Data and MSE Fits
     if (f.ireconstruct > 0):
         if ((f.imse >= 2) or (f.itse >0)):
-            f.twsgt, pos = fscanf(fid, '%g', 1)
-            f.msewgt, pos = fscanf(fid, '%g', 1)
-            f.isnodes, pos = fscanf(fid, '%d', 1)
+            f.twsgt = fscanf(fid, '%g', 1)
+            f.msewgt = fscanf(fid, '%g', 1)
+            f.isnodes = fscanf(fid, '%d', 1)
 
-            data, pos = fscanf(fid,'%g%g%g', [3, f.isnodes])
+            data = fscanf(fid,'%g%g%g', [3, f.isnodes])
             f.sknots = data[0, :] #changed indices
             f.ystark = data[1, :]
             f.y2stark = data[2, :]
-            f.ipnodes, pos = fscanf(fid, '%d', 1)
+            f.ipnodes = fscanf(fid, '%d', 1)
 
-            data, pos = fscanf(fid,'%g%g%g', [3, f.ipnodes])
+            data = fscanf(fid,'%g%g%g', [3, f.ipnodes])
             f.pknots = data[0, :] #changed indices
             f.ythom = data[1, :]
             f.y2thom = data[2, :]
 
-            data, pos = fscanf(fid,'%g%g%g%g%g%g%g', [7, (2*f.ns)-1])
+            data = fscanf(fid,'%g%g%g%g%g%g%g', [7, (2*f.ns)-1])
             f.anglemse = data[0, :] #changed indices
             f.rmid = data[1, :]
             f.qmid = data[2, :]
@@ -682,70 +682,70 @@ def read_vmec_620(fid,fmt):
             f.alfa = data[5, :]
             f.curmid = data[6, :]
 
-            data, pos = fscanf(fid,'%g%g%g', [3, f.imse])
+            data = fscanf(fid,'%g%g%g', [3, f.imse])
             f.rstark = data[0, :] #changed indices
             f.datastark = data[1, :]
             f.qmeas = data[2, :]
 
-            data, pos = fscanf(fid,'%g%g', [2, f.itse])
+            data = fscanf(fid,'%g%g', [2, f.itse])
             f.rthom = data[0, :] #changed indices
             f.datathom = data[1, :]
         # end
 
         if (f.nobd > 0):
-            data, pos = fscanf(fid,'%g%g%g',[3,f.nobd])
+            data = fscanf(fid,'%g%g%g',[3,f.nobd])
             f.dsiext = data[0, :] #changed indices
             f.plflux = data[1, :]
             f.dsiobt = data[2, :]
-            f.flmwgt, pos = fscanf(fid, '%g', 1)
+            f.flmwgt = fscanf(fid, '%g', 1)
         # end
         nbfldn=_np.sum(nbldf[:f.nbsets])
 
         if (nbfldn > 0):
             for nn in range(nbsets): # n=1:nbsets
-                data, pos = fscanf(fid,'%g%g%g', [3, f.nbfld(nn)])
+                data = fscanf(fid,'%g%g%g', [3, f.nbfld(nn)])
                 f.bcoil[:, nn] = data[0, :] #changed indices
                 f.plbfld[:, nn] = data[1, :]
                 f.bbc[:, nn] = data[2, :]
             # end
-            f.bcwgt, pos = fscanf(fid, '%g', 1)
+            f.bcwgt = fscanf(fid, '%g', 1)
         # end
-        f.phidiam, pos = fscanf(fid, '%g', 1)
-        f.delphid, pos = fscanf(fid, '%g', 1)
+        f.phidiam = fscanf(fid, '%g', 1)
+        f.delphid = fscanf(fid, '%g', 1)
 
         #Read Limiter and Prout Plotting Specs
-        f.nsets, pos = fscanf(fid, '%g', 1)
-        f.nparts, pos = fscanf(fid, '%g', 1)
-        f.nlim, pos = fscanf(fid, '%g', 1)
-        f.nsetsn, pos = fscanf(fid,'%g',f.nsets)
+        f.nsets = fscanf(fid, '%g', 1)
+        f.nparts = fscanf(fid, '%g', 1)
+        f.nlim = fscanf(fid, '%g', 1)
+        f.nsetsn = fscanf(fid,'%g',f.nsets)
         f.pfcspec=_np.zeros( (f.nparts, _np.max(f.nxsetsn), f.nsets), dtype=_np.float64)
         for kk in range(f.nsets): # k=1:f.nsets
             for jj in range(f.nsetsn[kk]): # j=1:f.nsetsn(k)
                 for ii in range(f.nparts): # i=1:f.nparts
-                    f.pfcspec[ii, jj, kk], pos = fscanf(fid, '%g', 1)
+                    f.pfcspec[ii, jj, kk] = fscanf(fid, '%g', 1)
                 # end
             # end
         # end
-        f.limitr, pos = fscanf(fid, '%g', f.nlim)
+        f.limitr = fscanf(fid, '%g', f.nlim)
         f.rlim=_np.zeros( (_np.max(f.limitr),f.nlim), dtype=_np.float64)
         f.zlim=_np.zeros( (_np.max(f.limitr),f.nlim), dtype=_np.float64)
 
         for jj in range(f.nlim): # j=1:f.nlim
             for ii in range(f.limitr[jj]): # i=1:f.limitr(j)
-                data, pos = fscanf(fid,'%g%g',2)
+                data = fscanf(fid,'%g%g',2)
                 f.rlim[ii, jj] = data[0] #changed indices
                 f.zlim[ii, jj] = data[1]
             # end
         # end
-        f.nrgrid, pos = fscanf(fid, '%g', 1)
-        f.nzgrid, pos = fscanf(fid, '%g', 1)
-        f.tokid, pos = fscanf(fid, '%g', 1)
-        f.rx1, pos = fscanf(fid, '%g', 1)
-        f.rx2, pos = fscanf(fid, '%g', 1)
-        f.zy1, pos = fscanf(fid, '%g', 1)
-        f.zy2, pos = fscanf(fid, '%g', 1)
-        f.conif, pos = fscanf(fid, '%g', 1)
-        f.imatch_phiedge, pos = fscanf(fid, '%g', 1)
+        f.nrgrid = fscanf(fid, '%g', 1)
+        f.nzgrid = fscanf(fid, '%g', 1)
+        f.tokid = fscanf(fid, '%g', 1)
+        f.rx1 = fscanf(fid, '%g', 1)
+        f.rx2 = fscanf(fid, '%g', 1)
+        f.zy1 = fscanf(fid, '%g', 1)
+        f.zy2 = fscanf(fid, '%g', 1)
+        f.conif = fscanf(fid, '%g', 1)
+        f.imatch_phiedge = fscanf(fid, '%g', 1)
     # end
     return
 # end  def read_vmec_620()
@@ -761,7 +761,7 @@ def read_vmec_650(fid, fmt):
     dmu0=(2.0e-7)/_np.pi
 
     #Read Data
-    data, pos = fscanf(fid, '%g', 6)
+    data = fscanf(fid, '%g', 6)
     f.wb = data[0]
     f.wp = data[1]
     f.gamma = data[2]
@@ -769,7 +769,7 @@ def read_vmec_650(fid, fmt):
     f.rmax_surf = data[4]
     f.rmin_surf = data[5]
 
-    data, pos = fscanf(fid, '%d', 10)
+    data = fscanf(fid, '%d', 10)
     f.nfp = data[0]
     f.ns = data[1]
     f.mpol = data[2]
@@ -781,7 +781,7 @@ def read_vmec_650(fid, fmt):
     f.ireconstruct = data[8]
     f.ierr_vmec = data[9]
 
-    data, pos = fscanf(fid, '%d', 6)
+    data = fscanf(fid, '%d', 6)
     f.imse = data[0]
     f.itse = data[1]
     f.nbsets = data[2]
@@ -797,19 +797,19 @@ def read_vmec_650(fid, fmt):
 
     #Read nbfld
     if (f.nbsets > 0):
-        f.nbfld, pos = fscanf(fid, '%g', f.nbsets)
+        f.nbfld = fscanf(fid, '%g', f.nbsets)
     # end
 
     #Read mgrid filename
-    f.mgrid_file, pos = fscanf(fid, '%s', 1)
+    f.mgrid_file = fscanf(fid, '%s', 1)
 
     #Read Arrays
     if f.iasym > 0:
-        data, pos = fscanf(fid, '%d%d%g%g%g%g%g%g%g%g%g%g%g%g%g%g', [16, f.mnmax])
-        data, pos = fscanf(fid, '%g%g%g%g%g%g%g%g%g%g%g%g%g%g', [14, f.mnmax*(f.ns-1)])
+        data = fscanf(fid, '%d%d%g%g%g%g%g%g%g%g%g%g%g%g%g%g', [16, f.mnmax])
+        data = fscanf(fid, '%g%g%g%g%g%g%g%g%g%g%g%g%g%g', [14, f.mnmax*(f.ns-1)])
     else:
-        data, pos = fscanf(fid, '%d%d%g%g%g%g%g%g%g%g%g%g%g', [13, f.mnmax])
-        data, pos = fscanf(fid, '%g%g%g%g%g%g%g%g%g%g%g', [11, f.mnmax*(f.ns-1)])
+        data = fscanf(fid, '%d%d%g%g%g%g%g%g%g%g%g%g%g', [13, f.mnmax])
+        data = fscanf(fid, '%g%g%g%g%g%g%g%g%g%g%g', [11, f.mnmax*(f.ns-1)])
     # end
 
     #Extract Data from Arrays
@@ -830,7 +830,7 @@ def read_vmec_650(fid, fmt):
     f.currvmnc=[data1[12, :].T, reshape(data[10, :],f.mnmax,f.ns-1)]
 
     #Read the half-mesh quantities
-    data, pos = fscanf(fid, '%g%g%g%g%g%g%g%g%g%g%g%g%g', [13, f.ns/2])
+    data = fscanf(fid, '%g%g%g%g%g%g%g%g%g%g%g%g%g', [13, f.ns/2])
     f.iotas = data[0, :]
     f.mass = data[1, :]
     f.pres = data[2, :]
@@ -845,7 +845,7 @@ def read_vmec_650(fid, fmt):
     f.jcurv = data[11, :]
     f.specw = data[12, :]
 
-    data, pos = fscanf(fid, '%g%g%g%g%g%g', 6)
+    data = fscanf(fid, '%g%g%g%g%g%g', 6)
     f.aspect = data[0]
     f.betatot = data[1]
     f.betapol = data[2]
@@ -853,10 +853,10 @@ def read_vmec_650(fid, fmt):
     f.betaxis = data[4]
     f.b0 = data[5]
 
-    f.isigna, pos = fscanf(fid, '%d\n', 1)
+    f.isigna = fscanf(fid, '%d\n', 1)
     f.input_extension=strtrim(fgetl(fid))
 
-    data, pos = fscanf(fid, '%g', 8)
+    data = fscanf(fid, '%g', 8)
     f.IonLarmor = data[0]
     f.VolAvgB = data[1]
     f.RBtor0 = data[2]
@@ -867,7 +867,7 @@ def read_vmec_650(fid, fmt):
     f.Volume = data[7]
 
     #Mercier Criterion
-    data, pos = fscanf(fid, '%g%g%g%g%g%g', [6, f.ns-2])
+    data = fscanf(fid, '%g%g%g%g%g%g', [6, f.ns-2])
     f.Dmerc = data[0, :]
     f.Dshear = data[1, :]
     f.Dwell = data[2, :]
@@ -876,37 +876,37 @@ def read_vmec_650(fid, fmt):
     f.equif = data[5, :]
 
     if (f.nextcur > 0):
-        f.extcur, pos = fscanf(fid, '%g', f.nextcur)
-        f.curlabel, pos = fscanf(fid, '%g', f.nextcur)
+        f.extcur = fscanf(fid, '%g', f.nextcur)
+        f.curlabel = fscanf(fid, '%g', f.nextcur)
     # end
 
-    data, pos = fscanf(fid, '%g%g', [2, f.nstore_seq])
+    data = fscanf(fid, '%g%g', [2, f.nstore_seq])
     f.sqt = data[0, :]
     f.wdot = data[1, :]
 
-    data, pos = fscanf(fid, '%g%g', [2, f.nstore_seq])
+    data = fscanf(fid, '%g%g', [2, f.nstore_seq])
     f.jdotb = data[0, :]
     f.bdotgradv = data[1, :]
 
     #Data and MSE Fits
     if (f.ireconstruct > 0):
         if ((f.imse >= 2) or (f.itse > 0)):
-            f.twsgt, pos = fscanf(fid, '%g', 1)
-            f.msewgt, pos = fscanf(fid, '%g', 1)
-            f.isnodes, pos = fscanf(fid, '%d', 1)
+            f.twsgt = fscanf(fid, '%g', 1)
+            f.msewgt = fscanf(fid, '%g', 1)
+            f.isnodes = fscanf(fid, '%d', 1)
 
-            data, pos = fscanf(fid, '%g%g%g', [3, f.isnodes])
+            data = fscanf(fid, '%g%g%g', [3, f.isnodes])
             f.sknots = data[0, :]
             f.ystark = data[1, :]
             f.y2stark = data[2, :]
-            f.ipnodes, pos = fscanf(fid, '%d', 1)
+            f.ipnodes = fscanf(fid, '%d', 1)
 
-            data, pos = fscanf(fid, '%g%g%g', [3, f.ipnodes])
+            data = fscanf(fid, '%g%g%g', [3, f.ipnodes])
             f.pknots = data[0, :]
             f.ythom = data[1, :]
             f.y2thom = data[2, :]
 
-            data, pos = fscanf(fid, '%g%g%g%g%g%g%g', [7, (2*f.ns)-1])
+            data = fscanf(fid, '%g%g%g%g%g%g%g', [7, (2*f.ns)-1])
             f.anglemse = data[0, :]
             f.rmid = data[1, :]
             f.qmid = data[2, :]
@@ -915,70 +915,70 @@ def read_vmec_650(fid, fmt):
             f.alfa = data[5, :]
             f.curmid = data[6, :]
 
-            data, pos = fscanf(fid, '%g%g%g', [3, f.imse])
+            data = fscanf(fid, '%g%g%g', [3, f.imse])
             f.rstark = data[0, :]
             f.datastark = data[1, :]
             f.qmeas = data[2, :]
 
-            data, pos = fscanf(fid, '%g%g', [2, f.itse])
+            data = fscanf(fid, '%g%g', [2, f.itse])
             f.rthom = data[0, :]
             f.datathom = data[1, :]
         # end
 
         if (f.nobd > 0):
-            data, pos = fscanf(fid, '%g%g%g', [3,f.nobd])
+            data = fscanf(fid, '%g%g%g', [3,f.nobd])
             f.dsiext = data[0, :]
             f.plflux = data[1, :]
             f.dsiobt = data[2, :]
-            f.flmwgt, pos = fscanf(fid, '%g', 1)
+            f.flmwgt = fscanf(fid, '%g', 1)
         # end
 
         nbfldn = _np.sum(nbldf[:f.nbsets])
         if (nbfldn > 0):
             for nn in range(nbsets):  #for n=1:nbsets
-                data, pos = fscanf(fid, '%g%g%g', [3, f.nbfld[nn]])
+                data = fscanf(fid, '%g%g%g', [3, f.nbfld[nn]])
                 f.bcoil[:, nn] = data[0, :]
                 f.plbfld[:, nn] = data[1, :]
                 f.bbc[:, nn] = data[2, :]
             # end
-            f.bcwgt, pos = fscanf(fid, '%g', 1)
+            f.bcwgt = fscanf(fid, '%g', 1)
         # end
-        f.phidiam, pos = fscanf(fid, '%g', 1)
-        f.delphid, pos = fscanf(fid, '%g', 1)
+        f.phidiam = fscanf(fid, '%g', 1)
+        f.delphid = fscanf(fid, '%g', 1)
 
         #Read Limiter and Prout Plotting Specs
-        f.nsets, pos = fscanf(fid, '%g', 1)
-        f.nparts, pos = fscanf(fid, '%g', 1)
-        f.nlim, pos = fscanf(fid, '%g', 1)
-        f.nsetsn, pos = fscanf(fid, '%g', f.nsets)
+        f.nsets = fscanf(fid, '%g', 1)
+        f.nparts = fscanf(fid, '%g', 1)
+        f.nlim = fscanf(fid, '%g', 1)
+        f.nsetsn = fscanf(fid, '%g', f.nsets)
         f.pfcspec=_np.zeros( (f.nparts,_np.max(f.nxsetsn),f.nsets), dtype=_np.float64)
         for kk in range(f.nsets):  #k=1:f.nsets
             for jj in range(f.nsetsn[kk]):  #for j=1:f.nsetsn(k)
                 for ii in range(f.nparts):  #for i=1:f.nparts
-                    f.pfcspec[ii, jj, kk], pos = fscanf(fid, '%g', 1)
+                    f.pfcspec[ii, jj, kk] = fscanf(fid, '%g', 1)
                 # end
             # end
         # end
 
-        f.limitr, pos = fscanf(fid, '%g', f.nlim)
+        f.limitr = fscanf(fid, '%g', f.nlim)
         f.rlim=_np.zeros( (_np.max(f.limitr), f.nlim), dtype=_np.float64)
         f.zlim=_np.zeros( (_np.max(f.limitr), f.nlim), dtype=_np.float64)
         for jj in range(f.nlim):  #j=1:f.nlim
             for ii in range(f.limitr[jj]):  #i=1:f.limitr(j)
-                data, pos = fscanf(fid, '%g%g', 2)
+                data = fscanf(fid, '%g%g', 2)
                 f.rlim[ii, jj] = data[0]
                 f.zlim[ii, jj] = data[1]
             # end
         # end
-        f.nrgrid, pos = fscanf(fid, '%g', 1)
-        f.nzgrid, pos = fscanf(fid, '%g', 1)
-        f.tokid, pos = fscanf(fid, '%g', 1)
-        f.rx1, pos = fscanf(fid, '%g', 1)
-        f.rx2, pos = fscanf(fid, '%g', 1)
-        f.zy1, pos = fscanf(fid, '%g', 1)
-        f.zy2, pos = fscanf(fid, '%g', 1)
-        f.conif, pos = fscanf(fid, '%g', 1)
-        f.imatch_phiedge, pos = fscanf(fid, '%g', 1)
+        f.nrgrid = fscanf(fid, '%g', 1)
+        f.nzgrid = fscanf(fid, '%g', 1)
+        f.tokid = fscanf(fid, '%g', 1)
+        f.rx1 = fscanf(fid, '%g', 1)
+        f.rx2 = fscanf(fid, '%g', 1)
+        f.zy1 = fscanf(fid, '%g', 1)
+        f.zy2 = fscanf(fid, '%g', 1)
+        f.conif = fscanf(fid, '%g', 1)
+        f.imatch_phiedge = fscanf(fid, '%g', 1)
     # end
     return
 # end  def read_vmec_650()
@@ -990,7 +990,7 @@ def read_vmec_695(fid, fmt):
     f = Struct()
     f.lfreeb = 0
 
-    data, pos = fscanf(fid, fmt, 7)
+    data = fscanf(fid, fmt, 7)
     f.wb = data[0]
     f.wp = data[1]
     f.gamma = data[2]
@@ -999,7 +999,7 @@ def read_vmec_695(fid, fmt):
     f.rmin_surf = data[5]
     f.zmax_surf = data[6]
 
-    data, pos = fscanf(fid, fmt, 10)
+    data = fscanf(fid, fmt, 10)
     f.nfp = data[0]
     f.ns = data[1]
     f.mpol = data[2]
@@ -1011,7 +1011,7 @@ def read_vmec_695(fid, fmt):
     f.ireconstruct = data[8]
     f.ierr_vmec = data[9]
 
-    data, pos = fscanf(fid, fmt, 6)
+    data = fscanf(fid, fmt, 6)
     f.imse = data[0]
     f.itse = data[1]
     f.nbsets = data[2]
@@ -1027,12 +1027,12 @@ def read_vmec_695(fid, fmt):
 
     #Read nbfld
     if (f.nbsets > 0):
-        f.nbfld, pos = fscanf(fid, fmt, f.nbsets)
+        f.nbfld = fscanf(fid, fmt, f.nbsets)
     # end
 
     #Read mgrid filename and setup other format statements
     if fmt.find(',')<0:
-        #  f.mgrid_file, pos = fscanf(fid, '%s', 1)
+        #  f.mgrid_file = fscanf(fid, '%s', 1)
         fmt2 = '%d%d%g%g%g%g%g%g%g%g%g%g%g%g%g%g'
         fmt3 = '%g%g%g%g%g%g%g%g%g%g%g%g%g%g'
         fmt4 = '%d%d%g%g%g%g%g%g%g%g%g%g%g'
@@ -1043,7 +1043,7 @@ def read_vmec_695(fid, fmt):
         fmt9 = '%g%g%g'
         fmt10 = '%g%g%g%g%g%g%g'
     else:
-        #   f.mgrid_file, pos = fscanf(fid, '%s,', 1)
+        #   f.mgrid_file = fscanf(fid, '%s,', 1)
         fmt2 = '%d,%d,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g'
         fmt3 = '%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g'
         fmt4 = '%d,%d,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g'
@@ -1056,7 +1056,7 @@ def read_vmec_695(fid, fmt):
     # end
 
     if fmt.find(',')<0:  #isempty(strfind(fmt,','))
-        f.mgrid_file, pos = fscanf(fid,'%s',1)
+        f.mgrid_file = fscanf(fid,'%s',1)
         fmt2 = '%g%g'
         fmt3 = '%g%g%g'
         fmt6 = '%g%g%g%g%g%g'
@@ -1068,7 +1068,7 @@ def read_vmec_695(fid, fmt):
         fmt2_11 = '%d%d%g%g%g%g%g%g%g%g%g%g%g'
         fmt2_14 = '%d%d%g%g%g%g%g%g%g%g%g%g%g%g%g%g'
     else:
-        f.mgrid_file, pos = fscanf(fid, '%s,', 1)
+        f.mgrid_file = fscanf(fid, '%s,', 1)
         fmt2 = '%g,%g'
         fmt3 = '%g,%g,%g'
         fmt6 = '%g,%g,%g,%g,%g,%g'
@@ -1083,11 +1083,11 @@ def read_vmec_695(fid, fmt):
 
     # Read Arrays
     if f.iasym > 0:
-        data, pos = fscanf(fid, fmt2_14, [16, f.mnmax])
-        data, pos = fscanf(fid, fmt14, [14, f.mnmax*(f.ns-1)])
+        data = fscanf(fid, fmt2_14, [16, f.mnmax])
+        data = fscanf(fid, fmt14, [14, f.mnmax*(f.ns-1)])
     else:
-        data, pos = fscanf(fid, fmt2_11, [13, f.mnmax])
-        data, pos = fscanf(fid, fmt11, [11, f.mnmax*(f.ns-1)])
+        data = fscanf(fid, fmt2_11, [13, f.mnmax])
+        data = fscanf(fid, fmt11, [11, f.mnmax*(f.ns-1)])
     # end
 
     # Extract Data from Arrays
@@ -1113,7 +1113,7 @@ def read_vmec_695(fid, fmt):
     # end
 
     # Read the half-mesh quantities
-    data, pos = fscanf(fid,fmt13, [13, f.ns-1])
+    data = fscanf(fid,fmt13, [13, f.ns-1])
     f.iotas = data[0, :]
     f.mass = data[1, :]
     f.pres = data[2, :]
@@ -1128,7 +1128,7 @@ def read_vmec_695(fid, fmt):
     f.jcurv = data[11, :]
     f.specw = data[12, :]
 
-    data, pos = fscanf(fid, fmt, 6)
+    data = fscanf(fid, fmt, 6)
     f.aspect = data[0]
     f.betatot = data[1]
     f.betapol = data[2]
@@ -1136,10 +1136,10 @@ def read_vmec_695(fid, fmt):
     f.betaxis = data[4]
     f.b0 = data[5]
 
-    f.isigna, pos = fscanf(fid, fmt+'\n', 1)
+    f.isigna = fscanf(fid, fmt+'\n', 1)
     f.input_extension = strtrim(fgetl(fid))
 
-    data, pos = fscanf(fid, fmt, 8)
+    data = fscanf(fid, fmt, 8)
     f.IonLarmor = data[0]
     f.VolAvgB = data[1]
     f.RBtor0 = data[2]
@@ -1150,7 +1150,7 @@ def read_vmec_695(fid, fmt):
     f.Volume = data[7]
 
     # Mercier Criterion
-    data, pos = fscanf(fid, fmt6, [6, f.ns-2])
+    data = fscanf(fid, fmt6, [6, f.ns-2])
     f.Dmerc = data[0, :]
     f.Dshear = data[1, :]
     f.Dwell = data[2, :]
@@ -1161,7 +1161,7 @@ def read_vmec_695(fid, fmt):
     f.curlabel=cell(f.nextcur, 1)
     if (f.nextcur > 0):
         f.lfreeb = 1
-        f.extcur, pos = fscanf(fid, fmt, f.nextcur)
+        f.extcur = fscanf(fid, fmt, f.nextcur)
         fscanf(fid, '\n')
         rem = f.nextcur
         jj = 0
@@ -1178,11 +1178,11 @@ def read_vmec_695(fid, fmt):
         # end
     # end
 
-    data, pos = fscanf(fid, fmt2, [2, f.nstore_seq])
+    data = fscanf(fid, fmt2, [2, f.nstore_seq])
     f.sqt = data[0, :]
     f.wdot = data[1, :]
 
-    data, pos = fscanf(fid, fmt2, [2, f.nstore_seq])
+    data = fscanf(fid, fmt2, [2, f.nstore_seq])
     f.jdotb = data[0, :]
     f.bdotgradv = data[1, :]
 
@@ -1190,22 +1190,22 @@ def read_vmec_695(fid, fmt):
     # Data and MSE Fits
     if (f.ireconstruct > 0):
         if ((f.imse >= 2) or (f.itse > 0)):
-            f.twsgt, pos = fscanf(fid, fmt, 1)
-            f.msewgt, pos = fscanf(fid, fmt, 1)
-            f.isnodes, pos = fscanf(fid, fmt, 1)
+            f.twsgt = fscanf(fid, fmt, 1)
+            f.msewgt = fscanf(fid, fmt, 1)
+            f.isnodes = fscanf(fid, fmt, 1)
 
-            data, pos = fscanf(fid, fmt3, [3, f.isnodes])
+            data = fscanf(fid, fmt3, [3, f.isnodes])
             f.sknots = data[0, :]
             f.ystark = data[1, :]
             f.y2stark = data[2, :]
-            f.ipnodes, pos = fscanf(fid, fmt, 1)
+            f.ipnodes = fscanf(fid, fmt, 1)
 
-            data, pos = fscanf(fid, fmt3, [3, f.ipnodes])
+            data = fscanf(fid, fmt3, [3, f.ipnodes])
             f.pknots = data[0, :]
             f.ythom = data[1, :]
             f.y2thom = data[2, :]
 
-            data, pos = fscanf(fid,fmt7, [7, (2*f.ns)-1])
+            data = fscanf(fid,fmt7, [7, (2*f.ns)-1])
             f.anglemse = data[0, :]
             f.rmid = data[1, :]
             f.qmid = data[2, :]
@@ -1214,71 +1214,71 @@ def read_vmec_695(fid, fmt):
             f.alfa = data[5, :]
             f.curmid = data[6, :]
 
-            data, pos = fscanf(fid, fmt3, [3, f.imse])
+            data = fscanf(fid, fmt3, [3, f.imse])
             f.rstark = data[0, :]
             f.datastark = data[1, :]
             f.qmeas = data[2, :]
 
-            data, pos = fscanf(fid, fmt2, [2, f.itse])
+            data = fscanf(fid, fmt2, [2, f.itse])
             f.rthom = data[0, :]
             f.datathom = data[1, :]
         # end
 
         if (f.nobd > 0):
-            data, pos = fscanf(fid, fmt3, [3, f.nobd])
+            data = fscanf(fid, fmt3, [3, f.nobd])
             f.dsiext = data[0, :]
             f.plflux = data[1, :]
             f.dsiobt = data[2, :]
-            f.flmwgt, pos = fscanf(fid, fmt, 1)
+            f.flmwgt = fscanf(fid, fmt, 1)
         # end
 
         nbfldn = _np.sum(nbldf[:f.nbsets])
         if (nbfldn > 0):
             for nn in range(nbsets):  # for n=1:nbsets
-                data, pos = fscanf(fid, fmt3, [3, f.nbfld[nn]])
+                data = fscanf(fid, fmt3, [3, f.nbfld[nn]])
                 f.bcoil[:, nn] = data[0, :]
                 f.plbfld[:, nn] = data[1, :]
                 f.bbc[:, nn] = data[2, :]
             # end
-            f.bcwgt, pos = fscanf(fid, fmt, 1)
+            f.bcwgt = fscanf(fid, fmt, 1)
         # end
-        f.phidiam, pos = fscanf(fid, fmt, 1)
-        f.delphid, pos = fscanf(fid, fmt, 1)
+        f.phidiam = fscanf(fid, fmt, 1)
+        f.delphid = fscanf(fid, fmt, 1)
 
         # Read Limiter and Prout Plotting Specs
-        f.nsets, pos = fscanf(fid, fmt, 1)
-        f.nparts, pos = fscanf(fid, fmt, 1)
-        f.nlim, pos = fscanf(fid, fmt, 1)
-        f.nsetsn, pos = fscanf(fid, fmt, f.nsets)
+        f.nsets = fscanf(fid, fmt, 1)
+        f.nparts = fscanf(fid, fmt, 1)
+        f.nlim = fscanf(fid, fmt, 1)
+        f.nsetsn = fscanf(fid, fmt, f.nsets)
         f.pfcspec=_np.zeros( (f.nparts, _np.max(f.nxsetsn), f.nsets), dtype=_np.float64)
         for kk in range(f.nsets):  # k=1:f.nsets
             for jj in range(f.nsetsn[kk]):  # j=1:f.nsetsn(k)
                 for ii in range(f.nparts):  # i=1:f.nparts
-                    f.pfcspec[ii, jj, kk], pos = fscanf(fid, fmt, 1)
+                    f.pfcspec[ii, jj, kk] = fscanf(fid, fmt, 1)
                 # end
             # end
         # end
 
-        f.limitr, pos = fscanf(fid, fmt, f.nlim)
+        f.limitr = fscanf(fid, fmt, f.nlim)
         f.rlim = _np.zeros( (_np.max(f.limitr), f.nlim), dtype=_np.float64)
         f.zlim = _np.zeros( (_np.max(f.limitr), f.nlim), dtype=_np.float64)
         for jj in range(f.nlim):  # j=1:f.nlim
             for ii in range(f.limitr[jj]):  # i=1:f.limitr(j)
-                data, pos = fscanf(fid, fmt2, 2)
+                data = fscanf(fid, fmt2, 2)
                 f.rlim[ii, jj] = data[0]
                 f.zlim[ii, jj] = data[1]
             # end
         # end
 
-        f.nrgrid, pos = fscanf(fid, fmt, 1)
-        f.nzgrid, pos = fscanf(fid, fmt, 1)
-        f.tokid, pos = fscanf(fid, fmt, 1)
-        f.rx1, pos = fscanf(fid, fmt, 1)
-        f.rx2, pos = fscanf(fid, fmt, 1)
-        f.zy1, pos = fscanf(fid, fmt, 1)
-        f.zy2, pos = fscanf(fid, fmt, 1)
-        f.conif, pos = fscanf(fid, fmt, 1)
-        f.imatch_phiedge, pos = fscanf(fid, fmt, 1)
+        f.nrgrid = fscanf(fid, fmt, 1)
+        f.nzgrid = fscanf(fid, fmt, 1)
+        f.tokid = fscanf(fid, fmt, 1)
+        f.rx1 = fscanf(fid, fmt, 1)
+        f.rx2 = fscanf(fid, fmt, 1)
+        f.zy1 = fscanf(fid, fmt, 1)
+        f.zy2 = fscanf(fid, fmt, 1)
+        f.conif = fscanf(fid, fmt, 1)
+        f.imatch_phiedge = fscanf(fid, fmt, 1)
     # end
     return
 # end  def read_vmec_695
@@ -1289,7 +1289,7 @@ def read_vmec_800(fid, fmt):
     # function f=read_vmec_800(fid,fmt)
     f = Struct()
     f.lfreeb = 0
-    data, pos = fscanf(fid, fmt, 7)
+    data = fscanf(fid, fmt, 7)
     f.wb = data[0]
     f.wp = data[1]
     f.gamma = data[2]
@@ -1298,7 +1298,7 @@ def read_vmec_800(fid, fmt):
     f.rmin_surf = data[5]
     f.zmax_surf = data[6]
 
-    data, pos = fscanf(fid, fmt, 10)
+    data = fscanf(fid, fmt, 10)
     f.nfp = data[0]
     f.ns = data[1]
     f.mpol = data[2]
@@ -1311,7 +1311,7 @@ def read_vmec_800(fid, fmt):
     f.ierr_vmec = data[9]
     f.mnmax_nyq = f.mnmax
 
-    data, pos = fscanf(fid, fmt, 6)
+    data = fscanf(fid, fmt, 6)
     f.imse = data[0]
     f.itse = data[1]
     f.nbsets = data[2]
@@ -1327,12 +1327,12 @@ def read_vmec_800(fid, fmt):
 
     # Read nbfld
     if (f.nbsets > 0):
-        f.nbfld, pos = fscanf(fid, fmt, f.nbsets)
+        f.nbfld = fscanf(fid, fmt, f.nbsets)
     # end
 
     # Read mgrid filename and setup other format statements
     if fmt.find(',')<0:  # isempty(strfind(fmt,','))
-        f.mgrid_file, pos = fscanf(fid,'%s',1)
+        f.mgrid_file = fscanf(fid,'%s',1)
         fmt2 = '%g%g'
         fmt3 = '%g%g%g'
         fmt6 = '%g%g%g%g%g%g'
@@ -1345,7 +1345,7 @@ def read_vmec_800(fid, fmt):
         fmt2_11 = '%d%d%g%g%g%g%g%g%g%g%g%g%g'
         fmt2_14 = '%d%d%g%g%g%g%g%g%g%g%g%g%g%g%g%g'
     else:
-        f.mgrid_file, pos = fscanf(fid, '%s,', 1)
+        f.mgrid_file = fscanf(fid, '%s,', 1)
         fmt2 = '%g,%g'
         fmt3 = '%g,%g,%g'
         fmt6 = '%g,%g,%g,%g,%g,%g'
@@ -1360,11 +1360,11 @@ def read_vmec_800(fid, fmt):
 
     # Read Arrays
     if f.iasym > 0:
-        data, pos = fscanf(fid, fmt2_14, [16, f.mnmax])
-        data, pos = fscanf(fid, fmt14, [14, f.mnmax*(f.ns-1)])
+        data = fscanf(fid, fmt2_14, [16, f.mnmax])
+        data = fscanf(fid, fmt14, [14, f.mnmax*(f.ns-1)])
     else:
-        data, pos = fscanf(fid, fmt2_11, [13, f.mnmax])
-        data, pos = fscanf(fid, fmt11, [11, f.mnmax*(f.ns-1)])
+        data = fscanf(fid, fmt2_11, [13, f.mnmax])
+        data = fscanf(fid, fmt11, [11, f.mnmax*(f.ns-1)])
     # end
     # Extract Data from Arrays
     f.xm = data1[0, :]
@@ -1389,7 +1389,7 @@ def read_vmec_800(fid, fmt):
     # end
 
     # Read the full-mesh quantities
-    data, pos = fscanf(fid, fmt6, [6, f.ns])
+    data = fscanf(fid, fmt6, [6, f.ns])
     f.iotaf = data[0, :]
     f.presf = data[1, :]
     f.phipf = data[2, :]
@@ -1398,7 +1398,7 @@ def read_vmec_800(fid, fmt):
     f.jcurv = data[5, :]
 
     # Read the half-mesh quantities
-    data, pos = fscanf(fid, fmt10, [10, f.ns-1])
+    data = fscanf(fid, fmt10, [10, f.ns-1])
     f.iotas = data[0,:]
     f.mass = data[1,:]
     f.pres = data[2,:]
@@ -1410,17 +1410,17 @@ def read_vmec_800(fid, fmt):
     f.overr = data[8, :]
     f.specw = data[9, :]
 
-    data, pos = fscanf(fid, fmt, 6)
+    data = fscanf(fid, fmt, 6)
     f.aspect = data[0]
     f.betatot = data[1]
     f.betapol = data[2]
     f.betator = data[3]
     f.betaxis = data[4]
     f.b0 = data[5]
-    f.isigna, pos = fscanf(fid, fmt+'\n', 1)
+    f.isigna = fscanf(fid, fmt+'\n', 1)
     f.input_extension = strtrim(fgetl(fid))
 
-    data, pos = fscanf(fid, fmt, 8)
+    data = fscanf(fid, fmt, 8)
     f.IonLarmor = data[0]
     f.VolAvgB = data[1]
     f.RBtor0 = data[2]
@@ -1431,7 +1431,7 @@ def read_vmec_800(fid, fmt):
     f.Volume = data[7]
 
     # Mercier Criterion
-    data, pos = fscanf(fid, fmt6, [6, f.ns-2])
+    data = fscanf(fid, fmt6, [6, f.ns-2])
     f.Dmerc = data[0, :]
     f.Dshear = data[1, :]
     f.Dwell = data[2, :]
@@ -1442,7 +1442,7 @@ def read_vmec_800(fid, fmt):
     f.curlabel = cell(f.nextcur, 1)
     if (f.nextcur > 0):
         f.lfreeb = 1
-        f.extcur, pos = fscanf(fid, fmt, f.nextcur)
+        f.extcur = fscanf(fid, fmt, f.nextcur)
         fscanf(fid, '\n')
         rem = f.nextcur
         jj = 0
@@ -1459,11 +1459,11 @@ def read_vmec_800(fid, fmt):
         # end
     # end
 
-    data, pos = fscanf(fid, fmt2, [2, f.nstore_seq])
+    data = fscanf(fid, fmt2, [2, f.nstore_seq])
     f.sqt = data[0, :]
     f.wdot = data[1, :]
 
-    data, pos = fscanf(fid, fmt2, [2, f.nstore_seq])
+    data = fscanf(fid, fmt2, [2, f.nstore_seq])
     f.jdotb = data[0, :]
     f.bdotgradv = data[1, :]
 
@@ -1471,22 +1471,22 @@ def read_vmec_800(fid, fmt):
     # Data and MSE Fits
     if (f.ireconstruct > 0):
         if ((f.imse >= 2) or (f.itse > 0)):
-            f.twsgt, pos = fscanf(fid, fmt, 1)
-            f.msewgt, pos = fscanf(fid, fmt, 1)
-            f.isnodes, pos = fscanf(fid, fmt, 1)
+            f.twsgt = fscanf(fid, fmt, 1)
+            f.msewgt = fscanf(fid, fmt, 1)
+            f.isnodes = fscanf(fid, fmt, 1)
 
-            data, pos = fscanf(fid, fmt3, [3, f.isnodes])
+            data = fscanf(fid, fmt3, [3, f.isnodes])
             f.sknots = data[0, :]
             f.ystark = data[1, :]
             f.y2stark = data[2, :]
-            f.ipnodes, pos = fscanf(fid, fmt, 1)
+            f.ipnodes = fscanf(fid, fmt, 1)
 
-            data, pos = fscanf(fid, fmt3, [3, f.ipnodes])
+            data = fscanf(fid, fmt3, [3, f.ipnodes])
             f.pknots = data[0, :]
             f.ythom = data[1, :]
             f.y2thom = data[2, :]
 
-            data, pos = fscanf(fid,fmt7, [7, (2*f.ns)-1])
+            data = fscanf(fid,fmt7, [7, (2*f.ns)-1])
             f.anglemse = data[0, :]
             f.rmid = data[1, :]
             f.qmid = data[2, :]
@@ -1495,71 +1495,71 @@ def read_vmec_800(fid, fmt):
             f.alfa = data[5, :]
             f.curmid = data[6, :]
 
-            data, pos = fscanf(fid, fmt3, [3, f.imse])
+            data = fscanf(fid, fmt3, [3, f.imse])
             f.rstark = data[0, :]
             f.datastark = data[1, :]
             f.qmeas = data[2, :]
 
-            data, pos = fscanf(fid, fmt2, [2, f.itse])
+            data = fscanf(fid, fmt2, [2, f.itse])
             f.rthom = data[0, :]
             f.datathom = data[1, :]
         # end
 
         if (f.nobd > 0):
-            data, pos = fscanf(fid, fmt3, [3,f.nobd])
+            data = fscanf(fid, fmt3, [3,f.nobd])
             f.dsiext = data[0, :]
             f.plflux = data[1, :]
             f.dsiobt = data[2, :]
-            f.flmwgt, pos = fscanf(fid, fmt, 1)
+            f.flmwgt = fscanf(fid, fmt, 1)
         # end
 
         nbfldn = _np.sum(nbldf[:f.nbsets])
         if (nbfldn > 0):
             for nn in range(nbsets):  # for n=1:nbsets
-                data, pos = fscanf(fid, fmt3, [3, f.nbfld[nn]])
+                data = fscanf(fid, fmt3, [3, f.nbfld[nn]])
                 f.bcoil[:, nn] = data[0, :]
                 f.plbfld[:, nn] = data[1, :]
                 f.bbc[:, nn] = data[2, :]
             # end
-            f.bcwgt, pos = fscanf(fid, fmt, 1)
+            f.bcwgt = fscanf(fid, fmt, 1)
         # end
-        f.phidiam, pos = fscanf(fid, fmt, 1)
-        f.delphid, pos = fscanf(fid, fmt, 1)
+        f.phidiam = fscanf(fid, fmt, 1)
+        f.delphid = fscanf(fid, fmt, 1)
 
         # Read Limiter and Prout Plotting Specs
-        f.nsets, pos = fscanf(fid, fmt, 1)
-        f.nparts, pos = fscanf(fid, fmt, 1)
-        f.nlim, pos = fscanf(fid, fmt, 1)
-        f.nsetsn, pos = fscanf(fid, fmt, f.nsets)
+        f.nsets = fscanf(fid, fmt, 1)
+        f.nparts = fscanf(fid, fmt, 1)
+        f.nlim = fscanf(fid, fmt, 1)
+        f.nsetsn = fscanf(fid, fmt, f.nsets)
         f.pfcspec = _np.zeros( (f.nparts, _np.max(f.nxsetsn), f.nsets), dtype=_np.float64)
         for kk in range(f.nsets):  # k=1:f.nsets
             for jj in range(f.nsetns[kk]):  # j=1:f.nsetsn[kk]
                 for ii in range(f.nparts):  # i=1:f.nparts
-                    f.pfcspec[ii, jj, kk], pos = fscanf(fid, fmt, 1)
+                    f.pfcspec[ii, jj, kk] = fscanf(fid, fmt, 1)
                 # end
             # end
         # end
 
-        f.limitr, pos = fscanf(fid, fmt, f.nlim)
+        f.limitr = fscanf(fid, fmt, f.nlim)
         f.rlim = _np.zeros( (_np.max(f.limitr), f.nlim), dtype=_np.float64)
         f.zlim = _np.zeros( (_np.max(f.limitr), f.nlim), dtype=_np.float64)
         for jj in range(f.nlim):  # j=1:f.nlim
             for ii in range(f.limitr[jj]):  # i=1:f.limitr(j)
-                data, pos = fscanf(fid, fmt2, 2)
+                data = fscanf(fid, fmt2, 2)
                 f.rlim[ii, jj] = data[0]
                 f.zlim[ii, jj] = data[1]
             # end
         # end
 
-        f.nrgrid, pos = fscanf(fid, fmt, 1)
-        f.nzgrid, pos = fscanf(fid, fmt, 1)
-        f.tokid, pos = fscanf(fid, fmt, 1)
-        f.rx1, pos = fscanf(fid, fmt, 1)
-        f.rx2, pos = fscanf(fid, fmt, 1)
-        f.zy1, pos = fscanf(fid, fmt, 1)
-        f.zy2, pos = fscanf(fid, fmt, 1)
-        f.conif, pos = fscanf(fid, fmt, 1)
-        f.imatch_phiedge, pos = fscanf(fid, fmt, 1)
+        f.nrgrid = fscanf(fid, fmt, 1)
+        f.nzgrid = fscanf(fid, fmt, 1)
+        f.tokid = fscanf(fid, fmt, 1)
+        f.rx1 = fscanf(fid, fmt, 1)
+        f.rx2 = fscanf(fid, fmt, 1)
+        f.zy1 = fscanf(fid, fmt, 1)
+        f.zy2 = fscanf(fid, fmt, 1)
+        f.conif = fscanf(fid, fmt, 1)
+        f.imatch_phiedge = fscanf(fid, fmt, 1)
     # end
 
     return
@@ -1571,7 +1571,7 @@ def read_vmec_847(fid,fmt):
     f = Struct()
     f.lfreeb = 0
 
-    data, pos = fscanf(fid, fmt, 7)
+    data = fscanf(fid, fmt, 7)
     f.wb = data[0]
     f.wp = data[1]
     f.gamma = data[2]
@@ -1580,7 +1580,7 @@ def read_vmec_847(fid,fmt):
     f.rmin_surf = data[5]
     f.zmax_surf = data[6]
 
-    data, pos = fscanf(fid, fmt, 11)
+    data = fscanf(fid, fmt, 11)
     f.nfp = data[0]
     f.ns = data[1]
     f.mpol = data[2]
@@ -1593,7 +1593,7 @@ def read_vmec_847(fid,fmt):
     f.ireconstruct = data[9]
     f.ierr_vmec = data[10]
 
-    data, pos = fscanf(fid, fmt, 6)
+    data = fscanf(fid, fmt, 6)
     f.imse = data[0]
     f.itse = data[1]
     f.nbsets = data[2]
@@ -1609,12 +1609,12 @@ def read_vmec_847(fid,fmt):
 
     # Read nbfld
     if (f.nbsets > 0):
-        f.nbfld, pos = fscanf(fid, fmt, f.nbsets)
+        f.nbfld = fscanf(fid, fmt, f.nbsets)
     # end
 
     # Read mgrid filename and setup other format statements
     if fmt.find(',')<0:  # isempty(strfind(fmt,',')):
-        f.mgrid_file, pos = fscanf(fid,'%s',1)
+        f.mgrid_file = fscanf(fid,'%s',1)
         fmt2 = '%g%g'
         fmt3 = '%g%g%g'
         fmt6 = '%g%g%g%g%g%g'
@@ -1628,7 +1628,7 @@ def read_vmec_847(fid,fmt):
         fmt2_7 = '%d%d%g%g%g%g%g%g%g'
         fmt2_14 = '%d%d%g%g%g%g%g%g%g%g%g%g%g%g%g%g'
     else:
-        f.mgrid_file, pos = fscanf(fid,'%s,',1)
+        f.mgrid_file = fscanf(fid,'%s,',1)
         fmt2 = '%g,%g'
         fmt3 = '%g,%g,%g'
         fmt6 = '%g,%g,%g,%g,%g,%g'
@@ -1674,42 +1674,42 @@ def read_vmec_847(fid,fmt):
     for ii in range(f.ns): # i=1:f.ns
         for jj in range(f.mnmax): # j=1:f.mnmax
             if ii==1:
-                f.xm[jj], pos = fscanf(fid, '%d', 1)
-                f.xn[jj], pos = fscanf(fid, '%d', 1)
+                f.xm[jj] = fscanf(fid, '%d', 1)
+                f.xn[jj] = fscanf(fid, '%d', 1)
             # end
-            f.rmnc[jj, ii], pos = fscanf(fid, '%g', 1)
-            f.zmns[jj, ii], pos = fscanf(fid, '%g', 1)
-            f.lmns[jj, ii], pos = fscanf(fid, '%g', 1)
+            f.rmnc[jj, ii] = fscanf(fid, '%g', 1)
+            f.zmns[jj, ii] = fscanf(fid, '%g', 1)
+            f.lmns[jj, ii] = fscanf(fid, '%g', 1)
 
             if f.iasym > 0:
-                f.rmns[jj, ii], pos = fscanf(fid, '%g', 1)
-                f.zmnc[jj, ii], pos = fscanf(fid, '%g', 1)
-                f.lmnc[jj, ii], pos = fscanf(fid, '%g', 1)
+                f.rmns[jj, ii] = fscanf(fid, '%g', 1)
+                f.zmnc[jj, ii] = fscanf(fid, '%g', 1)
+                f.lmnc[jj, ii] = fscanf(fid, '%g', 1)
             # end
         # end
 
         for jj in range(f.mnmax_nyq): # j=1:f.mnmax_nyq
             if ii==1:
-                f.xm_nyq[jj], pos = fscanf(fid, '%d', 1)
-                f.xn_nyq[jj], pos = fscanf(fid, '%d', 1)
+                f.xm_nyq[jj] = fscanf(fid, '%d', 1)
+                f.xn_nyq[jj] = fscanf(fid, '%d', 1)
             # end
 
-            f.bmnc[jj, ii], pos = fscanf(fid, '%g', 1)
-            f.gmnc[jj, ii], pos = fscanf(fid, '%g', 1)
-            f.bsubumnc[jj, ii], pos = fscanf(fid, '%g', 1)
-            f.bsubvmnc[jj, ii], pos = fscanf(fid, '%g', 1)
-            f.bsubsmns[jj, ii], pos = fscanf(fid, '%g', 1)
-            f.bsupumnc[jj, ii], pos = fscanf(fid, '%g', 1)
-            f.bsupvmnc[jj, ii], pos = fscanf(fid, '%g', 1)
+            f.bmnc[jj, ii] = fscanf(fid, '%g', 1)
+            f.gmnc[jj, ii] = fscanf(fid, '%g', 1)
+            f.bsubumnc[jj, ii] = fscanf(fid, '%g', 1)
+            f.bsubvmnc[jj, ii] = fscanf(fid, '%g', 1)
+            f.bsubsmns[jj, ii] = fscanf(fid, '%g', 1)
+            f.bsupumnc[jj, ii] = fscanf(fid, '%g', 1)
+            f.bsupvmnc[jj, ii] = fscanf(fid, '%g', 1)
 
             if f.iasym > 0:
-                f.bmns[jj, ii], pos = fscanf(fid, '%g', 1)
-                f.gmns[jj, ii], pos = fscanf(fid, '%g', 1)
-                f.bsubumns[jj, ii], pos = fscanf(fid, '%g', 1)
-                f.bsubvmns[jj, ii], pos = fscanf(fid, '%g', 1)
-                f.bsubsmnc[jj, ii], pos = fscanf(fid, '%g', 1)
-                f.bsupumns[jj, ii], pos = fscanf(fid, '%g', 1)
-                f.bsupvmns[jj, ii], pos = fscanf(fid, '%g', 1)
+                f.bmns[jj, ii] = fscanf(fid, '%g', 1)
+                f.gmns[jj, ii] = fscanf(fid, '%g', 1)
+                f.bsubumns[jj, ii] = fscanf(fid, '%g', 1)
+                f.bsubvmns[jj, ii] = fscanf(fid, '%g', 1)
+                f.bsubsmnc[jj, ii] = fscanf(fid, '%g', 1)
+                f.bsupumns[jj, ii] = fscanf(fid, '%g', 1)
+                f.bsupvmns[jj, ii] = fscanf(fid, '%g', 1)
             # end
         # end
     # end
@@ -1754,7 +1754,7 @@ def read_vmec_847(fid,fmt):
     # end
 
     # Read the full-mesh quantities
-    data, pos = fscanf(fid,fmt6, [6, f.ns])
+    data = fscanf(fid,fmt6, [6, f.ns])
     f.iotaf = data[0, :]
     f.presf = data[1, :]
     f.phipf = data[2, :]
@@ -1763,7 +1763,7 @@ def read_vmec_847(fid,fmt):
     f.jcurv = data[5, :]
 
     # Read the half-mesh quantities
-    data, pos = fscanf(fid,fmt10, [10, f.ns-1])
+    data = fscanf(fid,fmt10, [10, f.ns-1])
     f.iotas = data[0, :]
     f.mass = data[1, :]
     f.pres = data[2, :]
@@ -1775,7 +1775,7 @@ def read_vmec_847(fid,fmt):
     f.overr = data[8, :]
     f.specw = data[9, :]
 
-    data, pos = fscanf(fid, fmt, 6)
+    data = fscanf(fid, fmt, 6)
     f.aspect = data[0]
     f.betatot = data[1]
     f.betapol = data[2]
@@ -1783,10 +1783,10 @@ def read_vmec_847(fid,fmt):
     f.betaxis = data[4]
     f.b0 = data[5]
 
-    f.isigna, pos = fscanf(fid, fmt+'\n', 1)
+    f.isigna = fscanf(fid, fmt+'\n', 1)
     f.input_extension = strtrim(fgetl(fid))
 
-    data, pos = fscanf(fid, fmt, 8)
+    data = fscanf(fid, fmt, 8)
     f.IonLarmor = data[0]
     f.VolAvgB = data[1]
     f.RBtor0 = data[2]
@@ -1797,7 +1797,7 @@ def read_vmec_847(fid,fmt):
     f.Volume = data[7]
 
     # Mercier Criterion
-    data, pos = fscanf(fid,fmt6, [6, f.ns-2])
+    data = fscanf(fid,fmt6, [6, f.ns-2])
     f.Dmerc = data[0, :]
     f.Dshear = data[1, :]
     f.Dwell = data[2, :]
@@ -1808,7 +1808,7 @@ def read_vmec_847(fid,fmt):
     f.curlabel=cell(f.nextcur, 1)
     if (f.nextcur > 0):
         f.lfreeb = 1
-        f.extcur, pos = fscanf(fid, fmt, f.nextcur)
+        f.extcur = fscanf(fid, fmt, f.nextcur)
         lcurr = strtrim(fscanf(fid, '%s', 1))
         if lcurr == 'T':  # strcmpi(lcurr,'T'):
             fscanf(fid, '\n')
@@ -1828,11 +1828,11 @@ def read_vmec_847(fid,fmt):
         # end
     # end
 
-    data, pos = fscanf(fid, fmt2, [2, f.nstore_seq])
+    data = fscanf(fid, fmt2, [2, f.nstore_seq])
     f.sqt = data[0, :]
     f.wdot = data[1, :]
 
-    data, pos = fscanf(fid, fmt2, [2, f.nstore_seq])
+    data = fscanf(fid, fmt2, [2, f.nstore_seq])
     f.jdotb = data[0, :]
     f.bdotgradv = data[1, :]
 
@@ -1840,22 +1840,22 @@ def read_vmec_847(fid,fmt):
     # Data and MSE Fits
     if (f.ireconstruct > 0):
         if ((f.imse >= 2) or (f.itse >0)):
-            f.twsgt, pos = fscanf(fid, fmt, 1)
-            f.msewgt, pos = fscanf(fid, fmt, 1)
-            f.isnodes, pos = fscanf(fid, fmt, 1)
+            f.twsgt = fscanf(fid, fmt, 1)
+            f.msewgt = fscanf(fid, fmt, 1)
+            f.isnodes = fscanf(fid, fmt, 1)
 
-            data, pos = fscanf(fid, fmt3, [3, f.isnodes])
+            data = fscanf(fid, fmt3, [3, f.isnodes])
             f.sknots = data[0, :]
             f.ystark = data[1, :]
             f.y2stark = data[2, :]
-            f.ipnodes, pos = fscanf(fid, fmt, 1)
+            f.ipnodes = fscanf(fid, fmt, 1)
 
-            data, pos = fscanf(fid, fmt3, [3, f.ipnodes])
+            data = fscanf(fid, fmt3, [3, f.ipnodes])
             f.pknots = data[0, :]
             f.ythom = data[1, :]
             f.y2thom = data[2, :]
 
-            data, pos = fscanf(fid,fmt7, [7, (2*f.ns)-1])
+            data = fscanf(fid,fmt7, [7, (2*f.ns)-1])
             f.anglemse = data[0, :]
             f.rmid = data[1, :]
             f.qmid = data[2, :]
@@ -1864,71 +1864,71 @@ def read_vmec_847(fid,fmt):
             f.alfa = data[5, :]
             f.curmid = data[6, :]
 
-            data, pos = fscanf(fid, fmt3, [3, f.imse])
+            data = fscanf(fid, fmt3, [3, f.imse])
             f.rstark = data[0, :]
             f.datastark = data[1, :]
             f.qmeas = data[2, :]
 
-            data, pos = fscanf(fid, fmt2, [2, f.itse])
+            data = fscanf(fid, fmt2, [2, f.itse])
             f.rthom = data[0, :]
             f.datathom = data[1, :]
         # end
 
         if (f.nobd > 0):
-            data, pos = fscanf(fid, fmt3, [3,f.nobd])
+            data = fscanf(fid, fmt3, [3,f.nobd])
             f.dsiext = data[0, :]
             f.plflux = data[1, :]
             f.dsiobt = data[2, :]
-            f.flmwgt, pos = fscanf(fid, fmt, 1)
+            f.flmwgt = fscanf(fid, fmt, 1)
         # end
 
         nbfldn=_np.sum(nbldf[:f.nbsets])
         if (nbfldn > 0):
             for nn in range(nbsets):  # n=1:nbsets
-                data, pos = fscanf(fid, fmt3, [3, f.nbfld[nn]])
+                data = fscanf(fid, fmt3, [3, f.nbfld[nn]])
                 f.bcoil[:, nn] = data[0, :]
                 f.plbfld[:, nn] = data[1, :]
                 f.bbc[:, nn] = data[2, :]
             # end
-            f.bcwgt, pos = fscanf(fid, fmt, 1)
+            f.bcwgt = fscanf(fid, fmt, 1)
         # end
-        f.phidiam, pos = fscanf(fid, fmt, 1)
-        f.delphid, pos = fscanf(fid, fmt, 1)
+        f.phidiam = fscanf(fid, fmt, 1)
+        f.delphid = fscanf(fid, fmt, 1)
 
         # Read Limiter and Prout Plotting Specs
-        f.nsets, pos = fscanf(fid, fmt, 1)
-        f.nparts, pos = fscanf(fid, fmt, 1)
-        f.nlim, pos = fscanf(fid, fmt, 1)
-        f.nsetsn, pos = fscanf(fid, fmt, f.nsets)
+        f.nsets = fscanf(fid, fmt, 1)
+        f.nparts = fscanf(fid, fmt, 1)
+        f.nlim = fscanf(fid, fmt, 1)
+        f.nsetsn = fscanf(fid, fmt, f.nsets)
         f.pfcspec = _np.zeros( (f.nparts, _np.max(f.nxsetsn), f.nsets), dtype=_np.float64)
         for kk in range( f.nsets ):  # k=1:f.nsets
             for jj in range( f.nsetsn[kk]):  # j=1:f.nsetsn(k)
                 for ii in range( f.nparts):  # i=1:f.nparts
-                    f.pfcspec[ii, jj, kk], pos = fscanf(fid, fmt, 1)
+                    f.pfcspec[ii, jj, kk] = fscanf(fid, fmt, 1)
                 # end
             # end
         # end
 
-        f.limitr, pos = fscanf(fid, fmt,  f.nlim)
+        f.limitr = fscanf(fid, fmt,  f.nlim)
         f.rlim = _np.zeros( (_np.max(f.limitr), f.nlim), dtype=_np.float64)
         f.zlim = _np.zeros( (_np.max(f.limitr), f.nlim), dtype=_np.float64)
         for jj in range(f.nlim):  # j=1:f.nlim
             for ii in range(f.limitr[jj]):  # ii=1:f.limitr(jj)
-                data, pos = fscanf(fid, fmt2, 2)
+                data = fscanf(fid, fmt2, 2)
                 f.rlim[ii, jj] = data[0]
                 f.zlim[ii, jj] = data[1]
             # end
         # end
 
-        f.nrgrid, pos = fscanf(fid, fmt, 1)
-        f.nzgrid, pos = fscanf(fid, fmt, 1)
-        f.tokid, pos = fscanf(fid, fmt, 1)
-        f.rx1, pos = fscanf(fid, fmt, 1)
-        f.rx2, pos = fscanf(fid, fmt, 1)
-        f.zy1, pos = fscanf(fid, fmt, 1)
-        f.zy2, pos = fscanf(fid, fmt, 1)
-        f.conif, pos = fscanf(fid, fmt, 1)
-        f.imatch_phiedge, pos = fscanf(fid, fmt, 1)
+        f.nrgrid = fscanf(fid, fmt, 1)
+        f.nzgrid = fscanf(fid, fmt, 1)
+        f.tokid = fscanf(fid, fmt, 1)
+        f.rx1 = fscanf(fid, fmt, 1)
+        f.rx2 = fscanf(fid, fmt, 1)
+        f.zy1 = fscanf(fid, fmt, 1)
+        f.zy2 = fscanf(fid, fmt, 1)
+        f.conif = fscanf(fid, fmt, 1)
+        f.imatch_phiedge = fscanf(fid, fmt, 1)
     # end
     f.mgrid_mode=strtrim(fscanf(fid, '%s'))
     return

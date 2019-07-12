@@ -25,18 +25,33 @@ def ftell(fid):
     """
     return fid.tell()
 
-def fseek(fid, offset, Origin='currentposition'):
+def fseek(fid, offset, origin='currentposition'):
     """
         A python function that mimics fseek from MATLAB
             sets the current file position
+    inputs:
+        fid    - file object identifier
+        offset - integer number of bytes to move the current file position
+        origin - reference from where to offset the file position
+
+    In text files only seeks relative to the beginning of the file are allowed
+    (except for seeking to the very end of the file with seek(0, 2))
+
+    The only valid offset values are those returned from fid.tell or 0
     """
-    if from_what.lower().find('currentposition')>-1:   # default
-        from_what =
-    elif from_what.lower().find('start-of-file')>-1:
-        from_what =
-    elif from_what.lower().find('end-of-file')>-1:
-        from_what =
+    if type(origin) == type(''):
+        if origin.lower().find('currentposition')>-1:   # default
+            origin = 1
+        elif origin.lower().find('start-of-file')>-1:
+            origin = 0
+        elif origin.lower().find('end-of-file')>-1:
+            origin = 2
+        # end if
     # end if
+    return fid.seek(offset, origin)
+
+def frewind(fid):
+    return fseek(fid, 0, 'start-of-file')
 
 def fgets(fid):
     """
@@ -101,7 +116,10 @@ def fscanf(fid, dtypes='#g', size=None, offset=None, delimiter=" "):
     nptypes = {'i':_np.int, 'd':_np.int, 'ld':_np.int, 'li':_np.int,  # TODO:! actually use correct datatypes
                'u':_np.uint, 'o':_np.uint, 'x':_np.uint, 'lu':_np.uint, 'lo':_np.uint, 'lx':_np.uint,
                'f':_np.float, 'e':_np.float, 'g':_np.float,
-               's':_np.str, 'c':_np.str}
+               's':_np.str, 'c':_np.str,
+               'bool':_np.bool}
+
+
     # Convert the different datatypes into a list
     dtypes = list(_np.atleast_1d(dtypes.split('%')))[1:]
     ndt = len(dtypes)
@@ -119,9 +137,17 @@ def fscanf(fid, dtypes='#g', size=None, offset=None, delimiter=" "):
             ncol = size[0]
         # end if
     # end if
+
+#    string_line = False
     if ncol != ndt:
-        dtypes = dtypes*ncol
-        ndt = ncol
+        # Assume that one data type was put in for the entire line regardless of how many columns
+#        if len(dtypes)==1 and dtypes[0] =='s':
+#            string_line = True
+#        else:
+        if 1:
+            dtypes = dtypes*ncol
+            ndt = ncol
+        # end if
     # end if
 
     if offset is not None:
@@ -130,14 +156,32 @@ def fscanf(fid, dtypes='#g', size=None, offset=None, delimiter=" "):
 
     data = []
     for ii in range(nrow):
-        line = fgetl(fid)
-        if len(line)==0:
+        try:
+            line = fgetl(fid)
+            if len(line)==0:
+                continue # end of file has been reached or white space with readline
+        except EOFError:
             break
-        # end of file has been reached or white space with readline
-        data = _np.asarray(line.split(delimiter))
-    # end if
-    return data, fid.tell()
+        # end try
 
+        if size == 1 and dtypes[ii]=='s':
+            return line
+        # end if
+
+        # split up the line into a list (choose where by delimiter)
+        line = list(line.split(delimiter))  # now a tuple, now a list
+
+        # Remove empty elements from the list
+        line = [line[jj] for jj in range(len(line)) if line[jj] != '']
+
+        # Loop over the elements of the list and assign the data type
+        for jj in range(len(line)):
+            line[jj] = nptypes[dtypes[jj]](line[jj])
+        # end for
+        data.append(line)
+    # end if
+    return data
+#    return data, fid.tell()
 
 # ===================================================================== #
 
