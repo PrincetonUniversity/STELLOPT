@@ -31,8 +31,13 @@ except:
     print('Unable to import netCDf4')
 # end try
 
-from pybaseutils.Struct import Struct
-from pybaseutils import utils as _ut
+import utils as _ut
+
+try:
+    from .VMEC import read_vmec
+except:
+    from VMEC import read_vmec
+# end try
 
 # ========================================================================== #
 # ========================================================================== #
@@ -44,7 +49,9 @@ VMEC_DataSource = None
 def __extract_data(VMEC_FilePath, ForceReadVMEC=False, verbose=True):
     global VMEC_Data
     if VMEC_Data is None or ForceReadVMEC:
-        VMEC_Data = Struct() # Instantiate an empty class of type structure
+        VMEC_Data = read_vmec(VMEC_FilePath)
+
+        VMEC_Data = _ut.Struct() # Instantiate an empty class of type structure
 
         # If this is a netCDF VMEC file, read the output ourseleves, otherwise,
         # let Sam Lazerson's code handle it
