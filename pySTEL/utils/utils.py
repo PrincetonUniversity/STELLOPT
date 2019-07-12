@@ -67,7 +67,7 @@ def fgetl(fid):
     """
     return fgets(fid).replace('\n','')
 
-def fscanf(fid, dtypes='#g', size=None, offset=None, delimiter=" "):
+def fscanf(fid, dtypes='#g', size=None, offset=None):
     """
     This function tries to mimic fscanf from MATLAB. In MATLAB, fscanf
     reads in formatted data from an open file up to a specified shape.
@@ -83,7 +83,7 @@ def fscanf(fid, dtypes='#g', size=None, offset=None, delimiter=" "):
             if size = [3, 2], then 2 elements will be read in for three rows
         offset - The starting point to read from the file
             MATLAB automatically keeps track.
-        delimiter - defaults to white space
+        # delimiter - defaults to white space
 
     Outputs:
         data - shape is equal to input size, but defaults to (1,length of the row)
@@ -119,8 +119,13 @@ def fscanf(fid, dtypes='#g', size=None, offset=None, delimiter=" "):
                's':_np.str, 'c':_np.str,
                'bool':_np.bool}
 
-
     # Convert the different datatypes into a list
+    delimiter = ' '
+    if dtypes.find(',')>-1:   # delimiter hidden in fmt string
+        delimiter = ','
+        dtypes = dtypes.replace(',', '')
+    # end if
+
     dtypes = list(_np.atleast_1d(dtypes.split('%')))[1:]
     ndt = len(dtypes)
     # ndt = len(dtypes.split('#'))-1

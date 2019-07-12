@@ -47,7 +47,6 @@ from __future__ import absolute_import, with_statement, absolute_import, \
                        division, print_function, unicode_literals
 
 import numpy as _np
-
 from utils import Struct, Spline, fscanf, fgetl
 
 # ======================================================================== #
@@ -62,8 +61,6 @@ def read_vmec_orig(fid, fmt):
     dmu0=(2.0e-7)/_np.pi
 
     # Read Data
-
-
     data = fscanf(fid,'%g', 13)
     f.wb    = data[0]
     f.wp    = data[1]
@@ -77,7 +74,7 @@ def read_vmec_orig(fid, fmt):
     f.itfsq = data[9]
     f.niter = data[10]
     f.iasym = data[11]
-    f.ireconstruct[12]
+    f.ireconstruct = data[12]
 
     data = fscanf(fid,'%d', 5)
     f.imse    = data[0]
@@ -85,8 +82,8 @@ def read_vmec_orig(fid, fmt):
     f.nbsets  = data[2]
     f.nobd    = data[3]
     f.nextcur = data[4]
-    f.nstore_seq = 100
 
+    f.nstore_seq = 100
     # Error Check
     if f.ierr_vmec and (f.ierr_vmec != 4):
         print('ierr_vmec >0')
@@ -244,7 +241,7 @@ def read_vmec_orig(fid, fmt):
         nbfldn = _np.sum( nbldf[:f.nbsets] )
         if (nbfldn > 0):
             for nn in range(nbsets): # n=1:nbsets
-                data = fscanf(fid, fmt3, [3, f.nbfld(nn)])
+                data = fscanf(fid, fmt3, [3, f.nbfld[nn]])
                 f.bcoil[:, nn]  = data[0, :]
                 f.plbfld[:, nn] = data[1, :]
                 f.bbc[:, nn]    = data[2, :]
@@ -703,7 +700,7 @@ def read_vmec_620(fid,fmt):
 
         if (nbfldn > 0):
             for nn in range(nbsets): # n=1:nbsets
-                data = fscanf(fid,'%g%g%g', [3, f.nbfld(nn)])
+                data = fscanf(fid,'%g%g%g', [3, f.nbfld[nn]])
                 f.bcoil[:, nn] = data[0, :] #changed indices
                 f.plbfld[:, nn] = data[1, :]
                 f.bbc[:, nn] = data[2, :]
