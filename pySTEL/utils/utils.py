@@ -150,7 +150,9 @@ def fscanf(fid, dtypes='#g', size=None, offset=None):
 #            string_line = True
 #        else:
         if 1:
+            print(len(dtypes))
             dtypes = dtypes*ncol
+            print(len(dtypes))
             ndt = ncol
         # end if
     # end if
@@ -478,5 +480,13 @@ def openpoints(func, a, b, TOL=1e-6, verbose=True):           # f(x)=func(x)
         if verbose: print('openpoints(%d): Trapezoid=%s, Simpson=%s' % (count, new, new2) ) # end if
 # end def openpoints
 
+
+# ========================================================================== #
+
+
+if __name__ == '__main__':
+    import doctest
+    doctest.testmod()
+# end if
 
 # ========================================================================== #

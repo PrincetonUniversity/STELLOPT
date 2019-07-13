@@ -20,7 +20,7 @@ from . import Spline
 from .Spline import Spline  # analysis:ignore
 
 from . import utils
-from .utils import ftell, fgetl, fscanf, sscanf, fseek
+from .utils import ftell, fgetl, fscanf, fseek
 from .utils import cylsym_odd, cylsym_even, cart2pol, pol2cart # analysis:ignore
 from .utils import lagrange_interpolation, newton, closedpoints, openpoints # analysis:ignore
 

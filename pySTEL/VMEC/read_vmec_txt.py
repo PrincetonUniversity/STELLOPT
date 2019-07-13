@@ -289,7 +289,7 @@ def read_vmec_orig(fid, fmt):
         f.conif = fscanf(fid, fmt, 1)
         f.imatch_phiedge = fscanf(fid, fmt, 1)
     # end
-    return
+    return f
 # end  def read_vmec_orig
 
 #---------------------------------------------------------------- %
@@ -512,7 +512,7 @@ def read_vmec_605(fid,fmt):
         f.conif = fscanf(fid, '%g', 1)
         f.imatch_phiedge = fscanf(fid, '%g', 1)
     # end
-    return
+    return f
 # end  def read_vmec_605(fid,fmt)
 
 #---------------------------------------------------------------- %
@@ -556,7 +556,7 @@ def read_vmec_620(fid,fmt):
     #Error Check
     if (f.ierr_vmec) and (f.ierr_vmec != 4):
         print('ierr_vmec >0')
-        return
+        return f
     # end
 
     #Read nbfld
@@ -744,7 +744,7 @@ def read_vmec_620(fid,fmt):
         f.conif = fscanf(fid, '%g', 1)
         f.imatch_phiedge = fscanf(fid, '%g', 1)
     # end
-    return
+    return f
 # end  def read_vmec_620()
 
 #---------------------------------------------------------------- %
@@ -977,7 +977,7 @@ def read_vmec_650(fid, fmt):
         f.conif = fscanf(fid, '%g', 1)
         f.imatch_phiedge = fscanf(fid, '%g', 1)
     # end
-    return
+    return f
 # end  def read_vmec_650()
 
 #---------------------------------------------------------------- %
@@ -1277,7 +1277,7 @@ def read_vmec_695(fid, fmt):
         f.conif = fscanf(fid, fmt, 1)
         f.imatch_phiedge = fscanf(fid, fmt, 1)
     # end
-    return
+    return f
 # end  def read_vmec_695
 
 # ---------------------------------------------------------------- %
@@ -1559,7 +1559,7 @@ def read_vmec_800(fid, fmt):
         f.imatch_phiedge = fscanf(fid, fmt, 1)
     # end
 
-    return
+    return f
 # end  def read_vmec_800()
 
 # ---------------------------------------------------------------- %
@@ -1928,7 +1928,7 @@ def read_vmec_847(fid,fmt):
         f.imatch_phiedge = fscanf(fid, fmt, 1)
     # end
     f.mgrid_mode=strtrim(fscanf(fid, '%s'))
-    return
+    return f
 # end  def read_vmec_847
 
 # ---------------------------------------------------------------- %
@@ -1937,7 +1937,9 @@ def read_vmec_847(fid,fmt):
 
 def read_vmec_mercier(filname):
 
-    with open(filname, 'r') as fid: # fid=fopen(filname,'r')
+    try:
+#    with open(filname, 'r') as fid: # fid=fopen(filname,'r')
+        fid = open(filname, 'r')
         fgetl(fid) # First Header
         fgetl(fid) # Second Header ----
 
@@ -1993,14 +1995,19 @@ def read_vmec_mercier(filname):
             f.dgeod  = [f.dgeod,  val[5]]
         # end
     # implicitly close the file using the with open (otherwise explicitly)
-    fclose(fid)
-    return
+    except:
+        raise
+    finally:
+        fid.close()
+    return f
 # end
 
 # ====================================================================== #
 
 def read_vmec_jxbout(filname):
-    with open(filname,'r') as fid:
+    try:
+        fid = fopen(filname, 'r')
+#    with open(filname,'r') as fid:
         # fid = fopen(filname,'r')
 
         fgetl(fid)           # Blank Line
@@ -2026,7 +2033,7 @@ def read_vmec_jxbout(filname):
         f.jdotb    = val[2]
         f.bdotv    = val[3]
 
-        line = fgetl(fid)    %percentages
+        line = fgetl(fid)    # percentages
         fgetl(fid)
         fgetl(fid)
         fgetl(fid)
@@ -2042,8 +2049,11 @@ def read_vmec_jxbout(filname):
             # end
         # end
     # implicitly close the file using the with open (otherwise explicitly)
-    fclose(fid)
-    return
+    except:
+        raise
+    finally:
+        fid.close()
+    return f
 # end  def read_vmec_jxbout
 
 # ====================================================================== #
@@ -2100,8 +2110,8 @@ def read_vmec_netcdf(filname):
     f.currvmnc[:, 0] = 0.0
     for ii in range(f.mnmaxnyq): # i=1:f.mnmaxnyq
         if ( f.xmnyq[ii]==0 ):
-            f.currumnc(ii,0) = 2*f.currumnc(ii,1) - f.currumnc(ii,2)
-            f.currvmnc(ii,0) = 2*(f.ns-1)*f.bsubumnc(ii,1)
+            f.currumnc[ii,0] = 2*f.currumnc[ii,1] - f.currumnc[ii,2]
+            f.currvmnc[ii,0] = 2*(f.ns-1)*f.bsubumnc[ii,1]
         # end
     # end
 
@@ -2121,8 +2131,8 @@ def read_vmec_netcdf(filname):
 
         for ii in range(f.mnmaxnyq): # i=1:f.mnmaxnyq
             if (f.xmnyq[ii]==0):
-                f.currumns(ii,0) = 2*f.currumns(ii,1) - f.currumns(ii,2)
-                f.currvmns(ii,0) = 2*(f.ns-1)*f.bsubumns(ii,1)
+                f.currumns[ii,0] = 2*f.currumns[ii,1] - f.currumns[ii,2]
+                f.currvmns[ii,0] = 2*(f.ns-1)*f.bsubumns[ii,1]
             # end
         # end
         f.currumns[:, f.ns] = 2*f.currumns[:, f.ns-1] - f.currumns[:, f.ns-2]
@@ -2144,7 +2154,8 @@ def read_vmec_netcdf(filname):
     del f.lasymlogical # rmfield(self, 'lasymlogical')
     del f.lfreeblogical # rmfield(self, 'lfreeblogical')
     del f.lreconlogical # rmfield(self, 'lreconlogical')
-    return
+#    f.close()
+    return f
 # end  def read_netcdf()
 
 

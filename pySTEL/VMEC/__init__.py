@@ -24,7 +24,7 @@ __version__ = "2019.07.12.19"
 __all__ = ['read_vmec']
 
 from . import read_vmec
-from read_vmec import read_vmec # analysis:ignore
+from .read_vmec import read_vmec # analysis:ignore
 
 #from . import CalcFluxCart_VMEC
 #from .CalcFluxCart_VMEC import

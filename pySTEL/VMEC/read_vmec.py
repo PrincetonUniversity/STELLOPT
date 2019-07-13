@@ -59,13 +59,18 @@ from __future__ import absolute_import, with_statement, absolute_import, \
 
 import numpy as _np
 
-from utils import Struct, Spline, ftell, fgetl
+try:
+#if 1:
+    from utils import Struct, Spline, ftell, fgetl
+except:
+    from ..utils import Struct, Spline, ftell, fgetl
+# end try
 
 # ======================================================================== #
 # ======================================================================== #
 
 
-class read_vmec(object):
+class read_vmec(Struct):
     """
     READ_VMEC(filname) This class reads the VMEC wout file.
     This function reads the wout file and returns the data from the file
@@ -89,11 +94,17 @@ class read_vmec(object):
         self.filname = filname
         # Number of Arguments
         if filname is None:
-            print('read_vmec requires a filname.')
+            if verbose:
+                print('read_vmec requires a filname.')
+            # end if
             return None
+        else:
+            if verbose:
+                print('Opening %s for reading'%(filname,))
+            # end if
         # end if
-
-        if self._filexists_(verbose=verbose):
+        success = self._filexists_(verbose=verbose)
+        if success:
             self.readfil(verbose=verbose)
         #endif
     #end def __init__
@@ -106,19 +117,9 @@ class read_vmec(object):
         success = 0
         try:
             self.fid = open(filname,'r')
-#        with open(filname,'r+') as fid:
-#            # fid=fopen(filname,'r+')
-            if (self.fid < 0):
-                if verbose:
-                    print( 'ERROR: Could not find file '+filname)
-                # end if
-                # print( fid )
-                return success
-            # end if
-            self.fid.close()
             success = 1
         except:
-            pass
+            raise
         finally:
             self.fid.close()
         #end initialization (automatically closes file using "with open," if not already closed)
@@ -148,19 +149,19 @@ class read_vmec(object):
 #            with open(filname,'r') as fid:
             try:
                 self.fid = open(filname,'r')  # Open File
-
                 # Read First Line and extract version information
                 line = fgetl(self.fid)
                 # line = self.fid.readline()
                 _, self.version = line.split('=')
                 self.version = float(self.version)
                 # Handle unknown versions
-                if (self.version < 0) or (self.version > 8.47):
-                    if verbose:
-                        print('Unknown file type or version.')
-                    # end if
-                    return self
-                #end
+#                print(self.version)
+#                if (self.version < 0) or (self.version > 8.47):
+#                    if verbose:
+#                        print('Unknown file type or version.')
+#                    # end if
+#                    return self
+#                #end
 
                 # VMEC files with comma delimited values do exist, in an attempt to
                 # handle them we dynamically create the format specifier for fscanself.
@@ -256,6 +257,9 @@ class read_vmec(object):
         elif (self.version <= 8.00):
             self.reader = rvt.read_vmec_800
         elif (self.version <= 8.47):
+            self.reader = rvt.read_vmec_847
+        else:
+            # this is temporary!
             self.reader = rvt.read_vmec_847
         # end if
         f = self.reader(fid, fmt)
@@ -917,6 +921,17 @@ class read_vmec(object):
     # end try
 #    return jsonsignal
 
+if __name__=="__main__":
+    import os as _os
+    rootdir = _os.path.join('d:/', 'Workshop', 'TRAVIS', 'MagnConfigs', 'W7X')
+    filname = []
+    filname.append('wout_w7x.1000_1000_1000_1000_+0390_+0000.05.0144.txt')
+#    filname.append('wout_w7x.1000_1000_1000_1000_+0390_+0000.05.0144.nc')
+    for fil in filname:
+        vmecfile = _os.path.join(rootdir, fil)
+        data = read_vmec(vmecfile)
+    # end for
+# end if
 
 
 
