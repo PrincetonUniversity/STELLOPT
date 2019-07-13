@@ -63,8 +63,28 @@ def read_vmec_orig(fid, fmt):
     # Read Data
     f.wb, f.wp, f.gamma, f.pfac, f.nfp, f.ns, f.mpol, f.ntor, \
         f.mnmax, f.itfsq, f.niter, f.iasym, f.ireconstruct = tuple(fscanf(fid,'%g', 13))
+#    data = fscanf(fid,'%g', 13)
+#    f.wb    = data[0]
+#    f.wp    = data[1]
+#    f.gamma = data[2]
+#    f.pfac  = data[3]
+#    f.nfp   = data[4]
+#    f.ns    = data[5]
+#    f.mpol  = data[6]
+#    f.ntor  = data[7]
+#    f.mnmax = data[8]
+#    f.itfsq = data[9]
+#    f.niter = data[10]
+#    f.iasym = data[11]
+#    f.ireconstruct = data[12]
 
     f.imse, f.itse, f.nbsets, f.nobd, f.nextur = tuple(fscanf(fid,'%d', 5))
+#    data = fscanf(fid,'%d', 5)
+#    f.imse    = data[0]
+#    f.itse    = data[1]
+#    f.nbsets  = data[2]
+#    f.nobd    = data[3]
+#    f.nextcur = data[4]
 
     f.nstore_seq = 100
     # Error Check
@@ -112,12 +132,21 @@ def read_vmec_orig(fid, fmt):
     # Extract the data and reshape
     f.rmnc, f.zmns, f.lmns, f.bmn, f.gmn, f.bsubumn, f.bsubvmn, f.bsubsmn, \
         f.bsupumn, f.bsupvmn, f.currvmn \
-        = [_np.vstack((_np.copy(data1[ii+2, :].T), _np.reshape(data[ii, :], f.mnmax, f.ns-1, order='F').copy()))
-            for ii in range(10)]
+        = [_np.vstack((data1[ii, :].T, _np.reshape(data[ii-2, :], f.mnmax, f.ns-1, order='F').copy()))
+            for ii in range(2,13)]
+#    f.rmnc = _np.vstack((data1[2, :].T, reshape(data[0, :], f.mnmax, f.ns-1, order='F').copy()))
+#    f.zmns = _np.vstack((data1[3, :].T, reshape(data[1, :], f.mnmax, f.ns-1, order='F').copy()))
+#    f.lmns = _np.vstack((data1[4, :].T, reshape(data[2, :], f.mnmax, f.ns-1, order='F').copy()))
+#    f.bmn = _np.vstack((data1[5, :].T, reshape(data[3, :], f.mnmax, f.ns-1, order='F').copy()))
+#    f.gmn = _np.vstack((data1[6, :].T, reshape(data[4, :], f.mnmax, f.ns-1, order='F').copy()))
+#    f.bsubumn = _np.vstack((data1[7, :].T, reshape(data[5, :], f.mnmax, f.ns-1, order='F').copy()))
+#    f.bsubvmn = _np.vstack((data1[8, :].T, reshape(data[6, :], f.mnmax, f.ns-1, order='F').copy()))
+#    f.bsubsmn = _np.vstack((data1[9, :].T, reshape(data[7, :], f.mnmax, f.ns-1, order='F').copy()))
+#    f.bsupumn = _np.vstack((data1[10, :].T, reshape(data[8, :], f.mnmax, f.ns-1, order='F').copy()))
+#    f.bsupvmn = _np.vstack((data1[11, :].T, reshape(data[9, :], f.mnmax, f.ns-1, order='F').copy()))
+#    f.currvmn = _np.vstack((data1[12, :].T, reshape(data[10, :], f.mnmax, f.ns-1, order='F').copy()))
 
     #Read the half-mesh quantities
-    f.iotas, f.mass, f.pres, f.phip, f.buco, f.bvco, f.phi, f.vp, f.overr, \
-        f.juru, f.jcurv, f.specw = fscanf(fid, fmt12, [12, f.ns/2])
     data = fscanf(fid, fmt12, [12, f.ns/2])
     f.iotas = data[0, :]
     f.mass  = data[1, :]

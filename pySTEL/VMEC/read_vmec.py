@@ -155,13 +155,13 @@ class read_vmec(Struct):
                 _, self.version = line.split('=')
                 self.version = float(self.version)
                 # Handle unknown versions
-#                print(self.version)
-#                if (self.version < 0) or (self.version > 8.47):
-#                    if verbose:
-#                        print('Unknown file type or version.')
-#                    # end if
-#                    return self
-#                #end
+                print(self.version)
+                if (self.version < 0) or (self.version > 8.52):
+                    if verbose:
+                        print('Unknown file type or version.')
+                    # end if
+                    return self
+                # end if
 
                 # VMEC files with comma delimited values do exist, in an attempt to
                 # handle them we dynamically create the format specifier for fscanself.
@@ -169,18 +169,14 @@ class read_vmec(Struct):
                 line = fgetl(self.fid)   # Get the next line
 #                start = self.fid.tell()
 #                line = self.fid.readline().replace('\n', '')
-                if line.find(',') < 0:  # isempty(strfind(line,',')):
-                    fmt = '#g'
-                else:
-                    fmt = '#g,'
-                    if verbose:
+                fmt = '%g'
+                if line.find(',') > -1:  # isempty(strfind(line,',')):
+                    fmt += ','
+                    if verbose and self.version < 6.54:
                         print('Comma delimited file detected!')
-                    if self.version < 6.54:
-                        if verbose:
-                            print('     Only 6.54+ version supported!')
-                        # end if
-                        return self
+                        print('     Only 6.54+ version supported!')
                     # end if
+                    return self
                 # end if
 
                 # Go back to just after the version.
@@ -256,10 +252,7 @@ class read_vmec(Struct):
             self.reader = rvt.read_vmec_695
         elif (self.version <= 8.00):
             self.reader = rvt.read_vmec_800
-        elif (self.version <= 8.47):
-            self.reader = rvt.read_vmec_847
-        else:
-            # this is temporary!
+        elif (self.version <= 8.52):
             self.reader = rvt.read_vmec_847
         # end if
         f = self.reader(fid, fmt)
@@ -268,7 +261,7 @@ class read_vmec(Struct):
         # Call the initialization function of the super class to store the data
         if type(f) != dict:   f = f.dict_from_class()   # endif
         self.__dict__.update(f)
-        return f
+        return
     # end def read_vmec_txt
 
     # ===================================================================== #
@@ -643,7 +636,7 @@ class read_vmec(Struct):
         # end if
 
         # Check to make sure phi,jcuru and jcurv are the same size as self.ns
-        if len(self.phi) != self.ns: #fixed indices
+        if len(self.phi) != self.ns:
             temp = _np.zeros( (1, self.ns), dtype=_np.float64)
 #            temp[0:self.ns] = self.phi
             temp[1:] = _np.copy(self.phi)
@@ -724,6 +717,17 @@ class read_vmec(Struct):
         # ===================================================================== #
         # ================== Now do the matrix values ================ #
 
+#        for name in ['lmns', 'bsupumnc', 'bsupvmnc', 'bsubsmns','bsubumnc', 'bsubvmnc', 'gmnc', 'bmnc']:
+#            # First Index (note indexing on vectors is 2:ns when VMEC outputs)
+#            self.(name)[:, 0] = 1.5*self.(name)[:, 1] - 0.5*self.(name)[:, 2]
+#            for ii in range(1,self.ns-1):  #i=2:self.ns-1
+#                # Average
+#                self.(name)[:, ii] = 0.5*( self.(name)[:, ii] + self.(name)[:, ii+1] )
+#            # end for
+#            # Last Index (note indexing on vectors is 2:ns when VMEC outputs)
+#            self.(name)[:, -1] = 2.0 * self.(name)[:, -2] - self.(name)[:, -3]
+#        # end for
+
         # First Index (note indexing on vectors is 2:ns when VMEC outputs)
         self.lmns[:, 0] = 1.5*self.lmns[:, 1] - 0.5*self.lmns[:, 2]
         self.bsupumnc[:, 0] = 1.5*self.bsupumnc[:, 1] - 0.5*self.bsupumnc[:, 2]
@@ -801,7 +805,7 @@ class read_vmec(Struct):
                 self.bsubvmns[:, ii]= 0.5 * ( self.bsubvmns[:, ii] + self.bsubvmns[:, ii+1] )
                 self.gmns[:, ii]    = 0.5 * (     self.gmns[:, ii] +     self.gmns[:, ii+1] )
                 self.bmns[:, ii]    = 0.5 * (     self.bmns[:, ii] +     self.bmns[:, ii+1] )
-            #end
+            # end
 
             self.lmnc[:, -1]  = 2.0 *     self.lmnc[:, -2] -     self.lmnc[:, -3]
             self.bsupumns[:, -1] = 2.0 * self.bsupumns[:, -2] - self.bsupumns[:, -3]
@@ -811,9 +815,9 @@ class read_vmec(Struct):
             self.bsubvmns[:, -1] = 2.0 * self.bsubvmns[:, -2] - self.bsubvmns[:, -3]
             self.gmns[:, -1] = 2.0 *     self.gmns[:, -2] -     self.gmns[:, -3]
             self.bmns[:, -1] = 2.0 *     self.bmns[:, -2] -     self.bmns[:, -3]
-        #end
+        # end if
         return self
-    #end def half2fullmesh
+    # end def half2fullmesh
 
     # ================================================================ #
 
@@ -924,6 +928,8 @@ class read_vmec(Struct):
 if __name__=="__main__":
     import os as _os
     rootdir = _os.path.join('d:/', 'Workshop', 'TRAVIS', 'MagnConfigs', 'W7X')
+    if not _os.path.exists(rootdir):
+        rootdir = _os.path.join('G:/', 'Workshop', 'TRAVIS', 'MagnConfigs', 'W7X')
     filname = []
     filname.append('wout_w7x.1000_1000_1000_1000_+0390_+0000.05.0144.txt')
 #    filname.append('wout_w7x.1000_1000_1000_1000_+0390_+0000.05.0144.nc')

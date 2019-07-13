@@ -17,6 +17,35 @@ __metaclass__ = type
 # ===================================================================== #
 # ===================================================================== #
 
+    fmt2 = ''.join(['%g'+delim for _ in range(2)]) # '%g%g'
+    fmt3 = ''.join(['%g'+delim for _ in range(3)]) # '%g%g%g'
+    fmt6 = ''.join(['%g'+delim for _ in range(6)]) # '%g%g%g%g%g%g'
+    fmt7 = ''.join(['%g'+delim for _ in range(7)]) # '%g%g%g%g%g%g%g'
+    fmt10 = ''.join(['%g'+delim for _ in range(10)]) # '%g%g%g%g%g%g%g%g%g%g'
+    fmt11 = ''.join(['%g'+delim for _ in range(11)]) # '%g%g%g%g%g%g%g%g%g%g%g'
+    fmt12 = ''.join(['%g'+delim for _ in range(12)]) # '%g%g%g%g%g%g%g%g%g%g%g%g'
+    fmt13 = ''.join(['%g'+delim for _ in range(13)]) # '%g%g%g%g%g%g%g%g%g%g%g%g%g'
+    fmt14 = ''.join(['%g'+delim for _ in range(14)]) # '%g%g%g%g%g%g%g%g%g%g%g%g%g%g'
+    fmt20 = ''.join(['%g'+delim for _ in range(20)]) # '%g%g%g%g%g%g%g%g%g%g%g%g%g%g%g%g%g%g%g%g'
+    fmt2_3 = (''.join(['%d'+delim for _ in range(2)]) # '%d%d%g%g%g'
+           + ''.join(['%g'+delim for _ in range(3)]) )
+    fmt2_6 = (''.join(['%d'+delim for _ in range(2)]) # '%d%d%g%g%g%g%g%g'
+           + ''.join(['%g'+delim for _ in range(6)]) )
+    fmt2_7 = (''.join(['%d'+delim for _ in range(2)]) # '%d%d%g%g%g%g%g%g%g'
+            + ''.join(['%g'+delim for _ in range(7)]) )
+    fmt2_11 = (''.join(['%d'+delim for _ in range(2)]) # '%d%d%g%g%g%g%g%g%g%g%g%g%g'
+           + ''.join(['%g'+delim for _ in range(11)]) )
+    fmt2_14 = (''.join(['%d'+delim for _ in range(2)]) # '%d%d%g%g%g%g%g%g%g%g%g%g%g%g%g%g'
+             + ''.join(['%g'+delim for _ in range(14)]) )
+    fmt2_3_2_7 = (''.join(['%d'+delim for _ in range(2)]) # '%d%d%g%g%g%d%d%g%g%g%g%g%g%g'
+                + ''.join(['%g'+delim for _ in range(3)])
+                + ''.join(['%d'+delim for _ in range(2)])
+                + ''.join(['%g'+delim for _ in range(7)]) )
+    fmt2_6_2_14 = (''.join(['%d'+delim for _ in range(2)]) # '%d%d%g%g%g%g%g%g%d%d%g%g%g%g%g%g%g%g%g%g%g%g%g%g'
+                + ''.join(['%g'+delim for _ in range(6)])
+                + ''.join(['%d'+delim for _ in range(2)])
+                + ''.join(['%g'+delim for _ in range(14)]) )
+
 
 def ftell(fid):
     """
@@ -113,12 +142,16 @@ def fscanf(fid, dtypes='#g', size=None, offset=None):
                     To read multiple characters at a time, specify field width.
 
     """
-    nptypes = {'i':_np.int, 'd':_np.int, 'ld':_np.int, 'li':_np.int,  # TODO:! actually use correct datatypes
-               'u':_np.uint, 'o':_np.uint, 'x':_np.uint, 'lu':_np.uint, 'lo':_np.uint, 'lx':_np.uint,
-               'f':_np.float, 'e':_np.float, 'g':_np.float,
-               's':_np.str, 'c':_np.str,
-               'bool':_np.bool}
-
+#    nptypes = {'i':_np.int, 'd':_np.int, 'ld':_np.int, 'li':_np.int,  # TODO:! actually use correct datatypes
+#               'u':_np.uint, 'o':_np.uint, 'x':_np.uint, 'lu':_np.uint, 'lo':_np.uint, 'lx':_np.uint,
+#               'f':_np.float, 'e':_np.float, 'g':_np.float,
+#               's':_np.str, 'c':_np.str,
+#               'bool':_np.bool}
+    nptypes = {'i':'int', 'd':'int', 'ld':'int', 'li':'int',  # TODO:! actually use correct datatypes
+               'u':'uint', 'o':'uint', 'x':'uint', 'lu':'uint', 'lo':'uint', 'lx':'uint',
+               'f':'float', 'e':'float', 'g':'float',
+               's':'str', 'c':'str',
+               'bool':'bool'}
     # Convert the different datatypes into a list
     delimiter = ' '
     if dtypes.find(',')>-1:   # delimiter hidden in fmt string
@@ -150,9 +183,9 @@ def fscanf(fid, dtypes='#g', size=None, offset=None):
 #            string_line = True
 #        else:
         if 1:
-            print(len(dtypes))
+#            print(len(dtypes))
             dtypes = dtypes*ncol
-            print(len(dtypes))
+#            print(len(dtypes))
             ndt = ncol
         # end if
     # end if
@@ -161,7 +194,9 @@ def fscanf(fid, dtypes='#g', size=None, offset=None):
         fid.seek(offset, 0)
     # end if
 
-    data = []
+    dt = _np.dtype(''.join(nptypes[dtypes[jj]] for jj in range(ncol)))
+    data = _np.zeros((nrow, ncol), dtype=dt)
+#    data = []
     for ii in range(nrow):
         try:
             line = fgetl(fid)
@@ -181,11 +216,12 @@ def fscanf(fid, dtypes='#g', size=None, offset=None):
         # Remove empty elements from the list
         line = [line[jj] for jj in range(len(line)) if line[jj] != '']
 
-        # Loop over the elements of the list and assign the data type
-        for jj in range(len(line)):
-            line[jj] = nptypes[dtypes[jj]](line[jj])
-        # end for
-        data.append(line)
+        data[ii, :] = tuple(line)
+#        # Loop over the elements of the list and assign the data type
+#        for jj in range(len(line)):
+#            line[jj] = nptypes[dtypes[jj]](line[jj])
+#        # end for
+#        data.append(line)
     # end if
     return data
 #    return data, fid.tell()
