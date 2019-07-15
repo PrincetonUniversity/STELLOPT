@@ -575,6 +575,8 @@ class eztxt(object):
         else:
             ncol = shape[0]
         # end if
+        nrow = int(nrow)
+        ncol = int(ncol)
 
         tst = []
         for ii in range(nrow):

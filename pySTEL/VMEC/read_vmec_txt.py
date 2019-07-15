@@ -1299,7 +1299,7 @@ def read_vmec_800(fid, fmt):
 
     # =============================================== #
 
-    data = fscanf(fid, fmt, 7)
+    data = fscanf(fid, fmtg, 7)
     f.wb = data[0]
     f.wp = data[1]
     f.gamma = data[2]
@@ -1308,7 +1308,7 @@ def read_vmec_800(fid, fmt):
     f.rmin_surf = data[5]
     f.zmax_surf = data[6]
 
-    data = fscanf(fid, fmt, 10)
+    data = fscanf(fid, fmtd, 10)
     f.nfp = data[0]
     f.ns = data[1]
     f.mpol = data[2]
@@ -1321,7 +1321,7 @@ def read_vmec_800(fid, fmt):
     f.ierr_vmec = data[9]
     f.mnmax_nyq = f.mnmax
 
-    data = fscanf(fid, fmt, 6)
+    data = fscanf(fid, fmtd, 6)
     f.imse = data[0]
     f.itse = data[1]
     f.nbsets = data[2]
@@ -1397,7 +1397,7 @@ def read_vmec_800(fid, fmt):
     f.overr = data[8][:]
     f.specw = data[9][:]
 
-    data = fscanf(fid, fmt, 6)
+    data = fscanf(fid, fmt6, 6)
     f.aspect = data[0]
     f.betatot = data[1]
     f.betapol = data[2]
@@ -1410,7 +1410,7 @@ def read_vmec_800(fid, fmt):
     f.isigna = fscanf(fid, fmt, 1)
     f.input_extension = fgetl(fid).strip()
 
-    data = fscanf(fid, fmt, 8)
+    data = fscanf(fid, fmtg, 8)
     f.IonLarmor = data[0]
     f.VolAvgB = data[1]
     f.RBtor0 = data[2]

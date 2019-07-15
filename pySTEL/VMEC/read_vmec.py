@@ -119,7 +119,8 @@ class read_vmec(Struct):
         except:
             raise
         finally:
-            self.fid.close()
+            try: self.fid.close()
+            except:  pass
         #end initialization (automatically closes file using "with open," if not already closed)
         return success
     # end def _filexists_
@@ -192,7 +193,8 @@ class read_vmec(Struct):
                 raise
             finally:
                 # (automatically closes file using "with open," if not already closed)
-                self.fid.close()
+                try:    self.fid.close()
+                except: pass
 #                fclose(fid)
             # end try
         # end if filename selection
@@ -256,7 +258,9 @@ class read_vmec(Struct):
             self.reader = rvt.read_vmec_847
         # end if
         f = self.reader(fid, fmt)
-        fid.close()
+
+        try:    fid.close()
+        except: pass
 
         # Call the initialization function of the super class to store the data
         if type(f) != dict:   f = f.dict_from_class()   # endif
@@ -958,17 +962,43 @@ class read_vmec(Struct):
 #    return jsonsignal
 
 if __name__=="__main__":
+    import time
+    start = time.time()
+
     import os as _os
     rootdir = _os.path.join('d:/', 'Workshop', 'TRAVIS', 'MagnConfigs', 'W7X')
     if not _os.path.exists(rootdir):
-        rootdir = _os.path.join('G:/', 'Workshop', 'TRAVIS', 'MagnConfigs', 'W7X')
+        rootdir = _os.path.join('G:/', 'Workshop', 'TRAVIS_tree', 'MagnConfigs', 'W7X')
     filname = []
-    filname.append('wout_w7x.1000_1000_1000_1000_+0390_+0000.05.0144.txt')
-#    filname.append('wout_w7x.1000_1000_1000_1000_+0390_+0000.05.0144.nc')
+    filname.append(_os.path.join(rootdir, 'wout_w7x.1000_1000_1000_1000_+0390_+0000.05.0144.txt'))
+    filname.append(_os.path.join(rootdir, 'wout_w7x.1000_1000_1000_1000_+0000_+0000.01.00.txt'))
+    filname.append(_os.path.join(rootdir, 'wout_w7x.1000_1000_1000_1000_+0390_+0000.05.0144.nc'))
+
+    rootdir = _os.path.join('d:/', 'Workshop', 'TRAVIS', 'MagnConfigs', 'HSX', 'QHS')
+    if not _os.path.exists(rootdir):
+        rootdir = _os.path.join('G:/', 'Workshop', 'TRAVIS_tree', 'MagnConfigs', 'HSX', 'QHS')
+    filname.append(_os.path.join(rootdir, 'wout_QHS_Rstart_1_513_AXIS_v2_VMEC_8p46_2012_03_16_39_52.txt'))
+
+    rootdir = _os.path.join('d:/', 'Workshop', 'TRAVIS', 'MagnConfigs', 'HSX', 'QHS')
+    if not _os.path.exists(rootdir):
+        rootdir = _os.path.join('G:/', 'Workshop', 'TRAVIS_tree', 'MagnConfigs', 'HSX', 'QHS', '8p49')
+    filname.append(_os.path.join(rootdir, 'wout_QHS_Rstart_1_513_AXIS_v2_VMEC_8p46.txt'))
+
+    rootdir = _os.path.join('d:/', 'Workshop', 'TRAVIS', 'MagnConfigs', 'HeliotronJ')
+    if not _os.path.exists(rootdir):
+        rootdir = _os.path.join('G:/', 'Workshop', 'TRAVIS_tree', 'MagnConfigs', 'HeliotronJ')
+    filname.append(_os.path.join(rootdir, 'wout.vm8_hj_HV89TA74TB81AV46IV76_x384m12n12s101bd00id+00'))
+
     for fil in filname:
-        vmecfile = _os.path.join(rootdir, fil)
-        data = read_vmec(vmecfile)
+#        vmecfile = _os.path.join(rootdir, fil)
+        start1 = time.time()
+        data = read_vmec(fil)
+        end1 = time.time()
+        print((fil, end1-start1))
     # end for
+
+    endall = time.time()
+    print(('%i files'%(len(filname),), endall-start))
 # end if
 
 
