@@ -295,20 +295,18 @@ def fscanf(fid, dtypes='%g', size=None, offset=None, eol='\n'):
         if nr == 1:
             if dtypes[0] == str:
                 # for reading in strings that have spaces in them (when delim==' ')
+                if data is None:
+                    data = ' '
                 data = ''.join(data)
                 data = data.strip(delim)
             elif nc > 1:
                 data = _np.asarray(data)
             # end if
         elif nr>1:
-#            if _np.asray(trunc)
-#            if (_np.asarray(trunc) == False).all():
             data = _np.asarray(data)
-
         # end if
     # end if
     # ======================= #
-
     return data
 
 #def fscanf(fid, dtypes='%g', size=None, offset=None, unpack=False, eol='\n'):
@@ -496,23 +494,24 @@ class eztxt(object):
 #        return tst[0]
 
     @staticmethod
-    def read_element(fid, dtype=str, delim=' ', eol='\n', allowed_white_lines=1000, readline=False):
+    def read_element(fid, dtype=str, delim=' ', eol='\n', allowed_white_lines=10, readline=False):
         buffsize = max((len(delim),len(eol), 1))
         tst = ''
         white_lines = 0
         eof = False
-        pos = -1
+#        pos = -1
         while not eof and white_lines<allowed_white_lines:
-            pos = ftell(fid)
+#            pos = ftell(fid)
             tmp = fid.read(buffsize)
 
-            if ftell(fid) == pos:
+#            if ftell(fid) == pos:
+            if len(tmp) == 0:
+                white_lines += 1  # same result for eof and a blank line
+                continue
+            if white_lines>allowed_white_lines:
                 # same position before and after read means that we have hit the end-of-file
                 eof = True
                 break
-            elif len(tmp) == 0:
-                white_lines += 1  # same result for eof and a blank line
-                continue
             # end if
 
             # ================================== #
@@ -538,7 +537,7 @@ class eztxt(object):
             # end if
             # ================================== #
         # end while
-        if eof and len(tst) == 0:
+        if len(tst) == 0:
             return None
         else:
             return dtype(tst)

@@ -288,6 +288,8 @@ class read_vmec(Struct):
         self.nfp = _np.float64(self.nfp)
         nsize = _np.max( self.xn / self.nfp ) - _np.min( self.xn / self.nfp )+1
 
+        msize = int(msize)
+        nsize = int(nsize)
         self.rbc = _np.zeros( (msize+1, nsize, self.ns), dtype=_np.float64)
         self.zbs = _np.zeros_like( self.rbc )
         self.lbs = _np.zeros_like( self.rbc )
@@ -306,12 +308,14 @@ class read_vmec(Struct):
         offset = _np.min(self.xn/self.nfp)-1
 
         # This is a strange line.  #TODO!: is this VMEC Left-hand coord system, or convenience for Sam?
-        self.xn = -self.xn
+        self.xn *= -1
         for ii in range(self.ns): #ii=1:self.ns
             for jj in range(self.mnmax): #jj=1:self.mnmax
                 mm = self.xm[jj]+1
                 nn = -offset+self.xn[jj] / self.nfp
 
+                mm = int(mm)-1
+                nn = int(nn)-1
                 self.rbc[mm, nn, ii] = self.rmnc[jj, ii]
                 self.rus[mm, nn, ii] =-self.rmnc[jj, ii]*self.xm[jj]
                 self.rvs[mm, nn, ii] =-self.rmnc[jj, ii]*self.xn[jj]
@@ -323,10 +327,10 @@ class read_vmec(Struct):
         # end for
 
         # repmat( a, m, n) -> tile( a, (m,n))
-        self.rumns = -self.rmnc*_np.tile( self.xm.T, (1,self.ns) )  # repmat( self.xm.T, [1 self.ns] )
-        self.rvmns = -self.rmnc*_np.tile( self.xn.T, (1,self.ns) )  # repmat( self.xn.T, [1 self.ns] )
-        self.zumnc =  self.zmns*_np.tile( self.xm.T, (1,self.ns) )  # repmat( self.xm.T, [1 self.ns] )
-        self.zvmnc =  self.zmns*_np.tile( self.xn.T, (1,self.ns) )  # repmat( self.xn.T, [1 self.ns] )
+        self.rumns = -self.rmnc*_np.tile( _np.atleast_2d(self.xm).T, (1,self.ns) )  # repmat( self.xm.T, [1 self.ns] )
+        self.rvmns = -self.rmnc*_np.tile( _np.atleast_2d(self.xn).T, (1,self.ns) )  # repmat( self.xn.T, [1 self.ns] )
+        self.zumnc =  self.zmns*_np.tile( _np.atleast_2d(self.xm).T, (1,self.ns) )  # repmat( self.xm.T, [1 self.ns] )
+        self.zvmnc =  self.zmns*_np.tile( _np.atleast_2d(self.xn).T, (1,self.ns) )  # repmat( self.xn.T, [1 self.ns] )
 
         # Handle Radial Derivatives
         self.rsc = _np.copy(self.rbc)
@@ -381,6 +385,9 @@ class read_vmec(Struct):
         # end if hasattr()
 
         # pre-allocate vectors
+        msize = int(msize)
+        nsize = int(nsize)
+        mnmax = int(mnmax)
         self.bc = _np.zeros( (msize+1, nsize, self.ns), dtype=_np.float64)
         self.gc = _np.zeros_like( self.bc )
         self.b_ss = _np.zeros_like( self.bc )
@@ -390,7 +397,7 @@ class read_vmec(Struct):
         self.bvc = _np.zeros_like( self.bc )
         self.currvc = _np.zeros_like( self.bc )
         if (self.version > 8.0):
-            self.curruc = _np.zeros( (msize,nsize,self.ns), dtype=_np.float64)
+            self.curruc = _np.zeros( (msize+1,nsize,self.ns), dtype=_np.float64)
         # end if
 
         for ii in range(self.ns): #ii=1:self.ns
@@ -398,6 +405,8 @@ class read_vmec(Struct):
                 mm =  xm[jj]+1
                 nn = -offset+xn[jj] / self.nfp
 
+                mm = int(mm)-1
+                nn = int(nn)-1
                 self.bc[mm, nn, ii] = self.bmnc[jj, ii]
                 self.gc[mm, nn, ii] = self.gmnc[jj, ii]
                 self.b_ss[mm, nn, ii] = self.bsubsmns[jj, ii]
@@ -420,6 +429,8 @@ class read_vmec(Struct):
         if self.iasym==1:
             msize = _np.max( self.xm )
             nsize = _np.max( self.xn / self.nfp ) - _np.min( self.xn / self.nfp )+1
+            msize = int(msize)
+            nsize = int(nsize)
             self.rbs = _np.zeros( (msize+1,nsize,self.ns), dtype=_np.float64)
             self.zbc = _np.zeros_like( self.rbs )
             self.lbc = _np.zeros_like( self.rbs )
@@ -437,9 +448,12 @@ class read_vmec(Struct):
             offset   = _np.min( self.xn / self.nfp )-1
 
             for ii in range(self.ns): #i=1:self.ns:
-                for jj in range(self.mnmax): #j=1:self.mnmax:
+                for jj in range(int(self.mnmax)): #j=1:self.mnmax:
                     mm =  self.xm[jj]+1
                     nn = -offset+self.xn[jj] / self.nfp
+
+                    mm = int(mm)-1
+                    nn = int(nn)-1
                     self.rbs[mm, nn, ii] = self.rmns[jj, ii]
                     self.ruc[mm, nn, ii] =-self.rmns[jj, ii] * self.xm[jj]
                     self.rvc[mm, nn, ii] =-self.rmns[jj, ii] * self.xn[jj]
@@ -449,10 +463,10 @@ class read_vmec(Struct):
                     self.lbc[mm, nn, ii] = self.lmnc[jj, ii]
                 # end for jj
             # end for ii
-            self.rumnc = -self.rmns * _np.tile( self.xm.T, (1, self.ns) )  # repmat(self.xm.T,[1 self.ns])
-            self.rvmnc = -self.rmns * _np.tile( self.xn.T, (1, self.ns) )  # repmat(self.xn.T,[1 self.ns])
-            self.zumns =  self.zmnc * _np.tile( self.xm.T, (1, self.ns) )  # repmat(self.xm.T,[1 self.ns])
-            self.zvmns =  self.zmnc * _np.tile( self.xn.T, (1, self.ns) )  # repmat(self.xn.T,[1 self.ns])
+            self.rumnc = -self.rmns * _np.tile( _np.atleast_2d(self.xm).T, (1, self.ns) )  # repmat(self.xm.T,[1 self.ns])
+            self.rvmnc = -self.rmns * _np.tile( _np.atleast_2d(self.xn).T, (1, self.ns) )  # repmat(self.xn.T,[1 self.ns])
+            self.zumns =  self.zmnc * _np.tile( _np.atleast_2d(self.xm).T, (1, self.ns) )  # repmat(self.xm.T,[1 self.ns])
+            self.zvmns =  self.zmnc * _np.tile( _np.atleast_2d(self.xn).T, (1, self.ns) )  # repmat(self.xn.T,[1 self.ns])
 
             # Handle Radial Derivatives - centered finite differencing in plasma
             self.rss = _np.copy(self.rbs)
@@ -498,6 +512,9 @@ class read_vmec(Struct):
                 xm = self.xm
             # end if
 
+            msize = int(msize)
+            nsize = int(nsize)
+            mnmax = int(mnmax)
             self.bs = _np.zeros((msize+1,nsize,self.ns), dtype=_np.float64)
             self.gs = _np.zeros_like( self.bs )
             self.b_sc = _np.zeros_like( self.bs )
@@ -507,13 +524,16 @@ class read_vmec(Struct):
             self.bvs = _np.zeros_like( self.bs )
             self.currvs = _np.zeros_like( self.bs )
             if self.version > 8.0:
-                self.currus=_np.zeros( (msize,nsize,self.ns), dtype=_np.float64)
+                self.currus=_np.zeros( (msize+1, nsize, self.ns), dtype=_np.float64)
             # end if
 
             for ii in range(self.ns): #i=1:self.ns:
                 for jj in range(mnmax): #j=1:mnmax:
                     mm =  xm[jj]+1
                     nn = -offset+xn[jj] / self.nfp
+
+                    mm = int(mm)-1
+                    nn = int(nn)-1
                     self.bs[mm, nn, ii] = self.bmns[jj, ii]
                     self.gs[mm, nn, ii] = self.gmns[jj, ii]
                     self.b_sc[mm, nn, ii] = self.bsubsmnc[jj, ii]
@@ -546,10 +566,13 @@ class read_vmec(Struct):
         # Create the Resonance Array
         # self.M = 1:_np.max( self.xm )
         # self.N = _np.min( self.xn( self.xn > 0 ) ) : _np.min( self.xn( self.xn > 0 ) ) : _np.max( self.xn )
+
+        self.N = _np.arange(_np.min(self.xn[self.xn>0]), _np.max( self.xn ), step=_np.min(self.xn[_np.where(self.xn>0)]))
+        self.M = _np.linspace(1, _np.max(self.xm), num=len(self.N), endpoint=True)
 #        self.M = _np.arange(1, _np.max(self.xm))
 #        self.N = _np.arange(_np.min(self.xn[_np.where(self.xn>0)]), _np.max(self.xn), _np.min(self.xn[_np.where(self.xn>0)]))
-        self.M = _np.asarray(range(1, _np.max(self.xm)))
-        self.N = _np.asarray(range(_np.min( self.xn[_np.where(self.xn>0)]), _np.max(self.xn), _np.min(self.xn[_np.where(self.xn>0)])))
+#        self.M = _np.asarray(range(1, int(_np.max(self.xm))))
+#        self.N = _np.asarray(range(int(_np.min( self.xn[_np.where(self.xn>0)])), int(_np.max(self.xn)), int(_np.min(self.xn[_np.where(self.xn>0)]))))
 
         Minv = 1.0/self.M
         self.iota_res = self.N.T * Minv
@@ -637,7 +660,8 @@ class read_vmec(Struct):
 
         # Check to make sure phi,jcuru and jcurv are the same size as self.ns
         if len(self.phi) != self.ns:
-            temp = _np.zeros( (1, self.ns), dtype=_np.float64)
+#            temp = _np.zeros( (1, self.ns), dtype=_np.float64)
+            temp = _np.zeros( (self.ns,), dtype=_np.float64)
 #            temp[0:self.ns] = self.phi
             temp[1:] = _np.copy(self.phi)
             temp[0] = 2*temp[1]-temp[2]
@@ -645,7 +669,8 @@ class read_vmec(Struct):
             self.phi = _np.copy(temp)
         # end if
         if len(self.jcuru) != self.ns:
-            temp = _np.zeros( (1, self.ns), dtype=_np.float64)
+#            temp = _np.zeros( (1, self.ns), dtype=_np.float64)
+            temp = _np.zeros( (self.ns,), dtype=_np.float64)
 #            temp[0:self.ns] = self.jcuru
             temp[1:] = _np.copy(self.jcuru)
             temp[0]  = 2*temp[1]-temp[2]
@@ -653,7 +678,8 @@ class read_vmec(Struct):
             self.jcuru = _np.copy(temp)
         # end if
         if len(self.jcurv) != self.ns:
-            temp = _np.zeros( (1,self.ns), dtype=_np.float64)
+#            temp = _np.zeros( (1,self.ns), dtype=_np.float64)
+            temp = _np.zeros( (self.ns,), dtype=_np.float64)
             temp[1:] =_np.copy(self.jcurv)
             temp[0] = 2*temp[1]-temp[2]
             temp[-1] = 2*temp[-2]-temp[-3]
@@ -662,14 +688,16 @@ class read_vmec(Struct):
 
         # Put the FLOW arrays on the full mesh
         if hasattr(self, 'pmap'):
-            temp = _np.zeros((1,self.ns), dtype=_np.float64)
+#            temp = _np.zeros((1,self.ns), dtype=_np.float64)
+            temp = _np.zeros( (self.ns,), dtype=_np.float64)
             temp[1:] = _np.copy(self.pmap[:-1])
             temp[0] = 2*temp[1]-temp[2]
             temp[-1] = 2*temp[-2]-temp[-3]
             self.pmap = _np.copy(temp)
         # end if
         if hasattr(self,'omega'):  # Note this is zero on axis so extrapolate first
-            temp = _np.zeros((1,self.ns), dtype=_np.float64)
+#            temp = _np.zeros((1,self.ns), dtype=_np.float64)
+            temp = _np.zeros( (self.ns,), dtype=_np.float64)
             temp[1:] = _np.copy(self.omega[:-1])
             temp[1] = 2*temp[2]-temp[3]
             temp[0] = 2*temp[1]-temp[2]
@@ -677,7 +705,8 @@ class read_vmec(Struct):
             self.omega = _np.copy(temp)
         # end if
         if hasattr(self,'tpotb'):  # Note this is zero on axis so extrapolate first
-            temp = _np.zeros((1,self.ns), dtype=_np.float64)
+#            temp = _np.zeros((1,self.ns), dtype=_np.float64)
+            temp = _np.zeros( (self.ns,), dtype=_np.float64)
             temp[1:] = _np.copy(self.tpotb[:-1])
             temp[1] = 2*temp[2]-temp[3]
             temp[0] = 2*temp[1]-temp[2]
@@ -687,7 +716,8 @@ class read_vmec(Struct):
 
         # Fix the Stability values by making into ns arrays
         if hasattr(self, 'Dmerc') and len(self.Dmerc) != self.ns:
-            temp = _np.zeros( (1, self.ns), dtype=_np.float64)
+#            temp = _np.zeros( (1, self.ns), dtype=_np.float64)
+            temp = _np.zeros( (self.ns,), dtype=_np.float64)
             temp[1:-1] = _np.copy(self.Dmerc)
             self.Dmerc = _np.copy(temp)
             self.Dmerc[0] = 2 * self.Dmerc[1] - self.Dmerc[2]
@@ -778,7 +808,7 @@ class read_vmec(Struct):
         if hasattr(self,'protrsqmnc'):
             self.protrsqmnc[:,0] = 1.5*self.protrsqmnc[:,1] - 0.5*self.protrsqmnc[:,2]
             for ii in range(1, self.ns-1): #
-                self.protrsqmnc[:, ii] = 0.5 * (     self.protrsqmnc[:, ii] + self.protrsqmnc[:,ii+1] )
+                self.protrsqmnc[:, ii] = 0.5 * (self.protrsqmnc[:, ii] + self.protrsqmnc[:,ii+1] )
             # end for
             self.protrsqmnc[:,-1]= 2.0*self.protrsqmnc[:,-2] - self.protrsqmnc[:,-3]
         # end if
@@ -822,10 +852,11 @@ class read_vmec(Struct):
     # ================================================================ #
 
     @staticmethod
-    def h2f(var,ns):
+    def h2f(var, ns):
         var = _np.copy(var)
         # Map quantitiy from half to full grid
-        temp = _np.zeros( (1, ns), dtype=var.dtype)
+#        temp = _np.zeros( (1, ns), dtype=var.dtype)
+        temp = _np.zeros( (min((ns, len(var))),), dtype=var.dtype)
         temp[0] = 1.5*var[0] - 0.5*var[1]
         temp[1:-1] = 0.5*(var[:-2] + var[1:-1])
         #for i=2:ns-1
@@ -838,10 +869,11 @@ class read_vmec(Struct):
     #end def h2f()
 
     @staticmethod
-    def h2f_special(var,ns):
+    def h2f_special(var, ns):
         var = _np.copy(var)
         # Map quantitiy from half to full grid
-        temp = _np.zeros( (1, ns), dtype=var.dtype)
+#        temp = _np.zeros( (1, ns), dtype=var.dtype)
+        temp = _np.zeros( (min((ns, len(var))),), dtype=var.dtype)
         # temp[0] = 1.5*var[0] - 0.5*var[1]
         temp[1:-1] = 0.5*(var[1:-1] + var[2:])
         temp[-1] = 1.5*var[-1] - 0.5*var[-2]
