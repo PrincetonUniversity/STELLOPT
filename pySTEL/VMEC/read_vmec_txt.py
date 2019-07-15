@@ -47,7 +47,7 @@ from __future__ import absolute_import, with_statement, absolute_import, \
                        division, print_function, unicode_literals
 
 import numpy as _np
-from utils import Struct, fscanf, fgetl, fgets, findstr
+from utils import Struct, fscanf, fgetl, fgets, findstr, sscanf
 
 # ======================================================================== #
 # ======================================================================== #
@@ -115,7 +115,7 @@ def read_vmec_orig(fid, fmt):
     f.wb, f.wp, f.gamma, f.pfac, f.nfp, f.ns, f.mpol, f.ntor, f.mnmax, f.itfsq, \
         f.niter, f.iasym, f.ireconstruct = tuple(fscanf(fid, fmtg, 13).tolist())
 
-    f.imse, f.itse, f.nbsets, f.nobd, f.nextur = tuple(fscanf(fid, fmtd, 5).tolist())
+    f.imse, f.itse, f.nbsets, f.nobd, f.nextcur = tuple(fscanf(fid, fmtd, 5).tolist())
 
     f.nstore_seq = 100
     # Error Check
@@ -149,14 +149,16 @@ def read_vmec_orig(fid, fmt):
     data1 = _np.asarray(data1[2:][:])
     f.rmnc, f.zmns, f.lmns, f.bmn, f.gmn, f.bsubumn, f.bsubvmn, f.bsubsmn, \
         f.bsupumn, f.bsupvmn, f.currvmn \
-        = tuple([_np.vstack((_np.copy(data1[ii+2,:].T), _np.reshape(data[ii,:], f.mnmax, f.ns-1, order='F').copy()))
+        = tuple([_np.vstack((_np.copy(data1[ii,:].T), _np.reshape(data[ii,:], f.mnmax, f.ns-1, order='F').copy()))
             for ii in range(10)])
+#        = tuple([_np.vstack((_np.copy(data1[ii+2,:].T), _np.reshape(data[ii,:], f.mnmax, f.ns-1, order='F').copy()))
+#            for ii in range(10)])
 
     #Read the half-mesh quantities
-    data = fscanf(fid, fmt12, [12, f.ns/2])
+#    data = fscanf(fid, fmt12, [12, f.ns/2])
 
     f.iotas, f.mass, f.pres, f.phip, f.buco, f.bvco, f.phi, f.vp, f.overr, \
-        f.juru, f.jcurv, f.specw = tuple(data.tolist())
+        f.juru, f.jcurv, f.specw = tuple(fscanf(fid, fmt12, [12, f.ns/2]).tolist())
 #        f.juru, f.jcurv, f.specw = tuple(map(_np.asarray, zip(*data)))
 
     data = fscanf(fid, fmt6, 6)
@@ -164,7 +166,7 @@ def read_vmec_orig(fid, fmt):
     f.betatot = data[1]
     f.betapol = data[2]
     f.betator = data[3]
-    f.betaxis = data[4]
+    f.betaxis = data[4]  # betaaxis?
     f.b0      = data[5]
 
     #Mercier Criterion
@@ -185,12 +187,12 @@ def read_vmec_orig(fid, fmt):
     f.wdot = data[1,:]
 
     #Convert from Internal Units to Physical Units
-    f.mass  = f.mass/dmu0
-    f.pres  = f.pres/dmu0
-    f.jcuru = f.jcuru/dmu0
-    f.jcurv = f.jcurv/dmu0
-    f.jdotb = f.jdotb/dmu0
-    f.phi   = -f.phi       # Data and MSE Fits
+    f.mass  /= dmu0
+    f.pres  /= dmu0
+    f.jcuru /= dmu0
+    f.jcurv /= dmu0
+    f.jdotb /= dmu0
+    f.phi   *= -1.0       # Data and MSE Fits
 
     if (f.ireconstruct > 0):
         if (f.imse >= 2) or (f.itse >0):
@@ -238,7 +240,8 @@ def read_vmec_orig(fid, fmt):
             f.flmwgt = fscanf(fid, fmt, 1)
         # end
 
-        nbfldn = _np.sum( nbldf[:f.nbsets] )
+        nbfldn = _np.sum( f.nbfld[:f.nbsets] )
+#        nbfldn = _np.sum( nbldf[:f.nbsets] )
         if (nbfldn > 0):
             for nn in range(f.nbsets): # n=1:nbsets
                 data = fscanf(fid, fmt3, [3, f.nbfld[nn]])
@@ -290,7 +293,7 @@ def read_vmec_orig(fid, fmt):
         f.imatch_phiedge = fscanf(fid, fmt, 1)
     # end
     return f
-# end  def read_vmec_orig
+# end  def read_vmec_orig    # checked vs matlabVMEC on July15, 2019
 
 # ========================================================================= %
 
@@ -370,8 +373,10 @@ def read_vmec_605(fid,fmt):
     data1 = _np.asarray(data1[2:][:])
     f.rmnc, f.zmns, f.lmns, f.bmnc, f.gmnc, f.bsubumnc, f.bsubvmnc, f.bsubsmnc, \
         f.bsupumnc, f.bsupvmnc, f.currvmnc \
-        = tuple([_np.vstack((_np.copy(data1[ii+2,:].T), _np.reshape(data[ii,:], f.mnmax, f.ns-1, order='F').copy()))
+        = tuple([_np.vstack((_np.copy(data1[ii,:].T), _np.reshape(data[ii,:], f.mnmax, f.ns-1, order='F').copy()))
             for ii in range(10)])
+#        = tuple([_np.vstack((_np.copy(data1[ii+2,:].T), _np.reshape(data[ii,:], f.mnmax, f.ns-1, order='F').copy()))
+#            for ii in range(10)])
 
     #Read the half-mesh quantities
     data = fscanf(fid, fmt12, [12, f.ns/2])
@@ -415,12 +420,12 @@ def read_vmec_605(fid,fmt):
     f.wdot = data[1,:]
 
     #Convert from Internal Units to Physical Units
-    f.mass =  f.mass / dmu0
-    f.pres =  f.pres / dmu0
-    f.jcuru =  f.jcuru / dmu0
-    f.jcurv =  f.jcurv / dmu0
-    f.jdotb =  f.jdotb / dmu0
-    f.phi   = -f.phi    #Data and MSE Fits
+    f.mass /= dmu0
+    f.pres /= dmu0
+    f.jcuru /= dmu0
+    f.jcurv /= dmu0
+    f.jdotb /= dmu0
+    f.phi   *= -1.0    #Data and MSE Fits
 
     if (f.ireconstruct > 0):
         if (f.imse >= 2) or (f.itse >0):
@@ -465,7 +470,7 @@ def read_vmec_605(fid,fmt):
             f.dsiobt = data[2, :]
             f.flmwgt = fscanf(fid, fmtg, 1)
         # end
-        nbfldn=_np.sum(nbldf[:f.nbsets])
+        nbfldn=_np.sum(f.nbfld[:f.nbsets])
 
         if (nbfldn > 0):
             for nn in range(f.nbsets): # n=1:nbsets
@@ -516,7 +521,7 @@ def read_vmec_605(fid,fmt):
         f.imatch_phiedge = fscanf(fid, fmtg, 1)
     # end
     return f
-# end  def read_vmec_605(fid,fmt)
+# end  def read_vmec_605(fid,fmt)   # checked against matlabVMEC on July15,2019
 
 # ========================================================================= #
 
@@ -594,10 +599,12 @@ def read_vmec_620(fid,fmt):
 
     # Extract the data and reshape
     data1 = _np.asarray(data1[2:][:])
-    f.rmnc, f.zmns, f.lmns, f.bmn, f.gmn, f.bsubumnc, f.bsubvmnc, f.bsubsmnc, \
+    f.rmnc, f.zmns, f.lmns, f.bmn, f.gmn, f.bsubumnc, f.bsubvmnc, f.bsubsmns, \
         f.bsupumnc, f.bsupvmnc, f.currvmnc \
-        = tuple([_np.vstack((_np.copy(data1[ii+2,:].T), _np.reshape(data[ii,:], f.mnmax, f.ns-1, order='F').copy()))
+        = tuple([_np.vstack((_np.copy(data1[ii,:].T), _np.reshape(data[ii,:], f.mnmax, f.ns-1, order='F').copy()))
             for ii in range(10)])
+#        = tuple([_np.vstack((_np.copy(data1[ii+2,:].T), _np.reshape(data[ii,:], f.mnmax, f.ns-1, order='F').copy()))
+#            for ii in range(10)])
 
     #Read the half-mesh quantities
     data = fscanf(fid, fmt13, [13, f.ns/2])
@@ -703,7 +710,7 @@ def read_vmec_620(fid,fmt):
             f.dsiobt = data[2, :]
             f.flmwgt = fscanf(fid, fmtg, 1)
         # end
-        nbfldn=_np.sum(nbldf[:f.nbsets])
+        nbfldn=_np.sum(f.nbfld[:f.nbsets])
 
         if (nbfldn > 0):
             for nn in range(f.nbsets): # n=1:nbsets
@@ -731,13 +738,13 @@ def read_vmec_620(fid,fmt):
             # end
         # end
         f.limitr = fscanf(fid, fmtg, f.nlim)
-        f.rlim=_np.zeros( (_np.max(f.limitr),f.nlim), dtype=_np.float64)
-        f.zlim=_np.zeros( (_np.max(f.limitr),f.nlim), dtype=_np.float64)
 
+        f.rlim=_np.zeros( (_np.max(f.limitr),f.nlim), dtype=_np.float64)
+        f.zlim=_np.zeros_like(f.rlim)
         for jj in range(f.nlim): # j=1:f.nlim
             for ii in range(f.limitr[jj]): # i=1:f.limitr(j)
                 data = fscanf(fid, fmt2, 2)
-                f.rlim[ii, jj] = data[0] #changed indices
+                f.rlim[ii, jj] = data[0]
                 f.zlim[ii, jj] = data[1]
             # end
         # end
@@ -752,7 +759,7 @@ def read_vmec_620(fid,fmt):
         f.imatch_phiedge = fscanf(fid, fmtg, 1)
     # end
     return f
-# end  def read_vmec_620()
+# end  def read_vmec_620()    # checked against matlabVMEC on July15th,2019
 
 # ========================================================================= #
 
@@ -831,9 +838,9 @@ def read_vmec_650(fid, fmt):
 
     # Extract the data and reshape
     data1 = _np.asarray(data1[2:][:])
-    f.rmnc, f.zmns, f.lmns, f.bmnc, f.gmnc, f.bsubumnc, f.bsubvmnc, f.bsubsmnc, \
+    f.rmnc, f.zmns, f.lmns, f.bmnc, f.gmnc, f.bsubumnc, f.bsubvmnc, f.bsubsmns, \
         f.bsupumnc, f.bsupvmnc, f.currvmnc \
-        = tuple([_np.vstack((_np.copy(data1[ii+2,:].T), _np.reshape(data[ii,:], f.mnmax, f.ns-1, order='F').copy()))
+        = tuple([_np.vstack((_np.copy(data1[ii,:].T), _np.reshape(data[ii,:], f.mnmax, f.ns-1, order='F').copy()))
             for ii in range(10)])
 
     #Read the half-mesh quantities
@@ -941,7 +948,7 @@ def read_vmec_650(fid, fmt):
             f.flmwgt = fscanf(fid, fmtg, 1)
         # end
 
-        nbfldn = _np.sum(nbldf[:f.nbsets])
+        nbfldn = _np.sum(f.nbfld[:f.nbsets])
         if (nbfldn > 0):
             for nn in range(f.nbsets):  #for n=1:nbsets
                 data = fscanf(fid, fmt3, [3, f.nbfld[nn]])
@@ -969,8 +976,9 @@ def read_vmec_650(fid, fmt):
         # end
 
         f.limitr = fscanf(fid, fmtg, f.nlim)
+
         f.rlim=_np.zeros( (_np.max(f.limitr), f.nlim), dtype=_np.float64)
-        f.zlim=_np.zeros( (_np.max(f.limitr), f.nlim), dtype=_np.float64)
+        f.zlim=_np.zeros_like(f.zlim)
         for jj in range(f.nlim):  #j=1:f.nlim
             for ii in range(f.limitr[jj]):  #i=1:f.limitr(j)
                 data = fscanf(fid, fmt2, 2)
@@ -989,7 +997,7 @@ def read_vmec_650(fid, fmt):
         f.imatch_phiedge = fscanf(fid, fmtg, 1)
     # end
     return f
-# end  def read_vmec_650()
+# end  def read_vmec_650()      # checked against matlabVMEC on July15,2019
 
 # ========================================================================= #
 
@@ -1017,7 +1025,7 @@ def read_vmec_695(fid, fmt):
     f.rmin_surf = data[5]
     f.zmax_surf = data[6]
 
-    data = fscanf(fid, fmt, 10)
+    data = fscanf(fid, fmt, 10)   # TODO:! should be fmtd
     f.nfp = data[0]
     f.ns = data[1]
     f.mpol = data[2]
@@ -1029,7 +1037,7 @@ def read_vmec_695(fid, fmt):
     f.ireconstruct = data[8]
     f.ierr_vmec = data[9]
 
-    data = fscanf(fid, fmt, 6)
+    data = fscanf(fid, fmt, 6)    # TODO:! should be fmtd
     f.imse = data[0]
     f.itse = data[1]
     f.nbsets = data[2]
@@ -1048,12 +1056,14 @@ def read_vmec_695(fid, fmt):
         f.nbfld = fscanf(fid, fmt, f.nbsets)
     # end
 
-    if fmt.find(',')<0:  #isempty(strfind(fmt,','))
-        f.mgrid_file = fscanf(fid, fmts, 1)
+    # Commented out in matlabVMEC
+    if fmt.find(',')<0:
+        temp = fgetl(fid)
+        temp = fgetl(fid)
+        f.mgrid_file = temp.strip()
     else:
-        f.mgrid_file = fscanf(fid, '%s,', 1)
-    # end
-
+        f.mgrid_file = fscanf(fid, fmts, 1)
+    # end if
     # Read Arrays
     if f.iasym > 0:
         data1 = fscanf(fid, fmt2_14, [16, f.mnmax])
@@ -1071,14 +1081,14 @@ def read_vmec_695(fid, fmt):
     data1 = _np.asarray(data1[2:][:])
     if f.iasym > 0:
         # On half grid
-        f.rmnc, f.zmns, f.lmns, f.bmnc, f.gmnc, f.bsubumnc, f.bsubvmnc, f.bsubsmnc, \
+        f.rmnc, f.zmns, f.lmns, f.bmnc, f.gmnc, f.bsubumnc, f.bsubvmnc, f.bsubsmns, \
             f.bsupumnc, f.bsupvmnc, f.currvmnc, f.rmns, f.zmnc, f.lmnc \
-            = tuple([_np.vstack((_np.copy(data1[ii+2,:].T), _np.reshape(data[ii,:], f.mnmax, f.ns-1, order='F').copy()))
+            = tuple([_np.vstack((_np.copy(data1[ii,:].T), _np.reshape(data[ii,:], f.mnmax, f.ns-1, order='F').copy()))
                 for ii in range(10)])
     else:
-        f.rmnc, f.zmns, f.lmns, f.bmnc, f.gmnc, f.bsubumnc, f.bsubvmnc, f.bsubsmnc, \
+        f.rmnc, f.zmns, f.lmns, f.bmnc, f.gmnc, f.bsubumnc, f.bsubvmnc, f.bsubsmns, \
             f.bsupumnc, f.bsupvmnc, f.currvmnc \
-            = tuple([_np.vstack((_np.copy(data1[ii+2,:].T), _np.reshape(data[ii,:], f.mnmax, f.ns-1, order='F').copy()))
+            = tuple([_np.vstack((_np.copy(data1[ii,:].T), _np.reshape(data[ii,:], f.mnmax, f.ns-1, order='F').copy()))
                 for ii in range(10)])
     # end
 
@@ -1134,8 +1144,7 @@ def read_vmec_695(fid, fmt):
     if (f.nextcur > 0):
         f.lfreeb = 1
         f.extcur = fscanf(fid, fmt, f.nextcur)
-#        fscanf(fid, '\n')
-        fgetl(fid)
+        fscanf(fid, '\n')
         rem = f.nextcur
         jj = 0
         while rem > 0:
@@ -1205,7 +1214,7 @@ def read_vmec_695(fid, fmt):
             f.flmwgt = fscanf(fid, fmt, 1)
         # end
 
-        nbfldn = _np.sum(nbldf[:f.nbsets])
+        nbfldn = _np.sum(f.nbfld[:f.nbsets])
         if (nbfldn > 0):
             for nn in range(f.nbsets):  # for n=1:nbsets
                 data = fscanf(fid, fmt3, [3, f.nbfld[nn]])
@@ -1234,7 +1243,7 @@ def read_vmec_695(fid, fmt):
 
         f.limitr = fscanf(fid, fmt, f.nlim)
         f.rlim = _np.zeros( (_np.max(f.limitr), f.nlim), dtype=_np.float64)
-        f.zlim = _np.zeros( (_np.max(f.limitr), f.nlim), dtype=_np.float64)
+        f.zlim = _np.zeros_like(f.zlim)
         for jj in range(f.nlim):  # j=1:f.nlim
             for ii in range(f.limitr[jj]):  # i=1:f.limitr(j)
                 data = fscanf(fid, fmt2, 2)
@@ -1333,12 +1342,12 @@ def read_vmec_800(fid, fmt):
         # On half grid
         f.rmnc, f.zmns, f.lmns, f.bmnc, f.gmnc, f.bsubumnc, f.bsubvmnc, f.bsubsmns, \
             f.bsupumnc, f.bsupvmnc, f.currvmnc, f.rmns, f.zmnc, f.lmnc \
-            = tuple([_np.vstack((_np.copy(data1[ii+2,:].T), _np.reshape(data[ii,:], f.mnmax, f.ns-1, order='F').copy()))
+            = tuple([_np.vstack((_np.copy(data1[ii,:].T), _np.reshape(data[ii,:], f.mnmax, f.ns-1, order='F').copy()))
                 for ii in range(10)])
     else:
         f.rmnc, f.zmns, f.lmns, f.bmnc, f.gmnc, f.bsubumnc, f.bsubvmnc, f.bsubsmns, \
             f.bsupumnc, f.bsupvmnc, f.currvmnc \
-            = tuple([_np.vstack((_np.copy(data1[ii+2,:].T), _np.reshape(data[ii,:], f.mnmax, f.ns-1, order='F').copy()))
+            = tuple([_np.vstack((_np.copy(data1[ii,:].T), _np.reshape(data[ii,:], f.mnmax, f.ns-1, order='F').copy()))
                 for ii in range(10)])
     # end
 
@@ -1372,7 +1381,7 @@ def read_vmec_800(fid, fmt):
     f.betaxis = data[4]
     f.b0 = data[5]
 
-#    f.isigna = fscanf(fid, fmt+'\n', 1)
+#    f.isigna = fscanf(fid, fmt+'\n', 1)  # does this mean read to format matching (fmt\n)?
 #    f.input_extension = strtrim(fgetl(fid))
     f.isigna = fscanf(fid, fmt, 1)
     f.input_extension = fgetl(fid).strip()
@@ -1401,14 +1410,12 @@ def read_vmec_800(fid, fmt):
     if (f.nextcur > 0):
         f.lfreeb = 1
         f.extcur = fscanf(fid, fmt, f.nextcur)
-#        fscanf(fid, '\n')
-        fgetl(fid)
+        fscanf(fid, '\n')
         rem = f.nextcur
         jj = 0
         while rem > 0:
             line = fgetl(fid)
-#            fscanf(fid, '\n')
-            fgetl(fid)
+            fscanf(fid, '\n')
             test = line[0]
             # find all occurances of line[0] in line
             index = findstr(line, test)
@@ -1474,7 +1481,7 @@ def read_vmec_800(fid, fmt):
             f.flmwgt = fscanf(fid, fmt, 1)
         # end
 
-        nbfldn = _np.sum(nbldf[:f.nbsets])
+        nbfldn = _np.sum(f.nbfld[:f.nbsets])
         if (nbfldn > 0):
             for nn in range(f.nbsets):  # for n=1:nbsets
                 data = fscanf(fid, fmt3, [3, f.nbfld[nn]])
@@ -1503,7 +1510,7 @@ def read_vmec_800(fid, fmt):
 
         f.limitr = fscanf(fid, fmt, f.nlim)
         f.rlim = _np.zeros( (_np.max(f.limitr), f.nlim), dtype=_np.float64)
-        f.zlim = _np.zeros( (_np.max(f.limitr), f.nlim), dtype=_np.float64)
+        f.zlim = _np.zeros_like(f.rlim)
         for jj in range(f.nlim):  # j=1:f.nlim
             for ii in range(f.limitr[jj]):  # i=1:f.limitr(j)
                 data = fscanf(fid, fmt2, 2)
@@ -1524,7 +1531,7 @@ def read_vmec_800(fid, fmt):
     # end
 
     return f
-# end  def read_vmec_800()
+# end  def read_vmec_800()   # checked against matlabVMEC on July15,2019
 
 # ========================================================================= #
 
@@ -1533,7 +1540,7 @@ def read_vmec_847(fid,fmt):
     f = Struct()
 
     # Unit Conversions
-#    mu0 = 4.0*_np.pi*1e-7
+    mu0 = 4.0*_np.pi*1e-7
 #    dmu0=(2.0e-7)/_np.pi
 
     # =============================================== #
@@ -1581,7 +1588,7 @@ def read_vmec_847(fid,fmt):
     # Error Check
     if f.ierr_vmec and (f.ierr_vmec != 4):
         print('ierr_vmec: '+str(f.ierr_vmec))
-        return f
+        return None
     # end
 
     # Read nbfld
@@ -1594,7 +1601,7 @@ def read_vmec_847(fid,fmt):
 
     # Read Arrays
     f.xm = _np.zeros( (1,f.mnmax), dtype=_np.int64)
-    f.xn = _np.zeros_like(f.xn)
+    f.xn = _np.zeros_like(f.xm)
 
     f.rmnc = _np.zeros( (f.mnmax, f.ns), dtype=_np.float64)
     f.zmns = _np.zeros_like(f.rmnc)
@@ -1627,7 +1634,7 @@ def read_vmec_847(fid,fmt):
 
     for ii in range(f.ns): # i=1:f.ns
         for jj in range(f.mnmax): # j=1:f.mnmax
-            if ii==1:
+            if ii==0:
                 f.xm[jj] = fscanf(fid, fmtd, 1)
                 f.xn[jj] = fscanf(fid, fmtd, 1)
             # end
@@ -1643,7 +1650,7 @@ def read_vmec_847(fid,fmt):
         # end
 
         for jj in range(f.mnmax_nyq): # j=1:f.mnmax_nyq
-            if ii==1:
+            if ii==0:
                 f.xm_nyq[jj] = fscanf(fid, fmtd, 1)
                 f.xn_nyq[jj] = fscanf(fid, fmtd, 1)
             # end
@@ -1674,38 +1681,127 @@ def read_vmec_847(fid,fmt):
     # Calculate the Currents
     f.currumnc = _np.zeros( (f.mnmax_nyq, f.ns), dtype=_np.float64)
     f.currvmnc = _np.zeros_like(f.currumnc)
+    ohs = f.ns - 1
+    hs = 1.0/ohs
+    ns = f.ns
 
-    for ii in range(1,f.ns-1): # i=2:f.ns-1
-        f.currumnc[:, ii] = -f.xn_nyq.flatten()*f.bsubsmns[:, ii] - (f.bsubvmnc[:, ii+1] - f.bsubvmnc[:, ii-1])/(f.ns-1)
-        f.currvmnc[:, ii] = -f.xm_nyq.flatten()*f.bsubsmns[:, ii] - (f.bsubumnc[:, ii+1] - f.bsubumnc[:, ii-1])/(f.ns-1)
-    # end
+    shalf = _np.zeros((ns,), dtype=_np.float64)
+    sfull = _np.zeros_like(shalf)
+    for ii in range(1,ns):  # 2:ns
+        shalf[ii] = _np.sqrt(hs*(ii-1.5))
+        sfull[ii] = _np.sqrt(hs*(ii-1.0))
+    # end for
+    js1 = range(2,ns)    # 3:ns
+    js = range(1, ns-1)  # 2:(ns-1)
+    for mn in range(f.mnmax_nyq):  # 1:f.mnmax_nyq:
+        if f.xm_nyq%2 == 0:     # mod(f.xm_nyq, 2) == 1
+            t1 = 0.5*(shalf[js1]*f.bsubsmns[mn, js1] +
+                      shalf[js]*f.bsubsmns[mn, js])/sfull[js]
+            bu0 = f.bsubumnc[mn, js]/ shalf[js]
+            bu1 = f.bsubumnc[mn, js1]/ shalf[js1]
 
-    f.currvmnc[f.xm_nyq==0, 0] = 2*f.bsubumnc[ f.xm_nyq == 0, 1]/(f.ns-1)
-    f.currumnc[f.xm_nyq==0, 0] = 2*f.currumnc[ f.xm_nyq == 0, 1] - f.currumnc[ f.xm_nyq == 0, 2]
-    f.currvmnc[f.xm_nyq!=0, 0] = 0.0
-    f.currumnc[f.xm_nyq!=0, 0] = 0.0
-    f.currumnc[:, f.ns] = 2*f.currumnc[:, f.ns-1] - f.currumnc[:, f.ns-2]
-    f.currvmnc[:, f.ns] = 2*f.currvmnc[:, f.ns-1] - f.currvmnc[:, f.ns-2]
-    f.currumnc = f.currumnc/(4*_np.pi*1e-7)
-    f.currvmnc = f.currvmnc/(4*_np.pi*1e-7)
+            t2 = ohs*(bu1-bu0)*sfull[js]+0.25*(bu0+bu1)/sfull[js]
+            bv0 = f.bsubvmnc[mn, js] / shalf[js]
+            bv1 = f.bsubvmnc[mn, js1] / shalf[js1]
 
-    if f.iasym > 0:
+            t3 = ohs*(bv1-bv0)*sfull[js]+0.25*(bv0+bv1)/sfull[js]
+        else:
+            t1 = 0.5*(f.bsubsmns[mn, js1] + f.bsubsmns[mn, js])
+            t2 = ohs*(f.bsubumnc[mn, js1] + f.bsubumnc[mn, js])
+            t3 = ohs*(f.bsubvmnc[mn, js1] + f.bsubvmnc[mn, js])
+        # end if
+        f.currumnc[mn, js] = -_np.float64(f.xn_nyq[mn])*t1-t3
+        f.currvmnc[mn, js] = -_np.float64(f.xn_nyq[mn])*t1+t2
+    # end for
+    # OLD way
+    # for ii in range(1,f.ns-1): # i=2:f.ns-1
+    #     f.currumnc[:, ii] = -f.xn_nyq.flatten()*f.bsubsmns[:, ii] - (f.bsubvmnc[:, ii+1] - f.bsubvmnc[:, ii-1])/(f.ns-1)
+    #     f.currvmnc[:, ii] = -f.xm_nyq.flatten()*f.bsubsmns[:, ii] - (f.bsubumnc[:, ii+1] - f.bsubumnc[:, ii-1])/(f.ns-1)
+    # # end
+
+    f.currumnc[:, 0] = 0.0
+    f.currvmnc[:, 0] = 0.0
+    for ii in range(f.mnmax_nyq): # 1:f.mnmax_nyq
+        if f.xm_nyq[ii] == 0:
+            f.currumnc[ii, 0] = 2*f.currumnc[ii, 1] - f.currumnc[ii, 2]
+            f.currvmnc[ii, 0] = 2*(f.ns-1)*f.bsubumnc[ii, 1]
+        # end if
+    # end for
+    f.currumnc[:, -1] = 2*f.currumnc[:, -2] - f.currumnc[:, -3]
+    f.currvmnc[:, -1] = 2*f.currvmnc[:, -2] - f.currvmnc[:, -3]
+    f.currumnc /= mu0
+    f.currvmnc /= mu0
+
+    if f.iasym>0:
         f.currumns = _np.zeros( (f.mnmax_nyq, f.ns), dtype=_np.float64)
         f.currvmns = _np.zeros_like(f.currumns)
-        for ii in range(1, f.ns-1):  # i=2:f.ns-1
-            f.currumns[:, ii] = -f.xn_nyq.flatten()*f.bsubsmnc[:, ii]-(f.bsubvmns[:, ii+1]-f.bsubvmns[:, ii-1])/(f.ns-1)
-            f.currvmns[:, ii] = -f.xm_nyq.flatten()*f.bsubsmnc[:, ii]-(f.bsubumns[:, ii+1]-f.bsubumns[:, ii-1])/(f.ns-1)
-        # end
+        for mn in range(f.mnmax_nyq):  # 1:f.mnmax_nyq:
+            if f.xm_nyq%2 == 0:     # mod(f.xm_nyq, 2) == 1
+                t1 = 0.5*(shalf[js1]*f.bsubsmnc[mn, js1] +
+                          shalf[js]*f.bsubsmnc[mn, js])/sfull[js]
+                bu0 = f.bsubumns[mn, js]/ shalf[js]
+                bu1 = f.bsubumns[mn, js1]/ shalf[js1]
 
-        f.currvmns[f.xm_nyq == 0, 0] = 2*f.bsubumns[f.xm_nyq == 0, 1]/(f.ns-1)
-        f.currumns[f.xm_nyq == 0, 0] = 2*f.currumns[f.xm_nyq == 0, 1]-f.currumns[f.xm_nyq == 0, 2]
-        f.currvmns[f.xm_nyq != 0, 0] = 0.0
-        f.currumns[f.xm_nyq != 0, 0] = 0.0
-        f.currumns[:, f.ns] = 2*f.currumns[:, f.ns-1]-f.currumns[:, f.ns-2]
-        f.currvmns[:, f.ns] = 2*f.currvmns[:, f.ns-1]-f.currvmns[:, f.ns-2]
-        f.currumns = f.currumns/(4*_np.pi*1e-7)
-        f.currvmns = f.currvmns/(4*_np.pi*1e-7)
-    # end
+                t2 = ohs*(bu1-bu0)*sfull[js]+0.25*(bu0+bu1)/sfull[js]
+                bv0 = f.bsubvmns[mn, js] / shalf[js]
+                bv1 = f.bsubvmns[mn, js1] / shalf[js1]
+
+                t3 = ohs*(bv1-bv0)*sfull[js]+0.25*(bv0+bv1)/sfull[js]
+            else:
+                t1 = 0.5*(f.bsubsmnc[mn, js1] + f.bsubsmnc[mn, js])
+                t2 = ohs*(f.bsubumns[mn, js1] + f.bsubumns[mn, js])
+                t3 = ohs*(f.bsubvmns[mn, js1] + f.bsubvmns[mn, js])
+            # end if
+            f.currumns[mn, js] = -_np.float64(f.xn_nyq[mn])*t1-t3
+            f.currvmns[mn, js] = -_np.float64(f.xn_nyq[mn])*t1+t2
+        # end for
+        # OLD way
+        # for ii in range(1,f.ns-1): # i=2:f.ns-1
+        #     f.currumns[:, ii] = -f.xnnyq.flatten()*f.bsubsmnc[:, ii] - (f.ns-1)*(f.bsubvmns[:, ii+1] - f.bsubvmns[:, ii])
+        #     f.currvmns[:, ii] = -f.xmnyq.flatten()*f.bsubsmnc[:, ii] + (f.ns-1)*(f.bsubumns[:, ii+1] - f.bsubumns[:, ii])
+        # # end
+
+        f.currumns[:, 0] = 0.0
+        f.currvmns[:, 0] = 0.0
+        for ii in range(f.mnmax_nyq): # 1:f.mnmax_nyq
+            if f.xm_nyq[ii] == 0:
+                f.currumns[ii, 0] = 2*f.currumns[ii, 1] - f.currumns[ii, 2]
+                f.currvmns[ii, 0] = 2*(f.ns-1)*f.bsubumns[ii, 1]
+            # end if
+        # end for
+        f.currumns[:, -1] = 2*f.currumns[:, -2] - f.currumns[:, -3]
+        f.currvmns[:, -1] = 2*f.currvmns[:, -2] - f.currvmns[:, -3]
+        f.currumns /= mu0
+        f.currvmns /= mu0
+    # end for
+
+#    f.currumnc[f.xm_nyq==0, 0] = 2*f.currumnc[ f.xm_nyq == 0, 1] - f.currumnc[ f.xm_nyq == 0, 2]
+#    f.currvmnc[f.xm_nyq==0, 0] = 2*f.bsubumnc[ f.xm_nyq == 0, 1]/(f.ns-1)
+#
+#    f.currvmnc[f.xm_nyq!=0, 0] = 0.0
+#    f.currumnc[f.xm_nyq!=0, 0] = 0.0
+#    f.currumnc[:, f.ns] = 2*f.currumnc[:, f.ns-1] - f.currumnc[:, f.ns-2]
+#    f.currvmnc[:, f.ns] = 2*f.currvmnc[:, f.ns-1] - f.currvmnc[:, f.ns-2]
+#    f.currumnc = f.currumnc/(4*_np.pi*1e-7)
+#    f.currvmnc = f.currvmnc/(4*_np.pi*1e-7)
+#
+#    if f.iasym > 0:
+#        f.currumns = _np.zeros( (f.mnmax_nyq, f.ns), dtype=_np.float64)
+#        f.currvmns = _np.zeros_like(f.currumns)
+#        for ii in range(1, f.ns-1):  # i=2:f.ns-1
+#            f.currumns[:, ii] = -f.xn_nyq.flatten()*f.bsubsmnc[:, ii]-(f.bsubvmns[:, ii+1]-f.bsubvmns[:, ii-1])/(f.ns-1)
+#            f.currvmns[:, ii] = -f.xm_nyq.flatten()*f.bsubsmnc[:, ii]-(f.bsubumns[:, ii+1]-f.bsubumns[:, ii-1])/(f.ns-1)
+#        # end
+#
+#        f.currvmns[f.xm_nyq == 0, 0] = 2*f.bsubumns[f.xm_nyq == 0, 1]/(f.ns-1)
+#        f.currumns[f.xm_nyq == 0, 0] = 2*f.currumns[f.xm_nyq == 0, 1]-f.currumns[f.xm_nyq == 0, 2]
+#        f.currvmns[f.xm_nyq != 0, 0] = 0.0
+#        f.currumns[f.xm_nyq != 0, 0] = 0.0
+#        f.currumns[:, f.ns] = 2*f.currumns[:, f.ns-1]-f.currumns[:, f.ns-2]
+#        f.currvmns[:, f.ns] = 2*f.currvmns[:, f.ns-1]-f.currvmns[:, f.ns-2]
+#        f.currumns = f.currumns/(4*_np.pi*1e-7)
+#        f.currvmns = f.currvmns/(4*_np.pi*1e-7)
+#    # end
 
     # Read the full-mesh quantities
     data = fscanf(fid, fmt6, [6, f.ns])
@@ -1766,15 +1862,13 @@ def read_vmec_847(fid,fmt):
         f.lfreeb = 1
         f.extcur = fscanf(fid, fmt, f.nextcur)
         lcurr = fscanf(fid, fmts, 1).strip()
-        if lcurr == 'T':  # strcmpi(lcurr,'T'):
-            # fscanf(fid, '\n')  # TODO:!  what does  this actaully do? Skip to the next line?
-            fgetl(fid)
+        if lcurr.upper() == 'T':  # strcmpi(lcurr,'T'):
+            fscanf(fid, '\n')
             rem = f.nextcur
             jj = 0
             while rem > 0:
                 line = fgetl(fid)
-                # fscanf(fid, '\n')
-                fgetl(fid)
+                fscanf(fid, '\n')
                 test = line[0]
                 index = findstr(line,test)
                 for ii in range(_np.size(index, axis=1)/2):  # i=1:size(index,2)/2
@@ -1842,7 +1936,7 @@ def read_vmec_847(fid,fmt):
             f.flmwgt = fscanf(fid, fmt, 1)
         # end
 
-        nbfldn=_np.sum(nbldf[:f.nbsets])
+        nbfldn=_np.sum(f.nbfld[:f.nbsets])
         if (nbfldn > 0):
             for nn in range(f.nbsets):  # n=1:nbsets
                 data = fscanf(fid, fmt3, [3, f.nbfld[nn]])
@@ -1871,7 +1965,7 @@ def read_vmec_847(fid,fmt):
 
         f.limitr = fscanf(fid, fmt, f.nlim)
         f.rlim = _np.zeros( (_np.max(f.limitr), f.nlim), dtype=_np.float64)
-        f.zlim = _np.zeros( (_np.max(f.limitr), f.nlim), dtype=_np.float64)
+        f.zlim = _np.zeros_like(f.zlim)
         for jj in range(f.nlim):  # j=1:f.nlim
             for ii in range(f.limitr[jj]):  # ii=1:f.limitr(jj)
                 data = fscanf(fid, fmt2, 2)
@@ -1892,7 +1986,7 @@ def read_vmec_847(fid,fmt):
     # end
     f.mgrid_mode=fscanf(fid, fmts).strip()
     return f
-# end  def read_vmec_847
+# end  def read_vmec_847    checked against matlabVMEC on July15,2019
 
 # ========================================================================= #
 # ========================================================================= #
