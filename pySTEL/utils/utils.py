@@ -161,7 +161,7 @@ def fscanf(fid, dtypes='%g', size=None, offset=None, eol='\n'):
     if offset is not None:
         fid.seek(offset, 0)
     # end if
-    dtypes_in = dtypes
+#    dtypes_in = dtypes
 
     # ===================== #
     # Parse the input data types for the delimiter
@@ -190,14 +190,7 @@ def fscanf(fid, dtypes='%g', size=None, offset=None, eol='\n'):
     # Count and parse the requested data types input by the user
     dtypes = list(_np.atleast_1d(dtypes.split('%')))[1:]
     ndt = len(dtypes)
-
-    # check if the datatypes are all the same
-#    if ndt>1 and (dtypes[0] == _np.atleast_1d(dtypes)).all():
-#        dtypes = [nptypes[dtypes[0]]]
-#    else:
-    if 1:
-        dtypes = [nptypes[dtypes[ii]] for ii in range(ndt)]
-    # end if
+    dtypes = [nptypes[dtypes[ii]] for ii in range(ndt)]
 
     # ===================== #
     # now parse the size keyword input for easier handling later
@@ -215,7 +208,7 @@ def fscanf(fid, dtypes='%g', size=None, offset=None, eol='\n'):
 
     # ===================== #
 
-    if ndt>1 and (dtypes[0] != _np.atleast_1d(dtypes)).all():
+    if ndt>1 and (dtypes[0] != _np.atleast_1d(dtypes)).any():
         # multiple datatypes entered, we have to assign data types after getting data
         # or perform multiple calls
         kwargs['dtype'] = _np.str
@@ -246,44 +239,72 @@ def fscanf(fid, dtypes='%g', size=None, offset=None, eol='\n'):
         data = reader(*args, **kwargs)
     except EOFError:
         print('premature termination by end-of-file (before input size was reached)')
-        # get actual output dimensions returned
-        sh = _np.shape(data)
-        if len(sh)>1:
-            nrow, ncol = sh
-        else:
-            nrow = 1
-            ncol = sh[0]
-        # end if
     except:
         raise
     # end try
 
+    # get actual output dimensions returned
+    sh = _np.shape(_np.atleast_1d(data))
+    if len(sh)>1:
+        nr, nc = sh
+    else:
+        nr = 1
+        nc = sh[0]
+    # end if
+
+#    trunc = []
+#    for ii in range(nr):
+#        trunc.append(True if len(data[ii])<ncol else False)
+#    # end for
+
+#    if nrow>1:
+#        while nr<nrow:
+#            data.append(_np.zeros((ncol,)).tolist())
+#            nr, _ = _np.shape(_np.atleast_1d(data))
+#        # end while
+#
+#        for ii in range(nrow):
+#            nc = len(_np.atleast_1d(data[ii]))
+#            while nc<ncol:
+#                data[ii].append(0)
+#                nc = len(_np.atleast_1d(data[ii]))
+#            # end if
+#        # end for
+#    if nrow==1:
+#        nc = len(_np.atleast_1d(data))
+#        while nc<ncol:
+#            data.append(0)
+#            nc = len(_np.atleast_1d(data))
+#        # end if
+#    # end if
+
     # ======================= #
-    if ndt>1 and (dtypes[0] != _np.atleast_1d(dtypes)).all():
+    if ndt>1 and (dtypes[0] != _np.atleast_1d(dtypes)).any():
         # Loop over the elements of the list and assign the data type
-        if nrow > 1:
-            for ii in range(nrow):
-                for jj in range(ncol):
+        if nr > 1: # nrow
+            for ii in range(nr):  # nrow
+                nc = len(_np.atleast_1d(data[ii]))
+                for jj in range(nc):   # ncol
                     data[ii][jj] = dtypes[ii](data[ii][jj])
                 # end for
             # end for
         else:
-            data = [dtypes[jj](data[jj]) for jj in range(ncol)]
-#            for jj in range(ncol):
-#                data[jj] = dtypes[jj](data[jj])
-#            # end for
+            data = [dtypes[jj](data[jj]) for jj in range(nc)] # ncol
         # end if
     else:
-        if nrow == 1:
+        if nr == 1:
             if dtypes[0] == str:
                 # for reading in strings that have spaces in them (when delim==' ')
                 data = ''.join(data)
                 data = data.strip(delim)
-            elif ncol > 1:
+            elif nc > 1:
                 data = _np.asarray(data)
             # end if
-        elif nrow>1:
+        elif nr>1:
+#            if _np.asray(trunc)
+#            if (_np.asarray(trunc) == False).all():
             data = _np.asarray(data)
+
         # end if
     # end if
     # ======================= #
@@ -469,19 +490,37 @@ class eztxt(object):
         # end while
         return tst
 
+#    @staticmethod
+#    def read_element(fid, dtype=str, delim=' ', eol='\n', allowed_white_lines=1000, readline=False):
+#        tst = _np.fromfile(fid, dtype=dtype, count=1, sep=delim.strip())
+#        return tst[0]
+
     @staticmethod
-    def read_element(fid, dtype=str, delim=' ', eol='\n', allowed_white_lines=100, readline=False):
+    def read_element(fid, dtype=str, delim=' ', eol='\n', allowed_white_lines=1000, readline=False):
         buffsize = max((len(delim),len(eol), 1))
         tst = ''
         white_lines = 0
-        while True and white_lines<allowed_white_lines:
+        eof = False
+        pos = -1
+        while not eof and white_lines<allowed_white_lines:
+            pos = ftell(fid)
             tmp = fid.read(buffsize)
-            if len(tmp) == 0:
+
+            if ftell(fid) == pos:
+                # same position before and after read means that we have hit the end-of-file
+                eof = True
+                break
+            elif len(tmp) == 0:
                 white_lines += 1  # same result for eof and a blank line
                 continue
             # end if
-            tst += tmp
 
+            # ================================== #
+            # Append the data
+            tst += tmp
+#            print(tst)   # debugging makes pretty pyramid shapes on your stdout
+
+            # ================================== #
             if tst == eol:  # remove new line if it is the only element
                 tst = tst.strip(eol)
                 continue
@@ -490,12 +529,20 @@ class eztxt(object):
                 continue
 
             if tst.find(delim)>-1 and (not readline):
+                if delim != ' ':
+                    tst = tst.strip(delim)
                 break
             if tst.find(eol)>-1:
+                tst = tst.strip(eol)
                 break
             # end if
+            # ================================== #
         # end while
-        return dtype(tst)
+        if eof and len(tst) == 0:
+            return None
+        else:
+            return dtype(tst)
+        # end if
 
     @staticmethod
     def read_line(fid, dtype=str, delim=' ', eol='\n', allowed_white_lines=100):
@@ -509,9 +556,13 @@ class eztxt(object):
         tst = []
         for ii in range(count):
             tmp = eztxt.read_element(fid, dtype=dtype, delim=delim, eol=eol)
-            tst.append(tmp)
+            if tmp is not None:
+                tst.append(tmp)
+            # end if
         # end for
         return tst
+#        tst = _np.fromfile(fid, dtype=dtype, count=count, sep=delim.strip())
+#        return tst.tolist()
 
     @staticmethod
     def read_to_shape(fid, shape, dtype=str, delim=' ', eol='\n'):
@@ -528,7 +579,10 @@ class eztxt(object):
 
         tst = []
         for ii in range(nrow):
-            tst.append(eztxt.read_to_count(fid, count=ncol, dtype=dtype, delim=delim, eol=eol))
+            tmp = eztxt.read_to_count(fid, count=ncol, dtype=dtype, delim=delim, eol=eol)
+            if (tmp is not None):
+                tst.append(tmp)
+            # end if
         # end for
         return tst
     # end def methods
@@ -851,7 +905,8 @@ if __name__ == '__main__':
     npfloat = 23.3
     strtst1 = 'what is my name?'
     strtst2 = 'wout.txt'
-    testdat = [npbool, npfloatarray, npint1, [npint1, npint2, npint3, npfloat], strtst1, strtst2]
+    tst3 = [3e-4, 1.56e-3]
+    testdat = [npbool, npfloatarray, npint1, [npint1, npint2, npint3, npfloat], strtst1, strtst2, tst3]
 
     eol = '\n'
     delim = ' '
@@ -886,9 +941,10 @@ if __name__ == '__main__':
         except:     pass
     # end try
 
-    elmnts_shape = [1, [3,4], 1, 4, 4, 1]
-    dtypes = [_np.bool, _np.float64, _np.int, _np.int, _np.str, _np.str]
-    dtyps = ['%b','%g','%d','%d%d%d%g','%s','%s']
+    elmnts_shape = [1, [3,4], 1, 4, 4, 1, [1,3]]  # intended to trip the EOFError and handle it appropriately
+#    elmnts_shape = [1, [3,4], 1, 4, 4, 1, 2]  # actual shapes
+    dtypes = [_np.bool, _np.float64, _np.int, _np.int, _np.str, _np.float64]
+    dtyps = ['%b','%g','%d','%d%d%d%g','%s','%s', '%e']
     try:
         fid = open('utils.testfile', 'r')
 
@@ -898,8 +954,8 @@ if __name__ == '__main__':
             tst = fscanf(fid, dtypes=dtyps[ii], size=sh)
 
             # test if the data reading worked
-            if len(_np.atleast_1d(testdat[ii]).shape)>1:
-                if (tst == testdat[ii]).all():
+            if len(_np.atleast_1d(testdat[ii]))>1 or len(_np.atleast_1d(tst))>1:
+                if _np.atleast_1d(tst == testdat[ii]).all():
                     print((tst, 'success'))
                 else:
                     print((tst, testdat[ii], 'fail'))

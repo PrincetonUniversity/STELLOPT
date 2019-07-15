@@ -57,7 +57,7 @@ from __future__ import absolute_import, with_statement, absolute_import, \
                        division, print_function, unicode_literals
 
 import numpy as _np
-from utils import Struct, fscanf, fgetl, fgets, findstr, sscanf
+from utils import Struct, fscanf, fgetl, fgets, sscanf
 
 # ======================================================================== #
 # ======================================================================== #
@@ -1150,29 +1150,27 @@ def read_vmec_695(fid, fmt):
     f.equif = data[5, :]
 
 #    f.curlabel=cell(f.nextcur, 1)
-    f.curlabel = [f.nextcur, 1]
+#    f.curlabel = [f.nextcur, 1]
+    f.curlabel = []
+    delim = None
+    if fmt.find(',')>-1:
+        delim = ','
+    # end if
     if (f.nextcur > 0):
         f.lfreeb = 1
         f.extcur = fscanf(fid, fmt, f.nextcur)
-        fscanf(fid, '\n')
+#        fscanf(fid, '\n')
         rem = f.nextcur
-        jj = 0
         while rem > 0:
             line = fgetl(fid)
-            fscanf(fid,'\n')
-            test = line[0]
-            index = tuple(findstr(line,test))
-            for ii in range(_np.size(index)//2):  # i=1:size(index,2)/2
-                f.curlabel[ii+jj] = line[index[2*ii-1]+range(index[2*ii])-1].strip()
-            # end
-            jj += _np.size(index)//2
-            rem -= _np.size(index)/2
-#            index = findstr(line,test)
-#            for ii in range(_np.size(index, axis=1)/2):  # i=1:size(index,2)/2
-#                f.curlabel[ii+jj] = line[index[2*ii-1]+range(index[2*ii])-1].strip()
-#            # end
-#            jj += _np.size(index, axis=1)/2
-#            rem -= _np.size(index, axis=1)/2
+            line = line.replace('\'','').strip() # remove the spaces and apostrophes at end-points
+            line = line.split(delim)          # split into a list of Coils (Coil_3, Coil_4)
+#            fscanf(fid, '\n')            # skip a line seems wrong here
+            index = _np.asarray(range(len(line)))
+            for ii in index:
+                f.curlabel.append(line[ii].strip())
+            # end for
+            rem -= len(index)
         # end
     # end
 
@@ -1422,30 +1420,26 @@ def read_vmec_800(fid, fmt):
     f.equif = data[5, :]
 
 #    f.curlabel = cell(f.nextcur, 1)
-    f.curlabel = [f.nextcur, 1]
+    f.curlabel = []
+    delim = None
+    if fmt.find(',')>-1:
+        delim = ','
+    # end if
     if (f.nextcur > 0):
         f.lfreeb = 1
         f.extcur = fscanf(fid, fmt, f.nextcur)
-        fscanf(fid, '\n')
+#        fscanf(fid, '\n')   # TODO!: need to test this
         rem = f.nextcur
-        jj = 0
         while rem > 0:
             line = fgetl(fid)
-            fscanf(fid, '\n')
-            test = line[0]
-            # find all occurances of line[0] in line
-            index = tuple(findstr(line,test))
-            for ii in range(_np.size(index)//2):  # i=1:size(index,2)/2
-                f.curlabel[ii+jj] = line[index[2*ii-1]+range(index[2*ii])-1].strip()
-            # end
-            jj += _np.size(index)//2
-            rem -= _np.size(index)/2
-#            index = findstr(line, test)
-#            for ii in range(_np.size(index, axis=1)/2):  # i=1:size(index, 2)/2
-#                f.curlabel[ii+jj] = line[index[2*ii-1]+range(index[2*ii])-1].strip()
-#            # end
-#            jj += _np.size(index, axis=1)/2
-#            rem -= _np.size(index, axis=1)/2
+            line = line.replace('\'','').strip() # remove the spaces and apostrophes at end-points
+            line = line.split(delim)          # split into a list of Coils (Coil_3, Coil_4)
+#            fscanf(fid, '\n')            # skip a line seems wrong here
+            index = _np.asarray(range(len(line)))
+            for ii in index:
+                f.curlabel.append(line[ii].strip())
+            # end for
+            rem -= len(index)
         # end
     # end
 
@@ -1883,25 +1877,30 @@ def read_vmec_847(fid,fmt):
     f.Dgeod = data[4, :]
     f.equif = data[5, :]
 
-    f.curlabel=[f.nextcur, 1]
+#    f.curlabel=cell(f.nextcur, 1)
+    f.curlabel = []
+    delim = None
+    if fmt.find(',')>-1:
+        delim = ','
+    # end if
     if (f.nextcur > 0):
         f.lfreeb = 1
         f.extcur = fscanf(fid, fmt, f.nextcur)
         lcurr = fscanf(fid, fmts, 1).strip()
         if lcurr.upper() == 'T':  # strcmpi(lcurr,'T'):
-            fscanf(fid, '\n')
+#            fscanf(fid, '\n')  # skipping seems wrong here?
             rem = f.nextcur
-            jj = 0
+#            jj = 0
             while rem > 0:
                 line = fgetl(fid)
-                fscanf(fid, '\n')
-                test = line[0]
-                index = tuple(findstr(line,test))
-                for ii in range(_np.size(index)//2):  # i=1:size(index,2)/2
-                    f.curlabel[ii+jj] = line[index[2*ii-1]+range(index[2*ii])-1].strip()
-                # end
-                jj += _np.size(index)//2
-                rem -= _np.size(index)/2
+                line = line.replace('\'','').strip() # remove the spaces and apostrophes at end-points
+                line = line.split(delim)          # split into a list of Coils (Coil_3, Coil_4)
+#                fscanf(fid, '\n')            # skip a line seems wrong here
+                index = _np.asarray(range(len(line)))
+                for ii in index:
+                    f.curlabel.append(line[ii].strip())
+                # end for
+                rem -= len(index)
             # end
         # end
     # end
@@ -1910,9 +1909,9 @@ def read_vmec_847(fid,fmt):
     f.sqt = data[0, :]
     f.wdot = data[1, :]
 
-    data = fscanf(fid, fmt2, [2, f.nstore_seq])
-    f.jdotb = data[0, :]
-    f.bdotgradv = data[1, :]
+    data = fscanf(fid, fmt2, [2, f.nstore_seq])   # running into eof here
+    f.jdotb = data[0][:]
+    f.bdotgradv = data[1][:]
 
     # No Unit Conversion Necessary
     # Data and MSE Fits
@@ -2010,7 +2009,7 @@ def read_vmec_847(fid,fmt):
         f.conif = fscanf(fid, fmt, 1)
         f.imatch_phiedge = fscanf(fid, fmt, 1)
     # end
-    f.mgrid_mode=fscanf(fid, fmts).strip()
+    f.mgrid_mode=fscanf(fid, fmts).strip()    # if we already hit the end of file, then this will return None?
     return f
 # end  def read_vmec_847    checked against matlabVMEC on July15,2019
 
