@@ -177,6 +177,11 @@ def fscanf(fid, dtypes='%g', size=None, offset=None, eol='\n'):
         dtypes = dtypes.replace('\t', '')
     # end if
 
+    kwargs = {'delim':delim, 'eol':eol}
+    if dtypes == '\n':
+        # special request to read to end of line and stop there
+        return eztxt.read_rol(fid, **kwargs)
+
     # ===================== #
     # Convert to python / numpy data types
     global nptypes
@@ -208,7 +213,6 @@ def fscanf(fid, dtypes='%g', size=None, offset=None, eol='\n'):
 
     # ===================== #
 
-    kwargs = {'delim':delim, 'eol':eol}
     if ndt>1:
         # multiple datatypes entered, we have to assign data types after getting data
         # or perform multiple calls
@@ -434,6 +438,28 @@ class eztxt(object):
     # end def
 
     @staticmethod
+    def read_rol(fid, dtype=str, delim=' ', eol='\n', allowed_white_lines=100):
+        buffsize = max((len(delim),len(eol), 1))
+        tst = ''
+        white_lines = 0
+        while True and white_lines<allowed_white_lines:
+            tmp = fid.read(buffsize)
+            if len(tmp) == 0:
+                white_lines += 1  # same result for eof and a blank line
+                continue
+            # end if
+            tst += tmp
+
+            if tst == delim:  # remove new line if it is the only element
+                tst = tst.strip(delim)
+                continue
+            if tst.find(eol)>-1:
+                break
+            # end if
+        # end while
+        return tst
+
+    @staticmethod
     def read_element(fid, dtype=str, delim=' ', eol='\n', allowed_white_lines=100, readline=False):
         buffsize = max((len(delim),len(eol), 1))
         tst = ''
@@ -446,8 +472,11 @@ class eztxt(object):
             # end if
             tst += tmp
 
-            if tst == eol or tst == delim:  # remove new line if it is the only element
-                tst = tst.strip(eol).strip(delim)
+            if tst == eol:  # remove new line if it is the only element
+                tst = tst.strip(eol)
+                continue
+            if tst == delim:  # remove new line if it is the only element
+                tst = tst.strip(delim)
                 continue
 
             if tst.find(delim)>-1 and (not readline):
@@ -456,7 +485,6 @@ class eztxt(object):
                 break
             # end if
         # end while
-#        return tst
         return dtype(tst)
 
     @staticmethod
