@@ -17,34 +17,46 @@ __metaclass__ = type
 # ===================================================================== #
 # ===================================================================== #
 
-    fmt2 = ''.join(['%g'+delim for _ in range(2)]) # '%g%g'
-    fmt3 = ''.join(['%g'+delim for _ in range(3)]) # '%g%g%g'
-    fmt6 = ''.join(['%g'+delim for _ in range(6)]) # '%g%g%g%g%g%g'
-    fmt7 = ''.join(['%g'+delim for _ in range(7)]) # '%g%g%g%g%g%g%g'
-    fmt10 = ''.join(['%g'+delim for _ in range(10)]) # '%g%g%g%g%g%g%g%g%g%g'
-    fmt11 = ''.join(['%g'+delim for _ in range(11)]) # '%g%g%g%g%g%g%g%g%g%g%g'
-    fmt12 = ''.join(['%g'+delim for _ in range(12)]) # '%g%g%g%g%g%g%g%g%g%g%g%g'
-    fmt13 = ''.join(['%g'+delim for _ in range(13)]) # '%g%g%g%g%g%g%g%g%g%g%g%g%g'
-    fmt14 = ''.join(['%g'+delim for _ in range(14)]) # '%g%g%g%g%g%g%g%g%g%g%g%g%g%g'
-    fmt20 = ''.join(['%g'+delim for _ in range(20)]) # '%g%g%g%g%g%g%g%g%g%g%g%g%g%g%g%g%g%g%g%g'
-    fmt2_3 = (''.join(['%d'+delim for _ in range(2)]) # '%d%d%g%g%g'
-           + ''.join(['%g'+delim for _ in range(3)]) )
-    fmt2_6 = (''.join(['%d'+delim for _ in range(2)]) # '%d%d%g%g%g%g%g%g'
-           + ''.join(['%g'+delim for _ in range(6)]) )
-    fmt2_7 = (''.join(['%d'+delim for _ in range(2)]) # '%d%d%g%g%g%g%g%g%g'
-            + ''.join(['%g'+delim for _ in range(7)]) )
-    fmt2_11 = (''.join(['%d'+delim for _ in range(2)]) # '%d%d%g%g%g%g%g%g%g%g%g%g%g'
-           + ''.join(['%g'+delim for _ in range(11)]) )
-    fmt2_14 = (''.join(['%d'+delim for _ in range(2)]) # '%d%d%g%g%g%g%g%g%g%g%g%g%g%g%g%g'
-             + ''.join(['%g'+delim for _ in range(14)]) )
-    fmt2_3_2_7 = (''.join(['%d'+delim for _ in range(2)]) # '%d%d%g%g%g%d%d%g%g%g%g%g%g%g'
-                + ''.join(['%g'+delim for _ in range(3)])
-                + ''.join(['%d'+delim for _ in range(2)])
-                + ''.join(['%g'+delim for _ in range(7)]) )
-    fmt2_6_2_14 = (''.join(['%d'+delim for _ in range(2)]) # '%d%d%g%g%g%g%g%g%d%d%g%g%g%g%g%g%g%g%g%g%g%g%g%g'
-                + ''.join(['%g'+delim for _ in range(6)])
-                + ''.join(['%d'+delim for _ in range(2)])
-                + ''.join(['%g'+delim for _ in range(14)]) )
+nptypes = {'i':_np.int, 'd':_np.int, 'ld':_np.int, 'li':_np.int,  # TODO:! actually use correct datatypes
+           'u':_np.uint, 'o':_np.uint, 'x':_np.uint, 'lu':_np.uint, 'lo':_np.uint, 'lx':_np.uint,
+           'f':_np.float, 'e':_np.float, 'g':_np.float,
+           's':_np.str, 'c':_np.str,
+           'b':_np.bool}
+
+#nptypes = {'i':'int', 'd':'int', 'ld':'int', 'li':'int',  # TODO:! actually use correct datatypes
+#           'u':'uint', 'o':'uint', 'x':'uint', 'lu':'uint', 'lo':'uint', 'lx':'uint',
+#           'f':'float', 'e':'float', 'g':'float',
+#           's':'str', 'c':'str',
+#           'bool':'bool'}
+
+#    fmt2 = ''.join(['%g'+delim for _ in range(2)]) # '%g%g'
+#    fmt3 = ''.join(['%g'+delim for _ in range(3)]) # '%g%g%g'
+#    fmt6 = ''.join(['%g'+delim for _ in range(6)]) # '%g%g%g%g%g%g'
+#    fmt7 = ''.join(['%g'+delim for _ in range(7)]) # '%g%g%g%g%g%g%g'
+#    fmt10 = ''.join(['%g'+delim for _ in range(10)]) # '%g%g%g%g%g%g%g%g%g%g'
+#    fmt11 = ''.join(['%g'+delim for _ in range(11)]) # '%g%g%g%g%g%g%g%g%g%g%g'
+#    fmt12 = ''.join(['%g'+delim for _ in range(12)]) # '%g%g%g%g%g%g%g%g%g%g%g%g'
+#    fmt13 = ''.join(['%g'+delim for _ in range(13)]) # '%g%g%g%g%g%g%g%g%g%g%g%g%g'
+#    fmt14 = ''.join(['%g'+delim for _ in range(14)]) # '%g%g%g%g%g%g%g%g%g%g%g%g%g%g'
+#    fmt20 = ''.join(['%g'+delim for _ in range(20)]) # '%g%g%g%g%g%g%g%g%g%g%g%g%g%g%g%g%g%g%g%g'
+#    fmt2_3 = (''.join(['%d'+delim for _ in range(2)]) # '%d%d%g%g%g'
+#           + ''.join(['%g'+delim for _ in range(3)]) )
+#    fmt2_6 = (''.join(['%d'+delim for _ in range(2)]) # '%d%d%g%g%g%g%g%g'
+#           + ''.join(['%g'+delim for _ in range(6)]) )
+#    fmt2_7 = (''.join(['%d'+delim for _ in range(2)]) # '%d%d%g%g%g%g%g%g%g'
+#            + ''.join(['%g'+delim for _ in range(7)]) )
+#    fmt2_11 = (''.join(['%d'+delim for _ in range(2)]) # '%d%d%g%g%g%g%g%g%g%g%g%g%g'
+#           + ''.join(['%g'+delim for _ in range(11)]) )
+#    fmt2_14 = (''.join(['%d'+delim for _ in range(2)]) # '%d%d%g%g%g%g%g%g%g%g%g%g%g%g%g%g'
+#             + ''.join(['%g'+delim for _ in range(14)]) )
+#    fmt2_3_2_7 = (''.join(['%d'+delim for _ in range(2)]) # '%d%d%g%g%g%d%d%g%g%g%g%g%g%g'
+#                + ''.join(['%g'+delim for _ in range(3)])
+#                + ''.join(['%d'+delim for _ in range(2)])
+#                + ''.join(['%g'+delim for _ in range(7)]) )
+#    fmt2_6_2_14 = (''.join(['%d'+delim for _ in range(2)]) # '%d%d%g%g%g%g%g%g%d%d%g%g%g%g%g%g%g%g%g%g%g%g%g%g'
+#                + ''.join(['%g'+delim for _ in range(6)])
+#                + ''.join(['%d'+delim for _ in range(2)])
+#                + ''.join(['%g'+delim for _ in range(14)]) )
 
 
 def ftell(fid):
@@ -96,7 +108,7 @@ def fgetl(fid):
     """
     return fgets(fid).replace('\n','')
 
-def fscanf(fid, dtypes='#g', size=None, offset=None):
+def fscanf(fid, dtypes='%g', size=None, offset=None, eol='\n'):
     """
     This function tries to mimic fscanf from MATLAB. In MATLAB, fscanf
     reads in formatted data from an open file up to a specified shape.
@@ -112,10 +124,14 @@ def fscanf(fid, dtypes='#g', size=None, offset=None):
             if size = [3, 2], then 2 elements will be read in for three rows
         offset - The starting point to read from the file
             MATLAB automatically keeps track.
-        # delimiter - defaults to white space
-
+        unpack - output a tuple for expansion into multiple variables
+            default to False, automatically True if multiple data types are entered
     Outputs:
-        data - shape is equal to input size, but defaults to (1,length of the row)
+        data - shape is equal to input size
+                if multiple data types are input
+                    output structure is a list
+                if single data type requested and more than 1 element:
+                    output structure is a numpy array
 
     MATLAB cheat-sheet for fscanf
 
@@ -140,32 +156,46 @@ def fscanf(fid, dtypes='#g', size=None, offset=None):
             %s - string - Read all characters excluding white spaces
             %c - string - Read any single character, including white space.
                     To read multiple characters at a time, specify field width.
-
     """
-#    nptypes = {'i':_np.int, 'd':_np.int, 'ld':_np.int, 'li':_np.int,  # TODO:! actually use correct datatypes
-#               'u':_np.uint, 'o':_np.uint, 'x':_np.uint, 'lu':_np.uint, 'lo':_np.uint, 'lx':_np.uint,
-#               'f':_np.float, 'e':_np.float, 'g':_np.float,
-#               's':_np.str, 'c':_np.str,
-#               'bool':_np.bool}
-    nptypes = {'i':'int', 'd':'int', 'ld':'int', 'li':'int',  # TODO:! actually use correct datatypes
-               'u':'uint', 'o':'uint', 'x':'uint', 'lu':'uint', 'lo':'uint', 'lx':'uint',
-               'f':'float', 'e':'float', 'g':'float',
-               's':'str', 'c':'str',
-               'bool':'bool'}
-    # Convert the different datatypes into a list
-    delimiter = ' '
-    if dtypes.find(',')>-1:   # delimiter hidden in fmt string
-        delimiter = ','
-        dtypes = dtypes.replace(',', '')
+    # ===================== #
+    if offset is not None:
+        fid.seek(offset, 0)
     # end if
 
+    # ===================== #
+    # Parse the input data types for the delimiter
+    # Convert the different datatypes into a list
+    delim = ' '
+    if dtypes.find(',')>-1:   # delimiter hidden in fmt string
+        delim = ','
+        dtypes = dtypes.replace(',', '')
+    elif dtypes.find(';')>-1:   # delimiter hidden in fmt string
+        delim = ';'
+        dtypes = dtypes.replace(';', '')
+    elif dtypes.find('\t')>-1:   # delimiter hidden in fmt string
+        delim = '\t'
+        dtypes = dtypes.replace('\t', '')
+    # end if
+
+    # ===================== #
+    # Convert to python / numpy data types
+    global nptypes
+
+    # Count and parse the requested data types input by the user
     dtypes = list(_np.atleast_1d(dtypes.split('%')))[1:]
     ndt = len(dtypes)
-    # ndt = len(dtypes.split('#'))-1
 
+    # check if the datatypes are all the same
+    if ndt>1 and (dtypes[0] == _np.atleast_1d(dtypes)).all():
+        dtypes = [nptypes[dtypes[0]]]
+    else:
+        dtypes = [nptypes[dtypes[ii]] for ii in range(ndt)]
+    # end if
+
+    # ===================== #
+    # now parse the size keyword input for easier handling later
     nrow = 1
-    ncol = ndt
-
+    ncol = 1
     if size is not None:
         size = _np.atleast_1d(size)
         if len(size)>1:
@@ -176,55 +206,307 @@ def fscanf(fid, dtypes='#g', size=None, offset=None):
         # end if
     # end if
 
-#    string_line = False
-    if ncol != ndt:
-        # Assume that one data type was put in for the entire line regardless of how many columns
-#        if len(dtypes)==1 and dtypes[0] =='s':
-#            string_line = True
-#        else:
-        if 1:
-#            print(len(dtypes))
-            dtypes = dtypes*ncol
-#            print(len(dtypes))
-            ndt = ncol
+    # ===================== #
+
+    kwargs = {'delim':delim, 'eol':eol}
+    if ndt>1:
+        # multiple datatypes entered, we have to assign data types after getting data
+        # or perform multiple calls
+        kwargs['dtype'] = _np.str
+    else:
+        # single data type entered and numpy/column vectors requested
+        # we can allow the reader to do the data typing on the fly
+        kwargs['dtype'] = dtypes[0]
+    # end if
+
+    if nrow>1:
+        # if an array was input for size then read in to the specified shape
+        reader = eztxt.read_to_shape
+        args = (fid, size)
+    else:
+        if ncol>1:
+            # if more than one element was requested
+            reader = eztxt.read_to_count
+            args = (fid, ncol)
+        else:
+            # if a single-element was requested
+            reader = eztxt.read_element
+            args = (fid,)
         # end if
     # end if
 
-    if offset is not None:
-        fid.seek(offset, 0)
-    # end if
+    # Get the data and return it as a list (or list of lists)
+    try:
+        data = reader(*args, **kwargs)
+    except EOFError:
+        print('premature termination by end-of-file (before input size was reached)')
+    except:
+        raise
+    # end try
 
-    dt = _np.dtype(''.join(nptypes[dtypes[jj]] for jj in range(ncol)))
-    data = _np.zeros((nrow, ncol), dtype=dt)
-#    data = []
-    for ii in range(nrow):
-        try:
-            line = fgetl(fid)
-            if len(line)==0:
-                continue # end of file has been reached or white space with readline
-        except EOFError:
-            break
-        # end try
-
-        if size == 1 and dtypes[ii]=='s':
-            return line
+    # ======================= #
+    if ndt>1:
+        # Loop over the elements of the list and assign the data type
+        if nrow > 1:
+            for ii in range(nrow):
+                for jj in range(ncol):
+                    data[ii][jj] = dtypes[jj](data[ii][jj])
+                # end for
+            # end for
+        else:
+            data = [dtypes[jj](data[jj]) for jj in range(ncol)]
+#            for jj in range(ncol):
+#                data[jj] = dtypes[jj](data[jj])
+#            # end for
         # end if
-
-        # split up the line into a list (choose where by delimiter)
-        line = list(line.split(delimiter))  # now a tuple, now a list
-
-        # Remove empty elements from the list
-        line = [line[jj] for jj in range(len(line)) if line[jj] != '']
-
-        data[ii, :] = tuple(line)
-#        # Loop over the elements of the list and assign the data type
-#        for jj in range(len(line)):
-#            line[jj] = nptypes[dtypes[jj]](line[jj])
-#        # end for
-#        data.append(line)
+    else:
+        if nrow == 1:
+            if dtypes[0] == str:
+                # for reading in strings that have spaces in them (when delim==' ')
+                data = ''.join(data)
+                data = data.strip(delim)
+            elif ncol > 1:
+                data = _np.asarray(data)
+            # end if
+        elif nrow>1:
+            data = _np.asarray(data)
+        # end if
     # end if
+    # ======================= #
+
     return data
-#    return data, fid.tell()
+
+#def fscanf(fid, dtypes='%g', size=None, offset=None, unpack=False, eol='\n'):
+#    """
+#    This function tries to mimic fscanf from MATLAB. In MATLAB, fscanf
+#    reads in formatted data from an open file up to a specified shape.
+#        fscanf(fileID,formatSpec,sizeA)
+#
+#    Input:
+#        fid    - file id generated from fid = open(filename), etc.
+#        dtypes - data types mimicing the formatSpec keyword in MATLAB's fscanf function
+#            See the note below
+#        size   - 1D or 2D shape of returned data, [nrow, ncol] or an integer
+#            The shape of the output data
+#            if size = 13, then 13 elements will be read in along a single row
+#            if size = [3, 2], then 2 elements will be read in for three rows
+#        offset - The starting point to read from the file
+#            MATLAB automatically keeps track.
+#        unpack - output a tuple for expansion into multiple variables
+#            default to False, automatically True if multiple data types are entered
+#    Outputs:
+#        data - shape is equal to input size, but defaults to (1,length of the row)
+#
+#    MATLAB cheat-sheet for fscanf
+#    """
+#    kwargs = {'delim':delim, 'eol':eol}
+#    if ndt>1:
+#        # multiple datatypes entered, we have to assign data types after getting data
+#        # or perform multiple calls
+#        kwargs['dtype'] = _np.str
+#
+#        # if multiple data formats have been entered we have to unpack it
+#        unpack = True
+#    else:
+#        # single data type entered and numpy/column vectors requested
+#        # we can allow the reader to do the data typing on the fly
+#        kwargs['dtype'] = dtypes[0]
+#    # end if
+#
+#    if nrow>1:
+#        # if an array was input for size then read in to the specified shape
+#        reader = eztxt.read_to_shape
+#        args = (fid, size)
+#    else:
+#        if ncol>1:
+#            # if more than one element was requested
+#            reader = eztxt.read_to_count
+#            args = (fid, size)
+#        else:
+#            # if a single-element was requested
+#            reader = eztxt.read_element
+#            args = (fid,)
+#        # end if
+#    # end if
+#    try:
+#        data = reader(*args, **kwargs)
+#    except EOFError:
+#        print('premature termination by end-of-file (before input size was reached)')
+#    except:
+#        raise
+#    # end try
+#
+#    # ======================= #
+#    if ndt>1:
+#        # Loop over the elements of the list and assign the data type
+#        if nrow > 1:
+#            for ii in range(nrow):
+#                for jj in range(ncol):
+#                    data[ii][jj] = dtypes[jj](data[ii][jj])
+#                # end for
+#            # end for
+#        else:
+#            for jj in range(ncol):
+#                data[jj] = dtypes[jj](data[jj])
+#            # end for
+#        # end if
+#    # end if
+#    # ======================= #
+#
+#    if nrow > 1 and ndt == 1:
+#        data = _np.asarray(data)
+#        if unpack:
+#            # single data format input, column vector output required
+#            #  data = fscanf(fid, dtype='%g', [3, 5], unpack=True)
+#            #  returns 5 column vectors of float64 data, size(3,)
+#            return tuple([data[:,ii] for ii in range(ncol)])
+#            # return tuple(map(None, zip(*data)))
+#        else:
+#            # single data format input, array output required
+#            #  data = fscanf(fid, dtype='%g', [3, 5])
+#            #  Should output a numpy array sized 3,5 of float64 data
+#            return data
+#        # end if
+#    elif nrow >1 and ndt > 1:
+#        # We automatically have to unpack the data in this case
+#        #   (unpack == True when ndt>1)
+#        # multiple data formats input, expecting column vectors output
+#        #   a, b, c = fscanf(fid, dtype='%d%d%g', [100, 3])
+#        #Should return an unzipped tuple for expansion
+#        #   size(a) == size(b) == size(c) == [100,]
+#        return tuple(map(_np.asarray, zip(*data)))
+#    elif nrow == 1 and ndt == 1:
+#        if unpack:
+#            # single data format input, expanded output required
+#            #  a, b, c = fscanf(fid, dtype='%i', 3)
+#            # Should return a tuple for expansion
+#            if dtypes[0] == str:
+#                data = data.strip(delim)
+#            # end if
+#            return tuple(data)
+#        else:
+#            if dtypes[0] == str:
+#                # for reading in strings that have spaces in them (when delim==' ')
+#                data = ''.join(data)
+#                data = data.strip(delim)
+#            # end if
+#            return data
+#    elif nrow == 1 and ndt > 1:
+#       # We automatically have to unpack the data in this case
+#        #   (unpack == True when ndt>1)
+#        return tuple(data)
+#
+#        #    multiple data formats input, unzipped tuple output required
+#        #        a, b, c = fscanf(fid, dtype='%d%d%g', 3)
+#        #            Should return an unzipped tuple for expansion
+#        return tuple([nptypes[dtypes[jj]](data[0][jj]) for jj in range(ncol)])
+#
+##        elif ndt == ncol and nrow>1:
+##            #    multiple data formats input, expecting column vectors output
+##            #        a, b, c = fscanf(fid, dtype='%d%d%g', [100, 3])
+##            #            Should return an unzipped tuple for expansion
+##            #        size(a) == size(b) == size(c) == [100,]
+##            # Loop over the elements of the list and assign the data type
+##            for ii in range(nrow):
+##                for jj in range(ncol):
+##                    data[ii][jj] = nptypes[dtypes[jj]](data[ii][jj])
+##                # end for
+##            # end for
+##            return tuple(map(_np.asarray, zip(*data)))
+##        # end if
+##    # end if
+##
+##    # we will get to this situation when it arises
+##    print('unknown situation ... outputing a list of lists from fscanf')
+##    print('Note:  no data formatting applied: string output!')
+##    return data
+##    # end if
+###    return data, fid.tell()
+
+
+class eztxt(object):
+    def __init__(self, fid, dtype=str, delim=' ', eol='\n'):
+        self.fid = fid           # file id
+        self.delim = delim       # delimiter
+        self.eol = eol           # line feed
+        self.cr                  # carriage return
+        self.dtype = dtype       # function handle for data type conversion
+    # end def
+
+    @staticmethod
+    def read_element(fid, dtype=str, delim=' ', eol='\n', allowed_white_lines=100, readline=False):
+        buffsize = max((len(delim),len(eol), 1))
+        tst = ''
+        white_lines = 0
+        while True and white_lines<allowed_white_lines:
+            tmp = fid.read(buffsize)
+            if len(tmp) == 0:
+                white_lines += 1  # same result for eof and a blank line
+                continue
+            # end if
+            tst += tmp
+
+            if tst == eol or tst == delim:  # remove new line if it is the only element
+                tst = tst.strip(eol).strip(delim)
+                continue
+
+            if tst.find(delim)>-1 and (not readline):
+                break
+            if tst.find(eol)>-1:
+                break
+            # end if
+        # end while
+#        return tst
+        return dtype(tst)
+
+    @staticmethod
+    def read_line(fid, dtype=str, delim=' ', eol='\n', allowed_white_lines=100):
+        return eztxt.read_element(fid, dtype=dtype, delim=delim, eol=eol, readline=True)
+
+    @staticmethod
+    def read_to_count(fid, count, dtype=str, delim=' ', eol='\n'):
+        """
+        returns a list with length count
+        """
+        tst = []
+        for ii in range(count):
+            tmp = eztxt.read_element(fid, dtype=dtype, delim=delim, eol=eol)
+            tst.append(tmp)
+        # end for
+        return tst
+
+    @staticmethod
+    def read_to_shape(fid, shape, dtype=str, delim=' ', eol='\n'):
+        """
+        returns a list of lists with shape determined by input shape
+        """
+        nrow = 1
+        if len(shape)>1:
+            nrow = shape[0]
+            ncol = shape[1]
+        else:
+            ncol = shape[0]
+        # end if
+
+        tst = []
+        for ii in range(nrow):
+            tst.append(eztxt.read_to_count(fid, count=ncol, dtype=dtype, delim=delim, eol=eol))
+        # end for
+        return tst
+    # end def methods
+# end class eztxt
+
+# ===================================================================== #
+
+
+def findstr(a_str, sub):
+    start = 0
+    while True:
+        start = a_str.find(sub, start)
+        if start == -1: return
+        yield start
+        start += len(sub) # use start += 1 to find overlapping matches
+
 
 # ===================================================================== #
 
@@ -517,10 +799,85 @@ def openpoints(func, a, b, TOL=1e-6, verbose=True):           # f(x)=func(x)
 # end def openpoints
 
 
+
 # ========================================================================== #
 
 
 if __name__ == '__main__':
+    npbool = True
+    npfloatarray = _np.ones((3,4), dtype=float)
+    npfloatarray += _np.random.normal(0, 1, _np.shape(npfloatarray))
+    npint1 = 134
+    npint2 = 323
+    npint3 = 51
+    npfloat = 23.3
+    strtst1 = 'what is my name?'
+    strtst2 = 'wout.txt'
+    testdat = [npbool, npfloatarray, npint1, [npint1, npint2, npint3, npfloat], strtst1, strtst2]
+
+    eol = '\n'
+    delim = ' '
+    try:
+        fid = open('utils.testfile', 'w+')
+        for tst in testdat:
+            if len(_np.atleast_1d(tst))>1:
+                try:    tst = tst.flatten()
+                except: pass
+                # end try
+
+                for ii in range(len(tst)):
+                    if ii>0 and ii%4 == 0:  # maximum of 4 elements per line
+                        fid.write(eol)
+                    # end if
+                    fid.write(str(tst[ii])+delim)
+                # end for
+#                fid.write(' '.join(str(tst[ii]) for ii in range(len(tst))))
+            else:
+                fid.write(''.join(str(tst)) + delim + eol)
+            # end if
+            fid.write(eol)  # the write statement just fills a buffer ...
+            # end if
+
+            # writing to file only happens when the close statement is called.
+            fid.flush()  # forces the buffer to empty into the file
+        # end for
+    except:
+        raise
+    finally:
+        try:        fid.close()
+        except:     pass
+    # end try
+
+    elmnts_shape = [1, [3,4], 1, 4, 4, 1]
+    dtypes = [_np.bool, _np.float64, _np.int, _np.int, _np.str, _np.str]
+    dtyps = ['%b','%g','%d','%d%d%d%g','%s','%s']
+    try:
+        fid = open('utils.testfile', 'r')
+
+        kwargs = {'delim':delim, 'eol':eol}
+        for ii in range(len(elmnts_shape)):
+            sh = elmnts_shape[ii]
+            tst = fscanf(fid, dtypes=dtyps[ii], size=sh)
+
+            # test if the data reading worked
+            if len(_np.atleast_1d(testdat[ii]).shape)>1:
+                if (tst == testdat[ii]).all():
+                    print((tst, 'success'))
+                else:
+                    print((tst, testdat[ii], 'fail'))
+            elif (tst == testdat[ii]):
+                print((tst, 'success'))
+            else:
+                print((tst, testdat[ii], 'fail'))
+        # end for
+    except:
+        raise
+    finally:
+        fid.close()
+    # end try
+
+    import os as _os
+    _os.remove('utils.testfile')
     import doctest
     doctest.testmod()
 # end if
