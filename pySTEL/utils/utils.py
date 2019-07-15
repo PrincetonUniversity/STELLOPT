@@ -161,6 +161,7 @@ def fscanf(fid, dtypes='%g', size=None, offset=None, eol='\n'):
     if offset is not None:
         fid.seek(offset, 0)
     # end if
+    dtypes_in = dtypes
 
     # ===================== #
     # Parse the input data types for the delimiter
@@ -191,9 +192,10 @@ def fscanf(fid, dtypes='%g', size=None, offset=None, eol='\n'):
     ndt = len(dtypes)
 
     # check if the datatypes are all the same
-    if ndt>1 and (dtypes[0] == _np.atleast_1d(dtypes)).all():
-        dtypes = [nptypes[dtypes[0]]]
-    else:
+#    if ndt>1 and (dtypes[0] == _np.atleast_1d(dtypes)).all():
+#        dtypes = [nptypes[dtypes[0]]]
+#    else:
+    if 1:
         dtypes = [nptypes[dtypes[ii]] for ii in range(ndt)]
     # end if
 
@@ -213,7 +215,7 @@ def fscanf(fid, dtypes='%g', size=None, offset=None, eol='\n'):
 
     # ===================== #
 
-    if ndt>1:
+    if ndt>1 and (dtypes[0] != _np.atleast_1d(dtypes)).all():
         # multiple datatypes entered, we have to assign data types after getting data
         # or perform multiple calls
         kwargs['dtype'] = _np.str
@@ -244,17 +246,25 @@ def fscanf(fid, dtypes='%g', size=None, offset=None, eol='\n'):
         data = reader(*args, **kwargs)
     except EOFError:
         print('premature termination by end-of-file (before input size was reached)')
+        # get actual output dimensions returned
+        sh = _np.shape(data)
+        if len(sh)>1:
+            nrow, ncol = sh
+        else:
+            nrow = 1
+            ncol = sh[0]
+        # end if
     except:
         raise
     # end try
 
     # ======================= #
-    if ndt>1:
+    if ndt>1 and (dtypes[0] != _np.atleast_1d(dtypes)).all():
         # Loop over the elements of the list and assign the data type
         if nrow > 1:
             for ii in range(nrow):
                 for jj in range(ncol):
-                    data[ii][jj] = dtypes[jj](data[ii][jj])
+                    data[ii][jj] = dtypes[ii](data[ii][jj])
                 # end for
             # end for
         else:

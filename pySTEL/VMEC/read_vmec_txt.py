@@ -26,19 +26,29 @@
 
     NOTES:
     01/05/2011      Modified output variables to use cos sine (c/s) notation
-    instead of the e notation.  Also added modifications to
-    support non-axisymmetric VMEC runs.
+                    instead of the e notation.  Also added modifications to
+                    support non-axisymmetric VMEC runs.
     01/13/2011     Overloaded to read vmec mercier file.
     01/31/2011     All quantities now mapped to full mesh.
     02/01/2011     Updated for version 8.47
     02/28/2011     Properly Handles half grid quantities (see wrfcn in pgplot)
     05/31/2011     Added support for +8.0 text files
     03/21/2012     Modified so opening netCDF via path is possible.
-    Fixed issue with mu constant when reading netCDF files.
+                   Fixed issue with mu constant when reading netCDF files.
 
+    Original branch point for porting to python:
     03/03/2016     G.M. Weir (IPP-Greifswald) Ported to Python (old version)
-        To do: Still needs updates!
-    07/12/2019     G.M. Weir updated for general use
+
+    1/30/13     Added calculation of chip
+    1/10/14     Modified to read 8.51 files
+                Uses new methods for calculating J taking into acount the
+                odd modes properly.
+    3/31/14     Fixed calculation of non-stellarator symmetric J terms.
+    3/1/16      Corrected variable names so text files use the new method
+                calculation of current densities.
+
+    Updated merge in port to python:
+    07/12/2019     G.M. Weir updated for general use in python
 """
 # ======================================================================== #
 # ======================================================================== #
@@ -1151,12 +1161,18 @@ def read_vmec_695(fid, fmt):
             line = fgetl(fid)
             fscanf(fid,'\n')
             test = line[0]
-            index = findstr(line,test)
-            for ii in range(_np.size(index, axis=1)/2):  # i=1:size(index,2)/2
+            index = tuple(findstr(line,test))
+            for ii in range(_np.size(index)//2):  # i=1:size(index,2)/2
                 f.curlabel[ii+jj] = line[index[2*ii-1]+range(index[2*ii])-1].strip()
             # end
-            jj += _np.size(index, axis=1)/2
-            rem -= _np.size(index, axis=1)/2
+            jj += _np.size(index)//2
+            rem -= _np.size(index)/2
+#            index = findstr(line,test)
+#            for ii in range(_np.size(index, axis=1)/2):  # i=1:size(index,2)/2
+#                f.curlabel[ii+jj] = line[index[2*ii-1]+range(index[2*ii])-1].strip()
+#            # end
+#            jj += _np.size(index, axis=1)/2
+#            rem -= _np.size(index, axis=1)/2
         # end
     # end
 
@@ -1418,12 +1434,18 @@ def read_vmec_800(fid, fmt):
             fscanf(fid, '\n')
             test = line[0]
             # find all occurances of line[0] in line
-            index = findstr(line, test)
-            for ii in range(_np.size(index, axis=1)/2):  # i=1:size(index, 2)/2
+            index = tuple(findstr(line,test))
+            for ii in range(_np.size(index)//2):  # i=1:size(index,2)/2
                 f.curlabel[ii+jj] = line[index[2*ii-1]+range(index[2*ii])-1].strip()
             # end
-            jj += _np.size(index, axis=1)/2
-            rem -= _np.size(index, axis=1)/2
+            jj += _np.size(index)//2
+            rem -= _np.size(index)/2
+#            index = findstr(line, test)
+#            for ii in range(_np.size(index, axis=1)/2):  # i=1:size(index, 2)/2
+#                f.curlabel[ii+jj] = line[index[2*ii-1]+range(index[2*ii])-1].strip()
+#            # end
+#            jj += _np.size(index, axis=1)/2
+#            rem -= _np.size(index, axis=1)/2
         # end
     # end
 
@@ -1600,14 +1622,17 @@ def read_vmec_847(fid,fmt):
     f.mgrid_file = fscanf(fid, fmts, 1)
 
     # Read Arrays
-    f.xm = _np.zeros( (1,f.mnmax), dtype=_np.int64)
+#    f.xm = _np.zeros( (1,f.mnmax), dtype=_np.int64)
+#    f.xn = _np.zeros_like(f.xm)
+    f.xm = _np.zeros( (f.mnmax,), dtype=_np.int64)
     f.xn = _np.zeros_like(f.xm)
 
     f.rmnc = _np.zeros( (f.mnmax, f.ns), dtype=_np.float64)
     f.zmns = _np.zeros_like(f.rmnc)
     f.lmns = _np.zeros_like(f.rmnc)
 
-    f.xm_nyq = _np.zeros( (1, f.mnmax_nyq), dtype=_np.int64)
+#    f.xm_nyq = _np.zeros( (1, f.mnmax_nyq), dtype=_np.int64)
+    f.xm_nyq = _np.zeros( (f.mnmax_nyq,), dtype=_np.int64)
     f.xn_nyq = _np.zeros_like(f.xm_nyq)
 
     f.bmnc = _np.zeros( (f.mnmax_nyq, f.ns), dtype=_np.float64)
@@ -1694,7 +1719,7 @@ def read_vmec_847(fid,fmt):
     js1 = range(2,ns)    # 3:ns
     js = range(1, ns-1)  # 2:(ns-1)
     for mn in range(f.mnmax_nyq):  # 1:f.mnmax_nyq:
-        if f.xm_nyq%2 == 0:     # mod(f.xm_nyq, 2) == 1
+        if f.xm_nyq[mn]%2 == 0:     # mod(f.xm_nyq, 2) == 1
             t1 = 0.5*(shalf[js1]*f.bsubsmns[mn, js1] +
                       shalf[js]*f.bsubsmns[mn, js])/sfull[js]
             bu0 = f.bsubumnc[mn, js]/ shalf[js]
@@ -1736,7 +1761,8 @@ def read_vmec_847(fid,fmt):
         f.currumns = _np.zeros( (f.mnmax_nyq, f.ns), dtype=_np.float64)
         f.currvmns = _np.zeros_like(f.currumns)
         for mn in range(f.mnmax_nyq):  # 1:f.mnmax_nyq:
-            if f.xm_nyq%2 == 0:     # mod(f.xm_nyq, 2) == 1
+#            if f.xm_nyq%2 == 0:     # mod(f.xm_nyq, 2) == 1
+            if _np.mod(f.xm_nyq, 2) == 1:     # mod(f.xm_nyq, 2) == 1
                 t1 = 0.5*(shalf[js1]*f.bsubsmnc[mn, js1] +
                           shalf[js]*f.bsubsmnc[mn, js])/sfull[js]
                 bu0 = f.bsubumns[mn, js]/ shalf[js]
@@ -1870,12 +1896,12 @@ def read_vmec_847(fid,fmt):
                 line = fgetl(fid)
                 fscanf(fid, '\n')
                 test = line[0]
-                index = findstr(line,test)
-                for ii in range(_np.size(index, axis=1)/2):  # i=1:size(index,2)/2
+                index = tuple(findstr(line,test))
+                for ii in range(_np.size(index)//2):  # i=1:size(index,2)/2
                     f.curlabel[ii+jj] = line[index[2*ii-1]+range(index[2*ii])-1].strip()
                 # end
-                jj += _np.size(index, axis=1)/2
-                rem -= _np.size(index, axis=1)/2
+                jj += _np.size(index)//2
+                rem -= _np.size(index)/2
             # end
         # end
     # end
@@ -2056,7 +2082,8 @@ def read_vmec_netcdf(filname):
     js1 = range(2, ns)
     js = range(1, ns-1)
     for mn in range(f.mnmaxnyq):
-        if f.xmnyq%2 == 1:  # mod(f.xmnyq, 2) == 1
+#        if f.xmnyq%2 == 1:  # mod(f.xmnyq, 2) == 1
+        if _np.mod(f.xmnyq, 2) == 1:  # mod(f.xmnyq, 2) == 1
             t1 = 0.5 * (shalf[js1] * f.bsubsmns[mn, js1] +
                 shalf[js]*f.bsubsmns[mn,js]) / sfull[js]
             bu0 = f.bsubumnc[mn,js] / shalf[js]
@@ -2096,7 +2123,8 @@ def read_vmec_netcdf(filname):
         f.currumns=_np.zeros( (f.mnmaxnyq,f.ns), dtype=_np.float64)
         f.currvmns=_np.zeros( (f.mnmaxnyq,f.ns), dtype=_np.float64)
         for mn in range(f.mnmaxnyq): # i=1:f.mnmaxnyq
-            if (f.xmnyq%2 == 1):  # mod(f.xmnyq, 2) == 1
+#            if (f.xmnyq%2 == 1):  # mod(f.xmnyq, 2) == 1
+            if _np.mod(f.xmnyq, 2) == 1:  # mod(f.xmnyq, 2) == 1
                 t1 = 0.5 * (shalf[js1] * f.bsubsmnc[mn, js1] +
                     shalf[js]*f.bsubsmnc[mn,js]) / sfull[js]
                 bu0 = f.bsubumns[mn,js] / shalf[js]

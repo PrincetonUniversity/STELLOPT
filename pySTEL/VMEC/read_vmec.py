@@ -36,20 +36,18 @@
     03/21/2012     Modified so opening netCDF via path is possible.
                    Fixed issue with mu constant when reading netCDF files.
     1/30/13     Added calculation of chip
+    1/10/14     Modified to read 8.51 files
+                Uses new methods for calculating J taking into acount the
+                odd modes properly.
     3/31/14     Fixed calculation of non-stellarator symmetric J terms.
+    3/1/16      Corrected variable names so text files use the new method
+                calculation of current densities.
 
     Original branch point for porting to python:
         03/03/2016     G.M. Weir (IPP-Greifswald) Ported to Python (old version)
 
     Updated merge in port to python:
         07/12/2019     G.M. Weir updated for general use
-
-            %   1/10/14     Modified to read 8.51 files
-            %               Uses new methods for calculating J taking into acount the
-            %               odd modes properly.
-            %   3/1/16      Corrected variable names so text files use the new method
-            %               calculation of current densities.
-
 """
 # ======================================================================== #
 # ======================================================================== #
@@ -237,8 +235,10 @@ class read_vmec(Struct):
     def read_vmec_txt(self, fid, fmt):
         try:
             from VMEC import read_vmec_txt as rvt
+#            import read_vmec_txt as rvt
         except:
-            from . import read_vmec_txt as rvt
+            import VMEC
+            from .VMEC import read_vmec_txt as rvt
         # end try
         if (self.version <= 5.10):
             self.reader = rvt.read_vmec_orig
