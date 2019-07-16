@@ -62,6 +62,9 @@
       ! Handle coil geometry
       IF (lcoil_geom) CALL namelist_input_makegrid(id_string)
 
+      ! Init MPI
+      !CALL stellopt_init_mpi
+
 !DEC$ IF DEFINED (MPI_OPT)
       CALL MPI_BARRIER( MPI_COMM_STEL, ierr_mpi )                   ! MPI
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'stellopt_main',ierr_mpi)
