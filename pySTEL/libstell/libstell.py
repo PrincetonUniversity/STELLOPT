@@ -1,21 +1,147 @@
 # LIBSTELL Module
+"""
 
+"""
+# ===================================================================== #
+# ===================================================================== #
+
+#This section is to improve compatability between bython 2.7 and python 3x
+from __future__ import absolute_import, division, print_function, unicode_literals
+__metaclass__ = type
+
+import utils as _ut
+
+# ========================================================================== #
+# ========================================================================== #
+
+# global string variables used for accessing methods in libstell
 s1 = ""
 s2 = "mp"
 s3 = "_"
 
-def read_vmec(file):
-    import os, sys
+# ========================================================================== #
+# ========================================================================== #
+
+
+def setup_libstell(branch=None, path=None, verbose=False):
+    """
+     Allowing interfacing with this library through difference git branches,
+     without messing with environment variables, and allow local user paths
+     to pre-compiled libraries
+    """
+    # ====================================================================== #
+    import os as _os
+    import sys
+    global libstell_branch
+    global libstell_path
+    global qtCreatorPath
+    global use_stellopt
+    # ====================================================================== #
+
+    if branch is not None:
+        libstell_branch = branch
+    if path is not None:
+        libstell_path = path
+        qtCreatorPath = path
+        if verbose and not _os.path.exists(libstell_path):
+            print('Error in libstell_path setup:  path does not exist')
+        # end if
+    # end if
+
+    if 'use_stellopt' not in globals():
+        use_stellopt = True
+    if 'libstell_branch' not in globals():
+        # Default to the release branch of the STELLOPT library
+        libstell_branch = 'Release'
+    if 'libstell_path' not in globals():
+        if use_stellopt:
+            if verbose:
+                print('Attempting to use the STELLOPT library')
+            # end if
+            try:
+                # Default to the stellopt environment variable
+                if 'qtCreatorPath' not in globals():
+                    qtCreatorPath = _os.environ["STELLOPT_PATH"]
+                # end if
+                libstell_path = _os.path.join(qtCreatorPath, 'LIBSTELL', libstell_branch)
+            except KeyError:
+                if verbose:
+                    print('Please set environment variable STELLOPT_PATH or specify the libstell path')
+                # end if
+                sys.exit()
+            # end try
+        else:
+            # library location in same spot as this module
+            libstell_path = _os.path.dirname(__file__)
+            if verbose:
+                print('Attempting to set a local library: %s'%(libstell_path,))
+            # end if
+
+            if 'qtCreatorPath' not in globals():
+                qtCreatorPath = libstell_path
+            # end if
+        # end if
+    # end if
+
+    if verbose:
+        print('Set libstell library path to: %s'%(libstell_path,))
+        print('Set qtCreatorPath for the VMECplot GUI to: %s'%(qtCreatorPath,))
+    # end if
+# end def
+
+
+def load_libstell():
+    import os as _os
+    import sys
+    import platform
+    import ctypes as ct
+#    import numpy.ctypeslib as npct
+
+    global libstell_path
+    global qtCreatorPath
+    if 'libstell_path' not in globals():
+        setup_libstell()
+    # end if
+
+    # ====================================================================== #
+
+    os = platform.system()
+    is_64bits = sys.maxsize > 2**32
+
+    if is_64bits:   # 64-bit architecture
+        # ls_handle = ct.c_longlong
+        if os=='Windows':
+            libstell =  ct.cdll.LoadLibrary( _os.path.join( libstell_path,"libstell64.dll"))
+#            libstell = npct.load_library( _os.path.join( libstell_path,"libstell64.dll"),".")
+        elif os=='Linux':
+            libstell =  ct.cdll.LoadLibrary( _os.path.join( libstell_path,"libstell64.so"))
+#            libstell = npct.load_library( _os.path.join( libstell_path,"libstell64.so"),".")
+    else:
+        # ls_handle = ct.c_long
+        if os=='Windows':
+            libstell =  ct.cdll.LoadLibrary( _os.path.join( libstell_path,"libstell.dll"))
+#            libstell = npct.load_library( _os.path.join( libstell_path,"libstell.dll"),".")
+        elif os=='Linux':
+            libstell =  ct.cdll.LoadLibrary( _os.path.join( libstell_path,"libstell.so"))
+#            libstell = npct.load_library( _os.path.join( libstell_path,"libstell.so"),".")
+        # end if
+    # end if
+
+    # ====================================================================== #
+
+    return libstell, libstell_path
+# end def load_libstell
+
+# ========================================================================== #
+
+
+def read_vmec(file, branch=None):
+    # Load Libraries
     import ctypes as ct
     import numpy.ctypeslib as npct
-    import numpy as np
-    # Load Libraries
-    try:
-        libstell = ct.cdll.LoadLibrary(os.environ["STELLOPT_PATH"]+"/LIBSTELL/Release/libstell.so")
-        qtCreatorPath=os.environ["STELLOPT_PATH"]
-    except KeyError:
-        print("Please set environment variable STELLOPT_PATH")
-        sys.exit(1)
+#    import numpy as np
+    libstell, qtCreatorPath = load_libstell()
+
     # Read File
     read_wout = getattr(libstell,s1+'read_wout_mod_'+s2+'_readw_and_open'+s3)
     read_wout.argtypes=[ct.c_char_p, ct.POINTER(ct.c_int), ct.POINTER(ct.c_int), ct.c_long]
@@ -118,53 +244,103 @@ def read_vmec(file):
     # Return the data dictionary
     return vmec_data
 
-def h2f(var,ns):
-    import numpy as np
-    temp = np.zeros((ns,1))
-    temp[0] = 1.5 * var[0] - 0.5 * var[1]
-    temp[1:ns-1] = 0.5* (var[0:ns-2] + var[1:ns-1])
-    temp[ns-1] = 1.5 * var[ns-2] - 0.5 * var[ns-3]
-    return temp
+# ========================================================================= #
 
-def cfunct(theta,zeta,fmnc,xm,xn):
-    import numpy as np
-    f=0
-    (ns,mn)=fmnc.shape
-    lt = len(theta)
-    lz = len(zeta)
-    mt=np.matmul(xm,theta.T)
-    nz=np.matmul(xn,zeta.T)
-    cosmt=np.cos(mt)
-    sinmt=np.sin(mt)
-    cosnz=np.cos(nz)
-    sinnz=np.sin(nz)
-    f = np.zeros((ns,lt,lz))
-    fmn = np.ndarray((mn,lt))
-    for k in range(ns):
-        fmn = np.broadcast_to(fmnc[k,:],(lt,mn)).T
-        fmncosmt=(fmn*cosmt).T
-        fmnsinmt=(fmn*sinmt).T
-        f[k,:,:]=np.matmul(fmncosmt, cosnz)-np.matmul(fmnsinmt, sinnz)
-    return f
-    
-def sfunct(theta,zeta,fmnc,xm,xn):
-    import numpy as np
-    f=0
-    (ns,mn)=fmnc.shape
-    lt = len(theta)
-    lz = len(zeta)
-    mt=np.matmul(xm,theta.T)
-    nz=np.matmul(xn,zeta.T)
-    cosmt=np.cos(mt)
-    sinmt=np.sin(mt)
-    cosnz=np.cos(nz)
-    sinnz=np.sin(nz)
-    f = np.zeros((ns,lt,lz))
-    fmn = np.ndarray((mn,lt))
-    for k in range(ns):
-        fmn = np.broadcast_to(fmnc[k,:],(lt,mn)).T
-        f[k,:,:]=np.matmul((fmn*sinmt).T,cosnz)+np.matmul((fmn*cosmt).T,sinnz)
-    return f
+def h2f(var, ns):
+#    import numpy as np
+#    temp = np.zeros((ns,1))
+#    temp[0] = 1.5 * var[0] - 0.5 * var[1]
+#    temp[1:ns-1] = 0.5* (var[0:ns-2] + var[1:ns-1])
+#    temp[ns-1] = 1.5 * var[ns-2] - 0.5 * var[ns-3]
+#    return temp
+    return _ut.h2f(var, ns)
+
+def cfunct(theta, zeta, fmnc, xm, xn):
+#    import numpy as np
+#    f=0
+#    (ns,mn)=fmnc.shape
+#    lt = len(theta)
+#    lz = len(zeta)
+#    mt=np.matmul(xm,theta.T)
+#    nz=np.matmul(xn,zeta.T)
+#    cosmt=np.cos(mt)
+#    sinmt=np.sin(mt)
+#    cosnz=np.cos(nz)
+#    sinnz=np.sin(nz)
+#    f = np.zeros((ns,lt,lz))
+#    fmn = np.ndarray((mn,lt))
+#    for k in range(ns):
+#        fmn = np.broadcast_to(fmnc[k,:],(lt,mn)).T
+#        fmncosmt=(fmn*cosmt).T
+#        fmnsinmt=(fmn*sinmt).T
+#        f[k,:,:]=np.matmul(fmncosmt, cosnz)-np.matmul(fmnsinmt, sinnz)
+#    return f
+    return _ut.cfunct(theta, zeta, fmnc, xm, xn)
+
+def sfunct(theta, zeta, fmnc, xm, xn):
+#    import numpy as np
+#    f=0
+#    (ns,mn)=fmnc.shape
+#    lt = len(theta)
+#    lz = len(zeta)
+#    mt=np.matmul(xm,theta.T)
+#    nz=np.matmul(xn,zeta.T)
+#    cosmt=np.cos(mt)
+#    sinmt=np.sin(mt)
+#    cosnz=np.cos(nz)
+#    sinnz=np.sin(nz)
+#    f = np.zeros((ns,lt,lz))
+#    fmn = np.ndarray((mn,lt))
+#    for k in range(ns):
+#        fmn = np.broadcast_to(fmnc[k,:],(lt,mn)).T
+#        f[k,:,:]=np.matmul((fmn*sinmt).T,cosnz)+np.matmul((fmn*cosmt).T,sinnz)
+#    return f
+    return _ut.sfunct(theta, zeta, fmnc, xm, xn)
+
+def calc_jll(vmec_data, theta, zeta ):
+#    # CALC_JLL(vmec_data,theta,zeta) Calculates the parallel current density.
+#    # This funciton takes a VMEC data structure (as read by read_vmec) and
+#    # theta/zeta arrays as input and outputs the parallel current density.
+#
+#    # Example usage (Matlab)
+#    #      theta=0:2*pi/359:2*pi;
+#    #      zeta=0:2*pi/63:2*pi;
+#    #      data=read_vmec('wout.test');        % Reads VMEC wout file
+#    #      jll=calc_jll(vmec_data,theta,zeta); % Calculate the current
+#    #
+#    # Example usage (Python)
+#    #      theta=np.linspace(0, 2*np.pi, 360)
+#    #      zeta=np.linspace(0, 2*np.pi, 64)
+#    #      vmec_data=read_vmec('wout.nc')
+#    #      jll=calc_jll(vmec_data, theta, zeta)
+#
+#
+#    # Maintained by: Samuel Lazerson (lazerson@pppl.gov)
+#    # Version:       1.00
+#
+#    b =cfunct(theta,zeta,vmec_data['bmnc'],    vmec_data['xm_nyq'],vmec_data['xn_nyq'])
+#    g =cfunct(theta,zeta,vmec_data['gmnc'],    vmec_data['xm_nyq'],vmec_data['xn_nyq'])
+#    bu=cfunct(theta,zeta,vmec_data['bsubumnc'],vmec_data['xm_nyq'],vmec_data['xn_nyq'])
+#    bv=cfunct(theta,zeta,vmec_data['bsubvmnc'],vmec_data['xm_nyq'],vmec_data['xn_nyq'])
+#    ju=cfunct(theta,zeta,vmec_data['currumnc'],vmec_data['xm_nyq'],vmec_data['xn_nyq'])
+#    jv=cfunct(theta,zeta,vmec_data['currvmnc'],vmec_data['xm_nyq'],vmec_data['xn_nyq'])
+#
+#    if (vmec_data['iasym']):
+#        b =b +sfunct(theta,zeta,vmec_data['bmns'],    vmec_data['xm_nyq'],vmec_data['xn_nyq'])
+#        g =g +sfunct(theta,zeta,vmec_data['gmns'],    vmec_data['xm_nyq'],vmec_data['xn_nyq'])
+#        bu=bu+sfunct(theta,zeta,vmec_data['bsubumns'],vmec_data['xm_nyq'],vmec_data['xn_nyq'])
+#        bv=bv+sfunct(theta,zeta,vmec_data['bsubvmns'],vmec_data['xm_nyq'],vmec_data['xn_nyq'])
+#        ju=ju+sfunct(theta,zeta,vmec_data['currumns'],vmec_data['xm_nyq'],vmec_data['xn_nyq'])
+#        jv=jv+sfunct(theta,zeta,vmec_data['currvmns'],vmec_data['xm_nyq'],vmec_data['xn_nyq'])
+#
+#
+#    jll = (bu*ju+bv*jv)/(g*b)
+#    return jll
+    return _ut.calc_jll(vmec_data, theta, zeta, use_nyq=True)
+
+# ========================================================================= #
+# ========================================================================= #
+
 
 def torocont(r,z,val,s):
     import numpy as np
@@ -205,7 +381,7 @@ def isotoro(r,z,zeta,svals,*args,**kwargs):
     vertex = np.zeros((nt*nz,3,nr))
     for k in range(0,nr):
         ivertex = 0
-        ifaces = 0
+        # ifaces = 0
         for j in range(0,nz):
             for i in range(0,nt):
                 vertex[ivertex,0,k]=r[s[k],i,j]*math.cos(zeta[j])
@@ -240,56 +416,14 @@ def isotoro(r,z,zeta,svals,*args,**kwargs):
         pyplot.show()
     return h
 
-def calc_jll(vmec_data, theta, zeta ):
-    # CALC_JLL(vmec_data,theta,zeta) Calculates the parallel current density.
-    # This funciton takes a VMEC data structure (as read by read_vmec) and
-    # theta/zeta arrays as input and outputs the parallel current density.
-    
-    # Example usage (Matlab)
-    #      theta=0:2*pi/359:2*pi;
-    #      zeta=0:2*pi/63:2*pi;
-    #      data=read_vmec('wout.test');        % Reads VMEC wout file
-    #      jll=calc_jll(vmec_data,theta,zeta); % Calculate the current
-    #
-    # Example usage (Python)
-    #      theta=np.linspace(0, 2*np.pi, 360)
-    #      zeta=np.linspace(0, 2*np.pi, 64)
-    #      vmec_data=read_vmec('wout.nc')
-    #      jll=calc_jll(vmec_data, theta, zeta)
-    
-    
-    # Maintained by: Samuel Lazerson (lazerson@pppl.gov)
-    # Version:       1.00
-    
-    b =cfunct(theta,zeta,vmec_data['bmnc'],    vmec_data['xm_nyq'],vmec_data['xn_nyq'])
-    g =cfunct(theta,zeta,vmec_data['gmnc'],    vmec_data['xm_nyq'],vmec_data['xn_nyq'])
-    bu=cfunct(theta,zeta,vmec_data['bsubumnc'],vmec_data['xm_nyq'],vmec_data['xn_nyq'])
-    bv=cfunct(theta,zeta,vmec_data['bsubvmnc'],vmec_data['xm_nyq'],vmec_data['xn_nyq'])
-    ju=cfunct(theta,zeta,vmec_data['currumnc'],vmec_data['xm_nyq'],vmec_data['xn_nyq'])
-    jv=cfunct(theta,zeta,vmec_data['currvmnc'],vmec_data['xm_nyq'],vmec_data['xn_nyq'])
-    
-    if (vmec_data['iasym']):
-        b =b +sfunct(theta,zeta,vmec_data['bmns'],    vmec_data['xm_nyq'],vmec_data['xn_nyq'])
-        g =g +sfunct(theta,zeta,vmec_data['gmns'],    vmec_data['xm_nyq'],vmec_data['xn_nyq'])
-        bu=bu+sfunct(theta,zeta,vmec_data['bsubumns'],vmec_data['xm_nyq'],vmec_data['xn_nyq'])
-        bv=bv+sfunct(theta,zeta,vmec_data['bsubvmns'],vmec_data['xm_nyq'],vmec_data['xn_nyq'])
-        ju=ju+sfunct(theta,zeta,vmec_data['currumns'],vmec_data['xm_nyq'],vmec_data['xn_nyq'])
-        jv=jv+sfunct(theta,zeta,vmec_data['currvmns'],vmec_data['xm_nyq'],vmec_data['xn_nyq'])
-    
-    
-    jll = (bu*ju+bv*jv)/(g*b)
-    return jll
+# ========================================================================= #
+# ========================================================================= #
 
 def safe_close(iunit):
-    import os, sys
     import ctypes as ct
     # Load Libraries
-    try:
-        libstell = ct.cdll.LoadLibrary(os.environ["STELLOPT_PATH"]+"/LIBSTELL/Release/libstell.so")
-        qtCreatorPath=os.environ["STELLOPT_PATH"]
-    except KeyError:
-        print("Please set environment variable STELLOPT_PATH")
-        sys.exit(1)
+    libstell, qtCreatorPath = load_libstell()
+
     # Handle interface
     safe_close_h = getattr(libstell,s1+'safe_open_mod_'+s2+'_safe_close'+s3)
     safe_close_h.restype=None
@@ -298,15 +432,11 @@ def safe_close(iunit):
     return
 
 def safe_open(iunit,istat,filename,filestat,fileform,record_in,access_in,delim_in):
-    import os, sys
-    import ctypes as ct
+
     # Load Libraries
-    try:
-        libstell = ct.cdll.LoadLibrary(os.environ["STELLOPT_PATH"]+"/LIBSTELL/Release/libstell.so")
-        qtCreatorPath=os.environ["STELLOPT_PATH"]
-    except KeyError:
-        print("Please set environment variable STELLOPT_PATH")
-        sys.exit(1)
+    import ctypes as ct
+    libstell, qtCreatorPath = load_libstell()
+
     # Handle interface
     safe_open_h = getattr(libstell,s1+'safe_open_mod_'+s2+'_safe_open'+s3)
     # SUBROUTINE safe_open(int iunit, int istat, char filename, char filestat, char fileform, int record_in, char access_in, char delim_in)
@@ -330,16 +460,11 @@ def safe_open(iunit,istat,filename,filestat,fileform,record_in,access_in,delim_i
     return istat
 
 def read_indata_namelist(iunit,istat):
-    import os, sys
+    # Load Libraries
     import ctypes as ct
     import numpy.ctypeslib as npct
-    import numpy as np
-    # Load Libraries
-    try:
-        libstell = ct.cdll.LoadLibrary(os.environ["STELLOPT_PATH"]+"/LIBSTELL/Release/libstell.so")
-    except KeyError:
-        print("Please set environment variable STELLOPT_PATH")
-        sys.exit(1)
+    libstell, _ = load_libstell()
+
     # Handle interface
     read_indata_namelist = getattr(libstell,s1+'vmec_input_'+s2+'_read_indata_namelist'+s3)
     #SUBROUTINE read_indata_namelist (iunit, istat)
@@ -444,17 +569,11 @@ def read_indata_namelist(iunit,istat):
     return indata_namelist
 
 def set_module_var(module,var,val):
-    import os, sys
-    import ctypes as ct
-    import numpy.ctypeslib as npct
-    import numpy as np
     # Load Libraries
-    try:
-        libstell = ct.cdll.LoadLibrary(os.environ["STELLOPT_PATH"]+"/LIBSTELL/Release/libstell.so")
-        qtCreatorPath=os.environ["STELLOPT_PATH"]
-    except KeyError:
-        print("Please set environment variable STELLOPT_PATH")
-        sys.exit(1)
+    import numpy as np
+    import ctypes as ct
+    libstell, qtCreatorPath = load_libstell()
+
     if type(val) == bool:
         f = ct.c_bool
     elif type(val) == int:
@@ -492,17 +611,10 @@ def set_module_var(module,var,val):
     return
 
 def write_indata_namelist(iunit,istat):
-    import os, sys
-    import ctypes as ct
-    import numpy.ctypeslib as npct
-    import numpy as np
     # Load Libraries
-    try:
-        libstell = ct.cdll.LoadLibrary(os.environ["STELLOPT_PATH"]+"/LIBSTELL/Release/libstell.so")
-        qtCreatorPath=os.environ["STELLOPT_PATH"]
-    except KeyError:
-        print("Please set environment variable STELLOPT_PATH")
-        sys.exit(1)
+    import ctypes as ct
+    libstell, qtCreatorPath = load_libstell()
+
     # Handle interface
     write_indata_namelist = getattr(libstell,s1+'vmec_input_'+s2+'_write_indata_namelist'+s3)
     #SUBROUTINE read_indata_namelist (iunit, istat)
@@ -516,16 +628,10 @@ def write_indata_namelist(iunit,istat):
     return
 
 def pcurr(xx):
-    import os, sys
-    import ctypes as ct
-    import numpy.ctypeslib as npct
     # Load Libraries
-    try:
-        libstell = ct.cdll.LoadLibrary(os.environ["STELLOPT_PATH"]+"/LIBSTELL/Release/libstell.so")
-        qtCreatorPath=os.environ["STELLOPT_PATH"]
-    except KeyError:
-        print("Please set environment variable STELLOPT_PATH")
-        sys.exit(1)
+    import ctypes as ct
+    libstell, qtCreatorPath = load_libstell()
+
     pcurr_func = getattr(libstell,'pcurr_')
     #SUBROUTINE pcurr (xx)
     pcurr_func.argtypes = [ct.POINTER(ct.c_double)]
@@ -535,16 +641,10 @@ def pcurr(xx):
     return val;
 
 def pmass(xx):
-    import os, sys
-    import ctypes as ct
-    import numpy.ctypeslib as npct
     # Load Libraries
-    try:
-        libstell = ct.cdll.LoadLibrary(os.environ["STELLOPT_PATH"]+"/LIBSTELL/Release/libstell.so")
-        qtCreatorPath=os.environ["STELLOPT_PATH"]
-    except KeyError:
-        print("Please set environment variable STELLOPT_PATH")
-        sys.exit(1)
+    import ctypes as ct
+    libstell, qtCreatorPath = load_libstell()
+
     pmass_func = getattr(libstell,'pmass_')
     #SUBROUTINE piota (xx)
     pmass_func.argtypes = [ct.POINTER(ct.c_double)]
@@ -554,16 +654,10 @@ def pmass(xx):
     return val;
 
 def piota(xx):
-    import os, sys
-    import ctypes as ct
-    import numpy.ctypeslib as npct
     # Load Libraries
-    try:
-        libstell = ct.cdll.LoadLibrary(os.environ["STELLOPT_PATH"]+"/LIBSTELL/Release/libstell.so")
-        qtCreatorPath=os.environ["STELLOPT_PATH"]
-    except KeyError:
-        print("Please set environment variable STELLOPT_PATH")
-        sys.exit(1)
+    import ctypes as ct
+    libstell, qtCreatorPath = load_libstell()
+
     piota_func = getattr(libstell,'piota_')
     #SUBROUTINE piota (xx)
     piota_func.argtypes = [ct.POINTER(ct.c_double)]
@@ -571,6 +665,11 @@ def piota(xx):
     xx_temp = ct.c_double(xx)
     val = piota_func(ct.byref(xx_temp))
     return val;
+
+
+
+# ========================================================================== #
+# ========================================================================== #
 
 
 

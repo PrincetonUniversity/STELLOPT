@@ -15,8 +15,11 @@ from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 #from PyQt5.QtWidgets import QMainWindow, QApplication, QVBoxLayout, QSizePolicy
 #from PyQt5.QtGui import QIcon
 #from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+
 from libstell.libstell import read_vmec, cfunct, sfunct, torocont, isotoro, calc_jll
 from matplotlib.figure import Figure
+
+
 from mpl_toolkits import mplot3d
 
 try:
@@ -33,7 +36,7 @@ class MyApp(QMainWindow):
 	def __init__(self):
 		super(MyApp, self).__init__()
 		self.ui = Ui_MainWindow()
-		self.ui.setupUi(self) 
+		self.ui.setupUi(self)
 		self.setStyleSheet("background-color: white;");
 		#self.ui.PlotButtons.setStyleSheet("background-color: white;");
 		self.statusBar().showMessage('Ready')
@@ -69,7 +72,7 @@ class MyApp(QMainWindow):
 		self.canvas = FigureCanvas(self.fig)
 		self.ui.plot_widget.addWidget(self.canvas)
 		#self.canvas.draw()
-		# Callbacks		
+		# Callbacks
 		self.ui.FileName.currentIndexChanged.connect(self.FileSelect)
 		self.ui.PlotList.currentIndexChanged.connect(self.PlotSelect)
 		self.ui.rho_button.toggled.connect(self.CutSelect)
@@ -317,7 +320,7 @@ class MyApp(QMainWindow):
 
 
 if __name__ == "__main__":
-	app = QApplication(sys.argv) 
-	window = MyApp() 
-	window.show() 
+	app = QApplication(sys.argv)
+	window = MyApp()
+	window.show()
 	sys.exit(app.exec_())

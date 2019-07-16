@@ -59,10 +59,12 @@ import numpy as _np
 
 try:
 #if 1:
-    from utils import Struct, Spline, ftell, fgetl
+    from utils import Struct, ftell, fgetl
 except:
-    from ..utils import Struct, Spline, ftell, fgetl
+    from ..utils import Struct, ftell, fgetl
 # end try
+
+__metaclass__ = type
 
 # ======================================================================== #
 # ======================================================================== #
@@ -269,22 +271,7 @@ class read_vmec(Struct):
     # end def read_vmec_txt
 
     # ===================================================================== #
-#    #
-#    # Public functions within the read_vmec class
-#
-#    def fread1darray(self, fid, dtyp):
-#        data1D = _np.fromfile(fid, dtype=dtyp)
-#        return data1D
-#    #end def fread1Darray
-#
-#    # ======================== #
-#
-#    def fread2darray(self, fid, dtyp):
-#        data2D = _np.fromfile(fid, dtyp).reshape((-1,2)).T
-#        return data2D
-#    #end def fread2Darray
 
-    # ======================== #
 
     def RecomposeFourierArrays(self):
         # Now recompose the Fourier arrays
@@ -628,6 +615,8 @@ class read_vmec(Struct):
     # ================================================================ #
     # ================================================================ #
 
+    def finish_import(self):
+        self.__dict__.update(finish_import(self.dict_from_class()))
 
     def half2fullmesh(self):
         # Interpolate various quantities to the full mesh
@@ -854,39 +843,6 @@ class read_vmec(Struct):
     # end def half2fullmesh
 
     # ================================================================ #
-
-    @staticmethod
-    def h2f(var, ns):
-        var = _np.copy(var)
-        # Map quantitiy from half to full grid
-#        temp = _np.zeros( (1, ns), dtype=var.dtype)
-        temp = _np.zeros( (min((ns, len(var))),), dtype=var.dtype)
-        temp[0] = 1.5*var[0] - 0.5*var[1]
-        temp[1:-1] = 0.5*(var[:-2] + var[1:-1])
-        #for i=2:ns-1
-        #    temp(i)= 0.5*(var(i) + var(i+1) )
-        #end
-        temp[-1] = 1.5*var[-2] - 0.5*var[-3]
-#        temp[1:-1] = 0.5*(var[:ns-2] + var[1:ns-1])
-#        temp[-1] = 1.5*var[ns-2] - 0.5*var[ns-3]
-        return temp
-    #end def h2f()
-
-    @staticmethod
-    def h2f_special(var, ns):
-        var = _np.copy(var)
-        # Map quantitiy from half to full grid
-#        temp = _np.zeros( (1, ns), dtype=var.dtype)
-        temp = _np.zeros( (min((ns, len(var))),), dtype=var.dtype)
-        # temp[0] = 1.5*var[0] - 0.5*var[1]
-        temp[1:-1] = 0.5*(var[1:-1] + var[2:])
-        temp[-1] = 1.5*var[-1] - 0.5*var[-2]
-#        temp[1:-1] = 0.5*(var[1:ns-2] + var[2:ns-1])
-#        temp[-1] = 1.5*var[ns-1] - 0.5*var[ns-2]
-        return temp
-    #end def h2f()
-
-    # ================================================================ #
     # ================================================================ #
 
     def __delattr__(self, name):
@@ -940,26 +896,10 @@ class read_vmec(Struct):
 #    def closeFile(self, fid):
 #        self.fid.close()
 #    # end def closeFile
-## --------------------------------------------------------------------- #
-## --------------------------------------------------------------------- #
 
+# ======================================================================== #
+# ======================================================================== #
 
-#def with_open_finally(fil):
-#    try:
-#        fid = open(fil,'r+')
-#        if fid<1:
-#
-#            raise ArchiveError
-#    except:
-#        jsonsignal = None
-#        pass
-##        raise
-#    finally:
-#        if resp is not None:
-#            resp.close()
-#        # endif
-    # end try
-#    return jsonsignal
 
 if __name__=="__main__":
     import time
@@ -1002,7 +942,8 @@ if __name__=="__main__":
 # end if
 
 
-
+# ======================================================================== #
+# ======================================================================== #
 
 
 

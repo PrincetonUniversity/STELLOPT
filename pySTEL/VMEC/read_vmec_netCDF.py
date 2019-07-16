@@ -19,197 +19,17 @@ from __future__ import absolute_import, with_statement, absolute_import, \
 
 from netCDF4 import Dataset
 import numpy as _np
-from utils import h2f, cfunct, sfunct
+from utils import calc_curr
 
-mu0=4.0e-7*_np.pi
-
-# ===================================================================== #
-
-# Calculate Currents
-def calc_curr(f):
-    f['currumnc']=_np.zeros([f['ns'], f['mnmax_nyq']])
-    f['currvmnc']=_np.zeros([f['ns'], f['mnmax_nyq']])
-
-    ohs = f['ns']-1.0
-    hs  = 1.0/_np.double(ohs)
-    ns = f['ns']
-
-    shalf=_np.zeros(ns)
-    sfull=_np.zeros(ns)
-    for i in _np.arange(1,ns):
-        shalf[i] = _np.sqrt(hs*(i-0.5))
-        sfull[i] = _np.sqrt(hs*(i-0.0))
-
-    js1 = _np.arange(2,ns)
-    js  = _np.arange(1,ns-1)
-
-    # calculation of curl B
-    for mn in _np.arange(f['mnmax_nyq']):
-        if (_np.mod(f['xm_nyq'][mn],2) == 1):
-            t1  = 0.5*(shalf[js1] * f['bsubsmns'][js1,mn] +
-                       shalf[js]  * f['bsubsmns'][js,mn]   ) / sfull[js]
-            bu0 = f['bsubumnc'][js,mn]/shalf[js]
-            bu1 = f['bsubumnc'][js1,mn]/shalf[js1]
-            t2  = ohs*(bu1-bu0)*sfull[js]+0.25*(bu0+bu1)/sfull[js]
-            bv0 = f['bsubvmnc'][js,mn]/shalf[js]
-            bv1 = f['bsubvmnc'][js1,mn]/shalf[js1]
-            t3  = ohs*(bv1-bv0)*sfull[js]+0.25*(bv0+bv1)/sfull[js]
-        else:
-            t1  = 0.5*(f['bsubsmns'][js1,mn]+f['bsubsmns'][js,mn])
-            t2  = ohs*(f['bsubumnc'][js1,mn]-f['bsubumnc'][js,mn])
-            t3  = ohs*(f['bsubvmnc'][js1,mn]-f['bsubvmnc'][js,mn])
-        f['currumnc'][js,mn] = -_np.double(f['xn_nyq'][mn])*t1 - t3
-        f['currvmnc'][js,mn] = -_np.double(f['xm_nyq'][mn])*t1 + t2
-
-    # linear extrapolation to axis
-    for i in _np.arange(f['mnmax_nyq']):
-        if (f['xm_nyq'][i]<=1):
-            f['currumnc'][0,i]=2.0*f['currumnc'][1,i]-f['currumnc'][2,i]
-            f['currvmnc'][0,i]=2.0*f['currvmnc'][1,i]-f['currvmnc'][2,i]
-        else:
-            f['currumnc'][0,i]=0.0
-            f['currvmnc'][0,i]=0.0
-
-    # linear extrapolation to LCFS
-    f['currumnc'][f['ns']-1,:]=2.0*f['currumnc'][f['ns']-2,:]-f['currumnc'][f['ns']-3,:]
-    f['currvmnc'][f['ns']-1,:]=2.0*f['currvmnc'][f['ns']-2,:]-f['currvmnc'][f['ns']-3,:]
-
-    # scaling to SI units
-    f['currumnc']=f['currumnc']/mu0;
-    f['currvmnc']=f['currvmnc']/mu0;
-
-    if f['iasym']:
-        f['currumns']=_np.zeros([f['ns'], f['mnmax_nyq']])
-        f['currvmns']=_np.zeros([f['ns'], f['mnmax_nyq']])
-
-        for mn in _np.arange(f['mnmax_nyq']):
-            if (_np.mod(f['xm_nyq'][mn],2) == 1):
-                t1  = 0.5*(shalf[js1] * f['bsubsmnc'][js1,mn] +
-                           shalf[js]  * f['bsubsmnc'][js,mn]   ) / sfull[js]
-                bu0 = f['bsubumns'][js,mn]/shalf[js1]
-                bu1 = f['bsubumns'][js1,mn]/shalf[js1]
-                t2  = ohs*(bu1-bu0)*sfull[js]+0.25*(bu0+bu1)/sfull[js]
-                bv0 = f['bsubvmns'][js,mn]/shalf[js]
-                bv1 = f['bsubvmns'][js1,mn]/shalf[js1]
-                t3  = ohs*(bv1-bv0)*sfull[js]+0.25*(bv0+bv1)/sfull[js]
-            else:
-                t1  = 0.5*(f['bsubsmnc'][js1,mn]+f['bsubsmnc'][js,mn])
-                t2  = ohs*(f['bsubumns'][js1,mn]-f['bsubumns'][js,mn])
-                t3  = ohs*(f['bsubvmns'][js1,mn]-f['bsubvmns'][js,mn])
-            f['currumns'][js,mn] = _np.double(f['xn_nyq'][mn])*t1 - t3
-            f['currvmns'][js,mn] = _np.double(f['xm_nyq'][mn])*t1 + t2
-
-        for i in _np.arange(f['mnmax_nyq']):
-            if (f['xm_nyq'][i]<=1):
-                f['currumns'][0,i]=2.0*f['currumns'][1,i]-f['currumns'][2,i]
-                f['currvmns'][0,i]=2.0*f['currvmns'][1,i]-f['currvmns'][2,i]
-            else:
-                f['currumns'][0,i]=0.0
-                f['currvmns'][0,i]=0.0
-
-        f['currumns'][f['ns']-1,:]=2.0*f['currumns'][f['ns']-2,:]-f['currumns'][f['ns']-3,:]
-        f['currvmns'][f['ns']-1,:]=2.0*f['currvmns'][f['ns']-2,:]-f['currvmns'][f['ns']-3,:]
-
-        f['currumns']=f['currumns']/mu0;
-        f['currvmns']=f['currvmns']/mu0;
-    return f
-
-## copied from libstell.py by SAL to circumvent libstell import here
-#def h2f(var,ns):
-#    import numpy as np
-#    temp = _np.zeros((ns,1))
-#    temp[0] = 1.5 * var[0] - 0.5 * var[1]
-#    temp[1:ns-1] = 0.5* (var[0:ns-2] + var[1:ns-1])
-#    temp[ns-1] = 1.5 * var[ns-2] - 0.5 * var[ns-3]
-#    return temp
-#
-#
-#def cfunct(theta,zeta,fmnc,xm,xn):
-#    import numpy as np
-#    f=0
-#    (ns,mn)=fmnc.shape
-#    lt = len(theta)
-#    lz = len(zeta)
-#    mt=_np.matmul(xm,theta.T)
-#    nz=_np.matmul(xn,zeta.T)
-#    cosmt=_np.cos(mt)
-#    sinmt=_np.sin(mt)
-#    cosnz=_np.cos(nz)
-#    sinnz=_np.sin(nz)
-#    f = _np.zeros((ns,lt,lz))
-#
-#    fmn = _np.ndarray((mn,lt))
-#    for k in range(ns):
-#        fmn = _np.broadcast_to(fmnc[k,:],(lt,mn)).T
-#        fmncosmt=(fmn*cosmt).T
-#        fmnsinmt=(fmn*sinmt).T
-#        f[k,:,:]=_np.matmul(fmncosmt, cosnz)-_np.matmul(fmnsinmt, sinnz)
-#    return f
-#
-#def sfunct(theta,zeta,fmnc,xm,xn):
-#    import numpy as np
-#    f=0
-#    (ns,mn)=fmnc.shape
-#    lt = len(theta)
-#    lz = len(zeta)
-#    mt=_np.matmul(xm,theta.T)
-#    nz=_np.matmul(xn,zeta.T)
-#    cosmt=_np.cos(mt)
-#    sinmt=_np.sin(mt)
-#    cosnz=_np.cos(nz)
-#    sinnz=_np.sin(nz)
-#    f = _np.zeros((ns,lt,lz))
-#    fmn = _np.ndarray((mn,lt))
-#    for k in range(ns):
-#        fmn = _np.broadcast_to(fmnc[k,:],(lt,mn)).T
-#        f[k,:,:]=_np.matmul((fmn*sinmt).T,cosnz)+_np.matmul((fmn*cosmt).T,sinnz)
-#    return f
-#
-
-def calc_jll(vmec_data, theta, zeta ):
-    # CALC_JLL(vmec_data,theta,zeta) Calculates the parallel current density.
-    # This funciton takes a VMEC data structure (as read by read_vmec) and
-    # theta/zeta arrays as input and outputs the parallel current density.
-
-    # Example usage (Matlab)
-    #      theta=0:2*pi/359:2*pi;
-    #      zeta=0:2*pi/63:2*pi;
-    #      data=read_vmec('wout.test');        % Reads VMEC wout file
-    #      jll=calc_jll(vmec_data,theta,zeta); % Calculate the current
-    #
-    # Example usage (Python)
-    #      theta=_np.linspace(0, 2*_np.pi, 360)
-    #      zeta=_np.linspace(0, 2*_np.pi, 64)
-    #      vmec_data=read_vmec('wout.nc')
-    #      jll=calc_jll(vmec_data, theta, zeta)
-
-
-    # Maintained by: Samuel Lazerson (lazerson@pppl.gov)
-    # Ported to python by Jonathan Schilling (jonathan.schilling@ipp.mpg.de)
-    # Version:       1.00
-
-    b =cfunct(theta,zeta,vmec_data['bmnc'],    vmec_data['xm'],vmec_data['xn'])
-    g =cfunct(theta,zeta,vmec_data['gmnc'],    vmec_data['xm'],vmec_data['xn'])
-    bu=cfunct(theta,zeta,vmec_data['bsubumnc'],vmec_data['xm'],vmec_data['xn'])
-    bv=cfunct(theta,zeta,vmec_data['bsubvmnc'],vmec_data['xm'],vmec_data['xn'])
-    ju=cfunct(theta,zeta,vmec_data['currumnc'],vmec_data['xm'],vmec_data['xn'])
-    jv=cfunct(theta,zeta,vmec_data['currvmnc'],vmec_data['xm'],vmec_data['xn'])
-
-    if (vmec_data['iasym']):
-        b =b +sfunct(theta,zeta,vmec_data['bmns'],    vmec_data['xm'],vmec_data['xn'])
-        g =g +sfunct(theta,zeta,vmec_data['gmns'],    vmec_data['xm'],vmec_data['xn'])
-        bu=bu+sfunct(theta,zeta,vmec_data['bsubumns'],vmec_data['xm'],vmec_data['xn'])
-        bv=bv+sfunct(theta,zeta,vmec_data['bsubvmns'],vmec_data['xm'],vmec_data['xn'])
-        ju=ju+sfunct(theta,zeta,vmec_data['currumns'],vmec_data['xm'],vmec_data['xn'])
-        jv=jv+sfunct(theta,zeta,vmec_data['currvmns'],vmec_data['xm'],vmec_data['xn'])
-
-
-    jll = (bu*ju+bv*jv)/(g*b)
-    return jll
-
+# ========================================================================= #
+# ========================================================================= #
 
 
 def read_vmec(filename):
+#    from netCDF4 import Dataset
+#    import numpy as _np
+#    from utils import calc_curr
+
     rootgrp = Dataset(filename, 'r')
     vmec_data=dict()
 
@@ -358,7 +178,6 @@ def read_vmec(filename):
         vmec_data['currumns']=None
         vmec_data['currvmns']=None
 
-
     # new definition => adapt to NESCOIL ???
 #    vmec_data['xn'] = -vmec_data['xn']
 
@@ -380,42 +199,175 @@ def read_vmec(filename):
 #            vmec_data[key][1:ns-2,:] = 0.5 * (vmec_data[key][1:ns-2,:] + vmec_data[key][2:ns-1,:])
 #            vmec_data[key][ns-1,:] = 2.0 * vmec_data[key][ns-2,:] - vmec_data[key][ns-3,:]
 
-
     return vmec_data
 
-# call this with the result of read_vmec:
-# vmec_data=read_vmec("wout_w7x_ref_60.nc")
-# finish_import(vmec_data)
-# to transform the half-mesh quantities onto the full grid
-# This has to be done with some care as p.ex. booz_xform rely
-# on having the half-mesh quantities after the import.
-# Most likely this is only useful for plotting...
-def finish_import(vmec_data):
-
-    ns=vmec_data['ns']
-
-    # new definition => adapt to NESCOIL ???
-    vmec_data['xn'] = -vmec_data['xn']
-
-    # Put on full grid
-    vmec_data['buco'] = h2f(vmec_data['buco'],ns)
-    vmec_data['bvco'] = h2f(vmec_data['bvco'],ns)
-    vmec_data['vp'] = h2f(vmec_data['vp'],ns)
-    vmec_data['overr'] = h2f(vmec_data['overr'],ns)
-    vmec_data['specw'] = h2f(vmec_data['specw'],ns)
-
-    # Put matrix quantities on full grid
-    for key in ['bmnc','gmnc','lmns','bsupumnc','bsupvmnc','bsubsmns','bsubumnc','bsubvmnc']:
-        vmec_data[key][0,:] = 1.5 * vmec_data[key][1,:] - 0.5 * vmec_data[key][2,:]
-        vmec_data[key][1:ns-2,:] = 0.5 * (vmec_data[key][1:ns-2,:] + vmec_data[key][2:ns-1,:])
-        vmec_data[key][ns-1,:] = 2.0 * vmec_data[key][ns-2,:] - vmec_data[key][ns-3,:]
-    if vmec_data['iasym']:
-        for key in ['bmns','gmns','lmnc','bsupumns','bsupvmns','bsubsmnc','bsubumns','bsubvmns']:
-            vmec_data[key][0,:] = 1.5 * vmec_data[key][1,:] - 0.5 * vmec_data[key][2,:]
-            vmec_data[key][1:ns-2,:] = 0.5 * (vmec_data[key][1:ns-2,:] + vmec_data[key][2:ns-1,:])
-            vmec_data[key][ns-1,:] = 2.0 * vmec_data[key][ns-2,:] - vmec_data[key][ns-3,:]
+# ========================================================================= #
+# ========================================================================= #
 
 
+def read_vmec_netcdf_old(filname):
+    mu0=4*_np.pi*1e-7
+
+    f = read_netcdf(filname, 'strip', 'flipdim')
+
+    # Now fix named fields so they match the old way of doing things
+    f.ierr_vmec = f.ierflag
+    if f.ierr_vmec != 0:
+        return f
+    # end if
+    f.input_extension = _np.copy(f.inputextension)
+    f.mgrid_file = _np.copy(str(f.mgridfile))
+    f.rmax_surf = _np.copy(f.rmaxsurf)
+    f.rmin_surf = _np.copy(f.rminsurf)
+    f.zmax_surf = _np.copy(f.zmaxsurf)
+    f.ireconstruct = _np.copy(f.lreconlogical)
+    f.imse = -1
+    f.itse = -1
+    f.RBtor = _np.copy(f.rbtor)
+    f.Rmajor = _np.copy(f.Rmajorp)
+    f.Aminor = _np.copy(f.Aminorp)
+    f.betatot = _np.copy(f.betatotal)
+    f.Volume  = _np.copy(f.volumep)
+    f.VolAvgB = _np.copy(f.volavgB)
+    if hasattr(f, 'betavol'):
+        f.beta_vol = _np.copy(f.betavol.T)
+    if hasattr(f, 'specw'):
+        f.specw = _np.copy(f.specw.T)
+    if not hasattr(f, 'iasym'):
+        f.iasym = 0
+    # end if
+    f.iasym = _np.copy(f.lasymlogical)
+    f.freeb = _np.copy(f.lfreeblogical)
+    f.lfreeb = _np.copy(f.freeb)
+    f.Itor = _np.copy(f.ctor)
+    f.Dmerc = _np.copy(f.DMerc)
+    f.Dwell = _np.copy(f.DWell)
+    f.Dshear = _np.copy(f.DShear)
+    f.Dcurr = _np.copy(f.DCurr)
+    f.Dgeod = _np.copy(f.DGeod)
+
+    # Cast some values
+    f.ntor = _np.float64(f.ntor)
+    f.mpol = _np.float64(f.mpol)
+    f.nfp = _np.float64(f.nfp)
+    f.ns = _np.float64(f.ns)
+
+    # Calculate Currents
+    f.currumnc = _np.zeros((f.mnmaxnyq,f.ns), dtype=_np.float64)
+    f.currvmnc = _np.zeros((f.mnmaxnyq,f.ns), dtype=_np.float64)
+    ohs = f.ns-1
+    hs = 1.0/_np.float64(ohs)
+    ns = f.ns
+
+    shalf = _np.zeros((ns,), dtype=_np.float64)
+    sfull = _np.zeros((ns,), dtype=_np.float64)
+    for ii in range(1, ns):  # 2:ns
+        shalf[ii] = _np.sqrt(hs*(ii-1.5))
+        sfull[ii] = _np.sqrt(hs*(ii-1))
+    # end for
+
+    js1 = range(2, ns)
+    js = range(1, ns-1)
+    for mn in range(f.mnmaxnyq):
+#        if f.xmnyq%2 == 1:  # mod(f.xmnyq, 2) == 1
+        if _np.mod(f.xmnyq, 2) == 1:  # mod(f.xmnyq, 2) == 1
+            t1 = 0.5 * (shalf[js1] * f.bsubsmns[mn, js1] +
+                shalf[js]*f.bsubsmns[mn,js]) / sfull[js]
+            bu0 = f.bsubumnc[mn,js] / shalf[js]
+            bu1 = f.bsubumnc[mn,js1] / shalf[js1]
+
+            t2 = ohs *(bu1-bu0) * sfull[js] + 0.25*(bu0+bu1)/sfull[js]
+            bv0 = f.bsubvmnc[mn,js] / shalf[js]
+            bv1 = f.bsubvmnc[mn,js1] / shalf[js1]
+            t3 = ohs *(bv1-bv0) * sfull[js] + 0.25*(bv0+bv1)/sfull[js]
+        else:
+            t1 = 0.5*(f.bsubsmns[mn, js1] + f.bsubsmns[mn, js])
+            t2 = ohs*(f.bsubumnc[mn, js1] - f.bsubumnc[mn, js])
+            t3 = ohs*(f.bsubvmnc[mn, js1] - f.bsubvmnc[mn, js])
+        # end if
+        f.currumnc[mn, js] = -_np.float64(f.xnnyq[mn]) * t1 - t3
+        f.currvmnc[mn, js] = -_np.float64(f.xmnyq[mn]) * t1 + t2
+    # end for
+#    # OLD way
+#    for ii in range(1,f.ns-1): # i=2:f.ns-1
+#        f.currumnc[:, ii] = -_np.float64(f.xnnyq).T * f.bsubsmns[:, ii] - (f.ns-1) * (f.bsubvmnc[:, ii+1] - f.bsubvmnc[:, ii] )
+#        f.currvmnc[:, ii] = -_np.float64(f.xmnyq).T * f.bsubsmns[:, ii] + (f.ns-1) * (f.bsubumnc[:, ii+1] - f.bsubumnc[:, ii] )
+#    # end
+
+    f.currumnc[:, 0] = 0.0
+    f.currvmnc[:, 0] = 0.0
+    for ii in range(f.mnmaxnyq): # i=1:f.mnmaxnyq
+        if ( f.xmnyq[ii]<=1 ):
+            f.currumnc[ii,0] = 2*f.currumnc[ii,1] - f.currumnc[ii,2]
+            f.currvmnc[ii,0] = 2*f.currvmnc[ii,1] - f.currvmnc[ii,2]
+        # end if
+    # end for
+    f.currumnc[:, -1] = 2*f.currumnc[:, -2] - f.currumnc[:, -3]
+    f.currvmnc[:, -1] = 2*f.currvmnc[:, -2] - f.currvmnc[:, -3]
+    f.currumnc /= mu0
+    f.currvmnc /= mu0
+    if f.iasym:
+        f.currumns=_np.zeros( (f.mnmaxnyq,f.ns), dtype=_np.float64)
+        f.currvmns=_np.zeros( (f.mnmaxnyq,f.ns), dtype=_np.float64)
+        for mn in range(f.mnmaxnyq): # i=1:f.mnmaxnyq
+#            if (f.xmnyq%2 == 1):  # mod(f.xmnyq, 2) == 1
+            if _np.mod(f.xmnyq, 2) == 1:  # mod(f.xmnyq, 2) == 1
+                t1 = 0.5 * (shalf[js1] * f.bsubsmnc[mn, js1] +
+                    shalf[js]*f.bsubsmnc[mn,js]) / sfull[js]
+                bu0 = f.bsubumns[mn,js] / shalf[js]
+                bu1 = f.bsubumns[mn,js1] / shalf[js1]
+
+                t2 = ohs *(bu1-bu0) * sfull[js] + 0.25*(bu0+bu1)/sfull[js]
+                bv0 = f.bsubvmns[mn,js] / shalf[js]
+                bv1 = f.bsubvmns[mn,js1] / shalf[js1]
+                t3 = ohs *(bv1-bv0) * sfull[js] + 0.25*(bv0+bv1)/sfull[js]
+            else:
+                t1 = 0.5*(f.bsubsmnc[mn, js1] + f.bsubsmnc[mn, js])
+                t2 = ohs*(f.bsubumns[mn, js1] - f.bsubumns[mn, js])
+                t3 = ohs*(f.bsubvmns[mn, js1] - f.bsubvmns[mn, js])
+            # end if
+            f.currumns[mn, js] = -_np.float64(f.xnnyq[mn]) * t1 - t3
+            f.currvmns[mn, js] = -_np.float64(f.xmnyq[mn]) * t1 + t2
+        # end for
+#        # OLD way
+#        for ii in range(1,f.ns-1): # i=2:f.ns-1
+#            f.currumns[:, ii] = -_np.float64(f.xnnyq).T * f.bsubsmnc[:, ii] - (f.ns-1) * (f.bsubvmns[:, ii+1] - f.bsubvmns[:, ii] )
+#            f.currvmns[:, ii] = -_np.float64(f.xmnyq).T * f.bsubsmnc[:, ii] + (f.ns-1) * (f.bsubumns[:, ii+1] - f.bsubumns[:, ii] )
+#        # end
+
+        f.currumns[:, 0] = 0.0
+        f.currvmns[:, 0] = 0.0
+        for ii in range(f.mnmaxnyq): # i=1:f.mnmaxnyq
+            if (f.xmnyq[ii]<=1):
+                f.currumns[ii,0] = 2*f.currumns[ii,1] - f.currumns[ii,2]
+                f.currvmns[ii,0] = 2*f.currvmns[ii,1] - f.currvmns[ii,2]
+            # end if
+        # end for
+        f.currumns[:, -1] = 2*f.currumns[:, -2] - f.currumns[:, -3]
+        f.currvmns[:, -1] = 2*f.currvmns[:, -2] - f.currvmns[:, -3]
+        f.currumns /= mu0
+        f.currvmns /= mu0
+    # end if iasym
+
+    # Remove Renamed Fields
+    del f.inputextension # rmfield(self, 'inputextension')
+    del f.mgridfile # rmfield(self, 'mgridfile')
+    del f.ierflag # rmfield(self, 'ierflag')
+    del f.Rmajorp # rmfield(self, 'Rmajorp')
+    del f.Aminorp # rmfield(self, 'Aminorp')
+    del f.betatotal # rmfield(self, 'betatotal')
+    del f.volumep # rmfield(self, 'volumep')
+    del f.volavgB # rmfield(self, 'volavgB')
+    del f.betavol # rmfield(self, 'betavol')
+    del f.lasymlogical # rmfield(self, 'lasymlogical')
+    del f.lfreeblogical # rmfield(self, 'lfreeblogical')
+    del f.lreconlogical # rmfield(self, 'lreconlogical')
+#    f.close()
+    return f
+# end  def read_netcdf_old()
+
+# ========================================================================= #
+# ========================================================================= #
 
 
 

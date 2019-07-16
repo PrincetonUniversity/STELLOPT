@@ -21,7 +21,7 @@ from __future__ import absolute_import, with_statement, absolute_import, \
                        division, print_function, unicode_literals
 
 __version__ = "2019.07.12.19"
-__all__ = ['read_vmec', 'read_vmec_txt', 'read_vmec_netCDF']
+__all__ = ['read_vmec']
 
 from . import read_vmec
 from .read_vmec import read_vmec # analysis:ignore
