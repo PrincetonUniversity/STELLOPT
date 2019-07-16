@@ -424,6 +424,7 @@ CONTAINS
     rank = 0; par_ns = 0; nranks = 1 !SAL
     grank = 0; gnranks = 1; vrank = 0; vnranks = 1; last_ns = -1; !SAL
     NS_RESLTN=0
+    vlactive = .FALSE.
 #endif
   END SUBROUTINE FinalizeRunVmec
   !--------------------------------------------------------------------------
