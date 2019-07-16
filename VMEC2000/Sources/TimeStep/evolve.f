@@ -276,7 +276,9 @@ C-----------------------------------------------
          ELSE
             CALL funct3d(.FALSE., ier_flag)
          END IF
-         IF (irst .NE. 1) STOP 'Logic error in TimeStepControl!'
+         IF (irst .NE. 1 .and. irst .NE. 4) THEN
+            STOP 'Logic error in TimeStepControl!'
+         END IF
       END IF
 
       END SUBROUTINE TimeStepControl
