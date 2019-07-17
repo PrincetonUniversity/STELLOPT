@@ -180,6 +180,7 @@ class read_vmec(Struct):
 
 #            try:
             if 1:
+#                from VMEC.read_vmec.read_vmec_txt_matlabVMEC import read_vmec
                 from VMEC.read_vmec.read_vmec_txt import read_vmec
 #            except:
 #                from .read_vmec_txt import read_wout_txt
@@ -949,28 +950,32 @@ if __name__=="__main__":
         rootdir = _os.path.join('G:/', 'Workshop', 'TRAVIS_tree', 'MagnConfigs', 'W7X')
     filname = []
     filname.append(_os.path.join(rootdir, 'wout_w7x.1000_1000_1000_1000_+0390_+0000.05.0144.txt'))
-    filname.append(_os.path.join(rootdir, 'wout_w7x.1000_1000_1000_1000_+0000_+0000.01.00.txt'))
-    filname.append(_os.path.join(rootdir, 'wout_w7x.1000_1000_1000_1000_+0390_+0000.05.0144.nc'))
-
-    rootdir = _os.path.join('d:/', 'Workshop', 'TRAVIS', 'MagnConfigs', 'HSX', 'QHS')
-    if not _os.path.exists(rootdir):
-        rootdir = _os.path.join('G:/', 'Workshop', 'TRAVIS_tree', 'MagnConfigs', 'HSX', 'QHS')
-    filname.append(_os.path.join(rootdir, 'wout_QHS_Rstart_1_513_AXIS_v2_VMEC_8p46_2012_03_16_39_52.txt'))
-
-    rootdir = _os.path.join('d:/', 'Workshop', 'TRAVIS', 'MagnConfigs', 'HSX', 'QHS')
-    if not _os.path.exists(rootdir):
-        rootdir = _os.path.join('G:/', 'Workshop', 'TRAVIS_tree', 'MagnConfigs', 'HSX', 'QHS', '8p49')
-    filname.append(_os.path.join(rootdir, 'wout_QHS_Rstart_1_513_AXIS_v2_VMEC_8p46.txt'))
-
-    rootdir = _os.path.join('d:/', 'Workshop', 'TRAVIS', 'MagnConfigs', 'HeliotronJ')
-    if not _os.path.exists(rootdir):
-        rootdir = _os.path.join('G:/', 'Workshop', 'TRAVIS_tree', 'MagnConfigs', 'HeliotronJ')
-    filname.append(_os.path.join(rootdir, 'wout.vm8_hj_HV89TA74TB81AV46IV76_x384m12n12s101bd00id+00'))
+#    filname.append(_os.path.join(rootdir, 'wout_w7x.1000_1000_1000_1000_+0000_+0000.01.00.txt'))
+#    filname.append(_os.path.join(rootdir, 'wout_w7x.1000_1000_1000_1000_+0390_+0000.05.0144.nc'))
+#
+#    rootdir = _os.path.join('d:/', 'Workshop', 'TRAVIS', 'MagnConfigs', 'HSX', 'QHS')
+#    if not _os.path.exists(rootdir):
+#        rootdir = _os.path.join('G:/', 'Workshop', 'TRAVIS_tree', 'MagnConfigs', 'HSX', 'QHS')
+#    filname.append(_os.path.join(rootdir, 'wout_QHS_Rstart_1_513_AXIS_v2_VMEC_8p46_2012_03_16_39_52.txt'))
+#
+#    rootdir = _os.path.join('d:/', 'Workshop', 'TRAVIS', 'MagnConfigs', 'HSX', 'QHS')
+#    if not _os.path.exists(rootdir):
+#        rootdir = _os.path.join('G:/', 'Workshop', 'TRAVIS_tree', 'MagnConfigs', 'HSX', 'QHS', '8p49')
+#    filname.append(_os.path.join(rootdir, 'wout_QHS_Rstart_1_513_AXIS_v2_VMEC_8p46.txt'))
+#
+#    rootdir = _os.path.join('d:/', 'Workshop', 'TRAVIS', 'MagnConfigs', 'HeliotronJ')
+#    if not _os.path.exists(rootdir):
+#        rootdir = _os.path.join('G:/', 'Workshop', 'TRAVIS_tree', 'MagnConfigs', 'HeliotronJ')
+#    filname.append(_os.path.join(rootdir, 'wout.vm8_hj_HV89TA74TB81AV46IV76_x384m12n12s101bd00id+00'))
 
     for fil in filname:
 #        vmecfile = _os.path.join(rootdir, fil)
         start1 = time.time()
         data = read_vmec(fil)
+
+        tst = data.dict_from_class()
+        finish_import(tst)
+
         end1 = time.time()
         print((fil, end1-start1))
     # end for

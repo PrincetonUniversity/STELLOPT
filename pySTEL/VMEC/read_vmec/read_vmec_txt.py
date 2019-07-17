@@ -5,12 +5,15 @@ Created on Mon Jul 15 20:42:27 2019
     converted from
     from stellopt\LIBSTELL\Sources\Modules\read_wout_mod.f90
 @author: weir
+
+note that numpy uses the opposite indexing to fortran, so we have to transpose
+arrays when using numpy
 """
 # ===================================================================== #
 # ===================================================================== #
 
-from __future__ import absolute_import, with_statement, absolute_import, \
-                       division, print_function, unicode_literals
+#from __future__ import absolute_import, with_statement, absolute_import, \
+#                       division, print_function, unicode_literals
 import numpy as _np
 from utils import calc_curr
 
@@ -18,11 +21,11 @@ from utils import calc_curr
 # ===================================================================== #
 
 
-def read_vmec(filename, delim=' ', ierr=int(0)):
+def read_vmec(filename, delim=' '):
     try:
         fid = open(filename, 'r')
 
-        vmec_data = read_open_wout_text(fid, delim=delim, ierr=ierr)
+        vmec_data = read_open_wout_text(fid, delim=delim)
         fid.close()
     except:
         raise
@@ -33,7 +36,7 @@ def read_vmec(filename, delim=' ', ierr=int(0)):
     return vmec_data
 
 
-def read_open_wout_text(iunit, delim=' ', ierr=int(0)):
+def read_open_wout_text(iunit, delim=' '):
     vmec_data = {}
 #------------------------------------------------
 #   D u m m y   A r g u m e n t s
@@ -49,7 +52,7 @@ def read_open_wout_text(iunit, delim=' ', ierr=int(0)):
 #------------------------------------------------
     i, j, k, js, m, n, n1, mn, nparts_in, i_animec, i_flow = \
         tuple(int(0) for ii in range(11))   # 464
-
+    ierr = 0
     istat = _np.zeros((15,), dtype=int)
 
     vmec_version = ''
@@ -87,10 +90,11 @@ def read_open_wout_text(iunit, delim=' ', ierr=int(0)):
     # === END SAL Addition
 
     if (ii >= 0):
-       version_ = vmec_version[ii+_np.asarray(range(len(vmec_version.strip())), dtype=int)]
+       version_ = vmec_version[ii+1:vmec_version.find('\n')]
     else:
        version_ = -1.0
     # end if
+    version_ = float(version_)
     vmec_data['vmec_version'] = version_
 
     # ===================================================================== #
@@ -101,12 +105,16 @@ def read_open_wout_text(iunit, delim=' ', ierr=int(0)):
         keys = ['wb', 'wp', 'gamma', 'pfac', 'nfp', 'ns', 'mpol', 'ntor', 'mnmax',
                 'itfsq', 'niter', 'iasym', 'ireconstruct']
 
-        dt = _np.dtype([(key, _np.float) if ii<4 else (key, _np.int)
-            for ii, key in enumerate(keys)])
-        data = _np.fromfile(iunit, dtype=dt, sep=delim)
-        for key in keys:
-            vmec_data[key] = data[key]
+#        dt = _np.dtype([(key, _np.float) if ii<4 else (key, _np.int)
+#            for ii, key in enumerate(keys)])
+        data = _np.fromfile(iunit, dtype=float, count=len(keys), sep=delim)
+        for ii, key in enumerate(keys):
+            vmec_data[key] = data[ii]
+            if ii>=4:
+                vmec_data[key] = int(vmec_data[key])
+            # end if
         # end for
+
     else:
         # ==================== version less than 6.54 ==================== #
         keys = ['wb','wp','gamma','pfac','rmax_surf','rmin_surf']
@@ -116,10 +124,11 @@ def read_open_wout_text(iunit, delim=' ', ierr=int(0)):
             keys.append('zmax_surf')
         # end if
 
-        dt = _np.dtype([(key, _np.float) for key in keys])
-        data = _np.fromfile(iunit, dtype=dt, sep=delim)
-        for key in keys:
-            vmec_data[key] = data[key]
+#        dt = _np.dtype([(key, _np.float) for key in keys])
+#        data = _np.fromfile(iunit, dtype=dt, sep=delim)  # breaking somehow
+        data = _np.fromfile(iunit, dtype=float, count=len(keys), sep=delim)  # breaking somehow
+        for ii, key in enumerate(keys):
+            vmec_data[key] = data[ii]
 #        # end for
 
         # ======================================== #
@@ -146,11 +155,15 @@ def read_open_wout_text(iunit, delim=' ', ierr=int(0)):
 #            vmec_data[key] = int(data[ii])
         # end for
 
-        dt = _np.dtype([(key, _np.int) for key in keys])
-        data = _np.fromfile(iunit, dtype=dt, sep=delim)
-        for key in keys:
-            vmec_data[key] = _np.copy(data[key])
-        # end for
+#        dt = _np.dtype([(key, _np.int) for key in keys])
+        data = _np.fromfile(iunit, dtype=int, count=len(keys), sep=delim)  # breaking somehow
+        for ii, key in enumerate(keys):
+            vmec_data[key] = data[ii]
+#        # end for
+#        data = _np.fromfile(iunit, dtype=dt, sep=delim)
+#        for key in keys:
+#            vmec_data[key] = _np.copy(data[key])
+#        # end for
 
         if 'mnmax_nyq' not in vmec_data:
             # mnmax_nyq only in vmec versions greater than 8.00
@@ -169,13 +182,14 @@ def read_open_wout_text(iunit, delim=' ', ierr=int(0)):
         keys.append('nstore_seq')
     # end if
 
-    dt = _np.dtype([(key, _np.int) for key in keys])
-    data = _np.fromfile(iunit, dtype=dt, sep=delim)
-    for key in keys:
-        vmec_data[key] = _np.copy(data[key])
-    # end for
-#    for ii, key in enumerate(keys):
-#        vmec_data[key] = int(data[ii])
+#    dt = _np.dtype([(key, _np.int) for key in keys])
+#    data = _np.fromfile(iunit, dtype=dt, sep=delim)
+#    for key in keys:
+#        vmec_data[key] = _np.copy(data[key])
+#    # end for
+    data = _np.fromfile(iunit, dtype=int, count=len(keys), sep=delim)  # breaking somehow
+    for ii, key in enumerate(keys):
+        vmec_data[key] = data[ii]
     # end for
 
     # ================= version up to 6.20 ================= #
@@ -187,7 +201,11 @@ def read_open_wout_text(iunit, delim=' ', ierr=int(0)):
 
     def Continue1000():
         data = iunit.readline().strip().split(delim)
-        vmec_data['mgrid_mode'] = [dat.strip() for dat in data if len(dat)>0][0]
+        data = [dat.strip() for dat in data if len(dat)>0]
+        if len(data)==0 or len(data[0])==0:
+            vmec_data['mgrid_mode'] = 'N'
+            return True, 0
+        vmec_data['mgrid_mode'] = data
 
         if (ierr != 0):   # analysis:ignore
             ierr = 0
@@ -196,7 +214,7 @@ def read_open_wout_text(iunit, delim=' ', ierr=int(0)):
             vmec_data['ierr_vmec'] = 1
         # end if
 
-        exit_program = False
+
         for m in range(15):
             if (istat[m] > 0):
                 print(' Error No.%i '%(m+1,)+' in READ_WOUT, iostat = %i'%(istat[m],))
@@ -220,9 +238,9 @@ def read_open_wout_text(iunit, delim=' ', ierr=int(0)):
 
     # ===================================================================== #
     # ==================================================================== #
-    if (vmec_data['nextcur'] > vmec_data['nigroup']):
-        istat[15-1] = -1
-    # end if
+#    if (vmec_data['nextcur'] > vmec_data['nigroup']):
+#        istat[15-1] = -1
+#    # end if
 
     # ========================================================== #
     # ================== Pre-allocation of arrays ============== #
@@ -234,7 +252,7 @@ def read_open_wout_text(iunit, delim=' ', ierr=int(0)):
     keys = ['rmnc','zmns','lmns','bmnc','gmnc','bsubumnc','bsubvmnc','bsubsmns',
             'bsupumnc','bsupvmnc','currvmnc','currumnc']
     for ii, key in enumerate(keys):
-        vmec_data[key] = _np.zeros((vmec_data['mnmax_nyq'],vmec_data['ns']), dtype=float)
+        vmec_data[key] = _np.zeros((vmec_data['mnmax_nyq'],vmec_data['ns']), dtype=float).T
     # end for
 
     keys = ['iotas', 'mass', 'pres', 'beta_vol', 'phip', 'buco', 'bvco',
@@ -245,7 +263,7 @@ def read_open_wout_text(iunit, delim=' ', ierr=int(0)):
         vmec_data[key] = _np.zeros((vmec_data['ns'],), dtype=float)
     # end for
 
-    vmec_data['raxis'] = _np.zeros((vmec_data['ntor'],2), dtype=float)
+    vmec_data['raxis'] = _np.zeros((vmec_data['ntor'],2), dtype=float).T
     vmec_data['zaxis'] = _np.zeros_like(vmec_data['raxis'])
 
     vmec_data['am'], vmec_data['ac'], vmec_data['ai'] \
@@ -264,13 +282,13 @@ def read_open_wout_text(iunit, delim=' ', ierr=int(0)):
     if lasym:
         keys = ['rmns', 'zmnc', 'lmnc']
         for key in keys:
-            vmec_data[key] = _np.zeros((vmec_data['mnmax'], vmec_data['ns']), dtype=float)
+            vmec_data[key] = _np.zeros((vmec_data['mnmax'], vmec_data['ns']), dtype=float).T
         # end for
 
         keys = ['bmns', 'gmns', 'bsubumns','bsubvmns','bsubsmnc','bsupumns',
                 'bsupvmns','currumns','currvmns']
         for key in keys:
-            vmec_data[key] = _np.zeros((vmec_data['mnmax_nyq'], vmec_data['ns']), dtype=float)
+            vmec_data[key] = _np.zeros((vmec_data['mnmax_nyq'], vmec_data['ns']), dtype=float).T
         # end for
 #        stat=istat[6-1]
     # end if
@@ -278,14 +296,14 @@ def read_open_wout_text(iunit, delim=' ', ierr=int(0)):
     if vmec_type == 1:
         keys = ['pparmnc', 'ppermnc', 'hotdmnc', 'pbprmnc', 'ppprmnc', 'sigmnc', 'taumnc']
         for key in keys:
-            vmec_data[key] = _np.zeros((vmec_data['mnmax_nyq'],vmec_data['ns']), dtype=float)
+            vmec_data[key] = _np.zeros((vmec_data['mnmax_nyq'],vmec_data['ns']), dtype=float).T
         # end for
 #        stat=istat[6-1]
 
         if lasym:
             keys = ['pparmns', 'ppermns', 'hotdmns', 'pbprmns', 'ppprmns', 'sigmns', 'taumns']
             for key in keys:
-                vmec_data[key] = _np.zeros((vmec_data['mnmax_nyq'],vmec_data['ns']), dtype=float)
+                vmec_data[key] = _np.zeros((vmec_data['mnmax_nyq'],vmec_data['ns']), dtype=float).T
             # end for
 #            stat=istat[6-1]
         # end if
@@ -296,14 +314,14 @@ def read_open_wout_text(iunit, delim=' ', ierr=int(0)):
 
         keys = ['protmnc', 'protrsqmnc', 'prprmnc']
         for key in keys:
-            vmec_data[key] = _np.zeros((vmec_data['mnmax_nyq'], vmec_data['ns']), dtype=float)
+            vmec_data[key] = _np.zeros((vmec_data['mnmax_nyq'], vmec_data['ns']), dtype=float).T
         # end for
 #        stat=istat[6-1]
 
         if lasym:
             keys = ['protmns', 'protrsqmns', 'prprmns']
             for key in keys:
-                vmec_data[key] = _np.zeros((vmec_data['mnmax_nyq'],vmec_data['ns']), dtype=float)
+                vmec_data[key] = _np.zeros((vmec_data['mnmax_nyq'],vmec_data['ns']), dtype=float).T
             # end for
 #            stat=istat[6-1]
         # end if
@@ -323,42 +341,41 @@ def read_open_wout_text(iunit, delim=' ', ierr=int(0)):
     for js in range(vmec_data['ns']):   # js = 1, ns
         for mn in range(vmec_data['mnmax']):  # 1, mnmax
             if js == 0:
-                dt = _np.dtype(('m',_np.int), ('n', _np.int))
-                data = _np.fromfile(iunit, dtype=dt, sep=delim)
-
-                m, n = data['m'], data['n']
+#                dt = _np.dtype(('m',_np.int), ('n', _np.int))
+#                data = _np.fromfile(iunit, dtype=dt, sep=delim)
+#                m, n = data['m'], data['n']
+                m, n = tuple(_np.fromfile(iunit, dtype=int, count=2, sep=delim))
                 vmec_data['xm'][mn] = float(m)
                 vmec_data['xn'][mn] = float(n)
-
-#                data = iunit.readline().strip().split(delim)
-#                m, n = tuple([dat.strip() for dat in data if len(dat)>0])
-#                vmec_data['xm'][mn] = float(m)
-#                vmec_data['xn'][mn] = float(n)
             # end if
 
             if (version_ <= (6.20+eps_w)):
-                key = ['rmnc', 'zmns', 'lmns', 'bmnc', 'gmnc', 'bsubumnc',
+                keys = ['rmnc', 'zmns', 'lmns', 'bmnc', 'gmnc', 'bsubumnc',
                        'bsubvmnc', 'bsubsmns', 'bsupumnc', 'bsupvmnc', 'currvmnc']
                 #fmt = 730: '5e20.13'
             elif (version_ <= (8.0+eps_w)):
-                key = ['rmnc', 'zmns', 'lmns', 'bmnc', 'gmnc', 'bsubumnc',
+                keys = ['rmnc', 'zmns', 'lmns', 'bmnc', 'gmnc', 'bsubumnc',
                        'bsubvmnc', 'bsubsmns', 'bsupumnc', 'bsupvmnc', 'currvmnc']
                 #fmt = '*'
             else:
-                key = ['rmnc', 'zmns', 'lmns']
+                keys = ['rmnc', 'zmns', 'lmns']
                 #fmt = '*'
             # end if
 
-            dt = _np.dtype([(key, _np.float) for key in keys])
-            data = _np.fromfile(iunit, dtype=dt, sep=delim)
-            for key in keys:
-                vmec_data[key][mn, js] = _np.copy(data[key])
+#            dt = _np.dtype([(key, _np.float) for key in keys])
+            data = _np.fromfile(iunit, dtype=float, count=len(keys), sep=delim)
+            for ii, key in enumerate(keys):
+                vmec_data[key][js, mn] = _np.copy(data[ii])
             # end for
+#            data = _np.fromfile(iunit, dtype=dt, sep=delim)
+#            for key in keys:
+#                vmec_data[key][js, mn] = _np.copy(data[key])
+#            # end for
 
 #            data = iunit.readline().strip().split(delim)
 #            data = [dat.strip() for dat in data if len(dat)>0]
 #            for ii, key in enumerate(keys):
-#                vmec_data[key][mn, js] = float(data[ii])
+#                vmec_data[key][js, mn] = float(data[ii])
 #            # end if
 
             if lasym:
@@ -370,26 +387,30 @@ def read_open_wout_text(iunit, delim=' ', ierr=int(0)):
                     keys = ['rmns', 'zmnc', 'lmnc']
                     #fmt = '*'
                 # end if
-                dt = _np.dtype([(key, _np.float) for key in keys])
-                data = _np.fromfile(iunit, dtype=dt, sep=delim)
-                for key in keys:
-                    vmec_data[key][mn, js] = _np.copy(data[key])
+#                dt = _np.dtype([(key, _np.float) for key in keys])
+                data = _np.fromfile(iunit, dtype=float, count=len(keys), sep=delim)
+                for ii, key in enumerate(keys):
+                    vmec_data[key][js, mn] = _np.copy(data[ii])
                 # end for
-
+#                data = _np.fromfile(iunit, dtype=dt, sep=delim)
+#                for key in keys:
+#                    vmec_data[key][js, mn] = _np.copy(data[key])
+#                # end for
+#
 #                data = iunit.readline().strip().split(delim)
 #                data = [dat.strip() for dat in data if len(dat)>0]
 #                for ii, key in enumerate(keys):
-#                    vmec_data[key][mn, js] = float(data[ii])
+#                    vmec_data[key][js, mn] = float(data[ii])
 #                # end if
             # end if
             if (js == 0) and (m ==0):
-                n1 = int(abs(n/vmec_data['nfp']))
+                n1 = int(abs(n/vmec_data['nfp']))-1
                 if n1 <= vmec_data['ntor']:
-                    vmec_data['raxis'][n1,0] = _np.copy(vmec_data['rmnc'][mn,0])
-                    vmec_data['zaxis'][n1,0] = _np.copy(vmec_data['zmns'][mn,0])
+                    vmec_data['raxis'][0, n1] = _np.copy(vmec_data['rmnc'][0, mn])
+                    vmec_data['zaxis'][0, n1] = _np.copy(vmec_data['zmns'][0, mn])
                     if lasym:
-                        vmec_data['raxis'][n1,1] = _np.copy(vmec_data['rmns'][mn,0])
-                        vmec_data['zaxis'][n1,1] = _np.copy(vmec_data['zmnc'][mn,0])
+                        vmec_data['raxis'][1, n1] = _np.copy(vmec_data['rmns'][0, mn])
+                        vmec_data['zaxis'][1, n1] = _np.copy(vmec_data['zmnc'][0, mn])
                     # end if
                 # end if
             # end if
@@ -401,9 +422,10 @@ def read_open_wout_text(iunit, delim=' ', ierr=int(0)):
 
         for mn in range(vmec_data['mnmax_nyq']):
             if js == 0:
-                dt = _np.dtype(('m',_np.int), ('n', _np.int))
-                data = _np.fromfile(iunit, dtype=dt, sep=delim)
-                m, n = data['m'], data['n']
+#                dt = _np.dtype(('m',_np.int), ('n', _np.int))
+#                data = _np.fromfile(iunit, dtype=dt, sep=delim)
+                m, n = tuple(_np.fromfile(iunit, dtype=int, count=2, sep=delim))
+#                m, n = data['m'], data['n']
                 vmec_data['xm_nyq'][mn] = float(m)
                 vmec_data['xn_nyq'][mn] = float(n)
 
@@ -418,15 +440,19 @@ def read_open_wout_text(iunit, delim=' ', ierr=int(0)):
                         'bsupumnc', 'bsupvmnc', 'pparmnc', 'ppermnc', 'hotdmnc'
                         'pbprmnc', 'ppprmnc', 'sigmnc', 'taumnc']
 
-                dt = _np.dtype([(key, _np.float) for key in keys])
-                data = _np.fromfile(iunit, dtype=dt, sep=delim)
-                for key in keys:
-                    vmec_data[key][mn, js] = _np.copy(data[key])
+#                dt = _np.dtype([(key, _np.float) for key in keys])
+                data = _np.fromfile(iunit, dtype=float, count=len(keys), sep=delim)
+                for ii, key in enumerate(keys):
+                    vmec_data[key][js, mn] = _np.copy(data[ii])
                 # end for
+#                data = _np.fromfile(iunit, dtype=dt, sep=delim)
+#                for key in keys:
+#                    vmec_data[key][js, mn] = _np.copy(data[key])
+#                # end for
 #                data = iunit.readline().strip().split(delim)
 #                data = [dat.strip() for dat in data if len(dat)>0]
 #                for ii, key in enumerate(keys):
-#                    vmec_data[key][mn, js] = float(data[ii])
+#                    vmec_data[key][js, mn] = float(data[ii])
 #                # end for
 
                 if lasym:
@@ -434,74 +460,94 @@ def read_open_wout_text(iunit, delim=' ', ierr=int(0)):
                             'bsupumns', 'bsupvmns', 'pparmns', 'ppermns', 'hotdmns',
                             'pbprmns', 'ppprmns', 'sigmns', 'taumns']
 
-                    dt = _np.dtype([(key, _np.float) for key in keys])
-                    data = _np.fromfile(iunit, dtype=dt, sep=delim)
-                    for key in keys:
-                        vmec_data[key][mn, js] = _np.copy(data[key])
+#                    dt = _np.dtype([(key, _np.float) for key in keys])
+                    data = _np.fromfile(iunit, dtype=float, count=len(keys), sep=delim)
+                    for ii, key in enumerate(keys):
+                        vmec_data[key][js, mn] = _np.copy(data[ii])
                     # end for
+#                    data = _np.fromfile(iunit, dtype=dt, sep=delim)
+#                    for key in keys:
+#                        vmec_data[key][js, mn] = _np.copy(data[key])
+#                    # end for
 #                    data = iunit.readline().strip().split(delim)
 #                    data = [dat.strip() for dat in data if len(dat)>0]
 #                    for ii, key in enumerate(keys):
-#                        vmec_data[key][mn, js] = float(data[ii])
+#                        vmec_data[key][js, mn] = float(data[ii])
 #                    # end for
                 # end if
             elif vmec_type == 2:
                 keys = ['bmnc', 'gmnc', 'bsubumnc', 'bsubvmnc', 'bsubsmns',
                         'bsupumnc', 'bsupvmnc', 'protmnc', 'protrsqmnc', 'prprmnc']
 
-                dt = _np.dtype([(key, _np.float) for key in keys])
-                data = _np.fromfile(iunit, dtype=dt, sep=delim)
-                for key in keys:
-                    vmec_data[key][mn, js] = _np.copy(data[key])
+#                dt = _np.dtype([(key, _np.float) for key in keys])
+                data = _np.fromfile(iunit, dtype=float, count=len(keys), sep=delim)
+                for ii, key in enumerate(keys):
+                    vmec_data[key][js, mn] = _np.copy(data[ii])
                 # end for
+#                data = _np.fromfile(iunit, dtype=dt, sep=delim)
+#                for key in keys:
+#                    vmec_data[key][js, mn] = _np.copy(data[key])
+#                # end for
 #                data = iunit.readline().strip().split(delim)
 #                data = [dat.strip() for dat in data if len(dat)>0]
 #                for ii, key in enumerate(keys):
-#                    vmec_data[key][mn, js] = float(data[ii])
+#                    vmec_data[key][js, mn] = float(data[ii])
 #                # end for
 
                 if lasym:
                     keys = ['bmns', 'gmns', 'bsubumns','bsubvmns', 'bsubsmnc',
                             'bsupumns', 'bsupvmns', 'protmns', 'protrsqmns', 'prprmns']
 
-                    dt = _np.dtype([(key, _np.float) for key in keys])
-                    data = _np.fromfile(iunit, dtype=dt, sep=delim)
-                    for key in keys:
-                        vmec_data[key][mn, js] = _np.copy(data[key])
+#                    dt = _np.dtype([(key, _np.float) for key in keys])
+                    data = _np.fromfile(iunit, dtype=float, count=len(keys), sep=delim)
+                    for ii, key in enumerate(keys):
+                        vmec_data[key][js, mn] = _np.copy(data[ii])
                     # end for
+#                    data = _np.fromfile(iunit, dtype=dt, sep=delim)
+#                    for key in keys:
+#                        vmec_data[key][js, mn] = _np.copy(data[key])
+#                    # end for
 #                    data = iunit.readline().strip().split(delim)
 #                    data = [dat.strip() for dat in data if len(dat)>0]
 #                    for ii, key in enumerate(keys):
-#                        vmec_data[key][mn, js] = float(data[ii])
+#                        vmec_data[key][js, mn] = float(data[ii])
 #                    # end for
                 # end if
             else:
-                keys = ['bmnc', 'gmnc', 'bsubumnc', 'bsubvmnc', 'bsubsmns'
+                keys = ['bmnc', 'gmnc', 'bsubumnc', 'bsubvmnc', 'bsubsmns',
                         'bsupumnc', 'bsupvmnc']
 
-                dt = _np.dtype([(key, _np.float) for key in keys])
-                data = _np.fromfile(iunit, dtype=dt, sep=delim)
-                for key in keys:
-                    vmec_data[key][mn, js] = _np.copy(data[key])
+#                dt = _np.dtype([(key, _np.float) for key in keys])
+                data = _np.fromfile(iunit, dtype=float, count=len(keys), sep=delim)
+                for ii, key in enumerate(keys):
+                    vmec_data[key][js, mn] = _np.copy(data[ii])
                 # end for
+#                data = _np.fromfile(iunit, dtype=dt, sep=delim)
+#                for key in keys:
+#                    vmec_data[key][js, mn] = _np.copy(data[key])
+#                # end for
 #                data = iunit.readline().strip().split(delim)
 #                data = [dat.strip() for dat in data if len(dat)>0]
 #                for ii, key in enumerate(keys):
-#                    vmec_data[key][mn, js] = float(data[ii])
+#                    vmec_data[key][js, mn] = float(data[ii])
 #                # end for
 
                 if lasym:
                     keys = ['bmns', 'gmns', 'bsubumns', 'bsubvmns', 'bsubsmnc',
                             'bsupumns', 'bsupvmns']
-                    dt = _np.dtype([(key, _np.float) for key in keys])
-                    data = _np.fromfile(iunit, dtype=dt, sep=delim)
-                    for key in keys:
-                        vmec_data[key][mn, js] = _np.copy(data[key])
+#                    dt = _np.dtype([(key, _np.float) for key in keys])
+                    data = _np.fromfile(iunit, dtype=float, count=len(keys), sep=delim)
+                    for ii, key in enumerate(keys):
+                        vmec_data[key][js, mn] = _np.copy(data[ii])
                     # end for
+#                    data = _np.fromfile(iunit, dtype=dt, sep=delim)
+#                    for key in keys:
+#                        vmec_data[key][js, mn] = _np.copy(data[key])
+#                    # end for
 #                    data = iunit.readline().strip().split(delim)
 #                    data = [dat.strip() for dat in data if len(dat)>0]
 #                    for ii, key in enumerate(keys):
-#                        vmec_data[key][mn, js] = float(data[ii])
+#                        vmec_data[key][js, mn] = float(data[ii])
 #                    # end for
                 # end if
             # end if
@@ -534,111 +580,156 @@ def read_open_wout_text(iunit, delim=' ', ierr=int(0)):
         keys = ['iotas', 'mass', 'pres', 'phip', 'buco', 'bvco', 'phi', 'vp', 'overr',
                 'jcuru', 'jcurv', 'specw']
         # 730 FORMAT(5e20.13)
-        dt = _np.dtype([(key, _np.float) for key in keys])
+#        dt = _np.dtype([(key, _np.float) for key in keys])
         for js in range(1, vmec_data['ns']):
-            data = _np.fromfile(iunit, dtype=dt, sep=delim)
-            for key in keys:
-                vmec_data[key][js] = _np.copy(data[key])
+            data = _np.fromfile(iunit, dtype=float, count=len(keys), sep=delim)
+            for ii, key in enumerate(keys):
+                vmec_data[key][js] = _np.copy(data[ii])
             # end for
+#            data = _np.fromfile(iunit, dtype=dt, sep=delim)
+#            for key in keys:
+#                vmec_data[key][js] = _np.copy(data[key])
+#            # end for
         # end for
 
         keys = ['aspect', 'betatot', 'betapol', 'betator', 'betaxis', 'b0']
-        dt = _np.dtype([(key, _np.float) for key in keys])
-        data = _np.fromfile(iunit, dtype=dt, sep=delim)
-        for key in keys:
-            vmec_data[key] = _np.copy(data[key])
+#        dt = _np.dtype([(key, _np.float) for key in keys])
+        data = _np.fromfile(iunit, dtype=float, count=len(keys), sep=delim)
+        for ii, key in enumerate(keys):
+            vmec_data[key] = _np.copy(data[ii])
         # end for
+#        data = _np.fromfile(iunit, dtype=dt, sep=delim)
+#        for key in keys:
+#            vmec_data[key] = _np.copy(data[key])
+#        # end for
     elif version_ <= 6.20+eps_w:
         keys = ['iotas', 'mass', 'pres', 'beta_vol', 'phip', 'buco', 'bvco',
                 'phi', 'vp', 'overr', 'jcuru', 'jcurv', 'specw']
         # 730 FORMAT(5e20.13)
-        dt = _np.dtype([(key, _np.float) for key in keys])
+#        dt = _np.dtype([(key, _np.float) for key in keys])
         for js in range(1, vmec_data['ns']):
-            data = _np.fromfile(iunit, dtype=dt, sep=delim)
-            for key in keys:
-                vmec_data[key][js] = _np.copy(data[key])
+            data = _np.fromfile(iunit, dtype=float, count=len(keys), sep=delim)
+            for ii, key in enumerate(keys):
+                vmec_data[key][js] = _np.copy(data[ii])
             # end for
+#            data = _np.fromfile(iunit, dtype=dt, sep=delim)
+#            for key in keys:
+#                vmec_data[key][js] = _np.copy(data[key])
+#            # end for
         # end for
 
         keys = ['aspect', 'betatot', 'betapol', 'betator', 'betaxis', 'b0']
-        dt = _np.dtype([(key, _np.float) for key in keys])
-        data = _np.fromfile(iunit, dtype=dt, sep=delim)
-        for key in keys:
-            vmec_data[key] = _np.copy(data[key])
+#        dt = _np.dtype([(key, _np.float) for key in keys])
+        data = _np.fromfile(iunit, dtype=float, count=len(keys), sep=delim)
+        for ii, key in enumerate(keys):
+            vmec_data[key] = _np.copy(data[ii])
         # end for
+#        data = _np.fromfile(iunit, dtype=dt, sep=delim)
+#        for key in keys:
+#            vmec_data[key] = _np.copy(data[key])
+#        # end for
     elif version_ <= (6.95+eps_w):
         keys = ['iotas', 'mass', 'pres', 'beta_vol', 'phip', 'buco', 'bvco',
                 'phi', 'vp', 'overr', 'jcuru', 'jcurv', 'specw']
         # *
-        dt = _np.dtype([(key, _np.float) for key in keys])
+#        dt = _np.dtype([(key, _np.float) for key in keys])
         for js in range(1, vmec_data['ns']):
-            data = _np.fromfile(iunit, dtype=dt, sep=delim)
-            for key in keys:
-                vmec_data[key][js] = _np.copy(data[key])
+            data = _np.fromfile(iunit, dtype=float, count=len(keys), sep=delim)
+            for ii, key in enumerate(keys):
+                vmec_data[key][js] = _np.copy(data[ii])
             # end for
+#            data = _np.fromfile(iunit, dtype=dt, sep=delim)
+#            for key in keys:
+#                vmec_data[key][js] = _np.copy(data[key])
+#            # end for
         # end for
         keys = ['aspect', 'betatot', 'betapol', 'betator', 'betaxis', 'b0']
-        dt = _np.dtype([(key, _np.float) for key in keys])
-        data = _np.fromfile(iunit, dtype=dt, sep=delim)
-        for key in keys:
-            vmec_data[key] = _np.copy(data[key])
+#        dt = _np.dtype([(key, _np.float) for key in keys])
+        data = _np.fromfile(iunit, dtype=float, count=len(keys), sep=delim)
+        for ii, key in enumerate(keys):
+            vmec_data[key] = _np.copy(data[ii])
         # end for
+#        data = _np.fromfile(iunit, dtype=dt, sep=delim)
+#        for key in keys:
+#            vmec_data[key] = _np.copy(data[key])
+#        # end for
     else:
         keys = ['iotaf', 'presf', 'phipf', 'phi', 'jcuru', 'jcurv']
         # *
-        dt = _np.dtype([(key, _np.float) for key in keys])
+#        dt = _np.dtype([(key, _np.float) for key in keys])
         for js in range(vmec_data['ns']):
-            data = _np.fromfile(iunit, dtype=dt, sep=delim)
-            for key in keys:
-                vmec_data[key][js] = _np.copy(data[key])
+            data = _np.fromfile(iunit, dtype=float, count=len(keys), sep=delim)
+            for ii, key in enumerate(keys):
+                vmec_data[key][js] = _np.copy(data[ii])
             # end for
+#            data = _np.fromfile(iunit, dtype=dt, sep=delim)
+#            for key in keys:
+#                vmec_data[key][js] = _np.copy(data[key])
+#            # end for
         # end for
 
         keys = ['iotas', 'mass', 'pres', 'beta_vol', 'phip', 'buco', 'bvco',
                 'vp', 'overr', 'specw']
         # *
-        dt = _np.dtype([(key, _np.float) for key in keys])
+#        dt = _np.dtype([(key, _np.float) for key in keys])
         for js in range(1, vmec_data['ns']):
-            data = _np.fromfile(iunit, dtype=dt, sep=delim)
-            for key in keys:
-                vmec_data[key][js] = _np.copy(data[key])
+            data = _np.fromfile(iunit, dtype=float, count=len(keys), sep=delim)
+            for ii, key in enumerate(keys):
+                vmec_data[key][js] = _np.copy(data[ii])
             # end for
+#            data = _np.fromfile(iunit, dtype=dt, sep=delim)
+#            for key in keys:
+#                vmec_data[key][js] = _np.copy(data[key])
+#            # end for
         # end for
 
         keys = ['aspect', 'betatot', 'betapol', 'betator', 'betaxis', 'b0']
-        dt = _np.dtype([(key, _np.float) for key in keys])
-        data = _np.fromfile(iunit, dtype=dt, sep=delim)
-        for key in keys:
-            vmec_data[key] = _np.copy(data[key])
+#        dt = _np.dtype([(key, _np.float) for key in keys])
+        data = _np.fromfile(iunit, dtype=float, count=len(keys), sep=delim)
+        for ii, key in enumerate(keys):
+            vmec_data[key] = _np.copy(data[ii])
         # end for
+#        data = _np.fromfile(iunit, dtype=dt, sep=delim)
+#        for key in keys:
+#            vmec_data[key] = _np.copy(data[key])
+#        # end for
      # end if
 
     if version_ > (6.10+eps_w):
         keys = ['isign']
-        dt = _np.dtype([(key, _np.int) for key in keys])
-        data = _np.fromfile(iunit, dtype=dt, sep=delim)
-        for key in keys:
-            vmec_data[key] = _np.copy(data[key])
+#        dt = _np.dtype([(key, _np.int) for key in keys])
+        data = _np.fromfile(iunit, dtype=int, count=len(keys), sep=delim)
+        for ii, key in enumerate(keys):
+            vmec_data[key] = _np.copy(data[ii])
         # end for
+#        data = _np.fromfile(iunit, dtype=dt, sep=delim)
+#        for key in keys:
+#            vmec_data[key] = _np.copy(data[key])
+#        # end for
 #        isigng = vmec_data['isign']
 
         keys = ['input_extension']
-        dt = _np.dtype([(key, _np.str) for key in keys])
-        data = _np.fromfile(iunit, dtype=dt, sep=delim)
-        for key in keys:
-            vmec_data[key] = _np.copy(data[key])
-        # end for
+        vmec_data[keys[0]] = iunit.readline().strip()
+#        dt = _np.dtype([(key, _np.str) for key in keys])
+#        data = _np.fromfile(iunit, dtype=dt, sep=delim)
+#        for key in keys:
+#            vmec_data[key] = _np.copy(data[key])
+#        # end for
 #        data = iunit.readline().strip().split(delim)
 #        data = [dat.strip() for dat in data if len(dat)>0]
 #        input_extension = data[0]
 
         keys = ['IonLarmor', 'VolAvgB', 'RBtor0', 'RBtor', 'Itor', 'Aminor',
                 'Rmajor', 'Volume']
-        dt = _np.dtype([(key, _np.float) for key in keys])
-        data = _np.fromfile(iunit, dtype=dt, sep=delim)
-        for key in keys:
-            vmec_data[key] = _np.copy(data[key])
+#        dt = _np.dtype([(key, _np.float) for key in keys])
+        data = _np.fromfile(iunit, dtype=float, count=len(keys), sep=delim)
+        for ii, key in enumerate(keys):
+            vmec_data[key] = _np.copy(data[ii])
         # end for
+#        data = _np.fromfile(iunit, dtype=dt, sep=delim)
+#        for key in keys:
+#            vmec_data[key] = _np.copy(data[key])
+#        # end for
 #        data = iunit.readline().strip().split(delim)
 #        data = [dat.strip() for dat in data if len(dat)>0]
 #        IonLarmor, VolAvgB, RBtor0, RBtor, Itor, Aminor, Rmajor, Volume \
@@ -651,96 +742,124 @@ def read_open_wout_text(iunit, delim=' ', ierr=int(0)):
     if (version_ > (5.10+eps_w)) and (version_ < (6.20-eps_w)):
         keys = ['Dmerc', 'Dshear', 'Dwell', 'Dcurr', 'Dgeod', 'equif']
         # fortran fmt 730
-        dt = _np.dtype([(key, _np.float) for key in keys])
+#        dt = _np.dtype([(key, _np.float) for key in keys])
         for js in range(1, vmec_data['ns']-1):
-            data = _np.fromfile(iunit, dtype=dt, sep=delim)
-            for key in keys:
-                vmec_data[key][js] = _np.copy(data[key])
+            data = _np.fromfile(iunit, dtype=float, count=len(keys), sep=delim)
+            for ii, key in enumerate(keys):
+                vmec_data[key][js] = _np.copy(data[ii])
             # end for
+#            data = _np.fromfile(iunit, dtype=dt, sep=delim)
+#            for key in keys:
+#                vmec_data[key][js] = _np.copy(data[key])
+#            # end for
         # end for
     elif (version_ >= (6.20-eps_w)):
         keys = ['Dmerc', 'Dshear', 'Dwell', 'Dcurr', 'Dgeod', 'equif']
         # fortran fmt *
-        dt = _np.dtype([(key, _np.float) for key in keys])
+#        dt = _np.dtype([(key, _np.float) for key in keys])
         for js in range(1, vmec_data['ns']-1):
-            data = _np.fromfile(iunit, dtype=dt, sep=delim)
-            for key in keys:
-                vmec_data[key][js] = _np.copy(data[key])
+            data = _np.fromfile(iunit, dtype=float, count=len(keys), sep=delim)
+            for ii, key in enumerate(keys):
+                vmec_data[key][js] = _np.copy(data[ii])
             # end for
+#            data = _np.fromfile(iunit, dtype=dt, sep=delim)
+#            for key in keys:
+#                vmec_data[key][js] = _np.copy(data[key])
+#            # end for
         # end for
     # end if
 
-    if (vmec_data['next_cur'] > 0):
+    if (vmec_data['nextcur'] > 0):
         if version_ <= (6.20+eps_w):
             data = _np.fromfile(iunit, dtype=_np.float, count=vmec_data['nextcur'], sep=delim)
-            vmec_data['extcur'] = _np.copy(data[key])
+            vmec_data['extcur'] = _np.copy(data)
         else:
             data = _np.fromfile(iunit, dtype=_np.float, count=vmec_data['nextcur'], sep=delim)
-            vmec_data['extcur'] = _np.copy(data[key])
+            vmec_data['extcur'] = _np.copy(data)
         # end if
         data = iunit.readline()
-        vmec_data['lcurr'] = True if data.find('T') else False
+        vmec_data['lcurr'] = True if data.find('T')>-1 else False
 #        vmec_data['lcurr'] = iunit.fromfile(dtype=bool, count=1, sep=delim)
         if (vmec_data['lcurr']):
             # Figure out how many current labels exist per line (max)
             ncur = len(vmec_data['extcur'])
+            vmec_data['curlabel'] = []
             nremaining = ncur
             tstcount = 0
             while nremaining>0 and tstcount<200:
                 data = iunit.readline().strip().split(delim)
-                data = [dat.strip() for dat in data if len(dat)>0]
-
+                data = [dat.strip() for dat in data if len(dat)>1]
+                data = [dat.replace("\'", "") for dat in data]
                 # store the ones you have already grabbed
                 for js in range(len(data)):
-                    vmec_data['curlabel'][js] = data[js]
+                    vmec_data['curlabel'].append(data[js])
                 # end for
                 tstcount += 1
                 nremaining -= len(data)
             # end while
+            vmec_data['curlabel'] = _np.asarray(vmec_data['curlabel'])
         # end if
     # end if
 
     if (version_ <= (6.20+eps_w)):
         keys = ['fsqt', 'wdot']
-        dt = _np.dtype([(key, _np.float) for key in keys])
+#        dt = _np.dtype([(key, _np.float) for key in keys])
         for js in range(vmec_data['nstore_seq']):
-            data = _np.fromfile(iunit, dtype=dt, sep=delim)
-            for key in keys:
-                vmec_data[key][js] = _np.copy(data[key])
+            data = _np.fromfile(iunit, dtype=float, count=len(keys), sep=delim)
+            for ii, key in enumerate(keys):
+                vmec_data[key][js] = _np.copy(data[ii])
             # end for
+#            data = _np.fromfile(iunit, dtype=dt, sep=delim)
+#            for key in keys:
+#                vmec_data[key][js] = _np.copy(data[key])
+#            # end for
         # end for
 #         READ (iunit, 730, iostat=istat(14))(fsqt(i), wdot(i), i=1,nstore_seq)
     else:
         keys = ['fsqt', 'wdot']
-        dt = _np.dtype([(key, _np.float) for key in keys])
+#        dt = _np.dtype([(key, _np.float) for key in keys])
         for js in range(vmec_data['nstore_seq']):
-            data = _np.fromfile(iunit, dtype=dt, sep=delim)
-            for key in keys:
-                vmec_data[key][js] = _np.copy(data[key])
+            data = _np.fromfile(iunit, dtype=float, count=len(keys), sep=delim)
+            for ii, key in enumerate(keys):
+                vmec_data[key][js] = _np.copy(data[ii])
             # end for
+#            data = _np.fromfile(iunit, dtype=dt, sep=delim)
+#            for key in keys:
+#                vmec_data[key][js] = _np.copy(data[key])
+#            # end for
         # end for
 #         READ (iunit, *, iostat=istat(14))(fsqt(i), wdot(i), i=1,nstore_seq)
     # end if
 
     if (version_>=6.20-eps_w) and (version_ < 6.50-eps_w) and (istat[14-1]==0):
         keys = ['jdotb', 'bdotgradv', 'bdotb']
-        dt = _np.dtype([(key, _np.float) for key in keys])
+#        dt = _np.dtype([(key, _np.float) for key in keys])
         for js in range(vmec_data['ns']):
-            data = _np.fromfile(iunit, dtype=dt, sep=delim)
-            for key in keys:
-                vmec_data[key][js] = _np.copy(data[key])
+            data = _np.fromfile(iunit, dtype=float, count=len(keys), sep=delim)
+            for ii, key in enumerate(keys):
+                vmec_data[key][js] = _np.copy(data[ii])
             # end for
+#            data = _np.fromfile(iunit, dtype=dt, sep=delim)
+#            for key in keys:
+#                vmec_data[key][js] = _np.copy(data[key])
+#            # end for
         # end for
 #         READ (iunit, 730, iostat=istat(14), err=1000)                  &
 #           (jdotb(js), bdotgradv(js), bdotb(js), js=1,ns)
     elif (version_ >= (6.50-eps_w)):
         keys = ['jdotb', 'bdotgradv', 'bdotb']
-        dt = _np.dtype([(key, _np.float) for key in keys])
+#        dt = _np.dtype([(key, _np.float) for key in keys])
         for js in range(vmec_data['ns']):
-            data = _np.fromfile(iunit, dtype=dt, sep=delim)
-            for key in keys:
-                vmec_data[key][js] = _np.copy(data[key])
+            data = _np.fromfile(iunit, dtype=float, count=len(keys), sep=delim)
+            if len(data)==0:
+                break
+            for ii, key in enumerate(keys):
+                vmec_data[key][js] = _np.copy(data[ii])
             # end for
+#            data = _np.fromfile(iunit, dtype=dt, sep=delim)
+#            for key in keys:
+#                vmec_data[key][js] = _np.copy(data[key])
+#            # end for
         # end for
 #         READ (iunit, *, iostat=istat(14), err=1000)                    &
 #           (jdotb(js), bdotgradv(js), bdotb(js), js=1,ns)
@@ -793,141 +912,189 @@ def read_open_wout_text(iunit, delim=' ', ierr=int(0)):
 
         if vmec_data['imse'] >= 2 or vmec_data['itse'] > 0:
             keys = ['tswgt', 'msewgt']
-            dt = _np.dtype([(key, _np.float) for key in keys])
-            data = _np.fromfile(iunit, dtype=dt, sep=delim)
-            for key in keys:
-                vmec_data[key][js] = _np.copy(data[key])
+#            dt = _np.dtype([(key, _np.float) for key in keys])
+            data = _np.fromfile(iunit, dtype=float, count=len(keys), sep=delim)
+            for ii, key in enumerate(keys):
+                vmec_data[key][js] = _np.copy(data[ii])
             # end for
+#            data = _np.fromfile(iunit, dtype=dt, sep=delim)
+#            for key in keys:
+#                vmec_data[key][js] = _np.copy(data[key])
+#            # end for
 #            READ (iunit, *) tswgt, msewgt
 
-            vmec_data['isnodes'] = iunit.fromfile(dtype=_np.dtype('isnodes', _np.int), count=1, sep=delim)
+            vmec_data['isnodes'] = iunit.fromfile(dtype=_np.int, count=1, sep=delim)
             keys = ['sknots', 'ystark', 'y2stark']
-            dt = _np.dtype([(key, _np.float) for key in keys])
-            for ii in range(vmec_data['isnodes']):
-                data = _np.fromfile(iunit, dtype=dt, sep=delim)
-                for key in keys:
-                    vmec_data[key][ii] = _np.copy(data[key])
+#            dt = _np.dtype([(key, _np.float) for key in keys])
+            for js in range(vmec_data['isnodes']):
+                data = _np.fromfile(iunit, dtype=float, count=len(keys), sep=delim)
+                for ii, key in enumerate(keys):
+                    vmec_data[key][js] = _np.copy(data[ii])
                 # end for
+#                data = _np.fromfile(iunit, dtype=dt, sep=delim)
+#                for key in keys:
+#                    vmec_data[key][js] = _np.copy(data[key])
+#                # end for
             # end for
 #            READ (iunit, *) isnodes, (sknots(i),ystark(i),y2stark(i),   &
 #               i=1,isnodes)
 
             vmec_data['ipnodes'] = iunit.fromfile(dtype=_np.dtype('ipnodes', _np.int), count=1, sep=delim)
             keys = ['pknots', 'ythom', 'y2thom']
-            dt = _np.dtype([(key, _np.float) for key in keys])
-            for ii in range(vmec_data['ipnodes']):
-                data = _np.fromfile(iunit, dtype=dt, sep=delim)
-                for key in keys:
-                    vmec_data[key][ii] = _np.copy(data[key])
+#            dt = _np.dtype([(key, _np.float) for key in keys])
+            for js in range(vmec_data['ipnodes']):
+                data = _np.fromfile(iunit, dtype=float, count=len(keys), sep=delim)
+                for ii, key in enumerate(keys):
+                    vmec_data[key][js] = _np.copy(data[ii])
                 # end for
+#                data = _np.fromfile(iunit, dtype=dt, sep=delim)
+#                for key in keys:
+#                    vmec_data[key][js] = _np.copy(data[key])
+#                # end for
             # end for
 #            READ (iunit, *) ipnodes, (pknots(i), ythom(i),              &
 #               y2thom(i),i=1,ipnodes)
 
             keys = ['anglemse', 'rmid', 'qmid', 'shear', 'presmid', 'alfa', 'curmid']
-            dt = _np.dtype([(key, _np.float) for key in keys])
-            for ii in range(2*vmec_data['ns'-1]):
-                data = _np.fromfile(iunit, dtype=dt, sep=delim)
-                for key in keys:
-                    vmec_data[key][ii] = _np.copy(data[key])
+#            dt = _np.dtype([(key, _np.float) for key in keys])
+            for js in range(2*vmec_data['ns'-1]):
+                data = _np.fromfile(iunit, dtype=float, count=len(keys), sep=delim)
+                for ii, key in enumerate(keys):
+                    vmec_data[key][js] = _np.copy(data[ii])
                 # end for
+#                data = _np.fromfile(iunit, dtype=dt, sep=delim)
+#                for key in keys:
+#                    vmec_data[key][js] = _np.copy(data[key])
+#                # end for
             # end for
 #            READ(iunit, *)(anglemse(i),rmid(i),qmid(i),shear(i),        &
 #            presmid(i),alfa(i),curmid(i),i=1,2*ns-1)
 
             keys = ['rstark', 'datastark', 'qmeas']
-            dt = _np.dtype([(key, _np.float) for key in keys])
-            for ii in range(vmec_data['imse']):
-                data = _np.fromfile(iunit, dtype=dt, sep=delim)
-                for key in keys:
-                    vmec_data[key][ii] = _np.copy(data[key])
+#            dt = _np.dtype([(key, _np.float) for key in keys])
+            for js in range(vmec_data['imse']):
+                data = _np.fromfile(iunit, dtype=float, count=len(keys), sep=delim)
+                for ii, key in enumerate(keys):
+                    vmec_data[key][js] = _np.copy(data[ii])
                 # end for
+#                data = _np.fromfile(iunit, dtype=dt, sep=delim)
+#                for key in keys:
+#                    vmec_data[key][js] = _np.copy(data[key])
+#                # end for
             # end for
 #            READ(iunit, *)(rstark(i),datastark(i),qmeas(i),i=1,imse)
 
             keys = ['rtom', 'datathom']
-            dt = _np.dtype([(key, _np.float) for key in keys])
-            for ii in range(vmec_data['itse']):
-                data = _np.fromfile(iunit, dtype=dt, sep=delim)
-                for key in keys:
-                    vmec_data[key][ii] = _np.copy(data[key])
+#            dt = _np.dtype([(key, _np.float) for key in keys])
+            for js in range(vmec_data['itse']):
+                data = _np.fromfile(iunit, dtype=float, count=len(keys), sep=delim)
+                for ii, key in enumerate(keys):
+                    vmec_data[key][js] = _np.copy(data[ii])
                 # end for
+#                data = _np.fromfile(iunit, dtype=dt, sep=delim)
+#                for key in keys:
+#                    vmec_data[key][js] = _np.copy(data[key])
+#                # end for
             # end for
 #            READ(iunit, *)(rthom(i),datathom(i),i=1,itse)
         # end if
 
         if vmec_data['nobd']>0:
             keys = ['dsiext', 'plflux', 'dsiobt']
-            dt = _np.dtype([(key, _np.float) for key in keys])
-            for ii in range(vmec_data['nobd']):
-                data = _np.fromfile(iunit, dtype=dt, sep=delim)
-                for key in keys:
-                    vmec_data[key][ii] = _np.copy(data[key])
+#            dt = _np.dtype([(key, _np.float) for key in keys])
+            for js in range(vmec_data['nobd']):
+                data = _np.fromfile(iunit, dtype=float, count=len(keys), sep=delim)
+                for ii, key in enumerate(keys):
+                    vmec_data[key][js] = _np.copy(data[ii])
                 # end for
+#                data = _np.fromfile(iunit, dtype=dt, sep=delim)
+#                for key in keys:
+#                    vmec_data[key][js] = _np.copy(data[key])
+#                # end for
             # end for
 #            READ (iunit, *) (dsiext(i),plflux(i),dsiobt(i),i=1,nobd)
 
             keys = ['flmwgt']
-            dt = _np.dtype([(key, _np.float) for key in keys])
-            data = _np.fromfile(iunit, dtype=dt, sep=delim)
-            for key in keys:
-                vmec_data[key] = _np.copy(data[key])
+#            dt = _np.dtype([(key, _np.float) for key in keys])
+            data = _np.fromfile(iunit, dtype=float, sep=delim)
+            for ii, key in enumerate(keys):
+                vmec_data[key] = _np.copy(data[ii])
             # end for
+#            data = _np.fromfile(iunit, dtype=dt, sep=delim)
+#            for key in keys:
+#                vmec_data[key] = _np.copy(data[key])
+#            # end for
 #            READ (iunit, *) flmwgt
          # end if
 
         vmec_data['nbfldn'] = _np.sum(vmec_data['nbfld'][:vmec_data['nbsets']])
         if (vmec_data['nbfldn'] > 0):
             keys = ['bcoil', 'plbfld', 'bbc']
-            dt = _np.dtype([(key, _np.float) for key in keys])
+#            dt = _np.dtype([(key, _np.float) for key in keys])
             for n in range(vmec_data['nbsets']):  # 1, nbsets
-                for ii in range(vmec_data['nbfldn'][n]):
-                    data = _np.fromfile(iunit, dtype=dt, sep=delim)
-                    for key in keys:
-                        vmec_data[key][ii,n] = _np.copy(data[key])
+                for jn in range(vmec_data['nbfldn'][n]):
+                    data = _np.fromfile(iunit, dtype=float, sep=delim)
+                    for ii, key in enumerate(keys):
+                        vmec_data[key][n, jn] = _np.copy(data[ii])
                     # end for
+#                    data = _np.fromfile(iunit, dtype=dt, sep=delim)
+#                    for key in keys:
+#                        vmec_data[key][n, jn] = _np.copy(data[key])
+#                    # end for
                 # end for
 #               READ (iunit, *) (bcoil(i,n),plbfld(i,n),bbc(i,n),        &
 #                  i=1,nbfld(n))
             # end for
 
             keys = ['bcwgt']
-            dt = _np.dtype([(key, _np.float) for key in keys])
-            data = _np.fromfile(iunit, dtype=dt, sep=delim)
-            for key in keys:
-                vmec_data[key] = _np.copy(data[key])
+#            dt = _np.dtype([(key, _np.float) for key in keys])
+            data = _np.fromfile(iunit, dtype=float, count=len(keys), sep=delim)
+            for ii, key in enumerate(keys):
+                vmec_data[key] = _np.copy(data[ii])
             # end for
             # READ (iunit, *) bcwgt
         # end if
 
         keys = ['phidiam', 'delphid']
-        dt = _np.dtype([(key, _np.float) for key in keys])
-        data = _np.fromfile(iunit, dtype=dt, sep=delim)
-        for key in keys:
-            vmec_data[key] = _np.copy(data[key])
+#        dt = _np.dtype([(key, _np.float) for key in keys])
+        data = _np.fromfile(iunit, dtype=float, count=len(keys), sep=delim)
+        for ii, key in enumerate(keys):
+            vmec_data[key] = _np.copy(data[ii])
         # end for
+#        data = _np.fromfile(iunit, dtype=dt, sep=delim)
+#        for key in keys:
+#            vmec_data[key] = _np.copy(data[key])
+#        # end for
 #         READ (iunit, *) phidiam, delphid
 
         #
         #     READ Limiter & Prout plotting specs
         #
         keys = ['nsets', 'npars_in', 'nlim']
-        dt = _np.dtype([(key, _np.int) for key in keys])
-        data = _np.fromfile(iunit, dtype=dt, sep=delim)
-        for key in keys:
-            vmec_data[key] = _np.copy(data[key])
+#        dt = _np.dtype([(key, _np.int) for key in keys])
+        data = _np.fromfile(iunit, dtype=int, count=len(keys), sep=delim)
+        for ii, key in enumerate(keys):
+            vmec_data[key] = _np.copy(data[ii])
         # end for
+#        data = _np.fromfile(iunit, dtype=dt, sep=delim)
+#        for key in keys:
+#            vmec_data[key] = _np.copy(data[key])
+#        # end for
 #         READ (iunit, *) nsets, nparts_in, nlim
 
         vmec_data['nsetsn'] = _np.zeros((vmec_data['nsets'],), dtype=_np.int)
 #         ALLOCATE (nsetsn(nsets))
         keys = ['nsetsn']
-        dt = _np.dtype([(key, _np.int) for key in keys])
-        for ii in range(vmec_data['nsets']):
-            data = _np.fromfile(iunit, dtype=dt, sep=delim)
-            for key in keys:
-                vmec_data[key][ii] = _np.copy(data[key])
+#        dt = _np.dtype([(key, _np.int) for key in keys])
+        for js in range(vmec_data['nsets']):
+            data = _np.fromfile(iunit, dtype=int, count=len(keys), sep=delim)
+            for ii, key in enumerate(keys):
+                vmec_data[key][js] = _np.copy(data[ii])
             # end for
+#            data = _np.fromfile(iunit, dtype=dt, sep=delim)
+#            for key in keys:
+#                vmec_data[key][js] = _np.copy(data[key])
+#            # end for
 #         READ (iunit, *) (nsetsn(i),i=1,nsets)
 
         n1 = int(_np.max(vmec_data['nsetsn'][:vmec_data['nsets']]))
@@ -936,22 +1103,25 @@ def read_open_wout_text(iunit, delim=' ', ierr=int(0)):
         # ALLOCATE (pfcspec(nparts_in,n1,nsets), limitr(nlim))
 
         keys = ['pfcspec']
-        dt = _np.dtype([(key, _np.float64) for key in keys])
+#        dt = _np.dtype([(key, _np.float64) for key in keys])
         for kk in range(vmec_data['nsets']):
             for jj in range(vmec_data['nsetsn'][kk]):
                 for ii in range(vmec_data['nparts_in']):
-                    vmec_data[keys[0]][ii,jj,kk] = _np.fromfile(iunit, dtype=dt, sep=delim)
+#                    vmec_data[keys[0]][ii,jj,kk] = _np.fromfile(iunit, dtype=dt, sep=delim)
+                    vmec_data[keys[0]][ii,jj,kk] = _np.fromfile(iunit, dtype=float, count=len(keys), sep=delim)
                 # end for
             # end for
         # end for
+        vmec_data[keys[0]] = _np.asfortranarray(vmec_data[keys[0]])
 #        READ (iunit, *) (((pfcspec(i,j,k),i=1,nparts_in),              &
 #            j=1,nsetsn(k)),k=1,nsets)
 
         keys = ['limitr']
-        dt = _np.dtype([(key, _np.float64) for key in keys])
+#        dt = _np.dtype([(key, _np.float64) for key in keys])
         for ii in range(vmec_data['nlim']):
-            vmec_data[keys[0]][ii] = _np.fromfile(iunit, dtype=dt, sep=delim)
+            vmec_data[keys[0]][ii] = _np.fromfile(iunit, dtype=float, count=len(keys), sep=delim)
         # end for
+        vmec_data[keys[0]] = _np.asfortranarray(vmec_data[keys[0]])
 #         READ (iunit, *) (limitr(i), i=1,nlim)
 
         m  = _np.max(vmec_data['limitr'][:vmec_data['nlim']])
@@ -960,47 +1130,50 @@ def read_open_wout_text(iunit, delim=' ', ierr=int(0)):
 #        ALLOCATE (rlim(m,nlim), zlim(m,nlim))
 
         keys = ['rlim', 'zlim']
-        dt = _np.dtype([(key, _np.float64) for key in keys])
+#        dt = _np.dtype([(key, _np.float64) for key in keys])
         for jj in range(vmec_data['nlim']):
             for ii in range(vmec_data['limitr'][jj]):
-                data = _np.fromfile(iunit, dtype=dt, sep=delim)
-                for key in keys:
-                    vmec_data[key][ii,jj] = _np.copy(data[key])
+                data = _np.fromfile(iunit, dtype=float, count=len(keys), sep=delim)
+                for ik, key in enumerate(keys):
+                    vmec_data[key][ii,jj] = _np.copy(data[ik])
                 # end for
             # end for
+        # end for
+        for key in keys:
+            vmec_data[key] = _np.asfortranarray(vmec_data[key])
         # end for
 #         READ (iunit, *) ((rlim(i,j),zlim(i,j),i=1,limitr(j)),          &
 #            j=1,nlim)
 
         keys = ['nrgrid', 'nzgrid']
-        dt = _np.dtype([(key, _np.int) for key in keys])
-        data = _np.fromfile(iunit, dtype=dt, sep=delim)
-        for key in keys:
-            vmec_data[key] = _np.copy(data[key])
+#        dt = _np.dtype([(key, _np.int) for key in keys])
+        data = _np.fromfile(iunit, dtype=int, count=len(keys), sep=delim)
+        for ii, key in enumerate(keys):
+            vmec_data[key] = _np.copy(data[ii])
         # end for
 #         READ (iunit, *) nrgrid, nzgrid
 
         keys = ['tokid']
-        dt = _np.dtype([(key, _np.float) for key in keys])
-        data = _np.fromfile(iunit, dtype=dt, sep=delim)
-        for key in keys:
-            vmec_data[key] = _np.copy(data[key])
+#        dt = _np.dtype([(key, _np.float) for key in keys])
+        data = _np.fromfile(iunit, dtype=float, count=len(keys), sep=delim)
+        for ii, key in enumerate(keys):
+            vmec_data[key] = _np.copy(data[ii])
         # end for
 #         READ (iunit, *) tokid
 
         keys = ['rx1', 'rx2', 'zy1', 'zy2', 'condif']
-        dt = _np.dtype([(key, _np.float) for key in keys])
-        data = _np.fromfile(iunit, dtype=dt, sep=delim)
-        for key in keys:
-            vmec_data[key] = _np.copy(data[key])
+#        dt = _np.dtype([(key, _np.float) for key in keys])
+        data = _np.fromfile(iunit, dtype=float, count=len(keys), sep=delim)
+        for ii, key in enumerate(keys):
+            vmec_data[key] = _np.copy(data[ii])
         # end for
 #         READ (iunit, *) rx1, rx2, zy1, zy2, condif
 
         keys = ['imatch_phiedge']
-        dt = _np.dtype([(key, _np.float) for key in keys])
-        data = _np.fromfile(iunit, dtype=dt, sep=delim)
-        for key in keys:
-            vmec_data[key] = _np.copy(data[key])
+#        dt = _np.dtype([(key, _np.float) for key in keys])
+        data = _np.fromfile(iunit, dtype=float, count=len(keys), sep=delim)
+        for ii, key in enumerate(keys):
+            vmec_data[key] = _np.copy(data[ii])
         # end for
 #         READ (iunit, *) imatch_phiedge
     # end if
