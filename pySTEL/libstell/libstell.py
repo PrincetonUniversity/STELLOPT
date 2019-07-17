@@ -223,6 +223,7 @@ def read_vmec(file, branch=None):
     # Free memory (don't do this as python accesses this memory)
     #read_wout_dealloc = getattr(libstell,s1+'read_wout_mod_'+s2+'_read_wout_deallocate'+s3)
     #read_wout_dealloc()
+
     # Correct Arrays (mn-nv) to (mn+nv)
     vmec_data['xn'] = -vmec_data['xn']
     # Put on full grid

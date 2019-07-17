@@ -26,13 +26,6 @@ __all__ = ['read_vmec']
 from . import read_vmec
 from .read_vmec import read_vmec # analysis:ignore
 
-from . import read_vmec_txt
-from .read_vmec_txt import read_vmec_orig, read_vmec_605, read_vmec_620  # analysis:ignore
-from .read_vmec_txt import read_vmec_650, read_vmec_695, read_vmec_800, read_vmec_847  # analysis:ignore
-from .read_vmec_txt import read_vmec_mercier, read_vmec_jxbout  # analysis:ignore
-
-from . import read_vmec_netCDF
-from .read_vmec_netCDF import read_vmec as read_vmec_netcdf  # analysis:ignore
 
 #from . import CalcFluxCart_VMEC
 #from .CalcFluxCart_VMEC import

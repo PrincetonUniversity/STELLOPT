@@ -56,12 +56,20 @@ from __future__ import absolute_import, with_statement, absolute_import, \
                        division, print_function, unicode_literals
 
 import numpy as _np
+from utils import finish_import
 
 try:
 #if 1:
     from utils import Struct, ftell, fgetl
 except:
     from ..utils import Struct, ftell, fgetl
+# end try
+
+try:
+    from libstell import read_vmec as read_vmec_libstell
+    use_lib_stell = True
+except:
+    use_lib_stell = False
 # end try
 
 __metaclass__ = type
@@ -129,25 +137,49 @@ class read_vmec(Struct):
 
     def readfil(self, verbose=True):
         filname = self.filname
-        # Handle File type
+
+        # Handle File type and library access
         # nfilname = len(filname)
         netcdffile = 0
-        if (filname.find('.nc')>-1 and filname.find('wout')>-1):
+        if use_lib_stell and filname.find('wout')>-1 or filname.find('.nc')>-1:
+            if verbose:
+                print('Attempting to open %s using the libstell library'%(filname,))
+            # end if
+            self.reader = read_vmec_libstell
+
+            self.__dict__.update(self.reader(filname))
+
+        elif filname.find('.nc')>-1:   # and filname.find('wout')>-1):
             if verbose:     print('netcdf wout file')   # end if
             netcdffile = 1
-            self.read_vmec_netcdf(filname)
+
+            try:
+                from VMEC.read_vmec_netCDF import read_vmec as read_vmec_nc
+            except:
+                from .read_vmec_netCDF import read_vmec as read_vmec_nc
+            # end try
+            self.reader = read_vmec_nc
+
+            self.__dict__.update(self.reader(filname))
+
         elif filname.find('mercier')>-1:
             if verbose:     print('mercier file')    # end if
-            self.read_vmec_mercier(filname)
-            return self
+            self.reader = self.read_vmec_mercier
+
+            self.__dict__.update(self.reader(filname))
+            return
         elif filname.find('jxbout')>-1:
             if verbose:     print('jxbout file')     # end if
-            self.read_vmec_jxbout(filname)
-            return self
+            self.reader = self.read_vmec_jxbout
+
+            self.__dict__.update(self.reader(filname))
+
         else:
             # Assume a VMEC output file in text format
             if verbose:     print('text-based wout file')   # end if
 #            with open(filname,'r') as fid:
+
+
             try:
                 self.fid = open(filname,'r')  # Open File
                 # Read First Line and extract version information
@@ -221,54 +253,54 @@ class read_vmec(Struct):
         # end if
     # end def readfil
 
-    def read_vmec_netcdf(self, filname):
-        try:
-            from VMEC.read_vmec_netCDF import read_vmec
-        except:
-            from .read_vmec_netCDF import read_vmec
-        # end try
-        self.reader = read_vmec
-        f = self.reader(filname)
-
-        # Call the initialization function of the super class to store the data
-        if type(f) != dict:   f = f.dict_from_class()   # endif
-        self.__dict__.update(f)
-        return f
-    # end def read_vmec_netcdf
-
-    def read_vmec_txt(self, fid, fmt):
-        try:
-            from VMEC import read_vmec_txt as rvt
-#            import read_vmec_txt as rvt
-        except:
-            import VMEC
-            from .VMEC import read_vmec_txt as rvt
-        # end try
-        if (self.version <= 5.10):
-            self.reader = rvt.read_vmec_orig
-        elif (self.version <= 6.05):
-            self.reader = rvt.read_vmec_605
-        elif (self.version <= 6.20):
-            self.reader = rvt.read_vmec_620
-        elif (self.version <= 6.50):
-            self.reader = rvt.read_vmec_650
-        elif (self.version <= 6.95):
-            self.reader = rvt.read_vmec_695
-        elif (self.version <= 8.00):
-            self.reader = rvt.read_vmec_800
-        elif (self.version <= 8.52):
-            self.reader = rvt.read_vmec_847
-        # end if
-        f = self.reader(fid, fmt)
-
-        try:    fid.close()
-        except: pass
-
-        # Call the initialization function of the super class to store the data
-        if type(f) != dict:   f = f.dict_from_class()   # endif
-        self.__dict__.update(f)
-        return
-    # end def read_vmec_txt
+#    def read_vmec_netcdf(self, filname):
+#        try:
+#            from VMEC.read_vmec_netCDF import read_vmec
+#        except:
+#            from .read_vmec_netCDF import read_vmec
+#        # end try
+#        self.reader = read_vmec
+#        f = self.reader(filname)
+#
+#        # Call the initialization function of the super class to store the data
+#        if type(f) != dict:   f = f.dict_from_class()   # endif
+#        self.__dict__.update(f)
+#        return f
+#    # end def read_vmec_netcdf
+#
+#    def read_vmec_txt(self, fid, fmt):
+#        try:
+#            from VMEC import read_vmec_txt as rvt
+##            import read_vmec_txt as rvt
+#        except:
+#            import VMEC
+#            from .VMEC import read_vmec_txt as rvt
+#        # end try
+#        if (self.version <= 5.10):
+#            self.reader = rvt.read_vmec_orig
+#        elif (self.version <= 6.05):
+#            self.reader = rvt.read_vmec_605
+#        elif (self.version <= 6.20):
+#            self.reader = rvt.read_vmec_620
+#        elif (self.version <= 6.50):
+#            self.reader = rvt.read_vmec_650
+#        elif (self.version <= 6.95):
+#            self.reader = rvt.read_vmec_695
+#        elif (self.version <= 8.00):
+#            self.reader = rvt.read_vmec_800
+#        elif (self.version <= 8.52):
+#            self.reader = rvt.read_vmec_847
+#        # end if
+#        f = self.reader(fid, fmt)
+#
+#        try:    fid.close()
+#        except: pass
+#
+#        # Call the initialization function of the super class to store the data
+#        if type(f) != dict:   f = f.dict_from_class()   # endif
+#        self.__dict__.update(f)
+#        return
+#    # end def read_vmec_txt
 
     # ===================================================================== #
 
