@@ -211,6 +211,9 @@ def h2f(var, ns):
     # ... our data is expected as numpy arrays so this isn't bad
     #     at the output this should be a numpy array
     var = _np.copy(var)
+    if len(_np.shape(var)) == 1:
+        var = _np.atleast_2d(var).T
+    # end if
     temp = _np.zeros((ns,1), dtype=var.dtype)
     temp[0] = 1.5 * var[0] - 0.5 * var[1]
     temp[1:ns-1] = 0.5* (var[0:ns-2] + var[1:ns-1])
