@@ -86,8 +86,8 @@ def calc_curr(f):
     shalf=_np.zeros(ns)
     sfull=_np.zeros(ns)
     for i in _np.arange(1,ns):
-        shalf[i] = _np.sqrt(hs*(i-0.5))
-        sfull[i] = _np.sqrt(hs*(i-0.0))
+        shalf[i] = _np.sqrt(hs*(i-0.5))   # check this...
+        sfull[i] = _np.sqrt(hs*(i-0.0))   # check this
 
     js1 = _np.arange(2,ns)
     js  = _np.arange(1,ns-1)
