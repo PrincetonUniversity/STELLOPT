@@ -56,7 +56,7 @@ from __future__ import absolute_import, with_statement, absolute_import, \
                        division, print_function, unicode_literals
 
 import numpy as _np
-from utils import finish_import
+from utils.vmcutils import finish_import
 
 try:
 #if 1:
@@ -140,7 +140,7 @@ class read_vmec(Struct):
 
         # Handle File type and library access
         # nfilname = len(filname)
-        netcdffile = 0
+#        netcdffile = 0
         if use_lib_stell and filname.find('wout')>-1 or filname.find('.nc')>-1:
             if verbose:
                 print('Attempting to open %s using the libstell library'%(filname,))
@@ -149,10 +149,9 @@ class read_vmec(Struct):
 
             self.__dict__.update(self.reader(filname))
 
-        elif filname.find('.nc')>-1:   # and filname.find('wout')>-1):
+        elif filname.find('.nc')>-1 and filname.find('wout')>-1:
             if verbose:     print('netcdf wout file')   # end if
-            netcdffile = 1
-
+#            netcdffile = 1
             try:
                 from VMEC.read_vmec_netCDF import read_vmec as read_vmec_nc
             except:
@@ -173,84 +172,92 @@ class read_vmec(Struct):
             self.reader = self.read_vmec_jxbout
 
             self.__dict__.update(self.reader(filname))
-
         else:
             # Assume a VMEC output file in text format
             if verbose:     print('text-based wout file')   # end if
 #            with open(filname,'r') as fid:
-
+#            self.reader = self.read_vmec_txt
 
             try:
-                self.fid = open(filname,'r')  # Open File
-                # Read First Line and extract version information
-                line = fgetl(self.fid)
-                # line = self.fid.readline()
-                _, self.version = line.split('=')
-                self.version = float(self.version)
-                # Handle unknown versions
-                print(self.version)
-                if (self.version < 0) or (self.version > 8.52):
-                    if verbose:
-                        print('Unknown file type or version.')
-                    # end if
-                    return self
-                # end if
-
-                # VMEC files with comma delimited values do exist, in an attempt to
-                # handle them we dynamically create the format specifier for fscanself.
-                start = ftell(self.fid)   # Get the current position to rewind to
-                line = fgetl(self.fid)   # Get the next line
-#                start = self.fid.tell()
-#                line = self.fid.readline().replace('\n', '')
-                fmt = '%g'
-                if line.find(',') > -1:  # isempty(strfind(line,',')):
-                    fmt += ','
-                    if verbose and self.version < 6.54:
-                        print('Comma delimited file detected!')
-                        print('     Only 6.54+ version supported!')
-                    # end if
-                    return self
-                # end if
-
-                # Go back to just after the version.
-                self.fid.seek(start, 0)
-
-                # Handle versions
-                self.read_vmec_txt(self.fid, fmt)
-
-                # If VMEC threw an error then return what was read
-                if self.ierr_vmec and (self.ierr_vmec != 4):
-                    print('VMEC runtime error detected!')
-                    return self
-                #end
+                from VMEC import read_vmec_txt as rvt
+    #            import read_vmec_txt as rvt
             except:
-                raise
-            finally:
-                # (automatically closes file using "with open," if not already closed)
-                try:    self.fid.close()
-                except: pass
-#                fclose(fid)
+                import VMEC
+                from .VMEC import read_vmec_txt as rvt
             # end try
-        # end if filename selection
-
-        if not netcdffile:
-            # This is taken care of in Jonathon's code I believe.
-            # TODO:! Double check this!
-            if not hasattr(self, 'lrfplogical'):
-                self.lrfplogical=0
-            # end if
-
-            # === Now comes the geometric manipulations of the VMEC output === #
-            #
-            # Need to convert various quantities to full mesh
-            self.half2fullmesh()
-
-            # Now recompose the Fourier arrays
-            self.RecomposeFourierArrays()
-
-            # Create resonance array
-            self. CreateResonanceArray()
-        # end if
+            self.reader = read_vmec_txt
+            self.__dict__.update(self.reader(filname))
+#            try:
+#                self.fid = open(filname,'r')  # Open File
+#                # Read First Line and extract version information
+#                line = fgetl(self.fid)
+#                # line = self.fid.readline()
+#                _, self.version = line.split('=')
+#                self.version = float(self.version)
+#                # Handle unknown versions
+#                print(self.version)
+#                if (self.version < 0) or (self.version > 8.52):
+#                    if verbose:
+#                        print('Unknown file type or version.')
+#                    # end if
+#                    return
+#                # end if
+#
+#                # VMEC files with comma delimited values do exist, in an attempt to
+#                # handle them we dynamically create the format specifier for fscanself.
+#                start = ftell(self.fid)   # Get the current position to rewind to
+#                line = fgetl(self.fid)   # Get the next line
+##                start = self.fid.tell()
+##                line = self.fid.readline().replace('\n', '')
+#                fmt = '%g'
+#                if line.find(',') > -1:  # isempty(strfind(line,',')):
+#                    fmt += ','
+#                    if verbose and self.version < 6.54:
+#                        print('Comma delimited file detected!')
+#                        print('     Only 6.54+ version supported!')
+#                    # end if
+#                    return self
+#                # end if
+#
+#                # Go back to just after the version.
+#                self.fid.seek(start, 0)
+#
+#                # Handle versions
+#                self.read_vmec_txt(self.fid, fmt)
+#
+#                # If VMEC threw an error then return what was read
+#                if self.ierr_vmec and (self.ierr_vmec != 4):
+#                    print('VMEC runtime error detected!')
+#                    return self
+#                #end
+#            except:
+#                raise
+#            finally:
+#                # (automatically closes file using "with open," if not already closed)
+#                try:    self.fid.close()
+#                except: pass
+##                fclose(fid)
+#            # end try
+#        # end if filename selection
+#
+#        if not netcdffile:
+#            # This is taken care of in Jonathon's code I believe.
+#            # TODO:! Double check this!
+#            if not hasattr(self, 'lrfplogical'):
+#                self.lrfplogical=0
+#            # end if
+#
+#            # === Now comes the geometric manipulations of the VMEC output === #
+#            #
+#            # Need to convert various quantities to full mesh
+#            self.half2fullmesh()
+#
+#            # Now recompose the Fourier arrays
+#            self.RecomposeFourierArrays()
+#
+#            # Create resonance array
+#            self. CreateResonanceArray()
+#        # end if
     # end def readfil
 
 #    def read_vmec_netcdf(self, filname):
