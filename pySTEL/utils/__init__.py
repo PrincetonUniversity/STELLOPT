@@ -24,7 +24,7 @@ from . import utils
 from .utils import cylsym_odd, cylsym_even, cart2pol, pol2cart # analysis:ignore
 from .utils import lagrange_interpolation, newton, closedpoints, openpoints # analysis:ignore
 
-#from . import txtutils
+from . import txtutils
 #from .txtutils import scanf, sscanf, fscanf  # analysis:ignore
 #from .txtutils import ftell, fseek, frewind, fgets, fgetl, findstr # analysis:ignore
 from txtutils import scanf, sscanf, fscanf, ftell, fseek, frewind, fgets, fgetl, findstr  # analysis:Ignore
