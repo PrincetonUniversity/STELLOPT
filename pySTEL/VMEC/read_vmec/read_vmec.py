@@ -153,7 +153,7 @@ class read_vmec(Struct):
             if verbose:     print('netcdf wout file')   # end if
 #            netcdffile = 1
             try:
-                from VMEC.read_vmec_netCDF import read_vmec as read_vmec_nc
+                from VMEC.read_vmec.read_vmec_netCDF import read_vmec as read_vmec_nc
             except:
                 from .read_vmec_netCDF import read_vmec as read_vmec_nc
             # end try
@@ -178,14 +178,13 @@ class read_vmec(Struct):
 #            with open(filname,'r') as fid:
 #            self.reader = self.read_vmec_txt
 
-            try:
-                from VMEC import read_vmec_txt as rvt
-    #            import read_vmec_txt as rvt
-            except:
-                import VMEC
-                from .VMEC import read_vmec_txt as rvt
+#            try:
+            if 1:
+                from VMEC.read_vmec.read_vmec_txt import read_vmec
+#            except:
+#                from .read_vmec_txt import read_wout_txt
             # end try
-            self.reader = read_vmec_txt
+            self.reader = read_vmec
             self.__dict__.update(self.reader(filname))
 #            try:
 #                self.fid = open(filname,'r')  # Open File

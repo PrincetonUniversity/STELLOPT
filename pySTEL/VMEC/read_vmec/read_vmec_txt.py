@@ -18,11 +18,11 @@ from utils import calc_curr
 # ===================================================================== #
 
 
-def read_wout_text(filename, delim=' ', ierr=int(0)):
+def read_vmec(filename, delim=' ', ierr=int(0)):
     try:
         fid = open(filename, 'r')
 
-        vmec_data = read_wout_text(fid, delim=delim, ierr=ierr)
+        vmec_data = read_open_wout_text(fid, delim=delim, ierr=ierr)
         fid.close()
     except:
         raise
@@ -48,7 +48,7 @@ def read_open_wout_text(iunit, delim=' ', ierr=int(0)):
 #   L o c a l   V a r i a b l e s
 #------------------------------------------------
     i, j, k, js, m, n, n1, mn, nparts_in, i_animec, i_flow = \
-        tuple(int(0) for ii in range(15))   # 464
+        tuple(int(0) for ii in range(11))   # 464
 
     istat = _np.zeros((15,), dtype=int)
 
