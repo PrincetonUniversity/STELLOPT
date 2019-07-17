@@ -11,7 +11,7 @@ from __future__ import absolute_import, with_statement, absolute_import, \
                        division, print_function, unicode_literals
 
 __version__ = "2019.07.12.19"
-__all__ = ['scanf', 'Struct', 'Spline', 'utils', 'txtutils', 'vmcutils']
+__all__ = ['Struct', 'Spline', 'utils', 'txtutils', 'vmcutils']
 
 
 from . import Struct
@@ -24,10 +24,10 @@ from . import utils
 from .utils import cylsym_odd, cylsym_even, cart2pol, pol2cart # analysis:ignore
 from .utils import lagrange_interpolation, newton, closedpoints, openpoints # analysis:ignore
 
-#from . import txtutils
+from . import txtutils
 #from .txtutils import scanf, sscanf, fscanf  # analysis:ignore
 #from .txtutils import ftell, fseek, frewind, fgets, fgetl, findstr # analysis:ignore
-from txtutils import scanf, sscanf, fscanf, ftell, fseek, frewind, fgets, fgetl, findstr  # analysis:Ignore
+from .txtutils import scanf, sscanf, fscanf, ftell, fseek, frewind, fgets, fgetl, findstr  # analysis:Ignore
 
 from . import vmcutils
 from .vmcutils import calc_curr  # analysis:ignore
