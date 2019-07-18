@@ -33,13 +33,48 @@ class Spline(object):
         if xf is None:              xf = xvar.copy()    # endif
         self.xf = _np.copy(xf)
         self.bbox = bbox
+
+        self.deriv_out=False
     # end def __init__
 
     # ========================= #
     # ========================= #
 
+    def derivative(self, deriv_out=True):
+        self.deriv_out = deriv_out
+
+    def __call__(self, x, nu=0):
+        x = _np.asarray(x)
+        # empty input yields empty output
+        if x.size == 0:
+            return _np.array([])
+
+        yf, dydx = seval(x, self.xvar, self.yvar, self.coeffs[0], self.coeffs[1], self.coeffs[2])
+        if nu == 0:
+            return yf
+        elif nu == 1 or self.deriv_out:
+            return dydx
+        # end if
+    # end def
 
     def spline(self):
+        self.status, b, c, d = _spline(self.xvar[self.msk], self.yvar[self.msk], **self.kwargs)
+
+        if self.status != 0:
+            print(self.status)
+        coeffs = []
+        coeffs.append(b)
+        coeffs.append(c)
+        coeffs.append(d)
+        self.coeffs = coeffs
+
+#        self.yf, self.dydx = seval(self.xf, self.xvar, self.yvar,
+#                  self.coeffs[0], self.coeffs[1], self.coeffs[2])
+#        return self.yf, self.dydx
+        return self
+    # end def
+
+    def spline_and_eval(self):
         if self.nmonti is None:
             self.status, b, c, d = _spline(self.xvar[self.msk], self.yvar[self.msk], **self.kwargs)
 
@@ -62,7 +97,7 @@ class Spline(object):
     # ========================= #
 
 
-    def spline_bs(self):
+    def spline_and_eval_bs(self):
         nmonti = self.nmonti
         self.nmonti = None
 
@@ -403,6 +438,7 @@ def _spline(x, y, end1=int(0), end2=int(0), slope1=_np.float64(0), slope2=_np.fl
 # //
 
 def seval(xx, x, y, b, c, d):
+    xx = _np.atleast_1d(xx)
     nx = len(xx)
     ys = _np.zeros((nx,), dtype=_np.float64)
     dy = _np.zeros_like(ys)
