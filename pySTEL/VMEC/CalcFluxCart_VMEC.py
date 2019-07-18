@@ -88,12 +88,12 @@ def __extract_data(VMEC_FilePath, ForceReadVMEC=False, verbose=True):
             # defines xn with the opposite sign as is usual in VMEC
             VMEC_Data = read_vmec(VMEC_FilePath)
 
-#            VMEC_Data.xm = VMEC_Data.xm.T
-#            VMEC_Data.xn = -VMEC_Data.xn.T
-#            VMEC_Data.ns = VMEC_Data.ns.T
-#            VMEC_Data.zmns = VMEC_Data.zmns.T
-#            VMEC_Data.rmnc = VMEC_Data.rmnc.T
-            VMEC_Data.xn = -VMEC_Data.xn
+            VMEC_Data.xm = VMEC_Data.xm.T
+            VMEC_Data.xn = -VMEC_Data.xn.T
+            VMEC_Data.ns = VMEC_Data.ns.T
+            VMEC_Data.zmns = VMEC_Data.zmns.T
+            VMEC_Data.rmnc = VMEC_Data.rmnc.T
+#            VMEC_Data.xn = -VMEC_Data.xn
         #end
         VMEC_Data.loaded = True
         if verbose:
@@ -122,16 +122,17 @@ def __spline_data(VMEC_Data, ForceReadVMEC=False, verbose=True):
         # \tilde{R}_mn, for example. The values right at the axis are linearly
         # extrapolated: \tidle{R_(mn)}(\rho = 0) = \tilde{R_(mn)}(\rho = \Delta \rho) -
         # \Delta \rho \frac{\tilde{R_(mn)(2\Delta \rho) - \tilde{R_(mn)(\Delta \rho}{\Delta \rho}}
-        TempExp = _np.dot( _np.abs(VMEC_Data.xm), _np.ones((1,len(VMEC_DerivedQuant.GridRho)), float) )
+        TempExp = _np.dot( _np.abs(VMEC_Data.xm.T), _np.ones((1,len(VMEC_DerivedQuant.GridRho)), float) )
         TempBase = _np.dot( _np.ones((len(VMEC_Data.xm), 1), float), _np.atleast_2d(VMEC_DerivedQuant.GridRho))
         NormalizationFactor = TempBase**TempExp
+#        NormalizationFactor = NormalizationFactor.T
 
-        rmnc_norm = _np.zeros_like(VMEC_Data.rmnc)
-        rmnc_norm[:,1:] = VMEC_Data.rmnc[1:, :].T/NormalizationFactor[:, 1:]
+        rmnc_norm = _np.zeros_like(VMEC_Data.rmnc.T)
+        rmnc_norm[:,1:] = VMEC_Data.rmnc[1:, :].T/NormalizationFactor #[:, 1:]
         rmnc_norm[:,0] = 2.0*rmnc_norm[:,1] - rmnc_norm[:,2]
 
-        zmns_norm = _np.zeros_like(VMEC_Data.zmnc)
-        zmns_norm[:,1:] = VMEC_Data.zmns[1:, :].T/NormalizationFactor[:, 1:]
+        zmns_norm = _np.zeros_like(VMEC_Data.zmns.T)
+        zmns_norm[:,1:] = VMEC_Data.zmns[1:, :].T/NormalizationFactor #[:, 1:]
         zmns_norm[:,0] = 2.0*zmns_norm[:,1] - zmns_norm[:,2]
 
         if verbose:
@@ -143,18 +144,19 @@ def __spline_data(VMEC_Data, ForceReadVMEC=False, verbose=True):
         # components of r and z using splines fit to 'double-sided' profiles.
         # This approximates the radial partial derivatives of the normalized
         # spectral components, too (but not directly the radial derivatives of r,z).
-        Spline_Rhos = _ut.cylsym_odd(VMEC_DerivedQuant.GridRho)
-        rmnc_vals_to_spline = _ut.cylsym_even(rmnc_norm, axis=1)
-        zmns_vals_to_spline = _ut.cylsym_even(zmns_norm, axis=1)
+        Spline_Rhos = _ut.cylsym_odd(VMEC_DerivedQuant.GridRho, exclude_axis=True)
+        rmnc_vals_to_spline = _ut.cylsym_even(rmnc_norm, axis=1, exclude_axis=True)
+        zmns_vals_to_spline = _ut.cylsym_even(zmns_norm, axis=1, exclude_axis=True)
         # Spline_Rhos = np.concatenate((_np.flipud( -VMEC_DerivedQuant.GridRho[1:]), VMEC_DerivedQuant.GridRho), axis=1)
         # rmnc_vals_to_spline = np.concatenate( ( np.fliplr( rmnc_norm[ :, 1:-1 ] ) , rmnc_norm ), axis=1)
         # zmns_vals_to_spline = np.concatenate( ( np.fliplr( zmns_norm[ :, 1:-1 ] ) , zmns_norm ), axis=1)
 
-        VMEC_DerivedQuant.rmnc_norm_spline = _dsi.spline(Spline_Rhos, rmnc_vals_to_spline)
-        VMEC_DerivedQuant.rmnc_norm_spline_derivs = _dsi.spline_deriv(VMEC_DerivedQuant.rmnc_norm_spline, order=1) #First derivative
 
-        VMEC_DerivedQuant.zmns_norm_spline = _dsi.spline(Spline_Rhos,zmns_vals_to_spline)
-        VMEC_DerivedQuant.zmns_norm_spline_derivs = _dsi.spline_deriv(VMEC_DerivedQuant.zmns_norm_spline, order=1)
+        VMEC_DerivedQuant.rmnc_norm_spline = _dsi.UnivariateSpline(Spline_Rhos, rmnc_vals_to_spline)
+        VMEC_DerivedQuant.rmnc_norm_spline_derivs = VMEC_DerivedQuant.rmnc_norm_spline.derivative(1) #First derivative
+
+        VMEC_DerivedQuant.zmns_norm_spline = _dsi.UnivariateSpline(Spline_Rhos,zmns_vals_to_spline)
+        VMEC_DerivedQuant.zmns_norm_spline_derivs = VMEC_DerivedQuant.zmns_norm_spline.derivative(1)
 
         if verbose:
             print('Done splining the spectral coefficients')
@@ -544,11 +546,11 @@ def GetLabCoordsFromVMEC(Rho, Theta, Phi, VMEC_Data, VMEC_DerivedQuant, kMinRho=
     else:
         RhoSpline = _np.copy(Rho)
     # end if rho>1
-    rmnc_norm = _dsi.ppval(VMEC_DerivedQuant.rmnc_norm_spline, RhoSpline)
-    zmns_norm = _dsi.ppval(VMEC_DerivedQuant.zmns_norm_spline, RhoSpline)
+    rmnc_norm = VMEC_DerivedQuant.rmnc_norm_spline(RhoSpline)
+    zmns_norm = VMEC_DerivedQuant.zmns_norm_spline(RhoSpline)
 
-    RhoDeriv_rmnc_norm = _dsi.ppval(VMEC_DerivedQuant.rmnc_norm_spline_derivs, RhoSpline)
-    RhoDeriv_zmns_norm = _dsi.ppval(VMEC_DerivedQuant.zmns_norm_spline_derivs, RhoSpline)
+    RhoDeriv_rmnc_norm = VMEC_DerivedQuant.rmnc_norm_spline_derivs(RhoSpline)
+    RhoDeriv_zmns_norm = VMEC_DerivedQuant.zmns_norm_spline_derivs(RhoSpline)
 
     # Find the cos(m\theta - n \phi) and sin(m\theta - n\phi) terms only once,
     # to save processor time.
@@ -787,7 +789,7 @@ if __name__=="__main__":
     kVMECfile = _os.path.join(kVMECfile, 'wout_w7x.1000_1000_1000_1000_+0000_+0000.10.06.txt')
 
     VMEC_Data = __extract_data(kVMECfile, ForceReadVMEC=False, verbose=True)
-    VMEC_Data = __extract_data(kVMECfile, ForceReadVMEC=True, verbose=True)
+#    VMEC_Data = __extract_data(kVMECfile, ForceReadVMEC=True, verbose=True)
 
     VMEC_DerivedQuant = __spline_data(VMEC_Data, ForceReadVMEC=False, verbose=True)
     VMEC_DerivedQuant = __spline_data(VMEC_Data, ForceReadVMEC=True, verbose=True)
