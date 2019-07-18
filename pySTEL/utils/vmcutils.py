@@ -189,18 +189,38 @@ def finish_import(vmec_data):
 
     # Put matrix quantities on full grid
     for key in ['bmnc','gmnc','lmns','bsupumnc','bsupvmnc','bsubsmns','bsubumnc','bsubvmnc']:
+        transposeit = False
+        if vmec_data[key].shape[0] != ns:
+            transposeit = True
+            vmec_data[key] = vmec_data[key].T
+        # end if
         vmec_data[key][0,:] = 1.5 * vmec_data[key][1,:] - 0.5 * vmec_data[key][2,:]
         vmec_data[key][1:ns-2,:] = 0.5 * (vmec_data[key][1:ns-2,:] + vmec_data[key][2:ns-1,:])
         vmec_data[key][ns-1,:] = 2.0 * vmec_data[key][ns-2,:] - vmec_data[key][ns-3,:]
+
+        if transposeit:
+            vmec_data[key] = vmec_data[key].T
+        # end if
     # end for key in dict
 
     if vmec_data['iasym']:
         for key in ['bmns','gmns','lmnc','bsupumns','bsupvmns','bsubsmnc','bsubumns','bsubvmns']:
+            transposeit = False
+            if vmec_data[key].shape[0] != ns:
+                transposeit = True
+                vmec_data[key] = vmec_data[key].T
+            # end if
+
             vmec_data[key][0,:] = 1.5 * vmec_data[key][1,:] - 0.5 * vmec_data[key][2,:]
             vmec_data[key][1:ns-2,:] = 0.5 * (vmec_data[key][1:ns-2,:] + vmec_data[key][2:ns-1,:])
             vmec_data[key][ns-1,:] = 2.0 * vmec_data[key][ns-2,:] - vmec_data[key][ns-3,:]
+
+            if transposeit:
+                vmec_data[key] = vmec_data[key].T
+            # end if
         # end for key in dict
     # end if is asymmetric
+    return vmec_data
 # end def finish_import
 
 # ===================================================================== #
