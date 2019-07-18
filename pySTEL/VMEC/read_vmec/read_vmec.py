@@ -56,7 +56,7 @@ from __future__ import absolute_import, with_statement, absolute_import, \
                        division, print_function, unicode_literals
 
 import numpy as _np
-from utils.vmcutils import finish_import
+from utils.vmcutils import finish_import, h2f, h2f_special
 
 try:
 #if 1:
@@ -140,7 +140,7 @@ class read_vmec(Struct):
 
         # Handle File type and library access
         # nfilname = len(filname)
-#        netcdffile = 0
+        netcdffile = 0
         if use_lib_stell and filname.find('wout')>-1 or filname.find('.nc')>-1:
             if verbose:
                 print('Attempting to open %s using the libstell library'%(filname,))
@@ -151,7 +151,7 @@ class read_vmec(Struct):
 
         elif filname.find('.nc')>-1 and filname.find('wout')>-1:
             if verbose:     print('netcdf wout file')   # end if
-#            netcdffile = 1
+            netcdffile = 1
             try:
                 from VMEC.read_vmec.read_vmec_netCDF import read_vmec as read_vmec_nc
             except:
@@ -187,6 +187,7 @@ class read_vmec(Struct):
             # end try
             self.reader = read_vmec
             self.__dict__.update(self.reader(filname))
+
 #            try:
 #                self.fid = open(filname,'r')  # Open File
 #                # Read First Line and extract version information
@@ -240,24 +241,26 @@ class read_vmec(Struct):
 #            # end try
 #        # end if filename selection
 #
-#        if not netcdffile:
-#            # This is taken care of in Jonathon's code I believe.
-#            # TODO:! Double check this!
-#            if not hasattr(self, 'lrfplogical'):
-#                self.lrfplogical=0
-#            # end if
-#
-#            # === Now comes the geometric manipulations of the VMEC output === #
-#            #
-#            # Need to convert various quantities to full mesh
-#            self.half2fullmesh()
-#
-#            # Now recompose the Fourier arrays
-#            self.RecomposeFourierArrays()
-#
-#            # Create resonance array
-#            self. CreateResonanceArray()
-#        # end if
+        if not netcdffile:
+            # This is taken care of in Jonathon's code I believe.
+            # TODO:! Double check this!
+            if not hasattr(self, 'lrfplogical'):
+                self.lrfplogical=0
+            # end if
+
+            # === Now comes the geometric manipulations of the VMEC output === #
+            #
+            # Need to convert various quantities to full mesh
+            self.half2fullmesh()
+
+            # Now recompose the Fourier arrays
+            self.RecomposeFourierArrays()
+
+            # Create resonance array
+            self. CreateResonanceArray()
+        else:
+            self.finish_import()
+        # end if
     # end def readfil
 
 #    def read_vmec_netcdf(self, filname):
@@ -357,10 +360,10 @@ class read_vmec(Struct):
         # end for
 
         # repmat( a, m, n) -> tile( a, (m,n))
-        self.rumns = -self.rmnc*_np.tile( _np.atleast_2d(self.xm).T, (1,self.ns) )  # repmat( self.xm.T, [1 self.ns] )
-        self.rvmns = -self.rmnc*_np.tile( _np.atleast_2d(self.xn).T, (1,self.ns) )  # repmat( self.xn.T, [1 self.ns] )
-        self.zumnc =  self.zmns*_np.tile( _np.atleast_2d(self.xm).T, (1,self.ns) )  # repmat( self.xm.T, [1 self.ns] )
-        self.zvmnc =  self.zmns*_np.tile( _np.atleast_2d(self.xn).T, (1,self.ns) )  # repmat( self.xn.T, [1 self.ns] )
+        self.rumns = -self.rmnc*_np.tile( _np.atleast_2d(self.xm), (1,self.ns) )  # repmat( self.xm.T, [1 self.ns] )
+        self.rvmns = -self.rmnc*_np.tile( _np.atleast_2d(self.xn), (1,self.ns) )  # repmat( self.xn.T, [1 self.ns] )
+        self.zumnc =  self.zmns*_np.tile( _np.atleast_2d(self.xm), (1,self.ns) )  # repmat( self.xm.T, [1 self.ns] )
+        self.zvmnc =  self.zmns*_np.tile( _np.atleast_2d(self.xn), (1,self.ns) )  # repmat( self.xn.T, [1 self.ns] )
 
         # Handle Radial Derivatives
         self.rsc = _np.copy(self.rbc)
@@ -669,25 +672,25 @@ class read_vmec(Struct):
 
         # Now we create full mesh quantities for those that have full mesh names
         if not hasattr(self, 'iotaf'):  # !isfield(self, 'iotaf'):
-            self.iotaf = self.h2f( self.iotas, self.ns)
+            self.iotaf = h2f( self.iotas, self.ns)
         if not hasattr(self, 'presf'):  # !isfield(self, 'presf'):
-            self.presf = self.h2f( self.pres, self.ns)
+            self.presf = h2f( self.pres, self.ns)
         if not hasattr(self, 'phipf'):  # !isfield(self, 'phipf'):
-            self.phipf = self.h2f(self.phip, self.ns)
+            self.phipf = h2f(self.phip, self.ns)
         # end if
 
         # Now the rest of the quantities are remapped to full mesh
         if hasattr(self, 'beta_vol'):
-            self.beta_vol = self.h2f(self.beta_vol, self.ns)
+            self.beta_vol = h2f(self.beta_vol, self.ns)
         # end if
-        self.buco = self.h2f(self.buco, self.ns)
-        self.bvco = self.h2f(self.bvco, self.ns)
-        self.vp = self.h2f_special(self.vp, len(self.vp))
-        self.overr = self.h2f(self.overr, self.ns)
-        self.specw = self.h2f(self.specw, self.ns)
+        self.buco = h2f(self.buco, self.ns)
+        self.bvco = h2f(self.bvco, self.ns)
+        self.vp = h2f_special(self.vp, len(self.vp))
+        self.overr = h2f(self.overr, self.ns)
+        self.specw = h2f(self.specw, self.ns)
         if len(self.jdotb) ==self.ns:
-            self.jdotb = self.h2f(self.jdotb, self.ns)
-            self.bdotgradv = self.h2f(self.bdotgradv, self.ns)
+            self.jdotb = h2f(self.jdotb, self.ns)
+            self.bdotgradv = h2f(self.bdotgradv, self.ns)
         # end if
 
         # Check to make sure phi,jcuru and jcurv are the same size as self.ns
