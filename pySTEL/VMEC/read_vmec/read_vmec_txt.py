@@ -167,7 +167,7 @@ def read_open_wout_text(iunit, delim=' '):
 
         if 'mnmax_nyq' not in vmec_data:
             # mnmax_nyq only in vmec versions greater than 8.00
-            vmec_data['mnmax_nyq'] = vmec_data['mnmnax']
+            vmec_data['mnmax_nyq'] = vmec_data['mnmax']
         # end if
     # end if
     lasym = (vmec_data['iasym'] > 0)
@@ -199,12 +199,12 @@ def read_open_wout_text(iunit, delim=' '):
 
     # ===================================================================== #
 
-    def Continue1000():
+    def Continue1000(ierr=int(0)):
         data = iunit.readline().strip().split(delim)
         data = [dat.strip() for dat in data if len(dat)>0]
         if len(data)==0 or len(data[0])==0:
             vmec_data['mgrid_mode'] = 'N'
-            return True, 0
+            return True, ierr
         vmec_data['mgrid_mode'] = data
 
         if (ierr != 0):   # analysis:ignore
@@ -214,7 +214,7 @@ def read_open_wout_text(iunit, delim=' '):
             vmec_data['ierr_vmec'] = 1
         # end if
 
-
+        exit_program = False
         for m in range(15):
             if (istat[m] > 0):
                 print(' Error No.%i '%(m+1,)+' in READ_WOUT, iostat = %i'%(istat[m],))
@@ -230,7 +230,7 @@ def read_open_wout_text(iunit, delim=' '):
 #        (vmec_data['ierr_vmec'] != more_iter_flag) and \
 #        (vmec_data['ierr_vmec'] != jac75_flag)):
 #        ierr = -2
-#        exit_flag, ierr = Continue1000()
+#        exit_flag, ierr = Continue1000(ierr)
 #        if exit_flag:
 #            return vmec_data
 #        # end if
@@ -244,9 +244,9 @@ def read_open_wout_text(iunit, delim=' '):
 
     # ========================================================== #
     # ================== Pre-allocation of arrays ============== #
-    vmec_data['xm'] = _np.zeros((vmec_data['mnmax'],), dtype=float)
+    vmec_data['xm'] = _np.zeros((vmec_data['mnmax'],1), dtype=float)
     vmec_data['xn'] = _np.zeros_like(vmec_data['xm'])
-    vmec_data['xm_nyq'] = _np.zeros((vmec_data['mnmax_nyq'],), dtype=float)
+    vmec_data['xm_nyq'] = _np.zeros((vmec_data['mnmax_nyq'],1), dtype=float)
     vmec_data['xn_nyq'] = _np.zeros_like(vmec_data['xm_nyq'])
 
     keys = ['rmnc','zmns','lmns','bmnc','gmnc','bsubumnc','bsubvmnc','bsubsmns',
@@ -806,6 +806,8 @@ def read_open_wout_text(iunit, delim=' '):
 #        dt = _np.dtype([(key, _np.float) for key in keys])
         for js in range(vmec_data['nstore_seq']):
             data = _np.fromfile(iunit, dtype=float, count=len(keys), sep=delim)
+            if len(data)==0:
+                break
             for ii, key in enumerate(keys):
                 vmec_data[key][js] = _np.copy(data[ii])
             # end for
@@ -820,6 +822,8 @@ def read_open_wout_text(iunit, delim=' '):
 #        dt = _np.dtype([(key, _np.float) for key in keys])
         for js in range(vmec_data['nstore_seq']):
             data = _np.fromfile(iunit, dtype=float, count=len(keys), sep=delim)
+            if len(data)==0:
+                break
             for ii, key in enumerate(keys):
                 vmec_data[key][js] = _np.copy(data[ii])
             # end for
@@ -836,6 +840,8 @@ def read_open_wout_text(iunit, delim=' '):
 #        dt = _np.dtype([(key, _np.float) for key in keys])
         for js in range(vmec_data['ns']):
             data = _np.fromfile(iunit, dtype=float, count=len(keys), sep=delim)
+            if len(data)==0:
+                break
             for ii, key in enumerate(keys):
                 vmec_data[key][js] = _np.copy(data[ii])
             # end for
@@ -1178,7 +1184,11 @@ def read_open_wout_text(iunit, delim=' '):
 #         READ (iunit, *) imatch_phiedge
     # end if
 
-    exit_flag, ierr = Continue1000()
+    exit_flag, ierr = Continue1000(ierr)
+
+    for key in vmec_data:
+        if type(vmec_data[key]) != type('') and len(_np.atleast_1d(vmec_data[key]))>1:
+            vmec_data[key] = _np.asfortranarray(vmec_data[key])
     return vmec_data
 
     #  720 FORMAT(8i10)
