@@ -140,7 +140,7 @@ class read_vmec(Struct):
 
         # Handle File type and library access
         # nfilname = len(filname)
-        netcdffile = 0
+        self.netcdffile = 0
         if use_lib_stell and filname.find('wout')>-1 or filname.find('.nc')>-1:
             if verbose:
                 print('Attempting to open %s using the libstell library'%(filname,))
@@ -151,7 +151,7 @@ class read_vmec(Struct):
 
         elif filname.find('.nc')>-1 and filname.find('wout')>-1:
             if verbose:     print('netcdf wout file')   # end if
-            netcdffile = 1
+            self.netcdffile = 1
             try:
                 from VMEC.read_vmec.read_vmec_netCDF import read_vmec as read_vmec_nc
             except:
@@ -175,79 +175,96 @@ class read_vmec(Struct):
         else:
             # Assume a VMEC output file in text format
             if verbose:     print('text-based wout file')   # end if
-#            with open(filname,'r') as fid:
-#            self.reader = self.read_vmec_txt
 
 #            try:
             if 1:
 #                from VMEC.read_vmec.read_vmec_txt_matlabVMEC import read_vmec
-                from VMEC.read_vmec.read_vmec_txt import read_vmec
+#                from VMEC.read_vmec.read_vmec_txt import read_vmec
+                from VMEC.read_vmec.read_vmec_txt import read_open_wout_text as read_vmec
 #            except:
 #                from .read_vmec_txt import read_wout_txt
             # end try
             self.reader = read_vmec
-            self.__dict__.update(self.reader(filname))
+#            self.__dict__.update(self.reader(filname, delim=' ', verbose=verbose))
+#            self.__dict__.update(self.reader(filname, delim='', verbose=verbose))
+            try:
+                self.fid = open(filname,'r')  # Open File
+                # Read First Line and extract version information
+                line = fgetl(self.fid)
+                # line = self.fid.readline()
+                _, self.version = line.split('=')
+                self.version = float(self.version)
+                # Handle unknown versions
+                print(self.version)
+                if (self.version < 0): # or (self.version > 8.52):  # matlabVMEC flag
+                    if verbose:
+                        print('Unknown file type or version.')
+                    # end if
+                    return
+                # end if
 
-#            try:
-#                self.fid = open(filname,'r')  # Open File
-#                # Read First Line and extract version information
-#                line = fgetl(self.fid)
-#                # line = self.fid.readline()
-#                _, self.version = line.split('=')
-#                self.version = float(self.version)
-#                # Handle unknown versions
-#                print(self.version)
-#                if (self.version < 0) or (self.version > 8.52):
-#                    if verbose:
-#                        print('Unknown file type or version.')
-#                    # end if
-#                    return
-#                # end if
-#
-#                # VMEC files with comma delimited values do exist, in an attempt to
-#                # handle them we dynamically create the format specifier for fscanself.
+                # VMEC files with comma delimited values do exist, in an attempt to
+                # handle them we dynamically create the format specifier for fscanself.
 #                start = ftell(self.fid)   # Get the current position to rewind to
-#                line = fgetl(self.fid)   # Get the next line
-##                start = self.fid.tell()
-##                line = self.fid.readline().replace('\n', '')
-#                fmt = '%g'
-#                if line.find(',') > -1:  # isempty(strfind(line,',')):
-#                    fmt += ','
-#                    if verbose and self.version < 6.54:
-#                        print('Comma delimited file detected!')
-#                        print('     Only 6.54+ version supported!')
-#                    # end if
+                line = fgetl(self.fid)   # Get the next line
+#                start = self.fid.tell()
+#                line = self.fid.readline().replace('\n', '')
+                fmt = '%g'
+                if line.find(',') > -1:  # isempty(strfind(line,',')):
+                    fmt += ','
+                    if verbose:
+                        print('Comma delimited file detected!')
+#                        if self.version < 6.54
+#                           print('     Only 6.54+ version supported!')
+#                        # end if
+                    # end if
 #                    return self
-#                # end if
-#
+                # end if
+
+                self.delim = ' '
+#                self.delim = '\t'
+                if fmt.find(',')>-1:
+                    self.delim = ','
+                # end if
+
+                # use the translated version for open files from libstell
+                self.fid.seek(0)   # go back to start of file/stream position
+                self.__dict__.update(self.reader(self.fid, delim=self.delim, verbose=verbose))
+
+#                # for matlabVMEC like text reader
 #                # Go back to just after the version.
 #                self.fid.seek(start, 0)
 #
 #                # Handle versions
 #                self.read_vmec_txt(self.fid, fmt)
 #
-#                # If VMEC threw an error then return what was read
-#                if self.ierr_vmec and (self.ierr_vmec != 4):
-#                    print('VMEC runtime error detected!')
-#                    return self
-#                #end
-#            except:
-#                raise
-#            finally:
-#                # (automatically closes file using "with open," if not already closed)
-#                try:    self.fid.close()
-#                except: pass
-##                fclose(fid)
-#            # end try
-#        # end if filename selection
-#
-        if not netcdffile:
-            # This is taken care of in Jonathon's code I believe.
-            # TODO:! Double check this!
+                # If VMEC threw an error then return what was read
+                if self.ierr_vmec and (self.ierr_vmec != 4):
+                    print('VMEC runtime error detected!')
+                    return self
+                #end
+                self.fid.close()
+            except:
+                raise
+            finally:
+                # (automatically closes file using "with open," if not already closed)
+                try:    self.fid.close()
+                except: pass
+            # end try
+        # end if filename selection
+
+        if 1:
+
             if not hasattr(self, 'lrfplogical'):
                 self.lrfplogical=0
             # end if
 
+#        if self.netcdffile:
+#            self.finish_import()
+#        else:
+            # This is taken care of in Jonathon's code I believe.
+            # TODO:! Double check this!
+            #
             # === Now comes the geometric manipulations of the VMEC output === #
             #
             # Need to convert various quantities to full mesh
@@ -258,8 +275,6 @@ class read_vmec(Struct):
 
             # Create resonance array
             self. CreateResonanceArray()
-        else:
-            self.finish_import()
         # end if
     # end def readfil
 
@@ -683,12 +698,12 @@ class read_vmec(Struct):
         if hasattr(self, 'beta_vol'):
             self.beta_vol = h2f(self.beta_vol, self.ns)
         # end if
-        self.buco = h2f(self.buco, self.ns)
-        self.bvco = h2f(self.bvco, self.ns)
-        self.vp = h2f_special(self.vp, len(self.vp))
-        self.overr = h2f(self.overr, self.ns)
-        self.specw = h2f(self.specw, self.ns)
-        if len(self.jdotb) ==self.ns:
+#        self.buco = h2f(self.buco, self.ns)  # in finish import
+#        self.bvco = h2f(self.bvco, self.ns)  # in finish import
+#        self.vp = h2f_special(self.vp, len(self.vp)) # in finish import
+#        self.overr = h2f(self.overr, self.ns) # in finish import
+#        self.specw = h2f(self.specw, self.ns) # in finish import
+        if len(self.jdotb) == self.ns:
             self.jdotb = h2f(self.jdotb, self.ns)
             self.bdotgradv = h2f(self.bdotgradv, self.ns)
         # end if
@@ -779,51 +794,8 @@ class read_vmec(Struct):
             self.Dgeod[-1] = 2*self.Dgeod[-2] - self.Dgeod[-3]
         # end if
 
-        # ===================================================================== #
-        # ================== Now do the matrix values ================ #
-
-#        for name in ['lmns', 'bsupumnc', 'bsupvmnc', 'bsubsmns','bsubumnc', 'bsubvmnc', 'gmnc', 'bmnc']:
-#            # First Index (note indexing on vectors is 2:ns when VMEC outputs)
-#            self.(name)[:, 0] = 1.5*self.(name)[:, 1] - 0.5*self.(name)[:, 2]
-#            for ii in range(1,self.ns-1):  #i=2:self.ns-1
-#                # Average
-#                self.(name)[:, ii] = 0.5*( self.(name)[:, ii] + self.(name)[:, ii+1] )
-#            # end for
-#            # Last Index (note indexing on vectors is 2:ns when VMEC outputs)
-#            self.(name)[:, -1] = 2.0 * self.(name)[:, -2] - self.(name)[:, -3]
-#        # end for
-
-        # First Index (note indexing on vectors is 2:ns when VMEC outputs)
-        self.lmns[:, 0] = 1.5*self.lmns[:, 1] - 0.5*self.lmns[:, 2]
-        self.bsupumnc[:, 0] = 1.5*self.bsupumnc[:, 1] - 0.5*self.bsupumnc[:, 2]
-        self.bsupvmnc[:, 0] = 1.5*self.bsupvmnc[:, 1] - 0.5*self.bsupvmnc[:, 2]
-        self.bsubsmns[:, 0] = 1.5*self.bsubsmns[:, 1] - 0.5*self.bsubsmns[:, 2]
-        self.bsubumnc[:, 0] = 1.5*self.bsubumnc[:, 1] - 0.5*self.bsubumnc[:, 2]
-        self.bsubvmnc[:, 0] = 1.5*self.bsubvmnc[:, 1] - 0.5*self.bsubvmnc[:, 2]
-        self.gmnc[:, 0] = 1.5*self.gmnc[:, 1] - 0.5*self.gmnc[:, 2]
-        self.bmnc[:, 0] = 1.5*self.bmnc[:, 1] - 0.5*self.bmnc[:, 2]
-
-        # Average
-        for ii in range(1,self.ns-1):  #i=2:self.ns-1
-            self.lmns[:, ii] = 0.5*( self.lmns[:, ii] + self.lmns[:, ii+1] )
-            self.bsupumnc[:, ii] = 0.5*( self.bsupumnc[:, ii] + self.bsupumnc[:, ii+1] )
-            self.bsupvmnc[:, ii] = 0.5*( self.bsupvmnc[:, ii] + self.bsupvmnc[:, ii+1] )
-            self.bsubsmns[:, ii] = 0.5*( self.bsubsmns[:, ii] + self.bsubsmns[:, ii+1] )
-            self.bsubumnc[:, ii] = 0.5*( self.bsubumnc[:, ii] + self.bsubumnc[:, ii+1] )
-            self.bsubvmnc[:, ii] = 0.5*( self.bsubvmnc[:, ii] + self.bsubvmnc[:, ii+1] )
-            self.gmnc[:, ii] = 0.5*( self.gmnc[:, ii] + self.gmnc[:, ii+1] )
-            self.bmnc[:, ii] = 0.5*( self.bmnc[:, ii] + self.bmnc[:, ii+1] )
-        # end for
-
-        # Last Index (note indexing on vectors is 2:ns when VMEC outputs)
-        self.lmns[:, -1]     = 2.0 * self.lmns[:, -2] - self.lmns[:, -3]
-        self.bsupumnc[:, -1] = 2.0 * self.bsupumnc[:, -2] - self.bsupumnc[:, -3]
-        self.bsupvmnc[:, -1] = 2.0 * self.bsupvmnc[:, -2] - self.bsupvmnc[:, -3]
-        self.bsubsmns[:, -1] = 2.0 * self.bsubsmns[:, -2] - self.bsubsmns[:, -3]
-        self.bsubumnc[:, -1] = 2.0 * self.bsubumnc[:, -2] - self.bsubumnc[:, -3]
-        self.bsubvmnc[:, -1] = 2.0 * self.bsubvmnc[:, -2] - self.bsubvmnc[:, -3]
-        self.gmnc[:, -1] = 2.0 * self.gmnc[:, -2] - self.gmnc[:,-3]
-        self.bmnc[:,-1] = 2.0 * self.bmnc[:, -2] - self.bmnc[:, -3]
+        # ================================================================= #
+        # ================== Now do the matrix values ===================== #
 
         # Handle ANI/FLOW Values
         if hasattr(self,'prprmnc'):
@@ -851,37 +823,82 @@ class read_vmec(Struct):
             self.iasym=0
         # end if
 
-        if self.iasym >0: # Handle existance of lmnc on half mesh
-            self.lmnc[:, 0] =     1.5 *     self.lmnc[:, 1] - 0.5 *     self.lmnc[:, 2] #fixed indices
-            self.bsupumns[:, 0] = 1.5 * self.bsupumns[:, 1] - 0.5 * self.bsupumns[:, 2]
-            self.bsupvmns[:, 0] = 1.5 * self.bsupvmns[:, 1] - 0.5 * self.bsupvmns[:, 2]
-            self.bsubsmnc[:, 0] = 1.5 * self.bsubsmnc[:, 1] - 0.5 * self.bsubsmnc[:, 2]
-            self.bsubumns[:, 0] = 1.5 * self.bsubumns[:, 1] - 0.5 * self.bsubumns[:, 2]
-            self.bsubvmns[:, 0] = 1.5 * self.bsubvmns[:, 1] - 0.5 * self.bsubvmns[:, 2]
-            self.gmns[:, 0] =     1.5 *     self.gmns[:, 1] - 0.5 *     self.gmns[:, 2]
-            self.bmns[:, 0] =     1.5 *     self.bmns[:, 1] - 0.5 *     self.bmns[:, 2]
+        self.finish_import()
 
-            for ii in range(1,self.ns-1): #i=2:self.ns-1
-                self.lmnc[:, ii]=     0.5 * (     self.lmnc[:, ii] +     self.lmnc[:, ii+1] )
-                self.bsupumns[:, ii]= 0.5 * ( self.bsupumns[:, ii] + self.bsupumns[:, ii+1] )
-                self.bsupvmns[:, ii]= 0.5 * ( self.bsupvmns[:, ii] + self.bsupvmns[:, ii+1] )
-                self.bsubsmnc[:, ii]= 0.5 * ( self.bsubsmnc[:, ii] + self.bsubsmnc[:, ii+1] )
-                self.bsubumns[:, ii]= 0.5 * ( self.bsubumns[:, ii] + self.bsubumns[:, ii+1] )
-                self.bsubvmns[:, ii]= 0.5 * ( self.bsubvmns[:, ii] + self.bsubvmns[:, ii+1] )
-                self.gmns[:, ii]    = 0.5 * (     self.gmns[:, ii] +     self.gmns[:, ii+1] )
-                self.bmns[:, ii]    = 0.5 * (     self.bmns[:, ii] +     self.bmns[:, ii+1] )
-            # end
-
-            self.lmnc[:, -1]  = 2.0 *     self.lmnc[:, -2] -     self.lmnc[:, -3]
-            self.bsupumns[:, -1] = 2.0 * self.bsupumns[:, -2] - self.bsupumns[:, -3]
-            self.bsupvmns[:, -1] = 2.0 * self.bsupvmns[:, -2] - self.bsupvmns[:, -3]
-            self.bsubsmnc[:, -1] = 2.0 * self.bsubsmnc[:, -2] - self.bsubsmnc[:, -3]
-            self.bsubumns[:, -1] = 2.0 * self.bsubumns[:, -2] - self.bsubumns[:, -3]
-            self.bsubvmns[:, -1] = 2.0 * self.bsubvmns[:, -2] - self.bsubvmns[:, -3]
-            self.gmns[:, -1] = 2.0 *     self.gmns[:, -2] -     self.gmns[:, -3]
-            self.bmns[:, -1] = 2.0 *     self.bmns[:, -2] -     self.bmns[:, -3]
-        # end if
-        return self
+#        for name in ['lmns', 'bsupumnc', 'bsupvmnc', 'bsubsmns','bsubumnc', 'bsubvmnc', 'gmnc', 'bmnc']:
+#            # First Index (note indexing on vectors is 2:ns when VMEC outputs)
+#            self.(name)[:, 0] = 1.5*self.(name)[:, 1] - 0.5*self.(name)[:, 2]
+#            for ii in range(1,self.ns-1):  #i=2:self.ns-1
+#                # Average
+#                self.(name)[:, ii] = 0.5*( self.(name)[:, ii] + self.(name)[:, ii+1] )
+#            # end for
+#            # Last Index (note indexing on vectors is 2:ns when VMEC outputs)
+#            self.(name)[:, -1] = 2.0 * self.(name)[:, -2] - self.(name)[:, -3]
+#        # end for
+#
+#        # First Index (note indexing on vectors is 2:ns when VMEC outputs)
+#        self.lmns[:, 0] = 1.5*self.lmns[:, 1] - 0.5*self.lmns[:, 2]
+#        self.bsupumnc[:, 0] = 1.5*self.bsupumnc[:, 1] - 0.5*self.bsupumnc[:, 2]
+#        self.bsupvmnc[:, 0] = 1.5*self.bsupvmnc[:, 1] - 0.5*self.bsupvmnc[:, 2]
+#        self.bsubsmns[:, 0] = 1.5*self.bsubsmns[:, 1] - 0.5*self.bsubsmns[:, 2]
+#        self.bsubumnc[:, 0] = 1.5*self.bsubumnc[:, 1] - 0.5*self.bsubumnc[:, 2]
+#        self.bsubvmnc[:, 0] = 1.5*self.bsubvmnc[:, 1] - 0.5*self.bsubvmnc[:, 2]
+#        self.gmnc[:, 0] = 1.5*self.gmnc[:, 1] - 0.5*self.gmnc[:, 2]
+#        self.bmnc[:, 0] = 1.5*self.bmnc[:, 1] - 0.5*self.bmnc[:, 2]
+#
+#        # Average
+#        for ii in range(1,self.ns-1):  #i=2:self.ns-1
+#            self.lmns[:, ii] = 0.5*( self.lmns[:, ii] + self.lmns[:, ii+1] )
+#            self.bsupumnc[:, ii] = 0.5*( self.bsupumnc[:, ii] + self.bsupumnc[:, ii+1] )
+#            self.bsupvmnc[:, ii] = 0.5*( self.bsupvmnc[:, ii] + self.bsupvmnc[:, ii+1] )
+#            self.bsubsmns[:, ii] = 0.5*( self.bsubsmns[:, ii] + self.bsubsmns[:, ii+1] )
+#            self.bsubumnc[:, ii] = 0.5*( self.bsubumnc[:, ii] + self.bsubumnc[:, ii+1] )
+#            self.bsubvmnc[:, ii] = 0.5*( self.bsubvmnc[:, ii] + self.bsubvmnc[:, ii+1] )
+#            self.gmnc[:, ii] = 0.5*( self.gmnc[:, ii] + self.gmnc[:, ii+1] )
+#            self.bmnc[:, ii] = 0.5*( self.bmnc[:, ii] + self.bmnc[:, ii+1] )
+#        # end for
+#
+#        # Last Index (note indexing on vectors is 2:ns when VMEC outputs)
+#        self.lmns[:, -1]     = 2.0 * self.lmns[:, -2] - self.lmns[:, -3]
+#        self.bsupumnc[:, -1] = 2.0 * self.bsupumnc[:, -2] - self.bsupumnc[:, -3]
+#        self.bsupvmnc[:, -1] = 2.0 * self.bsupvmnc[:, -2] - self.bsupvmnc[:, -3]
+#        self.bsubsmns[:, -1] = 2.0 * self.bsubsmns[:, -2] - self.bsubsmns[:, -3]
+#        self.bsubumnc[:, -1] = 2.0 * self.bsubumnc[:, -2] - self.bsubumnc[:, -3]
+#        self.bsubvmnc[:, -1] = 2.0 * self.bsubvmnc[:, -2] - self.bsubvmnc[:, -3]
+#        self.gmnc[:, -1] = 2.0 * self.gmnc[:, -2] - self.gmnc[:,-3]
+#        self.bmnc[:,-1] = 2.0 * self.bmnc[:, -2] - self.bmnc[:, -3]
+#
+#        if self.iasym >0: # Handle existance of lmnc on half mesh
+#            self.lmnc[:, 0] =     1.5 *     self.lmnc[:, 1] - 0.5 *     self.lmnc[:, 2] #fixed indices
+#            self.bsupumns[:, 0] = 1.5 * self.bsupumns[:, 1] - 0.5 * self.bsupumns[:, 2]
+#            self.bsupvmns[:, 0] = 1.5 * self.bsupvmns[:, 1] - 0.5 * self.bsupvmns[:, 2]
+#            self.bsubsmnc[:, 0] = 1.5 * self.bsubsmnc[:, 1] - 0.5 * self.bsubsmnc[:, 2]
+#            self.bsubumns[:, 0] = 1.5 * self.bsubumns[:, 1] - 0.5 * self.bsubumns[:, 2]
+#            self.bsubvmns[:, 0] = 1.5 * self.bsubvmns[:, 1] - 0.5 * self.bsubvmns[:, 2]
+#            self.gmns[:, 0] =     1.5 *     self.gmns[:, 1] - 0.5 *     self.gmns[:, 2]
+#            self.bmns[:, 0] =     1.5 *     self.bmns[:, 1] - 0.5 *     self.bmns[:, 2]
+#
+#            for ii in range(1,self.ns-1): #i=2:self.ns-1
+#                self.lmnc[:, ii]=     0.5 * (     self.lmnc[:, ii] +     self.lmnc[:, ii+1] )
+#                self.bsupumns[:, ii]= 0.5 * ( self.bsupumns[:, ii] + self.bsupumns[:, ii+1] )
+#                self.bsupvmns[:, ii]= 0.5 * ( self.bsupvmns[:, ii] + self.bsupvmns[:, ii+1] )
+#                self.bsubsmnc[:, ii]= 0.5 * ( self.bsubsmnc[:, ii] + self.bsubsmnc[:, ii+1] )
+#                self.bsubumns[:, ii]= 0.5 * ( self.bsubumns[:, ii] + self.bsubumns[:, ii+1] )
+#                self.bsubvmns[:, ii]= 0.5 * ( self.bsubvmns[:, ii] + self.bsubvmns[:, ii+1] )
+#                self.gmns[:, ii]    = 0.5 * (     self.gmns[:, ii] +     self.gmns[:, ii+1] )
+#                self.bmns[:, ii]    = 0.5 * (     self.bmns[:, ii] +     self.bmns[:, ii+1] )
+#            # end
+#
+#            self.lmnc[:, -1]  = 2.0 *     self.lmnc[:, -2] -     self.lmnc[:, -3]
+#            self.bsupumns[:, -1] = 2.0 * self.bsupumns[:, -2] - self.bsupumns[:, -3]
+#            self.bsupvmns[:, -1] = 2.0 * self.bsupvmns[:, -2] - self.bsupvmns[:, -3]
+#            self.bsubsmnc[:, -1] = 2.0 * self.bsubsmnc[:, -2] - self.bsubsmnc[:, -3]
+#            self.bsubumns[:, -1] = 2.0 * self.bsubumns[:, -2] - self.bsubumns[:, -3]
+#            self.bsubvmns[:, -1] = 2.0 * self.bsubvmns[:, -2] - self.bsubvmns[:, -3]
+#            self.gmns[:, -1] = 2.0 *     self.gmns[:, -2] -     self.gmns[:, -3]
+#            self.bmns[:, -1] = 2.0 *     self.bmns[:, -2] -     self.bmns[:, -3]
+#        # end if
+#        return self
     # end def half2fullmesh
 
     # ================================================================ #

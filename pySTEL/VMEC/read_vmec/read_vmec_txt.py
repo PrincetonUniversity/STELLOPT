@@ -42,6 +42,7 @@ def read_in_constant(vmec_data, iunit, keys, dtype, delim=' ', verbose=True):
     elif dtype[keys[0]] == int:
         dtype = int
     # end if
+#    pos = iunit.tell()
 
     data = _np.fromfile(iunit, dtype=dtype, count=len(keys), sep=delim)
 #    data = _np.fromfile(iunit, dtype=dt, sep=delim)  # breaking somehow
@@ -57,6 +58,8 @@ def read_in_constant(vmec_data, iunit, keys, dtype, delim=' ', verbose=True):
             raise
         # end try
     # end for
+#    pos2 = iunit.tell()
+#    pass
 # end def
 
 def read_in_index(vmec_data, iunit, keys, dtype, index=0, delim=' ', verbose=True):
@@ -766,8 +769,14 @@ def read_open_wout_text(iunit, delim=' ', verbose=True):
             if len(_np.atleast_1d(vmec_data[key]).shape) == 1:
                 vmec_data[key] = _np.atleast_2d(vmec_data[key])  # change (ns,) to (ns,1)
                 vmec_data[key] = vmec_data[key].T  # change (1,ns) to (ns,1)
+                if verbose:
+                    print(('transposing array %s to shape:'%(key,),vmec_data[key].shape))
+                # end if
             # end if
             vmec_data[key] = _np.asfortranarray(vmec_data[key])
+            if verbose:
+                print('Switching array %s to fortran ordering:'%(key,))
+            # end if
     return vmec_data
 
     #  720 FORMAT(8i10)
