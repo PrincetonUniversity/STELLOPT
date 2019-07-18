@@ -44,6 +44,7 @@ except:
 # ========================================================================== #
 # ========================================================================== #
 
+DEBUG = False
 VMEC_Data = None
 VMEC_DerivedQuant = None
 VMEC_DataSource = None
@@ -113,8 +114,8 @@ def __spline_data(VMEC_Data, ForceReadVMEC=False, verbose=True):
         # (normalized total flux) space.  We often want it in normalized minor
         # radius (rho), though.
         VMEC_DerivedQuant = _ut.Struct()
-#        VMEC_DerivedQuant.GridS = ((1:VMEC_Data.ns:1)-1)/(VMEC_Data.ns-1)
-        VMEC_DerivedQuant.GridS = (_np.asarray(range(VMEC_Data.ns)))/(VMEC_Data.ns-1.0)
+#        VMEC_DerivedQuant.GridS = ((1:VMEC_Data.ns)-1)/(VMEC_Data.ns-1)
+        VMEC_DerivedQuant.GridS = (_np.asarray(range(1,VMEC_Data.ns+1))-1)/(VMEC_Data.ns-1.0)
         VMEC_DerivedQuant.GridRho = _np.sqrt(VMEC_DerivedQuant.GridS)
 
         # Normalizing the spectral coefficients to rho^m helps the splining get
@@ -124,19 +125,22 @@ def __spline_data(VMEC_Data, ForceReadVMEC=False, verbose=True):
         # \tilde{R}_mn, for example. The values right at the axis are linearly
         # extrapolated: \tidle{R_(mn)}(\rho = 0) = \tilde{R_(mn)}(\rho = \Delta \rho) -
         # \Delta \rho \frac{\tilde{R_(mn)(2\Delta \rho) - \tilde{R_(mn)(\Delta \rho}{\Delta \rho}}
-        TempExp = _np.dot( _np.abs(VMEC_Data.xm), _np.ones((1,len(VMEC_DerivedQuant.GridRho)), float) )
-        TempBase = _np.dot( _np.ones((len(VMEC_Data.xm), 1), float), _np.atleast_2d(VMEC_DerivedQuant.GridRho))
+        TempExp = _np.abs(VMEC_Data.xm)*_np.ones((1,len(VMEC_DerivedQuant.GridRho)), float)
+        TempBase = _np.ones((len(VMEC_Data.xm), 1), float)*_np.atleast_2d(VMEC_DerivedQuant.GridRho)
         NormalizationFactor = TempBase**TempExp
-#        NormalizationFactor = NormalizationFactor.T
+
+#        TempExp = _np.dot( _np.abs(VMEC_Data.xm), _np.ones((1,len(VMEC_DerivedQuant.GridRho)), float) )
+#        TempBase = _np.dot( _np.ones((len(VMEC_Data.xm), 1), float), _np.atleast_2d(VMEC_DerivedQuant.GridRho))
+#        NormalizationFactor = TempBase**TempExp
 
         rmnc_norm = _np.zeros_like(VMEC_Data.rmnc)
+#        rmnc_norm[:,:] = _np.divide(VMEC_Data.rmnc[:, :], NormalizationFactor[:, :], where=NormalizationFactor[:, :]!=0)
         rmnc_norm[:,1:] = _np.divide(VMEC_Data.rmnc[:, 1:], NormalizationFactor[:, 1:], where=NormalizationFactor[:, 1:]!=0)
-#        rmnc_norm[:,1:] = VMEC_Data.rmnc[1:, :].T/NormalizationFactor[:, 1:]
         rmnc_norm[:,0] = 2.0*rmnc_norm[:,1] - rmnc_norm[:,2]
 
         zmns_norm = _np.zeros_like(VMEC_Data.zmns)
+#        zmns_norm[:,:] = _np.divide(VMEC_Data.zmns[:, :], NormalizationFactor[:, :], where=NormalizationFactor[:, :]!=0)
         zmns_norm[:,1:] = _np.divide(VMEC_Data.zmns[:, 1:], NormalizationFactor[:, 1:], where=NormalizationFactor[:, 1:]!=0)
-#        zmns_norm[:,1:] = VMEC_Data.zmns[1:, :].T/NormalizationFactor[:, 1:]
         zmns_norm[:,0] = 2.0*zmns_norm[:,1] - zmns_norm[:,2]
 
         if verbose:
@@ -159,17 +163,38 @@ def __spline_data(VMEC_Data, ForceReadVMEC=False, verbose=True):
 #        VMEC_DerivedQuant.rmnc_norm_spline_derivs = []
         VMEC_DerivedQuant.zmns_norm_spline = []
 #        VMEC_DerivedQuant.zmns_norm_spline_derivs = []
+
+        if DEBUG:
+            nharm = _np.size(rmnc_vals_to_spline, axis=1)
+            maxplots = 5
+            iplot = nharm // (maxplots+1)
+        # end if
+
+        # Do not specify zero slope at convex hull
+        splargs = {'end1':int(0), 'end2':int(0), 'slope1':int(0), 'slope2':int(0)}
+
+        # Specify zero slope at convex hull
+#        splargs = {'end1':int(1), 'end2':int(1), 'slope1':int(0), 'slope2':int(0)}
+
         for ii in range(rmnc_vals_to_spline.shape[0]):
-            SplObj = _ut.Spline(Spline_Rhos, rmnc_vals_to_spline[ii,:]).spline() # homemade
+            SplObj = _ut.Spline(Spline_Rhos, rmnc_vals_to_spline[ii,:], **splargs).spline() # homemade
 #            SplObj = _dsi.UnivariateSpline(Spline_Rhos, rmnc_vals_to_spline[ii,:])  # dsi
+
+            if DEBUG and (ii % (iplot//2) == 0):
+                SplObj.show()
+            # end def
 
             VMEC_DerivedQuant.rmnc_norm_spline.append( SplObj )
 #            VMEC_DerivedQuant.rmnc_norm_spline_derivs.append( SplObj.derivative(1) ) # First derivative
 
             # ====== #
 
-            SplObj = _ut.Spline(Spline_Rhos,zmns_vals_to_spline[ii,:]).spline() #  homemade
+            SplObj = _ut.Spline(Spline_Rhos,zmns_vals_to_spline[ii,:], **splargs).spline() #  homemade
 #            SplObj = _dsi.UnivariateSpline(Spline_Rhos,zmns_vals_to_spline[ii,:])
+
+            if DEBUG and (ii % (iplot//2) == 0):
+                SplObj.show()
+            # end def
 
             VMEC_DerivedQuant.zmns_norm_spline.append( SplObj )
 #            VMEC_DerivedQuant.zmns_norm_spline_derivs.append( SplObj.derivative(1) )
@@ -191,9 +216,9 @@ def CalcFluxCart_VMEC(cLabPos, VMEC_FilePath, ForceReadVMEC=False, PosTol=1e-4, 
        Attenberger, Houlberg, and Hirshman, J Comp Phys 72 (1987) 435.
 
        This version is based on one created by John Schmitt, but is optimized
-       for Matlab (vectorized) and somewhat simplified.  It works out to be
+       for python (vectorized) and somewhat simplified.  It works out to be
        quite fast: 100ms for the first iteration and 10ms for subsequent
-       iterations on my 4 year old Core Duo desktop.
+       iterations on a 12 year old Core Duo desktop.
 
        It is worth noting that much of the complexity of this code deals with
        points near the axis.
@@ -330,7 +355,7 @@ def FindVMEC_Coords(pLabPos, VMEC_Data, VMEC_DerivedQuant, PosTol=1e-4, RhoGuess
     # Phi_tp = _np.copy(pLabPos[1])
     IterNum = 0
     Converged = False
-    MaxThetaStep = kMaxInitialThetaStep
+    MaxThetaStep = _np.copy(kMaxInitialThetaStep)
 
     Dist_BestMatch = 0.0
     DistR_BestMatch = 0.0
@@ -379,24 +404,24 @@ def FindVMEC_Coords(pLabPos, VMEC_Data, VMEC_DerivedQuant, PosTol=1e-4, RhoGuess
         # iteration is the "Best Match" in the program and the k+1-th is the
         # "Test Point".  We still need a maximum step size in the theta
         # direction here, as in the normal step.
-        if (IterNum>1) and (Dist_tp>Dist_BestMatch):
+        if (IterNum!=1) and (Dist_tp>Dist_BestMatch):
           StepReduction = 1.0
 
           # Keep halving until you beat your last guest
           while (Dist_tp>Dist_BestMatch) and (IterNum<kMaxIters):
-            StepReduction = 2.0*StepReduction
+            StepReduction *= 2.0
             ApproxJacDet = 0.75*JacDet_BestMatch + 0.25*JacDet_tp
 
-            ThetaStep = ((dZ_dRho_BestMatch*DistR_BestMatch-dR_dRho_BestMatch*DistZ_BestMatch)
-                            /StepReduction/ApproxJacDet)
+            ThetaStep = ( (dZ_dRho_BestMatch*DistR_BestMatch-dR_dRho_BestMatch*DistZ_BestMatch)
+                           / (StepReduction*ApproxJacDet) )
             if (_np.abs(ThetaStep)>MaxThetaStep):
                 ThetaStep = MaxThetaStep*_np.sign(ThetaStep)
             # end if
             Theta_tp = Theta_BestMatch + ThetaStep
 
             Rho_tp = (Rho_BestMatch +
-                        (dR_dTheta_BestMatch*DistZ_BestMatch-dZ_dTheta_BestMatch*DistR_BestMatch)
-                          /StepReduction/ApproxJacDet)
+                        ( (dR_dTheta_BestMatch*DistZ_BestMatch-dZ_dTheta_BestMatch*DistR_BestMatch)
+                          / (StepReduction*ApproxJacDet) ) )
 
             if (Rho_tp<0):
                 Rho_tp = -Rho_tp
@@ -421,16 +446,16 @@ def FindVMEC_Coords(pLabPos, VMEC_Data, VMEC_DerivedQuant, PosTol=1e-4, RhoGuess
                 print('Find_VMEC_Coords: Jacobian determinant approximately zero. R=%6.3e, Z= %6.3e'%(R_tp, Z_tp))
             # end if jacobian determinant less than tolerance
           # end while distance greater than best match and iteration number below maximum
-        # end if distance grreater than best match and iteration number greater than 1
+        # end if distance greater than best match and iteration number greater than 1
 
         # If necessary, pick the next test point using the typical Newton's
         # method. Otherwise, return the approximate location in VMEC coordinates.
         if (Dist_tp<PosTol):
             Converged = True
-            Rho = Rho_tp
+            Rho = _np.copy(Rho_tp)
             Theta = Theta_tp%(2.0*_np.pi)
             if (Theta<0):
-                Theta = 2.0*_np.pi + Theta
+                Theta += 2.0*_np.pi
             #end
         else:
             # This is the typical case: We have just identified an improved
@@ -438,16 +463,16 @@ def FindVMEC_Coords(pLabPos, VMEC_Data, VMEC_DerivedQuant, PosTol=1e-4, RhoGuess
             # We only typically need to know the coordinates of the best match
             # so far, but the half-step case needs the Jacobian elements and the
             # distance that the test point was from its target.
-            Rho_BestMatch = Rho_tp
-            Theta_BestMatch = Theta_tp
-            Dist_BestMatch = Dist_tp
-            DistR_BestMatch = DistR_tp
-            DistZ_BestMatch = DistZ_tp
-            dR_dRho_BestMatch = dR_dRho_tp
-            dR_dTheta_BestMatch = dR_dTheta_tp
-            dZ_dRho_BestMatch = dZ_dRho_tp
-            dZ_dTheta_BestMatch = dZ_dTheta_tp
-            JacDet_BestMatch = JacDet_tp
+            Rho_BestMatch = _np.copy(Rho_tp)
+            Theta_BestMatch = _np.copy(Theta_tp)
+            Dist_BestMatch = _np.copy(Dist_tp)
+            DistR_BestMatch = _np.copy(DistR_tp)
+            DistZ_BestMatch = _np.copy(DistZ_tp)
+            dR_dRho_BestMatch = _np.copy(dR_dRho_tp)
+            dR_dTheta_BestMatch = _np.copy(dR_dTheta_tp)
+            dZ_dRho_BestMatch = _np.copy(dZ_dRho_tp)
+            dZ_dTheta_BestMatch = _np.copy(dZ_dTheta_tp)
+            JacDet_BestMatch = _np.copy(JacDet_tp)
 
             # The normal step, as taken from eq. 3,4 in the paper.  I'm not sure
             # why exactly they formulated the problem this way, but it works out
@@ -456,12 +481,12 @@ def FindVMEC_Coords(pLabPos, VMEC_Data, VMEC_DerivedQuant, PosTol=1e-4, RhoGuess
             # orthagonal to get the algebra to work out).  Without a maximum
             # step size in the theta direction, convergence is very slow or
             # nonexistant.
-            Rho_tp += (dR_dTheta_tp*DistZ_tp-dZ_dTheta_tp*DistR_tp)/JacDet_tp
+            Rho_tp = Rho_tp + (dR_dTheta_tp*DistZ_tp-dZ_dTheta_tp*DistR_tp)/JacDet_tp
             ThetaStep = (dZ_dRho_tp*DistR_tp-dR_dRho_tp*DistZ_tp)/JacDet_tp
             if (_np.abs(ThetaStep)>MaxThetaStep):
                 ThetaStep = MaxThetaStep*_np.sign(ThetaStep)
             #end
-            Theta_tp += ThetaStep
+            Theta_tp = Theta_tp + ThetaStep
 
             # If the solver tries to look at the "negative rho", we must correct
             # it and the theta step that goes along with it.
@@ -475,6 +500,11 @@ def FindVMEC_Coords(pLabPos, VMEC_Data, VMEC_DerivedQuant, PosTol=1e-4, RhoGuess
     if (IterNum == kMaxIters) or ('Rho' not in locals()):
         print('Attempt to find flux coordinate failed to converge:\n Phi=%6.4e\n R=%6.4e\n Z=%6.4e'
                %(pLabPos[1],pLabPos[0],pLabPos[2]))
+
+        print('Best guess:\n Phi=%6.4e\n R=%6.4e\n Z=%6.4e'%(pLabPos[1],R_tp,Z_tp))
+        Rho = _np.nan
+        Theta = _np.nan
+
     # end if
     return Rho, Theta
 #    [ttemp,rtemp,ztemp] = cart2pol( pLabPos[0],pLabPos[1],pLabPos[2] )
@@ -596,14 +626,20 @@ def GetLabCoordsFromVMEC(Rho, Theta, Phi, VMEC_Data, VMEC_DerivedQuant, kMinRho=
     if (Rho>1):   # if rho is outside the LCFS
 #        SpectCoeffNorm = _np.ones((_np.size(VMEC_Data.xm),1), _np.float64)
 #        dSpectCoeffNorm_dRho = _np.zeros((_np.size(VMEC_Data.xm),1), _np.float64)
-        SpectCoeffNorm = _np.ones(_np.shape(VMEC_Data.xm), _np.float64)
-        dSpectCoeffNorm_dRho = _np.zeros(_np.shape(VMEC_Data.xm), _np.float64)
+#        SpectCoeffNorm = _np.ones(_np.shape(VMEC_Data.xm), _np.float64)
+#        dSpectCoeffNorm_dRho = _np.zeros(_np.shape(VMEC_Data.xm), _np.float64)
 
-        tst = (VMEC_Data.xm==1)*(VMEC_Data.xn==0)
-        if (tst).any():
-            SpectCoeffNorm[tst] = _np.copy(Rho)
-            dSpectCoeffNorm_dRho[tst] = 1
-        # end if tst
+        SpectCoeffNorm = _np.ones((_np.size(VMEC_Data.xm,axis=0),1), _np.float64)
+        SpectCoeffNorm[(VMEC_Data.xm == 1)*(VMEC_Data.xn == 0)] = _np.copy(Rho)
+
+        dSpectCoeffNorm_dRho = _np.zeros((_np.size(VMEC_Data.xm,axis=0),1), _np.float64)
+        dSpectCoeffNorm_dRho[(VMEC_Data.xm == 1)*(VMEC_Data.xn == 0)] = 1.0
+
+#        tst = (VMEC_Data.xm==1)*(VMEC_Data.xn==0)
+#        if (tst).any():
+#            SpectCoeffNorm[tst] = _np.copy(Rho)
+#            dSpectCoeffNorm_dRho[tst] = 1
+#        # end if tst
     elif (Rho<kMinRho):   # if rho is near the axis
         SpectCoeffNorm = kMinRho**_np.abs(VMEC_Data.xm)
         dSpectCoeffNorm_dRho = _np.abs(VMEC_Data.xm) * kMinRho**(_np.abs(VMEC_Data.xm-1))
@@ -836,8 +872,13 @@ if __name__=="__main__":
 #    VMEC_DerivedQuant = __spline_data(VMEC_Data, ForceReadVMEC=False, verbose=True)
 #    VMEC_DerivedQuant = __spline_data(VMEC_Data, ForceReadVMEC=True, verbose=True)
 
+    # within the LCFS
     cLabPos = _np.atleast_2d([5.85, 0, 0]);   sPos = _np.atleast_2d([_np.sqrt(0.11407577361150142), 180.0*_np.pi/180.0, 0.0])
     rho, th = CalcFluxCart_VMEC(cLabPos, kVMECfile, ForceReadVMEC=False, PosTol=1e-4, verbose=True)
+
+    # outside the LCFS
+    cLabPos2 = _np.atleast_2d([5.5, 0, 0]);   #sPos = _np.atleast_2d([_np.sqrt(0.11407577361150142), 180.0*_np.pi/180.0, 0.0])
+    rho2, th2 = CalcFluxCart_VMEC(cLabPos2, kVMECfile, ForceReadVMEC=False, PosTol=1e-4, verbose=True)
 # end if
 
 # ========================================================================= #
