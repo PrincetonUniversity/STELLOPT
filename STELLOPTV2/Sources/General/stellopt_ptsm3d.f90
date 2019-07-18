@@ -25,11 +25,11 @@
       USE interfaces
       
       !PTSM3D Files
-      !USE PTSM3D_setup
-      !USE PTSM3D_geom
-      !USE PTSM3D_itg
-      !USE PTSM3D_triplets
-      !USE PTSM3D_targets
+      USE ptsm3d_setup
+      USE ptsm3d_geom
+      USE ptsm3d_itg
+      USE ptsm3d_triplets
+      USE ptsm3d_targets
 
        
       IMPLICIT NONE
@@ -62,38 +62,60 @@
       integer :: nx2, nx3, i, j
       character(len=128) :: x3_coord, norm_type, grid_type
       real(rprec) :: nfpi, x3_center
-      character(len=16), dimension(7) :: ptsm3d_geom_strings
+      character(len=16), dimension(8) :: ptsm3d_geom_strings
       IF (lscreen) WRITE(6,'(a)') &
       &  ' -------------------------  BEGIN PTSM3D CALCULATION &
       & ------------------------ '
-      ptsm3d_geom_strings(1) = 'bmag'
-      ptsm3d_geom_strings(2) = 'jac'
-      ptsm3d_geom_strings(3) = 'g11'
-      ptsm3d_geom_strings(4) = 'g12'
-      ptsm3d_geom_strings(5) = 'g22'
+      ptsm3d_geom_strings(4) = 'bmag'
+      ptsm3d_geom_strings(5) = 'jac'
+      ptsm3d_geom_strings(1) = 'g11'
+      ptsm3d_geom_strings(2) = 'g12'
+      ptsm3d_geom_strings(3) = 'g22'
       ptsm3d_geom_strings(6) = 'curv_drift_x1'
       ptsm3d_geom_strings(7) = 'curv_drift_x2'
+      ptsm3d_geom_strings(8) = 'x3'
 
       ! Move this to the PTSM3D namelist
       if(allocated(surfaces)) deallocate(surfaces)
       allocate(surfaces(1))
       surfaces(1) = 0.5
       nx2 = 1
-      nx3 = 64
+      nx3 = points_per_turn 
+      li1=0
+      li2=nx3
       allocate(data_arr(nx3+1))
       x3_center = 0.0
       nfpi = 5.0
       norm_type = "minor_r"
       grid_type = "gene"
       x3_coord = "theta"
+
+      allocate(geom(8,nx3+1))
+      call ptsm3d_initialize_geom
       call vmec2pest_stellopt_interface(surfaces,nx2,nx3,x3_center,&
         &trim(x3_coord),nfpi,trim(norm_type),trim(grid_type))
 
-      do j = 1,7
+      do j = 1,8
         call get_pest_data_interface(0,0,trim(ptsm3d_geom_strings(j)),1,nx3+1,data_arr)
-
+        geom(j,:) = data_arr
       end do
 
+      call ptsm3d_set_norms
+      call ptsm3d_initialize_itg_solve
+      call ptsm3d_itg_solve
+      call ptsm3d_initialize_triplets
+      call ptsm3d_compute_targets
+      if (opt_target .eq. 'zf') then
+        ptsm3d_target = target_12f
+      elseif (opt_target .eq. 'nzf') then
+        ptsm3d_target = target_qst
+      endif
+
+      call ptsm3d_finalize_triplets
+      call ptsm3d_finalize_itg_solve
+      call ptsm3d_finalize_geom
+
+      !ptsm3d_finalize_geom deallocates geom
       deallocate(surfaces,data_arr)
       
       END SUBROUTINE stellopt_ptsm3d

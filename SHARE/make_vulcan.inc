@@ -132,11 +132,11 @@
 #######################################################################
 #            PTSM3D Options
 #######################################################################
-  LPTSM3D = F
+  LPTSM3D = T
   PTSM3D_PATH = /home/bfaber/projects/PTSM3D
   PTSM3D_INC = -I$(PTSM3D_PATH)/objs
   PTSM3D_DIR = $(PTSM3D_PATH)
-  LIB_PTSM3D = libptsm3d.a
+  LIB_PTSM3D = lib/libptsm3dlegacy.a
   PTSM3D_LIB = $(PTSM3D_DIR)/$(LIB_PTSM3D)
 
 #######################################################################
@@ -144,7 +144,7 @@
 #######################################################################
   LVMEC2PEST = T
   VMEC2PEST_PATH = /home/bfaber/projects/VMECTools
-  VMEC2PEST_INC = -I$(VMEC2PEST_PATH)/obj
+  VMEC2PEST_INC = -I$(VMEC2PEST_PATH)/objs/fortran
   VMEC2PEST_DIR = $(VMEC2PEST_PATH)
   LIB_VMEC2PEST = lib/libvmec2pest.a
   VMEC2PEST_LIB = $(VMEC2PEST_DIR)/$(LIB_VMEC2PEST)
@@ -332,7 +332,7 @@ endif
 ifeq ($(LPTSM3D),T)
   MOD1_PATH += $(PTSM3D_INC)
   PRECOMP += -DPTSM3D
-  MOD_PATH += -I$(PTSM3D_DIR)/objs
+  MOD_PATH += -I$(PTSM3D_DIR)/objs/fortran
 else
   PTSM3D_LIB =
   PTSM3D_DIR =

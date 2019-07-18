@@ -65,9 +65,9 @@ endif
 ifdef VMEC2PEST_DIR
 	@rm $(VMEC2PEST_DIR)/$(LIB_VMEC2PEST)
 endif
-#ifdef PTSM3D_DIR
-#@rm $(PTSM3D_DIR)/$(LIB_PTSM3D)
-#ndif
+ifdef PTSM3D_DIR
+	@rm $(PTSM3D_DIR)/$(LIB_PTSM3D)
+endif
 #Compile object files defined in OBJLIST.
 .f.o :
 	@if grep -q '^!DEC\$$' $<; \
@@ -179,5 +179,5 @@ $(LIB_VMEC2PEST) :
 	@cd $(VMEC2PEST_DIR); make lib
   
 #Construct PTSM3D library.
-#(LIB_PTSM3D) :
-#@cd $(PTSM3D_DIR); make; ar -cruv $(LIB_PTSM3D) objs/*.o objs/*.mod
+$(LIB_PTSM3D) :
+	@cd $(PTSM3D_DIR); make legacy_lib;

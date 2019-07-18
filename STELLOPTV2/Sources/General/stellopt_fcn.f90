@@ -380,7 +380,9 @@
          end if
 !DEC$ ENDIF
 !DEC$ IF DEFINED (VMEC2PEST)
+!DEC$ IF DEFINED (PTSM3D)
          IF (sigma_ptsm3d < bigno) CALL stellopt_ptsm3d(lscreen,iflag)
+!DEC$ ENDIF
 !DEC$ ENDIF
 
          ! Now we load target values if an error was found then
