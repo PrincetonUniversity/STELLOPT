@@ -68,29 +68,30 @@ class Spline(object):
         coeffs.append(d)
         self.coeffs = coeffs
 
-#        self.yf, self.dydx = seval(self.xf, self.xvar, self.yvar,
-#                  self.coeffs[0], self.coeffs[1], self.coeffs[2])
+        self.yf, self.dydx = seval(self.xf, self.xvar, self.yvar,
+                  self.coeffs[0], self.coeffs[1], self.coeffs[2])
 #        return self.yf, self.dydx
         return self
     # end def
 
     def spline_and_eval(self):
         if self.nmonti is None:
-            self.status, b, c, d = _spline(self.xvar[self.msk], self.yvar[self.msk], **self.kwargs)
-
-            if self.status != 0:
-                print(self.status)
-            coeffs = []
-            coeffs.append(b)
-            coeffs.append(c)
-            coeffs.append(d)
-            self.coeffs = coeffs
-
-            self.yf, self.dydx = seval(self.xf, self.xvar, self.yvar,
-                      self.coeffs[0], self.coeffs[1], self.coeffs[2])
+#            self.status, b, c, d = _spline(self.xvar[self.msk], self.yvar[self.msk], **self.kwargs)
+#
+#            if self.status != 0:
+#                print(self.status)
+#            coeffs = []
+#            coeffs.append(b)
+#            coeffs.append(c)
+#            coeffs.append(d)
+#            self.coeffs = coeffs
+#
+#            self.yf, self.dydx = seval(self.xf, self.xvar, self.yvar,
+#                      self.coeffs[0], self.coeffs[1], self.coeffs[2])
+            self.spline()
             return self.yf, self.dydx
         else:
-            self.yf, self.varf, self.dydx, self.vardydx = self.spline_bs()
+            self.yf, self.varf, self.dydx, self.vardydx = self.spline_and_eval_bs()
             return self.yf, self.varf, self.dydx, self.vardydx
     # end def
 
@@ -143,7 +144,7 @@ class Spline(object):
             tmp2 = _np.zeros_like(tmp1)
             for jj in range(nsh[1]):
                 self.yvar = utemp[:,jj].copy()
-                tmp1[:,jj], tmp2[:,jj] = self.spline()
+                tmp1[:,jj], tmp2[:,jj] = self.spline_and_eval()
             # end for
             yf[ii, :] = tmp1.reshape((nxf, nsh[1]), order='C')
             dydx[ii, :] = tmp2.reshape((nxf, nsh[1]), order='C')
@@ -181,6 +182,22 @@ class Spline(object):
         del self.msk
 
     # ========================= #
+
+    def show(self):
+        import matplotlib.pyplot as _plt
+        _plt.figure()
+        _ax1 = _plt.subplot(2,1,1)
+        _ax2 = _plt.subplot(2,1,2, sharex=_ax1)
+        _ax1.plot(self.xvar, self.yvar, 'ko')
+    #    _ax2.plot(self.x, self.dydx, 'ko')
+
+        _ax1.plot(self.xf, self.yf, 'b-')
+        _ax1.set_ylabel('function')
+
+        _ax2.plot(self.xf, self.yf, 'b-')
+        _ax2.set_xlabel('x')
+        _ax2.set_ylabel('deriv')
+        _ax1.set_title('Spline functions')
     # ========================= #
 # end class
 
@@ -519,7 +536,7 @@ def test_spline_bs(nsegs=None):
     kwargs.setdefault('end1', int(0))
     kwargs.setdefault('end2', int(0))
     Spl1Obj = Spline(xx, yy, xgrid, vy, nmonti=300, **kwargs)
-    yspl1, vspl1, dy1dx, vdy1dx = Spl1Obj.spline()
+    yspl1, vspl1, dy1dx, vdy1dx = Spl1Obj.spline_and_eval()
 
     # now specify zero slope at end points
     kwargs['end1'] = int(1)
@@ -527,7 +544,7 @@ def test_spline_bs(nsegs=None):
     kwargs.setdefault('slope1', int(0))
     kwargs.setdefault('slope2', int(0))
     Spl2Obj = Spline(xx, yy, xgrid, vy, nmonti=300, **kwargs)
-    yspl2, vspl2, dy2dx, vdy2dx = Spl2Obj.spline()
+    yspl2, vspl2, dy2dx, vdy2dx = Spl2Obj.spline_and_eval()
 
     # derivative by simple finite differences
     dydx = _np.hstack((_np.atleast_1d(0.5*(yy[1]-2.0*yy[0])/(xx[1]-xx[0])), _np.diff(yy)/_np.diff(xx)))
@@ -571,6 +588,9 @@ def test_spline(nsegs=None):
     yspl1, dy1dx = seval(xgrid, xx, yy, b1, c1, d1)
     yspl2, dy2dx = seval(xgrid, xx, yy, b2, c2, d2)
 
+    xch = _np.linspace(-0.5, 1.5, num=20, endpoint=True)
+    yspl3, dy3dx = seval(xch, xx, yy, b1, c1, d1)
+
     # derivative by simple finite differences
     dydx = _np.hstack((_np.atleast_1d(0.5*(yy[1]-2.0*yy[0])/(xx[1]-xx[0])), _np.diff(yy)/_np.diff(xx)))
 
@@ -583,10 +603,12 @@ def test_spline(nsegs=None):
 
     _ax1.plot(xgrid, yspl1, 'b-')
     _ax1.plot(xgrid, yspl2, 'r-')
+    _ax1.plot(xch, yspl3, 'm-')
     _ax1.set_ylabel('function')
 
     _ax2.plot(xgrid, dy1dx, 'b-')
     _ax2.plot(xgrid, dy2dx, 'r-')
+    _ax2.plot(xch, dy3dx, 'm-')
     _ax2.set_xlabel('x')
     _ax2.set_ylabel('deriv')
     _ax1.set_title('Testing spline functions')
