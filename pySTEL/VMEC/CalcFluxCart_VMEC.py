@@ -34,9 +34,9 @@ except:
 import utils as _ut
 
 try:
-    from .VMEC import read_vmec
+    from .VMEC.read_vmec import read_vmec
 except:
-    from VMEC import read_vmec
+    from VMEC.read_vmec import read_vmec
 # end try
 
 # ========================================================================== #
@@ -88,11 +88,12 @@ def __extract_data(VMEC_FilePath, ForceReadVMEC=False, verbose=True):
             # defines xn with the opposite sign as is usual in VMEC
             VMEC_Data = read_vmec(VMEC_FilePath)
 
-            VMEC_Data.xm = VMEC_Data.xm.T
-            VMEC_Data.xn = -VMEC_Data.xn.T
-            VMEC_Data.ns = VMEC_Data.ns.T
-            VMEC_Data.zmns = VMEC_Data.zmns.T
-            VMEC_Data.rmnc = VMEC_Data.rmnc.T
+#            VMEC_Data.xm = VMEC_Data.xm.T
+#            VMEC_Data.xn = -VMEC_Data.xn.T
+#            VMEC_Data.ns = VMEC_Data.ns.T
+#            VMEC_Data.zmns = VMEC_Data.zmns.T
+#            VMEC_Data.rmnc = VMEC_Data.rmnc.T
+            VMEC_Data.xn = -VMEC_Data.xn
         #end
         VMEC_Data.loaded = True
         if verbose:
@@ -109,7 +110,7 @@ def __spline_data(VMEC_Data, ForceReadVMEC=False, verbose=True):
         # Set up radial grids.  VMEC produces data that is equally spaced in 'S'
         # (normalized total flux) space.  We often want it in normalized minor
         # radius (rho), though.
-        VMEC_DerivedQuant = Struct()
+        VMEC_DerivedQuant = _ut.Struct()
 #        VMEC_DerivedQuant.GridS = ((1:VMEC_Data.ns:1)-1)/(VMEC_Data.ns-1)
         VMEC_DerivedQuant.GridS = (_np.asarray(range(1, VMEC_Data.ns))-1.0)/(VMEC_Data.ns-1.0)
         VMEC_DerivedQuant.GridRho = _np.sqrt(VMEC_DerivedQuant.GridS)
@@ -122,7 +123,7 @@ def __spline_data(VMEC_Data, ForceReadVMEC=False, verbose=True):
         # extrapolated: \tidle{R_(mn)}(\rho = 0) = \tilde{R_(mn)}(\rho = \Delta \rho) -
         # \Delta \rho \frac{\tilde{R_(mn)(2\Delta \rho) - \tilde{R_(mn)(\Delta \rho}{\Delta \rho}}
         TempExp = _np.dot( _np.abs(VMEC_Data.xm), _np.ones((1,len(VMEC_DerivedQuant.GridRho)), float) )
-        TempBase = _np.dot( _np.ones((len(VMEC_Data.xm), 1), float), VMEC_DerivedQuant.GridRho)
+        TempBase = _np.dot( _np.ones((len(VMEC_Data.xm), 1), float), _np.atleast_2d(VMEC_DerivedQuant.GridRho))
         NormalizationFactor = TempBase**TempExp
 
         rmnc_norm = _np.zeros_like(VMEC_Data.rmnc)
