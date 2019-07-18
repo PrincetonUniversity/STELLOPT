@@ -25,7 +25,7 @@ from __future__ import absolute_import, with_statement, absolute_import, \
 
 import numpy as _np
 #import scipy.interpolate as _dsi   # broken
-
+import scipy.integrate as _int
 
 try:
     import netCDF4 as netcdf
@@ -49,163 +49,9 @@ VMEC_Data = None
 VMEC_DerivedQuant = None
 VMEC_DataSource = None
 
-def __extract_data(VMEC_FilePath, ForceReadVMEC=False, verbose=True):
-    global VMEC_Data
-    if VMEC_Data is None or ForceReadVMEC:
-        VMEC_Data = read_vmec(VMEC_FilePath)
 
-        VMEC_Data = _ut.Struct() # Instantiate an empty class of type structure
 
-        # If this is a netCDF VMEC file, read the output ourseleves, otherwise,
-        # let Sam Lazerson's code handle it
-        #  nFileName = len( VMEC_FilePath )
-        # if VMEC_FilePath[nFileName-2:nFileName].lower()=='.nc':
-        if VMEC_FilePath.lower().find('.nc')>-1:
-            if verbose:   print('Checking file')  # end if
-            ncID = netcdf.open(VMEC_FilePath, 'nc_nowrite')
-
-            if verbose:   print('Loading data from VMEC wout file')  # end if
-            VarID = netcdf.inqVarID(ncID, 'ns')
-            VMEC_Data.ns = double(netcdf.getVar(ncID, VarID))
-
-            VarID = netcdf.inqVarID(ncID, 'mnmax')
-            VMEC_Data.mnmax = double(netcdf.getVar(ncID, VarID))
-
-            # (mn_mode) toridal mode numbers
-            VarID = netcdf.inqVarID(ncID, 'xn')
-            VMEC_Data.xn = double(netcdf.getVar(ncID, VarID))
-
-            # (mn_mode) polidal mode numbers
-            VarID = netcdf.inqVarID(ncID, 'xm')
-            VMEC_Data.xm = double(netcdf.getVar(ncID, VarID))
-
-            # (radius mn_mode ) cosmn component of cylindrical R, full mesh in [m]
-            VarID = netcdf.inqVarID(ncID, 'rmnc')
-            VMEC_Data.rmnc = (netcdf.getVar(ncID, VarID)).T
-
-            # (radius mn_mode ) sinmn component of cylindrical Z, full mesh in [m]
-            VarID = netcdf.inqVarID(ncID, 'zmns')
-            VMEC_Data.zmns = (netcdf.getVar(ncID, VarID)).T
-        else:
-            # Use Sam Lazerson's code to read the VMEC file, but note that he
-            # defines xn with the opposite sign as is usual in VMEC
-            VMEC_Data = read_vmec(VMEC_FilePath)
-
-#            VMEC_Data.xm = VMEC_Data.xm.T
-#            VMEC_Data.xn = -VMEC_Data.xn.T
-#            VMEC_Data.ns = VMEC_Data.ns.T
-#            VMEC_Data.zmns = VMEC_Data.zmns.T
-#            VMEC_Data.rmnc = VMEC_Data.rmnc.T
-#            # VMEC_Data.xn = -VMEC_Data.xn
-        #end
-        VMEC_Data.loaded = True
-        if verbose:
-            print('Done Reading VMEC File')
-        # end if
-    # end if
-    return VMEC_Data
-
-def __spline_data(VMEC_Data, ForceReadVMEC=False, verbose=True):
-    global VMEC_DerivedQuant
-    if VMEC_DerivedQuant is None or ForceReadVMEC:
-        if verbose:
-            print('Normalizing.')
-        # Set up radial grids.  VMEC produces data that is equally spaced in 'S'
-        # (normalized total flux) space.  We often want it in normalized minor
-        # radius (rho), though.
-        VMEC_DerivedQuant = _ut.Struct()
-#        VMEC_DerivedQuant.GridS = ((1:VMEC_Data.ns)-1)/(VMEC_Data.ns-1)
-        VMEC_DerivedQuant.GridS = (_np.asarray(range(1,VMEC_Data.ns+1))-1)/(VMEC_Data.ns-1.0)
-        VMEC_DerivedQuant.GridRho = _np.sqrt(VMEC_DerivedQuant.GridS)
-
-        # Normalizing the spectral coefficients to rho^m helps the splining get
-        # the radial dependence correct near the axis, as described in the paper.
-        # See equations 7a and 7b and the paragraphs directly above those
-        # equations for more details. Notationally, rmnc_norm corresponds with
-        # \tilde{R}_mn, for example. The values right at the axis are linearly
-        # extrapolated: \tidle{R_(mn)}(\rho = 0) = \tilde{R_(mn)}(\rho = \Delta \rho) -
-        # \Delta \rho \frac{\tilde{R_(mn)(2\Delta \rho) - \tilde{R_(mn)(\Delta \rho}{\Delta \rho}}
-        TempExp = _np.abs(VMEC_Data.xm)*_np.ones((1,len(VMEC_DerivedQuant.GridRho)), float)
-        TempBase = _np.ones((len(VMEC_Data.xm), 1), float)*_np.atleast_2d(VMEC_DerivedQuant.GridRho)
-        NormalizationFactor = TempBase**TempExp
-
-#        TempExp = _np.dot( _np.abs(VMEC_Data.xm), _np.ones((1,len(VMEC_DerivedQuant.GridRho)), float) )
-#        TempBase = _np.dot( _np.ones((len(VMEC_Data.xm), 1), float), _np.atleast_2d(VMEC_DerivedQuant.GridRho))
-#        NormalizationFactor = TempBase**TempExp
-
-        rmnc_norm = _np.zeros_like(VMEC_Data.rmnc)
-#        rmnc_norm[:,:] = _np.divide(VMEC_Data.rmnc[:, :], NormalizationFactor[:, :], where=NormalizationFactor[:, :]!=0)
-        rmnc_norm[:,1:] = _np.divide(VMEC_Data.rmnc[:, 1:], NormalizationFactor[:, 1:], where=NormalizationFactor[:, 1:]!=0)
-        rmnc_norm[:,0] = 2.0*rmnc_norm[:,1] - rmnc_norm[:,2]
-
-        zmns_norm = _np.zeros_like(VMEC_Data.zmns)
-#        zmns_norm[:,:] = _np.divide(VMEC_Data.zmns[:, :], NormalizationFactor[:, :], where=NormalizationFactor[:, :]!=0)
-        zmns_norm[:,1:] = _np.divide(VMEC_Data.zmns[:, 1:], NormalizationFactor[:, 1:], where=NormalizationFactor[:, 1:]!=0)
-        zmns_norm[:,0] = 2.0*zmns_norm[:,1] - zmns_norm[:,2]
-
-        if verbose:
-            print('Done normalizing.')
-            print('Generating splines for spectral cooefficients.')
-        # end if
-
-        # We will capture the radial dependence of the spectral normalized
-        # components of r and z using splines fit to 'double-sided' profiles.
-        # This approximates the radial partial derivatives of the normalized
-        # spectral components, too (but not directly the radial derivatives of r,z).
-        Spline_Rhos = _ut.cylsym_odd(VMEC_DerivedQuant.GridRho, exclude_axis=True)
-        rmnc_vals_to_spline = _ut.cylsym_even(rmnc_norm, axis=1, exclude_axis=True)
-        zmns_vals_to_spline = _ut.cylsym_even(zmns_norm, axis=1, exclude_axis=True)
-        # Spline_Rhos = np.concatenate((_np.flipud( -VMEC_DerivedQuant.GridRho[1:]), VMEC_DerivedQuant.GridRho), axis=1)
-        # rmnc_vals_to_spline = np.concatenate( ( np.fliplr( rmnc_norm[ :, 1:-1 ] ) , rmnc_norm ), axis=1)
-        # zmns_vals_to_spline = np.concatenate( ( np.fliplr( zmns_norm[ :, 1:-1 ] ) , zmns_norm ), axis=1)
-
-        VMEC_DerivedQuant.rmnc_norm_spline = []
-#        VMEC_DerivedQuant.rmnc_norm_spline_derivs = []
-        VMEC_DerivedQuant.zmns_norm_spline = []
-#        VMEC_DerivedQuant.zmns_norm_spline_derivs = []
-
-        if DEBUG:
-            nharm = _np.size(rmnc_vals_to_spline, axis=1)
-            maxplots = 5
-            iplot = nharm // (maxplots+1)
-        # end if
-
-        # Do not specify zero slope at convex hull
-        splargs = {'end1':int(0), 'end2':int(0), 'slope1':int(0), 'slope2':int(0)}
-
-        # Specify zero slope at convex hull
-#        splargs = {'end1':int(1), 'end2':int(1), 'slope1':int(0), 'slope2':int(0)}
-
-        for ii in range(rmnc_vals_to_spline.shape[0]):
-            SplObj = _ut.Spline(Spline_Rhos, rmnc_vals_to_spline[ii,:], **splargs).spline() # homemade
-#            SplObj = _dsi.UnivariateSpline(Spline_Rhos, rmnc_vals_to_spline[ii,:])  # dsi
-
-            if DEBUG and (ii % (iplot//2) == 0):
-                SplObj.show()
-            # end def
-
-            VMEC_DerivedQuant.rmnc_norm_spline.append( SplObj )
-#            VMEC_DerivedQuant.rmnc_norm_spline_derivs.append( SplObj.derivative(1) ) # First derivative
-
-            # ====== #
-
-            SplObj = _ut.Spline(Spline_Rhos,zmns_vals_to_spline[ii,:], **splargs).spline() #  homemade
-#            SplObj = _dsi.UnivariateSpline(Spline_Rhos,zmns_vals_to_spline[ii,:])
-
-            if DEBUG and (ii % (iplot//2) == 0):
-                SplObj.show()
-            # end def
-
-            VMEC_DerivedQuant.zmns_norm_spline.append( SplObj )
-#            VMEC_DerivedQuant.zmns_norm_spline_derivs.append( SplObj.derivative(1) )
-
-        # end for
-
-        if verbose:
-            print('Done splining the spectral coefficients')
-        # end if
-    # end if
-    return VMEC_DerivedQuant
+# ========================================================================= #
 
 def CalcFluxCart_VMEC(cLabPos, VMEC_FilePath, ForceReadVMEC=False, PosTol=1e-4, verbose=True):
     """
@@ -289,6 +135,132 @@ def CalcFluxCart_VMEC(cLabPos, VMEC_FilePath, ForceReadVMEC=False, PosTol=1e-4, 
     #end for
     return Rho, Theta
 #end def CalcFluxCart_VMEC
+
+# ========================================================================= #
+
+
+#def Flux2Cart(sPos, VMEC_FilePath, ForceReadVMEC=False, kMinRho=2.0e-9, jacout=False, verbose=True):
+#    """
+#     Description:
+#       This function finds the coordinates of a point in cartesian lab coordinates
+#       that corresponds with a point in VMEC flux coordinates.
+#
+#     Inputs:
+#       sPos - A 2D array describing the points that you want to have
+#           converted from VMEC coordinates.  The first index is the point
+#           number, and the second identifies the coordinate.  For example:
+#          (rho1, th1, fi1 ; rho2, th2, fi2;...).
+#              rho ~ normalized poloidal flux (sqrt(S))
+#              th ~ pseudo-poloidal angle [rad]
+#              fi ~ pseudo-toroidal angle [rad]
+#
+#       VMEC_FilePath - The location and name of the VMEC output file
+#           that you want to use for the transformation (eithet netcdf or txt).
+#
+#       ForceReadVMEC (optional) - Set this to one if you want to force the
+#           routine to read the VMEC file from disk instead of trying to reuse
+#           data stored in memory.  Otherwise set to zero. Default = 0
+#
+#     Outputs:
+#       cLabPos - The cartesian laboratory coordinates at the approximate input location
+#    """
+#
+#    out = Flux2Polar(sPos, VMEC_FilePath, ForceReadVMEC=ForceReadVMEC, kMinRho=kMinRho, jacout=jacout, verbose=verbose)
+#
+#    if jacout:
+#        RR, fi, ZZ = tuple(out[0][:,0], out[0][:,1], out[0][:,2])
+#    else:
+#        RR, fi, ZZ = tuple(out[:,0], out[:,1], out[:,2])
+#    # end if
+#
+#    XX, YY, ZZ = _ut.pol2cart(RR, fi, ZZ)
+#    if jacout:
+#        # Convert to configuration space coordinates from polar coordinates
+#        return out[0], Jac*_np.cos
+#    else:
+#        return out[0], [1]
+#    # end if
+## end def
+
+
+def Flux2Polar(sPos, VMEC_FilePath, ForceReadVMEC=False, kMinRho=2.0e-9, jacout=False, verbose=True):
+    """
+     Description:
+       This function finds the coordinates of a point in polar lab coordinates
+       that corresponds with a point in VMEC flux coordinates.
+
+     Inputs:
+       sPos - A 2D array describing the points that you want to have
+           converted from VMEC coordinates.  The first index is the point
+           number, and the second identifies the coordinate.  For example:
+          (rho1, th1, fi1 ; rho2, th2, fi2;...).
+              rho ~ normalized poloidal flux (sqrt(S))
+              th ~ pseudo-poloidal angle [rad]
+              fi ~ pseudo-toroidal angle [rad]
+
+       VMEC_FilePath - The location and name of the VMEC output file
+           that you want to use for the transformation (eithet netcdf or txt).
+
+       ForceReadVMEC (optional) - Set this to one if you want to force the
+           routine to read the VMEC file from disk instead of trying to reuse
+           data stored in memory.  Otherwise set to zero. Default = 0
+
+     Outputs:
+       pLabPos - The polar laboratory coordinates at the approximate input location
+    """
+    # ===================================================================== #
+    # Fetch VMEC data
+
+    # We'll store the relevant VMEC data in a persistent variables to improve
+    # speed for the case where this function is called many times for the same
+    # VMEC data.  Unless the user asks for a new file to be used as input, we'll
+    # continue to use the persistent data.  Otherwise, load it from a file.
+    global VMEC_Data
+    global VMEC_DerivedQuant
+    global VMEC_DataSource
+
+    # note this test should be for whether the var field is present in VMEC_DataSource
+    if ForceReadVMEC or (VMEC_Data is None) or (VMEC_DerivedQuant is None) or (VMEC_DataSource is None) \
+        or (VMEC_DataSource != VMEC_FilePath):
+        if 1:
+            VMEC_Data =  __extract_data(VMEC_FilePath, ForceReadVMEC=ForceReadVMEC, verbose=verbose)
+            VMEC_DerivedQuant = __spline_data(VMEC_Data, ForceReadVMEC=ForceReadVMEC, verbose=verbose)
+        # end if
+    # end
+    VMEC_DataSource = VMEC_FilePath
+
+    # ===================================================================== #
+
+    sPos = _np.atleast_2d(sPos)
+    nrho = len(sPos[:,0])
+
+    nargout = 2
+    RR = _np.zeros((nrho,), _np.float64)
+    ZZ = _np.zeros_like(RR)
+
+    if jacout:
+        nargout=8
+        dRdRho, dRdTheta, dZdRho, dZdTheta, dRdZi, dZdZi \
+            = tuple([_np.zeros_like(RR) for _ in range(6)])
+    # end if
+
+    for ii in range(nrho):
+        out = GetLabCoordsFromVMEC(sPos[ii,0], sPos[ii,1], sPos[ii,2],
+                    VMEC_Data, VMEC_DerivedQuant, kMinRho=kMinRho, nargout=nargout)
+
+        if jacout:
+            RR[ii], ZZ[ii], dRdRho[ii], dRdTheta[ii], dZdRho[ii], dZdTheta[ii], \
+                dRdZi[ii], dZdZi[ii] = out
+        else:
+            RR[ii], ZZ[ii] = out
+        # end if
+    #end for
+
+    pLabPos = _np.hstack((RR, sPos[:,2], ZZ))
+    if jacout:
+        return pLabPos, _np.hstack((dRdRho, dRdTheta, dZdRho, dZdTheta, dRdZi, dZdZi))
+    return pLabPos
+#end def Flux2Polar
 
 # ========================================================================= #
 
@@ -624,22 +596,12 @@ def GetLabCoordsFromVMEC(Rho, Theta, Phi, VMEC_Data, VMEC_DerivedQuant, kMinRho=
     # n=0 modes linearly with \Rho, and hold the other terms constant at their
     # value evaluated at \Rho=1
     if (Rho>1):   # if rho is outside the LCFS
-#        SpectCoeffNorm = _np.ones((_np.size(VMEC_Data.xm),1), _np.float64)
-#        dSpectCoeffNorm_dRho = _np.zeros((_np.size(VMEC_Data.xm),1), _np.float64)
-#        SpectCoeffNorm = _np.ones(_np.shape(VMEC_Data.xm), _np.float64)
-#        dSpectCoeffNorm_dRho = _np.zeros(_np.shape(VMEC_Data.xm), _np.float64)
-
         SpectCoeffNorm = _np.ones((_np.size(VMEC_Data.xm,axis=0),1), _np.float64)
         SpectCoeffNorm[(VMEC_Data.xm == 1)*(VMEC_Data.xn == 0)] = _np.copy(Rho)
 
         dSpectCoeffNorm_dRho = _np.zeros((_np.size(VMEC_Data.xm,axis=0),1), _np.float64)
         dSpectCoeffNorm_dRho[(VMEC_Data.xm == 1)*(VMEC_Data.xn == 0)] = 1.0
 
-#        tst = (VMEC_Data.xm==1)*(VMEC_Data.xn==0)
-#        if (tst).any():
-#            SpectCoeffNorm[tst] = _np.copy(Rho)
-#            dSpectCoeffNorm_dRho[tst] = 1
-#        # end if tst
     elif (Rho<kMinRho):   # if rho is near the axis
         SpectCoeffNorm = kMinRho**_np.abs(VMEC_Data.xm)
         dSpectCoeffNorm_dRho = _np.abs(VMEC_Data.xm) * kMinRho**(_np.abs(VMEC_Data.xm-1))
@@ -652,6 +614,9 @@ def GetLabCoordsFromVMEC(Rho, Theta, Phi, VMEC_Data, VMEC_DerivedQuant, kMinRho=
     # major radius and vertical direction (r,z).
     r = _np.sum(rmnc_norm*CosModeAngle*SpectCoeffNorm)
     z = _np.sum(zmns_norm*SinModeAngle*SpectCoeffNorm)
+
+    if nargout == 2:
+        return r, z
 
     # The partial derivative in the theta direction is easily extracted from the
     # above equation, since only the cos (sin) term contains a theta dependence
@@ -680,6 +645,171 @@ def GetLabCoordsFromVMEC(Rho, Theta, Phi, VMEC_Data, VMEC_DerivedQuant, kMinRho=
 # ========================================================================= #
 
 
+def __extract_data(VMEC_FilePath, ForceReadVMEC=False, verbose=True):
+    global VMEC_Data
+    if VMEC_Data is None or ForceReadVMEC:
+        VMEC_Data = read_vmec(VMEC_FilePath)
+
+        VMEC_Data = _ut.Struct() # Instantiate an empty class of type structure
+
+        # If this is a netCDF VMEC file, read the output ourseleves, otherwise,
+        # let Sam Lazerson's code handle it
+        #  nFileName = len( VMEC_FilePath )
+        # if VMEC_FilePath[nFileName-2:nFileName].lower()=='.nc':
+        if VMEC_FilePath.lower().find('.nc')>-1:
+            if verbose:   print('Checking file')  # end if
+            ncID = netcdf.open(VMEC_FilePath, 'nc_nowrite')
+
+            if verbose:   print('Loading data from VMEC wout file')  # end if
+            VarID = netcdf.inqVarID(ncID, 'ns')
+            VMEC_Data.ns = double(netcdf.getVar(ncID, VarID))
+
+            VarID = netcdf.inqVarID(ncID, 'mnmax')
+            VMEC_Data.mnmax = double(netcdf.getVar(ncID, VarID))
+
+            # (mn_mode) toridal mode numbers
+            VarID = netcdf.inqVarID(ncID, 'xn')
+            VMEC_Data.xn = double(netcdf.getVar(ncID, VarID))
+
+            # (mn_mode) polidal mode numbers
+            VarID = netcdf.inqVarID(ncID, 'xm')
+            VMEC_Data.xm = double(netcdf.getVar(ncID, VarID))
+
+            # (radius mn_mode ) cosmn component of cylindrical R, full mesh in [m]
+            VarID = netcdf.inqVarID(ncID, 'rmnc')
+            VMEC_Data.rmnc = (netcdf.getVar(ncID, VarID)).T
+
+            # (radius mn_mode ) sinmn component of cylindrical Z, full mesh in [m]
+            VarID = netcdf.inqVarID(ncID, 'zmns')
+            VMEC_Data.zmns = (netcdf.getVar(ncID, VarID)).T
+        else:
+            # Use Sam Lazerson's code to read the VMEC file, but note that he
+            # defines xn with the opposite sign as is usual in VMEC
+            VMEC_Data = read_vmec(VMEC_FilePath)
+
+#            VMEC_Data.xm = VMEC_Data.xm.T
+#            VMEC_Data.xn = -VMEC_Data.xn.T
+#            VMEC_Data.ns = VMEC_Data.ns.T
+#            VMEC_Data.zmns = VMEC_Data.zmns.T
+#            VMEC_Data.rmnc = VMEC_Data.rmnc.T
+#            # VMEC_Data.xn = -VMEC_Data.xn
+        #end
+        VMEC_Data.loaded = True
+        if verbose:
+            print('Done Reading VMEC File')
+        # end if
+    # end if
+    return VMEC_Data
+
+# ========================================================================= #
+
+
+def __spline_data(VMEC_Data, ForceReadVMEC=False, verbose=True):
+    global VMEC_DerivedQuant
+    if VMEC_DerivedQuant is None or ForceReadVMEC:
+        if verbose:
+            print('Normalizing.')
+        # Set up radial grids.  VMEC produces data that is equally spaced in 'S'
+        # (normalized total flux) space.  We often want it in normalized minor
+        # radius (rho), though.
+        VMEC_DerivedQuant = _ut.Struct()
+#        VMEC_DerivedQuant.GridS = ((1:VMEC_Data.ns)-1)/(VMEC_Data.ns-1)
+        VMEC_DerivedQuant.GridS = (_np.asarray(range(1,VMEC_Data.ns+1))-1)/(VMEC_Data.ns-1.0)
+        VMEC_DerivedQuant.GridRho = _np.sqrt(VMEC_DerivedQuant.GridS)
+
+        # Normalizing the spectral coefficients to rho^m helps the splining get
+        # the radial dependence correct near the axis, as described in the paper.
+        # See equations 7a and 7b and the paragraphs directly above those
+        # equations for more details. Notationally, rmnc_norm corresponds with
+        # \tilde{R}_mn, for example. The values right at the axis are linearly
+        # extrapolated: \tidle{R_(mn)}(\rho = 0) = \tilde{R_(mn)}(\rho = \Delta \rho) -
+        # \Delta \rho \frac{\tilde{R_(mn)(2\Delta \rho) - \tilde{R_(mn)(\Delta \rho}{\Delta \rho}}
+        TempExp = _np.abs(VMEC_Data.xm)*_np.ones((1,len(VMEC_DerivedQuant.GridRho)), float)
+        TempBase = _np.ones((len(VMEC_Data.xm), 1), float)*_np.atleast_2d(VMEC_DerivedQuant.GridRho)
+        NormalizationFactor = TempBase**TempExp
+
+#        TempExp = _np.dot( _np.abs(VMEC_Data.xm), _np.ones((1,len(VMEC_DerivedQuant.GridRho)), float) )
+#        TempBase = _np.dot( _np.ones((len(VMEC_Data.xm), 1), float), _np.atleast_2d(VMEC_DerivedQuant.GridRho))
+#        NormalizationFactor = TempBase**TempExp
+
+        rmnc_norm = _np.zeros_like(VMEC_Data.rmnc)
+#        rmnc_norm[:,:] = _np.divide(VMEC_Data.rmnc[:, :], NormalizationFactor[:, :], where=NormalizationFactor[:, :]!=0)
+        rmnc_norm[:,1:] = _np.divide(VMEC_Data.rmnc[:, 1:], NormalizationFactor[:, 1:], where=NormalizationFactor[:, 1:]!=0)
+        rmnc_norm[:,0] = 2.0*rmnc_norm[:,1] - rmnc_norm[:,2]
+
+        zmns_norm = _np.zeros_like(VMEC_Data.zmns)
+#        zmns_norm[:,:] = _np.divide(VMEC_Data.zmns[:, :], NormalizationFactor[:, :], where=NormalizationFactor[:, :]!=0)
+        zmns_norm[:,1:] = _np.divide(VMEC_Data.zmns[:, 1:], NormalizationFactor[:, 1:], where=NormalizationFactor[:, 1:]!=0)
+        zmns_norm[:,0] = 2.0*zmns_norm[:,1] - zmns_norm[:,2]
+
+        if verbose:
+            print('Done normalizing.')
+            print('Generating splines for spectral cooefficients.')
+        # end if
+
+        # We will capture the radial dependence of the spectral normalized
+        # components of r and z using splines fit to 'double-sided' profiles.
+        # This approximates the radial partial derivatives of the normalized
+        # spectral components, too (but not directly the radial derivatives of r,z).
+        Spline_Rhos = _ut.cylsym_odd(VMEC_DerivedQuant.GridRho, exclude_axis=True)
+        rmnc_vals_to_spline = _ut.cylsym_even(rmnc_norm, axis=1, exclude_axis=True)
+        zmns_vals_to_spline = _ut.cylsym_even(zmns_norm, axis=1, exclude_axis=True)
+        # Spline_Rhos = np.concatenate((_np.flipud( -VMEC_DerivedQuant.GridRho[1:]), VMEC_DerivedQuant.GridRho), axis=1)
+        # rmnc_vals_to_spline = np.concatenate( ( np.fliplr( rmnc_norm[ :, 1:-1 ] ) , rmnc_norm ), axis=1)
+        # zmns_vals_to_spline = np.concatenate( ( np.fliplr( zmns_norm[ :, 1:-1 ] ) , zmns_norm ), axis=1)
+
+        VMEC_DerivedQuant.rmnc_norm_spline = []
+#        VMEC_DerivedQuant.rmnc_norm_spline_derivs = []
+        VMEC_DerivedQuant.zmns_norm_spline = []
+#        VMEC_DerivedQuant.zmns_norm_spline_derivs = []
+
+        if DEBUG:
+            nharm = _np.size(rmnc_vals_to_spline, axis=1)
+            maxplots = 5
+            iplot = nharm // (maxplots+1)
+        # end if
+
+        # Do not specify zero slope at convex hull
+        splargs = {'end1':int(0), 'end2':int(0), 'slope1':int(0), 'slope2':int(0)}
+
+        # Specify zero slope at convex hull
+#        splargs = {'end1':int(1), 'end2':int(1), 'slope1':int(0), 'slope2':int(0)}
+
+        for ii in range(rmnc_vals_to_spline.shape[0]):
+            SplObj = _ut.Spline(Spline_Rhos, rmnc_vals_to_spline[ii,:], **splargs).spline() # homemade
+#            SplObj = _dsi.UnivariateSpline(Spline_Rhos, rmnc_vals_to_spline[ii,:])  # dsi
+
+            if DEBUG and (ii % (iplot//2) == 0):
+                SplObj.show()
+            # end def
+
+            VMEC_DerivedQuant.rmnc_norm_spline.append( SplObj )
+#            VMEC_DerivedQuant.rmnc_norm_spline_derivs.append( SplObj.derivative(1) ) # First derivative
+
+            # ====== #
+
+            SplObj = _ut.Spline(Spline_Rhos,zmns_vals_to_spline[ii,:], **splargs).spline() #  homemade
+#            SplObj = _dsi.UnivariateSpline(Spline_Rhos,zmns_vals_to_spline[ii,:])
+
+            if DEBUG and (ii % (iplot//2) == 0):
+                SplObj.show()
+            # end def
+
+            VMEC_DerivedQuant.zmns_norm_spline.append( SplObj )
+#            VMEC_DerivedQuant.zmns_norm_spline_derivs.append( SplObj.derivative(1) )
+
+        # end for
+
+        if verbose:
+            print('Done splining the spectral coefficients')
+        # end if
+    # end if
+    return VMEC_DerivedQuant
+
+# ========================================================================= #
+# ========================================================================= #
+
+
 def _RootG(RR, dR_dRho, dR_dTheta, dZ_dRho, dZ_dTheta):
     """
         Return the jacobian for flux surface average integration (flux surface area element)
@@ -701,14 +831,25 @@ def _dVdrho(M, Rho, VMEC_Data, VMEC_DerivedQuant, kMinRho=2.0e-9):
     def zifunc(Phi):
         def thfunc(x, Phi):
             return _sqrtG(x, Phi)
+
+        sinarg = lambda x: thfunc(x, Phi)
+        # gaussian quadrature
+        integ, err = _int.quadrature(sinarg, 0.0, 2.0*_np.pi, tol=1e-6)
+        return integ
         # simpson's integration over poloidal angle
         # ... note that this excludes the point theta=0 AND theta=2pi!!!
-        return _ut.openpoints(thfunc, 0.0, 2.0*_np.pi, TOL=1e-6, verbose=True)
+#        return _ut.openpoints(thfunc, 0.0, 2.0*_np.pi, TOL=1e-6, verbose=True)
+
+    # ======== Returns the incremental volume between \Rho and \Rho + d\Rho ==== #
 
     # simpson's integration over toroidal angle (one field period)
     # ... note that this excludes the point Phi=0 AND Phi=2pi!!!
-    # Returns the incremental volume between \Rho and \Rho + d\Rho
-    dVdrho = M*_ut.openpoints(zifunc, 0.0, 2.0*_np.pi/M, TOL=1e-6, verbose=True)
+
+#    dVdrho = M*_ut.openpoints(zifunc, 0.0, 2.0*_np.pi/M, TOL=1e-6, verbose=True)
+
+    # fixed gaussian quadrature integration
+    dVdrho, err = M*_int.quadrature(zifunc, 0.0, 2.0*_np.pi/M, tol=1e-6)
+
     return dVdrho
 
 
@@ -744,6 +885,9 @@ def _FSAGradRho(M, Rho, VMEC_Data, VMEC_DerivedQuant, kMinRho=2.0e-9):
     """
         Calculate the gradient of the normalized effective radius at a single-point in space
         ... gradrho(\Rho, \Theta, \Phi)
+
+        M - number of field periods
+        Rho - sqrt(s), normalized effective radius
     """
     def _Gradrho(Theta, Phi):
         RR, ZZ, dR_dRho, dR_dTheta, dZ_dRho, dZ_dTheta, dR_dZi, dZ_dZi = \
@@ -756,13 +900,22 @@ def _FSAGradRho(M, Rho, VMEC_Data, VMEC_DerivedQuant, kMinRho=2.0e-9):
         def thfunc(x, Phi):
             _sqrtG, _gr = _Gradrho(x, Phi)
             return _sqrtG*_gr
-        # simpson's integration over poloidal angle
-        # ... note that this excludes the point theta=0 AND theta=2pi!!!
-        return _ut.openpoints(thfunc, 0.0, 2.0*_np.pi, TOL=1e-6, verbose=True)
+
+        sinarg = lambda x: thfunc(x, Phi)
+        # gaussian quadrature
+        integ, err = _int.quadrature(sinarg, 0.0, 2.0*_np.pi, tol=1e-6)
+        return integ
+#        # simpson's integration over poloidal angle
+#        # ... note that this excludes the point theta=0 AND theta=2pi!!!
+#        return _ut.openpoints(sinarg, 0.0, 2.0*_np.pi, TOL=1e-6, verbose=True)
 
     # simpson's integration over toroidal angle (one field period)
     # ... note that this excludes the point Phi=0 AND Phi=2pi!!!
-    gradrho = M*_ut.openpoints(zifunc, 0.0, 2.0*_np.pi/M, TOL=1e-6, verbose=True)
+#    gradrho = M*_ut.openpoints(zifunc, 0.0, 2.0*_np.pi/M, TOL=1e-6, verbose=True)
+#
+    # fixed gaussian quadrature
+    gradrho = M*_int.quadrature(zifunc, 0.0, 2.0*_np.pi/M, tol=1e-6)
+
     gradrho /= _dVdrho(M, Rho, VMEC_Data, VMEC_DerivedQuant, kMinRho=kMinRho)
     return gradrho
 
@@ -772,6 +925,7 @@ def FSAGradRho(M, Rho, VMEC_Data, VMEC_DerivedQuant, kMinRho=2.0e-9):
         effective radius on a single surface
         ... gradrho(\Rho)
     """
+    Rho = _np.atleast_1d(Rho)
     gradrho = _np.zeros_like(Rho)
     dVoldrho = _np.zeros_like(Rho)
     nrho = len(gradrho)
@@ -801,13 +955,23 @@ def _FSAGradRho2(M, Rho, VMEC_Data, VMEC_DerivedQuant, kMinRho=2.0e-9):
         def thfunc(x, Phi):
             _sqrtG, _gr2 = _Gradrho2(x, Phi)
             return _sqrtG*_gr2
+
+        sinarg = lambda x: thfunc(x, Phi)
+
+        # fixed gaussian quadrature
+        return _int.quadrature(sinarg, 0.0, 2.0*_np.pi, tol=1e-6)
+
         # simpson's integration over poloidal angle
         # ... note that this excludes the point theta=0 AND theta=2pi!!!
-        return _ut.openpoints(thfunc, 0.0, 2.0*_np.pi, TOL=1e-6, verbose=True)
+#        return _ut.openpoints(sinarg, 0.0, 2.0*_np.pi, TOL=1e-6, verbose=True)
 
     # simpson's integration over toroidal angle (one field period)
     # ... note that this excludes the point Phi=0 AND Phi=2pi!!!
-    gradrho2 = M*_ut.openpoints(zifunc, 0.0, 2.0*_np.pi/M, TOL=1e-6, verbose=True)
+#    gradrho2 = M*_ut.openpoints(zifunc, 0.0, 2.0*_np.pi/M, TOL=1e-6, verbose=True)
+
+    # fixed gaussian quadrature
+    gradrho2 = M*_int.quadrature(zifunc, 0.0, 2.0*_np.pi/M, tol=1e-6)
+
     dVoldrho = _dVdrho(M, Rho, VMEC_Data, VMEC_DerivedQuant, kMinRho=kMinRho)
     gradrho2 /= dVoldrho
     return gradrho2, dVoldrho
@@ -821,6 +985,7 @@ def FSAGradRho2(M, Rho, VMEC_Data, VMEC_DerivedQuant, kMinRho=2.0e-9):
     """
     # Theta, dTheta = _np.linspace(0.0, 2.0*_np.pi, num=50, endpoint=True, retstep=True)
 
+    Rho = _np.atleast_1d(Rho)
     gradrho2 = _np.zeros_like(Rho)
     dVoldrho = _np.zeros_like(Rho)
     nrho = len(gradrho2)
@@ -834,17 +999,58 @@ def FSAGradRho2(M, Rho, VMEC_Data, VMEC_DerivedQuant, kMinRho=2.0e-9):
 # ========================================================================= #
 # ========================================================================= #
 
-#class VMEC_Data(Struct):
-#    def __init__(self):
-#        loaded = False
-#        self.ns = float()
-#        self.mnmax = float()
-#        self.xn = np.array([], float)
-#        self.xm = np.array([], float)
-#        self.rmnc = np.array([], float)
-#        self.zmnc = np.array([], float)
-#    # end def __init__
-# # end class VMEC_Data
+
+class VMEC(_ut.Struct):
+    def __init__(self, vmec_data={}, **kwargs):
+        ForceReadVMEC = kwargs.pop('ForceReadVMEC', False)
+        self.__dict__.update(vmec_data)
+        self.__dict__.update(kwargs)
+
+        if hasattr(self, 'filname'):
+            self.VMEC_FilePath = self.filname
+        elif hasattr(self, 'input_extension'):
+            tstname = _os.path.join(_os.path.abspath(_os.path.curdir), self.input_extension)
+            if _os.path.exists(tstname):
+                self.VMEC_FilePath = tstname
+            # end if
+        # end if
+
+        # Check if the data was already loaded to this file through a dictionary
+        if not hasattr(self, 'loaded'):  self.loaded = False  # end if
+        if hasattr(self, 'rmnc'):
+            self.loaded = True
+        # end if
+
+        # Add some convenience flags
+        if not hasattr(self, 'verbose'): self.verbose = True  # end if
+
+        if ForceReadVMEC or (self.VMEC_FilePath is not None and
+                            _os.path.exists(self.VMEC_FilePath) and not self.loaded):
+            self.vmec_data = __extract_data(self.VMEC_FilePath, ForceReadVMEC, self.verbose)
+
+            self.vmec_derivedquant = __spline_data(self.vmec_data, ForceReadVMEC, self.verbose)
+
+
+        # end if
+    # end def __init__
+
+    def read(self, VMEC_FilePath, ForceReadVMEC=True, verbose=False):
+        self.__dict__.update(__extract_data(VMEC_FilePath, ForceReadVMEC, verbose))
+        self.VMEC_FilePath = VMEC_FilePath
+        self.loaded = True
+    # end def
+
+    def cart2flux(self, cLabPos, verbose=True):
+        roa, th = CalcFluxCart_VMEC(cLabPos, self.VMEC_FilePath, verbose=verbose)
+
+
+
+    def __call__(self, ):
+        pass
+# end def
+    # end def
+
+ # end class VMEC_Data
 
 
 # ========================================================================= #
@@ -873,12 +1079,18 @@ if __name__=="__main__":
 #    VMEC_DerivedQuant = __spline_data(VMEC_Data, ForceReadVMEC=True, verbose=True)
 
     # within the LCFS
-    cLabPos = _np.atleast_2d([5.85, 0, 0]);   sPos = _np.atleast_2d([_np.sqrt(0.11407577361150142), 180.0*_np.pi/180.0, 0.0])
+    cLabPos = _np.atleast_2d([5.85, 0, 0]);
+    sPos = _np.atleast_2d([_np.sqrt(0.11407577361150142), 180.0*_np.pi/180.0, 0.0])
     rho, th = CalcFluxCart_VMEC(cLabPos, kVMECfile, ForceReadVMEC=False, PosTol=1e-4, verbose=True)
 
+    fiRZ = _ut.cart2pol(cLabPos[0,0],cLabPos[0,1],cLabPos[0,2])
+    pLabOut = Flux2Polar(sPos, kVMECfile, verbose=True)
+
     # outside the LCFS
-    cLabPos2 = _np.atleast_2d([5.5, 0, 0]);   #sPos = _np.atleast_2d([_np.sqrt(0.11407577361150142), 180.0*_np.pi/180.0, 0.0])
+    cLabPos2 = _np.atleast_2d([5.5, 0, 0]);
     rho2, th2 = CalcFluxCart_VMEC(cLabPos2, kVMECfile, ForceReadVMEC=False, PosTol=1e-4, verbose=True)
+
+    gradrho2, dVoldrho, Vol = FSAGradRho2(5, sPos[0,0], VMEC_Data, VMEC_DerivedQuant, kMinRho=2.0e-9)
 # end if
 
 # ========================================================================= #
