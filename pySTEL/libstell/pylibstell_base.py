@@ -8,7 +8,7 @@ Created on Tue Jul 16 15:42:44 2019
 # ===================================================================== #
 
 #This section is to improve compatability between bython 2.7 and python 3x
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function #, unicode_literals
 __metaclass__ = type
 
 import os as _os
