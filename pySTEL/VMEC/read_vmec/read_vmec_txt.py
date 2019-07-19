@@ -22,7 +22,7 @@ from utils import calc_curr
 # ===================================================================== #
 # ===================================================================== #
 
-DEBUG = FALSE
+DEBUG = False
 
 def read_vmec(filename, delim=' ', verbose=True):
     try:
