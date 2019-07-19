@@ -22,6 +22,7 @@ from utils import calc_curr
 # ===================================================================== #
 # ===================================================================== #
 
+DEBUG = FALSE
 
 def read_vmec(filename, delim=' ', verbose=True):
     try:
@@ -54,7 +55,7 @@ def read_in_constant(vmec_data, iunit, keys, dtype, delim=' ', verbose=True):
             vmec_data[key] = _np.copy(data[ii])
     #        vmec_data[key] = _np.copy(data[key])
         except:
-            if verbose:
+            if DEBUG and verbose:
                 print('missing data! for %s'%(key,))
     #        pass
             raise
@@ -82,7 +83,7 @@ def read_in_index(vmec_data, iunit, keys, dtype, index=0, delim=' ', verbose=Tru
             vmec_data[key][index] = _np.copy(data[ii])
     #        vmec_data[key][index] = _np.copy(data[key])
         except:
-            if verbose:
+            if DEBUG and verbose:
                 print('missing data! for %s'%(key,))
                 print(('index:',index))
             pass
