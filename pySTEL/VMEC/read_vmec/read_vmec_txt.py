@@ -6,8 +6,10 @@ Created on Mon Jul 15 20:42:27 2019
     from stellopt\LIBSTELL\Sources\Modules\read_wout_mod.f90
 @author: weir
 
-note that numpy uses the opposite indexing to fortran, so we have to transpose
-arrays when using numpy
+note that numpy uses the opposite indexing to fortran, so we are recasting the
+memory ordering, and transposing arrays after import using numpy. We need a
+test case for when this is wrong.
+
 """
 # ===================================================================== #
 # ===================================================================== #

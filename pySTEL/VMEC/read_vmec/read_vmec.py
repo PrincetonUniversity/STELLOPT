@@ -12,42 +12,18 @@
         data = read_vmec('wout.test')      # Reads VMEC wout file
         mdata = read_vmec('mercier.test')  # Reads VMEC mercier file
 
-    Original version written in MATLAB
-        Maintained by: Samuel Lazerson (lazerson@pppl.gov)
-        Version:       1.96
-        available through the MathWorks file exchange under matlabVMEC:
-        https://www.mathworks.com/matlabcentral/fileexchange/29031-matlabvmec
+    The class method favors the compiled fortran libstell library for reading
+    VMEC files.  If libstell is found we use ctypes to access that library
+    (maintained by Samuel Lazerson, PPPL).
+    If libstell is inaccessible, then we use a set of pure python methods that
+    have been translated from the fortran libstell library.
 
-    Ported to python and updated
         Maintained by: Gavin Weir (gavin.weir@ipp.mpg.de)
         Version:       0.99
         available through the pySTELL library in STELLOPT
         https://bitbucket.org/lazerson_princeton/stellopt/wiki/Home
 
     NOTES:
-    01/05/2011      Modified output variables to use cos sine (c/s) notation
-    instead of the e notation.  Also added modifications to
-    support non-axisymmetric VMEC runs.
-    01/13/2011     Overloaded to read vmec mercier file.
-    01/31/2011     All quantities now mapped to full mesh.
-    02/01/2011     Updated for version 8.47
-    02/28/2011     Properly Handles half grid quantities (see wrfcn in pgplot)
-    05/31/2011     Added support for +8.0 text files
-    03/21/2012     Modified so opening netCDF via path is possible.
-                   Fixed issue with mu constant when reading netCDF files.
-    1/30/13     Added calculation of chip
-    1/10/14     Modified to read 8.51 files
-                Uses new methods for calculating J taking into acount the
-                odd modes properly.
-    3/31/14     Fixed calculation of non-stellarator symmetric J terms.
-    3/1/16      Corrected variable names so text files use the new method
-                calculation of current densities.
-
-    Original branch point for porting to python:
-        03/03/2016     G.M. Weir (IPP-Greifswald) Ported to Python (old version)
-
-    Updated merge in port to python:
-        07/12/2019     G.M. Weir updated for general use
 """
 # ======================================================================== #
 # ======================================================================== #

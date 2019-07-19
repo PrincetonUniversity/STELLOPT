@@ -49,6 +49,11 @@
 
     Updated merge in port to python:
     07/12/2019     G.M. Weir updated for general use in python
+
+    ==================================
+
+    Deprecated in favor of the pure python loader translated from libstell
+    by Gavin Weir.  Allow this to remain as backup and reference.
 """
 # ======================================================================== #
 # ======================================================================== #
