@@ -27,10 +27,10 @@
   MPI_COMPILE_C = cc
   MPI_LINK = ftn
   MPI_RUN = srun
-  MPI_RUN_OPTS = -n 8 -c 16
-  MPI_RUN_OPTS = -n 1088 -c 1
-  # KNL 64 Nodes
-  MPI_RUN_OPTS = -n 8704 -c 2
+  MPI_RUN_OPTS = -n 68 -c 4 --cpu_bind=cores
+  MPI_RUN_OPTS_SM = -n 68 -c 4 --cpu_bind=cores
+#  MPI_RUN_OPTS_MD = -n 544 -c 4 --cpu_bind=cores
+  MPI_RUN_OPTS_LG = -n 4352 -c 4 --cpu_bind=cores
 
 #######################################################################
 #            NAG Options
@@ -125,7 +125,7 @@
 #            SFINCS Options
 #######################################################################
 
-  LSFINCS = T
+  LSFINCS = F
   SFINCS_DIR = $(SFINCS_PATH)
   SFINCS_INC = -I$(SFINCS_DIR)
   LIB_SFINCS = libsfincs.a
@@ -232,6 +232,14 @@ ifeq ($(MAKECMDGOALS),xstelloptv2)
     NEO_DIR = 
     LIB_NEO = 
   endif
+else ifeq ($(MAKECMDGOALS),help)
+else ifeq ($(MAKECMDGOALS),test_stellopt)
+else ifeq ($(MAKECMDGOALS),test_stellopt_coilopt)
+else ifeq ($(MAKECMDGOALS),test_stellopt_gene)
+else ifeq ($(MAKECMDGOALS),test_stellopt_regcoil)
+else ifeq ($(MAKECMDGOALS),test_stellopt_sfincs)
+else ifeq ($(MAKECMDGOALS),test_stellopt_terpsichore)
+else ifeq ($(MAKECMDGOALS),test_stellopt_travis)
 else
   LGENE = F
   LCOILOPT = F
