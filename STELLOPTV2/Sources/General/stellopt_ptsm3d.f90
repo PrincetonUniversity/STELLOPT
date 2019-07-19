@@ -20,8 +20,9 @@
       USE read_boozer_mod
       USE EZspline_obj
       USE EZspline
+      USE read_wout_mod
 
-      !VMEC2PEST
+      !VMECTOOLS
       USE interfaces
       
       !PTSM3D Files
@@ -58,10 +59,12 @@
 !     Do this for each (kx,ky) pair focusing only on a range defined
 !     by theta_k and local_npol
 !----------------------------------------------------------------------
+      !real(rprec), parameter :: pi = 3.1415926535897932846264338327950d+0 
       real(rprec), dimension(:), allocatable :: surfaces, data_arr
       integer :: nx2, nx3, i, j
       character(len=128) :: x3_coord, norm_type, grid_type
-      real(rprec) :: nfpi, x3_center
+      real(rprec) :: nfpi, x3_center, max_z
+      real(rprec), dimension(1) :: s0_data, vmec_data
       character(len=16), dimension(8) :: ptsm3d_geom_strings
       IF (lscreen) WRITE(6,'(a)') &
       &  ' -------------------------  BEGIN PTSM3D CALCULATION &
@@ -71,21 +74,30 @@
       ptsm3d_geom_strings(1) = 'g11'
       ptsm3d_geom_strings(2) = 'g12'
       ptsm3d_geom_strings(3) = 'g22'
-      ptsm3d_geom_strings(6) = 'curv_drift_x1'
-      ptsm3d_geom_strings(7) = 'curv_drift_x2'
+      ptsm3d_geom_strings(6) = 'curv_drift_x2'
+      ptsm3d_geom_strings(7) = 'curv_drift_x1'
       ptsm3d_geom_strings(8) = 'x3'
 
+      call vmec2pest_stellopt_interface(&
+        & (/s0/),1,1,0d+0,"zeta",1d+0,"minor_r","gene")
+
+      call get_pest_data_interface(0,0,"shat",0,1,s0_data)
+      shat = s0_data(1)
       ! Move this to the PTSM3D namelist
       if(allocated(surfaces)) deallocate(surfaces)
       allocate(surfaces(1))
-      surfaces(1) = 0.5
+      surfaces(1) = s0
       nx2 = 1
-      nx3 = points_per_turn 
+      max_z = 1.0/(abs(shat)*dky)
+      call get_pest_data_interface(0,0,"nfp",-1,1,vmec_data)
+      nfpi = (real(ceiling(max_z/pi)) + local_npol)*vmec_data(1)
+
+      nx3 = (ceiling(max_z/pi)+local_npol)*points_per_turn
+      nz = nx3+1
       li1=0
       li2=nx3
       allocate(data_arr(nx3+1))
       x3_center = 0.0
-      nfpi = 5.0
       norm_type = "minor_r"
       grid_type = "gene"
       x3_coord = "theta"
@@ -103,13 +115,16 @@
       call ptsm3d_set_norms
       call ptsm3d_initialize_itg_solve
       call ptsm3d_itg_solve
+      !print *, omdw(:,:,0)
       call ptsm3d_initialize_triplets
+      call ptsm3d_compute_triplets
       call ptsm3d_compute_targets
       if (opt_target .eq. 'zf') then
         ptsm3d_target = target_12f
       elseif (opt_target .eq. 'nzf') then
         ptsm3d_target = target_qst
       endif
+      if (lscreen) write(6,"((A),2x,F12.7)") "PTSM3D target: ",ptsm3d_target
 
       call ptsm3d_finalize_triplets
       call ptsm3d_finalize_itg_solve

@@ -140,14 +140,14 @@
   PTSM3D_LIB = $(PTSM3D_DIR)/$(LIB_PTSM3D)
 
 #######################################################################
-#            VMEC2PEST Options
+#            VMECTOOLS Options
 #######################################################################
-  LVMEC2PEST = T
-  VMEC2PEST_PATH = /home/bfaber/projects/VMECTools
-  VMEC2PEST_INC = -I$(VMEC2PEST_PATH)/objs/fortran
-  VMEC2PEST_DIR = $(VMEC2PEST_PATH)
-  LIB_VMEC2PEST = lib/libvmec2pest.a
-  VMEC2PEST_LIB = $(VMEC2PEST_DIR)/$(LIB_VMEC2PEST)
+  LVMECTOOLS = T
+  VMECTOOLS_PATH = /home/bfaber/projects/VMECTools
+  VMECTOOLS_INC = -I$(VMECTOOLS_PATH)/objs/fortran
+  VMECTOOLS_DIR = $(VMECTOOLS_PATH)
+  LIB_VMECTOOLS = lib/libvmectools.a
+  VMECTOOLS_LIB = $(VMECTOOLS_DIR)/$(LIB_VMECTOOLS)
 
 #######################################################################
 #            LIBSTELL Shared Options
@@ -246,7 +246,7 @@ else
   LTERPSICHORE = F
   LTRAVIS = F
   LREGCOIL = F
-  LVMEC2PEST = F
+  LVMECTOOLS = F
   LPTSM3D = F
 endif
 ifeq ($(MAKECMDGOALS),xanimec)
@@ -319,14 +319,14 @@ else
   LIB_REGCOIL = 
 endif
 
-ifeq ($(LVMEC2PEST),T)
-  MOD1_PATH += $(VMEC2PEST_INC)
-  PRECOMP += -DVMEC2PEST
-  MOD_PATH += -I$(VMEC2PEST_DIR)/objs
+ifeq ($(LVMECTOOLS),T)
+  MOD1_PATH += $(VMECTOOLS_INC)
+  PRECOMP += -DVMECTOOLS
+  MOD_PATH += -I$(VMECTOOLS_DIR)/objs
 else
-  VMEC2PEST_LIB =
-  VMEC2PEST_DIR =
-  LIB_VMEC2PEST =
+  VMECTOOLS_LIB =
+  VMECTOOLS_DIR =
+  LIB_VMECTOOLS =
 endif
 
 ifeq ($(LPTSM3D),T)
@@ -341,7 +341,7 @@ endif
 
 
 # Handle other codes
-LIB_LINK += $(GENE_LIB) $(COILOPT_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB) $(REGCOIL_LIB) $(VMEC2PEST_LIB) $(PTSM3D_LIB)
+LIB_LINK += $(GENE_LIB) $(COILOPT_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB) $(REGCOIL_LIB) $(VMECTOOLS_LIB) $(PTSM3D_LIB)
 
 # Add libraries to LIB_LINK
 # LIB_LINK+= $(MYHOME)/libstell.a $(LIBS)
