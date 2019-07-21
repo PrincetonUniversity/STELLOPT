@@ -53,7 +53,8 @@ VMEC_DataSource = None
 
 # ========================================================================= #
 
-def CalcFluxCart_VMEC(cLabPos, VMEC_FilePath, ForceReadVMEC=False, PosTol=1e-4, verbose=True):
+
+def Cart2Flux(cLabPos, VMEC_FilePath, ForceReadVMEC=False, PosTol=1e-4, verbose=True):
     """
      Description:
        This function finds the coordinates of a point in VMEC flux coordinates that
@@ -139,48 +140,49 @@ def CalcFluxCart_VMEC(cLabPos, VMEC_FilePath, ForceReadVMEC=False, PosTol=1e-4, 
 # ========================================================================= #
 
 
-#def Flux2Cart(sPos, VMEC_FilePath, ForceReadVMEC=False, kMinRho=2.0e-9, jacout=False, verbose=True):
-#    """
-#     Description:
-#       This function finds the coordinates of a point in cartesian lab coordinates
-#       that corresponds with a point in VMEC flux coordinates.
-#
-#     Inputs:
-#       sPos - A 2D array describing the points that you want to have
-#           converted from VMEC coordinates.  The first index is the point
-#           number, and the second identifies the coordinate.  For example:
-#          (rho1, th1, fi1 ; rho2, th2, fi2;...).
-#              rho ~ normalized poloidal flux (sqrt(S))
-#              th ~ pseudo-poloidal angle [rad]
-#              fi ~ pseudo-toroidal angle [rad]
-#
-#       VMEC_FilePath - The location and name of the VMEC output file
-#           that you want to use for the transformation (eithet netcdf or txt).
-#
-#       ForceReadVMEC (optional) - Set this to one if you want to force the
-#           routine to read the VMEC file from disk instead of trying to reuse
-#           data stored in memory.  Otherwise set to zero. Default = 0
-#
-#     Outputs:
-#       cLabPos - The cartesian laboratory coordinates at the approximate input location
-#    """
-#
-#    out = Flux2Polar(sPos, VMEC_FilePath, ForceReadVMEC=ForceReadVMEC, kMinRho=kMinRho, jacout=jacout, verbose=verbose)
-#
-#    if jacout:
-#        RR, fi, ZZ = tuple(out[0][:,0], out[0][:,1], out[0][:,2])
-#    else:
-#        RR, fi, ZZ = tuple(out[:,0], out[:,1], out[:,2])
-#    # end if
-#
-#    XX, YY, ZZ = _ut.pol2cart(RR, fi, ZZ)
-#    if jacout:
-#        # Convert to configuration space coordinates from polar coordinates
-#        return out[0], Jac*_np.cos
-#    else:
-#        return out[0], [1]
-#    # end if
-## end def
+def Flux2Cart(sPos, VMEC_FilePath, ForceReadVMEC=False, kMinRho=2.0e-9, jacout=False, verbose=True):
+    """
+     Description:
+       This function finds the coordinates of a point in cartesian lab coordinates
+       that corresponds with a point in VMEC flux coordinates.
+
+     Inputs:
+       sPos - A 2D array describing the points that you want to have
+           converted from VMEC coordinates.  The first index is the point
+           number, and the second identifies the coordinate.  For example:
+          (rho1, th1, fi1 ; rho2, th2, fi2;...).
+              rho ~ normalized poloidal flux (sqrt(S))
+              th ~ pseudo-poloidal angle [rad]
+              fi ~ pseudo-toroidal angle [rad]
+
+       VMEC_FilePath - The location and name of the VMEC output file
+           that you want to use for the transformation (eithet netcdf or txt).
+
+       ForceReadVMEC (optional) - Set this to one if you want to force the
+           routine to read the VMEC file from disk instead of trying to reuse
+           data stored in memory.  Otherwise set to zero. Default = 0
+
+     Outputs:
+       cLabPos - The cartesian laboratory coordinates at the approximate input location
+    """
+
+    out = Flux2Polar(sPos, VMEC_FilePath, ForceReadVMEC=ForceReadVMEC, kMinRho=kMinRho, jacout=jacout, verbose=verbose)
+
+    if jacout:
+        RR, fi, ZZ = tuple(out[0][:,0], out[0][:,1], out[0][:,2])
+    else:
+        RR, fi, ZZ = tuple(out[:,0], out[:,1], out[:,2])
+    # end if
+
+    XX, YY, ZZ = _ut.pol2cart(RR, fi, ZZ)
+    cLabPos = _np.hstack((XX,YY,ZZ))
+    if jacout:
+        # Convert to configuration space coordinates from polar coordinates
+        return cLabPos, _np.nan
+    else:
+        return cLabPos
+    # end if
+# end def
 
 
 def Flux2Polar(sPos, VMEC_FilePath, ForceReadVMEC=False, kMinRho=2.0e-9, jacout=False, verbose=True):
@@ -953,24 +955,27 @@ def _FSAGradRho2(M, Rho, VMEC_Data, VMEC_DerivedQuant, kMinRho=2.0e-9):
 
     def zifunc(Phi):
         def thfunc(x, Phi):
+
             _sqrtG, _gr2 = _Gradrho2(x, Phi)
+            # prod1
             return _sqrtG*_gr2
 
         sinarg = lambda x: thfunc(x, Phi)
 
         # fixed gaussian quadrature
-        return _int.quadrature(sinarg, 0.0, 2.0*_np.pi, tol=1e-6)
+        integ, err = _int.quadrature(sinarg, 0.0, 2.0*_np.pi, tol=1e-6)
 
         # simpson's integration over poloidal angle
         # ... note that this excludes the point theta=0 AND theta=2pi!!!
 #        return _ut.openpoints(sinarg, 0.0, 2.0*_np.pi, TOL=1e-6, verbose=True)
+        return integ
 
     # simpson's integration over toroidal angle (one field period)
     # ... note that this excludes the point Phi=0 AND Phi=2pi!!!
 #    gradrho2 = M*_ut.openpoints(zifunc, 0.0, 2.0*_np.pi/M, TOL=1e-6, verbose=True)
 
     # fixed gaussian quadrature
-    gradrho2 = M*_int.quadrature(zifunc, 0.0, 2.0*_np.pi/M, tol=1e-6)
+    gradrho2, err = M*_int.quadrature(zifunc, 0.0, 2.0*_np.pi/M, tol=1e-6)
 
     dVoldrho = _dVdrho(M, Rho, VMEC_Data, VMEC_DerivedQuant, kMinRho=kMinRho)
     gradrho2 /= dVoldrho
@@ -1040,10 +1045,14 @@ class VMEC(_ut.Struct):
         self.loaded = True
     # end def
 
-    def cart2flux(self, cLabPos, verbose=True):
-        roa, th = CalcFluxCart_VMEC(cLabPos, self.VMEC_FilePath, verbose=verbose)
+    def cart2flux(self, cLabPos, verbose=True, **kwargs):
+        return Cart2Flux_VMEC(cLabPos, self.VMEC_FilePath, verbose=verbose, **kwargs)
 
+    def flux2cart(self, sLabPos, verbose=True, **kwargs):
+        return Flux2Cart(sLabPos, self.VMEC_FilePath, verbose=verbose, **kwargs)
 
+    def flux2polar(self, sLabPos, verbose=True, **kwargs):
+        return Flux2Polar(sLabPos, self.VMEC_FilePath, verbose=verbose, **kwargs)
 
     def __call__(self, ):
         pass
@@ -1081,16 +1090,16 @@ if __name__=="__main__":
     # within the LCFS
     cLabPos = _np.atleast_2d([5.85, 0, 0]);
     sPos = _np.atleast_2d([_np.sqrt(0.11407577361150142), 180.0*_np.pi/180.0, 0.0])
-    rho, th = CalcFluxCart_VMEC(cLabPos, kVMECfile, ForceReadVMEC=False, PosTol=1e-4, verbose=True)
+    rho, th = Cart2Flux(cLabPos, kVMECfile, ForceReadVMEC=False, PosTol=1e-4, verbose=True)
 
     fiRZ = _ut.cart2pol(cLabPos[0,0],cLabPos[0,1],cLabPos[0,2])
     pLabOut = Flux2Polar(sPos, kVMECfile, verbose=True)
 
     # outside the LCFS
     cLabPos2 = _np.atleast_2d([5.5, 0, 0]);
-    rho2, th2 = CalcFluxCart_VMEC(cLabPos2, kVMECfile, ForceReadVMEC=False, PosTol=1e-4, verbose=True)
+    rho2, th2 = Cart2Flux(cLabPos2, kVMECfile, ForceReadVMEC=False, PosTol=1e-4, verbose=True)
 
-    gradrho2, dVoldrho, Vol = FSAGradRho2(5, sPos[0,0], VMEC_Data, VMEC_DerivedQuant, kMinRho=2.0e-9)
+    # gradrho2, dVoldrho, Vol = FSAGradRho2(5, sPos[0,0], VMEC_Data, VMEC_DerivedQuant, kMinRho=2.0e-9)
 # end if
 
 # ========================================================================= #
