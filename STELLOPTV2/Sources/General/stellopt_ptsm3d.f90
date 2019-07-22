@@ -64,7 +64,7 @@
       integer :: nx2, nx3, i, j, k
       character(len=128) :: x3_coord, norm_type, grid_type
       real(rprec) :: nfpi, x3_center, max_z
-      real(rprec) :: target_12f, target_qst, k_norm
+      real(rprec) :: target_12f, target_qst, k_norm, ptsm3d_target
       real(rprec), dimension(1) :: s0_data, vmec_data
       character(len=16), dimension(8) :: ptsm3d_geom_strings
       IF (lscreen) WRITE(6,'(a)') &
