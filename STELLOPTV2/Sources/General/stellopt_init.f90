@@ -16,7 +16,7 @@
       USE stellopt_targets, ONLY: write_targets
       USE stellopt_vars
       USE equil_utils, ONLY: count_vars
-      USE vparams, ONLY: ntor_rcws, mpol_rcws
+      USE vparams, ONLY: ntor_rcws, mpol_rcws, rosenbrock_dim
       USE vmec_input
       USE safe_open_mod, ONLY: safe_open
       USE equil_utils, ONLY: profile_norm
@@ -246,6 +246,9 @@
          CASE('test')
             IF (lxval_opt)  nvars = nvars + 1
             IF (lyval_opt)  nvars = nvars + 1
+            write(*,*) "<----nvars, before Rosenbrock = ", nvars
+            IF (ANY(lRosenbrock_X_opt)) nvars = nvars + COUNT(lRosenbrock_X_opt)
+            write(*,*) "<----nvars, after Rosenbrock = ", nvars
       END SELECT
 
       ! Allocate Arrays
@@ -1587,6 +1590,29 @@
                  diag(nvar_in)    = dyval_opt
                  arr_dex(nvar_in,1) = 1
               END IF
+              write(*,*) "<---input_init 1598"
+              !IF (ANY(lRosenbrock_X_opt)) THEN
+                 DO m = 1,rosenbrock_dim
+                    write(*,*) "<---m=", m, " nvar_in= ",nvar_in
+                    IF (lRosenbrock_X_opt(m)) THEN
+                       write(*,*) "<---init 1602"
+                       IF (lauto_domain) THEN
+                         Rosenbrock_X_min(m) = Rosenbrock_X(m) - ABS(pct_domain*Rosenbrock_X(m))
+                         Rosenbrock_X_max(m) = Rosenbrock_X(m) + ABS(pct_domain*Rosenbrock_X(m))
+                       END IF
+                       write(*,*) "<---init 1607"
+                       nvar_in = nvar_in + 1
+                       vars(nvar_in) = Rosenbrock_X(m)
+                       vars_min(nvar_in) = Rosenbrock_X_min(m)
+                       vars_max(nvar_in) = Rosenbrock_X_max(m)
+                       var_dex(nvar_in) = iRosenbrock_X
+                       diag(nvar_in)    = dRosenbrock_X_opt(m)
+                       arr_dex(nvar_in,1) = m
+                       write(*,*) "<---init 1615"
+                    END IF
+                 END DO
+              !END IF
+              write(*,*) "<---input_init 1616"
       END SELECT
 !DEC$ IF DEFINED (MPI_OPT)
       CALL MPI_BARRIER( MPI_COMM_STEL, ierr_mpi )                   ! MPI

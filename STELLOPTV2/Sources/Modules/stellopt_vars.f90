@@ -13,7 +13,7 @@
 !     Libraries
 !-----------------------------------------------------------------------
       USE vparams, ONLY: ndatafmax, mpol1d, ntord, &
-                         ntor_rcws, mpol_rcws
+                         ntor_rcws, mpol_rcws, rosenbrock_dim
       USE vsvd0
 !-----------------------------------------------------------------------
 !     Module Variables
@@ -201,6 +201,13 @@
                           regcoil_nescin_filename, bootcalc_type, phi_type
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: sfincs_J_dot_B_flux_surface_average, sfincs_B_squared_flux_surface_average
       
+      ! Variables associated with the Rosenbrock test function
+      LOGICAL, DIMENSION(1:rosenbrock_dim)      ::  lRosenbrock_X_opt
+      REAL(rprec), DIMENSION(1:rosenbrock_dim)  ::  dRosenbrock_X_opt
+      REAL(rprec), DIMENSION(1:rosenbrock_dim)  ::  Rosenbrock_X
+      REAL(rprec), DIMENSION(1:rosenbrock_dim)  ::  Rosenbrock_X_min
+      REAL(rprec), DIMENSION(1:rosenbrock_dim)  ::  Rosenbrock_X_max
+
       ! These are not really variable parameters as we don't vary them
       ! yet
       REAL(rprec), DIMENSION(ndatafmax) :: nustar_s, nustar_f
@@ -270,6 +277,7 @@
       INTEGER, PARAMETER ::  iregcoil_rcws_rbound_s = 5161
       INTEGER, PARAMETER ::  iregcoil_rcws_zbound_c = 5162
       INTEGER, PARAMETER ::  iregcoil_rcws_zbound_s = 5163
+      INTEGER, PARAMETER ::  iRosenbrock_X = 5500
       
       REAL(rprec), PARAMETER :: ne_norm = 1.0E18
       
@@ -502,6 +510,10 @@
          CASE(iregcoil_rcws_zbound_s)
             WRITE(iunit,out_format_2DB) 'REGCOIL_RCWS_zbound_s(',var_dex1,',',var_dex2,'):  REGCOIL Winding Surface Boundary Vertical Specification (SIN MN)'
          ! END of REGCOIL cases
+
+         ! Rosenbrock test function
+         CASE(iRosenbrock_X)
+            WRITE(iunit,out_format_1D) 'Rosenbrock_X(',var_dex1,'): Rosenbrock Test Function X-Value(s)'
       END SELECT
       END SUBROUTINE write_vars
 

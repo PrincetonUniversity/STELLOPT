@@ -11,7 +11,7 @@
 !     Libraries
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
-      USE vparams, ONLY: ntor_rcws, mpol_rcws
+      USE vparams, ONLY: ntor_rcws, mpol_rcws, rosenbrock_dim
       USE stellopt_runtime
       USE stellopt_vars
       USE equil_utils, ONLY: profile_norm
@@ -404,8 +404,11 @@
                          regcoil_rcws_zbound_c_min, regcoil_rcws_zbound_s_min, &
                          regcoil_rcws_rbound_c_max, regcoil_rcws_rbound_s_max, &
                          regcoil_rcws_zbound_c_max, regcoil_rcws_zbound_s_max, &
-                         target_curvature_P2, sigma_curvature_P2
-      
+                         target_curvature_P2, sigma_curvature_P2, &
+                         lRosenbrock_X_opt, dRosenbrock_X_opt, &
+                         Rosenbrock_X, Rosenbrock_X_min, Rosenbrock_X_max, &
+                         target_Rosenbrock_F, sigma_Rosenbrock_F
+       
 !-----------------------------------------------------------------------
 !     Subroutines
 !         read_stellopt_input:   Reads optimum namelist
@@ -541,6 +544,14 @@
       dregcoil_rcws_rbound_s_opt = -1.0
       dregcoil_rcws_zbound_c_opt = -1.0
       dregcoil_rcws_zbound_s_opt = -1.0
+      ! Rosenbrock test function variables
+      lRosenbrock_X_opt(1:ROSENBROCK_DIM) = .FALSE.
+      dRosenbrock_X_opt(1:ROSENBROCK_DIM) = -1.0
+      Rosenbrock_X(1:ROSENBROCK_DIM)      = 3
+      Rosenbrock_X_min(1:ROSENBROCK_DIM)  = -bigno
+      Rosenbrock_X_max(1:ROSENBROCK_DIM)  = bigno
+      target_Rosenbrock_F(1:ROSENBROCK_DIM) = 0
+      sigma_Rosenbrock_F(1:ROSENBROCK_DIM)  = bigno
 
       IF (.not.ltriangulate) THEN  ! This is done because values may be set by trinagulate
          phiedge_min     = -bigno;  phiedge_max     = bigno
@@ -950,6 +961,7 @@
       lexist            = .false.
       istat=0
       iunit=12
+      !write(*,*) "<----About to read input"
       INQUIRE(FILE=TRIM(filename),EXIST=lexist)
       IF (.not.lexist) CALL handle_err(FILE_EXIST_ERR,TRIM(filename),istat)
       CALL safe_open(iunit,istat,TRIM(filename),'old','formatted')
@@ -963,6 +975,7 @@
       END IF
       CALL FLUSH(iunit)
       CLOSE(iunit)
+      !write(*,*) "<----Finished reading input"
 
       ! Fix String vars
       equil_type=TRIM(equil_type)
@@ -1365,6 +1378,7 @@
       target_dkes(1)      = 0.0;  sigma_dkes(1)      = bigno
       target_dkes(2)      = 0.0;  sigma_dkes(2)      = bigno
       target_helicity(1)  = 0.0;  sigma_helicity(1)  = bigno
+      write(*,*) "<---Rosenbrock_X=", Rosenbrock_X
       END SUBROUTINE read_stellopt_input
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1755,6 +1769,22 @@
          WRITE(iunit,outflt) 'TARGET_Y',target_y
          WRITE(iunit,outflt) 'SIGMA_Y',sigma_y
       END IF 
+      write(*,*) "<---input_mod 1770"
+      IF (ANY(sigma_Rosenbrock_F < bigno)) THEN
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,'(A)') '!          Rosenbrock Test Function'
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         DO ik = 1, rosenbrock_dim
+            IF (sigma_Rosenbrock_F(ik) < bigno) THEN
+              WRITE(iunit,"(2X,A,I3.3,A,L1,3(2X,A,I3.3,A,E22.14))") &
+                          'LROSENBROCK_X_OPT(',ik,') = ',LRosenbrock_X_opt(ik), &
+                          'TARGET_ROSENBROCK_F(',ik,') = ',target_Rosenbrock_F(ik), &
+                          'SIGMA_ROSENBROCK_F(',ik,') = ',sigma_Rosenbrock_F(ik), &
+                          'ROSENBROCK_X(',ik,') = ',Rosenbrock_X(ik)
+             END IF
+         END DO
+      END IF
+      write(*,*) "<---input_mod 1785"
       IF (sigma_phiedge < bigno) THEN
          WRITE(iunit,outflt) 'TARGET_PHIEDGE',target_phiedge
          WRITE(iunit,outflt) 'SIGMA_PHIEDGE',sigma_phiedge
