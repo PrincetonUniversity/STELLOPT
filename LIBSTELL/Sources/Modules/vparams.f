@@ -63,5 +63,9 @@
       ! the m<0 components are not used)
       INTEGER, PARAMETER ::  mnprod_x4_rcws = 4 * (2*32+1) * (2*32+1)
 
+!
+!     FOR ROSENBROCK TEST FUNCTION
+!
+      INTEGER, PARAMETER :: ROSENBROCK_DIM = 20
 
       END MODULE vparams
