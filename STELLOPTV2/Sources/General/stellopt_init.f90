@@ -246,9 +246,9 @@
          CASE('test')
             IF (lxval_opt)  nvars = nvars + 1
             IF (lyval_opt)  nvars = nvars + 1
-            write(*,*) "<----debug nvars, before Rosenbrock = ", nvars
+            !write(*,*) "<----debug nvars, before Rosenbrock = ", nvars
             IF (ANY(lRosenbrock_X_opt)) nvars = nvars + COUNT(lRosenbrock_X_opt)
-            write(*,*) "<----debug nvars, after Rosenbrock = ", nvars
+            !write(*,*) "<----debug nvars, after Rosenbrock = ", nvars
       END SELECT
 
       ! Allocate Arrays
@@ -260,6 +260,8 @@
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'stellot_init',ierr_mpi)
 !DEC$ ENDIF
       ! Read the Equilibrium Namelist and initalize the var arrays
+      ! Initialize nvar_in to 0
+      nvar_in=0
       SELECT CASE (TRIM(equil_type))
          CASE('vmec2000','animec','flow','satire','paravmec','parvmec','vboot','vmec2000_oneeq')
               ! Set some defaults
@@ -279,7 +281,6 @@
               ier=ictrl(2)
               IF (ier /= 0) CALL handle_err(VMEC_RUN_ERR,'Initialization call (stellopt_init)',ier)
               ! Now count
-              nvar_in=0
               IF (lregcoil_winding_surface_separation_opt) THEN
                  IF (lauto_domain) THEN
                     regcoil_winding_surface_separation_min = &
@@ -1592,7 +1593,7 @@
               END IF
               !write(*,*) "<---debug init 1598"
                  DO m = 1,rosenbrock_dim
-                    write(*,*) "<---debug m=", m, " nvar_in= ",nvar_in
+                    ! write(*,*) "<---debug m=", m, " nvar_in= ",nvar_in
                     IF (lRosenbrock_X_opt(m)) THEN
                       ! write(*,*) "<---debug init 1602"
                        IF (lauto_domain) THEN
