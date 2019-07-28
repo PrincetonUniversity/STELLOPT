@@ -1607,7 +1607,7 @@
                        var_dex(nvar_in) = iRosenbrock_X
                        diag(nvar_in)    = dRosenbrock_X_opt(m)
                        arr_dex(nvar_in,1) = m
-                       write(*,*) "<---debug init 1615"
+                       !write(*,*) "<---debug init 1615"
                     END IF
                  END DO
               !write(*,*) "<---debug init 1616"
