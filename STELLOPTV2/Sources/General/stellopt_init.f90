@@ -1590,10 +1590,6 @@
                  diag(nvar_in)    = dyval_opt
                  arr_dex(nvar_in,1) = 1
               END IF
-!DEC$ IF DEFINED (MPI_OPT)
-              CALL MPI_BARRIER( MPI_COMM_STEL, ierr_mpi )                   ! MPI
-              IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'stellot_init',ierr_mpi)
-!DEC$ ENDIF
               write(*,*) "<---debug init 1598"
                  DO m = 1,rosenbrock_dim
                     write(*,*) "<---debug m=", m, " nvar_in= ",nvar_in
