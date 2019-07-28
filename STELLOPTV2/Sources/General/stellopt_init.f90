@@ -1594,7 +1594,7 @@
                  DO m = 1,rosenbrock_dim
                     write(*,*) "<---debug m=", m, " nvar_in= ",nvar_in
                     IF (lRosenbrock_X_opt(m)) THEN
-                       write(*,*) "<---debug init 1602"
+                      ! write(*,*) "<---debug init 1602"
                        IF (lauto_domain) THEN
                          Rosenbrock_X_min(m) = Rosenbrock_X(m) - ABS(pct_domain*Rosenbrock_X(m))
                          Rosenbrock_X_max(m) = Rosenbrock_X(m) + ABS(pct_domain*Rosenbrock_X(m))
