@@ -1599,7 +1599,7 @@
                          Rosenbrock_X_min(m) = Rosenbrock_X(m) - ABS(pct_domain*Rosenbrock_X(m))
                          Rosenbrock_X_max(m) = Rosenbrock_X(m) + ABS(pct_domain*Rosenbrock_X(m))
                        END IF
-                       write(*,*) "<---debug init 1607"
+                       !write(*,*) "<---debug init 1607"
                        nvar_in = nvar_in + 1
                        vars(nvar_in) = Rosenbrock_X(m)
                        vars_min(nvar_in) = Rosenbrock_X_min(m)
