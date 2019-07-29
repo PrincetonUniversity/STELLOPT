@@ -10,7 +10,7 @@
 !     Libraries
 !-----------------------------------------------------------------------
       USE stellopt_runtime, ONLY:  proc_string, bigno, rprec
-      USE equil_utils, ONLY: get_equil_phi, nrad, rho
+      USE equil_utils, ONLY: get_equil_phi, nrad, rho, phi_type
       USE stellopt_targets, ONLY: nu_dkes, sigma_dkes, lbooz, nsd
       ! NEO LIBRARIES
 !DEC$ IF DEFINED (DKES_OPT)
@@ -80,7 +80,7 @@
          CALL second0 (tcpu0)
          ! Get ER based on phi specification
          ier_phi = 0
-         CALL get_equil_phi(rho(ik),phi_temp,ier_phi,dkes_efield)
+         CALL get_equil_phi(rho(ik),phi_type,phi_temp,ier_phi,dkes_efield)
          IF (ier_phi < 0) dkes_efield = 0.0
          !!!! CALL read_dkes_input
          WRITE(arg1(2),'(i3)') ik

@@ -1,11 +1,12 @@
 !-----------------------------------------------------------------------
-!     Subroutine:    chisq_ece
+!     Subroutine:    chisq_xics_v
 !     Authors:       S. Lazerson (lazerson@pppl.gov)
 !     Date:          05/26/2012
 !     Description:   Calculate difference measured and equilibrium
-!                    ECE reflected power.
+!                    XICS Velocity Signal.
+!                    u_perp = -dPhi/ds *(1/B)*(nhatxbhat)
 !-----------------------------------------------------------------------
-      SUBROUTINE chisq_ece(target,sigma,niter,iflag)
+      SUBROUTINE chisq_xics_v(target,sigma,niter,iflag)
 !-----------------------------------------------------------------------
 !     Libraries
 !-----------------------------------------------------------------------
@@ -18,8 +19,8 @@
 !
 !-----------------------------------------------------------------------
       IMPLICIT NONE
-      REAL(rprec), INTENT(in)    ::  target(nsys,nprof)
-      REAL(rprec), INTENT(in)    ::  sigma(nsys,nprof)
+      REAL(rprec), INTENT(in)    ::  target(nprof)
+      REAL(rprec), INTENT(in)    ::  sigma(nprof)
       INTEGER,     INTENT(in)    ::  niter
       INTEGER,     INTENT(inout) ::  iflag
       
@@ -29,38 +30,41 @@
 !        ik          Dummy index
 !        ti_val      Holds profile evaulation
 !-----------------------------------------------------------------------
-      INTEGER ::  ii,ij,ik,ier,n
+      INTEGER ::  ik
+      REAL(rprec) :: xics_val, xics_length
+      REAL(rprec) :: x0(3), x1(3)
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
       IF (iflag < 0 ) RETURN
       ik = COUNT(sigma < bigno)
-      IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'ECEREFLECT',ik,7
-      IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA  REFLECT  FREQ  RADTX  RADTO  MIX'
+      IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'XICS_V',ik,9
+      IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA  EQUIL  R0  PHI0  Z0  R1  PHI1  Z1'
       IF (niter >= 0) THEN
-      	 DO ij = 1, nsys
-      	    IF (ALL(sigma(ij,:) >= bigno,DIM=1)) CYCLE
-            DO ik = 1, nprof
-               IF (sigma(ij,ik) >= bigno) CYCLE
-               mtargets = mtargets + 1
-               targets(mtargets) = target(ij,ik)
-               sigmas(mtargets)  = sigma(ij,ik)
-               vals(mtargets)    = (radtx_ece(ij,ik)+mix_ece*radto_ece(ij,ik))*1000
-               IF (iflag == 1) WRITE(iunit_out,'(7ES22.12E3)') target(ij,ik),sigma(ij,ik),vals(mtargets),freq_ece(ij,ik),radtx_ece(ij,ik)*1000,radto_ece(ij,ik)*1000,mix_ece
-            END DO
+         DO ik = 1, nprof
+            IF (sigma(ik) >= bigno) CYCLE
+            x0(1)=r0_xics(ik); x1(1)=r1_xics(ik)
+            x0(2)=phi0_xics(ik); x1(2)=phi1_xics(ik)
+            x0(3)=z0_xics(ik); x1(3)=z1_xics(ik)
+            xics_val = 0.0
+            CALL line_int(fcn_xics_v,x0,x1,xics_val,LENGTH=xics_length)
+            !PRINT *,'TI_LENGTH (',ik,')',xics_length
+            mtargets = mtargets + 1
+            targets(mtargets) = target(ik)
+            sigmas(mtargets)  = sigma(ik)
+            vals(mtargets)    = xics_val+xics_v0
+            IF (iflag == 1) WRITE(iunit_out,'(9ES22.12E3)') target(ik),sigma(ik),xics_val+xics_v0,x0(1),x0(2),x0(3),x1(1),x1(2),x1(3)
          END DO
       ELSE
-      	 DO ij = 1, nsys
-            DO ik = 1, nprof
-               IF (sigma(ij,ik) < bigno) THEN
-                  mtargets = mtargets + 1
-                  IF (niter == -2) target_dex(mtargets) = jtarget_ece
-               END IF
-            END DO
+         DO ik = 1, nprof
+            IF (sigma(ik) < bigno) THEN
+               mtargets = mtargets + 1
+               IF (niter == -2) target_dex(mtargets) = jtarget_xics_v
+            END IF
          END DO
       END IF
       RETURN
 !----------------------------------------------------------------------
 !     END SUBROUTINE
 !----------------------------------------------------------------------
-      END SUBROUTINE chisq_ece
+      END SUBROUTINE chisq_xics_v

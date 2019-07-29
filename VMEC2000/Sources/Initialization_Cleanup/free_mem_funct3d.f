@@ -3,7 +3,7 @@
       USE realspace
       USE vforces
       USE vacmod
-#if defined(SKS)
+
       IMPLICIT NONE
 C-----------------------------------------------
 C   L o c a l   V a r i a b l e s
@@ -11,16 +11,21 @@ C-----------------------------------------------
       INTEGER :: istat1 = 0
 C-----------------------------------------------
       IF (ALLOCATED(parmn))
-     1   DEALLOCATE (parmn, pazmn, pbrmn, pbzmn, pcrmn, pczmn, pblmn,
-     2       pclmn, pr1, pru, prv, pz1, pzu, pzv, pgcon, prcon,
-     3       pzcon, prcon0, pzcon0, pguu, pguv, pgvv, 
-     4       pru0, pzu0, stat=istat1)
-      IF (istat1 .ne. 0) STOP 'deallocation error#1 in funct3d'
+     &   DEALLOCATE(parmn, pazmn, pbrmn, pbzmn, pcrmn, pczmn, pblmn,
+     &              pclmn, pr1, pru, prv, pz1, pzu, pzv, pgcon, prcon,
+     &              pzcon, prcon0, pzcon0, pguu, pguv, pgvv,
+     &              pru0, pzu0, stat=istat1)
+      IF (istat1 .ne. 0) THEN
+         STOP 'deallocation error#1 in funct3d'
+      END IF
 
-      IF (ALLOCATED(pextra1))
-     1   DEALLOCATE (pextra1, pextra2, pextra3, pextra4, stat=istat1)
-      IF (istat1 .ne. 0) STOP 'deallocation error#3 in funct3d'
-#endif
+      IF (ALLOCATED(pextra1)) THEN
+         DEALLOCATE (pextra1, pextra2, pextra3, pextra4, stat=istat1)
+      END IF
+      IF (istat1 .ne. 0) THEN
+         STOP 'deallocation error#3 in funct3d'
+      END IF
+
       END SUBROUTINE free_mem_funct3d_par
 
       SUBROUTINE free_mem_funct3d
@@ -28,6 +33,7 @@ C-----------------------------------------------
       USE realspace
       USE vforces
       USE vacmod
+
       IMPLICIT NONE
 C-----------------------------------------------
 C   L o c a l   V a r i a b l e s
@@ -35,29 +41,43 @@ C-----------------------------------------------
       INTEGER :: istat1 = 0
 C-----------------------------------------------
 
-      IF (ALLOCATED(armn))
-     1   DEALLOCATE (armn, azmn, brmn, bzmn, crmn, czmn, blmn, clmn,
-     2   r1, ru, rv, z1, zu, zv, gcon, rcon, zcon, ru0, zu0,
-     3   rcon0, zcon0, guu, guv, gvv, sigma_an, stat=istat1)
-      IF (istat1 .ne. 0) STOP 'deallocation error#1 in funct3d'
+      IF (ALLOCATED(armn)) THEN
+         DEALLOCATE (armn, azmn, brmn, bzmn, crmn, czmn, blmn, clmn,
+     &               r1, ru, rv, z1, zu, zv, gcon, rcon, zcon, ru0, zu0,
+     &               rcon0, zcon0, guu, guv, gvv, sigma_an, stat=istat1)
+      END IF
+      IF (istat1 .ne. 0) THEN
+         STOP 'deallocation error#1 in funct3d'
+      END IF
 
 #ifdef _ANIMEC
-      IF (ALLOCATED(pperp))
-     1   DEALLOCATE (pperp, ppar, onembc, pp1, pp2, pp3,
-     2               stat=istat1)
-      IF (istat1 .ne. 0) STOP 'deallocation error#1A in funct3d'
+      IF (ALLOCATED(pperp)) THEN
+         DEALLOCATE (pperp, ppar, onembc, pp1, pp2, pp3,
+     &               stat=istat1)
+      END IF
+      IF (istat1 .ne. 0) THEN
+         STOP 'deallocation error#1A in funct3d'
+      END IF
 #endif
 
-      IF (ALLOCATED(brv))
-     1   DEALLOCATE (brv, bphiv, bzv, bsqvac, 
-     2               bsubu_sur, bsubv_sur,
-     3               bsupu_sur, bsupv_sur, stat=istat1)
-      IF (istat1 .ne. 0) STOP 'deallocation error#2 in funct3d'
+      IF (ALLOCATED(brv)) THEN
+         DEALLOCATE(brv, bphiv, bzv, bsqvac,
+     &              bsubu_sur, bsubv_sur,
+     &              bsupu_sur, bsupv_sur, stat=istat1)
+      END IF
+      IF (istat1 .ne. 0) THEN
+         STOP 'deallocation error#2 in funct3d'
+      END IF
 
-      IF (ALLOCATED(bsqvac0)) DEALLOCATE (bsqvac0)
+      IF (ALLOCATED(bsqvac0)) THEN
+         DEALLOCATE (bsqvac0)
+      END IF
 
-      IF (ALLOCATED(extra1))
-     1   DEALLOCATE (extra1, extra2, extra3, extra4, stat=istat1)
-      IF (istat1 .ne. 0) STOP 'deallocation error#3 in funct3d'
+      IF (ALLOCATED(extra1)) THEN
+         DEALLOCATE (extra1, extra2, extra3, extra4, stat=istat1)
+      END IF
+      IF (istat1 .ne. 0) THEN
+         STOP 'deallocation error#3 in funct3d'
+      END IF
 
       END SUBROUTINE free_mem_funct3d

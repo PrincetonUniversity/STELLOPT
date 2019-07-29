@@ -17,10 +17,10 @@
   PRECOMP:= cpp -traditional-cpp -E -P -C -DMACOSX
   COMPILE = gfortran
   COMPILE_FREE = gfortran -ffree-form -ffree-line-length-none -ffixed-line-length-none
-  LINK    = ld $(FLAGS) -o
+  LINK    = mpif90 $(FLAGS) -o
   LINK_AR = ar -ruvs
   LINK_C  = gcc -shared -Wl,-no_compact_unwind
-  LINK_C  = $(CC) -shared -Wl,--no-undefined -Wl,-export-dynamic 
+#  LINK_C  = gcc -shared -Wl,--no-undefined -Wl,-export-dynamic 
 
 #######################################################################
 #            Define Compiler Flags
@@ -39,10 +39,10 @@
                      -ffree-line-length-none -ffixed-line-length-none
   MPI_COMPILE_C = mpicc 
   MPI_LINK = /opt/local/bin/mpif90
-  MPI_LINK = mpicc -shared  -Wl,-no_compact_unwind
+  MPI_LINK = mpif90 -shared  -Wl,-no_compact_unwind
 
   MPI_RUN = mpirun
-  MPI_RUN_OPTS = -np 2 
+  MPI_RUN_OPTS = -np 4 
 
 #######################################################################
 #            NAG Options
@@ -60,11 +60,14 @@
 #######################################################################
 #            NTCC Options
 #######################################################################
-  LNTCC = F
-  NTCC_INC = -I/Users/slazerso/Sims_PPPL/STELLOPT/NTCC/MAC/mod
-  NTCC_LIB = -L/Users/slazerso/Sims_PPPL/STELLOPT/NTCC/MAC/lib \
-             -lpreact -lsigsub -laladdinsub -lpreact -lpspline \
-             -lportlib -lezcdf
+  LNTCC = T
+  NTCC_INC = -I/opt/local/mod
+  NTCC_LIB = -L/opt/local/lib -lpreact -lsigsub -laladdinsub \
+             -lpreact -lpspline -lportlib -lezcdf
+#  NTCC_INC = -I/Users/slazerso/Sims_PPPL/STELLOPT/NTCC/MAC/mod
+#  NTCC_LIB = -L/Users/slazerso/Sims_PPPL/STELLOPT/NTCC/MAC/lib \
+#             -lpreact -lsigsub -laladdinsub -lpreact -lpspline \
+#             -lportlib -lezcdf
 
 #######################################################################
 #            HDF5 Options
@@ -77,9 +80,9 @@
 #######################################################################
 #             PGPLOT Options
 #######################################################################
-  LPGPLOT = F
-  PGPLOT_INC = -I$(PGPLOT_DIR)
-  PGPLOT_LIB = -L$(PGPLOT_DIR) -lpgplot -L/usr/X11R6/lib -lX11
+  LPGPLOT = T
+  PGPLOT_INC = -I/opt/local/include
+  PGPLOT_LIB = -L/opt/local/lib -lpgplot -lX11
 
 #######################################################################
 #             SILO Options
@@ -120,7 +123,7 @@
 #######################################################################
 #            TERPSICHORE Options
 #######################################################################
-  LTERPSICHORE= F
+  LTERPSICHORE= T
   TERPSICHORE_INC = -I$(TERPSICHORE_PATH)
   TERPSICHORE_DIR = $(TERPSICHORE_PATH)
   LIB_TERPSICHORE = libterpsichore.a
@@ -164,7 +167,7 @@ LIB_SHARE = /opt/local/lib/libnetcdf.dylib \
          /usr/lib/libc.dylib \
          /usr/lib/libm.dylib \
          /usr/lib/libpthread.dylib
-LIB_SHARE = -L/opt/local/lib/gcc7 -lstdc++ -lgfortran -L/usr/lib -lz -lc -lm -lpthread -L/opt/local/lib/openmpi-gcc7 -lmpi -lmpi_mpifh $(LIBS)
+LIB_SHARE = -L/opt/local/lib/gcc8 -lstdc++ -lgfortran -L/usr/lib -lz -lc -lm -lpthread -L/opt/local/lib/openmpi-gcc8 -lmpi -lmpi_mpifh $(LIBS)
 
 
 #######################################################################
@@ -254,6 +257,14 @@ ifeq ($(MAKECMDGOALS),xstelloptv2)
     NEO_DIR = 
     LIB_NEO = 
   endif
+else ifeq ($(MAKECMDGOALS),help)
+else ifeq ($(MAKECMDGOALS),test_stellopt)
+else ifeq ($(MAKECMDGOALS),test_stellopt_coilopt)
+else ifeq ($(MAKECMDGOALS),test_stellopt_gene)
+else ifeq ($(MAKECMDGOALS),test_stellopt_regcoil)
+else ifeq ($(MAKECMDGOALS),test_stellopt_sfincs)
+else ifeq ($(MAKECMDGOALS),test_stellopt_terpsichore)
+else ifeq ($(MAKECMDGOALS),test_stellopt_travis)
 else
   LGENE = F
   LCOILOPT = F

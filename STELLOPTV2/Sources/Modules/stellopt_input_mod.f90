@@ -20,7 +20,12 @@
       USE safe_open_mod, ONLY: safe_open
       USE diagno_runtime, ONLY: DIAGNO_VERSION
       USE vmec0, ONLY: version_
-      USE vmec_input, ONLY: lasym_local => lasym
+      USE vmec_input, ONLY: lasym_local => lasym, am, am_aux_s, am_aux_f, pmass_type, &
+                            ac, ac_aux_s, ac_aux_f, pcurr_type, &
+                            ai, ai_aux_s, ai_aux_f, piota_type, &
+                            ah, ah_aux_s, ah_aux_f, ph_type, &
+                            at, at_aux_s, at_aux_f, pt_type, &
+                            aphi
       USE vmec_params, ONLY: version_vmec=> version_
       USE mpi_params                                                    ! MPI
 !DEC$ IF DEFINED (GENE)
@@ -240,7 +245,7 @@
                          cr_strategy, mode, lkeep_mins, lrefit,&
                          npopulation, noptimizers, &
                          lphiedge_opt, lcurtor_opt, lbcrit_opt, &
-                         lpscale_opt, lmix_ece_opt,&
+                         lpscale_opt, lmix_ece_opt, lxics_v0_opt, &
                          lextcur_opt, laphi_opt, lam_opt, lac_opt, &
                          lai_opt, lah_opt, lat_opt, lam_s_opt, &
                          lam_f_opt, lac_s_opt, lac_f_opt, lai_s_opt, &
@@ -252,7 +257,7 @@
                          lah_f_opt, lat_f_opt, lcoil_spline, lemis_xics_f_opt, &
                          windsurfname, &
                          dphiedge_opt, dcurtor_opt, dbcrit_opt, &
-                         dpscale_opt, dmix_ece_opt,&
+                         dpscale_opt, dmix_ece_opt, dxics_v0_opt, &
                          dextcur_opt, daphi_opt, dam_opt, dac_opt, &
                          dai_opt, dah_opt, dat_opt, dam_s_opt, &
                          dam_f_opt, dac_s_opt, dac_f_opt, dai_s_opt, &
@@ -262,19 +267,20 @@
                          drho_opt, ddeltamn_opt, &
                          dne_opt, dte_opt, dti_opt, dth_opt, dzeff_opt, &
                          dah_f_opt, dat_f_opt, daxis_opt, &
-                         dmix_ece_opt, dcoil_spline, demis_xics_f_opt, &
+                         dcoil_spline, demis_xics_f_opt, &
                          ne_aux_s, te_aux_s, ti_aux_s, th_aux_s, phi_aux_s,&
                          beamj_aux_s, bootj_aux_s, zeff_aux_s, &
                          ne_aux_f, te_aux_f, ti_aux_f, th_aux_f, phi_aux_f,&
                          beamj_aux_f, bootj_aux_f, zeff_aux_f, &
                          ne_opt, te_opt, ti_opt, th_opt, zeff_opt, &
                          ne_type, te_type, ti_type, th_type, &
-                         beamj_type, bootj_type, zeff_type, &
-                         bootcalc_type, sfincs_s, sfincs_min_procs, sfincs_Er_option, vboot_tolerance, &
+                         beamj_type, bootj_type, zeff_type, phi_type, &
+                         bootcalc_type, sfincs_s, sfincs_min_procs, sfincs_Er_option, &
+                         vboot_tolerance, vboot_max_iterations, &
                          ne_min, te_min, ti_min, th_min, beamj_f_min, &
-                         bootj_f_min, zeff_min, zeff_f_min, &
+                         bootj_f_min, zeff_min, zeff_f_min, phi_f_min, &
                          ne_max, te_max, ti_max, th_max, beamj_f_max, &
-                         bootj_f_max, zeff_max, zeff_f_max, &
+                         bootj_f_max, zeff_max, zeff_f_max, phi_f_max, &
                          ah_f_min, at_f_min, &
                          ah_f_max, at_f_max, &
                          emis_xics_s, emis_xics_f, emis_xics_type,&
@@ -324,6 +330,7 @@
                          target_ti, sigma_ti, r_ti, z_ti, phi_ti, s_ti,&
                          target_xics, sigma_xics, r0_xics, phi0_xics, z0_xics,&
                          r1_xics, phi1_xics, z1_xics, target_xics_bright, sigma_xics_bright, &
+                         target_xics_w3, sigma_xics_w3, target_xics_v, sigma_xics_v, &
                          target_vphi, sigma_vphi, r_vphi, z_vphi, phi_vphi, s_vphi, qm_ratio,&
                          target_iota, sigma_iota, r_iota, z_iota, phi_iota, s_iota,&
                          target_vaciota, sigma_vaciota, r_vaciota, z_vaciota, phi_vaciota, s_vaciota,&
@@ -339,7 +346,8 @@
                          target_vessel, sigma_vessel, vessel_string, &
                          phiedge_min, phiedge_max, curtor_min, curtor_max, &
                          bcrit_min, bcrit_max, pscale_min, pscale_max, &
-                         mix_ece_min, mix_ece_max, &
+                         mix_ece_min, mix_ece_max, xics_v0_min, xics_v0_max, &
+                         xics_v0, &
                          extcur_min, extcur_max, &
                          am_min, am_max, ac_min, ac_max, ai_min, ai_max, &
                          ah_min, ah_max, at_min, at_max, aphi_min, aphi_max, &
@@ -439,6 +447,7 @@
       lpscale_opt     = .FALSE.
       lbcrit_opt      = .FALSE.
       lmix_ece_opt    = .FALSE.
+      lxics_v0_opt    = .FALSE.
       lextcur_opt(:)  = .FALSE.
       laphi_opt(:)    = .FALSE.
       lam_opt(:)      = .FALSE.
@@ -481,6 +490,7 @@
       dpscale_opt     = -1.0
       dbcrit_opt      = -1.0
       dmix_ece_opt    = -1.0
+      dxics_v0_opt    = -1.0
       dextcur_opt(:)  = -1.0
       daphi_opt(:)    = -1.0
       dam_opt(:)      = -1.0
@@ -512,8 +522,8 @@
       dat_f_opt(:)    = -1.0
       daxis_opt(:)    = -1.0
       demis_xics_f_opt(:) = -1.0
-      dbound_opt(:,:) = -1.0
-      drho_opt(:,:) = -1.0
+      dbound_opt(:,:)   = -1.0
+      drho_opt(:,:)     = -1.0
       ddeltamn_opt(:,:) = -1.0
       dcoil_spline(:,:) = -1.0
       ! REGCOIL Winding surface options
@@ -547,7 +557,6 @@
          am_f_min        = 0.0;     am_f_max        = bigno
          ac_f_min        = -bigno;  ac_f_max        = bigno
          ai_f_min        = -bigno;  ai_f_max        = bigno
-         phi_f_min       = -bigno;  phi_f_max       = bigno
          ah_f_min        = -bigno;  ah_f_max        = bigno
          at_f_min        = -bigno;  at_f_max        = bigno
          raxis_min        = -bigno; raxis_max        = bigno
@@ -559,6 +568,7 @@
       END IF
       xval            = 0.0   ;  yval            = 0.0
       mix_ece_min     = 0.0   ;  mix_ece_max     = 1.0
+      xics_v0_min     = -bigno;  xics_v0_max     = bigno
       ne_min          = -bigno;  ne_max          = bigno
       zeff_min        = -bigno;  zeff_max        = bigno
       te_min          = -bigno;  te_max          = bigno
@@ -566,6 +576,7 @@
       th_min          = -bigno;  th_max          = bigno
       ne_f_min        = 0.0;     ne_f_max        = bigno_ne
       zeff_f_min      = 0.0;     zeff_f_max      = bigno
+      phi_f_min       = -bigno;  phi_f_max       = bigno
       te_f_min        = 0.0;     te_f_max        = bigno
       ti_f_min        = 0.0;     ti_f_max        = bigno
       th_f_min        = 0.0;     th_f_max        = bigno
@@ -597,6 +608,7 @@
       
       ne_type         = 'akima_spline'
       zeff_type       = 'akima_spline'
+      phi_type        = 'akima_spline'
       te_type         = 'akima_spline'
       ti_type         = 'akima_spline'
       th_type         = 'akima_spline'
@@ -623,7 +635,7 @@
       ti_aux_f(:)     = 0.0
       th_aux_s(:)     = -1.0
       th_aux_f(:)     = 0.0 ! Probably need to recast th as ph later
-      phi_aux_s(:)    = -1.0
+      phi_aux_s(1:5)  = (/0.0,0.25,0.50,0.75,1.0/)
       phi_aux_f(:)    = 0.0
       beamj_aux_s(:)   = -1.0
       ! beamj_aux_s(1:5) = (/0.0,0.25,0.50,0.75,1.0/)
@@ -634,7 +646,13 @@
       sfincs_s        = -1 
       sfincs_s(1:4)   = (/ 0.2, 0.4, 0.6, 0.8 /)
       vboot_tolerance = 0.01
+      ! The default setting for VBOOT_MAX_ITERATIONS is very high (1e4).
+      ! If VBOOT is not converging, try setting this to a smaller number.
+      ! For BOOTSJ, a setting of 8-20 works.
+      ! For SFINCS, this setting has not been tested.
+      vboot_max_iterations = 1e4  ! The maximum number of VBOOT iterations.
       sfincs_min_procs = 1
+      xics_v0          = 0.0
       emis_xics_s(1:5) = (/0.0,0.25,0.50,0.75,1.0/)
       emis_xics_f(:)   = 0.0
       coil_splinesx(:,:) = -1
@@ -761,10 +779,14 @@
       r1_ti_line(:)   = 0.0
       phi1_ti_line(:) = 0.0
       z1_ti_line(:)   = 0.0
-      target_xics(:)  = 0.0
-      sigma_xics(:)   = bigno
+      target_xics(:)        = 0.0
+      sigma_xics(:)         = bigno
       target_xics_bright(:) = 0.0
       sigma_xics_bright(:)  = bigno
+      target_xics_w3(:)     = 0.0
+      sigma_xics_w3(:)      = bigno
+      target_xics_v(:)      = 0.0
+      sigma_xics_v(:)       = bigno
       r0_xics(:)            = 0.0
       phi0_xics(:)          = 0.0
       z0_xics(:)            = 0.0
@@ -953,6 +975,8 @@
       te_type = ADJUSTL(te_type)
       ti_type = ADJUSTL(ti_type)
       th_type = ADJUSTL(th_type)
+      zeff_type = ADJUSTL(zeff_type)
+      phi_type = ADJUSTL(phi_type)
       beamj_type = ADJUSTL(beamj_type)
       bootj_type = ADJUSTL(bootj_type)
       bootcalc_type = ADJUSTL(bootcalc_type)
@@ -1090,7 +1114,7 @@
       IF ((myid == master) .and. (TRIM(equil_type(1:4)) == 'vmec') ) THEN
          WRITE(6,*)        " Equilibrium calculation provided by: "
          WRITE(6,"(2X,A)") "================================================================================="
-         WRITE(6,"(2X,A)") "=========   Parallel Variational Moments Equilibrium Code (v "//TRIM(version_vmec)//")      ========="
+         WRITE(6,"(2X,A)") "=========   Parallel Variational Moments Equilibrium Code (v "//TRIM(version_vmec)//")       ========="
          WRITE(6,"(2X,A)") "=========                (S. Hirshman, J. Whitson)                      ========="
          WRITE(6,"(2X,A)") "=========         http://vmecwiki.pppl.wikispaces.net/VMEC              ========="
          WRITE(6,"(2X,A)") "================================================================================="
@@ -1161,8 +1185,8 @@
       IF (myid == master .and. ANY(sigma_ece < bigno)) THEN
          WRITE(6,*)        " ECE Radiation calculation provided by: "
          WRITE(6,"(2X,A)")        "================================================================================="
-         WRITE(6,"(2X,A,F5.2,A)") "=========                            TRAVIS                             ========="
-         CALL printversion_f77
+         CALL printversion_sopt_f77
+         !WRITE(6,"(2X,A,F5.2,A)") "=========                            TRAVIS                             ========="
          WRITE(6,"(2X,A)")        "=========                    (N. Marushchenko)                          ========="
          WRITE(6,"(2X,A)")        "=========              nikolai.marushchenko@ipp.mpg.de                  ========="
          WRITE(6,"(2X,A)")        "================================================================================="
@@ -1379,6 +1403,7 @@
          WRITE(iunit,outint) 'SFINCS_MIN_PROCS',sfincs_min_procs
          WRITE(iunit,outflt) 'VBOOT_TOLERANCE',vboot_tolerance
          WRITE(iunit,outstr) 'BOOTCALC_TYPE',TRIM(bootcalc_type)
+         WRITE(iunit,outint) 'VBOOT_MAX_ITERATIONS',vboot_max_iterations
       END IF
       WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
       WRITE(iunit,'(A)') '!       Optimized Quantities'
@@ -1413,321 +1438,105 @@
          WRITE(iunit,onevar) 'LMIX_ECE_OPT',lmix_ece_opt,'MIX_ECE_MIN',mix_ece_min,'MIX_ECE_MAX',mix_ece_max
          IF (dmix_ece_opt > 0)   WRITE(iunit,outflt) 'DMIX_ECE_OPT',dmix_ece_opt
       END IF
-      IF (ANY(lextcur_opt)) THEN
-        n=0
-        DO ik = LBOUND(lextcur_opt,DIM=1), UBOUND(lextcur_opt,DIM=1)
-           IF(lextcur_opt(ik)) n=ik
-        END DO
-        DO ik = 1, n
-           WRITE(iunit,vecvar) 'LEXTCUR_OPT',ik,lextcur_opt(ik),'EXTCUR_MIN',ik,extcur_min(ik),'EXTCUR_MAX',ik,extcur_max(ik)
-        END DO
-        IF (ANY(dextcur_opt > 0)) WRITE(iunit,"(2X,A,1X,'=',10(1X,E22.14))") 'DEXTCUR_OPT',(dextcur_opt(ik), ik = 1, n)
+      IF (lxics_v0_opt) THEN
+         WRITE(iunit,onevar) 'LXICS_V0_OPT',lxics_v0_opt,'XICS_V0_MIN',xics_v0_min,'XICS_V0_MAX',xics_v0_max
+         IF (dxics_v0_opt > 0)   WRITE(iunit,outflt) 'DXICS_V0_OPT',dxics_v0_opt
       END IF
-      IF (ANY(laphi_opt)) THEN
-        n=0
-        DO ik = LBOUND(laphi_opt,DIM=1), UBOUND(laphi_opt,DIM=1)
-           IF(laphi_opt(ik)) n=ik
-        END DO
-        DO ik = 1, n
-           WRITE(iunit,vecvar) 'LAPHI_OPT',ik,laphi_opt(ik),'APHI_MIN',ik,aphi_min(ik),'APHI_MAX',ik,aphi_max(ik)
-        END DO
-        IF (ANY(daphi_opt > 0)) WRITE(iunit,"(2X,A,1X,'=',10(1X,E22.14))") 'DAPHI_OPT',(daphi_opt(ik), ik = 1, n)
-      END IF
-      IF (ANY(lam_opt)) THEN
-        n=0
-        DO ik = LBOUND(lam_opt,DIM=1), UBOUND(lam_opt,DIM=1)
-           IF(lam_opt(ik)) n=ik
-        END DO
-        DO ik = 0, n
-           WRITE(iunit,vecvar) 'LAM_OPT',ik,lam_opt(ik),'AM_MIN',ik,am_min(ik),'AM_MAX',ik,am_max(ik)
-        END DO
-        IF (ANY(dam_opt > 0)) WRITE(iunit,"(2X,A,1X,'=',10(1X,E22.14))") 'DAM_OPT',(dam_opt(ik), ik = 0, n)
-      END IF
-      IF (ANY(lac_opt)) THEN
-        n=0
-        DO ik = LBOUND(lac_opt,DIM=1),UBOUND(lac_opt,DIM=1)
-           IF(lac_opt(ik)) n=ik
-        END DO
-        DO ik = 0, n
-           WRITE(iunit,vecvar) 'LAC_OPT',ik,lac_opt(ik),'AC_MIN',ik,ac_min(ik),'AC_MAX',ik,ac_max(ik)
-        END DO
-        IF (ANY(dac_opt > 0)) WRITE(iunit,"(2X,A,1X,'=',10(1X,E22.14))") 'DAC_OPT',(dac_opt(ik), ik = 0, n)
-      END IF
-      IF (ANY(lai_opt)) THEN
-        n=0
-        DO ik = LBOUND(lai_opt,DIM=1),UBOUND(lai_opt,DIM=1)
-           IF(lai_opt(ik)) n=ik
-        END DO
-        DO ik = 0, n
-           WRITE(iunit,vecvar) 'LAI_OPT',ik,lai_opt(ik),'AI_MIN',ik,ai_min(ik),'AI_MAX',ik,ai_max(ik)
-        END DO
-        IF (ANY(dai_opt > 0)) WRITE(iunit,"(2X,A,1X,'=',10(1X,E22.14))") 'DAI_OPT',(dai_opt(ik), ik = 0, n)
-      END IF
-      IF (ANY(lah_opt)) THEN
-        n=0
-        DO ik = LBOUND(lah_opt,DIM=1), UBOUND(lah_opt,DIM=1)
-           IF(lah_opt(ik)) n=ik
-        END DO
-        DO ik = 0, n
-           WRITE(iunit,vecvar) 'LAH_OPT',ik,lah_opt(ik),'AH_MIN',ik,ah_min(ik),'AH_MAX',ik,ah_max(ik)
-        END DO
-        IF (ANY(dah_opt > 0)) WRITE(iunit,"(2X,A,1X,'=',10(1X,E22.14))") 'DAH_OPT',(dah_opt(ik), ik = 0, n)
-      END IF
-      IF (ANY(lat_opt)) THEN
-        n=0
-        DO ik = LBOUND(lat_opt,DIM=1),UBOUND(lat_opt,DIM=1)
-           IF(lat_opt(ik)) n=ik
-        END DO
-        DO ik = 0, n
-           WRITE(iunit,vecvar) 'LAT_OPT',ik,lat_opt(ik),'AT_MIN',ik,at_min(ik),'AT_MAX',ik,at_max(ik)
-        END DO
-        IF (ANY(dat_opt > 0)) WRITE(iunit,"(2X,A,1X,'=',10(1X,E22.14))") 'DAT_OPT',(dat_opt(ik), ik = 0, n)
-      END IF
-      IF (ANY(lne_opt)) THEN
-        n=0
-        DO ik = LBOUND(lne_opt,DIM=1), UBOUND(lne_opt,DIM=1)
-           IF(lne_opt(ik)) n=ik
-        END DO
-        DO ik = 0, n
-           WRITE(iunit,vecvar) 'LNE_OPT',ik,lne_opt(ik),'NE_MIN',ik,ne_min(ik),'NE_MAX',ik,ne_max(ik)
-        END DO
-        IF (ANY(dne_opt > 0)) WRITE(iunit,"(2X,A,1X,'=',10(1X,E22.14))") 'DNE_OPT',(dne_opt(ik), ik = 0, n)
-      END IF
-      IF (ANY(lzeff_opt)) THEN
-        n=0
-        DO ik = LBOUND(lzeff_opt,DIM=1),UBOUND(lzeff_opt,DIM=1)
-           IF(lzeff_opt(ik)) n=ik
-        END DO
-        DO ik = 0, n
-           WRITE(iunit,vecvar) 'LZEFF_OPT',ik,lzeff_opt(ik),'ZEFF_MIN',ik,zeff_min(ik),'ZEFF_MAX',ik,zeff_max(ik)
-        END DO
-        IF (ANY(dne_opt > 0)) WRITE(iunit,"(2X,A,1X,'=',10(1X,E22.14))") 'DZEFF_OPT',(dne_opt(ik), ik = 0, n)
-      END IF
-      IF (ANY(lte_opt)) THEN
-        n=0
-        DO ik = LBOUND(lte_opt,DIM=1),UBOUND(lte_opt,DIM=1)
-           IF(lte_opt(ik)) n=ik
-        END DO
-        DO ik = 0, n
-           WRITE(iunit,vecvar) 'LTE_OPT',ik,lte_opt(ik),'TE_MIN',ik,te_min(ik),'TE_MAX',ik,te_max(ik)
-        END DO
-        IF (ANY(dte_opt > 0)) WRITE(iunit,"(2X,A,1X,'=',10(1X,E22.14))") 'DTE_OPT',(dte_opt(ik), ik = 0, n)
-      END IF
-      IF (ANY(lti_opt)) THEN
-        n=0
-        DO ik = LBOUND(lti_opt,DIM=1),UBOUND(lti_opt,DIM=1)
-           IF(lti_opt(ik)) n=ik
-        END DO
-        DO ik = 0, n
-           WRITE(iunit,vecvar) 'LTI_OPT',ik,lti_opt(ik),'TI_MIN',ik,ti_min(ik),'TI_MAX',ik,ti_max(ik)
-        END DO
-        IF (ANY(dti_opt > 0)) WRITE(iunit,"(2X,A,1X,'=',10(1X,E22.14))") 'DTI_OPT',(dti_opt(ik), ik = 0, n)
-      END IF
-      IF (ANY(lth_opt)) THEN
-        n=0
-        DO ik = LBOUND(lth_opt,DIM=1),UBOUND(lth_opt,DIM=1)
-           IF(lth_opt(ik)) n=ik
-        END DO
-        DO ik = 0, n
-           WRITE(iunit,vecvar) 'LTH_OPT',ik,lth_opt(ik),'TH_MIN',ik,th_min(ik),'TH_MAX',ik,th_max(ik)
-        END DO
-        IF (ANY(dth_opt > 0)) WRITE(iunit,"(2X,A,1X,'=',10(1X,E22.14))") 'DTH_OPT',(dth_opt(ik), ik = 0, n)
-      END IF
-      IF (ANY(lam_s_opt)) THEN
-        n=0
-        DO ik = 1,UBOUND(lam_s_opt,DIM=1)
-           IF(lam_s_opt(ik)) n=ik
-        END DO
-        WRITE(iunit,"(2X,A,1X,'=',10(2X,L1))") 'LAM_S_OPT',(lam_s_opt(ik), ik = 1, n)
-        IF (ANY(dam_s_opt > 0)) WRITE(iunit,"(2X,A,1X,'=',10(1X,E22.14))") 'DAM_S_OPT',(dam_s_opt(ik), ik = 1, n)
-      END IF
-      IF (ANY(lam_f_opt)) THEN
-        n=0
-        DO ik = 1,UBOUND(lam_f_opt,DIM=1)
-           IF(lam_f_opt(ik)) n=ik
-        END DO
-        DO ik = 1, n
-           WRITE(iunit,vecvar) 'LAM_F_OPT',ik,lam_f_opt(ik),'AM_F_MIN',ik,am_f_min(ik),'AM_F_MAX',ik,am_f_max(ik)
-        END DO
-        IF (ANY(dam_f_opt > 0)) WRITE(iunit,"(2X,A,1X,'=',10(1X,E22.14))") 'DAM_F_OPT',(dam_f_opt(ik), ik = 1, n)
-      END IF
-      
-      IF (ANY(lac_s_opt)) THEN
-        n=0
-        DO ik = 1,UBOUND(lac_s_opt,DIM=1)
-           IF(lac_s_opt(ik)) n=ik
-        END DO
-        WRITE(iunit,"(2X,A,1X,'=',10(2X,L1))") 'LAC_S_OPT',(lac_s_opt(ik), ik = 1, n)
-        IF (ANY(dac_s_opt > 0)) WRITE(iunit,"(2X,A,1X,'=',10(1X,E22.14))") 'DAC_S_OPT',(dac_s_opt(ik), ik = 1, n)
-      END IF
-      IF (ANY(lac_f_opt)) THEN
-        n=0
-        DO ik = 1,UBOUND(lac_f_opt,DIM=1)
-           IF(lac_f_opt(ik)) n=ik
-        END DO
-        DO ik = 1, n
-           WRITE(iunit,vecvar) 'LAC_F_OPT',ik,lac_f_opt(ik),'AC_F_MIN',ik,ac_f_min(ik),'AC_F_MAX',ik,ac_f_max(ik)
-        END DO
-        IF (ANY(dac_f_opt > 0)) WRITE(iunit,"(2X,A,1X,'=',10(1X,E22.14))") 'DAC_F_OPT',(dac_f_opt(ik), ik = 1, n)
-      END IF
-      
-      IF (ANY(lai_s_opt)) THEN
-        n=0
-        DO ik = 1,UBOUND(lai_s_opt,DIM=1)
-           IF(lai_s_opt(ik)) n=ik
-        END DO
-        WRITE(iunit,"(2X,A,1X,'=',10(2X,L1))") 'LAI_S_OPT',(lai_s_opt(ik), ik = 1, n)
-        IF (ANY(dai_s_opt > 0)) WRITE(iunit,"(2X,A,1X,'=',10(1X,E22.14))") 'DAI_S_OPT',(dai_s_opt(ik), ik = 1, n)
-      END IF
-      IF (ANY(lai_f_opt)) THEN
-        n=0
-        DO ik = 1,UBOUND(lai_f_opt,DIM=1)
-           IF(lai_f_opt(ik)) n=ik
-        END DO
-        DO ik = 1, n
-           WRITE(iunit,vecvar) 'LAI_F_OPT',ik,lai_f_opt(ik),'AI_F_MIN',ik,ai_f_min(ik),'AI_F_MAX',ik,ai_f_max(ik)
-        END DO
-        IF (ANY(dai_f_opt > 0)) WRITE(iunit,"(2X,A,1X,'=',10(1X,E22.14))") 'DAI_F_OPT',(dai_f_opt(ik), ik = 1, n)
-      END IF
-      
-      IF (ANY(lphi_s_opt)) THEN
-        n=0
-        DO ik = 1,UBOUND(lphi_s_opt,DIM=1)
-           IF(lphi_s_opt(ik)) n=ik
-        END DO
-        WRITE(iunit,"(2X,A,1X,'=',10(2X,L1))") 'LPHI_S_OPT',(lphi_s_opt(ik), ik = 1, n)
-        IF (ANY(dphi_s_opt > 0)) WRITE(iunit,"(2X,A,1X,'=',10(1X,E22.14))") 'DPHI_S_OPT',(dphi_s_opt(ik), ik = 1, n)
-      END IF
-      IF (ANY(lphi_f_opt)) THEN
-        n=0
-        DO ik = 1,UBOUND(lphi_f_opt,DIM=1)
-           IF(lphi_f_opt(ik)) n=ik
-        END DO
-        DO ik = 1, n
-           WRITE(iunit,vecvar) 'LPHI_F_OPT',ik,lphi_f_opt(ik),'PHI_F_MIN',ik,phi_f_min(ik),'PHI_F_MAX',ik,phi_f_max(ik)
-        END DO
-        IF (ANY(dphi_f_opt > 0)) WRITE(iunit,"(2X,A,1X,'=',10(1X,E22.14))") 'DPHI_F_OPT',(dphi_f_opt(ik), ik = 1, n)
-      END IF
-      
-      IF (ANY(lne_f_opt)) THEN
-        norm = profile_norm(ne_aux_f,ne_type)
-        IF (norm == 0) norm = 1
-        n=0
-        DO ik = 1,UBOUND(lne_f_opt,DIM=1)
-           IF(lne_f_opt(ik)) n=ik
-        END DO
-        DO ik = 1, n
-           WRITE(iunit,vecvar) 'LNE_F_OPT',ik,lne_f_opt(ik),'NE_F_MIN',ik,ne_f_min(ik)*norm,'NE_F_MAX',ik,ne_f_max(ik)*norm
-        END DO
-        IF (ANY(dne_f_opt > 0)) WRITE(iunit,"(2X,A,1X,'=',10(1X,E22.14))") 'DNE_F_OPT',(dne_f_opt(ik), ik = 1, n)
-      END IF
-      
-      IF (ANY(lzeff_f_opt)) THEN
-        norm = profile_norm(zeff_aux_f,zeff_type)
-        IF (norm == 0) norm = 1
-        n=0
-        DO ik = 1,UBOUND(lzeff_f_opt,DIM=1)
-           IF(lzeff_f_opt(ik)) n=ik
-        END DO
-        DO ik = 1, n
-           WRITE(iunit,vecvar) 'LZEFF_F_OPT',ik,lzeff_f_opt(ik),'ZEFF_F_MIN',ik,zeff_f_min(ik)*norm,'ZEFF_F_MAX',ik,zeff_f_max(ik)*norm
-        END DO
-        IF (ANY(dne_f_opt > 0)) WRITE(iunit,"(2X,A,1X,'=',10(1X,E22.14))") 'DZEFF_F_OPT',(dzeff_f_opt(ik), ik = 1, n)
-      END IF
-      
-      IF (ANY(lte_f_opt)) THEN
-        norm = profile_norm(te_aux_f,te_type)
-        IF (norm == 0) norm = 1
-        n=0
-        DO ik = 1,UBOUND(lte_f_opt,DIM=1)
-           IF(lte_f_opt(ik)) n=ik
-        END DO
-        DO ik = 1, n
-           WRITE(iunit,vecvar) 'LTE_F_OPT',ik,lte_f_opt(ik),'TE_F_MIN',ik,te_f_min(ik)*norm,'TE_F_MAX',ik,te_f_max(ik)*norm
-        END DO
-        IF (ANY(dte_f_opt > 0)) WRITE(iunit,"(2X,A,1X,'=',10(1X,E22.14))") 'DTE_F_OPT',(dte_f_opt(ik), ik = 1, n)
-      END IF
-      
-      IF (ANY(lti_f_opt)) THEN
-        norm = profile_norm(ti_aux_f,ti_type)
-        IF (norm == 0) norm = 1
-        n=0
-        DO ik = 1,UBOUND(lti_f_opt,DIM=1)
-           IF(lti_f_opt(ik)) n=ik
-        END DO
-        DO ik = 1, n
-           WRITE(iunit,vecvar) 'LTI_F_OPT',ik,lti_f_opt(ik),'TI_F_MIN',ik,ti_f_min(ik)*norm,'TI_F_MAX',ik,ti_f_max(ik)*norm
-        END DO
-        IF (ANY(dti_f_opt > 0)) WRITE(iunit,"(2X,A,1X,'=',10(1X,E22.14))") 'DTI_F_OPT',(dti_f_opt(ik), ik = 1, n)
-      END IF
-      
-      IF (ANY(lth_f_opt)) THEN
-        n=0
-        DO ik = 1,UBOUND(lth_f_opt,DIM=1)
-           IF(lth_f_opt(ik)) n=ik
-        END DO
-        DO ik = 1, n
-           WRITE(iunit,vecvar) 'LTH_F_OPT',ik,lth_f_opt(ik),'TH_F_MIN',ik,th_f_min(ik),'TH_F_MAX',ik,th_f_max(ik)
-        END DO
-        IF (ANY(dth_f_opt > 0)) WRITE(iunit,"(2X,A,1X,'=',10(1X,E22.14))") 'DTH_F_OPT',(dth_f_opt(ik), ik = 1, n)
-      END IF
-      
-      IF (ANY(lah_f_opt)) THEN
-        n=0
-        DO ik = 1,UBOUND(lah_f_opt,DIM=1)
-           IF(lah_f_opt(ik)) n=ik
-        END DO
-        DO ik = 1, n
-           WRITE(iunit,vecvar) 'LAH_F_OPT',ik,lah_f_opt(ik),'AH_F_MIN',ik,ah_f_min(ik),'AH_F_MAX',ik,ah_f_max(ik)
-        END DO
-        IF (ANY(dah_f_opt > 0)) WRITE(iunit,"(2X,A,1X,'=',10(1X,E22.14))") 'DAH_F_OPT',(dah_f_opt(ik), ik = 1, n)
-      END IF
-      
-      IF (ANY(lat_f_opt)) THEN
-        n=0
-        DO ik = 1,UBOUND(lat_f_opt,DIM=1)
-           IF(lat_f_opt(ik)) n=ik
-        END DO
-        DO ik = 1, n
-           WRITE(iunit,vecvar) 'LAT_F_OPT',ik,lat_f_opt(ik),'AT_F_MIN',ik,at_f_min(ik),'AT_F_MAX',ik,at_f_max(ik)
-        END DO
-        IF (ANY(dat_f_opt > 0)) WRITE(iunit,"(2X,A,1X,'=',10(1X,E22.14))") 'DAT_F_OPT',(dat_f_opt(ik), ik = 1, n)
-      END IF
-      
-      IF (ANY(lbeamj_f_opt)) THEN
-        n=0
-        DO ik = 1,UBOUND(lbeamj_f_opt,DIM=1)
-           IF(lbeamj_f_opt(ik)) n=ik
-        END DO
-        DO ik = 1, n
-           WRITE(iunit,vecvar) 'LBEAMJ_F_OPT',ik,lbeamj_f_opt(ik),'BEAMJ_F_MIN',ik,beamj_f_min(ik),'BEAMJ_F_MAX',ik,beamj_f_max(ik)
-        END DO
-        IF (ANY(dbeamj_f_opt > 0)) WRITE(iunit,"(2X,A,1X,'=',10(1X,E22.14))") 'DBEAMJ_F_OPT',(dbeamj_f_opt(ik), ik = 1, n)
-      END IF
-      
-      IF (ANY(lbootj_f_opt)) THEN
-        n=0
-        DO ik = 1,UBOUND(lbootj_f_opt,DIM=1)
-           IF(lbootj_f_opt(ik)) n=ik
-        END DO
-        DO ik = 1, n
-           WRITE(iunit,vecvar) 'LBOOTJ_F_OPT',ik,lbootj_f_opt(ik),'BOOTJ_F_MIN',ik,bootj_f_min(ik),'BOOTJ_F_MAX',ik,bootj_f_max(ik)
-        END DO
-        IF (ANY(dbootj_f_opt > 0)) WRITE(iunit,"(2X,A,1X,'=',10(1X,E22.14))") 'DBOOTJ_F_OPT',(dbootj_f_opt(ik), ik = 1, n)
-      END IF
-      
-      IF (ANY(lemis_xics_f_opt)) THEN
-        norm = profile_norm(emis_xics_f,emis_xics_type)
-        IF (norm == 0) norm = 1
-        n=0
-        DO ik = 1,UBOUND(lemis_xics_f_opt,DIM=1)
-           IF(lemis_xics_f_opt(ik)) n=ik
-        END DO
-        DO ik = 1, n
-           WRITE(iunit,vecvar) 'LEMIS_XICS_F_OPT',ik,lemis_xics_f_opt(ik),'EMIS_XICS_F_MIN',ik,emis_xics_f_min(ik)*norm,'EMIS_XICS_F_MAX',ik,emis_xics_f_max(ik)*norm
-        END DO
-        IF (ANY(demis_xics_f_opt > 0)) WRITE(iunit,"(2X,A,1X,'=',10(1X,E22.14))") 'DEMIS_XICS_F_OPT',(demis_xics_f_opt(ik), ik = 1, n)
-      END IF
+
+      ! Vector quantities
+      norm = 1.0
+      CALL write_stel_lvar_vec(iunit,lextcur_opt,extcur_min,extcur_max,dextcur_opt,norm,'EXTCUR')
+
+      norm = profile_norm(aphi,'power_series')
+      CALL write_stel_lvar_vec(iunit,laphi_opt,aphi_min,aphi_max,daphi_opt,norm,'APHI')
+
+      norm = profile_norm(am,pmass_type)
+      CALL write_stel_lvar_vec(iunit,lam_opt,am_min,am_max,dam_opt,norm,'AM')
+
+      norm = profile_norm(ac,pcurr_type)
+      CALL write_stel_lvar_vec(iunit,lac_opt,ac_min,ac_max,dac_opt,norm,'AC')
+
+      norm = profile_norm(ai,piota_type)
+      CALL write_stel_lvar_vec(iunit,lai_opt,ai_min,ai_max,dai_opt,norm,'AI')
+
+      norm = profile_norm(ah,ph_type)
+      CALL write_stel_lvar_vec(iunit,lah_opt,ah_min,ah_max,dah_opt,norm,'AH')
+
+      norm = profile_norm(at,pt_type)
+      CALL write_stel_lvar_vec(iunit,lat_opt,at_min,at_max,dat_opt,norm,'AT')
+
+      norm = profile_norm(ne_opt,ne_type)
+      CALL write_stel_lvar_vec(iunit,lne_opt,ne_min,ne_max,dne_opt,norm,'NE')
+
+      norm = profile_norm(zeff_opt,zeff_type)
+      CALL write_stel_lvar_vec(iunit,lzeff_opt,zeff_min,zeff_max,dzeff_opt,norm,'ZEFF')
+
+      norm = profile_norm(te_opt,te_type)
+      CALL write_stel_lvar_vec(iunit,lte_opt,te_min,te_max,dte_opt,norm,'TE')
+
+      norm = profile_norm(ti_opt,ti_type)
+      CALL write_stel_lvar_vec(iunit,lti_opt,ti_min,ti_max,dti_opt,norm,'TI')
+
+      norm = profile_norm(th_opt,th_type)
+      CALL write_stel_lvar_vec(iunit,lth_opt,th_min,th_max,dth_opt,norm,'TH')
+
+!     Disabled due to lack of min and max variables
+!      norm = 1.0
+!      CALL write_stel_lvar_vec(iunit,lam_s_opt,am_s_min,am_s_max,dam_s_opt,norm,'AM_S')
+
+      norm = profile_norm(am_aux_f,pmass_type)
+      CALL write_stel_lvar_vec(iunit,lam_f_opt,am_f_min,am_f_max,dam_f_opt,norm,'AM_F')
+ 
+!     Disabled due to lack of min and max variables
+!      norm = 1.0
+!      CALL write_stel_lvar_vec(iunit,lac_s_opt,ac_s_min,ac_s_max,dac_s_opt,norm,'AC_S)
+
+      norm = profile_norm(ac_aux_f,pcurr_type)
+      CALL write_stel_lvar_vec(iunit,lac_f_opt,ac_f_min,ac_f_max,dac_f_opt,norm,'AC_F')
+
+!     Disabled due to lack of min and max variables
+!      norm = 1.0
+!      CALL write_stel_lvar_vec(iunit,lai_s_opt,ai_s_min,ai_s_max,dai_s_opt,norm,'AI_S')
+
+      norm = profile_norm(ai_aux_f,piota_type)
+      CALL write_stel_lvar_vec(iunit,lai_f_opt,ai_f_min,ai_f_max,dai_f_opt,norm,'AI_F')
+
+!     Disabled due to lack of min and max variables
+!      norm = 1.0
+!      CALL write_stel_lvar_vec(iunit,lphi_s_opt,phi_s_min,phi_s_max,dphi_s_opt,norm,'PHI_S')
+
+      norm = profile_norm(phi_aux_f,phi_type)
+      CALL write_stel_lvar_vec(iunit,lphi_f_opt,phi_f_min,phi_f_max,dphi_f_opt,norm,'PHI_F')
+
+      norm = profile_norm(ne_aux_f,ne_type)
+      CALL write_stel_lvar_vec(iunit,lne_f_opt,ne_f_min,ne_f_max,dne_f_opt,norm,'NE_F')
+
+      norm = profile_norm(zeff_aux_f,zeff_type)
+      CALL write_stel_lvar_vec(iunit,lzeff_f_opt,zeff_f_min,zeff_f_max,dzeff_f_opt,norm,'ZEFF_F')
+
+      norm = profile_norm(te_aux_f,te_type)
+      CALL write_stel_lvar_vec(iunit,lte_f_opt,te_f_min,te_f_max,dte_f_opt,norm,'TE_F')
+
+      norm = profile_norm(ti_aux_f,ti_type)
+      CALL write_stel_lvar_vec(iunit,lti_f_opt,ti_f_min,ti_f_max,dti_f_opt,norm,'TI_F')
+
+      norm = profile_norm(th_aux_f,th_type)
+      CALL write_stel_lvar_vec(iunit,lth_f_opt,th_f_min,th_f_max,dth_f_opt,norm,'TH_F')
+
+      norm = profile_norm(ah_aux_f,ph_type)
+      CALL write_stel_lvar_vec(iunit,lah_f_opt,ah_f_min,ah_f_max,dah_f_opt,norm,'AH_F')
+
+      norm = profile_norm(at_aux_f,pt_type)
+      CALL write_stel_lvar_vec(iunit,lat_f_opt,at_f_min,at_f_max,dat_f_opt,norm,'AT_F')
+
+      norm = profile_norm(beamj_aux_f,beamj_type)
+      CALL write_stel_lvar_vec(iunit,lbeamj_f_opt,beamj_f_min,beamj_f_max,dbeamj_f_opt,norm,'BEAMJ_F')
+
+      norm = profile_norm(bootj_aux_f,bootj_type)
+      CALL write_stel_lvar_vec(iunit,lbootj_f_opt,bootj_f_min,bootj_f_max,dbootj_f_opt,norm,'BOOTJ_F')
+
+      norm = profile_norm(emis_xics_f,emis_xics_type)
+      CALL write_stel_lvar_vec(iunit,lemis_xics_f_opt,emis_xics_f_min,emis_xics_f_max,demis_xics_f_opt,norm,'EMIS_XICS_F')
       
       IF (ANY(laxis_opt)) THEN
          DO n = LBOUND(laxis_opt,DIM=1), UBOUND(laxis_opt,DIM=1)
@@ -1920,7 +1729,7 @@
       IF (ik > 2) THEN
          WRITE(iunit,"(2X,A,1X,'=',5(1X,E22.14))") 'SFINCS_S',(sfincs_s(n), n=1,ik)
       END IF
-      ! Emissivities
+      ! Emissivities (XICS)
       ik = MINLOC(emis_xics_s(2:),DIM=1)
       IF (ik > 2) THEN
          WRITE(iunit,outstr) 'EMIS_XICS_TYPE',TRIM(emis_xics_type)
@@ -1928,8 +1737,10 @@
          WRITE(iunit,"(2X,A,1X,'=',5(1X,E22.14))") 'EMIS_XICS_F',(emis_xics_f(n), n=1,ik)
       END IF
       ! E-static potential
-      ik = MINLOC(phi_aux_s(2:),DIM=1)
-      IF (ik > 4) THEN
+      ik = find_last_nonzero(phi_aux_s)
+      !ik = MINLOC(phi_aux_s(2:),DIM=1)
+      IF (ik > 2) THEN
+         WRITE(iunit,outstr) 'PHI_TYPE',TRIM(phi_type)
          WRITE(iunit,"(2X,A,1X,'=',5(1X,E22.14))") 'PHI_AUX_S',(phi_aux_s(n), n=1,ik)
          WRITE(iunit,"(2X,A,1X,'=',5(1X,E22.14))") 'PHI_AUX_F',(phi_aux_f(n), n=1,ik)
       END IF
@@ -2319,7 +2130,7 @@
          ! Options for uniform winding surface separations
          IF (lregcoil_winding_surface_separation_opt) THEN
             WRITE(iunit,outflt) &
-                   'REGCOIL_WINDING_SURFACE_SEPARATION = ', &
+                   'REGCOIL_WINDING_SURFACE_SEPARATION', &
                    regcoil_winding_surface_separation
             WRITE(iunit,outboo) 'LREGCOIL_WINDING_SURFACE_SEPARATION', &
                    lregcoil_winding_surface_separation_opt
@@ -2536,26 +2347,42 @@
             END IF
          END DO
       END IF
-      IF (ANY(sigma_xics < bigno)) THEN
+      IF (ANY(sigma_xics < bigno) .or. ANY(sigma_xics_bright < bigno) .or. &
+          ANY(sigma_xics_w3 < bigno) .or. ANY(sigma_xics_v < bigno)) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          WRITE(iunit,'(A)') '!          XICS Signal Optimization'
-         WRITE(iunit,'(A)') '!              Brightness is line integrated emissivity'
-         WRITE(iunit,'(A)') '!              Signal is line integrated product of emis. and ion temp.'
+         WRITE(iunit,'(A)') '!              BRIGHT:  Line integrated emissivity'
+         WRITE(iunit,'(A)') '!              XICS:    Line integrated product of Ti and emissivity'
+         WRITE(iunit,'(A)') '!              V:       Line integrated perp velocity (function of ExB)'
+         WRITE(iunit,'(A)') '!              W3:      Line integrated sat. emissivity (function of Te)'
+         WRITE(iunit,'(A)') '!              XICS_V0: Offset for XICS V0 measurement'
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         IF (ANY(sigma_xics_v < bigno)) WRITE(iunit,'(2X,A,E22.14)') 'XICS_V0 = ',xics_v0
          DO ik = 1, UBOUND(sigma_xics,DIM=1)
-            IF (sigma_xics(ik) < bigno .or. sigma_xics_bright(ik) < bigno) THEN
-               WRITE(iunit,"(10(2X,A,I3.3,A,1X,'=',1X,E22.14))") &
-                  'TARGET_XICS(',ik,')',target_xics(ik),&
-                  'SIGMA_XICS(',ik,')',sigma_xics(ik),&
-                  'TARGET_XICS_BRIGHT(',ik,')',target_xics_bright(ik),&
-                  'SIGMA_XICS_BRIGHT(',ik,')',sigma_xics_bright(ik),&
+            IF (sigma_xics(ik)    < bigno .or. sigma_xics_bright(ik) < bigno .or. &
+                sigma_xics_w3(ik)     < bigno .or. sigma_xics_v(ik)  < bigno ) &
+                WRITE(iunit,"(6(2X,A,I3.3,A,1X,'=',1X,E22.14))") &
                   'R0_XICS(',ik,')',r0_xics(ik),&
                   'PHI0_XICS(',ik,')',phi0_xics(ik),&
                   'Z0_XICS(',ik,')',z0_xics(ik),&
                   'R1_XICS(',ik,')',r1_xics(ik),&
                   'PHI1_XICS(',ik,')',phi1_xics(ik),&
                   'Z1_XICS(',ik,')',z1_xics(ik)
+            IF (sigma_xics(ik) < bigno .or. sigma_xics_bright(ik) < bigno) THEN
+               WRITE(iunit,"(4(4X,A,I3.3,A,1X,'=',1X,E22.14))") &
+                  'TARGET_XICS(',ik,')',target_xics(ik),&
+                  'SIGMA_XICS(',ik,')',sigma_xics(ik),&
+                  'TARGET_XICS_BRIGHT(',ik,')',target_xics_bright(ik),&
+                  'SIGMA_XICS_BRIGHT(',ik,')',sigma_xics_bright(ik)
             END IF
+            IF (sigma_xics_w3(ik) < bigno) &
+               WRITE(iunit,"(2(4X,A,I3.3,A,1X,'=',1X,E22.14))") &
+                  'TARGET_XICS_W3(',ik,')',target_xics_w3(ik),&
+                  'SIGMA_XICS_W3(',ik,')',sigma_xics_w3(ik)
+            IF (sigma_xics_v(ik) < bigno) &
+               WRITE(iunit,"(2(4X,A,I3.3,A,1X,'=',1X,E22.14))") &
+                  'TARGET_XICS_V(',ik,')',target_xics_v(ik),&
+                  'SIGMA_XICS_V(',ik,')',sigma_xics_v(ik)
          END DO
       END IF
       IF (ANY(sigma_te < bigno)) THEN
@@ -2813,5 +2640,46 @@
 
       RETURN
       END SUBROUTINE write_optimum_namelist
+
+      SUBROUTINE write_stel_lvar_vec(iunit,lvar,var_min,var_max,dvar,norm,str_name)
+      IMPLICIT NONE
+      INTEGER, INTENT(in) :: iunit
+      LOGICAL, INTENT(in) :: lvar(:)
+      REAL(rprec), INTENT(in) :: var_min(:), var_max(:), dvar(:)
+      REAL(rprec), INTENT(inout) :: norm
+      CHARACTER(LEN=*), INTENT(in) :: str_name
+      CHARACTER(LEN=256) :: lname,minname,maxname,dname
+      INTEGER :: n, ik
+      CHARACTER(LEN=*), PARAMETER :: vecvar  = "(2X,A,'(',I3.3,')',1X,'=',1X,L1,2(2X,A,'(',I3.3,')',1X,'=',1X,ES22.12E3))"
+      
+      norm = ABS(norm)
+      IF (norm == 0) norm = 1
+      IF (ANY(lvar)) THEN
+        lname   = 'L'//TRIM(str_name)//'_OPT'
+        minname = TRIM(str_name)//'_MIN'
+        maxname = TRIM(str_name)//'_MAX'
+        dname   = 'D'//TRIM(str_name)//'_OPT'
+        n=0
+        DO ik = LBOUND(lvar,DIM=1), UBOUND(lvar,DIM=1)
+           IF(lvar(ik)) n=ik
+        END DO
+        DO ik = 1, n
+           WRITE(iunit,vecvar) TRIM(lname),ik,lvar(ik),TRIM(minname),ik,var_min(ik)*norm,TRIM(maxname),ik,var_max(ik)*norm
+        END DO
+        IF (ANY(dvar > 0)) WRITE(iunit,"(2X,A,1X,'=',10(1X,E22.14))") TRIM(dname),(dvar(ik), ik = 1, n)
+      END IF
+      RETURN
+      END SUBROUTINE write_stel_lvar_vec
+
+      INTEGER FUNCTION find_last_nonzero(arr_in)
+      IMPLICIT NONE
+      REAL(rprec), INTENT(in) :: arr_in(:)
+      INTEGER :: n, ik
+      find_last_nonzero = 0
+      DO ik = LBOUND(arr_in,DIM=1), UBOUND(arr_in,DIM=1)
+         IF (arr_in(ik) .ne. 0) find_last_nonzero=ik
+      END DO
+      RETURN
+      END FUNCTION find_last_nonzero
       
       END MODULE stellopt_input_mod
