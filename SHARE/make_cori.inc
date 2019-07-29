@@ -17,6 +17,7 @@
   FLAGS_R = -fp-model strict -assume noold_unit_star -cxxlib 
   FLAGS_D = -g -dynamic -traceback -fp-model strict -assume noold_unit_star -cxxlib
   LIBS    = 
+#  FLAGS_R += -g -traceback -dynamic
 
 #######################################################################
 #            MPI Options
@@ -103,7 +104,7 @@
 #######################################################################
 #            TERPSICHORE Options
 #######################################################################
-  LTERPSICHORE= T
+  LTERPSICHORE = T
   TERPSICHORE_INC = -I$(TERPSICHORE_PATH)
   TERPSICHORE_DIR = $(TERPSICHORE_PATH)
   LIB_TERPSICHORE = libterpsichore.a
@@ -112,7 +113,7 @@
 #######################################################################
 #            TRAVIS Options
 #######################################################################
-  LTRAVIS= T
+  LTRAVIS = T
   TRAVIS_DIR = $(TRAVIS_PATH)
   LIB_TRAVIS = libtravis64_sopt.a
   LIB_MCONF  = libmconf64.a

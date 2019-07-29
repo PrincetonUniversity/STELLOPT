@@ -673,7 +673,8 @@ c     Get mpi parameters
                  par = MIN(par, par_old)
               END IF
               
-              ! By deffinition we need to try smaller bounds now   
+              ! By deffinition we need to try smaller bounds now
+              IF (delta_old == 0) delta_old=delta   
               delta = 0.25 * MIN(delta, delta_old)
               par   = 4 * par
 
