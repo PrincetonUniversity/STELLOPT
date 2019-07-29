@@ -961,7 +961,6 @@
       lexist            = .false.
       istat=0
       iunit=12
-      !write(*,*) "<----debug About to read input"
       INQUIRE(FILE=TRIM(filename),EXIST=lexist)
       IF (.not.lexist) CALL handle_err(FILE_EXIST_ERR,TRIM(filename),istat)
       CALL safe_open(iunit,istat,TRIM(filename),'old','formatted')
@@ -975,7 +974,6 @@
       END IF
       CALL FLUSH(iunit)
       CLOSE(iunit)
-      !write(*,*) "<----debug Finished reading input"
 
       ! Fix String vars
       equil_type=TRIM(equil_type)
@@ -1378,7 +1376,6 @@
       target_dkes(1)      = 0.0;  sigma_dkes(1)      = bigno
       target_dkes(2)      = 0.0;  sigma_dkes(2)      = bigno
       target_helicity(1)  = 0.0;  sigma_helicity(1)  = bigno
-      !write(*,*) "<---debug Rosenbrock_X=", Rosenbrock_X
       END SUBROUTINE read_stellopt_input
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1769,7 +1766,6 @@
          WRITE(iunit,outflt) 'TARGET_Y',target_y
          WRITE(iunit,outflt) 'SIGMA_Y',sigma_y
       END IF 
-      !write(*,*) "<---debug input_mod 1770"
       IF (ANY(sigma_Rosenbrock_F < bigno)) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          WRITE(iunit,'(A)') '!          Rosenbrock Test Function'
@@ -1784,7 +1780,6 @@
              END IF
          END DO
       END IF
-      !write(*,*) "<---debug input_mod 1785"
       IF (sigma_phiedge < bigno) THEN
          WRITE(iunit,outflt) 'TARGET_PHIEDGE',target_phiedge
          WRITE(iunit,outflt) 'SIGMA_PHIEDGE',sigma_phiedge
