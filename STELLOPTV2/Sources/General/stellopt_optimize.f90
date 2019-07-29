@@ -101,7 +101,35 @@
                        factor, nprint, info, nfev, fjac, ldfjac, ipvt, &
                        qtf, wa1, wa2, wa3, wa4,vars_min,vars_max)
             DEALLOCATE(ipvt, qtf, wa1, wa2, wa3, wa4, fvec, fjac)
-         CASE('eval_xvec')
+         CASE('lbfgsb')
+            ALLOCATE(ipvt(nvars))
+            ALLOCATE(qtf(nvars),wa1(nvars),wa2(nvars),wa3(nvars),&
+                     wa4(mtargets),fvec(mtargets))
+            ALLOCATE(fjac(mtargets,nvars))
+            fvec     = 0.0
+            nprint   = 0
+            info     = 0
+            nfev     = 0
+            ldfjac   = mtargets
+            nfev     = 0
+            IF (lverb) THEN
+               WRITE(6,*) '    OPTIMIZER: Levenberg-Mardquardt'
+               WRITE(6,*) '    NFUNC_MAX: ',nfunc_max
+               WRITE(6,'(A,2X,1ES12.4)') '         FTOL: ',ftol
+               WRITE(6,'(A,2X,1ES12.4)') '         XTOL: ',xtol
+               WRITE(6,'(A,2X,1ES12.4)') '         GTOL: ',gtol
+               WRITE(6,'(A,2X,1ES12.4)') '       EPSFCN: ',epsfcn
+               WRITE(6,*) '         MODE: ',mode
+               WRITE(6,*) '       FACTOR: ',factor
+            END IF
+            vars_min = -bigno; vars_max = bigno
+            WHERE(vars > bigno) vars_max = 1E30
+            CALL lbfgsb_driver(stellopt_fcn, mtargets, nvars, vars, fvec, &
+                       ftol, xtol, gtol, nfunc_max, epsfcn, diag, mode, &
+                       factor, nprint, info, nfev, fjac, ldfjac, ipvt, &
+                       qtf, wa1, wa2, wa3, wa4,vars_min,vars_max)
+            DEALLOCATE(ipvt, qtf, wa1, wa2, wa3, wa4, fvec, fjac)
+          CASE('eval_xvec')
             IF (lverb) THEN
                WRITE(6,*) '    OPTIMIZER: XVEC Evlauation'
                WRITE(6,*) '    FILE:     ',TRIM(xvec_file)

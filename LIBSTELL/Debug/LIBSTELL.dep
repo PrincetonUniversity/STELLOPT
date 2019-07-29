@@ -732,6 +732,14 @@ lmpar_parallel.o : \
       lmpar_mod.o 
       
 
+lbfgsb_driver.o : \
+      fdjac_mod.o \
+      lmpar_mod.o \
+      mpi_params.o \
+      safe_open_mod.o \
+      stel_kinds.o 
+      
+
 multiprocess.o : \
       system_mod.o 
       

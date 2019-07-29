@@ -216,6 +216,7 @@ enorm.o \
 crosovr.o \
 lmder_serial.o \
 stepopt_mp.o \
+lbfgsb_driver.o \
 GA_driver.o \
 ga_code.o \
 ga_mutate.o \

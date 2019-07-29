@@ -699,6 +699,14 @@ ga_sp.o : \
       safe_open_mod.o 
       
 
+lbfgsb_driver.o : \
+      fdjac_mod.o \
+      lmpar_mod.o \
+      mpi_params.o \
+      safe_open_mod.o \
+      stel_kinds.o 
+      
+
 lmdif.o : \
       fdjac_mod.o \
       lmpar_mod.o \
