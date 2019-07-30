@@ -6,9 +6,6 @@
 
 !-------------------------------------------------------------------------------
 MODULE blocktridiagonalsolver
-!#if defined(MPI_OPT)
-!INCLUDE 'mpif.h'
-!#endif
 USE mpi_inc
 USE parallel_include_module, ONLY: STOPMPI
 USE parallel_include_module, ONLY: TOFU
@@ -4750,7 +4747,7 @@ SUBROUTINE VerifySolution
   ELSE
     totrmserr = SQRT( totrmserr / ((endglobrow-startglobrow+1) * M) )
   END IF
-  IF(KPDBG) WRITE(OFU,'(A,E16.8E3)') 'TOTAL RMS ERROR = ', totrmserr; CALL FL(OFU)
+  IF(KPDBG) WRITE(OFU,'(A,E15.8E3)') 'TOTAL RMS ERROR = ', totrmserr; CALL FL(OFU)
   IF(KPDBG) WRITE(OFU,*) '------ Solution verified ------'; CALL FL(OFU)
 END SUBROUTINE VerifySolution
 !-------------------------------------------------------------------------------
