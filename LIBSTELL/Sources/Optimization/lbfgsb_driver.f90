@@ -246,7 +246,6 @@ subroutine lbfgsb_driver(fcn, m, n, x, l, u, nbd, dx_init, maxfev, ftol, &
              ' Number of Processors: ', i6, //, 40('='), / ,2x, &
              'Iteration', 3x, 'Processor', 7x, 'Chi-Sq', 7x, &
              /, 40('='))
-      !WRITE(6, '(2x,i6,8x,i3,7x,1es12.4)'), 0, myid, f
   END IF
 
 
@@ -300,7 +299,7 @@ subroutine lbfgsb_driver(fcn, m, n, x, l, u, nbd, dx_init, maxfev, ftol, &
         CALL safe_open(iunit,istat,'xvec.dat','unknown','formatted', &
                        ACCESS_IN='APPEND')
         ! Number of variables, 'n', followed by iteration count
-        WRITE(iunit,'(2(2X,I5.5))') n, nfev
+        WRITE(iunit,'(2(2X,I12.12))') n, nfev
         ! The variables, 'x'
         WRITE(iunit,'(10ES22.12E3)') x(1:n)
         ! The function value, 'f'
@@ -368,7 +367,6 @@ subroutine lbfgsb_driver(fcn, m, n, x, l, u, nbd, dx_init, maxfev, ftol, &
       nfev = nfev + n
 
       g = matmul(fvec, fjac) / f
-      !write(*,*) "K===g:", g
 
     else  !  if (task(1:2) .eq. 'FG') then
       if (task(1:5) .eq. 'NEW_X') then   
@@ -475,10 +473,6 @@ subroutine lbfgsb_driver(fcn, m, n, x, l, u, nbd, dx_init, maxfev, ftol, &
 ! Exit message
   if (myid .eq. master) then
     write(*,"(A,I2,A)") "<----LBFGSB_DRIVER terminated" ! after ", iter, " iterations."
-    !write(*,"(A,10E22.14)") "<----New x value: ", x
-    !write(*,"(A,10E22.14)") "<----Function value: ", f
-    !write(*,"(A,10E22.14)") "<----Function graidant: ", g
-    !write(*,"(A,10E22.14)") "<----New gradient norm: ", enorm(n,g)
     write(*,"(A,I6)") "<----Function evaluations: ", nfev
   end if
 
