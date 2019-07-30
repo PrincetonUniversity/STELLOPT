@@ -135,6 +135,8 @@ subroutine lbfgsb_driver(fcn, m, n, x, l, u, nbd, dx_init, maxfev, ftol, &
   integer,  allocatable  :: iwa(:)
   real(dp), allocatable  :: wa(:)
   real(dp)               :: t1, t2
+  logical                :: f_success
+  real(rprec) :: bigno = 1.0e10
 
 !-----------------------------------------------
 !   E x t e r n a l   F u n c t i o n s
@@ -277,22 +279,29 @@ subroutine lbfgsb_driver(fcn, m, n, x, l, u, nbd, dx_init, maxfev, ftol, &
       IF (myid .eq. master) THEN
         ! Set iflag to flag_singletask to tell fcn what to do
         iflag = FLAG_SINGLETASK
+        f_success = .false.
 
         !  Compute function value f 
         CALL fcn (m, n, x, fvec, iflag, nfev)
 
         ! Increment nfev by 1 (Is this correct and necessary? JCS)
-        nfev = nfev + 1
+        ! nfev = nfev + 1
 
         IF (iflag .ne. 0) THEN
           WRITE(6,*) "<----Evaluation Failed!"
-          STOP "K====ERROR in LBFGSB_DRIVER!"
+          !STOP "K====ERROR in LBFGSB_DRIVER!"
+          do ii = 1,m
+            fvec(ii) = bigno
+          end do
+        ELSE
+          f_success = .true.
         END IF
 
         ! Calculate the Euclidean norm here- this is 'f'
         f = enorm(m,fvec)
 
-        WRITE(6, '(2x,i6,8x,i3,7x,1es12.4)'), 0, myid, f
+        WRITE(6, '(2x,i6,8x,i3,7x,1es16.8,a,1es16.8,a)'), 0, myid, &
+              f, '(', f**2, ')'
 
         ! Write useful information to 'xvec.dat'
         iunit = 12; istat = 0
@@ -308,8 +317,8 @@ subroutine lbfgsb_driver(fcn, m, n, x, l, u, nbd, dx_init, maxfev, ftol, &
 
 !DEC$ IF DEFINED (MPI_OPT)
           ! Mark the communicator for deallocation -- only required
-          ! on first iteration (nfev .eq. 1)
-          if (nfev .eq. 1) then
+          ! on first iteration (nfev .eq. 0)
+          if (nfev .eq. 0) then
             CALL MPI_COMM_FREE(MPI_COMM_WORKERS, ierr_mpi)
             IF (ierr_mpi /= MPI_SUCCESS) CALL mpi_stel_abort(ierr_mpi)      
           end if
@@ -318,6 +327,9 @@ subroutine lbfgsb_driver(fcn, m, n, x, l, u, nbd, dx_init, maxfev, ftol, &
       ! Workers jump to here.
 
 !DEC$ IF DEFINED (MPI_OPT)
+        CALL MPI_BCAST(f_success,1, MPI_REAL8, master, &
+                       MPI_COMM_STEL, ierr_mpi)
+        IF (ierr_mpi /= MPI_SUCCESS) CALL mpi_stel_abort(ierr_mpi)
         CALL MPI_BCAST(x,n, MPI_REAL8, master, &
                        MPI_COMM_STEL, ierr_mpi)
         IF (ierr_mpi /= MPI_SUCCESS) CALL mpi_stel_abort(ierr_mpi)
@@ -330,6 +342,9 @@ subroutine lbfgsb_driver(fcn, m, n, x, l, u, nbd, dx_init, maxfev, ftol, &
       CALL fcn (m, n, x, fvec, iflag, nfev)
       ! The master will do the bfgs cleanup.
       ! The workers will do 'regular' cleanup
+ 
+      ! Increment nfev by 1 (Is this correct and necessary? JCS)
+      nfev = nfev + 1
 
 
       !        Compute gradient g for the sample problem.
@@ -361,12 +376,15 @@ subroutine lbfgsb_driver(fcn, m, n, x, l, u, nbd, dx_init, maxfev, ftol, &
         IF (ierr_mpi /= MPI_SUCCESS) CALL mpi_stel_abort(ierr_mpi)
 !DEC$ ENDIF
 
-      CALL fdjac2_mp_queue(fcn, f, m, n, x, fvec, fjac, &
-                           m, iflag, nfev, dx_init, f_min, x_min, &
-                           fvec_min, f_array, .true.)
-      nfev = nfev + n
-
-      g = matmul(fvec, fjac) / f
+      !if (f_success) then
+        CALL fdjac2_mp_queue(fcn, f, m, n, x, fvec, fjac, &
+                             m, iflag, nfev, dx_init, f_min, x_min, &
+                             fvec_min, f_array, .true.)
+        nfev = nfev + n
+        g = matmul(fvec, fjac) / f
+      !else
+      !  g(1:n) = bigno
+      !end if
 
     else  !  if (task(1:2) .eq. 'FG') then
       if (task(1:5) .eq. 'NEW_X') then   
