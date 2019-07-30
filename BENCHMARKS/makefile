@@ -52,6 +52,30 @@ test_diagno:
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xdiagno -vmec bigtok -bench
 	@cd $(DIAGNO_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xdiagno -bench -vmec bigtok
 	@cd $(DIAGNO_TEST_DIR); ./compare_bigtok.py
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xdiagno -vmec bigtok_phi1 -bench
+	@cd $(DIAGNO_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xdiagno -bench -vmec bigtok_phi1
+	@cd $(DIAGNO_TEST_DIR); ./compare_bigtok_phi1.py
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xdiagno -vmec a3tok -bench
+	@cd $(DIAGNO_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xdiagno -bench -vmec a3tok
+	@cd $(DIAGNO_TEST_DIR); ./compare_a3tok.py
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xdiagno -vmec DIIID_m24n0s99_nfp1 -bench
+	@cd $(DIAGNO_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xdiagno -bench -vmec DIIID_m24n0s99_nfp1
+	@cd $(DIAGNO_TEST_DIR); ./compare_DIIID_m24n0s99_nfp1.py
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xdiagno -vmec DIIID_m24n0s99_nfp10 -bench
+	@cd $(DIAGNO_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xdiagno -bench -vmec DIIID_m24n0s99_nfp10
+	@cd $(DIAGNO_TEST_DIR); ./compare_DIIID_m24n0s99_nfp10.py
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xdiagno -vmec DIIID_m20n0s128_nfp1_lasym -bench
+	@cd $(DIAGNO_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xdiagno -bench -vmec DIIID_m20n0s128_nfp1_lasym
+	@cd $(DIAGNO_TEST_DIR); ./compare_DIIID_m20n0s128_nfp1_lasym.py
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xdiagno -vmec iter -bench
+	@cd $(DIAGNO_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xdiagno -bench -vmec iter
+	@cd $(DIAGNO_TEST_DIR); ./compare_iter.py
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xdiagno -vmec lhd -bench
+	@cd $(DIAGNO_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xdiagno -bench -vmec lhd
+	@cd $(DIAGNO_TEST_DIR); ./compare_lhd.py
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xdiagno -vmec hsx -bench
+	@cd $(DIAGNO_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xdiagno -bench -vmec hsx
+	@cd $(DIAGNO_TEST_DIR); ./compare_hsx.py
 	@echo ""
 
 test_fieldlines:
