@@ -445,7 +445,7 @@
       noptimizers     = -1
       refit_param     = 0.75
       m_lbfgsb        = 5
-      print_lbfgsb    = 101
+      print_lbfgsb    = 0
       rho_exp         = 4
       lxval_opt       = .FALSE.
       lyval_opt       = .FALSE.
