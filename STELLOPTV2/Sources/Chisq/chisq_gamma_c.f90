@@ -307,7 +307,7 @@
             bdotgradb = 0.0_rprec
             kappa_g(j) = 0.0_rprec
             binormal(j,:) = 0.0_rprec
-            CALL cross_product(grad_psi/grad_psi_norm(j), Bxyz/modB(j), binormal(j,:))
+            CALL cross_product(grad_psi/grad_psi_norm(j)/pi2, Bxyz/modB(j), binormal(j,:))
             !write (*,*) 'tangential', Bxyz/modB(j)
             !write (*,*) 'normal',grad_psi(j,:)/grad_psi_norm(j)
             !write (*,*) 'nxb',binormal(j,:)
