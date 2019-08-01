@@ -563,8 +563,8 @@
               !write (*,*) 'dVdb ', dVdb
               !write (*,*) 'etheta0 ', e_theta_i(j-1)
               !write (*,*) 'grad_psi ', grad_psi_i(j-1)
-              temp = dgdb/grad_psi_i(well_start(k))/dIdb * minB * e_theta_i(well_start(k))
-              temp = temp * (dbigGdb/dIdb + 0.666666_rprec * dVdb/dIdb)
+              temp = dgdb/grad_psi_i(well_start(k))/dIdb / minB / e_theta_i(well_start(k))
+              temp = temp / (dbigGdb/dIdb + 0.666666_rprec * dVdb/dIdb)
               vrovervt = temp
               !write (*,*) 'vrovervt ', vrovervt
 
