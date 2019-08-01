@@ -15,7 +15,6 @@
      1   ru0, zu0, gcon, rcon0, zcon0, phip, chip, shalf, sqrts, wint
       REAL(dp), DIMENSION(:,:), ALLOCATABLE, TARGET ::
      1   extra1, extra2, extra3, extra4
-#if defined(SKS)
       INTEGER, DIMENSION(:), ALLOCATABLE :: ireflect_par
       REAL(dp), DIMENSION(:,:,:), ALLOCATABLE :: pru, pz1, pzu, pr1
       REAL(dp), DIMENSION(:,:,:), ALLOCATABLE :: prv, pzv
@@ -30,5 +29,5 @@
       REAL(dp), DIMENSION(:,:), ALLOCATABLE :: pru0, pzu0
       REAL(dp), DIMENSION(:,:), ALLOCATABLE :: prcon0, pzcon0
       REAL(dp), DIMENSION(:,:), ALLOCATABLE :: psqrts
-#endif
+
       END MODULE realspace

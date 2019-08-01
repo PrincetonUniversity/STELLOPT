@@ -31,8 +31,10 @@
   MPI_COMPILE_C = mpiifort 
   MPI_LINK = mpiifort
   MPI_RUN = srun
-  MPI_RUN_OPTS = -n 8
-
+  MPI_RUN_OPTS = --nodes=1 --ntasks-per-node=32 --time=0:30:00
+  MPI_RUN_SM   = --nodes=1 --ntasks-per-node=32 --time=0:30:00
+  MPI_RUN_MD   = --nodes=1 --ntasks-per-node=32 --time=0:30:00
+  MPI_RUN_LG   = --nodes=8 --ntasks-per-node=32 --time=2:00:00
 #######################################################################
 #            NAG Options
 #######################################################################
@@ -126,13 +128,13 @@
   LIB_TRAVIS = libtravis64_sopt.a
   LIB_MCONF  = libmconf64.a
   TRAVIS_LIB = $(TRAVIS_DIR)/lib/$(LIB_TRAVIS) \
-               $(TRAVIS_DIR)/mag_conf/lib/$(LIB_MCONF) -lstdc++
+               $(TRAVIS_DIR)/magconf/lib/$(LIB_MCONF) -lstdc++
 
 #######################################################################
 #            SFINCS Options
 #######################################################################
 
-  LSFINCS = T
+  LSFINCS = F
   include ${PETSC_DIR}/lib/petsc/conf/variables
   SFINCS_DIR = $(SFINCS_PATH)/fortran/version3
   SFINCS_INC = -I$(SFINCS_DIR) -I${PETSC_DIR}/include -I${PETSC_DIR}/${PETSC_ARCH}/include
@@ -245,6 +247,14 @@ ifeq ($(MAKECMDGOALS),xstelloptv2)
     NEO_DIR = 
     LIB_NEO = 
   endif
+else ifeq ($(MAKECMDGOALS),help)
+else ifeq ($(MAKECMDGOALS),test_stellopt)
+else ifeq ($(MAKECMDGOALS),test_stellopt_coilopt)
+else ifeq ($(MAKECMDGOALS),test_stellopt_gene)
+else ifeq ($(MAKECMDGOALS),test_stellopt_regcoil)
+else ifeq ($(MAKECMDGOALS),test_stellopt_sfincs)
+else ifeq ($(MAKECMDGOALS),test_stellopt_terpsichore)
+else ifeq ($(MAKECMDGOALS),test_stellopt_travis)
 else
   LGENE = F
   LCOILOPT = F
