@@ -143,42 +143,42 @@ test_stellopt_tok_r0_delta:
 	@echo ""
 
 test_stellopt_tok_r0_rho:
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.TOK_R0_RHO
-	@cd $(STELLOPT_TEST_DIR)/TOK_R0_RHO; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.TOK_R0_RHO; rm -f *_opt*
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.TOK_R0_RHO
+	@cd $(STELLOPT_TEST_DIR)/TOK_R0_RHO; $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.TOK_R0_RHO; rm -f *_opt*
 	@echo ""
 
 test_stellopt_qhs_lmdif:
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.QHS_LMDIF
-	@cd $(STELLOPT_TEST_DIR)/QHS_LMDIF; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.QHS_LMDIF; rm -f *_opt*
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.QHS_LMDIF
+	@cd $(STELLOPT_TEST_DIR)/QHS_LMDIF; $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.QHS_LMDIF; rm -f *_opt*
 	@echo ""
 
 test_stellopt_vboot_tokamak_bootsj:
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.vboot_tokamak_bootsj
-	@cd $(STELLOPT_TEST_DIR)/vboot_tokamak_bootsj; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.vboot_tokamak_bootsj; rm -f *_opt*
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.vboot_tokamak_bootsj
+	@cd $(STELLOPT_TEST_DIR)/vboot_tokamak_bootsj; $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.vboot_tokamak_bootsj; rm -f *_opt*
 	@echo ""
 
 test_stellopt_coilopt:
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.COILOPTPP
-	@cd $(STELLOPT_TEST_DIR)/COILOPTPP; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.COILOPTPP; rm -f *_opt*
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xstelloptv2 input.COILOPTPP
+	@cd $(STELLOPT_TEST_DIR)/COILOPTPP; $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xstelloptv2 input.COILOPTPP; rm -f *_opt*
 	@echo ""
 
 test_stellopt_gene:
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.GENE;
-	@cd $(STELLOPT_TEST_DIR)/GENE; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.GENE; rm -f *_opt*
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xstelloptv2 input.GENE;
+	@cd $(STELLOPT_TEST_DIR)/GENE; $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xstelloptv2 input.GENE; rm -f *_opt*
 	@echo ""
 
 test_stellopt_sfincs:
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.vboot_tokamak_sfincs;
-	@cd $(STELLOPT_TEST_DIR)/vboot_tokamak_sfincs; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.vboot_tokamak_sfincs; rm -f *_opt*
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.vboot_tokamak_sfincs;
+	@cd $(STELLOPT_TEST_DIR)/vboot_tokamak_sfincs; $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.vboot_tokamak_sfincs; rm -f *_opt*
 	@echo ""
 
 test_stellopt_terpsichore:
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xstelloptv2 input.TERPSICHORE
-	@cd $(STELLOPT_TEST_DIR)/TERPSICHORE; $(MPI_RUN) $(MPI_RUN_OPTS) $(MYHOME)/xstelloptv2 input.TERPSICHORE; rm -f *_opt*
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.TERPSICHORE
+	@cd $(STELLOPT_TEST_DIR)/TERPSICHORE; $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.TERPSICHORE; rm -f *_opt*
 	@echo ""
 
 test_stellopt_travis:
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xstelloptv2 input.TRAVIS
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.TRAVIS
 	@cd $(STELLOPT_TEST_DIR)/TRAVIS; $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.TRAVIS; rm -f *_opt*
 	@echo ""
 
