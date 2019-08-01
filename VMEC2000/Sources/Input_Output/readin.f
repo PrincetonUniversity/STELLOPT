@@ -399,26 +399,20 @@ C-----------------------------------------------
          IF (nextcur .gt. 0) THEN
             WRITE(nthreed, "(' EXTERNAL CURRENTS',/,1x,17('-'))")
             ni = 0
-            IF (ASSOCIATED(curlabel))
-     &         ni = MAXVAL(LEN_TRIM(curlabel(1:nextcur)))
+            IF (ASSOCIATED(curlabel)) THEN
+               ni = MAXVAL(LEN_TRIM(curlabel(1:nextcur)))
+            END IF
             ni = MAX(ni+4, 14)
             WRITE (line,  '(a,i2.2,a)') "(5a",ni,")"
             WRITE (line2, '(a,i2.2,a)') "(5(",ni-12,"x,1p,e12.4))"
             DO i = 1,nextcur,5
                ni = MIN(i+4, nextcur)
-               IF (ASSOCIATED(curlabel))
-     &         WRITE (nthreed, line, iostat=mj) 
-     &               (TRIM(curlabel(n)),n=i,ni)
-               WRITE (nthreed, line2,iostat=mj) 
-     &                 (extcur(n), n=i,ni)
-            ENDDO
-               IF (ALLOCATED(curlabel)) THEN
+               IF (ASSOCIATED(curlabel)) THEN
                   WRITE (nthreed, line, iostat=mj)
      &                  (TRIM(curlabel(n)),n=i,ni)
                   WRITE (nthreed, line2,iostat=mj) (extcur(n), n=i,ni)
                END IF
             END DO
->>>>>>> master
             WRITE (nthreed, *)
          END IF
 
