@@ -11,7 +11,6 @@
 !     Libraries
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
-      USE vparams, ONLY: ntor_rcws, mpol_rcws, rosenbrock_dim
       USE stellopt_runtime
       USE stellopt_vars
       USE equil_utils, ONLY: profile_norm

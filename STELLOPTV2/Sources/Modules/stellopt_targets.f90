@@ -9,7 +9,8 @@
 !     Libraries
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
-      USE vparams, ONLY: nsd, ntor_rcws, mpol_rcws, rosenbrock_dim
+      USE stellopt_vars, ONLY: ntor_rcws, mpol_rcws, rosenbrock_dim
+      USE vparams, ONLY: nsd
       USE vsvd0, ONLY : nigroup
 
 !-----------------------------------------------------------------------

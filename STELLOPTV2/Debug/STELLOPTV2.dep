@@ -537,6 +537,7 @@ stellopt_runtime.o : \
 
 stellopt_targets.o : \
       $(LIB_DIR)/Debug/stel_kinds.o \
+      stellopt_vars.o \
       $(LIB_DIR)/Debug/vparams.o 
       
 
