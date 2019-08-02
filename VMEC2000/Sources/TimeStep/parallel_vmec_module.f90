@@ -269,18 +269,18 @@ INTEGER, INTENT(IN) :: ns, nzeta, ntheta3
     t1rglob = trglob + 1; IF (rank.EQ.nranks-1) t1rglob=par_ns
 
     IF(mypart.LT.2) THEN
-      CALL MPI_Barrier(NS_COMM,MPI_ERR)
-      WRITE(TOFU,*) '***********************************************************' 
-      WRITE(TOFU,*) '* This version is not yet tested for mynsnum <= 2. Aborting!'
-      WRITE(TOFU,*) '***********************************************************' 
-      IF (rank.EQ.0) THEN
-        WRITE(*,*)
-        WRITE(*,*) '***********************************************************' 
-        WRITE(*,*) '* This version is not yet tested for mynsnum <= 2. Aborting!'
-        WRITE(*,*) '***********************************************************' 
-        WRITE(*,*)
-      END IF
-      CALL MPI_Abort(NS_COMM,local_err,MPI_ERR)
+       CALL MPI_Barrier(NS_COMM,MPI_ERR)
+       WRITE(TOFU,*) '***********************************************************'
+       WRITE(TOFU,*) '* This version is not yet tested for mynsnum <= 2. Aborting!'
+       WRITE(TOFU,*) '***********************************************************'
+       IF (rank.EQ.0) THEN
+          WRITE(*,*)
+          WRITE(*,*) '***********************************************************'
+          WRITE(*,*) '* This version is not yet tested for mynsnum <= 2. Aborting!'
+          WRITE(*,*) '***********************************************************'
+          WRITE(*,*)
+       END IF
+       CALL MPI_Abort(NS_COMM,local_err,MPI_ERR)
     END IF
 #endif
     END SUBROUTINE SetSurfacePartitions
