@@ -1,22 +1,22 @@
-#if defined(SKS)
       SUBROUTINE residue_par (gcr, gcz, gcl)
       USE vmec_main, p5 => cp5
-      USE vmec_params, ONLY: rss, zcs, rsc, zcc,                        &
+      USE vmec_params, ONLY: rss, zcs, rsc, zcc,                               &
                              meven, modd, ntmax, signgs
       USE realspace, ONLY: phip
       USE vsvd
       USE xstuff
       USE precon2d
       USE parallel_include_module
-      USE parallel_vmec_module, ONLY: tlglob_arr, trglob_arr,           &
+      USE parallel_vmec_module, ONLY: tlglob_arr, trglob_arr,                  &
                                       lactive, SAXLASTNTYPE
       USE blocktridiagonalsolver, ONLY: L_COLSCALE
+
       IMPLICIT NONE
 !-----------------------------------------------
 !   D u m m y   A r g u m e n t s
 !-----------------------------------------------
-      REAL(dp), DIMENSION(0:ntor,0:mpol1,ns,ntmax), INTENT(INOUT) :: &
-        gcr, gcz, gcl
+      REAL(dp), DIMENSION(0:ntor,0:mpol1,ns,ntmax), INTENT(INOUT) ::           &
+         gcr, gcz, gcl
 !-----------------------------------------------
 !   L o c a l   P a r a m e t e r s
 !-----------------------------------------------
@@ -41,7 +41,9 @@
 !FREE-BDY RFP MAY NEED THIS TO IMPROVE CONVERGENCE (SPH 022514)
       IF (lfreeb .AND. lrfp) THEN
          fac = 0
-         IF (ictrl_prec2d .EQ. 0) fac = 1.E-1_dp
+         IF (ictrl_prec2d .EQ. 0) THEN
+            fac = 1.E-1_dp
+         END IF
          gcz(ns,0,m0,:) = fac*gcz(ns,0,m0,:)
       END IF
 #else
@@ -59,20 +61,25 @@
 !        ASYM:     GC(zcc) = 0
 !
 
-      IF (lthreed) CALL constrain_m1_par(gcr(:,m1,:,rss), gcz(:,m1,:,zcs))
-      IF (lasym)   CALL constrain_m1_par(gcr(:,m1,:,rsc), gcz(:,m1,:,zcc))
+      IF (lthreed) THEN
+         CALL constrain_m1_par(gcr(:,m1,:,rss), gcz(:,m1,:,zcs))
+      END IF
+      IF (lasym) THEN
+         CALL constrain_m1_par(gcr(:,m1,:,rsc), gcz(:,m1,:,zcc))
+      END IF
 
-      !print *, ">>>>>",lfreeb.AND.lrfp
       IF (lfreeb .AND. lrfp) THEN
          fac = 0
-         IF (ictrl_prec2d .EQ. 0) fac = 1.E-1_dp
+         IF (ictrl_prec2d .EQ. 0) THEN
+            fac = 1.E-1_dp
+         END IF
          gcr(0,m0,ns,:) = fac*gcr(0,m0,ns,:)
          gcz(0,m0,ns,:) = fac*gcz(0,m0,ns,:)
       END IF
 #endif
 
 !     PRECONDITIONER MUST BE CALCULATED USING RAW (UNPRECONDITIONED) FORCES
-      IF (ictrl_prec2d.GE.2 .OR. ictrl_prec2d.EQ.-1) RETURN
+      IF (ictrl_prec2d .GE. 2 .OR. ictrl_prec2d .EQ. -1) RETURN
 
 !
 !     PUT FORCES INTO PHIFSAVE UNITS USED BY PRECONDITIONERS, FNORM
@@ -84,26 +91,32 @@
       END IF
 
       IF (lrecon) THEN
-
-          CALL second0(tredon)
-          tmp = SUM(gcr(n0,m0,tlglob:trglob,1))
-          CALL MPI_Allreduce(tmp,r1,1,MPI_REAL8,MPI_SUM,NS_COMM,MPI_ERR)
-          CALL second0(tredoff)
-          allreduce_time = allreduce_time + (tredoff - tredon)
-        fsqsum0 = signgs*hs*r1/r0scale
-        nsfix = 1                   !fix origin for reconstruction mode
-        gcr(:,:,tlglob:trglob,:) = gcr(:,:,tlglob:trglob,:) * tnorm**2
-        gcz(:,:,tlglob:trglob,:) = gcz(:,:,tlglob:trglob,:) * tnorm**2
-        gcl(:,:,tlglob:trglob,:) = gcl(:,:,tlglob:trglob,:) * tnorm
-        IF (iopt_raxis.GT.0 .AND. iresidue.EQ.2                        &
-           .AND. fsq.LT.fopt_axis) iresidue = 3
-        IF (iresidue .LT. 3) gcr(n0,m0,nsfix,1) = zero
+         CALL second0(tredon)
+         tmp = SUM(gcr(n0,m0,tlglob:trglob,1))
+         CALL MPI_Allreduce(tmp,r1,1,MPI_REAL8,MPI_SUM,NS_COMM,MPI_ERR)
+         CALL second0(tredoff)
+         allreduce_time = allreduce_time + (tredoff - tredon)
+         fsqsum0 = signgs*hs*r1/r0scale
+         nsfix = 1                   !fix origin for reconstruction mode
+         gcr(:,:,tlglob:trglob,:) = gcr(:,:,tlglob:trglob,:) * tnorm**2
+         gcz(:,:,tlglob:trglob,:) = gcz(:,:,tlglob:trglob,:) * tnorm**2
+         gcl(:,:,tlglob:trglob,:) = gcl(:,:,tlglob:trglob,:) * tnorm
+         IF (iopt_raxis .GT. 0 .AND.                                           &
+             iresidue   .EQ. 2 .AND.                                           &
+             fsq        .LT.fopt_axis) THEN
+            iresidue = 3
+         END IF
+         IF (iresidue .LT. 3) THEN
+            gcr(n0,m0,nsfix,1) = zero
+         END IF
       ELSE
 !
 !     ADJUST PHIEDGE
 !
-         IF (imovephi .GT. 0) CALL movephi1 (gphifac)
-      ENDIF
+         IF (imovephi .GT. 0) THEN
+            CALL movephi1 (gphifac)
+         END IF
+      END IF
       gc(neqs1) = gphifac
 
 !
@@ -113,12 +126,10 @@
       jedge = 0    
       delIter = iter2-iter1
 
-!      IF (l_v3fit) THEN
-!         IF (iter2-iter1.lt.50) jedge = 1
-!      ELSE
-         IF (delIter.lt.50 .and.                                        &
-            (fsqr+fsqz).LT.1.E-6_dp) jedge = 1
-!      ENDIF
+      IF (delIter       .lt. 50 .and.                                        &
+          (fsqr + fsqz) .LT. 1.E-6_dp) THEN
+         jedge = 1
+      ENDIF
 
       CALL getfsq_par (gcr, gcz, fsqr, fsqz, r1*fnorm, jedge)
 
@@ -128,37 +139,34 @@
       CALL second0(tredoff)
       allreduce_time = allreduce_time + (tredoff - tredon)
       fsql = fnormL*ftotal
-      IF(rank .EQ. nranks-1) &
-        fedge = r1*fnorm*SUM(gcr(:,:,ns,:)**2 + gcz(:,:,ns,:)**2)
+      IF(rank .EQ. nranks-1) THEN
+         fedge = r1*fnorm*SUM(gcr(:,:,ns,:)**2 + gcz(:,:,ns,:)**2)
+      END IF
 !
 !     PERFORM PRECONDITIONING AND COMPUTE RESIDUES
 !
-#if defined(PTESTING)
-      IF (ictrl_prec2d.EQ.1 .AND. lactive) THEN
-      CALL Gather4XArray(pgc)
-      IF (rank.eq.0) THEN
-         CALL PrintOutLinearArray(pgc, 1, ns, .FALSE., 1000+nranks)
-         PRINT *,'BEFORE precond_par'
-      END IF
-      CALL MPI_BARRIER(NS_COMM,MPI_ERR)
-      END IF
-#endif
       IF (ictrl_prec2d .EQ. 1) THEN
          
-         IF (l_colscale .AND. lactive) CALL SAXLASTNTYPE(pgc, pcol_scale, pgc)
+         IF (l_colscale .AND. lactive) THEN
+            CALL SAXLASTNTYPE(pgc, pcol_scale, pgc)
+         END IF
 
-         LRESIDUECALL=.TRUE.
+         LRESIDUECALL = .TRUE.
          CALL block_precond_par(pgc)
-         LRESIDUECALL=.FALSE.
+         LRESIDUECALL = .FALSE.
 
-         IF (.NOT.lfreeb .AND. ANY(gcr(:,:,ns,:) .NE. zero))            &
+         IF (.NOT.lfreeb .AND. ANY(gcr(:,:,ns,:) .NE. zero)) THEN
             STOP 'gcr(ns) != 0 for fixed boundary in residue'
-         IF (.NOT.lfreeb .AND. ANY(gcz(:,:,ns,:) .NE. zero))            &
+         END IF
+         IF (.NOT.lfreeb .AND. ANY(gcz(:,:,ns,:) .NE. zero)) THEN
             STOP 'gcz(ns) != 0 for fixed boundary in residue'
-         IF (ANY(gcl(1:,m0,:,zsc) .NE. zero))                           &
+         END IF
+         IF (ANY(gcl(1:,m0,:,zsc) .NE. zero)) THEN
             STOP 'gcl(m=0,n>0,sc) != 0 in residue'
-         IF (lthreed .AND. ANY(gcl(n0,:,:,zcs) .NE. zero))              &
+         END IF
+         IF (lthreed .AND. ANY(gcl(n0,:,:,zcs) .NE. zero)) THEN
             STOP 'gcl(n=0,m,cs) != 0 in residue'
+         END IF
 
          fsqr1 = SUM(gcr*gcr)
          fsqz1 = SUM(gcz*gcz)
@@ -167,8 +175,12 @@
       ELSE
 !        m = 1 constraint scaling
 
-         IF (lthreed) CALL scale_m1_par(gcr(:,m1,:,rss), gcz(:,m1,:,zcs))
-         IF (lasym)   CALL scale_m1_par(gcr(:,m1,:,rsc), gcz(:,m1,:,zcc))
+         IF (lthreed) THEN
+            CALL scale_m1_par(gcr(:,m1,:,rss), gcz(:,m1,:,zcs))
+         END IF
+         IF (lasym) THEN
+            CALL scale_m1_par(gcr(:,m1,:,rsc), gcz(:,m1,:,zcc))
+         END IF
 
          jedge = 0
          CALL scalfor_par (gcr, arm, brm, ard, brd, crd, jedge)
@@ -189,15 +201,6 @@
 
       ENDIF
 
-#if defined(PTESTING)
-         IF (ictrl_prec2d.eq.1 .and. lactive) THEN
-            IF (ictrl_prec2d .NE. 1) CALL Gather4XArray(pgc)
-            IF (rank.eq.0)   &
-              CALL PrintOutLinearArray(pgc, 1, ns, .TRUE., 2000+nranks)
-            CALL MPI_BARRIER(NS_COMM,MPI_ERR)
-            STOP 'AFTER precond_par'
-         END IF
-#endif
       CALL second0 (tresoff)
       residue_time = residue_time + (tresoff-treson)
 
@@ -226,13 +229,18 @@
       ALLOCATE(temp(0:ntor,ns))
       IF (lconm1) THEN
          temp(:,tlglob:trglob) = gcr(:,tlglob:trglob)
-         gcr(:,tlglob:trglob) = osqrt2*(gcr (:,tlglob:trglob) + gcz(:,tlglob:trglob))
-         gcz(:,tlglob:trglob) = osqrt2*(temp(:,tlglob:trglob) - gcz(:,tlglob:trglob))
+         gcr(:,tlglob:trglob) = osqrt2*(gcr(:,tlglob:trglob) +                 &
+                                        gcz(:,tlglob:trglob))
+         gcz(:,tlglob:trglob) = osqrt2*(temp(:,tlglob:trglob) -                &
+                                        gcz(:,tlglob:trglob))
       END IF
 
 !v8.50: ADD iter2<2 so reset=<WOUT_FILE> works
-      IF (fsqz.LT.FThreshold .OR. iter2.LT.2 .OR. ictrl_prec2d.NE.0)   &
+      IF (fsqz         .LT. FThreshold .OR.                                    &
+     &    iter2        .LT. 2          .OR.                                    &
+     &    ictrl_prec2d .NE. 0) THEN
          gcz(:,tlglob:trglob) = 0
+      END IF
  
       DEALLOCATE(temp)
       END SUBROUTINE constrain_m1_par
@@ -254,34 +262,36 @@
 !-----------------------------------------------
       IF (.not.lconm1) RETURN
 
-      fac(tlglob:trglob) = (ard(tlglob:trglob,nodd)+brd(tlglob:trglob,nodd))/ &
-            (ard(tlglob:trglob,nodd)+brd(tlglob:trglob,nodd)+ &
-            azd(tlglob:trglob,nodd)+bzd(tlglob:trglob,nodd))
+      fac(tlglob:trglob) = (ard(tlglob:trglob,nodd) +                          &
+                            brd(tlglob:trglob,nodd))                           &
+                         / (ard(tlglob:trglob,nodd) +                          &
+                            brd(tlglob:trglob,nodd) +                          &
+                            azd(tlglob:trglob,nodd) +                          &
+                            bzd(tlglob:trglob,nodd))
       DO n = 0, ntor
          gcr(n,tlglob:trglob) = fac(tlglob:trglob)*gcr(n,tlglob:trglob)
       END DO
 
-      fac(tlglob:trglob) = (azd(tlglob:trglob,nodd)+bzd(tlglob:trglob,nodd))/ &
-            (ard(tlglob:trglob,nodd)+brd(tlglob:trglob,nodd)+  &
-            azd(tlglob:trglob,nodd)+bzd(tlglob:trglob,nodd))
+      fac(tlglob:trglob) = (azd(tlglob:trglob,nodd) +                          &
+                            bzd(tlglob:trglob,nodd))                           &
+                         / (ard(tlglob:trglob,nodd) +                          &
+                            brd(tlglob:trglob,nodd) +                          &
+                            azd(tlglob:trglob,nodd) +                          &
+                            bzd(tlglob:trglob,nodd))
       DO n = 0, ntor
          gcz(n,tlglob:trglob) = fac(tlglob:trglob)*gcz(n,tlglob:trglob)
       END DO
  
       END SUBROUTINE scale_m1_par
-#endif
 
       SUBROUTINE residue (gcr, gcz, gcl)
       USE vmec_main, p5 => cp5
-      USE vmec_params, ONLY: rss, zcs, rsc, zcc,                        &
+      USE vmec_params, ONLY: rss, zcs, rsc, zcc,                               &
                              meven, modd, ntmax, signgs
       USE realspace, ONLY: phip
       USE vsvd
       USE xstuff
       USE precon2d
-#if defined(SKS)
-      USE parallel_include_module
-#endif
 #ifdef _HBANGLE
       USE angle_constraints, ONLY: scalfor_rho
 #endif
@@ -309,15 +319,13 @@
 !     (ZCS = RSS, ZSS = RCS ARE THE CORRECT POLAR RELATIONS)
 !
 
-#if defined(SKS)      
-      CALL second0 (treson)
-#endif
-
 #ifdef _HBANGLE
 !FREE-BDY RFP MAY NEED THIS TO IMPROVE CONVERGENCE (SPH 022514)
       IF (lfreeb .AND. lrfp) THEN
          fac = 0
-         IF (ictrl_prec2d .EQ. 0) fac = 1.E-1_dp
+         IF (ictrl_prec2d .EQ. 0) THEN
+            fac = 1.E-1_dp
+         END IF
          gcz(ns,0,m0,:) = fac*gcz(ns,0,m0,:)
       END IF
 #else
@@ -335,21 +343,29 @@
 !        ASYM:     GC(zcc) = 0
 !
 
-      IF (lthreed) CALL constrain_m1(gcr(:,:,m1,rss), gcz(:,:,m1,zcs))
-      IF (lasym)   CALL constrain_m1(gcr(:,:,m1,rsc), gcz(:,:,m1,zcc))
+      IF (lthreed) THEN
+         CALL constrain_m1(gcr(:,:,m1,rss), gcz(:,:,m1,zcs))
+      END IF
+      IF (lasym) THEN
+         CALL constrain_m1(gcr(:,:,m1,rsc), gcz(:,:,m1,zcc))
+      END IF
 
 !FREE-BDY RFP MAY NEED THIS TO IMPROVE CONVERGENCE (SPH 022514)
       IF (lfreeb .AND. lrfp) THEN
-!      IF (lfreeb .AND. lrfp .AND. iter2 .gt. 2000) THEN
          fac = 0
-         IF (ictrl_prec2d .EQ. 0) fac = 1.E-1_dp
+         IF (ictrl_prec2d .EQ. 0) THEN
+            fac = 1.E-1_dp
+         END IF
          gcr(ns,0,m0,:) = fac*gcr(ns,0,m0,:)
          gcz(ns,0,m0,:) = fac*gcz(ns,0,m0,:)
       END IF
 #endif
 
 !     PRECONDITIONER MUST BE CALCULATED USING RAW (UNPRECONDITIONED) FORCES
-      IF (ictrl_prec2d.GE.2 .OR. ictrl_prec2d.EQ.-1) RETURN
+      IF (ictrl_prec2d .GE. 2 .OR.                                             &
+          ictrl_prec2d .EQ. -1) THEN
+         RETURN
+      END IF
 
 !
 !     PUT FORCES INTO PHIFSAVE UNITS USED BY PRECONDITIONERS, FNORM
@@ -357,7 +373,7 @@
       IF (phifac .eq. zero) THEN
          STOP 'phifac = 0 in residue'
       ELSE
-         tnorm = phifsave/phifac           !put all forces into phifac=phifsave units
+         tnorm = phifsave/phifac !put all forces into phifac=phifsave units
       END IF
 
       IF (lrecon) THEN
@@ -367,21 +383,28 @@
 !       TO SATISFY FORCE BALANCE AT JS=1, ADJUST PFAC IN RADFOR
 !       ALSO, SCALE TOROIDAL FLUX AT EDGE TO MATCH MINOR RADIUS
 
-        r1 = SUM(gcr(:ns,n0,m0,1))
-        fsqsum0 = signgs*hs*r1/r0scale
-        nsfix = 1                   !fix origin for reconstruction mode
-        gcr = gcr * tnorm**2
-        gcz = gcz * tnorm**2
-        gcl = gcl * tnorm
-        IF (iopt_raxis.gt.0 .and. iresidue.eq.2                        &
-           .and. fsq.lt.fopt_axis) iresidue = 3
-        IF (iresidue .lt. 3) gcr(nsfix,n0,m0,1) = zero
+         r1 = SUM(gcr(:ns,n0,m0,1))
+         fsqsum0 = signgs*hs*r1/r0scale
+         nsfix = 1                   !fix origin for reconstruction mode
+         gcr = gcr*tnorm**2
+         gcz = gcz*tnorm**2
+         gcl = gcl*tnorm
+         IF (iopt_raxis .gt. 0 .and.                                           &
+             iresidue   .eq. 2 .and.                                           &
+             fsq        .lt. fopt_axis) THEN
+            iresidue = 3
+         END IF
+         IF (iresidue .lt. 3) THEN
+            gcr(nsfix,n0,m0,1) = zero
+         END IF
       ELSE
 !
 !     ADJUST PHIEDGE
 !
-         IF (imovephi .gt. 0) CALL movephi1 (gphifac)
-      ENDIF
+         IF (imovephi .gt. 0) THEN
+            CALL movephi1 (gphifac)
+         END IF
+      END IF
       gc(neqs1) = gphifac
 !
 !     COMPUTE INVARIANT RESIDUALS
@@ -390,17 +413,18 @@
       jedge = 0    
 !SPH-JAH013108: MUST INCLUDE EDGE FORCE (INITIALLY) FOR V3FITA TO WORK
 !ADD A V3FIT RELATED FLAG? ADD fsq criterion first
-      delIter = iter2-iter1
+      delIter = iter2 - iter1
 
-      IF (l_v3fit) THEN
+!      IF (l_v3fit) THEN  ! MRC I don't this this is valid anymore.
 !  Coding for when run by V3FIT. Needed for correct computation
 !  of partial derivatives
-         IF (iter2-iter1.lt.50) jedge = 1
-      ELSE
+!         IF (iter2-iter1.lt.50) jedge = 1
+!      ELSE
 !  Coding for VMEC2000 run stand-alone
-         IF (delIter.lt.50 .and.                                        &
-            (fsqr+fsqz).lt.1.E-6_dp) jedge = 1
-      ENDIF
+      IF (delIter       .lt. 50 .and.                                          &
+          (fsqr + fsqz) .lt. 1.E-6_dp) THEN
+         jedge = 1
+      END IF
 
       CALL getfsq (gcr, gcz, fsqr, fsqz, r1*fnorm, jedge)
 
@@ -415,14 +439,16 @@
 
          CALL block_precond(gc)
 
-         IF (.not.lfreeb .and. ANY(gcr(ns,:,:,:) .ne. zero))            &
+         IF (.not.lfreeb .and. ANY(gcr(ns,:,:,:) .ne. zero)) THEN
             STOP 'gcr(ns) != 0 for fixed boundary in residue'
-         IF (.not.lfreeb .and. ANY(gcz(ns,:,:,:) .ne. zero))            &
+         END IF
+         IF (.not.lfreeb .and. ANY(gcz(ns,:,:,:) .ne. zero)) THEN
             STOP 'gcz(ns) != 0 for fixed boundary in residue'
-         IF (ANY(gcl(:,1:,0,zsc) .ne. zero))                            &
+         END IF
+         IF (ANY(gcl(:,1:,0,zsc) .ne. zero)) THEN
             STOP 'gcl(m=0,n>0,sc) != 0 in residue'
-         IF (lthreed) THEN
-            IF (ANY(gcl(:,n0,:,zcs) .ne. zero))                         &
+         END IF
+         IF (lthreed .and. ANY(gcl(:,n0,:,zcs) .ne. zero)) THEN
             STOP 'gcl(n=0,m,cs) != 0 in residue'
          END IF
 
@@ -434,16 +460,18 @@
 #ifdef _HBANGLE
          CALL scalfor_rho(gcr, gcz)
 #else
-
 !        m = 1 constraint scaling
-         IF (lthreed) CALL scale_m1(gcr(:,:,m1,rss), gcz(:,:,m1,zcs))
-         IF (lasym)   CALL scale_m1(gcr(:,:,m1,rsc), gcz(:,:,m1,zcc))
+         IF (lthreed) THEN
+            CALL scale_m1(gcr(:,:,m1,rss), gcz(:,:,m1,zcs))
+         END IF
+         IF (lasym) THEN
+            CALL scale_m1(gcr(:,:,m1,rsc), gcz(:,:,m1,zcc))
+         END IF
 
          jedge = 0
          CALL scalfor (gcr, arm, brm, ard, brd, crd, jedge)
          jedge = 1
          CALL scalfor (gcz, azm, bzm, azd, bzd, crd, jedge)
-
 #endif
 
 !SPH: add fnorm1 ~ 1/R**2, since preconditioned forces gcr,gcz ~ Rmn or Zmn
@@ -453,9 +481,12 @@
 !     TO IMPROVE CONVERGENCE, REDUCE FORCES INITIALLY IF THEY ARE TOO LARGE
 !
          fac = .5_dp
-         IF ((iter2-iter1).LT.25 .AND. (fsqr+fsqz).GT.1.E-2_dp)         &
-         fac = fac / SQRT(1.E2_dp*(fsqr+fsqz))
-         gcr = fac*gcr; gcz = fac*gcz 
+         IF ((iter2 - iter1) .LT. 25 .AND.                                     &
+             (fsqr + fsqz)   .GT. 1.E-2_dp) THEN
+            fac = fac / SQRT(1.E2_dp*(fsqr+fsqz))
+         END IF
+         gcr = fac*gcr
+         gcz = fac*gcz
 #endif
 
 !SPH: THIS IS NOT INVARIANT UNDER PHIP->A*PHIP, AM->A**2*AM IN PROFIL1D
@@ -465,12 +496,7 @@
          fsql1 = hs*SUM(gcl*gcl)
 !030514      fsql1 = hs*lamscale**2*SUM(gcl*gcl)
 
-      ENDIF
-
-#if defined(SKS)      
-      CALL second0 (tresoff)
-      s_residue_time = s_residue_time + (tresoff-treson)
-#endif
+      END IF
 
       END SUBROUTINE residue
 
@@ -500,8 +526,11 @@
       END IF
 
 !v8.50: ADD iter2<2 so reset=<WOUT_FILE> works
-      IF (fsqz.LT.FThreshold .OR. iter2.LT.2 .OR. ictrl_prec2d.NE.0)   &
-        gcz = 0
+      IF (fsqz  .LT. FThreshold .OR.                                           &
+     &    iter2 .LT. 2          .OR.                                           &
+     &    ictrl_prec2d .NE. 0) THEN
+         gcz = 0
+      END IF
  
       END SUBROUTINE constrain_m1
 
@@ -521,14 +550,14 @@
 !-----------------------------------------------
       IF (.not.lconm1) RETURN
 
-      fac = (ard(:,nodd)+brd(:,nodd))/                                        &
-            (ard(:,nodd)+brd(:,nodd)+azd(:,nodd)+bzd(:,nodd))
+      fac = (ard(:,nodd) + brd(:,nodd))                                        &
+          / (ard(:,nodd) + brd(:,nodd) + azd(:,nodd) + bzd(:,nodd))
       DO n = 0, ntor
          gcr(:,n) = fac*gcr(:,n)
       END DO
 
-      fac = (azd(:,nodd)+bzd(:,nodd))/                                        &
-            (ard(:,nodd)+brd(:,nodd)+azd(:,nodd)+bzd(:,nodd))
+      fac = (azd(:,nodd) + bzd(:,nodd))                                        &
+          / (ard(:,nodd) + brd(:,nodd) + azd(:,nodd) + bzd(:,nodd))
       DO n = 0, ntor
          gcz(:,n) = fac*gcz(:,n)
       END DO

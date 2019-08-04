@@ -1,1 +1,1 @@
-SHARE/make_cori.inc
+SHARE/make_macports.inc

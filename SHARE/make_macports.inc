@@ -42,7 +42,7 @@
   MPI_LINK = mpif90 -shared  -Wl,-no_compact_unwind
 
   MPI_RUN = mpirun
-  MPI_RUN_OPTS = -np 2 
+  MPI_RUN_OPTS = -np 4 
 
 #######################################################################
 #            NAG Options
@@ -123,7 +123,7 @@
 #######################################################################
 #            TERPSICHORE Options
 #######################################################################
-  LTERPSICHORE= F
+  LTERPSICHORE= T
   TERPSICHORE_INC = -I$(TERPSICHORE_PATH)
   TERPSICHORE_DIR = $(TERPSICHORE_PATH)
   LIB_TERPSICHORE = libterpsichore.a
@@ -257,6 +257,14 @@ ifeq ($(MAKECMDGOALS),xstelloptv2)
     NEO_DIR = 
     LIB_NEO = 
   endif
+else ifeq ($(MAKECMDGOALS),help)
+else ifeq ($(MAKECMDGOALS),test_stellopt)
+else ifeq ($(MAKECMDGOALS),test_stellopt_coilopt)
+else ifeq ($(MAKECMDGOALS),test_stellopt_gene)
+else ifeq ($(MAKECMDGOALS),test_stellopt_regcoil)
+else ifeq ($(MAKECMDGOALS),test_stellopt_sfincs)
+else ifeq ($(MAKECMDGOALS),test_stellopt_terpsichore)
+else ifeq ($(MAKECMDGOALS),test_stellopt_travis)
 else
   LGENE = F
   LCOILOPT = F
