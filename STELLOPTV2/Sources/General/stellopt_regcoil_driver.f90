@@ -1,20 +1,36 @@
 !-----------------------------------------------------------------------
-!     Subroutine:    stellopt_regcoil_chi2_b
+!     Subroutine:    stellopt_regcoil_driver
 !     Authors:       J.C.Schmitt (Auburn/PPPL) jcschmitt@auburn.edu
 !     Date:          2017-2018
 !     Description:   This subroutine calls the coil regularization code
-!                    REGCOIL in 'target sqrt(<K^2>)' mode
+!                    REGCOIL in 'target <mode>', where target_otion is one of
+!                    the following:
+!    "max_K": Search for the λ value such that the maximum current 
+!             density over the winding surface equals target value.
+!    "chi2_K": Search for the λ value such that
+!             χ 2 K equals target value.
+!    "rms_K": Search for the λ value such that the
+!             root-mean-square current density R d 2a K2 1/2
+!             (where the integral is over the current winding surface)
+!             equals target value
+!    "max_Bnormal": Search for the λ value such that
+!             the maximum B · n over the plasma surface equals target value.
+!    "chi2_B": Search for the λ value such that
+!             χ 2 B equals target value
+!    "rms_Bnormal": Search for the λ value such that the 
+!             root-mean-square value of B·n, i.e. R d 2a B2 n 1/2 
+!             (where the integral is over the plasma surface)
+!             equals target value
 !                    
 !-----------------------------------------------------------------------
-      SUBROUTINE stellopt_regcoil_chi2_b(lscreen, iflag)
+      SUBROUTINE stellopt_regcoil_driver(lscreen, iflag)
 !-----------------------------------------------------------------------
 !     Libraries
 !-----------------------------------------------------------------------
       USE stellopt_runtime
       USE stellopt_input_mod
-      USE stellopt_vars
+      USE stellopt_vars, my_mpol => mpol_rcws, my_ntor => ntor_rcws
       USE equil_utils
-      use vparams, only: my_mpol => mpol_rcws, my_ntor => ntor_rcws
 
 !DEC$ IF DEFINED (REGCOIL)
       !USE regcoil_auto_regularization_solve
@@ -71,7 +87,7 @@
       ! determiend, control variables are set, and the regcoil-functions
       ! are called
       separation = regcoil_winding_surface_separation
-      target_value = regcoil_current_density
+      target_value = regcoil_target_value
      
       ! Loop over all of the spectral components of the winding surface
       ! and update the rc_*_stellopt  
@@ -197,7 +213,15 @@
          ! 'error' (too high or too low of current), the chi2_B will
          ! contain the chi2_B that was achieved with infinite
          ! regularization ! (well-spaced apart, straight-ish) coils
-      case default
+         ! From regcoil_auto_regularization_solve.f90
+         !    Assign variables for external optimizers
+         !     chi2_B_target = chi2_B(Nlambda)
+         !     max_K_target = max_K(Nlambda)
+         !     rms_K_target = rms_K(Nlambda)
+         !     max_Bnormal_target = max_Bnormal(Nlambda)
+         !     chi2_K_target = chi2_K(Nlambda)
+         !     Bnormal_total_target = Bnormal_total(:,:,Nlambda)
+ case default
          print *,"Invalid general_option:",general_option
          stop
       END select
@@ -261,4 +285,4 @@
 !----------------------------------------------------------------------
 !     END SUBROUTINE
 !----------------------------------------------------------------------
-      END SUBROUTINE stellopt_regcoil_chi2_b
+      END SUBROUTINE stellopt_regcoil_driver

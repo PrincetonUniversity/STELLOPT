@@ -16,7 +16,6 @@
       USE stellopt_targets, ONLY: write_targets
       USE stellopt_vars
       USE equil_utils, ONLY: count_vars
-      USE vparams, ONLY: ntor_rcws, mpol_rcws
       USE vmec_input
       USE safe_open_mod, ONLY: safe_open
       USE equil_utils, ONLY: profile_norm
@@ -225,7 +224,7 @@
 
               ! REGCOIL options
               IF (lregcoil_winding_surface_separation_opt) nvars = nvars + 1
-              IF (lregcoil_current_density_opt) nvars = nvars + 1
+              !IF (lregcoil_current_density_opt) nvars = nvars + 1
               DO m = -mpol_rcws, mpol_rcws
                  DO n = -ntor_rcws, ntor_rcws
                     IF (lregcoil_rcws_rbound_c_opt(m,n)) THEN
@@ -257,6 +256,8 @@
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'stellot_init',ierr_mpi)
 !DEC$ ENDIF
       ! Read the Equilibrium Namelist and initalize the var arrays
+      ! Initialize nvar_in to 0
+      nvar_in = 0
       SELECT CASE (TRIM(equil_type))
          CASE('vmec2000','animec','flow','satire','paravmec','parvmec','vboot','vmec2000_oneeq')
               ! Set some defaults
@@ -276,7 +277,6 @@
               ier=ictrl(2)
               IF (ier /= 0) CALL handle_err(VMEC_RUN_ERR,'Initialization call (stellopt_init)',ier)
               ! Now count
-              nvar_in=0
               IF (lregcoil_winding_surface_separation_opt) THEN
                  IF (lauto_domain) THEN
                     regcoil_winding_surface_separation_min = &
@@ -294,23 +294,23 @@
                  diag(nvar_in)    = dregcoil_winding_surface_separation_opt
                  arr_dex(nvar_in,1) = 1
               END IF
-              IF (lregcoil_current_density_opt) THEN
-                 IF (lauto_domain) THEN
-                    regcoil_current_density_min = &
-                        regcoil_current_density - &
-                        ABS(pct_domain*regcoil_current_density)
-                    regcoil_current_density_max = &
-                        regcoil_current_density + &
-                        ABS(pct_domain*regcoil_current_density)
-                 END IF
-                 nvar_in = nvar_in + 1
-                 vars(nvar_in) = regcoil_current_density
-                 vars_min(nvar_in) = regcoil_current_density_min
-                 vars_max(nvar_in) = regcoil_current_density_max
-                 var_dex(nvar_in) = iregcoil_current_density
-                 diag(nvar_in)    = dregcoil_current_density_opt
-                 arr_dex(nvar_in,1) = 1
-              END IF
+              !IF (lregcoil_current_density_opt) THEN
+              !   IF (lauto_domain) THEN
+              !      regcoil_current_density_min = &
+              !          regcoil_current_density - &
+              !          ABS(pct_domain*regcoil_current_density)
+              !      regcoil_current_density_max = &
+              !          regcoil_current_density + &
+              !          ABS(pct_domain*regcoil_current_density)
+              !   END IF
+              !   nvar_in = nvar_in + 1
+              !   vars(nvar_in) = regcoil_current_density
+              !   vars_min(nvar_in) = regcoil_current_density_min
+              !   vars_max(nvar_in) = regcoil_current_density_max
+              !   var_dex(nvar_in) = iregcoil_current_density
+              !   diag(nvar_in)    = dregcoil_current_density_opt
+              !   arr_dex(nvar_in,1) = 1
+              !END IF
               IF (ANY(lregcoil_rcws_rbound_c_opt) ) THEN
                  DO m = -mpol_rcws,mpol_rcws
                     DO n = -ntor_rcws,ntor_rcws
