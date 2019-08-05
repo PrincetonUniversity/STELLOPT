@@ -102,7 +102,96 @@ chisq_regcoil_chi2_b.o : \
       stellopt_vars.o \
       equil_vals.o
       
+       
+chisq_regcoil_max_k.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      stellopt_input_mod.o \
+      stellopt_vars.o \
+      equil_vals.o
       
+       
+chisq_regcoil_rms_k.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      stellopt_input_mod.o \
+      stellopt_vars.o \
+      equil_vals.o
+
+
+chisq_regcoil_max_bnormal.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      stellopt_input_mod.o \
+      stellopt_vars.o \
+      equil_vals.o
+      
+ 
+chisq_regcoil_chi2_k.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      stellopt_input_mod.o \
+      stellopt_vars.o \
+      equil_vals.o
+      
+ 
+
+chisq_regcoil_area_coil.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      stellopt_input_mod.o \
+      stellopt_vars.o \
+      equil_vals.o
+      
+ 
+chisq_regcoil_area_plasma.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      stellopt_input_mod.o \
+      stellopt_vars.o \
+      equil_vals.o
+      
+ 
+chisq_regcoil_area_diff.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      stellopt_input_mod.o \
+      stellopt_vars.o \
+      equil_vals.o
+      
+ 
+chisq_regcoil_volume_coil.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      stellopt_input_mod.o \
+      stellopt_vars.o \
+      equil_vals.o
+      
+ 
+chisq_regcoil_volume_plasma.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      stellopt_input_mod.o \
+      stellopt_vars.o \
+      equil_vals.o
+      
+ 
+chisq_regcoil_volume_diff.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      stellopt_input_mod.o \
+      stellopt_vars.o \
+      equil_vals.o
+      
+ 
+chisq_regcoil_bnormal_total.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      stellopt_input_mod.o \
+      stellopt_vars.o \
+      equil_vals.o
+      
+
 chisq_rbtor.o : \
       stellopt_runtime.o \
       stellopt_targets.o \
@@ -669,7 +758,7 @@ stellopt_clean_up.o : \
       $(LIB_DIR)/Release/safe_open_mod.o 
       
 
-stellopt_regcoil_chi2_b.o : \
+stellopt_regcoil_driver.o : \
       stellopt_runtime.o \
       stellopt_input_mod.o \
       stellopt_vars.o \

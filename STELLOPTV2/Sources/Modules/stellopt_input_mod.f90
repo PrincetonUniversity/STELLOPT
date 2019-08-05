@@ -386,14 +386,26 @@
                          nj_kink, nk_kink, lssl_kink, lssd_kink, mmaxdf_kink, nmaxdf_kink, &
                          lregcoil_winding_surface_separation_opt, &
                          dregcoil_winding_surface_separation_opt, &
-                         lregcoil_current_density_opt, &
-                         dregcoil_current_density_opt, &
+                         !lregcoil_current_density_opt, &
+                         !dregcoil_current_density_opt, &
                          target_regcoil_winding_surface_separation, &
                          sigma_regcoil_winding_surface_separation, &
                          target_regcoil_chi2_b, sigma_regcoil_chi2_b, &
-                         target_regcoil_current_density, sigma_regcoil_current_density, &
+                         target_regcoil_rms_K, sigma_regcoil_rms_K, &
+                         target_regcoil_max_K, sigma_regcoil_max_K, &
+                         target_regcoil_chi2_k, sigma_regcoil_chi2_k, &
+                         target_regcoil_max_bnormal, sigma_regcoil_max_bnormal, &
+                         target_regcoil_area_coil, sigma_regcoil_area_coil, &
+                         target_regcoil_area_plasma, sigma_regcoil_area_plasma, &
+                         target_regcoil_area_diff, sigma_regcoil_area_diff, &
+                         target_regcoil_volume_coil, sigma_regcoil_volume_coil, &
+                         target_regcoil_volume_plasma, sigma_regcoil_volume_plasma, &
+                         target_regcoil_volume_diff, sigma_regcoil_volume_diff, &
+                         target_regcoil_bnormal_total, sigma_regcoil_bnormal_total, &
+                         !target_regcoil_current_density, sigma_regcoil_current_density, &
                          regcoil_winding_surface_separation, &
-                         regcoil_current_density, &
+                         !regcoil_current_density, &
+                         regcoil_target_value, &
                          regcoil_nescin_filename, &
                          regcoil_num_field_periods, &
                          lregcoil_rcws_rbound_c_opt, lregcoil_rcws_rbound_s_opt, &
@@ -531,8 +543,8 @@
       regcoil_num_field_periods = -1.0
       lregcoil_winding_surface_separation_opt    = .FALSE.
       dregcoil_winding_surface_separation_opt    = -1.0
-      lregcoil_current_density_opt    = .FALSE.
-      dregcoil_current_density_opt    = -1.0
+      !lregcoil_current_density_opt    = .FALSE.
+      !dregcoil_current_density_opt    = -1.0
       lregcoil_rcws_rbound_c_opt = .FALSE.
       lregcoil_rcws_rbound_s_opt = .FALSE.
       lregcoil_rcws_zbound_c_opt = .FALSE.
@@ -592,19 +604,42 @@
       regcoil_winding_surface_separation = 1.0
       regcoil_winding_surface_separation_min = 1.0e-3
       regcoil_winding_surface_separation_max = 10.
-      target_regcoil_current_density = 0.0
-      sigma_regcoil_current_density = bigno
-      regcoil_current_density = 8.0e6
-      regcoil_current_density_min = 0.0
-      regcoil_current_density_max = bigno
+      !target_regcoil_current_density = 0.0
+      !sigma_regcoil_current_density = bigno
+      regcoil_target_value = 0.0
+      !regcoil_current_density = 8.0e6
+      !regcoil_current_density_min = 0.0
+      !regcoil_current_density_max = bigno
       regcoil_rcws_rbound_c_min = -bigno;  regcoil_rcws_rbound_c_max = bigno
       regcoil_rcws_rbound_s_min = -bigno;  regcoil_rcws_rbound_s_max = bigno
       regcoil_rcws_zbound_c_min = -bigno;  regcoil_rcws_zbound_c_max = bigno
       regcoil_rcws_zbound_s_min = -bigno;  regcoil_rcws_zbound_s_max = bigno
       target_regcoil_chi2_b = 0.0
       sigma_regcoil_chi2_b  = bigno
-      target_regcoil_current_density = 8.0e6
-      sigma_regcoil_current_density  = bigno
+      target_regcoil_max_K = 0.0
+      sigma_regcoil_max_K  = bigno
+      target_regcoil_rms_K = 0.0
+      sigma_regcoil_rms_K  = bigno
+      target_regcoil_chi2_K = 0.0
+      sigma_regcoil_chi2_K  = bigno
+      target_regcoil_max_bnormal = 0.0
+      sigma_regcoil_max_bnormal  = bigno
+      target_regcoil_area_coil = 0.0
+      sigma_regcoil_area_coil  = bigno
+      target_regcoil_area_plasma = 0.0
+      sigma_regcoil_area_plasma  = bigno
+      target_regcoil_area_diff = 0.0
+      sigma_regcoil_area_diff  = bigno
+      target_regcoil_volume_plasma = 0.0
+      sigma_regcoil_volume_plasma  = bigno
+      target_regcoil_volume_coil = 0.0
+      sigma_regcoil_volume_coil  = bigno
+      target_regcoil_volume_diff = 0.0
+      sigma_regcoil_volume_diff  = bigno
+      target_regcoil_bnormal_total = 0.0
+      sigma_regcoil_bnormal_total  = bigno
+      !target_regcoil_current_density = 8.0e6
+      !sigma_regcoil_current_density  = bigno
       
       ne_type         = 'akima_spline'
       zeff_type       = 'akima_spline'
@@ -1036,9 +1071,23 @@
       ! namelist
 
 !DEC$ IF DEFINED (REGCOIL)
-      IF ( ANY(sigma_regcoil_chi2_b < bigno) .and. &
-           ( ANY(lregcoil_rcws_rbound_c_opt) .or. ANY(lregcoil_rcws_rbound_s_opt) .or. &
-           ANY(lregcoil_rcws_zbound_c_opt) .or. ANY(lregcoil_rcws_zbound_s_opt) ) ) THEN
+      IF ( ( ANY(sigma_regcoil_chi2_b < bigno) .or.   &
+             ANY(sigma_regcoil_max_K < bigno) .or.    &
+	     ANY(sigma_regcoil_rms_K < bigno) .or.    &
+	     ANY(sigma_regcoil_chi2_k < bigno) .or.    &
+	     ANY(sigma_regcoil_max_bnormal < bigno) .or.    &
+	     ANY(sigma_regcoil_area_coil < bigno) .or.    &
+	     ANY(sigma_regcoil_area_plasma < bigno) .or.    &
+	     ANY(sigma_regcoil_area_diff < bigno) .or.    &
+	     ANY(sigma_regcoil_volume_coil < bigno) .or.    &
+	     ANY(sigma_regcoil_volume_plasma < bigno) .or.    &
+	     ANY(sigma_regcoil_volume_diff < bigno) .or.    &
+	     ANY(sigma_regcoil_bnormal_total < bigno) )  &
+            .and. &
+           ( ANY(lregcoil_rcws_rbound_c_opt) .or. &
+             ANY(lregcoil_rcws_rbound_s_opt) .or. &
+             ANY(lregcoil_rcws_zbound_c_opt) .or. &
+             ANY(lregcoil_rcws_zbound_s_opt) ) ) THEN
          rc_nfp = regcoil_num_field_periods
          regcoil_rcws_rbound_c = 0
          regcoil_rcws_rbound_s = 0
@@ -1226,8 +1275,19 @@
       END IF
 !DEC$ ENDIF
 !DEC$ IF DEFINED (REGCOIL)
-      IF (myid == master .and. (ANY(sigma_regcoil_chi2_b < bigno) .or. &
-                                (sigma_regcoil_current_density < bigno) )) THEN
+      IF (myid == master .and. (ANY(sigma_regcoil_chi2_b < bigno) .or.   &
+                                ANY(sigma_regcoil_max_K < bigno) .or.    &
+	                        ANY(sigma_regcoil_rms_K < bigno) .or.    &
+	                        ANY(sigma_regcoil_chi2_k < bigno) .or.    &
+	                        ANY(sigma_regcoil_max_bnormal < bigno) .or.    &
+	                        ANY(sigma_regcoil_area_coil < bigno) .or.    &
+	                        ANY(sigma_regcoil_area_plasma < bigno) .or.    &
+	                        ANY(sigma_regcoil_area_diff < bigno) .or.    &
+	                        ANY(sigma_regcoil_volume_coil < bigno) .or.    &
+	                        ANY(sigma_regcoil_volume_plasma < bigno) .or.    &
+	                        ANY(sigma_regcoil_volume_diff < bigno) .or.    &
+	                        ANY(sigma_regcoil_bnormal_total < bigno) )) THEN ! .or. &
+                                !(sigma_regcoil_current_density < bigno) )) THEN
          WRITE(6,*)        " Stellarator REGCOIL Optimization provided by: "
          WRITE(6,"(2X,A)") "================================================================================="
          WRITE(6,"(2X,A)") "=========                            REGCOIL                            ========="
@@ -1237,10 +1297,33 @@
          WRITE(6,*)        "    "
       END IF
 !DEC$ ELSE
-      IF (myid == master .and. (ANY(sigma_regcoil_chi2_b < bigno) .or. &
-                                (sigma_regcoil_current_density < bigno) ) ) THEN
+      IF (myid == master .and. (ANY(sigma_regcoil_chi2_b < bigno) .or.   &
+                                ANY(sigma_regcoil_max_K < bigno) .or.    &
+	                        ANY(sigma_regcoil_rms_K < bigno) .or.    &
+	                        ANY(sigma_regcoil_chi2_k < bigno) .or.    &
+	                        ANY(sigma_regcoil_max_bnormal < bigno) .or.    &
+	                        ANY(sigma_regcoil_area_coil < bigno) .or.    &
+	                        ANY(sigma_regcoil_area_plasma < bigno) .or.    &
+	                        ANY(sigma_regcoil_area_diff < bigno) .or.    &
+	                        ANY(sigma_regcoil_volume_coil < bigno) .or.    &
+	                        ANY(sigma_regcoil_volume_plasma < bigno) .or.    &
+	                        ANY(sigma_regcoil_volume_diff < bigno) .or.    &
+	                        ANY(sigma_regcoil_bnormal_total < bigno) )) THEN  .or. &
+                                !(sigma_regcoil_current_density < bigno) )) THEN
+         ! 'Disable' the target by assigning bigno to the sigmas
          sigma_regcoil_chi2_b = bigno
-         sigma_regcoil_current_density = bigno
+         sigma_regcoil_max_K = bigno
+         sigma_regcoil_rms_K = bigno
+         sigma_regcoil_chi2_K  = bigno
+         sigma_regcoil_max_bnormal  = bigno
+         sigma_regcoil_area_coil  = bigno
+         sigma_regcoil_area_plasma  = bigno
+         sigma_regcoil_area_diff  = bigno
+         sigma_regcoil_volume_plasma  = bigno
+         sigma_regcoil_volume_coil  = bigno
+         sigma_regcoil_volume_diff  = bigno
+         sigma_regcoil_bnormal_total  = bigno
+         !sigma_regcoil_current_density = bigno
          WRITE(6,*) '!!!!!!!!!!!!!!!!!!!! WARNING !!!!!!!!!!!!!!!!!!!!!!!!!'
          WRITE(6,*) '  Coil optimization with the REGCOIL'
          WRITE(6,*) '  code has been disabled.  Coil optimziation'
@@ -2117,15 +2200,17 @@
       ! This section runs if the current density, surface separation or
       ! winding surface are opitmized variables
       !
-      IF ((lregcoil_current_density_opt) .or. (lregcoil_winding_surface_separation_opt) .or.  &
+      !IF ((lregcoil_current_density_opt) .or. (lregcoil_winding_surface_separation_opt) .or.  &
+      IF ( (lregcoil_winding_surface_separation_opt) .or.  &
           (ANY(lregcoil_rcws_rbound_s_opt)) .or. (ANY(lregcoil_rcws_rbound_c_opt)) .or. &
           (ANY(lregcoil_rcws_zbound_s_opt)) .or. (ANY(lregcoil_rcws_zbound_c_opt)) ) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          WRITE(iunit,'(A)') '!          REGCOIL OPTIMIZATION'  
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
-         WRITE(iunit,outflt) 'TARGET_REGCOL_CURRENT_DENSITY',target_regcoil_current_density
-         WRITE(iunit,outflt) 'SIGMA_REGCOL_CURRENT_DENSITY',sigma_regcoil_current_density
-         WRITE(iunit,outflt) 'REGCOIL_CURRENT_DENSITY',regcoil_current_density
+         WRITE(iunit,outflt) 'REGCOIL_TARGET_VALUE',regcoil_target_value
+         !WRITE(iunit,outflt) 'TARGET_REGCOiL_CURRENT_DENSITY',target_regcoil_current_density
+         !WRITE(iunit,outflt) 'SIGMA_REGCOiL_CURRENT_DENSITY',sigma_regcoil_current_density
+         !WRITE(iunit,outflt) 'REGCOIL_CURRENT_DENSITY',regcoil_current_density
  
          ! Options for uniform winding surface separations
          IF (lregcoil_winding_surface_separation_opt) THEN
@@ -2145,17 +2230,17 @@
          ! end of uniform winding surface separation options
 
          ! Options for current density optimization - Not completely developted/tested
-         IF (lregcoil_current_density_opt) THEN
-            WRITE(iunit,onevar) 'LREGCOIL_CURRENT_DENSITY', & 
-                   lregcoil_current_density_opt, &
-                   'REGCOIL_CURRENT_DENSITY_MIN', &
-                   regcoil_current_density_min, &
-                   'REGCOIL_CURRENT_DENSITY_MAX', &
-                  regcoil_current_density_max
-            IF (dregcoil_current_density_opt > 0) &
-                       WRITE(iunit,outflt) 'DREGCOIL_CURRENT_DENSITY', &
-                       dregcoil_current_density_opt
-         END IF
+         !IF (lregcoil_current_density_opt) THEN
+         !   WRITE(iunit,onevar) 'LREGCOIL_CURRENT_DENSITY', & 
+         !          lregcoil_current_density_opt, &
+         !          'REGCOIL_CURRENT_DENSITY_MIN', &
+         !          regcoil_current_density_min, &
+         !          'REGCOIL_CURRENT_DENSITY_MAX', &
+         !         regcoil_current_density_max
+         !   IF (dregcoil_current_density_opt > 0) &
+         !              WRITE(iunit,outflt) 'DREGCOIL_CURRENT_DENSITY', &
+         !              dregcoil_current_density_opt
+         !END IF
          ! end of option for current density optimization
 
          ! Winding surface component OR separation optimization
@@ -2169,7 +2254,84 @@
                            'SIGMA_REGCOIL_CHI2_B(',ii,') = ', sigma_regcoil_chi2_b(ii)
                 END IF
              END DO
-         END IF
+             DO ii = 1,UBOUND(target_regcoil_max_K, 1)
+                IF (sigma_regcoil_max_K(ii) < bigno) THEN
+                    WRITE(iunit,"(2(2X,A,I4.3,A,E22.14))") &
+                           'TARGET_REGCOIL_MAX_K(',ii,') = ', target_regcoil_max_K(ii), &
+                           'SIGMA_REGCOIL_MAX_K(',ii,') = ', sigma_regcoil_max_K(ii)
+                END IF
+             END DO
+             DO ii = 1,UBOUND(target_regcoil_rms_K, 1)
+                IF (sigma_regcoil_rms_K(ii) < bigno) THEN
+                    WRITE(iunit,"(2(2X,A,I4.3,A,E22.14))") &
+                           'TARGET_REGCOIL_RMS_K(',ii,') = ', target_regcoil_rms_K(ii), &
+                           'SIGMA_REGCOIL_RMS_K(',ii,') = ', sigma_regcoil_rms_K(ii)
+                END IF
+             END DO
+             DO ii = 1,UBOUND(target_regcoil_chi2_K, 1)
+                IF (sigma_regcoil_chi2_k(ii) < bigno) THEN
+                    WRITE(iunit,"(2(2X,A,I4.3,A,E22.14))") &
+                           'TARGET_REGCOIL_CHI2_K(',ii,') = ', target_regcoil_chi2_k(ii), &
+                           'SIGMA_REGCOIL_CHI2_K(',ii,') = ', sigma_regcoil_chi2_k(ii)
+                END IF
+             END DO
+              DO ii = 1,UBOUND(target_regcoil_max_bnormal, 1)
+                IF (sigma_regcoil_max_bnormal(ii) < bigno) THEN
+                    WRITE(iunit,"(2(2X,A,I4.3,A,E22.14))") &
+                           'TARGET_REGCOIL_MAX_BNORMAL(',ii,') = ', target_regcoil_max_bnormal(ii), &
+                           'SIGMA_REGCOIL_MAX_BNORMAL(',ii,') = ', sigma_regcoil_max_bnormal(ii)
+                END IF
+             END DO
+              DO ii = 1,UBOUND(target_regcoil_area_coil, 1)
+                IF (sigma_regcoil_area_coil(ii) < bigno) THEN
+                    WRITE(iunit,"(2(2X,A,I4.3,A,E22.14))") &
+                           'TARGET_REGCOIL_AREA_COIL(',ii,') = ', target_regcoil_area_coil(ii), &
+                           'SIGMA_REGCOIL_AREA_COIL(',ii,') = ', sigma_regcoil_area_coil(ii)
+                END IF
+             END DO
+              DO ii = 1,UBOUND(target_regcoil_area_plasma, 1)
+                IF (sigma_regcoil_area_plasma(ii) < bigno) THEN
+                    WRITE(iunit,"(2(2X,A,I4.3,A,E22.14))") &
+                           'TARGET_REGCOIL_AREA_PLASMA(',ii,') = ', target_regcoil_area_plasma(ii), &
+                           'SIGMA_REGCOIL_AREA_PLASMA(',ii,') = ', sigma_regcoil_area_plasma(ii)
+                END IF
+             END DO
+              DO ii = 1,UBOUND(target_regcoil_area_diff, 1)
+                IF (sigma_regcoil_area_diff(ii) < bigno) THEN
+                    WRITE(iunit,"(2(2X,A,I4.3,A,E22.14))") &
+                           'TARGET_REGCOIL_AREA_DIFF(',ii,') = ', target_regcoil_area_diff(ii), &
+                           'SIGMA_REGCOIL_AREA_DIFF(',ii,') = ', sigma_regcoil_area_diff(ii)
+                END IF
+             END DO
+              DO ii = 1,UBOUND(target_regcoil_volume_coil, 1)
+                IF (sigma_regcoil_volume_coil(ii) < bigno) THEN
+                    WRITE(iunit,"(2(2X,A,I4.3,A,E22.14))") &
+                           'TARGET_REGCOIL_VOLUME_COIL(',ii,') = ', target_regcoil_volume_coil(ii), &
+                           'SIGMA_REGCOIL_VOLUME_COIL(',ii,') = ', sigma_regcoil_volume_coil(ii)
+                END IF
+             END DO
+              DO ii = 1,UBOUND(target_regcoil_volume_plasma, 1)
+                IF (sigma_regcoil_volume_plasma(ii) < bigno) THEN
+                    WRITE(iunit,"(2(2X,A,I4.3,A,E22.14))") &
+                           'TARGET_REGCOIL_VOLUME_PLASMA(',ii,') = ', target_regcoil_volume_plasma(ii), &
+                           'SIGMA_REGCOIL_VOLUME_PLASMA(',ii,') = ', sigma_regcoil_volume_plasma(ii)
+                END IF
+             END DO
+              DO ii = 1,UBOUND(target_regcoil_volume_diff, 1)
+                IF (sigma_regcoil_volume_diff(ii) < bigno) THEN
+                    WRITE(iunit,"(2(2X,A,I4.3,A,E22.14))") &
+                           'TARGET_REGCOIL_VOLUME_DIFF(',ii,') = ', target_regcoil_volume_diff(ii), &
+                           'SIGMA_REGCOIL_VOLUME_DIFF(',ii,') = ', sigma_regcoil_volume_diff(ii)
+                END IF
+             END DO
+              DO ii = 1,UBOUND(target_regcoil_bnormal_total, 1)
+                IF (sigma_regcoil_bnormal_total(ii) < bigno) THEN
+                    WRITE(iunit,"(2(2X,A,I4.3,A,E22.14))") &
+                           'TARGET_REGCOIL_BNORMAL_TOTAL(',ii,') = ', target_regcoil_bnormal_total(ii), &
+                           'SIGMA_REGCOIL_BNORMAL_TOTAL(',ii,') = ', sigma_regcoil_bnormal_total(ii)
+                END IF
+             END DO
+          END IF
 
          ! Options for winding surface (Fourier Series) variation
          IF (  (ANY(lregcoil_rcws_rbound_c_opt)) .or. (ANY(lregcoil_rcws_rbound_s_opt)) .or. &
