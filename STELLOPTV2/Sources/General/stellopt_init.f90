@@ -311,7 +311,7 @@
               !   var_dex(nvar_in) = iregcoil_current_density
               !   diag(nvar_in)    = dregcoil_current_density_opt
               !   arr_dex(nvar_in,1) = 1
-              END IF
+              !END IF
               IF (ANY(lregcoil_rcws_rbound_c_opt) ) THEN
                  DO m = -mpol_rcws,mpol_rcws
                     DO n = -ntor_rcws,ntor_rcws

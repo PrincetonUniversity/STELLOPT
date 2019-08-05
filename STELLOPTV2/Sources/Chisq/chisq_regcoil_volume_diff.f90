@@ -41,8 +41,7 @@
       USE stellopt_runtime
       USE stellopt_targets
       USE stellopt_input_mod
-      USE stellopt_vars, ONLY: regcoil_nlambda
-      USE vparams, ONLY: mnprod_x4_rcws
+      USE stellopt_vars, ONLY: regcoil_nlambda, mnprod_x4_rcws
 !DEC$ IF DEFINED (REGCOIL)
       USE regcoil_variables, ONLY:  volume_coil_target, &
 			volume_plasma_target, nlambda, regcoil_nml

@@ -111,8 +111,8 @@
          IF (var_dex(nvar_in) == ixics_v0) xics_v0 = x(nvar_in)
          IF (var_dex(nvar_in) == iregcoil_winding_surface_separation) &
                 regcoil_winding_surface_separation = x(nvar_in)
-         IF (var_dex(nvar_in) == iregcoil_target_value) &
-                regcoil_target_value = x(nvar_in)
+         !IF (var_dex(nvar_in) == iregcoil_target_value) &
+         !       regcoil_target_value = x(nvar_in)
          IF (var_dex(nvar_in) == ibcrit) bcrit = x(nvar_in)
          IF (var_dex(nvar_in) == iextcur) extcur(arr_dex(nvar_in,1)) = x(nvar_in)
          IF (var_dex(nvar_in) == iaphi) aphi(arr_dex(nvar_in,1)) = x(nvar_in)
