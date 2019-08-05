@@ -125,8 +125,8 @@ chisq_regcoil_max_bnormal.o : \
       stellopt_input_mod.o \
       stellopt_vars.o \
       equil_vals.o
-      
- 
+
+
 chisq_regcoil_chi2_k.o : \
       stellopt_runtime.o \
       stellopt_targets.o \
@@ -135,7 +135,6 @@ chisq_regcoil_chi2_k.o : \
       equil_vals.o
       
  
-
 chisq_regcoil_area_coil.o : \
       stellopt_runtime.o \
       stellopt_targets.o \
@@ -192,7 +191,14 @@ chisq_regcoil_bnormal_total.o : \
       equil_vals.o
 
        
-chisq_rbtor.o : \
+chisq_rosenbrock.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      stellopt_input_mod.o \
+      stellopt_vars.o
+
+
+ chisq_rbtor.o : \
       stellopt_runtime.o \
       stellopt_targets.o \
       equil_vals.o 
@@ -619,6 +625,7 @@ stellopt_runtime.o : \
 
 stellopt_targets.o : \
       $(LIB_DIR)/Debug/stel_kinds.o \
+      stellopt_vars.o \
       $(LIB_DIR)/Debug/vparams.o 
       
 

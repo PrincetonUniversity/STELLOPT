@@ -32,9 +32,8 @@
               ! JCS: to do.  update with 'only:' varsiables
       USE stellopt_runtime
       USE stellopt_input_mod
-      USE stellopt_vars
+      USE stellopt_vars, my_mpol => mpol_rcws, my_ntor => ntor_rcws
       USE equil_utils
-      use vparams, only: my_mpol => mpol_rcws, my_ntor => ntor_rcws
 
 !DEC$ IF DEFINED (REGCOIL)
       !USE regcoil_auto_regularization_solve

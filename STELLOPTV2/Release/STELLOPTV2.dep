@@ -101,8 +101,8 @@ chisq_regcoil_chi2_b.o : \
       stellopt_input_mod.o \
       stellopt_vars.o \
       equil_vals.o
+
       
-       
 chisq_regcoil_max_k.o : \
       stellopt_runtime.o \
       stellopt_targets.o \
@@ -174,7 +174,14 @@ chisq_regcoil_volume_plasma.o : \
       stellopt_input_mod.o \
       stellopt_vars.o \
       equil_vals.o
-      
+
+
+chisq_rosenbrock.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      stellopt_input_mod.o \
+      stellopt_vars.o
+
  
 chisq_regcoil_volume_diff.o : \
       stellopt_runtime.o \
@@ -631,6 +638,7 @@ stellopt_runtime.o : \
 
 stellopt_targets.o : \
       $(LIB_DIR)/Release/stel_kinds.o \
+      stellopt_vars.o \
       $(LIB_DIR)/Release/vparams.o 
       
 

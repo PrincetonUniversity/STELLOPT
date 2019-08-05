@@ -54,6 +54,7 @@ chisq_regcoil_volume_coil.o \
 chisq_regcoil_volume_plasma.o \
 chisq_regcoil_volume_diff.o \
 chisq_regcoil_bnormal_total.o \
+chisq_rosenbrock.o \
 chisq_vessel.o \
 chisq_b0.o \
 chisq_z0.o \

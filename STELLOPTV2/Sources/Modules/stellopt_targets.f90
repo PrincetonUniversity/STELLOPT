@@ -9,7 +9,8 @@
 !     Libraries
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
-      USE vparams, ONLY: nsd, ntor_rcws, mpol_rcws
+      USE stellopt_vars, ONLY: ntor_rcws, mpol_rcws, rosenbrock_dim
+      USE vparams, ONLY: nsd
       USE vsvd0, ONLY : nigroup
 
 !-----------------------------------------------------------------------
@@ -82,6 +83,8 @@
       REAL(rprec) ::  target_kappa_avg, sigma_kappa_avg
       REAL(rprec) ::  target_x, sigma_x
       REAL(rprec) ::  target_y, sigma_y
+      REAL(rprec), DIMENSION(rosenbrock_dim) ::  target_Rosenbrock_F, &
+                                                 sigma_Rosenbrock_F
       REAL(rprec), PARAMETER ::  bigno_ne = 1.0E27
       REAL(rprec) ::  norm_press
       REAL(rprec) ::  qm_ratio
@@ -280,6 +283,7 @@
       INTEGER, PARAMETER :: jtarget_coilself   = 617
       INTEGER, PARAMETER :: jtarget_x          = 900
       INTEGER, PARAMETER :: jtarget_y          = 901
+      INTEGER, PARAMETER :: jtarget_Rosenbrock_F   = 902
       
 
       CONTAINS
@@ -294,6 +298,8 @@
             WRITE(iunit, out_format) 'X'
          CASE(jtarget_y)
             WRITE(iunit, out_format) 'Y'
+         CASE(jtarget_Rosenbrock_F)
+            WRITE(iunit, out_format) 'Rosenbrock Test Function'
          CASE(jtarget_aspect)
             WRITE(iunit, out_format) 'Aspect Ratio'
          CASE(jtarget_aspect_max)

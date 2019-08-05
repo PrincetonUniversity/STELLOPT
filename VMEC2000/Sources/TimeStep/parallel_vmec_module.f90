@@ -242,7 +242,7 @@ INTEGER, INTENT(IN) :: ns, nzeta, ntheta3
   !------------------------------------------------
     SUBROUTINE SetSurfacePartitions
     
-    INTEGER :: mypart
+    INTEGER :: mypart, local_err
 #if defined(MPI_OPT)
     IF (par_ns.LT.nranks) THEN
        IF(grank.EQ.0) print *,"NS is less than NRANKS. Aborting!"
@@ -280,7 +280,7 @@ INTEGER, INTENT(IN) :: ns, nzeta, ntheta3
           WRITE(*,*) '***********************************************************'
           WRITE(*,*)
        END IF
-       CALL MPI_Abort(NS_COMM,MPI_ERR)
+       CALL MPI_Abort(NS_COMM,local_err,MPI_ERR)
     END IF
 #endif
     END SUBROUTINE SetSurfacePartitions
