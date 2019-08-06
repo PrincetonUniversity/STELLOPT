@@ -8,7 +8,7 @@ modeling neutral beam injection in parallel. The magnetic field is
 represented by a three dimensional splines over a cylindrical grid. It
 is currently interfaced to the MAKEGRID coils file, MAKEGRID output
 file, and VMEC equilibria. Ionization and recombination models are
-provided by ADAS. \<\<toc\>\>
+provided by ADAS.
 
 ------------------------------------------------------------------------
 
@@ -17,17 +17,16 @@ provided by ADAS. \<\<toc\>\>
 ![](images/depositing.png)
 
 The BEAMS3D code follows the guiding center orbit equations on a
-cylindrical grid [math](math)
-\\frac{d\\vec{R}}{dt}=\\frac{\\hat{b}}{qB}\\left(\\mu\\nabla B
-+\\frac{mv\_{ll}\^2}{2B}\\left(\\hat{b}\\cdot\\nabla\\right)\\vec{B}\\right)+v\_{ll}\\hat{b}
-[math](math) [math](math)
-\\frac{dv\_{ll}}{dt}=-\\frac{\\mu}{m}\\hat{b}\\cdot\\left(\\nabla
-B\\right) [math](math) These ODE\'s can be solved via a NAG routine,
+cylindrical grid
+$\\frac{d\\vec{R}}{dt}=\\frac{\\hat{b}}{qB}\\left(\\mu\\nabla B
++\\frac{mv\_{ll}\^2}{2B}\\left(\\hat{b}\\cdot\\nabla\\right)\\vec{B}\\right)+v\_{ll}\\hat{b} $,
+$\\frac{dv\_{ll}}{dt}=-\\frac{\\mu}{m}\\hat{b}\\cdot\\left(\\nabla
+B\\right) $. These ODE\'s can be solved via a NAG routine,
 LSODE, or Runge-Kutta algorithm. The magnetic field is splined over the
 cylindrical grid (R,phi,Z). The initial position and velocity of the
 particles can either be specified or modeled using a neutral beam model.
 The neutral beam model relies on ADAS for ionization and recombination
-physics. [math](math) \\mu = \\frac{mv\_\\perp\^2}{2B} [math](math)
+physics. $ \\mu = \\frac{mv\_\\perp\^2}{2B} $
 
 ------------------------------------------------------------------------
 
@@ -45,70 +44,71 @@ namelist which should be placed in the input.ext file. While the entire
 VMEC input name is not required some parts will be read. The name lists
 should look like:
 
-    #!fortran
-    &INDATA
-     ! VMEC input namelist (only need coil currents for usual runs)
-     EXTCUR(1) = 10000.00
-     EXTCUR(2) = 10000.00
-     EXTCUR(3) = 12000.00
-     EXTCUR(4) = 12000.00
-     EXTCUR(5) = 6000.00
-     ! VMEC Axis info (for putting a current on axis -axis option)
-     !     This information is utilized if you want to place the net toroidal current
-     !     on a magnetic axis.  Useful for doing vacuum tokamak equilibria
-     CURTOR = 5000.0
-     NFP = 5
-     NTOR = 6
-     RAXIS = 3.6  0.1 0.001
-     ZAXIS = 0.0  0.1 0.001
-    /
-    &BEAMS3D_INPUT
-     NR = 201                          ! Number of radial gridpoints, overridden if using mgrid
-     NPHI = 36                         ! Number of toroidal gridpoints, overridden if using mgrid
-     NZ = 201                          ! Number of vertical gridpoints, overridden if using mgrid
-     RMIN = 2.5                        ! Minimum extent of radial grid, overridden if using mgrid
-     RMAX = 5.0                        ! Maximum extent of radial grid, overridden if using mgrid
-     ZMIN = -1.5                       ! Minimum extent of vertical grid, overridden if using mgrid
-     ZMAX = 1.5                        ! Maximum extent of radial grid, overridden if using mgrid
-     PHIMIN = 0.0                      ! Minimum extent of toroidal grid, overridden if using mgrid
-     PHIMAX = 0.628                    ! Maximum extent of toroidal grid, overridden if using mgrid
-     R_START_IN =  3.6  3.7  3.8       ! Radial starting locations of particles [m]
-     Z_START_IN =  0.0  0.0  0.0       ! Vertical starting locations of particles [m]
-     PHI_START_IN =  0.0  0.0  0.0     ! Toroidal starting locations of particles (radians)
-     VLL_START_IN =  1.0E6 1.0E6 1.0E6 ! Initial parallel velocity of particles [m/s]
-     MU_START_IN =   3*1.0E-15         ! Particle magnetic moment [J/T] (0.5*m*v^2/B)
-     CHARGE_IN   =   3*1.60217733E-19  ! Particle charge [C]
-     MASS_IN     =   3*1.6726231E-27   ! Particle mass [kg]
-     ZATOM_IN    =   3*1.0             ! Particle charge number
-     T_END_IN    =   3*0.001           ! How long to follow particles [s]
-     NPOINC = 500                      ! Number of toroidal points per-period to output the field line trajectory
-     INT_TYPE = 'NAG'                  ! Particle trajectory integration method (NAG, RKH68, LSODE)
-     FOLLOW_TOL = 1.0E-12              ! Trajectory following tolerance
-     VC_ADAPT_TOL = 1.0E-7             ! Virtual casing tolerance (if using plasma field from equilibria)
-     ! The following is used if modeling beam deposition as well
-     NPARTICLES_START = 500            ! Number of particles per beam line
-     ASIZE_BEAMS = 0.15                ! Aperature Size [m]
-     ADIST_BEAMS = 2.0                 ! Aperature Distance [m]
-     DIV_BEAMS = 0.1                   ! Beam divergence [rad] (small angle approximation used)
-     E_BEAMS   = 6.408E-15             ! Beam energy [J]
-     MASS_BEAMS = 1.6726231E-27        ! Beam particle mass [kg]
-     CHARGE_BEAMS = 1.60217733E-19     ! Beam particle charge [C]
-     ZATOM_BEAMS = 1.0                 ! Beam particle charge number
-     R_beams(1,1) = 1.673              ! Neutral beam radial position (Beam #1)
-     R_beams(1,2) = 1.400              ! Point defining beam line (Beam #1)
-     Z_beams(1,1) = 0.0                ! Neutral beam vertical position (Beam #1)
-     Z_beams(1,2) = 0.0                ! Point defining beam line (Beam #1)
-     PHI_BEAMS(1,1) = 0.0              ! Neutral beam toroidal poition (Beam #1)
-     PHI_BEAMS(1,2) = 1.047            ! Point defining beam line (Beam #1)
-     ADIST_BEAMS = 0.1                 ! Beam Appearture distance
-     TE_AUX_S  = 0.0 0.5 1.0           ! Electron Temperature Profile (radial knots)
-     TE_AUX_F  = 0.0 1.0 2.0           ! Electron Temperature Profile (values)
-     NE_AUX_S  = 0.0 0.5 1.0           ! Electron Density Profile (radial knots)
-     NE_AUX_F  = 0.0 1.0 2.0           ! Electron Density Profile (values)
-     TI_AUX_S  = 0.0 0.5 1.0           ! Ion Temperature Profile (radial knots)
-     TI_AUX_F  = 0.0 1.0 2.0           ! Ion Temperature Profile (values)
-    /
-    &END
+```fortran
+&INDATA
+ ! VMEC input namelist (only need coil currents for usual runs)
+ EXTCUR(1) = 10000.00
+ EXTCUR(2) = 10000.00
+ EXTCUR(3) = 12000.00
+ EXTCUR(4) = 12000.00
+ EXTCUR(5) = 6000.00
+ ! VMEC Axis info (for putting a current on axis -axis option)
+ !     This information is utilized if you want to place the net toroidal current
+ !     on a magnetic axis.  Useful for doing vacuum tokamak equilibria
+ CURTOR = 5000.0
+ NFP = 5
+ NTOR = 6
+ RAXIS = 3.6  0.1 0.001
+ ZAXIS = 0.0  0.1 0.001
+/
+&BEAMS3D_INPUT
+ NR = 201                          ! Number of radial gridpoints, overridden if using mgrid
+ NPHI = 36                         ! Number of toroidal gridpoints, overridden if using mgrid
+ NZ = 201                          ! Number of vertical gridpoints, overridden if using mgrid
+ RMIN = 2.5                        ! Minimum extent of radial grid, overridden if using mgrid
+ RMAX = 5.0                        ! Maximum extent of radial grid, overridden if using mgrid
+ ZMIN = -1.5                       ! Minimum extent of vertical grid, overridden if using mgrid
+ ZMAX = 1.5                        ! Maximum extent of radial grid, overridden if using mgrid
+ PHIMIN = 0.0                      ! Minimum extent of toroidal grid, overridden if using mgrid
+ PHIMAX = 0.628                    ! Maximum extent of toroidal grid, overridden if using mgrid
+ R_START_IN =  3.6  3.7  3.8       ! Radial starting locations of particles [m]
+ Z_START_IN =  0.0  0.0  0.0       ! Vertical starting locations of particles [m]
+ PHI_START_IN =  0.0  0.0  0.0     ! Toroidal starting locations of particles (radians)
+ VLL_START_IN =  1.0E6 1.0E6 1.0E6 ! Initial parallel velocity of particles [m/s]
+ MU_START_IN =   3*1.0E-15         ! Particle magnetic moment [J/T] (0.5*m*v^2/B)
+ CHARGE_IN   =   3*1.60217733E-19  ! Particle charge [C]
+ MASS_IN     =   3*1.6726231E-27   ! Particle mass [kg]
+ ZATOM_IN    =   3*1.0             ! Particle charge number
+ T_END_IN    =   3*0.001           ! How long to follow particles [s]
+ NPOINC = 500                      ! Number of toroidal points per-period to output the field line trajectory
+ INT_TYPE = 'NAG'                  ! Particle trajectory integration method (NAG, RKH68, LSODE)
+ FOLLOW_TOL = 1.0E-12              ! Trajectory following tolerance
+ VC_ADAPT_TOL = 1.0E-7             ! Virtual casing tolerance (if using plasma field from equilibria)
+ ! The following is used if modeling beam deposition as well
+ NPARTICLES_START = 500            ! Number of particles per beam line
+ ASIZE_BEAMS = 0.15                ! Aperature Size [m]
+ ADIST_BEAMS = 2.0                 ! Aperature Distance [m]
+ DIV_BEAMS = 0.1                   ! Beam divergence [rad] (small angle approximation used)
+ E_BEAMS   = 6.408E-15             ! Beam energy [J]
+ MASS_BEAMS = 1.6726231E-27        ! Beam particle mass [kg]
+ CHARGE_BEAMS = 1.60217733E-19     ! Beam particle charge [C]
+ ZATOM_BEAMS = 1.0                 ! Beam particle charge number
+ R_beams(1,1) = 1.673              ! Neutral beam radial position (Beam #1)
+ R_beams(1,2) = 1.400              ! Point defining beam line (Beam #1)
+ Z_beams(1,1) = 0.0                ! Neutral beam vertical position (Beam #1)
+ Z_beams(1,2) = 0.0                ! Point defining beam line (Beam #1)
+ PHI_BEAMS(1,1) = 0.0              ! Neutral beam toroidal poition (Beam #1)
+ PHI_BEAMS(1,2) = 1.047            ! Point defining beam line (Beam #1)
+ ADIST_BEAMS = 0.1                 ! Beam Appearture distance
+ TE_AUX_S  = 0.0 0.5 1.0           ! Electron Temperature Profile (radial knots)
+ TE_AUX_F  = 0.0 1.0 2.0           ! Electron Temperature Profile (values)
+ NE_AUX_S  = 0.0 0.5 1.0           ! Electron Density Profile (radial knots)
+ NE_AUX_F  = 0.0 1.0 2.0           ! Electron Density Profile (values)
+ TI_AUX_S  = 0.0 0.5 1.0           ! Ion Temperature Profile (radial knots)
+ TI_AUX_F  = 0.0 1.0 2.0           ! Ion Temperature Profile (values)
+/
+&END
+```
 
 It is important to note that neutral beam lines are defined by two
 points. The first index of the array is the beam number, the second
@@ -204,4 +204,4 @@ bins by VLL the particles at each NPOINC time step.
 
 ### Tutorials
 
-[NCSX Neutral Beam Injection Example](NCSX Neutral Beam Injection Example)
+[NCSX Neutral Beam Injection Example](NCSX Neutral Beam Injection Example.md)
