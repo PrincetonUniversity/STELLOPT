@@ -131,18 +131,21 @@ and BEASM3D\_INPUT namelists in it.
 
     BEASM3D -vmec <VMEC FILE> -coil <COIL FILE> -mgrid <MGRID FILE> -vessel <VESSEL FILE> -vac -full -noverb -help
 
-\|\| Argument \|\| Default \|\| Description \|\| \|\| -vmec \|\| NONE
-\|\| VMEC input extension \|\| \|\| -coil \|\| NONE \|\| Coils File \|\|
-\|\| -mgrid \|\| NONE \|\| Makegrid style vacuum grid file \|\| \|\|
--vessel \|\| NONE \|\| First wall file \|\| \|\| -vac \|\| NONE \|\|
-Only compute the vacuum field \|\| \|\| -plasma \|\| NONE \|\| Only
-compute fields inside the plasma domain (places wall at LCFS) \|\| \|\|
--noverb \|\| NONE \|\| Suppresses screen output \|\| \|\| -field \|\|
-NONE \|\| Outputs the B-Field on the cylindrical grid only. \|\| \|\|
--raw \|\| NONE \|\| Treats EXTCUR array as raw values (EXTCUR is a scale
-factor applied to what\'s in the coils file). \|\| \|\| -hitonly \|\|
-NONE \|\| Only save vessel strike points.\|\| \|\| -help \|\| NONE \|\|
-Print help message. \|\| In it\'s simplest invokation the code requires
+| Argument | Default | Description |
+|:------------- |:-------------:|:----- |
+| -vmec | NONE | VMEC input extension |
+| -coil | NONE | Coils File |
+| -mgrid | NONE | Makegrid style vacuum grid file |
+| -vessel | NONE | First wall file |
+| -vac | NONE | Only compute the vacuum field |
+| -plasma | NONE | Only compute fields inside the plasma domain (places wall at LCFS) |
+| -noverb | NONE | Suppresses screen output |
+| -field | NONE | Outputs the B-Field on the cylindrical grid only. |
+| -raw | NONE | Treats EXTCUR array as raw values (EXTCUR is a scale factor applied to what\'s in the coils file). |
+| -hitonly | NONE | Only save vessel strike points.|
+| -help | NONE | Print help message. |
+
+In it\'s simplest invokation the code requires
 a VMEC input file.
 
     >~/bin/xbeams3d -vmec ncsx_c09r00_free -mgrid mgrid_c09r00.nc -vac
