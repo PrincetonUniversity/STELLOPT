@@ -183,43 +183,55 @@ def read_vmec(file, branch=None):
     vmec_data['xn']=npct.as_array(ftemp.in_dll(libstell,s1+'read_wout_mod_'+s2+'_xn'+s3),(vmec_data['mnmax'],1))
     vmec_data['xm_nyq']=npct.as_array(ftemp.in_dll(libstell,s1+'read_wout_mod_'+s2+'_xm_nyq'+s3),(vmec_data['mnmax_nyq'],1))
     vmec_data['xn_nyq']=npct.as_array(ftemp.in_dll(libstell,s1+'read_wout_mod_'+s2+'_xn_nyq'+s3),(vmec_data['mnmax_nyq'],1))
+
     ## Array values 1D
-    ftemp=ct.POINTER(ct.c_double)
+    ftemp=ct.POINTER(ct.c_double)  # analysis:ignore  
     ns = vmec_data['ns']
     mnmax = vmec_data['mnmax']
     mnmax_nyq = vmec_data['mnmax_nyq']
-    ns_size = (ns,1)
-    mn_size = (mnmax,1)
-    mnnyq_size = (mnmax_nyq,1)
+
     ## 2D Arrays
     mn2d_size = (ns, mnmax)
     mn2d_nyq_size = (ns, mnmax_nyq)
     fmn=ct.POINTER(ct.c_double)
-    vmec_data['rmnc']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_rmnc'+s3),mn2d_size) #ns,mnmax format
-    vmec_data['zmns']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_zmns'+s3),mn2d_size) #ns,mnmax format
-    vmec_data['lmns']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_lmns'+s3),mn2d_size) #ns,mnmax format
-    vmec_data['bmnc']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_bmnc'+s3),mn2d_nyq_size) #ns,mnmax format
-    vmec_data['gmnc']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_gmnc'+s3),mn2d_nyq_size) #ns,mnmax format
-    vmec_data['bsupumnc']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_bsupumnc'+s3),mn2d_nyq_size) #ns,mnmax format
-    vmec_data['bsupvmnc']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_bsupvmnc'+s3),mn2d_nyq_size) #ns,mnmax format
-    vmec_data['bsubsmns']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_bsubsmns'+s3),mn2d_nyq_size) #ns,mnmax format
-    vmec_data['bsubumnc']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_bsubumnc'+s3),mn2d_nyq_size) #ns,mnmax format
-    vmec_data['bsubvmnc']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_bsubvmnc'+s3),mn2d_nyq_size) #ns,mnmax format
-    vmec_data['currumnc']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_currumnc'+s3),mn2d_nyq_size) #ns,mnmax format
-    vmec_data['currvmnc']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_currvmnc'+s3),mn2d_nyq_size) #ns,mnmax format
+    for key in ['rmnc','zmns','lmns']:
+        vmec_data[key]=npct.as_array(fmn.in_dll(libstell, '%sread_wout_mod_%s_%s%s'%(s1,s2,key,s3)), mn2d_size) #ns,mnmax format
+    for key in ['bmnc','gmnc','bsupumnc', 'bsupvmnc', 'bsubsmns', 'bsubumnc', 'bsubvmnc', 'currumnc', 'currvmnc']:
+        vmec_data[key]=npct.as_array(fmn.in_dll(libstell, '%sread_wout_mod_%s_%s%s'%(s1,s2,key,s3)), mn2d_nyq_size) #ns,mnmax format
     if vmec_data['iasym']:
-        vmec_data['rmns']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_rmns'+s3),mn2d_size) #ns,mnmax format
-        vmec_data['zmnc']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_zmnc'+s3),mn2d_size) #ns,mnmax format
-        vmec_data['lmnc']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_lmnc'+s3),mn2d_size) #ns,mnmax format
-        vmec_data['bmns']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_bmns'+s3),mn2d_nyq_size) #ns,mnmax format
-        vmec_data['gmns']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_gmns'+s3),mn2d_nyq_size) #ns,mnmax format
-        vmec_data['bsupumns']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_bsupumns'+s3),mn2d_nyq_size) #ns,mnmax format
-        vmec_data['bsupvmns']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_bsupvmns'+s3),mn2d_nyq_size) #ns,mnmax format
-        vmec_data['bsubsmnc']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_bsubsmnc'+s3),mn2d_nyq_size) #ns,mnmax format
-        vmec_data['bsubumns']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_bsubumns'+s3),mn2d_nyq_size) #ns,mnmax format
-        vmec_data['bsubvmns']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_bsubvmns'+s3),mn2d_nyq_size) #ns,mnmax format
-        vmec_data['currumns']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_currumns'+s3),mn2d_nyq_size) #ns,mnmax format
-        vmec_data['currvmns']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_currvmns'+s3),mn2d_nyq_size) #ns,mnmax format
+        for key in ['rmns','zmnc','lmnc']:
+            vmec_data[key]=npct.as_array(fmn.in_dll(libstell, '%sread_wout_mod_%s_%s%s'%(s1,s2,key,s3)), mn2d_size) #ns,mnmax format
+        for key in ['bmns','gmns','bsupumns', 'bsupvmns', 'bsubsmnc', 'bsubumns', 'bsubvmns', 'currumns', 'currvmns']:
+            vmec_data[key]=npct.as_array(fmn.in_dll(libstell, '%sread_wout_mod_%s_%s%s'%(s1,s2,key,s3)), mn2d_nyq_size) #ns,mnmax format
+        # end for
+    # end if
+    
+#    vmec_data['rmnc']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_rmnc'+s3),mn2d_size) #ns,mnmax format
+#    vmec_data['zmns']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_zmns'+s3),mn2d_size) #ns,mnmax format
+#    vmec_data['lmns']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_lmns'+s3),mn2d_size) #ns,mnmax format
+#    vmec_data['bmnc']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_bmnc'+s3),mn2d_nyq_size) #ns,mnmax format
+#    vmec_data['gmnc']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_gmnc'+s3),mn2d_nyq_size) #ns,mnmax format
+#    vmec_data['bsupumnc']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_bsupumnc'+s3),mn2d_nyq_size) #ns,mnmax format
+#    vmec_data['bsupvmnc']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_bsupvmnc'+s3),mn2d_nyq_size) #ns,mnmax format
+#    vmec_data['bsubsmns']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_bsubsmns'+s3),mn2d_nyq_size) #ns,mnmax format
+#    vmec_data['bsubumnc']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_bsubumnc'+s3),mn2d_nyq_size) #ns,mnmax format
+#    vmec_data['bsubvmnc']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_bsubvmnc'+s3),mn2d_nyq_size) #ns,mnmax format
+#    vmec_data['currumnc']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_currumnc'+s3),mn2d_nyq_size) #ns,mnmax format
+#    vmec_data['currvmnc']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_currvmnc'+s3),mn2d_nyq_size) #ns,mnmax format
+#    if vmec_data['iasym']:
+#        vmec_data['rmns']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_rmns'+s3),mn2d_size) #ns,mnmax format
+#        vmec_data['zmnc']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_zmnc'+s3),mn2d_size) #ns,mnmax format
+#        vmec_data['lmnc']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_lmnc'+s3),mn2d_size) #ns,mnmax format
+#        vmec_data['bmns']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_bmns'+s3),mn2d_nyq_size) #ns,mnmax format
+#        vmec_data['gmns']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_gmns'+s3),mn2d_nyq_size) #ns,mnmax format
+#        vmec_data['bsupumns']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_bsupumns'+s3),mn2d_nyq_size) #ns,mnmax format
+#        vmec_data['bsupvmns']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_bsupvmns'+s3),mn2d_nyq_size) #ns,mnmax format
+#        vmec_data['bsubsmnc']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_bsubsmnc'+s3),mn2d_nyq_size) #ns,mnmax format
+#        vmec_data['bsubumns']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_bsubumns'+s3),mn2d_nyq_size) #ns,mnmax format
+#        vmec_data['bsubvmns']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_bsubvmns'+s3),mn2d_nyq_size) #ns,mnmax format
+#        vmec_data['currumns']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_currumns'+s3),mn2d_nyq_size) #ns,mnmax format
+#        vmec_data['currvmns']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_currvmns'+s3),mn2d_nyq_size) #ns,mnmax format
+
     # Free memory (don't do this as python accesses this memory)
     #read_wout_dealloc = getattr(libstell,s1+'read_wout_mod_'+s2+'_read_wout_deallocate'+s3)
     #read_wout_dealloc()
@@ -344,7 +356,7 @@ def calc_jll(vmec_data, theta, zeta ):
 
 
 def torocont(r,z,val,s):
-    import numpy as np
+#    import numpy as np
     import matplotlib.pyplot as pyplot
     h=pyplot.axes(xlabel='R [m]',ylabel='Z [m]',aspect='equal')
     pyplot.pcolormesh(r[:,:,s],z[:,:,s],val[:,:,s],cmap='jet',shading='gouraud',axes=h)
@@ -367,7 +379,7 @@ def toroslice(r,zeta,z,s):
 def isotoro(r,z,zeta,svals,*args,**kwargs):
     import numpy as np
     import matplotlib.pyplot as pyplot
-    import mpl_toolkits.mplot3d as mplot3d
+#    import mpl_toolkits.mplot3d as mplot3d
     import math as math
     import matplotlib.tri as mtri
     #from mayavi import mlab
@@ -448,9 +460,9 @@ def safe_open(iunit,istat,filename,filestat,fileform,record_in,access_in,delim_i
     iunit_temp = ct.c_int(iunit)
     istat_temp = ct.c_int(istat)
     record_in_temp = ct.c_int(record_in)
-    opt1 = ct.c_bool(True)
-    opt2 = ct.c_bool(True)
-    opt3 = ct.c_bool(True)
+    opt1 = ct.c_bool(True)  # analysis:ignore
+    opt2 = ct.c_bool(True)  # analysis:ignore
+    opt3 = ct.c_bool(True)  # analysis:ignore
     safe_open_h(ct.byref(iunit_temp),ct.byref(istat_temp), \
         filename.encode('UTF-8'),filestat.encode('UTF-8'),fileform.encode('UTF-8'),\
         ct.byref(record_in_temp),access_in.encode('UTF-8'),delim_in.encode('UTF-8'), \

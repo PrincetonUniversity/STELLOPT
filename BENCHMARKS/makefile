@@ -3,14 +3,13 @@
 
 # BINARY DIRECTORIES
   LIB_DIR = $(MYHOME)/libstell_dir
-  BIN_DIR = ~/bin_cori
 
 # Setup Subdirectories
   VMEC_TEST_DIR = VMEC_TEST
   DIAGNO_TEST_DIR = DIAGNO_TEST
   STELLOPT_TEST_DIR = STELLOPT_TEST
 
-# We do the following to handle Testing on Large Systems (CORI)
+# We do the following to handle Testing on Large Systems
   MPI_RUN_OPTS_SM ?= $(MPI_RUN_OPTS)
   MPI_RUN_OPTS_MD ?= $(MPI_RUN_OPTS)
   MPI_RUN_OPTS_LG ?= $(MPI_RUN_OPTS)
