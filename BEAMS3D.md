@@ -3,21 +3,6 @@
 BEAMS3D
 =======
 
-* [Theory](#theory)
-
-* [Compilation](#compilation)
-
-* [Input Data Format](#input-data-format)
-
-* [Execution](#execution)
-
-* [Output Data Format](#output-data-format)
-
-* [Visualization](#visualization)
-
-* [Tutorials](#tutorials)
-
-
 The BEAMS3D ([Matthew McMillan and Samuel A Lazerson 2014 *Plasma Phys.
 Control. Fusion* **56** 095019](https://iopscience.iop.org/article/10.1088/0741-3335/56/9/095019/))
 code is a guiding center particle code
@@ -29,7 +14,16 @@ file, and VMEC equilibria. Ionization and recombination models are
 provided by ADAS.
 
 ------------------------------------------------------------------------
+Table of Contents
+   * [Theory](#theory)
+   * [Compilation](#compilation)
+   * [Input Data Format](#input-data-format)
+   * [Execution](#execution)
+   * [Output Data Format](#output-data-format)
+   * [Visualization](#visualization)
+   * [Tutorials](#tutorials)
 
+------------------------------------------------------------------------
 ### Theory
 
 ![](images/depositing.png)
