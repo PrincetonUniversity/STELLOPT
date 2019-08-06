@@ -28,13 +28,10 @@
   MPI_COMPILE_C = cc
   MPI_LINK = ftn
   MPI_RUN = srun
-  MPI_RUN_OPTS = -n 8 -c 16
-  MPI_RUN_OPTS = -n 1088 -c 1
-  # KNL 64 Nodes
-  MPI_RUN_OPTS = -n 272 -c 1
-  MPI_RUN_OPTS_SM = -n 272 -c 1  --cpu_bind=threads
-  MPI_RUN_OPTS_MD = -n 4352 -c 1  --cpu_bind=threads
-  MPI_RUN_OPTS_LG = -n 17408 -c 1  --cpu_bind=threads
+  MPI_RUN_OPTS = -n 68 -c 4 --cpu_bind=cores
+  MPI_RUN_OPTS_SM = -n 68 -c 4 --cpu_bind=cores
+#  MPI_RUN_OPTS_MD = -n 544 -c 4 --cpu_bind=cores
+  MPI_RUN_OPTS_LG = -n 4352 -c 4 --cpu_bind=cores
 
 #######################################################################
 #            NAG Options
@@ -237,6 +234,16 @@ ifeq ($(MAKECMDGOALS),xstelloptv2)
     LIB_NEO = 
   endif
 else ifeq ($(MAKECMDGOALS),help)
+<<<<<<< HEAD
+=======
+else ifeq ($(MAKECMDGOALS),test_stellopt)
+else ifeq ($(MAKECMDGOALS),test_stellopt_coilopt)
+else ifeq ($(MAKECMDGOALS),test_stellopt_gene)
+else ifeq ($(MAKECMDGOALS),test_stellopt_regcoil)
+else ifeq ($(MAKECMDGOALS),test_stellopt_sfincs)
+else ifeq ($(MAKECMDGOALS),test_stellopt_terpsichore)
+else ifeq ($(MAKECMDGOALS),test_stellopt_travis)
+>>>>>>> master
 else
   LGENE = F
   LCOILOPT = F

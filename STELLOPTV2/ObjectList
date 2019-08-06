@@ -44,6 +44,7 @@ chisq_balloon.o \
 chisq_pmin.o \
 chisq_coil_bnorm.o \
 chisq_regcoil_chi2_b.o \
+chisq_rosenbrock.o \
 chisq_vessel.o \
 chisq_b0.o \
 chisq_z0.o \

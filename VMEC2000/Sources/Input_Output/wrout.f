@@ -1737,7 +1737,6 @@
 
       CALL second0 (twoutoff)
       timer(twout) = timer(twout) + twoutoff - twouton
-#if defined(SKS)
       fo_wrout_time = timer(twout)
-#endif
+
       END SUBROUTINE wrout

@@ -221,19 +221,17 @@ C-----------------------------------------------
       numjs_vac=nuv3max-nuv3min+1
 !      blksize_scp=mnpd2  
 
-#if defined(SKS)
       ALLOCATE (counts_vac(vnranks),disps_vac(vnranks), stat=i)
       IF (i .NE. 0) STOP 'Allocation error in precal'
-      DO i=1,vnranks
-        counts_vac(i)=nuv3max_arr(i)-nuv3min_arr(i)+1
+      DO i = 1, vnranks
+         counts_vac(i) = nuv3max_arr(i) - nuv3min_arr(i) + 1
       END DO
       disps_vac(1)=0
-      DO i=2,vnranks
-        disps_vac(i)=disps_vac(i-1)+counts_vac(i-1)
+      DO i = 2, vnranks
+         disps_vac(i) = disps_vac(i - 1) + counts_vac(i - 1)
       END DO
-#endif
+
       CALL second0(tprecoff)
       precal_time = precal_time + (tprecoff - tprecon) 
 
       END SUBROUTINE precal
-
