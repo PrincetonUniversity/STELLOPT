@@ -3,17 +3,24 @@
 BEAMS3D
 =======
 
-  * [BEAMS3D](#beams3d)
-         * [Theory](#theory)
-         * [Compilation](#compilation)
-         * [Input Data Format](#input-data-format)
-         * [Execution](#execution)
-         * [Output Data Format](#output-data-format)
-         * [Visualization](#visualization)
-         * [Tutorials](#tutorials)
+* [Theory](#theory)
 
-The BEAMS3D (Matthew McMillan and Samuel A Lazerson 2014 *Plasma Phys.
-Control. Fusion* **56** 095019) code is a guiding center particle code
+* [Compilation](#compilation)
+
+* [Input Data Format](#input-data-format)
+
+* [Execution](#execution)
+
+* [Output Data Format](#output-data-format)
+
+* [Visualization](#visualization)
+
+* [Tutorials](#tutorials)
+
+
+The BEAMS3D ([Matthew McMillan and Samuel A Lazerson 2014 *Plasma Phys.
+Control. Fusion* **56** 095019](https://iopscience.iop.org/article/10.1088/0741-3335/56/9/095019/))
+code is a guiding center particle code
 capable of following both user defined ensembles of particles and
 modeling neutral beam injection in parallel. The magnetic field is
 represented by a three dimensional splines over a cylindrical grid. It
@@ -30,14 +37,14 @@ provided by ADAS.
 The BEAMS3D code follows the guiding center orbit equations on a
 cylindrical grid
 $$ \frac{d\vec{R}}{dt}=\frac{\hat{b}}{qB}\left(\mu\nabla B
-+\frac{mv\_{ll}\^2}{2B}\left(\hat{b}\cdot\nabla\right)\vec{B}\right)+v\_{ll}\hat{b} $$,
-$$ \frac{dv\_{ll}}{dt}=-\frac{\mu}{m}\hat{b}\cdot\left(\nabla
++\frac{mv_{ll}^2}{2B}\left(\hat{b}\cdot\nabla\right)\vec{B}\right)+v_{ll}\hat{b} $$,
+$$ \frac{dv_{ll}}{dt}=-\frac{\mu}{m}\hat{b}\cdot\left(\nabla
 B\right) $$. These ODE\'s can be solved via a NAG routine,
 LSODE, or Runge-Kutta algorithm. The magnetic field is splined over the
 cylindrical grid (R,phi,Z). The initial position and velocity of the
 particles can either be specified or modeled using a neutral beam model.
 The neutral beam model relies on ADAS for ionization and recombination
-physics. $$ \mu = \frac{mv\_\perp\^2}{2B} $$
+physics. $$ \mu = \frac{mv_\perp^2}{2B} $$
 
 ------------------------------------------------------------------------
 
