@@ -16,7 +16,6 @@
       USE stellopt_targets, ONLY: write_targets
       USE stellopt_vars
       USE equil_utils, ONLY: count_vars
-      USE vparams, ONLY: ntor_rcws, mpol_rcws
       USE vmec_input
       USE safe_open_mod, ONLY: safe_open
       USE equil_utils, ONLY: profile_norm
@@ -246,6 +245,7 @@
          CASE('test')
             IF (lxval_opt)  nvars = nvars + 1
             IF (lyval_opt)  nvars = nvars + 1
+            IF (ANY(lRosenbrock_X_opt)) nvars = nvars + COUNT(lRosenbrock_X_opt)
       END SELECT
 
       ! Allocate Arrays
@@ -257,6 +257,8 @@
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'stellot_init',ierr_mpi)
 !DEC$ ENDIF
       ! Read the Equilibrium Namelist and initalize the var arrays
+      ! Initialize nvar_in to 0
+      nvar_in=0
       SELECT CASE (TRIM(equil_type))
          CASE('vmec2000','animec','flow','satire','paravmec','parvmec','vboot','vmec2000_oneeq')
               ! Set some defaults
@@ -276,7 +278,6 @@
               ier=ictrl(2)
               IF (ier /= 0) CALL handle_err(VMEC_RUN_ERR,'Initialization call (stellopt_init)',ier)
               ! Now count
-              nvar_in=0
               IF (lregcoil_winding_surface_separation_opt) THEN
                  IF (lauto_domain) THEN
                     regcoil_winding_surface_separation_min = &
@@ -1587,6 +1588,21 @@
                  diag(nvar_in)    = dyval_opt
                  arr_dex(nvar_in,1) = 1
               END IF
+                 DO m = 1,rosenbrock_dim
+                    IF (lRosenbrock_X_opt(m)) THEN
+                       IF (lauto_domain) THEN
+                         Rosenbrock_X_min(m) = Rosenbrock_X(m) - ABS(pct_domain*Rosenbrock_X(m))
+                         Rosenbrock_X_max(m) = Rosenbrock_X(m) + ABS(pct_domain*Rosenbrock_X(m))
+                       END IF
+                       nvar_in = nvar_in + 1
+                       vars(nvar_in) = Rosenbrock_X(m)
+                       vars_min(nvar_in) = Rosenbrock_X_min(m)
+                       vars_max(nvar_in) = Rosenbrock_X_max(m)
+                       var_dex(nvar_in) = iRosenbrock_X
+                       diag(nvar_in)    = dRosenbrock_X_opt(m)
+                       arr_dex(nvar_in,1) = m
+                    END IF
+                 END DO
       END SELECT
 !DEC$ IF DEFINED (MPI_OPT)
       CALL MPI_BARRIER( MPI_COMM_STEL, ierr_mpi )                   ! MPI
