@@ -10,7 +10,7 @@ $ J \times B = \nabla B $
 or independantly
 $$ J \times B = \nabla B $$
 ```
-And you should get the equations printed out on the GitHub Pages (might not work in the preview).
+And you should get the equations printed out on the [GitHub Pages](https://princetonuniversity.github.io/STELLOPT/README) (might not work in the preview).
 
 inline
 $ J \times B = \nabla B $
