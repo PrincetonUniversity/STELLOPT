@@ -18,15 +18,15 @@ provided by ADAS.
 
 The BEAMS3D code follows the guiding center orbit equations on a
 cylindrical grid
-$\\frac{d\\vec{R}}{dt}=\\frac{\\hat{b}}{qB}\\left(\\mu\\nabla B
-+\\frac{mv\_{ll}\^2}{2B}\\left(\\hat{b}\\cdot\\nabla\\right)\\vec{B}\\right)+v\_{ll}\\hat{b} $,
-$\\frac{dv\_{ll}}{dt}=-\\frac{\\mu}{m}\\hat{b}\\cdot\\left(\\nabla
-B\\right) $. These ODE\'s can be solved via a NAG routine,
+\( \\frac{d\\vec{R}}{dt}=\\frac{\\hat{b}}{qB}\\left(\\mu\\nabla B
++\\frac{mv\_{ll}\^2}{2B}\\left(\\hat{b}\\cdot\\nabla\\right)\\vec{B}\\right)+v\_{ll}\\hat{b} \),
+$$ \\frac{dv\_{ll}}{dt}=-\\frac{\\mu}{m}\\hat{b}\\cdot\\left(\\nabla
+B\\right) $$. These ODE\'s can be solved via a NAG routine,
 LSODE, or Runge-Kutta algorithm. The magnetic field is splined over the
 cylindrical grid (R,phi,Z). The initial position and velocity of the
 particles can either be specified or modeled using a neutral beam model.
 The neutral beam model relies on ADAS for ionization and recombination
-physics. $ \\mu = \\frac{mv\_\\perp\^2}{2B} $
+physics. $$ \\mu = \\frac{mv\_\\perp\^2}{2B} $$
 
 ------------------------------------------------------------------------
 
