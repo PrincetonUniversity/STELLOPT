@@ -26,19 +26,16 @@ or displayed
 BEAMS3D
 =======
 
-* [Theory](#theory)
-
-* [Compilation](#compilation)
-
-* [Input Data Format](#input-data-format)
-
-* [Execution](#execution)
-
-* [Output Data Format](#output-data-format)
-
-* [Visualization](#visualization)
-
-* [Tutorials](#tutorials)
+---
+Table of Contents
+    * [Theory](#theory)
+    * [Compilation](#compilation)
+    * [Input Data Format](#input-data-format)
+    * [Execution](#execution)
+    * [Output Data Format](#output-data-format)
+    * [Visualization](#visualization)
+    * [Tutorials](#tutorials)
+---
 ```
 
 4. [script.sh](script.sh) is a batchscript for converting **Creole** format to **markdown** using pandoc. You can modify it doing converts for other formats.
