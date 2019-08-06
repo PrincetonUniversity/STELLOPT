@@ -10,4 +10,11 @@ $ J \times B = \nabla B $
 or independantly
 $$ J \times B = \nabla B $$
 ```
-And you should get the equations printed out on the GitHub Pages.
+And you should get the equations printed out on the GitHub Pages (might not work in the preview).
+
+inline
+$ J \times B = \nabla B $
+or independantly
+$$ J \times B = \nabla B $$
+
+[script.sh](script.sh) is a batchscript for converting **Creole** format to **markdown** using pandoc. You can modify it doing converts for other formats.
