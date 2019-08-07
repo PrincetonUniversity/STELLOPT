@@ -345,7 +345,7 @@
             CASE('regcoil_driver')
                !  Warning; This parallel call is untested.
                WRITE (6, *) '<----stellopt_paraxe calling regcoil_driver'
-               CALL stellopt_regcoil_driver(lscreen,ier)
+               CALL stellopt_regcoil_driver(file_str, lscreen,ier)
             CASE('terpsichore')
                proc_string = file_str
                ier = 0

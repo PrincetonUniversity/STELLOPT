@@ -386,7 +386,7 @@
 	        ANY(sigma_regcoil_c2p_dist_min < bigno) .or.    &
 	        ANY(sigma_regcoil_bnormal_total < bigno)   ) .and. (iflag >=0)) then
             !Skipping parallelization for now - instead, call regcoi_driver directly.
-            CALL stellopt_regcoil_driver(lscreen, iflag)
+            CALL stellopt_regcoil_driver(proc_string, lscreen, iflag)
             ! Unstested parallel call is commented out here.
             ! ctemp_str = 'regcoil_driver'
             ! CALL stellopt_paraexe(ctemp_str,proc_string,lscreen)
