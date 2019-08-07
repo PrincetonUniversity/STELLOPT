@@ -297,6 +297,10 @@
       IF (ANY(sigma_regcoil_bnormal_total < bigno)) THEN
          CALL chisq_regcoil_bnormal_total(target_regcoil_bnormal_total, sigma_regcoil_bnormal_total, ncnt,iflag)
       END IF
+       ! REGCOIL Coil Optimization (coil plasma distance min targets)
+      IF (ANY(sigma_regcoil_c2p_dist_min < bigno)) THEN
+         CALL chisq_regcoil_c2p_dist_min(target_regcoil_c2p_dist_min, sigma_regcoil_c2p_dist_min, ncnt,iflag)
+      END IF
       IF (sigma_curvature_p2 < bigno) &
          CALL chisq_curvature_p2(target_curvature_p2, sigma_curvature_p2, ncnt, iflag)
       IF (ANY(sigma_gamma_c < bigno)) &

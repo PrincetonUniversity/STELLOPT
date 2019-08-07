@@ -190,6 +190,7 @@
       REAL(rprec),DIMENSION((2*ntor_rcws+1)*(2*mpol_rcws+1)*4) ::  target_regcoil_volume_coil, sigma_regcoil_volume_coil
       REAL(rprec),DIMENSION((2*ntor_rcws+1)*(2*mpol_rcws+1)*4) ::  target_regcoil_volume_plasma, sigma_regcoil_volume_plasma
       REAL(rprec),DIMENSION((2*ntor_rcws+1)*(2*mpol_rcws+1)*4) ::  target_regcoil_volume_diff, sigma_regcoil_volume_diff
+      REAL(rprec),DIMENSION((2*ntor_rcws+1)*(2*mpol_rcws+1)*4) ::  target_regcoil_c2p_dist_min, sigma_regcoil_c2p_dist_min
       REAL(rprec),DIMENSION((2*ntor_rcws+1)*(2*mpol_rcws+1)*4) ::  target_regcoil_bnormal_total, sigma_regcoil_bnormal_total
       !REAL(rprec) ::  target_regcoil_current_density, sigma_regcoil_current_density
       REAL(rprec) ::  target_curvature_p2, sigma_curvature_P2
@@ -260,6 +261,7 @@
       INTEGER, PARAMETER :: jtarget_regcoil_volume_coil     = 5050
       INTEGER, PARAMETER :: jtarget_regcoil_volume_diff     = 5051
       INTEGER, PARAMETER :: jtarget_regcoil_bnormal_total   = 5052
+      INTEGER, PARAMETER :: jtarget_regcoil_c2p_dist_min    = 5053
       INTEGER, PARAMETER :: jtarget_curvature_P2            = 505
       INTEGER, PARAMETER :: jtarget_gamma_c    = 506
       INTEGER, PARAMETER :: jtarget_balloon    = 601
@@ -429,6 +431,8 @@
             WRITE(iunit, out_format) 'REGCOIL Chi^2 K'
          CASE(jtarget_regcoil_max_bnormal)
             WRITE(iunit, out_format) 'REGCOIL MAX BNormal'
+         CASE(jtarget_regcoil_c2p_dist_min)
+            WRITE(iunit, out_format) 'REGCOIL COIL PLASMA DISTANCE MIN'
          CASE(jtarget_regcoil_area_coil)
             WRITE(iunit, out_format) 'REGCOIL AREA COIL'
          CASE(jtarget_regcoil_area_plasma)

@@ -213,14 +213,12 @@
          ! 'error' (too high or too low of current), the chi2_B will
          ! contain the chi2_B that was achieved with infinite
          ! regularization ! (well-spaced apart, straight-ish) coils
-         ! From regcoil_auto_regularization_solve.f90
-         !    Assign variables for external optimizers
-         !     chi2_B_target = chi2_B(Nlambda)
-         !     max_K_target = max_K(Nlambda)
-         !     rms_K_target = rms_K(Nlambda)
-         !     max_Bnormal_target = max_Bnormal(Nlambda)
-         !     chi2_K_target = chi2_K(Nlambda)
-         !     Bnormal_total_target = Bnormal_total(:,:,Nlambda)
+         ! See regcoil_auto_regularization_solve.f90 for the assignment
+         ! of variables for external optimizers
+         !     chi2_B_target, max_K_target, rms_K_target,
+         !     max_Bnormal_target, chi2_K_target,
+         !     coil_plasma_dist_min_target, Bnormal_total_target,
+         !     + volume and area targets
  case default
          print *,"Invalid general_option:",general_option
          stop
