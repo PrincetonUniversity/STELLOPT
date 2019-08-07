@@ -184,6 +184,14 @@ chisq_regcoil_volume_diff.o : \
       equil_vals.o
       
  
+chisq_regcoil_c2p_dist_min.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      stellopt_input_mod.o \
+      stellopt_vars.o \
+      equil_vals.o
+
+ 
 chisq_regcoil_bnormal_total.o : \
       stellopt_runtime.o \
       stellopt_targets.o \
