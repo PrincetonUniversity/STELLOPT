@@ -1,3 +1,5 @@
+{% include head.html %}
+
 STELLOPT
 ========
 
@@ -6,7 +8,7 @@ target physics parameters encompassing stellarator design and 3D
 equilibrium reconstruction. It is currently interfaced to the
 [VMEC](VMEC) 3D equilibrium solver.
 
-STELLOPT is currently hosted on the Princeton University's GitHub repository. 
+[STELLOPT](https://github.com/PrincetonUniversity/STELLOPT) is currently hosted on the Princeton University's GitHub repository. 
 It is not publicly accessed.
 If you want to get access to the source code, please send an email with your GitHub username to Dr. Caoxiang Zhu (czhu@pppl.gov) or Dr. Samuel Lazerson (samuel.lazerson@ipp.mpg.de).
 
@@ -40,9 +42,7 @@ function. The code uses either a modified
 to find a best fit set of equilibrium inputs to the set of desired
 targets. The quality of fit is determined by the Chi-squared
 metric
-\$$ \chi_i\^2=\frac{
-\left(f_i\^{target}-f_i\^{equilbria}\right)\^2 }{\sigma_i\^2}.
-$$
+\$$ \chi_i\^2=\frac{\left(f_i^{target}-f_i^{equilbria}\right)^2 }{\sigma_i^2} .$$
 The sigma here represents the tolerance of the target value. The goal of
 the code is to minimize the total chi-squared value.
 
@@ -57,6 +57,7 @@ calculation is preformed. The code is capable of targeting a number of
 different parameters by either directly evaluating the equilibrium or
 calling subcodes once an equilibrium is found. The following list
 outlines the currently available targets:
+
  | Target | Dimension | Description |
  |--------|--------|--------|
  | ASPECT RATIO | Single | Equilibrium Aspect Ratio |
@@ -88,7 +89,7 @@ outlines the currently available targets:
  | NEO | Vector | Array of radial locations for Neoclassical transport calculation by [NEO](NEO)|
  | HELICITY | Vector | Array of radial locations for Helicity calculation |
  | JSTAR | Vector | Array of radial locations for particle confinement calculation |
- | ORBIT | Vector | Array of radial locations on which to calculate confinement BEAMS3D](BEAMS3D) |
+ | ORBIT | Vector | Array of radial locations on which to calculate confinement [BEAMS3D](BEAMS3D) |
  | COIL_BNORM | Single | Calculation of residual coil normal field after calculation by [COILOPT++](COILOPT)|
 
 ------------------------------------------------------------------------
