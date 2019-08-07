@@ -4,13 +4,28 @@ STELLOPT
 The STELLOPT code is design to optimize 3D MHD equilibria to a set of
 target physics parameters encompassing stellarator design and 3D
 equilibrium reconstruction. It is currently interfaced to the
-[VMEC](VMEC) 3D equilibrium solver. \<\<toc\>\>
+[VMEC](VMEC) 3D equilibrium solver.
 
+STELLOPT is currently hosted on the Princeton University's GitHub repository. 
+It is not publicly accessed.
+If you want to get access to the source code, please send an email with your GitHub username to Dr. Caoxiang Zhu (czhu@pppl.gov) or Dr. Samuel Lazerson (samuel.lazerson@ipp.mpg.de).
+
+------------------------------------------------------------------------
+
+Table of Contents
+  * [Theory](#theory)
+  * [Compilation](#compilation)
+  * [Input Data Format](#input-data-format)
+  * [Execution](#execution)
+  * [Output Data Format](#output-data-format)
+  * [Visualization](#visualization)
+  * [Tutorials](#tutorials)
+  
 ------------------------------------------------------------------------
 
 ### Theory
 
-\<span style=\"line-height: 1.5;\"\>The STELLOPT code can be thought of
+The STELLOPT code can be thought of
 as a multi-dimensional non-linear curve fitting algorithm. The curve to
 which a fit is sought is parameterized by a set of target parameters
 which themselves may be MHD equilibrium quantities (beta, aspect ratio,
@@ -24,12 +39,15 @@ function. The code uses either a modified
 [differential evolution](http://en.wikipedia.org/wiki/Differential_evolution)
 to find a best fit set of equilibrium inputs to the set of desired
 targets. The quality of fit is determined by the Chi-squared
-metric\</span\> [math](math) \\chi\_i\^2=\\frac{
-\\left(f\_i\^{target}-f\_i\^{equilbria}\\right)\^2 }{\\sigma\_i\^2}.
-[math](math)
-[image:vmecwiki/stellopt\_example.jpg width=\"480\" height=\"273\" align=\"right\" caption=\"STELLOPT NCSX Reconstruction\"](image:vmecwiki/stellopt_example.jpg width="480" height="273" align="right" caption="STELLOPT NCSX Reconstruction")
+metric
+\$$ \chi_i\^2=\frac{
+\left(f_i\^{target}-f_i\^{equilbria}\right)\^2 }{\sigma_i\^2}.
+$$
 The sigma here represents the tolerance of the target value. The goal of
 the code is to minimize the total chi-squared value.
+
+![STELLOPT NCSX Reconstruction](images/stellopt_example.jpg)
+
 
 The user specifies which equilibrium input values to vary independently
 of the targets. Additionally, profiles for Ne, Te, and Ti (as functions
@@ -38,46 +56,40 @@ profiles are used to calculate the equilibrium total pressure before a
 calculation is preformed. The code is capable of targeting a number of
 different parameters by either directly evaluating the equilibrium or
 calling subcodes once an equilibrium is found. The following list
-outlines the currently available targets: \|\| Target \|\| Dimension
-\|\| Description \|\| \|\| ASPECT RATIO \|\| Single \|\| Equilibrium
-Aspect Ratio \|\| \|\| BETA \|\| Single \|\| Equilibrium Total Plasma
-Beta \|\| \|\| CURTOR \|\| Single \|\| Equilibrium Total Toroidal
-Current \|\| \|\| PHIEDGE \|\| Single \|\| Equilibrium Total Enclosed
-Toroidal Flux \|\| \|\| R0 \|\| Single \|\| Equilibrium Radial Magnetic
-Axis Position \|\| \|\| RBTOR \|\| Single \|\| Equilibrium R-B\_toroidal
-\|\| \|\| STORED ENERGY \|\| Single \|\| Equilibrium Stored Energy \|\|
-\|\| VOLUME \|\| Single \|\| Equilibrium Volume \|\| \|\| EXTCUR \|\|
-Vector \|\| Vacuum Field Currents \|\| \|\| LINE\_NE \|\| Vector \|\|
-Array of line integrated electron density measurements \|\| \|\| FARADAY
-\|\| Vector \|\| Array of Faraday Rotation measurements \|\| \|\| PRESS
-\|\| Vector \|\| Array of pressure profile measurements (R,PHI,Z or S)
-\|\| \|\| NE \|\| Vector \|\| Array of electron density measurements (R,
-PHI, Z or S) \|\| \|\| TE \|\| Vector \|\| Array of electron temperature
-measurements (R, PHI, Z or S) \|\| \|\| TI \|\| Vector \|\| Array of ion
-temperature measurements (R, PHI, Z or S) \|\| \|\| LINE\_TE \|\| Vector
-\|\| Array of line integrated electron temperature measurements \|\|
-\|\| LINE\_TI \|\| Vector \|\| Array of line integrated ion temperature
-measurements \|\| \|\| IOTA \|\| Vector \|\| Array of rotational
-transform measurements (R, PHI, Z or S) \|\| \|\| BPROBE \|\| Vector
-\|\| Array of B-Field measurements calculated by [DIAGNO](DIAGNO) \|\|
-\|\| FLUXLOOP \|\| Vector \|\| Array of Flux Loop measurements
-calculated by [DIAGNO](DIAGNO) \|\| \|\| ROGOWSKI \|\| Vector \|\| Array
-of Rogowski Coil measurements calculated by [DIAGNO](DIAGNO) \|\| \|\|
-VESSEL \|\| Matrix \|\| Limiting points in space \|\| \|\| SEPARATRIX
-\|\| Matrix \|\| Desired edge points in space \|\| \|\| BALLOON \|\|
-Vector \|\| Array of radial locations for ballooning stability
-calculation by [COBRAVMEC](COBRAVMEC) \|\| \|\| KINK \|\| Single \|\|
-Equilibrium kink stability as calculated by TERPSICHORE \|\| \|\|
-BOOTSTRAP \|\| Vector \|\| Array of radial locations for bootstrap
-calculation by [BOOTSJ](BOOTSJ) \|\| \|\| NEO \|\| Vector \|\| Array of
-radial locations for Neoclassical transport calculation by [NEO](NEO)
-\|\| \|\| HELICITY \|\| Vector \|\| Array of radial locations for
-Helicity calculation \|\| \|\| JSTAR \|\| Vector \|\| Array of radial
-locations for particle confinement calculation \|\| \|\| ORBIT \|\|
-Vector \|\| Array of radial locations on which to calculate confinement
-[BEAMS3D](BEAMS3D) \|\| \|\| COIL\_BNORM \|\| Single \|\| Calculation of
-residual coil normal field after calculation by [COILOPT++](COILOPT)
-\|\|
+outlines the currently available targets:
+ | Target | Dimension | Description |
+ |--------|--------|--------|
+ | ASPECT RATIO | Single | Equilibrium Aspect Ratio |
+ | BETA | Single | Equilibrium Total Plasma Beta |
+ | CURTOR | Single | Equilibrium Total Toroidal Current |
+ | PHIEDGE | Single | Equilibrium Total Enclosed Toroidal Flux |
+ | R0 | Single | Equilibrium Radial Magnetic Axis Position |
+ | RBTOR | Single | Equilibrium R-B_toroidal |
+ | STORED ENERGY | Single | Equilibrium Stored Energy |
+ | VOLUME | Single | Equilibrium Volume |
+ | EXTCUR | Vector | Vacuum Field Currents |
+ | LINE_NE | Vector | Array of line integrated electron density measurements |
+ | FARADAY | Vector | Array of Faraday Rotation measurements |
+ | PRESS | Vector | Array of pressure profile measurements (R,PHI,Z or S)|
+ | NE | Vector | Array of electron density measurements (R,PHI, Z or S) |
+ | TE | Vector | Array of electron temperature measurements (R, PHI, Z or S) |
+ | TI | Vector | Array of ion temperature measurements (R, PHI, Z or S) |
+ | LINE_TE | Vector | Array of line integrated electron temperature measurements |
+ | LINE_TI | Vector | Array of line integrated ion temperature measurements |
+ | IOTA | Vector | Array of rotational transform measurements (R, PHI, Z or S) |
+ | BPROBE | Vector | Array of B-Field measurements calculated by [DIAGNO](DIAGNO) |
+ | FLUXLOOP | Vector | Array of Flux Loop measurements calculated by [DIAGNO](DIAGNO) |
+ | ROGOWSKI | Vector | Array of Rogowski Coil measurements calculated by [DIAGNO](DIAGNO) |
+ | VESSEL | Matrix | Limiting points in space |
+ | SEPARATRIX | Matrix | Desired edge points in space |
+ | BALLOON | Vector | Array of radial locations for ballooning stability calculation by [COBRAVMEC](COBRAVMEC) |
+ | KINK | Single | Equilibrium kink stability as calculated by TERPSICHORE |
+ | BOOTSTRAP | Vector | Array of radial locations for bootstrap calculation by [BOOTSJ](BOOTSJ) |
+ | NEO | Vector | Array of radial locations for Neoclassical transport calculation by [NEO](NEO)|
+ | HELICITY | Vector | Array of radial locations for Helicity calculation |
+ | JSTAR | Vector | Array of radial locations for particle confinement calculation |
+ | ORBIT | Vector | Array of radial locations on which to calculate confinement BEAMS3D](BEAMS3D) |
+ | COIL_BNORM | Single | Calculation of residual coil normal field after calculation by [COILOPT++](COILOPT)|
 
 ------------------------------------------------------------------------
 
@@ -107,23 +119,22 @@ likely inside a PBS script). The call should take the form:
 
     mpirun -np $NPROCS ~/bin/xstellopt $runid > log.$runid
 
-Here \$NPROCS is the number of processors being requested and \$runid is
+Here `$NPROCS` is the number of processors being requested and \$runid is
 the suffix assigned to the input file. Upon execution STELLOPT will
-create a working directory entitled \'stellopt\_\$runid\' where
-\'\$runid\' is the value passed to it from the command line. All work
+create a working directory entitled `stellopt_$runid` where
+`$runid` is the value passed to it from the command line. All work
 and final output is preformed in this directory. Optional arguments
-which control the code behavior are: \|\| Argument \|\| Default \|\|
-Description \|\| \|\| -restart \|\| NONE \|\| Use wout\_reset\_file.nc
-in directory to restart VMEC run on first iteration. \|\| \|\| -noverb
-\|\| NONE \|\| Suppress screen output. \|\| \|\| -log \|\| NONE \|\|
-Send screen output to log file (useful on systems where \>& doesn\'t
-work). \|\| \|\| -autodomain XX \|\| NONE \|\| Automatically calculate
-bounds as percentage (-autodomain 0.2, produces a +/-20% bound) \|\|
-\|\| -tri FILE1 FILE2\> \|\| NONE \|\| Use FILE1 and FILE2 to set Min
-and Max bounds respectively (used in hyperplane mapping mode) \|\| \|\|
--xvec\_file FILE1 \|\| NONE \|\| Use FILE1 to initialize population for
-Differential Evolution and Particle Swarm runs. \|\| \|\| -help \|\|
-NONE \|\| Print help message \|\|
+which control the code behavior are:
+
+ | Argument | Default | Description |
+ |--------|--------|--------|
+ | -restart | NONE | Use wout_reset_file.nc in directory to restart VMEC run on first iteration. |
+ | -noverb  | NONE | Suppress screen output. |
+ | -log | NONE | Send screen output to log file (useful on systems where `>&` doesn't work). |
+ | -autodomain XX | NONE | Automatically calculate bounds as percentage (-autodomain 0.2, produces a +/-20% bound) |
+ | -tri FILE1 FILE2 | NONE | Use FILE1 and FILE2 to set Min and Max bounds respectively (used in hyperplane mapping mode) |
+ | -xvec_file FILE1 | NONE | Use FILE1 to initialize population for Differential Evolution and Particle Swarm runs. |
+ | -help | NONE | Print help message |
 
 ------------------------------------------------------------------------
 
@@ -133,18 +144,18 @@ The STELLOPT code will produce many files so it is suggested that each
 run be kept in a separate directory. A stereotypical run looks something
 like:
 
-Once a run has completed the code will output a \'stellopt.ext\' file,
-and a \'input.ext\_min\' file. The \'\_min\' file contains an
+Once a run has completed the code will output a `stellopt.ext` file,
+and a `input.ext_min` file. The `_min` file contains an
 equilibrium input file corresponding to the best fit as found by
-STELLOPT. The \'stellopt.\' file contains an iteration by iteration
+STELLOPT. The `stellopt.` file contains an iteration by iteration
 analysis of the fit to the target parameters. The file begins with a
-version string (VERSION 2.12). Each iteration is demarked by an
+version string (VERSION 2.65). Each iteration is demarked by an
 iteration line (ITER XXXX). Each target type is then noted by line
 indicating a type, the number of target values, and the number of output
 values (TYPE 3 1). Immediately following that line is a line of text
 indicating the value in each column.
 
-Additionally, many working files denoted by \'\_optXX\' are produced by
+Additionally, many working files denoted by `_optXX` are produced by
 STELLOPT. These files may be removed once a run has completed. If the
 user has elected to keep minimum states as the code iterated, various
 files produced by the equilibrium calculation, and other codes will be
