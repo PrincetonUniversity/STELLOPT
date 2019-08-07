@@ -21,19 +21,17 @@
 !             root-mean-square value of B·n, i.e. R d 2a B2 n 1/2 
 !             (where the integral is over the plasma surface)
 !             equals target value
-
-
 !                    
 !-----------------------------------------------------------------------
-      SUBROUTINE stellopt_regcoil_driver(lscreen, iflag)
+      SUBROUTINE stellopt_regcoil_driver(file_str, lscreen, iflag)
 !-----------------------------------------------------------------------
 !     Libraries
 !-----------------------------------------------------------------------
-              ! JCS: to do.  update with 'only:' varsiables
       USE stellopt_runtime
       USE stellopt_input_mod
       USE stellopt_vars, my_mpol => mpol_rcws, my_ntor => ntor_rcws
       USE equil_utils
+      USE neswrite, ONLY: coil_separation
 
 !DEC$ IF DEFINED (REGCOIL)
       !USE regcoil_auto_regularization_solve
@@ -54,6 +52,7 @@
 !        iflag         Error flag
 !----------------------------------------------------------------------
       IMPLICIT NONE
+      CHARACTER(256), INTENT(inout)    :: file_str
       INTEGER, INTENT(inout) :: iflag
       LOGICAL, INTENT(inout)        :: lscreen
 
@@ -67,6 +66,10 @@
 !        iunit         File unit number
       ! FOR REGCOIL
       INTEGER :: istat, iunit, m, n, ii, imn, nummodes1, nummodes2
+!        bnfou/_c      B-Normal Fourier coefficients
+      REAL(rprec), ALLOCATABLE, DIMENSION(:,:) :: bnfou, bnfou_c
+      INTEGER :: iverb, nu, nv, mf, nf, md, nd 
+
 
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
@@ -81,6 +84,30 @@
 !DEC$ IF DEFINED (REGCOIL)
       verbose = lscreen ! Suppress REGCOIL stdout if needed
 
+      ! Run bnorm if required
+      if (load_bnorm) then
+         nu = nu_bnorm
+         nv = nv_bnorm
+         mf=24; nf=14; md=24; nd=20; coil_separation = 0.2
+          ! Run BNORM code
+         ALLOCATE(bnfou(0:mf,-nf:nf),bnfou_c(0:mf,-nf:nf),STAT=istat)
+         IF (lscreen) WRITE(6,"(A)") '   - Calculating B-Normal File'
+         CALL bnormal(nu,nv,mf,nf,md,nd,bnfou,bnfou_c,TRIM(file_str)//'.nc')
+         IF (lscreen) WRITE(6,"(A,ES22.12E3)") '      Max. B-Normal: ',MAXVAL(MAXVAL(bnfou,DIM=2),DIM=1)
+         IF (lscreen) WRITE(6,"(A,ES22.12E3)") '      MIN. B-Normal: ',MINVAL(MINVAL(bnfou,DIM=2),DIM=1)
+         ! WRITE BNORMAL
+         CALL safe_open(iunit, istat, 'bnorm.' // TRIM(file_str), 'replace','formatted')
+         DO m = 0, mf
+            DO n = -nf, nf
+               WRITE(iunit,"(1x,2i5,ES22.12E3)") m,n,bnfou(m,n)
+            END DO
+         END DO
+         CLOSE(iunit)
+         DEALLOCATE(bnfou,bnfou_c)
+         IF (lscreen) WRITE(6,"(A)") '      Coefficients output to:   '//'bnorm.' // TRIM(file_str)
+         bnorm_filename = 'bnorm.' // TRIM(proc_string)
+      end if
+
       ! IF (lscreen) WRITE(6,'(a,a)') '<---- proc_string=', proc_string
       wout_filename = 'wout_'//TRIM(proc_string)//'.nc'
       ! STELLOPT (via lmdif->stellopt_fcn or similar) will modifiy the value of
@@ -90,7 +117,6 @@
       ! determiend, control variables are set, and the regcoil-functions
       ! are called
       separation = regcoil_winding_surface_separation
-      !target_value = regcoil_current_density
       target_value = regcoil_target_value
      
       ! Loop over all of the spectral components of the winding surface
@@ -192,11 +218,10 @@
       ! write(6,'(a)') '<----read bnorm'
       call regcoil_read_bnorm()
       ! write(6,'(a)') '<----build matrices'
-      ! write(6,'(a)') '<----build_matrices in'
+      ! write(6,'(a)') '<----build_matrices'
       call regcoil_build_matrices()
-      ! write(6,'(a)') '<----prepare_solve in'
+      ! write(6,'(a)') '<----prepare_solve'
       call regcoil_prepare_solve()
-      ! write(6,'(a)') '<----prepare_solve out'
 
       ! JCS: I disabled all options except for #5 (for now)
       ! As REGCOIL development continues, future cases can 
@@ -221,15 +246,13 @@
          ! 'error' (too high or too low of current), the chi2_B will
          ! contain the chi2_B that was achieved with infinite
          ! regularization ! (well-spaced apart, straight-ish) coils
-         ! From regcoil_auto_regularization_solve.f90
-           ! Assign variables for external optimizers
-         !  chi2_B_target = chi2_B(Nlambda)
-         !  max_K_target = max_K(Nlambda)
-         !  rms_K_target = rms_K(Nlambda)
-         !  max_Bnormal_target = max_Bnormal(Nlambda)
-         !  chi2_K_target = chi2_K(Nlambda)
-         !  Bnormal_total_target = Bnormal_total(:,:,Nlambda)
-
+         ! See regcoil_auto_regularization_solve.f90 for the assignment
+         ! of variables for external optimizers
+         !     chi2_B_target, max_K_target, rms_K_target,
+         !     max_Bnormal_target, chi2_K_target,
+         !     coil_plasma_dist_min_target, Bnormal_total_target,
+         !     + volume and area targets
+ 
       case default
          print *,"Invalid general_option:",general_option
          stop
