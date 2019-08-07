@@ -1318,7 +1318,7 @@
 	                        ANY(sigma_regcoil_volume_coil < bigno) .or.    &
 	                        ANY(sigma_regcoil_volume_plasma < bigno) .or.    &
 	                        ANY(sigma_regcoil_volume_diff < bigno) .or.    &
-	                        ANY(sigma_regcoil_bnormal_total < bigno) )) THEN  .or. &
+	                        ANY(sigma_regcoil_bnormal_total < bigno) )) THEN !  .or. &
                                 !(sigma_regcoil_current_density < bigno) )) THEN
          ! 'Disable' the target by assigning bigno to the sigmas
          sigma_regcoil_chi2_b = bigno
