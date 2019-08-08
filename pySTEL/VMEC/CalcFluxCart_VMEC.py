@@ -24,8 +24,9 @@ from __future__ import absolute_import, with_statement, absolute_import, \
                        division, print_function, unicode_literals
 
 import numpy as _np
+import os as _os
 #import scipy.interpolate as _dsi   # broken
-import scipy.integrate as _int
+#import scipy.integrate as _int
 
 try:
     import netCDF4 as netcdf
@@ -54,7 +55,7 @@ VMEC_DataSource = None
 # ========================================================================= #
 
 
-def Cart2Flux(cLabPos, VMEC_FilePath, ForceReadVMEC=False, PosTol=1e-4, verbose=True):
+def Cart2Flux(cLabPos, VMEC_FilePath, ForceReadVMEC=False, PosTol=1e-3, verbose=True):
     """
      Description:
        This function finds the coordinates of a point in VMEC flux coordinates that
@@ -112,9 +113,9 @@ def Cart2Flux(cLabPos, VMEC_FilePath, ForceReadVMEC=False, PosTol=1e-4, verbose=
         or (VMEC_DataSource != VMEC_FilePath):
         if 1:
 #        if type(VMEC_FilePath)!=type('') or (VMEC_Data is None):
-            VMEC_Data =  __extract_data(VMEC_FilePath, ForceReadVMEC=ForceReadVMEC, verbose=verbose)
+            VMEC_Data =  extract_data(VMEC_FilePath, ForceReadVMEC=ForceReadVMEC, verbose=verbose)
 #        if VMEC_DerivedQuant is None:
-            VMEC_DerivedQuant = __spline_data(VMEC_Data, ForceReadVMEC=ForceReadVMEC, verbose=verbose)
+            VMEC_DerivedQuant = spline_data(VMEC_Data, ForceReadVMEC=True, verbose=verbose)
         # end if
     # end
     VMEC_DataSource = VMEC_FilePath
@@ -178,7 +179,7 @@ def Flux2Cart(sPos, VMEC_FilePath, ForceReadVMEC=False, kMinRho=2.0e-9, jacout=F
     cLabPos = _np.hstack((XX,YY,ZZ))
     if jacout:
         # Convert to configuration space coordinates from polar coordinates
-        return cLabPos, _np.nan
+        return cLabPos, _np.nan # TODO!:
     else:
         return cLabPos
     # end if
@@ -225,8 +226,8 @@ def Flux2Polar(sPos, VMEC_FilePath, ForceReadVMEC=False, kMinRho=2.0e-9, jacout=
     if ForceReadVMEC or (VMEC_Data is None) or (VMEC_DerivedQuant is None) or (VMEC_DataSource is None) \
         or (VMEC_DataSource != VMEC_FilePath):
         if 1:
-            VMEC_Data =  __extract_data(VMEC_FilePath, ForceReadVMEC=ForceReadVMEC, verbose=verbose)
-            VMEC_DerivedQuant = __spline_data(VMEC_Data, ForceReadVMEC=ForceReadVMEC, verbose=verbose)
+            VMEC_Data =  extract_data(VMEC_FilePath, ForceReadVMEC=ForceReadVMEC, verbose=verbose)
+            VMEC_DerivedQuant = spline_data(VMEC_Data, ForceReadVMEC=True, verbose=verbose)
         # end if
     # end
     VMEC_DataSource = VMEC_FilePath
@@ -267,7 +268,7 @@ def Flux2Polar(sPos, VMEC_FilePath, ForceReadVMEC=False, kMinRho=2.0e-9, jacout=
 # ========================================================================= #
 
 
-def FindVMEC_Coords(pLabPos, VMEC_Data, VMEC_DerivedQuant, PosTol=1e-4, RhoGuess=0.5, ThetaGuess=1.0, verbose=True,
+def FindVMEC_Coords(pLabPos, VMEC_Data, VMEC_DerivedQuant, PosTol=1e-3, RhoGuess=0.5, ThetaGuess=1.0, verbose=True,
                     kMaxIters=150, kMinJacDet=1.0e-16, kMaxItersPerThetaStep=30, kMaxInitialThetaStep=0.5):
     """
      Description:
@@ -647,7 +648,7 @@ def GetLabCoordsFromVMEC(Rho, Theta, Phi, VMEC_Data, VMEC_DerivedQuant, kMinRho=
 # ========================================================================= #
 
 
-def __extract_data(VMEC_FilePath, ForceReadVMEC=False, verbose=True):
+def extract_data(VMEC_FilePath, ForceReadVMEC=False, verbose=True):
     global VMEC_Data
     if VMEC_Data is None or ForceReadVMEC:
         VMEC_Data = read_vmec(VMEC_FilePath)
@@ -706,7 +707,7 @@ def __extract_data(VMEC_FilePath, ForceReadVMEC=False, verbose=True):
 # ========================================================================= #
 
 
-def __spline_data(VMEC_Data, ForceReadVMEC=False, verbose=True):
+def spline_data(VMEC_Data, ForceReadVMEC=True, verbose=True):
     global VMEC_DerivedQuant
     if VMEC_DerivedQuant is None or ForceReadVMEC:
         if verbose:
@@ -811,252 +812,274 @@ def __spline_data(VMEC_Data, ForceReadVMEC=False, verbose=True):
 # ========================================================================= #
 # ========================================================================= #
 
-
-def _RootG(RR, dR_dRho, dR_dTheta, dZ_dRho, dZ_dTheta):
-    """
-        Return the jacobian for flux surface average integration (flux surface area element)
-        ... this is the sqrt(g)
-    """
-    return RR*(dR_dTheta*dZ_dRho - dR_dRho*dZ_dTheta)
-
-
-def _dVdrho(M, Rho, VMEC_Data, VMEC_DerivedQuant, kMinRho=2.0e-9):
-    """
-    Return the incremental volume between \Rho and \Rho + d\Rho
-    """
-    def _sqrtG(Theta, Phi):
-        RR, _, dR_dRho, dR_dTheta, dZ_dRho, dZ_dTheta = \
-            GetLabCoordsFromVMEC(Rho, Theta, Phi, VMEC_Data, VMEC_DerivedQuant,
-                                 kMinRho=kMinRho, nargout=6)
-        return _RootG(RR, dR_dRho, dR_dTheta, dZ_dRho, dZ_dTheta)
-
-    def zifunc(Phi):
-        def thfunc(x, Phi):
-            return _sqrtG(x, Phi)
-
-        sinarg = lambda x: thfunc(x, Phi)
-        # gaussian quadrature
-        integ, err = _int.quadrature(sinarg, 0.0, 2.0*_np.pi, tol=1e-6)
-        return integ
-        # simpson's integration over poloidal angle
-        # ... note that this excludes the point theta=0 AND theta=2pi!!!
-#        return _ut.openpoints(thfunc, 0.0, 2.0*_np.pi, TOL=1e-6, verbose=True)
-
-    # ======== Returns the incremental volume between \Rho and \Rho + d\Rho ==== #
-
-    # simpson's integration over toroidal angle (one field period)
-    # ... note that this excludes the point Phi=0 AND Phi=2pi!!!
-
-#    dVdrho = M*_ut.openpoints(zifunc, 0.0, 2.0*_np.pi/M, TOL=1e-6, verbose=True)
-
-    # fixed gaussian quadrature integration
-    dVdrho, err = M*_int.quadrature(zifunc, 0.0, 2.0*_np.pi/M, tol=1e-6)
-
-    return dVdrho
-
-
-def GetdVdrho(M, Rho, VMEC_Data, VMEC_DerivedQuant, kMinRho=2.0e-9):
-    """
-    Return the incremental volume between \Rho and \Rho + d\Rho for a vector of
-    input flux-surfaces
-    """
-    dVdrho = _np.zeros_like(Rho)
-    nrho = len(dVdrho)
-    for ii in range(nrho):
-        dVdrho[ii] = _dVdrho(M, Rho[ii], VMEC_Data, VMEC_DerivedQuant, kMinRho=kMinRho)
-    # end for
-    Vol = _np.cumsum(dVdrho)
-    return dVdrho, Vol
-
-
-# ========================================================================= #
-
-
-def _GradRhoSquared(RR, dR_dRho, dR_dTheta, dZ_dRho, dZ_dTheta, dR_dZi, dZ_dZi):
-    """
-        Calculate the gradient of the normalized effective radius at a single-point in space
-        ... gradrho(\Rho, \Theta, \Phi)
-    """
-    numerator = (dR_dTheta*dR_dTheta+dZ_dTheta*dZ_dTheta)*(dR_dZi*dR_dZi+RR*RR+dZ_dZi*dZ_dZi)
-    numerator -= (dR_dTheta*dR_dZi+dZ_dTheta*dZ_dZi)**2.0
-
-    sqrtG = _RootG(RR, dR_dRho, dR_dTheta, dZ_dRho, dZ_dTheta)
-    return numerator/(sqrtG*sqrtG)
-
-def _FSAGradRho(M, Rho, VMEC_Data, VMEC_DerivedQuant, kMinRho=2.0e-9):
-    """
-        Calculate the gradient of the normalized effective radius at a single-point in space
-        ... gradrho(\Rho, \Theta, \Phi)
-
-        M - number of field periods
-        Rho - sqrt(s), normalized effective radius
-    """
-    def _Gradrho(Theta, Phi):
-        RR, ZZ, dR_dRho, dR_dTheta, dZ_dRho, dZ_dTheta, dR_dZi, dZ_dZi = \
-            GetLabCoordsFromVMEC(Rho, Theta, Phi, VMEC_Data, VMEC_DerivedQuant,
-                                 kMinRho=kMinRho, nargout=8)
-        return (_RootG(RR, dR_dRho, dR_dTheta, dZ_dRho, dZ_dTheta),
-                _np.sqrt(_GradRhoSquared(RR, dR_dRho, dR_dTheta, dZ_dRho, dZ_dTheta, dR_dZi, dZ_dZi)))
-
-    def zifunc(Phi):
-        def thfunc(x, Phi):
-            _sqrtG, _gr = _Gradrho(x, Phi)
-            return _sqrtG*_gr
-
-        sinarg = lambda x: thfunc(x, Phi)
-        # gaussian quadrature
-        integ, err = _int.quadrature(sinarg, 0.0, 2.0*_np.pi, tol=1e-6)
-        return integ
-#        # simpson's integration over poloidal angle
-#        # ... note that this excludes the point theta=0 AND theta=2pi!!!
-#        return _ut.openpoints(sinarg, 0.0, 2.0*_np.pi, TOL=1e-6, verbose=True)
-
-    # simpson's integration over toroidal angle (one field period)
-    # ... note that this excludes the point Phi=0 AND Phi=2pi!!!
-#    gradrho = M*_ut.openpoints(zifunc, 0.0, 2.0*_np.pi/M, TOL=1e-6, verbose=True)
-#
-    # fixed gaussian quadrature
-    gradrho = M*_int.quadrature(zifunc, 0.0, 2.0*_np.pi/M, tol=1e-6)
-
-    gradrho /= _dVdrho(M, Rho, VMEC_Data, VMEC_DerivedQuant, kMinRho=kMinRho)
-    return gradrho
-
-def FSAGradRho(M, Rho, VMEC_Data, VMEC_DerivedQuant, kMinRho=2.0e-9):
-    """
-        Calculate the flux-surface averaged gradient of the normalized
-        effective radius on a single surface
-        ... gradrho(\Rho)
-    """
-    Rho = _np.atleast_1d(Rho)
-    gradrho = _np.zeros_like(Rho)
-    dVoldrho = _np.zeros_like(Rho)
-    nrho = len(gradrho)
-    for ii in range(nrho):
-        gradrho[ii], dVoldrho[ii] = _FSAGradRho(M, Rho[ii], VMEC_Data, VMEC_DerivedQuant, kMinRho=kMinRho)
-    # end for
-    Vol = _np.cumsum(dVoldrho)
-    return gradrho, dVoldrho, Vol
-
-
-# ========================================================================= #
-
-
-def _FSAGradRho2(M, Rho, VMEC_Data, VMEC_DerivedQuant, kMinRho=2.0e-9):
-    """
-        Calculate the gradient of the normalized effective radius at a single-point in space
-        ... gradrho(\Rho, \Theta, \Phi)
-    """
-    def _Gradrho2(Theta, Phi):
-        RR, ZZ, dR_dRho, dR_dTheta, dZ_dRho, dZ_dTheta, dR_dZi, dZ_dZi = \
-            GetLabCoordsFromVMEC(Rho, Theta, Phi, VMEC_Data, VMEC_DerivedQuant,
-                                 kMinRho=kMinRho, nargout=8)
-        return (_RootG(RR, dR_dRho, dR_dTheta, dZ_dRho, dZ_dTheta),
-                _GradRhoSquared(RR, dR_dRho, dR_dTheta, dZ_dRho, dZ_dTheta, dR_dZi, dZ_dZi))
-
-    def zifunc(Phi):
-        def thfunc(x, Phi):
-
-            _sqrtG, _gr2 = _Gradrho2(x, Phi)
-            # prod1
-            return _sqrtG*_gr2
-
-        sinarg = lambda x: thfunc(x, Phi)
-
-        # fixed gaussian quadrature
-        integ, err = _int.quadrature(sinarg, 0.0, 2.0*_np.pi, tol=1e-6)
-
-        # simpson's integration over poloidal angle
-        # ... note that this excludes the point theta=0 AND theta=2pi!!!
-#        return _ut.openpoints(sinarg, 0.0, 2.0*_np.pi, TOL=1e-6, verbose=True)
-        return integ
-
-    # simpson's integration over toroidal angle (one field period)
-    # ... note that this excludes the point Phi=0 AND Phi=2pi!!!
-#    gradrho2 = M*_ut.openpoints(zifunc, 0.0, 2.0*_np.pi/M, TOL=1e-6, verbose=True)
-
-    # fixed gaussian quadrature
-    gradrho2, err = M*_int.quadrature(zifunc, 0.0, 2.0*_np.pi/M, tol=1e-6)
-
-    dVoldrho = _dVdrho(M, Rho, VMEC_Data, VMEC_DerivedQuant, kMinRho=kMinRho)
-    gradrho2 /= dVoldrho
-    return gradrho2, dVoldrho
-
-
-def FSAGradRho2(M, Rho, VMEC_Data, VMEC_DerivedQuant, kMinRho=2.0e-9):
-    """
-        Calculate the flux-surface averaged gradient of the normalized
-        effective radius on a single surface
-        ... gradrho(\Rho)
-    """
-    # Theta, dTheta = _np.linspace(0.0, 2.0*_np.pi, num=50, endpoint=True, retstep=True)
-
-    Rho = _np.atleast_1d(Rho)
-    gradrho2 = _np.zeros_like(Rho)
-    dVoldrho = _np.zeros_like(Rho)
-    nrho = len(gradrho2)
-    for ii in range(nrho):
-        gradrho2[ii], dVoldrho[ii] = _FSAGradRho2(M, Rho[ii], VMEC_Data, VMEC_DerivedQuant, kMinRho=kMinRho)
-    # end for
-    Vol = _np.cumsum(dVoldrho)
-    return gradrho2, dVoldrho, Vol
-
-
 # ========================================================================= #
 # ========================================================================= #
 
 
-class VMEC(_ut.Struct):
-    def __init__(self, vmec_data={}, **kwargs):
-        ForceReadVMEC = kwargs.pop('ForceReadVMEC', False)
-        self.__dict__.update(vmec_data)
+class PYVMEC(_ut.Struct):
+    loaded = False
+    verbose = True
+    def __init__(self, fname=None, **kwargs):
+        kwargs['fname'] = fname
         self.__dict__.update(kwargs)
 
-        if hasattr(self, 'filname'):
-            self.VMEC_FilePath = self.filname
-        elif hasattr(self, 'input_extension'):
+        if hasattr(self, 'input_extension') and fname is None:
             tstname = _os.path.join(_os.path.abspath(_os.path.curdir), self.input_extension)
             if _os.path.exists(tstname):
-                self.VMEC_FilePath = tstname
+                self.fname = tstname
             # end if
         # end if
 
         # Check if the data was already loaded to this file through a dictionary
-        if not hasattr(self, 'loaded'):  self.loaded = False  # end if
+        if _os.path.exists(self.fname):
+            self.read(self.fname, False, self.verbose)
         if hasattr(self, 'rmnc'):
             self.loaded = True
-        # end if
-
-        # Add some convenience flags
-        if not hasattr(self, 'verbose'): self.verbose = True  # end if
-
-        if ForceReadVMEC or (self.VMEC_FilePath is not None and
-                            _os.path.exists(self.VMEC_FilePath) and not self.loaded):
-            self.vmec_data = __extract_data(self.VMEC_FilePath, ForceReadVMEC, self.verbose)
-
-            self.vmec_derivedquant = __spline_data(self.vmec_data, ForceReadVMEC, self.verbose)
-
-
+#            self.roa = _np.linspace(1e-5, 1, 200)
+#            self.getB00()
+#            self.setB00(Bfactor*self.B00)
+#            self.getB00()
+#            self.getamin()
+#            self.getgradrho()
+#            self.getVol()
+#            self.getiota()
         # end if
     # end def __init__
 
     def read(self, VMEC_FilePath, ForceReadVMEC=True, verbose=False):
-        self.__dict__.update(__extract_data(VMEC_FilePath, ForceReadVMEC, verbose))
+#        self.__dict__.update(extract_data(VMEC_FilePath, ForceReadVMEC, verbose))
+        self.vmec_data = extract_data(VMEC_FilePath, ForceReadVMEC, verbose)
+        self.vmec_derivedquant = spline_data(self.vmec_data, True, verbose)
         self.VMEC_FilePath = VMEC_FilePath
         self.loaded = True
     # end def
 
     def cart2flux(self, cLabPos, verbose=True, **kwargs):
-        return Cart2Flux_VMEC(cLabPos, self.VMEC_FilePath, verbose=verbose, **kwargs)
+        # ===================================================================== #
+        # Use Newton's method to find the values of Rho and Theta that match our
+        # position in real space.
+        PosTol = kwargs.setdefault('PosTol', 1e-3)
 
-    def flux2cart(self, sLabPos, verbose=True, **kwargs):
-        return Flux2Cart(sLabPos, self.VMEC_FilePath, verbose=verbose, **kwargs)
+        #Convert the user's cartesian data into polar form indexed as r,phi,z
+        pLabPos = _np.zeros_like(cLabPos)
+        pLabPos[:, 1], pLabPos[:, 0], pLabPos[:, 2] = _ut.cart2pol(cLabPos[:, 0], cLabPos[:, 1], cLabPos[:, 2] )
+        Phi = pLabPos[:, 1]
 
-    def flux2polar(self, sLabPos, verbose=True, **kwargs):
-        return Flux2Polar(sLabPos, self.VMEC_FilePath, verbose=verbose, **kwargs)
+        nrho = len(Phi)
+        Rho = _np.zeros((nrho,), _np.float64)
+        Theta = _np.zeros_like(Rho)
+        for ii in range(nrho):
+            Rho[ii], Theta[ii] = FindVMEC_Coords(pLabPos[ii, :], self.vmec_data, self.vmec_derivedquant, PosTol=PosTol)
+        #end for
+        return Rho, Theta
+#        return Cart2Flux_VMEC(cLabPos, self.VMEC_FilePath, verbose=verbose, **kwargs)
 
-    def __call__(self, ):
-        pass
-# end def
+    def flux2cart(self, sLabPos, **kwargs):
+        out = self.flux2cart(sLabPos, self.VMEC_FilePath, **kwargs)
+
+        RR, fi, ZZ = tuple(out[:,0], out[:,1], out[:,2])
+        XX, YY, ZZ = _ut.pol2cart(RR, fi, ZZ)
+        cLabPos = _np.hstack((XX,YY,ZZ))
+        return cLabPos
+#        return Flux2Cart(sLabPos, self.VMEC_FilePath, verbose=verbose, **kwargs)
+
+    def flux2polar(self, sLabPos, **kwargs):
+        kwargs.setdefault('kMinRho', 2.0e-9)
+        kwargs.setdefault('verbose', True)
+        return Flux2Polar(sLabPos, self.VMEC_FilePath, **kwargs)
+
+    def __call__(self, cLabPos):
+        return self.cart2flux(cLabPos, self.VMEC_FilePath)
+    # end def
+
+#    @property
+#    def B00(self):
+#        """
+#         Get the B<SUB>00</SUB> value of the magnetic field on axis.
+#         @return the B<SUB>00</SUB> value of the magnetic field on magnetic axis.
+#        """
+#        if not hasattr(self,"_B00"):
+#            self._B00 = _np.copy(self.vmec_data.B00)
+#        # endif
+#        return self._B00
+#    @B00.setter
+#    def B00(self, value=None):
+#        # Here we need to scale all the magnetic fields and associate the changes into the currents as well...
+#        self.mconf.MCsetB00(self.MC, value)
+#        self._B00 = value
+#    @B00.deleter
+#    def B00(self):
+#        del self._B00
+
+    # ============================================= #
+
+    @staticmethod
+    def _RootG(RR, dR_dRho, dR_dTheta, dZ_dRho, dZ_dTheta):
+        """
+            Return the jacobian for flux surface average integration (flux surface area element)
+            ... this is the sqrt(g)
+        """
+        return RR*(dR_dTheta*dZ_dRho - dR_dRho*dZ_dTheta)
+
+    @staticmethod
+    def _dVdrho(M, Rho, VMEC_Data, VMEC_DerivedQuant, kMinRho=2.0e-9):
+        """
+        Return the incremental volume between \Rho and \Rho + d\Rho
+        """
+        def _sqrtG(Theta, Phi):
+            RR, _, dR_dRho, dR_dTheta, dZ_dRho, dZ_dTheta = \
+                GetLabCoordsFromVMEC(Rho, Theta, Phi, VMEC_Data, VMEC_DerivedQuant, kMinRho=kMinRho, nargout=6)
+            return PYVMEC._RootG(RR, dR_dRho, dR_dTheta, dZ_dRho, dZ_dTheta)
+
+        # ======== Returns the incremental volume between \Rho and \Rho + d\Rho ==== #
+        # simpson's integration over toroidal angle (one field period)
+        # func = _sqrtG(Theta, Phi)
+        dVdrho = M*_ut.dblquad_asr(_sqrtG, 0.0, 2.0*_np.pi, 0.0, 2.0*_np.pi/M, tol=1e-2)
+        return dVdrho
+
+#    @staticmethod
+#    def GetdVdrho(M, Rho, VMEC_Data, VMEC_DerivedQuant, kMinRho=2.0e-9):
+    def GetdVdrho(self, Rho, **kwargs):
+        """
+        Return the incremental volume between \Rho and \Rho + d\Rho for a vector of
+        input flux-surfaces
+        """
+        kMinRho = kwargs.setdefault('kMinRho',None)
+        if kMinRho is None and hasattr(self, 'kMinRho'):
+            kMinRho = self.kMinRho
+        else:
+            kMinRho = 2.0e-9
+        # end if
+        self.kMinRho = kMinRho
+
+        Rho = _np.atleast_1d(Rho).copy()
+        dVdrho = _np.zeros_like(Rho)
+        nrho = len(dVdrho)
+        for ii in range(nrho):
+            if Rho[ii] == 0:
+                Rho[ii] = 1e-5
+            dVdrho[ii] = PYVMEC._dVdrho(self.vmec_data.nfp, Rho[ii], self.vmec_data, self.vmec_derivedquant, kMinRho=self.kMinRho)
+        # end for
+        self.Vol = _np.cumsum(dVdrho)
+        self.dVdrho = dVdrho
+        return self.dVdrho, self.Vol
+
+    # ========================================================================= #
+
+
+    @staticmethod
+    def _GradRhoSquared(RR, dR_dRho, dR_dTheta, dZ_dRho, dZ_dTheta, dR_dZi, dZ_dZi):
+        """
+            Calculate the gradient of the normalized effective radius at a single-point in space
+            ... gradrho(\Rho, \Theta, \Phi)
+        """
+        numerator = (dR_dTheta**2.0+dZ_dTheta**2.0)*(dR_dZi**2.0+RR**2.0+dZ_dZi**2.0)
+        numerator -= (dR_dTheta*dR_dZi+dZ_dTheta*dZ_dZi)**2.0
+
+        sqrtG = PYVMEC._RootG(RR, dR_dRho, dR_dTheta, dZ_dRho, dZ_dTheta)
+        return numerator/(sqrtG**2.0), sqrtG
+
+    @staticmethod
+    def _FSAGradRho(M, Rho, VMEC_Data, VMEC_DerivedQuant, kMinRho=2.0e-9):
+        """
+            Calculate the gradient of the normalized effective radius at a single-point in space
+            ... gradrho(\Rho, \Theta, \Phi)
+
+            M - number of field periods
+            Rho - sqrt(s), normalized effective radius
+        """
+        def _Gradrho(Theta, Phi):
+            RR, ZZ, dR_dRho, dR_dTheta, dZ_dRho, dZ_dTheta, dR_dZi, dZ_dZi = \
+                GetLabCoordsFromVMEC(Rho, Theta, Phi, VMEC_Data, VMEC_DerivedQuant, kMinRho=kMinRho, nargout=8)
+
+            _gr2, sqg = PYVMEC._GradRhoSquared(RR, dR_dRho, dR_dTheta, dZ_dRho, dZ_dTheta, dR_dZi, dZ_dZi)
+            return _np.sqrt(_gr2)*sqg
+
+        # simpson's integration over toroidal angle (one field period)
+        dVdrho = PYVMEC._dVdrho(M, Rho, VMEC_Data, VMEC_DerivedQuant, kMinRho=kMinRho)
+        gradrho = M*_ut.dblquad_asr(_Gradrho, 0.0, 2.0*_np.pi, 0.0, 2.0*_np.pi/M, tol=1e-2)
+        return gradrho/dVdrho, dVdrho
+
+#    @staticmethod
+#    def FSAGradRho(M, Rho, VMEC_Data, VMEC_DerivedQuant, kMinRho=2.0e-9):
+    def FSAGradRho(self, Rho, **kwargs):
+        """
+            Calculate the flux-surface averaged gradient of the normalized
+            effective radius on a single surface
+            ... gradrho(\Rho)
+        """
+        kMinRho = kwargs.setdefault('kMinRho',None)
+        if kMinRho is None and hasattr(self, 'kMinRho'):
+            kMinRho = self.kMinRho
+        else:
+            kMinRho = 2.0e-9
+        # end if
+        self.kMinRho = kMinRho
+
+        Rho = _np.atleast_1d(Rho).copy()
+        gradrho = _np.zeros_like(Rho)
+        dVoldrho = _np.zeros_like(Rho)
+        nrho = len(gradrho)
+        for ii in range(nrho):
+            if Rho[ii] == 0:
+                Rho[ii] = 1e-5
+            gradrho[ii], dVoldrho[ii] = PYVMEC._FSAGradRho(self.vmec_data.nfp, Rho[ii], self.vmec_data, self.vmec_derivedquant, kMinRho=self.kMinRho)
+        # end for
+        self.Vol = _np.cumsum(dVoldrho)
+        self.gradrho = gradrho
+        self.dVdrho = dVoldrho
+        return self.gradrho, self.dVdrho, self.Vol
+
+
+    # ========================================================================= #
+
+    @staticmethod
+    def _FSAGradRho2(M, Rho, VMEC_Data, VMEC_DerivedQuant, kMinRho=2.0e-9):
+        """
+            Calculate the gradient of the normalized effective radius at a single-point in space
+            ... gradrho(\Rho, \Theta, \Phi)
+        """
+        def _Gradrho2(Theta, Phi):
+            RR, ZZ, dR_dRho, dR_dTheta, dZ_dRho, dZ_dTheta, dR_dZi, dZ_dZi = \
+                GetLabCoordsFromVMEC(Rho, Theta, Phi, VMEC_Data, VMEC_DerivedQuant, kMinRho=kMinRho, nargout=8)
+
+            _gr2, sqg = PYVMEC._GradRhoSquared(RR, dR_dRho, dR_dTheta, dZ_dRho, dZ_dTheta, dR_dZi, dZ_dZi)
+            return _gr2*sqg
+
+        # simpson's integration over toroidal angle (one field period)
+        dVdrho = PYVMEC._dVdrho(M, Rho, VMEC_Data, VMEC_DerivedQuant, kMinRho=kMinRho)
+        gradrho2 = M*_ut.dblquad_asr(_Gradrho2, 0.0, 2.0*_np.pi, 0.0, 2.0*_np.pi/M, tol=1e-2)
+        return gradrho2/dVdrho, dVdrho
+
+#    @staticmethod
+#    def FSAGradRho2(M, Rho, VMEC_Data, VMEC_DerivedQuant, kMinRho=2.0e-9):
+    def FSAGradRho2(self, Rho, **kwargs):
+        """
+            Calculate the flux-surface averaged gradient of the normalized
+            effective radius on a single surface
+            ... gradrho(\Rho)
+        """
+        kMinRho = kwargs.setdefault('kMinRho',None)
+        if kMinRho is None and hasattr(self, 'kMinRho'):
+            kMinRho = self.kMinRho
+        else:
+            kMinRho = 2.0e-9
+        # end if
+        self.kMinRho = kMinRho
+
+        Rho = _np.atleast_1d(Rho).copy()
+        gradrho2 = _np.zeros_like(Rho)
+        dVoldrho = _np.zeros_like(Rho)
+        nrho = len(gradrho2)
+        for ii in range(nrho):
+            if Rho[ii] == 0:
+                Rho[ii] = 1e-5
+            gradrho2[ii], dVoldrho[ii] = PYVMEC._FSAGradRho2(self.vmec_data.nfp, Rho[ii], self.vmec_data, self.vmec_derivedquant, kMinRho=kMinRho)
+        # end for
+        self.Vol = _np.cumsum(dVoldrho)
+        self.gradrho2 = gradrho2
+        self.dVdrho = dVoldrho
+        return self.gradrho2, self.dVdrho, self.Vol
     # end def
 
  # end class VMEC_Data
@@ -1069,7 +1092,7 @@ if __name__=="__main__":
     import time
     start = time.time()
 
-    import os as _os
+#    import os as _os
     rootdir = _os.path.join('d:/', 'Workshop', 'TRAVIS', 'MagnConfigs', 'W7X')
     if not _os.path.exists(rootdir):
         rootdir = _os.path.join('G:/', 'Workshop', 'TRAVIS_tree', 'MagnConfigs', 'W7X')
@@ -1081,25 +1104,55 @@ if __name__=="__main__":
 #    kVMECfile = _os.path.join('G://', 'Workshop','TRAVIS_tree','MagnConfigs','W7X')
 #    kVMECfile = _os.path.join(kVMECfile, 'wout_w7x.1000_1000_1000_1000_+0000_+0000.10.06.txt')
 
-#    VMEC_Data = __extract_data(kVMECfile, ForceReadVMEC=False, verbose=True)
-#    VMEC_Data = __extract_data(kVMECfile, ForceReadVMEC=True, verbose=True)
+#    VMEC_Data = extract_data(kVMECfile, ForceReadVMEC=False, verbose=True)
+#    VMEC_Data = extract_data(kVMECfile, ForceReadVMEC=True, verbose=True)
 
-#    VMEC_DerivedQuant = __spline_data(VMEC_Data, ForceReadVMEC=False, verbose=True)
-#    VMEC_DerivedQuant = __spline_data(VMEC_Data, ForceReadVMEC=True, verbose=True)
+#    VMEC_DerivedQuant = spline_data(VMEC_Data, ForceReadVMEC=False, verbose=True)
+#    VMEC_DerivedQuant = spline_data(VMEC_Data, ForceReadVMEC=True, verbose=True)
 
     # within the LCFS
     cLabPos = _np.atleast_2d([5.85, 0, 0]);
     sPos = _np.atleast_2d([_np.sqrt(0.11407577361150142), 180.0*_np.pi/180.0, 0.0])
-    rho, th = Cart2Flux(cLabPos, kVMECfile, ForceReadVMEC=False, PosTol=1e-4, verbose=True)
+#    rho, th = Cart2Flux(cLabPos, kVMECfile, ForceReadVMEC=False, PosTol=1e-3, verbose=True)
 
     fiRZ = _ut.cart2pol(cLabPos[0,0],cLabPos[0,1],cLabPos[0,2])
-    pLabOut = Flux2Polar(sPos, kVMECfile, verbose=True)
+#    pLabOut = Flux2Polar(sPos, kVMECfile, verbose=True)
 
     # outside the LCFS
     cLabPos2 = _np.atleast_2d([5.5, 0, 0]);
-    rho2, th2 = Cart2Flux(cLabPos2, kVMECfile, ForceReadVMEC=False, PosTol=1e-4, verbose=True)
+#    rho2, th2 = Cart2Flux(cLabPos2, kVMECfile, ForceReadVMEC=False, PosTol=1e-3, verbose=True)
 
-    # gradrho2, dVoldrho, Vol = FSAGradRho2(5, sPos[0,0], VMEC_Data, VMEC_DerivedQuant, kMinRho=2.0e-9)
+    vmc = PYVMEC(kVMECfile)
+    _rho, _th = vmc(cLabPos)
+    _rho2, _th2 = vmc(cLabPos2)
+
+    VMEC_Data = vmc.vmec_data
+    VMEC_DerivedQuant = vmc.vmec_derivedquant
+    VMEC_DataSource = vmc.fname
+
+    print('Starting single-point gradrho2 calculation')
+    _gradrho, _ = vmc._FSAGradRho(5, sPos[0,0], VMEC_Data, VMEC_DerivedQuant, kMinRho=2.0e-9)
+    _gradrho2, _dVoldrho = vmc._FSAGradRho2(5, sPos[0,0], VMEC_Data, VMEC_DerivedQuant, kMinRho=2.0e-9)
+
+    print('Starting multi-point gradrho2 calculation')
+    rho = _np.linspace(1e-3, 1.0, 21, endpoint=True)
+    gradrho, dVoldrho, Vol = vmc.FSAGradRho(rho)
+    gradrho2, dVoldrho, Vol = vmc.FSAGradRho2(rho)
+
+    from pymconf import pyvmec as pymconf
+    pym = pymconf(kVMECfile)
+    pym.getgradrho(sPos[0,0])
+    pym.getVol(sPos[0,0])
+    print((_dVoldrho, pym.dVdrho, 100*(_np.abs(_dVoldrho)-pym.dVdrho)/pym.dVdrho))
+    print((_gradrho,  pym.gradrho, 100*(_np.abs(_gradrho) -pym.gradrho)/pym.gradrho))
+    print((_gradrho2, pym.gradrho2, 100*(_np.abs(_gradrho2)-pym.gradrho2)/pym.gradrho2))
+    pym.getgradrho(rho)
+    pym.getVol(rho)
+    print((Vol, pym.Vol, 100*(_np.abs(Vol)-pym.Vol)/pym.Vol))
+    print((dVoldrho, pym.dVdrho, 100*(_np.abs(dVoldrho)-pym.dVdrho)/pym.dVdrho))
+    print((gradrho,  pym.gradrho, 100*(_np.abs(gradrho) -pym.gradrho)/pym.gradrho))
+    print((gradrho2, pym.gradrho2, 100*(_np.abs(gradrho2)-pym.gradrho2)/pym.gradrho2))
+
 # end if
 
 # ========================================================================= #
