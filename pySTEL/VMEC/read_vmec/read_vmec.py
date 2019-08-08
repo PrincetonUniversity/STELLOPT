@@ -117,7 +117,7 @@ class read_vmec(Struct):
         # Handle File type and library access
         # nfilname = len(filname)
         self.netcdffile = 0
-        if use_lib_stell and filname.find('wout')>-1 or filname.find('.nc')>-1:
+        if use_lib_stell and filname.find('wout')>-1: # or filname.find('.nc')>-1:
             if verbose:
                 print('Attempting to open %s using the libstell library'%(filname,))
             # end if
@@ -253,55 +253,6 @@ class read_vmec(Struct):
             self. CreateResonanceArray()
         # end if
     # end def readfil
-
-#    def read_vmec_netcdf(self, filname):
-#        try:
-#            from VMEC.read_vmec_netCDF import read_vmec
-#        except:
-#            from .read_vmec_netCDF import read_vmec
-#        # end try
-#        self.reader = read_vmec
-#        f = self.reader(filname)
-#
-#        # Call the initialization function of the super class to store the data
-#        if type(f) != dict:   f = f.dict_from_class()   # endif
-#        self.__dict__.update(f)
-#        return f
-#    # end def read_vmec_netcdf
-#
-#    def read_vmec_txt(self, fid, fmt):
-#        try:
-#            from VMEC import read_vmec_txt as rvt
-##            import read_vmec_txt as rvt
-#        except:
-#            import VMEC
-#            from .VMEC import read_vmec_txt as rvt
-#        # end try
-#        if (self.version <= 5.10):
-#            self.reader = rvt.read_vmec_orig
-#        elif (self.version <= 6.05):
-#            self.reader = rvt.read_vmec_605
-#        elif (self.version <= 6.20):
-#            self.reader = rvt.read_vmec_620
-#        elif (self.version <= 6.50):
-#            self.reader = rvt.read_vmec_650
-#        elif (self.version <= 6.95):
-#            self.reader = rvt.read_vmec_695
-#        elif (self.version <= 8.00):
-#            self.reader = rvt.read_vmec_800
-#        elif (self.version <= 8.52):
-#            self.reader = rvt.read_vmec_847
-#        # end if
-#        f = self.reader(fid, fmt)
-#
-#        try:    fid.close()
-#        except: pass
-#
-#        # Call the initialization function of the super class to store the data
-#        if type(f) != dict:   f = f.dict_from_class()   # endif
-#        self.__dict__.update(f)
-#        return
-#    # end def read_vmec_txt
 
     # ===================================================================== #
 
