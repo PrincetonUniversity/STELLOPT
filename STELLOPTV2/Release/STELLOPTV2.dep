@@ -814,6 +814,12 @@ equil_utils.o : \
       $(VMEC_DIR)/Release/vmec_dim.o \
       $(VMEC_DIR)/Release/xstuff.o 
 
+stellopt_bnorm.o : \
+      stellopt_runtime.o \
+      stellopt_input_mod.o \
+      stellopt_vars.o \
+      $(LIB_DIR)/Release/mpi_params.o
+
 stellopt_coiloptpp.o : \
       stellopt_runtime.o \
       stellopt_input_mod.o \
