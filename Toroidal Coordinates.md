@@ -1,3 +1,5 @@
+{% include head.html %}
+
 Toroidal Coordinate Systems
 ===========================
 
@@ -19,9 +21,10 @@ the radial direction. Thus on any radial surface the value of a
 parameter is known to machine accuracy at any point. Of course the
 accuracy of this representation is a function of the ability to
 represent a spatially varying quantity with a truncated trigonometric
-series. In general any quantity can be represented by [math](math)
-f\\left(r,\\theta,\\zeta\\right)=\\sum\_{m=0}\^M\\sum\_{n=-N}\^N
-f\_{mn}\\left(r\\right) cos\\left(m\\theta+n\\zeta\\right) [math](math)
+series. In general any quantity can be represented by
+
+\[ f\\left(r,\\theta,\\zeta\\right)=\\sum\_{m=0}\^M\\sum\_{n=-N}\^N f\_{mn}\\left(r\\right) cos\\left(m\\theta+n\\zeta\\right) \]
+
 or [math](math) f\\left(r,\\theta,\\zeta\\right)=\\sum
 f\_{mn}\\left(r\\right) sin\\left(m\\theta+n\\zeta\\right). [math](math)
 Here the angle per field period (zeta) has been utilized in place of the
