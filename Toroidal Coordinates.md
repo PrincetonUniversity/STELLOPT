@@ -23,7 +23,7 @@ accuracy of this representation is a function of the ability to
 represent a spatially varying quantity with a truncated trigonometric
 series. In general any quantity can be represented by
 
-\[ f\\left(r,\\theta,\\zeta\\right)=\\sum\_{m=0}\^M\\sum\_{n=-N}\^N f\_{mn}\\left(r\\right) cos\\left(m\\theta+n\\zeta\\right) \]
+\$$ f\\left(r,\\theta,\\zeta\\right)=\\sum\_{m=0}\^M\\sum\_{n=-N}\^N f\_{mn}\\left(r\\right) cos\\left(m\\theta+n\\zeta\\right) $$
 
 or [math](math) f\\left(r,\\theta,\\zeta\\right)=\\sum
 f\_{mn}\\left(r\\right) sin\\left(m\\theta+n\\zeta\\right). [math](math)
