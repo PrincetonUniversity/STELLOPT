@@ -11,7 +11,7 @@ from __future__ import absolute_import, with_statement, absolute_import, \
                        division, print_function, unicode_literals
 
 __version__ = "2019.07.12.19"
-__all__ = ['Struct', 'Spline', 'utils', 'txtutils', 'vmcutils']
+__all__ = ['Struct', 'Spline', 'utils', 'aquad', 'txtutils', 'vmcutils']
 
 
 from . import Struct
@@ -22,7 +22,10 @@ from .Spline import Spline  # analysis:ignore
 
 from . import utils
 from .utils import cylsym_odd, cylsym_even, cart2pol, pol2cart # analysis:ignore
-from .utils import lagrange_interpolation, newton, closedpoints, openpoints # analysis:ignore
+from .utils import lagrange_interpolation, newton # analysis:ignore
+
+from . import aquad
+from .aquad import quad_asr, dblquad_asr # analysis:ignore
 
 from . import txtutils
 #from .txtutils import scanf, sscanf, fscanf  # analysis:ignore
