@@ -7,6 +7,7 @@ SPATH   = ../Sources
 #Contains list of source files (.o) and dependencies
 DEPLIST = FIELDLINES.dep
 OBJLIST = ../ObjectList
+FLAGS := -g -fbacktrace $(FLAGS)
 
 #Includes source files and dependency list
 include $(DEPLIST)
@@ -15,8 +16,9 @@ VPATH = $(SPATH)
 
 .SUFFIXES :
 .SUFFIXES : .f .f90 .o
-xfieldlines:  $(LIB) $(ObjectFiles)
-	$(LINK) $@ $(ObjectFiles) $(LIB_LINK)
+xfieldlines:  $(LIB) $(ObjectFiles) 
+	$(LINK) $@ $(ObjectFiles) $(LIB_LINK) -L/u/asingh2/cvodeTest -lcvodeTest
+
 #Compile object files defined in OBJLIST.
 .f.o :
 	@if grep -q '^!DEC\$$' $<; \
@@ -53,8 +55,8 @@ xfieldlines:  $(LIB) $(ObjectFiles)
          echo '$(COMPILE_FREE) $(FLAGS) $(MOD_PATH). -c $<'; \
          $(COMPILE_FREE) $(FLAGS) $(MOD_PATH).. -c $<; \
       fi
-      
-#Check that library files are current. 
+
+#Check that library files are current.
 $(LIB) :
 	@cd $(LIB_DIR); make $(TYPE)
 
