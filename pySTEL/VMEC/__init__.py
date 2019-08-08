@@ -20,15 +20,14 @@
 from __future__ import absolute_import, with_statement, absolute_import, \
                        division, print_function, unicode_literals
 
-__version__ = "2019.07.12.19"
+__version__ = "2019.08.07.7"
 __all__ = ['read_vmec']
 
 from . import read_vmec
 from .read_vmec import read_vmec # analysis:ignore
 
-
-#from . import CalcFluxCart_VMEC
-#from .CalcFluxCart_VMEC import
+from . import CalcFluxCart_VMEC # analysis:ignore
+from .CalcFluxCart_VMEC import Cart2Flux  # analysis:ignore
 
 # ======================================================================== #
 # ======================================================================== #
