@@ -31,6 +31,7 @@
       USE stellopt_input_mod
       USE stellopt_vars, my_mpol => mpol_rcws, my_ntor => ntor_rcws
       USE equil_utils
+      USE neswrite, ONLY: coil_separation
 
 !DEC$ IF DEFINED (REGCOIL)
       !USE regcoil_auto_regularization_solve
@@ -83,6 +84,7 @@
 
       ! Run bnorm if required
       if (load_bnorm) then
+         coil_separation = regcoil_winding_surface_separation 
          ! Run BNORM code
          call stellopt_bnorm(file_str,lscreen)
          bnorm_filename = 'bnorm.' // TRIM(file_str)
