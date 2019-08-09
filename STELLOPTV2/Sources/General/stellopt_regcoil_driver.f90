@@ -31,7 +31,6 @@
       USE stellopt_input_mod
       USE stellopt_vars, my_mpol => mpol_rcws, my_ntor => ntor_rcws
       USE equil_utils
-      USE neswrite, ONLY: coil_separation
 
 !DEC$ IF DEFINED (REGCOIL)
       !USE regcoil_auto_regularization_solve
@@ -66,9 +65,6 @@
 !        iunit         File unit number
       ! FOR REGCOIL
       INTEGER :: istat, iunit, m, n, ii, imn, nummodes1, nummodes2
-!        bnfou/_c      B-Normal Fourier coefficients
-      REAL(rprec), ALLOCATABLE, DIMENSION(:,:) :: bnfou, bnfou_c
-      INTEGER :: iverb, nu, nv, mf, nf, md, nd 
 
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
@@ -87,26 +83,9 @@
 
       ! Run bnorm if required
       if (load_bnorm) then
-         nu = nu_bnorm
-         nv = nv_bnorm
-         mf=24; nf=14; md=24; nd=20; coil_separation = 0.2
-          ! Run BNORM code
-         ALLOCATE(bnfou(0:mf,-nf:nf),bnfou_c(0:mf,-nf:nf),STAT=istat)
-         IF (lscreen) WRITE(6,"(A)") '   - Calculating B-Normal File'
-         CALL bnormal(nu,nv,mf,nf,md,nd,bnfou,bnfou_c,TRIM(file_str)//'.nc')
-         IF (lscreen) WRITE(6,"(A,ES22.12E3)") '      Max. B-Normal: ',MAXVAL(MAXVAL(bnfou,DIM=2),DIM=1)
-         IF (lscreen) WRITE(6,"(A,ES22.12E3)") '      MIN. B-Normal: ',MINVAL(MINVAL(bnfou,DIM=2),DIM=1)
-         ! WRITE BNORMAL
-         CALL safe_open(iunit, istat, 'bnorm.' // TRIM(file_str), 'replace','formatted')
-         DO m = 0, mf
-            DO n = -nf, nf
-               WRITE(iunit,"(1x,2i5,ES22.12E3)") m,n,bnfou(m,n)
-            END DO
-         END DO
-         CLOSE(iunit)
-         DEALLOCATE(bnfou,bnfou_c)
-         IF (lscreen) WRITE(6,"(A)") '      Coefficients output to:   '//'bnorm.' // TRIM(file_str)
-         bnorm_filename = 'bnorm.' // TRIM(proc_string)
+         ! Run BNORM code
+         call stellopt_bnorm(file_str,lscreen)
+         bnorm_filename = 'bnorm.' // TRIM(file_str)
       end if
 
       ! IF (lscreen) WRITE(6,'(a,a)') '<---- proc_string=', proc_string
