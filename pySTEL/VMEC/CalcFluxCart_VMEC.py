@@ -42,18 +42,17 @@ except:
     from VMEC.read_vmec import read_vmec
 # end try
 
-# ========================================================================== #
-# ========================================================================== #
-
+# ========================================================================= #
+# ------------------------------------------------------------------------- #
+# ========================================================================= #
+# GLOBALS
 DEBUG = False
 VMEC_Data = None
 VMEC_DerivedQuant = None
 VMEC_DataSource = None
 
-
-
 # ========================================================================= #
-
+# FUNCTIONS THAT USE GLOBAL VARIABLES
 
 def Cart2Flux(cLabPos, VMEC_FilePath, ForceReadVMEC=False, PosTol=1e-3, verbose=True):
     """
@@ -266,6 +265,9 @@ def Flux2Polar(sPos, VMEC_FilePath, ForceReadVMEC=False, kMinRho=2.0e-9, jacout=
 #end def Flux2Polar
 
 # ========================================================================= #
+# ------------------------------------------------------------------------- #
+# ========================================================================= #
+# FUNCTIONS THAT USE ONLY LOCAL VARIABLES BELOW HERE
 
 
 def FindVMEC_Coords(pLabPos, VMEC_Data, VMEC_DerivedQuant, PosTol=1e-3, RhoGuess=0.5, ThetaGuess=1.0, verbose=True,
@@ -651,8 +653,6 @@ def GetLabCoordsFromVMEC(Rho, Theta, Phi, VMEC_Data, VMEC_DerivedQuant, kMinRho=
 def extract_data(VMEC_FilePath, ForceReadVMEC=False, verbose=True):
     global VMEC_Data
     if VMEC_Data is None or ForceReadVMEC:
-        VMEC_Data = read_vmec(VMEC_FilePath)
-
         VMEC_Data = _ut.Struct() # Instantiate an empty class of type structure
 
         # If this is a netCDF VMEC file, read the output ourseleves, otherwise,
@@ -810,9 +810,7 @@ def spline_data(VMEC_Data, ForceReadVMEC=True, verbose=True):
     return VMEC_DerivedQuant
 
 # ========================================================================= #
-# ========================================================================= #
-
-# ========================================================================= #
+# ------------------------------------------------------------------------- #
 # ========================================================================= #
 
 
@@ -848,8 +846,8 @@ class PYVMEC(_ut.Struct):
 
     def read(self, VMEC_FilePath, ForceReadVMEC=True, verbose=False):
 #        self.__dict__.update(extract_data(VMEC_FilePath, ForceReadVMEC, verbose))
-        self.vmec_data = extract_data(VMEC_FilePath, ForceReadVMEC, verbose)
-        self.vmec_derivedquant = spline_data(self.vmec_data, True, verbose)
+        self.VMEC_Data = extract_data(VMEC_FilePath, ForceReadVMEC, verbose)
+        self.VMEC_DerivedQuant = spline_data(self.VMEC_Data, True, verbose)
         self.VMEC_FilePath = VMEC_FilePath
         self.loaded = True
     # end def
@@ -869,7 +867,7 @@ class PYVMEC(_ut.Struct):
         Rho = _np.zeros((nrho,), _np.float64)
         Theta = _np.zeros_like(Rho)
         for ii in range(nrho):
-            Rho[ii], Theta[ii] = FindVMEC_Coords(pLabPos[ii, :], self.vmec_data, self.vmec_derivedquant, PosTol=PosTol)
+            Rho[ii], Theta[ii] = FindVMEC_Coords(pLabPos[ii, :], self.VMEC_Data, self.VMEC_DerivedQuant, PosTol=PosTol)
         #end for
         return Rho, Theta
 #        return Cart2Flux_VMEC(cLabPos, self.VMEC_FilePath, verbose=verbose, **kwargs)
@@ -899,7 +897,7 @@ class PYVMEC(_ut.Struct):
 #         @return the B<SUB>00</SUB> value of the magnetic field on magnetic axis.
 #        """
 #        if not hasattr(self,"_B00"):
-#            self._B00 = _np.copy(self.vmec_data.B00)
+#            self._B00 = _np.copy(self.VMEC_Data.B00)
 #        # endif
 #        return self._B00
 #    @B00.setter
@@ -932,9 +930,28 @@ class PYVMEC(_ut.Struct):
             return PYVMEC._RootG(RR, dR_dRho, dR_dTheta, dZ_dRho, dZ_dTheta)
 
         # ======== Returns the incremental volume between \Rho and \Rho + d\Rho ==== #
-        # simpson's integration over toroidal angle (one field period)
+        # simpson's integration over toroidal and poloidal angle (one field period)
         # func = _sqrtG(Theta, Phi)
-        dVdrho = M*_ut.dblquad_asr(_sqrtG, 0.0, 2.0*_np.pi, 0.0, 2.0*_np.pi/M, tol=1e-2)
+#        dVdrho = M*_ut.aquad.dblquad_asr(_sqrtG, 0.0, 2.0*_np.pi, 0.0, 2.0*_np.pi/M, tol=1e-3)
+#        dVdrho = M*_ut.aquad.dblquad_scipy(_sqrtG, 0.0, 2.0*_np.pi, 0.0, 2.0*_np.pi/M, tol=1e-3)
+#        dVdrho = M*_ut.aquad.dblquadrature(_sqrtG, 0.0, 2.0*_np.pi, 0.0, 2.0*_np.pi/M, tol=1e-3)
+
+        # due to speed reasons, let's try to mesh it and calculate
+        ph = _np.linspace(0.0, 2.0*_np.pi, num=10)/M
+#        func = lambda x: _sqrtG(x, ph)
+#        dVdrho = M*_ut.aquad.quad_asr(func, 0.0, 2.0*_np.pi, tol=1e-3)
+        th = _np.linspace(0.0, 2.0*_np.pi, num=15)
+#        func = lambda x: _sqrtG(th, x)
+#        dVdrho = M*_ut.aquad.quad_asr(func, 0.0, 2.0*_np.pi/M, tol=1e-3)
+        res = 0.0
+        dphi = ph[1]-ph[0]
+        dth = th[1]-th[0]
+        for _ph in ph:
+            for _th in th:
+                res += _sqrtG(_th, _ph)
+            # end for
+        # end for
+        dVdrho = res*dphi*dth
         return dVdrho
 
 #    @staticmethod
@@ -958,7 +975,7 @@ class PYVMEC(_ut.Struct):
         for ii in range(nrho):
             if Rho[ii] == 0:
                 Rho[ii] = 1e-5
-            dVdrho[ii] = PYVMEC._dVdrho(self.vmec_data.nfp, Rho[ii], self.vmec_data, self.vmec_derivedquant, kMinRho=self.kMinRho)
+            dVdrho[ii] = PYVMEC._dVdrho(self.VMEC_Data.nfp, Rho[ii], self.VMEC_Data, self.VMEC_DerivedQuant, kMinRho=self.kMinRho)
         # end for
         self.Vol = _np.cumsum(dVdrho)
         self.dVdrho = dVdrho
@@ -995,9 +1012,30 @@ class PYVMEC(_ut.Struct):
             _gr2, sqg = PYVMEC._GradRhoSquared(RR, dR_dRho, dR_dTheta, dZ_dRho, dZ_dTheta, dR_dZi, dZ_dZi)
             return _np.sqrt(_gr2)*sqg
 
-        # simpson's integration over toroidal angle (one field period)
+        # simpson's integration over toroidal and poloidal angle (one field period)
         dVdrho = PYVMEC._dVdrho(M, Rho, VMEC_Data, VMEC_DerivedQuant, kMinRho=kMinRho)
-        gradrho = M*_ut.dblquad_asr(_Gradrho, 0.0, 2.0*_np.pi, 0.0, 2.0*_np.pi/M, tol=1e-2)
+
+        # adaptive integration:
+#        gradrho = M*_ut.aquad.dblquad_asr(_Gradrho, 0.0, 2.0*_np.pi, 0.0, 2.0*_np.pi/M, tol=1e-3)
+#        gradrho = M*_ut.aquad.dblquad_scipy(_Gradrho, 0.0, 2.0*_np.pi, 0.0, 2.0*_np.pi/M, tol=1e-3)
+#        gradrho = M*_ut.aquad.dblquadrature(_Gradrho, 0.0, 2.0*_np.pi, 0.0, 2.0*_np.pi/M, tol=1e-3)
+
+        # due to speed reasons, let's try to mesh it and calculate
+        ph = _np.linspace(0.0, 2.0*_np.pi, num=10)/M
+#        func = lambda x: _Gradrho(x, ph)
+#        gradrho = M*_ut.aquad.quad_asr(func, 0.0, 2.0*_np.pi, tol=1e-3)
+        th = _np.linspace(0.0, 2.0*_np.pi, num=15)
+#        func = lambda x: _Gradrho(th, x)
+#        gradrho = M*_ut.aquad.quad_asr(func, 0.0, 2.0*_np.pi/M, tol=1e-3)
+        res = 0.0
+        dphi = ph[1]-ph[0]
+        dth = th[1]-th[0]
+        for _ph in ph:
+            for _th in th:
+                res += _Gradrho(_th, _ph)
+            # end for
+        # end for
+        gradrho = res*dphi*dth
         return gradrho/dVdrho, dVdrho
 
 #    @staticmethod
@@ -1023,7 +1061,7 @@ class PYVMEC(_ut.Struct):
         for ii in range(nrho):
             if Rho[ii] == 0:
                 Rho[ii] = 1e-5
-            gradrho[ii], dVoldrho[ii] = PYVMEC._FSAGradRho(self.vmec_data.nfp, Rho[ii], self.vmec_data, self.vmec_derivedquant, kMinRho=self.kMinRho)
+            gradrho[ii], dVoldrho[ii] = PYVMEC._FSAGradRho(self.VMEC_Data.nfp, Rho[ii], self.VMEC_Data, self.VMEC_DerivedQuant, kMinRho=self.kMinRho)
         # end for
         self.Vol = _np.cumsum(dVoldrho)
         self.gradrho = gradrho
@@ -1035,10 +1073,12 @@ class PYVMEC(_ut.Struct):
 
     @staticmethod
     def _FSAGradRho2(M, Rho, VMEC_Data, VMEC_DerivedQuant, kMinRho=2.0e-9):
+#    def _FSAGradRho2(self, Rho, kMinRho=2.0e-9):
         """
             Calculate the gradient of the normalized effective radius at a single-point in space
             ... gradrho(\Rho, \Theta, \Phi)
         """
+#        M = self.VMEC_Data.nfp
         def _Gradrho2(Theta, Phi):
             RR, ZZ, dR_dRho, dR_dTheta, dZ_dRho, dZ_dTheta, dR_dZi, dZ_dZi = \
                 GetLabCoordsFromVMEC(Rho, Theta, Phi, VMEC_Data, VMEC_DerivedQuant, kMinRho=kMinRho, nargout=8)
@@ -1046,9 +1086,29 @@ class PYVMEC(_ut.Struct):
             _gr2, sqg = PYVMEC._GradRhoSquared(RR, dR_dRho, dR_dTheta, dZ_dRho, dZ_dTheta, dR_dZi, dZ_dZi)
             return _gr2*sqg
 
-        # simpson's integration over toroidal angle (one field period)
+        # simpson's integration over toroidal and poloidal angle (one field period)
+#        dVdrho = self._dVdrho(Rho, kMinRho=kMinRho)
         dVdrho = PYVMEC._dVdrho(M, Rho, VMEC_Data, VMEC_DerivedQuant, kMinRho=kMinRho)
-        gradrho2 = M*_ut.dblquad_asr(_Gradrho2, 0.0, 2.0*_np.pi, 0.0, 2.0*_np.pi/M, tol=1e-2)
+#        gradrho2 = M*_ut.aquad.dblquad_asr(_Gradrho2, 0.0, 2.0*_np.pi, 0.0, 2.0*_np.pi/M, tol=1e-3)
+#        gradrho2 = M*_ut.aquad.dblquad_scipy(_Gradrho2, 0.0, 2.0*_np.pi, 0.0, 2.0*_np.pi/M, tol=1e-3)
+#        gradrho2 = M*_ut.aquad.dblquadrature(_Gradrho2, 0.0, 2.0*_np.pi, 0.0, 2.0*_np.pi/M, tol=1e-3)
+
+        # due to speed reasons, let's try to mesh it and calculate
+        ph = _np.linspace(0.0, 2.0*_np.pi, num=10)/M
+#        func = lambda x: _Gradrho2(x, ph)
+#        gradrho2 = M*_ut.aquad.quad_asr(func, 0.0, 2.0*_np.pi, tol=1e-3)
+        th = _np.linspace(0.0, 2.0*_np.pi, num=15)
+#        func = lambda x: _Gradrho2(th, x)
+#        gradrho2 = M*_ut.aquad.quad_asr(func, 0.0, 2.0*_np.pi/M, tol=1e-3)
+        res = 0.0
+        dphi = ph[1]-ph[0]
+        dth = th[1]-th[0]
+        for _ph in ph:
+            for _th in th:
+                res += _Gradrho2(_th, _ph)
+            # end for
+        # end for
+        gradrho2 = res*dphi*dth
         return gradrho2/dVdrho, dVdrho
 
 #    @staticmethod
@@ -1074,7 +1134,7 @@ class PYVMEC(_ut.Struct):
         for ii in range(nrho):
             if Rho[ii] == 0:
                 Rho[ii] = 1e-5
-            gradrho2[ii], dVoldrho[ii] = PYVMEC._FSAGradRho2(self.vmec_data.nfp, Rho[ii], self.vmec_data, self.vmec_derivedquant, kMinRho=kMinRho)
+            gradrho2[ii], dVoldrho[ii] = self._FSAGradRho2(self.VMEC_Data.nfp, Rho[ii], self.VMEC_Data, self.VMEC_DerivedQuant, kMinRho=kMinRho)
         # end for
         self.Vol = _np.cumsum(dVoldrho)
         self.gradrho2 = gradrho2
@@ -1126,32 +1186,34 @@ if __name__=="__main__":
     _rho, _th = vmc(cLabPos)
     _rho2, _th2 = vmc(cLabPos2)
 
-    VMEC_Data = vmc.vmec_data
-    VMEC_DerivedQuant = vmc.vmec_derivedquant
+    VMEC_Data = vmc.VMEC_Data
+    VMEC_DerivedQuant = vmc.VMEC_DerivedQuant
     VMEC_DataSource = vmc.fname
 
-    print('Starting single-point gradrho2 calculation')
+    print('Starting single-point calculation of gradrho')
     _gradrho, _ = vmc._FSAGradRho(5, sPos[0,0], VMEC_Data, VMEC_DerivedQuant, kMinRho=2.0e-9)
+    print('Starting single-point calculation of gradrho2')
     _gradrho2, _dVoldrho = vmc._FSAGradRho2(5, sPos[0,0], VMEC_Data, VMEC_DerivedQuant, kMinRho=2.0e-9)
 
-    print('Starting multi-point gradrho2 calculation')
     rho = _np.linspace(1e-3, 1.0, 21, endpoint=True)
+    print('Starting multi-point calculation of gradrho')
     gradrho, dVoldrho, Vol = vmc.FSAGradRho(rho)
+    print('Starting multi-point calculation of gradrho2')
     gradrho2, dVoldrho, Vol = vmc.FSAGradRho2(rho)
 
     from pymconf import pyvmec as pymconf
     pym = pymconf(kVMECfile)
     pym.getgradrho(sPos[0,0])
     pym.getVol(sPos[0,0])
-    print((_dVoldrho, pym.dVdrho, 100*(_np.abs(_dVoldrho)-pym.dVdrho)/pym.dVdrho))
-    print((_gradrho,  pym.gradrho, 100*(_np.abs(_gradrho) -pym.gradrho)/pym.gradrho))
-    print((_gradrho2, pym.gradrho2, 100*(_np.abs(_gradrho2)-pym.gradrho2)/pym.gradrho2))
+    print((_dVoldrho, pym.dVdrho.flatten(), 100*((_np.abs(_dVoldrho)-pym.dVdrho)/pym.dVdrho).flatten()))
+    print((_gradrho,  pym.gradrho.flatten(), 100*((_np.abs(_gradrho) -pym.gradrho)/pym.gradrho).flatten()))
+    print((_gradrho2, pym.gradrho2.flatten(), 100*((_np.abs(_gradrho2)-pym.gradrho2)/pym.gradrho2).flatten()))
     pym.getgradrho(rho)
     pym.getVol(rho)
-    print((Vol, pym.Vol, 100*(_np.abs(Vol)-pym.Vol)/pym.Vol))
-    print((dVoldrho, pym.dVdrho, 100*(_np.abs(dVoldrho)-pym.dVdrho)/pym.dVdrho))
-    print((gradrho,  pym.gradrho, 100*(_np.abs(gradrho) -pym.gradrho)/pym.gradrho))
-    print((gradrho2, pym.gradrho2, 100*(_np.abs(gradrho2)-pym.gradrho2)/pym.gradrho2))
+    print((Vol, pym.Vol.flatten(), 100*((_np.abs(Vol)-pym.Vol)/pym.Vol).flatten()))
+    print((dVoldrho, pym.dVdrho.flatten(), 100*((_np.abs(dVoldrho)-pym.dVdrho)/pym.dVdrho).flatten()))
+    print((gradrho,  pym.gradrho.flatten(), 100*((_np.abs(gradrho) -pym.gradrho)/pym.gradrho).flatten()))
+    print((gradrho2, pym.gradrho2.flatten(), 100*((_np.abs(gradrho2)-pym.gradrho2)/pym.gradrho2).flatten()))
 
 # end if
 

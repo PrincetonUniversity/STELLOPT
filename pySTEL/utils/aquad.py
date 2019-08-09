@@ -56,6 +56,40 @@ def dblquad_asr(f, a, b, c, d, tol=1e-9):
     m, fi, whole = _quad_simpsons_mem(inner_function, c, fc, d, fd)
     return _quad_asr(inner_function, c, fc, d, fd, tol, whole, m, fi)
 
+# ============================================ #
+
+def quad_scipy(f, a, b, tol=1e-9):
+    from scipy.integrate import quad
+
+    res, abserr = quad(f, a, b, epsabs=tol)
+    return res
+
+def dblquad_scipy(f, a, b, c, d, tol=1e-9):
+    from scipy.integrate import dblquad
+
+    def func(y, x):
+        return f(x, y)
+    def clim(x):
+        return c
+    def dlim(x):
+        return d
+    res, abserr = dblquad(func, a, b, clim, dlim, epsabs=tol)
+    return res
+
+def dblquadrature(f, a, b, c, d, tol=1e-9, maxiter=100, order=5):
+#    from scipy.integrate import quadrature
+    from scipy.integrate import fixed_quad
+
+    def func(y):
+        gunc = lambda x: f(x, y)
+#        res, abserr = quadrature(gunc, a, b, args=(), tol=tol) #, maxiter=maxiter, miniter=order)
+        res, abserr = fixed_quad(gunc, a, b) #, args=(), n=order)
+        return res
+#    return quad_scipy(func, c, d, tol)
+    return quad_asr(func, c, d, tol)
+
+# ============================================ #
+
 def test_quad():
     from math import sin
 
@@ -67,12 +101,30 @@ def test_quad():
     print((res, 100*(res-2.0)/2.0))
     assert abs(res - 2.0) < 1E-9
 
+    res = quad_scipy(sin, 0, 1, 1e-09)
+    print((res, 100*(res-0.4596976941317858)/0.4596976941317858))
+    assert abs(res - 0.4596976941317858) < 1E-9
+
+    res = quad_scipy(sin, 0, _np.pi, 1e-09)
+    print((res, 100*(res-2.0)/2.0))
+    assert abs(res - 2.0) < 1E-9
+
 def test_dblquad():
-    from math import sin, cos
+#    from math import sin, cos
+    from numpy import sin, cos
     dblf = lambda x, y: x**2.0*cos(y)
     res = dblquad_asr(dblf, 2, 3, 0.0, _np.pi, 1e-09)
     print((res, -100*(0.0-res)/res))
     assert abs(res - 0.0) < 1E-9
+
+    res = dblquad_scipy(dblf, 2, 3, 0.0, _np.pi, 1e-09)
+    print((res, -100*(0.0-res)/res))
+    assert abs(res - 0.0) < 1E-9
+
+    res = dblquadrature(dblf, 2, 3, 0.0, _np.pi, 1e-09)
+    print((res, -100*(0.0-res)/res))
+    assert abs(res - 0.0) < 1E-9
+
 
     # surface area of a 1m sphere
     sarea = 4.0*_np.pi*(1.0)**2.0
@@ -81,7 +133,13 @@ def test_dblquad():
     print((res, 100*(res-sarea)/sarea))
     assert abs(res - sarea) < 1E-9
 
+    res = dblquad_scipy(dblf, 0, 2*_np.pi, 0.0, _np.pi, 1e-09)
+    print((res, 100*(res-sarea)/sarea))
+    assert abs(res - sarea) < 1E-9
 
+    res = dblquadrature(dblf, 0, 2*_np.pi, 0.0, _np.pi, 1e-09)
+    print((res, 100*(res-sarea)/sarea))
+    assert abs(res - sarea) < 1E-9
 
 #def closedpoints(func, a, b, TOL=1e-6, verbose=True):         # f(x)=func(x)
 #    """
@@ -350,7 +408,7 @@ def test_trapezoidal_linear():
     F = lambda x: 3*x**2 - 4*x  # Anti-derivative
     a = 1.2; b = 4.4
     expected = F(b) - F(a)
-    tol = 1E-14
+    tol = 1E-13
     for n in [2, 20, 21]:
         computed = trapezoidal(f, a, b, n)
         error = abs(expected - computed)
@@ -439,7 +497,7 @@ if __name__ == '__main__':
     test_dblquad()
 
     test_midpoint()
-    test_midpoint_double()
+#    test_midpoint_double()
     test_trapezoidal_linear()
     test_trapezoidal_conv_rate()
 #    test_MonteCarlo_double_rectangle_area()
