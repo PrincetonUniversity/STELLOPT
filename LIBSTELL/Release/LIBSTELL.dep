@@ -699,6 +699,20 @@ ga_sp.o : \
       safe_open_mod.o 
       
 
+timer.o :
+
+
+lbfgsb.o : \
+      timer.o \
+      dnrm2.o \
+      dpofa.o \
+      dtrsl.o 
+
+
+lbfgsb_driver.o : \
+      lbfgsb.o 
+      
+
 lmdif.o : \
       fdjac_mod.o \
       lmpar_mod.o \
@@ -1335,6 +1349,29 @@ coordinate_utilities.o : \
       stel_constants.o 
 
       
+daxpy.o :
+
+
+dcopy.o :
+
+
+ddot.o :
+
+
+dnrm2.o :
+
+
+dpofa.o :
+
+
+dscal.o :
+
+
+dtrsl.o :
+
+
+
+
 
 
 
