@@ -392,7 +392,7 @@ INTEGER, INTENT(IN) :: ns, nzeta, ntheta3
   !--------------------------------------------------------------------------
     SUBROUTINE FinalizeSurfaceComm(INCOMM)
 
-    INTEGER, INTENT(IN)  :: INCOMM
+    INTEGER, INTENT(INOUT)  :: INCOMM
 #if defined(MPI_OPT)
     CALL MPI_Comm_free(INCOMM, MPI_ERR)
     lactive = .FALSE.
