@@ -56,7 +56,7 @@
       REAL(rprec), DIMENSION(3) :: grad_zeta, grad_psi_x_b, grad_psi_xyz
       REAL(rprec), DIMENSION(3) :: bdotgradb
       INTEGER, PARAMETER :: ntransits = 400
-      INTEGER, PARAMETER :: delzetadiv = 800
+      INTEGER, PARAMETER :: delzetadiv = 400
       INTEGER, PARAMETER :: nsteps = ntransits*delzetadiv
       INTEGER, PARAMETER :: bpstep = 80 !division in b'
 
@@ -70,7 +70,7 @@
       REAL(rprec), DIMENSION(nsteps) :: Bsupv, dBsupvdpsi, dVdb_t1
       REAL(rprec), DIMENSION(nsteps, 3) :: binormal
     
-      integer, parameter :: maxwells = 1000
+      integer, parameter :: maxwells = 5000
 
       integer, dimension(maxwells) :: well_start, well_stop
       integer :: in_well, cur_well, nwells
@@ -94,9 +94,9 @@
         !delzeta = -0.0034433355_rprec !for comparison with ROSE
         rovera = sqrt(s) !rho = r/a
         psi_a = phiedge !Toroidal flux at the edge
-        dloverb = 0.0_rprec
 
         DO ik = 1,nsd !go through each surface
+          dloverb = 0.0_rprec
           IF (sigma(ik) >= bigno) CYCLE
           mtargets = mtargets + 1
 
@@ -391,12 +391,15 @@
           bigGamma_c = 0.0_rprec
           minB = MINVAL(modB)
           maxB = MAXVAL(modB)
-          
+
           !Make the bp array
           DO i=1,bpstep
             bp(i) = 1.0_rprec + (maxB-minB)/minB * (i-0.5_rprec) / bpstep 
           END DO
           deltabp = (maxB - minB)/minB/bpstep 
+          !write(*,*) 'minB',minB
+          !write(*,*) 'maxB',maxB
+          !write(*,*) 'deltabp',deltabp
 
           !Go through each value of bp
           DO i=1,bpstep
@@ -581,6 +584,9 @@
             bigGamma_c = bigGamma_c + wellGamma_c * pi2/4.0_rprec/sqrt(2.0_rprec)*deltabp
           END DO !end integration over bp
           bigGamma_c = bigGamma_c/dloverb
+          !write(*,*) 'dloverb',dloverb
+          !write(*,*) 'bigGamma_c',bigGamma_c
+          
 
           vals(mtargets) = bigGamma_c
           sigmas(mtargets) = ABS(sigma(ik))
