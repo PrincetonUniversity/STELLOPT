@@ -40,9 +40,11 @@
   MPI_COMPILE_C = mpicc 
   MPI_LINK = /opt/local/bin/mpif90
   MPI_LINK = mpif90 -shared  -Wl,-no_compact_unwind
-
-  MPI_RUN = mpirun
-  MPI_RUN_OPTS = -np 4 
+  MPI_RUN = mpiexec
+  MPI_RUN_OPTS = -np 4
+#  MPI_RUN_OPTS_SM = -np 16
+#  MPI_RUN_OPTS_MD = -np 64
+#  MPI_RUN_OPTS_LG = -np 256
 
 #######################################################################
 #            NAG Options
@@ -268,6 +270,8 @@ else ifeq ($(MAKECMDGOALS),test_stellopt_travis)
 else
   LGENE = F
   LCOILOPT = F
+  LSFINCS = F
+  LREGCOIL= F
   LTERPSICHORE = F
   LTRAVIS = F
 endif

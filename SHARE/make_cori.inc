@@ -245,6 +245,7 @@ else
   LGENE = F
   LCOILOPT = F
   LTERPSICHORE = F
+  LREGCOIL= F
   LTRAVIS = F
   LSFINCS = F
 endif
