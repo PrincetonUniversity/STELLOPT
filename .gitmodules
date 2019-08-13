@@ -1,0 +1,3 @@
+[submodule "CVODE"]
+	path = CVODE
+	url = https://github.com/Asap7772/CVODE.git
