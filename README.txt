@@ -41,3 +41,7 @@ PYTHON INTERFACE
 A Python interface using CTYPES is also included but it requires a
 static shared build of LIBSTELL.  This is still a highly experimental
 option.
+
+CVODE SUBMODULE
+---------------
+Please refer to [https://github.com/Asap7772/CVODE] for more information
