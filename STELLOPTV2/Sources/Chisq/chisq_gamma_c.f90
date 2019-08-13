@@ -56,7 +56,7 @@
       REAL(rprec), DIMENSION(3) :: grad_zeta, grad_psi_x_b, grad_psi_xyz
       REAL(rprec), DIMENSION(3) :: bdotgradb
       INTEGER, PARAMETER :: ntransits = 400
-      INTEGER, PARAMETER :: delzetadiv = 400
+      INTEGER, PARAMETER :: delzetadiv = 800
       INTEGER, PARAMETER :: nsteps = ntransits*delzetadiv
       INTEGER, PARAMETER :: bpstep = 80 !division in b'
 
@@ -396,7 +396,7 @@
           DO i=1,bpstep
             bp(i) = 1.0_rprec + (maxB-minB)/minB * (i-0.5_rprec) / bpstep 
           END DO
-          deltabp = (maxB - minB)/(bpstep+1) 
+          deltabp = (maxB - minB)/minB/bpstep 
 
           !Go through each value of bp
           DO i=1,bpstep
@@ -443,7 +443,7 @@
                 END IF
 
                 !mark the well end index
-                well_stop(cur_well) = j-1
+                well_stop(cur_well) = j-2
 
                 !test output
                 !write(*,*) 'exiting well',cur_well
@@ -475,7 +475,7 @@
 
                 !add the beginning value, but only if we're not at the start
                 IF (j > 1) THEN
-                  well_start(cur_well) = j
+                  well_start(cur_well) = j+1
                 END IF 
                 !mark that we're in a well
                 in_well = 1
@@ -556,16 +556,21 @@
 
               !vrovervt ratio of radial to poloidal drifts
               !write (*,*) '---------------------------------------'
-              !write (*,*) 'well k,b ', k, B_refl
+              !write (*,*) 'well k,b ', k, B_refl,well_start(k),well_stop(k)
               !write (*,*) 'dIdb ', dIdb
               !write (*,*) 'dgdb ' , dgdb
               !write (*,*) 'dbigGdb', dbigGdb
               !write (*,*) 'dVdb ', dVdb
               !write (*,*) 'etheta0 ', e_theta_i(j-1)
               !write (*,*) 'grad_psi ', grad_psi_i(j-1)
-              temp = dgdb/grad_psi_i(well_start(k))/dIdb / minB / e_theta_i(well_start(k))
-              temp = temp / (dbigGdb/dIdb + 0.666666_rprec * dVdb/dIdb)
-              vrovervt = temp
+              IF (well_start(k) < well_stop(k)) THEN
+
+                temp = dgdb/grad_psi_i(well_start(k))/dIdb / minB / e_theta_i(well_start(k))
+                temp = temp / (dbigGdb/dIdb + 0.666666_rprec * dVdb/dIdb)
+                vrovervt = temp
+              ELSE
+                vrovervt = 0.0
+              END IF
               !write (*,*) 'vrovervt ', vrovervt
 
               gamma_c = 4.0_rprec/pi2 * atan(vrovervt)
