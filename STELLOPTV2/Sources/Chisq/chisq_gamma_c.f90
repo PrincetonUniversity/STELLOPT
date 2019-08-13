@@ -70,7 +70,7 @@
       REAL(rprec), DIMENSION(nsteps) :: Bsupv, dBsupvdpsi, dVdb_t1
       REAL(rprec), DIMENSION(nsteps, 3) :: binormal
     
-      integer, parameter :: maxwells = 1000
+      integer, parameter :: maxwells = 5000
 
       integer, dimension(maxwells) :: well_start, well_stop
       integer :: in_well, cur_well, nwells
@@ -94,9 +94,9 @@
         !delzeta = -0.0034433355_rprec !for comparison with ROSE
         rovera = sqrt(s) !rho = r/a
         psi_a = phiedge !Toroidal flux at the edge
-        dloverb = 0.0_rprec
 
         DO ik = 1,nsd !go through each surface
+          dloverb = 0.0_rprec
           IF (sigma(ik) >= bigno) CYCLE
           mtargets = mtargets + 1
 
@@ -391,12 +391,15 @@
           bigGamma_c = 0.0_rprec
           minB = MINVAL(modB)
           maxB = MAXVAL(modB)
-          
+
           !Make the bp array
           DO i=1,bpstep
             bp(i) = 1.0_rprec + (maxB-minB)/minB * (i-0.5_rprec) / bpstep 
           END DO
-          deltabp = (maxB - minB)/(bpstep+1) 
+          deltabp = (maxB - minB)/minB/bpstep 
+          !write(*,*) 'minB',minB
+          !write(*,*) 'maxB',maxB
+          !write(*,*) 'deltabp',deltabp
 
           !Go through each value of bp
           DO i=1,bpstep
@@ -443,7 +446,7 @@
                 END IF
 
                 !mark the well end index
-                well_stop(cur_well) = j-1
+                well_stop(cur_well) = j-2
 
                 !test output
                 !write(*,*) 'exiting well',cur_well
@@ -475,7 +478,7 @@
 
                 !add the beginning value, but only if we're not at the start
                 IF (j > 1) THEN
-                  well_start(cur_well) = j
+                  well_start(cur_well) = j+1
                 END IF 
                 !mark that we're in a well
                 in_well = 1
@@ -556,16 +559,21 @@
 
               !vrovervt ratio of radial to poloidal drifts
               !write (*,*) '---------------------------------------'
-              !write (*,*) 'well k,b ', k, B_refl
+              !write (*,*) 'well k,b ', k, B_refl,well_start(k),well_stop(k)
               !write (*,*) 'dIdb ', dIdb
               !write (*,*) 'dgdb ' , dgdb
               !write (*,*) 'dbigGdb', dbigGdb
               !write (*,*) 'dVdb ', dVdb
               !write (*,*) 'etheta0 ', e_theta_i(j-1)
               !write (*,*) 'grad_psi ', grad_psi_i(j-1)
-              temp = dgdb/grad_psi_i(well_start(k))/dIdb * minB * e_theta_i(well_start(k))
-              temp = temp * (dbigGdb/dIdb + 0.666666_rprec * dVdb/dIdb)
-              vrovervt = temp
+              IF (well_start(k) < well_stop(k)) THEN
+
+                temp = dgdb/grad_psi_i(well_start(k))/dIdb / minB / e_theta_i(well_start(k))
+                temp = temp / (dbigGdb/dIdb + 0.666666_rprec * dVdb/dIdb)
+                vrovervt = temp
+              ELSE
+                vrovervt = 0.0
+              END IF
               !write (*,*) 'vrovervt ', vrovervt
 
               gamma_c = 4.0_rprec/pi2 * atan(vrovervt)
@@ -576,6 +584,9 @@
             bigGamma_c = bigGamma_c + wellGamma_c * pi2/4.0_rprec/sqrt(2.0_rprec)*deltabp
           END DO !end integration over bp
           bigGamma_c = bigGamma_c/dloverb
+          !write(*,*) 'dloverb',dloverb
+          !write(*,*) 'bigGamma_c',bigGamma_c
+          
 
           vals(mtargets) = bigGamma_c
           sigmas(mtargets) = ABS(sigma(ik))
