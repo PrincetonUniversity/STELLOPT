@@ -44,4 +44,4 @@ option.
 
 CVODE SUBMODULE
 ---------------
-Please refer to [https://github.com/Asap7772/CVODE](https://github.com/Asap7772/CVODE) for more information
+Please refer to https://github.com/Asap7772/CVODE for more information
