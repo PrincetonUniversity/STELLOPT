@@ -234,8 +234,6 @@ ifeq ($(MAKECMDGOALS),xstelloptv2)
     LIB_NEO = 
   endif
 else ifeq ($(MAKECMDGOALS),help)
-<<<<<<< HEAD
-=======
 else ifeq ($(MAKECMDGOALS),test_stellopt)
 else ifeq ($(MAKECMDGOALS),test_stellopt_coilopt)
 else ifeq ($(MAKECMDGOALS),test_stellopt_gene)
@@ -243,11 +241,11 @@ else ifeq ($(MAKECMDGOALS),test_stellopt_regcoil)
 else ifeq ($(MAKECMDGOALS),test_stellopt_sfincs)
 else ifeq ($(MAKECMDGOALS),test_stellopt_terpsichore)
 else ifeq ($(MAKECMDGOALS),test_stellopt_travis)
->>>>>>> master
 else
   LGENE = F
   LCOILOPT = F
   LTERPSICHORE = F
+  LREGCOIL= F
   LTRAVIS = F
   LSFINCS = F
 endif

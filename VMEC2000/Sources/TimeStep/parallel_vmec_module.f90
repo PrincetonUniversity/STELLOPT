@@ -907,6 +907,7 @@ INTEGER, INTENT(IN) :: ns, nzeta, ntheta3
     END DO
 #endif
     DEALLOCATE(sendbuf, recvbuf)
+    DEALLOCATE(counts, disps)
     CALL second0(allgvtoff)
     allgather_time = allgather_time + (allgvtoff-allgvton)
     END SUBROUTINE Gather4XArray
@@ -960,6 +961,7 @@ INTEGER, INTENT(IN) :: ns, nzeta, ntheta3
     END DO
 #endif
     DEALLOCATE(sendbuf, recvbuf)
+    DEALLOCATE(counts, disps)
     CALL second0(allgvtoff)
     allgather_time = allgather_time + (allgvtoff-allgvton)
     END SUBROUTINE GatherReordered4XArray
@@ -1010,6 +1012,7 @@ INTEGER, INTENT(IN) :: ns, nzeta, ntheta3
     END DO
 #endif
     DEALLOCATE(sendbuf, recvbuf)
+    DEALLOCATE(counts, disps)
     CALL second0(allgvtoff)
     allgather_time = allgather_time + (allgvtoff-allgvton)
     END SUBROUTINE Gather2XArray
@@ -1052,6 +1055,7 @@ INTEGER, INTENT(IN) :: ns, nzeta, ntheta3
     arr = recvbuf
 
     DEALLOCATE(sendbuf, recvbuf)
+    DEALLOCATE(counts, disps)
     CALL second0(allgvtoff)
     allgather_time = allgather_time + (allgvtoff - allgvton)
     END SUBROUTINE Gather1XArray
