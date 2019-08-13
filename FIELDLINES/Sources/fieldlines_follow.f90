@@ -46,11 +46,11 @@ SUBROUTINE fieldlines_follow
   INTEGER, ALLOCATABLE :: iwork(:)
   INTEGER :: MPI_COMM_LOCAL
   REAL(rprec) :: phif_max
-  DOUBLE PRECISION, ALLOCATABLE :: w(:), q(:)
-  DOUBLE PRECISION :: phif_nag, phi_nag,&
+  real(8), ALLOCATABLE :: w(:), q(:)
+  real(8) :: phif_nag, phi_nag,&
   tol_nag, rtol
-  DOUBLE PRECISION :: atol(2)
-  DOUBLE PRECISION :: rkh_work(2,2)
+  real(8) :: atol(2)
+  real(8) :: rkh_work(2,2)
   CHARACTER*1 :: relab
   !-----------------------------------------------------------------------
   !     External Functions
@@ -263,9 +263,9 @@ SUBROUTINE fieldlines_follow
         dphi = SIGN(dphi,phi_end(l)-phi_start(l))  ! This should work
         print *, "t = ", phi_nag, "tout = ", phif_nag 
         print *, "CALL EVALUATE CVODE"
-        CALL evaluateCvode(neqs_nag,q, phi_nag,phif_nag,rtol, atol, rmin, rmax,&
-         phimin, phimax,zmin, zmax, nr, nphi, nz, eps1, eps2, eps3, raxis,&
-         phiaxis,zaxis, BR4D, BZ4D, dphi)
+       CALL evaluateCvode(neqs_nag,q, phi_nag,phif_nag,rtol, atol, rmin, rmax,&
+        phimin, phimax,zmin, zmax, nr, nphi, nz, eps1, eps2, eps3, raxis,&
+        phiaxis,zaxis, BR4D, BZ4D, dphi)
         CALL out_fieldlines_nag(phif_nag,q)
      end DO
     CASE ("TEST")
