@@ -15,7 +15,7 @@
 #            Define Compiler Flags
 #######################################################################
   FLAGS_R = -I$(MKL_HOME)/include -O2 -fp-model strict -ip \
-            -assume noold_unit_star 
+            -assume noold_unit_star -g -traceback
   FLAGS_D = -g -I$(MKL_HOME)/include
   LIBS    = -Wl,-rpath,$(MKL_HOME)/lib/intel64 \
             -L$(MKL_HOME)/lib/intel64 -lmkl_scalapack_lp64 \
@@ -31,8 +31,10 @@
   MPI_COMPILE_C = mpiifort
   MPI_LINK = mpiifort
   MPI_RUN  = srun
-  MPI_RUN_OPTS = --nodes=1 --ntasks-per-node=80 --ntasks-per-core=2
-#  MPI_RUN_OPTS_LG = --nodes=2 --ntasks-per-node=40 --ntasks-per-core=1
+  MPI_RUN_OPTS = --nodes=1 --ntasks-per-node=40 --time=0:30:00 -p express
+  MPI_RUN_OPTS_SM   = --nodes=1 --ntasks-per-node=40 --time=0:30:00 -p express
+  MPI_RUN_OPTS_MD   = --nodes=8 --ntasks-per-node=40 --time=0:30:00 -p express
+  MPI_RUN_OPTS_LG   = --nodes=32 --ntasks-per-node=40 --time=0:30:00 -p express
 
 #######################################################################
 #            NAG Options
@@ -124,10 +126,10 @@
 #######################################################################
   LTRAVIS= T
   TRAVIS_DIR = $(TRAVIS_PATH)
-  LIB_TRAVIS = libtravis64_sopt.a
+  LIB_TRAVIS = libtravis64_sopt_dbg.a
   LIB_MCONF  = libmconf64.a
   TRAVIS_LIB = $(TRAVIS_DIR)/lib/$(LIB_TRAVIS) \
-               $(TRAVIS_DIR)/mag_conf/lib/$(LIB_MCONF) -lstdc++
+               $(TRAVIS_DIR)/magconf/lib/$(LIB_MCONF) -lstdc++
 
 #######################################################################
 #            SFINCS Options
