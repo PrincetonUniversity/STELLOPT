@@ -1,5 +1,4 @@
 # INSTALLATION
-------------
 This version of STELLOPT makes use of the `make.inc` file to define
 compiler options and paths (in analogy to the old setup file).  These
 files are stored in the [SHARE](SHARE) folder.  Check to see if one exists
@@ -28,9 +27,10 @@ edit files as necessary for your installation.  To build the code
 use the build_all script which will systematically build and compile 
 all the files.
 
+For more information, please view [STELLOPT compilation](https://princetonuniversity.github.io/STELLOPT/STELLOPT%20Compilation).
+
 
 # EDITING CODE
-------------
 To edit the code please first checkout a new branch with the feature
 you'd like.  Then when you want your changes merged into master,
 please push your branch to the remote:
@@ -42,13 +42,12 @@ Then submit a pull request through
 
 
 # PYTHON INTERFACE
-----------------
 A Python interface using CTYPES is also included but it requires a
 static shared build of LIBSTELL.  This is still a highly experimental
 option.
 
+
 # REPORT BUGS
-----------------
 If you find any bugs or have any suggestions, please submit an issue 
 through [GitHub issues](https://github.com/PrincetonUniversity/STELLOPT/issues).
 You are suggested to provide detailed description and assign someone 
@@ -56,7 +55,6 @@ when creating an issue.
 
 
 # DOCUMENTATION
----------------
 You can find some wiki pages at 
 [GitHub pages](https://princetonuniversity.github.io/STELLOPT/).
 This is automatically generated from the `markdown` source files 
