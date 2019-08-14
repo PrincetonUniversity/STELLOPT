@@ -42,7 +42,8 @@
       USE par_in, ONLY: diagdir,file_extension, beta_gene => beta
       USE par_other, ONLY: print_ini_msg
       USE parameters_IO, ONLY: read_parameters, write_parameters, PAR_OUT_FILE, &
-                               PARFILE, bcast_parameters
+                               PARFILE
+      USE stellopt_interface, ONLY: bcast_parameters
       USE geometry, ONLY: geomdir, magn_geometry, geomfile
       USE file_io, ONLY: erase_stop_file
       USE discretization, ONLY: mype_gl, n_procs_sim, n_procs_s, n_procs_w, &
