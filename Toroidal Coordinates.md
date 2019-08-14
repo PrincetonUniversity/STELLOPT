@@ -105,9 +105,7 @@ through the relation
 
 \$$ \vec{A}=A^s\hat{e}_s+A^u\hat{e}_u+A^v\hat{e}_v=A_s\hat{e}^s+A_u\hat{e}^u+A_v\hat{e}^v.$$ 
 
-The covariant and contravariant basis vectors may be written 
-
-\$$ \hat{e}_k=\frac{\partial \vec{x}}{\partial x_k} $$ and $$ \hat{e}^k=\nabla x_k.$$
+The covariant and contravariant basis vectors may be written $$ \hat{e}_k=\frac{\partial \vec{x}}{\partial x_k} $$ and $$ \hat{e}^k=\nabla x_k.$$
 
 ### Contravariant Vector Components
 
