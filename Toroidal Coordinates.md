@@ -22,13 +22,16 @@ parameter is known to machine accuracy at any point. Of course the
 accuracy of this representation is a function of the ability to
 represent a spatially varying quantity with a truncated trigonometric
 series. In general any quantity can be represented by
+
 \$$ f\left(r,\theta,\zeta\right)=\sum_{m=0}^M\sum_{n=-N}^N f_{mn}\left(r\right) cos\left(m\theta+n\zeta\right) $$
+
 or
+
 \$$ f\left(r,\theta,\zeta\right)=\sum f\_{mn}\left(r\right) sin\left(m\theta+n\zeta\right). $$
 
-Here the angle per field period (zeta) has been utilized in place of the
-total toroidal angle (phi). The two are related by the periodicity of
-the toroidal domain $$ \zeta=N\_{FP}\phi. $$
+Here the angle per field period ($$zeta$$) has been utilized in place of the
+total toroidal angle ($$phi$$). The two are related by the periodicity of
+the toroidal domain $$ \zeta=N_{FP}\phi. $$
 Finally, it is often more convenient to write the kernel of the
 trigonometric functions in terms of normalized values instead of
 radians. $$ u=\frac{\theta}{2\pi} $$ $$
