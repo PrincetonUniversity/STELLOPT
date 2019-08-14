@@ -5,7 +5,7 @@
 !     Description:   This subroutine reads a coils file and generates
 !                    the appropriate vacuum grid file.
 !-----------------------------------------------------------------------
-      SUBROUTINE stellopt_write_mgrid(MPI_COMM,proc_string,lscreen)
+      SUBROUTINE stellopt_write_mgrid(COMM_LOCAL,proc_string,lscreen)
 !-----------------------------------------------------------------------
 !     Libraries
 !-----------------------------------------------------------------------
@@ -22,14 +22,14 @@
           vn_br0, vn_bz0, vn_bp0
       USE ezcdf
       USE mpi_params
-!      USE equil_vals
+      USE mpi_inc
       USE stellopt_runtime, ONLY: pi2,NETCDF_OPEN_ERR,handle_err
       IMPLICIT NONE
 !-----------------------------------------------------------------------
 !     Input Variables
-!        MPI_COMM   Local MPI communicator
+!        COMM_LOCAL   Local MPI communicator
 !----------------------------------------------------------------------
-      INTEGER :: MPI_COMM
+      INTEGER :: COMM_LOCAL
       CHARACTER(*) :: proc_string
       LOGICAL, INTENT(inout)        :: lscreen
 !-----------------------------------------------------------------------
@@ -47,11 +47,8 @@
 !        iunit       File unit number
 !----------------------------------------------------------------------
       INTEGER(KIND=BYTE_8) :: chunk
-!DEC$ IF DEFINED (MPI_OPT)
-      INCLUDE 'mpif.h'   ! MPI - Don't need because of fieldlines_runtime
       INTEGER :: numprocs_local, mystart, myend
       INTEGER(KIND=BYTE_8),ALLOCATABLE :: mnum(:), moffsets(:)
-!DEC$ ENDIF
       LOGICAL :: lfile_found
       LOGICAL, ALLOCATABLE, DIMENSION(:) :: lfile_found_global
       INTEGER :: ig, i, j, k, s, ngrid
@@ -65,8 +62,8 @@
 
       numprocs_local=1
 !DEC$ IF DEFINED (MPI_OPT)
-      CALL MPI_COMM_SIZE( MPI_COMM, numprocs_local, ierr_mpi )
-      CALL MPI_COMM_RANK( MPI_COMM, myworkid, ierr_mpi )
+      CALL MPI_COMM_SIZE( COMM_LOCAL, numprocs_local, ierr_mpi )
+      CALL MPI_COMM_RANK( COMM_LOCAL, myworkid, ierr_mpi )
       ALLOCATE(lfile_found_global(numprocs_local))
 !DEC$ ENDIF
 
@@ -77,7 +74,7 @@
       lfile_found = .false.
       DO 
          INQUIRE(FILE=TRIM(coil_string),EXIST=lfile_found)
-         CALL MPI_ALLGATHER(lfile_found,1,MPI_LOGICAL,lfile_found_global,1,MPI_LOGICAL,MPI_COMM,ierr_mpi)
+         CALL MPI_ALLGATHER(lfile_found,1,MPI_LOGICAL,lfile_found_global,1,MPI_LOGICAL,COMM_LOCAL,ierr_mpi)
          IF (ALL(lfile_found_global)) EXIT
       END DO
       DEALLOCATE(lfile_found_global)
@@ -87,7 +84,7 @@
       ! Parse EXTCUR Array
       nextcur = SIZE(coil_group) !SAL
 !DEC$ IF DEFINED (MPI_OPT)
-      CALL MPI_BCAST(extcur(1:nextcur),nextcur,MPI_REAL8, master, MPI_COMM, ierr_mpi)
+      CALL MPI_BCAST(extcur(1:nextcur),nextcur,MPI_REAL8, master, COMM_LOCAL, ierr_mpi)
 !DEC$ ENDIF
       DO i = 1, nextcur
          DO j = 1, coil_group(i) % ncoil
@@ -129,8 +126,8 @@
       IF (ALLOCATED(mnum)) DEALLOCATE(mnum)
       IF (ALLOCATED(moffsets)) DEALLOCATE(moffsets)
       ALLOCATE(mnum(numprocs_local), moffsets(numprocs_local))
-      CALL MPI_ALLGATHER(chunk,1,MPI_INTEGER,mnum,1,MPI_INTEGER,MPI_COMM,ierr_mpi)
-      CALL MPI_ALLGATHER(mystart,1,MPI_INTEGER,moffsets,1,MPI_INTEGER,MPI_COMM,ierr_mpi)
+      CALL MPI_ALLGATHER(chunk,1,MPI_INTEGER,mnum,1,MPI_INTEGER,COMM_LOCAL,ierr_mpi)
+      CALL MPI_ALLGATHER(mystart,1,MPI_INTEGER,moffsets,1,MPI_INTEGER,COMM_LOCAL,ierr_mpi)
       i = 1
       DO
          IF ((moffsets(numprocs_local)+mnum(numprocs_local)-1) == nr*nphi*nz) EXIT
@@ -221,16 +218,16 @@
 
          ! Gather the Results
 !DEC$ IF DEFINED (MPI_OPT)
-         CALL MPI_BARRIER(MPI_COMM,ierr_mpi)
+         CALL MPI_BARRIER(COMM_LOCAL,ierr_mpi)
          CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
                         br,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
-                        MPI_COMM,ierr_mpi)
+                        COMM_LOCAL,ierr_mpi)
          CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
                         bp,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
-                        MPI_COMM,ierr_mpi)
+                        COMM_LOCAL,ierr_mpi)
          CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
                         bz,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
-                        MPI_COMM,ierr_mpi)
+                        COMM_LOCAL,ierr_mpi)
 !DEC$ ENDIF
   
 

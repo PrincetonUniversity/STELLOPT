@@ -18,10 +18,8 @@
       USE mpi_params
       USE safe_open_mod
       USE gade_mod, ONLY: pso_cleanup
+      USE mpi_inc
       IMPLICIT NONE
-!DEC$ IF DEFINED (MPI_OPT)
-      include 'mpif.h'                                       !mpi stuff
-!DEC$ ENDIF
 !-----------------------------------------------------------------------
 !     Input Variables
 !        fcn     Target function one wishes to mimizie

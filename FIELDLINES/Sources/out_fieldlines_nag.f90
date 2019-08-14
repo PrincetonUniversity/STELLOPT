@@ -15,7 +15,7 @@
       USE fieldlines_lines, ONLY: R_lines, Z_lines, PHI_lines, myline,&
                                   nsteps,nlines,myldex, B_lines, xlast,&
                                   ylast, zlast, myend, L_lines
-      USE fieldlines_grid, ONLY: delta_phi, MU_spl, MODB_spl
+      USE fieldlines_grid
       USE wall_mod, ONLY: collide
       USE random, ONLY: random_normal
       USE mpi_params                                                    ! MPI
@@ -36,6 +36,12 @@
       INTEGER             :: ier
       REAL(rprec)         :: x0,y0,z0,x1,y1,z1,xw,yw,zw,phi_save
       LOGICAL             :: lhit
+      ! For splines
+      INTEGER :: i,j,k
+      REAL*8 :: xparam, yparam, zparam, hx, hy, hz, hxi, hyi, hzi
+      REAL*8 :: fval(1)
+      INTEGER, parameter :: ict(8)=(/1,0,0,0,0,0,0,0/)
+      REAL*8, PARAMETER :: one = 1
 
 !-----------------------------------------------------------------------
 !     Begin Function
@@ -95,11 +101,29 @@
          IF (y0 < 0) y0 = delta_phi + y0
          z0 = q(2)
          zw = 0; ier=0
-         CALL EZspline_isInDomain(MU_spl,x0,y0,z0,ier)
-         IF (ier == 0) THEN
-            CALL EZspline_interp(MU_spl,x0,y0,z0,zw,ier)
-            q(1) = q(1) + random_normal() * sqrt(zw*ABS(dphi)) !EDIT
-            q(2) = q(2) + random_normal() * sqrt(zw*ABS(dphi)) !EDIT
+         !CALL EZspline_isInDomain(MU_spl,x0,y0,z0,ier)
+         !IF (ier == 0) THEN
+         IF ((x0 >= rmin-eps1) .and. (x0 <= rmax+eps1) .and. &
+            (y0 >= phimin-eps2) .and. (y0 <= phimax+eps2) .and. &
+            (z0 >= zmin-eps3) .and. (z0 <= zmax+eps3)) THEN
+            !CALL EZspline_interp(MU_spl,x0,y0,z0,zw,ier)
+            i = MIN(MAX(COUNT(raxis < x0),1),nr-1)
+            j = MIN(MAX(COUNT(phiaxis < y0),1),nphi-1)
+            k = MIN(MAX(COUNT(zaxis < z0),1),nz-1)
+            hx     = raxis(i+1) - raxis(i)
+            hy     = phiaxis(j+1) - phiaxis(j)
+            hz     = zaxis(k+1) - zaxis(k)
+            hxi    = one / hx
+            hyi    = one / hy
+            hzi    = one / hz
+            xparam = (x0 - raxis(i)) * hxi
+            yparam = (y0 - phiaxis(j)) * hyi
+            zparam = (z0 - zaxis(k)) * hzi
+            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                       hx,hxi,hy,hyi,hz,hzi,&
+                       MU4D(1,1,1,1),nr,nphi,nz)
+            q(1) = q(1) + random_normal() * sqrt(fval(1)*ABS(dphi)) !EDIT
+            q(2) = q(2) + random_normal() * sqrt(fval(1)*ABS(dphi)) !EDIT
          END IF
       END IF
 
@@ -110,9 +134,28 @@
          IF (y0 < 0) y0 = delta_phi + y0
          z0 = Z_lines(myline,myldex)
          zw = 0
-         CALL EZspline_isInDomain(MODB_spl,x0,y0,z0,ier)
-         IF (ier == 0) CALL EZspline_interp(MODB_spl,x0,y0,z0,zw,ier)
-         B_lines(myline,myldex) = zw
+         !CALL EZspline_isInDomain(MODB_spl,x0,y0,z0,ier)
+         !IF (ier == 0) CALL EZspline_interp(MODB_spl,x0,y0,z0,zw,ier)
+         IF ((x0 >= rmin-eps1) .and. (x0 <= rmax+eps1) .and. &
+            (y0 >= phimin-eps2) .and. (y0 <= phimax+eps2) .and. &
+            (z0 >= zmin-eps3) .and. (z0 <= zmax+eps3)) THEN
+            i = MIN(MAX(COUNT(raxis < x0),1),nr-1)
+            j = MIN(MAX(COUNT(phiaxis < y0),1),nphi-1)
+            k = MIN(MAX(COUNT(zaxis < z0),1),nz-1)
+            hx     = raxis(i+1) - raxis(i)
+            hy     = phiaxis(j+1) - phiaxis(j)
+            hz     = zaxis(k+1) - zaxis(k)
+            hxi    = one / hx
+            hyi    = one / hy
+            hzi    = one / hz
+            xparam = (x0 - raxis(i)) * hxi
+            yparam = (y0 - phiaxis(j)) * hyi
+            zparam = (z0 - zaxis(k)) * hzi
+            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                       hx,hxi,hy,hyi,hz,hzi,&
+                       MODB4D(1,1,1,1),nr,nphi,nz)
+            B_lines(myline,myldex) = fval(1)
+         END IF
       END IF
 
       !IF (lverb .and. ((phi+dphi) .ge. myldex*dphi)) THEN

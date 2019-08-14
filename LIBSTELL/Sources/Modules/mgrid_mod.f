@@ -79,28 +79,32 @@ C-----------------------------------------------
       INTEGER :: nobd, nobser, nextcur, nbfldn, nbsets, nbcoilsn
       INTEGER :: nbvac, nbcoil_max, nlim, nlim_max, nsets,
      1           nrgrid, nzgrid
-      INTEGER, DIMENSION(:), ALLOCATABLE :: needflx, nbcoils
-      INTEGER, DIMENSION(:), ALLOCATABLE :: limitr, nsetsn
-      INTEGER, DIMENSION(:,:), ALLOCATABLE :: iconnect, needbfld
+      INTEGER, DIMENSION(:), POINTER :: needflx, nbcoils
+      INTEGER, DIMENSION(:), POINTER :: limitr, nsetsn
+      INTEGER, DIMENSION(:,:), POINTER :: iconnect, needbfld
       REAL(rprec) :: rminb, zminb, rmaxb, zmaxb, delrb, delzb
       REAL(rprec) ::rx1, rx2, zy1, zy2, condif
-      REAL(rprec), DIMENSION(:,:), ALLOCATABLE, TARGET :: bvac
+      REAL(rprec), DIMENSION(:,:), POINTER :: bvac
       REAL(rprec), DIMENSION(:,:,:), POINTER :: brvac, bzvac, bpvac
-      REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: unpsiext, 
+      REAL(rprec), DIMENSION(:,:), POINTER :: unpsiext, 
      1   plbfld, rbcoil, zbcoil, abcoil, bcoil, rbcoilsqr
-      REAL(rprec), DIMENSION(:), ALLOCATABLE :: raw_coil_current
-      REAL(rprec), DIMENSION(:), ALLOCATABLE :: xobser, zobser,
+      REAL(rprec), DIMENSION(:), POINTER :: raw_coil_current
+      REAL(rprec), DIMENSION(:), POINTER :: xobser, zobser,
      1   xobsqr, dsiext, psiext, plflux, b_chi
       CHARACTER(LEN=300) :: mgrid_path
       CHARACTER(LEN=300) :: mgrid_path_old = " "
-      CHARACTER(LEN=30), DIMENSION(:), ALLOCATABLE :: curlabel
-      CHARACTER(LEN=15), DIMENSION(:), ALLOCATABLE :: 
+      CHARACTER(LEN=30), DIMENSION(:), POINTER :: curlabel
+      CHARACTER(LEN=15), DIMENSION(:), POINTER :: 
      1                                           dsilabel, bloopnames
       CHARACTER(LEN=30) :: tokid
-      REAL(rprec), DIMENSION(:,:,:), ALLOCATABLE :: dbcoil, pfcspec
-      REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: 
+      REAL(rprec), DIMENSION(:,:,:), POINTER :: dbcoil, pfcspec
+      REAL(rprec), DIMENSION(:,:), POINTER :: 
      1    rlim, zlim, reslim, seplim
       CHARACTER(LEN=1) :: mgrid_mode
+
+      INTEGER :: win_needflx, win_nbcoils, win_limitr, win_nsetsn,
+     1           win_iconnect, win_needbfld, win_bvac,
+     2           win_brvac, win_bzvac, win_bpvac
 
 #if defined(NETCDF)
       PRIVATE :: read_mgrid_bin, read_mgrid_nc
@@ -148,18 +152,18 @@ C-----------------------------------------------
       INTEGER :: istat, ii
       CHARACTER(LEN=200) :: home_dir
       LOGICAL :: lgrid_exist, lfind
-      INTEGER :: mpi_comm
+      INTEGER :: comm_local
 C-----------------------------------------------
 
 #if defined(MPI_OPT)
-      mpi_comm = MPI_COMM_WORLD
-      IF (PRESENT(comm)) mpi_comm = comm
+      comm_local = MPI_COMM_WORLD
+      IF (PRESENT(comm)) comm_local = comm
 #endif
 
       mgrid_path = TRIM(mgrid_file)
 
       IF ((mgrid_path .eq. TRIM(mgrid_path_old)) .and. 
-     1     ALLOCATED(curlabel)) THEN
+     1     ASSOCIATED(curlabel)) THEN
          PRINT *,' mgrid file previously parsed!'
          RETURN
       END IF
@@ -200,13 +204,13 @@ C-----------------------------------------------
          IF (lfind) THEN
 #if defined(NETCDF)
             CALL read_mgrid_nc (mgrid_path, extcur, nv, nfp, 
-     1                          ier_flag, lscreen, comm)
+     1                          ier_flag, lscreen, comm_local)
 #else
             lgrid_exist = .false.
 #endif
          ELSE
             CALL read_mgrid_bin (mgrid_path, extcur, nv, nfp,
-     1                          ier_flag, lscreen)
+     1                          ier_flag, lscreen, comm_local)
          END IF
 
 !SPH060517         IF (np0b .ne. nv) THEN
@@ -241,8 +245,9 @@ C-----------------------------------------------
 
       
       SUBROUTINE read_mgrid_bin (filename, extcur, nv, nfp, ier_flag, 
-     1                           lscreen)
+     1                           lscreen,comm)
       USE safe_open_mod
+      USE mpi_sharmem
       IMPLICIT NONE
 C-----------------------------------------------
 C   D u m m y  A r g u m e n t s
@@ -253,15 +258,24 @@ C-----------------------------------------------
       INTEGER, INTENT(in)  :: nv, nfp
       CHARACTER(LEN=*), INTENT(in) :: filename
       REAL(rprec), INTENT(in) :: extcur(:)
+      INTEGER, INTENT(inout)  :: ier_flag
+      LOGICAL, INTENT(in)  :: lscreen
+      INTEGER, INTENT(in), OPTIONAL :: comm
 C-----------------------------------------------
 C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
-      REAL(rprec), DIMENSION(:,:,:), ALLOCATABLE :: 
+      REAL(rprec), DIMENSION(:,:,:), POINTER :: 
      1           brtemp, bztemp, bptemp
-      INTEGER :: ier_flag, iunit = 50
+      INTEGER :: iunit = 50
       INTEGER :: istat, ig, i, j, n, n1, m, nsets_max, k
-      LOGICAL :: lscreen, lstyle_2000
+      LOGICAL :: lstyle_2000
+      INTEGER :: nskip, sh(1), mylocalid,
+     1           win_brtemp, win_bptemp, win_bztemp
 C-----------------------------------------------
+      mylocalid = 0
+      IF (PRESENT(comm)) CALL MPI_COMM_RANK(comm, 
+     1                                      mylocalid, ier_flag)
+
       CALL safe_open(iunit, istat, filename, 'old', 'unformatted')
       IF (istat .ne. 0) THEN
          ier_flag = 9
@@ -301,14 +315,32 @@ C-----------------------------------------------
 !     NOTE: ADD UP CONTRIBUTION TO BVAC DIRECTLY FOR ALL EXTERNAL CURRENT GROUPS
 
       nbvac = nr0b*nz0b*nv
-      IF (.NOT. ALLOCATED(bvac)) THEN
-         ALLOCATE (bvac(nbvac,3))
+      IF (.NOT. ASSOCIATED(bvac)) THEN
+         IF (PRESENT(comm)) THEN
+            CALL MPIALLOC(bvac,nbvac,3,mylocalid,0,comm,win_bvac)
+         ELSE
+            ALLOCATE (bvac(nbvac,3))
+         END IF
       ELSE IF (SIZE(bvac,1) .ne. nbvac) THEN
-         DEALLOCATE (bvac);  ALLOCATE(bvac(nbvac,3))
+         IF (PRESENT(comm)) THEN
+            CALL MPIDEALLOC(bvac,win_bvac)
+            CALL MPIALLOC(bvac,nbvac,3,mylocalid,0,comm,win_bvac)
+         ELSE
+            DEALLOCATE (bvac);  ALLOCATE(bvac(nbvac,3))
+         END IF
       END IF
 
-      ALLOCATE (brtemp(nr0b,nz0b,np0b), bptemp(nr0b,nz0b,np0b),
+      IF (PRESENT(comm)) THEN
+         CALL MPIALLOC(brtemp,nr0b,nz0b,np0b,
+     1                 mylocalid,0,comm,win_brtemp)
+         CALL MPIALLOC(bptemp,nr0b,nz0b,np0b,
+     1                 mylocalid,0,comm,win_bptemp)
+         CALL MPIALLOC(bztemp,nr0b,nz0b,np0b,
+     1                 mylocalid,0,comm,win_bztemp)
+      ELSE
+         ALLOCATE (brtemp(nr0b,nz0b,np0b), bptemp(nr0b,nz0b,np0b),
      1          bztemp(nr0b,nz0b,np0b), stat=istat)
+      END IF
 
       IF (istat .ne. 0) THEN
         PRINT *,' allocation for b-vector storage failed'
@@ -317,26 +349,49 @@ C-----------------------------------------------
       END IF
 
       bvac = 0
-
-      DO ig = 1,nextcur
-         IF (lstyle_2000) THEN
-            READ(iunit, iostat=istat) brtemp, bptemp, bztemp
-         ELSE
-            READ(iunit, iostat=istat) (((brtemp(i,j,k), bztemp(i,j,k),
-     1                                   bptemp(i,j,k), i= 1,nr0b), 
-     2                                   j=1,nz0b), k=1,np0b)
-         END IF
+      nskip = np0b/nv
+      sh(1) = nbvac
+      
+      IF (mylocalid == 0) THEN
+         DO ig = 1,nextcur
+            IF (lstyle_2000) THEN
+               READ(iunit, iostat=istat) brtemp, bptemp, bztemp
+            ELSE
+               READ(iunit, iostat=istat) (((brtemp(i,j,k),
+     1                                   bztemp(i,j,k),bptemp(i,j,k), 
+     2                               i= 1,nr0b),j=1,nz0b), k=1,np0b)
+            END IF
 !
 !        STORE SUMMED BFIELD (OVER COIL GROUPS) IN BVAC
 !         
-         CALL sum_bfield(bvac(1,1), brtemp, extcur(ig), nv)
-         CALL sum_bfield(bvac(1,2), bptemp, extcur(ig), nv)
-         CALL sum_bfield(bvac(1,3), bztemp, extcur(ig), nv)
+         !CALL sum_bfield(bvac(1,1), brtemp, extcur(ig), nv)
+         !CALL sum_bfield(bvac(1,2), bptemp, extcur(ig), nv)
+         !CALL sum_bfield(bvac(1,3), bztemp, extcur(ig), nv)
+         
+            bvac(:,1) = bvac(:,1) + extcur(ig) * 
+     1               RESHAPE(brtemp(:,:,1:np0b:nskip),sh)
+         
+            bvac(:,2) = bvac(:,2) + extcur(ig) * 
+     1               RESHAPE(bptemp(:,:,1:np0b:nskip),sh)
+         
+            bvac(:,3) = bvac(:,3) + extcur(ig) * 
+     1               RESHAPE(bztemp(:,:,1:np0b:nskip),sh)
 
-      END DO
+         END DO
+         CALL FTELL(iunit,ig)
+      END IF
 
-      DEALLOCATE (brtemp, bztemp, bptemp)
-	np0b = nv
+      IF (PRESENT(comm)) THEN
+         CALL MPI_BCAST(ig,1,MPI_INTEGER,0,comm,istat)
+         CALL MPIDEALLOC(brtemp,win_brtemp)
+         CALL MPIDEALLOC(bptemp,win_bptemp)
+         CALL MPIDEALLOC(bztemp,win_bztemp)
+         IF (mylocalid /= 0) CALL FSEEK(iunit,ig,1)
+      ELSE
+         DEALLOCATE (brtemp, bztemp, bptemp)
+      END IF
+	
+      np0b = nv
 
       CALL assign_bptrs(bvac)
 
@@ -558,6 +613,7 @@ C-----------------------------------------------
      1                          ier_flag, lscreen, comm)
       USE ezcdf
       USE mpi_inc
+      USE mpi_sharmem
       IMPLICIT NONE
 C-----------------------------------------------
 C   D u m m y  A r g u m e n t s
@@ -565,26 +621,36 @@ C-----------------------------------------------
       CHARACTER(LEN=*), INTENT(in) :: filename
       INTEGER, INTENT(in)          :: nv, nfp
       REAL(rprec), INTENT(in)      :: extcur(:)
-      INTEGER, INTENT(in)          :: comm
+      INTEGER, INTENT(in), OPTIONAL  :: comm
 C-----------------------------------------------
 C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
       REAL(rprec), DIMENSION(:,:,:), ALLOCATABLE ::
-     1                       brtemp, bztemp, bptemp
+     1                 brtemp, bztemp, bptemp
+      REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: bttemp
       INTEGER :: ier_flag, ngrid
       INTEGER :: istat, ig
       LOGICAL :: lscreen
       INTEGER, DIMENSION(3)   :: dimlens
       CHARACTER(LEN=100) :: temp
+      INTEGER :: nskip, sh(1)
 #if defined(MPI_OPT)
-      INTEGER :: mpi_rank, mpi_size, lMPIInit, MPI_ERR
+      LOGICAL :: lMPIInit
+      INTEGER :: mpi_rank, mpi_size, MPI_ERR
+      INTEGER :: shar_rank, shar_comm, temp_comm, temp_size, 
+     1           temp_rank, win_brtemp, win_bptemp, win_bztemp
 
       CALL MPI_INITIALIZED(lMPIInit, MPI_ERR)
-      IF (lMPIInit.NE.0) THEN
+      IF ((lMPIInit) .and. PRESENT(comm)) THEN
          CALL MPI_COMM_RANK(comm, mpi_rank, istat)
          CALL MPI_COMM_SIZE(comm, mpi_size, istat)
+         CALL MPI_COMM_SPLIT_TYPE(comm, 
+     1           MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, 
+     2           shar_comm, istat)
+         CALL MPI_COMM_RANK(shar_comm, shar_rank, istat)
       ELSE
-         mpi_rank = 0; mpi_size = 1
+         mpi_rank = 0; mpi_size = 1; 
+         shar_comm = -1; shar_rank = 0
       END IF
 #endif
 C-----------------------------------------------
@@ -625,7 +691,7 @@ C-----------------------------------------------
       delzb = (zmaxb-zminb)/(nz0b-1)
 
       CALL cdf_inquire(ngrid, vn_coilgrp, dimlens)
-      IF (.NOT. ALLOCATED(curlabel)) THEN
+      IF (.NOT. ASSOCIATED(curlabel)) THEN
          ALLOCATE (curlabel(nextcur), stat=istat)
       ELSE IF (SIZE(curlabel) .ne. nextcur) THEN
          DEALLOCATE (curlabel)
@@ -644,54 +710,145 @@ C-----------------------------------------------
 !     READ 3D Br, Bp, Bz ARRAYS FOR EACH COIL GROUP
 !
       nbvac = nr0b*nz0b*nv
-      IF (.NOT. ALLOCATED(bvac)) THEN
-         ALLOCATE (bvac(nbvac,3), stat=istat)
+#if defined(MPI_OPT)
+      IF (.NOT. ASSOCIATED(bvac)) THEN
+         IF (PRESENT(comm)) THEN
+            CALL MPIALLOC(bvac,nbvac,3,shar_rank,0,shar_comm,win_bvac)
+         ELSE
+            ALLOCATE (bvac(nbvac,3))
+         END IF
       ELSE IF (SIZE(bvac,1) .ne. nbvac) THEN
-         DEALLOCATE (bvac);  ALLOCATE(bvac(nbvac,3), stat=istat)
+         IF (PRESENT(comm)) THEN
+            CALL MPIDEALLOC(bvac,win_bvac)
+            CALL MPIALLOC(bvac,nbvac,3,shar_rank,0,shar_comm,win_bvac)
+         ELSE
+            DEALLOCATE (bvac);  ALLOCATE(bvac(nbvac,3))
+         END IF
       END IF
+#else
+      IF (.NOT. ASSOCIATED(bvac)) THEN
+         ALLOCATE (bvac(nbvac,3))
+      ELSE IF (SIZE(bvac,1) .ne. nbvac) THEN
+         DEALLOCATE (bvac);  ALLOCATE(bvac(nbvac,3))
+      END IF
+#endif
       IF (istat .ne. 0) STOP 'Error allocating bvac in mgrid_mod'
 
       bvac = 0
 
-      ALLOCATE (brtemp(nr0b, nz0b, np0b),                                      &
-     &          bptemp(nr0b, nz0b, np0b),                                      &
-     &          bztemp(nr0b, nz0b, np0b), stat=istat)
-      IF (istat .ne. 0)STOP 'Error allocating bXtemp in mgrid_mod'
+      nskip = np0b/nv
+      sh(1) = nbvac
+
+      IF (ALLOCATED(brtemp)) DEALLOCATE(brtemp)
+      IF (ALLOCATED(bptemp)) DEALLOCATE(bptemp)
+      IF (ALLOCATED(bztemp)) DEALLOCATE(bztemp)
+      IF (ALLOCATED(bttemp)) DEALLOCATE(bttemp)
+
+#if defined(MPI_OPT)
+      IF ((lMPIInit) .and. PRESENT(comm)) THEN
+         ig = MPI_UNDEFINED
+         IF (mpi_rank .lt. nextcur) THEN
+            ig = 0
+            ALLOCATE (brtemp(nr0b,nz0b,np0b), bptemp(nr0b,nz0b,np0b),
+     1             bztemp(nr0b,nz0b,np0b), bttemp(nbvac,3), stat=istat)
+            IF (istat .ne. 0)
+     1            STOP 'Error allocating bXtemp in mgrid_mod1 '
+            brtemp = 0
+            bptemp = 0
+            bztemp = 0
+            bttemp = 0
+         END IF
+         temp_rank = -1
+         CALL MPI_COMM_SPLIT(comm, ig, mpi_rank, temp_comm, istat)
+         IF (ig .eq. 0) THEN
+            CALL MPI_COMM_RANK(temp_comm, temp_rank, istat)
+            CALL MPI_COMM_SIZE(temp_comm, temp_size, istat)
+         ELSE
+            temp_rank = -1; temp_size = 1
+         END IF
+      ELSE
+         temp_size = 1; temp_rank = 0
+      END IF
+#else
+      ALLOCATE (brtemp(nr0b,nz0b,np0b), bptemp(nr0b,nz0b,np0b),
+     1          bztemp(nr0b,nz0b,np0b), bttemp(nbvac,3), stat=istat)
+      IF (istat .ne. 0)STOP 'Error allocating bXtemp in mgrid_mod2 '
       brtemp = 0
       bptemp = 0
       bztemp = 0
-
-#if defined(MPI_OPT)
-      DO ig = mpi_rank + 1, nextcur, mpi_size
-#else
-      DO ig = 1, nextcur
+      bttemp = 0
 #endif
-         WRITE (temp, 1000) vn_br0, ig
-         CALL cdf_read(ngrid, temp, brtemp)
 
-         WRITE (temp, 1000) vn_bp0, ig
-         CALL cdf_read(ngrid, temp, bptemp)
+      ! Only the master process on each shared memory communicator reads
+      IF (temp_rank .ge. 0) THEN
+#if defined(MPI_OPT)
+         DO ig = temp_rank + 1, nextcur, temp_size
+#else
+         DO ig = 1, nextcur
+#endif
+            WRITE (temp, 1000) vn_br0, ig
+            CALL cdf_read(ngrid, temp, brtemp)
 
-         WRITE (temp, 1000) vn_bz0, ig
-         CALL cdf_read(ngrid, temp, bztemp)
+            WRITE (temp, 1000) vn_bp0, ig
+            CALL cdf_read(ngrid, temp, bptemp)
+
+            WRITE (temp, 1000) vn_bz0, ig
+            CALL cdf_read(ngrid, temp, bztemp)
 
 !
 !        STORE SUMMED BFIELD (OVER COIL GROUPS) IN BVAC
 !
-         CALL sum_bfield(bvac(1,1), brtemp, extcur(ig), nv)
-         CALL sum_bfield(bvac(1,2), bptemp, extcur(ig), nv)
-         CALL sum_bfield(bvac(1,3), bztemp, extcur(ig), nv)
-      END DO
-
-	np0b = nv
+         CALL sum_bfield(bttemp(1,1), brtemp, extcur(ig), nv)
+         CALL sum_bfield(bttemp(1,2), bptemp, extcur(ig), nv)
+         CALL sum_bfield(bttemp(1,3), bztemp, extcur(ig), nv)
+         
+!            bttemp(:,1) = bttemp(:,1) + extcur(ig) * 
+!     1                  RESHAPE(brtemp(:,:,1:np0b:nskip),sh)
+!         
+!            bttemp(:,2) = bttemp(:,2) + extcur(ig) * 
+!     1                  RESHAPE(bptemp(:,:,1:np0b:nskip),sh)
+!         
+!            bttemp(:,3) = bttemp(:,3) + extcur(ig) * 
+!     1                  RESHAPE(bztemp(:,:,1:np0b:nskip),sh)
+         END DO
+      END IF
+      np0b = nv
 
 #if defined(MPI_OPT)
-      IF (lMPIInit.NE.0) THEN
-         CALL MPI_ALLREDUCE(MPI_IN_PLACE, bvac, SIZE(bvac), MPI_REAL8,  &
-     &                      MPI_SUM, comm, istat)
-         CALL assert_eq(istat,0,'MPI_ALLREDUCE failed in read_mgrid_nc')
+      IF ((lMPIInit) .and. PRESENT(comm)) THEN
+!         CALL MPI_ALLREDUCE(MPI_IN_PLACE, b, SIZE(bvac), MPI_REAL8,  &
+!     &                      MPI_SUM, comm, istat)
+         IF (temp_rank .ge. 0) THEN
+            CALL MPI_BARRIER(temp_comm,istat)
+            CALL MPI_REDUCE(bttemp,bvac,SIZE(bttemp), MPI_REAL8, 
+     1                   MPI_SUM, 0, temp_comm, istat)
+            CALL assert_eq(istat,0,'MPI_REDUCE failed in read_mgrid_nc')
+            !IF (temp_rank .eq. 0) bvac = bttemp
+            CALL MPI_COMM_FREE(temp_comm,istat)
+         END IF
+         CALL MPI_BARRIER(comm,istat)
+         ig = MPI_UNDEFINED
+         temp_rank = -1
+         IF (shar_rank .eq. 0) ig = 0
+         CALL MPI_COMM_SPLIT(comm, ig, mpi_rank, temp_comm, istat)
+         IF (shar_rank .eq. 0) THEN
+            CALL MPI_COMM_RANK(temp_comm, temp_rank, istat)
+            CALL MPI_COMM_SIZE(temp_comm, temp_size, istat)
+            CALL MPI_BCAST(bvac,SIZE(bvac), MPI_REAL8, 0,
+     1                     temp_comm, istat)
+            CALL MPI_COMM_FREE(temp_comm,istat)
+         END IF
+         CALL MPI_BARRIER(comm,istat)
+      ELSE
+         bvac = bttemp
       END IF
+#else
+      bvac = bttemp
 #endif
+      IF (ALLOCATED(brtemp)) DEALLOCATE(brtemp)
+      IF (ALLOCATED(bptemp)) DEALLOCATE(bptemp)
+      IF (ALLOCATED(bztemp)) DEALLOCATE(bztemp)
+      IF (ALLOCATED(bttemp)) DEALLOCATE(bttemp)
 
 !
 !     MUST ADD EXTERNAL LOOP STUFF LATER
@@ -711,7 +868,7 @@ C-----------------------------------------------
 
       CALL cdf_inquire(ngrid, vn_coilcur, dimlens, ier=istat)
       IF (istat .eq. 0) THEN
-	   IF (ALLOCATED(raw_coil_current)) DEALLOCATE(raw_coil_current)
+	   IF (ASSOCIATED(raw_coil_current)) DEALLOCATE(raw_coil_current)
          ALLOCATE (raw_coil_current(nextcur), stat=istat)
          IF (istat .ne. 0) STOP 'Error allocating RAW_COIL in mgrid_mod'
          CALL cdf_read(ngrid, vn_coilcur, raw_coil_current)
@@ -719,8 +876,11 @@ C-----------------------------------------------
 
       CALL cdf_close(ngrid)
 
-      IF (ALLOCATED(brtemp))
-     1    DEALLOCATE (brtemp, bptemp, bztemp)
+#if defined(MPI_OPT)
+      IF ((lMPIInit) .and. PRESENT(comm)) THEN
+        CALL MPI_COMM_FREE(shar_comm,istat)
+      END IF
+#endif
 
       CALL assign_bptrs(bvac)
 
@@ -751,20 +911,29 @@ C-----------------------------------------------
 
       END SUBROUTINE assign_bptrs
 
-      SUBROUTINE free_mgrid (istat)
+      SUBROUTINE free_mgrid (istat,comm)
+      USE mpi_sharmem
       INTEGER :: istat 
+      INTEGER, INTENT(in), OPTIONAL :: comm 
      
       istat = 0
 
-      IF (ALLOCATED(bvac)) DEALLOCATE (bvac,stat=istat)
-      IF (ALLOCATED(xobser))
+      IF (PRESENT(comm)) THEN
+         IF (ASSOCIATED(bvac)) THEN
+            CALL MPI_BARRIER(comm,istat)
+            CALL mpidealloc(bvac,win_bvac)
+         END IF
+      ELSE
+         IF (ASSOCIATED(bvac)) DEALLOCATE (bvac,stat=istat)
+      END IF
+      IF (ASSOCIATED(xobser))
      1   DEALLOCATE (xobser, xobsqr, zobser, unpsiext, dsiext,
      2      psiext,plflux, iconnect, needflx, needbfld, plbfld,
      3      nbcoils, rbcoil, zbcoil, abcoil, bcoil, rbcoilsqr, dbcoil,
      4      pfcspec,dsilabel, bloopnames, curlabel, b_chi, stat=istat)
-      IF (ALLOCATED(raw_coil_current)) DEALLOCATE(raw_coil_current)
+      IF (ASSOCIATED(raw_coil_current)) DEALLOCATE(raw_coil_current)
 
-      IF (ALLOCATED(rlim))
+      IF (ASSOCIATED(rlim))
      1   DEALLOCATE (rlim,zlim, reslim,seplim,stat=istat)
      
 !  Reset mgrid_path_old, so that can reread an mgrid file. SL, JDH 2012-07-16

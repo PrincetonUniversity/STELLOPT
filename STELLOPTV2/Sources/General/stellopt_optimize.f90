@@ -14,9 +14,8 @@
       USE safe_open_mod, ONLY: safe_open
       USE de_mod, ONLY: nopt, n_pop, n_free
       USE fdjac_mod, ONLY: FLAG_CLEANUP, FLAG_CLEANUP_LEV, FLAG_SINGLETASK
-!DEC$ IF DEFINED (MPI_OPT)
       USE mpi_params
-!DEC$ ENDIF
+      USE mpi_inc
       
 !-----------------------------------------------------------------------
 !     Local Variables

@@ -31,10 +31,10 @@
   MPI_COMPILE_C = mpiifort
   MPI_LINK = mpiifort
   MPI_RUN  = srun
-  MPI_RUN_OPTS = --nodes=1 --ntasks-per-node=40 --time=0:30:00
-  MPI_RUN_SM   = --nodes=1 --ntasks-per-node=40 --time=0:30:00
-  MPI_RUN_MD   = --nodes=1 --ntasks-per-node=40 --time=0:30:00
-  MPI_RUN_LG   = --nodes=8 --ntasks-per-node=40 --time=2:00:00
+  MPI_RUN_OPTS = --nodes=1 --ntasks-per-node=40 --time=0:30:00 -p express
+  MPI_RUN_OPTS_SM   = --nodes=1 --ntasks-per-node=40 --time=0:30:00 -p express
+  MPI_RUN_OPTS_MD   = --nodes=8 --ntasks-per-node=40 --time=0:30:00 -p express
+  MPI_RUN_OPTS_LG   = --nodes=32 --ntasks-per-node=40 --time=0:30:00 -p express
 
 #######################################################################
 #            NAG Options
