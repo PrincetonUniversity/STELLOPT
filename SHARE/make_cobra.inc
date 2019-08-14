@@ -31,10 +31,8 @@
   MPI_COMPILE_C = mpiifort
   MPI_LINK = mpiifort
   MPI_RUN  = srun
-  MPI_RUN_OPTS = --nodes=1 --ntasks-per-node=40 --time=0:30:00
-  MPI_RUN_SM   = --nodes=1 --ntasks-per-node=40 --time=0:30:00
-  MPI_RUN_MD   = --nodes=1 --ntasks-per-node=40 --time=0:30:00
-  MPI_RUN_LG   = --nodes=8 --ntasks-per-node=40 --time=2:00:00
+  MPI_RUN_OPTS = --nodes=1 --ntasks-per-node=80 --ntasks-per-core=2
+#  MPI_RUN_OPTS_LG = --nodes=2 --ntasks-per-node=40 --ntasks-per-core=1
 
 #######################################################################
 #            NAG Options
@@ -106,7 +104,7 @@
 #######################################################################
 #            COILOPT++ Options
 #######################################################################
-  LCOILOPT = T
+  LCOILOPT = F
   COILOPT_INC = -I$(COILOPT_PATH)
   COILOPTPP_DIR = $(COILOPT_PATH)
   LIB_COILOPTPP = libcoilopt++.a
@@ -129,7 +127,7 @@
   LIB_TRAVIS = libtravis64_sopt.a
   LIB_MCONF  = libmconf64.a
   TRAVIS_LIB = $(TRAVIS_DIR)/lib/$(LIB_TRAVIS) \
-               $(TRAVIS_DIR)/magconf/lib/$(LIB_MCONF) -lstdc++
+               $(TRAVIS_DIR)/mag_conf/lib/$(LIB_MCONF) -lstdc++
 
 #######################################################################
 #            SFINCS Options
