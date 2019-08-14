@@ -27,7 +27,7 @@ series. In general any quantity can be represented by
 
 or
 
-\$$ f\left(r,\theta,\zeta\right)=\sum f\_{mn}\left(r\right) sin\left(m\theta+n\zeta\right). $$
+\$$ f\left(r,\theta,\zeta\right)=\sum f_{mn}\left(r\right) sin\left(m\theta+n\zeta\right). $$
 
 Here the angle per field period ($$zeta$$) has been utilized in place of the
 total toroidal angle ($$phi$$). The two are related by the periodicity of
@@ -44,8 +44,8 @@ a even symmetry (cosine) while the vertical coordinate (Z) has a odd
 symmetry (sine). In general, toroidal coordinates do not require this
 symmetry and quantities are functions of a series of both odd and even
 coefficients $$ f\left(r,\theta,\zeta\right)=\sum
-f\^C\_{mn}\left(r\right) cos\left(m\theta+n\zeta\right)+\sum
-f\^S\_{mn}\left(r\right) sin\left(m\theta+n\zeta\right).
+f^C_{mn}\left(r\right) cos\left(m\theta+n\zeta\right)+\sum
+f^S_{mn}\left(r\right) sin\left(m\theta+n\zeta\right).
 $$ Here the superscripts denote that the coefficients are
 different values.
 
@@ -77,42 +77,49 @@ Curvilinear coordinates
 
 In the toroidal domain a cylindrical coordinates system is used to
 express the location of points in space. This position vector in this
-coordinate system may be written 
-\$$ \vec{x}\left(s,u,v\right)=R\left(s,u,v\right)cos\left(\phi\right)\hat{x}+R\left(s,u,v\right)sin\left(\phi\right)\hat{y}+Z\left(s,u,v\right)s\hat{z} $$ 
+coordinate system may be written
+
+\$$ \vec{x}\left(s,u,v\right)=R\left(s,u,v\right)cos\left(\phi\right)\hat{x}+R\left(s,u,v\right)sin\left(\phi\right)\hat{y}+Z\left(s,u,v\right)s\hat{z} $$
+
 where s is the normalized minor radial coordinate, u and v
 are the normalized angular coordinates, and R and Z are functions of the
 toroidal coordinates. The position function R and Z are written
 
-\$$ R\left(s,u,v\right)=\sum R\^C\_{mn}\left(s\right)
-cos\left(mu+nv\right)+\sum R\^S\_{mn}\left(s\right)
-sin\left(mu+nv\right) $$ 
+\$$ R\left(s,u,v\right)=\sum R^C_{mn}\left(s\right)
+cos\left(mu+nv\right)+\sum R^S_{mn}\left(s\right)
+sin\left(mu+nv\right) $$
+
 \$$ Z\left(s,u,v\right)=\sum
-Z\^S\_{mn}\left(s\right) sin\left(mu+nv\right)+\sum
-Z\^C\_{mn}\left(s\right) cos\left(mu+nv\right). $$ 
+Z^S_{mn}\left(s\right) sin\left(mu+nv\right)+\sum
+Z^C_{mn}\left(s\right) cos\left(mu+nv\right). $$ 
 
 Thesecond term in each equation can be dropped if stellarator symmetry is
 assumed. Vectors may be represented in terms of their contravariant
 (sup, up, top) components or covariant (sub, dn, bottom) components
 through the relation 
-$$ \vec{A}=A\^s\hat{e}\_s+A\^u\hat{e}\_u+A\^v\hat{e}\_v=A\_s\hat{e}\^s+A\_u\hat{e}\^u+A\_v\hat{e}\^v.$$ 
+$$ \vec{A}=A^s\hat{e}_s+A^u\hat{e}_u+A^v\hat{e}_v=A_s\hat{e}^s+A_u\hat{e}^u+A_v\hat{e}^v.$$ 
 The covariant and contravariant basis vectors may be
-written $$ \hat{e}\_k=\frac{\partial \vec{x}}{\partial
-x\_k} $$ and $$ \hat{e}\^k=\nabla x\_k.$$
+written $$ \hat{e}_k=\frac{\partial \vec{x}}{\partial
+x_k} $$ and $$ \hat{e}^k=\nabla x_k.$$
 
 ### Contravariant Vector Components
 
 This allows us to write the covariant basis vectors in terms of
-cartesian unit vectors \$$ \hat{e}\_s=\frac{\partial
+cartesian unit vectors
+
+\$$ \hat{e}_s=\frac{\partial
 R}{\partial s}cos\left(\phi\right)\hat{x}+\frac{\partial
 R}{\partial s}sin\left(\phi\right)\hat{y}+\frac{\partial
-Z}{\partial s}\hat{z}, $$ 
+Z}{\partial s}\hat{z}, $$
+
 \$$
-\hat{e}\_u=\frac{\partial R}{\partial
+\hat{e}_u=\frac{\partial R}{\partial
 u}cos\left(\phi\right)\hat{x}+\frac{\partial R}{\partial
 u}sin\left(\phi\right)\hat{y}+\frac{\partial Z}{\partial
-u}\hat{z}, $$ 
+u}\hat{z}, $$
+
 \$$
-\hat{e}\_v=\left(\frac{\partial R}{\partial
+\hat{e}_v=\left(\frac{\partial R}{\partial
 v}cos\left(\phi\right)-R\frac{\partial \phi}{\partial
 v}sin\left(\phi\right)\right)\hat{x}+\left(\frac{\partial
 R}{\partial v}sin\left(\phi\right)+R\frac{\partial
@@ -121,48 +128,52 @@ v}cos\left(\phi\right)\right)\hat{y}+\frac{\partial Z}{\partial
 v}\hat{z}. $$ Here the derivative of phi with respect to the
 normalized toroidal angle is kept general. This allows the cartesian
 components of a vector to be written in terms of the contravariant
-components: $$ A\_x=\left(A\^s\frac{\partial R}{\partial
-s}+A\^u\frac{\partial R}{\partial u}+A\^v\frac{\partial
-R}{\partial v}\right)cos\left(\phi\right)-A\^vR\frac{\partial
-\phi}{\partial v}sin\left(\phi\right), $$ 
+components: $$ A_x=\left(A^s\frac{\partial R}{\partial
+s}+A^u\frac{\partial R}{\partial u}+A^v\frac{\partial
+R}{\partial v}\right)cos\left(\phi\right)-A^vR\frac{\partial
+\phi}{\partial v}sin\left(\phi\right), $$
+
 \$$
-A\_y=\left(A\^s\frac{\partial R}{\partial s}+A\^u\frac{\partial
-R}{\partial u}+A\^v\frac{\partial R}{\partial
-v}\right)sin\left(\phi\right)+A\^vR\frac{\partial \phi}{\partial
+A_y=\left(A^s\frac{\partial R}{\partial s}+A^u\frac{\partial
+R}{\partial u}+A^v\frac{\partial R}{\partial
+v}\right)sin\left(\phi\right)+A^vR\frac{\partial \phi}{\partial
 v}cos\left(\phi\right), $$ and $$
-A\_z=A\^s\frac{\partial Z}{\partial s}+A\^u\frac{\partial
-Z}{\partial u}+A\^v\frac{\partial Z}{\partial v}. $$ The
+A_z=A^s\frac{\partial Z}{\partial s}+A^u\frac{\partial
+Z}{\partial u}+A^v\frac{\partial Z}{\partial v}. $$ The
 components in cylindrical coordinates may also be written in terms of
-the contravariant components: $$ A\_\rho=A\^s\frac{\partial
-R}{\partial s}+A\^u\frac{\partial R}{\partial
-u}+A\^v\frac{\partial R}{\partial v}, $$ 
-\$$
-A\_\phi=A\^vR\frac{\partial \phi}{\partial v}, $$ and
-$$ A\_z=A\^s\frac{\partial Z}{\partial
-s}+A\^u\frac{\partial Z}{\partial u}+A\^v\frac{\partial
+the contravariant components: $$ A_\rho=A^s\frac{\partial
+R}{\partial s}+A^u\frac{\partial R}{\partial
+u}+A^v\frac{\partial R}{\partial v}, $$
+
+$$ A_\phi=A^vR\frac{\partial \phi}{\partial v}, $$ and
+$$ A_z=A^s\frac{\partial Z}{\partial
+s}+A^u\frac{\partial Z}{\partial u}+A^v\frac{\partial
 Z}{\partial v}. $$ It is important to note that when working
 with different coordinate systems a chain-rule can be used to convert
 derivatives $$ \frac{\partial Z}{\partial
-v}=\frac{\partial Z}{\partial v\_k}\frac{\partial v\_k}{\partial
-v\_l} $$ The surface normal vector (N, which does not have
+v}=\frac{\partial Z}{\partial v_k}\frac{\partial v_k}{\partial
+v_l}
+$$ The surface normal vector (N, which does not have
 unit length) can be written as the cross product of the covariant basis
 vectors $$ \vec{N}=\frac{\partial \vec{x}}{\partial
 u}\times\frac{\partial \vec{x}}{\partial
-v}=\hat{e}\_u\times\hat{e}\_v $$ allowing the cartesian
+v}=\hat{e}_u\times\hat{e}_v $$ allowing the cartesian
 surface normal components to be written $$
-N\_x=-\left(\frac{\partial R}{\partial u}\frac{\partial
+N_x=-\left(\frac{\partial R}{\partial u}\frac{\partial
 Z}{\partial v}-\frac{\partial R}{\partial v}\frac{\partial
 Z}{\partial u}\right)sin\left(\phi\right)+R\frac{\partial
 \phi}{\partial v}\frac{\partial Z}{\partial
-u}cos\left(\phi\right) $$ 
+u}cos\left(\phi\right) $$
+
 \$$
-N\_y=\left(\frac{\partial R}{\partial u}\frac{\partial
+N_y=\left(\frac{\partial R}{\partial u}\frac{\partial
 Z}{\partial v}-\frac{\partial R}{\partial v}\frac{\partial
 Z}{\partial u}\right)cos\left(\phi\right)+R\frac{\partial
 \phi}{\partial v}\frac{\partial Z}{\partial
-u}sin\left(\phi\right) $$ 
+u}sin\left(\phi\right) $$
+
 \$$
-N\_z=-R\frac{\partial \phi}{\partial v}\frac{\partial R}{\partial
+N_z=-R\frac{\partial \phi}{\partial v}\frac{\partial R}{\partial
 u}. $$ This vector integrated can be treated as the product of
 the surface normal vector (unit length) and the differential surface
 element $$ \vec{N}=\hat{n}\cdot dA. $$
