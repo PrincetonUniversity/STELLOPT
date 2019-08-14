@@ -177,6 +177,8 @@ Z}{\partial u}\right)\cos\left(\phi\right)+R\frac{\partial
 u}\sin\left(\phi\right) $$
 
 \$$ N_z=-R\frac{\partial \phi}{\partial v}\frac{\partial R}{\partial
-u}. $$ This vector integrated can be treated as the product of
+u}. $$ 
+
+This vector integrated can be treated as the product of
 the surface normal vector (unit length) and the differential surface
 element $$ \vec{N}=\hat{n}\cdot dA. $$
