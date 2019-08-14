@@ -2,7 +2,7 @@
 
 Toroidal Coordinate Systems
 ===========================
-
+sin
 ------------------------------------------------------------------------
 
 Introduction
@@ -64,8 +64,8 @@ requires that an array be flipped about the toroidal mode index (n=0),
 thus n=-n and -n=n (NESCOIL TO VMEC is the same conversion). The VMEC
 convention is just the negative kernel of the PIES convention, so only
 the odd (sine) coefficients need be multiplied by -1, remember:
-$$ \cos\left(-x\right)=cos\left(x\right) $$
-$$ \sin\left(-x\right)=-sin\left(x\right) $$
+$$ \cos\left(-x\right)=\cos\left(x\right) $$
+$$ \sin\left(-x\right)=-\sin\left(x\right) $$
 Thus conversion from one convention is simply a matter of flipping
 arrays about the toroidal mode index (n) and negating odd coefficients
 (sin).
@@ -79,19 +79,19 @@ In the toroidal domain a cylindrical coordinates system is used to
 express the location of points in space. This position vector in this
 coordinate system may be written
 
-\$$ \vec{x}\left(s,u,v\right)=R\left(s,u,v\right)cos\left(\phi\right)\hat{x}+R\left(s,u,v\right)sin\left(\phi\right)\hat{y}+Z\left(s,u,v\right)s\hat{z} $$
+\$$ \vec{x}\left(s,u,v\right)=R\left(s,u,v\right)\cos\left(\phi\right)\hat{x}+R\left(s,u,v\right)\sin\left(\phi\right)\hat{y}+Z\left(s,u,v\right)s\hat{z} $$
 
 where s is the normalized minor radial coordinate, u and v
 are the normalized angular coordinates, and R and Z are functions of the
 toroidal coordinates. The position function R and Z are written
 
 \$$ R\left(s,u,v\right)=\sum R^C_{mn}\left(s\right)
-cos\left(mu+nv\right)+\sum R^S_{mn}\left(s\right)
-sin\left(mu+nv\right) $$
+\cos\left(mu+nv\right)+\sum R^S_{mn}\left(s\right)
+\sin\left(mu+nv\right) $$
 
 \$$ Z\left(s,u,v\right)=\sum
-Z^S_{mn}\left(s\right) sin\left(mu+nv\right)+\sum
-Z^C_{mn}\left(s\right) cos\left(mu+nv\right). $$ 
+Z^S_{mn}\left(s\right) \sin\left(mu+nv\right)+\sum
+Z^C_{mn}\left(s\right) \cos\left(mu+nv\right). $$ 
 
 Thesecond term in each equation can be dropped if stellarator symmetry is
 assumed. Vectors may be represented in terms of their contravariant
@@ -107,21 +107,21 @@ This allows us to write the covariant basis vectors in terms of
 cartesian unit vectors
 
 \$$ \hat{e}_s=\frac{\partial
-R}{\partial s}cos\left(\phi\right)\hat{x}+\frac{\partial
-R}{\partial s}sin\left(\phi\right)\hat{y}+\frac{\partial
+R}{\partial s}\cos\left(\phi\right)\hat{x}+\frac{\partial
+R}{\partial s}\sin\left(\phi\right)\hat{y}+\frac{\partial
 Z}{\partial s}\hat{z}, $$
 
 \$$ \hat{e}_u=\frac{\partial R}{\partial
-u}cos\left(\phi\right)\hat{x}+\frac{\partial R}{\partial
-u}sin\left(\phi\right)\hat{y}+\frac{\partial Z}{\partial
+u}\cos\left(\phi\right)\hat{x}+\frac{\partial R}{\partial
+u}\sin\left(\phi\right)\hat{y}+\frac{\partial Z}{\partial
 u}\hat{z}, $$
 
 \$$ \hat{e}_v=\left(\frac{\partial R}{\partial
-v}cos\left(\phi\right)-R\frac{\partial \phi}{\partial
-v}sin\left(\phi\right)\right)\hat{x}+\left(\frac{\partial
-R}{\partial v}sin\left(\phi\right)+R\frac{\partial
+v}\cos\left(\phi\right)-R\frac{\partial \phi}{\partial
+v}\sin\left(\phi\right)\right)\hat{x}+\left(\frac{\partial
+R}{\partial v}\sin\left(\phi\right)+R\frac{\partial
 \phi}{\partial
-v}cos\left(\phi\right)\right)\hat{y}+\frac{\partial Z}{\partial
+v}\cos\left(\phi\right)\right)\hat{y}+\frac{\partial Z}{\partial
 v}\hat{z}. $$ 
 
 Here the derivative of phi with respect to the
@@ -131,13 +131,13 @@ components:
 
 \$$ A_x=\left(A^s\frac{\partial R}{\partial
 s}+A^u\frac{\partial R}{\partial u}+A^v\frac{\partial
-R}{\partial v}\right)cos\left(\phi\right)-A^vR\frac{\partial
-\phi}{\partial v}sin\left(\phi\right), $$
+R}{\partial v}\right)\cos\left(\phi\right)-A^vR\frac{\partial
+\phi}{\partial v}\sin\left(\phi\right), $$
 
 \$$ A_y=\left(A^s\frac{\partial R}{\partial s}+A^u\frac{\partial
 R}{\partial u}+A^v\frac{\partial R}{\partial
-v}\right)sin\left(\phi\right)+A^vR\frac{\partial \phi}{\partial
-v}cos\left(\phi\right), $$ and $$
+v}\right)\sin\left(\phi\right)+A^vR\frac{\partial \phi}{\partial
+v}\cos\left(\phi\right), $$ and $$
 A_z=A^s\frac{\partial Z}{\partial s}+A^u\frac{\partial
 Z}{\partial u}+A^v\frac{\partial Z}{\partial v}. $$ The
 components in cylindrical coordinates may also be written in terms of
@@ -162,15 +162,15 @@ surface normal components to be written
 
 \$$ N_x=-\left(\frac{\partial R}{\partial u}\frac{\partial
 Z}{\partial v}-\frac{\partial R}{\partial v}\frac{\partial
-Z}{\partial u}\right)sin\left(\phi\right)+R\frac{\partial
+Z}{\partial u}\right)\sin\left(\phi\right)+R\frac{\partial
 \phi}{\partial v}\frac{\partial Z}{\partial
-u}cos\left(\phi\right) $$
+u}\cos\left(\phi\right) $$
 
 \$$ N_y=\left(\frac{\partial R}{\partial u}\frac{\partial
 Z}{\partial v}-\frac{\partial R}{\partial v}\frac{\partial
-Z}{\partial u}\right)cos\left(\phi\right)+R\frac{\partial
+Z}{\partial u}\right)\cos\left(\phi\right)+R\frac{\partial
 \phi}{\partial v}\frac{\partial Z}{\partial
-u}sin\left(\phi\right) $$
+u}\sin\left(\phi\right) $$
 
 \$$ N_z=-R\frac{\partial \phi}{\partial v}\frac{\partial R}{\partial
 u}. $$ This vector integrated can be treated as the product of
