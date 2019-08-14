@@ -48,10 +48,14 @@ different values.
 
 There are three choices of kernel. Although they are simply a choice of
 sign, they have been named after the codes which employ them. Here they
-are | Name | Convention |
-| VMEC | (mu-nv) | |
-NESCOIL | (mu+nv) |
+are 
+
+| Name | Convention |
+|------|----------|
+| VMEC | (mu-nv) | 
+|NESCOIL | (mu+nv) |
 | PIES | (nv-mu) |
+
 Conversion between these conventions is straightforward. Going from VMEC to NESCOIL simply
 requires that an array be flipped about the toroidal mode index (n=0),
 thus n=-n and -n=n (NESCOIL TO VMEC is the same conversion). The VMEC
@@ -70,26 +74,27 @@ Curvilinear coordinates
 
 In the toroidal domain a cylindrical coordinates system is used to
 express the location of points in space. This position vector in this
-coordinate system may be written $$
-\vec{x}\left(s,u,v\right)=R\left(s,u,v\right)cos\left(\phi\right)\hat{x}+R\left(s,u,v\right)sin\left(\phi\right)\hat{y}+Z\left(s,u,v\right)s\hat{z}
-$$ where s is the normalized minor radial coordinate, u and v
+coordinate system may be written 
+\$$ \vec{x}\left(s,u,v\right)=R\left(s,u,v\right)cos\left(\phi\right)\hat{x}+R\left(s,u,v\right)sin\left(\phi\right)\hat{y}+Z\left(s,u,v\right)s\hat{z} $$ 
+where s is the normalized minor radial coordinate, u and v
 are the normalized angular coordinates, and R and Z are functions of the
 toroidal coordinates. The position function R and Z are written
-$$ R\left(s,u,v\right)=\sum R\^C\_{mn}\left(s\right)
+
+\$$ R\left(s,u,v\right)=\sum R\^C\_{mn}\left(s\right)
 cos\left(mu+nv\right)+\sum R\^S\_{mn}\left(s\right)
-sin\left(mu+nv\right) $$ \<span style=\"margin: 0px;
-padding: 0px;\"\>and\</span\> $$ Z\left(s,u,v\right)=\sum
+sin\left(mu+nv\right) $$ 
+\$$ Z\left(s,u,v\right)=\sum
 Z\^S\_{mn}\left(s\right) sin\left(mu+nv\right)+\sum
-Z\^C\_{mn}\left(s\right) cos\left(mu+nv\right). $$ The
-second term in each equation can be dropped if stellarator symmetry is
+Z\^C\_{mn}\left(s\right) cos\left(mu+nv\right). $$ 
+
+Thesecond term in each equation can be dropped if stellarator symmetry is
 assumed. Vectors may be represented in terms of their contravariant
 (sup, up, top) components or covariant (sub, dn, bottom) components
-through the relation $$
-\vec{A}=A\^s\hat{e}\_s+A\^u\hat{e}\_u+A\^v\hat{e}\_v=A\_s\hat{e}\^s+A\_u\hat{e}\^u+A\_v\hat{e}\^v.
-$$ The covariant and contravariant basis vectors may be
+through the relation 
+$$ \vec{A}=A\^s\hat{e}\_s+A\^u\hat{e}\_u+A\^v\hat{e}\_v=A\_s\hat{e}\^s+A\_u\hat{e}\^u+A\_v\hat{e}\^v.$$ 
+The covariant and contravariant basis vectors may be
 written $$ \hat{e}\_k=\frac{\partial \vec{x}}{\partial
-x\_k} $$ and $$ \hat{e}\^k=\nabla x\_k.
-$$
+x\_k} $$ and $$ \hat{e}\^k=\nabla x\_k.$$
 
 ### Contravariant Vector Components
 
