@@ -20,10 +20,8 @@
      1           iflag, ncnt, epsfcn, fnorm_min, x_min, wa)
       USE stel_kinds
       USE mpi_params
+      USE mpi_inc
       IMPLICIT NONE
-!DEC$ IF DEFINED (MPI_OPT)
-      include 'mpif.h'                                       !mpi stuff
-!DEC$ ENDIF
 C-----------------------------------------------
 C   D u m m y   A r g u m e n t s
 C-----------------------------------------------
@@ -284,10 +282,8 @@ c
       USE stel_kinds
       USE mpi_params
       USE safe_open_mod, ONLY: safe_open
+      USE mpi_inc
       IMPLICIT NONE
-!DEC$ IF DEFINED (MPI_OPT)
-      include 'mpif.h'                                       !mpi stuff
-!DEC$ ENDIF
 C-----------------------------------------------
 C   D u m m y   A r g u m e n t s
 C-----------------------------------------------
@@ -575,6 +571,10 @@ C-----------------------------------------------
       EXTERNAL fcn, dpmpar, multiprocess, fdjac_parallel
       REAL(rprec), EXTERNAL :: enorm
 C-----------------------------------------------
+      fjac = 0
+      fnorm_min = 0
+      x_min = 0
+      fvec_min = 0
 !DEC$ IF .NOT.DEFINED (MPI_OPT)
 c
 c     SUBROUTINE fdjac2

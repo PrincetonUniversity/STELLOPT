@@ -19,7 +19,8 @@
       USE vmec_input,  ONLY: extcur_in => extcur, read_indata_namelist,&
                              nv_in => nzeta, nfp_in => nfp, nigroup
       USE mgrid_field_mod, pi2_mgrid => pi2
-      USE mpi_params                       
+      USE mpi_params
+      USE mpi_inc
 !-----------------------------------------------------------------------
 !     Local Variables
 !          ier            Error Flag
@@ -40,19 +41,10 @@
 !-----------------------------------------------------------------------
 
       ! Divide up Work
-      IF (nprocs_beams > nlocal) THEN
-         i = myworkid/nlocal
-         CALL MPI_COMM_SPLIT( MPI_COMM_BEAMS,i,myworkid,MPI_COMM_LOCAL,ierr_mpi)
-         CALL MPI_COMM_RANK( MPI_COMM_LOCAL, mylocalid, ierr_mpi )              ! MPI
-         CALL MPI_COMM_SIZE( MPI_COMM_LOCAL, numprocs_local, ierr_mpi )          ! MPI
-         mylocalmaster = master
-      ELSE
-         ! Basic copy of MPI_COMM_FIELDLINES
-         CALL MPI_COMM_DUP( MPI_COMM_BEAMS, MPI_COMM_LOCAL, ierr_mpi)
-         mylocalid = myworkid
-         mylocalmaster = master
-         numprocs_local = nprocs_beams
-      END IF
+      CALL MPI_COMM_DUP( MPI_COMM_SHARMEM, MPI_COMM_LOCAL, ierr_mpi)
+      CALL MPI_COMM_RANK( MPI_COMM_LOCAL, mylocalid, ierr_mpi )              ! MPI
+      CALL MPI_COMM_SIZE( MPI_COMM_LOCAL, numprocs_local, ierr_mpi )          ! MPI
+      mylocalmaster = master
 
       ! Read the input file for the EXTCUR array, NV, and NFP
       IF (.not. ALLOCATED(extcur) .and. lmgrid) THEN
@@ -79,7 +71,7 @@
       END IF
       
       ! Read the mgrid file
-      CALL mgrid_load(mgrid_string,extcur,nextcur,nv_in,nfp_in,ier,myworkid)
+      CALL mgrid_load(mgrid_string,extcur,nextcur,nv_in,nfp_in,ier,myworkid,MPI_COMM_LOCAL)
       IF (lverb) THEN
          CALL mgrid_info(6)
          WRITE(6,'(5X,A,I3.3,A)',ADVANCE='no') 'Vacuum Field Calculation [',0,']%'
@@ -103,7 +95,10 @@
       ! Reset the phi grid limit to match mgrid
       phimin = 0.0
       phimax = pi2 / nfp_in
-      FORALL(i = 1:nphi) phiaxis(i) = (i-1)*(phimax-phimin)/(nphi-1) + phimin
+      IF (mylocalid == mylocalmaster) FORALL(i = 1:nphi) phiaxis(i) = (i-1)*(phimax-phimin)/(nphi-1) + phimin
+!DEC$ IF DEFINED (MPI_OPT)
+      CALL MPI_BARRIER(MPI_COMM_LOCAL, ierr_mpi)
+!DEC$ ENDIF
       
       ! Break up the Work
       chunk = FLOOR(REAL(nr*nphi*nz) / REAL(numprocs_local))
@@ -128,6 +123,8 @@
       mystart = moffsets(mylocalid+1)
       chunk  = mnum(mylocalid+1)
       myend   = mystart + chunk - 1
+      DEALLOCATE(mnum)
+      DEALLOCATE(moffsets)
 !DEC$ ENDIF
       
       ! Get the fields
@@ -150,7 +147,7 @@
       END DO
       
       ! Free Variables (put this here to make room)
-      CALL mgrid_free(ier)
+      CALL mgrid_free(ier,MPI_COMM_LOCAL)
       
       ! Clean up the progress bar
       IF (lverb) THEN
@@ -163,20 +160,6 @@
       ! Now recompose the array and send to everyone.
 !DEC$ IF DEFINED (MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
-      
-      ! Send Data
-      CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
-                        B_R,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
-                        MPI_COMM_LOCAL,ierr_mpi)
-      CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
-                        B_PHI,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
-                        MPI_COMM_LOCAL,ierr_mpi)
-      CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
-                        B_Z,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
-                        MPI_COMM_LOCAL,ierr_mpi)
-      DEALLOCATE(mnum)
-      DEALLOCATE(moffsets)
-
       CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)
       CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
       IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'beams3d_init_mgrid',ierr_mpi)

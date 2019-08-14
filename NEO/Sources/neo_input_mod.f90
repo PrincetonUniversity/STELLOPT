@@ -169,5 +169,64 @@
       WRITE(iunit,'(A)') '/'
       RETURN
       END SUBROUTINE write_neoin_namelist
+
+      SUBROUTINE BCAST_NEOIN_INPUT(local_master,comm,istat)
+!DEC$ IF DEFINED (MPI_OPT)
+      USE mpi
+!DEC$ ENDIF
+      IMPLICIT NONE
+      INTEGER, INTENT(inout) :: comm
+      INTEGER, INTENT(in)    :: local_master
+      INTEGER, INTENT(inout) :: istat
+      IF (istat .ne. 0) RETURN
+!DEC$ IF DEFINED (MPI_OPT)
+      CALL MPI_BCAST(theta_n,1,MPI_INTEGER,local_master,comm,istat)
+      IF (istat .ne. 0) RETURN
+      CALL MPI_BCAST(phi_n,1,MPI_INTEGER,local_master,comm,istat)
+      IF (istat .ne. 0) RETURN
+      CALL MPI_BCAST(max_m_mode,1,MPI_INTEGER,local_master,comm,istat)
+      IF (istat .ne. 0) RETURN
+      CALL MPI_BCAST(max_n_mode,1,MPI_INTEGER,local_master,comm,istat)
+      IF (istat .ne. 0) RETURN
+      CALL MPI_BCAST(npart,1,MPI_INTEGER,local_master,comm,istat)
+      IF (istat .ne. 0) RETURN
+      CALL MPI_BCAST(multra,1,MPI_INTEGER,local_master,comm,istat)
+      IF (istat .ne. 0) RETURN
+      CALL MPI_BCAST(acc_req,1,MPI_DOUBLE_PRECISION,local_master,comm,istat)
+      IF (istat .ne. 0) RETURN
+      CALL MPI_BCAST(no_bins,1,MPI_INTEGER,local_master,comm,istat)
+      IF (istat .ne. 0) RETURN
+      CALL MPI_BCAST(nstep_per,1,MPI_INTEGER,local_master,comm,istat)
+      IF (istat .ne. 0) RETURN
+      CALL MPI_BCAST(nstep_max,1,MPI_INTEGER,local_master,comm,istat)
+      IF (istat .ne. 0) RETURN
+      CALL MPI_BCAST(nstep_min,1,MPI_INTEGER,local_master,comm,istat)
+      IF (istat .ne. 0) RETURN
+      CALL MPI_BCAST(calc_nstep_max,1,MPI_INTEGER,local_master,comm,istat)
+      IF (istat .ne. 0) RETURN
+      CALL MPI_BCAST(eout_swi,1,MPI_INTEGER,local_master,comm,istat)
+      IF (istat .ne. 0) RETURN
+      CALL MPI_BCAST(lab_swi,1,MPI_INTEGER,local_master,comm,istat)
+      IF (istat .ne. 0) RETURN
+      CALL MPI_BCAST(inp_swi,1,MPI_INTEGER,local_master,comm,istat)
+      IF (istat .ne. 0) RETURN
+      CALL MPI_BCAST(ref_swi,1,MPI_INTEGER,local_master,comm,istat)
+      IF (istat .ne. 0) RETURN
+      CALL MPI_BCAST(write_progress,1,MPI_INTEGER,local_master,comm,istat)
+      IF (istat .ne. 0) RETURN
+      CALL MPI_BCAST(write_output_files,1,MPI_INTEGER,local_master,comm,istat)
+      IF (istat .ne. 0) RETURN
+      CALL MPI_BCAST(spline_test,1,MPI_INTEGER,local_master,comm,istat)
+      IF (istat .ne. 0) RETURN
+      CALL MPI_BCAST(write_integrate,1,MPI_INTEGER,local_master,comm,istat)
+      IF (istat .ne. 0) RETURN
+      CALL MPI_BCAST(write_diagnostic,1,MPI_INTEGER,local_master,comm,istat)
+      IF (istat .ne. 0) RETURN
+      CALL MPI_BCAST(calc_cur,1,MPI_INTEGER,local_master,comm,istat)
+      IF (istat .ne. 0) RETURN
+      CALL MPI_BCAST(npart_cur,1,MPI_INTEGER,local_master,comm,istat)
+      IF (istat .ne. 0) RETURN
+!DEC$ ENDIF
+      END SUBROUTINE BCAST_NEOIN_INPUT
       
       END MODULE neo_input_mod

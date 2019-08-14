@@ -14,16 +14,14 @@
       USE fieldlines_grid
       USE fieldlines_lines, ONLY: nlines
       USE ez_hdf5
-      USE mpi_params                                                    ! MPI
+      USE mpi_params
+      USE mpi_inc
 !-----------------------------------------------------------------------
 !     Local Variables
 !          ier            Error Flag
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       INTEGER :: ier, i
-!DEC$ IF DEFINED (MPI_OPT)
-      INCLUDE 'mpif.h'   ! MPI
-!DEC$ ENDIF  
 !-----------------------------------------------------------------------
 !     Begin Subroutine
 !-----------------------------------------------------------------------
