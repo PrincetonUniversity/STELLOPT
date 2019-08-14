@@ -22,9 +22,11 @@
                                  phimax, vc_adapt_tol, B_R, B_Z, B_PHI,&
                                  BR_spl, BZ_spl, TE_spl_s, NE_spl_s, TI_spl_s, &
                                  nte, nne, nti, TE, NE, TI, Vp_spl_s, S_ARR,&
-                                 U_ARR, POT_ARR, POT_spl_s, nne, nte, nti, npot
+                                 U_ARR, POT_ARR, POT_spl_s, nne, nte, nti, npot, &
+                                 ZEFF_spl_s, nzeff, ZEFF_ARR
       USE wall_mod, ONLY: wall_load_mn, wall_info,vertex,face
-      USE mpi_params                                                    ! MPI
+      USE mpi_params
+      USE mpi_inc
 !-----------------------------------------------------------------------
 !     Local Variables
 !          ier            Error Flag
@@ -33,7 +35,6 @@
       IMPLICIT NONE
       INTEGER, PARAMETER :: BYTE_8 = SELECTED_INT_KIND (8)
 !DEC$ IF DEFINED (MPI_OPT)
-!      INCLUDE 'mpif.h'   ! MPI
       INTEGER(KIND=BYTE_8),ALLOCATABLE :: mnum(:), moffsets(:)
       INTEGER :: numprocs_local, mylocalid, mylocalmaster
       INTEGER :: MPI_COMM_LOCAL
@@ -56,24 +57,58 @@
 !-----------------------------------------------------------------------
 
       ! Divide up Work
-      IF (nprocs_beams > nlocal) THEN
-         i = myworkid/nlocal
-         CALL MPI_COMM_SPLIT( MPI_COMM_BEAMS,i,myworkid,MPI_COMM_LOCAL,ierr_mpi)
-         CALL MPI_COMM_RANK( MPI_COMM_LOCAL, mylocalid, ierr_mpi )              ! MPI
-         CALL MPI_COMM_SIZE( MPI_COMM_LOCAL, numprocs_local, ierr_mpi )          ! MPI
-         mylocalmaster = master
-      ELSE
-         ! Basic copy of MPI_COMM_BEAMS
-         CALL MPI_COMM_DUP( MPI_COMM_BEAMS, MPI_COMM_LOCAL, ierr_mpi)
-         mylocalid = myworkid
-         mylocalmaster = master
-         numprocs_local = nprocs_beams
-      END IF
+      mylocalid = myworkid
+      numprocs_local = 1
+#if defined(MPI_OPT)
+      CALL MPI_COMM_DUP( MPI_COMM_SHARMEM, MPI_COMM_LOCAL, ierr_mpi)
+      CALL MPI_COMM_RANK( MPI_COMM_LOCAL, mylocalid, ierr_mpi )              ! MPI
+      CALL MPI_COMM_SIZE( MPI_COMM_LOCAL, numprocs_local, ierr_mpi )          ! MPI
+#endif
+      mylocalmaster = master
       bx_vc = 0.0; by_vc = 0.0; bz_vc = 0.0
 
       ! Open VMEC file
-      CALL read_wout_file(TRIM(id_string),ier)
-      IF (ier /= 0) CALL handle_err(VMEC_WOUT_ERR,'beams3d_init_vmec',ier)
+      IF (myworkid == master) THEN
+         CALL read_wout_file(TRIM(id_string),ier)
+         IF (ier /= 0) CALL handle_err(VMEC_WOUT_ERR,'beams3d_init_vmec',ier)
+      END IF
+      
+#if defined(MPI_OPT)
+      ! We do this to avoid multiple opens of wout file
+      CALL MPI_BCAST(ns,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
+      CALL MPI_BCAST(mpol,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
+      CALL MPI_BCAST(ntor,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
+      CALL MPI_BCAST(nfp,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
+      CALL MPI_BCAST(mnmax,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
+      CALL MPI_BCAST(mnmax_nyq,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
+      CALL MPI_BCAST(lasym,1,MPI_LOGICAL, master, MPI_COMM_BEAMS,ierr_mpi)
+      CALL MPI_BCAST(lthreed,1,MPI_LOGICAL, master, MPI_COMM_BEAMS,ierr_mpi)
+      CALL MPI_BCAST(lwout_opened,1,MPI_LOGICAL, master, MPI_COMM_BEAMS,ierr_mpi)
+      IF (myworkid /= master) THEN
+         ALLOCATE(vp(ns),phi(ns))
+         ALLOCATE(xm(mnmax),xn(mnmax),xm_nyq(mnmax_nyq),xn_nyq(mnmax_nyq))
+         ALLOCATE(rmnc(mnmax,ns),zmns(mnmax,ns),bsupumnc(mnmax_nyq,ns),bsupvmnc(mnmax_nyq,ns))
+         IF (lasym) ALLOCATE(rmns(mnmax,ns),zmnc(mnmax,ns),bsupumns(mnmax_nyq,ns),bsupvmns(mnmax_nyq,ns))
+      END IF
+      CALL MPI_BCAST(vp,ns,MPI_DOUBLE_PRECISION, master, MPI_COMM_BEAMS,ierr_mpi)
+      CALL MPI_BCAST(phi,ns,MPI_DOUBLE_PRECISION, master, MPI_COMM_BEAMS,ierr_mpi)
+      CALL MPI_BCAST(xm,mnmax,MPI_DOUBLE_PRECISION, master, MPI_COMM_BEAMS,ierr_mpi)
+      CALL MPI_BCAST(xn,mnmax,MPI_DOUBLE_PRECISION, master, MPI_COMM_BEAMS,ierr_mpi)
+      CALL MPI_BCAST(xm_nyq,mnmax_nyq,MPI_DOUBLE_PRECISION, master, MPI_COMM_BEAMS,ierr_mpi)
+      CALL MPI_BCAST(xn_nyq,mnmax_nyq,MPI_DOUBLE_PRECISION, master, MPI_COMM_BEAMS,ierr_mpi)
+      CALL MPI_BCAST(rmnc,ns*mnmax,MPI_DOUBLE_PRECISION, master, MPI_COMM_BEAMS,ierr_mpi)
+      CALL MPI_BCAST(zmns,ns*mnmax,MPI_DOUBLE_PRECISION, master, MPI_COMM_BEAMS,ierr_mpi)
+      CALL MPI_BCAST(bsupumnc,ns*mnmax_nyq,MPI_DOUBLE_PRECISION, master, MPI_COMM_BEAMS,ierr_mpi)
+      CALL MPI_BCAST(bsupvmnc,ns*mnmax_nyq,MPI_DOUBLE_PRECISION, master, MPI_COMM_BEAMS,ierr_mpi)
+      IF (lasym) THEN
+         CALL MPI_BCAST(rmns,ns*mnmax,MPI_DOUBLE_PRECISION, master, MPI_COMM_BEAMS,ierr_mpi)
+         CALL MPI_BCAST(zmnc,ns*mnmax,MPI_DOUBLE_PRECISION, master, MPI_COMM_BEAMS,ierr_mpi)
+         CALL MPI_BCAST(bsupumns,ns*mnmax_nyq,MPI_DOUBLE_PRECISION, master, MPI_COMM_BEAMS,ierr_mpi)
+         CALL MPI_BCAST(bsupvmns,ns*mnmax_nyq,MPI_DOUBLE_PRECISION, master, MPI_COMM_BEAMS,ierr_mpi)
+      END IF
+#endif
+
+      ! Write info to screen
       IF (lverb) THEN
          WRITE(6,'(A)')               '----- VMEC Information -----'
          WRITE(6,'(A,A)')             '   FILE: ',TRIM(id_string)
@@ -105,9 +140,9 @@
       IF (lplasma_only .and. .not.ldepo) THEN
          lvessel = .TRUE.  ! Do this so the other parts of the code know there is a vessel
          k = ns
-         CALL wall_load_mn(DBLE(rmnc(1:mnmax,k)),DBLE(zmns(1:mnmax,k)),DBLE(xm),-DBLE(xn),mnmax,120,120)
+         CALL wall_load_mn(DBLE(rmnc(1:mnmax,k)),DBLE(zmns(1:mnmax,k)),DBLE(xm),-DBLE(xn),mnmax,120,120,COMM=MPI_COMM_BEAMS)
          IF (lverb) CALL wall_info(6)
-         IF (mylocalid /= master) DEALLOCATE(vertex,face)
+         !IF (mylocalid /= master) DEALLOCATE(vertex,face)
       END IF
 
       ! Initialize Virtual Casing
@@ -178,13 +213,15 @@
                                          rmnc_temp,zmns_temp,nfp,&
                                          RMNS=rmns_temp, ZMNC=zmnc_temp,&
                                          BUMNC=bumnc_temp,BVMNC=bvmnc_temp,&
-                                         BUMNS=bumns_temp,BVMNS=bvmns_temp)
+                                         BUMNS=bumns_temp,BVMNS=bvmns_temp,&
+                                         COMM=MPI_COMM_BEAMS)
             DEALLOCATE(rmns_temp,zmnc_temp)
             DEALLOCATE(bumns_temp,bvmns_temp)
          ELSE
             CALL init_virtual_casing(mnmax_temp,nu,nv,xm_temp,xn_temp,&
                                          rmnc_temp,zmns_temp,nfp,&
-                                         BUMNC=bumnc_temp,BVMNC=bvmnc_temp)
+                                         BUMNC=bumnc_temp,BVMNC=bvmnc_temp,&
+                                         COMM=MPI_COMM_BEAMS)
          END IF
          DEALLOCATE(rmnc_temp,zmns_temp)
          DEALLOCATE(bumnc_temp,bvmnc_temp)
@@ -206,7 +243,7 @@
       myend = mystart + chunk - 1
 
       ! This section sets up the work so we can use ALLGATHERV
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
       IF (ALLOCATED(mnum)) DEALLOCATE(mnum)
       IF (ALLOCATED(moffsets)) DEALLOCATE(moffsets)
@@ -224,9 +261,16 @@
       mystart = moffsets(mylocalid+1)
       chunk  = mnum(mylocalid+1)
       myend   = mystart + chunk - 1
-!DEC$ ENDIF
+      DEALLOCATE(mnum)
+      DEALLOCATE(moffsets)
+#endif
 	
-      TE = 0; NE = 0; TI=0; S_ARR=1.5; U_ARR=0; POT_ARR=0
+      IF (mylocalid == mylocalmaster) THEN
+         TE = 0; NE = 0; TI=0; S_ARR=1.5; U_ARR=0; POT_ARR=0; ZEFF_ARR = 1;
+      END IF
+#if defined(MPI_OPT)
+      CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
+#endif
       DO s = mystart, myend
          i = MOD(s-1,nr)+1
          j = MOD(s-1,nr*nphi)
@@ -255,13 +299,14 @@
                B_R(i,j,k)   = br
                B_PHI(i,j,k) = bphi
                B_Z(i,j,k)   = bz
-               sflx = 1 ! Assume s=1 for lplasma_only
+               sflx = 1.0 ! Assume s=1 for lplasma_only
             END IF
             IF (sflx <= 1) THEN
                IF (nte > 0) CALL EZspline_interp(TE_spl_s,sflx,TE(i,j,k),ier)
                IF (nne > 0) CALL EZspline_interp(NE_spl_s,sflx,NE(i,j,k),ier)
                IF (nti > 0) CALL EZspline_interp(TI_spl_s,sflx,TI(i,j,k),ier)
                IF (npot > 0) CALL EZspline_interp(POT_spl_s,sflx,POT_ARR(i,j,k),ier)
+               IF (nzeff > 0) CALL EZspline_interp(ZEFF_spl_s,sflx,ZEFF_ARR(i,j,k),ier)
             END IF
          ELSE IF (lplasma_only) THEN
             B_R(i,j,k)   = 0
@@ -294,16 +339,30 @@
             !CALL FLUSH(6)
             !stop 'ERROR in GetBcyl'
          END IF
-         IF (lverb .and. (MOD(s,nr) == 0)) THEN
-            CALL backspace_out(6,6)
-            WRITE(6,'(A,I3,A)',ADVANCE='no') '[',INT((100.*s)/(myend-mystart+1)),']%'
-            CALL FLUSH(6)
+         IF (MOD(s,nr) == 0) THEN
+            IF (lverb) THEN
+               CALL backspace_out(6,6)
+               WRITE(6,'(A,I3,A)',ADVANCE='no') '[',INT((100.*s)/(myend-mystart+1)),']%'
+               CALL FLUSH(6)
+            END IF
          END IF
       END DO
       
+#if defined(MPI_OPT)
+      CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
+#endif
+      
       ! Free variables
-      IF (.not. lplasma_only) CALL free_virtual_casing
-      CALL read_wout_deallocate
+      IF (.not. lplasma_only) CALL free_virtual_casing(MPI_COMM_BEAMS)
+      IF (myworkid == master) THEN
+         CALL read_wout_deallocate
+      ELSE
+         lwout_opened = .FALSE.
+         DEALLOCATE(vp,phi)
+         DEALLOCATE(xm,xn,xm_nyq,xn_nyq)
+         DEALLOCATE(rmnc,zmns,bsupumnc,bsupvmnc)
+         IF (lasym) DEALLOCATE(rmns,zmnc,bsupumns,bsupvmns)
+      END IF
       
       IF (lverb) THEN
          CALL backspace_out(6,36)
@@ -314,93 +373,16 @@
          WRITE(6,*)
          CALL FLUSH(6)
       END IF    
-      
-!DEC$ IF DEFINED (MPI_OPT)
+
+      ! Fix ZEFF
+      IF (mylocalid == mylocalmaster) WHERE(ZEFF_ARR < 1) ZEFF_ARR = 1
+
+#if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
-      CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
-                        B_R,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
-                        MPI_COMM_LOCAL,ierr_mpi)
-      CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
-                        B_PHI,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
-                        MPI_COMM_LOCAL,ierr_mpi)
-      CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
-                        B_Z,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
-                        MPI_COMM_LOCAL,ierr_mpi)
-      CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
-                        TE,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
-                        MPI_COMM_LOCAL,ierr_mpi)
-      CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
-                        NE,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
-                        MPI_COMM_LOCAL,ierr_mpi)
-      CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
-                        TI,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
-                        MPI_COMM_LOCAL,ierr_mpi)
-      CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
-                        S_ARR,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
-                        MPI_COMM_LOCAL,ierr_mpi)
-      CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
-                        U_ARR,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
-                        MPI_COMM_LOCAL,ierr_mpi)
-      CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
-                        POT_ARR,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
-                        MPI_COMM_LOCAL,ierr_mpi)
-      DEALLOCATE(mnum)
-      DEALLOCATE(moffsets)
-
-      ! Smooth edge data
-!      IF (lplasma_only .and. (mylocalid == mylocalmaster)) THEN
-!         DO j = 1, nphi
-!            DO i = 2, nr-1
-!               DO k = 2, nz-1
-!                  IF ((S_ARR(i,j,k+1) .lt. 1.5)) THEN
-!                     B_R(i,j,k) = B_R(i,j,k+1)
-!                     B_PHI(i,j,k) = B_PHI(i,j,k+1)
-!                     B_Z(i,j,k) = B_Z(i,j,k+1)
-!                     EXIT
-!                  END IF
-!               END DO
-!               DO k = nz-1, 2,-1
-!                  IF ((S_ARR(i,j,k-1) .lt. 1.5)) THEN
-!                     B_R(i,j,k) = B_R(i,j,k-1)
-!                     B_PHI(i,j,k) = B_PHI(i,j,k-1)
-!                     B_Z(i,j,k) = B_Z(i,j,k-1)
-!                     EXIT
-!                  END IF
-!               END DO
-!            END DO
-!            DO k = 2,nz-1
-!               DO i = 2, nr-1
-!                  IF ((S_ARR(i+1,j,k) .lt. 1.5)) THEN
-!                     B_R(i,j,k) = B_R(i+1,j,k)
-!                     B_PHI(i,j,k) = B_PHI(i+1,j,k)
-!                     B_Z(i,j,k) = B_Z(i+1,j,k)
-!                     EXIT
-!                  END IF
-!               END DO
-!               DO i = nr-1, 2, -1
-!                  IF ((S_ARR(i-1,j,k) .lt. 1.5)) THEN
-!                     B_R(i,j,k) = B_R(i-1,j,k)
-!                     B_PHI(i,j,k) = B_PHI(i-1,j,k)
-!                     B_Z(i,j,k) = B_Z(i-1,j,k)
-!                     EXIT
-!                  END IF
-!               END DO
-!            END DO
-!         END DO
-!      END IF   
-      
-      ! Broadcast the updated magnetic field to other members
-!      IF (lplasma_only) THEN
-!         CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
-!         CALL MPI_BCAST(B_R,nr*nphi*nz,MPI_DOUBLE_PRECISION,mylocalmaster,MPI_COMM_LOCAL,ierr_mpi)
-!         CALL MPI_BCAST(B_PHI,nr*nphi*nz,MPI_DOUBLE_PRECISION,mylocalmaster,MPI_COMM_LOCAL,ierr_mpi)
-!         CALL MPI_BCAST(B_Z,nr*nphi*nz,MPI_DOUBLE_PRECISION,mylocalmaster,MPI_COMM_LOCAL,ierr_mpi)
-!      END IF
-
       CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)
       CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
       IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'beams3d_init_vmec',ierr_mpi)
-!DEC$ ENDIF
+#endif
 
       RETURN
 !-----------------------------------------------------------------------

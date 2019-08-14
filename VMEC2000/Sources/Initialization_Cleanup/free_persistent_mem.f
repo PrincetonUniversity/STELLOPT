@@ -10,7 +10,7 @@ C-----------------------------------------------
       INTEGER :: istat1 = 0, istat2 = 0
 c-----------------------------------------------
       IF (ALLOCATED(xc)) DEALLOCATE (xc, scalxc, stat=istat1)
-      CALL free_mgrid (istat2)
+      !CALL free_mgrid (istat2) ! moved to fileout so all call it
       IF (lrecon) CALL free_mem_recon
 
       IF (istat1.ne.0 .or. istat2.ne.0) THEN

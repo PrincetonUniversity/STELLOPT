@@ -530,10 +530,8 @@
       END SUBROUTINE write_vars
 
       SUBROUTINE bcast_vars(loc_master,loc_comm,ierr)
+      USE mpi_inc
       IMPLICIT NONE
-!DEC$ IF DEFINED (MPI_OPT)
-      INCLUDE 'mpif.h' 
-!DEC$ ENDIF        
       INTEGER :: loc_master, loc_comm, ierr
       INTEGER :: n_temp
       ierr = 0

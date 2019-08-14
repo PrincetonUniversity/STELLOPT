@@ -15,8 +15,9 @@
 #            Define Compiler Flags
 #######################################################################
   FLAGS_R = -I$(MKL_HOME)/include -O2 -fp-model strict -ip \
-            -assume noold_unit_star 
-  FLAGS_D = -g -I$(MKL_HOME)/include
+            -assume noold_unit_star -g -traceback
+  FLAGS_D = -I$(MKL_HOME)/include -fp-model strict -ip \
+            -assume noold_unit_star -g -traceback
   LIBS    = -Wl,-rpath,$(MKL_HOME)/lib/intel64 \
             -L$(MKL_HOME)/lib/intel64 -lmkl_scalapack_lp64 \
             -lmkl_intel_lp64 -lmkl_core -lmkl_sequential \
@@ -31,10 +32,10 @@
   MPI_COMPILE_C = mpiifort 
   MPI_LINK = mpiifort
   MPI_RUN = srun
-  MPI_RUN_OPTS = --nodes=1 --ntasks-per-node=32 --time=0:30:00
-  MPI_RUN_SM   = --nodes=1 --ntasks-per-node=32 --time=0:30:00
-  MPI_RUN_MD   = --nodes=1 --ntasks-per-node=32 --time=0:30:00
-  MPI_RUN_LG   = --nodes=8 --ntasks-per-node=32 --time=2:00:00
+  MPI_RUN_OPTS = --nodes=1 --ntasks-per-node=32 --time=0:30:00 -p express
+  MPI_RUN_OPTS_SM   = --nodes=1 --ntasks-per-node=32 --time=0:30:00 -p express
+  MPI_RUN_OPTS_MD   = --nodes=8 --ntasks-per-node=32 --time=0:30:00 -p express
+  MPI_RUN_OPTS_LG   = --nodes=32 --ntasks-per-node=32 --time=0:30:00 -p express
 #######################################################################
 #            NAG Options
 #######################################################################
@@ -257,9 +258,10 @@ else ifeq ($(MAKECMDGOALS),test_stellopt_travis)
 else
   LGENE = F
   LCOILOPT = F
+  LSFINCS = F
+  LREGCOIL= F
   LTERPSICHORE = F
   LTRAVIS = F
-  LSFINCS = F
 endif
 ifeq ($(MAKECMDGOALS),xanimec)
   PRECOMP += -D_ANIMEC
