@@ -15,8 +15,9 @@
 #            Define Compiler Flags
 #######################################################################
   FLAGS_R = -I$(MKL_HOME)/include -O2 -fp-model strict -ip \
+            -assume noold_unit_star
+  FLAGS_D = -I$(MKL_HOME)/include -O2 -fp-model strict -ip \
             -assume noold_unit_star -g -traceback
-  FLAGS_D = -g -I$(MKL_HOME)/include
   LIBS    = -Wl,-rpath,$(MKL_HOME)/lib/intel64 \
             -L$(MKL_HOME)/lib/intel64 -lmkl_scalapack_lp64 \
             -lmkl_intel_lp64 -lmkl_core -lmkl_sequential \
@@ -126,10 +127,10 @@
 #######################################################################
   LTRAVIS= T
   TRAVIS_DIR = $(TRAVIS_PATH)
-  LIB_TRAVIS = libtravis64_sopt_dbg.a
+  LIB_TRAVIS = libtravis64_sopt.a
   LIB_MCONF  = libmconf64.a
   TRAVIS_LIB = $(TRAVIS_DIR)/lib/$(LIB_TRAVIS) \
-               $(TRAVIS_DIR)/magconf/lib/$(LIB_MCONF) -lstdc++
+               $(TRAVIS_DIR)/mag_conf/lib/$(LIB_MCONF) -lstdc++
 
 #######################################################################
 #            SFINCS Options
