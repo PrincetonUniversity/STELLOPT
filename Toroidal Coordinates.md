@@ -137,11 +137,15 @@ R}{\partial v}\right)\cos\left(\phi\right)-A^vR\frac{\partial
 \$$ A_y=\left(A^s\frac{\partial R}{\partial s}+A^u\frac{\partial
 R}{\partial u}+A^v\frac{\partial R}{\partial
 v}\right)\sin\left(\phi\right)+A^vR\frac{\partial \phi}{\partial
-v}\cos\left(\phi\right), $$ and $$
-A_z=A^s\frac{\partial Z}{\partial s}+A^u\frac{\partial
-Z}{\partial u}+A^v\frac{\partial Z}{\partial v}. $$ The
-components in cylindrical coordinates may also be written in terms of
-the contravariant components: $$ A_\rho=A^s\frac{\partial
+v}\cos\left(\phi\right), $$
+
+\$$ A_z=A^s\frac{\partial Z}{\partial s}+A^u\frac{\partial
+Z}{\partial u}+A^v\frac{\partial Z}{\partial v}. $$ 
+
+The components in cylindrical coordinates may also be written in terms of
+the contravariant components: 
+
+\$$ A_\rho=A^s\frac{\partial
 R}{\partial s}+A^u\frac{\partial R}{\partial
 u}+A^v\frac{\partial R}{\partial v}, $$
 
