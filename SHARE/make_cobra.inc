@@ -97,7 +97,7 @@
   LIB_GENE = libgene.a
   LIB_FUTILS = libfutils.a
   GENE_INC = -I$(GENE_DIR) \
-             -I$(GENE_PATH)/external/cobra/futils-gene-mod/src
+             -I$(FUTILS_DIR)
   GENE_LIB = -L$(FFTW_HOME)/lib -lfftw3 -lfftw3f -Xlinker \
              -L$(SLEPC_HOME)/lib -lslepc \
              -L$(PETSC_HOME)/lib -lpetsc \
