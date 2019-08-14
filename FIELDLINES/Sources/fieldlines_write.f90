@@ -27,15 +27,13 @@
                                     lafield_only, lemc3, lmodb, &
                                     MPI_BARRIER_ERR, iota0
       USE fieldlines_write_par
+      USE mpi_inc
 !-----------------------------------------------------------------------
 !     Local Variables
 !          ier          Error Flag
 !          iunit        File ID
 !-----------------------------------------------------------------------
       IMPLICIT NONE
-!DEC$ IF DEFINED (MPI_OPT)
-      INCLUDE 'mpif.h'
-!DEC$ ENDIF
       INTEGER :: ier, iunit, mystart
 !-----------------------------------------------------------------------
 !     Begin Subroutine
@@ -83,17 +81,17 @@
             IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'npoinc',ier)
          END IF
          ! Wall Data
-         IF (ALLOCATED(vertex)) THEN
+         IF (ASSOCIATED(vertex)) THEN
             CALL write_var_hdf5(fid,'wall_vertex',nvertex,3,ier,DBLVAR=vertex,ATT='Wall Verticies (x,y,z) [m]',ATT_NAME='description')
             IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'wall_vertex',ier)
             DEALLOCATE(vertex)
          END IF
-         IF (ALLOCATED(face)) THEN
+         IF (ASSOCIATED(face)) THEN
             CALL write_var_hdf5(fid,'wall_faces',nface,3,ier,INTVAR=face,ATT='Wall Faces',ATT_NAME='description')
             IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'wall_faces',ier)
             DEALLOCATE(face)
          END IF
-         IF (ALLOCATED(ihit_array)) THEN
+         IF (ASSOCIATED(ihit_array)) THEN
             CALL write_var_hdf5(fid,'wall_strikes',nface,ier,INTVAR=ihit_array,&
                                       ATT='Wall Strikes',ATT_NAME='description')
             IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'wall_strikes',ier)

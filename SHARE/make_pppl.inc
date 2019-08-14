@@ -40,7 +40,10 @@
   MPI_COMPILE_C = mpicc
   MPI_LINK = mpicc -shared -pthread -Wl,--no-undefined -Wl,-export-dynamic
   MPI_RUN = srun
-  MPI_RUN_OPTS = -n 64 -p dawson -t 5:00:00 -J STELLOPT_BENCH
+  MPI_RUN_OPTS = -N 2 -n 64 -p general -t 2:00:00 -J STELLOPT_BENCH
+  MPI_RUN_OPTS_SM = -N 2 -n 64 -p general -t 2:00:00 -J STELLOPT_BENCH
+  MPI_RUN_OPTS_MD = -N 4 -n 128 -p general -t 2:00:00 -J STELLOPT_BENCH
+  MPI_RUN_OPTS_LG = -N 8 -n 256 -p general -t 2:00:00 -J STELLOPT_BENCH
 
 #######################################################################
 #            NAG Options
@@ -137,7 +140,7 @@
 #######################################################################
 #            TRAVIS Options
 #######################################################################
-  LTRAVIS= T
+  LTRAVIS= F
   TRAVIS_DIR = $(TRAVIS_PATH)
   LIB_TRAVIS = libtravis64_sopt.a
   LIB_MCONF  = libmconf64.a
@@ -256,13 +259,21 @@ ifeq ($(MAKECMDGOALS),xstelloptv2)
     NEO_DIR = 
     LIB_NEO = 
   endif
+else ifeq ($(MAKECMDGOALS),help)
+else ifeq ($(MAKECMDGOALS),test_stellopt)
+else ifeq ($(MAKECMDGOALS),test_stellopt_coilopt)
+else ifeq ($(MAKECMDGOALS),test_stellopt_gene)
+else ifeq ($(MAKECMDGOALS),test_stellopt_regcoil)
+else ifeq ($(MAKECMDGOALS),test_stellopt_sfincs)
+else ifeq ($(MAKECMDGOALS),test_stellopt_terpsichore)
+else ifeq ($(MAKECMDGOALS),test_stellopt_travis)
 else
   LGENE = F
   LCOILOPT = F
+  LSFINCS = F
+  LREGCOIL= F
   LTERPSICHORE = F
   LTRAVIS = F
-  LREGCOIL= F
-  LSFINCS = F
 #  LYOURNEWCODE = F
 endif
 ifeq ($(MAKECMDGOALS),xanimec)

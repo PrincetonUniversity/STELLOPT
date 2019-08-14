@@ -14,6 +14,7 @@
       USE hdf5
       USE fieldlines_runtime, ONLY: id_string, handle_err, &
                                  MPI_BARRIER_ERR
+      USE mpi_inc
 !-----------------------------------------------------------------------
 !     Input Variables
 !          var_name     Name of variable
@@ -44,7 +45,6 @@
 !          mspace_id    Memory identifier
 !          dataspace    Data identifier
 !-----------------------------------------------------------------------
-      INCLUDE 'mpif.h'
       LOGICAL :: livar, lfvar, ldvar
       INTEGER :: ier, info, rank, i
       INTEGER(HID_T) :: file_id, fspace_id, dset_id, mspace_id, &
@@ -208,6 +208,7 @@
       USE hdf5
       USE fieldlines_runtime, ONLY: id_string, handle_err, &
                                  MPI_BARRIER_ERR
+      USE mpi_inc
 !-----------------------------------------------------------------------
 !     Input Variables
 !          var_name     Name of variable
@@ -238,7 +239,6 @@
 !          mspace_id    Memory identifier
 !          dataspace    Data identifier
 !-----------------------------------------------------------------------
-      INCLUDE 'mpif.h'
       LOGICAL :: livar, lfvar, ldvar
       INTEGER :: ier, info, rank, i
       INTEGER(HID_T) :: file_id, fspace_id, dset_id, mspace_id, &

@@ -16,7 +16,8 @@
                                  phimax, B_R, B_Z, B_PHI
       USE vmec_input,  ONLY: curtor, raxis_cc, raxis_cs, zaxis_cc, &
                              zaxis_cs, ntor, nfp, read_indata_namelist
-      USE mpi_params                       
+      USE mpi_params
+      USE mpi_inc
 !-----------------------------------------------------------------------
 !     Local Variables
 !          ier            Error Flag
@@ -24,7 +25,6 @@
 !-----------------------------------------------------------------------
       IMPLICIT NONE
 !DEC$ IF DEFINED (MPI_OPT)
-      INCLUDE 'mpif.h'   ! MPI - Don't need because of fieldlines_runtime
       INTEGER :: sender
       INTEGER :: status(MPI_STATUS_SIZE)
       REAL(rprec), ALLOCATABLE :: buffer_mast(:,:,:),buffer_slav(:,:,:)

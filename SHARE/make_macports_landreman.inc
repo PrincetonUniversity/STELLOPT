@@ -44,6 +44,11 @@
                      -ffree-line-length-none -ffixed-line-length-none
   MPI_COMPILE_C = gcc -shared -Wl,-no_compact_unwind
   MPI_LINK = /opt/local/bin/mpif90
+  MPI_RUN = mpiexec
+  MPI_RUN_OPTS = -np 4
+#  MPI_RUN_OPTS_SM = -np 16
+#  MPI_RUN_OPTS_MD = -np 64
+#  MPI_RUN_OPTS_LG = -np 256
 
   # For GCC6
   #MPI_COMPILE = mpif90
@@ -264,12 +269,21 @@ ifeq ($(MAKECMDGOALS),xstelloptv2)
 	$(JINV_DIR)/$(LOCTYPE)/$(LIB_JINV) \
 	$(MGRID_DIR)/$(LOCTYPE)/$(LIB_MGRID) \
 	$(NEO_DIR)/$(LOCTYPE)/$(LIB_NEO)
+else ifeq ($(MAKECMDGOALS),help)
+else ifeq ($(MAKECMDGOALS),test_stellopt)
+else ifeq ($(MAKECMDGOALS),test_stellopt_coilopt)
+else ifeq ($(MAKECMDGOALS),test_stellopt_gene)
+else ifeq ($(MAKECMDGOALS),test_stellopt_regcoil)
+else ifeq ($(MAKECMDGOALS),test_stellopt_sfincs)
+else ifeq ($(MAKECMDGOALS),test_stellopt_terpsichore)
+else ifeq ($(MAKECMDGOALS),test_stellopt_travis)
 else
   LGENE = F
   LCOILOPT = F
+  LSFINCS = F
+  LREGCOIL= F
   LTERPSICHORE = F
   LTRAVIS = F
-  LSFINCS = F
 endif
 ifeq ($(MAKECMDGOALS),xanimec)
   PRECOMP += -D_ANIMEC

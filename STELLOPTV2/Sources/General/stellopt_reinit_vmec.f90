@@ -19,11 +19,8 @@
       USE mgrid_mod, ONLY: nextcur, curlabel, nfper0, read_mgrid, free_mgrid,&
                            mgrid_path_old
       USE init_geometry
+      USE mpi_params, ONLY: MPI_COMM_MYWORLD     
       IMPLICIT NONE
-!DEC$ IF DEFINED (MPI_OPT)
-!      Need if linking to serial VMEC
-!      INCLUDE 'mpif.h'
-!DEC$ ENDIF  
 !-----------------------------------------------------------------------
 !     Local Variables
 !        ier         Error flag
@@ -44,7 +41,7 @@
       IF (lfreeb) THEN
          CALL free_mgrid(iflag)
          mgrid_path_old = " "
-         CALL read_mgrid(mgrid_file,extcur,nzeta,nfp,.false.,iflag,MPI_COMM_SELF)
+         CALL read_mgrid(mgrid_file,extcur,nzeta,nfp,.false.,iflag,MPI_COMM_MYWORLD)
       END IF
 !     PARSE NS_ARRAY
       nsin = MAX (3, nsin)

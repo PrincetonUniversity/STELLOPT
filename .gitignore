@@ -7,8 +7,10 @@
 *.so
 *.zip
 .DS*
+*.dSYM
 ._*
 __*
+make.inc
 CMakeLists.txt
 */Release/*.f90
 */Release/*.f

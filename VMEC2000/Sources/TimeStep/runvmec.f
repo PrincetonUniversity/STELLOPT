@@ -336,6 +336,9 @@ C-----------------------------------------------
          END IF
 
          IF (imatch_phiedge .eq. 3) imovephi = 1
+
+         CALL Finalize_bst(.FALSE.) ! SAL 080119
+
          IF (ier_flag .ne. norm_term_flag       .and.
      &       ier_flag .ne. successful_term_flag .and.
      &       ier_flag .ne. more_iter_flag) EXIT
@@ -356,7 +359,6 @@ C-----------------------------------------------
             EXIT
          END IF
 
-         CALL Finalize_bst(.FALSE.)
          CALL second0(gridtoff)
          grid_time(grid_id) = gridtoff - gridton
          IF (lfreeb) THEN
