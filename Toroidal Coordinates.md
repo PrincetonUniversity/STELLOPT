@@ -33,8 +33,11 @@ total toroidal angle ($$\phi$$). The two are related by the periodicity of
 the toroidal domain $$ \zeta=N_{FP}\phi. $$
 Finally, it is often more convenient to write the kernel of the
 trigonometric functions in terms of normalized values instead of
-radians, $$ u=\frac{\theta}{2\pi} $$ $$
-v=\frac{\zeta}{2\pi} $$.
+radians, 
+
+\$$ u=\frac{\theta}{2\pi} $$
+
+\$$v=\frac{\zeta}{2\pi}. $$
 
 The choice of trigonometric function for a given quantity is determined
 by the symmetry of the problem. For systems with stellarator symmetry
@@ -42,10 +45,13 @@ by the symmetry of the problem. For systems with stellarator symmetry
 a even symmetry (cosine) while the vertical coordinate (Z) has a odd
 symmetry (sine). In general, toroidal coordinates do not require this
 symmetry and quantities are functions of a series of both odd and even
-coefficients $$ f\left(r,\theta,\zeta\right)=\sum
+coefficients
+
+\$$ f\left(r,\theta,\zeta\right)=\sum
 f^C_{mn}\left(r\right) cos\left(m\theta+n\zeta\right)+\sum
-f^S_{mn}\left(r\right) sin\left(m\theta+n\zeta\right).
-$$ Here the superscripts denote that the coefficients are
+f^S_{mn}\left(r\right) sin\left(m\theta+n\zeta\right). $$
+
+Here the superscripts denote that the coefficients are
 different values.
 
 There are three choices of kernel. Although they are simply a choice of
@@ -96,9 +102,12 @@ Thesecond term in each equation can be dropped if stellarator symmetry is
 assumed. Vectors may be represented in terms of their contravariant
 (sup, up, top) components or covariant (sub, dn, bottom) components
 through the relation 
-$$ \vec{A}=A^s\hat{e}_s+A^u\hat{e}_u+A^v\hat{e}_v=A_s\hat{e}^s+A_u\hat{e}^u+A_v\hat{e}^v.$$ 
+
+\$$ \vec{A}=A^s\hat{e}_s+A^u\hat{e}_u+A^v\hat{e}_v=A_s\hat{e}^s+A_u\hat{e}^u+A_v\hat{e}^v.$$ 
+
 The covariant and contravariant basis vectors may be written 
-$$ \hat{e}_k=\frac{\partial \vec{x}}{\partial x_k} $$ and $$ \hat{e}^k=\nabla x_k.$$
+
+\$$ \hat{e}_k=\frac{\partial \vec{x}}{\partial x_k} $$ and $$ \hat{e}^k=\nabla x_k.$$
 
 ### Contravariant Vector Components
 
@@ -156,12 +165,17 @@ Z}{\partial v}. $$
 
 It is important to note that when working
 with different coordinate systems a chain-rule can be used to convert
-derivatives $$ \frac{\partial Z}{\partial
-v}=\frac{\partial Z}{\partial v_k}\frac{\partial v_k}{\partial
-v_l} $$.The surface normal vector (N, which does not have
+derivatives 
+
+\$$ \frac{\partial Z}{\partial v}=\frac{\partial Z}{\partial v_k}\frac{\partial v_k}{\partial v_l}. $$
+
+The surface normal vector (N, which does not have
 unit length) can be written as the cross product of the covariant basis
-vectors $$ \vec{N}=\frac{\partial \vec{x}}{\partial u}\times\frac{\partial \vec{x}}{\partial v}=\hat{e}_u\times\hat{e}_v $$ allowing the cartesian
-surface normal components to be written 
+vectors 
+
+\$$ \vec{N}=\frac{\partial \vec{x}}{\partial u}\times\frac{\partial \vec{x}}{\partial v}=\hat{e}_u\times\hat{e}_v $$
+
+allowing the cartesian surface normal components to be written 
 
 \$$ N_x=-\left(\frac{\partial R}{\partial u}\frac{\partial
 Z}{\partial v}-\frac{\partial R}{\partial v}\frac{\partial
@@ -180,4 +194,6 @@ u}. $$
 
 This vector integrated can be treated as the product of
 the surface normal vector (unit length) and the differential surface
-element $$ \vec{N}=\hat{n}\cdot dA. $$
+element 
+
+\$$ \vec{N}=\hat{n}\cdot dA. $$
