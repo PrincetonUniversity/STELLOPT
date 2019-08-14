@@ -29,13 +29,13 @@ or
 
 \$$ f\left(r,\theta,\zeta\right)=\sum f_{mn}\left(r\right) sin\left(m\theta+n\zeta\right). $$
 
-Here the angle per field period ($$zeta$$) has been utilized in place of the
-total toroidal angle ($$phi$$). The two are related by the periodicity of
+Here the angle per field period ($$\zeta$$) has been utilized in place of the
+total toroidal angle ($$\phi$$). The two are related by the periodicity of
 the toroidal domain $$ \zeta=N_{FP}\phi. $$
 Finally, it is often more convenient to write the kernel of the
 trigonometric functions in terms of normalized values instead of
-radians. $$ u=\frac{\theta}{2\pi} $$ $$
-v=\frac{\zeta}{2\pi} $$
+radians, $$ u=\frac{\theta}{2\pi} $$ $$
+v=\frac{\zeta}{2\pi} $$.
 
 The choice of trigonometric function for a given quantity is determined
 by the symmetry of the problem. For systems with stellarator symmetry
@@ -64,8 +64,8 @@ requires that an array be flipped about the toroidal mode index (n=0),
 thus n=-n and -n=n (NESCOIL TO VMEC is the same conversion). The VMEC
 convention is just the negative kernel of the PIES convention, so only
 the odd (sine) coefficients need be multiplied by -1, remember:
-$$ cos\left(-x)\right)=cos\left(x\right) $$
-$$ sin\left(-x)\right)=-sin\left(x\right) $$
+$$ \cos\left(-x\right)=cos\left(x\right) $$
+$$ \sin\left(-x\right)=-sin\left(x\right) $$
 Thus conversion from one convention is simply a matter of flipping
 arrays about the toroidal mode index (n) and negating odd coefficients
 (sin).
@@ -98,9 +98,8 @@ assumed. Vectors may be represented in terms of their contravariant
 (sup, up, top) components or covariant (sub, dn, bottom) components
 through the relation 
 $$ \vec{A}=A^s\hat{e}_s+A^u\hat{e}_u+A^v\hat{e}_v=A_s\hat{e}^s+A_u\hat{e}^u+A_v\hat{e}^v.$$ 
-The covariant and contravariant basis vectors may be
-written $$ \hat{e}_k=\frac{\partial \vec{x}}{\partial
-x_k} $$ and $$ \hat{e}^k=\nabla x_k.$$
+The covariant and contravariant basis vectors may be written 
+$$ \hat{e}_k=\frac{\partial \vec{x}}{\partial x_k} $$ and $$ \hat{e}^k=\nabla x_k.$$
 
 ### Contravariant Vector Components
 
@@ -112,29 +111,30 @@ R}{\partial s}cos\left(\phi\right)\hat{x}+\frac{\partial
 R}{\partial s}sin\left(\phi\right)\hat{y}+\frac{\partial
 Z}{\partial s}\hat{z}, $$
 
-\$$
-\hat{e}_u=\frac{\partial R}{\partial
+\$$ \hat{e}_u=\frac{\partial R}{\partial
 u}cos\left(\phi\right)\hat{x}+\frac{\partial R}{\partial
 u}sin\left(\phi\right)\hat{y}+\frac{\partial Z}{\partial
 u}\hat{z}, $$
 
-\$$
-\hat{e}_v=\left(\frac{\partial R}{\partial
+\$$ \hat{e}_v=\left(\frac{\partial R}{\partial
 v}cos\left(\phi\right)-R\frac{\partial \phi}{\partial
 v}sin\left(\phi\right)\right)\hat{x}+\left(\frac{\partial
 R}{\partial v}sin\left(\phi\right)+R\frac{\partial
 \phi}{\partial
 v}cos\left(\phi\right)\right)\hat{y}+\frac{\partial Z}{\partial
-v}\hat{z}. $$ Here the derivative of phi with respect to the
+v}\hat{z}. $$ 
+
+Here the derivative of phi with respect to the
 normalized toroidal angle is kept general. This allows the cartesian
 components of a vector to be written in terms of the contravariant
-components: $$ A_x=\left(A^s\frac{\partial R}{\partial
+components: 
+
+\$$ A_x=\left(A^s\frac{\partial R}{\partial
 s}+A^u\frac{\partial R}{\partial u}+A^v\frac{\partial
 R}{\partial v}\right)cos\left(\phi\right)-A^vR\frac{\partial
 \phi}{\partial v}sin\left(\phi\right), $$
 
-\$$
-A_y=\left(A^s\frac{\partial R}{\partial s}+A^u\frac{\partial
+\$$ A_y=\left(A^s\frac{\partial R}{\partial s}+A^u\frac{\partial
 R}{\partial u}+A^v\frac{\partial R}{\partial
 v}\right)sin\left(\phi\right)+A^vR\frac{\partial \phi}{\partial
 v}cos\left(\phi\right), $$ and $$
@@ -145,35 +145,34 @@ the contravariant components: $$ A_\rho=A^s\frac{\partial
 R}{\partial s}+A^u\frac{\partial R}{\partial
 u}+A^v\frac{\partial R}{\partial v}, $$
 
-$$ A_\phi=A^vR\frac{\partial \phi}{\partial v}, $$ and
-$$ A_z=A^s\frac{\partial Z}{\partial
+\$$ A_\phi=A^vR\frac{\partial \phi}{\partial v}, $$
+
+\$$ A_z=A^s\frac{\partial Z}{\partial
 s}+A^u\frac{\partial Z}{\partial u}+A^v\frac{\partial
-Z}{\partial v}. $$ It is important to note that when working
+Z}{\partial v}. $$ 
+
+It is important to note that when working
 with different coordinate systems a chain-rule can be used to convert
 derivatives $$ \frac{\partial Z}{\partial
 v}=\frac{\partial Z}{\partial v_k}\frac{\partial v_k}{\partial
-v_l}
-$$ The surface normal vector (N, which does not have
+v_l} $$.The surface normal vector (N, which does not have
 unit length) can be written as the cross product of the covariant basis
-vectors $$ \vec{N}=\frac{\partial \vec{x}}{\partial
-u}\times\frac{\partial \vec{x}}{\partial
-v}=\hat{e}_u\times\hat{e}_v $$ allowing the cartesian
-surface normal components to be written $$
-N_x=-\left(\frac{\partial R}{\partial u}\frac{\partial
+vectors $$ \vec{N}=\frac{\partial \vec{x}}{\partial u}\times\frac{\partial \vec{x}}{\partial v}=\hat{e}_u\times\hat{e}_v $$ allowing the cartesian
+surface normal components to be written 
+
+\$$ N_x=-\left(\frac{\partial R}{\partial u}\frac{\partial
 Z}{\partial v}-\frac{\partial R}{\partial v}\frac{\partial
 Z}{\partial u}\right)sin\left(\phi\right)+R\frac{\partial
 \phi}{\partial v}\frac{\partial Z}{\partial
 u}cos\left(\phi\right) $$
 
-\$$
-N_y=\left(\frac{\partial R}{\partial u}\frac{\partial
+\$$ N_y=\left(\frac{\partial R}{\partial u}\frac{\partial
 Z}{\partial v}-\frac{\partial R}{\partial v}\frac{\partial
 Z}{\partial u}\right)cos\left(\phi\right)+R\frac{\partial
 \phi}{\partial v}\frac{\partial Z}{\partial
 u}sin\left(\phi\right) $$
 
-\$$
-N_z=-R\frac{\partial \phi}{\partial v}\frac{\partial R}{\partial
+\$$ N_z=-R\frac{\partial \phi}{\partial v}\frac{\partial R}{\partial
 u}. $$ This vector integrated can be treated as the product of
 the surface normal vector (unit length) and the differential surface
 element $$ \vec{N}=\hat{n}\cdot dA. $$
