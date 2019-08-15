@@ -65,9 +65,9 @@ endif
 ifdef VMECTOOLS_DIR
 	@rm $(VMECTOOLS_DIR)/$(LIB_VMECTOOLS)
 endif
-ifdef PTSM3D_DIR
-	@rm $(PTSM3D_DIR)/$(LIB_PTSM3D)
-endif
+#ifdef PTSM3D_DIR
+#	@rm $(PTSM3D_DIR)/$(LIB_PTSM3D)
+#endif
 #Compile object files defined in OBJLIST.
 .f.o :
 	@if grep -q '^!DEC\$$' $<; \

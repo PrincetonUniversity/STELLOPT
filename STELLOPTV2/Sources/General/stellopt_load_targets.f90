@@ -231,9 +231,6 @@
       ! TXPORT
       IF (ANY(sigma_txport < bigno)) &
          CALL chisq_txport(target_txport, sigma_txport, ncnt,iflag)
-      ! PTSM3D using gs2 coordinates
-      IF (sigma_gs2_ptsm3d < bigno) &
-         CALL chisq_gs2_ptsm3d(target_gs2_ptsm3d, sigma_gs2_ptsm3d, ncnt, iflag)
       ! Orbit
       IF (ANY(sigma_orbit < bigno)) &
          CALL chisq_orbit(target_orbit, sigma_orbit, ncnt,iflag)

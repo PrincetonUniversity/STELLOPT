@@ -28,7 +28,6 @@ chisq_jstar.o \
 chisq_phiedge.o \
 chisq_resjac.o \
 chisq_txport.o \
-chisq_gs2_ptsm3d.o \
 chisq_ptsm3d.o \
 chisq_betator.o \
 chisq_bprobes.o \

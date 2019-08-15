@@ -414,11 +414,6 @@ chisq_curvature_p2.o : \
       stellopt_targets.o \
       $(LIB_DIR)/Release/read_wout_mod.o
 
-chisq_gs2_ptsm3d.o : \
-      stellopt_runtime.o \
-      stellopt_targets.o \
-      $(LIB_DIR)/Release/vmec2gs2.o 
-      
 chisq_gamma_c.o : \
       stellopt_runtime.o \
       stellopt_targets.o \
@@ -480,8 +475,7 @@ stellopt_ptsm3d.o : \
 	equil_vals.o \
 	equil_utils.o \
 	$(BOOZ_DIR)/Release/booz_persistent.o \
-	$(LIB_DIR)/Release/read_boozer_mod.o \
-    $(LIB_DIR)/Release/vmec2gs2.o 
+	$(LIB_DIR)/Release/read_boozer_mod.o
       
 stellopt_prof_to_vmec.o : \
       stellopt_runtime.o \

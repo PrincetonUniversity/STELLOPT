@@ -154,7 +154,6 @@
       REAL(rprec), DIMENSION(nsd)   ::  target_txport, sigma_txport, &
                                         s_txport
       CHARACTER(256)                ::  txport_proxy
-      REAL(rprec)                   ::  target_gs2_ptsm3d, sigma_gs2_ptsm3d
       REAL(rprec), DIMENSION(nsd)   ::  target_DKES, sigma_DKES, nu_DKES
       REAL(rprec), DIMENSION(nu_max,nv_max) ::  target_separatrix, sigma_separatrix, &
                                                 r_separatrix, z_separatrix, phi_separatrix
@@ -249,7 +248,6 @@
       INTEGER, PARAMETER :: jtarget_helicity   = 605
       INTEGER, PARAMETER :: jtarget_resjac     = 606
       INTEGER, PARAMETER :: jtarget_txport     = 607
-      INTEGER, PARAMETER :: jtarget_gs2_ptsm3d = 6071
       INTEGER, PARAMETER :: jtarget_ptsm3d     = 6072
       INTEGER, PARAMETER :: jtarget_dkes       = 608
       INTEGER, PARAMETER :: jtarget_jdotb      = 609
@@ -382,8 +380,6 @@
             WRITE(iunit, out_format) 'Turbulent Transport'
          CASE(jtarget_ptsm3d)
             WRITE(iunit, out_format) '3D turbulence saturation model'
-         CASE(jtarget_gs2_ptsm3d)
-            WRITE(iunit, out_format) 'Turbulent transport using ptsm3d'
          CASE(jtarget_orbit)
             WRITE(iunit, out_format) 'Particle Orbits (BEAMS3D)'
          CASE(jtarget_dkes)

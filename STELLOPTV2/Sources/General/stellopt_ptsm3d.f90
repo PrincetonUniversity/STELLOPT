@@ -152,6 +152,7 @@
       ! the code uses the tauC_12f(qst) array to compute the targets.  To use more !
       ! detailed quantities, look at ptsm3d_triplets                               !
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
+      print *, tauC_12f(lj1,lk1+1)
       
       target_12f = 0.0
       target_qst = 0.0

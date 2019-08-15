@@ -70,7 +70,7 @@
             IF (niter == -2) target_dex(mtargets)=jtarget_ptsm3d
             CALL safe_open(iunit, iflag, &
               & TRIM('input.'//TRIM(id_string)),'old','formatted')
-            CALL PTSM3D_read_stellopt_input(iunit, iflag)
+            CALL ptsm3d_read_stellopt_input(iunit, iflag)
             close(iunit)
          END IF
       END IF
