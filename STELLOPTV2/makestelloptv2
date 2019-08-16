@@ -62,9 +62,9 @@ endif
 ifdef TERPSICHORE_DIR
 	@rm $(TERPSICHORE_DIR)/$(LIB_TERPSICHORE)
 endif
-ifdef VMECTOOLS_DIR
-	@rm $(VMECTOOLS_DIR)/$(LIB_VMECTOOLS)
-endif
+#ifdef VMECTOOLS_DIR
+#	@rm $(VMECTOOLS_DIR)/$(LIB_VMECTOOLS)
+#endif
 #ifdef PTSM3D_DIR
 #	@rm $(PTSM3D_DIR)/$(LIB_PTSM3D)
 #endif

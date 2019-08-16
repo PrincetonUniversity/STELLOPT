@@ -30,7 +30,7 @@
       USE ptsm3d_geom
       USE ptsm3d_itg
       USE ptsm3d_triplets
-      !USE ptsm3d_targets
+      USE ptsm3d_targets
 
        
       IMPLICIT NONE
@@ -64,9 +64,9 @@
       integer :: nx2, nx3, i, j, k
       character(len=128) :: x3_coord, norm_type, grid_type
       real(rprec) :: nfpi, x3_center, max_z
-      real(rprec) :: target_12f, target_qst, k_norm, ptsm3d_target
+      !real(rprec) :: ptsm3d_target!, target_12f, target_qst, k_norm, 
       real(rprec), dimension(1) :: s0_data, vmec_data
-      character(len=16), dimension(8) :: ptsm3d_geom_strings
+      character(len=16), dimension(9) :: ptsm3d_geom_strings
       IF (lscreen) WRITE(6,'(a)') &
       &  ' -------------------------  BEGIN PTSM3D CALCULATION &
       & ------------------------ '
@@ -79,7 +79,8 @@
       ptsm3d_geom_strings(5) = 'jac'
       ptsm3d_geom_strings(6) = 'curv_drift_x2'
       ptsm3d_geom_strings(7) = 'curv_drift_x1'
-      ptsm3d_geom_strings(8) = 'x3'
+      ptsm3d_geom_strings(8) = 'd_B_d_x3'
+      ptsm3d_geom_strings(9) = 'x3'
 
       ! Call vmec2pest on 1 point on one surface to obtain radial quantities, such as s-hat 
       ! These functions are documented in the VMECTools library
@@ -113,7 +114,7 @@
 
       ! Allocate the arrays to hold the geometric quantities to pass from vmec2pest to PTSM3D
       ! geom is an array defined in PTSM3D
-      allocate(data_arr(nx3+1),geom(8,nx3+1))
+      allocate(data_arr(nx3+1),geom(9,nx3+1))
       x3_center = 0.0
       norm_type = "minor_r"
       grid_type = "gene"
@@ -126,7 +127,7 @@
         &trim(x3_coord),nfpi,trim(norm_type),trim(grid_type))
 
       ! Populate the geom array that is passed to PTSM3D with the results of vmec2pest
-      do j = 1,8
+      do j = 1,9
         call get_pest_data_interface(&
           & 0,0,trim(ptsm3d_geom_strings(j)),1,nx3+1,data_arr)
         geom(j,:) = data_arr
@@ -142,6 +143,7 @@
 
       ! Compute the triplet quantities
       call ptsm3d_initialize_triplets
+      resolve_triplets = .false.
       call ptsm3d_compute_triplets
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -152,21 +154,21 @@
       ! the code uses the tauC_12f(qst) array to compute the targets.  To use more !
       ! detailed quantities, look at ptsm3d_triplets                               !
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
-      print *, tauC_12f(lj1,lk1+1)
       
-      target_12f = 0.0
-      target_qst = 0.0
-      k_norm = 0.0
-      do k=lk1+1,lk2
-        do j=lj1,lj2
-          !if (inst_mat(j,k) == 1) then
-          if ((ky(k) <= ky_limit) .and. (abs(kx(j)) <= kx_limit)) then 
-            target_12f = target_12f + tauC_12f(j,k)
-            target_qst = target_qst + tauC_qst(j,k)
-            k_norm = k_norm + 1
-          end if
-        end do
-      end do
+      !target_12f = 0.0
+      !target_qst = 0.0
+      !k_norm = 0.0
+      !do k=lk1+1,lk2
+      !  do j=lj1,lj2
+      !    !if (inst_mat(j,k) == 1) then
+      !    if ((ky(k) <= ky_limit) .and. (abs(kx(j)) <= kx_limit)) then 
+      !      target_12f = target_12f + tauC_12f(j,k)
+      !      target_qst = target_qst + tauC_qst(j,k)
+      !      k_norm = k_norm + 1
+      !    end if
+      !  end do
+      !end do
+      call ptsm3d_compute_targets
 
       ! Set the PTSM3D targets
       if (opt_target .eq. 'zf') then
