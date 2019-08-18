@@ -202,6 +202,7 @@ test_stellopt_travis:
 test_fieldlines_full:
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xfieldlines -vmec NCSX_s1 -coil coils.NCSX -vac -full
 	@cd $(FIELDLINES_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xfieldlines -vmec NCSX_s1 -vac -coil coils.NCSX -vac -full
+	@cd $(FIELDLINES_TEST_DIR); ./compare_NCSX_s1.py
 	@echo ""
 
 test_fieldlines_coll:
@@ -212,6 +213,7 @@ test_fieldlines_coll:
 clean_test:
 	@cd $(VMEC_TEST_DIR); rm -f dcon* jxbout* mercier* threed1* parvmecinfo* wout*
 	@cd $(DIAGNO_TEST_DIR); rm -f diagno_bench* diagno_flux* diagno_surf* test_loops_j* test_loops_b*
+	@cd $(FIELDLINES_TEST_DIR); rm -f fieldlines_*.h5
 	@$(MAKE) SUBDIR=$(STELLOPT_TEST_DIR)/LMDIF_TEST stellopt_cleanup_dir
 	@$(MAKE) SUBDIR=$(STELLOPT_TEST_DIR)/GADE_TEST stellopt_cleanup_dir
 	@$(MAKE) SUBDIR=$(STELLOPT_TEST_DIR)/BASIC stellopt_cleanup_dir
