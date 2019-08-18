@@ -29,7 +29,9 @@
 #  FLAGS_R = -O2 -fexternal-blas -Wmissing-include-dirs
   FLAGS_D = -g -O0 -fcheck=all 
 #  LIBS    = -L/opt/local/lib -lopenblas -lscalapack  
-  LIBS    = -L/opt/local/lib -lopenblas
+  LIBS    = -L/opt/local/lib -lopenblas 
+# Because scalapack is broken in macport for MPI4.0
+  LIBS += /Users/lazerson/Sims_Work/scalapack-2.0.2/libscalapack.a
 
 #######################################################################
 #            MPI Options
@@ -42,7 +44,7 @@
   MPI_LINK = /opt/local/bin/mpif90
   MPI_LINK = mpif90 -shared  -Wl,-no_compact_unwind
   MPI_RUN = mpiexec
-  MPI_RUN_OPTS = -np 4
+  MPI_RUN_OPTS = -np 2
 #  MPI_RUN_OPTS_SM = -np 16
 #  MPI_RUN_OPTS_MD = -np 64
 #  MPI_RUN_OPTS_LG = -np 256
