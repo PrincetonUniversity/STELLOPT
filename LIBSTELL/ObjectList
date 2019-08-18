@@ -1,4 +1,5 @@
 ObjectFiles = \
+mpi_sharmem.o \
 GENERIC_Evolve.o \
 eval_x_queued.o \
 MAP_HYPERS.o \

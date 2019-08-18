@@ -242,7 +242,7 @@ INTEGER, INTENT(IN) :: ns, nzeta, ntheta3
   !------------------------------------------------
     SUBROUTINE SetSurfacePartitions
     
-    INTEGER :: mypart
+    INTEGER :: mypart, local_err
 #if defined(MPI_OPT)
     IF (par_ns.LT.nranks) THEN
        IF(grank.EQ.0) print *,"NS is less than NRANKS. Aborting!"
@@ -280,7 +280,7 @@ INTEGER, INTENT(IN) :: ns, nzeta, ntheta3
           WRITE(*,*) '***********************************************************'
           WRITE(*,*)
        END IF
-       CALL MPI_Abort(NS_COMM,MPI_ERR)
+       CALL MPI_Abort(NS_COMM,local_err,MPI_ERR)
     END IF
 #endif
     END SUBROUTINE SetSurfacePartitions
@@ -393,7 +393,7 @@ INTEGER, INTENT(IN) :: ns, nzeta, ntheta3
   !--------------------------------------------------------------------------
     SUBROUTINE FinalizeSurfaceComm(INCOMM)
 
-    INTEGER, INTENT(IN)  :: INCOMM
+    INTEGER, INTENT(INOUT)  :: INCOMM
 #if defined(MPI_OPT)
     CALL MPI_Comm_free(INCOMM, MPI_ERR)
     lactive = .FALSE.
@@ -908,6 +908,7 @@ INTEGER, INTENT(IN) :: ns, nzeta, ntheta3
     END DO
 #endif
     DEALLOCATE(sendbuf, recvbuf)
+    DEALLOCATE(counts, disps)
     CALL second0(allgvtoff)
     allgather_time = allgather_time + (allgvtoff-allgvton)
     END SUBROUTINE Gather4XArray
@@ -961,6 +962,7 @@ INTEGER, INTENT(IN) :: ns, nzeta, ntheta3
     END DO
 #endif
     DEALLOCATE(sendbuf, recvbuf)
+    DEALLOCATE(counts, disps)
     CALL second0(allgvtoff)
     allgather_time = allgather_time + (allgvtoff-allgvton)
     END SUBROUTINE GatherReordered4XArray
@@ -1011,6 +1013,7 @@ INTEGER, INTENT(IN) :: ns, nzeta, ntheta3
     END DO
 #endif
     DEALLOCATE(sendbuf, recvbuf)
+    DEALLOCATE(counts, disps)
     CALL second0(allgvtoff)
     allgather_time = allgather_time + (allgvtoff-allgvton)
     END SUBROUTINE Gather2XArray
@@ -1053,6 +1056,7 @@ INTEGER, INTENT(IN) :: ns, nzeta, ntheta3
     arr = recvbuf
 
     DEALLOCATE(sendbuf, recvbuf)
+    DEALLOCATE(counts, disps)
     CALL second0(allgvtoff)
     allgather_time = allgather_time + (allgvtoff - allgvton)
     END SUBROUTINE Gather1XArray
