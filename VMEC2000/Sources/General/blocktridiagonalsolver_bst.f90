@@ -1702,6 +1702,7 @@ SUBROUTINE PLBDGETRF( A, piv, info )
 #endif
   REAL(dp) :: ton, toff
 
+  piv  = 0
   info = 0
 
 END SUBROUTINE PLBDGETRF
@@ -4380,7 +4381,7 @@ SUBROUTINE VerifySolution
   ELSE
     totrmserr = SQRT( totrmserr / ((endglobrow-startglobrow+1) * M) )
   END IF
-  IF(KPDBG) WRITE(OFU,'(A,E15.8E3)') 'TOTAL RMS ERROR = ', totrmserr; CALL FL(OFU)
+  IF(KPDBG) WRITE(OFU,'(A,E16.8E3)') 'TOTAL RMS ERROR = ', totrmserr; CALL FL(OFU)
   IF(KPDBG) WRITE(OFU,*) '------ Solution verified ------'; CALL FL(OFU)
 END SUBROUTINE VerifySolution
 !-------------------------------------------------------------------------------

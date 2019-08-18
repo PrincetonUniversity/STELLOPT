@@ -15,16 +15,14 @@
 !DEC$ IF DEFINED (LHDF5)
       USE ez_hdf5
 !DEC$ ENDIF  
-      USE mpi_params                                                    ! MPI
+      USE mpi_params
+      USE mpi_inc
 !-----------------------------------------------------------------------
 !     Local Variables
 !          ier            Error Flag
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       INTEGER :: ier
-!DEC$ IF DEFINED (MPI_OPT)
-      INCLUDE 'mpif.h'   ! MPI
-!DEC$ ENDIF  
 !-----------------------------------------------------------------------
 !     Begin Subroutine
 !-----------------------------------------------------------------------

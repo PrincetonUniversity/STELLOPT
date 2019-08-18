@@ -31,10 +31,7 @@
                               phimin, phimax
       USE beams3d_lines, ONLY: lost_lines
 !DEC$ ENDIF
-!DEC$ IF DEFINED (MPI_OPT)
-      USE mpi_params     
-!DEC$ ENDIF
-      !USE safe_open_mod
+      USE mpi_params
       
 !-----------------------------------------------------------------------
 !     Subroutine Parameters

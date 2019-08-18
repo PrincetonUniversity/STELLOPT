@@ -45,6 +45,9 @@
       ! Y
       IF (sigma_y < bigno)  &
          CALL chisq_y(target_y,sigma_y,ncnt,iflag)
+      ! Rosenbrock test function
+      IF (ANY(sigma_Rosenbrock_F < bigno)) &
+         CALL chisq_Rosenbrock(target_Rosenbrock_F,sigma_Rosenbrock_F,ncnt,iflag)
       !------------- SCALAR TARGETS ----------------------------
       ! PHIEDGE
       IF (sigma_phiedge < bigno)  &

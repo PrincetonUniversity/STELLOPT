@@ -12,10 +12,8 @@
 !     Libraries
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
+      USE mpi_inc
       IMPLICIT NONE
-#if defined(MPI_OPT)
-      include 'mpif.h'                                       !mpi stuff
-#endif
 !-----------------------------------------------------------------------
 !     Input Variables
 !        fcn     Target function one wishes to mimizie

@@ -26,9 +26,9 @@
       USE mpi_params
       USE gade_mod, ONLY: pso_cleanup
       USE safe_open_mod, ONLY: safe_open
+      USE mpi_inc
       IMPLICIT NONE
 !DEC$ IF DEFINED (MPI_OPT)
-      include 'mpif.h'                                       !mpi stuff
       INTEGER :: status(MPI_STATUS_size)                     !mpi stuff
 !DEC$ ENDIF
 

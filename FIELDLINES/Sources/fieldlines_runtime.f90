@@ -296,8 +296,8 @@
 !DEC$ IF DEFINED (MPI_OPT)
     SUBROUTINE FIELDLINES_TRANSMIT_2DDBL(n1,n2,m1,m2,data_in,n1_gbl,n2_gbl,id,root,COMM_local,ier)
     USE stel_kinds, ONLY: rprec
+    USE mpi
     IMPLICIT NONE
-    INCLUDE 'mpif.h' ! MPI
     INTEGER, INTENT(in)           :: n1,n2,m1,m2,id,root,COMM_local
     INTEGER, INTENT(in)           :: n1_gbl, n2_gbl
     REAL(rprec), INTENT(inout)    :: data_in(n1:n2,m1:m2)

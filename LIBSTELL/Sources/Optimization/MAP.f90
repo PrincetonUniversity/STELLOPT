@@ -11,7 +11,7 @@
 !-----------------------------------------------------------------------
       USE gade_mod, ONLY: pso_cleanup
       USE safe_open_mod, ONLY: safe_open
-      
+      USE mpi_inc
 !-----------------------------------------------------------------------
 !     Arguments
 !        obj         Functional to evaluate
@@ -34,7 +34,6 @@
 !        iunit       File unit number
 !----------------------------------------------------------------------
 !DEC$ IF DEFINED (MPI_OPT)
-      include 'mpif.h'                                       !mpi stuff
       INTEGER :: status(MPI_STATUS_size)                     !mpi stuff
       INTEGER :: myid, numprocs
 !DEC$ ELSE

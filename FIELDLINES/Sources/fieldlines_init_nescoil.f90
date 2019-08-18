@@ -11,7 +11,6 @@
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
       USE safe_open_mod
-      USE virtual_casing_mod, ONLY: mntouv => mntouv_local
       USE fieldlines_runtime
       USE fieldlines_grid, ONLY: raxis_g => raxis, phiaxis, &
                                  zaxis_g => zaxis, nr, nphi, nz, &
@@ -19,7 +18,8 @@
                                  phimax, B_R, B_Z, B_PHI,&
                                  BR_spl, BZ_spl
       USE fieldlines_lines, ONLY: nlines
-      USE mpi_params                                                    ! MPI
+      USE mpi_params
+      USE mpi_inc
 !-----------------------------------------------------------------------
 !     Local Variables
 !          ier            Error Flag
@@ -28,7 +28,6 @@
       IMPLICIT NONE
       INTEGER, PARAMETER :: BYTE_8 = SELECTED_INT_KIND (8)
 !DEC$ IF DEFINED (MPI_OPT)
-      INCLUDE 'mpif.h'   ! MPI
       INTEGER :: sender, status(MPI_STATUS_SIZE)                     !mpi stuff
       INTEGER(KIND=BYTE_8),ALLOCATABLE :: mnum(:), moffsets(:)
 !DEC$ ENDIF  
@@ -125,7 +124,8 @@
           ALLOCATE(temp_3D(1,nu,nv),fmn_temp(mn_surf,1))
           ALLOCATE(x_surf(nuv), y_surf(nuv), z_surf(nuv), pot_surf(nuv))
           FORALL(i = 1:mn_surf) fmn_temp(i,1) = rmnc_surf(i)
-          CALL mntouv(1,1,mn_surf,nu,nv,xu,xv,fmn_temp,xm_surf,xn_surf,temp_3D,0,1)
+          STOP "NEED TO FIX FIELDLINES_INIT_NESCOIL TO SUPPORT mntouv_local NOW PRIVATE"
+          !CALL mntouv(1,1,mn_surf,nu,nv,xu,xv,fmn_temp,xm_surf,xn_surf,temp_3D,0,1)
           rmax_nes = maxval(maxval(maxval(temp_3D,DIM=3),DIM=2),DIM=1)
           rmin_nes = minval(minval(minval(temp_3D,DIM=3),DIM=2),DIM=1)
           n = 1
@@ -138,7 +138,7 @@
           END DO
           temp_3D = 0
           FORALL(i = 1:mn_surf) fmn_temp(i,1) = zmns_surf(i)
-          CALL mntouv(1,1,mn_surf,nu,nv,xu,xv,fmn_temp,xm_surf,xn_surf,temp_3D,1,0)
+          !CALL mntouv(1,1,mn_surf,nu,nv,xu,xv,fmn_temp,xm_surf,xn_surf,temp_3D,1,0)
           zmax_nes = maxval(maxval(maxval(temp_3D,DIM=3),DIM=2),DIM=1)
           zmin_nes = minval(minval(minval(temp_3D,DIM=3),DIM=2),DIM=1)
           n = 1
@@ -152,7 +152,7 @@
           ! Calculate Surface normals
           ALLOCATE(xu_surf(nuv), yu_surf(nuv))
           FORALL(i = 1:mn_surf) fmn_temp(i,1) = -rmnc_surf(i)*xm_surf(i)
-          CALL mntouv(1,1,mn_surf,nu,nv,xu,xv,fmn_temp,xm_surf,xn_surf,temp_3D,1,0)
+          !CALL mntouv(1,1,mn_surf,nu,nv,xu,xv,fmn_temp,xm_surf,xn_surf,temp_3D,1,0)
           n = 1
           DO i = 1, nu
              DO j = 1, nv
@@ -163,7 +163,7 @@
           END DO
           ALLOCATE(xv_surf(nuv), yv_surf(nuv))
           FORALL(i = 1:mn_surf) fmn_temp(i,1) = -rmnc_surf(i)*xn_surf(i)
-          CALL mntouv(1,1,mn_surf,nu,nv,xu,xv,fmn_temp,xm_surf,xn_surf,temp_3D,1,0)
+          !CALL mntouv(1,1,mn_surf,nu,nv,xu,xv,fmn_temp,xm_surf,xn_surf,temp_3D,1,0)
           n = 1
           DO i = 1, nu
              DO j = 1, nv
@@ -176,7 +176,7 @@
           yv_surf = yv_surf + x_surf
           ALLOCATE(zu_surf(nuv))
           FORALL(i = 1:mn_surf) fmn_temp(i,1) = zmns_surf(i)*xm_surf(i)
-          CALL mntouv(1,1,mn_surf,nu,nv,xu,xv,fmn_temp,xm_surf,xn_surf,temp_3D,0,0)
+          !CALL mntouv(1,1,mn_surf,nu,nv,xu,xv,fmn_temp,xm_surf,xn_surf,temp_3D,0,0)
           n = 1
           DO i = 1, nu
              DO j = 1, nv
@@ -186,7 +186,7 @@
           END DO
           ALLOCATE(zv_surf(nuv))
           FORALL(i = 1:mn_surf) fmn_temp(i,1) = zmns_surf(i)*xn_surf(i)
-          CALL mntouv(1,1,mn_surf,nu,nv,xu,xv,fmn_temp,xm_surf,xn_surf,temp_3D,0,0)
+          !CALL mntouv(1,1,mn_surf,nu,nv,xu,xv,fmn_temp,xm_surf,xn_surf,temp_3D,0,0)
           n = 1
           DO i = 1, nu
              DO j = 1, nv
@@ -209,7 +209,7 @@
           ALLOCATE(temp_3D(1,nu,nv),fmn_temp(mn_pot,1))
           temp_3D = 0
           FORALL(i = 1:mn_pot) fmn_temp(i,1) = pmns(i)
-          CALL mntouv(1,1,mn_pot,nu,nv,xu,xv,fmn_temp,xm_pot,xn_pot,temp_3D,1,1)
+          !CALL mntouv(1,1,mn_pot,nu,nv,xu,xv,fmn_temp,xm_pot,xn_pot,temp_3D,1,1)
           n = 1
           DO i = 1, nu
              DO j = 1, nv

@@ -15,10 +15,8 @@
 !-----------------------------------------------------------------------
       USE vmec_input
       USE mpi_params
+      USE mpi_inc
       IMPLICIT NONE
-!DEC$ IF DEFINED (MPI_OPT)
-      INCLUDE 'mpif.h'                                                          ! MPI
-!DEC$ ENDIF  
 !-----------------------------------------------------------------------
 !     Local Variables
 !        ier         Error flag

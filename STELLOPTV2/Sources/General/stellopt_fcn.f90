@@ -156,6 +156,7 @@
          IF (var_dex(nvar_in) == iregcoil_rcws_rbound_s) regcoil_rcws_rbound_s(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
          IF (var_dex(nvar_in) == iregcoil_rcws_zbound_c) regcoil_rcws_zbound_c(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
          IF (var_dex(nvar_in) == iregcoil_rcws_zbound_s) regcoil_rcws_zbound_s(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
+         IF (var_dex(nvar_in) == iRosenbrock_X) Rosenbrock_X(arr_dex(nvar_in,1)) = x(nvar_in)
       END DO
 
       ! Adust Boundary Representation
@@ -334,21 +335,16 @@
 
          ! Calls to secondary codes
          proc_string_old = proc_string ! So we can find the DIAGNO files
-         !IF (ANY(lbooz)) CALL stellopt_toboozer(lscreen,iflag)
+         IF (ANY(sigma_balloon < bigno)) CALL stellopt_balloon(lscreen,iflag)
          ctemp_str = 'booz_xform'
          IF (ANY(lbooz) .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
-         !IF (ANY(sigma_bootstrap < bigno)) CALL stellopt_bootsj(lscreen,iflag)
          ctemp_str = 'bootsj'
          IF (ANY(sigma_bootstrap < bigno) .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
-         IF (ANY(sigma_balloon < bigno)) CALL stellopt_balloon(lscreen,iflag)
-         !IF (lneed_magdiag) CALL stellopt_magdiag(lscreen,iflag)
          ctemp_str = 'diagno'
          IF (lneed_magdiag .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
-         !IF (ANY(sigma_neo < bigno)) CALL stellopt_neo(lscreen,iflag)
          ctemp_str = 'neo'
          IF (ANY(sigma_neo < bigno) .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
 !DEC$ IF DEFINED (TERPSICHORE)
-         !IF (ANY(sigma_kink < bigno)) CALL stellopt_kink(lscreen,iflag)
          ctemp_str = 'terpsichore'
          IF (ANY(sigma_kink < bigno) .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
 !DEC$ ENDIF

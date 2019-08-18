@@ -3,10 +3,8 @@
       USE ga_mod
       USE safe_open_mod
       USE mpi_params, ONLY: master
+      USE mpi_inc
       IMPLICIT NONE
-!DEC$ IF DEFINED (MPI_OPT)
-      include 'mpif.h'                                       !mpi stuff
-!DEC$ ENDIF
       EXTERNAL fcn
 
       INTEGER :: nopt

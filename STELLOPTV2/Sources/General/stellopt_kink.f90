@@ -21,6 +21,8 @@
                                mass_vmec => mass, pres_vmec => pres, &
                                phip_vmec => phip, vp_vmec => vp
       USE vmec_input, ONLY: lfreeb_vmec => lfreeb
+      USE mpi_params
+      USE mpi_inc
 
 !DEC$ IF DEFINED (TERPSICHORE)
       USE tpr_param
