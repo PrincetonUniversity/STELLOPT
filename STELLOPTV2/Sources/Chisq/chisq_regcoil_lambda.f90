@@ -73,7 +73,7 @@
           DO ii = 1,mnprod_x4_rcws
             IF (sigma(ii) < bigno) counter=counter +1
           END DO
-          WRITE(iunit_out,'(A,2(2X,I7))') 'REGCOIL_RMS_K ', counter, 4
+          WRITE(iunit_out,'(A,2(2X,I7))') 'REGCOIL_LAMBDA ', counter, 4
           WRITE(iunit_out,'(A)') 'TARGET  SIGMA  UNUSED  CHI'
       END IF
 
