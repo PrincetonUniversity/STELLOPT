@@ -65,7 +65,7 @@
 !        istat         Error status
 !        iunit         File unit number
       ! FOR REGCOIL
-      INTEGER :: istat, iunit, m, n, ii, imn, nummodes1, nummodes2
+      INTEGER :: istat, iunit = 12, m, n, ii, imn, nummodes1, nummodes2
 
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
@@ -121,10 +121,17 @@
          CALL safe_open(iunit, istat, TRIM('regcoil_nescout.'// &
                    TRIM(proc_string)), 'replace', 'formatted')
          !write(6,'(a)'), '<----JCSwrite_output'
-         write(iunit,*) "Number of fourier modes in table"
-         write(iunit,*) nummodes1
-         write(iunit,*) "Table of fourier coefficients"
-         write(iunit,*) "m,n,crc2,czs2,crs2,czc2"
+         write (iunit, '(a)') '------ Plasma information from VMEC ----'
+         write (iunit, '(a)') 'np     iota_edge       phip_edge       curpol'
+         ! write nfp and curpol information 
+         write (iunit, '(I6, 3ES20.12)') nfp, 0.0, 0.0, curpol  
+         write (iunit,*)
+         write (iunit, '(a, 1pe20.12, a)') '------ Current Surface: Coil-Plasma separation = ', separation,' -----'
+         write (iunit, '(a)') 'Number of fourier modes in table'
+         write (iunit,*) nummodes1
+         write (iunit, '(a)') 'Table of fourier coefficients'
+         write (iunit, '(a)') 'm,n,crc2,czs2,crs2,czc2'
+
          DO m = -my_mpol, my_mpol
              DO n = -my_ntor, my_ntor
                 if ( (regcoil_rcws_rbound_c(m,n) .ne. 0) .or. &

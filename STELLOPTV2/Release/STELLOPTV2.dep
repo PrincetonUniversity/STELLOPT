@@ -102,6 +102,14 @@ chisq_regcoil_chi2_b.o : \
       stellopt_vars.o \
       equil_vals.o
 
+
+chisq_regcoil_lambda.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      stellopt_input_mod.o \
+      stellopt_vars.o \
+      equil_vals.o
+
       
 chisq_regcoil_max_k.o : \
       stellopt_runtime.o \

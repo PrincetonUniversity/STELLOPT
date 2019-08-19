@@ -43,6 +43,7 @@ chisq_balloon.o \
 chisq_pmin.o \
 chisq_coil_bnorm.o \
 chisq_regcoil_chi2_b.o \
+chisq_regcoil_lambda.o \
 chisq_regcoil_max_k.o \
 chisq_regcoil_max_bnormal.o \
 chisq_regcoil_chi2_k.o \

@@ -253,6 +253,10 @@
       IF (ANY(sigma_regcoil_chi2_b < bigno)) THEN
          CALL chisq_regcoil_chi2_b(target_regcoil_chi2_b, sigma_regcoil_chi2_b, ncnt,iflag)
       END IF
+      ! REGCOIL Coil Optimization (LAMBDA targets)
+      IF (ANY(sigma_regcoil_lambda < bigno)) THEN
+         CALL chisq_regcoil_lambda(target_regcoil_lambda, sigma_regcoil_lambda, ncnt,iflag)
+      END IF
       ! REGCOIL Coil Optimization (MAX_K targets)
       IF (ANY(sigma_regcoil_max_K < bigno)) THEN
          CALL chisq_regcoil_max_K(target_regcoil_max_K, sigma_regcoil_max_K, ncnt,iflag)

@@ -180,6 +180,7 @@
       REAL(rprec) ::  target_regcoil_winding_surface_separation
       REAL(rprec) ::  sigma_regcoil_winding_surface_separation
       REAL(rprec),DIMENSION((2*ntor_rcws+1)*(2*mpol_rcws+1)*4) ::  target_regcoil_chi2_b, sigma_regcoil_chi2_b
+      REAL(rprec),DIMENSION((2*ntor_rcws+1)*(2*mpol_rcws+1)*4) ::  target_regcoil_lambda, sigma_regcoil_lambda
       REAL(rprec),DIMENSION((2*ntor_rcws+1)*(2*mpol_rcws+1)*4) ::  target_regcoil_rms_K, sigma_regcoil_rms_K
       REAL(rprec),DIMENSION((2*ntor_rcws+1)*(2*mpol_rcws+1)*4) ::  target_regcoil_max_K, sigma_regcoil_max_K
       REAL(rprec),DIMENSION((2*ntor_rcws+1)*(2*mpol_rcws+1)*4) ::  target_regcoil_chi2_K, sigma_regcoil_chi2_K
@@ -250,6 +251,7 @@
       INTEGER, PARAMETER :: jtarget_fluxloop   = 503
       INTEGER, PARAMETER :: jtarget_regcoil_chi2_b          = 5040
       !INTEGER, PARAMETER :: jtarget_regcoil_current_density = 5041
+      INTEGER, PARAMETER :: jtarget_regcoil_lambda          = 5041
       INTEGER, PARAMETER :: jtarget_regcoil_max_K           = 5042
       INTEGER, PARAMETER :: jtarget_regcoil_rms_K           = 5043
       INTEGER, PARAMETER :: jtarget_regcoil_chi2_k          = 5044
@@ -423,6 +425,8 @@
             WRITE(iunit, out_format) 'COILOPT++ Normal Field'
          CASE(jtarget_regcoil_chi2_b)
             WRITE(iunit, out_format) 'REGCOIL Chi^2 B'
+         CASE(jtarget_regcoil_lambda)
+            WRITE(iunit, out_format) 'REGCOIL LAMBDA'
          CASE(jtarget_regcoil_rms_K)
             WRITE(iunit, out_format) 'REGCOIL RMS K'
          CASE(jtarget_regcoil_max_K)

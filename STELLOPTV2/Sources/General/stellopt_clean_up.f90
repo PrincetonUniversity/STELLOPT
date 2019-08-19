@@ -403,6 +403,7 @@
               ! Currently inside of LEV and GADE cleanup loop, and 
               ! 'Keeping the mins' section
               IF ( (  ANY(sigma_regcoil_chi2_b < bigno) .or.   &
+                      ANY(sigma_regcoil_lambda < bigno) .or.    &
                       ANY(sigma_regcoil_max_K < bigno) .or.    &
 	              ANY(sigma_regcoil_rms_K < bigno) .or.    &
 	              ANY(sigma_regcoil_chi2_k < bigno) .or.    &

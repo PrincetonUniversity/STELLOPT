@@ -393,6 +393,7 @@
                          target_regcoil_winding_surface_separation, &
                          sigma_regcoil_winding_surface_separation, &
                          target_regcoil_chi2_b, sigma_regcoil_chi2_b, &
+                         target_regcoil_lambda, sigma_regcoil_lambda, &
                          target_regcoil_rms_K, sigma_regcoil_rms_K, &
                          target_regcoil_max_K, sigma_regcoil_max_K, &
                          target_regcoil_chi2_k, sigma_regcoil_chi2_k, &
@@ -620,6 +621,8 @@
       regcoil_rcws_zbound_s_min = -bigno;  regcoil_rcws_zbound_s_max = bigno
       target_regcoil_chi2_b = 0.0
       sigma_regcoil_chi2_b  = bigno
+      target_regcoil_lambda = 0.0
+      sigma_regcoil_lambda  = bigno
       target_regcoil_max_K = 0.0
       sigma_regcoil_max_K  = bigno
       target_regcoil_rms_K = 0.0
@@ -1082,6 +1085,7 @@
 !DEC$ IF DEFINED (REGCOIL)
 
       IF ( ( ANY(sigma_regcoil_chi2_b < bigno) .or.   &
+             ANY(sigma_regcoil_lambda < bigno) .or.    &
              ANY(sigma_regcoil_max_K < bigno) .or.    &
 	     ANY(sigma_regcoil_rms_K < bigno) .or.    &
 	     ANY(sigma_regcoil_chi2_k < bigno) .or.    &
@@ -1287,6 +1291,7 @@
 !DEC$ ENDIF
 !DEC$ IF DEFINED (REGCOIL)
       IF (myid == master .and. (ANY(sigma_regcoil_chi2_b < bigno) .or.   &
+                                ANY(sigma_regcoil_lambda < bigno) .or.    &
                                 ANY(sigma_regcoil_max_K < bigno) .or.    &
 	                        ANY(sigma_regcoil_rms_K < bigno) .or.    &
 	                        ANY(sigma_regcoil_chi2_k < bigno) .or.    &
@@ -1310,6 +1315,7 @@
       END IF
 !DEC$ ELSE
       IF (myid == master .and. (ANY(sigma_regcoil_chi2_b < bigno) .or.   &
+                                ANY(sigma_regcoil_lambda < bigno) .or.    &
                                 ANY(sigma_regcoil_max_K < bigno) .or.    &
 	                        ANY(sigma_regcoil_rms_K < bigno) .or.    &
 	                        ANY(sigma_regcoil_chi2_k < bigno) .or.    &
@@ -1325,6 +1331,7 @@
                                 !(sigma_regcoil_current_density < bigno) )) THEN
          ! 'Disable' the target by assigning bigno to the sigmas
          sigma_regcoil_chi2_b = bigno
+         sigma_regcoil_lambda = bigno
          sigma_regcoil_max_K = bigno
          sigma_regcoil_rms_K = bigno
          sigma_regcoil_chi2_K  = bigno
@@ -2277,6 +2284,15 @@
                            'SIGMA_REGCOIL_CHI2_B(',ii,') = ', sigma_regcoil_chi2_b(ii)
                 END IF
              END DO
+
+             DO ii = 1,UBOUND(target_regcoil_lambda, 1)
+                IF (sigma_regcoil_lambda(ii) < bigno) THEN
+                    WRITE(iunit,"(2(2X,A,I4.3,A,E22.14))") &
+                           'TARGET_REGCOIL_LAMBDA(',ii,') = ', target_regcoil_lambda(ii), &
+                           'SIGMA_REGCOIL_LAMBDA(',ii,') = ', sigma_regcoil_lambda(ii)
+                END IF
+             END DO
+
 
              DO ii = 1,UBOUND(target_regcoil_max_K, 1)
                 IF (sigma_regcoil_max_K(ii) < bigno) THEN
