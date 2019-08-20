@@ -20,7 +20,7 @@
 !                    zero indicates the code has functioned properly.
 !                    
 !                    NITER:
-!                    On entry, if niter is less than 1 the
+!                    On entry, if niter is less than 0 the
 !                    code should increment the mtargets value by
 !                    the number of sigmas less than bigno.
 !                    On entry, if niter is equlal to -2, the value of
@@ -44,7 +44,8 @@
       USE stellopt_vars, ONLY: regcoil_nlambda, mnprod_x4_rcws
 !DEC$ IF DEFINED (REGCOIL)
       USE regcoil_variables, ONLY:  Bnormal_total_target, chi2_B_target, &
-				 nlambda, regcoil_nml
+				 nlambda, regcoil_nml, ntheta_plasma, &
+                                 nzeta_plasma
 !DEC$ ENDIF      
 !-----------------------------------------------------------------------
 !     Input/Output Variables
@@ -61,7 +62,7 @@
 !     Local Variables
 !
 !-----------------------------------------------------------------------
-      INTEGER :: iunit, counter, ii
+      INTEGER :: iunit=5150, counter, ii
 
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
@@ -71,7 +72,7 @@
 !DEC$ IF DEFINED (REGCOIL)
       IF (iflag == 1) THEN
           counter = 0
-          DO ii = 1,mnprod_x4_rcws
+          DO ii = 1,(nzeta_plasma * ntheta_plasma)
             IF (sigma(ii) < bigno) counter=counter +1
           END DO
           WRITE(iunit_out,'(A,2(2X,I7))') 'REGCOIL_BNORMAL_TOTAL ', counter, 4
@@ -80,18 +81,14 @@
 
       IF (niter >= 0) THEN
          ! Now fill in the targets, sigmas and chi_sq
-         DO ii = 1, mnprod_x4_rcws
+         DO ii = 1, (nzeta_plasma * ntheta_plasma)
             !IF (sigma(ii) >= bigno) CYCLE
             IF (sigma(ii) < bigno) THEN
               mtargets = mtargets + 1
               targets(mtargets) = target(ii)
               sigmas(mtargets)  = sigma(ii)
               ! The value of the results is in the Bnormal_total_target variable
-              !  Ummm...I need to figure out how to calculate m and n based on
-              !  other arrays information, I think.  For now, I'm going to punt
-	      !  and set it equal to the sqrt(chi2_B target)
-              ! vals(mtargets)    = Bnormal_total_target(m,n)???
-              vals(mtargets)    = sqrt(chi2_B_target)
+              vals(mtargets)    = Bnormal_total_target(ii)
               IF (iflag == 1) WRITE(iunit_out,'(4ES22.12E3)') target(ii), &
                                     sigma(ii), 0.0, vals(mtargets)
             END IF
@@ -99,7 +96,7 @@
       ELSE
          IF (ANY(sigma < bigno)) THEN
             ! Fill in the targets
-            DO ii = 1, mnprod_x4_rcws
+            DO ii = 1, (nzeta_plasma * ntheta_plasma)
                IF (sigma(ii) < bigno) THEN
                   mtargets = mtargets + 1
                   IF (niter == -2) THEN

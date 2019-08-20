@@ -9,7 +9,7 @@
 !     Libraries
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
-      USE stellopt_vars, ONLY: ntor_rcws, mpol_rcws
+      USE stellopt_vars, ONLY: ntor_rcws, mpol_rcws, mnprod_ps
       USE vparams, ONLY: nsd
       USE vsvd0, ONLY : nigroup
 
@@ -192,7 +192,7 @@
       REAL(rprec),DIMENSION((2*ntor_rcws+1)*(2*mpol_rcws+1)*4) ::  target_regcoil_volume_plasma, sigma_regcoil_volume_plasma
       REAL(rprec),DIMENSION((2*ntor_rcws+1)*(2*mpol_rcws+1)*4) ::  target_regcoil_volume_diff, sigma_regcoil_volume_diff
       REAL(rprec),DIMENSION((2*ntor_rcws+1)*(2*mpol_rcws+1)*4) ::  target_regcoil_c2p_dist_min, sigma_regcoil_c2p_dist_min
-      REAL(rprec),DIMENSION((2*ntor_rcws+1)*(2*mpol_rcws+1)*4) ::  target_regcoil_bnormal_total, sigma_regcoil_bnormal_total
+      REAL(rprec),DIMENSION(mnprod_ps) ::  target_regcoil_bnormal_total, sigma_regcoil_bnormal_total
       !REAL(rprec) ::  target_regcoil_current_density, sigma_regcoil_current_density
       REAL(rprec) ::  target_curvature_p2, sigma_curvature_P2
       REAL(rprec), DIMENSION(nsd)        :: target_gamma_c, sigma_gamma_c
