@@ -94,8 +94,6 @@ PROGRAM BEAMS3D
                 lverb = .false.
             case ("-vac") ! Vacuum Fields Only
                 lvac = .true.
-            case ("-plasma")
-                lplasma_only = .true.
             case ("-ascot")
                 lascot = .true.
             case ("-vmec")
@@ -149,6 +147,8 @@ PROGRAM BEAMS3D
                 lbeam_simple  = .true.
             case ("-collisions")
                 lcollision = .true.
+            case ("-plasma")
+                lplasma_only = .true.
             case ("-help", "-h") ! Output Help message
                 write(6, *) ' Beam MC Code'
                 write(6, *) ' Usage: xbeams3d <options>'
@@ -182,10 +182,10 @@ PROGRAM BEAMS3D
         DEALLOCATE(args)
         WRITE(6, '(a,f5.2)') 'BEAMS3D Version ', BEAMS3D_VERSION
         WRITE(6,'(A)')      '-----  MPI Parameters  -----'
-         WRITE(6,'(A,I2,A,I2.2)')  '   MPI_version:  ', vmajor,'.',vminor
-         WRITE(6,'(A,A)')  '   ', TRIM(mpi_lib_name(1:liblen))
-         WRITE(6,'(A,I8)')  '   Nproc_total:  ', nprocs_beams
-         WRITE(6,'(A,3X,I5)')  '   Nproc_shared: ', nshar
+        WRITE(6,'(A,I2,A,I2.2)')  '   MPI_version:  ', vmajor,'.',vminor
+        WRITE(6,'(A,A)')  '   ', TRIM(mpi_lib_name(1:liblen))
+        WRITE(6,'(A,I8)')  '   Nproc_total:  ', nprocs_beams
+        WRITE(6,'(A,3X,I5)')  '   Nproc_shared: ', nshar
     ELSE
         lverb = .false. ! Shutup the workers
     END IF
@@ -236,6 +236,7 @@ PROGRAM BEAMS3D
     CALL MPI_BCAST(lw7x,1,MPI_LOGICAL, master, MPI_COMM_BEAMS,ierr_mpi)
     IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_main',ierr_mpi)
 !DEC$ ENDIF
+
 
     ! Initialize the Calculation
     CALL beams3d_init

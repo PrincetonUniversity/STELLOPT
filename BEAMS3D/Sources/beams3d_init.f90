@@ -184,12 +184,17 @@
 
       ! Put the plasma field on the background grid
       IF (lvmec .and. .not.lvac .and. nte > 0) THEN
+         CALL mpialloc(req_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_req_axis)
+         CALL mpialloc(zeq_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_zeq_axis)
          CALL beams3d_init_vmec
       ELSE IF (lpies .and. .not.lvac) THEN
          !CALL beams3d_init_pies
       ELSE IF (lspec .and. .not.lvac) THEN
          !CALL beams3d_init_spec
       END IF
+
+      ! For testing I put this here
+      IF (lascot) CALL beams3d_write_ascoth5
 
       ! Construct 3D Profile Splines
       IF (.not. lvac) THEN

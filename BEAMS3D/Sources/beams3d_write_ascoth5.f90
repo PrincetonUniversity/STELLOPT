@@ -17,7 +17,7 @@
       USE beams3d_lines
       USE beams3d_grid, ONLY: nr, nphi, nz, B_R, B_PHI, B_Z, raxis, &
                                  zaxis, phiaxis, S_ARR, U_ARR, POT_ARR, &
-                                 ZEFF_ARR, TE, TI, NE
+                                 ZEFF_ARR, TE, TI, NE, req_axis, zeq_axis
       USE beams3d_runtime, ONLY: id_string, npoinc, nbeams, beam, t_end, lverb, lflux, &
                                     lvmec, lpies, lspec, lcoil, lmgrid, lbeam, &
                                     lvessel, lvac, lbeam_simple, handle_err, nparticles_start, &
@@ -46,6 +46,7 @@
       INTEGER(HSIZE_T), DIMENSION(1) :: h5_1d_help = (/1/)
       INTEGER(SIZE_T) :: help_int
       CHARACTER(LEN=10) ::  qid_str
+      DOUBLE PRECISION, ALLOCATABLE :: rtemp(:,:,:)
 !-----------------------------------------------------------------------
 !     Begin Subroutine
 !-----------------------------------------------------------------------
@@ -123,6 +124,20 @@
          CALL write_var_hdf5(qid_gid,'axis_phimin',ier,DBLVAR=phiaxis(1)*180/pi)
          CALL write_var_hdf5(qid_gid,'axis_phimax',ier,DBLVAR=phiaxis(nphi)*180/pi)
          CALL write_var_hdf5(qid_gid,'toroidalPeriods',ier,INTVAR=FLOOR(pi2/phiaxis(nphi)))
+         CALL write_var_hdf5(qid_gid,'axisr',nphi,ier,DBLVAR=req_axis)
+         CALL write_var_hdf5(qid_gid,'axisz',nphi,ier,DBLVAR=zeq_axis)
+         CALL write_var_hdf5(qid_gid,'psi0',ier,DBLVAR=DBLE(0))
+         CALL write_var_hdf5(qid_gid,'psi1',ier,DBLVAR=DBLE(0))
+         ALLOCATE(rtemp(nr,nphi,nz))
+         rtemp = RESHAPE(B_R,(/nr,nphi,nz/),ORDER=(/1,2,3/))
+         CALL write_var_hdf5(qid_gid,'br',nr,nphi,nz,ier,DBLVAR=rtemp)
+         rtemp = RESHAPE(B_PHI,(/nr,nphi,nz/),ORDER=(/1,2,3/))
+         CALL write_var_hdf5(qid_gid,'bphi',nr,nphi,nz,ier,DBLVAR=rtemp)
+         rtemp = RESHAPE(B_Z,(/nr,nphi,nz/),ORDER=(/1,2,3/))
+         CALL write_var_hdf5(qid_gid,'bz',nr,nphi,nz,ier,DBLVAR=rtemp)
+         rtemp = RESHAPE(S_ARR,(/nr,nphi,nz/),ORDER=(/1,2,3/))
+         CALL write_var_hdf5(qid_gid,'psi',nr,nphi,nz,ier,DBLVAR=rtemp)
+         DEALLOCATE(rtemp)
          CALL h5gclose_f(qid_gid, ier)
          CALL h5gclose_f(bfield_gid, ier)
 
