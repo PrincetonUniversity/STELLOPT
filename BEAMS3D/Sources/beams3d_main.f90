@@ -75,6 +75,7 @@ PROGRAM BEAMS3D
         lbeam_simple = .false.
         lcollision = .false.
         lw7x = .false.
+        lascot = .false.
         id_string = ''
         coil_string = ''
         mgrid_string = ''
@@ -95,6 +96,8 @@ PROGRAM BEAMS3D
                 lvac = .true.
             case ("-plasma")
                 lplasma_only = .true.
+            case ("-ascot")
+                lascot = .true.
             case ("-vmec")
                 i = i + 1
                 lvmec = .true.
@@ -159,6 +162,7 @@ PROGRAM BEAMS3D
                 write(6, *) '     -coil file:    Coils. File (for vacuum)'
                 write(6, *) '     -beam_simple:  Monoenergetic BEAMS'
                 write(6, *) '     -w7x:          W7-X beam model'
+                write(6, *) '     -ascot:        Output data in ASCOT format'
                 !write(6,*)'     -restart ext:  FIELDLINES HDF5 extension.'
                 write(6, *) '     -raw:          Treat coil currents as raw (scale factors)'
                 write(6, *) '     -vac:          Only vacuum field'
@@ -210,6 +214,8 @@ PROGRAM BEAMS3D
     CALL MPI_BCAST(lvessel, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
     IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
     CALL MPI_BCAST(lvac, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
+    IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
+    CALL MPI_BCAST(lascot, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
     IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
     CALL MPI_BCAST(lrestart, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
     IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
