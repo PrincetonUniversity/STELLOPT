@@ -240,11 +240,19 @@ PROGRAM BEAMS3D
 
     ! Initialize the Calculation
     CALL beams3d_init
+
     ! Follow Fieldlines
     CALL beams3d_follow
+
+    ! Write Ouput
     CALL beams3d_write('TRAJECTORY_PARTIAL')
-    ! Write some stuff
+      IF (lascot) THEN
+         CALL beams3d_write_ascoth5('MARKER')
+      END IF
+
+    ! Write diagnostics stuff
     CALL beams3d_diagnostics
+
     ! Clean up
     CALL beams3d_free
     CALL wall_free(ier,MPI_COMM_BEAMS)
