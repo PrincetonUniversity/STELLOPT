@@ -88,6 +88,7 @@
          IF (lvac)  WRITE(6,'(A)') '   VACUUM FIELDS ONLY!'
          IF (ldepo) WRITE(6,'(A)') '   DEPOSITION ONLY!'
          IF (lw7x) WRITE(6,'(A)') '   W7-X BEAM Model!'
+         IF (lascot) WRITE(6,'(A)') '   ASCOT5 OUTPUT ON!'
          CALL FLUSH(6)
       END IF
 
@@ -192,9 +193,18 @@
       ELSE IF (lspec .and. .not.lvac) THEN
          !CALL beams3d_init_spec
       END IF
+      
+      ! Setup vessel
+      IF (lvessel .and. (.not. lplasma_only .or. ldepo)) THEN
+         CALL wall_load_txt(TRIM(vessel_string),ier,MPI_COMM_BEAMS)
+         IF (lverb) CALL wall_info(6)
+         CALL FLUSH(6)
+      END IF
 
       ! For testing I put this here
-      IF (lascot) CALL beams3d_write_ascoth5
+      IF (lascot) THEN
+         CALL beams3d_write_ascoth5('INIT')
+      END IF
 
       ! Construct 3D Profile Splines
       IF (.not. lvac) THEN
@@ -254,14 +264,6 @@
          
       ! Construct MODB
       IF (myid_sharmem == master) MODB = SQRT(B_R*B_R+B_PHI*B_PHI+B_Z*B_Z)
-      
-      ! Get setup vessel
-      IF (lvessel .and. (.not. lplasma_only .or. ldepo)) THEN
-         CALL wall_load_txt(TRIM(vessel_string),ier,MPI_COMM_BEAMS)
-         !IF (myworkid /= master) DEALLOCATE(vertex,face) ! Do this to save memory
-         IF (lverb) CALL wall_info(6)
-         CALL FLUSH(6)
-      END IF
 
       ! Initialize Random Number generator
       CALL RANDOM_SEED

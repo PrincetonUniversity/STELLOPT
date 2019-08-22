@@ -115,6 +115,7 @@ beams3d_write_ascoth5.o: \
       ../../LIBSTELL/Release/mpi_params.o \
       beams3d_runtime.o \
       beams3d_lines.o \
+      beams3d_write_parhdf5.o \
       beams3d_grid.o
       
 
