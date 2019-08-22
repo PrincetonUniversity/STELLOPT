@@ -56,7 +56,7 @@
             lread_input_beams => lread_input, lvmec_beams => lvmec, &
             lverb_beams => lverb, lbeam_beams => lbeam, &
             lpies_beams => lpies, lspec_beams => lspec, &
-            lmgrid_beams => lmgrid, &
+            lmgrid_beams => lmgrid, lascot_beams => lascot, &
             lvessel_beams => lvessel, lcoil_beams => lcoil, &
             lrestart_beams => lrestart, lbeam_simple_beams => lbeam_simple, &
             lflux_beams => lflux, lplasma_only_beams => lplasma_only, &
@@ -296,6 +296,7 @@
                lspec_beams        = .FALSE.
                lcoil_beams        = .FALSE.
                lmgrid_beams       = .FALSE.
+               lascot_beams       = .FALSE.
                lraw_beams         = .FALSE.
                lvessel_beams      = .FALSE.
                lvac_beams         = .FALSE.
