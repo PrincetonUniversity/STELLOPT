@@ -129,11 +129,11 @@
           END IF
           ! ZEFF
           IF (nzeff>0) THEN
-             CALL EZspline_init(ZEFF_spl_s,nti,bcs1_s,ier)
+             CALL EZspline_init(ZEFF_spl_s,nzeff,bcs1_s,ier)
              IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init7',ier)
              ZEFF_spl_s%isHermite   = 1
              ZEFF_spl_s%x1          = ZEFF_AUX_S(1:nzeff)
-             CALL EZspline_setup(ZEFF_spl_s,ZEFF_AUX_F(1:nti),ier,EXACT_DIM=.true.)
+             CALL EZspline_setup(ZEFF_spl_s,ZEFF_AUX_F(1:nzeff),ier,EXACT_DIM=.true.)
              IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init8',ier)
           END IF
           ! POTENTIAL
