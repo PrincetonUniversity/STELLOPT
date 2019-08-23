@@ -399,6 +399,16 @@ SUBROUTINE beams3d_follow
                 B_lines(0:npoinc,mystart:myend) = REAL(myworkid)
         END SELECT
     END IF
+      
+    IF (lverb) THEN
+       CALL backspace_out(6,36)
+       CALL FLUSH(6)
+       WRITE(6,'(36X)',ADVANCE='no')
+       CALL FLUSH(6)
+       CALL backspace_out(6,36)
+       WRITE(6,*)
+       CALL FLUSH(6)
+    END IF    
 
     ! Check for crash
     istate = 0

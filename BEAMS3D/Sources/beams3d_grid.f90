@@ -43,7 +43,7 @@
                      win_MODB, win_TE, win_NE, win_TI, win_ZEFF_ARR,&
                      win_S_ARR, win_U_ARR, win_POT_ARR, win_BR4D, win_BPHI4D, &
                      win_BZ4D, win_MODB4D, win_TE4D, win_NE4D, win_TI4D, win_ZEFF4D, &
-                     win_S4D, win_U4D, win_POT4D, win_req_axis,win_zeq_axis
+                     win_S4D, win_U4D, win_POT4D, win_req_axis, win_zeq_axis
       REAL(rprec) :: rmin, rmax, zmin, zmax, phimin, phimax, tmin, tmax, delta_t, &
                      vc_adapt_tol, phiedge_eq
       REAL(rprec), POINTER :: raxis(:), zaxis(:), phiaxis(:)

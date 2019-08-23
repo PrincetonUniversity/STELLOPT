@@ -131,14 +131,12 @@
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'nvertex',ier)
                   CALL write_var_hdf5(fid,'wall_vertex',nvertex,3,ier,DBLVAR=vertex,ATT='Wall Verticies (x,y,z) [m]',ATT_NAME='description')
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'wall_vertex',ier)
-                  !DEALLOCATE(vertex)
                END IF
                IF (ASSOCIATED(face)) THEN
                   CALL write_scalar_hdf5(fid,'nface',ier,INTVAR=nface,ATT='Number of Wall Faces',ATT_NAME='description')
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'nface',ier)
                   CALL write_var_hdf5(fid,'wall_faces',nface,3,ier,INTVAR=face,ATT='Wall Faces',ATT_NAME='description')
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'wall_faces',ier)
-                  !DEALLOCATE(face)
                END IF
             CASE('TRAJECTORY_PARTIAL')
                CALL open_hdf5('beams3d_'//TRIM(id_string)//'.h5',fid,ier,LCREATE=.false.)
@@ -168,7 +166,6 @@
                   CALL write_var_hdf5(fid,'wall_strikes',nface,ier,INTVAR=ihit_array,&
                                    ATT='Wall Strikes',ATT_NAME='description')
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'wall_strikes',ier)
-                  !CALL wall_free(ier,MPI_COMM_SHARMEM)
                END IF
             CASE('TRAJECTORY_FULL')
                CALL open_hdf5('beams3d_'//TRIM(id_string)//'.h5',fid,ier,LCREATE=.false.)
@@ -231,7 +228,6 @@
                   CALL write_var_hdf5(fid,'wall_strikes',nface,ier,INTVAR=ihit_array,&
                                    ATT='Wall Strikes',ATT_NAME='description')
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'wall_strikes',ier)
-                  !CALL wall_free(ier,MPI_COMM_SHARMEM)
                END IF
             CASE('DIAG')
                CALL open_hdf5('beams3d_'//TRIM(id_string)//'.h5',fid,ier,LCREATE=.false.)
@@ -282,7 +278,6 @@
          WRITE(iunit,*) weight
          WRITE(iunit,*) beam
          WRITE(iunit,*) e_beams
-         !WRITE(iunit,*) p_beams
          IF (.not.ldepo) THEN
             WRITE(iunit,*) shine_through
             WRITE(iunit,*) ndot_prof
