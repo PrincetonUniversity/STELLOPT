@@ -65,14 +65,11 @@
 #######################################################################
 #            NTCC Options
 #######################################################################
-  LNTCC = F
-  NTCC_INC = -I/opt/local/mod
-  NTCC_LIB = -L/opt/local/lib -lpreact -lsigsub -laladdinsub \
-             -lpreact -lpspline -lportlib -lezcdf
-#  NTCC_INC = -I/Users/slazerso/Sims_PPPL/STELLOPT/NTCC/MAC/mod
-#  NTCC_LIB = -L/Users/slazerso/Sims_PPPL/STELLOPT/NTCC/MAC/lib \
-#             -lpreact -lsigsub -laladdinsub -lpreact -lpspline \
-#             -lportlib -lezcdf
+  LNTCC = T
+  NTCC_INC = -I/Users/lazerson/Sims_Work/pub/mod
+  NTCC_LIB = -L/Users/lazerson/Sims_Work/pub/lib \
+             -lpreact -lsigsub -laladdinsub -lpreact -lpspline \
+             -lportlib -lezcdf
 
 #######################################################################
 #            HDF5 Options
