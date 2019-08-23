@@ -467,6 +467,13 @@ MODULE beams3d_physics_mod
          ! This formula comes from the ADAS description of how to use the functions. (M. Gorelenkova)
          telocal = telocal + to3*0.000544602984424355*energy
          CALL adas_sigvte_ioniz(1,telocal,num_depo,sigvei,ier)        ! Electron Impact ionization cross-section term.
+!DEC$ ELSE
+         IF (myworkid == master) THEN
+            WRITE(6,*) '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+            WRITE(6,*) '!!    ERROR: YOU DONT HAVE ADAS       !!'
+            WRITE(6,*) '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+            STOP
+         END IF
 !DEC$ ENDIF
          tau_inv = ((sigvii + sigvcx + sigvei)*nelocal) ! Delete a term if desired. (save a comment)
 

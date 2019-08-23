@@ -64,18 +64,18 @@
                CALL h5gcreate_f(fid,'options', options_gid, ier)
                CALL write_att_hdf5(options_gid,'active',qid_str,ier)
                CALL h5gcreate_f(options_gid,'opt_'//qid_str, qid_gid, ier)
-               CALL write_var_hdf5(qid_gid,'SIM_MODE',ier,DBLVAR=DBLE(1))
-               CALL write_var_hdf5(qid_gid,'ENABLE_ADAPTIVE',ier,DBLVAR=DBLE(0))
+               CALL write_var_hdf5(qid_gid,'SIM_MODE',ier,DBLVAR=DBLE(3))
+               CALL write_var_hdf5(qid_gid,'ENABLE_ADAPTIVE',ier,DBLVAR=DBLE(1))
                CALL write_var_hdf5(qid_gid,'RECORD_MODE',ier,DBLVAR=DBLE(0))
                CALL write_var_hdf5(qid_gid,'FIXEDSTEP_USE_USERDEFINED',ier,DBLVAR=DBLE(0))
                CALL write_var_hdf5(qid_gid,'FIXEDSTEP_USERDEFINED',ier,DBLVAR=DBLE(0))
                CALL write_var_hdf5(qid_gid,'FIXEDSTEP_GYRODEFINED',ier,DBLVAR=DBLE(0))
-               CALL write_var_hdf5(qid_gid,'ADAPTIVE_TOL_ORBIT',ier,DBLVAR=DBLE(0))
-               CALL write_var_hdf5(qid_gid,'ADAPTIVE_TOL_CCOL',ier,DBLVAR=DBLE(0))
-               CALL write_var_hdf5(qid_gid,'ADAPTIVE_MAX_DRHO',ier,DBLVAR=DBLE(0))
-               CALL write_var_hdf5(qid_gid,'ADAPTIVE_MAX_DPHI',ier,DBLVAR=DBLE(0))
-               CALL write_var_hdf5(qid_gid,'ENABLE_ORBIT_FOLLOWING',ier,DBLVAR=DBLE(0))
-               CALL write_var_hdf5(qid_gid,'ENABLE_COULOMB_COLLISIONS',ier,DBLVAR=DBLE(0))
+               CALL write_var_hdf5(qid_gid,'ADAPTIVE_TOL_ORBIT',ier,DBLVAR=DBLE(0.01))
+               CALL write_var_hdf5(qid_gid,'ADAPTIVE_TOL_CCOL',ier,DBLVAR=DBLE(0.01))
+               CALL write_var_hdf5(qid_gid,'ADAPTIVE_MAX_DRHO',ier,DBLVAR=DBLE(0.01))
+               CALL write_var_hdf5(qid_gid,'ADAPTIVE_MAX_DPHI',ier,DBLVAR=DBLE(0.01))
+               CALL write_var_hdf5(qid_gid,'ENABLE_ORBIT_FOLLOWING',ier,DBLVAR=DBLE(1))
+               CALL write_var_hdf5(qid_gid,'ENABLE_COULOMB_COLLISIONS',ier,DBLVAR=DBLE(1))
                CALL write_var_hdf5(qid_gid,'DISABLE_FIRSTORDER_GCTRANS',ier,DBLVAR=DBLE(0))
                CALL write_var_hdf5(qid_gid,'DISABLE_ENERGY_CCOLL',ier,DBLVAR=DBLE(0))
                CALL write_var_hdf5(qid_gid,'DISABLE_PITCH_CCOLL',ier,DBLVAR=DBLE(0))
@@ -84,16 +84,16 @@
                CALL write_var_hdf5(qid_gid,'ENDCOND_CPUTIMELIM',ier,DBLVAR=DBLE(0))
                CALL write_var_hdf5(qid_gid,'ENDCOND_RHOLIM',ier,DBLVAR=DBLE(0))
                CALL write_var_hdf5(qid_gid,'ENDCOND_ENERGYLIM',ier,DBLVAR=DBLE(0))
-               CALL write_var_hdf5(qid_gid,'ENDCOND_WALLHIT',ier,DBLVAR=DBLE(0))
+               CALL write_var_hdf5(qid_gid,'ENDCOND_WALLHIT',ier,DBLVAR=DBLE(1))
                CALL write_var_hdf5(qid_gid,'ENDCOND_MAXORBS',ier,DBLVAR=DBLE(0))
                CALL write_var_hdf5(qid_gid,'ENDCOND_MAX_SIMTIME',ier,DBLVAR=DBLE(0))
-               CALL write_var_hdf5(qid_gid,'ENDCOND_MAX_CPUTIME',ier,DBLVAR=DBLE(0))
-               CALL write_var_hdf5(qid_gid,'ENDCOND_MAX_RHO',ier,DBLVAR=DBLE(0))
+               CALL write_var_hdf5(qid_gid,'ENDCOND_MAX_CPUTIME',ier,DBLVAR=DBLE(600))
+               CALL write_var_hdf5(qid_gid,'ENDCOND_MAX_RHO',ier,DBLVAR=DBLE(1.0))
                CALL write_var_hdf5(qid_gid,'ENDCOND_MIN_RHO',ier,DBLVAR=DBLE(0))
                CALL write_var_hdf5(qid_gid,'ENDCOND_MIN_ENERGY',ier,DBLVAR=DBLE(0))
                CALL write_var_hdf5(qid_gid,'ENDCOND_MIN_THERMAL',ier,DBLVAR=DBLE(0))
                CALL write_var_hdf5(qid_gid,'ENDCOND_MAX_POLOIDALORBS',ier,DBLVAR=DBLE(0))
-               CALL write_var_hdf5(qid_gid,'ENDCOND_MAX_TOROIDALORBS',ier,DBLVAR=DBLE(0))
+               CALL write_var_hdf5(qid_gid,'ENDCOND_MAX_TOROIDALORBS',ier,DBLVAR=DBLE(pi2*1000))
                CALL write_var_hdf5(qid_gid,'ENABLE_DIST_5D',ier,DBLVAR=DBLE(0))
                CALL write_var_hdf5(qid_gid,'ENABLE_DIST_6D',ier,DBLVAR=DBLE(0))
                CALL write_var_hdf5(qid_gid,'ENABLE_DIST_RHO5D',ier,DBLVAR=DBLE(0))
@@ -297,22 +297,26 @@
             !    2: Gyrocenter
             d1 = LBOUND(R_lines,DIM=2)
             d2 = UBOUND(R_lines,DIM=2)
+            d3 = 2
             ALLOCATE(rtemp(d1:d2,13,1))
             DO i = d1, d2
-               rtemp(i,1,1) = R_lines(2,i)
-               rtemp(i,2,1) = PHI_lines(2,i)
-               rtemp(i,3,1) = Z_lines(2,i)
-               rtemp(i,4,1) = 0.5*mass(i)*vll_lines(2,i)*vll_lines(2,i)
-               rtemp(i,5,1) = 0.0 ! pitch
+               !CALL RANDOM_NUMBER(rand_prob)
+               rtemp(i,1,1) = R_lines(d3,i)
+               rtemp(i,2,1) = PHI_lines(d3,i)
+               rtemp(i,3,1) = Z_lines(d3,i)
+               rtemp(i,4,1) = 0.5*mass(i)*vll_lines(d3,i)*vll_lines(d3,i)
+               rtemp(i,5,1) = SQRT(2*B_lines(d3,i)*moment_lines(d3,i)/mass(i)) ! v_perp
+               rtemp(i,5,1) = rtemp(i,5,1)/(rtemp(i,5,1)+vll_lines(d3,i)) ! pitch
                rtemp(i,6,1) = 0.0 ! zeta
                rtemp(i,7,1) = mass(i) ! mass
                rtemp(i,8,1) = charge(i)
-               rtemp(i,9,1) = mass(i)/1.6726231000E-27 ! Anum
+               rtemp(i,9,1) = NINT(mass(i)*5.97863320194E26) ! Anum
                rtemp(i,10,1) = Zatom(i)
                rtemp(i,11,1) = 1.0 ! weight
                rtemp(i,12,1) = 0.0 ! time
                rtemp(i,13,1) = i
             END DO
+            WHERE(rtemp(:,4,1)==0) rtemp(:,5,1)=0.0 ! avoid NAN pitch angle
             CALL beams3d_write1d_parhdf5( 1, nparticles, d1, d2, '/marker/gc_'//qid_str//'/r',      DBLVAR=rtemp(:,1,1))
             CALL beams3d_write1d_parhdf5( 1, nparticles, d1, d2, '/marker/gc_'//qid_str//'/phi',    DBLVAR=rtemp(:,2,1))
             CALL beams3d_write1d_parhdf5( 1, nparticles, d1, d2, '/marker/gc_'//qid_str//'/z',      DBLVAR=rtemp(:,3,1))

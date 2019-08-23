@@ -177,6 +177,12 @@
             npot = npot + 1
          END DO
 
+         IF (nzeff < 2) THEN
+            ZEFF_AUX_S(1:6) = (/0.0,0.2,0.4,0.6,0.8,1.0/)
+            ZEFF_AUX_F(1:6) = (/1.0,1.0,1.0,1.0,1.0,1.0/)
+            nzeff = 6
+         END IF
+
          nparticles = 0
          DO WHILE ((r_start_in(nparticles+1) >= 0.0).and.(nparticles<MAXPARTICLES))
             nparticles = nparticles + 1
