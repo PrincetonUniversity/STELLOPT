@@ -116,8 +116,8 @@ simplified through a spectral decomposition in the angle variables and
 furthermore through the implementation of a steepest-descent method for
 solving for the minimum in potential energy.
 
-The inverse mapping (\$R,\lambda,Z\$ in terms of the flux coordinates
-\$\rho,\theta,\zeta\$) can be expressed as:
+The inverse mapping ($$R,\lambda,Z$$ in terms of the flux coordinates
+$$\rho,\theta,\zeta$$) can be expressed as:
 
 \$$  R=R_o\left(\rho\right) + f_R \left(\rho,\theta,\zeta\right),$$
 
