@@ -18,9 +18,9 @@ toc.pop(2)
 toc.insert(1, b'---')
 toc[-2] = b'---'
 toc = [line.decode('utf8')+' \n' for line in toc]
-for line in toc:
-    if line[:8] == '         ':
-        del line[:8]
+for i in range(len(toc)):
+    if toc[i][:6] == '      ':
+        toc[i] = toc[i][5:]
 #print(toc)
 
 with open(filename, 'r') as f:

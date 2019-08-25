@@ -6,27 +6,26 @@ appended the input file containing the
 [VMEC input namelist](VMEC input namelist). The OPTIMUM namelist is
 arranged below into sections for clarity. The first section deals with
 how the optimizer runs and which equilibrium code to utilize.
-
 =======
  
 --- 
 Table of Contents 
  
-      * [Runtime Control](#runtime-control) 
-         * [LMDIF](#lmdif) 
-         * [GADE](#gade) 
-         * [PSO](#pso) 
-         * [Mapping (gridded)](#mapping-gridded) 
-         * [Mapping (hyperplane)](#mapping-hyperplane) 
-      * [Variables](#variables) 
-      * [Profile Functions](#profile-functions) 
-      * [Boozer Spectrum Parameters](#boozer-spectrum-parameters) 
-      * [Targets](#targets) 
+ * [Runtime Control](#runtime-control) 
+    * [LMDIF](#lmdif) 
+    * [GADE](#gade) 
+    * [PSO](#pso) 
+    * [Mapping (gridded)](#mapping-gridded) 
+    * [Mapping (hyperplane)](#mapping-hyperplane) 
+ * [Variables](#variables) 
+ * [Profile Functions](#profile-functions) 
+ * [Boozer Spectrum Parameters](#boozer-spectrum-parameters) 
+ * [Targets](#targets) 
  
 --- 
  
- 
 
+ 
 ## Runtime Control
 ---------------
 
@@ -58,28 +57,15 @@ characterization of some optimization choices please see the page
 Levenberg-Marquardt algorithm with finite difference derivative
 evaluation. Note that the user should not set the NPOPULATION parameter
 unless they're running parallel codes.
-| FTOL | Desired relative
-error in sum of squares. Termination occurs when both the actual and
-predicted relative reductions in the
-sum of squares are at most FTOL. Therefore, FTOL measures the
-relative error desired in the sum of
-squares.|
-| XTOL | Desired relative error in
-approximate solution. Termination occurs when the relative error between
-two consecutive iterates is at most XTOL. Therefore, XTOL measures the
-relative error desired in the approximate solution. |
-| GTOL |
-Measures the orthogonality between the function vector and columns of
-the Jacobian. Termination occurs when the cosine of the angle between
-FVEC and any column of the Jacobian is at most GTOL in absolute value.
-therefore, GTOL measures the orthogonality desired between the function
-vector and the columns of the jacobian. |
+
+| FTOL | Desired relative error in sum of squares. Termination occurs when both the actual an predicted relative reductions in the sum of squares are at most FTOL. Therefore, FTOL measures the relative error desired in the sum of squares.|
+| XTOL | Desired relative error in approximate solution. Termination occurs when the relative error between two consecutive iterates is at most XTOL. Therefore, XTOL measures the relative error desired in the approximate solution. |
+| GTOL | Measures the orthogonality between the function vector and columns of the Jacobian. Termination occurs when the cosine of the angle between FVEC and any column of the Jacobian is at most GTOL in absolute value. Therefore, GTOL measures the orthogonality desired between the function vector and the columns of the jacobian. |
 | EPSFCN | Jacobian forward differencing step size (1% \~ 0.0001) |
-| FACTOR | Determines initial step step bound (100.0 suggested) | \n | MODE |
-Determines variable scaling (1: auto, 2: Use DVAR scaling values) |
-| NPOPULATION | Number of optimizer threads (for parallel codes:
-GENE, COILOPT++, BEAMS3D, default: NPROCS) | A bounded LMDIF routine
-is also accessible by setting the OPT_TYPE='LMDIF_BOUNDED'. |
+| FACTOR | Determines initial step step bound (100.0 suggested) |
+| MODE | Determines variable scaling (1: auto, 2: Use DVAR scaling values) |
+| NPOPULATION | Number of optimizer threads (for parallel codes: GENE, COILOPT++, BEAMS3D, default: NPROCS) |
+A bounded LMDIF routine is also accessible by setting the OPT_TYPE='LMDIF_BOUNDED'.
 
 ### GADE
 
@@ -91,7 +77,9 @@ varied. Stereotypical advice is to set MIN = 0.5\*VAL and MAX=2.0\*VAL
 where VAL is the initial value of the variable being varied by the code
 (some sorting may be necessary). This was how the values were
 traditionally set in addition to: FACTOR = 0.5, EPSFCN = 0.3, MODE = 2,
-CR_STRATEGY = 0. | FACTOR | Mutation scaling factor (F). |
+CR_STRATEGY = 0.
+
+| FACTOR | Mutation scaling factor (F). |
 | EPSFCN | Crossover factor. | \n | MODE | The strategy of
 the mutation operations used. | \n | CR_STRATEGY | Cross-over
 strategy (0: exponential, 1: binomial) | The algorithm begin by
@@ -113,7 +101,9 @@ Equation | \n | 1 | X_NEW=X_BEST+FACTOR\*(X_1-X_2) | \n | 2
 | X_NEW=X_3+FACTOR\*(X_1-X_2) | \n | 3 |
 X_NEW=X_OLD+FACTOR\*(X_BEST-X_OLD+X_3-X_4) | \n | 4 |
 X_NEW=X_BEST+FACTOR\*(X_1-X_2+X_3-X_4) | \n | 5 |
-X_NEW=X_5+FACTOR\*(X_1-X_2+X_3-X_4) | Here X_BEST is the GENE
+X_NEW=X_5+FACTOR\*(X_1-X_2+X_3-X_4) |
+
+Here X_BEST is the GENE
 from the 'BEST' previous equilibrium (lowest chi-squared),
 X_(1,2,3,4,5) are randomly chosen members of the population, and X_OLD
 is the original GENE. Remember that only specific 'GENES' are being
@@ -157,33 +147,7 @@ mutated. Notes from code on choice of MODE.
     !
     !===========================================================================
  
---- 
  
- 
- 
- 
- 
---- 
- 
- 
---- 
- 
- 
- 
- 
- 
---- 
- 
- 
---- 
- 
- 
- 
- 
- 
---- 
- 
-
 To preform a restart from a previous run first setup a new directory,
 with the input file and any auxiliary files you may need. Then copy in
 the gade_restart.ext file from your previous run. Then when you execute
