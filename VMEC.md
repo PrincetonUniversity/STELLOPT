@@ -42,7 +42,7 @@ of MHD force balance equations in a toroidal domain:
 Combining these equations the total plasma potential energy can be
 written
 
-\$$ W=\int\left(\frac{|\vec{B}|^2}{2\mu_o}+\frac{p}{\gamma-1}\right)d^3x. $$
+\$$ W=\int\left(\frac{\|\vec{B}\|^2}{2\mu_o}+\frac{p}{\gamma-1}\right)d^3x. $$
 
 The scalar invariance of the potential energy allows it`s computation
 directly in flux coordinates. The relevant toroidal-cylindrical and flux
@@ -77,7 +77,7 @@ The magnitude of the magnetic field is defined as:
 
 \$$  \|\vec{B}\|^2\equiv B^iB_i=\left(B^\theta\right)^2g_{\theta\theta}+2B^\theta B^\zeta g_{\theta\zeta}+\left(B^\zeta\right)^2g_{\zeta\zeta}. $$
 
-The limits of the second integral indicate that we`ve normalized our
+The limits of the second integral indicate that we've normalized our
 radial magnetic coordinate to the dimensions of our toroidal cross
 section.
 
@@ -96,19 +96,19 @@ rewrite the variation in potential energy:
 
 Here, the MHD force components are $$\left(F_1,F_2,F_3\right)=\left(F_R,F_\phi,F_Z\right)$$.
 
-\$$  F_R&=&-\frac{\partial}{\partial \rho}\left[\|\sqrt{g}\|\frac{\partial\rho}{\partial R}\left(\frac{\|\vec{B}\|^2}{2\mu_o}+p\right)\right]-\frac{\partial}{\partial \theta}\left[\|\sqrt{g}\|\frac{\partial\theta}{\partial R}\left(\frac{\|\vec{B}\|^2}{2\mu_o}+p\right)\right] $$
+\$$  F_R=-\frac{\partial}{\partial \rho}\left[\|\sqrt{g}\|\frac{\partial\rho}{\partial R}\left(\frac{\|\vec{B}\|^2}{2\mu_o}+p\right)\right]-\frac{\partial}{\partial \theta}\left[\|\sqrt{g}\|\frac{\partial\theta}{\partial R}\left(\frac{\|\vec{B}\|^2}{2\mu_o}+p\right)\right] $$
 
-\$$  & &-\frac{\partial}{\partial \zeta}\left[\|\sqrt{g}\|\frac{\partial\zeta}{\partial R}\left(\frac{\|\vec{B}\|^2}{2\mu_o}+p\right)\right]+\mu^{-1}_o\|\sqrt{g}\|\vec{\nabla}\cdot\left[\left(\vec{B}\cdot\vec{\nabla}R\right)\vec{B}\right] $$
+\$$   -\frac{\partial}{\partial \zeta}\left[\|\sqrt{g}\|\frac{\partial\zeta}{\partial R}\left(\frac{\|\vec{B}\|^2}{2\mu_o}+p\right)\right]+\mu^{-1}_o\|\sqrt{g}\|\vec{\nabla}\cdot\left[\left(\vec{B}\cdot\vec{\nabla}R\right)\vec{B}\right] $$
 
-\$$  & &+\frac{\sqrt{g}}{R}\left[\frac{\|\vec{B}\|^2}{2\mu_o}+p-\frac{R^2\left(\vec{B}\cdot\vec{\nabla}\phi\right)^2}{\mu_o}\right] $$
+\$$   +\frac{\sqrt{g}}{R}\left[\frac{\|\vec{B}\|^2}{2\mu_o}+p-\frac{R^2\left(\vec{B}\cdot\vec{\nabla}\phi\right)^2}{\mu_o}\right] $$
 
-\$$  F_\phi&=&-\frac{\partial}{\partial \rho}\left[\|\sqrt{g}\|\frac{\partial\rho}{\partial \phi}\left(\frac{\|\vec{B}\|^2}{2\mu_o}+p\right)\right]-\frac{\partial}{\partial \theta}\left[\|\sqrt{g}\|\frac{\partial\theta}{\partial \phi}\left(\frac{\|\vec{B}\|^2}{2\mu_o}+p\right)\right] $$
+\$$  F_\phi=-\frac{\partial}{\partial \rho}\left[\|\sqrt{g}\|\frac{\partial\rho}{\partial \phi}\left(\frac{\|\vec{B}\|^2}{2\mu_o}+p\right)\right]-\frac{\partial}{\partial \theta}\left[\|\sqrt{g}\|\frac{\partial\theta}{\partial \phi}\left(\frac{\|\vec{B}\|^2}{2\mu_o}+p\right)\right] $$
 
-\$$  & &-\frac{\partial}{\partial \zeta}\left[\|\sqrt{g}\|\frac{\partial\zeta}{\partial \phi}\left(\frac{\|\vec{B}\|^2}{2\mu_o}+p\right)\right]+\mu^{-1}_o\|\sqrt{g}\|\vec{\nabla}\cdot\left[\left(R^2\vec{B}\cdot\vec{\nabla}\phi\right)\vec{B}\right] $$
+\$$   -\frac{\partial}{\partial \zeta}\left[\|\sqrt{g}\|\frac{\partial\zeta}{\partial \phi}\left(\frac{\|\vec{B}\|^2}{2\mu_o}+p\right)\right]+\mu^{-1}_o\|\sqrt{g}\|\vec{\nabla}\cdot\left[\left(R^2\vec{B}\cdot\vec{\nabla}\phi\right)\vec{B}\right] $$
 
-\$$  F_Z&=&-\frac{\partial}{\partial \rho}\left[\|\sqrt{g}\|\frac{\partial\rho}{\partial Z}\left(\frac{\|\vec{B}\|^2}{2\mu_o}+p\right)\right]-\frac{\partial}{\partial \theta}\left[\|\sqrt{g}\|\frac{\partial\theta}{\partial Z}\left(\frac{\|\vec{B}\|^2}{2\mu_o}+p\right)\right] $$
+\$$  F_Z=-\frac{\partial}{\partial \rho}\left[\|\sqrt{g}\|\frac{\partial\rho}{\partial Z}\left(\frac{\|\vec{B}\|^2}{2\mu_o}+p\right)\right]-\frac{\partial}{\partial \theta}\left[\|\sqrt{g}\|\frac{\partial\theta}{\partial Z}\left(\frac{\|\vec{B}\|^2}{2\mu_o}+p\right)\right] $$
 
-\$$  & &-\frac{\partial}{\partial \zeta}\left[\|\sqrt{g}\|\frac{\partial\zeta}{\partial Z}\left(\frac{\|\vec{B}\|^2}{2\mu_o}+p\right)\right]+\mu^{-1}_o\|\sqrt{g}\|\vec{\nabla}\cdot\left[\left(\vec{B}\cdot\vec{\nabla}Z\right)\vec{B}\right]. $$
+\$$   -\frac{\partial}{\partial \zeta}\left[\|\sqrt{g}\|\frac{\partial\zeta}{\partial Z}\left(\frac{\|\vec{B}\|^2}{2\mu_o}+p\right)\right]+\mu^{-1}_o\|\sqrt{g}\|\vec{\nabla}\cdot\left[\left(\vec{B}\cdot\vec{\nabla}Z\right)\vec{B}\right]. $$
 
 This defines our system of equations. This system is subsequently
 simplified through a spectral decomposition in the angle variables and
@@ -161,16 +161,16 @@ three general constraints on the behavior of the magnetic field at the
 origin must be maintained. At the outer boundary (rho=1) two situations
 may exist: a fixed boundary and a free boundary. The former case is
 simply implemented through specification of the boundary Fourier
-amplitudes (Xj^{mn}). In the latter case, energy principles must be
+amplitudes ($$X_j^{mn}$$). In the latter case, energy principles must be
 incorporated into the variational principle.
 
 The magnetic field must be well behaved at the inner boundary. The
 magnetic axis must not have a poloidal dependence (theta). This implies
-that that all the Fourier coefficients (Xj^{mn}) must vanish at the
+that that all the Fourier coefficients ($$X_j^{mn}$$) must vanish at the
 origin for m≠0. The net force in the system is a second order operator
 in rho. This implies that at the origin, which has mirror symmetry, the
 Fourier coefficients must also be second order in rho. In terms of the
-Fourier coefficients (X1^{0n})`=(X3^{0n})`=0\$, here the prime
+Fourier coefficients ($$X_1^{0n}' = X_3^{0n}'=0 $$, here the prime
 indicates a derivative with respect to rho. The final constraint is on
 the lambda coordinate. At the origin we require the poloidal derivative
 of the toroidal coordinate to vanish. Again in the nomenclature of the
@@ -179,8 +179,8 @@ Fourier coefficients, it is written
 \$$  \partial X_2^{0m}/\partial \theta=0. $$
 
 It is also important to mention that the toroidal coordinate must be
-periodic thus it`s m=0,n=0 coefficient must vanish everywhere
-(X2^{00}=0). This completes the boundary specification of the magnetic
+periodic thus it's m=0,n=0 coefficient must vanish everywhere
+($$X_2^{00}=0$$). This completes the boundary specification of the magnetic
 field at the origin.
 
 The boundary conditions for a fixed outer boundary (rho=1) are
@@ -236,36 +236,37 @@ of variable can be found in the
 [input variable namelist page](VMEC Input Namelist (v8.47)). The input
 file in general looks like:
 
-    #!fortran
-    &INDATA
-     LFREEB = F
-     MGRID_FILE = "none"
-     DELT = 0.9
-     NFP = 7
-     NCURR = 0
-     MPOL = 9
-     NTOR = 6
-     NZETA = 18
-     NITER = 10000
-     NSTEP = 200
-     NVACSKIP = 6
-     GAMMA = 0.000000E+00
-     PHIEDGE = 1.13E-01
-     CURTOR = 0.0
-     NS_ARRAY =     9      49
-     FTOL_ARRAY = 1.00e-6   1.e-11
-     AM =   1.e4    -1.e4    9*0.
-     AI =    6.90    0.0      0.0    3.90   0.0    0.0    6.90    0.0    0.0    6.90
-       0.0
-     AC =   11*0.
-     RAXIS =   2.88    0.04
-     ZAXIS =   0.00   -0.04
-     RBC(0,0) =   2.90     ZBS(0,0) =   0.00
-     RBC(0,1) =   1.00     ZBS(0,1) =   1.00
-     RBC(1,1) =  -0.21     ZBS(1,1) =   0.21
-     RBC(1,4) =  -0.01     ZBS(1,4) =   0.01
-     RBC(1,6) =  -0.01     ZBS(1,6) =  -0.01
-    /
+```Fortran
+&INDATA
+LFREEB = F
+MGRID_FILE = "none"
+DELT = 0.9
+NFP = 7
+NCURR = 0
+MPOL = 9
+NTOR = 6
+NZETA = 18
+NITER = 10000
+NSTEP = 200
+NVACSKIP = 6
+GAMMA = 0.000000E+00
+PHIEDGE = 1.13E-01
+CURTOR = 0.0
+NS_ARRAY =     9      49
+FTOL_ARRAY = 1.00e-6   1.e-11
+AM =   1.e4    -1.e4    9*0.
+AI =    6.90    0.0      0.0    3.90   0.0    0.0    6.90    0.0    0.0    6.90
+0.0
+AC =   11*0.
+RAXIS =   2.88    0.04
+ZAXIS =   0.00   -0.04
+RBC(0,0) =   2.90     ZBS(0,0) =   0.00
+RBC(0,1) =   1.00     ZBS(0,1) =   1.00
+RBC(1,1) =  -0.21     ZBS(1,1) =   0.21
+RBC(1,4) =  -0.01     ZBS(1,4) =   0.01
+RBC(1,6) =  -0.01     ZBS(1,6) =  -0.01
+/
+```
 
 The first line simply defines the Fortran namelist and the last line
 ends it. The `LFREEB` is a boolean value which specifies if the code
@@ -360,7 +361,7 @@ to VMEC like so (input file named input.test):
 
     yourmachine:0005> ~/bin/xvmec2000 test >& log.test &
 
-Here we`ve redirected screen output (trapping error messages) to
+Here we've redirected screen output (trapping error messages) to
 `log.test` and put the process in the background.
 
 ------------------------------------------------------------------------
@@ -399,7 +400,7 @@ multiply the toroidal mode number (n) by the number of field periods for
 a given machine. Strumberger provides an explanation of how to map the
 VMEC contravariant vectors to cylindrical space. A few packages exist to
 ease the user into plotting the VMEC data. A discussion of toroidal
-coordinate systems can be found [here](Toroidal Coordinates). A FORTRAN
+coordinate systems can be found [Toroidal Coordinate](Toroidal Coordinates). A FORTRAN
 library for manipulation of toroidal equilibria AJAX does exist and is
 distributed as part of the LIBSTELL package.
 
@@ -425,6 +426,8 @@ IDL.
 [VMEC Advanced Profiles](VMEC Advanced Profiles)
 
 [VMEC PEST1 Coordinates](VMEC PEST1 Coordinates)
+
+[Toroidal Coordinate](Toroidal Coordinates)
 
 ------------------------------------------------------------------------
 
