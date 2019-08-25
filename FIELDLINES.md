@@ -337,7 +337,7 @@ field line is defined as a set of points in R phi and Z.
 
 ------------------------------------------------------------------------
 
-### Tutorials\]
+### Tutorials
 
 [FIELDLINES Vacuum NCSX Tutorial](FIELDLINES Vacuum NCSX Tutorial)
 
