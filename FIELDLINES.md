@@ -5,13 +5,13 @@ FIELDLINES
 --- 
 Table of Contents 
  
-         * [Theory](#theory) 
-         * [Compilation](#compilation) 
-         * [Input Data Format](#input-data-format) 
-         * [Execution](#execution) 
-         * [Output Data Format](#output-data-format) 
-         * [Visualization](#visualization) 
-         * [Tutorials]](#tutorials) 
+   * [Theory](#theory) 
+   * [Compilation](#compilation) 
+   * [Input Data Format](#input-data-format) 
+   * [Execution](#execution) 
+   * [Output Data Format](#output-data-format) 
+   * [Visualization](#visualization) 
+   * [Tutorials]](#tutorials) 
  
 --- 
  

@@ -16,7 +16,8 @@ toc = toc.split(b'\n') # split into list
 toc.pop(2)
 toc.insert(1, b'---')
 toc[-2] = b'---'
-toc = [line.decode('utf8')+' \n' for line in toc]
+toc = [line.decode('utf8').replace('         ', '   ')+' \n' for line in toc]
+
 
 
 with open(filename, 'r') as f:
