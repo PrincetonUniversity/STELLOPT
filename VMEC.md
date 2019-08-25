@@ -170,7 +170,7 @@ that that all the Fourier coefficients ($$X_j^{mn}$$) must vanish at the
 origin for m≠0. The net force in the system is a second order operator
 in rho. This implies that at the origin, which has mirror symmetry, the
 Fourier coefficients must also be second order in rho. In terms of the
-Fourier coefficients ($$X_1^{0n}' = X_3^{0n}'=0 $$, here the prime
+Fourier coefficients ($$ {X_1^{0n}}' = {X_3^{0n}}'=0 $$, here the prime
 indicates a derivative with respect to rho. The final constraint is on
 the lambda coordinate. At the origin we require the poloidal derivative
 of the toroidal coordinate to vanish. Again in the nomenclature of the
@@ -185,10 +185,10 @@ field at the origin.
 
 The boundary conditions for a fixed outer boundary (rho=1) are
 implemented through specification of the Fourier coefficients. The shape
-of the flux surface thus prescribes the radial X1^{mn} and vertical
-X3^{mn} coordinate coefficients. The poloidal force components contain
+of the flux surface thus prescribes the radial $$X_1^{mn}$$ and vertical
+$$X_3^{mn}$$ coordinate coefficients. The poloidal force components contain
 no radial derivatives. This implies that no boundary specification is
-required for X2^{mn}.
+required for $$X_2^{mn}$$.
 
 The VMEC code treats the `free` outer boundary condition through
 inclusion of a `vacuum` magnetic field. The MAKEGRID code is used to
@@ -298,7 +298,7 @@ flux for a fixed boundary run. For a free boundary run, this variable
 limits the radius of the plasma. The `CURTOR` variable specifies the
 scaling for the toroidal current in Amps.
 
-The `NS\_ARRAY` and `FTOL_ARRAY` specify the radial grid
+The `NS_ARRAY` and `FTOL_ARRAY` specify the radial grid
 refinement that the code uses. In general the code iterates on a given
 radial grid. Once a specified tolerance is met, the code uses a more
 refined grid and restarts it`s iterative cycle for a new tolerance. The

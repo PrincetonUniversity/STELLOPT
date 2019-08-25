@@ -1,14 +1,33 @@
-\<span style=\"font-size: 13px; line-height: 1.5;\"\>The STELLOPT
-OPTIMUM namelist controls the execution of the STELLOPT code. Not all
+{% include head.html %} 
+
+The STELLOPT OPTIMUM namelist controls the execution of the STELLOPT code. Not all
 values need be specified in a file. This input namelist should be
 appended the input file containing the
 [VMEC input namelist](VMEC input namelist). The OPTIMUM namelist is
 arranged below into sections for clarity. The first section deals with
-how the optimizer runs and which equilibrium code to utilize.\</span\>
+how the optimizer runs and which equilibrium code to utilize.
 
-------------------------------------------------------------------------
+=======
+ 
+--- 
+Table of Contents 
+ 
+      * [Runtime Control](#runtime-control) 
+         * [LMDIF](#lmdif) 
+         * [GADE](#gade) 
+         * [PSO](#pso) 
+         * [Mapping (gridded)](#mapping-gridded) 
+         * [Mapping (hyperplane)](#mapping-hyperplane) 
+      * [Variables](#variables) 
+      * [Profile Functions](#profile-functions) 
+      * [Boozer Spectrum Parameters](#boozer-spectrum-parameters) 
+      * [Targets](#targets) 
+ 
+--- 
+ 
+ 
 
-Runtime Control
+## Runtime Control
 ---------------
 
 The following parameters control how the code runs. Depending on the
@@ -38,63 +57,66 @@ characterization of some optimization choices please see the page
 
 Levenberg-Marquardt algorithm with finite difference derivative
 evaluation. Note that the user should not set the NPOPULATION parameter
-unless they\'re running parallel codes. \|\| FTOL \|\| Desired relative
+unless they're running parallel codes.
+| FTOL | Desired relative
 error in sum of squares. Termination occurs when both the actual and
-predicted relative \<span style=\"line-height: 1.5;\"\>reductions in the
-sum of squares are at most FTOL. T\</span\>herefore, FTOL measures the
-relative error desired \<span style=\"line-height: 1.5;\"\>in the sum of
-squares.\</span\> \|\| \|\| XTOL \|\| Desired relative error in
+predicted relative reductions in the
+sum of squares are at most FTOL. Therefore, FTOL measures the
+relative error desired in the sum of
+squares.|
+| XTOL | Desired relative error in
 approximate solution. Termination occurs when the relative error between
 two consecutive iterates is at most XTOL. Therefore, XTOL measures the
-relative error desired in the approximate solution. \|\| \|\| GTOL \|\|
+relative error desired in the approximate solution. |
+| GTOL |
 Measures the orthogonality between the function vector and columns of
 the Jacobian. Termination occurs when the cosine of the angle between
 FVEC and any column of the Jacobian is at most GTOL in absolute value.
 therefore, GTOL measures the orthogonality desired between the function
-vector and the columns of the jacobian. \|\| \|\| EPSFCN \|\| Jacobian
-forward differencing step size (1% \~ 0.0001) \|\| \|\| FACTOR \|\|
-Determines initial step step bound (100.0 suggested) \|\| \|\| MODE \|\|
-Determines variable scaling (1: auto, 2: Use DVAR scaling values) \|\|
-\|\| NPOPULATION \|\| Number of optimizer threads (for parallel codes:
-GENE, COILOPT++, BEAMS3D, default: NPROCS) \|\| A bounded LMDIF routine
-is also accessible by setting the OPT\_TYPE=\'LMDIF\_BOUNDED\'.
+vector and the columns of the jacobian. |
+| EPSFCN | Jacobian forward differencing step size (1% \~ 0.0001) |
+| FACTOR | Determines initial step step bound (100.0 suggested) | \n | MODE |
+Determines variable scaling (1: auto, 2: Use DVAR scaling values) |
+| NPOPULATION | Number of optimizer threads (for parallel codes:
+GENE, COILOPT++, BEAMS3D, default: NPROCS) | A bounded LMDIF routine
+is also accessible by setting the OPT_TYPE='LMDIF_BOUNDED'. |
 
 ### GADE
 
 Genetic algorithm with differential evolution mode where the input
-vector defining the optimized quantities are treated as \'GENES.\' It
+vector defining the optimized quantities are treated as 'GENES.' It
 should be noted that the user must also supply MIN and MAX values
 through the appropriate auxiliary arrays for each variable which is
 varied. Stereotypical advice is to set MIN = 0.5\*VAL and MAX=2.0\*VAL
 where VAL is the initial value of the variable being varied by the code
 (some sorting may be necessary). This was how the values were
 traditionally set in addition to: FACTOR = 0.5, EPSFCN = 0.3, MODE = 2,
-CR\_STRATEGY = 0. \|\| FACTOR \|\| Mutation scaling factor (F). \|\|
-\|\| EPSFCN \|\| Crossover factor. \|\| \|\| MODE \|\| The strategy of
-the mutation operations used. \|\| \|\| CR\_STRATEGY \|\| Cross-over
-strategy (0: exponential, 1: binomial) \|\| The algorithm begin by
+CR_STRATEGY = 0. | FACTOR | Mutation scaling factor (F). |
+| EPSFCN | Crossover factor. | \n | MODE | The strategy of
+the mutation operations used. | \n | CR_STRATEGY | Cross-over
+strategy (0: exponential, 1: binomial) | The algorithm begin by
 evaluating NPOPULATION equilibria, where the first member of the
 population is the input equilibria. All other equilibria are randomly
 generated from the MIN and MAX values in the OPTIMUM name list. The
-CR\_STRATEGY parameter controls how \'GENES\' are mutated. Setting it to
+CR_STRATEGY parameter controls how 'GENES' are mutated. Setting it to
 1 tells the code to randomly permute GENES where approximately EPSFCN
-(in percentage) \'GENES\' are permuted. Setting it to zero gives a more
-random behavior. However, if the user sets EPSFCN to 1, all \'GENES\'
-will be mutated either way. Setting EPSFCN to 0 and CR\_STRATEGY to 1
-would tell the code to permute one \'GENE.\' Setting EPSFCN to 0 and
-CR\_STRATEGY to 0 would permute all \'GENES.\' The mutation of the
-\'GENES\' is controlled by FACTOR and MODE. In each case, member of the
-population are randomly chosen to \'mate.\' The FACTOR parameter
-controls how much \'mutation\' is preformed. The following table
-outlines the effects of the MODE parameter \|\| MODE \|\| Mutation
-Equation \|\| \|\| 1 \|\| X\_NEW=X\_BEST+FACTOR\*(X\_1-X\_2) \|\| \|\| 2
-\|\| X\_NEW=X\_3+FACTOR\*(X\_1-X\_2) \|\| \|\| 3 \|\|
-X\_NEW=X\_OLD+FACTOR\*(X\_BEST-X\_OLD+X\_3-X\_4) \|\| \|\| 4 \|\|
-X\_NEW=X\_BEST+FACTOR\*(X\_1-X\_2+X\_3-X\_4) \|\| \|\| 5 \|\|
-X\_NEW=X\_5+FACTOR\*(X\_1-X\_2+X\_3-X\_4) \|\| Here X\_BEST is the GENE
-from the \'BEST\' previous equilibrium (lowest chi-squared),
-X\_(1,2,3,4,5) are randomly chosen members of the population, and X\_OLD
-is the original GENE. Remember that only specific \'GENES\' are being
+(in percentage) 'GENES' are permuted. Setting it to zero gives a more
+random behavior. However, if the user sets EPSFCN to 1, all 'GENES'
+will be mutated either way. Setting EPSFCN to 0 and CR_STRATEGY to 1
+would tell the code to permute one 'GENE.' Setting EPSFCN to 0 and
+CR_STRATEGY to 0 would permute all 'GENES.' The mutation of the
+'GENES' is controlled by FACTOR and MODE. In each case, member of the
+population are randomly chosen to 'mate.' The FACTOR parameter
+controls how much 'mutation' is preformed. The following table
+outlines the effects of the MODE parameter | MODE | Mutation
+Equation | \n | 1 | X_NEW=X_BEST+FACTOR\*(X_1-X_2) | \n | 2
+| X_NEW=X_3+FACTOR\*(X_1-X_2) | \n | 3 |
+X_NEW=X_OLD+FACTOR\*(X_BEST-X_OLD+X_3-X_4) | \n | 4 |
+X_NEW=X_BEST+FACTOR\*(X_1-X_2+X_3-X_4) | \n | 5 |
+X_NEW=X_5+FACTOR\*(X_1-X_2+X_3-X_4) | Here X_BEST is the GENE
+from the 'BEST' previous equilibrium (lowest chi-squared),
+X_(1,2,3,4,5) are randomly chosen members of the population, and X_OLD
+is the original GENE. Remember that only specific 'GENES' are being
 mutated. Notes from code on choice of MODE.
 
     !=======Choice of strategy=================================================
@@ -134,36 +156,63 @@ mutated. Notes from code on choice of MODE.
     ! (5) DE/rand/2/'z' seems to be a robust optimizer for many functions
     !
     !===========================================================================
+ 
+--- 
+ 
+ 
+ 
+ 
+ 
+--- 
+ 
+ 
+--- 
+ 
+ 
+ 
+ 
+ 
+--- 
+ 
+ 
+--- 
+ 
+ 
+ 
+ 
+ 
+--- 
+ 
 
 To preform a restart from a previous run first setup a new directory,
 with the input file and any auxiliary files you may need. Then copy in
-the gade\_restart.ext file from your previous run. Then when you execute
+the gade_restart.ext file from your previous run. Then when you execute
 STELLOPT, include the -restart flag on the command line to tell the
 system that this is a restart.
 
 ### PSO
 
-Particle Swarm evolution. \|\| FTOL \|\| Desired relative error in sum
-of squares. \|\| \|\| XTOL \|\| Desired relative error in approximate
-solution. \|\| \|\| EPSFCN \|\| Ratio of global attractor to local
-(local = 1.0) \|\| \|\| FACTOR \|\| Scaling factor for maximum velocity
-\|\|
+Particle Swarm evolution. | FTOL | Desired relative error in sum
+of squares. | \n | XTOL | Desired relative error in approximate
+solution. | \n | EPSFCN | Ratio of global attractor to local
+(local = 1.0) | \n | FACTOR | Scaling factor for maximum velocity
+|
 
 ### Mapping (gridded)
 
 The STELLOPT code can perform a gridded mapping of the n-dimensional
-space. \|\| MODE \|\| Number of gridpoints along a given dimension \|\|
-\|\| NPOPULATION \|\| Number of workers to evaluate map (default:
-NPROCS) \|\|
+space. | MODE | Number of gridpoints along a given dimension |
+| NPOPULATION | Number of workers to evaluate map (default:
+NPROCS) |
 
 ### Mapping (hyperplane)
 
 The STELLOPT code can perform a gridded mapping using a 2D hyperspace
 plane as defined by two points in space. In this case, the plane is
 defined by the initial equilibrium and the equilibriums defined by
-XXX\_MIN and XXX\_MAX (where XXX are the desired variables). \|\| MODE
-\|\| Number of gridpoints along a given dimension \|\| \|\| NPOPULATION
-\|\| Number of workers to evaluate map (default: NPROCS) \|\|
+XXX_MIN and XXX_MAX (where XXX are the desired variables). | MODE
+| Number of gridpoints along a given dimension | \n | NPOPULATION
+| Number of workers to evaluate map (default: NPROCS) |
 
 Variables
 ---------
@@ -213,7 +262,7 @@ with MODE set to 2.
       LDELTAMN_OPT(1,0) = T    ! Optimize DELTAMN (Garabedian representation)
 
 Care should be taken not to enable conflicting profiles (ex. NE and AM).
-Note when optimizing boundary harmonics that LRHO\_OPT and LDELTAMN\_OPT
+Note when optimizing boundary harmonics that LRHO_OPT and LDELTAMN_OPT
 will first recalculate the rhomn or deltamn represenation based on the
 RBC and ZBS arrays, then vary these coefficients.
 Hirshman-Breslau\<ref\>S. P. Hirshman and J. Breslau,
@@ -231,14 +280,14 @@ electrostatic potential (PHI), driven current (BEAMJ), and bootstrap
 current (BOOTJ). These profiles are utilized to calculate pressure and
 current profiles which are then used to calculate the equilibrium. Two
 profile variables exist for most profiles these are parameterized
-XX\_OPT and spline XX\_AUX\_S, XX\_AUX\_F. The available profile types
-for NE, TE, TI, and ZEFF are: GAUSS\_TRUNC, TWO\_LORENTZ, TWO\_POWER,
-POWER\_SERIES, PEDESTAL, and SPLINE. The BEAMJ and BOOTJ profiles are
-summed together to provide the AC\_AUX\_F array (where it is assumed we
+XX_OPT and spline XX_AUX_S, XX_AUX_F. The available profile types
+for NE, TE, TI, and ZEFF are: GAUSS_TRUNC, TWO_LORENTZ, TWO_POWER,
+POWER_SERIES, PEDESTAL, and SPLINE. The BEAMJ and BOOTJ profiles are
+summed together to provide the AC_AUX_F array (where it is assumed we
 are providing I-prime not I). The BEAMJ profile has the types:
-TWO\_POWER and SPLINE. The BOOTJ profile has the types: BUMP,
-TWO\_POWER, SPLINE. Note that the BEAMJ and BOOTJ profiles do not have
-XX\_OPT type profile specification but rather use the spline array
+TWO_POWER and SPLINE. The BOOTJ profile has the types: BUMP,
+TWO_POWER, SPLINE. Note that the BEAMJ and BOOTJ profiles do not have
+XX_OPT type profile specification but rather use the spline array
 values when parameterized. Note that NE is normalized to 1.0E+18.
 
     !------------------------------------------------------------------------
@@ -267,25 +316,25 @@ values when parameterized. Note that NE is normalized to 1.0E+18.
       BOOTJ_AUX_S   = 0.0  0.1  0.5  0.9  1.0
       BOOTJ_AUX_F   = 1.0  1.0  1.0  1.2  0.0
 
-\|\|\~ Profile Type (XX\_TYPE) \|\|\~ Functional form \|\|\~ Description
-\|\| \|\|\< AKIMA\_SPLINE \|\|\< See desciption \|\|\< 3rd order Akima
-spline. Minimum of five knots required. Use XX\_AUX\_S and XX\_AUX\_F to
-control the knot locations and values. \|\| \|\|\< POWER\_SERIES \|\| c0
-+ c1\*s + s\^2 \<span style=\"line-height: 1.5;\"\>+ c2\*s\^3 + . . .
-\</span\> \|\|\< Polynomial power series in s. It is recommended to fix
+|\~ Profile Type (XX_TYPE) |\~ Functional form |\~ Description
+| \n |\< AKIMA_SPLINE |\< See desciption |\< 3rd order Akima
+spline. Minimum of five knots required. Use XX_AUX_S and XX_AUX_F to
+control the knot locations and values. | \n |\< POWER_SERIES | c0
++ c1\*s + s^2 \<span style=\"line-height: 1.5;\"\>+ c2\*s^3 + . . .
+\</span\> |\< Polynomial power series in s. It is recommended to fix
 the odd coefficients to zero in order to have a better behaved even
-polynomial. Use XX\_OPT to control the coefficient values. \|\| \|\|\<
-TWO\_POWER \|\|\< \<span style=\"background-color: \#ffffff; color:
-\#222222; font-family: arial,sans-serif;\"\>c0\*(1 - s\^c1)\^c2\</span\>
-\|\|\< Simple 3 coefficient representation. \|\| \|\| GAUSS\_TRUNC \|\|
-(c0/(1.0 - exp(-(1.0/c1)\^2)))\*(exp(-(s./c1).\^2)-exp(-(1.0/c1)\^2))
-\|\| Two coefficient truncated gaussian. \|\| \|\| TWO\_LORENTZ \|\|
-\|\| \<span style=\"line-height: 1.5;\"\>two Lorentz-type functions,
-mapped to \[0:1\]\</span\> \|\| \|\| PEDESTAL \|\| \<span
+polynomial. Use XX_OPT to control the coefficient values. | \n |\<
+TWO_POWER |\< \<span style=\"background-color: \#ffffff; color:
+\#222222; font-family: arial,sans-serif;\"\>c0\*(1 - s^c1)^c2\</span\>
+|\< Simple 3 coefficient representation. | \n | GAUSS_TRUNC |
+(c0/(1.0 - exp(-(1.0/c1)^2)))\*(exp(-(s./c1).^2)-exp(-(1.0/c1)^2))
+| Two coefficient truncated gaussian. | \n | TWO_LORENTZ |
+| \<span style=\"line-height: 1.5;\"\>two Lorentz-type functions,
+mapped to \[0:1\]\</span\> | \n | PEDESTAL | \<span
 style=\"line-height: 1.5;\"\>C20 \* C17 \* ( TANH( 2\*(C18-SQRT(s))/C19
-) -TANH( 2\*(C18-1.0) /C19 ) )\</span\> \|\| 10th order polynomial plus
+) -TANH( 2\*(C18-1.0) /C19 ) )\</span\> | 10th order polynomial plus
 hyperbolic tangent like edge profile. Note C20 auto-calculated to be C20
-= 1.0/(TANH(2\*c18/c19)-TANH(2\*(c18-1)/c19)) \|\|
+= 1.0/(TANH(2\*c18/c19)-TANH(2\*(c18-1)/c19)) |
 
 Boozer Spectrum Parameters
 --------------------------
