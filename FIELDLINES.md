@@ -1,6 +1,20 @@
 {% include head.html %} 
 FIELDLINES
 ==========
+ 
+--- 
+Table of Contents 
+ 
+         * [Theory](#theory) 
+         * [Compilation](#compilation) 
+         * [Input Data Format](#input-data-format) 
+         * [Execution](#execution) 
+         * [Output Data Format](#output-data-format) 
+         * [Visualization](#visualization) 
+         * [Tutorials]](#tutorials) 
+ 
+--- 
+ 
 
 The FIELDLINES code follows field lines in a toroidal domain given a
 vacuum, [VMEC](VMEC), [PIES](PIES), or [SPEC](SPEC) equilibria, and is
