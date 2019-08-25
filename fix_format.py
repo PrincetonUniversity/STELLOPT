@@ -5,8 +5,8 @@ import subprocess
 filename = sys.argv[1]
 print('processing '+filename)
 
-old_list = ['[math](math)', r'\\ '[:-1], r'\_ '[:-1], r'\^', r'\|\| \|\|', r'\|\|', r"\`", r"\'", r'\$']
-new_list = ['$$', r'\ '[:-1], r"_ "[:-1], r"^", r'| \n |', '|', "'", "'", '$$']
+old_list = ['[math](math)', r'\\ '[:-1], r'\_ '[:-1], r'\^', r'\|\| \|\|', r'\|\|', r"\`", r"\'", r'\$', r'\*']
+new_list = ['$$', r'\ '[:-1], r"_ "[:-1], r"^", r'| \n |', '|', "'", "'", '$$', '*']
 
 head = ['{% include head.html %} \n']
 

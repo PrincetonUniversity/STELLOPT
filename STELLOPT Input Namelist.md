@@ -6,7 +6,6 @@ appended the input file containing the
 [VMEC input namelist](VMEC input namelist). The OPTIMUM namelist is
 arranged below into sections for clarity. The first section deals with
 how the optimizer runs and which equilibrium code to utilize.
-=======
  
 --- 
 Table of Contents 
@@ -23,9 +22,8 @@ Table of Contents
  * [Targets](#targets) 
  
 --- 
- 
 
- 
+
 ## Runtime Control
 ---------------
 
@@ -74,7 +72,7 @@ Genetic algorithm with differential evolution mode where the input
 vector defining the optimized quantities are treated as 'GENES.' It
 should be noted that the user must also supply MIN and MAX values
 through the appropriate auxiliary arrays for each variable which is
-varied. Stereotypical advice is to set MIN = 0.5\*VAL and MAX=2.0\*VAL
+varied. Stereotypical advice is to set MIN = 0.5*VAL and MAX=2.0*VAL
 where VAL is the initial value of the variable being varied by the code
 (some sorting may be necessary). This was how the values were
 traditionally set in addition to: FACTOR = 0.5, EPSFCN = 0.3, MODE = 2,
@@ -102,11 +100,11 @@ controls how much 'mutation' is preformed. The following table
 outlines the effects of the MODE parameter 
 
 | MODE | Mutation Equation | 
-| 1 | X_NEW=X_BEST+FACTOR\*(X_1-X_2) |
-| 2 | X_NEW=X_3+FACTOR\*(X_1-X_2) |
-| 3 | X_NEW=X_OLD+FACTOR\*(X_BEST-X_OLD+X_3-X_4) | 
-| 4 | X_NEW=X_BEST+FACTOR\*(X_1-X_2+X_3-X_4) |
-| 5 | X_NEW=X_5+FACTOR\*(X_1-X_2+X_3-X_4) |
+| 1 | X_NEW=X_BEST+FACTOR*(X_1-X_2) |
+| 2 | X_NEW=X_3+FACTOR*(X_1-X_2) |
+| 3 | X_NEW=X_OLD+FACTOR*(X_BEST-X_OLD+X_3-X_4) | 
+| 4 | X_NEW=X_BEST+FACTOR*(X_1-X_2+X_3-X_4) |
+| 5 | X_NEW=X_5+FACTOR*(X_1-X_2+X_3-X_4) |
 
 Here X_BEST is the GENE
 from the 'BEST' previous equilibrium (lowest chi-squared),
@@ -290,12 +288,12 @@ values when parameterized. Note that NE is normalized to 1.0E+18.
 
 | Profile Type (XX_TYPE) | Functional form | Description| 
 | ---- | ---- |
-| AKIMA_SPLINE |\< See desciption | 3rd order Akima spline. Minimum of five knots required. Use XX_AUX_S and XX_AUX_F to control the knot locations and values. | 
-| POWER_SERIES | $$c0 + c1\*s + s^2 + c2\*s^3 + . . .$$| Polynomial power series in s. It is recommended to fix the odd coefficients to zero in order to have a better behaved even polynomial. Use XX_OPT to control the coefficient values. | 
-| TWO_POWER |c0\*(1 - s^c1)^c2 | Simple 3 coefficient representation. |
-| GAUSS_TRUNC | (c0/(1.0 - exp(-(1.0/c1)^2)))\*(exp(-(s./c1).^2)-exp(-(1.0/c1)^2)) | Two coefficient truncated gaussian. |
+| AKIMA_SPLINE | See desciption | 3rd order Akima spline. Minimum of five knots required. Use XX_AUX_S and XX_AUX_F to control the knot locations and values. | 
+| POWER_SERIES | $$c0 + c1*s + s^2 + c2*s^3 + . . .$$| Polynomial power series in s. It is recommended to fix the odd coefficients to zero in order to have a better behaved even polynomial. Use XX_OPT to control the coefficient values. | 
+| TWO_POWER | $$ c0*(1 - s^c1)^c2 $$ | Simple 3 coefficient representation. |
+| GAUSS_TRUNC | $$ (c0/(1.0 - \exp(-(1.0/c1)^2)))*(\exp(-(s./c1).^2)-\exp(-(1.0/c1)^2)) $$ | Two coefficient truncated gaussian. |
 | TWO_LORENTZ | two Lorentz-type functions, mapped to \[0:1\]| 
-| PEDESTAL | C20 \* C17 \* ( TANH( 2\*(C18-SQRT(s))/C19) -TANH( 2\*(C18-1.0) /C19 ) ) | 10th order polynomial plus hyperbolic tangent like edge profile. Note C20 auto-calculated to be C20 = 1.0/(TANH(2\*c18/c19)-TANH(2\*(c18-1)/c19)) |
+| PEDESTAL | $$ C20 * C17 * ( \tanh( 2*(C18-\sqrt{s})/C19) - \tanh( 2*(C18-1.0) /C19 ) ) $$ | 10th order polynomial plus hyperbolic tangent like edge profile. Note C20 auto-calculated to be $$ C20 = 1.0/(\tanh(2*c18/c19)-\tanh(2*(c18-1)/c19)) $$ |
 
 Boozer Spectrum Parameters
 --------------------------
