@@ -11,7 +11,7 @@ Table of Contents
    * [Execution](#execution) 
    * [Output Data Format](#output-data-format) 
    * [Visualization](#visualization) 
-   * [Tutorials]](#tutorials) 
+   * [Tutorials](#tutorials) 
  
 --- 
  
