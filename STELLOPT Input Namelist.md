@@ -65,6 +65,7 @@ unless they're running parallel codes.
 | FACTOR | Determines initial step step bound (100.0 suggested) |
 | MODE | Determines variable scaling (1: auto, 2: Use DVAR scaling values) |
 | NPOPULATION | Number of optimizer threads (for parallel codes: GENE, COILOPT++, BEAMS3D, default: NPROCS) |
+
 A bounded LMDIF routine is also accessible by setting the OPT_TYPE='LMDIF_BOUNDED'.
 
 ### GADE
@@ -80,9 +81,11 @@ traditionally set in addition to: FACTOR = 0.5, EPSFCN = 0.3, MODE = 2,
 CR_STRATEGY = 0.
 
 | FACTOR | Mutation scaling factor (F). |
-| EPSFCN | Crossover factor. | \n | MODE | The strategy of
-the mutation operations used. | \n | CR_STRATEGY | Cross-over
-strategy (0: exponential, 1: binomial) | The algorithm begin by
+| EPSFCN | Crossover factor. | 
+| MODE | The strategy of the mutation operations used. 
+| CR_STRATEGY | Cross-over strategy (0: exponential, 1: binomial) |
+
+The algorithm begin by
 evaluating NPOPULATION equilibria, where the first member of the
 population is the input equilibria. All other equilibria are randomly
 generated from the MIN and MAX values in the OPTIMUM name list. The
@@ -96,12 +99,14 @@ CR_STRATEGY to 0 would permute all 'GENES.' The mutation of the
 'GENES' is controlled by FACTOR and MODE. In each case, member of the
 population are randomly chosen to 'mate.' The FACTOR parameter
 controls how much 'mutation' is preformed. The following table
-outlines the effects of the MODE parameter | MODE | Mutation
-Equation | \n | 1 | X_NEW=X_BEST+FACTOR\*(X_1-X_2) | \n | 2
-| X_NEW=X_3+FACTOR\*(X_1-X_2) | \n | 3 |
-X_NEW=X_OLD+FACTOR\*(X_BEST-X_OLD+X_3-X_4) | \n | 4 |
-X_NEW=X_BEST+FACTOR\*(X_1-X_2+X_3-X_4) | \n | 5 |
-X_NEW=X_5+FACTOR\*(X_1-X_2+X_3-X_4) |
+outlines the effects of the MODE parameter 
+
+| MODE | Mutation Equation | 
+| 1 | X_NEW=X_BEST+FACTOR\*(X_1-X_2) |
+| 2 | X_NEW=X_3+FACTOR\*(X_1-X_2) |
+| 3 | X_NEW=X_OLD+FACTOR\*(X_BEST-X_OLD+X_3-X_4) | 
+| 4 | X_NEW=X_BEST+FACTOR\*(X_1-X_2+X_3-X_4) |
+| 5 | X_NEW=X_5+FACTOR\*(X_1-X_2+X_3-X_4) |
 
 Here X_BEST is the GENE
 from the 'BEST' previous equilibrium (lowest chi-squared),
@@ -156,27 +161,30 @@ system that this is a restart.
 
 ### PSO
 
-Particle Swarm evolution. | FTOL | Desired relative error in sum
-of squares. | \n | XTOL | Desired relative error in approximate
-solution. | \n | EPSFCN | Ratio of global attractor to local
-(local = 1.0) | \n | FACTOR | Scaling factor for maximum velocity
-|
+Particle Swarm evolution. 
+
+| FTOL | Desired relative error in sum of squares. |
+| XTOL | Desired relative error in approximate solution. | 
+| EPSFCN | Ratio of global attractor to local (local = 1.0) |
+| FACTOR | Scaling factor for maximum velocity|
 
 ### Mapping (gridded)
 
 The STELLOPT code can perform a gridded mapping of the n-dimensional
-space. | MODE | Number of gridpoints along a given dimension |
-| NPOPULATION | Number of workers to evaluate map (default:
-NPROCS) |
+space. 
+
+| MODE | Number of gridpoints along a given dimension |
+| NPOPULATION | Number of workers to evaluate map (default: NPROCS) |
 
 ### Mapping (hyperplane)
 
 The STELLOPT code can perform a gridded mapping using a 2D hyperspace
 plane as defined by two points in space. In this case, the plane is
 defined by the initial equilibrium and the equilibriums defined by
-XXX_MIN and XXX_MAX (where XXX are the desired variables). | MODE
-| Number of gridpoints along a given dimension | \n | NPOPULATION
-| Number of workers to evaluate map (default: NPROCS) |
+XXX_MIN and XXX_MAX (where XXX are the desired variables). 
+
+| MODE | Number of gridpoints along a given dimension | 
+| NPOPULATION | Number of workers to evaluate map (default: NPROCS) |
 
 Variables
 ---------
@@ -229,8 +237,8 @@ Care should be taken not to enable conflicting profiles (ex. NE and AM).
 Note when optimizing boundary harmonics that LRHO_OPT and LDELTAMN_OPT
 will first recalculate the rhomn or deltamn represenation based on the
 RBC and ZBS arrays, then vary these coefficients.
-Hirshman-Breslau\<ref\>S. P. Hirshman and J. Breslau,
-[Phys. Plasmas 5, 2664 (1998)](http://link.aip.org/link/doi/10.1063/1.872954).\</ref\>
+Hirshman-Breslau (S. P. Hirshman and J. Breslau,
+[Phys. Plasmas 5, 2664 (1998)](http://link.aip.org/link/doi/10.1063/1.872954))
 and Garabedian representations only support stellarator symmetry
 (up-down) at this time.
 
@@ -280,25 +288,14 @@ values when parameterized. Note that NE is normalized to 1.0E+18.
       BOOTJ_AUX_S   = 0.0  0.1  0.5  0.9  1.0
       BOOTJ_AUX_F   = 1.0  1.0  1.0  1.2  0.0
 
-|\~ Profile Type (XX_TYPE) |\~ Functional form |\~ Description
-| \n |\< AKIMA_SPLINE |\< See desciption |\< 3rd order Akima
-spline. Minimum of five knots required. Use XX_AUX_S and XX_AUX_F to
-control the knot locations and values. | \n |\< POWER_SERIES | c0
-+ c1\*s + s^2 \<span style=\"line-height: 1.5;\"\>+ c2\*s^3 + . . .
-\</span\> |\< Polynomial power series in s. It is recommended to fix
-the odd coefficients to zero in order to have a better behaved even
-polynomial. Use XX_OPT to control the coefficient values. | \n |\<
-TWO_POWER |\< \<span style=\"background-color: \#ffffff; color:
-\#222222; font-family: arial,sans-serif;\"\>c0\*(1 - s^c1)^c2\</span\>
-|\< Simple 3 coefficient representation. | \n | GAUSS_TRUNC |
-(c0/(1.0 - exp(-(1.0/c1)^2)))\*(exp(-(s./c1).^2)-exp(-(1.0/c1)^2))
-| Two coefficient truncated gaussian. | \n | TWO_LORENTZ |
-| \<span style=\"line-height: 1.5;\"\>two Lorentz-type functions,
-mapped to \[0:1\]\</span\> | \n | PEDESTAL | \<span
-style=\"line-height: 1.5;\"\>C20 \* C17 \* ( TANH( 2\*(C18-SQRT(s))/C19
-) -TANH( 2\*(C18-1.0) /C19 ) )\</span\> | 10th order polynomial plus
-hyperbolic tangent like edge profile. Note C20 auto-calculated to be C20
-= 1.0/(TANH(2\*c18/c19)-TANH(2\*(c18-1)/c19)) |
+| Profile Type (XX_TYPE) | Functional form | Description| 
+| ---- | ---- |
+| AKIMA_SPLINE |\< See desciption | 3rd order Akima spline. Minimum of five knots required. Use XX_AUX_S and XX_AUX_F to control the knot locations and values. | 
+| POWER_SERIES | $$c0 + c1\*s + s^2 + c2\*s^3 + . . .$$| Polynomial power series in s. It is recommended to fix the odd coefficients to zero in order to have a better behaved even polynomial. Use XX_OPT to control the coefficient values. | 
+| TWO_POWER |c0\*(1 - s^c1)^c2 | Simple 3 coefficient representation. |
+| GAUSS_TRUNC | (c0/(1.0 - exp(-(1.0/c1)^2)))\*(exp(-(s./c1).^2)-exp(-(1.0/c1)^2)) | Two coefficient truncated gaussian. |
+| TWO_LORENTZ | two Lorentz-type functions, mapped to \[0:1\]| 
+| PEDESTAL | C20 \* C17 \* ( TANH( 2\*(C18-SQRT(s))/C19) -TANH( 2\*(C18-1.0) /C19 ) ) | 10th order polynomial plus hyperbolic tangent like edge profile. Note C20 auto-calculated to be C20 = 1.0/(TANH(2\*c18/c19)-TANH(2\*(c18-1)/c19)) |
 
 Boozer Spectrum Parameters
 --------------------------
