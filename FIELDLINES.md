@@ -15,9 +15,9 @@ constructing splines over that mesh. An ODE for following field lines as
 a function of the toroidal angle can be constructed by relating the
 motions in R and Z as a function of phi through
 
-[math](math) \\frac{\\partial R}{\\partial \\phi} =
-R\\frac{B\_R}{B\_\\phi} [math](math) and [math](math) \\frac{\\partial
-Z}{\\partial \\phi} = R\\frac{B\_Z}{B\_\\phi} [math](math)
+$$ \\frac{\\partial R}{\\partial \\phi} =
+R\\frac{B\_R}{B\_\\phi} $$ and $$ \\frac{\\partial
+Z}{\\partial \\phi} = R\\frac{B\_Z}{B\_\\phi} $$
 
 In this representation the trajectory of the fieldline can be
 parameterized by toroidal angle. The resulting ODE is solved with a user
@@ -141,7 +141,7 @@ field period model. In general the formula is NPHI1=(NPHI-1)\*NFP+1,
 where NPHI1 is the full device model (nphi) and NPHI is the field period
 model (nphi).
 
-To use MU you need to take the actual diffusion coefficient D \[m\^2/s\]
+To use MU you need to take the actual diffusion coefficient D \[m^2/s\]
 multiply it by TAU \[s\] which is the timescale of the simulation and
 the factor 2, then take the square root. This will give you the proper
 value of MU. To calculate TAU use the formula
