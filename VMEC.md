@@ -42,7 +42,7 @@ of MHD force balance equations in a toroidal domain:
 Combining these equations the total plasma potential energy can be
 written
 
-    \$$ W=\int\left(\frac{|\vec{B}|^2}{2\mu_o}+\frac{p}{\gamma-1}\right)d^3x. $$
+\$$ W=\int\left(\frac{|\vec{B}|^2}{2\mu_o}+\frac{p}{\gamma-1}\right)d^3x. $$
 
 The scalar invariance of the potential energy allows it`s computation
 directly in flux coordinates. The relevant toroidal-cylindrical and flux
@@ -62,21 +62,20 @@ field
 
 \$$   =  B^\theta \hat{e}_\theta + B^\zeta\hat{e}_\zeta $$
 
-\$$  \text{where } \theta^*=\theta+\lambda\left(\rho,\theta,\zeta\right), \text{ and } \lambda $$
-
+where $$ \theta^*=\theta+\lambda\left(\rho,\theta,\zeta\right)$$, and $$ \lambda $$
 straightens the magnetic field lines. Adiabatic conservation of mass
 flux may then be achieved through
 
-\$$  p\left(\rho\right)=\frac{M\left(\rho\right)}{\left[\int\int d\theta d\zeta |\sqrt{g}|\right]^\gamma} \qquad \sqrt{g}=\frac{1}{\vec{\nabla}\rho\cdot\vec{\theta}\times\vec{\nabla}\zeta} $$
+\$$ p\left(\rho\right)=\frac{M\left(\rho\right)}{\left[\int\int d\theta d\zeta \| \sqrt{g} \|\right]^\gamma} \qquad \sqrt{g}=\frac{1}{\vec{\nabla}\rho\cdot\vec{\theta}\times\vec{\nabla}\zeta} $$
 
 where M is our mass function and g is the metric for the flux
 coordinates. This allows the total potential energy to be written as
 
-\$$  W=\int\frac{|\vec{B}|^2}{2\mu_o}|\sqrt{g}|d\rho d\theta d\zeta + \int_0^1 \frac{M\left(\rho\right)}{\left(\gamma-1\right)\left[\int\int d\theta d\zeta |\sqrt{g}|\right]^{1-\gamma}}d\rho. $$
+\$$  W=\int\frac{\|\vec{B}\|^2}{2\mu_o}\|\sqrt{g}\|d\rho d\theta d\zeta + \int_0^1 \frac{M\left(\rho\right)}{\left(\gamma-1\right)\left[\int\int d\theta d\zeta \|\sqrt{g}\|\right]^{1-\gamma}}d\rho. $$
 
 The magnitude of the magnetic field is defined as:
 
-\$$  |\vec{B}|^2\equiv B^iB_i=\left(B^\theta\right)^2g_{\theta\theta}+2B^\theta B^\zeta g_{\theta\zeta}+\left(B^\zeta\right)^2g_{\zeta\zeta}. $$
+\$$  \|\vec{B}\|^2\equiv B^iB_i=\left(B^\theta\right)^2g_{\theta\theta}+2B^\theta B^\zeta g_{\theta\zeta}+\left(B^\zeta\right)^2g_{\zeta\zeta}. $$
 
 The limits of the second integral indicate that we`ve normalized our
 radial magnetic coordinate to the dimensions of our toroidal cross
@@ -85,7 +84,7 @@ section.
 A variation in the potential energy is now preformed. The resulting
 equation may be written
 
-\$$  \frac{dW}{d\beta}=\int\left[-\left(\frac{|\vec{B}|}{2\mu_o}+p\right)\frac{\partial \sqrt{g}}{\partial\beta}+\frac{1}{\mu_o\sqrt{g}}\left(b_R\frac{\partial b_R}{\partial \beta}+R^2b_\phi\frac{\partial b_\phi}{\partial \beta}+b_Z\frac{\partial b_Z}{\partial \beta}+Rb^2_\phi\frac{\partial R}{\partial \beta}\right)\right]d^3\alpha, $$
+\$$  \frac{dW}{d\beta}=\int\left[-\left(\frac{\|\vec{B}\|}{2\mu_o}+p\right)\frac{\partial \sqrt{g}}{\partial\beta}+\frac{1}{\mu_o\sqrt{g}}\left(b_R\frac{\partial b_R}{\partial \beta}+R^2b_\phi\frac{\partial b_\phi}{\partial \beta}+b_Z\frac{\partial b_Z}{\partial \beta}+Rb^2_\phi\frac{\partial R}{\partial \beta}\right)\right]d^3\alpha, $$
 
 where a variational parameter (Beta) has been used instead of the
 canonical time (t). The toroidal-cylindrical domain considered here is
@@ -93,23 +92,23 @@ defined by x=(R,phi,Z). Utilizing the coordinate transformation between
 the toroidal-cylindrical and magnetic coordinate domains we may then
 rewrite the variation in potential energy:
 
-\$$  \frac{dW}{d\beta}=-\int F_i\frac{\partial x_i}{\partial \beta}d^3\alpha -\int F_\lambda \frac{\partial \lambda}{\partial \beta}d^3\alpha -\int_{\rho=1}|\sqrt{g}|\frac{\partial \rho}{\partial x_i}\left(\frac{|\vec{B}|^2}{2\mu_o}+p\right)\frac{\partial x_i}{\partial \beta}d\theta d\zeta. $$
+\$$  \frac{dW}{d\beta}=-\int F_i\frac{\partial x_i}{\partial \beta}d^3\alpha -\int F_\lambda \frac{\partial \lambda}{\partial \beta}d^3\alpha -\int_{\rho=1}\|\sqrt{g}\|\frac{\partial \rho}{\partial x_i}\left(\frac{\|\vec{B}\|^2}{2\mu_o}+p\right)\frac{\partial x_i}{\partial \beta}d\theta d\zeta. $$
 
 Here, the MHD force components are $$\left(F_1,F_2,F_3\right)=\left(F_R,F_\phi,F_Z\right)$$.
 
-\$$  F_R&=&-\frac{\partial}{\partial \rho}\left[|\sqrt{g}|\frac{\partial\rho}{\partial R}\left(\frac{|\vec{B}|^2}{2\mu_o}+p\right)\right]-\frac{\partial}{\partial \theta}\left[|\sqrt{g}|\frac{\partial\theta}{\partial R}\left(\frac{|\vec{B}|^2}{2\mu_o}+p\right)\right] $$
+\$$  F_R&=&-\frac{\partial}{\partial \rho}\left[\|\sqrt{g}\|\frac{\partial\rho}{\partial R}\left(\frac{\|\vec{B}\|^2}{2\mu_o}+p\right)\right]-\frac{\partial}{\partial \theta}\left[\|\sqrt{g}\|\frac{\partial\theta}{\partial R}\left(\frac{\|\vec{B}\|^2}{2\mu_o}+p\right)\right] $$
 
-\$$  & &-\frac{\partial}{\partial \zeta}\left[|\sqrt{g}|\frac{\partial\zeta}{\partial R}\left(\frac{|\vec{B}|^2}{2\mu_o}+p\right)\right]+\mu^{-1}_o|\sqrt{g}|\vec{\nabla}\cdot\left[\left(\vec{B}\cdot\vec{\nabla}R\right)\vec{B}\right] $$
+\$$  & &-\frac{\partial}{\partial \zeta}\left[\|\sqrt{g}\|\frac{\partial\zeta}{\partial R}\left(\frac{\|\vec{B}\|^2}{2\mu_o}+p\right)\right]+\mu^{-1}_o\|\sqrt{g}\|\vec{\nabla}\cdot\left[\left(\vec{B}\cdot\vec{\nabla}R\right)\vec{B}\right] $$
 
-\$$  & &+\frac{\sqrt{g}}{R}\left[\frac{|\vec{B}|^2}{2\mu_o}+p-\frac{R^2\left(\vec{B}\cdot\vec{\nabla}\phi\right)^2}{\mu_o}\right] $$
+\$$  & &+\frac{\sqrt{g}}{R}\left[\frac{\|\vec{B}\|^2}{2\mu_o}+p-\frac{R^2\left(\vec{B}\cdot\vec{\nabla}\phi\right)^2}{\mu_o}\right] $$
 
-\$$  F_\phi&=&-\frac{\partial}{\partial \rho}\left[|\sqrt{g}|\frac{\partial\rho}{\partial \phi}\left(\frac{|\vec{B}|^2}{2\mu_o}+p\right)\right]-\frac{\partial}{\partial \theta}\left[|\sqrt{g}|\frac{\partial\theta}{\partial \phi}\left(\frac{|\vec{B}|^2}{2\mu_o}+p\right)\right] $$
+\$$  F_\phi&=&-\frac{\partial}{\partial \rho}\left[\|\sqrt{g}\|\frac{\partial\rho}{\partial \phi}\left(\frac{\|\vec{B}\|^2}{2\mu_o}+p\right)\right]-\frac{\partial}{\partial \theta}\left[\|\sqrt{g}\|\frac{\partial\theta}{\partial \phi}\left(\frac{\|\vec{B}\|^2}{2\mu_o}+p\right)\right] $$
 
-\$$  & &-\frac{\partial}{\partial \zeta}\left[|\sqrt{g}|\frac{\partial\zeta}{\partial \phi}\left(\frac{|\vec{B}|^2}{2\mu_o}+p\right)\right]+\mu^{-1}_o|\sqrt{g}|\vec{\nabla}\cdot\left[\left(R^2\vec{B}\cdot\vec{\nabla}\phi\right)\vec{B}\right] $$
+\$$  & &-\frac{\partial}{\partial \zeta}\left[\|\sqrt{g}\|\frac{\partial\zeta}{\partial \phi}\left(\frac{\|\vec{B}\|^2}{2\mu_o}+p\right)\right]+\mu^{-1}_o\|\sqrt{g}\|\vec{\nabla}\cdot\left[\left(R^2\vec{B}\cdot\vec{\nabla}\phi\right)\vec{B}\right] $$
 
-\$$  F_Z&=&-\frac{\partial}{\partial \rho}\left[|\sqrt{g}|\frac{\partial\rho}{\partial Z}\left(\frac{|\vec{B}|^2}{2\mu_o}+p\right)\right]-\frac{\partial}{\partial \theta}\left[|\sqrt{g}|\frac{\partial\theta}{\partial Z}\left(\frac{|\vec{B}|^2}{2\mu_o}+p\right)\right] $$
+\$$  F_Z&=&-\frac{\partial}{\partial \rho}\left[\|\sqrt{g}\|\frac{\partial\rho}{\partial Z}\left(\frac{\|\vec{B}\|^2}{2\mu_o}+p\right)\right]-\frac{\partial}{\partial \theta}\left[\|\sqrt{g}\|\frac{\partial\theta}{\partial Z}\left(\frac{\|\vec{B}\|^2}{2\mu_o}+p\right)\right] $$
 
-\$$  & &-\frac{\partial}{\partial \zeta}\left[|\sqrt{g}|\frac{\partial\zeta}{\partial Z}\left(\frac{|\vec{B}|^2}{2\mu_o}+p\right)\right]+\mu^{-1}_o|\sqrt{g}|\vec{\nabla}\cdot\left[\left(\vec{B}\cdot\vec{\nabla}Z\right)\vec{B}\right]. $$
+\$$  & &-\frac{\partial}{\partial \zeta}\left[\|\sqrt{g}\|\frac{\partial\zeta}{\partial Z}\left(\frac{\|\vec{B}\|^2}{2\mu_o}+p\right)\right]+\mu^{-1}_o\|\sqrt{g}\|\vec{\nabla}\cdot\left[\left(\vec{B}\cdot\vec{\nabla}Z\right)\vec{B}\right]. $$
 
 This defines our system of equations. This system is subsequently
 simplified through a spectral decomposition in the angle variables and
@@ -153,7 +152,7 @@ increase the rate of convergence. This equation then becomes
 
 where the optimum frequency is given by
 
-\$$  \frac{1}{\tau_{op}}=-\frac{d}{d\beta}\left(\int |F|^2dV\right). $$
+\$$  \frac{1}{\tau_{op}}=-\frac{d}{d\beta}\left(\int \|F\|^2dV\right). $$
 
 The spectral nature of the VMEC code coupled with the toroidal geometry
 of magnetic fusion devices reduces the number of boundaries to two along
