@@ -1,3 +1,4 @@
+{% include head.html %} 
 FIELDLINES
 ==========
 
@@ -15,9 +16,9 @@ constructing splines over that mesh. An ODE for following field lines as
 a function of the toroidal angle can be constructed by relating the
 motions in R and Z as a function of phi through
 
-$$ \\frac{\\partial R}{\\partial \\phi} =
-R\\frac{B\_R}{B\_\\phi} $$ and $$ \\frac{\\partial
-Z}{\\partial \\phi} = R\\frac{B\_Z}{B\_\\phi} $$
+$$ \frac{\partial R}{\partial \phi} =
+R\frac{B_R}{B_\phi} $$ and $$ \frac{\partial
+Z}{\partial \phi} = R\frac{B_Z}{B_\phi} $$
 
 In this representation the trajectory of the fieldline can be
 parameterized by toroidal angle. The resulting ODE is solved with a user
@@ -58,7 +59,7 @@ modeling divertor strike points.
 If the user wishes, the code can automatically locate the magnetic axis,
 find the \'edge\' of the flux surfaces, and output the periodic orbit of
 the edge with the -full option. Here the code begins by first following
-fieldlines from the minimum and maximum values in R\_START and Z\_START.
+fieldlines from the minimum and maximum values in R_START and Z_START.
 A magnetic axis is identified using a periodic orbit search. The edge is
 then refined once so any edge stochastic region may be resolved. The
 code then follows fieldlines in this domain from the axis to the
@@ -145,7 +146,7 @@ To use MU you need to take the actual diffusion coefficient D \[m^2/s\]
 multiply it by TAU \[s\] which is the timescale of the simulation and
 the factor 2, then take the square root. This will give you the proper
 value of MU. To calculate TAU use the formula
-TAU=\<PHI\_END\*R\_START\>/V\_PART where V\_PART is the velocity of a
+TAU=\<PHI_END\*R_START\>/V_PART where V_PART is the velocity of a
 particle (assumed) and the operator \<\> means average. (Note this works
 as of version 1.31)
 
@@ -159,7 +160,7 @@ equilibrium input file. That file must also contain the VMEC INDATA
 namelist (although only the EXTCUR array will be used). The FIELDLINES
 code is run from the command line taking an equilibrium input file as a
 necessary argument. This input file must have the INDATA (for EXTCUR)
-and FIELDLINES\_IN namelists in it.
+and FIELDLINES_IN namelists in it.
 
     XFIELDLINES -vmec <VMEC FILE> -pies <PIES_FILE> -spec <SPEC FILE> -coil <COIL FILE> -mgrid <MGRID FILE> -vessel <VESSEL FILE> -vac -full -noverb -help
 
@@ -179,7 +180,7 @@ and FIELDLINES\_IN namelists in it.
 | -noverb | NONE | Suppresses screen output | 
 | -field | NONE | Outputs the B-Field on the cylindrical grid only. | 
 | -raw | NONE | Treats EXTCUR array as raw values (EXTCUR is a scale factor applied to what\'s in the coils file). | 
-| -auto | NONE | Starting points set equal to radial grid and run from the min to max values of R\_START and Z\_START | 
+| -auto | NONE | Starting points set equal to radial grid and run from the min to max values of R_START and Z_START | 
 | -help | NONE | Print help message |
 
 In it\'s simplest invokation the code requires a VMEC input file and some source of vacuum field.  Please note that FIELDLINES takes advantage of shared memory MPI so the user must request full nodes
@@ -215,9 +216,9 @@ In it\'s simplest invokation the code requires a VMEC input file and some source
 The FIELDLINES code outputs data in the
 [HDF5 data format](http://www.hdfgroup.org/HDF5/). The trajectory of
 each field line and relevant quantities for each run are stored in a
-fieldline\_ext.h5 file. A MATLAB routine for reading the HDF5 file is
+fieldline_ext.h5 file. A MATLAB routine for reading the HDF5 file is
 available
-([MATLAB File Exchange: read\_fieldlines.m](@http://www.mathworks.com/matlabcentral/fileexchange/54931-read-fieldlines)).
+([MATLAB File Exchange: read_fieldlines.m](@http://www.mathworks.com/matlabcentral/fileexchange/54931-read-fieldlines)).
 A sample of the HDF5 data structure looks like:
 
     HDF5 "fieldlines_ncsx_c09r00_free.h5" {
