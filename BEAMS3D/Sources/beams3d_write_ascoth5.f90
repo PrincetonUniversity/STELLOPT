@@ -64,6 +64,8 @@
                CALL h5gcreate_f(fid,'options', options_gid, ier)
                CALL write_att_hdf5(options_gid,'active',qid_str,ier)
                CALL h5gcreate_f(options_gid,'opt_'//qid_str, qid_gid, ier)
+               CALL write_att_hdf5(qid_gid,'date','08/22/19',ier)
+               CALL write_att_hdf5(qid_gid,'description','Data initialized from BEAMS3D',ier)
                CALL write_var_hdf5(qid_gid,'SIM_MODE',ier,DBLVAR=DBLE(3))
                CALL write_var_hdf5(qid_gid,'ENABLE_ADAPTIVE',ier,DBLVAR=DBLE(1))
                CALL write_var_hdf5(qid_gid,'RECORD_MODE',ier,DBLVAR=DBLE(0))
