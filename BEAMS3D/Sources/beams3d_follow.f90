@@ -419,8 +419,8 @@ SUBROUTINE beams3d_follow
     IF (ALLOCATED(w)) DEALLOCATE(w)
     IF (ALLOCATED(iwork)) DEALLOCATE(iwork)
 
-    ! Handle WALL Heat MAp
 !DEC$ IF DEFINED (MPI_OPT)
+    ! Handle WALL Heat MAp
     ier = 0
     IF (ASSOCIATED(ihit_array)) THEN
       i = MPI_UNDEFINED
@@ -433,6 +433,20 @@ SUBROUTINE beams3d_follow
       CALL MPI_BARRIER(MPI_COMM_BEAMS, ierr_mpi)
     END IF
 !DEC$ ENDIF
+
+!DEC$ IF DEFINED (MPI_OPT)
+    IF (myid_sharmem == master) i = 0
+    CALL MPI_COMM_SPLIT( MPI_COMM_BEAMS,i,myworkid,MPI_COMM_LOCAL,ierr_mpi)
+    IF (myid_sharmem == master) THEN
+       partvmax = MAXVAL(MAXVAL(ABS(vll_lines),DIM=2),DIM=1)
+       CALL MPI_ALLREDUCE(MPI_IN_PLACE,partvmax,1,MPI_DOUBLE_PRECISION,MPI_MAX,MPI_COMM_LOCAL,ierr_mpi)
+       CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)
+    END IF
+    CALL MPI_BARRIER(MPI_COMM_BEAMS, ierr_mpi)
+!DEC$ ELSE
+    partvmax = MAXVAL(MAXVAL(ABS(vll_lines),DIM=2),DIM=1)
+!DEC$ ENDIF
+
 
 !DEC$ IF DEFINED (MPI_OPT)
     CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend,      'R_lines', DBLVAR=R_lines)
