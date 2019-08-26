@@ -18,7 +18,7 @@
                                  zaxis, phiaxis, S_ARR, U_ARR, POT_ARR, &
                                  ZEFF_ARR, TE, TI, NE
       USE beams3d_runtime, ONLY: id_string, npoinc, nbeams, beam, t_end, lverb, lflux, &
-                                    lvmec, lpies, lspec, lcoil, lmgrid, lbeam, &
+                                    lvmec, lpies, lspec, lcoil, lmgrid, lbeam, lascot, &
                                     lvessel, lvac, lbeam_simple, handle_err, nparticles_start, &
                                     HDF5_OPEN_ERR,HDF5_WRITE_ERR,&
                                     HDF5_CLOSE_ERR, BEAMS3D_VERSION, weight, e_beams, p_beams,&
@@ -73,6 +73,8 @@
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ldepo',ier)
                CALL write_scalar_hdf5(fid,'lcollision',ier,BOOVAR=lcollision,ATT='Collisionall Operators Flag',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'lcollision',ier)
+               CALL write_scalar_hdf5(fid,'lascot',ier,BOOVAR=lascot,ATT='ASCOT5 Output Flag',ATT_NAME='description')
+               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'lascot',ier)
                CALL write_scalar_hdf5(fid,'nr',ier,INTVAR=nr,ATT='Number of Radial Gridpoints',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'nr',ier)
                CALL write_scalar_hdf5(fid,'nphi',ier,INTVAR=nphi,ATT='Number of Toroidal Gridpoints',ATT_NAME='description')
