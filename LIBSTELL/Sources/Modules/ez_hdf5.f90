@@ -138,7 +138,8 @@
       ierr = 0
       attrlen=LEN(TRIM(ATT))
       data_dims(1)=1
-      CALL h5screate_simple_f(drank, ddims, aspace_id, ierr)
+      !CALL h5screate_simple_f(drank, ddims, aspace_id, ierr)
+      CALL h5screate_f(H5S_SCALAR_F,aspace_id,ierr)
       IF (ierr /=0) RETURN
       CALL h5tcopy_f(H5T_NATIVE_CHARACTER, atype_id, ierr)
       IF (ierr /=0) RETURN
