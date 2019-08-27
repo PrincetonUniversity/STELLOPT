@@ -56,6 +56,7 @@ c-----------------------------------------------
       if(mf.lt.mpol1 .or. nf.lt.ntor) then
          print *, 'increase number of poloidal and/or toroidal modes:',
      1            ' mf,nf'
+         print *, 'mpol1, ntor = ', mpol1, ntor, ' ; mf, nf = ', mf, nf
          stop
       endif
 c---------------------------------------------------------------------

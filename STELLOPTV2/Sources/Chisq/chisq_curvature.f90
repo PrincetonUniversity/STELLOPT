@@ -40,7 +40,7 @@
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
       IF (iflag < 0) RETURN
-      IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'CURVATURE_KERT ',1,7
+      IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'CURVATURE_KERT ',nzeta_pts,7
       IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA  VAL  KURTOSIS  KURTOSIS_AVG  KURTOSIS_MAX  PHI'
       IF (niter >= 0) THEN
          s=1.0

@@ -53,7 +53,8 @@
       INTEGER ::  vctrl_array(5)
       REAL(rprec) :: norm_aphi, norm_am, norm_ac, norm_ai, norm_ah,&
                      norm_at, norm_ne, norm_te, norm_ti, norm_th, &
-                     norm_phi, norm_zeff, norm_emis_xics, temp
+                     norm_phi, norm_zeff, norm_emis_xics, &
+                     norm_beamj, norm_bootj, temp
       INTEGER, PARAMETER     :: max_refit = 2
       REAL(rprec), PARAMETER :: ec  = 1.60217653D-19
       CHARACTER(len = 16)     :: temp_str
@@ -67,9 +68,9 @@
       norm_aphi = 1; norm_am = 1; norm_ac = 1; norm_ai = 1
       norm_ah   = 1; norm_at = 1; norm_phi = 1; norm_zeff = 1
       norm_ne   = 1; norm_te = 1; norm_ti  = 1; norm_th = 1
-      norm_emis_xics = 1
-      ! Save variables
+      norm_beamj = 1; norm_bootj = 1; norm_emis_xics = 1
 
+      ! Save variables
       DO nvar_in = 1, n
          IF (var_dex(nvar_in) == iaphi .and. arr_dex(nvar_in,2) == norm_dex) norm_aphi = x(nvar_in)
          IF (var_dex(nvar_in) == iam .and. arr_dex(nvar_in,2) == norm_dex) norm_am = x(nvar_in)
@@ -93,16 +94,21 @@
          IF (var_dex(nvar_in) == iah_aux_f .and. arr_dex(nvar_in,2) == norm_dex) norm_ah = x(nvar_in)
          IF (var_dex(nvar_in) == iat_aux_f .and. arr_dex(nvar_in,2) == norm_dex) norm_at = x(nvar_in)
          IF (var_dex(nvar_in) == izeff_aux_f .and. arr_dex(nvar_in,2) == norm_dex) norm_zeff = x(nvar_in)
+         IF (var_dex(nvar_in) == ibeamj_aux_f .and. arr_dex(nvar_in,2) == norm_dex) norm_beamj = x(nvar_in)
+         IF (var_dex(nvar_in) == ibootj_aux_f .and. arr_dex(nvar_in,2) == norm_dex) norm_bootj = x(nvar_in)
          IF (var_dex(nvar_in) == iemis_xics_f .and. arr_dex(nvar_in,2) == norm_dex) norm_emis_xics = x(nvar_in)
       END DO
 
       ! Unpack array (minus RBC/ZBS/RBS/ZBC)
       DO nvar_in = 1, n
          IF (arr_dex(nvar_in,2) == norm_dex) cycle
+         IF (var_dex(nvar_in) == ixval) xval = x(nvar_in)
+         IF (var_dex(nvar_in) == iyval) yval = x(nvar_in)
          IF (var_dex(nvar_in) == iphiedge) phiedge = x(nvar_in)
          IF (var_dex(nvar_in) == icurtor) curtor = x(nvar_in)
          IF (var_dex(nvar_in) == ipscale) pres_scale = x(nvar_in)
          IF (var_dex(nvar_in) == imixece) mix_ece = x(nvar_in)
+         IF (var_dex(nvar_in) == ixics_v0) xics_v0 = x(nvar_in)
          IF (var_dex(nvar_in) == iregcoil_winding_surface_separation) &
                 regcoil_winding_surface_separation = x(nvar_in)
          IF (var_dex(nvar_in) == iregcoil_current_density) &
@@ -150,6 +156,7 @@
          IF (var_dex(nvar_in) == iregcoil_rcws_rbound_s) regcoil_rcws_rbound_s(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
          IF (var_dex(nvar_in) == iregcoil_rcws_zbound_c) regcoil_rcws_zbound_c(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
          IF (var_dex(nvar_in) == iregcoil_rcws_zbound_s) regcoil_rcws_zbound_s(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
+         IF (var_dex(nvar_in) == iRosenbrock_X) Rosenbrock_X(arr_dex(nvar_in,1)) = x(nvar_in)
       END DO
 
       ! Adust Boundary Representation
@@ -199,6 +206,8 @@
       th_aux_f = th_aux_f * norm_th
       ah_aux_f = ah_aux_f * norm_ah
       at_aux_f = at_aux_f * norm_at
+      beamj_aux_f = beamj_aux_f * norm_beamj
+      bootj_aux_f = bootj_aux_f * norm_bootj
       emis_xics_f = emis_xics_f * norm_emis_xics
 
       ! Handle cleanup
@@ -226,6 +235,8 @@
          th_aux_f = th_aux_f / norm_th
          ah_aux_f = ah_aux_f / norm_ah
          at_aux_f = at_aux_f / norm_at
+         bootj_aux_f = bootj_aux_f / norm_bootj
+         beamj_aux_f = beamj_aux_f / norm_beamj
          emis_xics_f = emis_xics_f / norm_emis_xics
          RETURN
       END IF
@@ -304,6 +315,8 @@
                   iflag = 0
                END IF
             CASE('spec')
+            CASE('test')
+               !Do Nothing
          END SELECT
          ! Check profiles for negative values of pressure
          dex = MINLOC(am_aux_s(2:),DIM=1)
@@ -322,26 +335,22 @@
 
          ! Calls to secondary codes
          proc_string_old = proc_string ! So we can find the DIAGNO files
-         !IF (ANY(lbooz)) CALL stellopt_toboozer(lscreen,iflag)
+         IF (ANY(sigma_balloon < bigno)) CALL stellopt_balloon(lscreen,iflag)
          ctemp_str = 'booz_xform'
          IF (ANY(lbooz) .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
-         !IF (ANY(sigma_bootstrap < bigno)) CALL stellopt_bootsj(lscreen,iflag)
          ctemp_str = 'bootsj'
          IF (ANY(sigma_bootstrap < bigno) .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
-         IF (ANY(sigma_balloon < bigno)) CALL stellopt_balloon(lscreen,iflag)
-         !IF (lneed_magdiag) CALL stellopt_magdiag(lscreen,iflag)
          ctemp_str = 'diagno'
          IF (lneed_magdiag .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
-         !IF (ANY(sigma_neo < bigno)) CALL stellopt_neo(lscreen,iflag)
          ctemp_str = 'neo'
          IF (ANY(sigma_neo < bigno) .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
 !DEC$ IF DEFINED (TERPSICHORE)
-         !IF (ANY(sigma_kink < bigno)) CALL stellopt_kink(lscreen,iflag)
          ctemp_str = 'terpsichore'
          IF (ANY(sigma_kink < bigno) .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
 !DEC$ ENDIF
 !DEC$ IF DEFINED (TRAVIS)
-         IF (ANY(sigma_ece < bigno)) CALL stellopt_travis(lscreen,iflag)
+         ctemp_str = 'travis'
+         IF (ANY(sigma_ece < bigno) .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
 !DEC$ ENDIF
 !DEC$ IF DEFINED (DKES_OPT)
          IF (ANY(sigma_dkes < bigno)) CALL stellopt_dkes(lscreen,iflag)
@@ -362,7 +371,7 @@
          ! JCS: skipping parallelization for now 
          ! ctemp_str = 'regcoil_chi2_b'
          ! IF (sigma_regcoil_chi2_b < bigno .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen)
-         IF (ANY(sigma_regcoil_chi2_b < bigno)) then
+         IF (ANY(sigma_regcoil_chi2_b < bigno) .and. (iflag >=0)) then
            CALL stellopt_regcoil_chi2_b(lscreen, iflag)
          end if
 !DEC$ ENDIF
@@ -401,6 +410,8 @@
       th_aux_f = th_aux_f / norm_th
       ah_aux_f = ah_aux_f / norm_ah
       at_aux_f = at_aux_f / norm_at
+      bootj_aux_f = bootj_aux_f / norm_bootj
+      beamj_aux_f = beamj_aux_f / norm_beamj
       emis_xics_f = emis_xics_f / norm_emis_xics
       RETURN
 !----------------------------------------------------------------------

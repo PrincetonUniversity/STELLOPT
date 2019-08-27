@@ -24,6 +24,8 @@
       USE diagno_runtime
       USE diagno_input_mod
       USE mpi_params
+      USE mpi_inc
+      USE virtual_casing_mod, ONLY: free_virtual_casing
 !-----------------------------------------------------------------------
 !     Local Variables
 !          numargs      Number of input arguments
@@ -33,9 +35,6 @@
 !          args         Input arguments
 !-----------------------------------------------------------------------   
       implicit none
-#if defined(MPI_OPT)
-      INCLUDE 'mpif.h'
-#endif
       logical :: lbench
       integer numargs,i,ier
       integer, parameter :: arg_len =256
@@ -50,6 +49,8 @@
     CALL MPI_COMM_DUP( MPI_COMM_WORLD, MPI_COMM_DIAGNO, ierr_mpi)
     CALL MPI_COMM_RANK(MPI_COMM_DIAGNO, myworkid, ierr_mpi)
     CALL MPI_COMM_SIZE(MPI_COMM_DIAGNO, nprocs_diagno, ierr_mpi)
+    CALL MPI_COMM_SPLIT_TYPE(MPI_COMM_DIAGNO, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, MPI_COMM_SHARMEM, ierr_mpi)
+    CALL MPI_COMM_RANK(MPI_COMM_SHARMEM, myid_sharmem, ierr_mpi)
 #endif
     IF (myworkid == master) THEN
        numargs=0
@@ -190,6 +191,7 @@
       
       ! Do Cleanup
       IF (lvmec) THEN
+         CALL free_virtual_casing(MPI_COMM_SHARMEM)
       ELSE IF (lpies) THEN
       ELSE IF (lspec) THEN
       ELSE IF (lcoil) THEN

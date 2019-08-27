@@ -13,16 +13,11 @@
       USE ez_hdf5
 !DEC$ ENDIF  
       USE beams3d_lines
-      USE beams3d_grid, ONLY: nr, nphi, nz, B_R, B_PHI, B_Z, raxis, &
-                                 zaxis, phiaxis, S_ARR, U_ARR, POT_ARR
-      USE beams3d_runtime, ONLY: id_string, npoinc, nbeams, beam, t_end, lverb, lflux, &
-                                    lvmec, lpies, lspec, lcoil, lmgrid, lmu, lbeam, &
-                                    lvessel, lvac, lbeam_simple, handle_err, nparticles_start, &
-                                    HDF5_OPEN_ERR,HDF5_READ_ERR,&
-                                    HDF5_CLOSE_ERR, BEAMS3D_VERSION, weight, e_beams, p_beams,&
-                                    charge, Zatom, mass, ldepo, v_neut
+      USE beams3d_grid
+      USE beams3d_runtime
       USE safe_open_mod, ONLY: safe_open
       USE wall_mod, ONLY: nface,nvertex,face,vertex,ihit_array
+      USE mpi_sharmem
 !-----------------------------------------------------------------------
 !     Local Variables
 !          ier          Error Flag
@@ -166,18 +161,25 @@
       IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'nphi',ier)
       CALL read_scalar_hdf5(fid,'nz',ier,INTVAR=nz)
       IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'nz',ier)
-      IF (ALLOCATED(raxis)) DEALLOCATE(raxis)
-      IF (ALLOCATED(zaxis)) DEALLOCATE(zaxis)
-      IF (ALLOCATED(phiaxis)) DEALLOCATE(phiaxis)
-      IF (ALLOCATED(B_R)) DEALLOCATE(B_R)
-      IF (ALLOCATED(B_Z)) DEALLOCATE(B_Z)
-      IF (ALLOCATED(B_PHI)) DEALLOCATE(B_PHI)
-      IF (ALLOCATED(S_ARR)) DEALLOCATE(S_ARR)
-      IF (ALLOCATED(U_ARR)) DEALLOCATE(U_ARR)
-      IF (ALLOCATED(POT_ARR)) DEALLOCATE(POT_ARR)
-      ALLOCATE(raxis(nr),phiaxis(nphi),zaxis(nz), &
-            B_R(nr,nphi,nz),B_PHI(nr,nphi,nz),B_Z(nr,nphi,nz),&
-            S_ARR(nr,nphi,nz),U_ARR(nr,nphi,nz),POT_ARR(nr,nphi,nz))
+      IF (ASSOCIATED(raxis))   CALL mpidealloc(raxis,win_raxis)
+      IF (ASSOCIATED(zaxis))   CALL mpidealloc(zaxis,win_zaxis)
+      IF (ASSOCIATED(phiaxis)) CALL mpidealloc(phiaxis,win_phiaxis)
+      IF (ASSOCIATED(B_R))     CALL mpidealloc(B_R,win_B_R)
+      IF (ASSOCIATED(B_Z))     CALL mpidealloc(B_Z,win_B_Z)
+      IF (ASSOCIATED(B_PHI))   CALL mpidealloc(B_PHI,win_B_PHI)
+      IF (ASSOCIATED(S_ARR))   CALL mpidealloc(S_ARR,win_S_ARR)
+      IF (ASSOCIATED(U_ARR))   CALL mpidealloc(U_ARR,win_U_ARR)
+      IF (ASSOCIATED(POT_ARR)) CALL mpidealloc(POT_ARR,win_POT_ARR)
+      CALL mpialloc(raxis, nr, myid_sharmem, 0, MPI_COMM_SHARMEM, win_raxis)
+      CALL mpialloc(phiaxis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_phiaxis)
+      CALL mpialloc(zaxis, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_zaxis)
+      CALL mpialloc(B_R, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_B_R)
+      CALL mpialloc(B_PHI, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_B_PHI)
+      CALL mpialloc(B_Z, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_B_Z)
+      CALL mpialloc(MODB, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_MODB)
+      CALL mpialloc(POT_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_POT_ARR)
+      CALL mpialloc(S_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_S_ARR)
+      CALL mpialloc(U_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_U_ARR)
       CALL read_var_hdf5(fid,'raxis',nr,ier,DBLVAR=raxis)
       IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'raxis',ier)
       CALL read_var_hdf5(fid,'zaxis',nz,ier,DBLVAR=zaxis)

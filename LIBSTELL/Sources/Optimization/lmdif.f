@@ -17,10 +17,8 @@
 !DEC$ ENDIF
       USE mpi_params
       USE safe_open_mod
+      USE mpi_inc
       IMPLICIT NONE
-!DEC$ IF DEFINED (MPI_OPT)
-      INCLUDE 'mpif.h'                                       !mpi stuff
-!DEC$ ENDIF
 C-----------------------------------------------
 C   D u m m y   A r g u m e n t s
 C-----------------------------------------------
@@ -40,7 +38,7 @@ C   L o c a l   P a r a m e t e r s
 C-----------------------------------------------
       REAL(rprec), PARAMETER :: zero = 0, one = 1,
      1   p1=0.1_dp, p5=0.5_dp, p25=0.25_dp, p75=0.75_dp, p0001=1.e-4_dp
-      CHARACTER(LEN=130), DIMENSION(0:12) :: info_array 
+      CHARACTER(LEN=130), DIMENSION(0:13) :: info_array 
 C-----------------------------------------------
 C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
@@ -265,6 +263,10 @@ c     Get mpi parameters
      A"Levenberg-Marquardt terminated prematurely: " //
      A"because of bad Jacobian" 
 
+      info_array(13) = 
+     1"improper input parameters " //
+     1"X_MIN < X_MAX"
+
 
 !DEC$ IF DEFINED (MPI_OPT)
       IF (numprocs > n) THEN
@@ -322,6 +324,19 @@ c     Get mpi parameters
          DO j = 1, n
             IF (diag(j) .le. zero) GOTO 300
          END DO
+      END IF
+
+      IF (PRESENT(xvmin) .AND. PRESENT(xvmax)) THEN
+         DO j = 1, n
+            IF (xvmin(j) .ge. xvmax(j)) THEN
+               info = 13
+               IF (myid .eq. master) WRITE(6,'(A,I3,3(A,ES20.10))') 
+     1            '   AT j=',j,
+     2            '; MIN=',xvmin(j),
+     3            '; X=',x(j),'; MAX=',xvmax(j)
+            END IF
+         END DO
+         IF (info > 0) GOTO 400
       END IF
 
 !     Set up workers communicator (only master processor here) for initial run
@@ -655,6 +670,11 @@ c     Get mpi parameters
                  delta = MAX(delta, delta_old)
                  par = MIN(par, par_old)
               END IF
+              
+              ! By deffinition we need to try smaller bounds now
+              IF (delta_old == 0) delta_old=delta   
+              delta = 0.25 * MIN(delta, delta_old)
+              par   = 4 * par
 
               actred = 1 - (fnorm1/fnorm)**2
               ratio = actred/prered

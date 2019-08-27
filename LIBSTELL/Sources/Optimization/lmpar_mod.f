@@ -19,10 +19,8 @@
      1                     n_red
       USE mpi_params
       USE safe_open_mod
+      USE mpi_inc
       IMPLICIT NONE
-!DEC$ IF DEFINED (MPI_OPT)
-      INCLUDE 'mpif.h'                                       !mpi stuff
-!DEC$ ENDIF
 C-----------------------------------------------
 C   D u m m y   A r g u m e n t s
 C-----------------------------------------------
@@ -99,7 +97,7 @@ C-----------------------------------------------
          lfirst_lm = .false.
       ELSE IF (num_lev > 2*nfact) THEN
          scale_factor = (iproc*MAXVAL(factors))/num_lev
-      ELSE IF (iproc .lt. nfact) THEN
+      ELSE IF (iproc .le. nfact) THEN
          scale_factor = factors(iproc)
       ELSE
          scale_factor = ((iproc-nfact)*MINVAL(factors))/

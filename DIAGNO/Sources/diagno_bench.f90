@@ -15,6 +15,7 @@
       USE biotsavart
       USE safe_open_mod
       USE mpi_params
+      USE mpi_inc
 !-----------------------------------------------------------------------
 !     Local Variables
 !          ier            Error Flag
@@ -23,7 +24,6 @@
       IMPLICIT NONE
       INTEGER, PARAMETER :: BYTE_8 = SELECTED_INT_KIND (8)
 #if defined(MPI_OPT)
-      INCLUDE 'mpif.h'
       INTEGER(KIND=BYTE_8),ALLOCATABLE :: mnum(:), moffsets(:)
       INTEGER :: numprocs_local, mylocalid, mylocalmaster
       INTEGER :: MPI_COMM_LOCAL
@@ -53,7 +53,7 @@
       nsect=3
       SELECT CASE (TRIM(id_string))
          CASE ('bigtok','bigtok_phi1') ! BIGTOK
-            r1 = 101.01; r2 = 102.01; z1 = 0.000; z2 = 1.000; nrad = 5 ; nzed = 5; c_loop = 100; r_loop = 1.5; my_rtol = 1.0E-3
+            r1 = 101.01; r2 = 102.01; z1 = 0.000; z2 = 1.000; nrad = 5 ; nzed = 5; c_loop = 100; r_loop = 1.5; my_rtol =  1.0E-3
          CASE ('a3tok') ! A3TOK
             r1 = 4.01;   r2 = 5.01;   z1 = 0.000; z2 = 1.000; nrad = 5 ; nzed = 5; c_loop = 3;   r_loop = 1.25; my_rtol = 1.0E-3
          CASE ('DIIID_m24n0s99_nfp1','DIIID_m24n0s99_nfp10','DIIID_m20n0s128_nfp1_lasym')
@@ -61,13 +61,13 @@
          CASE ('ncsx') ! NCSX
             r1 = 1.79;   r2 = 2.79;   z1 = 0.000; z2 = 0.500; nrad = 5 ; nzed = 5; c_loop = 1.4; r_loop = 0.80; my_rtol = 1.0E-3
          CASE ('w7x') ! W7X
-            r1 = 6.50;   r2 = 7.50;   z1 = 0.000; z2 = 0.500; nrad = 5 ; nzed = 5; c_loop = 5.5; r_loop = 1.0; my_rtol = 1.0E-2
+            r1 = 6.50;   r2 = 7.50;   z1 = 0.000; z2 = 0.500; nrad = 5 ; nzed = 5; c_loop = 5.5; r_loop = 1.0; my_rtol = 1.0E-3
          CASE('iter') ! ITER
             r1 = 8.20;   r2 = 9.200;  z1 = 0.000; z2 = 4.000; nrad = 5 ; nzed = 5; c_loop = 6.0; r_loop = 4.5; my_rtol = 1.0E-3
          CASE('lhd')  ! LHD
             r1 = 4.75;   r2 = 5.50;   z1 = 0.000; z2 = 1.000; nrad = 5 ; nzed = 5; c_loop = 3.6; r_loop = 1.0; my_rtol = 1.0E-3
          CASE('hsx') !HSX
-            r1 = 1.55;   r2 = 2.0;   z1 = 0.000; z2 = 0.300; nrad = 5 ; nzed = 5; c_loop = 1.35; r_loop = 0.3; my_rtol = 1.0E-2
+            r1 = 1.55;   r2 = 2.0;   z1 = 0.000; z2 = 0.300; nrad = 5 ; nzed = 5; c_loop = 1.35; r_loop = 0.3; my_rtol = 1.0E-3
       END SELECT
 
       ! Setup Grid
@@ -198,6 +198,7 @@
          CALL bfield_vc(xp,yp,zp,bxp,byp,bzp,ier)
          ier1 = 1
          CALL vecpot_vc(xp,yp,zp,axp,ayp,azp,ier1)
+         PRINT *,myid,nlastcall,axp,ayp,azp
          bfield_data(i,4)=axp
          bfield_data(i,5)=ayp
          bfield_data(i,6)=azp
@@ -222,7 +223,7 @@
 
       ! Cleanup
       id_string = id_string_temp
-      CALL free_virtual_casing
+      CALL free_virtual_casing(MPI_COMM_SHARMEM)
 
       ! Now do VC
       if(lverb) write(6,*)' -------------------------------'
@@ -310,7 +311,7 @@
       END IF
 
       ! Cleanup
-      CALL free_virtual_casing
+      CALL free_virtual_casing(MPI_COMM_SHARMEM)
       DEALLOCATE(bfield_data,bfield_data2)
 
 #if defined(MPI_OPT)
