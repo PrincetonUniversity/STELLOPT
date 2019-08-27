@@ -48,6 +48,9 @@
       DOUBLE PRECISION, ALLOCATABLE :: rtemp(:,:,:), r1dtemp(:)
       CHARACTER(LEN=10) ::  qid_str
       CHARACTER(LEN=8) :: temp_str8
+
+
+      DOUBLE PRECISION, PARAMETER :: e_charge      = 1.60217662E-19 !e_c
 !-----------------------------------------------------------------------
 !     Begin Subroutine
 !-----------------------------------------------------------------------
@@ -366,9 +369,10 @@
                rtemp(i,1,1) = R_lines(d3,i)
                rtemp(i,2,1) = PHI_lines(d3,i)
                rtemp(i,3,1) = Z_lines(d3,i)
-               rtemp(i,4,1) = 0.5*mass(i)*vll_lines(d3,i)*vll_lines(d3,i)
-               rtemp(i,5,1) = 2*B_lines(d3,i)*moment_lines(d3,i)/mass(i) ! v_perp^2
-               rtemp(i,5,1) = vll_lines(d3,i)/SQRT(rtemp(i,5,1)+vll_lines(d3,i)*vll_lines(d3,i)) ! pitch
+               dbl_temp     = 2*B_lines(d3,i)*moment_lines(d3,i)/mass(i) ! V_perp^2
+               rtemp(i,4,1) = 0.5*mass(i)*(vll_lines(d3,i)*vll_lines(d3,i)+dbl_temp)*e_charge
+               !rtemp(i,5,1) = 2*B_lines(d3,i)*moment_lines(d3,i)/mass(i) ! v_perp^2
+               rtemp(i,5,1) = vll_lines(d3,i)/SQRT(dbl_temp+vll_lines(d3,i)*vll_lines(d3,i)) ! pitch
                !rtemp(i,5,1) = rtemp(i,5,1)/(rtemp(i,5,1)+vll_lines(d3,i)) ! pitch
                rtemp(i,6,1) = dbl_temp*pi2 ! zeta
                rtemp(i,7,1) = mass(i) ! mass
