@@ -14,9 +14,8 @@
       USE stellopt_vars
       USE equil_vals, ONLY: phiedge
       USE safe_open_mod, ONLY: safe_open
-!DEC$ IF DEFINED (MPI_OPT)
       USE mpi_params
-!DEC$ ENDIF
+      USE mpi_inc
       IMPLICIT NONE
  
 !-----------------------------------------------------------------------

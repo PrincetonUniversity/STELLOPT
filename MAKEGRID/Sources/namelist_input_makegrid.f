@@ -125,3 +125,33 @@
       CLOSE(iou_nli)
 
       END SUBROUTINE namelist_input_makegrid
+
+! Namelist output
+      SUBROUTINE write_mgrid_namelist(iunit,istat)
+      USE write_mgrid, only: mgrid_mode, lstell_sym,                    & 
+     &     rmin, rmax, zmin, zmax, kp, ir, jz
+      IMPLICIT NONE
+      INTEGER, INTENT(IN)  :: iunit
+      INTEGER, INTENT(OUT) :: istat
+
+      CHARACTER(LEN=*), PARAMETER :: outboo  = "(2X,A,1X,'=',1X,L1)"
+      CHARACTER(LEN=*), PARAMETER :: outint  = "(2X,A,1X,'=',1X,I0)"
+      CHARACTER(LEN=*), PARAMETER :: outflt  =                          &
+     &     "(2X,A,1X,'=',1X,ES22.12E3)"
+      CHARACTER(LEN=*), PARAMETER :: outstr  =                          &
+     &     "(2X,A,1X,'=',1X,'''',A,'''')"
+
+      WRITE(iunit,'(A)') '&MGRID_NLI'
+      WRITE(iunit,outstr) 'MGRID_MODE',mgrid_mode
+      WRITE(iunit,outboo) 'LSTELL_SYM',lstell_sym
+      WRITE(iunit,outflt) 'RMIN',rmin
+      WRITE(iunit,outflt) 'RMAX',rmax
+      WRITE(iunit,outflt) 'ZMIN',zmin
+      WRITE(iunit,outflt) 'ZMAX',zmax
+      WRITE(iunit,outint) 'KP',kp
+      WRITE(iunit,outint) 'JZ',jz
+      WRITE(iunit,outint) 'IR',ir
+      WRITE(iunit,'(A)') '/'
+
+      istat = 0
+      END SUBROUTINE write_mgrid_namelist

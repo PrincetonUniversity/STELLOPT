@@ -31,7 +31,6 @@
       USE equil_utils
       USE booz_persistent
       USE read_boozer_mod
-!      USE gist_mod
       USE EZspline_obj
       USE EZspline
 !DEC$ IF DEFINED (GENE)
@@ -44,6 +43,7 @@
       USE mpi_params
       USE discretization, ONLY: mype_gl, n_procs_sim
       USE communications, ONLY: omp_level
+      USE mpi_inc
 !DEC$ ENDIF
       
 !-----------------------------------------------------------------------
@@ -475,6 +475,9 @@
                      vkp1fac = zero
                      WHERE(rkp1av < zero) vkp1fac = - rkp1av
                      vqqprox = (dk/rkp_p)*sqrt(tau*vkp1fac*dkpfac)*qqfac
+                  CASE('prox_l2')
+                     vqqprox = L2
+                     WHERE(vqqprox > zero) vqqprox=vqqprox*0.01
                   CASE('prox_tem_proll','temproxy','tem_overlap')
                      DO ialpha = 1, nalpha0_
                         bmax = MAXVAL(Bhat(ialpha,:))

@@ -1,5 +1,5 @@
       SUBROUTINE fouri (grpmn, gsource, amatrix, amatsq, bvec, 
-     1                  bvecNS, ndim)
+     &                  bvecNS, ndim)
       USE vacmod
       USE parallel_include_module
       USE timer_sub
@@ -76,42 +76,38 @@ C-----------------------------------------------
 !
       mn = 0
       NLOOP2: DO n = -nf, nf
-      MLOOP: DO m = 0, mf
-         mn = mn+1
-         j = 0
-         IF (m.EQ.0 .AND. n.LT.0) CYCLE
-         DO i = nuv3min, nuv3max
-            j = j+1
-            bvecNS(mn,1) = bvecNS(mn,1)
-     1                   + sinmni(j,mn)*source(i)
+         MLOOP: DO m = 0, mf
+            mn = mn + 1
+            j = 0
+            IF (m.EQ.0 .AND. n.LT.0) CYCLE
+            DO i = nuv3min, nuv3max
+               j = j + 1
+               bvecNS(mn,1) = bvecNS(mn,1) + sinmni(j,mn)*source(i)
  
-            amatrix(:,mn,1) = amatrix(:,mn,1) 
-     1                      + sinmni(j,mn)*grpmn(:mnpd,i)
+               amatrix(:,mn,1) = amatrix(:,mn,1)
+     &                         + sinmni(j,mn)*grpmn(:mnpd,i)
 
-            IF (.NOT.lasym) CYCLE
+               IF (.NOT.lasym) CYCLE
 
-            bvecNS(mn,2) = bvecNS(mn,2) 
-     1                   + cosmni(j,mn)*source(i)
+               bvecNS(mn,2) = bvecNS(mn,2) + cosmni(j,mn)*source(i)
 
-            amatrix(:,mn,2) = amatrix(:,mn,2) 
-     1                      + cosmni(j,mn)*grpmn(:mnpd,i)
-            amatrix(:,mn,3) = amatrix(:,mn,3) 
-     1                      + sinmni(j,mn)*grpmn(mnpd+1:,i)
-            amatrix(:,mn,4) = amatrix(:,mn,4) 
-     1                      + cosmni(j,mn)*grpmn(mnpd+1:,i)
-         END DO
-      END DO MLOOP
+               amatrix(:,mn,2) = amatrix(:,mn,2)
+     &                         + cosmni(j,mn)*grpmn(:mnpd,i)
+               amatrix(:,mn,3) = amatrix(:,mn,3)
+     &                         + sinmni(j,mn)*grpmn(mnpd+1:,i)
+               amatrix(:,mn,4) = amatrix(:,mn,4)
+     &                         + cosmni(j,mn)*grpmn(mnpd+1:,i)
+            END DO
+         END DO MLOOP
       END DO NLOOP2
 
-#if defined(SKS)
       IF (vlactive) THEN
-        CALL second0(ton)
-        CALL MPI_Allreduce(MPI_IN_PLACE,amatrix,SIZE(amatrix),MPI_REAL8,
-     1                     MPI_SUM,VAC_COMM,MPI_ERR)
-        CALL second0(toff)
-        allreduce_time = allreduce_time + (toff - ton)
+         CALL second0(ton)
+         CALL MPI_Allreduce(MPI_IN_PLACE, amatrix, SIZE(amatrix),
+     &                      MPI_REAL8, MPI_SUM, VAC_COMM, MPI_ERR)
+         CALL second0(toff)
+         allreduce_time = allreduce_time + (toff - ton)
       END IF
-#endif
 !
 !     ADD (still not reduced) ANALYTIC AND NON-SINGULAR PARTS 
 !
@@ -119,7 +115,7 @@ C-----------------------------------------------
 
       DEALLOCATE (source, stat=i)
 
-      mn0 = 1+mf1*nf                                            !Index of m,n=(0,0)
+      mn0 = 1 + mf1*nf                                            !Index of m,n=(0,0)
 
 !SANITY CHECKS
 !      IF (ANY(bvec(1:mn0-mf1:mf1,:) .NE. 0._dp)) STOP 'BVEC != 0'
@@ -145,11 +141,9 @@ C-----------------------------------------------
       amatsq(:mnpd,:mnpd) = amatrix(:,:,1)                      !Sin-Sin'
 
       IF (lasym) THEN
-
-      amatsq(:mnpd,1+mnpd:mnpd2) = amatrix(:,:,2)               !Sin-Cos'
-      amatsq(1+mnpd:mnpd2,:mnpd) = amatrix(:,:,3)               !Cos-Sin'
-      amatsq(1+mnpd:mnpd2,1+mnpd:mnpd2) = amatrix(:,:,4)        !Cos-Cos'
-
+         amatsq(:mnpd,1+mnpd:mnpd2) = amatrix(:,:,2)               !Sin-Cos'
+         amatsq(1+mnpd:mnpd2,:mnpd) = amatrix(:,:,3)               !Cos-Sin'
+         amatsq(1+mnpd:mnpd2,1+mnpd:mnpd2) = amatrix(:,:,4)        !Cos-Cos'
       END IF
 
       CALL second0(tfourioff)
@@ -157,4 +151,3 @@ C-----------------------------------------------
       fouri_time = timer_vac(tfouri)
 
       END SUBROUTINE fouri
-

@@ -68,15 +68,17 @@
          ! Now calculate values
          DO ik = 1, nprof
             IF (sigma(ik) >= bigno) CYCLE
+            ! For now we disable the phi contribution to the MSE signal
             ! Get E
-            IF (dex > 1) THEN
-               CALL get_equil_E(r_mse(ik),phi_mse(ik),z_mse(ik),Er,Ez,ier)
-            ELSE
+            !IF (dex > 1) THEN
+            !   CALL get_equil_E(r_mse(ik),phi_mse(ik),z_mse(ik),Er,Ez,ier)
+            !ELSE
                Er = 0.0
                Ez = 0.0
-            END IF
+            !END IF
             ! Get S (for plotting purposes only)
             ier = 0
+            !PRINT *,ik,r_mse(ik),phi_mse(ik),z_mse(ik)
             CALL get_equil_s(r_mse(ik),phi_mse(ik),z_mse(ik),s_mse(ik),ier)
             ! Get B
             Br = 0.0; Bphi = 0.0; Bz = 0.0

@@ -1,4 +1,3 @@
-#if defined(SKS)
       SUBROUTINE scalfor_par(gcx, axm, bxm, axd, bxd, cx, iflag)
       USE vmec_main
       USE vmec_params
@@ -45,31 +44,34 @@ C-----------------------------------------------
       ax(:,:,ns) = 0; bx(:,:,ns) = 0; dx(:,:,ns) = 0
 
       jmax = ns
-      IF (ivac .lt. 1) jmax = ns1
+      IF (ivac .lt. 1) THEN
+         jmax = ns1
+      END IF
 
 !     FOR SOME 3D PLASMAS, THIS SOMETIME HELPS (CHOOSE mult_fac =1 otherwise)
 !     TO AVOID JACOBIAN RESETS BY GIVING A SMOOTH TRANSITION FROM FIXED TO FREE ITERATIONS
 !      mult_fac = 1._dp/(1._dp + 10*(fsqr+fsqz))
 !      gcx(ns,:,:,:) = mult_fac*gcx(ns,:,:,:)
 
+      nsmax = MIN(trglob, jmax)
       DO m = 0, mpol1
-        mp = MOD(m,2) + 1
-        DO n = 0, ntor
-          ax(n,m,tlglob:trglob) = 0
-          bx(n,m,tlglob:trglob) = 0
-          dx(n,m,tlglob:trglob) = 0
-          nsmin=MAX(jmin2(m), tlglob); nsmax=MIN(trglob,jmax)
-          DO js = nsmin, nsmax
-            ax(n,m,js) = -(axm(js+1,mp) + bxm(js+1,mp)*m**2)
-            bx(n,m,js) = -(axm(js,mp) + bxm(js,mp)*m**2)
-            dx(n,m,js) = -(axd(js,mp) + bxd(js,mp)*m**2
-     1                    + cx(js)*(n*nfp)**2)
-          END DO
+         nsmin = MAX(jmin2(m), tlglob)
+         mp = MOD(m,2) + 1
+         DO n = 0, ntor
+            ax(n,m,tlglob:trglob) = 0
+            bx(n,m,tlglob:trglob) = 0
+            dx(n,m,tlglob:trglob) = 0
+            DO js = nsmin, nsmax
+               ax(n,m,js) = -(axm(js+1,mp) + bxm(js+1,mp)*m**2)
+               bx(n,m,js) = -(axm(js,mp) + bxm(js,mp)*m**2)
+               dx(n,m,js) = -(axd(js,mp) + bxd(js,mp)*m**2
+     &                    + cx(js)*(n*nfp)**2)
+            END DO
 
-          IF (m .eq. 1) THEN
-            dx(n,m,2) = dx(n,m,2) + bx(n,m,2)
-          END IF
-        END DO
+            IF (m .eq. 1 .and. nsmin .eq. 2) THEN
+               dx(n,m,2) = dx(n,m,2) + bx(n,m,2)
+            END IF
+         END DO
       END DO
 
       IF (jmax .GE. ns) THEN
@@ -78,8 +80,8 @@ C-----------------------------------------------
 !     IN PARTICULAR, NEEDED TO ACCOUNT FOR POTENTIAL ZERO
 !     EIGENVALUE DUE TO NEUMANN (GRADIENT) CONDITION AT EDGE
 !
-         dx(:,0:1,ns)     = (1+edge_pedestal)  *dx(:,0:1,ns)
-         dx(:,2:mpol1,ns) = (1+2*edge_pedestal)*dx(:,2:mpol1,ns)
+         dx(:,0:1,ns)     = (1 + edge_pedestal)  *dx(:,0:1,ns)
+         dx(:,2:mpol1,ns) = (1 + 2*edge_pedestal)*dx(:,2:mpol1,ns)
 !
 !     STABILIZATION ALGORITHM FOR ZC_00(NS)
 !     FOR UNSTABLE CASE, HAVE TO FLIP SIGN OF -FAC -> +FAC FOR CONVERGENCE
@@ -91,7 +93,7 @@ C-----------------------------------------------
 !
 !     METHOD 1: SUBTRACT (INSTABILITY) Pedge ~ fac*z/hs FROM PRECONDITIONER AT EDGE
 !
-             dx(0,0,ns) = dx(0,0,ns)*(1-mult_fac)/(1+edge_pedestal)
+             dx(0,0,ns) = dx(0,0,ns)*(1 - mult_fac)/(1 + edge_pedestal)
           END IF
 
       ENDIF
@@ -117,19 +119,21 @@ C-----------------------------------------------
 !     MAGNETIC AXIS IS FIXED SO JMIN3(0) => 2 FOR M=0,N=0
 
       jmin4 = jmin3
-      IF (iresidue.GE.0 .AND. iresidue.LT.3) jmin4(0) = 2
+      IF (iresidue .GE. 0 .AND. iresidue .LT. 3) THEN
+         jmin4(0) = 2
+      END IF
 
 !     Padsides moved to SUBROUTINE residue AFTER this completes
       CALL second0(tridslvton)
       CALL bst_parallel_tridiag_solver(ax,dx,bx,gcx,jmin4,jmax,
-     1                                 mnsize-1,ns,ntmax)
+     1                                 mnsize - 1,ns,ntmax)
       CALL second0(tridslvtoff)
       tridslv_time = tridslv_time + (tridslvtoff-tridslvton)
 
       DEALLOCATE (ax, bx, dx)
 
       CALL second0(scalfortoff)
-      scalfor_time =  scalfor_time + (scalfortoff-scalforton)
+!      scalfor_time =  scalfor_time + (scalfortoff-scalforton)
 
       END SUBROUTINE scalfor_par
 
@@ -171,7 +175,9 @@ C-----------------------------------------------
 !     AND RETURNS ANSWER IN C(I)
 
       CALL second0(t1)
-      IF (jmax .GT. ns) STOP 'jmax>ns in tridslv_par'
+      IF (jmax .GT. ns) THEN
+         STOP 'jmax>ns in tridslv_par'
+      END IF
       in0 = MINVAL(jmin)
       DO mn = 0, mnd1
          in1 = jmin(mn)-1
@@ -192,20 +198,20 @@ C-----------------------------------------------
       CALL second0(t1)
       DO irow = tlglob, trglob
         
-        ! Set up L
-        IF(irow.EQ.ns.AND.jmax.LT.ns) THEN
-          b(:,irow) = 0
-        END IF
-        CALL SetMatrixRowColL_bst(irow,b(:,irow))
+         ! Set up L
+         IF (irow .EQ. ns .AND. jmax .LT. ns) THEN
+            b(:,irow) = 0
+         END IF
+         CALL SetMatrixRowColL_bst(irow,b(:,irow))
 
-        ! Set up D
-        IF(irow.EQ.ns.AND.jmax.LT.ns) THEN
-          d(:,irow) = 1
-        END IF
-        CALL SetMatrixRowColD_bst(irow,d(:,irow))
+         ! Set up D
+         IF (irow .EQ. ns .AND. jmax .LT. ns) THEN
+            d(:,irow) = 1
+         END IF
+         CALL SetMatrixRowColD_bst(irow,d(:,irow))
 
-        ! Set up U
-        CALL SetMatrixRowColU_bst(irow,a(:,irow))
+         ! Set up U
+         CALL SetMatrixRowColU_bst(irow,a(:,irow))
       END DO
       CALL second0(t2)
       setup_time = setup_time + (t2-t1)
@@ -220,20 +226,20 @@ C-----------------------------------------------
       DO jrhs = 1, nrhs
         
         ! Set RHS
-        DO irow = tlglob, trglob
-          tmpv(0:mnd1)=c(:,irow,jrhs)
-          IF (irow.EQ.ns.AND.jmax.LT.ns) tmpv(0:mnd1)=0
-          CALL SetMatrixRHS_bst(irow,tmpv) 
-        END DO
+         DO irow = tlglob, trglob
+           tmpv(0:mnd1)=c(:,irow,jrhs)
+           IF (irow.EQ.ns.AND.jmax.LT.ns) tmpv(0:mnd1)=0
+           CALL SetMatrixRHS_bst(irow,tmpv)
+         END DO
 
-        ! Backward solve
-        CALL BackwardSolve_bst
+         ! Backward solve
+         CALL BackwardSolve_bst
 
-        ! Get solution vector
-        DO irow = tlglob, trglob
-          CALL GetSolutionVector_bst(irow, tmpv)
-          c(:,irow,jrhs)=tmpv(0:mnd1)
-        END DO
+         ! Get solution vector
+         DO irow = tlglob, trglob
+            CALL GetSolutionVector_bst(irow, tmpv)
+            c(:,irow,jrhs)=tmpv(0:mnd1)
+         END DO
 
       END DO
       DEALLOCATE(tmp, tmpv)
@@ -241,17 +247,13 @@ C-----------------------------------------------
       backwardsolve_time = backwardsolve_time + (t2-t1)
 
       END SUBROUTINE bst_parallel_tridiag_solver
-#endif      
 
       SUBROUTINE scalfor(gcx, axm, bxm, axd, bxd, cx, iflag)
       USE vmec_main
       USE vmec_params
       USE vmec_dim, ONLY: ns 
       USE realspace, ONLY: wint, ru0
-#if defined(SKS)      
-      USE xstuff, ONLY: xc, gc
-      USE parallel_include_module
-#endif      
+
       IMPLICIT NONE
 C-----------------------------------------------
 C   Dummy Arguments
@@ -270,23 +272,18 @@ C-----------------------------------------------
       INTEGER :: m , mp, n, js, jmax, jmin4(0:mnsize-1)
       REAL(dp), DIMENSION(:,:,:), ALLOCATABLE :: ax, bx, dx
       REAL(dp) :: mult_fac
-!      LOGICAL :: ledge
-#if defined(SKS)      
-      INTEGER :: nsmin, nsmax, i, j, k, l
-      REAL(dp) :: tridslvton, tridslvtoff
-      REAL(dp) :: scalforton, scalfortoff
-#endif
+
 C-----------------------------------------------
-#if defined(SKS)      
-      CALL second0(scalforton)
-#endif
+
       ALLOCATE (ax(ns,0:ntor,0:mpol1), bx(ns,0:ntor,0:mpol1),
-     1          dx(ns,0:ntor,0:mpol1))
+     &          dx(ns,0:ntor,0:mpol1))
       ax(1,:,:) = 0; bx(1,:,:) = 0; dx(1,:,:) = 0
       ax(ns,:,:) = 0; bx(ns,:,:) = 0; dx(ns,:,:) = 0
 
       jmax = ns
-      IF (ivac .lt. 1) jmax = ns1
+      IF (ivac .lt. 1) THEN
+         jmax = ns1
+      END IF
 
 !     FOR SOME 3D PLASMAS, THIS SOMETIME HELPS (CHOOSE mult_fac =1 otherwise)
 !     TO AVOID JACOBIAN RESETS BY GIVING A SMOOTH TRANSITION FROM FIXED TO FREE ITERATIONS
@@ -335,7 +332,7 @@ C-----------------------------------------------
 !
              dx(ns,0,0) = dx(ns,0,0)*(1-mult_fac)/(1+edge_pedestal)
           END IF
-      ENDIF
+      END IF
 
 
 !
@@ -360,25 +357,15 @@ C-----------------------------------------------
 !     MAGNETIC AXIS IS FIXED SO JMIN3(0) => 2 FOR M=0,N=0
 
       jmin4 = jmin3
-      IF (iresidue.GE.0 .and. iresidue.LT.3) jmin4(0) = 2
+      IF (iresidue.GE.0 .and. iresidue.LT.3) THEN
+         jmin4(0) = 2
+      END IF
 
 !     SOLVES BX(I)*X(I-1)+DX(I)*X(I)+AX(I)*X(I+1)=GCX(I), I=JMIN4,JMAX
 !     AND RETURNS ANSWER IN GCX(I)
-
-#if defined(SKS)      
-      CALL second0(tridslvton)
-#endif
-      CALL serial_tridslv (ax, dx, bx, gcx, jmin4, jmax, mnsize-1, 
-     1                     ns, ntmax)
-#if defined(SKS)      
-      CALL second0(tridslvtoff)
-      s_tridslv_time = s_tridslv_time + (tridslvtoff-tridslvton)
-#endif
+      CALL serial_tridslv (ax, dx, bx, gcx, jmin4, jmax, mnsize - 1,
+     &                     ns, ntmax)
       DEALLOCATE (ax, bx, dx)
-#if defined(SKS)      
-      CALL second0(scalfortoff)
-      s_scalfor_time =  s_scalfor_time + (scalfortoff-scalforton)
-#endif
 
       END SUBROUTINE scalfor
 
@@ -409,10 +396,14 @@ C-----------------------------------------------
 !     ADDED VECTORIZATION ON FOURIER MODE ARGUMENT (01-2000)
 !     AND NEW ARGUMENT (NRHS) TO DO MULTIPLE RIGHT SIDES SIMULTANEOUSLY
 !
-      IF (jmax .gt. ns) STOP 'jmax>ns in tridslv'
+      IF (jmax .gt. ns) THEN
+         STOP 'jmax>ns in tridslv'
+      END IF
 
       ALLOCATE (alf(ns,0:mnd1), stat = in)
-      IF (in .ne. 0) STOP 'Allocation error in tridslv'
+      IF (in .ne. 0) THEN
+         STOP 'Allocation error in tridslv'
+      END IF
 
       in = MINVAL(jmin)
 !
@@ -432,7 +423,9 @@ C-----------------------------------------------
       in1 = in + 1
 
       psi0(:)= d(in,:)
-      IF (ANY(psi0 .eq. zero)) STOP 'psi0 == 0 error in tridslv'
+      IF (ANY(psi0 .eq. zero)) THEN
+         STOP 'psi0 == 0 error in tridslv'
+      END IF
       psi0 = one/psi0
       DO jrhs = 1, nrhs
          c(in,:,jrhs) = c(in,:,jrhs)*psi0(:)
@@ -441,12 +434,12 @@ C-----------------------------------------------
       DO i0 = in1,jmax
          alf(i0-1,:) = a(i0-1,:)*psi0(:)
          psi0 = d(i0,:) - b(i0,:)*alf(i0-1,:)
-         IF (ANY(ABS(psi0) .le. 1.E-8_dp*ABS(d(i0,:)))) 
-     1       STOP 'psi0/d(i0) < 1.E-8: possible singularity in tridslv'
+         IF (ANY(ABS(psi0) .le. 1.E-8_dp*ABS(d(i0,:)))) THEN
+            STOP 'psi0/d(i0) < 1.E-8: possible singularity in tridslv'
+         END IF
          psi0  = one/psi0
          DO jrhs = 1, nrhs
-            c(i0,:,jrhs) = (c(i0,:,jrhs) - b(i0,:)*c(i0-1,:,jrhs))
-     1                   * psi0
+            c(i0,:,jrhs) = (c(i0,:,jrhs) - b(i0,:)*c(i0-1,:,jrhs))*psi0
          END DO
       END DO
 

@@ -5,8 +5,6 @@
 
       CONTAINS
 
-#if defined(SKS)
-
       SUBROUTINE calc_fbal_par(bsubu, bsubv)
       USE vmec_main, ONLY: buco, bvco, equif, iequi,
      1                     jcurv, jcuru, chipf, vp, pres, 
@@ -55,7 +53,6 @@
       !SKS-RANGE: All LHS's computed correctly in [t1lglob, trglob]
 
       END SUBROUTINE calc_fbal_par
-#endif
 
       SUBROUTINE calc_fbal(bsubu, bsubv)
       USE vmec_main, ONLY: buco, bvco, equif, 
@@ -72,9 +69,7 @@
      2                     pp1, pp2, pp3
       USE vforces, gsqrt => azmn_o
 #endif
-#if defined (SKS)      
-      USE parallel_include_module 
-#endif      
+
       IMPLICIT NONE
 !-----------------------------------------------
       REAL(dp), INTENT(in) :: bsubu(1:nrzt), bsubv(1:nrzt)

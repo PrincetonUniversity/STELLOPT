@@ -20,9 +20,8 @@
       USE stellopt_vars
       USE equil_vals, ONLY: kx_gene
       USE wall_mod, ONLY: wall_free
-!DEC$ IF DEFINED (MPI_OPT)
-      USE mpi_params     
-!DEC$ ENDIF
+      USE mpi_params
+      USE mpi_inc
 !DEC$ IF DEFINED (SKS2)
       USE parallel_vmec_module, ONLY: &
             InitializeParallel, FinalizeParallel, grank, &
@@ -42,7 +41,8 @@
       USE par_in, ONLY: diagdir,file_extension, beta_gene => beta
       USE par_other, ONLY: print_ini_msg
       USE parameters_IO, ONLY: read_parameters, write_parameters, PAR_OUT_FILE, &
-                               PARFILE, bcast_parameters
+                               PARFILE
+      USE stellopt_interface, ONLY: bcast_parameters
       USE geometry, ONLY: geomdir, magn_geometry, geomfile
       USE file_io, ONLY: erase_stop_file
       USE discretization, ONLY: mype_gl, n_procs_sim, n_procs_s, n_procs_w, &
@@ -56,7 +56,7 @@
             lread_input_beams => lread_input, lvmec_beams => lvmec, &
             lverb_beams => lverb, lbeam_beams => lbeam, &
             lpies_beams => lpies, lspec_beams => lspec, &
-            lmgrid_beams => lmgrid, lmu_beams => lmu,&
+            lmgrid_beams => lmgrid, &
             lvessel_beams => lvessel, lcoil_beams => lcoil, &
             lrestart_beams => lrestart, lbeam_simple_beams => lbeam_simple, &
             lflux_beams => lflux, lplasma_only_beams => lplasma_only, &
@@ -76,6 +76,7 @@
                               BR_spl, BZ_spl, BPHI_spl, MODB_spl, rmin, rmax, zmin, &
                               zmax, phimin, phimax
       USE wall_mod, ONLY: wall_free
+      USE beams3d_input_mod, ONLY: BCAST_BEAMS3D_INPUT
 !DEC$ ENDIF
       
 !-----------------------------------------------------------------------
@@ -126,6 +127,31 @@
          ! Now run the proper code
          CALL tolower(code_str)
          SELECT CASE (TRIM(code_str))
+            CASE('parvmec_init')
+               myseq=myid
+               CALL MPI_BCAST(myseq,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
+              ! Now make initializing VMEC call which preforms allocations
+               ictrl(1) = restart_flag + readin_flag + reset_jacdt_flag
+               ictrl(2) = 0
+               ictrl(3) = 50
+               ictrl(4) = 0
+               ictrl(5) = myid
+               PARVMEC = .TRUE.
+               NS_RESLTN = 0 ! Need to do this otherwise situations arrise which cause problems.
+               reset_string =''
+               !IF (TRIM(equil_type)=='animec') ictrl(1) = ictrl(1) + animec_flag
+               !IF (TRIM(equil_type)=='flow' .or. TRIM(equil_type)=='satire') ictrl(1) = ictrl(1) + flow_flag
+               IF (myworkid==master) THEN
+                  CALL safe_open(iunit,ier,'threed1.'//TRIM(file_str),'unknown','formatted')
+                  CLOSE(iunit)
+               END IF
+               CALL MPI_BARRIER(MPI_COMM_MYWORLD,ierr_mpi)
+               IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_paraexe: BARRIER',ierr_mpi)
+               CALL runvmec(ictrl,file_str,.false.,MPI_COMM_MYWORLD,reset_string)
+               CALL FinalizeSurfaceComm(NS_COMM)
+               CALL FinalizeRunVmec(RUNVMEC_COMM_WORLD)
+               ier_paraexe=ictrl(2)
+               in_parameter_2 = TRIM(file_str)
             CASE('paravmec_run')
 !DEC$ IF DEFINED (SKS2)
                ! Broadcast the sequence number
@@ -259,7 +285,11 @@
                IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_paraexe',ierr_mpi)
 
                ! Set vars so BEAMS3D knows it's being called from stellopt
-               MPI_COMM_BEAMS     = MPI_COMM_MYWORLD
+               CALL MPI_COMM_DUP(MPI_COMM_BEAMS, MPI_COMM_MYWORLD, ierr_mpi)
+               CALL MPI_COMM_SPLIT_TYPE(MPI_COMM_BEAMS, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, MPI_COMM_SHARMEM, ierr_mpi)
+               CALL MPI_COMM_RANK(MPI_COMM_SHARMEM, myid_sharmem, ierr_mpi)
+               CALL BCAST_BEAMS3D_INPUT(master,MPI_COMM_MYWORLD,ierr_mpi)
+
                lverb_beams        = .FALSE.
                lvmec_beams        = .TRUE.  ! Use VMEC Equilibria
                lpies_beams        = .FALSE.
@@ -267,7 +297,6 @@
                lcoil_beams        = .FALSE.
                lmgrid_beams       = .FALSE.
                lraw_beams         = .FALSE.
-               lmu_beams          = .FALSE.
                lvessel_beams      = .FALSE.
                lvac_beams         = .FALSE.
                lrestart_beams     = .FALSE.
@@ -332,9 +361,19 @@
 
                ! Deallocate Arrays
                CALL beams3d_free
-               CALL wall_free(ier)
+               CALL wall_free(ier,MPI_COMM_SHARMEM)
+              
+               ! Free the Shared Memory region
+               CALL MPI_COMM_FREE(MPI_COMM_SHARMEM,ierr_mpi)
+               CALL MPI_COMM_FREE(MPI_COMM_BEAMS,ierr_mpi)
+
                IF (lverb_beams) WRITE(6, '(A)') '----- BEAMS3D DONE -----'
 
+!DEC$ ENDIF
+!DEC$ IF DEFINED (TRAVIS)
+            CASE('travis')
+               proc_string = file_str
+               CALL stellopt_travis(lscreen,ier)
 !DEC$ ENDIF
             CASE('coilopt++')
                CALL stellopt_coiloptpp(file_str,lscreen)

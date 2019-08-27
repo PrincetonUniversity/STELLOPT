@@ -1702,6 +1702,7 @@ SUBROUTINE PLBDGETRF( A, piv, info )
 #endif
   REAL(dp) :: ton, toff
 
+  piv  = 0
   info = 0
 
 END SUBROUTINE PLBDGETRF

@@ -5,16 +5,9 @@
       USE vmec_input, ONLY: delt
       USE vsvd, ONLY: pfac, phifac
       USE timer_sub, ONLY: timer
-      USE parallel_include_module, ONLY: reset_params_time
       IMPLICIT NONE
 C-----------------------------------------------
-C   L o c a l   V a r i a b l e s
-C-----------------------------------------------
-      REAL(dp) :: reseton, resetoff
-C-----------------------------------------------
-#if defined(SKS)
-        CALL second0(reseton)
-#endif
+
 
 !     2d preconditioner
       ictrl_prec2d = 0
@@ -37,9 +30,5 @@ C-----------------------------------------------
       pfac   = 1
       phifac = 1
       timer =  0
-#if defined(SKS)
-      CALL second0(resetoff)
-      reset_params_time = reset_params_time + (resetoff-reseton)
-#endif
 
       END SUBROUTINE reset_params

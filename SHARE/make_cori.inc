@@ -1,5 +1,3 @@
-# -*- mode: makefile -*-
-
 #######################################################################
 #            Define Basic Utilities
 #######################################################################
@@ -16,9 +14,10 @@
 #######################################################################
 #            Define Compiler Flags
 #######################################################################
-  FLAGS_R = -fp-model strict -assume noold_unit_star -cxxlib
-  FLAGS_D = -g -O0 -fp-model strict -assume noold_unit_star -cxxlib
+  FLAGS_R = -fp-model strict -assume noold_unit_star -cxxlib 
+  FLAGS_D = -g -dynamic -traceback -fp-model strict -assume noold_unit_star -cxxlib
   LIBS    = 
+  FLAGS_R += -g -traceback -dynamic
 
 #######################################################################
 #            MPI Options
@@ -29,7 +28,10 @@
   MPI_COMPILE_C = cc
   MPI_LINK = ftn
   MPI_RUN = srun
-  MPI_RUN_OPTS = -n 8 -c 16
+  MPI_RUN_OPTS = -n 68 -c 4 --cpu_bind=cores
+  MPI_RUN_OPTS_SM = -n 68 -c 4 --cpu_bind=cores
+#  MPI_RUN_OPTS_MD = -n 544 -c 4 --cpu_bind=cores
+  MPI_RUN_OPTS_LG = -n 4352 -c 4 --cpu_bind=cores
 
 #######################################################################
 #            NAG Options
@@ -47,9 +49,9 @@
 #######################################################################
 #            NTCC Options
 #######################################################################
-  LNTCC = F
-  NTCC_INC = -I/global/homes/l/lazerson/pub_cori/preact/mod 
-  NTCC_LIB = -L/global/homes/l/lazerson/pub_cori/preact/lib \
+  LNTCC = T
+  NTCC_INC = -I/global/homes/l/lazerson/pub/mod 
+  NTCC_LIB = -L/global/homes/l/lazerson/pub/lib \
              -lpreact -lsigsub -laladdinsub -lpreact -lportlib
 
 #######################################################################
@@ -93,7 +95,7 @@
 #######################################################################
 #            COILOPT++ Options
 #######################################################################
-  LCOILOPT = F
+  LCOILOPT = T
   COILOPT_INC = -I$(COILOPT_PATH)
   COILOPTPP_DIR = $(COILOPT_PATH)
   LIB_COILOPTPP = libcoilopt++.a
@@ -102,7 +104,7 @@
 #######################################################################
 #            TERPSICHORE Options
 #######################################################################
-  LTERPSICHORE= F
+  LTERPSICHORE = T
   TERPSICHORE_INC = -I$(TERPSICHORE_PATH)
   TERPSICHORE_DIR = $(TERPSICHORE_PATH)
   LIB_TERPSICHORE = libterpsichore.a
@@ -111,12 +113,14 @@
 #######################################################################
 #            TRAVIS Options
 #######################################################################
-  LTRAVIS= F
+  LTRAVIS = T
   TRAVIS_DIR = $(TRAVIS_PATH)
   LIB_TRAVIS = libtravis64_sopt.a
   LIB_MCONF  = libmconf64.a
   TRAVIS_LIB = $(TRAVIS_DIR)/lib/$(LIB_TRAVIS) \
                $(TRAVIS_DIR)/mag_conf/lib/$(LIB_MCONF) -lstdc++
+#  TRAVIS_LIB = $(TRAVIS_DIR)/lib/$(LIB_TRAVIS) \
+#               $(TRAVIS_DIR)/magconf/lib/$(LIB_MCONF) -lstdc++
 
 #######################################################################
 #            SFINCS Options
@@ -126,8 +130,7 @@
   SFINCS_DIR = $(SFINCS_PATH)
   SFINCS_INC = -I$(SFINCS_DIR)
   LIB_SFINCS = libsfincs.a
-  SFINCS_LIB = $(SFINCS_DIR)/$(LIB_SFINCS) \
-	$(PETSC_LIB) $(FC_LINKER_FLAGS) $(FFLAGS)
+  SFINCS_LIB = $(SFINCS_DIR)/$(LIB_SFINCS)
 
 #######################################################################
 #            REGCOIL Options
@@ -230,10 +233,19 @@ ifeq ($(MAKECMDGOALS),xstelloptv2)
     NEO_DIR = 
     LIB_NEO = 
   endif
+else ifeq ($(MAKECMDGOALS),help)
+else ifeq ($(MAKECMDGOALS),test_stellopt)
+else ifeq ($(MAKECMDGOALS),test_stellopt_coilopt)
+else ifeq ($(MAKECMDGOALS),test_stellopt_gene)
+else ifeq ($(MAKECMDGOALS),test_stellopt_regcoil)
+else ifeq ($(MAKECMDGOALS),test_stellopt_sfincs)
+else ifeq ($(MAKECMDGOALS),test_stellopt_terpsichore)
+else ifeq ($(MAKECMDGOALS),test_stellopt_travis)
 else
   LGENE = F
   LCOILOPT = F
   LTERPSICHORE = F
+  LREGCOIL= F
   LTRAVIS = F
   LSFINCS = F
 endif
@@ -338,7 +350,7 @@ ifeq ($(LNETCDF),T)
 endif
 ifeq ($(LHDF5),T)
   MOD1_PATH += $(HDF5_INC)
-  PRECOMP += -DLHDF5 -DH5_USE_16_API
+  PRECOMP += -DLHDF5 -DH5_USE_16_API -DHDF5_PAR
   LIB_LINK += $(HDF5_LIB)
   MOD_PATH += $(HDF5_INC)
   LIB_SHARE += $(HDF5_LIB)
@@ -365,8 +377,8 @@ endif
 # This is hear because of MPI above resetting LINK
 ifeq ($(MAKECMDGOALS),libstell.a)
   LINK = $(LINK_AR)
-  COMPILE += -fPIC
-  COMPILE_FREE += -fPIC
+  COMPILE += -fPIC -axMIC-AVX512,AVX
+  COMPILE_FREE += -fPIC -axMIC-AVX512,AVX
   INC_PATH = 
 endif
 ifeq ($(MAKECMDGOALS),libstell.so)

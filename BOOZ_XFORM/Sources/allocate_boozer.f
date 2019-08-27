@@ -55,7 +55,7 @@ c-----------------------------------------------
          END DO
 
       ELSE IF (istat1 .ne. 0) THEN 
-         WRITE(6, '(a,/,a,i4)')
+         WRITE(6, '(a,a,/,a,i4)')
      1    ' No jlist data was found in Boozer input file.',
      1    ' Will assume that all surfaces are needed.',
      1    ' Iostat: ', istat1

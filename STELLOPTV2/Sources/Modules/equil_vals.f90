@@ -30,13 +30,13 @@
                       rbtor, r0, z0, iota_res_tgt, betap, beta, Rmajor, &
                       Aminor, mach0, kx_gene, kink_omega, Baxis
       REAL(rprec),ALLOCATABLE :: rho(:),extcur(:), eff_ripple(:), &
-                                 orbit_lost_frac(:), radto_ece(:), radtx_ece(:)
+                                 orbit_lost_frac(:), radto_ece(:,:), radtx_ece(:,:)
       REAL(rprec),ALLOCATABLE :: balloon_grate(:,:,:)
       REAL(rprec),ALLOCATABLE :: txport_q(:,:,:), txport_q_all(:,:,:,:)
       TYPE(EZspline1_r8) :: pres_spl, iota_spl, phi_spl, ip_spl, V_spl, &
-                            te_spl, ne_spl, ti_spl, th_spl, jdotb_spl,&
-                            nustar_spl, zeff_spl, jcurv_spl, omega_spl,&
-                            emis_xics_spl
+                            te_spl, ne_spl, ti_spl, th_spl, ah_spl, &
+                            jdotb_spl, zeff_spl, jcurv_spl, omega_spl,&
+                            nustar_spl, emis_xics_spl
       REAL(rprec), ALLOCATABLE :: wp_kink(:), wk_kink(:), omega_kink(:),&
                      growth_kink(:)
 

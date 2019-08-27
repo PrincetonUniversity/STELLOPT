@@ -79,6 +79,7 @@ forces.o : \
       parallel_include_module.o \
       realspace.o \
       vforces.o \
+      timer_sub.o \
       vmec_main.o 
       
 
@@ -224,11 +225,13 @@ precon2d.o : \
       ../../LIBSTELL/Debug/stel_kinds.o \
       ../../LIBSTELL/Debug/vmec_input.o \
       ../../LIBSTELL/Debug/vparams.o \
+      blocktridiagonalsolver.o \
       directaccess.o \
       realspace.o \
       timer_sub.o \
       vmec_dim.o \
       vmec_main.o \
+      xstuff.o \
       vmec_params.o 
       
 
@@ -509,6 +512,7 @@ mercier.o : \
 printout.o : \
       angle_constraints.o \
       parallel_include_module.o \
+      parallel_vmec_module.o \
       realspace.o \
       vmec_main.o \
       vmec_params.o \
@@ -972,6 +976,7 @@ evolve.o : \
 
 gmres_mod.o : \
       ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Debug/gmres.o \
       parallel_include_module.o \
       vmec_dim.o \
       vmec_main.o \

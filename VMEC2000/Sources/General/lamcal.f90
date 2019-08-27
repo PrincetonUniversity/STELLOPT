@@ -1,4 +1,3 @@
-#if defined(SKS)      
       SUBROUTINE lamcal_par(overg, guu, guv, gvv)
       USE vmec_main
       USE vmec_params, ONLY: ntmax, jlam, lamscale
@@ -41,9 +40,9 @@
 
       nsmin=MAX(2,tlglob); nsmax=trglob
       DO js = nsmin, nsmax
-        blam(js) = cp5*(blam(js) + blam(js+1))
-        clam(js) = cp5*(clam(js) + clam(js+1))
-        dlam(js) = cp5*(dlam(js) + dlam(js+1))
+         blam(js) = cp5*(blam(js) + blam(js+1))
+         clam(js) = cp5*(clam(js) + clam(js+1))
+         dlam(js) = cp5*(dlam(js) + dlam(js+1))
       END DO
 
       pfaclam = 0
@@ -51,32 +50,30 @@
       pfactor0 = damping_fac/(2*r0scale*lamscale)**2
 
       DO m = 0, mpol1
-        tmm = m*m
-        power = MIN(tmm/256, 8._dp)
-        pfactor = pfactor0
-        DO n = 0, ntor
-          IF (m.eq.0 .and. n.eq.0) CYCLE
-          tnn = (n*nfp)**2
-          tnm = 2*m*n*nfp
+         tmm = m*m
+         power = MIN(tmm/256, 8._dp)
+         pfactor = pfactor0
+         DO n = 0, ntor
+            IF (m.eq.0 .and. n.eq.0) CYCLE
+            tnn = (n*nfp)**2
+            tnm = 2*m*n*nfp
 
-          DO js = MAX(jlam(m),tlglob), trglob
-!            pfaclam(n,m,js,1) = ((blam(js) + blam(js+1))*tnn          &
-!              + SIGN((dlam(js) + dlam(js+1)),blam(js))*tnm             &
-!              +      (clam(js) + clam(js+1))*tmm)
-            pfaclam(n,m,js,1) = ((blam(js))*tnn          &
-            + SIGN((dlam(js)),blam(js))*tnm             &
-            +      (clam(js))*tmm)
-            IF (pfaclam(n,m,js,1) .eq. zero) pfaclam(n,m,js,1) = -1.E-10_dp
-            pfaclam(n,m,js,1) = (pfactor/pfaclam(n,m,js,1))               &
-            * psqrts(1,js)**power                                        !Damps m > 16 modes
-          END DO
-        END DO
+            DO js = MAX(jlam(m),tlglob), trglob
+               pfaclam(n,m,js,1) = blam(js)*tnn + clam(js)*tmm                 &
+                                 + SIGN(dlam(js),blam(js))*tnm
+               IF (pfaclam(n,m,js,1) .eq. zero) THEN
+                  pfaclam(n,m,js,1) = -1.E-10_dp
+               END IF
+               pfaclam(n,m,js,1) = (pfactor/pfaclam(n,m,js,1))                 &
+                                 * psqrts(1,js)**power !Damps m > 16 modes
+            END DO
+         END DO
       END DO
 
       nsmin=tlglob; nsmax=trglob
       DO n = 2, ntmax
-        pfaclam(0:ntor,0:mpol1,nsmin:nsmax,n) = &
-          pfaclam(0:ntor,0:mpol1,nsmin:nsmax,1)
+         pfaclam(0:ntor,0:mpol1,nsmin:nsmax,n) =                               &
+            pfaclam(0:ntor,0:mpol1,nsmin:nsmax,1)
       END DO
 
 !
@@ -84,22 +81,16 @@
 !
       nsmin=tlglob; nsmax=trglob
       DO js = nsmin, nsmax
-!         pfaclam(0,0,js,1) = (pfactor*lamscale**2)/(blam(js)+blam(js+1))
-!         pfaclam(0,0,js,1) = (pfactor*lamscale**2)/blam(js)
          pfaclam(0,0,js,1) = (pfactor0*lamscale**2)/blam(js)
       END DO
 
       END SUBROUTINE lamcal_par
-#endif
-
 
       SUBROUTINE lamcal(overg, guu, guv, gvv)
       USE vmec_main
       USE vmec_params, ONLY: ntmax, jlam, lamscale
       USE realspace, ONLY: sqrts
-#if defined(SKS)
-      USE parallel_include_module
-#endif
+
       IMPLICIT NONE
 !-----------------------------------------------
 !   D u m m y   A r g u m e n t s
@@ -115,9 +106,7 @@
 !-----------------------------------------------
       INTEGER :: m,n,js
       REAL(rprec) :: tnn, tnm, tmm, power, pfactor0, pfactor
-#if defined(SKS)
-      INTEGER :: nsmin, nsmax, i, j, k, l 
-#endif
+
 !-----------------------------------------------
 
 
@@ -131,9 +120,9 @@
       clam(ns+1) =  0
       dlam(ns+1) =  0
       DO js = 2, ns
-        blam(js) = cp5*(blam(js) + blam(js+1))
-        clam(js) = cp5*(clam(js) + clam(js+1))
-        dlam(js) = cp5*(dlam(js) + dlam(js+1))
+         blam(js) = cp5*(blam(js) + blam(js+1))
+         clam(js) = cp5*(clam(js) + clam(js+1))
+         dlam(js) = cp5*(dlam(js) + dlam(js+1))
       END DO
 
       faclam = 0
@@ -149,13 +138,13 @@
             tnn = (n*nfp)**2
             tnm = 2*m*n*nfp
             DO js = jlam(m), ns
-               faclam(js,n,m,1) = (blam(js)*tnn                         &
-               + SIGN(dlam(js),blam(js))*tnm                            &
-               +      clam(js)*tmm)
-               IF (faclam(js,n,m,1) .eq. zero)                           &
+               faclam(js,n,m,1) = blam(js)*tnn + clam(js)*tmm                  &
+                                + SIGN(dlam(js),blam(js))*tnm
+               IF (faclam(js,n,m,1) .eq. zero) THEN
                   faclam(js,n,m,1) = -1.E-10_dp
-            faclam(js,n,m,1) = (pfactor/faclam(js,n,m,1))               &
-               * sqrts(js)**power                                        !Damps m > 16 modes
+               END IF
+               faclam(js,n,m,1) = (pfactor/faclam(js,n,m,1))                   &
+                               * sqrts(js)**power !Damps m > 16 modes
             END DO
          END DO
       END DO
@@ -163,14 +152,10 @@
       DO n = 2, ntmax
          faclam(:ns,0:ntor,0:mpol1,n) = faclam(:ns,0:ntor,0:mpol1,1)
       END DO
-#if defined(SKS)      
-      nsmin=tlglob; nsmax=trglob
-#endif
 !
 !     ADD NORM FOR CHIP (PREVIOUSLY IOTA) FORCE, STORED IN lmnsc(m=0,n=0) COMPONENT
 !
       DO js = 1, ns
-!         faclam(js,0,0,1) = (pfactor*lamscale**2)/blam(js)
          faclam(js,0,0,1) = (pfactor0*lamscale**2)/blam(js)
       END DO
 

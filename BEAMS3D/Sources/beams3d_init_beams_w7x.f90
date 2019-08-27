@@ -14,6 +14,7 @@
       USE beams3d_runtime
       USE beams3d_lines, ONLY: nparticles
       USE mpi_params
+      USE mpi_inc
 
 !-----------------------------------------------------------------------
 !     Local Variables
@@ -21,7 +22,6 @@
 !          iunit          File ID Number
 !-----------------------------------------------------------------------
       IMPLICIT NONE
-      INCLUDE 'mpif.h' ! MPI
       INTEGER :: ier, i, j, k, k1, k2
 !      REAL(rprec)  :: br
       REAL(rprec), ALLOCATABLE :: X(:,:), Y(:,:), Energy(:), X_start(:), Y_start(:)

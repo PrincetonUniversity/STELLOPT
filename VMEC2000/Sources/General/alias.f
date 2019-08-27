@@ -1,4 +1,3 @@
-#if defined (SKS)
       SUBROUTINE alias_par(gcons, ztemp, gcs, gsc, gcc, gss)
       USE vmec_main
       USE realspace, ONLY:ireflect_par, psqrts
@@ -138,14 +137,10 @@ C-----------------------------------------------
       alias_time = alias_time + (taloff-talon)
 
       END SUBROUTINE alias_par
-#endif
 
       SUBROUTINE alias(gcons, ztemp, gcs, gsc, gcc, gss)
       USE vmec_main
-#if defined (SKS)      
-      USE realspace, ONLY: sqrts
-      USE parallel_include_module
-#endif
+
       IMPLICIT NONE
 C-----------------------------------------------
 C   D u m m y   A r g u m e n t s
@@ -159,14 +154,8 @@ C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
       INTEGER :: m, i, ir, jk, jka, n, k, js, l, j
       REAL(dp), DIMENSION(:,:), ALLOCATABLE :: work, gcona
-#if defined (SKS)      
-      INTEGER :: nsmin, nsmax
-      REAL(dp) :: talon, taloff
-#endif
+
 C-----------------------------------------------
-#if defined(SKS)
-      CALL second0(talon)
-#endif
       ALLOCATE (work(ns*nzeta,4), gcona(ns*nzeta,ntheta3))
 
       gcons = 0
@@ -267,9 +256,5 @@ C-----------------------------------------------
       END IF
 
       DEALLOCATE (work, gcona)
-#if defined(SKS)      
-      CALL second0(taloff)
-      s_alias_time = s_alias_time + (taloff-talon)
-#endif
 
       END SUBROUTINE alias

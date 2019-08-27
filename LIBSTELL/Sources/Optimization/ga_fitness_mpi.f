@@ -1,9 +1,9 @@
       SUBROUTINE ga_fitness_mpi (np, fvec, nopt, fcn, nfev, funcval)
       USE ga_mod
       USE mpi_params, ONLY: master, myid, MPI_COMM_STEL
+      USE mpi_inc
       IMPLICIT NONE
 !DEC$ IF DEFINED (MPI_OPT)
-      include 'mpif.h'                                       !mpi stuff
       REAL(rprec), DIMENSION(nparam) :: x
 !DEC$ ENDIF
 

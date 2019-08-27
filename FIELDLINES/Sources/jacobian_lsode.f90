@@ -11,9 +11,9 @@
 !     Libraries
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
-      USE fieldlines_grid, ONLY: BR_spl, BZ_spl, delta_phi
-      USE EZspline_obj
-      USE EZspline                                            ! MPI
+      USE fieldlines_grid
+      !USE EZspline_obj
+      !USE EZspline                                            ! MPI
 !-----------------------------------------------------------------------
 !     Input Variables
 !          phi        phi angle
@@ -31,6 +31,12 @@
       REAL(rprec) :: r_temp, phi_temp, z_temp, br_temp, bz_temp, br_dot, bz_dot
       REAL(rprec) :: x,y,z,vx, vy, vz
       DOUBLE PRECISION :: R_grad(3), Z_grad(3)
+      ! For splines
+      INTEGER :: i,j,k
+      REAL*8 :: xparam, yparam, zparam, hx, hy, hz, hxi, hyi, hzi
+      REAL*8 :: fval(4)
+      INTEGER, parameter :: ict(8)=(/1,1,1,1,0,0,0,0/)
+      REAL*8, PARAMETER :: one = 1
 !-----------------------------------------------------------------------
 !     Begin Subroutine
 !-----------------------------------------------------------------------
@@ -39,14 +45,36 @@
       z_temp = q(2)
       phi_temp = MOD(phi,delta_phi)
       IF (phi_temp < 0) phi_temp = delta_phi + phi_temp
-      CALL EZspline_isInDomain(BR_spl,r_temp,phi_temp,z_temp,ier)
-      IF (ier == 0) THEN
-         CALL EZspline_gradient(BR_spl,r_temp,phi_temp,z_temp,R_grad,ier)
-         CALL EZspline_gradient(BZ_spl,r_temp,phi_temp,z_temp,Z_grad,ier)
-         pd(1,1) = R_grad(1) !dBR/dR
-         pd(1,2) = R_grad(3) ! dBR/dZ
-         pd(2,1) = Z_grad(1) ! dBZ/dR
-         pd(2,2) = Z_grad(3) ! dBZ/dZ
+      !CALL EZspline_isInDomain(BR_spl,r_temp,phi_temp,z_temp,ier)
+      !IF (ier == 0) THEN
+      IF ((r_temp >= rmin-eps1) .and. (r_temp <= rmax+eps1) .and. &
+          (phi_temp >= phimin-eps2) .and. (phi_temp <= phimax+eps2) .and. &
+          (z_temp >= zmin-eps3) .and. (z_temp <= zmax+eps3)) THEN
+         ! Get the gridpoint info
+         i = MIN(MAX(COUNT(raxis < r_temp),1),nr-1)
+         j = MIN(MAX(COUNT(phiaxis < phi_temp),1),nphi-1)
+         k = MIN(MAX(COUNT(zaxis < z_temp),1),nz-1)
+         hx     = raxis(i+1) - raxis(i)
+         hy     = phiaxis(j+1) - phiaxis(j)
+         hz     = zaxis(k+1) - zaxis(k)
+         hxi    = one / hx
+         hyi    = one / hy
+         hzi    = one / hz
+         xparam = (r_temp - raxis(i)) * hxi
+         yparam = (phi_temp - phiaxis(j)) * hyi
+         zparam = (z_temp - zaxis(k)) * hzi
+         !CALL EZspline_gradient(BR_spl,r_temp,phi_temp,z_temp,R_grad,ier)
+         !CALL EZspline_gradient(BZ_spl,r_temp,phi_temp,z_temp,Z_grad,ier)
+         CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                         hx,hxi,hy,hyi,hz,hzi,&
+                         BR4D(1,1,1,1),nr,nphi,nz)
+         pd(1,1) = fval(2) !dBR/dR
+         pd(1,2) = fval(4) ! dBR/dZ
+         CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                         hx,hxi,hy,hyi,hz,hzi,&
+                         BZ4D(1,1,1,1),nr,nphi,nz)
+         pd(2,1) = fval(2) ! dBZ/dR
+         pd(2,2) = fval(4) ! dBZ/dZ
       END IF
       RETURN
 !-----------------------------------------------------------------------

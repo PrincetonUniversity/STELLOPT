@@ -5,7 +5,7 @@
       USE vacmod
       USE vmec_input, ONLY: nzeta
       USE vmec_dim, ONLY: ns, ntheta3
-#if defined(SKS)
+
       IMPLICIT NONE
 C-----------------------------------------------
 C   L o c a l   V a r i a b l e s
@@ -53,12 +53,12 @@ C-----------------------------------------------
       
       IF (lasym) THEN
          ALLOCATE (pextra2(nznt,ns,0:1), 
-     1             pextra3(nznt,ns,0:1), 
-     2             pextra4(nznt,ns,0:1),stat=istat1)
+     &             pextra3(nznt,ns,0:1),
+     &             pextra4(nznt,ns,0:1),stat=istat1)
       ELSE
          ALLOCATE (pextra2(nznt,ns,1), 
-     1             pextra3(nznt,ns,1), 
-     2             pextra4(nznt,ns,1),stat=istat1)
+     &             pextra3(nznt,ns,1),
+     &             pextra4(nznt,ns,1),stat=istat1)
       END IF
       IF (istat1.ne.0) STOP 'allocation error #3 in allocate_funct3dpar'
       pextra2=0; pextra3=0; pextra4=0
@@ -105,13 +105,15 @@ C-----------------------------------------------
       CALL free_mem_funct3d
 
       ALLOCATE (armn(ndim2), azmn(ndim2), brmn(ndim2), bzmn(ndim2),
-     1   crmn(ndim2), czmn(ndim2), blmn(ndim2), clmn(ndim2),
-     2   r1(nrzt,0:1), ru(nrzt,0:1), rv(nrzt,0:1),
-     3   z1(nrzt,0:1), zu(nrzt,0:1), zv(nrzt,0:1),
-     4   rcon(nrzt,0:1), zcon(nrzt,0:1), ru0(ndim), zu0(ndim),
-     5   rcon0(ndim), zcon0(ndim), guu(ndim), guv(ndim), gvv(ndim), 
-     6   gcon(ndim), sigma_an(nrzt), stat=istat1)
-      IF (istat1.ne.0) STOP 'allocation error #1 in allocate_funct3d'
+     &          crmn(ndim2), czmn(ndim2), blmn(ndim2), clmn(ndim2),
+     &          r1(nrzt,0:1), ru(nrzt,0:1), rv(nrzt,0:1),
+     &          z1(nrzt,0:1), zu(nrzt,0:1), zv(nrzt,0:1),
+     &          rcon(nrzt,0:1), zcon(nrzt,0:1), ru0(ndim), zu0(ndim),
+     &          rcon0(ndim), zcon0(ndim), guu(ndim), guv(ndim),
+     &          gvv(ndim), gcon(ndim), sigma_an(nrzt), stat=istat1)
+      IF (istat1.ne.0) THEN
+         STOP 'allocation error #1 in allocate_funct3d'
+      END IF
       armn=0; azmn=0; brmn=0; bzmn=0; crmn=0; czmn=0; blmn=0; clmn=0
       r1=0; ru=0; rv=0; z1=0; zu=0; zv=0; rcon=0; zcon=0
       ru0=0; zu0=0; rcon0=0; zcon=0; guu=0; guv=0; gvv=0
@@ -119,22 +121,28 @@ C-----------------------------------------------
 
 #ifdef _ANIMEC
       ALLOCATE(pperp(nrzt), ppar(nrzt), onembc(nrzt),
-     1   pp1(nrzt), pp2(nrzt), pp3(nrzt), stat=istat1)
-      IF (istat1.ne.0) STOP 'allocation error #1A in allocate_funct3d'
+     &         pp1(nrzt), pp2(nrzt), pp3(nrzt), stat=istat1)
+      IF (istat1.ne.0) THEN
+         STOP 'allocation error #1A in allocate_funct3d'
+      END IF
       pperp=0; ppar=0; onembc=0; pp1=0; pp2=0; pp3=0
 #endif
 
       IF (lfreeb) THEN
          ALLOCATE (brv(nznt), bphiv(nznt), bzv(nznt), bsqvac(nznt),
-     1             bsqvac0(nznt), bsubu_sur(nuv3), bsubv_sur(nuv3),                !MRC    10-15-15
-     2             bsupu_sur(nuv3), bsupv_sur(nuv3),
-     3             stat=istat1)
-         IF (istat1.ne.0) STOP 'allocation error #2 in allocate_funct3d'
+     &             bsqvac0(nznt), bsubu_sur(nuv3), bsubv_sur(nuv3),                !MRC    10-15-15
+     &             bsupu_sur(nuv3), bsupv_sur(nuv3),
+     &             stat=istat1)
+         IF (istat1.ne.0) THEN
+            STOP 'allocation error #2 in allocate_funct3d'
+         END IF
          brv=0; bphiv=0; bzv=0; bsqvac=0
       END IF
 
       ALLOCATE (extra1(ndim,0:1), stat=istat1)
-      IF (istat1.ne.0) STOP 'allocation error #3 in allocate_funct3d'
+      IF (istat1.ne.0) THEN
+         STOP 'allocation error #3 in allocate_funct3d'
+      END IF
       extra1=0
      
       IF (lasym) THEN
@@ -144,7 +152,9 @@ C-----------------------------------------------
          ALLOCATE (extra2(ndim,1), extra3(ndim,1), extra4(ndim,1),
      1             stat=istat1)
       END IF
-      IF (istat1.ne.0) STOP 'allocation error #3 in allocate_funct3d'
+      IF (istat1.ne.0) THEN
+         STOP 'allocation error #3 in allocate_funct3d'
+      END IF
       extra2=0; extra3=0; extra4=0
 
 !
@@ -177,7 +187,7 @@ C-----------------------------------------------
       clmn(:ndim2) = zero
       rcon0(:ndim) = zero
       zcon0(:ndim) = zero
-#endif      
+
       END SUBROUTINE allocate_funct3d_par
 
       SUBROUTINE allocate_funct3d
@@ -191,19 +201,21 @@ C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
       INTEGER :: istat1, ndim, ndim2
 C-----------------------------------------------
-      ndim  = 1+nrzt
+      ndim  = 1 + nrzt
       ndim2 = 2*ndim
 
       CALL free_mem_funct3d
 
       ALLOCATE (armn(ndim2), azmn(ndim2), brmn(ndim2), bzmn(ndim2),
-     1   crmn(ndim2), czmn(ndim2), blmn(ndim2), clmn(ndim2),
-     2   r1(nrzt,0:1), ru(nrzt,0:1), rv(nrzt,0:1),
-     3   z1(nrzt,0:1), zu(nrzt,0:1), zv(nrzt,0:1),
-     4   rcon(nrzt,0:1), zcon(nrzt,0:1), ru0(ndim), zu0(ndim),
-     5   rcon0(ndim), zcon0(ndim), guu(ndim), guv(ndim), gvv(ndim), 
-     6   gcon(ndim), sigma_an(nrzt), stat=istat1)
-      IF (istat1.ne.0) STOP 'allocation error #1 in allocate_funct3d'
+     &          crmn(ndim2), czmn(ndim2), blmn(ndim2), clmn(ndim2),
+     &          r1(nrzt,0:1), ru(nrzt,0:1), rv(nrzt,0:1),
+     &          z1(nrzt,0:1), zu(nrzt,0:1), zv(nrzt,0:1),
+     &          rcon(nrzt,0:1), zcon(nrzt,0:1), ru0(ndim), zu0(ndim),
+     &          rcon0(ndim), zcon0(ndim), guu(ndim), guv(ndim),
+     &          gvv(ndim), gcon(ndim), sigma_an(nrzt), stat=istat1)
+      IF (istat1.ne.0) THEN
+         STOP 'allocation error #1 in allocate_funct3d'
+      END IF
       armn=0; azmn=0; brmn=0; bzmn=0; crmn=0; czmn=0; blmn=0; clmn=0
       r1=0; ru=0; rv=0; z1=0; zu=0; zv=0; rcon=0; zcon=0
       ru0=0; zu0=0; rcon0=0; zcon=0; guu=0; guv=0; gvv=0
@@ -211,30 +223,36 @@ C-----------------------------------------------
 
 #ifdef _ANIMEC
       ALLOCATE(pperp(nrzt), ppar(nrzt), onembc(nrzt),
-     1   pp1(nrzt), pp2(nrzt), pp3(nrzt), stat=istat1)
-      IF (istat1.ne.0) STOP 'allocation error #1A in allocate_funct3d'
+     &         pp1(nrzt), pp2(nrzt), pp3(nrzt), stat=istat1)
+      IF (istat1.ne.0) THEN
+         STOP 'allocation error #1A in allocate_funct3d'
+      END IF
       pperp=0; ppar=0; onembc=0; pp1=0; pp2=0; pp3=0
 #endif
 
       IF (lfreeb) THEN
          ALLOCATE (brv(nznt), bphiv(nznt), bzv(nznt), bsqvac(nznt),
-     1             bsubu_sur(nznt), bsubv_sur(nznt),                !MRC    10-15-15
-     2             bsupu_sur(nznt), bsupv_sur(nznt),
-     3             stat=istat1)
-         IF (istat1.ne.0) STOP 'allocation error #2 in allocate_funct3d'
+     &             bsubu_sur(nznt), bsubv_sur(nznt),                !MRC    10-15-15
+     &             bsupu_sur(nznt), bsupv_sur(nznt),
+     &             stat=istat1)
+         IF (istat1.ne.0) THEN
+            STOP 'allocation error #2 in allocate_funct3d'
+         END IF
          brv=0; bphiv=0; bzv=0; bsqvac=0
       END IF
 
       ALLOCATE (extra1(ndim,0:1), stat=istat1)
-      IF (istat1.ne.0) STOP 'allocation error #3 in allocate_funct3d'
+      IF (istat1.ne.0) THEN
+         STOP 'allocation error #3 in allocate_funct3d'
+      END IF
       extra1=0
       
       IF (lasym) THEN
          ALLOCATE (extra2(ndim,0:1), extra3(ndim,0:1), 
-     1             extra4(ndim,0:1),stat=istat1)
+     &             extra4(ndim,0:1),stat=istat1)
       ELSE
          ALLOCATE (extra2(ndim,1), extra3(ndim,1), extra4(ndim,1),
-     1             stat=istat1)
+     &             stat=istat1)
       END IF
       IF (istat1.ne.0) STOP 'allocation error #3 in allocate_funct3d'
       extra2=0; extra3=0; extra4=0

@@ -1,4 +1,3 @@
-#if defined (SKS)
       SUBROUTINE guess_axis_par(r1, z1, ru0, zu0, lscreen)
       USE vmec_main
       USE vmec_params, ONLY: nscale, signgs
@@ -8,9 +7,8 @@
 C-----------------------------------------------
 C   D u m m y   A r g u m e n t s
 C-----------------------------------------------
-      REAL(dp), DIMENSION(nzeta,ntheta3,ns,0:1),
-     1     INTENT(inout) :: r1, z1
-      REAL(dp),DIMENSION(nzeta,ntheta3,ns),INTENT(inout) :: ru0, zu0
+      REAL(dp), DIMENSION(nzeta,ntheta3,ns,0:1), INTENT(inout) :: r1, z1
+      REAL(dp), DIMENSION(nzeta,ntheta3,ns),INTENT(inout) :: ru0, zu0
       LOGICAL, INTENT(in) :: lscreen
 C-----------------------------------------------
 C   L o c a l   P a r a m e t e r s
@@ -47,89 +45,94 @@ C-----------------------------------------------
 !     CHOOSES THE AXIS POSITION SO THE MIN VALUE OF THE JACOBIAN IS MAXIMIZED
 !
       CALL second0(tguesson)
-      ns12 = (ns+1)/2
+      ns12 = (ns + 1)/2
 
+#if defined(MPI_OPT)
       IF (nranks.GT.1) THEN
-        bcastrank = -1
-        IF (ns.EQ.nranks) THEN
-          bcastrank=ns12
-        ELSE IF (ns.GT.nranks) THEN
+         bcastrank = -1
+         IF (ns.EQ.nranks) THEN
+            bcastrank=ns12
+         ELSE IF (ns.GT.nranks) THEN
           !!! Can make this log P (for later) : SKS : NOV 13, 2014
-          DO i=1, nranks
-            IF(tlglob_arr(i).LE.ns12.AND.ns12.LE.trglob_arr(i)) THEN
-              bcastrank=i-1
-              EXIT
+            DO i=1, nranks
+               IF (tlglob_arr(i) .LE. ns12 .AND.
+     &             ns12          .LE. trglob_arr(i)) THEN
+                  bcastrank = i - 1
+                  EXIT
+               END IF
+            END DO
+         ELSE
+            IF (rank.EQ.0) THEN
+               WRITE(*,*) 'Something wrong in guess_axis'
             END IF
-          END DO
-        ELSE
-          IF(rank.EQ.0) WRITE(*,*) 'Something wrong in guess_axis'
-          CALL STOPMPI(666)
-        END IF
+            CALL STOPMPI(666)
+         END IF
 
-        ALLOCATE(bcastbuf(nzeta,ntheta3,6))
-        bcastbuf(:,:,1)=r1(:,:,ns12,0)
-        bcastbuf(:,:,2)=r1(:,:,ns12,1)
-        bcastbuf(:,:,3)=z1(:,:,ns12,0)
-        bcastbuf(:,:,4)=z1(:,:,ns12,1)
-        bcastbuf(:,:,5)=ru0(:,:,ns12)
-        bcastbuf(:,:,6)=zu0(:,:,ns12)
+         ALLOCATE(bcastbuf(nzeta,ntheta3,6))
+         bcastbuf(:,:,1) = r1(:,:,ns12,0)
+         bcastbuf(:,:,2) = r1(:,:,ns12,1)
+         bcastbuf(:,:,3) = z1(:,:,ns12,0)
+         bcastbuf(:,:,4) = z1(:,:,ns12,1)
+         bcastbuf(:,:,5) = ru0(:,:,ns12)
+         bcastbuf(:,:,6) = zu0(:,:,ns12)
 
-        CALL second0(tbroadon)
-        CALL MPI_Bcast(bcastbuf,6*nznt,MPI_REAL8,bcastrank,
-     1                 NS_COMM, MPI_ERR)
-        CALL second0(tbroadoff)
-        broadcast_time = broadcast_time + (tbroadoff-tbroadon)
+         CALL second0(tbroadon)
+         CALL MPI_Bcast(bcastbuf, 6*nznt, MPI_REAL8, bcastrank,
+     &                  NS_COMM, MPI_ERR)
+         CALL second0(tbroadoff)
+         broadcast_time = broadcast_time + (tbroadoff-tbroadon)
 
-        r1(:,:,ns12,0)=bcastbuf(:,:,1)
-        r1(:,:,ns12,1)=bcastbuf(:,:,2)
-        z1(:,:,ns12,0)=bcastbuf(:,:,3)
-        z1(:,:,ns12,1)=bcastbuf(:,:,4)
-        ru0(:,:,ns12)=bcastbuf(:,:,5)
-        zu0(:,:,ns12)=bcastbuf(:,:,6)
+         r1(:,:,ns12,0) = bcastbuf(:,:,1)
+         r1(:,:,ns12,1) = bcastbuf(:,:,2)
+         z1(:,:,ns12,0) = bcastbuf(:,:,3)
+         z1(:,:,ns12,1) = bcastbuf(:,:,4)
+         ru0(:,:,ns12) = bcastbuf(:,:,5)
+         zu0(:,:,ns12) = bcastbuf(:,:,6)
 
-        bcastbuf(:,:,1)=r1(:,:,ns,0)
-        bcastbuf(:,:,2)=r1(:,:,ns,1)
-        bcastbuf(:,:,3)=z1(:,:,ns,0)
-        bcastbuf(:,:,4)=z1(:,:,ns,1)
-        bcastbuf(:,:,5)=ru0(:,:,ns)
-        bcastbuf(:,:,6)=zu0(:,:,ns)
+         bcastbuf(:,:,1) = r1(:,:,ns,0)
+         bcastbuf(:,:,2) = r1(:,:,ns,1)
+         bcastbuf(:,:,3) = z1(:,:,ns,0)
+         bcastbuf(:,:,4) = z1(:,:,ns,1)
+         bcastbuf(:,:,5) = ru0(:,:,ns)
+         bcastbuf(:,:,6) = zu0(:,:,ns)
 
-        CALL second0(tbroadon)
-        CALL MPI_Bcast(bcastbuf,6*nznt,MPI_REAL8,nranks-1,
-     1                 NS_COMM, MPI_ERR)
-        CALL second0(tbroadoff)
-        broadcast_time = broadcast_time + (tbroadoff-tbroadon)
+         CALL second0(tbroadon)
+         CALL MPI_Bcast(bcastbuf, 6*nznt, MPI_REAL8, nranks - 1,
+     &                  NS_COMM, MPI_ERR)
+         CALL second0(tbroadoff)
+         broadcast_time = broadcast_time + (tbroadoff - tbroadon)
 
-        r1(:,:,ns,0)=bcastbuf(:,:,1)
-        r1(:,:,ns,1)=bcastbuf(:,:,2)
-        z1(:,:,ns,0)=bcastbuf(:,:,3)
-        z1(:,:,ns,1)=bcastbuf(:,:,4)
-        ru0(:,:,ns)=bcastbuf(:,:,5)
-        zu0(:,:,ns)=bcastbuf(:,:,6)
-        DEALLOCATE(bcastbuf)
+         r1(:,:,ns,0) = bcastbuf(:,:,1)
+         r1(:,:,ns,1) = bcastbuf(:,:,2)
+         z1(:,:,ns,0) = bcastbuf(:,:,3)
+         z1(:,:,ns,1) = bcastbuf(:,:,4)
+         ru0(:,:,ns) = bcastbuf(:,:,5)
+         zu0(:,:,ns) = bcastbuf(:,:,6)
+         DEALLOCATE(bcastbuf)
 
-        CALL second0(tbroadon)
-        CALL MPI_Bcast(psqrts(1,ns12),1,MPI_REAL8,bcastrank,
-     1                 NS_COMM, MPI_ERR)
-        CALL second0(tbroadoff)
-        broadcast_time = broadcast_time + (tbroadoff-tbroadon)
+         CALL second0(tbroadon)
+         CALL MPI_Bcast(psqrts(1,ns12), 1, MPI_REAL8, bcastrank,
+     &                 NS_COMM, MPI_ERR)
+         CALL second0(tbroadoff)
+         broadcast_time = broadcast_time + (tbroadoff - tbroadon)
 
-        ALLOCATE(tmp(2*nzeta))
-        tmp(1:nzeta) = r1(:,1,1,0) 
-        tmp(nzeta+1:2*nzeta) = z1(:,1,1,0) 
-        CALL second0(tbroadon)
-        CALL MPI_Bcast(tmp,2*nzeta,MPI_REAL8,0,NS_COMM,MPI_ERR)
-        CALL second0(tbroadoff)
-        broadcast_time = broadcast_time + (tbroadoff-tbroadon)
-        r1(:,1,1,0) = tmp(1:nzeta)
-        z1(:,1,1,0) = tmp(nzeta+1:2*nzeta)
-        DEALLOCATE(tmp)
-
+         ALLOCATE(tmp(2*nzeta))
+         tmp(1:nzeta) = r1(:,1,1,0)
+         tmp(nzeta + 1:2*nzeta) = z1(:,1,1,0)
+         CALL second0(tbroadon)
+         CALL MPI_Bcast(tmp, 2*nzeta, MPI_REAL8, 0, NS_COMM, MPI_ERR)
+         CALL second0(tbroadoff)
+         broadcast_time = broadcast_time + (tbroadoff - tbroadon)
+         r1(:,1,1,0) = tmp(1:nzeta)
+         z1(:,1,1,0) = tmp(nzeta + 1:2*nzeta)
+         DEALLOCATE(tmp)
       END IF
+#endif
+
       planes: DO iv = 1, nzeta
-        IF (.not.lasym .and. iv.gt.nzeta/2+1) THEN
-          rcom(iv) = rcom(nzeta+2-iv)
-            zcom(iv) =-zcom(nzeta+2-iv)
+         IF (.not.lasym .and. iv .gt. nzeta/2 + 1) THEN
+            rcom(iv) = rcom(nzeta + 2 - iv)
+            zcom(iv) =-zcom(nzeta + 2 - iv)
             CYCLE
          END IF
          r1b(:ntheta3) = r1(iv,:,ns,0) + r1(iv,:,ns,1)
@@ -146,28 +149,33 @@ C-----------------------------------------------
 !     USE Z(v,-u) = -Z(twopi-v,u), R(v,-u) = R(twopi-v,u)
 !     TO DO EXTEND R,Z, etc. OVER ALL THETA (NOT JUST 0,PI)
 !
-         ivminus = MOD(nzeta + 1 - iv,nzeta) + 1           !!(twopi-v)
-         DO iu = 1+ntheta2, ntheta1
-            iu_r = ntheta1 + 2 - iu
-            r1b(iu) = r1(ivminus,iu_r,ns,0) + r1(ivminus,iu_r,ns,1)
-            z1b(iu) =-(z1(ivminus,iu_r,ns,0) + z1(ivminus,iu_r,ns,1))
-            r12(iu) = r1(ivminus,iu_r,ns12,0) +
-     1                r1(ivminus,iu_r,ns12,1)*psqrts(1,ns12)
-            z12(iu) =-(z1(ivminus,iu_r,ns12,0) +
-     1                z1(ivminus,iu_r,ns12,1)*psqrts(1,ns12))
-            rub(iu) =-ru0(ivminus,iu_r,ns)
-            zub(iu) = zu0(ivminus,iu_r,ns)
-            ru12(iu)=-p5*(ru0(ivminus,iu_r,ns) + ru0(ivminus,iu_r,ns12))
-            zu12(iu)= p5*(zu0(ivminus,iu_r,ns) + zu0(ivminus,iu_r,ns12))
-         END DO
-
+            ivminus = MOD(nzeta + 1 - iv,nzeta) + 1           !!(twopi-v)
+            DO iu = 1+ntheta2, ntheta1
+               iu_r = ntheta1 + 2 - iu
+               r1b(iu)  = r1(ivminus,iu_r,ns,0) + r1(ivminus,iu_r,ns,1)
+               z1b(iu)  =-(z1(ivminus,iu_r,ns,0) +
+     &                     z1(ivminus,iu_r,ns,1))
+               r12(iu)  = r1(ivminus,iu_r,ns12,0)
+     &                  + r1(ivminus,iu_r,ns12,1)*psqrts(1,ns12)
+               z12(iu)  =-(z1(ivminus,iu_r,ns12,0) +
+     &                     z1(ivminus,iu_r,ns12,1)*psqrts(1,ns12))
+               rub(iu)  =-ru0(ivminus,iu_r,ns)
+               zub(iu)  = zu0(ivminus,iu_r,ns)
+               ru12(iu) =-p5*(ru0(ivminus,iu_r,ns) +
+     &                       ru0(ivminus,iu_r,ns12))
+               zu12(iu) = p5*(zu0(ivminus,iu_r,ns) +
+     &                        zu0(ivminus,iu_r,ns12))
+            END DO
          END IF
 !
 !        Scan over r-z grid for interior point
 !
-         rmin = MINVAL(r1b);  rmax = MAXVAL(r1b)
-         zmin = MINVAL(z1b);  zmax = MAXVAL(z1b)
-         rcom(iv) = (rmax + rmin)/2; zcom(iv) = (zmax + zmin)/2
+         rmin = MINVAL(r1b)
+         rmax = MAXVAL(r1b)
+         zmin = MINVAL(z1b)
+         zmax = MAXVAL(z1b)
+         rcom(iv) = (rmax + rmin)/2
+         zcom(iv) = (zmax + zmin)/2
 
 !
 !        Estimate jacobian based on boundary and 1/2 surface
@@ -182,8 +190,9 @@ C-----------------------------------------------
          mintau = 0
 
          DO nlim = 1, limpts
-            zlim = zmin + ((zmax - zmin)*(nlim-1))/(limpts-1)
-            IF (.not.lasym .and. (iv.eq.1 .or. iv.eq.nzeta/2+1)) THEN
+            zlim = zmin + ((zmax - zmin)*(nlim-1))/(limpts - 1)
+            IF (.not.lasym .and.
+     &          (iv .eq. 1 .or. iv .eq. nzeta/2 + 1)) THEN
                zlim = 0
                IF (nlim .gt. 1) EXIT
             END IF
@@ -191,7 +200,7 @@ C-----------------------------------------------
 !           Find value of magnetic axis that maximizes the minimum jacobian value
 !
             DO klim = 1, limpts
-               rlim = rmin + ((rmax - rmin)*(klim-1))/(limpts-1)
+               rlim = rmin + ((rmax - rmin)*(klim - 1))/(limpts - 1)
                tau = signgs*(tau0 - ru12(:)*zlim + zu12(:)*rlim)
                mintemp = MINVAL(tau)
                IF (mintemp .gt. mintau) THEN
@@ -200,19 +209,24 @@ C-----------------------------------------------
                   zcom(iv) = zlim
 !           If up-down symmetric and lasym=T, need this to pick z = 0
                ELSE IF (mintemp .eq. mintau) THEN
-                  IF (ABS(zcom(iv)).gt.ABS(zlim)) zcom(iv) = zlim
+                  IF (ABS(zcom(iv)).gt.ABS(zlim)) THEN
+                     zcom(iv) = zlim
+                  END IF
                END IF
             END DO
          END DO
 
       END DO planes
-!      CALL STOPMPI(12313)
 
 !Distribute to all processors, not just NS_COMM
-      tmp2(:,1) = rcom;  tmp2(:,2) = zcom
-      CALL MPI_BCast(tmp2,2*nzeta,MPI_REAL8,0,
-     1               RUNVMEC_COMM_WORLD,MPI_ERR)
-      rcom = tmp2(:,1); zcom = tmp2(:,2)
+#if defined(MPI_OPT)
+      tmp2(:,1) = rcom
+      tmp2(:,2) = zcom
+      CALL MPI_BCast(tmp2, 2*nzeta, MPI_REAL8, 0,
+     1               RUNVMEC_COMM_WORLD, MPI_ERR)
+      rcom = tmp2(:,1)
+      zcom = tmp2(:,2)
+#endif
 !
 !     FOURIER TRANSFORM RCOM, ZCOM
 !
@@ -222,7 +236,7 @@ C-----------------------------------------------
          zaxis_cs(n) =-dzeta*SUM(sinnv(:,n)*zcom(:))/nscale(n)
          raxis_cs(n) =-dzeta*SUM(sinnv(:,n)*rcom(:))/nscale(n)
          zaxis_cc(n) = dzeta*SUM(cosnv(:,n)*zcom(:))/nscale(n)
-         IF (n.eq.0 .or. n.eq.nzeta/2) THEN
+         IF (n .eq. 0 .or. n .eq. nzeta/2) THEN
             raxis_cc(n) = p5*raxis_cc(n)
             zaxis_cc(n) = p5*zaxis_cc(n)
          END IF
@@ -239,7 +253,6 @@ C-----------------------------------------------
       guess_axis_time = guess_axis_time + (tguessoff - tguesson)
 
       END SUBROUTINE guess_axis_par
-#endif
 
       SUBROUTINE guess_axis(r1, z1, ru0, zu0)
       USE vmec_main
@@ -302,29 +315,34 @@ C-----------------------------------------------
 !     USE Z(v,-u) = -Z(twopi-v,u), R(v,-u) = R(twopi-v,u)
 !     TO DO EXTEND R,Z, etc. OVER ALL THETA (NOT JUST 0,PI)
 !
-         ivminus = MOD(nzeta + 1 - iv,nzeta) + 1           !!(twopi-v)
-         DO iu = 1+ntheta2, ntheta1
-            iu_r = ntheta1 + 2 - iu
-            r1b(iu) = r1(ns,ivminus,iu_r,0) + r1(ns,ivminus,iu_r,1)
-            z1b(iu) =-(z1(ns,ivminus,iu_r,0) + z1(ns,ivminus,iu_r,1))
-            r12(iu) = r1(ns12,ivminus,iu_r,0) +
-     1                r1(ns12,ivminus,iu_r,1)*sqrts(ns12)
-            z12(iu) =-(z1(ns12,ivminus,iu_r,0) +
-     1                z1(ns12,ivminus,iu_r,1)*sqrts(ns12))
-            rub(iu) =-ru0(ns,ivminus,iu_r)
-            zub(iu) = zu0(ns,ivminus,iu_r)
-            ru12(iu)=-p5*(ru0(ns,ivminus,iu_r) + ru0(ns12,ivminus,iu_r))
-            zu12(iu)= p5*(zu0(ns,ivminus,iu_r) + zu0(ns12,ivminus,iu_r))
-         END DO
+            ivminus = MOD(nzeta + 1 - iv,nzeta) + 1           !!(twopi-v)
+            DO iu = 1+ntheta2, ntheta1
+               iu_r = ntheta1 + 2 - iu
+               r1b(iu) = r1(ns,ivminus,iu_r,0) + r1(ns,ivminus,iu_r,1)
+               z1b(iu) =-(z1(ns,ivminus,iu_r,0) + z1(ns,ivminus,iu_r,1))
+               r12(iu) = r1(ns12,ivminus,iu_r,0)
+     &                 + r1(ns12,ivminus,iu_r,1)*sqrts(ns12)
+               z12(iu) =-(z1(ns12,ivminus,iu_r,0)
+     &                 + z1(ns12,ivminus,iu_r,1)*sqrts(ns12))
+               rub(iu) =-ru0(ns,ivminus,iu_r)
+               zub(iu) = zu0(ns,ivminus,iu_r)
+               ru12(iu) = -p5*(ru0(ns,ivminus,iu_r)
+     &                  + ru0(ns12,ivminus,iu_r))
+               zu12(iu) =  p5*(zu0(ns,ivminus,iu_r)
+     &                  + zu0(ns12,ivminus,iu_r))
+            END DO
 
          END IF
 
 !
 !        Scan over r-z grid for interior point
 !
-         rmin = MINVAL(r1b);  rmax = MAXVAL(r1b)
-         zmin = MINVAL(z1b);  zmax = MAXVAL(z1b)
-         rcom(iv) = (rmax + rmin)/2; zcom(iv) = (zmax + zmin)/2
+         rmin = MINVAL(r1b)
+         rmax = MAXVAL(r1b)
+         zmin = MINVAL(z1b)
+         zmax = MAXVAL(z1b)
+         rcom(iv) = (rmax + rmin)/2
+         zcom(iv) = (zmax + zmin)/2
 
 !
 !        Estimate jacobian based on boundary and 1/2 surface
@@ -339,8 +357,9 @@ C-----------------------------------------------
          mintau = 0
 
          DO nlim = 1, limpts
-            zlim = zmin + ((zmax - zmin)*(nlim-1))/(limpts-1)
-            IF (.not.lasym .and. (iv.eq.1 .or. iv.eq.nzeta/2+1)) THEN
+            zlim = zmin + ((zmax - zmin)*(nlim - 1))/(limpts - 1)
+            IF (.not.lasym .and.
+     &          (iv .eq. 1 .or. iv .eq. nzeta/2 + 1)) THEN
                zlim = 0
                IF (nlim .gt. 1) EXIT
             END IF
@@ -348,7 +367,7 @@ C-----------------------------------------------
 !           Find value of magnetic axis that maximizes the minimum jacobian value
 !
             DO klim = 1, limpts
-               rlim = rmin + ((rmax - rmin)*(klim-1))/(limpts-1)
+               rlim = rmin + ((rmax - rmin)*(klim - 1))/(limpts - 1)
                tau = signgs*(tau0 - ru12(:)*zlim + zu12(:)*rlim)
                mintemp = MINVAL(tau)
                IF (mintemp .gt. mintau) THEN
@@ -363,8 +382,6 @@ C-----------------------------------------------
          END DO
 
       END DO planes
-!      CALL STOPMPI(12313)
-
 
 !
 !     FOURIER TRANSFORM RCOM, ZCOM
@@ -375,7 +392,7 @@ C-----------------------------------------------
          zaxis_cs(n) =-dzeta*SUM(sinnv(:,n)*zcom(:))/nscale(n)
          raxis_cs(n) =-dzeta*SUM(sinnv(:,n)*rcom(:))/nscale(n)
          zaxis_cc(n) = dzeta*SUM(cosnv(:,n)*zcom(:))/nscale(n)
-         IF (n.eq.0 .or. n.eq.nzeta/2) THEN
+         IF (n .eq. 0 .or. n .eq. nzeta/2) THEN
             raxis_cc(n) = p5*raxis_cc(n)
             zaxis_cc(n) = p5*zaxis_cc(n)
          END IF

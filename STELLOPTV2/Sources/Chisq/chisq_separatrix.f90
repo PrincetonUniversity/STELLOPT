@@ -30,7 +30,7 @@
 !
 !-----------------------------------------------------------------------
       INTEGER :: u, u2, v, nv2, ier, dex
-      REAL(rprec) :: s, xu, xv, R1, Z1, R2, Z2, dist, temp
+      REAL(rprec) :: s, xu, xv, R1, Z1, R2, Z2, dist, temp, sneg
       REAL(rprec) :: d1(nu_max)
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
@@ -43,13 +43,18 @@
          DO v = 1, nv_max
             DO u = 1, nu_max
                IF (sigma_separatrix(u,v) >= bigno) CYCLE
+               ! Setup helper
                R1 = r_separatrix(u,v)
                Z1 = z_separatrix(u,v)
-               s  = 1.0_rprec
                xv = phi_separatrix(u,v)
-               IF (xv < 0.0) xv = xv + pi2
+               ! Check if inside equilibrium
+               ier = 0; sneg = 1
+               CALL get_equil_s(R1,xv,Z1,s,ier)
+               IF (s <= 1.0 .and. s >= 0.0 .and. ier == 0) sneg = -1
+               s  = 1.0_rprec
+               !IF (xv < 0.0) xv = xv + pi2
                !xv = MOD(nfp*xv,pi2)
-               xv = xv/nfp
+               !xv = xv/nfp
                dist = bigno
                d1 = bigno
                DO u2 = 1, nu_max
@@ -58,7 +63,7 @@
                   CALL get_equil_RZ(s,xu,xv,R2,Z2,ier)
                   IF (ier == 0) d1(u2) = SQRT((R2 - R1)*(R2 - R1) + (Z2 - Z1)*(Z2 - Z1))
                END DO
-               dist = MINVAL(d1,DIM=1)
+               dist = sneg*MINVAL(d1,DIM=1)
                mtargets = mtargets + 1
                targets(mtargets) = target(u,v)
                sigmas(mtargets)  = sigma(u,v)

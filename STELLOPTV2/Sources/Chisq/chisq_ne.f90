@@ -53,14 +53,8 @@
             num_avg = 0
             DO ik = 1, nprof
                IF (sigma(ik) >= bigno_ne) CYCLE
-               !IF (target(ik) > avg_ne) avg_ne = target(ik)
                ier = 0
                CALL get_equil_s(r_ne(ik),phi_ne(ik),z_ne(ik),s_ne(ik),ier,u_val)
-               ! Old Way
-               !IF ((s_ne(ik) < s_temp) .and. (s_ne(ik) <= 1.0)) THEN
-               !   s_temp = s_ne(ik)
-               !   avg_ne = target(ik)
-               !END IF
                ! New Way
                IF ((s_ne(ik) < 0.05) .and. (s_ne(ik) <= 1.0)) THEN
                   avg_ne = avg_ne + target(ik)

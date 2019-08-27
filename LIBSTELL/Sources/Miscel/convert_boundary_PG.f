@@ -29,7 +29,7 @@
 !
       m_bdy = 0
       n_bdy = 0
-      DO mcount = 1, mpol
+      DO mcount = 0, mpol
          DO ncount = -ntor, ntor
             IF (rbc(ncount,mcount).ne.zero .or.
      1          zbs(ncount,mcount).ne.zero) THEN

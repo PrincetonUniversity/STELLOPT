@@ -60,7 +60,7 @@
            cscratch="scratch", cseq="sequential"                        
       CHARACTER(LEN=10) :: acc_type
       CHARACTER(LEN=10) :: delim_type
-      LOGICAL :: lopen, lexist, linvalid
+      LOGICAL :: lopen, lexist, linvalid, lscratch
 !-----------------------------------------------
 !  Start of Executable Code
 !-----------------------------------------------
@@ -72,8 +72,8 @@
 !
       linvalid = .true.
       IF (iunit < 0) THEN
-         WRITE (6, *) 'In safe_open, requested unit was uninitialized: IUNIT=', iunit
-         iunit = 10
+!         WRITE (6, *) 'In safe_open, requested unit was uninitialized: IUNIT=', iunit
+         iunit = 411
       END IF
       DO WHILE (linvalid)
          INQUIRE(iunit, exist=lexist, opened=lopen, iostat=istat)
@@ -82,20 +82,7 @@
          iunit = iunit + 1
       END DO
 
-!  JDH 08-24-2004 This next IF(Present) clause seems to be duplicated below. 
-!  I think one of the two should be eliminated, for clarity.
-
-      IF (PRESENT(access_in)) THEN
-         acc_type = TRIM(access_in)
-      ELSE
-         acc_type = cseq
-      END IF
-
-!  Why not call this variable lscratch?
-      lexist = (filestat(1:1).eq.'s') .or. (filestat(1:1).eq.'S')        !Scratch file
-
-!  JDH 08-24-2004 Below is nearly exact duplicate of IF(Present) clause 
-!  from above
+      lscratch = (filestat(1:1).eq.'s') .or. (filestat(1:1).eq.'S')      !Scratch file
 
       IF (PRESENT(access_in)) THEN
          acc_type = TRIM(access_in)
@@ -121,7 +108,7 @@
       SELECT CASE (fileform(1:1))
       CASE ('u', 'U')
          IF (PRESENT(record_in)) THEN
-            IF (lexist) THEN     ! unformatted, record length specified, scratch 
+            IF (lscratch) THEN   ! unformatted, record length specified, scratch 
                OPEN(unit=iunit, form=cunform, status=cscratch,                 &
      &              recl=record_in, access=acc_type, iostat=istat)
             ELSE             ! unformatted, record length specified, non-scratch 
@@ -130,7 +117,7 @@
      &              access=acc_type, iostat=istat)
             END IF
          ELSE
-            IF (lexist) THEN   ! unformatted, record length unspecified, scratch 
+            IF (lscratch) THEN ! unformatted, record length unspecified, scratch 
                OPEN(unit=iunit, form=cunform, status=cscratch,                 &
      &              access=acc_type, iostat=istat)
             ELSE           ! unformatted, record length unspecified, non-scratch 
@@ -141,7 +128,7 @@
 
       CASE DEFAULT
          IF (PRESENT(record_in)) THEN
-            IF (lexist) THEN       ! formatted, record length specified, scratch 
+            IF (lscratch) THEN     ! formatted, record length specified, scratch 
                OPEN(unit=iunit, form=cform, status=cscratch,                   &
                     delim=TRIM(delim_type), recl=record_in,                    &
                     access=acc_type, iostat=istat)
@@ -151,7 +138,7 @@
                     recl=record_in, access=acc_type, iostat=istat)
             END IF
          ELSE
-            IF (lexist) THEN     ! formatted, record length unspecified, scratch 
+            IF (lscratch) THEN   ! formatted, record length unspecified, scratch 
                OPEN(unit=iunit, form=cform, status=cscratch,                   &
                     delim=TRIM(delim_type), access=acc_type,                   &
                     iostat=istat)

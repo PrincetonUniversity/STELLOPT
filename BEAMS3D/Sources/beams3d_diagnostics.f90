@@ -22,6 +22,7 @@
       USE EZspline
 !DEC$ IF DEFINED (MPI_OPT)
       USE mpi_params ! MPI
+      USE mpi
 !DEC$ ENDIF
 !-----------------------------------------------------------------------
 !     Local Variables
@@ -39,7 +40,6 @@
       REAL, ALLOCATABLE     :: real_mask(:)
       INTEGER, PARAMETER :: ndist = 100
 !DEC$ IF DEFINED (MPI_OPT)
-      INCLUDE 'mpif.h' ! MPI
       INTEGER :: status(MPI_STATUS_size) !mpi stuff
       INTEGER :: mystart, mypace, sender
       INTEGER, ALLOCATABLE :: revcounts(:), displs(:)
@@ -79,8 +79,8 @@
       ALLOCATE(int_mask(mystart:myend))
       ALLOCATE(int_mask2(0:npoinc,mystart:myend))
       ALLOCATE(real_mask(mystart:myend))
-      maxdist=MAXVAl(MAXVAL(vll_lines,DIM=2),DIM=1)
-      mindist=MINVAl(MINVAL(vll_lines,DIM=2),DIM=1)
+      maxdist=MAXVAl(MAXVAL(vll_lines,DIM=2,MASK=(ABS(vll_lines)<1E8)),DIM=1)
+      mindist=MINVAl(MINVAL(vll_lines,DIM=2,MASK=(ABS(vll_lines)<1E8)),DIM=1)
 !DEC$ IF DEFINED (MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_BEAMS, ierr_mpi)
       IF (ierr_mpi /= 0) CALL handle_err(MPI_BARRIER_ERR, 'beams3d_follow', ierr_mpi)
@@ -108,6 +108,7 @@
 
       ! Calculate distribution function
       ALLOCATE(dist_func(1:nbeams,1:ndist,0:npoinc))
+      dist_func = 0
       dist = maxdist-mindist
       ddist = dist/ndist
       sbeam = MINVAL(beam(mystart:myend), DIM=1)

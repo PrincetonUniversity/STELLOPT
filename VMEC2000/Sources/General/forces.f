@@ -1,4 +1,3 @@
-#if defined (SKS)
       SUBROUTINE forces_par
       USE vmec_main, p5 => cp5
       USE realspace
@@ -70,10 +69,12 @@ C-----------------------------------------------
       gvvs(:,l) = p5*(gvvs(:,l) + gvvs(:,l+1))
       END DO
 
+      IF (trglob .ge. ns) THEN
       pguu(:,ns) = p5*pguu(:,ns)
       pgvv(:,ns) = p5*pgvv(:,ns)
       guus(:,ns) = p5*guus(:,ns)
       gvvs(:,ns) = p5*gvvs(:,ns)
+      END IF
 
 !DIR$ IVDEP
       nsmin=tlglob; nsmax=MIN(ns-1,trglob)
@@ -210,7 +211,6 @@ C-----------------------------------------------
       forces_time = timer(tfor)
 
       END SUBROUTINE forces_par
-#endif      
 
       SUBROUTINE forces
       USE vmec_main, p5 => cp5
@@ -219,10 +219,8 @@ C-----------------------------------------------
      1             azmn_e => azmn_e, armn_e => armn_e,
      2             lv_e => crmn_e, lu_e => czmn_e, lu_o => czmn_o,
      3             crmn_e => crmn_e, czmn_e => czmn_e, czmn_o => czmn_o
-#if defined (SKS)      
-      USE parallel_include_module
-#endif
       USE timer_sub
+
       IMPLICIT NONE
 C-----------------------------------------------
 C   L o c a l   P a r a m e t e r s
@@ -234,9 +232,7 @@ C-----------------------------------------------
       INTEGER :: l, ndim
       REAL(dp), DIMENSION(:), POINTER :: 
      1    bsqr, gvvs, guvs, guus
-#if defined (SKS)      
-      INTEGER :: i, j, k
-#endif
+
 C-----------------------------------------------
       ndim = 1+nrzt
       CALL second0 (tforon)
@@ -402,9 +398,6 @@ C-----------------------------------------------
 #endif
       
       CALL second0 (tforoff)
-#if defined(SKS)      
-      s_forces_time = s_forces_time + (tforoff-tforon)
-#endif
       timer(tfor) = timer(tfor) + (tforoff - tforon)
 
       END SUBROUTINE forces

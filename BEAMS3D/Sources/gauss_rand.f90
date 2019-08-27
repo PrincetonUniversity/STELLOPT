@@ -20,7 +20,7 @@
 100      CALL RANDOM_NUMBER(v)
          v = 2. * v - 1.
          rsq = v(1) * v(1) + v(2) * v(2)
-         IF ((rsq .gt. 1.) .or. (rsq .eq. 0.)) GO TO 100
+         IF ((rsq .ge. 1.) .or. (rsq .eq. 0.)) GO TO 100
          fac = SQRT(-2. * LOG(rsq) / rsq)
          x(j) = v(1) * fac
          j = j + 1

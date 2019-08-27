@@ -31,7 +31,7 @@
 !-----------------------------------------------------------------------
       INTEGER     :: ik, ier
       REAL(rprec) :: modb, Bsqav, dBsqav, p, pp, W, Vp,temp1, temp2, &
-                     rhosqav, V
+                     rhosqav, V, Bav
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
@@ -42,7 +42,7 @@
       IF (niter >= 0) THEN
          DO ik = 1, nsd
             IF (sigma(ik) >= bigno) CYCLE
-            CALL get_equil_Bsqav(rho(ik),Bsqav,ier,dBsqav)
+            CALL get_equil_Bav(rho(ik),Bav,Bsqav,ier,dBsqav)
             CALL get_equil_p(rho(ik),p,ier,pp)
             CALL get_equil_volume(rho(ik),V,ier,Vp)
             W = V*(2*mu0*pp/Vp+dBsqav)/Bsqav

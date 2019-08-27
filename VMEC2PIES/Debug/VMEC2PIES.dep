@@ -8,6 +8,14 @@ pies_main.o: \
       pies_background.o
       
 
+write_pies_input.o: \
+      pies_fieldlines.o \
+      pies_profile.o \
+      pies_realspace.o \
+      pies_runtime.o \
+      pies_background.o
+      
+
 pies_init.o: \
       pies_runtime.o \
       pies_input_mod.o
