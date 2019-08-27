@@ -25,7 +25,7 @@
                                     lvessel, lvac, lbeam_simple, handle_err, nparticles_start, &
                                     HDF5_OPEN_ERR,HDF5_WRITE_ERR,&
                                     HDF5_CLOSE_ERR, BEAMS3D_VERSION, weight, e_beams, p_beams,&
-                                    charge, Zatom, mass, ldepo, v_neut,lcollision, pi, pi2
+                                    charge, Zatom, mass, ldepo, v_neut,lcollision, pi, pi2, t_end_in
       USE safe_open_mod, ONLY: safe_open
       USE wall_mod, ONLY: nface,nvertex,face,vertex,ihit_array, wall_free
       USE beams3d_write_par
@@ -91,7 +91,7 @@
                CALL write_var_hdf5(qid_gid,'ENDCOND_ENERGYLIM',ier,DBLVAR=DBLE(1))
                CALL write_var_hdf5(qid_gid,'ENDCOND_WALLHIT',ier,DBLVAR=DBLE(1))
                CALL write_var_hdf5(qid_gid,'ENDCOND_MAXORBS',ier,DBLVAR=DBLE(0))
-               CALL write_var_hdf5(qid_gid,'ENDCOND_MAX_SIMTIME',ier,DBLVAR=DBLE(1))
+               CALL write_var_hdf5(qid_gid,'ENDCOND_MAX_SIMTIME',ier,DBLVAR=DBLE(MAXVAL(t_end_in)))
                CALL write_var_hdf5(qid_gid,'ENDCOND_MAX_CPUTIME',ier,DBLVAR=DBLE(1800))
                CALL write_var_hdf5(qid_gid,'ENDCOND_MAX_RHO',ier,DBLVAR=DBLE(2.0))
                CALL write_var_hdf5(qid_gid,'ENDCOND_MIN_RHO',ier,DBLVAR=DBLE(0))
@@ -117,9 +117,9 @@
                CALL write_var_hdf5(qid_gid,'DIST_MAX_TIME',ier,DBLVAR=DBLE(1))
                CALL write_var_hdf5(qid_gid,'DIST_MIN_CHARGE',ier,DBLVAR=DBLE(-2))
                CALL write_var_hdf5(qid_gid,'DIST_MAX_CHARGE',ier,DBLVAR=DBLE(2))
-               CALL write_var_hdf5(qid_gid,'DIST_NBIN_R',ier,DBLVAR=DBLE(nr))
-               CALL write_var_hdf5(qid_gid,'DIST_NBIN_Z',ier,DBLVAR=DBLE(nz))
-               CALL write_var_hdf5(qid_gid,'DIST_NBIN_PHI',ier,DBLVAR=DBLE(nphi))
+               CALL write_var_hdf5(qid_gid,'DIST_NBIN_R',ier,DBLVAR=DBLE(16))
+               CALL write_var_hdf5(qid_gid,'DIST_NBIN_Z',ier,DBLVAR=DBLE(16))
+               CALL write_var_hdf5(qid_gid,'DIST_NBIN_PHI',ier,DBLVAR=DBLE(16))
                CALL write_var_hdf5(qid_gid,'DIST_NBIN_RHO',ier,DBLVAR=DBLE(16))
                CALL write_var_hdf5(qid_gid,'DIST_NBIN_THETA',ier,DBLVAR=DBLE(16))
                CALL write_var_hdf5(qid_gid,'DIST_NBIN_TIME',ier,DBLVAR=DBLE(npoinc))
@@ -380,6 +380,7 @@
                rtemp(i,13,1) = i
             END DO
             WHERE(rtemp(:,4,1)==0) rtemp(:,5,1)=0.0 ! avoid NAN pitch angle
+            WHERE(rtemp(:,1,1)<raxis(1)) rtemp(:,1,1)=raxis(1) ! avoid NAN pitch angle
             CALL beams3d_write1d_parhdf5( 1, nparticles, d1, d2, '/marker/gc_'//qid_str//'/r',      DBLVAR=rtemp(:,1,1))
             CALL beams3d_write1d_parhdf5( 1, nparticles, d1, d2, '/marker/gc_'//qid_str//'/phi',    DBLVAR=rtemp(:,2,1))
             CALL beams3d_write1d_parhdf5( 1, nparticles, d1, d2, '/marker/gc_'//qid_str//'/z',      DBLVAR=rtemp(:,3,1))
