@@ -76,11 +76,11 @@
                CALL write_var_hdf5(qid_gid,'ENABLE_ADAPTIVE',ier,DBLVAR=DBLE(1))
                CALL write_var_hdf5(qid_gid,'RECORD_MODE',ier,DBLVAR=DBLE(0))
                CALL write_var_hdf5(qid_gid,'FIXEDSTEP_USE_USERDEFINED',ier,DBLVAR=DBLE(0))
-               CALL write_var_hdf5(qid_gid,'FIXEDSTEP_USERDEFINED',ier,DBLVAR=DBLE(1.0E-8))
+               CALL write_var_hdf5(qid_gid,'FIXEDSTEP_USERDEFINED',ier,DBLVAR=DBLE(5.0E-8))
                CALL write_var_hdf5(qid_gid,'FIXEDSTEP_GYRODEFINED',ier,DBLVAR=DBLE(20))
                CALL write_var_hdf5(qid_gid,'ADAPTIVE_TOL_ORBIT',ier,DBLVAR=DBLE(1.0E-8))
-               CALL write_var_hdf5(qid_gid,'ADAPTIVE_TOL_CCOL',ier,DBLVAR=DBLE(0.1))
-               CALL write_var_hdf5(qid_gid,'ADAPTIVE_MAX_DRHO',ier,DBLVAR=DBLE(0.1))
+               CALL write_var_hdf5(qid_gid,'ADAPTIVE_TOL_CCOL',ier,DBLVAR=DBLE(0.01))
+               CALL write_var_hdf5(qid_gid,'ADAPTIVE_MAX_DRHO',ier,DBLVAR=DBLE(1.0))
                CALL write_var_hdf5(qid_gid,'ADAPTIVE_MAX_DPHI',ier,DBLVAR=DBLE(2))
                CALL write_var_hdf5(qid_gid,'ENABLE_ORBIT_FOLLOWING',ier,DBLVAR=DBLE(1))
                CALL write_var_hdf5(qid_gid,'ENABLE_COULOMB_COLLISIONS',ier,DBLVAR=DBLE(1))
@@ -96,7 +96,7 @@
                CALL write_var_hdf5(qid_gid,'ENDCOND_MAXORBS',ier,DBLVAR=DBLE(0))
                CALL write_var_hdf5(qid_gid,'ENDCOND_MAX_SIMTIME',ier,DBLVAR=DBLE(MAXVAL(t_end_in)))
                CALL write_var_hdf5(qid_gid,'ENDCOND_MAX_CPUTIME',ier,DBLVAR=DBLE(1800))
-               CALL write_var_hdf5(qid_gid,'ENDCOND_MAX_RHO',ier,DBLVAR=DBLE(2.0))
+               CALL write_var_hdf5(qid_gid,'ENDCOND_MAX_RHO',ier,DBLVAR=DBLE(0.99))
                CALL write_var_hdf5(qid_gid,'ENDCOND_MIN_RHO',ier,DBLVAR=DBLE(0))
                CALL write_var_hdf5(qid_gid,'ENDCOND_MIN_ENERGY',ier,DBLVAR=DBLE(1000))
                CALL write_var_hdf5(qid_gid,'ENDCOND_MIN_THERMAL',ier,DBLVAR=DBLE(1.5))
@@ -370,10 +370,10 @@
                rtemp(i,2,1) = PHI_lines(d3,i)
                rtemp(i,3,1) = Z_lines(d3,i)
                dbl_temp     = 2*B_lines(d3,i)*moment_lines(d3,i)/mass(i) ! V_perp^2
-               rtemp(i,4,1) = 0.5*mass(i)*(vll_lines(d3,i)*vll_lines(d3,i)+dbl_temp)
+               rtemp(i,4,1) = 0.5*mass(i)*(vll_lines(d3,i)*vll_lines(d3,i)+dbl_temp)*e_charge
                rtemp(i,5,1) = vll_lines(d3,i)/SQRT(dbl_temp+vll_lines(d3,i)*vll_lines(d3,i)) ! pitch
                rtemp(i,6,1) = dbl_temp*pi2 ! zeta
-               rtemp(i,7,1) = mass(i) ! mass
+               rtemp(i,7,1) = NINT(mass(i)*5.97863320194E26) ! mass
                rtemp(i,8,1) = Zatom(i)
                rtemp(i,9,1) = NINT(mass(i)*5.97863320194E26) ! Anum
                rtemp(i,10,1) = Zatom(i)
