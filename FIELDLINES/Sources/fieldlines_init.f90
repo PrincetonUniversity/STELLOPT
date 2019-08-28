@@ -14,15 +14,16 @@
                              nv_in => nzeta, nfp_in => nfp, nigroup
       USE read_wout_mod, ONLY:  read_wout_file, rmin_surf, rmax_surf, zmax_surf
       USE fieldlines_runtime
-      USE fieldlines_grid, ONLY: raxis,phiaxis,zaxis, nr, nphi, nz, &
-                                 rmin, rmax, zmin, zmax, phimin, &
-                                 phimax, B_R, B_Z, B_PHI, MU3D, &
-                                 BR_spl, BZ_spl, MU_spl, delta_phi, MODB_spl
+      USE fieldlines_grid
       USE fieldlines_input_mod, ONLY: read_fieldlines_input
       USE fieldlines_lines, ONLY: nlines
       USE wall_mod
       USE random, ONLY: random_normal
       USE mpi_params                                                    ! MPI
+!DEC$ IF DEFINED (MPI_OPT)
+      USE mpi
+      USE mpi_sharmem
+!DEC$ ENDIF
 !-----------------------------------------------------------------------
 !     Local Variables
 !          ier            Error Flag
@@ -30,13 +31,10 @@
 !-----------------------------------------------------------------------
       IMPLICIT NONE
 !DEC$ IF DEFINED (NAG)
-!      LOGICAL        :: licval
-!      INTEGER        :: mkmaj, mkmin
-!      CHARACTER(128) :: impl,prec,pcode,hdware,opsys,fcomp,vend
+      LOGICAL        :: licval
+      INTEGER        :: mkmaj, mkmin
+      CHARACTER(128) :: impl,prec,pcode,hdware,opsys,fcomp,vend
 !DEC$ ENDIF
-!DEC$ IF DEFINED (MPI_OPT)
-      INCLUDE 'mpif.h'                                                          ! MPI
-!DEC$ ENDIF  
       INTEGER :: i,j,k,ier, iunit
       INTEGER :: bcs1(2), bcs2(2), bcs3(2)
       REAL(rprec) :: rmin_temp, rmax_temp, zmin_temp, zmax_temp,&
@@ -118,7 +116,7 @@
       END IF
       
       IF (lauto) THEN
-         nlines = nr
+         nlines = MAX(numprocs,128)
          IF (nruntype == runtype_full) THEN
             rmin_temp = r_start(1)
             zmin_temp = z_start(1)
@@ -179,14 +177,22 @@
       IF (lrestart) THEN
          CALL fieldlines_init_restart
       ELSE
-         ALLOCATE(raxis(nr),zaxis(nz),phiaxis(nphi),STAT=ier)
-         IF (ier /= 0) CALL handle_err(ALLOC_ERR,'RAXIS ZAXIS PHIAXIS',ier)
-         ALLOCATE(B_R(nr,nphi,nz),B_PHI(nr,nphi,nz),B_Z(nr,nphi,nz),STAT=ier)
-         IF (ier /= 0) CALL handle_err(ALLOC_ERR,'BR BZ',ier)
-         FORALL(i = 1:nr) raxis(i) = (i-1)*(rmax-rmin)/(nr-1) + rmin
-         FORALL(i = 1:nz) zaxis(i) = (i-1)*(zmax-zmin)/(nz-1) + zmin
-         FORALL(i = 1:nphi) phiaxis(i) = (i-1)*(phimax-phimin)/(nphi-1) + phimin
-         B_R = 0; B_PHI = 0; B_Z = 0
+         !ALLOCATE(raxis(nr),zaxis(nz),phiaxis(nphi),STAT=ier)
+         !IF (ier /= 0) CALL handle_err(ALLOC_ERR,'RAXIS ZAXIS PHIAXIS',ier)
+         !ALLOCATE(B_R(nr,nphi,nz),B_PHI(nr,nphi,nz),B_Z(nr,nphi,nz),STAT=ier)
+         !IF (ier /= 0) CALL handle_err(ALLOC_ERR,'BR BZ',ier)
+         CALL mpialloc(raxis, nr, myid_sharmem, 0, MPI_COMM_SHARMEM, win_raxis)
+         CALL mpialloc(phiaxis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_phiaxis)
+         CALL mpialloc(zaxis, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_zaxis)
+         CALL mpialloc(B_R, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_B_R)
+         CALL mpialloc(B_PHI, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_B_PHI)
+         CALL mpialloc(B_Z, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_B_Z)
+         IF (myid_sharmem == master) THEN
+            FORALL(i = 1:nr) raxis(i) = (i-1)*(rmax-rmin)/(nr-1) + rmin
+            FORALL(i = 1:nz) zaxis(i) = (i-1)*(zmax-zmin)/(nz-1) + zmin
+            FORALL(i = 1:nphi) phiaxis(i) = (i-1)*(phimax-phimin)/(nphi-1) + phimin
+            B_R = 0; B_PHI = 0; B_Z = 0
+         END IF
          ! Put the vacuum field on the background grid
          IF (lmgrid) THEN
             CALL fieldlines_init_mgrid
@@ -211,7 +217,7 @@
 
       !ERROR FIELD code section
       ! Note that for this to make sense the code must be run with NFP=1 and PHIMAX=2*pi
-      IF (lerror_field) THEN
+      IF ((lerror_field) .and. (myid_sharmem == master)) THEN
          IF (lverb) WRITE(6,'(A)') '!!!!!ADDING STATIC ERROR FIELD!!!!!'
          b_err   = 2.5*2.0E-5
          ang_err = pi2*0./360.
@@ -258,44 +264,56 @@
 
       ! Handle MOD_B
       IF (lmodb) THEN
-         ALLOCATE(MU3D(nr,nphi,nz),STAT=ier)
-         IF (ier /= 0) CALL handle_err(ALLOC_ERR,'MU3D1',ier)
-         MU3D = sqrt(B_R**2+B_PHI**2+B_Z**2)
-         bcs1=(/ 0, 0/)
-         bcs2=(/-1,-1/)
-         bcs3=(/ 0, 0/)
-         CALL EZspline_init(MODB_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
-         IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'fieldlines_init:MODB_spl',ier)
-         MODB_spl%isHermite = 1
-         MODB_spl%x1 = raxis
-         MODB_spl%x2 = phiaxis
-         MODB_spl%x3 = zaxis
-         CALL EZspline_setup(MODB_spl,MU3D,ier,EXACT_DIM=.true.)
-         IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'fieldlines_init:MODB_spl',ier)
-         DEALLOCATE(MU3D)
+         CALL mpialloc(MU3D, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_MU)
+         CALL mpialloc(MODB4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_MODB4D)
+         IF (myid_sharmem == master) THEN
+            MU3D = sqrt(B_R**2+B_PHI**2+B_Z**2)
+            bcs1=(/ 0, 0/)
+            bcs2=(/-1,-1/)
+            bcs3=(/ 0, 0/)
+            CALL EZspline_init(MODB_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
+            IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'fieldlines_init:MODB_spl',ier)
+            MODB_spl%isHermite = 1
+            MODB_spl%x1 = raxis
+            MODB_spl%x2 = phiaxis
+            MODB_spl%x3 = zaxis
+            CALL EZspline_setup(MODB_spl,MU3D,ier,EXACT_DIM=.true.)
+            IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'fieldlines_init:MODB_spl',ier)
+            MODB4D = MODB_SPL%fspl
+            CALL EZspline_free(MODB_spl,ier)
+         END IF
+         CALL MPI_BARRIER(MPI_COMM_SHARMEM, ierr_mpi)
+         CALL mpidealloc(MU3D,win_MU)
       END IF
 
       ! Handle mu
       IF (lmu) THEN
          CALL init_random_seed()
-         ALLOCATE(MU3D(nr,nphi,nz),STAT=ier)
-         IF (ier /= 0) CALL handle_err(ALLOC_ERR,'MU3D2',ier)
-         MU3D = ABS(2*mu*sqrt(B_R**2+B_PHI**2+B_Z**2)/B_PHI)
-         DO i = 1, nr
-            MU3D(i,:,:) = raxis(i) * MU3D(i,:,:)
-         END DO
-         bcs1=(/ 0, 0/)
-         bcs2=(/-1,-1/)
-         bcs3=(/ 0, 0/)
-         CALL EZspline_init(MU_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
-         IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'fieldlines_init:MU_SPL',ier)
-         MU_spl%isHermite = 1
-         MU_spl%x1 = raxis
-         MU_spl%x2 = phiaxis
-         MU_spl%x3 = zaxis
-         CALL EZspline_setup(MU_spl,MU3D,ier,EXACT_DIM=.true.)
-         IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'fieldlines_init:MU_SPL',ier)
-         DEALLOCATE(MU3D)
+         !ALLOCATE(MU3D(nr,nphi,nz),STAT=ier)
+         !IF (ier /= 0) CALL handle_err(ALLOC_ERR,'MU3D2',ier)
+         CALL mpialloc(MU3D, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_MU)
+         CALL mpialloc(MU4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_MU4D)
+         IF (myid_sharmem == master) THEN
+            MU3D = ABS(2*mu*sqrt(B_R**2+B_PHI**2+B_Z**2)/B_PHI)
+            DO i = 1, nr
+               MU3D(i,:,:) = raxis(i) * MU3D(i,:,:)
+            END DO
+            bcs1=(/ 0, 0/)
+            bcs2=(/-1,-1/)
+            bcs3=(/ 0, 0/)
+            CALL EZspline_init(MU_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
+            IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'fieldlines_init:MU_SPL',ier)
+            MU_spl%isHermite = 1
+            MU_spl%x1 = raxis
+            MU_spl%x2 = phiaxis
+            MU_spl%x3 = zaxis
+            CALL EZspline_setup(MU_spl,MU3D,ier,EXACT_DIM=.true.)
+            IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'fieldlines_init:MU_SPL',ier)
+            MU4D = MU_SPL%fspl
+            CALL EZspline_free(MU_spl,ier)
+         END IF
+         CALL MPI_BARRIER(MPI_COMM_SHARMEM, ierr_mpi)
+         CALL mpidealloc(MU3D,win_MU)
          CALL RANDOM_SEED()
       END IF
 
@@ -311,43 +329,59 @@
       END IF
 
       ! Now we need to reformulate B_R and B_Z as functions of phi
-      DO k = 1, nz
-         DO j = 1, nphi
-            DO i = 1, nr
-               B_R(i,j,k) = raxis(i) * B_R(i,j,k) / B_PHI(i,j,k)
-               B_Z(i,j,k) = raxis(i) * B_Z(i,j,k) / B_PHI(i,j,k)
+      IF (myid_sharmem == master) THEN
+         DO k = 1, nz
+            DO j = 1, nphi
+               DO i = 1, nr
+                  B_R(i,j,k) = raxis(i) * B_R(i,j,k) / B_PHI(i,j,k)
+                  B_Z(i,j,k) = raxis(i) * B_Z(i,j,k) / B_PHI(i,j,k)
+               END DO
             END DO
          END DO
-      END DO
-
-      ! Construct Splines
-      bcs1=(/ 0, 0/)
-      bcs2=(/-1,-1/)
-      bcs3=(/ 0, 0/)
-      CALL EZspline_init(BR_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
-      IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'fieldlines_init',ier)
-      CALL EZspline_init(BZ_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
-      IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'fieldlines_init',ier)
-      BR_spl%isHermite = 1
-      BZ_spl%isHermite = 1
-      BR_spl%x1 = raxis
-      BZ_spl%x1 = raxis
-      BR_spl%x2 = phiaxis
-      BZ_spl%x2 = phiaxis
-      BR_spl%x3 = zaxis
-      BZ_spl%x3 = zaxis
-      IF (lverb) THEN
-         WRITE(6,'(A)')'----- Constructing Splines -----'
-         WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   R   = [',MINVAL(raxis),',',MAXVAL(raxis),'];  NR:   ',BR_spl%n1
-         WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   PHI = [',MINVAL(phiaxis),',',MAXVAL(phiaxis),'];  NPHI: ',BR_spl%n2
-         WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   Z   = [',MINVAL(zaxis),',',MAXVAL(zaxis),'];  NZ:   ',BR_spl%n3
-         IF (lmu) WRITE(6,'(A,E15.5)')   '   MU  = ',mu
-         WRITE(6,'(A,I1)')               '   HERMITE FORM: ',BR_spl%isHermite
       END IF
-      CALL EZspline_setup(BR_spl,B_R,ier,EXACT_DIM=.true.)
-      IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'fieldlines_init',ier)
-      CALL EZspline_setup(BZ_spl,B_Z,ier,EXACT_DIM=.true.)
-      IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'fieldlines_init',ier)
+
+      ! Construct Splines (on master nodes of shared memeory)
+      IF (myid_sharmem == master) THEN
+         bcs1=(/ 0, 0/)
+         bcs2=(/-1,-1/)
+         bcs3=(/ 0, 0/)
+         CALL EZspline_init(BR_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
+         IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'fieldlines_init',ier)
+         CALL EZspline_init(BZ_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
+         IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'fieldlines_init',ier)
+         BR_spl%isHermite = 1
+         BZ_spl%isHermite = 1
+         BR_spl%x1 = raxis
+         BZ_spl%x1 = raxis
+         BR_spl%x2 = phiaxis
+         BZ_spl%x2 = phiaxis
+         BR_spl%x3 = zaxis
+         BZ_spl%x3 = zaxis
+         IF (lverb) THEN
+            WRITE(6,'(A)')'----- Constructing Splines -----'
+            WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   R   = [',MINVAL(raxis),',',MAXVAL(raxis),'];  NR:   ',BR_spl%n1
+            WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   PHI = [',MINVAL(phiaxis),',',MAXVAL(phiaxis),'];  NPHI: ',BR_spl%n2
+            WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   Z   = [',MINVAL(zaxis),',',MAXVAL(zaxis),'];  NZ:   ',BR_spl%n3
+            IF (lmu) WRITE(6,'(A,E15.5)')   '   MU  = ',mu
+            WRITE(6,'(A,I1)')               '   HERMITE FORM: ',BR_spl%isHermite
+         END IF
+         CALL EZspline_setup(BR_spl,B_R,ier,EXACT_DIM=.true.)
+         IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'fieldlines_init',ier)
+         CALL EZspline_setup(BZ_spl,B_Z,ier,EXACT_DIM=.true.)
+         IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'fieldlines_init',ier)
+      END IF
+
+      ! Allocated 4D Arrays
+      CALL mpialloc(BR4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_BR4D)
+      CALL mpialloc(BZ4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_BZ4D)
+
+      ! Copy Spline info to shared memory and Free
+      IF (myid_sharmem == master) THEN
+         BR4D = BR_SPL%fspl
+         BZ4D = BZ_SPL%fspl
+         CALL EZspline_free(BR_spl,ier)
+         CALL EZspline_free(BZ_spl,ier)
+      END IF
 
       IF (.FALSE.) THEN
          qdot = 0
@@ -361,10 +395,10 @@
       
       ! DEALLOCATE Variables
       ! Only master retains a copy for output
-      IF (myid /= master) THEN
-         DEALLOCATE(raxis,zaxis,phiaxis)
-         DEALLOCATE(B_R,B_Z,B_PHI)
-      END IF
+      !IF (myid /= master) THEN
+      !   DEALLOCATE(raxis,zaxis,phiaxis)
+      !   DEALLOCATE(B_R,B_Z,B_PHI)
+      !END IF
 
 !DEC$ IF DEFINED (MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)

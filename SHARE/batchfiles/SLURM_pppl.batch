@@ -1,0 +1,88 @@
+#!/bin/tcsh 
+
+#SBATCH --partition=dawson
+#SBATCH --ntasks=256
+#SBATCH --time=23:00:00
+#SBATCH --job-name=STELLOPT
+#SBATCH --mem-per-cpu=2GB
+
+
+cd $SLURM_SUBMIT_DIR
+
+# ------------------------------------------------------------
+# Log interesting information
+#
+echo " "
+echo "-------------------"
+#echo "This is a $PBS_ENVIRONMENT job"
+echo "This job was submitted to the queue: $SLURM_JOB_PARTITION"
+echo "The jobs id is: $SLURM_JOBID"
+echo "-------------------"
+echo "The master node of this job is: $SLURM_SUBMIT_HOST"
+echo "$SLURM_JOB_NODELIST"
+echo "This job is using $SLURM_NTASKS CPU(s) on the following $SLURM_JOB_NUM_NODES node(s):"
+echo "-----------------------"
+#uniq $SLURM_JOB_NODELIST | sort
+echo "-----------------------"
+
+# ------------------------------------------------------------
+# Setup execution variables
+# --- SLURM_SUBMIT_DIR is the current working directory from
+#     which this job was submitted using 'qsub'
+echo The working directory is $SLURM_SUBMIT_DIR 
+cd $SLURM_SUBMIT_DIR
+
+set OMP_NUM_THREADS=1
+set HDF5_USE_FILE_LOCKING=FALSE
+
+####################BEAMS3D##############################
+#
+# --- the path of your executable
+set EXEPATH="xbeams3d"
+ 
+# --- declare any program arguments
+set FLAGS='-vac'
+set VMEC='test'
+set COIL=/p/w7x_sci/coils/coils.w7x_mc_sc_tc_15
+set VESSEL=/p/w7x_sci/vessel/w7x_vessel_limiter_trimesh_full.dat
+
+# --- print out the current time, then use the 'time' command
+#     to start the program and print useful stats
+#
+echo -n 'Started program at : ' ; date
+
+# Now setup a directory
+cd /pfs/nobackup/Lazerson
+mkdir $VMEC
+cd $VMEC
+echo Switching to /pfs/nobackup/Lazerson/$VMEC 
+cp $SLURM_SUBMIT_DIR/input.$VMEC
+cp $SLURM_SUBMIT_DIR/wout_$VMEC.nc
+
+echo mpirun -np $SLURM_NTASKS $EXEPATH -vmec $VMEC -coil $COIL -vessel $VESSEL $FLAGS 
+mpirun -np $SLURM_NTASKS $EXEPATH -vmec $VMEC -coil $COIL -vessel $VESSEL $FLAGS >& log.$VMEC
+
+echo Copying to $SLURM_SUBMIT_DIR
+cp 'beams3d_'$VMEC'.h5' $SLURM_SUBMIT_DIR
+cp 'beams3d_diag_'$VMEC'.txt' $SLURM_SUBMIT_DIR
+cp log.$VMEC $SLURM_SUBMIT_DIR
+
+####################STELOPT##############################
+#
+# --- the path of your executable
+set EXEPATH="xstelloptv2"
+# --- declare any program arguments
+set FLAGS=' '
+set VMEC='test'
+
+# --- print out the current time, then use the 'time' command
+#     to start the program and print useful stats
+#
+echo -n 'Started program at : ' ; date
+
+echo mpirun -np $SLURM_NTASKS $EXEPATH input.$VMEC $FLAGS 
+mpirun -np $SLURM_NTASKS $EXEPATH input.$VMEC $FLAGS >& log.$VMEC
+
+
+echo -n 'Ended program at  : ' ; date
+echo " " 

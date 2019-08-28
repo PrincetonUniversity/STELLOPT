@@ -3,7 +3,7 @@ import numpy as np                    #For Arrays
 from math import sqrt
 
 lfail = 0
-failtol = 1.0
+failtol = 3.0
 fileext='DIIID_m20n0s128_nfp1_lasym'
 filename='diagno_bench.'+fileext
 data = np.loadtxt(filename)

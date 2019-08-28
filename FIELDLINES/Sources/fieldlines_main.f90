@@ -16,13 +16,14 @@
 !-----------------------------------------------------------------------
       USE fieldlines_runtime
       USE wall_mod, ONLY: wall_free
-      USE fieldlines_grid, ONLY: raxis, zaxis, phiaxis, B_R, B_PHI, &
-                                 B_Z, BR_spl, BZ_spl, MU_spl, MODB_spl
+      USE fieldlines_grid
       USE fieldlines_lines, ONLY: R_lines, Z_lines, PHI_lines, &
                                   Rhc_lines, Zhc_lines, B_lines
       USE EZspline_obj
       USE EZspline
-      USE mpi_params                                                    ! MPI
+      USE mpi_sharmem
+      USE mpi_params
+      USE mpi_inc
 !-----------------------------------------------------------------------
 !     Local Variables
 !          numargs      Number of input arguments
@@ -32,13 +33,11 @@
 !          args         Input arguments
 !-----------------------------------------------------------------------
       IMPLICIT NONE
-!DEC$ IF DEFINED (MPI_OPT)
-      INCLUDE 'mpif.h'                                                          ! MPI
-!DEC$ ENDIF  
-      integer                                      :: numargs,i,ier
+      integer                                      :: numargs,i,ier, vmajor, vminor, liblen, nshar
       integer, parameter                           :: arg_len =256
       character*(arg_len)                          :: arg1
       character*(arg_len),allocatable,dimension(:) :: args
+      character(LEN=MPI_MAX_LIBRARY_VERSION_STRING) :: mpi_lib_name
 !-----------------------------------------------------------------------
 !     Begin Program
 !-----------------------------------------------------------------------
@@ -46,11 +45,19 @@
       myid = master
       ierr_mpi = MPI_SUCCESS
 !DEC$ IF DEFINED (MPI_OPT)
-      CALL MPI_INIT( ierr_mpi )                                         ! MPI
-      CALL MPI_COMM_RANK( MPI_COMM_WORLD, myid, ierr_mpi )              ! MPI
-      CALL MPI_COMM_SPLIT( MPI_COMM_WORLD,0,myid,MPI_COMM_FIELDLINES,ierr_mpi)
+      CALL MPI_INIT(ierr_mpi) ! MPI
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_INIT_ERR, 'fieldlines_main', ierr_mpi)
+      CALL MPI_COMM_DUP( MPI_COMM_WORLD, MPI_COMM_FIELDLINES, ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_RANK_ERR, 'fieldlines_main', ierr_mpi)
       CALL MPI_COMM_RANK( MPI_COMM_FIELDLINES, myid, ierr_mpi )              ! MPI
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_RANK_ERR, 'fieldlines_main', ierr_mpi)
       CALL MPI_COMM_SIZE( MPI_COMM_FIELDLINES, numprocs, ierr_mpi )          ! MPI
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_SIZE_ERR, 'fieldlines_main', ierr_mpi)
+      CALL MPI_COMM_SPLIT_TYPE(MPI_COMM_FIELDLINES, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, MPI_COMM_SHARMEM, ierr_mpi)
+      CALL MPI_COMM_RANK(MPI_COMM_SHARMEM, myid_sharmem, ierr_mpi)
+      CALL MPI_COMM_SIZE(MPI_COMM_SHARMEM, nshar, ierr_mpi) ! MPI
+      CALL MPI_GET_VERSION(vmajor,vminor,ier)
+      CALL MPI_GET_LIBRARY_VERSION(mpi_lib_name,liblen,ier)
       CALL MPI_ERRHANDLER_SET(MPI_COMM_WORLD,MPI_ERRORS_RETURN,ierr_mpi)
 !DEC$ ENDIF
       pi = 4.0 * ATAN(1.0)
@@ -218,6 +225,11 @@
          END DO
          DEALLOCATE(args)
          WRITE(6,'(a,f5.2)') 'FIELDLINES Version ',FIELDLINES_VERSION
+         WRITE(6,'(A)')      '-----  MPI Parameters  -----'
+         WRITE(6,'(A,I2,A,I2.2)')  '   MPI_version:  ', vmajor,'.',vminor
+         WRITE(6,'(A,A)')  '   ', TRIM(mpi_lib_name(1:liblen))
+         WRITE(6,'(A,I8)')  '   Nproc_total:  ', numprocs
+         WRITE(6,'(A,3X,I5)')  '   Nproc_shared: ', nshar
       ELSE IF (myid /= master) THEN
          lverb=.false.   ! Shutup the slaves
       END IF
@@ -331,12 +343,16 @@
 
       ! Clean up
       IF (lvessel) CALL wall_free(ier)
-      IF (ALLOCATED(raxis)) DEALLOCATE(raxis)
-      IF (ALLOCATED(zaxis)) DEALLOCATE(zaxis)
-      IF (ALLOCATED(phiaxis)) DEALLOCATE(phiaxis)
-      IF (ALLOCATED(B_R)) DEALLOCATE(B_R)
-      IF (ALLOCATED(B_PHI)) DEALLOCATE(B_PHI)
-      IF (ALLOCATED(B_Z)) DEALLOCATE(B_Z)
+      IF (ASSOCIATED(raxis)) CALL mpidealloc(raxis,win_raxis)
+      IF (ASSOCIATED(phiaxis)) CALL mpidealloc(phiaxis,win_phiaxis)
+      IF (ASSOCIATED(zaxis)) CALL mpidealloc(zaxis,win_zaxis)
+      IF (ASSOCIATED(B_R)) CALL mpidealloc(B_R,win_B_R)
+      IF (ASSOCIATED(B_PHI)) CALL mpidealloc(B_PHI,win_B_PHI)
+      IF (ASSOCIATED(B_Z)) CALL mpidealloc(B_Z,win_B_Z)
+      IF (ASSOCIATED(BR4D)) CALL mpidealloc(BR4D,win_BR4D)
+      IF (ASSOCIATED(BZ4D)) CALL mpidealloc(BZ4D,win_BZ4D)
+      IF (ASSOCIATED(MU4D)) CALL mpidealloc(MU4D,win_MU4D)
+      IF (ASSOCIATED(MODB4D)) CALL mpidealloc(MODB4D,win_MODB4D)
       IF (ALLOCATED(R_lines)) DEALLOCATE(R_lines)
       IF (ALLOCATED(Z_lines)) DEALLOCATE(Z_lines)
       IF (ALLOCATED(PHI_lines)) DEALLOCATE(PHI_lines)

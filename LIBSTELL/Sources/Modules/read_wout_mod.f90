@@ -1873,7 +1873,7 @@
 !     THIS SUBROUTINE WRITES A netCDF FILE WOUT CREATED BY STORED THE INFORMATION 
 !     IN THE read_WOUT MODULE. This routine can only be called if the wout has 
 !     already been read in.
-
+      ierr   = 0
       iwout0 = 0     
       CALL cdf_open(nwout,TRIM(filename),'w',iwout0)
       IF (iwout0 .ne. 0) STOP 'Error opening wout.nc file VMEC WROUT'
