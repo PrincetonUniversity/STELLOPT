@@ -1,5 +1,3 @@
-{% include head.html %}
-
 BOOZ_XFORM
 ===========
 
