@@ -1,4 +1,4 @@
-BOOZ\_XFORM
+BOOZ_XFORM
 ===========
 
 This code calculates the transformation to Boozer coordinates
@@ -11,16 +11,18 @@ of a [VMEC](VMEC) equilibria.
 
 ### Theory
 
-The BOOZ\_XFORM code
+The BOOZ_XFORM code
 [Sanchez R., Hirshman S.P., Ware A. S., Berry L. A., and Spong D.A. \"Ballooning stability optimization of low-aspect-ratio stellarators.\" Plas. Phys. Cont. Fusion 42, 641 (2000).](http://iopscience.iop.org/0741-3335/42/6/303)
 transforms the [VMEC](VMEC) field-line coordinate system to the
 [straight field-line coordinates](http://www-fusion.ciemat.es/wiki/Flux_coordinates)
 introduced by Boozer
 ([Fusionwiki link](http://www-fusion.ciemat.es/wiki/Boozer_coordinates)).
 The Boozer coordinates allow the magnetic field to be written in the
-form [math](math)
-\\vec{B}=\\nabla\\psi\\left(s\\right)\\times\\nabla\\zeta\_b+\\nabla\\theta\_b\\times\\nabla\\chi\\left(s\\right)
-[math](math) where the subscript indicates the quantities are
+form 
+
+\$$ \vec{B}=\nabla\psi\left(s\right)\times\nabla\zeta_b+\nabla\theta_b\times\nabla\chi\left(s\right) $$ 
+
+where the subscript indicates the quantities are
 generalized toroidal and poloidal coordinates (xi and theta
 respectively). The code transforms the coordinates and magnetic field.
 The output quantities are in terms of the Fourier coefficients of the
@@ -38,7 +40,7 @@ non-stellarator symmetric equilibria.
 
 ### Compilation
 
-BOOZ\_XFORM is a component of the STELLOPT suite of codes. Compilation
+BOOZ_XFORM is a component of the STELLOPT suite of codes. Compilation
 of the STELLOPT suite is discussed on the
 [STELLOPT Compilation Page](STELLOPT Compilation).
 
@@ -46,14 +48,14 @@ of the STELLOPT suite is discussed on the
 
 ### Input Data Format
 
-The BOOZ\_XFORM code takes an input filename as a command line argument.
+The BOOZ_XFORM code takes an input filename as a command line argument.
 The input file contains the number of theta and zeta harmonics to use,
 the filename extension of the wout file to read, and a list of surfaces
 on which to calculate the transform. Typically the user will choose
 surfaces located at 1/4, 1/2, and 3/4 the way from the axis to the edge
 of the equilibrium. The choice of surface must coincide with a VMEC
 index. For example, if the user wished to specify 72 poloidal harmonics,
-15 toroidal harmonics, the \'wout.test\' file, and surfaces 25, 50 and
+15 toroidal harmonics, the 'wout.test' file, and surfaces 25, 50 and
 75, the file would look like:
 
     72  15
@@ -64,9 +66,9 @@ index. For example, if the user wished to specify 72 poloidal harmonics,
 
 ### Execution
 
-The BOOZ\_XFORM code takes a command line (see above) and optional
+The BOOZ_XFORM code takes a command line (see above) and optional
 output suppression arguments (T/F). For example, if the user had an
-input file entitled \'in\_booz.test\' the code could be executed by:
+input file entitled 'in_booz.test' the code could be executed by:
 
     > xbooz_xform in_booz.test
       0 <= mboz <=   71    -15 <= nboz <=   15
@@ -90,12 +92,12 @@ input file entitled \'in\_booz.test\' the code could be executed by:
 ### Output Data Format
 
 The transformed R, Z, p and \|B\| quantities are output into a file
-\'boozmn.ext\' where ext is the [VMEC](VMEC) file extension specified in
+'boozmn.ext' where ext is the [VMEC](VMEC) file extension specified in
 the input file. The STELLOPT library provides a fortran function for
-reading this file: read\_boozer\_file.f. This file can be included in a
-code through read\_booz\_mod. The output file is a binary file a general
+reading this file: read_boozer_file.f. This file can be included in a
+code through read_booz_mod. The output file is a binary file a general
 prescription for reading the file can be found below (taken from
-read\_boozer\_file):
+read_boozer_file):
 
     #!fortran
            read(iunit, iostat=ierr, err=100) nfp_b, ns_b, aspect_b, max_b, rmin_b, betaxis_b
@@ -132,7 +134,7 @@ Note that this is for version v1.0. The latest version v2.0 outputs in
 
 ### Visualization
 
-Once read from the output file the BOOZ\_XFORM data can be transformed
+Once read from the output file the BOOZ_XFORM data can be transformed
 to real space much the way [VMEC](VMEC) data is. It is important to note
 that this code utilizes a trigonometric argument of the form (mu-nv). In
 Boozer coordinates the toroidal angle is optimized so before preforming
