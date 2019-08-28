@@ -285,7 +285,7 @@
                IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_paraexe',ierr_mpi)
 
                ! Set vars so BEAMS3D knows it's being called from stellopt
-               CALL MPI_COMM_DUP(MPI_COMM_BEAMS, MPI_COMM_MYWORLD, ierr_mpi)
+               CALL MPI_COMM_DUP(MPI_COMM_MYWORLD, MPI_COMM_BEAMS, ierr_mpi)
                CALL MPI_COMM_SPLIT_TYPE(MPI_COMM_BEAMS, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, MPI_COMM_SHARMEM, ierr_mpi)
                CALL MPI_COMM_RANK(MPI_COMM_SHARMEM, myid_sharmem, ierr_mpi)
                CALL BCAST_BEAMS3D_INPUT(master,MPI_COMM_MYWORLD,ierr_mpi)

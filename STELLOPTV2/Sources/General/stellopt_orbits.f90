@@ -11,12 +11,13 @@
 !-----------------------------------------------------------------------
       USE stellopt_runtime, ONLY:  proc_string, bigno, rprec, pi2
       USE equil_utils, ONLY: get_equil_RZ, get_equil_Bflx,&
-                             get_equil_ne, get_equil_te, get_equil_ti
+                             get_equil_ne, get_equil_te, get_equil_ti, &
+                             get_equil_zeff
       USE equil_vals, ONLY: nfp, rho, orbit_lost_frac
       USE stellopt_targets, ONLY: sigma_orbit, vll_orbit, mu_orbit,&
             nu_orbit, nv_orbit, nsd, np_orbit, mass_orbit, Z_orbit,&
             vperp_orbit, nsd
-      USE stellopt_vars, ONLY: ne_type, te_type, ti_type, ne_norm
+      USE stellopt_vars, ONLY: ne_type, te_type, ti_type, ne_norm, zeff_type
       USE read_wout_mod, ONLY:  rmax_surf, rmin_surf, zmax_surf
 !DEC$ IF DEFINED (BEAMS3D_OPT)
       ! BEAMS3D Libraries
@@ -26,8 +27,9 @@
             TE_AUX_S_BEAMS => TE_AUX_S, TE_AUX_F_BEAMS => TE_AUX_F, &
             NE_AUX_S_BEAMS => NE_AUX_S, NE_AUX_F_BEAMS => NE_AUX_F, &
             TI_AUX_S_BEAMS => TI_AUX_S, TI_AUX_F_BEAMS => TI_AUX_F, &
+            ZEFF_AUX_S_BEAMS => ZEFF_AUX_S, ZEFF_AUX_F_BEAMS => ZEFF_AUX_F, &
             BEAMS3D_VERSION
-      USE beams3d_grid, ONLY: nte, nne, nti, rmin, rmax, zmin, zmax, &
+      USE beams3d_grid, ONLY: nte, nne, nti, nzeff, rmin, rmax, zmin, zmax, &
                               phimin, phimax
       USE beams3d_lines, ONLY: lost_lines
 !DEC$ ENDIF
@@ -119,18 +121,21 @@
       END IF
 
       ! Initialize temperature profiles
-      nne = NBEAM_PROF; nte = NBEAM_PROF; nti = NBEAM_PROF
+      nne = NBEAM_PROF; nte = NBEAM_PROF; nti = NBEAM_PROF; nzeff = NBEAM_PROF
       DO ik = 1, NBEAM_PROF
          s_val = DBLE(ik-1)/DBLE(NBEAM_PROF-1)
          NE_AUX_S_BEAMS(ik) = s_val
          TE_AUX_S_BEAMS(ik) = s_val
          TI_AUX_S_BEAMS(ik) = s_val
+         ZEFF_AUX_S_BEAMS(ik) = s_val
          CALL get_equil_ne(s_val,TRIM(ne_type),v_val,iflag)
          NE_AUX_F_BEAMS(ik) = v_val
          CALL get_equil_te(s_val,TRIM(te_type),v_val,iflag)
          TE_AUX_F_BEAMS(ik) = v_val
          CALL get_equil_ti(s_val,TRIM(ti_type),v_val,iflag)
          TI_AUX_F_BEAMS(ik) = v_val
+         CALL get_equil_zeff(s_val,TRIM(zeff_type),v_val,iflag)
+         ZEFF_AUX_F_BEAMS(ik) = v_val
       END DO
 
       IF (lscreen) THEN
@@ -138,6 +143,7 @@
          WRITE(6,'(A,F7.2,A,F7.2,A,I4)') '   Ne  = [',MINVAL(NE_AUX_F_BEAMS)/1E19,',',MAXVAL(NE_AUX_F_BEAMS)/1E19,'] 10^19 [m^-3];  Nne:   ',nne
          WRITE(6,'(A,F7.2,A,F7.2,A,I4)') '   Te  = [',MINVAL(TE_AUX_F_BEAMS)/1000,',',MAXVAL(TE_AUX_F_BEAMS)/1000,'] [keV];  Nte:   ',nte
          WRITE(6,'(A,F7.2,A,F7.2,A,I4)') '   Ti  = [',MINVAL(TI_AUX_F_BEAMS)/1000,',',MAXVAL(TI_AUX_F_BEAMS)/1000,'] [keV];  Nti:   ',nti
+         WRITE(6,'(A,F7.2,A,F7.2,A,I4)') '  Zeff = [',MINVAL(ZEFF_AUX_F_BEAMS),',',MAXVAL(ZEFF_AUX_F_BEAMS),'] [keV];  Nti:   ',nzeff
          CALL FLUSH(6)
       END IF
 
