@@ -138,7 +138,6 @@ PROGRAM BEAMS3D
                 lhitonly  = .true.
             case ("-depo")
                 ldepo  = .true.
-                lplasma_only = .true.
             case ("-raw")
                 lraw  = .true.
             case ("-w7x")

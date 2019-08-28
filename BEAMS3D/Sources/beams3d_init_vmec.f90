@@ -161,8 +161,8 @@
       END IF
 
 
-      ! If only plasma response then put a wall at the plasma boundary Unless doing depo calc
-      IF (lplasma_only .and. .not.ldepo) THEN
+      ! If we ask for a plasma-only run and don't provide a vessel then make one.
+      IF (lplasma_only .and. .not.lvessel) THEN
          lvessel = .TRUE.  ! Do this so the other parts of the code know there is a vessel
          k = ns
          CALL wall_load_mn(DBLE(rmnc(1:mnmax,k)),DBLE(zmns(1:mnmax,k)),DBLE(xm),-DBLE(xn),mnmax,120,120,COMM=MPI_COMM_BEAMS)

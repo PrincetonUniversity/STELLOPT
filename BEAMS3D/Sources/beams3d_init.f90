@@ -89,6 +89,7 @@
          IF (ldepo) WRITE(6,'(A)') '   DEPOSITION ONLY!'
          IF (lw7x) WRITE(6,'(A)') '   W7-X BEAM Model!'
          IF (lascot) WRITE(6,'(A)') '   ASCOT5 OUTPUT ON!'
+         IF (lplasma_only) WRITE(6,'(A)') '   MAGNETIC FIELD FROM PLASMA ONLY!'
          CALL FLUSH(6)
       END IF
 
@@ -195,7 +196,7 @@
       END IF
       
       ! Setup vessel
-      IF (lvessel .and. (.not. lplasma_only .or. ldepo)) THEN
+      IF (lvessel .and. (.not. lplasma_only)) THEN
          CALL wall_load_txt(TRIM(vessel_string),ier,MPI_COMM_BEAMS)
          IF (lverb) CALL wall_info(6)
          CALL FLUSH(6)
