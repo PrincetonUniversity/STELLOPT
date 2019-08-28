@@ -49,26 +49,17 @@
       mylocalmaster = master
 
       ! Read the input file for the EXTCUR array, NV, and NFP
-      IF (.not. ALLOCATED(extcur) .and. lcoil) THEN
-         IF (mylocalid == mylocalmaster) THEN
-            iunit = 11
-            OPEN(UNIT=iunit, FILE='input.' // TRIM(id_string), STATUS='OLD', IOSTAT=ier)
-            IF (ier /= 0) CALL handle_err(FILE_OPEN_ERR,id_string,ier)
-            CALL read_indata_namelist(iunit,ier)
-            IF (ier /= 0) CALL handle_err(VMEC_INPUT_ERR,id_string,ier)
-            CLOSE(iunit)
-         END IF
-!DEC$ IF DEFINED (MPI_OPT)
-         CALL MPI_BCAST(extcur_in,nigroup,MPI_REAL, mylocalmaster, MPI_COMM_LOCAL,ierr_mpi)
-!DEC$ ENDIF
-         DO i = 1, SIZE(extcur_in,DIM=1)
-           IF (ABS(extcur_in(i)) > 0) nextcur = i
-         END DO
-         ALLOCATE(extcur(nextcur+1),STAT=ier)
-         IF (ier /= 0) CALL handle_err(ALLOC_ERR,'EXTCUR',ier)
-         extcur = 0.0
-         extcur(1:nextcur) = extcur_in(1:nextcur)
+      IF (mylocalid == mylocalmaster) THEN
+         iunit = 11
+         OPEN(UNIT=iunit, FILE='input.' // TRIM(id_string), STATUS='OLD', IOSTAT=ier)
+         IF (ier /= 0) CALL handle_err(FILE_OPEN_ERR,id_string,ier)
+         CALL read_indata_namelist(iunit,ier)
+         IF (ier /= 0) CALL handle_err(VMEC_INPUT_ERR,id_string,ier)
+         CLOSE(iunit)
       END IF
+!DEC$ IF DEFINED (MPI_OPT)
+      CALL MPI_BCAST(extcur_in,nigroup,MPI_REAL, mylocalmaster, MPI_COMM_LOCAL,ierr_mpi)
+!DEC$ ENDIF
       
       ! Read the coils file
       CALL parse_coils_file(TRIM(coil_string))
@@ -157,7 +148,7 @@
          bphi_temp = 0
          bz_temp   = 0
          DO ig = 1, nextcur
-            IF (extcur(ig) == 0) CYCLE
+            IF (extcur_in(ig) == 0) CYCLE
             CALL bfield(raxis(i), phiaxis(j), zaxis(k), br, bphi, bz, IG = ig)
             br_temp = br_temp + br
             bphi_temp = bphi_temp + bphi
@@ -184,7 +175,6 @@
       
       ! Free Variables
       CALL cleanup_biotsavart
-      IF (ALLOCATED(extcur)) DEALLOCATE(extcur)
 
 !DEC$ IF DEFINED (MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
