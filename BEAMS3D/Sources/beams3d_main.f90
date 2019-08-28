@@ -256,6 +256,8 @@ PROGRAM BEAMS3D
     CALL beams3d_free
     CALL wall_free(ier,MPI_COMM_BEAMS)
 !DEC$ IF DEFINED (MPI_OPT)
+    CALL MPI_BARRIER(MPI_COMM_BEAMS, ierr_mpi)
+    IF (ierr_mpi /= 0) CALL handle_err(MPI_BARRIER_ERR, 'beams3d_main', ierr_mpi)
     ierr_mpi=0
     CALL MPI_FINALIZE(ierr_mpi)
     IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_FINE_ERR, 'beams3d_main', ierr_mpi)

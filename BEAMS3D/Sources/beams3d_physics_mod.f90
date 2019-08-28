@@ -443,7 +443,7 @@ MODULE beams3d_physics_mod
          tilocal = tilocal*1D-3
          telocal = telocal*1D-3
          zeff_temp = SUM(zefflocal)/DBLE(num_depo)
-         zeff_temp = 1
+!         zeff_temp = 1
 
 !DEC$ IF DEFINED (NTCC)
          !--------------------------------------------------------------
@@ -455,18 +455,23 @@ MODULE beams3d_physics_mod
          ! eabeam beam energy in keV/nucleon
          ! tatarg target energy in keV/nucleon
          ! n array size
-         ! izbeam  Beam Z
-         ! iztarg  Target Z
+         ! izbeam  Beam Z (always int)
+         ! iztarg  Target Z (can be real)
          ! btsigv  cross section
-         CALL adas_btsigv(2,1,energy,tilocal,num_depo,1,1,sigvii,ier)  ! Ion Impact ionization cross-section term.
-         CALL adas_btsigv(1,1,energy,tilocal,num_depo,1,1,sigvcx,ier)  ! Charge Exchange ionization cross-section term.
+         CALL adas_btsigv(2,1,energy,tilocal,num_depo,myZ,zeff_temp,sigvii,ier)  ! Ion Impact ionization cross-section term.
+         CALL adas_btsigv(1,1,energy,tilocal,num_depo,myZ,zeff_temp,sigvcx,ier)  ! Charge Exchange ionization cross-section term.
          ! Arguments to sigvte(zneut,tevec,n1,sigv_adas,istat)
          ! zneut charge (=1)
          ! tevec electron temperature [keV]
          ! n1 array size
          ! This formula comes from the ADAS description of how to use the functions. (M. Gorelenkova)
          telocal = telocal + to3*0.000544602984424355*energy
-         CALL adas_sigvte_ioniz(1,telocal,num_depo,sigvei,ier)        ! Electron Impact ionization cross-section term.
+         CALL adas_sigvte_ioniz(myZ,telocal,num_depo,sigvei,ier)        ! Electron Impact ionization cross-section term.
+         ! Do this because Ztarg changes for each point.
+         !DO l = 1, num_depo
+         !   CALL adas_btsigv(2,1,energy,tilocal(l),1,myZ,zefflocal(l),sigvii(l),ier)  ! Ion Impact ionization cross-section term.
+         !   CALL adas_btsigv(1,1,energy,tilocal(l),1,myZ,zefflocal(l),sigvcx(l),ier)  ! Charge Exchange ionization cross-section term.
+         !END DO
 !DEC$ ELSE
          IF (myworkid == master) THEN
             WRITE(6,*) '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
