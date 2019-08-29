@@ -118,6 +118,14 @@
                                            zeff_max, zeff_min
       REAL(rprec)                       :: mix_ece, xval, yval, xics_v0
 
+  
+      ! FOR BNORM RELATED VARIABLES
+      INTEGER, PARAMETER :: mf_bnorm = 24 ! Bn Fourier resolution
+      INTEGER, PARAMETER :: nf_bnorm = 20 ! Bn Fourier resolution 
+      INTEGER, PARAMETER :: md_bnorm = 24 ! VMEC, Surface and others related resolution
+      INTEGER, PARAMETER :: nd_bnorm = 20 ! VMEC, Surface and others related resolution
+      REAL(rprec), DIMENSION(0:mf_bnorm,-nf_bnorm:nf_bnorm) :: bnfou ! calculated Bn Fourier harmonics
+
       ! FOR REGCOIL WINDING SURFACE Fourier Series Representation
       INTEGER, PARAMETER :: mpol_rcws = 32    ! maximum poloidal mode number (min = -max)
       INTEGER, PARAMETER :: ntor_rcws = 32    ! maximum toroidal mode number (min = -max)
@@ -127,7 +135,15 @@
       !       (-mpol_rcws:mpmol_rcws,  -ntor_rcws:ntor_rcws)
       ! (this is slightly different than what is used in nescoil, where
       ! the m<0 components are not used)
-      INTEGER, PARAMETER ::  mnprod_x4_rcws = 4 * (2*32+1) * (2*32+1)
+      INTEGER, PARAMETER :: mnprod_x4_rcws = 4 * (2*32+1) * (2*32+1)
+      ! FOR REGCOIL BNORMAL ON TARGET PLAMSA SURFACE
+      ! These should match or exceed the settings for REGCOIL's
+      ! NTHETA_PLASMA and NZETA_PLASMA
+      ! Number of grid points in poloidal and toroidal directions used to
+      ! evaluate surface integrals on the plasma surface
+      INTEGER, PARAMETER :: mpol_ps = 256    ! Poloidal direction
+      INTEGER, PARAMETER :: ntor_ps = 256    ! Toroidal direction
+      INTEGER, PARAMETER :: mnprod_ps = mpol_ps * ntor_ps
 
       REAL(rprec)                       :: regcoil_winding_surface_separation
       REAL(rprec)                       :: regcoil_target_value
@@ -511,8 +527,6 @@
          ! REGCOIL cases
          CASE(iregcoil_winding_surface_separation)
             WRITE(iunit,out_format) 'REGCOIL_SEPARATION: Coil winding surface separation'
-!         CASE(iregcoil_current_density)
-!            WRITE(iunit,out_format) 'REGCOIL_SEPARATION: Winding surface current density'
          CASE(iregcoil_rcws_rbound_c)
             WRITE(iunit,out_format_2DB) 'REGCOIL_RCWS_rbound_c(',var_dex1,',',var_dex2,'):  REGCOIL Winding Surface Boundary Radial Specification (COS MN)'
          CASE(iregcoil_rcws_rbound_s)

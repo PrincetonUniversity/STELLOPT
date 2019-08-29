@@ -367,6 +367,7 @@
 !DEC$ ENDIF
 !DEC$ IF DEFINED (REGCOIL)
          IF ( ( ANY(sigma_regcoil_chi2_b < bigno) .or.   &
+                ANY(sigma_regcoil_lambda < bigno) .or.    &
                 ANY(sigma_regcoil_max_K < bigno) .or.    &
 	        ANY(sigma_regcoil_rms_K < bigno) .or.    &
 	        ANY(sigma_regcoil_chi2_k < bigno) .or.    &

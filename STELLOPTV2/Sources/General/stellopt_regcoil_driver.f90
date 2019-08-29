@@ -53,8 +53,8 @@
 !----------------------------------------------------------------------
       IMPLICIT NONE
       CHARACTER(256), INTENT(inout)    :: file_str
-      INTEGER, INTENT(inout) :: iflag
       LOGICAL, INTENT(inout)        :: lscreen
+      INTEGER, INTENT(inout) :: iflag
 
 !-----------------------------------------------------------------------
 !     Local Variables
@@ -65,11 +65,7 @@
 !        istat         Error status
 !        iunit         File unit number
       ! FOR REGCOIL
-      INTEGER :: istat, iunit, m, n, ii, imn, nummodes1, nummodes2
-!        bnfou/_c      B-Normal Fourier coefficients
-      REAL(rprec), ALLOCATABLE, DIMENSION(:,:) :: bnfou, bnfou_c
-      INTEGER :: iverb, nu, nv, mf, nf, md, nd 
-
+      INTEGER :: istat, iunit = 12, m, n, ii, imn, nummodes1, nummodes2
 
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
@@ -84,28 +80,14 @@
 !DEC$ IF DEFINED (REGCOIL)
       verbose = lscreen ! Suppress REGCOIL stdout if needed
 
+      !write(6,*) "proc_str=",proc_string," file_str=",file_str
+
       ! Run bnorm if required
       if (load_bnorm) then
-         nu = nu_bnorm
-         nv = nv_bnorm
-         mf=24; nf=14; md=24; nd=20; coil_separation = 0.2
-          ! Run BNORM code
-         ALLOCATE(bnfou(0:mf,-nf:nf),bnfou_c(0:mf,-nf:nf),STAT=istat)
-         IF (lscreen) WRITE(6,"(A)") '   - Calculating B-Normal File'
-         CALL bnormal(nu,nv,mf,nf,md,nd,bnfou,bnfou_c,TRIM(file_str)//'.nc')
-         IF (lscreen) WRITE(6,"(A,ES22.12E3)") '      Max. B-Normal: ',MAXVAL(MAXVAL(bnfou,DIM=2),DIM=1)
-         IF (lscreen) WRITE(6,"(A,ES22.12E3)") '      MIN. B-Normal: ',MINVAL(MINVAL(bnfou,DIM=2),DIM=1)
-         ! WRITE BNORMAL
-         CALL safe_open(iunit, istat, 'bnorm.' // TRIM(file_str), 'replace','formatted')
-         DO m = 0, mf
-            DO n = -nf, nf
-               WRITE(iunit,"(1x,2i5,ES22.12E3)") m,n,bnfou(m,n)
-            END DO
-         END DO
-         CLOSE(iunit)
-         DEALLOCATE(bnfou,bnfou_c)
-         IF (lscreen) WRITE(6,"(A)") '      Coefficients output to:   '//'bnorm.' // TRIM(file_str)
-         bnorm_filename = 'bnorm.' // TRIM(proc_string)
+         coil_separation = regcoil_winding_surface_separation 
+         ! Run BNORM code
+         call stellopt_bnorm(file_str,lscreen)
+         bnorm_filename = 'bnorm.' // TRIM(file_str)
       end if
 
       ! IF (lscreen) WRITE(6,'(a,a)') '<---- proc_string=', proc_string
@@ -139,10 +121,17 @@
          CALL safe_open(iunit, istat, TRIM('regcoil_nescout.'// &
                    TRIM(proc_string)), 'replace', 'formatted')
          !write(6,'(a)'), '<----JCSwrite_output'
-         write(iunit,*) "Number of fourier modes in table"
-         write(iunit,*) nummodes1
-         write(iunit,*) "Table of fourier coefficients"
-         write(iunit,*) "m,n,crc2,czs2,crs2,czc2"
+         write (iunit, '(a)') '------ Plasma information from VMEC ----'
+         write (iunit, '(a)') 'np     iota_edge       phip_edge       curpol'
+         ! write nfp and curpol information 
+         write (iunit, '(I6, 3ES20.12)') nfp, 0.0, 0.0, curpol  
+         write (iunit,*)
+         write (iunit, '(a, 1pe20.12, a)') '------ Current Surface: Coil-Plasma separation = ', separation,' -----'
+         write (iunit, '(a)') 'Number of fourier modes in table'
+         write (iunit,*) nummodes1
+         write (iunit, '(a)') 'Table of fourier coefficients'
+         write (iunit, '(a)') 'm,n,crc2,czs2,crs2,czc2'
+
          DO m = -my_mpol, my_mpol
              DO n = -my_ntor, my_ntor
                 if ( (regcoil_rcws_rbound_c(m,n) .ne. 0) .or. &
@@ -218,9 +207,7 @@
       ! write(6,'(a)') '<----read bnorm'
       call regcoil_read_bnorm()
       ! write(6,'(a)') '<----build matrices'
-      ! write(6,'(a)') '<----build_matrices'
       call regcoil_build_matrices()
-      ! write(6,'(a)') '<----prepare_solve'
       call regcoil_prepare_solve()
 
       ! JCS: I disabled all options except for #5 (for now)
@@ -237,9 +224,8 @@
       !case (4)
       !   call regcoil_auto_regularization_solve()
       case (5)
-         ! write(6,'(a)') '<----auto_reg solve in'
+         ! write(6,'(a)') '<----auto_reg solve'
          call regcoil_auto_regularization_solve()
-         ! write(6,'(a)') '<----auto_reg solve out'
          ! After regcoil_auto_reg...solve, the value we want should be
          ! in the variable 'chi2_B_target'. Normal termination of regcoil
          ! returns the achieved chi2_B (miniumum). If there is an
@@ -252,8 +238,7 @@
          !     max_Bnormal_target, chi2_K_target,
          !     coil_plasma_dist_min_target, Bnormal_total_target,
          !     + volume and area targets
- 
-      case default
+ case default
          print *,"Invalid general_option:",general_option
          stop
       END select

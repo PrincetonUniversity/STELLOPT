@@ -1,5 +1,5 @@
 !-----------------------------------------------------------------------
-!     Subroutine:    chisq_regcoil_chi2_K
+!     Subroutine:    chisq_regcoil_c2p_dist_min
 !     Authors:       J.C. Schmitt (Auburn/PPPL) (jcschmitt@auburn.edu)
 !     Date:          2017-2018
 !     Description:   Chisq routine(s) for REGCOIL.
@@ -25,7 +25,7 @@
 !                    the number of sigmas less than bigno.
 !                    On entry, if niter is equlal to -2, the value of
 !                    target_dex(mtargets) will be set to
-!                    jtarget_regcoil_chi2_K
+!                    jtarget_regcoil_max_K
 !                    On entry, if niter is 0 or larger, then:
 !                       increment mtargets, and
 !                       assign targets, sigmas, and vals to the
@@ -33,7 +33,7 @@
 !                       sigma input arrays.
 !
 !-----------------------------------------------------------------------
-      SUBROUTINE chisq_regcoil_chi2_K(target,sigma,niter,iflag)
+      SUBROUTINE chisq_regcoil_c2p_dist_min(target,sigma,niter,iflag)
 !-----------------------------------------------------------------------
 !     Libraries
 !-----------------------------------------------------------------------
@@ -43,7 +43,8 @@
       USE stellopt_input_mod
       USE stellopt_vars, ONLY: regcoil_nlambda, mnprod_x4_rcws
 !DEC$ IF DEFINED (REGCOIL)
-      USE regcoil_variables, ONLY:  chi2_K_target, nlambda, regcoil_nml
+      USE regcoil_variables, ONLY:  coil_plasma_dist_min_target, &
+                                    nlambda, regcoil_nml
 !DEC$ ENDIF      
 !-----------------------------------------------------------------------
 !     Input/Output Variables
@@ -73,20 +74,22 @@
           DO ii = 1,mnprod_x4_rcws
             IF (sigma(ii) < bigno) counter=counter +1
           END DO
-          WRITE(iunit_out,'(A,2(2X,I7))') 'REGCOIL_CHI2_K ', counter, 4
+          WRITE(iunit_out,'(A,2(2X,I7))') &
+             'REGCOIL_COIL_PLASMA_DISTANCE_MIN ', counter, 4
           WRITE(iunit_out,'(A)') 'TARGET  SIGMA  UNUSED  CHI'
       END IF
 
       IF (niter >= 0) THEN
-         ! Now fill in the targets, sigmas and chi_sq
+         ! Now fill in the targets, sigmas and values
          DO ii = 1, mnprod_x4_rcws
             !IF (sigma(ii) >= bigno) CYCLE
             IF (sigma(ii) < bigno) THEN
               mtargets = mtargets + 1
               targets(mtargets) = target(ii)
               sigmas(mtargets)  = sigma(ii)
-              ! The value of the results is in the chi2_K_target variable
-              vals(mtargets)    = sqrt(chi2_K_target)
+              ! The value of the result is the minimum of either
+              ! the coil_plasma_dist_min or the target value 
+              vals(mtargets) = MIN(target(ii), coil_plasma_dist_min_target) 
               IF (iflag == 1) WRITE(iunit_out,'(4ES22.12E3)') target(ii), &
                                     sigma(ii), 0.0, vals(mtargets)
             END IF
@@ -98,7 +101,7 @@
                IF (sigma(ii) < bigno) THEN
                   mtargets = mtargets + 1
                   IF (niter == -2) THEN
-                     target_dex(mtargets)=jtarget_regcoil_chi2_K
+                     target_dex(mtargets)=jtarget_regcoil_c2p_dist_min
                   END IF
                END IF
             END DO
@@ -124,4 +127,4 @@
 !----------------------------------------------------------------------
 !     END SUBROUTINE
 !----------------------------------------------------------------------
-      END SUBROUTINE chisq_regcoil_chi2_K
+      END SUBROUTINE chisq_regcoil_c2p_dist_min

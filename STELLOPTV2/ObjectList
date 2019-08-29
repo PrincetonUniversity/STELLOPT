@@ -44,6 +44,7 @@ chisq_balloon.o \
 chisq_pmin.o \
 chisq_coil_bnorm.o \
 chisq_regcoil_chi2_b.o \
+chisq_regcoil_lambda.o \
 chisq_regcoil_max_k.o \
 chisq_regcoil_max_bnormal.o \
 chisq_regcoil_chi2_k.o \
@@ -54,6 +55,7 @@ chisq_regcoil_area_diff.o \
 chisq_regcoil_volume_coil.o \
 chisq_regcoil_volume_plasma.o \
 chisq_regcoil_volume_diff.o \
+chisq_regcoil_c2p_dist_min.o \
 chisq_regcoil_bnormal_total.o \
 chisq_rosenbrock.o \
 chisq_vessel.o \
@@ -95,6 +97,7 @@ stellopt_fcn.o \
 stellopt_load_targets.o \
 stellopt_toboozer.o \
 stellopt_init.o \
+stellopt_bnorm.o \
 stellopt_coiloptpp.o \
 stellopt_regcoil_driver.o \
 stellopt_bootsj.o \

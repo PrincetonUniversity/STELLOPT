@@ -36,8 +36,9 @@
 !                             animec_flag, flow_flag
       USE read_wout_mod, ONLY: read_wout_file, write_wout_file, read_wout_deallocate
       USE fdjac_mod, ONLY: flag_singletask, flag_cleanup, &
-                           JAC_CLEANUP => flag_cleanup_jac,&
-                           LEV_CLEANUP => flag_cleanup_lev
+                           JAC_CLEANUP => flag_cleanup_jac, &
+                           LEV_CLEANUP => flag_cleanup_lev, &
+                           LBFGSB_CLEANUP => flag_cleanup_lbfgsb
       USE gade_mod, ONLY: GADE_CLEANUP, PSO_CLEANUP
       
 !-----------------------------------------------------------------------
@@ -233,18 +234,19 @@
          IF (ncnt == 0) WRITE(iunit_out,'(A,1X,F5.2)') 'VERSION',STELLOPT_VERSION
          WRITE(iunit_out,'(A,1X,I5.5)') 'ITER',ncnt
          CALL stellopt_load_targets(mtargets,fvec_temp,iflag,ncnt)          ! Count
-         WRITE(iunit_out,'(A,2(2X,I8))') 'TARGETS ',mtargets,1
-         WRITE(iunit_out,'(A)') 'TARGETS'
-         WRITE(iunit_out,'(ES22.12E3)') targets(1:mtargets)
-         WRITE(iunit_out,'(A,2(2X,I8))') 'SIGMAS ',mtargets,1
-         WRITE(iunit_out,'(A)') 'SIGMAS'
-         WRITE(iunit_out,'(ES22.12E3)') sigmas(1:mtargets)
-         WRITE(iunit_out,'(A,2(2X,I8))') 'VALS ',mtargets,1
-         WRITE(iunit_out,'(A)') 'VALUES'
-         WRITE(iunit_out,'(ES22.12E3)') vals(1:mtargets)
+         !WRITE(iunit_out,'(A,2(2X,I8))') 'TARGETS ',mtargets,1
+         !WRITE(iunit_out,'(A)') 'TARGETS'
+         !WRITE(iunit_out,'(ES22.12E3)') targets(1:mtargets)
+         !WRITE(iunit_out,'(A,2(2X,I8))') 'SIGMAS ',mtargets,1
+         !WRITE(iunit_out,'(A)') 'SIGMAS'
+         !WRITE(iunit_out,'(ES22.12E3)') sigmas(1:mtargets)
+         !WRITE(iunit_out,'(A,2(2X,I8))') 'VALS ',mtargets,1
+         !WRITE(iunit_out,'(A)') 'VALUES'
+         !WRITE(iunit_out,'(ES22.12E3)') vals(1:mtargets)
          CLOSE(iunit_out)
          DEALLOCATE(fvec_temp)
-      ELSE IF ((ctype == LEV_CLEANUP) .or. (ctype == GADE_CLEANUP)) THEN
+      ELSE IF ((ctype == LEV_CLEANUP) .or. (ctype == GADE_CLEANUP) & 
+               .or. (ctype == LBFGSB_CLEANUP )) THEN
           IF (ncnt /= 1 .or. ctype == GADE_CLEANUP) THEN
              ! Write the input file
              WRITE(temp_str,'(i5.5)') ncnt
@@ -402,6 +404,7 @@
               ! Currently inside of LEV and GADE cleanup loop, and 
               ! 'Keeping the mins' section
               IF ( (  ANY(sigma_regcoil_chi2_b < bigno) .or.   &
+                      ANY(sigma_regcoil_lambda < bigno) .or.    &
                       ANY(sigma_regcoil_max_K < bigno) .or.    &
 	              ANY(sigma_regcoil_rms_K < bigno) .or.    &
 	              ANY(sigma_regcoil_chi2_k < bigno) .or.    &
@@ -479,15 +482,15 @@
           IF (ncnt == 0) WRITE(iunit_out,'(A,1X,F5.2)') 'VERSION',STELLOPT_VERSION
           WRITE(iunit_out,'(A,1X,I5.5)') 'ITER',ncnt
           CALL stellopt_load_targets(mtargets,fvec_temp,iflag,ncnt)          ! Count
-          WRITE(iunit_out,'(A,2(2X,I8))') 'TARGETS ',mtargets,1
-          WRITE(iunit_out,'(A)') 'TARGETS'
-          WRITE(iunit_out,'(ES22.12E3)') targets(1:mtargets)
-          WRITE(iunit_out,'(A,2(2X,I8))') 'SIGMAS ',mtargets,1
-          WRITE(iunit_out,'(A)') 'SIGMAS'
-          WRITE(iunit_out,'(ES22.12E3)') sigmas(1:mtargets)
-          WRITE(iunit_out,'(A,2(2X,I8))') 'VALS ',mtargets,1
-          WRITE(iunit_out,'(A)') 'VALUES'
-          WRITE(iunit_out,'(ES22.12E3)') vals(1:mtargets)
+          !WRITE(iunit_out,'(A,2(2X,I8))') 'TARGETS ',mtargets,1 
+          !WRITE(iunit_out,'(A)') 'TARGETS'
+          !WRITE(iunit_out,'(ES22.12E3)') targets(1:mtargets)
+          !WRITE(iunit_out,'(A,2(2X,I8))') 'SIGMAS ',mtargets,1
+          !WRITE(iunit_out,'(A)') 'SIGMAS'
+          !WRITE(iunit_out,'(ES22.12E3)') sigmas(1:mtargets)
+          !WRITE(iunit_out,'(A,2(2X,I8))') 'VALS ',mtargets,1
+          !WRITE(iunit_out,'(A)') 'VALUES'
+          !WRITE(iunit_out,'(ES22.12E3)') vals(1:mtargets)
           CLOSE(iunit_out)
           DEALLOCATE(fvec_temp)
       ELSE IF (ctype == JAC_CLEANUP) THEN
@@ -553,15 +556,15 @@
          WRITE(iunit_out,'(A)') 'ITER MIN'
          ik = 999
          CALL stellopt_load_targets(mtargets,fvec_temp,iflag,ik)    ! Count
-         WRITE(iunit_out,'(A,2(2X,I8))') 'TARGETS ',mtargets,1
-         WRITE(iunit_out,'(A)') 'TARGETS'
-         WRITE(iunit_out,'(ES22.12E3)') targets(1:mtargets)
-         WRITE(iunit_out,'(A,2(2X,I8))') 'SIGMAS ',mtargets,1
-         WRITE(iunit_out,'(A)') 'SIGMAS'
-         WRITE(iunit_out,'(ES22.12E3)') sigmas(1:mtargets)
-         WRITE(iunit_out,'(A,2(2X,I8))') 'VALS ',mtargets,1
-         WRITE(iunit_out,'(A)') 'VALUES'
-         WRITE(iunit_out,'(ES22.12E3)') vals(1:mtargets)
+         !WRITE(iunit_out,'(A,2(2X,I8))') 'TARGETS ',mtargets,1
+         !WRITE(iunit_out,'(A)') 'TARGETS'
+         !WRITE(iunit_out,'(ES22.12E3)') targets(1:mtargets)
+         !WRITE(iunit_out,'(A,2(2X,I8))') 'SIGMAS ',mtargets,1
+         !WRITE(iunit_out,'(A)') 'SIGMAS'
+         !WRITE(iunit_out,'(ES22.12E3)') sigmas(1:mtargets)
+         !WRITE(iunit_out,'(A,2(2X,I8))') 'VALS ',mtargets,1
+         !WRITE(iunit_out,'(A)') 'VALUES'
+         !WRITE(iunit_out,'(ES22.12E3)') vals(1:mtargets)
          CLOSE(iunit_out)
          DEALLOCATE(fvec_temp)
          IF (.not.lkeep_extra) THEN

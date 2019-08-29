@@ -72,6 +72,9 @@
 !                               Determines number of divisions if > numprocs (MAP)
 !            cr_strategy        Crossover strategy (GADE, 0:exponential, 1: binomial)
 !            npopulation        Size of population (defaults to nproc if -1 or not set)
+!            m_lbfgsb           the maximum number of variable metric corrections
+!            print_lbfgsb       The lbfgsb 'iprint' control parameter is set to
+!                               this integer value
 !            lkeep_mins         Keep minimum files.
 !            lphiedge_opt       Logical to control PHIEDGE variation
 !            lcurtor_opt        Logical to control CURTOR variation
@@ -240,6 +243,7 @@
                          ftol, xtol, gtol, epsfcn, factor, refit_param, &
                          cr_strategy, mode, lkeep_mins, lrefit,&
                          npopulation, noptimizers, &
+                         m_lbfgsb, print_lbfgsb, &
                          lphiedge_opt, lcurtor_opt, lbcrit_opt, &
                          lpscale_opt, lmix_ece_opt, lxics_v0_opt, &
                          lextcur_opt, laphi_opt, lam_opt, lac_opt, &
@@ -382,11 +386,10 @@
                          nj_kink, nk_kink, lssl_kink, lssd_kink, mmaxdf_kink, nmaxdf_kink, &
                          lregcoil_winding_surface_separation_opt, &
                          dregcoil_winding_surface_separation_opt, &
-                         !lregcoil_current_density_opt, &
-                         !dregcoil_current_density_opt, &
                          target_regcoil_winding_surface_separation, &
                          sigma_regcoil_winding_surface_separation, &
                          target_regcoil_chi2_b, sigma_regcoil_chi2_b, &
+                         target_regcoil_lambda, sigma_regcoil_lambda, &
                          target_regcoil_rms_K, sigma_regcoil_rms_K, &
                          target_regcoil_max_K, sigma_regcoil_max_K, &
                          target_regcoil_chi2_k, sigma_regcoil_chi2_k, &
@@ -397,8 +400,8 @@
                          target_regcoil_volume_coil, sigma_regcoil_volume_coil, &
                          target_regcoil_volume_plasma, sigma_regcoil_volume_plasma, &
                          target_regcoil_volume_diff, sigma_regcoil_volume_diff, &
-                         target_regcoil_bnormal_total, sigma_regcoil_bnormal_total, &
-                         !target_regcoil_current_density, sigma_regcoil_current_density, &
+                         target_regcoil_bnormal_total, sigma_regcoil_bnormal_total, &                         
+                         target_regcoil_c2p_dist_min, sigma_regcoil_c2p_dist_min, &                         
                          regcoil_winding_surface_separation, &
                          !regcoil_current_density, &
                          regcoil_target_value, &
@@ -448,6 +451,8 @@
       npopulation     = -1
       noptimizers     = -1
       refit_param     = 0.75
+      m_lbfgsb        = 5
+      print_lbfgsb    = 0
       rho_exp         = 4
       lxval_opt       = .FALSE.
       lyval_opt       = .FALSE.
@@ -623,6 +628,8 @@
       regcoil_rcws_zbound_s_min = -bigno;  regcoil_rcws_zbound_s_max = bigno
       target_regcoil_chi2_b = 0.0
       sigma_regcoil_chi2_b  = bigno
+      target_regcoil_lambda = 0.0
+      sigma_regcoil_lambda  = bigno
       target_regcoil_max_K = 0.0
       sigma_regcoil_max_K  = bigno
       target_regcoil_rms_K = 0.0
@@ -645,6 +652,8 @@
       sigma_regcoil_volume_diff  = bigno
       target_regcoil_bnormal_total = 0.0
       sigma_regcoil_bnormal_total  = bigno
+      target_regcoil_c2p_dist_min = 0.0
+      sigma_regcoil_c2p_dist_min  = bigno
       !target_regcoil_current_density = 8.0e6
       !sigma_regcoil_current_density  = bigno
       
@@ -1079,8 +1088,9 @@
 
 !DEC$ IF DEFINED (REGCOIL)
       IF ( ( ANY(sigma_regcoil_chi2_b < bigno) .or.   &
+             ANY(sigma_regcoil_lambda < bigno) .or.    &
              ANY(sigma_regcoil_max_K < bigno) .or.    &
-	     ANY(sigma_regcoil_rms_K < bigno) .or.    &
+       	     ANY(sigma_regcoil_rms_K < bigno) .or.    &
 	     ANY(sigma_regcoil_chi2_k < bigno) .or.    &
 	     ANY(sigma_regcoil_max_bnormal < bigno) .or.    &
 	     ANY(sigma_regcoil_area_coil < bigno) .or.    &
@@ -1089,8 +1099,9 @@
 	     ANY(sigma_regcoil_volume_coil < bigno) .or.    &
 	     ANY(sigma_regcoil_volume_plasma < bigno) .or.    &
 	     ANY(sigma_regcoil_volume_diff < bigno) .or.    &
+	     ANY(sigma_regcoil_c2p_dist_min < bigno) .or.    &
 	     ANY(sigma_regcoil_bnormal_total < bigno) )  &
-            .and. &
+             .and. &
            ( ANY(lregcoil_rcws_rbound_c_opt) .or. &
              ANY(lregcoil_rcws_rbound_s_opt) .or. &
              ANY(lregcoil_rcws_zbound_c_opt) .or. &
@@ -1283,6 +1294,7 @@
 !DEC$ ENDIF
 !DEC$ IF DEFINED (REGCOIL)
       IF (myid == master .and. (ANY(sigma_regcoil_chi2_b < bigno) .or.   &
+                                ANY(sigma_regcoil_lambda < bigno) .or.    &
                                 ANY(sigma_regcoil_max_K < bigno) .or.    &
 	                        ANY(sigma_regcoil_rms_K < bigno) .or.    &
 	                        ANY(sigma_regcoil_chi2_k < bigno) .or.    &
@@ -1293,6 +1305,7 @@
 	                        ANY(sigma_regcoil_volume_coil < bigno) .or.    &
 	                        ANY(sigma_regcoil_volume_plasma < bigno) .or.    &
 	                        ANY(sigma_regcoil_volume_diff < bigno) .or.    &
+	                        ANY(sigma_regcoil_c2p_dist_min < bigno) .or.    &
 	                        ANY(sigma_regcoil_bnormal_total < bigno) )) THEN ! .or. &
                                 !(sigma_regcoil_current_density < bigno) )) THEN
          WRITE(6,*)        " Stellarator REGCOIL Optimization provided by: "
@@ -1305,6 +1318,7 @@
       END IF
 !DEC$ ELSE
       IF (myid == master .and. (ANY(sigma_regcoil_chi2_b < bigno) .or.   &
+                                ANY(sigma_regcoil_lambda < bigno) .or.    &
                                 ANY(sigma_regcoil_max_K < bigno) .or.    &
 	                        ANY(sigma_regcoil_rms_K < bigno) .or.    &
 	                        ANY(sigma_regcoil_chi2_k < bigno) .or.    &
@@ -1315,10 +1329,12 @@
 	                        ANY(sigma_regcoil_volume_coil < bigno) .or.    &
 	                        ANY(sigma_regcoil_volume_plasma < bigno) .or.    &
 	                        ANY(sigma_regcoil_volume_diff < bigno) .or.    &
+	                        ANY(sigma_regcoil_c2p_dist_min < bigno) .or.    &
 	                        ANY(sigma_regcoil_bnormal_total < bigno) )) THEN !  .or. &
                                 !(sigma_regcoil_current_density < bigno) )) THEN
          ! 'Disable' the target by assigning bigno to the sigmas
          sigma_regcoil_chi2_b = bigno
+         sigma_regcoil_lambda = bigno
          sigma_regcoil_max_K = bigno
          sigma_regcoil_rms_K = bigno
          sigma_regcoil_chi2_K  = bigno
@@ -1329,6 +1345,7 @@
          sigma_regcoil_volume_plasma  = bigno
          sigma_regcoil_volume_coil  = bigno
          sigma_regcoil_volume_diff  = bigno
+         sigma_regcoil_c2p_dist_min = bigno
          sigma_regcoil_bnormal_total  = bigno
          !sigma_regcoil_current_density = bigno
          WRITE(6,*) '!!!!!!!!!!!!!!!!!!!! WARNING !!!!!!!!!!!!!!!!!!!!!!!!!'
@@ -2275,6 +2292,15 @@
                            'SIGMA_REGCOIL_CHI2_B(',ii,') = ', sigma_regcoil_chi2_b(ii)
                 END IF
              END DO
+
+             DO ii = 1,UBOUND(target_regcoil_lambda, 1)
+                IF (sigma_regcoil_lambda(ii) < bigno) THEN
+                    WRITE(iunit,"(2(2X,A,I4.3,A,E22.14))") &
+                           'TARGET_REGCOIL_LAMBDA(',ii,') = ', target_regcoil_lambda(ii), &
+                           'SIGMA_REGCOIL_LAMBDA(',ii,') = ', sigma_regcoil_lambda(ii)
+                END IF
+             END DO
+
              DO ii = 1,UBOUND(target_regcoil_max_K, 1)
                 IF (sigma_regcoil_max_K(ii) < bigno) THEN
                     WRITE(iunit,"(2(2X,A,I4.3,A,E22.14))") &
@@ -2352,7 +2378,14 @@
                            'SIGMA_REGCOIL_BNORMAL_TOTAL(',ii,') = ', sigma_regcoil_bnormal_total(ii)
                 END IF
              END DO
-          END IF
+             DO ii = 1,UBOUND(target_regcoil_c2p_dist_min, 1)
+                IF (sigma_regcoil_c2p_dist_min(ii) < bigno) THEN
+                    WRITE(iunit,"(2(2X,A,I4.3,A,E22.14))") &
+                           'TARGET_REGCOIL_C2P_DIST_MIN(',ii,') = ', target_regcoil_c2p_dist_min(ii), &
+                           'SIGMA_REGCOIL_C2P_DIST_MIN(',ii,') = ', sigma_regcoil_c2p_dist_min(ii)
+                END IF
+             END DO
+           END IF
 
          ! Options for winding surface (Fourier Series) variation
          IF (  (ANY(lregcoil_rcws_rbound_c_opt)) .or. (ANY(lregcoil_rcws_rbound_s_opt)) .or. &
