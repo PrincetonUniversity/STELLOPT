@@ -135,8 +135,8 @@
 !       Particle Transport
 !       Mu = 0.5*m*v*v/B or (Thermal Energy)/B
 !------------------------------------------------------------------------
-  NU_ORBIT = 10
-  NV_ORBIT = 10
+  NU_ORBIT = 20
+  NV_ORBIT = 20
   NP_ORBIT = 20
   VLL_ORBIT = 20*7.76E5  ! 50 [keV]
   VLL_ORBIT = 20*5.00E5
@@ -159,12 +159,12 @@
   ZMAX =  1.00000000000000E+00
   PHIMIN =  0.00000000000000E+00
   PHIMAX =  2.09439510239000E+00
-  NPOINC = 20
+  NPOINC = 200
 !  T_END_IN = 2*0.000001
 !  T_END_IN = 2*0.00003
 !  T_END_IN = 2*0.00006
-  T_END_IN = 2*0.0001
-!  T_END_IN = 2*0.003
+!  T_END_IN = 2*0.0001
+  T_END_IN = 2*0.003
   INT_TYPE = 'LSODE'
   FOLLOW_TOL =  1.00000000000000E-09
   VC_ADAPT_TOL =  1.00000000000000E-06
