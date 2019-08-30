@@ -15,24 +15,39 @@ if __name__ == "__main__":
 	lvmec=0
 	lspec=0
 	lfocus=0
+	lflip=0
 	parser = argparse.ArgumentParser(description='Outputs VMEC harmonics to stdout.')
 	#print(parser)
 	parser.add_argument('filename',help='Filename (wout file) to read.')
 	parser.add_argument('-v','--vmec', action='store_true', dest='lvmec', help='Print VMEC harmonics.')
 	parser.add_argument('-f','--focus', action='store_true', dest='lfocus', help='Print FOCUS harmonics.')
 	parser.add_argument('-s','--spec', action='store_true', dest='lspec', help='Print SPEC harmonics.')
+	parser.add_argument('--flip', action='store_true', dest='lflip', help='Flip the jacobian.')
 	parser.add_argument('-k', action='store', dest='k', type=int, help='Evaluate Surface (default: ns)')
-	args = parser.parse_args()
-	lvmec = args.lvmec
-	lspec = args.lspec
+	args   = parser.parse_args()
+	lvmec  = args.lvmec
+	lspec  = args.lspec
 	lfocus = args.lfocus
+	lflip  = args.lflip
 	vmec_data=read_vmec(args.filename)
 	# note that we use nu+nv in pystel
 	k = vmec_data['ns']
 	if args.k:
 		k = args.k
+	# Flip Jacobian
+	if lflip:
+		for i in range(vmec_data['mnmax']):
+			m = vmec_data['xm'][i]
+			if m > 0:
+				if np.remainder(m,2) == 0:
+					vmec_data['zmns'][k-1,i] = -vmec_data['zmns'][k-1,i]
+				else:
+					vmec_data['rmnc'][k-1,i] = -vmec_data['rmnc'][k-1,i]
+		vmec_data['xn'] = - vmec_data['xn']
+		print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+		print('!!!!!!!!!!!!!!!! JACOBIAN SIGN FLIPPPED !!!!!!!!!!!!!!!')
+		print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
 	if lvmec:
-		print('VMEC')
 		ntor = vmec_data['ntor']
 		temp = '  RAXIS_CC = '
 		for i in range(ntor+1):
