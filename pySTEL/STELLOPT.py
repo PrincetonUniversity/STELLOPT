@@ -90,6 +90,7 @@ class MyApp(QMainWindow):
 		# Callbacks (OPT_plot Tab)
 		self.ui.ButtonLoadSTELLOPT.clicked.connect(self.LoadSTELLOPT)
 		self.ui.ComboBoxOPTplot_type.currentIndexChanged.connect(self.UpdateOptplot)
+		self.ui.ButtonPlotSTELLOPT.clicked.connect(self.PlotSTELLOPT)
 
 	def UpdateMpol(self):
 		strtmp = self.ui.TextMpol.text()
@@ -1736,6 +1737,9 @@ class MyApp(QMainWindow):
 			self.ax2.set_xlim((0,1))
 		self.canvas2.draw()
 
+	def PlotSTELLOPT(self,i):
+		text = self.ui.saveasSTELLOPT.toPlainText();
+		self.fig2.savefig('./'+text, dpi=300)
 
 
 
