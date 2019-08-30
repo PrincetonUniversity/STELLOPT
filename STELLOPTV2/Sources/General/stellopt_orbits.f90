@@ -28,7 +28,7 @@
             NE_AUX_S_BEAMS => NE_AUX_S, NE_AUX_F_BEAMS => NE_AUX_F, &
             TI_AUX_S_BEAMS => TI_AUX_S, TI_AUX_F_BEAMS => TI_AUX_F, &
             ZEFF_AUX_S_BEAMS => ZEFF_AUX_S, ZEFF_AUX_F_BEAMS => ZEFF_AUX_F, &
-            BEAMS3D_VERSION
+            BEAMS3D_VERSION, mass_beams, charge_beams
       USE beams3d_grid, ONLY: nte, nne, nti, nzeff, rmin, rmax, zmin, zmax, &
                               phimin, phimax
       USE beams3d_lines, ONLY: lost_lines
@@ -75,6 +75,8 @@
       s_min = 1
       s_max = 0
       tf    = MAXVAL(t_end_in)
+      MASS_BEAMS(1) = mass_orbit ! do this to diagnostic routine outputs the correct number
+      CHARGE_BEAMS(1) = Z_orbit*1.602176565E-19
       DO ik = 1, nsd
          IF (sigma_orbit(ik) .ge. bigno) CYCLE
          DO v = 1, nv_orbit
@@ -110,8 +112,9 @@
       END DO
       nparticles_start = nparts - 1
       IF (lscreen) THEN
-         WRITE(6, '(/,a,f5.2)') 'BEAMS3D Version ', BEAMS3D_VERSION
          WRITE(6,'(A)') '----- Particle Initialization -----'
+         WRITE(6,'(A,I2)')               '   Z   = ',NINT(Z_orbit)
+         WRITE(6,'(A,ES10.2)')           '   M   = ',mass_orbit
          WRITE(6,'(A,F9.5,A,F9.5,A,I6)') '   S   = [',s_min,',',s_max,'];   NS:   ',COUNT(sigma_orbit .lt. bigno)
          WRITE(6,'(A,F9.5,A,F9.5,A,I4)') '   U   = [',0.0,',',pi2*(nu_orbit-1)/nu_orbit,'];   NU:   ',nu_orbit
          WRITE(6,'(A,F9.5,A,F9.5,A,I4)') '   V   = [',0.0,',',pi2*(nv_orbit-1)/nv_orbit/2,'];   NV:   ',nv_orbit
@@ -135,6 +138,7 @@
          CALL get_equil_ti(s_val,TRIM(ti_type),v_val,iflag)
          TI_AUX_F_BEAMS(ik) = v_val
          CALL get_equil_zeff(s_val,TRIM(zeff_type),v_val,iflag)
+         IF (v_val < 1) v_val = 1
          ZEFF_AUX_F_BEAMS(ik) = v_val
       END DO
 
