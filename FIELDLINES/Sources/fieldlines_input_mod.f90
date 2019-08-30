@@ -17,15 +17,13 @@
                                 phimin, phimax, vc_adapt_tol
       USE safe_open_mod, ONLY: safe_open
       USE mpi_params
+      USE mpi_inc
       
 !-----------------------------------------------------------------------
 !     Module Variables
 !         
 !-----------------------------------------------------------------------
       IMPLICIT NONE
-!DEC$ IF DEFINED (MPI_OPT)
-      INCLUDE 'mpif.h'                                                          ! MPI
-!DEC$ ENDIF  
       
 !-----------------------------------------------------------------------
 !     Input Namelists

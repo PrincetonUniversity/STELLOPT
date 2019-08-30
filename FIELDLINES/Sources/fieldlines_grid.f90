@@ -38,10 +38,15 @@
       INTEGER  ::    nr, nphi, nz
       REAL(rprec) :: rmin, rmax, zmin, zmax, phimin, phimax, delta_phi,&
                      vc_adapt_tol
-      REAL(rprec), ALLOCATABLE :: raxis(:), zaxis(:), phiaxis(:)
-      REAL(rprec), ALLOCATABLE :: B_R(:,:,:), B_Z(:,:,:), B_PHI(:,:,:)
-      REAL(rprec), ALLOCATABLE :: MU3D(:,:,:)
+      INTEGER  ::    win_raxis, win_phiaxis, win_zaxis, win_B_R, win_B_PHI, win_B_Z, &
+                     win_MU, win_BR4D, win_BPHI4D, win_BZ4D, win_MODB4D, win_MU4D
+      REAL(rprec), POINTER :: raxis(:), zaxis(:), phiaxis(:)
+      REAL(rprec), POINTER :: B_R(:,:,:), B_Z(:,:,:), B_PHI(:,:,:)
+      REAL(rprec), POINTER :: MU3D(:,:,:)
+      REAL(rprec), DIMENSION(:,:,:,:), POINTER :: BR4D, BPHI4D, BZ4D, MODB4D, MU4D
       TYPE(EZspline3_r8) :: BR_spl, BZ_spl, MU_spl, MODB_spl
+      REAL*8 ::      eps1, eps2, eps3
+      REAL*8, parameter :: small = 1.e-10_ezspline_r8
 
       ! For the boundary scaling routine
       INTEGER :: mnmax_m, nfp_m, isgn_m

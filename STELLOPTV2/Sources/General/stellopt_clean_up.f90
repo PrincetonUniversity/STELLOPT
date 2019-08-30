@@ -18,6 +18,7 @@
       USE gist_mod, ONLY: write_gist_namelist
       USE bootsj_input, ONLY: write_bootsj_input
       USE equil_utils, ONLY: move_txtfile, copy_txtfile, copy_boozer_file
+      USE mpi_inc
 !DEC$ IF DEFINED (NEO_OPT)
       USE neo_input_mod, ONLY: write_neoin_namelist
 !DEC$ ENDIF

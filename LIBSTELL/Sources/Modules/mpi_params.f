@@ -21,6 +21,7 @@ c                    differently.
       ! Communicators
       INTEGER :: MPI_COMM_WORKERS=-1, worker_id=-1                 !communicator for worker processors only
       INTEGER :: MPI_COMM_WORKERS_OK=-1, worker_id_ok=-1           !communicator subgroup, vmec ran ok
+      INTEGER :: MPI_COMM_SHARMEM = 718, myid_sharmem=-1           !communicator for shared memory
       INTEGER :: MPI_COMM_STEL = 327                               !communicator which is a copy of MPI_COMM_WORLD (user must set this up)
       INTEGER :: MPI_COMM_MYWORLD = 411                            !communicator 
       INTEGER :: MPI_COMM_FIELDLINES = 328                         !communicator for FIELDLINES code
@@ -34,8 +35,8 @@ c                    differently.
       CONTAINS
       
       SUBROUTINE mpi_stel_abort(error)
-      IMPLICIT NONE
-      INCLUDE 'mpif.h'         
+      USE MPI
+      IMPLICIT NONE        
       INTEGER, INTENT(in)                 :: error
       INTEGER                             :: length, temp
       CHARACTER(LEN=MPI_MAX_ERROR_STRING) :: message

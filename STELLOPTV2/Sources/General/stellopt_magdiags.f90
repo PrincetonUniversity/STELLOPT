@@ -12,11 +12,11 @@
       USE stellopt_runtime
       USE stellopt_input_mod
       USE stellopt_vars
-      USE vmec_input
-      USE read_wout_mod
+      !USE vmec_input
+      !USE read_wout_mod
       USE diagno_input_mod, ONLY: bfield_points_file, bprobes_file,&
                                   mirnov_file, seg_rog_file, &
-                                  flux_diag_file
+                                  flux_diag_file, BCAST_DIAGNO_INPUT
       USE diagno_runtime, ONLY: lverb_diagno => lverb, &
                                 id_string_diagno => id_string, &
                                 lcoil_diagno => lcoil, &
@@ -25,6 +25,7 @@
       USE biotsavart, ONLY: cleanup_biotsavart
       USE virtual_casing_mod, ONLY: free_virtual_casing, virtual_casing_surf_dump
       USE mpi_params
+      USE mpi_inc
       
 !-----------------------------------------------------------------------
 !     Subroutine Parameters
@@ -45,9 +46,11 @@
 !----------------------------------------------------------------------
       myworkid = master
 #if defined(MPI_OPT)
-      MPI_COMM_DIAGNO = MPI_COMM_MYWORLD
+      CALL MPI_COMM_DUP( MPI_COMM_MYWORLD, MPI_COMM_DIAGNO, ierr_mpi)
       CALL MPI_COMM_RANK(MPI_COMM_DIAGNO, myworkid, ierr_mpi)
       CALL MPI_COMM_SIZE(MPI_COMM_DIAGNO, nprocs_diagno, ierr_mpi)
+      CALL MPI_COMM_SPLIT_TYPE(MPI_COMM_DIAGNO, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, MPI_COMM_SHARMEM, ierr_mpi)
+      CALL MPI_COMM_RANK(MPI_COMM_SHARMEM, myid_sharmem, ierr_mpi)
 #endif
 
       IF (iflag < 0) RETURN
@@ -61,6 +64,7 @@
          INQUIRE(FILE=TRIM(diagno_coil_string),EXIST=lcoil_diagno,IOSTAT=iflag)
          IF (iflag /= 0) RETURN
       END IF
+      CALL BCAST_DIAGNO_INPUT(master,MPI_COMM_DIAGNO,ierr_mpi)
       IF (lverb_diagno) write(6,'(A)')'==========================================='
       IF (lverb_diagno) write(6,'(A,F5.2,A)')'=========  D I A G N O  (v.',DIAGNO_VERSION,')  ========='
       IF (lverb_diagno) write(6,'(A)')' - Loading equilibrium surface'
@@ -83,7 +87,9 @@
       IF ((LEN_TRIM(flux_diag_file) > 1) .AND. ANY(sigma_fluxloop<bigno)) CALL diagno_flux
       ! Clean up
       IF (lcoil_diagno) CALL cleanup_biotsavart
-      CALL free_virtual_casing
+      CALL free_virtual_casing(MPI_COMM_SHARMEM)
+      CALL MPI_COMM_FREE(MPI_COMM_SHARMEM,ierr_mpi)
+      CALL MPI_COMM_FREE(MPI_COMM_DIAGNO,ierr_mpi)
       IF (lverb_diagno) write(6,*)'============  DIAGNO Complete  ============'
       IF (lverb_diagno) write(6,*)'==========================================='
       IF (lverb_diagno) CALL FLUSH(6)

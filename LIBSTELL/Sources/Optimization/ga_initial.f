@@ -8,11 +8,9 @@ c  generator, parent and iparent arrays (reads the ga.restart file).
       USE ga_mod
       USE safe_open_mod
       USE mpi_params, ONLY: master, MPI_COMM_STEL
+      USE mpi_inc
       IMPLICIT NONE
-!DEC$ IF DEFINED (MPI_OPT)
-      include 'mpif.h'                                       !mpi stuff
       INTEGER :: ierr
-!DEC$ ENDIF
       INTEGER :: istart, npossum, ig2sum, myid
       INTEGER :: i, j, k, l, itemp, istat
       CHARACTER(LEN=100) :: filename

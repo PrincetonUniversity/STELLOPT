@@ -7,10 +7,8 @@
 C      USE lmpar_mod, ONLY: wa2, wa4, myid, numprocs
       USE safe_open_mod
       USE mpi_params
+      USE mpi_inc
       IMPLICIT NONE
-!DEC$ IF DEFINED (MPI_OPT)
-      INCLUDE 'mpif.h'                                       !mpi stuff
-!DEC$ ENDIF
 C-----------------------------------------------
 C   D u m m y   A r g u m e n t s
 C-----------------------------------------------
