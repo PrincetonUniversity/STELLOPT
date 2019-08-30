@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-import sys, os, globsys.path.insert(0, '../../../pySTEL/')
+import sys, os, glob
+sys.path.insert(0, '../../../pySTEL/') 
 import ctypes as ct
 import numpy as np                    #For Arrays
 import matplotlib.pyplot as plt
