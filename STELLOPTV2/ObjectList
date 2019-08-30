@@ -1,4 +1,5 @@
 ObjectFiles = \
+stellopt_init_mpi.o \
 chisq_x.o \
 chisq_y.o \
 chisq_xics.o \
