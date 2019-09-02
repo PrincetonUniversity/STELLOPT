@@ -60,16 +60,16 @@
                mtargets = mtargets + 1
                targets(mtargets) = target(ik)
                sigmas(mtargets)  = sigma(ik)
-               CALL get_equil_nustar(rhoar(ik),nustar,ier)
+               CALL get_equil_nustar(rhoar(ik-1),nustar,ier)
                IF (ier == -1) nustar=0
                facnu = 1./(1.+nustar)
                ier   = 0
-               CALL get_equil_jdotb(rhoar(ik),avg_jdotb,ier)
+               CALL get_equil_jdotb(rhoar(ik-1),avg_jdotb,ier)
                ! Scale avg_jdotb if net toroidal current is present
                beam_jdotb = 0.0
                boot_jdotb = 0.0
                IF ((dex1>4) .and. (dex2>4)) THEN
-                  s = rhoar(ik)
+                  s = rhoar(ik-1)
                   CALL get_equil_beamj(s,j_beam,ier)
                   CALL get_equil_bootj(s,j_boot,ier)
                   !CALL eval_prof_spline(dex1,beamj_aux_s(1:dex1),beamj_aux_f(1:dex1),s,j_beam,ier)
@@ -79,15 +79,15 @@
                ELSE IF ((ABS(curtor) > 0) .and. (l_boot_all)) THEN
                   boot_jdotb = avg_jdotb * aibs(ik)/curtor
                END IF
-               IF (ABS(ajBbs(ik)) < 1.0E-30) ajBbs(ik) = 0.0
-               IF (ABS(bsnorm(ik)) < 1.0E-30) bsnorm(ik) = 0.0
-               vals(mtargets)    = ABS(boot_jdotb-ajBbs(ik)*facnu)
-               sig_temp          = ABS(ajBbs(ik)*facnu)
+               IF (ABS(ajBbs(ik-1)) < 1.0E-30) ajBbs(ik-1) = 0.0
+               IF (ABS(bsnorm(ik-1)) < 1.0E-30) bsnorm(ik-1) = 0.0
+               vals(mtargets)    = ABS(boot_jdotb-ajBbs(ik-1)*facnu)
+               sig_temp          = ABS(ajBbs(ik-1)*facnu)
                !IF (sig_temp > 1.0E3) sigmas(mtargets) = sig_temp*10.
                IF (sig_temp > 1.0E4) sigmas(mtargets) = sig_temp*10.
                IF (sig_temp > 1.0E5) sigmas(mtargets) = sig_temp*1.0
                IF (sig_temp > 1.0E6) sigmas(mtargets) = sig_temp*0.2
-               IF (iflag == 1) WRITE(iunit_out,'(10ES22.12E3)') target(ik),sigmas(mtargets),vals(mtargets),rhoar(ik),avg_jdotb,beam_jdotb,boot_jdotb,ajBbs(ik),facnu,bsnorm(ik)
+               IF (iflag == 1) WRITE(iunit_out,'(10ES22.12E3)') target(ik),sigmas(mtargets),vals(mtargets),rhoar(ik-1),avg_jdotb,beam_jdotb,boot_jdotb,ajBbs(ik-1),facnu,bsnorm(ik-1)
             END IF
          END DO
       ELSE
