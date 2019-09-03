@@ -59,7 +59,11 @@
          targets(mtargets) = target
          sigmas(mtargets)  = sigma
 ! Need to add case if ptsm3d_target is zero
-         vals(mtargets)    = 1.0/ptsm3d_target
+         if (opt_target .eq. 'gamma') then
+           vals(mtargets) = ptsm3d_target
+         else
+           vals(mtargets) = 1.0/ptsm3d_target
+         end if
          !vals(mtargets)    = 1.0
          IF (iflag == 1) WRITE(iunit_out,'(3ES22.12E3)') target,sigma,0.0,vals(mtargets)
          IF (iflag == 1) WRITE(iunit_out,'(A,ES22.12E3)') &

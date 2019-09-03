@@ -175,6 +175,8 @@
         ptsm3d_target = target_12f
       elseif (opt_target .eq. 'nzf') then
         ptsm3d_target = target_qst
+      elseif (opt_target .eq. 'gamma') then
+        ptsm3d_target = maxval(aimag(omdw(:,:,0)))
       endif
       if (lscreen) write(6,"((A),2x,F12.7)") "PTSM3D target: ",ptsm3d_target
 
