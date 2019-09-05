@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-import sys, ossys.path.insert(0, '../../pySTEL/')
+import sys, os
+sys.path.insert(0, '../../pySTEL/')
 import numpy as np                    #For Arrays
 from math import pi
 from libstell.libstell import read_vmec
