@@ -2336,12 +2336,12 @@
       USE stel_constants, ONLY: mu0
       IMPLICIT NONE
 
-      REAL(rprec), DIMENSION(:,:), INTENT(in)  :: bsubsmnc_
-      REAL(rprec), DIMENSION(:,:), INTENT(in)  :: bsubsmns_
-      REAL(rprec), DIMENSION(:,:), INTENT(in)  :: bsubumnc_
-      REAL(rprec), DIMENSION(:,:), INTENT(in)  :: bsubumns_
-      REAL(rprec), DIMENSION(:,:), INTENT(in)  :: bsubvmnc_
-      REAL(rprec), DIMENSION(:,:), INTENT(in)  :: bsubvmns_
+      REAL(rprec), DIMENSION(:,:), ALLOCATABLE, INTENT(in)  :: bsubsmnc_
+      REAL(rprec), DIMENSION(:,:), ALLOCATABLE, INTENT(in)  :: bsubsmns_
+      REAL(rprec), DIMENSION(:,:), ALLOCATABLE, INTENT(in)  :: bsubumnc_
+      REAL(rprec), DIMENSION(:,:), ALLOCATABLE, INTENT(in)  :: bsubumns_
+      REAL(rprec), DIMENSION(:,:), ALLOCATABLE, INTENT(in)  :: bsubvmnc_
+      REAL(rprec), DIMENSION(:,:), ALLOCATABLE, INTENT(in)  :: bsubvmns_
 
       REAL(rprec), DIMENSION(:), INTENT(in)    :: xm_nyq_
       REAL(rprec), DIMENSION(:), INTENT(in)    :: xn_nyq_
@@ -2352,8 +2352,8 @@
 
       REAL(rprec), DIMENSION(:,:), INTENT(out) :: currumnc_
       REAL(rprec), DIMENSION(:,:), INTENT(out) :: currvmnc_
-      REAL(rprec), DIMENSION(:,:), INTENT(out) :: currumns_
-      REAL(rprec), DIMENSION(:,:), INTENT(out) :: currvmns_
+      REAL(rprec), DIMENSION(:,:), ALLOCATABLE, INTENT(out) :: currumns_
+      REAL(rprec), DIMENSION(:,:), ALLOCATABLE, INTENT(out) :: currvmns_
 
 !-----------------------------------------------
 !   L o c a l   V a r i a b l e s

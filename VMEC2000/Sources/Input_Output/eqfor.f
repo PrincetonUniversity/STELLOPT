@@ -693,7 +693,7 @@ C-----------------------------------------------
       vvc_smaleli = smaleli ! Save result for v3fit.
       betai   = 2*factor*sump
       musubi  = vnorm*factor*musubi
-      dmusubi_meas = 2*twopi*factor*delphid*rbtor
+      dmusubi_meas = 2*twopi*factor*delphid_exact*rbtor ! delphid replaced; czhu 20190904
       lambda = p5*smaleli + betai
       s11 = er - rshaf*sigr0              !Shafranov def. based on RT, Eq.(12)
       s12 = er - rcen*sigr0               !R = Rgeometric

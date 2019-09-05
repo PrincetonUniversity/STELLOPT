@@ -176,6 +176,7 @@ C-----------------------------------------------
                STOP 'allocation error #10 in allocate_ns'
             END IF
             pxc(:neqs2) = zero
+            pscalxc(:neqs2) = zero
          END IF
 
          IF (ALLOCATED(pxc_old)) THEN
@@ -189,6 +190,10 @@ C-----------------------------------------------
       ALLOCATE(gc(neqs2), xcdot(neqs2), xsave(neqs2),
      &         xstore(neqs2), col_scale(neqs2), stat=istat1)
       xstore = zero
+      xcdot = zero
+      gc = zero
+      xsave = zero
+      col_scale = zero
       IF (istat1 .NE. 0) THEN
          STOP 'allocation error #9 in allocate_ns'
       END IF
@@ -199,6 +204,7 @@ C-----------------------------------------------
             STOP 'allocation error #10 in allocate_ns'
          END IF
          xc(:neqs2) = zero
+         scalxc = zero
       END IF
 
       IF (ALLOCATED(xc_old)) THEN
