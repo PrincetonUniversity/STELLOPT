@@ -90,6 +90,7 @@ class MyApp(QMainWindow):
 		# Callbacks (OPT_plot Tab)
 		self.ui.ButtonLoadSTELLOPT.clicked.connect(self.LoadSTELLOPT)
 		self.ui.ComboBoxOPTplot_type.currentIndexChanged.connect(self.UpdateOptplot)
+		self.ui.ButtonPlotSTELLOPT.clicked.connect(self.PlotSTELLOPT)
 
 	def UpdateMpol(self):
 		strtmp = self.ui.TextMpol.text()
@@ -823,7 +824,8 @@ class MyApp(QMainWindow):
 			self.ui.ComboBoxOPTplot_type.addItem('Iota')
 			self.ui.ComboBoxOPTplot_type.addItem('q-prof')
 			self.ui.ComboBoxOPTplot_type.addItem('<j*B>')
-			self.wout_files = sorted([k for k in files if 'wout' in k])
+			wout_files = sorted([k for k in files if 'wout' in k])
+			self.wout_files = sorted([k for k in wout_files if '_opt' not in k])
 		# Handle Kinetic Profiles
 		if any('tprof.' in mystring for mystring in files):
 			self.ui.ComboBoxOPTplot_type.addItem('----- Kinetics -----')
@@ -831,7 +833,8 @@ class MyApp(QMainWindow):
 			self.ui.ComboBoxOPTplot_type.addItem('Electron Density')
 			self.ui.ComboBoxOPTplot_type.addItem('Ion Temperature')
 			self.ui.ComboBoxOPTplot_type.addItem('Z Effective')
-			self.tprof_files = sorted([k for k in files if 'tprof.' in k])
+			tprof_files = sorted([k for k in files if 'tprof.' in k])
+			self.tprof_files = sorted([k for k in tprof_files if '_opt' not in k])
 		# Handle Diagnostic Profiles
 		if any('dprof.' in mystring for mystring in files):
 			self.ui.ComboBoxOPTplot_type.addItem('----- Diagnostic -----')
@@ -844,7 +847,8 @@ class MyApp(QMainWindow):
 			self.ui.ComboBoxOPTplot_type.addItem('Bootstrap Profile')
 			self.ui.ComboBoxOPTplot_type.addItem('Beam Profile')
 			self.ui.ComboBoxOPTplot_type.addItem('Total Current Profile')
-			self.jprof_files = sorted([k for k in files if 'jprof.' in k])
+			jprof_files = sorted([k for k in files if 'tprof.' in k])
+			self.jprof_files = sorted([k for k in jprof_files if '_opt' not in k])
 		
 
 	def UpdateOptplot(self):
@@ -916,8 +920,8 @@ class MyApp(QMainWindow):
 			self.ax2.set_xlabel('Radial Grid')
 			self.ax2.set_ylabel('Epsilon Effective')
 			self.ax2.set_title('Neoclassical Helical Ripple (NEO)')
-		elif (plot_name == 'HELICITY_evolution'):
-			self.ax2.plot(self.stel_data['HELICITY_equil'].T,'o',fillstyle='none')
+		elif (plot_name == 'HELICITY_FULL_evolution'):
+			self.ax2.plot(self.stel_data['HELICITY_FULL_equil'].T,'o',fillstyle='none')
 			self.ax2.set_ylabel('Helicity')
 			self.ax2.set_title('Boozer Spectrum Helicity')
 		elif (plot_name == 'B_PROBE_evolution'):
@@ -1487,7 +1491,8 @@ class MyApp(QMainWindow):
 			self.ax2.set_title('XICS Velocity Reconstruction')
 		elif (plot_name == 'Pressure'):
 			l=0
-			dl = len(self.wout_files)
+			dl = len(self.wout_files)-1
+			if dl == 0 : dl = 1 
 			for string in self.wout_files:
 				if 'wout' in string:
 					vmec_data=read_vmec(self.workdir+string)
@@ -1502,7 +1507,8 @@ class MyApp(QMainWindow):
 			self.ax2.set_xlim((0,1))
 		elif (plot_name == 'I-prime'):
 			l=0
-			dl = len(self.wout_files)
+			dl = len(self.wout_files)-1
+			if dl == 0 : dl = 1 
 			for string in self.wout_files:
 				if 'wout' in string:
 					vmec_data=read_vmec(self.workdir+string)
@@ -1517,7 +1523,7 @@ class MyApp(QMainWindow):
 			self.ax2.set_xlim((0,1))
 		elif (plot_name == 'Iota'):
 			l=0
-			dl = len(self.wout_files)
+			dl = len(self.wout_files)-1
 			for string in self.wout_files:
 				if 'wout' in string:
 					vmec_data=read_vmec(self.workdir+string)
@@ -1547,7 +1553,7 @@ class MyApp(QMainWindow):
 			self.ax2.set_xlim((0,1))
 		elif (plot_name == 'Current'):
 			l=0
-			dl = len(self.wout_files)
+			dl = len(self.wout_files)-1
 			for string in self.wout_files:
 				if 'wout' in string:
 					vmec_data=read_vmec(self.workdir+string)
@@ -1562,7 +1568,7 @@ class MyApp(QMainWindow):
 			self.ax2.set_xlim((0,1))
 		elif (plot_name == '<j*B>'):
 			l=0
-			dl = len(self.wout_files)
+			dl = len(self.wout_files)-1
 			for string in self.wout_files:
 				if 'wout' in string:
 					vmec_data=read_vmec(self.workdir+string)
@@ -1577,7 +1583,7 @@ class MyApp(QMainWindow):
 			self.ax2.set_xlim((0,1))
 		elif (plot_name == 'Flux0'):
 			l=0
-			dl = len(self.wout_files)
+			dl = len(self.wout_files)-1
 			for string in self.wout_files:
 				if 'wout' in string:
 					vmec_data=read_vmec(self.workdir+string)
@@ -1601,7 +1607,8 @@ class MyApp(QMainWindow):
 			self.ax2.set_aspect('equal')
 		elif (plot_name == 'FluxPI'):
 			l=0
-			dl = len(self.wout_files)
+			dl = len(self.wout_files)-1
+			if dl == 0 : dl = 1 
 			for string in self.wout_files:
 				if 'wout' in string:
 					vmec_data=read_vmec(self.workdir+string)
@@ -1625,7 +1632,8 @@ class MyApp(QMainWindow):
 			self.ax2.set_aspect('equal')
 		elif (plot_name == 'Electron Temperature'):
 			l=0
-			dl = len(self.tprof_files)
+			dl = len(self.tprof_files)-1
+			if dl == 0 : dl = 1 
 			for string in self.tprof_files:
 				if 'tprof' in string:
 					tprof = np.loadtxt(self.workdir+string,skiprows=1)
@@ -1637,7 +1645,8 @@ class MyApp(QMainWindow):
 			self.ax2.set_xlim((0,1))
 		elif (plot_name == 'Electron Density'):
 			l=0
-			dl = len(self.tprof_files)
+			dl = len(self.tprof_files)-1
+			if dl == 0 : dl = 1 
 			for string in self.tprof_files:
 				if 'tprof' in string:
 					tprof = np.loadtxt(self.workdir+string,skiprows=1)
@@ -1649,7 +1658,8 @@ class MyApp(QMainWindow):
 			self.ax2.set_xlim((0,1))
 		elif (plot_name == 'Ion Temperature'):
 			l=0
-			dl = len(self.tprof_files)
+			dl = len(self.tprof_files)-1
+			if dl == 0 : dl = 1 
 			for string in self.tprof_files:
 				if 'tprof' in string:
 					tprof = np.loadtxt(self.workdir+string,skiprows=1)
@@ -1661,7 +1671,8 @@ class MyApp(QMainWindow):
 			self.ax2.set_xlim((0,1))
 		elif (plot_name == 'Z Effective'):
 			l=0
-			dl = len(self.tprof_files)
+			dl = len(self.tprof_files)-1
+			if dl == 0 : dl = 1 
 			for string in self.tprof_files:
 				if 'tprof' in string:
 					tprof = np.loadtxt(self.workdir+string,skiprows=1)
@@ -1673,7 +1684,8 @@ class MyApp(QMainWindow):
 			self.ax2.set_xlim((0,1))
 		elif (plot_name == 'XICS Emissivity'):
 			l=0
-			dl = len(self.dprof_files)
+			dl = len(self.dprof_files)-1
+			if dl == 0 : dl = 1 
 			for string in self.dprof_files:
 				if 'dprof' in string:
 					dprof = np.loadtxt(self.workdir+string,skiprows=1)
@@ -1697,7 +1709,8 @@ class MyApp(QMainWindow):
 			self.ax2.set_xlim((0,1))
 		elif (plot_name == 'Bootstrap Profile'):
 			l=0
-			dl = len(self.jprof_files)
+			dl = len(self.jprof_files)-1
+			if dl == 0 : dl = 1 
 			for string in self.jprof_files:
 				if 'jprof' in string:
 					jprof = np.loadtxt(self.workdir+string,skiprows=1)
@@ -1709,7 +1722,8 @@ class MyApp(QMainWindow):
 			self.ax2.set_xlim((0,1))
 		elif (plot_name == 'Beam Profile'):
 			l=0
-			dl = len(self.jprof_files)
+			dl = len(self.jprof_files)-1
+			if dl == 0 : dl = 1 
 			for string in self.jprof_files:
 				if 'jprof' in string:
 					jprof = np.loadtxt(self.workdir+string,skiprows=1)
@@ -1721,7 +1735,8 @@ class MyApp(QMainWindow):
 			self.ax2.set_xlim((0,1))
 		elif (plot_name == 'Total Current Profile'):
 			l=0
-			dl = len(self.jprof_files)
+			dl = len(self.jprof_files)-1
+			if dl == 0 : dl = 1 
 			jprof = np.loadtxt(self.workdir+self.jprof_files[0],skiprows=1)
 			self.ax2.plot(jprof[:,0],jprof[:,2],'--b')
 			self.ax2.plot(jprof[:,0],jprof[:,1],':b')
@@ -1736,6 +1751,9 @@ class MyApp(QMainWindow):
 			self.ax2.set_xlim((0,1))
 		self.canvas2.draw()
 
+	def PlotSTELLOPT(self,i):
+		text = self.ui.saveasSTELLOPT.toPlainText();
+		self.fig2.savefig('./'+text, dpi=300)
 
 
 

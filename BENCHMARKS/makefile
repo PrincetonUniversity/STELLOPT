@@ -120,11 +120,13 @@ test_stellopt_gade:
 test_stellopt_basic:
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.BASIC
 	@cd $(STELLOPT_TEST_DIR)/BASIC; $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.BASIC; rm -f *_opt*
+	@cd $(STELLOPT_TEST_DIR)/BASIC && ./compare_STELLOPT_BASIC.py
 	@echo ""
 
 test_stellopt_beams3d:
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xstelloptv2 input.BEAMS3D
 	@cd $(STELLOPT_TEST_DIR)/BEAMS3D; $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xstelloptv2 input.BEAMS3D; rm -f *_opt*
+	@cd $(STELLOPT_TEST_DIR)/BEAMS3D && ./compare_STELLOPT_BEAMS3D.py
 	@echo ""
 
 test_stellopt_iota_lmdif:

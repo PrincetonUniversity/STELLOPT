@@ -56,7 +56,7 @@
       IF (lverb) WRITE(6,'(A)') '----- Input Parameters -----'
 !DEC$ IF DEFINED (MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
-      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'beams3d_init',ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'beams3d_init0',ierr_mpi)
 !DEC$ ENDIF
 
       IF (lvmec .and. lread_input) THEN
