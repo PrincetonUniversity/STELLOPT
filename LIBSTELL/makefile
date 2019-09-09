@@ -19,6 +19,7 @@ release:
 	@rm -f $(REL)\*.f; rm -f $(REL)\*.f90
 	@rm -f $(MYHOME)/$(EXE_F)
 	@-(umask 022; rm -f $(MYHOME)/$(EXE_F); ln -fs $(REL_PATH)/$(EXE_F) $(MYHOME) 2> /dev/null; umask 077)
+	@make shared_release
 	@echo "Release version - libstell.a - is now updated"
 	@echo "To free up space, delete all *.o files from Release"
 	@echo ""
@@ -37,7 +38,7 @@ clean_release:
 	@echo "CLEAN REMAKE IN PROGRESS"
 	@cd $(REL); make -f $(MAKE) clean
 	@make release
-#	@make shared_release
+	@make shared_release
 
 clean_debug: 
 	@echo "CLEAN REMAKE IN PROGRESS"

@@ -253,7 +253,7 @@ PROGRAM BEAMS3D
     CALL beams3d_diagnostics
 
     ! Clean up
-    CALL beams3d_free
+    CALL beams3d_free(MPI_COMM_SHARMEM)
     CALL wall_free(ier,MPI_COMM_BEAMS)
 !DEC$ IF DEFINED (MPI_OPT)
     CALL MPI_BARRIER(MPI_COMM_BEAMS, ierr_mpi)
