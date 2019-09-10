@@ -134,7 +134,12 @@
                CALL write_var_hdf5(qid_gid,'DIST_NBIN_THETA',ier,DBLVAR=DBLE(8))
                CALL write_var_hdf5(qid_gid,'DIST_NBIN_TIME',ier,DBLVAR=DBLE(npoinc))
                CALL write_var_hdf5(qid_gid,'DIST_NBIN_CHARGE',ier,DBLVAR=DBLE(2))
-               CALL write_var_hdf5(qid_gid,'ENABLE_ORBITWRITE',ier,DBLVAR=DBLE(0)) ! If we enable this we need to write more
+               CALL write_var_hdf5(qid_gid,'ENABLE_ORBITWRITE',ier,DBLVAR=DBLE(0))
+               CALL write_var_hdf5(qid_gid,'ORBITWRITE_MODE',ier,DBLVAR=DBLE(1))
+               CALL write_var_hdf5(qid_gid,'ORBITWRITE_NPOINT',ier,DBLVAR=DBLE(npoinc))
+               CALL write_var_hdf5(qid_gid,'ORBITWRITE_INTERVAL',ier,DBLVAR=DBLE(MAXVAL(t_end_in))/DBLE(npoinc))
+               CALL write_var_hdf5(qid_gid,'ORBITWRITE_TOROIDALANGLES',ier,DBLVAR=DBLE(0))
+               CALL write_var_hdf5(qid_gid,'ORBITWRITE_POLOIDALANGLES',ier,DBLVAR=DBLE(0))
                CALL h5gclose_f(qid_gid, ier)
                CALL h5gclose_f(options_gid, ier)
 
