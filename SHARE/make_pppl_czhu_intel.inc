@@ -15,10 +15,10 @@
 #            Define Compiler Flags
 #######################################################################
   FLAGS_R = -mcmodel=large -O2 -m64 -unroll0 -fno-alias -ip -traceback \
-  	  -init=zeros,arrays -I${MKLROOT}/include -mkl
+  	  -init=zero,arrays -I${MKLROOT}/include -mkl
   FLAGS_D = -O0 -g -traceback -check all -check bounds \
   	  -check noarg_temp_created -check uninit \
-     -ftrapuv -init=snan,arrays -debug all -I${MKLROOT}/include -mkl 
+     -ftrapuv -init=zero,arrays -debug all -I${MKLROOT}/include -mkl 
 
   NETCDF_F = $(NETCDF_FORTRAN_HOME)
   NETCDC_F = $(NETCDF_C_HOME)
