@@ -54,15 +54,15 @@ MODULE parallel_vmec_module
     CHARACTER*100 :: envvar
     CHARACTER*100 :: envval
 
-    REAL(dp) :: bcyclic_comp_time = 0
-    REAL(dp) :: bcyclic_comm_time = 0
-    REAL(dp) :: waitall_time = 0
-    REAL(dp) :: dgemm_time = 0
-    REAL(dp) :: dgetrf_time = 0
-    REAL(dp) :: dgetrs_time = 0
-    REAL(dp) :: dgemv_time = 0
-    REAL(dp) :: ForwardSolveLoop_time = 0
-    REAL(dp), DIMENSION(12) :: t=0
+    REAL(dp) :: bcyclic_comp_time
+    REAL(dp) :: bcyclic_comm_time
+    REAL(dp) :: waitall_time
+    REAL(dp) :: dgemm_time
+    REAL(dp) :: dgetrf_time
+    REAL(dp) :: dgetrs_time
+    REAL(dp) :: dgemv_time
+    REAL(dp) :: ForwardSolveLoop_time
+    REAL(dp), DIMENSION(12) :: t
 
     REAL(dp) :: allgather_time=0
     REAL(dp) :: allreduce_time=0
