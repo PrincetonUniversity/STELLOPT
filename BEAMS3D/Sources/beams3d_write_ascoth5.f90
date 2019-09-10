@@ -19,7 +19,7 @@
                                  zaxis, phiaxis, S_ARR, U_ARR, POT_ARR, &
                                  ZEFF_ARR, TE, TI, NE, req_axis, zeq_axis, npot, &
                                  POT_SPL_S, ezspline_interp, phiedge_eq, TE_spl_s, &
-                                 NE_spl_s, TI_spl_s, ZEFF_spl_s
+                                 NE_spl_s, TI_spl_s, ZEFF_spl_s, nne, nte, nti, nzeff
       USE beams3d_runtime, ONLY: id_string, npoinc, nbeams, beam, t_end, lverb, lflux, &
                                     lvmec, lpies, lspec, lcoil, lmgrid, lbeam, &
                                     lvessel, lvac, lbeam_simple, handle_err, nparticles_start, &
@@ -83,11 +83,18 @@
                CALL write_var_hdf5(qid_gid,'ADAPTIVE_MAX_DRHO',ier,DBLVAR=DBLE(1.0))
                CALL write_var_hdf5(qid_gid,'ADAPTIVE_MAX_DPHI',ier,DBLVAR=DBLE(2))
                CALL write_var_hdf5(qid_gid,'ENABLE_ORBIT_FOLLOWING',ier,DBLVAR=DBLE(1))
-               CALL write_var_hdf5(qid_gid,'ENABLE_COULOMB_COLLISIONS',ier,DBLVAR=DBLE(1))
+               IF (lbeam) THEN
+                  CALL write_var_hdf5(qid_gid,'ENABLE_COULOMB_COLLISIONS',ier,DBLVAR=DBLE(1))
+                  CALL write_var_hdf5(qid_gid,'DISABLE_ENERGY_CCOLL',ier,DBLVAR=DBLE(0))
+                  CALL write_var_hdf5(qid_gid,'DISABLE_PITCH_CCOLL',ier,DBLVAR=DBLE(0))
+                  CALL write_var_hdf5(qid_gid,'DISABLE_GCDIFF_CCOLL',ier,DBLVAR=DBLE(0))
+               ELSE
+                  CALL write_var_hdf5(qid_gid,'ENABLE_COULOMB_COLLISIONS',ier,DBLVAR=DBLE(0))
+                  CALL write_var_hdf5(qid_gid,'DISABLE_ENERGY_CCOLL',ier,DBLVAR=DBLE(1))
+                  CALL write_var_hdf5(qid_gid,'DISABLE_PITCH_CCOLL',ier,DBLVAR=DBLE(1))
+                  CALL write_var_hdf5(qid_gid,'DISABLE_GCDIFF_CCOLL',ier,DBLVAR=DBLE(1))
+               END IF
                CALL write_var_hdf5(qid_gid,'DISABLE_FIRSTORDER_GCTRANS',ier,DBLVAR=DBLE(0))
-               CALL write_var_hdf5(qid_gid,'DISABLE_ENERGY_CCOLL',ier,DBLVAR=DBLE(0))
-               CALL write_var_hdf5(qid_gid,'DISABLE_PITCH_CCOLL',ier,DBLVAR=DBLE(0))
-               CALL write_var_hdf5(qid_gid,'DISABLE_GCDIFF_CCOLL',ier,DBLVAR=DBLE(0))
                CALL write_var_hdf5(qid_gid,'ENDCOND_SIMTIMELIM',ier,DBLVAR=DBLE(1))
                CALL write_var_hdf5(qid_gid,'ENDCOND_CPUTIMELIM',ier,DBLVAR=DBLE(1))
                CALL write_var_hdf5(qid_gid,'ENDCOND_RHOLIM',ier,DBLVAR=DBLE(0))
@@ -120,13 +127,13 @@
                CALL write_var_hdf5(qid_gid,'DIST_MAX_TIME',ier,DBLVAR=DBLE(1))
                CALL write_var_hdf5(qid_gid,'DIST_MIN_CHARGE',ier,DBLVAR=DBLE(-2))
                CALL write_var_hdf5(qid_gid,'DIST_MAX_CHARGE',ier,DBLVAR=DBLE(2))
-               CALL write_var_hdf5(qid_gid,'DIST_NBIN_R',ier,DBLVAR=DBLE(16))
-               CALL write_var_hdf5(qid_gid,'DIST_NBIN_Z',ier,DBLVAR=DBLE(16))
-               CALL write_var_hdf5(qid_gid,'DIST_NBIN_PHI',ier,DBLVAR=DBLE(16))
-               CALL write_var_hdf5(qid_gid,'DIST_NBIN_RHO',ier,DBLVAR=DBLE(16))
-               CALL write_var_hdf5(qid_gid,'DIST_NBIN_THETA',ier,DBLVAR=DBLE(16))
+               CALL write_var_hdf5(qid_gid,'DIST_NBIN_R',ier,DBLVAR=DBLE(8))
+               CALL write_var_hdf5(qid_gid,'DIST_NBIN_Z',ier,DBLVAR=DBLE(8))
+               CALL write_var_hdf5(qid_gid,'DIST_NBIN_PHI',ier,DBLVAR=DBLE(8))
+               CALL write_var_hdf5(qid_gid,'DIST_NBIN_RHO',ier,DBLVAR=DBLE(8))
+               CALL write_var_hdf5(qid_gid,'DIST_NBIN_THETA',ier,DBLVAR=DBLE(8))
                CALL write_var_hdf5(qid_gid,'DIST_NBIN_TIME',ier,DBLVAR=DBLE(npoinc))
-               CALL write_var_hdf5(qid_gid,'DIST_NBIN_CHARGE',ier,DBLVAR=DBLE(5))
+               CALL write_var_hdf5(qid_gid,'DIST_NBIN_CHARGE',ier,DBLVAR=DBLE(2))
                CALL write_var_hdf5(qid_gid,'ENABLE_ORBITWRITE',ier,DBLVAR=DBLE(0)) ! If we enable this we need to write more
                CALL h5gclose_f(qid_gid, ier)
                CALL h5gclose_f(options_gid, ier)
@@ -225,14 +232,16 @@
                CALL write_var_hdf5(qid_gid,'charge',ier,INTVAR=1)
                CALL write_var_hdf5(qid_gid,'mass',ier,INTVAR=1)
                ALLOCATE(rtemp(nr,5,1))
+               rtemp = 0
+               rtemp(:,5,1) = 1
                DO i = 1, nr
-                 rtemp(i,1,1)=DBLE(i-1)/DBLE(nr-1)
-                 CALL EZspline_interp( TE_spl_s,   rtemp(i,1,1), rtemp(i,2,1), ier)
-                 CALL EZspline_interp( NE_spl_s,   rtemp(i,1,1), rtemp(i,3,1), ier)
-                 CALL EZspline_interp( TI_spl_s,   rtemp(i,1,1), rtemp(i,4,1), ier)
-                 CALL EZspline_interp( ZEFF_spl_s, rtemp(i,1,1), rtemp(i,5,1), ier)
-                 rtemp(i,5,1)=rtemp(i,3,1)/rtemp(i,5,1)
+                  rtemp(i,1,1)=DBLE(i-1)/DBLE(nr-1)
                END DO
+               IF (nte > 0)   CALL EZspline_interp( TE_spl_s,   nr, rtemp(:,1,1), rtemp(:,2,1), ier)
+               IF (nne > 0)   CALL EZspline_interp( NE_spl_s,   nr, rtemp(:,1,1), rtemp(:,3,1), ier)
+               IF (nti > 0)   CALL EZspline_interp( TI_spl_s,   nr, rtemp(:,1,1), rtemp(:,4,1), ier)
+               IF (nzeff > 0) CALL EZspline_interp( ZEFF_spl_s, nr, rtemp(:,1,1), rtemp(:,5,1), ier)
+               rtemp(:,5,1)=rtemp(:,3,1)/rtemp(:,5,1)
                CALL write_var_hdf5( qid_gid, 'rho',          nr, ier, DBLVAR=rtemp(1:nr,1,1))
                CALL write_var_hdf5( qid_gid, 'etemperature', nr, ier, DBLVAR=rtemp(1:nr,2,1))
                CALL write_var_hdf5( qid_gid, 'edensity',     nr, ier, DBLVAR=rtemp(1:nr,3,1))
@@ -344,11 +353,11 @@
                CALL write_var_hdf5(qid_gid,'DIST_MAX_VPA',ier,DBLVAR=DBLE(partvmax))
                CALL write_var_hdf5(qid_gid,'DIST_MIN_VPE',ier,DBLVAR=DBLE(-partvmax))
                CALL write_var_hdf5(qid_gid,'DIST_MAX_VPE',ier,DBLVAR=DBLE(partvmax))
-               CALL write_var_hdf5(qid_gid,'DIST_NBIN_VR',ier,DBLVAR=DBLE(16))
-               CALL write_var_hdf5(qid_gid,'DIST_NBIN_VPHI',ier,DBLVAR=DBLE(16))
-               CALL write_var_hdf5(qid_gid,'DIST_NBIN_VZ',ier,DBLVAR=DBLE(16))
-               CALL write_var_hdf5(qid_gid,'DIST_NBIN_VPA',ier,DBLVAR=DBLE(16))
-               CALL write_var_hdf5(qid_gid,'DIST_NBIN_VPE',ier,DBLVAR=DBLE(16))
+               CALL write_var_hdf5(qid_gid,'DIST_NBIN_VR',ier,DBLVAR=DBLE(8))
+               CALL write_var_hdf5(qid_gid,'DIST_NBIN_VPHI',ier,DBLVAR=DBLE(8))
+               CALL write_var_hdf5(qid_gid,'DIST_NBIN_VZ',ier,DBLVAR=DBLE(8))
+               CALL write_var_hdf5(qid_gid,'DIST_NBIN_VPA',ier,DBLVAR=DBLE(8))
+               CALL write_var_hdf5(qid_gid,'DIST_NBIN_VPE',ier,DBLVAR=DBLE(8))
                CALL h5gclose_f(qid_gid, ier)
                CALL h5gclose_f(options_gid, ier)
                ! Close file
@@ -362,17 +371,19 @@
             !    2: Gyrocenter
             d1 = LBOUND(R_lines,DIM=2)
             d2 = UBOUND(R_lines,DIM=2)
-            d3 = 2
+            d3 = 0
+            IF (lbeam) d3 = 2
             ALLOCATE(rtemp(d1:d2,13,1))
             DO i = d1, d2
                CALL RANDOM_NUMBER(dbl_temp)
+               rtemp(i,6,1) = dbl_temp*pi2 ! zeta
                rtemp(i,1,1) = R_lines(d3,i)
                rtemp(i,2,1) = PHI_lines(d3,i)
                rtemp(i,3,1) = Z_lines(d3,i)
                dbl_temp     = 2*B_lines(d3,i)*moment_lines(d3,i)/mass(i) ! V_perp^2
-               rtemp(i,4,1) = 0.5*mass(i)*(vll_lines(d3,i)*vll_lines(d3,i)+dbl_temp)*e_charge
+               rtemp(i,4,1) = 0.5*mass(i)*(vll_lines(d3,i)*vll_lines(d3,i)+dbl_temp)/e_charge
+               !rtemp(i,4,1) = 0.5*mass(i)*(vll_lines(d3,i)*vll_lines(d3,i)+dbl_temp)
                rtemp(i,5,1) = vll_lines(d3,i)/SQRT(dbl_temp+vll_lines(d3,i)*vll_lines(d3,i)) ! pitch
-               rtemp(i,6,1) = dbl_temp*pi2 ! zeta
                rtemp(i,7,1) = NINT(mass(i)*5.97863320194E26) ! mass
                rtemp(i,8,1) = Zatom(i)
                rtemp(i,9,1) = NINT(mass(i)*5.97863320194E26) ! Anum
