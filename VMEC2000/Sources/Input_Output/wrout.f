@@ -33,7 +33,7 @@
 #ifdef NETCDF      
       USE ezcdf
       USE read_wout_mod, ONLY: Compute_Currents,
-     1  vn_version, vn_extension, vn_mgrid,
+	1  vn_version, vn_extension, vn_mgrid,
      1  vn_magen, vn_therm, vn_gam, vn_maxr, vn_minr, vn_maxz, vn_fp,
      2  vn_radnod, vn_polmod, vn_tormod, vn_maxmod, vn_maxit, vn_actit,
      3  vn_asym, vn_recon, vn_free, vn_error, vn_aspect, vn_beta, 
@@ -1113,16 +1113,14 @@
                END DO
             END DO
          END DO MN3
-
-         IF (lasym) THEN
-            gmns(:,js) = gmn(:)
-            bmns(:,js) = bmn(:)
-            bsubumns(:,js) = bsubumn(:)
-            bsubvmns(:,js) = bsubvmn(:)
-            bsubsmnc(:,js) = bsubsmn(:)
-            bsupumns(:,js) = bsupumn(:)
-            bsupvmns(:,js) = bsupvmn(:)
-         END IF
+   
+         gmns(:,js) = gmn(:)
+         bmns(:,js) = bmn(:)
+         bsubumns(:,js) = bsubumn(:)
+         bsubvmns(:,js) = bsubvmn(:)
+         bsubsmnc(:,js) = bsubsmn(:)
+         bsupumns(:,js) = bsupumn(:)
+         bsupvmns(:,js) = bsupvmn(:)
 #ifdef _ANIMEC
          pparmns(:,js)  = pparmn(:)
          ppermns(:,js)  = ppermn(:)
@@ -1134,13 +1132,11 @@
 #endif
       END DO RADIUS3
 
-      IF (lasym) THEN
-         gmns(:,1) = 0; bmns(:,1) = 0
-         bsubumns(:,1) = 0
-         bsubvmns(:,1) = 0
-         bsubsmnc(:,1) = 2*bsubsmnc(:,2) - bsubsmnc(:,3)
-         bsupumns(:,1) = 0;  bsupvmns(:,1) = 0
-      END IF
+      gmns(:,1) = 0; bmns(:,1) = 0
+      bsubumns(:,1) = 0
+      bsubvmns(:,1) = 0
+      bsubsmnc(:,1) = 2*bsubsmnc(:,2) - bsubsmnc(:,3)
+      bsupumns(:,1) = 0;  bsupvmns(:,1) = 0
 #ifdef _ANIMEC
       hotdmns(:,1)  = 0;  pparmns(:,1)  = 0;  ppermns(:,1) = 0
       pbprmns(:,1)  = 0;  ppprmns(:,1)  = 0

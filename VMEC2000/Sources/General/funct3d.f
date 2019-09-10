@@ -512,7 +512,6 @@ C-----------------------------------------------
       xtempa = xc
       CALL getrz(xc)
 #endif       
-
       IF (ictrl_prec2d .EQ. 3) THEN
          gc(:neqs2) = scalxc(:neqs2)*(xc(:neqs2)+xcdot(:neqs2))
       ELSE
