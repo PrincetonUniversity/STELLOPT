@@ -23,6 +23,7 @@
 !     v1.51 09/13/16 - Substep size implemnted for neutral deposition
 !     v1.52 11/22/16 - Added ability to model W7-X injector geometry
 !     v2.00 05/06/19 - Shared Memory model implemented
+!     v2.01 08/21/19 - Added ASCOT Interface
 !-----------------------------------------------------------------------
 MODULE beams3d_runtime
     !-----------------------------------------------------------------------
@@ -104,7 +105,7 @@ MODULE beams3d_runtime
     LOGICAL :: lverb, lvmec, lpies, lspec, lcoil, lmgrid, &
                lvessel, lvac, lrestart, lneut, &
                lflux, lbeam, lhitonly, lread_input, lplasma_only, lraw,&
-               ldepo, lbeam_simple, ldebug, lcollision, lw7x
+               ldepo, lbeam_simple, ldebug, lcollision, lw7x, lascot
     INTEGER :: nextcur, npoinc, nbeams, nparticles_start, nprocs_beams
     INTEGER, ALLOCATABLE :: beam(:)
     REAL(rprec) :: dt, follow_tol, pi, pi2, mu0, to3, dt_save, ne_scale, te_scale, ti_scale, zeff_scale
