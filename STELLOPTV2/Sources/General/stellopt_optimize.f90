@@ -16,6 +16,7 @@
       USE fdjac_mod, ONLY: FLAG_CLEANUP, FLAG_CLEANUP_LEV, FLAG_SINGLETASK
       USE mpi_params
       USE mpi_inc
+      USE, INTRINSIC :: ISO_C_BINDING, ONLY: C_FUNLOC
       
 !-----------------------------------------------------------------------
 !     Local Variables
@@ -89,10 +90,14 @@
             END IF
             vars_min = -bigno; vars_max = bigno
             WHERE(vars > bigno) vars_max = 1E30
-            CALL lmdif(stellopt_fcn, mtargets, nvars, vars, fvec, &
-                       ftol, xtol, gtol, nfunc_max, epsfcn, diag, mode, &
-                       factor, nprint, info, nfev, fjac, ldfjac, ipvt, &
-                       qtf, wa1, wa2, wa3, wa4,vars_min,vars_max)
+           CALL clmdif(C_FUNLOC(stellopt_fcn), mtargets, nvars, vars, fvec, &
+                      ftol, xtol, gtol, nfunc_max, epsfcn, diag, mode, &
+                      factor, nprint, info, nfev, fjac, ldfjac, ipvt, &
+                      qtf, wa1, wa2, wa3, wa4,vars_min,vars_max)
+!           CALL lmdif(stellopt_fcn, mtargets, nvars, vars, fvec, &
+!                      ftol, xtol, gtol, nfunc_max, epsfcn, diag, mode, &
+!                      factor, nprint, info, nfev, fjac, ldfjac, ipvt, &
+!                      qtf, wa1, wa2, wa3, wa4,vars_min,vars_max)
             DEALLOCATE(ipvt, qtf, wa1, wa2, wa3, wa4, fvec, fjac)
          CASE('lmdif_bounded')
             ALLOCATE(ipvt(nvars))
