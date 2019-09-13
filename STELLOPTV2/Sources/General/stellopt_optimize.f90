@@ -35,6 +35,26 @@
       
       REAL(rprec), EXTERNAL :: enorm
       EXTERNAL stellopt_fcn
+
+      INTERFACE
+         SUBROUTINE clmdif(fcn, m, n, x, fvec, ftol, xtol, gtol, maxfev, &
+               epsfcn, diag, mode, factor, nprint, info, nfev, fjac, &
+               ldfjac, ipvt, qtf, wa1, wa2, wa3, wa4, xvmin, xvmax) BIND(C)
+            USE, INTRINSIC :: ISO_C_BINDING
+            INTEGER(KIND=C_INT) :: m, n, maxfev, mode, nprint, info, ldfjac
+            INTEGER(KIND=C_INT), INTENT(inout)  :: nfev
+            REAL(KIND=C_DOUBLE), INTENT(in) ::  ftol, xtol, gtol, factor
+            REAL(KIND=C_DOUBLE), INTENT(inout) :: epsfcn
+            REAL(KIND=C_DOUBLE), DIMENSION(n) :: x, wa1, wa2, wa3
+            REAL(KIND=C_DOUBLE), DIMENSION(m) :: fvec, wa4
+            INTEGER(KIND=C_INT), DIMENSION(n), TARGET :: ipvt
+            REAL(KIND=C_DOUBLE), DIMENSION(n), TARGET :: diag, qtf
+            REAL(KIND=C_DOUBLE), DIMENSION(ldfjac,n), TARGET :: fjac
+            REAL(KIND=C_DOUBLE), DIMENSION(n), INTENT(in), OPTIONAL :: xvmin
+            REAL(KIND=C_DOUBLE), DIMENSION(n), INTENT(in), OPTIONAL :: xvmax
+            TYPE(C_FUNPTR), VALUE :: fcn
+         END SUBROUTINE clmdif
+      END INTERFACE
       
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
