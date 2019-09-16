@@ -28,7 +28,7 @@ PROGRAM BEAMS3D
     !-----------------------------------------------------------------------
     IMPLICIT NONE
     integer :: numargs, i, ier, nshar, vmajor, vminor, liblen
-    integer :: h5major, h5minor, h5rel
+    integer :: h5major, h5minor, h5rel, h5par
     integer, parameter :: arg_len = 256
     character(LEN=MPI_MAX_LIBRARY_VERSION_STRING) :: mpi_lib_name
     character*(arg_len) :: arg1
@@ -54,7 +54,12 @@ PROGRAM BEAMS3D
 !DEC$ ENDIF
 !DEC$ IF DEFINED (LHDF5)
     CALL H5GET_LIBVERSION_F(h5major, h5minor, h5rel, ier)
+    h5par = 0
 !DEC$ ENDIF
+!DEC$ IF DEFINED (HDF5_PAR)
+    h5par = 1
+!DEC$ ENDIF
+
     pi = 4.0 * ATAN(1.0)
     pi2 = 8.0 * ATAN(1.0)
     mu0 = (16.0E-7) * ATAN(1.0)
@@ -188,7 +193,11 @@ PROGRAM BEAMS3D
         DEALLOCATE(args)
         WRITE(6, '(a,f5.2)') 'BEAMS3D Version ', BEAMS3D_VERSION
 !DEC$ IF DEFINED (LHDF5)
-        WRITE(6,'(A)')      '-----  HDF5 Parameters  ----'
+        IF (h5par > 0) THEN
+           WRITE(6,'(A)')      '-----  HDF5 (Parallel) Parameters  -----'
+        ELSE
+           WRITE(6,'(A)')      '-----  HDF5 Parameters  -----'
+        ENDIF
         WRITE(6,'(A,I2,2(A,I2.2))')  '   HDF5_version:  ', h5major,'.',h5minor,' release: ',h5rel
 !DEC$ ENDIF
         WRITE(6,'(A)')      '-----  MPI Parameters  -----'
