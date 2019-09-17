@@ -29,9 +29,9 @@ for i in range(0,nlines):
 	line2 = file_handle2.readline()
 	cal   = float(line1)
 	act   = float(line2)
-	if abs(act) < 1E-4:
+	if abs(act) < 1E-3:
 		continue
-	if abs(cal) < 1E-4:
+	if abs(cal) < 1E-3:
 		continue
 	perct = 100*(abs(act-cal)/abs(act))
 	print('   '+str(cal)+'   '+str(act)+'   '+str(int(perct))+'%')
