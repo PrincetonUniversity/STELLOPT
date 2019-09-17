@@ -278,9 +278,9 @@
       CALL MPI_BARRIER(MPI_COMM_FIELDLINES, ierr_mpi)
     END IF
       
-      CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
-      IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_follow',ierr_mpi)
-      ! Don't worry about telling the slaves, they won't do any writing.
+!      CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
+!      IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_follow',ierr_mpi)
+!      ! Don't worry about telling the slaves, they won't do any writing.
 !DEC$ ENDIF
    
 !-----------------------------------------------------------------------

@@ -1,0 +1,50 @@
+#!/bin/tcsh 
+
+##SBATCH --partition=general
+#SBATCH --time=24:00:00
+#SBATCH --job-name=W7X_EIM_FIELDLINES
+#SBATCH --mail-user=%u@ipp.mpg.de
+#SBATCH -oe %x.%j
+
+##### TINY
+##SBATCH --nodes=1
+##SBATCH --ntasks-per-node=40
+##### n0256
+##SBATCH --nodes=256
+##SBATCH --ntasks-per-node=40
+##### n0512
+##SBATCH --nodes=512
+##SBATCH --ntasks-per-node=40
+
+# ------------------------------------------------------------
+# Log interesting information
+#
+echo " "
+echo "-------------------"
+echo "This job was submitted to the queue: $SLURM_JOB_PARTITION"
+echo "The jobs id is: $SLURM_JOBID"
+echo "-------------------"
+echo "The master node of this job is: $SLURM_SUBMIT_HOST"
+echo "$SLURM_JOB_NODELIST"
+echo "This job is using $SLURM_NTASKS CPU(s) on the following $SLURM_JOB_NUM_NODES node(s):"
+echo "-----------------------"
+
+# ------------------------------------------------------------
+# Setup execution variables
+# --- SLURM_SUBMIT_DIR is the current working directory from
+#     which this job was submitted using 'qsub'
+echo The working directory is $SLURM_SUBMIT_DIR 
+cd $SLURM_SUBMIT_DIR
+
+####################
+set EXEPATH=""
+set FLAGS=""
+
+echo -n 'Started program at : ' ; date
+
+echo srun $EXEPATH $FLAGS
+srun $EXEPATH $FLAGS
+
+echo -n 'Ended program at  : ' ; date
+echo " " 
+

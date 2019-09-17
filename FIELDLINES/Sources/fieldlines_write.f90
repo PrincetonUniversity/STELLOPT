@@ -172,8 +172,8 @@
       END IF
       
       ! Wait for everyone to catch up
-      CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
-      IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_follow',ierr_mpi)
+!      CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
+!      IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_follow',ierr_mpi)
       !  This is the parallel call.
       IF (.not. lbfield_only .and. .not. lafield_only .and. .not. lemc3) THEN
          mystart = LBOUND(R_lines,1)
