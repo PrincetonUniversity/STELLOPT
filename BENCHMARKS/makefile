@@ -5,9 +5,11 @@
   LIB_DIR = $(MYHOME)/libstell_dir
 
 # Setup Subdirectories
-  VMEC_TEST_DIR = VMEC_TEST
+  BEAMS3D_TEST_DIR = BEAMS3D_TEST
   DIAGNO_TEST_DIR = DIAGNO_TEST
+  FIELDLINES_TEST_DIR = FIELDLINES_TEST
   STELLOPT_TEST_DIR = STELLOPT_TEST
+  VMEC_TEST_DIR = VMEC_TEST
 
 # We do the following to handle Testing on Large Systems
   MPI_RUN_OPTS_SM ?= $(MPI_RUN_OPTS)
@@ -57,15 +59,39 @@ test_diagno:
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xdiagno -vmec a3tok -bench
 	@cd $(DIAGNO_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xdiagno -bench -vmec a3tok
 	@cd $(DIAGNO_TEST_DIR); ./compare_a3tok.py
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xdiagno -vmec DIIID_m20n0s128_nfp1_lasym -bench
-	@cd $(DIAGNO_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xdiagno -bench -vmec DIIID_m20n0s128_nfp1_lasym
-	@cd $(DIAGNO_TEST_DIR); ./compare_DIIID_m20n0s128_nfp1_lasym.py
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xdiagno -vmec DIIID_m24n0s99_nfp10 -bench
-	@cd $(DIAGNO_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xdiagno -bench -vmec DIIID_m24n0s99_nfp10
-	@cd $(DIAGNO_TEST_DIR); ./compare_DIIID_m24n0s99_nfp10.py
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xdiagno -vmec DIIID_m24n0s99_nfp1 -bench
 	@cd $(DIAGNO_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xdiagno -bench -vmec DIIID_m24n0s99_nfp1
 	@cd $(DIAGNO_TEST_DIR); ./compare_DIIID_m24n0s99_nfp1.py
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xdiagno -vmec DIIID_m24n0s99_nfp10 -bench
+	@cd $(DIAGNO_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xdiagno -bench -vmec DIIID_m24n0s99_nfp10
+	@cd $(DIAGNO_TEST_DIR); ./compare_DIIID_m24n0s99_nfp10.py
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xdiagno -vmec DIIID_m20n0s128_nfp1_lasym -bench
+	@cd $(DIAGNO_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xdiagno -bench -vmec DIIID_m20n0s128_nfp1_lasym
+	@cd $(DIAGNO_TEST_DIR); ./compare_DIIID_m20n0s128_nfp1_lasym.py
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xdiagno -vmec iter -bench
+	@cd $(DIAGNO_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xdiagno -bench -vmec iter
+	@cd $(DIAGNO_TEST_DIR); ./compare_iter.py
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xdiagno -vmec lhd -bench
+	@cd $(DIAGNO_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xdiagno -bench -vmec lhd
+	@cd $(DIAGNO_TEST_DIR); ./compare_lhd.py
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xdiagno -vmec hsx -bench
+	@cd $(DIAGNO_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xdiagno -bench -vmec hsx
+	@cd $(DIAGNO_TEST_DIR); ./compare_hsx.py
+	@echo ""
+
+test_fieldlines:
+	@echo "Beginning testing of FIELDLINES"
+	$(MAKE) test_fieldlines_full
+	$(MAKE) test_fieldlines_coll
+	@echo "Tesing of FIELDLINES complete"
+	@echo ""
+
+test_beams3d:
+	@echo "Beginning testing of BEAMS3D"
+	@cd $(BEAMS3D_TEST_DIR); rm -f *.h5 *.txt; 
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS -plasma
+	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS -plasma
+	@cd $(BEAMS3D_TEST_DIR); ./test_ORBITS.py
 	@echo ""
 
 test_stellopt:
@@ -120,11 +146,13 @@ test_stellopt_gade:
 test_stellopt_basic:
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.BASIC
 	@cd $(STELLOPT_TEST_DIR)/BASIC; $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.BASIC; rm -f *_opt*
+	@cd $(STELLOPT_TEST_DIR)/BASIC && ./compare_STELLOPT_BASIC.py
 	@echo ""
 
 test_stellopt_beams3d:
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xstelloptv2 input.BEAMS3D
 	@cd $(STELLOPT_TEST_DIR)/BEAMS3D; $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xstelloptv2 input.BEAMS3D; rm -f *_opt*
+	@cd $(STELLOPT_TEST_DIR)/BEAMS3D && ./compare_STELLOPT_BEAMS3D.py
 	@echo ""
 
 test_stellopt_iota_lmdif:
@@ -182,9 +210,21 @@ test_stellopt_travis:
 	@cd $(STELLOPT_TEST_DIR)/TRAVIS; $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.TRAVIS; rm -f *_opt*
 	@echo ""
 
+test_fieldlines_full:
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xfieldlines -vmec NCSX_s1 -coil coils.NCSX -vac -full
+	@cd $(FIELDLINES_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xfieldlines -vmec NCSX_s1 -vac -coil coils.NCSX -vac -full
+	@cd $(FIELDLINES_TEST_DIR); ./compare_NCSX_s1.py
+	@echo ""
+
+test_fieldlines_coll:
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xfieldlines -vmec NCSX_s1_coll -coil coils.NCSX -vac -vessel NCSX_wall_trimesh.dat -hitonly
+	@cd $(FIELDLINES_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xfieldlines -vmec NCSX_s1_coll -vac -coil coils.NCSX -vac -vessel NCSX_wall_trimesh.dat -hitonly
+	@echo ""
+
 clean_test:
 	@cd $(VMEC_TEST_DIR); rm -f dcon* jxbout* mercier* threed1* parvmecinfo* wout*
 	@cd $(DIAGNO_TEST_DIR); rm -f diagno_bench* diagno_flux* diagno_surf* test_loops_j* test_loops_b*
+	@cd $(FIELDLINES_TEST_DIR); rm -f fieldlines_*.h5
 	@$(MAKE) SUBDIR=$(STELLOPT_TEST_DIR)/LMDIF_TEST stellopt_cleanup_dir
 	@$(MAKE) SUBDIR=$(STELLOPT_TEST_DIR)/GADE_TEST stellopt_cleanup_dir
 	@$(MAKE) SUBDIR=$(STELLOPT_TEST_DIR)/BASIC stellopt_cleanup_dir
@@ -228,7 +268,9 @@ help:
 	@echo "      LTRAVIS:         " $(LTRAVIS)
 	@echo ""
 	@echo "   COMMANDS"
-	@echo "      test_vmec     Tesing of VMEC"
-	@echo "      test_diagno   Tesing of DIAGNO"
-	@echo "      test_stellopt Tesing of STELLOPT"
-	@echo "      clean_test    Remove files generated by tests"
+	@echo "      test_beams3d    Tesing of BEAMS3D"
+	@echo "      test_diagno     Tesing of DIAGNO"
+	@echo "      test_fieldlines Tesing of FIELDLINES"
+	@echo "      test_stellopt   Tesing of STELLOPT"
+	@echo "      test_vmec       Tesing of VMEC"
+	@echo "      clean_test      Remove files generated by tests"

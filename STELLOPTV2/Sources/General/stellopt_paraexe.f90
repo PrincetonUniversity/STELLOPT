@@ -56,11 +56,11 @@
             lread_input_beams => lread_input, lvmec_beams => lvmec, &
             lverb_beams => lverb, lbeam_beams => lbeam, &
             lpies_beams => lpies, lspec_beams => lspec, &
-            lmgrid_beams => lmgrid, &
+            lmgrid_beams => lmgrid, lascot_beams => lascot, &
             lvessel_beams => lvessel, lcoil_beams => lcoil, &
             lrestart_beams => lrestart, lbeam_simple_beams => lbeam_simple, &
             lflux_beams => lflux, lplasma_only_beams => lplasma_only, &
-            lcollision_beams => lcollision, &
+            lcollision_beams => lcollision, lw7x_beams => lw7x, &
             coil_string_beams => coil_string, mgrid_string_beams => mgrid_string,&
             vessel_string_beams => vessel_string, restart_string_beams => restart_string, &
             lraw_beams => lraw, nbeams_beams => nbeams, &
@@ -285,7 +285,7 @@
                IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_paraexe',ierr_mpi)
 
                ! Set vars so BEAMS3D knows it's being called from stellopt
-               CALL MPI_COMM_DUP(MPI_COMM_BEAMS, MPI_COMM_MYWORLD, ierr_mpi)
+               CALL MPI_COMM_DUP(MPI_COMM_MYWORLD, MPI_COMM_BEAMS, ierr_mpi)
                CALL MPI_COMM_SPLIT_TYPE(MPI_COMM_BEAMS, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, MPI_COMM_SHARMEM, ierr_mpi)
                CALL MPI_COMM_RANK(MPI_COMM_SHARMEM, myid_sharmem, ierr_mpi)
                CALL BCAST_BEAMS3D_INPUT(master,MPI_COMM_MYWORLD,ierr_mpi)
@@ -296,6 +296,7 @@
                lspec_beams        = .FALSE.
                lcoil_beams        = .FALSE.
                lmgrid_beams       = .FALSE.
+               lascot_beams       = .FALSE.
                lraw_beams         = .FALSE.
                lvessel_beams      = .FALSE.
                lvac_beams         = .FALSE.
@@ -308,6 +309,7 @@
                lbeam_beams        = .FALSE.
                lread_input_beams  = .FALSE.
                lcollision_beams   = .FALSE.
+               lw7x_beams   = .FALSE.
                id_string_beams    = TRIM(file_str)
                coil_string_beams  = ''
                mgrid_string_beams = ''
@@ -346,6 +348,11 @@
                CALL MPI_BCAST(t_end_in,nparticles_start,MPI_REAL8, master, MPI_COMM_MYWORLD,ierr_mpi)
                nparticles_beams = nparticles_start
 
+               ! Print some stuff to screen
+               IF (lscreen) THEN
+                  WRITE(6, '(a,f5.2)') 'BEAMS3D Version ', BEAMS3D_VERSION
+               END IF
+
                ! Initialize the code
                CALL beams3d_init
                CALL MPI_BARRIER(MPI_COMM_MYWORLD,ierr_mpi)
@@ -360,7 +367,7 @@
                CALL beams3d_diagnostics
 
                ! Deallocate Arrays
-               CALL beams3d_free
+               CALL beams3d_free(MPI_COMM_SHARMEM)
                CALL wall_free(ier,MPI_COMM_SHARMEM)
               
                ! Free the Shared Memory region

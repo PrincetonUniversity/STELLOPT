@@ -26,7 +26,9 @@
       INTEGER  :: ns_prof = 50
       INTEGER  :: nparticles, nsteps, myline, mybeam, mytdex, myend, mystart_save,myend_save
       REAL(rprec) :: xlast,ylast,zlast ! for storing position
-      REAL(rprec) :: moment, mycharge, myZ, mymass, myv_neut(3), B_temp(4), rand_prob, cum_prob, tau, next_t, dt_out
+      REAL(rprec) :: moment, mycharge, myZ, mymass, myv_neut(3), &
+                     B_temp(4), rand_prob, cum_prob, tau, next_t, &
+                     dt_out, partvmax
       LOGICAL, ALLOCATABLE     :: neut_lines(:,:)
       REAL(rprec), ALLOCATABLE :: shine_through(:)
       REAL(rprec), ALLOCATABLE :: ndot_prof(:,:),power_prof(:,:),epower_prof(:,:),ipower_prof(:,:),j_prof(:,:)
