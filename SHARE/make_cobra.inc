@@ -91,14 +91,14 @@
 #######################################################################
 #            GENE Options
 #######################################################################
-  LGENE = T
+  LGENE = F
   GENE_DIR = $(GENE_PATH)/bin/obj_cobra
   FUTILS_DIR = $(GENE_PATH)/external/cobra/futils-gene-mod/src
   LIB_GENE = libgene.a
   LIB_FUTILS = libfutils.a
   GENE_INC = -I$(GENE_DIR) \
              -I$(FUTILS_DIR)
-  GENE_LIB = -L$(FFTW_HOME)/lib -lfftw3 -lfftw3f -Xlinker \
+  GENE_LIB = -L$(FFTW_HOME)/lib -lfftw3 -lfftw3f \
              -L$(SLEPC_HOME)/lib -lslepc \
              -L$(PETSC_HOME)/lib -lpetsc \
              $(GENE_DIR)/$(LIB_GENE) \

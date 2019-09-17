@@ -658,11 +658,12 @@
       REAL(rprec) :: phi_val, phi_prime,Bav,Bavsq, &
                      rho,vp,grho,grho2,&
                      br,bp,bx,by,bz,modb,&
-                     rt,zt,h
+                     rt,zt,h, bright
       REAL(rprec) :: nhat(3), uperp(3),Rg(3),Zg(3)
       INTEGER, INTENT(inout) :: ier
       fval = 0
       IF (s>1) RETURN
+      CALL get_equil_emis_xics(s,TRIM(emis_xics_type),bright,ier)
       CALL get_equil_phi(s,phi_type,phi_val,ier,phi_prime)
       CALL get_equil_RZ(s,u,v,Rt,Zt,ier,Rg,Zg)
       !CALL get_equil_Bav(s,Bav,Bavsq,ier) !<B>,<B^2>
@@ -682,6 +683,7 @@
       uperp(3) = bx*nhat(2)-by*nhat(1)
       uperp    = uperp*phi_prime/modb
       fval = uperp(1)*dx+uperp(2)*dy+uperp(3)*dz
+      fval = fval*bright
       RETURN
       END SUBROUTINE fcn_xics_v
 

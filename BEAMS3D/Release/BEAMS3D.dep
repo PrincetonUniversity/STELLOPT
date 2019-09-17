@@ -107,6 +107,18 @@ beams3d_write.o: \
       beams3d_grid.o
       
 
+beams3d_write_ascoth5.o: \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Release/ez_hdf5.o \
+      ../../LIBSTELL/Release/safe_open_mod.o \
+      ../../LIBSTELL/Release/wall_mod.o \
+      ../../LIBSTELL/Release/mpi_params.o \
+      beams3d_runtime.o \
+      beams3d_lines.o \
+      beams3d_write_parhdf5.o \
+      beams3d_grid.o
+      
+
 beams3d_write_parhdf5.o: \
       ../../LIBSTELL/Release/stel_kinds.o \
       ../../LIBSTELL/Release/ez_hdf5.o \
