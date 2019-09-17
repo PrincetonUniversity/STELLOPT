@@ -2934,16 +2934,18 @@
       REAL*8, INTENT(in) :: F(4,n1,n2)
 
       evalch2D = axbar*(aybar*F(1,i,j)  +ay*F(1,i,j+1))+ &
-                    ax*(aybar*F(1,i+1,j)+ay*F(1,i+1,j+1))
-      evalch2D = evalch2D+hx*( &
-               bxbar*(aybar*F(2,i,j)  +ay*F(2,i,j+1))+ &
-                  bx*(aybar*F(2,i+1,j)+ay*F(2,i+1,j+1))) 
-      evalch2D = evalch2D+hy*( &
-               axbar*(bybar*F(3,i,j)  +by*F(3,i,j+1))+ &
-                  ax*(bybar*F(3,i+1,j)+by*F(3,i+1,j+1)))
-      evalch2D = evalch2D+hx*hy*( &
-               bxbar*(bybar*F(4,i,j)  +by*F(4,i,j+1))+ &
-                  bx*(bybar*F(4,i+1,j)+by*F(4,i+1,j+1)))
+                    ax*(aybar*F(1,i+1,j)+ay*F(1,i+1,j+1)) &
+                   +hx*( &
+                        bxbar*(aybar*F(2,i,j)  +ay*F(2,i,j+1))+ &
+                           bx*(aybar*F(2,i+1,j)+ay*F(2,i+1,j+1)) &
+                        ) &
+                   +hy*( &
+                        axbar*(bybar*F(3,i,j)  +by*F(3,i,j+1))+ &
+                           ax*(bybar*F(3,i+1,j)+by*F(3,i+1,j+1)) &
+                        +hx*( &
+                              bxbar*(bybar*F(4,i,j)  +by*F(4,i,j+1))+ &
+                                 bx*(bybar*F(4,i+1,j)+by*F(4,i+1,j+1)) &
+                           ) )
       RETURN
       END FUNCTION evalch2D
       !-----------------------------------------------------------------
