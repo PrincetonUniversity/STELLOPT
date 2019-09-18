@@ -6,7 +6,7 @@
 !                    minimized by STELLOPT.  Originally developed for
 !                    the lmdif function.
 !-----------------------------------------------------------------------
-      SUBROUTINE stellopt_fcn(m, n, x, fvec, iflag, ncnt)
+      SUBROUTINE stellopt_fcn(m, n, x, fvec, iflag, ncnt) BIND(C)
 !-----------------------------------------------------------------------
 !     Libraries
 !-----------------------------------------------------------------------
@@ -27,6 +27,7 @@
       USE vmec_main, ONLY:  multi_ns_grid
       USE read_wout_mod, ONLY: read_wout_file, write_wout_file, read_wout_deallocate
       USE mpi_params                                                    ! MPI
+      USE, INTRINSIC :: ISO_C_BINDING
       IMPLICIT NONE
       
 !-----------------------------------------------------------------------
@@ -38,10 +39,10 @@
 !        iflag   Processor number
 !        ncnt    Current function evaluation
 !----------------------------------------------------------------------
-      INTEGER, INTENT(in)      ::  m, n, ncnt
-      INTEGER, INTENT(inout)   :: iflag
-      REAL(rprec), INTENT(inout)  :: x(n)
-      REAL(rprec), INTENT(out) :: fvec(m)
+      INTEGER(KIND=C_INT), INTENT(in)      ::  m, n, ncnt
+      INTEGER(KIND=C_INT), INTENT(inout)   :: iflag
+      REAL(KIND=C_DOUBLE), INTENT(inout)  :: x(n)
+      REAL(KIND=C_DOUBLE), INTENT(out) :: fvec(m)
       
 !-----------------------------------------------------------------------
 !     Local Variables
