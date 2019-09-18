@@ -28,7 +28,10 @@
   FLAGS_R = -O2 -g -fexternal-blas -fbacktrace -fcheck=all 
 #  FLAGS_R = -O2 -fexternal-blas -Wmissing-include-dirs
   FLAGS_D = -g -O0 -fcheck=all 
-  LIBS    = -L/opt/local/lib -lopenblas -lscalapack  
+#  LIBS    = -L/opt/local/lib -lopenblas -lscalapack  
+  LIBS    = -L/opt/local/lib -lopenblas 
+# Because scalapack is broken in macport for MPI4.0
+  LIBS += /Users/lazerson/Sims_Work/scalapack-2.0.2/libscalapack.a
 
 #######################################################################
 #            MPI Options
@@ -41,7 +44,7 @@
   MPI_LINK = /opt/local/bin/mpif90
   MPI_LINK = mpif90 -shared  -Wl,-no_compact_unwind
   MPI_RUN = mpiexec
-  MPI_RUN_OPTS = -np 4
+  MPI_RUN_OPTS = -np 2
 #  MPI_RUN_OPTS_SM = -np 16
 #  MPI_RUN_OPTS_MD = -np 64
 #  MPI_RUN_OPTS_LG = -np 256
@@ -63,13 +66,10 @@
 #            NTCC Options
 #######################################################################
   LNTCC = T
-  NTCC_INC = -I/opt/local/mod
-  NTCC_LIB = -L/opt/local/lib -lpreact -lsigsub -laladdinsub \
-             -lpreact -lpspline -lportlib -lezcdf
-#  NTCC_INC = -I/Users/slazerso/Sims_PPPL/STELLOPT/NTCC/MAC/mod
-#  NTCC_LIB = -L/Users/slazerso/Sims_PPPL/STELLOPT/NTCC/MAC/lib \
-#             -lpreact -lsigsub -laladdinsub -lpreact -lpspline \
-#             -lportlib -lezcdf
+  NTCC_INC = -I/Users/lazerson/Sims_Work/pub/mod
+  NTCC_LIB = -L/Users/lazerson/Sims_Work/pub/lib \
+             -lpreact -lsigsub -laladdinsub -lpreact -lpspline \
+             -lportlib -lezcdf
 
 #######################################################################
 #            HDF5 Options
@@ -134,7 +134,7 @@
 #######################################################################
 #            TRAVIS Options
 #######################################################################
-  LTRAVIS= T
+  LTRAVIS= F
   TRAVIS_DIR = $(TRAVIS_PATH)
   LIB_TRAVIS = libtravis64_sopt.a
   LIB_MCONF  = libmconf64.a
@@ -153,22 +153,7 @@
 #######################################################################
 #            LIBSTELL Shared Options
 #######################################################################
-LIB_SHARE = /opt/local/lib/libnetcdf.dylib \
-         /opt/local/lib/libnetcdff.dylib \
-         /opt/local/lib/libnetcdf_c++4.dylib \
-         /opt/local/lib/libhdf5.dylib \
-         /opt/local/lib/libhdf5hl_fortran.dylib\
-         /opt/local/lib/libhdf5_hl.dylib \
-         /opt/local/lib/libhdf5_fortran.dylib\
-         /opt/local/lib/gcc6/libgfortran.dylib \
-         /opt/local/lib/gcc6/libstdc++.dylib \
-         /opt/local/lib/libopenblas.dylib \
-         /opt/local/lib/openmpi-gcc6/libmpi.dylib \
-         /opt/local/lib/openmpi-gcc6/libmpi_mpifh.12.dylib \
-         /opt/local/lib/libz.dylib \
-         /usr/lib/libc.dylib \
-         /usr/lib/libm.dylib \
-         /usr/lib/libpthread.dylib
+
 LIB_SHARE = -L/opt/local/lib/gcc8 -lstdc++ -lgfortran -L/usr/lib -lz -lc -lm -lpthread -L/opt/local/lib/openmpi-gcc8 -lmpi -lmpi_mpifh $(LIBS)
 
 

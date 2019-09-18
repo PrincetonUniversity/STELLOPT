@@ -23,7 +23,8 @@
                                  BR_spl, BZ_spl, TE_spl_s, NE_spl_s, TI_spl_s, &
                                  nte, nne, nti, TE, NE, TI, Vp_spl_s, S_ARR,&
                                  U_ARR, POT_ARR, POT_spl_s, nne, nte, nti, npot, &
-                                 ZEFF_spl_s, nzeff, ZEFF_ARR
+                                 ZEFF_spl_s, nzeff, ZEFF_ARR, req_axis, zeq_axis, &
+                                 phiedge_eq
       USE wall_mod, ONLY: wall_load_mn, wall_info,vertex,face
       USE mpi_params
       USE mpi_inc
@@ -79,6 +80,8 @@
       CALL MPI_BCAST(mpol,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(ntor,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(nfp,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
+      CALL MPI_BCAST(mnyq,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
+      CALL MPI_BCAST(nnyq,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(mnmax,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(mnmax_nyq,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(lasym,1,MPI_LOGICAL, master, MPI_COMM_BEAMS,ierr_mpi)
@@ -106,6 +109,7 @@
          CALL MPI_BCAST(bsupumns,ns*mnmax_nyq,MPI_DOUBLE_PRECISION, master, MPI_COMM_BEAMS,ierr_mpi)
          CALL MPI_BCAST(bsupvmns,ns*mnmax_nyq,MPI_DOUBLE_PRECISION, master, MPI_COMM_BEAMS,ierr_mpi)
       END IF
+      phiedge_eq = phi(ns)
 #endif
 
       ! Write info to screen
@@ -135,9 +139,30 @@
       CALL EZspline_setup(Vp_spl_s,vp(1:ns),ier,EXACT_DIM=.true.)
       IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init_vmec',ier)
 
+      ! Calculate the axis values
+      chunk = FLOOR(REAL(nphi) / REAL(numprocs_local))
+      mystart = mylocalid*chunk + 1
+      myend = mystart + chunk - 1
+      DO i = mystart, myend
+         req_axis(i) = 0
+         zeq_axis(i) = 0
+         DO u = 1, mnmax
+            req_axis(i) = req_axis(i)+rmnc(u,1)*COS(xn(u)*phiaxis(i))
+            zeq_axis(i) = zeq_axis(i)+zmns(u,1)*SIN(xn(u)*phiaxis(i))
+         END DO
+      END DO
+      IF (lasym) THEN
+         DO i = mystart, myend
+            DO u = 1, mnmax
+               req_axis(i) = req_axis(i)+rmns(u,1)*SIN(xn(u)*phiaxis(i))
+               zeq_axis(i) = zeq_axis(i)+zmnc(u,1)*COS(xn(u)*phiaxis(i))
+            END DO
+         END DO
+      END IF
 
-      ! If only plasma response then put a wall at the plasma boundary Unless doing depo calc
-      IF (lplasma_only .and. .not.ldepo) THEN
+
+      ! If we ask for a plasma-only run and don't provide a vessel then make one.
+      IF (lplasma_only .and. .not.lvessel) THEN
          lvessel = .TRUE.  ! Do this so the other parts of the code know there is a vessel
          k = ns
          CALL wall_load_mn(DBLE(rmnc(1:mnmax,k)),DBLE(zmns(1:mnmax,k)),DBLE(xm),-DBLE(xn),mnmax,120,120,COMM=MPI_COMM_BEAMS)
@@ -264,7 +289,7 @@
       DEALLOCATE(mnum)
       DEALLOCATE(moffsets)
 #endif
-	
+
       IF (mylocalid == mylocalmaster) THEN
          TE = 0; NE = 0; TI=0; S_ARR=1.5; U_ARR=0; POT_ARR=0; ZEFF_ARR = 1;
       END IF
