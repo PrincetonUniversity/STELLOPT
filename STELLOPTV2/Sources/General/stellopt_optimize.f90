@@ -34,8 +34,20 @@
       REAL(rprec), ALLOCATABLE ::  fjac(:,:)
       
       REAL(rprec), EXTERNAL :: enorm
-      EXTERNAL stellopt_fcn
-      
+
+!-----------------------------------------------------------------------
+!     Interface of external callback function (from "stellopt_fcn.f90")
+!-----------------------------------------------------------------------
+      INTERFACE
+         SUBROUTINE stellopt_fcn(m, n, x, fvec, iflag, ncnt) BIND(C)
+            USE, INTRINSIC :: ISO_C_BINDING
+            INTEGER(KIND=C_INT), INTENT(in)      ::  m, n, ncnt
+            INTEGER(KIND=C_INT), INTENT(inout)   :: iflag
+            REAL(KIND=C_DOUBLE), INTENT(inout)  :: x(n)
+            REAL(KIND=C_DOUBLE), INTENT(out) :: fvec(m)
+         END SUBROUTINE stellopt_fcn
+      END INTERFACE
+
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
