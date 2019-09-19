@@ -38,7 +38,7 @@ C   L o c a l   P a r a m e t e r s
 C-----------------------------------------------
       REAL(rprec), PARAMETER :: zero = 0, one = 1,
      1   p1=0.1_dp, p5=0.5_dp, p25=0.25_dp, p75=0.75_dp, p0001=1.e-4_dp
-      CHARACTER(LEN=130), DIMENSION(0:13) :: info_array 
+      CHARACTER(LEN=130), DIMENSION(0:14) :: info_array 
 C-----------------------------------------------
 C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
@@ -267,6 +267,10 @@ c     Get mpi parameters
      1"improper input parameters " //
      1"X_MIN < X_MAX"
 
+      info_array(14) = 
+     1"improper input parameters " //
+     1"X not in range X_MIN-X_MAX"
+
 
 !DEC$ IF DEFINED (MPI_OPT)
       IF (numprocs > n) THEN
@@ -336,6 +340,13 @@ c     Get mpi parameters
      3            '; X=',x(j),'; MAX=',xvmax(j)
             END IF
          END DO
+         IF ((x(j) .lt. xvmin(j)) .or. (x(j).gt.xvmax(j))) THEN
+               info = 14
+               IF (myid .eq. master) WRITE(6,'(A,I3,3(A,ES20.10))') 
+     1            '   AT j=',j,
+     2            '; MIN=',xvmin(j),
+     3            '; X=',x(j),'; MAX=',xvmax(j)
+         END IF
          IF (info > 0) GOTO 400
       END IF
 
