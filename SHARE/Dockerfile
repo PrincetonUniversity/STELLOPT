@@ -4,12 +4,12 @@
 FROM ubuntu:latest
 
 # Set the working directory to STELLOPT
-WORKDIR /STELLOPT
+WORKDIR /home/stellopt/STELLOPT
 
 # Copy the current directory contents into the container at STELLOPT
-COPY . /STELLOPT
+COPY . /home/stellopt/STELLOPT
 
-# Install all the stuff we need and build STELLOPT
+# Install all the stuff we need, build STELLOPT, and setup non-root user
 RUN apt-get update && apt-get install -y \
     build-essential \
     gfortran \
@@ -25,7 +25,10 @@ RUN apt-get update && apt-get install -y \
     git \
     vim-tiny && \
     cp --remove-destination SHARE/make_docker.inc make.inc && \
-    ./build_all 2>&1 | tee build.out
+    ./build_all 2>&1 | tee build.out && \
+    useradd stellopt && chown -R stellopt:stellopt /home/stellopt
+
+USER stellopt
 
 # Run bash
 CMD ["/bin/bash"]
