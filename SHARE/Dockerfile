@@ -24,7 +24,7 @@ RUN apt-get update && apt-get install -y \
     libgsl-dev \
     git \
     vim-tiny && \
-    cp SHARE/make_docker.inc make.inc && \
+    cp --remove-destination SHARE/make_docker.inc make.inc && \
     ./build_all 2>&1 | tee build.out
 
 # Run bash
