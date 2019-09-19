@@ -14,7 +14,7 @@ include $(OBJLIST)
 VPATH = $(SPATH):$(SPATH)/Chisq:$(SPATH)/General:$(SPATH)/Modules
 
 .SUFFIXES :
-.SUFFIXES : .f .f90 .o
+.SUFFIXES : .c .f .f90 .o
 xstelloptv2:  $(LIB) $(LIB_VMEC) $(LIB_BEAMS3D) $(LIB_BNORM) $(LIB_BOOTSJ) $(LIB_BOOZ) $(LIB_COBRA) $(LIB_DIAGNO) $(LIB_DKES) $(LIB_JINV) $(LIB_MGRID) $(LIB_NEO) $(LIB_GENE) $(LIB_COILOPTPP) $(LIB_REGCOIL) $(LIB_TERPSICHORE) $(ObjectFiles)
 	$(LINK) $@ $(ObjectFiles) $(LIB_LINK)
 ifdef VMEC_DIR 
@@ -98,7 +98,7 @@ endif
          echo '$(COMPILE_FREE) $(FLAGS) $(MOD_PATH). -c $<'; \
          $(COMPILE_FREE) $(FLAGS) $(MOD_PATH).. -c $<; \
       fi
-      
+
 #Check that library files are current. 
 $(LIB) :
 	@cd $(LIB_DIR); make $(TYPE)
