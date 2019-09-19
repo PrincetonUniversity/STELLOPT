@@ -92,17 +92,20 @@
                WRITE(6,'(A,2X,1ES12.4)') '       EPSFCN: ',epsfcn
                WRITE(6,*) '         MODE: ',mode
                WRITE(6,*) '       FACTOR: ',factor
+!               DO i = 1, nvars
+!                  WRITE(6,'(2(2X,I4),4(2X,ES12.4))') i,var_dex(i),vars(i),vars_min(i),vars_max(i),diag(i)
+!               END DO
             END IF
             CALL lmdif(stellopt_fcn, mtargets, nvars, vars, fvec, &
                        ftol, xtol, gtol, nfunc_max, epsfcn, diag, mode, &
                        factor, nprint, info, nfev, fjac, ldfjac, ipvt, &
                        qtf, wa1, wa2, wa3, wa4,vars_min,vars_max)
             DEALLOCATE(ipvt, qtf, wa1, wa2, wa3, wa4, fvec, fjac)
-            IF ((info .ne. 0) .and. lverb) THEN
-               DO i = 1, nvars
-                  WRITE(6,'(2(2X,4I),4(2X,ES12.4))') i,var_dex(i),vars(i),vars_min(i),vars_max(i),diag(i)
-               END DO
-            END IF
+!            IF ((info .ne. 0) .and. lverb) THEN
+!               DO i = 1, nvars
+!                  WRITE(6,'(2(2X,4I),4(2X,ES12.4))') i,var_dex(i),vars(i),vars_min(i),vars_max(i),diag(i)
+!               END DO
+!            END IF
          CASE('eval_xvec')
             IF (lverb) THEN
                WRITE(6,*) '    OPTIMIZER: XVEC Evlauation'
