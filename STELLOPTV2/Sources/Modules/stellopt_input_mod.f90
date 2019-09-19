@@ -1451,99 +1451,57 @@
       END IF
 
       ! Vector quantities
-      norm = 1.0
-      CALL write_stel_lvar_vec(iunit,lextcur_opt,extcur_min,extcur_max,dextcur_opt,norm,'EXTCUR')
+      CALL write_stel_lvar_vec(iunit,lextcur_opt,extcur_min,extcur_max,dextcur_opt,'EXTCUR')
 
-      norm = profile_norm(aphi,'power_series')
-      CALL write_stel_lvar_vec(iunit,laphi_opt,aphi_min,aphi_max,daphi_opt,norm,'APHI')
+      CALL write_stel_lvar_vec(iunit,laphi_opt,aphi_min,aphi_max,daphi_opt,'APHI')
 
-      norm = profile_norm(am,pmass_type)
-      CALL write_stel_lvar_vec(iunit,lam_opt,am_min,am_max,dam_opt,norm,'AM')
+      CALL write_stel_lvar_vec(iunit,lam_opt,am_min,am_max,dam_opt,'AM')
 
-      norm = profile_norm(ac,pcurr_type)
-      CALL write_stel_lvar_vec(iunit,lac_opt,ac_min,ac_max,dac_opt,norm,'AC')
+      CALL write_stel_lvar_vec(iunit,lac_opt,ac_min,ac_max,dac_opt,'AC')
 
-      norm = profile_norm(ai,piota_type)
-      CALL write_stel_lvar_vec(iunit,lai_opt,ai_min,ai_max,dai_opt,norm,'AI')
+      CALL write_stel_lvar_vec(iunit,lai_opt,ai_min,ai_max,dai_opt,'AI')
 
-      norm = profile_norm(ah,ph_type)
-      CALL write_stel_lvar_vec(iunit,lah_opt,ah_min,ah_max,dah_opt,norm,'AH')
+      CALL write_stel_lvar_vec(iunit,lah_opt,ah_min,ah_max,dah_opt,'AH')
 
-      norm = profile_norm(at,pt_type)
-      CALL write_stel_lvar_vec(iunit,lat_opt,at_min,at_max,dat_opt,norm,'AT')
+      CALL write_stel_lvar_vec(iunit,lat_opt,at_min,at_max,dat_opt,'AT')
 
-      norm = profile_norm(ne_opt,ne_type)
-      CALL write_stel_lvar_vec(iunit,lne_opt,ne_min,ne_max,dne_opt,norm,'NE')
+      CALL write_stel_lvar_vec(iunit,lne_opt,ne_min,ne_max,dne_opt,'NE')
 
-      norm = profile_norm(zeff_opt,zeff_type)
-      CALL write_stel_lvar_vec(iunit,lzeff_opt,zeff_min,zeff_max,dzeff_opt,norm,'ZEFF')
+      CALL write_stel_lvar_vec(iunit,lzeff_opt,zeff_min,zeff_max,dzeff_opt,'ZEFF')
 
-      norm = profile_norm(te_opt,te_type)
-      CALL write_stel_lvar_vec(iunit,lte_opt,te_min,te_max,dte_opt,norm,'TE')
+      CALL write_stel_lvar_vec(iunit,lte_opt,te_min,te_max,dte_opt,'TE')
 
-      norm = profile_norm(ti_opt,ti_type)
-      CALL write_stel_lvar_vec(iunit,lti_opt,ti_min,ti_max,dti_opt,norm,'TI')
+      CALL write_stel_lvar_vec(iunit,lti_opt,ti_min,ti_max,dti_opt,'TI')
 
-      norm = profile_norm(th_opt,th_type)
-      CALL write_stel_lvar_vec(iunit,lth_opt,th_min,th_max,dth_opt,norm,'TH')
+      CALL write_stel_lvar_vec(iunit,lth_opt,th_min,th_max,dth_opt,'TH')
 
-!     Disabled due to lack of min and max variables
-!      norm = 1.0
-!      CALL write_stel_lvar_vec(iunit,lam_s_opt,am_s_min,am_s_max,dam_s_opt,norm,'AM_S')
-
-      norm = profile_norm(am_aux_f,pmass_type)
-      CALL write_stel_lvar_vec(iunit,lam_f_opt,am_f_min,am_f_max,dam_f_opt,norm,'AM_F')
+      CALL write_stel_lvar_vec(iunit,lam_f_opt,am_f_min,am_f_max,dam_f_opt,'AM_F')
  
-!     Disabled due to lack of min and max variables
-!      norm = 1.0
-!      CALL write_stel_lvar_vec(iunit,lac_s_opt,ac_s_min,ac_s_max,dac_s_opt,norm,'AC_S)
+      CALL write_stel_lvar_vec(iunit,lac_f_opt,ac_f_min,ac_f_max,dac_f_opt,'AC_F')
 
-      norm = profile_norm(ac_aux_f,pcurr_type)
-      CALL write_stel_lvar_vec(iunit,lac_f_opt,ac_f_min,ac_f_max,dac_f_opt,norm,'AC_F')
+      CALL write_stel_lvar_vec(iunit,lai_f_opt,ai_f_min,ai_f_max,dai_f_opt,'AI_F')
 
-!     Disabled due to lack of min and max variables
-!      norm = 1.0
-!      CALL write_stel_lvar_vec(iunit,lai_s_opt,ai_s_min,ai_s_max,dai_s_opt,norm,'AI_S')
+      CALL write_stel_lvar_vec(iunit,lphi_f_opt,phi_f_min,phi_f_max,dphi_f_opt,'PHI_F')
 
-      norm = profile_norm(ai_aux_f,piota_type)
-      CALL write_stel_lvar_vec(iunit,lai_f_opt,ai_f_min,ai_f_max,dai_f_opt,norm,'AI_F')
+      CALL write_stel_lvar_vec(iunit,lne_f_opt,ne_f_min,ne_f_max,dne_f_opt,'NE_F')
 
-!     Disabled due to lack of min and max variables
-!      norm = 1.0
-!      CALL write_stel_lvar_vec(iunit,lphi_s_opt,phi_s_min,phi_s_max,dphi_s_opt,norm,'PHI_S')
+      CALL write_stel_lvar_vec(iunit,lzeff_f_opt,zeff_f_min,zeff_f_max,dzeff_f_opt,'ZEFF_F')
 
-      norm = profile_norm(phi_aux_f,phi_type)
-      CALL write_stel_lvar_vec(iunit,lphi_f_opt,phi_f_min,phi_f_max,dphi_f_opt,norm,'PHI_F')
+      CALL write_stel_lvar_vec(iunit,lte_f_opt,te_f_min,te_f_max,dte_f_opt,'TE_F')
 
-      norm = profile_norm(ne_aux_f,ne_type)
-      CALL write_stel_lvar_vec(iunit,lne_f_opt,ne_f_min,ne_f_max,dne_f_opt,norm,'NE_F')
+      CALL write_stel_lvar_vec(iunit,lti_f_opt,ti_f_min,ti_f_max,dti_f_opt,'TI_F')
 
-      norm = profile_norm(zeff_aux_f,zeff_type)
-      CALL write_stel_lvar_vec(iunit,lzeff_f_opt,zeff_f_min,zeff_f_max,dzeff_f_opt,norm,'ZEFF_F')
+      CALL write_stel_lvar_vec(iunit,lth_f_opt,th_f_min,th_f_max,dth_f_opt,'TH_F')
 
-      norm = profile_norm(te_aux_f,te_type)
-      CALL write_stel_lvar_vec(iunit,lte_f_opt,te_f_min,te_f_max,dte_f_opt,norm,'TE_F')
+      CALL write_stel_lvar_vec(iunit,lah_f_opt,ah_f_min,ah_f_max,dah_f_opt,'AH_F')
 
-      norm = profile_norm(ti_aux_f,ti_type)
-      CALL write_stel_lvar_vec(iunit,lti_f_opt,ti_f_min,ti_f_max,dti_f_opt,norm,'TI_F')
+      CALL write_stel_lvar_vec(iunit,lat_f_opt,at_f_min,at_f_max,dat_f_opt,'AT_F')
 
-      norm = profile_norm(th_aux_f,th_type)
-      CALL write_stel_lvar_vec(iunit,lth_f_opt,th_f_min,th_f_max,dth_f_opt,norm,'TH_F')
+      CALL write_stel_lvar_vec(iunit,lbeamj_f_opt,beamj_f_min,beamj_f_max,dbeamj_f_opt,'BEAMJ_F')
 
-      norm = profile_norm(ah_aux_f,ph_type)
-      CALL write_stel_lvar_vec(iunit,lah_f_opt,ah_f_min,ah_f_max,dah_f_opt,norm,'AH_F')
+      CALL write_stel_lvar_vec(iunit,lbootj_f_opt,bootj_f_min,bootj_f_max,dbootj_f_opt,'BOOTJ_F')
 
-      norm = profile_norm(at_aux_f,pt_type)
-      CALL write_stel_lvar_vec(iunit,lat_f_opt,at_f_min,at_f_max,dat_f_opt,norm,'AT_F')
-
-      norm = profile_norm(beamj_aux_f,beamj_type)
-      CALL write_stel_lvar_vec(iunit,lbeamj_f_opt,beamj_f_min,beamj_f_max,dbeamj_f_opt,norm,'BEAMJ_F')
-
-      norm = profile_norm(bootj_aux_f,bootj_type)
-      CALL write_stel_lvar_vec(iunit,lbootj_f_opt,bootj_f_min,bootj_f_max,dbootj_f_opt,norm,'BOOTJ_F')
-
-      norm = profile_norm(emis_xics_f,emis_xics_type)
-      CALL write_stel_lvar_vec(iunit,lemis_xics_f_opt,emis_xics_f_min,emis_xics_f_max,demis_xics_f_opt,norm,'EMIS_XICS_F')
+      CALL write_stel_lvar_vec(iunit,lemis_xics_f_opt,emis_xics_f_min,emis_xics_f_max,demis_xics_f_opt,'EMIS_XICS_F')
       
       IF (ANY(laxis_opt)) THEN
          DO n = LBOUND(laxis_opt,DIM=1), UBOUND(laxis_opt,DIM=1)
@@ -2662,19 +2620,16 @@
       RETURN
       END SUBROUTINE write_optimum_namelist
 
-      SUBROUTINE write_stel_lvar_vec(iunit,lvar,var_min,var_max,dvar,norm,str_name)
+      SUBROUTINE write_stel_lvar_vec(iunit,lvar,var_min,var_max,dvar,str_name)
       IMPLICIT NONE
       INTEGER, INTENT(in) :: iunit
       LOGICAL, INTENT(in) :: lvar(:)
       REAL(rprec), INTENT(in) :: var_min(:), var_max(:), dvar(:)
-      REAL(rprec), INTENT(inout) :: norm
       CHARACTER(LEN=*), INTENT(in) :: str_name
       CHARACTER(LEN=256) :: lname,minname,maxname,dname
       INTEGER :: n, ik
       CHARACTER(LEN=*), PARAMETER :: vecvar  = "(2X,A,'(',I3.3,')',1X,'=',1X,L1,2(2X,A,'(',I3.3,')',1X,'=',1X,ES22.12E3))"
       
-      norm = ABS(norm)
-      IF (norm == 0) norm = 1
       IF (ANY(lvar)) THEN
         lname   = 'L'//TRIM(str_name)//'_OPT'
         minname = TRIM(str_name)//'_MIN'
@@ -2684,8 +2639,8 @@
         DO ik = LBOUND(lvar,DIM=1), UBOUND(lvar,DIM=1)
            IF(lvar(ik)) n=ik
         END DO
-        DO ik = 1, n
-           WRITE(iunit,vecvar) TRIM(lname),ik,lvar(ik),TRIM(minname),ik,var_min(ik)*norm,TRIM(maxname),ik,var_max(ik)*norm
+        DO ik = LBOUND(lvar,DIM=1), n
+           WRITE(iunit,vecvar) TRIM(lname),ik,lvar(ik),TRIM(minname),ik,var_min(ik),TRIM(maxname),ik,var_max(ik)
         END DO
         IF (ANY(dvar > 0)) WRITE(iunit,"(2X,A,1X,'=',10(1X,E22.14))") TRIM(dname),(dvar(ik), ik = 1, n)
       END IF
