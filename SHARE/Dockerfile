@@ -20,7 +20,9 @@ RUN apt-get update && apt-get install -y \
     libscalapack-mpi-dev \
     libhdf5-openmpi-dev \
     pgplot5 \
-    libncarg-dev && \
+    libncarg-dev \
+    git \
+    vim-tiny && \
     cp SHARE/make_docker.inc make.inc && \
     ./build_all 2>&1 | tee build.out
 
