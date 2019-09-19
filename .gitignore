@@ -11,6 +11,7 @@
 ._*
 __*
 make.inc
+/Dockerfile
 CMakeLists.txt
 */Release/*.f90
 */Release/*.f
