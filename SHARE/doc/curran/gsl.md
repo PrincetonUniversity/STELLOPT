@@ -14,7 +14,7 @@ Quick start
 
 3. Check out "stellopt\_scenarios" repository
    
-   `git clone git@github.com:landreman/stellopt_scenarios.git`.  The steps below assume this is checked out as a sibling to the STELLOPT repository inside the container.
+   `git clone https://github.com/landreman/stellopt_scenarios.git`.  The steps below assume this is checked out as a sibling to the STELLOPT repository inside the container.
 
 4. Modify input file to request GSL optimizer
    
