@@ -26,7 +26,7 @@
       !LOGICAL ::  lrestart
       LOGICAL ::  lfile_exists
       INTEGER ::  ier, iunit,nvar_in, nprint, info, ldfjac,nfev,&
-                  iunit_restart, nfev_save, npop, ndiv
+                  iunit_restart, nfev_save, npop, ndiv, i
       INTEGER, ALLOCATABLE :: ipvt(:)
       REAL(rprec)              ::  target_fitness, c1, c2
       REAL(rprec), ALLOCATABLE ::  qtf(:), wa1(:), wa2(:), wa3(:), &
@@ -98,6 +98,11 @@
                        factor, nprint, info, nfev, fjac, ldfjac, ipvt, &
                        qtf, wa1, wa2, wa3, wa4,vars_min,vars_max)
             DEALLOCATE(ipvt, qtf, wa1, wa2, wa3, wa4, fvec, fjac)
+            IF ((info .ne. 0) .and. lverb) THEN
+               DO i = 1, nvars
+                  WRITE(6,'(2(2X,4I),4(2X,ES12.4))') i,var_dex(i),vars(i),vars_min(i),vars_max(i),diag(i)
+               END DO
+            END IF
          CASE('eval_xvec')
             IF (lverb) THEN
                WRITE(6,*) '    OPTIMIZER: XVEC Evlauation'

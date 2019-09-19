@@ -2684,7 +2684,7 @@
         DO ik = LBOUND(lvar,DIM=1), UBOUND(lvar,DIM=1)
            IF(lvar(ik)) n=ik
         END DO
-        DO ik = 1, n
+        DO ik = LBOUND(lvar,DIM=1), n
            WRITE(iunit,vecvar) TRIM(lname),ik,lvar(ik),TRIM(minname),ik,var_min(ik)*norm,TRIM(maxname),ik,var_max(ik)*norm
         END DO
         IF (ANY(dvar > 0)) WRITE(iunit,"(2X,A,1X,'=',10(1X,E22.14))") TRIM(dname),(dvar(ik), ik = 1, n)
