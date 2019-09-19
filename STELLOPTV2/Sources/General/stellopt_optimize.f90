@@ -16,6 +16,7 @@
       USE fdjac_mod, ONLY: FLAG_CLEANUP, FLAG_CLEANUP_LEV, FLAG_SINGLETASK
       USE mpi_params
       USE mpi_inc
+      USE, INTRINSIC :: ISO_C_BINDING, ONLY: C_FUNLOC
       
 !-----------------------------------------------------------------------
 !     Local Variables
@@ -34,8 +35,43 @@
       REAL(rprec), ALLOCATABLE ::  fjac(:,:)
       
       REAL(rprec), EXTERNAL :: enorm
-      EXTERNAL stellopt_fcn
-      
+
+!-----------------------------------------------------------------------
+!     Interface of external callback function (from "stellopt_fcn.f90")
+!-----------------------------------------------------------------------
+      INTERFACE
+         SUBROUTINE stellopt_fcn(m, n, x, fvec, iflag, ncnt) BIND(C)
+            USE, INTRINSIC :: ISO_C_BINDING
+            INTEGER(KIND=C_INT), INTENT(in)      ::  m, n, ncnt
+            INTEGER(KIND=C_INT), INTENT(inout)   :: iflag
+            REAL(KIND=C_DOUBLE), INTENT(inout)  :: x(n)
+            REAL(KIND=C_DOUBLE), INTENT(out) :: fvec(m)
+         END SUBROUTINE stellopt_fcn
+      END INTERFACE
+
+!-----------------------------------------------------------------------
+!     Interface of GSL optimizer (C)
+!-----------------------------------------------------------------------
+      INTERFACE
+         SUBROUTINE clmdif(fcn, m, n, x, fvec, ftol, xtol, gtol, maxfev, &
+               epsfcn, diag, mode, factor, nprint, info, nfev, fjac, &
+               ldfjac, ipvt, qtf, wa1, wa2, wa3, wa4, xvmin, xvmax) BIND(C)
+            USE, INTRINSIC :: ISO_C_BINDING
+            INTEGER(KIND=C_INT) :: m, n, maxfev, mode, nprint, info, ldfjac
+            INTEGER(KIND=C_INT), INTENT(inout)  :: nfev
+            REAL(KIND=C_DOUBLE), INTENT(in) ::  ftol, xtol, gtol, factor
+            REAL(KIND=C_DOUBLE), INTENT(inout) :: epsfcn
+            REAL(KIND=C_DOUBLE), DIMENSION(n) :: x, wa1, wa2, wa3
+            REAL(KIND=C_DOUBLE), DIMENSION(m) :: fvec, wa4
+            INTEGER(KIND=C_INT), DIMENSION(n), TARGET :: ipvt
+            REAL(KIND=C_DOUBLE), DIMENSION(n), TARGET :: diag, qtf
+            REAL(KIND=C_DOUBLE), DIMENSION(ldfjac,n), TARGET :: fjac
+            REAL(KIND=C_DOUBLE), DIMENSION(n), INTENT(in), OPTIONAL :: xvmin
+            REAL(KIND=C_DOUBLE), DIMENSION(n), INTENT(in), OPTIONAL :: xvmax
+            TYPE(C_FUNPTR), VALUE :: fcn
+         END SUBROUTINE clmdif
+      END INTERFACE
+
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
@@ -69,10 +105,10 @@
             END IF
             vars_min = -bigno; vars_max = bigno
             WHERE(vars > bigno) vars_max = 1E30
-            CALL lmdif(stellopt_fcn, mtargets, nvars, vars, fvec, &
-                       ftol, xtol, gtol, nfunc_max, epsfcn, diag, mode, &
-                       factor, nprint, info, nfev, fjac, ldfjac, ipvt, &
-                       qtf, wa1, wa2, wa3, wa4,vars_min,vars_max)
+           CALL lmdif(stellopt_fcn, mtargets, nvars, vars, fvec, &
+                      ftol, xtol, gtol, nfunc_max, epsfcn, diag, mode, &
+                      factor, nprint, info, nfev, fjac, ldfjac, ipvt, &
+                      qtf, wa1, wa2, wa3, wa4,vars_min,vars_max)
             DEALLOCATE(ipvt, qtf, wa1, wa2, wa3, wa4, fvec, fjac)
          CASE('lmdif_bounded')
             ALLOCATE(ipvt(nvars))
@@ -99,6 +135,34 @@
                        ftol, xtol, gtol, nfunc_max, epsfcn, diag, mode, &
                        factor, nprint, info, nfev, fjac, ldfjac, ipvt, &
                        qtf, wa1, wa2, wa3, wa4,vars_min,vars_max)
+            DEALLOCATE(ipvt, qtf, wa1, wa2, wa3, wa4, fvec, fjac)
+         CASE('clmdif')
+            ALLOCATE(ipvt(nvars))
+            ALLOCATE(qtf(nvars),wa1(nvars),wa2(nvars),wa3(nvars),&
+                     wa4(mtargets),fvec(mtargets))
+            ALLOCATE(fjac(mtargets,nvars))
+            fvec     = 0.0
+            nprint   = 0
+            info     = 0
+            nfev     = 0
+            ldfjac   = mtargets
+            nfev     = 0
+            IF (lverb) THEN
+               WRITE(6,*) '    OPTIMIZER: Levenberg-Mardquardt (GSL)'
+               WRITE(6,*) '    NFUNC_MAX: ',nfunc_max
+               WRITE(6,'(A,2X,1ES12.4)') '         FTOL: ',ftol
+               WRITE(6,'(A,2X,1ES12.4)') '         XTOL: ',xtol
+               WRITE(6,'(A,2X,1ES12.4)') '         GTOL: ',gtol
+               WRITE(6,'(A,2X,1ES12.4)') '       EPSFCN: ',epsfcn
+               WRITE(6,*) '         MODE: ',mode
+               WRITE(6,*) '       FACTOR: ',factor
+            END IF
+            vars_min = -bigno; vars_max = bigno
+            WHERE(vars > bigno) vars_max = 1E30
+           CALL clmdif(C_FUNLOC(stellopt_fcn), mtargets, nvars, vars, fvec, &
+                      ftol, xtol, gtol, nfunc_max, epsfcn, diag, mode, &
+                      factor, nprint, info, nfev, fjac, ldfjac, ipvt, &
+                      qtf, wa1, wa2, wa3, wa4,vars_min,vars_max)
             DEALLOCATE(ipvt, qtf, wa1, wa2, wa3, wa4, fvec, fjac)
          CASE('eval_xvec')
             IF (lverb) THEN

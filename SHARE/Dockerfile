@@ -21,6 +21,7 @@ RUN apt-get update && apt-get install -y \
     libhdf5-openmpi-dev \
     pgplot5 \
     libncarg-dev \
+    libgsl-dev \
     git \
     vim-tiny && \
     cp SHARE/make_docker.inc make.inc && \

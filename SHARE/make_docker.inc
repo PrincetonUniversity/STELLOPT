@@ -16,7 +16,7 @@
 #######################################################################
   FLAGS_R = -O2 -fexternal-blas
   FLAGS_D = -g -O0 -fexternal-blas -fbacktrace -fcheck=all 
-  LIBS    = -L/usr/lib -lscalapack-openmpi -lblacs-openmpi -lblas -llapack
+  LIBS    = -L/usr/lib -lgsl -lscalapack-openmpi -lblacs-openmpi -lblas -llapack
 
 #######################################################################
 #            MPI Options
