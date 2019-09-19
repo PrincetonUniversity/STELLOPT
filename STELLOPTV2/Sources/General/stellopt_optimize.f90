@@ -56,7 +56,6 @@
             info     = 0
             nfev     = 0
             ldfjac   = mtargets
-            nfev     = 0
             IF (lverb) THEN
                WRITE(6,*) '    OPTIMIZER: Levenberg-Mardquardt'
                WRITE(6,*) '    NFUNC_MAX: ',nfunc_max
@@ -84,7 +83,6 @@
             info     = 0
             nfev     = 0
             ldfjac   = mtargets
-            nfev     = 0
             IF (lverb) THEN
                WRITE(6,*) '    OPTIMIZER: Levenberg-Mardquardt (Bounded)'
                WRITE(6,*) '    NFUNC_MAX: ',nfunc_max
