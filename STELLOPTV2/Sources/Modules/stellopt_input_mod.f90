@@ -1506,7 +1506,7 @@
       IF (ANY(laxis_opt)) THEN
          DO n = LBOUND(laxis_opt,DIM=1), UBOUND(laxis_opt,DIM=1)
             IF (laxis_opt(n) .and. (raxis_min(n)>-bigno .or. raxis_max(n)<bigno .or. zaxis_min(n)>-bigno .or. zaxis_max(n)<bigno)) THEN
-               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',1X,L1,5(2X,A,I4.3,A,1X,'=',1X,E22.14))")&
+               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',1X,L1,5(2X,A,I4.3,A,1X,'=',1X,ES22.12E3))")&
                  'LAXIS_OPT(',n,')',laxis_opt(n),&
                  'RAXIS_MIN(',n,')',raxis_min(n),&
                  'RAXIS_MAX(',n,')',raxis_max(n),&
@@ -1514,7 +1514,7 @@
                  'ZAXIS_MAX(',n,')',zaxis_max(n),&
                  'DAXIS_OPT(',n,')',daxis_opt(n)
             ELSEIF (laxis_opt(n)) THEN
-               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',1X,L1,1(2X,A,I4.3,A,1X,'=',1X,E22.14))")&
+               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',1X,L1,1(2X,A,I4.3,A,1X,'=',1X,ES22.12E3))")&
                  'LAXIS_OPT(',n,')',laxis_opt(n),&
                  'DAXIS_OPT(',n,')',daxis_opt(n)
             END IF
@@ -1524,13 +1524,13 @@
          DO m = LBOUND(lrho_opt,DIM=2), UBOUND(lrho_opt,DIM=2)
             DO n = LBOUND(lrho_opt,DIM=1), UBOUND(lrho_opt,DIM=1)
                IF(lrho_opt(n,m) .and. (bound_min(n,m)>-bigno .or. bound_max(n,m)<bigno)) THEN
-                 WRITE(iunit,"(2X,A,I4.3,A,I4.3,A,1X,'=',1X,L1,4(2X,A,I4.3,A,I4.3,A,1X,'=',1X,E22.14))")&
+                 WRITE(iunit,"(2X,A,I4.3,A,I4.3,A,1X,'=',1X,L1,4(2X,A,I4.3,A,I4.3,A,1X,'=',1X,ES22.12E3))")&
                  'LRHO_OPT(',n,',',m,')',lrho_opt(n,m),&
                  'BOUND_MIN(',n,',',m,')',bound_min(n,m),&
                  'BOUND_MAX(',n,',',m,')',bound_max(n,m),&
                  'DRHO_OPT(',n,',',m,')',drho_opt(n,m)
                ELSEIF (lrho_opt(n,m)) THEN
-                 WRITE(iunit,"(2X,A,I4.3,A,I4.3,A,1X,'=',1X,L1,1(2X,A,I4.3,A,I4.3,A,1X,'=',1X,E22.14))")&
+                 WRITE(iunit,"(2X,A,I4.3,A,I4.3,A,1X,'=',1X,L1,1(2X,A,I4.3,A,I4.3,A,1X,'=',1X,ES22.12E3))")&
                  'LRHO_OPT(',n,',',m,')',lrho_opt(n,m),&
                  'DRHO_OPT(',n,',',m,')',drho_opt(n,m)
                END IF
@@ -1542,13 +1542,13 @@
          DO m = LBOUND(ldeltamn_opt,DIM=2), UBOUND(ldeltamn_opt,DIM=2)
             DO n = LBOUND(ldeltamn_opt,DIM=1), UBOUND(ldeltamn_opt,DIM=1)
                IF(ldeltamn_opt(n,m) .and. (delta_min(n,m)>-bigno .or. delta_max(n,m)<bigno)) THEN
-                 WRITE(iunit,"(2X,A,I4.3,A,I4.3,A,1X,'=',1X,L1,4(2X,A,I4.3,A,I4.3,A,1X,'=',1X,E22.14))")&
+                 WRITE(iunit,"(2X,A,I4.3,A,I4.3,A,1X,'=',1X,L1,4(2X,A,I4.3,A,I4.3,A,1X,'=',1X,ES22.12E3))")&
                  'LDELTAMN_OPT(',n,',',m,')',ldeltamn_opt(n,m),&
                  'DELTA_MIN(',n,',',m,')',delta_min(n,m),&
                  'DELTA_MAX(',n,',',m,')',delta_max(n,m),&
                  'DDELTAMN_OPT(',n,',',m,')',ddeltamn_opt(n,m)
                ELSEIF (ldeltamn_opt(n,m)) THEN
-                 WRITE(iunit,"(2X,A,I4.3,A,I4.3,A,1X,'=',1X,L1,1(2X,A,I4.3,A,I4.3,A,1X,'=',1X,E22.14))")&
+                 WRITE(iunit,"(2X,A,I4.3,A,I4.3,A,1X,'=',1X,L1,1(2X,A,I4.3,A,I4.3,A,1X,'=',1X,ES22.12E3))")&
                  'LDELTAMN_OPT(',n,',',m,')',ldeltamn_opt(n,m),&
                  'DDELTAMN_OPT(',n,',',m,')',ddeltamn_opt(n,m)
                END IF
@@ -1559,13 +1559,13 @@
          DO m = LBOUND(lmode_opt,DIM=2), UBOUND(lmode_opt,DIM=2)
            DO n = LBOUND(lmode_opt,DIM=1), UBOUND(lmode_opt,DIM=1)
                IF(lmode_opt(n,m) .and. (bound_min(n,m)>-bigno .or. bound_max(n,m)<bigno)) THEN
-                 WRITE(iunit,"(2X,A,I4.3,A,I4.3,A,1X,'=',1X,L1,4(2X,A,I4.3,A,I4.3,A,1X,'=',1X,E22.14))")&
+                 WRITE(iunit,"(2X,A,I4.3,A,I4.3,A,1X,'=',1X,L1,4(2X,A,I4.3,A,I4.3,A,1X,'=',1X,ES22.12E3))")&
                  'LMODE_OPT(',n,',',m,')',lmode_opt(n,m),&
                  'BOUND_MIN(',n,',',m,')',bound_min(n,m),&
                  'BOUND_MAX(',n,',',m,')',bound_max(n,m),&
                  'DBOUND_OPT(',n,',',m,')',dbound_opt(n,m)
                ELSEIF (lrho_opt(n,m)) THEN
-                 WRITE(iunit,"(2X,A,I4.3,A,I4.3,A,1X,'=',1X,L1,1(2X,A,I4.3,A,I4.3,A,1X,'=',1X,E22.14))")&
+                 WRITE(iunit,"(2X,A,I4.3,A,I4.3,A,1X,'=',1X,L1,1(2X,A,I4.3,A,I4.3,A,1X,'=',1X,ES22.12E3))")&
                  'LMODE_OPT(',n,',',m,')',lmode_opt(n,m),&
                  'DBOUND_OPT(',n,',',m,')',dbound_opt(n,m)
                END IF
@@ -1578,7 +1578,7 @@
          DO m = LBOUND(lbound_opt,DIM=2), UBOUND(lbound_opt,DIM=2)
            DO n = LBOUND(lbound_opt,DIM=1), UBOUND(lbound_opt,DIM=1)
               IF(lbound_opt(n,m)) THEN
-                 WRITE(iunit,"(2X,A,I4.3,A,I4.3,A,1X,'=',1X,L1,5(2X,A,I4.3,A,I4.3,A,1X,'=',1X,E22.14))")&
+                 WRITE(iunit,"(2X,A,I4.3,A,I4.3,A,1X,'=',1X,L1,5(2X,A,I4.3,A,I4.3,A,1X,'=',1X,ES22.12E3))")&
                  'LBOUND_OPT(',n,',',m,')',lbound_opt(n,m),&
                  'RBC_MIN(',n,',',m,')',rbc_min(n,m),&
                  'RBC_MAX(',n,',',m,')',rbc_max(n,m),&
@@ -1586,7 +1586,7 @@
                  'ZBS_MAX(',n,',',m,')',zbs_max(n,m),&
                  'DBOUND_OPT(',n,',',m,')',dbound_opt(n,m)
                  IF (lasym_local) THEN
-                    WRITE(iunit,"(4(2X,A,I4.3,A,I4.3,A,1X,'=',1X,E22.14))")&
+                    WRITE(iunit,"(4(2X,A,I4.3,A,I4.3,A,1X,'=',1X,ES22.12E3))")&
                     'RBS_MIN(',n,',',m,')',rbs_min(n,m),&
                     'RBS_MAX(',n,',',m,')',rbs_max(n,m),&
                     'ZBC_MIN(',n,',',m,')',zbc_min(n,m),&
@@ -1612,20 +1612,20 @@
                WRITE(iunit,"(2X,A,I4.3,A,1X,'=',1X,A)") 'COIL_TYPE(',n,')',"'"//COIL_TYPE(n)//"'"
                ik = MINLOC(coil_splinesx(n,:),DIM=1) - 1
                WRITE(iunit,"(2X,A,I4.3,A,1X,'=',10(2X,L1))") 'LCOIL_SPLINE(',n,',:)',(lcoil_spline(n,m), m = 1, ik-4)
-               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'DCOIL_SPLINE(',n,',:)',(dcoil_spline(n,m), m = 1, ik-4)
-               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINESX(',n,',:)',(coil_splinesx(n,m), m = 1, ik)
-               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINEFX(',n,',:)',(coil_splinefx(n,m), m = 1, ik-4)
-               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINESY(',n,',:)',(coil_splinesy(n,m), m = 1, ik)
-               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINEFY(',n,',:)',(coil_splinefy(n,m), m = 1, ik-4)
-               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINESZ(',n,',:)',(coil_splinesz(n,m), m = 1, ik)
-               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINEFZ(',n,',:)',(coil_splinefz(n,m), m = 1, ik-4)
+               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,ES22.12E3))") 'DCOIL_SPLINE(',n,',:)',(dcoil_spline(n,m), m = 1, ik-4)
+               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,ES22.12E3))") 'COIL_SPLINESX(',n,',:)',(coil_splinesx(n,m), m = 1, ik)
+               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,ES22.12E3))") 'COIL_SPLINEFX(',n,',:)',(coil_splinefx(n,m), m = 1, ik-4)
+               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,ES22.12E3))") 'COIL_SPLINESY(',n,',:)',(coil_splinesy(n,m), m = 1, ik)
+               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,ES22.12E3))") 'COIL_SPLINEFY(',n,',:)',(coil_splinefy(n,m), m = 1, ik-4)
+               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,ES22.12E3))") 'COIL_SPLINESZ(',n,',:)',(coil_splinesz(n,m), m = 1, ik)
+               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,ES22.12E3))") 'COIL_SPLINEFZ(',n,',:)',(coil_splinefz(n,m), m = 1, ik-4)
                ! Min/Max
-               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINEFX_MIN(',n,',:)',(coil_splinefx_min(n,m), m = 1, ik-4)
-               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINEFX_MAX(',n,',:)',(coil_splinefx_max(n,m), m = 1, ik-4)
-               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINEFY_MIN(',n,',:)',(coil_splinefy_min(n,m), m = 1, ik-4)
-               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINEFY_MAX(',n,',:)',(coil_splinefy_max(n,m), m = 1, ik-4)
-               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINEFZ_MIN(',n,',:)',(coil_splinefz_min(n,m), m = 1, ik-4)
-               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,E22.14))") 'COIL_SPLINEFZ_MAX(',n,',:)',(coil_splinefz_max(n,m), m = 1, ik-4)
+               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,ES22.12E3))") 'COIL_SPLINEFX_MIN(',n,',:)',(coil_splinefx_min(n,m), m = 1, ik-4)
+               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,ES22.12E3))") 'COIL_SPLINEFX_MAX(',n,',:)',(coil_splinefx_max(n,m), m = 1, ik-4)
+               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,ES22.12E3))") 'COIL_SPLINEFY_MIN(',n,',:)',(coil_splinefy_min(n,m), m = 1, ik-4)
+               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,ES22.12E3))") 'COIL_SPLINEFY_MAX(',n,',:)',(coil_splinefy_max(n,m), m = 1, ik-4)
+               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,ES22.12E3))") 'COIL_SPLINEFZ_MIN(',n,',:)',(coil_splinefz_min(n,m), m = 1, ik-4)
+               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,ES22.12E3))") 'COIL_SPLINEFZ_MAX(',n,',:)',(coil_splinefz_max(n,m), m = 1, ik-4)
             END IF
          END DO
       END IF
@@ -1638,76 +1638,76 @@
       m = MINLOC(ne_aux_s(2:),DIM=1)
       IF (n > 1 .or. m > 4)  WRITE(iunit,outstr) 'NE_TYPE',TRIM(ne_type)
       IF (n > 1) THEN
-         WRITE(iunit,"(2X,A,1X,'=',5(2X,E22.14))") 'NE_OPT',(ne_opt(ik), ik = 0, 20)
+         WRITE(iunit,"(2X,A,1X,'=',5(2X,ES22.12E3))") 'NE_OPT',(ne_opt(ik), ik = 0, 20)
       END IF
       IF (m > 5) THEN
-         WRITE(iunit,"(2X,A,1X,'=',5(1X,E22.14))") 'NE_AUX_S',(ne_aux_s(ik), ik=1,m)
-         WRITE(iunit,"(2X,A,1X,'=',5(1X,E22.14))") 'NE_AUX_F',(ne_aux_f(ik), ik=1,m)
+         WRITE(iunit,"(2X,A,1X,'=',5(1X,ES22.12E3))") 'NE_AUX_S',(ne_aux_s(ik), ik=1,m)
+         WRITE(iunit,"(2X,A,1X,'=',5(1X,ES22.12E3))") 'NE_AUX_F',(ne_aux_f(ik), ik=1,m)
       END IF
       ! ZEFF
       n = MINLOC(zeff_opt,DIM=1)
       m = MINLOC(zeff_aux_s(2:),DIM=1)
       IF (n > 1 .or. m > 4)  WRITE(iunit,outstr) 'ZEFF_TYPE',TRIM(zeff_type)
       IF (n > 1) THEN
-         WRITE(iunit,"(2X,A,1X,'=',5(2X,E22.14))") 'ZEFF_OPT',(zeff_opt(ik), ik = 0, 20)
+         WRITE(iunit,"(2X,A,1X,'=',5(2X,ES22.12E3))") 'ZEFF_OPT',(zeff_opt(ik), ik = 0, 20)
       END IF
       IF (m > 4) THEN
-         WRITE(iunit,"(2X,A,1X,'=',5(1X,E22.14))") 'ZEFF_AUX_S',(zeff_aux_s(ik), ik=1,m)
-         WRITE(iunit,"(2X,A,1X,'=',5(1X,E22.14))") 'ZEFF_AUX_F',(zeff_aux_f(ik), ik=1,m)
+         WRITE(iunit,"(2X,A,1X,'=',5(1X,ES22.12E3))") 'ZEFF_AUX_S',(zeff_aux_s(ik), ik=1,m)
+         WRITE(iunit,"(2X,A,1X,'=',5(1X,ES22.12E3))") 'ZEFF_AUX_F',(zeff_aux_f(ik), ik=1,m)
       END IF
       ! TE
       n = MINLOC(te_opt,DIM=1)
       m = MINLOC(te_aux_s(2:),DIM=1)
       IF (n > 1 .or. m > 4)  WRITE(iunit,outstr) 'TE_TYPE',TRIM(te_type)
       IF (n > 1) THEN
-         WRITE(iunit,"(2X,A,1X,'=',5(2X,E22.14))") 'TE_OPT',(te_opt(ik), ik = 0, 20)
+         WRITE(iunit,"(2X,A,1X,'=',5(2X,ES22.12E3))") 'TE_OPT',(te_opt(ik), ik = 0, 20)
       END IF
       IF (m > 4) THEN
-         WRITE(iunit,"(2X,A,1X,'=',5(1X,E22.14))") 'TE_AUX_S',(te_aux_s(ik), ik=1,m)
-         WRITE(iunit,"(2X,A,1X,'=',5(1X,E22.14))") 'TE_AUX_F',(te_aux_f(ik), ik=1,m)
+         WRITE(iunit,"(2X,A,1X,'=',5(1X,ES22.12E3))") 'TE_AUX_S',(te_aux_s(ik), ik=1,m)
+         WRITE(iunit,"(2X,A,1X,'=',5(1X,ES22.12E3))") 'TE_AUX_F',(te_aux_f(ik), ik=1,m)
       END IF
       ! TI
       n = MINLOC(ti_opt,DIM=1)
       m = MINLOC(ti_aux_s(2:),DIM=1)
       IF (n > 1 .or. m > 4)  WRITE(iunit,outstr) 'TI_TYPE',TRIM(ti_type)
       IF (n > 1) THEN
-         WRITE(iunit,"(2X,A,1X,'=',5(2X,E22.14))") 'TI_OPT',(ti_opt(ik), ik = 0, 20)
+         WRITE(iunit,"(2X,A,1X,'=',5(2X,ES22.12E3))") 'TI_OPT',(ti_opt(ik), ik = 0, 20)
       END IF
       IF (m > 4) THEN
-         WRITE(iunit,"(2X,A,1X,'=',5(1X,E22.14))") 'TI_AUX_S',(ti_aux_s(ik), ik=1,m)
-         WRITE(iunit,"(2X,A,1X,'=',5(1X,E22.14))") 'TI_AUX_F',(ti_aux_f(ik), ik=1,m)
+         WRITE(iunit,"(2X,A,1X,'=',5(1X,ES22.12E3))") 'TI_AUX_S',(ti_aux_s(ik), ik=1,m)
+         WRITE(iunit,"(2X,A,1X,'=',5(1X,ES22.12E3))") 'TI_AUX_F',(ti_aux_f(ik), ik=1,m)
       END IF
       ! Currents
       ik = MINLOC(beamj_aux_s(2:),DIM=1)
       IF (ik > 2) THEN
          WRITE(iunit,outstr) 'BEAMJ_TYPE',TRIM(beamj_type)
-         WRITE(iunit,"(2X,A,1X,'=',5(1X,E22.14))") 'BEAMJ_AUX_S',(beamj_aux_s(n), n=1,ik)
-         WRITE(iunit,"(2X,A,1X,'=',5(1X,E22.14))") 'BEAMJ_AUX_F',(beamj_aux_f(n), n=1,ik)
+         WRITE(iunit,"(2X,A,1X,'=',5(1X,ES22.12E3))") 'BEAMJ_AUX_S',(beamj_aux_s(n), n=1,ik)
+         WRITE(iunit,"(2X,A,1X,'=',5(1X,ES22.12E3))") 'BEAMJ_AUX_F',(beamj_aux_f(n), n=1,ik)
       END IF
       ik = MINLOC(bootj_aux_s(2:),DIM=1)
       IF (ik > 2) THEN
          WRITE(iunit,outstr) 'BOOTJ_TYPE',TRIM(bootj_type)
-         WRITE(iunit,"(2X,A,1X,'=',5(1X,E22.14))") 'BOOTJ_AUX_S',(bootj_aux_s(n), n=1,ik)
-         WRITE(iunit,"(2X,A,1X,'=',5(1X,E22.14))") 'BOOTJ_AUX_F',(bootj_aux_f(n), n=1,ik)
+         WRITE(iunit,"(2X,A,1X,'=',5(1X,ES22.12E3))") 'BOOTJ_AUX_S',(bootj_aux_s(n), n=1,ik)
+         WRITE(iunit,"(2X,A,1X,'=',5(1X,ES22.12E3))") 'BOOTJ_AUX_F',(bootj_aux_f(n), n=1,ik)
       END IF
       ik = MINLOC(sfincs_s(2:),DIM=1)
       IF (ik > 2) THEN
-         WRITE(iunit,"(2X,A,1X,'=',5(1X,E22.14))") 'SFINCS_S',(sfincs_s(n), n=1,ik)
+         WRITE(iunit,"(2X,A,1X,'=',5(1X,ES22.12E3))") 'SFINCS_S',(sfincs_s(n), n=1,ik)
       END IF
       ! Emissivities (XICS)
       ik = MINLOC(emis_xics_s(2:),DIM=1)
       IF (ik > 2) THEN
          WRITE(iunit,outstr) 'EMIS_XICS_TYPE',TRIM(emis_xics_type)
-         WRITE(iunit,"(2X,A,1X,'=',5(1X,E22.14))") 'EMIS_XICS_S',(emis_xics_s(n), n=1,ik)
-         WRITE(iunit,"(2X,A,1X,'=',5(1X,E22.14))") 'EMIS_XICS_F',(emis_xics_f(n), n=1,ik)
+         WRITE(iunit,"(2X,A,1X,'=',5(1X,ES22.12E3))") 'EMIS_XICS_S',(emis_xics_s(n), n=1,ik)
+         WRITE(iunit,"(2X,A,1X,'=',5(1X,ES22.12E3))") 'EMIS_XICS_F',(emis_xics_f(n), n=1,ik)
       END IF
       ! E-static potential
       ik = find_last_nonzero(phi_aux_s)
       !ik = MINLOC(phi_aux_s(2:),DIM=1)
       IF (ik > 2) THEN
          WRITE(iunit,outstr) 'PHI_TYPE',TRIM(phi_type)
-         WRITE(iunit,"(2X,A,1X,'=',5(1X,E22.14))") 'PHI_AUX_S',(phi_aux_s(n), n=1,ik)
-         WRITE(iunit,"(2X,A,1X,'=',5(1X,E22.14))") 'PHI_AUX_F',(phi_aux_f(n), n=1,ik)
+         WRITE(iunit,"(2X,A,1X,'=',5(1X,ES22.12E3))") 'PHI_AUX_S',(phi_aux_s(n), n=1,ik)
+         WRITE(iunit,"(2X,A,1X,'=',5(1X,ES22.12E3))") 'PHI_AUX_F',(phi_aux_f(n), n=1,ik)
       END IF
       WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
       WRITE(iunit,'(A)') '!         EQUILIBRIUM/GEOMETRY OPTIMIZATION PARAMETERS' 
@@ -1726,7 +1726,7 @@
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          DO ik = 1, rosenbrock_dim
             IF (sigma_Rosenbrock_F(ik) < bigno) THEN
-              WRITE(iunit,"(2X,A,I3.3,A,L1,3(2X,A,I3.3,A,E22.14))") &
+              WRITE(iunit,"(2X,A,I3.3,A,L1,3(2X,A,I3.3,A,ES22.12E3))") &
                           'LROSENBROCK_X_OPT(',ik,') = ',LRosenbrock_X_opt(ik), &
                           'TARGET_ROSENBROCK_F(',ik,') = ',target_Rosenbrock_F(ik), &
                           'SIGMA_ROSENBROCK_F(',ik,') = ',sigma_Rosenbrock_F(ik), &
@@ -1840,7 +1840,7 @@
             IF(sigma_helicity(ik) < bigno) n=ik
          END DO
          DO ik = 1, n
-            IF (sigma_helicity(ik) < bigno) WRITE(iunit,"(2(2X,A,I3.3,A,E22.14))") &
+            IF (sigma_helicity(ik) < bigno) WRITE(iunit,"(2(2X,A,I3.3,A,ES22.12E3))") &
                           'TARGET_HELICITY(',ik,') = ',target_helicity(ik), &
                           'SIGMA_HELICITY(',ik,') = ',sigma_helicity(ik)
          END DO
@@ -1855,7 +1855,7 @@
             IF(sigma_helicity_old(ik) < bigno) n=ik
          END DO
          DO ik = 1, n
-            IF (sigma_helicity_old(ik) < bigno) WRITE(iunit,"(2(2X,A,I3.3,A,E22.14))") &
+            IF (sigma_helicity_old(ik) < bigno) WRITE(iunit,"(2(2X,A,I3.3,A,ES22.12E3))") &
                           'TARGET_HELICITY_OLD(',ik,') = ',target_helicity_old(ik), &
                           'SIGMA_HELICITY_OLD(',ik,') = ',sigma_helicity_old(ik)
          END DO
@@ -1869,7 +1869,7 @@
             IF(sigma_resjac(ik) < bigno) n=ik
          END DO
          DO ik = 1, n
-            IF (sigma_resjac(ik) < bigno) WRITE(iunit,"(2(2X,A,I3.3,A,E22.14))") &
+            IF (sigma_resjac(ik) < bigno) WRITE(iunit,"(2(2X,A,I3.3,A,ES22.12E3))") &
                           'TARGET_RESJAC(',ik,') = ',target_resjac(ik), &
                           'SIGMA_RESJAC(',ik,') = ',sigma_resjac(ik), &
                           'XM_RESJAC(',ik,') = ',xm_resjac(ik), &
@@ -1881,15 +1881,15 @@
          WRITE(iunit,'(A)') '!          BALLOONING CALCULATION'  
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          n=COUNT(balloon_theta >= 0.0)
-         WRITE(iunit,"(2X,A,1X,'=',10(2X,E22.14))") 'BALLOON_THETA',(balloon_theta(ik), ik = 1, n)
+         WRITE(iunit,"(2X,A,1X,'=',10(2X,ES22.12E3))") 'BALLOON_THETA',(balloon_theta(ik), ik = 1, n)
          n=COUNT(balloon_zeta >= 0.0)
-         WRITE(iunit,"(2X,A,1X,'=',10(2X,E22.14))") 'BALLOON_ZETA',(balloon_zeta(ik), ik = 1, n)
+         WRITE(iunit,"(2X,A,1X,'=',10(2X,ES22.12E3))") 'BALLOON_ZETA',(balloon_zeta(ik), ik = 1, n)
          n=0
          DO ik = 1,UBOUND(sigma_balloon,DIM=1)
             IF(sigma_balloon(ik) < bigno) n=ik
          END DO
          DO ik = 1, n
-            IF (sigma_balloon(ik) < bigno) WRITE(iunit,"(2(2X,A,I3.3,A,E22.14))") &
+            IF (sigma_balloon(ik) < bigno) WRITE(iunit,"(2(2X,A,I3.3,A,ES22.12E3))") &
                           'TARGET_BALLOON(',ik,') = ',target_balloon(ik), &
                           'SIGMA_BALLOON(',ik,') = ',sigma_balloon(ik)
          END DO
@@ -1903,7 +1903,7 @@
             IF(sigma_bootstrap(ik) < bigno) n=ik
          END DO
          DO ik = 1, n
-           IF (sigma_bootstrap(ik) < bigno)  WRITE(iunit,"(2(2X,A,I3.3,A,E22.14))") &
+           IF (sigma_bootstrap(ik) < bigno)  WRITE(iunit,"(2(2X,A,I3.3,A,ES22.12E3))") &
                           'TARGET_BOOTSTRAP(',ik,') = ',target_bootstrap(ik), &
                           'SIGMA_BOOTSTRAP(',ik,') = ',sigma_bootstrap(ik)
          END DO
@@ -1917,7 +1917,7 @@
             IF(sigma_neo(ik) < bigno) n=ik
          END DO
          DO ik = 1, n
-            IF (sigma_neo(ik) < bigno) WRITE(iunit,"(2(2X,A,I3.3,A,E22.14))") &
+            IF (sigma_neo(ik) < bigno) WRITE(iunit,"(2(2X,A,I3.3,A,ES22.12E3))") &
                           'TARGET_NEO(',ik,') = ',target_neo(ik), &
                           'SIGMA_NEO(',ik,') = ',sigma_neo(ik)
          END DO
@@ -1929,7 +1929,7 @@
          WRITE(iunit,"(2(2X,A,1X,'=',1X,I5))") 'MLMNB_KINK',mlmnb_kink,'IVAC_KINK',ivac_kink
          WRITE(iunit,"(2(2X,A,1X,'=',1X,I5))") 'MMAXDF_KINK',mmaxdf_kink,'NMAXDF_KINK',nmaxdf_kink
          DO ik = 1, UBOUND(sigma_kink,DIM=1)
-            IF (sigma_kink(ik) < bigno) WRITE(iunit,"(2(2X,A,I3.3,A,E22.14),5(2X,A,I3.3,A,I6))") &
+            IF (sigma_kink(ik) < bigno) WRITE(iunit,"(2(2X,A,I3.3,A,ES22.12E3),5(2X,A,I3.3,A,I6))") &
                           'TARGET_KINK(',ik,') = ',target_kink(ik), &
                           'SIGMA_KINK(',ik,') = ',sigma_kink(ik),&
                           'MLMNS_KINK(',ik,') = ',mlmns_kink(ik),&
@@ -1948,7 +1948,7 @@
             IF(sigma_dkes(ik) < bigno) n=ik
          END DO
          DO ik = 1, n
-            IF (sigma_dkes(ik) < bigno) WRITE(iunit,"(3(2X,A,I3.3,A,E22.14))") &
+            IF (sigma_dkes(ik) < bigno) WRITE(iunit,"(3(2X,A,I3.3,A,ES22.12E3))") &
                           'TARGET_DKES(',ik,') = ',target_dkes(ik), &
                           'SIGMA_DKES(',ik,') = ',sigma_dkes(ik), &
                           'NU_DKES(',ik,') = ',nu_dkes(ik)
@@ -1963,7 +1963,7 @@
             IF(sigma_jdotb(ik) < bigno) n=ik
          END DO
          DO ik = 1, n
-           IF (sigma_jdotb(ik) < bigno)  WRITE(iunit,"(2(2X,A,I3.3,A,E22.14))") &
+           IF (sigma_jdotb(ik) < bigno)  WRITE(iunit,"(2(2X,A,I3.3,A,ES22.12E3))") &
                           'TARGET_JDOTB(',ik,') = ',target_jdotb(ik), &
                           'SIGMA_JDOTB(',ik,') = ',sigma_jdotb(ik)
          END DO
@@ -1977,7 +1977,7 @@
             IF(sigma_magwell(ik) < bigno) n=ik
          END DO
          DO ik = 1, n
-           IF (sigma_magwell(ik) < bigno)  WRITE(iunit,"(2(2X,A,I3.3,A,E22.14))") &
+           IF (sigma_magwell(ik) < bigno)  WRITE(iunit,"(2(2X,A,I3.3,A,ES22.12E3))") &
                           'TARGET_MAGWELL(',ik,') = ',target_magwell(ik), &
                           'SIGMA_MAGWELL(',ik,') = ',sigma_magwell(ik)
          END DO
@@ -1991,7 +1991,7 @@
             IF(sigma_jcurv(ik) < bigno) n=ik
          END DO
          DO ik = 1, n
-            IF (sigma_jcurv(ik) < bigno) WRITE(iunit,"(2(2X,A,I3.3,A,E22.14))") &
+            IF (sigma_jcurv(ik) < bigno) WRITE(iunit,"(2(2X,A,I3.3,A,ES22.12E3))") &
                           'TARGET_JCURV(',ik,') = ',target_jcurv(ik), &
                           'SIGMA_JCURV(',ik,') = ',sigma_jcurv(ik)
          END DO
@@ -2005,7 +2005,7 @@
             IF(sigma_bmin(ik) < bigno) n=ik
          END DO
          DO ik = 1, n
-            IF (sigma_bmin(ik) < bigno) WRITE(iunit,"(2(2X,A,I3.3,A,E22.14))") &
+            IF (sigma_bmin(ik) < bigno) WRITE(iunit,"(2(2X,A,I3.3,A,ES22.12E3))") &
                           'TARGET_BMIN(',ik,') = ',target_bmin(ik), &
                           'SIGMA_BMIN(',ik,') = ',sigma_bmin(ik)
          END DO
@@ -2019,7 +2019,7 @@
             IF(sigma_bmax(ik) < bigno) n=ik
          END DO
          DO ik = 1, n
-            IF (sigma_bmax(ik) < bigno) WRITE(iunit,"(2(2X,A,I3.3,A,E22.14))") &
+            IF (sigma_bmax(ik) < bigno) WRITE(iunit,"(2(2X,A,I3.3,A,ES22.12E3))") &
                           'TARGET_BMAX(',ik,') = ',target_bmax(ik), &
                           'SIGMA_BMAX(',ik,') = ',sigma_bmax(ik)
          END DO
@@ -2034,7 +2034,7 @@
             IF(sigma_Jstar(ik) < bigno) n=ik
          END DO
          DO ik = 1, n
-            IF (sigma_Jstar(ik) < bigno) WRITE(iunit,"(2(2X,A,I3.3,A,E22.14))") &
+            IF (sigma_Jstar(ik) < bigno) WRITE(iunit,"(2(2X,A,I3.3,A,ES22.12E3))") &
                           'TARGET_JSTAR(',ik,') = ',target_Jstar(ik), &
                           'SIGMA_JSTAR(',ik,') = ',sigma_Jstar(ik)
          END DO
@@ -2054,7 +2054,7 @@
             IF(sigma_txport(ik) < bigno) n=ik
          END DO
          DO ik = 1, n
-            IF (sigma_txport(ik) < bigno) WRITE(iunit,"(3(2X,A,I3.3,A,E22.14))") &
+            IF (sigma_txport(ik) < bigno) WRITE(iunit,"(3(2X,A,I3.3,A,ES22.12E3))") &
                           'S_TXPORT(',ik,') = ',s_txport(ik), &
                           'TARGET_TXPORT(',ik,') = ',target_txport(ik), &
                           'SIGMA_TXPORT(',ik,') = ',sigma_txport(ik)
@@ -2070,13 +2070,13 @@
          WRITE(iunit,outint) 'NV_ORBIT',nv_orbit
          n=0
          DO ik = 1,UBOUND(sigma_orbit,DIM=1)
-            IF(sigma_orbit(ik) < bigno) WRITE(iunit,"(2(2X,A,I3.3,A,E22.14))") &
+            IF(sigma_orbit(ik) < bigno) WRITE(iunit,"(2(2X,A,I3.3,A,ES22.12E3))") &
                           'TARGET_ORBIT(',ik,') = ',target_orbit(ik), &
                           'SIGMA_ORBIT(',ik,') = ',sigma_orbit(ik)
          END DO
          WRITE(iunit,outint) 'NP_ORBIT',np_orbit
          DO ik = 1, np_orbit
-            WRITE(iunit,"(3(2X,A,I3.3,A,E22.14))") &
+            WRITE(iunit,"(3(2X,A,I3.3,A,ES22.12E3))") &
                           'VLL_ORBIT(',ik,') = ',VLL_orbit(ik), &
                           'MU_ORBIT(',ik,') = ',MU_orbit(ik),&
                           'VPERP_ORBIT(',ik,') = ',VPERP_orbit(ik)
@@ -2143,7 +2143,7 @@
               lregcoil_winding_surface_separation_opt ) THEN
              DO ii = 1,UBOUND(target_regcoil_chi2_b, 1)
                 IF (sigma_regcoil_chi2_b(ii) < bigno) THEN
-                    WRITE(iunit,"(2(2X,A,I4.3,A,E22.14))") &
+                    WRITE(iunit,"(2(2X,A,I4.3,A,ES22.12E3))") &
                            'TARGET_REGCOIL_CHI2_B(',ii,') = ', target_regcoil_chi2_b(ii), &
                            'SIGMA_REGCOIL_CHI2_B(',ii,') = ', sigma_regcoil_chi2_b(ii)
                 END IF
@@ -2224,7 +2224,7 @@
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          DO ik = 1, UBOUND(sigma_extcur,DIM=1)
             IF (sigma_extcur(ik) < bigno) THEN
-               WRITE(iunit,"(2(2X,A,I3.3,A,1X,'=',1X,E22.14))") &
+               WRITE(iunit,"(2(2X,A,I3.3,A,1X,'=',1X,ES22.12E3))") &
                   'TARGET_EXTCUR(',ik,')',target_extcur(ik),& 
                   'SIGMA_EXTCUR(',ik,')',sigma_extcur(ik)
             END IF
@@ -2237,14 +2237,14 @@
          WRITE(iunit,outflt) 'NORM_PRESS',norm_press
          DO ik = 1, UBOUND(sigma_press,DIM=1)
             IF (sigma_press(ik) < bigno .and. s_press(ik) < 0) THEN
-               WRITE(iunit,"(5(2X,A,I3.3,A,1X,'=',1X,E22.14))") &
+               WRITE(iunit,"(5(2X,A,I3.3,A,1X,'=',1X,ES22.12E3))") &
                   'R_PRESS(',ik,')',r_press(ik),&
                   'PHI_PRESS(',ik,')',phi_press(ik),& 
                   'Z_PRESS(',ik,')',z_press(ik),&
                   'TARGET_PRESS(',ik,')',target_press(ik),& 
                   'SIGMA_PRESS(',ik,')',sigma_press(ik)
             ELSE IF (sigma_press(ik) < bigno .and. s_press(ik) >= 0) THEN
-               WRITE(iunit,"(3(2X,A,I3.3,A,1X,'=',1X,E22.14))") &
+               WRITE(iunit,"(3(2X,A,I3.3,A,1X,'=',1X,ES22.12E3))") &
                   'S_PRESS(',ik,')',s_press(ik),&
                   'TARGET_PRESS(',ik,')',target_press(ik),& 
                   'SIGMA_PRESS(',ik,')',sigma_press(ik)
@@ -2257,14 +2257,14 @@
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          DO ik = 1, UBOUND(sigma_ne,DIM=1)
             IF (sigma_ne(ik) < bigno_ne .and. s_ne(ik) < 0) THEN
-               WRITE(iunit,"(5(2X,A,I3.3,A,1X,'=',1X,E22.14))") &
+               WRITE(iunit,"(5(2X,A,I3.3,A,1X,'=',1X,ES22.12E3))") &
                   'R_NE(',ik,')',r_ne(ik),&
                   'PHI_NE(',ik,')',phi_ne(ik),& 
                   'Z_NE(',ik,')',z_ne(ik),&
                   'TARGET_NE(',ik,')',target_ne(ik),& 
                   'SIGMA_NE(',ik,')',sigma_ne(ik)
             ELSE IF (sigma_ne(ik) < bigno_ne .and. s_ne(ik) >= 0) THEN
-               WRITE(iunit,"(3(2X,A,I3.3,A,1X,'=',1X,E22.14))") &
+               WRITE(iunit,"(3(2X,A,I3.3,A,1X,'=',1X,ES22.12E3))") &
                   'S_NE(',ik,')',s_ne(ik),&
                   'TARGET_NE(',ik,')',target_ne(ik),& 
                   'SIGMA_NE(',ik,')',sigma_ne(ik)
@@ -2277,7 +2277,7 @@
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          DO ik = 1, UBOUND(sigma_ne_line,DIM=1)
             IF (sigma_ne_line(ik) < bigno_ne) THEN
-               WRITE(iunit,"(8(2X,A,I3.3,A,1X,'=',1X,E22.14))") &
+               WRITE(iunit,"(8(2X,A,I3.3,A,1X,'=',1X,ES22.12E3))") &
                   'R0_NE_LINE(',ik,')',r0_ne_line(ik),&
                   'PHI0_NE_LINE(',ik,')',phi0_ne_line(ik),&
                   'Z0_NE_LINE(',ik,')',z0_ne_line(ik),&
@@ -2296,7 +2296,7 @@
          WRITE(iunit,outflt) 'CUTOFF_TE_LINE',cutoff_te_line
          DO ik = 1, UBOUND(sigma_te_line,DIM=1)
             IF (sigma_te_line(ik) < bigno) THEN
-               WRITE(iunit,"(8(2X,A,I3.3,A,1X,'=',1X,E22.14))") &
+               WRITE(iunit,"(8(2X,A,I3.3,A,1X,'=',1X,ES22.12E3))") &
                   'R0_TE_LINE(',ik,')',r0_te_line(ik),&
                   'PHI0_TE_LINE(',ik,')',phi0_te_line(ik),&
                   'Z0_TE_LINE(',ik,')',z0_te_line(ik),&
@@ -2314,7 +2314,7 @@
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          DO ik = 1, UBOUND(sigma_ti_line,DIM=1)
             IF (sigma_ti_line(ik) < bigno) THEN
-               WRITE(iunit,"(8(2X,A,I3.3,A,1X,'=',1X,E22.14))") &
+               WRITE(iunit,"(8(2X,A,I3.3,A,1X,'=',1X,ES22.12E3))") &
                   'R0_TI_LINE(',ik,')',r0_ti_line(ik),&
                   'PHI0_TI_LINE(',ik,')',phi0_ti_line(ik),&
                   'Z0_TI_LINE(',ik,')',z0_ti_line(ik),&
@@ -2336,11 +2336,11 @@
          WRITE(iunit,'(A)') '!              W3:      Line integrated sat. emissivity (function of Te)'
          WRITE(iunit,'(A)') '!              XICS_V0: Offset for XICS V0 measurement'
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
-         IF (ANY(sigma_xics_v < bigno)) WRITE(iunit,'(2X,A,E22.14)') 'XICS_V0 = ',xics_v0
+         IF (ANY(sigma_xics_v < bigno)) WRITE(iunit,'(2X,A,ES22.12E3)') 'XICS_V0 = ',xics_v0
          DO ik = 1, UBOUND(sigma_xics,DIM=1)
             IF (sigma_xics(ik)    < bigno .or. sigma_xics_bright(ik) < bigno .or. &
                 sigma_xics_w3(ik)     < bigno .or. sigma_xics_v(ik)  < bigno ) &
-                WRITE(iunit,"(6(2X,A,I3.3,A,1X,'=',1X,E22.14))") &
+                WRITE(iunit,"(6(2X,A,I3.3,A,1X,'=',1X,ES22.12E3))") &
                   'R0_XICS(',ik,')',r0_xics(ik),&
                   'PHI0_XICS(',ik,')',phi0_xics(ik),&
                   'Z0_XICS(',ik,')',z0_xics(ik),&
@@ -2348,18 +2348,18 @@
                   'PHI1_XICS(',ik,')',phi1_xics(ik),&
                   'Z1_XICS(',ik,')',z1_xics(ik)
             IF (sigma_xics(ik) < bigno .or. sigma_xics_bright(ik) < bigno) THEN
-               WRITE(iunit,"(4(4X,A,I3.3,A,1X,'=',1X,E22.14))") &
+               WRITE(iunit,"(4(4X,A,I3.3,A,1X,'=',1X,ES22.12E3))") &
                   'TARGET_XICS(',ik,')',target_xics(ik),&
                   'SIGMA_XICS(',ik,')',sigma_xics(ik),&
                   'TARGET_XICS_BRIGHT(',ik,')',target_xics_bright(ik),&
                   'SIGMA_XICS_BRIGHT(',ik,')',sigma_xics_bright(ik)
             END IF
             IF (sigma_xics_w3(ik) < bigno) &
-               WRITE(iunit,"(2(4X,A,I3.3,A,1X,'=',1X,E22.14))") &
+               WRITE(iunit,"(2(4X,A,I3.3,A,1X,'=',1X,ES22.12E3))") &
                   'TARGET_XICS_W3(',ik,')',target_xics_w3(ik),&
                   'SIGMA_XICS_W3(',ik,')',sigma_xics_w3(ik)
             IF (sigma_xics_v(ik) < bigno) &
-               WRITE(iunit,"(2(4X,A,I3.3,A,1X,'=',1X,E22.14))") &
+               WRITE(iunit,"(2(4X,A,I3.3,A,1X,'=',1X,ES22.12E3))") &
                   'TARGET_XICS_V(',ik,')',target_xics_v(ik),&
                   'SIGMA_XICS_V(',ik,')',sigma_xics_v(ik)
          END DO
@@ -2370,14 +2370,14 @@
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          DO ik = 1, UBOUND(sigma_te,DIM=1)
             IF (sigma_te(ik) < bigno .and. s_te(ik) < 0) THEN
-               WRITE(iunit,"(5(2X,A,I3.3,A,1X,'=',1X,E22.14))") &
+               WRITE(iunit,"(5(2X,A,I3.3,A,1X,'=',1X,ES22.12E3))") &
                   'R_TE(',ik,')',r_te(ik),&
                   'PHI_TE(',ik,')',phi_te(ik),& 
                   'Z_TE(',ik,')',z_te(ik),&
                   'TARGET_TE(',ik,')',target_te(ik),& 
                   'SIGMA_TE(',ik,')',sigma_te(ik)
             ELSE IF (sigma_te(ik) < bigno .and. s_te(ik) >= 0) THEN
-               WRITE(iunit,"(3(2X,A,I3.3,A,1X,'=',1X,E22.14))") &
+               WRITE(iunit,"(3(2X,A,I3.3,A,1X,'=',1X,ES22.12E3))") &
                   'S_TE(',ik,')',s_te(ik),&
                   'TARGET_TE(',ik,')',target_te(ik),& 
                   'SIGMA_TE(',ik,')',sigma_te(ik)
@@ -2390,14 +2390,14 @@
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          DO ik = 1, UBOUND(sigma_ti,DIM=1)
             IF (sigma_ti(ik) < bigno .and. s_ti(ik) < 0) THEN
-               WRITE(iunit,"(5(2X,A,I3.3,A,1X,'=',1X,E22.14))") &
+               WRITE(iunit,"(5(2X,A,I3.3,A,1X,'=',1X,ES22.12E3))") &
                   'R_TI(',ik,')',r_ti(ik),&
                   'PHI_TI(',ik,')',phi_ti(ik),& 
                   'Z_TI(',ik,')',z_ti(ik),&
                   'TARGET_TI(',ik,')',target_ti(ik),& 
                   'SIGMA_TI(',ik,')',sigma_ti(ik)
             ELSE IF (sigma_ti(ik) < bigno .and. s_ti(ik) >= 0) THEN
-               WRITE(iunit,"(3(2X,A,I3.3,A,1X,'=',1X,E22.14))") &
+               WRITE(iunit,"(3(2X,A,I3.3,A,1X,'=',1X,ES22.12E3))") &
                   'S_TI(',ik,')',s_ti(ik),&
                   'TARGET_TI(',ik,')',target_ti(ik),& 
                   'SIGMA_TI(',ik,')',sigma_ti(ik)
@@ -2408,17 +2408,17 @@
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          WRITE(iunit,'(A)') '!          TOROIDAL ROTATION OPTIMIZATION'
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
-         WRITE(iunit,'(2X,A,E22.14)') 'QM_RATIO = ',qm_ratio
+         WRITE(iunit,'(2X,A,ES22.12E3)') 'QM_RATIO = ',qm_ratio
          DO ik = 1, UBOUND(sigma_vphi,DIM=1)
             IF (sigma_vphi(ik) < bigno .and. s_vphi(ik) < 0) THEN
-               WRITE(iunit,"(5(2X,A,I3.3,A,1X,'=',1X,E22.14))") &
+               WRITE(iunit,"(5(2X,A,I3.3,A,1X,'=',1X,ES22.12E3))") &
                   'R_VPHI(',ik,')',r_vphi(ik),&
                   'PHI_VPHI(',ik,')',phi_vphi(ik),& 
                   'Z_VPHI(',ik,')',z_vphi(ik),&
                   'TARGET_VPHI(',ik,')',target_vphi(ik),& 
                   'SIGMA_VPHI(',ik,')',sigma_vphi(ik)
             ELSE IF (sigma_vphi(ik) < bigno .and. s_vphi(ik) >= 0) THEN
-               WRITE(iunit,"(3(2X,A,I3.3,A,1X,'=',1X,E22.14))") &
+               WRITE(iunit,"(3(2X,A,I3.3,A,1X,'=',1X,ES22.12E3))") &
                   'S_VPHI(',ik,')',s_vphi(ik),&
                   'TARGET_VPHI(',ik,')',target_vphi(ik),& 
                   'SIGMA_VPHI(',ik,')',sigma_vphi(ik)
@@ -2429,7 +2429,7 @@
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          WRITE(iunit,'(A)') '!          ECE Reflectometry OPTIMIZATION'
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
-         WRITE(iunit,'(2X,A,E22.14)') 'MIX_ECE = ',mix_ece
+         WRITE(iunit,'(2X,A,ES22.12E3)') 'MIX_ECE = ',mix_ece
          WRITE(iunit,'(2X,A,I3.3)') 'NRA_ECE = ',nra_ece
          WRITE(iunit,'(2X,A,I3.3)') 'NPHI_ECE = ',nphi_ece
          IF (LEN_TRIM(vessel_ece) > 1) WRITE(iunit,outstr) 'VESSEL_ECE',TRIM(vessel_ece)
@@ -2438,13 +2438,13 @@
          IF (LEN_TRIM(antennatype_ece) > 1) WRITE(iunit,outstr) 'ANTENNATYPE_ECE',TRIM(antennatype_ece)
          DO u = 1, UBOUND(sigma_ece,DIM=1)
                IF (ALL(sigma_ece(u,:) >= bigno)) CYCLE
-               WRITE(iunit,"(2X,A,I3.3,A,1X,'=',1X,3E22.14)")'ANTENNAPOSITION_ECE(',u,',1:3)',antennaposition_ece(u,1:3)
-               WRITE(iunit,"(2X,A,I3.3,A,1X,'=',1X,3E22.14)")'TARGETPOSITION_ECE(',u,',1:3)',targetposition_ece(u,1:3)
-               WRITE(iunit,"(2X,A,I3.3,A,1X,'=',1X,3E22.14)")'RBEAM_ECE(',u,',1:3)',rbeam_ece(u,1:3)
-               WRITE(iunit,"(2X,A,I3.3,A,1X,'=',1X,3E22.14)")'RFOCUS_ECE(',u,',1:3)',rfocus_ece(u,1:3)
+               WRITE(iunit,"(2X,A,I3.3,A,1X,'=',1X,3ES22.12E3)")'ANTENNAPOSITION_ECE(',u,',1:3)',antennaposition_ece(u,1:3)
+               WRITE(iunit,"(2X,A,I3.3,A,1X,'=',1X,3ES22.12E3)")'TARGETPOSITION_ECE(',u,',1:3)',targetposition_ece(u,1:3)
+               WRITE(iunit,"(2X,A,I3.3,A,1X,'=',1X,3ES22.12E3)")'RBEAM_ECE(',u,',1:3)',rbeam_ece(u,1:3)
+               WRITE(iunit,"(2X,A,I3.3,A,1X,'=',1X,3ES22.12E3)")'RFOCUS_ECE(',u,',1:3)',rfocus_ece(u,1:3)
                DO v = 1, UBOUND(sigma_ece,DIM=2)
                   IF (sigma_ece(u,v) >= bigno) CYCLE
-                  WRITE(iunit,"(3(5X,A,I3.3,A,I3.3,A,1X,'=',1X,E22.14))") &
+                  WRITE(iunit,"(3(5X,A,I3.3,A,I3.3,A,1X,'=',1X,ES22.12E3))") &
                         'TARGET_ECE(',u,',',v,')',target_ece(u,v),&
                         'SIGMA_ECE(',u,',',v,')',sigma_ece(u,v),& 
                         'FREQ_ECE(',u,',',v,')',freq_ece(u,v)
@@ -2457,14 +2457,14 @@
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          DO ik = 1, UBOUND(sigma_iota,DIM=1)
             IF (sigma_iota(ik) < bigno .and. s_iota(ik) < 0) THEN
-               WRITE(iunit,"(5(2X,A,I3.3,A,1X,'=',1X,E22.14))") &
+               WRITE(iunit,"(5(2X,A,I3.3,A,1X,'=',1X,ES22.12E3))") &
                   'R_IOTA(',ik,')',r_iota(ik),&
                   'PHI_IOTA(',ik,')',phi_iota(ik),& 
                   'Z_IOTA(',ik,')',z_iota(ik),&
                   'TARGET_IOTA(',ik,')',target_iota(ik),& 
                   'SIGMA_IOTA(',ik,')',sigma_iota(ik)
             ELSE IF (sigma_iota(ik) < bigno .and. s_iota(ik) >= 0) THEN
-               WRITE(iunit,"(3(2X,A,I3.3,A,1X,'=',1X,E22.14))") &
+               WRITE(iunit,"(3(2X,A,I3.3,A,1X,'=',1X,ES22.12E3))") &
                   'S_IOTA(',ik,')',s_iota(ik),&
                   'TARGET_IOTA(',ik,')',target_iota(ik),& 
                   'SIGMA_IOTA(',ik,')',sigma_iota(ik)
@@ -2477,14 +2477,14 @@
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          DO ik = 1, UBOUND(sigma_vaciota,DIM=1)
             IF (sigma_vaciota(ik) < bigno .and. s_vaciota(ik) < 0) THEN
-               WRITE(iunit,"(5(2X,A,I3.3,A,1X,'=',1X,E22.14))") &
+               WRITE(iunit,"(5(2X,A,I3.3,A,1X,'=',1X,ES22.12E3))") &
                   'R_VACIOTA(',ik,')',r_vaciota(ik),&
                   'PHI_VACIOTA(',ik,')',phi_vaciota(ik),& 
                   'Z_VACIOTA(',ik,')',z_vaciota(ik),&
                   'TARGET_VACIOTA(',ik,')',target_vaciota(ik),& 
                   'SIGMA_VACIOTA(',ik,')',sigma_vaciota(ik)
             ELSE IF (sigma_vaciota(ik) < bigno .and. s_vaciota(ik) >= 0) THEN
-               WRITE(iunit,"(3(2X,A,I3.3,A,1X,'=',1X,E22.14))") &
+               WRITE(iunit,"(3(2X,A,I3.3,A,1X,'=',1X,ES22.12E3))") &
                   'S_VACIOTA(',ik,')',s_vaciota(ik),&
                   'TARGET_VACIOTA(',ik,')',target_vaciota(ik),& 
                   'SIGMA_VACIOTA(',ik,')',sigma_vaciota(ik)
@@ -2497,7 +2497,7 @@
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          DO ik = 1, UBOUND(sigma_faraday,DIM=1)
             IF (sigma_faraday(ik) < bigno_ne) THEN
-               WRITE(iunit,"(8(2X,A,I3.3,A,1X,'=',1X,E22.14))") &
+               WRITE(iunit,"(8(2X,A,I3.3,A,1X,'=',1X,ES22.12E3))") &
                   'R0_FARADAY(',ik,')',r0_faraday(ik),&
                   'PHI0_FARADAY(',ik,')',phi0_faraday(ik),&
                   'Z0_FARADAY(',ik,')',z0_faraday(ik),&
@@ -2518,7 +2518,7 @@
          END DO
          DO ik = 1, UBOUND(sigma_mse,DIM=1)
             IF (sigma_mse(ik) < bigno .and. s_mse(ik) < 0) THEN
-               WRITE(iunit,"(13(2X,A,I3.3,A,1X,'=',1X,E22.14))") &
+               WRITE(iunit,"(13(2X,A,I3.3,A,1X,'=',1X,ES22.12E3))") &
                   'R_MSE(',ik,')',r_mse(ik),&
                   'PHI_MSE(',ik,')',phi_mse(ik),& 
                   'Z_MSE(',ik,')',z_mse(ik),&
@@ -2533,7 +2533,7 @@
                   'SIGMA_MSE(',ik,')',sigma_mse(ik),& 
                   'VAC_MSE(',ik,')',vac_mse(ik)
             ELSE IF (sigma_mse(ik) < bigno .and. s_mse(ik) >= 0) THEN
-               WRITE(iunit,"(11(2X,A,I3.3,A,1X,'=',1X,E22.14))") &
+               WRITE(iunit,"(11(2X,A,I3.3,A,1X,'=',1X,ES22.12E3))") &
                   'S_MSE(',ik,')',z_mse(ik),&
                   'A1_MSE(',ik,')',a1_mse(ik),&
                   'A2_MSE(',ik,')',a2_mse(ik),&
@@ -2555,21 +2555,21 @@
          IF (LEN_TRIM(magdiag_coil) > 1) WRITE(iunit,outstr) 'MAGDIAG_COIL',TRIM(magdiag_coil)
          DO ik = 1, UBOUND(sigma_bprobe,DIM=1)
             IF (target_bprobe(ik) /= 0.0) THEN
-               WRITE(iunit,"(2(2X,A,I3.3,A,1X,'=',1X,E22.14))")&
+               WRITE(iunit,"(2(2X,A,I3.3,A,1X,'=',1X,ES22.12E3))")&
                   'TARGET_BPROBE(',ik,')',target_bprobe(ik),&
                   'SIGMA_BPROBE(',ik,')',sigma_bprobe(ik)
             END IF
          END DO
          DO ik = 1, UBOUND(sigma_fluxloop,DIM=1)
             IF (target_fluxloop(ik) /= 0.0) THEN
-               WRITE(iunit,"(2(2X,A,I3.3,A,1X,'=',1X,E22.14))")&
+               WRITE(iunit,"(2(2X,A,I3.3,A,1X,'=',1X,ES22.12E3))")&
                   'TARGET_FLUXLOOP(',ik,')',target_fluxloop(ik),&
                   'SIGMA_FLUXLOOP(',ik,')',sigma_fluxloop(ik)
             END IF
          END DO
          DO ik = 1, UBOUND(sigma_segrog,DIM=1)
             IF (target_segrog(ik) /= 0.0) THEN
-               WRITE(iunit,"(2(2X,A,I3.3,A,1X,'=',1X,E22.14))")&
+               WRITE(iunit,"(2(2X,A,I3.3,A,1X,'=',1X,ES22.12E3))")&
                   'TARGET_SEGROG(',ik,')',target_segrog(ik),&
                   'SIGMA_SEGROG(',ik,')',sigma_segrog(ik)
             END IF
@@ -2590,7 +2590,7 @@
          DO u = 1, nu_max
             DO v = 1, nv_max
                IF (sigma_separatrix(u,v) < bigno) &
-                  WRITE(iunit,"(5(2X,A,I3.3,',',I3.3,A,E22.14))") &
+                  WRITE(iunit,"(5(2X,A,I3.3,',',I3.3,A,ES22.12E3))") &
                   'R_SEPARATRIX(',u,v,') = ',r_separatrix(u,v),&
                   'PHI_SEPARATRIX(',u,v,') = ',phi_separatrix(u,v),&
                   'Z_SEPARATRIX(',u,v,') = ',z_separatrix(u,v),&
@@ -2606,7 +2606,7 @@
          DO u = 1, nu_max
             DO v = 1, nv_max
                IF (sigma_limiter(u,v) < bigno) &
-                  WRITE(iunit,"(5(2X,A,I3.3,',',I3.3,A,E22.14))") &
+                  WRITE(iunit,"(5(2X,A,I3.3,',',I3.3,A,ES22.12E3))") &
                   'R_LIMITER(',u,v,') = ',r_limiter(u,v),&
                   'PHI_LIMITER(',u,v,') = ',phi_limiter(u,v),&
                   'Z_LIMITER(',u,v,') = ',z_limiter(u,v),&
@@ -2642,7 +2642,7 @@
         DO ik = LBOUND(lvar,DIM=1), n
            WRITE(iunit,vecvar) TRIM(lname),ik,lvar(ik),TRIM(minname),ik,var_min(ik),TRIM(maxname),ik,var_max(ik)
         END DO
-        IF (ANY(dvar > 0)) WRITE(iunit,"(2X,A,1X,'=',10(1X,E22.14))") TRIM(dname),(dvar(ik), ik = 1, n)
+        IF (ANY(dvar > 0)) WRITE(iunit,"(2X,A,1X,'=',10(1X,ES22.12E3))") TRIM(dname),(dvar(ik), ik = 1, n)
       END IF
       RETURN
       END SUBROUTINE write_stel_lvar_vec
