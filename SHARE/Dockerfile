@@ -1,15 +1,15 @@
-# From docs.docker.com/get-started.part2
+# Derived from docs.docker.com/get-started.part2
 
-# Use an official Python runtime as a parent image
+# Use an official Ubuntu runtime as a parent image
 FROM ubuntu:latest
 
-# Set the working directory to /app
+# Set the working directory to STELLOPT
 WORKDIR /STELLOPT
 
-# Copy the current directory contents into the container at /app
+# Copy the current directory contents into the container at STELLOPT
 COPY . /STELLOPT
 
-# Install all the stuff we need...
+# Install all the stuff we need and build STELLOPT
 RUN apt-get update && apt-get install -y \
     build-essential \
     gfortran \
