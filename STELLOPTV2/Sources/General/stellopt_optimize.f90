@@ -72,7 +72,7 @@
                        ftol, xtol, gtol, nfunc_max, epsfcn, diag, mode, &
                        factor, nprint, info, nfev, fjac, ldfjac, ipvt, &
                        qtf, wa1, wa2, wa3, wa4,vars_min,vars_max)
-            DEALLOCATE(ipvt, qtf, wa1, wa2, wa3, wa4, fvec, fjac)
+            DEALLOCATE(ipvt, qtf, wa1, wa2, wa3, wa4, fjac)
          CASE('lmdif_bounded')
             ALLOCATE(ipvt(nvars))
             ALLOCATE(qtf(nvars),wa1(nvars),wa2(nvars),wa3(nvars),&
@@ -92,20 +92,12 @@
                WRITE(6,'(A,2X,1ES12.4)') '       EPSFCN: ',epsfcn
                WRITE(6,*) '         MODE: ',mode
                WRITE(6,*) '       FACTOR: ',factor
-!               DO i = 1, nvars
-!                  WRITE(6,'(2(2X,I4),4(2X,ES12.4))') i,var_dex(i),vars(i),vars_min(i),vars_max(i),diag(i)
-!               END DO
             END IF
             CALL lmdif(stellopt_fcn, mtargets, nvars, vars, fvec, &
                        ftol, xtol, gtol, nfunc_max, epsfcn, diag, mode, &
                        factor, nprint, info, nfev, fjac, ldfjac, ipvt, &
                        qtf, wa1, wa2, wa3, wa4,vars_min,vars_max)
-            DEALLOCATE(ipvt, qtf, wa1, wa2, wa3, wa4, fvec, fjac)
-!            IF ((info .ne. 0) .and. lverb) THEN
-!               DO i = 1, nvars
-!                  WRITE(6,'(2(2X,4I),4(2X,ES12.4))') i,var_dex(i),vars(i),vars_min(i),vars_max(i),diag(i)
-!               END DO
-!            END IF
+            DEALLOCATE(ipvt, qtf, wa1, wa2, wa3, wa4, fjac)
          CASE('eval_xvec')
             IF (lverb) THEN
                WRITE(6,*) '    OPTIMIZER: XVEC Evlauation'
@@ -132,7 +124,6 @@
             info = FLAG_CLEANUP
             IF (myid == master) info = flag_cleanup_lev
             call stellopt_fcn(mtargets, nvars, vars, fvec, info, nfev)
-            DEALLOCATE(fvec)
          CASE('gade')
             ALLOCATE(fvec(mtargets))
          !   Notes on this
@@ -180,7 +171,6 @@
             !               numprocs,lrestart,vars,chisq_min,nfev)
             CLOSE(iunit)
             CLOSE(iunit_restart)
-            DEALLOCATE(fvec)
          CASE('map')
             nprint = 6
             npop   = npopulation
@@ -266,7 +256,7 @@
             IF (lverb) THEN
                 WRITE(6,*) '!!!!!  HYPERSHPERE MAPPING DONE  !!!!!'
             END IF
-            DEALLOCATE(wa1,fvec)
+            DEALLOCATE(wa1)
          CASE('pso')
             ALLOCATE(wa1(nvars),fvec(mtargets))
             wa1 = vars
@@ -287,7 +277,7 @@
             END IF
             CALL PSO_Evolve(stellopt_fcn,mtargets,nvars,npop,vars_min,vars_max,&
                             wa1,fvec,c1,c2,factor,ftol,xtol,nfunc_max)
-            DEALLOCATE(wa1, fvec)
+            DEALLOCATE(wa1)
          CASE('rocket')
             ALLOCATE(wa1(nvars))
             wa1 = vars
@@ -341,7 +331,7 @@
                        ftol, xtol, gtol, nfunc_max, epsfcn, diag, mode, &
                        factor, nprint, info, nfev, fjac, ldfjac, ipvt, &
                        qtf, wa1, wa2, wa3, wa4)
-            DEALLOCATE(ipvt, qtf, wa1, wa2, wa3, wa4, fvec, fjac)
+            DEALLOCATE(ipvt, qtf, wa1, wa2, wa3, wa4, fjac)
          CASE DEFAULT
             WRITE(6,*) '!!!!!  UNKNOWN OPTIMIZATION TYPE  !!!!!'
             WRITE(6,*) '       OPT_TYPE: ',TRIM(opt_type)
@@ -349,14 +339,17 @@
             RETURN
       END SELECT
       ! Now output the minimum files
-      !IF (myid == master .and. info /= 5) THEN
-      !   nfev_save = nfev
-      !   ier=0
-      !   CALL stellopt_fcn(mtargets,nvars,vars,fvec,ier,nfev)
-      !   nfev = nfev_save
-      !   ier=-500
-      !   CALL stellopt_fcn(mtargets,nvars,vars,fvec,ier,nfev)
-      !END IF
+      IF (myid == master .and. info /= 5) THEN
+         IF (lrenorm) CALL stellopt_renorm(mtargets,fvec)
+         nfev_save = nfev
+         ier=0
+         CALL stellopt_fcn(mtargets,nvars,vars,fvec,ier,nfev)
+         nfev = nfev_save
+         ier=-500
+         CALL stellopt_fcn(mtargets,nvars,vars,fvec,ier,nfev)
+      END IF
+      IF (ALLOCATED(fvec)) DEALLOCATE(fvec)
+
 !DEC$ IF DEFINED (MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_STEL,ierr_mpi)                       !PPPL -SAL
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_optimize2',ierr_mpi)
