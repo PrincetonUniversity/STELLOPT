@@ -6,6 +6,14 @@ stellopt_init_mpi.o : \
       $(LIB_DIR)/Release/mpi_params.o 
 
 
+stellopt_renorm.o : \
+      stellopt_input_mod.o \
+      stellopt_runtime.o \
+      stellopt_vars.o \
+      $(LIB_DIR)/Release/mpi_params.o \
+      $(LIB_DIR)/Release/mpi_inc.o 
+
+
 stellopt_vmec_bcast.o : \
       $(LIB_DIR)/Release/mpi_params.o \
       $(LIB_DIR)/Release/vmec_input.o 

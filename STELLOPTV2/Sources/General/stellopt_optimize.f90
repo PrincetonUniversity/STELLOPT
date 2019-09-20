@@ -34,6 +34,7 @@
       REAL(rprec), ALLOCATABLE ::  fjac(:,:)
       
       REAL(rprec), EXTERNAL :: enorm
+      LOGICAL, PARAMETER :: lrenorm = .true.
       EXTERNAL stellopt_fcn
       
 !----------------------------------------------------------------------
@@ -129,6 +130,9 @@
             WRITE(iunit,'(10ES22.12E3)') vars(1:nvars)
             WRITE(iunit,'(ES22.12E3)') c1
             CLOSE(iunit)
+            IF (lrenorm .and. (myid==master)) THEN
+               CALL stellopt_renorm(mtargets,fvec)
+            ENDIF
             info = FLAG_CLEANUP
             IF (myid == master) info = flag_cleanup_lev
             call stellopt_fcn(mtargets, nvars, vars, fvec, info, nfev)
