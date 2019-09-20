@@ -51,6 +51,7 @@
       ltriangulate = .false.
       lno_restart = .false.
       lauto_domain = .false.
+      lrenorm      = .false.
       pct_domain = 0.05
       xvec_file = 'xvec.dat'
       INQUIRE(UNIT=6,NAME=screen_str) ! Store STDOUT
@@ -79,6 +80,8 @@
                   lrestart = .true.
                case ("-noverb")  ! No Verbose Output
                   lverb=.false.
+               case ("-renorm")  ! No Verbose Output
+                  lrenorm=.true.
                case ("-log")
                   screen_str = "log."//id_string(7:)
                   CLOSE(UNIT=6)
@@ -104,6 +107,7 @@
                   write(6,*)' Usage: xstellopt input_file <options>'
                   write(6,*)'    <options>'
                   write(6,*)'     -restart          Restart a run from reset file'
+                  write(6,*)'     -renorm           Renormalize sigmas'
                   write(6,*)'     -autodomain pct   Automatically calculate min-max domain'
                   write(6,*)'     -noverb           Supress all screen output'
                   write(6,*)'     -log              Output screen to log file'
@@ -125,6 +129,8 @@
       ! Broadcast variables
 !DEC$ IF DEFINED (MPI_OPT)
       CALL MPI_BCAST(lrestart,1,MPI_LOGICAL, master, MPI_COMM_STEL,ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'stellopt_main',ierr_mpi)
+      CALL MPI_BCAST(lrenorm,1,MPI_LOGICAL, master, MPI_COMM_STEL,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'stellopt_main',ierr_mpi)
       CALL MPI_BCAST(ltriangulate,1,MPI_LOGICAL, master, MPI_COMM_STEL,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'stellopt_main',ierr_mpi)
