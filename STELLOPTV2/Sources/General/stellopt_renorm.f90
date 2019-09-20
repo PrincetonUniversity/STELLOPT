@@ -64,13 +64,13 @@
          ! now renormalize sigmas (BIG LIST)
          SELECT CASE(iddex(i))
             CASE(jtarget_ne)
-               WHERE(sigma_ne<bigno) sigma_ne = sigma_ne/temp
+               WHERE(sigma_ne<bigno_ne) sigma_ne = sigma_ne/temp
             CASE(jtarget_te)
                WHERE(sigma_te<bigno) sigma_te = sigma_te/temp
             CASE(jtarget_ti)
                WHERE(sigma_ti<bigno) sigma_ti = sigma_ti/temp
             CASE(jtarget_line_ne)
-               WHERE(sigma_ne_line<bigno) sigma_ne_line = sigma_ne_line/temp
+               WHERE(sigma_ne_line<bigno_ne) sigma_ne_line = sigma_ne_line/temp
             CASE(jtarget_line_te)
                WHERE(sigma_te_line<bigno) sigma_te_line = sigma_te_line/temp
             CASE(jtarget_line_ti)
@@ -97,6 +97,8 @@
                WHERE(sigma_fluxloop<bigno) sigma_fluxloop = sigma_fluxloop/temp
             CASE(jtarget_segrog)
                WHERE(sigma_segrog<bigno) sigma_segrog = sigma_segrog/temp
+            CASE DEFAULT
+               WRITE(6,'(A,I3.3,A)') '!!! JTARGET=',iddex(i),' not supported'
          END SELECT
       END DO
       DEALLOCATE(iddex)
