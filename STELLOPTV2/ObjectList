@@ -1,4 +1,5 @@
 ObjectFiles = \
+stellopt_renorm.o \
 stellopt_init_mpi.o \
 chisq_x.o \
 chisq_y.o \
