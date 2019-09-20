@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import sys, os, getopt
+import sys, os, argparse
 import numpy as np                    #For Arrays
 from math import pi
 from libstell.stellopt import read_stellopt
@@ -30,11 +30,19 @@ if __name__ == "__main__":
 	data=read_stellopt(args.filename)
 	for name in ['TE','TI','NELINE','TELINE','TILINE','FARADAY','SXR','XICS','XICS_BRIGHT','XICS_W3','XICS_V',
 		'B_PROBES','FLUXLOOPS','SEGROG','MSE','ECEREFLECT']:
-		vals = data[name+'_equil']
-		sig  = data[name+'_sigma']
-		targ = data[name+'_target']
-		chi  = ((targ-vals)/sig)**2
-		factor = 1.0/sum(chi)
-		print(name+": "+str(factor))
+		if name+'_equil' in data:
+			if (np.ndim(data[name+'_equil'])) == 2:
+				vals = data[name+'_equil'][0,:]
+				sig  = data[name+'_sigma'][0,:]
+				targ = data[name+'_target'][0,:]
+				chi  = ((targ-vals)/sig)**2
+				factor = 1.0/sum(chi)
+			else:
+				vals = data[name+'_equil'][0]
+				sig  = data[name+'_sigma'][0]
+				targ = data[name+'_target'][0]
+				chi  = ((targ-vals)/sig)**2
+				factor = 1.0/chi
+			print('!  '+name+': '+str(factor))
 
 sys.exit(0)
