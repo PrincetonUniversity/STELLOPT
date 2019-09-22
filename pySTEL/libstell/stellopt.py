@@ -102,6 +102,8 @@ def read_stellopt(filename):
     for line in file_handle:
         if 'ITER' in line:
             niter=niter+1
+        if 'MIN' in line:
+            niter=niter-1
     stel_data['ITER'] = np.ndarray((niter,1));
     file_handle.seek(0)
     line = file_handle.readline()
@@ -116,6 +118,8 @@ def read_stellopt(filename):
             break
         ttype,hw = line.split(' ',1)
         if ttype == 'ITER':
+            if 'MIN' in hw:
+                break
             citer = citer+1
             stel_data[ttype][citer] = int(hw)
             continue
