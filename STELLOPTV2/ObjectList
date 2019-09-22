@@ -97,7 +97,6 @@ stellopt_orbits.o \
 stellopt_reinit_vmec.o \
 stellopt_cas3d.o \
 stellopt_optimize.o \
-stellopt_recon_opt.o \
 stellopt_triangulate.o \
 stellopt_txport.o \
 stellopt_bcast_vmec.o \

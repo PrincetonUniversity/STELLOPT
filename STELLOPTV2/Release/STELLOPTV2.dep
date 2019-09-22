@@ -646,15 +646,7 @@ stellopt_optimize.o : \
       $(LIB_DIR)/Release/safe_open_mod.o \
       $(LIB_DIR)/Release/de_mod.o 
       
-      
-stellopt_recon_opt.o : \
-      equil_vals.o \
-      stellopt_runtime.o \
-      stellopt_input_mod.o \
-      stellopt_vars.o \
-      $(LIB_DIR)/Release/safe_open_mod.o 
-      
-      
+
 stellopt_paraexe.o : \
       stellopt_runtime.o \
       stellopt_input_mod.o \

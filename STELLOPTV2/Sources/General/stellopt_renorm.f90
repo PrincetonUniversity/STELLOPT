@@ -2,7 +2,12 @@
 !     Subroutine:    stellopt_renorm
 !     Authors:       S. Lazerson (lazerson@pppl.gov)
 !     Date:          09/20/2019
-!     Description:   Renormalization routine
+!     Description:   This routine renomalizes the sigmas so that each
+!                    chi-squared functional returns a value = 1 over
+!                    that diagnostic
+!                    f = (xt-x)/sigmas
+!                    1 = chisq*c
+!                    chisq = 1/c
 !-----------------------------------------------------------------------
       SUBROUTINE stellopt_renorm(m1,fvec)
 !-----------------------------------------------------------------------
@@ -59,10 +64,14 @@
                temp = temp + fvec(j)*fvec(j)
             END IF
          END DO
-         temp = 1.0/temp
          IF (temp == 0) temp = 1
+         temp = 1./sqrt(temp)
          ! now renormalize sigmas (BIG LIST)
          SELECT CASE(iddex(i))
+            !CASE(jtarget_curtor)
+            !   sigma_curtor = sigma_curtor/temp
+            CASE(jtarget_separatrix)
+               WHERE(sigma_separatrix<bigno) sigma_separatrix = sigma_separatrix/temp
             CASE(jtarget_ne)
                WHERE(sigma_ne<bigno_ne) sigma_ne = sigma_ne/temp
             CASE(jtarget_te)
@@ -99,6 +108,7 @@
                WHERE(sigma_segrog<bigno) sigma_segrog = sigma_segrog/temp
             CASE DEFAULT
                WRITE(6,'(A,I3.3,A)') '!!! JTARGET=',iddex(i),' not supported'
+               CALL write_targets(6,iddex(i))
          END SELECT
       END DO
       DEALLOCATE(iddex)
