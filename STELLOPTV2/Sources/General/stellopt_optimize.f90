@@ -121,6 +121,15 @@
                WRITE(6,'(A,2X,1ES12.4)') '      C_global: ',1.0
                WRITE(6,'(A,2X,1ES12.4)') '        Vscale: ',factor
                WRITE(6,'(A,2X,1I5)')     '          NPOP: ',npop
+            CASE('rocket')
+               WRITE(6,*) '    OPTIMIZER: Rocket'
+               WRITE(6,'(A,2X,1ES12.4)') '         FTOL: ',ftol
+               WRITE(6,'(A,2X,1ES12.4)') '         XTOL: ',xtol
+               WRITE(6,'(A,2X,1I5)')     '     NFUNC_MAX: ',nfunc_max
+               WRITE(6,'(A,2X,1ES12.4)') '       C_local: ',c1
+               WRITE(6,'(A,2X,1ES12.4)') '      C_global: ',c2
+               WRITE(6,'(A,2X,1ES12.4)') '        Vscale: ',factor
+               WRITE(6,'(A,2X,1I5)')     '          NPOP: ',npop
          CASE DEFAULT
             WRITE(6,*) '!!!!!  UNKNOWN OPTIMIZATION TYPE  !!!!!'
             WRITE(6,*) '       OPT_TYPE: ',TRIM(opt_type)
@@ -283,53 +292,9 @@
             lno_restart = .TRUE.
             c1 = epsfcn
             c2 = 1.0
-            IF (lverb) THEN
-               WRITE(6,*) '    OPTIMIZER: Rocket'
-               WRITE(6,'(A,2X,1ES12.4)') '         FTOL: ',ftol
-               WRITE(6,'(A,2X,1ES12.4)') '         XTOL: ',xtol
-               WRITE(6,'(A,2X,1I5)')     '     NFUNC_MAX: ',nfunc_max
-               WRITE(6,'(A,2X,1ES12.4)') '       C_local: ',c1
-               WRITE(6,'(A,2X,1ES12.4)') '      C_global: ',c2
-               WRITE(6,'(A,2X,1ES12.4)') '        Vscale: ',factor
-               WRITE(6,'(A,2X,1I5)')     '          NPOP: ',npop
-               IF (lauto_domain) WRITE(6,*) '  !!!!!! AUTO_DOMAIN Calculation !!!!!!!'
-            END IF
             CALL ROCKET_Evolve(stellopt_fcn,mtargets,nvars,npop,vars_min,vars_max,&
                             wa1,fvec,c1,c2,factor,ftol,xtol,nfunc_max)
             DEALLOCATE(wa1)
-         CASE('recon')
-            IF (lverb) THEN
-               WRITE(6,*) '    OPTIMIZER: RECONSTRUCTION'
-            END IF
-            CALL stellopt_recon_opt(stellopt_fcn,mtargets,nvars,vars,fvec,ier)
-            IF (ier > 0) nfev     = ier + 1
-            ALLOCATE(ipvt(nvars))
-            ALLOCATE(qtf(nvars),wa1(nvars),wa2(nvars),wa3(nvars),&
-                     wa4(mtargets),fvec(mtargets))
-            ALLOCATE(fjac(mtargets,nvars))
-            fvec     = 0.0
-            !mode     = 1
-            !IF (ANY(diag .ne. -1.0)) mode = 2
-            nprint   = 0
-            info     = 0
-            ldfjac   = mtargets
-            !WRITE(6,*) 'myid:',myid,nvars,mtargets
-            !CALL FLUSH(6)
-            IF (lverb) THEN
-               WRITE(6,*) '    OPTIMIZER: Levenberg-Mardquardt'
-               WRITE(6,*) '    NFUNC_MAX: ',nfunc_max
-               WRITE(6,'(A,2X,1ES12.4)') '         FTOL: ',ftol
-               WRITE(6,'(A,2X,1ES12.4)') '         XTOL: ',xtol
-               WRITE(6,'(A,2X,1ES12.4)') '         GTOL: ',gtol
-               WRITE(6,'(A,2X,1ES12.4)') '       EPSFCN: ',epsfcn
-               WRITE(6,*) '         MODE: ',mode
-               WRITE(6,*) '       FACTOR: ',factor
-            END IF
-            CALL lmdif(stellopt_fcn, mtargets, nvars, vars, fvec, &
-                       ftol, xtol, gtol, nfunc_max, epsfcn, diag, mode, &
-                       factor, nprint, info, nfev, fjac, ldfjac, ipvt, &
-                       qtf, wa1, wa2, wa3, wa4)
-            DEALLOCATE(ipvt, qtf, wa1, wa2, wa3, wa4, fjac)
          CASE DEFAULT
             RETURN
       END SELECT
