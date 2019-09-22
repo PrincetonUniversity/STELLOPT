@@ -45,6 +45,92 @@
 !DEC$ ENDIF
       IF (npopulation <= 0) npopulation = numprocs
       CALL tolower(opt_type)
+
+      ! Print to screen
+      IF (lverb) THEN
+         SELECT CASE(TRIM(opt_type))
+            CASE('lmdif')
+               WRITE(6,*) '    OPTIMIZER: Levenberg-Mardquardt'
+               WRITE(6,*) '    NFUNC_MAX: ',nfunc_max
+               WRITE(6,'(A,2X,1ES12.4)') '         FTOL: ',ftol
+               WRITE(6,'(A,2X,1ES12.4)') '         XTOL: ',xtol
+               WRITE(6,'(A,2X,1ES12.4)') '         GTOL: ',gtol
+               WRITE(6,'(A,2X,1ES12.4)') '       EPSFCN: ',epsfcn
+               WRITE(6,*) '         MODE: ',mode
+               WRITE(6,*) '       FACTOR: ',factor
+            CASE('lmdif_bounded')
+               WRITE(6,*) '    OPTIMIZER: Levenberg-Mardquardt (Bounded)'
+               WRITE(6,*) '    NFUNC_MAX: ',nfunc_max
+               WRITE(6,'(A,2X,1ES12.4)') '         FTOL: ',ftol
+               WRITE(6,'(A,2X,1ES12.4)') '         XTOL: ',xtol
+               WRITE(6,'(A,2X,1ES12.4)') '         GTOL: ',gtol
+               WRITE(6,'(A,2X,1ES12.4)') '       EPSFCN: ',epsfcn
+               WRITE(6,*) '         MODE: ',mode
+               WRITE(6,*) '       FACTOR: ',factor
+            CASE('eval_xvec')
+               WRITE(6,*) '    OPTIMIZER: XVEC Evlauation'
+               WRITE(6,*) '    FILE:     ',TRIM(xvec_file)
+            CASE('one_iter','single','eval','single_iter')
+               WRITE(6,*) '    OPTIMIZER: SINGLE_ITERATION'
+               WRITE(6,*) '    NFUNC_MAX: ',nfunc_max
+            CASE('gade')
+               WRITE(6,*) '    OPTIMIZER: Differential Evolution'
+               WRITE(6,*) '         NPOP: ',npopulation
+               WRITE(6,*) '    NFUNC_MAX: ',nfunc_max
+               WRITE(6,*) '       FACTOR: ',factor,'  (Mutation Scaling Factor)'
+               WRITE(6,*) '       EPSFCN: ',epsfcn,'  (Crossover Factor)'
+               WRITE(6,*) '         MODE: ',mode,'  (Strategy)'
+               WRITE(6,*) '  CR_STRATEGY: ',cr_strategy
+               IF(lrestart) WRITE(6,*) ' Restart file: ',TRIM('gade_restart.'//TRIM(id_string))
+            CASE('map')
+               WRITE(6,*) '    OPTIMIZER: Parameter Space Mapping'
+               WRITE(6,*) '         NPOP: ',npopulation
+               WRITE(6,*) '         NDIV: ',ndiv
+               WRITE(6,*) '            N: ',nvars
+               WRITE(6,*) '            M: ',mtargets
+               WRITE(6,*) '        NFUNC: ',mode**nvars
+            CASE('map_linear')
+               WRITE(6,*) '    OPTIMIZER: Linear Mapping'
+               WRITE(6,*) '         NPOP: ',npopulation
+               WRITE(6,*) '         NDIV: ',ndiv
+               WRITE(6,*) '            N: ',nvars
+               WRITE(6,*) '            M: ',mtargets
+               WRITE(6,*) '        NFUNC: ',ndiv*nvars
+            CASE('map_plane')
+               WRITE(6,*) '    OPTIMIZER: Hyperplane Mapping'
+               WRITE(6,*) '         NPOP: ',npop
+               WRITE(6,*) '         NDIV: ',ndiv
+               WRITE(6,*) '       FACTOR: ',factor,'  (Scale factor for vectors)'
+               WRITE(6,*) '            N: ',nvars
+               WRITE(6,*) '            M: ',mtargets
+               WRITE(6,*) '        NFUNC: ',ndiv*ndiv
+            CASE('map_hypers')
+               WRITE(6,*) '    OPTIMIZER: Hypersphere Mapping'
+               WRITE(6,*) '         NRAD: ',nfunc_max
+               WRITE(6,*) '         NPOL: ',npop
+               WRITE(6,*) '         DRHO: ',factor
+               WRITE(6,*) '         ERHO: ',epsfcn
+               WRITE(6,*) '            N: ',nvars
+               WRITE(6,*) '            M: ',mtargets
+            CASE('pso')
+               WRITE(6,*) '    OPTIMIZER: Particle Swarm'
+               WRITE(6,'(A,2X,1ES12.4)') '         FTOL: ',ftol
+               WRITE(6,'(A,2X,1ES12.4)') '         XTOL: ',xtol
+               WRITE(6,'(A,2X,1I5)')     '     NFUNC_MAX: ',nfunc_max
+               WRITE(6,'(A,2X,1ES12.4)') '       C_local: ',epsfcn
+               WRITE(6,'(A,2X,1ES12.4)') '      C_global: ',1.0
+               WRITE(6,'(A,2X,1ES12.4)') '        Vscale: ',factor
+               WRITE(6,'(A,2X,1I5)')     '          NPOP: ',npop
+         CASE DEFAULT
+            WRITE(6,*) '!!!!!  UNKNOWN OPTIMIZATION TYPE  !!!!!'
+            WRITE(6,*) '       OPT_TYPE: ',TRIM(opt_type)
+            WRITE(6,*)
+         END SELECT
+         IF (lauto_domain) WRITE(6,*) '  !!!!!! AUTO_DOMAIN Calculation !!!!!!!'
+         IF (lrenorm) WRITE(6,*)      '  !!!!!! Sigmas renormalized in _min file !!!!!'
+      END IF
+
+      ! Do runs
       SELECT CASE(TRIM(opt_type))
          CASE('lmdif')
             ALLOCATE(ipvt(nvars))
@@ -56,16 +142,6 @@
             info     = 0
             nfev     = 0
             ldfjac   = mtargets
-            IF (lverb) THEN
-               WRITE(6,*) '    OPTIMIZER: Levenberg-Mardquardt'
-               WRITE(6,*) '    NFUNC_MAX: ',nfunc_max
-               WRITE(6,'(A,2X,1ES12.4)') '         FTOL: ',ftol
-               WRITE(6,'(A,2X,1ES12.4)') '         XTOL: ',xtol
-               WRITE(6,'(A,2X,1ES12.4)') '         GTOL: ',gtol
-               WRITE(6,'(A,2X,1ES12.4)') '       EPSFCN: ',epsfcn
-               WRITE(6,*) '         MODE: ',mode
-               WRITE(6,*) '       FACTOR: ',factor
-            END IF
             vars_min = -bigno; vars_max = bigno
             WHERE(vars > bigno) vars_max = 1E30
             CALL lmdif(stellopt_fcn, mtargets, nvars, vars, fvec, &
@@ -83,36 +159,18 @@
             info     = 0
             nfev     = 0
             ldfjac   = mtargets
-            IF (lverb) THEN
-               WRITE(6,*) '    OPTIMIZER: Levenberg-Mardquardt (Bounded)'
-               WRITE(6,*) '    NFUNC_MAX: ',nfunc_max
-               WRITE(6,'(A,2X,1ES12.4)') '         FTOL: ',ftol
-               WRITE(6,'(A,2X,1ES12.4)') '         XTOL: ',xtol
-               WRITE(6,'(A,2X,1ES12.4)') '         GTOL: ',gtol
-               WRITE(6,'(A,2X,1ES12.4)') '       EPSFCN: ',epsfcn
-               WRITE(6,*) '         MODE: ',mode
-               WRITE(6,*) '       FACTOR: ',factor
-            END IF
             CALL lmdif(stellopt_fcn, mtargets, nvars, vars, fvec, &
                        ftol, xtol, gtol, nfunc_max, epsfcn, diag, mode, &
                        factor, nprint, info, nfev, fjac, ldfjac, ipvt, &
                        qtf, wa1, wa2, wa3, wa4,vars_min,vars_max)
             DEALLOCATE(ipvt, qtf, wa1, wa2, wa3, wa4, fjac)
          CASE('eval_xvec')
-            IF (lverb) THEN
-               WRITE(6,*) '    OPTIMIZER: XVEC Evlauation'
-               WRITE(6,*) '    FILE:     ',TRIM(xvec_file)
-            END IF
             CALL xvec_eval(stellopt_fcn,nvars,mtargets,xvec_file)
          CASE('one_iter','single','eval','single_iter')
             ALLOCATE(fvec(mtargets))
             fvec     = 0.0
             info     = FLAG_SINGLETASK
             nfev     = 0
-            IF (lverb) THEN
-               WRITE(6,*) '    OPTIMIZER: SINGLE_ITERATION'
-               WRITE(6,*) '    NFUNC_MAX: ',nfunc_max
-            END IF
             CALL stellopt_fcn(mtargets, nvars, vars,fvec,info, nfev)
             c1 = enorm(mtargets,fvec)
             iunit = 12; info = 0
@@ -150,17 +208,6 @@
             END IF
             !lrestart       = .FALSE.
             nfev           = 0
-            IF (lverb) THEN
-               WRITE(6,*) '    OPTIMIZER: Differential Evolution'
-               WRITE(6,*) '         NPOP: ',npop
-               WRITE(6,*) '    NFUNC_MAX: ',nfunc_max
-               WRITE(6,*) '       FACTOR: ',factor,'  (Mutation Scaling Factor)'
-               WRITE(6,*) '       EPSFCN: ',epsfcn,'  (Crossover Factor)'
-               WRITE(6,*) '         MODE: ',mode,'  (Strategy)'
-               WRITE(6,*) '  CR_STRATEGY: ',cr_strategy
-               IF(lrestart) WRITE(6,*) ' Restart file: ',TRIM('gade_restart.'//TRIM(id_string))
-               IF (lauto_domain) WRITE(6,*) '  !!!!!! AUTO_DOMAIN Calculation !!!!!!!'
-            END IF
             CALL DE2_Evolve(stellopt_fcn,mtargets,nvars,npopulation,&
                             vars_min,vars_max,vars,fvec,nfunc_max,&
                             factor,epsfcn,mode,cr_strategy,iunit,&
@@ -176,15 +223,6 @@
             npop   = npopulation
             ndiv   = mode
             lno_restart = .true.
-            IF (lverb) THEN
-               WRITE(6,*) '    OPTIMIZER: Parameter Space Mapping'
-               WRITE(6,*) '         NPOP: ',npop
-               WRITE(6,*) '         NDIV: ',ndiv
-               WRITE(6,*) '            N: ',nvars
-               WRITE(6,*) '            M: ',mtargets
-               WRITE(6,*) '        NFUNC: ',ndiv**nvars
-               IF (lauto_domain) WRITE(6,*) '  !!!!!! AUTO_DOMAIN Calculation !!!!!!!'
-            END IF
             CALL MAP(stellopt_fcn,nvars,mtargets,vars_min,vars_max,npop,nprint,ndiv,MPI_COMM_STEL)
             info = 5
             IF (lverb) THEN
@@ -196,15 +234,6 @@
             npop   = npopulation
             ndiv   = mode
             lno_restart = .true.
-            IF (lverb) THEN
-               WRITE(6,*) '    OPTIMIZER: Linear Mapping'
-               WRITE(6,*) '         NPOP: ',npop
-               WRITE(6,*) '         NDIV: ',ndiv
-               WRITE(6,*) '            N: ',nvars
-               WRITE(6,*) '            M: ',mtargets
-               WRITE(6,*) '        NFUNC: ',ndiv*nvars
-               IF (lauto_domain) WRITE(6,*) '  !!!!!! AUTO_DOMAIN Calculation !!!!!!!'
-            END IF
             CALL MAP_LINEAR(stellopt_fcn,nvars,mtargets,vars,vars_min,vars_max,npop,nprint,ndiv)
             info = 5
             IF (lverb) THEN
@@ -216,16 +245,6 @@
             npop   = npopulation
             ndiv   = mode
             lno_restart = .true.
-            IF (lverb) THEN
-               WRITE(6,*) '    OPTIMIZER: Hyperplane Mapping'
-               WRITE(6,*) '         NPOP: ',npop
-               WRITE(6,*) '         NDIV: ',ndiv
-               WRITE(6,*) '       FACTOR: ',factor,'  (Scale factor for vectors)'
-               WRITE(6,*) '            N: ',nvars
-               WRITE(6,*) '            M: ',mtargets
-               WRITE(6,*) '        NFUNC: ',ndiv*ndiv
-               !IF (lauto_domain) WRITE(6,*) '  !!!!!! AUTO_DOMAIN Calculation !!!!!!!'
-            END IF
             CALL MAP_PLANE(stellopt_fcn,nvars,mtargets,vars,vars_min,vars_max,factor,npop,nprint,ndiv)
             info = 5
             IF (lverb) THEN
@@ -241,16 +260,6 @@
             c1 = factor
             c2 = epsfcn
             lno_restart = .true.
-            IF (lverb) THEN
-               WRITE(6,*) '    OPTIMIZER: Hypersphere Mapping'
-               WRITE(6,*) '         NRAD: ',nfunc_max
-               WRITE(6,*) '         NPOL: ',npop
-               WRITE(6,*) '         DRHO: ',c1
-               WRITE(6,*) '         ERHO: ',c2
-               WRITE(6,*) '            N: ',nvars
-               WRITE(6,*) '            M: ',mtargets
-               !IF (lauto_domain) WRITE(6,*) '  !!!!!! AUTO_DOMAIN Calculation !!!!!!!'
-            END IF
             CALL MAP_HYPERS(stellopt_fcn,mtargets,nvars,npop,vars_min,vars_max,&
                             wa1,fvec,c1,c2,nfunc_max,MPI_COMM_STEL)
             IF (lverb) THEN
@@ -264,17 +273,6 @@
             lno_restart = .TRUE.
             c1 = epsfcn
             c2 = 1.0
-            IF (lverb) THEN
-               WRITE(6,*) '    OPTIMIZER: Particle Swarm'
-               WRITE(6,'(A,2X,1ES12.4)') '         FTOL: ',ftol
-               WRITE(6,'(A,2X,1ES12.4)') '         XTOL: ',xtol
-               WRITE(6,'(A,2X,1I5)')     '     NFUNC_MAX: ',nfunc_max
-               WRITE(6,'(A,2X,1ES12.4)') '       C_local: ',c1
-               WRITE(6,'(A,2X,1ES12.4)') '      C_global: ',c2
-               WRITE(6,'(A,2X,1ES12.4)') '        Vscale: ',factor
-               WRITE(6,'(A,2X,1I5)')     '          NPOP: ',npop
-               IF (lauto_domain) WRITE(6,*) '  !!!!!! AUTO_DOMAIN Calculation !!!!!!!'
-            END IF
             CALL PSO_Evolve(stellopt_fcn,mtargets,nvars,npop,vars_min,vars_max,&
                             wa1,fvec,c1,c2,factor,ftol,xtol,nfunc_max)
             DEALLOCATE(wa1)
@@ -333,9 +331,6 @@
                        qtf, wa1, wa2, wa3, wa4)
             DEALLOCATE(ipvt, qtf, wa1, wa2, wa3, wa4, fjac)
          CASE DEFAULT
-            WRITE(6,*) '!!!!!  UNKNOWN OPTIMIZATION TYPE  !!!!!'
-            WRITE(6,*) '       OPT_TYPE: ',TRIM(opt_type)
-            WRITE(6,*)
             RETURN
       END SELECT
       ! Now output the minimum files
