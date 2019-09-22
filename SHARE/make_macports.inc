@@ -25,10 +25,9 @@
 #######################################################################
 #            Define Compiler Flags
 #######################################################################
-  FLAGS_R = -O2 -g -fexternal-blas -fbacktrace -fcheck=all 
-#  FLAGS_R = -O2 -fexternal-blas -Wmissing-include-dirs
-  FLAGS_D = -g -O0 -fcheck=all 
-#  LIBS    = -L/opt/local/lib -lopenblas -lscalapack  
+  FLAGS_R = -O2 -fexternal-blas -Wmissing-include-dirs
+  FLAGS_D = -g -O0 -fcheck=all -Wmissing-include-dirs -fexternal-blas \
+            -fbacktrace -fcheck=all
   LIBS    = -L/opt/local/lib -lopenblas 
 # Because scalapack is broken in macport for MPI4.0
   LIBS += /Users/lazerson/Sims_Work/scalapack-2.0.2/libscalapack.a
