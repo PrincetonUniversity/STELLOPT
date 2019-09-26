@@ -241,7 +241,6 @@ INTEGER, INTENT(IN) :: ns, nzeta, ntheta3
   ! computations
   !------------------------------------------------
     SUBROUTINE SetSurfacePartitions
-    
     INTEGER :: mypart, local_err
 #if defined(MPI_OPT)
     IF (par_ns.LT.nranks) THEN
