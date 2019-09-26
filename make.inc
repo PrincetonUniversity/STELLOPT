@@ -1,1 +1,1 @@
-SHARE/make_cobra.inc
+SHARE/make_macports.inc
