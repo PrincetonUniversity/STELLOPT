@@ -1455,25 +1455,25 @@
 
       CALL write_stel_lvar_vec(iunit,laphi_opt,aphi_min,aphi_max,daphi_opt,'APHI')
 
-      CALL write_stel_lvar_vec(iunit,lam_opt,am_min,am_max,dam_opt,'AM')
+      CALL write_stel_lvar_vec(iunit,lam_opt,am_min,am_max,dam_opt,'AM',0)
 
-      CALL write_stel_lvar_vec(iunit,lac_opt,ac_min,ac_max,dac_opt,'AC')
+      CALL write_stel_lvar_vec(iunit,lac_opt,ac_min,ac_max,dac_opt,'AC',0)
 
-      CALL write_stel_lvar_vec(iunit,lai_opt,ai_min,ai_max,dai_opt,'AI')
+      CALL write_stel_lvar_vec(iunit,lai_opt,ai_min,ai_max,dai_opt,'AI',0)
 
-      CALL write_stel_lvar_vec(iunit,lah_opt,ah_min,ah_max,dah_opt,'AH')
+      CALL write_stel_lvar_vec(iunit,lah_opt,ah_min,ah_max,dah_opt,'AH',0)
 
-      CALL write_stel_lvar_vec(iunit,lat_opt,at_min,at_max,dat_opt,'AT')
+      CALL write_stel_lvar_vec(iunit,lat_opt,at_min,at_max,dat_opt,'AT',0)
 
-      CALL write_stel_lvar_vec(iunit,lne_opt,ne_min,ne_max,dne_opt,'NE')
+      CALL write_stel_lvar_vec(iunit,lne_opt,ne_min,ne_max,dne_opt,'NE',0)
 
-      CALL write_stel_lvar_vec(iunit,lzeff_opt,zeff_min,zeff_max,dzeff_opt,'ZEFF')
+      CALL write_stel_lvar_vec(iunit,lzeff_opt,zeff_min,zeff_max,dzeff_opt,'ZEFF',0)
 
-      CALL write_stel_lvar_vec(iunit,lte_opt,te_min,te_max,dte_opt,'TE')
+      CALL write_stel_lvar_vec(iunit,lte_opt,te_min,te_max,dte_opt,'TE',0)
 
-      CALL write_stel_lvar_vec(iunit,lti_opt,ti_min,ti_max,dti_opt,'TI')
+      CALL write_stel_lvar_vec(iunit,lti_opt,ti_min,ti_max,dti_opt,'TI',0)
 
-      CALL write_stel_lvar_vec(iunit,lth_opt,th_min,th_max,dth_opt,'TH')
+      CALL write_stel_lvar_vec(iunit,lth_opt,th_min,th_max,dth_opt,'TH',0)
 
       CALL write_stel_lvar_vec(iunit,lam_f_opt,am_f_min,am_f_max,dam_f_opt,'AM_F')
  
@@ -2620,16 +2620,20 @@
       RETURN
       END SUBROUTINE write_optimum_namelist
 
-      SUBROUTINE write_stel_lvar_vec(iunit,lvar,var_min,var_max,dvar,str_name)
+      SUBROUTINE write_stel_lvar_vec(iunit,lvar,var_min,var_max,dvar,str_name,istart)
       IMPLICIT NONE
       INTEGER, INTENT(in) :: iunit
       LOGICAL, INTENT(in) :: lvar(:)
       REAL(rprec), INTENT(in) :: var_min(:), var_max(:), dvar(:)
       CHARACTER(LEN=*), INTENT(in) :: str_name
+      INTEGER, INTENT(in), OPTIONAL :: istart
       CHARACTER(LEN=256) :: lname,minname,maxname,dname
-      INTEGER :: n, ik
+      INTEGER :: n, ik, i1
       CHARACTER(LEN=*), PARAMETER :: vecvar  = "(2X,A,'(',I3.3,')',1X,'=',1X,L1,2(2X,A,'(',I3.3,')',1X,'=',1X,ES22.12E3))"
       
+      i1 = 1
+      IF(PRESENT(istart)) i1=istart
+
       IF (ANY(lvar)) THEN
         lname   = 'L'//TRIM(str_name)//'_OPT'
         minname = TRIM(str_name)//'_MIN'
@@ -2639,7 +2643,7 @@
         DO ik = LBOUND(lvar,DIM=1), UBOUND(lvar,DIM=1)
            IF(lvar(ik)) n=ik
         END DO
-        DO ik = LBOUND(lvar,DIM=1), n
+        DO ik = i1, n
            WRITE(iunit,vecvar) TRIM(lname),ik,lvar(ik),TRIM(minname),ik,var_min(ik),TRIM(maxname),ik,var_max(ik)
         END DO
         IF (ANY(dvar > 0)) WRITE(iunit,"(2X,A,1X,'=',10(1X,ES22.12E3))") TRIM(dname),(dvar(ik), ik = 1, n)
