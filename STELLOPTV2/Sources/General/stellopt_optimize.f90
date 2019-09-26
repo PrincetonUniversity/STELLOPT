@@ -26,12 +26,14 @@
       !LOGICAL ::  lrestart
       LOGICAL ::  lfile_exists
       INTEGER ::  ier, iunit,nvar_in, nprint, info, ldfjac,nfev,&
-                  iunit_restart, nfev_save, npop, ndiv
+                  iunit_restart, nfev_save, npop, ndiv, ii
       INTEGER, ALLOCATABLE :: ipvt(:)
       REAL(rprec)              ::  target_fitness, c1, c2
       REAL(rprec), ALLOCATABLE ::  qtf(:), wa1(:), wa2(:), wa3(:), &
                                    wa4(:), fvec(:)
       REAL(rprec), ALLOCATABLE ::  fjac(:,:)
+      ! LBFGSB variables 
+      INTEGER, ALLOCATABLE :: nbd(:)
       
       REAL(rprec), EXTERNAL :: enorm
       EXTERNAL stellopt_fcn
@@ -100,7 +102,56 @@
                        factor, nprint, info, nfev, fjac, ldfjac, ipvt, &
                        qtf, wa1, wa2, wa3, wa4,vars_min,vars_max)
             DEALLOCATE(ipvt, qtf, wa1, wa2, wa3, wa4, fvec, fjac)
-         CASE('eval_xvec')
+         CASE('lbfgsb')
+            ! Additional Memory allocation and de-allocation is handled
+            ! inside of the lbfgsb driver routine
+            ALLOCATE(nbd(nvars))
+            nprint   = 0
+            info     = 0
+            nfev     = 0
+            IF (lverb) THEN
+               WRITE(6,*) '    OPTIMIZER: Limited-Memory BFGS (Bounded)'
+               WRITE(6,*) '    # of Target Functions: ',mtargets
+               WRITE(6,*) '           # of Variables: ',nvars
+               WRITE(6,'(A,2X,1ES12.4)') '        EPSFCN: ',epsfcn
+               WRITE(6,*) '    NFUNC_MAX: ',nfunc_max
+               WRITE(6,'(A,2X,1ES12.4)') '          FTOL: ',ftol
+               WRITE(6,*) '     M_LBFGSB: ',m_lbfgsb
+               WRITE(6,'(A,2X,1ES12.4)') '        FACTOR: ',factor
+               WRITE(6,'(A,2X,1ES12.4)') '          GTOL: ',gtol
+               WRITE(6,*) ' LBFGSB_PRINT: ',print_lbfgsb
+               WRITE(6,*) '       NPRINT: ',nprint
+               WRITE(6,*) '         INFO: ',info
+            END IF
+
+            ! Handle bounds. For this, use the existing
+            ! structure and scan it to determine the appropriate value
+            ! for nbd (see lbfgsb.f for documentation)
+            ! Loop over each variable min/max.  Assign nbd accordingly
+            do ii = 1,nvars
+              if ( (vars_min(ii) .gt. -bigno) .and. &
+                   (vars_max(ii) .lt.  bigno) ) then
+                nbd(ii) = 2  ! upper and lower bounds
+              elseif ( (vars_min(ii) .le. -bigno) .and. &
+                       (vars_max(ii) .ge.  bigno) ) then
+                nbd(ii) = 0  ! no bounds
+              elseif ( (vars_min(ii) .gt. -bigno) .and. &
+                       (vars_max(ii) .ge.  bigno) ) then
+                nbd(ii) = 1  ! lower bounds
+              elseif ( (vars_min(ii) .le. -bigno) .and. &
+                       (vars_max(ii) .lt.  bigno) ) then
+                nbd(ii) = 3  ! upper bounds
+              end if
+            end do
+
+            CALL lbfgsb_driver(stellopt_fcn, mtargets, nvars, vars, &
+                               vars_min, vars_max, nbd, epsfcn, & 
+                               nfunc_max, ftol, m_lbfgsb, factor, &
+                               gtol, print_lbfgsb, nprint, info, nfev)
+            ! Deallocate the variables that were allocated for lbfgsb
+            DEALLOCATE(nbd)
+
+          CASE('eval_xvec')
             IF (lverb) THEN
                WRITE(6,*) '    OPTIMIZER: XVEC Evlauation'
                WRITE(6,*) '    FILE:     ',TRIM(xvec_file)

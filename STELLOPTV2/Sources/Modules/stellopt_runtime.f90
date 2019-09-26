@@ -201,6 +201,7 @@
       INTEGER                  :: nvars, mtargets, iter, mode, iunit_out,&
                                   cr_strategy, rho_exp, npopulation, noptimizers,&
                                   ier_paraexe
+      INTEGER                  :: m_lbfgsb, print_lbfgsb
       INTEGER, ALLOCATABLE     :: var_dex(:),target_dex(:)
       INTEGER, ALLOCATABLE     :: arr_dex(:,:)
       REAL(rprec)              :: pi, pi2, mu0, ftol, xtol, gtol, epsfcn,&
