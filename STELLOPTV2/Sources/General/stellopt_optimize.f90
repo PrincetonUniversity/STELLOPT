@@ -72,6 +72,19 @@
          END SUBROUTINE clmdif
       END INTERFACE
 
+!-----------------------------------------------------------------------
+!     Interface of RPC server (C)
+!-----------------------------------------------------------------------
+      INTERFACE
+         SUBROUTINE serve_rpc(fcn, m, n, x, fvec) BIND(C)
+            USE, INTRINSIC :: ISO_C_BINDING
+            INTEGER(KIND=C_INT) :: m, n
+            REAL(KIND=C_DOUBLE), DIMENSION(n) :: x
+            REAL(KIND=C_DOUBLE), DIMENSION(m) :: fvec
+            TYPE(C_FUNPTR), VALUE :: fcn
+         END SUBROUTINE serve_rpc
+      END INTERFACE
+
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
@@ -164,6 +177,14 @@
                       factor, nprint, info, nfev, fjac, ldfjac, ipvt, &
                       qtf, wa1, wa2, wa3, wa4,vars_min,vars_max)
             DEALLOCATE(ipvt, qtf, wa1, wa2, wa3, wa4, fvec, fjac)
+         CASE('rpc_server')
+            ALLOCATE(fvec(mtargets))
+            IF (lverb) THEN
+               WRITE(6,*) '    OPTIMIZER: RPC Server'
+               WRITE(6,*) '    FILE:     ',TRIM(xvec_file)
+            END IF
+            CALL serve_rpc(C_FUNLOC(stellopt_fcn), mtargets, nvars, vars, fvec)
+            DEALLOCATE(fvec)
          CASE('eval_xvec')
             IF (lverb) THEN
                WRITE(6,*) '    OPTIMIZER: XVEC Evlauation'
