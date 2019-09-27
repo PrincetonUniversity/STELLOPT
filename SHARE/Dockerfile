@@ -22,6 +22,7 @@ RUN apt-get update && apt-get install -y \
     pgplot5 \
     libncarg-dev \
     libgsl-dev \
+    libcapnp-dev \
     git \
     vim-tiny && \
     cp --remove-destination SHARE/make_docker.inc make.inc && \
