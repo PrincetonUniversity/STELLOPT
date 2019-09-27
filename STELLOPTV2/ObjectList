@@ -119,4 +119,6 @@ stellopt_input_mod.o \
 equil_vals.o \
 stellopt_runtime.o \
 stellopt_targets.o \
-clmdif.o 
+clmdif.o \
+eval_server.o \
+eval.capnp.o 
