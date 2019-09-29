@@ -9,8 +9,7 @@ normal to the VMEC surface.
 \$$ \vec{B}\cdot\hat{n}=\frac{1}{4\pi}\int\frac{\vec{j}'
 dA}{\|\vec{x}-\vec{x}'\|^{3/2}} $$
 
-It achieves this by
-utilizing the covariant magnetic field on the VMEC surface to construct
+It achieves this by utilizing the covariant magnetic field on the VMEC surface to construct
 a surface current. It creates input files for the NESCOIL program.
 
 ------------------------------------------------------------------------
@@ -47,22 +46,15 @@ The BNORM code reads input parameters from command line.
 Here are the arguments list.
 
 | index |  argument | description |
-|c----c|c-------c|c---------|
+|:----:|:-------:|:---------|
 | 1 | extension | VMEC 'wout' file |
-| 2 | separation | [optional, default: RBC(1,0)] uniformly scale-up
-separation, unit: same as RBC |
-| 3 | nu | [optional, default: 256] poloidal resolution for plasma
-surface |
-| 4 | nv | [optional, default: 256] toroidal resolution for plasma
-surface per period |
-| 5 | mf | [optional, default: 24] poloidal Fourier mode number for
-Bnormal distribution (mf>=MPOL-1) |
-| 6 | nf | [optional, default: 14] toroidal Fourier mode number for
-Bnormal distribution (nf>=NTOR) |
-| 7 | md | [optional, default: 24] poloidal Fourier mode number for
-surface and Bfield representations |
-| 8 | nd | [optional, default: 20] toroidal Fourier mode number for
-surface and Bfield representations |
+| 2 | separation | [optional, default: RBC(1,0)] uniformly scale-up separation, unit: same as RBC |
+| 3 | nu | [optional, default: 256] poloidal resolution for plasma surface |
+| 4 | nv | [optional, default: 256] toroidal resolution for plasma surface per period |
+| 5 | mf | [optional, default: 24] poloidal Fourier mode number for Bnormal distribution (mf>=MPOL-1) |
+| 6 | nf | [optional, default: 14] toroidal Fourier mode number for Bnormal distribution (nf>=NTOR) |
+| 7 | md | [optional, default: 24] poloidal Fourier mode number for surface and Bfield representations |
+| 8 | nd | [optional, default: 20] toroidal Fourier mode number for surface and Bfield representations |
 
 ------------------------------------------------------------------------
 
