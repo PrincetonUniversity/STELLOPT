@@ -1,22 +1,5 @@
-{% include head.html %} 
 VMEC
 ====
- 
---- 
-Table of Contents 
- 
-   * [VMEC](#vmec) 
-   * [Theory](#theory) 
-   * [Compilation](#compilation) 
-   * [Input Data Format](#input-data-format) 
-   * [Execution](#execution) 
-   * [Output Data Format](#output-data-format) 
-   * [Visualization](#visualization) 
-   * [Tutorials](#tutorials) 
-   * [References](#references) 
- 
---- 
- 
 
 The code uses a variational method to find a minimum in the total energy
 of the system. The code assumes that quantities may be Fourier expanded
@@ -44,7 +27,7 @@ written
 
 \$$ W=\int\left(\frac{\|\vec{B}\|^2}{2\mu_o}+\frac{p}{\gamma-1}\right)d^3x. $$
 
-The scalar invariance of the potential energy allows it`s computation
+The scalar invariance of the potential energy allows it's computation
 directly in flux coordinates. The relevant toroidal-cylindrical and flux
 coordinates are shown in Figure 1.
 
@@ -126,7 +109,7 @@ A Fourier expansion in terms of theta and zeta may be conducted giving
 
 \$$  x_j=\sum_{m,n}X_j^{mn}\left(\rho\right)\exp\left[i\left(m\theta-n\zeta\right)\right] $$
 
-where (x1,x2,x3)=(R,lambda,Z). The variation of the total potential
+where $$(x_1, x_2, x_3)=(R, \lambda, Z)$$. The variation of the total potential
 energy then becomes
 
 \$$  \frac{dW}{d\beta}=-\int\left(F_j^{mn}\right)^* \frac{\partial X_j^{mn}}{\partial \beta}dV, $$
@@ -190,9 +173,9 @@ $$X_3^{mn}$$ coordinate coefficients. The poloidal force components contain
 no radial derivatives. This implies that no boundary specification is
 required for $$X_2^{mn}$$.
 
-The VMEC code treats the `free` outer boundary condition through
-inclusion of a `vacuum` magnetic field. The MAKEGRID code is used to
-produce an `mgrid` file. This file contains the vacuum field on an R-Z
+The VMEC code treats the  'free' outer boundary condition through
+inclusion of a 'vacuum' magnetic field. The MAKEGRID code is used to
+produce an 'mgrid' file. This file contains the vacuum field on an R-Z
 grid for a series of toroidal angles for a given coil set. The vacuum
 field can be decomposed into two parts
 
@@ -214,7 +197,7 @@ vacuum potential
 
 The free boundary condition requires the calculation of the initial
 vacuum magnetic field from data involving the coil configuration. The
-MAKEGRID code is used to produce an `mgrid` file. This file contains
+MAKEGRID code is used to produce an 'mgrid' file. This file contains
 the vacuum field on an R-Z grid for a series of toroidal angles.
 
 ------------------------------------------------------------------------
@@ -222,15 +205,15 @@ the vacuum field on an R-Z grid for a series of toroidal angles.
 ### Compilation
 
 VMEC is a component of the STELLOPT suite of codes. It is contained
-within the `stellopt.zip` file. Compilation of the STELLOPT suite is
+within the 'stellopt.zip' file. Compilation of the STELLOPT suite is
 discussed on the [STELLOPT Compilation Page](STELLOPT Compilation).
 
 ------------------------------------------------------------------------
 
 ### Input Data Format
 
-The VMEC input file has the name `input.name` where `name` is a
-descriptive name of the user`s choosing. This input file is a Fortran
+The VMEC input file has the name 'input.name' where 'name' is a
+descriptive name of the user's choosing. This input file is a Fortran
 namelist file which specifies how the code is to be run. A full listing
 of variable can be found in the
 [input variable namelist page](VMEC Input Namelist (v8.47)). The input
@@ -269,41 +252,41 @@ RBC(1,6) =  -0.01     ZBS(1,6) =  -0.01
 ```
 
 The first line simply defines the Fortran namelist and the last line
-ends it. The `LFREEB` is a boolean value which specifies if the code
-should be run in free boundary mode. If `LFREEB` is set to `T` then
-the next variable `MGRID_FILE` must specify the name of an mgrid file
+ends it. The 'LFREEB' is a boolean value which specifies if the code
+should be run in free boundary mode. If 'LFREEB' is set to 'T' then
+the next variable 'MGRID\_FILE' must specify the name of an mgrid file
 created by the xgrid package. This file contains information regarding
-the fields created by the various field coils. If `LFREEB` is set to
-`F` then `MGRID_FILE` is ignored and may be omitted. The `DELT`
+the fields created by the various field coils. If 'LFREEB' is set to
+'F' then 'MGRID_FILE' is ignored and may be omitted. The 'DELT'
 parameter determines the amount of blending from previous iterations
-(value from 0.0 to 1.0). The `NFP` variable specifies the number of
+(value from 0.0 to 1.0). The 'NFP' variable specifies the number of
 field periods in the toroidal direction (number of times the plasma
-cross-section repeats itself). The `NCURR` variable specifies that the
+cross-section repeats itself). The 'NCURR' variable specifies that the
 rotational transform (NCURR=0, iota) or the toroidal current (NCURR=1)
-is specified at the boundary. The `MPOL` variable specifies the
-maximum poloidal mode number for the run. The `NTOR` variable
+is specified at the boundary. The 'MPOL' variable specifies the
+maximum poloidal mode number for the run. The 'NTOR' variable
 specifies the minimum and maximum toroidal mode number for the run. The
-`NZETA` variable specifies the number of planes on which the mgrid
-file has calculated the magnetic field. The `NITER` variable specifies
+'NZETA' variable specifies the number of planes on which the mgrid
+file has calculated the magnetic field. The 'NITER' variable specifies
 the maximum number of iterations for the VMEC code. Note that if this
 number is exceeded VMEC will continue to run for double this number to
-see if convergence can be met. The `NSTEP` variable determines how
-often the code should output diagnostics to the screen and `threed1`
-file. The `NVACSKIP` variable is used for a free boundary run to
-indicate how often to update the vacuum field solution. The `GAMMA`
+see if convergence can be met. The 'NSTEP' variable determines how
+often the code should output diagnostics to the screen and 'threed1'
+file. The 'NVACSKIP' variable is used for a free boundary run to
+indicate how often to update the vacuum field solution. The 'GAMMA'
 variable is used to set the adiabatic (compressional) index. Note that
 for GAMMA=0.0 the code assumes it is being supplied a pressure not a
-mass. The `PHIEDGE` variable specifies the total enclosed toroidal
+mass. The 'PHIEDGE' variable specifies the total enclosed toroidal
 flux for a fixed boundary run. For a free boundary run, this variable
-limits the radius of the plasma. The `CURTOR` variable specifies the
+limits the radius of the plasma. The 'CURTOR' variable specifies the
 scaling for the toroidal current in Amps.
 
-The `NS_ARRAY` and `FTOL_ARRAY` specify the radial grid
+The 'NS\_ARRAY' and 'FTOL\_ARRAY' specify the radial grid
 refinement that the code uses. In general the code iterates on a given
 radial grid. Once a specified tolerance is met, the code uses a more
-refined grid and restarts it`s iterative cycle for a new tolerance. The
-`NS_ARRAY` is an array of integers specifying the number of radial
-grid points for each cycle of the code. The `FTOL_ARRAY` variable
+refined grid and restarts it's iterative cycle for a new tolerance. The
+'NS\_ARRAY' is an array of integers specifying the number of radial
+grid points for each cycle of the code. The 'FTOL\_ARRAY' variable
 specifies the tolerance for a given radial grid discretization. These
 arrays should have the same number of elements. In this way the user
 control the gird refinement of the code.
@@ -311,30 +294,30 @@ control the gird refinement of the code.
 The input profiles (mass/pressure, rotational transform, and current)
 for the code are described in terms of a 10th order polynomial in the
 radial grid. The user must thus specify the 11 coefficients for the
-polynomial in input file. The `AM` array specifies the coefficients
-for the mass (pressure) polynomial. The `AI` array specifies the
+polynomial in input file. The 'AM' array specifies the coefficients
+for the mass (pressure) polynomial. The 'AI' array specifies the
 coefficients for the rotational transform (iota) polynomial (used if
-NCURR=0). The `AC` array specifies the coefficients for the toroidal
+NCURR=0). The 'AC' array specifies the coefficients for the toroidal
 current polynomial (used if NCURR=1). In order to change the
 specification to a form other than a polynomial in the radial direction,
 the source code for the profile specifications must be changed. The
-`pcurr.f`, `piota.f`, and `pmass.f` files in the `vsource`
+'pcurr.f', 'piota.f', and 'pmass.f' files in the 'vsource'
 directory specify these profile functions.
 
 The code requires a guess for the initial magnetic axis. The position of
-this axis is specified in the `RAXIS` and `ZAXIS` variables. The
+this axis is specified in the 'RAXIS' and 'ZAXIS' variables. The
 axis is specified by a space curve in terms of Fourier coefficients in
-the toroidal angle. The `RAXIS` and `ZAXIS` variables contain the
+the toroidal angle. The 'RAXIS' and 'ZAXIS' variables contain the
 Fourier coefficients describing this space curve. This is only an
 initial guess.
 
-The boundary coefficients for the plasma are stored in the `RBC`,
-`RBS`, `ZBC`, and `ZBS` variables. These are Fourier coefficients
+The boundary coefficients for the plasma are stored in the 'RBC',
+'RBS', 'ZBC', and 'ZBS' variables. These are Fourier coefficients
 describing the outer most flux surface over one field period. For a
 fixed boundary run, these values prescribe the shape of the outer most
 flux surface. For the free boundary run, they prescribe an initial
 condition for the shape of the plasma. For up-down symmetric
-(stellarator symmetric) plasmas, only the `RBC` and `ZBS`
+(stellarator symmetric) plasmas, only the 'RBC' and 'ZBS'
 coefficients need be specified. The variables names indicate if they
 reference radial (R) or vertical (Z) coordinates. The second character
 (B) specifies them as the boundary coefficients. The third letter
@@ -349,7 +332,7 @@ It is worthwhile to note that the array indices in VMEC use toroidal
 angle precedence so the first index of the arrays is over the toroidal
 mode indices while the second is over the poloidal indices. Also
 remember that the toroidal angle must be multiplied by the number of
-field periods to plot the entire torus. This implies that `NTOR`
+field periods to plot the entire torus. This implies that 'NTOR'
 actually corresponds to NTOR x NFP modes over the entire torus.
 
 ------------------------------------------------------------------------
@@ -362,7 +345,7 @@ to VMEC like so (input file named input.test):
     yourmachine:0005> ~/bin/xvmec2000 test >& log.test &
 
 Here we've redirected screen output (trapping error messages) to
-`log.test` and put the process in the background.
+'log.test' and put the process in the background.
 
 ------------------------------------------------------------------------
 
@@ -374,8 +357,10 @@ wout). The data output to the screen is also indicated (in greater
 detail) in the threed1 file. It is suggested that the user redirect the
 output of the run to a log file. The wout file is a text file containing
 data from plotting of the final configuration. Details of reading the
-`wout` file can be found in `LIB_OPT/vsource/readw_only_priv.f.`
-If `LDIAGNO` was set to true in the input namelist, a `diagno_in`
+'wout' file can be found in
+[LIBSTELL/Sources//Modules/read_wout_mod.f90]
+(https://github.com/PrincetonUniversity/STELLOPT/blob/master/LIBSTELL/Sources/Modules/read_wout_mod.f90).
+If 'LDIAGNO' was set to true in the input namelist, a 'diagno_in'
 file will be created. This file contains information regarding the outer
 flux surface and currents for the DIAGNO routine (which calculate the
 field at a point for magnetic reconstruction).
@@ -385,15 +370,15 @@ field at a point for magnetic reconstruction).
 ### Visualization
 
 The datafiles output by VMEC are text files which explain the quantities
-they contain, the exception being the `wout` file. This file contains
+they contain, the exception being the 'wout' file. This file contains
 a reduced form of the Fourier coefficients for various quantities, along
 with radial profiles of specific quantities. This file can be in text or
 netCDF format. The user is encourage to examine the files in the
 matlabVMEC package to better understand how to handle these quantities.
-In general, VMEC stores the R and Z data in the variables `rmnc` and
-`zmns`. These variables are two dimensional. One dimension indexes the
+In general, VMEC stores the R and Z data in the variables 'rmnc' and
+'zmns'. These variables are two dimensional. One dimension indexes the
 radial surface the other is a vectorization over the poloidal and
-toroidal modes. The `xn` and `xm` variables store the m and n
+toroidal modes. The 'xn' and 'xm' variables store the m and n
 information for a given index. It is important to note that VMEC
 calculates values over one field period, thus for a full torus one must
 multiply the toroidal mode number (n) by the number of field periods for
@@ -405,7 +390,7 @@ library for manipulation of toroidal equilibria AJAX does exist and is
 distributed as part of the LIBSTELL package.
 
 MATLAB: matlabVMEC, provides a series of functions to read the VMEC data
-files into MATLAB, transform from Fourier to `toroidal` coordinates,
+files into MATLAB, transform from Fourier to 'toroidal' coordinates,
 and provides a Graphical User Interface (GUI) for data exploration. It
 can be obtained from the MATLAB Central File Exchange
 (<http://www.mathworks.com/matlabcentral/fileexchange/29031-matlabvmec>).
@@ -413,32 +398,28 @@ can be obtained from the MATLAB Central File Exchange
 IDL: ECHIDNA, provides a GUI for execution and visualization of VMEC via
 IDL.
 
+Python: PySTEL is also available in the repository.
+
 ------------------------------------------------------------------------
 
 ### Tutorials
 
-[ Fixed Boundary Run for NCSX-like configuration.](VMEC Fixed Boundary Run)
-
-[ Free Boundary Run for NCSX-like configuration.](VMEC Free Boundary Run)
-
-[VMEC Input Namelist](Tutorial VMEC Input Namelist)
-
-[VMEC Advanced Profiles](VMEC Advanced Profiles)
-
-[VMEC PEST1 Coordinates](VMEC PEST1 Coordinates)
-
-[Toroidal Coordinate](Toroidal Coordinates)
+- [ Fixed Boundary Run for NCSX-like configuration.](VMEC Fixed Boundary Run)
+- [ Free Boundary Run for NCSX-like configuration.](VMEC Free Boundary Run)
+- [VMEC Input Namelist](Tutorial VMEC Input Namelist)
+- [VMEC Advanced Profiles](VMEC Advanced Profiles)
+- [VMEC PEST1 Coordinates](VMEC PEST1 Coordinates)
+- [Toroidal Coordinate](Toroidal Coordinates)
 
 ------------------------------------------------------------------------
 
 ### References
 
 -   [VMEC input variables on Doxygen](https://ornl-fusion.github.io/stellinstall/vmec_equilibrium_sec.html)
-
 -   [Hirshman, S.P. and Whitson, J.C. \"Steepest-descent moment method for three-dimensional magnetohydrodynamic equilibria.\" Phys. Fluids 26, 3353 (1983)](https://doi.org/10.1063/1.864116)
 -   [Hirshman, S.P. and Meier, H.K.  \"Optimized Fourier representations for three-dimensional magnetic surfaces.\" Phys. Fluids 28, 1387 (1985)](https://doi.org/10.1063/1.864972)
 -   [Hirshman, S.P. and Lee D.K. \"Momcon: A spectral code for obtaining three-dimensional magnetohydrodynamic equilibria.\" Comp. Phys. Comm. 39, 161 (1986)](https://doi.org/10.1016/0010-4655(86)90127-X)
--   [Hirshman, S.P., van Rij, W.I., and Merkel P. \"Three-dimensional free boundary calculations using a spectral green`s function method.\" Comp. Phys. Comm. 43, 143 (1986)](https://inis.iaea.org/search/search.aspx?orig_q=RN:18025214)
+-   [Hirshman, S.P., van Rij, W.I., and Merkel P. \"Three-dimensional free boundary calculations using a spectral green's function method.\" Comp. Phys. Comm. 43, 143 (1986)](https://inis.iaea.org/search/search.aspx?orig_q=RN:18025214)
 -   [ Hirshman, S.P. and Betancourt O. \"Preconditioned descent algorithm for rapid calculations of magnetohydrodynamic equilibria.\" J. Comp. Phys. 96, 99 (1991)](https://doi.org/10.1016/0021-9991(91)90267-O)
 -   [E. Strumberger, S. Günter, P. Merkel, E. Schwarz, C. Tichmann and H.-P. Zehrfeld \"Numerical computation of magnetic fields of two- and three-dimensional equilibria with net toroidal current.\" Nuclear Fusion 42, 7 (2002)](http://dx.doi.org/10.1088/0029-5515/42/7/305)
 -   [S.E. Attenberger, W. A. Houlberg and S.P Hirshman. \"Some practical considerations involving spectral representations of 3D plasma equilibria.\" J. Comp. Phys. 72, 435 (1987)](http://www.sciencedirect.com/science/article/pii/0021999187900921)
