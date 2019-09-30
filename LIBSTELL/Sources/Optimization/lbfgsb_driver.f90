@@ -262,7 +262,7 @@ subroutine lbfgsb_driver(fcn, m, n, x, l, u, nbd, dx_init, maxfev, ftol, &
     
     ! This is the call to the L-BFGS-B code.
     IF (myid .eq. master) THEN
-      call setulb(n,m,x,l,u,nbd,f,g,factr,pgtol,wa,iwa,task,iprint, &
+      call setulb(n,m_lbfgsb,x,l,u,nbd,f,g,factr,pgtol,wa,iwa,task,iprint, &
                   csave,lsave,isave,dsave)
     END IF
 !DEC$ IF DEFINED (MPI_OPT)
