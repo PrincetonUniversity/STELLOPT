@@ -1372,6 +1372,7 @@
       target_dkes(1)      = 0.0;  sigma_dkes(1)      = bigno
       target_dkes(2)      = 0.0;  sigma_dkes(2)      = bigno
       target_helicity(1)  = 0.0;  sigma_helicity(1)  = bigno
+      target_Jstar(1)     = 0.0;  sigma_Jstar(1)     = bigno
       END SUBROUTINE read_stellopt_input
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1451,57 +1452,57 @@
       END IF
 
       ! Vector quantities
-      CALL write_stel_lvar_vec(iunit,lextcur_opt,extcur_min,extcur_max,dextcur_opt,'EXTCUR')
+      CALL write_stel_lvar_vec(iunit,lextcur_opt,extcur_min,extcur_max,dextcur_opt,'EXTCUR',1,nigroup)
 
-      CALL write_stel_lvar_vec(iunit,laphi_opt,aphi_min,aphi_max,daphi_opt,'APHI')
+      CALL write_stel_lvar_vec(iunit,laphi_opt,aphi_min,aphi_max,daphi_opt,'APHI',0,20)
 
-      CALL write_stel_lvar_vec(iunit,lam_opt,am_min,am_max,dam_opt,'AM')
+      CALL write_stel_lvar_vec(iunit,lam_opt,am_min,am_max,dam_opt,'AM',0,20)
 
-      CALL write_stel_lvar_vec(iunit,lac_opt,ac_min,ac_max,dac_opt,'AC')
+      CALL write_stel_lvar_vec(iunit,lac_opt,ac_min,ac_max,dac_opt,'AC',0,20)
 
-      CALL write_stel_lvar_vec(iunit,lai_opt,ai_min,ai_max,dai_opt,'AI')
+      CALL write_stel_lvar_vec(iunit,lai_opt,ai_min,ai_max,dai_opt,'AI',0,20)
 
-      CALL write_stel_lvar_vec(iunit,lah_opt,ah_min,ah_max,dah_opt,'AH')
+      CALL write_stel_lvar_vec(iunit,lah_opt,ah_min,ah_max,dah_opt,'AH',0,20)
 
-      CALL write_stel_lvar_vec(iunit,lat_opt,at_min,at_max,dat_opt,'AT')
+      CALL write_stel_lvar_vec(iunit,lat_opt,at_min,at_max,dat_opt,'AT',0,20)
 
-      CALL write_stel_lvar_vec(iunit,lne_opt,ne_min,ne_max,dne_opt,'NE')
+      CALL write_stel_lvar_vec(iunit,lne_opt,ne_min,ne_max,dne_opt,'NE',0,20)
 
-      CALL write_stel_lvar_vec(iunit,lzeff_opt,zeff_min,zeff_max,dzeff_opt,'ZEFF')
+      CALL write_stel_lvar_vec(iunit,lzeff_opt,zeff_min,zeff_max,dzeff_opt,'ZEFF',0,20)
 
-      CALL write_stel_lvar_vec(iunit,lte_opt,te_min,te_max,dte_opt,'TE')
+      CALL write_stel_lvar_vec(iunit,lte_opt,te_min,te_max,dte_opt,'TE',0,20)
 
-      CALL write_stel_lvar_vec(iunit,lti_opt,ti_min,ti_max,dti_opt,'TI')
+      CALL write_stel_lvar_vec(iunit,lti_opt,ti_min,ti_max,dti_opt,'TI',0,20)
 
-      CALL write_stel_lvar_vec(iunit,lth_opt,th_min,th_max,dth_opt,'TH')
+      CALL write_stel_lvar_vec(iunit,lth_opt,th_min,th_max,dth_opt,'TH',0,20)
 
-      CALL write_stel_lvar_vec(iunit,lam_f_opt,am_f_min,am_f_max,dam_f_opt,'AM_F')
+      CALL write_stel_lvar_vec(iunit,lam_f_opt,am_f_min,am_f_max,dam_f_opt,'AM_F',1,ndatafmax)
  
-      CALL write_stel_lvar_vec(iunit,lac_f_opt,ac_f_min,ac_f_max,dac_f_opt,'AC_F')
+      CALL write_stel_lvar_vec(iunit,lac_f_opt,ac_f_min,ac_f_max,dac_f_opt,'AC_F',1,ndatafmax)
 
-      CALL write_stel_lvar_vec(iunit,lai_f_opt,ai_f_min,ai_f_max,dai_f_opt,'AI_F')
+      CALL write_stel_lvar_vec(iunit,lai_f_opt,ai_f_min,ai_f_max,dai_f_opt,'AI_F',1,ndatafmax)
 
-      CALL write_stel_lvar_vec(iunit,lphi_f_opt,phi_f_min,phi_f_max,dphi_f_opt,'PHI_F')
+      CALL write_stel_lvar_vec(iunit,lphi_f_opt,phi_f_min,phi_f_max,dphi_f_opt,'PHI_F',1,ndatafmax)
 
-      CALL write_stel_lvar_vec(iunit,lne_f_opt,ne_f_min,ne_f_max,dne_f_opt,'NE_F')
+      CALL write_stel_lvar_vec(iunit,lne_f_opt,ne_f_min,ne_f_max,dne_f_opt,'NE_F',1,ndatafmax)
 
-      CALL write_stel_lvar_vec(iunit,lzeff_f_opt,zeff_f_min,zeff_f_max,dzeff_f_opt,'ZEFF_F')
+      CALL write_stel_lvar_vec(iunit,lzeff_f_opt,zeff_f_min,zeff_f_max,dzeff_f_opt,'ZEFF_F',1,ndatafmax)
 
-      CALL write_stel_lvar_vec(iunit,lte_f_opt,te_f_min,te_f_max,dte_f_opt,'TE_F')
+      CALL write_stel_lvar_vec(iunit,lte_f_opt,te_f_min,te_f_max,dte_f_opt,'TE_F',1,ndatafmax)
 
-      CALL write_stel_lvar_vec(iunit,lti_f_opt,ti_f_min,ti_f_max,dti_f_opt,'TI_F')
+      CALL write_stel_lvar_vec(iunit,lti_f_opt,ti_f_min,ti_f_max,dti_f_opt,'TI_F',1,ndatafmax)
 
-      CALL write_stel_lvar_vec(iunit,lth_f_opt,th_f_min,th_f_max,dth_f_opt,'TH_F')
+      CALL write_stel_lvar_vec(iunit,lth_f_opt,th_f_min,th_f_max,dth_f_opt,'TH_F',1,ndatafmax)
 
-      CALL write_stel_lvar_vec(iunit,lah_f_opt,ah_f_min,ah_f_max,dah_f_opt,'AH_F')
+      CALL write_stel_lvar_vec(iunit,lah_f_opt,ah_f_min,ah_f_max,dah_f_opt,'AH_F',1,ndatafmax)
 
-      CALL write_stel_lvar_vec(iunit,lat_f_opt,at_f_min,at_f_max,dat_f_opt,'AT_F')
+      CALL write_stel_lvar_vec(iunit,lat_f_opt,at_f_min,at_f_max,dat_f_opt,'AT_F',1,ndatafmax)
 
-      CALL write_stel_lvar_vec(iunit,lbeamj_f_opt,beamj_f_min,beamj_f_max,dbeamj_f_opt,'BEAMJ_F')
+      CALL write_stel_lvar_vec(iunit,lbeamj_f_opt,beamj_f_min,beamj_f_max,dbeamj_f_opt,'BEAMJ_F',1,ndatafmax)
 
-      CALL write_stel_lvar_vec(iunit,lbootj_f_opt,bootj_f_min,bootj_f_max,dbootj_f_opt,'BOOTJ_F')
+      CALL write_stel_lvar_vec(iunit,lbootj_f_opt,bootj_f_min,bootj_f_max,dbootj_f_opt,'BOOTJ_F',1,ndatafmax)
 
-      CALL write_stel_lvar_vec(iunit,lemis_xics_f_opt,emis_xics_f_min,emis_xics_f_max,demis_xics_f_opt,'EMIS_XICS_F')
+      CALL write_stel_lvar_vec(iunit,lemis_xics_f_opt,emis_xics_f_min,emis_xics_f_max,demis_xics_f_opt,'EMIS_XICS_F',1,ndatafmax)
       
       IF (ANY(laxis_opt)) THEN
          DO n = LBOUND(laxis_opt,DIM=1), UBOUND(laxis_opt,DIM=1)
@@ -2620,29 +2621,30 @@
       RETURN
       END SUBROUTINE write_optimum_namelist
 
-      SUBROUTINE write_stel_lvar_vec(iunit,lvar,var_min,var_max,dvar,str_name)
+      SUBROUTINE write_stel_lvar_vec(iunit,lvar,var_min,var_max,dvar,str_name,n1,n2)
       IMPLICIT NONE
-      INTEGER, INTENT(in) :: iunit
-      LOGICAL, INTENT(in) :: lvar(:)
-      REAL(rprec), INTENT(in) :: var_min(:), var_max(:), dvar(:)
+      INTEGER, INTENT(in) :: iunit, n1, n2
+      LOGICAL, INTENT(in) :: lvar(n1:n2)
+      REAL(rprec), INTENT(in) :: var_min(n1:n2), var_max(n1:n2), dvar(n1:n2)
       CHARACTER(LEN=*), INTENT(in) :: str_name
       CHARACTER(LEN=256) :: lname,minname,maxname,dname
       INTEGER :: n, ik
       CHARACTER(LEN=*), PARAMETER :: vecvar  = "(2X,A,'(',I3.3,')',1X,'=',1X,L1,2(2X,A,'(',I3.3,')',1X,'=',1X,ES22.12E3))"
       
+
       IF (ANY(lvar)) THEN
         lname   = 'L'//TRIM(str_name)//'_OPT'
         minname = TRIM(str_name)//'_MIN'
         maxname = TRIM(str_name)//'_MAX'
         dname   = 'D'//TRIM(str_name)//'_OPT'
         n=0
-        DO ik = LBOUND(lvar,DIM=1), UBOUND(lvar,DIM=1)
+        DO ik = n1,n2
            IF(lvar(ik)) n=ik
         END DO
-        DO ik = LBOUND(lvar,DIM=1), n
+        DO ik = n1, n
            WRITE(iunit,vecvar) TRIM(lname),ik,lvar(ik),TRIM(minname),ik,var_min(ik),TRIM(maxname),ik,var_max(ik)
         END DO
-        IF (ANY(dvar > 0)) WRITE(iunit,"(2X,A,1X,'=',10(1X,ES22.12E3))") TRIM(dname),(dvar(ik), ik = 1, n)
+        IF (ANY(dvar > 0)) WRITE(iunit,"(2X,A,1X,'=',10(1X,ES22.12E3))") TRIM(dname),(dvar(ik), ik = n1, n)
       END IF
       RETURN
       END SUBROUTINE write_stel_lvar_vec
