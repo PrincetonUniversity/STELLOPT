@@ -68,8 +68,26 @@
          temp = 1./sqrt(temp)
          ! now renormalize sigmas (BIG LIST)
          SELECT CASE(iddex(i))
-            !CASE(jtarget_curtor)
-            !   sigma_curtor = sigma_curtor/temp
+            CASE(jtarget_aspect)
+               sigma_aspect = sigma_aspect/temp
+            CASE(jtarget_beta)
+               sigma_beta = sigma_beta/temp
+            CASE(jtarget_betapol)
+               sigma_betapol = sigma_betapol/temp
+            CASE(jtarget_betator)
+               sigma_betator = sigma_betator/temp
+            CASE(jtarget_curvature)
+               sigma_curvature = sigma_curvature/temp
+            CASE(jtarget_kappa)
+               sigma_kappa = sigma_kappa/temp
+            CASE(jtarget_curtor)
+               sigma_curtor = sigma_curtor/temp
+            CASE(jtarget_phiedge)
+               sigma_phiedge = sigma_phiedge/temp
+            CASE(jtarget_wp)
+               sigma_wp = sigma_wp/temp
+            CASE(jtarget_volume)
+               sigma_volume = sigma_volume/temp
             CASE(jtarget_separatrix)
                WHERE(sigma_separatrix<bigno) sigma_separatrix = sigma_separatrix/temp
             CASE(jtarget_ne)
