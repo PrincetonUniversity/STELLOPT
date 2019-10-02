@@ -1372,6 +1372,7 @@
       target_dkes(1)      = 0.0;  sigma_dkes(1)      = bigno
       target_dkes(2)      = 0.0;  sigma_dkes(2)      = bigno
       target_helicity(1)  = 0.0;  sigma_helicity(1)  = bigno
+      target_Jstar(1)     = 0.0;  sigma_Jstar(1)     = bigno
       END SUBROUTINE read_stellopt_input
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
