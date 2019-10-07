@@ -1373,6 +1373,14 @@
       target_dkes(2)      = 0.0;  sigma_dkes(2)      = bigno
       target_helicity(1)  = 0.0;  sigma_helicity(1)  = bigno
       target_Jstar(1)     = 0.0;  sigma_Jstar(1)     = bigno
+
+      ! Fix profile types
+!      IF (TRIM(bootj_type) == "boot_model_sal") bootj_aux_s(21) =  1.0
+!      IF (TRIM(bootj_type) .ne. "akima_spline") bootj_aux_s(21) = 1.0
+!      IF (TRIM(beamj_type) .ne. "akima_spline") beamj_aux_s(21) = 1.0
+!      IF (TRIM(phi_type) .ne. "akima_spline") phi_aux_s(21) = 1.0
+!      IF (TRIM(emis_xics_type) .ne. "akima_spline") emis_xics_s(21) = 1.0
+
       END SUBROUTINE read_stellopt_input
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
