@@ -19,6 +19,7 @@
 !         
 !-----------------------------------------------------------------------
       IMPLICIT NONE
+      LOGICAL            :: lwall_loaded
       INTEGER            :: nvertex, nface
       INTEGER, POINTER :: face(:,:)
       INTEGER, POINTER :: ihit_array(:)
@@ -212,6 +213,7 @@
          CALL MPI_BARRIER(shar_comm, istat)
          CALL MPI_COMM_FREE(shar_comm, istat)
       END IF
+      lwall_loaded = .true.
       RETURN
       END SUBROUTINE wall_load_txt
 
@@ -442,6 +444,7 @@
          CALL MPI_BARRIER(shar_comm, istat)
          CALL MPI_COMM_FREE(shar_comm, istat)
       END IF
+      lwall_loaded = .true.
       RETURN
       END SUBROUTINE wall_load_mn
 
@@ -664,6 +667,7 @@
       date=''
       nface = -1
       nvertex = -1
+      lwall_loaded = .false.
       RETURN
       END SUBROUTINE wall_free
 
