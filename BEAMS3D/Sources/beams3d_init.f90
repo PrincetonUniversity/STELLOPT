@@ -196,7 +196,7 @@
       END IF
       
       ! Setup vessel
-      IF (lvessel .and. (.not. lplasma_only)) THEN
+      IF (lvessel .and. (.not. lwall_loaded)) THEN
          CALL wall_load_txt(TRIM(vessel_string),ier,MPI_COMM_BEAMS)
          IF (lverb) CALL wall_info(6)
          CALL FLUSH(6)
