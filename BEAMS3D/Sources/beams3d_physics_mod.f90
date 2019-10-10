@@ -344,6 +344,10 @@ MODULE beams3d_physics_mod
          END DO
          qs=qf
 
+         xlast = qf(1)
+         ylast = qf(2)
+         zlast = qf(3)
+
          !--------------------------------------------------------------
          !     Follow particle track out of plasma
          !--------------------------------------------------------------
@@ -517,6 +521,9 @@ MODULE beams3d_physics_mod
                             S4D(1,1,1,1),nr,nphi,nz)
             s_temp = fval(1)
             lneut=.false.
+            xlast = qf(1)
+            ylast = qf(2)
+            zlast = qf(3)
             RETURN
          END IF
 
@@ -526,6 +533,9 @@ MODULE beams3d_physics_mod
          x0 = qf(1); y0 = qf(2); z0 = qf(3)
          dt_local = 0.25/q(4)  
          ltest = .FALSE.
+         xlast = qf(1)
+         ylast = qf(2)
+         zlast = qf(3)
          DO
             qf = qf + myv_neut*dt_local
             t = t + dt_local
