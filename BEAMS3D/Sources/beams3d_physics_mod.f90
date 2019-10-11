@@ -541,17 +541,17 @@ MODULE beams3d_physics_mod
             t = t + dt_local
             IF (lvessel) CALL collide(x0,y0,z0,qf(1),qf(2),qf(3),xw,yw,zw,ltest)
             IF (ltest) THEN
-               q(1) = SQRT(xw*xw+yw*yw)
-               q(2) = ATAN2(yw,xw)
-               q(3) = zw
+               !q(1) = SQRT(xw*xw+yw*yw)
+               !q(2) = ATAN2(yw,xw)
+               !q(3) = zw
                ! Next lines are so that out_beams3d_nag detects the wall.
-               xlast = x0; ylast=y0; zlast=z0
+               !xlast = x0; ylast=y0; zlast=z0
                q(1) = SQRT(qf(1)*qf(1)+qf(2)*qf(2))
                q(2) = ATAN2(qf(2),qf(1))
                q(3) = qf(3)
                RETURN
             END IF
-            xlast = x0; ylast=y0; zlast=z0
+            !xlast = x0; ylast=y0; zlast=z0
             x0 = qf(1); y0 = qf(2); z0 = qf(3)
             q(1) = SQRT(qf(1)*qf(1)+qf(2)*qf(2))
             q(2) = ATAN2(qf(2),qf(1))
