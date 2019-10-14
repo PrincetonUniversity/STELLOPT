@@ -27,6 +27,7 @@
       USE equil_vals
       USE equil_utils, ONLY: mntouv
       USE mpi_params
+      USE mpi_inc
       
 !-----------------------------------------------------------------------
 !     Subroutine Parameters

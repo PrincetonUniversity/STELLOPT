@@ -17,14 +17,9 @@ C-----------------------------------------------
 C   L o c a l   P a r a m e t e r s
 C-----------------------------------------------
       CHARACTER(LEN=100), PARAMETER ::
-#if defined(SKS)
-     1   banner = 
-     2   ' THIS IS PARVMEC (PARALLEL VMEC), VERSION ' 
-#else
-     1   banner = ' THIS IS VMEC2000, A 3D EQUILIBRIUM CODE, VERSION '
-#endif
+     &   banner = ' THIS IS PARVMEC (PARALLEL VMEC), VERSION '
       CHARACTER(LEN=*), PARAMETER :: VersionID1 =
-     1   ' Lambda: Full Radial Mesh. L-Force: hybrid full/half.'
+     &   ' Lambda: Full Radial Mesh. L-Force: hybrid full/half.'
 C-----------------------------------------------
 C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
@@ -36,47 +31,54 @@ C-----------------------------------------------
 !
 !     Open output files
 !
-      IF (grank .NE. 0) lscreen=.FALSE.
+      IF (grank .NE. 0) THEN
+         lscreen = .FALSE.
+      END IF
 
-      CALL open_output_files (extension, iseq_count, lmac, lscreen,
-     1                        lfirst, lwrite)
+      CALL open_output_files(extension, iseq_count, lmac, lscreen,
+     &                       lfirst, lwrite)
 
       IF (.NOT.lfirst .OR. .NOT.lwrite) RETURN
 
 !     FORTRAN-90 ROUTINE
-      CALL DATE_AND_TIME(date0,time0,zone0)
-      READ(date0(5:6),'(i2)')imon
-      WRITE(dateloc,100)months(imon),date0(7:8),date0(1:4),
-     1  time0(1:2),time0(3:4),time0(5:6)
- 100  FORMAT('DATE = ',a3,' ',a2,',',a4,' ',' TIME = ',2(a2,':'),a2)
+      CALL DATE_AND_TIME(date0, time0, zone0)
+      READ(date0(5:6),'(i2)') imon
+      WRITE(dateloc,1000) months(imon), date0(7:8), date0(1:4),
+     &   time0(1:2), time0(3:4), time0(5:6)
 
       IF (lscreen) THEN
          CALL GetComputerInfo
 
-         IF (lfirst) WRITE (*,'(a,i4,a,1p,e12.4/2a)')
-     1   '  SEQ = ', iseq_count+1,
-     2   ' TIME SLICE',time_slice,'  PROCESSING INPUT.', TRIM(extension)
-
          Version = TRIM(ADJUSTL(version_))
-         WRITE(nthreed,'(a,1x,a,/,a,//,3(2a,2x),a)') TRIM(banner),
-     1     TRIM(Version), TRIM(VersionID1), 
-     2     ' COMPUTER: ', TRIM(computer), ' OS: ', TRIM(os),
-     3     ' RELEASE: ', TRIM(os_release), TRIM(dateloc)
-         IF (lfirst)
-     1   WRITE (*,'(1x,a,1x,a,/,1x,a,//,1x,3(2a,2x),a)') TRIM(banner),
-     2   TRIM(Version), TRIM(VersionID1), 
-     3     ' COMPUTER: ', TRIM(computer), ' OS: ', TRIM(os),
-     4     ' RELEASE: ', TRIM(os_release), TRIM(dateloc)
+         WRITE (nthreed,1002) TRIM(banner), TRIM(Version),
+     &                        TRIM(VersionID1), TRIM(computer),
+     &                        TRIM(os), TRIM(os_release), TRIM(dateloc)
+
+         IF (lfirst) THEN
+            WRITE (*,1001) iseq_count + 1, time_slice, TRIM(extension)
+            WRITE (*,1003) TRIM(banner), TRIM(Version),
+     &                     TRIM(VersionID1), TRIM(computer), TRIM(os),
+     &                     TRIM(os_release), TRIM(dateloc)
+         END IF
       ENDIF
 
-      DO nout = nthreed, nthreed+1
-        imon = nout
-        IF (imon .eq. nthreed+1) imon = nmac
-        IF (imon.eq.nmac .and. .not.lmac) CYCLE
-        WRITE (imon,3) TRIM(extension),iseq_count,time_slice
-      ENDDO
+      DO nout = nthreed, nthreed + 1
+         imon = nout
+         IF (imon .eq. nthreed + 1) THEN
+            imon = nmac
+         END IF
+         IF (imon .eq. nmac .and. .not.lmac) CYCLE
+         WRITE (imon,1004) TRIM(extension), iseq_count, time_slice
+      END DO
 
- 3    FORMAT(' SHOT ID.: ',a,2x,'SEQ. NO.:',i4,/,
-     1       ' TIME SLICE = ',f5.0,' ms')
+1000  FORMAT('DATE = ',a3,' ',a2,',',a4,' ',' TIME = ',2(a2,':'),a2)
+1001  FORMAT('  SEQ = ',i4,' TIME SLICE',1p,e12.4/
+     &       '  PROCESSING INPUT.',a)
+1002  FORMAT(a,1x,a,/a,//,' COMPUTER: ',a,2x,' OS: ',a,2x,
+     &       ' RELEASE: ',a,2x,a)
+1003  FORMAT(1x,a,1x,a,/1x,a,//,'  COMPUTER: ',a,2x,' OS: ',a,2x,
+     &       ' RELEASE: ',a,2x,a)
+1004    FORMAT(' SHOT ID.: ',a,2x,'SEQ. NO.:',i4,/,
+     &         ' TIME SLICE = ',f5.0,' ms')
 
       END SUBROUTINE heading

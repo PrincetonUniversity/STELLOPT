@@ -1,6 +1,6 @@
       SUBROUTINE vacuum_par (rmnc, rmns, zmns, zmnc, xm, xn, 
-     1                       plascur, rbtor, wint, ns, ivac_skip, 
-     2                       ivac, mnmax, ier_flag, lscreen)
+     &                       plascur, rbtor, wint, ns, ivac_skip,
+     &                       ivac, mnmax, ier_flag, lscreen)
       USE vacmod
       USE vparams, ONLY: nthreed, zero, one, mu0
       USE vmec_params, ONLY: norm_term_flag, phiedge_error_flag
@@ -15,7 +15,7 @@ C-----------------------------------------------
       INTEGER :: ns, ivac_skip, ivac, mnmax, ier_flag
       REAL(dp) :: plascur, rbtor
       REAL(dp), DIMENSION(mnmax), INTENT(in) ::
-     1   rmnc, rmns, zmns, zmnc, xm, xn
+     &   rmnc, rmns, zmns, zmnc, xm, xn
       REAL(dp), DIMENSION(nuv3), INTENT(in) :: wint
       LOGICAL :: lscreen
 C-----------------------------------------------
@@ -26,7 +26,7 @@ C-----------------------------------------------
       REAL(dp), ALLOCATABLE :: potu(:), potv(:)
       REAL(dp), ALLOCATABLE :: amatrix(:)
       REAL(dp):: dn2, dm2, cosmn, sinmn, huv, hvv,
-     1           det, bsubuvac, fac, ton, toff
+     &           det, bsubuvac, fac, ton, toff
       REAL(dp) :: tmp1(2), tmp2(2)
 C-----------------------------------------------
 !
@@ -49,11 +49,11 @@ C-----------------------------------------------
       potcos => potvac(1+mnpd:)
 
       ALLOCATE (bexu(nuv3), bexv(nuv3), bexn(nuv3),
-     1     bexni(nuv3), r1b(nuv), rub(nuv3), rvb(nuv3),
-     2     z1b(nuv), zub(nuv3), zvb(nuv3), auu(nuv3), auv(nuv3),
-     3     avv(nuv3), snr(nuv3), snv(nuv3), snz(nuv3), drv(nuv3),
-     4     guu_b(nuv3), guv_b(nuv3), gvv_b(nuv3), rzb2(nuv),
-     5     rcosuv(nuv), rsinuv(nuv), stat=i)
+     &     bexni(nuv3), r1b(nuv), rub(nuv3), rvb(nuv3),
+     &     z1b(nuv), zub(nuv3), zvb(nuv3), auu(nuv3), auv(nuv3),
+     &     avv(nuv3), snr(nuv3), snv(nuv3), snz(nuv3), drv(nuv3),
+     &     guu_b(nuv3), guv_b(nuv3), gvv_b(nuv3), rzb2(nuv),
+     &     rcosuv(nuv), rsinuv(nuv), stat=i)
       IF (i .NE. 0) STOP 'Allocation error in vacuum'
 
 !
@@ -120,7 +120,7 @@ C-----------------------------------------------
             dm2 = m
             j = 0
             DO i = nuv3min, nuv3max
-               j = j+1
+               j = j + 1
                cosmn = potsin(mn)*cosmni(j,mn)/(pi2*pi2*wint(i))
                potu(i) = potu(i) + dm2*cosmn
                potv(i) = potv(i) + dn2*cosmn
@@ -128,7 +128,7 @@ C-----------------------------------------------
             IF (.NOT.lasym) CYCLE
             j = 0
             DO i = nuv3min, nuv3max
-               j = j+1
+               j = j + 1
                sinmn = potcos(mn)*sinmni(j,mn)/(pi2*pi2*wint(i))
                potu(i) = potu(i) - dm2*sinmn
                potv(i) = potv(i) - dn2*sinmn
@@ -145,7 +145,7 @@ C-----------------------------------------------
          bsupu_sur(i) = (hvv*bsubu_sur(i)-huv*bsubv_sur(i))*det         !Contravariant components
          bsupv_sur(i) = ((-huv*bsubu_sur(i))+guu_b(i)*bsubv_sur(i))*det
          bsqvac(i) = p5*(bsubu_sur(i)*bsupu_sur(i) 
-     1             +     bsubv_sur(i)*bsupv_sur(i))                     !.5*|Bvac|**2
+     &             +     bsubv_sur(i)*bsupv_sur(i))                     !.5*|Bvac|**2
          brv(i) = rub(i)*bsupu_sur(i) + rvb(i)*bsupv_sur(i)
          bphiv(i) = r1b(i)*bsupv_sur(i)
          bzv(i) = zub(i)*bsupu_sur(i) + zvb(i)*bsupv_sur(i)
@@ -159,25 +159,24 @@ C-----------------------------------------------
             IF (lscreen) WRITE (*, 200) nfper, mf, nf, nu, nv
             WRITE (nthreed, 200) nfper, mf, nf, nu, nv
          END IF
-  200    FORMAT(/,2x,'In VACUUM, np =',i3,2x,'mf =',i3,2x,'nf =',i3,
-     1      ' nu =',i3,2x,'nv = ',i4)
+  200 FORMAT(/,2x,'In VACUUM, np =',i3,2x,'mf =',i3,2x,'nf =',i3,
+     &       ' nu =',i3,2x,'nv = ',i4)
 
          bsubuvac = 0
          bsubvvac = 0
-         DO i=nuv3min, nuv3max
-           bsubuvac = bsubuvac + bsubu_sur(i)*wint(i)
-           bsubvvac = bsubvvac + bsubv_sur(i)*wint(i)
+         DO i = nuv3min, nuv3max
+            bsubuvac = bsubuvac + bsubu_sur(i)*wint(i)
+            bsubvvac = bsubvvac + bsubv_sur(i)*wint(i)
          END DO
-         tmp1(1)=bsubuvac; tmp1(2)=bsubvvac
+         tmp1(1) = bsubuvac
+         tmp1(2)=bsubvvac
          CALL second0(ton)
-#if defined(SKS)
+
          IF (vlactive) THEN
-           CALL MPI_Allreduce(tmp1,tmp2,2,MPI_REAL8,MPI_SUM,VAC_COMM,
-     1                        MPI_ERR)
+            CALL MPI_Allreduce(tmp1, tmp2, 2, MPI_REAL8, MPI_SUM,
+     &                         VAC_COMM, MPI_ERR)
          END IF
-#else
-         tmp2 = tmp1;
-#endif
+
          CALL second0(toff)
          allreduce_time = allreduce_time + (toff - ton)
          bsubuvac = tmp2(1); bsubvvac = tmp2(2)
@@ -185,14 +184,15 @@ C-----------------------------------------------
 
          fac = 1.e-6_dp/mu0
          IF (vrank .EQ. 0) THEN
-         IF (lscreen ) WRITE (*,1000) bsubuvac*fac,
-     1       plascur*fac, bsubvvac, rbtor
-         WRITE (nthreed, 1000) bsubuvac*fac, plascur*fac,
-     1       bsubvvac, rbtor
+            IF (lscreen ) THEN
+               WRITE (*,1000) bsubuvac*fac, plascur*fac, bsubvvac, rbtor
+            END IF
+            WRITE (nthreed, 1000) bsubuvac*fac, plascur*fac, bsubvvac,
+     &                            rbtor
          END IF
- 1000    FORMAT(2x,'2*pi * a * -BPOL(vac) = ',1p,e10.2,
-     1      ' TOROIDAL CURRENT = ',e10.2,/,2x,'R * BTOR(vac) = ',
-     2      e10.2,' R * BTOR(plasma) = ',e10.2)
+ 1000 FORMAT(2x,'2*pi * a * -BPOL(vac) = ',1p,e10.2,
+     &       ' TOROIDAL CURRENT = ',e10.2,/,2x,'R * BTOR(vac) = ',
+     &       e10.2,' R * BTOR(plasma) = ',e10.2)
 !  JDH Add test for RFP. 2013-11-25
 !         IF (rbtor*bsubvvac .lt. zero) ier_flag = phiedge_error_flag
 !         IF (ABS((plascur - bsubuvac)/rbtor) .gt. 1.e-2_dp)
@@ -200,8 +200,8 @@ C-----------------------------------------------
          IF (rbtor*bsubvvac .LT. zero) THEN
             IF (lrfp) THEN
                IF (vrank .EQ. 0) THEN
-               IF (lscreen) WRITE(*,1100) 
-               WRITE(nthreed,1100) 
+                  IF (lscreen) WRITE(*,1100)
+                  WRITE(nthreed,1100)
                END IF
             ELSE
                ier_flag = phiedge_error_flag
@@ -210,8 +210,8 @@ C-----------------------------------------------
          IF (ABS((plascur - bsubuvac)/rbtor) .GT. 5.e-2_dp) THEN
             IF (lrfp) THEN
                IF (vrank .EQ. 0) THEN
-               IF (lscreen) WRITE(*,1200) 
-               WRITE(nthreed,1200) 
+                  IF (lscreen) WRITE(*,1200)
+                  WRITE(nthreed,1200)
                END IF
             ELSE
                ier_flag = 10
@@ -223,21 +223,22 @@ C-----------------------------------------------
 1200  FORMAT('lrfp is TRUE. Proceed with convergence')
 
       IF (ALLOCATED(bexu))
-     1    DEALLOCATE (bexu, bexv, bexn, bexni, r1b, rub, rvb, z1b, zub,
-     2    zvb, auu, auv, avv, snr, snv, snz, drv, guu_b, guv_b, gvv_b,
-     3    rzb2, rcosuv, rsinuv, stat=i)
+     &    DEALLOCATE (bexu, bexv, bexn, bexni, r1b, rub, rvb, z1b, zub,
+     &    zvb, auu, auv, avv, snr, snv, snz, drv, guu_b, guv_b, gvv_b,
+     &    rzb2, rcosuv, rsinuv, stat=i)
       IF (i .NE. 0) STOP 'Deallocation error in vacuum'
 
       DEALLOCATE (amatrix, potu, potv, stat=i)
       IF (i .NE. 0) STOP 'Deallocation error in vacuum'
       
       CALL second0(ton)
-#if defined(SKS)
+
       IF (vlactive) THEN
-        CALL MPI_Allgatherv(MPI_IN_PLACE,numjs_vac,MPI_REAL8,bsqvac,
-     1          counts_vac,disps_vac,MPI_REAL8,VAC_COMM,MPI_ERR)
+         CALL MPI_Allgatherv(MPI_IN_PLACE, numjs_vac, MPI_REAL8, bsqvac,
+     &                       counts_vac, disps_vac, MPI_REAL8, VAC_COMM,
+     &                       MPI_ERR)
       END IF
-#endif
+
       CALL second0(toff)
       timer_vac(tallgv) = timer_vac(tallgv) + (toff-ton)
 
@@ -248,15 +249,13 @@ C-----------------------------------------------
 
 
       SUBROUTINE vacuum(rmnc, rmns, zmns, zmnc, xm, xn, 
-     1                  plascur, rbtor, wint, ns, ivac_skip, ivac, 
-     2                  mnmax, ier_flag, lscreen)
+     &                  plascur, rbtor, wint, ns, ivac_skip, ivac,
+     &                  mnmax, ier_flag, lscreen)
       USE vacmod
       USE vparams, ONLY: nthreed, zero, one, mu0
       USE vmec_params, ONLY: norm_term_flag, phiedge_error_flag
       USE vmec_input, ONLY: lrfp         ! JDH Added 2013-11-25, to test for RFP
-#if defined(SKS)
-      USE parallel_include_module
-#endif
+
       IMPLICIT NONE
 C-----------------------------------------------
 C   D u m m y   A r g u m e n t s
@@ -264,7 +263,7 @@ C-----------------------------------------------
       INTEGER :: ns, ivac_skip, ivac, mnmax, ier_flag
       REAL(dp) :: plascur, rbtor
       REAL(dp), DIMENSION(mnmax), INTENT(in) ::
-     1   rmnc, rmns, zmns, zmnc, xm, xn
+     &   rmnc, rmns, zmns, zmnc, xm, xn
       REAL(dp), DIMENSION(ns, nuv3), INTENT(in) :: wint
       LOGICAL :: lscreen
 C-----------------------------------------------
@@ -279,8 +278,8 @@ C-----------------------------------------------
       tmpwint(:) = wint(ns, :)
 
       CALL vacuum_par (rmnc, rmns, zmns, zmnc, xm, xn, 
-     1                 plascur, rbtor, tmpwint, ns, ivac_skip, 
-     2                 ivac, mnmax, ier_flag, lscreen)
+     &                 plascur, rbtor, tmpwint, ns, ivac_skip,
+     &                 ivac, mnmax, ier_flag, lscreen)
 
       DEALLOCATE (tmpwint, stat = i)
 

@@ -72,6 +72,7 @@
       IF (dex /= strlen-2) file_temp = TRIM(file_temp) // '.h5'
       CALL h5open_f(ier)
       IF (ier /=0) RETURN
+#ifdef HDF5_PAR
       IF (PRESENT(comm)) THEN
          CALL h5pcreate_f(H5P_FILE_ACCESS_F, plistid, ier)
          CALL h5pset_fapl_mpio_f(plistid, comm, info, ier)
@@ -79,6 +80,9 @@
       ELSE
          plistid = H5P_DEFAULT_F
       END IF
+#else
+      plistid = H5P_DEFAULT_F
+#endif
       IF (PRESENT(lcreate)) THEN
          IF (lcreate) THEN
             CALL h5fcreate_f(TRIM(file_temp),H5F_ACC_TRUNC_F, file_id,ier, access_prp = plistid)
@@ -88,7 +92,9 @@
       ELSE
          CALL h5fopen_f(file_temp, H5F_ACC_RDWR_F, file_id, ier, access_prp = plistid)
       END IF
+#ifdef HDF5_PAR
       IF (PRESENT(comm)) CALL h5pclose_f(plistid,ier)
+#endif
       END SUBROUTINE open_hdf5
       !-----------------------------------------------------------------
          
@@ -98,7 +104,9 @@
       INTEGER(HID_T), INTENT(inout):: file_id
       INTEGER, INTENT(out)         :: ier
       ier = 0
+#ifdef HDF5_PAR
       IF (plistid /= H5P_DEFAULT_F) CALL h5pclose_f(plistid, ier)
+#endif
       IF (ier /=0) RETURN
       CALL h5fclose_f(fid,ier)
       IF (ier /=0) RETURN

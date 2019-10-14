@@ -19,10 +19,8 @@
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
       USE safe_open_mod, ONLY: safe_open
+      USE mpi_inc
       IMPLICIT NONE
-#if defined(MPI_OPT)
-      include 'mpif.h'                                       !mpi stuff
-#endif
 !-----------------------------------------------------------------------
 !     Input Variables
 !        fcn     Target function one wishes to mimizie
@@ -63,6 +61,7 @@
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
+      fvec = 0
 #if defined(MPI_OPT)
       ierr_mpi = 0
       CALL MPI_COMM_RANK(HYPER_COMM, myid, ierr_mpi)

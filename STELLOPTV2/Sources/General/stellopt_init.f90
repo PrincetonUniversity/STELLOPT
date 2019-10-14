@@ -16,7 +16,6 @@
       USE stellopt_targets, ONLY: write_targets
       USE stellopt_vars
       USE equil_utils, ONLY: count_vars
-      USE vparams, ONLY: ntor_rcws, mpol_rcws
       USE vmec_input
       USE safe_open_mod, ONLY: safe_open
       USE equil_utils, ONLY: profile_norm
@@ -28,7 +27,8 @@
                              output_flag, cleanup_flag, reset_jacdt_flag
 !                             animec_flag, flow_flag
       USE parallel_vmec_module, ONLY: PARVMEC, gnranks
-      USE mpi_params                                                    ! MPI
+      USE mpi_params
+      USE mpi_inc
 !-----------------------------------------------------------------------
 !     Local Variables
 !        ier         Error flag
@@ -42,6 +42,10 @@
       REAL(rprec), DIMENSION(-ntord:ntord,0:mpol1d) :: rbc_temp,zbs_temp
       REAL(rprec), PARAMETER :: norm_fac = 0.5_rprec   ! Used to set bounds for nomalization
 !      REAL(rprec), PARAMETER :: pct_domain = 0.05 ! USed to auto-determine domain
+
+      LOGICAL                                      :: ltst
+      integer                                      :: color,key, nprocs_total
+      CHARACTER(256)                               :: tstr1,tstr2
       
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
@@ -51,51 +55,39 @@
 
       ! Read the OPTIMUM Namelist
       CALL read_stellopt_input(TRIM(id_string),ier,myid)
-      CALL bcast_vars(master,MPI_COMM_STEL,ierr_mpi)
-      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'stellot_init:bcast_vars',ierr_mpi)
+      !CALL bcast_vars(master,MPI_COMM_STEL,ierr_mpi)
+      !IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'stellot_init:bcast_vars',ierr_mpi)
 
       ! Handle coil geometry
       IF (lcoil_geom) CALL namelist_input_makegrid(id_string)
+
+      ! Handle MPI and shared memory
+      CALL stellopt_init_mpi
+
+      ! Send workers to the worker pool subroutine
+      IF (myworkid .ne. master) THEN
+         ltst  = .false.
+         tstr1 = ''
+         tstr2 = ''
+         ier_paraexe = 0
+         CALL stellopt_paraexe(tstr1,tstr2,ltst)
+         RETURN
+      END IF
 
       ! Read the Equilibrium input
       CALL tolower(equil_type)
       SELECT CASE (TRIM(equil_type))
          CASE('vmec2000','animec','flow','satire','parvmec','paravmec','vmec2000_oneeq')
-              ! Now convert id_string to extension
+              ltst = .false.
+              tstr1 = 'parvmec_init'
               id_string = id_string(7:LEN(id_string))
-              ! Now make initializing VMEC call which preforms allocations
-              ictrl(1) = restart_flag + readin_flag + reset_jacdt_flag
-              ictrl(2) = 0
-              ictrl(3) = 50
-              ictrl(4) = 0
-              ictrl(5) = myid
-              !IF (TRIM(equil_type)=='animec') ictrl(1) = ictrl(1) + animec_flag
-              !IF (TRIM(equil_type)=='flow' .or. TRIM(equil_type)=='satire') ictrl(1) = ictrl(1) + flow_flag
-              IF (myid==master) THEN
-                 CALL safe_open(iunit,ier,'threed1.'//TRIM(id_string),'unknown','formatted')
-                 CLOSE(iunit)
-              END IF
-              CALL MPI_BARRIER(MPI_COMM_STEL,ierr_mpi)
-              IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_init: BARRIER',ierr_mpi)
-              CALL runvmec(ictrl,id_string,.false.,MPI_COMM_SELF,'')
+              tstr2 = id_string
+              CALL stellopt_paraexe(tstr1,tstr2,ltst)
          CASE('vboot')
-              ! Now convert id_string to extension
+              ltst = .false.
+              tstr1 = 'parvmec_init'
               id_string = id_string(7:LEN(id_string))
-              ! Now make initializing VMEC call which preforms allocations
-              ictrl(1) = restart_flag + readin_flag + reset_jacdt_flag
-              ictrl(2) = 0
-              ictrl(3) = 50
-              ictrl(4) = 0
-              ictrl(5) = myid
-              !IF (TRIM(equil_type)=='animec') ictrl(1) = ictrl(1) + animec_flag
-              !IF (TRIM(equil_type)=='flow' .or. TRIM(equil_type)=='satire') ictrl(1) = ictrl(1) + flow_flag
-              IF (myid==master) THEN
-                 CALL safe_open(iunit,ier,'threed1.'//TRIM(id_string),'unknown','formatted')
-                 CLOSE(iunit)
-              END IF
-              CALL MPI_BARRIER(MPI_COMM_STEL,ierr_mpi)
-              IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_init: BARRIER',ierr_mpi)
-              CALL runvmec(ictrl,id_string,.false.,MPI_COMM_SELF,'')
+              tstr2 = id_string
               ! Read BOOTSJ NAMELIST
               CALL safe_open(iunit,ier,'input.'//TRIM(id_string),'old','formatted')
               CALL read_namelist (iunit, ier, 'bootin')
@@ -106,6 +98,7 @@
                  STOP
               END IF
               CLOSE(iunit)
+              CALL stellopt_paraexe(tstr1,tstr2,ltst)
          CASE('test')
               id_string = id_string(7:LEN(id_string))
               ! We don't read indata but use it later so need to do some defaulting
@@ -246,6 +239,7 @@
          CASE('test')
             IF (lxval_opt)  nvars = nvars + 1
             IF (lyval_opt)  nvars = nvars + 1
+            IF (ANY(lRosenbrock_X_opt)) nvars = nvars + COUNT(lRosenbrock_X_opt)
       END SELECT
 
       ! Allocate Arrays
@@ -257,6 +251,8 @@
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'stellot_init',ierr_mpi)
 !DEC$ ENDIF
       ! Read the Equilibrium Namelist and initalize the var arrays
+      ! Initialize nvar_in to 0
+      nvar_in=0
       SELECT CASE (TRIM(equil_type))
          CASE('vmec2000','animec','flow','satire','paravmec','parvmec','vboot','vmec2000_oneeq')
               ! Set some defaults
@@ -273,10 +269,7 @@
               CALL MPI_BARRIER( MPI_COMM_STEL, ierr_mpi )                   ! MPI
               IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'stellot_init',ierr_mpi)
 !DEC$ ENDIF
-              ier=ictrl(2)
-              IF (ier /= 0) CALL handle_err(VMEC_RUN_ERR,'Initialization call (stellopt_init)',ier)
               ! Now count
-              nvar_in=0
               IF (lregcoil_winding_surface_separation_opt) THEN
                  IF (lauto_domain) THEN
                     regcoil_winding_surface_separation_min = &
@@ -1587,6 +1580,21 @@
                  diag(nvar_in)    = dyval_opt
                  arr_dex(nvar_in,1) = 1
               END IF
+                 DO m = 1,rosenbrock_dim
+                    IF (lRosenbrock_X_opt(m)) THEN
+                       IF (lauto_domain) THEN
+                         Rosenbrock_X_min(m) = Rosenbrock_X(m) - ABS(pct_domain*Rosenbrock_X(m))
+                         Rosenbrock_X_max(m) = Rosenbrock_X(m) + ABS(pct_domain*Rosenbrock_X(m))
+                       END IF
+                       nvar_in = nvar_in + 1
+                       vars(nvar_in) = Rosenbrock_X(m)
+                       vars_min(nvar_in) = Rosenbrock_X_min(m)
+                       vars_max(nvar_in) = Rosenbrock_X_max(m)
+                       var_dex(nvar_in) = iRosenbrock_X
+                       diag(nvar_in)    = dRosenbrock_X_opt(m)
+                       arr_dex(nvar_in,1) = m
+                    END IF
+                 END DO
       END SELECT
 !DEC$ IF DEFINED (MPI_OPT)
       CALL MPI_BARRIER( MPI_COMM_STEL, ierr_mpi )                   ! MPI
@@ -1661,7 +1669,6 @@
             m=target_dex(i)
          END DO
          WRITE(6,*) '   =================='
-         WRITE(6,*) '   Number of Processors: ',numprocs
          WRITE(6,*) '   Number of Parameters: ',nvars
          WRITE(6,*) '   Number of Targets:    ',mtargets
          IF (lno_restart) WRITE(6,*) '   !!!! EQUILIBRIUM RESTARTING NOT UTILIZED !!!!'

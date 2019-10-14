@@ -1,5 +1,11 @@
 # Microsoft Developer Studio Generated Dependency File, included by STELLOPT.mak
 
+stellopt_init_mpi.o : \
+      stellopt_input_mod.o \
+      stellopt_runtime.o \
+      $(LIB_DIR)/Release/mpi_params.o 
+
+
 stellopt_vmec_bcast.o : \
       $(LIB_DIR)/Release/mpi_params.o \
       $(LIB_DIR)/Release/vmec_input.o 
@@ -101,7 +107,14 @@ chisq_regcoil_chi2_b.o : \
       stellopt_input_mod.o \
       stellopt_vars.o \
       equil_vals.o
+
       
+chisq_rosenbrock.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      stellopt_input_mod.o \
+      stellopt_vars.o
+
       
 chisq_rbtor.o : \
       stellopt_runtime.o \
@@ -506,6 +519,8 @@ stellopt_main.o : \
       
       
 stellopt_input_mod.o : \
+      stellopt_winding_surface.o \
+      equil_utils.o \
       stellopt_runtime.o \
       stellopt_vars.o \
       stellopt_targets.o \
@@ -548,6 +563,7 @@ stellopt_runtime.o : \
 
 stellopt_targets.o : \
       $(LIB_DIR)/Release/stel_kinds.o \
+      stellopt_vars.o \
       $(LIB_DIR)/Release/vparams.o 
       
 

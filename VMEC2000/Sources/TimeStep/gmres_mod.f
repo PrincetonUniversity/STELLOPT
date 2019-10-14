@@ -16,8 +16,8 @@
 !     nfcn :  number of calls to function (funct3d)
 !     lqmr :  logical, used by external programs to control calling these routines
 !
-      CONTAINS 
-#if defined(SKS)
+      CONTAINS
+
       SUBROUTINE matvec_par (ploc, Ap, nloc)
       USE blocktridiagonalsolver, ONLY: ParMatVec
       USE stel_kinds
@@ -27,9 +27,9 @@ C   D u m m y   A r g u m e n t s
 C-----------------------------------------------
       INTEGER, INTENT(IN)   :: nloc
       REAL(dp), INTENT(IN)  :: 
-     1                  ploc(ntmaxblocksize,tlglob:trglob)
+     &   ploc(ntmaxblocksize,tlglob:trglob)
       REAL(dp), INTENT(OUT) :: 
-     1                  Ap(ntmaxblocksize,tlglob:trglob)
+     &   Ap(ntmaxblocksize,tlglob:trglob)
 C-----------------------------------------------
 C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
@@ -46,47 +46,34 @@ C-----------------------------------------------
       delta = SQRT(EPSILON(delta))
 
       LACTIVE0: IF (lactive) THEN
-      IF (nloc .NE. (trglob-tlglob+1)*mblk_size)
-     1    STOP 'nloc wrong in matvec_par'
-      lmax = SUM(ploc*ploc)
-      CALL MPI_ALLREDUCE(lmax,pmax,1,MPI_REAL8,MPI_SUM,NS_COMM,MPI_ERR)
-      pmax = SQRT(pmax)
-      delta = delta/MAX(delta, pmax)
+         IF (nloc .NE. (trglob - tlglob + 1)*mblk_size) THEN
+            STOP 'nloc wrong in matvec_par'
+         END IF
+         lmax = SUM(ploc*ploc)
+         CALL MPI_ALLREDUCE(lmax, pmax, 1, MPI_REAL8, MPI_SUM, NS_COMM,
+     &                      MPI_ERR)
+         pmax = SQRT(pmax)
+         delta = delta/MAX(delta, pmax)
 
-      CALL SaxpbyLastNs(delta, ploc, one, px0, pxc)
+         CALL SaxpbyLastNs(delta, ploc, one, px0, pxc)
 
-      CALL last_ntype_par
-      CALL PadSides(pxc)
+         CALL last_ntype_par
+         CALL PadSides(pxc)
       END IF LACTIVE0
 
       CALL funct3d_par(lscreen0, ier_flag_res)
       
       IF (lactive) THEN
-      CALL last_ns_par
-      CALL GetDerivLastNs(pgc, pgc0, delta, Ap)
+         CALL last_ns_par
+         CALL GetDerivLastNs(pgc, pgc0, delta, Ap)
       ENDIF
 
-      IF (ier_flag_res.NE.0 .AND. rank.EQ.0) 
-     1  PRINT *,'IN MATVEC_PAR, IER_FLAG = ', ier_flag_res
-      
+      IF (ier_flag_res.NE.0 .AND. rank.EQ.0) THEN
+         PRINT *,'IN MATVEC_PAR, IER_FLAG = ', ier_flag_res
+      END IF
+
  90   CONTINUE
       nfcn = nfcn + 1
-
-      RETURN
-!DEBUG
-      IF (lactive) THEN
-      lmax = SUM(Ap(:,tlglob:trglob)**2)
-      CALL MPI_REDUCE(lmax, apmax, 1, MPI_REAL8, MPI_SUM, 0, NS_COMM,
-     1                MPI_ERR)
-      lmax = SUM((Ap(:,tlglob:trglob)+ploc(:,tlglob:trglob))**2)
-      CALL MPI_REDUCE(lmax, gmax, 1, MPI_REAL8, MPI_SUM, 0, NS_COMM,
-     1                MPI_ERR)
-      IF (rank .EQ. 0) PRINT 100,'IN MATVEC_PAR, delta: ', delta,
-     1               ' |p|: ', pmax, ' |Ap|: ',
-     2               SQRT(apmax), ' |Ap+p|: ', SQRT(gmax)
- 100  FORMAT(1x,4(a,1p,e12.5))
-      END IF
-!END DEBUG
 
       END SUBROUTINE matvec_par
 
@@ -95,23 +82,21 @@ C-----------------------------------------------
 !-----------------------------------------------
 !   D u m m y   A r g u m e n t s
 !-----------------------------------------------
-      REAL(dp),INTENT(IN)  :: xcstate(neqs), bnorm
-      REAL(dp),INTENT(OUT) :: fsq_nl
+      REAL(dp), INTENT(IN)  :: xcstate(neqs), bnorm
+      REAL(dp), INTENT(OUT) :: fsq_nl
 !-----------------------------------------------
 !undo internal gmres normalization
 
       LACTIVE0: IF (lactive) THEN
-
-      CALL Saxpby1LastNs(bnorm, xcstate, one, x0, pxc)
-      CALL last_ntype_par
-      CALL PadSides(pxc)
-
+         CALL Saxpby1LastNs(bnorm, xcstate, one, x0, pxc)
+         CALL last_ntype_par
+         CALL PadSides(pxc)
       END IF LACTIVE0
 
       CALL funct3d_par(lscreen0, ier_flag_res)
       IF (lactive) CALL last_ns_par
 
-      fsq_nl = fsqr+fsqz+fsql
+      fsq_nl = fsqr + fsqz + fsql
       nfcn = nfcn + 1
 
       END SUBROUTINE GetNLForce_par
@@ -119,53 +104,53 @@ C-----------------------------------------------
   ! 
   !------------------------------------------------
       SUBROUTINE last_ns_par 
-        USE xstuff
+         USE xstuff
 
-        REAL(dp), ALLOCATABLE, DIMENSION(:)  :: tmp
-        ALLOCATE (tmp(ntmaxblocksize*ns))
+         REAL(dp), ALLOCATABLE, DIMENSION(:)  :: tmp
+         ALLOCATE (tmp(ntmaxblocksize*ns))
 
-        CALL tolastns(pgc,tmp)
-        CALL copylastns(tmp,pgc)
+         CALL tolastns(pgc,tmp)
+         CALL copylastns(tmp,pgc)
 
-        CALL tolastns(pxcdot,tmp)
-        CALL copylastns(tmp,pxcdot)
+         CALL tolastns(pxcdot,tmp)
+         CALL copylastns(tmp,pxcdot)
 
-        CALL tolastns(pxc,tmp)
-        CALL copylastns(tmp,pxc)
+         CALL tolastns(pxc,tmp)
+         CALL copylastns(tmp,pxc)
 
-        CALL tolastns(pxsave,tmp)
-        CALL copylastns(tmp,pxsave)
+         CALL tolastns(pxsave,tmp)
+         CALL copylastns(tmp,pxsave)
 
-        DEALLOCATE(tmp)
+         DEALLOCATE(tmp)
 
       END SUBROUTINE last_ns_par
   !------------------------------------------------
 
   !------------------------------------------------
       SUBROUTINE last_ntype_par 
-        USE xstuff
+         USE xstuff
 
-        REAL(dp), ALLOCATABLE, DIMENSION(:)  :: tmp
-        ALLOCATE (tmp(ntmaxblocksize*ns))
+         REAL(dp), ALLOCATABLE, DIMENSION(:)  :: tmp
+         ALLOCATE (tmp(ntmaxblocksize*ns))
 
-        CALL tolastntype(pgc,tmp)
-        CALL copylastntype(tmp,pgc)
+         CALL tolastntype(pgc,tmp)
+         CALL copylastntype(tmp,pgc)
 
-        CALL tolastntype(pxcdot,tmp)
-        CALL copylastntype(tmp,pxcdot)
+         CALL tolastntype(pxcdot,tmp)
+         CALL copylastntype(tmp,pxcdot)
 
-        CALL tolastntype(pxc,tmp)
-        CALL copylastntype(tmp,pxc)
+         CALL tolastntype(pxc,tmp)
+         CALL copylastntype(tmp,pxc)
 
-        CALL tolastntype(pxsave,tmp)
-        CALL copylastntype(tmp,pxsave)
+         CALL tolastntype(pxsave,tmp)
+         CALL copylastntype(tmp,pxsave)
 
-        DEALLOCATE(tmp)
+         DEALLOCATE(tmp)
       END SUBROUTINE last_ntype_par
   !------------------------------------------------
 
   !------------------------------------------------
-      SUBROUTINE gmres_fun_par (ier_flag, itype)
+      SUBROUTINE gmres_fun_par (ier_flag, itype, lscreen)
       USE precon2d, ONLY: ictrl_prec2d, block_precond_par
       USE xstuff
       USE vmec_main, ONLY: fsqr, fsqz, fsql, ftolv
@@ -175,20 +160,21 @@ C-----------------------------------------------
 !-----------------------------------------------
       INTEGER, INTENT(IN)  :: itype
       INTEGER, INTENT(OUT) :: ier_flag
+      LOGICAL, INTENT(IN)  :: lscreen
 !-----------------------------------------------
 !   L o c a l   V a r i a b l e s
 !-----------------------------------------------
-      TYPE (gmres_info)   :: gi
-      INTEGER :: n, m, l
-      INTEGER :: icntl(9), info(3)
-      REAL(dp) :: cntl(5), fact, fact_min, fsq_min, fsq2,
-     1            fsqr_min, fsqz_min, fsql_min
+      TYPE (gmres_info)    :: gi
+      INTEGER              :: n, m, l
+      INTEGER              :: icntl(9), info(3)
+      REAL(dp)             :: cntl(5), fact, fact_min, fsq_min, fsq2,
+     &                        fsqr_min, fsqz_min, fsql_min
       CHARACTER(LEN=*), PARAMETER :: qmr_message = 
-     1                              'Beginning GMRES iterations'
+     &                              'Beginning GMRES iterations'
       INTEGER, PARAMETER   :: noPrec=0, leftPrec=1, rightPrec=2
 !-----------------------------------------------
-      LGMRESCALL=.TRUE.
-      n     = neqs
+      LGMRESCALL = .TRUE.
+      n = neqs
 !
 !     CHOOSE TYPE OF SOLVER
 !
@@ -203,9 +189,9 @@ C-----------------------------------------------
 
       IF (lfirst) THEN
          lfirst = .FALSE.
-         IF(grank.EQ.0) THEN
-           WRITE (*,'(2x,a,/)') qmr_message
-           WRITE (nthreed, '(2x,a,/)') qmr_message
+         IF (grank.EQ.0) THEN
+            WRITE (*,'(2x,a,/)') qmr_message
+            WRITE (nthreed, '(2x,a,/)') qmr_message
          END IF
       END IF
 
@@ -257,29 +243,31 @@ C-----------------------------------------------
 !
 !      Load gmres_info structure
 !
-       info = 0
-       gi%m=m; gi%icntl=icntl; gi%cntl=cntl; gi%info = info
-       gi%ftol = ftolv
+      info = 0
+      gi%m=m; gi%icntl=icntl; gi%cntl=cntl; gi%info = info
+      gi%ftol = ftolv
 
 
-       ALLOCATE(gi%rcounts(nranks),gi%disp(nranks))
-       gi%startglobrow=tlglob
-       gi%endglobrow=trglob
-       gi%iam=rank
-       gi%nprocs=nranks
-       gi%rcounts=ntblkrcounts
-       gi%disp=ntblkdisp
-       gi%mblk_size=ntmaxblocksize
+      ALLOCATE(gi%rcounts(nranks),gi%disp(nranks))
+      gi%startglobrow=tlglob
+      gi%endglobrow=trglob
+      gi%iam=rank
+      gi%nprocs=nranks
+      gi%rcounts=ntblkrcounts
+      gi%disp=ntblkdisp
+      gi%mblk_size=ntmaxblocksize
 
-       gi%my_comm = NS_COMM
-       gi%my_comm_world = RUNVMEC_COMM_WORLD
-       gi%lactive = lactive
+      gi%my_comm = NS_COMM
+      gi%my_comm_world = RUNVMEC_COMM_WORLD
+      gi%lactive = lactive
 
-       l=ictrl_prec2d
-       IF (icntl(4) .NE. noPrec) ictrl_prec2d = -1
-       CALL funct3d_par(lscreen0, ier_flag_res)
-       ictrl_prec2d = l
-       nfcn = nfcn+1
+      gi%lverbose = lscreen
+
+      l = ictrl_prec2d
+      IF (icntl(4) .NE. noPrec) ictrl_prec2d = -1
+      CALL funct3d_par(lscreen0, ier_flag_res)
+      ictrl_prec2d = l
+      nfcn = nfcn+1
 
 !STORE INITIAL POINT AND INITIAL FORCE (AT INIT PT)
 !SO DEVIATIONS FROM THEM CAN BE COMPUTED REPEATEDLY
@@ -292,8 +280,8 @@ C-----------------------------------------------
 
       CALL last_ns_par
 
-      CALL gmres_par (n, gi, matvec_par, block_precond_par,
-     1                getnlforce_par, pxcdot, pgc)
+      CALL gmres_par(n, gi, matvec_par, block_precond_par,
+     &               getnlforce_par, pxcdot, pgc)
 
       CALL last_ntype_par
 
@@ -306,7 +294,6 @@ C-----------------------------------------------
 
 !     SIMPLE LINESEARCH SCALING SCAN
 
-!      IF (rank .EQ. 0) PRINT 1010
  1010 FORMAT(1x,'LINE SEARCH - SCAN ||X|| FOR MIN FSQ_NL',/,
      &       '-------------',/,
      &       1x,'ITER',7x,'FSQ_NL',10x,'||X||',9x,'MAX|X|')
@@ -315,31 +302,29 @@ C-----------------------------------------------
      &               MPI_ERR)
 
       DO m = 1, 5
-
-        fact = fact*SQRT(0.5_dp)
-        CALL SaxpbyLastNtype(fact, pxcdot, one, pxsave, pxc)
-!        CALL PadSides(pxc)
+         fact = fact*SQRT(0.5_dp)
+         CALL SaxpbyLastNtype(fact, pxcdot, one, pxsave, pxc)
  
-        CALL funct3d_par(lscreen0, ier_flag_res)
+         CALL funct3d_par(lscreen0, ier_flag_res)
 
-        fsq2 = fsqr+fsqz+fsql 
+         fsq2 = fsqr+fsqz+fsql
 
-        IF (fsq2 .LT. fsq_min) THEN
-          fsq_min = fsq2
-          fact_min = fact
-          fsqr_min = fsqr; fsqz_min = fsqz; fsql_min = fsql
-          IF (grank .EQ. 0) PRINT 1020, fact, fsq2
-        ELSE
-           EXIT
-        END IF      
-
+         IF (fsq2 .LT. fsq_min) THEN
+            fsq_min = fsq2
+            fact_min = fact
+            fsqr_min = fsqr; fsqz_min = fsqz; fsql_min = fsql
+            IF (grank .EQ. 0) PRINT 1020, fact, fsq2
+         ELSE
+            EXIT
+         END IF
       END DO
 
  1020 FORMAT(2x,'GMRES_FUN, TIME_STEP: ',1p,e10.3, ' FSQ_MIN: ',1pe10.3)
 
       fsqr = fsqr_min; fsqz = fsqz_min; fsql = fsql_min
-      IF (ictrl_prec2d .EQ. 1) 
-     1  CALL SaxLastNtype(pxcdot,pcol_scale,pxcdot)
+      IF (ictrl_prec2d .EQ. 1) THEN
+         CALL SaxLastNtype(pxcdot,pcol_scale,pxcdot)
+      END IF
 
       CALL SaxpbyLastNtype(fact_min, pxcdot, one, pxsave, pxc)
       CALL COPYLASTNTYPE(pxc, pxsave)
@@ -348,7 +333,6 @@ C-----------------------------------------------
       LGMRESCALL=.FALSE.
 
       END SUBROUTINE gmres_fun_par
-#endif
 
       SUBROUTINE GetNLForce(xcstate, fsq_nl, bnorm)
       USE xstuff, ONLY: xc, gc, x0=>xsave
@@ -359,7 +343,7 @@ C-----------------------------------------------
       REAL(dp),INTENT(OUT) :: fsq_nl
 !-----------------------------------------------
 !undo internal gmres normalization
-      xc(1:neqs) = x0(1:neqs)+bnorm*xcstate(1:neqs)    
+      xc(1:neqs) = x0(1:neqs) + bnorm*xcstate(1:neqs)
 
       CALL funct3d(lscreen0, ier_flag_res)
       fsq_nl = fsqr+fsqz+fsql
@@ -373,7 +357,7 @@ C-----------------------------------------------
 C-----------------------------------------------
 C   D u m m y   A r g u m e n t s
 C-----------------------------------------------
-      INTEGER, INTENT(in)      :: ndim
+      INTEGER, INTENT(in)                    :: ndim
       REAL(dp), INTENT(in), DIMENSION(ndim)  :: p
       REAL(dp), INTENT(out), DIMENSION(ndim) :: Ap
 C-----------------------------------------------
@@ -397,19 +381,12 @@ C-----------------------------------------------
       CALL funct3d(lscreen0, ier_flag_res)
       Ap = (gc(1:ndim) - gc0(1:ndim))/delta
 
-      IF (ier_flag_res .NE. 0) 
-     1  PRINT *,'IN MATVEC, IER_FLAG = ', ier_flag_res
+      IF (ier_flag_res .NE. 0) THEN
+         PRINT *,'IN MATVEC, IER_FLAG = ', ier_flag_res
+      END IF
 
  90   CONTINUE
       nfcn = nfcn + 1
-
-!DEBUG
-!      PRINT 100,'IN MATVEC, delta: ',delta,' |p|: ',
-!     1        pmax, ' |Ap|: ',
-!     2        SQRT(SUM(Ap(1:ndim)**2)), ' |Ap+p|: ',
-!     3        SQRT(SUM((Ap(1:ndim)+p(1:ndim))**2))
-! 100  FORMAT(1x,4(a,1p,e12.5))
-!END DEBUG
 
       END SUBROUTINE matvec
 
@@ -430,12 +407,12 @@ C-----------------------------------------------
       INTEGER :: n, m, l
       INTEGER :: icntl(9), info(3)
       REAL(dp) :: cntl(5), fact, fact_min, fsq_min, fsq2,
-     1            fsqr_min, fsqz_min, fsql_min
+     &            fsqr_min, fsqz_min, fsql_min
       CHARACTER(LEN=*), PARAMETER :: qmr_message = 
-     1                              'Beginning GMRES iterations'
+     &                              'Beginning GMRES iterations'
       INTEGER, PARAMETER   :: noPrec=0, leftPrec=1, rightPrec=2
 !-----------------------------------------------
-      n     = neqs
+      n = neqs
 
 !
 !     CHOOSE TYPE OF SOLVER
@@ -523,8 +500,8 @@ C-----------------------------------------------
 !RHS: RETURN RESULT OF A*X = -gc IN XCDOT
       gc = -gc
 
-      CALL gmres_ser (n, gi, matvec, block_precond, getnlforce, 
-     1                xcdot, gc)
+      CALL gmres_ser(n, gi, matvec, block_precond, getnlforce,
+     &               xcdot, gc)
 
 100   CONTINUE
 
@@ -538,20 +515,20 @@ C-----------------------------------------------
 !     SIMPLE LINESEARCH SCALING SCAN
       DO m = 1, 5
 
-      xc(1:n) = xsave(1:n) + fact*xcdot(1:n)
+         xc(1:n) = xsave(1:n) + fact*xcdot(1:n)
         
-      CALL funct3d(lscreen0, ier_flag_res)
+         CALL funct3d(lscreen0, ier_flag_res)
 
-      fsq2 = fsqr+fsqz+fsql 
+         fsq2 = fsqr+fsqz+fsql
 
-      IF (fsq2 .LT. fsq_min) THEN
-         fsq_min = fsq2
-         fact_min = fact
-         fsqr_min = fsqr; fsqz_min = fsqz; fsql_min = fsql
-      ELSE
-         EXIT
-      END IF      
-      fact = fact/2._dp
+         IF (fsq2 .LT. fsq_min) THEN
+            fsq_min = fsq2
+            fact_min = fact
+            fsqr_min = fsqr; fsqz_min = fsqz; fsql_min = fsql
+         ELSE
+            EXIT
+         END IF
+         fact = fact/2._dp
 
       END DO
 
@@ -563,7 +540,6 @@ C-----------------------------------------------
       xsave = xc
 
       END SUBROUTINE gmres_fun
-
 
       SUBROUTINE gmresr_fun (ier_flag)
       USE xstuff
@@ -580,7 +556,7 @@ C-----------------------------------------------
       REAL(dp), ALLOCATABLE, DIMENSION(:) :: work, delx, brhs
       CHARACTER(len=3), PARAMETER :: stc="rel"
       CHARACTER(LEN=*), PARAMETER :: qmr_message = 
-     1                              'Beginning GMRESR iterations'
+     &                              'Beginning GMRESR iterations'
 C-----------------------------------------------
       IF (lfirst) THEN
          lfirst = .false.
@@ -596,7 +572,6 @@ C-----------------------------------------------
       lwork  = ndim*(2*jtrunc + mgmres + 2)
       eps = .3_dp
 
-
       ALLOCATE(work(lwork), delx(ndim), brhs(ndim), stat=ier_flag_res)
       IF (ier_flag_res .ne. 0) STOP 'Allocation failed in gmresr'
 
@@ -604,17 +579,15 @@ C-----------------------------------------------
       delx = 0
 
       CALL gmresr(oktest, ndim, jtrunc, mgmres, brhs, delx, work,
-     1     eps, stc, maxits, resid, matvec, ier_flag_res)
+     &            eps, stc, maxits, resid, matvec, ier_flag_res)
 
       xc(1:ndim) = xsave(1:ndim) + delx(1:ndim)
 
       DEALLOCATE (work, delx, brhs)
 
-!     ier_flag = ier_flag_res
       ier_flag = 0
 
       END SUBROUTINE gmresr_fun
-
 
       SUBROUTINE qmr_fun
       USE vmec_dim, ONLY: ns, mpol1, ntor1

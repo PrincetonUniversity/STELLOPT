@@ -18,6 +18,7 @@
       USE biotsavart
       USE safe_open_mod
       USE mpi_params
+      USE mpi_inc
 !-----------------------------------------------------------------------
 !     Local Variables
 !          ier            Error Flag
@@ -25,12 +26,9 @@
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       INTEGER, PARAMETER :: BYTE_8 = SELECTED_INT_KIND (8)
-#if defined(MPI_OPT)
-      INCLUDE 'mpif.h'
       INTEGER(KIND=BYTE_8),ALLOCATABLE :: mnum(:), moffsets(:)
       INTEGER :: numprocs_local, mylocalid, mylocalmaster
       INTEGER :: MPI_COMM_LOCAL
-#endif
       INTEGER(KIND=BYTE_8) :: icount, chunk
       INTEGER :: ier, iunit, nseg, npts,i,j,k,ig, ncg
       REAL(rprec) :: nx, ny, nz, int_fac, xp1, yp1, zp1, xp2, yp2, zp2

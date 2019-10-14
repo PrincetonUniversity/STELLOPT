@@ -1,1 +1,0 @@
-SHARE/make_vulcan.inc
