@@ -402,7 +402,7 @@
                          regcoil_rcws_rbound_c_max, regcoil_rcws_rbound_s_max, &
                          regcoil_rcws_zbound_c_max, regcoil_rcws_zbound_s_max, &
                          target_curvature_P2, sigma_curvature_P2, &
-                         target_gamma_c, sigma_gamma_c
+                         target_gamma_c, sigma_gamma_c, &
                          lRosenbrock_X_opt, dRosenbrock_X_opt, &
                          Rosenbrock_X, Rosenbrock_X_min, Rosenbrock_X_max, &
                          target_Rosenbrock_F, sigma_Rosenbrock_F

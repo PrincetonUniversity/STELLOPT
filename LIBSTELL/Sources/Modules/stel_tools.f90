@@ -1775,6 +1775,7 @@
       DOUBLE PRECISION, INTENT(out), OPTIONAL   ::  dBsupv(3)
       INTEGER, INTENT(inout)     ::  ier
       DOUBLE PRECISION :: rho_val
+      TYPE(EZspline3_r8) :: Bv_spl
       IF (ier < 0) RETURN
       rho_val = SQRT(s_val)
       CALL EZspline_interp(Bv_spl,u_val,v_val,rho_val,Bsupv,ier)
