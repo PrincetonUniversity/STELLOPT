@@ -167,3 +167,12 @@ $(LIB_REGCOIL) :
 #Construct TERPSICHORE library. 
 $(LIB_TERPSICHORE) :
 	@cd $(TERPSICHORE_DIR);make; ar -cruv $(LIB_TERPSICHORE) *.o *.mod
+
+#Construct VMECTOOLS library
+$(LIB_VMECTOOLS) :
+	@cd $(VMECTOOLS_DIR); make lib
+   
+#Construct PTSM3D library.
+$(LIB_PTSM3D) :
+	@cd $(PTSM3D_DIR); make legacy_lib;
+

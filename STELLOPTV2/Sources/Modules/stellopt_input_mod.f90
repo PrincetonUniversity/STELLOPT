@@ -365,6 +365,7 @@
                          r_limiter, z_limiter, phi_limiter, &
                          lglobal_txport, nz_txport, nalpha_txport, alpha_start_txport, alpha_end_txport, &
                          target_txport, sigma_txport, s_txport, txport_proxy,&
+                         target_ptsm3d, sigma_ptsm3d, &
                          target_dkes, sigma_dkes, nu_dkes, &
                          target_jdotb,sigma_jdotb,target_bmin,sigma_bmin,&
                          target_bmax,sigma_bmax,target_jcurv,sigma_jcurv,&
@@ -912,6 +913,8 @@
       sigma_txport      = bigno
       s_txport          = -1.0
       txport_proxy      = 'prox1f'
+      target_ptsm3d     = 0.0
+      sigma_ptsm3d      = bigno
       target_orbit      = 0.0
       sigma_orbit       = bigno
       mass_orbit        = 6.64465675E-27 ! Default to He4
@@ -1365,6 +1368,26 @@
             WRITE(6,*) '  Optimization with linear GENE for turblent'
             WRITE(6,*) '  transport not possible.  Defaulting to proxy function'
             WRITE(6,*) '        txport_proxy = prox1d'
+         END IF
+      END IF
+!DEC$ ENDIF
+!DEC$ IF DEFINED (PTSM3D)
+      IF (myid == master .and. sigma_ptsm3d < bigno) THEN
+          WRITE(6,*)        " Geometry Interface to Turbulent Transport provided by: "
+          WRITE(6,"(2X,A)") "================================================================================="
+          WRITE(6,"(2X,A)") "=========             Plasma Turbulence Saturation Model-3D             ========="
+          WRITE(6,"(2X,A)") "=========            (B.J. Faber, P.W. Terry and C.C. Hegna)            ========="
+          WRITE(6,"(2X,A)") "=========       bfaber@wisc.edu https://gitlab.com/bfaber/PTSM3D/       ========="
+          WRITE(6,"(2X,A)") "================================================================================="
+          WRITE(6,*)        "    "
+      END IF
+!DEC$ ELSE
+      IF (sigma_ptsm3d < bigno) THEN
+         IF (myid == master) THEN
+            WRITE(6,*) '!!!!!!!!!!!!!!!!!!!! WARNING !!!!!!!!!!!!!!!!!!!!!!!!!'
+            WRITE(6,*) '  STELLOPT has not been linked to the PTSM3D code.    '
+            WRITE(6,*) '  Optimization with PTSM3D for turblent transport     '
+            WRITE(6,*) '  not possible.                                       '
          END IF
       END IF
 !DEC$ ENDIF
@@ -2115,6 +2138,15 @@
                           'SIGMA_TXPORT(',ik,') = ',sigma_txport(ik)
          END DO
       END IF
+
+      IF (sigma_ptsm3d < bigno) THEN
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,'(A)') '!         TURBULENCE OPTIMIZATION WITH PTSM3D' 
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,outflt) 'TARGET_PTSM3D',target_ptsm3d
+         WRITE(iunit,outflt) 'SIGMA_PTSM3D',sigma_ptsm3d
+      ENDIF
+
       IF (ANY(sigma_orbit < bigno)) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          WRITE(iunit,'(A)') '!          ORBIT OPTIMIZATION'  

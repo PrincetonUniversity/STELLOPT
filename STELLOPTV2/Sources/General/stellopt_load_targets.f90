@@ -264,6 +264,10 @@
       ! Kink
       IF (ANY(sigma_kink < bigno)) &
          CALL chisq_kink(target_kink, sigma_kink, ncnt,iflag)
+      ! Plasma turbulence saturation model
+      IF (sigma_ptsm3d < bigno) &
+         CALL chisq_ptsm3d(target_ptsm3d, sigma_ptsm3d, &
+          ncnt,iflag)
 
       ! Return if an initialization call
       IF (ncnt < 0) RETURN

@@ -190,6 +190,7 @@
       REAL(rprec), DIMENSION(nigroup)    :: target_coilcrv,  sigma_coilcrv
       REAL(rprec), DIMENSION(nigroup)    :: target_coilself, sigma_coilself
       REAL(rprec)                        :: target_coilsep,  sigma_coilsep
+      REAL(rprec) :: target_ptsm3d, sigma_ptsm3d
 
       INTEGER, PARAMETER :: jtarget_aspect     = 100
       INTEGER, PARAMETER :: jtarget_rbtor      = 1001
@@ -250,6 +251,7 @@
       INTEGER, PARAMETER :: jtarget_helicity   = 605
       INTEGER, PARAMETER :: jtarget_resjac     = 606
       INTEGER, PARAMETER :: jtarget_txport     = 607
+      INTEGER, PARAMETER :: jtarget_ptsm3d     = 6072
       INTEGER, PARAMETER :: jtarget_dkes       = 608
       INTEGER, PARAMETER :: jtarget_jdotb      = 609
       INTEGER, PARAMETER :: jtarget_jcurv      = 6091
@@ -382,6 +384,8 @@
             WRITE(iunit, out_format) 'Boozer Spectrum Helicity'
          CASE(jtarget_txport)
             WRITE(iunit, out_format) 'Turbulent Transport'
+         CASE(jtarget_ptsm3d)
+            WRITE(iunit, out_format) '3D turbulence saturation model'
          CASE(jtarget_orbit)
             WRITE(iunit, out_format) 'Particle Orbits (BEAMS3D)'
          CASE(jtarget_dkes)

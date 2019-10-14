@@ -162,8 +162,10 @@ chisq_txport.o : \
       $(LIB_DIR)/Release/safe_open_mod.o 
 
 chisq_ptsm3d.o : \
-			stellopt_runtime.o \
-			stellopt_targets.o
+	stellopt_runtime.o \
+	stellopt_targets.o \
+	stellopt_input_mod.o \
+	$(LIB_DIR)/Release/safe_open_mod.o
 
 chisq_jdotb.o : \
       stellopt_runtime.o \
@@ -479,13 +481,15 @@ stellopt_txport.o : \
       $(LIB_DIR)/Release/gist_mod.o \
       $(LIB_DIR)/Release/read_boozer_mod.o
       
-stellopt_ptsm3d.o: \
-       stellopt_runtime.o \
-      stellopt_input_mod.o \
-      stellopt_vars.o \
-      stellopt_targets.o \     
-      equil_vals.o \
-      equil_utils.o
+stellopt_ptsm3d.o : \
+	stellopt_runtime.o \
+	stellopt_input_mod.o \
+	stellopt_vars.o \
+	stellopt_targets.o \     
+	equil_vals.o \
+	equil_utils.o \
+	$(BOOZ_DIR)/Release/booz_persistent.o \
+	$(LIB_DIR)/Release/read_boozer_mod.o
 
 stellopt_prof_to_vmec.o : \
       stellopt_runtime.o \
