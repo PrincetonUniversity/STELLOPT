@@ -98,9 +98,9 @@ C-----------------------------------------------
 
           CALL second0(tbroadoff)
           broadcast_time = broadcast_time + (tbroadoff - tbroadon)
- !         den = SUM(bsqsav(:nznt,3)*pwint(:,2))
- !         IF (den .NE. zero) delbsq =
- !    1     SUM(dbsq(:nznt)*pwint(:,2))/den
+          den = SUM(bsqsav(:nznt,3)*pwint(:,2))
+          IF (den .NE. zero) delbsq =
+     1     SUM(dbsq(:nznt)*pwint(:,2))/den
           END IF ACTIVE1
 #endif
         ELSE

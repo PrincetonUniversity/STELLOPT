@@ -45,6 +45,9 @@
       ! Y
       IF (sigma_y < bigno)  &
          CALL chisq_y(target_y,sigma_y,ncnt,iflag)
+      ! Rosenbrock test function
+      IF (ANY(sigma_Rosenbrock_F < bigno)) &
+         CALL chisq_Rosenbrock(target_Rosenbrock_F,sigma_Rosenbrock_F,ncnt,iflag)
       !------------- SCALAR TARGETS ----------------------------
       ! PHIEDGE
       IF (sigma_phiedge < bigno)  &
@@ -261,10 +264,6 @@
       ! Kink
       IF (ANY(sigma_kink < bigno)) &
          CALL chisq_kink(target_kink, sigma_kink, ncnt,iflag)
-      ! Plasma turbulence saturation model 
-      IF (sigma_ptsm3d < bigno) &
-         CALL chisq_ptsm3d(target_ptsm3d, sigma_ptsm3d, &
-          ncnt,iflag)
 
       ! Return if an initialization call
       IF (ncnt < 0) RETURN

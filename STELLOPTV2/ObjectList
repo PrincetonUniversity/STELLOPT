@@ -1,4 +1,5 @@
 ObjectFiles = \
+stellopt_init_mpi.o \
 chisq_x.o \
 chisq_y.o \
 chisq_xics.o \
@@ -28,7 +29,6 @@ chisq_jstar.o \
 chisq_phiedge.o \
 chisq_resjac.o \
 chisq_txport.o \
-chisq_ptsm3d.o \
 chisq_betator.o \
 chisq_bprobes.o \
 chisq_vphi.o \
@@ -44,6 +44,7 @@ chisq_balloon.o \
 chisq_pmin.o \
 chisq_coil_bnorm.o \
 chisq_regcoil_chi2_b.o \
+chisq_rosenbrock.o \
 chisq_vessel.o \
 chisq_b0.o \
 chisq_z0.o \
@@ -99,7 +100,6 @@ stellopt_optimize.o \
 stellopt_recon_opt.o \
 stellopt_triangulate.o \
 stellopt_txport.o \
-stellopt_ptsm3d.o \
 stellopt_bcast_vmec.o \
 stellopt_paraexe.o \
 stellopt_prof_to_vmec.o \

@@ -40,7 +40,10 @@
   MPI_COMPILE_C = mpicc
   MPI_LINK = mpicc -shared -pthread -Wl,--no-undefined -Wl,-export-dynamic
   MPI_RUN = srun
-  MPI_RUN_OPTS = -n 64 -p dawson -t 5:00:00 -J STELLOPT_BENCH
+  MPI_RUN_OPTS = -N 2 -n 64 -p general -t 2:00:00 -J STELLOPT_BENCH
+  MPI_RUN_OPTS_SM = -N 2 -n 64 -p general -t 2:00:00 -J STELLOPT_BENCH
+  MPI_RUN_OPTS_MD = -N 4 -n 128 -p general -t 2:00:00 -J STELLOPT_BENCH
+  MPI_RUN_OPTS_LG = -N 8 -n 256 -p general -t 2:00:00 -J STELLOPT_BENCH
 
 #######################################################################
 #            NAG Options
@@ -100,13 +103,13 @@
 #######################################################################
 #            DKES/NEO Options
 #######################################################################
-  LDKES = F
+  LDKES = T
   LNEO  = T
 
 #######################################################################
 #            GENE Options
 #######################################################################
-  LGENE = F
+  LGENE = T
   GENE_INC = -I$(GENE_PATH)
   GENE_DIR = $(GENE_PATH)
   LIB_GENE = libgene.a
@@ -118,7 +121,7 @@
 #######################################################################
 #            COILOPT++ Options
 #######################################################################
-  LCOILOPT = F
+  LCOILOPT = T
   COILOPT_INC = -I$(COILOPT_PATH)
   COILOPTPP_DIR = $(COILOPT_PATH)
   LIB_COILOPTPP = libcoilopt++.a
@@ -128,7 +131,7 @@
 #######################################################################
 #            TERPSICHORE Options
 #######################################################################
-  LTERPSICHORE= F
+  LTERPSICHORE= T
   TERPSICHORE_INC = -I$(TERPSICHORE_PATH)
   TERPSICHORE_DIR = $(TERPSICHORE_PATH)
   LIB_TERPSICHORE = libterpsichore.a
@@ -153,14 +156,6 @@
   LIB_REGCOIL = libregcoil.a
   REGCOIL_LIB = $(REGCOIL_DIR)/$(LIB_REGCOIL) -fopenmp
 
-#            PTSM3D Options
-#######################################################################
-  LPTSM3D = T
-  PTSM3D_PATH = /p/stellopt/ANALYSIS/bfaber/ptsm3d
-  PTSM3D_INC = -I$(PTSM3D_PATH)/objs
-  PTSM3D_DIR = $(PTSM3D_PATH)
-  LIB_PTSM3D = libptsm3d.a
-  PTSM3D_LIB = $(PTSM3D_DIR)/$(LIB_PTSM3D)
 #######################################################################
 #            SFINCS Options
 #######################################################################
@@ -264,16 +259,22 @@ ifeq ($(MAKECMDGOALS),xstelloptv2)
     NEO_DIR = 
     LIB_NEO = 
   endif
+else ifeq ($(MAKECMDGOALS),help)
+else ifeq ($(MAKECMDGOALS),test_stellopt)
+else ifeq ($(MAKECMDGOALS),test_stellopt_coilopt)
+else ifeq ($(MAKECMDGOALS),test_stellopt_gene)
+else ifeq ($(MAKECMDGOALS),test_stellopt_regcoil)
+else ifeq ($(MAKECMDGOALS),test_stellopt_sfincs)
+else ifeq ($(MAKECMDGOALS),test_stellopt_terpsichore)
+else ifeq ($(MAKECMDGOALS),test_stellopt_travis)
 else
   LGENE = F
   LCOILOPT = F
+  LSFINCS = F
+  LREGCOIL= F
   LTERPSICHORE = F
   LTRAVIS = F
-
-  LREGCOIL= F
-  LSFINCS = F
 #  LYOURNEWCODE = F
-  LPTSM3D = F
 endif
 ifeq ($(MAKECMDGOALS),xanimec)
   PRECOMP += -D_ANIMEC
@@ -352,17 +353,7 @@ else
 endif
 
 # Handle other codes
-ifeq ($(LPTSM3D),T)
-  MOD1_PATH += $(PTSM3D_INC)
-  PRECOMP += -DPTSM3D
-  MOD_PATH += -I$(PTSM3D_DIR)/objs
-else
-  PTSM3D_LIB =
-  PTSM3D_DIR =
-  LIB_PTSM3D =
-endif
-
-LIB_LINK += $(GENE_LIB) $(COILOPT_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB) $(SFINCS_LIB) $(REGCOIL_LIB) $(PTSM3D_LIB)
+LIB_LINK += $(GENE_LIB) $(COILOPT_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB) $(SFINCS_LIB) $(REGCOIL_LIB)
 
 # Add libraries to LIB_LINK
 # LIB_LINK+= $(MYHOME)/libstell.a $(LIBS)

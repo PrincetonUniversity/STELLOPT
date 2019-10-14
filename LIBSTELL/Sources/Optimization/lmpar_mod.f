@@ -19,10 +19,8 @@
      1                     n_red
       USE mpi_params
       USE safe_open_mod
+      USE mpi_inc
       IMPLICIT NONE
-!DEC$ IF DEFINED (MPI_OPT)
-      INCLUDE 'mpif.h'                                       !mpi stuff
-!DEC$ ENDIF
 C-----------------------------------------------
 C   D u m m y   A r g u m e n t s
 C-----------------------------------------------

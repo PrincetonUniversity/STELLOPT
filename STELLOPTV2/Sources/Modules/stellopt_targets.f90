@@ -9,7 +9,8 @@
 !     Libraries
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
-      USE vparams, ONLY: nsd, ntor_rcws, mpol_rcws
+      USE stellopt_vars, ONLY: ntor_rcws, mpol_rcws, rosenbrock_dim
+      USE vparams, ONLY: nsd
       USE vsvd0, ONLY : nigroup
 
 !-----------------------------------------------------------------------
@@ -82,6 +83,8 @@
       REAL(rprec) ::  target_kappa_avg, sigma_kappa_avg
       REAL(rprec) ::  target_x, sigma_x
       REAL(rprec) ::  target_y, sigma_y
+      REAL(rprec), DIMENSION(rosenbrock_dim) ::  target_Rosenbrock_F, &
+                                                 sigma_Rosenbrock_F
       REAL(rprec), PARAMETER ::  bigno_ne = 1.0E27
       REAL(rprec) ::  norm_press
       REAL(rprec) ::  qm_ratio
@@ -187,7 +190,6 @@
       REAL(rprec), DIMENSION(nigroup)    :: target_coilcrv,  sigma_coilcrv
       REAL(rprec), DIMENSION(nigroup)    :: target_coilself, sigma_coilself
       REAL(rprec)                        :: target_coilsep,  sigma_coilsep
-      REAL(rprec) :: target_ptsm3d, sigma_ptsm3d
 
       INTEGER, PARAMETER :: jtarget_aspect     = 100
       INTEGER, PARAMETER :: jtarget_rbtor      = 1001
@@ -248,7 +250,6 @@
       INTEGER, PARAMETER :: jtarget_helicity   = 605
       INTEGER, PARAMETER :: jtarget_resjac     = 606
       INTEGER, PARAMETER :: jtarget_txport     = 607
-      INTEGER, PARAMETER :: jtarget_ptsm3d     = 6072
       INTEGER, PARAMETER :: jtarget_dkes       = 608
       INTEGER, PARAMETER :: jtarget_jdotb      = 609
       INTEGER, PARAMETER :: jtarget_jcurv      = 6091
@@ -262,6 +263,8 @@
       INTEGER, PARAMETER :: jtarget_coilself   = 617
       INTEGER, PARAMETER :: jtarget_x          = 900
       INTEGER, PARAMETER :: jtarget_y          = 901
+      INTEGER, PARAMETER :: jtarget_Rosenbrock_F   = 902
+      
 
       CONTAINS
       
@@ -275,6 +278,8 @@
             WRITE(iunit, out_format) 'X'
          CASE(jtarget_y)
             WRITE(iunit, out_format) 'Y'
+         CASE(jtarget_Rosenbrock_F)
+            WRITE(iunit, out_format) 'Rosenbrock Test Function'
          CASE(jtarget_aspect)
             WRITE(iunit, out_format) 'Aspect Ratio'
          CASE(jtarget_aspect_max)
@@ -327,7 +332,6 @@
             WRITE(iunit, out_format) 'Line Integrated Electron Density'
          CASE(jtarget_line_te)
             WRITE(iunit, out_format) 'Line Integrated Electron Temperature'
-
          CASE(jtarget_line_ti)
             WRITE(iunit, out_format) 'Line Integrated Ion Temperature'
          CASE(jtarget_xics)
@@ -378,8 +382,6 @@
             WRITE(iunit, out_format) 'Boozer Spectrum Helicity'
          CASE(jtarget_txport)
             WRITE(iunit, out_format) 'Turbulent Transport'
-         CASE(jtarget_ptsm3d)
-            WRITE(iunit, out_format) '3D turbulence saturation model'
          CASE(jtarget_orbit)
             WRITE(iunit, out_format) 'Particle Orbits (BEAMS3D)'
          CASE(jtarget_dkes)

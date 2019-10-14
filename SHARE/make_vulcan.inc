@@ -16,7 +16,7 @@
 #######################################################################
   FLAGS_R = -O3 -fexternal-blas
   FLAGS_D = -g -O0 -fexternal-blas -fbacktrace -fcheck=all 
-  LIBS    = -L/opt/gcc/scalapack-2.0.2 -lscalapack \
+  LIBS    = -L/opt/gcc/openmpi/scalapack-2.0.2/lib -lscalapack \
             -lopenblas
 
 #######################################################################
@@ -39,7 +39,7 @@
 #            NETCDF Options
 #######################################################################
   LNETCDF = T
-  NETCDF_INC = -I/opt/gcc/netcdf-fortran-4.4.5/include
+  NETCDF_INC = -I/opt/gcc/openmpi/netcdf-fortran-4.4.5/include
   NETCDF_LIB = -lnetcdf -lnetcdff
 
 #######################################################################
@@ -55,7 +55,7 @@
 #            HDF5 Options
 #######################################################################
   LHDF5 = T
-  HDF5_INC = -I/opt/gcc/hdf5-parallel-1.10.5/include
+  HDF5_INC = -I/opt/gcc/openmpi/hdf5-parallel-1.10.5/include
   HDF5_LIB = -lhdf5 -lhdf5hl_fortran -lhdf5_hl -lhdf5_fortran
 
 #######################################################################
@@ -76,7 +76,7 @@
 #            DKES/NEO Options
 #######################################################################
   LDKES = F
-  LNEO  = F
+  LNEO  = T
 
 #######################################################################
 #            GENE Options
@@ -123,35 +123,45 @@
 #######################################################################
 #            REGCOIL Options
 #######################################################################
-  LREGCOIL= F
+  LREGCOIL= T
   REGCOIL_DIR = $(REGCOIL_PATH)
   REGCOIL_INC = -I$(REGCOIL_DIR) 
   LIB_REGCOIL = libregcoil.a
   REGCOIL_LIB = $(REGCOIL_DIR)/$(LIB_REGCOIL) -fopenmp
 
 #######################################################################
-#            PTSM3D Options
-#######################################################################
-  LPTSM3D = T
-  PTSM3D_PATH = /home/bfaber/projects/PTSM3D
-  PTSM3D_INC = -I$(PTSM3D_PATH)/objs
-  PTSM3D_DIR = $(PTSM3D_PATH)
-  LIB_PTSM3D = lib/libptsm3dlegacy.a
-  PTSM3D_LIB = $(PTSM3D_DIR)/$(LIB_PTSM3D)
-
-#######################################################################
-#            VMECTOOLS Options
-#######################################################################
-  LVMECTOOLS = T
-  VMECTOOLS_PATH = /home/bfaber/projects/VMECTools
-  VMECTOOLS_INC = -I$(VMECTOOLS_PATH)/objs/fortran
-  VMECTOOLS_DIR = $(VMECTOOLS_PATH)
-  LIB_VMECTOOLS = lib/libvmectools.a
-  VMECTOOLS_LIB = $(VMECTOOLS_DIR)/$(LIB_VMECTOOLS)
-
-#######################################################################
 #            LIBSTELL Shared Options
 #######################################################################
+#LIB_SHARE = $(BLASHOME)/lib/libblas.so \
+          $(SCALAPACK_HOME)/lib/libscalapack-openmpi.so \
+          $(BLACS_HOME)/lib/libblacs-openmpi.so  $(BLACS_HOME)/lib/libblacsCinit-openmpi.so $(BLACS_HOME)/lib/libblacsF77init-openmpi.so \
+          $(HDF5_HOME)/lib/x86_64-linux-gnu/libhdf5_hl.so $(HDF5_HOME)/lib/x86_64-linux-gnu/libhdf5_fortran.so $(HDF5_HOME)/lib/x86_64-linux-gnu/libhdf5hl_fortran.so $(HDF5_HOME)/lib/x86_64-linux-gnu/libhdf5.so \
+          $(HDF5_HOME)/lib/x86_64-linux-gnu/libmpi_usempif08.so $(HDF5_HOME)/lib/x86_64-linux-gnu/libhdf5_openmpi_fortran.so \
+          $(NETCDF_HOME)/lib/x86_64-linux-gnu/libnetcdf.so $(NETCDF_HOME)/lib/x86_64-linux-gnu/libnetcdff.so $(NETCDF_HOME)/lib/x86_64-linux-gnu/libnetcdf_c++.so \
+          $(SILOHOME)/lib/x86_64-linux-gnu/libsiloh5.so \
+          $(GSLHOME)/lib/x86_64-linux-gnu/libgsl.so \
+          $(GCC6_HOME)/libgfortran.so $(GCC6_HOME)/libstdc++.so \
+          $(MPIHOME)/lib/x86_64-linux-gnu/libmpi.so $(MPIHOME)/lib/x86_64-linux-gnu/libmpi_mpifh.so \
+          /usr/lib/x86_64-linux-gnu/libm.so /usr/lib/liblapack.so /usr/lib/x86_64-linux-gnu/libdl.so
+#LIB_SHARE = $(BLASHOME)/lib/libblas.so \
+          $(SCALAPACK_HOME)/lib/libscalapack-openmpi.so.1 \
+          $(BLACS_HOME)/lib/libblacs-openmpi.so.1 \
+          $(BLACS_HOME)/lib/libblacsCinit-openmpi.so.1 \
+          $(BLACS_HOME)/lib/libblacsF77init-openmpi.so.1 \
+          $(HDF5_HOME)/lib/x86_64-linux-gnu/libhdf5_openmpi_fortran.so \
+          $(NETCDF_HOME)/lib/libnetcdf.so \
+          $(NETCDF_HOME)/lib/libnetcdff.so \
+          $(NETCDF_HOME)/lib/libnetcdf_c++.so \
+          $(SILOHOME)/lib/x86_64-linux-gnu/libsiloh5.so \
+          $(GSLHOME)/lib/x86_64-linux-gnu/libgsl.so \
+          $(GCC49_HOME)/libgfortran.so \
+          $(GCC49_HOME)/libstdc++.so \
+          $(MPIHOME)/lib/libmpi.so \
+          $(MPIHOME)/lib/libmpif77.so \
+          /usr/lib/x86_64-linux-gnu/libm.so \
+          /usr/lib/liblapack.so \
+          /usr/lib/x86_64-linux-gnu/libdl.so
+
 
 #######################################################################
 #######################################################################
@@ -245,9 +255,6 @@ else
   LCOILOPT = F
   LTERPSICHORE = F
   LTRAVIS = F
-  LREGCOIL = F
-  LVMECTOOLS = F
-  LPTSM3D = F
 endif
 ifeq ($(MAKECMDGOALS),xanimec)
   PRECOMP += -D_ANIMEC
@@ -319,29 +326,8 @@ else
   LIB_REGCOIL = 
 endif
 
-ifeq ($(LVMECTOOLS),T)
-  MOD1_PATH += $(VMECTOOLS_INC)
-  PRECOMP += -DVMECTOOLS
-  MOD_PATH += -I$(VMECTOOLS_DIR)/objs
-else
-  VMECTOOLS_LIB =
-  VMECTOOLS_DIR =
-  LIB_VMECTOOLS =
-endif
-
-ifeq ($(LPTSM3D),T)
-  MOD1_PATH += $(PTSM3D_INC)
-  PRECOMP += -DPTSM3D
-  MOD_PATH += -I$(PTSM3D_DIR)/objs/fortran
-else
-  PTSM3D_LIB =
-  PTSM3D_DIR =
-  LIB_PTSM3D =
-endif
-
-
 # Handle other codes
-LIB_LINK += $(GENE_LIB) $(COILOPT_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB) $(REGCOIL_LIB) $(VMECTOOLS_LIB) $(PTSM3D_LIB)
+LIB_LINK += $(GENE_LIB) $(COILOPT_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB) $(REGCOIL_LIB)
 
 # Add libraries to LIB_LINK
 # LIB_LINK+= $(MYHOME)/libstell.a $(LIBS)

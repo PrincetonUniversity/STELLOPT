@@ -11,7 +11,6 @@
 !     Libraries
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
-      USE vparams, ONLY: ntor_rcws, mpol_rcws
       USE stellopt_runtime
       USE stellopt_vars
       USE equil_utils, ONLY: profile_norm
@@ -47,9 +46,6 @@
 !         
 !-----------------------------------------------------------------------
       IMPLICIT NONE
-!DEC$ IF DEFINED (MPI_OPT)
-      INCLUDE 'mpif.h'                                                          ! MPI
-!DEC$ ENDIF        
 !-----------------------------------------------------------------------
 !     Input Namelists
 !         &optimum
@@ -369,7 +365,6 @@
                          r_limiter, z_limiter, phi_limiter, &
                          lglobal_txport, nz_txport, nalpha_txport, alpha_start_txport, alpha_end_txport, &
                          target_txport, sigma_txport, s_txport, txport_proxy,&
-                         target_ptsm3d, sigma_ptsm3d, &
                          target_dkes, sigma_dkes, nu_dkes, &
                          target_jdotb,sigma_jdotb,target_bmin,sigma_bmin,&
                          target_bmax,sigma_bmax,target_jcurv,sigma_jcurv,&
@@ -407,8 +402,11 @@
                          regcoil_rcws_rbound_c_max, regcoil_rcws_rbound_s_max, &
                          regcoil_rcws_zbound_c_max, regcoil_rcws_zbound_s_max, &
                          target_curvature_P2, sigma_curvature_P2, &
-                         target_gamma_c, sigma_gamma_c
-      
+                         target_gamma_c, sigma_gamma_c, &
+                         lRosenbrock_X_opt, dRosenbrock_X_opt, &
+                         Rosenbrock_X, Rosenbrock_X_min, Rosenbrock_X_max, &
+                         target_Rosenbrock_F, sigma_Rosenbrock_F
+       
 !-----------------------------------------------------------------------
 !     Subroutines
 !         read_stellopt_input:   Reads optimum namelist
@@ -544,6 +542,14 @@
       dregcoil_rcws_rbound_s_opt = -1.0
       dregcoil_rcws_zbound_c_opt = -1.0
       dregcoil_rcws_zbound_s_opt = -1.0
+      ! Rosenbrock test function variables
+      lRosenbrock_X_opt(1:ROSENBROCK_DIM) = .FALSE.
+      dRosenbrock_X_opt(1:ROSENBROCK_DIM) = -1.0
+      Rosenbrock_X(1:ROSENBROCK_DIM)      = 3
+      Rosenbrock_X_min(1:ROSENBROCK_DIM)  = -bigno
+      Rosenbrock_X_max(1:ROSENBROCK_DIM)  = bigno
+      target_Rosenbrock_F(1:ROSENBROCK_DIM) = 0
+      sigma_Rosenbrock_F(1:ROSENBROCK_DIM)  = bigno
 
       IF (.not.ltriangulate) THEN  ! This is done because values may be set by trinagulate
          phiedge_min     = -bigno;  phiedge_max     = bigno
@@ -906,8 +912,6 @@
       sigma_txport      = bigno
       s_txport          = -1.0
       txport_proxy      = 'prox1f'
-      target_ptsm3d     = 0.0
-      sigma_ptsm3d      = bigno
       target_orbit      = 0.0
       sigma_orbit       = bigno
       mass_orbit        = 6.64465675E-27 ! Default to He4
@@ -1364,28 +1368,6 @@
          END IF
       END IF
 !DEC$ ENDIF
-!DEC$ IF DEFINED (PTSM3D)
-      IF (myid == master .and. sigma_ptsm3d < bigno) THEN
-         WRITE(6,*)        " Geometry Interface to Turbulent Transport provided by: "
-         WRITE(6,"(2X,A)") "================================================================================="
-         WRITE(6,"(2X,A)") "=========             Plasma Turbulence Saturation Model-3D             ========="
-         WRITE(6,"(2X,A)") "=========            (B.J. Faber, P.W. Terry and C.C. Hegna)            ========="
-         WRITE(6,"(2X,A)") "=========       bfaber@wisc.edu https://gitlab.com/bfaber/PTSM3D/       ========="
-         WRITE(6,"(2X,A)") "================================================================================="
-         WRITE(6,*)        "    "
-     END IF
-!DEC$ ELSE
-      IF (ANY(sigma_txport < bigno)) THEN
-         sigma_txport(:) = bigno
-         IF (myid == master) THEN
-            WRITE(6,*) '!!!!!!!!!!!!!!!!!!!! WARNING !!!!!!!!!!!!!!!!!!!!!!!!!'
-            WRITE(6,*) '  Turbulent transport optimization with the PTSM3D'
-            WRITE(6,*) '  code has been disabled.  Turbulent optimziation'
-            WRITE(6,*) '  has been turned off.  Contact your vendor for'
-            WRITE(6,*) '  further information.'
-         END IF
-      END IF
-!DEC$ ENDIF
       ! Force some behavior
       lbooz(1) = .FALSE.
       target_balloon(1)   = 0.0;  sigma_balloon(1)   = bigno
@@ -1784,6 +1766,20 @@
          WRITE(iunit,outflt) 'TARGET_Y',target_y
          WRITE(iunit,outflt) 'SIGMA_Y',sigma_y
       END IF 
+      IF (ANY(sigma_Rosenbrock_F < bigno)) THEN
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,'(A)') '!          Rosenbrock Test Function'
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         DO ik = 1, rosenbrock_dim
+            IF (sigma_Rosenbrock_F(ik) < bigno) THEN
+              WRITE(iunit,"(2X,A,I3.3,A,L1,3(2X,A,I3.3,A,E22.14))") &
+                          'LROSENBROCK_X_OPT(',ik,') = ',LRosenbrock_X_opt(ik), &
+                          'TARGET_ROSENBROCK_F(',ik,') = ',target_Rosenbrock_F(ik), &
+                          'SIGMA_ROSENBROCK_F(',ik,') = ',sigma_Rosenbrock_F(ik), &
+                          'ROSENBROCK_X(',ik,') = ',Rosenbrock_X(ik)
+             END IF
+         END DO
+      END IF
       IF (sigma_phiedge < bigno) THEN
          WRITE(iunit,outflt) 'TARGET_PHIEDGE',target_phiedge
          WRITE(iunit,outflt) 'SIGMA_PHIEDGE',sigma_phiedge
@@ -2277,107 +2273,6 @@
         ! end of Options for winding surface (Fourier Series) variation
       END IF  ! End of REGCOIL options
 
-
-      IF (sigma_ptsm3d < bigno) THEN
-         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
-         WRITE(iunit,'(A)') '!         TURBULENCE OPTIMIZATION WITH PTSM3D' 
-         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
-         WRITE(iunit,outflt) 'TARGET_PTSM3D',target_ptsm3d
-         WRITE(iunit,outflt) 'SIGMA_PTSM3D',sigma_ptsm3d
-      ENDIF
- 
-      WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
-      WRITE(iunit,'(A)') '!         EQUILIBRIUM/GEOMETRY OPTIMIZATION PARAMETERS' 
-      WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
-      IF (sigma_phiedge < bigno) THEN
-         WRITE(iunit,outflt) 'TARGET_PHIEDGE',target_phiedge
-         WRITE(iunit,outflt) 'SIGMA_PHIEDGE',sigma_phiedge
-      END IF 
-      IF (sigma_curtor < bigno) THEN
-         WRITE(iunit,outflt) 'TARGET_CURTOR',target_curtor
-         WRITE(iunit,outflt) 'SIGMA_CURTOR',sigma_curtor
-      END IF 
-      IF (sigma_curtor_max < bigno) THEN
-         WRITE(iunit,outflt) 'TARGET_CURTOR_MAX',target_curtor_max
-         WRITE(iunit,outflt) 'SIGMA_CURTOR_MAX',sigma_curtor_max
-      END IF 
-      IF (sigma_rbtor < bigno) THEN
-         WRITE(iunit,outflt) 'TARGET_RBTOR',target_rbtor
-         WRITE(iunit,outflt) 'SIGMA_RBTOR',sigma_rbtor
-      END IF 
-      IF (sigma_b0 < bigno) THEN
-         WRITE(iunit,outflt) 'TARGET_B0',target_b0
-         WRITE(iunit,outflt) 'SIGMA_B0',sigma_b0
-      END IF 
-      IF (sigma_r0 < bigno) THEN
-         WRITE(iunit,outflt) 'TARGET_R0',target_r0
-         WRITE(iunit,outflt) 'SIGMA_R0',sigma_r0
-      END IF 
-      IF (sigma_z0 < bigno) THEN
-         WRITE(iunit,outflt) 'TARGET_Z0',target_z0
-         WRITE(iunit,outflt) 'SIGMA_Z0',sigma_z0
-      END IF 
-      IF (sigma_volume < bigno) THEN
-         WRITE(iunit,outflt) 'TARGET_VOLUME',target_volume
-         WRITE(iunit,outflt) 'SIGMA_VOLUME',sigma_volume
-      END IF 
-      IF (sigma_beta < bigno) THEN
-         WRITE(iunit,outflt) 'TARGET_BETA',target_beta
-         WRITE(iunit,outflt) 'SIGMA_BETA',sigma_beta
-      END IF 
-      IF (sigma_betapol < bigno) THEN
-         WRITE(iunit,outflt) 'TARGET_BETAPOL',target_betapol
-         WRITE(iunit,outflt) 'SIGMA_BETAPOL',sigma_betapol
-      END IF 
-      IF (sigma_betator < bigno) THEN
-         WRITE(iunit,outflt) 'TARGET_BETATOR',target_betator
-         WRITE(iunit,outflt) 'SIGMA_BETATOR',sigma_betator
-      END IF 
-      IF (sigma_wp < bigno) THEN
-         WRITE(iunit,outflt) 'TARGET_WP',target_wp
-         WRITE(iunit,outflt) 'SIGMA_WP',sigma_wp
-      END IF 
-      IF (sigma_aspect < bigno) THEN
-         WRITE(iunit,outflt) 'TARGET_ASPECT',target_aspect
-         WRITE(iunit,outflt) 'SIGMA_ASPECT',sigma_aspect
-      END IF 
-      IF (sigma_curvature < bigno) THEN
-         WRITE(iunit,outflt) 'TARGET_CURVATURE',target_curvature
-         WRITE(iunit,outflt) 'SIGMA_CURVATURE',sigma_curvature
-      END IF
-      IF (sigma_kappa < bigno) THEN
-         WRITE(iunit,outflt) 'TARGET_KAPPA',target_kappa
-         WRITE(iunit,outflt) 'SIGMA_KAPPA',sigma_kappa
-         WRITE(iunit,outflt) 'PHI_KAPPA',phi_kappa
-      END IF 
-      IF (sigma_kappa_box < bigno) THEN
-         WRITE(iunit,outflt) 'TARGET_KAPPA_BOX',target_kappa_box
-         WRITE(iunit,outflt) 'SIGMA_KAPPA_BOX',sigma_kappa_box
-         WRITE(iunit,outflt) 'PHI_KAPPA_BOX',phi_kappa_box
-      END IF 
-      IF (sigma_kappa_avg < bigno) THEN
-         WRITE(iunit,outflt) 'TARGET_KAPPA_AVG',target_kappa_avg
-         WRITE(iunit,outflt) 'SIGMA_KAPPA_AVG',sigma_kappa_avg
-      END IF 
-      IF (sigma_aspect_max < bigno) THEN
-         WRITE(iunit,outflt) 'TARGET_ASPECT_MAX',target_aspect_max
-         WRITE(iunit,outflt) 'SIGMA_ASPECT_MAX',sigma_aspect_max
-         WRITE(iunit,outflt) 'WIDTH_ASPECT_MAX',width_aspect_max
-      END IF          
-      IF (sigma_gradp_max < bigno) THEN
-         WRITE(iunit,outflt) 'TARGET_GRADP_MAX',target_gradp_max
-         WRITE(iunit,outflt) 'SIGMA_GRADP_MAX',sigma_gradp_max
-         WRITE(iunit,outflt) 'WIDTH_GRADP_MAX',width_gradp_max
-      END IF          
-      IF (sigma_pmin < bigno) THEN
-         WRITE(iunit,outflt) 'TARGET_PMIN',target_pmin
-         WRITE(iunit,outflt) 'SIGMA_PMIN',sigma_pmin
-         WRITE(iunit,outflt) 'WIDTH_PMIN',width_pmin
-      END IF
-      IF (sigma_curvature_P2 < bigno) THEN
-         WRITE(iunit,outflt) 'TARGET_CURVATURE_P2',target_curvature_P2
-         WRITE(iunit,outflt) 'SIGMA_CURVATURE_P2',sigma_curvature_P2
-      END IF          
       IF (ANY(sigma_extcur < bigno)) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          WRITE(iunit,'(A)') '!          Coil Current Optimization'

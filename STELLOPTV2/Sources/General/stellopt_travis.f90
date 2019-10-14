@@ -13,14 +13,13 @@
       USE stellopt_input_mod
       USE stellopt_vars
       USE equil_utils
+      USE mpi_params
+      USE mpi_inc
 !-----------------------------------------------------------------------
 !     Subroutine Parameters
 !        iflag         Error flag
 !----------------------------------------------------------------------
       IMPLICIT NONE
-!DEC$ IF DEFINED (MPI_OPT)
-!      INCLUDE 'mpif.h'
-!DEC$ ENDIF
       LOGICAL, INTENT(inout) :: lscreen
       INTEGER, INTENT(inout) :: iflag
 !-----------------------------------------------------------------------

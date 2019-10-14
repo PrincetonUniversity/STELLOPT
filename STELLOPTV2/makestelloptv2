@@ -15,7 +15,7 @@ VPATH = $(SPATH):$(SPATH)/Chisq:$(SPATH)/General:$(SPATH)/Modules
 
 .SUFFIXES :
 .SUFFIXES : .f .f90 .o
-xstelloptv2:  $(LIB) $(LIB_VMEC) $(LIB_BEAMS3D) $(LIB_BNORM) $(LIB_BOOTSJ) $(LIB_BOOZ) $(LIB_COBRA) $(LIB_DIAGNO) $(LIB_DKES) $(LIB_JINV) $(LIB_MGRID) $(LIB_NEO) $(LIB_GENE) $(LIB_COILOPTPP) $(LIB_REGCOIL) $(LIB_TERPSICHORE) $(LIB_VMECTOOLS) $(LIB_PTSM3D) $(ObjectFiles)
+xstelloptv2:  $(LIB) $(LIB_VMEC) $(LIB_BEAMS3D) $(LIB_BNORM) $(LIB_BOOTSJ) $(LIB_BOOZ) $(LIB_COBRA) $(LIB_DIAGNO) $(LIB_DKES) $(LIB_JINV) $(LIB_MGRID) $(LIB_NEO) $(LIB_GENE) $(LIB_COILOPTPP) $(LIB_REGCOIL) $(LIB_TERPSICHORE) $(ObjectFiles)
 	$(LINK) $@ $(ObjectFiles) $(LIB_LINK)
 ifdef VMEC_DIR 
 	@rm $(VMEC_DIR)/$(LOCTYPE)/$(LIB_VMEC) 
@@ -62,12 +62,6 @@ endif
 ifdef TERPSICHORE_DIR
 	@rm $(TERPSICHORE_DIR)/$(LIB_TERPSICHORE)
 endif
-#ifdef VMECTOOLS_DIR
-#	@rm $(VMECTOOLS_DIR)/$(LIB_VMECTOOLS)
-#endif
-#ifdef PTSM3D_DIR
-#	@rm $(PTSM3D_DIR)/$(LIB_PTSM3D)
-#endif
 #Compile object files defined in OBJLIST.
 .f.o :
 	@if grep -q '^!DEC\$$' $<; \
@@ -173,11 +167,3 @@ $(LIB_REGCOIL) :
 #Construct TERPSICHORE library. 
 $(LIB_TERPSICHORE) :
 	@cd $(TERPSICHORE_DIR);make; ar -cruv $(LIB_TERPSICHORE) *.o *.mod
-
-#Construct VMECTOOLS library
-$(LIB_VMECTOOLS) :
-	@cd $(VMECTOOLS_DIR); make lib
-  
-#Construct PTSM3D library.
-$(LIB_PTSM3D) :
-	@cd $(PTSM3D_DIR); make legacy_lib;

@@ -34,8 +34,8 @@
         vn_maxz = 'zmax_surf', vn_fp = 'nfp',                           &
         vn_radnod = 'ns', vn_polmod = 'mpol', vn_tormod = 'ntor',       &
         vn_maxmod = 'mnmax', vn_maxit = 'niter', vn_actit = 'itfsq',    &
-        vn_maxpot ='mnmaxpot', vn_potsin = 'potsin',                    &
-        vn_potcos = 'potcos', vn_xmpot = 'xmpot', vn_xnpot='xnpot',     &
+        vn_maxpot ='mnmaxpot', vn_potsin = 'potsin', vn_potcos = 'potcos', &
+        vn_xmpot = 'xmpot', vn_xnpot='xnpot',                           &
         vn_asym = 'lasym', vn_recon = 'lrecon',                         &
 
         vn_free = 'lfreeb', vn_moveaxis = 'lmove_axis',                 &
@@ -251,7 +251,6 @@
         ln_pmap = '<p(s,R)>', ln_omega = 'Toroidal Angular Freq.',      &
         ln_tpotb = 'T_perp/T_parallel or T(flow)'                   
 #endif
-
 !-----------------------------------------------
 !   L o c a l   V a r i a b l e s
 !-----------------------------------------------
@@ -1874,7 +1873,7 @@
 !     THIS SUBROUTINE WRITES A netCDF FILE WOUT CREATED BY STORED THE INFORMATION 
 !     IN THE read_WOUT MODULE. This routine can only be called if the wout has 
 !     already been read in.
-
+      ierr   = 0
       iwout0 = 0     
       CALL cdf_open(nwout,TRIM(filename),'w',iwout0)
       IF (iwout0 .ne. 0) STOP 'Error opening wout.nc file VMEC WROUT'

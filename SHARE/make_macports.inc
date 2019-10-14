@@ -25,8 +25,8 @@
 #######################################################################
 #            Define Compiler Flags
 #######################################################################
-#  FLAGS_R = -O2 -g -fexternal-blas -fbacktrace -fcheck=all 
-  FLAGS_R = -O2 -fexternal-blas -Wmissing-include-dirs
+  FLAGS_R = -O2 -g -fexternal-blas -fbacktrace -fcheck=all 
+#  FLAGS_R = -O2 -fexternal-blas -Wmissing-include-dirs
   FLAGS_D = -g -O0 -fcheck=all 
   LIBS    = -L/opt/local/lib -lopenblas -lscalapack  
 
@@ -40,9 +40,11 @@
   MPI_COMPILE_C = mpicc 
   MPI_LINK = /opt/local/bin/mpif90
   MPI_LINK = mpif90 -shared  -Wl,-no_compact_unwind
-
-  MPI_RUN = mpirun
-  MPI_RUN_OPTS = -np 2 
+  MPI_RUN = mpiexec
+  MPI_RUN_OPTS = -np 4
+#  MPI_RUN_OPTS_SM = -np 16
+#  MPI_RUN_OPTS_MD = -np 64
+#  MPI_RUN_OPTS_LG = -np 256
 
 #######################################################################
 #            NAG Options
@@ -123,7 +125,7 @@
 #######################################################################
 #            TERPSICHORE Options
 #######################################################################
-  LTERPSICHORE= F
+  LTERPSICHORE= T
   TERPSICHORE_INC = -I$(TERPSICHORE_PATH)
   TERPSICHORE_DIR = $(TERPSICHORE_PATH)
   LIB_TERPSICHORE = libterpsichore.a
@@ -132,12 +134,12 @@
 #######################################################################
 #            TRAVIS Options
 #######################################################################
-  LTRAVIS= F
+  LTRAVIS= T
   TRAVIS_DIR = $(TRAVIS_PATH)
   LIB_TRAVIS = libtravis64_sopt.a
   LIB_MCONF  = libmconf64.a
   TRAVIS_LIB = $(TRAVIS_DIR)/lib/$(LIB_TRAVIS) \
-               $(TRAVIS_DIR)/mag_conf/lib/$(LIB_MCONF) -lstdc++
+               $(TRAVIS_DIR)/magconf/lib/$(LIB_MCONF) -lstdc++
 
 #######################################################################
 #            REGCOIL Options
@@ -257,9 +259,19 @@ ifeq ($(MAKECMDGOALS),xstelloptv2)
     NEO_DIR = 
     LIB_NEO = 
   endif
+else ifeq ($(MAKECMDGOALS),help)
+else ifeq ($(MAKECMDGOALS),test_stellopt)
+else ifeq ($(MAKECMDGOALS),test_stellopt_coilopt)
+else ifeq ($(MAKECMDGOALS),test_stellopt_gene)
+else ifeq ($(MAKECMDGOALS),test_stellopt_regcoil)
+else ifeq ($(MAKECMDGOALS),test_stellopt_sfincs)
+else ifeq ($(MAKECMDGOALS),test_stellopt_terpsichore)
+else ifeq ($(MAKECMDGOALS),test_stellopt_travis)
 else
   LGENE = F
   LCOILOPT = F
+  LSFINCS = F
+  LREGCOIL= F
   LTERPSICHORE = F
   LTRAVIS = F
 endif
