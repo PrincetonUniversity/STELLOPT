@@ -169,11 +169,11 @@
             nti = nti + 1
          END DO
          nzeff = 0
-         DO WHILE ((ZEFF_AUX_S(nti+1) >= 0.0).and.(nzeff<MAXPROFLEN))
+         DO WHILE ((ZEFF_AUX_S(nzeff+1) >= 0.0).and.(nzeff<MAXPROFLEN))
             nzeff = nzeff + 1
          END DO
          npot = 0
-         DO WHILE ((POT_AUX_S(nti+1) >= 0.0).and.(npot<MAXPROFLEN))
+         DO WHILE ((POT_AUX_S(npot+1) >= 0.0).and.(npot<MAXPROFLEN))
             npot = npot + 1
          END DO
 
