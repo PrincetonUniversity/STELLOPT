@@ -380,8 +380,9 @@
             IF (lbeam) d3 = 2
             ALLOCATE(rtemp(d1:d2,13,1))
             DO i = d1, d2
-               CALL RANDOM_NUMBER(dbl_temp)
-               rtemp(i,6,1) = dbl_temp*pi2 ! zeta
+               !CALL RANDOM_NUMBER(dbl_temp)
+               !rtemp(i,6,1) = dbl_temp*pi2 ! zeta
+               rtemp(i,6,1) = 0          ! zeta
                rtemp(i,1,1) = R_lines(d3,i)
                rtemp(i,2,1) = PHI_lines(d3,i)
                rtemp(i,3,1) = Z_lines(d3,i)
