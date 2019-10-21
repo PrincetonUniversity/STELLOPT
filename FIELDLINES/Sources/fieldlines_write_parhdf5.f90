@@ -70,6 +70,7 @@
       offset(1) = mystart-1
 
 !DEC$ IF DEFINED (HDF5_PAR)
+      CALL MPI_ALLREDUCE(MPI_IN_PLACE,chunk_dims(1),1,MPI_INTEGER,MPI_MAX,MPI_COMM_FIELDLINES,ier)
       ! Setup Helper Arrays
       ALLOCATE(stride(rank),block(rank))
       stride(1) = 1
@@ -106,6 +107,7 @@
 
 
       ! Create Memory Space
+      chunk_dims(1) = myend-mystart+1
       CALL h5screate_simple_f(rank, chunk_dims, mspace_id, ier)
 
       ! Select Hyperslab in File
@@ -268,6 +270,7 @@
       offset(2) = 0
 
 !DEC$ IF DEFINED (HDF5_PAR)
+      CALL MPI_ALLREDUCE(MPI_IN_PLACE,chunk_dims(1),1,MPI_INTEGER,MPI_MAX,MPI_COMM_FIELDLINES,ier)
       ! Setup Helper Arrays
       ALLOCATE(stride(rank),block(rank))
       stride(1) = 1
@@ -306,6 +309,7 @@
 
 
       ! Create Memory Space
+      chunk_dims(1) = myend-mystart+1
       CALL h5screate_simple_f(rank, chunk_dims, mspace_id, ier)
 
       ! Select Hyperslab in File
