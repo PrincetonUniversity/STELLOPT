@@ -76,10 +76,10 @@
          WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   PHI = [',phimin,',',phimax,'];  NPHI: ',nphi
          WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   Z   = [',zmin,',',zmax,'];  NZ:   ',nz
          IF (lbeam) THEN
-            WRITE(6,'(A,I6)')               '   # of Particles to Start: ', nparticles_start
+            WRITE(6,'(A,I8)')               '   # of Particles to Start: ', nparticles_start
             WRITE(6,'(A,I6)')                          '   # of Beams: ', nbeams
          ELSE
-            WRITE(6,'(A,I6)')               '   # of Particles to Start: ', nparticles
+            WRITE(6,'(A,I8)')               '   # of Particles to Start: ', nparticles
          END IF
          IF (lvessel) WRITE(6,'(A)')    '   VESSEL: ' // TRIM(vessel_string)
          IF (lcoil) WRITE(6,'(A)')    '   COIL: ' // TRIM(coil_string)
