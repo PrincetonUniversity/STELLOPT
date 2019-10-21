@@ -77,7 +77,7 @@
 
 !DEC$ IF DEFINED (HDF5_PAR)
       ! Do this so we define the chunking correctly
-      CALL MPI_ALLREDUCE(MPI_IN_PLACE,chunk_dims(2),1,MPI_INTEGER,MPI_MAX,comm,ier)
+      CALL MPI_ALLREDUCE(MPI_IN_PLACE,chunk_dims(2),1,MPI_INTEGER,MPI_MAX,MPI_COMM_BEAMS,ier)
 
       ier = 0
       info = MPI_INFO_NULL
