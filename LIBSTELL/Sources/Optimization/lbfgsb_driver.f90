@@ -281,7 +281,9 @@ subroutine lbfgsb_driver(fcn, m, n, x, l, u, nbd, dx_init, maxfev, ftol, &
         iflag = FLAG_SINGLETASK
         f_success = .false.
 
-        !  Compute function value f 
+        !  Compute function value f = enorm(m, fvec).
+        !  fvec is a vector with the individual chi quantities.
+        !  LBFGSB wants 'f' (which is computed below).
         CALL fcn (m, n, x, fvec, iflag, nfev)
 
         ! Increment nfev by 1 (Is this correct and necessary? JCS)
@@ -297,7 +299,8 @@ subroutine lbfgsb_driver(fcn, m, n, x, l, u, nbd, dx_init, maxfev, ftol, &
           f_success = .true.
         END IF
 
-        ! Calculate the Euclidean norm here- this is 'f'
+        ! Calculate the Euclidean norm here- this is 'f', the quatity 
+        ! of interest for the LBFGSB algorithm
         f = enorm(m,fvec)
 
         WRITE(6, '(2x,i6,8x,i3,7x,1es16.8,a,1es16.8,a)'), 0, myid, &
