@@ -8,37 +8,41 @@ Overview
 
 The STELLOPT Suite compiles a subset of included codes and can link to
 precompiled codes (expanding it\'s capabilities). STELLOPT is maintained
-under Git. The repository is maintained at Bitbucket.
+using git. The repository is maintained at GitHub.
+
+Get source code
+----------
+
+If you want to get access to the source code, please send your GitHub account 
+name to Dr. Caoxiang Zhu (czhu[_at_]pppl[_dot_]gov) with some brief justifications.
+Once you obtained the access, you can visit the GitHub page at https://github.com/PrincetonUniversity/STELLOPT.
 
 Installation Workflow
 ---------------------
-
-In general users must make slight modifications to the files in the repo
-before compiling. For this reason we ask that users create an
-\'install\' branch based on the branch from which they wish to work. The
-**master** branch contains the cutting edge version of the code while
-**vXXX** are the release versions of the code. The general workflow
+The **master** branch contains the cutting edge version of the code while
+**develop** has the latest testing capabilities.The general workflow
 should be:
 
 1.  Clone Repository
-2.  Checkout an \'install\' branch locally
-3.  Repoint make.inc to the proper SHARE/make\_XXX.inc file (and make
+2.  Repoint make.inc to the proper SHARE/make\_XXX.inc file (or make
     one if necessary).
-4.  Issue the command make from the root directory.
+3.  Issue the command make from the root directory.
 
 Development Workflow
 --------------------
 
 For those wishing to develop the code please create a new branch based
-on **master**. Before pushing this branch back to bitbucket, do a pull
-and merge of the master branch into your branch to verify that updates
-and changes work. Then push you branch to the Bitbucket server. Once you
-done this, issue a pull request to have your branch merged with master.
-All merges into master should be tracked through the Bitbucket interface
+on **develop** . Before pushing this branch back to bitbucket, do a pull
+and merge of the **develop** branch into your branch to verify that updates
+and changes work. Then push you branch to the GitHub server. Once you
+done this, issue a pull request to have your branch merged with **develop**.
+All merges into **develop** should be tracked through the GitHub interface
 (save small things which do not directly affect compiling).
 
 Specific Compilation Issues
 ---------------------------
+
+*If you find the instructions are out dated, please raise an issue. Direct contributions to the documentation on the **gh-pages** branch are particularly welcomed.*
 
 [Compiling on the PPPL Cluster](STELLOPT Compilation at PPPL)
 
