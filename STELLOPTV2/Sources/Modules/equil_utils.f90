@@ -556,6 +556,7 @@
          CASE DEFAULT
             CALL eval_prof_stel(s_val,type,val,21,zeff_opt(0:20),ier)
       END SELECT
+      val = MAX(val,1.0)
       RETURN
       END SUBROUTINE get_equil_zeff
 
@@ -594,6 +595,18 @@
       fval = MAX(fval,0.0)*sqrt(dx*dx+dy*dy+dz*dz)
       RETURN
       END SUBROUTINE fcn_lineti
+
+      SUBROUTINE fcn_linezeff(s,u,v,dx,dy,dz,fval,ier)
+      IMPLICIT NONE
+      REAL(rprec), INTENT(in) :: s,u,v,dx,dy,dz
+      REAL(rprec), INTENT(out) :: fval
+      INTEGER, INTENT(inout) :: ier
+      fval = 0
+      IF (s>1) RETURN
+      CALL get_equil_zeff(s,TRIM(zeff_type),fval,ier)
+      fval = MAX(fval,0.0)*sqrt(dx*dx+dy*dy+dz*dz)
+      RETURN
+      END SUBROUTINE fcn_linezeff
 
       SUBROUTINE fcn_xics_bright(s,u,v,dx,dy,dz,fval,ier)
       IMPLICIT NONE

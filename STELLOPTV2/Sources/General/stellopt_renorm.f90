@@ -102,6 +102,8 @@
                WHERE(sigma_te_line<bigno) sigma_te_line = sigma_te_line/temp
             CASE(jtarget_line_ti)
                WHERE(sigma_ti_line<bigno) sigma_ti_line = sigma_ti_line/temp
+            CASE(jtarget_line_zeff)
+               WHERE(sigma_zeff_line<bigno) sigma_zeff_line = sigma_zeff_line/temp
             CASE(jtarget_xics)
                WHERE(sigma_xics<bigno) sigma_xics = sigma_xics/temp
             CASE(jtarget_xics_bright)
