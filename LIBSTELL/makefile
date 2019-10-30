@@ -37,7 +37,6 @@ clean_release:
 	@echo "CLEAN REMAKE IN PROGRESS"
 	@cd $(REL); make -f $(MAKE) clean
 	@make release
-#	@make shared_release
 
 clean_debug: 
 	@echo "CLEAN REMAKE IN PROGRESS"

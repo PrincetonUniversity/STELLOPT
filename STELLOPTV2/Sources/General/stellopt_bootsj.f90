@@ -219,9 +219,19 @@
                      dense(ir) = dense(ir) + 1.E-36_dp
                   END DO
                ELSE
+                  IF(lscreen_bootsj) THEN
+                     WRITE(6,*) '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+                     WRITE(6,*) '!!    WARNING: tempres >=0 detected     !!'
+                     WRITE(6,*) '!!             Using pressure profile   !!'
+                     WRITE(6,*) '!!             and ATE(0) ATI(0) for    !!'
+                     WRITE(6,*) '!!             profile spec.  To use    !!'
+                     WRITE(6,*) '!!             profiles set AUX_F vars  !!'
+                     WRITE(6,*) '!!             and tempres < 0.         !!'
+                     WRITE(6,*) '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+                  END IF
                   ! Setup some variables
-                  tempe0 = ate(0)            !central electron temperature in keV
-                  tempi0 = ati(0)                 !central ion temperature in keV
+                  tempe0 = ate(0)*1000            !central electron temperature in keV
+                  tempi0 = ati(0)*1000            !central ion temperature in keV
                   pres0 = 1.6022E-19_DP           !Normalization of P=N*ec Note we want eV and m^-3 at this point
                   ! Mimic behavior (if ate/i >0 then use as central values and scale density)
                   if (tempe0.le.0 .or. tempi0.le.0) tempres = abs(tempres)
@@ -244,6 +254,9 @@
             CALL MPI_BCAST(dense,irdim,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
             CALL MPI_BCAST(tempi1,irdim,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
 !DEC$ ENDIF
+            WHERE (tempe1 <10)   tempe1 = 10
+            WHERE (tempi1 <10)   tempi1 = 10
+            WHERE (dense  <1E17) tempi1 = 1E17
             tempe1 = tempe1/1000.         ! [eV] to [keV]
             tempi1 = tempi1/1000.         ! [eV] to [keV]
             dense  = dense/(1.0E+20)       ! [m^-3] to 10^20 [m^-3]
@@ -258,10 +271,13 @@
             call smooth1 (dense, 1, irup, work, 0.0)
             call positiv (dense, irup, 2)
             DEALLOCATE(work)
-            i1 = irup - 1
-            a = tempe1(irup) + tempi1(irup)/zeff1
-            a1 = tempe1(i1) + tempi1(i1)/zeff1
-            dense(irup) = dense(i1)*a1*betar(irup)/(a*betar(i1)+1.E-36_dp)
+            ! This was to control the density at the edge but can have
+            ! some seriously disasterous concequeneces.
+            !i1 = irup - 1
+            !a = tempe1(irup) + tempi1(irup)/zeff1
+            !a1 = tempe1(i1) + tempi1(i1)/zeff1
+            !dense(irup) = dense(i1)*a1*betar(irup)/(a*betar(i1)+1.E-36_dp)
+            !IF (myworkid == master) WRITE(6,*) a, a1, betar(i1)
             dex_zeff = MINLOC(zeff_aux_s(2:),DIM=1)
             IF (myworkid == master) THEN
                IF (dex_zeff > 4) THEN
