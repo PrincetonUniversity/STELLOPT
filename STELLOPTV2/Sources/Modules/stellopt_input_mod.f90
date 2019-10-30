@@ -323,6 +323,8 @@
                          r1_te_line, phi1_te_line, z1_te_line, cutoff_te_line, &
                          target_ti_line, sigma_ti_line, r0_ti_line, phi0_ti_line, z0_ti_line,&
                          r1_ti_line, phi1_ti_line, z1_ti_line, &
+                         target_zeff_line, sigma_zeff_line, r0_zeff_line, phi0_zeff_line, z0_zeff_line,&
+                         r1_zeff_line, phi1_zeff_line, z1_zeff_line, &
                          target_ti, sigma_ti, r_ti, z_ti, phi_ti, s_ti,&
                          target_xics, sigma_xics, r0_xics, phi0_xics, z0_xics,&
                          r1_xics, phi1_xics, z1_xics, target_xics_bright, sigma_xics_bright, &
@@ -786,6 +788,14 @@
       r1_ti_line(:)   = 0.0
       phi1_ti_line(:) = 0.0
       z1_ti_line(:)   = 0.0
+      target_zeff_line(:) = 0.0
+      sigma_zeff_line(:) = bigno
+      r0_zeff_line(:)   = 0.0
+      phi0_zeff_line(:) = 0.0
+      z0_zeff_line(:)   = 0.0
+      r1_zeff_line(:)   = 0.0
+      phi1_zeff_line(:) = 0.0
+      z1_zeff_line(:)   = 0.0
       target_xics(:)        = 0.0
       sigma_xics(:)         = bigno
       target_xics_bright(:) = 0.0
@@ -2332,6 +2342,24 @@
                   'Z1_TI_LINE(',ik,')',z1_ti_line(ik),&
                   'TARGET_TI_LINE(',ik,')',target_ti_line(ik),&
                   'SIGMA_TI_LINE(',ik,')',sigma_ti_line(ik)
+            END IF
+         END DO
+      END IF
+      IF (ANY(sigma_zeff_line < bigno)) THEN
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,'(A)') '!          LINE INTEGRATED Z_EFFECTIVE OPTIMIZATION'
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         DO ik = 1, UBOUND(sigma_zeff_line,DIM=1)
+            IF (sigma_zeff_line(ik) < bigno) THEN
+               WRITE(iunit,"(8(2X,A,I3.3,A,1X,'=',1X,ES22.12E3))") &
+                  'R0_ZEFF_LINE(',ik,')',r0_zeff_line(ik),&
+                  'PHI0_ZEFF_LINE(',ik,')',phi0_zeff_line(ik),&
+                  'Z0_ZEFF_LINE(',ik,')',z0_zeff_line(ik),&
+                  'R1_ZEFF_LINE(',ik,')',r1_zeff_line(ik),&
+                  'PHI1_ZEFF_LINE(',ik,')',phi1_zeff_line(ik),&
+                  'Z1_ZEFF_LINE(',ik,')',z1_zeff_line(ik),&
+                  'TARGET_ZEFF_LINE(',ik,')',target_zeff_line(ik),&
+                  'SIGMA_ZEFF_LINE(',ik,')',sigma_zeff_line(ik)
             END IF
          END DO
       END IF

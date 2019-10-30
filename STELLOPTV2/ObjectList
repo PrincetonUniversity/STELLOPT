@@ -1,4 +1,5 @@
 ObjectFiles = \
+chisq_line_zeff.o \
 stellopt_renorm.o \
 stellopt_init_mpi.o \
 chisq_x.o \
