@@ -760,3 +760,8 @@ chisq_y.o : \
       stellopt_runtime.o \
       stellopt_targets.o \
       stellopt_vars.o
+
+stellopt_mango.o : \
+      stellopt_runtime.o \
+      stellopt_vars.o \
+      $(LIB_DIR)/Debug/mpi_params.o 

@@ -14,6 +14,9 @@
 !-----------------------------------------------------------------------
       USE vparams, ONLY: ndatafmax, mpol1d, ntord 
       USE vsvd0
+!DEC$ IF DEFINED (MANGO)
+      USE mango, ONLY: mango_problem
+!DEC$ ENDIF
 !-----------------------------------------------------------------------
 !     Module Variables
 !            nfunc_max          Maximum number of function evaluations
@@ -159,6 +162,12 @@
       CHARACTER(256)  ::  sfincs_Er_option
       REAL(rprec)                       ::  vboot_tolerance
       INTEGER                           ::  vboot_max_iterations
+
+!DEC$ IF DEFINED (MANGO)
+      TYPE(mango_problem) :: mango_problem_instance
+!DEC$ ENDIF
+      REAL(rprec), ALLOCATABLE :: best_residual_function(:)
+
       REAL(rprec), DIMENSION(ndatafmax) ::  ne_aux_f, te_aux_f, &
                                             ti_aux_f, th_aux_f,&
                                             zeff_aux_f, &

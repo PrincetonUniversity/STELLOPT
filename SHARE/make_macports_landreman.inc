@@ -4,8 +4,7 @@
 #            Define User Specific Output Paths
 #######################################################################
   # Set a default directory if one has not already been defined.
-#  $STELLOPT_HOME ?= $(HOME)/stellopt/bin
-  STELLOPT_HOME = $(HOME)/stellopt/bin
+  STELLOPT_HOME ?= /Users/mattland/stellopt_github/mango/STELLOPT/bin
 
 
 #######################################################################
@@ -20,42 +19,40 @@
   PRECOMP:= cpp -traditional-cpp -E -P -C -DMACOSX
   COMPILE = gfortran
   COMPILE_FREE = gfortran -ffree-form -ffree-line-length-none -ffixed-line-length-none
-  LINK    = ld $(FLAGS) -o
+  LINK    = mpif90 $(FLAGS) -o
   LINK_AR = ar -ruvs
   LINK_C  = gcc -shared -Wl,-no_compact_unwind
+#  LINK_C  = gcc -shared -Wl,--no-undefined -Wl,-export-dynamic 
 
 #######################################################################
 #            Define Compiler Flags
 #######################################################################
 #  FLAGS_R = -O2 -g -fexternal-blas -fbacktrace -fcheck=all 
+  FLAGS_R = -O0 -g -Wmissing-include-dirs -fbacktrace -fcheck=all 
 #  FLAGS_R = -O2 -fexternal-blas -Wmissing-include-dirs
-#  FLAGS_R = -O2 -Wmissing-include-dirs
-  FLAGS_R = -g -O0  -Wmissing-include-dirs
-  FLAGS_D = -g -O0 -fcheck=all 
+#  FLAGS_D = -g -O0 -fcheck=all
+  FLAGS_R = $(FLAGS_D)
 #  LIBS    = -L/opt/local/lib -lopenblas -lscalapack  
+  LIBS    = -L/opt/local/lib -lopenblas 
+# Because scalapack is broken in macport for MPI4.0
+#  LIBS += /Users/lazerson/Sims_Work/scalapack-2.0.2/libscalapack.a
   LIBS    = -L/opt/local/lib -framework Accelerate -lscalapack   -g
 
 #######################################################################
 #            MPI Options
 #######################################################################
   LMPI    = T
-  MPI_COMPILE = /opt/local/bin/mpif90 
-  MPI_COMPILE_FREE = /opt/local/bin/mpif90 -ffree-form \
+  MPI_COMPILE = mpif90
+  MPI_COMPILE_FREE = mpif90 -ffree-form \
                      -ffree-line-length-none -ffixed-line-length-none
-  MPI_COMPILE_C = gcc -shared -Wl,-no_compact_unwind
-  MPI_LINK = /opt/local/bin/mpif90
+  MPI_COMPILE_C = mpicc 
+  MPI_LINK = mpif90
+  MPI_LINK = mpif90 -shared  -Wl,-no_compact_unwind
   MPI_RUN = mpiexec
-  MPI_RUN_OPTS = -np 4
+  MPI_RUN_OPTS = -np 2
 #  MPI_RUN_OPTS_SM = -np 16
 #  MPI_RUN_OPTS_MD = -np 64
 #  MPI_RUN_OPTS_LG = -np 256
-
-  # For GCC6
-  #MPI_COMPILE = mpif90
-  #MPI_COMPILE_FREE = mpif90 -ffree-form \
-  #                   -ffree-line-length-none -ffixed-line-length-none
-  #MPI_COMPILE_C = mpicc
-  #MPI_LINK = mpif90
 
 #######################################################################
 #            NAG Options
@@ -70,15 +67,12 @@
   NETCDF_INC = -I/opt/local/include
   NETCDF_LIB = -L/opt/local/lib -lnetcdf -lnetcdff
 
-  # FOR GCC6
-  #NETCDF_LIB = -L$(NETCDF_HOME)/lib -lnetcdff
-
 #######################################################################
 #            NTCC Options
 #######################################################################
   LNTCC = F
-  NTCC_INC = -I/Users/slazerso/Sims_PPPL/STELLOPT/NTCC/MAC/mod
-  NTCC_LIB = -L/Users/slazerso/Sims_PPPL/STELLOPT/NTCC/MAC/lib \
+  NTCC_INC = -I/Users/lazerson/Sims_Work/pub/mod
+  NTCC_LIB = -L/Users/lazerson/Sims_Work/pub/lib \
              -lpreact -lsigsub -laladdinsub -lpreact -lpspline \
              -lportlib -lezcdf
 
@@ -94,15 +88,21 @@
 #             PGPLOT Options
 #######################################################################
   LPGPLOT = F
-  PGPLOT_INC = -I$(PGPLOT_DIR)
-  PGPLOT_LIB = -L$(PGPLOT_DIR) -lpgplot -L/usr/X11R6/lib -lX11
+  PGPLOT_INC = -I/opt/local/include
+  PGPLOT_LIB = -L/opt/local/lib -lpgplot -lX11
 
 #######################################################################
 #             SILO Options
 #######################################################################
   LSILO = F
-  SILO_INC = -I$(SILOHOME)/include
-  SILO_LIB = -L$(SILOHOME)/lib -lsilo
+  SILO_INC = -I/opt/local/include
+  SILO_LIB = -L/opt/local/lib -lsilo
+
+#######################################################################
+#            DKES/NEO Options
+#######################################################################
+  LDKES = T
+  LNEO  = T
 
 #######################################################################
 #            GENE Options
@@ -144,14 +144,14 @@
   LIB_TRAVIS = libtravis64_sopt.a
   LIB_MCONF  = libmconf64.a
   TRAVIS_LIB = $(TRAVIS_DIR)/lib/$(LIB_TRAVIS) \
-               $(TRAVIS_DIR)/mag_conf/lib/$(LIB_MCONF) -lstdc++
+               $(TRAVIS_DIR)/magconf/lib/$(LIB_MCONF) -lstdc++
 
 #######################################################################
 #            SFINCS Options
 #######################################################################
 
-#LSFINCS = F
-LSFINCS = T
+LSFINCS = F
+#LSFINCS = T
 SFINCS_DIR = /Users/mattland/sfincs/fortran/version3
 SFINCS_INC = -I$(SFINCS_DIR)
 LIB_SFINCS = libsfincs.a
@@ -163,19 +163,42 @@ include ${PETSC_DIR}/lib/petsc/conf/variables
 SFINCS_LIB = $(SFINCS_DIR)/$(LIB_SFINCS) \
 	$(PETSC_LIB) $(FC_LINKER_FLAGS) $(FFLAGS)
 
-#######################################################################                                                                                       
-#            REGCOIL Options                                                                                                                                  
-#######################################################################                                                                                       
+#######################################################################
+#            MANGO Options
+#######################################################################
+
+#LMANGO = F
+LMANGO = T
+MANGO_DIR = /Users/mattland/mango
+MANGO_INC = -I$(MANGO_DIR)/include
+LIB_MANGO = libmango.a
+
+ifeq ($(LMANGO),T)
+  PETSC_DIR=/opt/local/lib/petsc
+  include ${PETSC_DIR}/lib/petsc/conf/variables
+  # The above line defines the PETSC make variables PETSC_LIB, FC_LINKER_FLAGS, and FFLAGS, which are used below in MANGO_LIB.
+endif
+
+MANGO_LIB = $(MANGO_DIR)/lib/$(LIB_MANGO) \
+	$(PETSC_LIB) $(FC_LINKER_FLAGS) $(FFLAGS) -lnlopt -lstdc++
+
+#######################################################################
+#            REGCOIL Options
+#######################################################################
   LREGCOIL= F
-#  REGCOIL_DIR = $(REGCOIL_PATH)
-  REGCOIL_DIR = /Users/mattland/regcoil
-  REGCOIL_INC = -I$(REGCOIL_DIR)
+  REGCOIL_DIR = $(REGCOIL_PATH)
+  REGCOIL_INC = -I$(REGCOIL_DIR) 
   LIB_REGCOIL = libregcoil.a
   REGCOIL_LIB = $(REGCOIL_DIR)/$(LIB_REGCOIL) -fopenmp
 
 #######################################################################
 #            LIBSTELL Shared Options
 #######################################################################
+
+LIB_SHARE = -L/opt/local/lib/gcc8 -lstdc++ -lgfortran -L/usr/lib -lz -lc -lm -lpthread -L/opt/local/lib/openmpi-gcc8 -lmpi -lmpi_mpifh $(LIBS)
+
+# or,
+
 LIB_SHARE = /opt/local/lib/libnetcdf.dylib \
          /opt/local/lib/libnetcdff.dylib \
          /opt/local/lib/libnetcdf_c++4.dylib \
@@ -215,7 +238,6 @@ LIB_SHARE = /opt/local/lib/libnetcdf.dylib \
 # Home bin specifies where the build scripts are located,
 # for example awk_cdir.awk.
 HOME_BIN = ../../
-
 MOD1_PATH = -I$(MYHOME)/libstell_dir
 MOD_PATH = 
 CLEAN_ARCH = 
@@ -224,8 +246,8 @@ LIB = libstell.a
 
 # Handle Which Code is being CALLED
 ifeq ($(MAKECMDGOALS),xstelloptv2)
-  PRECOMP += -DBNORM -DDKES_OPT -DBEAMS3D_OPT -DJINV_OPT -DNEO_OPT -DTXPORT_OPT -DDIAGNO_OPT  -DDKES_OPT  -DNEO_OPT  -DSKS  -DSKS2
-  VMEC_DIR ?= ../../VMEC2000
+  PRECOMP += -DBNORM -DBEAMS3D_OPT -DJINV_OPT -DTXPORT_OPT -DDIAGNO_OPT -DSKS  -DSKS2
+  VMEC_DIR = ../../VMEC2000
   LIB_VMEC= libvmec.a
   MOD_PATH+= -I$(VMEC_DIR)/$(LOCTYPE)
   BEAMS3D_DIR = ../../BEAMS3D
@@ -246,18 +268,12 @@ ifeq ($(MAKECMDGOALS),xstelloptv2)
   DIAGNO_DIR = ../../DIAGNO
   LIB_DIAGNO= libdiagno.a
   MOD_PATH+= -I$(DIAGNO_DIR)/$(LOCTYPE)
-  DKES_DIR= ../../DKES
-  LIB_DKES= libdkes.a
-  MOD_PATH+= -I$(DKES_DIR)/$(LOCTYPE)
   JINV_DIR = ../../J_INVARIANT
   LIB_JINV = libjinv.a
   MOD_PATH+= -I$(JINV_DIR)/$(LOCTYPE)
   MGRID_DIR= ../../MAKEGRID
   LIB_MGRID= libmakegrid.a
   MOD_PATH+= -I$(MGRID_DIR)/$(LOCTYPE)
-  NEO_DIR = ../../NEO
-  LIB_NEO = libneo.a
-  MOD_PATH+= -I$(NEO_DIR)/$(LOCTYPE)
   LIB_LINK=  $(VMEC_DIR)/$(LOCTYPE)/$(LIB_VMEC)  \
 	$(BEAMS3D_DIR)/$(LOCTYPE)/$(LIB_BEAMS3D) \
 	$(BOOTSJ_DIR)/$(LOCTYPE)/$(LIB_BOOTSJ) \
@@ -265,10 +281,28 @@ ifeq ($(MAKECMDGOALS),xstelloptv2)
 	$(BOOZ_DIR)/$(LOCTYPE)/$(LIB_BOOZ) \
 	$(COBRA_DIR)/$(LOCTYPE)/$(LIB_COBRA) \
 	$(DIAGNO_DIR)/$(LOCTYPE)/$(LIB_DIAGNO) \
-	$(DKES_DIR)/$(LOCTYPE)/$(LIB_DKES) \
 	$(JINV_DIR)/$(LOCTYPE)/$(LIB_JINV) \
-	$(MGRID_DIR)/$(LOCTYPE)/$(LIB_MGRID) \
-	$(NEO_DIR)/$(LOCTYPE)/$(LIB_NEO)
+	$(MGRID_DIR)/$(LOCTYPE)/$(LIB_MGRID) 
+  ifeq ($(LDKES),T)
+    DKES_DIR = ../../DKES
+    LIB_DKES = libdkes.a
+    MOD_PATH += -I$(DKES_DIR)/$(LOCTYPE)
+    PRECOMP += -DDKES_OPT
+    LIB_LINK += $(DKES_DIR)/$(LOCTYPE)/$(LIB_DKES)
+  else
+    DKES_DIR = 
+    LIB_DKES = 
+  endif
+  ifeq ($(LNEO),T)
+    NEO_DIR = ../../NEO
+    LIB_NEO = libneo.a
+    MOD_PATH += -I$(NEO_DIR)/$(LOCTYPE)
+    PRECOMP += -DNEO_OPT
+    LIB_LINK += $(NEO_DIR)/$(LOCTYPE)/$(LIB_NEO)
+  else
+    NEO_DIR = 
+    LIB_NEO = 
+  endif
 else ifeq ($(MAKECMDGOALS),help)
 else ifeq ($(MAKECMDGOALS),test_stellopt)
 else ifeq ($(MAKECMDGOALS),test_stellopt_coilopt)
@@ -281,6 +315,7 @@ else
   LGENE = F
   LCOILOPT = F
   LSFINCS = F
+  LMANGO = F
   LREGCOIL= F
   LTERPSICHORE = F
   LTRAVIS = F
@@ -291,9 +326,6 @@ endif
 ifeq ($(MAKECMDGOALS),xvmec2000)
   PRECOMP += -DSKS  -DSKS2
 endif
-#ifeq ($(MAKECMDGOALS),xparvmec)
-#  PRECOMP += -DSKS  -DSKS2
-#endif
 ifeq ($(MAKECMDGOALS),xsiesta)
   PRECOMP += -DSKS  -DSKS2
 endif
@@ -354,18 +386,27 @@ else
   SFINCS_DIR = 
   LIB_SFINCS = 
 endif
+ifeq ($(LMANGO),T)
+  MOD1_PATH += $(MANGO_INC)
+  PRECOMP += -DMANGO
+  MOD_PATH += $(MANGO_INC)
+else
+  MANGO_LIB = 
+  MANGO_DIR = 
+  LIB_MANGO = 
+endif
 ifeq ($(LREGCOIL),T)
   MOD1_PATH += $(REGCOIL_INC)
   PRECOMP += -DREGCOIL
   MOD_PATH += -I$(REGCOIL_DIR)
 else
-  REGCOIL_LIB =
-  REGCOIL_DIR =
-  LIB_REGCOIL =
+  REGCOIL_LIB = 
+  REGCOIL_DIR = 
+  LIB_REGCOIL = 
 endif
 
 # Handle other codes
-LIB_LINK += $(GENE_LIB) $(COILOPT_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB) $(SFINCS_LIB) $(REGCOIL_LIB)
+LIB_LINK += $(GENE_LIB) $(COILOPT_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB) $(SFINCS_LIB) $(MANGO_LIB) $(REGCOIL_LIB)
 
 # Add libraries to LIB_LINK
 # LIB_LINK+= $(MYHOME)/libstell.a $(LIBS)
@@ -376,42 +417,45 @@ LIB_LINK+= $(LIB_DIR)/$(LOCTYPE)/$(LIB) $(LIBS)
 # 3rd Party Libs
 ifeq ($(LMPI),T)
   PRECOMP += -DMPI_OPT
-  VMEC_DIR = ../../VMEC2000
-#  VMEC_DIR = ../../PARVMEC
   COMPILE = $(MPI_COMPILE)
   COMPILE_FREE = $(MPI_COMPILE_FREE)
   LINK    = $(MPI_COMPILE) $(FLAGS) -o 
-  LINK_C  = $(MPI_COMPILE_C) 
+  LINK_C  = $(MPI_LINK) 
 endif
 ifeq ($(LNETCDF),T)
   MOD1_PATH += $(NETCDF_INC)
   PRECOMP += -DNETCDF
   LIB_LINK += $(NETCDF_LIB)
   MOD_PATH += $(NETCDF_INC)
+  LIB_SHARE += $(NETCDF_LIB)
 endif
 ifeq ($(LHDF5),T)
   MOD1_PATH += $(HDF5_INC)
   PRECOMP += -DLHDF5 -DH5_USE_16_API
   LIB_LINK += $(HDF5_LIB)
   MOD_PATH += $(HDF5_INC)
+  LIB_SHARE += $(HDF5_LIB)
 endif
 ifeq ($(LNAG),T)
   PRECOMP += -DNAG
   LIB_LINK += $(NAG_LIB)
+  LIB_SHARE += $(NAG_LIB)
 endif
 ifeq ($(LNTCC),T)
   MOD1_PATH += $(NTCC_INC)
   PRECOMP += -DLADAS -DNTCC
   LIB_LINK += $(NTCC_LIB)
   MOD_PATH += $(NTCC_INC)
+  LIB_SHARE += $(NTCC_LIB)
 endif
 ifeq ($(LSILO),T)
   MOD1_PATH += $(SILO_INC)
   PRECOMP += -DSILO_AVAI
   LIB_LINK += $(SILO_LIB)
+  LIB_SHARE += $(SILO_LIB)
 endif
 
-# This is here because of MPI above resetting LINK
+# This is hear because of MPI above resetting LINK
 ifeq ($(MAKECMDGOALS),libstell.a)
   LINK = $(LINK_AR)
   COMPILE += -fPIC
@@ -419,6 +463,7 @@ ifeq ($(MAKECMDGOALS),libstell.a)
   INC_PATH = 
 endif
 ifeq ($(MAKECMDGOALS),libstell.so)
+  LINK = $(LINK_C)
   LIB_LINK = $(LIB_SHARE)
   COMPILE += -fPIC
   COMPILE_FREE += -fPIC

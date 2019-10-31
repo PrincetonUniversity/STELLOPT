@@ -32,7 +32,7 @@
       REAL(rprec), ALLOCATABLE ::  qtf(:), wa1(:), wa2(:), wa3(:), &
                                    wa4(:), fvec(:)
       REAL(rprec), ALLOCATABLE ::  fjac(:,:)
-      
+      LOGICAL :: used_mango_algorithm
       REAL(rprec), EXTERNAL :: enorm
       EXTERNAL stellopt_fcn
       
@@ -337,10 +337,13 @@
                        qtf, wa1, wa2, wa3, wa4)
             DEALLOCATE(ipvt, qtf, wa1, wa2, wa3, wa4, fvec, fjac)
          CASE DEFAULT
-            WRITE(6,*) '!!!!!  UNKNOWN OPTIMIZATION TYPE  !!!!!'
-            WRITE(6,*) '       OPT_TYPE: ',TRIM(opt_type)
-            WRITE(6,*)
-            RETURN
+            CALL stellopt_optimize_mango(used_mango_algorithm)
+            IF (.not. used_mango_algorithm) THEN
+               WRITE(6,*) '!!!!!  UNKNOWN OPTIMIZATION TYPE  !!!!!'
+               WRITE(6,*) '       OPT_TYPE: ',TRIM(opt_type)
+               WRITE(6,*)
+               RETURN
+            END IF
       END SELECT
       ! Now output the minimum files
       !IF (myid == master .and. info /= 5) THEN

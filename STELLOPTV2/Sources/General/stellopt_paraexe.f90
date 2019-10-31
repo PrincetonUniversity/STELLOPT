@@ -112,6 +112,7 @@
       code_str = TRIM(in_parameter_1)
       file_str = TRIM(in_parameter_2)
       ierr_mpi = 0
+      print *,"Hello from stellopt_paraexe. code_str=",code_str
       DO
          ! First get the name of the code blah
          ier_paraexe = 0; ierr_mpi = 0; ier = 0
@@ -422,6 +423,10 @@
                ier_paraexe = ier
             CASE('write_mgrid')
                CALL stellopt_write_mgrid(MPI_COMM_MYWORLD,file_str,lscreen)
+            CASE('mango_init')
+               CALL stellopt_mango_init
+            CASE('mango_finalize')
+               CALL stellopt_mango_finalize
             CASE('exit')  ! we send this when we want to terminate the code (everyone leaves)
                !PRINT *,'myid: ',myid,' exiting stellopt_paraexe'
                CALL MPI_COMM_FREE(MPI_COMM_MYWORLD,ierr_mpi)
