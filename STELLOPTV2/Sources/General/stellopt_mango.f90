@@ -12,7 +12,7 @@ SUBROUTINE stellopt_optimize_mango(used_mango_algorithm)
 !     Libraries
 !-----------------------------------------------------------------------
       USE mango
-      USE stellopt_runtime, ONLY: opt_type
+      USE stellopt_runtime, ONLY: opt_type, targets, sigmas
       USE stellopt_vars, ONLY: mango_problem_instance
 !-----------------------------------------------------------------------
 !     Local Variables
@@ -22,6 +22,8 @@ SUBROUTINE stellopt_optimize_mango(used_mango_algorithm)
       DOUBLE PRECISION :: best_objective_function
       LOGICAL :: ltst
       CHARACTER(256) :: tstr1, tstr2
+      INTEGER :: m, ncnt, iflag
+      DOUBLE PRECISION :: fvec_temp(1)
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
@@ -37,6 +39,19 @@ SUBROUTINE stellopt_optimize_mango(used_mango_algorithm)
       print *,"BBB"
       ! If we make it here, then opt_type must be a MANGO algorithm.
       used_mango_algorithm = .true.
+
+      ! At this point in stellopt's execution, the 'targets' and 'sigmas' arrays have been allocated
+      ! but not populated with their values. However, mango_optimize() needs to know the values of 'targets' and 'sigmas'
+      ! before it starts evaluating the residual function. So, let's populate 'targets' and 'sigmas' now.
+      ! This is done by calling stellopt_load_targets().
+      m = -1
+      ncnt = 0
+      iflag = 0
+      print *,"targets before stellopt_load_targets:",targets
+      print *,"sigmas before stellopt_load_targets:",sigmas
+      CALL stellopt_load_targets(m,fvec_temp,iflag,ncnt)
+      print *,"targets after stellopt_load_targets:",targets
+      print *,"sigmas after stellopt_load_targets:",sigmas
 
       ! The first few steps must be done by all processes, not only those in MPI_COMM_STEL = mpi_comm_group_leaders.
       ltst  = .false.
@@ -82,6 +97,7 @@ SUBROUTINE stellopt_optimize_mango(used_mango_algorithm)
 !     Local Variables
 !----------------------------------------------------------------------
       IMPLICIT NONE
+      EXTERNAL mango_residual_function
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
@@ -103,11 +119,15 @@ SUBROUTINE stellopt_optimize_mango(used_mango_algorithm)
       CALL mango_problem_create_least_squares(mango_problem_instance, nvars, vars, mtargets, targets, sigmas, best_residual_function, mango_residual_function)
       CALL mango_set_custom_mpi_communicators(mango_problem_instance, MPI_COMM_WORLD, MPI_COMM_STEL, MPI_COMM_MYWORLD)
 
-CONTAINS
+!DEC$ ENDIF
+  END SUBROUTINE stellopt_mango_init
+
   ! We make mango_residual_function contained by stellopt_mango_init so the call to mango_problem_create_least_squares knows the interface to mango_residual_function.
 
+!DEC$ IF DEFINED (MANGO)
     SUBROUTINE mango_residual_function(N_parameters, x, N_terms, f, failed, problem)
       USE iso_c_binding
+      USE mango
       IMPLICIT NONE
       INTEGER(C_int), INTENT(IN) :: N_parameters
       REAL(C_double), INTENT(IN) :: x(N_parameters)
@@ -127,7 +147,6 @@ CONTAINS
     END SUBROUTINE mango_residual_function
 
 !DEC$ ENDIF
-  END SUBROUTINE stellopt_mango_init
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
