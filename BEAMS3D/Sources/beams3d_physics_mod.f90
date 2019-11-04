@@ -251,7 +251,7 @@ MODULE beams3d_physics_mod
          USE beams3d_grid
          USE beams3d_lines, ONLY: myline,xlast,ylast,zlast
          USE beams3d_runtime, ONLY: t_end, lvessel,to3
-         USE wall_mod, ONLY: collide
+         USE wall_mod, ONLY: collide, uncount_wall_hit
 
          !--------------------------------------------------------------
          !     Input Parameters
@@ -549,6 +549,7 @@ MODULE beams3d_physics_mod
                q(1) = SQRT(qf(1)*qf(1)+qf(2)*qf(2))
                q(2) = ATAN2(qf(2),qf(1))
                q(3) = qf(3)
+               CALL uncount_wall_hit
                RETURN
             END IF
             !xlast = x0; ylast=y0; zlast=z0
