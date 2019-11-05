@@ -141,7 +141,7 @@
 !DEC$ ELSE
 
       DO i = 0, numprocs-1
-         IF (myid == i) THEN
+         IF (myworkid == i) THEN
             ! Open the fotran interface
             CALL h5open_f(ier)
 
@@ -152,7 +152,7 @@
             CALL h5fopen_f('fieldlines_'//TRIM(id_string)//'.h5', H5F_ACC_RDWR_F, file_id, ier, access_prp = H5P_DEFAULT_F)
 
             ! Open or create the dataset and get/create dataspace identifer
-            IF  (myid == master) THEN
+            IF  (myworkid == master) THEN
                CALL h5screate_simple_f(rank, dimsf, fspace_id, ier)
                IF (livar) CALL h5dcreate_f(file_id, TRIM(var_name), H5T_NATIVE_INTEGER, fspace_id, dset_id, ier)
                IF (lfvar) CALL h5dcreate_f(file_id, TRIM(var_name), H5T_NATIVE_DOUBLE, fspace_id, dset_id, ier)
@@ -343,7 +343,7 @@
 !DEC$ ELSE
 
       DO i = 0, numprocs-1
-         IF (myid == i) THEN
+         IF (myworkid == i) THEN
             ! Open the fotran interface
             CALL h5open_f(ier)
 
@@ -354,7 +354,7 @@
             CALL h5fopen_f('fieldlines_'//TRIM(id_string)//'.h5', H5F_ACC_RDWR_F, file_id, ier, access_prp = H5P_DEFAULT_F)
 
             ! Open or create the dataset and get/create dataspace identifer
-            IF  (myid == master) THEN
+            IF  (myworkid == master) THEN
                CALL h5screate_simple_f(rank, dimsf, fspace_id, ier)
                IF (livar) CALL h5dcreate_f(file_id, TRIM(var_name), H5T_NATIVE_INTEGER, fspace_id, dset_id, ier)
                IF (lfvar) CALL h5dcreate_f(file_id, TRIM(var_name), H5T_NATIVE_DOUBLE, fspace_id, dset_id, ier)

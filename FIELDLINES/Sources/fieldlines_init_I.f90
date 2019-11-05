@@ -105,7 +105,7 @@
       ! Get the fields
       chunk  = nz/numprocs
       IF (MOD(nz,numprocs) /= 0) chunk = chunk + 1
-      myzs = myid*chunk + 1
+      myzs = myworkid*chunk + 1
       myze = myzs + chunk - 1
       if (myze > nz) myze = nz
       count = 0
@@ -162,7 +162,7 @@
 !DEC$ IF DEFINED (MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
       IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_init_I',ierr_mpi)
-      IF (myid == master) THEN
+      IF (myworkid == master) THEN
          ALLOCATE(buffer_mast(nr,nphi,3))
          DO i = myze+1, nz
             CALL MPI_RECV(buffer_mast,nr*nphi*3,MPI_DOUBLE_PRECISION,MPI_ANY_SOURCE,MPI_ANY_TAG,MPI_COMM_FIELDLINES,status,ierr_mpi)
@@ -191,7 +191,7 @@
       ! Have master send info to slaves, in parts
       CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
       IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_init_I',ierr_mpi)
-      IF (myid == master) THEN
+      IF (myworkid == master) THEN
          ALLOCATE(buffer_mast(nr,nphi,3))
          DO i = 1, nz
             buffer_mast(:,:,1) = B_R(:,:,i)

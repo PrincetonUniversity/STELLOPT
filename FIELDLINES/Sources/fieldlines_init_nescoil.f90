@@ -59,7 +59,7 @@
       nu = 128; nv = 128; nuv = nu * nv; fnuv = REAL(1)/REAL(nuv)
 
       ! Read the NESCOIL FILE
-      IF (myid == master) THEN
+      IF (myworkid == master) THEN
           npos = 1
           CALL safe_open(iunit,ier,'nescout.'//TRIM(nescoil_string),'unknown','formatted')
           DO
@@ -269,7 +269,7 @@
       
       ! Break up the Work
       chunk = FLOOR(REAL(nr*nphi*nz) / REAL(numprocs))
-      mystart = myid*chunk + 1
+      mystart = myworkid*chunk + 1
       myend = mystart + chunk - 1
 
       ! This section sets up the work so we can use ALLGATHERV
@@ -287,8 +287,8 @@
          moffsets(i+1:numprocs) = moffsets(i+1:numprocs) + 1
          i=i+1
       END DO
-      mystart = moffsets(myid+1)
-      chunk  = mnum(myid+1)
+      mystart = moffsets(myworkid+1)
+      chunk  = mnum(myworkid+1)
       myend   = mystart + chunk - 1
 !DEC$ ENDIF
       IF (lafield_only) THEN
@@ -317,7 +317,7 @@
                by_temp = SUM(dby)*fnuv
                bx = bx + (bx_temp * COS(alp * iper) - by_temp * SIN(alp * iper))
                by = by + (by_temp * COS(alp * iper) + bx_temp * SIN(alp * iper))
-               !IF (myid == 10) THEN; WRITE(6,*) fnuv; CALL FLUSH(6); STOP; END IF
+               !IF (myworkid == 10) THEN; WRITE(6,*) fnuv; CALL FLUSH(6); STOP; END IF
                B_Z(i,j,k) = B_Z(i,j,k) + SUM(dbz)*fnuv
             END DO
             B_R(i,j,k) = B_R(i,j,k) + bx * COS(phiaxis(j)) + by * sin(phiaxis(j))

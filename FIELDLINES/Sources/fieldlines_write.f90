@@ -12,7 +12,7 @@
       USE stel_kinds, ONLY: rprec
       USE ez_hdf5
       USE safe_open_mod, ONLY: safe_open
-      USE mpi_params, ONLY: master, myid, MPI_COMM_FIELDLINES, ierr_mpi
+      USE mpi_params, ONLY: master, myworkid, MPI_COMM_FIELDLINES, ierr_mpi
       USE wall_mod, ONLY: nface,nvertex,face,vertex,ihit_array
       USE fieldlines_lines
       USE fieldlines_grid, ONLY: nr, nphi, nz, B_R, B_PHI, B_Z, raxis, &
@@ -38,7 +38,7 @@
 !-----------------------------------------------------------------------
 !     Begin Subroutine
 !-----------------------------------------------------------------------
-      IF (myid == master) THEN
+      IF (myworkid == master) THEN
          IF (lverb) THEN
             WRITE(6,'(A)')  '----- WRITING DATA TO FILE -----'
          END IF
