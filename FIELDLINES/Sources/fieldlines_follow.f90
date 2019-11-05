@@ -97,11 +97,11 @@
          END DO
          IF (SUM(mnum) == nlines) EXIT
       END DO
-      mypace = mnum(myid+1)
-      IF (myid == 0) THEN
+      mypace = mnum(myworkid+1)
+      IF (myworkid == 0) THEN
          mystart = 1
       ELSE
-         mystart = SUM(mnum(1:myid))+1
+         mystart = SUM(mnum(1:myworkid))+1
       END IF
       myend   = mystart+mypace-1
       DEALLOCATE(mnum)
@@ -247,11 +247,11 @@
                DO l = 0, nsteps
                   R_lines(mystart:myend,l) = REAL(l)
                END DO
-               B_lines(mystart:myend,0:nsteps) = REAL(myid)
+               B_lines(mystart:myend,0:nsteps) = REAL(myworkid)
          END SELECT
       END IF
       
-      IF (myid == master) WRITE(6,*) ' '
+      IF (myworkid == master) WRITE(6,*) ' '
 
       ! Deallocations
       IF (ALLOCATED(q)) DEALLOCATE(q)

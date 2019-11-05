@@ -42,14 +42,14 @@
 !     Begin Program
 !-----------------------------------------------------------------------
       
-      myid = master
+      myworkid = master
       ierr_mpi = MPI_SUCCESS
 !DEC$ IF DEFINED (MPI_OPT)
       CALL MPI_INIT(ierr_mpi) ! MPI
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_INIT_ERR, 'fieldlines_main', ierr_mpi)
       CALL MPI_COMM_DUP( MPI_COMM_WORLD, MPI_COMM_FIELDLINES, ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_RANK_ERR, 'fieldlines_main', ierr_mpi)
-      CALL MPI_COMM_RANK( MPI_COMM_FIELDLINES, myid, ierr_mpi )              ! MPI
+      CALL MPI_COMM_RANK( MPI_COMM_FIELDLINES, myworkid, ierr_mpi )              ! MPI
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_RANK_ERR, 'fieldlines_main', ierr_mpi)
       CALL MPI_COMM_SIZE( MPI_COMM_FIELDLINES, numprocs, ierr_mpi )          ! MPI
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_SIZE_ERR, 'fieldlines_main', ierr_mpi)
@@ -64,7 +64,7 @@
       pi2 = 8.0 * ATAN(1.0)
       mu0 = 16.0E-7 * ATAN(1.0)
       lverb = .true.
-      IF (myid == master) THEN
+      IF (myworkid == master) THEN
          !OPEN(6,CARRIAGECONTROL='fortran')
          !OPEN(6, RECL = 2**24)
          numargs=0
@@ -230,7 +230,7 @@
          WRITE(6,'(A,A)')  '   ', TRIM(mpi_lib_name(1:liblen))
          WRITE(6,'(A,I8)')  '   Nproc_total:  ', numprocs
          WRITE(6,'(A,3X,I5)')  '   Nproc_shared: ', nshar
-      ELSE IF (myid /= master) THEN
+      ELSE IF (myworkid /= master) THEN
          lverb=.false.   ! Shutup the slaves
       END IF
       CALL FLUSH(6)
