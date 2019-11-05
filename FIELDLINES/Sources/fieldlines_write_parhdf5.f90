@@ -13,7 +13,7 @@
       USE mpi_params
       USE hdf5
       USE fieldlines_runtime, ONLY: id_string, handle_err, &
-                                 MPI_BARRIER_ERR
+                                 MPI_BARRIER_ERR, nprocs_fieldlines
       USE mpi_inc
 !-----------------------------------------------------------------------
 !     Input Variables
@@ -140,7 +140,7 @@
 
 !DEC$ ELSE
 
-      DO i = 0, numprocs-1
+      DO i = 0, nprocs_fieldlines-1
          IF (myworkid == i) THEN
             ! Open the fotran interface
             CALL h5open_f(ier)
@@ -209,7 +209,7 @@
       USE mpi_params
       USE hdf5
       USE fieldlines_runtime, ONLY: id_string, handle_err, &
-                                 MPI_BARRIER_ERR
+                                 MPI_BARRIER_ERR, nprocs_fieldlines
       USE mpi_inc
 !-----------------------------------------------------------------------
 !     Input Variables
@@ -342,7 +342,7 @@
 
 !DEC$ ELSE
 
-      DO i = 0, numprocs-1
+      DO i = 0, nprocs_fieldlines-1
          IF (myworkid == i) THEN
             ! Open the fotran interface
             CALL h5open_f(ier)
