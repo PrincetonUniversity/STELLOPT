@@ -509,6 +509,14 @@ stellopt_magdiags.o : \
       $(LIB_DIR)/Release/vmec_input.o 
       
       
+stellopt_fieldlines.o : \
+      stellopt_runtime.o \
+      $(FIELDLINES_DIR)/Release/fieldlines_runtime.o \
+      $(FIELDLINES_DIR)/Release/fieldlines_grid.o \
+      $(FIELDLINES_DIR)/Release/fieldlines_lines.o \
+      $(LIB_DIR)/Release/mpi_params.o 
+      
+      
 stellopt_fcn.o : \
       stellopt_runtime.o \
       stellopt_input_mod.o \
