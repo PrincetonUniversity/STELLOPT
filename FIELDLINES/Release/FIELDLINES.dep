@@ -16,6 +16,10 @@ fieldlines_runtime.o: \
       ../../LIBSTELL/Release/stel_kinds.o 
       
 
+fieldlines_init_vars.o: \
+      fieldlines_runtime.o 
+      
+
 monit_find_axis.o: 
 
 
