@@ -60,46 +60,18 @@
       CALL MPI_GET_LIBRARY_VERSION(mpi_lib_name,liblen,ier)
       CALL MPI_ERRHANDLER_SET(MPI_COMM_WORLD,MPI_ERRORS_RETURN,ierr_mpi)
 !DEC$ ENDIF
-      pi = 4.0 * ATAN(1.0)
-      pi2 = 8.0 * ATAN(1.0)
-      mu0 = 16.0E-7 * ATAN(1.0)
-      lverb = .true.
+
+      ! Intialize variables
+      CALL fieldlines_init_vars
+
+
       IF (myworkid == master) THEN
          !OPEN(6,CARRIAGECONTROL='fortran')
          !OPEN(6, RECL = 2**24)
+         lverb = .true.
          numargs=0
          i=0
          arg1=''
-         lverb    = .true.
-         lvmec    = .false.
-         lpies    = .false.
-         lspec    = .false.
-         lcoil    = .false.
-         lmgrid   = .false.
-         lmu      = .false.
-         lvessel  = .false.
-         lvac     = .false.
-         lrestart = .false.
-         laxis_i  = .false.
-         ladvanced = .false.
-         lemc3 = .false.
-         lerror_field = .false.
-         lplasma_only = .false.
-         lbfield_only = .false.
-         lafield_only = .false.
-         lreverse  = .false.
-         lhitonly  = .false.
-         lraw   = .false.
-         lwall_trans = .false.
-         ledge_start = .false.
-         lnescoil    = .false.
-         lmodb       = .false.
-         nruntype = runtype_old
-         id_string     = ''
-         coil_string   = ''
-         mgrid_string  = ''
-         vessel_string = ''
-         restart_string = ''
          
          ! First Handle the input arguments
          CALL GETCARG(1, arg1, numargs)
@@ -230,8 +202,6 @@
          WRITE(6,'(A,A)')  '   ', TRIM(mpi_lib_name(1:liblen))
          WRITE(6,'(A,I8)')  '   Nproc_total:  ', nprocs_fieldlines
          WRITE(6,'(A,3X,I5)')  '   Nproc_shared: ', nshar
-      ELSE IF (myworkid /= master) THEN
-         lverb=.false.   ! Shutup the slaves
       END IF
       CALL FLUSH(6)
       id_string = TRIM(id_string)

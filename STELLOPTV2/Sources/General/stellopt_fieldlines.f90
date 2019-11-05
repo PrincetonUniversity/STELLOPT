@@ -39,10 +39,10 @@
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
+      IF (iflag < 0) RETURN
+
+      ! Setup MPI stuff
       myworkid = master
-      pi_fieldlines = 4.0 * ATAN(1.0)
-      pi2_fieldlines = 8.0 * ATAN(1.0)
-      mu0_fieldlines = 16.0E-7 * ATAN(1.0)
 #if defined(MPI_OPT)
       CALL MPI_COMM_DUP( MPI_COMM_MYWORLD, MPI_COMM_FIELDLINES, ierr_mpi)
       CALL MPI_COMM_RANK(MPI_COMM_FIELDLINES, myworkid, ierr_mpi)
@@ -51,39 +51,6 @@
       CALL MPI_COMM_RANK(MPI_COMM_SHARMEM, myid_sharmem, ierr_mpi)
       CALL MPI_COMM_SIZE(MPI_COMM_SHARMEM, nshar, ierr_mpi)
 #endif
-
-      IF (iflag < 0) RETURN
-      lverb_fieldlines = lscreen
-      id_string_fieldlines = TRIM(proc_string)
-      lvmec    = .false.
-      lpies    = .false.
-      lspec    = .false.
-      lcoil    = .false.
-      lmgrid   = .false.
-      lmu      = .false.
-      lvessel  = .false.
-      lvac     = .false.
-      lrestart = .false.
-      laxis_i  = .false.
-      ladvanced = .false.
-      lemc3 = .false.
-      lerror_field = .false.
-      lplasma_only = .false.
-      lbfield_only = .false.
-      lafield_only = .false.
-      lreverse  = .false.
-      lhitonly  = .false.
-      lraw   = .false.
-      lwall_trans = .false.
-      ledge_start = .false.
-      lnescoil    = .false.
-      lmodb       = .false.
-      nruntype = runtype_old
-      coil_string   = ''
-      mgrid_string  = ''
-      vessel_string = ''
-      restart_string = ''
-
       IF (lverb_fieldlines) THEN
          WRITE(6,'(a,f5.2)') 'FIELDLINES Version ',FIELDLINES_VERSION
          WRITE(6,'(A)')      '-----  MPI Parameters  -----'
@@ -92,6 +59,14 @@
          CALL FLUSH(6)
       END IF
 
+      ! Initialize fieldlines
+      CALL fieldlines_init_vars
+
+      ! Setup run
+      IF (myworkid == master) lverb_fieldlines = lscreen
+      id_string_fieldlines = TRIM(proc_string)
+
+      ! Initalize grids
       CALL fieldlines_init
 
       IF (lemc3 .or. lbfield_only .or. lafield_only) nruntype=runtype_norun
