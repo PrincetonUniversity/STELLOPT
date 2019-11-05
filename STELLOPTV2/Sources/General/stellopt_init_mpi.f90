@@ -35,6 +35,16 @@
          CALL FLUSH(6)
       END IF
 
+      ! See how many shared memory groups we have
+      CALL MPI_COMM_SPLIT_TYPE( MPI_COMM_STEL, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, MPI_COMM_MYWORLD, ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_init_mpi1',ierr_mpi)
+      CALL MPI_COMM_SIZE(MPI_COMM_MYWORLD, nshar, ierr_mpi )
+      CALL MPI_COMM_FREE(MPI_COMM_MYWORLD, ierr_mpi)
+
+      ! Now if nshar >= noptimizers we're fine
+      ! IF nshar < noptimizer then we should guaruntee that we can have at least one optimizer
+      IF ((nshar == nprocs_total) .and. (noptimizers /= 1)) noptimizers = 0
+
       ! Create a local communicator
       IF (noptimizers <=0 ) THEN ! Every process an optimizer
          noptimizers = numprocs + 1
