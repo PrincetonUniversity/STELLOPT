@@ -103,8 +103,8 @@
       
       
       ! Get the fields
-      chunk  = nz/numprocs
-      IF (MOD(nz,numprocs) /= 0) chunk = chunk + 1
+      chunk  = nz/nprocs_fieldlines
+      IF (MOD(nz,nprocs_fieldlines) /= 0) chunk = chunk + 1
       myzs = myworkid*chunk + 1
       myze = myzs + chunk - 1
       if (myze > nz) myze = nz
@@ -197,7 +197,7 @@
             buffer_mast(:,:,1) = B_R(:,:,i)
             buffer_mast(:,:,2) = B_PHI(:,:,i)
             buffer_mast(:,:,3) = B_Z(:,:,i)
-            DO j = 1, numprocs - 1
+            DO j = 1, nprocs_fieldlines - 1
                CALL MPI_SEND(buffer_mast,nr*nphi*3,MPI_DOUBLE_PRECISION,j,i,MPI_COMM_FIELDLINES,ierr_mpi)
                IF (ierr_mpi /=0) CALL handle_err(MPI_SEND_ERR,'fieldlines_init_I',ierr_mpi)
             END DO

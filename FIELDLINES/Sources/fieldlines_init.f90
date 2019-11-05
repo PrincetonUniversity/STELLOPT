@@ -116,7 +116,7 @@
       END IF
       
       IF (lauto) THEN
-         nlines = MAX(numprocs,128)
+         nlines = MAX(nprocs_fieldlines,128)
          IF (nruntype == runtype_full) THEN
             rmin_temp = r_start(1)
             zmin_temp = z_start(1)

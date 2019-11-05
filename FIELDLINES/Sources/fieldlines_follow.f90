@@ -87,11 +87,11 @@
       mystart = 1
       myend   = nlines
       IF (ALLOCATED(mnum)) DEALLOCATE(mnum)
-      ALLOCATE(mnum(numprocs))
-      mnum = FLOOR(REAL(nlines)/REAL(numprocs))
+      ALLOCATE(mnum(nprocs_fieldlines))
+      mnum = FLOOR(REAL(nlines)/REAL(nprocs_fieldlines))
       DO
          IF (SUM(mnum) == nlines) EXIT
-         DO i = 1, numprocs
+         DO i = 1, nprocs_fieldlines
             mnum(i) = mnum(i) + 1
             IF (SUM(mnum) == nlines) EXIT
          END DO

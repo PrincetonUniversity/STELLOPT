@@ -51,7 +51,7 @@
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_RANK_ERR, 'fieldlines_main', ierr_mpi)
       CALL MPI_COMM_RANK( MPI_COMM_FIELDLINES, myworkid, ierr_mpi )              ! MPI
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_RANK_ERR, 'fieldlines_main', ierr_mpi)
-      CALL MPI_COMM_SIZE( MPI_COMM_FIELDLINES, numprocs, ierr_mpi )          ! MPI
+      CALL MPI_COMM_SIZE( MPI_COMM_FIELDLINES, nprocs_fieldlines, ierr_mpi )          ! MPI
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_SIZE_ERR, 'fieldlines_main', ierr_mpi)
       CALL MPI_COMM_SPLIT_TYPE(MPI_COMM_FIELDLINES, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, MPI_COMM_SHARMEM, ierr_mpi)
       CALL MPI_COMM_RANK(MPI_COMM_SHARMEM, myid_sharmem, ierr_mpi)
@@ -228,7 +228,7 @@
          WRITE(6,'(A)')      '-----  MPI Parameters  -----'
          WRITE(6,'(A,I2,A,I2.2)')  '   MPI_version:  ', vmajor,'.',vminor
          WRITE(6,'(A,A)')  '   ', TRIM(mpi_lib_name(1:liblen))
-         WRITE(6,'(A,I8)')  '   Nproc_total:  ', numprocs
+         WRITE(6,'(A,I8)')  '   Nproc_total:  ', nprocs_fieldlines
          WRITE(6,'(A,3X,I5)')  '   Nproc_shared: ', nshar
       ELSE IF (myworkid /= master) THEN
          lverb=.false.   ! Shutup the slaves

@@ -54,7 +54,7 @@
 !-----------------------------------------------------------------------
 
       ! Divide up Work
-      IF ((numprocs) > nlocal) THEN
+      IF ((nprocs_fieldlines) > nlocal) THEN
          i = myworkid/nlocal
          CALL MPI_COMM_SPLIT( MPI_COMM_FIELDLINES,i,myworkid,MPI_COMM_LOCAL,ierr_mpi)
          CALL MPI_COMM_RANK( MPI_COMM_LOCAL, mylocalid, ierr_mpi )              ! MPI
@@ -66,7 +66,7 @@
          IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'fieldlines_init_vmec: MPI_COMM_DUP',ierr_mpi)
          mylocalid = myworkid
          mylocalmaster = master
-         numprocs_local = numprocs
+         numprocs_local = nprocs_fieldlines
       END IF
 
       ! Open VMEC file
@@ -294,7 +294,7 @@
 !DEC$ ENDIF
 
 !DEC$ IF DEFINED (MPI_OPT)
-      !IF (numprocs > nlocal) THEN
+      !IF (nprocs_fieldlines > nlocal) THEN
          ierr_mpi=0
       !   For John Schmitt
       !   CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)

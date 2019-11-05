@@ -268,7 +268,7 @@
       END IF
       
       ! Break up the Work
-      chunk = FLOOR(REAL(nr*nphi*nz) / REAL(numprocs))
+      chunk = FLOOR(REAL(nr*nphi*nz) / REAL(nprocs_fieldlines))
       mystart = myworkid*chunk + 1
       myend = mystart + chunk - 1
 
@@ -276,15 +276,15 @@
 !DEC$ IF DEFINED (MPI_OPT)
       IF (ALLOCATED(mnum)) DEALLOCATE(mnum)
       IF (ALLOCATED(moffsets)) DEALLOCATE(moffsets)
-      ALLOCATE(mnum(numprocs), moffsets(numprocs))
+      ALLOCATE(mnum(nprocs_fieldlines), moffsets(nprocs_fieldlines))
       CALL MPI_ALLGATHER(chunk,1,MPI_INTEGER,mnum,1,MPI_INTEGER,MPI_COMM_FIELDLINES,ierr_mpi)
       CALL MPI_ALLGATHER(mystart,1,MPI_INTEGER,moffsets,1,MPI_INTEGER,MPI_COMM_FIELDLINES,ierr_mpi)
       i = 1
       DO
-         IF ((moffsets(numprocs)+mnum(numprocs)-1) == nr*nphi*nz) EXIT
-         IF (i == numprocs) i = 1
+         IF ((moffsets(nprocs_fieldlines)+mnum(nprocs_fieldlines)-1) == nr*nphi*nz) EXIT
+         IF (i == nprocs_fieldlines) i = 1
          mnum(i) = mnum(i) + 1
-         moffsets(i+1:numprocs) = moffsets(i+1:numprocs) + 1
+         moffsets(i+1:nprocs_fieldlines) = moffsets(i+1:nprocs_fieldlines) + 1
          i=i+1
       END DO
       mystart = moffsets(myworkid+1)
