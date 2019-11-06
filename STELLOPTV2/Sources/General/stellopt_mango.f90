@@ -152,11 +152,11 @@ SUBROUTINE stellopt_optimize_mango(used_mango_algorithm)
       iflag = mango_get_mpi_rank_group_leaders(problem)
       if (mango_get_function_evaluations(problem) <= 1 .and. mango_get_proc0_world(problem)) iflag = -1
 
-      print "(4(a,i3),a,2(es24.15))","Proc",mango_get_mpi_rank_world(problem)," N_terms:",N_terms," N_parameters:",N_parameters," iflag:",iflag," x:",x
+      print "(4(a,i3),a,256(es24.15))","Proc",mango_get_mpi_rank_world(problem)," N_terms:",N_terms," N_parameters:",N_parameters," iflag:",iflag," x:",x
       print *,"size(f):",size(f)," f:",f
       CALL stellopt_fcn(N_terms, N_parameters, x, f, iflag, mango_get_function_evaluations(problem))
 
-      print "(a,i3,a,i8,4(a,1(es24.15)))","Proc",mango_get_mpi_rank_world(problem)," iflag:",iflag," f from stellopt_fcn:",f," targets:",targets," sigmas:",sigmas," f for mango:",sigmas*f+targets
+!      print "(a,i3,a,i8,4(a,1(es24.15)))","Proc",mango_get_mpi_rank_world(problem)," iflag:",iflag," f from stellopt_fcn:",f," targets:",targets," sigmas:",sigmas," f for mango:",sigmas*f+targets
 
       ! Stellopt's convention is that fvec is (values - targets) / sigmas. This can be seen from the line
       ! fvec(1:m) = (vals(1:m)-targets(1:m))/ABS(sigmas(1:m))

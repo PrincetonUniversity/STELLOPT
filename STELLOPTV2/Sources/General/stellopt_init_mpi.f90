@@ -17,6 +17,7 @@
 !        nprocs_total :: total number of processors         
 !----------------------------------------------------------------------
       INTEGER :: nprocs_total, vmajor, vminor, color, key, nshar
+      INTEGER :: worker_group
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
@@ -36,12 +37,20 @@
       END IF
 
       ! Create a local communicator
-      IF (noptimizers <=0 ) THEN ! Every process an optimizer
+      IF (noptimizers == 0) THEN ! Every process is an optimizer
          noptimizers = numprocs + 1
          color = MOD(myid,noptimizers)
          key = myid
          CALL MPI_COMM_SPLIT( MPI_COMM_STEL, color, key, MPI_COMM_MYWORLD, ierr_mpi)
          IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_init_mpi0',ierr_mpi)
+      ELSEIF (noptimizers < 0) THEN
+         ! Partition the total set of processors into |noptimizers| groups. Each group will
+         ! work together to evaluate the objective function.
+         noptimizers = ABS(noptimizers)
+         worker_group = (myid * noptimizers) / nprocs_total ! Note integer division, so there is an implied floor().
+         ! color = worker_group
+         ! key = myid, which is the rank in MPI_COMM_WORLD
+         CALL mpi_comm_split(MPI_COMM_STEL, worker_group, myid, MPI_COMM_MYWORLD, ierr_mpi)
       ELSE ! make is shared memory
          CALL MPI_COMM_SPLIT_TYPE( MPI_COMM_STEL, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, MPI_COMM_MYWORLD, ierr_mpi)
          IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_init_mpi1',ierr_mpi)
