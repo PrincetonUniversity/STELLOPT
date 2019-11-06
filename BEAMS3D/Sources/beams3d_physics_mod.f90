@@ -21,11 +21,9 @@ MODULE beams3d_physics_mod
                               phimin, eps1, eps2, eps3, raxis, phiaxis, zaxis
       USE EZspline_obj
       USE EZspline
-!DEC$ IF DEFINED (NTCC)
       USE adas_mod_simpl
 !      USE fpreact_calls
 !      USE periodic_table_mod
-!DEC$ ENDIF  
       USE mpi_params 
 
       !-----------------------------------------------------------------
@@ -447,9 +445,6 @@ MODULE beams3d_physics_mod
          tilocal = tilocal*1D-3
          telocal = telocal*1D-3
          zeff_temp = SUM(zefflocal)/DBLE(num_depo)
-!         zeff_temp = 1
-
-!DEC$ IF DEFINED (NTCC)
          !--------------------------------------------------------------
          !     USE ADAS to calcualte ionization rates
          !--------------------------------------------------------------
@@ -476,14 +471,6 @@ MODULE beams3d_physics_mod
          !   CALL adas_btsigv(2,1,energy,tilocal(l),1,myZ,zefflocal(l),sigvii(l),ier)  ! Ion Impact ionization cross-section term.
          !   CALL adas_btsigv(1,1,energy,tilocal(l),1,myZ,zefflocal(l),sigvcx(l),ier)  ! Charge Exchange ionization cross-section term.
          !END DO
-!DEC$ ELSE
-         IF (myworkid == master) THEN
-            WRITE(6,*) '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-            WRITE(6,*) '!!    ERROR: YOU DONT HAVE ADAS       !!'
-            WRITE(6,*) '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-            STOP
-         END IF
-!DEC$ ENDIF
          tau_inv = ((sigvii + sigvcx + sigvei)*nelocal) ! Delete a term if desired. (save a comment)
 
          !--------------------------------------------------------------
