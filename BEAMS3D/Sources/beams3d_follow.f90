@@ -420,26 +420,15 @@ SUBROUTINE beams3d_follow
     IF (ALLOCATED(iwork)) DEALLOCATE(iwork)
 
 !DEC$ IF DEFINED (MPI_OPT)
-    ! Handle WALL Heat MAp
-    ier = 0
-    IF (ASSOCIATED(ihit_array)) THEN
-      i = MPI_UNDEFINED
-      IF (myid_sharmem == master) i = 0
-      CALL MPI_COMM_SPLIT( MPI_COMM_BEAMS,i,myworkid,MPI_COMM_LOCAL,ierr_mpi)
-      IF (myid_sharmem == master) THEN
-         CALL MPI_ALLREDUCE(MPI_IN_PLACE,ihit_array,nface,MPI_INTEGER,MPI_SUM,MPI_COMM_LOCAL,ierr_mpi)
-         CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)
-      END IF
-      CALL MPI_BARRIER(MPI_COMM_BEAMS, ierr_mpi)
-    END IF
-!DEC$ ENDIF
-
-!DEC$ IF DEFINED (MPI_OPT)
+    i = MPI_UNDEFINED
     IF (myid_sharmem == master) i = 0
     CALL MPI_COMM_SPLIT( MPI_COMM_BEAMS,i,myworkid,MPI_COMM_LOCAL,ierr_mpi)
     IF (myid_sharmem == master) THEN
        partvmax = MAXVAL(MAXVAL(ABS(vll_lines),DIM=2),DIM=1)
        CALL MPI_ALLREDUCE(MPI_IN_PLACE,partvmax,1,MPI_DOUBLE_PRECISION,MPI_MAX,MPI_COMM_LOCAL,ierr_mpi)
+       IF (ASSOCIATED(ihit_array)) THEN
+          CALL MPI_ALLREDUCE(MPI_IN_PLACE,ihit_array,nface,MPI_INTEGER,MPI_SUM,MPI_COMM_LOCAL,ierr_mpi)
+       END IF
        CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)
     END IF
     CALL MPI_BARRIER(MPI_COMM_BEAMS, ierr_mpi)
