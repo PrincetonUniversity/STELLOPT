@@ -167,6 +167,7 @@
       TYPE(mango_problem) :: mango_problem_instance
 !DEC$ ENDIF
       REAL(rprec), ALLOCATABLE :: best_residual_function(:)
+      LOGICAL :: mango_bound_constraints = .true.
 
       REAL(rprec), DIMENSION(ndatafmax) ::  ne_aux_f, te_aux_f, &
                                             ti_aux_f, th_aux_f,&

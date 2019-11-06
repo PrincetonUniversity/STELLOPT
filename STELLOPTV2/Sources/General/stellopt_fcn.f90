@@ -277,6 +277,7 @@
       IF (iflag .eq. -1) istat = 0
       WRITE(temp_str,'(i5)') istat
       proc_string = TRIM(TRIM(id_string) // '_opt' // TRIM(ADJUSTL(temp_str)))
+      print *,"proc_string in stellopt_fcn:",proc_string
 
       ! Handle coil geometry variations
       IF (lcoil_geom) THEN
@@ -289,6 +290,7 @@
          IF (lverb) WRITE(6,*) '---------------------------  EQUILIBRIUM CALCULATION  ------------------------'
       END IF
 
+      print *,"stellopt_fcn AAA iflag=",iflag
       ! Assume we've already read the stellopt input namelist and any input files.
       CALL tolower(equil_type)
          SELECT CASE (TRIM(equil_type))
@@ -296,6 +298,7 @@
             CASE('paravmec','parvmec','vmec2000')
                iflag = 0
                CALL stellopt_paraexe('paravmec_run',proc_string,lscreen)
+               print *,"stellopt_fcn ier_paraexe=",ier_paraexe
                iflag = ier_paraexe
                IF (lscreen .and. lverb) WRITE(6,*)  '-------------------------  PARAVMEC CALCULATION DONE  -----------------------'
             CASE('vboot')
@@ -331,7 +334,9 @@
          ! a function call which is handles every equil_type.  Note these
          ! functions should handle iflag by returning immediately if
          ! iflag is set to a negative number upon entry.
+      print *,"stellopt_fcn BBB iflag=",iflag
          CALL stellopt_load_equil(lscreen,iflag)
+      print *,"stellopt_fcn CCC iflag=",iflag
 
          ! Calls to secondary codes
          proc_string_old = proc_string ! So we can find the DIAGNO files
@@ -375,16 +380,20 @@
            CALL stellopt_regcoil_chi2_b(lscreen, iflag)
          end if
 !DEC$ ENDIF
+      print *,"stellopt_fcn MMM iflag=",iflag
 
          ! Now we load target values if an error was found then
          ! exagerate the fvec values so that those directions are not
          ! searched this levenberg step
          IF (iflag == 0) THEN
+            print *,"stellopt_fcn: iflag==0, so calling stellopt_load_targets"
             CALL stellopt_load_targets(m,fvec,iflag,ncnt)
             WHERE(ABS(fvec) > bigno) fvec = bigno
             ier_paraexe = 0
          ELSE
+            print *,"stellopt_fcn: iflag.ne.0, so NOT calling stellopt_load_targets"
             IF (lscreen) RETURN ! Make sure we can do at least the initial integration
+            print *,"stellopt_fcn: setting fvec to 10*SQRT(bigno/m)."
             fvec(1:m) = 10*SQRT(bigno/m)
             iflag = 0 ! Because we wish to continue
             ier_paraexe = 0

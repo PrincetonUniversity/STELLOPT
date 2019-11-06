@@ -238,6 +238,7 @@
 !-----------------------------------------------------------------------
       NAMELIST /optimum/ nfunc_max, equil_type, opt_type,&
                          ftol, xtol, gtol, epsfcn, factor, refit_param, &
+                         lcentered_differences, &
                          cr_strategy, mode, lkeep_mins, lrefit,&
                          npopulation, noptimizers, &
                          lphiedge_opt, lcurtor_opt, lbcrit_opt, &
@@ -273,6 +274,7 @@
                          beamj_type, bootj_type, zeff_type, phi_type, &
                          bootcalc_type, sfincs_s, sfincs_min_procs, sfincs_Er_option, &
                          vboot_tolerance, vboot_max_iterations, &
+                         mango_bound_constraints, &
                          ne_min, te_min, ti_min, th_min, beamj_f_min, &
                          bootj_f_min, zeff_min, zeff_f_min, phi_f_min, &
                          ne_max, te_max, ti_max, th_max, beamj_f_max, &
@@ -437,6 +439,7 @@
       noptimizers     = -1
       refit_param     = 0.75
       rho_exp         = 4
+      lcentered_differences = .FALSE.
       lxval_opt       = .FALSE.
       lyval_opt       = .FALSE.
       lkeep_mins      = .FALSE.

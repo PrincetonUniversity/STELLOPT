@@ -112,7 +112,7 @@
       code_str = TRIM(in_parameter_1)
       file_str = TRIM(in_parameter_2)
       ierr_mpi = 0
-      print *,"Hello from stellopt_paraexe. code_str=",code_str
+      print *,"Hello from stellopt_paraexe. code_str=",trim(code_str)
       DO
          ! First get the name of the code blah
          ier_paraexe = 0; ierr_mpi = 0; ier = 0
