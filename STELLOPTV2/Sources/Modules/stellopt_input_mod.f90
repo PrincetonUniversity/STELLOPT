@@ -238,7 +238,7 @@
 !-----------------------------------------------------------------------
       NAMELIST /optimum/ nfunc_max, equil_type, opt_type,&
                          ftol, xtol, gtol, epsfcn, factor, refit_param, &
-                         lcentered_differences, &
+                         lcentered_differences, lreset_axis_every_iteration, &
                          cr_strategy, mode, lkeep_mins, lrefit,&
                          npopulation, noptimizers, &
                          lphiedge_opt, lcurtor_opt, lbcrit_opt, &
@@ -440,6 +440,7 @@
       refit_param     = 0.75
       rho_exp         = 4
       lcentered_differences = .FALSE.
+      lreset_axis_every_iteration = .FALSE.
       lxval_opt       = .FALSE.
       lyval_opt       = .FALSE.
       lkeep_mins      = .FALSE.
