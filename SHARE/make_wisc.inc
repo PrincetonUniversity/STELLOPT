@@ -50,13 +50,6 @@
   NETCDF_LIB = -lnetcdf -lnetcdff
 
 #######################################################################
-#            NTCC Options
-#######################################################################
-  LNTCC = F
-  NTCC_INC = 
-  NTCC_LIB = 
-
-#######################################################################
 #            HDF5 Options
 #######################################################################
   LHDF5 = T
@@ -357,12 +350,6 @@ endif
 ifeq ($(LNAG),T)
   PRECOMP += -DNAG
   LIB_LINK += $(NAG_LIB)
-endif
-ifeq ($(LNTCC),T)
-  MOD1_PATH += $(NTCC_INC)
-  PRECOMP += -DLADAS -DNTCC
-  LIB_LINK += $(NTCC_LIB)
-  MOD_PATH += $(NTCC_INC)
 endif
 ifeq ($(LSILO),T)
   MOD1_PATH += $(SILO_INC)
