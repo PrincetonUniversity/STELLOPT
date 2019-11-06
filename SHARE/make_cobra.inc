@@ -55,10 +55,10 @@
 #            NTCC Options
 #######################################################################
   LNTCC = T
-  NTCC_INC = -I$(NTCCHOME)/mod
-  NTCC_LIB = -L$(NTCCHOME)/lib -lpreact -lsigsub \
-                               -laladdinsub -lpreact -lportlib \
-                               -ladas310_fortran_driver
+#  NTCC_INC = -I$(NTCCHOME)/mod
+#  NTCC_LIB = -L$(NTCCHOME)/lib -lpreact -lsigsub \
+#                               -laladdinsub -lpreact -lportlib \
+#                               -ladas310_fortran_driver
 
 #######################################################################
 #            HDF5 Options
