@@ -23,8 +23,8 @@ MODULE beams3d_physics_mod
       USE EZspline
 !DEC$ IF DEFINED (NTCC)
       USE adas_mod_simpl
-      USE fpreact_calls
-      USE periodic_table_mod
+!      USE fpreact_calls
+!      USE periodic_table_mod
 !DEC$ ENDIF  
       USE mpi_params 
 

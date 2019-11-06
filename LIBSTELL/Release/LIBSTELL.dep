@@ -1,6 +1,8 @@
 # Microsoft Developer Studio Generated Dependency File, included by LIBSTELL.mak
       
 mpi_sharmem.o :  
+
+str_length.o :  
       
 xvec_eval.o : \
       mpi_inc.o \

@@ -66,10 +66,10 @@
 #            NTCC Options
 #######################################################################
   LNTCC = T
-  NTCC_INC = -I/Users/lazerson/Sims_Work/pub/mod
-  NTCC_LIB = -L/Users/lazerson/Sims_Work/pub/lib \
-             -lpreact -lsigsub -laladdinsub -lpreact -lpspline \
-             -lportlib -lezcdf
+!  NTCC_INC = -I/Users/lazerson/Sims_Work/pub/mod
+!  NTCC_LIB = -L/Users/lazerson/Sims_Work/pub/lib \
+!             -lpreact -lsigsub -laladdinsub -lpreact -lpspline \
+!             -lportlib -lezcdf
 
 #######################################################################
 #            HDF5 Options
