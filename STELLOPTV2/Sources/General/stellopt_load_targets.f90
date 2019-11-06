@@ -263,14 +263,17 @@
       IF (ANY(sigma_kink < bigno)) &
          CALL chisq_kink(target_kink, sigma_kink, ncnt,iflag)
 
+      print *,"stellopt_load_targets before ncnt check. ncnt=",ncnt
       ! Return if an initialization call
       IF (ncnt < 0) RETURN
       
+      print *,"stellopt_load_targets before mtargets check. mtargets=",mtargets," m=",m
       ! Check some stuff
       IF (mtargets .ne. m) THEN; iflag=-2; RETURN; END IF
       
       ! Calculate fvec
       !PRINT *,m,mtargets,fvec
+         print *,"stellopt_load_targets: setting fvec."
       fvec(1:m) = (vals(1:m)-targets(1:m))/ABS(sigmas(1:m))
       RETURN
 !----------------------------------------------------------------------
