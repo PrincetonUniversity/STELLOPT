@@ -55,7 +55,6 @@
 !---------------------------------------------------------------------
 Module adas_mod_simpl
 
-!DEC$ IF DEFINED (NTCC)
   use ezcdf
      implicit none
       INTEGER, PARAMETER :: R8=SELECTED_REAL_KIND(12,100)
@@ -2874,5 +2873,4 @@ subroutine str_pad(str)
       return
 end subroutine str_pad
 
-!DEC$ ENDIF  
 end module adas_mod_simpl

@@ -63,15 +63,6 @@
   NETCDF_LIB = -L/opt/local/lib -lnetcdf -lnetcdff
 
 #######################################################################
-#            NTCC Options
-#######################################################################
-  LNTCC = T
-!  NTCC_INC = -I/Users/lazerson/Sims_Work/pub/mod
-!  NTCC_LIB = -L/Users/lazerson/Sims_Work/pub/lib \
-!             -lpreact -lsigsub -laladdinsub -lpreact -lpspline \
-!             -lportlib -lezcdf
-
-#######################################################################
 #            HDF5 Options
 #######################################################################
   LHDF5 = T
@@ -366,13 +357,6 @@ ifeq ($(LNAG),T)
   PRECOMP += -DNAG
   LIB_LINK += $(NAG_LIB)
   LIB_SHARE += $(NAG_LIB)
-endif
-ifeq ($(LNTCC),T)
-  MOD1_PATH += $(NTCC_INC)
-  PRECOMP += -DLADAS -DNTCC
-  LIB_LINK += $(NTCC_LIB)
-  MOD_PATH += $(NTCC_INC)
-  LIB_SHARE += $(NTCC_LIB)
 endif
 ifeq ($(LSILO),T)
   MOD1_PATH += $(SILO_INC)
