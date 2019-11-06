@@ -1,4 +1,5 @@
 ObjectFiles = \
+str_length.o \
 mpi_sharmem.o \
 GENERIC_Evolve.o \
 eval_x_queued.o \

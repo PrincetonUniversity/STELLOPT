@@ -2821,5 +2821,58 @@ subroutine check_data_react(freact_type,beamchrg,izneut,zion,izion_use,n_use,ist
   
 end subroutine check_data_react
 
+subroutine bad_exit
+      STOP                              ! this line not reached.
+end subroutine bad_exit
+
+subroutine sget_env(varname,value)
+!
+!  get the value of an environment variable (UNIX) or logical name (VMS)
+!
+!  14Mar2005   jim.conboy@jet.uk
+!              if __IDL6_FIX, use cget_env ; w/around for name conflict between
+!              IDL Vn 6 & Lahey/F90 getenv functions
+!
+      implicit none
+!
+!  input:
+      character*(*) varname             ! name to be translated
+!  output:
+      character*(*) value               ! translation returned
+      integer str_length
+      external str_length
+!
+!  local:
+!
+!  value=' ' on exit, if the environment variable (logical name) is
+!  undefined.
+!
+      integer ilvar
+!
+      ilvar= str_length(varname)
+      ilvar=max(1,ilvar)
+!
+      value=' '
+!
+      call getenv(varname(1:ilvar),value)
+      call str_pad(value)
+      return
+end subroutine sget_env
+
+subroutine str_pad(str)
+!
+!  replace nulls in str with blanks
+!
+      integer il, ilen
+      character*(*) str
+!
+      ilen=len(str)
+      do il=1,ilen
+         if(ichar(str(il:il)).eq.0) str(il:il)=' '
+      enddo
+!
+      return
+end subroutine str_pad
+
 !DEC$ ENDIF  
 end module adas_mod_simpl
