@@ -65,6 +65,7 @@
          END IF
          nlmask = .TRUE.
          WHERE(lmask) nlmask = .FALSE.
+         print "(a,i6,a,i7,a,l1)","chisq_helicity_ornl mnboz_b=",mnboz_b," nsd=",nsd," allocated(bmnc_b)=",allocated(bmnc_b)
          DO ik = 1, nsd
             IF (sigma(ik) >= bigno) CYCLE
             bmax  = MAXVAL(ABS(bmnc_b(1:mnboz_b,ik)))
