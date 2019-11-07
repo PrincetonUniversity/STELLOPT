@@ -151,6 +151,7 @@ and BEASM3D\_INPUT namelists in it.
 | -vessel | NONE | First wall file |
 | -vac | NONE | Only compute the vacuum field |
 | -plasma | NONE | Only compute fields inside the plasma domain (places wall at LCFS) |
+| -depo | NONE | Calculate deposition only |
 | -noverb | NONE | Suppresses screen output |
 | -field | NONE | Outputs the B-Field on the cylindrical grid only. |
 | -raw | NONE | Treats EXTCUR array as raw values (EXTCUR is a scale factor applied to what\'s in the coils file). |
