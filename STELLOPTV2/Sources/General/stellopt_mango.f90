@@ -133,6 +133,7 @@ SUBROUTINE stellopt_optimize_mango(used_mango_algorithm)
       USE iso_c_binding
       USE mango
       USE stellopt_runtime, ONLY: targets, sigmas
+      USE mpi_params, ONLY: myworkid, myid
 
       IMPLICIT NONE
 
@@ -144,17 +145,23 @@ SUBROUTINE stellopt_optimize_mango(used_mango_algorithm)
       TYPE(mango_problem), value, INTENT(IN) :: problem
 
       INTEGER :: iflag
+      INTEGER, SAVE :: N_function_evaluations = -1
 
-      print *,"Hello from mango_residual_function on proc",mango_get_mpi_rank_world(problem),", function_evaluations=",mango_get_function_evaluations(problem)
+      N_function_evaluations = N_function_evaluations + 1
+      !print *,"Hello from mango_residual_function on proc",mango_get_mpi_rank_world(problem),", function_evaluations=",mango_get_function_evaluations(problem)
+      print "(a,i4,a,i7)","Hello from mango_residual_function on proc",myid,", function_evaluations=",N_function_evaluations
 
       ! iflag should be the processor number, except that iflag=-1 has the effect of turning 
       ! on output from VMEC and other codes, as traditionally is done for the first function evaluation.
-      iflag = mango_get_mpi_rank_group_leaders(problem)
-      if (mango_get_function_evaluations(problem) <= 1 .and. mango_get_proc0_world(problem)) iflag = -1
+      !iflag = mango_get_mpi_rank_group_leaders(problem)
+      iflag = myid
+      !if (mango_get_function_evaluations(problem) <= 1 .and. mango_get_proc0_world(problem)) iflag = -1
+      if (N_function_evaluations < 1 .and. myid==0) iflag = -1
 
-      print "(4(a,i3),a,256(es24.15))","Proc",mango_get_mpi_rank_world(problem)," N_terms:",N_terms," N_parameters:",N_parameters," iflag:",iflag," x:",x
-      print *,"size(f):",size(f)," f:",f
-      CALL stellopt_fcn(N_terms, N_parameters, x, f, iflag, mango_get_function_evaluations(problem))
+      !print "(4(a,i3),a,256(es24.15))","Proc",mango_get_mpi_rank_world(problem)," N_terms:",N_terms," N_parameters:",N_parameters," iflag:",iflag," x:",x
+      !print *,"size(f):",size(f)," f:",f
+      !CALL stellopt_fcn(N_terms, N_parameters, x, f, iflag, mango_get_function_evaluations(problem))
+      CALL stellopt_fcn(N_terms, N_parameters, x, f, iflag, N_function_evaluations)
 
 !      print "(a,i3,a,i8,4(a,1(es24.15)))","Proc",mango_get_mpi_rank_world(problem)," iflag:",iflag," f from stellopt_fcn:",f," targets:",targets," sigmas:",sigmas," f for mango:",sigmas*f+targets
 

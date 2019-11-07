@@ -292,7 +292,7 @@
       IF (iflag .eq. -1) istat = 0
       WRITE(temp_str,'(i5)') istat
       proc_string = TRIM(TRIM(id_string) // '_opt' // TRIM(ADJUSTL(temp_str)))
-      print *,"proc_string in stellopt_fcn:",proc_string
+      print *,"proc_string in stellopt_fcn:",TRIM(proc_string)
 
       ! Handle coil geometry variations
       IF (lcoil_geom) THEN
