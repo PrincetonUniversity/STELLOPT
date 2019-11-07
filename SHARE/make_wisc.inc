@@ -29,7 +29,7 @@
   MPI_COMPILE_FREE = mpif90 -ffree-form \
                      -ffree-line-length-none -ffixed-line-length-none
   MPI_COMPILE_C = mpicc
-  MPI_LINK = mpif90
+  MPI_LINK = mpif90 -shared  -Wl,-no_compact_unwind
   MPI_RUN = mpiexec
   MPI_RUN_OPTS = -np 4
 #  MPI_RUN_OPTS_SM = -np 16
@@ -130,19 +130,7 @@
 #######################################################################
 #            LIBSTELL Shared Options (experimental for Python)
 #######################################################################
-LIB_SHARE = $(BLASHOME)/lib/libopenblas.so \
-          $(SCALAPACK_HOME)/lib/libscalapack.a \
-          $(BLACS_HOME)/lib/libmpiblacs.a  $(BLACS_HOME)/lib/libmpiblacsCinit.a $(BLACS_HOME)/lib/libmpiblacsF77init.a \
-          $(NTCCHOME)/lib/libaladdinsub.a $(NTCCHOME)/lib/libr8slatec.a $(NTCCHOME)/lib/libadpak.a $(NTCCHOME)/lib/libcppsub.a $(NTCCHOME)/lib/libcomput.a \
-          $(NTCCHOME)/lib/libpspline.a $(NTCCHOME)/lib/libportlib.a $(NTCCHOME)/lib/libezcdf.a $(NTCCHOME)/lib/libmds_sub.a $(NTCCHOME)/lib/libmdstransp.a $(NTCCHOME)/lib/libvaxonly.a \
-          $(HDF5_HOME)/lib/libhdf5_hl.so $(HDF5_HOME)/lib/libhdf5_fortran.so $(HDF5_HOME)/lib/libhdf5hl_fortran.so $(HDF5_HOME)/lib/libhdf5.so \
-          $(NAG_ROOT)/lib/libnag_nag.so  \
-          $(NETCDFHOME)/lib/libnetcdf.so $(NETCDFHOME)/lib/libnetcdff.so $(NETCDFHOME)/lib/libnetcdf_c++.so \
-          $(SILOHOME)/lib/libsilo.a \
-          $(GSLHOME)/lib/libgsl.so \
-          $(GCC4_HOME)/lib64/libgfortran.so $(GCC4_HOME)/lib64/libstdc++.so \
-          $(MPIHOME)/lib/libmpi.so $(MPIHOME)/lib/libmpi_f77.so $(MPIHOME)/lib/libmpi_f90.so 
-#          /usr/lib/libc.so /usr/lib/libm.so /usr/lib/libpthread.so 
+  LIB_SHARE = -L$(GCC4_HOME)/lib64 -lstdc++ -lgfortran -L/usr/lib -lz -lc -lm -lpthread -L$(MPIHOME)/lib -lmpi -lmpi_mpifh $(LIBS)
 #######################################################################
 #######################################################################
 #######################################################################
@@ -333,28 +321,32 @@ ifeq ($(LMPI),T)
   COMPILE = $(MPI_COMPILE)
   COMPILE_FREE = $(MPI_COMPILE_FREE)
   LINK    = $(MPI_COMPILE) $(FLAGS) -o 
-  LINK_C  = $(MPI_COMPILE_C) -shared -Wl,-z,defs
+  LINK_C  = $(MPI_LINK) 
 endif
 ifeq ($(LNETCDF),T)
   MOD1_PATH += $(NETCDF_INC)
   PRECOMP += -DNETCDF
   LIB_LINK += $(NETCDF_LIB)
   MOD_PATH += $(NETCDF_INC)
+  LIB_SHARE += $(NETCDF_LIB)
 endif
 ifeq ($(LHDF5),T)
   MOD1_PATH += $(HDF5_INC)
   PRECOMP += -DLHDF5 -DH5_USE_16_API
   LIB_LINK += $(HDF5_LIB)
   MOD_PATH += $(HDF5_INC)
+  LIB_SHARE += $(HDF5_LIB)
 endif
 ifeq ($(LNAG),T)
   PRECOMP += -DNAG
   LIB_LINK += $(NAG_LIB)
+  LIB_SHARE += $(NAG_LIB)
 endif
 ifeq ($(LSILO),T)
   MOD1_PATH += $(SILO_INC)
   PRECOMP += -DSILO_AVAI
   LIB_LINK += $(SILO_LIB)
+  LIB_SHARE += $(SILO_LIB)
 endif
 
 # This is hear because of MPI above resetting LINK
@@ -365,6 +357,7 @@ ifeq ($(MAKECMDGOALS),libstell.a)
   INC_PATH = 
 endif
 ifeq ($(MAKECMDGOALS),libstell.so)
+  LINK = $(LINK_C)
   LIB_LINK = $(LIB_SHARE)
   COMPILE += -fPIC
   COMPILE_FREE += -fPIC
