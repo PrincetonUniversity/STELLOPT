@@ -13,7 +13,7 @@
       USE beams3d_lines
       USE beams3d_grid, ONLY: nr, nphi, nz, B_R, B_PHI, B_Z, raxis, &
                                  zaxis, phiaxis,vp_spl_s
-      USE beams3d_runtime, ONLY: id_string, npoinc, t_end, lbeam, lflux, &
+      USE beams3d_runtime, ONLY: id_string, npoinc, t_end, lbeam, &
                                  nbeams, beam, e_beams, charge_beams, &
                                  mass_beams, lverb, p_beams, MPI_BARRIER_ERR,&
                                  MPI_BCAST_ERR,nprocs_beams,handle_err, ldepo,&
@@ -187,7 +187,7 @@
       IF (ALLOCATED(neut_lines)) DEALLOCATE(neut_lines)
 
       ! BEAM DIAGNOSTICS
-      IF (lflux .and. lbeam .and. .not.ldepo) THEN
+      IF (lbeam .and. .not.ldepo) THEN
 
          ! Birth Profiles and Power deposition and current profile
          IF (ALLOCATED(ndot_prof)) DEALLOCATE(ndot_prof)

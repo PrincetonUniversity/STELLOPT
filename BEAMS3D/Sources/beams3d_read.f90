@@ -55,8 +55,6 @@
       IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'lvac',ier)
       CALL read_scalar_hdf5(fid,'lbeam_simple',ier,BOOVAR=lbeam_simple)
       IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'lbeam_simple',ier)
-      CALL read_scalar_hdf5(fid,'lflux',ier,BOOVAR=lflux)
-      IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'lflux',ier)
       CALL read_scalar_hdf5(fid,'ldepo',ier,BOOVAR=ldepo)
       IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'ldepo',ier)
       CALL read_scalar_hdf5(fid,'lbeam',ier,BOOVAR=lbeam)
@@ -117,13 +115,24 @@
       IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'PE_lines',ier)
       CALL read_var_hdf5(fid,'PI_lines',npoinc+1,nparticles,ier,DBLVAR=PI_lines)
       IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'PI_lines',ier)
-      IF (lflux) THEN
-         ! DIAGNOSTICS
+      IF (lbeam) THEN
+         IF (ALLOCATED(weight)) DEALLOCATE(weight)
+         IF (ALLOCATED(beam)) DEALLOCATE(beam)
+         IF (ALLOCATED(v_neut)) DEALLOCATE(v_neut)
          IF (ALLOCATED(shine_through)) DEALLOCATE(shine_through)
          ALLOCATE(shine_through(nbeams))
+         ALLOCATE(weight(nparticles_start,nbeams),beam(nparticles),v_neut(3,nparticles))
          CALL read_var_hdf5(fid,'Shinethrough',nbeams,ier,DBLVAR=shine_through)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'shine_through',ier)
-         IF (lbeam .and. .not.ldepo) THEN
+         CALL read_var_hdf5(fid,'Weight',nparticles_start,nbeams,ier,DBLVAR=weight)
+         IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'weight',ier)
+         CALL read_var_hdf5(fid,'Beam',nparticles,ier,INTVAR=beam)
+         IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'beam',ier)
+         CALL read_var_hdf5(fid,'Energy',nbeams,ier,DBLVAR=e_beams)
+         IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'e_beams',ier)
+         CALL read_var_hdf5(fid,'V_NEUT',3,nparticles,ier,DBLVAR=v_neut)
+         IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'e_beams',ier)
+         IF (.not. ldepo) THEN
             IF (ALLOCATED(ndot_prof)) DEALLOCATE(ndot_prof)
             IF (ALLOCATED(epower_prof)) DEALLOCATE(epower_prof)
             IF (ALLOCATED(ipower_prof)) DEALLOCATE(ipower_prof)
@@ -139,20 +148,6 @@
             CALL read_var_hdf5(fid,'j_prof',nbeams,ns_prof,ier,DBLVAR=j_prof)
             IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'j_prof',ier)
          END IF
-      END IF
-      IF (lbeam) THEN
-         IF (ALLOCATED(weight)) DEALLOCATE(weight)
-         IF (ALLOCATED(beam)) DEALLOCATE(beam)
-         IF (ALLOCATED(v_neut)) DEALLOCATE(v_neut)
-         ALLOCATE(weight(nparticles_start,nbeams),beam(nparticles),v_neut(3,nparticles))
-         CALL read_var_hdf5(fid,'Weight',nparticles_start,nbeams,ier,DBLVAR=weight)
-         IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'weight',ier)
-         CALL read_var_hdf5(fid,'Beam',nparticles,ier,INTVAR=beam)
-         IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'beam',ier)
-         CALL read_var_hdf5(fid,'Energy',nbeams,ier,DBLVAR=e_beams)
-         IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'e_beams',ier)
-         CALL read_var_hdf5(fid,'V_NEUT',3,nparticles,ier,DBLVAR=v_neut)
-         IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'e_beams',ier)
       END IF
       ! Grid
       CALL read_scalar_hdf5(fid,'nr',ier,INTVAR=nr)
