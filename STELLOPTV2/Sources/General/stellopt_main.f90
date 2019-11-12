@@ -11,8 +11,10 @@
 !     Libraries
 !-----------------------------------------------------------------------
       USE stellopt_runtime
+      USE stellopt_input_mod
       USE mpi_params
       USE mpi_inc
+      USE equil_utils, ONLY: move_txtfile
 !-----------------------------------------------------------------------
 !     Local Variables
 !          numargs      Number of input arguments
@@ -140,11 +142,40 @@
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'stellopt_main',ierr_mpi)
       CALL MPI_BCAST(id_string,256,MPI_CHARACTER, master, MPI_COMM_STEL,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'stellopt_main',ierr_mpi)
-      CALL MPI_BARRIER( MPI_COMM_STEL, ierr_mpi )                   ! MPI
+      CALL MPI_BARRIER( MPI_COMM_STEL, ierr_mpi )
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'stellopt_main',ierr_mpi)
 !DEC$ ENDIF
       ! Initialize the Calculation
       CALL stellopt_init
+
+      IF (myworkid == master .and. lrenorm) THEN
+         ! Now do one run with renorm
+         tstr1 = opt_type
+         opt_type = 'one_iter_norm'
+         CALL stellopt_optimize
+
+         ! Now cleaup some files
+         CALL MPI_FILE_DELETE('stellopt.'//TRIM(id_string), MPI_INFO_NULL, ierr_mpi)
+
+         ! Now initalize using min file
+         opt_type = tstr1
+         IF (myid == master) THEN
+            CALL stellopt_write_inputfile(0,.true.)
+            CALL move_txtfile('input.'//TRIM(id_string) //'_min','input.'//TRIM(id_string) // '_norm')
+            WRITE(6,*) ''
+            WRITE(6,*) ' ---------------------  RESTARTING WITH NEW NORMALIZTION  --------------------'
+            WRITE(6,*) ''
+         END IF
+         id_string = 'input.' // TRIM(id_string) // '_norm'
+         CALL MPI_FILE_OPEN(MPI_COMM_STEL, TRIM(id_string), &
+                            MPI_MODE_RDONLY, MPI_INFO_NULL, key, ierr_mpi )
+         CALL MPI_FILE_CLOSE(key,ier)
+         CALL read_stellopt_input(TRIM(id_string),ier,myid)
+
+         ! Now fix a couple things before we re-run the optimizer
+         id_string = id_string(7:LEN(id_string))
+         lrenorm = .false.
+      END IF
 
       IF (myworkid == master) THEN
          CALL stellopt_optimize
