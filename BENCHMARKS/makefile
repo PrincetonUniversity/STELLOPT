@@ -170,6 +170,7 @@ test_stellopt_recon_tok:
 test_stellopt_tok_r0_delta:
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.TOK_R0_DELTA
 	@cd $(STELLOPT_TEST_DIR)/TOK_R0_DELTA; $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.TOK_R0_DELTA; rm -f *_opt*
+	@cd $(STELLOPT_TEST_DIR)/TOK_R0_DELTA && ./compare_TOK_R0_DELTA.py
 	@echo ""
 
 test_stellopt_tok_r0_rho:
