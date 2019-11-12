@@ -115,7 +115,8 @@
             CALL set_VesselMirrors_f77(vessel_ece,mirror_ece)
 
             ! Allocate Arrays
-            narr = MAXVAL(COUNT(sigma_ece < bigno,DIM=2),DIM=1)
+            !narr = MAXVAL(COUNT(sigma_ece < bigno,DIM=2),DIM=1)
+            narr = nprof
             IF (ALLOCATED(radto_ece)) DEALLOCATE(radto_ece)
             IF (ALLOCATED(radtx_ece)) DEALLOCATE(radtx_ece)
             ALLOCATE(radto_ece(nsys,narr))
