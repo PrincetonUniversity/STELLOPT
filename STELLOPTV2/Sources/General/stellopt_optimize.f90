@@ -73,6 +73,8 @@
             CASE('one_iter','single','eval','single_iter')
                WRITE(6,*) '    OPTIMIZER: SINGLE_ITERATION'
                WRITE(6,*) '    NFUNC_MAX: ',nfunc_max
+            CASE('one_iter_norm')
+               WRITE(6,*) '    OPTIMIZER: SINGLE_ITERATION FOR NORMALIZTION'
             CASE('gade')
                WRITE(6,*) '    OPTIMIZER: Differential Evolution'
                WRITE(6,*) '         NPOP: ',npopulation
@@ -136,7 +138,6 @@
             WRITE(6,*)
          END SELECT
          IF (lauto_domain) WRITE(6,*) '  !!!!!! AUTO_DOMAIN Calculation !!!!!!!'
-         IF (lrenorm) WRITE(6,*)      '  !!!!!! Sigmas renormalized in _min file !!!!!'
       END IF
 
       ! Do runs
@@ -191,6 +192,12 @@
             info = FLAG_CLEANUP
             IF (myid == master) info = flag_cleanup_lev
             call stellopt_fcn(mtargets, nvars, vars, fvec, info, nfev)
+         CASE('one_iter_norm')
+            ALLOCATE(fvec(mtargets))
+            fvec     = 0.0
+            info     = FLAG_SINGLETASK
+            nfev     = 0
+            IF (myid == master) CALL stellopt_fcn(mtargets, nvars, vars,fvec,info, nfev)
          CASE('gade')
             ALLOCATE(fvec(mtargets))
          !   Notes on this
