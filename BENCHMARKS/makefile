@@ -214,6 +214,7 @@ test_stellopt_terpsichore:
 test_stellopt_travis:
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.TRAVIS
 	@cd $(STELLOPT_TEST_DIR)/TRAVIS; $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.TRAVIS; rm -f *_opt*
+	@cd $(STELLOPT_TEST_DIR)/TRAVIS && ./compare_TRAVIS.py
 	@echo ""
 
 test_fieldlines_full:
