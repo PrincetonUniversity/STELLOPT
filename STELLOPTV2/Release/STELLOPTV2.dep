@@ -1,5 +1,13 @@
 # Microsoft Developer Studio Generated Dependency File, included by STELLOPT.mak
 
+stellopt_write_inputfile.o : \
+      stellopt_input_mod.o \
+      stellopt_runtime.o \
+      $(DIAGNO_DIR)/Release/diagno_input_mod.o \
+      $(LIB_DIR)/Release/bootsj_input.o \
+      $(NEO_DIR)/Release/neo_input_mod.o \
+      $(LIB_DIR)/Release/safe_open_mod.o 
+
 stellopt_init_mpi.o : \
       stellopt_input_mod.o \
       stellopt_runtime.o \

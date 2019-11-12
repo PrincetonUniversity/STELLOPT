@@ -47,7 +47,7 @@
       IMPLICIT NONE
       INTEGER, INTENT(in)    :: ncnt
       INTEGER, INTENT(inout) :: iflag
-!-----------------------------------------------------------------------
+!----------------------------------------------------------------------
 !     Local Variables
 !        ier         Error flag
 !        iunit       File unit number
@@ -74,27 +74,7 @@
       iunit_out = 12
       ier = 0
       IF (ctype == PSO_CLEANUP) THEN
-         IF (ncnt /= 1) THEN
-            WRITE(temp_str,'(i5.5)') ncnt
-            proc_string = TRIM(id_string) // '.' // TRIM(ADJUSTL(temp_str))
-            CALL safe_open(iunit_out,iflag,TRIM('input.'//TRIM(proc_string)),'unknown','formatted')
-            SELECT CASE(TRIM(equil_type))
-               CASE('vmec2000','animec','flow','satire','parvmec','paravmec','vboot','vmec2000_oneeq')
-                  CALL write_indata_namelist(iunit_out,ier)
-               CASE('test')
-             END SELECT
-            CALL write_optimum_namelist(iunit_out,ier)
-            IF (lneed_magdiag) CALL write_diagno_input(iunit_out,ier)
-            IF (ANY(sigma_bootstrap < bigno)) CALL write_bootsj_input(iunit_out,ier)
-!DEC$ IF DEFINED (NEO_OPT)
-            IF (ANY(sigma_neo < bigno)) CALL write_neoin_namelist(iunit_out,ier)
-!DEC$ ENDIF
-!DEC$ IF DEFINED (BEAMS3D_OPT)
-            IF (ANY(sigma_orbit < bigno)) CALL write_beams3d_namelist(iunit_out,ier)
-!DEC$ ENDIF
-            WRITE(iunit_out,'(A)') '&END'
-            CLOSE(iunit_out)
-         END IF
+         IF (ncnt /= 1) CALL stellopt_write_inputfile(ncnt,.false.)
          IF (lkeep_mins) THEN
             WRITE(temp_str,'(i5.5)') ncnt
             proc_string = TRIM(id_string) // '.' // TRIM(ADJUSTL(temp_str))
@@ -245,28 +225,7 @@
          CLOSE(iunit_out)
          DEALLOCATE(fvec_temp)
       ELSE IF ((ctype == LEV_CLEANUP) .or. (ctype == GADE_CLEANUP)) THEN
-          IF (ncnt /= 1 .or. ctype == GADE_CLEANUP) THEN
-             ! Write the input file
-             WRITE(temp_str,'(i5.5)') ncnt
-             proc_string = TRIM(id_string) // '.' // TRIM(ADJUSTL(temp_str))
-             CALL safe_open(iunit_out,iflag,TRIM('input.'//TRIM(proc_string)),'unknown','formatted')
-             SELECT CASE(TRIM(equil_type))
-               CASE('vmec2000','animec','flow','satire','parvmec','paravmec','vboot','vmec2000_oneeq')
-                  CALL write_indata_namelist(iunit_out,ier)
-               CASE('test')
-             END SELECT
-             CALL write_optimum_namelist(iunit_out,ier)
-             IF (lneed_magdiag) CALL write_diagno_input(iunit_out,ier)
-             IF (ANY(sigma_bootstrap < bigno)) CALL write_bootsj_input(iunit_out,ier)
-!DEC$ IF DEFINED (NEO_OPT)
-             IF (ANY(sigma_neo < bigno)) CALL write_neoin_namelist(iunit_out,ier)
-!DEC$ ENDIF
-!DEC$ IF DEFINED (BEAMS3D_OPT)
-             IF (ANY(sigma_orbit < bigno)) CALL write_beams3d_namelist(iunit_out,ier)
-!DEC$ ENDIF
-             WRITE(iunit_out,'(A)') '&END'
-             CLOSE(iunit_out)
-          END IF
+          IF (ncnt /= 1 .or. ctype == GADE_CLEANUP) CALL stellopt_write_inputfile(ncnt,.false.)
           ! Overwrite the restart file
           proc_string = 'reset_file'
           SELECT CASE(TRIM(equil_type))
@@ -482,46 +441,9 @@
       ELSE IF (ctype == JAC_CLEANUP) THEN
       ELSE IF (ctype == JUST_INPUT) THEN
          ! Write the input file
-         WRITE(temp_str,'(i5.5)') ncnt
-         proc_string = TRIM(id_string) // '.' // TRIM(ADJUSTL(temp_str))
-         CALL safe_open(iunit_out,iflag,TRIM('input.'//TRIM(proc_string)),'unknown','formatted')
-         SELECT CASE(TRIM(equil_type))
-            CASE('vmec2000','animec','flow','satire','parvmec','paravmec','vboot','vmec2000_oneeq')
-               CALL write_indata_namelist(iunit_out,ier)
-            CASE('test')
-         END SELECT
-         CALL write_optimum_namelist(iunit_out,ier)
-         IF (lneed_magdiag) CALL write_diagno_input(iunit_out,ier)
-         IF (ANY(sigma_bootstrap < bigno)) CALL write_bootsj_input(iunit_out,ier)
-!DEC$ IF DEFINED (NEO_OPT)
-         IF (ANY(sigma_neo < bigno)) CALL write_neoin_namelist(iunit_out,ier)
-!DEC$ ENDIF
-!DEC$ IF DEFINED (BEAMS3D_OPT)
-         IF (ANY(sigma_orbit < bigno)) CALL write_beams3d_namelist(iunit_out,ier)
-!DEC$ ENDIF
-         WRITE(iunit_out,'(A)') '&END'
-         CLOSE(iunit_out)
+         CALL stellopt_write_inputfile(ncnt,.false.)
       ELSE IF (ctype == LAST_GO) THEN
-         CALL safe_open(iunit_out,iflag,TRIM('input.'//TRIM(id_string)//'_min'),'unknown','formatted')
-         SELECT CASE(TRIM(equil_type))
-            CASE('vmec2000','animec','flow','satire','parvmec','paravmec','vboot','vmec2000_oneeq')
-               CALL write_indata_namelist(iunit_out,ier)
-            CASE('test')
-         END SELECT
-         CALL write_optimum_namelist(iunit_out,ier)
-         IF (lneed_magdiag) CALL write_diagno_input(iunit_out,ier)
-         IF (ANY(sigma_bootstrap < bigno)) CALL write_bootsj_input(iunit_out,ier)
-!DEC$ IF DEFINED (NEO_OPT)
-         IF (ANY(sigma_neo < bigno)) CALL write_neoin_namelist(iunit_out,ier)
-!DEC$ ENDIF
-!DEC$ IF DEFINED (BEAMS3D_OPT)
-         IF (ANY(sigma_orbit < bigno)) CALL write_beams3d_namelist(iunit_out,ier)
-!DEC$ ENDIF
-!DEC$ IF DEFINED (REGCOIL)
-         ! JCS to do: If needed put regcoil items here.
-!DEC$ ENDIF
-         WRITE(iunit_out,'(A)') '&END'
-         CLOSE(iunit_out)
+         CALL stellopt_write_inputfile(ncnt,.true.)
 !               ! Overwrite the restart file
 !               proc_string = 'reset_file'
 !               vctrl_array(1) = output_flag ! Output to file
