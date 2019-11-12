@@ -1,9 +1,9 @@
 !-----------------------------------------------------------------------
-!     Subroutine:    stellopt_clean_up
-!     Authors:       S. Lazerson (lazerson@pppl.gov)
-!     Date:          06/26/2012
-!     Description:   This subroutine handles cleaning up the function
-!                    calls.
+!     Subroutine:    stellopt_write_inputfile
+!     Authors:       S. Lazerson (samuel.lazerson@ipp.mpg.de)
+!     Date:          11/12/2019
+!     Description:   This subroutine handles writeing the full
+!                    STELLOPT input file
 !-----------------------------------------------------------------------
       SUBROUTINE stellopt_write_inputfile(ncnt,lmin)
       USE stellopt_runtime
@@ -42,8 +42,11 @@
       ier = 0
       iunit_out = 12
       WRITE(temp_str,'(i5.5)') ncnt
-      proc_string = TRIM(id_string) // '.' // TRIM(ADJUSTL(temp_str))
-      IF (lmin) proc_string = TRIM(proc_string) // '_min'
+      IF (lmin) THEN
+         proc_string = TRIM(id_string) // '_min'
+      ELSE
+         proc_string = TRIM(id_string) // '.' // TRIM(ADJUSTL(temp_str))
+      END IF
       CALL safe_open(iunit_out,ier,TRIM('input.'//TRIM(proc_string)),'unknown','formatted')
          SELECT CASE(TRIM(equil_type))
             CASE('vmec2000','animec','flow','satire','parvmec','paravmec','vboot','vmec2000_oneeq')
