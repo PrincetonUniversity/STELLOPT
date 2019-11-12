@@ -116,7 +116,13 @@
 
             ! Allocate Arrays
             !narr = MAXVAL(COUNT(sigma_ece < bigno,DIM=2),DIM=1)
-            narr = nprof
+            narr = 0
+            DO i = 1, nsys
+               DO j = 1, nprof
+                  IF (sigma_ece(i,j)< bigno) narr = j
+               END DO
+            END DO
+            !narr = nprof
             IF (ALLOCATED(radto_ece)) DEALLOCATE(radto_ece)
             IF (ALLOCATED(radtx_ece)) DEALLOCATE(radtx_ece)
             ALLOCATE(radto_ece(nsys,narr))
