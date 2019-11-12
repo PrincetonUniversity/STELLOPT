@@ -12,22 +12,9 @@
       USE stellopt_runtime
       USE stellopt_input_mod
       USE stellopt_vars
-      USE stellopt_targets, ONLY: sigma_bootstrap, lbooz, numws
       USE safe_open_mod, ONLY: safe_open
-      USE equil_utils, ONLY: move_txtfile, copy_txtfile, copy_boozer_file
       USE mpi_inc
-!DEC$ IF DEFINED (BEAMS3D_OPT)
-      USE beams3d_runtime, ONLY: id_string_beams => id_string, lverb_beams => lverb
-!DEC$ ENDIF
       USE vmec_input
-      USE vmec_params, ONLY: norm_term_flag, bad_jacobian_flag,&
-                             more_iter_flag, jac75_flag, input_error_flag,&
-                             phiedge_error_flag, ns_error_flag, &
-                             misc_error_flag, successful_term_flag, &
-                             restart_flag, readin_flag, timestep_flag, &
-                             output_flag, cleanup_flag, reset_jacdt_flag
-!                             animec_flag, flow_flag
-      USE read_wout_mod, ONLY: read_wout_file, write_wout_file, read_wout_deallocate
       USE fdjac_mod, ONLY: flag_singletask, flag_cleanup, &
                            JAC_CLEANUP => flag_cleanup_jac,&
                            LEV_CLEANUP => flag_cleanup_lev
@@ -45,15 +32,10 @@
 !        ier         Error flag
 !        iunit       File unit number
 !----------------------------------------------------------------------
-      LOGICAL ::  lfile_found
-      INTEGER ::  ier, ik, iunit, ctype, temp_max, ialpha, m, n
-      INTEGER ::  vctrl_array(5)
-      CHARACTER(len = 256)   :: temp_str, reset_string
+      INTEGER ::  ier, ik, iunit, ctype, temp_max, m, n
+      CHARACTER(len = 256)   :: temp_str
       REAL(rprec), ALLOCATABLE :: fvec_temp(:)
       
-!      INTEGER, PARAMETER :: JAC_CLEANUP = -100
-!      INTEGER, PARAMETER :: LEV_CLEANUP = -101
-!      INTEGER, PARAMETER :: PSO_CLEANUP = -300
       INTEGER, PARAMETER :: JUST_INPUT  = -110
       INTEGER, PARAMETER :: LAST_GO     = -500
       
@@ -100,15 +82,6 @@
           ! Overwrite the restart file
           proc_string = 'reset_file'
           CALL stellopt_write_eqfile
-!!DEC$ IF DEFINED (COILOPTPP)
-!          IF (sigma_coil_bnorm < bigno .and. (proc_string.ne.proc_string_old) ) THEN
-!             DO ik = 0, numws-1
-!                WRITE(temp_str,'(I3.3)') ik
-!                CALL copy_txtfile('coil_spline'//TRIM(temp_str)//'_'//TRIM(proc_string_old)//'.out',&
-!                                  'coil_spline'//TRIM(temp_str)//'_'//TRIM(proc_string)//'.out')
-!             END DO
-!          END IF
-!!DEC$ ENDIF
           ! Keep minimum states
           IF (lkeep_mins) THEN
              WRITE(temp_str,'(i5.5)') ncnt
