@@ -142,6 +142,17 @@
   REGCOIL_LIB = $(REGCOIL_DIR)/$(LIB_REGCOIL) -fopenmp
 
 #######################################################################
+#            SFINCS Options
+#######################################################################
+
+  LSFINCS = F
+  SFINCS_DIR = $(SFINCS_PATH)
+  SFINCS_INC = -I$(SFINCS_DIR)
+  LIB_SFINCS = libsfincs.a
+  SFINCS_LIB = $(SFINCS_DIR)/$(LIB_SFINCS) \
+             -L$(PETSC_DIR)/$(PETSC_ARCH)/lib -lpetsc -lX11
+
+#######################################################################
 #            LIBSTELL Shared Options
 #######################################################################
 
