@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-import sys, ossys.path.insert(0, '../../../pySTEL/')
+import sys, os
+sys.path.insert(0, '../../../pySTEL/')
 import numpy as np                    #For Arrays
 from math import pi
 from libstell.stellopt import read_stellopt
@@ -21,8 +22,8 @@ else:
 lfail = 0;
 print('==== Scalars ====')
 varlist={}
-varlist['R0_equil']=10.01841938177
-varlist['ASPECT_equil']=9.990371483402
+varlist['R0_equil']=10.0
+varlist['ASPECT_equil']=10.0
 n = data['R0_equil'].shape
 for temp in varlist:
     act = varlist[temp]
