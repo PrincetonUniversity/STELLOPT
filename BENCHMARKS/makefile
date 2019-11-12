@@ -136,7 +136,7 @@ test_stellopt:
 test_stellopt_lmdif:
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.LMDIF_TEST
 	@cd $(STELLOPT_TEST_DIR)/LMDIF_TEST; $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.LMDIF_TEST; rm -f *_opt*
-	@cd $(STELLOPT_TEST_DIR)/LMDIF_TEST && ./compare_STELLOPT_LMDIF.py
+	@cd $(STELLOPT_TEST_DIR)/LMDIF_TEST && ./compare_LMDIF_TEST.py
 	@echo ""
 
 test_stellopt_gade:
