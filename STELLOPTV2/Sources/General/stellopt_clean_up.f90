@@ -14,17 +14,10 @@
       USE stellopt_vars
       USE stellopt_targets, ONLY: sigma_bootstrap, lbooz, numws
       USE safe_open_mod, ONLY: safe_open
-      USE diagno_input_mod, ONLY: write_diagno_input
-      USE gist_mod, ONLY: write_gist_namelist
-      USE bootsj_input, ONLY: write_bootsj_input
       USE equil_utils, ONLY: move_txtfile, copy_txtfile, copy_boozer_file
       USE mpi_inc
-!DEC$ IF DEFINED (NEO_OPT)
-      USE neo_input_mod, ONLY: write_neoin_namelist
-!DEC$ ENDIF
 !DEC$ IF DEFINED (BEAMS3D_OPT)
       USE beams3d_runtime, ONLY: id_string_beams => id_string, lverb_beams => lverb
-      USE beams3d_input_mod, ONLY: write_beams3d_namelist
 !DEC$ ENDIF
       USE vmec_input
       USE vmec_params, ONLY: norm_term_flag, bad_jacobian_flag,&
@@ -74,31 +67,14 @@
       iunit_out = 12
       ier = 0
       IF (ctype == PSO_CLEANUP) THEN
+         ! Write Input File
          IF (ncnt /= 1) CALL stellopt_write_inputfile(ncnt,.false.)
+         ! If Keeping minimums
          IF (lkeep_mins) THEN
+            ! Write EQULIBRIUM File
             WRITE(temp_str,'(i5.5)') ncnt
             proc_string = TRIM(id_string) // '.' // TRIM(ADJUSTL(temp_str))
-            SELECT CASE(TRIM(equil_type))
-               CASE ('vmec2000_old','animec','flow','satire')
-                  vctrl_array(1) = output_flag ! Output to file
-                  vctrl_array(2) = 0     ! vmec error flag  
-                  vctrl_array(3) = 0    ! Use multigrid
-                  vctrl_array(4) = 0     ! Iterative 
-                  vctrl_array(5) = myid ! Output file sequence number
-                  CALL runvmec(vctrl_array,proc_string,.false.,MPI_COMM_SELF,'')
-                  ier=vctrl_array(2)
-               CASE('parvmec','paravmec','vmec2000','vboot')
-                  CALL stellopt_paraexe('paravmec_write',proc_string,.false.)
-                  ier = ier_paraexe
-               CASE('vmec2000_oneeq')
-                  CALL read_wout_deallocate
-                  CALL read_wout_file(TRIM(proc_string_old),iflag)
-                  CALL write_wout_file('wout_'//TRIM(proc_string)//'.nc',iflag)
-                  ier = successful_term_flag
-               CASE('test')
-            END SELECT
-            iflag = ier
-            IF (ier == successful_term_flag) iflag = 0
+            CALL stellopt_write_eqfile
             ier = 0
             IF (ANY(sigma_txport < bigno)) THEN
                DO ik = 1, 256
@@ -228,23 +204,7 @@
           IF (ncnt /= 1 .or. ctype == GADE_CLEANUP) CALL stellopt_write_inputfile(ncnt,.false.)
           ! Overwrite the restart file
           proc_string = 'reset_file'
-          SELECT CASE(TRIM(equil_type))
-             CASE ('vmec2000_old','animec','flow','satire')
-                vctrl_array(1) = output_flag ! Output to file
-                vctrl_array(2) = 0     ! vmec error flag  
-                vctrl_array(3) = 0    ! Use multigrid
-                vctrl_array(4) = 0     ! Iterative 
-                vctrl_array(5) = myid ! Output file sequence number
-                CALL runvmec(vctrl_array,proc_string,.false.,MPI_COMM_SELF,'')
-                ier = vctrl_array(2)
-             CASE('parvmec','paravmec','vmec2000','vboot')
-                CALL stellopt_paraexe('paravmec_write',proc_string,.false.)
-                ier = ier_paraexe
-             CASE('vmec2000_oneeq','test')
-                      ! Do nothing, no reset file generated
-          END SELECT
-          iflag = ier
-          IF (ier_paraexe == successful_term_flag) iflag = 0
+          CALL stellopt_write_eqfile
 !DEC$ IF DEFINED (COILOPTPP)
           IF (sigma_coil_bnorm < bigno .and. (proc_string.ne.proc_string_old) ) THEN
              DO ik = 0, numws-1
@@ -258,21 +218,7 @@
           IF (lkeep_mins) THEN
              WRITE(temp_str,'(i5.5)') ncnt
              proc_string = TRIM(id_string) // '.' // TRIM(ADJUSTL(temp_str))
-             SELECT CASE(TRIM(equil_type))
-                CASE('parvmec','paravmec','vmec2000','vboot')
-                   CALL stellopt_paraexe('paravmec_write',proc_string,.false.)
-                   ier = ier_paraexe
-                CASE('vmec2000_oneeq')
-                   CALL read_wout_deallocate
-                   CALL read_wout_file(TRIM(proc_string_old),iflag)
-                   CALL write_wout_file('wout_'//TRIM(proc_string)//'.nc',iflag)
-                   ier = successful_term_flag
-                CASE('test')
-             END SELECT
-             ier=vctrl_array(2)
-             iflag = ier
-             IF (ier == successful_term_flag) iflag = 0
-             ier = 0
+             CALL stellopt_write_eqfile
              IF (ANY(sigma_txport < bigno)) THEN
                 DO ik = 1, 256
                    DO ialpha = 1, 256
@@ -444,19 +390,6 @@
          CALL stellopt_write_inputfile(ncnt,.false.)
       ELSE IF (ctype == LAST_GO) THEN
          CALL stellopt_write_inputfile(ncnt,.true.)
-!               ! Overwrite the restart file
-!               proc_string = 'reset_file'
-!               vctrl_array(1) = output_flag ! Output to file
-!               vctrl_array(2) = 0     ! vmec error flag  
-!               vctrl_array(3) = 0    ! Use multigrid
-!               vctrl_array(4) = 0     ! Iterative 
-!               vctrl_array(5) = myid ! Output file sequence number
-!               !IF (TRIM(equil_type)=='animec') vctrl_array(1) = vctrl_array(1) + animec_flag
-!               !IF (TRIM(equil_type)=='flow' .or. TRIM(equil_type)=='satire') vctrl_array(1) = vctrl_array(1) + flow_flag
-!               CALL runvmec(vctrl_array,proc_string,.false.,'')
-!               ier=vctrl_array(2)
-!               iflag = ier
-!               IF (ier == successful_term_flag) iflag = 0
          ! Now open the Output file
          ALLOCATE(fvec_temp(mtargets))
          CALL safe_open(iunit_out,iflag,TRIM('stellopt.'//TRIM(id_string)),'unknown','formatted',ACCESS_IN='APPEND')

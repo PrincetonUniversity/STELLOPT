@@ -1,5 +1,10 @@
 # Microsoft Developer Studio Generated Dependency File, included by STELLOPT.mak
 
+stellopt_write_eqfile.o : \
+      stellopt_runtime.o \
+      $(LIB_DIR)/Release/mpi_inc.o \
+      $(LIB_DIR)/Release/read_wout_mod.o
+
 stellopt_write_inputfile.o : \
       stellopt_input_mod.o \
       stellopt_runtime.o \
