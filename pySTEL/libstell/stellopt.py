@@ -169,7 +169,8 @@ def read_stellopt(filename):
         elif 'ITER' == item:
             continue
         elif item in ['ASPECT','ASPECT_MAX','BETA','CURTOR','KAPPA','PHIEDGE', \
-                    'VOLUME','WP','RBTOR','R0','Z0','BETATOR','BETAPOL']:
+                    'VOLUME','WP','RBTOR','R0','Z0','BETATOR','BETAPOL','TEST_X',\
+                    'TEST_Y']:
             stel_data[item+'_target'] = np.squeeze(stel_data[item][:,:,0])
             stel_data[item+'_sigma'] = np.squeeze(stel_data[item][:,:,1])
             stel_data[item+'_equil'] = np.squeeze(stel_data[item][:,:,2])
