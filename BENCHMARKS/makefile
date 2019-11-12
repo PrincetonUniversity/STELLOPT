@@ -158,6 +158,7 @@ test_stellopt_beams3d:
 test_stellopt_iota_lmdif:
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.IOTA_LMDIF
 	@cd $(STELLOPT_TEST_DIR)/IOTA_LMDIF; $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.IOTA_LMDIF; rm -f *_opt*
+	@cd $(STELLOPT_TEST_DIR)/IOTA_LMDIF && ./compare_IOTA_LMDIF.py
 	@echo ""
 
 test_stellopt_recon_tok:
