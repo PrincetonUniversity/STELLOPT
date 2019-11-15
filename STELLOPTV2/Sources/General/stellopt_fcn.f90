@@ -186,6 +186,17 @@
          END IF
       END DO
 
+      ! Set initial axis shape to be the m=0 mode of the boundary shape.
+      ! This makes the result of a given call to stellopt_fcn independent of the previous calls,
+      ! which it would be if the axis from the previous iteration were used as the initial guess.
+      ! This feature is useful for testing, by ensuring results are less dependent on the number of processors.
+      DO nf = 0, ntord
+         raxis_cc(nf) = rbc(nf, 0)
+         zaxis_cc(nf) = zbc(nf, 0)
+         raxis_cs(nf) = rbs(nf, 0)
+         zaxis_cs(nf) = zbs(nf, 0)
+      END DO
+
       ! Apply normalization
       aphi = aphi * norm_aphi
       am   = am   * norm_am
