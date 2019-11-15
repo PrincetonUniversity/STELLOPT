@@ -1,4 +1,5 @@
 ObjectFiles = \
+sort.o \
 str_length.o \
 mpi_sharmem.o \
 GENERIC_Evolve.o \
