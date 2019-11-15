@@ -35,6 +35,7 @@ C-----------------------------------------------
 C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
       INTEGER, POINTER               :: ier_flag
+      INTEGER                        :: old_ier
       INTEGER                        :: ictrl_flag, iseq_count
       INTEGER                        :: ns_index, ns_min, nsval,
      &                                  ns_old=0, numsteps
@@ -392,11 +393,13 @@ C-----------------------------------------------
          PRINT *, 'runvmec: Running some more iterations',
      &            ' -> Skipping call to fileout!'
       ELSE IF (ier_flag .NE. more_iter_flag) THEN
+         old_ier = ier_flag
          IF (PARVMEC) THEN
             CALL fileout_par(iseq_count, ictrl_flag, ier_flag, lscreen)
          ELSE
             CALL fileout(iseq_count, ictrl_flag, ier_flag, lscreen)
          END IF
+         ier_flag = old_ier
       END IF
 
       IF(LV3FITCALL) CALL FinalizeRunVmec(RUNVMEC_COMM_WORLD)
