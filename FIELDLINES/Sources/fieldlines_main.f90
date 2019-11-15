@@ -305,6 +305,7 @@
             CALL fieldlines_init_subgrid
             CALL fieldlines_follow  ! This call on subgrid grid
             !CALL fieldlines_periodic_orbits  ! This call on subgrid grid
+            IF (lverb) CALL fieldlines_calc_surface_fit(25)
          CASE(runtype_norun)
       END SELECT
       ! Output Date
