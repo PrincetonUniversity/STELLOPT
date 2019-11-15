@@ -82,11 +82,12 @@ SUBROUTINE beams3d_follow
     !-----------------------------------------------------------------------
     ! Initializations
     ier = 0
-    dt_out = MAXVAL(t_end)/npoinc
-    tf_max = MAXVAL(t_end)
+    i = MAXLOC(ABS(t_end),1)
+    tf_max = t_end(i)
+    dt_out = tf_max/npoinc
     vel_max = MAXVAL(vll_start)
-    dt = lendt_m/vel_max      ! Keep this here so we print out max(dt)
-    IF (dt < 1E-9) dt = 1E-9  ! This is a limiter term for STELLOPT
+    dt = SIGN(lendt_m/vel_max,tf_max)      ! Keep this here so we print out max(dt)
+    IF (ABS(dt) < 1E-9) dt = SIGN(1E-9,tf_max)  ! This is a limiter term for STELLOPT
     nsteps = FLOOR(tf_max/dt)
     tol_nag = follow_tol
     neqs_nag = 4
@@ -334,6 +335,9 @@ SUBROUTINE beams3d_follow
                     q(2) = phi_start(l)
                     q(3) = Z_start(l)
                     q(4) = vll_start(l)
+                    xlast = q(1)*cos(q(2))
+                    ylast = q(1)*sin(q(2))
+                    zlast = q(3)
                     B_temp(:) = 1.0
                     t_nag = 0.0
                     tf_nag = 0.0
@@ -388,7 +392,7 @@ SUBROUTINE beams3d_follow
                         END IF
                         iwork(11) = 0; iwork(12) = 0; iwork(13) = 0
                         CALL out_beams3d_nag(tf_nag,q)
-                        IF ((istate == -1) .or. (istate ==-2) .or. (tf_nag > t_end(l)) ) EXIT
+                        IF ((istate == -1) .or. (istate ==-2) .or. (ABS(tf_nag) > ABS(t_end(l))) ) EXIT
                     END DO
                 END DO
                 IF (ldebug) CLOSE(iunit)
