@@ -7,7 +7,8 @@
       SUBROUTINE fieldlines_calc_surface_fit(fit_line)
 !-----------------------------------------------------------------------
 !     Libraries
-!-----------------------------------------------------------------------\
+!-----------------------------------------------------------------------
+      USE, intrinsic :: iso_c_binding
       USE fieldlines_runtime
       USE fieldlines_lines
 !-----------------------------------------------------------------------
@@ -19,7 +20,7 @@
 !     Local Variables
 !-----------------------------------------------------------------------
       LOGICAL, DIMENSION(:), ALLOCATABLE :: lmask
-      INTEGER ::                  i, j, n1, n2, d1
+      INTEGER ::                  i, j, n1, n2, d1, d2
       INTEGER, DIMENSION(:), ALLOCATABLE :: idex
       REAL(rprec) :: x_old, y_old
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: r, z, p, x, y, r0, z0, &
@@ -27,6 +28,14 @@
                                                 xth, yth, dr, arr1, arr2
       REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: x2d, y2d, dx2d, dy2d, &
                                                   x_new, y_new
+
+#if defined(FFTW3)
+      ! FFTW3
+      INCLUDE 'fftw3.f03'
+      TYPE(C_PTR) :: plan
+      REAL(C_DOUBLE), DIMENSION(:,:), ALLOCATABLE :: real_in, real_out
+      COMPLEX(C_DOUBLE_COMPLEX), DIMENSION(:,:), ALLOCATABLE :: fftw_in,fftw_out
+#endif
 
       ! Extract the surface and axis data
       i = nsteps
@@ -103,17 +112,22 @@
 
       ! Now we calculate a poloidal like angle
       ALLOCATE(dx2d(n1,n2),dy2d(n1,n2))
-      DO i = 2, n1
-         dx2d(i-1,:)=x2d(i,:)-x2d(i-1,:)
-         dy2d(i-1,:)=y2d(i,:)-y2d(i-1,:)
+      dx2d=0; dy2d=0;
+      DO i = 1, n1-1
+         dx2d(i,:)=x2d(i+1,:)-x2d(i,:)
+         dy2d(i,:)=y2d(i+1,:)-y2d(i,:)
       END DO
       dx2d = SQRT(dx2d*dx2d+dy2d*dy2d)
-      dy2d(1,:) = 0
+      dy2d = 0
       DO i = 2, n1
-         dy2d(i,:) = dy2d(i-1,:)+dx2d(i,:)
+         dy2d(i,:) = dy2d(i-1,:)+dx2d(i-1,:)
       END DO
       DO i = 1, n2
          dy2d(:,i) = dy2d(:,i)/MAXVAL(dy2d(:,i),1)
+      END DO
+
+      DO j =1, n1
+         WRITE(328,*) dx2d(j,1),dy2d(j,1)
       END DO
 
       ! Now calculated new 2D grid
@@ -123,28 +137,71 @@
       DO i = 1, n2-1
          xth = dy2d(:,i)
          yth = x2d(:,i)
-         DO j = 1, n1
-            WRITE(400+i,*) xth(i),yth(i)
-         END DO
-         CALL spline_it(n1,xth,yth,256,nth,arr1,0)
-         x_new(:,i) = arr1
+         CALL spline_it(n1,xth,yth,256,nth,arr2,0)
+         x_new(:,i) = arr2
          yth = y2d(:,i)
-         DO j = 1, n1
-            WRITE(500+i,*) xth(i),yth(i)
-         END DO
-         CALL spline_it(n1,xth,yth,256,nth,arr1,0)
-         y_new(:,i) = arr1
+         CALL spline_it(n1,xth,yth,256,nth,arr2,0)
+         y_new(:,i) = arr2
       END DO
 
-      DO j =1, 256
-         WRITE(327,*) x_new(j,1),y_new(j,1)
+      ! Make sure we start at max x
+      DO i = 1, n2-1
+         arr2 = x_new(:,i)
+         j = MAXLOC(arr2,1)
+         IF (j >1) THEN
+            d1 = 256-j+1
+            d2 = d1 + 1
+            arr2(1:d1)   = x_new(j:256,i)
+            arr2(d2:256) = x_new(1:j-1,i)
+            x_new(:,i)   = arr2
+            arr2(1:d1)   = y_new(j:256,i)
+            arr2(d2:256) = y_new(1:j-1,i)
+            y_new(:,i)    = arr2
+         END IF
       END DO
+      x_new(:,n2) = x_new(:,1)
+      y_new(:,n2) = y_new(:,1)
+
+      DO j =1, 256
+         WRITE(329,*) x_new(j,1),y_new(j,1)
+      END DO
+#if defined(FFTW3)
+      ALLOCATE(real_in(256,n2),real_out(256,n2))
+      ALLOCATE(fftw_in(256,n2),fftw_out(256,n2))
+      fftw_in = x_new
+      plan = FFTW_PLAN_DFT_2D(n2, 256, fftw_in, fftw_out, FFTW_FORWARD, FFTW_ESTIMATE)
+      CALL FFTW_EXECUTE_DFT(plan, fftw_in, fftw_out)
+      CALL FFTW_DESTROY_PLAN(plan)
+      DO j = 1, 256
+         WRITE(601,*) fftw_out(j,1)/(128*16)
+      END DO
+      plan = FFTW_PLAN_DFT_2D(n2, 256, fftw_out, fftw_in, FFTW_BACKWARD, FFTW_ESTIMATE)
+      CALL FFTW_EXECUTE_DFT(plan, fftw_out, fftw_in)
+      CALL FFTW_DESTROY_PLAN(plan)
+      x_new = REAL(fftw_in)
+      fftw_in = y_new
+      plan = FFTW_PLAN_DFT_2D(n2, 256, fftw_in, fftw_out, FFTW_FORWARD, FFTW_ESTIMATE)
+      CALL FFTW_EXECUTE_DFT(plan, fftw_in, fftw_out)
+      CALL FFTW_DESTROY_PLAN(plan)
+      DO j = 1, 256
+         WRITE(602,*) fftw_out(j,1)/(128*16)
+      END DO
+      plan = FFTW_PLAN_DFT_2D(n2, 256, fftw_out, fftw_in, FFTW_BACKWARD, FFTW_ESTIMATE)
+      CALL FFTW_EXECUTE_DFT(plan, fftw_out, fftw_in)
+      CALL FFTW_DESTROY_PLAN(plan)
+      y_new = REAL(fftw_in)
+      DO j =1, 256
+         WRITE(603,*) x_new(j,1)/(128*16), y_new(j,1)/(128*16)
+      END DO
+      DEALLOCATE(fftw_in,fftw_out)
+
+#endif
 
 
 
       ! DEALLOCATION
       DEALLOCATE(x_new,y_new)
-      DEALLOCATE(nth)
+      DEALLOCATE(nth,arr2)
       DEALLOCATE(dx2d,dy2d)
       DEALLOCATE(x2d,y2d)
       DEALLOCATE(tth,xth,yth,dr,arr1)

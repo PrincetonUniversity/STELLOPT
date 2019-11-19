@@ -63,6 +63,13 @@
   NETCDF_LIB = -L/opt/local/lib -lnetcdf -lnetcdff
 
 #######################################################################
+#            FFTW3 Options
+#######################################################################
+  LFFTW3 = T
+  FFTW3_INC = -I/opt/local/include
+  FFTW3_LIB = -L/opt/local/lib -lfftw3
+
+#######################################################################
 #            HDF5 Options
 #######################################################################
   LHDF5 = T
@@ -356,6 +363,13 @@ ifeq ($(LNETCDF),T)
   LIB_LINK += $(NETCDF_LIB)
   MOD_PATH += $(NETCDF_INC)
   LIB_SHARE += $(NETCDF_LIB)
+endif
+ifeq ($(LFFTW3),T)
+  MOD1_PATH += $(FFTW3_INC)
+  PRECOMP += -DFFTW3
+  LIB_LINK += $(FFTW3_LIB)
+  MOD_PATH += $(FFTW3_INC)
+  LIB_SHARE += $(FFTW3_LIB)
 endif
 ifeq ($(LHDF5),T)
   MOD1_PATH += $(HDF5_INC)
