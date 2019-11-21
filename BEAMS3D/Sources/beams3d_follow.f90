@@ -87,7 +87,7 @@ SUBROUTINE beams3d_follow
     dt_out = tf_max/npoinc
     vel_max = MAXVAL(vll_start)
     dt = SIGN(lendt_m/vel_max,tf_max)      ! Keep this here so we print out max(dt)
-    IF (ABS(dt) < 1E-9) dt = SIGN(1E-9,tf_max)  ! This is a limiter term for STELLOPT
+    IF (ABS(dt) < 1E-9) dt = SIGN(1D-9,tf_max)  ! This is a limiter term for STELLOPT
     nsteps = FLOOR(tf_max/dt)
     tol_nag = follow_tol
     neqs_nag = 4

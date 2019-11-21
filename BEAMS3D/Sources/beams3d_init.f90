@@ -18,6 +18,7 @@
       USE beams3d_lines, ONLY: nparticles
       USE wall_mod
       USE mpi_params
+      USE adas_mod_parallel, ONLY: adas_load_tables
 !DEC$ IF DEFINED (MPI_OPT)
       USE mpi
       USE mpi_sharmem
@@ -272,6 +273,7 @@
       
       ! Initialize beams (define a distribution of directions and weights)
       IF (lbeam) THEN
+          CALL adas_load_tables
           IF (lw7x) THEN
              CALL beams3d_init_beams_w7x
           ELSE
