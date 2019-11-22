@@ -232,25 +232,27 @@
             CASE('DIAG')
                CALL open_hdf5('beams3d_'//TRIM(id_string)//'.h5',fid,ier,LCREATE=.false.)
                IF (ier /= 0) CALL handle_err(HDF5_OPEN_ERR,'beams3d_'//TRIM(id_string)//'.h5',ier)
-               CALL write_var_hdf5(fid,'Shinethrough',nbeams,ier,DBLVAR=shine_through,&
+               IF (lbeam) THEN
+                  CALL write_var_hdf5(fid,'Shinethrough',nbeams,ier,DBLVAR=shine_through,&
                                    ATT='Total Beam Shine Through [%]',ATT_NAME='description')
-               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'Shinethrough',ier)
-               IF (lbeam .and. .not. ldepo) THEN
-                  CALL write_scalar_hdf5(fid,'ns_prof',ier,INTVAR=ns_prof,&
-                                      ATT='Flux Grid Points',ATT_NAME='description')
-                  IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ns_prof',ier)
-                  CALL write_var_hdf5(fid,'ndot_prof',nbeams,ns_prof,ier,DBLVAR=ndot_prof,&
-                                      ATT='Fast Ion Source [m^-3/s]',ATT_NAME='description')
-                  IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ndot_prof',ier)
-                  CALL write_var_hdf5(fid,'epower_prof',nbeams,ns_prof,ier,DBLVAR=epower_prof,&
-                                      ATT='Electron Power Deposition [W*m^-3]',ATT_NAME='description')
-                  IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'epower_prof',ier)
-                  CALL write_var_hdf5(fid,'ipower_prof',nbeams,ns_prof,ier,DBLVAR=ipower_prof,&
-                                      ATT='Ion Power Deposition [W*m^-3]',ATT_NAME='description')
-                  IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ipower_prof',ier)
-                  CALL write_var_hdf5(fid,'J_prof',nbeams,ns_prof,ier,DBLVAR=j_prof,&
-                                      ATT='Total Beam Current Density [P/(e*E)]',ATT_NAME='description')
-                  IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'J_prof',ier)
+                  IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'Shinethrough',ier)
+                  IF (.not. ldepo) THEN
+                     CALL write_scalar_hdf5(fid,'ns_prof',ier,INTVAR=ns_prof,&
+                                         ATT='Flux Grid Points',ATT_NAME='description')
+                     IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ns_prof',ier)
+                     CALL write_var_hdf5(fid,'ndot_prof',nbeams,ns_prof,ier,DBLVAR=ndot_prof,&
+                                         ATT='Fast Ion Source [m^-3/s]',ATT_NAME='description')
+                     IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ndot_prof',ier)
+                     CALL write_var_hdf5(fid,'epower_prof',nbeams,ns_prof,ier,DBLVAR=epower_prof,&
+                                         ATT='Electron Power Deposition [W*m^-3]',ATT_NAME='description')
+                     IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'epower_prof',ier)
+                     CALL write_var_hdf5(fid,'ipower_prof',nbeams,ns_prof,ier,DBLVAR=ipower_prof,&
+                                         ATT='Ion Power Deposition [W*m^-3]',ATT_NAME='description')
+                     IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ipower_prof',ier)
+                     CALL write_var_hdf5(fid,'J_prof',nbeams,ns_prof,ier,DBLVAR=j_prof,&
+                                         ATT='Total Beam Current Density [P/(e*E)]',ATT_NAME='description')
+                     IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'J_prof',ier)
+                  END IF
                END IF
          END SELECT
          CALL close_hdf5(fid,ier)
