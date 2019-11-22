@@ -30,6 +30,7 @@ beams3d_init.o: \
       ../../LIBSTELL/Release/vmec_input.o \
       ../../LIBSTELL/Release/mpi_params.o \
       ../../LIBSTELL/Release/wall_mod.o \
+      ../../LIBSTELL/Release/adas_mod_parallel.o \
       beams3d_runtime.o \
       beams3d_grid.o \
       beams3d_input_mod.o \
@@ -197,7 +198,7 @@ beams3d_init_beams_w7x.o: \
 
 beams3d_physics_mod.o: \
       ../../LIBSTELL/Release/stel_kinds.o \
-      ../../LIBSTELL/Release/adas_mod_simpl.o \
+      ../../LIBSTELL/Release/adas_mod_parallel.o \
       beams3d_runtime.o \
       beams3d_lines.o \
       beams3d_grid.o

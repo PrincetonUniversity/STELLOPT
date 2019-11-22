@@ -273,7 +273,7 @@
       
       ! Initialize beams (define a distribution of directions and weights)
       IF (lbeam) THEN
-          CALL adas_load_tables
+          CALL adas_load_tables(myid_sharmem, MPI_COMM_SHARMEM)
           IF (lw7x) THEN
              CALL beams3d_init_beams_w7x
           ELSE
