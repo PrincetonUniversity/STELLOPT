@@ -13,16 +13,17 @@ module adas_mod_parallel
        USE netcdf
 #endif
 #if defined(MPI_OPT)
-!       USE mpi_sharmem
+       USE mpi_sharmem
+       USE mpi_inc
 #endif
 !-----------------------------------------------------------------------
 !     Variables
 !-----------------------------------------------------------------------
        IMPLICIT NONE
        INTEGER :: iwarn_adas
-       DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:) :: ei_1_axis, ei_2_axis
-       DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:) :: ei_1_sigv, ei_2_sigv
-       DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:) :: cx_1_1_axis, cx_2_1_axis,cx_2_2_axis,&
+       DOUBLE PRECISION, POINTER, DIMENSION(:) :: ei_1_axis, ei_2_axis
+       DOUBLE PRECISION, POINTER, DIMENSION(:) :: ei_1_sigv, ei_2_sigv
+       DOUBLE PRECISION, POINTER, DIMENSION(:) :: cx_1_1_axis, cx_2_1_axis,cx_2_2_axis,&
                                                       ii_1_1_axis, ii_1_2_axis, &
                                                       ii_1_3_axis, ii_1_4_axis, &
                                                       ii_1_5_axis, ii_1_6_axis, &
@@ -32,7 +33,7 @@ module adas_mod_parallel
                                                       ii_2_3_axis, ii_2_4_axis, &
                                                       ii_2_5_axis, ii_2_6_axis, &
                                                       ii_2_7_axis, ii_2_8_axis
-       DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:,:) :: cx_1_1_btsigv,cx_2_1_btsigv,cx_2_2_btsigv,&
+       DOUBLE PRECISION, POINTER, DIMENSION(:,:) :: cx_1_1_btsigv,cx_2_1_btsigv,cx_2_2_btsigv,&
                                                         ii_1_1_btsigv, ii_1_2_btsigv, &
                                                         ii_1_3_btsigv, ii_1_4_btsigv, &
                                                         ii_1_5_btsigv, ii_1_6_btsigv, &
@@ -42,12 +43,23 @@ module adas_mod_parallel
                                                         ii_2_3_btsigv, ii_2_4_btsigv, &
                                                         ii_2_5_btsigv, ii_2_6_btsigv, &
                                                         ii_2_7_btsigv, ii_2_8_btsigv
+       INTEGER :: win_ei_1a, win_ei_2a, win_cx_11a, win_cx_21a, win_cx_22a,&
+                  win_ii_11a, win_ii_12a, win_ii_13a, win_ii_14a, win_ii_15a, &
+                  win_ii_16a, win_ii_17a, win_ii_18a, win_ii_19a, win_ii_110a, &
+                  win_ii_21a, win_ii_22a, win_ii_23a, win_ii_24a, win_ii_25a, &
+                  win_ii_26a, win_ii_27a, win_ii_28a, &
+                  win_ei_1s, win_ei_2s, win_cx_11b, win_cx_21b, win_cx_22b,&
+                  win_ii_11b, win_ii_12b, win_ii_13b, win_ii_14b, win_ii_15b, &
+                  win_ii_16b, win_ii_17b, win_ii_18b, win_ii_19b, win_ii_110b, &
+                  win_ii_21b, win_ii_22b, win_ii_23b, win_ii_24b, win_ii_25b, &
+                  win_ii_26b, win_ii_27b, win_ii_28b
+       INTEGER, PRIVATE, PARAMETER :: local_master=0
 !-----------------------------------------------------------------------
 !     INTERFACES
 !-----------------------------------------------------------------------
        PUBLIC :: adas_btsigv
        PUBLIC :: adas_sigvte_ioniz
-       
+
        INTERFACE adas_sigvte_ioniz
           MODULE PROCEDURE adas_sigvte_ioniz_r8,adas_sigvte_ioniz_int
        END INTERFACE
@@ -61,645 +73,395 @@ module adas_mod_parallel
 !-----------------------------------------------------------------------
        CONTAINS
 
-       SUBROUTINE adas_load_tables
+!       SUBROUTINE adas_load_tables
+       SUBROUTINE adas_load_tables(myid,comm)
        IMPLICIT NONE
-       INTEGER :: ncid, varid, ier, ndims, i
-       INTEGER, ALLOCATABLE, DIMENSION(:) :: dimid, dimlen
-       CHARACTER(LEN=256) :: adasdir, table_str
+       INTEGER, INTENT(inout) :: myid
+       INTEGER, INTENT(inout) :: comm
+       INTEGER, DIMENSION(2) :: dimlen
+       CHARACTER(LEN=256) :: adasdir, table_str, var_str
 
        ! Initialize
        CALL deallocate_adas_tables
-
-#if defined(NETCDF)
        ! Load Electron impact iz =1 
        CALL getenv('ADASDIR', adasdir)
        table_str=TRIM(adasdir) // '/tables/ei/ei_1_coldTarget.cdf'
-       ier = NF90_OPEN(table_str,NF90_NOWRITE,ncid)
-       ier = NF90_INQ_VARID(ncid,'axis_param_coldTarget',varid)
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,NDIMS = ndims)
-       ALLOCATE(dimid(ndims),dimlen(ndims))
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,DIMIDS = dimid)
-       DO i = 1, ndims
-          ier = NF90_INQUIRE_DIMENSION(ncid,dimid(i),LEN = dimlen(i))
-       END DO
-       ALLOCATE(ei_1_axis(dimlen(1)))
-       ier = NF90_GET_VAR(ncid, varid, ei_1_axis)
-       DEALLOCATE(dimid,dimlen)
-       ier = NF90_INQ_VARID(ncid,'sigv',varid)
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,NDIMS = ndims)
-       ALLOCATE(dimid(ndims),dimlen(ndims))
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,DIMIDS = dimid)
-       DO i = 1, ndims
-          ier = NF90_INQUIRE_DIMENSION(ncid,dimid(i),LEN = dimlen(i))
-       END DO
-       ALLOCATE(ei_1_sigv(dimlen(1)))
-       ier = NF90_GET_VAR(ncid, varid, ei_1_sigv)
-       DEALLOCATE(dimid,dimlen)
-       ier = NF90_CLOSE(ncid)
+       var_str = 'axis_param_coldTarget'
+       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       CALL mpialloc(ei_1_axis, dimlen(1), myid, local_master, comm, win_ei_1a)
+       CALL adas_get_var_1D(table_str,var_str,dimlen(1),ei_1_axis,myid,comm)
+       var_str = 'sigv'
+       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       CALL mpialloc(ei_1_sigv, dimlen(1), myid, local_master, comm, win_ei_1s)
+       CALL adas_get_var_1D(table_str,var_str,dimlen(1),ei_1_sigv,myid,comm)
 
-       ! Load Electron impact iz =2 
+       ! Load Electron impact iz = 2
        table_str=TRIM(adasdir) // '/tables/ei/ei_2_coldTarget.cdf'
-       ier = NF90_OPEN(table_str,NF90_NOWRITE,ncid)
-       ier = NF90_INQ_VARID(ncid,'axis_param_coldTarget',varid)
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,NDIMS = ndims)
-       ALLOCATE(dimid(ndims),dimlen(ndims))
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,DIMIDS = dimid)
-       DO i = 1, ndims
-          ier = NF90_INQUIRE_DIMENSION(ncid,dimid(i),LEN = dimlen(i))
-       END DO
-       ALLOCATE(ei_2_axis(dimlen(1)))
-       ier = NF90_GET_VAR(ncid, varid, ei_2_axis)
-       DEALLOCATE(dimid,dimlen)
-       ier = NF90_INQ_VARID(ncid,'sigv',varid)
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,NDIMS = ndims)
-       ALLOCATE(dimid(ndims),dimlen(ndims))
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,DIMIDS = dimid)
-       DO i = 1, ndims
-          ier = NF90_INQUIRE_DIMENSION(ncid,dimid(i),LEN = dimlen(i))
-       END DO
-       ALLOCATE(ei_2_sigv(dimlen(1)))
-       ier = NF90_GET_VAR(ncid, varid, ei_2_sigv)
-       DEALLOCATE(dimid,dimlen)
-       ier = NF90_CLOSE(ncid)
+       var_str = 'axis_param_coldTarget'
+       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       CALL mpialloc(ei_2_axis, dimlen(1), myid, local_master, comm, win_ei_2a)
+       CALL adas_get_var_1D(table_str,var_str,dimlen(1),ei_2_axis,myid,comm)
+       var_str = 'sigv'
+       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       CALL mpialloc(ei_2_sigv, dimlen(1), myid, local_master, comm, win_ei_2s)
+       CALL adas_get_var_1D(table_str,var_str,dimlen(1),ei_2_sigv,myid,comm)
 
-       ! Load Ion Impact CX 1-1
+       ! Charge Exchange 1-1
        table_str=TRIM(adasdir) // '/tables/cx/cx_1_1_warmTarget.cdf'
-       ier = NF90_OPEN(table_str,NF90_NOWRITE,ncid)
-       ier = NF90_INQ_VARID(ncid,'axis_param_warmTarget',varid)
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,NDIMS = ndims)
-       ALLOCATE(dimid(ndims),dimlen(ndims))
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,DIMIDS = dimid)
-       DO i = 1, ndims
-          ier = NF90_INQUIRE_DIMENSION(ncid,dimid(i),LEN = dimlen(i))
-       END DO
-       ALLOCATE(cx_1_1_axis(dimlen(1)))
-       ier = NF90_GET_VAR(ncid, varid, cx_1_1_axis)
-       DEALLOCATE(dimid,dimlen)
-       ier = NF90_INQ_VARID(ncid,'btsigv',varid)
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,NDIMS = ndims)
-       ALLOCATE(dimid(ndims),dimlen(ndims))
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,DIMIDS = dimid)
-       DO i = 1, ndims
-          ier = NF90_INQUIRE_DIMENSION(ncid,dimid(i),LEN = dimlen(i))
-       END DO
-       ALLOCATE(cx_1_1_btsigv(dimlen(1),dimlen(2)))
-       ier = NF90_GET_VAR(ncid, varid, cx_1_1_btsigv)
-       DEALLOCATE(dimid,dimlen)
-       ier = NF90_CLOSE(ncid)
+       var_str = 'axis_param_warmTarget'
+       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       CALL mpialloc(cx_1_1_axis, dimlen(1), myid, local_master, comm, win_cx_11a)
+       CALL adas_get_var_1D(table_str,var_str,dimlen(1),cx_1_1_axis,myid,comm)
+       var_str = 'btsigv'
+       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       CALL mpialloc(cx_1_1_btsigv, dimlen(1), dimlen(2), myid, local_master, comm, win_cx_11b)
+       CALL adas_get_var_2D(table_str,var_str,dimlen(1),dimlen(2),cx_1_1_btsigv,myid,comm)
 
-       ! Load Ion Impact CX 2-1
+       ! Charge Exchange 2-1
        table_str=TRIM(adasdir) // '/tables/cx/cx_2_1_warmTarget.cdf'
-       ier = NF90_OPEN(table_str,NF90_NOWRITE,ncid)
-       ier = NF90_INQ_VARID(ncid,'axis_param_warmTarget',varid)
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,NDIMS = ndims)
-       ALLOCATE(dimid(ndims),dimlen(ndims))
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,DIMIDS = dimid)
-       DO i = 1, ndims
-          ier = NF90_INQUIRE_DIMENSION(ncid,dimid(i),LEN = dimlen(i))
-       END DO
-       ALLOCATE(cx_2_1_axis(dimlen(1)))
-       ier = NF90_GET_VAR(ncid, varid, cx_2_1_axis)
-       DEALLOCATE(dimid,dimlen)
-       ier = NF90_INQ_VARID(ncid,'btsigv',varid)
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,NDIMS = ndims)
-       ALLOCATE(dimid(ndims),dimlen(ndims))
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,DIMIDS = dimid)
-       DO i = 1, ndims
-          ier = NF90_INQUIRE_DIMENSION(ncid,dimid(i),LEN = dimlen(i))
-       END DO
-       ALLOCATE(cx_2_1_btsigv(dimlen(1),dimlen(2)))
-       ier = NF90_GET_VAR(ncid, varid, cx_2_1_btsigv)
-       DEALLOCATE(dimid,dimlen)
-       ier = NF90_CLOSE(ncid)
+       var_str = 'axis_param_warmTarget'
+       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       CALL mpialloc(cx_2_1_axis, dimlen(1), myid, local_master, comm, win_cx_21a)
+       CALL adas_get_var_1D(table_str,var_str,dimlen(1),cx_2_1_axis,myid,comm)
+       var_str = 'btsigv'
+       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       CALL mpialloc(cx_2_1_btsigv, dimlen(1), dimlen(2), myid, local_master, comm, win_cx_21b)
+       CALL adas_get_var_2D(table_str,var_str,dimlen(1),dimlen(2),cx_2_1_btsigv,myid,comm)
 
-       ! Load Ion Impact CX 2-2
+       ! Charge Exchange 2-2
        table_str=TRIM(adasdir) // '/tables/cx/cx_2_2_warmTarget.cdf'
-       ier = NF90_OPEN(table_str,NF90_NOWRITE,ncid)
-       ier = NF90_INQ_VARID(ncid,'axis_param_warmTarget',varid)
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,NDIMS = ndims)
-       ALLOCATE(dimid(ndims),dimlen(ndims))
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,DIMIDS = dimid)
-       DO i = 1, ndims
-          ier = NF90_INQUIRE_DIMENSION(ncid,dimid(i),LEN = dimlen(i))
-       END DO
-       ALLOCATE(cx_2_2_axis(dimlen(1)))
-       ier = NF90_GET_VAR(ncid, varid, cx_2_2_axis)
-       DEALLOCATE(dimid,dimlen)
-       ier = NF90_INQ_VARID(ncid,'btsigv',varid)
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,NDIMS = ndims)
-       ALLOCATE(dimid(ndims),dimlen(ndims))
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,DIMIDS = dimid)
-       DO i = 1, ndims
-          ier = NF90_INQUIRE_DIMENSION(ncid,dimid(i),LEN = dimlen(i))
-       END DO
-       ALLOCATE(cx_2_2_btsigv(dimlen(1),dimlen(2)))
-       ier = NF90_GET_VAR(ncid, varid, cx_2_2_btsigv)
-       DEALLOCATE(dimid,dimlen)
-       ier = NF90_CLOSE(ncid)
+       var_str = 'axis_param_warmTarget'
+       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       CALL mpialloc(cx_2_2_axis, dimlen(1), myid, local_master, comm, win_cx_22a)
+       CALL adas_get_var_1D(table_str,var_str,dimlen(1),cx_2_2_axis,myid,comm)
+       var_str = 'btsigv'
+       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       CALL mpialloc(cx_2_2_btsigv, dimlen(1), dimlen(2), myid, local_master, comm, win_cx_22b)
+       CALL adas_get_var_2D(table_str,var_str,dimlen(1),dimlen(2),cx_2_2_btsigv,myid,comm)
 
-       ! Load Ion Impact II 1-1
+       ! Ion Impact 1-1
        table_str=TRIM(adasdir) // '/tables/ii/ii_1_1_warmTarget.cdf'
-       ier = NF90_OPEN(table_str,NF90_NOWRITE,ncid)
-       ier = NF90_INQ_VARID(ncid,'axis_param_warmTarget',varid)
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,NDIMS = ndims)
-       ALLOCATE(dimid(ndims),dimlen(ndims))
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,DIMIDS = dimid)
-       DO i = 1, ndims
-          ier = NF90_INQUIRE_DIMENSION(ncid,dimid(i),LEN = dimlen(i))
-       END DO
-       ALLOCATE(ii_1_1_axis(dimlen(1)))
-       ier = NF90_GET_VAR(ncid, varid, ii_1_1_axis)
-       DEALLOCATE(dimid,dimlen)
-       ier = NF90_INQ_VARID(ncid,'btsigv',varid)
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,NDIMS = ndims)
-       ALLOCATE(dimid(ndims),dimlen(ndims))
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,DIMIDS = dimid)
-       DO i = 1, ndims
-          ier = NF90_INQUIRE_DIMENSION(ncid,dimid(i),LEN = dimlen(i))
-       END DO
-       ALLOCATE(ii_1_1_btsigv(dimlen(1),dimlen(2)))
-       ier = NF90_GET_VAR(ncid, varid, ii_1_1_btsigv)
-       DEALLOCATE(dimid,dimlen)
-       ier = NF90_CLOSE(ncid)
+       var_str = 'axis_param_warmTarget'
+       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       CALL mpialloc(ii_1_1_axis, dimlen(1), myid, local_master, comm, win_ii_11a)
+       CALL adas_get_var_1D(table_str,var_str,dimlen(1),ii_1_1_axis,myid,comm)
+       var_str = 'btsigv'
+       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       CALL mpialloc(ii_1_1_btsigv, dimlen(1), dimlen(2), myid, local_master, comm, win_ii_11b)
+       CALL adas_get_var_2D(table_str,var_str,dimlen(1),dimlen(2),ii_1_1_btsigv,myid,comm)
 
-       ! Load Ion Impact II 1-2
+       ! Ion Impact 1-2
        table_str=TRIM(adasdir) // '/tables/ii/ii_1_2_warmTarget.cdf'
-       ier = NF90_OPEN(table_str,NF90_NOWRITE,ncid)
-       ier = NF90_INQ_VARID(ncid,'axis_param_warmTarget',varid)
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,NDIMS = ndims)
-       ALLOCATE(dimid(ndims),dimlen(ndims))
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,DIMIDS = dimid)
-       DO i = 1, ndims
-          ier = NF90_INQUIRE_DIMENSION(ncid,dimid(i),LEN = dimlen(i))
-       END DO
-       ALLOCATE(ii_1_2_axis(dimlen(1)))
-       ier = NF90_GET_VAR(ncid, varid, ii_1_2_axis)
-       DEALLOCATE(dimid,dimlen)
-       ier = NF90_INQ_VARID(ncid,'btsigv',varid)
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,NDIMS = ndims)
-       ALLOCATE(dimid(ndims),dimlen(ndims))
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,DIMIDS = dimid)
-       DO i = 1, ndims
-          ier = NF90_INQUIRE_DIMENSION(ncid,dimid(i),LEN = dimlen(i))
-       END DO
-       ALLOCATE(ii_1_2_btsigv(dimlen(1),dimlen(2)))
-       ier = NF90_GET_VAR(ncid, varid, ii_1_2_btsigv)
-       DEALLOCATE(dimid,dimlen)
-       ier = NF90_CLOSE(ncid)
+       var_str = 'axis_param_warmTarget'
+       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       CALL mpialloc(ii_1_2_axis, dimlen(1), myid, local_master, comm, win_ii_12a)
+       CALL adas_get_var_1D(table_str,var_str,dimlen(1),ii_1_2_axis,myid,comm)
+       var_str = 'btsigv'
+       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       CALL mpialloc(ii_1_2_btsigv, dimlen(1), dimlen(2), myid, local_master, comm, win_ii_12b)
+       CALL adas_get_var_2D(table_str,var_str,dimlen(1),dimlen(2),ii_1_2_btsigv,myid,comm)
 
-       ! Load Ion Impact II 1-3
+       ! Ion Impact 1-3
        table_str=TRIM(adasdir) // '/tables/ii/ii_1_3_warmTarget.cdf'
-       ier = NF90_OPEN(table_str,NF90_NOWRITE,ncid)
-       ier = NF90_INQ_VARID(ncid,'axis_param_warmTarget',varid)
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,NDIMS = ndims)
-       ALLOCATE(dimid(ndims),dimlen(ndims))
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,DIMIDS = dimid)
-       DO i = 1, ndims
-          ier = NF90_INQUIRE_DIMENSION(ncid,dimid(i),LEN = dimlen(i))
-       END DO
-       ALLOCATE(ii_1_3_axis(dimlen(1)))
-       ier = NF90_GET_VAR(ncid, varid, ii_1_3_axis)
-       DEALLOCATE(dimid,dimlen)
-       ier = NF90_INQ_VARID(ncid,'btsigv',varid)
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,NDIMS = ndims)
-       ALLOCATE(dimid(ndims),dimlen(ndims))
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,DIMIDS = dimid)
-       DO i = 1, ndims
-          ier = NF90_INQUIRE_DIMENSION(ncid,dimid(i),LEN = dimlen(i))
-       END DO
-       ALLOCATE(ii_1_3_btsigv(dimlen(1),dimlen(2)))
-       ier = NF90_GET_VAR(ncid, varid, ii_1_3_btsigv)
-       DEALLOCATE(dimid,dimlen)
-       ier = NF90_CLOSE(ncid)
+       var_str = 'axis_param_warmTarget'
+       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       CALL mpialloc(ii_1_3_axis, dimlen(1), myid, local_master, comm, win_ii_13a)
+       CALL adas_get_var_1D(table_str,var_str,dimlen(1),ii_1_3_axis,myid,comm)
+       var_str = 'btsigv'
+       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       CALL mpialloc(ii_1_3_btsigv, dimlen(1), dimlen(2), myid, local_master, comm, win_ii_13b)
+       CALL adas_get_var_2D(table_str,var_str,dimlen(1),dimlen(2),ii_1_3_btsigv,myid,comm)
 
-       ! Load Ion Impact II 1-4
+       ! Ion Impact 1-4
        table_str=TRIM(adasdir) // '/tables/ii/ii_1_4_warmTarget.cdf'
-       ier = NF90_OPEN(table_str,NF90_NOWRITE,ncid)
-       ier = NF90_INQ_VARID(ncid,'axis_param_warmTarget',varid)
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,NDIMS = ndims)
-       ALLOCATE(dimid(ndims),dimlen(ndims))
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,DIMIDS = dimid)
-       DO i = 1, ndims
-          ier = NF90_INQUIRE_DIMENSION(ncid,dimid(i),LEN = dimlen(i))
-       END DO
-       ALLOCATE(ii_1_4_axis(dimlen(1)))
-       ier = NF90_GET_VAR(ncid, varid, ii_1_4_axis)
-       DEALLOCATE(dimid,dimlen)
-       ier = NF90_INQ_VARID(ncid,'btsigv',varid)
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,NDIMS = ndims)
-       ALLOCATE(dimid(ndims),dimlen(ndims))
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,DIMIDS = dimid)
-       DO i = 1, ndims
-          ier = NF90_INQUIRE_DIMENSION(ncid,dimid(i),LEN = dimlen(i))
-       END DO
-       ALLOCATE(ii_1_4_btsigv(dimlen(1),dimlen(2)))
-       ier = NF90_GET_VAR(ncid, varid, ii_1_4_btsigv)
-       DEALLOCATE(dimid,dimlen)
-       ier = NF90_CLOSE(ncid)
+       var_str = 'axis_param_warmTarget'
+       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       CALL mpialloc(ii_1_4_axis, dimlen(1), myid, local_master, comm, win_ii_14a)
+       CALL adas_get_var_1D(table_str,var_str,dimlen(1),ii_1_4_axis,myid,comm)
+       var_str = 'btsigv'
+       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       CALL mpialloc(ii_1_4_btsigv, dimlen(1), dimlen(2), myid, local_master, comm, win_ii_14b)
+       CALL adas_get_var_2D(table_str,var_str,dimlen(1),dimlen(2),ii_1_4_btsigv,myid,comm)
 
-       ! Load Ion Impact II 1-5
+       ! Ion Impact 1-5
        table_str=TRIM(adasdir) // '/tables/ii/ii_1_5_warmTarget.cdf'
-       ier = NF90_OPEN(table_str,NF90_NOWRITE,ncid)
-       ier = NF90_INQ_VARID(ncid,'axis_param_warmTarget',varid)
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,NDIMS = ndims)
-       ALLOCATE(dimid(ndims),dimlen(ndims))
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,DIMIDS = dimid)
-       DO i = 1, ndims
-          ier = NF90_INQUIRE_DIMENSION(ncid,dimid(i),LEN = dimlen(i))
-       END DO
-       ALLOCATE(ii_1_5_axis(dimlen(1)))
-       ier = NF90_GET_VAR(ncid, varid, ii_1_5_axis)
-       DEALLOCATE(dimid,dimlen)
-       ier = NF90_INQ_VARID(ncid,'btsigv',varid)
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,NDIMS = ndims)
-       ALLOCATE(dimid(ndims),dimlen(ndims))
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,DIMIDS = dimid)
-       DO i = 1, ndims
-          ier = NF90_INQUIRE_DIMENSION(ncid,dimid(i),LEN = dimlen(i))
-       END DO
-       ALLOCATE(ii_1_5_btsigv(dimlen(1),dimlen(2)))
-       ier = NF90_GET_VAR(ncid, varid, ii_1_5_btsigv)
-       DEALLOCATE(dimid,dimlen)
-       ier = NF90_CLOSE(ncid)
+       var_str = 'axis_param_warmTarget'
+       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       CALL mpialloc(ii_1_5_axis, dimlen(1), myid, local_master, comm, win_ii_15a)
+       CALL adas_get_var_1D(table_str,var_str,dimlen(1),ii_1_5_axis,myid,comm)
+       var_str = 'btsigv'
+       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       CALL mpialloc(ii_1_5_btsigv, dimlen(1), dimlen(2), myid, local_master, comm, win_ii_15b)
+       CALL adas_get_var_2D(table_str,var_str,dimlen(1),dimlen(2),ii_1_5_btsigv,myid,comm)
 
-       ! Load Ion Impact II 1-6
+       ! Ion Impact 1-6
        table_str=TRIM(adasdir) // '/tables/ii/ii_1_6_warmTarget.cdf'
-       ier = NF90_OPEN(table_str,NF90_NOWRITE,ncid)
-       ier = NF90_INQ_VARID(ncid,'axis_param_warmTarget',varid)
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,NDIMS = ndims)
-       ALLOCATE(dimid(ndims),dimlen(ndims))
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,DIMIDS = dimid)
-       DO i = 1, ndims
-          ier = NF90_INQUIRE_DIMENSION(ncid,dimid(i),LEN = dimlen(i))
-       END DO
-       ALLOCATE(ii_1_6_axis(dimlen(1)))
-       ier = NF90_GET_VAR(ncid, varid, ii_1_6_axis)
-       DEALLOCATE(dimid,dimlen)
-       ier = NF90_INQ_VARID(ncid,'btsigv',varid)
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,NDIMS = ndims)
-       ALLOCATE(dimid(ndims),dimlen(ndims))
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,DIMIDS = dimid)
-       DO i = 1, ndims
-          ier = NF90_INQUIRE_DIMENSION(ncid,dimid(i),LEN = dimlen(i))
-       END DO
-       ALLOCATE(ii_1_6_btsigv(dimlen(1),dimlen(2)))
-       ier = NF90_GET_VAR(ncid, varid, ii_1_6_btsigv)
-       DEALLOCATE(dimid,dimlen)
-       ier = NF90_CLOSE(ncid)
+       var_str = 'axis_param_warmTarget'
+       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       CALL mpialloc(ii_1_6_axis, dimlen(1), myid, local_master, comm, win_ii_16a)
+       CALL adas_get_var_1D(table_str,var_str,dimlen(1),ii_1_6_axis,myid,comm)
+       var_str = 'btsigv'
+       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       CALL mpialloc(ii_1_6_btsigv, dimlen(1), dimlen(2), myid, local_master, comm, win_ii_16b)
+       CALL adas_get_var_2D(table_str,var_str,dimlen(1),dimlen(2),ii_1_6_btsigv,myid,comm)
 
-       ! Load Ion Impact II 1-7
+       ! Ion Impact 1-7
        table_str=TRIM(adasdir) // '/tables/ii/ii_1_7_warmTarget.cdf'
-       ier = NF90_OPEN(table_str,NF90_NOWRITE,ncid)
-       ier = NF90_INQ_VARID(ncid,'axis_param_warmTarget',varid)
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,NDIMS = ndims)
-       ALLOCATE(dimid(ndims),dimlen(ndims))
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,DIMIDS = dimid)
-       DO i = 1, ndims
-          ier = NF90_INQUIRE_DIMENSION(ncid,dimid(i),LEN = dimlen(i))
-       END DO
-       ALLOCATE(ii_1_7_axis(dimlen(1)))
-       ier = NF90_GET_VAR(ncid, varid, ii_1_7_axis)
-       DEALLOCATE(dimid,dimlen)
-       ier = NF90_INQ_VARID(ncid,'btsigv',varid)
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,NDIMS = ndims)
-       ALLOCATE(dimid(ndims),dimlen(ndims))
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,DIMIDS = dimid)
-       DO i = 1, ndims
-          ier = NF90_INQUIRE_DIMENSION(ncid,dimid(i),LEN = dimlen(i))
-       END DO
-       ALLOCATE(ii_1_7_btsigv(dimlen(1),dimlen(2)))
-       ier = NF90_GET_VAR(ncid, varid, ii_1_7_btsigv)
-       DEALLOCATE(dimid,dimlen)
-       ier = NF90_CLOSE(ncid)
+       var_str = 'axis_param_warmTarget'
+       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       CALL mpialloc(ii_1_7_axis, dimlen(1), myid, local_master, comm, win_ii_17a)
+       CALL adas_get_var_1D(table_str,var_str,dimlen(1),ii_1_7_axis,myid,comm)
+       var_str = 'btsigv'
+       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       CALL mpialloc(ii_1_7_btsigv, dimlen(1), dimlen(2), myid, local_master, comm, win_ii_17b)
+       CALL adas_get_var_2D(table_str,var_str,dimlen(1),dimlen(2),ii_1_7_btsigv,myid,comm)
 
-       ! Load Ion Impact II 1-8
+       ! Ion Impact 1-8
        table_str=TRIM(adasdir) // '/tables/ii/ii_1_8_warmTarget.cdf'
-       ier = NF90_OPEN(table_str,NF90_NOWRITE,ncid)
-       ier = NF90_INQ_VARID(ncid,'axis_param_warmTarget',varid)
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,NDIMS = ndims)
-       ALLOCATE(dimid(ndims),dimlen(ndims))
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,DIMIDS = dimid)
-       DO i = 1, ndims
-          ier = NF90_INQUIRE_DIMENSION(ncid,dimid(i),LEN = dimlen(i))
-       END DO
-       ALLOCATE(ii_1_8_axis(dimlen(1)))
-       ier = NF90_GET_VAR(ncid, varid, ii_1_8_axis)
-       DEALLOCATE(dimid,dimlen)
-       ier = NF90_INQ_VARID(ncid,'btsigv',varid)
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,NDIMS = ndims)
-       ALLOCATE(dimid(ndims),dimlen(ndims))
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,DIMIDS = dimid)
-       DO i = 1, ndims
-          ier = NF90_INQUIRE_DIMENSION(ncid,dimid(i),LEN = dimlen(i))
-       END DO
-       ALLOCATE(ii_1_8_btsigv(dimlen(1),dimlen(2)))
-       ier = NF90_GET_VAR(ncid, varid, ii_1_8_btsigv)
-       DEALLOCATE(dimid,dimlen)
-       ier = NF90_CLOSE(ncid)
+       var_str = 'axis_param_warmTarget'
+       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       CALL mpialloc(ii_1_8_axis, dimlen(1), myid, local_master, comm, win_ii_18a)
+       CALL adas_get_var_1D(table_str,var_str,dimlen(1),ii_1_8_axis,myid,comm)
+       var_str = 'btsigv'
+       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       CALL mpialloc(ii_1_8_btsigv, dimlen(1), dimlen(2), myid, local_master, comm, win_ii_18b)
+       CALL adas_get_var_2D(table_str,var_str,dimlen(1),dimlen(2),ii_1_8_btsigv,myid,comm)
 
-       ! Load Ion Impact II 1-9
+       ! Ion Impact 1-9
        table_str=TRIM(adasdir) // '/tables/ii/ii_1_9_warmTarget.cdf'
-       ier = NF90_OPEN(table_str,NF90_NOWRITE,ncid)
-       ier = NF90_INQ_VARID(ncid,'axis_param_warmTarget',varid)
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,NDIMS = ndims)
-       ALLOCATE(dimid(ndims),dimlen(ndims))
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,DIMIDS = dimid)
-       DO i = 1, ndims
-          ier = NF90_INQUIRE_DIMENSION(ncid,dimid(i),LEN = dimlen(i))
-       END DO
-       ALLOCATE(ii_1_9_axis(dimlen(1)))
-       ier = NF90_GET_VAR(ncid, varid, ii_1_9_axis)
-       DEALLOCATE(dimid,dimlen)
-       ier = NF90_INQ_VARID(ncid,'btsigv',varid)
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,NDIMS = ndims)
-       ALLOCATE(dimid(ndims),dimlen(ndims))
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,DIMIDS = dimid)
-       DO i = 1, ndims
-          ier = NF90_INQUIRE_DIMENSION(ncid,dimid(i),LEN = dimlen(i))
-       END DO
-       ALLOCATE(ii_1_9_btsigv(dimlen(1),dimlen(2)))
-       ier = NF90_GET_VAR(ncid, varid, ii_1_9_btsigv)
-       DEALLOCATE(dimid,dimlen)
-       ier = NF90_CLOSE(ncid)
+       var_str = 'axis_param_warmTarget'
+       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       CALL mpialloc(ii_1_9_axis, dimlen(1), myid, local_master, comm, win_ii_19a)
+       CALL adas_get_var_1D(table_str,var_str,dimlen(1),ii_1_9_axis,myid,comm)
+       var_str = 'btsigv'
+       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       CALL mpialloc(ii_1_9_btsigv, dimlen(1), dimlen(2), myid, local_master, comm, win_ii_19b)
+       CALL adas_get_var_2D(table_str,var_str,dimlen(1),dimlen(2),ii_1_9_btsigv,myid,comm)
 
-       ! Load Ion Impact II 1-10
+       ! Ion Impact 1-10
        table_str=TRIM(adasdir) // '/tables/ii/ii_1_10_warmTarget.cdf'
-       ier = NF90_OPEN(table_str,NF90_NOWRITE,ncid)
-       ier = NF90_INQ_VARID(ncid,'axis_param_warmTarget',varid)
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,NDIMS = ndims)
-       ALLOCATE(dimid(ndims),dimlen(ndims))
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,DIMIDS = dimid)
-       DO i = 1, ndims
-          ier = NF90_INQUIRE_DIMENSION(ncid,dimid(i),LEN = dimlen(i))
-       END DO
-       ALLOCATE(ii_1_10_axis(dimlen(1)))
-       ier = NF90_GET_VAR(ncid, varid, ii_1_1_axis)
-       DEALLOCATE(dimid,dimlen)
-       ier = NF90_INQ_VARID(ncid,'btsigv',varid)
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,NDIMS = ndims)
-       ALLOCATE(dimid(ndims),dimlen(ndims))
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,DIMIDS = dimid)
-       DO i = 1, ndims
-          ier = NF90_INQUIRE_DIMENSION(ncid,dimid(i),LEN = dimlen(i))
-       END DO
-       ALLOCATE(ii_1_10_btsigv(dimlen(1),dimlen(2)))
-       ier = NF90_GET_VAR(ncid, varid, ii_1_10_btsigv)
-       DEALLOCATE(dimid,dimlen)
-       ier = NF90_CLOSE(ncid)
+       var_str = 'axis_param_warmTarget'
+       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       CALL mpialloc(ii_1_10_axis, dimlen(1), myid, local_master, comm, win_ii_110a)
+       CALL adas_get_var_1D(table_str,var_str,dimlen(1),ii_1_10_axis,myid,comm)
+       var_str = 'btsigv'
+       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       CALL mpialloc(ii_1_10_btsigv, dimlen(1), dimlen(2), myid, local_master, comm, win_ii_110b)
+       CALL adas_get_var_2D(table_str,var_str,dimlen(1),dimlen(2),ii_1_10_btsigv,myid,comm)
 
-       ! Load Ion Impact II 2-1
+       ! Ion Impact 2-1
        table_str=TRIM(adasdir) // '/tables/ii/ii_2_1_warmTarget.cdf'
-       ier = NF90_OPEN(table_str,NF90_NOWRITE,ncid)
-       ier = NF90_INQ_VARID(ncid,'axis_param_warmTarget',varid)
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,NDIMS = ndims)
-       ALLOCATE(dimid(ndims),dimlen(ndims))
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,DIMIDS = dimid)
-       DO i = 1, ndims
-          ier = NF90_INQUIRE_DIMENSION(ncid,dimid(i),LEN = dimlen(i))
-       END DO
-       ALLOCATE(ii_2_1_axis(dimlen(1)))
-       ier = NF90_GET_VAR(ncid, varid, ii_2_1_axis)
-       DEALLOCATE(dimid,dimlen)
-       ier = NF90_INQ_VARID(ncid,'btsigv',varid)
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,NDIMS = ndims)
-       ALLOCATE(dimid(ndims),dimlen(ndims))
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,DIMIDS = dimid)
-       DO i = 1, ndims
-          ier = NF90_INQUIRE_DIMENSION(ncid,dimid(i),LEN = dimlen(i))
-       END DO
-       ALLOCATE(ii_2_1_btsigv(dimlen(1),dimlen(2)))
-       ier = NF90_GET_VAR(ncid, varid, ii_2_1_btsigv)
-       DEALLOCATE(dimid,dimlen)
-       ier = NF90_CLOSE(ncid)
+       var_str = 'axis_param_warmTarget'
+       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       CALL mpialloc(ii_2_1_axis, dimlen(1), myid, local_master, comm, win_ii_21a)
+       CALL adas_get_var_1D(table_str,var_str,dimlen(1),ii_2_1_axis,myid,comm)
+       var_str = 'btsigv'
+       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       CALL mpialloc(ii_2_1_btsigv, dimlen(1), dimlen(2), myid, local_master, comm, win_ii_21b)
+       CALL adas_get_var_2D(table_str,var_str,dimlen(1),dimlen(2),ii_2_1_btsigv,myid,comm)
 
-       ! Load Ion Impact II 2-2
+       ! Ion Impact 2-2
        table_str=TRIM(adasdir) // '/tables/ii/ii_2_2_warmTarget.cdf'
-       ier = NF90_OPEN(table_str,NF90_NOWRITE,ncid)
-       ier = NF90_INQ_VARID(ncid,'axis_param_warmTarget',varid)
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,NDIMS = ndims)
-       ALLOCATE(dimid(ndims),dimlen(ndims))
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,DIMIDS = dimid)
-       DO i = 1, ndims
-          ier = NF90_INQUIRE_DIMENSION(ncid,dimid(i),LEN = dimlen(i))
-       END DO
-       ALLOCATE(ii_2_2_axis(dimlen(1)))
-       ier = NF90_GET_VAR(ncid, varid, ii_2_2_axis)
-       DEALLOCATE(dimid,dimlen)
-       ier = NF90_INQ_VARID(ncid,'btsigv',varid)
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,NDIMS = ndims)
-       ALLOCATE(dimid(ndims),dimlen(ndims))
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,DIMIDS = dimid)
-       DO i = 1, ndims
-          ier = NF90_INQUIRE_DIMENSION(ncid,dimid(i),LEN = dimlen(i))
-       END DO
-       ALLOCATE(ii_2_2_btsigv(dimlen(1),dimlen(2)))
-       ier = NF90_GET_VAR(ncid, varid, ii_2_2_btsigv)
-       DEALLOCATE(dimid,dimlen)
-       ier = NF90_CLOSE(ncid)
+       var_str = 'axis_param_warmTarget'
+       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       CALL mpialloc(ii_2_2_axis, dimlen(1), myid, local_master, comm, win_ii_22a)
+       CALL adas_get_var_1D(table_str,var_str,dimlen(1),ii_2_2_axis,myid,comm)
+       var_str = 'btsigv'
+       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       CALL mpialloc(ii_2_2_btsigv, dimlen(1), dimlen(2), myid, local_master, comm, win_ii_22b)
+       CALL adas_get_var_2D(table_str,var_str,dimlen(1),dimlen(2),ii_2_2_btsigv,myid,comm)
 
-       ! Load Ion Impact II 2-3
+       ! Ion Impact 2-3
        table_str=TRIM(adasdir) // '/tables/ii/ii_2_3_warmTarget.cdf'
-       ier = NF90_OPEN(table_str,NF90_NOWRITE,ncid)
-       ier = NF90_INQ_VARID(ncid,'axis_param_warmTarget',varid)
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,NDIMS = ndims)
-       ALLOCATE(dimid(ndims),dimlen(ndims))
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,DIMIDS = dimid)
-       DO i = 1, ndims
-          ier = NF90_INQUIRE_DIMENSION(ncid,dimid(i),LEN = dimlen(i))
-       END DO
-       ALLOCATE(ii_2_3_axis(dimlen(1)))
-       ier = NF90_GET_VAR(ncid, varid, ii_2_3_axis)
-       DEALLOCATE(dimid,dimlen)
-       ier = NF90_INQ_VARID(ncid,'btsigv',varid)
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,NDIMS = ndims)
-       ALLOCATE(dimid(ndims),dimlen(ndims))
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,DIMIDS = dimid)
-       DO i = 1, ndims
-          ier = NF90_INQUIRE_DIMENSION(ncid,dimid(i),LEN = dimlen(i))
-       END DO
-       ALLOCATE(ii_2_3_btsigv(dimlen(1),dimlen(2)))
-       ier = NF90_GET_VAR(ncid, varid, ii_2_3_btsigv)
-       DEALLOCATE(dimid,dimlen)
-       ier = NF90_CLOSE(ncid)
+       var_str = 'axis_param_warmTarget'
+       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       CALL mpialloc(ii_2_3_axis, dimlen(1), myid, local_master, comm, win_ii_23a)
+       CALL adas_get_var_1D(table_str,var_str,dimlen(1),ii_2_3_axis,myid,comm)
+       var_str = 'btsigv'
+       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       CALL mpialloc(ii_2_3_btsigv, dimlen(1), dimlen(2), myid, local_master, comm, win_ii_23b)
+       CALL adas_get_var_2D(table_str,var_str,dimlen(1),dimlen(2),ii_2_3_btsigv,myid,comm)
 
-       ! Load Ion Impact II 2-4
+       ! Ion Impact 2-4
        table_str=TRIM(adasdir) // '/tables/ii/ii_2_4_warmTarget.cdf'
-       ier = NF90_OPEN(table_str,NF90_NOWRITE,ncid)
-       ier = NF90_INQ_VARID(ncid,'axis_param_warmTarget',varid)
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,NDIMS = ndims)
-       ALLOCATE(dimid(ndims),dimlen(ndims))
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,DIMIDS = dimid)
-       DO i = 1, ndims
-          ier = NF90_INQUIRE_DIMENSION(ncid,dimid(i),LEN = dimlen(i))
-       END DO
-       ALLOCATE(ii_2_4_axis(dimlen(1)))
-       ier = NF90_GET_VAR(ncid, varid, ii_2_4_axis)
-       DEALLOCATE(dimid,dimlen)
-       ier = NF90_INQ_VARID(ncid,'btsigv',varid)
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,NDIMS = ndims)
-       ALLOCATE(dimid(ndims),dimlen(ndims))
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,DIMIDS = dimid)
-       DO i = 1, ndims
-          ier = NF90_INQUIRE_DIMENSION(ncid,dimid(i),LEN = dimlen(i))
-       END DO
-       ALLOCATE(ii_2_4_btsigv(dimlen(1),dimlen(2)))
-       ier = NF90_GET_VAR(ncid, varid, ii_2_4_btsigv)
-       DEALLOCATE(dimid,dimlen)
-       ier = NF90_CLOSE(ncid)
+       var_str = 'axis_param_warmTarget'
+       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       CALL mpialloc(ii_2_4_axis, dimlen(1), myid, local_master, comm, win_ii_24a)
+       CALL adas_get_var_1D(table_str,var_str,dimlen(1),ii_2_4_axis,myid,comm)
+       var_str = 'btsigv'
+       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       CALL mpialloc(ii_2_4_btsigv, dimlen(1), dimlen(2), myid, local_master, comm, win_ii_24b)
+       CALL adas_get_var_2D(table_str,var_str,dimlen(1),dimlen(2),ii_2_4_btsigv,myid,comm)
 
-       ! Load Ion Impact II 2-5
+       ! Ion Impact 2-5
        table_str=TRIM(adasdir) // '/tables/ii/ii_2_5_warmTarget.cdf'
-       ier = NF90_OPEN(table_str,NF90_NOWRITE,ncid)
-       ier = NF90_INQ_VARID(ncid,'axis_param_warmTarget',varid)
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,NDIMS = ndims)
-       ALLOCATE(dimid(ndims),dimlen(ndims))
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,DIMIDS = dimid)
-       DO i = 1, ndims
-          ier = NF90_INQUIRE_DIMENSION(ncid,dimid(i),LEN = dimlen(i))
-       END DO
-       ALLOCATE(ii_2_5_axis(dimlen(1)))
-       ier = NF90_GET_VAR(ncid, varid, ii_2_5_axis)
-       DEALLOCATE(dimid,dimlen)
-       ier = NF90_INQ_VARID(ncid,'btsigv',varid)
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,NDIMS = ndims)
-       ALLOCATE(dimid(ndims),dimlen(ndims))
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,DIMIDS = dimid)
-       DO i = 1, ndims
-          ier = NF90_INQUIRE_DIMENSION(ncid,dimid(i),LEN = dimlen(i))
-       END DO
-       ALLOCATE(ii_2_5_btsigv(dimlen(1),dimlen(2)))
-       ier = NF90_GET_VAR(ncid, varid, ii_2_5_btsigv)
-       DEALLOCATE(dimid,dimlen)
-       ier = NF90_CLOSE(ncid)
+       var_str = 'axis_param_warmTarget'
+       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       CALL mpialloc(ii_2_5_axis, dimlen(1), myid, local_master, comm, win_ii_25a)
+       CALL adas_get_var_1D(table_str,var_str,dimlen(1),ii_2_5_axis,myid,comm)
+       var_str = 'btsigv'
+       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       CALL mpialloc(ii_2_5_btsigv, dimlen(1), dimlen(2), myid, local_master, comm, win_ii_25b)
+       CALL adas_get_var_2D(table_str,var_str,dimlen(1),dimlen(2),ii_2_5_btsigv,myid,comm)
 
-       ! Load Ion Impact II 2-6
+       ! Ion Impact 2-6
        table_str=TRIM(adasdir) // '/tables/ii/ii_2_6_warmTarget.cdf'
-       ier = NF90_OPEN(table_str,NF90_NOWRITE,ncid)
-       ier = NF90_INQ_VARID(ncid,'axis_param_warmTarget',varid)
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,NDIMS = ndims)
-       ALLOCATE(dimid(ndims),dimlen(ndims))
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,DIMIDS = dimid)
-       DO i = 1, ndims
-          ier = NF90_INQUIRE_DIMENSION(ncid,dimid(i),LEN = dimlen(i))
-       END DO
-       ALLOCATE(ii_2_6_axis(dimlen(1)))
-       ier = NF90_GET_VAR(ncid, varid, ii_2_6_axis)
-       DEALLOCATE(dimid,dimlen)
-       ier = NF90_INQ_VARID(ncid,'btsigv',varid)
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,NDIMS = ndims)
-       ALLOCATE(dimid(ndims),dimlen(ndims))
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,DIMIDS = dimid)
-       DO i = 1, ndims
-          ier = NF90_INQUIRE_DIMENSION(ncid,dimid(i),LEN = dimlen(i))
-       END DO
-       ALLOCATE(ii_2_6_btsigv(dimlen(1),dimlen(2)))
-       ier = NF90_GET_VAR(ncid, varid, ii_2_6_btsigv)
-       DEALLOCATE(dimid,dimlen)
-       ier = NF90_CLOSE(ncid)
+       var_str = 'axis_param_warmTarget'
+       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       CALL mpialloc(ii_2_6_axis, dimlen(1), myid, local_master, comm, win_ii_26a)
+       CALL adas_get_var_1D(table_str,var_str,dimlen(1),ii_2_6_axis,myid,comm)
+       var_str = 'btsigv'
+       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       CALL mpialloc(ii_2_6_btsigv, dimlen(1), dimlen(2), myid, local_master, comm, win_ii_26b)
+       CALL adas_get_var_2D(table_str,var_str,dimlen(1),dimlen(2),ii_2_6_btsigv,myid,comm)
 
-       ! Load Ion Impact II 2-7
+       ! Ion Impact 2-7
        table_str=TRIM(adasdir) // '/tables/ii/ii_2_7_warmTarget.cdf'
-       ier = NF90_OPEN(table_str,NF90_NOWRITE,ncid)
-       ier = NF90_INQ_VARID(ncid,'axis_param_warmTarget',varid)
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,NDIMS = ndims)
-       ALLOCATE(dimid(ndims),dimlen(ndims))
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,DIMIDS = dimid)
-       DO i = 1, ndims
-          ier = NF90_INQUIRE_DIMENSION(ncid,dimid(i),LEN = dimlen(i))
-       END DO
-       ALLOCATE(ii_2_7_axis(dimlen(1)))
-       ier = NF90_GET_VAR(ncid, varid, ii_2_7_axis)
-       DEALLOCATE(dimid,dimlen)
-       ier = NF90_INQ_VARID(ncid,'btsigv',varid)
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,NDIMS = ndims)
-       ALLOCATE(dimid(ndims),dimlen(ndims))
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,DIMIDS = dimid)
-       DO i = 1, ndims
-          ier = NF90_INQUIRE_DIMENSION(ncid,dimid(i),LEN = dimlen(i))
-       END DO
-       ALLOCATE(ii_2_7_btsigv(dimlen(1),dimlen(2)))
-       ier = NF90_GET_VAR(ncid, varid, ii_2_7_btsigv)
-       DEALLOCATE(dimid,dimlen)
-       ier = NF90_CLOSE(ncid)
+       var_str = 'axis_param_warmTarget'
+       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       CALL mpialloc(ii_2_7_axis, dimlen(1), myid, local_master, comm, win_ii_27a)
+       CALL adas_get_var_1D(table_str,var_str,dimlen(1),ii_2_7_axis,myid,comm)
+       var_str = 'btsigv'
+       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       CALL mpialloc(ii_2_7_btsigv, dimlen(1), dimlen(2), myid, local_master, comm, win_ii_27b)
+       CALL adas_get_var_2D(table_str,var_str,dimlen(1),dimlen(2),ii_2_7_btsigv,myid,comm)
 
-       ! Load Ion Impact II 2-8
+       ! Ion Impact 2-8
        table_str=TRIM(adasdir) // '/tables/ii/ii_2_8_warmTarget.cdf'
-       ier = NF90_OPEN(table_str,NF90_NOWRITE,ncid)
-       ier = NF90_INQ_VARID(ncid,'axis_param_warmTarget',varid)
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,NDIMS = ndims)
-       ALLOCATE(dimid(ndims),dimlen(ndims))
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,DIMIDS = dimid)
-       DO i = 1, ndims
-          ier = NF90_INQUIRE_DIMENSION(ncid,dimid(i),LEN = dimlen(i))
-       END DO
-       ALLOCATE(ii_2_8_axis(dimlen(1)))
-       ier = NF90_GET_VAR(ncid, varid, ii_2_8_axis)
-       DEALLOCATE(dimid,dimlen)
-       ier = NF90_INQ_VARID(ncid,'btsigv',varid)
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,NDIMS = ndims)
-       ALLOCATE(dimid(ndims),dimlen(ndims))
-       ier = NF90_INQUIRE_VARIABLE(ncid,varid,DIMIDS = dimid)
-       DO i = 1, ndims
-          ier = NF90_INQUIRE_DIMENSION(ncid,dimid(i),LEN = dimlen(i))
-       END DO
-       ALLOCATE(ii_2_8_btsigv(dimlen(1),dimlen(2)))
-       ier = NF90_GET_VAR(ncid, varid, ii_2_8_btsigv)
-       DEALLOCATE(dimid,dimlen)
-       ier = NF90_CLOSE(ncid)
-#endif
+       var_str = 'axis_param_warmTarget'
+       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       CALL mpialloc(ii_2_8_axis, dimlen(1), myid, local_master, comm, win_ii_28a)
+       CALL adas_get_var_1D(table_str,var_str,dimlen(1),ii_2_8_axis,myid,comm)
+       var_str = 'btsigv'
+       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       CALL mpialloc(ii_2_8_btsigv, dimlen(1), dimlen(2), myid, local_master, comm, win_ii_28b)
+       CALL adas_get_var_2D(table_str,var_str,dimlen(1),dimlen(2),ii_2_8_btsigv,myid,comm)
 
        END SUBROUTINE adas_load_tables
 
        SUBROUTINE deallocate_adas_tables
        IMPLICIT NONE
-       IF (ALLOCATED(ei_1_axis)) DEALLOCATE(ei_1_axis)
-       IF (ALLOCATED(ei_2_axis)) DEALLOCATE(ei_2_axis)
-       IF (ALLOCATED(cx_1_1_axis)) DEALLOCATE(cx_1_1_axis)
-       IF (ALLOCATED(cx_2_1_axis)) DEALLOCATE(cx_2_1_axis)
-       IF (ALLOCATED(cx_2_2_axis)) DEALLOCATE(cx_2_2_axis)
-       IF (ALLOCATED(ii_1_1_axis)) DEALLOCATE(ii_1_1_axis)
-       IF (ALLOCATED(ii_1_2_axis)) DEALLOCATE(ii_1_2_axis)
-       IF (ALLOCATED(ii_1_3_axis)) DEALLOCATE(ii_1_3_axis)
-       IF (ALLOCATED(ii_1_4_axis)) DEALLOCATE(ii_1_4_axis)
-       IF (ALLOCATED(ii_1_5_axis)) DEALLOCATE(ii_1_5_axis)
-       IF (ALLOCATED(ii_1_6_axis)) DEALLOCATE(ii_1_6_axis)
-       IF (ALLOCATED(ii_1_7_axis)) DEALLOCATE(ii_1_7_axis)
-       IF (ALLOCATED(ii_1_8_axis)) DEALLOCATE(ii_1_8_axis)
-       IF (ALLOCATED(ii_1_9_axis)) DEALLOCATE(ii_1_9_axis)
-       IF (ALLOCATED(ii_1_10_axis)) DEALLOCATE(ii_1_10_axis)
-       IF (ALLOCATED(ii_2_1_axis)) DEALLOCATE(ii_2_1_axis)
-       IF (ALLOCATED(ii_2_2_axis)) DEALLOCATE(ii_2_2_axis)
-       IF (ALLOCATED(ii_2_3_axis)) DEALLOCATE(ii_2_3_axis)
-       IF (ALLOCATED(ii_2_4_axis)) DEALLOCATE(ii_2_4_axis)
-       IF (ALLOCATED(ii_2_5_axis)) DEALLOCATE(ii_2_5_axis)
-       IF (ALLOCATED(ii_2_6_axis)) DEALLOCATE(ii_2_6_axis)
-       IF (ALLOCATED(ii_2_7_axis)) DEALLOCATE(ii_2_7_axis)
-       IF (ALLOCATED(ii_2_8_axis)) DEALLOCATE(ii_2_8_axis)
+       IF (ASSOCIATED(ei_1_axis)) CALL mpidealloc(ei_1_axis,win_ei_1a)
+       IF (ASSOCIATED(ei_2_axis)) CALL mpidealloc(ei_2_axis,win_ei_2a)
+       IF (ASSOCIATED(cx_1_1_axis)) CALL mpidealloc(cx_1_1_axis,win_cx_11a)
+       IF (ASSOCIATED(cx_2_1_axis)) CALL mpidealloc(cx_2_1_axis,win_cx_21a)
+       IF (ASSOCIATED(cx_2_2_axis)) CALL mpidealloc(cx_2_2_axis,win_cx_22a)
+       IF (ASSOCIATED(ii_1_1_axis)) CALL mpidealloc(ii_1_1_axis,win_ii_11a)
+       IF (ASSOCIATED(ii_1_2_axis)) CALL mpidealloc(ii_1_2_axis,win_ii_12a)
+       IF (ASSOCIATED(ii_1_3_axis)) CALL mpidealloc(ii_1_3_axis,win_ii_13a)
+       IF (ASSOCIATED(ii_1_4_axis)) CALL mpidealloc(ii_1_4_axis,win_ii_14a)
+       IF (ASSOCIATED(ii_1_5_axis)) CALL mpidealloc(ii_1_5_axis,win_ii_15a)
+       IF (ASSOCIATED(ii_1_6_axis)) CALL mpidealloc(ii_1_6_axis,win_ii_16a)
+       IF (ASSOCIATED(ii_1_7_axis)) CALL mpidealloc(ii_1_7_axis,win_ii_17a)
+       IF (ASSOCIATED(ii_1_8_axis)) CALL mpidealloc(ii_1_8_axis,win_ii_18a)
+       IF (ASSOCIATED(ii_1_9_axis)) CALL mpidealloc(ii_1_9_axis,win_ii_19a)
+       IF (ASSOCIATED(ii_1_10_axis)) CALL mpidealloc(ii_1_10_axis,win_ii_110a)
+       IF (ASSOCIATED(ii_2_1_axis)) CALL mpidealloc(ii_2_1_axis,win_ii_21a)
+       IF (ASSOCIATED(ii_2_2_axis)) CALL mpidealloc(ii_2_2_axis,win_ii_22a)
+       IF (ASSOCIATED(ii_2_3_axis)) CALL mpidealloc(ii_2_3_axis,win_ii_23a)
+       IF (ASSOCIATED(ii_2_4_axis)) CALL mpidealloc(ii_2_4_axis,win_ii_24a)
+       IF (ASSOCIATED(ii_2_5_axis)) CALL mpidealloc(ii_2_5_axis,win_ii_25a)
+       IF (ASSOCIATED(ii_2_6_axis)) CALL mpidealloc(ii_2_6_axis,win_ii_26a)
+       IF (ASSOCIATED(ii_2_7_axis)) CALL mpidealloc(ii_2_7_axis,win_ii_27a)
+       IF (ASSOCIATED(ii_2_8_axis)) CALL mpidealloc(ii_2_8_axis,win_ii_28a)
 
-       IF (ALLOCATED(ei_1_sigv)) DEALLOCATE(ei_1_sigv)
-       IF (ALLOCATED(ei_2_sigv)) DEALLOCATE(ei_2_sigv)
-       IF (ALLOCATED(cx_1_1_btsigv)) DEALLOCATE(cx_1_1_btsigv)
-       IF (ALLOCATED(cx_2_1_btsigv)) DEALLOCATE(cx_2_1_btsigv)
-       IF (ALLOCATED(cx_2_2_btsigv)) DEALLOCATE(cx_2_2_btsigv)
-       IF (ALLOCATED(ii_1_1_btsigv)) DEALLOCATE(ii_1_1_btsigv)
-       IF (ALLOCATED(ii_1_2_btsigv)) DEALLOCATE(ii_1_2_btsigv)
-       IF (ALLOCATED(ii_1_3_btsigv)) DEALLOCATE(ii_1_3_btsigv)
-       IF (ALLOCATED(ii_1_4_btsigv)) DEALLOCATE(ii_1_4_btsigv)
-       IF (ALLOCATED(ii_1_5_btsigv)) DEALLOCATE(ii_1_5_btsigv)
-       IF (ALLOCATED(ii_1_6_btsigv)) DEALLOCATE(ii_1_6_btsigv)
-       IF (ALLOCATED(ii_1_7_btsigv)) DEALLOCATE(ii_1_7_btsigv)
-       IF (ALLOCATED(ii_1_8_btsigv)) DEALLOCATE(ii_1_8_btsigv)
-       IF (ALLOCATED(ii_1_9_btsigv)) DEALLOCATE(ii_1_9_btsigv)
-       IF (ALLOCATED(ii_1_10_btsigv)) DEALLOCATE(ii_1_10_btsigv)
-       IF (ALLOCATED(ii_2_1_btsigv)) DEALLOCATE(ii_2_1_btsigv)
-       IF (ALLOCATED(ii_2_2_btsigv)) DEALLOCATE(ii_2_2_btsigv)
-       IF (ALLOCATED(ii_2_3_btsigv)) DEALLOCATE(ii_2_3_btsigv)
-       IF (ALLOCATED(ii_2_4_btsigv)) DEALLOCATE(ii_2_4_btsigv)
-       IF (ALLOCATED(ii_2_5_btsigv)) DEALLOCATE(ii_2_5_btsigv)
-       IF (ALLOCATED(ii_2_6_btsigv)) DEALLOCATE(ii_2_6_btsigv)
-       IF (ALLOCATED(ii_2_7_btsigv)) DEALLOCATE(ii_2_7_btsigv)
-       IF (ALLOCATED(ii_2_8_btsigv)) DEALLOCATE(ii_2_8_btsigv)
+       IF (ASSOCIATED(ei_1_sigv)) CALL mpidealloc(ei_1_sigv,win_ei_1s)
+       IF (ASSOCIATED(ei_2_sigv)) CALL mpidealloc(ei_2_sigv,win_ei_2s)
+       IF (ASSOCIATED(cx_1_1_btsigv)) CALL mpidealloc(cx_1_1_btsigv,win_cx_11b)
+       IF (ASSOCIATED(cx_2_1_btsigv)) CALL mpidealloc(cx_2_1_btsigv,win_cx_21b)
+       IF (ASSOCIATED(cx_2_2_btsigv)) CALL mpidealloc(cx_2_2_btsigv,win_cx_22b)
+       IF (ASSOCIATED(ii_1_1_btsigv)) CALL mpidealloc(ii_1_1_btsigv,win_ii_11b)
+       IF (ASSOCIATED(ii_1_2_btsigv)) CALL mpidealloc(ii_1_2_btsigv,win_ii_12b)
+       IF (ASSOCIATED(ii_1_3_btsigv)) CALL mpidealloc(ii_1_3_btsigv,win_ii_13b)
+       IF (ASSOCIATED(ii_1_4_btsigv)) CALL mpidealloc(ii_1_4_btsigv,win_ii_14b)
+       IF (ASSOCIATED(ii_1_5_btsigv)) CALL mpidealloc(ii_1_5_btsigv,win_ii_15b)
+       IF (ASSOCIATED(ii_1_6_btsigv)) CALL mpidealloc(ii_1_6_btsigv,win_ii_16b)
+       IF (ASSOCIATED(ii_1_7_btsigv)) CALL mpidealloc(ii_1_7_btsigv,win_ii_17b)
+       IF (ASSOCIATED(ii_1_8_btsigv)) CALL mpidealloc(ii_1_8_btsigv,win_ii_18b)
+       IF (ASSOCIATED(ii_1_9_btsigv)) CALL mpidealloc(ii_1_9_btsigv,win_ii_19b)
+       IF (ASSOCIATED(ii_1_10_btsigv)) CALL mpidealloc(ii_1_10_btsigv,win_ii_110b)
+       IF (ASSOCIATED(ii_2_1_btsigv)) CALL mpidealloc(ii_2_1_btsigv,win_ii_21b)
+       IF (ASSOCIATED(ii_2_2_btsigv)) CALL mpidealloc(ii_2_2_btsigv,win_ii_22b)
+       IF (ASSOCIATED(ii_2_3_btsigv)) CALL mpidealloc(ii_2_3_btsigv,win_ii_23b)
+       IF (ASSOCIATED(ii_2_4_btsigv)) CALL mpidealloc(ii_2_4_btsigv,win_ii_24b)
+       IF (ASSOCIATED(ii_2_5_btsigv)) CALL mpidealloc(ii_2_5_btsigv,win_ii_25b)
+       IF (ASSOCIATED(ii_2_6_btsigv)) CALL mpidealloc(ii_2_6_btsigv,win_ii_26b)
+       IF (ASSOCIATED(ii_2_7_btsigv)) CALL mpidealloc(ii_2_7_btsigv,win_ii_27b)
+       IF (ASSOCIATED(ii_2_8_btsigv)) CALL mpidealloc(ii_2_8_btsigv,win_ii_28b)
        END SUBROUTINE deallocate_adas_tables
+
+       SUBROUTINE adas_inq_var_size(filename,varname,n,myid,comm)
+       IMPLICIT NONE
+       CHARACTER(LEN=256), INTENT(in) :: filename, varname
+       INTEGER, DIMENSION(2), INTENT(out)  :: n
+       INTEGER, INTENT(inout) :: comm, myid
+       INTEGER :: ncid, varid, ier, ndims, i
+       INTEGER :: dimid(2)
+       n   = 0
+#if defined(NETCDF)
+       IF (myid == local_master) THEN
+          ier = NF90_OPEN(filename,NF90_NOWRITE,ncid)
+          ier = NF90_INQ_VARID(ncid,varname,varid)
+          ier = NF90_INQUIRE_VARIABLE(ncid,varid,NDIMS = ndims)
+          IF ((ndims) > 2) ndims=2
+          DO i = 1, ndims
+             ier = NF90_INQUIRE_DIMENSION(ncid,dimid(i),LEN = n(i))
+          END DO
+          ier = NF90_CLOSE(ncid)
+       END IF
+#endif
+#if defined(MPI_OPT)
+       ier = 0
+       CALL MPI_BCAST(n, 2, MPI_INT, local_master, comm, ier)
+       RETURN
+#endif
+       END SUBROUTINE adas_inq_var_size
+
+       SUBROUTINE adas_get_var_1D(filename,varname,n,var,myid,comm)
+       IMPLICIT NONE
+       CHARACTER(LEN=256), INTENT(in) :: filename, varname
+       INTEGER, INTENT(in)  :: n
+       DOUBLE PRECISION, DIMENSION(n), INTENT(inout) :: var
+       INTEGER, INTENT(inout) :: comm, myid
+       INTEGER :: ncid, varid, ier, ndims, i
+       INTEGER :: dimid(2)
+#if defined(NETCDF)
+       IF (myid == local_master) THEN
+          ier = NF90_OPEN(filename,NF90_NOWRITE,ncid)
+          ier = NF90_INQ_VARID(ncid,varname,varid)
+          ier = NF90_GET_VAR(ncid, varid, var)
+          ier = NF90_CLOSE(ncid)
+       END IF
+#endif
+#if defined(MPI_OPT)
+       ier = 0
+       CALL MPI_BCAST(var, n, MPI_DOUBLE, local_master, comm, ier)
+       RETURN
+#endif
+       END SUBROUTINE adas_get_var_1D
+
+       SUBROUTINE adas_get_var_2D(filename,varname,n,m,var,myid,comm)
+       IMPLICIT NONE
+       CHARACTER(LEN=256), INTENT(in) :: filename, varname
+       INTEGER, INTENT(in)  :: n, m
+       DOUBLE PRECISION, DIMENSION(n,m), INTENT(inout) :: var
+       INTEGER, INTENT(inout) :: comm, myid
+       INTEGER :: ncid, varid, ier, ndims, i
+       INTEGER :: dimid(2)
+#if defined(NETCDF)
+       IF (myid == local_master) THEN
+          ier = NF90_OPEN(filename,NF90_NOWRITE,ncid)
+          ier = NF90_INQ_VARID(ncid,varname,varid)
+          ier = NF90_GET_VAR(ncid, varid, var)
+          ier = NF90_CLOSE(ncid)
+       END IF
+#endif
+#if defined(MPI_OPT)
+       ier = 0
+       CALL MPI_BCAST(var, n*m, MPI_DOUBLE, local_master, comm, ier)
+       RETURN
+#endif
+       END SUBROUTINE adas_get_var_2D
 
        SUBROUTINE ADAS_SIGVTE_IONIZ_R8(zneut,tevec,n1,sigv_adas,istat)
        ! calculates <sig*v> electron impact ionization
