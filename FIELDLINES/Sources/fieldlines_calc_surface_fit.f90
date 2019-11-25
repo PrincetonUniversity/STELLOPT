@@ -252,7 +252,7 @@
       IF(MOD(m,2) == 1) zmns(:,mfft-1) = zmns(:,mfft-1)*2
 
       DO i = -n/2, n/2
-         DO j = 0, mfft-1
+         DO j = 0, 24
             WRITE(555,*) 'RMNC(',i,',',j,') = ', rmnc(i,j),'  ZMNS(',i,',',j,') = ', zmns(i,j)
          END DO
       END DO
