@@ -61,6 +61,24 @@ public:
     return kj::READY_NOW;
   }
 
+  kj::Promise<void> evalAll(EvalAllContext context) override {
+    auto params = context.getParams().getParams();
+    assert(params.size() == _n);
+
+    ++_ncnt;
+
+    // Evaluate `fcn` at provided parameters
+    for (size_t i = 0; i < params.size(); ++i) {
+      _x[i] = params[i];
+    }
+    int iflag = 0;
+    _fcn(&_m, &_n, _x, _fvec, &iflag, &_ncnt);
+
+    context.getResults().setObjectives(kj::ArrayPtr<double>(_fvec, _m));
+
+    return kj::READY_NOW;
+  }
+
 private:
   /** Callback to evaluate objective function */
   void(*_fcn)(int const * m,
