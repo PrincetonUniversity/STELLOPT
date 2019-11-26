@@ -20,6 +20,8 @@ namespace schemas {
 CAPNP_DECLARE_SCHEMA(c4cd5eae5260b85a);
 CAPNP_DECLARE_SCHEMA(ae5b24bd165a03d6);
 CAPNP_DECLARE_SCHEMA(f690063753a69643);
+CAPNP_DECLARE_SCHEMA(82f8e3e83c0c0153);
+CAPNP_DECLARE_SCHEMA(96ecc7f7f5903a36);
 
 }  // namespace schemas
 }  // namespace capnp
@@ -35,6 +37,8 @@ struct Eval {
 
   struct EvalParams;
   struct EvalResults;
+  struct EvalAllParams;
+  struct EvalAllResults;
 
   #if !CAPNP_LITE
   struct _capnpPrivate {
@@ -74,6 +78,36 @@ struct Eval::EvalResults {
   };
 };
 
+struct Eval::EvalAllParams {
+  EvalAllParams() = delete;
+
+  class Reader;
+  class Builder;
+  class Pipeline;
+
+  struct _capnpPrivate {
+    CAPNP_DECLARE_STRUCT_HEADER(82f8e3e83c0c0153, 0, 1)
+    #if !CAPNP_LITE
+    static constexpr ::capnp::_::RawBrandedSchema const* brand() { return &schema->defaultBrand; }
+    #endif  // !CAPNP_LITE
+  };
+};
+
+struct Eval::EvalAllResults {
+  EvalAllResults() = delete;
+
+  class Reader;
+  class Builder;
+  class Pipeline;
+
+  struct _capnpPrivate {
+    CAPNP_DECLARE_STRUCT_HEADER(96ecc7f7f5903a36, 0, 1)
+    #if !CAPNP_LITE
+    static constexpr ::capnp::_::RawBrandedSchema const* brand() { return &schema->defaultBrand; }
+    #endif  // !CAPNP_LITE
+  };
+};
+
 // =======================================================================================
 
 #if !CAPNP_LITE
@@ -97,6 +131,8 @@ public:
 
   ::capnp::Request< ::Eval::EvalParams,  ::Eval::EvalResults> evalRequest(
       ::kj::Maybe< ::capnp::MessageSize> sizeHint = nullptr);
+  ::capnp::Request< ::Eval::EvalAllParams,  ::Eval::EvalAllResults> evalAllRequest(
+      ::kj::Maybe< ::capnp::MessageSize> sizeHint = nullptr);
 
 protected:
   Client() = default;
@@ -116,6 +152,10 @@ protected:
   typedef  ::Eval::EvalResults EvalResults;
   typedef ::capnp::CallContext<EvalParams, EvalResults> EvalContext;
   virtual ::kj::Promise<void> eval(EvalContext context);
+  typedef  ::Eval::EvalAllParams EvalAllParams;
+  typedef  ::Eval::EvalAllResults EvalAllResults;
+  typedef ::capnp::CallContext<EvalAllParams, EvalAllResults> EvalAllContext;
+  virtual ::kj::Promise<void> evalAll(EvalAllContext context);
 
   inline  ::Eval::Client thisCap() {
     return ::capnp::Capability::Server::thisCap()
@@ -285,6 +325,170 @@ private:
 };
 #endif  // !CAPNP_LITE
 
+class Eval::EvalAllParams::Reader {
+public:
+  typedef EvalAllParams Reads;
+
+  Reader() = default;
+  inline explicit Reader(::capnp::_::StructReader base): _reader(base) {}
+
+  inline ::capnp::MessageSize totalSize() const {
+    return _reader.totalSize().asPublic();
+  }
+
+#if !CAPNP_LITE
+  inline ::kj::StringTree toString() const {
+    return ::capnp::_::structString(_reader, *_capnpPrivate::brand());
+  }
+#endif  // !CAPNP_LITE
+
+  inline bool hasParams() const;
+  inline  ::capnp::List<double>::Reader getParams() const;
+
+private:
+  ::capnp::_::StructReader _reader;
+  template <typename, ::capnp::Kind>
+  friend struct ::capnp::ToDynamic_;
+  template <typename, ::capnp::Kind>
+  friend struct ::capnp::_::PointerHelpers;
+  template <typename, ::capnp::Kind>
+  friend struct ::capnp::List;
+  friend class ::capnp::MessageBuilder;
+  friend class ::capnp::Orphanage;
+};
+
+class Eval::EvalAllParams::Builder {
+public:
+  typedef EvalAllParams Builds;
+
+  Builder() = delete;  // Deleted to discourage incorrect usage.
+                       // You can explicitly initialize to nullptr instead.
+  inline Builder(decltype(nullptr)) {}
+  inline explicit Builder(::capnp::_::StructBuilder base): _builder(base) {}
+  inline operator Reader() const { return Reader(_builder.asReader()); }
+  inline Reader asReader() const { return *this; }
+
+  inline ::capnp::MessageSize totalSize() const { return asReader().totalSize(); }
+#if !CAPNP_LITE
+  inline ::kj::StringTree toString() const { return asReader().toString(); }
+#endif  // !CAPNP_LITE
+
+  inline bool hasParams();
+  inline  ::capnp::List<double>::Builder getParams();
+  inline void setParams( ::capnp::List<double>::Reader value);
+  inline void setParams(::kj::ArrayPtr<const double> value);
+  inline  ::capnp::List<double>::Builder initParams(unsigned int size);
+  inline void adoptParams(::capnp::Orphan< ::capnp::List<double>>&& value);
+  inline ::capnp::Orphan< ::capnp::List<double>> disownParams();
+
+private:
+  ::capnp::_::StructBuilder _builder;
+  template <typename, ::capnp::Kind>
+  friend struct ::capnp::ToDynamic_;
+  friend class ::capnp::Orphanage;
+  template <typename, ::capnp::Kind>
+  friend struct ::capnp::_::PointerHelpers;
+};
+
+#if !CAPNP_LITE
+class Eval::EvalAllParams::Pipeline {
+public:
+  typedef EvalAllParams Pipelines;
+
+  inline Pipeline(decltype(nullptr)): _typeless(nullptr) {}
+  inline explicit Pipeline(::capnp::AnyPointer::Pipeline&& typeless)
+      : _typeless(kj::mv(typeless)) {}
+
+private:
+  ::capnp::AnyPointer::Pipeline _typeless;
+  friend class ::capnp::PipelineHook;
+  template <typename, ::capnp::Kind>
+  friend struct ::capnp::ToDynamic_;
+};
+#endif  // !CAPNP_LITE
+
+class Eval::EvalAllResults::Reader {
+public:
+  typedef EvalAllResults Reads;
+
+  Reader() = default;
+  inline explicit Reader(::capnp::_::StructReader base): _reader(base) {}
+
+  inline ::capnp::MessageSize totalSize() const {
+    return _reader.totalSize().asPublic();
+  }
+
+#if !CAPNP_LITE
+  inline ::kj::StringTree toString() const {
+    return ::capnp::_::structString(_reader, *_capnpPrivate::brand());
+  }
+#endif  // !CAPNP_LITE
+
+  inline bool hasObjectives() const;
+  inline  ::capnp::List<double>::Reader getObjectives() const;
+
+private:
+  ::capnp::_::StructReader _reader;
+  template <typename, ::capnp::Kind>
+  friend struct ::capnp::ToDynamic_;
+  template <typename, ::capnp::Kind>
+  friend struct ::capnp::_::PointerHelpers;
+  template <typename, ::capnp::Kind>
+  friend struct ::capnp::List;
+  friend class ::capnp::MessageBuilder;
+  friend class ::capnp::Orphanage;
+};
+
+class Eval::EvalAllResults::Builder {
+public:
+  typedef EvalAllResults Builds;
+
+  Builder() = delete;  // Deleted to discourage incorrect usage.
+                       // You can explicitly initialize to nullptr instead.
+  inline Builder(decltype(nullptr)) {}
+  inline explicit Builder(::capnp::_::StructBuilder base): _builder(base) {}
+  inline operator Reader() const { return Reader(_builder.asReader()); }
+  inline Reader asReader() const { return *this; }
+
+  inline ::capnp::MessageSize totalSize() const { return asReader().totalSize(); }
+#if !CAPNP_LITE
+  inline ::kj::StringTree toString() const { return asReader().toString(); }
+#endif  // !CAPNP_LITE
+
+  inline bool hasObjectives();
+  inline  ::capnp::List<double>::Builder getObjectives();
+  inline void setObjectives( ::capnp::List<double>::Reader value);
+  inline void setObjectives(::kj::ArrayPtr<const double> value);
+  inline  ::capnp::List<double>::Builder initObjectives(unsigned int size);
+  inline void adoptObjectives(::capnp::Orphan< ::capnp::List<double>>&& value);
+  inline ::capnp::Orphan< ::capnp::List<double>> disownObjectives();
+
+private:
+  ::capnp::_::StructBuilder _builder;
+  template <typename, ::capnp::Kind>
+  friend struct ::capnp::ToDynamic_;
+  friend class ::capnp::Orphanage;
+  template <typename, ::capnp::Kind>
+  friend struct ::capnp::_::PointerHelpers;
+};
+
+#if !CAPNP_LITE
+class Eval::EvalAllResults::Pipeline {
+public:
+  typedef EvalAllResults Pipelines;
+
+  inline Pipeline(decltype(nullptr)): _typeless(nullptr) {}
+  inline explicit Pipeline(::capnp::AnyPointer::Pipeline&& typeless)
+      : _typeless(kj::mv(typeless)) {}
+
+private:
+  ::capnp::AnyPointer::Pipeline _typeless;
+  friend class ::capnp::PipelineHook;
+  template <typename, ::capnp::Kind>
+  friend struct ::capnp::ToDynamic_;
+};
+#endif  // !CAPNP_LITE
+
 // =======================================================================================
 
 #if !CAPNP_LITE
@@ -361,6 +565,82 @@ inline double Eval::EvalResults::Builder::getObjective() {
 inline void Eval::EvalResults::Builder::setObjective(double value) {
   _builder.setDataField<double>(
       ::capnp::bounded<0>() * ::capnp::ELEMENTS, value);
+}
+
+inline bool Eval::EvalAllParams::Reader::hasParams() const {
+  return !_reader.getPointerField(
+      ::capnp::bounded<0>() * ::capnp::POINTERS).isNull();
+}
+inline bool Eval::EvalAllParams::Builder::hasParams() {
+  return !_builder.getPointerField(
+      ::capnp::bounded<0>() * ::capnp::POINTERS).isNull();
+}
+inline  ::capnp::List<double>::Reader Eval::EvalAllParams::Reader::getParams() const {
+  return ::capnp::_::PointerHelpers< ::capnp::List<double>>::get(_reader.getPointerField(
+      ::capnp::bounded<0>() * ::capnp::POINTERS));
+}
+inline  ::capnp::List<double>::Builder Eval::EvalAllParams::Builder::getParams() {
+  return ::capnp::_::PointerHelpers< ::capnp::List<double>>::get(_builder.getPointerField(
+      ::capnp::bounded<0>() * ::capnp::POINTERS));
+}
+inline void Eval::EvalAllParams::Builder::setParams( ::capnp::List<double>::Reader value) {
+  ::capnp::_::PointerHelpers< ::capnp::List<double>>::set(_builder.getPointerField(
+      ::capnp::bounded<0>() * ::capnp::POINTERS), value);
+}
+inline void Eval::EvalAllParams::Builder::setParams(::kj::ArrayPtr<const double> value) {
+  ::capnp::_::PointerHelpers< ::capnp::List<double>>::set(_builder.getPointerField(
+      ::capnp::bounded<0>() * ::capnp::POINTERS), value);
+}
+inline  ::capnp::List<double>::Builder Eval::EvalAllParams::Builder::initParams(unsigned int size) {
+  return ::capnp::_::PointerHelpers< ::capnp::List<double>>::init(_builder.getPointerField(
+      ::capnp::bounded<0>() * ::capnp::POINTERS), size);
+}
+inline void Eval::EvalAllParams::Builder::adoptParams(
+    ::capnp::Orphan< ::capnp::List<double>>&& value) {
+  ::capnp::_::PointerHelpers< ::capnp::List<double>>::adopt(_builder.getPointerField(
+      ::capnp::bounded<0>() * ::capnp::POINTERS), kj::mv(value));
+}
+inline ::capnp::Orphan< ::capnp::List<double>> Eval::EvalAllParams::Builder::disownParams() {
+  return ::capnp::_::PointerHelpers< ::capnp::List<double>>::disown(_builder.getPointerField(
+      ::capnp::bounded<0>() * ::capnp::POINTERS));
+}
+
+inline bool Eval::EvalAllResults::Reader::hasObjectives() const {
+  return !_reader.getPointerField(
+      ::capnp::bounded<0>() * ::capnp::POINTERS).isNull();
+}
+inline bool Eval::EvalAllResults::Builder::hasObjectives() {
+  return !_builder.getPointerField(
+      ::capnp::bounded<0>() * ::capnp::POINTERS).isNull();
+}
+inline  ::capnp::List<double>::Reader Eval::EvalAllResults::Reader::getObjectives() const {
+  return ::capnp::_::PointerHelpers< ::capnp::List<double>>::get(_reader.getPointerField(
+      ::capnp::bounded<0>() * ::capnp::POINTERS));
+}
+inline  ::capnp::List<double>::Builder Eval::EvalAllResults::Builder::getObjectives() {
+  return ::capnp::_::PointerHelpers< ::capnp::List<double>>::get(_builder.getPointerField(
+      ::capnp::bounded<0>() * ::capnp::POINTERS));
+}
+inline void Eval::EvalAllResults::Builder::setObjectives( ::capnp::List<double>::Reader value) {
+  ::capnp::_::PointerHelpers< ::capnp::List<double>>::set(_builder.getPointerField(
+      ::capnp::bounded<0>() * ::capnp::POINTERS), value);
+}
+inline void Eval::EvalAllResults::Builder::setObjectives(::kj::ArrayPtr<const double> value) {
+  ::capnp::_::PointerHelpers< ::capnp::List<double>>::set(_builder.getPointerField(
+      ::capnp::bounded<0>() * ::capnp::POINTERS), value);
+}
+inline  ::capnp::List<double>::Builder Eval::EvalAllResults::Builder::initObjectives(unsigned int size) {
+  return ::capnp::_::PointerHelpers< ::capnp::List<double>>::init(_builder.getPointerField(
+      ::capnp::bounded<0>() * ::capnp::POINTERS), size);
+}
+inline void Eval::EvalAllResults::Builder::adoptObjectives(
+    ::capnp::Orphan< ::capnp::List<double>>&& value) {
+  ::capnp::_::PointerHelpers< ::capnp::List<double>>::adopt(_builder.getPointerField(
+      ::capnp::bounded<0>() * ::capnp::POINTERS), kj::mv(value));
+}
+inline ::capnp::Orphan< ::capnp::List<double>> Eval::EvalAllResults::Builder::disownObjectives() {
+  return ::capnp::_::PointerHelpers< ::capnp::List<double>>::disown(_builder.getPointerField(
+      ::capnp::bounded<0>() * ::capnp::POINTERS));
 }
 
 

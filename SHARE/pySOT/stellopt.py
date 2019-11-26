@@ -36,3 +36,7 @@ class StelloptProblem(OptimizationProblem):
         self.__check_input__(x)
         # TODO: Handle errors and disconnects
         return self.evaluator.eval(x.tolist()).wait().objective
+
+    def evalAll(self, x):
+        self.__check_input__(x)
+        return np.array(self.evaluator.evalAll(x.tolist()).wait().objectives)
