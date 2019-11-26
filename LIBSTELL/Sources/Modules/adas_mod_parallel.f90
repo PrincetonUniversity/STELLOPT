@@ -396,13 +396,13 @@ module adas_mod_parallel
        INTEGER, DIMENSION(2), INTENT(out)  :: n
        INTEGER, INTENT(inout) :: comm, myid
        INTEGER :: ncid, varid, ier, ndims, i
-       INTEGER :: dimid(2)
+       INTEGER, DIMENSION(2) :: dimid
        n   = 0
 #if defined(NETCDF)
        IF (myid == local_master) THEN
           ier = NF90_OPEN(filename,NF90_NOWRITE,ncid)
           ier = NF90_INQ_VARID(ncid,varname,varid)
-          ier = NF90_INQUIRE_VARIABLE(ncid,varid,NDIMS = ndims)
+          ier = NF90_INQUIRE_VARIABLE(ncid,varid,NDIMS = ndims, DIMIDS=dimid)
           IF ((ndims) > 2) ndims=2
           DO i = 1, ndims
              ier = NF90_INQUIRE_DIMENSION(ncid,dimid(i),LEN = n(i))
