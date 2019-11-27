@@ -57,6 +57,7 @@
       SELECT CASE (TRIM(write_type))
          CASE('INIT')
             IF (myworkid == master) THEN
+               CALL DATE_AND_TIME(DATE=temp_str8)
                CALL open_hdf5('ascot4_'//TRIM(id_string)//'.h5',fid,ier,LCREATE=.true.)
                IF (ier /= 0) CALL handle_err(HDF5_OPEN_ERR,'beams3d_ascot5_'//TRIM(id_string)//'.h5',ier)
                ! Write the ID
@@ -69,6 +70,7 @@
                CALL write_att_hdf5(bfield_gid,'active',qid_str,ier)
                CALL h5gcreate_f(bfield_gid,'stellarator', qid_gid, ier)
                CALL h5gcreate_f(qid_gid,'profiles', plasma_gid, ier)
+               CALL write_att_hdf5(qid_gid,'date',temp_str8,ier)
                CALL write_att_hdf5(qid_gid,'description','Data initialized from BEAMS3D',ier)
                CALL write_var_hdf5(qid_gid,'raxis',nphi,ier,DBLVAR=req_axis)
                CALL write_var_hdf5(qid_gid,'zaxis',nphi,ier,DBLVAR=zeq_axis)
@@ -96,7 +98,7 @@
                !--------------------------------------------------------------
                CALL h5gcreate_f(fid,'wall', wall_gid, ier)
                CALL write_att_hdf5(wall_gid,'active',qid_str,ier)
-               CALL h5gcreate_f(wall_gid,'wall_3D_'//qid_str, qid_gid, ier)
+               CALL h5gcreate_f(wall_gid,'3d', qid_gid, ier)
                CALL write_att_hdf5(qid_gid,'date',temp_str8,ier)
                CALL write_att_hdf5(qid_gid,'description','Data initialized from BEAMS3D',ier)
                CALL write_var_hdf5(qid_gid,'nelements',ier,INTVAR=nface)
@@ -118,9 +120,9 @@
                   rtemp(2,i,3) = vertex(d2,3)
                   rtemp(3,i,3) = vertex(d3,3)
                END DO
-               CALL write_var_hdf5( qid_gid, 'x1x2x3', 3, nface, ier, DBLVAR=rtemp(:,:,1))
-               CALL write_var_hdf5( qid_gid, 'y1y2y3', 3, nface, ier, DBLVAR=rtemp(:,:,2))
-               CALL write_var_hdf5( qid_gid, 'z1z2z3', 3, nface, ier, DBLVAR=rtemp(:,:,3))
+               CALL write_var_hdf5( qid_gid, 'triangles_x1x2x3', 3, nface, ier, DBLVAR=rtemp(:,:,1))
+               CALL write_var_hdf5( qid_gid, 'triangles_y1y2y3', 3, nface, ier, DBLVAR=rtemp(:,:,2))
+               CALL write_var_hdf5( qid_gid, 'triangles_z1z2z3', 3, nface, ier, DBLVAR=rtemp(:,:,3))
                DEALLOCATE(rtemp)
                CALL h5gclose_f(qid_gid, ier)
                CALL h5gclose_f(wall_gid, ier)
