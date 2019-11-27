@@ -67,7 +67,6 @@
                !           B-FIELD
                !--------------------------------------------------------------
                CALL h5gcreate_f(fid,'bfield', bfield_gid, ier)
-               CALL write_att_hdf5(bfield_gid,'active',qid_str,ier)
                CALL h5gcreate_f(bfield_gid,'stellarator', qid_gid, ier)
                CALL h5gcreate_f(qid_gid,'profiles', plasma_gid, ier)
                CALL write_att_hdf5(qid_gid,'date',temp_str8,ier)
@@ -82,6 +81,7 @@
                rtemp = RESHAPE(B_Z,(/nr,nphi,nz/),ORDER=(/1,2,3/))
                CALL write_var_hdf5(qid_gid,'bz',nr,nphi,nz,ier,DBLVAR=rtemp)
                rtemp = RESHAPE(S_ARR,(/nr,nphi,nz/),ORDER=(/1,2,3/))
+               DEALLOCATE(rtemp)
                CALL write_var_hdf5(qid_gid,'s',nr,nphi,nz,ier,DBLVAR=rtemp)
                CALL write_var_hdf5(qid_gid,'phi',nphi,ier,DBLVAR=phiaxis)
                CALL write_var_hdf5(qid_gid,'r',nr,ier,DBLVAR=raxis)
@@ -130,6 +130,42 @@
                ! Close file
                CALL close_hdf5(fid,ier)
                IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,'beams3d_ascot5_'//TRIM(id_string)//'.h5',ier)
+
+               ! Write the text file
+               ier = 0; iunit = 411
+               CALL safe_open(iunit,ier,'input.plasma_1d','replace','formatted')
+               WRITE(iunit,'(A)') 'Created by BEAMS3D from run: '//TRIM(id_string)
+               WRITE(iunit,'(A)') 'Profiles from input file.  Assuming Carbon Impurity.'
+               WRITE(iunit,'(A)') temp_str8
+               ALLOCATE(rtemp(nr,5,1))
+               rtemp = 0
+               rtemp(:,5,1) = 1
+               DO i = 1, nr
+                  rtemp(i,1,1)=DBLE(i-1)/DBLE(nr-1)
+               END DO
+               IF (nte > 0)   CALL EZspline_interp( TE_spl_s,   nr, rtemp(:,1,1), rtemp(:,2,1), ier)
+               IF (nne > 0)   CALL EZspline_interp( NE_spl_s,   nr, rtemp(:,1,1), rtemp(:,3,1), ier)
+               IF (nti > 0)   CALL EZspline_interp( TI_spl_s,   nr, rtemp(:,1,1), rtemp(:,4,1), ier)
+               IF (nzeff > 0) CALL EZspline_interp( ZEFF_spl_s, nr, rtemp(:,1,1), rtemp(:,5,1), ier)
+               rtemp(:,5,1)=rtemp(:,3,1)/rtemp(:,5,1)
+               IF (ANY(rtemp(:,5,1)>1)) THEN
+                  WRITE(iunit,'(2X,I4,2X,I4,2X,A)') nr,2,'# Nrad,Nion'
+                  WRITE(iunit,'(2X,I4,2X,I4,2X,A)') 1,6,'# ion Znum'
+                  WRITE(iunit,'(2X,I4,2X,I4,2X,A)') 1,12,'# ion Anum'
+                  WRITE(iunit,'(2X,I4,2X,I4,2X,A)') 1,1,'# OBSOLETE VALUES. PUT 1'
+               ELSE
+                  WRITE(iunit,'(2X,I4,2X,I4,2X,A)') nr,1,'# Nrad,Nion'
+                  WRITE(iunit,'(2X,I4,2X,I4,2X,A)') 1,'# ion Znum'
+                  WRITE(iunit,'(2X,I4,2X,I4,2X,A)') 1,'# ion Anum'
+                  WRITE(iunit,'(2X,I4,2X,I4,2X,A)') 1,'# OBSOLETE VALUES. PUT 1'
+               END IF
+               WRITE(iunit,'(A)') 'RHO (pol)     Te (eV)         Ne (1/m3)       Vtor_I (rad/s)  Ti1 (eV)        Ni1 (1/m3)      Ni2 (1/m3) ...'
+               DO i = 1, nr
+                  dbl_temp = (rtemp(i,5,1)-1)/6.0 ! Frac nH=frac*nC;   Zeff*ni=nH+6*nC=(1+6*frac)*nH = ne; nH = ne/(1*6*frac)
+                  WRITE(iunit,'(7(2X,ES18.10))') rtemp(i,1,1),rtemp(i,2,1),rtemp(i,3,1),0.0,rtemp(:,4,1),&
+                                              rtemp(i,3,1)/(1+6*dbl_temp),dbl_temp*rtemp(i,3,1)/(1+6*dbl_temp)
+               END DO
+               CLOSE(iunit)
             END IF
          CASE('MARKER')
       END SELECT
