@@ -19,7 +19,7 @@
                                  zaxis, phiaxis, S_ARR, U_ARR, POT_ARR, &
                                  ZEFF_ARR, TE, TI, NE, req_axis, zeq_axis, npot, &
                                  POT_SPL_S, ezspline_interp, phiedge_eq, TE_spl_s, &
-                                 NE_spl_s, TI_spl_s, ZEFF_spl_s, POT_spl_s, &
+                                 NE_spl_s, TI_spl_s, ZEFF_spl_s, POT_spl_s, vp_spl_s, &
                                  nne, nte, nti, nzeff, npot
       USE beams3d_runtime, ONLY: id_string, npoinc, nbeams, beam, t_end, lverb, &
                                     lvmec, lpies, lspec, lcoil, lmgrid, lbeam, &
@@ -90,6 +90,17 @@
                CALL write_var_hdf5(qid_gid,'z',nz,ier,DBLVAR=zaxis)
                CALL write_var_hdf5(qid_gid,'toroidalPeriods',ier,INTVAR=FLOOR(pi2/phiaxis(nphi)))
                CALL write_var_hdf5(qid_gid,'symmetrymode',ier,INTVAR=0)
+
+               ALLOCATE(rtemp(nr,5,1))
+               rtemp = 0
+               rtemp(:,2,1) = 0
+               DO i = 1, nr
+                  rtemp(i,1,1)=DBLE(i-1)/DBLE(nr-1)
+               END DO
+               CALL EZspline_interp( vp_spl_s, nr, rtemp(:,1,1), rtemp(:,2,1), ier)
+               CALL write_var_hdf5(plasma_gid,'s',nr,ier,DBLVAR=rtemp(:,1,1))
+               CALL write_var_hdf5(plasma_gid,'volume',nr,ier,DBLVAR=rtemp(:,2,1))
+               DEALLOCATE(rtemp)
                
                CALL h5gclose_f(pid_gid, ier)
                CALL h5gclose_f(qid_gid, ier)
