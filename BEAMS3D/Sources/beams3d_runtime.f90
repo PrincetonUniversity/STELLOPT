@@ -105,7 +105,7 @@ MODULE beams3d_runtime
     LOGICAL :: lverb, lvmec, lpies, lspec, lcoil, lmgrid, &
                lvessel, lvac, lrestart, lneut, &
                lbeam, lhitonly, lread_input, lplasma_only, lraw,&
-               ldepo, lbeam_simple, ldebug, lcollision, lw7x, lascot
+               ldepo, lbeam_simple, ldebug, lcollision, lw7x, lascot, lascot4
     INTEGER :: nextcur, npoinc, nbeams, nparticles_start, nprocs_beams
     INTEGER, ALLOCATABLE :: beam(:)
     REAL(rprec) :: dt, follow_tol, pi, pi2, mu0, to3, dt_save, ne_scale, te_scale, ti_scale, zeff_scale

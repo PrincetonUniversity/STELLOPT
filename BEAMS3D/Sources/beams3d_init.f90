@@ -205,6 +205,9 @@
       END IF
 
       ! For testing I put this here
+      IF (lascot4) THEN
+         CALL beams3d_write_ascoth4('INIT')
+      END IF
       IF (lascot) THEN
          CALL beams3d_write_ascoth5('INIT')
       END IF
