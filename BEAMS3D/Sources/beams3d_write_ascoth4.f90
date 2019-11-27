@@ -70,6 +70,7 @@
                CALL h5gcreate_f(bfield_gid,'stellarator', qid_gid, ier)
                CALL h5gcreate_f(qid_gid,'profiles', plasma_gid, ier)
                CALL write_att_hdf5(qid_gid,'date',temp_str8,ier)
+               CALL write_att_int_hdf5(qid_gid,'version',1,ier)
                CALL write_att_hdf5(qid_gid,'description','Data initialized from BEAMS3D',ier)
                CALL write_var_hdf5(qid_gid,'raxis',nphi,ier,DBLVAR=req_axis)
                CALL write_var_hdf5(qid_gid,'zaxis',nphi,ier,DBLVAR=zeq_axis)
