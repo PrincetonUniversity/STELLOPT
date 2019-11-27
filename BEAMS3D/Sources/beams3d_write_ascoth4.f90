@@ -19,7 +19,8 @@
                                  zaxis, phiaxis, S_ARR, U_ARR, POT_ARR, &
                                  ZEFF_ARR, TE, TI, NE, req_axis, zeq_axis, npot, &
                                  POT_SPL_S, ezspline_interp, phiedge_eq, TE_spl_s, &
-                                 NE_spl_s, TI_spl_s, ZEFF_spl_s, nne, nte, nti, nzeff
+                                 NE_spl_s, TI_spl_s, ZEFF_spl_s, POT_spl_s, &
+                                 nne, nte, nti, nzeff, npot
       USE beams3d_runtime, ONLY: id_string, npoinc, nbeams, beam, t_end, lverb, &
                                     lvmec, lpies, lspec, lcoil, lmgrid, lbeam, &
                                     lvessel, lvac, lbeam_simple, handle_err, nparticles_start, &
@@ -132,7 +133,7 @@
                CALL close_hdf5(fid,ier)
                IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,'beams3d_ascot5_'//TRIM(id_string)//'.h5',ier)
 
-               ! Write the text file
+               ! Write the input text file
                ier = 0; iunit = 411
                CALL safe_open(iunit,ier,'input.plasma_1d','replace','formatted')
                WRITE(iunit,'(A)') 'Created by BEAMS3D from run: '//TRIM(id_string)
@@ -148,10 +149,10 @@
                IF (nne > 0)   CALL EZspline_interp( NE_spl_s,   nr, rtemp(:,1,1), rtemp(:,3,1), ier)
                IF (nti > 0)   CALL EZspline_interp( TI_spl_s,   nr, rtemp(:,1,1), rtemp(:,4,1), ier)
                IF (nzeff > 0) CALL EZspline_interp( ZEFF_spl_s, nr, rtemp(:,1,1), rtemp(:,5,1), ier)
-                  WRITE(iunit,'(2X,I4,2X,I4,2X,A)') nr,2,'# Nrad,Nion'
-                  WRITE(iunit,'(2X,I4,2X,I4,2X,A)') 1,6,'# ion Znum'
-                  WRITE(iunit,'(2X,I4,2X,I4,2X,A)') 1,12,'# ion Anum'
-                  WRITE(iunit,'(2X,I4,2X,I4,2X,I4,2X,A)') 1,1,1,'# OBSOLETE VALUES. PUT 1'
+               WRITE(iunit,'(2X,I4,2X,I4,2X,A)') nr,2,'# Nrad,Nion'
+               WRITE(iunit,'(2X,I4,2X,I4,2X,A)') 1,6,'# ion Znum'
+               WRITE(iunit,'(2X,I4,2X,I4,2X,A)') 1,12,'# ion Anum'
+               WRITE(iunit,'(2X,I4,2X,I4,2X,I4,2X,A)') 1,1,1,'# OBSOLETE VALUES. PUT 1'
                WRITE(iunit,'(A)') 'RHO (pol)     Te (eV)         Ne (1/m3)       Vtor_I (rad/s)  Ti1 (eV)        Ni1 (1/m3)      Ni2 (1/m3) ...'
                DO i = 1, nr
                   dbl_temp = (rtemp(i,5,1)-1)/6.0 ! Frac nH=frac*nC;   Zeff*ni=nH+6*nC=(1+6*frac)*nH = ne; nH = ne/(1*6*frac)
@@ -159,6 +160,25 @@
                                               rtemp(i,3,1)/(1+6*dbl_temp),MAX(dbl_temp*rtemp(i,3,1)/(1+6*dbl_temp),1.0E16)
                END DO
                DEALLOCATE(rtemp)
+               CLOSE(iunit)
+
+               ! Write the input erad file
+               ier = 0; iunit = 411
+               CALL safe_open(iunit,ier,'input.erad','replace','formatted')
+               WRITE(iunit,'(A)') 'Created by BEAMS3D from run: '//TRIM(id_string)
+               ALLOCATE(rtemp(nr,2,1))
+               rtemp = 0
+               rtemp(:,2,1) = 0
+               DO i = 1, nr
+                  rtemp(i,1,1)=DBLE(i-1)/DBLE(nr-1)
+               END DO
+               IF (npot > 0)   CALL EZspline_interp( POT_spl_s,   nr, rtemp(:,1,1), rtemp(:,2,1), ier)
+               WRITE(iunit,'(2X,I4,2X,A)') nr,'# Nradial points'
+               DO i = 1, nr
+                  WRITE(iunit,'(2(2X,ES18.10))') rtemp(i,1,1),rtemp(i,2,1)
+               END DO
+               DEALLOCATE(rtemp)
+
                CLOSE(iunit)
             END IF
          CASE('MARKER')
