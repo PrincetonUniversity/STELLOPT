@@ -271,17 +271,6 @@ module adas_mod_parallel
        CALL mpialloc(ii_2_2_btsigv, dimlen(1), dimlen(2), myid, local_master, comm, win_ii_22b)
        CALL adas_get_var_2D(table_str,var_str,dimlen(1),dimlen(2),ii_2_2_btsigv,myid,comm)
 
-       ! Ion Impact 2-3
-!       table_str=TRIM(adasdir) // '/tables/ii/ii_2_3_warmTarget.cdf'
-!       var_str = 'axis_param_warmTarget'
-!       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
-!       CALL mpialloc(ii_2_3_axis, dimlen(1), myid, local_master, comm, win_ii_23a)
-!       CALL adas_get_var_1D(table_str,var_str,dimlen(1),ii_2_3_axis,myid,comm)
-!       var_str = 'btsigv'
-!       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
-!       CALL mpialloc(ii_2_3_btsigv, dimlen(1), dimlen(2), myid, local_master, comm, win_ii_23b)
-!       CALL adas_get_var_2D(table_str,var_str,dimlen(1),dimlen(2),ii_2_3_btsigv,myid,comm)
-
        ! Ion Impact 2-4
        table_str=TRIM(adasdir) // '/tables/ii/ii_2_4_warmTarget.cdf'
        var_str = 'axis_param_warmTarget'
@@ -293,17 +282,6 @@ module adas_mod_parallel
        CALL mpialloc(ii_2_4_btsigv, dimlen(1), dimlen(2), myid, local_master, comm, win_ii_24b)
        CALL adas_get_var_2D(table_str,var_str,dimlen(1),dimlen(2),ii_2_4_btsigv,myid,comm)
 
-       ! Ion Impact 2-5
-!       table_str=TRIM(adasdir) // '/tables/ii/ii_2_5_warmTarget.cdf'
-!       var_str = 'axis_param_warmTarget'
-!       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
-!       CALL mpialloc(ii_2_5_axis, dimlen(1), myid, local_master, comm, win_ii_25a)
-!       CALL adas_get_var_1D(table_str,var_str,dimlen(1),ii_2_5_axis,myid,comm)
-!       var_str = 'btsigv'
-!       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
-!       CALL mpialloc(ii_2_5_btsigv, dimlen(1), dimlen(2), myid, local_master, comm, win_ii_25b)
-!       CALL adas_get_var_2D(table_str,var_str,dimlen(1),dimlen(2),ii_2_5_btsigv,myid,comm)
-
        ! Ion Impact 2-6
        table_str=TRIM(adasdir) // '/tables/ii/ii_2_6_warmTarget.cdf'
        var_str = 'axis_param_warmTarget'
@@ -314,17 +292,6 @@ module adas_mod_parallel
        CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
        CALL mpialloc(ii_2_6_btsigv, dimlen(1), dimlen(2), myid, local_master, comm, win_ii_26b)
        CALL adas_get_var_2D(table_str,var_str,dimlen(1),dimlen(2),ii_2_6_btsigv,myid,comm)
-
-!       ! Ion Impact 2-7
-!       table_str=TRIM(adasdir) // '/tables/ii/ii_2_7_warmTarget.cdf'
-!       var_str = 'axis_param_warmTarget'
-!       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
-!       CALL mpialloc(ii_2_7_axis, dimlen(1), myid, local_master, comm, win_ii_27a)
-!       CALL adas_get_var_1D(table_str,var_str,dimlen(1),ii_2_7_axis,myid,comm)
-!       var_str = 'btsigv'
-!       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
-!       CALL mpialloc(ii_2_7_btsigv, dimlen(1), dimlen(2), myid, local_master, comm, win_ii_27b)
-!       CALL adas_get_var_2D(table_str,var_str,dimlen(1),dimlen(2),ii_2_7_btsigv,myid,comm)
 
        ! Ion Impact 2-8
        table_str=TRIM(adasdir) // '/tables/ii/ii_2_8_warmTarget.cdf'

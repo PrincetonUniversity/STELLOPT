@@ -147,24 +147,17 @@
                IF (nne > 0)   CALL EZspline_interp( NE_spl_s,   nr, rtemp(:,1,1), rtemp(:,3,1), ier)
                IF (nti > 0)   CALL EZspline_interp( TI_spl_s,   nr, rtemp(:,1,1), rtemp(:,4,1), ier)
                IF (nzeff > 0) CALL EZspline_interp( ZEFF_spl_s, nr, rtemp(:,1,1), rtemp(:,5,1), ier)
-               rtemp(:,5,1)=rtemp(:,3,1)/rtemp(:,5,1)
-               IF (ANY(rtemp(:,5,1)>1)) THEN
                   WRITE(iunit,'(2X,I4,2X,I4,2X,A)') nr,2,'# Nrad,Nion'
                   WRITE(iunit,'(2X,I4,2X,I4,2X,A)') 1,6,'# ion Znum'
                   WRITE(iunit,'(2X,I4,2X,I4,2X,A)') 1,12,'# ion Anum'
                   WRITE(iunit,'(2X,I4,2X,I4,2X,A)') 1,1,'# OBSOLETE VALUES. PUT 1'
-               ELSE
-                  WRITE(iunit,'(2X,I4,2X,I4,2X,A)') nr,1,'# Nrad,Nion'
-                  WRITE(iunit,'(2X,I4,2X,I4,2X,A)') 1,'# ion Znum'
-                  WRITE(iunit,'(2X,I4,2X,I4,2X,A)') 1,'# ion Anum'
-                  WRITE(iunit,'(2X,I4,2X,I4,2X,A)') 1,'# OBSOLETE VALUES. PUT 1'
-               END IF
                WRITE(iunit,'(A)') 'RHO (pol)     Te (eV)         Ne (1/m3)       Vtor_I (rad/s)  Ti1 (eV)        Ni1 (1/m3)      Ni2 (1/m3) ...'
                DO i = 1, nr
                   dbl_temp = (rtemp(i,5,1)-1)/6.0 ! Frac nH=frac*nC;   Zeff*ni=nH+6*nC=(1+6*frac)*nH = ne; nH = ne/(1*6*frac)
-                  WRITE(iunit,'(7(2X,ES18.10))') rtemp(i,1,1),rtemp(i,2,1),rtemp(i,3,1),0.0,rtemp(:,4,1),&
-                                              rtemp(i,3,1)/(1+6*dbl_temp),dbl_temp*rtemp(i,3,1)/(1+6*dbl_temp)
+                  WRITE(iunit,'(7(2X,ES18.10))') rtemp(i,1,1),rtemp(i,2,1),rtemp(i,3,1),-999.0,rtemp(i,4,1),&
+                                              rtemp(i,3,1)/(1+6*dbl_temp),MAX(dbl_temp*rtemp(i,3,1)/(1+6*dbl_temp),1.0E16)
                END DO
+               DEALLOCATE(rtemp)
                CLOSE(iunit)
             END IF
          CASE('MARKER')
