@@ -272,15 +272,15 @@ module adas_mod_parallel
        CALL adas_get_var_2D(table_str,var_str,dimlen(1),dimlen(2),ii_2_2_btsigv,myid,comm)
 
        ! Ion Impact 2-3
-       table_str=TRIM(adasdir) // '/tables/ii/ii_2_3_warmTarget.cdf'
-       var_str = 'axis_param_warmTarget'
-       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
-       CALL mpialloc(ii_2_3_axis, dimlen(1), myid, local_master, comm, win_ii_23a)
-       CALL adas_get_var_1D(table_str,var_str,dimlen(1),ii_2_3_axis,myid,comm)
-       var_str = 'btsigv'
-       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
-       CALL mpialloc(ii_2_3_btsigv, dimlen(1), dimlen(2), myid, local_master, comm, win_ii_23b)
-       CALL adas_get_var_2D(table_str,var_str,dimlen(1),dimlen(2),ii_2_3_btsigv,myid,comm)
+!       table_str=TRIM(adasdir) // '/tables/ii/ii_2_3_warmTarget.cdf'
+!       var_str = 'axis_param_warmTarget'
+!       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+!       CALL mpialloc(ii_2_3_axis, dimlen(1), myid, local_master, comm, win_ii_23a)
+!       CALL adas_get_var_1D(table_str,var_str,dimlen(1),ii_2_3_axis,myid,comm)
+!       var_str = 'btsigv'
+!       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+!       CALL mpialloc(ii_2_3_btsigv, dimlen(1), dimlen(2), myid, local_master, comm, win_ii_23b)
+!       CALL adas_get_var_2D(table_str,var_str,dimlen(1),dimlen(2),ii_2_3_btsigv,myid,comm)
 
        ! Ion Impact 2-4
        table_str=TRIM(adasdir) // '/tables/ii/ii_2_4_warmTarget.cdf'
@@ -294,15 +294,15 @@ module adas_mod_parallel
        CALL adas_get_var_2D(table_str,var_str,dimlen(1),dimlen(2),ii_2_4_btsigv,myid,comm)
 
        ! Ion Impact 2-5
-       table_str=TRIM(adasdir) // '/tables/ii/ii_2_5_warmTarget.cdf'
-       var_str = 'axis_param_warmTarget'
-       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
-       CALL mpialloc(ii_2_5_axis, dimlen(1), myid, local_master, comm, win_ii_25a)
-       CALL adas_get_var_1D(table_str,var_str,dimlen(1),ii_2_5_axis,myid,comm)
-       var_str = 'btsigv'
-       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
-       CALL mpialloc(ii_2_5_btsigv, dimlen(1), dimlen(2), myid, local_master, comm, win_ii_25b)
-       CALL adas_get_var_2D(table_str,var_str,dimlen(1),dimlen(2),ii_2_5_btsigv,myid,comm)
+!       table_str=TRIM(adasdir) // '/tables/ii/ii_2_5_warmTarget.cdf'
+!       var_str = 'axis_param_warmTarget'
+!       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+!       CALL mpialloc(ii_2_5_axis, dimlen(1), myid, local_master, comm, win_ii_25a)
+!       CALL adas_get_var_1D(table_str,var_str,dimlen(1),ii_2_5_axis,myid,comm)
+!       var_str = 'btsigv'
+!       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+!       CALL mpialloc(ii_2_5_btsigv, dimlen(1), dimlen(2), myid, local_master, comm, win_ii_25b)
+!       CALL adas_get_var_2D(table_str,var_str,dimlen(1),dimlen(2),ii_2_5_btsigv,myid,comm)
 
        ! Ion Impact 2-6
        table_str=TRIM(adasdir) // '/tables/ii/ii_2_6_warmTarget.cdf'
@@ -315,16 +315,16 @@ module adas_mod_parallel
        CALL mpialloc(ii_2_6_btsigv, dimlen(1), dimlen(2), myid, local_master, comm, win_ii_26b)
        CALL adas_get_var_2D(table_str,var_str,dimlen(1),dimlen(2),ii_2_6_btsigv,myid,comm)
 
-       ! Ion Impact 2-7
-       table_str=TRIM(adasdir) // '/tables/ii/ii_2_7_warmTarget.cdf'
-       var_str = 'axis_param_warmTarget'
-       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
-       CALL mpialloc(ii_2_7_axis, dimlen(1), myid, local_master, comm, win_ii_27a)
-       CALL adas_get_var_1D(table_str,var_str,dimlen(1),ii_2_7_axis,myid,comm)
-       var_str = 'btsigv'
-       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
-       CALL mpialloc(ii_2_7_btsigv, dimlen(1), dimlen(2), myid, local_master, comm, win_ii_27b)
-       CALL adas_get_var_2D(table_str,var_str,dimlen(1),dimlen(2),ii_2_7_btsigv,myid,comm)
+!       ! Ion Impact 2-7
+!       table_str=TRIM(adasdir) // '/tables/ii/ii_2_7_warmTarget.cdf'
+!       var_str = 'axis_param_warmTarget'
+!       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+!       CALL mpialloc(ii_2_7_axis, dimlen(1), myid, local_master, comm, win_ii_27a)
+!       CALL adas_get_var_1D(table_str,var_str,dimlen(1),ii_2_7_axis,myid,comm)
+!       var_str = 'btsigv'
+!       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+!       CALL mpialloc(ii_2_7_btsigv, dimlen(1), dimlen(2), myid, local_master, comm, win_ii_27b)
+!       CALL adas_get_var_2D(table_str,var_str,dimlen(1),dimlen(2),ii_2_7_btsigv,myid,comm)
 
        ! Ion Impact 2-8
        table_str=TRIM(adasdir) // '/tables/ii/ii_2_8_warmTarget.cdf'
@@ -799,7 +799,7 @@ module adas_mod_parallel
                              xlr,npts_e,ii_2_2_axis(5),ii_2_2_axis(6),&
                              xlr_t,npts_t,iwarn_adas)
                 sigv_adas = sigv_adas_wrk1 + (sigv_adas_wrk2-sigv_adas_wrk1)*(zion-1)
-             ELSE IF (zion >=2 .and. zion < 3) THEN
+             ELSE IF (zion >=2 .and. zion < 4) THEN
                 xlr=log(ii_2_2_axis(2)/ii_2_2_axis(1))
                 xlr_t=log(ii_2_2_axis(6)/ii_2_2_axis(5))
                 npts_e = SIZE(ii_2_2_btsigv,DIM=1)
@@ -807,53 +807,21 @@ module adas_mod_parallel
                 call FLINT_Z(evec,tevec,sigv_adas_wrk1,n1,ii_2_2_btsigv,ii_2_2_axis(1),ii_2_2_axis(2),&
                              xlr,npts_e,ii_2_2_axis(5),ii_2_2_axis(6),&
                              xlr_t,npts_t,iwarn_adas)
-                xlr=log(ii_2_3_axis(2)/ii_2_3_axis(1))
-                xlr_t=log(ii_2_3_axis(6)/ii_2_3_axis(5))
-                npts_e = SIZE(ii_2_3_btsigv,DIM=1)
-                npts_t = SIZE(ii_2_3_btsigv,DIM=2)
-                call FLINT_Z(evec,tevec,sigv_adas_wrk2,n1,ii_2_3_btsigv,ii_2_3_axis(1),ii_2_3_axis(2),&
-                             xlr,npts_e,ii_2_3_axis(5),ii_2_3_axis(6),&
-                             xlr_t,npts_t,iwarn_adas)
-                sigv_adas = sigv_adas_wrk1 + (sigv_adas_wrk2-sigv_adas_wrk1)*(zion-2)
-             ELSE IF (zion >=3 .and. zion < 4) THEN
-                xlr    =  log(ii_2_3_axis(2)/ii_2_3_axis(1))
-                xlr_t  =  log(ii_2_3_axis(6)/ii_2_3_axis(5))
-                npts_e = SIZE(ii_2_3_btsigv,DIM=1)
-                npts_t = SIZE(ii_2_3_btsigv,DIM=2)
-                call FLINT_Z(evec,tevec,sigv_adas_wrk1,n1,ii_2_3_btsigv, ii_2_3_axis(1),ii_2_3_axis(2),&
-                                               xlr,npts_e,ii_2_3_axis(5),ii_2_3_axis(6),&
-                                               xlr_t,npts_t,iwarn_adas)
                 xlr    =  log(ii_2_4_axis(2)/ii_2_4_axis(1))
                 xlr_t  =  log(ii_2_4_axis(6)/ii_2_4_axis(5))
                 npts_e = SIZE(ii_2_4_btsigv,DIM=1)
                 npts_t = SIZE(ii_2_4_btsigv,DIM=2)
-                call FLINT_Z(evec,tevec,sigv_adas_wrk2,n1,ii_2_4_btsigv, ii_2_4_axis(1),ii_2_4_axis(2),&
-                                               xlr,npts_e,ii_2_4_axis(5),ii_2_4_axis(6),&
-                                               xlr_t,npts_t,iwarn_adas)
-                sigv_adas = sigv_adas_wrk1 + (sigv_adas_wrk2-sigv_adas_wrk1)*(zion-3)
-             ELSE IF (zion >=4 .and. zion < 5) THEN
+                call FLINT_Z(evec,tevec,sigv_adas_wrk2,n1,ii_2_4_btsigv,ii_2_4_axis(1),ii_2_4_axis(2),&
+                             xlr,npts_e,ii_2_4_axis(5),ii_2_4_axis(6),&
+                             xlr_t,npts_t,iwarn_adas)
+                sigv_adas = sigv_adas_wrk1 + (sigv_adas_wrk2-sigv_adas_wrk1)*(zion-2)
+             ELSE IF (zion >=4 .and. zion < 6) THEN
                 xlr    =  log(ii_2_4_axis(2)/ii_2_4_axis(1))
                 xlr_t  =  log(ii_2_4_axis(6)/ii_2_4_axis(5))
                 npts_e = SIZE(ii_2_4_btsigv,DIM=1)
                 npts_t = SIZE(ii_2_4_btsigv,DIM=2)
                 call FLINT_Z(evec,tevec,sigv_adas_wrk1,n1,ii_2_4_btsigv, ii_2_4_axis(1),ii_2_4_axis(2),&
                                                xlr,npts_e,ii_2_4_axis(5),ii_2_4_axis(6),&
-                                               xlr_t,npts_t,iwarn_adas)
-                xlr    =  log(ii_2_5_axis(2)/ii_2_5_axis(1))
-                xlr_t  =  log(ii_2_5_axis(6)/ii_2_5_axis(5))
-                npts_e = SIZE(ii_2_5_btsigv,DIM=1)
-                npts_t = SIZE(ii_2_5_btsigv,DIM=2)
-                call FLINT_Z(evec,tevec,sigv_adas_wrk2,n1,ii_2_5_btsigv, ii_2_5_axis(1),ii_2_5_axis(2),&
-                                               xlr,npts_e,ii_2_5_axis(5),ii_2_5_axis(6),&
-                                               xlr_t,npts_t,iwarn_adas)
-                sigv_adas = sigv_adas_wrk1 + (sigv_adas_wrk2-sigv_adas_wrk1)*(zion-4)
-             ELSE IF (zion >=5 .and. zion < 6) THEN
-                xlr    =  log(ii_2_5_axis(2)/ii_2_5_axis(1))
-                xlr_t  =  log(ii_2_5_axis(6)/ii_2_5_axis(5))
-                npts_e = SIZE(ii_2_5_btsigv,DIM=1)
-                npts_t = SIZE(ii_2_5_btsigv,DIM=2)
-                call FLINT_Z(evec,tevec,sigv_adas_wrk1,n1,ii_2_5_btsigv, ii_2_5_axis(1),ii_2_5_axis(2),&
-                                               xlr,npts_e,ii_2_5_axis(5),ii_2_5_axis(6),&
                                                xlr_t,npts_t,iwarn_adas)
                 xlr    =  log(ii_2_6_axis(2)/ii_2_6_axis(1))
                 xlr_t  =  log(ii_2_6_axis(6)/ii_2_6_axis(5))
@@ -862,30 +830,14 @@ module adas_mod_parallel
                 call FLINT_Z(evec,tevec,sigv_adas_wrk2,n1,ii_2_6_btsigv, ii_2_6_axis(1),ii_2_6_axis(2),&
                                                xlr,npts_e,ii_2_6_axis(5),ii_2_6_axis(6),&
                                                xlr_t,npts_t,iwarn_adas)
-                sigv_adas = sigv_adas_wrk1 + (sigv_adas_wrk2-sigv_adas_wrk1)*(zion-5)
-             ELSE IF (zion >=6 .and. zion < 7) THEN
+                sigv_adas = sigv_adas_wrk1 + (sigv_adas_wrk2-sigv_adas_wrk1)*(zion-4)
+             ELSE IF (zion >=6 .and. zion < 8) THEN
                 xlr    =  log(ii_2_6_axis(2)/ii_2_6_axis(1))
                 xlr_t  =  log(ii_2_6_axis(6)/ii_2_6_axis(5))
                 npts_e = SIZE(ii_2_6_btsigv,DIM=1)
                 npts_t = SIZE(ii_2_6_btsigv,DIM=2)
                 call FLINT_Z(evec,tevec,sigv_adas_wrk1,n1,ii_2_6_btsigv, ii_2_6_axis(1),ii_2_6_axis(2),&
                                                xlr,npts_e,ii_2_6_axis(5),ii_2_6_axis(6),&
-                                               xlr_t,npts_t,iwarn_adas)
-                xlr    =  log(ii_2_7_axis(2)/ii_2_7_axis(1))
-                xlr_t  =  log(ii_2_7_axis(6)/ii_2_7_axis(5))
-                npts_e = SIZE(ii_2_7_btsigv,DIM=1)
-                npts_t = SIZE(ii_2_7_btsigv,DIM=2)
-                call FLINT_Z(evec,tevec,sigv_adas_wrk2,n1,ii_2_7_btsigv, ii_2_7_axis(1),ii_2_7_axis(2),&
-                                               xlr,npts_e,ii_2_7_axis(5),ii_2_7_axis(6),&
-                                               xlr_t,npts_t,iwarn_adas)
-                sigv_adas = sigv_adas_wrk1 + (sigv_adas_wrk2-sigv_adas_wrk1)*(zion-6)
-             ELSE IF (zion >=7 .and. zion < 8) THEN
-                xlr    =  log(ii_2_7_axis(2)/ii_2_7_axis(1))
-                xlr_t  =  log(ii_2_7_axis(6)/ii_2_7_axis(5))
-                npts_e = SIZE(ii_2_7_btsigv,DIM=1)
-                npts_t = SIZE(ii_2_7_btsigv,DIM=2)
-                call FLINT_Z(evec,tevec,sigv_adas_wrk1,n1,ii_2_7_btsigv, ii_2_7_axis(1),ii_2_7_axis(2),&
-                                               xlr,npts_e,ii_2_7_axis(5),ii_2_7_axis(6),&
                                                xlr_t,npts_t,iwarn_adas)
                 xlr    =  log(ii_2_8_axis(2)/ii_2_8_axis(1))
                 xlr_t  =  log(ii_2_8_axis(6)/ii_2_8_axis(5))
@@ -894,7 +846,7 @@ module adas_mod_parallel
                 call FLINT_Z(evec,tevec,sigv_adas_wrk2,n1,ii_2_8_btsigv, ii_2_8_axis(1),ii_2_8_axis(2),&
                                                xlr,npts_e,ii_2_8_axis(5),ii_2_8_axis(6),&
                                                xlr_t,npts_t,iwarn_adas)
-                sigv_adas = sigv_adas_wrk1 + (sigv_adas_wrk2-sigv_adas_wrk1)*(zion-7)
+                sigv_adas = sigv_adas_wrk1 + (sigv_adas_wrk2-sigv_adas_wrk1)*(zion-6)
              ELSE IF (zion >=8) THEN
                 xlr    =  log(ii_2_8_axis(2)/ii_2_8_axis(1))
                 xlr_t  =  log(ii_2_8_axis(6)/ii_2_8_axis(5))
