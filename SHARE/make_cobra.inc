@@ -60,6 +60,13 @@
              -lhdf5 -lhdf5_fortran -lhdf5_hl -lhdf5hl_fortran 
 
 #######################################################################
+#            FFTW3 Options
+#######################################################################
+  LFFTW3 = T
+  FFTW3_INC = -I$(FFTW_HOME)/include
+  FFTW3_LIB = -L$(FFTW_HOME)/lib -lfftw3 -lfftw3f 
+
+#######################################################################
 #             PGPLOT Options
 #######################################################################
   LPGPLOT = F
@@ -358,6 +365,13 @@ ifeq ($(LNETCDF),T)
   LIB_LINK += $(NETCDF_LIB)
   MOD_PATH += $(NETCDF_INC)
   LIB_SHARE += $(NETCDF_LIB)
+endif
+ifeq ($(LFFTW3),T)
+  MOD1_PATH += $(FFTW3_INC)
+  PRECOMP += -DFFTW3
+  LIB_LINK += $(FFTW3_LIB)
+  MOD_PATH += $(FFTW3_INC)
+  LIB_SHARE += $(FFTW3_LIB)
 endif
 ifeq ($(LHDF5),T)
   MOD1_PATH += $(HDF5_INC)
