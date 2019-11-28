@@ -45,6 +45,7 @@
       INTEGER :: ier, iunit, i, d1, d2, d3
       INTEGER(HID_T) :: options_gid, bfield_gid, efield_gid, plasma_gid, &
                         neutral_gid, wall_gid, marker_gid, qid_gid, pid_gid
+      INTEGER, ALLOCATABLE :: i1dtemp(:)
       DOUBLE PRECISION :: dbl_temp
       DOUBLE PRECISION, ALLOCATABLE :: rtemp(:,:,:), r1dtemp(:)
       CHARACTER(LEN=10) ::  qid_str
@@ -71,10 +72,8 @@
                CALL h5gcreate_f(bfield_gid,'stellarator', qid_gid, ier)
                CALL h5gcreate_f(qid_gid,'profiles', plasma_gid, ier)
                CALL write_att_hdf5(qid_gid,'date',temp_str8,ier)
-               CALL write_att_int_hdf5(qid_gid,'version',1,ier)
+               CALL write_att_int_hdf5(qid_gid,'version',2,ier) ! Otherwise stellarator symmetry is assumed
                CALL write_att_hdf5(qid_gid,'description','Data initialized from BEAMS3D',ier)
-               CALL write_var_hdf5(qid_gid,'raxis',nphi,ier,DBLVAR=req_axis)
-               CALL write_var_hdf5(qid_gid,'zaxis',nphi,ier,DBLVAR=zeq_axis)
                ALLOCATE(rtemp(nr,nphi,nz))
                rtemp = RESHAPE(B_R,(/nr,nphi,nz/),ORDER=(/1,2,3/))
                CALL write_var_hdf5(qid_gid,'br',nr,nphi,nz,ier,DBLVAR=rtemp)
@@ -83,22 +82,40 @@
                rtemp = RESHAPE(B_Z,(/nr,nphi,nz/),ORDER=(/1,2,3/))
                CALL write_var_hdf5(qid_gid,'bz',nr,nphi,nz,ier,DBLVAR=rtemp)
                rtemp = RESHAPE(S_ARR,(/nr,nphi,nz/),ORDER=(/1,2,3/))
-               DEALLOCATE(rtemp)
                CALL write_var_hdf5(qid_gid,'s',nr,nphi,nz,ier,DBLVAR=rtemp)
-               CALL write_var_hdf5(qid_gid,'phi',nphi,ier,DBLVAR=phiaxis)
+               DEALLOCATE(rtemp)
+               CALL write_var_hdf5(qid_gid,'phi',nphi,ier,DBLVAR=360*phiaxis/pi2)
                CALL write_var_hdf5(qid_gid,'r',nr,ier,DBLVAR=raxis)
                CALL write_var_hdf5(qid_gid,'z',nz,ier,DBLVAR=zaxis)
                CALL write_var_hdf5(qid_gid,'toroidalPeriods',ier,INTVAR=FLOOR(pi2/phiaxis(nphi)))
-               CALL write_var_hdf5(qid_gid,'symmetrymode',ier,INTVAR=0)
+               CALL write_var_hdf5(qid_gid,'symmetrymode',ier,INTVAR=1)
+               d3 = FLOOR(pi2/phiaxis(nphi))
+               ALLOCATE(rtemp((nphi-1)*d3+1,3,1))
+               DO i = 1, d3
+                  d1 = (i-1)*(nphi-1)+1
+                  d2 = (i)*(nphi-1)
+                  rtemp(d1:d2,1,1)=req_axis(1:(nphi-1))
+                  rtemp(d1:d2,2,1)=zeq_axis(1:(nphi-1))
+                  rtemp(d1:d2,3,1)=360*(phiaxis(1:(nphi-1))+(i-1)*pi2/d3)/pi2
+               END DO
+               rtemp((nphi-1)*d3+1,1:2,1) = rtemp(1,1:2,1)
+               rtemp((nphi-1)*d3+1,3,1) = 360
+               CALL write_var_hdf5(qid_gid,'axis_R',(nphi-1)*d3+1,ier,DBLVAR=rtemp(:,1,1))
+               CALL write_var_hdf5(qid_gid,'axis_z',(nphi-1)*d3+1,ier,DBLVAR=rtemp(:,2,1))
+               CALL write_var_hdf5(qid_gid,'axis_phi',(nphi-1)*d3+1,ier,DBLVAR=rtemp(:,3,1))
+               DEALLOCATE(rtemp)
 
-               ALLOCATE(rtemp(nr,5,1))
+               ALLOCATE(rtemp(nr,2,1))
                rtemp = 0
                rtemp(:,2,1) = 0
                DO i = 1, nr
                   rtemp(i,1,1)=DBLE(i-1)/DBLE(nr-1)
                END DO
                CALL EZspline_interp( vp_spl_s, nr, rtemp(:,1,1), rtemp(:,2,1), ier)
-               CALL write_var_hdf5(plasma_gid,'s',nr,ier,DBLVAR=rtemp(:,1,1))
+               DO i = 2, nr
+                  rtemp(i,2,1)=rtemp(i,2,1)+(rtemp(i-1,2,1)) ! Integral So volume
+               END DO
+               CALL write_var_hdf5(plasma_gid,'s',nr,ier,DBLVAR=sqrt(rtemp(:,1,1)))
                CALL write_var_hdf5(plasma_gid,'volume',nr,ier,DBLVAR=rtemp(:,2,1))
                DEALLOCATE(rtemp)
                
@@ -110,12 +127,13 @@
                !           WALL
                !--------------------------------------------------------------
                CALL h5gcreate_f(fid,'wall', wall_gid, ier)
-               CALL write_att_hdf5(wall_gid,'active',qid_str,ier)
                CALL h5gcreate_f(wall_gid,'3d', qid_gid, ier)
                CALL write_att_hdf5(qid_gid,'date',temp_str8,ier)
                CALL write_att_hdf5(qid_gid,'description','Data initialized from BEAMS3D',ier)
                CALL write_var_hdf5(qid_gid,'nelements',ier,INTVAR=nface)
                ALLOCATE(rtemp(3,nface,3))
+               ALLOCATE(i1dtemp(nface))
+               i1dtemp = 0
                DO i = 1, nface
                   d1 = face(i,1)
                   d2 = face(i,2)
@@ -133,10 +151,11 @@
                   rtemp(2,i,3) = vertex(d2,3)
                   rtemp(3,i,3) = vertex(d3,3)
                END DO
+               CALL write_var_hdf5( qid_gid, 'triangles_flag', nface, ier, INTVAR=i1dtemp)
                CALL write_var_hdf5( qid_gid, 'triangles_x1x2x3', 3, nface, ier, DBLVAR=rtemp(:,:,1))
                CALL write_var_hdf5( qid_gid, 'triangles_y1y2y3', 3, nface, ier, DBLVAR=rtemp(:,:,2))
                CALL write_var_hdf5( qid_gid, 'triangles_z1z2z3', 3, nface, ier, DBLVAR=rtemp(:,:,3))
-               DEALLOCATE(rtemp)
+               DEALLOCATE(rtemp,i1dtemp)
                CALL h5gclose_f(qid_gid, ier)
                CALL h5gclose_f(wall_gid, ier)
 
