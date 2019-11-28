@@ -90,6 +90,7 @@
          IF (ldepo) WRITE(6,'(A)') '   DEPOSITION ONLY!'
          IF (lw7x) WRITE(6,'(A)') '   W7-X BEAM Model!'
          IF (lascot) WRITE(6,'(A)') '   ASCOT5 OUTPUT ON!'
+         IF (lascot4) WRITE(6,'(A)') '   ASCOT4 OUTPUT ON!'
          IF (lplasma_only) WRITE(6,'(A)') '   MAGNETIC FIELD FROM PLASMA ONLY!'
          IF (npot > 0) WRITE(6,'(A)') '   RAIDAL ELECTRIC FIELD PRESENT!'
          CALL FLUSH(6)
@@ -205,6 +206,9 @@
       END IF
 
       ! For testing I put this here
+      IF (lascot4) THEN
+         CALL beams3d_write_ascoth4('INIT')
+      END IF
       IF (lascot) THEN
          CALL beams3d_write_ascoth5('INIT')
       END IF
