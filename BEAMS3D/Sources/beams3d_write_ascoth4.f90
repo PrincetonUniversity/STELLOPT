@@ -82,6 +82,7 @@
                rtemp = RESHAPE(B_Z,(/nr,nphi,nz/),ORDER=(/1,2,3/))
                CALL write_var_hdf5(qid_gid,'bz',nr,nphi,nz,ier,DBLVAR=rtemp)
                rtemp = RESHAPE(S_ARR,(/nr,nphi,nz/),ORDER=(/1,2,3/))
+               WHERE(rtemp < 1.0E-2) rtemp = 1.0E-2
                CALL write_var_hdf5(qid_gid,'s',nr,nphi,nz,ier,DBLVAR=rtemp)
                DEALLOCATE(rtemp)
                CALL write_var_hdf5(qid_gid,'phi',nphi,ier,DBLVAR=360*phiaxis/pi2)
