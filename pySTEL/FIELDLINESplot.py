@@ -75,6 +75,7 @@ class MyApp(QMainWindow):
 		self.ui.rhoslider.valueChanged.connect(self.CutSelect)
 		self.ui.uslider.valueChanged.connect(self.CutSelect)
 		self.ui.vslider.valueChanged.connect(self.CutSelect)
+		self.ui.savebutton.clicked.connect(self.plot_to_file)
 
 	def FileSelect(self,i):
 		self.fieldlines_data=read_fieldlines(self.ui.FileName.currentText())
@@ -207,7 +208,7 @@ class MyApp(QMainWindow):
 			rmax = np.amax(self.fieldlines_data['raxis'])
 			self.ax.plot(self.fieldlines_data['R_lines'][k:self.nsteps-1:self.npoinc,:],\
 				self.fieldlines_data['Z_lines'][k:self.nsteps-1:self.npoinc,:],\
-				'.k',markersize=0.3)
+				'.k',markersize=0.1)
 			self.ax.set_xlabel('R [m]')
 			self.ax.set_ylabel('Z [m]')
 			self.ax.set_title('Poincaré Plot')
@@ -283,6 +284,10 @@ class MyApp(QMainWindow):
 			elif (self.ui.ThreeD_button.isChecked()):
 				self.fig.delaxes(self.ax)
 		self.canvas.draw()
+
+	def plot_to_file(self,i):
+		text = self.ui.saveas_filename.toPlainText();
+		self.fig.savefig('./'+text, dpi=300)
 
 
 if __name__ == "__main__":
