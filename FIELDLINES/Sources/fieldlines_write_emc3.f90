@@ -16,7 +16,6 @@
                                  zaxis, phiaxis, nfp_m
       USE read_wout_mod, ONLY: ns, mnmax_nyq, xm_nyq, xn_nyq,rmnc, zmns,&
                                nfp
-      USE virtual_casing_mod, ONLY: mntouv_local
       USE safe_open_mod, ONLY: safe_open
       USE EZspline_obj
       USE EZspline
@@ -133,8 +132,9 @@
          xn_temp = -xn_temp/nfp
          FORALL(u = 1:nu) xu(u) = DBLE(u-1)/DBLE(NU)
          FORALL(v = 1:nv) xv(v) = DBLE(v-1)/DBLE(NV)
-         CALL mntouv_local(1,k,mnmax_nyq,NU,NV,xu,xv,rmnc_sav,xm_temp,xn_temp,r,0,1)
-         CALL mntouv_local(1,k,mnmax_nyq,NU,NV,xu,xv,zmns_sav,xm_temp,xn_temp,z,1,0)
+         STOP "NEED TO FIX FIELDLINES_WRITE_EMC3 TO SUPPORT mntouv_local NOW PRIVATE"
+         !CALL mntouv_local(1,k,mnmax_nyq,NU,NV,xu,xv,rmnc_sav,xm_temp,xn_temp,r,0,1)
+         !CALL mntouv_local(1,k,mnmax_nyq,NU,NV,xu,xv,zmns_sav,xm_temp,xn_temp,z,1,0)
          ! Output to file
          WRITE(6,'(A)')  '   FILE: '//'emc3_equil_'//TRIM(id_string)//'.txt'
          iunit = 100

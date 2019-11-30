@@ -1,6 +1,9 @@
 # Microsoft Developer Studio Generated Dependency File, included by LIBSTELL.mak
       
+mpi_sharmem.o :  
+      
 xvec_eval.o : \
+      mpi_inc.o \
       safe_open_mod.o \
       mpi_params.o \
       gade_mod.o \
@@ -140,6 +143,7 @@ integration_path.o : \
 
 
 init_bg_currents.o : \
+      mpi_inc.o \
       biotsavart.o \
       bcoils_mod.o \
       mpi_params.o \
@@ -167,6 +171,7 @@ init_saddle_currents.o : \
       
 
 init_saddle_wsurf.o : \
+      mpi_inc.o \
       mpi_params.o \
       saddle_surface.o 
       
@@ -497,6 +502,7 @@ crosovr.o : \
       
 
 DE_driver.o : \
+      mpi_inc.o \
       de_mod.o \
       gade_mod.o \
       mpi_params.o \
@@ -511,6 +517,7 @@ DE_Evaluate.o : \
       
 
 MAP.o : \
+      mpi_inc.o \
       mpi_params.o \
       safe_open_mod.o \
       gade_mod.o \
@@ -518,6 +525,7 @@ MAP.o : \
 
 
 eval_x_queued.o : \
+      mpi_inc.o \
       safe_open_mod.o \
       stel_kinds.o
 
@@ -528,6 +536,7 @@ MAP_HYPERS.o : \
       
 
 MAP_LINEAR.o : \
+      mpi_inc.o \
       mpi_params.o \
       safe_open_mod.o \
       gade_mod.o \
@@ -535,6 +544,7 @@ MAP_LINEAR.o : \
       
 
 GENERIC_Evolve.o : \
+      mpi_inc.o \
       mpi_params.o \
       safe_open_mod.o \
       gade_mod.o \
@@ -542,6 +552,7 @@ GENERIC_Evolve.o : \
       
 
 MAP_PLANE.o : \
+      mpi_inc.o \
       mpi_params.o \
       safe_open_mod.o \
       gade_mod.o \
@@ -549,6 +560,7 @@ MAP_PLANE.o : \
       
 
 DE_Evolve.o : \
+      mpi_inc.o \
       de_mod.o \
       gade_mod.o \
       mpi_params.o \
@@ -556,6 +568,7 @@ DE_Evolve.o : \
       
 
 PSO_Evolve.o : \
+      mpi_inc.o \
       safe_open_mod.o \
       mpi_params.o \
       gade_mod.o \
@@ -563,6 +576,7 @@ PSO_Evolve.o : \
       
 
 DE2_Evolve.o : \
+      mpi_inc.o \
       safe_open_mod.o \
       mpi_params.o \
       gade_mod.o \
@@ -570,12 +584,14 @@ DE2_Evolve.o : \
       
 
 ROCKET_Evolve.o : \
+      mpi_inc.o \
       safe_open_mod.o \
       mpi_params.o \
       stel_kinds.o 
       
 
 de_mpi.o : \
+      mpi_inc.o \
       de_mod.o \
       mpi_params.o 
       
@@ -598,6 +614,7 @@ enorm.o : \
       
 
 fdjac_mod.o : \
+      mpi_inc.o \
       safe_open_mod.o \
       mpi_params.o \
       stel_kinds.o 
@@ -616,6 +633,7 @@ ga_decode.o : \
       
 
 GA_driver.o : \
+      mpi_inc.o \
       ga_mod.o \
       mpi_params.o \
       safe_open_mod.o \
@@ -623,6 +641,7 @@ GA_driver.o : \
       
 
 ga_evalout.o : \
+      mpi_inc.o \
       ga_mod.o \
       mpi_params.o 
       
@@ -632,6 +651,7 @@ ga_evaluate.o : \
       
 
 ga_fitness_mpi.o : \
+      mpi_inc.o \
       ga_mod.o \
       mpi_params.o 
       
@@ -641,32 +661,38 @@ ga_fitness_parallel.o : \
       
 
 ga_initial.o : \
+      mpi_inc.o \
       ga_mod.o \
       mpi_params.o \
       safe_open_mod.o 
       
 
 ga_micro.o : \
+      mpi_inc.o \
       ga_mod.o \
       mpi_params.o 
       
 
 ga_mutate.o : \
+      mpi_inc.o \
       ga_mod.o \
       mpi_params.o 
       
 
 ga_newgen.o : \
+      mpi_inc.o \
       ga_mod.o \
       mpi_params.o 
       
 
 ga_niche.o : \
+      mpi_inc.o \
       ga_mod.o \
       mpi_params.o 
       
 
 ga_possibl.o : \
+      mpi_inc.o \
       ga_mod.o \
       mpi_params.o 
       
@@ -676,6 +702,7 @@ GA_preset.o : \
       
 
 ga_restart.o : \
+      mpi_inc.o \
       ga_mod.o \
       mpi_params.o \
       safe_open_mod.o 
@@ -694,6 +721,7 @@ ga_shuffle.o : \
       
 
 ga_sp.o : \
+      mpi_inc.o \
       ga_mod.o \
       mpi_params.o \
       safe_open_mod.o 
@@ -714,6 +742,7 @@ lbfgsb_driver.o : \
       
 
 lmdif.o : \
+      mpi_inc.o \
       fdjac_mod.o \
       lmpar_mod.o \
       mpi_params.o \
@@ -735,6 +764,7 @@ lmpar.o : \
       
 
 lmpar_mod.o : \
+      mpi_inc.o \
       safe_open_mod.o \
       fdjac_mod.o \
       mpi_params.o \
@@ -1019,6 +1049,7 @@ read_boozer_mod.o : \
       
 
 read_response.o : \
+      mpi_inc.o \
       bsc_cdf.o \
       ezcdf.o \
       mpi_params.o \
@@ -1222,6 +1253,7 @@ li_gesl.o : \
       
 
 stepopt_mp.o : \
+      mpi_inc.o \
       stel_kinds.o \
       fdjac_mod.o \
       safe_open_mod.o \
@@ -1229,6 +1261,7 @@ stepopt_mp.o : \
       
 
 mgrid_field_mod.o : \
+      mpi_inc.o \
       stel_kinds.o \
       mgrid_mod.o \
       ezspline_obj.o \

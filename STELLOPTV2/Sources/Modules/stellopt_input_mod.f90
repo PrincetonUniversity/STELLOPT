@@ -46,9 +46,6 @@
 !         
 !-----------------------------------------------------------------------
       IMPLICIT NONE
-!DEC$ IF DEFINED (MPI_OPT)
-      INCLUDE 'mpif.h'                                                          ! MPI
-!DEC$ ENDIF        
 !-----------------------------------------------------------------------
 !     Input Namelists
 !         &optimum
@@ -420,8 +417,11 @@
                          regcoil_rcws_rbound_c_max, regcoil_rcws_rbound_s_max, &
                          regcoil_rcws_zbound_c_max, regcoil_rcws_zbound_s_max, &
                          target_curvature_P2, sigma_curvature_P2, &
-                         target_gamma_c, sigma_gamma_c
-      
+                         target_gamma_c, sigma_gamma_c, &
+                         lRosenbrock_X_opt, dRosenbrock_X_opt, &
+                         Rosenbrock_X, Rosenbrock_X_min, Rosenbrock_X_max, &
+                         target_Rosenbrock_F, sigma_Rosenbrock_F
+       
 !-----------------------------------------------------------------------
 !     Subroutines
 !         read_stellopt_input:   Reads optimum namelist
@@ -559,6 +559,14 @@
       dregcoil_rcws_rbound_s_opt = -1.0
       dregcoil_rcws_zbound_c_opt = -1.0
       dregcoil_rcws_zbound_s_opt = -1.0
+      ! Rosenbrock test function variables
+      lRosenbrock_X_opt(1:ROSENBROCK_DIM) = .FALSE.
+      dRosenbrock_X_opt(1:ROSENBROCK_DIM) = -1.0
+      Rosenbrock_X(1:ROSENBROCK_DIM)      = 3
+      Rosenbrock_X_min(1:ROSENBROCK_DIM)  = -bigno
+      Rosenbrock_X_max(1:ROSENBROCK_DIM)  = bigno
+      target_Rosenbrock_F(1:ROSENBROCK_DIM) = 0
+      sigma_Rosenbrock_F(1:ROSENBROCK_DIM)  = bigno
 
       IF (.not.ltriangulate) THEN  ! This is done because values may be set by trinagulate
          phiedge_min     = -bigno;  phiedge_max     = bigno
@@ -1859,6 +1867,20 @@
          WRITE(iunit,outflt) 'TARGET_Y',target_y
          WRITE(iunit,outflt) 'SIGMA_Y',sigma_y
       END IF 
+      IF (ANY(sigma_Rosenbrock_F < bigno)) THEN
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,'(A)') '!          Rosenbrock Test Function'
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         DO ik = 1, rosenbrock_dim
+            IF (sigma_Rosenbrock_F(ik) < bigno) THEN
+              WRITE(iunit,"(2X,A,I3.3,A,L1,3(2X,A,I3.3,A,E22.14))") &
+                          'LROSENBROCK_X_OPT(',ik,') = ',LRosenbrock_X_opt(ik), &
+                          'TARGET_ROSENBROCK_F(',ik,') = ',target_Rosenbrock_F(ik), &
+                          'SIGMA_ROSENBROCK_F(',ik,') = ',sigma_Rosenbrock_F(ik), &
+                          'ROSENBROCK_X(',ik,') = ',Rosenbrock_X(ik)
+             END IF
+         END DO
+      END IF
       IF (sigma_phiedge < bigno) THEN
          WRITE(iunit,outflt) 'TARGET_PHIEDGE',target_phiedge
          WRITE(iunit,outflt) 'SIGMA_PHIEDGE',sigma_phiedge

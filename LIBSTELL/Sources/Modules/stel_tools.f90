@@ -80,17 +80,24 @@
       DOUBLE PRECISION, PARAMETER,PRIVATE      :: pi2 = 6.283185482025146D+00
       DOUBLE PRECISION, PARAMETER,PRIVATE      :: one = 1.000000000000000D+00
       DOUBLE PRECISION, PARAMETER,PRIVATE      :: search_tol = 1.000000000000000D-12
-      TYPE(EZspline1_r8),PRIVATE :: Vp_spl, grho_spl, grho2_spl, Bav_spl, Bsq_spl
-      TYPE(EZspline1_r8),PRIVATE :: S11_spl, S12_spl, S21_spl, S22_spl
-      TYPE(EZspline3_r8),PRIVATE :: R_spl, Z_spl, G_spl
-      TYPE(EZspline3_r8),PRIVATE :: Ru_spl, Zu_spl
-      TYPE(EZspline3_r8),PRIVATE :: Rv_spl, Zv_spl
-      TYPE(EZspline3_r8),PRIVATE :: Bs_spl, Bu_spl, Bv_spl, B_spl
-      TYPE(EZspline3_r8),PRIVATE :: L_spl, Lu_spl, Lv_spl
+      DOUBLE PRECISION, DIMENSION(:), POINTER, PRIVATE :: x1, x2, x3
+      DOUBLE PRECISION, DIMENSION(:,:), POINTER, PRIVATE ::&
+                                    VP2D, GRHO2D, GRHO22D, BAV2D, BSQ2D, &
+                                    S112D, S122D, S212D, S222D
+      DOUBLE PRECISION, DIMENSION(:,:,:,:), POINTER, PRIVATE ::  R4D, Z4D, &
+                                    G4D, RU4D, ZU4D, RV4D, ZV4D, BS4D, BU4D, &
+                                    BV4D, B4D, L4D, LU4D, LV4D
+      INTEGER, PRIVATE :: win_R4D, win_Z4D, win_G4D, win_RU4D, win_ZU4D, win_RV4D, &
+                          win_ZV4D, win_BS4D, win_BU4D, win_BV4D, win_B4D, &   
+                          win_L4D, win_LU4D, win_LV4D, win_VP2D, win_GRHO2D, win_GRHO22D, &
+                          win_BAV2D, win_BSQ2D, win_S112D, win_S122D, win_S212D, win_S222D, &
+                          win_x1, win_x2, win_x3, nx1, nx2, nx3
+      REAL*8, PRIVATE :: eps1, eps2, eps3, x1_min, x1_max, x2_min, x2_max, x3_min, x3_max
+      REAL*8, parameter, PRIVATE :: small = 1.e-10_ezspline_r8
 !-----------------------------------------------------------------------
 !     Private Subroutines
 !-----------------------------------------------------------------------
-      PRIVATE :: mntouv
+      PRIVATE :: mntouv, isingrid, lookupgrid1d, lookupgrid3d
 !-----------------------------------------------------------------------
 !     INTERFACE Modules
 !-----------------------------------------------------------------------
@@ -152,8 +159,12 @@
       
       SUBROUTINE load_fourier_geom_dbl(k1,k2,mnmax,nu,nv,xm,xn_in,iflag,rmnc,zmns,&
                                    rmns,zmnc,bsmns,bumnc,bvmnc,bsmnc,bumns,bvmns,&
-                                   lmns,lmnc,bmnc,bmns,gmnc,gmns)
+                                   lmns,lmnc,bmnc,bmns,gmnc,gmns,comm)
       USE EZspline
+      USE mpi_sharmem
+#if defined(MPI_OPT)
+      USE mpi
+#endif
       IMPLICIT NONE
       INTEGER, INTENT(in)        :: k1
       INTEGER, INTENT(in)        :: k2
@@ -172,17 +183,26 @@
       DOUBLE PRECISION, INTENT(in),OPTIONAL :: lmns(1:mnmax,k1:k2),lmnc(1:mnmax,k1:k2)
       DOUBLE PRECISION, INTENT(in),OPTIONAL :: bmnc(1:mnmax,k1:k2),bmns(1:mnmax,k1:k2)
       DOUBLE PRECISION, INTENT(in),OPTIONAL :: gmnc(1:mnmax,k1:k2),gmns(1:mnmax,k1:k2)
+      INTEGER, INTENT(in), OPTIONAL :: comm
       INTEGER ::  ns_t, u, mn, isherm
+      INTEGER ::  shar_comm, shar_rank, shar_size
       INTEGER ::  xn(1:mnmax)
       DOUBLE PRECISION, ALLOCATABLE :: xu(:),xv(:),rho(:),vp(:),grho(:),grho2(:)
       DOUBLE PRECISION, ALLOCATABLE :: fmn_temp(:,:)
       DOUBLE PRECISION, ALLOCATABLE :: f_temp(:,:,:)
       DOUBLE PRECISION, ALLOCATABLE :: gsr(:,:,:),gsp(:,:,:),gsz(:,:,:),gs(:,:,:)
+      TYPE(EZspline1_r8) :: Vp_spl, grho_spl, grho2_spl, Bav_spl, Bsq_spl
+      TYPE(EZspline1_r8) :: S11_spl, S12_spl, S21_spl, S22_spl
+      TYPE(EZspline3_r8) :: R_spl, Z_spl, G_spl
+      TYPE(EZspline3_r8) :: Ru_spl, Zu_spl
+      TYPE(EZspline3_r8) :: Rv_spl, Zv_spl
+      TYPE(EZspline3_r8) :: Bs_spl, Bu_spl, Bv_spl, B_spl
+      TYPE(EZspline3_r8) :: L_spl, Lu_spl, Lv_spl
 
       !Helper vars
       iflag = 0
       ns_t=k2-k1+1
-      isherm = 0
+      isherm = 0  ! Cannot change now
       ! Preform checks
       IF (ns_t < 1) iflag = -2
       IF (mnmax< 1) iflag = -3
@@ -190,265 +210,438 @@
       IF (PRESENT(rmns).NEQV.PRESENT(zmnc)) iflag = -5
       IF (PRESENT(bumnc).NEQV.PRESENT(bvmnc)) iflag = -6
       IF (iflag <0) RETURN
-      !Allocations
-      ALLOCATE(xu(nu),xv(nv),rho(k1:k2))
-      ALLOCATE(fmn_temp(1:mnmax,k1:k2))
-      ALLOCATE(f_temp(nu,nv,k1:k2))
-      FORALL(u=k1:k2) rho(u) = REAL(u-1)/REAL(ns_t-1)
-      rho = SQRT(rho) ! Improves lookup near axis
-      FORALL(u=1:nu) xu(u) = REAL(u-1)/REAL(nu-1)
-      FORALL(u=1:nv) xv(u) = REAL(u-1)/REAL(nv-1)
       ! Find NFP
       nfp = 1
       nfp = MINVAL(ABS(xn_in),MASK=(xn_in>0))
       IF (nfp == 0) nfp = 1
       xn = xn_in / nfp
-      ! Free Memory
-      IF (EZspline_allocated(R_spl)) CALL EZspline_free(R_spl,iflag)
-      IF (EZspline_allocated(Z_spl)) CALL EZspline_free(Z_spl,iflag)
-      IF (EZspline_allocated(G_spl)) CALL EZspline_free(G_spl,iflag)
-      IF (EZspline_allocated(Ru_spl)) CALL EZspline_free(Ru_spl,iflag)
-      IF (EZspline_allocated(Rv_spl)) CALL EZspline_free(Rv_spl,iflag)
-      IF (EZspline_allocated(Zu_spl)) CALL EZspline_free(Zu_spl,iflag)
-      IF (EZspline_allocated(Zv_spl)) CALL EZspline_free(Zv_spl,iflag)
-      IF (EZspline_allocated(Bs_spl)) CALL EZspline_free(Bs_spl,iflag)
-      IF (EZspline_allocated(Bu_spl)) CALL EZspline_free(Bu_spl,iflag)
-      IF (EZspline_allocated(Bv_spl)) CALL EZspline_free(Bv_spl,iflag)
-      IF (EZspline_allocated(B_spl)) CALL EZspline_free(B_spl,iflag)
-      IF (EZspline_allocated(L_spl)) CALL EZspline_free(L_spl,iflag)
-      IF (EZspline_allocated(Lu_spl)) CALL EZspline_free(Lu_spl,iflag)
-      IF (EZspline_allocated(Lv_spl)) CALL EZspline_free(Lv_spl,iflag)
-      ! Preform Init
-      CALL EZspline_init(R_spl,nu,nv,ns_t,bcs1,bcs1,bcs0,iflag)
-      CALL EZspline_init(Z_spl,nu,nv,ns_t,bcs1,bcs1,bcs0,iflag)
-      CALL EZspline_init(G_spl,nu,nv,ns_t,bcs1,bcs1,bcs0,iflag)
-      CALL EZspline_init(Ru_spl,nu,nv,ns_t,bcs1,bcs1,bcs0,iflag)
-      CALL EZspline_init(Rv_spl,nu,nv,ns_t,bcs1,bcs1,bcs0,iflag)
-      CALL EZspline_init(Zu_spl,nu,nv,ns_t,bcs1,bcs1,bcs0,iflag)
-      CALL EZspline_init(Zv_spl,nu,nv,ns_t,bcs1,bcs1,bcs0,iflag)
-      CALL EZspline_init(Bs_spl,nu,nv,ns_t,bcs1,bcs1,bcs0,iflag)
-      CALL EZspline_init(Bu_spl,nu,nv,ns_t,bcs1,bcs1,bcs0,iflag)
-      CALL EZspline_init(Bv_spl,nu,nv,ns_t,bcs1,bcs1,bcs0,iflag)
-      CALL EZspline_init(B_spl,nu,nv,ns_t,bcs1,bcs1,bcs0,iflag)
-      CALL EZspline_init(L_spl,nu,nv,ns_t,bcs1,bcs1,bcs0,iflag)
-      CALL EZspline_init(Lu_spl,nu,nv,ns_t,bcs1,bcs1,bcs0,iflag)
-      CALL EZspline_init(Lv_spl,nu,nv,ns_t,bcs1,bcs1,bcs0,iflag)
-      ! R/Z
-      f_temp =0
-      R_spl%x1 = xu*pi2; R_spl%x2 = xv*pi2; R_spl%x3 = rho; R_spl%isHermite = isherm
-      CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,rmnc,xm,xn,f_temp,0,1)
-      IF (PRESENT(rmns)) CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,rmns,xm,xn,f_temp,1,0)
-      CALL EZspline_setup(R_spl,f_temp,iflag); f_temp=0
-      Z_spl%x1 = xu*pi2; Z_spl%x2 = xv*pi2; Z_spl%x3 = rho; Z_spl%isHermite = isherm
-      CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,zmns,xm,xn,f_temp,1,0)
-      IF (PRESENT(zmnc)) CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,zmnc,xm,xn,f_temp,0,0)
-      CALL EZspline_setup(Z_spl,f_temp,iflag); f_temp = 0
-      ! dR/Du Derivatives
-      Ru_spl%x1 = xu*pi2; Ru_spl%x2 = xv*pi2; Ru_spl%x3 = rho; Ru_spl%isHermite = isherm
-      FORALL(mn = 1:mnmax) fmn_temp(mn,:) = -rmnc(mn,:)*xm(mn)
-      CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,fmn_temp,xm,xn,f_temp,1,0)
-      IF (PRESENT(rmns)) THEN
-         FORALL(mn = 1:mnmax) fmn_temp(mn,:) = rmns(mn,:)*xm(mn)
-         CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,fmn_temp,xm,xn,f_temp,0,0)
+      ! These must be consistent with splines below
+      nx1    = nu;  nx2    = nv;   nx3    = ns_t
+      x1_min = 0;   x2_min = 0;    x3_min = 0
+      x1_max = pi2; x2_max = pi2;  x3_max = 1
+      eps1 = (x1_max-x1_min)*small
+      eps2 = (x2_max-x2_min)*small
+      eps3 = (x3_max-x3_min)*small
+      ! Handle Allocating the 4D arrays
+#if defined(MPI_OPT)
+      IF (PRESENT(comm)) THEN
+         ! Get rank
+         CALL MPI_COMM_SPLIT_TYPE(comm, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, shar_comm, iflag)
+         CALL MPI_COMM_RANK(shar_comm, shar_rank, iflag)
+         CALL MPI_COMM_SIZE(shar_comm, shar_size, iflag)
+         ! Free if allocated
+         IF (ASSOCIATED(R4D))  CALL mpidealloc(R4D,  win_R4D)
+         IF (ASSOCIATED(Z4D))  CALL mpidealloc(Z4D,  win_Z4D)
+         IF (ASSOCIATED(G4D))  CALL mpidealloc(G4D,  win_G4D)
+         IF (ASSOCIATED(RU4D)) CALL mpidealloc(RU4D, win_RU4D)
+         IF (ASSOCIATED(RV4D)) CALL mpidealloc(RV4D, win_RV4D)
+         IF (ASSOCIATED(ZU4D)) CALL mpidealloc(ZU4D, win_ZU4D)
+         IF (ASSOCIATED(ZV4D)) CALL mpidealloc(ZV4D, win_ZV4D)
+         IF (ASSOCIATED(BS4D)) CALL mpidealloc(BS4D, win_BS4D)
+         IF (ASSOCIATED(BU4D)) CALL mpidealloc(BU4D, win_BU4D)
+         IF (ASSOCIATED(BV4D)) CALL mpidealloc(BV4D, win_BV4D)
+         IF (ASSOCIATED(B4D))  CALL mpidealloc(B4D,  win_B4D)
+         IF (ASSOCIATED(L4D))  CALL mpidealloc(L4D,  win_L4D)
+         IF (ASSOCIATED(LU4D)) CALL mpidealloc(LU4D, win_LU4D)
+         IF (ASSOCIATED(LV4D)) CALL mpidealloc(LV4D, win_LV4D)
+         IF (ASSOCIATED(x1)) CALL mpidealloc(x1, win_x1)
+         IF (ASSOCIATED(x2)) CALL mpidealloc(x2, win_x2)
+         IF (ASSOCIATED(x3)) CALL mpidealloc(x3, win_x3)
+         ! ALLOCATE
+         CALL mpialloc(R4D, 8, nu, nv, ns_t, shar_rank, 0, shar_comm, win_R4D)
+         CALL mpialloc(Z4D, 8, nu, nv, ns_t, shar_rank, 0, shar_comm, win_Z4D)
+         CALL mpialloc(G4D, 8, nu, nv, ns_t, shar_rank, 0, shar_comm, win_G4D)
+         CALL mpialloc(RU4D, 8, nu, nv, ns_t, shar_rank, 0, shar_comm, win_RU4D)
+         CALL mpialloc(ZU4D, 8, nu, nv, ns_t, shar_rank, 0, shar_comm, win_ZU4D)
+         CALL mpialloc(RV4D, 8, nu, nv, ns_t, shar_rank, 0, shar_comm, win_RV4D)
+         CALL mpialloc(ZV4D, 8, nu, nv, ns_t, shar_rank, 0, shar_comm, win_ZV4D)
+         CALL mpialloc(BS4D, 8, nu, nv, ns_t, shar_rank, 0, shar_comm, win_BS4D)
+         CALL mpialloc(BU4D, 8, nu, nv, ns_t, shar_rank, 0, shar_comm, win_BU4D)
+         CALL mpialloc(BV4D, 8, nu, nv, ns_t, shar_rank, 0, shar_comm, win_BV4D)
+         CALL mpialloc(B4D, 8, nu, nv, ns_t, shar_rank, 0, shar_comm, win_B4D)
+         CALL mpialloc(L4D, 8, nu, nv, ns_t, shar_rank, 0, shar_comm, win_L4D)
+         CALL mpialloc(LU4D, 8, nu, nv, ns_t, shar_rank, 0, shar_comm, win_LU4D)
+         CALL mpialloc(LV4D, 8, nu, nv, ns_t, shar_rank, 0, shar_comm, win_LV4D)
+         CALL mpialloc(x1, nu, shar_rank, 0, shar_comm, win_x1)
+         CALL mpialloc(x2, nv, shar_rank, 0, shar_comm, win_x2)
+         CALL mpialloc(x3, ns_t, shar_rank, 0, shar_comm, win_x3)
+         ! Handle the 1D arrays
+         IF (PRESENT(gmnc) .or. PRESENT(gmns)) THEN
+            IF (ASSOCIATED(VP2D))    CALL mpidealloc(VP2D,    win_VP2D)
+            IF (ASSOCIATED(GRHO2D))  CALL mpidealloc(GRHO2D,  win_GRHO2D)
+            IF (ASSOCIATED(GRHO22D)) CALL mpidealloc(GRHO22D, win_GRHO22D)
+            IF (ASSOCIATED(BAV2D))   CALL mpidealloc(BAV2D,   win_BAV2D)
+            IF (ASSOCIATED(BSQ2D))   CALL mpidealloc(BSQ2D,   win_BSQ2D)
+            IF (ASSOCIATED(S112D))   CALL mpidealloc(S112D,   win_S112D)
+            IF (ASSOCIATED(S122D))   CALL mpidealloc(S122D,   win_S122D)
+            IF (ASSOCIATED(S212D))   CALL mpidealloc(S212D,   win_S212D)
+            IF (ASSOCIATED(S222D))   CALL mpidealloc(S222D,   win_S222D)
+            CALL mpialloc(VP2D,    2, ns_t, shar_rank, 0, shar_comm, win_VP2D)
+            CALL mpialloc(GRHO2D,  2, ns_t, shar_rank, 0, shar_comm, win_GRHO2D)
+            CALL mpialloc(GRHO22D, 2, ns_t, shar_rank, 0, shar_comm, win_GRHO22D)
+            CALL mpialloc(BAV2D,   2, ns_t, shar_rank, 0, shar_comm, win_BAV2D)
+            CALL mpialloc(BSQ2D,   2, ns_t, shar_rank, 0, shar_comm, win_BSQ2D)
+            CALL mpialloc(S112D,   2, ns_t, shar_rank, 0, shar_comm, win_S112D)
+            CALL mpialloc(S122D,   2, ns_t, shar_rank, 0, shar_comm, win_S122D)
+            CALL mpialloc(S212D,   2, ns_t, shar_rank, 0, shar_comm, win_S212D)
+            CALL mpialloc(S222D,   2, ns_t, shar_rank, 0, shar_comm, win_S222D)
+         END IF
+      ELSE
+#endif
+         shar_rank = 0; shar_size = 1
+         IF (ASSOCIATED(R4D))   DEALLOCATE(R4D)
+         IF (ASSOCIATED(Z4D))   DEALLOCATE(Z4D)
+         IF (ASSOCIATED(G4D))   DEALLOCATE(G4D)
+         IF (ASSOCIATED(RU4D))  DEALLOCATE(RU4D)
+         IF (ASSOCIATED(RV4D))  DEALLOCATE(RV4D)
+         IF (ASSOCIATED(ZU4D))  DEALLOCATE(ZU4D)
+         IF (ASSOCIATED(ZV4D))  DEALLOCATE(ZV4D)
+         IF (ASSOCIATED(BS4D))  DEALLOCATE(BS4D)
+         IF (ASSOCIATED(BU4D))  DEALLOCATE(BU4D)
+         IF (ASSOCIATED(BV4D))  DEALLOCATE(BV4D)
+         IF (ASSOCIATED(B4D))   DEALLOCATE(B4D)
+         IF (ASSOCIATED(L4D))   DEALLOCATE(L4D)
+         IF (ASSOCIATED(LU4D))  DEALLOCATE(LU4D)
+         IF (ASSOCIATED(LV4D))  DEALLOCATE(LV4D)
+         IF (ASSOCIATED(x1))  DEALLOCATE(x1)
+         IF (ASSOCIATED(x2))  DEALLOCATE(x2)
+         IF (ASSOCIATED(x3))  DEALLOCATE(x3)
+         ALLOCATE(R4D(8,nu,nv,ns_t))
+         ALLOCATE(Z4D(8,nu,nv,ns_t))
+         ALLOCATE(G4D(8,nu,nv,ns_t))
+         ALLOCATE(RU4D(8,nu,nv,ns_t))
+         ALLOCATE(RV4D(8,nu,nv,ns_t))
+         ALLOCATE(ZU4D(8,nu,nv,ns_t))
+         ALLOCATE(ZV4D(8,nu,nv,ns_t))
+         ALLOCATE(BS4D(8,nu,nv,ns_t))
+         ALLOCATE(BU4D(8,nu,nv,ns_t))
+         ALLOCATE(BV4D(8,nu,nv,ns_t))
+         ALLOCATE(B4D(8,nu,nv,ns_t))
+         ALLOCATE(L4D(8,nu,nv,ns_t))
+         ALLOCATE(LU4D(8,nu,nv,ns_t))
+         ALLOCATE(LV4D(8,nu,nv,ns_t))
+         ALLOCATE(x1(nu))
+         ALLOCATE(x2(nv))
+         ALLOCATE(x3(ns_t))
+         IF (PRESENT(gmnc) .or. PRESENT(gmns)) THEN
+            IF (ASSOCIATED(VP2D))    DEALLOCATE(VP2D)
+            IF (ASSOCIATED(GRHO2D))  DEALLOCATE(GRHO2D)
+            IF (ASSOCIATED(GRHO22D)) DEALLOCATE(GRHO22D)
+            IF (ASSOCIATED(BAV2D))   DEALLOCATE(BAV2D)
+            IF (ASSOCIATED(BSQ2D))   DEALLOCATE(BSQ2D)
+            IF (ASSOCIATED(S112D))   DEALLOCATE(S112D)
+            IF (ASSOCIATED(S122D))   DEALLOCATE(S122D)
+            IF (ASSOCIATED(S212D))   DEALLOCATE(S212D)
+            IF (ASSOCIATED(S222D))   DEALLOCATE(S222D)
+            ALLOCATE(VP2D(2,ns_t))
+            ALLOCATE(GRHO2D(2,ns_t))
+            ALLOCATE(GRHO22D(2,ns_t))
+            ALLOCATE(BAV2D(2,ns_t))
+            ALLOCATE(BSQ2D(2,ns_t))
+            ALLOCATE(S112D(2,ns_t))
+            ALLOCATE(S122D(2,ns_t))
+            ALLOCATE(S212D(2,ns_t))
+            ALLOCATE(S222D(2,ns_t))
+         END IF
+#if defined(MPI_OPT)
       END IF
-      CALL EZspline_setup(Ru_spl,f_temp,iflag); f_temp = 0
-      ! dR/Dv Derivatives
-      Rv_spl%x1 = xu*pi2; Rv_spl%x2 = xv*pi2; Rv_spl%x3 = rho; Rv_spl%isHermite = isherm
-      FORALL(mn = 1:mnmax) fmn_temp(mn,:) = -rmnc(mn,:)*xn(mn)
-      CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,fmn_temp,xm,xn,f_temp,1,0)
-      IF (PRESENT(rmns)) THEN
-         FORALL(mn = 1:mnmax) fmn_temp(mn,:) = rmns(mn,:)*xn(mn)
-         CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,fmn_temp,xm,xn,f_temp,0,0)
-      END IF
-      CALL EZspline_setup(Rv_spl,f_temp,iflag); f_temp = 0
-      ! dZ/Du Derivatives
-      Zu_spl%x1 = xu*pi2; Zu_spl%x2 = xv*pi2; Zu_spl%x3 = rho; Zu_spl%isHermite = isherm
-      FORALL(mn = 1:mnmax) fmn_temp(mn,:) = zmns(mn,:)*xm(mn)
-      CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,fmn_temp,xm,xn,f_temp,0,0)
-      IF (PRESENT(zmnc)) THEN
-         FORALL(mn = 1:mnmax) fmn_temp(mn,:) = -zmnc(mn,:)*xm(mn)
+#endif
+      IF (shar_rank == 0) THEN
+         !Allocations
+         ALLOCATE(xu(nu),xv(nv),rho(k1:k2))
+         ALLOCATE(fmn_temp(1:mnmax,k1:k2))
+         ALLOCATE(f_temp(nu,nv,k1:k2))
+         FORALL(u=k1:k2) rho(u) = REAL(u-1)/REAL(ns_t-1)
+         rho = SQRT(rho) ! Improves lookup near axis
+         FORALL(u=1:nu) xu(u) = REAL(u-1)/REAL(nu-1)
+         FORALL(u=1:nv) xv(u) = REAL(u-1)/REAL(nv-1)
+         ! Preform Init
+         CALL EZspline_init(R_spl,nu,nv,ns_t,bcs1,bcs1,bcs0,iflag)
+         CALL EZspline_init(Z_spl,nu,nv,ns_t,bcs1,bcs1,bcs0,iflag)
+         CALL EZspline_init(G_spl,nu,nv,ns_t,bcs1,bcs1,bcs0,iflag)
+         CALL EZspline_init(Ru_spl,nu,nv,ns_t,bcs1,bcs1,bcs0,iflag)
+         CALL EZspline_init(Rv_spl,nu,nv,ns_t,bcs1,bcs1,bcs0,iflag)
+         CALL EZspline_init(Zu_spl,nu,nv,ns_t,bcs1,bcs1,bcs0,iflag)
+         CALL EZspline_init(Zv_spl,nu,nv,ns_t,bcs1,bcs1,bcs0,iflag)
+         CALL EZspline_init(Bs_spl,nu,nv,ns_t,bcs1,bcs1,bcs0,iflag)
+         CALL EZspline_init(Bu_spl,nu,nv,ns_t,bcs1,bcs1,bcs0,iflag)
+         CALL EZspline_init(Bv_spl,nu,nv,ns_t,bcs1,bcs1,bcs0,iflag)
+         CALL EZspline_init(B_spl,nu,nv,ns_t,bcs1,bcs1,bcs0,iflag)
+         CALL EZspline_init(L_spl,nu,nv,ns_t,bcs1,bcs1,bcs0,iflag)
+         CALL EZspline_init(Lu_spl,nu,nv,ns_t,bcs1,bcs1,bcs0,iflag)
+         CALL EZspline_init(Lv_spl,nu,nv,ns_t,bcs1,bcs1,bcs0,iflag)
+         ! R/Z
+         f_temp =0
+         R_spl%x1 = xu*pi2; R_spl%x2 = xv*pi2; R_spl%x3 = rho; R_spl%isHermite = isherm
+         CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,rmnc,xm,xn,f_temp,0,1)
+         IF (PRESENT(rmns)) CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,rmns,xm,xn,f_temp,1,0)
+         CALL EZspline_setup(R_spl,f_temp,iflag); f_temp=0
+         Z_spl%x1 = xu*pi2; Z_spl%x2 = xv*pi2; Z_spl%x3 = rho; Z_spl%isHermite = isherm
+         CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,zmns,xm,xn,f_temp,1,0)
+         IF (PRESENT(zmnc)) CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,zmnc,xm,xn,f_temp,0,0)
+         CALL EZspline_setup(Z_spl,f_temp,iflag); f_temp = 0
+         ! dR/Du Derivatives
+         Ru_spl%x1 = xu*pi2; Ru_spl%x2 = xv*pi2; Ru_spl%x3 = rho; Ru_spl%isHermite = isherm
+         FORALL(mn = 1:mnmax) fmn_temp(mn,:) = -rmnc(mn,:)*xm(mn)
          CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,fmn_temp,xm,xn,f_temp,1,0)
-      END IF
-      CALL EZspline_setup(Zu_spl,f_temp,iflag); f_temp = 0
-      ! dZ/Dv Derivatives
-      Zv_spl%x1 = xu*pi2; Zv_spl%x2 = xv*pi2; Zv_spl%x3 = rho; Zv_spl%isHermite = isherm
-      FORALL(mn = 1:mnmax) fmn_temp(mn,:) = zmns(mn,:)*xn(mn)
-      CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,fmn_temp,xm,xn,f_temp,0,0)
-      IF (PRESENT(zmnc)) THEN
-         FORALL(mn = 1:mnmax) fmn_temp(mn,:) = -zmnc(mn,:)*xn(mn)
+         IF (PRESENT(rmns)) THEN
+            FORALL(mn = 1:mnmax) fmn_temp(mn,:) = rmns(mn,:)*xm(mn)
+            CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,fmn_temp,xm,xn,f_temp,0,0)
+         END IF
+         CALL EZspline_setup(Ru_spl,f_temp,iflag); f_temp = 0
+         ! dR/Dv Derivatives
+         Rv_spl%x1 = xu*pi2; Rv_spl%x2 = xv*pi2; Rv_spl%x3 = rho; Rv_spl%isHermite = isherm
+         FORALL(mn = 1:mnmax) fmn_temp(mn,:) = -rmnc(mn,:)*xn(mn)
          CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,fmn_temp,xm,xn,f_temp,1,0)
-      END IF
-      CALL EZspline_setup(Zv_spl,f_temp,iflag); f_temp = 0
-      ! B^s
-      Bs_spl%x1 = xu*pi2; Bs_spl%x2 = xv*pi2; Bs_spl%x3 = rho; Bs_spl%isHermite = isherm
-      IF (PRESENT(bsmns)) CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,bsmns,xm,xn,f_temp,1,0)
-      IF (PRESENT(bsmnc)) CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,bsmnc,xm,xn,f_temp,0,0)
-      CALL EZspline_setup(Bs_spl,f_temp,iflag); f_temp = 0
-      ! B^u
-      Bu_spl%x1 = xu*pi2; Bu_spl%x2 = xv*pi2; Bu_spl%x3 = rho; Bu_spl%isHermite = isherm
-      IF (PRESENT(bumnc)) CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,bumnc,xm,xn,f_temp,0,0)
-      IF (PRESENT(bumns)) CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,bumns,xm,xn,f_temp,1,0)
-      CALL EZspline_setup(Bu_spl,f_temp,iflag); f_temp = 0
-      ! B^v
-      Bv_spl%x1 = xu*pi2; Bv_spl%x2 = xv*pi2; Bv_spl%x3 = rho; Bv_spl%isHermite = isherm
-      IF (PRESENT(bvmnc)) CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,bvmnc,xm,xn,f_temp,0,0)
-      IF (PRESENT(bvmns)) CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,bvmns,xm,xn,f_temp,1,0)
-      CALL EZspline_setup(Bv_spl,f_temp,iflag); f_temp = 0
-      ! ModB
-      B_spl%x1 = xu*pi2; B_spl%x2 = xv*pi2; B_spl%x3 = rho; B_spl%isHermite = isherm
-      IF (PRESENT(bmnc)) CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,bmnc,xm,xn,f_temp,0,0)
-      IF (PRESENT(bmns)) CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,bmns,xm,xn,f_temp,1,0)
-      CALL EZspline_setup(B_spl,f_temp,iflag); f_temp = 0
-      ! Jacobian sqrt(g)
-      G_spl%x1 = xu*pi2; G_spl%x2 = xv*pi2; G_spl%x3 = rho; G_spl%isHermite = isherm
-      IF (PRESENT(gmnc)) CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,gmnc,xm,xn,f_temp,0,0)
-      IF (PRESENT(gmns)) CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,gmns,xm,xn,f_temp,1,0)
-      CALL EZspline_setup(G_spl,f_temp,iflag); f_temp = 0
-      ! Lambda
-      L_spl%x1 = xu*pi2; L_spl%x2 = xv*pi2; L_spl%x3 = rho; L_spl%isHermite = isherm
-      IF (PRESENT(lmns)) CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,lmns,xm,xn,f_temp,1,0)
-      IF (PRESENT(lmnc)) CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,lmnc,xm,xn,f_temp,0,0)
-      CALL EZspline_setup(L_spl,f_temp,iflag); f_temp = 0
-      ! Lambda/u
-      Lu_spl%x1 = xu*pi2; Lu_spl%x2 = xv*pi2; Lu_spl%x3 = rho; Lu_spl%isHermite = isherm
-      IF (PRESENT(lmns)) THEN
-         FORALL(mn = 1:mnmax) fmn_temp(mn,:) = lmns(mn,:)*xm(mn)
+         IF (PRESENT(rmns)) THEN
+            FORALL(mn = 1:mnmax) fmn_temp(mn,:) = rmns(mn,:)*xn(mn)
+            CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,fmn_temp,xm,xn,f_temp,0,0)
+         END IF
+         CALL EZspline_setup(Rv_spl,f_temp,iflag); f_temp = 0
+         ! dZ/Du Derivatives
+         Zu_spl%x1 = xu*pi2; Zu_spl%x2 = xv*pi2; Zu_spl%x3 = rho; Zu_spl%isHermite = isherm
+         FORALL(mn = 1:mnmax) fmn_temp(mn,:) = zmns(mn,:)*xm(mn)
          CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,fmn_temp,xm,xn,f_temp,0,0)
-      END IF
-      IF (PRESENT(lmnc)) THEN
-         FORALL(mn = 1:mnmax) fmn_temp(mn,:) = -lmnc(mn,:)*xm(mn)
-         CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,fmn_temp,xm,xn,f_temp,1,0)
-      END IF
-      CALL EZspline_setup(Lu_spl,f_temp,iflag); f_temp = 0
-      ! Lambda/v
-      Lv_spl%x1 = xu*pi2; Lv_spl%x2 = xv*pi2; Lv_spl%x3 = rho; Lv_spl%isHermite = isherm
-      IF (PRESENT(lmns)) THEN
-         FORALL(mn = 1:mnmax) fmn_temp(mn,:) = lmns(mn,:)*xn(mn)
+         IF (PRESENT(zmnc)) THEN
+            FORALL(mn = 1:mnmax) fmn_temp(mn,:) = -zmnc(mn,:)*xm(mn)
+            CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,fmn_temp,xm,xn,f_temp,1,0)
+         END IF
+         CALL EZspline_setup(Zu_spl,f_temp,iflag); f_temp = 0
+         ! dZ/Dv Derivatives
+         Zv_spl%x1 = xu*pi2; Zv_spl%x2 = xv*pi2; Zv_spl%x3 = rho; Zv_spl%isHermite = isherm
+         FORALL(mn = 1:mnmax) fmn_temp(mn,:) = zmns(mn,:)*xn(mn)
          CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,fmn_temp,xm,xn,f_temp,0,0)
-      END IF
-      IF (PRESENT(lmnc)) THEN
-         FORALL(mn = 1:mnmax) fmn_temp(mn,:) = -lmnc(mn,:)*xn(mn)
-         CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,fmn_temp,xm,xn,f_temp,1,0)
-      END IF
-      CALL EZspline_setup(Lv_spl,f_temp,iflag); f_temp = 0
-      
-      ! Calculate rho_s
-      IF (PRESENT(gmnc) .or. PRESENT(gmns)) THEN
-         ! Allocations
-         IF (EZspline_allocated(Vp_spl)) CALL EZspline_free(Vp_spl,iflag)
-         IF (EZspline_allocated(grho_spl)) CALL EZspline_free(grho_spl,iflag)
-         IF (EZspline_allocated(grho2_spl)) CALL EZspline_free(grho2_spl,iflag)
-         IF (EZspline_allocated(S11_spl)) CALL EZspline_free(S11_spl,iflag)
-         IF (EZspline_allocated(S12_spl)) CALL EZspline_free(S12_spl,iflag)
-         IF (EZspline_allocated(S21_spl)) CALL EZspline_free(S21_spl,iflag)
-         IF (EZspline_allocated(S22_spl)) CALL EZspline_free(S22_spl,iflag)
-         IF (EZspline_allocated(Bav_spl)) CALL EZspline_free(Bav_spl,iflag)
-         IF (EZspline_allocated(Bsq_spl)) CALL EZspline_free(Bsq_spl,iflag)
-         CALL EZspline_init(Vp_spl,ns_t,bcs0,iflag)
-         CALL EZspline_init(grho_spl,ns_t,bcs0,iflag)
-         CALL EZspline_init(grho2_spl,ns_t,bcs0,iflag)
-         CALL EZspline_init(S11_spl,ns_t,bcs0,iflag)
-         CALL EZspline_init(S12_spl,ns_t,bcs0,iflag)
-         CALL EZspline_init(S21_spl,ns_t,bcs0,iflag)
-         CALL EZspline_init(S22_spl,ns_t,bcs0,iflag)
-         CALL EZspline_init(Bav_spl,ns_t,bcs0,iflag)
-         CALL EZspline_init(Bsq_spl,ns_t,bcs0,iflag)
-         Vp_spl%x1 = rho; grho_spl%x1 = rho; grho2_spl%x1 = rho
-         S11_spl%x1 = rho; S12_spl%x1 = rho; S21_spl%x1 = rho; S22_spl%x1=rho
-         Bav_spl%x1 = rho; Bsq_spl%x1 = rho
-         ALLOCATE(Vp(k1:k2),grho(k1:k2),grho2(k1:k2))
-         ALLOCATE(gsr(nu,nv,k1:k2),gsp(nu,nv,k1:k2),gsz(nu,nv,k1:k2),&
-                  gs(nu,nv,k1:k2))
-         ! Calc grad(s) components dR/du X dR/dv / sqrt(g)
-         !    Note component of R_spl comes from dphi/dphi and cyl coordinates
-         gsr = - Zu_spl%fspl(1,:,:,:)*R_spl%fspl(1,:,:,:)
-         gsp = (Zu_spl%fspl(1,:,:,:)*Rv_spl%fspl(1,:,:,:) - Ru_spl%fspl(1,:,:,:)*Zv_spl%fspl(1,:,:,:))*nfp
-         gsz =   Ru_spl%fspl(1,:,:,:)*R_spl%fspl(1,:,:,:)
-         f_temp   = G_spl%fspl(1,:,:,:)
-         gs  = (gsr*gsr+gsp*gsp+gsz*gsz)/(f_temp*f_temp)  !|grad(s)|^2
-         FORALL(u=k1:k2) gs(:,:,u) = gs(:,:,u)/(4*rho(u)*rho(u)) !|grad(rho)|^2
-         ! dV/ds
-         Vp = SUM(SUM(f_temp,DIM=1),DIM=1)
-         !Vp(1) = 2*Vp(2) - Vp(3)
-         ! <|grad(rho)|^2>
-         grho2 = SUM(SUM(gs*f_temp,DIM=1),DIM=1)
-         grho2 = grho2 / Vp
-         grho2(1) = 2*grho2(2) - grho2(3)
-         ! <|grad(rho|>|
-         gs = sqrt(gs) !|grad(rho)|
-         grho = SUM(SUM(gs*f_temp,DIM=1),DIM=1)
-         grho = grho / Vp
-         grho(1) = 2*grho(2) - grho(3)
-         ! Construct splines
-         CALL EZspline_setup(Vp_spl,ABS(Vp*pi2*pi2/(nu*nv)),iflag) ! ABS because of negative Jacobian
-         CALL EZspline_setup(grho_spl,grho,iflag)
-         CALL EZspline_setup(grho2_spl,grho2,iflag)
-         f_temp = 0; grho = 0
-         ! Calc S11
-         f_temp = (Ru_spl%fspl(1,:,:,:)*Ru_spl%fspl(1,:,:,:)+ &
-                   Zu_spl%fspl(1,:,:,:)*Zu_spl%fspl(1,:,:,:))
-         f_temp = f_temp / G_spl%fspl(1,:,:,:)
-         grho   = SUM(SUM(f_temp,DIM=1),DIM=1)/(nu*nv)
-         grho(1) = 2*grho(2) - grho(3)
-         CALL EZspline_setup(S11_spl,grho,iflag); f_temp = 0; grho = 0
-         ! Calc S21
-         f_temp = (Ru_spl%fspl(1,:,:,:)*Rv_spl%fspl(1,:,:,:)+ &
-                   Zu_spl%fspl(1,:,:,:)*Zv_spl%fspl(1,:,:,:))*nfp
-         f_temp = f_temp / G_spl%fspl(1,:,:,:)
-         grho   = SUM(SUM(f_temp,DIM=1),DIM=1)/(nu*nv)
-         grho(1) = 2*grho(2) - grho(3)
-         CALL EZspline_setup(S21_spl,grho,iflag); f_temp = 0; grho = 0
-         ! Calc S12
-         f_temp = (Ru_spl%fspl(1,:,:,:)*Rv_spl%fspl(1,:,:,:)+ &
-                   Zu_spl%fspl(1,:,:,:)*Zv_spl%fspl(1,:,:,:))* &
-                  (one+Lu_spl%fspl(1,:,:,:))*nfp
-         f_temp = f_temp - (Ru_spl%fspl(1,:,:,:)*Ru_spl%fspl(1,:,:,:)+ &
-                            Zu_spl%fspl(1,:,:,:)*Zu_spl%fspl(1,:,:,:))*&
-                           Lv_spl%fspl(1,:,:,:)
-         f_temp = f_temp / G_spl%fspl(1,:,:,:)
-         grho   = SUM(SUM(f_temp,DIM=1),DIM=1)/(nu*nv)
-         grho(1) = 2*grho(2) - grho(3)
-         CALL EZspline_setup(S12_spl,grho,iflag); f_temp = 0; grho = 0
-         ! Calc S22
-         f_temp = (Rv_spl%fspl(1,:,:,:)*Rv_spl%fspl(1,:,:,:)*nfp*nfp+ &
-                   Zv_spl%fspl(1,:,:,:)*Zv_spl%fspl(1,:,:,:)*nfp*nfp+ &
-                   R_spl%fspl(1,:,:,:)* R_spl%fspl(1,:,:,:))* &
-                  (one+Lu_spl%fspl(1,:,:,:))
-         f_temp = f_temp - (Ru_spl%fspl(1,:,:,:)*Rv_spl%fspl(1,:,:,:)+ &
-                            Zu_spl%fspl(1,:,:,:)*Zv_spl%fspl(1,:,:,:))*&
-                           Lv_spl%fspl(1,:,:,:)*nfp
-         f_temp = f_temp / G_spl%fspl(1,:,:,:)
-         grho   = SUM(SUM(f_temp,DIM=1),DIM=1)/(nu*nv)
-         !grho(1) = 2*grho(2) - grho(3)
-         CALL EZspline_setup(S22_spl,grho,iflag); f_temp = 0; grho = 0
-         ! Bav
-         f_temp = B_spl%fspl(1,:,:,:)*G_spl%fspl(1,:,:,:)
-         grho   = SUM(SUM(f_temp,DIM=1),DIM=1)/(nu*nv)
-         grho2 = grho2 / Vp
-         grho2(1) = 2*grho2(2) - grho2(3)
-         CALL EZspline_setup(Bav_spl,grho,iflag); f_temp = 0; grho = 0
-         ! Bsq
-         f_temp = B_spl%fspl(1,:,:,:)*B_spl%fspl(1,:,:,:)*G_spl%fspl(1,:,:,:)
-         grho   = SUM(SUM(f_temp,DIM=1),DIM=1)/(nu*nv)
-         grho2 = grho2 / Vp
-         grho2(1) = 2*grho2(2) - grho2(3)
-         CALL EZspline_setup(Bsq_spl,grho,iflag); f_temp = 0; grho = 0
-         ! Deallocate arrays
-         DEALLOCATE(gsr,gsp,gsz,gs,Vp,grho,grho2)
-         f_temp = 0
-      END IF
+         IF (PRESENT(zmnc)) THEN
+            FORALL(mn = 1:mnmax) fmn_temp(mn,:) = -zmnc(mn,:)*xn(mn)
+            CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,fmn_temp,xm,xn,f_temp,1,0)
+         END IF
+         CALL EZspline_setup(Zv_spl,f_temp,iflag); f_temp = 0
+         ! B^s
+         Bs_spl%x1 = xu*pi2; Bs_spl%x2 = xv*pi2; Bs_spl%x3 = rho; Bs_spl%isHermite = isherm
+         IF (PRESENT(bsmns)) CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,bsmns,xm,xn,f_temp,1,0)
+         IF (PRESENT(bsmnc)) CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,bsmnc,xm,xn,f_temp,0,0)
+         CALL EZspline_setup(Bs_spl,f_temp,iflag); f_temp = 0
+         ! B^u
+         Bu_spl%x1 = xu*pi2; Bu_spl%x2 = xv*pi2; Bu_spl%x3 = rho; Bu_spl%isHermite = isherm
+         IF (PRESENT(bumnc)) CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,bumnc,xm,xn,f_temp,0,0)
+         IF (PRESENT(bumns)) CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,bumns,xm,xn,f_temp,1,0)
+         CALL EZspline_setup(Bu_spl,f_temp,iflag); f_temp = 0
+         ! B^v
+         Bv_spl%x1 = xu*pi2; Bv_spl%x2 = xv*pi2; Bv_spl%x3 = rho; Bv_spl%isHermite = isherm
+         IF (PRESENT(bvmnc)) CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,bvmnc,xm,xn,f_temp,0,0)
+         IF (PRESENT(bvmns)) CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,bvmns,xm,xn,f_temp,1,0)
+         CALL EZspline_setup(Bv_spl,f_temp,iflag); f_temp = 0
+         ! ModB
+         B_spl%x1 = xu*pi2; B_spl%x2 = xv*pi2; B_spl%x3 = rho; B_spl%isHermite = isherm
+         IF (PRESENT(bmnc)) CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,bmnc,xm,xn,f_temp,0,0)
+         IF (PRESENT(bmns)) CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,bmns,xm,xn,f_temp,1,0)
+         CALL EZspline_setup(B_spl,f_temp,iflag); f_temp = 0
+         ! Jacobian sqrt(g)
+         G_spl%x1 = xu*pi2; G_spl%x2 = xv*pi2; G_spl%x3 = rho; G_spl%isHermite = isherm
+         IF (PRESENT(gmnc)) CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,gmnc,xm,xn,f_temp,0,0)
+         IF (PRESENT(gmns)) CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,gmns,xm,xn,f_temp,1,0)
+         CALL EZspline_setup(G_spl,f_temp,iflag); f_temp = 0
+         ! Lambda
+         L_spl%x1 = xu*pi2; L_spl%x2 = xv*pi2; L_spl%x3 = rho; L_spl%isHermite = isherm
+         IF (PRESENT(lmns)) CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,lmns,xm,xn,f_temp,1,0)
+         IF (PRESENT(lmnc)) CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,lmnc,xm,xn,f_temp,0,0)
+         CALL EZspline_setup(L_spl,f_temp,iflag); f_temp = 0
+         ! Lambda/u
+         Lu_spl%x1 = xu*pi2; Lu_spl%x2 = xv*pi2; Lu_spl%x3 = rho; Lu_spl%isHermite = isherm
+         IF (PRESENT(lmns)) THEN
+            FORALL(mn = 1:mnmax) fmn_temp(mn,:) = lmns(mn,:)*xm(mn)
+            CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,fmn_temp,xm,xn,f_temp,0,0)
+         END IF
+         IF (PRESENT(lmnc)) THEN
+            FORALL(mn = 1:mnmax) fmn_temp(mn,:) = -lmnc(mn,:)*xm(mn)
+            CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,fmn_temp,xm,xn,f_temp,1,0)
+         END IF
+         CALL EZspline_setup(Lu_spl,f_temp,iflag); f_temp = 0
+         ! Lambda/v
+         Lv_spl%x1 = xu*pi2; Lv_spl%x2 = xv*pi2; Lv_spl%x3 = rho; Lv_spl%isHermite = isherm
+         IF (PRESENT(lmns)) THEN
+            FORALL(mn = 1:mnmax) fmn_temp(mn,:) = lmns(mn,:)*xn(mn)
+            CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,fmn_temp,xm,xn,f_temp,0,0)
+         END IF
+         IF (PRESENT(lmnc)) THEN
+            FORALL(mn = 1:mnmax) fmn_temp(mn,:) = -lmnc(mn,:)*xn(mn)
+            CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,fmn_temp,xm,xn,f_temp,1,0)
+         END IF
+         CALL EZspline_setup(Lv_spl,f_temp,iflag); f_temp = 0
 
-      ! DEALLOCATIONS
-      DEALLOCATE(xu,xv,rho)
-      DEALLOCATE(f_temp)
-      ! Return
+         ! Here the part where we copy and delete everything
+         x1   = R_SPL%x1
+         x2   = R_SPL%x2
+         x3   = R_SPL%x3
+         R4D  = R_SPL%fspl
+         Z4D  = Z_SPL%fspl
+         G4D  = G_SPL%fspl
+         RU4D = RU_SPL%fspl
+         ZU4D = ZU_SPL%fspl
+         RV4D = RV_SPL%fspl
+         ZV4D = ZV_SPL%fspl
+         BS4D = BS_SPL%fspl
+         BU4D = BU_SPL%fspl
+         BV4D = BV_SPL%fspl
+         B4D  = B_SPL%fspl
+         L4D  = L_SPL%fspl
+         LU4D  = LU_SPL%fspl
+         LV4D  = LV_SPL%fspl
+         CALL EZspline_free(R_spl,iflag)
+         CALL EZspline_free(Z_spl,iflag)
+         CALL EZspline_free(G_spl,iflag)
+         CALL EZspline_free(RU_spl,iflag)
+         CALL EZspline_free(RV_spl,iflag)
+         CALL EZspline_free(ZU_spl,iflag)
+         CALL EZspline_free(ZV_spl,iflag)
+         CALL EZspline_free(BS_spl,iflag)
+         CALL EZspline_free(BU_spl,iflag)
+         CALL EZspline_free(BV_spl,iflag)
+         CALL EZspline_free(B_spl,iflag)
+         CALL EZspline_free(L_spl,iflag)
+         CALL EZspline_free(LU_spl,iflag)
+         CALL EZspline_free(LV_spl,iflag)
+         
+         ! Calculate rho_s
+         IF (PRESENT(gmnc) .or. PRESENT(gmns)) THEN
+            ! Allocations
+            IF (EZspline_allocated(Vp_spl)) CALL EZspline_free(Vp_spl,iflag)
+            IF (EZspline_allocated(grho_spl)) CALL EZspline_free(grho_spl,iflag)
+            IF (EZspline_allocated(grho2_spl)) CALL EZspline_free(grho2_spl,iflag)
+            IF (EZspline_allocated(S11_spl)) CALL EZspline_free(S11_spl,iflag)
+            IF (EZspline_allocated(S12_spl)) CALL EZspline_free(S12_spl,iflag)
+            IF (EZspline_allocated(S21_spl)) CALL EZspline_free(S21_spl,iflag)
+            IF (EZspline_allocated(S22_spl)) CALL EZspline_free(S22_spl,iflag)
+            IF (EZspline_allocated(Bav_spl)) CALL EZspline_free(Bav_spl,iflag)
+            IF (EZspline_allocated(Bsq_spl)) CALL EZspline_free(Bsq_spl,iflag)
+            CALL EZspline_init(Vp_spl,ns_t,bcs0,iflag)
+            CALL EZspline_init(grho_spl,ns_t,bcs0,iflag)
+            CALL EZspline_init(grho2_spl,ns_t,bcs0,iflag)
+            CALL EZspline_init(S11_spl,ns_t,bcs0,iflag)
+            CALL EZspline_init(S12_spl,ns_t,bcs0,iflag)
+            CALL EZspline_init(S21_spl,ns_t,bcs0,iflag)
+            CALL EZspline_init(S22_spl,ns_t,bcs0,iflag)
+            CALL EZspline_init(Bav_spl,ns_t,bcs0,iflag)
+            CALL EZspline_init(Bsq_spl,ns_t,bcs0,iflag)
+            Vp_spl%x1 = rho; grho_spl%x1 = rho; grho2_spl%x1 = rho
+            S11_spl%x1 = rho; S12_spl%x1 = rho; S21_spl%x1 = rho; S22_spl%x1=rho
+            Bav_spl%x1 = rho; Bsq_spl%x1 = rho
+            ALLOCATE(Vp(k1:k2),grho(k1:k2),grho2(k1:k2))
+            ALLOCATE(gsr(nu,nv,k1:k2),gsp(nu,nv,k1:k2),gsz(nu,nv,k1:k2),&
+                     gs(nu,nv,k1:k2))
+            ! Calc grad(s) components dR/du X dR/dv / sqrt(g)
+            !    Note component of R_spl comes from dphi/dphi and cyl coordinates
+            gsr = - ZU4D(1,:,:,:)*R4D(1,:,:,:)
+            gsp = (ZU4D(1,:,:,:)*RV4D(1,:,:,:) - RU4D(1,:,:,:)*ZV4D(1,:,:,:))*nfp
+            gsz =   RU4D(1,:,:,:)*R4D(1,:,:,:)
+            f_temp   = G4D(1,:,:,:)
+            gs  = (gsr*gsr+gsp*gsp+gsz*gsz)/(f_temp*f_temp)  !|grad(s)|^2
+            FORALL(u=k1:k2) gs(:,:,u) = gs(:,:,u)/(4*rho(u)*rho(u)) !|grad(rho)|^2
+            ! dV/ds
+            Vp = SUM(SUM(f_temp,DIM=1),DIM=1)
+            !Vp(1) = 2*Vp(2) - Vp(3)
+            ! <|grad(rho)|^2>
+            grho2 = SUM(SUM(gs*f_temp,DIM=1),DIM=1)
+            grho2 = grho2 / Vp
+            grho2(1) = 2*grho2(2) - grho2(3)
+            ! <|grad(rho|>|
+            gs = sqrt(gs) !|grad(rho)|
+            grho = SUM(SUM(gs*f_temp,DIM=1),DIM=1)
+            grho = grho / Vp
+            grho(1) = 2*grho(2) - grho(3)
+            ! Construct splines
+            CALL EZspline_setup(Vp_spl,ABS(Vp*pi2*pi2/(nu*nv)),iflag) ! ABS because of negative Jacobian
+            CALL EZspline_setup(grho_spl,grho,iflag)
+            CALL EZspline_setup(grho2_spl,grho2,iflag)
+            f_temp = 0; grho = 0
+            ! Calc S11
+            f_temp = (RU4D(1,:,:,:)*RU4D(1,:,:,:)+ &
+                      ZU4D(1,:,:,:)*ZU4D(1,:,:,:))
+            f_temp = f_temp / G4D(1,:,:,:)
+            grho   = SUM(SUM(f_temp,DIM=1),DIM=1)/(nu*nv)
+            grho(1) = 2*grho(2) - grho(3)
+            CALL EZspline_setup(S11_spl,grho,iflag); f_temp = 0; grho = 0
+            ! Calc S21
+            f_temp = (RU4D(1,:,:,:)*RV4D(1,:,:,:)+ &
+                      ZU4D(1,:,:,:)*ZV4D(1,:,:,:))*nfp
+            f_temp = f_temp / G4D(1,:,:,:)
+            grho   = SUM(SUM(f_temp,DIM=1),DIM=1)/(nu*nv)
+            grho(1) = 2*grho(2) - grho(3)
+            CALL EZspline_setup(S21_spl,grho,iflag); f_temp = 0; grho = 0
+            ! Calc S12
+            f_temp = (RU4D(1,:,:,:)*RV4D(1,:,:,:)+ &
+                      ZU4D(1,:,:,:)*ZV4D(1,:,:,:))* &
+                     (one+LU4D(1,:,:,:))*nfp
+            f_temp = f_temp - (RU4D(1,:,:,:)*RU4D(1,:,:,:)+ &
+                               ZU4D(1,:,:,:)*ZU4D(1,:,:,:))*&
+                              LV4D(1,:,:,:)
+            f_temp = f_temp / G4D(1,:,:,:)
+            grho   = SUM(SUM(f_temp,DIM=1),DIM=1)/(nu*nv)
+            grho(1) = 2*grho(2) - grho(3)
+            CALL EZspline_setup(S12_spl,grho,iflag); f_temp = 0; grho = 0
+            ! Calc S22
+            f_temp = (RV4D(1,:,:,:)*RV4D(1,:,:,:)*nfp*nfp+ &
+                      ZV4D(1,:,:,:)*ZV4D(1,:,:,:)*nfp*nfp+ &
+                      R4D(1,:,:,:)* R4D(1,:,:,:))* &
+                     (one+LU4D(1,:,:,:))
+            f_temp = f_temp - (RU4D(1,:,:,:)*RV4D(1,:,:,:)+ &
+                               ZU4D(1,:,:,:)*ZV4D(1,:,:,:))*&
+                              LV4D(1,:,:,:)*nfp
+            f_temp = f_temp / G4D(1,:,:,:)
+            grho   = SUM(SUM(f_temp,DIM=1),DIM=1)/(nu*nv)
+            !grho(1) = 2*grho(2) - grho(3)
+            CALL EZspline_setup(S22_spl,grho,iflag); f_temp = 0; grho = 0
+            ! Bav
+            f_temp = B4D(1,:,:,:)*G4D(1,:,:,:)
+            grho   = SUM(SUM(f_temp,DIM=1),DIM=1)/(nu*nv)
+            grho2 = grho2 / Vp
+            grho2(1) = 2*grho2(2) - grho2(3)
+            CALL EZspline_setup(Bav_spl,grho,iflag); f_temp = 0; grho = 0
+            ! Bsq
+            f_temp = B4D(1,:,:,:)*B4D(1,:,:,:)*G4D(1,:,:,:)
+            grho   = SUM(SUM(f_temp,DIM=1),DIM=1)/(nu*nv)
+            grho2 = grho2 / Vp
+            grho2(1) = 2*grho2(2) - grho2(3)
+            CALL EZspline_setup(Bsq_spl,grho,iflag); f_temp = 0; grho = 0
+            ! Deallocate arrays
+            DEALLOCATE(gsr,gsp,gsz,gs,Vp,grho,grho2)
+            f_temp = 0
+            VP2D    = VP_SPL%fspl
+            GRHO2D  = GRHO_SPL%fspl
+            GRHO22D = GRHO2_SPL%fspl
+            BAV2D   = BAV_SPL%fspl
+            BSQ2D   = BSQ_SPL%fspl
+            S112D   = S11_SPL%fspl
+            S122D   = S12_SPL%fspl
+            S212D   = S21_SPL%fspl
+            S222D   = S22_SPL%fspl
+            CALL EZspline_free(VP_spl,iflag)
+            CALL EZspline_free(GRHO_spl,iflag)
+            CALL EZspline_free(GRHO2_spl,iflag)
+            CALL EZspline_free(BAV_spl,iflag)
+            CALL EZspline_free(BSQ_spl,iflag)
+            CALL EZspline_free(S11_spl,iflag)
+            CALL EZspline_free(S12_spl,iflag)
+            CALL EZspline_free(S21_spl,iflag)
+            CALL EZspline_free(S22_spl,iflag)
+         END IF
+         ! DEALLOCATIONS
+         DEALLOCATE(xu,xv,rho)
+         DEALLOCATE(f_temp)
+      END IF !So shared memory doesn't do work
+#if defined(MPI_OPT)
+      IF (PRESENT(comm)) THEN
+         CALL MPI_BARRIER(shar_comm,iflag)
+         CALL MPI_COMM_FREE(shar_comm,iflag)
+      END IF
+#endif
       RETURN
       END SUBROUTINE load_fourier_geom_dbl
 
       SUBROUTINE load_fourier_geom_sgl(k1,k2,mnmax,nu,nv,xm,xn_in,iflag,rmnc,zmns,&
                                    rmns,zmnc,bsmns,bumnc,bvmnc,&
                                    bsmnc,bumns,bvmns,&
-                                   lmns,lmnc,bmnc,bmns,gmnc,gmns)
+                                   lmns,lmnc,bmnc,bmns,gmnc,gmns,comm)
       USE EZspline
       IMPLICIT NONE
       INTEGER, INTENT(in)        :: k1
@@ -468,6 +661,7 @@
       REAL, INTENT(in),OPTIONAL :: lmns(1:mnmax,k1:k2), lmnc(1:mnmax,k1:k2)
       REAL, INTENT(in),OPTIONAL :: bmnc(1:mnmax,k1:k2), bmns(1:mnmax,k1:k2)
       REAL, INTENT(in),OPTIONAL :: gmnc(1:mnmax,k1:k2), gmns(1:mnmax,k1:k2)
+      INTEGER, INTENT(in), OPTIONAL :: comm
       DOUBLE PRECISION :: rmnc_dbl(1:mnmax,k1:k2), zmns_dbl(1:mnmax,k1:k2)
       DOUBLE PRECISION :: rmns_dbl(1:mnmax,k1:k2), zmnc_dbl(1:mnmax,k1:k2)
       DOUBLE PRECISION :: bsmns_dbl(1:mnmax,k1:k2),bumnc_dbl(1:mnmax,k1:k2),&
@@ -497,12 +691,21 @@
       IF (PRESENT(lmnc)) lmnc_dbl = lmnc
       IF (PRESENT(bmns)) bmns_dbl = bmns
       IF (PRESENT(bmnc)) bmnc_dbl = bmnc
-      CALL load_fourier_geom_dbl(k1,k2,mnmax,nu,nv,xm,xn_in,iflag,rmnc_dbl,zmns_dbl,&
+      IF (PRESENT(comm)) THEN
+         CALL load_fourier_geom_dbl(k1,k2,mnmax,nu,nv,xm,xn_in,iflag,rmnc_dbl,zmns_dbl,&
+           RMNS=rmns_dbl,ZMNC=zmnc_dbl,&
+           BSMNS=bsmns_dbl,BUMNC=bumnc_dbl,BVMNC=bvmnc_dbl,&
+           BSMNC=bsmnc_dbl,BUMNS=bumns_dbl,BVMNS=bvmns_dbl,&
+           LMNS=lmns_dbl,LMNC=lmnc_dbl,BMNC=bmnc_dbl,BMNS=bmns_dbl,&
+           GMNC=gmnc_dbl,GMNS=gmns_dbl,COMM=comm)
+      ELSE
+         CALL load_fourier_geom_dbl(k1,k2,mnmax,nu,nv,xm,xn_in,iflag,rmnc_dbl,zmns_dbl,&
            RMNS=rmns_dbl,ZMNC=zmnc_dbl,&
            BSMNS=bsmns_dbl,BUMNC=bumnc_dbl,BVMNC=bvmnc_dbl,&
            BSMNC=bsmnc_dbl,BUMNS=bumns_dbl,BVMNS=bvmns_dbl,&
            LMNS=lmns_dbl,LMNC=lmnc_dbl,BMNC=bmnc_dbl,BMNS=bmns_dbl,&
            GMNC=gmnc_dbl,GMNS=gmns_dbl)
+      END IF
       RETURN
       END SUBROUTINE load_fourier_geom_sgl
       
@@ -513,21 +716,34 @@
       DOUBLE PRECISION :: x(n),fvec(m),fjac(ldfjac,n)
       DOUBLE PRECISION :: R_temp, Z_temp
       DOUBLE PRECISION :: R_grad(3), Z_grad(3)
+      INTEGER :: i,j,k
+      REAL*8 :: xparam, yparam, zparam, hx, hy, hz, hxi, hyi, hzi
+      REAL*8 :: fval(4)
+      INTEGER, parameter :: ict(10)=(/1,1,1,1,0,0,0,0,0,0/)
       IF (x(2) < 0.0) x(2) = x(2) + pi2
       x(2) = MOD(x(2),pi2)
       IF (x(1) < 0) THEN
          x(1) = ABS(x(1))
          x(2) = x(2)+pi2*0.5
          x(2) = MOD(x(2),pi2)
-         !x(1) = 0
       END IF
       ier = 0; domain_flag = 0
-      CALL EZspline_isInDomain(R_spl,x(2),PHI_Target,x(1),ier)
-      IF (ier .ne. 0) THEN ! Outside domain, extrapolate
-         CALL EZspline_interp(R_spl,x(2),PHI_Target,one,R_temp,iflag)
-         CALL EZspline_interp(Z_spl,x(2),PHI_Target,one,Z_temp,iflag)
-         CALL EZspline_gradient(R_spl,x(2),PHI_Target,one,R_grad,iflag)
-         CALL EZspline_gradient(Z_spl,x(2),PHI_Target,one,Z_grad,iflag)
+      !CALL EZspline_isInDomain(R_spl,x(2),PHI_Target,x(1),ier)
+      !IF (ier .ne. 0) THEN ! Outside domain, extrapolate
+      IF (.not. isingrid(x(2),PHI_Target,x(1))) THEN
+         !CALL EZspline_interp(R_spl,x(2),PHI_Target,one,R_temp,iflag)
+         !CALL EZspline_interp(Z_spl,x(2),PHI_Target,one,Z_temp,iflag)
+         !CALL EZspline_gradient(R_spl,x(2),PHI_Target,one,R_grad,iflag)
+         !CALL EZspline_gradient(Z_spl,x(2),PHI_Target,one,Z_grad,iflag)
+         CALL lookupgrid3d(x(2),PHI_Target,one,i,j,k,hx,hy,hz,hxi,hyi,hzi,xparam,yparam,zparam)
+         CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
+                         hx, hxi, hy, hyi, hz, hzi, &
+                         R4D(1,1,1,1), nx1, nx2, nx3)
+         R_temp = fval(1); R_grad(1:3) = fval(2:4)
+         CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
+                         hx, hxi, hy, hyi, hz, hzi, &
+                         Z4D(1,1,1,1), nx1, nx2, nx3)
+         Z_temp = fval(1); Z_grad(1:3) = fval(2:4)
          IF (iflag == 1) THEN
             R_temp = R_temp + R_grad(3)*(x(1)-one)
             Z_temp = Z_temp + Z_grad(3)*(x(1)-one)
@@ -544,13 +760,33 @@
       END IF
       ! Inside domain
       IF (iflag == 1) THEN
-         CALL EZspline_interp(R_spl,x(2),PHI_Target,x(1),R_temp,iflag)
-         CALL EZspline_interp(Z_spl,x(2),PHI_Target,x(1),Z_temp,iflag)
+         !CALL EZspline_interp(R_spl,x(2),PHI_Target,x(1),R_temp,iflag)
+         !CALL EZspline_interp(Z_spl,x(2),PHI_Target,x(1),Z_temp,iflag)
+         CALL lookupgrid3d(x(2),PHI_Target,x(1),i,j,k,hx,hy,hz,hxi,hyi,hzi,xparam,yparam,zparam)
+         CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
+                         hx, hxi, hy, hyi, hz, hzi, &
+                         R4D(1,1,1,1), nx1, nx2, nx3)
+         R_temp = fval(1)
+         CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
+                         hx, hxi, hy, hyi, hz, hzi, &
+                         Z4D(1,1,1,1), nx1, nx2, nx3)
+         Z_temp = fval(1)
          fvec(1) = (R_temp - R_target)
          fvec(2) = (Z_temp - Z_target)
       ELSE IF (iflag == 2) THEN
-         CALL EZspline_gradient(R_spl,x(2),PHI_Target,x(1),R_grad,iflag)
-         CALL EZspline_gradient(Z_spl,x(2),PHI_Target,x(1),Z_grad,iflag)
+         !CALL EZspline_gradient(R_spl,x(2),PHI_Target,x(1),R_grad,iflag)
+         !CALL EZspline_gradient(Z_spl,x(2),PHI_Target,x(1),Z_grad,iflag)
+         CALL lookupgrid3d(x(2),PHI_Target,x(1),i,j,k,hx,hy,hz,hxi,hyi,hzi,xparam,yparam,zparam)
+         CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
+                         hx, hxi, hy, hyi, hz, hzi, &
+                         R4D(1,1,1,1), nx1, nx2, nx3)
+         R_temp = fval(1); R_grad(1:3) = fval(2:4)
+         CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
+                         hx, hxi, hy, hyi, hz, hzi, &
+                         Z4D(1,1,1,1), nx1, nx2, nx3)
+         Z_temp = fval(1); Z_grad(1:3) = fval(2:4)
+         fvec(1) = (R_temp - R_target)
+         fvec(2) = (Z_temp - Z_target)
          fjac(1,1) = R_grad(3) !dR/ds
          fjac(1,2) = R_grad(1) !dR/du
          fjac(2,1) = Z_grad(3) !dZ/ds
@@ -603,7 +839,7 @@
       IF (s_val > 1 .or. s_val < 0) s_val = 0
       IF (ier < 0) RETURN
       ier = 0
-      IF (EZspline_allocated(R_spl) .and. EZspline_allocated(Z_spl)) THEN
+      IF (ASSOCIATED(R4D) .and. ASSOCIATED(Z4D)) THEN
          ! These target variables are modules level variables that are used
          ! in rzfunct_stel_tool as part of the optimization loop.
          R_target = r_val
@@ -780,15 +1016,31 @@
       DOUBLE PRECISION, INTENT(out),OPTIONAL   ::  Z_grad(3)
       DOUBLE PRECISION :: rho_val
       INTEGER, INTENT(inout)     ::  ier
+      INTEGER :: i,j,k
+      REAL*8 :: xparam, yparam, zparam, hx, hy, hz, hxi, hyi, hzi
+      REAL*8 :: fval(4)
+      INTEGER, parameter :: ict(10)=(/1,1,1,1,0,0,0,0,0,0/)
       R_val = 0; Z_val = 0
       IF (ier < 0) RETURN
       rho_val = SQRT(s_val)
-      CALL EZspline_isInDomain(R_spl,u_val,v_val,rho_val,ier)
-      IF (ier == 0) THEN
-         CALL EZspline_interp(R_spl,u_val,v_val,rho_val,R_val,ier)
-         CALL EZspline_interp(Z_spl,u_val,v_val,rho_val,Z_val,ier)
-         IF (PRESENT(R_grad)) CALL EZspline_gradient(R_spl,u_val,v_val,rho_val,R_grad,ier)
-         IF (PRESENT(Z_grad)) CALL EZspline_gradient(Z_spl,u_val,v_val,rho_val,Z_grad,ier)
+      !CALL EZspline_isInDomain(R_spl,u_val,v_val,rho_val,ier)
+      !IF (ier == 0) THEN
+      IF (isingrid(u_val,v_val,rho_val)) THEN
+         !CALL EZspline_interp(R_spl,u_val,v_val,rho_val,R_val,ier)
+         !CALL EZspline_interp(Z_spl,u_val,v_val,rho_val,Z_val,ier)
+         !IF (PRESENT(R_grad)) CALL EZspline_gradient(R_spl,u_val,v_val,rho_val,R_grad,ier)
+         !IF (PRESENT(Z_grad)) CALL EZspline_gradient(Z_spl,u_val,v_val,rho_val,Z_grad,ier)
+         CALL lookupgrid3d(u_val,v_val,rho_val,i,j,k,hx,hy,hz,hxi,hyi,hzi,xparam,yparam,zparam)
+         CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
+                         hx, hxi, hy, hyi, hz, hzi, &
+                         R4D(1,1,1,1), nx1, nx2, nx3)
+         R_val = fval(1)
+         IF (PRESENT(R_grad)) R_grad = fval(2:4)
+         CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
+                         hx, hxi, hy, hyi, hz, hzi, &
+                         Z4D(1,1,1,1), nx1, nx2, nx3)
+         Z_val = fval(1)
+         IF (PRESENT(Z_grad)) Z_grad = fval(2:4)
       ELSE
          ier=9
       END IF
@@ -832,13 +1084,24 @@
       DOUBLE PRECISION, INTENT(out),OPTIONAL   ::  L_grad(3)
       DOUBLE PRECISION :: rho_val
       INTEGER, INTENT(inout)     ::  ier
+      INTEGER :: i,j,k
+      REAL*8 :: xparam, yparam, zparam, hx, hy, hz, hxi, hyi, hzi
+      REAL*8 :: fval(4)
+      INTEGER, parameter :: ict(10)=(/1,1,1,1,0,0,0,0,0,0/)
       L_val = 0
       IF (ier < 0) RETURN
       rho_val = SQRT(s_val)
-      CALL EZspline_isInDomain(L_spl,u_val,v_val,rho_val,ier)
-      IF (ier == 0) THEN
-         CALL EZspline_interp(L_spl,u_val,v_val,rho_val,L_val,ier)
-         IF (PRESENT(L_grad)) CALL EZspline_gradient(L_spl,u_val,v_val,rho_val,L_grad,ier)
+      !CALL EZspline_isInDomain(L_spl,u_val,v_val,rho_val,ier)
+      !IF (ier == 0) THEN
+      !   CALL EZspline_interp(L_spl,u_val,v_val,rho_val,L_val,ier)
+      !   IF (PRESENT(L_grad)) CALL EZspline_gradient(L_spl,u_val,v_val,rho_val,L_grad,ier)
+      IF (isingrid(u_val,v_val,rho_val)) THEN
+         CALL lookupgrid3d(u_val,v_val,rho_val,i,j,k,hx,hy,hz,hxi,hyi,hzi,xparam,yparam,zparam)
+         CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
+                         hx, hxi, hy, hyi, hz, hzi, &
+                         L4D(1,1,1,1), nx1, nx2, nx3)
+         L_val = fval(1)
+         IF (PRESENT(L_grad)) L_grad = fval(2:4)
       ELSE
          ier=9
       END IF
@@ -876,14 +1139,25 @@
       DOUBLE PRECISION, INTENT(out)   ::  gradrho2
       INTEGER, INTENT(inout)     ::  ier
       DOUBLE PRECISION :: rho_val
+      INTEGER :: k
+      REAL*8 :: zparam, hz, hzi
+      REAL*8 :: fval(1)
+      INTEGER, parameter :: ict(3)=(/1,0,0/)
       rho = -1; vp = 0; gradrho=0; gradrho2=0
       IF (ier < 0) RETURN
       rho_val = SQRT(s_val)
       IF (s_val >= 0 .and. s_val <= 1) THEN
          rho = sqrt(s_val)
-         CALL EZspline_interp(Vp_spl,rho_val,vp,ier)
-         CALL EZspline_interp(grho_spl,rho_val,gradrho,ier)
-         CALL EZspline_interp(grho2_spl,rho_val,gradrho2,ier)
+         !CALL EZspline_interp(Vp_spl,rho_val,vp,ier)
+         !CALL EZspline_interp(grho_spl,rho_val,gradrho,ier)
+         !CALL EZspline_interp(grho2_spl,rho_val,gradrho2,ier)
+         CALL lookupgrid1d(rho_val,k,hz,hzi,zparam)
+         CALL r8fvspline(ict,1,1,fval,k,zparam,hz,hzi,VP2D(1,1),nx3)
+         vp = fval(1);
+         CALL r8fvspline(ict,1,1,fval,k,zparam,hz,hzi,GRHO2D(1,1),nx3)
+         gradrho = fval(1);
+         CALL r8fvspline(ict,1,1,fval,k,zparam,hz,hzi,GRHO22D(1,1),nx3)
+         gradrho2 = fval(1);
       ELSE
          ier=-1
       END IF
@@ -920,14 +1194,28 @@
       INTEGER, INTENT(inout)     ::  ier
       DOUBLE PRECISION :: rho_val, x_val, y_val, xu,yu, xv, yv, R_val
       DOUBLE PRECISION ::  R_grad(3),Z_grad(3)
+      INTEGER :: i,j,k
+      REAL*8 :: xparam, yparam, zparam, hx, hy, hz, hxi, hyi, hzi
+      REAL*8 :: fval(4)
+      INTEGER, parameter :: ict(10)=(/1,1,1,1,0,0,0,0,0,0/)
       R_val = 0; nhat = 0
       IF (ier < 0) RETURN
       rho_val = SQRT(s_val)
-      CALL EZspline_isInDomain(R_spl,u_val,v_val,rho_val,ier)
-      IF (ier == 0) THEN
-         CALL EZspline_interp(R_spl,u_val,v_val,rho_val,R_val,ier)
-         CALL EZspline_gradient(R_spl,u_val,v_val,rho_val,R_grad,ier)
-         CALL EZspline_gradient(Z_spl,u_val,v_val,rho_val,Z_grad,ier)
+      !CALL EZspline_isInDomain(R_spl,u_val,v_val,rho_val,ier)
+      !IF (ier == 0) THEN
+      IF (isingrid(u_val,v_val,rho_val)) THEN
+         CALL lookupgrid3d(u_val,v_val,rho_val,i,j,k,hx,hy,hz,hxi,hyi,hzi,xparam,yparam,zparam)
+         !CALL EZspline_interp(R_spl,u_val,v_val,rho_val,R_val,ier)
+         !CALL EZspline_gradient(R_spl,u_val,v_val,rho_val,R_grad,ier)
+         !CALL EZspline_gradient(Z_spl,u_val,v_val,rho_val,Z_grad,ier)
+         CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
+                         hx, hxi, hy, hyi, hz, hzi, &
+                         R4D(1,1,1,1), nx1, nx2, nx3)
+         R_val = fval(1); R_grad = fval(2:4)
+         CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
+                         hx, hxi, hy, hyi, hz, hzi, &
+                         Z4D(1,1,1,1), nx1, nx2, nx3)
+         Z_grad = fval(2:4)
          x_val = R_val * DCOS(v_val)
          y_val = R_val * DSIN(v_val)
          xu    = R_grad(1)*DCOS(v_val)
@@ -972,14 +1260,27 @@
       DOUBLE PRECISION, INTENT(out)   ::  s22
       INTEGER, INTENT(inout)     ::  ier
       DOUBLE PRECISION :: rho_val
+      INTEGER :: k
+      REAL*8 :: zparam, hz, hzi
+      REAL*8 :: fval(1)
+      INTEGER, parameter :: ict(3)=(/1,0,0/)
       s11 = 0; s12 = 0; s21=0; s22=0
       IF (ier < 0) RETURN
       rho_val = SQRT(s_val)
       IF (s_val >= 0 .and. s_val <= 1) THEN
-         CALL EZspline_interp(S11_spl,rho_val,s11,ier)
-         CALL EZspline_interp(S12_spl,rho_val,s12,ier)
-         CALL EZspline_interp(S21_spl,rho_val,s21,ier)
-         CALL EZspline_interp(S22_spl,rho_val,s22,ier)
+         CALL lookupgrid1d(rho_val,k,hz,hzi,zparam)
+         CALL r8fvspline(ict,1,1,fval,k,zparam,hz,hzi,S112D(1,1),nx3)
+         s11 = fval(1);
+         CALL r8fvspline(ict,1,1,fval,k,zparam,hz,hzi,S122D(1,1),nx3)
+         s12 = fval(1);
+         CALL r8fvspline(ict,1,1,fval,k,zparam,hz,hzi,S212D(1,1),nx3)
+         s21 = fval(1);
+         CALL r8fvspline(ict,1,1,fval,k,zparam,hz,hzi,S222D(1,1),nx3)
+         s22 = fval(1);
+         !CALL EZspline_interp(S11_spl,rho_val,s11,ier)
+         !CALL EZspline_interp(S12_spl,rho_val,s12,ier)
+         !CALL EZspline_interp(S21_spl,rho_val,s21,ier)
+         !CALL EZspline_interp(S22_spl,rho_val,s22,ier)
       ELSE
          ier=-1
       END IF
@@ -1016,17 +1317,31 @@
       INTEGER, INTENT(inout)     ::  ier
       DOUBLE PRECISION :: rho_val
       DOUBLE PRECISION :: xp, xpp, zp, zpp, denom
+      INTEGER :: i,j,k
+      REAL*8 :: xparam, yparam, zparam, hx, hy, hz, hxi, hyi, hzi
+      REAL*8 :: fval(2)
+      INTEGER, parameter :: ict(10)=(/1,1,0,0,0,0,0,0,0,0/)
       kappa = 0
       IF (ier < 0) RETURN
       rho_val = SQRT(s_val)
-      CALL EZspline_isInDomain(R_spl,u_val,v_val,rho_val,ier)
-      IF (ier == 0) THEN
-         !CALL EZspline_derivative(R_spl,1,0,0,u_val,v_val,rho_val,xp,ier)
-         CALL EZspline_interp(Ru_spl,u_val,v_val,rho_val,xp,ier)
-         CALL EZspline_derivative(Ru_spl,1,0,0,u_val,v_val,rho_val,xpp,ier)
-         !CALL EZspline_derivative(Z_spl,1,0,0,u_val,v_val,rho_val,zp,ier)
-         CALL EZspline_interp(Zu_spl,u_val,v_val,rho_val,zp,ier)
-         CALL EZspline_derivative(Zu_spl,1,0,0,u_val,v_val,rho_val,zpp,ier)
+!      CALL EZspline_isInDomain(R_spl,u_val,v_val,rho_val,ier)
+!      IF (ier == 0) THEN
+!         !CALL EZspline_derivative(R_spl,1,0,0,u_val,v_val,rho_val,xp,ier)
+!         CALL EZspline_interp(Ru_spl,u_val,v_val,rho_val,xp,ier)
+!         CALL EZspline_derivative(Ru_spl,1,0,0,u_val,v_val,rho_val,xpp,ier)
+!         !CALL EZspline_derivative(Z_spl,1,0,0,u_val,v_val,rho_val,zp,ier)
+!         CALL EZspline_interp(Zu_spl,u_val,v_val,rho_val,zp,ier)
+!         CALL EZspline_derivative(Zu_spl,1,0,0,u_val,v_val,rho_val,zpp,ier)
+      IF (isingrid(u_val,v_val,rho_val)) THEN
+         CALL lookupgrid3d(u_val,v_val,rho_val,i,j,k,hx,hy,hz,hxi,hyi,hzi,xparam,yparam,zparam)
+         CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
+                         hx, hxi, hy, hyi, hz, hzi, &
+                         RU4D(1,1,1,1), nx1, nx2, nx3)
+         xp = fval(1); xpp = fval(2)
+         CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
+                         hx, hxi, hy, hyi, hz, hzi, &
+                         ZU4D(1,1,1,1), nx1, nx2, nx3)
+         zp = fval(1); zpp = fval(2)
          denom = (xp*xp+zp*zp)**1.5
          IF (ABS(denom) > 0) THEN
             kappa = ABS(xp*zpp-zp*xpp)/denom
@@ -1070,23 +1385,69 @@
       DOUBLE PRECISION :: rho_val
       DOUBLE PRECISION :: Bs, Bu, Bv, r_val
       DOUBLE PRECISION :: R_grad(3), Z_grad(3)
+      INTEGER :: i,j,k
+      REAL*8 :: xparam, yparam, zparam, hx, hy, hz, hxi, hyi, hzi
+      REAL*8 :: fval1(1)
+      REAL*8 :: fval2(4)
+      INTEGER, parameter :: ict1(10)=(/1,0,0,0,0,0,0,0,0,0/)
+      INTEGER, parameter :: ict2(10)=(/1,1,1,1,0,0,0,0,0,0/)
       IF (ier < 0) RETURN
       rho_val = SQRT(s_val)
-      CALL EZSPLINE_isInDomain(R_spl,u_val,v_val,rho_val,ier)
-      IF (ier == 0) THEN
-         R_grad = 0; Z_grad = 0
-         CALL EZspline_interp(R_spl,u_val,v_val,rho_val,r_val,ier)
-         CALL EZspline_interp(Bs_spl,u_val,v_val,rho_val,Bs,ier)
-         CALL EZspline_interp(Bu_spl,u_val,v_val,rho_val,Bu,ier)
-         CALL EZspline_interp(Bv_spl,u_val,v_val,rho_val,Bv,ier)
-         CALL EZspline_interp(Ru_spl,u_val,v_val,rho_val,R_grad(1),ier)
-         CALL EZspline_interp(Rv_spl,u_val,v_val,rho_val,R_grad(2),ier)
-         CALL EZspline_interp(Zu_spl,u_val,v_val,rho_val,Z_grad(1),ier)
-         CALL EZspline_interp(Zv_spl,u_val,v_val,rho_val,Z_grad(2),ier)
+!      CALL EZSPLINE_isInDomain(R_spl,u_val,v_val,rho_val,ier)
+!      IF (ier == 0) THEN
+!         R_grad = 0; Z_grad = 0
+!         CALL EZspline_interp(R_spl,u_val,v_val,rho_val,r_val,ier)
+!         CALL EZspline_interp(Bs_spl,u_val,v_val,rho_val,Bs,ier)
+!         CALL EZspline_interp(Bu_spl,u_val,v_val,rho_val,Bu,ier)
+!         CALL EZspline_interp(Bv_spl,u_val,v_val,rho_val,Bv,ier)
+!         CALL EZspline_interp(Ru_spl,u_val,v_val,rho_val,R_grad(1),ier)
+!         CALL EZspline_interp(Rv_spl,u_val,v_val,rho_val,R_grad(2),ier)
+!         CALL EZspline_interp(Zu_spl,u_val,v_val,rho_val,Z_grad(1),ier)
+!         CALL EZspline_interp(Zv_spl,u_val,v_val,rho_val,Z_grad(2),ier)
+      IF (isingrid(u_val,v_val,rho_val)) THEN
+         CALL lookupgrid3d(u_val,v_val,rho_val,i,j,k,hx,hy,hz,hxi,hyi,hzi,xparam,yparam,zparam)
+         CALL r8fvtricub(ict1, 1, 1, fval1, i, j, k, xparam, yparam, zparam, &
+                         hx, hxi, hy, hyi, hz, hzi, &
+                         R4D(1,1,1,1), nx1, nx2, nx3)
+         r_val = fval1(1)
+         CALL r8fvtricub(ict1, 1, 1, fval1, i, j, k, xparam, yparam, zparam, &
+                         hx, hxi, hy, hyi, hz, hzi, &
+                         BS4D(1,1,1,1), nx1, nx2, nx3)
+         Bs = fval1(1)
+         CALL r8fvtricub(ict1, 1, 1, fval1, i, j, k, xparam, yparam, zparam, &
+                         hx, hxi, hy, hyi, hz, hzi, &
+                         BU4D(1,1,1,1), nx1, nx2, nx3)
+         Bu = fval1(1)
+         CALL r8fvtricub(ict1, 1, 1, fval1, i, j, k, xparam, yparam, zparam, &
+                         hx, hxi, hy, hyi, hz, hzi, &
+                         BV4D(1,1,1,1), nx1, nx2, nx3)
+         Bv = fval1(1)
+         CALL r8fvtricub(ict1, 1, 1, fval1, i, j, k, xparam, yparam, zparam, &
+                         hx, hxi, hy, hyi, hz, hzi, &
+                         RU4D(1,1,1,1), nx1, nx2, nx3)
+         R_grad(1) = fval1(1)
+         CALL r8fvtricub(ict1, 1, 1, fval1, i, j, k, xparam, yparam, zparam, &
+                         hx, hxi, hy, hyi, hz, hzi, &
+                         RV4D(1,1,1,1), nx1, nx2, nx3)
+         R_grad(2) = fval1(1)
+         CALL r8fvtricub(ict1, 1, 1, fval1, i, j, k, xparam, yparam, zparam, &
+                         hx, hxi, hy, hyi, hz, hzi, &
+                         ZU4D(1,1,1,1), nx1, nx2, nx3)
+         Z_grad(1) = fval1(1)
+         CALL r8fvtricub(ict1, 1, 1, fval1, i, j, k, xparam, yparam, zparam, &
+                         hx, hxi, hy, hyi, hz, hzi, &
+                         ZV4D(1,1,1,1), nx1, nx2, nx3)
+         Z_grad(2) = fval1(1)
          br = R_grad(3)*Bs + R_grad(1)*Bu + R_grad(2)*Bv*nfp
          bphi = r_val * Bv
          bz = Z_grad(3)*Bs + Z_grad(1)*Bu + Z_grad(2)*Bv*nfp
-         IF (PRESENT(B_grad)) CALL EZspline_gradient(B_spl,u_val,v_val,s_val,B_grad,ier)
+!         IF (PRESENT(B_grad)) CALL EZspline_gradient(B_spl,u_val,v_val,s_val,B_grad,ier)
+         IF (PRESENT(B_grad))  THEN
+            CALL r8fvtricub(ict2, 1, 1, fval2, i, j, k, xparam, yparam, zparam, &
+                           hx, hxi, hy, hyi, hz, hzi, &
+                           B4D(1,1,1,1), nx1, nx2, nx3)
+            B_grad = fval2(2:4)
+         END IF
       ELSE
          ier   = 9
          br    = 0
@@ -1191,21 +1552,55 @@
       DOUBLE PRECISION :: rho_val
       DOUBLE PRECISION :: s_val, u_val, v_val, Bs, Bu, Bv
       DOUBLE PRECISION :: R_grad(3), Z_grad(3)
+      INTEGER :: i,j,k
+      REAL*8 :: xparam, yparam, zparam, hx, hy, hz, hxi, hyi, hzi
+      REAL*8 :: fval(1)
+      INTEGER, parameter :: ict(10)=(/1,0,0,0,0,0,0,0,0,0/)
       IF (ier < 0) RETURN
       CALL get_equil_s(r_val,phi_val,z_val,s_val,ier,u_val)
       IF (ier < 0) RETURN
       v_val = PHI_target
       rho_val = SQRT(s_val)
-      CALL EZSPLINE_isInDomain(R_spl,u_val,v_val,rho_val,ier)
-      IF (ier == 0) THEN
+!      CALL EZSPLINE_isInDomain(R_spl,u_val,v_val,rho_val,ier)
+!      IF (ier == 0) THEN
+!         CALL EZspline_interp(Bs_spl,u_val,v_val,rho_val,Bs,ier)
+!         CALL EZspline_interp(Bu_spl,u_val,v_val,rho_val,Bu,ier)
+!         CALL EZspline_interp(Bv_spl,u_val,v_val,rho_val,Bv,ier)
+!         CALL EZspline_interp(Ru_spl,u_val,v_val,rho_val,R_grad(1),ier)
+!         CALL EZspline_interp(Rv_spl,u_val,v_val,rho_val,R_grad(2),ier)
+!         CALL EZspline_interp(Zu_spl,u_val,v_val,rho_val,Z_grad(1),ier)
+!         CALL EZspline_interp(Zv_spl,u_val,v_val,rho_val,Z_grad(2),ier)
+      IF (isingrid(u_val,v_val,rho_val)) THEN
          R_grad = 0; Z_grad = 0
-         CALL EZspline_interp(Bs_spl,u_val,v_val,rho_val,Bs,ier)
-         CALL EZspline_interp(Bu_spl,u_val,v_val,rho_val,Bu,ier)
-         CALL EZspline_interp(Bv_spl,u_val,v_val,rho_val,Bv,ier)
-         CALL EZspline_interp(Ru_spl,u_val,v_val,rho_val,R_grad(1),ier)
-         CALL EZspline_interp(Rv_spl,u_val,v_val,rho_val,R_grad(2),ier)
-         CALL EZspline_interp(Zu_spl,u_val,v_val,rho_val,Z_grad(1),ier)
-         CALL EZspline_interp(Zv_spl,u_val,v_val,rho_val,Z_grad(2),ier)
+         CALL lookupgrid3d(u_val,v_val,rho_val,i,j,k,hx,hy,hz,hxi,hyi,hzi,xparam,yparam,zparam)
+         CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
+                         hx, hxi, hy, hyi, hz, hzi, &
+                         BS4D(1,1,1,1), nx1, nx2, nx3)
+         Bs = fval(1)
+         CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
+                         hx, hxi, hy, hyi, hz, hzi, &
+                         BU4D(1,1,1,1), nx1, nx2, nx3)
+         Bu = fval(1)
+         CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
+                         hx, hxi, hy, hyi, hz, hzi, &
+                         BV4D(1,1,1,1), nx1, nx2, nx3)
+         Bv = fval(1)
+         CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
+                         hx, hxi, hy, hyi, hz, hzi, &
+                         RU4D(1,1,1,1), nx1, nx2, nx3)
+         R_grad(1) = fval(1)
+         CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
+                         hx, hxi, hy, hyi, hz, hzi, &
+                         RV4D(1,1,1,1), nx1, nx2, nx3)
+         R_grad(2) = fval(1)
+         CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
+                         hx, hxi, hy, hyi, hz, hzi, &
+                         ZU4D(1,1,1,1), nx1, nx2, nx3)
+         Z_grad(1) = fval(1)
+         CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
+                         hx, hxi, hy, hyi, hz, hzi, &
+                         ZV4D(1,1,1,1), nx1, nx2, nx3)
+         Z_grad(2) = fval(1)
          Br = R_grad(3)*Bs + R_grad(1)*Bu + R_grad(2)*Bv*nfp
          Bphi = r_val * Bv
          bz = Z_grad(3)*Bs + Z_grad(1)*Bu + Z_grad(2)*Bv*nfp
@@ -1252,13 +1647,38 @@
       DOUBLE PRECISION, INTENT(out), OPTIONAL   ::  B_grad(3)
       INTEGER, INTENT(inout)     ::  ier
       DOUBLE PRECISION :: rho_val
+      INTEGER :: i,j,k
+      REAL*8 :: xparam, yparam, zparam, hx, hy, hz, hxi, hyi, hzi
+      REAL*8 :: fval1(1)
+      REAL*8 :: fval2(4)
+      INTEGER, parameter :: ict1(10)=(/1,0,0,0,0,0,0,0,0,0/)
+      INTEGER, parameter :: ict2(10)=(/1,1,1,1,0,0,0,0,0,0/)
       IF (ier < 0) RETURN
       rho_val = SQRT(s_val)
-      CALL EZspline_interp(Bs_spl,u_val,v_val,rho_val,bs,ier)
-      CALL EZspline_interp(Bu_spl,u_val,v_val,rho_val,bu,ier)
-      CALL EZspline_interp(Bv_spl,u_val,v_val,rho_val,bv,ier)
-      IF (PRESENT(modb_val)) CALL EZspline_interp(B_spl,u_val,v_val,rho_val,modb_val,ier)
-      IF (PRESENT(B_grad)) CALL EZspline_gradient(B_spl,u_val,v_val,rho_val,B_grad,ier)
+!      CALL EZspline_interp(Bs_spl,u_val,v_val,rho_val,bs,ier)
+!      CALL EZspline_interp(Bu_spl,u_val,v_val,rho_val,bu,ier)
+!      CALL EZspline_interp(Bv_spl,u_val,v_val,rho_val,bv,ier)
+!      IF (PRESENT(modb_val)) CALL EZspline_interp(B_spl,u_val,v_val,rho_val,modb_val,ier)
+!      IF (PRESENT(B_grad)) CALL EZspline_gradient(B_spl,u_val,v_val,rho_val,B_grad,ier)
+      CALL lookupgrid3d(u_val,v_val,rho_val,i,j,k,hx,hy,hz,hxi,hyi,hzi,xparam,yparam,zparam)
+      CALL r8fvtricub(ict1, 1, 1, fval1, i, j, k, xparam, yparam, zparam, &
+                      hx, hxi, hy, hyi, hz, hzi, &
+                      BS4D(1,1,1,1), nx1, nx2, nx3)
+      bs = fval1(1)
+      CALL r8fvtricub(ict1, 1, 1, fval1, i, j, k, xparam, yparam, zparam, &
+                      hx, hxi, hy, hyi, hz, hzi, &
+                      BU4D(1,1,1,1), nx1, nx2, nx3)
+      bu = fval1(1)
+      CALL r8fvtricub(ict1, 1, 1, fval1, i, j, k, xparam, yparam, zparam, &
+                      hx, hxi, hy, hyi, hz, hzi, &
+                      BV4D(1,1,1,1), nx1, nx2, nx3)
+      bv = fval1(1)
+      IF (PRESENT(modb_val) .or. PRESENT(B_GRAD)) &
+         CALL r8fvtricub(ict2, 1, 1, fval2, i, j, k, xparam, yparam, zparam, &
+                         hx, hxi, hy, hyi, hz, hzi, &
+                         B4D(1,1,1,1), nx1, nx2, nx3)
+      IF (PRESENT(modb_val)) modb_val = fval2(1)
+      IF (PRESENT(B_grad)) B_grad = fval2(2:4)
       RETURN
       END SUBROUTINE get_equil_Bflx_dbl
       
@@ -1300,13 +1720,25 @@
       DOUBLE PRECISION, INTENT(out), OPTIONAL   ::  Bsqavp_val
       INTEGER, INTENT(inout)     ::  ier
       DOUBLE PRECISION :: rho_val, vp_val
+      INTEGER :: k
+      REAL*8 :: zparam, hz, hzi
+      REAL*8 :: fval(2)
+      INTEGER, parameter :: ict(3)=(/1,1,0/)
       IF (ier < 0) RETURN
       rho_val = SQRT(s_val)
-      CALL EZspline_interp(Bav_spl,rho_val,Bav,ier)
-      CALL EZspline_interp(Bsq_spl,rho_val,Bsqav,ier)
+      !CALL EZspline_interp(Bav_spl,rho_val,Bav,ier)
+      !CALL EZspline_interp(Bsq_spl,rho_val,Bsqav,ier)
+      CALL lookupgrid1d(rho_val,k,hz,hzi,zparam)
+      CALL r8fvspline(ict,1,1,fval,k,zparam,hz,hzi,BAV2D(1,1),nx3)
+      Bav = fval(1)
+      CALL r8fvspline(ict,1,1,fval,k,zparam,hz,hzi,BSQ2D(1,1),nx3)
+      Bsqav = fval(1)
       IF (PRESENT(Bsqavp_val))  THEN
-         CALL EZspline_derivative(Bsq_spl,1,rho_val,Bsqavp_val,ier)
-         CALL EZspline_interp(Vp_spl,rho_val,vp_val,ier)
+         !CALL EZspline_derivative(Bsq_spl,1,rho_val,Bsqavp_val,ier)
+         !CALL EZspline_interp(Vp_spl,rho_val,vp_val,ier)
+         Bsqavp_val = fval(2)
+         CALL r8fvspline(ict,1,1,fval,k,zparam,hz,hzi,VP2D(1,1),nx3)
+         vp_val = fval(1)
          Bsqavp_val = 2*rho_val*Bsqavp_val/vp_val  ! d/dV = (dPhi/drho)*(dV/dPhi)^-1 * d/drho
       END IF
       RETURN
@@ -1343,6 +1775,7 @@
       DOUBLE PRECISION, INTENT(out), OPTIONAL   ::  dBsupv(3)
       INTEGER, INTENT(inout)     ::  ier
       DOUBLE PRECISION :: rho_val
+      TYPE(EZspline3_r8) :: Bv_spl
       IF (ier < 0) RETURN
       rho_val = SQRT(s_val)
       CALL EZspline_interp(Bv_spl,u_val,v_val,rho_val,Bsupv,ier)
@@ -1381,6 +1814,10 @@
       DOUBLE PRECISION :: rho_val
       DOUBLE PRECISION :: th, th1, dth, phi, s, lam, dlam
       DOUBLE PRECISION,PARAMETER :: eps_newt = 1.0D-12
+      INTEGER :: i,j,k
+      REAL*8 :: xparam, yparam, zparam, hx, hy, hz, hxi, hyi, hzi
+      REAL*8 :: fval(1)
+      INTEGER, parameter :: ict(10)=(/1,0,0,0,0,0,0,0,0,0/)
       s = coord(1)
       th = coord(2)
       phi = coord(3)
@@ -1402,8 +1839,17 @@
       DO WHILE(ABS(dth) >= search_tol .and. n1 < 500)
          IF (th < 0) th = th + pi2
          IF (th > pi2) th = MOD(th,pi2)
-         CALL EZSpline_interp(L_spl,th,phi,rho_val,lam,ier)
-         CALL EZSpline_interp(Lu_spl,th,phi,rho_val,dlam,ier)
+         !CALL EZSpline_interp(L_spl,th,phi,rho_val,lam,ier)
+         !CALL EZSpline_interp(Lu_spl,th,phi,rho_val,dlam,ier)
+         CALL lookupgrid3d(th,phi,rho_val,i,j,k,hx,hy,hz,hxi,hyi,hzi,xparam,yparam,zparam)
+         CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
+                         hx, hxi, hy, hyi, hz, hzi, &
+                         L4D(1,1,1,1), nx1, nx2, nx3)
+         lam = fval(1)
+         CALL r8fvtricub(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
+                         hx, hxi, hy, hyi, hz, hzi, &
+                         LU4D(1,1,1,1), nx1, nx2, nx3)
+         dlam = fval(1)
          dth = -(th + lam - th1)/(one+dlam)
          n1 = n1 + 1
          th = th + 0.5*dth
@@ -1727,6 +2173,49 @@
       END IF
       ! END SUBROUTINE
       END SUBROUTINE mntouv
+
+      LOGICAL*2 FUNCTION isingrid(x1_in,x2_in,x3_in)
+      IMPLICIT NONE
+      DOUBLE PRECISION, INTENT(in) :: x1_in
+      DOUBLE PRECISION, INTENT(in), OPTIONAL :: x2_in, x3_in
+      isingrid = .FALSE.
+      isingrid = ((x1_in >= x1_min-eps1) .and. (x1_in <= x1_max+eps1))
+      IF (PRESENT(x2_in)) isingrid = (isingrid .and. (x2_in >= x2_min-eps2) .and. (x2_in <= x2_max+eps2))
+      IF (PRESENT(x3_in)) isingrid = (isingrid .and. (x3_in >= x3_min-eps3) .and. (x3_in <= x3_max+eps3))
+      RETURN
+      END FUNCTION isingrid
+
+      SUBROUTINE lookupgrid1d(x3_in,k,hz,hzi,zparam)
+      IMPLICIT NONE
+      DOUBLE PRECISION, INTENT(in) :: x3_in
+      INTEGER, INTENT(out) :: k
+      DOUBLE PRECISION, INTENT(out) :: hz, hzi, zparam
+      k = MIN(MAX(COUNT(x3 < x3_in),1),nx3-1)
+      hz     = x3(k+1) - x3(k)
+      hzi    = 1 / hz
+      zparam = (x3_in - x3(k)) * hzi
+      RETURN
+      END SUBROUTINE lookupgrid1d
+
+      SUBROUTINE lookupgrid3d(x1_in,x2_in,x3_in,i,j,k,hx,hy,hz,hxi,hyi,hzi,xparam,yparam,zparam)
+      IMPLICIT NONE
+      DOUBLE PRECISION, INTENT(in) :: x1_in, x2_in, x3_in
+      INTEGER, INTENT(out) :: i,j,k
+      DOUBLE PRECISION, INTENT(out) :: hx, hy, hz, hxi, hyi, hzi, xparam, yparam, zparam
+      i = MIN(MAX(COUNT(x1 < x1_in),1),nx1-1)
+      j = MIN(MAX(COUNT(x2 < x2_in),1),nx2-1)
+      k = MIN(MAX(COUNT(x3 < x3_in),1),nx3-1)
+      hx     = x1(i+1) - x1(i)
+      hy     = x2(j+1) - x2(j)
+      hz     = x3(k+1) - x3(k)
+      hxi    = 1 / hx
+      hyi    = 1 / hy
+      hzi    = 1 / hz
+      xparam = (x1_in - x1(i)) * hxi
+      yparam = (x2_in - x2(j)) * hyi
+      zparam = (x3_in - x3(k)) * hzi
+      RETURN
+      END SUBROUTINE lookupgrid3d
       !-----------------------------------------------------------------
 
 !-----------------------------------------------------------------------

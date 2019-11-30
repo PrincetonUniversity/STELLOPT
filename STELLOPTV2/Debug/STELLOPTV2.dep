@@ -117,6 +117,12 @@ chisq_regcoil_max_k.o : \
       stellopt_input_mod.o \
       stellopt_vars.o \
       equil_vals.o
+
+chisq_rosenbrock.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      stellopt_input_mod.o \
+      stellopt_vars.o
       
        
 chisq_regcoil_rms_k.o : \

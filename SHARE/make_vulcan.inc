@@ -16,7 +16,7 @@
 #######################################################################
   FLAGS_R = -O3 -fexternal-blas
   FLAGS_D = -g -O0 -fexternal-blas -fbacktrace -fcheck=all 
-  LIBS    = -L/opt/gcc/scalapack-2.0.2 -lscalapack \
+  LIBS    = -L/opt/gcc/openmpi/scalapack-2.0.2/lib -lscalapack \
             -lopenblas
 
 #######################################################################
@@ -39,7 +39,7 @@
 #            NETCDF Options
 #######################################################################
   LNETCDF = T
-  NETCDF_INC = -I/opt/gcc/netcdf-fortran-4.4.5/include
+  NETCDF_INC = -I/opt/gcc/openmpi/netcdf-fortran-4.4.5/include
   NETCDF_LIB = -lnetcdf -lnetcdff
 
 #######################################################################
@@ -55,7 +55,7 @@
 #            HDF5 Options
 #######################################################################
   LHDF5 = T
-  HDF5_INC = -I/opt/gcc/hdf5-parallel-1.10.5/include
+  HDF5_INC = -I/opt/gcc/openmpi/hdf5-parallel-1.10.5/include
   HDF5_LIB = -lhdf5 -lhdf5hl_fortran -lhdf5_hl -lhdf5_fortran
 
 #######################################################################

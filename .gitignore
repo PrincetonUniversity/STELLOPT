@@ -7,14 +7,17 @@
 *.so
 *.zip
 .DS*
+*.dSYM
 ._*
 __*
+make.inc
 CMakeLists.txt
 */Release/*.f90
 */Release/*.f
 */Debug/*.f90
 */Debug/*.f
 BENCHMARKS/STELLOPT_TEST/*/*
+BENCHMARKS/BEAMS3D_TEST/*
 update*
 COILGEOM
 bin

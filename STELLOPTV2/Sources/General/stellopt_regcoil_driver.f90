@@ -30,7 +30,7 @@
       USE stellopt_runtime
       USE stellopt_input_mod
       USE stellopt_vars, my_mpol => mpol_rcws, my_ntor => ntor_rcws
-      USE equil_utils
+      USE equil_utils, equil_nfp => nfp
       USE neswrite, ONLY: coil_separation
 
 !DEC$ IF DEFINED (REGCOIL)
@@ -205,6 +205,11 @@
 
       ! Initialize some of the vectors and matrices needed:
       ! write(6,'(a)') '<----read bnorm'
+      IF (load_bnorm) THEN
+         call stellopt_bnorm(proc_string,lscreen)
+         bnorm_filename = 'bnorm.' // TRIM(proc_string)
+      ENDIF
+
       call regcoil_read_bnorm()
       ! write(6,'(a)') '<----build matrices'
       call regcoil_build_matrices()

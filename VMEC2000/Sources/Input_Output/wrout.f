@@ -526,7 +526,7 @@
             CALL cdf_setatt(nwout, vn_potcos, ln_potcos)
          END IF
 
-         IF (nextcur.gt.0 .and. ALLOCATED(curlabel)) THEN
+         IF (nextcur.gt.0 .and. ASSOCIATED(curlabel)) THEN
          CALL cdf_define(nwout, vn_curlab,
      1        curlabel(1:nextcur), dimname=currl)
          END IF
@@ -699,7 +699,7 @@
          CALL cdf_write(nwout, vn_maxpot, mnpd)
          CALL cdf_write(nwout, vn_nobd, nobd)
          CALL cdf_write(nwout, vn_nbset, nbsets)
-         IF (nextcur.gt.0 .and. ALLOCATED(curlabel))
+         IF (nextcur.gt.0 .and. ASSOCIATED(curlabel))
      1   CALL cdf_write(nwout, vn_curlab, curlabel(1:nextcur))
       END IF
 
@@ -1414,7 +1414,7 @@
 
          IF (nextcur.gt.0) THEN
             WRITE (nwout2, *) (extcur(i),i=1,nextcur)
-            lcurr = ALLOCATED(curlabel) .and. lfreeb
+            lcurr = ASSOCIATED(curlabel) .and. lfreeb
             WRITE (nwout2, *) lcurr
             IF (lcurr) WRITE (nwout2, *) (curlabel(i),i=1,nextcur)
          ENDIF
@@ -1737,7 +1737,6 @@
 
       CALL second0 (twoutoff)
       timer(twout) = timer(twout) + twoutoff - twouton
-#if defined(SKS)
       fo_wrout_time = timer(twout)
-#endif
+
       END SUBROUTINE wrout
