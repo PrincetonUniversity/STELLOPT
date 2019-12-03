@@ -73,6 +73,13 @@
   SILO_LIB = -L$(SILO_DIR)/lib -lsilo
 
 #######################################################################
+#            FFTW3 Options
+#######################################################################
+  LFFTW3 = F
+  FFTW3_INC = -I$(FFTW_HOME)/include
+  FFTW3_LIB = -L$(FFTW_HOME)/lib -lfftw3 -lfftw3f 
+
+#######################################################################
 #            DKES/NEO Options
 #######################################################################
   LDKES = T
@@ -93,6 +100,7 @@
              -L$(PETSC_HOME)/lib -lpetsc \
              $(GENE_DIR)/$(LIB_GENE) \
              $(FUTILS_DIR)/$(LIB_FUTILS)
+
 #######################################################################
 #            COILOPT++ Options
 #######################################################################
@@ -105,7 +113,7 @@
 #######################################################################
 #            TERPSICHORE Options
 #######################################################################
-  LTERPSICHORE= T
+  LTERPSICHORE= F
   TERPSICHORE_INC = -I$(TERPSICHORE_PATH)
   TERPSICHORE_DIR = $(TERPSICHORE_PATH)
   LIB_TERPSICHORE = libterpsichore.a
@@ -114,7 +122,7 @@
 #######################################################################
 #            TRAVIS Options
 #######################################################################
-  LTRAVIS= T
+  LTRAVIS= F
   TRAVIS_DIR = $(TRAVIS_PATH)
   LIB_TRAVIS = libtravis64_sopt.a
   LIB_MCONF  = libmconf64.a
@@ -146,7 +154,7 @@
 #######################################################################
 #            LIBSTELL Shared Options
 #######################################################################
-  LIB_SHARE = $(LIBS) $(NTCC_LIB) $(NETCDF_LIB) $(HDF5_LIB) \
+  LIB_SHARE = $(LIBS) $(NETCDF_LIB) $(HDF5_LIB) \
              -lifport -lifcoremt -limf -lm -lc \
              -lpthread -lirc -lunwind -lirc_s
 
@@ -356,6 +364,13 @@ ifeq ($(LNETCDF),T)
   PRECOMP += -DNETCDF
   LIB_LINK += $(NETCDF_LIB)
   MOD_PATH += $(NETCDF_INC)
+endif
+ifeq ($(LFFTW3),T)
+  MOD1_PATH += $(FFTW3_INC)
+  PRECOMP += -DFFTW3
+  LIB_LINK += $(FFTW3_LIB)
+  MOD_PATH += $(FFTW3_INC)
+  LIB_SHARE += $(FFTW3_LIB)
 endif
 ifeq ($(LHDF5),T)
   MOD1_PATH += $(HDF5_INC)
