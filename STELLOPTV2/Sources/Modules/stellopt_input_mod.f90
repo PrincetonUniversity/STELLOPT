@@ -631,20 +631,20 @@
       ti_opt(0:20)       = 0.0
       th_opt(0:20)       = 0.0
       ne_aux_s(:)     = -1.0
-      ne_aux_s(1:5)   = (/0.0,0.25,0.50,0.75,1.0/)
+      ne_aux_s(1:3)   = (/0.0,0.50,1.0/)
       ne_aux_f(:)     = 0.0 ! Do this so profile norm doesn't get screwy
-      ne_aux_f(1:5)   = 1.0 ! Do this so we can scale T to P
+      ne_aux_f(1:3)   = 1.0 ! Do this so we can scale T to P
       zeff_aux_s(:)   = -1.0
-      zeff_aux_s(1:5) = (/0.0,0.25,0.50,0.75,1.0/)
+      zeff_aux_s(1:3) = (/0.0,0.50,1.0/)
       zeff_aux_f(:)   = 0.0 
-      zeff_aux_f(1:5) = 1.0 
+      zeff_aux_f(1:3) = 1.0 
       te_aux_s(:)     = -1.0
       te_aux_f(:)     = 0.0
       ti_aux_s(:)     = -1.0
       ti_aux_f(:)     = 0.0
       th_aux_s(:)     = -1.0
       th_aux_f(:)     = 0.0 ! Probably need to recast th as ph later
-      phi_aux_s(1:5)  = (/0.0,0.25,0.50,0.75,1.0/)
+      phi_aux_s(1:3)  = (/0.0,0.50,1.0/)
       phi_aux_f(:)    = 0.0
       beamj_aux_s(:)   = -1.0
       ! beamj_aux_s(1:5) = (/0.0,0.25,0.50,0.75,1.0/)
@@ -653,7 +653,7 @@
       ! bootj_aux_s(1:5) = (/0.0,0.25,0.50,0.75,1.0/)
       bootj_aux_f(:)   = 0.0
       sfincs_s        = -1 
-      sfincs_s(1:4)   = (/ 0.2, 0.4, 0.6, 0.8 /)
+      sfincs_s(1:3)   = (/ 0.2, 0.5, 0.8 /)
       vboot_tolerance = 0.01
       ! The default setting for VBOOT_MAX_ITERATIONS is very high (1e4).
       ! If VBOOT is not converging, try setting this to a smaller number.
@@ -662,7 +662,7 @@
       vboot_max_iterations = 1e4  ! The maximum number of VBOOT iterations.
       sfincs_min_procs = 1
       xics_v0          = 0.0
-      emis_xics_s(1:5) = (/0.0,0.25,0.50,0.75,1.0/)
+      emis_xics_s(1:3) = (/0.0,0.50,1.0/)
       emis_xics_f(:)   = 0.0
       coil_splinesx(:,:) = -1
       coil_splinesy(:,:) = -1
@@ -1655,44 +1655,44 @@
       ! NE
       n = MINLOC(ne_opt,DIM=1)
       m = MINLOC(ne_aux_s(2:),DIM=1)
-      IF (n > 1 .or. m > 4)  WRITE(iunit,outstr) 'NE_TYPE',TRIM(ne_type)
+      IF (n > 1 .or. m > 3)  WRITE(iunit,outstr) 'NE_TYPE',TRIM(ne_type)
       IF (n > 1) THEN
          WRITE(iunit,"(2X,A,1X,'=',5(2X,ES22.12E3))") 'NE_OPT',(ne_opt(ik), ik = 0, 20)
       END IF
-      IF (m > 5) THEN
+      IF (m > 3) THEN
          WRITE(iunit,"(2X,A,1X,'=',5(1X,ES22.12E3))") 'NE_AUX_S',(ne_aux_s(ik), ik=1,m)
          WRITE(iunit,"(2X,A,1X,'=',5(1X,ES22.12E3))") 'NE_AUX_F',(ne_aux_f(ik), ik=1,m)
       END IF
       ! ZEFF
       n = MINLOC(zeff_opt,DIM=1)
       m = MINLOC(zeff_aux_s(2:),DIM=1)
-      IF (n > 1 .or. m > 4)  WRITE(iunit,outstr) 'ZEFF_TYPE',TRIM(zeff_type)
+      IF (n > 1 .or. m > 3)  WRITE(iunit,outstr) 'ZEFF_TYPE',TRIM(zeff_type)
       IF (n > 1) THEN
          WRITE(iunit,"(2X,A,1X,'=',5(2X,ES22.12E3))") 'ZEFF_OPT',(zeff_opt(ik), ik = 0, 20)
       END IF
-      IF (m > 4) THEN
+      IF (m > 3) THEN
          WRITE(iunit,"(2X,A,1X,'=',5(1X,ES22.12E3))") 'ZEFF_AUX_S',(zeff_aux_s(ik), ik=1,m)
          WRITE(iunit,"(2X,A,1X,'=',5(1X,ES22.12E3))") 'ZEFF_AUX_F',(zeff_aux_f(ik), ik=1,m)
       END IF
       ! TE
       n = MINLOC(te_opt,DIM=1)
       m = MINLOC(te_aux_s(2:),DIM=1)
-      IF (n > 1 .or. m > 4)  WRITE(iunit,outstr) 'TE_TYPE',TRIM(te_type)
+      IF (n > 1 .or. m > 3)  WRITE(iunit,outstr) 'TE_TYPE',TRIM(te_type)
       IF (n > 1) THEN
          WRITE(iunit,"(2X,A,1X,'=',5(2X,ES22.12E3))") 'TE_OPT',(te_opt(ik), ik = 0, 20)
       END IF
-      IF (m > 4) THEN
+      IF (m > 3) THEN
          WRITE(iunit,"(2X,A,1X,'=',5(1X,ES22.12E3))") 'TE_AUX_S',(te_aux_s(ik), ik=1,m)
          WRITE(iunit,"(2X,A,1X,'=',5(1X,ES22.12E3))") 'TE_AUX_F',(te_aux_f(ik), ik=1,m)
       END IF
       ! TI
       n = MINLOC(ti_opt,DIM=1)
       m = MINLOC(ti_aux_s(2:),DIM=1)
-      IF (n > 1 .or. m > 4)  WRITE(iunit,outstr) 'TI_TYPE',TRIM(ti_type)
+      IF (n > 1 .or. m > 3)  WRITE(iunit,outstr) 'TI_TYPE',TRIM(ti_type)
       IF (n > 1) THEN
          WRITE(iunit,"(2X,A,1X,'=',5(2X,ES22.12E3))") 'TI_OPT',(ti_opt(ik), ik = 0, 20)
       END IF
-      IF (m > 4) THEN
+      IF (m > 3) THEN
          WRITE(iunit,"(2X,A,1X,'=',5(1X,ES22.12E3))") 'TI_AUX_S',(ti_aux_s(ik), ik=1,m)
          WRITE(iunit,"(2X,A,1X,'=',5(1X,ES22.12E3))") 'TI_AUX_F',(ti_aux_f(ik), ik=1,m)
       END IF
