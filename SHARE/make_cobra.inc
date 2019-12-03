@@ -62,7 +62,7 @@
 #######################################################################
 #            FFTW3 Options
 #######################################################################
-  LFFTW3 = T
+  LFFTW3 = F
   FFTW3_INC = -I$(FFTW_HOME)/include
   FFTW3_LIB = -L$(FFTW_HOME)/lib -lfftw3 -lfftw3f 
 
@@ -114,7 +114,7 @@
 #######################################################################
 #            TERPSICHORE Options
 #######################################################################
-  LTERPSICHORE= T
+  LTERPSICHORE= F
   TERPSICHORE_INC = -I$(TERPSICHORE_PATH)
   TERPSICHORE_DIR = $(TERPSICHORE_PATH)
   LIB_TERPSICHORE = libterpsichore.a
@@ -123,7 +123,7 @@
 #######################################################################
 #            TRAVIS Options
 #######################################################################
-  LTRAVIS= T
+  LTRAVIS= F
   TRAVIS_DIR = $(TRAVIS_PATH)
   LIB_TRAVIS = libtravis64_sopt.a
   LIB_MCONF  = libmconf64.a
@@ -154,7 +154,7 @@
 #######################################################################
 #            LIBSTELL Shared Options
 #######################################################################
-  LIB_SHARE = $(LIBS) $(NTCC_LIB) $(NETCDF_LIB) $(HDF5_LIB) \
+  LIB_SHARE = $(LIBS) $(NETCDF_LIB) $(HDF5_LIB) \
              -lifport -lifcoremt -limf -lm -lc \
              -lpthread -lirc -lunwind -lirc_s
 
