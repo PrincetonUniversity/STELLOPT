@@ -10,11 +10,14 @@
 
       MODULE mpi_inc
       USE mpi_params, ONLY: MPI_COMM_PARVMEC
+#if defined(MPI_OPT)
+      USE mpi
+#endif
 
       IMPLICIT NONE
 
-#if defined(MPI_OPT)
-      INCLUDE 'mpif.h'
-#endif
+!#if defined(MPI_OPT)
+!      INCLUDE 'mpif.h'
+!#endif
 
       END MODULE

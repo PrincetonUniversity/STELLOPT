@@ -4,17 +4,12 @@
 !     Date:          12/15/2014
 !     Description:   Deallocate and free all arrays. 
 !-----------------------------------------------------------------------
-      SUBROUTINE beams3d_free
+      SUBROUTINE beams3d_free(IN_COMM)
 !-----------------------------------------------------------------------
 !     Libraries
 !-----------------------------------------------------------------------
       USE beams3d_runtime
-      USE beams3d_grid, ONLY: raxis,phiaxis,zaxis, B_R, B_Z, B_PHI, MODB, &
-                                 BR_spl, BZ_spl, BPHI_spl, MODB_spl, &
-                                 TE_spl, NE_spl, TI_spl, TE, NE, TI, &
-                                 TE_spl_s, NE_spl_s, TI_spl_s, Vp_spl_s,&
-                                 S_ARR, S_spl, U_ARR, U_spl, &
-                                 POT_ARR, POT_spl
+      USE beams3d_grid
       USE beams3d_lines, ONLY: R_lines, PHI_lines, Z_lines, vll_lines, &
                                neut_lines, moment_lines, S_lines, U_lines, &
                                PE_lines, PI_lines, shine_through, &
@@ -22,6 +17,7 @@
                                B_lines
 !      USE wall_mod, ONLY: wall_free
       USE EZspline_obj
+      USE mpi_sharmem
 !-----------------------------------------------------------------------
 !     Local Variables
 !          ier            Error Flag
@@ -29,6 +25,7 @@
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       INTEGER :: ier
+      INTEGER, INTENT(INOUT), OPTIONAL :: IN_COMM
 !-----------------------------------------------------------------------
 !     External Functions
 !          A00ADF               NAG Detection
@@ -48,6 +45,7 @@
       IF (EZspline_allocated(TE_spl))   CALL EZspline_free(TE_spl,ier)
       IF (EZspline_allocated(NE_spl))   CALL EZspline_free(NE_spl,ier)
       IF (EZspline_allocated(TI_spl))   CALL EZspline_free(TI_spl,ier)
+      IF (EZspline_allocated(ZEFF_spl))   CALL EZspline_free(ZEFF_spl,ier)
       IF (EZspline_allocated(POT_spl))   CALL EZspline_free(POT_spl,ier)
       IF (EZspline_allocated(TE_spl_s))   CALL EZspline_free(TE_spl_s,ier)
       IF (EZspline_allocated(NE_spl_s))   CALL EZspline_free(NE_spl_s,ier)
@@ -66,19 +64,63 @@
       IF (ALLOCATED(B_lines)) DEALLOCATE(B_lines)
       IF (ALLOCATED(weight)) DEALLOCATE(weight)
       IF (ALLOCATED(beam)) DEALLOCATE(beam)
-      IF (ALLOCATED(raxis)) DEALLOCATE(raxis)
-      IF (ALLOCATED(phiaxis)) DEALLOCATE(phiaxis)
-      IF (ALLOCATED(zaxis)) DEALLOCATE(zaxis)
-      IF (ALLOCATED(B_R)) DEALLOCATE(B_R)
-      IF (ALLOCATED(B_PHI)) DEALLOCATE(B_PHI)
-      IF (ALLOCATED(B_Z)) DEALLOCATE(B_Z)
-      IF (ALLOCATED(MODB)) DEALLOCATE(MODB)
-      IF (ALLOCATED(S_ARR)) DEALLOCATE(S_ARR)
-      IF (ALLOCATED(U_ARR)) DEALLOCATE(U_ARR)
-      IF (ALLOCATED(TE)) DEALLOCATE(TE)
-      IF (ALLOCATED(NE)) DEALLOCATE(NE)
-      IF (ALLOCATED(TI)) DEALLOCATE(TI)
-      IF (ALLOCATED(POT_ARR)) DEALLOCATE(POT_ARR)
+      IF (PRESENT(IN_COMM)) THEN
+         IF (ASSOCIATED(req_axis)) CALL mpidealloc(req_axis,win_req_axis)
+         IF (ASSOCIATED(zeq_axis)) CALL mpidealloc(zeq_axis,win_zeq_axis)
+         IF (ASSOCIATED(raxis))    CALL mpidealloc(raxis,win_raxis)
+         IF (ASSOCIATED(phiaxis))  CALL mpidealloc(phiaxis,win_phiaxis)
+         IF (ASSOCIATED(zaxis))    CALL mpidealloc(zaxis,win_zaxis)
+         IF (ASSOCIATED(B_R))      CALL mpidealloc(B_R,win_B_R)
+         IF (ASSOCIATED(B_PHI))    CALL mpidealloc(B_PHI,win_B_PHI)
+         IF (ASSOCIATED(B_Z))      CALL mpidealloc(B_Z,win_B_Z)
+         IF (ASSOCIATED(MODB))     CALL mpidealloc(MODB,win_MODB)
+         IF (ASSOCIATED(S_ARR))    CALL mpidealloc(S_ARR,win_S_ARR)
+         IF (ASSOCIATED(U_ARR))    CALL mpidealloc(U_ARR,win_U_ARR)
+         IF (ASSOCIATED(TE))       CALL mpidealloc(TE,win_TE)
+         IF (ASSOCIATED(TI))       CALL mpidealloc(TI,win_TI)
+         IF (ASSOCIATED(NE))       CALL mpidealloc(NE,win_NE)
+         IF (ASSOCIATED(ZEFF_ARR)) CALL mpidealloc(ZEFF_ARR,win_ZEFF_ARR)
+         IF (ASSOCIATED(POT_ARR))  CALL mpidealloc(POT_ARR,win_POT_ARR)
+         IF (ASSOCIATED(BR4D))     CALL mpidealloc(BR4D,win_BR4D)
+         IF (ASSOCIATED(BPHI4D))   CALL mpidealloc(BPHI4D,win_BPHI4D)
+         IF (ASSOCIATED(BZ4D))     CALL mpidealloc(BZ4D,win_BZ4D)
+         IF (ASSOCIATED(MODB4D))   CALL mpidealloc(MODB4D,win_MODB4D)
+         IF (ASSOCIATED(TE4D))     CALL mpidealloc(TE4D,win_TE4D)
+         IF (ASSOCIATED(NE4D))     CALL mpidealloc(NE4D,win_NE4D)
+         IF (ASSOCIATED(TI4D))     CALL mpidealloc(TI4D,win_TI4D)
+         IF (ASSOCIATED(ZEFF4D))   CALL mpidealloc(ZEFF4D,win_ZEFF4D)
+         IF (ASSOCIATED(S4D))      CALL mpidealloc(S4D,win_S4D)
+         IF (ASSOCIATED(U4D))      CALL mpidealloc(U4D,win_U4D)
+         IF (ASSOCIATED(POT4D))    CALL mpidealloc(POT4D,win_POT4D)
+      ELSE
+         IF (ASSOCIATED(req_axis)) DEALLOCATE(req_axis)
+         IF (ASSOCIATED(zeq_axis)) DEALLOCATE(zeq_axis)
+         IF (ASSOCIATED(raxis))    DEALLOCATE(raxis)
+         IF (ASSOCIATED(phiaxis))  DEALLOCATE(phiaxis)
+         IF (ASSOCIATED(zaxis))    DEALLOCATE(zaxis)
+         IF (ASSOCIATED(B_R))      DEALLOCATE(B_R)
+         IF (ASSOCIATED(B_PHI))    DEALLOCATE(B_PHI)
+         IF (ASSOCIATED(B_Z))      DEALLOCATE(B_Z)
+         IF (ASSOCIATED(MODB))     DEALLOCATE(MODB)
+         IF (ASSOCIATED(S_ARR))    DEALLOCATE(S_ARR)
+         IF (ASSOCIATED(U_ARR))    DEALLOCATE(U_ARR)
+         IF (ASSOCIATED(TE))       DEALLOCATE(TE)
+         IF (ASSOCIATED(TI))       DEALLOCATE(TI)
+         IF (ASSOCIATED(NE))       DEALLOCATE(NE)
+         IF (ASSOCIATED(ZEFF_ARR)) DEALLOCATE(ZEFF_ARR)
+         IF (ASSOCIATED(POT_ARR))  DEALLOCATE(POT_ARR)
+         IF (ASSOCIATED(BR4D))     DEALLOCATE(BR4D)
+         IF (ASSOCIATED(BPHI4D))   DEALLOCATE(BPHI4D)
+         IF (ASSOCIATED(BZ4D))     DEALLOCATE(BZ4D)
+         IF (ASSOCIATED(MODB4D))   DEALLOCATE(MODB4D)
+         IF (ASSOCIATED(TE4D))     DEALLOCATE(TE4D)
+         IF (ASSOCIATED(NE4D))     DEALLOCATE(NE4D)
+         IF (ASSOCIATED(TI4D))     DEALLOCATE(TI4D)
+         IF (ASSOCIATED(ZEFF4D))   DEALLOCATE(ZEFF4D)
+         IF (ASSOCIATED(S4D))      DEALLOCATE(S4D)
+         IF (ASSOCIATED(U4D))      DEALLOCATE(U4D)
+         IF (ASSOCIATED(POT4D))    DEALLOCATE(POT4D)
+      ENDIF
       IF (ALLOCATED(R_start))   DEALLOCATE(R_start)
       IF (ALLOCATED(phi_start)) DEALLOCATE(phi_start)
       IF (ALLOCATED(Z_start))   DEALLOCATE(Z_start)

@@ -13,16 +13,11 @@
       USE ez_hdf5
 !DEC$ ENDIF  
       USE beams3d_lines
-      USE beams3d_grid, ONLY: nr, nphi, nz, B_R, B_PHI, B_Z, raxis, &
-                                 zaxis, phiaxis, S_ARR, U_ARR, POT_ARR
-      USE beams3d_runtime, ONLY: id_string, npoinc, nbeams, beam, t_end, lverb, lflux, &
-                                    lvmec, lpies, lspec, lcoil, lmgrid, lbeam, &
-                                    lvessel, lvac, lbeam_simple, handle_err, nparticles_start, &
-                                    HDF5_OPEN_ERR,HDF5_READ_ERR,&
-                                    HDF5_CLOSE_ERR, BEAMS3D_VERSION, weight, e_beams, p_beams,&
-                                    charge, Zatom, mass, ldepo, v_neut
+      USE beams3d_grid
+      USE beams3d_runtime
       USE safe_open_mod, ONLY: safe_open
       USE wall_mod, ONLY: nface,nvertex,face,vertex,ihit_array
+      USE mpi_sharmem
 !-----------------------------------------------------------------------
 !     Local Variables
 !          ier          Error Flag
@@ -166,18 +161,25 @@
       IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'nphi',ier)
       CALL read_scalar_hdf5(fid,'nz',ier,INTVAR=nz)
       IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'nz',ier)
-      IF (ALLOCATED(raxis)) DEALLOCATE(raxis)
-      IF (ALLOCATED(zaxis)) DEALLOCATE(zaxis)
-      IF (ALLOCATED(phiaxis)) DEALLOCATE(phiaxis)
-      IF (ALLOCATED(B_R)) DEALLOCATE(B_R)
-      IF (ALLOCATED(B_Z)) DEALLOCATE(B_Z)
-      IF (ALLOCATED(B_PHI)) DEALLOCATE(B_PHI)
-      IF (ALLOCATED(S_ARR)) DEALLOCATE(S_ARR)
-      IF (ALLOCATED(U_ARR)) DEALLOCATE(U_ARR)
-      IF (ALLOCATED(POT_ARR)) DEALLOCATE(POT_ARR)
-      ALLOCATE(raxis(nr),phiaxis(nphi),zaxis(nz), &
-            B_R(nr,nphi,nz),B_PHI(nr,nphi,nz),B_Z(nr,nphi,nz),&
-            S_ARR(nr,nphi,nz),U_ARR(nr,nphi,nz),POT_ARR(nr,nphi,nz))
+      IF (ASSOCIATED(raxis))   DEALLOCATE(raxis)
+      IF (ASSOCIATED(zaxis))   DEALLOCATE(zaxis)
+      IF (ASSOCIATED(phiaxis)) DEALLOCATE(phiaxis)
+      IF (ASSOCIATED(B_R))     DEALLOCATE(B_R)
+      IF (ASSOCIATED(B_Z))     DEALLOCATE(B_Z)
+      IF (ASSOCIATED(B_PHI))   DEALLOCATE(B_PHI)
+      IF (ASSOCIATED(S_ARR))   DEALLOCATE(S_ARR)
+      IF (ASSOCIATED(U_ARR))   DEALLOCATE(U_ARR)
+      IF (ASSOCIATED(POT_ARR)) DEALLOCATE(POT_ARR)
+      ALLOCATE(raxis(nr))
+      ALLOCATE(phiaxis(nphi))
+      ALLOCATE(zaxis(nz))
+      ALLOCATE(B_R(nr,nphi,nz))
+      ALLOCATE(B_PHI(nr,nphi,nz))
+      ALLOCATE(B_Z(nr,nphi,nz))
+      ALLOCATE(MODB(nr,nphi,nz))
+      ALLOCATE(POT_ARR(nr,nphi,nz))
+      ALLOCATE(S_ARR(nr,nphi,nz))
+      ALLOCATE(U_ARR(nr,nphi,nz))
       CALL read_var_hdf5(fid,'raxis',nr,ier,DBLVAR=raxis)
       IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'raxis',ier)
       CALL read_var_hdf5(fid,'zaxis',nz,ier,DBLVAR=zaxis)
@@ -210,7 +212,7 @@
          CALL read_var_hdf5(fid,'wall_faces',nface,3,ier,INTVAR=face)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'wall_faces',ier)
          CALL read_var_hdf5(fid,'wall_strikes',nface,ier,INTVAR=ihit_array)
-         IF (ier /= 0) DEALLOCATE(ihit_array)
+         !IF (ier /= 0) DEALLOCATE(ihit_array)
       END IF
       ier = 0
 
@@ -222,9 +224,7 @@
 
 
 !DEC$ ELSE
-      WRITE(6,'(A)')  '   FILE: '//'beams3d_'//TRIM(id_string)//'.bin'
-      CALL safe_open(iunit,ier,'beams3d_'//TRIM(id_string)//'.bin','replace','unformatted')
-      CLOSE(iunit)
+
 !DEC$ ENDIF  
 
 !-----------------------------------------------------------------------

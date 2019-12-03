@@ -85,6 +85,7 @@ class MyApp(QMainWindow):
 		self.ui.rhoslider.valueChanged.connect(self.CutSelect)
 		self.ui.uslider.valueChanged.connect(self.CutSelect)
 		self.ui.vslider.valueChanged.connect(self.CutSelect)
+		self.ui.savebutton.clicked.connect(self.plot_to_file)
 
 	def FileSelect(self,i):
 		self.vmec_data=read_vmec(self.ui.FileName.currentText())
@@ -317,6 +318,10 @@ class MyApp(QMainWindow):
 		self.b_s=sfunct(self.theta,self.zeta,self.vmec_data['bsubsmns'],self.vmec_data['xm'],self.vmec_data['xn'])
 		self.b_u=cfunct(self.theta,self.zeta,self.vmec_data['bsubumnc'],self.vmec_data['xm'],self.vmec_data['xn'])
 		self.b_v=cfunct(self.theta,self.zeta,self.vmec_data['bsubvmnc'],self.vmec_data['xm'],self.vmec_data['xn'])
+
+	def plot_to_file(self,i):
+		text = self.ui.saveas_filename.toPlainText();
+		self.fig.savefig('./'+text, dpi=300)
 
 
 if __name__ == "__main__":

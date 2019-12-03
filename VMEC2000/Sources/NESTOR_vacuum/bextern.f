@@ -21,7 +21,7 @@ c  exterior Neumann problem
 c
       CALL second0(tbexon)
 
-      IF (.not.ALLOCATED(bvac)) STOP 'BVAC unallocated in bextern'
+      IF (.not.ASSOCIATED(bvac)) STOP 'BVAC unallocated in bextern'
       ALLOCATE (brad(nuv3), bphi(nuv3), bz(nuv3), stat=i)
       IF (i .ne. 0) STOP 'allocation error in bextern'
 
