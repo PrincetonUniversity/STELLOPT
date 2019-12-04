@@ -5,7 +5,7 @@ This tutorial is designed to help the new user to VMEC understand the
 VMEC input namelist and what options are available.
 
 The VMEC code is controlled through a FORTRAN input namelist called
-(INDATA)[VMEC Input Namelist (v8.47)]. A FORTRAN input namelist is simply a text file where variable
+[INDATA](VMEC Input Namelist (v8.47)). A FORTRAN input namelist is simply a text file where variable
 values may be set in a straightforward fashion. They may then be read
 into a program to initialize various variables. It is important to note
 that while variables in a given namelist may be omitted from a file the
@@ -133,8 +133,9 @@ radial profile or a toroidal current density profile. The NCURR
 parameter determine which form of the profile to use (0: Rotational
 Transform, 1: Toroidal Current Density). The AI parameter specifies the
 polynomial coefficients (0..10) used to calculate the rotational
-transform profile (NCURR=0) $$ \iota=\sum_{n=0}^{10} ai(n)
-* s^n . $$ The AC_FORM parameter determines the form of the
+transform profile (NCURR=0) \$$ \iota=\sum_{n=0}^{10} ai(n)
+* s^n . $$
+The AC_FORM parameter determines the form of the
 current profiles used (NCURR=1). For AC_FORM=0 the toroidal current
 profile is power series in s defined by the AC parameter
 \$$ j=\sum_{n=0}^{10} ac(n) * s^n . $$

@@ -49,11 +49,11 @@ The 'Size' column indicates the size of the variable if it's an array
  | extcur | real(12,100) | 500 | Array of currents in each external group for free boundary run. | 
  | raxis | real(12,100) | 0:61 | see raxis_cc | 
  | zaxis | real(12,100) | 0:61 | see zaxis_cs | 
- | raxis_cc | real(12,100) | 0:61 | Radial Fourier Cosine Coefficients of magnetic Axis (R=raxis_cc*cos(-n*zeta)) | 
- | raxis_cs | real(12,100) | 0:61 | Radial Fourier Sine Coefficients of magnetic Axis (R=raxis_cs*sin(-n*zeta)) | 
- | zaxis_cc | real(12,100) | 0:61 | Vertical Fourier Cosine Coefficients of magnetic Axis (Z=zaxis_cc*cos(-n*zeta)) | 
- | zaxis_cs | real(12,100) | 0:61 | Vertical Fourier Sine Coefficients of magnetic Axis (Z=zaxis_cs*sin(-n*zeta)) | 
- | rbc | real(12,100) | -61:61,0:60 | Boundary cosine coefficients for R= cos(m*theta-n*zeta) | 
+ | raxis_cc | real(12,100) | 0:61 | Radial Fourier Cosine Coefficients of magnetic Axis (R=raxis_cc\*cos(-n\*zeta)) | 
+ | raxis_cs | real(12,100) | 0:61 | Radial Fourier Sine Coefficients of magnetic Axis (R=raxis_cs\*sin(-n\*zeta)) | 
+ | zaxis_cc | real(12,100) | 0:61 | Vertical Fourier Cosine Coefficients of magnetic Axis (Z=zaxis_cc\*cos(-n\*zeta)) | 
+ | zaxis_cs | real(12,100) | 0:61 | Vertical Fourier Sine Coefficients of magnetic Axis (Z=zaxis_cs\*sin(-n\*zeta)) | 
+ | rbc | real(12,100) | -61:61,0:60 | Boundary cosine coefficients for R= cos(m\*theta-n\*zeta) | 
  | rbs | real(12,100) | -61:61,0:60 | Boundary sine coefficients for R | 
  | zbc | real(12,100) | -61:61,0:60 | Boundary cosine coefficients for Z | 
  | zbs | real(12,100) | -61:61,0:60 | Boundary sine coefficients for Z| 
@@ -67,7 +67,6 @@ The 'Size' column indicates the size of the variable if it's an array
  | loptim | logical | 1 | Obsolete| 
  | lforbal | logical | 1 |  |
  | lrfp | logical | 1 | Switch for using poloidal flux as radial coordinate. |
- |l_spectrum_dump | 1 | Obsolete | |
  | mgrid_file | character | 100 | Vacuum Green's Function Filename | 
  | precon_type | character | 10 | Preconditioner type |
  | pcurr_type | character | 20 | Current Profile type | 
@@ -98,14 +97,14 @@ The 'Size' column indicates the size of the variable if it's an array
  | sigma_thom | real(12,100) | 100 | Standard deviation for pressure profile data [Pa]. Standard deviations of <0 are interpreted as a percent of the respective measurement. | 
  | sigma_delphid | real(12,100) | 1 | Standard deviation for pressure profile data [Wb]. Standard deviations of <0 are interpreted as a percent of the respective measurement. |
 | tensi2 | real(12,100) | 1 | vbl spline tension for iota | 
-| fpolyi | real(12,100) | 1 | vbl spline tension form factor (note if tensi!=tensi2 then tension(ith point)=tensi+(tensi2-tensi)*(i/n-1)**fpolyi ) |
+| fpolyi | real(12,100) | 1 | vbl spline tension form factor (note if tensi!=tensi2 then tension(ith point)=tensi+(tensi2-tensi)\*(i/n-1)^fpolyi ) |
 | nflxs | integer | 1 | Number of flux loop measurements used in matching.| 
  | indxflx | integer | 100 | Array giving index of flux measurement in iconnect array. | 
  | dsiobt | real(12,100) | 100 | Measured flux loop signals corresponding to the combination of signals in iconnect array. | 
  | sigma_flux | real(12,100) | 100 | Standard deviation for external poloidal flux data [Wb]. Standard deviations of <0 are interpreted as a percent of the respective measurement. | 
  | nbfld | integer | 5 | Number of selected external bfield measurements used in matching. | 
  | indxbfld | integer | 100,5 | Array giving index of bfield measurement used in matching | 
- | bbc | real(12,100) | 100,5 | Measured magnetic field at rbcoil(m,n) zbcoil(m,n) at the orientation br*cos(abcoil) + bz*sin(abcoil) | 
+ | bbc | real(12,100) | 100,5 | Measured magnetic field at rbcoil(m,n) zbcoil(m,n) at the orientation br\*cos(abcoil) + bz\*sin(abcoil) | 
  | sigma_b | real(12,100) | 100,5 | Standard deviation for external magnetic field data [T]. Standard deviations of <0 are interpreted as a percent of the respective measurement. | 
  | lpofr | logical | 1 | Switch for pressure data coordinates (.true. real space, .false. flux space) |
  
