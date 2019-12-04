@@ -133,8 +133,7 @@ radial profile or a toroidal current density profile. The NCURR
 parameter determine which form of the profile to use (0: Rotational
 Transform, 1: Toroidal Current Density). The AI parameter specifies the
 polynomial coefficients (0..10) used to calculate the rotational
-transform profile (NCURR=0) \$$ \iota=\sum_{n=0}^{10} ai(n)
-* s^n . $$
+transform profile (NCURR=0) \$$ \iota=\sum_{n=0}^{10} ai(n) * s^n . $$
 The AC_FORM parameter determines the form of the
 current profiles used (NCURR=1). For AC_FORM=0 the toroidal current
 profile is power series in s defined by the AC parameter
