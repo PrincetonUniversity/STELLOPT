@@ -104,8 +104,7 @@ MGRID_FILE = '/home/usr/coils/mgrid.lhd_ys4.msize'
 NTHETA = 22
 NZETA = 32
 NVACSKIP = 6
-EXTCUR
-= 4.82137988281250E+03 3.14672241210938E+03 2.13679345703125E+03 -5.03201074218750E+03 -3.84028015136719E+02 3.77810131835938E+03
+EXTCUR = 4.82137988281250E+03 3.14672241210938E+03 2.13679345703125E+03 -5.03201074218750E+03 -3.84028015136719E+02 3.77810131835938E+03
 ```
 
 The Pressure Profile Parameters The pressure profile in VMEC is
@@ -113,7 +112,7 @@ specified as a function of radial flux space coordinates (s). Where for
 the default case is the normalized toroidal flux (normalized to
 PHIEDGE). If LRFP is set to TRUE, this coordinates becomes the
 normalized poloidal flux. The AM parameter determines the polynomial
-coefficients (0..10) used to calculate pressure profile: \$$ p=\sum_{n=0}^{10} am(n) * s^n . $$
+coefficients (0..10) used to calculate pressure profile: $$ p=\sum_{n=0}^{10} am(n) * s^n . $$
 The GAMMA parameter controls this profile by scaling it. In general the user should choose
 it's value to be 0.0. The BLOAT parameter acts as a scaling factor to
 s. Again it's value should be chosen to be 1.0. The SPRES_PED
@@ -140,10 +139,10 @@ radial profile or a toroidal current density profile. The NCURR
 parameter determine which form of the profile to use (0: Rotational
 Transform, 1: Toroidal Current Density). The AI parameter specifies the
 polynomial coefficients (0..10) used to calculate the rotational
-transform profile (NCURR=0) \$$ \iota=\sum_{n=0}^{10} ai(n) * s^n . $$
+transform profile (NCURR=0) $$ \iota=\sum_{n=0}^{10} ai(n) * s^n . $$
 The AC_FORM parameter determines the form of the
 current profiles used (NCURR=1). For AC_FORM=0 the toroidal current
-profile is power series in s defined by the AC parameter \$$ j=\sum_{n=0}^{10} ac(n) * s^n . $$
+profile is power series in s defined by the AC parameter $$ j=\sum_{n=0}^{10} ac(n) * s^n . $$
 
 ```Fortran
 NCURR = 1
