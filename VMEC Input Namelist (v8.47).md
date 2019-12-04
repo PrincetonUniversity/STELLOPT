@@ -14,7 +14,8 @@ selected_real_kind(12,100), (12 point percision, and 100 point range).
 The 'Size' column indicates the size of the variable if it's an array
 (denoted 1 if it's just a scalar value).
 
-| Variable | Type | Size | Description | 
+| Variable | Type | Size | Description |
+|---|---| --- | --- | ---- |
  | nfp | integer | 1 | Number of toroidal field periods | 
  | ncurr | integer | 1 | Switch for using (0) flux conservation or (1) prescribed toroidal current |
  | nsin | integer | 1 | Deprecated parameters. |
