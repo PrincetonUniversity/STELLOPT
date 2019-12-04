@@ -72,8 +72,15 @@ variable and n are combined allowing for an efficient reduction in
 computational effort. The PHIEDGE parameter controls the total enclosed
 toroidal flux. In essence this controls the total volume of the plasma,
 by scaling the choice of boundary coefficients to match the value found
-in PHIEDGE. [code format=\"fortran\"](code format="fortran") LASYM = F
-NFP = 10 MPOL = 8 NTOR = 6 PHIEDGE = 8.28000000000000E-01 [code](code)
+in PHIEDGE.
+
+```Fortran
+LASYM = F
+NFP = 10
+MPOL = 8
+NTOR = 6
+PHIEDGE = 8.28000000000000E-01
+```
 
 The Free Boundary Parameters To preform a run in free boundary mode VMEC
 must be supplied various parameters. The LFREEB parameter (T/F)
@@ -81,11 +88,11 @@ indicates if the code should be executed in free boundary mode. The
 MGRID_FILE parameter indicates the location of the 'mgrid' file which
 contains the vacuum magnetic field on a grid in R,Z and PHI. The NTHETA
 parameter determines the number of points in theta to use to represent
-the VMEC flux surfaces. This value defaults to 2*(MPOL)+6, and in the
+the VMEC flux surfaces. This value defaults to 2\*(MPOL)+6, and in the
 strict sense is not just a free boundary parameters. The NZETA parameter
 determines the number of gridpoints in zeta/phi to use. This value must
 be equal to the number of phi planes in the 'mgrid' file, for free
-boundary runs. The default value is 2*NTOR+4 unless NTOR=0 then it
+boundary runs. The default value is 2\*NTOR+4 unless NTOR=0 then it
 defaults to 1. The EXTCUR parameter is an array specifying the current
 in each current group found in the 'mgrid' file. The NVACSKIP
 parameter determines the number of steps between update of the vacuum
@@ -136,8 +143,7 @@ polynomial coefficients (0..10) used to calculate the rotational
 transform profile (NCURR=0) \$$ \iota=\sum_{n=0}^{10} ai(n) * s^n . $$
 The AC_FORM parameter determines the form of the
 current profiles used (NCURR=1). For AC_FORM=0 the toroidal current
-profile is power series in s defined by the AC parameter
-\$$ j=\sum_{n=0}^{10} ac(n) * s^n . $$
+profile is power series in s defined by the AC parameter \$$ j=\sum_{n=0}^{10} ac(n) * s^n . $$
 
 ```Fortran
 NCURR = 1
