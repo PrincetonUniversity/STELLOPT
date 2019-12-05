@@ -253,6 +253,8 @@
       WRITE(iunit,outint4) 'MPOL',mpol
       WRITE(iunit,outint4) 'NTOR',ntor
       WRITE(iunit,outflt) 'PHIEDGE',phiedge
+      WRITE(iunit,outint4) 'NTHETA',ntheta
+      WRITE(iunit,outint4) 'NZETA',nzeta
       IF (lrfp) THEN
          WRITE(iunit,'(A)') '!----- RFP Parameters -----'
          WRITE(iunit,outboo) 'LRFP',lrfp
@@ -263,7 +265,6 @@
       WRITE(iunit,outboo) 'LFREEB',lfreeb
       IF (lfreeb) THEN
          WRITE (iunit, '(2x,3a)') "MGRID_FILE = '",TRIM(mgrid_file),"'"
-         WRITE(iunit,outint4) 'NZETA',nzeta
          DO n=1,SIZE(extcur)
             IF (extcur(n) == 0) CYCLE
             WRITE(iunit,'(2X,A,I3.3,A,ES22.12E3)')
