@@ -91,6 +91,7 @@
          IF (lw7x) WRITE(6,'(A)') '   W7-X BEAM Model!'
          IF (lascot) WRITE(6,'(A)') '   ASCOT5 OUTPUT ON!'
          IF (lascot4) WRITE(6,'(A)') '   ASCOT4 OUTPUT ON!'
+         IF (lbbnbi) WRITE(6,'(A)') '   BEAMLET BEAM Model!'
          IF (lplasma_only) WRITE(6,'(A)') '   MAGNETIC FIELD FROM PLASMA ONLY!'
          IF (npot > 0) WRITE(6,'(A)') '   RAIDAL ELECTRIC FIELD PRESENT!'
          CALL FLUSH(6)
@@ -280,6 +281,8 @@
           CALL adas_load_tables(myid_sharmem, MPI_COMM_SHARMEM)
           IF (lw7x) THEN
              CALL beams3d_init_beams_w7x
+          ELSEIF (lbbnbi) THEN
+             CALL beams3d_init_beams_bbnbi
           ELSE
              CALL beams3d_init_beams
           END IF

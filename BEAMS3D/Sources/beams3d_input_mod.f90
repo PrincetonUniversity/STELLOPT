@@ -62,7 +62,7 @@
                                   npoinc, follow_tol, t_end_in, mu_start_in,&
                                   charge_in, mass_in, Zatom_in, &
                                   vc_adapt_tol, int_type, Adist_beams,&
-                                  Asize_beams, Div_beams, E_beams,&
+                                  Asize_beams, Div_beams, E_beams, Dex_beams, &
                                   mass_beams, charge_beams, Zatom_beams, r_beams,&
                                   z_beams, phi_beams, TE_AUX_S, TE_AUX_F,&
                                   NE_AUX_S, NE_AUX_F, TI_AUX_S, TI_AUX_F, &
@@ -107,6 +107,7 @@
       Adist_beams = 1.0_rprec
       Asize_beams = -1.0_rprec
       Div_beams = 1.0_rprec
+      Dex_beams = -1
       r_beams = 1.0_rprec
       z_beams = 0.0_rprec
       phi_beams = 0.0_rprec
@@ -114,7 +115,7 @@
       mass_beams = 1.0_rprec
       charge_beams = 0.0_rprec
       Zatom_beams = 1.0_rprec
-      P_beams = 1.0_rprec
+      P_beams = 0.0_rprec
       TE_AUX_S = -1
       TE_AUX_F = -1
       NE_AUX_S = -1
