@@ -206,6 +206,13 @@ beams3d_init_beams_w7x.o: \
       ../../LIBSTELL/Release/mpi_params.o \
       beams3d_lines.o \
       beams3d_runtime.o
+      
+      
+beams3d_init_beams_bbnbi.o: \
+      ../../LIBSTELL/Release/stel_kinds.o \
+      ../../LIBSTELL/Release/mpi_params.o \
+      beams3d_lines.o \
+      beams3d_runtime.o
 
 
 beams3d_physics_mod.o: \

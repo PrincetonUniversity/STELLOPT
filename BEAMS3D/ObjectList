@@ -1,4 +1,5 @@
 ObjectFiles = \
+beams3d_init_beams_bbnbi.o \
 beams3d_write_ascoth4.o \
 beams3d_write_ascoth5.o \
 beams3d_write_parhdf5.o \
