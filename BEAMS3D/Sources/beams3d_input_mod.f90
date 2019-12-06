@@ -157,6 +157,13 @@
          DO WHILE ((Asize_beams(nbeams+1) >= 0.0).and.(nbeams<MAXBEAMS))
             nbeams = nbeams + 1
          END DO
+         IF (lbbnbi) THEN
+            nbeams = 0
+            DO WHILE ((Dex_beams(nbeams+1) > 0).and.(nbeams<MAXBEAMS))
+               nbeams = nbeams + 1
+            END DO
+            IF (nbeams == 0)  CALL handle_err(BAD_BEAMDEX_ERR,'beams3d_input in: input.'//TRIM(id_string),nbeams)
+         END IF
          nte = 0
          DO WHILE ((TE_AUX_S(nte+1) >= 0.0).and.(nte<MAXPROFLEN))
             nte = nte + 1
@@ -316,6 +323,7 @@
 
       IF (lbeam) THEN
           CALL MPI_BCAST(Adist_beams,MAXBEAMS,MPI_REAL8, local_master, comm,istat)
+          CALL MPI_BCAST(Dex_beams,MAXBEAMS,MPI_INTEGER, local_master, comm,istat)
           CALL MPI_BCAST(Asize_beams,MAXBEAMS,MPI_REAL8, local_master, comm,istat)
           CALL MPI_BCAST(Div_beams,MAXBEAMS,MPI_REAL8, local_master, comm,istat)
           CALL MPI_BCAST(E_beams,MAXBEAMS,MPI_REAL8, local_master, comm,istat)

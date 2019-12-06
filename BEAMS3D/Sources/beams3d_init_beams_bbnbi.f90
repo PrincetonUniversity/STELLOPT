@@ -27,12 +27,7 @@
       INTEGER, DIMENSION(:), ALLOCATABLE :: N_start
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: Energy, X_start, Y_start
       REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: X, Y, X_BEAMLET, Y_BEAMLET, Z_BEAMLET, &
-                                                  NX_BEAMLET, NY_BEAMLET, NZ_BEAMLET
-      REAL(rprec)              :: xbeam(2),ybeam(2),zbeam(2),dxbeam,dybeam,dzbeam,&
-                                  dxbeam2,dybeam2,dzbeam2,dlbeam,dxbeam3,dybeam3,dzbeam3
-      REAL(rprec)              :: magZ, magX, magV_neut, magV, xx(3), yy(3), zz(3)
-      REAL(rprec), PARAMETER   :: X_w7x = .114  !  22.4 duct width
-      REAL(rprec), PARAMETER   :: Y_w7x = .2533 ! 50.66 duct height
+                                                  NX_BEAMLET, NY_BEAMLET, NZ_BEAMLET, U, V
       REAL(rprec), PARAMETER   :: E_error = .01 ! 1% energy spread
 
       ! For HDF5
@@ -108,7 +103,7 @@
                   beam(nparticles), weight(nparticles_start, nbeams))
       IF (myworkid==master) THEN
          ALLOCATE(N_start(nparticles_start),X_start(nparticles_start),Y_start(nparticles_start),&
-                  Energy(nparticles_start))
+                  Energy(nparticles_start), U(3,nparticles_start), V(3,nparticles_start))
          ! Randomly inidialize beamlets
          CALL RANDOM_NUMBER(X_start)
          N_start = NINT(X_Start*dims(2))
@@ -117,10 +112,11 @@
          DO i=1,nbeams
             ! Cycle if not using beam
             j = Dex_beams(i)
-            IF (lverb) WRITE(6, '(A,I2,A,I4,A,A,I2,A,F7.3,A)') '            E_BEAM(',i ,'): ',&
+            IF (lverb) WRITE(6, '(A,I2,A,I4,A,A,I2,A,F7.3,A,A,I2,A,I4)') '            E_BEAM(',i ,'): ',&
                      NINT(E_beams(i)*6.24150636309E15),' [keV]',& !(1.0E-3/ec)
-                                     ' P_BEAM(',i ,'): ',&
-                     (P_beams(i)*1E-6),' [MW]'
+                                     ' P_BEAM(',i ,'): ',(P_beams(i)*1E-6),' [MW]',&
+                                     ' DEX_BEAM(',i ,'): ',(Dex_beams(i))
+
             CALL FLUSH(6)
             ! Basics
             beam(k1:k2)         = i
@@ -139,15 +135,28 @@
             R_start(k1:k2)   = SQRT(X_start*X_start+Y_start*Y_start)
             PHI_start(k1:k2) = ATAN2(Y_start,X_start)
             Z_start(k1:k2)   = Z_BEAMLET(j,N_start)
-            ! Starting Velocity
+            ! Now calculate Divergence (use small angle tan(div)=div here)
+            CALL gauss_rand(nparticles_start,X_Start)
+            CALL gauss_rand(nparticles_start,Y_Start)
+            U(1,:)  = SQRT(X_Start*X_Start+Y_start*Y_start)
+            X_Start = X_Start*Div_beams(i)/U(1,:)
+            Y_Start = Y_Start*Div_beams(i)/U(1,:)
+            ! Calcualte Divergence vectors (assume N are unit vectors)
+            U(1,:) = NY_BEAMLET(j,N_start)
+            U(2,:) = -NX_BEAMLET(j,N_start)
+            U(3,:) = 0.0
+            V(1,:) = U(2,:)*NZ_BEAMLET(j,N_start)
+            V(2,:) =-U(1,:)*NZ_BEAMLET(j,N_start)
+            V(3,:) = U(1,:)*NY_BEAMLET(j,N_start)-U(2,:)*NX_BEAMLET(j,N_start)
+            ! Starting Velocity 
             vll_start(k1:k2) = SQRT(2*Energy/mass_beams(i))  ! speed E=0.5*mv^2
-            v_neut(1,k1:k2)  = NX_BEAMLET(j,N_start)*vll_start(k1:k2)
-            v_neut(2,k1:k2)  = NY_BEAMLET(j,N_start)*vll_start(k1:k2)
-            v_neut(3,k1:k2)  = NZ_BEAMLET(j,N_start)*vll_start(k1:k2)
+            v_neut(1,k1:k2)  = (NX_BEAMLET(j,N_start) + U(1,:)*X_Start + V(1,:)*Y_start)*vll_start(k1:k2)
+            v_neut(2,k1:k2)  = (NY_BEAMLET(j,N_start) + U(2,:)*X_Start + V(2,:)*Y_start)*vll_start(k1:k2)
+            v_neut(3,k1:k2)  = (NZ_BEAMLET(j,N_start) + U(3,:)*X_Start + V(3,:)*Y_start)*vll_start(k1:k2)
             k1 = k2 + 1
             k2 = k2 + nparticles_start
          END DO
-         DEALLOCATE(N_start,X_Start,Y_start,Energy)
+         DEALLOCATE(N_start,X_Start,Y_start,Energy, U, V)
          DEALLOCATE(X_BEAMLET,Y_BEAMLET,Z_BEAMLET,NX_BEAMLET,NY_BEAMLET,NZ_BEAMLET)
       END IF
 !DEC$ IF DEFINED (MPI_OPT)

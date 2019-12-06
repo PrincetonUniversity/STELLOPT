@@ -11,7 +11,7 @@ MODULE beams3d_physics_mod
       !     Libraries
       !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
-      USE beams3d_runtime, ONLY: lneut, pi, pi2, dt, lverb, ADAS_ERR, dt_save
+      USE beams3d_runtime, ONLY: lneut, pi, pi2, dt, lverb, ADAS_ERR, dt_save, lbbnbi
       USE beams3d_lines, ONLY: R_lines, Z_lines, PHI_lines, &
                                myline, mytdex, moment, ltherm, &
                                nsteps, nparticles, vll_lines, moment_lines, mybeam, mycharge, myZ, &
@@ -300,6 +300,10 @@ MODULE beams3d_physics_mod
          !--------------------------------------------------------------
          !     Follow neutral into plasma using subgrid
          !--------------------------------------------------------------
+         xlast = qf(1)
+         ylast = qf(2)
+         zlast = qf(3)
+         x0 = qf(1); y0 = qf(2); z0 = qf(3)
          DO l = 1, 3
             dt_local = stepsize(l)/q(4)
             DO
@@ -342,6 +346,20 @@ MODULE beams3d_physics_mod
             t  =  t - dt_local
          END DO
          qs=qf
+
+         !--------------------------------------------------------------
+         !     Check to see if we hit the wall
+         !--------------------------------------------------------------
+         IF (lbbnbi .and. lvessel) THEN
+            CALL collide(x0,y0,z0,qf(1),qf(2),qf(3),xw,yw,zw,ltest)
+            IF (ltest) THEN
+               q(1) = SQRT(qf(1)*qf(1)+qf(2)*qf(2))
+               q(2) = ATAN2(qf(2),qf(1))
+               q(3) = qf(3)
+               CALL uncount_wall_hit
+               RETURN
+            END IF
+         END IF
 
          xlast = qf(1)
          ylast = qf(2)
@@ -529,11 +547,6 @@ MODULE beams3d_physics_mod
             t = t + dt_local
             IF (lvessel) CALL collide(x0,y0,z0,qf(1),qf(2),qf(3),xw,yw,zw,ltest)
             IF (ltest) THEN
-               !q(1) = SQRT(xw*xw+yw*yw)
-               !q(2) = ATAN2(yw,xw)
-               !q(3) = zw
-               ! Next lines are so that out_beams3d_nag detects the wall.
-               !xlast = x0; ylast=y0; zlast=z0
                q(1) = SQRT(qf(1)*qf(1)+qf(2)*qf(2))
                q(2) = ATAN2(qf(2),qf(1))
                q(3) = qf(3)
