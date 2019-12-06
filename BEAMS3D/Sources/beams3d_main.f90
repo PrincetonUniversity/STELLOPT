@@ -96,11 +96,13 @@ PROGRAM BEAMS3D
         lw7x = .false.
         lascot = .false.
         lascot4 = .false.
+        lbbnbi = .false.
         id_string = ''
         coil_string = ''
         mgrid_string = ''
         vessel_string = ''
         restart_string = ''
+        bbnbi_string = ''
 
         ! First Handle the input arguments
         CALL GETCARG(1, arg1, numargs)
@@ -154,6 +156,10 @@ PROGRAM BEAMS3D
                 i = i + 1
                 lvessel = .true.
                 CALL GETCARG(i, vessel_string, numargs)
+            case ("-beamlet")
+                i = i + 1
+                lbbnbi = .true.
+                CALL GETCARG(i, bbnbi_string, numargs)
             case ("-hitonly","-hit_only")
                 lhitonly  = .true.
             case ("-depo")
@@ -182,6 +188,7 @@ PROGRAM BEAMS3D
                 write(6, *) '     -w7x:          W7-X beam model'
                 write(6, *) '     -ascot5:       Output data in ASCOT5 format'
                 write(6, *) '     -ascot4:       Output data in ASCOT4 format'
+                write(6, *) '     -beamlet:      Beamlet file for beam geometry'
                 !write(6,*)'     -restart ext:  FIELDLINES HDF5 extension.'
                 write(6, *) '     -raw:          Treat coil currents as raw (scale factors)'
                 write(6, *) '     -vac:          Only vacuum field'
@@ -225,6 +232,8 @@ PROGRAM BEAMS3D
     IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
     CALL MPI_BCAST(vessel_string, 256, MPI_CHARACTER, master, MPI_COMM_BEAMS, ierr_mpi)
     IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
+    CALL MPI_BCAST(bbnbi_string, 256, MPI_CHARACTER, master, MPI_COMM_BEAMS, ierr_mpi)
+    IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
     CALL MPI_BCAST(restart_string, 256, MPI_CHARACTER, master, MPI_COMM_BEAMS, ierr_mpi)
     IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
     CALL MPI_BCAST(lvmec, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
@@ -244,6 +253,8 @@ PROGRAM BEAMS3D
     CALL MPI_BCAST(lascot, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
     IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
     CALL MPI_BCAST(lascot4, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
+    IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
+    CALL MPI_BCAST(lbbnbi, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
     IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
     CALL MPI_BCAST(lrestart, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
     IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)

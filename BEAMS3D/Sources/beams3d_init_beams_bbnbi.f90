@@ -24,7 +24,7 @@
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       INTEGER :: ier, i, j, k, k1, k2
-!      REAL(rprec)  :: br
+      INTEGER, DIMENSION(:), ALLOCATABLE :: N_start
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: Energy, X_start, Y_start
       REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: X, Y, X_BEAMLET, Y_BEAMLET, Z_BEAMLET, &
                                                   NX_BEAMLET, NY_BEAMLET, NZ_BEAMLET
@@ -36,7 +36,6 @@
       REAL(rprec), PARAMETER   :: E_error = .01 ! 1% energy spread
 
       ! For HDF5
-      CHARACTER(256)           :: beamlet_file
       INTEGER(HID_T)           :: h5_fid, h5_did, h5_sid
       INTEGER(HSIZE_T), DIMENSION(2)    :: dims, maxdims
 
@@ -46,78 +45,78 @@
 
       CALL init_random_seed
 
-      ! Open and process the HDF5 file containing the data
-      beamlet_file = 'w7x_NI20NI21_beamlet_geo.h5'
-      CALL H5open_f(ier)
-      CALL h5fopen_f(beamlet_file, H5F_ACC_RDONLY_F, h5_fid, ier)
-      CALL h5dopen_f (h5_fid, 'X_BEAM', h5_did, ier)
-      CALL h5dget_space_f(h5_did, h5_sid ,ier)
-      CALL h5sget_simple_extent_dims_f(h5_sid, dims, maxdims,ier)
-      PRINT *,dims, maxdims
-      ALLOCATE(X_BEAMLET(dims(1),dims(2)), Y_BEAMLET(dims(1),dims(2)), Z_BEAMLET(dims(1),dims(2)),&
-         NX_BEAMLET(dims(1),dims(2)), NY_BEAMLET(dims(1),dims(2)), NZ_BEAMLET(dims(1),dims(2)))
-      CALL h5dread_f(h5_did, H5T_NATIVE_DOUBLE, X_BEAMLET, dims, ier)
-      CALL h5sclose_f(h5_sid, ier)
-      CALL h5dclose_f(h5_did, ier)
-      CALL h5dopen_f (h5_fid, 'Y_BEAM', h5_did, ier)
-      CALL h5dread_f(h5_did, H5T_NATIVE_DOUBLE, Y_BEAMLET, dims, ier)
-      CALL h5dclose_f(h5_did, ier)
-      CALL h5dopen_f (h5_fid, 'Z_BEAM', h5_did, ier)
-      CALL h5dread_f(h5_did, H5T_NATIVE_DOUBLE, Z_BEAMLET, dims, ier)
-      CALL h5dclose_f(h5_did, ier)
-      CALL h5dopen_f (h5_fid, 'NX_BEAM', h5_did, ier)
-      CALL h5dread_f(h5_did, H5T_NATIVE_DOUBLE, NX_BEAMLET, dims, ier)
-      CALL h5dclose_f(h5_did, ier)
-      CALL h5dopen_f (h5_fid, 'NY_BEAM', h5_did, ier)
-      CALL h5dread_f(h5_did, H5T_NATIVE_DOUBLE, NY_BEAMLET, dims, ier)
-      CALL h5dclose_f(h5_did, ier)
-      CALL h5dopen_f (h5_fid, 'NZ_BEAM', h5_did, ier)
-      CALL h5dread_f(h5_did, H5T_NATIVE_DOUBLE, NZ_BEAMLET, dims, ier)
-      CALL h5dclose_f(h5_did, ier)
-      CALL h5close_f(ier)
-
-      IF (lverb) THEN
-         WRITE(6, '(A)') '----- INITIALIZING BEAMLET BASED BEAMS -----'
-         WRITE(6, '(A,I4)') '      nbeams: ', nbeams
-         WRITE(6, '(A,I6)') '      nparticles_start: ', nparticles_start
-         CALL FLUSH(6)
-      END IF
-
-      ALLOCATE (X(nparticles_start, nbeams), Y(nparticles_start, nbeams), &
-                  & Energy(nparticles_start), weight(nparticles_start, nbeams), STAT=ier )
-      IF (ier /= 0) CALL handle_err(ALLOC_ERR, 'X, Y, weight', ier)
-      weight = 0
-
       IF (myworkid == master) THEN
-         nparticles = 0
-         DO i=1,nbeams
-            CALL gauss_rand(nparticles_start, X(:,i))
-            CALL gauss_rand(nparticles_start, Y(:,i))
-            X(:,i) = X(:,i)/MAXVAL(ABS(X(:,i)),DIM=1)
-            Y(:,i) = Y(:,i)/MAXVAL(ABS(Y(:,i)),DIM=1)
+         CALL H5open_f(ier)
+         CALL h5fopen_f(TRIM(bbnbi_string), H5F_ACC_RDONLY_F, h5_fid, ier)
+         CALL h5dopen_f (h5_fid, 'X_BEAM', h5_did, ier)
+         CALL h5dget_space_f(h5_did, h5_sid ,ier)
+         CALL h5sget_simple_extent_dims_f(h5_sid, dims, maxdims,ier)
+         k1 = dims(1)
+         k2 = dims(2)
+         ALLOCATE(X_BEAMLET(k1,k2), Y_BEAMLET(k1,k2), Z_BEAMLET(k1,k2),&
+                  NX_BEAMLET(k1,k2), NY_BEAMLET(k1,k2), NZ_BEAMLET(k1,k2))
+         CALL h5dread_f(h5_did, H5T_NATIVE_DOUBLE, X_BEAMLET, dims, ier)
+         CALL h5sclose_f(h5_sid, ier)
+         CALL h5dclose_f(h5_did, ier)
+         CALL h5dopen_f (h5_fid, 'Y_BEAM', h5_did, ier)
+         CALL h5dread_f(h5_did, H5T_NATIVE_DOUBLE, Y_BEAMLET, dims, ier)
+         CALL h5dclose_f(h5_did, ier)
+         CALL h5dopen_f (h5_fid, 'Z_BEAM', h5_did, ier)
+         CALL h5dread_f(h5_did, H5T_NATIVE_DOUBLE, Z_BEAMLET, dims, ier)
+         CALL h5dclose_f(h5_did, ier)
+         CALL h5dopen_f (h5_fid, 'NX_BEAM', h5_did, ier)
+         CALL h5dread_f(h5_did, H5T_NATIVE_DOUBLE, NX_BEAMLET, dims, ier)
+         CALL h5dclose_f(h5_did, ier)
+         CALL h5dopen_f (h5_fid, 'NY_BEAM', h5_did, ier)
+         CALL h5dread_f(h5_did, H5T_NATIVE_DOUBLE, NY_BEAMLET, dims, ier)
+         CALL h5dclose_f(h5_did, ier)
+         CALL h5dopen_f (h5_fid, 'NZ_BEAM', h5_did, ier)
+         CALL h5dread_f(h5_did, H5T_NATIVE_DOUBLE, NZ_BEAMLET, dims, ier)
+         CALL h5dclose_f(h5_did, ier)
+         CALL h5close_f(ier)
+
+         i = 1
+         k2 = 0
+         DO
+            IF (Dex_beams(i)<1) EXIT
+            IF (Dex_beams(i)/=j) THEN
+               j = Dex_beams(i)
+               k2 = k2+1
+            END IF
+            i=i+1
          END DO
-         ! Renormalize to beam box size
-         X = X*X_w7x  ! Width
-         Y = Y*Y_w7x  ! Height
-         weight = 1
-      END IF
-      nparticles = nparticles_start*nbeams
-!DEC$ IF DEFINED (MPI_OPT)
-      CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
-      CALL MPI_BCAST(nparticles,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
-!DEC$ ENDIF
-      ALLOCATE( X_start(nparticles_start), Y_start(nparticles_start), STAT=ier   )
-      IF (ier /= 0) CALL handle_err(ALLOC_ERR, 'X,Y_start etc.', ier)
-      ALLOCATE(   R_start(nparticles), phi_start(nparticles), Z_start(nparticles), vll_start(nparticles), &
-                & v_neut(3,nparticles), mass(nparticles), charge(nparticles), Zatom(nparticles), &
-                & mu_start(nparticles), t_end(nparticles), &
-                & beam(nparticles), STAT=ier   )
-      IF (ier /= 0) CALL handle_err(ALLOC_ERR, 'R,phi,Z _start, etc.', ier)
 
-      ! Handle beam distrbution
-      IF (myworkid == master) THEN
+         IF (lverb) THEN
+            WRITE(6, '(A)') '----- INITIALIZING BEAMLET BASED BEAMS -----'
+            WRITE(6, '(A,A)')       '   filename: ', TRIM(bbnbi_string)
+            WRITE(6, '(A,I4,A,I4)') '   nbeams: ', k2,'/',dims(1)
+            WRITE(6, '(A,I4)')      '   nbeamlets: ', dims(2)
+            WRITE(6, '(A,I6)')      '   nparticles_start: ', nparticles_start
+            CALL FLUSH(6)
+         END IF
+      END IF
+
+      ! Broadcast and allocate the global variables
+      k1 = dims(1)
+      k2 = dims(2)
+      CALL MPI_BCAST(k1, 1, MPI_INTEGER, master, MPI_COMM_BEAMS, ierr_mpi)
+      CALL MPI_BCAST(k2, 1, MPI_INTEGER, master, MPI_COMM_BEAMS, ierr_mpi)
+      nparticles = nbeams*nparticles_start
+      ALLOCATE(   R_start(nparticles), phi_start(nparticles), Z_start(nparticles), vll_start(nparticles), &
+                  v_neut(3,nparticles), mass(nparticles), charge(nparticles), Zatom(nparticles), &
+                  mu_start(nparticles), t_end(nparticles), &
+                  beam(nparticles), weight(nparticles_start, nbeams))
+      IF (myworkid==master) THEN
+         ALLOCATE(N_start(nparticles_start),X_start(nparticles_start),Y_start(nparticles_start),&
+                  Energy(nparticles_start))
+         ! Randomly inidialize beamlets
+         CALL RANDOM_NUMBER(X_start)
+         N_start = NINT(X_Start*dims(2))
+         WHERE(N_start==0) N_start=1
          k1 = 1; k2 = nparticles_start
          DO i=1,nbeams
+            ! Cycle if not using beam
+            j = Dex_beams(i)
             IF (lverb) WRITE(6, '(A,I2,A,I4,A,A,I2,A,F7.3,A)') '            E_BEAM(',i ,'): ',&
                      NINT(E_beams(i)*6.24150636309E15),' [keV]',& !(1.0E-3/ec)
                                      ' P_BEAM(',i ,'): ',&
@@ -134,47 +133,23 @@
             CALL gauss_rand(nparticles_start, Energy)
             Energy = sqrt( (E_beams(i) + E_error*E_beams(i)*Energy)*(E_beams(i) + E_error*E_beams(i)*Energy) )
             IF (lbeam_simple) Energy = E_beams(i)
-            ! Beamline geometry
-            xbeam           = r_beams(i,1:2)*cos(phi_beams(i,1:2))
-            ybeam           = r_beams(i,1:2)*sin(phi_beams(i,1:2))
-            zbeam           = z_beams(i,1:2)
-            dxbeam          = xbeam(2)-xbeam(1)
-            dybeam          = ybeam(2)-ybeam(1)
-            dzbeam          = zbeam(2)-zbeam(1)
-            dlbeam          = SQRT(dxbeam*dxbeam+dybeam*dybeam+dzbeam*dzbeam)
-            IF (dlbeam == 0) dlbeam = 1
-            dxbeam = dxbeam/dlbeam; dybeam=dybeam/dlbeam; dzbeam=dzbeam/dlbeam
-            dxbeam2         = dybeam ! normal direction dbeam x hat(z)
-            dybeam2         = -dxbeam
-            dzbeam2         = 0
-            dlbeam          = SQRT(dxbeam2*dxbeam2+dybeam2*dybeam2) ! because dzbeam2=0
-            IF (dlbeam == 0) dlbeam = 1
-            dxbeam2 = dxbeam2/dlbeam; dybeam2=dybeam2/dlbeam; ! because dzbeam2=0
-            dxbeam3         = dybeam2*dzbeam                  ! because dzbeam2=0
-            dybeam3         =                - dxbeam2*dzbeam ! because dzbeam2=0
-            dzbeam3         = dxbeam2*dybeam - dybeam2*dxbeam
-            dlbeam          = SQRT(dxbeam3*dxbeam3+dybeam3*dybeam3+dzbeam3*dzbeam3)
-            IF (dlbeam == 0) dlbeam = 1
-            dxbeam3 = dxbeam3/dlbeam; dybeam3=dybeam3/dlbeam; dzbeam3=dzbeam3/dlbeam
             ! Starting Points
-            X_start          = xbeam(1) + dxbeam2*X(:,i) + dxbeam3*Y(:,i)
-            Y_start          = ybeam(1) + dybeam2*X(:,i) + dybeam3*Y(:,i)
+            X_start          = X_BEAMLET(j,N_start)
+            Y_start          = Y_BEAMLET(j,N_start)
             R_start(k1:k2)   = SQRT(X_start*X_start+Y_start*Y_start)
             PHI_start(k1:k2) = ATAN2(Y_start,X_start)
-            Z_start(k1:k2)   = zbeam(1) + dzbeam3*Y(:,i)                   ! because dzbeam2=0
+            Z_start(k1:k2)   = Z_BEAMLET(j,N_start)
             ! Starting Velocity
             vll_start(k1:k2) = SQRT(2*Energy/mass_beams(i))  ! speed E=0.5*mv^2
-            v_neut(1,k1:k2)  = dxbeam*vll_start(k1:k2)
-            v_neut(2,k1:k2)  = dybeam*vll_start(k1:k2)
-            v_neut(3,k1:k2)  = dzbeam*vll_start(k1:k2)
+            v_neut(1,k1:k2)  = NX_BEAMLET(j,N_start)*vll_start(k1:k2)
+            v_neut(2,k1:k2)  = NY_BEAMLET(j,N_start)*vll_start(k1:k2)
+            v_neut(3,k1:k2)  = NZ_BEAMLET(j,N_start)*vll_start(k1:k2)
             k1 = k2 + 1
             k2 = k2 + nparticles_start
          END DO
-         WHERE(PHI_start < 0) PHI_start = PHI_start+pi2
+         DEALLOCATE(N_start,X_Start,Y_start,Energy)
+         DEALLOCATE(X_BEAMLET,Y_BEAMLET,Z_BEAMLET,NX_BEAMLET,NY_BEAMLET,NZ_BEAMLET)
       END IF
-
-      DEALLOCATE(X,Y,Energy,X_start,Y_start)
-      DEALLOCATE(X_BEAMLET,Y_BEAMLET,Z_BEAMLET,NX_BEAMLET,NY_BEAMLET,NZ_BEAMLET)
 !DEC$ IF DEFINED (MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(mu_start,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
