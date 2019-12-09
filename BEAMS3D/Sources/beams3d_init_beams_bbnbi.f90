@@ -25,6 +25,7 @@
       IMPLICIT NONE
       INTEGER :: ier, i, j, k, k1, k2
       INTEGER, DIMENSION(:), ALLOCATABLE :: N_start
+      REAL(rprec) :: rtemp
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: Energy, X_start, Y_start
       REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: X, Y, X_BEAMLET, Y_BEAMLET, Z_BEAMLET, &
                                                   NX_BEAMLET, NY_BEAMLET, NZ_BEAMLET, U, V
@@ -136,11 +137,11 @@
             PHI_start(k1:k2) = ATAN2(Y_start,X_start)
             Z_start(k1:k2)   = Z_BEAMLET(j,N_start)
             ! Now calculate Divergence (use small angle tan(div)=div here)
-            CALL gauss_rand(nparticles_start,X_Start)
-            CALL gauss_rand(nparticles_start,Y_Start)
-            U(1,:)  = SQRT(X_Start*X_Start+Y_start*Y_start)
-            X_Start = X_Start*Div_beams(i)/U(1,:)
-            Y_Start = Y_Start*Div_beams(i)/U(1,:)
+            CALL gauss_rand(nparticles_start,X_start)
+            CALL gauss_rand(nparticles_start,Y_start)
+            rtemp  = MAXVAL(SQRT(X_start*X_start+Y_start*Y_start))
+            X_start = X_start*Div_beams(i)/rtemp
+            Y_start = Y_start*Div_beams(i)/rtemp
             ! Calcualte Divergence vectors (assume N are unit vectors)
             U(1,:) = NY_BEAMLET(j,N_start)
             U(2,:) = -NX_BEAMLET(j,N_start)
