@@ -348,7 +348,9 @@
                WRITE(iunit,'(2(A,I4.3,A,I3.3,A,ES22.12E3))') 
      1         '  RBC(',n,',',m,') = ',rbc(n,m),
      2         '    ZBS(',n,',',m,') = ',zbs(n,m)
-               IF (.not. lasym) CYCLE
+            END IF
+            IF (.not. lasym) CYCLE
+            IF ((rbs(n,m).ne.0) .or. (zbc(n,m).ne.0)) THEN
                WRITE(iunit,'(2(A,I4.3,A,I3.3,A,ES22.12E3))') 
      1         '  RBS(',n,',',m,') = ',rbs(n,m),
      2         '    ZBC(',n,',',m,') = ',zbc(n,m)
