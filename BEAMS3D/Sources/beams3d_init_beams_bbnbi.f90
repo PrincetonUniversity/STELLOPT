@@ -139,9 +139,10 @@
             ! Now calculate Divergence (use small angle tan(div)=div here)
             CALL gauss_rand(nparticles_start,X_start)
             CALL gauss_rand(nparticles_start,Y_start)
-            rtemp  = MAXVAL(SQRT(X_start*X_start+Y_start*Y_start))
-            X_start = X_start*Div_beams(i)/rtemp
-            Y_start = Y_start*Div_beams(i)/rtemp
+            U(1,:) = SQRT(X_start*X_start+Y_start*Y_start)/EXP(1.0_rprec)
+            V(1,:) = ATAN2(Y_start,X_start)
+            X_start = Div_beams(i)*U(1,:)*COS(V(1,:))
+            Y_start = Div_beams(i)*U(1,:)*SIN(V(1,:))
             ! Calcualte Divergence vectors (assume N are unit vectors)
             U(1,:) = NY_BEAMLET(j,N_start)
             U(2,:) = -NX_BEAMLET(j,N_start)
