@@ -180,7 +180,7 @@
                IF (nne > 0)   CALL EZspline_interp( NE_spl_s,   nr, rtemp(:,1,1), rtemp(:,3,1), ier)
                IF (nti > 0)   CALL EZspline_interp( TI_spl_s,   nr, rtemp(:,1,1), rtemp(:,4,1), ier)
                IF (nzeff > 0) CALL EZspline_interp( ZEFF_spl_s, nr, rtemp(:,1,1), rtemp(:,5,1), ier)
-               rtemp(nr,1,1) = 0; rtemp(nr,4,1) = 0 ! Default Te and Ti at edge to zero
+               rtemp(nr,1,1) = 1.0; rtemp(nr,2,1) = 0; rtemp(nr,4,1) = 0 ! Default Te and Ti at edge to zero
                WRITE(iunit,'(2X,I4,2X,I4,2X,A)') nr,2,'# Nrad,Nion'
                WRITE(iunit,'(2X,I4,2X,I4,2X,A)') 1,6,'# ion Znum'
                WRITE(iunit,'(2X,I4,2X,I4,2X,A)') 1,12,'# ion Anum'
