@@ -139,7 +139,7 @@
             ! Now calculate Divergence (use small angle tan(div)=div here)
             CALL gauss_rand(nparticles_start,X_start)
             CALL gauss_rand(nparticles_start,Y_start)
-            U(1,:) = SQRT(X_start*X_start+Y_start*Y_start)/EXP(1.0_rprec)
+            U(1,:) = SQRT(X_start*X_start+Y_start*Y_start)
             V(1,:) = ATAN2(Y_start,X_start)
             X_start = Div_beams(i)*U(1,:)*COS(V(1,:))
             Y_start = Div_beams(i)*U(1,:)*SIN(V(1,:))
