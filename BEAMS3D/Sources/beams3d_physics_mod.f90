@@ -195,15 +195,15 @@ MODULE beams3d_physics_mod
                newspeed = speed - reduction*dt
                ltherm = .true.
                vfrac = newspeed/speed
-               PE_lines(mytdex,myline) = PE_lines(mytdex,myline)+half*mymass*dve*dve*dt
-               PI_lines(mytdex,myline) = PI_lines(mytdex,myline)+half*mymass*dvi*dvi*dt
+               PE_lines(mytdex,myline) = PE_lines(mytdex,myline)+half*mymass*dve*dve*dt*dt
+               PI_lines(mytdex,myline) = PI_lines(mytdex,myline)+half*mymass*dvi*dvi*dt*dt
                vll = vfrac*vll
                moment = vfrac*vfrac*moment
                q(4) = vll
                RETURN
             END IF
-            PE_lines(mytdex,myline) = PE_lines(mytdex,myline)+half*mymass*dve*dve*dt
-            PI_lines(mytdex,myline) = PI_lines(mytdex,myline)+half*mymass*dvi*dvi*dt
+            PE_lines(mytdex,myline) = PE_lines(mytdex,myline)+half*mymass*dve*dve*dt*dt
+            PI_lines(mytdex,myline) = PI_lines(mytdex,myline)+half*mymass*dvi*dvi*dt*dt
             vll = vfrac*vll
             moment = vfrac*vfrac*moment
             speed = newspeed
