@@ -290,7 +290,7 @@
           ALLOCATE(  R_start(nparticles), phi_start(nparticles), Z_start(nparticles), &
           & v_neut(3,nparticles), mass(nparticles), charge(nparticles), &
           & mu_start(nparticles), Zatom(nparticles), t_end(nparticles), vll_start(nparticles), &
-          & beam(nparticles), weight(nparticles_start, nbeams)  )
+          & beam(nparticles), weight(nparticles)  )
 
           R_start = r_start_in(1:nparticles)
           phi_start = phi_start_in(1:nparticles)

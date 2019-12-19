@@ -114,7 +114,7 @@
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ZEFF_ARR',ier)
                END IF
                IF (lbeam) THEN
-                  CALL write_var_hdf5(fid,'Weight',nparticles_start, nbeams,ier,DBLVAR=weight,ATT='Weight',&
+                  CALL write_var_hdf5(fid,'Weight',nparticles,ier,DBLVAR=weight,ATT='Weight',&
                                       ATT_NAME='description')
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'Weight',ier)
                   CALL write_var_hdf5(fid,'Beam',nparticles,ier,INTVAR=beam,ATT='Beam Number',&

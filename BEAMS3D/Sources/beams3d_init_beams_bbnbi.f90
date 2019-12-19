@@ -101,7 +101,7 @@
       ALLOCATE(   R_start(nparticles), phi_start(nparticles), Z_start(nparticles), vll_start(nparticles), &
                   v_neut(3,nparticles), mass(nparticles), charge(nparticles), Zatom(nparticles), &
                   mu_start(nparticles), t_end(nparticles), &
-                  beam(nparticles), weight(nparticles_start, nbeams))
+                  beam(nparticles), weight(nparticles))
       IF (myworkid==master) THEN
          ALLOCATE(N_start(nparticles_start),X_start(nparticles_start),Y_start(nparticles_start),&
                   Energy(nparticles_start), U(3,nparticles_start), V(3,nparticles_start))
@@ -110,6 +110,7 @@
          N_start = NINT(X_Start*dims(2))
          WHERE(N_start==0) N_start=1
          k1 = 1; k2 = nparticles_start
+         weight = 0
          DO i=1,nbeams
             ! Cycle if not using beam
             j = Dex_beams(i)
@@ -130,6 +131,7 @@
             CALL gauss_rand(nparticles_start, Energy)
             Energy = sqrt( (E_beams(i) + E_error*E_beams(i)*Energy)*(E_beams(i) + E_error*E_beams(i)*Energy) )
             IF (lbeam_simple) Energy = E_beams(i)
+            weight(k1:k2)       = P_beams(i)/Energy
             ! Starting Points
             X_start          = X_BEAMLET(j,N_start)
             Y_start          = Y_BEAMLET(j,N_start)
@@ -160,6 +162,7 @@
          END DO
          DEALLOCATE(N_start,X_Start,Y_start,Energy, U, V)
          DEALLOCATE(X_BEAMLET,Y_BEAMLET,Z_BEAMLET,NX_BEAMLET,NY_BEAMLET,NZ_BEAMLET)
+         weight = weight/nparticles
       END IF
 !DEC$ IF DEFINED (MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
@@ -168,7 +171,7 @@
       CALL MPI_BCAST(mass,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(charge,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(Zatom,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
-      CALL MPI_BCAST(weight,nparticles_start*nbeams,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
+      CALL MPI_BCAST(weight,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(R_start,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(phi_start,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(Z_start,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
