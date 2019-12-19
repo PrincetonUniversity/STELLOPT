@@ -394,7 +394,7 @@
                rtemp(i,8,1) = Zatom(i)
                rtemp(i,9,1) = NINT(mass(i)*5.97863320194E26) ! Anum
                rtemp(i,10,1) = Zatom(i)
-               rtemp(i,11,1) = 1.0 ! weight
+               rtemp(i,11,1) = weight(i) ! weight
                rtemp(i,12,1) = 0.0 ! time
                rtemp(i,13,1) = i
             END DO

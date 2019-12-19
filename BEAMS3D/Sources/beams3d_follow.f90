@@ -423,6 +423,12 @@ SUBROUTINE beams3d_follow
     IF (ALLOCATED(w)) DEALLOCATE(w)
     IF (ALLOCATED(iwork)) DEALLOCATE(iwork)
 
+    ! Adjust PE_lines and PI_lines to be in real units
+    DO i = mystart, myend
+       PE_lines(:,i) = PE_lines(:,i)*weight(i)
+       PI_lines(:,i) = PI_lines(:,i)*weight(i)
+    END DO
+
 !DEC$ IF DEFINED (MPI_OPT)
     i = MPI_UNDEFINED
     IF (myid_sharmem == master) i = 0
