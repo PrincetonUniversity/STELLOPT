@@ -162,7 +162,7 @@ ifeq ($(LMANGO),T)
 endif
 
 MANGO_LIB = $(MANGO_DIR)/lib/$(LIB_MANGO) \
-        $(PETSC_LIB) $(FC_LINKER_FLAGS) $(FFLAGS) -L/u/mlan/nlopt/nlopt-2.6.1/install/lib64 -lnlopt -lstdc++
+        $(PETSC_LIB) $(FC_LINKER_FLAGS) $(FFLAGS) -L/u/mlan/nlopt/nlopt-2.6.1/install/lib64 -lnlopt -lstdc++ -L $(GSL_HOME)/lib -lgsl
 
 #######################################################################
 #            REGCOIL Options
