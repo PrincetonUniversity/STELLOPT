@@ -24,7 +24,7 @@ will examine each section giving detailed descriptions of how the choice
 of variables affects the execution of the code. A full version of this
 file can be found here:
 
-# The namelist declaration and Runtime control parameters
+## The namelist declaration and Runtime control parameters
 
 The VMEC input namelist is declared 'INDATA' and is the first line of the namelist.
 Various parameters control the execution of the VMEC code. The DELT
@@ -61,7 +61,7 @@ NITER_ARRAY= 2000 3000 5000 10000
 LWOUTTXT = F
 ```
 
-# The Grid Parameters
+## The Grid Parameters
 
 The VMEC computational domain is controlled through
 these parameters. The LASYM parmeter (T/F) determines if up/down
@@ -85,7 +85,7 @@ NTOR = 6
 PHIEDGE = 8.28000000000000E-01
 ```
 
-# The Free Boundary Parameters
+## The Free Boundary Parameters
 
 To preform a run in free boundary mode VMEC
 must be supplied various parameters. The LFREEB parameter (T/F)
@@ -112,7 +112,7 @@ NVACSKIP = 6
 EXTCUR = 4.82137988281250E+03 3.14672241210938E+03 2.13679345703125E+03 -5.03201074218750E+03 -3.84028015136719E+02 3.77810131835938E+03
 ```
 
-# The Pressure Profile Parameters
+## The Pressure Profile Parameters
 The pressure profile in VMEC is specified as a function of radial flux space coordinates (s). Where for
 the default case is the normalized toroidal flux (normalized to
 PHIEDGE). If LRFP is set to TRUE, this coordinates becomes the
@@ -138,7 +138,7 @@ PRES_SCALE = 1.0
 AM = 0.00000000000000E+00 0.00000000000000E+00 0.00000000000000E+00 0.00000000000000E+00 0.00000000000000E+00 0.00000000000000E+00 0.00000000000000E+00 0.00000000000000E+00 0.00000000000000E+00 0.00000000000000E+00 0.00000000000000E+00
 ```
 
-# The Toroidal Current / Rotational Transform Parameters
+## The Toroidal Current / Rotational Transform Parameters
 
 The VMEC code provides the user an option to specify either a rotational transform
 radial profile or a toroidal current density profile. The NCURR
@@ -157,7 +157,7 @@ AI = 0.00000000000000E+00 0.00000000000000E+00 0.00000000000000E+00 0.0000000000
 AC = 0.00000000000000E+00 0.00000000000000E+00 0.00000000000000E+00 0.00000000000000E+00 0.00000000000000E+00 0.00000000000000E+00 0.00000000000000E+00 0.00000000000000E+00 0.00000000000000E+00 0.00000000000000E+00 0.00000000000000E+00
 ```
 
-# The Magnetic Axis Parameters
+## The Magnetic Axis Parameters
 
 The VMEC code needs an initial guess for
 the magnetic axis. These values are specified as Fourier harmonics in
@@ -170,7 +170,7 @@ RAXIS = 3.80000000000000E+00 0.00000000000000E+00 0.00000000000000E+00 0.0000000
 ZAXIS = 0.00000000000000E+00 0.00000000000000E+00 0.00000000000000E+00 0.00000000000000E+00 0.00000000000000E+00 0.00000000000000E+00 0.00000000000000E+00 0.00000000000000E+00 0.00000000000000E+00 0.00000000000000E+00 0.00000000000000E+00
 ```
 
-#The Boundary Shape Parameters
+## The Boundary Shape Parameters
 
 The VMEC boundary is specified in terms of
 Fourier harmonics. The RBC parameter store the radial Fourier
