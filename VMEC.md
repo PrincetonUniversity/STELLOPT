@@ -358,8 +358,7 @@ detail) in the threed1 file. It is suggested that the user redirect the
 output of the run to a log file. The wout file is a text file containing
 data from plotting of the final configuration. Details of reading the
 'wout' file can be found in
-[LIBSTELL/Sources//Modules/read_wout_mod.f90]
-(https://github.com/PrincetonUniversity/STELLOPT/blob/master/LIBSTELL/Sources/Modules/read_wout_mod.f90).
+[LIBSTELL/Sources//Modules/read_wout_mod.f90](https://github.com/PrincetonUniversity/STELLOPT/blob/master/LIBSTELL/Sources/Modules/read_wout_mod.f90).
 If 'LDIAGNO' was set to true in the input namelist, a 'diagno_in'
 file will be created. This file contains information regarding the outer
 flux surface and currents for the DIAGNO routine (which calculate the
