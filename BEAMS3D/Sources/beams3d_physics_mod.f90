@@ -11,7 +11,7 @@ MODULE beams3d_physics_mod
       !     Libraries
       !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
-      USE beams3d_runtime, ONLY: lneut, pi, pi2, dt, lverb, ADAS_ERR, dt_save
+      USE beams3d_runtime, ONLY: lneut, pi, pi2, dt, lverb, ADAS_ERR, dt_save, lbbnbi
       USE beams3d_lines, ONLY: R_lines, Z_lines, PHI_lines, &
                                myline, mytdex, moment, ltherm, &
                                nsteps, nparticles, vll_lines, moment_lines, mybeam, mycharge, myZ, &
@@ -21,11 +21,10 @@ MODULE beams3d_physics_mod
                               phimin, eps1, eps2, eps3, raxis, phiaxis, zaxis
       USE EZspline_obj
       USE EZspline
-!DEC$ IF DEFINED (NTCC)
-      USE adas_mod_simpl
-      USE fpreact_calls
-      USE periodic_table_mod
-!DEC$ ENDIF  
+!      USE adas_mod_simpl
+      USE adas_mod_parallel
+!      USE fpreact_calls
+!      USE periodic_table_mod
       USE mpi_params 
 
       !-----------------------------------------------------------------
@@ -196,15 +195,15 @@ MODULE beams3d_physics_mod
                newspeed = speed - reduction*dt
                ltherm = .true.
                vfrac = newspeed/speed
-               PE_lines(mytdex,myline) = PE_lines(mytdex,myline)+half*mymass*dve*dve*dt
-               PI_lines(mytdex,myline) = PI_lines(mytdex,myline)+half*mymass*dvi*dvi*dt
+               PE_lines(mytdex,myline) = PE_lines(mytdex,myline)+mymass*dve*dt*speed
+               PI_lines(mytdex,myline) = PI_lines(mytdex,myline)+mymass*dvi*dt*speed
                vll = vfrac*vll
                moment = vfrac*vfrac*moment
                q(4) = vll
                RETURN
             END IF
-            PE_lines(mytdex,myline) = PE_lines(mytdex,myline)+half*mymass*dve*dve*dt
-            PI_lines(mytdex,myline) = PI_lines(mytdex,myline)+half*mymass*dvi*dvi*dt
+            PE_lines(mytdex,myline) = PE_lines(mytdex,myline)+mymass*dve*dt*speed
+            PI_lines(mytdex,myline) = PI_lines(mytdex,myline)+mymass*dvi*dt*speed
             vll = vfrac*vll
             moment = vfrac*vfrac*moment
             speed = newspeed
@@ -251,7 +250,7 @@ MODULE beams3d_physics_mod
          USE beams3d_grid
          USE beams3d_lines, ONLY: myline,xlast,ylast,zlast
          USE beams3d_runtime, ONLY: t_end, lvessel,to3
-         USE wall_mod, ONLY: collide
+         USE wall_mod, ONLY: collide, uncount_wall_hit
 
          !--------------------------------------------------------------
          !     Input Parameters
@@ -301,6 +300,10 @@ MODULE beams3d_physics_mod
          !--------------------------------------------------------------
          !     Follow neutral into plasma using subgrid
          !--------------------------------------------------------------
+         xlast = qf(1)
+         ylast = qf(2)
+         zlast = qf(3)
+         x0 = qf(1); y0 = qf(2); z0 = qf(3)
          DO l = 1, 3
             dt_local = stepsize(l)/q(4)
             DO
@@ -343,6 +346,24 @@ MODULE beams3d_physics_mod
             t  =  t - dt_local
          END DO
          qs=qf
+
+         !--------------------------------------------------------------
+         !     Check to see if we hit the wall
+         !--------------------------------------------------------------
+         IF (lbbnbi .and. lvessel) THEN
+            CALL collide(x0,y0,z0,qf(1),qf(2),qf(3),xw,yw,zw,ltest)
+            IF (ltest) THEN
+               q(1) = SQRT(qf(1)*qf(1)+qf(2)*qf(2))
+               q(2) = ATAN2(qf(2),qf(1))
+               q(3) = qf(3)
+               CALL uncount_wall_hit
+               RETURN
+            END IF
+         END IF
+
+         xlast = qf(1)
+         ylast = qf(2)
+         zlast = qf(3)
 
          !--------------------------------------------------------------
          !     Follow particle track out of plasma
@@ -443,9 +464,6 @@ MODULE beams3d_physics_mod
          tilocal = tilocal*1D-3
          telocal = telocal*1D-3
          zeff_temp = SUM(zefflocal)/DBLE(num_depo)
-!         zeff_temp = 1
-
-!DEC$ IF DEFINED (NTCC)
          !--------------------------------------------------------------
          !     USE ADAS to calcualte ionization rates
          !--------------------------------------------------------------
@@ -472,14 +490,6 @@ MODULE beams3d_physics_mod
          !   CALL adas_btsigv(2,1,energy,tilocal(l),1,myZ,zefflocal(l),sigvii(l),ier)  ! Ion Impact ionization cross-section term.
          !   CALL adas_btsigv(1,1,energy,tilocal(l),1,myZ,zefflocal(l),sigvcx(l),ier)  ! Charge Exchange ionization cross-section term.
          !END DO
-!DEC$ ELSE
-         IF (myworkid == master) THEN
-            WRITE(6,*) '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-            WRITE(6,*) '!!    ERROR: YOU DONT HAVE ADAS       !!'
-            WRITE(6,*) '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-            STOP
-         END IF
-!DEC$ ENDIF
          tau_inv = ((sigvii + sigvcx + sigvei)*nelocal) ! Delete a term if desired. (save a comment)
 
          !--------------------------------------------------------------
@@ -517,6 +527,9 @@ MODULE beams3d_physics_mod
                             S4D(1,1,1,1),nr,nphi,nz)
             s_temp = fval(1)
             lneut=.false.
+            xlast = qf(1)
+            ylast = qf(2)
+            zlast = qf(3)
             RETURN
          END IF
 
@@ -526,22 +539,21 @@ MODULE beams3d_physics_mod
          x0 = qf(1); y0 = qf(2); z0 = qf(3)
          dt_local = 0.25/q(4)  
          ltest = .FALSE.
+         xlast = qf(1)
+         ylast = qf(2)
+         zlast = qf(3)
          DO
             qf = qf + myv_neut*dt_local
             t = t + dt_local
             IF (lvessel) CALL collide(x0,y0,z0,qf(1),qf(2),qf(3),xw,yw,zw,ltest)
             IF (ltest) THEN
-               q(1) = SQRT(xw*xw+yw*yw)
-               q(2) = ATAN2(yw,xw)
-               q(3) = zw
-               ! Next lines are so that out_beams3d_nag detects the wall.
-               xlast = x0; ylast=y0; zlast=z0
                q(1) = SQRT(qf(1)*qf(1)+qf(2)*qf(2))
                q(2) = ATAN2(qf(2),qf(1))
                q(3) = qf(3)
+               CALL uncount_wall_hit
                RETURN
             END IF
-            xlast = x0; ylast=y0; zlast=z0
+            !xlast = x0; ylast=y0; zlast=z0
             x0 = qf(1); y0 = qf(2); z0 = qf(3)
             q(1) = SQRT(qf(1)*qf(1)+qf(2)*qf(2))
             q(2) = ATAN2(qf(2),qf(1))

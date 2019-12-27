@@ -63,13 +63,11 @@
   NETCDF_LIB = -L/opt/local/lib -lnetcdf -lnetcdff
 
 #######################################################################
-#            NTCC Options
+#            FFTW3 Options
 #######################################################################
-  LNTCC = T
-  NTCC_INC = -I/Users/lazerson/Sims_Work/pub/mod
-  NTCC_LIB = -L/Users/lazerson/Sims_Work/pub/lib \
-             -lpreact -lsigsub -laladdinsub -lpreact -lpspline \
-             -lportlib -lezcdf
+  LFFTW3 = T
+  FFTW3_INC = -I/opt/local/include
+  FFTW3_LIB = -L/opt/local/lib -lfftw3
 
 #######################################################################
 #            HDF5 Options
@@ -134,12 +132,12 @@
 #######################################################################
 #            TRAVIS Options
 #######################################################################
-  LTRAVIS= F
+  LTRAVIS= T
   TRAVIS_DIR = $(TRAVIS_PATH)
   LIB_TRAVIS = libtravis64_sopt.a
   LIB_MCONF  = libmconf64.a
   TRAVIS_LIB = $(TRAVIS_DIR)/lib/$(LIB_TRAVIS) \
-               $(TRAVIS_DIR)/magconf/lib/$(LIB_MCONF) -lstdc++
+               $(TRAVIS_DIR)/mag_conf/lib/$(LIB_MCONF) -lstdc++
 
 #######################################################################
 #            REGCOIL Options
@@ -149,6 +147,17 @@
   REGCOIL_INC = -I$(REGCOIL_DIR) 
   LIB_REGCOIL = libregcoil.a
   REGCOIL_LIB = $(REGCOIL_DIR)/$(LIB_REGCOIL) -fopenmp
+
+#######################################################################
+#            SFINCS Options
+#######################################################################
+
+  LSFINCS = F
+  SFINCS_DIR = $(SFINCS_PATH)
+  SFINCS_INC = -I$(SFINCS_DIR)
+  LIB_SFINCS = libsfincs.a
+  SFINCS_LIB = $(SFINCS_DIR)/$(LIB_SFINCS) \
+             -L$(PETSC_DIR)/$(PETSC_ARCH)/lib -lpetsc -lX11
 
 #######################################################################
 #            LIBSTELL Shared Options
@@ -209,6 +218,9 @@ ifeq ($(MAKECMDGOALS),xstelloptv2)
   DIAGNO_DIR = ../../DIAGNO
   LIB_DIAGNO= libdiagno.a
   MOD_PATH+= -I$(DIAGNO_DIR)/$(LOCTYPE)
+  FIELDLINES_DIR = ../../FIELDLINES
+  LIB_FIELDLINES = libfieldlines.a
+  MOD_PATH+= -I$(FIELDLINES_DIR)/$(LOCTYPE)
   JINV_DIR = ../../J_INVARIANT
   LIB_JINV = libjinv.a
   MOD_PATH+= -I$(JINV_DIR)/$(LOCTYPE)
@@ -221,7 +233,8 @@ ifeq ($(MAKECMDGOALS),xstelloptv2)
 	$(BNORM_DIR)/$(LOCTYPE)/$(LIB_BNORM) \
 	$(BOOZ_DIR)/$(LOCTYPE)/$(LIB_BOOZ) \
 	$(COBRA_DIR)/$(LOCTYPE)/$(LIB_COBRA) \
-	$(DIAGNO_DIR)/$(LOCTYPE)/$(LIB_DIAGNO) \
+  $(DIAGNO_DIR)/$(LOCTYPE)/$(LIB_DIAGNO) \
+  $(FIELDLINES_DIR)/$(LOCTYPE)/$(LIB_FIELDLINES) \
 	$(JINV_DIR)/$(LOCTYPE)/$(LIB_JINV) \
 	$(MGRID_DIR)/$(LOCTYPE)/$(LIB_MGRID) 
   ifeq ($(LDKES),T)
@@ -351,6 +364,13 @@ ifeq ($(LNETCDF),T)
   MOD_PATH += $(NETCDF_INC)
   LIB_SHARE += $(NETCDF_LIB)
 endif
+ifeq ($(LFFTW3),T)
+  MOD1_PATH += $(FFTW3_INC)
+  PRECOMP += -DFFTW3
+  LIB_LINK += $(FFTW3_LIB)
+  MOD_PATH += $(FFTW3_INC)
+  LIB_SHARE += $(FFTW3_LIB)
+endif
 ifeq ($(LHDF5),T)
   MOD1_PATH += $(HDF5_INC)
   PRECOMP += -DLHDF5 -DH5_USE_16_API
@@ -362,13 +382,6 @@ ifeq ($(LNAG),T)
   PRECOMP += -DNAG
   LIB_LINK += $(NAG_LIB)
   LIB_SHARE += $(NAG_LIB)
-endif
-ifeq ($(LNTCC),T)
-  MOD1_PATH += $(NTCC_INC)
-  PRECOMP += -DLADAS -DNTCC
-  LIB_LINK += $(NTCC_LIB)
-  MOD_PATH += $(NTCC_INC)
-  LIB_SHARE += $(NTCC_LIB)
 endif
 ifeq ($(LSILO),T)
   MOD1_PATH += $(SILO_INC)

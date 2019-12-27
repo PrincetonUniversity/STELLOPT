@@ -52,21 +52,19 @@
                -lnetcdf -lnetcdff 
 
 #######################################################################
-#            NTCC Options
-#######################################################################
-  LNTCC = T
-  NTCC_INC = -I$(NTCCHOME)/mod
-  NTCC_LIB = -L$(NTCCHOME)/lib -lpreact -lsigsub \
-                               -laladdinsub -lpreact -lportlib \
-                               -ladas310_fortran_driver
-
-#######################################################################
 #            HDF5 Options
 #######################################################################
   LHDF5 = T
   HDF5_INC = -I$(HDF5_HOME)/include 
   HDF5_LIB = -Wl,-rpath,$(HDF5_HOME)/lib -L$(HDF5_HOME)/lib \
              -lhdf5 -lhdf5_fortran -lhdf5_hl -lhdf5hl_fortran 
+
+#######################################################################
+#            FFTW3 Options
+#######################################################################
+  LFFTW3 = F
+  FFTW3_INC = -I$(FFTW_HOME)/include
+  FFTW3_LIB = -L$(FFTW_HOME)/lib -lfftw3 -lfftw3f 
 
 #######################################################################
 #             PGPLOT Options
@@ -91,14 +89,14 @@
 #######################################################################
 #            GENE Options
 #######################################################################
-  LGENE = T
+  LGENE = F
   GENE_DIR = $(GENE_PATH)/bin/obj_cobra
   FUTILS_DIR = $(GENE_PATH)/external/cobra/futils-gene-mod/src
   LIB_GENE = libgene.a
   LIB_FUTILS = libfutils.a
   GENE_INC = -I$(GENE_DIR) \
              -I$(FUTILS_DIR)
-  GENE_LIB = -L$(FFTW_HOME)/lib -lfftw3 -lfftw3f -Xlinker \
+  GENE_LIB = -L$(FFTW_HOME)/lib -lfftw3 -lfftw3f \
              -L$(SLEPC_HOME)/lib -lslepc \
              -L$(PETSC_HOME)/lib -lpetsc \
              $(GENE_DIR)/$(LIB_GENE) \
@@ -116,7 +114,7 @@
 #######################################################################
 #            TERPSICHORE Options
 #######################################################################
-  LTERPSICHORE= T
+  LTERPSICHORE= F
   TERPSICHORE_INC = -I$(TERPSICHORE_PATH)
   TERPSICHORE_DIR = $(TERPSICHORE_PATH)
   LIB_TERPSICHORE = libterpsichore.a
@@ -125,7 +123,7 @@
 #######################################################################
 #            TRAVIS Options
 #######################################################################
-  LTRAVIS= T
+  LTRAVIS= F
   TRAVIS_DIR = $(TRAVIS_PATH)
   LIB_TRAVIS = libtravis64_sopt.a
   LIB_MCONF  = libmconf64.a
@@ -156,7 +154,7 @@
 #######################################################################
 #            LIBSTELL Shared Options
 #######################################################################
-  LIB_SHARE = $(LIBS) $(NTCC_LIB) $(NETCDF_LIB) $(HDF5_LIB) \
+  LIB_SHARE = $(LIBS) $(NETCDF_LIB) $(HDF5_LIB) \
              -lifport -lifcoremt -limf -lm -lc \
              -lpthread -lirc -lunwind -lirc_s
 
@@ -213,6 +211,9 @@ ifeq ($(MAKECMDGOALS),xstelloptv2)
   DIAGNO_DIR = ../../DIAGNO
   LIB_DIAGNO= libdiagno.a
   MOD_PATH+= -I$(DIAGNO_DIR)/$(LOCTYPE)
+  FIELDLINES_DIR = ../../FIELDLINES
+  LIB_FIELDLINES = libfieldlines.a
+  MOD_PATH+= -I$(FIELDLINES_DIR)/$(LOCTYPE)
   JINV_DIR = ../../J_INVARIANT
   LIB_JINV = libjinv.a
   MOD_PATH+= -I$(JINV_DIR)/$(LOCTYPE)
@@ -226,6 +227,7 @@ ifeq ($(MAKECMDGOALS),xstelloptv2)
 	$(BOOZ_DIR)/$(LOCTYPE)/$(LIB_BOOZ) \
 	$(COBRA_DIR)/$(LOCTYPE)/$(LIB_COBRA) \
 	$(DIAGNO_DIR)/$(LOCTYPE)/$(LIB_DIAGNO) \
+  $(FIELDLINES_DIR)/$(LOCTYPE)/$(LIB_FIELDLINES) \
 	$(JINV_DIR)/$(LOCTYPE)/$(LIB_JINV) \
 	$(MGRID_DIR)/$(LOCTYPE)/$(LIB_MGRID) 
   ifeq ($(LDKES),T)
@@ -364,6 +366,13 @@ ifeq ($(LNETCDF),T)
   MOD_PATH += $(NETCDF_INC)
   LIB_SHARE += $(NETCDF_LIB)
 endif
+ifeq ($(LFFTW3),T)
+  MOD1_PATH += $(FFTW3_INC)
+  PRECOMP += -DFFTW3
+  LIB_LINK += $(FFTW3_LIB)
+  MOD_PATH += $(FFTW3_INC)
+  LIB_SHARE += $(FFTW3_LIB)
+endif
 ifeq ($(LHDF5),T)
   MOD1_PATH += $(HDF5_INC)
   PRECOMP += -DLHDF5 -DH5_USE_16_API  -DHDF5_PAR 
@@ -375,13 +384,6 @@ ifeq ($(LNAG),T)
   PRECOMP += -DNAG
   LIB_LINK += $(NAG_LIB)
   LIB_SHARE += $(NAG_LIB)
-endif
-ifeq ($(LNTCC),T)
-  MOD1_PATH += $(NTCC_INC)
-  PRECOMP += -DLADAS -DNTCC
-  LIB_LINK += $(NTCC_LIB)
-  MOD_PATH += $(NTCC_INC)
-  LIB_SHARE += $(NTCC_LIB)
 endif
 ifeq ($(LSILO),T)
   MOD1_PATH += $(SILO_INC)

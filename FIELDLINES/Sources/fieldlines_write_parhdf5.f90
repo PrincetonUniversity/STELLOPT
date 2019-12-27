@@ -13,7 +13,7 @@
       USE mpi_params
       USE hdf5
       USE fieldlines_runtime, ONLY: id_string, handle_err, &
-                                 MPI_BARRIER_ERR
+                                 MPI_BARRIER_ERR, nprocs_fieldlines
       USE mpi_inc
 !-----------------------------------------------------------------------
 !     Input Variables
@@ -70,6 +70,7 @@
       offset(1) = mystart-1
 
 !DEC$ IF DEFINED (HDF5_PAR)
+      CALL MPI_ALLREDUCE(MPI_IN_PLACE,chunk_dims(1),1,MPI_INTEGER,MPI_MAX,MPI_COMM_FIELDLINES,ier)
       ! Setup Helper Arrays
       ALLOCATE(stride(rank),block(rank))
       stride(1) = 1
@@ -106,6 +107,7 @@
 
 
       ! Create Memory Space
+      chunk_dims(1) = myend-mystart+1
       CALL h5screate_simple_f(rank, chunk_dims, mspace_id, ier)
 
       ! Select Hyperslab in File
@@ -138,8 +140,8 @@
 
 !DEC$ ELSE
 
-      DO i = 0, numprocs-1
-         IF (myid == i) THEN
+      DO i = 0, nprocs_fieldlines-1
+         IF (myworkid == i) THEN
             ! Open the fotran interface
             CALL h5open_f(ier)
 
@@ -150,7 +152,7 @@
             CALL h5fopen_f('fieldlines_'//TRIM(id_string)//'.h5', H5F_ACC_RDWR_F, file_id, ier, access_prp = H5P_DEFAULT_F)
 
             ! Open or create the dataset and get/create dataspace identifer
-            IF  (myid == master) THEN
+            IF  (myworkid == master) THEN
                CALL h5screate_simple_f(rank, dimsf, fspace_id, ier)
                IF (livar) CALL h5dcreate_f(file_id, TRIM(var_name), H5T_NATIVE_INTEGER, fspace_id, dset_id, ier)
                IF (lfvar) CALL h5dcreate_f(file_id, TRIM(var_name), H5T_NATIVE_DOUBLE, fspace_id, dset_id, ier)
@@ -207,7 +209,7 @@
       USE mpi_params
       USE hdf5
       USE fieldlines_runtime, ONLY: id_string, handle_err, &
-                                 MPI_BARRIER_ERR
+                                 MPI_BARRIER_ERR, nprocs_fieldlines
       USE mpi_inc
 !-----------------------------------------------------------------------
 !     Input Variables
@@ -268,6 +270,7 @@
       offset(2) = 0
 
 !DEC$ IF DEFINED (HDF5_PAR)
+      CALL MPI_ALLREDUCE(MPI_IN_PLACE,chunk_dims(1),1,MPI_INTEGER,MPI_MAX,MPI_COMM_FIELDLINES,ier)
       ! Setup Helper Arrays
       ALLOCATE(stride(rank),block(rank))
       stride(1) = 1
@@ -306,6 +309,7 @@
 
 
       ! Create Memory Space
+      chunk_dims(1) = myend-mystart+1
       CALL h5screate_simple_f(rank, chunk_dims, mspace_id, ier)
 
       ! Select Hyperslab in File
@@ -338,8 +342,8 @@
 
 !DEC$ ELSE
 
-      DO i = 0, numprocs-1
-         IF (myid == i) THEN
+      DO i = 0, nprocs_fieldlines-1
+         IF (myworkid == i) THEN
             ! Open the fotran interface
             CALL h5open_f(ier)
 
@@ -350,7 +354,7 @@
             CALL h5fopen_f('fieldlines_'//TRIM(id_string)//'.h5', H5F_ACC_RDWR_F, file_id, ier, access_prp = H5P_DEFAULT_F)
 
             ! Open or create the dataset and get/create dataspace identifer
-            IF  (myid == master) THEN
+            IF  (myworkid == master) THEN
                CALL h5screate_simple_f(rank, dimsf, fspace_id, ier)
                IF (livar) CALL h5dcreate_f(file_id, TRIM(var_name), H5T_NATIVE_INTEGER, fspace_id, dset_id, ier)
                IF (lfvar) CALL h5dcreate_f(file_id, TRIM(var_name), H5T_NATIVE_DOUBLE, fspace_id, dset_id, ier)

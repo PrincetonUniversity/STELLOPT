@@ -33,7 +33,7 @@
       INTEGER(4)     :: nra,nphi,QOemul,wmode
       INTEGER(4)     :: travisoutTEMP,travisScrOut
       INTEGER(4)     :: maxSteps,stopray,npass,maxHarm,nrho,nu
-      INTEGER(8)     :: mconf8=0,mVessel=0
+      INTEGER(8)     :: mconf8=0,mVessel=0,mMirror=0
       REAL(8)        :: hgrid,dphi,B_scale,B0_ref,phi_ref,phibx
       REAL(8)        :: maxlength,minStepSize,maxStepSize,odetolerance,umax
       REAL(8)        :: antennaPosition(3),targetPosition(3),rbeam(2),rfocus(2)
@@ -115,7 +115,14 @@
             CALL set_VesselMirrors_f77(vessel_ece,mirror_ece)
 
             ! Allocate Arrays
-            narr = MAXVAL(COUNT(sigma_ece < bigno,DIM=2),DIM=1)
+            !narr = MAXVAL(COUNT(sigma_ece < bigno,DIM=2),DIM=1)
+            narr = 0
+            DO i = 1, nsys
+               DO j = 1, nprof
+                  IF (sigma_ece(i,j)< bigno) narr = j
+               END DO
+            END DO
+            !narr = nprof
             IF (ALLOCATED(radto_ece)) DEALLOCATE(radto_ece)
             IF (ALLOCATED(radtx_ece)) DEALLOCATE(radtx_ece)
             ALLOCATE(radto_ece(nsys,narr))
@@ -174,7 +181,7 @@
                CALL initEquilibr_f77(hgrid, dphi, B0_ref, phi_ref, B_scale, B0type)
 
                ! Set Configuration
-               CALL SET_MAGCONFIG_F77(mConf8,mVessel)
+               CALL SET_MAGCONFIG_F77(mConf8,mVessel,mMirror)
 
                ! Set Profiles
                labelType = 'tor_rho'

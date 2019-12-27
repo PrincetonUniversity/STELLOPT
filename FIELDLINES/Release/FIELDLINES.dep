@@ -1,4 +1,9 @@
 # Microsoft Developer Studio Generated Dependency File, included by VMEC2000.mak
+      
+fieldlines_calc_surface_fit.o: \
+      fieldlines_runtime.o \
+      fieldlines_lines.o 
+
 
 fieldlines_main.o: \
       ../../LIBSTELL/Release/vessel_mod.o \
@@ -14,6 +19,10 @@ fieldlines_write_parhdf5.o: \
 
 fieldlines_runtime.o: \
       ../../LIBSTELL/Release/stel_kinds.o 
+      
+
+fieldlines_init_vars.o: \
+      fieldlines_runtime.o 
       
 
 monit_find_axis.o: 

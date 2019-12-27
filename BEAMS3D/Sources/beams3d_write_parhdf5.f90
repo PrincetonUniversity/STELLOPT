@@ -76,6 +76,9 @@
       offset(2) = mystart-1
 
 !DEC$ IF DEFINED (HDF5_PAR)
+      ! Do this so we define the chunking correctly
+      CALL MPI_ALLREDUCE(MPI_IN_PLACE,chunk_dims(2),1,MPI_INTEGER,MPI_MAX,MPI_COMM_BEAMS,ier)
+
       ier = 0
       info = MPI_INFO_NULL
       ! Initialize
@@ -105,7 +108,8 @@
       ! Close the file space
       CALL h5sclose_f(fspace_id, ier)
 
-      ! Create the Memore Space
+      ! Create the Memory Space
+      chunk_dims(2) = myend-mystart+1 ! So we write correctly
       CALL h5screate_simple_f(rank, chunk_dims, mspace_id, ier)
 
       ! Select the Hyperslab in data
@@ -276,6 +280,8 @@
       offset(1) = mystart-1
 
 !DEC$ IF DEFINED (HDF5_PAR)
+      ! Do this so we define the chunking correctly
+      CALL MPI_ALLREDUCE(MPI_IN_PLACE,chunk_dims(1),1,MPI_INTEGER,MPI_MAX,MPI_COMM_BEAMS,ier)
       ier = 0
       info = MPI_INFO_NULL
       ! Initialize
@@ -306,6 +312,7 @@
       CALL h5sclose_f(fspace_id, ier)
 
       ! Create the Memore Space
+      chunk_dims(1) = myend-mystart+1
       CALL h5screate_simple_f(rank, chunk_dims, mspace_id, ier)
 
       ! Select the Hyperslab in data

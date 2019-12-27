@@ -81,14 +81,14 @@
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_init',ierr_mpi)
 !DEC$ ENDIF
       IF (lvmec) THEN
-         CALL read_fieldlines_input('input.' // TRIM(id_string),ier,myid)
+         CALL read_fieldlines_input('input.' // TRIM(id_string),ier,myworkid)
          IF (lverb) WRITE(6,'(A)') '   FILE: input.' // TRIM(id_string)
          IF (.not. lvac) CALL read_wout_file(TRIM(id_string),ier)
       ELSE IF (lpies) THEN
-         CALL read_fieldlines_input(TRIM(id_string) // '.in',ier,myid)
+         CALL read_fieldlines_input(TRIM(id_string) // '.in',ier,myworkid)
          IF (lverb) WRITE(6,'(A)') '   FILE: ' // TRIM(id_string) // '.in'
       ELSE IF (lspec) THEN
-         CALL read_fieldlines_input('input.' // TRIM(id_string),ier,myid)
+         CALL read_fieldlines_input('input.' // TRIM(id_string),ier,myworkid)
          IF (lverb) WRITE(6,'(A)') '   FILE: input.' // TRIM(id_string)
       END IF
 
@@ -116,7 +116,7 @@
       END IF
       
       IF (lauto) THEN
-         nlines = MAX(numprocs,128)
+         nlines = MAX(nprocs_fieldlines,128)
          IF (nruntype == runtype_full) THEN
             rmin_temp = r_start(1)
             zmin_temp = z_start(1)
@@ -251,7 +251,7 @@
       
       ! Handle outputting the B-FIELD
       IF (lemc3 .or. lbfield_only .or. lafield_only) THEN
-         IF (lemc3 .and. myid==master) CALL fieldlines_write_emc3
+         IF (lemc3 .and. myworkid==master) CALL fieldlines_write_emc3
 !DEC$ IF DEFINED (MPI_OPT)
          CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
          IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_init',ierr_mpi)
@@ -321,7 +321,7 @@
       IF (lvessel) THEN
          CALL wall_load_txt(TRIM(vessel_string),ier)
          IF (ier /= 0) CALL handle_err(WALL_ERR,'fieldlines_init',ier)
-         IF (myid /= master) DEALLOCATE(vertex,face) ! Do this to save memory
+         IF (myworkid /= master) DEALLOCATE(vertex,face) ! Do this to save memory
          IF (lverb) THEN
             CALL wall_info(6)
             IF (lwall_trans) WRITE(6,'(A)')'   !!!!! Poincare Screen  !!!!!'
@@ -395,7 +395,7 @@
       
       ! DEALLOCATE Variables
       ! Only master retains a copy for output
-      !IF (myid /= master) THEN
+      !IF (myworkid /= master) THEN
       !   DEALLOCATE(raxis,zaxis,phiaxis)
       !   DEALLOCATE(B_R,B_Z,B_PHI)
       !END IF

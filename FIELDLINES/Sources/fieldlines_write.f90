@@ -12,7 +12,7 @@
       USE stel_kinds, ONLY: rprec
       USE ez_hdf5
       USE safe_open_mod, ONLY: safe_open
-      USE mpi_params, ONLY: master, myid, MPI_COMM_FIELDLINES, ierr_mpi
+      USE mpi_params, ONLY: master, myworkid, MPI_COMM_FIELDLINES, ierr_mpi
       USE wall_mod, ONLY: nface,nvertex,face,vertex,ihit_array
       USE fieldlines_lines
       USE fieldlines_grid, ONLY: nr, nphi, nz, B_R, B_PHI, B_Z, raxis, &
@@ -38,7 +38,7 @@
 !-----------------------------------------------------------------------
 !     Begin Subroutine
 !-----------------------------------------------------------------------
-      IF (myid == master) THEN
+      IF (myworkid == master) THEN
          IF (lverb) THEN
             WRITE(6,'(A)')  '----- WRITING DATA TO FILE -----'
          END IF
@@ -172,8 +172,8 @@
       END IF
       
       ! Wait for everyone to catch up
-      CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
-      IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_follow',ierr_mpi)
+!      CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
+!      IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_follow',ierr_mpi)
       !  This is the parallel call.
       IF (.not. lbfield_only .and. .not. lafield_only .and. .not. lemc3) THEN
          mystart = LBOUND(R_lines,1)

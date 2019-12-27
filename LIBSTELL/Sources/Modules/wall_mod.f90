@@ -19,6 +19,7 @@
 !         
 !-----------------------------------------------------------------------
       IMPLICIT NONE
+      LOGICAL            :: lwall_loaded
       INTEGER            :: nvertex, nface
       INTEGER, POINTER :: face(:,:)
       INTEGER, POINTER :: ihit_array(:)
@@ -28,7 +29,7 @@
 
 
       LOGICAL, PRIVATE, ALLOCATABLE            :: lmask(:)
-      INTEGER, PRIVATE                         :: mystart, myend, mydelta
+      INTEGER, PRIVATE                         :: mystart, myend, mydelta, ik_min
       INTEGER, PRIVATE                         :: win_vertex, win_face, win_phi, &
                                                   win_fn, win_a0, win_v0, win_v1, &
                                                   win_dot00, win_dot01, win_dot11, &
@@ -212,6 +213,7 @@
          CALL MPI_BARRIER(shar_comm, istat)
          CALL MPI_COMM_FREE(shar_comm, istat)
       END IF
+      lwall_loaded = .true.
       RETURN
       END SUBROUTINE wall_load_txt
 
@@ -442,6 +444,7 @@
          CALL MPI_BARRIER(shar_comm, istat)
          CALL MPI_COMM_FREE(shar_comm, istat)
       END IF
+      lwall_loaded = .true.
       RETURN
       END SUBROUTINE wall_load_mn
 
@@ -495,7 +498,7 @@
       DOUBLE PRECISION, INTENT(in) :: x0, y0, z0, x1, y1, z1
       DOUBLE PRECISION, INTENT(out) :: xw, yw, zw
       LOGICAL, INTENT(out) :: lhit
-      INTEGER :: ik, ik_min
+      INTEGER :: ik
       xw=zero; yw=zero; zw=zero; lhit=.FALSE.
       ik_min = -1
       lmask(:) = .TRUE.
@@ -547,7 +550,7 @@
       DOUBLE PRECISION, INTENT(in) :: x0, y0, z0, x1, y1, z1
       DOUBLE PRECISION, INTENT(out) :: xw, yw, zw
       LOGICAL, INTENT(out) :: lhit
-      INTEGER :: ik, ik_min, k1,k2
+      INTEGER :: ik, k1,k2
       DOUBLE PRECISION :: drx, dry, drz, V2x, V2y, V2z, DOT02l, DOT12l, tloc, tmin, alphal, betal
       xw=zero; yw=zero; zw=zero; lhit=.FALSE.
       ik_min = zero
@@ -597,6 +600,11 @@
       END IF
       RETURN
       END SUBROUTINE collide_double
+
+      SUBROUTINE uncount_wall_hit
+         IMPLICIT NONE
+         ihit_array(ik_min) = ihit_array(ik_min) - 1
+      END SUBROUTINE
 
       SUBROUTINE wall_free(istat,shared_comm)
 #if defined(MPI_OPT)
@@ -664,6 +672,7 @@
       date=''
       nface = -1
       nvertex = -1
+      lwall_loaded = .false.
       RETURN
       END SUBROUTINE wall_free
 

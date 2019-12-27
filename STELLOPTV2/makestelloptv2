@@ -15,7 +15,7 @@ VPATH = $(SPATH):$(SPATH)/Chisq:$(SPATH)/General:$(SPATH)/Modules
 
 .SUFFIXES :
 .SUFFIXES : .f .f90 .o
-xstelloptv2:  $(LIB) $(LIB_VMEC) $(LIB_BEAMS3D) $(LIB_BNORM) $(LIB_BOOTSJ) $(LIB_BOOZ) $(LIB_COBRA) $(LIB_DIAGNO) $(LIB_DKES) $(LIB_JINV) $(LIB_MGRID) $(LIB_NEO) $(LIB_GENE) $(LIB_COILOPTPP) $(LIB_REGCOIL) $(LIB_TERPSICHORE) $(ObjectFiles)
+xstelloptv2:  $(LIB) $(LIB_VMEC) $(LIB_BEAMS3D) $(LIB_BNORM) $(LIB_BOOTSJ) $(LIB_BOOZ) $(LIB_COBRA) $(LIB_DIAGNO) $(LIB_DKES) $(LIB_FIELDLINES) $(LIB_JINV) $(LIB_MGRID) $(LIB_NEO) $(LIB_GENE) $(LIB_COILOPTPP) $(LIB_REGCOIL) $(LIB_TERPSICHORE) $(ObjectFiles)
 	$(LINK) $@ $(ObjectFiles) $(LIB_LINK)
 ifdef VMEC_DIR 
 	@rm $(VMEC_DIR)/$(LOCTYPE)/$(LIB_VMEC) 
@@ -40,6 +40,9 @@ ifdef DIAGNO_DIR
 endif
 ifdef DKES_DIR
 	@rm $(DKES_DIR)/$(LOCTYPE)/$(LIB_DKES)
+endif
+ifdef FIELDLINES_DIR
+	@rm $(FIELDLINES_DIR)/$(LOCTYPE)/$(LIB_FIELDLINES)
 endif
 ifdef JINV_DIR
 	@rm $(JINV_DIR)/$(LOCTYPE)/$(LIB_JINV)
@@ -141,6 +144,10 @@ $(LIB_DKES) :
 #Construct DKES library. 
 $(LIB_JINV) :
 	@cd $(JINV_DIR); make $(TYPE); cd $(LOCTYPE); ar -cruv $(LIB_JINV) *.o *.mod
+	
+#Construct fieldlines library. 
+$(LIB_FIELDLINES) :
+	@cd $(FIELDLINES_DIR); make $(TYPE); cd $(LOCTYPE); ar -cruv $(LIB_FIELDLINES) *.o *.mod
 	
 #Construct MAKEGRID library. 
 $(LIB_MGRID) :

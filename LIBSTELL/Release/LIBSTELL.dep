@@ -1,6 +1,14 @@
 # Microsoft Developer Studio Generated Dependency File, included by LIBSTELL.mak
       
+adas_mod_parallel.o :  \
+      mpi_inc.o \
+      mpi_sharmem.o
+      
 mpi_sharmem.o :  
+
+str_length.o :  
+
+sort.o :  
       
 xvec_eval.o : \
       mpi_inc.o \

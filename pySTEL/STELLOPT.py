@@ -783,7 +783,7 @@ class MyApp(QMainWindow):
 		self.optplot_list = ['ASPECT','BETA','CURTOR','EXTCUR','SEPARATRIX',\
 					'PHIEDGE','RBTOR','R0','Z0','VOLUME','WP','KAPPA',\
 					'B_PROBES','FARADAY','FLUXLOOPS','SEGROG','MSE',\
-					'NE','NELINE','TE','TELINE','TI','TILINE',\
+					'NE','NELINE','TE','TELINE','TI','TILINE','ZEFFLINE',\
 					'XICS','XICS_BRIGHT','XICS_W3','XICS_V','SXR','VPHI',\
 					'IOTA','BALLOON','BOOTSTRAP','DKES','HELICITY','HELICITY_FULL',\
 					'KINK','ORBIT','JDOTB','J_STAR','NEO','TXPORT','ECEREFLECT',\
@@ -799,7 +799,7 @@ class MyApp(QMainWindow):
 		self.ui.ComboBoxOPTplot_type.addItem('-----SPECIAL-----')
 		for name in ['BALLOON','KINK','ORBIT','NEO','HELICITY','HELICITY_FULL',\
 					'TXPORT','B_PROBES','FLUXLOOPS','SEGROG',\
-					'NELINE','TELINE','TILINE',\
+					'NELINE','TELINE','TILINE','ZEFFLINE',\
 					'XICS','XICS_BRIGHT','XICS_W3','XICS_V',\
 					'ECEREFLECT','SXR','IOTA','PRESS']:
 			for item in self.stel_data:
@@ -1353,6 +1353,41 @@ class MyApp(QMainWindow):
 			self.ax2.set_xlabel('Channel')
 			self.ax2.set_ylabel('Signal')
 			self.ax2.set_title('Line-Int. Ion Temperature')
+		elif (plot_name == 'ZEFFLINE_evolution'):
+			y=self.stel_data['ZEFFLINE_target'].T
+			s=self.stel_data['ZEFFLINE_sigma'].T
+			e = self.stel_data['ZEFFLINE_equil'].T
+			n = y.shape
+			if (len(n)==0):
+				# Single Time slice Single point
+				x=np.ndarray((1,1))*0+1
+				self.ax2.errorbar(x,y,s,fmt='sk',fillstyle='none')
+				self.ax2.plot(x,e,'og',fillstyle='none')
+			elif (len(n)==1):
+				# Could be either mutli-time or single time
+				if len(self.stel_data['ITER']) == n[0]:
+					# Mutl-time single point
+					dl = n[0]
+					x = np.ndarray((n[0],1))*0+1
+					self.ax2.errorbar(x[0],y[0],s[0],fmt='sk',fillstyle='none')
+					for l in range(dl): self.ax2.plot(x[l],e[l],'o',fillstyle='none',color=_plt.cm.brg(l/(dl-1)))
+				else:
+					# Multi-channel single time
+					x = np.ndarray((n[0],1))
+					for j in range(n[0]): x[j]=j+1
+					self.ax2.errorbar(x,y,s,fmt='sk',fillstyle='none')
+					self.ax2.plot(x,e,'og',fillstyle='none')
+			else:
+				# Multiple Time slices
+				dl = n[0]
+				x = np.ndarray((n[1],1))
+				for j in range(n[1]): x[j]=j+1
+				self.ax2.errorbar(x[:,0],y[:,0],s[:,0],fmt='sk',fillstyle='none')
+				for l in range(dl):
+					self.ax2.plot(x,e[:,l-1],'o',fillstyle='none',color=_plt.cm.brg(l/(dl-1)))
+			self.ax2.set_xlabel('Channel')
+			self.ax2.set_ylabel('Signal')
+			self.ax2.set_title('Line-Int. Z Effective')
 		elif (plot_name == 'XICS_evolution'):
 			y=self.stel_data['XICS_target'].T
 			s=self.stel_data['XICS_sigma'].T

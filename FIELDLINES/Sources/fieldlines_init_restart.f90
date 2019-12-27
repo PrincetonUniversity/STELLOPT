@@ -29,12 +29,12 @@
          WRITE(6,'(A)')  '----- Reading Restart File -----'
          WRITE(6,'(A)')  '   FILE: '//TRIM(restart_string)
       END IF
-      !PRINT *,'myid:',myid,TRIM(restart_string)
+      !PRINT *,'myworkid:',myworkid,TRIM(restart_string)
 !DEC$ IF DEFINED (MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
 !DEC$ ENDIF
 !DEC$ IF DEFINED (LHDF5)
-      IF (myid == master) THEN
+      IF (myworkid == master) THEN
       CALL open_hdf5(TRIM(restart_string),fid,ier)
       PRINT *,'ier',ier
       CALL read_scalar_hdf5(fid,'nr',ier,INTVAR=nr)

@@ -37,7 +37,14 @@
          iunit = 12
          CALL safe_open(iunit,ier,'diagno_bth.'//TRIM(proc_string_old),'old','formatted')
          IF (ier < 0) THEN; iflag=ier; RETURN; END IF
-         dex = max(COUNT(target /= 0.0),COUNT(sigma < bigno))
+         dex = 0
+         DO
+            READ(iunit,*,iostat=ik)
+            IF (ik/=0) EXIT
+            dex = dex + 1
+         END DO
+         REWIND(iunit)
+         dex = dex - 1 ! Avoid the # line
          ALLOCATE(xp(dex),yp(dex),zp(dex),modb(dex),flux(dex))
          DO ik = 1, dex
             READ(iunit,*) itmp,xp(ik),yp(ik),zp(ik),modb(ik),flux(ik)

@@ -18,6 +18,7 @@
       USE beams3d_lines, ONLY: nparticles
       USE wall_mod
       USE mpi_params
+      USE adas_mod_parallel, ONLY: adas_load_tables
 !DEC$ IF DEFINED (MPI_OPT)
       USE mpi
       USE mpi_sharmem
@@ -76,10 +77,10 @@
          WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   PHI = [',phimin,',',phimax,'];  NPHI: ',nphi
          WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   Z   = [',zmin,',',zmax,'];  NZ:   ',nz
          IF (lbeam) THEN
-            WRITE(6,'(A,I6)')               '   # of Particles to Start: ', nparticles_start
+            WRITE(6,'(A,I8)')               '   # of Particles to Start: ', nparticles_start
             WRITE(6,'(A,I6)')                          '   # of Beams: ', nbeams
          ELSE
-            WRITE(6,'(A,I6)')               '   # of Particles to Start: ', nparticles
+            WRITE(6,'(A,I8)')               '   # of Particles to Start: ', nparticles
          END IF
          IF (lvessel) WRITE(6,'(A)')    '   VESSEL: ' // TRIM(vessel_string)
          IF (lcoil) WRITE(6,'(A)')    '   COIL: ' // TRIM(coil_string)
@@ -89,7 +90,10 @@
          IF (ldepo) WRITE(6,'(A)') '   DEPOSITION ONLY!'
          IF (lw7x) WRITE(6,'(A)') '   W7-X BEAM Model!'
          IF (lascot) WRITE(6,'(A)') '   ASCOT5 OUTPUT ON!'
+         IF (lascot4) WRITE(6,'(A)') '   ASCOT4 OUTPUT ON!'
+         IF (lbbnbi) WRITE(6,'(A)') '   BEAMLET BEAM Model!'
          IF (lplasma_only) WRITE(6,'(A)') '   MAGNETIC FIELD FROM PLASMA ONLY!'
+         IF (npot > 0) WRITE(6,'(A)') '   RAIDAL ELECTRIC FIELD PRESENT!'
          CALL FLUSH(6)
       END IF
 
@@ -196,13 +200,16 @@
       END IF
       
       ! Setup vessel
-      IF (lvessel .and. (.not. lplasma_only)) THEN
+      IF (lvessel .and. (.not. lwall_loaded)) THEN
          CALL wall_load_txt(TRIM(vessel_string),ier,MPI_COMM_BEAMS)
          IF (lverb) CALL wall_info(6)
          CALL FLUSH(6)
       END IF
 
       ! For testing I put this here
+      IF (lascot4) THEN
+         CALL beams3d_write_ascoth4('INIT')
+      END IF
       IF (lascot) THEN
          CALL beams3d_write_ascoth5('INIT')
       END IF
@@ -271,8 +278,11 @@
       
       ! Initialize beams (define a distribution of directions and weights)
       IF (lbeam) THEN
+          CALL adas_load_tables(myid_sharmem, MPI_COMM_SHARMEM)
           IF (lw7x) THEN
              CALL beams3d_init_beams_w7x
+          ELSEIF (lbbnbi) THEN
+             CALL beams3d_init_beams_bbnbi
           ELSE
              CALL beams3d_init_beams
           END IF
@@ -280,7 +290,7 @@
           ALLOCATE(  R_start(nparticles), phi_start(nparticles), Z_start(nparticles), &
           & v_neut(3,nparticles), mass(nparticles), charge(nparticles), &
           & mu_start(nparticles), Zatom(nparticles), t_end(nparticles), vll_start(nparticles), &
-          & beam(nparticles), weight(nparticles_start, nbeams)  )
+          & beam(nparticles), weight(nparticles)  )
 
           R_start = r_start_in(1:nparticles)
           phi_start = phi_start_in(1:nparticles)

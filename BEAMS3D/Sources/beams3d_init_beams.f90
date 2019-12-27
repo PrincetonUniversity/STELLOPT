@@ -24,7 +24,7 @@
       IMPLICIT NONE
       INTEGER :: ier, i, j, k
 !      REAL(rprec)  :: br
-      REAL(rprec), ALLOCATABLE :: X(:,:), Y(:,:), Energy(:), R_temp(:)
+      REAL(rprec), ALLOCATABLE :: X(:,:), Y(:,:), block(:,:), Energy(:), R_temp(:)
       REAL(rprec)              :: magZ, magX, magV_neut, magV, xx(3), yy(3), zz(3)
 !-----------------------------------------------------------------------
 !     Begin Subroutine
@@ -45,32 +45,32 @@
       END IF
 
       ALLOCATE (X(nparticles_start, nbeams), Y(nparticles_start, nbeams), &
-                  & Energy(nparticles_start), weight(nparticles_start, nbeams), STAT=ier )
+                  & Energy(nparticles_start), block(nparticles_start, nbeams), STAT=ier )
       IF (ier /= 0) CALL handle_err(ALLOC_ERR, 'X, Y, weight', ier)
       !ALLOCATE (R_temp(nparticles_start),STAT=ier)
       !IF (ier /= 0) CALL handle_err(ALLOC_ERR, 'R_temp', ier)
-      weight = 0
 
       IF (myworkid == master) THEN
-      nparticles = 0
-      DO i=1,nbeams
-          CALL gauss_rand(nparticles_start, X(:,i))
-          CALL gauss_rand(nparticles_start, Y(:,i))
-          X(:,i) = Div_beams(i)*Adist_beams(i)*X(:,i)
-          Y(:,i) = Div_beams(i)*Adist_beams(i)*Y(:,i)
+         block = 0
+         nparticles = 0
+         DO i=1,nbeams
+            CALL gauss_rand(nparticles_start, X(:,i))
+            CALL gauss_rand(nparticles_start, Y(:,i))
+            X(:,i) = Div_beams(i)*Adist_beams(i)*X(:,i)
+            Y(:,i) = Div_beams(i)*Adist_beams(i)*Y(:,i)
           ! Limit distribution so all particles make it through
           !R_temp = SQRT(X(:,i)*X(:,i) + Y(:,i)*Y(:,i))
           !X(:,i) = Asize_beams(i)*X(:,i)/R_temp
           !Y(:,i) = Asize_beams(i)*Y(:,i)/R_temp
-          DO j = 1,nparticles_start
-              IF ((X(j,i)*X(j,i) + Y(j,i)*Y(j,i)) <= Asize_beams(i)*Asize_beams(i)) THEN
-                  weight(j,i)    = 1
+            DO j = 1,nparticles_start
+               IF ((X(j,i)*X(j,i) + Y(j,i)*Y(j,i)) <= Asize_beams(i)*Asize_beams(i)) THEN
+                  block(j,i)    = 1
                   nparticles = nparticles + 1
-              END IF
-          END DO
-      END DO
+               END IF
+            END DO
+         END DO
       END IF
-      !DEALLOCATE(R_temp)
+
 !DEC$ IF DEFINED (MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(nparticles,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
@@ -79,7 +79,7 @@
       ALLOCATE(   R_start(nparticles), phi_start(nparticles), Z_start(nparticles), vll_start(nparticles), &
                 & v_neut(3,nparticles), mass(nparticles), charge(nparticles), Zatom(nparticles), &
                 & mu_start(nparticles), t_end(nparticles), &
-                & beam(nparticles), STAT=ier   )
+                & beam(nparticles), weight(nparticles), STAT=ier   )
       IF (ier /= 0) CALL handle_err(ALLOC_ERR, 'R,phi,Z _start, etc.', ier)
 
       IF (myworkid == master) THEN
@@ -91,7 +91,7 @@
           Energy = sqrt( (E_beams(i) + E_beams(i)/100*Energy)*(E_beams(i) + E_beams(i)/100*Energy) )
           IF (lbeam_simple) Energy = E_beams(i)
           DO j=1,nparticles_start
-              IF (weight(j,i) /= 0) THEN
+              IF (block(j,i) /= 0) THEN
                   k = k + 1
                   beam(k)         = i
                   mu_start(k)     = 0
@@ -99,6 +99,7 @@
                   mass(k)         = mass_beams(i)
                   charge(k)       = charge_beams(i)
                   Zatom(k)        = Zatom_beams(i)
+                  weight(k)       = P_beams(i)/Energy(j)
 
                   magV_neut         = sqrt( 2*Energy(j)/mass(k) )
                   IF (magV_neut == 0) magV_neut = 1
@@ -153,8 +154,9 @@
               END IF
           END DO
       END DO
+      weight = weight/nparticles
       END IF
-      DEALLOCATE(X,Y,Energy)
+      DEALLOCATE(X,Y,Energy,block)
 !DEC$ IF DEFINED (MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(mu_start,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
@@ -162,7 +164,7 @@
       CALL MPI_BCAST(mass,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(charge,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(Zatom,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
-      CALL MPI_BCAST(weight,nparticles_start*nbeams,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
+      CALL MPI_BCAST(weight,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(R_start,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(phi_start,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(Z_start,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
