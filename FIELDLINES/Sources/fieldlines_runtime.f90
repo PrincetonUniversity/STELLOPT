@@ -124,7 +124,7 @@
                          lreverse, lhitonly, lafield_only, lraw, lemc3, &
                          lerror_field, lwall_trans, ledge_start, lnescoil,&
                          lmodb
-      INTEGER         :: nextcur, npoinc, nruntype, num_hcp
+      INTEGER         :: nextcur, npoinc, nruntype, num_hcp, nprocs_fieldlines
       REAL(rprec)     :: mu, dphi, follow_tol, pi, pi2, mu0, delta_hc, iota0
       REAL(rprec), DIMENSION(MAXLINES)     :: r_start, phi_start, &
                                               z_start, phi_end, &

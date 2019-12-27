@@ -72,7 +72,7 @@
             CALL mntouv(1,ns_b,mnboz_b,nu_b,nv_b,xu_booz,xv_booz,bmns_b,&
                         ixm_b,ixn_b/nfp_b,modb_booz,1,0)
          END IF
-         DO ik = 1, dex
+         DO ik = 1, nsd
             IF (sigma(ik) >= bigno) CYCLE
             ! Now get b_min and b_max
             DO u = 1, nu_b

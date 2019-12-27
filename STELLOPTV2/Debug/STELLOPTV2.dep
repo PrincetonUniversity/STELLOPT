@@ -1,5 +1,19 @@
 # Microsoft Developer Studio Generated Dependency File, included by STELLOPT.mak
 
+stellopt_init_mpi.o : \
+      stellopt_input_mod.o \
+      stellopt_runtime.o \
+      $(LIB_DIR)/Debug/mpi_params.o 
+
+
+stellopt_renorm.o : \
+      stellopt_input_mod.o \
+      stellopt_runtime.o \
+      stellopt_vars.o \
+      $(LIB_DIR)/Debug/mpi_params.o \
+      $(LIB_DIR)/Debug/mpi_inc.o 
+
+
 stellopt_vmec_bcast.o : \
       $(LIB_DIR)/Debug/mpi_params.o \
       $(LIB_DIR)/Debug/vmec_input.o 
@@ -101,8 +115,8 @@ chisq_regcoil_chi2_b.o : \
       stellopt_input_mod.o \
       stellopt_vars.o \
       equil_vals.o
-      
 
+      
 chisq_rosenbrock.o : \
       stellopt_runtime.o \
       stellopt_targets.o \
@@ -275,6 +289,18 @@ chisq_xics.o : \
       
 
 chisq_xics_bright.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      equil_utils.o 
+      
+
+chisq_xics_w3.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      equil_utils.o 
+      
+
+chisq_xics_v.o : \
       stellopt_runtime.o \
       stellopt_targets.o \
       equil_utils.o 
@@ -495,6 +521,8 @@ stellopt_main.o : \
       
       
 stellopt_input_mod.o : \
+      stellopt_winding_surface.o \
+      equil_utils.o \
       stellopt_runtime.o \
       stellopt_vars.o \
       stellopt_targets.o \
@@ -618,15 +646,7 @@ stellopt_optimize.o : \
       $(LIB_DIR)/Debug/safe_open_mod.o \
       $(LIB_DIR)/Debug/de_mod.o 
       
-      
-stellopt_recon_opt.o : \
-      equil_vals.o \
-      stellopt_runtime.o \
-      stellopt_input_mod.o \
-      stellopt_vars.o \
-      $(LIB_DIR)/Debug/safe_open_mod.o 
-      
-      
+
 stellopt_paraexe.o : \
       stellopt_runtime.o \
       stellopt_input_mod.o \

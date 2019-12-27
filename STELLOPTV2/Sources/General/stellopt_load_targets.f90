@@ -122,6 +122,9 @@
       ! LINE ION TEMPERATURE
       IF (ANY(sigma_ti_line < bigno)) &
          CALL chisq_line_ti(target_ti_line, sigma_ti_line, ncnt,iflag)
+      ! LINE ZEFFECTIVE
+      IF (ANY(sigma_zeff_line < bigno)) &
+         CALL chisq_line_zeff(target_zeff_line, sigma_zeff_line, ncnt,iflag)
       ! XICS Brightness
       IF (ANY(sigma_xics_bright < bigno)) &
          CALL chisq_xics_bright(target_xics_bright, sigma_xics_bright, ncnt,iflag)

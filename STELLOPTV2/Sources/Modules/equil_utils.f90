@@ -556,6 +556,7 @@
          CASE DEFAULT
             CALL eval_prof_stel(s_val,type,val,21,zeff_opt(0:20),ier)
       END SELECT
+      val = MAX(val,1.0)
       RETURN
       END SUBROUTINE get_equil_zeff
 
@@ -594,6 +595,18 @@
       fval = MAX(fval,0.0)*sqrt(dx*dx+dy*dy+dz*dz)
       RETURN
       END SUBROUTINE fcn_lineti
+
+      SUBROUTINE fcn_linezeff(s,u,v,dx,dy,dz,fval,ier)
+      IMPLICIT NONE
+      REAL(rprec), INTENT(in) :: s,u,v,dx,dy,dz
+      REAL(rprec), INTENT(out) :: fval
+      INTEGER, INTENT(inout) :: ier
+      fval = 0
+      IF (s>1) RETURN
+      CALL get_equil_zeff(s,TRIM(zeff_type),fval,ier)
+      fval = MAX(fval,0.0)*sqrt(dx*dx+dy*dy+dz*dz)
+      RETURN
+      END SUBROUTINE fcn_linezeff
 
       SUBROUTINE fcn_xics_bright(s,u,v,dx,dy,dz,fval,ier)
       IMPLICIT NONE
@@ -658,11 +671,12 @@
       REAL(rprec) :: phi_val, phi_prime,Bav,Bavsq, &
                      rho,vp,grho,grho2,&
                      br,bp,bx,by,bz,modb,&
-                     rt,zt,h
+                     rt,zt,h, bright
       REAL(rprec) :: nhat(3), uperp(3),Rg(3),Zg(3)
       INTEGER, INTENT(inout) :: ier
       fval = 0
       IF (s>1) RETURN
+      CALL get_equil_emis_xics(s,TRIM(emis_xics_type),bright,ier)
       CALL get_equil_phi(s,phi_type,phi_val,ier,phi_prime)
       CALL get_equil_RZ(s,u,v,Rt,Zt,ier,Rg,Zg)
       !CALL get_equil_Bav(s,Bav,Bavsq,ier) !<B>,<B^2>
@@ -682,6 +696,7 @@
       uperp(3) = bx*nhat(2)-by*nhat(1)
       uperp    = uperp*phi_prime/modb
       fval = uperp(1)*dx+uperp(2)*dy+uperp(3)*dz
+      fval = fval*bright
       RETURN
       END SUBROUTINE fcn_xics_v
 
@@ -1012,6 +1027,8 @@
       INTEGER, INTENT(inout)     ::  ier
       INTEGER :: dex, i
       REAL(rprec) :: x0,x1, x2, h, x3, xp
+      REAL(rprec) :: v0, v1, z0, z1, s2
+      REAL(rprec), PARAMETER :: eps = 1.0E-4
       REAL(rprec), DIMENSION(10), PARAMETER :: glx = (/                       &
      &   0.01304673574141414, 0.06746831665550774, 0.1602952158504878,         &
      &   0.2833023029353764, 0.4255628305091844, 0.5744371694908156,           &
@@ -1027,6 +1044,22 @@
          CASE('spline','akima_spline')
             dex = MINLOC(bootj_aux_s(2:),DIM=1)
             CALL eval_prof_spline(dex,bootj_aux_s(1:dex),bootj_aux_f(1:dex),s_val,val,ier)
+         CASE('boot_model_sal')
+            val = 0
+            s2    = s_val + eps
+            IF (s2 > 1.0) s2 = 1.0
+            CALL get_equil_ne(s_val,ne_type,v0,ier)
+            CALL get_equil_ne(s2,ne_type,v1,ier)
+            CALL get_equil_zeff(s_val,zeff_type,z0,ier)
+            CALL get_equil_zeff(s2,zeff_type,z1,ier)
+            val = val + bootj_aux_f(1)*(v1/v0-1)/eps 
+            val = val + bootj_aux_f(2)*((v1*z0)/(v0*z1)-1)/eps
+            CALL get_equil_te(s_val,te_type,v0,ier)
+            CALL get_equil_te(s2,te_type,v1,ier)
+            val = val + bootj_aux_f(3)*(v1/v0-1)/eps 
+            CALL get_equil_ti(s_val,ti_type,v0,ier)
+            CALL get_equil_ti(s2,ti_type,v1,ier)
+            val = val + bootj_aux_f(4)*(v1/v0-1)/eps 
          CASE DEFAULT
             CALL eval_prof_stel(s_val,bootj_type,val,21,bootj_aux_f(1:21),ier)
 !         CASE ('power_series')

@@ -1,9 +1,35 @@
 # Microsoft Developer Studio Generated Dependency File, included by STELLOPT.mak
 
+stellopt_write_auxfiles.o : \
+      stellopt_runtime.o \
+      equil_utils.o \
+      stellopt_input_mod.o 
+
+stellopt_write_eqfile.o : \
+      stellopt_runtime.o \
+      $(LIB_DIR)/Release/mpi_inc.o \
+      $(LIB_DIR)/Release/read_wout_mod.o
+
+stellopt_write_inputfile.o : \
+      stellopt_input_mod.o \
+      stellopt_runtime.o \
+      $(DIAGNO_DIR)/Release/diagno_input_mod.o \
+      $(LIB_DIR)/Release/bootsj_input.o \
+      $(NEO_DIR)/Release/neo_input_mod.o \
+      $(LIB_DIR)/Release/safe_open_mod.o 
+
 stellopt_init_mpi.o : \
       stellopt_input_mod.o \
       stellopt_runtime.o \
       $(LIB_DIR)/Release/mpi_params.o 
+
+
+stellopt_renorm.o : \
+      stellopt_input_mod.o \
+      stellopt_runtime.o \
+      stellopt_vars.o \
+      $(LIB_DIR)/Release/mpi_params.o \
+      $(LIB_DIR)/Release/mpi_inc.o 
 
 
 stellopt_vmec_bcast.o : \
@@ -256,6 +282,12 @@ chisq_line_ne.o : \
       equil_utils.o 
       
 
+chisq_line_zeff.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      equil_utils.o 
+      
+
 chisq_ece.o : \
       stellopt_runtime.o \
       stellopt_targets.o \
@@ -495,6 +527,14 @@ stellopt_magdiags.o : \
       $(LIB_DIR)/Release/vmec_input.o 
       
       
+stellopt_fieldlines.o : \
+      stellopt_runtime.o \
+      $(FIELDLINES_DIR)/Release/fieldlines_runtime.o \
+      $(FIELDLINES_DIR)/Release/fieldlines_grid.o \
+      $(FIELDLINES_DIR)/Release/fieldlines_lines.o \
+      $(LIB_DIR)/Release/mpi_params.o 
+      
+      
 stellopt_fcn.o : \
       stellopt_runtime.o \
       stellopt_input_mod.o \
@@ -638,15 +678,7 @@ stellopt_optimize.o : \
       $(LIB_DIR)/Release/safe_open_mod.o \
       $(LIB_DIR)/Release/de_mod.o 
       
-      
-stellopt_recon_opt.o : \
-      equil_vals.o \
-      stellopt_runtime.o \
-      stellopt_input_mod.o \
-      stellopt_vars.o \
-      $(LIB_DIR)/Release/safe_open_mod.o 
-      
-      
+
 stellopt_paraexe.o : \
       stellopt_runtime.o \
       stellopt_input_mod.o \

@@ -59,26 +59,6 @@
   NETCDF_LIB = -L$(NETCDF_C)/lib -lnetcdf -L$(NETCDF_F)/lib -lnetcdff
 
 #######################################################################
-#            NTCC Options
-#######################################################################
-  LNTCC = T
-  NTCC_INC = -I$(NTCCHOME)/mod
-  NTCC_LIB = -L$(NTCCHOME)/lib -laladdinsub -lr8slatec -ladpak\
-             -lcppsub -lcomput -lpspline -lportlib -lezcdf -lmds_sub \
-             -lmdstransp -lvaxonly
-#  NTCC_LIB = $(NTCCHOME)/lib/aladdinsub.a
-#  NTCC_LIB += $(NTCCHOME)/lib/r8slatec.a
-#  NTCC_LIB += $(NTCCHOME)/lib/adpak.a
-#  NTCC_LIB += $(NTCCHOME)/lib/cppsub.a
-#  NTCC_LIB += $(NTCCHOME)/lib/comput.a
-#  NTCC_LIB += $(NTCCHOME)/lib/pspline.a
-#  NTCC_LIB += $(NTCCHOME)/lib/portlib.a
-#  NTCC_LIB += $(NTCCHOME)/lib/ezcdf.a
-#  NTCC_LIB += $(NTCCHOME)/lib/mds_sub.a
-#  NTCC_LIB += $(NTCCHOME)/lib/mdstransp.a
-#  NTCC_LIB += $(NTCCHOME)/lib/vaxonly.a
-
-#######################################################################
 #            HDF5 Options
 #######################################################################
   LHDF5 = T
@@ -224,6 +204,9 @@ ifeq ($(MAKECMDGOALS),xstelloptv2)
   DIAGNO_DIR = ../../DIAGNO
   LIB_DIAGNO= libdiagno.a
   MOD_PATH+= -I$(DIAGNO_DIR)/$(LOCTYPE)
+  FIELDLINES_DIR = ../../FIELDLINES
+  LIB_FIELDLINES = libfieldlines.a
+  MOD_PATH+= -I$(FIELDLINES_DIR)/$(LOCTYPE)
   JINV_DIR = ../../J_INVARIANT
   LIB_JINV = libjinv.a
   MOD_PATH+= -I$(JINV_DIR)/$(LOCTYPE)
@@ -237,6 +220,7 @@ ifeq ($(MAKECMDGOALS),xstelloptv2)
 	$(BOOZ_DIR)/$(LOCTYPE)/$(LIB_BOOZ) \
 	$(COBRA_DIR)/$(LOCTYPE)/$(LIB_COBRA) \
 	$(DIAGNO_DIR)/$(LOCTYPE)/$(LIB_DIAGNO) \
+  $(FIELDLINES_DIR)/$(LOCTYPE)/$(LIB_FIELDLINES) \
 	$(JINV_DIR)/$(LOCTYPE)/$(LIB_JINV) \
 	$(MGRID_DIR)/$(LOCTYPE)/$(LIB_MGRID) 
   ifeq ($(LDKES),T)
@@ -387,13 +371,6 @@ ifeq ($(LNAG),T)
   PRECOMP += -DNAG
   LIB_LINK += $(NAG_LIB)
   LIB_SHARE += $(NAG_LIB)
-endif
-ifeq ($(LNTCC),T)
-  MOD1_PATH += $(NTCC_INC)
-  PRECOMP += -DLADAS -DNTCC
-  LIB_LINK += $(NTCC_LIB)
-  MOD_PATH += $(NTCC_INC)
-  LIB_SHARE += $(NTCC_LIB)
 endif
 ifeq ($(LSILO),T)
   MOD1_PATH += $(SILO_INC)
