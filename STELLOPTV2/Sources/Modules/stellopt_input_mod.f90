@@ -72,6 +72,9 @@
 !                               Determines number of divisions if > numprocs (MAP)
 !            cr_strategy        Crossover strategy (GADE, 0:exponential, 1: binomial)
 !            npopulation        Size of population (defaults to nproc if -1 or not set)
+!            m_lbfgsb           the maximum number of variable metric corrections
+!            print_lbfgsb       The lbfgsb 'iprint' control parameter is set to
+!                               this integer value
 !            lkeep_mins         Keep minimum files.
 !            lphiedge_opt       Logical to control PHIEDGE variation
 !            lcurtor_opt        Logical to control CURTOR variation
@@ -240,6 +243,7 @@
                          ftol, xtol, gtol, epsfcn, factor, refit_param, &
                          cr_strategy, mode, lkeep_mins, lrefit,&
                          npopulation, noptimizers, &
+                         m_lbfgsb, print_lbfgsb, &
                          lphiedge_opt, lcurtor_opt, lbcrit_opt, &
                          lpscale_opt, lmix_ece_opt, lxics_v0_opt, &
                          lextcur_opt, laphi_opt, lam_opt, lac_opt, &
@@ -438,6 +442,8 @@
       npopulation     = -1
       noptimizers     = -1
       refit_param     = 0.75
+      m_lbfgsb        = 5
+      print_lbfgsb    = 0
       rho_exp         = 4
       lxval_opt       = .FALSE.
       lyval_opt       = .FALSE.

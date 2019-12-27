@@ -16,8 +16,9 @@
       USE mpi_inc
       USE vmec_input
       USE fdjac_mod, ONLY: flag_singletask, flag_cleanup, &
-                           JAC_CLEANUP => flag_cleanup_jac,&
-                           LEV_CLEANUP => flag_cleanup_lev
+                           JAC_CLEANUP => flag_cleanup_jac, &
+                           LEV_CLEANUP => flag_cleanup_lev, &
+                           LBFGSB_CLEANUP => flag_cleanup_lbfgsb
       USE gade_mod, ONLY: GADE_CLEANUP, PSO_CLEANUP
       
 !-----------------------------------------------------------------------
@@ -77,7 +78,8 @@
          WRITE(iunit_out,'(ES22.12E3)') vals(1:mtargets)
          CLOSE(iunit_out)
          DEALLOCATE(fvec_temp)
-      ELSE IF ((ctype == LEV_CLEANUP) .or. (ctype == GADE_CLEANUP)) THEN
+ELSE IF ((ctype == LEV_CLEANUP) .or. (ctype == GADE_CLEANUP) & 
+               .or. (ctype == LBFGSB_CLEANUP )) THEN
           IF (ncnt /= 1 .or. ctype == GADE_CLEANUP) CALL stellopt_write_inputfile(ncnt,.false.)
           ! Overwrite the restart file
           proc_string = 'reset_file'
