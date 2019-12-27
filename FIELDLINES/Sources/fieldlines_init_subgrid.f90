@@ -41,7 +41,7 @@
       mystart = LBOUND(R_lines,1)
       ! Get inner point
       !STOP 'DISABLED Due to upgrades'
-      IF (myid == master) THEN
+      IF (myworkid == master) THEN
          WRITE(6,'(A)') '===========EDGE SEARCH=========='
          CALL FLUSH(6)
       END IF
@@ -93,7 +93,7 @@
          phi_start(i) = phia
          phi_end(i)   = phiend_temp
       END DO
-      IF (myid == master) THEN
+      IF (myworkid == master) THEN
          WRITE(6,'(A,F8.5,A,F8.5,A)') '   AXIS_GUESS[R,Z]   = [',ra,',',za,'];'
          WRITE(6,'(A,F8.5,A,F8.5,A)') '   EDGE_OUTER[R,Z]   = [',r1,',',z1,'];'
          WRITE(6,'(A,F8.5,A,F8.5,A)') '   EDGE_LOST[R,Z]    = [',r2,',',z2,'];'
@@ -114,7 +114,7 @@
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_main',ierr_mpi)
       CALL MPI_BCAST(phi_end,MAXLINES,MPI_REAL8, master, MPI_COMM_FIELDLINES,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_main',ierr_mpi)
-      CALL MPI_COMM_SIZE( MPI_COMM_FIELDLINES, numprocs, ierr_mpi )          ! MPI
+      CALL MPI_COMM_SIZE( MPI_COMM_FIELDLINES, nprocs_fieldlines, ierr_mpi )          ! MPI
 !DEC$ ENDIF
    
       ! We follow the edge lines
@@ -147,7 +147,7 @@
       CALL MPI_ALLREDUCE(MPI_IN_PLACE,r2,1,MPI_DOUBLE_PRECISION,MPI_SUM,MPI_COMM_FIELDLINES,ierr_mpi)
       CALL MPI_ALLREDUCE(MPI_IN_PLACE,z2,1,MPI_DOUBLE_PRECISION,MPI_SUM,MPI_COMM_FIELDLINES,ierr_mpi)
          
-      IF (myid == master) THEN
+      IF (myworkid == master) THEN
          ! Get the axis
          r1 = r0
          r0 = ra
@@ -157,7 +157,7 @@
       END IF
       
       IF (COUNT(r_hc > 0) > 0) THEN
-         IF (myid == master) THEN
+         IF (myworkid == master) THEN
             CALL fieldlines_find_hc
          END IF
 
@@ -174,7 +174,7 @@
          IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_main',ierr_mpi)
          CALL MPI_BCAST(phi_end,MAXLINES,MPI_REAL8, master, MPI_COMM_FIELDLINES,ierr_mpi)
          IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_main',ierr_mpi)
-         CALL MPI_COMM_SIZE( MPI_COMM_FIELDLINES, numprocs, ierr_mpi )          ! MPI
+         CALL MPI_COMM_SIZE( MPI_COMM_FIELDLINES, nprocs_fieldlines, ierr_mpi )          ! MPI
 !DEC$ ENDIF
       
          ! Follow homoclines
@@ -200,7 +200,7 @@
          phi_start(i) = phia
          phi_end(i)   = phiend_temp
       END DO
-      IF (myid == master) THEN ! Final grid from axis to refined grid
+      IF (myworkid == master) THEN ! Final grid from axis to refined grid
          WRITE(6,'(A)') '===========FINAL GRID=========='
          WRITE(6,'(A,F8.5,A,F8.5,A)') '   AXIS[R,Z]   = [',r0,',',z0,']'
          WRITE(6,'(A,F8.5,A,F8.5,A)') '   EDGE[R,Z]   = [',r2,',',z2,']'
@@ -221,7 +221,7 @@
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_main',ierr_mpi)
       CALL MPI_BCAST(phi_end,MAXLINES,MPI_REAL8, master, MPI_COMM_FIELDLINES,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_main',ierr_mpi)
-      CALL MPI_COMM_SIZE( MPI_COMM_FIELDLINES, numprocs, ierr_mpi )          ! MPI
+      CALL MPI_COMM_SIZE( MPI_COMM_FIELDLINES, nprocs_fieldlines, ierr_mpi )          ! MPI
 !DEC$ ENDIF
 
 !DEC$ IF DEFINED (MPI_OPT)

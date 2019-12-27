@@ -102,7 +102,8 @@
                                        th_inc(ncoils), phi_inc(ncoils), eff_area(ncoils),flux(ncoils))
       ALLOCATE(bx_mut(ncoils,ncg), by_mut(ncoils,ncg), bz_mut(ncoils,ncg),br_mut(ncoils,ncg),bphi_mut(ncoils,ncg),&
                bn_mut(ncoils,ncg), modb_mut(ncoils,ncg))
-
+      
+      bx = 0; by = 0; bz=0; bx_mut=0; by_mut=0; bz_mut=0
 #if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_DIAGNO,ierr_mpi)
       IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'diagno_probes2',ierr_mpi)

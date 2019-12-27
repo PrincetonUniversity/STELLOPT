@@ -1,4 +1,6 @@
 ObjectFiles = \
+fieldlines_calc_surface_fit.o \
+fieldlines_init_vars.o \
 fieldlines_write_parhdf5.o \
 fieldlines_lines.o \
 follow_single.o \

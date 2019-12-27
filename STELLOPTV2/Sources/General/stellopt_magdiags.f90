@@ -81,7 +81,7 @@
       IF (lcoil_diagno) CALL diagno_init_coil
       IF (lverb_diagno) write(6,*)' - Calculating diagnostic responses'
       IF (LEN_TRIM(bfield_points_file) > 1) CALL diagno_bfield
-      IF (LEN_TRIM(bprobes_file) > 1) CALL diagno_bprobes
+      IF (LEN_TRIM(bprobes_file) > 1 .AND. ANY(sigma_bprobe<bigno)) CALL diagno_bprobes
       IF (LEN_TRIM(mirnov_file) > 1) CALL diagno_mirnov
       IF ((LEN_TRIM(seg_rog_file) > 1) .AND. ANY(sigma_segrog<bigno)) CALL diagno_rogowski_new
       IF ((LEN_TRIM(flux_diag_file) > 1) .AND. ANY(sigma_fluxloop<bigno)) CALL diagno_flux

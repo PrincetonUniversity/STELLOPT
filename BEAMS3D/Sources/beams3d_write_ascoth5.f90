@@ -20,7 +20,7 @@
                                  ZEFF_ARR, TE, TI, NE, req_axis, zeq_axis, npot, &
                                  POT_SPL_S, ezspline_interp, phiedge_eq, TE_spl_s, &
                                  NE_spl_s, TI_spl_s, ZEFF_spl_s, nne, nte, nti, nzeff
-      USE beams3d_runtime, ONLY: id_string, npoinc, nbeams, beam, t_end, lverb, lflux, &
+      USE beams3d_runtime, ONLY: id_string, npoinc, nbeams, beam, t_end, lverb, &
                                     lvmec, lpies, lspec, lcoil, lmgrid, lbeam, &
                                     lvessel, lvac, lbeam_simple, handle_err, nparticles_start, &
                                     HDF5_OPEN_ERR,HDF5_WRITE_ERR,&
@@ -380,8 +380,9 @@
             IF (lbeam) d3 = 2
             ALLOCATE(rtemp(d1:d2,13,1))
             DO i = d1, d2
-               CALL RANDOM_NUMBER(dbl_temp)
-               rtemp(i,6,1) = dbl_temp*pi2 ! zeta
+               !CALL RANDOM_NUMBER(dbl_temp)
+               !rtemp(i,6,1) = dbl_temp*pi2 ! zeta
+               rtemp(i,6,1) = 0          ! zeta
                rtemp(i,1,1) = R_lines(d3,i)
                rtemp(i,2,1) = PHI_lines(d3,i)
                rtemp(i,3,1) = Z_lines(d3,i)
@@ -393,7 +394,7 @@
                rtemp(i,8,1) = Zatom(i)
                rtemp(i,9,1) = NINT(mass(i)*5.97863320194E26) ! Anum
                rtemp(i,10,1) = Zatom(i)
-               rtemp(i,11,1) = 1.0 ! weight
+               rtemp(i,11,1) = weight(i) ! weight
                rtemp(i,12,1) = 0.0 ! time
                rtemp(i,13,1) = i
             END DO

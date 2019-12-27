@@ -102,6 +102,8 @@ def read_stellopt(filename):
     for line in file_handle:
         if 'ITER' in line:
             niter=niter+1
+        if 'MIN' in line:
+            niter=niter-1
     stel_data['ITER'] = np.ndarray((niter,1));
     file_handle.seek(0)
     line = file_handle.readline()
@@ -116,6 +118,8 @@ def read_stellopt(filename):
             break
         ttype,hw = line.split(' ',1)
         if ttype == 'ITER':
+            if 'MIN' in hw:
+                break
             citer = citer+1
             stel_data[ttype][citer] = int(hw)
             continue
@@ -165,7 +169,8 @@ def read_stellopt(filename):
         elif 'ITER' == item:
             continue
         elif item in ['ASPECT','ASPECT_MAX','BETA','CURTOR','KAPPA','PHIEDGE', \
-                    'VOLUME','WP','RBTOR','R0','Z0','BETATOR','BETAPOL']:
+                    'VOLUME','WP','RBTOR','R0','Z0','BETATOR','BETAPOL','TEST_X',\
+                    'TEST_Y']:
             stel_data[item+'_target'] = np.squeeze(stel_data[item][:,:,0])
             stel_data[item+'_sigma'] = np.squeeze(stel_data[item][:,:,1])
             stel_data[item+'_equil'] = np.squeeze(stel_data[item][:,:,2])
@@ -216,7 +221,7 @@ def read_stellopt(filename):
             stel_data[item+'_PHI'] = np.squeeze(stel_data[item][:,:,1])
             stel_data[item+'_Z'] = np.squeeze(stel_data[item][:,:,2])
             stel_data[item+'_s'] = np.squeeze(stel_data[item][:,:,3])
-        elif item in ['NELINE','TELINE','TILINE','FARADAY','SXR','XICS','XICS_BRIGHT','XICS_W3','XICS_V']:
+        elif item in ['NELINE','TELINE','TILINE','ZEFFLINE','FARADAY','SXR','XICS','XICS_BRIGHT','XICS_W3','XICS_V']:
             stel_data[item+'_target'] = np.squeeze(stel_data[item][:,:,0])
             stel_data[item+'_sigma'] = np.squeeze(stel_data[item][:,:,1])
             stel_data[item+'_equil'] = np.squeeze(stel_data[item][:,:,2])
