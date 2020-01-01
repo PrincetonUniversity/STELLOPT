@@ -1,8 +1,5 @@
-! To do:
-! - Set max function evaluations.
-
 SUBROUTINE stellopt_optimize_mango(used_mango_algorithm)
-        ! This function returns true or false corresponding to whether opt_type is a valid MANGO algorithm.
+        ! This subroutine sets its argument (used_mango_algorithm) to true or false corresponding to whether opt_type is a valid MANGO algorithm.
         ! Or, if STELLOPT was not built with MANGO, this function returns false.
  
 !DEC$ IF DEFINED (MANGO)
@@ -59,6 +56,7 @@ SUBROUTINE stellopt_optimize_mango(used_mango_algorithm)
       CALL mango_set_finite_difference_step_size(mango_problem_instance, epsfcn)
       CALL mango_set_centered_differences(mango_problem_instance, lcentered_differences)
       CALL mango_set_max_function_evaluations(mango_problem_instance, nfunc_max)
+      CALL mango_set_print_residuals_in_output_file(mango_problem_instance, .false.) ! This line makes the mango_out file much smaller.
       IF (mango_bound_constraints) THEN
          IF (myid==0) THEN
             PRINT *,"Adding bound constraints in mango:"
@@ -129,7 +127,7 @@ SUBROUTINE stellopt_optimize_mango(used_mango_algorithm)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !DEC$ IF DEFINED (MANGO)
-    SUBROUTINE mango_residual_function(N_parameters, x, N_terms, f, failed, problem)
+    SUBROUTINE mango_residual_function(N_parameters, x, N_terms, f, failed, problem, user_data)
       USE iso_c_binding
       USE mango
       USE stellopt_runtime, ONLY: targets, sigmas
@@ -142,7 +140,8 @@ SUBROUTINE stellopt_optimize_mango(used_mango_algorithm)
       INTEGER(C_int), INTENT(IN) :: N_terms
       REAL(C_double), INTENT(OUT) :: f(N_terms)
       INTEGER(C_int), INTENT(OUT) :: failed
-      TYPE(mango_problem), value, INTENT(IN) :: problem
+      TYPE(mango_problem), VALUE, INTENT(IN) :: problem
+      TYPE(C_ptr), VALUE, INTENT(IN) :: user_data
 
       INTEGER :: iflag
       INTEGER, SAVE :: N_function_evaluations = -1
