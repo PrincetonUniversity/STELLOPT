@@ -245,8 +245,8 @@
             val = (coefs(1)/(one - EXP(-(one/coefs(2))**2)))*&
                   (EXP(-(s_val/coefs(2))**2)-EXP(-(one/coefs(2))**2))
          CASE ('gauss_trunc_offset')
-            val = coefs(3)+(coefs(1)/(one - EXP(-(one/coefs(2))**2)))*&
-                  (EXP(-(s_val/coefs(2))**2)-EXP(-(one/coefs(2))**2))
+            val = coefs(1)+(coefs(2)/(one - EXP(-(one/coefs(4))**2)))*&
+                  (EXP(-((s_val-coefs(3))/coefs(2))**2)-EXP(-(one/coefs(4))**2))
          CASE ('two_lorentz')
             val = coefs(1)*(coefs(2)*(one/(one+(  s_val/coefs(3)**2)**coefs(4))**coefs(5) &
                                        -one/(one+(one/coefs(3)**2)**coefs(4))**coefs(5))/   &
