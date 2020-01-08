@@ -249,7 +249,7 @@ MODULE beams3d_physics_mod
          !--------------------------------------------------------------
          USE beams3d_grid
          USE beams3d_lines, ONLY: myline,xlast,ylast,zlast
-         USE beams3d_runtime, ONLY: t_end, lvessel,to3
+         USE beams3d_runtime, ONLY: t_end, lvessel, to3, lplasma_only
          USE wall_mod, ONLY: collide, uncount_wall_hit
 
          !--------------------------------------------------------------
@@ -350,7 +350,7 @@ MODULE beams3d_physics_mod
          !--------------------------------------------------------------
          !     Check to see if we hit the wall
          !--------------------------------------------------------------
-         IF (lbbnbi .and. lvessel) THEN
+         IF (lbbnbi .and. lvessel .and. .not.(lplasma_only)) THEN
             CALL collide(x0,y0,z0,qf(1),qf(2),qf(3),xw,yw,zw,ltest)
             IF (ltest) THEN
                q(1) = SQRT(qf(1)*qf(1)+qf(2)*qf(2))
