@@ -135,7 +135,6 @@
       CALL EZspline_init(Vp_spl_s,ns,bcs1_s,ier)
       IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init_vmec',ier)
       Vp_spl_s%isHermite   = 1
-      vp = 4*pi*pi*vp/(ns-1)
       CALL EZspline_setup(Vp_spl_s,vp(1:ns),ier,EXACT_DIM=.true.)
       IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init_vmec',ier)
 
