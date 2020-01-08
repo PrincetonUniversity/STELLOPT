@@ -212,6 +212,7 @@
             partmask(mystart:myend)  = ((real_mask(mystart:myend) >= s1) .and. (real_mask(mystart:myend) < s2))
             partmask2(:,mystart:myend) = ((S_lines(:,mystart:myend) >= s1) .and. (S_lines(:,mystart:myend) < s2))
             CALL EZspline_interp(Vp_spl_s,s2,vp_temp,ier)
+            !vp_temp = (s1+s2)*vp_temp ! because 2*s*vp is the qauntity we want and s=0.5*(s1+s2) ! do this if we want to use the rho grid.
             DO i = 1, nbeams
                partmask2t(:,mystart:myend)=(partmask2(:,mystart:myend).and.(int_mask2(:,mystart:myend)==i))
                ndot_prof(i,k) = COUNT((partmask(mystart:myend).and.(beam(mystart:myend)==i)))/vp_temp
@@ -236,13 +237,14 @@
          END IF
 !DEC$ ENDIF
 
+         ! Was only needed if no weight specified
          IF (myworkid == master) THEN
-            DO i = 1, nbeams
-               ninj  = COUNT(beam .eq. i)
-               ndot_prof(i,:) = (P_beams(i)/E_beams(i))*REAL(ndot_prof(i,:)) / REAL(ninj)
-               epower_prof(i,:) = (P_beams(i)/E_beams(i))*epower_prof(i,:)/ REAL(ninj)
-               ipower_prof(i,:) = (P_beams(i)/E_beams(i))*ipower_prof(i,:)/ REAL(ninj)
-            END DO
+         !   DO i = 1, nbeams
+         !      ninj  = COUNT(beam .eq. i)
+         !      ndot_prof(i,:) = (P_beams(i)/E_beams(i))*REAL(ndot_prof(i,:)) / REAL(ninj)
+         !      epower_prof(i,:) = (P_beams(i)/E_beams(i))*epower_prof(i,:)/ REAL(ninj)
+         !      ipower_prof(i,:) = (P_beams(i)/E_beams(i))*ipower_prof(i,:)/ REAL(ninj)
+         !   END DO
             DEALLOCATE(dist_func)
          END IF
 
