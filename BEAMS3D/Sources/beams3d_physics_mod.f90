@@ -11,13 +11,18 @@ MODULE beams3d_physics_mod
       !     Libraries
       !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
-      USE beams3d_runtime, ONLY: lneut, pi, pi2, dt, lverb, ADAS_ERR, dt_save, lbbnbi
+      USE beams3d_runtime, ONLY: lneut, pi, pi2, dt, lverb, ADAS_ERR, &
+                                 dt_save, lbbnbi
       USE beams3d_lines, ONLY: R_lines, Z_lines, PHI_lines, &
                                myline, mytdex, moment, ltherm, &
-                               nsteps, nparticles, vll_lines, moment_lines, mybeam, mycharge, myZ, &
-                               mymass, myv_neut, B_temp, rand_prob, cum_prob, tau, PE_lines, PI_lines
+                               nsteps, nparticles, vll_lines, &
+                               moment_lines, mybeam, mycharge, myZ, &
+                               mymass, myv_neut, B_temp, rand_prob, &
+                               cum_prob, tau, PE_lines, PI_lines, &
+                               j_lines
       USE beams3d_grid, ONLY: BR_spl, BZ_spl, delta_t, BPHI_spl, MODB_spl, MODB4D, &
-                              phimax, S4D, TE4D, NE4D, TI4D, ZEFF4D, nr, nphi, nz, rmax, rmin, zmax, zmin, &
+                              phimax, S4D, TE4D, NE4D, TI4D, ZEFF4D, &
+                              nr, nphi, nz, rmax, rmin, zmax, zmin, &
                               phimin, eps1, eps2, eps3, raxis, phiaxis, zaxis
       USE EZspline_obj
       USE EZspline
@@ -204,6 +209,7 @@ MODULE beams3d_physics_mod
             END IF
             PE_lines(mytdex,myline) = PE_lines(mytdex,myline)+mymass*dve*dt*speed
             PI_lines(mytdex,myline) = PI_lines(mytdex,myline)+mymass*dvi*dt*speed
+            j_lines(mytdex,myline)  =  j_lines(mytdex,myline)+mycharge*vll
             vll = vfrac*vll
             moment = vfrac*vfrac*moment
             speed = newspeed

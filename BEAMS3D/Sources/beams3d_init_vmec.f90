@@ -160,7 +160,7 @@
       END IF
 
 
-      ! If we ask for a plasma-only run and don't provide a vessel then make one.
+      ! If we ask for a plasma-only run and do not provide a vessel then make one.
       IF (lplasma_only .and. .not.lvessel) THEN
          lvessel = .TRUE.  ! Do this so the other parts of the code know there is a vessel
          k = ns
@@ -303,7 +303,7 @@
          sflx = 0.0
          ! The GetBcyl Routine returns -3 if cyl2flx thinks s>1
          ! however, if cyl2flx fails to converge then s may be
-         ! greater than 1 but cyl2flux won't throw the -3 code.
+         ! greater than 1 but cyl2flux will not throw the -3 code.
          ! In this case GetBcyl returns br,bphi,bz = 0.  So
          ! bphi == 0 or ier ==-3 indicate that a point is
          ! outside the VMEC domain.

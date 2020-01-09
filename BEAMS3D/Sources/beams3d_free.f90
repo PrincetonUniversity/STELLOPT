@@ -14,7 +14,7 @@
                                neut_lines, moment_lines, S_lines, U_lines, &
                                PE_lines, PI_lines, shine_through, &
                                ndot_prof, epower_prof, ipower_prof, j_prof,&
-                               B_lines
+                               B_lines, j_lines
 !      USE wall_mod, ONLY: wall_free
       USE EZspline_obj
       USE mpi_sharmem
@@ -59,6 +59,7 @@
       IF (ALLOCATED(moment_lines)) DEALLOCATE(moment_lines)
       IF (ALLOCATED(PE_lines)) DEALLOCATE(PE_lines)
       IF (ALLOCATED(PI_lines)) DEALLOCATE(PI_lines)
+      IF (ALLOCATED(j_lines)) DEALLOCATE(j_lines)
       IF (ALLOCATED(S_lines)) DEALLOCATE(S_lines)
       IF (ALLOCATED(U_lines)) DEALLOCATE(U_lines)
       IF (ALLOCATED(B_lines)) DEALLOCATE(B_lines)
