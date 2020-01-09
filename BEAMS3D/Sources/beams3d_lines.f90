@@ -34,6 +34,6 @@
       REAL(rprec), ALLOCATABLE :: ndot_prof(:,:),power_prof(:,:),epower_prof(:,:),ipower_prof(:,:),j_prof(:,:)
       REAL(rprec), ALLOCATABLE :: R_lines(:,:),Z_lines(:,:),PHI_lines(:,:),vll_lines(:,:),moment_lines(:,:),&
                                   S_lines(:,:),U_lines(:,:),PI_lines(:,:), PE_lines(:,:),&
-                                  B_lines(:,:)
+                                  B_lines(:,:),j_lines(:,:)
 
       END MODULE beams3d_lines

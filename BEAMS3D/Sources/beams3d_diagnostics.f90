@@ -51,7 +51,7 @@
       IF (lverb) WRITE(6,'(A)')  '----- BEAM DIAGNOSTICS -----'
 
 
-      ! DEALLOCATE stuff we don't need
+      ! DEALLOCATE stuff we do not need
       IF (ALLOCATED(Z_lines)) DEALLOCATE(Z_lines)
       IF (ALLOCATED(moment_lines)) DEALLOCATE(moment_lines)
       IF (ALLOCATED(U_lines)) DEALLOCATE(U_lines)
@@ -102,7 +102,7 @@
       WHERE(int_mask < 0) int_mask = 0
       FORALL(j=mystart:myend) real_mask(j) = S_lines(int_mask(j),j) ! Starting points in s
 
-      ! Don't need R_lines or PHI_lines after this point
+      ! Do not need R_lines or PHI_lines after this point
       IF (ALLOCATED(R_lines)) DEALLOCATE(R_lines)
       IF (ALLOCATED(PHI_lines)) DEALLOCATE(PHI_lines)
 
@@ -183,7 +183,7 @@
          DEALLOCATE(dist_func)
       END IF
 
-      ! Don't need R_lines or PHI_lines after this point
+      ! Do not need R_lines or PHI_lines after this point
       IF (ALLOCATED(neut_lines)) DEALLOCATE(neut_lines)
 
       ! BEAM DIAGNOSTICS
@@ -215,11 +215,12 @@
             !vp_temp = (s1+s2)*vp_temp ! because 2*s*vp is the qauntity we want and s=0.5*(s1+s2) ! do this if we want to use the rho grid.
             DO i = 1, nbeams
                partmask2t(:,mystart:myend)=(partmask2(:,mystart:myend).and.(int_mask2(:,mystart:myend)==i))
-               ndot_prof(i,k) = COUNT((partmask(mystart:myend).and.(beam(mystart:myend)==i)))/vp_temp
+               ndot_prof(i,k)   = COUNT((partmask(mystart:myend).and.(beam(mystart:myend)==i)))/vp_temp
                epower_prof(i,k) = SUM(SUM(PE_lines(:,mystart:myend),DIM=1,MASK=partmask2t(:,mystart:myend)))/vp_temp
                ipower_prof(i,k) = SUM(SUM(PI_lines(:,mystart:myend),DIM=1,MASK=partmask2t(:,mystart:myend)))/vp_temp
-               real_mask(mystart:myend)=SUM(vll_lines(:,mystart:myend),MASK=partmask2t(:,mystart:myend),DIM=1)*(t_end-int_mask*dt_out)/(COUNT(partmask2t(:,mystart:myend),DIM=1)+1)
-               j_prof(i,k) = SUM(real_mask)
+               j_prof(i,k)      = SUM(SUM(j_lines(:,mystart:myend),DIM=1,MASK=partmask2t(:,mystart:myend)))/vp_temp
+!               real_mask(mystart:myend)=SUM(vll_lines(:,mystart:myend),MASK=partmask2t(:,mystart:myend),DIM=1)*(t_end-int_mask*dt_out)/(COUNT(partmask2t(:,mystart:myend),DIM=1)+1)
+!               j_prof(i,k) = SUM(real_mask)
             END DO
          END DO
 
