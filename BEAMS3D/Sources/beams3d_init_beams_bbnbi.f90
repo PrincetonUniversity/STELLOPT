@@ -162,7 +162,7 @@
          END DO
          DEALLOCATE(N_start,X_Start,Y_start,Energy, U, V)
          DEALLOCATE(X_BEAMLET,Y_BEAMLET,Z_BEAMLET,NX_BEAMLET,NY_BEAMLET,NZ_BEAMLET)
-         weight = weight/nparticles
+         weight = weight/nparticles_start
       END IF
 !DEC$ IF DEFINED (MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
