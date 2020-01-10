@@ -297,7 +297,7 @@
           Z_start = z_start_in(1:nparticles)
           vll_start = vll_start_in(1:nparticles)
           v_neut = 0.0
-          weight = 1.0
+          weight = 1.0/nparticles
           Zatom = Zatom_in(1:nparticles)
           mass = mass_in(1:nparticles)
           charge = charge_in(1:nparticles)
