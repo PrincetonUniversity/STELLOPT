@@ -214,6 +214,7 @@
             CALL EZspline_interp(Vp_spl_s,s2,vp_temp,ier)
             epower_prof(:,k) = epower_prof(:,k)/vp_temp
             ipower_prof(:,k) = ipower_prof(:,k)/vp_temp
+            ndot_prof(:,k)   =   ndot_prof(:,k)/vp_temp
 !            !vp_temp = (s1+s2)*vp_temp ! because 2*s*vp is the qauntity we want and s=0.5*(s1+s2) ! do this if we want to use the rho grid.
 !            DO i = 1, nbeams
 !               partmask2t(:,mystart:myend)=(partmask2(:,mystart:myend).and.(int_mask2(:,mystart:myend)==i))
