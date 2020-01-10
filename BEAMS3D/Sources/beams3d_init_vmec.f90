@@ -311,7 +311,7 @@
                       br, bphi, bz, SFLX=sflx,UFLX=uflx,info=ier)
          IF (ier == 0 .and. bphi /= 0) THEN ! We have field data
             ! Save Grid data
-            S_ARR(i,j,k) = sflx
+            S_ARR(i,j,k) = MAX(sflx,0.0)
             IF (uflx<0)  uflx = uflx+pi2
             U_ARR(i,j,k) = uflx
             ! Handle equilibrium data

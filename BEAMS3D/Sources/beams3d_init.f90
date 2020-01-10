@@ -15,7 +15,8 @@
       USE beams3d_runtime
       USE beams3d_grid
       USE beams3d_input_mod, ONLY: read_beams3d_input
-      USE beams3d_lines, ONLY: nparticles
+      USE beams3d_lines, ONLY: nparticles, epower_prof, ipower_prof, &
+                               ns_prof
       USE wall_mod
       USE mpi_params
       USE adas_mod_parallel, ONLY: adas_load_tables
@@ -286,6 +287,8 @@
           ELSE
              CALL beams3d_init_beams
           END IF
+         ALLOCATE(epower_prof(nbeams,ns_prof), ipower_prof(nbeams,ns_prof))
+         ipower_prof=0; epower_prof=0
       ELSE
           ALLOCATE(  R_start(nparticles), phi_start(nparticles), Z_start(nparticles), &
           & v_neut(3,nparticles), mass(nparticles), charge(nparticles), &
@@ -303,8 +306,11 @@
           charge = charge_in(1:nparticles)
           mu_start = mu_start_in(1:nparticles)
           t_end = t_end_in(1:nparticles)
-          beam  = 0
+          beam  = 1
+         ALLOCATE(epower_prof(1,ns_prof), ipower_prof(1,ns_prof))
+         ipower_prof=0; epower_prof=0
       END IF
+
 
       ! Do a reality check
       IF (ANY(ABS(vll_start)>3E8) .and. lverb) THEN
