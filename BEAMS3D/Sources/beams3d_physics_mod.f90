@@ -202,7 +202,7 @@ MODULE beams3d_physics_mod
                vfrac = newspeed/speed
                PE_lines(mytdex,myline) = PE_lines(mytdex,myline)+mymass*dve*dt*speed
                PI_lines(mytdex,myline) = PI_lines(mytdex,myline)+mymass*dvi*dt*speed
-              j_lines(mytdex,myline)   =  j_lines(mytdex,myline)+mycharge*vll*dt
+               j_lines(mytdex,myline)  =  j_lines(mytdex,myline)+mycharge*vll*dt
                vll = vfrac*vll
                moment = vfrac*vfrac*moment
                q(4) = vll
