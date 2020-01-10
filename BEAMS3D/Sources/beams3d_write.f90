@@ -97,6 +97,9 @@
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'U_ARR',ier)
                CALL write_var_hdf5(fid,'POT_ARR',nr,nphi,nz,ier,DBLVAR=POT_ARR,ATT='Electrostatic Potential [V]',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'POT_ARR',ier)
+               CALL write_var_hdf5(fid,'Weight',nparticles,ier,DBLVAR=weight,ATT='Weight',&
+                                  ATT_NAME='description')
+               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'Weight',ier)
                IF (ASSOCIATED(TE)) THEN
                   CALL write_var_hdf5(fid,'TE',nr,nphi,nz,ier,DBLVAR=TE,ATT='Electron Temperature [eV]',ATT_NAME='description')
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'TE',ier)
@@ -114,9 +117,6 @@
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ZEFF_ARR',ier)
                END IF
                IF (lbeam) THEN
-                  CALL write_var_hdf5(fid,'Weight',nparticles,ier,DBLVAR=weight,ATT='Weight',&
-                                      ATT_NAME='description')
-                  IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'Weight',ier)
                   CALL write_var_hdf5(fid,'Beam',nparticles,ier,INTVAR=beam,ATT='Beam Number',&
                                       ATT_NAME='description')
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'Beam',ier)
