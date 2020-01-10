@@ -107,8 +107,8 @@ SUBROUTINE out_beams3d_nag(t, q)
           R_lines(mytdex,myline)       = SQRT(xw*xw+yw*yw)
           PHI_lines(mytdex,myline)     = atan2(yw,xw)
           Z_lines(mytdex,myline)       = zw
-          vll_lines(mytdex,myline)     = 0.5*(vll_lines(mytdex-1,myline)+vll_lines(mytdex,myline))
-          moment_lines(mytdex,myline)     = 0.5*(moment_lines(mytdex-1,myline)+moment_lines(mytdex,myline))
+          !vll_lines(mytdex,myline)     = 0.5*(vll_lines(mytdex-1,myline)+vll_lines(mytdex,myline))
+          !moment_lines(mytdex,myline)     = 0.5*(moment_lines(mytdex-1,myline)+moment_lines(mytdex,myline))
           lost_lines(myline) = .TRUE.
           t = t_end(myline)+dt
           IF (lhitonly) THEN
