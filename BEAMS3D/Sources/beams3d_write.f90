@@ -249,9 +249,9 @@
                      CALL write_var_hdf5(fid,'ipower_prof',nbeams,ns_prof,ier,DBLVAR=ipower_prof,&
                                          ATT='Ion Power Deposition [W*m^-3]',ATT_NAME='description')
                      IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ipower_prof',ier)
-                     CALL write_var_hdf5(fid,'J_prof',nbeams,ns_prof,ier,DBLVAR=j_prof,&
-                                         ATT='Total Beam Current Density [P/(e*E)]',ATT_NAME='description')
-                     IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'J_prof',ier)
+                     !CALL write_var_hdf5(fid,'J_prof',nbeams,ns_prof,ier,DBLVAR=j_prof,&
+                     !                    ATT='Total Beam Current Density [P/(e*E)]',ATT_NAME='description')
+                     !IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'J_prof',ier)
                   END IF
                END IF
          END SELECT
