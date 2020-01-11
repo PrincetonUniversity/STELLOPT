@@ -42,7 +42,7 @@ in the VMEC INDATA namelist. In order to transform to this
 representation the code must first take the VMEC boundary definition and
 convert is to Hirshman-Breslau. This is done by the code if any
 `LRHO_OPT` is set. STELLOPT will output a conversion accuracy message to
-the screen when this is done. The resulting spectrum in `RH`O will have
+the screen when this is done. The resulting spectrum in `RHO` will have
 one less poloidal mode than VMEC. Once the `RHO(N,M)` array is calculated,
 the modes are loaded into the optimization vector. The major radius is
 stored in the `RHO(0,0)` array element so if one wishes this variable to

@@ -13,7 +13,9 @@ equilibrium configurations in magnetically confined fusion devices.
 
 ## Theory
 
-![VMEC coordinates. *The toroidal angle in VMEC is in the counter-clockwise direction](images/Toroidal_coordinates.png)
+![VMEC coordinates](images/Toroidal_coordinates.png)
+(*The toroidal angle used in VMEC is in the counter-clockwise direction)
+
 The VMEC code seeks to solve a set
 of MHD force balance equations in a toroidal domain:
 
