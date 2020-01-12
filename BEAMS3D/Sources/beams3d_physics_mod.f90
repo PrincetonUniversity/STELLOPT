@@ -205,20 +205,15 @@ MODULE beams3d_physics_mod
                newspeed = speed - reduction*dt
                ltherm = .true.
                vfrac = newspeed/speed
-!               PE_lines(mytdex,myline) = PE_lines(mytdex,myline)+mymass*dve*dt*speed
-!               PI_lines(mytdex,myline) = PI_lines(mytdex,myline)+mymass*dvi*dt*speed
-               j_lines(mytdex,myline)  =  j_lines(mytdex,myline)+mycharge*vll*dt
                vll = vfrac*vll
                moment = vfrac*vfrac*moment
                q(4) = vll
                RETURN
             END IF
-            l = MAX(MIN(CEILING(s_temp*ns_prof),ns_prof),1)
+            l = MAX(MIN(CEILING(SQRT(s_temp)*ns_prof),ns_prof),1)
             ndot_prof(mybeam,l)   =   ndot_prof(mybeam,l) + weight(myline)
             epower_prof(mybeam,l) = epower_prof(mybeam,l) + mymass*dve*dt*speed*weight(myline)
             ipower_prof(mybeam,l) = ipower_prof(mybeam,l) + mymass*dvi*dt*speed*weight(myline)
-!            PE_lines(mytdex,myline) = PE_lines(mytdex,myline)+mymass*dve*dt*speed
-!            PI_lines(mytdex,myline) = PI_lines(mytdex,myline)+mymass*dvi*dt*speed
             j_lines(mytdex,myline)  =  j_lines(mytdex,myline)+mycharge*vll*dt
             vll = vfrac*vll
             moment = vfrac*vfrac*moment

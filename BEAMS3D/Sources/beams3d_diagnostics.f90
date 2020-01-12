@@ -189,66 +189,18 @@
       ! BEAM DIAGNOSTICS
       IF (lbeam .and. .not.ldepo) THEN
 
-         ! Birth Profiles and Power deposition and current profile
-!         IF (ALLOCATED(ndot_prof)) DEALLOCATE(ndot_prof)
-!         IF (ALLOCATED(epower_prof)) DEALLOCATE(epower_prof)
-!         IF (ALLOCATED(ipower_prof)) DEALLOCATE(ipower_prof)
-!         IF (ALLOCATED(j_prof)) DEALLOCATE(j_prof)
-!         ALLOCATE(ndot_prof(1:nbeams,1:ns_prof))
-!         ALLOCATE(epower_prof(1:nbeams,1:ns_prof))
-!         ALLOCATE(ipower_prof(1:nbeams,1:ns_prof))
-!         ALLOCATE(j_prof(1:nbeams,1:ns_prof))
-!
-!         !Initialize arrays
-!         ndot_prof = 0
-!         epower_prof = 0
-!         ipower_prof = 0
-!         j_prof = 0!
-!
-!         ! Loop over beam lines
+         ! Grid in rho, units in [/m^3]
          DO k = 2, ns_prof
-!            s1 = REAL(k-1)/REAL(ns_prof)
             s2 = REAL(k)/REAL(ns_prof)
-!            partmask(mystart:myend)  = ((real_mask(mystart:myend) >= s1) .and. (real_mask(mystart:myend) < s2))
-!            partmask2(:,mystart:myend) = ((S_lines(:,mystart:myend) >= s1) .and. (S_lines(:,mystart:myend) < s2))
             CALL EZspline_interp(Vp_spl_s,s2,vp_temp,ier)
+            vp_temp = vp_temp*2*s2
             epower_prof(:,k) = epower_prof(:,k)/vp_temp
             ipower_prof(:,k) = ipower_prof(:,k)/vp_temp
             ndot_prof(:,k)   =   ndot_prof(:,k)/vp_temp
-!            !vp_temp = (s1+s2)*vp_temp ! because 2*s*vp is the qauntity we want and s=0.5*(s1+s2) ! do this if we want to use the rho grid.
-!            DO i = 1, nbeams
-!               partmask2t(:,mystart:myend)=(partmask2(:,mystart:myend).and.(int_mask2(:,mystart:myend)==i))
-!               ndot_prof(i,k)   = COUNT((partmask(mystart:myend).and.(beam(mystart:myend)==i)))/vp_temp
-!               epower_prof(i,k) = SUM(SUM(PE_lines(:,mystart:myend),DIM=1,MASK=partmask2t(:,mystart:myend)))/vp_temp
-!               ipower_prof(i,k) = SUM(SUM(PI_lines(:,mystart:myend),DIM=1,MASK=partmask2t(:,mystart:myend)))/vp_temp
-!               j_prof(i,k)      = SUM(SUM(j_lines(:,mystart:myend),DIM=1,MASK=partmask2t(:,mystart:myend)))/vp_temp
-!!               real_mask(mystart:myend)=SUM(vll_lines(:,mystart:myend),MASK=partmask2t(:,mystart:myend),DIM=1)*(t_end-int_mask*dt_out)/(COUNT(partmask2t(:,mystart:myend),DIM=1)+1)
-!!               j_prof(i,k) = SUM(real_mask)
-!            END DO
          END DO
-!
-!DEC$ IF DEFINED (MPI_OPT)
-!         IF (myworkid == master) THEN
-!            CALL MPI_REDUCE(MPI_IN_PLACE, ndot_prof,   nbeams*ns_prof, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
-!            CALL MPI_REDUCE(MPI_IN_PLACE, epower_prof, nbeams*ns_prof, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
-!            CALL MPI_REDUCE(MPI_IN_PLACE, ipower_prof, nbeams*ns_prof, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
-!            CALL MPI_REDUCE(MPI_IN_PLACE, j_prof,      nbeams*ns_prof, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
-!         ELSE
-!            CALL MPI_REDUCE(ndot_prof,   ndot_prof,   nbeams*ns_prof, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
-!            CALL MPI_REDUCE(epower_prof, epower_prof, nbeams*ns_prof, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
-!            CALL MPI_REDUCE(ipower_prof, ipower_prof, nbeams*ns_prof, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
-!            CALL MPI_REDUCE(j_prof,      j_prof,      nbeams*ns_prof, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
-!         END IF
-!DEC$ ENDIF
 
          ! Was only needed if no weight specified
          IF (myworkid == master) THEN
-         !   DO i = 1, nbeams
-         !      ninj  = COUNT(beam .eq. i)
-         !      ndot_prof(i,:) = (P_beams(i)/E_beams(i))*REAL(ndot_prof(i,:)) / REAL(ninj)
-         !      epower_prof(i,:) = (P_beams(i)/E_beams(i))*epower_prof(i,:)/ REAL(ninj)
-         !      ipower_prof(i,:) = (P_beams(i)/E_beams(i))*ipower_prof(i,:)/ REAL(ninj)
-         !   END DO
             DEALLOCATE(dist_func)
          END IF
 
