@@ -14,7 +14,7 @@
                                neut_lines, moment_lines, S_lines, U_lines, &
                                PE_lines, PI_lines, shine_through, &
                                ndot_prof, epower_prof, ipower_prof, j_prof,&
-                               B_lines, j_lines
+                               B_lines, j_lines, dist_prof
 !      USE wall_mod, ONLY: wall_free
       USE EZspline_obj
       USE mpi_sharmem
@@ -139,6 +139,7 @@
       IF (ALLOCATED(epower_prof))    DEALLOCATE(epower_prof)
       IF (ALLOCATED(ipower_prof))    DEALLOCATE(ipower_prof)
       IF (ALLOCATED(j_prof))    DEALLOCATE(j_prof)
+      IF (ALLOCATED(dist_prof))    DEALLOCATE(dist_prof)
       RETURN
 !-----------------------------------------------------------------------
 !     End Subroutine
