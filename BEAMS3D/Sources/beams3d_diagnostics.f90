@@ -197,6 +197,7 @@
             epower_prof(:,k) = epower_prof(:,k)/vp_temp
             ipower_prof(:,k) = ipower_prof(:,k)/vp_temp
             ndot_prof(:,k)   =   ndot_prof(:,k)/vp_temp
+               j_prof(:,k)   =      j_prof(:,k)/vp_temp
          END DO
 
          ! Was only needed if no weight specified

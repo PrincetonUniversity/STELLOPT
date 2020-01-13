@@ -16,7 +16,7 @@
       USE beams3d_grid
       USE beams3d_input_mod, ONLY: read_beams3d_input
       USE beams3d_lines, ONLY: nparticles, epower_prof, ipower_prof, &
-                               ndot_prof, ns_prof
+                               ndot_prof, j_prof, ns_prof
       USE wall_mod
       USE mpi_params
       USE adas_mod_parallel, ONLY: adas_load_tables
@@ -287,8 +287,9 @@
          ELSE
             CALL beams3d_init_beams
          END IF
-         ALLOCATE(epower_prof(nbeams,ns_prof), ipower_prof(nbeams,ns_prof), ndot_prof(nbeams,ns_prof))
-         ipower_prof=0; epower_prof=0; ndot_prof=0;
+         ALLOCATE(epower_prof(nbeams,ns_prof), ipower_prof(nbeams,ns_prof), &
+                  ndot_prof(nbeams,ns_prof), j_prof(nbeams,ns_prof))
+         ipower_prof=0; epower_prof=0; ndot_prof=0; j_prof = 0;
       ELSE
         ALLOCATE(  R_start(nparticles), phi_start(nparticles), Z_start(nparticles), &
          & v_neut(3,nparticles), mass(nparticles), charge(nparticles), &
@@ -308,8 +309,9 @@
          t_end = t_end_in(1:nparticles)
          beam  = 1
          nbeams = 1
-         ALLOCATE(epower_prof(1,ns_prof), ipower_prof(1,ns_prof), ndot_prof(1,ns_prof))
-         ipower_prof=0; epower_prof=0; ndot_prof = 0
+         ALLOCATE(epower_prof(1,ns_prof), ipower_prof(1,ns_prof),&
+                  ndot_prof(1,ns_prof), j_prof(1,ns_prof))
+         ipower_prof=0; epower_prof=0; ndot_prof = 0; j_prof = 0
       END IF
 
 
