@@ -23,7 +23,7 @@
       IMPLICIT NONE
       LOGICAL  ::  ltherm
       LOGICAL, ALLOCATABLE :: lost_lines(:)
-      INTEGER  :: ns_prof = 50
+      INTEGER  :: ns_prof = 100
       INTEGER  :: nparticles, nsteps, myline, mybeam, mytdex, myend, mystart_save,myend_save
       REAL(rprec) :: xlast,ylast,zlast ! for storing position
       REAL(rprec) :: moment, mycharge, myZ, mymass, myv_neut(3), &

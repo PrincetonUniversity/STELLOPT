@@ -20,7 +20,7 @@ MODULE beams3d_physics_mod
                                mymass, myv_neut, B_temp, rand_prob, &
                                cum_prob, tau, PE_lines, PI_lines, &
                                j_lines, epower_prof, ipower_prof, &
-                               ndot_prof, ns_prof
+                               ndot_prof, ns_prof, j_prof
       USE beams3d_grid, ONLY: BR_spl, BZ_spl, delta_t, BPHI_spl, MODB_spl, MODB4D, &
                               phimax, S4D, TE4D, NE4D, TI4D, ZEFF4D, &
                               nr, nphi, nz, rmax, rmin, zmax, zmin, &
@@ -214,7 +214,7 @@ MODULE beams3d_physics_mod
             ndot_prof(mybeam,l)   =   ndot_prof(mybeam,l) + weight(myline)
             epower_prof(mybeam,l) = epower_prof(mybeam,l) + mymass*dve*dt*speed*weight(myline)
             ipower_prof(mybeam,l) = ipower_prof(mybeam,l) + mymass*dvi*dt*speed*weight(myline)
-            j_lines(mytdex,myline)  =  j_lines(mytdex,myline)+mycharge*vll*dt
+            j_prof(mybeam,l)      =      j_prof(mybeam,l) + mycharge*vll*weight(myline)
             vll = vfrac*vll
             moment = vfrac*vfrac*moment
             speed = newspeed
