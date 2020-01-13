@@ -16,7 +16,8 @@
       USE beams3d_grid
       USE beams3d_input_mod, ONLY: read_beams3d_input
       USE beams3d_lines, ONLY: nparticles, epower_prof, ipower_prof, &
-                               ndot_prof, j_prof, ns_prof
+                               ndot_prof, j_prof, ns_prof, dist_prof, &
+                               partvmax
       USE wall_mod
       USE mpi_params
       USE adas_mod_parallel, ONLY: adas_load_tables
@@ -37,7 +38,7 @@
 !DEC$ ENDIF
       INTEGER :: i,j,k,ier, iunit, nextcur_in, nshar
       INTEGER :: bcs1(2), bcs2(2), bcs3(2), bcs1_s(2)
-      REAL(rprec) :: br, bphi, bz, ti_temp
+      REAL(rprec) :: br, bphi, bz, ti_temp, vtemp
 !-----------------------------------------------------------------------
 !     External Functions
 !          A00ADF               NAG Detection
@@ -289,7 +290,8 @@
          END IF
          ALLOCATE(epower_prof(nbeams,ns_prof), ipower_prof(nbeams,ns_prof), &
                   ndot_prof(nbeams,ns_prof), j_prof(nbeams,ns_prof))
-         ipower_prof=0; epower_prof=0; ndot_prof=0; j_prof = 0;
+         ALLOCATE(dist_prof(nbeams,ns_prof,ns_prof))
+         ipower_prof=0; epower_prof=0; ndot_prof=0; j_prof = 0; dist_prof=0
       ELSE
         ALLOCATE(  R_start(nparticles), phi_start(nparticles), Z_start(nparticles), &
          & v_neut(3,nparticles), mass(nparticles), charge(nparticles), &
@@ -311,8 +313,12 @@
          nbeams = 1
          ALLOCATE(epower_prof(1,ns_prof), ipower_prof(1,ns_prof),&
                   ndot_prof(1,ns_prof), j_prof(1,ns_prof))
-         ipower_prof=0; epower_prof=0; ndot_prof = 0; j_prof = 0
+         ALLOCATE(dist_prof(1,ns_prof,ns_prof))
+         ipower_prof=0; epower_prof=0; ndot_prof = 0; j_prof = 0; dist_prof=0
       END IF
+
+      ! Determine maximum particle velocity
+      partvmax=MAXVAL(ABS(vll_start))*3.0/2.0
 
 
       ! Do a reality check

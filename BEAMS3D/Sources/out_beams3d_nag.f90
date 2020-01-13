@@ -11,12 +11,15 @@ SUBROUTINE out_beams3d_nag(t, q)
     !-----------------------------------------------------------------------
     USE stel_kinds, ONLY: rprec
     USE beams3d_runtime, ONLY: dt, lverb, pi2, lneut, t_end, lvessel, &
-                               lhitonly, npoinc, lcollision, ldepo
+                               lhitonly, npoinc, lcollision, ldepo, &
+                               weight
     USE beams3d_lines, ONLY: R_lines, Z_lines, PHI_lines, myline, moment, &
                              nsteps, nparticles, moment_lines, myend, &
                              vll_lines, neut_lines, mytdex, next_t,&
                              lost_lines, dt_out, xlast, ylast, zlast,&
-                             ltherm, S_lines, U_lines, B_lines
+                             ltherm, S_lines, U_lines, B_lines, &
+                             dist_prof, ns_prof, j_prof, ndot_prof, &
+                             partvmax, mymass, mycharge, mybeam
     USE beams3d_grid
     USE beams3d_physics_mod, ONLY: beams3d_physics
     USE wall_mod, ONLY: collide
@@ -40,7 +43,7 @@ SUBROUTINE out_beams3d_nag(t, q)
     DOUBLE PRECISION         :: x0,y0,z0,x1,y1,z1,xw,yw,zw,delta,dl
     LOGICAL             :: lhit
     ! For splines
-    INTEGER :: i,j,k
+    INTEGER :: i,j,k,l,m
     REAL*8 :: xparam, yparam, zparam, hx, hy, hz, hxi, hyi, hzi
     REAL*8 :: fval(1)
     INTEGER, parameter :: ict(8)=(/1,0,0,0,0,0,0,0/)
@@ -87,10 +90,17 @@ SUBROUTINE out_beams3d_nag(t, q)
                        hx,hxi,hy,hyi,hz,hzi,&
                        MODB4D(1,1,1,1),nr,nphi,nz)
        B_lines(mytdex, myline) = fval(1)
+       xw = SQRT(2*moment*fval(1)/mymass)
+       l = MAX(MIN(1+ns_prof+CEILING(ns_prof*q(4)/partvmax),ns_prof),1)
+       m = MAX(MIN(CEILING(ns_prof*xw/partvmax),ns_prof),1)
+       dist_prof(mybeam,l,m) = dist_prof(mybeam,l,m) + weight(myline)
        !CALL EZspline_interp(S_spl,q(1),x0,q(3),y0,ier)
        !CALL EZspline_interp(U_spl,q(1),x0,q(3),z0,ier)
        !CALL EZspline_interp(MODB_spl,q(1),x0,q(3),x1,ier)
        !IF (myworkid == 0) PRINT *,'--',y0,z0,x1
+       l = MAX(MIN(CEILING(SQRT(y0)*ns_prof),ns_prof),1)
+       ndot_prof(mybeam,l)   =   ndot_prof(mybeam,l) + weight(myline)
+       j_prof(mybeam,l)      =      j_prof(mybeam,l) + mycharge*q(4)*weight(myline)
     END IF
     IF (lcollision) CALL beams3d_physics(t,q)
     IF (ltherm) t = t_end(myline)
