@@ -209,7 +209,8 @@
                   ! should really spline to new grid
                   ALLOCATE(r1dtemp(nr))
                   DO i = 1, nr
-                    CALL EZspline_interp(POT_spl_s,DBLE(i-1)/DBLE(nr-1),r1dtemp(i),ier)
+                    CALL EZspline_interp(POT_spl_s,sqrt(DBLE(i-1)/DBLE(nr-1)),r1dtemp(i),ier)
+                    r1dtemp(i) = r1dtemp(i)*2*DBLE(i-1)/DBLE(nr-1)
                   END DO
                   CALL write_var_hdf5(qid_gid,'nrho',ier,INTVAR=nr)
                   CALL write_var_hdf5(qid_gid,'dvdrho',nr,ier,DBLVAR=r1dtemp)
