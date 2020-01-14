@@ -12,9 +12,9 @@
       USE beams3d_grid
       USE beams3d_lines, ONLY: R_lines, PHI_lines, Z_lines, vll_lines, &
                                neut_lines, moment_lines, S_lines, U_lines, &
-                               PE_lines, PI_lines, shine_through, &
+                               shine_through, &
                                ndot_prof, epower_prof, ipower_prof, j_prof,&
-                               B_lines, j_lines, dist_prof
+                               B_lines, dist_prof
 !      USE wall_mod, ONLY: wall_free
       USE EZspline_obj
       USE mpi_sharmem
@@ -57,9 +57,6 @@
       IF (ALLOCATED(vll_lines)) DEALLOCATE(vll_lines)
       IF (ALLOCATED(neut_lines)) DEALLOCATE(neut_lines)
       IF (ALLOCATED(moment_lines)) DEALLOCATE(moment_lines)
-      IF (ALLOCATED(PE_lines)) DEALLOCATE(PE_lines)
-      IF (ALLOCATED(PI_lines)) DEALLOCATE(PI_lines)
-      IF (ALLOCATED(j_lines)) DEALLOCATE(j_lines)
       IF (ALLOCATED(S_lines)) DEALLOCATE(S_lines)
       IF (ALLOCATED(U_lines)) DEALLOCATE(U_lines)
       IF (ALLOCATED(B_lines)) DEALLOCATE(B_lines)

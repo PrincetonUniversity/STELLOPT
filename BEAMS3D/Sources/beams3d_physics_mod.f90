@@ -18,9 +18,9 @@ MODULE beams3d_physics_mod
                                nsteps, nparticles, vll_lines, &
                                moment_lines, mybeam, mycharge, myZ, &
                                mymass, myv_neut, B_temp, rand_prob, &
-                               cum_prob, tau, PE_lines, PI_lines, &
-                               j_lines, epower_prof, ipower_prof, &
-                               ndot_prof, ns_prof, j_prof
+                               cum_prob, tau, &
+                               epower_prof, ipower_prof, &
+                               ns_prof
       USE beams3d_grid, ONLY: BR_spl, BZ_spl, delta_t, BPHI_spl, MODB_spl, MODB4D, &
                               phimax, S4D, TE4D, NE4D, TI4D, ZEFF4D, &
                               nr, nphi, nz, rmax, rmin, zmax, zmin, &
