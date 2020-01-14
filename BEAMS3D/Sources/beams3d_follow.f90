@@ -444,9 +444,9 @@ SUBROUTINE beams3d_follow
     ELSE
        CALL MPI_REDUCE(epower_prof, epower_prof, nbeams*ns_prof, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
        CALL MPI_REDUCE(ipower_prof, ipower_prof, nbeams*ns_prof, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
-       CALL MPI_REDUCE(ipower_prof,   ndot_prof, nbeams*ns_prof, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
-       CALL MPI_REDUCE(ipower_prof,      j_prof, nbeams*ns_prof, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
-       CALL MPI_REDUCE(ipower_prof,   dist_prof, nbeams*ns_prof*ns_prof, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
+       CALL MPI_REDUCE(ndot_prof,     ndot_prof, nbeams*ns_prof, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
+       CALL MPI_REDUCE(j_prof,           j_prof, nbeams*ns_prof, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
+       CALL MPI_REDUCE(dist_prof,     dist_prof, nbeams*ns_prof*ns_prof, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
     END IF
 !DEC$ ENDIF
 
@@ -479,9 +479,6 @@ SUBROUTINE beams3d_follow
     CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend,      'Z_lines', DBLVAR=Z_lines)
     CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend,    'vll_lines', DBLVAR=vll_lines)
     CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend, 'moment_lines', DBLVAR=moment_lines)
-    !CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend,     'PE_lines', DBLVAR=PE_lines)
-    !CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend,     'PI_lines', DBLVAR=PI_lines)
-    !CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend,      'j_lines', DBLVAR=j_lines)
     CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend,      'S_lines', DBLVAR=S_lines)
     CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend,      'U_lines', DBLVAR=U_lines)
     CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend,      'B_lines', DBLVAR=B_lines)
