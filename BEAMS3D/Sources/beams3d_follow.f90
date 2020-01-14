@@ -152,9 +152,6 @@ SUBROUTINE beams3d_follow
     IF (ALLOCATED(moment_lines)) DEALLOCATE(moment_lines)
     IF (ALLOCATED(neut_lines)) DEALLOCATE(neut_lines)
     IF (ALLOCATED(lost_lines)) DEALLOCATE(lost_lines)
-    IF (ALLOCATED(PE_lines)) DEALLOCATE(PE_lines)
-    IF (ALLOCATED(PI_lines)) DEALLOCATE(PI_lines)
-    IF (ALLOCATED(j_lines)) DEALLOCATE(j_lines)
     
     ! Output some stuff
     IF (lverb) THEN
@@ -177,9 +174,8 @@ SUBROUTINE beams3d_follow
     IF (ier /= 0) CALL handle_err(ALLOC_ERR, 'Q', ier)
     ALLOCATE(R_lines(0:npoinc, mystart:myend), Z_lines(0:npoinc, mystart:myend), &
              PHI_lines(0:npoinc, mystart:myend), vll_lines(0:npoinc, mystart:myend), moment_lines(0:npoinc, mystart:myend), &
-             neut_lines(0:npoinc, mystart:myend),PE_lines(0:npoinc, mystart:myend),PI_lines(0:npoinc, mystart:myend), &
-             S_lines(0:npoinc, mystart:myend), U_lines(0:npoinc, mystart:myend), B_lines(0:npoinc, mystart:myend), &
-             j_lines(0:npoinc, mystart:myend), STAT = ier)
+             neut_lines(0:npoinc, mystart:myend), S_lines(0:npoinc, mystart:myend), U_lines(0:npoinc, mystart:myend), &
+              B_lines(0:npoinc, mystart:myend), STAT = ier)
     IF (ier /= 0) CALL handle_err(ALLOC_ERR, 'R_LINES, PHI_LINES, Z_LINES', ier)
     ALLOCATE(lost_lines(mystart:myend), STAT = ier)
     IF (ier /= 0) CALL handle_err(ALLOC_ERR, 'LOST_LINES', ier)
@@ -187,7 +183,6 @@ SUBROUTINE beams3d_follow
     ! Initializations
     R_lines = 0.0; Z_lines = 0.0; PHI_lines = -1.0
     vll_lines = 0.0; moment_lines = 0.0
-    PE_lines = 0.0; PI_lines = 0.0; j_lines = 0.0
     lost_lines = .FALSE.
     S_lines = 1.5; U_lines = 0.0; B_lines = -1.0
     R_lines(0, mystart:myend) = R_start(mystart:myend)
@@ -426,13 +421,6 @@ SUBROUTINE beams3d_follow
     IF (ALLOCATED(w)) DEALLOCATE(w)
     IF (ALLOCATED(iwork)) DEALLOCATE(iwork)
 
-    ! Adjust PE_lines and PI_lines to be in real units
-!    DO i = mystart, myend
-!       PE_lines(:,i) = PE_lines(:,i)*weight(i)
-!       PI_lines(:,i) = PI_lines(:,i)*weight(i)
-!       j_lines(:,i)  = j_lines(:,i)*weight(i)
-!    END DO
-
     ! First reduce the cumulative arrays over shared memory groups then allreduce between shared memeory groups
 !DEC$ IF DEFINED (MPI_OPT)
     IF (myid_sharmem == master) THEN
@@ -455,8 +443,6 @@ SUBROUTINE beams3d_follow
     IF (myid_sharmem == master) i = 0
     CALL MPI_COMM_SPLIT( MPI_COMM_BEAMS,i,myworkid,MPI_COMM_LOCAL,ierr_mpi)
     IF (myid_sharmem == master) THEN
-!       partvmax = MAXVAL(MAXVAL(ABS(vll_lines),DIM=2),DIM=1)
-!       CALL MPI_ALLREDUCE(MPI_IN_PLACE, partvmax,                 1, MPI_DOUBLE_PRECISION, MPI_MAX, MPI_COMM_LOCAL, ierr_mpi)
        CALL MPI_ALLREDUCE(MPI_IN_PLACE, epower_prof, nbeams*ns_prof, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
        CALL MPI_ALLREDUCE(MPI_IN_PLACE, ipower_prof, nbeams*ns_prof, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
        CALL MPI_ALLREDUCE(MPI_IN_PLACE,   ndot_prof, nbeams*ns_prof, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
@@ -468,8 +454,6 @@ SUBROUTINE beams3d_follow
        CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)
     END IF
     CALL MPI_BARRIER(MPI_COMM_BEAMS, ierr_mpi)
-!DEC$ ELSE
-!    partvmax = MAXVAL(MAXVAL(ABS(vll_lines),DIM=2),DIM=1)
 !DEC$ ENDIF
 
 
