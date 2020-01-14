@@ -46,7 +46,6 @@
       ALLOCATE (X(nparticles_start, nbeams), Y(nparticles_start, nbeams), &
                   & Energy(nparticles_start), block(nparticles_start, nbeams), STAT=ier )
       IF (ier /= 0) CALL handle_err(ALLOC_ERR, 'X, Y, weight', ier)
-      weight = 0
 
       IF (myworkid == master) THEN
          nparticles = 0
