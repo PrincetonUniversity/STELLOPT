@@ -571,7 +571,7 @@
                      (one+LU4D(1,:,:,:))*nfp
             f_temp = f_temp - (RU4D(1,:,:,:)*RU4D(1,:,:,:)+ &
                                ZU4D(1,:,:,:)*ZU4D(1,:,:,:))*&
-                              LV4D(1,:,:,:)
+                              LV4D(1,:,:,:)*nfp
             f_temp = f_temp / G4D(1,:,:,:)
             grho   = SUM(SUM(f_temp,DIM=1),DIM=1)/(nu*nv)
             grho(1) = 2*grho(2) - grho(3)
@@ -583,23 +583,23 @@
                      (one+LU4D(1,:,:,:))
             f_temp = f_temp - (RU4D(1,:,:,:)*RV4D(1,:,:,:)+ &
                                ZU4D(1,:,:,:)*ZV4D(1,:,:,:))*&
-                              LV4D(1,:,:,:)*nfp
+                              LV4D(1,:,:,:)*nfp*nfp
             f_temp = f_temp / G4D(1,:,:,:)
             grho   = SUM(SUM(f_temp,DIM=1),DIM=1)/(nu*nv)
             !grho(1) = 2*grho(2) - grho(3)
             CALL EZspline_setup(S22_spl,grho,iflag); f_temp = 0; grho = 0
             ! Bav
             f_temp = B4D(1,:,:,:)*G4D(1,:,:,:)
-            grho   = SUM(SUM(f_temp,DIM=1),DIM=1)/(nu*nv)
-            grho2 = grho2 / Vp
+            grho   = SUM(SUM(f_temp,DIM=1),DIM=1)
+            grho2 = grho / Vp
             grho2(1) = 2*grho2(2) - grho2(3)
-            CALL EZspline_setup(Bav_spl,grho,iflag); f_temp = 0; grho = 0
+            CALL EZspline_setup(Bav_spl,grho2,iflag); f_temp = 0; grho = 0
             ! Bsq
             f_temp = B4D(1,:,:,:)*B4D(1,:,:,:)*G4D(1,:,:,:)
-            grho   = SUM(SUM(f_temp,DIM=1),DIM=1)/(nu*nv)
-            grho2 = grho2 / Vp
+            grho   = SUM(SUM(f_temp,DIM=1),DIM=1)
+            grho2 = grho / Vp
             grho2(1) = 2*grho2(2) - grho2(3)
-            CALL EZspline_setup(Bsq_spl,grho,iflag); f_temp = 0; grho = 0
+            CALL EZspline_setup(Bsq_spl,grho2,iflag); f_temp = 0; grho = 0
             ! Deallocate arrays
             DEALLOCATE(gsr,gsp,gsz,gs,Vp,grho,grho2)
             f_temp = 0
@@ -625,7 +625,7 @@
          ! DEALLOCATIONS
          DEALLOCATE(xu,xv,rho)
          DEALLOCATE(f_temp)
-      END IF !So shared memory doesn't do work
+      END IF !So shared memory doesnt do work
 #if defined(MPI_OPT)
       IF (PRESENT(comm)) THEN
          CALL MPI_BARRIER(shar_comm,iflag)
