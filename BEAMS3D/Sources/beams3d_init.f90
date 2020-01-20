@@ -73,8 +73,14 @@
          IF (lverb) WRITE(6,'(A)') '   FILE: input.' // TRIM(id_string)
       END IF
 
+      IF (lrestart_particles) THEN
+        ldepo = .false.
+        lbbnbi = .false.
+        lbeam = .false.
+      END IF
+
       ! Output some information
-      IF (lverb .and. .not.lrestart) THEN
+      IF (lverb .and. .not.lrestart_grid) THEN
          WRITE(6,'(A,F9.5,A,F9.5,A,I4)') '   R   = [',rmin,',',rmax,'];  NR:   ',nr
          WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   PHI = [',phimin,',',phimax,'];  NPHI: ',nphi
          WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   Z   = [',zmin,',',zmax,'];  NZ:   ',nz
@@ -95,6 +101,7 @@
          IF (lascot4) WRITE(6,'(A)') '   ASCOT4 OUTPUT ON!'
          IF (lbbnbi) WRITE(6,'(A)') '   BEAMLET BEAM Model!'
          IF (lplasma_only) WRITE(6,'(A)') '   MAGNETIC FIELD FROM PLASMA ONLY!'
+         IF (lrestart_particles) WRITE(6,'(A)') '   Restarting particles!'
          IF (npot > 0) WRITE(6,'(A)') '   RAIDAL ELECTRIC FIELD PRESENT!'
          CALL FLUSH(6)
       END IF
@@ -156,8 +163,8 @@
       END IF
 
 
-      IF (lrestart) THEN
-         CALL beams3d_init_restart
+      IF (lrestart_grid) THEN
+         !CALL beams3d_init_restart
       ELSE
          ! Create the background grid
          CALL mpialloc(raxis, nr, myid_sharmem, 0, MPI_COMM_SHARMEM, win_raxis)
@@ -288,6 +295,12 @@
          ELSE
             CALL beams3d_init_beams
          END IF
+         ALLOCATE(epower_prof(nbeams,ns_prof), ipower_prof(nbeams,ns_prof), &
+                  ndot_prof(nbeams,ns_prof), j_prof(nbeams,ns_prof))
+         ALLOCATE(dist_prof(nbeams,ns_prof,ns_prof))
+         ipower_prof=0; epower_prof=0; ndot_prof=0; j_prof = 0; dist_prof=0
+      ELSEIF (lrestart_particles) THEN
+        CALL beams3d_init_restart
          ALLOCATE(epower_prof(nbeams,ns_prof), ipower_prof(nbeams,ns_prof), &
                   ndot_prof(nbeams,ns_prof), j_prof(nbeams,ns_prof))
          ALLOCATE(dist_prof(nbeams,ns_prof,ns_prof))

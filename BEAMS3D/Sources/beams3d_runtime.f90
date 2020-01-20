@@ -104,7 +104,7 @@ MODULE beams3d_runtime
     INTEGER, PARAMETER :: MAXPROFLEN = 512
 
     LOGICAL :: lverb, lvmec, lpies, lspec, lcoil, lmgrid, &
-               lvessel, lvac, lrestart, lneut, &
+               lvessel, lvac, lrestart_grid, lrestart_particles, lneut, &
                lbeam, lhitonly, lread_input, lplasma_only, lraw,&
                ldepo, lbeam_simple, ldebug, lcollision, lw7x, &
                lascot, lascot4, lbbnbi
