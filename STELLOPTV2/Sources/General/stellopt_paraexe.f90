@@ -58,7 +58,8 @@
             lpies_beams => lpies, lspec_beams => lspec, &
             lmgrid_beams => lmgrid, lascot_beams => lascot, &
             lvessel_beams => lvessel, lcoil_beams => lcoil, &
-            lrestart_beams => lrestart, lbeam_simple_beams => lbeam_simple, &
+            lrestart_grid_beams => lrestart_grid, lrestart_particles_beams => lrestart_particles, &
+            lbeam_simple_beams => lbeam_simple, &
             lplasma_only_beams => lplasma_only, lascot4_beams => lascot4, &
             lbbnbi_beams => lbbnbi, &
             lcollision_beams => lcollision, lw7x_beams => lw7x, &
@@ -303,7 +304,8 @@
                lraw_beams         = .FALSE.
                lvessel_beams      = .FALSE.
                lvac_beams         = .FALSE.
-               lrestart_beams     = .FALSE.
+               lrestart_grid_beams     = .FALSE.
+               lrestart_particles_beams     = .FALSE.
                lbeam_simple_beams = .FALSE.
                lhitonly           = .TRUE. ! Set to true to smaller files.
                IF (lscreen) lhitonly = .FALSE.
