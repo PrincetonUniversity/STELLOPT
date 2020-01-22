@@ -11,7 +11,7 @@
   # Temporaryily copy STELLOPT_HOME to MYHOME since MYHOME is currently
   # used in all the makefiles.
   MYHOME = $(STELLOPT_HOME)
-  
+
   SHELL = /bin/sh
   PWD1 = `pwd`
   PRECOMP:= cpp -traditional-cpp -E -P -C -DMACOSX
@@ -20,29 +20,29 @@
   LINK    = ld $(FLAGS) -o
   LINK_AR = ar -ruvs
   LINK_C  = gcc -shared -Wl,-no_compact_unwind
-  LINK_C  = $(CC) -shared -Wl,--no-undefined -Wl,-export-dynamic 
+  LINK_C  = $(CC) -shared -Wl,--no-undefined -Wl,-export-dynamic
 
 #######################################################################
 #            Define Compiler Flags
 #######################################################################
-#  FLAGS_R = -O2 -g -fexternal-blas -fbacktrace -fcheck=all 
+#  FLAGS_R = -O2 -g -fexternal-blas -fbacktrace -fcheck=all
   FLAGS_R = -O2 -fexternal-blas -Wmissing-include-dirs
-  FLAGS_D = -g -O0 -fcheck=all 
-  LIBS    = -L/opt/local/lib -lopenblas -lscalapack  
+  FLAGS_D = -g -O0 -fcheck=all
+  LIBS    = -L/opt/local/lib -lopenblas -lscalapack
 
 #######################################################################
 #            MPI Options
 #######################################################################
-  LMPI    = T
+  LMPI    = F
   MPI_COMPILE = mpif90
   MPI_COMPILE_FREE = mpif90 -ffree-form \
                      -ffree-line-length-none -ffixed-line-length-none
-  MPI_COMPILE_C = mpicc 
+  MPI_COMPILE_C = mpicc
   MPI_LINK = /opt/local/bin/mpif90
   MPI_LINK = mpicc -shared  -Wl,-no_compact_unwind
 
   MPI_RUN = mpirun
-  MPI_RUN_OPTS = -np 2 
+  MPI_RUN_OPTS = -np 2
 
 #######################################################################
 #            NAG Options
@@ -56,6 +56,8 @@
   LNETCDF = T
   NETCDF_INC = -I/opt/local/include
   NETCDF_LIB = -L/opt/local/lib -lnetcdf -lnetcdff
+#  NETCDF_INC = -I/opt/local/include
+#  NETCDF_LIB = -L/opt/local/lib -lnetcdf -lnetcdff
 
 #######################################################################
 #            NTCC Options
@@ -141,7 +143,7 @@
 #######################################################################
   LREGCOIL= F
   REGCOIL_DIR = $(REGCOIL_PATH)
-  REGCOIL_INC = -I$(REGCOIL_DIR) 
+  REGCOIL_INC = -I$(REGCOIL_DIR)
   LIB_REGCOIL = libregcoil.a
   REGCOIL_LIB = $(REGCOIL_DIR)/$(LIB_REGCOIL) -fopenmp
 
@@ -190,8 +192,8 @@ LIB_SHARE = -L/opt/local/lib/gcc7 -lstdc++ -lgfortran -L/usr/lib -lz -lc -lm -lp
 # for example awk_cdir.awk.
 HOME_BIN = ../../
 MOD1_PATH = -I$(MYHOME)/libstell_dir
-MOD_PATH = 
-CLEAN_ARCH = 
+MOD_PATH =
+CLEAN_ARCH =
 LIB_DIR = ../../LIBSTELL
 LIB = libstell.a
 
@@ -233,7 +235,7 @@ ifeq ($(MAKECMDGOALS),xstelloptv2)
 	$(COBRA_DIR)/$(LOCTYPE)/$(LIB_COBRA) \
 	$(DIAGNO_DIR)/$(LOCTYPE)/$(LIB_DIAGNO) \
 	$(JINV_DIR)/$(LOCTYPE)/$(LIB_JINV) \
-	$(MGRID_DIR)/$(LOCTYPE)/$(LIB_MGRID) 
+	$(MGRID_DIR)/$(LOCTYPE)/$(LIB_MGRID)
   ifeq ($(LDKES),T)
     DKES_DIR = ../../DKES
     LIB_DKES = libdkes.a
@@ -241,8 +243,8 @@ ifeq ($(MAKECMDGOALS),xstelloptv2)
     PRECOMP += -DDKES_OPT
     LIB_LINK += $(DKES_DIR)/$(LOCTYPE)/$(LIB_DKES)
   else
-    DKES_DIR = 
-    LIB_DKES = 
+    DKES_DIR =
+    LIB_DKES =
   endif
   ifeq ($(LNEO),T)
     NEO_DIR = ../../NEO
@@ -251,8 +253,8 @@ ifeq ($(MAKECMDGOALS),xstelloptv2)
     PRECOMP += -DNEO_OPT
     LIB_LINK += $(NEO_DIR)/$(LOCTYPE)/$(LIB_NEO)
   else
-    NEO_DIR = 
-    LIB_NEO = 
+    NEO_DIR =
+    LIB_NEO =
   endif
 else
   LGENE = F
@@ -288,43 +290,43 @@ ifeq ($(LGENE),T)
   PRECOMP += -DGENE
   MOD_PATH += -I$(GENE_DIR)
 else
-  GENE_LIB = 
-  GENE_DIR = 
-  LIB_GENE = 
+  GENE_LIB =
+  GENE_DIR =
+  LIB_GENE =
 endif
 ifeq ($(LCOILOPT),T)
   MOD1_PATH += $(COILOPT_INC)
   PRECOMP += -DCOILOPTPP
   MOD_PATH += -I$(COILOPTPP_DIR)
 else
-  COILOPT_LIB = 
-  COILOPTPP_DIR = 
-  LIB_COILOPTPP = 
+  COILOPT_LIB =
+  COILOPTPP_DIR =
+  LIB_COILOPTPP =
 endif
 ifeq ($(LTERPSICHORE),T)
   MOD1_PATH += $(TERPSICHORE_INC)
   PRECOMP += -DTERPSICHORE
   MOD_PATH += -I$(TERPSICHORE_DIR)
 else
-  TERPSICHORE_LIB = 
-  TERPSICHORE_DIR = 
-  LIB_TERPSICHORE = 
+  TERPSICHORE_LIB =
+  TERPSICHORE_DIR =
+  LIB_TERPSICHORE =
 endif
 ifeq ($(LTRAVIS),T)
   PRECOMP += -DTRAVIS
 else
-  TRAVIS_LIB = 
-  TRAVIS_DIR = 
-  LIB_TRAVIS = 
+  TRAVIS_LIB =
+  TRAVIS_DIR =
+  LIB_TRAVIS =
 endif
 ifeq ($(LREGCOIL),T)
   MOD1_PATH += $(REGCOIL_INC)
   PRECOMP += -DREGCOIL
   MOD_PATH += -I$(REGCOIL_DIR)
 else
-  REGCOIL_LIB = 
-  REGCOIL_DIR = 
-  LIB_REGCOIL = 
+  REGCOIL_LIB =
+  REGCOIL_DIR =
+  LIB_REGCOIL =
 endif
 
 # Handle other codes
@@ -341,8 +343,8 @@ ifeq ($(LMPI),T)
   PRECOMP += -DMPI_OPT
   COMPILE = $(MPI_COMPILE)
   COMPILE_FREE = $(MPI_COMPILE_FREE)
-  LINK    = $(MPI_COMPILE) $(FLAGS) -o 
-  LINK_C  = $(MPI_LINK) 
+  LINK    = $(MPI_COMPILE) $(FLAGS) -o
+  LINK_C  = $(MPI_LINK)
 endif
 ifeq ($(LNETCDF),T)
   MOD1_PATH += $(NETCDF_INC)
@@ -382,14 +384,14 @@ ifeq ($(MAKECMDGOALS),libstell.a)
   LINK = $(LINK_AR)
   COMPILE += -fPIC
   COMPILE_FREE += -fPIC
-  INC_PATH = 
+  INC_PATH =
 endif
 ifeq ($(MAKECMDGOALS),libstell.so)
   LINK = $(LINK_C)
   LIB_LINK = $(LIB_SHARE)
   COMPILE += -fPIC
   COMPILE_FREE += -fPIC
-  INC_PATH = 
+  INC_PATH =
 endif
 
 #This must come here
