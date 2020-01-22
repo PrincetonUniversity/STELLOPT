@@ -162,7 +162,7 @@
 
                ! Close file
                CALL close_hdf5(fid,ier)
-               IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,'beams3d_ascot5_'//TRIM(id_string)//'.h5',ier)
+               IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,'beams3d_ascot4_'//TRIM(id_string)//'.h5',ier)
 
                ! Write the input text file
                ier = 0; iunit = 411
@@ -188,7 +188,7 @@
                WRITE(iunit,'(A)') 'RHO (pol)     Te (eV)         Ne (1/m3)       Vtor_I (rad/s)  Ti1 (eV)        Ni1 (1/m3)      Ni2 (1/m3) ...'
                DO i = 1, nr
                   dbl_temp = (rtemp(i,5,1)-1)/6.0 ! Frac nH=frac*nC;   Zeff*ni=nH+6*nC=(1+6*frac)*nH = ne; nH = ne/(1*6*frac)
-                  WRITE(iunit,'(7(2X,ES18.10))') rtemp(i,1,1),rtemp(i,2,1),rtemp(i,3,1),-999.0,rtemp(i,4,1),&
+                  WRITE(iunit,'(7(2X,ES18.10))') sqrt(rtemp(i,1,1)),rtemp(i,2,1),rtemp(i,3,1),-999.0,rtemp(i,4,1),&
                                               rtemp(i,3,1)/(1+6*dbl_temp),MAX(dbl_temp*rtemp(i,3,1)/(1+6*dbl_temp),1.0E16)
                END DO
                DEALLOCATE(rtemp)
