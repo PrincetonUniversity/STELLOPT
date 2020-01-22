@@ -42,8 +42,8 @@
          ! Save quantities
          npoinc_save = npoinc
          ! Read the data
-         CALL open_hdf5('beams3d_'//TRIM(restart_string)//'.h5',fid,ier,LCREATE=.false.)
-         IF (ier /= 0) CALL handle_err(HDF5_OPEN_ERR,'beams3d_'//TRIM(restart_string)//'.h5',ier)
+         CALL open_hdf5(TRIM(restart_string),fid,ier,LCREATE=.false.)
+         IF (ier /= 0) CALL handle_err(HDF5_OPEN_ERR,TRIM(restart_string),ier)
          CALL read_scalar_hdf5(fid,'nparticles',ier,INTVAR=nparticles)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'nparticles',ier)
          CALL read_scalar_hdf5(fid,'npoinc',ier,INTVAR=npoinc)
