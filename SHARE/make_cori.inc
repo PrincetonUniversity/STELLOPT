@@ -17,7 +17,7 @@
   FLAGS_R = -fp-model strict -assume noold_unit_star -cxxlib 
   FLAGS_D = -g -dynamic -traceback -fp-model strict -assume noold_unit_star -cxxlib
   LIBS    = 
-#  FLAGS_R += -g -traceback -dynamic
+  FLAGS_R += -g -traceback -dynamic
 
 #######################################################################
 #            MPI Options
@@ -245,6 +245,7 @@ else
   LGENE = F
   LCOILOPT = F
   LTERPSICHORE = F
+  LREGCOIL= F
   LTRAVIS = F
   LSFINCS = F
 endif

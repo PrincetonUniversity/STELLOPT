@@ -13,7 +13,9 @@
       USE stellopt_vars, ONLY: equil_type
       USE equil_vals, ONLY: eff_ripple
       USE stellopt_targets, ONLY: sigma_neo
+      USE safe_open_mod
       USE mpi_params
+      USE mpi_inc
       ! NEO LIBRARIES
 !DEC$ IF DEFINED (NEO_OPT)
       USE neo_precision
@@ -25,8 +27,8 @@
       USE neo_exchange
       USE neo_output
       USE sizey_bo
+      USE neo_input_mod
 !DEC$ ENDIF
-      USE safe_open_mod                          ! SPH
       ! BOOZER_XFORM
       USE read_boozer_mod, dp1 => dp
       
@@ -35,9 +37,6 @@
 !        iflag         Error flag
 !----------------------------------------------------------------------
       IMPLICIT NONE
-!DEC$ IF DEFINED (MPI_OPT)
-      INCLUDE 'mpif.h'
-!DEC$ ENDIF
       LOGICAL, INTENT(in)    :: lscreen
       INTEGER, INTENT(inout) :: iflag
 !-----------------------------------------------------------------------
@@ -65,6 +64,7 @@
       SELECT CASE(TRIM(equil_type))
          CASE('vmec2000','animec','flow','satire','parvmec','paravmec','vboot','vmec2000_oneeq')
 !DEC$ IF DEFINED (MPI_OPT)
+            CALL BCAST_NEOIN_INPUT(master,MPI_COMM_MYWORLD,ierr_mpi)
             CALL MPI_COMM_SIZE( MPI_COMM_MYWORLD, numprocs_local, ierr_mpi )
             CALL MPI_BCAST(mnboz_b,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
             CALL MPI_BCAST(mboz_b,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)

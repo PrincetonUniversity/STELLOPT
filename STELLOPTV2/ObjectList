@@ -1,4 +1,5 @@
 ObjectFiles = \
+stellopt_init_mpi.o \
 chisq_x.o \
 chisq_y.o \
 chisq_xics.o \
@@ -83,6 +84,7 @@ stellopt_fcn.o \
 stellopt_load_targets.o \
 stellopt_toboozer.o \
 stellopt_init.o \
+stellopt_bnorm.o \
 stellopt_coiloptpp.o \
 stellopt_regcoil_chi2_b.o \
 stellopt_bootsj.o \
