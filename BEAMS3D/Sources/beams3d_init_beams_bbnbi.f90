@@ -87,7 +87,7 @@
             WRITE(6, '(A,A)')       '   filename: ', TRIM(bbnbi_string)
             WRITE(6, '(A,I4,A,I4)') '   nbeams: ', k2,'/',dims(1)
             WRITE(6, '(A,I4)')      '   nbeamlets: ', dims(2)
-            WRITE(6, '(A,I6)')      '   nparticles_start: ', nparticles_start
+            WRITE(6, '(A,I8)')      '   nparticles_start: ', nparticles_start
             CALL FLUSH(6)
          END IF
       END IF
