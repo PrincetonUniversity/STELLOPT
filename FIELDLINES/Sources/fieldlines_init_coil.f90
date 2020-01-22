@@ -18,7 +18,8 @@
       USE vmec_input,  ONLY: extcur_in => extcur, read_indata_namelist,&
                              nv_in => nzeta, nfp_in => nfp, nigroup
       USE biotsavart
-      USE mpi_params                       
+      USE mpi_params
+      USE mpi_inc            
 !-----------------------------------------------------------------------
 !     Local Variables
 !          ier            Error Flag
@@ -26,12 +27,9 @@
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       INTEGER, PARAMETER :: BYTE_8 = SELECTED_INT_KIND (8)
-!DEC$ IF DEFINED (MPI_OPT)
-      INCLUDE 'mpif.h'   ! MPI - Don't need because of fieldlines_runtime
       INTEGER(KIND=BYTE_8),ALLOCATABLE :: mnum(:), moffsets(:)
       INTEGER :: numprocs_local, mylocalid, mylocalmaster
       INTEGER :: MPI_COMM_LOCAL
-!DEC$ ENDIF  
       INTEGER(KIND=BYTE_8) :: chunk
       INTEGER :: ier, iunit, s, i, j, mystart, myend, k, ik, ig
       REAL(rprec)  :: br, bphi, bz, current, current_first, &
@@ -41,44 +39,27 @@
 !-----------------------------------------------------------------------
 
       ! Divide up Work
-      IF ((numprocs) > nlocal) THEN
-         i = myid/nlocal
-         CALL MPI_COMM_SPLIT( MPI_COMM_FIELDLINES,i,myid,MPI_COMM_LOCAL,ierr_mpi)
-         CALL MPI_COMM_RANK( MPI_COMM_LOCAL, mylocalid, ierr_mpi )              ! MPI
-         CALL MPI_COMM_SIZE( MPI_COMM_LOCAL, numprocs_local, ierr_mpi )          ! MPI
-         mylocalmaster = master
-      ELSE
-         ! Basic copy of MPI_COMM_FIELDLINES
-         CALL MPI_COMM_DUP( MPI_COMM_FIELDLINES, MPI_COMM_LOCAL, ierr_mpi)
-         mylocalid = myid
-         mylocalmaster = master
-         numprocs_local = numprocs
-      END IF
-      
-      
+      numprocs_local = 1; mylocalid = master
+!DEC$ IF DEFINED (MPI_OPT)
+      CALL MPI_COMM_DUP( MPI_COMM_SHARMEM, MPI_COMM_LOCAL, ierr_mpi)
+      CALL MPI_COMM_RANK( MPI_COMM_LOCAL, mylocalid, ierr_mpi )              ! MPI
+      CALL MPI_COMM_SIZE( MPI_COMM_LOCAL, numprocs_local, ierr_mpi )          ! MPI
+!DEC$ ENDIF
+      mylocalmaster = master
       
       ! Read the input file for the EXTCUR array, NV, and NFP
-      IF (.not. ALLOCATED(extcur) .and. lcoil) THEN
-         IF (mylocalid == mylocalmaster) THEN
-            iunit = 11
-            OPEN(UNIT=iunit, FILE='input.' // TRIM(id_string), STATUS='OLD', IOSTAT=ier)
-            IF (ier /= 0) CALL handle_err(FILE_OPEN_ERR,id_string,ier)
-            CALL read_indata_namelist(iunit,ier)
-            IF (ier /= 0) CALL handle_err(VMEC_INPUT_ERR,id_string,ier)
-            CLOSE(iunit)
-         END IF
-!DEC$ IF DEFINED (MPI_OPT)
-         CALL MPI_BCAST(extcur_in,nigroup,MPI_REAL, mylocalmaster, MPI_COMM_LOCAL,ierr_mpi)
-         IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'fieldlines_init_coil',ierr_mpi)
-!DEC$ ENDIF
-         DO i = 1, nigroup
-           IF (ABS(extcur_in(i)) > 0) nextcur = i
-         END DO
-         ALLOCATE(extcur(nextcur+1),STAT=ier)
-         IF (ier /= 0) CALL handle_err(ALLOC_ERR,'EXTCUR',ier)
-         extcur = 0.0
-         extcur(1:nextcur) = extcur_in(1:nextcur)
+      IF (mylocalid == mylocalmaster) THEN
+         iunit = 11
+         OPEN(UNIT=iunit, FILE='input.' // TRIM(id_string), STATUS='OLD', IOSTAT=ier)
+         IF (ier /= 0) CALL handle_err(FILE_OPEN_ERR,id_string,ier)
+         CALL read_indata_namelist(iunit,ier)
+         IF (ier /= 0) CALL handle_err(VMEC_INPUT_ERR,id_string,ier)
+         CLOSE(iunit)
       END IF
+!DEC$ IF DEFINED (MPI_OPT)
+      CALL MPI_BCAST(extcur_in,nigroup,MPI_REAL, mylocalmaster, MPI_COMM_LOCAL,ierr_mpi)
+      IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'fieldlines_init_coil',ierr_mpi)
+!DEC$ ENDIF
       
       ! Read the coils file
       CALL parse_coils_file(TRIM(coil_string))
@@ -160,6 +141,7 @@
                bphi_temp = 0.0;
                bz_temp   = 0.0;
                DO ig = 1, nextcur
+                  IF (extcur_in(ig) == 0) CYCLE
                   CALL afield(raxis(i), phiaxis(j), zaxis(k), br, bphi, bz, IG = ig)
                   br_temp = br_temp + br
                   bphi_temp = bphi_temp + bphi
@@ -214,21 +196,20 @@
       
       ! Free Variables
       CALL cleanup_biotsavart
-      IF (ALLOCATED(extcur)) DEALLOCATE(extcur)
 
 !DEC$ IF DEFINED (MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
       IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_init_coil1',ierr_mpi)
 !       ! Adjust indexing to send 2D arrays
-       CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
-                        B_R,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
-                        MPI_COMM_LOCAL,ierr_mpi)
-       CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
-                        B_PHI,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
-                        MPI_COMM_LOCAL,ierr_mpi)
-       CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
-                        B_Z,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
-                        MPI_COMM_LOCAL,ierr_mpi)
+!       CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
+!                        B_R,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
+!                        MPI_COMM_LOCAL,ierr_mpi)
+!       CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
+!                        B_PHI,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
+!                        MPI_COMM_LOCAL,ierr_mpi)
+!       CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
+!                        B_Z,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
+!                        MPI_COMM_LOCAL,ierr_mpi)
        DEALLOCATE(mnum)
        DEALLOCATE(moffsets)
 !DEC$ ENDIF

@@ -15,8 +15,9 @@
 #            Define Compiler Flags
 #######################################################################
   FLAGS_R = -I$(MKL_HOME)/include -O2 -fp-model strict -ip \
-            -assume noold_unit_star 
-  FLAGS_D = -g -I$(MKL_HOME)/include
+            -assume noold_unit_star -g -traceback
+  FLAGS_D = -I$(MKL_HOME)/include -fp-model strict -ip \
+            -assume noold_unit_star -g -traceback
   LIBS    = -Wl,-rpath,$(MKL_HOME)/lib/intel64 \
             -L$(MKL_HOME)/lib/intel64 -lmkl_scalapack_lp64 \
             -lmkl_intel_lp64 -lmkl_core -lmkl_sequential \
@@ -31,10 +32,10 @@
   MPI_COMPILE_C = mpiifort 
   MPI_LINK = mpiifort
   MPI_RUN = srun
-  MPI_RUN_OPTS = --nodes=1 --ntasks-per-node=32 --time=0:30:00
-  MPI_RUN_SM   = --nodes=1 --ntasks-per-node=32 --time=0:30:00
-  MPI_RUN_MD   = --nodes=1 --ntasks-per-node=32 --time=0:30:00
-  MPI_RUN_LG   = --nodes=8 --ntasks-per-node=32 --time=2:00:00
+  MPI_RUN_OPTS = --nodes=1 --ntasks-per-node=32 --time=0:30:00 -p express
+  MPI_RUN_OPTS_SM   = --nodes=1 --ntasks-per-node=32 --time=0:30:00 -p express
+  MPI_RUN_OPTS_MD   = --nodes=8 --ntasks-per-node=32 --time=0:30:00 -p express
+  MPI_RUN_OPTS_LG   = --nodes=32 --ntasks-per-node=32 --time=0:30:00 -p express
 #######################################################################
 #            NAG Options
 #######################################################################
@@ -90,18 +91,17 @@
 #            GENE Options
 #######################################################################
   LGENE = F
-  GENE_INC = -I$(GENE_PATH)
-  GENE_DIR = $(GENE_PATH)
+  GENE_DIR = $(GENE_PATH)/bin/obj_draco
+  FUTILS_DIR = $(GENE_PATH)/external/draco/futils-gene-mod/src
   LIB_GENE = libgene.a
+  LIB_FUTILS = libfutils.a
+  GENE_INC = -I$(GENE_DIR) \
+             -I$(FUTILS_DIR)
   GENE_LIB = -L$(FFTW_HOME)/lib -lfftw3 -lfftw3f -Xlinker \
-             -rpath=$(FFTW_HOME)/lib \
-             -Wl,-rpath,$(SLEPC_HOME)/intel14.0-mpi.ibm1308-double-cplx/lib \
-             -L$(SLEPC_HOME)/intel14.0-mpi.ibm1308-double-cplx/lib -lslepc \
-             -Wl,-rpath,$(PETSC_HOME)/lib -L$(PETSC_HOME)/lib -lpetsc \
-             -Wl,-rpath,$(MKL_HOME)/lib/intel64 -L$(MKL_HOME)/lib/intel64 \
-             -lmkl_scalapack_lp64 -lmkl_intel_lp64 -lmkl_core \
-             -lmkl_sequential -lmkl_blacs_intelmpi_lp64 -lpthread -lm 
-
+             -L$(SLEPC_HOME)/lib -lslepc \
+             -L$(PETSC_HOME)/lib -lpetsc \
+             $(GENE_DIR)/$(LIB_GENE) \
+             $(FUTILS_DIR)/$(LIB_FUTILS)
 #######################################################################
 #            COILOPT++ Options
 #######################################################################
@@ -128,7 +128,7 @@
   LIB_TRAVIS = libtravis64_sopt.a
   LIB_MCONF  = libmconf64.a
   TRAVIS_LIB = $(TRAVIS_DIR)/lib/$(LIB_TRAVIS) \
-               $(TRAVIS_DIR)/magconf/lib/$(LIB_MCONF) -lstdc++
+               $(TRAVIS_DIR)/mag_conf/lib/$(LIB_MCONF) -lstdc++
 
 #######################################################################
 #            SFINCS Options
@@ -258,9 +258,10 @@ else ifeq ($(MAKECMDGOALS),test_stellopt_travis)
 else
   LGENE = F
   LCOILOPT = F
+  LSFINCS = F
+  LREGCOIL= F
   LTERPSICHORE = F
   LTRAVIS = F
-  LSFINCS = F
 endif
 ifeq ($(MAKECMDGOALS),xanimec)
   PRECOMP += -D_ANIMEC
@@ -288,7 +289,7 @@ endif
 ifeq ($(LGENE),T)
   MOD1_PATH += $(GENE_INC)
   PRECOMP += -DGENE
-  MOD_PATH += -I$(GENE_DIR)
+  MOD_PATH += -I$(GENE_DIR) -I$(FUTILS_DIR)
 else
   GENE_LIB = 
   GENE_DIR = 

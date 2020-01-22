@@ -11,12 +11,13 @@
 !-----------------------------------------------------------------------
       USE stellopt_runtime, ONLY:  proc_string, bigno, rprec, pi2
       USE equil_utils, ONLY: get_equil_RZ, get_equil_Bflx,&
-                             get_equil_ne, get_equil_te, get_equil_ti
+                             get_equil_ne, get_equil_te, get_equil_ti, &
+                             get_equil_zeff
       USE equil_vals, ONLY: nfp, rho, orbit_lost_frac
       USE stellopt_targets, ONLY: sigma_orbit, vll_orbit, mu_orbit,&
             nu_orbit, nv_orbit, nsd, np_orbit, mass_orbit, Z_orbit,&
             vperp_orbit, nsd
-      USE stellopt_vars, ONLY: ne_type, te_type, ti_type, ne_norm
+      USE stellopt_vars, ONLY: ne_type, te_type, ti_type, ne_norm, zeff_type
       USE read_wout_mod, ONLY:  rmax_surf, rmin_surf, zmax_surf
 !DEC$ IF DEFINED (BEAMS3D_OPT)
       ! BEAMS3D Libraries
@@ -26,15 +27,13 @@
             TE_AUX_S_BEAMS => TE_AUX_S, TE_AUX_F_BEAMS => TE_AUX_F, &
             NE_AUX_S_BEAMS => NE_AUX_S, NE_AUX_F_BEAMS => NE_AUX_F, &
             TI_AUX_S_BEAMS => TI_AUX_S, TI_AUX_F_BEAMS => TI_AUX_F, &
-            BEAMS3D_VERSION
-      USE beams3d_grid, ONLY: nte, nne, nti, rmin, rmax, zmin, zmax, &
+            ZEFF_AUX_S_BEAMS => ZEFF_AUX_S, ZEFF_AUX_F_BEAMS => ZEFF_AUX_F, &
+            BEAMS3D_VERSION, mass_beams, charge_beams
+      USE beams3d_grid, ONLY: nte, nne, nti, nzeff, rmin, rmax, zmin, zmax, &
                               phimin, phimax
       USE beams3d_lines, ONLY: lost_lines
 !DEC$ ENDIF
-!DEC$ IF DEFINED (MPI_OPT)
-      USE mpi_params     
-!DEC$ ENDIF
-      !USE safe_open_mod
+      USE mpi_params
       
 !-----------------------------------------------------------------------
 !     Subroutine Parameters
@@ -76,6 +75,8 @@
       s_min = 1
       s_max = 0
       tf    = MAXVAL(t_end_in)
+      MASS_BEAMS(1) = mass_orbit ! do this to diagnostic routine outputs the correct number
+      CHARGE_BEAMS(1) = Z_orbit*1.602176565E-19
       DO ik = 1, nsd
          IF (sigma_orbit(ik) .ge. bigno) CYCLE
          DO v = 1, nv_orbit
@@ -111,8 +112,9 @@
       END DO
       nparticles_start = nparts - 1
       IF (lscreen) THEN
-         WRITE(6, '(/,a,f5.2)') 'BEAMS3D Version ', BEAMS3D_VERSION
          WRITE(6,'(A)') '----- Particle Initialization -----'
+         WRITE(6,'(A,I2)')               '   Z   = ',NINT(Z_orbit)
+         WRITE(6,'(A,ES10.2)')           '   M   = ',mass_orbit
          WRITE(6,'(A,F9.5,A,F9.5,A,I6)') '   S   = [',s_min,',',s_max,'];   NS:   ',COUNT(sigma_orbit .lt. bigno)
          WRITE(6,'(A,F9.5,A,F9.5,A,I4)') '   U   = [',0.0,',',pi2*(nu_orbit-1)/nu_orbit,'];   NU:   ',nu_orbit
          WRITE(6,'(A,F9.5,A,F9.5,A,I4)') '   V   = [',0.0,',',pi2*(nv_orbit-1)/nv_orbit/2,'];   NV:   ',nv_orbit
@@ -122,18 +124,22 @@
       END IF
 
       ! Initialize temperature profiles
-      nne = NBEAM_PROF; nte = NBEAM_PROF; nti = NBEAM_PROF
+      nne = NBEAM_PROF; nte = NBEAM_PROF; nti = NBEAM_PROF; nzeff = NBEAM_PROF
       DO ik = 1, NBEAM_PROF
          s_val = DBLE(ik-1)/DBLE(NBEAM_PROF-1)
          NE_AUX_S_BEAMS(ik) = s_val
          TE_AUX_S_BEAMS(ik) = s_val
          TI_AUX_S_BEAMS(ik) = s_val
+         ZEFF_AUX_S_BEAMS(ik) = s_val
          CALL get_equil_ne(s_val,TRIM(ne_type),v_val,iflag)
          NE_AUX_F_BEAMS(ik) = v_val
          CALL get_equil_te(s_val,TRIM(te_type),v_val,iflag)
          TE_AUX_F_BEAMS(ik) = v_val
          CALL get_equil_ti(s_val,TRIM(ti_type),v_val,iflag)
          TI_AUX_F_BEAMS(ik) = v_val
+         CALL get_equil_zeff(s_val,TRIM(zeff_type),v_val,iflag)
+         IF (v_val < 1) v_val = 1
+         ZEFF_AUX_F_BEAMS(ik) = v_val
       END DO
 
       IF (lscreen) THEN
@@ -141,6 +147,7 @@
          WRITE(6,'(A,F7.2,A,F7.2,A,I4)') '   Ne  = [',MINVAL(NE_AUX_F_BEAMS)/1E19,',',MAXVAL(NE_AUX_F_BEAMS)/1E19,'] 10^19 [m^-3];  Nne:   ',nne
          WRITE(6,'(A,F7.2,A,F7.2,A,I4)') '   Te  = [',MINVAL(TE_AUX_F_BEAMS)/1000,',',MAXVAL(TE_AUX_F_BEAMS)/1000,'] [keV];  Nte:   ',nte
          WRITE(6,'(A,F7.2,A,F7.2,A,I4)') '   Ti  = [',MINVAL(TI_AUX_F_BEAMS)/1000,',',MAXVAL(TI_AUX_F_BEAMS)/1000,'] [keV];  Nti:   ',nti
+         WRITE(6,'(A,F7.2,A,F7.2,A,I4)') '  Zeff = [',MINVAL(ZEFF_AUX_F_BEAMS),',',MAXVAL(ZEFF_AUX_F_BEAMS),'] [keV];  Nti:   ',nzeff
          CALL FLUSH(6)
       END IF
 

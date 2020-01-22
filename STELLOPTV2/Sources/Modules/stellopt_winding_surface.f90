@@ -15,11 +15,9 @@ CONTAINS
   SUBROUTINE read_winding_surface(filename, ierr)
     !USE stellopt_vars
     USE mpi_params
+    USE mpi_inc
     IMPLICIT NONE
     INTRINSIC ALL, MAXVAL, ABS
-!DEC$ IF DEFINED (MPI_OPT)
-    INCLUDE 'mpif.h'
-!DEC$ ENDIF        
 
     ! Arguments
     CHARACTER(256), INTENT(IN) :: filename

@@ -27,7 +27,7 @@ C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
       INTEGER :: numargs, ierr_vmec, index_end,
      &   iopen, isnml, iread, iseq, index_seq,
-     &   index_dat, iunit, ncount, nsteps, i
+     &   index_dat, iunit, ncount, nsteps, i, local_code
       INTEGER :: ictrl(5)
       CHARACTER(LEN=120) :: input_file, seq_ext, reset_file_name, arg
       CHARACTER(LEN=120) :: log_file
@@ -335,13 +335,16 @@ C-----------------------------------------------
          ierr_vmec = ictrl(2)
 
          SELECT CASE (ierr_vmec)
-            CASE (more_iter_flag)                                !Need a few more iterations to converge
-               IF (grank .EQ. 0) THEN
-                  IF(lscreen) WRITE (6, '(1x,a)') increase_niter
-                  WRITE (nthreed, '(1x,a)') increase_niter
-                  WRITE (nthreed, '(1x,a)') "PARVMEC aborting..."
-                  CALL FLUSH(nthreed)
-               END IF
+         CASE (more_iter_flag)                                !Need a few more iterations to converge
+            IF (grank .EQ. 0) THEN
+               IF(lscreen ) WRITE (6, '(1x,a)') increase_niter
+               WRITE (nthreed, '(1x,a)') increase_niter
+               WRITE (nthreed, '(1x,a)') "PARVMEC aborting..."
+               CALL FLUSH(nthreed)
+#if defined(SKS)
+               CALL MPI_Abort(MPI_COMM_WORLD, local_code, MPI_ERR)
+#endif
+            END IF
 ! J Geiger: if lmoreiter and lfull3d1out are false
 !           the o-lines (original) are the only
 !           ones to be executed.

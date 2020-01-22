@@ -185,7 +185,7 @@ def read_vmec(file, branch=None):
     vmec_data['xn_nyq']=npct.as_array(ftemp.in_dll(libstell,s1+'read_wout_mod_'+s2+'_xn_nyq'+s3),(vmec_data['mnmax_nyq'],1))
 
     ## Array values 1D
-    ftemp=ct.POINTER(ct.c_double)  # analysis:ignore  
+    ftemp=ct.POINTER(ct.c_double)  # analysis:ignore
     ns = vmec_data['ns']
     mnmax = vmec_data['mnmax']
     mnmax_nyq = vmec_data['mnmax_nyq']
@@ -205,7 +205,7 @@ def read_vmec(file, branch=None):
             vmec_data[key]=npct.as_array(fmn.in_dll(libstell, '%sread_wout_mod_%s_%s%s'%(s1,s2,key,s3)), mn2d_nyq_size) #ns,mnmax format
         # end for
     # end if
-    
+
 #    vmec_data['rmnc']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_rmnc'+s3),mn2d_size) #ns,mnmax format
 #    vmec_data['zmns']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_zmns'+s3),mn2d_size) #ns,mnmax format
 #    vmec_data['lmns']=npct.as_array(fmn.in_dll(libstell,s1+'read_wout_mod_'+s2+'_lmns'+s3),mn2d_size) #ns,mnmax format

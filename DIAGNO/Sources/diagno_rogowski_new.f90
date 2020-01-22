@@ -44,9 +44,8 @@
       USE biotsavart
       USE safe_open_mod
       USE virtual_casing_mod
-!      USE EZspline_obj
-!      USE EZspline
       USE mpi_params
+      USE mpi_inc
 !-----------------------------------------------------------------------
 !     Local Variables
 !          ier            Error Flag
@@ -54,10 +53,7 @@
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       INTEGER, PARAMETER :: BYTE_8 = SELECTED_INT_KIND (8)
-#if defined(MPI_OPT)
-      INCLUDE 'mpif.h'
       INTEGER(KIND=BYTE_8),ALLOCATABLE :: mnum(:), moffsets(:)
-#endif
       INTEGER(KIND=BYTE_8) :: chunk
       INTEGER :: ier, i, j, k, iunit, nfl, nsegmx, nseg, ig,&
                  i1, i2, nfl_mut, ncg, nhelp
