@@ -7,6 +7,7 @@ MACHINE ?= $(shell uname -n | \
 	     /kruskal/{print "pppl"}\
 	     /landreman/{print "macports_landreman"}\
 	     /npablant/{print "macports_npablant"}\
+	     /vulcan/{print "vulcan"}\
 	     /cobra/{print "cobra"}\
 	     /draco/{print "draco"}')
 
