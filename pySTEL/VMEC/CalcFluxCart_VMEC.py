@@ -932,26 +932,26 @@ class PYVMEC(_ut.Struct):
         # ======== Returns the incremental volume between \Rho and \Rho + d\Rho ==== #
         # simpson's integration over toroidal and poloidal angle (one field period)
         # func = _sqrtG(Theta, Phi)
-#        dVdrho = M*_ut.aquad.dblquad_asr(_sqrtG, 0.0, 2.0*_np.pi, 0.0, 2.0*_np.pi/M, tol=1e-3)
+        dVdrho = M*_ut.aquad.dblquad_asr(_sqrtG, 0.0, 2.0*_np.pi, 0.0, 2.0*_np.pi/M, tol=1e-3)
 #        dVdrho = M*_ut.aquad.dblquad_scipy(_sqrtG, 0.0, 2.0*_np.pi, 0.0, 2.0*_np.pi/M, tol=1e-3)
 #        dVdrho = M*_ut.aquad.dblquadrature(_sqrtG, 0.0, 2.0*_np.pi, 0.0, 2.0*_np.pi/M, tol=1e-3)
 
-        # due to speed reasons, let's try to mesh it and calculate
-        ph = _np.linspace(0.0, 2.0*_np.pi, num=10)/M
-#        func = lambda x: _sqrtG(x, ph)
-#        dVdrho = M*_ut.aquad.quad_asr(func, 0.0, 2.0*_np.pi, tol=1e-3)
-        th = _np.linspace(0.0, 2.0*_np.pi, num=15)
-#        func = lambda x: _sqrtG(th, x)
-#        dVdrho = M*_ut.aquad.quad_asr(func, 0.0, 2.0*_np.pi/M, tol=1e-3)
-        res = 0.0
-        dphi = ph[1]-ph[0]
-        dth = th[1]-th[0]
-        for _ph in ph:
-            for _th in th:
-                res += _sqrtG(_th, _ph)
-            # end for
-        # end for
-        dVdrho = res*dphi*dth
+#        # due to speed reasons, let's try to mesh it and calculate
+#        ph = _np.linspace(0.0, 2.0*_np.pi, num=10)/M
+##        func = lambda x: _sqrtG(x, ph)
+##        dVdrho = M*_ut.aquad.quad_asr(func, 0.0, 2.0*_np.pi, tol=1e-3)
+#        th = _np.linspace(0.0, 2.0*_np.pi, num=15)
+##        func = lambda x: _sqrtG(th, x)
+##        dVdrho = M*_ut.aquad.quad_asr(func, 0.0, 2.0*_np.pi/M, tol=1e-3)
+#        res = 0.0
+#        dphi = ph[1]-ph[0]
+#        dth = th[1]-th[0]
+#        for _ph in ph:
+#            for _th in th:
+#                res += _sqrtG(_th, _ph)
+#            # end for
+#        # end for
+#        dVdrho = res*dphi*dth
         return dVdrho
 
 #    @staticmethod
@@ -1016,26 +1016,26 @@ class PYVMEC(_ut.Struct):
         dVdrho = PYVMEC._dVdrho(M, Rho, VMEC_Data, VMEC_DerivedQuant, kMinRho=kMinRho)
 
         # adaptive integration:
-#        gradrho = M*_ut.aquad.dblquad_asr(_Gradrho, 0.0, 2.0*_np.pi, 0.0, 2.0*_np.pi/M, tol=1e-3)
+        gradrho = M*_ut.aquad.dblquad_asr(_Gradrho, 0.0, 2.0*_np.pi, 0.0, 2.0*_np.pi/M, tol=1e-3)
 #        gradrho = M*_ut.aquad.dblquad_scipy(_Gradrho, 0.0, 2.0*_np.pi, 0.0, 2.0*_np.pi/M, tol=1e-3)
 #        gradrho = M*_ut.aquad.dblquadrature(_Gradrho, 0.0, 2.0*_np.pi, 0.0, 2.0*_np.pi/M, tol=1e-3)
 
-        # due to speed reasons, let's try to mesh it and calculate
-        ph = _np.linspace(0.0, 2.0*_np.pi, num=10)/M
-#        func = lambda x: _Gradrho(x, ph)
-#        gradrho = M*_ut.aquad.quad_asr(func, 0.0, 2.0*_np.pi, tol=1e-3)
-        th = _np.linspace(0.0, 2.0*_np.pi, num=15)
-#        func = lambda x: _Gradrho(th, x)
-#        gradrho = M*_ut.aquad.quad_asr(func, 0.0, 2.0*_np.pi/M, tol=1e-3)
-        res = 0.0
-        dphi = ph[1]-ph[0]
-        dth = th[1]-th[0]
-        for _ph in ph:
-            for _th in th:
-                res += _Gradrho(_th, _ph)
-            # end for
-        # end for
-        gradrho = res*dphi*dth
+#        # due to speed reasons, let's try to mesh it and calculate
+#        ph = _np.linspace(0.0, 2.0*_np.pi, num=10)/M
+##        func = lambda x: _Gradrho(x, ph)
+##        gradrho = M*_ut.aquad.quad_asr(func, 0.0, 2.0*_np.pi, tol=1e-3)
+#        th = _np.linspace(0.0, 2.0*_np.pi, num=15)
+##        func = lambda x: _Gradrho(th, x)
+##        gradrho = M*_ut.aquad.quad_asr(func, 0.0, 2.0*_np.pi/M, tol=1e-3)
+#        res = 0.0
+#        dphi = ph[1]-ph[0]
+#        dth = th[1]-th[0]
+#        for _ph in ph:
+#            for _th in th:
+#                res += _Gradrho(_th, _ph)
+#            # end for
+#        # end for
+#        gradrho = res*dphi*dth
         return gradrho/dVdrho, dVdrho
 
 #    @staticmethod
@@ -1089,26 +1089,26 @@ class PYVMEC(_ut.Struct):
         # simpson's integration over toroidal and poloidal angle (one field period)
 #        dVdrho = self._dVdrho(Rho, kMinRho=kMinRho)
         dVdrho = PYVMEC._dVdrho(M, Rho, VMEC_Data, VMEC_DerivedQuant, kMinRho=kMinRho)
-#        gradrho2 = M*_ut.aquad.dblquad_asr(_Gradrho2, 0.0, 2.0*_np.pi, 0.0, 2.0*_np.pi/M, tol=1e-3)
+        gradrho2 = M*_ut.aquad.dblquad_asr(_Gradrho2, 0.0, 2.0*_np.pi, 0.0, 2.0*_np.pi/M, tol=1e-3)
 #        gradrho2 = M*_ut.aquad.dblquad_scipy(_Gradrho2, 0.0, 2.0*_np.pi, 0.0, 2.0*_np.pi/M, tol=1e-3)
 #        gradrho2 = M*_ut.aquad.dblquadrature(_Gradrho2, 0.0, 2.0*_np.pi, 0.0, 2.0*_np.pi/M, tol=1e-3)
 
-        # due to speed reasons, let's try to mesh it and calculate
-        ph = _np.linspace(0.0, 2.0*_np.pi, num=10)/M
-#        func = lambda x: _Gradrho2(x, ph)
-#        gradrho2 = M*_ut.aquad.quad_asr(func, 0.0, 2.0*_np.pi, tol=1e-3)
-        th = _np.linspace(0.0, 2.0*_np.pi, num=15)
-#        func = lambda x: _Gradrho2(th, x)
-#        gradrho2 = M*_ut.aquad.quad_asr(func, 0.0, 2.0*_np.pi/M, tol=1e-3)
-        res = 0.0
-        dphi = ph[1]-ph[0]
-        dth = th[1]-th[0]
-        for _ph in ph:
-            for _th in th:
-                res += _Gradrho2(_th, _ph)
-            # end for
-        # end for
-        gradrho2 = res*dphi*dth
+#        # due to speed reasons, let's try to mesh it and calculate
+#        ph = _np.linspace(0.0, 2.0*_np.pi, num=10)/M
+##        func = lambda x: _Gradrho2(x, ph)
+##        gradrho2 = M*_ut.aquad.quad_asr(func, 0.0, 2.0*_np.pi, tol=1e-3)
+#        th = _np.linspace(0.0, 2.0*_np.pi, num=15)
+##        func = lambda x: _Gradrho2(th, x)
+##        gradrho2 = M*_ut.aquad.quad_asr(func, 0.0, 2.0*_np.pi/M, tol=1e-3)
+#        res = 0.0
+#        dphi = ph[1]-ph[0]
+#        dth = th[1]-th[0]
+#        for _ph in ph:
+#            for _th in th:
+#                res += _Gradrho2(_th, _ph)
+#            # end for
+#        # end for
+#        gradrho2 = res*dphi*dth
         return gradrho2/dVdrho, dVdrho
 
 #    @staticmethod
