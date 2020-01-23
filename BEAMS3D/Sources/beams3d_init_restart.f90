@@ -141,10 +141,10 @@
       CALL MPI_BCAST(nparticles,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(nbeams,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
       IF (myworkid /= master) THEN
-         ALLOCATE(  R_start(k), phi_start(k), Z_start(k), &
-                    v_neut(3,k), mass(k), charge(k), &
-                    mu_start(k), Zatom(k), t_end(k), vll_start(k), &
-                    beam(k), weight(k) )
+         ALLOCATE(  R_start(nparticles), phi_start(nparticles), Z_start(nparticles), &
+                    v_neut(3,nparticles), mass(nparticles), charge(nparticles), &
+                    mu_start(nparticles), Zatom(nparticles), t_end(nparticles), vll_start(nparticles), &
+                    beam(nparticles), weight(nparticles) )
       END IF
       CALL MPI_BCAST(mu_start,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(t_end,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
