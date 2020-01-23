@@ -8,6 +8,8 @@ MACHINE ?= $(shell uname -n | \
 	     /landreman/{print "macports_landreman"}\
 	     /npablant/{print "macports_npablant"}\
 	     /vulcan/{print "vulcan"}\
+	     /Matts-MBP/{print "macports_landreman"}\
+	     /Matts-MacBook-Pro/{print "macports_landreman"}\
 	     /cobra/{print "cobra"}\
 	     /draco/{print "draco"}')
 
