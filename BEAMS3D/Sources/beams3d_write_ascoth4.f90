@@ -82,7 +82,7 @@
                rtemp = RESHAPE(B_Z,(/nr,nphi,nz/),ORDER=(/1,2,3/))
                CALL write_var_hdf5(qid_gid,'bz',nr,nphi,nz,ier,DBLVAR=rtemp)
                rtemp = RESHAPE(S_ARR,(/nr,nphi,nz/),ORDER=(/1,2,3/))
-               WHERE(rtemp < 1.0E-2) rtemp = 1.0E-2
+               WHERE(rtemp < 1.0E-3) rtemp = 1.0E-3
                CALL write_var_hdf5(qid_gid,'s',nr,nphi,nz,ier,DBLVAR=rtemp)
                DEALLOCATE(rtemp)
                CALL write_var_hdf5(qid_gid,'phi',nphi,ier,DBLVAR=360*phiaxis/pi2)
@@ -175,11 +175,11 @@
                rtemp(:,5,1) = 1
                DO i = 1, nr
                   rtemp(i,1,1)=DBLE(i-1)/DBLE(nr-1)
-               END DO
-               IF (nte > 0)   CALL EZspline_interp( TE_spl_s,   nr, rtemp(:,1,1), rtemp(:,2,1), ier)
-               IF (nne > 0)   CALL EZspline_interp( NE_spl_s,   nr, rtemp(:,1,1), rtemp(:,3,1), ier)
-               IF (nti > 0)   CALL EZspline_interp( TI_spl_s,   nr, rtemp(:,1,1), rtemp(:,4,1), ier)
-               IF (nzeff > 0) CALL EZspline_interp( ZEFF_spl_s, nr, rtemp(:,1,1), rtemp(:,5,1), ier)
+               END DO ! Treat rtemp(:,1,1) as rho not s.
+               IF (nte > 0)   CALL EZspline_interp( TE_spl_s,   nr, rtemp(:,1,1)**2, rtemp(:,2,1), ier)
+               IF (nne > 0)   CALL EZspline_interp( NE_spl_s,   nr, rtemp(:,1,1)**2, rtemp(:,3,1), ier)
+               IF (nti > 0)   CALL EZspline_interp( TI_spl_s,   nr, rtemp(:,1,1)**2, rtemp(:,4,1), ier)
+               IF (nzeff > 0) CALL EZspline_interp( ZEFF_spl_s, nr, rtemp(:,1,1)**2, rtemp(:,5,1), ier)
                rtemp(nr,1,1) = 1.0; rtemp(nr,2,1) = 0; rtemp(nr,4,1) = 0 ! Default Te and Ti at edge to zero
                WRITE(iunit,'(2X,I4,2X,I4,2X,A)') nr,2,'# Nrad,Nion'
                WRITE(iunit,'(2X,I4,2X,I4,2X,A)') 1,6,'# ion Znum'
@@ -188,7 +188,7 @@
                WRITE(iunit,'(A)') 'RHO (pol)     Te (eV)         Ne (1/m3)       Vtor_I (rad/s)  Ti1 (eV)        Ni1 (1/m3)      Ni2 (1/m3) ...'
                DO i = 1, nr
                   dbl_temp = (rtemp(i,5,1)-1)/6.0 ! Frac nH=frac*nC;   Zeff*ni=nH+6*nC=(1+6*frac)*nH = ne; nH = ne/(1*6*frac)
-                  WRITE(iunit,'(7(2X,ES18.10))') sqrt(rtemp(i,1,1)),rtemp(i,2,1),rtemp(i,3,1),-999.0,rtemp(i,4,1),&
+                  WRITE(iunit,'(7(2X,ES18.10))') rtemp(i,1,1),rtemp(i,2,1),rtemp(i,3,1),-999.0,rtemp(i,4,1),&
                                               rtemp(i,3,1)/(1+6*dbl_temp),MAX(dbl_temp*rtemp(i,3,1)/(1+6*dbl_temp),1.0E16)
                END DO
                DEALLOCATE(rtemp)
