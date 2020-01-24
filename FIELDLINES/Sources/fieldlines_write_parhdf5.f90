@@ -311,6 +311,7 @@
 
       ! Create Memory Space
       chunk_dims(1) = myend-mystart+1
+      block(1) = chunk_dims(1)
       CALL h5screate_simple_f(rank, chunk_dims, mspace_id, ier)
 
       ! Select Hyperslab in File
