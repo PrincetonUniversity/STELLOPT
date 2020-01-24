@@ -305,15 +305,16 @@
       IF (livar) CALL h5dcreate_f(file_id, TRIM(var_name), H5T_NATIVE_INTEGER, fspace_id, dset_id, ier, dcpl_id)
       IF (lfvar) CALL h5dcreate_f(file_id, TRIM(var_name), H5T_NATIVE_DOUBLE, fspace_id, dset_id, ier, dcpl_id)
       IF (ldvar) CALL h5dcreate_f(file_id, TRIM(var_name), H5T_NATIVE_DOUBLE, fspace_id, dset_id, ier, dcpl_id)
-      CALL h5pclose_f(dcpl_id, ier)
 
+      ! Close the file space
+      CALL h5sclose_f(fspace_id, ier)
 
       ! Create Memory Space
       chunk_dims(1) = myend-mystart+1
       CALL h5screate_simple_f(rank, chunk_dims, mspace_id, ier)
 
       ! Select Hyperslab in File
-      !CALL h5sselect_hyperslab_f(fspace_id, H5S_SELECT_SET_F, offset, chunk_dims, ier)
+      CALL h5dget_space_f(dset_id, fspace_id, ier)
       CALL h5sselect_hyperslab_f(fspace_id, H5S_SELECT_SET_F, offset, counts, ier,stride,block)
 
       ! Create Properties
@@ -328,8 +329,11 @@
 
 
       ! Close Property list
-      CALL h5sclose_f(fspace_id, ier)
+      CALL h5pclose_f(fapl_id, ier)
+      CALL h5pclose_f(dcpl_id, ier)
+      CALL h5pclose_f(dxpl_id, ier)
       CALL h5sclose_f(mspace_id, ier)
+      CALL h5sclose_f(fspace_id, ier)
       CALL h5dclose_f(dset_id, ier)
 
       ! Close the file
