@@ -1,6 +1,7 @@
 # Shamelessly stolen from ASCOT4
 MACHINE ?= $(shell uname -n | \
 	awk '/lazersons-air/{print "macports"}\
+	     /Lazersons-MacBook-Air/{print "macports"}\
 	     /cori/{print "cori"}\
 	     /dawson/{print "pppl"}\
 	     /sunfire/{print "pppl"}\
