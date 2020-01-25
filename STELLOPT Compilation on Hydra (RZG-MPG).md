@@ -6,20 +6,6 @@ at [Rechenzentrum Garching](@http://www.rzg.mpg.de/) (RZG-MPE). In order
 to do so you will need an account on their system. These build
 instructions are for the Intel based compilers
 
-Hydra
------
-
-    module load git
-    module load intel/16.0
-    module load mkl/11.3
-    module load mpi.ibm/1.4.0
-    module load netcdf-mpi/4.4.0
-    module load hdf5-mpi/1.8.16
-    module load fftw/3.3.4
-    module load petsc-cplx/3.7.2
-    module load slepc-cplx/3.7.2
-    module load nag_flib/intel/mk24
-
 Draco
 -----
 
@@ -41,8 +27,8 @@ Cobra
     module load intel
     module load mkl
     module load impi
-    module load hdf5-mpi
-    module load netcdf-mpi
+    module load hdf5-mpi/1.10.5
+    module load netcdf-mpi/4.7.0
     module load fftw-mpi
     module load petsc-complex
     module load slepc-complex
