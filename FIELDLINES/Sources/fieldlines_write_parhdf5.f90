@@ -330,23 +330,11 @@
 
 
       ! Close Property list
-      IF (myworid==master) PRINT *,'1'
-      CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ier)
       CALL h5pclose_f(fapl_id, ier)
-      IF (myworid==master) PRINT *,'2'
-      CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ier)
       CALL h5pclose_f(dcpl_id, ier)
-      IF (myworid==master) PRINT *,'3'
-      CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ier)
       CALL h5pclose_f(dxpl_id, ier)
-      IF (myworid==master) PRINT *,'4'
-      CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ier)
       CALL h5sclose_f(mspace_id, ier)
-      IF (myworid==master) PRINT *,'5'
-      CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ier)
       CALL h5sclose_f(fspace_id, ier)
-      IF (myworid==master) PRINT *,'6'
-      CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ier)
       CALL h5dclose_f(dset_id, ier)
 
       ! Close the file
