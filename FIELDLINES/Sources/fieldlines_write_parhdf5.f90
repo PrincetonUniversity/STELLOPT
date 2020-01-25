@@ -292,7 +292,7 @@
 
       ! Open file
       CALL h5fopen_f('fieldlines_'//TRIM(id_string)//'.h5', H5F_ACC_RDWR_F, file_id, ier, access_prp = fapl_id)
-      CALL h5pclose_f(fapl_id,ier)
+      !CALL h5pclose_f(fapl_id,ier)
 
       ! Create File Space
       CALL h5screate_simple_f(rank, dimsf, fspace_id, ier)
@@ -326,15 +326,27 @@
       IF (livar) CALL h5dwrite_f(dset_id, H5T_NATIVE_INTEGER, INTVAR, dimsf, ier, mem_space_id = mspace_id, file_space_id = fspace_id, xfer_prp = dxpl_id)
       IF (lfvar) CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, FLTVAR, dimsf, ier, mem_space_id = mspace_id, file_space_id = fspace_id, xfer_prp = dxpl_id)
       IF (ldvar) CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, DBLVAR, dimsf, ier, mem_space_id = mspace_id, file_space_id = fspace_id, xfer_prp = dxpl_id)
-      CALL h5pclose_f(dxpl_id, ier)
+      !CALL h5pclose_f(dxpl_id, ier)
 
 
       ! Close Property list
+      IF (myworid==master) PRINT *,'1'
+      CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ier)
       CALL h5pclose_f(fapl_id, ier)
+      IF (myworid==master) PRINT *,'2'
+      CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ier)
       CALL h5pclose_f(dcpl_id, ier)
+      IF (myworid==master) PRINT *,'3'
+      CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ier)
       CALL h5pclose_f(dxpl_id, ier)
+      IF (myworid==master) PRINT *,'4'
+      CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ier)
       CALL h5sclose_f(mspace_id, ier)
+      IF (myworid==master) PRINT *,'5'
+      CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ier)
       CALL h5sclose_f(fspace_id, ier)
+      IF (myworid==master) PRINT *,'6'
+      CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ier)
       CALL h5dclose_f(dset_id, ier)
 
       ! Close the file
