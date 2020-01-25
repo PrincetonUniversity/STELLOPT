@@ -11,9 +11,12 @@ equilibrium configurations in magnetically confined fusion devices.
 
 ------------------------------------------------------------------------
 
-### Theory
+## Theory
 
-![](images/Toroidal_coordinates.png) The VMEC code seeks to solve a set
+![VMEC coordinates](images/Toroidal_coordinates.png)
+(*The toroidal angle used in VMEC is in the counter-clockwise direction)
+
+The VMEC code seeks to solve a set
 of MHD force balance equations in a toroidal domain:
 
 \$$  \vec{F}=-\vec{j}\times\vec{B}+\vec{\nabla}p=0, $$
@@ -202,7 +205,7 @@ the vacuum field on an R-Z grid for a series of toroidal angles.
 
 ------------------------------------------------------------------------
 
-### Compilation
+## Compilation
 
 VMEC is a component of the STELLOPT suite of codes. It is contained
 within the 'stellopt.zip' file. Compilation of the STELLOPT suite is
@@ -210,7 +213,7 @@ discussed on the [STELLOPT Compilation Page](STELLOPT Compilation).
 
 ------------------------------------------------------------------------
 
-### Input Data Format
+## Input Data Format
 
 The VMEC input file has the name 'input.name' where 'name' is a
 descriptive name of the user's choosing. This input file is a Fortran
@@ -337,7 +340,7 @@ actually corresponds to NTOR x NFP modes over the entire torus.
 
 ------------------------------------------------------------------------
 
-### Execution
+## Execution
 
 To run VMEC with a given input file simply pass the suffix of the file
 to VMEC like so (input file named input.test):
@@ -349,7 +352,7 @@ Here we've redirected screen output (trapping error messages) to
 
 ------------------------------------------------------------------------
 
-### Output Data Format
+## Output Data Format
 
 The VMEC code outputs some runtime and diagnostic data to the screen
 along with the creation of four files (jxbout, mercier, threed1, and
@@ -358,8 +361,7 @@ detail) in the threed1 file. It is suggested that the user redirect the
 output of the run to a log file. The wout file is a text file containing
 data from plotting of the final configuration. Details of reading the
 'wout' file can be found in
-[LIBSTELL/Sources//Modules/read_wout_mod.f90]
-(https://github.com/PrincetonUniversity/STELLOPT/blob/master/LIBSTELL/Sources/Modules/read_wout_mod.f90).
+[LIBSTELL/Sources//Modules/read_wout_mod.f90](https://github.com/PrincetonUniversity/STELLOPT/blob/master/LIBSTELL/Sources/Modules/read_wout_mod.f90).
 If 'LDIAGNO' was set to true in the input namelist, a 'diagno_in'
 file will be created. This file contains information regarding the outer
 flux surface and currents for the DIAGNO routine (which calculate the
@@ -367,7 +369,7 @@ field at a point for magnetic reconstruction).
 
 ------------------------------------------------------------------------
 
-### Visualization
+## Visualization
 
 The datafiles output by VMEC are text files which explain the quantities
 they contain, the exception being the 'wout' file. This file contains
@@ -402,7 +404,7 @@ Python: PySTEL is also available in the repository.
 
 ------------------------------------------------------------------------
 
-### Tutorials
+## Tutorials
 
 - [ Fixed Boundary Run for NCSX-like configuration.](VMEC Fixed Boundary Run)
 - [ Free Boundary Run for NCSX-like configuration.](VMEC Free Boundary Run)
@@ -413,7 +415,7 @@ Python: PySTEL is also available in the repository.
 
 ------------------------------------------------------------------------
 
-### References
+## References
 
 -   [VMEC input variables on Doxygen](https://ornl-fusion.github.io/stellinstall/vmec_equilibrium_sec.html)
 -   [Hirshman, S.P. and Whitson, J.C. \"Steepest-descent moment method for three-dimensional magnetohydrodynamic equilibria.\" Phys. Fluids 26, 3353 (1983)](https://doi.org/10.1063/1.864116)

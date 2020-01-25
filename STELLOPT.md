@@ -118,7 +118,7 @@ The STELLOPT routine is designed to be run on a multi-processor machine
 or cluster. In general, it should be executed via a call to mpirun (most
 likely inside a PBS script). The call should take the form:
 
-    mpirun -np $NPROCS ~/bin/xstellopt $runid > log.$runid
+    mpirun -np $NPROCS /path-to/xstelloptv2 $runid > log.$runid
 
 Here `$NPROCS` is the number of processors being requested and \$runid is
 the suffix assigned to the input file. Upon execution STELLOPT will
