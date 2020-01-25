@@ -154,6 +154,8 @@ and BEASM3D\_INPUT namelists in it.
 | -collisions | NONE | Force use of slowing down/scattering operator. |
 | -depo | NONE | Calculate deposition only |
 | -field | NONE | Outputs the B-Field on the cylindrical grid only. |
+| -ascot4 | NONE | Creates input HDF5 file for ASCOT4 (BBNBI, no particles) |
+| -ascot5 | NONE | Creates input HDF5 file for ASCOT5. |
 | -hitonly | NONE | Only save vessel strike points.|
 | -plasma | NONE | Only compute fields inside the plasma domain (places wall at LCFS) |
 | -raw | NONE | Treats EXTCUR array as raw values (EXTCUR is a scale factor applied to what\'s in the coils file). |
