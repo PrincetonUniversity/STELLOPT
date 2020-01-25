@@ -316,7 +316,8 @@
 
       ! Select Hyperslab in File
       CALL h5dget_space_f(dset_id, fspace_id, ier)
-      CALL h5sselect_hyperslab_f(fspace_id, H5S_SELECT_SET_F, offset, counts, ier,stride,block)
+      CALL h5sselect_hyperslab_f(fspace_id, H5S_SELECT_SET_F, offset, chunk_dims, ier, stride, block)
+      !CALL h5sselect_hyperslab_f(fspace_id, H5S_SELECT_SET_F, offset, counts, ier,stride,block)
 
       ! Create Properties
       CALL h5pcreate_f(H5P_DATASET_XFER_F, dxpl_id, ier)
