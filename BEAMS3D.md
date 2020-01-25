@@ -150,12 +150,15 @@ and BEASM3D\_INPUT namelists in it.
 | -mgrid | NONE | Makegrid style vacuum grid file |
 | -vessel | NONE | First wall file |
 | -vac | NONE | Only compute the vacuum field |
-| -plasma | NONE | Only compute fields inside the plasma domain (places wall at LCFS) |
+| -beam_simple | NONE | Assume monoenergetic beams (normally 1% variance around injection energy) |
+| -collisions | NONE | Force use of slowing down/scattering operator. |
 | -depo | NONE | Calculate deposition only |
-| -noverb | NONE | Suppresses screen output |
 | -field | NONE | Outputs the B-Field on the cylindrical grid only. |
-| -raw | NONE | Treats EXTCUR array as raw values (EXTCUR is a scale factor applied to what\'s in the coils file). |
 | -hitonly | NONE | Only save vessel strike points.|
+| -plasma | NONE | Only compute fields inside the plasma domain (places wall at LCFS) |
+| -raw | NONE | Treats EXTCUR array as raw values (EXTCUR is a scale factor applied to what\'s in the coils file). |
+| -w7x | NONE | Use W7-X beam shape model. |
+| -noverb | NONE | Suppresses screen output |
 | -help | NONE | Print help message. |
 
 In it\'s simplest invokation the code requires
