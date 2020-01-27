@@ -57,12 +57,6 @@
       IF (ALLOCATED(U_lines)) DEALLOCATE(U_lines)
       IF (ALLOCATED(B_lines)) DEALLOCATE(B_lines)
 
-
-      IF (.not. lbeam) THEN
-         beam = 1
-         nbeams = 1
-      END IF
-
       CALL FLUSH(6)
 
       mystart = mystart_save
