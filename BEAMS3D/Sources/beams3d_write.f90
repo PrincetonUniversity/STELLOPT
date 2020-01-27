@@ -226,11 +226,10 @@
             CASE('DIAG')
                CALL open_hdf5('beams3d_'//TRIM(id_string)//'.h5',fid,ier,LCREATE=.false.)
                IF (ier /= 0) CALL handle_err(HDF5_OPEN_ERR,'beams3d_'//TRIM(id_string)//'.h5',ier)
-               IF (lbeam) THEN
-                  CALL write_var_hdf5(fid,'Shinethrough',nbeams,ier,DBLVAR=shine_through,&
-                                   ATT='Total Beam Shine Through [%]',ATT_NAME='description')
-                  IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'Shinethrough',ier)
-                  IF (.not. ldepo) THEN
+               CALL write_scalar_hdf5(fid,'partvmax',ier,DBLVAR=partvmax,&
+                                      ATT='Maximum velocity of dist func [m/s]',ATT_NAME='description')
+               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'partvmax',ier)
+               IF (ALLOCATED(epower_prof)) THEN
                      CALL write_scalar_hdf5(fid,'ns_prof',ier,INTVAR=ns_prof,&
                                          ATT='Rho Grid Points',ATT_NAME='description')
                      IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ns_prof',ier)
@@ -248,10 +247,11 @@
                      IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'J_prof',ier)
                      CALL write_var_hdf5(fid,'dist_prof',nbeams,ns_prof,ns_prof,ier,DBLVAR=dist_prof,&
                                          ATT='Distribution Function [part/s]',ATT_NAME='description')
-                     CALL write_scalar_hdf5(fid,'partvmax',ier,DBLVAR=partvmax,&
-                                         ATT='Maximum velocity of dist func [m/s]',ATT_NAME='description')
-                     IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'partvmax',ier)
-                  END IF
+               END IF
+               IF (lbeam) THEN
+                  CALL write_var_hdf5(fid,'Shinethrough',nbeams,ier,DBLVAR=shine_through,&
+                                   ATT='Total Beam Shine Through [%]',ATT_NAME='description')
+                  IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'Shinethrough',ier)
                END IF
          END SELECT
          CALL close_hdf5(fid,ier)
