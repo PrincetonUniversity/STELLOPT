@@ -118,7 +118,6 @@
                                            zeff_max, zeff_min
       REAL(rprec)                       :: mix_ece, xval, yval, xics_v0
 
-  
       ! FOR BNORM RELATED VARIABLES
       INTEGER, PARAMETER :: mf_bnorm = 24 ! Bn Fourier resolution
       INTEGER, PARAMETER :: nf_bnorm = 20 ! Bn Fourier resolution 

@@ -42,16 +42,16 @@
 !     Begin Program
 !-----------------------------------------------------------------------
       
-      myid = master
+      myworkid = master
       ierr_mpi = MPI_SUCCESS
 !DEC$ IF DEFINED (MPI_OPT)
       CALL MPI_INIT(ierr_mpi) ! MPI
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_INIT_ERR, 'fieldlines_main', ierr_mpi)
       CALL MPI_COMM_DUP( MPI_COMM_WORLD, MPI_COMM_FIELDLINES, ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_RANK_ERR, 'fieldlines_main', ierr_mpi)
-      CALL MPI_COMM_RANK( MPI_COMM_FIELDLINES, myid, ierr_mpi )              ! MPI
+      CALL MPI_COMM_RANK( MPI_COMM_FIELDLINES, myworkid, ierr_mpi )              ! MPI
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_RANK_ERR, 'fieldlines_main', ierr_mpi)
-      CALL MPI_COMM_SIZE( MPI_COMM_FIELDLINES, numprocs, ierr_mpi )          ! MPI
+      CALL MPI_COMM_SIZE( MPI_COMM_FIELDLINES, nprocs_fieldlines, ierr_mpi )          ! MPI
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_SIZE_ERR, 'fieldlines_main', ierr_mpi)
       CALL MPI_COMM_SPLIT_TYPE(MPI_COMM_FIELDLINES, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, MPI_COMM_SHARMEM, ierr_mpi)
       CALL MPI_COMM_RANK(MPI_COMM_SHARMEM, myid_sharmem, ierr_mpi)
@@ -60,46 +60,18 @@
       CALL MPI_GET_LIBRARY_VERSION(mpi_lib_name,liblen,ier)
       CALL MPI_ERRHANDLER_SET(MPI_COMM_WORLD,MPI_ERRORS_RETURN,ierr_mpi)
 !DEC$ ENDIF
-      pi = 4.0 * ATAN(1.0)
-      pi2 = 8.0 * ATAN(1.0)
-      mu0 = 16.0E-7 * ATAN(1.0)
-      lverb = .true.
-      IF (myid == master) THEN
+
+      ! Intialize variables
+      CALL fieldlines_init_vars
+
+
+      IF (myworkid == master) THEN
          !OPEN(6,CARRIAGECONTROL='fortran')
          !OPEN(6, RECL = 2**24)
+         lverb = .true.
          numargs=0
          i=0
          arg1=''
-         lverb    = .true.
-         lvmec    = .false.
-         lpies    = .false.
-         lspec    = .false.
-         lcoil    = .false.
-         lmgrid   = .false.
-         lmu      = .false.
-         lvessel  = .false.
-         lvac     = .false.
-         lrestart = .false.
-         laxis_i  = .false.
-         ladvanced = .false.
-         lemc3 = .false.
-         lerror_field = .false.
-         lplasma_only = .false.
-         lbfield_only = .false.
-         lafield_only = .false.
-         lreverse  = .false.
-         lhitonly  = .false.
-         lraw   = .false.
-         lwall_trans = .false.
-         ledge_start = .false.
-         lnescoil    = .false.
-         lmodb       = .false.
-         nruntype = runtype_old
-         id_string     = ''
-         coil_string   = ''
-         mgrid_string  = ''
-         vessel_string = ''
-         restart_string = ''
          
          ! First Handle the input arguments
          CALL GETCARG(1, arg1, numargs)
@@ -228,10 +200,8 @@
          WRITE(6,'(A)')      '-----  MPI Parameters  -----'
          WRITE(6,'(A,I2,A,I2.2)')  '   MPI_version:  ', vmajor,'.',vminor
          WRITE(6,'(A,A)')  '   ', TRIM(mpi_lib_name(1:liblen))
-         WRITE(6,'(A,I8)')  '   Nproc_total:  ', numprocs
+         WRITE(6,'(A,I8)')  '   Nproc_total:  ', nprocs_fieldlines
          WRITE(6,'(A,3X,I5)')  '   Nproc_shared: ', nshar
-      ELSE IF (myid /= master) THEN
-         lverb=.false.   ! Shutup the slaves
       END IF
       CALL FLUSH(6)
       id_string = TRIM(id_string)
@@ -335,6 +305,7 @@
             CALL fieldlines_init_subgrid
             CALL fieldlines_follow  ! This call on subgrid grid
             !CALL fieldlines_periodic_orbits  ! This call on subgrid grid
+            IF (lverb) CALL fieldlines_calc_surface_fit(25)
          CASE(runtype_norun)
       END SELECT
       ! Output Date

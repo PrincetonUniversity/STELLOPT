@@ -18,6 +18,7 @@
       USE beams3d_lines, ONLY: nparticles
       USE wall_mod
       USE mpi_params
+      USE adas_mod_parallel, ONLY: adas_load_tables
 !DEC$ IF DEFINED (MPI_OPT)
       USE mpi
       USE mpi_sharmem
@@ -56,7 +57,7 @@
       IF (lverb) WRITE(6,'(A)') '----- Input Parameters -----'
 !DEC$ IF DEFINED (MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
-      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'beams3d_init',ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'beams3d_init0',ierr_mpi)
 !DEC$ ENDIF
 
       IF (lvmec .and. lread_input) THEN
@@ -76,10 +77,10 @@
          WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   PHI = [',phimin,',',phimax,'];  NPHI: ',nphi
          WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   Z   = [',zmin,',',zmax,'];  NZ:   ',nz
          IF (lbeam) THEN
-            WRITE(6,'(A,I6)')               '   # of Particles to Start: ', nparticles_start
+            WRITE(6,'(A,I8)')               '   # of Particles to Start: ', nparticles_start
             WRITE(6,'(A,I6)')                          '   # of Beams: ', nbeams
          ELSE
-            WRITE(6,'(A,I6)')               '   # of Particles to Start: ', nparticles
+            WRITE(6,'(A,I8)')               '   # of Particles to Start: ', nparticles
          END IF
          IF (lvessel) WRITE(6,'(A)')    '   VESSEL: ' // TRIM(vessel_string)
          IF (lcoil) WRITE(6,'(A)')    '   COIL: ' // TRIM(coil_string)
@@ -88,6 +89,11 @@
          IF (lvac)  WRITE(6,'(A)') '   VACUUM FIELDS ONLY!'
          IF (ldepo) WRITE(6,'(A)') '   DEPOSITION ONLY!'
          IF (lw7x) WRITE(6,'(A)') '   W7-X BEAM Model!'
+         IF (lascot) WRITE(6,'(A)') '   ASCOT5 OUTPUT ON!'
+         IF (lascot4) WRITE(6,'(A)') '   ASCOT4 OUTPUT ON!'
+         IF (lbbnbi) WRITE(6,'(A)') '   BEAMLET BEAM Model!'
+         IF (lplasma_only) WRITE(6,'(A)') '   MAGNETIC FIELD FROM PLASMA ONLY!'
+         IF (npot > 0) WRITE(6,'(A)') '   RAIDAL ELECTRIC FIELD PRESENT!'
          CALL FLUSH(6)
       END IF
 
@@ -128,11 +134,11 @@
           END IF
           ! ZEFF
           IF (nzeff>0) THEN
-             CALL EZspline_init(ZEFF_spl_s,nti,bcs1_s,ier)
+             CALL EZspline_init(ZEFF_spl_s,nzeff,bcs1_s,ier)
              IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init7',ier)
              ZEFF_spl_s%isHermite   = 1
              ZEFF_spl_s%x1          = ZEFF_AUX_S(1:nzeff)
-             CALL EZspline_setup(ZEFF_spl_s,ZEFF_AUX_F(1:nti),ier,EXACT_DIM=.true.)
+             CALL EZspline_setup(ZEFF_spl_s,ZEFF_AUX_F(1:nzeff),ier,EXACT_DIM=.true.)
              IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init8',ier)
           END IF
           ! POTENTIAL
@@ -183,12 +189,29 @@
       END IF
 
       ! Put the plasma field on the background grid
-      IF (lvmec .and. .not.lvac .and. nte > 0) THEN
+      IF (lvmec .and. .not.lvac) THEN
+         CALL mpialloc(req_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_req_axis)
+         CALL mpialloc(zeq_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_zeq_axis)
          CALL beams3d_init_vmec
       ELSE IF (lpies .and. .not.lvac) THEN
          !CALL beams3d_init_pies
       ELSE IF (lspec .and. .not.lvac) THEN
          !CALL beams3d_init_spec
+      END IF
+      
+      ! Setup vessel
+      IF (lvessel .and. (.not. lwall_loaded)) THEN
+         CALL wall_load_txt(TRIM(vessel_string),ier,MPI_COMM_BEAMS)
+         IF (lverb) CALL wall_info(6)
+         CALL FLUSH(6)
+      END IF
+
+      ! For testing I put this here
+      IF (lascot4) THEN
+         CALL beams3d_write_ascoth4('INIT')
+      END IF
+      IF (lascot) THEN
+         CALL beams3d_write_ascoth5('INIT')
       END IF
 
       ! Construct 3D Profile Splines
@@ -249,22 +272,17 @@
          
       ! Construct MODB
       IF (myid_sharmem == master) MODB = SQRT(B_R*B_R+B_PHI*B_PHI+B_Z*B_Z)
-      
-      ! Get setup vessel
-      IF (lvessel .and. (.not. lplasma_only .or. ldepo)) THEN
-         CALL wall_load_txt(TRIM(vessel_string),ier,MPI_COMM_BEAMS)
-         !IF (myworkid /= master) DEALLOCATE(vertex,face) ! Do this to save memory
-         IF (lverb) CALL wall_info(6)
-         CALL FLUSH(6)
-      END IF
 
       ! Initialize Random Number generator
       CALL RANDOM_SEED
       
       ! Initialize beams (define a distribution of directions and weights)
       IF (lbeam) THEN
+          CALL adas_load_tables(myid_sharmem, MPI_COMM_SHARMEM)
           IF (lw7x) THEN
              CALL beams3d_init_beams_w7x
+          ELSEIF (lbbnbi) THEN
+             CALL beams3d_init_beams_bbnbi
           ELSE
              CALL beams3d_init_beams
           END IF
@@ -272,7 +290,7 @@
           ALLOCATE(  R_start(nparticles), phi_start(nparticles), Z_start(nparticles), &
           & v_neut(3,nparticles), mass(nparticles), charge(nparticles), &
           & mu_start(nparticles), Zatom(nparticles), t_end(nparticles), vll_start(nparticles), &
-          & beam(nparticles), weight(nparticles_start, nbeams)  )
+          & beam(nparticles), weight(nparticles)  )
 
           R_start = r_start_in(1:nparticles)
           phi_start = phi_start_in(1:nparticles)

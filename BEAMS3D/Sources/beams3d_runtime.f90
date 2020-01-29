@@ -23,6 +23,7 @@
 !     v1.51 09/13/16 - Substep size implemnted for neutral deposition
 !     v1.52 11/22/16 - Added ability to model W7-X injector geometry
 !     v2.00 05/06/19 - Shared Memory model implemented
+!     v2.01 08/21/19 - Added ASCOT Interface
 !-----------------------------------------------------------------------
 MODULE beams3d_runtime
     !-----------------------------------------------------------------------
@@ -65,6 +66,7 @@ MODULE beams3d_runtime
     INTEGER, PARAMETER :: ALLOC_ERR = 11
     INTEGER, PARAMETER :: NAMELIST_READ_ERR = 12
     INTEGER, PARAMETER :: BAD_INPUT_ERR = 13
+    INTEGER, PARAMETER :: BAD_BEAMDEX_ERR = 14
     INTEGER, PARAMETER :: VMEC_INPUT_ERR = 2
     INTEGER, PARAMETER :: VMEC_WOUT_ERR = 21
     INTEGER, PARAMETER :: MGRID_ERR = 22
@@ -103,9 +105,11 @@ MODULE beams3d_runtime
 
     LOGICAL :: lverb, lvmec, lpies, lspec, lcoil, lmgrid, &
                lvessel, lvac, lrestart, lneut, &
-               lflux, lbeam, lhitonly, lread_input, lplasma_only, lraw,&
-               ldepo, lbeam_simple, ldebug, lcollision, lw7x
+               lbeam, lhitonly, lread_input, lplasma_only, lraw,&
+               ldepo, lbeam_simple, ldebug, lcollision, lw7x, &
+               lascot, lascot4, lbbnbi
     INTEGER :: nextcur, npoinc, nbeams, nparticles_start, nprocs_beams
+    INTEGER, DIMENSION(MAXBEAMS) :: Dex_beams
     INTEGER, ALLOCATABLE :: beam(:)
     REAL(rprec) :: dt, follow_tol, pi, pi2, mu0, to3, dt_save, ne_scale, te_scale, ti_scale, zeff_scale
     REAL(rprec), DIMENSION(MAXBEAMS) :: Adist_beams, Asize_beams, Div_beams, E_beams, mass_beams, &
@@ -116,10 +120,10 @@ MODULE beams3d_runtime
     REAL(rprec), DIMENSION(MAXPARTICLES) :: r_start_in, phi_start_in, z_start_in, vll_start_in, &
                                             & mu_start_in, charge_in, Zatom_in, mass_in, t_end_in
     REAL(rprec), ALLOCATABLE :: R_start(:), phi_start(:), Z_start(:), vll_start(:), v_neut(:,:), mu_start(:), &
-                                & mass(:), charge(:), Zatom(:), t_end(:), weight(:,:)
+                                & mass(:), charge(:), Zatom(:), t_end(:), weight(:)
     REAL(rprec), ALLOCATABLE :: extcur(:)
     CHARACTER(256) :: id_string, mgrid_string, coil_string, &
-    vessel_string, int_type, restart_string
+    vessel_string, int_type, restart_string, bbnbi_string
 
     REAL(rprec), PARAMETER :: BEAMS3D_VERSION = 2.00
     !-----------------------------------------------------------------------
@@ -172,6 +176,9 @@ CONTAINS
             WRITE(6, *) '  BEAMS3D ENCOUNTERED AN ERROR CALLING ADAS'
             WRITE(6, *) '  VARIABLES: ', TRIM(string_val)
             WRITE(6, *) '  IERR:      ', ierr
+        ELSEIF (error_num .eq. BAD_BEAMDEX_ERR) THEN
+            WRITE(6, *) '  BEAMS3D ENCOUNTERED AN NAMELIST ERROR'
+            WRITE(6, *) '    -BEAMLET USED BUT NO DEX_BEAM SET!'
         ELSEIF (error_num .eq. NETCDF_OPEN_ERR) THEN
             WRITE(6, *) '  BEAMS3D ENCOUNTERED AN ERROR OPENING A NETCDF FILE'
             WRITE(6, *) '  VARIABLES: ', TRIM(string_val)

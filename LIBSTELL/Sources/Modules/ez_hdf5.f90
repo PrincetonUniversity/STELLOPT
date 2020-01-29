@@ -114,6 +114,89 @@
       IF (ier /=0) RETURN
       END SUBROUTINE close_hdf5
       !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      SUBROUTINE write_att_hdf5(loc_id,ATT_NAME,ATT,ierr)
+      IMPLICIT NONE
+      INTEGER(HID_T), INTENT(in)    :: loc_id
+      CHARACTER(LEN=*), INTENT(in)  :: ATT
+      CHARACTER(LEN=*), INTENT(in)  :: ATT_NAME
+      INTEGER, INTENT(out)          :: ierr
+      INTEGER        :: drank = 1
+      INTEGER        :: arank = 1
+      INTEGER(HID_T) :: dset_id
+      INTEGER(HID_T) :: attr_id  
+      INTEGER(HID_T) :: dspace_id
+      INTEGER(HID_T) :: aspace_id
+      INTEGER(HID_T) :: atype_id
+      INTEGER(SIZE_T) :: attrlen
+      INTEGER(HSIZE_T), DIMENSION(1) :: ddims = (/1/)
+      INTEGER(HSIZE_T), DIMENSION(1) :: adims = (/1/)
+      INTEGER(HSIZE_T), DIMENSION(1) :: data_dims
+
+
+      ierr = 0
+      attrlen=LEN(TRIM(ATT))
+      data_dims(1)=1
+      !CALL h5screate_simple_f(drank, ddims, aspace_id, ierr)
+      CALL h5screate_f(H5S_SCALAR_F,aspace_id,ierr)
+      IF (ierr /=0) RETURN
+      CALL h5tcopy_f(H5T_NATIVE_CHARACTER, atype_id, ierr)
+      IF (ierr /=0) RETURN
+      CALL h5tset_size_f(atype_id,attrlen,ierr)
+      IF (ierr /=0) RETURN
+      CALL h5acreate_f(loc_id,TRIM(ATT_NAME), atype_id, aspace_id, attr_id,ierr)
+      IF (ierr /=0) RETURN
+      CALL h5awrite_f(attr_id,atype_id,TRIM(ATT),data_dims,ierr)
+      IF (ierr /=0) RETURN
+      CALL h5aclose_f(attr_id,ierr)
+      IF (ierr /=0) RETURN
+      CALL h5tclose_f(atype_id, ierr)
+      IF (ierr /=0) RETURN
+      CALL h5sclose_f(aspace_id,ierr)
+      IF (ierr /=0) RETURN
+
+      RETURN
+      END SUBROUTINE write_att_hdf5   
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      SUBROUTINE write_att_int_hdf5(loc_id,ATT_NAME,ATT,ierr)
+      IMPLICIT NONE
+      INTEGER(HID_T), INTENT(in)    :: loc_id
+      INTEGER, INTENT(in)    :: ATT
+      CHARACTER(LEN=*), INTENT(in)  :: ATT_NAME
+      INTEGER, INTENT(out)          :: ierr
+      INTEGER        :: drank = 1
+      INTEGER        :: arank = 1
+      INTEGER(HID_T) :: dset_id
+      INTEGER(HID_T) :: attr_id  
+      INTEGER(HID_T) :: dspace_id
+      INTEGER(HID_T) :: aspace_id
+      INTEGER(HID_T) :: atype_id
+      INTEGER(SIZE_T) :: attrlen
+      INTEGER(HSIZE_T), DIMENSION(1) :: ddims = (/1/)
+      INTEGER(HSIZE_T), DIMENSION(1) :: adims = (/1/)
+      INTEGER(HSIZE_T), DIMENSION(1) :: data_dims
+
+
+      ierr = 0
+      data_dims(1)=1
+      !CALL h5screate_simple_f(drank, ddims, aspace_id, ierr)
+      CALL h5screate_f(H5S_SCALAR_F,aspace_id,ierr)
+      IF (ierr /=0) RETURN
+      CALL h5acreate_f(loc_id,TRIM(ATT_NAME), H5T_NATIVE_INTEGER, aspace_id, attr_id,ierr)
+      IF (ierr /=0) RETURN
+      CALL h5awrite_f(attr_id,H5T_NATIVE_INTEGER,ATT,data_dims,ierr)
+      IF (ierr /=0) RETURN
+      CALL h5aclose_f(attr_id,ierr)
+      IF (ierr /=0) RETURN
+      CALL h5sclose_f(aspace_id,ierr)
+      IF (ierr /=0) RETURN
+
+      RETURN
+      END SUBROUTINE write_att_int_hdf5   
+      !-----------------------------------------------------------------
       
       !-----------------------------------------------------------------
       SUBROUTINE write_scalar_hdf5(file_id,var,ierr,BOOVAR,INTVAR,FLTVAR,DBLVAR,ATT,ATT_NAME)

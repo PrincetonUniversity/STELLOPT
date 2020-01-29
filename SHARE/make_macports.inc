@@ -28,7 +28,10 @@
   FLAGS_R = -O2 -g -fexternal-blas -fbacktrace -fcheck=all 
 #  FLAGS_R = -O2 -fexternal-blas -Wmissing-include-dirs
   FLAGS_D = -g -O0 -fcheck=all 
-  LIBS    = -L/opt/local/lib -lopenblas -lscalapack  
+#  LIBS    = -L/opt/local/lib -lopenblas -lscalapack  
+  LIBS    = -L/opt/local/lib -lopenblas 
+# Because scalapack is broken in macport for MPI4.0
+  LIBS += /Users/lazerson/Sims_Work/scalapack-2.0.2/libscalapack.a
 
 #######################################################################
 #            MPI Options
@@ -41,7 +44,7 @@
   MPI_LINK = /opt/local/bin/mpif90
   MPI_LINK = mpif90 -shared  -Wl,-no_compact_unwind
   MPI_RUN = mpiexec
-  MPI_RUN_OPTS = -np 4
+  MPI_RUN_OPTS = -np 2
 #  MPI_RUN_OPTS_SM = -np 16
 #  MPI_RUN_OPTS_MD = -np 64
 #  MPI_RUN_OPTS_LG = -np 256
@@ -60,16 +63,11 @@
   NETCDF_LIB = -L/opt/local/lib -lnetcdf -lnetcdff
 
 #######################################################################
-#            NTCC Options
+#            FFTW3 Options
 #######################################################################
-  LNTCC = T
-  NTCC_INC = -I/opt/local/mod
-  NTCC_LIB = -L/opt/local/lib -lpreact -lsigsub -laladdinsub \
-             -lpreact -lpspline -lportlib -lezcdf
-#  NTCC_INC = -I/Users/slazerso/Sims_PPPL/STELLOPT/NTCC/MAC/mod
-#  NTCC_LIB = -L/Users/slazerso/Sims_PPPL/STELLOPT/NTCC/MAC/lib \
-#             -lpreact -lsigsub -laladdinsub -lpreact -lpspline \
-#             -lportlib -lezcdf
+  LFFTW3 = T
+  FFTW3_INC = -I/opt/local/include
+  FFTW3_LIB = -L/opt/local/lib -lfftw3
 
 #######################################################################
 #            HDF5 Options
@@ -139,7 +137,7 @@
   LIB_TRAVIS = libtravis64_sopt.a
   LIB_MCONF  = libmconf64.a
   TRAVIS_LIB = $(TRAVIS_DIR)/lib/$(LIB_TRAVIS) \
-               $(TRAVIS_DIR)/magconf/lib/$(LIB_MCONF) -lstdc++
+               $(TRAVIS_DIR)/mag_conf/lib/$(LIB_MCONF) -lstdc++
 
 #######################################################################
 #            REGCOIL Options
@@ -151,24 +149,20 @@
   REGCOIL_LIB = $(REGCOIL_DIR)/$(LIB_REGCOIL) -fopenmp
 
 #######################################################################
+#            SFINCS Options
+#######################################################################
+
+  LSFINCS = F
+  SFINCS_DIR = $(SFINCS_PATH)
+  SFINCS_INC = -I$(SFINCS_DIR)
+  LIB_SFINCS = libsfincs.a
+  SFINCS_LIB = $(SFINCS_DIR)/$(LIB_SFINCS) \
+             -L$(PETSC_DIR)/$(PETSC_ARCH)/lib -lpetsc -lX11
+
+#######################################################################
 #            LIBSTELL Shared Options
 #######################################################################
-LIB_SHARE = /opt/local/lib/libnetcdf.dylib \
-         /opt/local/lib/libnetcdff.dylib \
-         /opt/local/lib/libnetcdf_c++4.dylib \
-         /opt/local/lib/libhdf5.dylib \
-         /opt/local/lib/libhdf5hl_fortran.dylib\
-         /opt/local/lib/libhdf5_hl.dylib \
-         /opt/local/lib/libhdf5_fortran.dylib\
-         /opt/local/lib/gcc6/libgfortran.dylib \
-         /opt/local/lib/gcc6/libstdc++.dylib \
-         /opt/local/lib/libopenblas.dylib \
-         /opt/local/lib/openmpi-gcc6/libmpi.dylib \
-         /opt/local/lib/openmpi-gcc6/libmpi_mpifh.12.dylib \
-         /opt/local/lib/libz.dylib \
-         /usr/lib/libc.dylib \
-         /usr/lib/libm.dylib \
-         /usr/lib/libpthread.dylib
+
 LIB_SHARE = -L/opt/local/lib/gcc8 -lstdc++ -lgfortran -L/usr/lib -lz -lc -lm -lpthread -L/opt/local/lib/openmpi-gcc8 -lmpi -lmpi_mpifh $(LIBS)
 
 
@@ -224,6 +218,9 @@ ifeq ($(MAKECMDGOALS),xstelloptv2)
   DIAGNO_DIR = ../../DIAGNO
   LIB_DIAGNO= libdiagno.a
   MOD_PATH+= -I$(DIAGNO_DIR)/$(LOCTYPE)
+  FIELDLINES_DIR = ../../FIELDLINES
+  LIB_FIELDLINES = libfieldlines.a
+  MOD_PATH+= -I$(FIELDLINES_DIR)/$(LOCTYPE)
   JINV_DIR = ../../J_INVARIANT
   LIB_JINV = libjinv.a
   MOD_PATH+= -I$(JINV_DIR)/$(LOCTYPE)
@@ -236,7 +233,8 @@ ifeq ($(MAKECMDGOALS),xstelloptv2)
 	$(BNORM_DIR)/$(LOCTYPE)/$(LIB_BNORM) \
 	$(BOOZ_DIR)/$(LOCTYPE)/$(LIB_BOOZ) \
 	$(COBRA_DIR)/$(LOCTYPE)/$(LIB_COBRA) \
-	$(DIAGNO_DIR)/$(LOCTYPE)/$(LIB_DIAGNO) \
+  $(DIAGNO_DIR)/$(LOCTYPE)/$(LIB_DIAGNO) \
+  $(FIELDLINES_DIR)/$(LOCTYPE)/$(LIB_FIELDLINES) \
 	$(JINV_DIR)/$(LOCTYPE)/$(LIB_JINV) \
 	$(MGRID_DIR)/$(LOCTYPE)/$(LIB_MGRID) 
   ifeq ($(LDKES),T)
@@ -366,6 +364,13 @@ ifeq ($(LNETCDF),T)
   MOD_PATH += $(NETCDF_INC)
   LIB_SHARE += $(NETCDF_LIB)
 endif
+ifeq ($(LFFTW3),T)
+  MOD1_PATH += $(FFTW3_INC)
+  PRECOMP += -DFFTW3
+  LIB_LINK += $(FFTW3_LIB)
+  MOD_PATH += $(FFTW3_INC)
+  LIB_SHARE += $(FFTW3_LIB)
+endif
 ifeq ($(LHDF5),T)
   MOD1_PATH += $(HDF5_INC)
   PRECOMP += -DLHDF5 -DH5_USE_16_API
@@ -377,13 +382,6 @@ ifeq ($(LNAG),T)
   PRECOMP += -DNAG
   LIB_LINK += $(NAG_LIB)
   LIB_SHARE += $(NAG_LIB)
-endif
-ifeq ($(LNTCC),T)
-  MOD1_PATH += $(NTCC_INC)
-  PRECOMP += -DLADAS -DNTCC
-  LIB_LINK += $(NTCC_LIB)
-  MOD_PATH += $(NTCC_INC)
-  LIB_SHARE += $(NTCC_LIB)
 endif
 ifeq ($(LSILO),T)
   MOD1_PATH += $(SILO_INC)

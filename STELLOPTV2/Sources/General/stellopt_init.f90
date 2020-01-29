@@ -493,9 +493,8 @@
                     var_dex(nvar_in) = iaphi
                     diag(nvar_in)    = 1.0_rprec
                     arr_dex(nvar_in,2) = norm_dex
-                    aphi = aphi / norm
-                    aphi_min = aphi_min/norm
-                    aphi_max = aphi_max/norm
+                 ELSE
+                    norm = 1
                  END IF
                  DO i = LBOUND(laphi_opt,DIM=1), UBOUND(laphi_opt,DIM=1)
                     IF (laphi_opt(i)) THEN
@@ -504,9 +503,9 @@
                           aphi_max(i) = aphi(i) + ABS(pct_domain*aphi(i))
                        END IF
                        nvar_in = nvar_in + 1
-                       vars(nvar_in) = aphi(i)
-                       vars_min(nvar_in) = aphi_min(i)
-                       vars_max(nvar_in) = aphi_max(i)
+                       vars(nvar_in) = aphi(i)/norm
+                       vars_min(nvar_in) = aphi_min(i)/norm
+                       vars_max(nvar_in) = aphi_max(i)/norm
                        var_dex(nvar_in) = iaphi
                        diag(nvar_in)    = daphi_opt(i)
                        arr_dex(nvar_in,1) = i
@@ -523,9 +522,8 @@
                     var_dex(nvar_in) = iam
                     diag(nvar_in)    = 1.0_rprec
                     arr_dex(nvar_in,2) = norm_dex
-                    am = am / norm
-                    am_min = am_min/norm
-                    am_max = am_max/norm
+                 ELSE
+                    norm = 1
                  END IF
                  DO i = LBOUND(lam_opt,DIM=1), UBOUND(lam_opt,DIM=1)
                     IF (lam_opt(i)) THEN
@@ -534,9 +532,9 @@
                           am_max(i) = am(i) + ABS(pct_domain*am(i))
                        END IF
                        nvar_in = nvar_in + 1
-                       vars(nvar_in) = am(i)
-                       vars_min(nvar_in) = am_min(i)
-                       vars_max(nvar_in) = am_max(i)
+                       vars(nvar_in) = am(i)/norm
+                       vars_min(nvar_in) = am_min(i)/norm
+                       vars_max(nvar_in) = am_max(i)/norm
                        var_dex(nvar_in) = iam
                        diag(nvar_in)    = dam_opt(i)
                        arr_dex(nvar_in,1) = i
@@ -554,9 +552,8 @@
                     var_dex(nvar_in) = iac
                     diag(nvar_in)    = 1.0_rprec
                     arr_dex(nvar_in,2) = norm_dex
-                    ac = ac / norm
-                    ac_min = ac_min/norm
-                    ac_max = ac_max/norm
+                 ELSE
+                    norm = 1
                  END IF
                  DO i = LBOUND(lac_opt,DIM=1), UBOUND(lac_opt,DIM=1)
                     IF (lac_opt(i)) THEN
@@ -565,9 +562,9 @@
                           ac_max(i) = ac(i) + ABS(pct_domain*ac(i))
                        END IF
                        nvar_in = nvar_in + 1
-                       vars(nvar_in) = ac(i)
-                       vars_min(nvar_in) = ac_min(i)
-                       vars_max(nvar_in) = ac_max(i)
+                       vars(nvar_in) = ac(i)/norm
+                       vars_min(nvar_in) = ac_min(i)/norm
+                       vars_max(nvar_in) = ac_max(i)/norm
                        var_dex(nvar_in) = iac
                        diag(nvar_in)    = dac_opt(i)
                        arr_dex(nvar_in,1) = i
@@ -584,9 +581,8 @@
                     var_dex(nvar_in) = iai
                     diag(nvar_in)    = 1.0_rprec
                     arr_dex(nvar_in,2) = norm_dex
-                    ai = ai / norm
-                    ai_min = ai_min/norm
-                    ai_max = ai_max/norm
+                 ELSE
+                    norm = 1
                  END IF
                  DO i = LBOUND(lai_opt,DIM=1), UBOUND(lai_opt,DIM=1)
                     IF (lai_opt(i)) THEN
@@ -595,9 +591,9 @@
                           ai_max(i) = ai(i) + ABS(pct_domain*ai(i))
                        END IF
                        nvar_in = nvar_in + 1
-                       vars(nvar_in) = ai(i)
-                       vars_min(nvar_in) = ai_min(i)
-                       vars_max(nvar_in) = ai_max(i)
+                       vars(nvar_in) = ai(i)/norm
+                       vars_min(nvar_in) = ai_min(i)/norm
+                       vars_max(nvar_in) = ai_max(i)/norm
                        var_dex(nvar_in) = iai
                        diag(nvar_in)    = dai_opt(i)
                        arr_dex(nvar_in,1) = i
@@ -614,9 +610,8 @@
                     var_dex(nvar_in) = iah
                     diag(nvar_in)    = 1.0_rprec
                     arr_dex(nvar_in,2) = norm_dex
-                    ah = ah / norm
-                    ah_min = ah_min/norm
-                    ah_max = ah_max/norm
+                 ELSE
+                    norm = 1
                  END IF
                  DO i = LBOUND(lah_opt,DIM=1), UBOUND(lah_opt,DIM=1)
                     IF (lah_opt(i)) THEN
@@ -625,9 +620,9 @@
                           ah_max(i) = ah(i) + ABS(pct_domain*ah(i))
                        END IF
                        nvar_in = nvar_in + 1
-                       vars(nvar_in) = ah(i)
-                       vars_min(nvar_in) = ah_min(i)
-                       vars_max(nvar_in) = ah_max(i)
+                       vars(nvar_in) = ah(i)/norm
+                       vars_min(nvar_in) = ah_min(i)/norm
+                       vars_max(nvar_in) = ah_max(i)/norm
                        var_dex(nvar_in) = iah
                        diag(nvar_in)    = dah_opt(i)
                        arr_dex(nvar_in,1) = i
@@ -644,9 +639,8 @@
                     var_dex(nvar_in) = iat
                     diag(nvar_in)    = 1.0_rprec
                     arr_dex(nvar_in,2) = norm_dex
-                    at = at / norm
-                    at_min = at_min/norm
-                    at_max = at_max/norm
+                 ELSE
+                    norm = 1
                  END IF
                  DO i = LBOUND(lat_opt,DIM=1), UBOUND(lat_opt,DIM=1)
                     IF (lat_opt(i)) THEN
@@ -655,9 +649,9 @@
                           at_max(i) = at(i) + ABS(pct_domain*at(i))
                        END IF
                        nvar_in = nvar_in + 1
-                       vars(nvar_in) = at(i)
-                       vars_min(nvar_in) = at_min(i)
-                       vars_max(nvar_in) = at_max(i)
+                       vars(nvar_in) = at(i)/norm
+                       vars_min(nvar_in) = at_min(i)/norm
+                       vars_max(nvar_in) = at_max(i)/norm
                        var_dex(nvar_in) = iat
                        diag(nvar_in)    = dat_opt(i)
                        arr_dex(nvar_in,1) = i
@@ -674,9 +668,8 @@
                     var_dex(nvar_in) = ine
                     diag(nvar_in)    = 1.0_rprec
                     arr_dex(nvar_in,2) = norm_dex
-                    ne_opt = ne_opt / norm
-                    ne_min = ne_min/norm
-                    ne_max = ne_max/norm
+                 ELSE
+                    norm = 1
                  END IF
                  DO i = LBOUND(lne_opt,DIM=1), UBOUND(lne_opt,DIM=1)
                     IF (lne_opt(i)) THEN
@@ -685,9 +678,9 @@
                           ne_max(i) = ne_opt(i) + ABS(pct_domain*ne_opt(i))
                        END IF
                        nvar_in = nvar_in + 1
-                       vars(nvar_in) = ne_opt(i)
-                       vars_min(nvar_in) = ne_min(i)
-                       vars_max(nvar_in) = ne_max(i)
+                       vars(nvar_in) = ne_opt(i)/norm
+                       vars_min(nvar_in) = ne_min(i)/norm
+                       vars_max(nvar_in) = ne_max(i)/norm
                        var_dex(nvar_in) = ine
                        diag(nvar_in)    = dne_opt(i)
                        arr_dex(nvar_in,1) = i
@@ -705,9 +698,8 @@
                     var_dex(nvar_in) = izeff
                     diag(nvar_in)    = 1.0_rprec
                     arr_dex(nvar_in,2) = norm_dex
-                    zeff_opt = zeff_opt / norm
-                    zeff_min = zeff_min/norm
-                    zeff_max = zeff_max/norm
+                 ELSE
+                    norm = 1
                  END IF
                  DO i = LBOUND(lzeff_opt,DIM=1), UBOUND(lzeff_opt,DIM=1)
                     IF (lzeff_opt(i)) THEN
@@ -716,9 +708,9 @@
                           zeff_max(i) = zeff_opt(i) + ABS(pct_domain*zeff_opt(i))
                        END IF
                        nvar_in = nvar_in + 1
-                       vars(nvar_in) = zeff_opt(i)
-                       vars_min(nvar_in) = zeff_min(i)
-                       vars_max(nvar_in) = zeff_max(i)
+                       vars(nvar_in) = zeff_opt(i)/norm
+                       vars_min(nvar_in) = zeff_min(i)/norm
+                       vars_max(nvar_in) = zeff_max(i)/norm
                        var_dex(nvar_in) = izeff
                        diag(nvar_in)    = dzeff_opt(i)
                        arr_dex(nvar_in,1) = i
@@ -736,9 +728,8 @@
                     var_dex(nvar_in) = ite
                     diag(nvar_in)    = 1.0_rprec
                     arr_dex(nvar_in,2) = norm_dex
-                    te_opt = te_opt / norm
-                    te_min = te_min/norm
-                    te_max = te_max/norm
+                 ELSE
+                    norm = 1
                  END IF
                  DO i = LBOUND(lte_opt,DIM=1), UBOUND(lte_opt,DIM=1)
                     IF (lte_opt(i)) THEN
@@ -747,9 +738,9 @@
                           te_max(i) = te_opt(i) + ABS(pct_domain*te_opt(i))
                        END IF
                        nvar_in = nvar_in + 1
-                       vars(nvar_in) = te_opt(i)
-                       vars_min(nvar_in) = te_min(i)
-                       vars_max(nvar_in) = te_max(i)
+                       vars(nvar_in) = te_opt(i)/norm
+                       vars_min(nvar_in) = te_min(i)/norm
+                       vars_max(nvar_in) = te_max(i)/norm
                        var_dex(nvar_in) = ite
                        diag(nvar_in)    = dte_opt(i)
                        arr_dex(nvar_in,1) = i
@@ -766,9 +757,8 @@
                     var_dex(nvar_in) = iti
                     diag(nvar_in)    = 1.0_rprec
                     arr_dex(nvar_in,2) = norm_dex
-                    ti_opt = ti_opt / norm
-                    ti_min = ti_min/norm
-                    ti_max = ti_max/norm
+                 ELSE
+                    norm = 1
                  END IF
                  DO i = LBOUND(lti_opt,DIM=1), UBOUND(lti_opt,DIM=1)
                     IF (lti_opt(i)) THEN
@@ -777,9 +767,9 @@
                           ti_max(i) = ti_opt(i) + ABS(pct_domain*ti_opt(i))
                        END IF
                        nvar_in = nvar_in + 1
-                       vars(nvar_in) = ti_opt(i)
-                       vars_min(nvar_in) = ti_min(i)
-                       vars_max(nvar_in) = ti_max(i)
+                       vars(nvar_in) = ti_opt(i)/norm
+                       vars_min(nvar_in) = ti_min(i)/norm
+                       vars_max(nvar_in) = ti_max(i)/norm
                        var_dex(nvar_in) = iti
                        diag(nvar_in)    = dti_opt(i)
                        arr_dex(nvar_in,1) = i
@@ -796,9 +786,8 @@
                     var_dex(nvar_in) = ith
                     diag(nvar_in)    = 1.0_rprec
                     arr_dex(nvar_in,2) = norm_dex
-                    th_opt = th_opt / norm
-                    th_min = th_min/norm
-                    th_max = th_max/norm
+                 ELSE
+                    norm = 1
                  END IF
                  DO i = LBOUND(lth_opt,DIM=1), UBOUND(lth_opt,DIM=1)
                     IF (lth_opt(i)) THEN
@@ -807,9 +796,9 @@
                           th_max(i) = th_opt(i) + ABS(pct_domain*th_opt(i))
                        END IF
                        nvar_in = nvar_in + 1
-                       vars(nvar_in) = th_opt(i)
-                       vars_min(nvar_in) = th_min(i)
-                       vars_max(nvar_in) = th_max(i)
+                       vars(nvar_in) = th_opt(i)/norm
+                       vars_min(nvar_in) = th_min(i)/norm
+                       vars_max(nvar_in) = th_max(i)/norm
                        var_dex(nvar_in) = ith
                        diag(nvar_in)    = dth_opt(i)
                        arr_dex(nvar_in,1) = i
@@ -840,9 +829,8 @@
                     var_dex(nvar_in) = iam_aux_f
                     diag(nvar_in)    = 1.0_rprec
                     arr_dex(nvar_in,2) = norm_dex
-                    am_aux_f = am_aux_f / norm
-                    am_f_min = am_f_min/norm
-                    am_f_max = am_f_max/norm
+                 ELSE
+                    norm = 1
                  END IF
                  DO i = LBOUND(lam_f_opt,DIM=1), UBOUND(lam_f_opt,DIM=1)
                     IF (lam_f_opt(i)) THEN
@@ -851,9 +839,9 @@
                           am_f_max(i) = am_aux_f(i) + ABS(pct_domain*am_aux_f(i))
                        END IF
                        nvar_in = nvar_in + 1
-                       vars(nvar_in) = am_aux_f(i)
-                       vars_min(nvar_in) = am_f_min(i)
-                       vars_max(nvar_in) = am_f_max(i)
+                       vars(nvar_in) = am_aux_f(i)/norm
+                       vars_min(nvar_in) = am_f_min(i)/norm
+                       vars_max(nvar_in) = am_f_max(i)/norm
                        var_dex(nvar_in) = iam_aux_f
                        diag(nvar_in)    = dam_f_opt(i)
                        arr_dex(nvar_in,1) = i
@@ -883,9 +871,8 @@
                     var_dex(nvar_in) = iac_aux_f
                     diag(nvar_in)    = 1.0_rprec
                     arr_dex(nvar_in,2) = norm_dex
-                    ac_aux_f = ac_aux_f / norm
-                    ac_f_min = ac_f_min/norm
-                    ac_f_max = ac_f_max/norm
+                 ELSE
+                    norm = 1
                  END IF
                  DO i = LBOUND(lac_f_opt,DIM=1), UBOUND(lac_f_opt,DIM=1)
                     IF (lac_f_opt(i)) THEN
@@ -894,9 +881,9 @@
                           ac_f_max(i) = ac_aux_f(i) + ABS(pct_domain*ac_aux_f(i))
                        END IF
                        nvar_in = nvar_in + 1
-                       vars(nvar_in) = ac_aux_f(i)
-                       vars_min(nvar_in) = ac_f_min(i)
-                       vars_max(nvar_in) = ac_f_max(i)
+                       vars(nvar_in) = ac_aux_f(i)/norm
+                       vars_min(nvar_in) = ac_f_min(i)/norm
+                       vars_max(nvar_in) = ac_f_max(i)/norm
                        var_dex(nvar_in) = iac_aux_f
                        diag(nvar_in)    = dac_f_opt(i)
                        arr_dex(nvar_in,1) = i
@@ -913,9 +900,8 @@
                     var_dex(nvar_in) = ibeamj_aux_f
                     diag(nvar_in)    = 1.0_rprec
                     arr_dex(nvar_in,2) = norm_dex
-                    beamj_aux_f = beamj_aux_f / norm
-                    beamj_f_min = beamj_f_min/norm
-                    beamj_f_max = beamj_f_max/norm
+                 ELSE
+                    norm = 1
                  END IF
                  DO i = LBOUND(lbeamj_f_opt,DIM=1), UBOUND(lbeamj_f_opt,DIM=1)
                     IF (lbeamj_f_opt(i)) THEN
@@ -924,9 +910,9 @@
                           beamj_f_max(i) = beamj_aux_f(i) + ABS(pct_domain*beamj_aux_f(i))
                        END IF
                        nvar_in = nvar_in + 1
-                       vars(nvar_in) = beamj_aux_f(i)
-                       vars_min(nvar_in) = beamj_f_min(i)
-                       vars_max(nvar_in) = beamj_f_max(i)
+                       vars(nvar_in) = beamj_aux_f(i)/norm
+                       vars_min(nvar_in) = beamj_f_min(i)/norm
+                       vars_max(nvar_in) = beamj_f_max(i)/norm
                        var_dex(nvar_in) = ibeamj_aux_f
                        diag(nvar_in)    = dbeamj_f_opt(i)
                        arr_dex(nvar_in,1) = i
@@ -943,9 +929,8 @@
                     var_dex(nvar_in) = ibootj_aux_f
                     diag(nvar_in)    = 1.0_rprec
                     arr_dex(nvar_in,2) = norm_dex
-                    bootj_aux_f = bootj_aux_f / norm
-                    bootj_f_min = bootj_f_min/norm
-                    bootj_f_max = bootj_f_max/norm
+                 ELSE
+                    norm = 1
                  END IF
                  DO i = LBOUND(lbootj_f_opt,DIM=1), UBOUND(lbootj_f_opt,DIM=1)
                     IF (lbootj_f_opt(i)) THEN
@@ -954,9 +939,9 @@
                           bootj_f_max(i) = bootj_aux_f(i) + ABS(pct_domain*bootj_aux_f(i))
                        END IF
                        nvar_in = nvar_in + 1
-                       vars(nvar_in) = bootj_aux_f(i)
-                       vars_min(nvar_in) = bootj_f_min(i)
-                       vars_max(nvar_in) = bootj_f_max(i)
+                       vars(nvar_in) = bootj_aux_f(i)/norm
+                       vars_min(nvar_in) = bootj_f_min(i)/norm
+                       vars_max(nvar_in) = bootj_f_max(i)/norm
                        var_dex(nvar_in) = ibootj_aux_f
                        diag(nvar_in)    = dbootj_f_opt(i)
                        arr_dex(nvar_in,1) = i
@@ -973,9 +958,8 @@
                     var_dex(nvar_in) = iemis_xics_f
                     diag(nvar_in)    = 1.0_rprec
                     arr_dex(nvar_in,2) = norm_dex
-                    emis_xics_f = emis_xics_f / norm
-                    emis_xics_f_min = emis_xics_f_min/norm
-                    emis_xics_f_max = emis_xics_f_max/norm
+                 ELSE
+                    norm = 1
                  END IF
                  DO i = LBOUND(lemis_xics_f_opt,DIM=1), UBOUND(lemis_xics_f_opt,DIM=1)
                     IF (lemis_xics_f_opt(i)) THEN
@@ -984,9 +968,9 @@
                           emis_xics_f_max(i) = emis_xics_f(i) + ABS(pct_domain*emis_xics_f(i))
                        END IF
                        nvar_in = nvar_in + 1
-                       vars(nvar_in) = emis_xics_f(i)
-                       vars_min(nvar_in) = emis_xics_f_min(i)
-                       vars_max(nvar_in) = emis_xics_f_max(i)
+                       vars(nvar_in) = emis_xics_f(i)/norm
+                       vars_min(nvar_in) = emis_xics_f_min(i)/norm
+                       vars_max(nvar_in) = emis_xics_f_max(i)/norm
                        var_dex(nvar_in) = iemis_xics_f
                        diag(nvar_in)    = demis_xics_f_opt(i)
                        arr_dex(nvar_in,1) = i
@@ -1016,9 +1000,8 @@
                     var_dex(nvar_in) = iai_aux_f
                     diag(nvar_in)    = 1.0_rprec
                     arr_dex(nvar_in,2) = norm_dex
-                    ai_aux_f = ai_aux_f / norm
-                    ai_f_min = ai_f_min/norm
-                    ai_f_max = ai_f_max/norm
+                 ELSE
+                    norm = 1
                  END IF
                  DO i = LBOUND(lai_f_opt,DIM=1), UBOUND(lai_f_opt,DIM=1)
                     IF (lai_f_opt(i)) THEN
@@ -1027,9 +1010,9 @@
                           ai_f_max(i) = ai_aux_f(i) + ABS(pct_domain*ai_aux_f(i))
                        END IF
                        nvar_in = nvar_in + 1
-                       vars(nvar_in) = ai_aux_f(i)
-                       vars_min(nvar_in) = ai_f_min(i)
-                       vars_max(nvar_in) = ai_f_max(i)
+                       vars(nvar_in) = ai_aux_f(i)/norm
+                       vars_min(nvar_in) = ai_f_min(i)/norm
+                       vars_max(nvar_in) = ai_f_max(i)/norm
                        var_dex(nvar_in) = iai_aux_f
                        diag(nvar_in)    = dai_f_opt(i)
                        arr_dex(nvar_in,1) = i
@@ -1059,9 +1042,8 @@
                     var_dex(nvar_in) = iphi_aux_f
                     diag(nvar_in)    = 1.0_rprec
                     arr_dex(nvar_in,2) = norm_dex
-                    phi_aux_f = phi_aux_f / norm
-                    phi_f_min = phi_f_min/norm
-                    phi_f_max = phi_f_max/norm
+                 ELSE
+                    norm = 1
                  END IF
                  DO i = LBOUND(lphi_f_opt,DIM=1), UBOUND(lphi_f_opt,DIM=1)
                     IF (lphi_f_opt(i)) THEN
@@ -1070,9 +1052,9 @@
                           phi_f_max(i) = phi_aux_f(i) + ABS(pct_domain*phi_aux_f(i))
                        END IF
                        nvar_in = nvar_in + 1
-                       vars(nvar_in) = phi_aux_f(i)
-                       vars_min(nvar_in) = phi_f_min(i)
-                       vars_max(nvar_in) = phi_f_max(i)
+                       vars(nvar_in) = phi_aux_f(i)/norm
+                       vars_min(nvar_in) = phi_f_min(i)/norm
+                       vars_max(nvar_in) = phi_f_max(i)/norm
                        var_dex(nvar_in) = iphi_aux_f
                        diag(nvar_in)    = dphi_f_opt(i)
                        arr_dex(nvar_in,1) = i
@@ -1089,20 +1071,19 @@
                     var_dex(nvar_in) = ine_aux_f
                     diag(nvar_in)    = 1.0_rprec
                     arr_dex(nvar_in,2) = norm_dex
-                    ne_aux_f = ne_aux_f / norm
-                    ne_f_min = ne_f_min/norm
-                    ne_f_max = ne_f_max/norm
+                 ELSE
+                    norm = 1
                  END IF
                  DO i = LBOUND(lne_f_opt,DIM=1), UBOUND(lne_f_opt,DIM=1)
                     IF (lne_f_opt(i)) THEN
                        IF (lauto_domain) THEN
-                          ne_f_min(i) = ne_aux_f(i) - ABS(pct_domain*ne_aux_f(i))
+                          ne_f_min(i) = MAX(ne_aux_f(i) - ABS(pct_domain*ne_aux_f(i)),0.0_rprec)
                           ne_f_max(i) = ne_aux_f(i) + ABS(pct_domain*ne_aux_f(i))
                        END IF
                        nvar_in = nvar_in + 1
-                       vars(nvar_in) = ne_aux_f(i)
-                       vars_min(nvar_in) = MAX(ne_f_min(i),0.0_rprec)
-                       vars_max(nvar_in) = ne_f_max(i)
+                       vars(nvar_in) = ne_aux_f(i)/norm
+                       vars_min(nvar_in) = ne_f_min(i)/norm
+                       vars_max(nvar_in) = ne_f_max(i)/norm
                        var_dex(nvar_in) = ine_aux_f
                        diag(nvar_in)    = dne_f_opt(i)
                        arr_dex(nvar_in,1) = i
@@ -1119,20 +1100,19 @@
                     var_dex(nvar_in) = izeff_aux_f
                     diag(nvar_in)    = 1.0_rprec
                     arr_dex(nvar_in,2) = norm_dex
-                    zeff_aux_f = zeff_aux_f / norm
-                    zeff_f_min = zeff_f_min/norm
-                    zeff_f_max = zeff_f_max/norm
+                 ELSE
+                    norm = 1
                  END IF
                  DO i = LBOUND(lzeff_f_opt,DIM=1), UBOUND(lzeff_f_opt,DIM=1)
                     IF (lzeff_f_opt(i)) THEN
                        IF (lauto_domain) THEN
-                          zeff_f_min(i) = zeff_aux_f(i) - ABS(pct_domain*zeff_aux_f(i))
+                          zeff_f_min(i) = MAX(zeff_aux_f(i) - ABS(pct_domain*zeff_aux_f(i)),1.0_rprec)
                           zeff_f_max(i) = zeff_aux_f(i) + ABS(pct_domain*zeff_aux_f(i))
                        END IF
                        nvar_in = nvar_in + 1
-                       vars(nvar_in) = zeff_aux_f(i)
-                       vars_min(nvar_in) = MAX(zeff_f_min(i),0.0_rprec)
-                       vars_max(nvar_in) = zeff_f_max(i)
+                       vars(nvar_in) = zeff_aux_f(i)/norm
+                       vars_min(nvar_in) = zeff_f_min(i)/norm
+                       vars_max(nvar_in) = zeff_f_max(i)/norm
                        var_dex(nvar_in) = izeff_aux_f
                        diag(nvar_in)    = dzeff_f_opt(i)
                        arr_dex(nvar_in,1) = i
@@ -1149,20 +1129,19 @@
                     var_dex(nvar_in) = ite_aux_f
                     diag(nvar_in)    = 1.0_rprec
                     arr_dex(nvar_in,2) = norm_dex
-                    te_aux_f = te_aux_f / norm
-                    te_f_min = te_f_min/norm
-                    te_f_max = te_f_max/norm
+                 ELSE
+                    norm = 1
                  END IF
                  DO i = LBOUND(lte_f_opt,DIM=1), UBOUND(lte_f_opt,DIM=1)
                     IF (lte_f_opt(i)) THEN
                        IF (lauto_domain) THEN
-                          te_f_min(i) = te_aux_f(i) - ABS(pct_domain*te_aux_f(i))
+                          te_f_min(i) = MAX(te_aux_f(i) - ABS(pct_domain*te_aux_f(i)),0.0_rprec)
                           te_f_max(i) = te_aux_f(i) + ABS(pct_domain*te_aux_f(i))
                        END IF
                        nvar_in = nvar_in + 1
-                       vars(nvar_in) = te_aux_f(i)
-                       vars_min(nvar_in) = MAX(te_f_min(i),0.0_rprec)
-                       vars_max(nvar_in) = te_f_max(i)
+                       vars(nvar_in) = te_aux_f(i)/norm
+                       vars_min(nvar_in) = te_f_min(i)/norm
+                       vars_max(nvar_in) = te_f_max(i)/norm
                        var_dex(nvar_in) = ite_aux_f
                        diag(nvar_in)    = dte_f_opt(i)
                        arr_dex(nvar_in,1) = i
@@ -1179,20 +1158,19 @@
                     var_dex(nvar_in) = iti_aux_f
                     diag(nvar_in)    = 1.0_rprec
                     arr_dex(nvar_in,2) = norm_dex
-                    ti_aux_f = ti_aux_f / norm
-                    ti_f_min = ti_f_min/norm
-                    ti_f_max = ti_f_max/norm
+                 ELSE
+                    norm = 1
                  END IF
                  DO i = LBOUND(lti_f_opt,DIM=1), UBOUND(lti_f_opt,DIM=1)
                     IF (lti_f_opt(i)) THEN
                        IF (lauto_domain) THEN
-                          ti_f_min(i) = ti_aux_f(i) - ABS(pct_domain*ti_aux_f(i))
+                          ti_f_min(i) = MAX(ti_aux_f(i) - ABS(pct_domain*ti_aux_f(i)),0.0_rprec)
                           ti_f_max(i) = ti_aux_f(i) + ABS(pct_domain*ti_aux_f(i))
                        END IF
                        nvar_in = nvar_in + 1
-                       vars(nvar_in) = ti_aux_f(i)
-                       vars_min(nvar_in) = MAX(ti_f_min(i),0.0_rprec)
-                       vars_max(nvar_in) = ti_f_max(i)
+                       vars(nvar_in) = ti_aux_f(i)/norm
+                       vars_min(nvar_in) = ti_f_min(i)/norm
+                       vars_max(nvar_in) = ti_f_max(i)/norm
                        var_dex(nvar_in) = iti_aux_f
                        diag(nvar_in)    = dti_f_opt(i)
                        arr_dex(nvar_in,1) = i
@@ -1209,20 +1187,19 @@
                     var_dex(nvar_in) = ith_aux_f
                     diag(nvar_in)    = 1.0_rprec
                     arr_dex(nvar_in,2) = norm_dex
-                    th_aux_f = th_aux_f / norm
-                    th_f_min = th_f_min/norm
-                    th_f_max = th_f_max/norm
+                 ELSE
+                    norm = 1
                  END IF
                  DO i = LBOUND(lth_f_opt,DIM=1), UBOUND(lth_f_opt,DIM=1)
                     IF (lth_f_opt(i)) THEN
                        IF (lauto_domain) THEN
-                          th_f_min(i) = th_aux_f(i) - ABS(pct_domain*th_aux_f(i))
+                          th_f_min(i) = MAX(th_aux_f(i) - ABS(pct_domain*th_aux_f(i)),0.0_rprec)
                           th_f_max(i) = th_aux_f(i) + ABS(pct_domain*th_aux_f(i))
                        END IF
                        nvar_in = nvar_in + 1
-                       vars(nvar_in) = th_aux_f(i)
-                       vars_min(nvar_in) = MAX(th_f_min(i),0.0_rprec)
-                       vars_max(nvar_in) = th_f_max(i)
+                       vars(nvar_in) = th_aux_f(i)/norm
+                       vars_min(nvar_in) = th_f_min(i)/norm
+                       vars_max(nvar_in) = th_f_max(i)/norm
                        var_dex(nvar_in) = ith_aux_f
                        diag(nvar_in)    = dth_f_opt(i)
                        arr_dex(nvar_in,1) = i
@@ -1239,9 +1216,8 @@
                     var_dex(nvar_in) = iah_aux_f
                     diag(nvar_in)    = 1.0_rprec
                     arr_dex(nvar_in,2) = norm_dex
-                    ah_aux_f = ah_aux_f / norm
-                    ah_f_min = ah_f_min/norm
-                    ah_f_max = ah_f_max/norm
+                 ELSE
+                    norm = 1
                  END IF
                  DO i = LBOUND(lah_f_opt,DIM=1), UBOUND(lah_f_opt,DIM=1)
                     IF (lah_f_opt(i)) THEN
@@ -1250,9 +1226,9 @@
                           ah_f_max(i) = ah_aux_f(i) + ABS(pct_domain*ah_aux_f(i))
                        END IF
                        nvar_in = nvar_in + 1
-                       vars(nvar_in) = ah_aux_f(i)
-                       vars_min(nvar_in) = ah_f_min(i)
-                       vars_max(nvar_in) = ah_f_max(i)
+                       vars(nvar_in) = ah_aux_f(i)/norm
+                       vars_min(nvar_in) = ah_f_min(i)/norm
+                       vars_max(nvar_in) = ah_f_max(i)/norm
                        var_dex(nvar_in) = iah_aux_f
                        diag(nvar_in)    = dah_f_opt(i)
                        arr_dex(nvar_in,1) = i
@@ -1269,9 +1245,8 @@
                     var_dex(nvar_in) = iat_aux_f
                     diag(nvar_in)    = 1.0_rprec
                     arr_dex(nvar_in,2) = norm_dex
-                    at_aux_f = at_aux_f / norm
-                    at_f_min = at_f_min/norm
-                    at_f_max = at_f_max/norm
+                 ELSE
+                    norm = 1
                  END IF
                  DO i = LBOUND(lat_f_opt,DIM=1), UBOUND(lat_f_opt,DIM=1)
                     IF (lat_f_opt(i)) THEN
@@ -1280,9 +1255,9 @@
                           at_f_max(i) = at_aux_f(i) + ABS(pct_domain*at_aux_f(i))
                        END IF
                        nvar_in = nvar_in + 1
-                       vars(nvar_in) = ah_aux_f(i)
-                       vars_min(nvar_in) = at_f_min(i)
-                       vars_max(nvar_in) = at_f_max(i)
+                       vars(nvar_in) = ah_aux_f(i)/norm
+                       vars_min(nvar_in) = at_f_min(i)/norm
+                       vars_max(nvar_in) = at_f_max(i)/norm
                        var_dex(nvar_in) = iat_aux_f
                        diag(nvar_in)    = dat_f_opt(i)
                        arr_dex(nvar_in,1) = i

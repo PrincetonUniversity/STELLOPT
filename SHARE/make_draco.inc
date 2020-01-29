@@ -51,15 +51,6 @@
                -lnetcdf -lnetcdff 
 
 #######################################################################
-#            NTCC Options
-#######################################################################
-  LNTCC = T
-  NTCC_INC = -I$(NTCCHOME)/mod
-  NTCC_LIB = -L$(NTCCHOME)/lib -lpreact -lsigsub \
-                               -laladdinsub -lpreact -lportlib \
-                               -ladas310_fortran_driver
-
-#######################################################################
 #            HDF5 Options
 #######################################################################
   LHDF5 = T
@@ -82,6 +73,13 @@
   SILO_LIB = -L$(SILO_DIR)/lib -lsilo
 
 #######################################################################
+#            FFTW3 Options
+#######################################################################
+  LFFTW3 = F
+  FFTW3_INC = -I$(FFTW_HOME)/include
+  FFTW3_LIB = -L$(FFTW_HOME)/lib -lfftw3 -lfftw3f 
+
+#######################################################################
 #            DKES/NEO Options
 #######################################################################
   LDKES = T
@@ -102,6 +100,7 @@
              -L$(PETSC_HOME)/lib -lpetsc \
              $(GENE_DIR)/$(LIB_GENE) \
              $(FUTILS_DIR)/$(LIB_FUTILS)
+
 #######################################################################
 #            COILOPT++ Options
 #######################################################################
@@ -114,7 +113,7 @@
 #######################################################################
 #            TERPSICHORE Options
 #######################################################################
-  LTERPSICHORE= T
+  LTERPSICHORE= F
   TERPSICHORE_INC = -I$(TERPSICHORE_PATH)
   TERPSICHORE_DIR = $(TERPSICHORE_PATH)
   LIB_TERPSICHORE = libterpsichore.a
@@ -123,12 +122,12 @@
 #######################################################################
 #            TRAVIS Options
 #######################################################################
-  LTRAVIS= T
+  LTRAVIS= F
   TRAVIS_DIR = $(TRAVIS_PATH)
   LIB_TRAVIS = libtravis64_sopt.a
   LIB_MCONF  = libmconf64.a
   TRAVIS_LIB = $(TRAVIS_DIR)/lib/$(LIB_TRAVIS) \
-               $(TRAVIS_DIR)/magconf/lib/$(LIB_MCONF) -lstdc++
+               $(TRAVIS_DIR)/mag_conf/lib/$(LIB_MCONF) -lstdc++
 
 #######################################################################
 #            SFINCS Options
@@ -155,7 +154,7 @@
 #######################################################################
 #            LIBSTELL Shared Options
 #######################################################################
-  LIB_SHARE = $(LIBS) $(NTCC_LIB) $(NETCDF_LIB) $(HDF5_LIB) \
+  LIB_SHARE = $(LIBS) $(NETCDF_LIB) $(HDF5_LIB) \
              -lifport -lifcoremt -limf -lm -lc \
              -lpthread -lirc -lunwind -lirc_s
 
@@ -212,6 +211,9 @@ ifeq ($(MAKECMDGOALS),xstelloptv2)
   DIAGNO_DIR = ../../DIAGNO
   LIB_DIAGNO= libdiagno.a
   MOD_PATH+= -I$(DIAGNO_DIR)/$(LOCTYPE)
+  FIELDLINES_DIR = ../../FIELDLINES
+  LIB_FIELDLINES = libfieldlines.a
+  MOD_PATH+= -I$(FIELDLINES_DIR)/$(LOCTYPE)
   JINV_DIR = ../../J_INVARIANT
   LIB_JINV = libjinv.a
   MOD_PATH+= -I$(JINV_DIR)/$(LOCTYPE)
@@ -225,6 +227,7 @@ ifeq ($(MAKECMDGOALS),xstelloptv2)
 	$(BOOZ_DIR)/$(LOCTYPE)/$(LIB_BOOZ) \
 	$(COBRA_DIR)/$(LOCTYPE)/$(LIB_COBRA) \
 	$(DIAGNO_DIR)/$(LOCTYPE)/$(LIB_DIAGNO) \
+  $(FIELDLINES_DIR)/$(LOCTYPE)/$(LIB_FIELDLINES) \
 	$(JINV_DIR)/$(LOCTYPE)/$(LIB_JINV) \
 	$(MGRID_DIR)/$(LOCTYPE)/$(LIB_MGRID) 
   ifeq ($(LDKES),T)
@@ -362,6 +365,13 @@ ifeq ($(LNETCDF),T)
   LIB_LINK += $(NETCDF_LIB)
   MOD_PATH += $(NETCDF_INC)
 endif
+ifeq ($(LFFTW3),T)
+  MOD1_PATH += $(FFTW3_INC)
+  PRECOMP += -DFFTW3
+  LIB_LINK += $(FFTW3_LIB)
+  MOD_PATH += $(FFTW3_INC)
+  LIB_SHARE += $(FFTW3_LIB)
+endif
 ifeq ($(LHDF5),T)
   MOD1_PATH += $(HDF5_INC)
   PRECOMP += -DLHDF5 -DH5_USE_16_API -DHDF5_PAR
@@ -371,12 +381,6 @@ endif
 ifeq ($(LNAG),T)
   PRECOMP += -DNAG
   LIB_LINK += $(NAG_LIB)
-endif
-ifeq ($(LNTCC),T)
-  MOD1_PATH += $(NTCC_INC)
-  PRECOMP += -DLADAS -DNTCC
-  LIB_LINK += $(NTCC_LIB)
-  MOD_PATH += $(NTCC_INC)
 endif
 ifeq ($(LSILO),T)
   MOD1_PATH += $(SILO_INC)

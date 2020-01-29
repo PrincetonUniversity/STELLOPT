@@ -205,6 +205,11 @@
 
       ! Initialize some of the vectors and matrices needed:
       ! write(6,'(a)') '<----read bnorm'
+      IF (load_bnorm) THEN
+         call stellopt_bnorm(proc_string,lscreen)
+         bnorm_filename = 'bnorm.' // TRIM(proc_string)
+      ENDIF
+
       call regcoil_read_bnorm()
       ! write(6,'(a)') '<----build matrices'
       call regcoil_build_matrices()

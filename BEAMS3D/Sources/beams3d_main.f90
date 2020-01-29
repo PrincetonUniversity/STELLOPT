@@ -14,6 +14,9 @@ PROGRAM BEAMS3D
     USE wall_mod, ONLY: wall_free
     USE mpi_params
     USE mpi_inc
+!DEC$ IF DEFINED (LHDF5)
+    USE hdf5
+!DEC$ ENDIF
 
     !-----------------------------------------------------------------------
     !     Local Variables
@@ -25,6 +28,8 @@ PROGRAM BEAMS3D
     !-----------------------------------------------------------------------
     IMPLICIT NONE
     integer :: numargs, i, ier, nshar, vmajor, vminor, liblen
+    integer :: h5major, h5minor, h5rel, h5par
+    integer :: mpi_info_beams3d
     integer, parameter :: arg_len = 256
     character(LEN=MPI_MAX_LIBRARY_VERSION_STRING) :: mpi_lib_name
     character*(arg_len) :: arg1
@@ -45,9 +50,24 @@ PROGRAM BEAMS3D
     CALL MPI_COMM_SPLIT_TYPE(MPI_COMM_BEAMS, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, MPI_COMM_SHARMEM, ierr_mpi)
     CALL MPI_COMM_RANK(MPI_COMM_SHARMEM, myid_sharmem, ierr_mpi)
     CALL MPI_COMM_SIZE(MPI_COMM_SHARMEM, nshar, ierr_mpi) ! MPI
-    CALL MPI_GET_VERSION(vmajor,vminor,ier)
-    CALL MPI_GET_LIBRARY_VERSION(mpi_lib_name,liblen,ier)
+    CALL MPI_GET_VERSION(vmajor,vminor,ierr_mpi)
+    CALL MPI_GET_LIBRARY_VERSION(mpi_lib_name,liblen,ierr_mpi)
+    ! Now we set some info
+    CALL MPI_INFO_CREATE(mpi_info_beams3d, ierr_mpi)
+    CALL MPI_INFO_SET(mpi_info_beams3d, "IBM_largeblock_io", "true",    ierr_mpi)
+    CALL MPI_INFO_SET(mpi_info_beams3d, "stripping_unit",    "1048576", ierr_mpi)
+    CALL MPI_INFO_SET(mpi_info_beams3d, "romio_ds_read",     "disable", ierr_mpi)
+    CALL MPI_INFO_SET(mpi_info_beams3d, "romio_ds_write",    "disable", ierr_mpi)
+
 !DEC$ ENDIF
+!DEC$ IF DEFINED (LHDF5)
+    CALL H5GET_LIBVERSION_F(h5major, h5minor, h5rel, ier)
+    h5par = 0
+!DEC$ ENDIF
+!DEC$ IF DEFINED (HDF5_PAR)
+    h5par = 1
+!DEC$ ENDIF
+
     pi = 4.0 * ATAN(1.0)
     pi2 = 8.0 * ATAN(1.0)
     mu0 = (16.0E-7) * ATAN(1.0)
@@ -67,7 +87,6 @@ PROGRAM BEAMS3D
         lvessel = .false.
         lvac = .false.
         lrestart = .false.
-        lflux = .false.
         lhitonly  = .false.
         lplasma_only = .false.
         lraw = .false.
@@ -75,11 +94,15 @@ PROGRAM BEAMS3D
         lbeam_simple = .false.
         lcollision = .false.
         lw7x = .false.
+        lascot = .false.
+        lascot4 = .false.
+        lbbnbi = .false.
         id_string = ''
         coil_string = ''
         mgrid_string = ''
         vessel_string = ''
         restart_string = ''
+        bbnbi_string = ''
 
         ! First Handle the input arguments
         CALL GETCARG(1, arg1, numargs)
@@ -93,8 +116,10 @@ PROGRAM BEAMS3D
                 lverb = .false.
             case ("-vac") ! Vacuum Fields Only
                 lvac = .true.
-            case ("-plasma")
-                lplasma_only = .true.
+            case ("-ascot","-ascot5")
+                lascot = .true.
+            case ("-ascot4")
+                lascot4 = .true.
             case ("-vmec")
                 i = i + 1
                 lvmec = .true.
@@ -107,8 +132,6 @@ PROGRAM BEAMS3D
                 lvmec = .false.
                 lspec = .false.
                 CALL GETCARG(i, id_string, numargs)
-            case ("-flux","-booz")
-                lflux = .true.
             case ("-spec")
                 i = i + 1
                 lspec = .true.
@@ -133,11 +156,14 @@ PROGRAM BEAMS3D
                 i = i + 1
                 lvessel = .true.
                 CALL GETCARG(i, vessel_string, numargs)
+            case ("-beamlet")
+                i = i + 1
+                lbbnbi = .true.
+                CALL GETCARG(i, bbnbi_string, numargs)
             case ("-hitonly","-hit_only")
                 lhitonly  = .true.
             case ("-depo")
                 ldepo  = .true.
-                lplasma_only = .true.
             case ("-raw")
                 lraw  = .true.
             case ("-w7x")
@@ -146,12 +172,13 @@ PROGRAM BEAMS3D
                 lbeam_simple  = .true.
             case ("-collisions")
                 lcollision = .true.
+            case ("-plasma")
+                lplasma_only = .true.
             case ("-help", "-h") ! Output Help message
                 write(6, *) ' Beam MC Code'
                 write(6, *) ' Usage: xbeams3d <options>'
                 write(6, *) '    <options>'
                 write(6, *) '     -vmec ext:     VMEC input/wout extension'
-                write(6, *) '     -booz file:    BOOZ_XFORM output file for mapping'
                 !write(6,*)'     -pies ext:   PIES input extension (must have &INDATA namelist)'
                 !write(6,*)'     -spec ext:     SPEC input extension (must have &INDATA namelist)'
                 write(6, *) '     -vessel file:  Vessel File (for limiting)'
@@ -159,12 +186,14 @@ PROGRAM BEAMS3D
                 write(6, *) '     -coil file:    Coils. File (for vacuum)'
                 write(6, *) '     -beam_simple:  Monoenergetic BEAMS'
                 write(6, *) '     -w7x:          W7-X beam model'
+                write(6, *) '     -ascot5:       Output data in ASCOT5 format'
+                write(6, *) '     -ascot4:       Output data in ASCOT4 format'
+                write(6, *) '     -beamlet:      Beamlet file for beam geometry'
                 !write(6,*)'     -restart ext:  FIELDLINES HDF5 extension.'
                 write(6, *) '     -raw:          Treat coil currents as raw (scale factors)'
                 write(6, *) '     -vac:          Only vacuum field'
                 write(6, *) '     -plasma:       Only plasma field'
                 write(6, *) '     -depo:         Only Deposition'
-                write(6, *) '     -flux:         Calculate Flux Coordinates'
                 write(6, *) '     -collisions:   Force collision operator'
                 write(6, *) '     -noverb:       Supress all screen output'
                 write(6, *) '     -help:         Output help message'
@@ -177,11 +206,19 @@ PROGRAM BEAMS3D
         END DO
         DEALLOCATE(args)
         WRITE(6, '(a,f5.2)') 'BEAMS3D Version ', BEAMS3D_VERSION
+!DEC$ IF DEFINED (LHDF5)
+        IF (h5par > 0) THEN
+           WRITE(6,'(A)')      '-----  HDF5 (Parallel) Parameters  -----'
+        ELSE
+           WRITE(6,'(A)')      '-----  HDF5 Parameters  -----'
+        ENDIF
+        WRITE(6,'(A,I2,2(A,I2.2))')  '   HDF5_version:  ', h5major,'.',h5minor,' release: ',h5rel
+!DEC$ ENDIF
         WRITE(6,'(A)')      '-----  MPI Parameters  -----'
-         WRITE(6,'(A,I2,A,I2.2)')  '   MPI_version:  ', vmajor,'.',vminor
-         WRITE(6,'(A,A)')  '   ', TRIM(mpi_lib_name(1:liblen))
-         WRITE(6,'(A,I8)')  '   Nproc_total:  ', nprocs_beams
-         WRITE(6,'(A,3X,I5)')  '   Nproc_shared: ', nshar
+        WRITE(6,'(A,I2,A,I2.2)')  '   MPI_version:  ', vmajor,'.',vminor
+        WRITE(6,'(A,A)')  '   ', TRIM(mpi_lib_name(1:liblen))
+        WRITE(6,'(A,I8)')  '   Nproc_total:  ', nprocs_beams
+        WRITE(6,'(A,3X,I5)')  '   Nproc_shared: ', nshar
     ELSE
         lverb = .false. ! Shutup the workers
     END IF
@@ -194,6 +231,8 @@ PROGRAM BEAMS3D
     CALL MPI_BCAST(coil_string, 256, MPI_CHARACTER, master, MPI_COMM_BEAMS, ierr_mpi)
     IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
     CALL MPI_BCAST(vessel_string, 256, MPI_CHARACTER, master, MPI_COMM_BEAMS, ierr_mpi)
+    IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
+    CALL MPI_BCAST(bbnbi_string, 256, MPI_CHARACTER, master, MPI_COMM_BEAMS, ierr_mpi)
     IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
     CALL MPI_BCAST(restart_string, 256, MPI_CHARACTER, master, MPI_COMM_BEAMS, ierr_mpi)
     IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
@@ -211,13 +250,17 @@ PROGRAM BEAMS3D
     IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
     CALL MPI_BCAST(lvac, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
     IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
+    CALL MPI_BCAST(lascot, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
+    IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
+    CALL MPI_BCAST(lascot4, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
+    IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
+    CALL MPI_BCAST(lbbnbi, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
+    IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
     CALL MPI_BCAST(lrestart, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
     IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
     CALL MPI_BCAST(lhitonly,1,MPI_LOGICAL, master, MPI_COMM_BEAMS,ierr_mpi)
     IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_main',ierr_mpi)
     CALL MPI_BCAST(lraw,1,MPI_LOGICAL, master, MPI_COMM_BEAMS,ierr_mpi)
-    IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_main',ierr_mpi)
-    CALL MPI_BCAST(lflux,1,MPI_LOGICAL, master, MPI_COMM_BEAMS,ierr_mpi)
     IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_main',ierr_mpi)
     CALL MPI_BCAST(lplasma_only,1,MPI_LOGICAL, master, MPI_COMM_BEAMS,ierr_mpi)
     IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_main',ierr_mpi)
@@ -231,18 +274,30 @@ PROGRAM BEAMS3D
     IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_main',ierr_mpi)
 !DEC$ ENDIF
 
+
     ! Initialize the Calculation
     CALL beams3d_init
+
     ! Follow Fieldlines
     CALL beams3d_follow
+
+    ! Write Ouput
     CALL beams3d_write('TRAJECTORY_PARTIAL')
-    ! Write some stuff
+      IF (lascot) THEN
+         CALL beams3d_write_ascoth5('MARKER')
+      END IF
+
+    ! Write diagnostics stuff
     CALL beams3d_diagnostics
+
     ! Clean up
-    CALL beams3d_free
+    CALL beams3d_free(MPI_COMM_SHARMEM)
     CALL wall_free(ier,MPI_COMM_BEAMS)
 !DEC$ IF DEFINED (MPI_OPT)
+    CALL MPI_BARRIER(MPI_COMM_BEAMS, ierr_mpi)
+    IF (ierr_mpi /= 0) CALL handle_err(MPI_BARRIER_ERR, 'beams3d_main', ierr_mpi)
     ierr_mpi=0
+    CALL MPI_INFO_FREE(mpi_info_beams3d, ierr_mpi)
     CALL MPI_FINALIZE(ierr_mpi)
     IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_FINE_ERR, 'beams3d_main', ierr_mpi)
 !DEC$ ENDIF

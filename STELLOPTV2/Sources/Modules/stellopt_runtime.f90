@@ -197,7 +197,7 @@
       
       LOGICAL                  :: lverb, lkeep_mins, lneed_output, lrestart,&
                                   lrefit, lno_restart, lauto_domain, lparallel,&
-                                  ltriangulate, lcoil_geom
+                                  ltriangulate, lcoil_geom, lrenorm
       INTEGER                  :: nvars, mtargets, iter, mode, iunit_out,&
                                   cr_strategy, rho_exp, npopulation, noptimizers,&
                                   ier_paraexe
@@ -211,7 +211,7 @@
       CHARACTER(256)           :: id_string, opt_type, proc_string, &
                                   proc_string_old, screen_str, xvec_file
       
-      REAL(rprec), PARAMETER :: STELLOPT_VERSION = 2.65
+      REAL(rprec), PARAMETER :: STELLOPT_VERSION = 2.70
       
       REAL(rprec), PARAMETER :: bigno = 1.0E+10
 !-----------------------------------------------------------------------

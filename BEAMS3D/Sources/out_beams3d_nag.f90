@@ -18,9 +18,7 @@ SUBROUTINE out_beams3d_nag(t, q)
                              lost_lines, dt_out, xlast, ylast, zlast,&
                              ltherm, S_lines, U_lines, B_lines
     USE beams3d_grid
-!DEC$ IF DEFINED (NTCC)
     USE beams3d_physics_mod, ONLY: beams3d_physics
-!DEC$ ENDIF
     USE wall_mod, ONLY: collide
     USE EZspline_obj
     USE EZspline
@@ -94,10 +92,8 @@ SUBROUTINE out_beams3d_nag(t, q)
        !CALL EZspline_interp(MODB_spl,q(1),x0,q(3),x1,ier)
        !IF (myworkid == 0) PRINT *,'--',y0,z0,x1
     END IF
-!DEC$ IF DEFINED (NTCC)
     IF (lcollision) CALL beams3d_physics(t,q)
     IF (ltherm) t = t_end(myline)
-!DEC$ ENDIF
     IF (lvessel .and. mytdex > 0 .and. y0 > 0.5) THEN
        lhit = .false.
        x0    = xlast
@@ -140,7 +136,7 @@ SUBROUTINE out_beams3d_nag(t, q)
        zlast = q(3)
     END IF
     IF (lhitonly) mytdex = 0
-    IF ((t+dt) .ge. mytdex*dt_out) mytdex = mytdex + 1
+    IF (ABS((t+dt)) .ge. ABS(mytdex*dt_out)) mytdex = mytdex + 1
     t = t + dt
 
     RETURN

@@ -38,7 +38,7 @@ C   L o c a l   P a r a m e t e r s
 C-----------------------------------------------
       REAL(rprec), PARAMETER :: zero = 0, one = 1,
      1   p1=0.1_dp, p5=0.5_dp, p25=0.25_dp, p75=0.75_dp, p0001=1.e-4_dp
-      CHARACTER(LEN=130), DIMENSION(0:13) :: info_array 
+      CHARACTER(LEN=130), DIMENSION(0:15) :: info_array 
 C-----------------------------------------------
 C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
@@ -209,7 +209,6 @@ c     Get mpi parameters
       IF (ierr_mpi .ne. 0) STOP 'MPI_COMM_SIZE error in LMDIF'
 !DEC$ ENDIF
 
-      !info = 0;      iflag = 0;      nfev = 0;      cycle_count = 0
       info = 0;      iflag = 0;      cycle_count = 0
 
       info_array(9) = 
@@ -267,6 +266,14 @@ c     Get mpi parameters
      1"improper input parameters " //
      1"X_MIN < X_MAX"
 
+      info_array(14) = 
+     1"improper input parameters " //
+     1"X not in range X_MIN-X_MAX"
+
+      info_array(15) = 
+     1"improper input parameters " //
+     1"DIAG > 1 when mode=2"
+
 
 !DEC$ IF DEFINED (MPI_OPT)
       IF (numprocs > n) THEN
@@ -296,7 +303,6 @@ c     Get mpi parameters
       lsmall_step = .false.  !SAL for EPSMCH step
       lredo_diag = .false.    !SAL recompute DIAG scaling
       jac_order = 0                                                     !PPPL
-!      info = 0; iflag = 0; nfev = 0; cycle_count = 0;                   !PPPL
       info = 0;      iflag = 0;      cycle_count = 0
       delta = 0                                                         !PPPL
 !DEC$ IF .NOT.DEFINED (MPI_OPT)
@@ -322,7 +328,14 @@ c     Get mpi parameters
 
       IF (mode .eq. 2) THEN
          DO j = 1, n
-            IF (diag(j) .le. zero) GOTO 300
+            IF (diag(j) .le. zero) THEN
+               info = 15
+               IF (myid .eq. master) WRITE(6,'(A,I3,2(A,ES20.10))') 
+     1            '   AT j=',j,
+     2            '; DIAG=',diag(j),
+     3            '; X=',x(j)
+            END IF
+         IF (info > 0) GOTO 400
          END DO
       END IF
 
@@ -330,6 +343,13 @@ c     Get mpi parameters
          DO j = 1, n
             IF (xvmin(j) .ge. xvmax(j)) THEN
                info = 13
+               IF (myid .eq. master) WRITE(6,'(A,I3,3(A,ES20.10))') 
+     1            '   AT j=',j,
+     2            '; MIN=',xvmin(j),
+     3            '; X=',x(j),'; MAX=',xvmax(j)
+            END IF
+            IF ((x(j) .lt. xvmin(j)) .or. (x(j).gt.xvmax(j))) THEN
+               info = 14
                IF (myid .eq. master) WRITE(6,'(A,I3,3(A,ES20.10))') 
      1            '   AT j=',j,
      2            '; MIN=',xvmin(j),

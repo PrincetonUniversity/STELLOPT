@@ -275,23 +275,23 @@
       END SELECT
       ! Setup the internal STELLOPT arrays
       dex = MINLOC(phi_aux_s(2:),DIM=1)
-      IF (dex > 4) CALL setup_prof_spline(phi_spl,dex,phi_aux_s(1:dex),phi_aux_f(1:dex),ier)
+      IF (dex > 2) CALL setup_prof_spline(phi_spl,dex,phi_aux_s(1:dex),phi_aux_f(1:dex),ier)
       dex = MINLOC(ne_aux_s(2:),DIM=1)
-      IF (dex > 4) CALL setup_prof_spline(ne_spl,dex,ne_aux_s(1:dex),ne_aux_f(1:dex),ier)
+      IF (dex > 2) CALL setup_prof_spline(ne_spl,dex,ne_aux_s(1:dex),ne_aux_f(1:dex),ier)
       dex = MINLOC(te_aux_s(2:),DIM=1)
-      IF (dex > 4) CALL setup_prof_spline(te_spl,dex,te_aux_s(1:dex),te_aux_f(1:dex),ier)
+      IF (dex > 2) CALL setup_prof_spline(te_spl,dex,te_aux_s(1:dex),te_aux_f(1:dex),ier)
       dex = MINLOC(ti_aux_s(2:),DIM=1)
-      IF (dex > 4) CALL setup_prof_spline(ti_spl,dex,ti_aux_s(1:dex),ti_aux_f(1:dex),ier)
+      IF (dex > 2) CALL setup_prof_spline(ti_spl,dex,ti_aux_s(1:dex),ti_aux_f(1:dex),ier)
       dex = MINLOC(th_aux_s(2:),DIM=1)
-      IF (dex > 4) CALL setup_prof_spline(th_spl,dex,th_aux_s(1:dex),th_aux_f(1:dex),ier)
+      IF (dex > 2) CALL setup_prof_spline(th_spl,dex,th_aux_s(1:dex),th_aux_f(1:dex),ier)
       dex = MINLOC(nustar_s(2:),DIM=1)
-      IF (dex > 4) CALL setup_prof_spline(nustar_spl,dex,nustar_s(1:dex),nustar_f(1:dex),ier)
+      IF (dex > 2) CALL setup_prof_spline(nustar_spl,dex,nustar_s(1:dex),nustar_f(1:dex),ier)
       dex = MINLOC(zeff_aux_s(2:),DIM=1)
-      IF (dex > 4) CALL setup_prof_spline(zeff_spl,dex,zeff_aux_s(1:dex),zeff_aux_f(1:dex),ier)
+      IF (dex > 2) CALL setup_prof_spline(zeff_spl,dex,zeff_aux_s(1:dex),zeff_aux_f(1:dex),ier)
       dex = MINLOC(ah_aux_s(2:),DIM=1)
-      IF (dex > 4) CALL setup_prof_spline(ah_spl,dex,ah_aux_s(1:dex),ah_aux_f(1:dex),ier)
+      IF (dex > 2) CALL setup_prof_spline(ah_spl,dex,ah_aux_s(1:dex),ah_aux_f(1:dex),ier)
       dex = MINLOC(emis_xics_s(2:),DIM=1)
-      IF (dex > 4) CALL setup_prof_spline(emis_xics_spl,dex,emis_xics_s(1:dex),emis_xics_f(1:dex),ier)
+      IF (dex > 2) CALL setup_prof_spline(emis_xics_spl,dex,emis_xics_s(1:dex),emis_xics_f(1:dex),ier)
 
       ! Screen output
       IF (lscreen) THEN

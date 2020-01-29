@@ -55,8 +55,6 @@
       IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'lvac',ier)
       CALL read_scalar_hdf5(fid,'lbeam_simple',ier,BOOVAR=lbeam_simple)
       IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'lbeam_simple',ier)
-      CALL read_scalar_hdf5(fid,'lflux',ier,BOOVAR=lflux)
-      IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'lflux',ier)
       CALL read_scalar_hdf5(fid,'ldepo',ier,BOOVAR=ldepo)
       IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'ldepo',ier)
       CALL read_scalar_hdf5(fid,'lbeam',ier,BOOVAR=lbeam)
@@ -117,13 +115,24 @@
       IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'PE_lines',ier)
       CALL read_var_hdf5(fid,'PI_lines',npoinc+1,nparticles,ier,DBLVAR=PI_lines)
       IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'PI_lines',ier)
-      IF (lflux) THEN
-         ! DIAGNOSTICS
+      IF (lbeam) THEN
+         IF (ALLOCATED(weight)) DEALLOCATE(weight)
+         IF (ALLOCATED(beam)) DEALLOCATE(beam)
+         IF (ALLOCATED(v_neut)) DEALLOCATE(v_neut)
          IF (ALLOCATED(shine_through)) DEALLOCATE(shine_through)
          ALLOCATE(shine_through(nbeams))
+         ALLOCATE(weight(nparticles),beam(nparticles),v_neut(3,nparticles))
          CALL read_var_hdf5(fid,'Shinethrough',nbeams,ier,DBLVAR=shine_through)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'shine_through',ier)
-         IF (lbeam .and. .not.ldepo) THEN
+         CALL read_var_hdf5(fid,'Weight',nparticles,ier,DBLVAR=weight)
+         IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'weight',ier)
+         CALL read_var_hdf5(fid,'Beam',nparticles,ier,INTVAR=beam)
+         IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'beam',ier)
+         CALL read_var_hdf5(fid,'Energy',nbeams,ier,DBLVAR=e_beams)
+         IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'e_beams',ier)
+         CALL read_var_hdf5(fid,'V_NEUT',3,nparticles,ier,DBLVAR=v_neut)
+         IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'e_beams',ier)
+         IF (.not. ldepo) THEN
             IF (ALLOCATED(ndot_prof)) DEALLOCATE(ndot_prof)
             IF (ALLOCATED(epower_prof)) DEALLOCATE(epower_prof)
             IF (ALLOCATED(ipower_prof)) DEALLOCATE(ipower_prof)
@@ -140,20 +149,6 @@
             IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'j_prof',ier)
          END IF
       END IF
-      IF (lbeam) THEN
-         IF (ALLOCATED(weight)) DEALLOCATE(weight)
-         IF (ALLOCATED(beam)) DEALLOCATE(beam)
-         IF (ALLOCATED(v_neut)) DEALLOCATE(v_neut)
-         ALLOCATE(weight(nparticles_start,nbeams),beam(nparticles),v_neut(3,nparticles))
-         CALL read_var_hdf5(fid,'Weight',nparticles_start,nbeams,ier,DBLVAR=weight)
-         IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'weight',ier)
-         CALL read_var_hdf5(fid,'Beam',nparticles,ier,INTVAR=beam)
-         IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'beam',ier)
-         CALL read_var_hdf5(fid,'Energy',nbeams,ier,DBLVAR=e_beams)
-         IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'e_beams',ier)
-         CALL read_var_hdf5(fid,'V_NEUT',3,nparticles,ier,DBLVAR=v_neut)
-         IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'e_beams',ier)
-      END IF
       ! Grid
       CALL read_scalar_hdf5(fid,'nr',ier,INTVAR=nr)
       IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'nr',ier)
@@ -161,25 +156,25 @@
       IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'nphi',ier)
       CALL read_scalar_hdf5(fid,'nz',ier,INTVAR=nz)
       IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'nz',ier)
-      IF (ASSOCIATED(raxis))   CALL mpidealloc(raxis,win_raxis)
-      IF (ASSOCIATED(zaxis))   CALL mpidealloc(zaxis,win_zaxis)
-      IF (ASSOCIATED(phiaxis)) CALL mpidealloc(phiaxis,win_phiaxis)
-      IF (ASSOCIATED(B_R))     CALL mpidealloc(B_R,win_B_R)
-      IF (ASSOCIATED(B_Z))     CALL mpidealloc(B_Z,win_B_Z)
-      IF (ASSOCIATED(B_PHI))   CALL mpidealloc(B_PHI,win_B_PHI)
-      IF (ASSOCIATED(S_ARR))   CALL mpidealloc(S_ARR,win_S_ARR)
-      IF (ASSOCIATED(U_ARR))   CALL mpidealloc(U_ARR,win_U_ARR)
-      IF (ASSOCIATED(POT_ARR)) CALL mpidealloc(POT_ARR,win_POT_ARR)
-      CALL mpialloc(raxis, nr, myid_sharmem, 0, MPI_COMM_SHARMEM, win_raxis)
-      CALL mpialloc(phiaxis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_phiaxis)
-      CALL mpialloc(zaxis, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_zaxis)
-      CALL mpialloc(B_R, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_B_R)
-      CALL mpialloc(B_PHI, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_B_PHI)
-      CALL mpialloc(B_Z, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_B_Z)
-      CALL mpialloc(MODB, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_MODB)
-      CALL mpialloc(POT_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_POT_ARR)
-      CALL mpialloc(S_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_S_ARR)
-      CALL mpialloc(U_ARR, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_U_ARR)
+      IF (ASSOCIATED(raxis))   DEALLOCATE(raxis)
+      IF (ASSOCIATED(zaxis))   DEALLOCATE(zaxis)
+      IF (ASSOCIATED(phiaxis)) DEALLOCATE(phiaxis)
+      IF (ASSOCIATED(B_R))     DEALLOCATE(B_R)
+      IF (ASSOCIATED(B_Z))     DEALLOCATE(B_Z)
+      IF (ASSOCIATED(B_PHI))   DEALLOCATE(B_PHI)
+      IF (ASSOCIATED(S_ARR))   DEALLOCATE(S_ARR)
+      IF (ASSOCIATED(U_ARR))   DEALLOCATE(U_ARR)
+      IF (ASSOCIATED(POT_ARR)) DEALLOCATE(POT_ARR)
+      ALLOCATE(raxis(nr))
+      ALLOCATE(phiaxis(nphi))
+      ALLOCATE(zaxis(nz))
+      ALLOCATE(B_R(nr,nphi,nz))
+      ALLOCATE(B_PHI(nr,nphi,nz))
+      ALLOCATE(B_Z(nr,nphi,nz))
+      ALLOCATE(MODB(nr,nphi,nz))
+      ALLOCATE(POT_ARR(nr,nphi,nz))
+      ALLOCATE(S_ARR(nr,nphi,nz))
+      ALLOCATE(U_ARR(nr,nphi,nz))
       CALL read_var_hdf5(fid,'raxis',nr,ier,DBLVAR=raxis)
       IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'raxis',ier)
       CALL read_var_hdf5(fid,'zaxis',nz,ier,DBLVAR=zaxis)
@@ -212,7 +207,7 @@
          CALL read_var_hdf5(fid,'wall_faces',nface,3,ier,INTVAR=face)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'wall_faces',ier)
          CALL read_var_hdf5(fid,'wall_strikes',nface,ier,INTVAR=ihit_array)
-         IF (ier /= 0) DEALLOCATE(ihit_array)
+         !IF (ier /= 0) DEALLOCATE(ihit_array)
       END IF
       ier = 0
 
@@ -224,9 +219,7 @@
 
 
 !DEC$ ELSE
-      WRITE(6,'(A)')  '   FILE: '//'beams3d_'//TRIM(id_string)//'.bin'
-      CALL safe_open(iunit,ier,'beams3d_'//TRIM(id_string)//'.bin','replace','unformatted')
-      CLOSE(iunit)
+
 !DEC$ ENDIF  
 
 !-----------------------------------------------------------------------

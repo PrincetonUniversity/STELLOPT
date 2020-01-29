@@ -19,6 +19,7 @@
 !         
 !-----------------------------------------------------------------------
       IMPLICIT NONE
+      LOGICAL            :: lwall_loaded
       INTEGER            :: nvertex, nface
       INTEGER, POINTER :: face(:,:)
       INTEGER, POINTER :: ihit_array(:)
@@ -28,7 +29,7 @@
 
 
       LOGICAL, PRIVATE, ALLOCATABLE            :: lmask(:)
-      INTEGER, PRIVATE                         :: mystart, myend, mydelta
+      INTEGER, PRIVATE                         :: mystart, myend, mydelta, ik_min
       INTEGER, PRIVATE                         :: win_vertex, win_face, win_phi, &
                                                   win_fn, win_a0, win_v0, win_v1, &
                                                   win_dot00, win_dot01, win_dot11, &
@@ -212,6 +213,7 @@
          CALL MPI_BARRIER(shar_comm, istat)
          CALL MPI_COMM_FREE(shar_comm, istat)
       END IF
+      lwall_loaded = .true.
       RETURN
       END SUBROUTINE wall_load_txt
 
@@ -242,24 +244,26 @@
          CALL MPI_COMM_SIZE( shar_comm, shar_size, istat)
       END IF
 #endif
-      ALLOCATE(r_temp(nu,nv),z_temp(nu,nv),x_temp(nu,nv),y_temp(nu,nv))
-      r_temp(:,:) = 0
-      z_temp(:,:) = 0
-      DO u = 1, nu
-         DO v = 1, nv
-            DO i = 1, mn
-               th = pi2*DBLE(u-1)/DBLE(nu)
-               zt = pi2*DBLE(v-1)/DBLE(nv)
-               r_temp(u,v) = r_temp(u,v) + Rmn(i)*DCOS(xm(i)*th+xn(i)*zt)
-               z_temp(u,v) = z_temp(u,v) + Zmn(i)*DSIN(xm(i)*th+xn(i)*zt)
+      IF (shar_rank==0)THEN
+         ALLOCATE(r_temp(nu,nv),z_temp(nu,nv),x_temp(nu,nv),y_temp(nu,nv))
+         r_temp(:,:) = 0
+         z_temp(:,:) = 0
+         DO u = 1, nu
+            DO v = 1, nv
+               DO i = 1, mn
+                  th = pi2*DBLE(u-1)/DBLE(nu)
+                  zt = pi2*DBLE(v-1)/DBLE(nv)
+                  r_temp(u,v) = r_temp(u,v) + Rmn(i)*DCOS(xm(i)*th+xn(i)*zt)
+                  z_temp(u,v) = z_temp(u,v) + Zmn(i)*DSIN(xm(i)*th+xn(i)*zt)
+               END DO
             END DO
          END DO
-      END DO
-      DO v = 1, nv
-         zt = pi2*DBLE(v-1)/DBLE(nv)
-         x_temp(:,v) = r_temp(:,v) * DCOS(zt)
-         y_temp(:,v) = r_temp(:,v) * DSIN(zt)
-      END DO
+         DO v = 1, nv
+            zt = pi2*DBLE(v-1)/DBLE(nv)
+            x_temp(:,v) = r_temp(:,v) * DCOS(zt)
+            y_temp(:,v) = r_temp(:,v) * DSIN(zt)
+         END DO
+      END IF
 
       nvertex = nu*nv
       nface   = 2*nu*nv
@@ -269,7 +273,7 @@
          CALL mpialloc_2d_dbl(vertex,nvertex,3,shar_rank,0,shar_comm,win_vertex)
          CALL mpialloc_2d_int(face,nface,3,shar_rank,0,shar_comm,win_face)
          mydelta = CEILING(REAL(nface) / REAL(shar_size))
-         mystart = 1 + (shar_rank-1)*mydelta
+         mystart = 1 + shar_rank*mydelta
          myend   = mystart + mydelta
          IF (myend > nface) myend=nface
       ELSE
@@ -279,17 +283,47 @@
       END IF
       i = 1  ! Tracks vertex index
       j = 1 ! Tracks face index
-      DO v = 1, nv-1
-         DO u = 1, nu-1
+      IF (shar_rank==0)THEN
+         DO v = 1, nv-1
+            DO u = 1, nu-1
+               vertex(i,1) = x_temp(u,v)
+               vertex(i,2) = y_temp(u,v)
+               vertex(i,3) = z_temp(u,v)
+               face(j,1) = i
+               face(j,2) = i + nu
+               face(j,3) = i + 1
+               j = j + 1
+               face(j,1) = i + nu
+               face(j,2) = i + nu + 1
+               face(j,3) = i + 1
+               j = j + 1
+               i=i+1
+            END DO
+            u = nu
             vertex(i,1) = x_temp(u,v)
             vertex(i,2) = y_temp(u,v)
             vertex(i,3) = z_temp(u,v)
             face(j,1) = i
-            face(j,2) = i + nu
-            face(j,3) = i + 1
+            face(j,2) = i+nu
+            face(j,3) = i-nu+1
             j = j + 1
             face(j,1) = i + nu
-            face(j,2) = i + nu + 1
+            face(j,2) = i + 1
+            face(j,3) = i-nu+1
+            j = j + 1
+            i=i+1
+         END DO
+         v = nv
+         DO u = 1, nu - 1
+            vertex(i,1) = x_temp(u,v)
+            vertex(i,2) = y_temp(u,v)
+            vertex(i,3) = z_temp(u,v)
+            face(j,1) = i
+            face(j,2) = i - nu*(nv-1)
+            face(j,3) = i + 1
+            j = j + 1
+            face(j,1) = i - nu*(nv-1)
+            face(j,2) = i - nu*(nv-1) + 1
             face(j,3) = i + 1
             j = j + 1
             i=i+1
@@ -299,44 +333,16 @@
          vertex(i,2) = y_temp(u,v)
          vertex(i,3) = z_temp(u,v)
          face(j,1) = i
-         face(j,2) = i+nu
-         face(j,3) = i-nu+1
+         face(j,2) = nu
+         face(j,3) = i - nu + 1
          j = j + 1
-         face(j,1) = i + nu
-         face(j,2) = i + 1
-         face(j,3) = i-nu+1
-         j = j + 1
-         i=i+1
-      END DO
-      v = nv
-      DO u = 1, nu - 1
-         vertex(i,1) = x_temp(u,v)
-         vertex(i,2) = y_temp(u,v)
-         vertex(i,3) = z_temp(u,v)
-         face(j,1) = i
-         face(j,2) = i - nu*(nv-1)
-         face(j,3) = i + 1
-         j = j + 1
-         face(j,1) = i - nu*(nv-1)
-         face(j,2) = i - nu*(nv-1) + 1
-         face(j,3) = i + 1
+         face(j,1) = nu
+         face(j,2) = 1
+         face(j,3) = i - nu + 1
          j = j + 1
          i=i+1
-      END DO
-      u = nu
-      vertex(i,1) = x_temp(u,v)
-      vertex(i,2) = y_temp(u,v)
-      vertex(i,3) = z_temp(u,v)
-      face(j,1) = i
-      face(j,2) = nu
-      face(j,3) = i - nu + 1
-      j = j + 1
-      face(j,1) = nu
-      face(j,2) = 1
-      face(j,3) = i - nu + 1
-      j = j + 1
-      i=i+1
-      DEALLOCATE(r_temp,z_temp,x_temp,y_temp)
+         DEALLOCATE(r_temp,z_temp,x_temp,y_temp)
+      END IF
       IF (PRESENT(comm)) CALL MPI_BARRIER(shar_comm,istat)
 
       ! Sort the array by toroidal angle
@@ -380,7 +386,7 @@
          CALL mpialloc_2d_dbl(V1,nface,3,shar_rank,0,shar_comm,win_v1)
          CALL mpialloc_2d_dbl(FN,nface,3,shar_rank,0,shar_comm,win_fn)
          mydelta = CEILING(REAL(nface) / REAL(shar_size))
-         mystart = 1 + (shar_rank-1)*mydelta
+         mystart = 1 + shar_rank*mydelta
          myend   = mystart + mydelta
          IF (myend > nface) myend=nface
       ELSE
@@ -414,7 +420,7 @@
          CALL mpialloc_1d_dbl(d,nface,shar_rank,0,shar_comm,win_d)
          CALL mpialloc_1d_int(ihit_array,nface,shar_rank,0,shar_comm,win_ihit)
          mydelta = CEILING(REAL(nface) / REAL(shar_size))
-         mystart = 1 + (shar_rank-1)*mydelta
+         mystart = 1 + shar_rank*mydelta
          myend   = mystart + mydelta
          IF (myend > nface) myend=nface
       ELSE
@@ -438,6 +444,7 @@
          CALL MPI_BARRIER(shar_comm, istat)
          CALL MPI_COMM_FREE(shar_comm, istat)
       END IF
+      lwall_loaded = .true.
       RETURN
       END SUBROUTINE wall_load_mn
 
@@ -491,7 +498,7 @@
       DOUBLE PRECISION, INTENT(in) :: x0, y0, z0, x1, y1, z1
       DOUBLE PRECISION, INTENT(out) :: xw, yw, zw
       LOGICAL, INTENT(out) :: lhit
-      INTEGER :: ik, ik_min
+      INTEGER :: ik
       xw=zero; yw=zero; zw=zero; lhit=.FALSE.
       ik_min = -1
       lmask(:) = .TRUE.
@@ -543,7 +550,7 @@
       DOUBLE PRECISION, INTENT(in) :: x0, y0, z0, x1, y1, z1
       DOUBLE PRECISION, INTENT(out) :: xw, yw, zw
       LOGICAL, INTENT(out) :: lhit
-      INTEGER :: ik, ik_min, k1,k2
+      INTEGER :: ik, k1,k2
       DOUBLE PRECISION :: drx, dry, drz, V2x, V2y, V2z, DOT02l, DOT12l, tloc, tmin, alphal, betal
       xw=zero; yw=zero; zw=zero; lhit=.FALSE.
       ik_min = zero
@@ -593,6 +600,11 @@
       END IF
       RETURN
       END SUBROUTINE collide_double
+
+      SUBROUTINE uncount_wall_hit
+         IMPLICIT NONE
+         ihit_array(ik_min) = ihit_array(ik_min) - 1
+      END SUBROUTINE
 
       SUBROUTINE wall_free(istat,shared_comm)
 #if defined(MPI_OPT)
@@ -660,6 +672,7 @@
       date=''
       nface = -1
       nvertex = -1
+      lwall_loaded = .false.
       RETURN
       END SUBROUTINE wall_free
 

@@ -17,14 +17,14 @@
       USE beams3d_grid, ONLY: nr, nphi, nz, B_R, B_PHI, B_Z, raxis, &
                                  zaxis, phiaxis, S_ARR, U_ARR, POT_ARR, &
                                  ZEFF_ARR, TE, TI, NE
-      USE beams3d_runtime, ONLY: id_string, npoinc, nbeams, beam, t_end, lverb, lflux, &
-                                    lvmec, lpies, lspec, lcoil, lmgrid, lbeam, &
+      USE beams3d_runtime, ONLY: id_string, npoinc, nbeams, beam, t_end, lverb, &
+                                    lvmec, lpies, lspec, lcoil, lmgrid, lbeam, lascot, &
                                     lvessel, lvac, lbeam_simple, handle_err, nparticles_start, &
                                     HDF5_OPEN_ERR,HDF5_WRITE_ERR,&
                                     HDF5_CLOSE_ERR, BEAMS3D_VERSION, weight, e_beams, p_beams,&
                                     charge, Zatom, mass, ldepo, v_neut,lcollision
       USE safe_open_mod, ONLY: safe_open
-      USE wall_mod, ONLY: nface,nvertex,face,vertex,ihit_array, wall_free
+      USE wall_mod, ONLY: nface,nvertex,face,vertex,ihit_array
       USE mpi_params
 !-----------------------------------------------------------------------
 !     Input Variables
@@ -67,12 +67,12 @@
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'lbeam',ier)
                CALL write_scalar_hdf5(fid,'lbeam_simple',ier,BOOVAR=lbeam_simple,ATT='Simple Beam Energy',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'lbeam_simple',ier)
-               CALL write_scalar_hdf5(fid,'lflux',ier,BOOVAR=lflux,ATT='Flux Calculation',ATT_NAME='description')
-               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'lflux',ier)
                CALL write_scalar_hdf5(fid,'ldepo',ier,BOOVAR=ldepo,ATT='Only Deposition Flag',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ldepo',ier)
                CALL write_scalar_hdf5(fid,'lcollision',ier,BOOVAR=lcollision,ATT='Collisionall Operators Flag',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'lcollision',ier)
+               CALL write_scalar_hdf5(fid,'lascot',ier,BOOVAR=lascot,ATT='ASCOT5 Output Flag',ATT_NAME='description')
+               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'lascot',ier)
                CALL write_scalar_hdf5(fid,'nr',ier,INTVAR=nr,ATT='Number of Radial Gridpoints',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'nr',ier)
                CALL write_scalar_hdf5(fid,'nphi',ier,INTVAR=nphi,ATT='Number of Toroidal Gridpoints',ATT_NAME='description')
@@ -114,7 +114,7 @@
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ZEFF_ARR',ier)
                END IF
                IF (lbeam) THEN
-                  CALL write_var_hdf5(fid,'Weight',nparticles_start, nbeams,ier,DBLVAR=weight,ATT='Weight',&
+                  CALL write_var_hdf5(fid,'Weight',nparticles,ier,DBLVAR=weight,ATT='Weight',&
                                       ATT_NAME='description')
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'Weight',ier)
                   CALL write_var_hdf5(fid,'Beam',nparticles,ier,INTVAR=beam,ATT='Beam Number',&
@@ -131,14 +131,12 @@
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'nvertex',ier)
                   CALL write_var_hdf5(fid,'wall_vertex',nvertex,3,ier,DBLVAR=vertex,ATT='Wall Verticies (x,y,z) [m]',ATT_NAME='description')
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'wall_vertex',ier)
-                  !DEALLOCATE(vertex)
                END IF
                IF (ASSOCIATED(face)) THEN
                   CALL write_scalar_hdf5(fid,'nface',ier,INTVAR=nface,ATT='Number of Wall Faces',ATT_NAME='description')
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'nface',ier)
                   CALL write_var_hdf5(fid,'wall_faces',nface,3,ier,INTVAR=face,ATT='Wall Faces',ATT_NAME='description')
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'wall_faces',ier)
-                  !DEALLOCATE(face)
                END IF
             CASE('TRAJECTORY_PARTIAL')
                CALL open_hdf5('beams3d_'//TRIM(id_string)//'.h5',fid,ier,LCREATE=.false.)
@@ -168,7 +166,6 @@
                   CALL write_var_hdf5(fid,'wall_strikes',nface,ier,INTVAR=ihit_array,&
                                    ATT='Wall Strikes',ATT_NAME='description')
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'wall_strikes',ier)
-                  !CALL wall_free(ier,MPI_COMM_SHARMEM)
                END IF
             CASE('TRAJECTORY_FULL')
                CALL open_hdf5('beams3d_'//TRIM(id_string)//'.h5',fid,ier,LCREATE=.false.)
@@ -231,30 +228,31 @@
                   CALL write_var_hdf5(fid,'wall_strikes',nface,ier,INTVAR=ihit_array,&
                                    ATT='Wall Strikes',ATT_NAME='description')
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'wall_strikes',ier)
-                  !CALL wall_free(ier,MPI_COMM_SHARMEM)
                END IF
             CASE('DIAG')
                CALL open_hdf5('beams3d_'//TRIM(id_string)//'.h5',fid,ier,LCREATE=.false.)
                IF (ier /= 0) CALL handle_err(HDF5_OPEN_ERR,'beams3d_'//TRIM(id_string)//'.h5',ier)
-               CALL write_var_hdf5(fid,'Shinethrough',nbeams,ier,DBLVAR=shine_through,&
+               IF (lbeam) THEN
+                  CALL write_var_hdf5(fid,'Shinethrough',nbeams,ier,DBLVAR=shine_through,&
                                    ATT='Total Beam Shine Through [%]',ATT_NAME='description')
-               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'Shinethrough',ier)
-               IF (lflux .and. lbeam .and. .not. ldepo) THEN
-                  CALL write_scalar_hdf5(fid,'ns_prof',ier,INTVAR=ns_prof,&
-                                      ATT='Flux Grid Points',ATT_NAME='description')
-                  IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ns_prof',ier)
-                  CALL write_var_hdf5(fid,'ndot_prof',nbeams,ns_prof,ier,DBLVAR=ndot_prof,&
-                                      ATT='Fast Ion Source [m^-3/s]',ATT_NAME='description')
-                  IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ndot_prof',ier)
-                  CALL write_var_hdf5(fid,'epower_prof',nbeams,ns_prof,ier,DBLVAR=epower_prof,&
-                                      ATT='Electron Power Deposition [W*m^-3]',ATT_NAME='description')
-                  IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'epower_prof',ier)
-                  CALL write_var_hdf5(fid,'ipower_prof',nbeams,ns_prof,ier,DBLVAR=ipower_prof,&
-                                      ATT='Ion Power Deposition [W*m^-3]',ATT_NAME='description')
-                  IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ipower_prof',ier)
-                  CALL write_var_hdf5(fid,'J_prof',nbeams,ns_prof,ier,DBLVAR=j_prof,&
-                                      ATT='Total Beam Current Density [P/(e*E)]',ATT_NAME='description')
-                  IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'J_prof',ier)
+                  IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'Shinethrough',ier)
+                  IF (.not. ldepo) THEN
+                     CALL write_scalar_hdf5(fid,'ns_prof',ier,INTVAR=ns_prof,&
+                                         ATT='Flux Grid Points',ATT_NAME='description')
+                     IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ns_prof',ier)
+                     CALL write_var_hdf5(fid,'ndot_prof',nbeams,ns_prof,ier,DBLVAR=ndot_prof,&
+                                         ATT='Fast Ion Source [m^-3/s]',ATT_NAME='description')
+                     IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ndot_prof',ier)
+                     CALL write_var_hdf5(fid,'epower_prof',nbeams,ns_prof,ier,DBLVAR=epower_prof,&
+                                         ATT='Electron Power Deposition [W*m^-3]',ATT_NAME='description')
+                     IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'epower_prof',ier)
+                     CALL write_var_hdf5(fid,'ipower_prof',nbeams,ns_prof,ier,DBLVAR=ipower_prof,&
+                                         ATT='Ion Power Deposition [W*m^-3]',ATT_NAME='description')
+                     IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ipower_prof',ier)
+                     CALL write_var_hdf5(fid,'J_prof',nbeams,ns_prof,ier,DBLVAR=j_prof,&
+                                         ATT='Total Beam Current Density [P/(e*E)]',ATT_NAME='description')
+                     IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'J_prof',ier)
+                  END IF
                END IF
          END SELECT
          CALL close_hdf5(fid,ier)
@@ -264,7 +262,7 @@
       WRITE(6,'(A)')  '   FILE: '//'beams3d_'//TRIM(id_string)//'.bin'
       CALL safe_open(iunit,ier,'beams3d_'//TRIM(id_string)//'.bin','replace','unformatted')
       WRITE(iunit,*) BEAMS3D_VERSION
-      WRITE(iunit,*) lvmec,lpies,lspec,lcoil,lmgrid,lvessel,lvac,lbeam_simple,lflux
+      WRITE(iunit,*) lvmec,lpies,lspec,lcoil,lmgrid,lvessel,lvac,lbeam_simple
       WRITE(iunit,*) nparticles,nsteps,npoinc,nbeams
       WRITE(iunit,*) weight
       WRITE(iunit,*) beam
@@ -273,16 +271,13 @@
       WRITE(iunit,*) Z_lines
       WRITE(iunit,*) PHI_lines
       WRITE(iunit,*) vll_lines
-      IF (lflux) THEN
-         WRITE(iunit,*) S_lines
-         WRITE(iunit,*) U_lines
-         WRITE(iunit,*) V_lines
-      END IF
+      WRITE(iunit,*) S_lines
+      WRITE(iunit,*) U_lines
+      WRITE(iunit,*) V_lines
       IF (lbeam) THEN
          WRITE(iunit,*) weight
          WRITE(iunit,*) beam
          WRITE(iunit,*) e_beams
-         !WRITE(iunit,*) p_beams
          IF (.not.ldepo) THEN
             WRITE(iunit,*) shine_through
             WRITE(iunit,*) ndot_prof
