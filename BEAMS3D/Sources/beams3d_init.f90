@@ -334,6 +334,11 @@
       ALLOCATE(end_state(nparticles))
       end_state=0
 
+      ! Setup wall heat flux tracking
+      IF (lwall_loaded) THEN
+         CALL mpialloc(wall_load, nbeams, nface, myid_sharmem, 0, MPI_COMM_SHARMEM, win_wall_load)
+      END IF
+
       ! Determine maximum particle velocity
       partvmax=MAXVAL(ABS(vll_start))*3.0/2.0
 

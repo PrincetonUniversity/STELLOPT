@@ -14,7 +14,7 @@
                                neut_lines, moment_lines, S_lines, U_lines, &
                                shine_through, &
                                ndot_prof, epower_prof, ipower_prof, j_prof,&
-                               B_lines, dist_prof
+                               B_lines, dist_prof, end_state
 !      USE wall_mod, ONLY: wall_free
       USE EZspline_obj
       USE mpi_sharmem
@@ -62,6 +62,7 @@
       IF (ALLOCATED(B_lines)) DEALLOCATE(B_lines)
       IF (ALLOCATED(weight)) DEALLOCATE(weight)
       IF (ALLOCATED(beam)) DEALLOCATE(beam)
+      IF (ALLOCATED(end_state)) DEALLOCATE(end_state)
       IF (PRESENT(IN_COMM)) THEN
          IF (ASSOCIATED(req_axis)) CALL mpidealloc(req_axis,win_req_axis)
          IF (ASSOCIATED(zeq_axis)) CALL mpidealloc(zeq_axis,win_zeq_axis)
@@ -90,6 +91,7 @@
          IF (ASSOCIATED(S4D))      CALL mpidealloc(S4D,win_S4D)
          IF (ASSOCIATED(U4D))      CALL mpidealloc(U4D,win_U4D)
          IF (ASSOCIATED(POT4D))    CALL mpidealloc(POT4D,win_POT4D)
+         IF (ASSOCIATED(wall_load))    CALL mpidealloc(wall_load,win_wall_load)
       ELSE
          IF (ASSOCIATED(req_axis)) DEALLOCATE(req_axis)
          IF (ASSOCIATED(zeq_axis)) DEALLOCATE(zeq_axis)
@@ -118,6 +120,7 @@
          IF (ASSOCIATED(S4D))      DEALLOCATE(S4D)
          IF (ASSOCIATED(U4D))      DEALLOCATE(U4D)
          IF (ASSOCIATED(POT4D))    DEALLOCATE(POT4D)
+         IF (ASSOCIATED(wall_load))    DEALLOCATE(wall_load)
       ENDIF
       IF (ALLOCATED(R_start))   DEALLOCATE(R_start)
       IF (ALLOCATED(phi_start)) DEALLOCATE(phi_start)

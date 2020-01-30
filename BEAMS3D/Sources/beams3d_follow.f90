@@ -21,7 +21,7 @@ SUBROUTINE beams3d_follow
     USE beams3d_lines
     USE beams3d_grid, ONLY: tmin, tmax, delta_t, BR_spl, BZ_spl, BPHI_spl, &
                             MODB_spl, S_spl, U_spl, TE_spl, NE_spl, TI_spl, &
-                            TE_spl, TI_spl
+                            TE_spl, TI_spl, wall_load
     USE mpi_params ! MPI
     USE beams3d_physics_mod
     USE beams3d_write_par
@@ -453,6 +453,9 @@ SUBROUTINE beams3d_follow
        CALL MPI_ALLREDUCE(MPI_IN_PLACE,   dist_prof, nbeams*ns_prof*ns_prof, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
        IF (ASSOCIATED(ihit_array)) THEN
           CALL MPI_ALLREDUCE(MPI_IN_PLACE,ihit_array,nface,MPI_INTEGER,MPI_SUM,MPI_COMM_LOCAL,ierr_mpi)
+       END IF
+       IF (ASSOCIATED(wall_load)) THEN
+          CALL MPI_ALLREDUCE(MPI_IN_PLACE,wall_load,nface*nbeams,MPI_DOUBLE_PRECISION,MPI_SUM,MPI_COMM_LOCAL,ierr_mpi)
        END IF
        CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)
     END IF

@@ -16,7 +16,7 @@
       USE beams3d_lines
       USE beams3d_grid, ONLY: nr, nphi, nz, B_R, B_PHI, B_Z, raxis, &
                                  zaxis, phiaxis, S_ARR, U_ARR, POT_ARR, &
-                                 ZEFF_ARR, TE, TI, NE
+                                 ZEFF_ARR, TE, TI, NE, wall_load
       USE beams3d_runtime, ONLY: id_string, npoinc, nbeams, beam, t_end, lverb, &
                                     lvmec, lpies, lspec, lcoil, lmgrid, lbeam, lascot, &
                                     lvessel, lvac, lbeam_simple, handle_err, nparticles_start, &
@@ -170,6 +170,11 @@
                IF (ASSOCIATED(ihit_array)) THEN
                   CALL write_var_hdf5(fid,'wall_strikes',nface,ier,INTVAR=ihit_array,&
                                    ATT='Wall Strikes',ATT_NAME='description')
+                  IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'wall_strikes',ier)
+               END IF
+               IF (ASSOCIATED(wall_load)) THEN
+                  CALL write_var_hdf5(fid,'wall_load',nbeams,nface,ier,DBLVAR=wall_load,&
+                                   ATT='Wall Loads [W/m^2]',ATT_NAME='description')
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'wall_strikes',ier)
                END IF
             CASE('TRAJECTORY_FULL')
