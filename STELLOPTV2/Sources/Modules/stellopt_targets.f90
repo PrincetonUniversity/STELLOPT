@@ -198,6 +198,7 @@
       REAL(rprec),DIMENSION((2*ntor_rcws+1)*(2*mpol_rcws+1)*4) ::  target_regcoil_volume_diff, sigma_regcoil_volume_diff
       REAL(rprec),DIMENSION((2*ntor_rcws+1)*(2*mpol_rcws+1)*4) ::  target_regcoil_c2p_dist_min, sigma_regcoil_c2p_dist_min
       REAL(rprec),DIMENSION(mnprod_ps) ::  target_regcoil_bnormal_total, sigma_regcoil_bnormal_total
+      REAL(rprec),DIMENSION(mnprod_ps) ::  target_regcoil_K2, sigma_regcoil_K2
       !REAL(rprec) ::  target_regcoil_current_density, sigma_regcoil_current_density
       REAL(rprec) ::  target_curvature_p2, sigma_curvature_P2
       REAL(rprec), DIMENSION(nigroup)    :: target_coillen, sigma_coillen
@@ -269,6 +270,7 @@
       INTEGER, PARAMETER :: jtarget_regcoil_volume_diff     = 5051
       INTEGER, PARAMETER :: jtarget_regcoil_bnormal_total   = 5052
       INTEGER, PARAMETER :: jtarget_regcoil_c2p_dist_min    = 5053
+      INTEGER, PARAMETER :: jtarget_regcoil_K2              = 5054
       INTEGER, PARAMETER :: jtarget_curvature_P2    = 505
       INTEGER, PARAMETER :: jtarget_balloon    = 601
       INTEGER, PARAMETER :: jtarget_kink       = 6011
@@ -460,6 +462,8 @@
             WRITE(iunit, out_format) 'REGCOIL VOLUME DIFF'
          CASE(jtarget_regcoil_bnormal_total)
             WRITE(iunit, out_format) 'REGCOIL BNORMAL TOTAL'
+         CASE(jtarget_regcoil_K2)
+            WRITE(iunit, out_format) 'REGCOIL K2'
          !CASE(jtarget_regcoil_current_density)
          !   WRITE(iunit, out_format) 'REGCOIL Current Density on Winding Surface'
          CASE(jtarget_coillen)

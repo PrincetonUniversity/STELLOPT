@@ -1,5 +1,5 @@
 !-----------------------------------------------------------------------
-!     Subroutine:    chisq_regcoil_rms_K
+!     Subroutine:    chisq_regcoil_rms_k
 !     Authors:       J.C. Schmitt (Auburn/PPPL) (jcschmitt@auburn.edu)
 !     Date:          2017-2018
 !     Description:   Chisq routine(s) for REGCOIL.
@@ -33,7 +33,7 @@
 !                       sigma input arrays.
 !
 !-----------------------------------------------------------------------
-      SUBROUTINE chisq_regcoil_rms_K(target,sigma,niter,iflag)
+      SUBROUTINE chisq_regcoil_rms_k(target,sigma,niter,iflag)
 !-----------------------------------------------------------------------
 !     Libraries
 !-----------------------------------------------------------------------
@@ -124,4 +124,4 @@
 !----------------------------------------------------------------------
 !     END SUBROUTINE
 !----------------------------------------------------------------------
-      END SUBROUTINE chisq_regcoil_rms_K
+      END SUBROUTINE chisq_regcoil_rms_k

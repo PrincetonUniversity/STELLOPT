@@ -1,5 +1,5 @@
 !-----------------------------------------------------------------------
-!     Subroutine:    chisq_regcoil_chi2_b
+!     Subroutine:    chisq_regcoil_K2
 !     Authors:       J.C. Schmitt (Auburn/PPPL) (jcschmitt@auburn.edu)
 !     Date:          2017-2018
 !     Description:   Chisq routine(s) for REGCOIL.
@@ -25,7 +25,7 @@
 !                    the number of sigmas less than bigno.
 !                    On entry, if niter is equlal to -2, the value of
 !                    target_dex(mtargets) will be set to
-!                    jtarget_regcoil_chi2_b
+!                    jtarget_regcoil_K2
 !                    On entry, if niter is 0 or larger, then:
 !                       increment mtargets, and
 !                       assign targets, sigmas, and vals to the
@@ -33,7 +33,7 @@
 !                       sigma input arrays.
 !
 !-----------------------------------------------------------------------
-      SUBROUTINE chisq_regcoil_chi2_b(target,sigma,niter,iflag)
+      SUBROUTINE chisq_regcoil_k2(target,sigma,niter,iflag)
 !-----------------------------------------------------------------------
 !     Libraries
 !-----------------------------------------------------------------------
@@ -43,7 +43,7 @@
       USE stellopt_input_mod
       USE stellopt_vars, ONLY: regcoil_nlambda, mnprod_x4_rcws
 !DEC$ IF DEFINED (REGCOIL)
-      USE regcoil_variables, ONLY:  chi2_B_target, nlambda, regcoil_nml
+      USE regcoil_variables, ONLY:  K2_target, nlambda, regcoil_nml
 !DEC$ ENDIF      
 !-----------------------------------------------------------------------
 !     Input/Output Variables
@@ -73,7 +73,7 @@
           DO ii = 1,mnprod_x4_rcws
             IF (sigma(ii) < bigno) counter=counter +1
           END DO
-          WRITE(iunit_out,'(A,2(2X,I7))') 'REGCOIL_CHI2_B ', counter, 4
+          WRITE(iunit_out,'(A,2(2X,I7))') 'REGCOIL_K2 ', counter, 4
           WRITE(iunit_out,'(A)') 'TARGET  SIGMA  UNUSED  CHI'
       END IF
 
@@ -85,9 +85,9 @@
               mtargets = mtargets + 1
               targets(mtargets) = target(ii)
               sigmas(mtargets)  = sigma(ii)
-              ! The value of the results is in the chi2_B_target variable
-              vals(mtargets)    = sqrt(chi2_B_target)
-              ! print *, mtargets, vals(mtargets), chi2_B_target, &
+              ! The value of the results is in the K2_target variable
+              vals(mtargets)    = K2_target(ii)
+              ! print *, mtargets, vals(mtargets), K2_target, &
               !          target(ii), target_dex(mtargets), sigmas(mtargets), sigma(ii)
               IF (iflag == 1) WRITE(iunit_out,'(4ES22.12E3)') target(ii), &
                                     sigma(ii), 0.0, vals(mtargets)
@@ -100,7 +100,7 @@
                IF (sigma(ii) < bigno) THEN
                   mtargets = mtargets + 1
                   IF (niter == -2) THEN
-                     target_dex(mtargets)=jtarget_regcoil_chi2_b
+                     target_dex(mtargets)=jtarget_regcoil_K2
                   END IF
                END IF
             END DO
@@ -126,4 +126,4 @@
 !----------------------------------------------------------------------
 !     END SUBROUTINE
 !----------------------------------------------------------------------
-      END SUBROUTINE chisq_regcoil_chi2_b
+      END SUBROUTINE chisq_regcoil_k2

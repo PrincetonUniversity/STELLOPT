@@ -403,6 +403,7 @@
                          target_regcoil_volume_plasma, sigma_regcoil_volume_plasma, &
                          target_regcoil_volume_diff, sigma_regcoil_volume_diff, &
                          target_regcoil_bnormal_total, sigma_regcoil_bnormal_total, &                         
+                         target_regcoil_K2, sigma_regcoil_K2, &                         
                          target_regcoil_c2p_dist_min, sigma_regcoil_c2p_dist_min, &                         
                          regcoil_winding_surface_separation, &
                          !regcoil_current_density, &
@@ -654,6 +655,8 @@
       sigma_regcoil_volume_diff  = bigno
       target_regcoil_bnormal_total = 0.0
       sigma_regcoil_bnormal_total  = bigno
+      target_regcoil_K2 = 0.0
+      sigma_regcoil_K2  = bigno
       target_regcoil_c2p_dist_min = 0.0
       sigma_regcoil_c2p_dist_min  = bigno
       !target_regcoil_current_density = 8.0e6
@@ -1100,17 +1103,18 @@
       IF ( ( ANY(sigma_regcoil_chi2_b < bigno) .or.   &
              ANY(sigma_regcoil_lambda < bigno) .or.    &
              ANY(sigma_regcoil_max_K < bigno) .or.    &
-       	     ANY(sigma_regcoil_rms_K < bigno) .or.    &
-	     ANY(sigma_regcoil_chi2_k < bigno) .or.    &
-	     ANY(sigma_regcoil_max_bnormal < bigno) .or.    &
-	     ANY(sigma_regcoil_area_coil < bigno) .or.    &
-	     ANY(sigma_regcoil_area_plasma < bigno) .or.    &
-	     ANY(sigma_regcoil_area_diff < bigno) .or.    &
-	     ANY(sigma_regcoil_volume_coil < bigno) .or.    &
-	     ANY(sigma_regcoil_volume_plasma < bigno) .or.    &
-	     ANY(sigma_regcoil_volume_diff < bigno) .or.    &
-	     ANY(sigma_regcoil_c2p_dist_min < bigno) .or.    &
-	     ANY(sigma_regcoil_bnormal_total < bigno) )  &
+             ANY(sigma_regcoil_rms_K < bigno) .or.    &
+             ANY(sigma_regcoil_chi2_k < bigno) .or.    &
+             ANY(sigma_regcoil_max_bnormal < bigno) .or.    &
+             ANY(sigma_regcoil_area_coil < bigno) .or.    &
+             ANY(sigma_regcoil_area_plasma < bigno) .or.    &
+             ANY(sigma_regcoil_area_diff < bigno) .or.    &
+             ANY(sigma_regcoil_volume_coil < bigno) .or.    &
+             ANY(sigma_regcoil_volume_plasma < bigno) .or.    &
+             ANY(sigma_regcoil_volume_diff < bigno) .or.    &
+             ANY(sigma_regcoil_c2p_dist_min < bigno) .or.    &
+             ANY(sigma_regcoil_bnormal_total < bigno) .or.    &
+             ANY(sigma_regcoil_K2 < bigno) )  &
              .and. &
            ( ANY(lregcoil_rcws_rbound_c_opt) .or. &
              ANY(lregcoil_rcws_rbound_s_opt) .or. &
@@ -1306,17 +1310,18 @@
       IF (myid == master .and. (ANY(sigma_regcoil_chi2_b < bigno) .or.   &
                                 ANY(sigma_regcoil_lambda < bigno) .or.    &
                                 ANY(sigma_regcoil_max_K < bigno) .or.    &
-	                        ANY(sigma_regcoil_rms_K < bigno) .or.    &
-	                        ANY(sigma_regcoil_chi2_k < bigno) .or.    &
-	                        ANY(sigma_regcoil_max_bnormal < bigno) .or.    &
-	                        ANY(sigma_regcoil_area_coil < bigno) .or.    &
-	                        ANY(sigma_regcoil_area_plasma < bigno) .or.    &
-	                        ANY(sigma_regcoil_area_diff < bigno) .or.    &
-	                        ANY(sigma_regcoil_volume_coil < bigno) .or.    &
-	                        ANY(sigma_regcoil_volume_plasma < bigno) .or.    &
-	                        ANY(sigma_regcoil_volume_diff < bigno) .or.    &
-	                        ANY(sigma_regcoil_c2p_dist_min < bigno) .or.    &
-	                        ANY(sigma_regcoil_bnormal_total < bigno) )) THEN ! .or. &
+                                ANY(sigma_regcoil_rms_K < bigno) .or.    &
+                                ANY(sigma_regcoil_chi2_k < bigno) .or.    &
+                                ANY(sigma_regcoil_max_bnormal < bigno) .or.    &
+                                ANY(sigma_regcoil_area_coil < bigno) .or.    &
+                                ANY(sigma_regcoil_area_plasma < bigno) .or.    &
+                                ANY(sigma_regcoil_area_diff < bigno) .or.    &
+                                ANY(sigma_regcoil_volume_coil < bigno) .or.    &
+                                ANY(sigma_regcoil_volume_plasma < bigno) .or.    &
+                                ANY(sigma_regcoil_volume_diff < bigno) .or.    &
+                                ANY(sigma_regcoil_c2p_dist_min < bigno) .or.    &
+                                ANY(sigma_regcoil_bnormal_total < bigno) .or.  &
+                                ANY(sigma_regcoil_K2 < bigno) )) THEN ! .or. &
                                 !(sigma_regcoil_current_density < bigno) )) THEN
          WRITE(6,*)        " Stellarator REGCOIL Optimization provided by: "
          WRITE(6,"(2X,A)") "================================================================================="
@@ -1330,17 +1335,18 @@
       IF (myid == master .and. (ANY(sigma_regcoil_chi2_b < bigno) .or.   &
                                 ANY(sigma_regcoil_lambda < bigno) .or.    &
                                 ANY(sigma_regcoil_max_K < bigno) .or.    &
-	                        ANY(sigma_regcoil_rms_K < bigno) .or.    &
-	                        ANY(sigma_regcoil_chi2_k < bigno) .or.    &
-	                        ANY(sigma_regcoil_max_bnormal < bigno) .or.    &
-	                        ANY(sigma_regcoil_area_coil < bigno) .or.    &
-	                        ANY(sigma_regcoil_area_plasma < bigno) .or.    &
-	                        ANY(sigma_regcoil_area_diff < bigno) .or.    &
-	                        ANY(sigma_regcoil_volume_coil < bigno) .or.    &
-	                        ANY(sigma_regcoil_volume_plasma < bigno) .or.    &
-	                        ANY(sigma_regcoil_volume_diff < bigno) .or.    &
-	                        ANY(sigma_regcoil_c2p_dist_min < bigno) .or.    &
-	                        ANY(sigma_regcoil_bnormal_total < bigno) )) THEN !  .or. &
+                                ANY(sigma_regcoil_rms_K < bigno) .or.    &
+                                ANY(sigma_regcoil_chi2_k < bigno) .or.    &
+                                ANY(sigma_regcoil_max_bnormal < bigno) .or.    &
+                                ANY(sigma_regcoil_area_coil < bigno) .or.    &
+                                ANY(sigma_regcoil_area_plasma < bigno) .or.    &
+                                ANY(sigma_regcoil_area_diff < bigno) .or.    &
+                                ANY(sigma_regcoil_volume_coil < bigno) .or.    &
+                                ANY(sigma_regcoil_volume_plasma < bigno) .or.    &
+                                ANY(sigma_regcoil_volume_diff < bigno) .or.    &
+                                ANY(sigma_regcoil_c2p_dist_min < bigno) .or.    &
+                                ANY(sigma_regcoil_bnormal_total < bigno) .or. &
+                                ANY(sigma_regcoil_K2 < bigno) )) THEN !  .or. &
                                 !(sigma_regcoil_current_density < bigno) )) THEN
          ! 'Disable' the target by assigning bigno to the sigmas
          sigma_regcoil_chi2_b = bigno
@@ -1357,6 +1363,7 @@
          sigma_regcoil_volume_diff  = bigno
          sigma_regcoil_c2p_dist_min = bigno
          sigma_regcoil_bnormal_total  = bigno
+         sigma_regcoil_K2  = bigno
          !sigma_regcoil_current_density = bigno
          WRITE(6,*) '!!!!!!!!!!!!!!!!!!!! WARNING !!!!!!!!!!!!!!!!!!!!!!!!!'
          WRITE(6,*) '  Coil optimization with the REGCOIL'
@@ -2353,6 +2360,13 @@
                     WRITE(iunit,"(2(2X,A,I4.3,A,E22.14))") &
                            'TARGET_REGCOIL_BNORMAL_TOTAL(',ii,') = ', target_regcoil_bnormal_total(ii), &
                            'SIGMA_REGCOIL_BNORMAL_TOTAL(',ii,') = ', sigma_regcoil_bnormal_total(ii)
+                END IF
+             END DO
+               DO ii = 1,UBOUND(target_regcoil_K2, 1)
+                IF (sigma_regcoil_K2(ii) < bigno) THEN
+                    WRITE(iunit,"(2(2X,A,I4.3,A,E22.14))") &
+                           'TARGET_REGCOIL_K2(',ii,') = ', target_regcoil_K2(ii), &
+                           'SIGMA_REGCOIL_K2(',ii,') = ', sigma_regcoil_K2(ii)
                 END IF
              END DO
              DO ii = 1,UBOUND(target_regcoil_c2p_dist_min, 1)

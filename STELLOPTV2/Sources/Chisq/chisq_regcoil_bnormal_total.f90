@@ -43,7 +43,7 @@
       USE stellopt_input_mod
       USE stellopt_vars, ONLY: regcoil_nlambda, mnprod_x4_rcws
 !DEC$ IF DEFINED (REGCOIL)
-      USE regcoil_variables, ONLY:  Bnormal_total_target, chi2_B_target, &
+      USE regcoil_variables, ONLY:  Bnormal_total_target, &
 				 nlambda, regcoil_nml, ntheta_plasma, &
                                  nzeta_plasma
 !DEC$ ENDIF      

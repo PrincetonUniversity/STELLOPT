@@ -54,7 +54,7 @@ chisq_regcoil_lambda.o \
 chisq_regcoil_max_k.o \
 chisq_regcoil_max_bnormal.o \
 chisq_regcoil_chi2_k.o \
-chisq_regcoil_rms_K.o \
+chisq_regcoil_rms_k.o \
 chisq_regcoil_area_coil.o \
 chisq_regcoil_area_plasma.o \
 chisq_regcoil_area_diff.o \
@@ -63,6 +63,7 @@ chisq_regcoil_volume_plasma.o \
 chisq_regcoil_volume_diff.o \
 chisq_regcoil_c2p_dist_min.o \
 chisq_regcoil_bnormal_total.o \
+chisq_regcoil_k2.o \
 chisq_rosenbrock.o \
 chisq_vessel.o \
 chisq_b0.o \

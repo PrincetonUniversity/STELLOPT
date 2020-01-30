@@ -127,7 +127,8 @@
                       ANY(sigma_regcoil_volume_coil < bigno) .or.    &
                       ANY(sigma_regcoil_volume_plasma < bigno) .or.    &
                       ANY(sigma_regcoil_volume_diff < bigno) .or.    &
-                      ANY(sigma_regcoil_bnormal_total < bigno)  ) .and. &
+                      ANY(sigma_regcoil_bnormal_total < bigno) .or. &
+                      ANY(sigma_regcoil_K2 < bigno)  ) .and. &
                    (ANY(lregcoil_rcws_rbound_c_opt) .or. ANY(lregcoil_rcws_rbound_s_opt) .or. &
                     ANY(lregcoil_rcws_zbound_c_opt) .or. ANY(lregcoil_rcws_zbound_s_opt) ) ) THEN
                    !print *, '<---In LEV/GADE cleanup.'

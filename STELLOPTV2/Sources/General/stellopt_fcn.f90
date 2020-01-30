@@ -379,7 +379,8 @@
 	        ANY(sigma_regcoil_volume_plasma < bigno) .or.    &
 	        ANY(sigma_regcoil_volume_diff < bigno) .or.    &
                 ANY(sigma_regcoil_c2p_dist_min < bigno) .or.    &
-	        ANY(sigma_regcoil_bnormal_total < bigno)   ) .and. (iflag >=0)) then
+	        ANY(sigma_regcoil_bnormal_total < bigno) .or.  &
+	        ANY(sigma_regcoil_K2 < bigno)   ) .and. (iflag >=0)) then
            !Skipping parallelization for now - instead, call regcoi_driver directly.
            CALL stellopt_regcoil_driver(proc_string, lscreen, iflag)
            ! Unstested parallel call is commented out here.
