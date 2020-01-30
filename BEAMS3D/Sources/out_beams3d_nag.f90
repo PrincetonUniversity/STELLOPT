@@ -19,7 +19,7 @@ SUBROUTINE out_beams3d_nag(t, q)
                              lost_lines, dt_out, xlast, ylast, zlast,&
                              ltherm, S_lines, U_lines, B_lines, &
                              dist_prof, ns_prof, j_prof, ndot_prof, &
-                             partvmax, mymass, mycharge, mybeam
+                             partvmax, mymass, mycharge, mybeam, end_state
     USE beams3d_grid
     USE beams3d_physics_mod, ONLY: beams3d_physics
     USE wall_mod, ONLY: collide
@@ -103,7 +103,10 @@ SUBROUTINE out_beams3d_nag(t, q)
        j_prof(mybeam,l)      =      j_prof(mybeam,l) + mycharge*q(4)*weight(myline)
     END IF
     IF (lcollision) CALL beams3d_physics(t,q)
-    IF (ltherm) t = t_end(myline)
+    IF (ltherm) THEN
+      end_state(myline) = 1
+      t = t_end(myline)
+    END IF
     IF (lvessel .and. mytdex > 0 .and. y0 > 0.5) THEN
        lhit = .false.
        x0    = xlast
@@ -121,6 +124,8 @@ SUBROUTINE out_beams3d_nag(t, q)
           !moment_lines(mytdex,myline)     = 0.5*(moment_lines(mytdex-1,myline)+moment_lines(mytdex,myline))
           lost_lines(myline) = .TRUE.
           t = t_end(myline)+dt
+          end_state(myline) = 2
+          IF (lneut) end_state(myline) = 3
           IF (lhitonly) THEN
              R_lines(0,myline)      = SQRT(xlast*xlast+ylast*ylast)
              PHI_lines(0,myline)    = ATAN2(ylast,xlast)

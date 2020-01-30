@@ -30,6 +30,7 @@
                      B_temp(4), rand_prob, cum_prob, tau, next_t, &
                      dt_out, partvmax
       LOGICAL, ALLOCATABLE     :: neut_lines(:,:)
+      INTEGER, ALLOCATABLE     :: end_state(:)
       REAL(rprec), ALLOCATABLE :: shine_through(:)
       REAL(rprec), ALLOCATABLE :: ndot_prof(:,:),epower_prof(:,:), &
                                   ipower_prof(:,:),j_prof(:,:)
