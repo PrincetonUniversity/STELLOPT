@@ -116,10 +116,12 @@
                   CALL write_var_hdf5(fid,'ZEFF_ARR',nr,nphi,nz,ier,DBLVAR=ZEFF_ARR,ATT='Effective Ion Charge',ATT_NAME='description')
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ZEFF_ARR',ier)
                END IF
-               IF (lbeam) THEN
+               IF (ALLOCATED(beam)) THEN
                   CALL write_var_hdf5(fid,'Beam',nparticles,ier,INTVAR=beam,ATT='Beam Number',&
                                       ATT_NAME='description')
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'Beam',ier)
+               END IF
+               IF (lbeam) THEN
                   CALL write_var_hdf5(fid,'V_NEUT',3,nparticles,ier,DBLVAR=V_NEUT,ATT='Neutral Velocity [m/s]',&
                                       ATT_NAME='description')
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'V_NEUT',ier)
