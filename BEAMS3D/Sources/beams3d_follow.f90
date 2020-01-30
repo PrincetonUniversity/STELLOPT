@@ -424,12 +424,14 @@ SUBROUTINE beams3d_follow
     ! First reduce the cumulative arrays over shared memory groups then allreduce between shared memeory groups
 !DEC$ IF DEFINED (MPI_OPT)
     IF (myid_sharmem == master) THEN
+       CALL MPI_REDUCE(MPI_IN_PLACE,   end_state,     nparticles,          MPI_INTEGER, MPI_MAX, master, MPI_COMM_SHARMEM, ierr_mpi)
        CALL MPI_REDUCE(MPI_IN_PLACE, epower_prof, nbeams*ns_prof, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
        CALL MPI_REDUCE(MPI_IN_PLACE, ipower_prof, nbeams*ns_prof, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
        CALL MPI_REDUCE(MPI_IN_PLACE,   ndot_prof, nbeams*ns_prof, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
        CALL MPI_REDUCE(MPI_IN_PLACE,      j_prof, nbeams*ns_prof, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
        CALL MPI_REDUCE(MPI_IN_PLACE,   dist_prof, nbeams*ns_prof*ns_prof, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
     ELSE
+       CALL MPI_REDUCE(end_state,     end_state,     nparticles,          MPI_INTEGER, MPI_MAX, master, MPI_COMM_SHARMEM, ierr_mpi)
        CALL MPI_REDUCE(epower_prof, epower_prof, nbeams*ns_prof, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
        CALL MPI_REDUCE(ipower_prof, ipower_prof, nbeams*ns_prof, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
        CALL MPI_REDUCE(ndot_prof,     ndot_prof, nbeams*ns_prof, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
@@ -443,6 +445,7 @@ SUBROUTINE beams3d_follow
     IF (myid_sharmem == master) i = 0
     CALL MPI_COMM_SPLIT( MPI_COMM_BEAMS,i,myworkid,MPI_COMM_LOCAL,ierr_mpi)
     IF (myid_sharmem == master) THEN
+       CALL MPI_ALLREDUCE(MPI_IN_PLACE,   end_state,     nparticles,          MPI_INTEGER, MPI_MAX, MPI_COMM_LOCAL, ierr_mpi)
        CALL MPI_ALLREDUCE(MPI_IN_PLACE, epower_prof, nbeams*ns_prof, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
        CALL MPI_ALLREDUCE(MPI_IN_PLACE, ipower_prof, nbeams*ns_prof, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
        CALL MPI_ALLREDUCE(MPI_IN_PLACE,   ndot_prof, nbeams*ns_prof, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)

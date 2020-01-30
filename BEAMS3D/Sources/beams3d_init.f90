@@ -17,7 +17,7 @@
       USE beams3d_input_mod, ONLY: read_beams3d_input
       USE beams3d_lines, ONLY: nparticles, epower_prof, ipower_prof, &
                                ndot_prof, j_prof, ns_prof, dist_prof, &
-                               partvmax
+                               partvmax, end_state
       USE wall_mod
       USE mpi_params
       USE adas_mod_parallel, ONLY: adas_load_tables
@@ -307,9 +307,9 @@
          ipower_prof=0; epower_prof=0; ndot_prof=0; j_prof = 0; dist_prof=0
       ELSE
         ALLOCATE(  R_start(nparticles), phi_start(nparticles), Z_start(nparticles), &
-         & v_neut(3,nparticles), mass(nparticles), charge(nparticles), &
-         & mu_start(nparticles), Zatom(nparticles), t_end(nparticles), vll_start(nparticles), &
-         & beam(nparticles), weight(nparticles)  )
+           v_neut(3,nparticles), mass(nparticles), charge(nparticles), &
+           mu_start(nparticles), Zatom(nparticles), t_end(nparticles), vll_start(nparticles), &
+           beam(nparticles), weight(nparticles) )
 
          R_start = r_start_in(1:nparticles)
          phi_start = phi_start_in(1:nparticles)
@@ -329,6 +329,10 @@
          ALLOCATE(dist_prof(1,ns_prof,ns_prof))
          ipower_prof=0; epower_prof=0; ndot_prof = 0; j_prof = 0; dist_prof=0
       END IF
+
+      ! In all cases create an end_state array
+      ALLOCATE(end_state(nparticles))
+      end_state=0
 
       ! Determine maximum particle velocity
       partvmax=MAXVAL(ABS(vll_start))*3.0/2.0
