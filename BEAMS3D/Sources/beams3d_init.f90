@@ -337,6 +337,7 @@
       ! Setup wall heat flux tracking
       IF (lwall_loaded) THEN
          CALL mpialloc(wall_load, nbeams, nface, myid_sharmem, 0, MPI_COMM_SHARMEM, win_wall_load)
+         IF (myid_sharmem == master) wall_load = 0
       END IF
 
       ! Determine maximum particle velocity
