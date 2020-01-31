@@ -24,6 +24,9 @@
 !     v1.52 11/22/16 - Added ability to model W7-X injector geometry
 !     v2.00 05/06/19 - Shared Memory model implemented
 !     v2.01 08/21/19 - Added ASCOT Interface
+!     v2.50 01/31/20 - Added Heating, Deposition, and Dist FUNCTION
+!                    - Tested ASCOT4 and ASCOT5 interfaces
+!                    - Now output wall and shinethrough heat flux
 !-----------------------------------------------------------------------
 MODULE beams3d_runtime
     !-----------------------------------------------------------------------
@@ -125,7 +128,7 @@ MODULE beams3d_runtime
     CHARACTER(256) :: id_string, mgrid_string, coil_string, &
     vessel_string, int_type, restart_string, bbnbi_string
 
-    REAL(rprec), PARAMETER :: BEAMS3D_VERSION = 2.00
+    REAL(rprec), PARAMETER :: BEAMS3D_VERSION = 2.50
     !-----------------------------------------------------------------------
     !     Subroutines
     !          handle_err  Controls Program Termination

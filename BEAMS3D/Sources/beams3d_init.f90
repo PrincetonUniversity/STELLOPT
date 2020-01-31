@@ -338,6 +338,8 @@
       IF (lwall_loaded) THEN
          CALL mpialloc(wall_load, nbeams, nface, myid_sharmem, 0, MPI_COMM_SHARMEM, win_wall_load)
          IF (myid_sharmem == master) wall_load = 0
+         CALL mpialloc(wall_shine, nbeams, nface, myid_sharmem, 0, MPI_COMM_SHARMEM, win_wall_shine)
+         IF (myid_sharmem == master) wall_shine = 0
       END IF
 
       ! Determine maximum particle velocity

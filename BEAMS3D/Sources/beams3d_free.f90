@@ -92,6 +92,7 @@
          IF (ASSOCIATED(U4D))      CALL mpidealloc(U4D,win_U4D)
          IF (ASSOCIATED(POT4D))    CALL mpidealloc(POT4D,win_POT4D)
          IF (ASSOCIATED(wall_load))    CALL mpidealloc(wall_load,win_wall_load)
+         IF (ASSOCIATED(wall_shine))    CALL mpidealloc(wall_shine,win_wall_shine)
       ELSE
          IF (ASSOCIATED(req_axis)) DEALLOCATE(req_axis)
          IF (ASSOCIATED(zeq_axis)) DEALLOCATE(zeq_axis)
@@ -121,6 +122,7 @@
          IF (ASSOCIATED(U4D))      DEALLOCATE(U4D)
          IF (ASSOCIATED(POT4D))    DEALLOCATE(POT4D)
          IF (ASSOCIATED(wall_load))    DEALLOCATE(wall_load)
+         IF (ASSOCIATED(wall_shine))    DEALLOCATE(wall_shine)
       ENDIF
       IF (ALLOCATED(R_start))   DEALLOCATE(R_start)
       IF (ALLOCATED(phi_start)) DEALLOCATE(phi_start)

@@ -16,7 +16,7 @@ SUBROUTINE out_beams3d_nag(t, q)
     USE beams3d_lines, ONLY: R_lines, Z_lines, PHI_lines, myline, moment, &
                              nsteps, nparticles, moment_lines, myend, &
                              vll_lines, neut_lines, mytdex, next_t,&
-                             lost_lines, dt_out, xlast, ylast, zlast,&
+                             dt_out, xlast, ylast, zlast,&
                              ltherm, S_lines, U_lines, B_lines, &
                              dist_prof, ns_prof, j_prof, ndot_prof, &
                              partvmax, mymass, mycharge, mybeam, end_state
@@ -123,14 +123,17 @@ SUBROUTINE out_beams3d_nag(t, q)
           R_lines(mytdex,myline)       = q2(1)
           PHI_lines(mytdex,myline)     = q2(2)
           Z_lines(mytdex,myline)       = zw
-          lost_lines(myline) = .TRUE.
           t = t_end(myline)+dt
-          end_state(myline) = 2
           l = get_wall_ik()
-          CALL fpart_nag(t,q2,qdot)
-          qdot(4)=0
-          wall_load(mybeam,l) = wall_load(mybeam,l) + weight(myline)*0.5*mymass*SUM(qdot*qdot)/get_wall_area(l)
-          IF (lneut) end_state(myline) = 3
+          IF (lneut) THEN  
+             end_state(myline) = 3
+             wall_shine(mybeam,l) = wall_shine(mybeam,l) + weight(myline)*0.5*mymass*q(4)*q(4)/get_wall_area(l)
+          ELSE
+             end_state(myline) = 2
+             CALL fpart_nag(t,q2,qdot)
+             qdot(4)=0
+             wall_load(mybeam,l) = wall_load(mybeam,l) + weight(myline)*0.5*mymass*SUM(qdot*qdot)/get_wall_area(l)
+          END IF
           IF (lhitonly) THEN
              R_lines(0,myline)      = SQRT(xlast*xlast+ylast*ylast)
              PHI_lines(0,myline)    = ATAN2(ylast,xlast)

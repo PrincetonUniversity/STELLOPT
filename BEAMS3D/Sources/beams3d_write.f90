@@ -16,7 +16,7 @@
       USE beams3d_lines
       USE beams3d_grid, ONLY: nr, nphi, nz, B_R, B_PHI, B_Z, raxis, &
                                  zaxis, phiaxis, S_ARR, U_ARR, POT_ARR, &
-                                 ZEFF_ARR, TE, TI, NE, wall_load
+                                 ZEFF_ARR, TE, TI, NE, wall_load, wall_shine
       USE beams3d_runtime, ONLY: id_string, npoinc, nbeams, beam, t_end, lverb, &
                                     lvmec, lpies, lspec, lcoil, lmgrid, lbeam, lascot, &
                                     lvessel, lvac, lbeam_simple, handle_err, nparticles_start, &
@@ -175,7 +175,12 @@
                IF (ASSOCIATED(wall_load)) THEN
                   CALL write_var_hdf5(fid,'wall_load',nbeams,nface,ier,DBLVAR=wall_load,&
                                    ATT='Wall Loads [W/m^2]',ATT_NAME='description')
-                  IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'wall_strikes',ier)
+                  IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'wall_load',ier)
+               END IF
+               IF (ASSOCIATED(wall_shine)) THEN
+                  CALL write_var_hdf5(fid,'wall_shine',nbeams,nface,ier,DBLVAR=wall_shine,&
+                                   ATT='Neutral Beam Shine-through [W/m^2]',ATT_NAME='description')
+                  IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'wall_shine',ier)
                END IF
             CASE('TRAJECTORY_FULL')
                CALL open_hdf5('beams3d_'//TRIM(id_string)//'.h5',fid,ier,LCREATE=.false.)
@@ -240,6 +245,11 @@
                   CALL write_var_hdf5(fid,'wall_load',nbeams,nface,ier,DBLVAR=wall_load,&
                                    ATT='Wall Loads [W/m^2]',ATT_NAME='description')
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'wall_strikes',ier)
+               END IF
+               IF (ASSOCIATED(wall_shine)) THEN
+                  CALL write_var_hdf5(fid,'wall_shine',nbeams,nface,ier,DBLVAR=wall_shine,&
+                                   ATT='Neutral Beam Shine-through [W/m^2]',ATT_NAME='description')
+                  IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'wall_shine',ier)
                END IF
             CASE('DIAG')
                CALL open_hdf5('beams3d_'//TRIM(id_string)//'.h5',fid,ier,LCREATE=.false.)
