@@ -31,7 +31,7 @@
             BEAMS3D_VERSION, mass_beams, charge_beams
       USE beams3d_grid, ONLY: nte, nne, nti, nzeff, rmin, rmax, zmin, zmax, &
                               phimin, phimax
-      USE beams3d_lines, ONLY: lost_lines
+      USE beams3d_lines, ONLY: end_state
 !DEC$ ENDIF
       USE mpi_params
       
@@ -159,6 +159,7 @@
       IF (lscreen) WRITE(6,'(a)') '------------------------  ORBIT CALCULATION (DONE)  ----------------------'
       CALL FLUSH(6)
       
+      CALL beams3d_read(proc_string)
 
       ! Now analyze the results
       IF (ALLOCATED(orbit_lost_frac)) DEALLOCATE(orbit_lost_frac)
@@ -170,13 +171,14 @@
       IF (lscreen) WRITE(6,'(A)') '    ns     flux     Lost(%)'
       DO ik = 1, nsd
          IF (sigma_orbit(ik) .ge. bigno) CYCLE
-         orbit_lost_frac(ik) = DBLE(COUNT(lost_lines(u:v)))/DBLE(p)
+         orbit_lost_frac(ik) = DBLE(COUNT(end_state(u:v)==2))/DBLE(p)
          IF (lscreen) WRITE(6,'(3X,I3,3X,F9.5,3X,F5.1)') ik,rho(ik),orbit_lost_frac(ik)*100
          u = v + 1
          v = u + p - 1
       END DO
-      IF (ALLOCATED(lost_lines)) DEALLOCATE(lost_lines)
       iflag = 0
+
+      CALL beams3d_free
 
 
 !DEC$ ENDIF
