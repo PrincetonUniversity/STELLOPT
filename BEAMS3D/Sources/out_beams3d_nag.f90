@@ -129,7 +129,7 @@ SUBROUTINE out_beams3d_nag(t, q)
           l = get_wall_ik()
           CALL fpart_nag(t,q2,qdot)
           qdot(4)=0
-          wall_load(mybeam,l) = wall_load(mybeam,l) + weight(myline)*0.5*mymass*SUM(qdot*qdot)*get_wall_area(l)
+          wall_load(mybeam,l) = wall_load(mybeam,l) + weight(myline)*0.5*mymass*SUM(qdot*qdot)/get_wall_area(l)
           IF (lneut) end_state(myline) = 3
           IF (lhitonly) THEN
              R_lines(0,myline)      = SQRT(xlast*xlast+ylast*ylast)
