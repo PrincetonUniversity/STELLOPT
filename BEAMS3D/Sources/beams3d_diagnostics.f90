@@ -73,18 +73,12 @@
       ALLOCATE(int_mask(mystart:myend))
       ALLOCATE(int_mask2(0:npoinc,mystart:myend))
       ALLOCATE(real_mask(mystart:myend))
-      maxdist=MAXVAl(MAXVAL(vll_lines,DIM=2,MASK=(ABS(vll_lines)<1E8)),DIM=1)
-      mindist=MINVAl(MINVAL(vll_lines,DIM=2,MASK=(ABS(vll_lines)<1E8)),DIM=1)
 !DEC$ IF DEFINED (MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_BEAMS, ierr_mpi)
       IF (ierr_mpi /= 0) CALL handle_err(MPI_BARRIER_ERR, 'beams3d_follow', ierr_mpi)
-      CALL MPI_ALLREDUCE(MPI_IN_PLACE,maxdist,1,MPI_DOUBLE_PRECISION,MPI_MAX,MPI_COMM_BEAMS,ierr_mpi)
-      IF (ierr_mpi /= 0) CALL handle_err(MPI_REDU_ERR, 'beams3d_diagnostic1', ierr_mpi)
-      CALL MPI_ALLREDUCE(MPI_IN_PLACE,mindist,1,MPI_DOUBLE_PRECISION,MPI_MIN,MPI_COMM_BEAMS,ierr_mpi)
-      IF (ierr_mpi /= 0) CALL handle_err(MPI_REDU_ERR, 'beams3d_diagnostic2', ierr_mpi)
 !DEC$ ENDIF
-      maxdist = max(ABS(mindist),ABS(maxdist))
-      mindist = -maxdist
+      maxdist = partvmax
+      mindist = -partvmax
 
       ! Setup masking arrays
       FORALL(i=0:npoinc) int_mask2(i,mystart:myend) = beam(mystart:myend)              ! Index of beams
@@ -119,8 +113,8 @@
       ! Calculate shinethrough and loss
       shine_through = 0
       DO i = 1, nbeams
-         shine_through(i) = 100.*COUNT(neut_lines(1,mystart:myend) .and. (beam(mystart:myend)==i),DIM=1)/COUNT(beam==i)
-         nlost(i)         = COUNT(lost_lines(mystart:myend).and. beam(mystart:myend) == i)
+         shine_through(i) = 100.*COUNT(end_state(mystart:myend) == 3 .and. (beam(mystart:myend)==i),DIM=1)/COUNT(beam==i)
+         nlost(i)         = COUNT(end_state(mystart:myend) == 2 .and. beam(mystart:myend) == i)
       END DO
 
 !DEC$ IF DEFINED (MPI_OPT)
@@ -200,23 +194,6 @@
          END IF
 
       END IF
-
-      ! Give master a full copy of lost_lines (for STELLOPT interface)
-      partmask(mystart:myend) = lost_lines(mystart:myend)
-      IF (myworkid == master) THEN
-           DEALLOCATE(lost_lines)
-           ALLOCATE(lost_lines(1:nparticles),revcounts(nprocs_beams),displs(nprocs_beams))
-           lost_lines(mystart:myend) = partmask(mystart:myend)
-      ELSE
-           ALLOCATE(revcounts(nprocs_beams),displs(nprocs_beams))
-      END IF
-      CALL MPI_GATHER(mystart,1,MPI_INTEGER,displs,1,MPI_INTEGER,master, MPI_COMM_BEAMS, ierr_mpi)
-      CALL MPI_GATHER(myend-mystart+1,1,MPI_INTEGER,revcounts,1,MPI_INTEGER,master, MPI_COMM_BEAMS, ierr_mpi)
-      CALL MPI_GATHERV(partmask(mystart:myend),myend-mystart+1,MPI_LOGICAL,&
-                       lost_lines,revcounts,displs,MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
-      IF (ALLOCATED(revcounts)) DEALLOCATE(revcounts)
-      IF (ALLOCATED(displs)) DEALLOCATE(displs)
-      IF (myworkid /= master) DEALLOCATE(lost_lines)
 
       CALL beams3d_write('DIAG')
 

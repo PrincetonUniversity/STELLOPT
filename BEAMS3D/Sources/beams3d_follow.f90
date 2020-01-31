@@ -21,7 +21,7 @@ SUBROUTINE beams3d_follow
     USE beams3d_lines
     USE beams3d_grid, ONLY: tmin, tmax, delta_t, BR_spl, BZ_spl, BPHI_spl, &
                             MODB_spl, S_spl, U_spl, TE_spl, NE_spl, TI_spl, &
-                            TE_spl, TI_spl, wall_load
+                            TE_spl, TI_spl, wall_load, wall_shine
     USE mpi_params ! MPI
     USE beams3d_physics_mod
     USE beams3d_write_par
@@ -151,7 +151,6 @@ SUBROUTINE beams3d_follow
     IF (ALLOCATED(B_lines)) DEALLOCATE(B_lines)
     IF (ALLOCATED(moment_lines)) DEALLOCATE(moment_lines)
     IF (ALLOCATED(neut_lines)) DEALLOCATE(neut_lines)
-    IF (ALLOCATED(lost_lines)) DEALLOCATE(lost_lines)
     
     ! Output some stuff
     IF (lverb) THEN
@@ -177,13 +176,10 @@ SUBROUTINE beams3d_follow
              neut_lines(0:npoinc, mystart:myend), S_lines(0:npoinc, mystart:myend), U_lines(0:npoinc, mystart:myend), &
               B_lines(0:npoinc, mystart:myend), STAT = ier)
     IF (ier /= 0) CALL handle_err(ALLOC_ERR, 'R_LINES, PHI_LINES, Z_LINES', ier)
-    ALLOCATE(lost_lines(mystart:myend), STAT = ier)
-    IF (ier /= 0) CALL handle_err(ALLOC_ERR, 'LOST_LINES', ier)
 
     ! Initializations
     R_lines = 0.0; Z_lines = 0.0; PHI_lines = -1.0
     vll_lines = 0.0; moment_lines = 0.0
-    lost_lines = .FALSE.
     S_lines = 1.5; U_lines = 0.0; B_lines = -1.0
     R_lines(0, mystart:myend) = R_start(mystart:myend)
     Z_lines(0, mystart:myend) = Z_start(mystart:myend)
@@ -456,6 +452,9 @@ SUBROUTINE beams3d_follow
        END IF
        IF (ASSOCIATED(wall_load)) THEN
           CALL MPI_ALLREDUCE(MPI_IN_PLACE,wall_load,nface*nbeams,MPI_DOUBLE_PRECISION,MPI_SUM,MPI_COMM_LOCAL,ierr_mpi)
+       END IF
+       IF (ASSOCIATED(wall_shine)) THEN
+          CALL MPI_ALLREDUCE(MPI_IN_PLACE,wall_shine,nface*nbeams,MPI_DOUBLE_PRECISION,MPI_SUM,MPI_COMM_LOCAL,ierr_mpi)
        END IF
        CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)
     END IF
