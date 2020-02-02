@@ -107,6 +107,30 @@ beams3d_write.o: \
       beams3d_grid.o
       
 
+beams3d_write_ascoth4.o: \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Debug/ez_hdf5.o \
+      ../../LIBSTELL/Debug/safe_open_mod.o \
+      ../../LIBSTELL/Debug/wall_mod.o \
+      ../../LIBSTELL/Debug/mpi_params.o \
+      beams3d_runtime.o \
+      beams3d_lines.o \
+      beams3d_write_parhdf5.o \
+      beams3d_grid.o
+      
+
+beams3d_write_ascoth5.o: \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Debug/ez_hdf5.o \
+      ../../LIBSTELL/Debug/safe_open_mod.o \
+      ../../LIBSTELL/Debug/wall_mod.o \
+      ../../LIBSTELL/Debug/mpi_params.o \
+      beams3d_runtime.o \
+      beams3d_lines.o \
+      beams3d_write_parhdf5.o \
+      beams3d_grid.o
+      
+
 beams3d_write_parhdf5.o: \
       ../../LIBSTELL/Debug/stel_kinds.o \
       ../../LIBSTELL/Debug/ez_hdf5.o \
@@ -177,6 +201,13 @@ beams3d_init_beams.o: \
       
       
 beams3d_init_beams_w7x.o: \
+      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/Debug/mpi_params.o \
+      beams3d_lines.o \
+      beams3d_runtime.o
+
+
+beams3d_init_beams_bbnbi.o: \
       ../../LIBSTELL/Debug/stel_kinds.o \
       ../../LIBSTELL/Debug/mpi_params.o \
       beams3d_lines.o \
