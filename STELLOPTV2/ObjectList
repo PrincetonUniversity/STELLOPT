@@ -64,6 +64,8 @@ chisq_regcoil_volume_diff.o \
 chisq_regcoil_c2p_dist_min.o \
 chisq_regcoil_bnormal_total.o \
 chisq_regcoil_k2.o \
+chisq_regcoil_current_potential.o \
+chisq_regcoil_max_current_potential.o \
 chisq_rosenbrock.o \
 chisq_vessel.o \
 chisq_b0.o \

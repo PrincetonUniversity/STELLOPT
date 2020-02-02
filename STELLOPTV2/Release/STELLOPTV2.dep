@@ -13,6 +13,7 @@ stellopt_write_eqfile.o : \
 stellopt_write_inputfile.o : \
       stellopt_input_mod.o \
       stellopt_runtime.o \
+      $(BEAMS3D_DIR)/Release/beams3d_input_mod.o \
       $(DIAGNO_DIR)/Release/diagno_input_mod.o \
       $(LIB_DIR)/Release/bootsj_input.o \
       $(NEO_DIR)/Release/neo_input_mod.o \
@@ -143,7 +144,7 @@ chisq_regcoil_lambda.o : \
       equil_vals.o
 
   
-chisq_regcoil_max_k.o : \
+chisq_regcoil_k2.o : \
       stellopt_runtime.o \
       stellopt_targets.o \
       stellopt_input_mod.o \
@@ -151,6 +152,30 @@ chisq_regcoil_max_k.o : \
       equil_vals.o
       
        
+chisq_regcoil_max_current_potential.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      stellopt_input_mod.o \
+      stellopt_vars.o \
+      equil_vals.o
+      
+       
+chisq_regcoil_current_potential.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      stellopt_input_mod.o \
+      stellopt_vars.o \
+      equil_vals.o
+      
+
+ chisq_regcoil_max_k.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      stellopt_input_mod.o \
+      stellopt_vars.o \
+      equil_vals.o
+      
+        
 chisq_regcoil_rms_k.o : \
       stellopt_runtime.o \
       stellopt_targets.o \
@@ -215,13 +240,7 @@ chisq_regcoil_volume_plasma.o : \
       equil_vals.o
 
 
-chisq_rosenbrock.o : \
-      stellopt_runtime.o \
-      stellopt_targets.o \
-      stellopt_input_mod.o \
-      stellopt_vars.o
 
- 
 chisq_regcoil_volume_diff.o : \
       stellopt_runtime.o \
       stellopt_targets.o \
@@ -245,7 +264,13 @@ chisq_regcoil_bnormal_total.o : \
       stellopt_vars.o \
       equil_vals.o
       
+chisq_rosenbrock.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      stellopt_input_mod.o \
+      stellopt_vars.o
 
+ 
 chisq_rbtor.o : \
       stellopt_runtime.o \
       stellopt_targets.o \

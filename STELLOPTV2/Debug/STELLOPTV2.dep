@@ -1,5 +1,24 @@
 # Microsoft Developer Studio Generated Dependency File, included by STELLOPT.mak
 
+stellopt_write_auxfiles.o : \
+      stellopt_runtime.o \
+      equil_utils.o \
+      stellopt_input_mod.o 
+
+stellopt_write_eqfile.o : \
+      stellopt_runtime.o \
+      $(LIB_DIR)/Debug/mpi_inc.o \
+      $(LIB_DIR)/Debug/read_wout_mod.o
+
+stellopt_write_inputfile.o : \
+      stellopt_input_mod.o \
+      stellopt_runtime.o \
+      $(BEAMS3D_DIR)/Debug/beams3d_input_mod.o \
+      $(DIAGNO_DIR)/Debug/diagno_input_mod.o \
+      $(LIB_DIR)/Debug/bootsj_input.o \
+      $(NEO_DIR)/Debug/neo_input_mod.o \
+      $(LIB_DIR)/Debug/safe_open_mod.o 
+
 stellopt_init_mpi.o : \
       stellopt_input_mod.o \
       stellopt_runtime.o \
@@ -125,7 +144,31 @@ chisq_regcoil_lambda.o : \
       equil_vals.o
 
 
-chisq_regcoil_max_k.o : \
+chisq_regcoil_k2.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      stellopt_input_mod.o \
+      stellopt_vars.o \
+      equil_vals.o
+
+      
+chisq_regcoil_max_current_potential.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      stellopt_input_mod.o \
+      stellopt_vars.o \
+      equil_vals.o
+      
+       
+chisq_regcoil_current_potential.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      stellopt_input_mod.o \
+      stellopt_vars.o \
+      equil_vals.o
+      
+
+ chisq_regcoil_max_k.o : \
       stellopt_runtime.o \
       stellopt_targets.o \
       stellopt_input_mod.o \
@@ -832,7 +875,7 @@ stellopt_bnorm.o : \
       stellopt_runtime.o \
       stellopt_input_mod.o \
       stellopt_vars.o \
-      $(LIB_DIR)/Release/mpi_params.o
+      $(LIB_DIR)/Debug/mpi_params.o
 
 
 stellopt_coiloptpp.o : \
