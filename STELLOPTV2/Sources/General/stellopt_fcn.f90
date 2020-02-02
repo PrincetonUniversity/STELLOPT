@@ -369,6 +369,8 @@
          IF ( ( ANY(sigma_regcoil_chi2_b < bigno) .or.   &
                 ANY(sigma_regcoil_lambda < bigno) .or.    &
                 ANY(sigma_regcoil_max_K < bigno) .or.    &
+                ANY(sigma_regcoil_current_potential < bigno) .or.    &
+                ANY(sigma_regcoil_max_current_potential < bigno) .or.    &
 	        ANY(sigma_regcoil_rms_K < bigno) .or.    &
 	        ANY(sigma_regcoil_chi2_k < bigno) .or.    &
 	        ANY(sigma_regcoil_max_bnormal < bigno) .or.    &

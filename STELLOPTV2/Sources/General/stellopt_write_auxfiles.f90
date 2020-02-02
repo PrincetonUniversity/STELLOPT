@@ -10,7 +10,8 @@
       USE stellopt_input_mod
       USE equil_utils, ONLY: move_txtfile, copy_txtfile, copy_boozer_file
       USE beams3d_runtime, ONLY: id_string_beams => id_string, lverb_beams => lverb
-      
+      USE regcoil_variables, ONLY: load_bnorm_regcoil => load_bnorm
+
 !-----------------------------------------------------------------------
 !     Subroutine Parameters
 !        NONE
@@ -136,7 +137,13 @@
                    !print *, '<---proc_string = ', proc_string
                    CALL copy_txtfile('regcoil_nescout.'//TRIM(proc_string_old),&
                                      'regcoil_nescout.'//TRIM(proc_string))
+                   IF (load_bnorm_regcoil) THEN
+                       CALL move_txtfile('bnorm.'//TRIM(proc_string_old),&
+                                         'bnorm.'//TRIM(proc_string))
+                   END IF
+                     
               END IF
+   !   
 !DEC$ ENDIF
 !DEC$ IF DEFINED (TERPSICHORE)
       IF (ANY(sigma_kink < bigno)) THEN

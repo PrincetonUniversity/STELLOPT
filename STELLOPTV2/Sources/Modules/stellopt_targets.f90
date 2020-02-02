@@ -188,6 +188,8 @@
       REAL(rprec),DIMENSION((2*ntor_rcws+1)*(2*mpol_rcws+1)*4) ::  target_regcoil_lambda, sigma_regcoil_lambda
       REAL(rprec),DIMENSION((2*ntor_rcws+1)*(2*mpol_rcws+1)*4) ::  target_regcoil_rms_K, sigma_regcoil_rms_K
       REAL(rprec),DIMENSION((2*ntor_rcws+1)*(2*mpol_rcws+1)*4) ::  target_regcoil_max_K, sigma_regcoil_max_K
+      REAL(rprec),DIMENSION((2*ntor_rcws+1)*(2*mpol_rcws+1)*4) ::  target_regcoil_current_potential, sigma_regcoil_current_potential
+      REAL(rprec),DIMENSION((2*ntor_rcws+1)*(2*mpol_rcws+1)*4) ::  target_regcoil_max_current_potential, sigma_regcoil_max_current_potential
       REAL(rprec),DIMENSION((2*ntor_rcws+1)*(2*mpol_rcws+1)*4) ::  target_regcoil_chi2_K, sigma_regcoil_chi2_K
       REAL(rprec),DIMENSION((2*ntor_rcws+1)*(2*mpol_rcws+1)*4) ::  target_regcoil_max_bnormal, sigma_regcoil_max_bnormal
       REAL(rprec),DIMENSION((2*ntor_rcws+1)*(2*mpol_rcws+1)*4) ::  target_regcoil_area_coil, sigma_regcoil_area_coil
@@ -271,6 +273,8 @@
       INTEGER, PARAMETER :: jtarget_regcoil_bnormal_total   = 5052
       INTEGER, PARAMETER :: jtarget_regcoil_c2p_dist_min    = 5053
       INTEGER, PARAMETER :: jtarget_regcoil_K2              = 5054
+      INTEGER, PARAMETER :: jtarget_regcoil_current_potential      = 5055
+      INTEGER, PARAMETER :: jtarget_regcoil_max_current_potential  = 5056
       INTEGER, PARAMETER :: jtarget_curvature_P2    = 505
       INTEGER, PARAMETER :: jtarget_balloon    = 601
       INTEGER, PARAMETER :: jtarget_kink       = 6011
@@ -442,6 +446,10 @@
             WRITE(iunit, out_format) 'REGCOIL RMS K'
          CASE(jtarget_regcoil_max_K)
             WRITE(iunit, out_format) 'REGCOIL MAX K'
+         CASE(jtarget_regcoil_current_potential)
+            WRITE(iunit, out_format) 'REGCOIL CURRENT POTENTIAL'
+         CASE(jtarget_regcoil_max_current_potential)
+            WRITE(iunit, out_format) 'REGCOIL MAX CURRENT POTENTIAL'
          CASE(jtarget_regcoil_chi2_k)
             WRITE(iunit, out_format) 'REGCOIL Chi^2 K'
          CASE(jtarget_regcoil_max_bnormal)

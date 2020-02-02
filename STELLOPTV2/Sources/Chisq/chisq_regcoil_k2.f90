@@ -1,5 +1,5 @@
 !-----------------------------------------------------------------------
-!     Subroutine:    chisq_regcoil_K2
+!     Subroutine:    chisq_regcoil_k2
 !     Authors:       J.C. Schmitt (Auburn/PPPL) (jcschmitt@auburn.edu)
 !     Date:          2017-2018
 !     Description:   Chisq routine(s) for REGCOIL.
@@ -25,7 +25,7 @@
 !                    the number of sigmas less than bigno.
 !                    On entry, if niter is equlal to -2, the value of
 !                    target_dex(mtargets) will be set to
-!                    jtarget_regcoil_K2
+!                    jtarget_regcoil_k2
 !                    On entry, if niter is 0 or larger, then:
 !                       increment mtargets, and
 !                       assign targets, sigmas, and vals to the

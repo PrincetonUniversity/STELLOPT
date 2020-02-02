@@ -25,7 +25,7 @@
 !                    the number of sigmas less than bigno.
 !                    On entry, if niter is equlal to -2, the value of
 !                    target_dex(mtargets) will be set to
-!                    jtarget_regcoil_max_K
+!                    jtarget_regcoil_c2p_dist_min
 !                    On entry, if niter is 0 or larger, then:
 !                       increment mtargets, and
 !                       assign targets, sigmas, and vals to the

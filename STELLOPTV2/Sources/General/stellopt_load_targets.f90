@@ -311,6 +311,14 @@
       IF (ANY(sigma_regcoil_K2 < bigno)) THEN
          CALL chisq_regcoil_k2(target_regcoil_K2, sigma_regcoil_K2, ncnt,iflag)
       END IF
+      ! REGCOIL Coil Optimization (current potential targets)
+      IF (ANY(sigma_regcoil_current_potential < bigno)) THEN
+         CALL chisq_regcoil_current_potential(target_regcoil_current_potential, sigma_regcoil_current_potential, ncnt,iflag)
+      END IF
+      ! REGCOIL Coil Optimization (max current potential targets)
+      IF (ANY(sigma_regcoil_max_current_potential < bigno)) THEN
+         CALL chisq_regcoil_max_current_potential(target_regcoil_max_current_potential, sigma_regcoil_max_current_potential, ncnt,iflag)
+      END IF
        ! REGCOIL Coil Optimization (coil plasma distance min targets)
       IF (ANY(sigma_regcoil_c2p_dist_min < bigno)) THEN
          CALL chisq_regcoil_c2p_dist_min(target_regcoil_c2p_dist_min, sigma_regcoil_c2p_dist_min, ncnt,iflag)

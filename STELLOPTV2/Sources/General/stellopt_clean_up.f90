@@ -174,6 +174,8 @@
                IF (ier == 0) CLOSE(iunit,STATUS='delete')
                OPEN(iunit,FILE=TRIM('answers.'//TRIM(proc_string)),STATUS='unknown',IOSTAT=ier)
                IF (ier == 0) CLOSE(iunit,STATUS='delete')
+               OPEN(iunit,FILE=TRIM('bnorm.'//TRIM(proc_string)),STATUS='unknown',IOSTAT=ier)
+               IF (ier == 0) CLOSE(iunit,STATUS='delete')
                OPEN(iunit,FILE=TRIM('boozmn_'//TRIM(proc_string)//'.nc'),STATUS='unknown',IOSTAT=ier)
                IF (ier == 0) CLOSE(iunit,STATUS='delete')
                OPEN(iunit,FILE=TRIM('diagno_bth.'//TRIM(proc_string)),STATUS='unknown',IOSTAT=ier)

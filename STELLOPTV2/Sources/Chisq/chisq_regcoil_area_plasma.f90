@@ -43,7 +43,7 @@
       USE stellopt_input_mod
       USE stellopt_vars, ONLY: regcoil_nlambda, mnprod_x4_rcws
 !DEC$ IF DEFINED (REGCOIL)
-      USE regcoil_variables, ONLY:  area_plasma, nlambda, regcoil_nml
+      USE regcoil_variables, ONLY:  nlambda, area_plasma, regcoil_nml
 !DEC$ ENDIF      
 !-----------------------------------------------------------------------
 !     Input/Output Variables
@@ -106,10 +106,11 @@
 
             !CALL regcoil_read_input(iunit, iflag)
             READ(iunit, nml=regcoil_nml, iostat=iflag)
-
-            ! save an internal copy of the value of nlambda here (regcoil may
-            ! overwrite it)
             regcoil_nlambda = nlambda
+
+!            ! save an internal copy of the value of nlambda here (regcoil may
+!            ! overwrite it)
+!            regcoil_nlambda = nlambda
             close(iunit)
             IF (iflag < 0) THEN
                WRITE(6,*) '!!!!!!!!!!!!ERRROR!!!!!!!!!!!!!!'
