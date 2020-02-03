@@ -10,7 +10,9 @@
       USE stellopt_input_mod
       USE equil_utils, ONLY: move_txtfile, copy_txtfile, copy_boozer_file
       USE beams3d_runtime, ONLY: id_string_beams => id_string, lverb_beams => lverb
+!DEC$ IF DEFINED (REGCOIL)
       USE regcoil_variables, ONLY: load_bnorm_regcoil => load_bnorm
+!DEC$ ENDIF
 
 !-----------------------------------------------------------------------
 !     Subroutine Parameters
@@ -143,7 +145,6 @@
                    END IF
                      
               END IF
-   !   
 !DEC$ ENDIF
 !DEC$ IF DEFINED (TERPSICHORE)
       IF (ANY(sigma_kink < bigno)) THEN
