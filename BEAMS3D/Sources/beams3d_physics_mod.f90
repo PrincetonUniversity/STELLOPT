@@ -20,7 +20,7 @@ MODULE beams3d_physics_mod
                                mymass, myv_neut, B_temp, rand_prob, &
                                cum_prob, tau, &
                                epower_prof, ipower_prof, &
-                               ns_prof
+                               ns_prof, end_state
       USE beams3d_grid, ONLY: BR_spl, BZ_spl, delta_t, BPHI_spl, MODB_spl, MODB4D, &
                               phimax, S4D, TE4D, NE4D, TI4D, ZEFF4D, &
                               nr, nphi, nz, rmax, rmin, zmax, zmin, &
@@ -309,6 +309,7 @@ MODULE beams3d_physics_mod
          !--------------------------------------------------------------
          !     Follow neutral into plasma using subgrid
          !--------------------------------------------------------------
+         end_state(myline) = 3 ! It's a neutral for now
          xlast = qf(1)
          ylast = qf(2)
          zlast = qf(3)
@@ -614,6 +615,7 @@ MODULE beams3d_physics_mod
          !     Begin Subroutine
          !--------------------------------------------------------------
          lneut = .false.
+         end_state(myline) = 0
          CALL RANDOM_NUMBER(rand_prob)
 
          ! Evaluate splines
