@@ -271,7 +271,7 @@
                                          ATT='Ion Power Deposition [W*m^-3]',ATT_NAME='description')
                      IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ipower_prof',ier)
                      CALL write_var_hdf5(fid,'j_prof',nbeams,ns_prof,ier,DBLVAR=j_prof,&
-                                         ATT='Total Beam Current Density [A*m^-2/s]',ATT_NAME='description')
+                                         ATT='Total Beam Current Density [A*m^-2]',ATT_NAME='description')
                      IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'J_prof',ier)
                      CALL write_var_hdf5(fid,'dist_prof',nbeams,ns_prof,ns_prof,ier,DBLVAR=dist_prof,&
                                          ATT='Distribution Function [part/s]',ATT_NAME='description')

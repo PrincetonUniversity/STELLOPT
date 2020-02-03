@@ -99,13 +99,15 @@ SUBROUTINE out_beams3d_nag(t, q)
        !CALL EZspline_interp(MODB_spl,q(1),x0,q(3),x1,ier)
        !IF (myworkid == 0) PRINT *,'--',y0,z0,x1
        l = MAX(MIN(CEILING(SQRT(y0)*ns_prof),ns_prof),1)
-       j_prof(mybeam,l)      =      j_prof(mybeam,l) + mycharge*q(4)*weight(myline)
-    END IF
-    IF (lcollision) CALL beams3d_physics(t,q)
-    IF (ltherm) THEN
-      ndot_prof(mybeam,l)   =   ndot_prof(mybeam,l) + weight(myline)
-      end_state(myline) = 1
-      t = t_end(myline)
+       j_prof(mybeam,l)      =      j_prof(mybeam,l) + mycharge*q(4)*weight(myline)*dt
+       IF (lcollision) CALL beams3d_physics(t,q)
+       IF (ltherm) THEN
+          ndot_prof(mybeam,l)   =   ndot_prof(mybeam,l) + weight(myline)
+          end_state(myline) = 1
+          t = t_end(myline)
+       END IF
+    ELSE
+       IF (lneut) end_state(myline)=3
     END IF
     IF (lvessel .and. mytdex > 0 .and. y0 > 0.5) THEN
        lhit = .false.
