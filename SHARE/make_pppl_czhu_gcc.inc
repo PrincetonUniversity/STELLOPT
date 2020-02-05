@@ -22,8 +22,6 @@
   NETCDF_F = $(NETCDF_FORTRAN_HOME)
   NETCDF_C = $(NETCDF_C_HOME)
   HDF5_HOME = $(HDF5_PARALLEL_HOME)
-  #NETCDF_F = /usr/pppl/gcc/6.1-pkgs/netcdf-fortran-4.4.4
-  #NETCDF_C = /usr/pppl/gcc/6.1-pkgs/netcdf-c-4.4.1
 
   LIBS    = -lopenblas -L$(SCALAPACK_HOME)/lib -lscalapack 
 
@@ -218,6 +216,9 @@ ifeq ($(MAKECMDGOALS),xstelloptv2)
   JINV_DIR = ../../J_INVARIANT
   LIB_JINV = libjinv.a
   MOD_PATH+= -I$(JINV_DIR)/$(LOCTYPE)
+  FIELDLINES_DIR = ../../FIELDLINES
+  LIB_FIELDLINES = libfieldlines.a
+  MOD_PATH+= -I$(FIELDLINES_DIR)/$(LOCTYPE)
   MGRID_DIR= ../../MAKEGRID
   LIB_MGRID= libmakegrid.a
   MOD_PATH+= -I$(MGRID_DIR)/$(LOCTYPE)
@@ -228,6 +229,7 @@ ifeq ($(MAKECMDGOALS),xstelloptv2)
 	$(BOOZ_DIR)/$(LOCTYPE)/$(LIB_BOOZ) \
 	$(COBRA_DIR)/$(LOCTYPE)/$(LIB_COBRA) \
 	$(DIAGNO_DIR)/$(LOCTYPE)/$(LIB_DIAGNO) \
+	$(FIELDLINES_DIR)/$(LOCTYPE)/$(LIB_FIELDLINES) \
 	$(JINV_DIR)/$(LOCTYPE)/$(LIB_JINV) \
 	$(MGRID_DIR)/$(LOCTYPE)/$(LIB_MGRID) 
   ifeq ($(LDKES),T)
