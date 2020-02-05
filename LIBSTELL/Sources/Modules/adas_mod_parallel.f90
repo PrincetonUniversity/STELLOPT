@@ -319,63 +319,63 @@ module adas_mod_parallel
        CALL adas_get_var_2D(table_str,var_str,dimlen(1),dimlen(2),ii_2_8_btsigv,myid,comm)
 
        ! Beam Stopping 1-1
-       table_str=TRIM(adasdir) // '/tables/sv/ex_1_1.cdf'
-       var_str = 'energy_vec'
-       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
-       CALL mpialloc(ex_1_1_e, dimlen(1), myid, local_master, comm, win_ex_11_e)
-       CALL adas_get_var_1D(table_str,var_str,dimlen(1),ex_1_1_e,myid,comm)
-       var_str = 'density_vec'
-       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
-       CALL mpialloc(ex_1_1_n, dimlen(1), myid, local_master, comm, win_ex_11_n)
-       CALL adas_get_var_1D(table_str,var_str,dimlen(1),ex_1_1_n,myid,comm)
-       var_str = 'temp_vec'
-       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
-       CALL mpialloc(ex_1_1_t, dimlen(1), myid, local_master, comm, win_ex_11_t)
-       CALL adas_get_var_1D(table_str,var_str,dimlen(1),ex_1_1_t,myid,comm)
-       var_str = 'sigv_excite'
-       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
-       CALL mpialloc(ex_1_1, dimlen(1), dimlen(2),dimlen(3), myid, local_master, comm, win_ex_11)
-       CALL adas_get_var_3D(table_str,var_str,dimlen(1),dimlen(2),dimlen(3),ex_1_1,myid,comm)
+       !table_str=TRIM(adasdir) // '/tables/sv/ex_1_1.cdf'
+       !var_str = 'energy_vec'
+       !CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       !CALL mpialloc(ex_1_1_e, dimlen(1), myid, local_master, comm, win_ex_11_e)
+       !CALL adas_get_var_1D(table_str,var_str,dimlen(1),ex_1_1_e,myid,comm)
+       !var_str = 'density_vec'
+       !CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       !CALL mpialloc(ex_1_1_n, dimlen(1), myid, local_master, comm, win_ex_11_n)
+       !CALL adas_get_var_1D(table_str,var_str,dimlen(1),ex_1_1_n,myid,comm)
+       !var_str = 'temp_vec'
+       !CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       !CALL mpialloc(ex_1_1_t, dimlen(1), myid, local_master, comm, win_ex_11_t)
+       !CALL adas_get_var_1D(table_str,var_str,dimlen(1),ex_1_1_t,myid,comm)
+       !var_str = 'sigv_excite'
+       !CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       !CALL mpialloc(ex_1_1, dimlen(1), dimlen(2),dimlen(3), myid, local_master, comm, win_ex_11)
+       !CALL adas_get_var_3D(table_str,var_str,dimlen(1),dimlen(2),dimlen(3),ex_1_1,myid,comm)
 
        ! Beam Stopping 1-2
-       table_str=TRIM(adasdir) // '/tables/sv/ex_1_2.cdf'
-       var_str = 'energy_vec'
-       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
-       CALL mpialloc(ex_1_2_e, dimlen(1), myid, local_master, comm, win_ex_12_e)
-       CALL adas_get_var_1D(table_str,var_str,dimlen(1),ex_1_2_e,myid,comm)
-       var_str = 'density_vec'
-       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
-       CALL mpialloc(ex_1_2_n, dimlen(1), myid, local_master, comm, win_ex_12_n)
-       CALL adas_get_var_1D(table_str,var_str,dimlen(1),ex_1_2_n,myid,comm)
-       var_str = 'temp_vec'
-       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
-       CALL mpialloc(ex_1_2_t, dimlen(1), myid, local_master, comm, win_ex_12_t)
-       CALL adas_get_var_1D(table_str,var_str,dimlen(1),ex_1_2_t,myid,comm)
-       var_str = 'sigv_excite'
-       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
-       CALL mpialloc(ex_1_2, dimlen(1), dimlen(2),dimlen(3), myid, local_master, comm, win_ex_12)
-       CALL adas_get_var_3D(table_str,var_str,dimlen(1),dimlen(2),dimlen(3),ex_1_2,myid,comm)
+       !table_str=TRIM(adasdir) // '/tables/sv/ex_1_2.cdf'
+       !var_str = 'energy_vec'
+       !CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       !CALL mpialloc(ex_1_2_e, dimlen(1), myid, local_master, comm, win_ex_12_e)
+       !CALL adas_get_var_1D(table_str,var_str,dimlen(1),ex_1_2_e,myid,comm)
+       !var_str = 'density_vec'
+       !CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       !CALL mpialloc(ex_1_2_n, dimlen(1), myid, local_master, comm, win_ex_12_n)
+       !CALL adas_get_var_1D(table_str,var_str,dimlen(1),ex_1_2_n,myid,comm)
+       !var_str = 'temp_vec'
+       !CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       !CALL mpialloc(ex_1_2_t, dimlen(1), myid, local_master, comm, win_ex_12_t)
+       !CALL adas_get_var_1D(table_str,var_str,dimlen(1),ex_1_2_t,myid,comm)
+       !var_str = 'sigv_excite'
+       !CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       !CALL mpialloc(ex_1_2, dimlen(1), dimlen(2),dimlen(3), myid, local_master, comm, win_ex_12)
+       !CALL adas_get_var_3D(table_str,var_str,dimlen(1),dimlen(2),dimlen(3),ex_1_2,myid,comm)
 
        ! Beam Stopping 1-3
-       table_str=TRIM(adasdir) // '/tables/sv/ex_1_3.cdf'
-       var_str = 'energy_vec'
-       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
-       CALL mpialloc(ex_1_3_e, dimlen(1), myid, local_master, comm, win_ex_13_e)
-       CALL adas_get_var_1D(table_str,var_str,dimlen(1),ex_1_3_e,myid,comm)
-       var_str = 'density_vec'
-       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
-       CALL mpialloc(ex_1_3_n, dimlen(1), myid, local_master, comm, win_ex_13_n)
-       CALL adas_get_var_1D(table_str,var_str,dimlen(1),ex_1_3_n,myid,comm)
-       var_str = 'temp_vec'
-       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
-       CALL mpialloc(ex_1_3_t, dimlen(1), myid, local_master, comm, win_ex_13_t)
-       CALL adas_get_var_1D(table_str,var_str,dimlen(1),ex_1_3_t,myid,comm)
-       var_str = 'sigv_excite'
-       CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
-       CALL mpialloc(ex_1_3, dimlen(1), dimlen(2),dimlen(3), myid, local_master, comm, win_ex_13)
-       CALL adas_get_var_3D(table_str,var_str,dimlen(1),dimlen(2),dimlen(3),ex_1_3,myid,comm)
+       !table_str=TRIM(adasdir) // '/tables/sv/ex_1_3.cdf'
+       !var_str = 'energy_vec'
+       !CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       !CALL mpialloc(ex_1_3_e, dimlen(1), myid, local_master, comm, win_ex_13_e)
+       !CALL adas_get_var_1D(table_str,var_str,dimlen(1),ex_1_3_e,myid,comm)
+       !var_str = 'density_vec'
+       !CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       !CALL mpialloc(ex_1_3_n, dimlen(1), myid, local_master, comm, win_ex_13_n)
+       !CALL adas_get_var_1D(table_str,var_str,dimlen(1),ex_1_3_n,myid,comm)
+       !var_str = 'temp_vec'
+       !CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       !CALL mpialloc(ex_1_3_t, dimlen(1), myid, local_master, comm, win_ex_13_t)
+       !CALL adas_get_var_1D(table_str,var_str,dimlen(1),ex_1_3_t,myid,comm)
+       !var_str = 'sigv_excite'
+       !CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       !CALL mpialloc(ex_1_3, dimlen(1), dimlen(2),dimlen(3), myid, local_master, comm, win_ex_13)
+       !CALL adas_get_var_3D(table_str,var_str,dimlen(1),dimlen(2),dimlen(3),ex_1_3,myid,comm)
 
-       ! BEAM Stopping
+       RETURN
 
        END SUBROUTINE adas_load_tables
 
