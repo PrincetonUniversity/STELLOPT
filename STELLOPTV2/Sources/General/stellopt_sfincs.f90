@@ -15,6 +15,7 @@
       USE stellopt_input_mod
       USE stellopt_vars
       USE equil_utils
+      USE mpi_inc
 
       USE sfincs_main, only: sfincs_init, sfincs_prepare, sfincs_run
       USE globalVariables, only: sfincs_inputFilename => inputFilename, sfincs_outputFilename => outputFilename, equilibriumFile, FSABjHat, FSABHat2

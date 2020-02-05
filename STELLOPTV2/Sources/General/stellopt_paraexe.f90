@@ -386,8 +386,10 @@
 !DEC$ ENDIF
             CASE('coilopt++')
                CALL stellopt_coiloptpp(file_str,lscreen)
-            CASE('regcoil_chi2_b')
-               CALL stellopt_regcoil_chi2_b(lscreen,ier)
+            CASE('regcoil_driver')
+               !  Warning; This parallel call is untested.
+               WRITE (6, *) '<----stellopt_paraxe calling regcoil_driver'
+               CALL stellopt_regcoil_driver(file_str,lscreen,ier)
             CASE('terpsichore')
                proc_string = file_str
                ier = 0

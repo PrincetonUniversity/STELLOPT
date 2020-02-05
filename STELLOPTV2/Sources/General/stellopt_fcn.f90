@@ -111,8 +111,6 @@
          IF (var_dex(nvar_in) == ixics_v0) xics_v0 = x(nvar_in)
          IF (var_dex(nvar_in) == iregcoil_winding_surface_separation) &
                 regcoil_winding_surface_separation = x(nvar_in)
-         IF (var_dex(nvar_in) == iregcoil_current_density) &
-                regcoil_current_density = x(nvar_in)
          IF (var_dex(nvar_in) == ibcrit) bcrit = x(nvar_in)
          IF (var_dex(nvar_in) == iextcur) extcur(arr_dex(nvar_in,1)) = x(nvar_in)
          IF (var_dex(nvar_in) == iaphi) aphi(arr_dex(nvar_in,1)) = x(nvar_in)
@@ -368,11 +366,28 @@
          IF (sigma_coil_bnorm < bigno .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
 !DEC$ ENDIF
 !DEC$ IF DEFINED (REGCOIL)
-         ! JCS: skipping parallelization for now 
-         ! ctemp_str = 'regcoil_chi2_b'
-         ! IF (sigma_regcoil_chi2_b < bigno .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen)
-         IF (ANY(sigma_regcoil_chi2_b < bigno) .and. (iflag >=0)) then
-           CALL stellopt_regcoil_chi2_b(lscreen, iflag)
+         IF ( ( ANY(sigma_regcoil_chi2_b < bigno) .or.   &
+                ANY(sigma_regcoil_lambda < bigno) .or.    &
+                ANY(sigma_regcoil_max_K < bigno) .or.    &
+                ANY(sigma_regcoil_current_potential < bigno) .or.    &
+                ANY(sigma_regcoil_max_current_potential < bigno) .or.    &
+	        ANY(sigma_regcoil_rms_K < bigno) .or.    &
+	        ANY(sigma_regcoil_chi2_k < bigno) .or.    &
+	        ANY(sigma_regcoil_max_bnormal < bigno) .or.    &
+	        ANY(sigma_regcoil_area_coil < bigno) .or.    &
+	        ANY(sigma_regcoil_area_plasma < bigno) .or.    &
+	        ANY(sigma_regcoil_area_diff < bigno) .or.    &
+	        ANY(sigma_regcoil_volume_coil < bigno) .or.    &
+	        ANY(sigma_regcoil_volume_plasma < bigno) .or.    &
+	        ANY(sigma_regcoil_volume_diff < bigno) .or.    &
+                ANY(sigma_regcoil_c2p_dist_min < bigno) .or.    &
+	        ANY(sigma_regcoil_bnormal_total < bigno) .or.  &
+	        ANY(sigma_regcoil_K2 < bigno)   ) .and. (iflag >=0)) then
+           !Skipping parallelization for now - instead, call regcoi_driver directly.
+           CALL stellopt_regcoil_driver(proc_string, lscreen, iflag)
+           ! Unstested parallel call is commented out here.
+           ! ctemp_str = 'regcoil_driver'
+           ! CALL stellopt_paraexe(ctemp_str,proc_string,lscreen)
          end if
 !DEC$ ENDIF
 

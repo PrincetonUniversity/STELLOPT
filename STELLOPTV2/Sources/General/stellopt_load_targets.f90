@@ -259,6 +259,70 @@
       IF (ANY(sigma_regcoil_chi2_b < bigno)) THEN
          CALL chisq_regcoil_chi2_b(target_regcoil_chi2_b, sigma_regcoil_chi2_b, ncnt,iflag)
       END IF
+      ! REGCOIL Coil Optimization (LAMBDA targets)
+      IF (ANY(sigma_regcoil_lambda < bigno)) THEN
+         CALL chisq_regcoil_lambda(target_regcoil_lambda, sigma_regcoil_lambda, ncnt,iflag)
+      END IF
+      ! REGCOIL Coil Optimization (MAX_K targets)
+      IF (ANY(sigma_regcoil_max_K < bigno)) THEN
+         CALL chisq_regcoil_max_k(target_regcoil_max_K, sigma_regcoil_max_K, ncnt,iflag)
+      END IF
+      ! REGCOIL Coil Optimization (RMS_K targets)
+      IF (ANY(sigma_regcoil_rms_K < bigno)) THEN
+         CALL chisq_regcoil_rms_k(target_regcoil_rms_K, sigma_regcoil_rms_K, ncnt,iflag)
+      END IF
+      ! REGCOIL Coil Optimization (chi2_k targets)
+      IF (ANY(sigma_regcoil_chi2_k < bigno)) THEN
+         CALL chisq_regcoil_chi2_k(target_regcoil_chi2_k, sigma_regcoil_chi2_k, ncnt,iflag)
+      END IF
+      ! REGCOIL Coil Optimization (max_bnormal targets)
+      IF (ANY(sigma_regcoil_max_bnormal < bigno)) THEN
+         CALL chisq_regcoil_max_bnormal(target_regcoil_max_bnormal, sigma_regcoil_max_bnormal, ncnt,iflag)
+      END IF
+      ! REGCOIL Coil Optimization (area_coil targets)
+      IF (ANY(sigma_regcoil_area_coil < bigno)) THEN
+         CALL chisq_regcoil_area_coil(target_regcoil_area_coil, sigma_regcoil_area_coil, ncnt,iflag)
+      END IF
+      ! REGCOIL Coil Optimization (area_plasma targets)
+      IF (ANY(sigma_regcoil_area_plasma < bigno)) THEN
+         CALL chisq_regcoil_area_plasma(target_regcoil_area_plasma, sigma_regcoil_area_plasma, ncnt,iflag)
+      END IF
+      ! REGCOIL Coil Optimization (area_diff targets)
+      IF (ANY(sigma_regcoil_area_diff < bigno)) THEN
+         CALL chisq_regcoil_area_diff(target_regcoil_area_diff, sigma_regcoil_area_diff, ncnt,iflag)
+      END IF
+      ! REGCOIL Coil Optimization (volume_coil targets)
+      IF (ANY(sigma_regcoil_volume_coil < bigno)) THEN
+         CALL chisq_regcoil_volume_coil(target_regcoil_volume_coil, sigma_regcoil_volume_coil, ncnt,iflag)
+      END IF
+      ! REGCOIL Coil Optimization (volume_plasma targets)
+      IF (ANY(sigma_regcoil_volume_plasma < bigno)) THEN
+         CALL chisq_regcoil_volume_plasma(target_regcoil_volume_plasma, sigma_regcoil_volume_plasma, ncnt,iflag)
+      END IF
+      ! REGCOIL Coil Optimization (volume_diff targets)
+      IF (ANY(sigma_regcoil_volume_diff < bigno)) THEN
+         CALL chisq_regcoil_volume_diff(target_regcoil_volume_diff, sigma_regcoil_volume_diff, ncnt,iflag)
+      END IF
+      ! REGCOIL Coil Optimization (bnormal_total targets)
+      IF (ANY(sigma_regcoil_bnormal_total < bigno)) THEN
+         CALL chisq_regcoil_bnormal_total(target_regcoil_bnormal_total, sigma_regcoil_bnormal_total, ncnt,iflag)
+      END IF
+      ! REGCOIL Coil Optimization (K2 targets)
+      IF (ANY(sigma_regcoil_K2 < bigno)) THEN
+         CALL chisq_regcoil_k2(target_regcoil_K2, sigma_regcoil_K2, ncnt,iflag)
+      END IF
+      ! REGCOIL Coil Optimization (current potential targets)
+      IF (ANY(sigma_regcoil_current_potential < bigno)) THEN
+         CALL chisq_regcoil_current_potential(target_regcoil_current_potential, sigma_regcoil_current_potential, ncnt,iflag)
+      END IF
+      ! REGCOIL Coil Optimization (max current potential targets)
+      IF (ANY(sigma_regcoil_max_current_potential < bigno)) THEN
+         CALL chisq_regcoil_max_current_potential(target_regcoil_max_current_potential, sigma_regcoil_max_current_potential, ncnt,iflag)
+      END IF
+       ! REGCOIL Coil Optimization (coil plasma distance min targets)
+      IF (ANY(sigma_regcoil_c2p_dist_min < bigno)) THEN
+         CALL chisq_regcoil_c2p_dist_min(target_regcoil_c2p_dist_min, sigma_regcoil_c2p_dist_min, ncnt,iflag)
+      END IF
       IF (sigma_curvature_p2 < bigno) &
          CALL chisq_curvature_p2(target_curvature_p2, sigma_curvature_p2, ncnt, iflag)
 
