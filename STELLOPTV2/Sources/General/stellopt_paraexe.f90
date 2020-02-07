@@ -59,7 +59,8 @@
             lmgrid_beams => lmgrid, lascot_beams => lascot, &
             lvessel_beams => lvessel, lcoil_beams => lcoil, &
             lrestart_beams => lrestart, lbeam_simple_beams => lbeam_simple, &
-            lflux_beams => lflux, lplasma_only_beams => lplasma_only, &
+            lplasma_only_beams => lplasma_only, lascot4_beams => lascot4, &
+            lbbnbi_beams => lbbnbi, &
             lcollision_beams => lcollision, lw7x_beams => lw7x, &
             coil_string_beams => coil_string, mgrid_string_beams => mgrid_string,&
             vessel_string_beams => vessel_string, restart_string_beams => restart_string, &
@@ -297,12 +298,13 @@
                lcoil_beams        = .FALSE.
                lmgrid_beams       = .FALSE.
                lascot_beams       = .FALSE.
+               lascot4_beams      = .FALSE.
+               lbbnbi_beams       = .FALSE.
                lraw_beams         = .FALSE.
                lvessel_beams      = .FALSE.
                lvac_beams         = .FALSE.
                lrestart_beams     = .FALSE.
                lbeam_simple_beams = .FALSE.
-               lflux_beams        = .TRUE. ! Set to true so we get flux locations
                lhitonly           = .TRUE. ! Set to true to smaller files.
                IF (lscreen) lhitonly = .FALSE.
                lplasma_only_beams = .TRUE.

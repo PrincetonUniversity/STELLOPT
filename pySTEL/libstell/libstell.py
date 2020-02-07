@@ -2,7 +2,7 @@
 
 s1 = ""
 s2 = "mp"
-s3 = "_"
+s3 = "__"
 
 def read_vmec(file):
     import os, sys

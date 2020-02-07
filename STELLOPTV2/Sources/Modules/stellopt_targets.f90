@@ -104,6 +104,9 @@
       REAL(rprec), DIMENSION(nprof) ::  target_ti_line,sigma_ti_line, &
                                         r0_ti_line, phi0_ti_line, z0_ti_line, &
                                         r1_ti_line, phi1_ti_line, z1_ti_line
+      REAL(rprec), DIMENSION(nprof) ::  target_zeff_line,sigma_zeff_line, &
+                                        r0_zeff_line, phi0_zeff_line, z0_zeff_line, &
+                                        r1_zeff_line, phi1_zeff_line, z1_zeff_line
       REAL(rprec), DIMENSION(nprof) ::  target_xics,sigma_xics, &
                                         target_xics_bright,sigma_xics_bright, &
                                         target_xics_w3,sigma_xics_w3, &
@@ -235,10 +238,11 @@
       INTEGER, PARAMETER :: jtarget_line_te    = 2011
       INTEGER, PARAMETER :: jtarget_ti         = 202
       INTEGER, PARAMETER :: jtarget_line_ti    = 2021
-      INTEGER, PARAMETER :: jtarget_xics       = 2022
-      INTEGER, PARAMETER :: jtarget_xics_bright= 2023
-      INTEGER, PARAMETER :: jtarget_xics_w3    = 2024
-      INTEGER, PARAMETER :: jtarget_xics_v     = 2025
+      INTEGER, PARAMETER :: jtarget_line_zeff  = 2031
+      INTEGER, PARAMETER :: jtarget_xics       = 2042
+      INTEGER, PARAMETER :: jtarget_xics_bright= 2043
+      INTEGER, PARAMETER :: jtarget_xics_w3    = 2044
+      INTEGER, PARAMETER :: jtarget_xics_v     = 2045
       INTEGER, PARAMETER :: jtarget_press      = 203
       INTEGER, PARAMETER :: jtarget_vphi       = 204
       INTEGER, PARAMETER :: jtarget_iota       = 300  
@@ -360,6 +364,8 @@
             WRITE(iunit, out_format) 'Line Integrated Electron Temperature'
          CASE(jtarget_line_ti)
             WRITE(iunit, out_format) 'Line Integrated Ion Temperature'
+         CASE(jtarget_line_zeff)
+            WRITE(iunit, out_format) 'Line Integrated Z-Effective'
          CASE(jtarget_xics)
             WRITE(iunit, out_format) 'XICS Signal'
          CASE(jtarget_xics_bright)

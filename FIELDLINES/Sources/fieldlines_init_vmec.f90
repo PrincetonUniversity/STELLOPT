@@ -54,9 +54,9 @@
 !-----------------------------------------------------------------------
 
       ! Divide up Work
-      IF ((numprocs) > nlocal) THEN
-         i = myid/nlocal
-         CALL MPI_COMM_SPLIT( MPI_COMM_FIELDLINES,i,myid,MPI_COMM_LOCAL,ierr_mpi)
+      IF ((nprocs_fieldlines) > nlocal) THEN
+         i = myworkid/nlocal
+         CALL MPI_COMM_SPLIT( MPI_COMM_FIELDLINES,i,myworkid,MPI_COMM_LOCAL,ierr_mpi)
          CALL MPI_COMM_RANK( MPI_COMM_LOCAL, mylocalid, ierr_mpi )              ! MPI
          CALL MPI_COMM_SIZE( MPI_COMM_LOCAL, numprocs_local, ierr_mpi )          ! MPI
          mylocalmaster = master
@@ -64,9 +64,9 @@
          ! Basic copy of MPI_COMM_FIELDLINES
          CALL MPI_COMM_DUP( MPI_COMM_FIELDLINES, MPI_COMM_LOCAL, ierr_mpi)
          IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'fieldlines_init_vmec: MPI_COMM_DUP',ierr_mpi)
-         mylocalid = myid
+         mylocalid = myworkid
          mylocalmaster = master
-         numprocs_local = numprocs
+         numprocs_local = nprocs_fieldlines
       END IF
 
       ! Open VMEC file
@@ -147,7 +147,7 @@
       
       ! Break up the Work
       chunk = FLOOR(REAL(nr*nphi*nz) / REAL(numprocs_local))
-      mystart = myid*chunk + 1
+      mystart = myworkid*chunk + 1
       myend = mystart + chunk - 1
 
       ! This section sets up the work so we can use ALLGATHERV
@@ -203,7 +203,7 @@
                   ! This is an error code check
                   PRINT *,'ERROR in GetAcyl Detected'
                   PRINT *,'R,PHI,Z',raxis_g(i),phiaxis(j),zaxis_g(k)
-                  print *,'br,bphi,bz,myid',br,bphi,bz,myid
+                  print *,'br,bphi,bz,myworkid',br,bphi,bz,myworkid
                   stop 'ERROR in GetAcyl'
                END IF
                IF (lverb .and. (MOD(s,nr) == 0)) THEN
@@ -252,7 +252,7 @@
                   ! This is an error code check
                   PRINT *,'ERROR in GetBcyl Detected'
                   PRINT *,'R,PHI,Z',raxis_g(i),phiaxis(j),zaxis_g(k)
-                  print *,'br,bphi,bz,myid',br,bphi,bz,myid
+                  print *,'br,bphi,bz,myworkid',br,bphi,bz,myworkid
                   stop 'ERROR in GetBcyl'
                END IF
                IF (lverb .and. (MOD(s,nr) == 0)) THEN
@@ -294,7 +294,7 @@
 !DEC$ ENDIF
 
 !DEC$ IF DEFINED (MPI_OPT)
-      !IF (numprocs > nlocal) THEN
+      !IF (nprocs_fieldlines > nlocal) THEN
          ierr_mpi=0
       !   For John Schmitt
       !   CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)

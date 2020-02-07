@@ -1,4 +1,7 @@
 ObjectFiles = \
+adas_mod_parallel.o \
+sort.o \
+str_length.o \
 mpi_sharmem.o \
 GENERIC_Evolve.o \
 eval_x_queued.o \

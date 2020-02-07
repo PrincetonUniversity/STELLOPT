@@ -218,7 +218,7 @@
       
       
 !DEC$ IF DEFINED (MPI_OPT)
-      !IF (numprocs > nlocal) THEN
+      !IF (nprocs_fieldlines > nlocal) THEN
          CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)
          IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'fieldlines_init_coil: MPI_COMM_LOCAL',ierr_mpi)
       !END IF

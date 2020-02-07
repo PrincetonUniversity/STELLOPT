@@ -40,18 +40,18 @@
 !-----------------------------------------------------------------------
 
       ! Divide up Work
-      IF ((numprocs) > nlocal) THEN
-         i = myid/nlocal
-         CALL MPI_COMM_SPLIT( MPI_COMM_FIELDLINES,i,myid,MPI_COMM_LOCAL,ierr_mpi)
+      IF ((nprocs_fieldlines) > nlocal) THEN
+         i = myworkid/nlocal
+         CALL MPI_COMM_SPLIT( MPI_COMM_FIELDLINES,i,myworkid,MPI_COMM_LOCAL,ierr_mpi)
          CALL MPI_COMM_RANK( MPI_COMM_LOCAL, mylocalid, ierr_mpi )              ! MPI
          CALL MPI_COMM_SIZE( MPI_COMM_LOCAL, numprocs_local, ierr_mpi )          ! MPI
          mylocalmaster = master
       ELSE
          ! Basic copy of MPI_COMM_FIELDLINES
          CALL MPI_COMM_DUP( MPI_COMM_FIELDLINES, MPI_COMM_LOCAL, ierr_mpi)
-         mylocalid = myid
+         mylocalid = myworkid
          mylocalmaster = master
-         numprocs_local = numprocs
+         numprocs_local = nprocs_fieldlines
       END IF
 
 
@@ -116,7 +116,7 @@
       
       ! Break up the Work
       chunk = FLOOR(REAL(nr*nphi*nz) / REAL(numprocs_local))
-      mystart = myid*chunk + 1
+      mystart = myworkid*chunk + 1
       myend = mystart + chunk - 1
 
       ! This section sets up the work so we can use ALLGATHERV
@@ -190,7 +190,7 @@
 !DEC$ ENDIF
       
 !DEC$ IF DEFINED (MPI_OPT)
-      !IF (numprocs > nlocal) THEN
+      !IF (nprocs_fieldlines > nlocal) THEN
          CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)
          IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'fieldlines_init_coil: MPI_COMM_LOCAL',ierr_mpi)
       !END IF
