@@ -27,39 +27,60 @@ libstell.so : $(ObjectFiles)
 
 #Compile object files defined in OBJLIST.
 .f.o :
-	@if grep -q '^!DEC\$$' $<; \
-      then \
-         awk -f $(HOME_BIN)/awk_cdir.awk $< > $(CFILE) ; \
-         echo '$(PRECOMP) $<'; $(PRECOMP) $(CFILE) $(FFILE); \
-         rm -f $(CFILE); echo '$(COMPILE) $(FLAGS) $(MOD_PATH).. -c $<'; \
-         $(COMPILE) $(FLAGS) $(MOD_PATH).. -c $(FFILE);\
-      elif grep -q '^#if' $<; \
-      then \
-         cp $< $(CFILE); \
-         echo '$(PRECOMP) $<'; $(PRECOMP) $(CFILE) $(FFILE); \
-         rm -f $(CFILE); echo '$(COMPILE) $(FLAGS) $(MOD_PATH).. -c $<'; \
-         $(COMPILE) $(FLAGS) $(MOD_PATH).. -c $(FFILE);\
-      else \
-         echo '$(COMPILE) $(FLAGS) $(MOD_PATH). -c $<'; \
-         $(COMPILE) $(FLAGS) $(MOD_PATH). -c $< ; \
-      fi
+	@cp $< $(FFILE)
+	@if grep -q '^!DEC\$$' $<; then \
+		awk -f $(HOME_BIN)/awk_cdir.awk $< > $(CFILE) ; \
+		echo '	CPP $<'; \
+		$(PRECOMP) $(CFILE) $(FFILE); \
+		rm -f $(CFILE); \
+	fi
+	@if grep -q '^#if' $<; then \
+		cp $< $(CFILE); \
+		echo '	CPP $<';\
+		$(PRECOMP) $(CFILE) $(FFILE); \
+		rm -f $(CFILE);\
+	fi
+	@if [ "$<" = "../Sources/Modules/bsc_T.f" ]; then\
+		echo "	FTN $<" ;\
+		$(COMPILE) $(FLAGS_D) $(MOD1_PATH) $(MOD_PATH).. $(INC_PATH) -c $(FFILE) ; \
+	elif [ "$<" = "../Sources/Modules/compression.f" ]; then\
+		echo "	FTN $<" ;\
+		$(COMPILE) $(FLAGS_D) $(MOD1_PATH) $(MOD_PATH).. $(INC_PATH) -c $(FFILE) ; \
+	else \
+		echo "	FTN $<" ;\
+		$(COMPILE) $(FLAGS) $(MOD_PATH).. $(INC_PATH) -c $(FFILE) ; \
+	fi
 
 .f90.o :
-	@if grep -q '^!DEC\$$' $<; \
-      then \
-         awk -f $(HOME_BIN)/awk_cdir.awk $< > $(CFILE) ; \
-         echo '$(PRECOMP) $<'; $(PRECOMP) $(CFILE) $(F90FILE); \
-         rm -f $(CFILE); echo '$(COMPILE_FREE) $(FLAGS) $(MOD_PATH).. $(INC_PATH) -c $<'; \
-         $(COMPILE_FREE) $(FLAGS) $(MOD_PATH).. $(INC_PATH) -c $(F90FILE);  \
-      elif grep -q '^#if' $<; \
-      then \
-         cp $< $(CFILE); \
-         echo '$(PRECOMP) $<'; $(PRECOMP) $(CFILE) $(F90FILE); \
-         rm -f $(CFILE); echo '$(COMPILE_FREE) $(FLAGS) $(MOD_PATH).. $(INC_PATH) -c $<'; \
-         $(COMPILE_FREE) $(FLAGS) $(MOD_PATH).. $(INC_PATH) -c $(F90FILE);  \
-      else \
-         echo '$(COMPILE_FREE) $(FLAGS) $(MOD_PATH). $(INC_PATH) -c $<'; \
-         $(COMPILE_FREE) $(FLAGS) $(MOD_PATH).. $(INC_PATH) -c $< ; \
-      fi
+	@cp $< $(F90FILE)
+	@if grep -q '^!DEC\$$' $<; then \
+		awk -f $(HOME_BIN)/awk_cdir.awk $< > $(CFILE) ; \
+		echo '	CPP $<'; \
+		$(PRECOMP) $(CFILE) $(F90FILE); \
+		rm -f $(CFILE); \
+	fi
+	@if grep -q '^#if' $<; then \
+		cp $< $(CFILE); \
+		echo '	CPP $<';\
+		$(PRECOMP) $(CFILE) $(F90FILE); \
+		rm -f $(CFILE);\
+	fi
+	@if [ "$<" = "../Sources/Modules/stel_tools.f90" ]; then\
+		echo "	FTN $<" ;\
+		$(COMPILE) $(FLAGS_D) $(MOD1_PATH) $(MOD_PATH).. $(INC_PATH) -c $(F90FILE) ; \
+	elif [ "$<" = "../Sources/Modules/mir_tools.f90" ]; then\
+		echo "	FTN $<" ;\
+		$(COMPILE) $(FLAGS_D) $(MOD1_PATH) $(MOD_PATH).. $(INC_PATH) -c $(F90FILE) ; \
+	elif [ "$<" = "../Sources/Modules/virtual_casing_mod.f90" ]; then\
+		echo "	FTN $<" ;\
+		$(COMPILE) $(FLAGS_D) $(MOD1_PATH) $(MOD_PATH).. $(INC_PATH) -c $(F90FILE) ; \
+	elif [ "$<" = "../Sources/Modules/boozer_utils.f90" ]; then\
+		echo "	FTN $<" ;\
+		$(COMPILE) $(FLAGS_D) $(MOD1_PATH) $(MOD_PATH).. $(INC_PATH) -c $(F90FILE) ; \
+	else \
+		echo "	FTN $<" ;\
+		$(COMPILE) $(FLAGS) $(MOD_PATH).. $(INC_PATH) -c $(F90FILE) ; \
+	fi
+
 clean:
 	- rm -f *.o *.mod *.a *.so
