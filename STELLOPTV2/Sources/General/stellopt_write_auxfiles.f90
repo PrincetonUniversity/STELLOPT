@@ -9,7 +9,6 @@
       USE stellopt_runtime
       USE stellopt_input_mod
       USE equil_utils, ONLY: move_txtfile, copy_txtfile, copy_boozer_file
-      USE beams3d_runtime, ONLY: id_string_beams => id_string, lverb_beams => lverb
       
 !-----------------------------------------------------------------------
 !     Subroutine Parameters
@@ -81,18 +80,6 @@
          CALL move_txtfile('opt_dkes.'//TRIM(proc_string_old)//TRIM(ADJUSTL(temp_str)),'opt_dkes.'//TRIM(proc_string)//TRIM(ADJUSTL(temp_str)))
          CALL move_txtfile('results.'//TRIM(proc_string_old)//TRIM(ADJUSTL(temp_str)),'results.'//TRIM(proc_string)//TRIM(ADJUSTL(temp_str)))
       END DO
-      IF (ANY(sigma_orbit .lt. bigno)) THEN
-         lverb_beams = .FALSE.
-         id_string_beams = TRIM(proc_string_old)
-         CALL beams3d_read
-         id_string_beams = TRIM(proc_string)
-         CALL beams3d_write('GRID_INIT')
-         CALL beams3d_write('TRAJECTORY_FULL')
-         CALL beams3d_write('DIAG')
-         CALL beams3d_free
-         CALL move_txtfile('beams3d_diag_'//TRIM(proc_string_old)//'.txt',&
-                           'beams3d_diag_'//TRIM(proc_string)//'.txt')
-      END IF
 !DEC$ IF DEFINED (COILOPTPP)
       IF (sigma_coil_bnorm < bigno) THEN
          CALL move_txtfile('bnorm.'//TRIM(proc_string_old),&

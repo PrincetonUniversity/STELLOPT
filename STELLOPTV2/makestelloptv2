@@ -67,40 +67,42 @@ ifdef TERPSICHORE_DIR
 endif
 #Compile object files defined in OBJLIST.
 .f.o :
-	@if grep -q '^!DEC\$$' $<; \
-      then \
-         awk -f $(HOME_BIN)/awk_cdir.awk $< > $(CFILE) ; \
-         echo '$(PRECOMP) $<'; $(PRECOMP) $(CFILE) $(FFILE); \
-         rm -f $(CFILE); echo '$(COMPILE) $(FLAGS) $(MOD_PATH).. -c $<'; \
-         $(COMPILE) $(FLAGS) $(MOD_PATH).. -c $(FFILE); \
-      elif grep -q '^#if' $<; \
-      then \
-         cp $< $(CFILE); \
-         echo '$(PRECOMP) $<'; $(PRECOMP) $(CFILE) $(FFILE); \
-         rm -f $(CFILE); echo '$(COMPILE) $(FLAGS) $(MOD_PATH).. -c $<'; \
-         $(COMPILE) $(FLAGS) $(MOD_PATH).. -c $(FFILE); \
-      else \
-         echo '$(COMPILE) $(FLAGS) $(MOD_PATH). -c $<'; \
-         $(COMPILE) $(FLAGS) $(MOD_PATH). -c $<; \
-      fi
+	@cp $< $(FFILE)
+	@if grep -q '^!DEC\$$' $<; then \
+		awk -f $(HOME_BIN)/awk_cdir.awk $< > $(CFILE) ; \
+		echo '	CPP $<'; \
+		$(PRECOMP) $(CFILE) $(FFILE); \
+		rm -f $(CFILE); \
+	fi
+	@if grep -q '^#if' $<; then \
+		cp $< $(CFILE); \
+		echo '	CPP $<';
+		$(PRECOMP) $(CFILE) $(FFILE); \
+		rm -f $(CFILE);\
+	fi
+	@echo "	FTN $<"
+	@$(COMPILE) $(FLAGS) $(MOD_PATH).. -c $(FFILE)
 
 .f90.o :
-	@if grep -q '^!DEC\$$' $<; \
-      then \
-         awk -f $(HOME_BIN)/awk_cdir.awk $< > $(CFILE) ; \
-         echo '$(PRECOMP) $<'; $(PRECOMP) $(CFILE) $(F90FILE); \
-         rm -f $(CFILE); echo '$(COMPILE_FREE) $(FLAGS) $(MOD_PATH).. -c $<'; \
-        $(COMPILE_FREE) $(FLAGS) $(MOD_PATH).. -c $(F90FILE); \
-      elif grep -q '^#if' $<; \
-      then \
-         cp $< $(CFILE); \
-         echo '$(PRECOMP) $<'; $(PRECOMP) $(CFILE) $(F90FILE); \
-         rm -f $(CFILE); echo '$(COMPILE_FREE) $(FLAGS) $(MOD_PATH).. -c $<'; \
-        $(COMPILE_FREE) $(FLAGS) $(MOD_PATH).. -c $(F90FILE); \
-      else \
-         echo '$(COMPILE_FREE) $(FLAGS) $(MOD_PATH). -c $<'; \
-         $(COMPILE_FREE) $(FLAGS) $(MOD_PATH).. -c $<; \
-      fi
+	@cp $< $(F90FILE)
+	@if grep -q '^!DEC\$$' $<; then \
+		awk -f $(HOME_BIN)/awk_cdir.awk $< > $(CFILE) ; \
+		echo '	CPP $<'; \
+		$(PRECOMP) $(CFILE) $(F90FILE); \
+		rm -f $(CFILE); \
+	fi
+	@if grep -q '^#if' $<; then \
+		cp $< $(CFILE); \
+		echo '	CPP $<'; \
+		$(PRECOMP) $(CFILE) $(F90FILE); \
+		rm -f $(CFILE);\
+	fi
+	@echo "	FTN $<"
+	@if [ "$<" = "../Sources/Modules/equil_utils.f90" ]; then \
+		$(COMPILE_FREE) $(FLAGS_D) $(MOD1_PATH) $(MOD_PATH).. -c $(F90FILE); \
+	else \
+		$(COMPILE_FREE) $(FLAGS) $(MOD_PATH).. -c $(F90FILE); \
+	fi
       
 #Check that library files are current. 
 $(LIB) :
@@ -112,10 +114,6 @@ clean:
 #Construct vmec library. 
 $(LIB_VMEC) :
 	@cd $(VMEC_DIR); make $(TYPE); cd $(LOCTYPE); ar -cruv $(LIB_VMEC) *.o 
-	
-#Construct beams3d library. 
-$(LIB_BEAMS3D) :
-	@cd $(BEAMS3D_DIR); make $(TYPE); cd $(LOCTYPE); ar -cruv $(LIB_BEAMS3D) *.o *.mod
 	
 #Construct bnorm library. 
 $(LIB_BNORM) :

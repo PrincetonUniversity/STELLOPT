@@ -16,7 +16,7 @@
 #######################################################################
   FLAGS_R = -O3 -fexternal-blas
   FLAGS_D = -g -O0 -fexternal-blas -fbacktrace -fcheck=all 
-  LIBS    = -L/opt/gcc/openmpi/scalapack-2.0.2/lib -lscalapack \
+  LIBS    = -L/opt/gcc/mpich-3.3.1/scalapack-2.0.2/lib -lscalapack \
             -lopenblas
 
 #######################################################################
@@ -39,7 +39,7 @@
 #            NETCDF Options
 #######################################################################
   LNETCDF = T
-  NETCDF_INC = -I/opt/gcc/openmpi/netcdf-fortran-4.4.5/include
+  NETCDF_INC = -I/opt/gcc/mpich-3.3.1/netcdf-fortran-4.5.2/include
   NETCDF_LIB = -lnetcdf -lnetcdff
 
 #######################################################################
@@ -55,7 +55,7 @@
 #            HDF5 Options
 #######################################################################
   LHDF5 = T
-  HDF5_INC = -I/opt/gcc/openmpi/hdf5-parallel-1.10.5/include
+  HDF5_INC = -I/opt/gcc/mpich-3.3.1/hdf5-parallel-1.10.6/include
   HDF5_LIB = -lhdf5 -lhdf5hl_fortran -lhdf5_hl -lhdf5_fortran
 
 #######################################################################
@@ -132,36 +132,6 @@
 #######################################################################
 #            LIBSTELL Shared Options
 #######################################################################
-#LIB_SHARE = $(BLASHOME)/lib/libblas.so \
-          $(SCALAPACK_HOME)/lib/libscalapack-openmpi.so \
-          $(BLACS_HOME)/lib/libblacs-openmpi.so  $(BLACS_HOME)/lib/libblacsCinit-openmpi.so $(BLACS_HOME)/lib/libblacsF77init-openmpi.so \
-          $(HDF5_HOME)/lib/x86_64-linux-gnu/libhdf5_hl.so $(HDF5_HOME)/lib/x86_64-linux-gnu/libhdf5_fortran.so $(HDF5_HOME)/lib/x86_64-linux-gnu/libhdf5hl_fortran.so $(HDF5_HOME)/lib/x86_64-linux-gnu/libhdf5.so \
-          $(HDF5_HOME)/lib/x86_64-linux-gnu/libmpi_usempif08.so $(HDF5_HOME)/lib/x86_64-linux-gnu/libhdf5_openmpi_fortran.so \
-          $(NETCDF_HOME)/lib/x86_64-linux-gnu/libnetcdf.so $(NETCDF_HOME)/lib/x86_64-linux-gnu/libnetcdff.so $(NETCDF_HOME)/lib/x86_64-linux-gnu/libnetcdf_c++.so \
-          $(SILOHOME)/lib/x86_64-linux-gnu/libsiloh5.so \
-          $(GSLHOME)/lib/x86_64-linux-gnu/libgsl.so \
-          $(GCC6_HOME)/libgfortran.so $(GCC6_HOME)/libstdc++.so \
-          $(MPIHOME)/lib/x86_64-linux-gnu/libmpi.so $(MPIHOME)/lib/x86_64-linux-gnu/libmpi_mpifh.so \
-          /usr/lib/x86_64-linux-gnu/libm.so /usr/lib/liblapack.so /usr/lib/x86_64-linux-gnu/libdl.so
-#LIB_SHARE = $(BLASHOME)/lib/libblas.so \
-          $(SCALAPACK_HOME)/lib/libscalapack-openmpi.so.1 \
-          $(BLACS_HOME)/lib/libblacs-openmpi.so.1 \
-          $(BLACS_HOME)/lib/libblacsCinit-openmpi.so.1 \
-          $(BLACS_HOME)/lib/libblacsF77init-openmpi.so.1 \
-          $(HDF5_HOME)/lib/x86_64-linux-gnu/libhdf5_openmpi_fortran.so \
-          $(NETCDF_HOME)/lib/libnetcdf.so \
-          $(NETCDF_HOME)/lib/libnetcdff.so \
-          $(NETCDF_HOME)/lib/libnetcdf_c++.so \
-          $(SILOHOME)/lib/x86_64-linux-gnu/libsiloh5.so \
-          $(GSLHOME)/lib/x86_64-linux-gnu/libgsl.so \
-          $(GCC49_HOME)/libgfortran.so \
-          $(GCC49_HOME)/libstdc++.so \
-          $(MPIHOME)/lib/libmpi.so \
-          $(MPIHOME)/lib/libmpif77.so \
-          /usr/lib/x86_64-linux-gnu/libm.so \
-          /usr/lib/liblapack.so \
-          /usr/lib/x86_64-linux-gnu/libdl.so
-
 
 #######################################################################
 #######################################################################
@@ -218,6 +188,9 @@ ifeq ($(MAKECMDGOALS),xstelloptv2)
   MGRID_DIR= ../../MAKEGRID
   LIB_MGRID= libmakegrid.a
   MOD_PATH+= -I$(MGRID_DIR)/$(LOCTYPE)
+	FIELDLINES_DIR = ../../FIELDLINES
+	LIB_FIELDLINES = libfieldlines.a
+	MOD_PATH += -I$(FIELDLINES_DIR)/$(LOCTYPE)
   LIB_LINK=  $(VMEC_DIR)/$(LOCTYPE)/$(LIB_VMEC)  \
 	$(BOOTSJ_DIR)/$(LOCTYPE)/$(LIB_BOOTSJ) \
 	$(BNORM_DIR)/$(LOCTYPE)/$(LIB_BNORM) \
@@ -225,7 +198,8 @@ ifeq ($(MAKECMDGOALS),xstelloptv2)
 	$(COBRA_DIR)/$(LOCTYPE)/$(LIB_COBRA) \
 	$(DIAGNO_DIR)/$(LOCTYPE)/$(LIB_DIAGNO) \
 	$(JINV_DIR)/$(LOCTYPE)/$(LIB_JINV) \
-	$(MGRID_DIR)/$(LOCTYPE)/$(LIB_MGRID) 
+	$(MGRID_DIR)/$(LOCTYPE)/$(LIB_MGRID) \
+	$(FIELDLINES_DIR)/$(LOCTYPE)/$(LIB_FIELDLINES)
   ifeq ($(LDKES),T)
     DKES_DIR = ../../DKES
     LIB_DKES = libdkes.a
