@@ -1,1 +1,1 @@
-SHARE/make_macports.inc
+SHARE/make_vulcan.inc
