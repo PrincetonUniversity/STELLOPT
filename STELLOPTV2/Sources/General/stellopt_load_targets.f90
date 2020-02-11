@@ -255,7 +255,11 @@
       ! Coil Optimization
       IF (sigma_coil_bnorm < bigno) &
          CALL chisq_coil_bnorm(target_coil_bnorm, sigma_coil_bnorm, ncnt,iflag)
-      ! REGCOIL Coil Optimization (CHI2_B targets)
+      ! FOCUS Bn (on LCFS) Optimization
+      IF (ANY(sigma_focus_bn < bigno)) THEN
+         CALL chisq_focus_bn(target_focus_bn, sigma_focus_bn, ncnt,iflag)
+      END IF
+       ! REGCOIL Coil Optimization (CHI2_B targets)
       IF (ANY(sigma_regcoil_chi2_b < bigno)) THEN
          CALL chisq_regcoil_chi2_b(target_regcoil_chi2_b, sigma_regcoil_chi2_b, ncnt,iflag)
       END IF

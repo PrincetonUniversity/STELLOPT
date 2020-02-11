@@ -216,6 +216,24 @@
               END DO
               ier = 0
 
+              ! FOCUS options
+              DO m = -mpol_fds, mpol_fds
+                 DO n = -ntor_fds, ntor_fds
+                    IF (lfocus_ds_rbound_c_opt(m,n)) THEN
+                       nvars = nvars + 1
+                    END IF
+                    IF (lfocus_ds_rbound_s_opt(m,n)) THEN
+                       nvars = nvars + 1
+                    END IF
+                    IF (lfocus_ds_zbound_c_opt(m,n)) THEN
+                       nvars = nvars + 1
+                    END IF
+                    IF (lfocus_ds_zbound_s_opt(m,n)) THEN
+                       nvars = nvars + 1
+                    END IF
+                 END DO
+              END DO
+
               ! REGCOIL options
               IF (lregcoil_winding_surface_separation_opt) nvars = nvars + 1
               !IF (lregcoil_current_density_opt) nvars = nvars + 1
@@ -270,6 +288,93 @@
               IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'stellot_init',ierr_mpi)
 !DEC$ ENDIF
               ! Now count
+              ! FOCUS - make sure to update 'rcws' with 'ds' (or
+              ! whatever is appropriate)
+              IF (ANY(lfocus_ds_rbound_c_opt) ) THEN
+                 DO m = -mpol_fds,mpol_fds
+                    DO n = -ntor_fds,ntor_fds
+                       ! IF (m==0 .and. n<=0) CYCLE
+                       IF (lfocus_ds_rbound_c_opt(m,n)) THEN
+                          IF (lauto_domain) THEN
+                             focus_ds_rbound_c_min(m,n) = focus_ds_rbound_c(m,n) - ABS(pct_domain*focus_ds_rbound_c(m,n))
+                             focus_ds_rbound_c_max(m,n) = focus_ds_rbound_c(m,n) + ABS(pct_domain*focus_ds_rbound_c(m,n))
+                          END IF
+                          nvar_in = nvar_in + 1
+                          vars(nvar_in) = focus_ds_rbound_c(m,n)
+                          vars_min(nvar_in) = focus_ds_rbound_c_min(m,n)
+                          vars_max(nvar_in) = focus_ds_rbound_c_max(m,n)
+                          var_dex(nvar_in) = ifocus_ds_rbound_c
+                          diag(nvar_in)    = dfocus_ds_rbound_c_opt(m,n)
+                          arr_dex(nvar_in,1) = m
+                          arr_dex(nvar_in,2) = n
+                       END IF
+                    END DO
+                 END DO
+              END IF
+              IF (ANY(lfocus_ds_rbound_s_opt) ) THEN
+                 DO m = -mpol_fds,mpol_fds
+                    DO n = -ntor_fds,ntor_fds
+                       ! IF (m==0 .and. n<=0) CYCLE
+                       IF (lfocus_ds_rbound_s_opt(m,n)) THEN
+                          IF (lauto_domain) THEN
+                             focus_ds_rbound_s_min(m,n) = focus_ds_rbound_s(m,n) - ABS(pct_domain*focus_ds_rbound_s(m,n))
+                             focus_ds_rbound_s_max(m,n) = focus_ds_rbound_s(m,n) + ABS(pct_domain*focus_ds_rbound_s(m,n))
+                          END IF
+                          nvar_in = nvar_in + 1
+                          vars(nvar_in) = focus_ds_rbound_s(m,n)
+                          vars_min(nvar_in) = focus_ds_rbound_s_min(m,n)
+                          vars_max(nvar_in) = focus_ds_rbound_s_max(m,n)
+                          var_dex(nvar_in) = ifocus_ds_rbound_s
+                          diag(nvar_in)    = dfocus_ds_rbound_s_opt(m,n)
+                          arr_dex(nvar_in,1) = m
+                          arr_dex(nvar_in,2) = n
+                       END IF
+                    END DO
+                 END DO
+              END IF
+              IF (ANY(lfocus_ds_zbound_c_opt) ) THEN
+                 DO m = -mpol_fds,mpol_fds
+                    DO n = -ntor_fds,ntor_fds
+                       ! IF (m==0 .and. n<=0) CYCLE
+                       IF (lfocus_ds_zbound_c_opt(m,n)) THEN
+                          IF (lauto_domain) THEN
+                             focus_ds_zbound_c_min(m,n) = focus_ds_zbound_c(m,n) - ABS(pct_domain*focus_ds_zbound_c(m,n))
+                             focus_ds_zbound_c_max(m,n) = focus_ds_zbound_c(m,n) + ABS(pct_domain*focus_ds_zbound_c(m,n))
+                          END IF
+                          nvar_in = nvar_in + 1
+                          vars(nvar_in) = focus_ds_zbound_c(m,n)
+                          vars_min(nvar_in) = focus_ds_zbound_c_min(m,n)
+                          vars_max(nvar_in) = focus_ds_zbound_c_max(m,n)
+                          var_dex(nvar_in) = ifocus_ds_zbound_c
+                          diag(nvar_in)    = dfocus_ds_zbound_c_opt(m,n)
+                          arr_dex(nvar_in,1) = m
+                          arr_dex(nvar_in,2) = n
+                       END IF
+                    END DO
+                 END DO
+              END IF
+              IF (ANY(lfocus_ds_zbound_s_opt) ) THEN
+                 DO m = -mpol_fds,mpol_fds
+                    DO n = -ntor_fds,ntor_fds
+                       ! IF (m==0 .and. n<=0) CYCLE
+                       IF (lfocus_ds_zbound_s_opt(m,n)) THEN
+                          IF (lauto_domain) THEN
+                             focus_ds_zbound_s_min(m,n) = focus_ds_zbound_s(m,n) - ABS(pct_domain*focus_ds_zbound_s(m,n))
+                             focus_ds_zbound_s_max(m,n) = focus_ds_zbound_s(m,n) + ABS(pct_domain*focus_ds_zbound_s(m,n))
+                          END IF
+                          nvar_in = nvar_in + 1
+                          vars(nvar_in) = focus_ds_zbound_s(m,n)
+                          vars_min(nvar_in) = focus_ds_zbound_s_min(m,n)
+                          vars_max(nvar_in) = focus_ds_zbound_s_max(m,n)
+                          var_dex(nvar_in) = ifocus_ds_zbound_s
+                          diag(nvar_in)    = dfocus_ds_zbound_s_opt(m,n)
+                          arr_dex(nvar_in,1) = m
+                          arr_dex(nvar_in,2) = n
+                       END IF
+                    END DO
+                 END DO
+              END IF
+              ! REGCOIL
               IF (lregcoil_winding_surface_separation_opt) THEN
                  IF (lauto_domain) THEN
                     regcoil_winding_surface_separation_min = &
@@ -287,23 +392,6 @@
                  diag(nvar_in)    = dregcoil_winding_surface_separation_opt
                  arr_dex(nvar_in,1) = 1
               END IF
-              !IF (lregcoil_current_density_opt) THEN
-              !   IF (lauto_domain) THEN
-              !      regcoil_current_density_min = &
-              !          regcoil_current_density - &
-              !          ABS(pct_domain*regcoil_current_density)
-              !      regcoil_current_density_max = &
-              !          regcoil_current_density + &
-              !          ABS(pct_domain*regcoil_current_density)
-              !   END IF
-              !   nvar_in = nvar_in + 1
-              !   vars(nvar_in) = regcoil_current_density
-              !   vars_min(nvar_in) = regcoil_current_density_min
-              !   vars_max(nvar_in) = regcoil_current_density_max
-              !   var_dex(nvar_in) = iregcoil_current_density
-              !   diag(nvar_in)    = dregcoil_current_density_opt
-              !   arr_dex(nvar_in,1) = 1
-              !END IF
               IF (ANY(lregcoil_rcws_rbound_c_opt) ) THEN
                  DO m = -mpol_rcws,mpol_rcws
                     DO n = -ntor_rcws,ntor_rcws

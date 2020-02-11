@@ -386,10 +386,13 @@
 !DEC$ ENDIF
             CASE('coilopt++')
                CALL stellopt_coiloptpp(file_str,lscreen)
-            CASE('regcoil_driver')
+            CASE('focus')
+               WRITE (6, *) '<----stellopt_paraxe calling focus_driver with file_str = ', file_str
+               CALL stellopt_focus_driver(file_str,lscreen,ier)
+            CASE('regcoil')
                !  Warning; This parallel call is untested.
-               WRITE (6, *) '<----stellopt_paraxe calling regcoil_driver'
-               CALL stellopt_regcoil_driver(file_str,lscreen,ier)
+               WRITE (6, *) '<----stellopt_paraxe has not been tested for regcoil'
+               ! CALL stellopt_regcoil_driver(file_str,lscreen,ier)
             CASE('terpsichore')
                proc_string = file_str
                ier = 0

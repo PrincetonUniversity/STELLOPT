@@ -128,6 +128,14 @@ chisq_coil_bnorm.o : \
       $(LIB_DIR)/Debug/mpi_params.o
 
       
+chisq_focus_bn.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      stellopt_input_mod.o \
+      stellopt_vars.o \
+      equil_vals.o
+
+
 chisq_regcoil_chi2_b.o : \
       stellopt_runtime.o \
       stellopt_targets.o \
@@ -832,6 +840,15 @@ stellopt_clean_up.o : \
       $(LIB_DIR)/Debug/safe_open_mod.o 
       
 
+stellopt_focus_driver.o : \
+      stellopt_runtime.o \
+      stellopt_input_mod.o \
+      stellopt_vars.o \
+      equil_utils.o \
+      $(LIB_DIR)/Debug/mpi_params.o \
+      $(LIB_DIR)/Debug/mpi_inc.o 
+      
+      
 stellopt_regcoil_driver.o : \
       stellopt_runtime.o \
       stellopt_input_mod.o \

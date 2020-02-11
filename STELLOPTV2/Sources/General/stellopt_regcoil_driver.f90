@@ -44,7 +44,7 @@
       !USE regcoil_read_bnorm
       !USE regcoil_read_nescin_spectrum
       !USE regcoil_validate_input
-      USE regcoil_variables
+      USE regcoil_variables, nfp_regcoil => nfp
 !DEC$ ENDIF
 
 !-----------------------------------------------------------------------
@@ -118,13 +118,17 @@
                 END IF
              END do
          END do
+
+         ! The rcws variables are written to file, first (not acutally used by
+         ! REGCOIL). But, during 'cleanup', the new minimum will be copied/moved
+         ! to have the iteration number as a suffix
          CALL safe_open(iunit, istat, TRIM('regcoil_nescout.'// &
                    TRIM(proc_string)), 'replace', 'formatted')
          !write(6,'(a)'), '<----JCSwrite_output'
          write (iunit, '(a)') '------ Plasma information from VMEC ----'
          write (iunit, '(a)') 'np     iota_edge       phip_edge       curpol'
-         ! write nfp and curpol information 
-         write (iunit, '(I6, 3ES20.12)') nfp, 0.0, 0.0, curpol  
+         ! write nfp_regcoil and curpol information 
+         write (iunit, '(I6, 3ES20.12)') nfp_regcoil, 0.0, 0.0, curpol  
          write (iunit,*)
          write (iunit, '(a, 1pe20.12, a)') '------ Current Surface: Coil-Plasma separation = ', separation,' -----'
          write (iunit, '(a)') 'Number of fourier modes in table'
@@ -152,9 +156,11 @@
                 END IF
               END DO
           END DO
+          CLOSE(iunit)
+          ! This assigns the regcoil variables of rmnc_coil, rmnz_coil, zmnc_coil, zmns_coil
           DO imn = 1, mnmax_coil
              m = xm_coil(imn)
-             n = xn_coil(imn)/(-nfp)
+             n = xn_coil(imn)/(-nfp_regcoil)
              IF (m < -my_mpol .or. m > my_mpol .or. n < -my_ntor .or. n > my_ntor) THEN
                 WRITE(6,*) "Error! (m,n) in regcoil coil surface exceeds mpol_rcws or ntor_rcws."
                 STOP
@@ -164,7 +170,6 @@
              zmnc_coil(imn) = regcoil_rcws_zbound_c(m,n)
              zmns_coil(imn) = regcoil_rcws_zbound_s(m,n)
           END DO
-          CLOSE(iunit)
       END IF
 
       ! regcoil will overwrite nlambda each time - need to restore it to
@@ -205,10 +210,10 @@
 
       ! Initialize some of the vectors and matrices needed:
       ! write(6,'(a)') '<----read bnorm'
-      IF (load_bnorm) THEN
-         call stellopt_bnorm(proc_string,lscreen)
-         bnorm_filename = 'bnorm.' // TRIM(proc_string)
-      ENDIF
+      ! IF (load_bnorm) THEN
+      !    call stellopt_bnorm(proc_string,lscreen)
+      !    bnorm_filename = 'bnorm.' // TRIM(proc_string)
+      ! ENDIF
 
       call regcoil_read_bnorm()
       ! write(6,'(a)') '<----build matrices'

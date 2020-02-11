@@ -49,6 +49,7 @@ chisq_mse.o \
 chisq_balloon.o \
 chisq_pmin.o \
 chisq_coil_bnorm.o \
+chisq_focus_bn.o \
 chisq_regcoil_chi2_b.o \
 chisq_regcoil_lambda.o \
 chisq_regcoil_max_k.o \
@@ -108,6 +109,7 @@ stellopt_toboozer.o \
 stellopt_init.o \
 stellopt_bnorm.o \
 stellopt_coiloptpp.o \
+stellopt_focus_driver.o \
 stellopt_regcoil_driver.o \
 stellopt_bootsj.o \
 stellopt_sfincs.o \

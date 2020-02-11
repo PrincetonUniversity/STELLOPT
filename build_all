@@ -24,6 +24,7 @@ export FLAG_CALLED_FROM_BUILD_ALL=true
 
 # Set the default.
 RELEASE_TYPE=--clean_release
+#RELEASE_TYPE=--clean_debug
 
 # Check to see if a build options was givin
 if [ $# -ne 0 ]; then

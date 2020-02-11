@@ -109,6 +109,8 @@
          IF (var_dex(nvar_in) == ipscale) pres_scale = x(nvar_in)
          IF (var_dex(nvar_in) == imixece) mix_ece = x(nvar_in)
          IF (var_dex(nvar_in) == ixics_v0) xics_v0 = x(nvar_in)
+         !IF (var_dex(nvar_in) == ifocus_winding_surface_separation) &
+         !       focus_winding_surface_separation = x(nvar_in)
          IF (var_dex(nvar_in) == iregcoil_winding_surface_separation) &
                 regcoil_winding_surface_separation = x(nvar_in)
          IF (var_dex(nvar_in) == ibcrit) bcrit = x(nvar_in)
@@ -150,6 +152,10 @@
          IF (var_dex(nvar_in) == icoil_splinefx)   coil_splinefx(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
          IF (var_dex(nvar_in) == icoil_splinefy)   coil_splinefy(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
          IF (var_dex(nvar_in) == icoil_splinefz)   coil_splinefz(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
+         IF (var_dex(nvar_in) == ifocus_ds_rbound_c) focus_ds_rbound_c(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
+         IF (var_dex(nvar_in) == ifocus_ds_rbound_s) focus_ds_rbound_s(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
+         IF (var_dex(nvar_in) == ifocus_ds_zbound_c) focus_ds_zbound_c(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
+         IF (var_dex(nvar_in) == ifocus_ds_zbound_s) focus_ds_zbound_s(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
          IF (var_dex(nvar_in) == iregcoil_rcws_rbound_c) regcoil_rcws_rbound_c(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
          IF (var_dex(nvar_in) == iregcoil_rcws_rbound_s) regcoil_rcws_rbound_s(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
          IF (var_dex(nvar_in) == iregcoil_rcws_zbound_c) regcoil_rcws_zbound_c(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
@@ -365,6 +371,14 @@
          ctemp_str = 'coilopt++'
          IF (sigma_coil_bnorm < bigno .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
 !DEC$ ENDIF
+!DEC$ IF DEFINED (FOCUS)
+         ctemp_str = 'focus'
+         write(6,*),'<----stellopt_fcn checking focus request'
+         IF ( ( ANY(sigma_focus_bn < bigno) ) .and. (iflag >=0)) then
+            write(6,*),'<----stellopt_fcn calling paraexe for ',ctemp_str
+            CALL stellopt_paraexe(ctemp_str,proc_string,lscreen)
+         END IF
+!DEC$ ENDIF
 !DEC$ IF DEFINED (REGCOIL)
          IF ( ( ANY(sigma_regcoil_chi2_b < bigno) .or.   &
                 ANY(sigma_regcoil_lambda < bigno) .or.    &
@@ -386,7 +400,7 @@
            !Skipping parallelization for now - instead, call regcoi_driver directly.
            CALL stellopt_regcoil_driver(proc_string, lscreen, iflag)
            ! Unstested parallel call is commented out here.
-           ! ctemp_str = 'regcoil_driver'
+           ! ctemp_str = 'regcoil'
            ! CALL stellopt_paraexe(ctemp_str,proc_string,lscreen)
          end if
 !DEC$ ENDIF

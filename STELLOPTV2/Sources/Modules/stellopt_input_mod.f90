@@ -34,8 +34,15 @@
 !DEC$ IF DEFINED (BEAMS3D_OPT)
       USE beams3d_runtime, ONLY: BEAMS3D_VERSION
 !DEC$ ENDIF        
+!DEC$ IF DEFINED (FOCUS)
+      USE focus_globals, ONLY: focus_nml => focusin, verbose_focus => verbose, &
+                               focusin_filename_from_stellopt, focus_called_from_stellopt => called_from_stellopt
+!DEC$ ENDIF
 !DEC$ IF DEFINED (REGCOIL)
-      USE regcoil_variables, ONLY: rc_nfp => nfp, rmnc_coil, rmns_coil, zmns_coil, zmnc_coil, mnmax_coil, xm_coil, xn_coil, verbose, regcoil_nml
+      USE regcoil_variables, ONLY: rc_nfp => nfp, rmnc_coil, rmns_coil, &
+                                   zmns_coil, zmnc_coil, mnmax_coil, &
+                                   xm_coil, xn_coil, verbose_regcoil => verbose, &
+                                   regcoil_nml
       !USE regcoil_variables, ONLY: rc_rmnc_stellopt, rc_rmns_stellopt, &
       !                             rc_zmnc_stellopt, rc_zmns_stellopt, &
       !                             rc_nfp => nfp
@@ -386,6 +393,16 @@
                          targettype_ece, antennatype_ece, nra_ece, nphi_ece, &
                          target_kink, sigma_kink,mlmnb_kink,mlmns_kink,ivac_kink,&
                          nj_kink, nk_kink, lssl_kink, lssd_kink, mmaxdf_kink, nmaxdf_kink, &
+                         focusin_filename, &
+                         target_focus_bn, sigma_focus_bn, &                         
+                         lfocus_ds_rbound_c_opt, lfocus_ds_rbound_s_opt, &
+                         lfocus_ds_zbound_c_opt, lfocus_ds_zbound_s_opt, &
+                         dfocus_ds_rbound_c_opt, dfocus_ds_rbound_s_opt, &
+                         dfocus_ds_zbound_c_opt, dfocus_ds_zbound_s_opt, &
+                         focus_ds_rbound_c_min, focus_ds_rbound_s_min, &
+                         focus_ds_zbound_c_min, focus_ds_zbound_s_min, &
+                         focus_ds_rbound_c_max, focus_ds_rbound_s_max, &
+                         focus_ds_zbound_c_max, focus_ds_zbound_s_max, &
                          lregcoil_winding_surface_separation_opt, &
                          dregcoil_winding_surface_separation_opt, &
                          target_regcoil_winding_surface_separation, &
@@ -547,6 +564,15 @@
       drho_opt(:,:)     = -1.0
       ddeltamn_opt(:,:) = -1.0
       dcoil_spline(:,:) = -1.0
+      ! FOCUS dipole surface options
+      lfocus_ds_rbound_c_opt = .FALSE.
+      lfocus_ds_rbound_s_opt = .FALSE.
+      lfocus_ds_zbound_c_opt = .FALSE.
+      lfocus_ds_zbound_s_opt = .FALSE.
+      dfocus_ds_rbound_c_opt = -1.0
+      dfocus_ds_rbound_s_opt = -1.0
+      dfocus_ds_zbound_c_opt = -1.0
+      dfocus_ds_zbound_s_opt = -1.0
       ! REGCOIL Winding surface options
       regcoil_nescin_filename = ''
       regcoil_num_field_periods = -1.0
@@ -615,6 +641,14 @@
       coil_splinefx_min       = -bigno;  coil_splinefx_max       = bigno
       coil_splinefy_min       = -bigno;  coil_splinefy_max       = bigno
       coil_splinefz_min       = -bigno;  coil_splinefz_max       = bigno
+      ! More FOCUS Options
+      focus_ds_rbound_c_min = -bigno;  focus_ds_rbound_c_max = bigno
+      focus_ds_rbound_s_min = -bigno;  focus_ds_rbound_s_max = bigno
+      focus_ds_zbound_c_min = -bigno;  focus_ds_zbound_c_max = bigno
+      focus_ds_zbound_s_min = -bigno;  focus_ds_zbound_s_max = bigno
+      target_focus_bn = 0.0
+      sigma_focus_bn  = bigno
+
       ! More REGCOIL Options
       target_regcoil_winding_surface_separation = 0.0
       sigma_regcoil_winding_surface_separation = bigno
@@ -1100,12 +1134,71 @@
          END DO !i
       ENDIF !lcoil_spline
 
+!DEC$ IF DEFINED (FOCUS)
+      ! FOCUS dipole) surface optimization
+      IF ( ( ANY(sigma_focus_bn < bigno) )  &
+             .and. &
+           ( ANY(lfocus_ds_rbound_c_opt) .or. &
+             ANY(lfocus_ds_rbound_s_opt) .or. &
+             ANY(lfocus_ds_zbound_c_opt) .or. &
+             ANY(lfocus_ds_zbound_s_opt) ) ) THEN
+         ! read the  
+         ! use STELLOPT's 'nfp' variable
+         !rc_nfp = regcoil_num_field_periods
+         focus_ds_rbound_c = 0
+         focus_ds_rbound_s = 0
+         focus_ds_zbound_c = 0
+         focus_ds_zbound_s = 0
+         IF (myid == master) THEN
+            WRITE(6,*) '<----stellopt_input_mod: Reading FOCUS namelist'
+         end if
+   
+         verbose_focus = (myid == master)
+         ! We need to read geometry_option_coil and nescin_filename from the input namelist before the coil surface can be loaded.
+         CALL safe_open(iunit, istat, TRIM(filename), 'old', 'formatted')
+         READ(iunit, nml=focus_nml, iostat=istat)
+         CLOSE(iunit)
+
+         ! initialize focus
+         focusin_filename_from_stellopt = focusin_filename
+         focus_called_from_stellopt = .true.
+         IF (myid == master) THEN
+            WRITE(6,*) '<----stellopt_input_mod: Initializing FOCUS'
+         end if
+         call initial() 
+         !call fousurf()
+         !call rdcoils()
+
+
+
+!         do imn = 1, mnmax_coil
+!            m = xm_coil(imn)
+!            n = xn_coil(imn)/(-regcoil_num_field_periods) ! Convert from regcoil/vmec to nescin convention
+!            IF (m < -mpol_rcws .or. m > mpol_rcws .or. n < -ntor_rcws .or. n > ntor_rcws) THEN
+!               WRITE(6,*) "Error! (m,n) values in nescin file exceed mpol_rcws or ntor_rcws."
+!               WRITE(6,*) "mpol_rcws=",mpol_rcws," ntor_rcws=",ntor_rcws
+!               WRITE(6,*) "m=",m,"  n=",n
+!               STOP
+!            END IF
+!            regcoil_rcws_rbound_c(m, n) = rmnc_coil(imn)
+!            regcoil_rcws_rbound_s(m, n) = rmns_coil(imn)
+!            regcoil_rcws_zbound_c(m, n) = zmnc_coil(imn)
+!            regcoil_rcws_zbound_s(m, n) = zmns_coil(imn)
+!         end do
+         
+         if (myid==master) then
+            WRITE(6,*) '<----STELLOPT_INPUT_MOD: Finished preparing FOCUS data and assigning stellopt variables'
+         end if
+      END IF
+!DEC$ ENDIF
+      ! End of FOCUS winding surface optimization initializion steps
+
+
+!DEC$ IF DEFINED (REGCOIL)
       ! REGCOIL winding surface optimization
       ! If targeting chi2_b on the plasma boundary AND varying the winding
       ! surface Fourier series, then load the nescin file from the regcoil
       ! namelist
-
-!DEC$ IF DEFINED (REGCOIL)
       IF ( ( ANY(sigma_regcoil_chi2_b < bigno) .or.   &
              ANY(sigma_regcoil_lambda < bigno) .or.    &
              ANY(sigma_regcoil_max_K < bigno) .or.    &
@@ -1137,7 +1230,7 @@
             WRITE(6,*) '<----REGCOIL: Reading NESCIN Spectrum from file'
          end if
          !call regcoil_read_nescin_spectrum(regcoil_nescin_filename, (myid == master)) 
-         verbose = (myid == master)
+         verbose_regcoil = (myid == master)
          ! We need to read geometry_option_coil and nescin_filename from the input namelist before the coil surface can be loaded.
          CALL safe_open(iunit, istat, TRIM(filename), 'old', 'formatted')
          READ(iunit, nml=regcoil_nml, iostat=istat)
@@ -1176,8 +1269,8 @@
                  ' assigning stellopt variables'
          end if
       END IF
-!DEC$ ENDIF
       ! End of REGCOIL winding surface optimization initializion steps
+!DEC$ ENDIF
 
       ! If fixed boundary optimization or mapping turn off restart
       IF (ANY(ANY(lbound_opt,2),1) .or. opt_type=='map') lno_restart = .true.
@@ -1312,6 +1405,28 @@
             WRITE(6,*) '  has been turned off.  Contact your vendor for'
             WRITE(6,*) '  further information.'
          END IF
+      END IF
+!DEC$ ENDIF
+!DEC$ IF DEFINED (FOCUS)
+      IF (myid == master .and. (ANY(sigma_focus_bn < bigno))) THEN ! .or. &
+         WRITE(6,*)        " Stellarator FOCUS Optimization provided by: "
+         WRITE(6,"(2X,A)") "================================================================================="
+         WRITE(6,"(2X,A)") "=========                           FOCUS                               ========="
+         WRITE(6,"(2X,A)") "=========                       Caoxiang Zhu                            ========="
+         WRITE(6,"(2X,A)") "=========                       czhu@pppl.gov                           ========="
+         WRITE(6,"(2X,A)") "================================================================================="
+         WRITE(6,*)        "    "
+      END IF
+!DEC$ ELSE
+      IF (myid == master .and. (ANY(sigma_focus_bn < bigno) )) THEN 
+         ! 'Disable' the target by assigning bigno to the sigmas
+         sigma_focus_bn = bigno
+         !sigma_regcoil_current_density = bigno
+         WRITE(6,*) '!!!!!!!!!!!!!!!!!!!! WARNING !!!!!!!!!!!!!!!!!!!!!!!!!'
+         WRITE(6,*) '  Coil optimization with the FOCUS'
+         WRITE(6,*) '  code has been disabled.  Coil optimziation'
+         WRITE(6,*) '  has been turned off.  Contact your vendor for'
+         WRITE(6,*) '  further information.'
       END IF
 !DEC$ ENDIF
 !DEC$ IF DEFINED (REGCOIL)
@@ -2231,6 +2346,89 @@
          WRITE(iunit,outflt) 'TARGET_COIL_BNORM',target_coil_bnorm
          WRITE(iunit,outflt) 'SIGMA_COIL_BNORM',sigma_coil_bnorm
       END IF
+
+      ! FOCUS
+      IF ( (ANY(lfocus_ds_rbound_s_opt)) .or. (ANY(lfocus_ds_rbound_s_opt)) .or.  &
+           (ANY(lfocus_ds_rbound_s_opt)) .or.(ANY(lfocus_ds_rbound_s_opt)) ) THEN
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,'(A)') '!          FOCUS OPTIMIZATION'  
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+
+         DO ii = 1,UBOUND(target_focus_bn, 1)
+            IF (sigma_focus_bn(ii) < bigno) THEN
+                WRITE(iunit,"(2(2X,A,I4.3,A,E22.14))") &
+                    'TARGET_FOCUS_BN(',ii,') = ', target_focus_bn(ii), &
+                    'SIGMA_FOCUS_BN(',ii,') = ', sigma_focus_bn(ii)
+            END IF
+         END DO
+         ! Options for winding surface (Fourier Series) variation
+         IF (  (ANY(lfocus_ds_rbound_c_opt)) .or. (ANY(lfocus_ds_rbound_s_opt)) .or. &
+               (ANY(lfocus_ds_zbound_c_opt)) .or. (ANY(lfocus_ds_zbound_s_opt)) ) THEN
+
+             ! Boundary components
+             ! r-boundary cos components
+             DO m = LBOUND(lfocus_ds_rbound_c_opt,DIM=1), UBOUND(lfocus_ds_rbound_s_opt,DIM=1)
+                 DO n = LBOUND(lfocus_ds_rbound_c_opt,DIM=2), UBOUND(lfocus_ds_rbound_s_opt,DIM=2)
+                     IF(lfocus_ds_rbound_c_opt(m,n) ) THEN
+                         WRITE(iunit,'(A)') '! FOCUS Winding surface R-boundary cos component'
+                         WRITE(iunit,"(2X,A,I4.3,A,I4.3,A,1X,'=',1X,L1,4(2X,A,I4.3,A,I4.3,A,1X,'=',1X,E19.12))") &
+                                'LFOCUS_DS_RBOUND_C_OPT(',m,',',n,')', lfocus_ds_rbound_c_opt(m, n), &
+                                'FOCUS_DS_RBOUND_C(',m,',',n,')', focus_ds_rbound_c(m, n), &
+                                'DFOCUS_DS_RBOUND_C_OPT(',m,',',n,')', dfocus_ds_rbound_c_opt(m,n), &
+                                'FOCUS_DS_RBOUND_C_MIN(',m,',',n,')', focus_ds_rbound_c_min(m,n), &
+                                'FOCUS_DS_RBOUND_C_MAX(',m,',',n,')', focus_ds_rbound_c_max(m,n)
+                     END IF
+                 END DO
+             END DO
+
+             ! r-boundary sin components 
+             DO m = LBOUND(lfocus_ds_rbound_s_opt,DIM=1), UBOUND(lfocus_ds_rbound_s_opt,DIM=1)
+                 DO n = LBOUND(lfocus_ds_rbound_s_opt,DIM=2), UBOUND(lfocus_ds_rbound_s_opt,DIM=2)
+                     IF(lfocus_ds_rbound_s_opt(m,n)  ) THEN
+                         WRITE(iunit,'(A)') '! FOCUS Winding surface R-boundary sin component'
+                         WRITE(iunit,"(2X,A,I4.3,A,I4.3,A,1X,'=',1X,L1,4(2X,A,I4.3,A,I4.3,A,1X,'=',1X,E19.12))") &
+                                'LFOCUS_DS_RBOUND_S_OPT(',m,',',n,')', lfocus_ds_rbound_s_opt(m, n), &
+                                'FOCUS_DS_RBOUND_S(',m,',',n,')', focus_ds_rbound_s(m, n), &
+                                'DFOCUS_DS_RBOUND_S_OPT(',m,',',n,')', dfocus_ds_rbound_s_opt(m,n), &
+                                'FOCUS_DS_RBOUND_S_MIN(',m,',',n,')', focus_ds_rbound_s_min(m,n), &
+                                'FOCUS_DS_RBOUND_S_MAX(',m,',',n,')', focus_ds_rbound_s_max(m,n)
+                     END IF
+                 END DO
+             END DO
+
+             ! z-boundary cos components - not implemented yet
+             DO m = LBOUND(lfocus_ds_zbound_c_opt,DIM=1), UBOUND(lfocus_ds_zbound_c_opt,DIM=1)
+                 DO n = LBOUND(lfocus_ds_zbound_c_opt,DIM=2), UBOUND(lfocus_ds_zbound_c_opt,DIM=2)
+                     IF(lfocus_ds_zbound_c_opt(m,n) ) THEN
+                         WRITE(iunit,'(A)') '! FOCUS Winding surface Z-boundary cos component'
+                         WRITE(iunit,"(2X,A,I4.3,A,I4.3,A,1X,'=',1X,L1,4(2X,A,I4.3,A,I4.3,A,1X,'=',1X,E19.12))") &
+                                'LFOCUS_DS_ZBOUND_C_OPT(',m,',',n,')', lfocus_ds_zbound_c_opt(m, n), &
+                                'FOCUS_DS_ZBOUND_C(',m,',',n,')', focus_ds_zbound_c(m, n), &
+                                'DFOCUS_DS_ZBOUND_C_OPT(',m,',',n,')', dfocus_ds_zbound_c_opt(m,n), &
+                                'FOCUS_DS_ZBOUND_C_MIN(',m,',',n,')', focus_ds_zbound_c_min(m,n), &
+                                'FOCUS_DS_ZBOUND_C_MAX(',m,',',n,')', focus_ds_zbound_c_max(m,n)
+                     END IF
+                 END DO
+             END DO
+
+             ! z-boundary sin components
+             DO m = LBOUND(lfocus_ds_zbound_s_opt,DIM=1), UBOUND(lfocus_ds_zbound_s_opt,DIM=1)
+                 DO n = LBOUND(lfocus_ds_zbound_s_opt,DIM=2), UBOUND(lfocus_ds_zbound_s_opt,DIM=2)
+                     IF( lfocus_ds_zbound_s_opt(m,n) ) THEN
+                         WRITE(iunit,'(A)') '! FOCUS Winding surface Z-boundary sin component'
+                         WRITE(iunit,"(2X,A,I4.3,A,I4.3,A,1X,'=',1X,L1,4(2X,A,I4.3,A,I4.3,A,1X,'=',1X,E19.12))") &
+                                'LFOCUS_DS_ZBOUND_S_OPT(',m,',',n,')', lfocus_ds_zbound_s_opt(m, n), &
+                                'FOCUS_DS_ZBOUND_S(',m,',',n,')', focus_ds_zbound_s(m, n), &
+                                'DFOCUS_DS_ZBOUND_S_OPT(',m,',',n,')', dfocus_ds_zbound_s_opt(m,n), &
+                                'FOCUS_DS_ZBOUND_S_MIN(',m,',',n,')', focus_ds_zbound_s_min(m,n), &
+                                'FOCUS_DS_ZBOUND_S_MAX(',m,',',n,')', focus_ds_zbound_s_max(m,n)
+                     END IF
+                 END DO
+             END DO
+        END IF
+        ! end of Options for winding surface (Fourier Series) variation
+      END IF  ! End of FOCUS 
+
 
       ! REGCOIL Options
       ! This section runs if the current density, surface separation or

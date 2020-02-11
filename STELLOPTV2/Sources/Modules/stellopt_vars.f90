@@ -125,6 +125,36 @@
       INTEGER, PARAMETER :: nd_bnorm = 20 ! VMEC, Surface and others related resolution
       REAL(rprec), DIMENSION(0:mf_bnorm,-nf_bnorm:nf_bnorm) :: bnfou ! calculated Bn Fourier harmonics
 
+      ! FOR FOCUS DIPOLE SURFACE Fourier Series Representation
+      INTEGER, PARAMETER :: mpol_fds = 64    ! maximum poloidal mode number (min = -max)
+      INTEGER, PARAMETER :: ntor_fds = 64    ! maximum toroidal mode number (min = -max)
+      ! Reserving space for the maximum number of Fourier components
+      ! that might be varied/optimized. Each of RC, RS, ZC, ZS may have
+      ! spectral components spanning the range of m and n in:
+      !       (-mpol_rcws:mpmol_rcws,  -ntor_rcws:ntor_rcws)
+      ! (this is slightly different than what is used in nescoil, where
+      ! the m<0 components are not used)
+      INTEGER, PARAMETER :: mnprod_fds = 4 * (2*mpol_fds+1) * (2*ntor_fds+1)
+      ! FOR FOCUS BNORMAL ON TARGET PLAMSA SURFACE
+      ! These should match or exceed the settings for FOCUS's
+      ! NTETA and NZETA
+      ! Number of grid points in poloidal and toroidal directions used to
+      ! evaluate surface integrals on the plasma surface
+      INTEGER, PARAMETER :: mpol_fps = 256    ! Poloidal direction
+      INTEGER, PARAMETER :: ntor_fps = 256    ! Toroidal direction
+      INTEGER, PARAMETER :: mnprod_fps = mpol_fps * ntor_fps
+
+      LOGICAL, DIMENSION(-mpol_fds:mpol_fds, &
+                         -ntor_fds:ntor_fds) :: lfocus_ds_rbound_c_opt , &
+                                                  lfocus_ds_rbound_s_opt, &
+                                                  lfocus_ds_zbound_c_opt, &
+                                                  lfocus_ds_zbound_s_opt
+      REAL(rprec), DIMENSION(-mpol_fds:mpol_fds, &
+                             -ntor_fds:ntor_fds) :: dfocus_ds_rbound_c_opt , &
+                                                      dfocus_ds_rbound_s_opt, &
+                                                      dfocus_ds_zbound_c_opt, &
+                                                      dfocus_ds_zbound_s_opt
+
       ! FOR REGCOIL WINDING SURFACE Fourier Series Representation
       INTEGER, PARAMETER :: mpol_rcws = 32    ! maximum poloidal mode number (min = -max)
       INTEGER, PARAMETER :: ntor_rcws = 32    ! maximum toroidal mode number (min = -max)
@@ -134,7 +164,7 @@
       !       (-mpol_rcws:mpmol_rcws,  -ntor_rcws:ntor_rcws)
       ! (this is slightly different than what is used in nescoil, where
       ! the m<0 components are not used)
-      INTEGER, PARAMETER :: mnprod_x4_rcws = 4 * (2*32+1) * (2*32+1)
+      INTEGER, PARAMETER :: mnprod_x4_rcws = 4 * (2*mpol_rcws+1) * (2*ntor_rcws+1)
       ! FOR REGCOIL BNORMAL ON TARGET PLAMSA SURFACE
       ! These should match or exceed the settings for REGCOIL's
       ! NTHETA_PLASMA and NZETA_PLASMA
@@ -157,6 +187,8 @@
                                                       dregcoil_rcws_rbound_s_opt, &
                                                       dregcoil_rcws_zbound_c_opt, &
                                                       dregcoil_rcws_zbound_s_opt
+
+
       REAL(rprec), DIMENSION(0:20)      ::  te_opt, ti_opt, ne_opt, th_opt, zeff_opt                                     
       REAL(rprec), DIMENSION(ndatafmax) ::  ne_aux_s, te_aux_s, &
                                             ti_aux_s, th_aux_s, &
@@ -214,6 +246,14 @@
       REAL(rprec), DIMENSION(nigroup,maxcoilctrl) :: coil_splinefx_min,coil_splinefy_min,coil_splinefz_min,&
                                                      coil_splinefx_max,coil_splinefy_max,coil_splinefz_max
 
+      ! FOCUS Dipole Surface (ds): Boundary+min/max
+      REAL(rprec), DIMENSION(-mpol_fds:mpol_fds, -ntor_fds:ntor_fds) :: focus_ds_rbound_c,     focus_ds_rbound_s
+      REAL(rprec), DIMENSION(-mpol_fds:mpol_fds, -ntor_fds:ntor_fds) :: focus_ds_rbound_c_min, focus_ds_rbound_s_min
+      REAL(rprec), DIMENSION(-mpol_fds:mpol_fds, -ntor_fds:ntor_fds) :: focus_ds_rbound_c_max, focus_ds_rbound_s_max
+      REAL(rprec), DIMENSION(-mpol_fds:mpol_fds, -ntor_fds:ntor_fds) :: focus_ds_zbound_c,     focus_ds_zbound_s
+      REAL(rprec), DIMENSION(-mpol_fds:mpol_fds, -ntor_fds:ntor_fds) :: focus_ds_zbound_c_min, focus_ds_zbound_s_min
+      REAL(rprec), DIMENSION(-mpol_fds:mpol_fds, -ntor_fds:ntor_fds) :: focus_ds_zbound_c_max, focus_ds_zbound_s_max
+
       ! Regcoil Winding Surface (rcws): Boundary+min/max
       REAL(rprec), DIMENSION(-mpol_rcws:mpol_rcws, -ntor_rcws:ntor_rcws) :: regcoil_rcws_rbound_c, regcoil_rcws_rbound_s
       REAL(rprec), DIMENSION(-mpol_rcws:mpol_rcws, -ntor_rcws:ntor_rcws) :: regcoil_rcws_rbound_c_min, regcoil_rcws_rbound_s_min
@@ -224,7 +264,8 @@
 
       CHARACTER(256)  ::  equil_type, te_type, ne_type, ti_type, th_type, &
                           beamj_type, bootj_type, zeff_type, emis_xics_type,windsurfname, &
-                          regcoil_nescin_filename, bootcalc_type, phi_type
+                          regcoil_nescin_filename, bootcalc_type, phi_type, &
+                          focusin_filename
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: sfincs_J_dot_B_flux_surface_average, sfincs_B_squared_flux_surface_average
       
       ! Variables associated with the Rosenbrock test function
@@ -304,6 +345,10 @@
       INTEGER, PARAMETER ::  iregcoil_rcws_rbound_s = 5161
       INTEGER, PARAMETER ::  iregcoil_rcws_zbound_c = 5162
       INTEGER, PARAMETER ::  iregcoil_rcws_zbound_s = 5163
+      INTEGER, PARAMETER ::  ifocus_ds_rbound_c = 5200
+      INTEGER, PARAMETER ::  ifocus_ds_rbound_s = 5201
+      INTEGER, PARAMETER ::  ifocus_ds_zbound_c = 5202
+      INTEGER, PARAMETER ::  ifocus_ds_zbound_s = 5203
       INTEGER, PARAMETER ::  iRosenbrock_X = 5500
       
       REAL(rprec), PARAMETER :: ne_norm = 1.0E18
@@ -522,6 +567,17 @@
             WRITE(iunit,out_format_2DB) 'COIL_SPLINEY(',var_dex1,',',var_dex2,'):  Coil Spline Ctrl Pts (Y)'
          CASE(icoil_splinefz)
             WRITE(iunit,out_format_2DB) 'COIL_SPLINEZ(',var_dex1,',',var_dex2,'):  Coil Spline Ctrl Pts (Z)'
+
+         ! FOCUS cases
+         CASE(ifocus_ds_rbound_c)
+            WRITE(iunit,out_format_2DB) 'FOCUS_DS_RBOUND_C(',var_dex1,',',var_dex2,'):  FOCUS Winding Surface Boundary Radial Specification (COS MN)'
+         CASE(ifocus_ds_rbound_s)
+            WRITE(iunit,out_format_2DB) 'FOCUS_DS_RBOUND_S(',var_dex1,',',var_dex2,'):  FOCUS Winding Surface Boundary Radial Specification (SIN MN)'
+         CASE(ifocus_ds_zbound_c)
+            WRITE(iunit,out_format_2DB) 'FOCUS_DS_ZBOUND_C(',var_dex1,',',var_dex2,'):  FOCUS Winding Surface Boundary Vertical Specification (COS MN)'
+         CASE(ifocus_ds_zbound_s)
+            WRITE(iunit,out_format_2DB) 'FOCUS_DS_ZBOUND_S(',var_dex1,',',var_dex2,'):  FOCUS Winding Surface Boundary Vertical Specification (SIN MN)'
+         ! END of FOCUS cases
 
          ! REGCOIL cases
          CASE(iregcoil_winding_surface_separation)
