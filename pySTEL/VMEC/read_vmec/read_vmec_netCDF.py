@@ -178,26 +178,27 @@ def read_vmec(filename):
         vmec_data['currumns']=None
         vmec_data['currvmns']=None
 
-    # new definition => adapt to NESCOIL ???
-#    vmec_data['xn'] = -vmec_data['xn']
+    # 2020.02.13 jonathon and gavin are uncommenting for testing:
+    # # new definition => adapt to NESCOIL ???
+    # vmec_data['xn'] = -vmec_data['xn']
 
-#    # Put on full grid
-#    vmec_data['buco'] = h2f(vmec_data['buco'],ns)
-#    vmec_data['bvco'] = h2f(vmec_data['bvco'],ns)
-#    vmec_data['vp'] = h2f(vmec_data['vp'],ns)
-#    vmec_data['overr'] = h2f(vmec_data['overr'],ns)
-#    vmec_data['specw'] = h2f(vmec_data['specw'],ns)
+    # # Put on full grid
+    # vmec_data['buco'] = h2f(vmec_data['buco'],ns)
+    # vmec_data['bvco'] = h2f(vmec_data['bvco'],ns)
+    # vmec_data['vp'] = h2f(vmec_data['vp'],ns)
+    # vmec_data['overr'] = h2f(vmec_data['overr'],ns)
+    # vmec_data['specw'] = h2f(vmec_data['specw'],ns)
 
-#    # Put matrix quantities on full grid
-#    for key in ['bmnc','gmnc','lmns','bsupumnc','bsupvmnc','bsubsmns','bsubumnc','bsubvmnc']:
-#        vmec_data[key][0,:] = 1.5 * vmec_data[key][1,:] - 0.5 * vmec_data[key][2,:]
-#        vmec_data[key][1:ns-2,:] = 0.5 * (vmec_data[key][1:ns-2,:] + vmec_data[key][2:ns-1,:])
-#        vmec_data[key][ns-1,:] = 2.0 * vmec_data[key][ns-2,:] - vmec_data[key][ns-3,:]
-#    if vmec_data['iasym']:
-#        for key in ['bmns','gmns','lmnc','bsupumns','bsupvmns','bsubsmnc','bsubumns','bsubvmns']:
-#            vmec_data[key][0,:] = 1.5 * vmec_data[key][1,:] - 0.5 * vmec_data[key][2,:]
-#            vmec_data[key][1:ns-2,:] = 0.5 * (vmec_data[key][1:ns-2,:] + vmec_data[key][2:ns-1,:])
-#            vmec_data[key][ns-1,:] = 2.0 * vmec_data[key][ns-2,:] - vmec_data[key][ns-3,:]
+    # # Put matrix quantities on full grid
+    # for key in ['bmnc','gmnc','lmns','bsupumnc','bsupvmnc','bsubsmns','bsubumnc','bsubvmnc']:
+    #     vmec_data[key][0,:] = 1.5 * vmec_data[key][1,:] - 0.5 * vmec_data[key][2,:]
+    #     vmec_data[key][1:ns-2,:] = 0.5 * (vmec_data[key][1:ns-2,:] + vmec_data[key][2:ns-1,:])
+    #     vmec_data[key][ns-1,:] = 2.0 * vmec_data[key][ns-2,:] - vmec_data[key][ns-3,:]
+    # if vmec_data['iasym']:
+    #     for key in ['bmns','gmns','lmnc','bsupumns','bsupvmns','bsubsmnc','bsubumns','bsubvmns']:
+    #         vmec_data[key][0,:] = 1.5 * vmec_data[key][1,:] - 0.5 * vmec_data[key][2,:]
+    #         vmec_data[key][1:ns-2,:] = 0.5 * (vmec_data[key][1:ns-2,:] + vmec_data[key][2:ns-1,:])
+    #         vmec_data[key][ns-1,:] = 2.0 * vmec_data[key][ns-2,:] - vmec_data[key][ns-3,:]
 
     return vmec_data
 
