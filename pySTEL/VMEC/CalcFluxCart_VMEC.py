@@ -258,7 +258,7 @@ def Flux2Polar(sPos, VMEC_FilePath, ForceReadVMEC=False, kMinRho=2.0e-9, jacout=
         # end if
     #end for
 
-    pLabPos = _np.hstack((RR, sPos[:,2], ZZ))
+    pLabPos = _np.hstack((RR, sPos[:,2], ZZ)) # phi is not the cylindrical angle!!!!
     if jacout:
         return pLabPos, _np.hstack((dRdRho, dRdTheta, dZdRho, dZdTheta, dRdZi, dZdZi))
     return pLabPos
@@ -271,7 +271,8 @@ def Flux2Polar(sPos, VMEC_FilePath, ForceReadVMEC=False, kMinRho=2.0e-9, jacout=
 
 
 def FindVMEC_Coords(pLabPos, VMEC_Data, VMEC_DerivedQuant, PosTol=1e-3, RhoGuess=0.5, ThetaGuess=1.0, verbose=True,
-                    kMaxIters=150, kMinJacDet=1.0e-16, kMaxItersPerThetaStep=30, kMaxInitialThetaStep=0.5):
+                    kMaxIters=150, kMinJacDet=1.0e-16, kMaxItersPerThetaStep=50, kMaxInitialThetaStep=0.1):
+                    # kMaxIters=150, kMinJacDet=1.0e-16, kMaxItersPerThetaStep=30, kMaxInitialThetaStep=0.5):
     """
      Description:
        This routine takes a single point in lab space (polar coordinates),
@@ -655,47 +656,24 @@ def extract_data(VMEC_FilePath, ForceReadVMEC=False, verbose=True):
     if VMEC_Data is None or ForceReadVMEC:
         VMEC_Data = _ut.Struct() # Instantiate an empty class of type structure
 
-        # If this is a netCDF VMEC file, read the output ourseleves, otherwise,
-        # let Sam Lazerson's code handle it
-        #  nFileName = len( VMEC_FilePath )
-        # if VMEC_FilePath[nFileName-2:nFileName].lower()=='.nc':
+        VMEC_Data = read_vmec(VMEC_FilePath)
+
         if VMEC_FilePath.lower().find('.nc')>-1:
-            if verbose:   print('Checking file')  # end if
-            ncID = netcdf.open(VMEC_FilePath, 'nc_nowrite')
+            VMEC_Data.ns = VMEC_Data.ns
+            VMEC_Data.xm = VMEC_Data.xm   # (mn_mode) polidal mode numbers
+            VMEC_Data.xn = VMEC_Data.xn   # (mn_mode) toridal mode numbers
+            VMEC_Data.zmns = VMEC_Data.zmns.T # (radius mn_mode ) sinmn component of cylindrical Z, full mesh in [m]
+            VMEC_Data.rmnc = VMEC_Data.rmnc.T # (radius mn_mode ) cosmn component of cylindrical R, full mesh in [m]
 
-            if verbose:   print('Loading data from VMEC wout file')  # end if
-            VarID = netcdf.inqVarID(ncID, 'ns')
-            VMEC_Data.ns = double(netcdf.getVar(ncID, VarID))
-
-            VarID = netcdf.inqVarID(ncID, 'mnmax')
-            VMEC_Data.mnmax = double(netcdf.getVar(ncID, VarID))
-
-            # (mn_mode) toridal mode numbers
-            VarID = netcdf.inqVarID(ncID, 'xn')
-            VMEC_Data.xn = double(netcdf.getVar(ncID, VarID))
-
-            # (mn_mode) polidal mode numbers
-            VarID = netcdf.inqVarID(ncID, 'xm')
-            VMEC_Data.xm = double(netcdf.getVar(ncID, VarID))
-
-            # (radius mn_mode ) cosmn component of cylindrical R, full mesh in [m]
-            VarID = netcdf.inqVarID(ncID, 'rmnc')
-            VMEC_Data.rmnc = (netcdf.getVar(ncID, VarID)).T
-
-            # (radius mn_mode ) sinmn component of cylindrical Z, full mesh in [m]
-            VarID = netcdf.inqVarID(ncID, 'zmns')
-            VMEC_Data.zmns = (netcdf.getVar(ncID, VarID)).T
-        else:
-            # Use Sam Lazerson's code to read the VMEC file, but note that he
             # defines xn with the opposite sign as is usual in VMEC
-            VMEC_Data = read_vmec(VMEC_FilePath)
+            VMEC_Data.xn = -VMEC_Data.xn
 
-#            VMEC_Data.xm = VMEC_Data.xm.T
-#            VMEC_Data.xn = -VMEC_Data.xn.T
-#            VMEC_Data.ns = VMEC_Data.ns.T
-#            VMEC_Data.zmns = VMEC_Data.zmns.T
-#            VMEC_Data.rmnc = VMEC_Data.rmnc.T
-#            # VMEC_Data.xn = -VMEC_Data.xn
+            # VMEC_Data.xm = VMEC_Data.xm.T
+            # VMEC_Data.xn = -VMEC_Data.xn.T
+            # VMEC_Data.ns = VMEC_Data.ns.T
+            # VMEC_Data.zmns = VMEC_Data.zmns.T
+            # VMEC_Data.rmnc = VMEC_Data.rmnc.T
+            # # VMEC_Data.xn = -VMEC_Data.xn
         #end
         VMEC_Data.loaded = True
         if verbose:
@@ -983,18 +961,46 @@ class PYVMEC(_ut.Struct):
 
     # ========================================================================= #
 
+    @staticmethod
+    def LocalGradRhoSquared(Rho, Theta, Phi, VMEC_Data, VMEC_DerivedQuant, kMinRho=2.0e-9):
+        RR, ZZ, dR_dRho, dR_dTheta, dZ_dRho, dZ_dTheta, dR_dZi, dZ_dZi = \
+            GetLabCoordsFromVMEC(Rho, Theta, Phi, VMEC_Data, VMEC_DerivedQuant, kMinRho=kMinRho, nargout=8)
+
+        _gr2, sqg = PYVMEC._GradRhoSquared(RR, dR_dRho, dR_dTheta, dZ_dRho, dZ_dTheta, dR_dZi, dZ_dZi)
+        return _gr2
+
+    @staticmethod
+    def LocalGradRho(Rho, Theta, Phi, VMEC_Data, VMEC_DerivedQuant, kMinRho=2.0e-9):
+        RR, ZZ, dR_dRho, dR_dTheta, dZ_dRho, dZ_dTheta, dR_dZi, dZ_dZi = \
+            GetLabCoordsFromVMEC(Rho, Theta, Phi, VMEC_Data, VMEC_DerivedQuant, kMinRho=kMinRho, nargout=8)
+
+        _gr2, sqg = PYVMEC._GradRhoSquared(RR, dR_dRho, dR_dTheta, dZ_dRho, dZ_dTheta, dR_dZi, dZ_dZi)
+        return _np.sqrt(PYVMEC.LocalGradRhoSquared(Rho, Theta, Phi, VMEC_Data, VMEC_DerivedQuant, kMinRho=kMinRho))
+
 
     @staticmethod
     def _GradRhoSquared(RR, dR_dRho, dR_dTheta, dZ_dRho, dZ_dTheta, dR_dZi, dZ_dZi):
         """
             Calculate the gradient of the normalized effective radius at a single-point in space
             ... gradrho(\Rho, \Theta, \Phi)
+
+            ( \nabla rho )^2 = 1/g * [ g_(th,th) * g_(zi,zi) - g_(th,zi)^2 ]
+                  = [(R_th^2+Z_th^2)*(R^2+R_zi^2+Z_zi^2) - (R_th*R_zi+Z_th*Z_zi)]
+                    / [R^2 * (R_th*Z_rho - R_rho*Z_th)^2]
+
+                sqrt(g) = R * (R_th*Z_rho - R_rho*Z_th)
+                dV/drho = int( sqrt(g) dth dzi )
         """
         numerator = (dR_dTheta**2.0+dZ_dTheta**2.0)*(dR_dZi**2.0+RR**2.0+dZ_dZi**2.0)
         numerator -= (dR_dTheta*dR_dZi+dZ_dTheta*dZ_dZi)**2.0
 
         sqrtG = PYVMEC._RootG(RR, dR_dRho, dR_dTheta, dZ_dRho, dZ_dTheta)
         return numerator/(sqrtG**2.0), sqrtG
+
+    @staticmethod
+    def _GradRho(RR, dR_dRho, dR_dTheta, dZ_dRho, dZ_dTheta, dR_dZi, dZ_dZi):
+        _gr2, sqg = PYVMEC._GradRhoSquared(RR, dR_dRho, dR_dTheta, dZ_dRho, dZ_dTheta, dR_dZi, dZ_dZi)
+        return _np.sqrt(_gr2)*sqg
 
     @staticmethod
     def _FSAGradRho(M, Rho, VMEC_Data, VMEC_DerivedQuant, kMinRho=2.0e-9):
@@ -1156,9 +1162,9 @@ if __name__=="__main__":
     rootdir = _os.path.join('d:/', 'Workshop', 'TRAVIS', 'MagnConfigs', 'W7X')
     if not _os.path.exists(rootdir):
         rootdir = _os.path.join('G:/', 'Workshop', 'TRAVIS_tree', 'MagnConfigs', 'W7X')
-    kVMECfile = _os.path.join(rootdir, 'wout_w7x.1000_1000_1000_1000_+0390_+0000.05.0144.txt')
+    # kVMECfile = _os.path.join(rootdir, 'wout_w7x.1000_1000_1000_1000_+0390_+0000.05.0144.txt')
 #    kVMECfile = _os.path.join(rootdir, 'wout_w7x.1000_1000_1000_1000_+0000_+0000.01.00.txt')
-#    kVMECfile = _os.path.join(rootdir, 'wout_w7x.1000_1000_1000_1000_+0390_+0000.05.0144.nc')
+    kVMECfile = _os.path.join(rootdir, 'wout_w7x.1000_1000_1000_1000_+0390_+0000.05.0144.nc')
 
 #    import os as _os
 #    kVMECfile = _os.path.join('G://', 'Workshop','TRAVIS_tree','MagnConfigs','W7X')
@@ -1173,47 +1179,118 @@ if __name__=="__main__":
     # within the LCFS
     cLabPos = _np.atleast_2d([5.85, 0, 0]);
     sPos = _np.atleast_2d([_np.sqrt(0.11407577361150142), 180.0*_np.pi/180.0, 0.0])
-#    rho, th = Cart2Flux(cLabPos, kVMECfile, ForceReadVMEC=False, PosTol=1e-3, verbose=True)
+    rho, th = Cart2Flux(cLabPos, kVMECfile, ForceReadVMEC=False, PosTol=1e-3, verbose=True)
 
     fiRZ = _ut.cart2pol(cLabPos[0,0],cLabPos[0,1],cLabPos[0,2])
-#    pLabOut = Flux2Polar(sPos, kVMECfile, verbose=True)
+    pLabOut = Flux2Polar(sPos, kVMECfile, verbose=True)
 
-    # outside the LCFS
-    cLabPos2 = _np.atleast_2d([5.5, 0, 0]);
-#    rho2, th2 = Cart2Flux(cLabPos2, kVMECfile, ForceReadVMEC=False, PosTol=1e-3, verbose=True)
+    # # outside the LCFS
+    # cLabPos2 = _np.atleast_2d([5.5, 0, 0]);
+    # rho2, th2 = Cart2Flux(cLabPos2, kVMECfile, ForceReadVMEC=False, PosTol=1e-3, verbose=True)
 
     vmc = PYVMEC(kVMECfile)
-    _rho, _th = vmc(cLabPos)
-    _rho2, _th2 = vmc(cLabPos2)
+    # _rho, _th = vmc(cLabPos)
+    # _rho2, _th2 = vmc(cLabPos2)
 
     VMEC_Data = vmc.VMEC_Data
     VMEC_DerivedQuant = vmc.VMEC_DerivedQuant
     VMEC_DataSource = vmc.fname
 
     print('Starting single-point calculation of gradrho')
-    _gradrho, _ = vmc._FSAGradRho(5, sPos[0,0], VMEC_Data, VMEC_DerivedQuant, kMinRho=2.0e-9)
-    print('Starting single-point calculation of gradrho2')
-    _gradrho2, _dVoldrho = vmc._FSAGradRho2(5, sPos[0,0], VMEC_Data, VMEC_DerivedQuant, kMinRho=2.0e-9)
+    # _gradrho, _ = vmc._FSAGradRho(5, sPos[0,0], VMEC_Data, VMEC_DerivedQuant, kMinRho=2.0e-9)
 
-    rho = _np.linspace(1e-3, 1.0, 21, endpoint=True)
-    print('Starting multi-point calculation of gradrho')
-    gradrho, dVoldrho, Vol = vmc.FSAGradRho(rho)
-    print('Starting multi-point calculation of gradrho2')
-    gradrho2, dVoldrho, Vol = vmc.FSAGradRho2(rho)
+    _localgradrho = vmc.LocalGradRho(sPos[0,0], sPos[0,1], sPos[0,2], VMEC_Data, VMEC_DerivedQuant, kMinRho=2.0e-9)
 
-    from pymconf import pyvmec as pymconf
-    pym = pymconf(kVMECfile)
-    pym.getgradrho(sPos[0,0])
-    pym.getVol(sPos[0,0])
-    print((_dVoldrho, pym.dVdrho.flatten(), 100*((_np.abs(_dVoldrho)-pym.dVdrho)/pym.dVdrho).flatten()))
-    print((_gradrho,  pym.gradrho.flatten(), 100*((_np.abs(_gradrho) -pym.gradrho)/pym.gradrho).flatten()))
-    print((_gradrho2, pym.gradrho2.flatten(), 100*((_np.abs(_gradrho2)-pym.gradrho2)/pym.gradrho2).flatten()))
-    pym.getgradrho(rho)
-    pym.getVol(rho)
-    print((Vol, pym.Vol.flatten(), 100*((_np.abs(Vol)-pym.Vol)/pym.Vol).flatten()))
-    print((dVoldrho, pym.dVdrho.flatten(), 100*((_np.abs(dVoldrho)-pym.dVdrho)/pym.dVdrho).flatten()))
-    print((gradrho,  pym.gradrho.flatten(), 100*((_np.abs(gradrho) -pym.gradrho)/pym.gradrho).flatten()))
-    print((gradrho2, pym.gradrho2.flatten(), 100*((_np.abs(gradrho2)-pym.gradrho2)/pym.gradrho2).flatten()))
+    theta = _np.linspace(0, 2*_np.pi, num=30, endpoint=True)
+    phi = _np.linspace(0.0, 2*_np.pi/5.0, num=30, endpoint=True)
+    lgradrho = _np.zeros((len(theta)*len(phi),), float)
+    cylR  = _np.zeros((len(theta)*len(phi),), float)
+    cylfi = _np.zeros((len(theta)*len(phi),), float)
+    cylZ  = _np.zeros((len(theta)*len(phi),), float)
+    kk = -1
+    for ph in phi:
+        for th in theta:
+            kk += 1
+            # pLabPos = Flux2Polar(_np.atleast_2d([sPos[0,0], th, ph]), kVMECfile, verbose=True)
+            # lgradrho[kk] = vmc.LocalGradRho(sPos[0,0], th, ph, VMEC_Data, VMEC_DerivedQuant, kMinRho=2.0e-9)
+
+            pLabPos = Flux2Polar(_np.atleast_2d([0.95, th, ph]), kVMECfile, verbose=True)
+            lgradrho[kk] = vmc.LocalGradRho(0.95, th, ph, VMEC_Data, VMEC_DerivedQuant, kMinRho=2.0e-9)
+            # print((kk, ph, th, lgradrho[kk]))
+
+            cylR[kk], cylfi[kk], cylZ[kk] = tuple(pLabPos.copy())
+            print((kk, ph, th, cylR[kk], cylfi[kk], cylZ[kk], lgradrho[kk]))
+        # end for
+    # end for
+
+    # ======= #
+
+    import matplotlib.pyplot as _plt
+    from mpl_toolkits.mplot3d import Axes3D   # analysis:ignore
+
+    XX, YY, ZZ, = _ut.pol2cart(cylR, cylfi, cylZ)
+    _lgr = _np.copy(lgradrho)
+
+
+    norm=_plt.Normalize(vmin=_lgr.min(), vmax=_lgr.max(), clip=False)
+    colors = _plt.cm.viridis(norm(_lgr))
+
+    # _plt.figure()
+    # _ax = _plt.axes(projection='3d')
+    # _ax.scatter(XX, YY, ZZ, c=_lgr, cmap='viridis')
+    # _ax.set_xlabel(r'x [m]')
+    # _ax.set_ylabel(r'y [m]')
+    # _ax.set_zlabel(r'z [m]')
+
+
+    XX = XX.reshape((len(theta), len(phi)))
+    YY = YY.reshape((len(theta), len(phi)))
+    ZZ = ZZ.reshape((len(theta), len(phi)))
+    lgr = _lgr.reshape((len(theta), len(phi)))
+    cm = colors.reshape((len(theta), len(phi),4))
+
+    _plt.figure()
+    _ax = _plt.axes(projection='3d')
+    surf = _ax.plot_surface(XX, YY, ZZ, antialiased=True, rstride=1, cstride=1, facecolors=cm)
+    # _ax.plot_surface(XX, YY, ZZ, facecolors=colors)
+    # _ax.plot_trisurf(XX, YY, ZZ, facecolors=colors, edgecolor='none')
+    _ax.set_xlabel(r'x [m]')
+    _ax.set_ylabel(r'y [m]')
+    _ax.set_zlabel(r'z [m]')
+    # _ax.set_clabel(r'$\nabla\rho$')
+    _ax.set_title(r'$|\nabla\rho|$ at $\rho$=0.95')
+
+    m = _plt.cm.ScalarMappable(cmap=surf.cmap, norm=surf.norm)
+    m.set_array(lgr)
+    _plt.colorbar(m, shrink=0.5, aspect=5)
+
+    # lim = (max(abs(max(_np.max(XX), _np.max(YY), _np.max(ZZ))), abs(min(_np.min(XX), _np.min(YY), _np.min(ZZ)))))
+    # _ax.set_xlim(-lim, lim)
+    # _ax.set_ylim(-lim, lim)
+    # _ax.set_zlim(-lim, lim)
+
+#     print('Starting single-point calculation of gradrho2')
+#     _gradrho2, _dVoldrho = vmc._FSAGradRho2(5, sPos[0,0], VMEC_Data, VMEC_DerivedQuant, kMinRho=2.0e-9)
+
+#     rho = _np.linspace(1e-3, 1.0, 21, endpoint=True)
+#     print('Starting multi-point calculation of gradrho')
+#     gradrho, dVoldrho, Vol = vmc.FSAGradRho(rho)
+#     print('Starting multi-point calculation of gradrho2')
+#     gradrho2, dVoldrho, Vol = vmc.FSAGradRho2(rho)
+
+#     from pymconf import pyvmec as pymconf
+#     pym = pymconf(kVMECfile)
+#     pym.getgradrho(sPos[0,0])
+#     pym.getVol(sPos[0,0])
+#     print((_dVoldrho, pym.dVdrho.flatten(), 100*((_np.abs(_dVoldrho)-pym.dVdrho)/pym.dVdrho).flatten()))
+#     print((_gradrho,  pym.gradrho.flatten(), 100*((_np.abs(_gradrho) -pym.gradrho)/pym.gradrho).flatten()))
+#     print((_gradrho2, pym.gradrho2.flatten(), 100*((_np.abs(_gradrho2)-pym.gradrho2)/pym.gradrho2).flatten()))
+#     pym.getgradrho(rho)
+#     pym.getVol(rho)
+#     print((Vol, pym.Vol.flatten(), 100*((_np.abs(Vol)-pym.Vol)/pym.Vol).flatten()))
+#     print((dVoldrho, pym.dVdrho.flatten(), 100*((_np.abs(dVoldrho)-pym.dVdrho)/pym.dVdrho).flatten()))
+#     print((gradrho,  pym.gradrho.flatten(), 100*((_np.abs(gradrho) -pym.gradrho)/pym.gradrho).flatten()))
+#     print((gradrho2, pym.gradrho2.flatten(), 100*((_np.abs(gradrho2)-pym.gradrho2)/pym.gradrho2).flatten()))
 
 # end if
 
