@@ -235,9 +235,17 @@ class read_vmec(Struct):
                 self.lrfplogical=0
             # end if
 
-#        if self.netcdffile:
-#            self.finish_import()
-#        else:
+        if self.netcdffile:
+            self.finish_import()
+
+            # # 2020.02.13 gmw testing
+            # # Now recompose the Fourier arrays
+            # self.RecomposeFourierArrays()
+
+            # # Create resonance array
+            # self. CreateResonanceArray()
+
+        else:
             # This is taken care of in Jonathon's code I believe.
             # TODO:! Double check this!
             #
