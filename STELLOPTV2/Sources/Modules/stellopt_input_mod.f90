@@ -412,6 +412,7 @@
                          regcoil_target_value, &
                          regcoil_nescin_filename, &
                          regcoil_num_field_periods, &
+                         lregcoil_toroidal_field, &
                          lregcoil_rcws_rbound_c_opt, lregcoil_rcws_rbound_s_opt, &
                          lregcoil_rcws_zbound_c_opt, lregcoil_rcws_zbound_s_opt, &
                          dregcoil_rcws_rbound_c_opt, dregcoil_rcws_rbound_s_opt, &
@@ -624,6 +625,7 @@
       !target_regcoil_current_density = 0.0
       !sigma_regcoil_current_density = bigno
       regcoil_target_value = 0.0
+      lregcoil_toroidal_field = .false.
       !regcoil_current_density = 8.0e6
       !regcoil_current_density_min = 0.0
       !regcoil_current_density_max = bigno

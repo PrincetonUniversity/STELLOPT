@@ -118,6 +118,7 @@
             END IF
          END IF
       END IF
+      IF (iflag/=0) WRITE(6,*) 'Error happened in chisq_regicoil_area_coil, iflag=', iflag
 !DEC$ ENDIF      
 
       RETURN

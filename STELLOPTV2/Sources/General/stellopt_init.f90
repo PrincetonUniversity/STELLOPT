@@ -55,6 +55,7 @@
 
       ! Read the OPTIMUM Namelist
       CALL read_stellopt_input(TRIM(id_string),ier,myid)
+      IF (ier /=0) CALL handle_err(NAMELIST_READ_ERR,'IN READ_STELLOPT_INPUT',ier)
       !CALL bcast_vars(master,MPI_COMM_STEL,ierr_mpi)
       !IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'stellot_init:bcast_vars',ierr_mpi)
 
@@ -1578,11 +1579,13 @@
 
       ! Now initalize the targets
       mtargets = 1
+      ier = 0
       CALL stellopt_load_targets(mtargets,fvec_temp,ier,-1)          ! Count
+      IF (ier /=0) CALL handle_err(NAMELIST_READ_ERR,'IN STELLOPT_LOAD_TARGETS COUNTS',ier)
       ALLOCATE(vals(mtargets),targets(mtargets),sigmas(mtargets),target_dex(mtargets))
       mtargets = 1
       CALL stellopt_load_targets(mtargets,fvec_temp,ier,-2)          ! Load index
-      IF (ier /=0) CALL handle_err(NAMELIST_READ_ERR,'IN STELLOPT_LOAD_TARGETS',ier)
+      IF (ier /=0) CALL handle_err(NAMELIST_READ_ERR,'IN STELLOPT_LOAD_TARGETS LOAD INDEX',ier)
       IF (lverb) THEN
          WRITE(6,*) '-----  Optimization  -----'
          WRITE(6,*) '   =======VARS======='

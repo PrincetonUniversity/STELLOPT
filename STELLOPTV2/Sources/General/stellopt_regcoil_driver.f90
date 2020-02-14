@@ -191,10 +191,10 @@
         write(6,'(a)') 'K====-----<<<<REGCOIL ERROR: Do not optimize both separation AND Fourier series simultaneously'
       END IF
 
-      IF (lregcoil_winding_surface_separation_opt) then 
+      ! IF (lregcoil_winding_surface_separation_opt) then 
          ! write(6,'(a)') '<----regcoil_init_coil_surface'
          call regcoil_init_coil_surface()
-      END IF
+      ! END IF
 
       IF ((ANY(lregcoil_rcws_rbound_s_opt)) .or. (ANY(lregcoil_rcws_rbound_c_opt)) .or. &
           (ANY(lregcoil_rcws_zbound_s_opt)) .or. (ANY(lregcoil_rcws_zbound_c_opt)) ) THEN 
@@ -210,10 +210,15 @@
          bnorm_filename = 'bnorm.' // TRIM(proc_string)
       ENDIF
 
-      call regcoil_read_bnorm()
+      CALL regcoil_read_bnorm()
+      ! calculate toroidal field contribution
+      IF (lregcoil_toroidal_field) THEN
+         CALL regcoil_toroidal_field()
+         net_poloidal_current_Amperes = 0
+      ENDIF
       ! write(6,'(a)') '<----build matrices'
-      call regcoil_build_matrices()
-      call regcoil_prepare_solve()
+      CALL regcoil_build_matrices()
+      CALL regcoil_prepare_solve()
 
       ! JCS: I disabled all options except for #5 (for now)
       ! As REGCOIL development continues, future cases can 

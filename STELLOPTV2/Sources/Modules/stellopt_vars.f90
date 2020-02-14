@@ -65,7 +65,7 @@
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       LOGICAL  ::  lphiedge_opt, lcurtor_opt, lpscale_opt, lbcrit_opt,&
-                   lmix_ece_opt, lregcoil_winding_surface_separation_opt,&
+                   lmix_ece_opt, lregcoil_winding_surface_separation_opt, lregcoil_toroidal_field, &
                    lxval_opt, lyval_opt, &
                    lxics_v0_opt
       LOGICAL, DIMENSION(nigroup)  ::  lextcur_opt
