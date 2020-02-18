@@ -181,7 +181,7 @@
       DOUBLE PRECISION, INTENT(in),OPTIONAL :: bmnc(1:mnmax,k1:k2),bmns(1:mnmax,k1:k2)
       DOUBLE PRECISION, INTENT(in),OPTIONAL :: gmnc(1:mnmax,k1:k2),gmns(1:mnmax,k1:k2)
       INTEGER, INTENT(in), OPTIONAL :: comm
-      INTEGER ::  ns_t, u, mn, isherm
+      INTEGER ::  ns_t, u, mn, isherm, nu1, nv1
       INTEGER ::  shar_comm, shar_rank, shar_size
       INTEGER ::  xn(1:mnmax)
       DOUBLE PRECISION, ALLOCATABLE :: xu(:),xv(:),rho(:),vp(:),grho(:),grho2(:)
@@ -219,6 +219,8 @@
       eps1 = (x1_max-x1_min)*small
       eps2 = (x2_max-x2_min)*small
       eps3 = (x3_max-x3_min)*small
+      nu1 = nu-1
+      nv1 = nv-1
       ! Handle Allocating the 4D arrays
 #if defined(MPI_OPT)
       IF (PRESENT(comm)) THEN
@@ -555,15 +557,13 @@
             f_temp = (RU4D(1,:,:,:)*RU4D(1,:,:,:)+ &
                       ZU4D(1,:,:,:)*ZU4D(1,:,:,:))
             f_temp = f_temp / G4D(1,:,:,:)
-            grho   = SUM(SUM(f_temp,DIM=1),DIM=1)/(nu*nv)
-            grho(1) = 2*grho(2) - grho(3)
+            grho   = SUM(SUM(f_temp(1:nu1,1:nv1,:),DIM=1),DIM=1)/(nu1*nv1)
             CALL EZspline_setup(S11_spl,grho,iflag); f_temp = 0; grho = 0
             ! Calc S21
             f_temp = (RU4D(1,:,:,:)*RV4D(1,:,:,:)+ &
                       ZU4D(1,:,:,:)*ZV4D(1,:,:,:))*nfp
             f_temp = f_temp / G4D(1,:,:,:)
-            grho   = SUM(SUM(f_temp,DIM=1),DIM=1)/(nu*nv)
-            grho(1) = 2*grho(2) - grho(3)
+            grho   = SUM(SUM(f_temp(1:nu1,1:nv1,:),DIM=1),DIM=1)/(nu1*nv1)
             CALL EZspline_setup(S21_spl,grho,iflag); f_temp = 0; grho = 0
             ! Calc S12
             f_temp = (RU4D(1,:,:,:)*RV4D(1,:,:,:)+ &
@@ -571,10 +571,9 @@
                      (one+LU4D(1,:,:,:))*nfp
             f_temp = f_temp - (RU4D(1,:,:,:)*RU4D(1,:,:,:)+ &
                                ZU4D(1,:,:,:)*ZU4D(1,:,:,:))*&
-                              LV4D(1,:,:,:)
+                              LV4D(1,:,:,:)*nfp
             f_temp = f_temp / G4D(1,:,:,:)
-            grho   = SUM(SUM(f_temp,DIM=1),DIM=1)/(nu*nv)
-            grho(1) = 2*grho(2) - grho(3)
+            grho   = SUM(SUM(f_temp(1:nu1,1:nv1,:),DIM=1),DIM=1)/(nu1*nv1)
             CALL EZspline_setup(S12_spl,grho,iflag); f_temp = 0; grho = 0
             ! Calc S22
             f_temp = (RV4D(1,:,:,:)*RV4D(1,:,:,:)*nfp*nfp+ &
@@ -583,23 +582,22 @@
                      (one+LU4D(1,:,:,:))
             f_temp = f_temp - (RU4D(1,:,:,:)*RV4D(1,:,:,:)+ &
                                ZU4D(1,:,:,:)*ZV4D(1,:,:,:))*&
-                              LV4D(1,:,:,:)*nfp
+                              LV4D(1,:,:,:)*nfp*nfp
             f_temp = f_temp / G4D(1,:,:,:)
-            grho   = SUM(SUM(f_temp,DIM=1),DIM=1)/(nu*nv)
-            !grho(1) = 2*grho(2) - grho(3)
+            grho   = SUM(SUM(f_temp(1:nu1,1:nv1,:),DIM=1),DIM=1)/(nu1*nv1)
             CALL EZspline_setup(S22_spl,grho,iflag); f_temp = 0; grho = 0
             ! Bav
             f_temp = B4D(1,:,:,:)*G4D(1,:,:,:)
-            grho   = SUM(SUM(f_temp,DIM=1),DIM=1)/(nu*nv)
-            grho2 = grho2 / Vp
+            grho   = SUM(SUM(f_temp,DIM=1),DIM=1)
+            grho2 = grho / Vp
             grho2(1) = 2*grho2(2) - grho2(3)
-            CALL EZspline_setup(Bav_spl,grho,iflag); f_temp = 0; grho = 0
+            CALL EZspline_setup(Bav_spl,grho2,iflag); f_temp = 0; grho = 0
             ! Bsq
             f_temp = B4D(1,:,:,:)*B4D(1,:,:,:)*G4D(1,:,:,:)
-            grho   = SUM(SUM(f_temp,DIM=1),DIM=1)/(nu*nv)
-            grho2 = grho2 / Vp
+            grho   = SUM(SUM(f_temp,DIM=1),DIM=1)
+            grho2 = grho / Vp
             grho2(1) = 2*grho2(2) - grho2(3)
-            CALL EZspline_setup(Bsq_spl,grho,iflag); f_temp = 0; grho = 0
+            CALL EZspline_setup(Bsq_spl,grho2,iflag); f_temp = 0; grho = 0
             ! Deallocate arrays
             DEALLOCATE(gsr,gsp,gsz,gs,Vp,grho,grho2)
             f_temp = 0
@@ -625,7 +623,7 @@
          ! DEALLOCATIONS
          DEALLOCATE(xu,xv,rho)
          DEALLOCATE(f_temp)
-      END IF !So shared memory doesn't do work
+      END IF !So shared memory doesnt do work
 #if defined(MPI_OPT)
       IF (PRESENT(comm)) THEN
          CALL MPI_BARRIER(shar_comm,iflag)

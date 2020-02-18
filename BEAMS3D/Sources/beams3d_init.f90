@@ -15,7 +15,9 @@
       USE beams3d_runtime
       USE beams3d_grid
       USE beams3d_input_mod, ONLY: read_beams3d_input
-      USE beams3d_lines, ONLY: nparticles
+      USE beams3d_lines, ONLY: nparticles, epower_prof, ipower_prof, &
+                               ndot_prof, j_prof, ns_prof, dist_prof, &
+                               partvmax, end_state
       USE wall_mod
       USE mpi_params
       USE adas_mod_parallel, ONLY: adas_load_tables
@@ -36,7 +38,7 @@
 !DEC$ ENDIF
       INTEGER :: i,j,k,ier, iunit, nextcur_in, nshar
       INTEGER :: bcs1(2), bcs2(2), bcs3(2), bcs1_s(2)
-      REAL(rprec) :: br, bphi, bz, ti_temp
+      REAL(rprec) :: br, bphi, bz, ti_temp, vtemp
 !-----------------------------------------------------------------------
 !     External Functions
 !          A00ADF               NAG Detection
@@ -71,8 +73,14 @@
          IF (lverb) WRITE(6,'(A)') '   FILE: input.' // TRIM(id_string)
       END IF
 
+      IF (lrestart_particles) THEN
+        ldepo = .false.
+        lbbnbi = .false.
+        lbeam = .false.
+      END IF
+
       ! Output some information
-      IF (lverb .and. .not.lrestart) THEN
+      IF (lverb .and. .not.lrestart_grid) THEN
          WRITE(6,'(A,F9.5,A,F9.5,A,I4)') '   R   = [',rmin,',',rmax,'];  NR:   ',nr
          WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   PHI = [',phimin,',',phimax,'];  NPHI: ',nphi
          WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   Z   = [',zmin,',',zmax,'];  NZ:   ',nz
@@ -93,6 +101,7 @@
          IF (lascot4) WRITE(6,'(A)') '   ASCOT4 OUTPUT ON!'
          IF (lbbnbi) WRITE(6,'(A)') '   BEAMLET BEAM Model!'
          IF (lplasma_only) WRITE(6,'(A)') '   MAGNETIC FIELD FROM PLASMA ONLY!'
+         IF (lrestart_particles) WRITE(6,'(A)') '   Restarting particles!'
          IF (npot > 0) WRITE(6,'(A)') '   RAIDAL ELECTRIC FIELD PRESENT!'
          CALL FLUSH(6)
       END IF
@@ -154,8 +163,8 @@
       END IF
 
 
-      IF (lrestart) THEN
-         CALL beams3d_init_restart
+      IF (lrestart_grid) THEN
+         !CALL beams3d_init_restart
       ELSE
          ! Create the background grid
          CALL mpialloc(raxis, nr, myid_sharmem, 0, MPI_COMM_SHARMEM, win_raxis)
@@ -278,33 +287,64 @@
       
       ! Initialize beams (define a distribution of directions and weights)
       IF (lbeam) THEN
-          CALL adas_load_tables(myid_sharmem, MPI_COMM_SHARMEM)
-          IF (lw7x) THEN
-             CALL beams3d_init_beams_w7x
-          ELSEIF (lbbnbi) THEN
-             CALL beams3d_init_beams_bbnbi
-          ELSE
-             CALL beams3d_init_beams
-          END IF
+         CALL adas_load_tables(myid_sharmem, MPI_COMM_SHARMEM)
+         IF (lw7x) THEN
+            CALL beams3d_init_beams_w7x
+         ELSEIF (lbbnbi) THEN
+            CALL beams3d_init_beams_bbnbi
+         ELSE
+            CALL beams3d_init_beams
+         END IF
+         ALLOCATE(epower_prof(nbeams,ns_prof), ipower_prof(nbeams,ns_prof), &
+                  ndot_prof(nbeams,ns_prof), j_prof(nbeams,ns_prof))
+         ALLOCATE(dist_prof(nbeams,ns_prof,ns_prof))
+         ipower_prof=0; epower_prof=0; ndot_prof=0; j_prof = 0; dist_prof=0
+      ELSEIF (lrestart_particles) THEN
+        CALL beams3d_init_restart
+         ALLOCATE(epower_prof(nbeams,ns_prof), ipower_prof(nbeams,ns_prof), &
+                  ndot_prof(nbeams,ns_prof), j_prof(nbeams,ns_prof))
+         ALLOCATE(dist_prof(nbeams,ns_prof,ns_prof))
+         ipower_prof=0; epower_prof=0; ndot_prof=0; j_prof = 0; dist_prof=0
       ELSE
-          ALLOCATE(  R_start(nparticles), phi_start(nparticles), Z_start(nparticles), &
-          & v_neut(3,nparticles), mass(nparticles), charge(nparticles), &
-          & mu_start(nparticles), Zatom(nparticles), t_end(nparticles), vll_start(nparticles), &
-          & beam(nparticles), weight(nparticles)  )
+        ALLOCATE(  R_start(nparticles), phi_start(nparticles), Z_start(nparticles), &
+           v_neut(3,nparticles), mass(nparticles), charge(nparticles), &
+           mu_start(nparticles), Zatom(nparticles), t_end(nparticles), vll_start(nparticles), &
+           beam(nparticles), weight(nparticles) )
 
-          R_start = r_start_in(1:nparticles)
-          phi_start = phi_start_in(1:nparticles)
-          Z_start = z_start_in(1:nparticles)
-          vll_start = vll_start_in(1:nparticles)
-          v_neut = 0.0
-          weight = 1.0
-          Zatom = Zatom_in(1:nparticles)
-          mass = mass_in(1:nparticles)
-          charge = charge_in(1:nparticles)
-          mu_start = mu_start_in(1:nparticles)
-          t_end = t_end_in(1:nparticles)
-          beam  = 0
+         R_start = r_start_in(1:nparticles)
+         phi_start = phi_start_in(1:nparticles)
+         Z_start = z_start_in(1:nparticles)
+         vll_start = vll_start_in(1:nparticles)
+         v_neut = 0.0
+         weight = 1.0/nparticles
+         Zatom = Zatom_in(1:nparticles)
+         mass = mass_in(1:nparticles)
+         charge = charge_in(1:nparticles)
+         mu_start = mu_start_in(1:nparticles)
+         t_end = t_end_in(1:nparticles)
+         beam  = 1
+         nbeams = 1
+         ALLOCATE(epower_prof(1,ns_prof), ipower_prof(1,ns_prof),&
+                  ndot_prof(1,ns_prof), j_prof(1,ns_prof))
+         ALLOCATE(dist_prof(1,ns_prof,ns_prof))
+         ipower_prof=0; epower_prof=0; ndot_prof = 0; j_prof = 0; dist_prof=0
       END IF
+
+      ! In all cases create an end_state array
+      ALLOCATE(end_state(nparticles))
+      end_state=0
+
+      ! Setup wall heat flux tracking
+      IF (lwall_loaded) THEN
+         CALL mpialloc(wall_load, nbeams, nface, myid_sharmem, 0, MPI_COMM_SHARMEM, win_wall_load)
+         IF (myid_sharmem == master) wall_load = 0
+         CALL mpialloc(wall_shine, nbeams, nface, myid_sharmem, 0, MPI_COMM_SHARMEM, win_wall_shine)
+         IF (myid_sharmem == master) wall_shine = 0
+      END IF
+
+      ! Determine maximum particle velocity
+      partvmax=MAXVAL(ABS(vll_start))*3.0/2.0
+
 
       ! Do a reality check
       IF (ANY(ABS(vll_start)>3E8) .and. lverb) THEN
