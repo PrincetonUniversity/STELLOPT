@@ -26,17 +26,20 @@
       REAL(rprec) :: x_old, y_old, norm
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: r, z, p, x, y, r0, z0, &
                                                 th, dth, nth, tth, &
-                                                xth, yth, dr, arr1, arr2
+                                                xth, yth, dr, arr1, arr2, &
+                                                raxis, zaxis
       REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: x2d, y2d, dx2d, dy2d, &
                                                   x_new, y_new, rmnc, zmns
 
 #if defined(FFTW3)
       ! FFTW3
       INCLUDE 'fftw3.f03'
+      REAL(C_DOUBLE), POINTER, DIMENSION(:) :: func_1d
+      COMPLEX(C_DOUBLE_COMPLEX), POINTER, DIMENSION(:) :: fmn_1d
       REAL(C_DOUBLE), POINTER, DIMENSION(:,:) :: func_2d
       COMPLEX(C_DOUBLE_COMPLEX), POINTER, DIMENSION(:,:) :: fmn_2d
       TYPE(C_PTR) :: plan
-      TYPE(C_PTR) :: real_2d, complex_2d
+      TYPE(C_PTR) :: real_1d, complex_1d, real_2d, complex_2d
 #endif
 
       ! Extract the surface and axis data
@@ -47,6 +50,8 @@
       FORALL(j=0:i-1) p(j+1) = PHI_lines(fit_line,j)
       FORALL(j=0:i-1) r0(j+1) = R_lines(1,j)
       FORALL(j=0:i-1) z0(j+1) = Z_lines(1,j)
+
+      PRINT *,R_lines(1,0),r0(1:npoinc+2)
 
 !      DO j =1, nsteps
 !         WRITE(325,*) r(j),z(j)
@@ -175,6 +180,11 @@
       x_new(:,n2) = x_new(:,1)
       y_new(:,n2) = y_new(:,1)
 
+      DO j = 1, n
+         x_new(:,j) = x_new(:,j) + r0(j)
+         y_new(:,j) = y_new(:,j) + z0(j)
+      END DO
+
       DO j =1, m
          WRITE(329,*) x_new(j,1),y_new(j,1)
       END DO
@@ -188,6 +198,48 @@
       END DO
 
 #if defined(FFTW3)
+      ! axis
+      nfft = (n)/2+1
+      PRINT *,'------------'
+      PRINT *,'n = ',n
+      PRINT *,'n/2 = ',n/2
+      PRINT *,'nfft = ',nfft
+      PRINT *,'phi = ',p(1:n)
+      PRINT *,'------------'
+      ALLOCATE(raxis(0:n/2),zaxis(0:n/2))
+      real_1d = FFTW_ALLOC_REAL(INT(n,C_SIZE_T))
+      complex_1d = FFTW_ALLOC_COMPLEX(INT(nfft,C_SIZE_T))
+      CALL C_F_POINTER(real_1d, func_1d, [n])
+      CALL C_F_POINTER(complex_1d, fmn_1d, [nfft])
+      norm = DBLE(n)/2
+      !R
+      func_1d = r0(1:n)
+      plan = FFTW_PLAN_DFT_R2C_1D(n, func_1d, fmn_1d, FFTW_ESTIMATE)
+      CALL FFTW_EXECUTE_DFT_R2C(plan, func_1d, fmn_1d)
+      CALL FFTW_DESTROY_PLAN(plan)
+      WRITE(500,*) fmn_1d
+      DO j = 1, n/2
+         ntor = j-1
+         raxis(ntor) = REAL(fmn_1d(j))/norm
+      END DO
+      raxis(0) = raxis(0)/2
+      !Z
+      func_1d = z0(1:n)
+      plan = FFTW_PLAN_DFT_R2C_1D(n, func_1d, fmn_1d, FFTW_ESTIMATE)
+      CALL FFTW_EXECUTE_DFT_R2C(plan, func_1d, fmn_1d)
+      CALL FFTW_DESTROY_PLAN(plan)
+      DO j = 1, n/2
+         ntor = j-1
+         zaxis(ntor) = -AIMAG(fmn_1d(j))/norm
+      END DO
+      DO j = 0, nfft-1
+         WRITE(555,'(2(2X,A,I3,A,ES18.10))') 'RAXIS(',j,') = ', raxis(j),'  ZAXIS(',j,') = ', zaxis(j)
+      END DO
+      DEALLOCATE(raxis, zaxis)
+
+
+
+      ! Surface
       mfft = m/2+1
       nfft = 2*(DBLE(n)/2+1)
       ALLOCATE(rmnc(-n/2:n/2,0:mfft-1),zmns(-n/2:n/2,0:mfft-1))
@@ -195,7 +247,7 @@
       complex_2d = FFTW_ALLOC_COMPLEX(INT(mfft*nfft,C_SIZE_T))
       CALL C_F_POINTER(real_2d, func_2d, [m,n])
       CALL C_F_POINTER(complex_2d, fmn_2d, [mfft,nfft])
-      norm = m*n/2
+      norm = DBLE(m*n)/2
 
       ! Do x
       func_2d = x_new
@@ -251,9 +303,10 @@
       END DO
       IF(MOD(m,2) == 1) zmns(:,mfft-1) = zmns(:,mfft-1)*2
 
-      DO i = -n/2, n/2
-         DO j = 0, 24
-            WRITE(555,*) 'RMNC(',i,',',j,') = ', rmnc(i,j),'  ZMNS(',i,',',j,') = ', zmns(i,j)
+      DO j = 0, 24
+         DO i = -n/2, n/2
+            IF ((j.eq.0) .and. (i<0)) CYCLE
+            WRITE(555,'(2(2X,A,I4,A,I3,A,ES18.10))') 'RBC(',-i,',',j,') = ', rmnc(i,j),'  ZBS(',-i,',',j,') = ', zmns(i,j)
          END DO
       END DO
       CALL FFTW_FREE(real_2d)

@@ -21,7 +21,7 @@ SUBROUTINE beams3d_follow
     USE beams3d_lines
     USE beams3d_grid, ONLY: tmin, tmax, delta_t, BR_spl, BZ_spl, BPHI_spl, &
                             MODB_spl, S_spl, U_spl, TE_spl, NE_spl, TI_spl, &
-                            TE_spl, TI_spl
+                            TE_spl, TI_spl, wall_load, wall_shine
     USE mpi_params ! MPI
     USE beams3d_physics_mod
     USE beams3d_write_par
@@ -40,7 +40,7 @@ SUBROUTINE beams3d_follow
     !          sender       Dummy index
     !          ier          Error flag
     !          l            Dummy index
-    !          neqs_nag     Number of ODE's to solve (not limited to NAG routines)
+    !          neqs_nag     Number of ODEs to solve (not limited to NAG routines)
     !          l2           Index helper
     !          itol         LSODE tolerance flag
     !          itask        LSODE flag (overshoot and interpolate)
@@ -151,9 +151,6 @@ SUBROUTINE beams3d_follow
     IF (ALLOCATED(B_lines)) DEALLOCATE(B_lines)
     IF (ALLOCATED(moment_lines)) DEALLOCATE(moment_lines)
     IF (ALLOCATED(neut_lines)) DEALLOCATE(neut_lines)
-    IF (ALLOCATED(lost_lines)) DEALLOCATE(lost_lines)
-    IF (ALLOCATED(PE_lines)) DEALLOCATE(PE_lines)
-    IF (ALLOCATED(PI_lines)) DEALLOCATE(PI_lines)
     
     ! Output some stuff
     IF (lverb) THEN
@@ -176,17 +173,13 @@ SUBROUTINE beams3d_follow
     IF (ier /= 0) CALL handle_err(ALLOC_ERR, 'Q', ier)
     ALLOCATE(R_lines(0:npoinc, mystart:myend), Z_lines(0:npoinc, mystart:myend), &
              PHI_lines(0:npoinc, mystart:myend), vll_lines(0:npoinc, mystart:myend), moment_lines(0:npoinc, mystart:myend), &
-             neut_lines(0:npoinc, mystart:myend),PE_lines(0:npoinc, mystart:myend),PI_lines(0:npoinc, mystart:myend), &
-             S_lines(0:npoinc, mystart:myend), U_lines(0:npoinc, mystart:myend), B_lines(0:npoinc, mystart:myend), STAT = ier)
+             neut_lines(0:npoinc, mystart:myend), S_lines(0:npoinc, mystart:myend), U_lines(0:npoinc, mystart:myend), &
+              B_lines(0:npoinc, mystart:myend), STAT = ier)
     IF (ier /= 0) CALL handle_err(ALLOC_ERR, 'R_LINES, PHI_LINES, Z_LINES', ier)
-    ALLOCATE(lost_lines(mystart:myend), STAT = ier)
-    IF (ier /= 0) CALL handle_err(ALLOC_ERR, 'LOST_LINES', ier)
 
     ! Initializations
     R_lines = 0.0; Z_lines = 0.0; PHI_lines = -1.0
     vll_lines = 0.0; moment_lines = 0.0
-    PE_lines = 0.0; PI_lines = 0.0
-    lost_lines = .FALSE.
     S_lines = 1.5; U_lines = 0.0; B_lines = -1.0
     R_lines(0, mystart:myend) = R_start(mystart:myend)
     Z_lines(0, mystart:myend) = Z_start(mystart:myend)
@@ -344,6 +337,7 @@ SUBROUTINE beams3d_follow
                     mycharge = charge(l)
                     myZ = Zatom(l)
                     mymass = mass(l)
+                    mybeam = Beam(l)
                     moment = mu_start(l)
                     myv_neut(:) = v_neut(:,myline)
                     IF (lbeam) lneut = .TRUE.
@@ -423,27 +417,48 @@ SUBROUTINE beams3d_follow
     IF (ALLOCATED(w)) DEALLOCATE(w)
     IF (ALLOCATED(iwork)) DEALLOCATE(iwork)
 
-    ! Adjust PE_lines and PI_lines to be in real units
-    DO i = mystart, myend
-       PE_lines(:,i) = PE_lines(:,i)*weight(i)
-       PI_lines(:,i) = PI_lines(:,i)*weight(i)
-    END DO
+    ! First reduce the cumulative arrays over shared memory groups then allreduce between shared memeory groups
+!DEC$ IF DEFINED (MPI_OPT)
+    IF (myid_sharmem == master) THEN
+       CALL MPI_REDUCE(MPI_IN_PLACE,   end_state,     nparticles,          MPI_INTEGER, MPI_MAX, master, MPI_COMM_SHARMEM, ierr_mpi)
+       CALL MPI_REDUCE(MPI_IN_PLACE, epower_prof, nbeams*ns_prof, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
+       CALL MPI_REDUCE(MPI_IN_PLACE, ipower_prof, nbeams*ns_prof, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
+       CALL MPI_REDUCE(MPI_IN_PLACE,   ndot_prof, nbeams*ns_prof, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
+       CALL MPI_REDUCE(MPI_IN_PLACE,      j_prof, nbeams*ns_prof, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
+       CALL MPI_REDUCE(MPI_IN_PLACE,   dist_prof, nbeams*ns_prof*ns_prof, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
+    ELSE
+       CALL MPI_REDUCE(end_state,     end_state,     nparticles,          MPI_INTEGER, MPI_MAX, master, MPI_COMM_SHARMEM, ierr_mpi)
+       CALL MPI_REDUCE(epower_prof, epower_prof, nbeams*ns_prof, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
+       CALL MPI_REDUCE(ipower_prof, ipower_prof, nbeams*ns_prof, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
+       CALL MPI_REDUCE(ndot_prof,     ndot_prof, nbeams*ns_prof, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
+       CALL MPI_REDUCE(j_prof,           j_prof, nbeams*ns_prof, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
+       CALL MPI_REDUCE(dist_prof,     dist_prof, nbeams*ns_prof*ns_prof, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
+    END IF
+!DEC$ ENDIF
 
 !DEC$ IF DEFINED (MPI_OPT)
     i = MPI_UNDEFINED
     IF (myid_sharmem == master) i = 0
     CALL MPI_COMM_SPLIT( MPI_COMM_BEAMS,i,myworkid,MPI_COMM_LOCAL,ierr_mpi)
     IF (myid_sharmem == master) THEN
-       partvmax = MAXVAL(MAXVAL(ABS(vll_lines),DIM=2),DIM=1)
-       CALL MPI_ALLREDUCE(MPI_IN_PLACE,partvmax,1,MPI_DOUBLE_PRECISION,MPI_MAX,MPI_COMM_LOCAL,ierr_mpi)
+       CALL MPI_ALLREDUCE(MPI_IN_PLACE,   end_state,     nparticles,          MPI_INTEGER, MPI_MAX, MPI_COMM_LOCAL, ierr_mpi)
+       CALL MPI_ALLREDUCE(MPI_IN_PLACE, epower_prof, nbeams*ns_prof, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
+       CALL MPI_ALLREDUCE(MPI_IN_PLACE, ipower_prof, nbeams*ns_prof, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
+       CALL MPI_ALLREDUCE(MPI_IN_PLACE,   ndot_prof, nbeams*ns_prof, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
+       CALL MPI_ALLREDUCE(MPI_IN_PLACE,      j_prof, nbeams*ns_prof, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
+       CALL MPI_ALLREDUCE(MPI_IN_PLACE,   dist_prof, nbeams*ns_prof*ns_prof, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
        IF (ASSOCIATED(ihit_array)) THEN
           CALL MPI_ALLREDUCE(MPI_IN_PLACE,ihit_array,nface,MPI_INTEGER,MPI_SUM,MPI_COMM_LOCAL,ierr_mpi)
+       END IF
+       IF (ASSOCIATED(wall_load)) THEN
+          CALL MPI_ALLREDUCE(MPI_IN_PLACE,wall_load,nface*nbeams,MPI_DOUBLE_PRECISION,MPI_SUM,MPI_COMM_LOCAL,ierr_mpi)
+       END IF
+       IF (ASSOCIATED(wall_shine)) THEN
+          CALL MPI_ALLREDUCE(MPI_IN_PLACE,wall_shine,nface*nbeams,MPI_DOUBLE_PRECISION,MPI_SUM,MPI_COMM_LOCAL,ierr_mpi)
        END IF
        CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)
     END IF
     CALL MPI_BARRIER(MPI_COMM_BEAMS, ierr_mpi)
-!DEC$ ELSE
-    partvmax = MAXVAL(MAXVAL(ABS(vll_lines),DIM=2),DIM=1)
 !DEC$ ENDIF
 
 
@@ -453,8 +468,6 @@ SUBROUTINE beams3d_follow
     CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend,      'Z_lines', DBLVAR=Z_lines)
     CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend,    'vll_lines', DBLVAR=vll_lines)
     CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend, 'moment_lines', DBLVAR=moment_lines)
-    CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend,     'PE_lines', DBLVAR=PE_lines)
-    CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend,     'PI_lines', DBLVAR=PI_lines)
     CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend,      'S_lines', DBLVAR=S_lines)
     CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend,      'U_lines', DBLVAR=U_lines)
     CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend,      'B_lines', DBLVAR=B_lines)

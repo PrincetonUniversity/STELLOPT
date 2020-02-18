@@ -25,11 +25,13 @@
                                     lvessel, lvac, lbeam_simple, handle_err, nparticles_start, &
                                     HDF5_OPEN_ERR,HDF5_WRITE_ERR,&
                                     HDF5_CLOSE_ERR, BEAMS3D_VERSION, weight, e_beams, p_beams,&
-                                    charge, Zatom, mass, ldepo, v_neut,lcollision, pi, pi2, t_end_in
+                                    charge, Zatom, mass, ldepo, v_neut, &
+                                    lcollision, pi, pi2, t_end_in, nprocs_beams
       USE safe_open_mod, ONLY: safe_open
       USE wall_mod, ONLY: nface,nvertex,face,vertex,ihit_array, wall_free
       USE beams3d_write_par
       USE mpi_params
+      USE mpi
 !-----------------------------------------------------------------------
 !     Input Variables
 !          write_type  Type of write to preform
@@ -41,9 +43,10 @@
 !          ier          Error Flag
 !          iunit        File ID
 !-----------------------------------------------------------------------
-      INTEGER :: ier, iunit, i, d1, d2, d3
+      INTEGER :: ier, iunit, i, d1, d2, d3, k, k1, k2, kmax
       INTEGER(HID_T) :: options_gid, bfield_gid, efield_gid, plasma_gid, &
                         neutral_gid, wall_gid, marker_gid, qid_gid
+      INTEGER, ALLOCATABLE, DIMENSION(:) :: itemp
       DOUBLE PRECISION :: dbl_temp
       DOUBLE PRECISION, ALLOCATABLE :: rtemp(:,:,:), r1dtemp(:)
       CHARACTER(LEN=10) ::  qid_str
@@ -54,7 +57,7 @@
 !-----------------------------------------------------------------------
 !     Begin Subroutine
 !-----------------------------------------------------------------------
-      qid_str='0000000000'
+      qid_str='0003271980'
       SELECT CASE (TRIM(write_type))
          CASE('INIT')
             IF (myworkid == master) THEN
@@ -110,9 +113,9 @@
                CALL write_var_hdf5(qid_gid,'ENDCOND_MAX_POLOIDALORBS',ier,DBLVAR=DBLE(100))
                CALL write_var_hdf5(qid_gid,'ENDCOND_MAX_TOROIDALORBS',ier,DBLVAR=DBLE(100))
                CALL write_var_hdf5(qid_gid,'ENABLE_DIST_5D',ier,DBLVAR=DBLE(1))
-               CALL write_var_hdf5(qid_gid,'ENABLE_DIST_6D',ier,DBLVAR=DBLE(1))
+               CALL write_var_hdf5(qid_gid,'ENABLE_DIST_6D',ier,DBLVAR=DBLE(0))
                CALL write_var_hdf5(qid_gid,'ENABLE_DIST_RHO5D',ier,DBLVAR=DBLE(1))
-               CALL write_var_hdf5(qid_gid,'ENABLE_DIST_RHO6D',ier,DBLVAR=DBLE(1))
+               CALL write_var_hdf5(qid_gid,'ENABLE_DIST_RHO6D',ier,DBLVAR=DBLE(0))
                CALL write_var_hdf5(qid_gid,'DIST_MIN_R',ier,DBLVAR=raxis(1))
                CALL write_var_hdf5(qid_gid,'DIST_MAX_R',ier,DBLVAR=raxis(nr))
                CALL write_var_hdf5(qid_gid,'DIST_MIN_Z',ier,DBLVAR=zaxis(1))
@@ -127,13 +130,13 @@
                CALL write_var_hdf5(qid_gid,'DIST_MAX_TIME',ier,DBLVAR=DBLE(1))
                CALL write_var_hdf5(qid_gid,'DIST_MIN_CHARGE',ier,DBLVAR=DBLE(-2))
                CALL write_var_hdf5(qid_gid,'DIST_MAX_CHARGE',ier,DBLVAR=DBLE(2))
-               CALL write_var_hdf5(qid_gid,'DIST_NBIN_R',ier,DBLVAR=DBLE(8))
-               CALL write_var_hdf5(qid_gid,'DIST_NBIN_Z',ier,DBLVAR=DBLE(8))
-               CALL write_var_hdf5(qid_gid,'DIST_NBIN_PHI',ier,DBLVAR=DBLE(8))
-               CALL write_var_hdf5(qid_gid,'DIST_NBIN_RHO',ier,DBLVAR=DBLE(8))
-               CALL write_var_hdf5(qid_gid,'DIST_NBIN_THETA',ier,DBLVAR=DBLE(8))
-               CALL write_var_hdf5(qid_gid,'DIST_NBIN_TIME',ier,DBLVAR=DBLE(npoinc))
-               CALL write_var_hdf5(qid_gid,'DIST_NBIN_CHARGE',ier,DBLVAR=DBLE(2))
+               CALL write_var_hdf5(qid_gid,'DIST_NBIN_R',ier,DBLVAR=DBLE(nr))
+               CALL write_var_hdf5(qid_gid,'DIST_NBIN_Z',ier,DBLVAR=DBLE(nz))
+               CALL write_var_hdf5(qid_gid,'DIST_NBIN_PHI',ier,DBLVAR=DBLE(nphi))
+               CALL write_var_hdf5(qid_gid,'DIST_NBIN_RHO',ier,DBLVAR=DBLE(nr))
+               CALL write_var_hdf5(qid_gid,'DIST_NBIN_THETA',ier,DBLVAR=DBLE(64))
+               CALL write_var_hdf5(qid_gid,'DIST_NBIN_TIME',ier,DBLVAR=DBLE(1))
+               CALL write_var_hdf5(qid_gid,'DIST_NBIN_CHARGE',ier,DBLVAR=DBLE(1))
                CALL write_var_hdf5(qid_gid,'ENABLE_ORBITWRITE',ier,DBLVAR=DBLE(0))
                CALL write_var_hdf5(qid_gid,'ORBITWRITE_MODE',ier,DBLVAR=DBLE(1))
                CALL write_var_hdf5(qid_gid,'ORBITWRITE_NPOINT',ier,DBLVAR=DBLE(npoinc))
@@ -205,11 +208,12 @@
                   CALL write_var_hdf5(qid_gid,'dvdrho',5,ier,DBLVAR=r1dtemp)
                   DEALLOCATE(r1dtemp)
                ELSE
-                  ! This is glitchy since we don't require POT_AUX_S to be equidistant
+                  ! This is glitchy since we do not require POT_AUX_S to be equidistant
                   ! should really spline to new grid
                   ALLOCATE(r1dtemp(nr))
                   DO i = 1, nr
-                    CALL EZspline_interp(POT_spl_s,DBLE(i-1)/DBLE(nr-1),r1dtemp(i),ier)
+                    CALL EZspline_interp(POT_spl_s,sqrt(DBLE(i-1)/DBLE(nr-1)),r1dtemp(i),ier)
+                    r1dtemp(i) = r1dtemp(i)*2*DBLE(i-1)/DBLE(nr-1)
                   END DO
                   CALL write_var_hdf5(qid_gid,'nrho',ier,INTVAR=nr)
                   CALL write_var_hdf5(qid_gid,'dvdrho',nr,ier,DBLVAR=r1dtemp)
@@ -378,41 +382,52 @@
             d2 = UBOUND(R_lines,DIM=2)
             d3 = 0
             IF (lbeam) d3 = 2
-            ALLOCATE(rtemp(d1:d2,13,1))
+            ALLOCATE(itemp(nprocs_beams))
+            itemp = 0
+            itemp(myworkid+1) = COUNT(end_state(d1:d2)==0)
+            CALL MPI_ALLREDUCE(MPI_IN_PLACE, itemp, nprocs_beams, MPI_INTEGER, MPI_SUM, MPI_COMM_BEAMS, ierr_mpi)
+            k2 = SUM(itemp(1:myworkid+1))
+            k1 = k2 - itemp(myworkid+1) + 1
+            kmax = SUM(itemp)
+            DEALLOCATE(itemp)
+            ALLOCATE(rtemp(k1:k2,13,1))
+            k = k1
             DO i = d1, d2
+               IF (end_state(i)>0) CYCLE
+               rtemp(k,1,1) = R_lines(d3,i)
+               rtemp(k,2,1) = PHI_lines(d3,i)
+               rtemp(k,3,1) = Z_lines(d3,i)
+               dbl_temp     = 2*B_lines(d3,i)*moment_lines(d3,i)/mass(i) ! V_perp^2
+               rtemp(k,4,1) = 0.5*mass(i)*(vll_lines(d3,i)*vll_lines(d3,i)+dbl_temp)/e_charge
+               !rtemp(i,4,1) = 0.5*mass(i)*(vll_lines(d3,i)*vll_lines(d3,i)+dbl_temp)
+               rtemp(k,5,1) = vll_lines(d3,i)/SQRT(dbl_temp+vll_lines(d3,i)*vll_lines(d3,i)) ! pitch
                !CALL RANDOM_NUMBER(dbl_temp)
                !rtemp(i,6,1) = dbl_temp*pi2 ! zeta
-               rtemp(i,6,1) = 0          ! zeta
-               rtemp(i,1,1) = R_lines(d3,i)
-               rtemp(i,2,1) = PHI_lines(d3,i)
-               rtemp(i,3,1) = Z_lines(d3,i)
-               dbl_temp     = 2*B_lines(d3,i)*moment_lines(d3,i)/mass(i) ! V_perp^2
-               rtemp(i,4,1) = 0.5*mass(i)*(vll_lines(d3,i)*vll_lines(d3,i)+dbl_temp)/e_charge
-               !rtemp(i,4,1) = 0.5*mass(i)*(vll_lines(d3,i)*vll_lines(d3,i)+dbl_temp)
-               rtemp(i,5,1) = vll_lines(d3,i)/SQRT(dbl_temp+vll_lines(d3,i)*vll_lines(d3,i)) ! pitch
-               rtemp(i,7,1) = NINT(mass(i)*5.97863320194E26) ! mass
-               rtemp(i,8,1) = Zatom(i)
-               rtemp(i,9,1) = NINT(mass(i)*5.97863320194E26) ! Anum
-               rtemp(i,10,1) = Zatom(i)
-               rtemp(i,11,1) = weight(i) ! weight
-               rtemp(i,12,1) = 0.0 ! time
-               rtemp(i,13,1) = i
+               rtemp(k,6,1) = 0          ! zeta
+               rtemp(k,7,1) = NINT(mass(i)*5.97863320194E26) ! mass
+               rtemp(k,8,1) = Zatom(i)
+               rtemp(k,9,1) = NINT(mass(i)*5.97863320194E26) ! Anum
+               rtemp(k,10,1) = Zatom(i)
+               rtemp(k,11,1) = weight(i) ! weight
+               rtemp(k,12,1) = 0.0 ! time
+               rtemp(k,13,1) = k
+               k=k+1
             END DO
             WHERE(rtemp(:,4,1)==0) rtemp(:,5,1)=0.0 ! avoid NAN pitch angle
             WHERE(rtemp(:,1,1)<raxis(1)) rtemp(:,1,1)=raxis(1) ! avoid NAN pitch angle
-            CALL beams3d_write1d_parhdf5( 1, nparticles, d1, d2, '/marker/gc_'//qid_str//'/r',      DBLVAR=rtemp(:,1,1))
-            CALL beams3d_write1d_parhdf5( 1, nparticles, d1, d2, '/marker/gc_'//qid_str//'/phi',    DBLVAR=rtemp(:,2,1))
-            CALL beams3d_write1d_parhdf5( 1, nparticles, d1, d2, '/marker/gc_'//qid_str//'/z',      DBLVAR=rtemp(:,3,1))
-            CALL beams3d_write1d_parhdf5( 1, nparticles, d1, d2, '/marker/gc_'//qid_str//'/energy', DBLVAR=rtemp(:,4,1))
-            CALL beams3d_write1d_parhdf5( 1, nparticles, d1, d2, '/marker/gc_'//qid_str//'/pitch',  DBLVAR=rtemp(:,5,1))
-            CALL beams3d_write1d_parhdf5( 1, nparticles, d1, d2, '/marker/gc_'//qid_str//'/zeta',   DBLVAR=rtemp(:,6,1))
-            CALL beams3d_write1d_parhdf5( 1, nparticles, d1, d2, '/marker/gc_'//qid_str//'/mass',   DBLVAR=rtemp(:,7,1))
-            CALL beams3d_write1d_parhdf5( 1, nparticles, d1, d2, '/marker/gc_'//qid_str//'/charge', INTVAR=INT(rtemp(:,8,1)))
-            CALL beams3d_write1d_parhdf5( 1, nparticles, d1, d2, '/marker/gc_'//qid_str//'/anum',   INTVAR=INT(rtemp(:,9,1)))
-            CALL beams3d_write1d_parhdf5( 1, nparticles, d1, d2, '/marker/gc_'//qid_str//'/znum',   INTVAR=INT(rtemp(:,10,1)))
-            CALL beams3d_write1d_parhdf5( 1, nparticles, d1, d2, '/marker/gc_'//qid_str//'/weight', DBLVAR=rtemp(:,11,1))
-            CALL beams3d_write1d_parhdf5( 1, nparticles, d1, d2, '/marker/gc_'//qid_str//'/time',   DBLVAR=rtemp(:,12,1))
-            CALL beams3d_write1d_parhdf5( 1, nparticles, d1, d2, '/marker/gc_'//qid_str//'/id',     INTVAR=INT(rtemp(:,13,1)))
+            CALL beams3d_write1d_parhdf5( 1, kmax, k1, k2, '/marker/gc_'//qid_str//'/r',      DBLVAR=rtemp(:,1,1))
+            CALL beams3d_write1d_parhdf5( 1, kmax, k1, k2, '/marker/gc_'//qid_str//'/phi',    DBLVAR=rtemp(:,2,1))
+            CALL beams3d_write1d_parhdf5( 1, kmax, k1, k2, '/marker/gc_'//qid_str//'/z',      DBLVAR=rtemp(:,3,1))
+            CALL beams3d_write1d_parhdf5( 1, kmax, k1, k2, '/marker/gc_'//qid_str//'/energy', DBLVAR=rtemp(:,4,1))
+            CALL beams3d_write1d_parhdf5( 1, kmax, k1, k2, '/marker/gc_'//qid_str//'/pitch',  DBLVAR=rtemp(:,5,1))
+            CALL beams3d_write1d_parhdf5( 1, kmax, k1, k2, '/marker/gc_'//qid_str//'/zeta',   DBLVAR=rtemp(:,6,1))
+            CALL beams3d_write1d_parhdf5( 1, kmax, k1, k2, '/marker/gc_'//qid_str//'/mass',   DBLVAR=rtemp(:,7,1))
+            CALL beams3d_write1d_parhdf5( 1, kmax, k1, k2, '/marker/gc_'//qid_str//'/charge', INTVAR=INT(rtemp(:,8,1)))
+            CALL beams3d_write1d_parhdf5( 1, kmax, k1, k2, '/marker/gc_'//qid_str//'/anum',   INTVAR=INT(rtemp(:,9,1)))
+            CALL beams3d_write1d_parhdf5( 1, kmax, k1, k2, '/marker/gc_'//qid_str//'/znum',   INTVAR=INT(rtemp(:,10,1)))
+            CALL beams3d_write1d_parhdf5( 1, kmax, k1, k2, '/marker/gc_'//qid_str//'/weight', DBLVAR=rtemp(:,11,1))
+            CALL beams3d_write1d_parhdf5( 1, kmax, k1, k2, '/marker/gc_'//qid_str//'/time',   DBLVAR=rtemp(:,12,1))
+            CALL beams3d_write1d_parhdf5( 1, kmax, k1, k2, '/marker/gc_'//qid_str//'/id',     INTVAR=INT(rtemp(:,13,1)))
             DEALLOCATE(rtemp)
       END SELECT
 
@@ -422,3 +437,4 @@
 !     End Subroutine
 !-----------------------------------------------------------------------    
       END SUBROUTINE beams3d_write_ascoth5
+
