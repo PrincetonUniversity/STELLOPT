@@ -3,55 +3,67 @@
 #######################################################################
   SHELL = /bin/sh
   PWD1 = `pwd`
-  MYHOME = $(HOME)/bin_cori
+  MYHOME = $(HOME)/bin
   PRECOMP:= fpp -C -P -DLINUX
-  COMPILE = ftn
-  COMPILE_FREE = ftn
+  COMPILE = ifort
+  COMPILE_FREE = ifort
   LINK    = ftn -Bstatic -o
   LINK_AR = ar -ruv
-  LINK_C  = $(CC) -shared -Wl,-z-defs
+  LINK_C  = icc -shared -Wl,-z-defs
 
 #######################################################################
 #            Define Compiler Flags
 #######################################################################
-  FLAGS_R = -fp-model strict -assume noold_unit_star -cxxlib 
-  FLAGS_D = -g -dynamic -traceback -fp-model strict -assume noold_unit_star -cxxlib
-  LIBS    = 
-  FLAGS_R += -g -traceback -dynamic
+  FLAGS_R = -I$(MKL_HOME)/include -O2 -fp-model strict -ip \
+            -assume noold_unit_star -axMIC-AVX512
+  FLAGS_D = -I$(MKL_HOME)/include -O2 -fp-model strict -ip \
+            -assume noold_unit_star -g -traceback -axMIC-AVX512
+  LIBS    = -Wl,-rpath,$(MKL_HOME)/lib/intel64 \
+            -L$(MKL_HOME)/lib/intel64 -lmkl_scalapack_lp64 \
+            -lmkl_intel_lp64 -lmkl_core -lmkl_sequential \
+            -lmkl_blacs_intelmpi_lp64  -lpthread -lm -lpthread
 
 #######################################################################
 #            MPI Options
 #######################################################################
   LMPI    = T
-  MPI_COMPILE = ftn
-  MPI_COMPILE_FREE = ftn
-  MPI_COMPILE_C = cc
-  MPI_LINK = ftn
-  MPI_RUN = srun
-  MPI_RUN_OPTS = -n 68 -c 4 --cpu_bind=cores
-  MPI_RUN_OPTS_SM = -n 68 -c 4 --cpu_bind=cores
-#  MPI_RUN_OPTS_MD = -n 544 -c 4 --cpu_bind=cores
-  MPI_RUN_OPTS_LG = -n 4352 -c 4 --cpu_bind=cores
+  MPI_COMPILE = mpiifort
+  MPI_COMPILE_FREE = mpiifort
+  MPI_COMPILE_C = mpiifort
+  MPI_LINK = mpiifort
+  MPI_RUN  = srun
+  MPI_RUN_OPTS = --partition=knl_fua_prod --qos=knl_qos_fuadbg --time=0:30:00
+  MPI_RUN_OPTS_SM   = $(MPI_RUN_OPTS) --nodes=1 --ntasks-per-node=68
+  MPI_RUN_OPTS_MD   = $(MPI_RUN_OPTS) --nodes=2 --ntasks-per-node=68
+  MPI_RUN_OPTS_LG   = $(MPI_RUN_OPTS) --nodes=2 --ntasks-per-node=68
 
 #######################################################################
 #            NAG Options
 #######################################################################
   LNAG = F
-  NAG_LIB =
+  NAG_LIB = $(NAGFLIB) $(NAGMKLLIB)
 
 #######################################################################
 #            NETCDF Options
 #######################################################################
   LNETCDF = T
-  NETCDF_INC = 
-  NETCDF_LIB = 
+  NETCDF_INC = $(shell nc-config --fflags)
+  NETCDF_LIB = $(shell nc-config --flibs)
 
 #######################################################################
 #            HDF5 Options
 #######################################################################
   LHDF5 = T
-  HDF5_INC = 
-  HDF5_LIB = 
+  HDF5_INC = -I$(HDF5_HOME)/include 
+  HDF5_LIB = -Wl,-rpath,$(HDF5_HOME)/lib -L$(HDF5_HOME)/lib \
+             -lhdf5 -lhdf5_fortran -lhdf5_hl -lhdf5hl_fortran 
+
+#######################################################################
+#            FFTW3 Options
+#######################################################################
+  LFFTW3 = T
+  FFTW3_INC = -I$(FFTW_HOME)/include
+  FFTW3_LIB = -L$(FFTW_HOME)/lib -lfftw3 -lfftw3f 
 
 #######################################################################
 #             PGPLOT Options
@@ -68,13 +80,6 @@
   SILO_LIB = -L$(SILO_DIR)/lib -lsilo
 
 #######################################################################
-#            FFTW3 Options
-#######################################################################
-  LFFTW3 = F
-  FFTW3_INC = 
-  FFTW3_LIB = 
-
-#######################################################################
 #            DKES/NEO Options
 #######################################################################
   LDKES = T
@@ -84,17 +89,22 @@
 #            GENE Options
 #######################################################################
   LGENE = F
-  GENE_INC = -I$(GENE_PATH)
-  GENE_DIR = $(GENE_PATH)
+  GENE_DIR = $(GENE_PATH)/bin/obj_cobra
+  FUTILS_DIR = $(GENE_PATH)/external/cobra/futils-gene-mod/src
   LIB_GENE = libgene.a
-  GENE_LIB = $(GENE_DIR)/$(LIB_GENE) \
-             -L$(FFTW_DIR)/lib -lfftw3 -lfftw3f \
-             -L$(SLEPC_DIR)/lib -lslepc 
+  LIB_FUTILS = libfutils.a
+  GENE_INC = -I$(GENE_DIR) \
+             -I$(FUTILS_DIR)
+  GENE_LIB = -L$(FFTW_HOME)/lib -lfftw3 -lfftw3f \
+             -L$(SLEPC_HOME)/lib -lslepc \
+             -L$(PETSC_HOME)/lib -lpetsc \
+             $(GENE_DIR)/$(LIB_GENE) \
+             $(FUTILS_DIR)/$(LIB_FUTILS)
 
 #######################################################################
 #            COILOPT++ Options
 #######################################################################
-  LCOILOPT = T
+  LCOILOPT = F
   COILOPT_INC = -I$(COILOPT_PATH)
   COILOPTPP_DIR = $(COILOPT_PATH)
   LIB_COILOPTPP = libcoilopt++.a
@@ -103,7 +113,7 @@
 #######################################################################
 #            TERPSICHORE Options
 #######################################################################
-  LTERPSICHORE = T
+  LTERPSICHORE= F
   TERPSICHORE_INC = -I$(TERPSICHORE_PATH)
   TERPSICHORE_DIR = $(TERPSICHORE_PATH)
   LIB_TERPSICHORE = libterpsichore.a
@@ -112,14 +122,12 @@
 #######################################################################
 #            TRAVIS Options
 #######################################################################
-  LTRAVIS = T
+  LTRAVIS= F
   TRAVIS_DIR = $(TRAVIS_PATH)
   LIB_TRAVIS = libtravis64_sopt.a
   LIB_MCONF  = libmconf64.a
   TRAVIS_LIB = $(TRAVIS_DIR)/lib/$(LIB_TRAVIS) \
                $(TRAVIS_DIR)/mag_conf/lib/$(LIB_MCONF) -lstdc++
-#  TRAVIS_LIB = $(TRAVIS_DIR)/lib/$(LIB_TRAVIS) \
-#               $(TRAVIS_DIR)/magconf/lib/$(LIB_MCONF) -lstdc++
 
 #######################################################################
 #            SFINCS Options
@@ -127,9 +135,11 @@
 
   LSFINCS = F
   SFINCS_DIR = $(SFINCS_PATH)
-  SFINCS_INC = -I$(SFINCS_DIR)
+  SFINCS_INC = -I$(SFINCS_DIR) -I${PETSC_DIR}/include -I${PETSC_DIR}/${PETSC_ARCH}/include
   LIB_SFINCS = libsfincs.a
-  SFINCS_LIB = $(SFINCS_DIR)/$(LIB_SFINCS)
+
+  SFINCS_LIB = $(SFINCS_DIR)/$(LIB_SFINCS) \
+        $(PETSC_LIB) $(FC_LINKER_FLAGS) $(FFLAGS)
 
 #######################################################################
 #            REGCOIL Options
@@ -143,5 +153,5 @@
 #######################################################################
 #            LIBSTELL Shared Options
 #######################################################################
-LIB_SHARE = $(LIBS)
+  LIB_SHARE = $(LIBS) $(NETCDF_LIB) $(HDF5_LIB) 
 

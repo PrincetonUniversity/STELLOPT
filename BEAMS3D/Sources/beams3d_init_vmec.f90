@@ -135,33 +135,31 @@
       CALL EZspline_init(Vp_spl_s,ns,bcs1_s,ier)
       IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init_vmec',ier)
       Vp_spl_s%isHermite   = 1
-      vp = 4*pi*pi*vp/(ns-1)
       CALL EZspline_setup(Vp_spl_s,vp(1:ns),ier,EXACT_DIM=.true.)
       IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init_vmec',ier)
 
       ! Calculate the axis values
-      chunk = FLOOR(REAL(nphi) / REAL(numprocs_local))
-      mystart = mylocalid*chunk + 1
-      myend = mystart + chunk - 1
-      DO i = mystart, myend
-         req_axis(i) = 0
-         zeq_axis(i) = 0
-         DO u = 1, mnmax
-            req_axis(i) = req_axis(i)+rmnc(u,1)*COS(xn(u)*phiaxis(i))
-            zeq_axis(i) = zeq_axis(i)+zmns(u,1)*SIN(xn(u)*phiaxis(i))
-         END DO
-      END DO
-      IF (lasym) THEN
-         DO i = mystart, myend
+      IF (mylocalid == master) THEN
+         DO i = 1, nphi
+            req_axis(i) = 0
+            zeq_axis(i) = 0
             DO u = 1, mnmax
-               req_axis(i) = req_axis(i)+rmns(u,1)*SIN(xn(u)*phiaxis(i))
-               zeq_axis(i) = zeq_axis(i)+zmnc(u,1)*COS(xn(u)*phiaxis(i))
+               req_axis(i) = req_axis(i)+rmnc(u,1)*COS(xn(u)*phiaxis(i))
+               zeq_axis(i) = zeq_axis(i)+zmns(u,1)*SIN(xn(u)*phiaxis(i))
             END DO
          END DO
+         IF (lasym) THEN
+            DO i = 1, nphi
+               DO u = 1, mnmax
+                  req_axis(i) = req_axis(i)+rmns(u,1)*SIN(xn(u)*phiaxis(i))
+                  zeq_axis(i) = zeq_axis(i)+zmnc(u,1)*COS(xn(u)*phiaxis(i))
+               END DO
+            END DO
+         END IF
       END IF
 
 
-      ! If we ask for a plasma-only run and don't provide a vessel then make one.
+      ! If we ask for a plasma-only run and do not provide a vessel then make one.
       IF (lplasma_only .and. .not.lvessel) THEN
          lvessel = .TRUE.  ! Do this so the other parts of the code know there is a vessel
          k = ns
@@ -304,7 +302,7 @@
          sflx = 0.0
          ! The GetBcyl Routine returns -3 if cyl2flx thinks s>1
          ! however, if cyl2flx fails to converge then s may be
-         ! greater than 1 but cyl2flux won't throw the -3 code.
+         ! greater than 1 but cyl2flux will not throw the -3 code.
          ! In this case GetBcyl returns br,bphi,bz = 0.  So
          ! bphi == 0 or ier ==-3 indicate that a point is
          ! outside the VMEC domain.
@@ -312,7 +310,7 @@
                       br, bphi, bz, SFLX=sflx,UFLX=uflx,info=ier)
          IF (ier == 0 .and. bphi /= 0) THEN ! We have field data
             ! Save Grid data
-            S_ARR(i,j,k) = sflx
+            S_ARR(i,j,k) = MAX(sflx,0.0)
             IF (uflx<0)  uflx = uflx+pi2
             U_ARR(i,j,k) = uflx
             ! Handle equilibrium data

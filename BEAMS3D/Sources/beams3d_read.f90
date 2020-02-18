@@ -4,7 +4,7 @@
 !     Date:          01/09/2014
 !     Description:   This subroutine reads a BEAMS3D run into memory.
 !-----------------------------------------------------------------------
-      SUBROUTINE beams3d_read
+      SUBROUTINE beams3d_read(file_ext)
 !-----------------------------------------------------------------------
 !     Libraries
 !-----------------------------------------------------------------------
@@ -19,11 +19,16 @@
       USE wall_mod, ONLY: nface,nvertex,face,vertex,ihit_array
       USE mpi_sharmem
 !-----------------------------------------------------------------------
+!     Input Variables
+!          file_ext     Extension of file (beam_ext.h5)
+!-----------------------------------------------------------------------
+      IMPLICIT NONE
+      CHARACTER(LEN=*), INTENT(in)           :: file_ext
+!-----------------------------------------------------------------------
 !     Local Variables
 !          ier          Error Flag
 !          iunit        File ID
 !-----------------------------------------------------------------------
-      IMPLICIT NONE
       INTEGER :: ier, iunit
       REAL(rprec) :: ver_temp
 !-----------------------------------------------------------------------
@@ -33,9 +38,9 @@
          WRITE(6,'(A)')  '----- READING DATA FROM FILE -----'
       END IF
 !DEC$ IF DEFINED (LHDF5)
-      IF (lverb) WRITE(6,'(A)')  '   FILE: '//'beams3d_'//TRIM(id_string)//'.h5'
-      CALL open_hdf5('beams3d_'//TRIM(id_string)//'.h5',fid,ier,LCREATE=.false.)
-      IF (ier /= 0) CALL handle_err(HDF5_OPEN_ERR,'beams3d_'//TRIM(id_string)//'.h5',ier)
+      IF (lverb) WRITE(6,'(A)')  '   FILE: '//'beams3d_'//TRIM(file_ext)//'.h5'
+      CALL open_hdf5('beams3d_'//TRIM(file_ext)//'.h5',fid,ier,LCREATE=.false.)
+      IF (ier /= 0) CALL handle_err(HDF5_OPEN_ERR,'beams3d_'//TRIM(file_ext)//'.h5',ier)
       ! Runtime
       CALL read_scalar_hdf5(fid,'VERSION',ier,DBLVAR=ver_temp)
       IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'VERSION',ier)
@@ -72,7 +77,8 @@
       IF (ALLOCATED(mass)) DEALLOCATE(mass)
       IF (ALLOCATED(charge)) DEALLOCATE(charge)
       IF (ALLOCATED(Zatom)) DEALLOCATE(Zatom)
-      ALLOCATE(t_end(nparticles),mass(nparticles),charge(nparticles),Zatom(nparticles))
+      IF (ALLOCATED(end_state)) DEALLOCATE(end_state)
+      ALLOCATE(t_end(nparticles),mass(nparticles),charge(nparticles),Zatom(nparticles),end_state(nparticles))
       CALL read_var_hdf5(fid,'t_end',nparticles,ier,DBLVAR=t_end)
       IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'t_end',ier)
       CALL read_var_hdf5(fid,'mass',nparticles,ier,DBLVAR=mass)
@@ -81,6 +87,8 @@
       IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'charge',ier)
       CALL read_var_hdf5(fid,'Zatom',nparticles,ier,DBLVAR=Zatom)
       IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'Zatom',ier)
+      CALL read_var_hdf5(fid,'end_state',nparticles,ier,INTVAR=end_state)
+      IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'end_state',ier)
       IF (ALLOCATED(R_lines)) DEALLOCATE(R_lines)
       IF (ALLOCATED(Z_lines)) DEALLOCATE(Z_lines)
       IF (ALLOCATED(PHI_lines)) DEALLOCATE(PHI_lines)
@@ -92,7 +100,6 @@
       ALLOCATE(R_lines(0:npoinc,nparticles),Z_lines(0:npoinc,nparticles),PHI_lines(0:npoinc,nparticles),&
             vll_lines(0:npoinc,nparticles),neut_lines(0:npoinc,nparticles),moment_lines(0:npoinc,nparticles))
       ALLOCATE(S_lines(0:npoinc,nparticles),U_lines(0:npoinc,nparticles),B_lines(0:npoinc,nparticles))
-      ALLOCATE(PE_lines(0:npoinc,nparticles),PI_lines(0:npoinc,nparticles))
       CALL read_var_hdf5(fid,'R_lines',npoinc+1,nparticles,ier,DBLVAR=R_lines)
       IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'R_lines',ier)
       CALL read_var_hdf5(fid,'Z_lines',npoinc+1,nparticles,ier,DBLVAR=Z_lines)
@@ -111,21 +118,19 @@
       IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'U_lines',ier)
       CALL read_var_hdf5(fid,'B_lines',npoinc+1,nparticles,ier,DBLVAR=B_lines)
       IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'B_lines',ier)
-      CALL read_var_hdf5(fid,'PE_lines',npoinc+1,nparticles,ier,DBLVAR=PE_lines)
-      IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'PE_lines',ier)
-      CALL read_var_hdf5(fid,'PI_lines',npoinc+1,nparticles,ier,DBLVAR=PI_lines)
-      IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'PI_lines',ier)
+      ! Particle parameters
+      IF (ALLOCATED(weight)) DEALLOCATE(weight)
+      ALLOCATE(weight(nparticles))
+      CALL read_var_hdf5(fid,'Weight',nparticles,ier,DBLVAR=weight)
+      IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'weight',ier)
       IF (lbeam) THEN
-         IF (ALLOCATED(weight)) DEALLOCATE(weight)
          IF (ALLOCATED(beam)) DEALLOCATE(beam)
          IF (ALLOCATED(v_neut)) DEALLOCATE(v_neut)
          IF (ALLOCATED(shine_through)) DEALLOCATE(shine_through)
          ALLOCATE(shine_through(nbeams))
-         ALLOCATE(weight(nparticles),beam(nparticles),v_neut(3,nparticles))
+         ALLOCATE(beam(nparticles),v_neut(3,nparticles))
          CALL read_var_hdf5(fid,'Shinethrough',nbeams,ier,DBLVAR=shine_through)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'shine_through',ier)
-         CALL read_var_hdf5(fid,'Weight',nparticles,ier,DBLVAR=weight)
-         IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'weight',ier)
          CALL read_var_hdf5(fid,'Beam',nparticles,ier,INTVAR=beam)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'beam',ier)
          CALL read_var_hdf5(fid,'Energy',nbeams,ier,DBLVAR=e_beams)
@@ -137,6 +142,10 @@
             IF (ALLOCATED(epower_prof)) DEALLOCATE(epower_prof)
             IF (ALLOCATED(ipower_prof)) DEALLOCATE(ipower_prof)
             IF (ALLOCATED(j_prof)) DEALLOCATE(j_prof)
+            IF (ALLOCATED(dist_prof)) DEALLOCATE(dist_prof)
+            ALLOCATE(ndot_prof(nbeams,ns_prof),epower_prof(nbeams,ns_prof),&
+               ipower_prof(nbeams,ns_prof),j_prof(nbeams,ns_prof), &
+               dist_prof(nbeams,ns_prof,ns_prof))
             CALL read_scalar_hdf5(fid,'ns_prof',ier,INTVAR=ns_prof)
             IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'ns_prof',ier)
             CALL read_var_hdf5(fid,'ndot_prof',nbeams,ns_prof,ier,DBLVAR=ndot_prof)
@@ -147,6 +156,8 @@
             IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'ipower_prof',ier)
             CALL read_var_hdf5(fid,'j_prof',nbeams,ns_prof,ier,DBLVAR=j_prof)
             IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'j_prof',ier)
+            CALL read_var_hdf5(fid,'dist_prof',nbeams,ns_prof,ns_prof,ier,DBLVAR=dist_prof)
+            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'dist_prof',ier)
          END IF
       END IF
       ! Grid
@@ -213,10 +224,7 @@
 
       ! Close the file
       CALL close_hdf5(fid,ier)
-      IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,'beams3d_'//TRIM(id_string)//'.h5',ier)
-
-
-
+      IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,'beams3d_'//TRIM(file_ext)//'.h5',ier)
 
 !DEC$ ELSE
 
