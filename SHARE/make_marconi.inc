@@ -14,14 +14,15 @@
 #######################################################################
 #            Define Compiler Flags
 #######################################################################
-  FLAGS_R = -I$(MKL_HOME)/include -O2 -fp-model strict -ip \
-            -assume noold_unit_star -axMIC-AVX512
-  FLAGS_D = -I$(MKL_HOME)/include -O2 -fp-model strict -ip \
-            -assume noold_unit_star -g -traceback -axMIC-AVX512
-  LIBS    = -Wl,-rpath,$(MKL_HOME)/lib/intel64 \
-            -L$(MKL_HOME)/lib/intel64 -lmkl_scalapack_lp64 \
-            -lmkl_intel_lp64 -lmkl_core -lmkl_sequential \
-            -lmkl_blacs_intelmpi_lp64  -lpthread -lm -lpthread
+  FLAGS_R = -O2 -fp-model strict -ip -assume noold_unit_star \
+		-axMIC-AVX512 \
+		-I${MKLROOT}/include/intel64/ilp64 -mkl=sequential
+  FLAGS_D = -g -traceback -O0 -fp-model strict -ip \
+		-assume noold_unit_star -axMIC-AVX512 \
+		-I${MKLROOT}/include/intel64/ilp64 -mkl=sequential
+  LIBS    = ${MKLROOT}/lib/intel64/libmkl_blas95_ilp64.a \
+            ${MKLROOT}/lib/intel64/libmkl_lapack95_ilp64.a \
+             -lmkl_scalapack_ilp64 -lmkl_blacs_intelmpi_ilp64 -lpthread -lm -ldl
 
 #######################################################################
 #            MPI Options
@@ -113,7 +114,7 @@
 #######################################################################
 #            TERPSICHORE Options
 #######################################################################
-  LTERPSICHORE= F
+  LTERPSICHORE= T
   TERPSICHORE_INC = -I$(TERPSICHORE_PATH)
   TERPSICHORE_DIR = $(TERPSICHORE_PATH)
   LIB_TERPSICHORE = libterpsichore.a
@@ -122,12 +123,12 @@
 #######################################################################
 #            TRAVIS Options
 #######################################################################
-  LTRAVIS= F
+  LTRAVIS= T
   TRAVIS_DIR = $(TRAVIS_PATH)
   LIB_TRAVIS = libtravis64_sopt.a
   LIB_MCONF  = libmconf64.a
   TRAVIS_LIB = $(TRAVIS_DIR)/lib/$(LIB_TRAVIS) \
-               $(TRAVIS_DIR)/mag_conf/lib/$(LIB_MCONF) -lstdc++
+               $(TRAVIS_DIR)/magconf/lib/$(LIB_MCONF) -lstdc++
 
 #######################################################################
 #            SFINCS Options
