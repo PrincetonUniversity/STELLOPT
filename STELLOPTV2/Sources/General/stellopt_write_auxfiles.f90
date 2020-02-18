@@ -83,9 +83,9 @@
       END DO
       IF (ANY(sigma_orbit .lt. bigno)) THEN
          lverb_beams = .FALSE.
-         id_string_beams = TRIM(proc_string_old)
-         CALL beams3d_read
-         id_string_beams = TRIM(proc_string)
+!         id_string_beams = TRIM(proc_string_old)
+         CALL beams3d_read(TRIM(proc_string_old))
+!         id_string_beams = TRIM(proc_string)
          CALL beams3d_write('GRID_INIT')
          CALL beams3d_write('TRAJECTORY_FULL')
          CALL beams3d_write('DIAG')

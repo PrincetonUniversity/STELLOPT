@@ -11,15 +11,18 @@ SUBROUTINE out_beams3d_nag(t, q)
     !-----------------------------------------------------------------------
     USE stel_kinds, ONLY: rprec
     USE beams3d_runtime, ONLY: dt, lverb, pi2, lneut, t_end, lvessel, &
-                               lhitonly, npoinc, lcollision, ldepo
+                               lhitonly, npoinc, lcollision, ldepo, &
+                               weight
     USE beams3d_lines, ONLY: R_lines, Z_lines, PHI_lines, myline, moment, &
                              nsteps, nparticles, moment_lines, myend, &
                              vll_lines, neut_lines, mytdex, next_t,&
-                             lost_lines, dt_out, xlast, ylast, zlast,&
-                             ltherm, S_lines, U_lines, B_lines
+                             dt_out, xlast, ylast, zlast,&
+                             ltherm, S_lines, U_lines, B_lines, &
+                             dist_prof, ns_prof, j_prof, ndot_prof, &
+                             partvmax, mymass, mycharge, mybeam, end_state
     USE beams3d_grid
     USE beams3d_physics_mod, ONLY: beams3d_physics
-    USE wall_mod, ONLY: collide
+    USE wall_mod, ONLY: collide, get_wall_ik, get_wall_area
     USE EZspline_obj
     USE EZspline
     USE mpi_params
@@ -35,12 +38,12 @@ SUBROUTINE out_beams3d_nag(t, q)
     !     Local Variables
     !     jint      Index along phi
     !-----------------------------------------------------------------------
-    !REAL(rprec)         :: x0,y0,z0,x1,y1,z1,xw,yw,zw,delta,dl
     INTEGER             :: ier
-    DOUBLE PRECISION         :: x0,y0,z0,x1,y1,z1,xw,yw,zw,delta,dl
+    DOUBLE PRECISION         :: x0,y0,z0,x1,y1,z1,xw,yw,zw
+    DOUBLE PRECISION    :: q2(4),qdot(4)
     LOGICAL             :: lhit
     ! For splines
-    INTEGER :: i,j,k
+    INTEGER :: i,j,k,l,m
     REAL*8 :: xparam, yparam, zparam, hx, hy, hz, hxi, hyi, hzi
     REAL*8 :: fval(1)
     INTEGER, parameter :: ict(8)=(/1,0,0,0,0,0,0,0/)
@@ -87,13 +90,25 @@ SUBROUTINE out_beams3d_nag(t, q)
                        hx,hxi,hy,hyi,hz,hzi,&
                        MODB4D(1,1,1,1),nr,nphi,nz)
        B_lines(mytdex, myline) = fval(1)
+       xw = SQRT(2*moment*fval(1)/mymass)
+       l = MAX(MIN(1+ns_prof/2+FLOOR(0.5*ns_prof*q(4)/partvmax),ns_prof),1)
+       m = MAX(MIN(CEILING(ns_prof*xw/partvmax),ns_prof),1)
+       dist_prof(mybeam,l,m) = dist_prof(mybeam,l,m) + weight(myline)
        !CALL EZspline_interp(S_spl,q(1),x0,q(3),y0,ier)
        !CALL EZspline_interp(U_spl,q(1),x0,q(3),z0,ier)
        !CALL EZspline_interp(MODB_spl,q(1),x0,q(3),x1,ier)
        !IF (myworkid == 0) PRINT *,'--',y0,z0,x1
+       l = MAX(MIN(CEILING(SQRT(y0)*ns_prof),ns_prof),1)
+       j_prof(mybeam,l)      =      j_prof(mybeam,l) + mycharge*q(4)*weight(myline)*dt
+       IF (lcollision) CALL beams3d_physics(t,q)
+       IF (ltherm) THEN
+          ndot_prof(mybeam,l)   =   ndot_prof(mybeam,l) + weight(myline)
+          end_state(myline) = 1
+          t = t_end(myline)
+       END IF
+    ELSE
+       IF (lneut) end_state(myline)=3
     END IF
-    IF (lcollision) CALL beams3d_physics(t,q)
-    IF (ltherm) t = t_end(myline)
     IF (lvessel .and. mytdex > 0 .and. y0 > 0.5) THEN
        lhit = .false.
        x0    = xlast
@@ -104,13 +119,23 @@ SUBROUTINE out_beams3d_nag(t, q)
        z1    = q(3)
        CALL collide(x0,y0,z0,x1,y1,z1,xw,yw,zw,lhit)
        IF (lhit) THEN
-          R_lines(mytdex,myline)       = SQRT(xw*xw+yw*yw)
-          PHI_lines(mytdex,myline)     = atan2(yw,xw)
+          q2(1) = SQRT(xw*xw+yw*yw)
+          q2(2) = atan2(yw,xw)
+          q2(3) = zw
+          R_lines(mytdex,myline)       = q2(1)
+          PHI_lines(mytdex,myline)     = q2(2)
           Z_lines(mytdex,myline)       = zw
-          vll_lines(mytdex,myline)     = 0.5*(vll_lines(mytdex-1,myline)+vll_lines(mytdex,myline))
-          moment_lines(mytdex,myline)     = 0.5*(moment_lines(mytdex-1,myline)+moment_lines(mytdex,myline))
-          lost_lines(myline) = .TRUE.
           t = t_end(myline)+dt
+          l = get_wall_ik()
+          IF (lneut) THEN  
+             end_state(myline) = 3
+             wall_shine(mybeam,l) = wall_shine(mybeam,l) + weight(myline)*0.5*mymass*q(4)*q(4)/get_wall_area(l)
+          ELSE
+             end_state(myline) = 2
+             CALL fpart_nag(t,q2,qdot)
+             qdot(4)=0
+             wall_load(mybeam,l) = wall_load(mybeam,l) + weight(myline)*0.5*mymass*SUM(qdot*qdot)/get_wall_area(l)
+          END IF
           IF (lhitonly) THEN
              R_lines(0,myline)      = SQRT(xlast*xlast+ylast*ylast)
              PHI_lines(0,myline)    = ATAN2(ylast,xlast)

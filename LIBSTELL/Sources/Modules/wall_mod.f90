@@ -49,7 +49,7 @@
 !         wall_dump:       Dumps triangulation data
 !         wall_info:       Prints wall info.
 !         wall_collide:    Calculates collision with wall
-!         wall_free:       Free's module memory
+!         wall_free:       Frees module memory
 !-----------------------------------------------------------------------
       INTERFACE collide
          MODULE PROCEDURE collide_double, collide_float
@@ -163,7 +163,7 @@
       ! V  = Vertex1-Vertex0
       ! W  = Vertex2-Vertex0
       ! FN = VxW/|VxW|
-      ! d  = -Vertex0.FN (. is dot product) (note we've absorbed the negative)
+      ! d  = -Vertex0.FN (. is dot product) (note weve absorbed the negative)
       DO ik = mystart, myend
          dex1 = face(ik,1)
          dex2 = face(ik,2)
@@ -399,7 +399,7 @@
       ! W  = Vertex1-Vertex0
       ! W  = Vertex2-Vertex0
       ! FN = VxW/|VxW|
-      ! d  = -Vertex0.FN (. is dot product) (not we've dropped the minus in our formulation)
+      ! d  = -Vertex0.FN (. is dot product) (not weve dropped the minus in our formulation)
       DO ik = mystart, myend
          dex1 = face(ik,1)
          dex2 = face(ik,2)
@@ -530,7 +530,7 @@
 !      DOT12 = SUM(V1*V2,DIM=2)
 !      alpha = ((DOT11*DOT02)-(DOT01*DOT12))*invDenom
 !      beta  = ((DOT00*DOT12)-(DOT01*DOT02))*invDenom
-!      ! Remove all negative values (aren't in triangle)
+!      ! Remove all negative values (arent in triangle)
 !      WHERE(alpha<zero) lmask = .FALSE.
 !      WHERE(beta<zero)  lmask = .FALSE.
 !      WHERE((alpha+beta) > 1.0001) lmask = .FALSE. ! If alpha+beta > 1 point is not in triangle
@@ -605,6 +605,19 @@
          IMPLICIT NONE
          ihit_array(ik_min) = ihit_array(ik_min) - 1
       END SUBROUTINE
+
+      INTEGER FUNCTION get_wall_ik()
+         IMPLICIT NONE
+         get_wall_ik = ik_min
+         RETURN
+      END FUNCTION
+
+      DOUBLE PRECISION FUNCTION get_wall_area(ik)
+         IMPLICIT NONE
+         INTEGER, INTENT(in) :: ik
+         get_wall_area = 0.5*SQRT(SUM(FN(ik,:)*FN(ik,:)))
+         RETURN
+      END FUNCTION
 
       SUBROUTINE wall_free(istat,shared_comm)
 #if defined(MPI_OPT)

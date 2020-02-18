@@ -11,13 +11,19 @@ MODULE beams3d_physics_mod
       !     Libraries
       !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
-      USE beams3d_runtime, ONLY: lneut, pi, pi2, dt, lverb, ADAS_ERR, dt_save, lbbnbi
+      USE beams3d_runtime, ONLY: lneut, pi, pi2, dt, lverb, ADAS_ERR, &
+                                 dt_save, lbbnbi, weight
       USE beams3d_lines, ONLY: R_lines, Z_lines, PHI_lines, &
                                myline, mytdex, moment, ltherm, &
-                               nsteps, nparticles, vll_lines, moment_lines, mybeam, mycharge, myZ, &
-                               mymass, myv_neut, B_temp, rand_prob, cum_prob, tau, PE_lines, PI_lines
+                               nsteps, nparticles, vll_lines, &
+                               moment_lines, mybeam, mycharge, myZ, &
+                               mymass, myv_neut, B_temp, rand_prob, &
+                               cum_prob, tau, &
+                               epower_prof, ipower_prof, &
+                               ns_prof, end_state
       USE beams3d_grid, ONLY: BR_spl, BZ_spl, delta_t, BPHI_spl, MODB_spl, MODB4D, &
-                              phimax, S4D, TE4D, NE4D, TI4D, ZEFF4D, nr, nphi, nz, rmax, rmin, zmax, zmin, &
+                              phimax, S4D, TE4D, NE4D, TI4D, ZEFF4D, &
+                              nr, nphi, nz, rmax, rmin, zmax, zmin, &
                               phimin, eps1, eps2, eps3, raxis, phiaxis, zaxis
       USE EZspline_obj
       USE EZspline
@@ -62,10 +68,10 @@ MODULE beams3d_physics_mod
          DOUBLE PRECISION    :: r_temp, phi_temp, z_temp, vll, te_temp, ne_temp, ti_temp, speed, newspeed, &
                           zeta, sigma, zeta_mean, zeta_o, v_s, tau_inv, tau_spit_inv, &
                           reduction, dve,dvi, tau_spit, v_crit, coulomb_log, te_cube, &
-                          inv_mymass, speed_cube, vcrit_cube, vfrac, modb
+                          inv_mymass, speed_cube, vcrit_cube, vfrac, modb, s_temp
          DOUBLE PRECISION :: Ebench  ! for ASCOT Benchmark
          ! For splines
-         INTEGER :: i,j,k
+         INTEGER :: i,j,k, l
          REAL*8 :: xparam, yparam, zparam, hx, hy, hz, hxi, hyi, hzi
          INTEGER, parameter :: ict(8)=(/1,0,0,0,0,0,0,0/)
          REAL*8 :: fval(1)
@@ -141,6 +147,10 @@ MODULE beams3d_physics_mod
                             hx,hxi,hy,hyi,hz,hzi,&
                             TI4D(1,1,1,1),nr,nphi,nz)
             ti_temp = fval(1)
+            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                            hx,hxi,hy,hyi,hz,hzi,&
+                            S4D(1,1,1,1),nr,nphi,nz)
+            s_temp = fval(1)
 
             ! Helpers
             te_cube = te_temp * te_temp * te_temp
@@ -195,15 +205,14 @@ MODULE beams3d_physics_mod
                newspeed = speed - reduction*dt
                ltherm = .true.
                vfrac = newspeed/speed
-               PE_lines(mytdex,myline) = PE_lines(mytdex,myline)+mymass*dve*dt*speed
-               PI_lines(mytdex,myline) = PI_lines(mytdex,myline)+mymass*dvi*dt*speed
                vll = vfrac*vll
                moment = vfrac*vfrac*moment
                q(4) = vll
                RETURN
             END IF
-            PE_lines(mytdex,myline) = PE_lines(mytdex,myline)+mymass*dve*dt*speed
-            PI_lines(mytdex,myline) = PI_lines(mytdex,myline)+mymass*dvi*dt*speed
+            l = MAX(MIN(CEILING(SQRT(s_temp)*ns_prof),ns_prof),1)
+            epower_prof(mybeam,l) = epower_prof(mybeam,l) + mymass*dve*dt*speed*weight(myline)
+            ipower_prof(mybeam,l) = ipower_prof(mybeam,l) + mymass*dvi*dt*speed*weight(myline)
             vll = vfrac*vll
             moment = vfrac*vfrac*moment
             speed = newspeed
@@ -249,7 +258,7 @@ MODULE beams3d_physics_mod
          !--------------------------------------------------------------
          USE beams3d_grid
          USE beams3d_lines, ONLY: myline,xlast,ylast,zlast
-         USE beams3d_runtime, ONLY: t_end, lvessel,to3
+         USE beams3d_runtime, ONLY: t_end, lvessel, to3, lplasma_only
          USE wall_mod, ONLY: collide, uncount_wall_hit
 
          !--------------------------------------------------------------
@@ -300,6 +309,7 @@ MODULE beams3d_physics_mod
          !--------------------------------------------------------------
          !     Follow neutral into plasma using subgrid
          !--------------------------------------------------------------
+         end_state(myline) = 3 ! It's a neutral for now
          xlast = qf(1)
          ylast = qf(2)
          zlast = qf(3)
@@ -350,7 +360,7 @@ MODULE beams3d_physics_mod
          !--------------------------------------------------------------
          !     Check to see if we hit the wall
          !--------------------------------------------------------------
-         IF (lbbnbi .and. lvessel) THEN
+         IF (lbbnbi .and. lvessel .and. .not.(lplasma_only)) THEN
             CALL collide(x0,y0,z0,qf(1),qf(2),qf(3),xw,yw,zw,ltest)
             IF (ltest) THEN
                q(1) = SQRT(qf(1)*qf(1)+qf(2)*qf(2))
@@ -605,6 +615,7 @@ MODULE beams3d_physics_mod
          !     Begin Subroutine
          !--------------------------------------------------------------
          lneut = .false.
+         end_state(myline) = 0
          CALL RANDOM_NUMBER(rand_prob)
 
          ! Evaluate splines

@@ -86,7 +86,8 @@ PROGRAM BEAMS3D
         lmgrid = .false.
         lvessel = .false.
         lvac = .false.
-        lrestart = .false.
+        lrestart_grid = .false.
+        lrestart_particles = .false.
         lhitonly  = .false.
         lplasma_only = .false.
         lraw = .false.
@@ -145,7 +146,7 @@ PROGRAM BEAMS3D
                 CALL GETCARG(i, mgrid_string, numargs)
             case ("-restart")
                 i = i + 1
-                lrestart = .true.
+                lrestart_particles = .true.
                 CALL GETCARG(i, restart_string, numargs)
             case ("-coil")
                 i = i + 1
@@ -184,12 +185,12 @@ PROGRAM BEAMS3D
                 write(6, *) '     -vessel file:  Vessel File (for limiting)'
                 write(6, *) '     -mgrid file:   MAKEGRID File (for vacuum)'
                 write(6, *) '     -coil file:    Coils. File (for vacuum)'
+                write(6, *) '     -restart ext:  BEAMS3D HDF5 extension for starting particles'
                 write(6, *) '     -beam_simple:  Monoenergetic BEAMS'
                 write(6, *) '     -w7x:          W7-X beam model'
                 write(6, *) '     -ascot5:       Output data in ASCOT5 format'
                 write(6, *) '     -ascot4:       Output data in ASCOT4 format'
                 write(6, *) '     -beamlet:      Beamlet file for beam geometry'
-                !write(6,*)'     -restart ext:  FIELDLINES HDF5 extension.'
                 write(6, *) '     -raw:          Treat coil currents as raw (scale factors)'
                 write(6, *) '     -vac:          Only vacuum field'
                 write(6, *) '     -plasma:       Only plasma field'
@@ -256,7 +257,9 @@ PROGRAM BEAMS3D
     IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
     CALL MPI_BCAST(lbbnbi, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
     IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
-    CALL MPI_BCAST(lrestart, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
+    CALL MPI_BCAST(lrestart_grid, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
+    IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
+    CALL MPI_BCAST(lrestart_particles, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
     IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
     CALL MPI_BCAST(lhitonly,1,MPI_LOGICAL, master, MPI_COMM_BEAMS,ierr_mpi)
     IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_main',ierr_mpi)
