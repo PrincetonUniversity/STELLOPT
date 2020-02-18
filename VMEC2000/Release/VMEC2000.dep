@@ -38,7 +38,6 @@ bcovar.o : \
       vmec_dim.o \
       vmec_main.o \
       vmec_params.o \
-      vsvd.o \
       xstuff.o 
       
 
@@ -96,7 +95,6 @@ funct3d.o : \
       vforces.o \
       vmec_main.o \
       vmec_params.o \
-      vsvd.o \
       xstuff.o 
       
 
@@ -142,7 +140,6 @@ residue.o : \
       realspace.o \
       vmec_main.o \
       vmec_params.o \
-      vsvd.o \
       xstuff.o 
       
 
@@ -255,7 +252,6 @@ allocate_ns.o : \
       vmec_dim.o \
       vmec_main.o \
       vmec_params.o \
-      vsvd.o \
       xstuff.o 
       
 
@@ -288,7 +284,6 @@ free_mem_ns.o : \
       realspace.o \
       vforces.o \
       vmec_main.o \
-      vsvd.o \
       xstuff.o 
       
 
@@ -297,15 +292,9 @@ free_mem_nunv.o : \
       vmec_main.o 
       
 
-free_mem_recon.o : \
-      vspline.o \
-      vsvd.o 
-      
-
 free_persistent_mem.o : \
       ../../LIBSTELL/Release/mgrid_mod.o \
       vmec_main.o \
-      vsvd.o \
       xstuff.o 
       
 
@@ -335,7 +324,6 @@ initialize_radial.o : \
       realspace.o \
       vmec_main.o \
       vmec_params.o \
-      vsvd.o \
       xstuff.o 
       
 
@@ -368,8 +356,7 @@ profil1d.o : \
       vmec_dim.o \
       vmec_main.o \
       vmec_params.o \
-      vspline.o \
-      vsvd.o 
+      vspline.o 
       
 
 profil3d.o : \
@@ -379,7 +366,6 @@ profil3d.o : \
       vmec_main.o \
       vmec_params.o \
       vspline.o \
-      vsvd.o \
       xstuff.o 
       
 
@@ -395,8 +381,7 @@ profile_functions.o : \
 reset_params.o : \
       precon2d.o \
       timer_sub.o \
-      vmec_main.o \
-      vsvd.o 
+      vmec_main.o 
       
 
 vsetup.o : \
@@ -404,14 +389,12 @@ vsetup.o : \
       gmres_mod.o \
       realspace.o \
       vacmod.o \
-      vmec_main.o \
-      vsvd.o 
+      vmec_main.o 
       
 
 bss.o : \
       realspace.o \
-      vmec_main.o \
-      vsvd.o 
+      vmec_main.o 
       
 
 dump_output.o : \
@@ -438,7 +421,6 @@ eqfor.o : \
       vmec_main.o \
       vmec_params.o \
       vspline.o \
-      vsvd.o \
       xstuff.o 
       
 
@@ -453,7 +435,6 @@ fileout.o : \
       vforces.o \
       vmec_main.o \
       vmec_params.o \
-      vsvd.o \
       xstuff.o 
       
 
@@ -495,13 +476,6 @@ jxbforce.o : \
       xstuff.o 
       
 
-magnetics_data.o : \
-      ../../LIBSTELL/Release/mgrid_mod.o \
-      vacmod.o \
-      vmec_main.o \
-      vsvd.o 
-      
-
 mercier.o : \
       ../../LIBSTELL/Release/safe_open_mod.o \
       ../../LIBSTELL/Release/vmec_input.o \
@@ -516,7 +490,6 @@ printout.o : \
       realspace.o \
       vmec_main.o \
       vmec_params.o \
-      vsvd.o \
       xstuff.o 
       
 
@@ -537,8 +510,7 @@ readin.o : \
       vacmod.o \
       vmec_main.o \
       vmec_params.o \
-      vspline.o \
-      vsvd.o 
+      vspline.o 
       
 
 TestWout.o : \
@@ -591,14 +563,7 @@ wrout.o : \
       vmec_persistent.o \
       vmercier.o \
       vspline.o \
-      vsvd.o \
       xstuff.o 
-      
-
-wroutlim.o : \
-      ../../LIBSTELL/Release/mgrid_mod.o \
-      vmec_main.o \
-      vsvd.o 
       
 
 analysum.o : \
@@ -701,192 +666,7 @@ vacuum.o : \
       vacmod.o \
       vmec_main.o \
       vmec_params.o 
-      
-
-axisopt.o : \
-      ../../LIBSTELL/Release/vparams.o \
-      vsvd.o 
-      
-
-cauchy.o : \
-      ../../LIBSTELL/Release/vparams.o 
-      
-
-chisq.o : \
-      vmec_main.o \
-      vspline.o \
-      vsvd.o 
-      
-
-findphi.o : \
-      realspace.o \
-      vmec_main.o 
-      
-
-fixrecon.o : \
-      ../../LIBSTELL/Release/mgrid_mod.o \
-      vmec_main.o \
-      vspline.o \
-      vsvd.o 
-      
-
-flux_init.o : \
-      realspace.o \
-      vforces.o \
-      vmec_main.o \
-      vmec_params.o \
-      vsvd.o 
-      
-
-getbfld.o : \
-      ../../LIBSTELL/Release/mgrid_mod.o \
-      realspace.o \
-      vmec_main.o \
-      vmec_params.o \
-      vspline.o \
-      vsvd.o 
-      
-
-getdiam.o : \
-      realspace.o \
-      vforces.o \
-      vmec_main.o \
-      vmec_params.o \
-      vspline.o \
-      vsvd.o 
-      
-
-getflux.o : \
-      ../../LIBSTELL/Release/mgrid_mod.o \
-      ../../LIBSTELL/Release/vparams.o \
-      realspace.o \
-      vmec_main.o \
-      vmec_params.o \
-      vspline.o \
-      vsvd.o 
-      
-
-getgreen.o : \
-      ../../LIBSTELL/Release/vparams.o \
-      vsvd.o 
-      
-
-getlim.o : \
-      ../../LIBSTELL/Release/mgrid_mod.o \
-      realspace.o \
-      vmec_main.o \
-      vsvd.o 
-      
-
-getmse.o : \
-      realspace.o \
-      vmec_main.o \
-      vmec_params.o \
-      vspline.o \
-      vsvd.o 
-      
-
-getpresprofile.o : \
-      vmec_main.o \
-      vsvd.o 
-      
-
-gettflux.o : \
-      vsvd.o 
-      
-
-getthom.o : \
-      vmec_main.o \
-      vspline.o \
-      vsvd.o 
-      
-
-grnbfld.o : \
-      ../../LIBSTELL/Release/mgrid_mod.o \
-      ../../LIBSTELL/Release/vparams.o \
-      vsvd.o 
-      
-
-grnflx.o : \
-      ../../LIBSTELL/Release/mgrid_mod.o \
-      vsvd.o 
-      
-
-lamfull.o : \
-      vmec_main.o 
-      
-
-movephi1.o : \
-      vmec_main.o \
-      vsvd.o 
-      
-
-newphi.o : \
-      ../../LIBSTELL/Release/stel_kinds.o \
-      realspace.o \
-      vmec_main.o \
-      vsvd.o \
-      xstuff.o 
-      
-
-newprofil.o : \
-      ../../LIBSTELL/Release/mgrid_mod.o \
-      realspace.o \
-      timer_sub.o \
-      vacmod.o \
-      vforces.o \
-      vmec_main.o \
-      vspline.o \
-      vsvd.o \
-      xstuff.o 
-      
-
-pofs.o : \
-      ../../LIBSTELL/Release/stel_kinds.o 
-      
-
-printmatrix.o : \
-      ../../LIBSTELL/Release/vparams.o 
-      
-
-radfor.o : \
-      realspace.o \
-      vforces.o \
-      vmec_main.o \
-      vmec_params.o \
-      vsvd.o 
-      
-
-readrecon.o : \
-      ../../LIBSTELL/Release/mgrid_mod.o \
-      vmec_main.o \
-      vsvd.o 
-      
-
-sgemvmm.o : \
-      ../../LIBSTELL/Release/stel_kinds.o 
-      
-
-smoothdata.o : \
-      vmec_main.o \
-      vsvd.o 
-      
-
-store_chisq.o : \
-      vmec_main.o \
-      vspline.o \
-      vsvd.o 
-      
-
-storesvd.o : \
-      realspace.o \
-      vmec_main.o \
-      vsvd.o 
-      
-
-vsvd.o : \
-      ../../LIBSTELL/Release/vmec_input.o 
-      
+            
 
 add_tension.o : \
       vspline.o 
@@ -931,8 +711,7 @@ sort_data.o : \
 
 splinint.o : \
       ../../LIBSTELL/Release/vparams.o \
-      vspline.o \
-      vsvd.o 
+      vspline.o 
       
 
 splints.o : \
@@ -942,8 +721,7 @@ splints.o : \
 
 splintx.o : \
       ../../LIBSTELL/Release/vparams.o \
-      csplinx.o \
-      vsvd.o 
+      csplinx.o 
       
 
 vspline.o : \
@@ -959,7 +737,6 @@ eqsolve.o : \
       vmec_history.o \
       vmec_main.o \
       vmec_params.o \
-      vsvd.o \
       xstuff.o 
       
 
@@ -970,7 +747,6 @@ evolve.o : \
       timer_sub.o \
       vmec_main.o \
       vmec_params.o \
-      vsvd.o \
       xstuff.o 
       
 
@@ -1016,7 +792,6 @@ runvmec.o : \
       vacmod.o \
       vmec_main.o \
       vmec_params.o \
-      vsvd.o \
       xstuff.o 
       
 

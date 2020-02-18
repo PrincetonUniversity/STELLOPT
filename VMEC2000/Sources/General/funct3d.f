@@ -5,7 +5,6 @@
       USE vmec_params, ONLY: ntmax, norm_term_flag
       USE realspace
       USE vforces
-      USE vsvd, ONLY: router, rinner, gphifac, grmse
       USE xstuff
       USE timer_sub
       USE precon2d, ONLY: ictrl_prec2d, lHess_exact, l_edge
@@ -62,11 +61,6 @@ C-----------------------------------------------
 
 !     RIGID BODY SHIFT OF RMNCC(JS.GT.1,0,0) BY DELR_MSE= R00-RAXMSE
 !
-
-!      IF (lrecon) THEN
-!         delr_mse = pxc(neqs2)
-!         pgc(1:ns) = pgc(1:ns) + delr_mse
-!      ENDIF
 
 !     INVERSE FOURIER TRANSFORM TO S,THETA,ZETA SPACE
 !     R, Z, AND LAMBDA ARRAYS IN FOURIER SPACE
@@ -445,11 +439,6 @@ C-----------------------------------------------
       CALL second0 (tresoff)
       timer(tres) = timer(tres) + (tresoff - treson)
 
-      pgc(neqs1) = gphifac
-      IF (iopt_raxis .GT. 0) THEN
-         pgc(neqs2) = grmse
-      END IF
-
  100  CONTINUE
 
       CALL second0 (tfunoff)
@@ -470,7 +459,6 @@ C-----------------------------------------------
       USE vmec_params, ONLY: ntmax
       USE realspace
       USE vforces
-      USE vsvd, ONLY: router, rinner, gphifac, grmse
       USE xstuff
       USE timer_sub
       USE precon2d, ONLY: ictrl_prec2d, lHess_exact, l_edge
@@ -513,18 +501,10 @@ C-----------------------------------------------
       CALL getrz(xc)
 #endif       
       IF (ictrl_prec2d .EQ. 3) THEN
-         gc(:neqs2) = scalxc(:neqs2)*(xc(:neqs2)+xcdot(:neqs2))
+         gc(:neqs) = scalxc(:neqs)*(xc(:neqs)+xcdot(:neqs))
       ELSE
-         gc(:neqs2) = scalxc(:neqs2)*xc(:neqs2)
+         gc(:neqs) = scalxc(:neqs)*xc(:neqs)
       END IF
-
-!
-!     RIGID BODY SHIFT OF RMNCC(JS.GT.1,0,0) BY DELR_MSE= R00-RAXMSE
-!
-      IF (lrecon) THEN
-         delr_mse = xc(neqs2)
-         gc(1:ns) = gc(1:ns) + delr_mse
-      ENDIF
 
 !
 !     INVERSE FOURIER TRANSFORM TO S,THETA,ZETA SPACE
@@ -832,11 +812,6 @@ C-----------------------------------------------
 
       CALL second0 (tresoff)
       timer(tres) = timer(tres) + (tresoff - treson)
-
-      gc(neqs1) = gphifac
-      IF (iopt_raxis .gt. 0) THEN
-         gc(neqs2) = grmse
-      END IF
 
  100  CONTINUE
 
