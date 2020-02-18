@@ -11,7 +11,7 @@ OBJLIST = ../ObjectList
 #Includes source files and dependency list
 include $(DEPLIST)
 include $(OBJLIST)
-VPATH = $(SPATH):$(SPATH)/General:$(SPATH)/Initialization_Cleanup:$(SPATH)/Hessian:$(SPATH)/Splines:$(SPATH)/NESTOR_vacuum:$(SPATH)/Reconstruction:$(SPATH)/TimeStep:$(SPATH)/Input_Output
+VPATH = $(SPATH):$(SPATH)/General:$(SPATH)/Initialization_Cleanup:$(SPATH)/Hessian:$(SPATH)/Splines:$(SPATH)/NESTOR_vacuum:$(SPATH)/TimeStep:$(SPATH)/Input_Output
 
 .SUFFIXES :
 .SUFFIXES : .f .f90 .o

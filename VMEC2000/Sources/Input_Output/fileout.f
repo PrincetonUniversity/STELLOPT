@@ -130,7 +130,6 @@ C-----------------------------------------------
      &      norm_term_flag, more_iter_flag, output_flag,
      &      cleanup_flag, successful_term_flag
       USE vforces
-      USE vsvd
       USE xstuff, ONLY: xc, gc, xsave, scalxc
       USE precon2d, ONLY: ictrl_prec2d
       USE timer_sub
@@ -157,21 +156,26 @@ C-----------------------------------------------
       INTEGER :: js, istat1=0, irst0, OFU
       REAL(dp), DIMENSION(:), POINTER :: lu, lv
       REAL(dp), ALLOCATABLE :: br_out(:), bz_out(:)
-      CHARACTER(LEN=*), PARAMETER, DIMENSION(0:10) :: werror = (/
-     &   'EXECUTION TERMINATED NORMALLY                            ',
-     &   'INITIAL JACOBIAN CHANGED SIGN (IMPROVE INITIAL GUESS)    ',
-     &   'FORCE RESIDUALS EXCEED FTOL: MORE ITERATIONS REQUIRED    ',
-     &   'VMEC INDATA ERROR: NCURR.ne.1 but BLOAT.ne.1.            ',
-     &   'MORE THAN 75 JACOBIAN ITERATIONS (DECREASE DELT)         ',
-     &   'ERROR READING INPUT FILE OR NAMELIST                     ',
-     &   'NEW AXIS GUESS STILL FAILED TO GIVE GOOD JACOBIAN        ',
-     &   'PHIEDGE HAS WRONG SIGN IN VACUUM SUBROUTINE              ',
-     &   'NS ARRAY MUST NOT BE ALL ZEROES                          ',
-     &   'ERROR READING MGRID FILE                                 ',
-     &   'VAC-VMEC I_TOR MISMATCH : BOUNDARY MAY ENCLOSE EXT. COIL ' /)
+      CHARACTER(LEN=*), PARAMETER, DIMENSION(0:14) :: werror = (/
+     &   'EXECUTION TERMINATED NORMALLY                            ', ! norm_term_flag
+     &   'INITIAL JACOBIAN CHANGED SIGN (IMPROVE INITIAL GUESS)    ', ! bad_jacobian_flag
+     &   'FORCE RESIDUALS EXCEED FTOL: MORE ITERATIONS REQUIRED    ', ! more_iter_flag
+     &   'VMEC INDATA ERROR: NCURR.ne.1 but BLOAT.ne.1.            ', !
+     &   'MORE THAN 75 JACOBIAN ITERATIONS (DECREASE DELT)         ', ! jac75_flag
+     &   'ERROR READING INPUT FILE OR NAMELIST                     ', ! input_error_flag
+     &   'NEW AXIS GUESS STILL FAILED TO GIVE GOOD JACOBIAN        ', !
+     &   'PHIEDGE HAS WRONG SIGN IN VACUUM SUBROUTINE              ', ! phiedge_error_flag
+     &   'NS ARRAY MUST NOT BE ALL ZEROES                          ', ! ns_error_flag
+     &   'ERROR READING MGRID FILE                                 ', ! misc_error_flag
+     &   'VAC-VMEC I_TOR MISMATCH : BOUNDARY MAY ENCLOSE EXT. COIL ', !
+     &   'SUCCESSFUL VMEC CONVERGENCE                              ', ! successful_term_flag
+     &   'BSUBU OR BSUBV JS=1 COMPONENT NON-ZERO                   ', ! bsub_bad_js1_flag
+     &   'RMNC N=0, M=1 IS ZERO                                    ', ! r01_bad_value_flag
+     &   'ARNORM OR AZNORM EQUAL ZERO IN BCOVAR                    '  ! arz_bad_value_flag
+     &   /)
       CHARACTER(LEN=*), PARAMETER ::
      &    Warning = " Error deallocating global memory FILEOUT"
-      LOGICAL :: log_open, lwrite, loutput, lterm
+      LOGICAL :: lwrite, loutput, lterm
       REAL(dp) :: tmpxc, rmssum
 C-----------------------------------------------
     
@@ -284,21 +288,6 @@ C-----------------------------------------------
       END IF
 
 !     END TEST
-
-!
-!     WRITE SEQUENCE HISTORY FILE
-!
-      INQUIRE(unit=nlog,opened=log_open)
-      IF (lrecon .and. log_open) THEN
-         IF (iseq .eq. 0) WRITE (nlog, 100)
-         WRITE (nlog, 110) iseq + 1, iter2, total_chi_square_n,
-     &      1.e-6_dp*ctor/mu0, 1.e-3_dp*ppeak/mu0, torflux, r00,
-     &      timer(tsum), input_extension
-      END IF
-
-  100 FORMAT(' SEQ ITERS  CHISQ/N',
-     1   '  TORCUR  PRESMAX  PHIEDGE     R00 CPU-TIME  EXTENSION')
-  110 FORMAT(i4,i6,f8.2,3f9.2,f8.2,f9.2,2x,a20)
 
  1000 CONTINUE
 

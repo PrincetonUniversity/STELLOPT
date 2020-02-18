@@ -12,7 +12,6 @@
      &             bsubu_e => pclmn_e, bsubv_e => pblmn_e,
      &             bsubu_o => pclmn_o, bsubv_o => pblmn_o,
      &             bsq => pbzmn_o, phipog => pbrmn_o
-      USE vsvd, ONLY: phifac, phifsave, imovephi
       USE xstuff, ONLY: pxc
       USE precon2d, ONLY: ictrl_prec2d, lHess_exact,
      &                    ctor_prec2d
@@ -373,8 +372,6 @@
 
       IF ((MOD(iter2-iter1,ns4).EQ.0 .AND. iequi.EQ.0) .AND.
      &    ictrl_prec2d.EQ.0) THEN
-         phifsave = phifac
-
          nsmin = tlglob
          nsmax = t1rglob
          phipog(:,nsmin:nsmax) = phipog(:,nsmin:nsmax)
@@ -529,7 +526,6 @@
      &             bsubu_e => clmn_e, bsubv_e => blmn_e,
      &             bsubu_o => clmn_o, bsubv_o => blmn_o,
      &             bsq => bzmn_o, phipog => brmn_o
-      USE vsvd, ONLY: phifac, phifsave, imovephi
       USE xstuff, ONLY: xc
       USE precon2d, ONLY: ictrl_prec2d, lHess_exact,
      &                    ctor_prec2d
@@ -826,7 +822,6 @@
 !
       IF ((MOD(iter2-iter1,ns4) .eq. 0 .and. iequi .eq. 0) .and.
      &    ictrl_prec2d.eq.0) THEN
-         phifsave = phifac
          phipog(:nrzt) = phipog(:nrzt)*wint(:nrzt)
          CALL lamcal(phipog, guu, guv, gvv)
          CALL precondn(bsupv, bsq, gsqrt, r12, zs, zu12, zu,z u(1,1),

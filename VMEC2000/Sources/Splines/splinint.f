@@ -1,7 +1,6 @@
       SUBROUTINE splinint(grn, cm, jacob, h, u, u1, w, w1, nk, nots,
      1   ifunc, nmesh)
       USE vparams
-      USE vsvd
       USE vspline
       IMPLICIT NONE
 C-----------------------------------------------

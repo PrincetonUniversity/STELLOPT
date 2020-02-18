@@ -3,7 +3,6 @@
       USE vmec_main, ONLY: iequi, ivac, ftolv, fsqr, fsqz, fsq, dp,
      1                     res0, delt0r, iter1, iter2, ijacob, irst
       USE vmec_input, ONLY: delt
-      USE vsvd, ONLY: pfac, phifac
       USE timer_sub, ONLY: timer
       IMPLICIT NONE
 C-----------------------------------------------
@@ -27,8 +26,6 @@ C-----------------------------------------------
       res0 = -1       !move to vmec_main, remove from runvmec SAVE
       delt0r = delt   !move delt0 to vmec_main from runvmec SAVE (renamed delt0r)
 
-      pfac   = 1
-      phifac = 1
       timer =  0
 
       END SUBROUTINE reset_params
