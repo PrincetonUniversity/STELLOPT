@@ -20,15 +20,12 @@
   LINK    = mpif90 $(FLAGS) -o
   LINK_AR = ar -ruvs
   LINK_C  = gcc -shared -Wl,-no_compact_unwind
-#  LINK_C  = gcc -shared -Wl,--no-undefined -Wl,-export-dynamic 
 
 #######################################################################
 #            Define Compiler Flags
 #######################################################################
   FLAGS_R = -O2 -g -fexternal-blas -fbacktrace -fcheck=all 
-#  FLAGS_R = -O2 -fexternal-blas -Wmissing-include-dirs
-  FLAGS_D = -g -O0 -fcheck=all 
-#  LIBS    = -L/opt/local/lib -lopenblas -lscalapack  
+  FLAGS_D = -O0 -g -fexternal-blas -fbacktrace -fcheck=all
   LIBS    = -L/opt/local/lib -lopenblas 
 # Because scalapack is broken in macport for MPI4.0
   LIBS += /Users/lazerson/Sims_Work/scalapack-2.0.2/libscalapack.a
@@ -45,9 +42,6 @@
   MPI_LINK = mpif90 -shared  -Wl,-no_compact_unwind
   MPI_RUN = mpiexec
   MPI_RUN_OPTS = -np 2
-#  MPI_RUN_OPTS_SM = -np 16
-#  MPI_RUN_OPTS_MD = -np 64
-#  MPI_RUN_OPTS_LG = -np 256
 
 #######################################################################
 #            NAG Options
@@ -59,7 +53,7 @@
 #            NETCDF Options
 #######################################################################
   LNETCDF = T
-  NETCDF_INC = -I/opt/local/include
+  NETCDF_INC = $(shell nc-config --fflags)
   NETCDF_LIB = -L/opt/local/lib -lnetcdf -lnetcdff
 
 #######################################################################
@@ -74,8 +68,8 @@
 #######################################################################
   LHDF5 = T
   HDF5_INC = -I/opt/local/include
-  HDF5_LIB = -L/opt/local/lib -lhdf5 -lhdf5hl_fortran -lhdf5_hl \
-             -lhdf5_fortran
+  HDF5_LIB = -L/opt/local/lib -lhdf5hl_fortran -lhdf5_hl \
+             -lhdf5_fortran -lhdf5 -lz -ldl -lm
 
 #######################################################################
 #             PGPLOT Options
