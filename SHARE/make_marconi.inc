@@ -14,15 +14,15 @@
 #######################################################################
 #            Define Compiler Flags
 #######################################################################
+  DIAG_DISABLE = -diag-disable=15009
   FLAGS_R = -O2 -fp-model strict -ip -assume noold_unit_star \
-		-axMIC-AVX512 \
-		-I${MKLROOT}/include/intel64/ilp64 -mkl=sequential
+		-axMIC-AVX512 $(DIAG_DISABLE) \
+		-I$(MKL_LIB)
   FLAGS_D = -g -traceback -O0 -fp-model strict -ip \
-		-assume noold_unit_star -axMIC-AVX512 \
-		-I${MKLROOT}/include/intel64/ilp64 -mkl=sequential
-  LIBS    = ${MKLROOT}/lib/intel64/libmkl_blas95_ilp64.a \
-            ${MKLROOT}/lib/intel64/libmkl_lapack95_ilp64.a \
-             -lmkl_scalapack_ilp64 -lmkl_blacs_intelmpi_ilp64 -lpthread -lm -ldl
+		-assume noold_unit_star -axMIC-AVX512 $(DIAG_DISABLE) \
+		-I$(MKL_INC)
+  LIBS    = -L$(MKL_LIB)  -lmkl_intel_lp64 -lmkl_core -lmkl_sequential \
+		-lmkl_blacs_intelmpi_lp64 -lmkl_scalapack_lp64
 
 #######################################################################
 #            MPI Options
@@ -33,7 +33,8 @@
   MPI_COMPILE_C = mpiifort
   MPI_LINK = mpiifort
   MPI_RUN  = srun
-  MPI_RUN_OPTS = --partition=knl_fua_prod --qos=knl_qos_fuadbg --time=0:30:00
+  MPI_RUN_OPTS = --partition=knl_fua_prod --qos=knl_qos_fuadbg \
+		--time=0:30:00
   MPI_RUN_OPTS_SM   = $(MPI_RUN_OPTS) --nodes=1 --ntasks-per-node=68
   MPI_RUN_OPTS_MD   = $(MPI_RUN_OPTS) --nodes=2 --ntasks-per-node=68
   MPI_RUN_OPTS_LG   = $(MPI_RUN_OPTS) --nodes=2 --ntasks-per-node=68
