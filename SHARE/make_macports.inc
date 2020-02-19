@@ -14,7 +14,7 @@
   
   SHELL = /bin/sh
   PWD1 = `pwd`
-  PRECOMP:= cpp -traditional-cpp -E -P -C -DMACOSX
+  PRECOMP:= cpp-mp-8 -traditional-cpp -E -P -C -DMACOSX
   COMPILE = gfortran
   COMPILE_FREE = gfortran -ffree-form -ffree-line-length-none -ffixed-line-length-none
   LINK    = mpif90 $(FLAGS) -o
@@ -131,7 +131,7 @@
   LIB_TRAVIS = libtravis64_sopt.a
   LIB_MCONF  = libmconf64.a
   TRAVIS_LIB = $(TRAVIS_DIR)/lib/$(LIB_TRAVIS) \
-               $(TRAVIS_DIR)/mag_conf/lib/$(LIB_MCONF) -lstdc++
+               $(TRAVIS_DIR)/magconf/lib/$(LIB_MCONF) -lstdc++
 
 #######################################################################
 #            REGCOIL Options
