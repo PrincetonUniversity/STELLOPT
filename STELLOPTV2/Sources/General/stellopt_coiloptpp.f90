@@ -31,12 +31,10 @@
 !        iverb         Coilopt++ screen control
 !        istat         Error status
 !        iunit         File unit number
-!        bnfou/_c      B-Normal Fourier coefficients
 !----------------------------------------------------------------------
       LOGICAL :: lexists
-      INTEGER :: iverb, istat, nu, nv, mf, nf, md, nd, iunit, m, n, &
+      INTEGER :: iverb, istat, nu, nv, iunit, m, n, &
                  ivmec, ispline_file
-      REAL(rprec), ALLOCATABLE, DIMENSION(:,:) :: bnfou, bnfou_c
       CHARACTER(8)   :: temp_str
       CHARACTER(256) :: copt_fext
 
@@ -53,27 +51,11 @@
       ispline_file = 0
       copt_fext = 'coilopt_params.'//TRIM(file_str)
       ! Have master run bnorm
-      nu = nu_bnorm
-      nv = nv_bnorm
-      mf=24; nf=10; md=24; nd=20; coil_separation = 0.33;
+      coil_separation = 0.33;
       IF (myworkid == master) THEN
          IF (lscreen) WRITE(6,'(a)') ' ---------------------------  COILOPT++ OPTIMIZATION  -------------------------'
          ! Run BNORM code
-         ALLOCATE(bnfou(0:mf,-nf:nf),bnfou_c(0:mf,-nf:nf),STAT=istat)
-         IF (lscreen) WRITE(6,"(A)") '   - Calculating B-Normal File'
-         CALL bnormal(nu,nv,mf,nf,md,nd,bnfou,bnfou_c,TRIM(file_str)//'.nc')
-         IF (lscreen) WRITE(6,"(A,ES22.12E3)") '      Max. B-Normal: ',MAXVAL(MAXVAL(bnfou,DIM=2),DIM=1)
-         IF (lscreen) WRITE(6,"(A,ES22.12E3)") '      MIN. B-Normal: ',MINVAL(MINVAL(bnfou,DIM=2),DIM=1)
-         ! WRITE BNORMAL
-         CALL safe_open(iunit, istat, 'bnorm.' // TRIM(file_str), 'replace','formatted')
-         DO m = 0, mf
-            DO n = -nf, nf
-               WRITE(iunit,"(1x,2i5,ES22.12E3)") m,n,bnfou(m,n)
-            END DO
-         END DO
-         CLOSE(iunit)
-         DEALLOCATE(bnfou,bnfou_c)
-         IF (lscreen) WRITE(6,"(A)") '      Coefficients output to:   '//'bnorm.' // TRIM(file_str)
+         call stellopt_bnorm(file_str,lscreen)
          ! Turn on screen output
          IF (lscreen) iverb = 1
       END IF
