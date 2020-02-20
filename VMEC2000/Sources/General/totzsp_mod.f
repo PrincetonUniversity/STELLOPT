@@ -9,6 +9,41 @@
 
       CONTAINS
 
+!-------------------------------------------------------------------------------
+!>  @brief Convert symmetric quantities from Fourier space to real space.
+!>
+!>  Forier transforms between Fourier space and real space. Computes quantities
+!>  for R, dR/du, dR/dv, Z, dZ/du, dZ/dv, dlambda/du and dlambda/dv. Non
+!>  derivative quantities are trans formed via
+!>
+!>    A_real = A_mnc*cos(mu - nv) + A_mns*sin(mu - nv)                       (1)
+!>
+!>  Derivatives with respect to u are transformed as
+!>
+!>    dA_real/du = -m*A_mnc*sin(mu - nv) + m*A_mns*cos(mu - nv)              (2)
+!>
+!>  Derivatives with respect to v are transformed as
+!>
+!>    dA_real/dv = n*A_mnc*sin(mu - nv) - m*A_mns*cos(mu - nv)               (3)
+!>
+!>  @param[inout] rzl_array Fourier amplitudes for Rmnc, Zmns and Lmns for
+!>                          lasym false. When lasym is true, this also contains
+!>                          Rmns, Zmnc, Lmnc.
+!>  @paran[out]   r11       Real space R.
+!>  @param[out]   ru1       Real space dR/du.
+!>  @param[out]   rv1       Real space dR/dz.
+!>  @param[out]   z11       Real space Z.
+!>  @param[out]   zu1       Real space dZ/du.
+!>  @param[out]   zv1       Real space dZ/dv.
+!>  @param[out]   lu1       Real space dlambda/du.
+!>  @param[out]   lv1       Real space dlambda/dv.
+!>  @param[out]   rcn1      Unknown R quantity.
+!>  @param[out]   zcn1      Unknown Z quantity.
+!>  @param[out]   ier_flag  Status of the transform. Takes the value of
+!>                          @ref r01_bad_value_flag if rmnc(0,1) is zero.
+!>
+!>  @note FIXME Figure out what rcn1 and zcn1 are.
+!-------------------------------------------------------------------------------
       SUBROUTINE totzsps_par(rzl_array, r11, ru1, rv1, z11, zu1, zv1,
      &                       lu1, lv1, rcn1, zcn1, ier_flag)
       USE vmec_params, ONLY: jmin1, jlam, ntmax, rcc, rss, zsc, zcs,
@@ -214,6 +249,41 @@
 
       END SUBROUTINE totzsps_par
 
+!-------------------------------------------------------------------------------
+!>  @brief Convert asymmetric quantities from Fourier space to real space.
+!>
+!>  Forier transforms between Fourier space and real space. Computes quantities
+!>  for R, dR/du, dR/dv, Z, dZ/du, dZ/dv, dlambda/du and dlambda/dv. Non
+!>  derivative quantities are trans formed via
+!>
+!>    A_real = A_mnc*cos(mu - nv) + A_mns*sin(mu - nv)                       (1)
+!>
+!>  Derivatives with respect to u are transformed as
+!>
+!>    dA_real/du = -m*A_mnc*sin(mu - nv) + m*A_mns*cos(mu - nv)              (2)
+!>
+!>  Derivatives with respect to v are transformed as
+!>
+!>    dA_real/dv = n*A_mnc*sin(mu - nv) - m*A_mns*cos(mu - nv)               (3)
+!>
+!>  @param[inout] rzl_array Fourier amplitudes for Rmnc, Zmns and Lmns for
+!>                          lasym false. When lasym is true, this also contains
+!>                          Rmns, Zmnc, Lmnc.
+!>  @paran[out]   r11       Real space R.
+!>  @param[out]   ru1       Real space dR/du.
+!>  @param[out]   rv1       Real space dR/dz.
+!>  @param[out]   z11       Real space Z.
+!>  @param[out]   zu1       Real space dZ/du.
+!>  @param[out]   zv1       Real space dZ/dv.
+!>  @param[out]   lu1       Real space dlambda/du.
+!>  @param[out]   lv1       Real space dlambda/dv.
+!>  @param[out]   rcn1      Unknown R quantity.
+!>  @param[out]   zcn1      Unknown Z quantity.
+!>  @param[out]   ier_flag  Status of the transform. Takes the value of
+!>                          @ref r01_bad_value_flag if rmnc(0,1) is zero.
+!>
+!>  @note FIXME Figure out what rcn1 and zcn1 are.
+!-------------------------------------------------------------------------------
       SUBROUTINE totzspa_par(rzl_array, r11, ru1, rv1, z11, zu1, zv1,
      1                       lu1, lv1, rcn1, zcn1)
       USE vmec_params, ONLY: jmin1, jlam, ntmax, rcs, rsc, zcc, zss

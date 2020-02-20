@@ -72,7 +72,7 @@ TYPE (LevelElement), ALLOCATABLE :: orig(:)
 TYPE (SolutionElement), ALLOCATABLE :: selement(:)
 
 !-------------------------------------------------------------------------------
-!INTEGER :: rank !<This MPI task's rank
+!INTEGER :: rank !<This MPI tasks rank
 !INTEGER :: nranks !<Num of MPI tasks
 INTEGER :: P !<Num of "master" tasks, adjusted such that P=Min(nranks,N)
 INTEGER :: N !<Num of row blocks in input block tri-diag matrix
@@ -102,7 +102,7 @@ REAL(dp) :: skston, skstoff
 
 
 !-------------------------------------------------------------------------------
-LOGICAL :: use_mpiwtime !<Use MPI's timer function?
+LOGICAL :: use_mpiwtime !<Use MPIs timer function?
 DOUBLE PRECISION :: loctimer1, loctimer2 !<Stopwatch snapshots to use locally
 DOUBLE PRECISION :: mattimer1, mattimer2 !<Stopwatch snapshots for matrix ops
 DOUBLE PRECISION :: globtimer1, globtimer2 !<Stopwatch snapshots to use globally
@@ -780,7 +780,7 @@ SUBROUTINE DetermineMasterSlaveRanks()
   IF(KPDBG) WRITE(OFU,*) 'Computed all mappings'; CALL FL(OFU)
 
   !----------------------------------------------
-  !Copy the mapping relevant to us (if I'm master, my own, else, my master's)
+  !Copy the mapping relevant to us (if I'm master, my own, else, my masters)
   masterindex = rank+1
   IF ( allmsmaps(masterindex)%masterrank .NE. rank ) THEN
     masterindex = allmsmaps(masterindex)%masterrank+1
@@ -855,7 +855,7 @@ END SUBROUTINE SlaveGetNextOp
 
 !-------------------------------------------------------------------------------
 !>
-!! Slave's operation loop
+!! Slaves operation loop
 !<
 !-------------------------------------------------------------------------------
 SUBROUTINE SlaveService()
@@ -1676,7 +1676,7 @@ END SUBROUTINE PLBDGEMV
 
 !-------------------------------------------------------------------------------
 !>
-!! Encapsulates BLAS/LAPACK's DGETRF functionality
+!! Encapsulates BLAS/LAPACKs DGETRF functionality
 !<
 !-------------------------------------------------------------------------------
 SUBROUTINE PLBDGETRF( A, piv, info )
@@ -1702,7 +1702,6 @@ SUBROUTINE PLBDGETRF( A, piv, info )
 #endif
   REAL(dp) :: ton, toff
 
-  piv  = 0
   info = 0
 
 END SUBROUTINE PLBDGETRF
@@ -1778,7 +1777,7 @@ END SUBROUTINE SlaveDGETRF
 
 !-------------------------------------------------------------------------------
 !>
-!! Encapsulates BLAS/LAPACK's DGETRS functionality
+!! Encapsulates BLAS/LAPACKs DGETRS functionality
 !<
 !-------------------------------------------------------------------------------
 SUBROUTINE PLBDGETRS( nrhs, A, piv, B, info )
@@ -1906,7 +1905,7 @@ SUBROUTINE Initialize_bst( do_mpiinit, inN, inM )
 
   !-----------------------------------------------------------------------------
   !Determine where we start and end in row list at level 1 on this processor
-  !This processor's global row numbers span [startglobrow,endglobrow] inclusive
+  !This processors global row numbers span [startglobrow,endglobrow] inclusive
   !-----------------------------------------------------------------------------
   nrowsperrank = N/P !Number of rows evenly split across processors
   nspillrows = MOD(N, P) !Some left over after even split
@@ -2825,7 +2824,7 @@ FUNCTION LR2GR( locrow, level ) result ( globrow )
   ! Formal arguments
   !-----------------------------------------------------------------------------
   INTEGER, INTENT(IN) :: locrow !<local row number of global row, at given level
-  INTEGER, INTENT(IN) :: level !<Level at which locrow's position is given
+  INTEGER, INTENT(IN) :: level !<Level at which locrows position is given
   INTEGER :: globrow !<Returned: Row number in original input (level 1)
 
   !-----------------------------------------------------------------------------
@@ -2863,7 +2862,7 @@ FUNCTION GR2LR( globrow, level ) result ( locrow )
   ! Formal arguments
   !-----------------------------------------------------------------------------
   INTEGER, INTENT(IN) :: globrow !<Row number in original input (level 1)
-  INTEGER, INTENT(IN) :: level !<Level at which globrow's position is needed
+  INTEGER, INTENT(IN) :: level !<Level at which globrows position is needed
   INTEGER :: locrow !<Returned: local row number of global row, at given level
 
   !-----------------------------------------------------------------------------
@@ -3216,7 +3215,7 @@ SUBROUTINE ForwardSolve_bst
     startlocrow = N+1 !Start with an invalid value (greater than endlocrow)
     endlocrow = -1 !Start with an invalid value (less than startlocrow)
     DO globrow = startglobrow, endglobrow, 1
-      locrow = GR2LR( globrow, level ) !globrow's place at current level
+      locrow = GR2LR( globrow, level ) !globrows place at current level
       IF ( locrow .GT. 0 ) THEN !This global row participates at current level
         IF ( locrow .LT. startlocrow ) THEN !A valid, earlier local row
           startlocrow = locrow
@@ -3319,8 +3318,8 @@ SUBROUTINE ForwardSolve_bst
     nbrrank = LR2Rank(startlocrow-1,level)
     IF ( ISODD(startlocrow) .AND. (nbrrank .GE. 0) ) THEN
       !-------------------------------------------------------------------------
-      !Our top row at this level is odd and top row's previous is valid
-      !We will get the previous (even-numbered) row's L-hat, U-hat, and b-hat
+      !Our top row at this level is odd and top rows previous is valid
+      !We will get the previous (even-numbered) rows L-hat, U-hat, and b-hat
       !-------------------------------------------------------------------------
       globrowoff = 0
       IF(KPDBG) WRITE(OFU,*) '  Irecv ',startlocrow-1,' ',nbrrank,' '; CALL FL(OFU)
@@ -3367,8 +3366,8 @@ SUBROUTINE ForwardSolve_bst
     nbrrank = LR2Rank(endlocrow+1,level)
     IF ( ISODD(endlocrow) .AND. (nbrrank .GE. 0) ) THEN
       !-------------------------------------------------------------------------
-      !Our bottom row at this level is odd and bottom row's next is valid
-      !We will get the next (even-numbered) row's L-hat, U-hat, and b-hat
+      !Our bottom row at this level is odd and bottom rows next is valid
+      !We will get the next (even-numbered) rows L-hat, U-hat, and b-hat
       !-------------------------------------------------------------------------
       globrowoff = endglobrow-startglobrow+2
       IF(KPDBG) WRITE(OFU,*) ' Irecv ',endlocrow+1,' ', nbrrank; CALL FL(OFU)
@@ -3710,7 +3709,7 @@ SUBROUTINE ForwardUpdateb
     startlocrow = N+1 !Start with an invalid value (greater than endlocrow)
     endlocrow = -1 !Start with an invalid value (less than startlocrow)
     DO globrow = startglobrow, endglobrow, 1
-      locrow = GR2LR( globrow, level ) !globrow's place at current level
+      locrow = GR2LR( globrow, level ) !globrows place at current level
       IF ( locrow .GT. 0 ) THEN !This global row participates at current level
         IF ( locrow .LT. startlocrow ) THEN !A valid, earlier local row
           startlocrow = locrow
@@ -3795,8 +3794,8 @@ SUBROUTINE ForwardUpdateb
     nbrrank = LR2Rank(startlocrow-1,level)
     IF ( ISODD(startlocrow) .AND. (nbrrank .GE. 0) ) THEN
       !-------------------------------------------------------------------------
-      !Our top row at this level is odd and top row's previous is valid
-      !We will get the previous (even-numbered) row's L-hat, U-hat, and b-hat
+      !Our top row at this level is odd and top rows previous is valid
+      !We will get the previous (even-numbered) rows L-hat, U-hat, and b-hat
       !-------------------------------------------------------------------------
       globrowoff = 0
       IF(KPDBG) WRITE(OFU,*) '  Irecv ',startlocrow-1,' ',nbrrank,' '; CALL FL(OFU)
@@ -3825,8 +3824,8 @@ SUBROUTINE ForwardUpdateb
     nbrrank = LR2Rank(endlocrow+1,level)
     IF ( ISODD(endlocrow) .AND. (nbrrank .GE. 0) ) THEN
       !-------------------------------------------------------------------------
-      !Our bottom row at this level is odd and bottom row's next is valid
-      !We will get the next (even-numbered) row's L-hat, U-hat, and b-hat
+      !Our bottom row at this level is odd and bottom rows next is valid
+      !We will get the next (even-numbered) rows L-hat, U-hat, and b-hat
       !-------------------------------------------------------------------------
       globrowoff = endglobrow-startglobrow+2
       IF(KPDBG) WRITE(OFU,*) ' Irecv ',endlocrow+1,' ', nbrrank; CALL FL(OFU)
@@ -4079,7 +4078,7 @@ SUBROUTINE BackwardSolve_bst
     startlocrow = N+1 !Start with an invalid value (greater than endlocrow)
     endlocrow = -1 !Start with an invalid value (less than startlocrow)
     DO globrow = startglobrow, endglobrow, 1
-      locrow = GR2LR( globrow, level ) !globrow's place at current level
+      locrow = GR2LR( globrow, level ) !globrows place at current level
       IF ( locrow .GT. 0 ) THEN !This global row participates at current level
         IF ( locrow .LT. startlocrow ) THEN !A valid, earlier local row
           startlocrow = locrow
@@ -4119,8 +4118,8 @@ SUBROUTINE BackwardSolve_bst
     nbrrank = LR2Rank(startlocrow-1,level)
     IF( ISEVEN(startlocrow) .AND. (nbrrank .GE. 0) ) THEN
       !-------------------------------------------------------------------------
-      !Our top row at this level is even and top row's previous is valid
-      !We will get the previous (odd-numbered) row's solution
+      !Our top row at this level is even and top rows previous is valid
+      !We will get the previous (odd-numbered) rows solution
       !-------------------------------------------------------------------------
       stag = 1
       globrow = LR2GR(startlocrow-1,level)
@@ -4140,8 +4139,8 @@ SUBROUTINE BackwardSolve_bst
     nbrrank = LR2Rank(endlocrow+1,level)
     IF ( ISEVEN(endlocrow) .AND. (nbrrank .GE. 0) ) THEN
       !-------------------------------------------------------------------------
-      !Our bottom row at this level is even and bottom row's next is valid
-      !We will get the next (odd-numbered) row's solution
+      !Our bottom row at this level is even and bottom rows next is valid
+      !We will get the next (odd-numbered) rows solution
       !-------------------------------------------------------------------------
       stag = 2
       globrow = LR2GR(endlocrow+1,level)
@@ -4381,7 +4380,7 @@ SUBROUTINE VerifySolution
   ELSE
     totrmserr = SQRT( totrmserr / ((endglobrow-startglobrow+1) * M) )
   END IF
-  IF(KPDBG) WRITE(OFU,'(A,E16.8E3)') 'TOTAL RMS ERROR = ', totrmserr; CALL FL(OFU)
+  IF(KPDBG) WRITE(OFU,'(A,E15.8E3)') 'TOTAL RMS ERROR = ', totrmserr; CALL FL(OFU)
   IF(KPDBG) WRITE(OFU,*) '------ Solution verified ------'; CALL FL(OFU)
 END SUBROUTINE VerifySolution
 !-------------------------------------------------------------------------------

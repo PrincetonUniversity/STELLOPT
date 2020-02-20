@@ -7,7 +7,6 @@
       USE directaccess, ONLY: DeleteDAFile
       USE gmres_mod, ONLY: nfcn
       USE realspace
-      USE vsvd
       USE xstuff
 ! Add below JDH 2010-08-03
       USE vmec_history
@@ -54,11 +53,8 @@ C-----------------------------------------------
  1000 CONTINUE
 
       itfsq = 0
-      rsfac   = one
       w1      = zero
       r00s    = zero
-      gphifac = zero
-      grmse   = zero
 
 !
 !     COMPUTE INITIAL R, Z AND MAGNETIC FLUX PROFILES
@@ -125,9 +121,9 @@ C-----------------------------------------------
          END IF
 
 #ifdef _ANIMEC
-      w0 = wb + wpar/(gamma-one)
+         w0 = wb + wpar/(gamma-one)
 #else
-      w0 = wb + wp/(gamma - one)
+         w0 = wb + wp/(gamma - one)
 #endif
 
 !
@@ -204,7 +200,7 @@ C-----------------------------------------------
 
 !SPH (021711): V3FITA - SAVE STATE FOR RESTART IF PRECONDITIONER IS ON
 
-       IF (l_v3fit) THEN
+      IF (l_v3fit) THEN
 
 !JDH 2011-09-14. Correct logic error.
 
@@ -220,15 +216,15 @@ C-----------------------------------------------
 
       IF (grank .EQ. 0) THEN
 	     WRITE (nthreed, 60) w0*twopi**2, wdota, r0dot
-            IF (lrecon) WRITE (nthreed, 70) r00*fsqsum0/wb
-            IF (nfcn .GT. 0) WRITE (nthreed, 80) nfcn
+         IF (lrecon) WRITE (nthreed, 70) r00*fsqsum0/wb
+         IF (nfcn .GT. 0) WRITE (nthreed, 80) nfcn
       END IF
 
       CALL second0(teqsoloff)
       eqsolve_time = eqsolve_time + (teqsoloff-teqsolon)
 
-   60 FORMAT(/,' MHD Energy = ',1p,e13.6,3x, 'd(ln W)/dt = ',1p,e10.3,
-     &       3x,'d(ln R0)/dt = ',e10.3)
+   60 FORMAT(/,' MHD Energy = ',1p,e12.6,3x, 'd(ln W)/dt = ',1p,e9.3,
+     &       3x,'d(ln R0)/dt = ',e9.3)
    70 FORMAT(' Average radial force balance: Int[FR(m=0)]',
      &       '/Int(B**2/R) = ',1p,e12.5,' (should tend to zero)'/)
    80 FORMAT(' Function calls in GMRES: ',i5)

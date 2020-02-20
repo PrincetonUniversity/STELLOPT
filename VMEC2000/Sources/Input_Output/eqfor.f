@@ -9,7 +9,6 @@
      3  ,tau_an => brmn_o
 #endif
       USE vacmod
-      USE vsvd
       USE vspline
       USE csplinx
       USE vmec_io
@@ -49,15 +48,18 @@ C-----------------------------------------------
       REAL(dp), DIMENSION(:), ALLOCATABLE ::
      &   btor_vac, btor1, dbtor, phat, t12u, guu_1u, surf_area,
      &   r3v, redge, rbps1u, bpol2vac, phipf_loc
-      REAL(dp) :: aminr1, aminr2, aminr2in, anorm,
+      REAL(dp) :: aminr1, !aminr2,
+     &   aminr2in, anorm,
      &   aspectratio, betai, betstr, scaling_ratio,
      &   bminz2, bminz2in, btor, iotamax, musubi,
      &   bzcalc, bzin, chisq, chiwgt, cur0,
      &   delphid_exact, delta1, delta2, delta3, denwgt, lambda,
-     &   dlogidsi, dmusubi_meas, er, es, fac, facnorm, factor, fgeo,
+     &   dlogidsi, !dmusubi_meas,
+     &   er, es, fac, facnorm, factor, fgeo,
      &   fmax, fmin, flao, fpsi0, pavg, pitchc, pitchm,
      &   pprime, qedge, qmin1, qmin2, qmin3, qzero,
-     &   raxis0, rcalc, rcen, rcenin, rgeo, rjs,
+     &   raxis0, rcalc, rcen,
+     &   rcenin, rgeo, rjs,
      &   rjs1, rlao, rqmin1, rqmin2, rshaf, rshaf1, rshaf2, s11, s12,
      &   s13, s2, s3, sigr0, sigr1, sigz1, smaleli,
      &   splintx, splints, sqmin, sumbpol, sumbtot, sumbtor, sump,
@@ -296,7 +298,7 @@ C-----------------------------------------------
 !
 !     b poloidals (cylindrical estimates)
 !
-      rcen = p5*(router + rinner)               !geometric center
+!      rcen = p5*(router + rinner)               !geometric center
       n = 0
       n1 = n + 1
       rcenin = DOT_PRODUCT(rmncc(ns,n1,:mpol1+1:2),
@@ -310,13 +312,13 @@ C-----------------------------------------------
       bminz2 = DOT_PRODUCT(zmnsc(ns,n1,2:mpol1+1:2),t12u(:l))
       DEALLOCATE (t12u)
       aminr1 = SQRT(two*volume_p/(twopi*twopi*r00))  !vol av minor radius
-      aminr2 = p5*(router - rinner)             !geometric plasma radius
+!      aminr2 = p5*(router - rinner)             !geometric plasma radius
 !
 !       cylindrical estimates for beta poloidal
 !
       sump = vnorm*SUM(vp(2:ns)*pres(2:ns))
       pavg = sump/volume_p
-      ppeak = presf(1)
+!      ppeak = presf(1)
       factor = 2*pavg
 !
 !       delphid_exact = Integral[ (Bvac - B) * dSphi ]
@@ -358,60 +360,6 @@ C-----------------------------------------------
       rshaf = rshaf1/rshaf2
       fpsi0 = c1p5*bvco(2) - p5*bvco(3)
       b0 = fpsi0/r00
-
-      IF (lrecon) THEN
-      IF (apres .ne. aminr1) THEN
-         WRITE (*, 50) (apres/aminr1)**2
-         IF(rank.EQ.0) WRITE (nthreed, 50) (apres/aminr1)**2
-      ENDIF
-   50 FORMAT(/'  Multiply final PHIEDGE by ',f7.3,
-     1   ' to make apres = aminr1')
-!
-!     Output some measured data
-!
-      raxis0 = SUM(raxis_cc(0:ntor))
-      zaxis0 = SUM(zaxis_cs(0:ntor))
-      cur0 = signgs*iotaf(1)*fpsi0/r00**2*(dkappa + one/dkappa)
-      IF (lpprof.AND.rank.EQ.0) WRITE (nthreed, 60) presfac*pfac,
-     1   (-100.*(r00 - rthompeak))
-      IF(rank.EQ.0) WRITE (nthreed, 65) b0, cur0/mu0
-   60 FORMAT(//,' Input pressure scaled by ',f6.3/,
-     1   ' Pressure profile shifted ',f6.2,' cm.',
-     2   ' relative to magnetic axis')
-   65 FORMAT(//' B-PHI(R=Raxis,Z=0) = ',f8.3,' [Wb/M**2]',/,
-     1   ' J-PHI(R=Raxis,Z=0) = iota(0)*Bt0/(mu0*R0)*(1+k**2)/k = ',1p
-     2   e10.3,' [A/M**2]',2/,' Comparison of Input vs Output',8x,
-     3   'Input',9x,'VMEC Output',/,1x,71('-'))
-      IF(rank.EQ.0) WRITE (nthreed, 70) 1.e-6_dp*currv/mu0,
-     1   1.e-6_dp*ctor/mu0, phiedge, toroidal_flux, 
-     1   1.e3_dp*phidiam, 1.e3_dp*delphid, 1.e-3_dp*pthommax,
-     2   1.e-3_dp*ppeak/mu0, rcenin, rcen, raxis0, r00, zaxis0, z00,
-     2   rc0mse,
-     3   apres, aminr1, aminr2in, aminr2, bminz2in, bminz2, rinner,
-     4   router, 1.e3_dp*delphid_exact
-   70 FORMAT(' Toroidal Current     =',2(10x,f10.3),'  [MA]',/,
-     1   ' Edge Toroidal Flux   =',2(10x,f10.3),'  [Wb]',/,
-     2   ' Diamagnetic Flux(*)  =',2(10x,f10.3),'  [mWb]',/,
-     3   ' Peak Pressure        =',2(10x,f10.3),'  [KPa]',/,
-     4   ' Geometric Center     =',2(10x,f10.3),'  [M]',/,
-     5   ' Magnetic R Axis      =',2(10x,f10.3),'  [M]',/,
-     6   ' Magnetic Z Axis      =',2(10x,f10.3),'  [M]',/,
-     7   ' MSE R Axis           =',10x,f10.3,20x,'  [M]',/,
-     8   ' Minor Radius (apres) =',2(10x,f10.3),'  [M]',/,
-     9   ' Minor Radius (a)     =',2(10x,f10.3),'  [M]',/,
-     .   ' Minor Radius (b)     =',2(10x,f10.3),'  [M]',/,
-     1   ' Inboard  Midplane R  =',30x,f10.3,'  [M]',/,
-     2   ' Outboard Midplane R  =',30x,f10.3,'  [M]',/,50('-')/,
-     3   ' * Exact diamagnetic flux (not based on equilibrium) = ',f8.3,
-     4   '  [mWb]')
-
-!       Calculate components of total chi-squared
-      total_chi_cur = (currv - ctor)**2/sigma_current**2
-      nchicur = 1
-      IF (iphidiam .eq. 1) total_chi_dia = (phidiam - delphid)**2/
-     1   sigma_delphid**2
-      nchidia = 1
-      END IF   !!IF(lrecon)
 
       rmax_surf = MAXVAL(r1(ns:nrzt:ns,0)+r1(ns:nrzt:ns,1))
       rmin_surf = MINVAL(r1(ns:nrzt:ns,0)+r1(ns:nrzt:ns,1))
@@ -687,13 +635,13 @@ C-----------------------------------------------
       er = sigr1 + sigz1
       rlao = volume_p/(twopi*cross_area_p)       !LAO, NUCL.FUS.25(1985)1421
       flao = rshaf/rlao
-      fgeo = rshaf/rcen
+!      fgeo = rshaf/rcen
 
       smaleli = factor*sumbpol
       vvc_smaleli = smaleli ! Save result for v3fit.
       betai   = 2*factor*sump
       musubi  = vnorm*factor*musubi
-      dmusubi_meas = 2*twopi*factor*delphid*rbtor
+!      dmusubi_meas = 2*twopi*factor*delphid*rbtor
       lambda = p5*smaleli + betai
       s11 = er - rshaf*sigr0              !Shafranov def. based on RT, Eq.(12)
       s12 = er - rcen*sigr0               !R = Rgeometric
@@ -706,7 +654,7 @@ C-----------------------------------------------
       IF(rank.EQ.0) WRITE (nthreed, 168)
       IF(rank.EQ.0) WRITE (nthreed, 170) rshaf, rcen, rlao,
      1   scaling_ratio, s3, smaleli, musubi, betai, lambda
-      IF (lrecon.AND.rank.EQ.0) WRITE (nthreed, 172) dmusubi_meas
+!      IF (lrecon.AND.rank.EQ.0) WRITE (nthreed, 172) dmusubi_meas
       IF(rank.EQ.0) WRITE (nthreed, 174) delta1, delta2, delta3, 
      1   s11, s12, s13, s2, s2/fgeo, s2/flao, 
      5   musubi + s11,musubi + s12, 
@@ -751,292 +699,5 @@ C-----------------------------------------------
      C   ' (3*Betai + Li - Mui)/[2*(s1+s2)] - 1',/,
      D   ' Radial force balance = ',3(f14.6,4x),/,
      E   ' (Betai + Li + Mui)/(2*s2) - 1',/)
-
-
-      IF (lrecon) THEN
-!
-!     Safety Factors (q)
-!
-      qzero = one/ABS(iotaf(1))
-      qedge = one/ABS(iotaf(ns))
-      IF(rank.EQ.0) WRITE (nthreed, 180) qzero, qedge, qzero/qedge
-  180 FORMAT(' Safety Factors',/,1x,14('-'),/,' q (on axis) = ',f12.4,/,
-     1   ' q (at edge) = ',f12.4,/,' q(0)/qedge  = ',f12.4,/)
-
-!
-!     PRINT OUT IOTA, PRESSURE SPLINE COEFFICIENTS
-!     (PRESSURE IN MKS UNITS, NWT/M**2)
-!
-      IF(rank.EQ.0) WRITE (nthreed, 190)
-  190 FORMAT(/,' SUMMARY OF IOTA AND PRESSURE SPLINES'/,
-     1   '  K   Spline Node       IOTA(K)      IOTA"(K)'/,
-     2   '        SQRT(s)',/,3('-'),3(4x,10('-')))
-      DO i = 1, isnodes
-         IF(rank.EQ.0) WRITE (nthreed, 200) i, sknots(i), ystark(i),
-     1                  y2stark(i)
-      END DO
-  200 FORMAT(i3,1p,3e14.3)
-      IF(rank.EQ.0) WRITE (nthreed, 210)
-  210 FORMAT(/,'  K   Spline Node       PRES(K)      PRES"(K)'/,
-     1   '        SQRT(s)',/,3('-'),3(4x,10('-')))
-      factor = pthommax
-      DO i = 1, ipnodes
-         IF (rank .EQ. 0) THEN
-            WRITE (nthreed, 200) i, pknots(i), factor*ythom(i),
-     &                           factor* y2thom(i)
-         END IF
-      END DO
-
-!
-!     PRINT-OUT MAGNETIC PITCH DATA
-!
-      nchimse = imse
-      total_mse_chi = zero
-
-      IF (imse .ne. 0) THEN
-
-         IF (rank .EQ. 0) THEN
-            WRITE (nthreed, 220)
-         END IF
-
-         msewgt = zero
-         denwgt = zero
-         DO n = 1, imse + 1
-            nsort = isortr(n)
-            pitchc = ATAN(starkcal(n))/dcon
-            pitchm = ATAN(datastark(nsort))/dcon
-            wght0 = ATAN(sigma_stark(nsort))/dcon
-            js = indexs1(n)
-            lt = indexu1(n)
-            noff = ns*(lt - 1)
-            rjs = r1(js+noff,0) + sqrts(js)*r1(js+noff,1)
-            js1 = js + 1
-            rjs1 = r1(js1+noff,0) + sqrts(js1)*r1(js1+noff,1)
-            rcalc = (one - delso1(n))*rjs + delso1(n)*rjs1
-            IF (delse1(n) .lt. zero) THEN
-               rcalc = zero
-            END IF
-            IF (rcalc .ne. 0.) THEN
-               btor = fpsical(n)/rcalc
-            END IF
-            bzin = TAN(dcon*pitchm)*btor
-            bzcalc = TAN(dcon*pitchc)*btor
-            chisq = zero
-            IF (ABS(rcalc - router) .lt. epstan) THEN
-               IF (rank.EQ.0) THEN
-                  WRITE (nthreed, 230) n, rcalc, rsort0(n), pitchm,
-     &                                 pitchc, wght0,
-     &                                 one/(qcalc(n) + epstan)
-               END IF
-            ELSE
-               IF (ABS(rsort(n) - rcalc) .le. epstan) THEN
-                  chisq = ((pitchc - pitchm)/wght0)**2
-                  msewgt = msewgt + chisq
-                  denwgt = denwgt + (pitchm/wght0)**2
-               END IF
-                  IF (rank.EQ.0) THEN
-                     WRITE (nthreed, 240) n, rcalc, rsort0(n), pitchm,
-     &                                    pitchc, chisq, wght0, bzin,
-     &                                    bzcalc, btor,
-     &                                    one/(qmeas(n) + epstan)
-                  END IF
-               END IF
-            END DO
-
-            chiwgt = msewgt/(imse)
-            msewgt = SQRT(msewgt/denwgt)
-c                                             !total chi-squared for mse
-            total_mse_chi = (imse)*chiwgt
-            IF (rank.EQ.0) THEN
-               WRITE (nthreed, 250) chiwgt, msewgt
-            END IF
-         END IF
-
-!
-!     PRINT-OUT PRESSURE DATA
-!
-         nchipres = itse
-         total_pres_chi = zero
-
-         IF (lpprof) THEN
-            tswgt = zero
-            denwgt = zero
-            IF (rank.EQ.0) THEN
-               WRITE (nthreed, 300) presfac*pfac
-            END IF
-
-            DO n = 1, itse
-               js = indexs2(n)
-               lt = indexu2(n)
-               noff = ns*(lt - 1)
-               rjs = r1(js+noff,0) + sqrts(js)*r1(js+noff,1)
-               js1 = js + 1
-               rjs1 = r1(js1+noff,0) + sqrts(js1)*r1(js1+noff,1)
-               IF (delso2(n) .eq. (-one)) THEN
-                  delso2(n) = one
-               END IF
-               rcalc = (one - delso2(n))*rjs + delso2(n)*rjs1
-               wght0 = sigma_thom(n)
-               chisq = ((datathom(n)*pfac-pcalc(n)/mu0)/wght0)**2
-               tswgt = tswgt + chisq
-               denwgt = denwgt + (datathom(n)/wght0)**2
-               IF (rank.EQ.0) THEN
-                  WRITE (nthreed, 310) n, rthom(n), rcalc,
-     &                                 presfac*pfac* datathom(n),
-     &                                 pcalc(n)/mu0, chisq, wght0
-               END IF
-            END DO
-
-            chiwgt = tswgt/(itse)
-            tswgt = SQRT(tswgt/denwgt)
-            total_pres_chi = (itse)*chiwgt !total
-            IF (rank.EQ.0) THEN
-               WRITE (nthreed, 320) chiwgt, tswgt
-            END IF
-         ENDIF
-
-!
-!     SUMMARIZE MAGNETICS DATA AND MATCH
-!
-         CALL magnetics_data
-
-!
-!     COMPUTE REAL TOROIDAL CURRENT ALONG MIDPLANE (MULTIPLY IZETA BY R/SQRT(G))
-!     IN PHI = 0 PLANE
-!
-         CALL getcurmid (curmid, izeta, gsqrt, r12)
-
-         DO nout = nthreed, nmac, (nmac - nthreed)
-            IF (nout .eq. nmac) THEN
-               IF (.not.lmac) CYCLE
-               WRITE (nout, *) 'FOLLOWING DATA EQUALLY SPACED IN ' //
-     &                         'TOROIDAL FLUX'
-            END IF
-            WRITE (nout, 700)
-            IF (nout .eq. nthreed) THEN
-               WRITE (nout, 710)
-            END IF
-            iotas(1) = two*iotas(2) - iotas(3)
-            iotas(ns+1) = two*iotas(ns) - iotas(ns1)
-            vp(1) = two*vp(2) - vp(3)
-            vp(ns+1) = two*vp(ns) - vp(ns1)
-            pres(1) = two*pres(2) - pres(3)
-            pres(ns+1) = two*pres(ns) - pres(ns1)
-            DO icount = 1, 2*ns - 1
-               js = MOD(imid(icount) - 1, ns) + 1
-               ageo(icount) = ygeo(js)
-               phimid(icount) = toroidal_flux*(js - 1)/(ns1)
-               psimid(icount) = psi(js)
-               volpsi(icount) = vnorm*SUM(vp(2:js))
-               IF (js .eq. 1) THEN
-                  volpsi(icount) = zero
-               END IF
-               dlogidsi = (iotas(js+1)-iotas(js))*ohs/iotaf(js)
-               vprime = p5*vnorm*ohs*(vp(js)+vp(js+1))
-               pprime = (pres(js+1)-pres(js))*ohs
-               rgeo = rmid(icount) + ygeo(js)
-               IF (icount .gt. ns) THEN
-                  rgeo = rgeo - two*ygeo(js)
-               END IF
-               alfa(icount) = -two*pprime*vprime
-     &                      * SQRT(two*volpsi(icount)/rgeo/twopi)
-     &                      / (iotaf(js)*phipf_loc(js))**2
-               shear(icount) = -two*volpsi(icount)*dlogidsi/vprime
-               WRITE (nout, 720) rmid(icount), ygeo(js), psi(js),
-     &                           volpsi(icount), qmid(icount),
-     &                           shear(icount), presmid(icount),
-     &                           alfa(icount), curmid(icount),
-     &                           datamse(icount)
-            END DO
-         END DO
-
-!     Determine q-MIN on the s grid by MIN-splining on the SQRT-s grid
-         nptsx = 2*ns - 1
-
-         wmidx(:nptsx) = one
-         tenmidx(:nptsx) = 0.1_dp
-         rmidx(:nptsx) = rmid(:nptsx)
-         qmidx(:nptsx) = qmid(:nptsx)
-
-         tol = .005_dp
-         sqmin = fmax(zero,one,splints,tol)
-         iotamax = splints(sqmin)
-         qmin3 = -99999.0_dp
-         IF (iotamax .ne. zero) THEN
-            qmin3 = one/iotamax
-         END IF
-         sqmin = sqmin**2
-
-!     Determine q-MIN on a fine r-midplane grid
-         tol = .005_dp
-!     outboard side
-         rqmin1 = fmin(rmid(ns),rmid(nptsx),splintx,tol)
-         qmin1 = splintx(rqmin1)
-         rqmin2 = fmin(rmid(1), rmid(ns), splintx,tol)!outboard side only
-         qmin2 = splintx(rqmin2)
-         IF (rank .EQ. 0) THEN
-            WRITE (nthreed, 730) qmin1, rqmin1, qmin2, rqmin2, qmin3,
-     &                           sqmin
-         END IF
-
-         nchiiota0 = 0
-         total_chi_square = total_b_chi + total_saddle_chi
-     &                    + total_pres_chi + total_mse_chi
-     &                    + total_chi_cur + total_chi_dia
-     &                    + chisqerr(islope0)                        !Total CHISQ of equilibrium fit
-         nchitot = nbfldn + nchiiota0 + nchisaddle + nchipres + nchimse
-     &           + nchicur + nchidia
-         total_chi_square_n = total_chi_square/MAX(1,nchitot)
-         IF (rank.EQ.0) THEN
-            WRITE (nthreed, 900)
-            WRITE (nthreed, 901) (bloopnames(n),nbfld(n), b_chi(n),
-     &                            b_chi(n)/MAX(1,nbfld(n)),n=1,nbsets)
-            WRITE (nthreed, 902) nchisaddle, total_saddle_chi,
-     &                           total_saddle_chi/MAX(1,nchisaddle),
-     &                           nchipres, total_pres_chi,
-     &                           total_pres_chi/MAX(1,nchipres),
-     &                           nchimse, total_mse_chi,
-     &                           total_mse_chi/MAX(1,nchimse), nchicur,
-     &                           total_chi_cur,
-     &                           total_chi_cur/MAX(1,nchicur), nchidia,
-     &                           total_chi_dia, total_chi_dia, nchitot,
-     &                           total_chi_square, total_chi_square_n
-         END IF
-      END IF          !!IF(LRECON)
-
-  220 FORMAT(//,4x,'N     R(data)      Spline',3x,
-     &      'atan[BZ/BT] ATAN[BZ/BT] Chi-Sq-Err',4x,
-     &      'Sigma       BZ(in)     BZ(calc)       BT        q(in)',/,
-     &      12x,'[m]',5x,'SQRT(s)-node',2x,'(in-deg)',2x,'(calc-deg)',
-     &      20x,3(9x,'[T]')/,2x,3('-'),1x,2(3x,9('-')),8(2x,10('-'))/)
-  230 FORMAT(i5,' ',1p,2e12.3,2e12.3,12x,e12.3,6x,
-     &      '- Outer (phantom) Edge -',6x,e12.3)
-  240 FORMAT(i5,' ',1p,2e12.3,8e12.3)
-  250 FORMAT(/' MEAN CHI-SQ ERROR IN STARK DATA MATCH : ',1p,e10.3,/,
-     &      ' RMS ERROR IN STARK DATA MATCH : ',e10.3,2/)
-  300 FORMAT(4x,'N     R(in)      R(calc)',4x,f6.2,
-     &      ' X Pres(in)      Pres(calc)','  Chi-Sq Err       Sigma'/,2x
-     &      ,3('-'),2(2x,10('-')),2(6x,12('-')),2(3x,9('-')),/)
-  310 FORMAT(i5,1p,2e12.3,2e18.3,2e12.3)
-  320 FORMAT(/' MEAN CHI-SQ ERROR IN PRESSURE DATA MATCH: ',
-     &      1p,e10.3,/,' RMS ERROR IN PRESSURE DATA MATCH: ',e10.3/)
-  700 FORMAT(/3x,'RMID[M]',6x,'AMID[M]',6x,'PSI[Wb]',4x,'VOL[M**3]',9x,
-     &   'q(r)',2x,'SHEAR(Spsi)',6x,'P(PASC)',6x,'ALF(P'')',2x,
-     &   'JTOR(A/M**2)',1x,'ATAN(Bz/Bt)[deg]')
-  710 FORMAT(10('-'),9(3x,10('-')))
-  720 FORMAT(1p,e10.3,9(3x,e10.3))
-  730 FORMAT(//' MINIMUM Q :     OUTBOARD SIDE: QMIN= ',f6.3,'  AT R= ',
-     &   f6.3,/,'                  INBOARD SIDE: QMIN= ',f6.3,'  AT R= '
-     &   ,f6.3,/,'                    IN S SPACE: QMIN= ',f6.3,
-     &   '  AT S= ',f6.3,/)
-  900 FORMAT(/,' CHI-SQUARED SUMMARY:',t25,'Type',t50,'Nchi',t65,'ChiSq'
-     &   ,t84,'ChiSq/N'/,t25,'----',t50,'----',t65,'-----',t84,'-------'
-     &   )
-  901 FORMAT(t25,'B-Loops-',a,t50,i3,t60,1p,e12.4,t80,e12.4)
-  902 FORMAT(t25,'Saddle',t50,i3,t60,1p,e12.4,t80,e12.4,/,t25,
-     &   'Pressure',t50,i3,t60,e12.4,t80,e12.4,/,t25,'MSE',t50,i3,
-     &    t60,e12.4,t80,e12.4,/,t25,'Ip',t50,i3,t60,e12.4,t80,
-     &    e12.4,/,t25,'Diamagnetic Flux',t50,i3,t60,e12.4,t80,e12.4,/
-     &   ,t25,'TOTAL',t50,i3,t60,e12.4,t80,e12.4)
 
       END SUBROUTINE eqfor

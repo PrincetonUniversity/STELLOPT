@@ -1,7 +1,6 @@
       SUBROUTINE printout(i0, delt0, w0, lscreen)
       USE vmec_main
       USE realspace
-      USE vsvd
       USE xstuff
 #ifdef _HBANGLE
       USE angle_constraints, ONLY: getrz
@@ -156,7 +155,7 @@ C-----------------------------------------------
          ELSE
             IF(grank.EQ.0) WRITE (nthreed, 42) i0, fsqr, fsqz, fsql,
      1      fsqr1, fsqz1, fsql1, delt0, r00, w, betav,
-     2      ABS(phiedge*phifac), delbsq, fedge
+     2      ABS(phiedge), delbsq, fedge
          ENDIF
       
       ELSE
@@ -178,7 +177,7 @@ C-----------------------------------------------
          ELSE
             IF(grank.EQ.0) WRITE (nthreed, 60) i0, fsqr, fsqz, fsql,
      1      fsqr1, fsqz1, fsql1, delt0, r00, z00, w, betav, 
-     2      ABS(phiedge*phifac), delbsq, fedge
+     2      ABS(phiedge), delbsq, fedge
          ENDIF
       END IF
 

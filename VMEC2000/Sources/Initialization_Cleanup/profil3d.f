@@ -1,7 +1,6 @@
       SUBROUTINE profil3d_par(rmn, zmn, lreset, linterp)
       USE vmec_main
       USE vmec_params
-      USE vsvd
       USE vspline, ONLY: sknots, pknots, hstark, hthom
       USE realspace
       USE xstuff
@@ -172,44 +171,17 @@
          END DO
       END DO
 
-!     STORE PHIFAC IN XC(NEQS1) ARRAY ELEMENT
-!     STORE DEL-RMSE IN XC(NEQS2) ARRAY ELEMENT
-
-      pxc(neqs1) = phifac
-      pxc(neqs2) = 0
-      pscalxc(neqs1) = 1
-      pscalxc(neqs2) = 1
-
 #ifdef _HBANGLE
       IF (.NOT.linterp) THEN
          CALL store_init_array(xc)
       END IF
 #endif
 
-      IF (lrecon) THEN ! FIXME: Execution will always terminate of lrecon=T. Consider removing all lrecon code.
-         STOP 'Check sqrts passed to setup_int; should be psqrts'
-!
-!       COMPUTE SPLINE SEGMENTS FOR INTEGRALS OF FUNCTIONS IN SPLININT
-!       THESE ARE FIXED DURING THE ITERATION SEQUENCE FOR FIXED SK,PK-NOTS,
-!       BUT MAY CHANGE IF SKNOTS, PKNOTS CHANGE FOR DIFFERENT DATA FILES
-!
-         CALL setup_int(sknots, shalf(2), hstark, w_ia, w1_ia, u_ia,
-     &                  u1_ia, nk_ia, isnodes, ns1)
-!
-!       COMPUTE SPLINE SEGMENTS FOR INTEGRALS OF DERIVATIVES IN SPLININT
-!
-         CALL setup_int(sknots, sqrts, hstark, w_ib, w1_ib, u_ib,
-     &                  u1_ib, nk_ib, isnodes, ns)
-         CALL setup_int(pknots, sqrts, hthom, w_pb, w1_pb, u_pb,
-     &                  u1_pb, nk_pb, ipnodes, ns)
-      END IF
-
       END SUBROUTINE profil3d_par
 
       SUBROUTINE profil3d(rmn, zmn, lreset, linterp)
       USE vmec_main
       USE vmec_params
-      USE vsvd
       USE vspline, ONLY: sknots, pknots, hstark, hthom
       USE realspace
       USE xstuff
@@ -359,36 +331,8 @@
       scalxc(1+irzloff:2*irzloff)   = scalxc(:irzloff)              !Z-components
       scalxc(1+2*irzloff:3*irzloff) = scalxc(:irzloff)              !Lamda-components
 
-!
-!     STORE PHIFAC IN XC(NEQS1) ARRAY ELEMENT
-!     STORE DEL-RMSE IN XC(NEQS2) ARRAY ELEMENT
-!
-      xc(neqs1) = phifac
-      xc(neqs2) = 0
-      scalxc(neqs1) = 1
-      scalxc(neqs2) = 1
-
 #ifdef _HBANGLE
       IF (.NOT.linterp) CALL store_init_array(xc)
 #endif
-
-      IF (lrecon) THEN
-!
-!       COMPUTE SPLINE SEGMENTS FOR INTEGRALS OF FUNCTIONS IN SPLININT
-!       THESE ARE FIXED DURING THE ITERATION SEQUENCE FOR FIXED SK,PK-NOTS,
-!       BUT MAY CHANGE IF SKNOTS, PKNOTS CHANGE FOR DIFFERENT DATA FILES
-!
-         CALL setup_int(sknots, shalf(2), hstark, w_ia, w1_ia, u_ia,
-     &                  u1_ia, nk_ia, isnodes, ns1)
-c-08-96 CALL setup_int(pknots,shalf(2),hthom,w_pa,w1_pa,u_pa,u1_pa,
-c-08-96 >  nk_pa,ipnodes,ns1)
-!
-!       COMPUTE SPLINE SEGMENTS FOR INTEGRALS OF DERIVATIVES IN SPLININT
-!
-         CALL setup_int(sknots, sqrts, hstark, w_ib, w1_ib, u_ib,
-     &                  u1_ib, nk_ib, isnodes, ns)
-         CALL setup_int(pknots, sqrts, hthom, w_pb, w1_pb, u_pb,
-     &                  u1_pb, nk_pb, ipnodes, ns)
-      END IF
       
       END SUBROUTINE profil3d

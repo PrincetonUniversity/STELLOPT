@@ -2,7 +2,6 @@
       USE vmec_main
       USE vmec_params, ONLY: bad_jacobian_flag, successful_term_flag,
      &                       norm_term_flag
-      USE vsvd
       USE xstuff
       USE precon2d, ONLY: ictrl_prec2d, l_comp_prec2D, 
      &                    compute_blocks_par, compute_blocks
