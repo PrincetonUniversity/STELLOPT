@@ -61,7 +61,11 @@
       END DO
 
       nsmin=MAX(2,t1lglob); nsmax=MIN(ns-1,trglob)
-      IF (nsmin.EQ.1) chipf(1) = chips(2)
+      IF (t1lglob .eq. 1 .and. trglob .gt. 2) THEN
+         chipf(1) = c1p5*chips(2) - p5*chips(3)
+      ELSE IF (t1lglob .eq. 1) THEN
+         chipf(1) = chips(2)
+      END IF
       chipf(nsmin:nsmax) = (chips(nsmin:nsmax) + chips(nsmin+1:nsmax+1))/2
       IF (nsmax.EQ.ns) chipf(ns)    = c1p5*chips(ns)- p5*chips(ns-1)
 

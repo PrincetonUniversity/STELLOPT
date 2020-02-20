@@ -13,7 +13,6 @@
       USE vmec_persistent
       USE vparams, p5 => cp5, two => c2p0
       USE vac_persistent
-      USE vsvd
       USE vspline
       USE xstuff
       USE vmec_io
@@ -133,7 +132,7 @@
 !-----------------------------------------------
 !   L o c a l   V a r i a b l e s
 !-----------------------------------------------
-      INTEGER :: j, js, jlk, mn, lk, iasym, ireconstruct,
+      INTEGER :: j, js, jlk, mn, lk, iasym,
      1           m, n, k, iwout0, n1, nwout, istat, i, indx1(1),
      2           mnmax_nyq0, mnyq0, nnyq0, nwout2   ! nwout2 by J.Geiger
      3          ,isgn, js2, nfort      !for diagno 1.5
@@ -302,11 +301,6 @@
       wout_file = 'wout_' // TRIM(input_extension) // '.nc'
       CALL cdf_open(nwout,wout_file,'w',iwout0)
       IF (iwout0 .ne. 0) STOP 'Error opening wout.nc file VMEC WROUT'
-
-      IF (.not. lrecon) THEN
-         itse = 0
-         imse2 = 0
-      END IF
       
 !================================
 ! Define Variables
@@ -356,11 +350,6 @@
       CALL cdf_define(nwout, vn_fsql, fsql)
       CALL cdf_define(nwout, vn_fsqr, fsqr)
       CALL cdf_define(nwout, vn_fsqz, fsqz)
-
-      IF (lrecon) THEN
-         CALL cdf_define(nwout, vn_mse, imse2)
-         CALL cdf_define(nwout, vn_thom, itse)
-      END IF
 
       CALL cdf_define(nwout, vn_nextcur, nextcur)
       CALL cdf_define(nwout, vn_extcur, extcur(1:nextcur), 
@@ -684,11 +673,6 @@
       CALL cdf_write(nwout, vn_fsqr, fsqr)
       CALL cdf_write(nwout, vn_fsqz, fsqz)
 
-      IF (lrecon) THEN
-         CALL cdf_write(nwout, vn_mse, imse2-1)
-         CALL cdf_write(nwout, vn_thom, itse)
-      END IF
-
       CALL cdf_write(nwout, vn_nextcur, nextcur)
       IF (nextcur .gt. 0) THEN
          CALL cdf_write(nwout, vn_extcur, extcur(1:nextcur))
@@ -735,13 +719,6 @@
          ELSE
             iasym = 0
          END IF
-         IF (lrecon) THEN
-            ireconstruct = 1
-         ELSE
-            itse = 0
-            imse2 = 0
-            ireconstruct = 0
-         END IF
 
 !
 !     Insert version information into wout file. This will be parsed in
@@ -759,15 +736,14 @@
 #ifdef _ANIMEC
          WRITE (nwout2, *) wb, wpar, gamma, pfac,
 #else
-         WRITE (nwout2, *) wb, wp, gamma, pfac,
+         WRITE (nwout2, *) wb, wp, gamma, 1,
 #endif
      1    rmax_surf, rmin_surf, zmax_surf
 
          WRITE (nwout2, *) nfp, ns, mpol, ntor, mnmax, mnmax_nyq0,
-     1     itfsq, iter2, iasym, ireconstruct, ier_flag
+     1     itfsq, iter2, iasym, 0, ier_flag
 
-         WRITE (nwout2, *) imse2 - 1, itse, nbsets, nobd, nextcur,
-     1     nstore_seq
+         WRITE (nwout2, *) 0, 0, nbsets, nobd, nextcur, nstore_seq
          IF (nbsets .gt. 0) WRITE (nwout2, *) (nbfld(i),i=1,nbsets)
          WRITE (nwout2, '(a)') mgrid_file
 
@@ -779,7 +755,7 @@
 
       IF (.not. lwrite) GOTO 970   ! J Geiger: in case lwouttxt is not true
                                    !           jump to close nc-file
-      ALLOCATE (xfinal(neqs2), stat=js)
+      ALLOCATE (xfinal(neqs), stat=js)
       IF (js .NE. 0) STOP 'Allocation error for xfinal in WROUT!'
       xfinal = xc
 #ifdef _HBANGLE
@@ -1588,54 +1564,6 @@
             write(6,*)"Check mgrid-file and namelist!"
          ENDIF
       ENDIF                   !added for diagno version 1.5 end
-
-!-----------------------------------------------
-!     DATA AND MSE FITS
-!-----------------------------------------------
-         IF (.not.lrecon) GOTO 950
-
-         IF (imse2 - 1.gt.2 .or. itse.gt.0) THEN
-            WRITE (nwout2, *) tswgt, msewgt
-            CALL smoothdata(nwout2)
-
-!       These knot values are on SQRT(s) grid
-            presfactor = mu0*pthommax             !!*pfac moved to getthom
-            WRITE (nwout2, *) isnodes, (sknots(i),ystark(i),y2stark(i),
-     1          i=1,isnodes)
-            WRITE (nwout2, *) ipnodes, (pknots(i),presfactor*ythom(i),
-     1          presfactor*y2thom(i),i=1,ipnodes)
-            WRITE (nwout2, *)(datamse(i),rmid(i),qmid(i),shear(i),
-     1          presmid(i),alfa(i),curmid(i),i=1,2*ns-1)
-            WRITE (nwout2, *)(rstark(i),datastark(i),qmeas(i),i=1,imse)
-            WRITE (nwout2, *)(rthom(i),datathom(i),i=1,itse)
-         ENDIF
-         IF (nobd .gt. 0) THEN
-            WRITE (nwout2, *) (dsiext(i),plflux(i),dsiobt(i),i=1,nobd)
-            WRITE (nwout2, *) flmwgt
-         ENDIF
-         IF (nbfldn .gt. 0) THEN
-            DO n = 1, nbsets
-               WRITE (nwout2, *) (bcoil(i,n),plbfld(i,n),bbc(i,n),
-     1             i=1,nbfld(n))
-            END DO
-            WRITE (nwout2, *) bcwgt
-         ENDIF
-
-         WRITE (nwout2, *) phidiam, delphid
-!
-!     Write Limiter & Prout plotting specs
-!
-         WRITE (nwout2, *) nsets, nparts, nlim
-         WRITE (nwout2, *) (nsetsn(i),i=1,nsets)
-         WRITE (nwout2, *) (((pfcspec(i,j,k),i=1,nparts),j=1,nsetsn(k)),
-     1       k=1,nsets)
-         WRITE (nwout2, *) (limitr(i), i=1,nlim)
-         WRITE (nwout2, *) ((rlim(i,j),zlim(i,j),i=1,limitr(j)),
-     1       j=1,nlim)
-         WRITE (nwout2, *) nrgrid, nzgrid
-         WRITE (nwout2, *) tokid
-         WRITE (nwout2, *) rx1, rx2, zy1, zy2, condif
-         WRITE (nwout2, *) imatch_phiedge
 
       ENDIF
 
