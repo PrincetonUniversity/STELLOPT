@@ -149,6 +149,7 @@ and BEASM3D\_INPUT namelists in it.
 | -coil | NONE | Coils File |
 | -mgrid | NONE | Makegrid style vacuum grid file |
 | -vessel | NONE | First wall file |
+| -beamlet | NONE | Beamlet deffintion HDF5 file. |
 | -vac | NONE | Only compute the vacuum field |
 | -beam_simple | NONE | Assume monoenergetic beams (normally 1% variance around injection energy) |
 | -collisions | NONE | Force use of slowing down/scattering operator. |

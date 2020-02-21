@@ -35,6 +35,7 @@ also chosen OpenMPI but the sources could also be built with MPICH.
     sudo ln -sf /opt/local/bin/mpifort-openmpi-gcc8 /opt/local/bin/mpifort
     sudo port install hdf5 +fortran +gccX +hl +openmpi
     sudo port install netcdf-fortran +gccX +openmpi
+    sudo port install fftw-3 +gccX +openmpi
     sudo port install pgplot +gccX
     sudo port install OpenBLAS +gccX +lapack +native
     sudo port install scalapack +gccX +openmpi +openblas
@@ -51,7 +52,6 @@ also chosen OpenMPI but the sources could also be built with MPICH.
     sudo port install py37-matplotlib +dvipng +pyside +qt4 +gccX
     sudo port install py37-h5py +gcc7 +openmpi
     # The following are needed for GENE
-    sudo port install fftw-3 +gccX +openmpi
     sudo port install petsc +gccX +openmpi +openblas -accelerate +metis +mumps +parmetis +suitesparse +superlu_dist +complex
     sudo port install slepc +gccX +openmpi +openblas +arpack -accelerate
     # NCARG has in issue with ESMF, but you don't need it for STELLOPT just XGTOVMI
@@ -100,37 +100,14 @@ appropriate location
 ([see ticket \#43615](https://trac.macports.org/ticket/42541)). Then
 rerun the port install command for ncarg.
 
-5\. Now create a directory in which you wish to compile STELLOPT and
-place the STELLOPT ZIP file in that directory. Then unzip it.
+5\. Now pull stellopt with the command 
 
-6\. You\'ll need to install the
-[PREACT library](http://w3.pppl.gov/ntcc/PREACT/) if you wish to use the
-BEAMS3D code. Create a new directory call NTCC and download the PREACT
-tarball into it. Then run the following commands (you need to make sure
-you have a v2 of Python loaded not v3)
+    git clone git@github.com:PrincetonUniversity/STELLOPT.git
 
-    mkdir NTCC
-    cd NTCC
-    cp ~/Downloads/preact.tar.gz .
-    tar -xf preact.tar.gz
-    make FORTRAN_VARIANT=GCC
 
-7\. Pull stellopt from Git
+6\. Set the environement variable
 
-8\. Now you should be able to run the setup script and compile the
-STELLOPT family of codes.
+    export MACHINE=macports
+    build_all
 
-If you run into problems regarding HDF5 or NetCDF durring compilation
-please verify that you\'ve loaded the proper groups in MacPorts. This is
-accomplished by typing
-
-    >sudo port select --summary
-    Name    Selected               Options
-    ====    ========               =======
-    db      none                   db48 none
-    gcc     mp-gcc49               dragonegg-3.3-gcc48 mp-gcc48 mp-gcc49 none
-    llvm    none                   mp-llvm-3.3 mp-llvm-3.5 none
-    mpi     openmpi-gcc49-fortran  mpich-mp-fortran openmpi-gcc49-fortran openmpi-mp-fortran none
-    python  none                   python25-apple python26-apple python27 python27-apple none
-
-The important part is that the GCC and MPI groups are selected properly.
+This will build all codes starting with LIBSTELL.  If you see errors durring compilation of LIBSTELL please run `build_all >& stellopt_build.log` and send the full stellopt_build.log file to a developer for debugging.
