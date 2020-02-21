@@ -128,7 +128,7 @@
             Zatom(k)    = Zatom2(i)
             beam(k)     = beam2(i)
             weight(k)   = weight2(i)
-            t_end(k)    = t_end2(i)
+            t_end(k)    = MAXVAL(t_end_in)
             k = k + 1
          END DO
          DEALLOCATE(R_lines, Z_lines, PHI_lines, vll_lines, moment_lines, neut_lines, end_state)
