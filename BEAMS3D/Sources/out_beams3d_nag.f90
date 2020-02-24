@@ -39,7 +39,7 @@ SUBROUTINE out_beams3d_nag(t, q)
     !     jint      Index along phi
     !-----------------------------------------------------------------------
     INTEGER             :: ier
-    DOUBLE PRECISION         :: x0,y0,z0,x1,y1,z1,xw,yw,zw
+    DOUBLE PRECISION         :: x0,y0,z0,x1,y1,z1,xw,yw,zw, vperp
     DOUBLE PRECISION    :: q2(4),qdot(4)
     LOGICAL             :: lhit
     ! For splines
@@ -90,9 +90,9 @@ SUBROUTINE out_beams3d_nag(t, q)
                        hx,hxi,hy,hyi,hz,hzi,&
                        MODB4D(1,1,1,1),nr,nphi,nz)
        B_lines(mytdex, myline) = fval(1)
-       xw = SQRT(2*moment*fval(1)/mymass)
+       vperp = SQRT(2*moment*fval(1)/mymass)
        l = MAX(MIN(1+ns_prof/2+FLOOR(0.5*ns_prof*q(4)/partvmax),ns_prof),1)
-       m = MAX(MIN(CEILING(ns_prof*xw/partvmax),ns_prof),1)
+       m = MAX(MIN(CEILING(ns_prof*vperp/partvmax),ns_prof),1)
        dist_prof(mybeam,l,m) = dist_prof(mybeam,l,m) + weight(myline)
        !CALL EZspline_interp(S_spl,q(1),x0,q(3),y0,ier)
        !CALL EZspline_interp(U_spl,q(1),x0,q(3),z0,ier)
@@ -134,7 +134,7 @@ SUBROUTINE out_beams3d_nag(t, q)
              end_state(myline) = 2
              CALL fpart_nag(t,q2,qdot)
              qdot(4)=0
-             wall_load(mybeam,l) = wall_load(mybeam,l) + weight(myline)*0.5*mymass*SUM(qdot*qdot)/get_wall_area(l)
+             wall_load(mybeam,l) = wall_load(mybeam,l) + weight(myline)*0.5*mymass*(SUM(qdot*qdot)+vperp*vperp)/get_wall_area(l)
           END IF
           IF (lhitonly) THEN
              R_lines(0,myline)      = SQRT(xlast*xlast+ylast*ylast)
