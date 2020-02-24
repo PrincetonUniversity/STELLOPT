@@ -20,7 +20,7 @@ MODULE beams3d_physics_mod
                                mymass, myv_neut, B_temp, rand_prob, &
                                cum_prob, tau, &
                                epower_prof, ipower_prof, &
-                               ns_prof, end_state
+                               ns_prof, end_state, fact_crit
       USE beams3d_grid, ONLY: BR_spl, BZ_spl, delta_t, BPHI_spl, MODB_spl, MODB4D, &
                               phimax, S4D, TE4D, NE4D, TI4D, ZEFF4D, &
                               nr, nphi, nz, rmax, rmin, zmax, zmin, &
@@ -167,7 +167,9 @@ MODULE beams3d_physics_mod
                   coulomb_log = 24 - log( sqrt(ne_temp*1E-6)/(te_temp) )
                END IF
                IF (coulomb_log .le. 1) coulomb_log = 1
-               v_crit = (( 0.75*sqrt_pi*electron_mass*inv_mymass )**0.33333333333 )*sqrt(te_temp)*5.93096892024D5
+               ! Callen Ch2 pg41 eq2.135 (fact*Vtherm; Vtherm = SQRT(2*E/mass) so E in J not eV)
+               v_crit = fact_crit*SQRT(2*te_temp*inv_mymass*e_charge)
+               !v_crit = (( 0.75*sqrt_pi*electron_mass*inv_mymass )**0.33333333333 )*sqrt(te_temp)*5.93096892024D5
                vcrit_cube = v_crit*v_crit*v_crit
                tau_spit = 3.777183D41*mymass*SQRT(te_cube)/(ne_temp*myZ*myZ*coulomb_log)  ! note ne should be in m^-3 here
                tau_spit_inv = (1.0D0)/tau_spit
@@ -195,6 +197,7 @@ MODULE beams3d_physics_mod
 
             !-----------------------------------------------------------
             !  Thermalize particle or adjust vll and moment
+            !  Fowler et al. NF 1990 30 (6) 997--1010
             !-----------------------------------------------------------
             IF (newspeed < v_s) THEN  ! Thermalize
                dve       = dve/reduction

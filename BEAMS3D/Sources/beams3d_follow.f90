@@ -21,7 +21,7 @@ SUBROUTINE beams3d_follow
     USE beams3d_lines
     USE beams3d_grid, ONLY: tmin, tmax, delta_t, BR_spl, BZ_spl, BPHI_spl, &
                             MODB_spl, S_spl, U_spl, TE_spl, NE_spl, TI_spl, &
-                            TE_spl, TI_spl, wall_load, wall_shine
+                            TE_spl, TI_spl, wall_load, wall_shine, plasma_mass
     USE mpi_params ! MPI
     USE beams3d_physics_mod
     USE beams3d_write_par
@@ -65,6 +65,9 @@ SUBROUTINE beams3d_follow
     DOUBLE PRECISION :: rkh_work(4, 2)
     DOUBLE PRECISION :: qdot1(4)
     CHARACTER*1 :: relab
+
+    DOUBLE PRECISION, PARAMETER :: electron_mass = 9.10938356D-31 !m_e
+    DOUBLE PRECISION, PARAMETER :: sqrt_pi       = 1.7724538509   !pi^(1/2)
 
     DOUBLE PRECISION, PARAMETER :: lendt_m = 0.05  ! Maximum length to travel before updating physics [m]
     !-----------------------------------------------------------------------
@@ -339,6 +342,7 @@ SUBROUTINE beams3d_follow
                     mymass = mass(l)
                     mybeam = Beam(l)
                     moment = mu_start(l)
+                    fact_crit = (3*sqrt_pi*sqrt(mymass/electron_mass)*mymass/plasma_mass)**(1.0/3.0)
                     myv_neut(:) = v_neut(:,myline)
                     IF (lbeam) lneut = .TRUE.
                     CALL out_beams3d_nag(tf_nag,q)
