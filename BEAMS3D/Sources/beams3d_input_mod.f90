@@ -15,7 +15,7 @@
       USE beams3d_lines, ONLY: nparticles
       USE beams3d_grid, ONLY: nr, nphi, nz, rmin, rmax, zmin, zmax, &
                               phimin, phimax, vc_adapt_tol, nte, nne, nti,&
-                              nzeff, npot
+                              nzeff, npot, plasma_mass
       USE safe_open_mod, ONLY: safe_open
       USE mpi_params
       USE mpi_inc
@@ -68,7 +68,7 @@
                                   NE_AUX_S, NE_AUX_F, TI_AUX_S, TI_AUX_F, &
                                   POT_AUX_S, POT_AUX_F, ZEFF_AUX_S, ZEFF_AUX_F, &
                                   P_beams, ldebug, ne_scale, te_scale, ti_scale, &
-                                  zeff_scale
+                                  zeff_scale, plasma_mass
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -135,6 +135,7 @@
       te_scale = 1.0
       ti_scale = 1.0
       zeff_scale = 1.0
+      plasma_mass = 1.6726219E-27 ! Assume Hydrogen
       ! Read namelist
 !      IF (ithread == local_master) THEN
          istat=0
@@ -240,6 +241,7 @@
       WRITE(iunit_out,outflt) 'FOLLOW_TOL',follow_tol
       WRITE(iunit_out,outflt) 'VC_ADAPT_TOL',vc_adapt_tol
       WRITE(iunit_out,outint) 'NPARTICLES_START',nparticles_start
+      WRITE(iunit_out,outflt) 'PLASMA_MASS',plasma_mass
       IF (lbeam) THEN
          WRITE(iunit_out,"(A)") '!---------- Profiles ------------'
          WRITE(iunit_out,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'NE_AUX_S',(ne_aux_s(n), n=1,nne)
@@ -255,6 +257,7 @@
          DO n = 1, nbeams
             WRITE(iunit_out,"(A,I2.2)") '!---- BEAM #',n
             WRITE(iunit_out,vecvar) 'T_END_IN',n,t_end_in(n)
+            WRITE(iunit_out,vecvar) 'DEX_BEAMS',n,dex_beams(n)
             WRITE(iunit_out,vecvar) 'DIV_BEAMS',n,div_beams(n)
             WRITE(iunit_out,vecvar) 'ADIST_BEAMS',n,adist_beams(n)
             WRITE(iunit_out,vecvar) 'ASIZE_BEAMS',n,asize_beams(n)
