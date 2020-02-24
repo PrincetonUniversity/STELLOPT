@@ -20,7 +20,9 @@ MODULE beams3d_physics_mod
                                mymass, myv_neut, B_temp, rand_prob, &
                                cum_prob, tau, &
                                epower_prof, ipower_prof, &
-                               ns_prof, end_state, fact_crit
+                               end_state, fact_crit, &
+                               ns_prof1, ns_prof2, ns_prof3, ns_prof4, &
+                               ns_prof5
       USE beams3d_grid, ONLY: BR_spl, BZ_spl, delta_t, BPHI_spl, MODB_spl, MODB4D, &
                               phimax, S4D, TE4D, NE4D, TI4D, ZEFF4D, &
                               nr, nphi, nz, rmax, rmin, zmax, zmin, &
@@ -213,7 +215,7 @@ MODULE beams3d_physics_mod
                q(4) = vll
                RETURN
             END IF
-            l = MAX(MIN(CEILING(SQRT(s_temp)*ns_prof),ns_prof),1)
+            l = MAX(MIN(CEILING(SQRT(s_temp)*ns_prof1),ns_prof1),1)
             epower_prof(mybeam,l) = epower_prof(mybeam,l) + mymass*dve*dt*speed*weight(myline)
             ipower_prof(mybeam,l) = ipower_prof(mybeam,l) + mymass*dvi*dt*speed*weight(myline)
             vll = vfrac*vll

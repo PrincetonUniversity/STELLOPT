@@ -260,22 +260,34 @@
                                       ATT='Maximum velocity of dist func [m/s]',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'partvmax',ier)
                IF (ALLOCATED(epower_prof)) THEN
-                     CALL write_scalar_hdf5(fid,'ns_prof',ier,INTVAR=ns_prof,&
-                                         ATT='Rho Grid Points',ATT_NAME='description')
-                     IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ns_prof',ier)
-                     CALL write_var_hdf5(fid,'ndot_prof',nbeams,ns_prof,ier,DBLVAR=ndot_prof,&
+                     CALL write_scalar_hdf5(fid,'ns_prof1',ier,INTVAR=ns_prof1,&
+                                         ATT='Rho Grid Points [0,1]',ATT_NAME='description')
+                     IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ns_prof1',ier)
+                     CALL write_scalar_hdf5(fid,'ns_prof2',ier,INTVAR=ns_prof2,&
+                                         ATT='U Grid Points [0,2pi]',ATT_NAME='description')
+                     IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ns_prof2',ier)
+                     CALL write_scalar_hdf5(fid,'ns_prof3',ier,INTVAR=ns_prof3,&
+                                         ATT='V Grid Points [0,2pi/nfp]',ATT_NAME='description')
+                     IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ns_prof3',ier)
+                     CALL write_scalar_hdf5(fid,'ns_prof4',ier,INTVAR=ns_prof4,&
+                                         ATT='VLL Grid Points[-vmax,vmax]',ATT_NAME='description')
+                     IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ns_prof4',ier)
+                     CALL write_scalar_hdf5(fid,'ns_prof5',ier,INTVAR=ns_prof5,&
+                                         ATT='Vperp Grid Points [0, vmax]',ATT_NAME='description')
+                     IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ns_prof5',ier)
+                     CALL write_var_hdf5(fid,'ndot_prof',nbeams,ns_prof1,ier,DBLVAR=ndot_prof,&
                                          ATT='Fast Ion Source [m^-3/s]',ATT_NAME='description')
                      IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ndot_prof',ier)
-                     CALL write_var_hdf5(fid,'epower_prof',nbeams,ns_prof,ier,DBLVAR=epower_prof,&
+                     CALL write_var_hdf5(fid,'epower_prof',nbeams,ns_prof1,ier,DBLVAR=epower_prof,&
                                          ATT='Electron Power Deposition [W*m^-3]',ATT_NAME='description')
                      IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'epower_prof',ier)
-                     CALL write_var_hdf5(fid,'ipower_prof',nbeams,ns_prof,ier,DBLVAR=ipower_prof,&
+                     CALL write_var_hdf5(fid,'ipower_prof',nbeams,ns_prof1,ier,DBLVAR=ipower_prof,&
                                          ATT='Ion Power Deposition [W*m^-3]',ATT_NAME='description')
                      IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ipower_prof',ier)
-                     CALL write_var_hdf5(fid,'j_prof',nbeams,ns_prof,ier,DBLVAR=j_prof,&
+                     CALL write_var_hdf5(fid,'j_prof',nbeams,ns_prof1,ier,DBLVAR=j_prof,&
                                          ATT='Total Beam Current Density [A*m^-2]',ATT_NAME='description')
                      IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'J_prof',ier)
-                     CALL write_var_hdf5(fid,'dist_prof',nbeams,ns_prof,ns_prof,ier,DBLVAR=dist_prof,&
+                     CALL write_var_hdf5(fid,'dist_prof',nbeams,ns_prof1,ns_prof2,ns_prof3,ns_prof4,ns_prof5,ier,DBLVAR=dist_prof,&
                                          ATT='Distribution Function [part/s]',ATT_NAME='description')
                END IF
                IF (lbeam) THEN

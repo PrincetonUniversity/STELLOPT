@@ -178,8 +178,8 @@
       IF (lbeam .and. .not.ldepo) THEN
 
          ! Grid in rho, units in [/m^3]
-         DO k = 2, ns_prof
-            s2 = REAL(k)/REAL(ns_prof)
+         DO k = 2, ns_prof1
+            s2 = REAL(k)/REAL(ns_prof1)
             CALL EZspline_interp(Vp_spl_s,s2,vp_temp,ier)
             vp_temp = vp_temp*2*s2
             epower_prof(:,k) = epower_prof(:,k)/vp_temp
