@@ -16,7 +16,7 @@
       USE beams3d_lines
       USE beams3d_grid, ONLY: nr, nphi, nz, B_R, B_PHI, B_Z, raxis, &
                                  zaxis, phiaxis, S_ARR, U_ARR, POT_ARR, &
-                                 ZEFF_ARR, TE, TI, NE, wall_load, wall_shine
+                                 ZEFF_ARR, TE, TI, NE, wall_load, wall_shine, plasma_mass
       USE beams3d_runtime, ONLY: id_string, npoinc, nbeams, beam, t_end, lverb, &
                                     lvmec, lpies, lspec, lcoil, lmgrid, lbeam, lascot, &
                                     lvessel, lvac, lbeam_simple, handle_err, nparticles_start, &
@@ -79,6 +79,8 @@
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'nphi',ier)
                CALL write_scalar_hdf5(fid,'nz',ier,INTVAR=nz,ATT='Number of Vertical Gridpoints',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'nz',ier)
+               CALL write_scalar_hdf5(fid,'plasma_mass',ier,DBLVAR=plasma_mass,ATT='Plasma Mass [kg]',ATT_NAME='description')
+               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'plasma_mass',ier)
                CALL write_var_hdf5(fid,'raxis',nr,ier,DBLVAR=raxis,ATT='Radial Axis [m]',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'raxis',ier)
                CALL write_var_hdf5(fid,'phiaxis',nphi,ier,DBLVAR=phiaxis,ATT='Toroidal Axis [rad]',ATT_NAME='description')

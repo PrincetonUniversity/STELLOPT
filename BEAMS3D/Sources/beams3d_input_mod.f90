@@ -307,6 +307,7 @@
       CALL MPI_BCAST(phimin,1,MPI_REAL8, local_master, comm,istat)
       CALL MPI_BCAST(phimax,1,MPI_REAL8, local_master, comm,istat)
       CALL MPI_BCAST(vc_adapt_tol,1,MPI_REAL8, local_master, comm,istat)
+      CALL MPI_BCAST(plasma_mass,1,MPI_REAL8, local_master, comm,istat)
 
       CALL MPI_BCAST(nte,1,MPI_INTEGER, local_master, comm,istat)
       CALL MPI_BCAST(nne,1,MPI_INTEGER, local_master, comm,istat)
