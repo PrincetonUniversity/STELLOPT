@@ -43,7 +43,9 @@ license), and a Runge-Kutta-Hutta 6-th order 8 step method
 ([D. Sarafyan, J. Math. Anal. Appl. 40, 436-455 (1972)](http://dx.doi.org/10.1016/0022-247X(72)90062-5))
 . The calculation of field line trajectories is parallelized over each
 field line. Thus each processor can follow each field line independently
-to speed computation.
+to speed computation.  It should be noted that `PHI_END` and `PHI_START`
+define the direction of integration.  The `-reverse` flag is present to
+aide in switching the sign of `PHI_END` automatically.
 
 ![\"\"](images/poinc3d_ncsx_c09r00_vac.jpg)
 
@@ -190,11 +192,12 @@ and FIELDLINES_IN namelists in it.
 | -vac    | NONE | Only compute the vacuum field | 
 | -hitonly | NONE | Only save strikepoint locations (used in conjunction with -vessel) | 
 | -full | NONE | Auto calculate axis and edge maximum resolution | 
+| -reverse | NONE | Follow particles in oposite direction. | 
 | -edge | NONE | Place all starting points at VMEC boundary. | 
-| -noverb | NONE | Suppresses screen output | 
 | -field | NONE | Outputs the B-Field on the cylindrical grid only. | 
 | -raw | NONE | Treats EXTCUR array as raw values (EXTCUR is a scale factor applied to what\'s in the coils file). | 
 | -auto | NONE | Starting points set equal to radial grid and run from the min to max values of R_START and Z_START | 
+| -noverb | NONE | Suppresses screen output | 
 | -help | NONE | Print help message |
 
 In it\'s simplest invokation the code requires a VMEC input file and some source of vacuum field.  Please note that FIELDLINES takes advantage of shared memory MPI so the user must request full nodes
