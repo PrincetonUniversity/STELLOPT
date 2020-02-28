@@ -170,7 +170,8 @@ MODULE beams3d_physics_mod
                END IF
                IF (coulomb_log .le. 1) coulomb_log = 1
                ! Callen Ch2 pg41 eq2.135 (fact*Vtherm; Vtherm = SQRT(2*E/mass) so E in J not eV)
-               v_crit = fact_crit*SQRT(2*te_temp*inv_mymass*e_charge)
+               !v_crit = fact_crit*SQRT(2*te_temp*inv_mymass*e_charge)
+               v_crit = fact_crit*SQRT(te_temp)
                !v_crit = (( 0.75*sqrt_pi*electron_mass*inv_mymass )**0.33333333333 )*sqrt(te_temp)*5.93096892024D5
                vcrit_cube = v_crit*v_crit*v_crit
                tau_spit = 3.777183D41*mymass*SQRT(te_cube)/(ne_temp*myZ*myZ*coulomb_log)  ! note ne should be in m^-3 here

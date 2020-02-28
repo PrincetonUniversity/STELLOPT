@@ -68,6 +68,7 @@ SUBROUTINE beams3d_follow
 
     DOUBLE PRECISION, PARAMETER :: electron_mass = 9.10938356D-31 !m_e
     DOUBLE PRECISION, PARAMETER :: sqrt_pi       = 1.7724538509   !pi^(1/2)
+    DOUBLE PRECISION, PARAMETER :: e_charge      = 1.60217662E-19 !e_c
 
     DOUBLE PRECISION, PARAMETER :: lendt_m = 0.05  ! Maximum length to travel before updating physics [m]
     !-----------------------------------------------------------------------
@@ -249,19 +250,26 @@ SUBROUTINE beams3d_follow
             CASE ("RKH68")
                 ier = 0
                 DO l = mystart, myend
+                    myline = l
+                    mytdex = 0
                     ltherm = .false.
                     lneut  = .false.
                     q(1) = R_start(l)
                     q(2) = phi_start(l)
                     q(3) = Z_start(l)
                     q(4) = vll_start(l)
+                    xlast = q(1)*cos(q(2))
+                    ylast = q(1)*sin(q(2))
+                    zlast = q(3)
                     B_temp(:) = 1.0
                     t_nag = 0.0
                     tf_nag = 0.0
                     mycharge = charge(l)
                     myZ = Zatom(l)
                     mymass = mass(l)
+                    mybeam = Beam(l)
                     moment = mu_start(l)
+                    fact_crit = SQRT(2*e_charge/mymass)*(3*sqrt_pi*sqrt(mymass/electron_mass)*mymass/plasma_mass)**(1.0/3.0)
                     myv_neut(:) = v_neut(:,myline)
                     IF (lbeam) lneut = .TRUE.
                     CALL out_beams3d_nag(tf_nag,q)
@@ -283,6 +291,7 @@ SUBROUTINE beams3d_follow
                        mytdex = 3
                        tf_nag = tf_nag - dt  ! Because out advances t by dt
                        dt_out = (t_end(l) - t_nag)/(npoinc-2) ! Adjust dt slightly to keep indexing correct.
+                       CALL FLUSH(6)
                     END IF
                     DO
                         CALL drkhvg(t_nag, q, neqs_nag, dt, 2, fpart_rkh68, rkh_work, iopt, ier)
@@ -294,7 +303,7 @@ SUBROUTINE beams3d_follow
                         t_nag = t_nag+dt
                         tf_nag = tf_nag+dt
                         CALL out_beams3d_nag(tf_nag,q)
-                        IF (tf_nag > t_end(l)) EXIT
+                        IF ((istate == -1) .or. (istate ==-2) .or. (ABS(tf_nag) > ABS(t_end(l))) ) EXIT
                     END DO
                 END DO
             CASE ("LSODE","DLSODE")
@@ -342,7 +351,7 @@ SUBROUTINE beams3d_follow
                     mymass = mass(l)
                     mybeam = Beam(l)
                     moment = mu_start(l)
-                    fact_crit = (3*sqrt_pi*sqrt(mymass/electron_mass)*mymass/plasma_mass)**(1.0/3.0)
+                    fact_crit = SQRT(2*e_charge/mymass)*(3*sqrt_pi*sqrt(mymass/electron_mass)*mymass/plasma_mass)**(1.0/3.0)
                     myv_neut(:) = v_neut(:,myline)
                     IF (lbeam) lneut = .TRUE.
                     CALL out_beams3d_nag(tf_nag,q)
