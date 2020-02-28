@@ -103,7 +103,7 @@ MODULE beams3d_runtime
 
     INTEGER, PARAMETER :: MAXPARTICLES = 2**18
     INTEGER, PARAMETER :: NLOCAL = 136  ! Number of local processors
-    INTEGER, PARAMETER :: MAXBEAMS = 16
+    INTEGER, PARAMETER :: MAXBEAMS = 32
     INTEGER, PARAMETER :: MAXPROFLEN = 512
 
     LOGICAL :: lverb, lvmec, lpies, lspec, lcoil, lmgrid, &
