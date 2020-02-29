@@ -395,7 +395,7 @@
             DO i = d1, d2
                IF (end_state(i)>0) CYCLE
                rtemp(k,1,1) = R_lines(d3,i)
-               rtemp(k,2,1) = PHI_lines(d3,i)
+               rtemp(k,2,1) = PHI_lines(d3,i)*180/pi
                rtemp(k,3,1) = Z_lines(d3,i)
                dbl_temp     = 2*B_lines(d3,i)*moment_lines(d3,i)/mass(i) ! V_perp^2
                rtemp(k,4,1) = 0.5*mass(i)*(vll_lines(d3,i)*vll_lines(d3,i)+dbl_temp)/e_charge
