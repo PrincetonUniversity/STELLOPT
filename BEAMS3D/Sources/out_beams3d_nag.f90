@@ -18,7 +18,7 @@ SUBROUTINE out_beams3d_nag(t, q)
                              vll_lines, neut_lines, mytdex, next_t,&
                              dt_out, xlast, ylast, zlast,&
                              ltherm, S_lines, U_lines, B_lines, &
-                             dist_prof, j_prof, ndot_prof, partvmax, &
+                             dist2d_prof, j_prof, ndot_prof, partvmax, &
                              ns_prof1, ns_prof2, ns_prof3, ns_prof4, &
                              ns_prof5, mymass, mycharge, mybeam, end_state
     USE beams3d_grid
@@ -95,11 +95,12 @@ SUBROUTINE out_beams3d_nag(t, q)
        ! Calc dist func bins
        vperp = SQRT(2*moment*fval(1)/mymass)
        d1 = MAX(MIN(CEILING(SQRT(y0)*ns_prof1                    ), ns_prof1), 1) ! Rho Bin
-       d2 = MAX(MIN(CEILING( MOD(z0,pi2)/pi2*ns_prof2            ), ns_prof2), 1) ! U Bin
-       d3 = MAX(MIN(CEILING( MOD(x0,pi2)/phimax*ns_prof3         ), ns_prof3), 1) ! V Bin
+       !d2 = MAX(MIN(CEILING( MOD(z0,pi2)/pi2*ns_prof2            ), ns_prof2), 1) ! U Bin
+       !d3 = MAX(MIN(CEILING( MOD(x0,pi2)/phimax*ns_prof3         ), ns_prof3), 1) ! V Bin
        d4 = MAX(MIN(1+ns_prof4/2+FLOOR(0.5*ns_prof4*q(4)/partvmax), ns_prof4), 1) ! vll
        d5 = MAX(MIN(CEILING(ns_prof5*vperp/partvmax              ), ns_prof5), 1) ! Vperp
-       dist_prof(mybeam,d1,d2,d3,d4,d5) = dist_prof(mybeam,d1,d2,d3,d4,d5) + weight(myline)
+       dist2d_prof(mybeam,d4,d5) = dist2d_prof(mybeam,d4,d5) + weight(myline)
+       !dist_prof(mybeam,d1,d2,d3,d4,d5) = dist_prof(mybeam,d1,d2,d3,d4,d5) + weight(myline)
        j_prof(mybeam,d1)      =      j_prof(mybeam,d1) + mycharge*q(4)*weight(myline)*dt
        IF (lcollision) CALL beams3d_physics(t,q)
        IF (ltherm) THEN
