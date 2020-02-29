@@ -36,8 +36,8 @@
       INTEGER, ALLOCATABLE     :: end_state(:)
       REAL(rprec), ALLOCATABLE :: shine_through(:)
       REAL(rprec), ALLOCATABLE :: ndot_prof(:,:),epower_prof(:,:), &
-                                  ipower_prof(:,:),j_prof(:,:)
-      REAL(rprec), ALLOCATABLE :: dist_prof(:,:,:,:,:,:)
+                                  ipower_prof(:,:),j_prof(:,:), dist2d_prof(:,:,:)
+!      REAL(rprec), ALLOCATABLE :: dist_prof(:,:,:,:,:,:)
       REAL(rprec), ALLOCATABLE :: R_lines(:,:),Z_lines(:,:),PHI_lines(:,:),vll_lines(:,:),moment_lines(:,:),&
                                   S_lines(:,:),U_lines(:,:),B_lines(:,:)
 

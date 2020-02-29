@@ -142,10 +142,12 @@
             IF (ALLOCATED(epower_prof)) DEALLOCATE(epower_prof)
             IF (ALLOCATED(ipower_prof)) DEALLOCATE(ipower_prof)
             IF (ALLOCATED(j_prof)) DEALLOCATE(j_prof)
-            IF (ALLOCATED(dist_prof)) DEALLOCATE(dist_prof)
+            !IF (ALLOCATED(dist_prof)) DEALLOCATE(dist_prof)
+            IF (ALLOCATED(dist2d_prof)) DEALLOCATE(dist2d_prof)
             ALLOCATE(ndot_prof(nbeams,ns_prof1),epower_prof(nbeams,ns_prof1),&
-               ipower_prof(nbeams,ns_prof1),j_prof(nbeams,ns_prof1), &
-               dist_prof(nbeams,ns_prof1,ns_prof2,ns_prof3,ns_prof4,ns_prof5))
+               ipower_prof(nbeams,ns_prof1),j_prof(nbeams,ns_prof1))
+            !ALLOCATE(dist_prof(nbeams,ns_prof1,ns_prof2,ns_prof3,ns_prof4,ns_prof5))
+            ALLOCATE(dist2d_prof(nbeams,ns_prof4,ns_prof5))
             CALL read_var_hdf5(fid, 'ndot_prof',   nbeams, ns_prof1, ier, DBLVAR=ndot_prof)
             IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'ndot_prof',ier)
             CALL read_var_hdf5(fid, 'epower_prof', nbeams, ns_prof1, ier, DBLVAR=epower_prof)
@@ -154,8 +156,10 @@
             IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'ipower_prof',ier)
             CALL read_var_hdf5(fid, 'j_prof',      nbeams, ns_prof1, ier, DBLVAR=j_prof)
             IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'j_prof',ier)
-            CALL read_var_hdf5(fid, 'dist_prof',   nbeams, ns_prof1, ns_prof2,ns_prof3,ns_prof4,ns_prof5,ier,DBLVAR=dist_prof)
-            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'dist_prof',ier)
+            !CALL read_var_hdf5(fid, 'dist_prof',   nbeams, ns_prof1, ns_prof2,ns_prof3,ns_prof4,ns_prof5,ier,DBLVAR=dist_prof)
+            !IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'dist_prof',ier)
+            CALL read_var_hdf5(fid, 'dist2d_prof',   nbeams, ns_prof4, ns_prof5, ier, DBLVAR=dist2d_prof)
+            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'dist2d_prof',ier)
          END IF
       END IF
       ! Grid
