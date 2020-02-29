@@ -136,27 +136,25 @@
          CALL read_var_hdf5(fid,'Energy',nbeams,ier,DBLVAR=e_beams)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'e_beams',ier)
          CALL read_var_hdf5(fid,'V_NEUT',3,nparticles,ier,DBLVAR=v_neut)
-         IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'e_beams',ier)
+         IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'V_NEUT',ier)
          IF (.not. ldepo) THEN
             IF (ALLOCATED(ndot_prof)) DEALLOCATE(ndot_prof)
             IF (ALLOCATED(epower_prof)) DEALLOCATE(epower_prof)
             IF (ALLOCATED(ipower_prof)) DEALLOCATE(ipower_prof)
             IF (ALLOCATED(j_prof)) DEALLOCATE(j_prof)
             IF (ALLOCATED(dist_prof)) DEALLOCATE(dist_prof)
-            ALLOCATE(ndot_prof(nbeams,ns_prof),epower_prof(nbeams,ns_prof),&
-               ipower_prof(nbeams,ns_prof),j_prof(nbeams,ns_prof), &
-               dist_prof(nbeams,ns_prof,ns_prof))
-            CALL read_scalar_hdf5(fid,'ns_prof',ier,INTVAR=ns_prof)
-            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'ns_prof',ier)
-            CALL read_var_hdf5(fid,'ndot_prof',nbeams,ns_prof,ier,DBLVAR=ndot_prof)
+            ALLOCATE(ndot_prof(nbeams,ns_prof1),epower_prof(nbeams,ns_prof1),&
+               ipower_prof(nbeams,ns_prof1),j_prof(nbeams,ns_prof1), &
+               dist_prof(nbeams,ns_prof1,ns_prof2,ns_prof3,ns_prof4,ns_prof5))
+            CALL read_var_hdf5(fid, 'ndot_prof',   nbeams, ns_prof1, ier, DBLVAR=ndot_prof)
             IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'ndot_prof',ier)
-            CALL read_var_hdf5(fid,'epower_prof',nbeams,ns_prof,ier,DBLVAR=epower_prof)
+            CALL read_var_hdf5(fid, 'epower_prof', nbeams, ns_prof1, ier, DBLVAR=epower_prof)
             IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'epower_prof',ier)
-            CALL read_var_hdf5(fid,'ipower_prof',nbeams,ns_prof,ier,DBLVAR=ipower_prof)
+            CALL read_var_hdf5(fid, 'ipower_prof', nbeams, ns_prof1, ier, DBLVAR=ipower_prof)
             IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'ipower_prof',ier)
-            CALL read_var_hdf5(fid,'j_prof',nbeams,ns_prof,ier,DBLVAR=j_prof)
+            CALL read_var_hdf5(fid, 'j_prof',      nbeams, ns_prof1, ier, DBLVAR=j_prof)
             IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'j_prof',ier)
-            CALL read_var_hdf5(fid,'dist_prof',nbeams,ns_prof,ns_prof,ier,DBLVAR=dist_prof)
+            CALL read_var_hdf5(fid, 'dist_prof',   nbeams, ns_prof1, ns_prof2,ns_prof3,ns_prof4,ns_prof5,ier,DBLVAR=dist_prof)
             IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'dist_prof',ier)
          END IF
       END IF

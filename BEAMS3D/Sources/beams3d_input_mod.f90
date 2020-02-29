@@ -81,6 +81,7 @@
       INTEGER, INTENT(out) :: istat
       LOGICAL :: lexist
       INTEGER :: iunit, local_master, i1
+      CHARACTER(LEN=1000) :: line
       ! Initializations
       local_master = 0
       nr     = 101
@@ -145,7 +146,12 @@
          CALL safe_open(iunit,istat,TRIM(filename),'old','formatted')
          IF (istat /= 0) CALL handle_err(NAMELIST_READ_ERR,'beams3d_input in: input.'//TRIM(id_string),istat)
          READ(iunit,NML=beams3d_input,IOSTAT=istat)
-         IF (istat /= 0) CALL handle_err(NAMELIST_READ_ERR,'beams3d_input in: input.'//TRIM(id_string),istat)
+         IF (istat /= 0) THEN
+            backspace(iunit)
+            read(iunit,fmt='(A)') line
+            write(6,'(A)') 'Invalid line in namelist: '//TRIM(line)
+            CALL handle_err(NAMELIST_READ_ERR,'beams3d_input in: input.'//TRIM(id_string),istat)
+         END IF
          CLOSE(iunit)
          NE_AUX_F = NE_AUX_F*ne_scale
          TE_AUX_F = TE_AUX_F*te_scale

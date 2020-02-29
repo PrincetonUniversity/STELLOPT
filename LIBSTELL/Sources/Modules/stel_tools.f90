@@ -709,7 +709,7 @@
       RETURN
       END SUBROUTINE load_fourier_geom_sgl
 
-      SUBROUTINE load_vmec_geom_dbl(k1,k2,mnmax,nu,nv,xm,xn_in,iflag,rmnc,zmns,lmns,&
+      SUBROUTINE load_vmec_geom_dbl(ns,mnmax,nu,nv,xm,xn_in,iflag,rmnc,zmns,lmns,&
                                     phiprime,iota,rmns,zmnc,lmnc,comm)
       ! Couple of notes here
       ! Lambda, phiprime, and iota are on the half mesh coming into this
@@ -719,23 +719,22 @@
       USE mpi
 #endif
       IMPLICIT NONE
-      INTEGER, INTENT(in)        :: k1
-      INTEGER, INTENT(in)        :: k2
+      INTEGER, INTENT(in)        :: ns
       INTEGER, INTENT(in)        :: mnmax
       INTEGER, INTENT(in)        :: nu
       INTEGER, INTENT(in)        :: nv
       INTEGER, INTENT(in) :: xm(1:mnmax)
       INTEGER, INTENT(in) :: xn_in(1:mnmax)
       INTEGER, INTENT(inout) :: iflag
-      DOUBLE PRECISION, INTENT(in) :: rmnc(1:mnmax,k1:k2), zmns(1:mnmax,k1:k2), lmns(1:mnmax,k1:k2)
-      DOUBLE PRECISION, INTENT(in) :: iota(k1:k2),phiprime(k1:k2)
-      DOUBLE PRECISION, INTENT(in),OPTIONAL :: rmns(1:mnmax,k1:k2), zmnc(1:mnmax,k1:k2), lmnc(1:mnmax,k1:k2)
+      DOUBLE PRECISION, INTENT(in) :: rmnc(1:mnmax,1:ns), zmns(1:mnmax,1:ns), lmns(1:mnmax,1:ns)
+      DOUBLE PRECISION, INTENT(in) :: iota(1:ns),phiprime(1:ns)
+      DOUBLE PRECISION, INTENT(in),OPTIONAL :: rmns(1:mnmax,1:ns), zmnc(1:mnmax,1:ns), lmnc(1:mnmax,1:ns)
       INTEGER, INTENT(in), OPTIONAL :: comm
-      INTEGER ::  ns_t, u, mn, isherm, nu1, nv1, k1p
+      INTEGER ::  ns_t, u, mn, isherm, nu1, nv1, k1p, k1, k2
       INTEGER ::  shar_comm, shar_rank, shar_size
       INTEGER ::  xn(1:mnmax)
       DOUBLE PRECISION :: ohs
-      DOUBLE PRECISION, ALLOCATABLE :: xu(:),xv(:),rho(:),vp(:),grho(:),grho2(:),drhods(:)
+      DOUBLE PRECISION, ALLOCATABLE :: xu(:),xv(:),rho(:),vp(:),grho(:),grho2(:),rhoinv(:)
       DOUBLE PRECISION, ALLOCATABLE :: fmn_temp(:,:), fmn_o(:,:),fmn_e(:,:), fumn_o(:,:), fumn_e(:,:)
       DOUBLE PRECISION, ALLOCATABLE :: f_temp(:,:,:)
       DOUBLE PRECISION, ALLOCATABLE :: r_e(:,:,:), r_o(:,:,:), z_e(:,:,:), z_o(:,:,:)
@@ -752,11 +751,12 @@
 
       !Helper vars
       iflag = 0
-      ns_t=k2-k1+1
-      k1p=k1+1
+      k1 = 1
+      k2 = ns
+      k1p= 2
+      ns_t = ns
       isherm = 0  ! Cannot change now
       ! Preform checks
-      IF (ns_t < 1) iflag = -2
       IF (mnmax< 1) iflag = -3
       IF (nu < 1 .or. nv < 1) iflag = -4
       IF (PRESENT(rmns).NEQV.PRESENT(zmnc)) iflag = -5
@@ -897,14 +897,14 @@
 #endif
       IF (shar_rank == 0) THEN
          !Allocations
-         ALLOCATE(xu(nu),xv(nv),rho(k1:k2),drhods(k1:k2))
+         ALLOCATE(xu(nu),xv(nv),rho(k1:k2),rhoinv(k1:k2))
          ALLOCATE(fmn_temp(1:mnmax,k1:k2))
          ALLOCATE(f_temp(nu,nv,k1:k2))
          FORALL(u=k1:k2) rho(u) = REAL(u-1)/REAL(ns_t-1)
          rho = SQRT(rho) ! Improves lookup near axis
-         drhods = 0.5/rho ! For changing to df/ds from df/drho
          ohs = k2-k1
-         WHERE(rho==0) drhods=1.0
+         rhoinv = 1.0/rho
+         rhoinv(1) = 1.0
          FORALL(u=1:nu) xu(u) = REAL(u-1)/REAL(nu-1)
          FORALL(u=1:nv) xv(u) = REAL(u-1)/REAL(nv-1)
          ! Preform Init
@@ -925,14 +925,16 @@
 
          ! Define Even Odd quantities
          ALLOCATE(fmn_e(1:mnmax,k1:k2),fmn_o(1:mnmax,k1:k2))
+         ALLOCATE(fumn_e(1:mnmax,k1:k2),fumn_o(1:mnmax,k1:k2))
          ALLOCATE(r_e(nu,nv,k1:k2),r_o(nu,nv,k1:k2),z_e(nu,nv,k1:k2),z_o(nu,nv,k1:k2))
+         ALLOCATE(ru_e(nu,nv,k1:k2),ru_o(nu,nv,k1:k2),zu_e(nu,nv,k1:k2),zu_o(nu,nv,k1:k2))
          ALLOCATE(rs(nu,nv,k1:k2),zs(nu,nv,k1:k2),ru12(nu,nv,k1:k2),zu12(nu,nv,k1:k2))
          DO mn = 1, mnmax
             fmn_e(mn,:) = 0; fmn_o(mn,:) = 0
             fumn_e(mn,:) = 0; fumn_o(mn,:) = 0
             IF (MOD(xm(mn),2)==1) THEN
-               fmn_o(mn,:)  =         rmnc(mn,:)/rho
-               fumn_o(mn,:) = -xm(mn)*rmnc(mn,:)/rho
+               fmn_o(mn,:)  =         rmnc(mn,:)*rhoinv
+               fumn_o(mn,:) = -xm(mn)*rmnc(mn,:)*rhoinv
             ELSE
                fmn_e(mn,:)  =         rmnc(mn,:)
                fumn_e(mn,:) = -xm(mn)*rmnc(mn,:)
@@ -945,9 +947,10 @@
          IF (PRESENT(rmns)) THEN
             DO mn = 1, mnmax
                fmn_e(mn,:) = 0; fmn_o(mn,:) = 0
+               fumn_e(mn,:) = 0; fumn_o(mn,:) = 0
                IF (MOD(xm(mn),2)==1) THEN
-                  fmn_o(mn,:)  =         rmns(mn,:)/rho
-                  fumn_o(mn,:) =  xm(mn)*rmns(mn,:)/rho
+                  fmn_o(mn,:)  =         rmns(mn,:)*rhoinv
+                  fumn_o(mn,:) =  xm(mn)*rmns(mn,:)*rhoinv
                ELSE
                   fmn_e(mn,:)  =         rmns(mn,:)
                   fumn_e(mn,:) =  xm(mn)*rmns(mn,:)
@@ -960,12 +963,13 @@
          END IF
          DO mn = 1, mnmax
             fmn_e(mn,:) = 0; fmn_o(mn,:) = 0
+            fumn_e(mn,:) = 0; fumn_o(mn,:) = 0
             IF (MOD(xm(mn),2)==1) THEN
-               fmn_o(mn,:)  =         zmns(mn,:)/rho
-               fumn_o(mn,:) =  xm(mn)*zmns(mn,:)/rho
+               fmn_o(mn,:)  =         zmns(mn,:)*rhoinv
+               fumn_o(mn,:) =  xm(mn)*zmns(mn,:)*rhoinv
             ELSE
-               fmn_o(mn,:)  =         zmns(mn,:)/rho
-               fumn_o(mn,:) =  xm(mn)*zmns(mn,:)/rho
+               fmn_e(mn,:)  =         zmns(mn,:)
+               fumn_e(mn,:) =  xm(mn)*zmns(mn,:)
             END IF
          END DO
          CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,fmn_e,xm,xn,z_e,1,0)
@@ -975,9 +979,10 @@
          IF (PRESENT(zmnc)) THEN
             DO mn = 1, mnmax
                fmn_e(mn,:) = 0; fmn_o(mn,:) = 0
+               fumn_e(mn,:) = 0; fumn_o(mn,:) = 0
                IF (MOD(xm(mn),2)==1) THEN
-                  fmn_o(mn,:)  =         zmnc(mn,:)/rho
-                  fumn_o(mn,:) = -xm(mn)*zmnc(mn,:)/rho
+                  fmn_o(mn,:)  =         zmnc(mn,:)*rhoinv
+                  fumn_o(mn,:) = -xm(mn)*zmnc(mn,:)*rhoinv
                ELSE
                   fmn_e(mn,:)  =         zmnc(mn,:)
                   fumn_e(mn,:) = -xm(mn)*zmnc(mn,:)
@@ -989,13 +994,16 @@
             CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,fumn_o,xm,xn,zu_o,1,0)
          END IF
          rs = 0; zs = 0;
-         DO mn = k1+1,k2
+         DO mn = k1p,k2
             rs(:,:,mn) = ohs*(r_e(:,:,mn)-r_e(:,:,mn-1) &
                          + rho(mn)*(r_o(:,:,mn)-r_o(:,:,mn-1)))
             zs(:,:,mn) = ohs*(z_e(:,:,mn)-z_e(:,:,mn-1) &
                          + rho(mn)*(z_o(:,:,mn)-z_o(:,:,mn-1)))
          END DO
+         rs(:,:,k1) = rs(:,:,k1p)
+         zs(:,:,k1) = zs(:,:,k1p)
          DEALLOCATE(fmn_o,fmn_e)
+         DEALLOCATE(fumn_o,fumn_e)
 
          ! R
          f_temp = 0;
@@ -1010,17 +1018,19 @@
          Ru_spl%x1 = xu*pi2; Ru_spl%x2 = xv*pi2; Ru_spl%x3 = rho; Ru_spl%isHermite = isherm
          FORALL(mn = k1:k2) f_temp(:,:,mn) = ru_e(:,:,mn) + rho(mn)*ru_o(:,:,mn) 
          ru12 = 0;
-         DO mn = k1+1,k2
+         DO mn = k1p,k2
             ru12(:,:,mn) = (f_temp(:,:,mn)+f_temp(:,:,mn-1))*0.5
          END DO
+         ru12(:,:,k1)=ru12(:,:,k1p)
          CALL EZspline_setup(Ru_spl,f_temp,iflag); f_temp = 0
          ! dZ/du
          Zu_spl%x1 = xu*pi2; Zu_spl%x2 = xv*pi2; Zu_spl%x3 = rho; Zu_spl%isHermite = isherm
          FORALL(mn = k1:k2) f_temp(:,:,mn) = zu_e(:,:,mn) + rho(mn)*zu_o(:,:,mn) 
          zu12 = 0;
-         DO mn = k1+1,k2
+         DO mn = k1p,k2
             zu12(:,:,mn) = (f_temp(:,:,mn)+f_temp(:,:,mn-1))*0.5
          END DO
+         zu12(:,:,k1)=zu12(:,:,k1p)
          CALL EZspline_setup(Zu_spl,f_temp,iflag); f_temp = 0
          ! dR/Dv Derivatives
          Rv_spl%x1 = xu*pi2; Rv_spl%x2 = xv*pi2; Rv_spl%x3 = rho; Rv_spl%isHermite = isherm
@@ -1082,37 +1092,48 @@
 
          ! Calc Gsqrt
          ! SQRT(G) = R(RuZs-RsZu) Eq17 Hirshman 83
-         G_spl%x1 = xu*pi2; G_spl%x2 = xv*pi2; G_spl%x3 = rho; G_spl%isHermite = isherm
+         G_spl%x1 = xu*pi2; G_spl%x2 = xv*pi2; G_spl%x3 = rho; G_spl%isHermite = isherm; f_temp=0
+         rhoinv(k1p:k2) = 2/(rho(1:k2-1)+rho(k1p:k2))
          DO mn = k1p, k2
             f_temp(:,:,mn) = ru12(:,:,mn)*zs(:,:,mn) &
                            + 0.25*(   ru_o(:,:,mn)*z_o(:,:,mn) + ru_o(:,:,mn-1)*z_o(:,:,mn-1) &
-                                   + (ru_e(:,:,mn)*z_o(:,:,mn) + ru_e(:,:,mn-1)*z_o(:,:,mn-1))/rho(mn))
+                                   + (ru_e(:,:,mn)*z_o(:,:,mn) + ru_e(:,:,mn-1)*z_o(:,:,mn-1))*rhoinv(mn))
             f_temp(:,:,mn) = f_temp(:,:,mn) - zu12(:,:,mn)*rs(:,:,mn)&
                            - 0.25*(   zu_o(:,:,mn)*r_o(:,:,mn) + zu_o(:,:,mn-1)*r_o(:,:,mn-1) &
-                                   + (zu_e(:,:,mn)*r_o(:,:,mn) + zu_e(:,:,mn-1)*r_o(:,:,mn-1))/rho(mn))
-            f_temp(:,:,mn) = 0.5*(RU4D(1,:,:,mn) + RU4D(1,:,:,mn-1))*f_temp(:,:,mn)
+                                   + (zu_e(:,:,mn)*r_o(:,:,mn) + zu_e(:,:,mn-1)*r_o(:,:,mn-1))*rhoinv(mn))
+            f_temp(:,:,mn) = 0.5*(R4D(1,:,:,mn) + R4D(1,:,:,mn-1))*f_temp(:,:,mn)
          END DO
-         ! To full grid
-         f_temp(:,:,k1) = f_temp(:,:,k1+1)
-         DO mn = k1p, k2
-            f_temp(:,:,mn) = f_temp(:,:,mn)+f_temp(:,:,mn-1)
-         END DO
+         f_temp(:,:,k1) = f_temp(:,:,k1p)
+
+         ! Put on full grid
+         ! From the half grid (2:ns) just average to (2:ns-1)
+         f_temp(:,:,k1p:k2-1) = 0.5*(f_temp(:,:,k1p:k2-1)+f_temp(:,:,k1p+1:k2))
+         f_temp(:,:,k2) = 2.0*f_temp(:,:,k2) - f_temp(:,:,k2-1) ! Extrapolate to edge
+         !This works but is probably not the correct way to extrapolate near the axis
+         f_temp(:,:,k1p) = 2*f_temp(:,:,k1p+1) - f_temp(:,:,k1p+2)
+         f_temp(:,:,k1) = 2*f_temp(:,:,k1p) - f_temp(:,:,k1p+1)
+
+         ! Create Spline
          CALL EZspline_setup(G_spl,f_temp,iflag); f_temp = 0
+
          ! B^s
          Bs_spl%x1 = xu*pi2; Bs_spl%x2 = xv*pi2; Bs_spl%x3 = rho; Bs_spl%isHermite = isherm
          CALL EZspline_setup(Bs_spl,f_temp,iflag); f_temp = 0
+
          ! B^u = phip*(iota-Lv)/sqrt(g)
          Bu_spl%x1 = xu*pi2; Bu_spl%x2 = xv*pi2; Bu_spl%x3 = rho; Bu_spl%isHermite = isherm
          f_temp = -LV4D(1,:,:,:)*nfp
-         FORALL(u=k1:k2) f_temp(:,:,u) = (f_temp(:,:,u)+iota(u))*phiprime(u)
+         FORALL(u=k1:k2) f_temp(:,:,u) = -(f_temp(:,:,u)+iota(u))*phiprime(u)/pi2
          f_temp = f_temp / G_SPL%fspl(1,:,:,:)
          CALL EZspline_setup(Bu_spl,f_temp,iflag); f_temp = 0
+
          ! B^v = phip*(1+Lu)/sqrt(g)
          Bv_spl%x1 = xu*pi2; Bv_spl%x2 = xv*pi2; Bv_spl%x3 = rho; Bv_spl%isHermite = isherm
          f_temp =  LU4D(1,:,:,:)+1
-         FORALL(u=k1:k2) f_temp(:,:,u) = f_temp(:,:,u)*phiprime(u)
+         FORALL(u=k1:k2) f_temp(:,:,u) = -f_temp(:,:,u)*phiprime(u)/pi2
          f_temp = f_temp / G_SPL%fspl(1,:,:,:)
          CALL EZspline_setup(Bv_spl,f_temp,iflag); f_temp = 0
+
          ! |B|^2 = Bu**2*guu+2*Bu*Bv*guv+Bv**2*gvv Eq8b Hirshman 83 (Bk=B^k)
          !  guu = Ru*Ru+Zv*Zv (Ru = dR/du)
          !  guv = Ru*Rv+Zu*Zv
@@ -1122,8 +1143,10 @@
          f_temp = f_temp + (RV4D(1,:,:,:)*RV4D(1,:,:,:)+ZV4D(1,:,:,:)*ZV4D(1,:,:,:))*BV_SPL%fspl(1,:,:,:)*BV_SPL%fspl(1,:,:,:)*nfp*nfp
          f_temp = f_temp + (RU4D(1,:,:,:)*RV4D(1,:,:,:)*nfp+ZU4D(1,:,:,:)*ZV4D(1,:,:,:)*nfp+R4D(1,:,:,:)*R4D(1,:,:,:))*BU_SPL%fspl(1,:,:,:)*BV_SPL%fspl(1,:,:,:)
          f_temp = SQRT(f_temp)
-         CALL EZspline_setup(G_spl,f_temp,iflag); f_temp = 0
-         DEALLOCATE(Rs,Zs)
+         CALL EZspline_setup(B_spl,f_temp,iflag); f_temp = 0
+         DEALLOCATE(Rs,Zs,ru12,zu12)
+         DEALLOCATE(ru_e,ru_o,zu_e,zu_o)
+         DEALLOCATE(r_e,r_o,z_e,z_o)
 
          ! Now we can get rid of some stuff
 
@@ -1273,7 +1296,7 @@
          CALL EZspline_free(S22_spl,iflag)
          
          ! DEALLOCATIONS
-         DEALLOCATE(xu,xv,rho)
+         DEALLOCATE(xu,xv,rho,rhoinv)
          DEALLOCATE(f_temp)
       END IF !So shared memory doesnt do work
 #if defined(MPI_OPT)
@@ -1285,25 +1308,24 @@
       RETURN
       END SUBROUTINE load_vmec_geom_dbl
 
-      SUBROUTINE load_vmec_geom_sgl(k1,k2,mnmax,nu,nv,xm,xn_in,iflag,rmnc,zmns,lmns,&
+      SUBROUTINE load_vmec_geom_sgl(ns,mnmax,nu,nv,xm,xn_in,iflag,rmnc,zmns,lmns,&
                                     phiprime,iota,rmns,zmnc,lmnc,comm)
       USE EZspline
       IMPLICIT NONE
-      INTEGER, INTENT(in)        :: k1
-      INTEGER, INTENT(in)        :: k2
+      INTEGER, INTENT(in)        :: ns
       INTEGER, INTENT(in)        :: mnmax
       INTEGER, INTENT(in)        :: nu
       INTEGER, INTENT(in)        :: nv
       INTEGER, INTENT(in) :: xm(1:mnmax)
       INTEGER, INTENT(in) :: xn_in(1:mnmax)
       INTEGER, INTENT(inout) :: iflag
-      REAL, INTENT(in) :: rmnc(1:mnmax,k1:k2), zmns(1:mnmax,k1:k2), lmns(1:mnmax,k1:k2)
-      REAL, INTENT(in) :: iota(k1:k2),phiprime(k1:k2)
-      REAL, INTENT(in),OPTIONAL :: rmns(1:mnmax,k1:k2), zmnc(1:mnmax,k1:k2), lmnc(1:mnmax,k1:k2)
+      REAL, INTENT(in) :: rmnc(1:mnmax,1:ns), zmns(1:mnmax,1:ns), lmns(1:mnmax,1:ns)
+      REAL, INTENT(in) :: iota(1:ns),phiprime(1:ns)
+      REAL, INTENT(in),OPTIONAL :: rmns(1:mnmax,1:ns), zmnc(1:mnmax,1:ns), lmnc(1:mnmax,1:ns)
       INTEGER, INTENT(in), OPTIONAL :: comm
-      DOUBLE PRECISION :: rmnc_dbl(1:mnmax,k1:k2), zmns_dbl(1:mnmax,k1:k2), lmns_dbl(1:mnmax,k1:k2)
-      DOUBLE PRECISION :: rmns_dbl(1:mnmax,k1:k2), zmnc_dbl(1:mnmax,k1:k2), lmnc_dbl(1:mnmax,k1:k2)
-      DOUBLE PRECISION :: iota_dbl(k1:k2),phiprime_dbl(k1:k2)
+      DOUBLE PRECISION :: rmnc_dbl(1:mnmax,1:ns), zmns_dbl(1:mnmax,1:ns), lmns_dbl(1:mnmax,1:ns)
+      DOUBLE PRECISION :: rmns_dbl(1:mnmax,1:ns), zmnc_dbl(1:mnmax,1:ns), lmnc_dbl(1:mnmax,1:ns)
+      DOUBLE PRECISION :: iota_dbl(1:ns),phiprime_dbl(1:ns)
       rmnc_dbl = rmnc
       zmns_dbl = zmns
       lmns_dbl = lmns
@@ -1314,10 +1336,10 @@
       IF (PRESENT(zmnc)) zmnc_dbl = zmnc
       IF (PRESENT(lmnc)) lmnc_dbl = lmnc
       IF (PRESENT(comm)) THEN
-         CALL load_vmec_geom_dbl(k1,k2,mnmax,nu,nv,xm,xn_in,iflag,rmnc_dbl,zmns_dbl,lmns_dbl,&
+         CALL load_vmec_geom_dbl(ns,mnmax,nu,nv,xm,xn_in,iflag,rmnc_dbl,zmns_dbl,lmns_dbl,&
             phiprime_dbl, iota_dbl, RMNS=rmns_dbl,ZMNC=zmnc_dbl,LMNC=lmnc_dbl, COMM=comm)
       ELSE
-         CALL load_vmec_geom_dbl(k1,k2,mnmax,nu,nv,xm,xn_in,iflag,rmnc_dbl,zmns_dbl,lmns_dbl,&
+         CALL load_vmec_geom_dbl(ns,mnmax,nu,nv,xm,xn_in,iflag,rmnc_dbl,zmns_dbl,lmns_dbl,&
             phiprime_dbl, iota_dbl, RMNS=rmns_dbl,ZMNC=zmnc_dbl,LMNC=lmnc_dbl)
       END IF
       RETURN
