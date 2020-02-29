@@ -16,7 +16,7 @@
       USE beams3d_grid
       USE beams3d_input_mod, ONLY: read_beams3d_input
       USE beams3d_lines, ONLY: nparticles, epower_prof, ipower_prof, &
-                               ndot_prof, j_prof, dist_prof, partvmax, &
+                               ndot_prof, j_prof, dist2d_prof, partvmax, &
                                end_state, ns_prof1, ns_prof2, ns_prof3, &
                                ns_prof4, ns_prof5
       USE wall_mod
@@ -320,8 +320,9 @@
       END IF
       ALLOCATE(epower_prof(nbeams,ns_prof1), ipower_prof(nbeams,ns_prof1), &
                ndot_prof(nbeams,ns_prof1), j_prof(nbeams,ns_prof1))
-      ALLOCATE(dist_prof(nbeams,ns_prof1,ns_prof2,ns_prof3,ns_prof4,ns_prof5))
-      ipower_prof=0; epower_prof=0; ndot_prof=0; j_prof = 0; dist_prof=0
+      ALLOCATE(dist2d_prof(nbeams,ns_prof4,ns_prof5))
+      !ALLOCATE(dist_prof(nbeams,ns_prof1,ns_prof2,ns_prof3,ns_prof4,ns_prof5))
+      ipower_prof=0; epower_prof=0; ndot_prof=0; j_prof = 0; dist2d_prof=0
 
       ! In all cases create an end_state array
       ALLOCATE(end_state(nparticles))

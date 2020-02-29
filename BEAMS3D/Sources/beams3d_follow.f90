@@ -438,14 +438,16 @@ SUBROUTINE beams3d_follow
        CALL MPI_REDUCE(MPI_IN_PLACE, ipower_prof, nbeams*ns_prof1, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
        CALL MPI_REDUCE(MPI_IN_PLACE,   ndot_prof, nbeams*ns_prof1, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
        CALL MPI_REDUCE(MPI_IN_PLACE,      j_prof, nbeams*ns_prof1, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
-       CALL MPI_REDUCE(MPI_IN_PLACE,   dist_prof, nbeams*ns_prof1*ns_prof2*ns_prof3*ns_prof4*ns_prof5, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
+       !CALL MPI_REDUCE(MPI_IN_PLACE,   dist_prof, nbeams*ns_prof1*ns_prof2*ns_prof3*ns_prof4*ns_prof5, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
+       CALL MPI_REDUCE(MPI_IN_PLACE, dist2d_prof, nbeams*ns_prof4*ns_prof5, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
     ELSE
        CALL MPI_REDUCE(end_state,     end_state,     nparticles,          MPI_INTEGER, MPI_MAX, master, MPI_COMM_SHARMEM, ierr_mpi)
        CALL MPI_REDUCE(epower_prof, epower_prof, nbeams*ns_prof1, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
        CALL MPI_REDUCE(ipower_prof, ipower_prof, nbeams*ns_prof1, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
        CALL MPI_REDUCE(ndot_prof,     ndot_prof, nbeams*ns_prof1, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
        CALL MPI_REDUCE(j_prof,           j_prof, nbeams*ns_prof1, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
-       CALL MPI_REDUCE(dist_prof,     dist_prof, nbeams*ns_prof1*ns_prof2*ns_prof3*ns_prof4*ns_prof5, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
+       !CALL MPI_REDUCE(dist_prof,     dist_prof, nbeams*ns_prof1*ns_prof2*ns_prof3*ns_prof4*ns_prof5, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
+       CALL MPI_REDUCE(dist2d_prof, dist2d_prof, nbeams*ns_prof4*ns_prof5, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
     END IF
 !DEC$ ENDIF
 
@@ -459,7 +461,8 @@ SUBROUTINE beams3d_follow
        CALL MPI_ALLREDUCE(MPI_IN_PLACE, ipower_prof, nbeams*ns_prof1, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
        CALL MPI_ALLREDUCE(MPI_IN_PLACE,   ndot_prof, nbeams*ns_prof1, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
        CALL MPI_ALLREDUCE(MPI_IN_PLACE,      j_prof, nbeams*ns_prof1, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
-       CALL MPI_ALLREDUCE(MPI_IN_PLACE,   dist_prof, nbeams*ns_prof1*ns_prof2*ns_prof3*ns_prof4*ns_prof5, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
+       !CALL MPI_ALLREDUCE(MPI_IN_PLACE,   dist_prof, nbeams*ns_prof1*ns_prof2*ns_prof3*ns_prof4*ns_prof5, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
+       CALL MPI_ALLREDUCE(MPI_IN_PLACE, dist2d_prof, nbeams*ns_prof4*ns_prof5, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
        IF (ASSOCIATED(ihit_array)) THEN
           CALL MPI_ALLREDUCE(MPI_IN_PLACE,ihit_array,nface,MPI_INTEGER,MPI_SUM,MPI_COMM_LOCAL,ierr_mpi)
        END IF
