@@ -22,7 +22,11 @@
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       LOGICAL  ::  ltherm
-      INTEGER  :: ns_prof = 100
+      INTEGER,PARAMETER  :: ns_prof1 = 128 !rho-Grid
+      INTEGER,PARAMETER  :: ns_prof2 = 16 !u-grid
+      INTEGER,PARAMETER  :: ns_prof3 = 16 !v-grid
+      INTEGER,PARAMETER  :: ns_prof4 = 64 !vll-grid
+      INTEGER,PARAMETER  :: ns_prof5 = 32 !vperp-grid
       INTEGER  :: nparticles, nsteps, myline, mybeam, mytdex, myend, mystart_save,myend_save
       REAL(rprec) :: xlast,ylast,zlast ! for storing position
       REAL(rprec) :: moment, mycharge, myZ, mymass, myv_neut(3), &
@@ -33,7 +37,7 @@
       REAL(rprec), ALLOCATABLE :: shine_through(:)
       REAL(rprec), ALLOCATABLE :: ndot_prof(:,:),epower_prof(:,:), &
                                   ipower_prof(:,:),j_prof(:,:)
-      REAL(rprec), ALLOCATABLE :: dist_prof(:,:,:)
+      REAL(rprec), ALLOCATABLE :: dist_prof(:,:,:,:,:,:)
       REAL(rprec), ALLOCATABLE :: R_lines(:,:),Z_lines(:,:),PHI_lines(:,:),vll_lines(:,:),moment_lines(:,:),&
                                   S_lines(:,:),U_lines(:,:),B_lines(:,:)
 

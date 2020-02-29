@@ -362,11 +362,11 @@
                CALL write_var_hdf5(qid_gid,'DIST_MAX_VPA',ier,DBLVAR=DBLE(partvmax))
                CALL write_var_hdf5(qid_gid,'DIST_MIN_VPE',ier,DBLVAR=DBLE(0))
                CALL write_var_hdf5(qid_gid,'DIST_MAX_VPE',ier,DBLVAR=DBLE(partvmax))
-               CALL write_var_hdf5(qid_gid,'DIST_NBIN_VR',ier,DBLVAR=DBLE(ns_prof))
-               CALL write_var_hdf5(qid_gid,'DIST_NBIN_VPHI',ier,DBLVAR=DBLE(ns_prof))
-               CALL write_var_hdf5(qid_gid,'DIST_NBIN_VZ',ier,DBLVAR=DBLE(ns_prof))
-               CALL write_var_hdf5(qid_gid,'DIST_NBIN_VPA',ier,DBLVAR=DBLE(ns_prof))
-               CALL write_var_hdf5(qid_gid,'DIST_NBIN_VPE',ier,DBLVAR=DBLE(ns_prof))
+               CALL write_var_hdf5(qid_gid,'DIST_NBIN_VR',ier,DBLVAR=DBLE(ns_prof4))
+               CALL write_var_hdf5(qid_gid,'DIST_NBIN_VPHI',ier,DBLVAR=DBLE(ns_prof4))
+               CALL write_var_hdf5(qid_gid,'DIST_NBIN_VZ',ier,DBLVAR=DBLE(ns_prof4))
+               CALL write_var_hdf5(qid_gid,'DIST_NBIN_VPA',ier,DBLVAR=DBLE(ns_prof4))
+               CALL write_var_hdf5(qid_gid,'DIST_NBIN_VPE',ier,DBLVAR=DBLE(ns_prof5))
                CALL h5gclose_f(qid_gid, ier)
                CALL h5gclose_f(options_gid, ier)
                ! Close file
@@ -403,7 +403,7 @@
                   IF (end_state(i) == 3) CYCLE
                END IF
                rtemp(k,1,1) = R_lines(d3,i)
-               rtemp(k,2,1) = PHI_lines(d3,i)
+               rtemp(k,2,1) = PHI_lines(d3,i)*180/pi
                rtemp(k,3,1) = Z_lines(d3,i)
                dbl_temp     = 2*B_lines(d3,i)*moment_lines(d3,i)/mass(i) ! V_perp^2
                rtemp(k,4,1) = 0.5*mass(i)*(vll_lines(d3,i)*vll_lines(d3,i)+dbl_temp)/e_charge
