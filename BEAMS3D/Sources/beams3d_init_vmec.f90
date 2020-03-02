@@ -138,21 +138,21 @@
       CALL EZspline_setup(Vp_spl_s,vp(1:ns),ier,EXACT_DIM=.true.)
       IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init_vmec',ier)
 
-      ! Calculate the axis values
+      ! Calculate the axis values (need negative since we haven't flipped Kernel yet)
       IF (mylocalid == master) THEN
          DO i = 1, nphi
             req_axis(i) = 0
             zeq_axis(i) = 0
             DO u = 1, mnmax
-               req_axis(i) = req_axis(i)+rmnc(u,1)*COS(xn(u)*phiaxis(i))
-               zeq_axis(i) = zeq_axis(i)+zmns(u,1)*SIN(xn(u)*phiaxis(i))
+               req_axis(i) = req_axis(i)+rmnc(u,1)*COS(-xn(u)*phiaxis(i))
+               zeq_axis(i) = zeq_axis(i)+zmns(u,1)*SIN(-xn(u)*phiaxis(i))
             END DO
          END DO
          IF (lasym) THEN
             DO i = 1, nphi
                DO u = 1, mnmax
-                  req_axis(i) = req_axis(i)+rmns(u,1)*SIN(xn(u)*phiaxis(i))
-                  zeq_axis(i) = zeq_axis(i)+zmnc(u,1)*COS(xn(u)*phiaxis(i))
+                  req_axis(i) = req_axis(i)+rmns(u,1)*SIN(-xn(u)*phiaxis(i))
+                  zeq_axis(i) = zeq_axis(i)+zmnc(u,1)*COS(-xn(u)*phiaxis(i))
                END DO
             END DO
          END IF
