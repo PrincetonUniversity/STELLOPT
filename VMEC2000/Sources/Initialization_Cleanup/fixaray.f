@@ -173,8 +173,4 @@ C-----------------------------------------------
       CALL init_multipliers
 #endif
 
-      IF (lrecon) THEN
-         CALL getgreen
-      END IF
-
       END SUBROUTINE fixaray

@@ -729,7 +729,6 @@ stellopt_reinit_vmec.o : \
       $(VMEC_DIR)/Release/vmec_main.o \
       $(VMEC_DIR)/Release/vmec_params.o \
       $(VMEC_DIR)/Release/vacmod.o \
-      $(VMEC_DIR)/Release/vsvd.o \
       $(VMEC_DIR)/Release/vspline.o \
       $(VMEC_DIR)/Release/timer_sub.o 
       

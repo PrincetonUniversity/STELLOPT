@@ -2,7 +2,6 @@
       USE vmec_main
       USE vmec_params, ONLY: signgs, lamscale, rcc, pdamp
       USE vmec_input, ONLY: lRFP
-      USE vsvd, torflux_edge => torflux
       USE vspline
       USE init_geometry, ONLY: lflip
       USE vmec_input, ONLY: nzeta
@@ -29,6 +28,7 @@ C-----------------------------------------------
       REAL(dp) :: Itor, si, tf, pedge, vpnorm, polflux_edge
       REAL(dp) :: phipslocal, phipstotal
       INTEGER :: j, k, l, nsmin, nsmax
+      REAL (dp) :: torflux_edge
 C-----------------------------------------------
 C   E x t e r n a l   F u n c t i o n s
 C-----------------------------------------------
@@ -64,7 +64,7 @@ C-----------------------------------------------
       IF (ncurr.EQ.1 .AND. lRFP) THEN
          STOP 'ncurr=1 inconsistent with lRFP=T!'
       END IF
-      torflux_edge = signgs*phifac*phiedge/twopi
+      torflux_edge = signgs*phiedge/twopi
       si = torflux(one)
       IF (si .ne. zero) THEN
          torflux_edge = torflux_edge/si
@@ -217,25 +217,6 @@ C-----------------------------------------------
 
       IF (lreset) THEN      
          xc(:,:,t1lglob:t1rglob,:) = 0
-         IF (lrecon) THEN
-            iresidue = 0
-         END IF
-      END IF
-
-      IF (lrecon) THEN
-         IF (iresidue .GT. 1) THEN
-            iresidue = 1
-         END IF
-!
-!       COMPUTE INDEX ARRAY FOR FINDPHI ROUTINE
-!
-        nsmin = t1lglob
-        nsmax = t1rglob
-        DO i = nsmin, nsmax
-           indexr(i)      = ns + 1 - i                    !FINDPHI
-           indexr(i + ns) = i + 1                         !FINDPHI
-        END DO
-        indexr(2*ns) = ns
       END IF
 
       END SUBROUTINE profil1d_par
@@ -244,7 +225,6 @@ C-----------------------------------------------
       USE vmec_main
       USE vmec_params, ONLY: signgs, lamscale, rcc, pdamp
       USE vmec_input, ONLY: lRFP
-      USE vsvd, torflux_edge => torflux
       USE vspline
       USE realspace, ONLY: shalf, sqrts
       USE init_geometry, ONLY: lflip
@@ -253,7 +233,7 @@ C-----------------------------------------------
 C-----------------------------------------------
 C   D u m m y   A r g u m e n t s
 C-----------------------------------------------
-      REAL(dp), DIMENSION(neqs2), INTENT(out) :: xc, xcdot
+      REAL(dp), DIMENSION(neqs), INTENT(out) :: xc, xcdot
       LOGICAL, INTENT(IN) :: lreset
 C-----------------------------------------------
 C   L o c a l   P a r a m e t e r s
@@ -264,6 +244,7 @@ C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
       INTEGER :: i
       REAL(dp) :: Itor, si, tf, pedge, vpnorm, polflux_edge
+      REAL(dp) :: torflux_edge
 C-----------------------------------------------
 C   E x t e r n a l   F u n c t i o n s
 C-----------------------------------------------
@@ -299,7 +280,7 @@ C-----------------------------------------------
          STOP 'ncurr=1 inconsistent with lRFP=T!'
       END IF
 
-      torflux_edge = signgs*phifac*phiedge/twopi
+      torflux_edge = signgs*phiedge/twopi
       si = torflux(one)
       IF (si .ne. zero) THEN
          torflux_edge = torflux_edge/si
@@ -398,7 +379,7 @@ C-----------------------------------------------
       END IF
 
       pres(:ns + 1) = 0
-      xcdot(:neqs2) = 0
+      xcdot(:neqs) = 0
 
 #ifdef _ANIMEC
       medge = pmass(one)*(ABS(phips(ns))*r00)**gamma
@@ -427,22 +408,7 @@ C-----------------------------------------------
       sp(1) = sm(2)
 
       IF (lreset) THEN
-         xc(:neqs1) = 0
-         IF (lrecon) iresidue = 0
-      END IF
-
-      IF (lrecon) THEN
-        IF (iresidue .GT. 1) THEN
-           iresidue = 1
-        END IF
-!
-!       COMPUTE INDEX ARRAY FOR FINDPHI ROUTINE
-!
-         DO i = 1, ns
-            indexr(i)    = ns + 1 - i                    !FINDPHI
-            indexr(i+ns) = i + 1                         !FINDPHI
-         END DO
-         indexr(2*ns) = ns
+         xc(:neqs) = 0
       END IF
 
       END SUBROUTINE profil1d

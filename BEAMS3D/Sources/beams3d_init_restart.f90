@@ -26,6 +26,7 @@
 !          npoinc_extract Which save state to extract from file.
 !-----------------------------------------------------------------------
       IMPLICIT NONE
+      LOGICAL :: lplasma_old
       INTEGER :: i, k, ier, npoinc_extract, npoinc_save
       INTEGER, DIMENSION(:), ALLOCATABLE :: beam2
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: mass2, charge2, Zatom2, &
@@ -54,6 +55,7 @@
          IF (ALLOCATED(Zatom)) DEALLOCATE(charge)
          IF (ALLOCATED(beam)) DEALLOCATE(beam)
          IF (ALLOCATED(weight)) DEALLOCATE(weight)
+         IF (ALLOCATED(end_state)) DEALLOCATE(end_state)
          IF (ALLOCATED(R_lines)) DEALLOCATE(R_lines)
          IF (ALLOCATED(PHI_lines)) DEALLOCATE(PHI_lines)
          IF (ALLOCATED(Z_lines)) DEALLOCATE(Z_lines)
@@ -61,7 +63,8 @@
          IF (ALLOCATED(vll_lines)) DEALLOCATE(vll_lines)
          IF (ALLOCATED(neut_lines)) DEALLOCATE(neut_lines)
          ALLOCATE(mass2(nparticles),charge2(nparticles),Zatom2(nparticles),&
-            beam2(nparticles), weight2(nparticles), t_end2(nparticles))
+            beam2(nparticles), weight2(nparticles), t_end2(nparticles), &
+            end_state(nparticles))
          ALLOCATE(R_lines(0:npoinc,nparticles),Z_lines(0:npoinc,nparticles),PHI_lines(0:npoinc,nparticles),&
             vll_lines(0:npoinc,nparticles),neut_lines(0:npoinc,nparticles),moment_lines(0:npoinc,nparticles))
          CALL read_var_hdf5(fid,'mass',nparticles,ier,DBLVAR=mass2)
@@ -74,6 +77,8 @@
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'weight2',ier)
          CALL read_var_hdf5(fid,'Beam',nparticles,ier,INTVAR=beam2)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'beam2',ier)
+         CALL read_var_hdf5(fid,'end_state',nparticles,ier,INTVAR=end_state)
+         IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'end_state',ier)
          CALL read_var_hdf5(fid,'t_end',nparticles,ier,DBLVAR=t_end2)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'t_end2',ier)
          CALL read_var_hdf5(fid,'R_lines',npoinc+1,nparticles,ier,DBLVAR=R_lines)
@@ -91,12 +96,15 @@
          CALL close_hdf5(fid,ier)
          IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,'beams3d_'//TRIM(restart_string)//'.h5',ier)
 
+         ! Decide where to 
+
          ! Count the particles
-         npoinc_extract=2 ! Starting point of particle
-         k = 0
-         DO i = 1, nparticles
-            IF (.not.neut_lines(npoinc_extract,i)) k=k+1
-         END DO
+         !npoinc_extract=2 ! Starting point of particle
+         !k = 0
+         !DO i = 1, nparticles
+         !   IF (.not.neut_lines(npoinc_extract,i)) k=k+1
+         !END DO
+         k = COUNT(end_state == 0)
 
          ! Allocate the particles
          ALLOCATE(  R_start(k), phi_start(k), Z_start(k), &
@@ -107,23 +115,23 @@
          ! Now fill the arrays downselecting for non-shinethrough particles
          k = 1
          DO i = 1, nparticles
-            IF (.not.neut_lines(npoinc_extract,i)) THEN
-               R_start(k)   = R_lines(npoinc_extract,i)
-               Z_start(k)   = Z_lines(npoinc_extract,i)
-               phi_start(k) = PHI_lines(npoinc_extract,i)
-               vll_start(k) = vll_lines(npoinc_extract,i)
-               mu_start(k)  = moment_lines(npoinc_extract,i)
-               v_neut(3,k)   = 0.0
-               mass(k)      = mass2(i)
-               charge(k)   = charge2(i)
-               Zatom(k)    = Zatom2(i)
-               beam(k)     = beam2(i)
-               weight(k)   = weight2(i)
-               t_end(k)    = t_end2(i)
-               k = k + 1
-            END IF
+            IF (end_state(i) > 0) CYCLE
+            npoinc_extract = COUNT(R_lines(:,i)>0)-1
+            R_start(k)   = R_lines(npoinc_extract,i)
+            Z_start(k)   = Z_lines(npoinc_extract,i)
+            phi_start(k) = PHI_lines(npoinc_extract,i)
+            vll_start(k) = vll_lines(npoinc_extract,i)
+            mu_start(k)  = moment_lines(npoinc_extract,i)
+            v_neut(3,k)   = 0.0
+            mass(k)      = mass2(i)
+            charge(k)   = charge2(i)
+            Zatom(k)    = Zatom2(i)
+            beam(k)     = beam2(i)
+            weight(k)   = weight2(i)
+            t_end(k)    = t_end2(i)
+            k = k + 1
          END DO
-         DEALLOCATE(R_lines, Z_lines, PHI_lines, vll_lines, moment_lines, neut_lines)
+         DEALLOCATE(R_lines, Z_lines, PHI_lines, vll_lines, moment_lines, neut_lines, end_state)
          DEALLOCATE(mass2, charge2, Zatom2, beam2, weight2, t_end2)
 
          ! Restore quantities

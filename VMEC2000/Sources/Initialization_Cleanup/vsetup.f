@@ -2,7 +2,6 @@
       USE vmec_main
       USE vacmod
       USE realspace
-      USE vsvd
       USE mgrid_mod, ONLY: nbcoil_max, nlim_max, nextcur, mgrid_mode
       USE gmres_mod, ONLY: nfcn
 
@@ -40,11 +39,6 @@ C-----------------------------------------------
 !
       delbsq = one
       lpofr = .true.
-      lpprof = .true.
-      icurrout = 0
-      total_chi_square_n = one
-      total_chisq_n0 = total_chi_square_n
-      nchistp = 0
       imse = -1
       itse = 0
       isnodes = 0
