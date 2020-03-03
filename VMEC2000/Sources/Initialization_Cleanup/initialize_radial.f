@@ -3,7 +3,6 @@
       USE vmec_main
       USE vmec_params, ONLY: ntmax 
       USE realspace
-      USE vsvd
       USE xstuff
 #ifdef _HBANGLE
       USE angle_constraints, ONLY: getrz, store_init_array
@@ -21,7 +20,7 @@ C-----------------------------------------------
 C-----------------------------------------------
 C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
-      INTEGER :: neqs2_old = 0
+      INTEGER :: neqs_old = 0
       LOGICAL :: lreset_internal, linterp
       INTEGER :: nsmin, nsmax, i, j, k, l, lk
 C-----------------------------------------------
@@ -56,8 +55,6 @@ C-----------------------------------------------
       irzloff = ntmax*mns
       nrzt = nznt*ns
       neqs = 3*irzloff
-      neqs1 = neqs + 1
-      neqs2 = neqs1 + 1
 
 
       IF (grank .EQ. 0) THEN
@@ -74,10 +71,6 @@ C-----------------------------------------------
                IF (lscreen) PRINT 1001, nranks
             END IF
          END IF
-
-         IF (imovephi .gt. 0 .and. lscreen) THEN
-            PRINT *, 'Turning on Ip Matching by varying Phi-Edge.'
-         END IF
       END IF
 
 !
@@ -86,26 +79,26 @@ C-----------------------------------------------
       lreset_internal = .true.
       linterp = (ns_old .LT. ns .AND. ns_old .NE. 0)
       IF (ns_old .EQ. ns) RETURN
-      CALL allocate_ns(linterp, neqs2_old)
+      CALL allocate_ns(linterp, neqs_old)
 !
 !     SAVE THIS FOR INTERPOLATION
 !
-      IF (neqs2_old.gt.0 .and. linterp) THEN
+      IF (neqs_old.gt.0 .and. linterp) THEN
 #ifdef _HBANGLE
          ns = ns_old
          CALL getrz(xstore)
          ns = ns1 + 1
 #endif
-         IF(PARVMEC) THEN
+         IF (PARVMEC) THEN
 #if defined(MPI_OPT)
-            pgc(1:neqs2_old) = pscalxc(1:neqs2_old)*pxstore(1:neqs2_old)
+            pgc(1:neqs_old) = pscalxc(1:neqs_old)*pxstore(1:neqs_old)
             IF (lfreeb) THEN
                CALL MPI_Bcast(rbsq, SIZE(rbsq), MPI_REAL8,
      &                        0, NS_COMM, MPI_ERR)
             END IF
 #endif
          ELSE
-            gc(1:neqs2_old) = scalxc(1:neqs2_old)*xstore(1:neqs2_old)
+            gc(1:neqs_old) = scalxc(1:neqs_old)*xstore(1:neqs_old)
          END IF
       END IF
 
@@ -154,7 +147,7 @@ C-----------------------------------------------
       CALL restart_iter(delt)
 
       ns_old = ns
-      neqs2_old = neqs2
+      neqs_old = neqs
 
 1000  FORMAT(/'  NS = ',i4,' NO. FOURIER MODES = ',i4,' FTOLV = ',
      &       1p,e10.3,' NITER = ',i6)

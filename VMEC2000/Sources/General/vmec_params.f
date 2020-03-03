@@ -14,6 +14,7 @@ C-----------------------------------------------
      2  jmin2 = (/ 1,2,(2,ink=2,mpold) /),        !starting js(m) values for which R,Z are evolved
      3  jlam  = (/ 2,2,(2,ink=2,mpold) /)         !starting js(m) values for which Lambda is evolved
 
+!  Besure to update werror in fileout.f when adding more error flags.
       INTEGER, PARAMETER :: norm_term_flag=0, bad_jacobian_flag=1, 
      1                      more_iter_flag=2, 
      2                      jac75_flag=4, input_error_flag=5,

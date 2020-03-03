@@ -2,7 +2,6 @@
       USE vmec_main
       USE vmec_params
       USE vacmod
-      USE vsvd
       USE vspline
       USE timer_sub
       USE mgrid_mod, ONLY: nextcur, curlabel, nfper0, read_mgrid
@@ -712,26 +711,6 @@ C-----------------------------------------------
       
 
       iresidue = -1
-      IF (lrecon) THEN
-!
-!     DETERMINE CURRENT-FLUX CONSISTENCY CHECK
-!
-      signiota = one
-      IF (signgs*curtor*phiedge .lt. zero)signiota = -one
-         IF (sigma_current .EQ. zero) THEN
-            IF (lwrite) WRITE (*,*) 'Sigma_current cannot be zero!'
-            ier_flag = -1
-            RETURN
-         END IF
-
-!
-!     SET UP RECONSTRUCTION FIXED PROFILES
-!
-         dcon = ATAN(one)/45
-         CALL readrecon                   !Setup for reconstruction mode
-         CALL fixrecon(ier_flag)          !Fixed arrays for reconstruction
-         IF (ier_flag .ne. norm_term_flag) RETURN
-      END IF
 
       currv = mu0*curtor              !Convert to Internal units
 
