@@ -118,6 +118,13 @@
                                            zeff_max, zeff_min
       REAL(rprec)                       :: mix_ece, xval, yval, xics_v0
 
+      ! FOR BNORM RELATED VARIABLES
+      INTEGER, PARAMETER :: mf_bnorm = 24 ! Bn Fourier resolution
+      INTEGER, PARAMETER :: nf_bnorm = 20 ! Bn Fourier resolution 
+      INTEGER, PARAMETER :: md_bnorm = 24 ! VMEC, Surface and others related resolution
+      INTEGER, PARAMETER :: nd_bnorm = 20 ! VMEC, Surface and others related resolution
+      REAL(rprec), DIMENSION(0:mf_bnorm,-nf_bnorm:nf_bnorm) :: bnfou ! calculated Bn Fourier harmonics
+
       ! FOR REGCOIL WINDING SURFACE Fourier Series Representation
       INTEGER, PARAMETER :: mpol_rcws = 32    ! maximum poloidal mode number (min = -max)
       INTEGER, PARAMETER :: ntor_rcws = 32    ! maximum toroidal mode number (min = -max)
