@@ -3,9 +3,9 @@ MACHINE ?= $(shell uname -n | \
 	awk '/lazersons-air/{print "macports"}\
 	     /Lazersons-MacBook-Air/{print "macports"}\
 	     /cori/{print "cori"}\
-	     /dawson/{print "pppl"}\
-	     /sunfire/{print "pppl"}\
-	     /kruskal/{print "pppl"}\
+	     /dawson/{print "pppl_gcc"}\
+	     /sunfire/{print "pppl_gcc"}\
+	     /kruskal/{print "pppl_gcc"}\
 	     /landreman/{print "macports_landreman"}\
 	     /npablant/{print "macports_npablant"}\
 	     /vulcan/{print "vulcan"}\
