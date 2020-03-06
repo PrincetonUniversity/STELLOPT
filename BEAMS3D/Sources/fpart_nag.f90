@@ -57,6 +57,7 @@
       REAL*8 :: xparam, yparam, zparam, hx, hy, hz, hxi, hyi, hzi
       REAL*8 :: fval(4)
       INTEGER, parameter :: ict(8)=(/1,1,1,1,0,0,0,0/)
+      INTEGER, parameter :: ict2(10)=(/1,1,1,1,0,0,0,0,0,0/)
       REAL*8, PARAMETER :: one = 1
 !-----------------------------------------------------------------------
 !     Begin Subroutine
@@ -113,6 +114,10 @@
                          hx,hxi,hy,hyi,hz,hzi,&
                          MODB4D(1,1,1,1),nr,nphi,nz)
          modb_temp = fval(1); gradb(1:3) = fval(2:4)
+         ! r8evtricub
+         !CALL R8FVTRICUB(ict2,1,1,fval,i,j,k,xparam,yparam,zparam,&
+         !                hx,hxi,hy,hyi,hz,hzi,&
+         !                POT4D(1,1,1,1),nr,nphi,nz)
          CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                          hx,hxi,hy,hyi,hz,hzi,&
                          POT4D(1,1,1,1),nr,nphi,nz)
