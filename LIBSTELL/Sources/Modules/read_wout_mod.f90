@@ -18,6 +18,7 @@
 !                         for the computed equilibrium
 !
 
+      USE v3_utilities
       USE vmec_input, ONLY: lrfp, lmove_axis, nbfld
       USE mgrid_mod
 

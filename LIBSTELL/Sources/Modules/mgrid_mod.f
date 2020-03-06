@@ -1,5 +1,5 @@
       MODULE mgrid_mod
-      USE mpi_inc
+      USE v3_utilities
       USE stel_kinds
       USE vmec_input, ONLY: nbfld, nflxs, lfreeb, lrecon
       USE vsvd0, ONLY: nigroup, nparts, npfcoil, nbcoilsp, nfloops,
