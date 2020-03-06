@@ -229,12 +229,6 @@ MAP_PLANE.o \
 lmpar_mod.o \
 unique_boundary_PG.o \
 DE_preset.o \
-ajax_mod.o \
-linear1_mod.o \
-spline1_mod.o \
-spec_kind_mod.o \
-track_mod.o \
-write_mod.o \
 drandn.o \
 daxpby.o \
 dutfx.o \
