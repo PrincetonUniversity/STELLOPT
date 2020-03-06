@@ -19,7 +19,8 @@
                                  zaxis, phiaxis, S_ARR, U_ARR, POT_ARR, &
                                  ZEFF_ARR, TE, TI, NE, req_axis, zeq_axis, npot, &
                                  POT_SPL_S, ezspline_interp, phiedge_eq, TE_spl_s, &
-                                 NE_spl_s, TI_spl_s, ZEFF_spl_s, nne, nte, nti, nzeff
+                                 NE_spl_s, TI_spl_s, ZEFF_spl_s, nne, nte, nti, nzeff, &
+                                 plasma_mass, reff_eq
       USE beams3d_runtime, ONLY: id_string, npoinc, nbeams, beam, t_end, lverb, &
                                     lvmec, lpies, lspec, lcoil, lmgrid, lbeam, &
                                     lvessel, lvac, lbeam_simple, handle_err, nparticles_start, &
@@ -43,7 +44,7 @@
 !          ier          Error Flag
 !          iunit        File ID
 !-----------------------------------------------------------------------
-      INTEGER :: ier, iunit, i, d1, d2, d3, k, k1, k2, kmax
+      INTEGER :: ier, iunit, i, d1, d2, d3, k, k1, k2, kmax ,ider
       INTEGER(HID_T) :: options_gid, bfield_gid, efield_gid, plasma_gid, &
                         neutral_gid, wall_gid, marker_gid, qid_gid
       INTEGER, ALLOCATABLE, DIMENSION(:) :: itemp
@@ -148,6 +149,10 @@
 
                !--------------------------------------------------------------
                !           B-FIELD
+               !  NOTE On PSI:
+               !     In B_STS B_STS_eval_rho defines psi as
+               !         rho[0] = sqrt( (psi - Bdata->psi0) / delta );
+               !     So psi is TOROIDAL FLUX.
                !--------------------------------------------------------------
                CALL h5gcreate_f(fid,'bfield', bfield_gid, ier)
                CALL write_att_hdf5(bfield_gid,'active',qid_str,ier)
@@ -212,8 +217,11 @@
                   ! should really spline to new grid
                   ALLOCATE(r1dtemp(nr))
                   DO i = 1, nr
-                    CALL EZspline_interp(POT_spl_s,sqrt(DBLE(i-1)/DBLE(nr-1)),r1dtemp(i),ier)
-                    r1dtemp(i) = r1dtemp(i)*2*DBLE(i-1)/DBLE(nr-1)
+                    !CALL EZspline_interp(POT_spl_s,sqrt(DBLE(i-1)/DBLE(nr-1)),r1dtemp(i),ier)
+                    ider = 1
+                    CALL EZspline_derivative1_r8(POT_spl_s,ider,sqrt(DBLE(i-1)/DBLE(nr-1)),r1dtemp(i),ier)
+                    ! df/drho = df/ds * ds/drho = df/ds * 2*rho = df/ds * 2 * SQRT(s)
+                    r1dtemp(i) = r1dtemp(i)*2*SQRT(DBLE(i-1)/DBLE(nr-1))/reff_eq
                   END DO
                   CALL write_var_hdf5(qid_gid,'nrho',ier,INTVAR=nr)
                   CALL write_var_hdf5(qid_gid,'dvdrho',nr,ier,DBLVAR=r1dtemp)
@@ -221,7 +229,7 @@
                END IF
                CALL write_var_hdf5(qid_gid,'rhomin',ier,DBLVAR=DBLE(0))
                CALL write_var_hdf5(qid_gid,'rhomax',ier,DBLVAR=DBLE(1))
-               CALL write_var_hdf5(qid_gid,'reff',ier,DBLVAR=DBLE(phiedge_eq))
+               CALL write_var_hdf5(qid_gid,'reff',ier,DBLVAR=DBLE(reff_eq))
                CALL h5gclose_f(qid_gid, ier)
                CALL h5gclose_f(efield_gid, ier)
 
@@ -239,7 +247,7 @@
                CALL write_var_hdf5(qid_gid,'znum',ier,INTVAR=1)
                CALL write_var_hdf5(qid_gid,'anum',ier,INTVAR=1)
                CALL write_var_hdf5(qid_gid,'charge',ier,INTVAR=1)
-               CALL write_var_hdf5(qid_gid,'mass',ier,INTVAR=1)
+               CALL write_var_hdf5(qid_gid,'mass',ier,INTVAR=NINT(plasma_mass*5.97863320194E26))
                ALLOCATE(rtemp(nr,5,1))
                rtemp = 0
                rtemp(:,5,1) = 1
