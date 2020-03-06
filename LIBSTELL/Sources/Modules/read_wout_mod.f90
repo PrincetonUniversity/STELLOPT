@@ -1539,7 +1539,6 @@
 #endif
 
       SUBROUTINE write_wout_text(filename, ierr)
-      USE v3_utilities
       USE vsvd0, ONLY: nparts
       USE safe_open_mod
       USE stel_constants, ONLY: mu0
@@ -1837,7 +1836,6 @@
 
 #if defined(NETCDF)
       SUBROUTINE write_wout_nc(filename, ierr)
-      USE v3_utilities
       USE vsvd0, ONLY: nparts
       USE stel_constants, ONLY: mu0, zero, one
       USE ezcdf
