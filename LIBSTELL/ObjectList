@@ -172,7 +172,6 @@ PCHEV.o \
 erf.o \
 read_namelist.o \
 strip_comments.o \
-splint.o \
 parse_extension.o \
 convert_boundary_PG.o \
 vmec_putenv.o \
