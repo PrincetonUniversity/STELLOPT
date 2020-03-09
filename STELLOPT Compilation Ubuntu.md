@@ -14,6 +14,7 @@ Installation Steps
 . Verify that your version of Ubuntu is up to date.
 . Use apt-get to install your packages. 
 
+    sudo apt-get install git
     sudo apt-get install gfortran
     sudo apt-get install openmpi-bin
     sudo apt-get install libopenmpi-dev
