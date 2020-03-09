@@ -11,8 +11,8 @@ management.
 Installation Steps
 -----
 
-. Verify that your version of Ubuntu is up to date.
-. Use apt-get to install your packages. 
+1\. Verify that your version of Ubuntu is up to date.
+2\. Use apt-get to install your packages. 
 
     sudo apt-get install git
     sudo apt-get install gfortran
@@ -32,7 +32,7 @@ Installation Steps
     sudo apt-get install pgplot5
     sudo apt-get install libncarg-dev
 
-. Setup your environment variables
+3\. Setup your environment variables
 
     export MACHINE="ubuntu"
     export STELLOPT_PATH=<path to repo directory>
