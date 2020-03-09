@@ -1027,18 +1027,8 @@
       INTEGER, INTENT(inout)     ::  ier
       INTEGER :: dex, i
       REAL(rprec) :: x0,x1, x2, h, x3, xp
-      REAL(rprec) :: v0, v1, z0, z1, s2
+      REAL(rprec) :: v0, v1, z0, z1, s2, n0, n1, te0, te1, ti0, ti1
       REAL(rprec), PARAMETER :: eps = 1.0E-4
-      REAL(rprec), DIMENSION(10), PARAMETER :: glx = (/                       &
-     &   0.01304673574141414, 0.06746831665550774, 0.1602952158504878,         &
-     &   0.2833023029353764, 0.4255628305091844, 0.5744371694908156,           &
-     &   0.7166976970646236, 0.8397047841495122, 0.9325316833444923,           &
-     &   0.9869532642585859 /)
-      REAL(rprec), DIMENSION(10), PARAMETER :: glw = (/                       &
-     &   0.03333567215434407, 0.0747256745752903, 0.1095431812579910,          &
-     &   0.1346333596549982, 0.1477621123573764, 0.1477621123573764,           &
-     &   0.1346333596549982, 0.1095431812579910, 0.0747256745752903,           &
-     &   0.03333567215434407 /)
       IF (ier < 0) RETURN
       SELECT CASE(bootj_type)
          CASE('spline','akima_spline')
@@ -1047,19 +1037,21 @@
          CASE('boot_model_sal')
             val = 0
             s2    = s_val + eps
-            IF (s2 > 1.0) s2 = 1.0
-            CALL get_equil_ne(s_val,ne_type,v0,ier)
-            CALL get_equil_ne(s2,ne_type,v1,ier)
+            IF (s2 > 1.0) THEN
+               val=0
+               RETURN
+            END IF
+            CALL get_equil_ne(s_val,ne_type,n0,ier)
+            CALL get_equil_ne(s2,ne_type,n1,ier)
             CALL get_equil_zeff(s_val,zeff_type,z0,ier)
             CALL get_equil_zeff(s2,zeff_type,z1,ier)
-            val = val + bootj_aux_f(1)*(v1/v0-1)/eps 
-            val = val + bootj_aux_f(2)*((v1*z0)/(v0*z1)-1)/eps
-            CALL get_equil_te(s_val,te_type,v0,ier)
-            CALL get_equil_te(s2,te_type,v1,ier)
-            val = val + bootj_aux_f(3)*(v1/v0-1)/eps 
-            CALL get_equil_ti(s_val,ti_type,v0,ier)
-            CALL get_equil_ti(s2,ti_type,v1,ier)
-            val = val + bootj_aux_f(4)*(v1/v0-1)/eps 
+            CALL get_equil_te(s_val,te_type,te0,ier)
+            CALL get_equil_te(s2,te_type,te1,ier)
+            CALL get_equil_ti(s_val,ti_type,ti0,ier)
+            CALL get_equil_ti(s2,ti_type,ti1,ier)
+            val = (n1-n0)*(te0+ti0)/eps
+            val = val + n0*((te1-te0)+(ti1-ti0)/z0-(z1-z0)*ti0/(z0*z0))/eps
+            
          CASE DEFAULT
             CALL eval_prof_stel(s_val,bootj_type,val,21,bootj_aux_f(1:21),ier)
 !         CASE ('power_series')
