@@ -6,7 +6,7 @@ SUBROUTINE stellopt_optimize_mango(used_mango_algorithm)
 !-----------------------------------------------------------------------
 !     Libraries
 !-----------------------------------------------------------------------
-      USE mango
+      USE mango_mod
       USE stellopt_runtime, ONLY: opt_type, targets, sigmas, epsfcn, lcentered_differences, vars_min, vars_max
       USE stellopt_vars, ONLY: mango_problem_instance, nfunc_max, mango_bound_constraints
       USE mpi_params, ONLY: myid
@@ -93,7 +93,7 @@ SUBROUTINE stellopt_optimize_mango(used_mango_algorithm)
 !-----------------------------------------------------------------------
 !     Libraries
 !-----------------------------------------------------------------------
-      USE mango
+      USE mango_mod
       USE stellopt_runtime, ONLY: nvars, mtargets, vars, targets, sigmas
       USE stellopt_vars, ONLY: mango_problem_instance, best_residual_function
       USE mpi_inc
@@ -102,23 +102,34 @@ SUBROUTINE stellopt_optimize_mango(used_mango_algorithm)
 !     Local Variables
 !----------------------------------------------------------------------
       IMPLICIT NONE
+      INTEGER :: nvars_allprocs, mtargets_allprocs, ierr
       EXTERNAL mango_residual_function
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
 
-      ALLOCATE(best_residual_function(mtargets))
+      ! In STELLOPT, nvars and mtargets are 0 on procs other than the group leaders.
+      ! MANGO may require values for the corresponding terms N_parameters and N_terms that are >0;
+      ! the policy on this in MANGO is not yet finalized. So let's broadcast these variables to
+      ! make sure they are >0 on all procs.
+      nvars_allprocs = nvars
+      mtargets_allprocs = mtargets
+      CALL MPI_BCAST(nvars_allprocs, 1, MPI_INTEGER, 0, MPI_COMM_WORLD, ierr)
+      CALL MPI_BCAST(mtargets_allprocs, 1, MPI_INTEGER, 0, MPI_COMM_WORLD, ierr)
+
+      ALLOCATE(best_residual_function(mtargets_allprocs))
       !print *,"stellopt_mango_init called on proc ",mango_get_mpi_rank_world(mango_problem_instance)
       !if (mango_is_proc0_world(mango_problem_instance)) then
       if (.true.) THEN
-         print *,"Hello from stellopt_mango_init. nvars:",nvars
-         print *,"vars:",vars
-         print *,"mtargets:",mtargets
-         print *,"targets:",targets
-         print *,"sigmas:",sigmas
+         print "(a,i4,a,i6)","Hello from stellopt_mango_init. nvars:",nvars," mtargets:",mtargets
+         !print *,"vars:",vars
+         !print *,"mtargets:",mtargets
+         !print *,"targets:",targets
+         !print *,"sigmas:",sigmas
       end if
-      CALL mango_problem_create_least_squares(mango_problem_instance, nvars, vars, mtargets, targets, sigmas, best_residual_function, mango_residual_function)
+      CALL mango_problem_create_least_squares(mango_problem_instance, nvars_allprocs, vars, mtargets_allprocs, targets, sigmas, best_residual_function, mango_residual_function)
       CALL mango_mpi_partition_set_custom(mango_problem_instance, MPI_COMM_WORLD, MPI_COMM_STEL, MPI_COMM_MYWORLD)
+      CALL mango_mpi_partition_write(mango_problem_instance, "mango_mpi")
 
 !DEC$ ENDIF
   END SUBROUTINE stellopt_mango_init
@@ -129,7 +140,7 @@ SUBROUTINE stellopt_optimize_mango(used_mango_algorithm)
 !DEC$ IF DEFINED (MANGO)
     SUBROUTINE mango_residual_function(N_parameters, x, N_terms, f, failed, problem, user_data)
       USE iso_c_binding
-      USE mango
+      USE mango_mod
       USE stellopt_runtime, ONLY: targets, sigmas
       USE mpi_params, ONLY: myworkid, myid
 
@@ -188,7 +199,7 @@ SUBROUTINE stellopt_optimize_mango(used_mango_algorithm)
 !-----------------------------------------------------------------------
 !     Libraries
 !-----------------------------------------------------------------------
-      USE mango
+      USE mango_mod
       USE stellopt_vars, ONLY: mango_problem_instance, best_residual_function
 !-----------------------------------------------------------------------
 !     Local Variables

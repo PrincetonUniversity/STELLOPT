@@ -15,7 +15,7 @@
       USE vparams, ONLY: ndatafmax, mpol1d, ntord 
       USE vsvd0
 !DEC$ IF DEFINED (MANGO)
-      USE mango, ONLY: mango_problem
+      USE mango_mod, ONLY: mango_problem
 !DEC$ ENDIF
 !-----------------------------------------------------------------------
 !     Module Variables
