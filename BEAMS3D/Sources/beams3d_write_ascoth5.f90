@@ -221,7 +221,7 @@
                     ider = 1
                     CALL EZspline_derivative1_r8(POT_spl_s,ider,sqrt(DBLE(i-1)/DBLE(nr-1)),r1dtemp(i),ier)
                     ! df/drho = df/ds * ds/drho = df/ds * 2*rho = df/ds * 2 * SQRT(s)
-                    r1dtemp(i) = r1dtemp(i)*2*SQRT(DBLE(i-1)/DBLE(nr-1))/reff_eq
+                    r1dtemp(i) = -r1dtemp(i)*2*SQRT(DBLE(i-1)/DBLE(nr-1))/reff_eq
                   END DO
                   CALL write_var_hdf5(qid_gid,'nrho',ier,INTVAR=nr)
                   CALL write_var_hdf5(qid_gid,'dvdrho',nr,ier,DBLVAR=r1dtemp)
