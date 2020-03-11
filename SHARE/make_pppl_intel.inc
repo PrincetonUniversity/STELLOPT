@@ -3,10 +3,10 @@
 #######################################################################
   SHELL = /bin/sh
   PWD1 = `pwd`
-  MYHOME = $(HOME)/bin
-  PRECOMP:= /lib/cpp -traditional -DLINUX
-  COMPILE = $(FC)
-  COMPILE_FREE = $(FC) -ffree-form -ffree-line-length-none -ffixed-line-length-none
+  MYHOME = $(STELLOPT_PATH)/bin
+  PRECOMP:= fpp -C -P -DLINUX
+  COMPILE = ifort
+  COMPILE_FREE = ifort
   LINK    = ld $(FLAGS) -o
   LINK_AR = ar -ruv
   LINK_C  = $(CC) -shared -Wl,--no-undefined -Wl,-export-dynamic 
@@ -14,16 +14,15 @@
 #######################################################################
 #            Define Compiler Flags
 #######################################################################
-  FLAGS_R = -O2 -fexternal-blas
-#  FLAGS_R = -g -O0 -fexternal-blas -fcheck=all -fbacktrace
-  FLAGS_D = -g -O0 -fexternal-blas -fcheck=all -fbacktrace
+  FLAGS_R = -mcmodel=large -O2 -m64 -unroll0 -fno-alias -ip -traceback \
+	-init=zero,arrays -I${MKLROOT}/include -mkl
+  FLAGS_D = -O0 -g -traceback -check all -check bounds \
+	-check noarg_temp_created -check uninit \
+	-ftrapuv -init=zero,arrays -debug all -I${MKLROOT}/include -mkl 
 
-# Crutch for broken module vars
-  NETCDF_F = /usr/pppl/gcc/6.1-pkgs/netcdf-fortran-4.4.4
-  NETCDF_C = /usr/pppl/gcc/6.1-pkgs/netcdf-c-4.4.1
-
-  LIBS    = -L$(ACML_HOME)/lib -lacml \
-            -L$(SCALAPACK_HOME)/lib -lscalapack 
+  LIBS     =  ${MKLROOT}/lib/intel64/libmkl_blas95_lp64.a \
+              ${MKLROOT}/lib/intel64/libmkl_lapack95_lp64.a -lpthread -lm -ldl \
+	      -L$(SCALAPACK_HOME)/lib -lscalapack 
 
 # BLACS requires full links to library files
   LIBS    += ${BLACS_HOME}/lib/blacs_MPI-LINUX-0.a
@@ -35,15 +34,11 @@
 #######################################################################
   LMPI    = T
   MPI_COMPILE = mpifort
-  MPI_COMPILE_FREE = mpifort -ffree-form \
-                     -ffree-line-length-none -ffixed-line-length-none
+  MPI_COMPILE_FREE = mpifort
   MPI_COMPILE_C = mpicc
-  MPI_LINK = mpicc -shared -pthread -Wl,--no-undefined -Wl,-export-dynamic
+  MPI_LINK = mpifort -shared -fpic
   MPI_RUN = srun
-  MPI_RUN_OPTS = -N 2 -n 64 -p general -t 2:00:00 -J STELLOPT_BENCH
-  MPI_RUN_OPTS_SM = -N 2 -n 64 -p general -t 2:00:00 -J STELLOPT_BENCH
-  MPI_RUN_OPTS_MD = -N 4 -n 128 -p general -t 2:00:00 -J STELLOPT_BENCH
-  MPI_RUN_OPTS_LG = -N 8 -n 256 -p general -t 2:00:00 -J STELLOPT_BENCH
+  MPI_RUN_OPTS = -n 64 -p general -t 5:00:00 -J STELLOPT_BENCH
 
 #######################################################################
 #            NAG Options
@@ -55,8 +50,17 @@
 #            NETCDF Options
 #######################################################################
   LNETCDF = T
-  NETCDF_INC = -I$(NETCDF_F)/include -I$(NETCDF_C)/include 
-  NETCDF_LIB = -L$(NETCDF_C)/lib -lnetcdf -L$(NETCDF_F)/lib -lnetcdff
+  NETCDF_INC = -I$(NETCDF_FORTRAN_HOME)/include -I$(NETCDF_C_HOME)/include 
+  NETCDF_LIB = -L$(NETCDF_C_HOME)/lib -lnetcdf -L$(NETCDF_FORTRAN_HOME)/lib -lnetcdff
+
+#######################################################################
+#            NTCC Options
+#######################################################################
+  LNTCC = T
+  NTCC_INC = -I$(NTCC_HOME)/mod -I$(PSPLINE_HOME)/mod
+  NTCC_LIB = -L$(NTCC_HOME)/lib -laladdinsub -lr8slatec -ladpak\
+             -lcppsub -lcomput -lportlib -lezcdf -lmds_sub \
+             -lmdstransp -lvaxonly -L$(PSPLINE_HOME)/lib -lpspline
 
 #######################################################################
 #            HDF5 Options
@@ -69,23 +73,16 @@
 #######################################################################
 #             PGPLOT Options
 #######################################################################
-  LPGPLOT = T
+  LPGPLOT = F
   PGPLOT_INC = 
   PGPLOT_LIB = -L$(PGPLOT_DIR) -lpgplot -L/usr/X11R6/lib -lX11
 
 #######################################################################
 #             SILO Options
 #######################################################################
-  LSILO = T
+  LSILO = F
   SILO_INC = -I$(SILOHOME)/include
   SILO_LIB = -L$(SILOHOME)/lib -lsilo
-
-#######################################################################
-#            FFTW3 Options
-#######################################################################
-  LFFTW3 = F
-  FFTW3_INC = -I$(FFTW_HOME)/include
-  FFTW3_LIB = -L$(FFTW_HOME)/lib -lfftw3
 
 #######################################################################
 #            DKES/NEO Options
@@ -96,7 +93,7 @@
 #######################################################################
 #            GENE Options
 #######################################################################
-  LGENE = T
+  LGENE = F
   GENE_INC = -I$(GENE_PATH)
   GENE_DIR = $(GENE_PATH)
   LIB_GENE = libgene.a
@@ -108,7 +105,7 @@
 #######################################################################
 #            COILOPT++ Options
 #######################################################################
-  LCOILOPT = T
+  LCOILOPT = F
   COILOPT_INC = -I$(COILOPT_PATH)
   COILOPTPP_DIR = $(COILOPT_PATH)
   LIB_COILOPTPP = libcoilopt++.a
@@ -137,7 +134,7 @@
 #######################################################################
 #            REGCOIL Options
 #######################################################################
-  LREGCOIL= F
+  LREGCOIL= T
   REGCOIL_DIR = $(REGCOIL_PATH)
   REGCOIL_INC = -I$(REGCOIL_DIR) 
   LIB_REGCOIL = libregcoil.a
@@ -158,4 +155,3 @@
 #            LIBSTELL Shared Options
 #######################################################################
 LIB_SHARE = -lc -lgfortran -lstdc++ -lmpi -lmpi_mpifh -lz -lc -lm -lpthread $(LIBS) -lc
-

@@ -13,7 +13,6 @@
       USE stel_kinds, ONLY: rprec
       USE fieldlines_grid
       USE fieldlines_runtime, ONLY: lmu, mu, ladvanced
-      USE sheppack
       USE EZspline_obj
       USE EZspline
 !-----------------------------------------------------------------------
