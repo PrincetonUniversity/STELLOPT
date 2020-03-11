@@ -247,7 +247,7 @@
                !--------------------------------------------------------------
                CALL h5gcreate_f(fid,'plasma', plasma_gid, ier)
                CALL write_att_hdf5(plasma_gid,'active',qid_str,ier)
-               CALL h5gcreate_f(plasma_gid,'plasma_1D_'//qid_str, qid_gid, ier)
+               CALL h5gcreate_f(plasma_gid,'plasma_1DS_'//qid_str, qid_gid, ier)
                CALL write_att_hdf5(qid_gid,'date',temp_str8,ier)
                CALL write_att_hdf5(qid_gid,'description','Data initialized from BEAMS3D',ier)
                CALL write_var_hdf5(qid_gid,'nion',ier,INTVAR=1)
