@@ -346,6 +346,23 @@
                IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,'beams3d_ascot5_'//TRIM(id_string)//'.h5',ier)
             END IF
          CASE('MARKER')
+            ! For now we assume we will only run this in deposition mode
+            ! so that means we look at index (1,i) since
+            !    0: starting point
+            !    1: Ionization point (or wall)
+            !    2: Gyrocenter
+            d1 = LBOUND(R_lines,DIM=2)
+            d2 = UBOUND(R_lines,DIM=2)
+            d3 = 0
+            IF (lbeam) d3 = 2
+            ALLOCATE(itemp(nprocs_beams))
+            itemp = 0
+            itemp(myworkid+1) = COUNT(end_state(d1:d2)==0)
+            CALL MPI_ALLREDUCE(MPI_IN_PLACE, itemp, nprocs_beams, MPI_INTEGER, MPI_SUM, MPI_COMM_BEAMS, ierr_mpi)
+            k2 = SUM(itemp(1:myworkid+1))
+            k1 = k2 - itemp(myworkid+1) + 1
+            kmax = SUM(itemp)
+            DEALLOCATE(itemp)
             IF (myworkid == master) THEN
                CALL open_hdf5('beams3d_ascot5_'//TRIM(id_string)//'.h5',fid,ier,LCREATE=.false.)
                IF (ier /= 0) CALL handle_err(HDF5_OPEN_ERR,'beams3d_ascot5_'//TRIM(id_string)//'.h5',ier)
@@ -355,7 +372,7 @@
                CALL h5gcreate_f(fid,'marker', marker_gid, ier)
                CALL write_att_hdf5(marker_gid,'active',qid_str,ier)
                CALL h5gcreate_f(marker_gid,'gc_'//qid_str, qid_gid, ier)
-               CALL write_var_hdf5(qid_gid,'n',ier,INTVAR=nparticles)
+               CALL write_var_hdf5(qid_gid,'n',ier,INTVAR=kmax)
                CALL DATE_AND_TIME(DATE=temp_str8)
                CALL write_att_hdf5(qid_gid,'date',temp_str8,ier)
                CALL write_att_hdf5(qid_gid,'description','Data initialized from BEAMS3D',ier)
@@ -387,27 +404,6 @@
                CALL close_hdf5(fid,ier)
                IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,'beams3d_ascot5_'//TRIM(id_string)//'.h5',ier)
             END IF
-            ! For now we assume we will only run this in deposition mode
-            ! so that means we look at index (1,i) since
-            !    0: starting point
-            !    1: Ionization point (or wall)
-            !    2: Gyrocenter
-            d1 = LBOUND(R_lines,DIM=2)
-            d2 = UBOUND(R_lines,DIM=2)
-            d3 = 0
-            ALLOCATE(itemp(nprocs_beams))
-            itemp = 0
-            IF (lbeam) THEN
-               d3 = 2
-               itemp(myworkid+1) = COUNT(end_state(d1:d2) == 0)
-            ELSE
-               itemp(myworkid+1) = COUNT(end_state(d1:d2) <  3)
-            END IF
-            CALL MPI_ALLREDUCE(MPI_IN_PLACE, itemp, nprocs_beams, MPI_INTEGER, MPI_SUM, MPI_COMM_BEAMS, ierr_mpi)
-            k2 = SUM(itemp(1:myworkid+1))
-            k1 = k2 - itemp(myworkid+1) + 1
-            kmax = SUM(itemp)
-            DEALLOCATE(itemp)
             ALLOCATE(rtemp(k1:k2,13,1))
             k = k1
             DO i = d1, d2
