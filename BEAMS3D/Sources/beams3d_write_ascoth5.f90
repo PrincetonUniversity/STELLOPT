@@ -257,10 +257,11 @@
                CALL write_var_hdf5(qid_gid,'charge',ier,INTVAR=1)
                CALL write_var_hdf5(qid_gid,'mass',ier,INTVAR=NINT(plasma_mass*5.97863320194E26))
                ALLOCATE(rtemp(nr,5,1))
+               dbl_temp = SQRT(MAXVAL(MAXVAL(MAXVAL(S_ARR,3),2),1))
                rtemp = 0
                rtemp(:,5,1) = 1
                DO i = 1, nr
-                  rtemp(i,1,1)=DBLE(i-1)/DBLE(nr-1)
+                  rtemp(i,1,1)=dbl_temp*DBLE(i-1)/DBLE(nr-1)
                END DO
                IF (nte > 0)   CALL EZspline_interp( TE_spl_s,   nr, rtemp(:,1,1)**2, rtemp(:,2,1), ier)
                IF (nne > 0)   CALL EZspline_interp( NE_spl_s,   nr, rtemp(:,1,1)**2, rtemp(:,3,1), ier)
