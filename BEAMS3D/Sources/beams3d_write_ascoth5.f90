@@ -22,7 +22,7 @@
                                  NE_spl_s, TI_spl_s, ZEFF_spl_s, nne, nte, nti, nzeff, &
                                  plasma_mass, reff_eq
       USE beams3d_runtime, ONLY: id_string, npoinc, nbeams, beam, t_end, lverb, &
-                                    lvmec, lpies, lspec, lcoil, lmgrid, lbeam, &
+                                    lvmec, lpies, lspec, lcoil, lmgrid, lbeam, lplasma_only, &
                                     lvessel, lvac, lbeam_simple, handle_err, nparticles_start, &
                                     HDF5_OPEN_ERR,HDF5_WRITE_ERR,&
                                     HDF5_CLOSE_ERR, BEAMS3D_VERSION, weight, e_beams, p_beams,&
@@ -91,7 +91,7 @@
                   CALL write_var_hdf5(qid_gid,'ENABLE_COULOMB_COLLISIONS',ier,DBLVAR=DBLE(1))
                   CALL write_var_hdf5(qid_gid,'DISABLE_ENERGY_CCOLL',ier,DBLVAR=DBLE(0))
                   CALL write_var_hdf5(qid_gid,'DISABLE_PITCH_CCOLL',ier,DBLVAR=DBLE(0))
-                  CALL write_var_hdf5(qid_gid,'DISABLE_GCDIFF_CCOLL',ier,DBLVAR=DBLE(0))
+                  CALL write_var_hdf5(qid_gid,'DISABLE_GCDIFF_CCOLL',ier,DBLVAR=DBLE(1))
                ELSE
                   CALL write_var_hdf5(qid_gid,'ENABLE_COULOMB_COLLISIONS',ier,DBLVAR=DBLE(0))
                   CALL write_var_hdf5(qid_gid,'DISABLE_ENERGY_CCOLL',ier,DBLVAR=DBLE(1))
@@ -113,7 +113,7 @@
                CALL write_var_hdf5(qid_gid,'ENDCOND_MIN_THERMAL',ier,DBLVAR=DBLE(1.5))
                CALL write_var_hdf5(qid_gid,'ENDCOND_MAX_POLOIDALORBS',ier,DBLVAR=DBLE(100))
                CALL write_var_hdf5(qid_gid,'ENDCOND_MAX_TOROIDALORBS',ier,DBLVAR=DBLE(100))
-               CALL write_var_hdf5(qid_gid,'ENABLE_DIST_5D',ier,DBLVAR=DBLE(1))
+               CALL write_var_hdf5(qid_gid,'ENABLE_DIST_5D',ier,DBLVAR=DBLE(0))
                CALL write_var_hdf5(qid_gid,'ENABLE_DIST_6D',ier,DBLVAR=DBLE(0))
                CALL write_var_hdf5(qid_gid,'ENABLE_DIST_RHO5D',ier,DBLVAR=DBLE(1))
                CALL write_var_hdf5(qid_gid,'ENABLE_DIST_RHO6D',ier,DBLVAR=DBLE(0))
@@ -124,7 +124,11 @@
                CALL write_var_hdf5(qid_gid,'DIST_MIN_PHI',ier,DBLVAR=phiaxis(1)*180/pi)
                CALL write_var_hdf5(qid_gid,'DIST_MAX_PHI',ier,DBLVAR=phiaxis(nphi)*180/pi)
                CALL write_var_hdf5(qid_gid,'DIST_MIN_RHO',ier,DBLVAR=DBLE(0))
-               CALL write_var_hdf5(qid_gid,'DIST_MAX_RHO',ier,DBLVAR=DBLE(2.0))
+               IF (lplasma_only) THEN
+                  CALL write_var_hdf5(qid_gid,'DIST_MAX_RHO',ier,DBLVAR=DBLE(1.0))
+               ELSE
+                  CALL write_var_hdf5(qid_gid,'DIST_MAX_RHO',ier,DBLVAR=DBLE(1.5))
+               ENDIF
                CALL write_var_hdf5(qid_gid,'DIST_MIN_THETA',ier,DBLVAR=DBLE(0))
                CALL write_var_hdf5(qid_gid,'DIST_MAX_THETA',ier,DBLVAR=DBLE(360))
                CALL write_var_hdf5(qid_gid,'DIST_MIN_TIME',ier,DBLVAR=DBLE(0))
@@ -136,7 +140,7 @@
                CALL write_var_hdf5(qid_gid,'DIST_NBIN_PHI',ier,DBLVAR=DBLE(4))
                CALL write_var_hdf5(qid_gid,'DIST_NBIN_RHO',ier,DBLVAR=DBLE(ns_prof1))
                CALL write_var_hdf5(qid_gid,'DIST_NBIN_THETA',ier,DBLVAR=DBLE(16))
-               CALL write_var_hdf5(qid_gid,'DIST_NBIN_TIME',ier,DBLVAR=DBLE(1))
+               CALL write_var_hdf5(qid_gid,'DIST_NBIN_TIME',ier,DBLVAR=DBLE(MAXVAL(t_end_in)))
                CALL write_var_hdf5(qid_gid,'DIST_NBIN_CHARGE',ier,DBLVAR=DBLE(1))
                CALL write_var_hdf5(qid_gid,'ENABLE_ORBITWRITE',ier,DBLVAR=DBLE(0))
                CALL write_var_hdf5(qid_gid,'ORBITWRITE_MODE',ier,DBLVAR=DBLE(1))
@@ -184,7 +188,9 @@
                CALL write_var_hdf5(qid_gid,'axisr',nphi,ier,DBLVAR=req_axis)
                CALL write_var_hdf5(qid_gid,'axisz',nphi,ier,DBLVAR=zeq_axis)
                CALL write_var_hdf5(qid_gid,'psi0',ier,DBLVAR=DBLE(0))
-               CALL write_var_hdf5(qid_gid,'psi1',ier,DBLVAR=DBLE(phiedge_eq))
+               dbl_temp = 1.05
+               IF (lplasma_only) dbl_temp = 1.0
+               CALL write_var_hdf5(qid_gid,'psi1',ier,DBLVAR=DBLE(phiedge_eq)*dbl_temp)
                ALLOCATE(rtemp(nr,nphi,nz))
                rtemp = RESHAPE(B_R,(/nr,nphi,nz/),ORDER=(/1,2,3/))
                CALL write_var_hdf5(qid_gid,'br',nr,nphi,nz,ier,DBLVAR=rtemp)
