@@ -488,6 +488,7 @@ stellopt_sfincs.o : \
       $(BOOTSJ_DIR)/Release/parambs.o \
       $(BOOTSJ_DIR)/Release/vmec0.o \
       $(BOOTSJ_DIR)/Release/trig.o \
+      $(LIB_DIR)/Release/mpi_params.o \
       $(LIB_DIR)/Release/read_boozer_mod.o
       
 

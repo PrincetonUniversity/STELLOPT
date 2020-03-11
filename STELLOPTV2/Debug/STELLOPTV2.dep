@@ -464,6 +464,7 @@ stellopt_sfincs.o : \
       $(BOOTSJ_DIR)/Debug/parambs.o \
       $(BOOTSJ_DIR)/Debug/vmec0.o \
       $(BOOTSJ_DIR)/Debug/trig.o \
+      $(LIB_DIR)/Debug/mpi_params.o
       $(LIB_DIR)/Debug/read_boozer_mod.o
       
 
