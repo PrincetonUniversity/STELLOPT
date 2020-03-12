@@ -214,6 +214,10 @@
                CALL h5gcreate_f(efield_gid,'E_1DS_'//qid_str, qid_gid, ier)
                CALL write_att_hdf5(qid_gid,'date',temp_str8,ier)
                CALL write_att_hdf5(qid_gid,'description','Data initialized from BEAMS3D',ier)
+               dbl_temp = SQRT(MAXVAL(MAXVAL(MAXVAL(S_ARR,3),2),1))
+               CALL write_var_hdf5(qid_gid,'rhomin',ier,DBLVAR=DBLE(0))
+               CALL write_var_hdf5(qid_gid,'rhomax',ier,DBLVAR=DBLE(dbl_temp))
+               CALL write_var_hdf5(qid_gid,'reff',ier,DBLVAR=DBLE(reff_eq))
                IF (npot < 1) THEN ! Because we can run with E=0
                   ALLOCATE(r1dtemp(5))
                   r1dtemp = 0
@@ -227,7 +231,7 @@
                   DO i = 1, nr
                     !CALL EZspline_interp(POT_spl_s,sqrt(DBLE(i-1)/DBLE(nr-1)),r1dtemp(i),ier)
                     ider = 1
-                    CALL EZspline_derivative1_r8(POT_spl_s,ider,sqrt(DBLE(i-1)/DBLE(nr-1)),r1dtemp(i),ier)
+                    CALL EZspline_derivative1_r8(POT_spl_s,ider,dbl_temp*sqrt(DBLE(i-1)/DBLE(nr-1)),r1dtemp(i),ier)
                     ! df/drho = df/ds * ds/drho = df/ds * 2*rho = df/ds * 2 * SQRT(s)
                     r1dtemp(i) = -r1dtemp(i)*2*SQRT(DBLE(i-1)/DBLE(nr-1))/reff_eq
                   END DO
@@ -235,9 +239,6 @@
                   CALL write_var_hdf5(qid_gid,'dvdrho',nr,ier,DBLVAR=r1dtemp)
                   DEALLOCATE(r1dtemp)
                END IF
-               CALL write_var_hdf5(qid_gid,'rhomin',ier,DBLVAR=DBLE(0))
-               CALL write_var_hdf5(qid_gid,'rhomax',ier,DBLVAR=DBLE(1))
-               CALL write_var_hdf5(qid_gid,'reff',ier,DBLVAR=DBLE(reff_eq))
                CALL h5gclose_f(qid_gid, ier)
                CALL h5gclose_f(efield_gid, ier)
 
@@ -258,6 +259,8 @@
                CALL write_var_hdf5(qid_gid,'mass',ier,INTVAR=NINT(plasma_mass*5.97863320194E26))
                ALLOCATE(rtemp(nr,5,1))
                dbl_temp = SQRT(MAXVAL(MAXVAL(MAXVAL(S_ARR,3),2),1))
+               CALL write_var_hdf5(qid_gid,'rhomin',ier,DBLVAR=DBLE(0))
+               CALL write_var_hdf5(qid_gid,'rhomax',ier,DBLVAR=dbl_temp)
                rtemp = 0
                rtemp(:,5,1) = 1
                DO i = 1, nr
