@@ -218,6 +218,7 @@
                CALL write_var_hdf5(qid_gid,'rhomin',ier,DBLVAR=DBLE(0))
                CALL write_var_hdf5(qid_gid,'rhomax',ier,DBLVAR=DBLE(rho_max))
                CALL write_var_hdf5(qid_gid,'reff',ier,DBLVAR=DBLE(reff_eq))
+               ! Values must be equidistant in rho.
                IF (npot < 1) THEN ! Because we can run with E=0
                   ALLOCATE(r1dtemp(5))
                   r1dtemp = 0
@@ -230,10 +231,10 @@
                   DO i = 1, nr
                      rho_temp = rho_max*DBLE(i-1)/DBLE(nr-1)
                      s_temp = rho_temp*rho_temp
-                     ier = 1
-                     IF (rho_temp<=1) CALL EZspline_derivative1_r8(POT_spl_s,ider,rho_temp,r1dtemp(i),ier)
+                     ider = 1
+                     IF (s_temp<=1) CALL EZspline_derivative1_r8(POT_spl_s,ider,s_temp,r1dtemp(i),ier)
                      ! df/drho = df/ds * ds/drho = df/ds * 2*rho = df/ds * 2 * SQRT(s)
-                     r1dtemp(i) = -r1dtemp(i)*2*SQRT(DBLE(i-1)/DBLE(nr-1))/reff_eq
+                     r1dtemp(i) = -r1dtemp(i)*2*rho_temp/reff_eq
                   END DO
                   CALL write_var_hdf5(qid_gid,'nrho',ier,INTVAR=nr)
                   CALL write_var_hdf5(qid_gid,'dvdrho',nr,ier,DBLVAR=r1dtemp)
@@ -265,12 +266,14 @@
                DO i = 1, nr
                   rtemp(i,1,1)=rho_max*DBLE(i-1)/DBLE(nr-1)
                END DO
-               d1 = COUNT(rtemp(:,1,1) <= 1)
-               IF (nte > 0)   CALL EZspline_interp( TE_spl_s,   nr, rtemp(1:d1,1,1)**2, rtemp(1:d1,2,1), ier)
-               IF (nne > 0)   CALL EZspline_interp( NE_spl_s,   nr, rtemp(1:d1,1,1)**2, rtemp(1:d1,3,1), ier)
-               IF (nti > 0)   CALL EZspline_interp( TI_spl_s,   nr, rtemp(1:d1,1,1)**2, rtemp(1:d1,4,1), ier)
-               IF (nzeff > 0) CALL EZspline_interp( ZEFF_spl_s, nr, rtemp(1:d1,1,1)**2, rtemp(1:d1,5,1), ier)
-               rtemp(1:d1,5,1)=rtemp(1:d1,3,1)/rtemp(1:d1,5,1)
+               d1 = COUNT(rtemp(:,1,1) <= 1)+1
+               PRINT *,d1
+               IF (nte > 0)   CALL EZspline_interp( TE_spl_s,   nr, rtemp(:,1,1)**2, rtemp(:,2,1), ier)
+               IF (nne > 0)   CALL EZspline_interp( NE_spl_s,   nr, rtemp(:,1,1)**2, rtemp(:,3,1), ier)
+               IF (nti > 0)   CALL EZspline_interp( TI_spl_s,   nr, rtemp(:,1,1)**2, rtemp(:,4,1), ier)
+               IF (nzeff > 0) CALL EZspline_interp( ZEFF_spl_s, nr, rtemp(:,1,1)**2, rtemp(:,5,1), ier)
+               rtemp(d1:,2:4,1) = 0
+               rtemp(:,5,1)=rtemp(:,3,1)/rtemp(:,5,1)
                CALL write_var_hdf5( qid_gid, 'rho',          nr, ier, DBLVAR=rtemp(1:nr,1,1))
                CALL write_var_hdf5( qid_gid, 'etemperature', nr, ier, DBLVAR=rtemp(1:nr,2,1))
                CALL write_var_hdf5( qid_gid, 'edensity',     nr, ier, DBLVAR=rtemp(1:nr,3,1))
