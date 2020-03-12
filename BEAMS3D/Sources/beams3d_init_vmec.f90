@@ -129,6 +129,8 @@
          ELSE
             WRITE(6,'(A,F7.3,A,F7.3,A)') '   BETA    = ',betatot,';  I  = ',Itor,' [A]'
          END IF
+         WRITE(6,'(A,F7.3,A)')        '   AMINOR  = ',reff_eq,' [m]'
+         WRITE(6,'(A,F7.3,A)')        '   PHIEDGE = ',phiedge_eq,' [Wb]'
          WRITE(6,'(A,F7.3,A)')        '   VOLUME  = ',Volume,' [m^3]'
       END IF
 
