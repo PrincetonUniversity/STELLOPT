@@ -215,7 +215,7 @@
                CALL write_att_hdf5(qid_gid,'date',temp_str8,ier)
                CALL write_att_hdf5(qid_gid,'description','Data initialized from BEAMS3D',ier)
                CALL write_var_hdf5(qid_gid,'rhomin',ier,DBLVAR=DBLE(0))
-               CALL write_var_hdf5(qid_gid,'rhomax',ier,DBLVAR=DBLE(rho_max))
+               CALL write_var_hdf5(qid_gid,'rhomax',ier,DBLVAR=rho_max)
                CALL write_var_hdf5(qid_gid,'reff',ier,DBLVAR=DBLE(reff_eq))
                ! Values must be equidistant in rho.
                IF (npot < 1) THEN ! Because we can run with E=0
