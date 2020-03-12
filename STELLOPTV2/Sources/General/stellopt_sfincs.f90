@@ -7,7 +7,6 @@
 !                    and/or chisq_bootstrap.f90.
 !-----------------------------------------------------------------------
       SUBROUTINE stellopt_sfincs(lscreen,iflag)
-!DEC$ IF DEFINED (SFINCS)
 !-----------------------------------------------------------------------
 !     Libraries
 !-----------------------------------------------------------------------
@@ -18,6 +17,7 @@
       USE mpi_params
       USE mpi_inc
 
+!DEC$ IF DEFINED (SFINCS)
       USE sfincs_main, only: sfincs_init, sfincs_prepare, sfincs_run
       USE globalVariables, only: sfincs_inputFilename => inputFilename, sfincs_outputFilename => outputFilename, equilibriumFile, FSABjHat, FSABHat2
       USE equil_vals, only: phiedge
