@@ -48,7 +48,7 @@
       INTEGER(HID_T) :: options_gid, bfield_gid, efield_gid, plasma_gid, &
                         neutral_gid, wall_gid, marker_gid, qid_gid
       INTEGER, ALLOCATABLE, DIMENSION(:) :: itemp
-      DOUBLE PRECISION :: dbl_temp
+      DOUBLE PRECISION :: rho_temp, s_temp, rho_max, dbl_temp
       DOUBLE PRECISION, ALLOCATABLE :: rtemp(:,:,:), r1dtemp(:)
       CHARACTER(LEN=10) ::  qid_str
       CHARACTER(LEN=8) :: temp_str8
@@ -64,8 +64,9 @@
             IF (myworkid == master) THEN
                CALL open_hdf5('beams3d_ascot5_'//TRIM(id_string)//'.h5',fid,ier,LCREATE=.true.)
                IF (ier /= 0) CALL handle_err(HDF5_OPEN_ERR,'beams3d_ascot5_'//TRIM(id_string)//'.h5',ier)
-               ! Write the ID
-               !CALL write_var_hdf5(fid,'/options/',nz,ier,DBLVAR=zaxis,ATT='Vertical Axis [rad]',ATT_NAME='description')
+
+               ! Define rho_max for use later on
+               rho_max = SQRT(MAXVAL(MAXVAL(MAXVAL(S_ARR,3),2),1))
 
                !--------------------------------------------------------------
                !           OPTIONS
@@ -214,9 +215,8 @@
                CALL h5gcreate_f(efield_gid,'E_1DS_'//qid_str, qid_gid, ier)
                CALL write_att_hdf5(qid_gid,'date',temp_str8,ier)
                CALL write_att_hdf5(qid_gid,'description','Data initialized from BEAMS3D',ier)
-               dbl_temp = SQRT(MAXVAL(MAXVAL(MAXVAL(S_ARR,3),2),1))
                CALL write_var_hdf5(qid_gid,'rhomin',ier,DBLVAR=DBLE(0))
-               CALL write_var_hdf5(qid_gid,'rhomax',ier,DBLVAR=DBLE(dbl_temp))
+               CALL write_var_hdf5(qid_gid,'rhomax',ier,DBLVAR=DBLE(rho_max))
                CALL write_var_hdf5(qid_gid,'reff',ier,DBLVAR=DBLE(reff_eq))
                IF (npot < 1) THEN ! Because we can run with E=0
                   ALLOCATE(r1dtemp(5))
@@ -225,15 +225,15 @@
                   CALL write_var_hdf5(qid_gid,'dvdrho',5,ier,DBLVAR=r1dtemp)
                   DEALLOCATE(r1dtemp)
                ELSE
-                  ! This is glitchy since we do not require POT_AUX_S to be equidistant
-                  ! should really spline to new grid
                   ALLOCATE(r1dtemp(nr))
+                  r1dtemp = 0
                   DO i = 1, nr
-                    !CALL EZspline_interp(POT_spl_s,sqrt(DBLE(i-1)/DBLE(nr-1)),r1dtemp(i),ier)
-                    ider = 1
-                    CALL EZspline_derivative1_r8(POT_spl_s,ider,dbl_temp*sqrt(DBLE(i-1)/DBLE(nr-1)),r1dtemp(i),ier)
-                    ! df/drho = df/ds * ds/drho = df/ds * 2*rho = df/ds * 2 * SQRT(s)
-                    r1dtemp(i) = -r1dtemp(i)*2*SQRT(DBLE(i-1)/DBLE(nr-1))/reff_eq
+                     rho_temp = rho_max*DBLE(i-1)/DBLE(nr-1)
+                     s_temp = rho_temp*rho_temp
+                     ier = 1
+                     IF (rho_temp<=1) CALL EZspline_derivative1_r8(POT_spl_s,ider,rho_temp,r1dtemp(i),ier)
+                     ! df/drho = df/ds * ds/drho = df/ds * 2*rho = df/ds * 2 * SQRT(s)
+                     r1dtemp(i) = -r1dtemp(i)*2*SQRT(DBLE(i-1)/DBLE(nr-1))/reff_eq
                   END DO
                   CALL write_var_hdf5(qid_gid,'nrho',ier,INTVAR=nr)
                   CALL write_var_hdf5(qid_gid,'dvdrho',nr,ier,DBLVAR=r1dtemp)
@@ -258,19 +258,19 @@
                CALL write_var_hdf5(qid_gid,'charge',ier,INTVAR=1)
                CALL write_var_hdf5(qid_gid,'mass',ier,INTVAR=NINT(plasma_mass*5.97863320194E26))
                ALLOCATE(rtemp(nr,5,1))
-               dbl_temp = SQRT(MAXVAL(MAXVAL(MAXVAL(S_ARR,3),2),1))
                CALL write_var_hdf5(qid_gid,'rhomin',ier,DBLVAR=DBLE(0))
-               CALL write_var_hdf5(qid_gid,'rhomax',ier,DBLVAR=dbl_temp)
+               CALL write_var_hdf5(qid_gid,'rhomax',ier,DBLVAR=rho_max)
                rtemp = 0
                rtemp(:,5,1) = 1
                DO i = 1, nr
-                  rtemp(i,1,1)=dbl_temp*DBLE(i-1)/DBLE(nr-1)
+                  rtemp(i,1,1)=rho_max*DBLE(i-1)/DBLE(nr-1)
                END DO
-               IF (nte > 0)   CALL EZspline_interp( TE_spl_s,   nr, rtemp(:,1,1)**2, rtemp(:,2,1), ier)
-               IF (nne > 0)   CALL EZspline_interp( NE_spl_s,   nr, rtemp(:,1,1)**2, rtemp(:,3,1), ier)
-               IF (nti > 0)   CALL EZspline_interp( TI_spl_s,   nr, rtemp(:,1,1)**2, rtemp(:,4,1), ier)
-               IF (nzeff > 0) CALL EZspline_interp( ZEFF_spl_s, nr, rtemp(:,1,1)**2, rtemp(:,5,1), ier)
-               rtemp(:,5,1)=rtemp(:,3,1)/rtemp(:,5,1)
+               d1 = COUNT(rtemp(:,1,1) <= 1)
+               IF (nte > 0)   CALL EZspline_interp( TE_spl_s,   nr, rtemp(1:d1,1,1)**2, rtemp(1:d1,2,1), ier)
+               IF (nne > 0)   CALL EZspline_interp( NE_spl_s,   nr, rtemp(1:d1,1,1)**2, rtemp(1:d1,3,1), ier)
+               IF (nti > 0)   CALL EZspline_interp( TI_spl_s,   nr, rtemp(1:d1,1,1)**2, rtemp(1:d1,4,1), ier)
+               IF (nzeff > 0) CALL EZspline_interp( ZEFF_spl_s, nr, rtemp(1:d1,1,1)**2, rtemp(1:d1,5,1), ier)
+               rtemp(1:d1,5,1)=rtemp(1:d1,3,1)/rtemp(1:d1,5,1)
                CALL write_var_hdf5( qid_gid, 'rho',          nr, ier, DBLVAR=rtemp(1:nr,1,1))
                CALL write_var_hdf5( qid_gid, 'etemperature', nr, ier, DBLVAR=rtemp(1:nr,2,1))
                CALL write_var_hdf5( qid_gid, 'edensity',     nr, ier, DBLVAR=rtemp(1:nr,3,1))
