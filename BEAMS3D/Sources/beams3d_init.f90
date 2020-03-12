@@ -114,7 +114,7 @@
           IF (nte>0) THEN
              CALL EZspline_init(TE_spl_s,nte,bcs1_s,ier)
              IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init1',ier)
-             TE_spl_s%isHermite   = 1
+             TE_spl_s%isHermite   = 0
              TE_spl_s%x1          = TE_AUX_S(1:nte)
              CALL EZspline_setup(TE_spl_s,TE_AUX_F(1:nte),ier,EXACT_DIM=.true.)
              IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init2',ier)
@@ -123,7 +123,7 @@
           IF (nti>0) THEN
              CALL EZspline_init(TI_spl_s,nti,bcs1_s,ier)
              IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init3',ier)
-             TI_spl_s%isHermite   = 1
+             TI_spl_s%isHermite   = 0
              TI_spl_s%x1          = TI_AUX_S(1:nti)
              CALL EZspline_setup(TI_spl_s,TI_AUX_F(1:nti),ier,EXACT_DIM=.true.)
              IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init4',ier)
@@ -138,7 +138,7 @@
              CALL EZspline_init(NE_spl_s,nne,bcs1_s,ier)
              IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init5',ier)
              NE_spl_s%x1          = NE_AUX_S(1:nne)
-             NE_spl_s%isHermite   = 1
+             NE_spl_s%isHermite   = 0
              CALL EZspline_setup(NE_spl_s,NE_AUX_F(1:nne),ier,EXACT_DIM=.true.)
              IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init6',ier)
           END IF
@@ -146,7 +146,7 @@
           IF (nzeff>0) THEN
              CALL EZspline_init(ZEFF_spl_s,nzeff,bcs1_s,ier)
              IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init7',ier)
-             ZEFF_spl_s%isHermite   = 1
+             ZEFF_spl_s%isHermite   = 0
              ZEFF_spl_s%x1          = ZEFF_AUX_S(1:nzeff)
              CALL EZspline_setup(ZEFF_spl_s,ZEFF_AUX_F(1:nzeff),ier,EXACT_DIM=.true.)
              IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init8',ier)
@@ -156,7 +156,7 @@
              CALL EZspline_init(POT_spl_s,npot,bcs1_s,ier)
              IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init9',ier)
              POT_spl_s%x1          = POT_AUX_S(1:npot)
-             POT_spl_s%isHermite   = 1
+             POT_spl_s%isHermite   = 0
              CALL EZspline_setup(POT_spl_s,POT_AUX_F(1:npot),ier,EXACT_DIM=.true.)
              IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init10',ier)
           END IF
