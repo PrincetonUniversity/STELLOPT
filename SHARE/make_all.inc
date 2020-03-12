@@ -115,6 +115,15 @@ ifeq ($(MAKECMDGOALS),xdes_plot)
 endif
 
 # Other Codes
+ifeq ($(LCOILOPT),T)
+  MOD1_PATH += $(COILOPT_INC)
+  PRECOMP += -DCOILOPTPP
+  MOD_PATH += -I$(COILOPTPP_DIR)
+else
+  COILOPT_LIB = 
+  COILOPTPP_DIR = 
+  LIB_COILOPTPP = 
+endif
 ifeq ($(LGENE),T)
   MOD1_PATH += $(GENE_INC)
   PRECOMP += -DGENE
@@ -124,14 +133,23 @@ else
   GENE_DIR = 
   LIB_GENE = 
 endif
-ifeq ($(LCOILOPT),T)
-  MOD1_PATH += $(COILOPT_INC)
-  PRECOMP += -DCOILOPTPP
-  MOD_PATH += -I$(COILOPTPP_DIR)
+ifeq ($(LREGCOIL),T)
+  MOD1_PATH += $(REGCOIL_INC)
+  PRECOMP += -DREGCOIL
+  MOD_PATH += -I$(REGCOIL_DIR)
 else
-  COILOPT_LIB = 
-  COILOPTPP_DIR = 
-  LIB_COILOPTPP = 
+  REGCOIL_LIB = 
+  REGCOIL_DIR = 
+  LIB_REGCOIL = 
+endif
+ifeq ($(LSFINCS),T)
+  MOD1_PATH += $(SFINCS_INC)
+  PRECOMP += -DSFINCS
+  MOD_PATH += $(SFINCS_INC)
+else
+  SFINCS_LIB =
+  SFINCS_DIR =
+  LIB_SFINCS =
 endif
 ifeq ($(LTERPSICHORE),T)
   MOD1_PATH += $(TERPSICHORE_INC)
@@ -148,15 +166,6 @@ else
   TRAVIS_LIB = 
   TRAVIS_DIR = 
   LIB_TRAVIS = 
-endif
-ifeq ($(LREGCOIL),T)
-  MOD1_PATH += $(REGCOIL_INC)
-  PRECOMP += -DREGCOIL
-  MOD_PATH += -I$(REGCOIL_DIR)
-else
-  REGCOIL_LIB = 
-  REGCOIL_DIR = 
-  LIB_REGCOIL = 
 endif
 
 # Handle other codes
