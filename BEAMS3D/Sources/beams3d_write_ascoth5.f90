@@ -266,7 +266,6 @@
                   rtemp(i,1,1)=rho_max*DBLE(i-1)/DBLE(nr-1)
                END DO
                d1 = COUNT(rtemp(:,1,1) <= 1)+1
-               PRINT *,d1
                IF (nte > 0)   CALL EZspline_interp( TE_spl_s,   nr, rtemp(:,1,1)**2, rtemp(:,2,1), ier)
                IF (nne > 0)   CALL EZspline_interp( NE_spl_s,   nr, rtemp(:,1,1)**2, rtemp(:,3,1), ier)
                IF (nti > 0)   CALL EZspline_interp( TI_spl_s,   nr, rtemp(:,1,1)**2, rtemp(:,4,1), ier)
