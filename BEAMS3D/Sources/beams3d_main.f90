@@ -286,9 +286,8 @@ PROGRAM BEAMS3D
 
     ! Write Ouput
     CALL beams3d_write('TRAJECTORY_PARTIAL')
-      IF (lascot) THEN
-         CALL beams3d_write_ascoth5('MARKER')
-      END IF
+    IF (lascot) CALL beams3d_write_ascoth5('MARKER')
+    IF (lascot4) CALL beams3d_write_ascoth4('MARKER')
 
     ! Write diagnostics stuff
     CALL beams3d_diagnostics
