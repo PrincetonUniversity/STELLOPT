@@ -133,10 +133,10 @@
 #######################################################################
 #            SFINCS Options
 #######################################################################
-
   LSFINCS = F
-  SFINCS_DIR = $(SFINCS_PATH)
-  SFINCS_INC = -I$(SFINCS_DIR) -I${PETSC_DIR}/include -I${PETSC_DIR}/${PETSC_ARCH}/include
+  include ${PETSC_DIR}/lib/petsc/conf/variables
+  SFINCS_DIR = $(SFINCS_PATH)/fortran/version3
+  SFINCS_INC = -I$(SFINCS_DIR) -I${PETSC_DIR}/include
   LIB_SFINCS = libsfincs.a
 
   SFINCS_LIB = $(SFINCS_DIR)/$(LIB_SFINCS) \

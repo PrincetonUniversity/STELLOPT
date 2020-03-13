@@ -132,7 +132,6 @@
 #######################################################################
 #            SFINCS Options
 #######################################################################
-
   LSFINCS = F
   include ${PETSC_DIR}/lib/petsc/conf/variables
   SFINCS_DIR = $(SFINCS_PATH)/fortran/version3
