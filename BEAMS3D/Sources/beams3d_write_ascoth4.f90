@@ -46,7 +46,7 @@
 !-----------------------------------------------------------------------
       INTEGER :: ier, iunit, i, d1, d2, d3, k, k1, k2, kmax
       INTEGER(HID_T) :: options_gid, bfield_gid, efield_gid, plasma_gid, &
-                        neutral_gid, wall_gid, marker_gid, qid_gid, pid_gid
+                        neutral_gid, wall_gid, marker_gid, qid_gid
       INTEGER, ALLOCATABLE :: i1dtemp(:)
       DOUBLE PRECISION :: dbl_temp
       DOUBLE PRECISION, ALLOCATABLE :: rtemp(:,:,:), r1dtemp(:)
@@ -122,7 +122,7 @@
                CALL write_var_hdf5(plasma_gid,'volume',nr,ier,DBLVAR=rtemp(:,2,1))
                DEALLOCATE(rtemp)
                
-               CALL h5gclose_f(pid_gid, ier)
+               CALL h5gclose_f(plasma_gid, ier)
                CALL h5gclose_f(qid_gid, ier)
                CALL h5gclose_f(bfield_gid, ier)
 
@@ -182,7 +182,7 @@
                IF (nne > 0)   CALL EZspline_interp( NE_spl_s,   nr, rtemp(:,1,1)**2, rtemp(:,3,1), ier)
                IF (nti > 0)   CALL EZspline_interp( TI_spl_s,   nr, rtemp(:,1,1)**2, rtemp(:,4,1), ier)
                IF (nzeff > 0) CALL EZspline_interp( ZEFF_spl_s, nr, rtemp(:,1,1)**2, rtemp(:,5,1), ier)
-               rtemp(nr,1,1) = 1.0; rtemp(nr,2,1) = 0; rtemp(nr,4,1) = 0 ! Default Te and Ti at edge to zero
+               rtemp(nr,1,1) = 1.0; rtemp(nr,2,1) = 1.0; rtemp(nr,4,1) = 1.0 ! Default Te and Ti to almost zero
                WRITE(iunit,'(2X,I4,2X,I4,2X,A)') nr,2,'# Nrad,Nion'
                WRITE(iunit,'(2X,I4,2X,I4,2X,A)') 1,6,'# ion Znum'
                WRITE(iunit,'(2X,I4,2X,I4,2X,A)') 1,12,'# ion Anum'
@@ -297,7 +297,7 @@
                IF (myworkid == i) THEN
                   CALL safe_open(iunit,ier,'input.particles','old','formatted',ACCESS_IN='APPEND')
                   DO k = k1,k2
-                     WRITE(iunit,'(2(I,E14.5E3),8(E18.9E3),2(I,E18.9E3))') &
+                     WRITE(iunit,'(2(I8,E14.5E3),8(E18.9E3),2(I8,E18.9E3))') &
                         NINT(rtemp(k,1,1)),rtemp(k,2,1),NINT(rtemp(k,3,1)),rtemp(k,4:12,1),&
                         NINT(rtemp(k,13,1)),rtemp(k,14,1),NINT(rtemp(k,15,1)),rtemp(k,16,1)
                   END DO
