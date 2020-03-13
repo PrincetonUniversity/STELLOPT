@@ -124,7 +124,7 @@
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'Beam',ier)
                END IF
                IF (lbeam) THEN
-                  CALL write_var_hdf5(fid,'V_NEUT',3,nparticles,ier,DBLVAR=V_NEUT,ATT='Neutral Velocity [m/s]',&
+                  CALL write_var_hdf5(fid,'V_NEUT',3,nparticles,ier,DBLVAR=V_NEUT,ATT='Neutral Velocity (Vx, Vy,Vz) [m/s]',&
                                       ATT_NAME='description')
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'V_NEUT',ier)
                   CALL write_var_hdf5(fid,'Energy',nbeams,ier,DBLVAR=e_beams,ATT='Beam Energy [J]',ATT_NAME='description')
