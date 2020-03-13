@@ -229,7 +229,7 @@
             k1 = k2 - i1dtemp(myworkid+1) + 1
             kmax = SUM(i1dtemp)
             DEALLOCATE(i1dtemp)
-            ALLOCATE(rtemp(k1:k2,19,1))
+            ALLOCATE(rtemp(k1:k2,16,1))
             k = k1
             DO i = d1, d2
                IF (end_state(i)>0) CYCLE
@@ -271,7 +271,7 @@
                WRITE(iunit,'(A)') ' '
                WRITE(iunit,'(I8,A)') kmax,' # Number of particles (-1 means unknown number)'
                WRITE(iunit,'(A)') ' '
-               WRITE(iunit,'(A)') '19 # Number of different fields for each particle [10 first letters are significant]'
+               WRITE(iunit,'(A)') '16 # Number of different fields for each particle [10 first letters are significant]'
                WRITE(iunit,'(A)') 'Anum      - mass number of particle        (integer)'
                WRITE(iunit,'(A)') 'mass      - mass of the particle           (amu)'
                WRITE(iunit,'(A)') 'Znum      - charge number of particle      (integer)'
@@ -288,9 +288,6 @@
                WRITE(iunit,'(A)') 'weight    - weight factor of particle      (particle/second)'
                WRITE(iunit,'(A)') 'id        - unique identifier of particle  (integer)'
                WRITE(iunit,'(A)') 'Tmax      - maximum time to follow the prt (s)'
-               WRITE(iunit,'(A)') 'Bphi      - toroidal magnetic field        (T)'
-               WRITE(iunit,'(A)') 'BR        - radial magnetic field          (T)'
-               WRITE(iunit,'(A)') 'Bz        - vertical magnetic field        (T)'
                WRITE(iunit,'(A)') ' '
                CALL FLUSH(iunit)
                CLOSE(iunit)
@@ -300,7 +297,9 @@
                IF (myworkid == i) THEN
                   CALL safe_open(iunit,ier,'input.particles','old','formatted',ACCESS_IN='APPEND')
                   DO k = k1,k2
-                     WRITE(iunit,'(2(I6,E14.5E3),8(E18.9E3),2(I9,E18.9E3),3(E18.9E3))') rtemp(k,:,1)
+                     WRITE(iunit,'(2(I,E14.5E3),8(E18.9E3),2(I,E18.9E3))') &
+                        NINT(rtemp(k,1,1)),rtemp(k,2,1),NINT(rtemp(k,3,1)),rtemp(k,4:12,1),&
+                        NINT(rtemp(k,13,1)),rtemp(k,14,1),NINT(rtemp(k,15,1)),rtemp(k,16,1)
                   END DO
                   CALL FLUSH(iunit)
                   CLOSE(iunit)
