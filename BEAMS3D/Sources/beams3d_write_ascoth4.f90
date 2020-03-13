@@ -237,7 +237,7 @@
                rtemp(k,2,1) = mass(i)*5.97863320194E26 ! mass
                rtemp(k,3,1) = Zatom(i)
                rtemp(k,4,1) = Zatom(i)
-               rtemp(k,5,1) = 0.5*mass(i)*SUM(v_neut(:,i)*v_neut(:,i),DIM=1)
+               rtemp(k,5,1) = 0.5*mass(i)*SUM(v_neut(:,i)*v_neut(:,i),DIM=1)*e_charge
                rtemp(k,6,1) = SQRT(S_lines(d3,i))
                dbl_temp = PHI_lines(d3,i)
                rtemp(k,7,1) = dbl_temp*180/pi
@@ -245,7 +245,7 @@
                rtemp(k,9,1) = Z_lines(d3,i)
                ! Now we get a little out of order since we need the components of the velocity
                rtemp(k,10,1) = v_neut(2,i)*cos(dbl_temp)-v_neut(1,i)*sin(dbl_temp) ! Vphi
-               rtemp(k,11,1) = v_neut(1,i)*cos(dbl_temp)+v_neut(2,i)*sin(dbl_temp) ! Vphi
+               rtemp(k,11,1) = v_neut(1,i)*cos(dbl_temp)+v_neut(2,i)*sin(dbl_temp) ! Vr
                rtemp(k,12,1) = v_neut(3,i) !Vz
                rtemp(k,13,1) = Beam(i)
                rtemp(k,14,1) = weight(i) ! weight
@@ -261,7 +261,6 @@
                ! Write the input text file
                ier = 0; iunit = 411
                CALL safe_open(iunit,ier,'input.particles','replace','formatted')
-               WRITE(iunit,'(A)') 'Created by BEAMS3D from run: '//TRIM(id_string)
                WRITE(iunit,'(A)') ' PARTICLE INITIAL DATA FOR ASCOT'
                WRITE(iunit,'(A)') ' 4 VERSION ====================='
                WRITE(iunit,'(A)') ' '
@@ -307,6 +306,13 @@
                END IF
                CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
             END DO
+            IF (myworkid == master) THEN
+               CALL safe_open(iunit,ier,'input.particles','old','formatted',ACCESS_IN='APPEND')
+               WRITE(iunit,'(A)') '#EOF'
+               CALL FLUSH(iunit)
+               CLOSE(iunit)
+            END IF
+
       END SELECT
 
       RETURN
