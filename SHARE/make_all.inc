@@ -133,15 +133,6 @@ else
   GENE_DIR = 
   LIB_GENE = 
 endif
-ifeq ($(LSFINCS),T)
-  MOD1_PATH += $(SFINCS_INC)
-  PRECOMP += -DSFINCS
-  MOD_PATH += $(SFINCS_INC)
-else
-  SFINCS_LIB =
-  SFINCS_DIR =
-  LIB_SFINCS =
-endif
 ifeq ($(LREGCOIL),T)
   MOD1_PATH += $(REGCOIL_INC)
   PRECOMP += -DREGCOIL
@@ -150,6 +141,15 @@ else
   REGCOIL_LIB = 
   REGCOIL_DIR = 
   LIB_REGCOIL = 
+endif
+ifeq ($(LSFINCS),T)
+  MOD1_PATH += $(SFINCS_INC)
+  PRECOMP += -DSFINCS
+  MOD_PATH += $(SFINCS_INC)
+else
+  SFINCS_LIB =
+  SFINCS_DIR =
+  LIB_SFINCS =
 endif
 ifeq ($(LTERPSICHORE),T)
   MOD1_PATH += $(TERPSICHORE_INC)
