@@ -90,6 +90,7 @@ test_beams3d:
 	@echo "Beginning testing of BEAMS3D"
 	$(MAKE) test_beams3d_basic
 	$(MAKE) test_beams3d_er
+	$(MAKE) test_beams3d_slow
 	@echo "Tesing of BEAMS3D complete"
 	@echo ""
 
@@ -105,6 +106,14 @@ test_beams3d_er:
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_er -plasma
 	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_er -plasma
 	@cd $(BEAMS3D_TEST_DIR); ./test_ORBITS_er.py
+	@echo ""
+	@echo ""
+
+test_beams3d_slow:
+	@cd $(BEAMS3D_TEST_DIR); rm -f *.h5 *.txt; 
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_slow -plasma -collisions
+	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_slow -plasma -collisions
+	@cd $(BEAMS3D_TEST_DIR); ./test_ORBITS_slow.py
 	@echo ""
 
 test_stellopt:
