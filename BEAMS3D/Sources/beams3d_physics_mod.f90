@@ -70,7 +70,7 @@ MODULE beams3d_physics_mod
          DOUBLE PRECISION    :: r_temp, phi_temp, z_temp, vll, te_temp, ne_temp, ti_temp, speed, newspeed, &
                           zeta, sigma, zeta_mean, zeta_o, v_s, tau_inv, tau_spit_inv, &
                           reduction, dve,dvi, tau_spit, v_crit, coulomb_log, te_cube, &
-                          inv_mymass, speed_cube, vcrit_cube, vfrac, modb, s_temp
+                          inv_mymass, speed_cube, vcrit_cube, vfrac, modb, s_temp, vc3_tauinv
          DOUBLE PRECISION :: Ebench  ! for ASCOT Benchmark
          ! For splines
          INTEGER :: i,j,k, l
@@ -104,7 +104,7 @@ MODULE beams3d_physics_mod
          te_temp  = 0; ne_temp  = 0; ti_temp  = 0; speed = 0; reduction = 0
 
          tau_spit_inv = 0.0; v_crit   = 0.0; coulomb_log = 15
-         tau_inv = 10.0
+         tau_inv = 10.0; vcrit_cube = 0.0; vc3_tauinv = 0
 
          ! Check that we're inside the domain then proceed
          !CALL EZspline_isInDomain(BR_spl,r_temp,phi_temp,z_temp,ier)
@@ -176,6 +176,7 @@ MODULE beams3d_physics_mod
                vcrit_cube = v_crit*v_crit*v_crit
                tau_spit = 3.777183D41*mymass*SQRT(te_cube)/(ne_temp*myZ*myZ*coulomb_log)  ! note ne should be in m^-3 here
                tau_spit_inv = (1.0D0)/tau_spit
+               vc3_tauinv = vcrit_cube*tau_spit_inv
             END IF
 
             !-----------------------------------------------------------
@@ -191,7 +192,7 @@ MODULE beams3d_physics_mod
             v_s = 1.5*sqrt(e_charge*ti_temp*inv_mymass)
             speed = sqrt( vll*vll + 2*moment*modb*inv_mymass )
             dve   = speed*tau_spit_inv
-            dvi   = vcrit_cube*tau_spit_inv/(speed*speed)
+            dvi   = vc3_tauinv/(speed*speed)
             reduction = dve + dvi
             newspeed = speed - reduction*dt
             vfrac = newspeed/speed
@@ -226,12 +227,12 @@ MODULE beams3d_physics_mod
            !------------------------------------------------------------
            !  Pitch Angle Scattering
            !------------------------------------------------------------
-           v_s = half*vcrit_cube*tau_spit_inv
-           speed_cube = speed*speed*speed
+           !v_s = half*vc3_tauinv
+           speed_cube = 2*vc3_tauinv*dt/(speed*speed*speed) ! redefine as inverse
            zeta_o = vll/speed   ! Record the current pitch.
            CALL gauss_rand(1,zeta)  ! A random from a standard normal (1,1)
-           sigma = sqrt( ABS(2*v_s*(1.0D0-zeta_o*zeta_o)*dt/speed_cube) ) ! The standard deviation.
-           zeta_mean = zeta_o *(1.0D0 - (2*v_s*dt)/(speed_cube) )  ! The new mean in the distribution.
+           sigma = sqrt( ABS((1.0D0-zeta_o*zeta_o)*speed_cube) ) ! The standard deviation.
+           zeta_mean = zeta_o *(1.0D0 - speed_cube )  ! The new mean in the distribution.
            zeta = zeta*sigma + zeta_mean  ! The new pitch angle.
            !!The pitch angle MUST NOT go outside [-1,1] nor be NaN; but could happen accidentally with the distribution.
            IF (ABS(zeta) >  0.999D+00) zeta =  SIGN(0.999D+00,zeta)
