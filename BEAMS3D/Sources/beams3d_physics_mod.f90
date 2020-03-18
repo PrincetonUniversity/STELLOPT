@@ -559,6 +559,7 @@ MODULE beams3d_physics_mod
          xlast = qf(1)
          ylast = qf(2)
          zlast = qf(3)
+         end_state(myline) = 3
          DO
             qf = qf + myv_neut*dt_local
             t = t + dt_local
