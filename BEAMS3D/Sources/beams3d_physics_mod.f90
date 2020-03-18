@@ -563,7 +563,7 @@ MODULE beams3d_physics_mod
          DO
             qf = qf + myv_neut*dt_local
             t = t + dt_local
-            IF (lvessel) CALL collide(x0,y0,z0,qf(1),qf(2),qf(3),xw,yw,zw,ltest)
+            IF (lvessel .and. .not.(lplasma_only)) CALL collide(x0,y0,z0,qf(1),qf(2),qf(3),xw,yw,zw,ltest)
             IF (ltest) THEN
                q(1) = SQRT(qf(1)*qf(1)+qf(2)*qf(2))
                q(2) = ATAN2(qf(2),qf(1))
