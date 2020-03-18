@@ -361,10 +361,10 @@
             d1 = LBOUND(R_lines,DIM=2)
             d2 = UBOUND(R_lines,DIM=2)
             d3 = 0
-            IF (lbeam) d3 = 2
             ALLOCATE(itemp(nprocs_beams))
             itemp = 0
-            itemp(myworkid+1) = COUNT(end_state(d1:d2)==0)
+            IF (lbeam) d3 = 2
+            itemp(myworkid+1) = COUNT(end_state(d1:d2).ne.3) ! Don't count shinethrough particles
             CALL MPI_ALLREDUCE(MPI_IN_PLACE, itemp, nprocs_beams, MPI_INTEGER, MPI_SUM, MPI_COMM_BEAMS, ierr_mpi)
             k2 = SUM(itemp(1:myworkid+1))
             k1 = k2 - itemp(myworkid+1) + 1
@@ -414,11 +414,7 @@
             ALLOCATE(rtemp(k1:k2,13,1))
             k = k1
             DO i = d1, d2
-               IF (lbeam) THEN
-                  IF (end_state(i) > 0) CYCLE
-               ELSE
-                  IF (end_state(i) == 3) CYCLE
-               END IF
+               IF (end_state(i) == 3) CYCLE
                rtemp(k,1,1) = R_lines(d3,i)
                rtemp(k,2,1) = PHI_lines(d3,i)*180/pi
                rtemp(k,3,1) = Z_lines(d3,i)
