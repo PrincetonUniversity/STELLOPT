@@ -20,7 +20,7 @@ MODULE beams3d_physics_mod
                                mymass, myv_neut, B_temp, rand_prob, &
                                cum_prob, tau, &
                                epower_prof, ipower_prof, &
-                               end_state, fact_crit, fact_pa, &
+                               end_state, fact_crit, fact_pa, fact_vsound, &
                                ns_prof1, ns_prof2, ns_prof3, ns_prof4, &
                                ns_prof5
       USE beams3d_grid, ONLY: BR_spl, BZ_spl, delta_t, BPHI_spl, MODB_spl, MODB4D, &
@@ -189,7 +189,7 @@ MODULE beams3d_physics_mod
             !     newspeed  New total speed
             !     vfrac     Ratio between new and old speed (helper) 
             !-----------------------------------------------------------
-            v_s = 1.5*sqrt(e_charge*ti_temp*inv_mymass)
+            v_s = fact_vsound*sqrt(ti_temp)
             speed = sqrt( vll*vll + 2*moment*modb*inv_mymass )
             dve   = speed*tau_spit_inv
             dvi   = vc3_tauinv/(speed*speed)
