@@ -21,7 +21,8 @@ SUBROUTINE beams3d_follow
     USE beams3d_lines
     USE beams3d_grid, ONLY: tmin, tmax, delta_t, BR_spl, BZ_spl, BPHI_spl, &
                             MODB_spl, S_spl, U_spl, TE_spl, NE_spl, TI_spl, &
-                            TE_spl, TI_spl, wall_load, wall_shine, plasma_mass
+                            TE_spl, TI_spl, wall_load, wall_shine, &
+                            plasma_mass, plasma_Zavg, plasma_Zmean
     USE mpi_params ! MPI
     USE beams3d_physics_mod
     USE beams3d_write_par
@@ -351,6 +352,7 @@ SUBROUTINE beams3d_follow
                     mymass = mass(l)
                     mybeam = Beam(l)
                     moment = mu_start(l)
+                    fact_pa   = plasma_mass*plasma_Zavg/(mymass*plasma_Zmean)
                     fact_crit = SQRT(2*e_charge/mymass)*(3*sqrt_pi*sqrt(mymass/electron_mass)*mymass/plasma_mass)**(1.0/3.0)
                     myv_neut(:) = v_neut(:,myline)
                     IF (lbeam) lneut = .TRUE.
