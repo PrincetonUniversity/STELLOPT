@@ -110,6 +110,7 @@
       ! Construct 1D splines
       bcs1_s=(/ 0, 0 /)
       IF (lvmec .and. .not.lvac) THEN
+      IF (lverb) WRITE(6,'(A)') '----- Profile Parameters -----'
           ! TE
           IF (nte>0) THEN
              CALL EZspline_init(TE_spl_s,nte,bcs1_s,ier)
@@ -118,6 +119,8 @@
              TE_spl_s%x1          = TE_AUX_S(1:nte)
              CALL EZspline_setup(TE_spl_s,TE_AUX_F(1:nte),ier,EXACT_DIM=.true.)
              IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init2',ier)
+             IF (lverb) WRITE(6,'(A,F9.5,A,F9.5,A,I4)') '   Te   = [', &
+                        MINVAL(TE_AUX_F(1:nte))*1E-3,',',MAXVAL(TE_AUX_F(1:nte))*1E-3,'] keV;  NTE:   ',nte
           END IF
           ! TI
           IF (nti>0) THEN
@@ -127,6 +130,8 @@
              TI_spl_s%x1          = TI_AUX_S(1:nti)
              CALL EZspline_setup(TI_spl_s,TI_AUX_F(1:nti),ier,EXACT_DIM=.true.)
              IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init4',ier)
+             IF (lverb) WRITE(6,'(A,F9.5,A,F9.5,A,I4)') '   Ti   = [', &
+                        MINVAL(TI_AUX_F(1:nti))*1E-3,',',MAXVAL(TI_AUX_F(1:nti))*1E-3,'] keV;  NTI:   ',nti
           END IF
           ! NE
           IF (nne>0) THEN
@@ -141,6 +146,8 @@
              NE_spl_s%isHermite   = 0
              CALL EZspline_setup(NE_spl_s,NE_AUX_F(1:nne),ier,EXACT_DIM=.true.)
              IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init6',ier)
+             IF (lverb) WRITE(6,'(A,F9.5,A,F9.5,A,I4,A)') '   Ne   = [', &
+                        MINVAL(NE_AUX_F(1:nne))*1E-20,',',MAXVAL(NE_AUX_F(1:nne))*1E-20,'] E20 m^-3;  NNE:   ',nne
           END IF
           ! ZEFF
           IF (nzeff>0) THEN
@@ -150,6 +157,8 @@
              ZEFF_spl_s%x1          = ZEFF_AUX_S(1:nzeff)
              CALL EZspline_setup(ZEFF_spl_s,ZEFF_AUX_F(1:nzeff),ier,EXACT_DIM=.true.)
              IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init8',ier)
+             IF (lverb) WRITE(6,'(A,F9.5,A,F9.5,A,I4)') '   Zeff = [', &
+                        MINVAL(ZEFF_AUX_F(1:nzeff)),',',MAXVAL(ZEFF_AUX_F(1:nzeff)),'];  NZEFF: ',nzeff
           END IF
           ! POTENTIAL
           IF (npot>0) THEN
@@ -159,6 +168,14 @@
              POT_spl_s%isHermite   = 0
              CALL EZspline_setup(POT_spl_s,POT_AUX_F(1:npot),ier,EXACT_DIM=.true.)
              IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init10',ier)
+             IF (lverb) WRITE(6,'(A,F9.5,A,F9.5,A,I4)') '   V    = [', &
+                        MINVAL(POT_AUX_F(1:npot))*1E-3,',',MAXVAL(POT_AUX_F(1:npot))*1E-3,'] kV;  NPOT: ',npot
+          END IF
+
+          IF (lverb) THEN
+             WRITE(6,'(A,F9.5,A)') '   PLASMA_MASS =  ',plasma_mass/1.66053906660E-27,' amu' 
+             WRITE(6,'(A,F9.5,A)') '   PLASMA_ZAVG =  ',plasma_zavg,' <Z>' 
+             WRITE(6,'(A,F9.5,A)') '   PLASMA_ZMEAN =  ',plasma_zmean,' [Z]' 
           END IF
          
       END IF
