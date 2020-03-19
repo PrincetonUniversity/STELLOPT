@@ -15,7 +15,8 @@
       USE beams3d_lines, ONLY: nparticles
       USE beams3d_grid, ONLY: nr, nphi, nz, rmin, rmax, zmin, zmax, &
                               phimin, phimax, vc_adapt_tol, nte, nne, nti,&
-                              nzeff, npot, plasma_mass
+                              nzeff, npot, plasma_mass, plasma_Zavg, &
+                              plasma_Zmean
       USE safe_open_mod, ONLY: safe_open
       USE mpi_params
       USE mpi_inc
@@ -68,7 +69,7 @@
                                   NE_AUX_S, NE_AUX_F, TI_AUX_S, TI_AUX_F, &
                                   POT_AUX_S, POT_AUX_F, ZEFF_AUX_S, ZEFF_AUX_F, &
                                   P_beams, ldebug, ne_scale, te_scale, ti_scale, &
-                                  zeff_scale, plasma_mass
+                                  zeff_scale, plasma_mass, plasma_Zavg, plasma_Zmean
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -136,6 +137,8 @@
       te_scale = 1.0
       ti_scale = 1.0
       zeff_scale = 1.0
+      plasma_Zmean = 1.0
+      plasma_Zavg  = 1.0
       plasma_mass = 1.6726219E-27 ! Assume Hydrogen
       ! Read namelist
 !      IF (ithread == local_master) THEN

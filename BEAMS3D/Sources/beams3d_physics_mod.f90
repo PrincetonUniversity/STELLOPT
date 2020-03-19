@@ -20,7 +20,7 @@ MODULE beams3d_physics_mod
                                mymass, myv_neut, B_temp, rand_prob, &
                                cum_prob, tau, &
                                epower_prof, ipower_prof, &
-                               end_state, fact_crit, &
+                               end_state, fact_crit, fact_pa, &
                                ns_prof1, ns_prof2, ns_prof3, ns_prof4, &
                                ns_prof5
       USE beams3d_grid, ONLY: BR_spl, BZ_spl, delta_t, BPHI_spl, MODB_spl, MODB4D, &
@@ -228,7 +228,7 @@ MODULE beams3d_physics_mod
            !  Pitch Angle Scattering
            !------------------------------------------------------------
            !v_s = half*vc3_tauinv
-           speed_cube = 2*vc3_tauinv*dt/(speed*speed*speed) ! redefine as inverse
+           speed_cube = 2*vc3_tauinv*fact_pa*dt/(speed*speed*speed) ! redefine as inverse
            zeta_o = vll/speed   ! Record the current pitch.
            CALL gauss_rand(1,zeta)  ! A random from a standard normal (1,1)
            sigma = sqrt( ABS((1.0D0-zeta_o*zeta_o)*speed_cube) ) ! The standard deviation.
