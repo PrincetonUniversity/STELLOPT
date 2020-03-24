@@ -22,4 +22,3 @@ endif
 # Now include the ALL FILE
 include $(STELLOPT_PATH)/SHARE/make_all.inc
 
-
