@@ -213,7 +213,7 @@
                CALL write_att_hdf5(qid_gid,'date',temp_str8,ier)
                CALL write_att_hdf5(qid_gid,'description','Data initialized from BEAMS3D',ier)
                CALL write_var_hdf5(qid_gid,'rhomin',ier,DBLVAR=DBLE(0))
-               CALL write_var_hdf5(qid_gid,'rhomax',ier,DBLVAR=DBLE(1))
+               CALL write_var_hdf5(qid_gid,'rhomax',ier,DBLVAR=DBLE(rho_max))
                CALL write_var_hdf5(qid_gid,'reff',ier,DBLVAR=DBLE(reff_eq))
                ! Values must be equidistant in rho.
                IF (npot < 1) THEN ! Because we can run with E=0
@@ -226,7 +226,7 @@
                   ALLOCATE(r1dtemp(nr))
                   r1dtemp = 0
                   DO i = 1, nr
-                     rho_temp = DBLE(i-1)/DBLE(nr-1)
+                     rho_temp = rho_max*DBLE(i-1)/DBLE(nr-1)
                      s_temp = rho_temp*rho_temp
                      ider = 1
                      IF (s_temp<=1) CALL EZspline_derivative1_r8(POT_spl_s,ider,s_temp,r1dtemp(i),ier)
@@ -257,11 +257,11 @@
                CALL write_var_hdf5(qid_gid,'mass',ier,INTVAR=NINT(plasma_mass*5.97863320194E26))
                ALLOCATE(rtemp(nr,5,1))
                CALL write_var_hdf5(qid_gid,'rhomin',ier,DBLVAR=DBLE(0))
-               CALL write_var_hdf5(qid_gid,'rhomax',ier,DBLVAR=DBLE(1))
+               CALL write_var_hdf5(qid_gid,'rhomax',ier,DBLVAR=DBLE(rho_max))
                rtemp = 0
                rtemp(:,5,1) = 1
                DO i = 1, nr
-                  rtemp(i,1,1)=DBLE(i-1)/DBLE(nr-1)
+                  rtemp(i,1,1)=rho_max*DBLE(i-1)/DBLE(nr-1)
                END DO
                d1 = COUNT(rtemp(:,1,1) <= 1)+1
                IF (nte > 0)   CALL EZspline_interp( TE_spl_s,   nr, rtemp(:,1,1)**2, rtemp(:,2,1), ier)
