@@ -3,8 +3,9 @@
 #######################################################################
   SHELL = /bin/sh
   PWD1 = `pwd`
-  MYHOME = $(HOME)/bin
+  MYHOME = /home/weir/bin
   FC = gfortran
+  CC = gcc
   PRECOMP:= /mingw64/bin/cpp -traditional -DWIN
   COMPILE = $(FC)
   COMPILE_FREE = $(FC) -ffree-form -ffree-line-length-none -ffixed-line-length-none
