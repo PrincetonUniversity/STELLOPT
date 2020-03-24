@@ -1,1 +1,73 @@
-../makelibstell
+#This makefile goes in dirs Debug and Release (first level below LIBSTELL)
+include ../../make.inc
+FFILE   = '$*''.f'
+CFILE   = '$*''.c'
+F90FILE = '$*''.f90'
+SPATH   = ../Sources
+
+#Contains list of source files (.o) and dependencies
+DEPLIST = LIBSTELL.dep
+OBJLIST = ../ObjectList
+VPATH = $(SPATH):$(SPATH)/FFTpack:$(SPATH)/Coils:$(SPATH)/Modules:$(SPATH)/Linpack:$(SPATH)/Miscel:$(SPATH)/Optimization:$(SPATH)/QMRpack:$(SPATH)/SMPINT:$(SPATH)/TOMS:$(SPATH)/Pspline:$(SPATH)/Ezcdf:$(SPATH)/SVDpack:$(SPATH)/GMRes:$(SPATH)/Lsode
+
+#Includes source files and dependency list
+include $(DEPLIST)
+include $(OBJLIST)
+
+.SUFFIXES :
+.SUFFIXES : .f .f90 .o
+
+libstell.a : $(ObjectFiles) 
+	$(LINK) $@ $(ObjectFiles)
+	$(CLEAN_ARCH)
+	
+libstell.so : $(ObjectFiles) 
+	$(LINK_C) -o $@ $(ObjectFiles) $(LIB_LINK)
+	$(CLEAN_ARCH)
+
+libstell.lib : $(ObjectFiles) 
+	$(LINK) $@ $(ObjectFiles)
+	$(CLEAN_ARCH)
+	
+libstell.dll : $(ObjectFiles) 
+	$(LINK_C) -o $@ $(ObjectFiles) $(LIB_LINK)
+	$(CLEAN_ARCH)
+
+#Compile object files defined in OBJLIST.
+.f.o :
+	@if grep -q '^!DEC\$$' $<; \
+      then \
+         awk -f $(HOME_BIN)/awk_cdir.awk $< > $(CFILE) ; \
+         echo '$(PRECOMP) $<'; $(PRECOMP) $(CFILE) $(FFILE); \
+         rm -f $(CFILE); echo '$(COMPILE) $(FLAGS) $(MOD_PATH).. -c $<'; \
+         $(COMPILE) $(FLAGS) $(MOD_PATH).. -c $(FFILE);\
+      elif grep -q '^#if' $<; \
+      then \
+         cp $< $(CFILE); \
+         echo '$(PRECOMP) $<'; $(PRECOMP) $(CFILE) $(FFILE); \
+         rm -f $(CFILE); echo '$(COMPILE) $(FLAGS) $(MOD_PATH).. -c $<'; \
+         $(COMPILE) $(FLAGS) $(MOD_PATH).. -c $(FFILE);\
+      else \
+         echo '$(COMPILE) $(FLAGS) $(MOD_PATH). -c $<'; \
+         $(COMPILE) $(FLAGS) $(MOD_PATH). -c $< ; \
+      fi
+
+.f90.o :
+	@if grep -q '^!DEC\$$' $<; \
+      then \
+         awk -f $(HOME_BIN)/awk_cdir.awk $< > $(CFILE) ; \
+         echo '$(PRECOMP) $<'; $(PRECOMP) $(CFILE) $(F90FILE); \
+         rm -f $(CFILE); echo '$(COMPILE_FREE) $(FLAGS) $(MOD_PATH).. $(INC_PATH) -c $<'; \
+         $(COMPILE_FREE) $(FLAGS) $(MOD_PATH).. $(INC_PATH) -c $(F90FILE);  \
+      elif grep -q '^#if' $<; \
+      then \
+         cp $< $(CFILE); \
+         echo '$(PRECOMP) $<'; $(PRECOMP) $(CFILE) $(F90FILE); \
+         rm -f $(CFILE); echo '$(COMPILE_FREE) $(FLAGS) $(MOD_PATH).. $(INC_PATH) -c $<'; \
+         $(COMPILE_FREE) $(FLAGS) $(MOD_PATH).. $(INC_PATH) -c $(F90FILE);  \
+      else \
+         echo '$(COMPILE_FREE) $(FLAGS) $(MOD_PATH). $(INC_PATH) -c $<'; \
+         $(COMPILE_FREE) $(FLAGS) $(MOD_PATH).. $(INC_PATH) -c $< ; \
+      fi
+clean:
+	- rm -f *.o *.mod *.a *.so *.dll *.lib

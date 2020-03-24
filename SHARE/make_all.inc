@@ -6,12 +6,13 @@
 
 # Home bin specifies where the build scripts are located,
 # for example awk_cdir.awk.
-HOME_BIN = ../../
+#HOME_BIN = ../../
+HOME_BIN = /home/weir
 MOD1_PATH = -I$(MYHOME)/libstell_dir
 MOD_PATH = 
 CLEAN_ARCH = 
 LIB_DIR = ../../LIBSTELL
-LIB = libstell.a
+LIB = libstell.lib
 
 # Handle Which Code is being CALLED
 ifeq ($(MAKECMDGOALS),xstelloptv2)
@@ -183,7 +184,8 @@ ifeq ($(LMPI),T)
   COMPILE = $(MPI_COMPILE)
   COMPILE_FREE = $(MPI_COMPILE_FREE)
   LINK    = $(MPI_COMPILE) $(FLAGS) -o 
-  LINK_C  = $(MPI_LINK) -shared
+  #LINK_C  = $(MPI_LINK) -shared
+  LINK_C  = $(MPI_LINK) -shared -Wl,--export-all-symbols -Wl,--enable-auto-import, -Wl,--whole-archive
 endif
 ifeq ($(LNETCDF),T)
   MOD1_PATH += $(NETCDF_INC)
@@ -226,6 +228,19 @@ ifeq ($(MAKECMDGOALS),libstell.a)
   INC_PATH = 
 endif
 ifeq ($(MAKECMDGOALS),libstell.so)
+  LINK = $(LINK_C)
+  LIB_LINK = $(LIB_SHARE)
+  COMPILE += -fPIC
+  COMPILE_FREE += -fPIC
+  INC_PATH = 
+endif
+ifeq ($(MAKECMDGOALS),libstell.lib)
+  LINK = $(LINK_AR)
+  COMPILE += -fPIC
+  COMPILE_FREE += -fPIC
+  INC_PATH = 
+endif
+ifeq ($(MAKECMDGOALS),libstell.dll)
   LINK = $(LINK_C)
   LIB_LINK = $(LIB_SHARE)
   COMPILE += -fPIC
