@@ -1,9 +1,50 @@
 This is an experimental branch for compiling LIBSTELL under msys-mingw 
 on windows.
 
+====================================================================================
+
+Known basics / fixes:
+-- install the proper environment (below the SOLVED / PREVIOUS ISSUE)
+-- change the user to your local user name: replace mine "weir" with yours
+-- You also have to copy the "awk_cdir.awk" file to the home folder for compilation
+-- the other changes I have made in this branch should be with you already...
+
+
+Notes:
+-- The compiled files hdf5.mod are stored under /mingw64/include/static/ or /mingw64/include/shared. 
+-- If you are using the hdf5 *.dll files, you need to include the "shared" dir 
+-- the mingw precompiler is based on gcc9 in this build. To avoid getcarg errors 
+
 =========================
 Current issue:
 
+- successfully compiling libstell.lib
+- working on libstell.dll
+
+===== 
+
+SOLVED / PREVIOUS ISSUE:  Wrote a new WIN64 macro (note: this should work on any format, it is specific for GCC9)
+
+gfortran -fPIC -O2 -fexternal-blas -I/home/weir/bin/libstell_dir -I/mingw64/include -L/mingw64/include -I/mingw64/include -I/mingw64/include/shared -I/mingw64/include -L/mingw64/include -I/mingw64/include -I/mingw64/include/shared -I.. -c ../Sources/Miscel/getcarg.f
+getcarg.c:17:72:
+
+Error: Too many arguments in call to 'getarg' at (1)
+make[2]: *** [makelibstell:38: getcarg.o] Error 1
+make[2]: Leaving directory '/home/weir/src/stellopt/LIBSTELL/Release'
+make[1]: *** [makefile:20: release] Error 2
+make[1]: Leaving directory '/home/weir/src/stellopt/LIBSTELL'
+make: *** [makefile:41: clean_release] Error 2
+
+Solved by adding a WIN64 macro that functions with GCC9. The type of iargc and getarg (functions) can't be declared integer type
+!DEC$ IF DEFINED (WIN64)
+      numargs = iargc()
+      CALL getarg(narg, arg)
+!DEC$ ELSEIF DEFINED (WIN32)
+
+
+SOLVED / PREVIOUS ISSUE:  HOTFIX FROM SAM (git checkout origin/Lazerson -- LIBSTELL/Sources/Modules)
+
+...
 gfortran -fPIC -O2 -fexternal-blas -I/home/weir/bin/libstell_dir -I/mingw64/include -L/mingw64/include -I/mingw64/include -I/mingw64/include -L/mingw64/include -I/mingw64/include -I.. -c ../Sources/Modules/vmec_input.f
 vmec_input.c:262:47-68:
 
@@ -104,14 +145,6 @@ pacman -U mingw-w64-x86_64-netcdf-fortran-4.5.2-1-any.pkg.tar.zst
 NOTE: the netcdf-fortran installation might throw an error because HDF5 includes a netcdf header in the same spot
 - I used the netcdf-fortran one and overwrote the HDF5 one 
 (etc. In principal, the netcdf-fortran one contains the stuff from netcdf-c already and is the more complete of the two)
-
-
-====================================================================================
-
-Now you can go and try to run the build_msys script on this branch of STELLOPT
--- change the user to your local user name: replace mine "weir" with yours
--- You also have to copy the "awk_cdir.awk" file to the folder above this one (home dir)
--- the other changes I have made in this branch should be with you already...
 
 ====================================================================================
 ====================================================================================
