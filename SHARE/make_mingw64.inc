@@ -6,7 +6,8 @@
   MYHOME = /home/weir/bin
   FC = gfortran
   CC = gcc
-  PRECOMP:= /mingw64/bin/cpp -traditional -DWIN
+  PRECOMP:= /mingw64/bin/cpp -traditional -DWIN64
+#  PRECOMP:= /mingw64/bin/cpp -traditional -DLINUX
   COMPILE = $(FC)
   COMPILE_FREE = $(FC) -ffree-form -ffree-line-length-none -ffixed-line-length-none
   LINK    = ld $(FLAGS) -o
@@ -19,15 +20,17 @@
 #######################################################################
   FLAGS_R = -O2 -fexternal-blas
   FLAGS_D = -g -O0 -fexternal-blas -fbacktrace -fcheck=all 
-  LIBS    = -L/mingw64/lib -L/mingw64/bin/libblas.dll -L/mingw64/bin/liblapack.dll
+  LIBS    = -L/mingw64/lib -L/mingw64/bin/libblas.dll \
+            -L/mingw64/bin/liblapack.dll \
+            -L/mingw64/bin/libgfortran-5.dll
 #  LIBS    = -L/mingw64/lib -L/mingw64/bin/libopenblas.dll
 
 #######################################################################
 #            MPI Options
 #######################################################################
   LMPI    = F
-  MPI_COMPILE = mpif90
-  MPI_COMPILE_FREE = mpif90 -ffree-form \
+  MPI_COMPILE = mpifort
+  MPI_COMPILE_FREE = mpifort -ffree-form \
                      -ffree-line-length-none -ffixed-line-length-none
   MPI_COMPILE_C = mpicc
   MPI_LINK = mpif90
@@ -64,7 +67,7 @@
 #######################################################################
   LHDF5 = T
   H5DIR = /mingw64
-  HDF5_INC = -I$(H5DIR)/include
+  HDF5_INC = -I$(H5DIR)/include -I$(H5DIR)/include/shared
   HDF5_LIB = -L$(H5DIR)/lib -L/mingw64/bin/libhdf5-0.dll \
              -L/mingw64/bin/libhdf5_hl_fortran-0.dll \
              -L/mingw64/bin/libhdf5_hl-0.dll \
@@ -122,7 +125,7 @@
   LIB_COILOPTPP = libcoilopt++.a
   COILOPT_LIB = $(COILOPT_PATH)/$(LIB_COILOPTPP) \
                 -L$(GSLHOME)/lib -lgsl -lgslcblas -lstdc++ -lmpi_cxx
-
+# /mingw64/include/fgsl/fgsl.mod, /mingw64/include/gsl/*
 #######################################################################
 #            TERPSICHORE Options
 #######################################################################
@@ -174,6 +177,7 @@ LIB_SHARE = /mingw64/bin/libblas.dll \
           /mingw64/bin/libgsl-25.dll \
           /mingw64/bin/libgfortran-5.dll \
           /mingw64/bin/libstdc++-6.dll \
+          /mingw64/bin/libgfortran-5.dll \
           /mingw64/bin/liblapack.dll
 
 
