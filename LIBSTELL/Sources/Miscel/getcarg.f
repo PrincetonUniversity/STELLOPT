@@ -11,7 +11,10 @@ C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
       INTEGER :: numchars
 C-----------------------------------------------
-!DEC$ IF DEFINED (WIN32)
+!DEC$ IF DEFINED (WIN64)
+      numargs = iargc()
+      CALL getarg(narg, arg)
+!DEC$ ELSEIF DEFINED (WIN32)
       INTEGER :: nargs
       numargs = nargs() - 1
       CALL getarg(narg, arg, numchars)
