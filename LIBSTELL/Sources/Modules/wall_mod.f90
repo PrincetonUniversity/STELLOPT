@@ -85,6 +85,7 @@
       READ(iunit,'(A)') machine_string
       READ(iunit,'(A)') date
       READ(iunit,*) nvertex,nface
+#if defined(MPI_OPT)
       IF (PRESENT(comm)) THEN
          CALL mpialloc_1d_dbl(PHI,nface,shar_rank,0,shar_comm,win_phi)
          CALL mpialloc_2d_dbl(vertex,nvertex,3,shar_rank,0,shar_comm,win_vertex)
@@ -94,10 +95,13 @@
          myend   = mystart + mydelta
          IF (myend > nface) myend=nface
       ELSE
+#endif
          ALLOCATE(PHI(nface),STAT=istat)
          ALLOCATE(vertex(nvertex,3),face(nface,3),STAT=istat)
          mystart = 1; myend=nface
+#if defined(MPI_OPT)
       END IF
+#endif
       IF (istat/=0) RETURN
       IF (shar_rank == 0) THEN
          DO ik = 1, nvertex
@@ -108,14 +112,18 @@
          END DO
       END IF
       CLOSE(iunit)
+#if defined(MPI_OPT)
       IF (PRESENT(comm)) CALL MPI_BARRIER(comm,istat)
       IF (istat/=0) RETURN
+#endif
       ! Sort the array by toroidal angle
       DO ik = mystart, myend
          dex1 = face(ik,1)
          PHI(ik) = ATAN2(vertex(dex1,2),vertex(dex1,1))
       END DO
+#if defined(MPI_OPT)
       IF (PRESENT(comm)) CALL MPI_BARRIER(comm,istat)
+#endif
       ! Bubble Sort
 !      dex3 = nface
 !      DO WHILE (dex3 > 1)
@@ -144,6 +152,7 @@
 !      END DO
 !      ALLOCATE(A0(nface,3),V0(nface,3),V1(nface,3),&
 !               V2(nface,3),FN(nface,3),STAT=istat)
+#if defined(MPI_OPT)
       IF (PRESENT(comm)) THEN
          CALL mpialloc_2d_dbl(A0,nface,3,shar_rank,0,shar_comm,win_a0)
          CALL mpialloc_2d_dbl(V0,nface,3,shar_rank,0,shar_comm,win_v0)
@@ -154,10 +163,13 @@
          myend   = mystart + mydelta
          IF (myend > nface) myend=nface
       ELSE
+#endif
          ALLOCATE(A0(nface,3),V0(nface,3),V1(nface,3),&
                   FN(nface,3),STAT=istat)
          mystart = 1; myend = nface
+#if defined(MPI_OPT)
       END IF
+#endif
       IF (istat/=0) RETURN
       ! Calculate the face normal
       ! V  = Vertex1-Vertex0
@@ -175,12 +187,15 @@
          FN(ik,2) = (V1(ik,3)*V0(ik,1))-(V1(ik,1)*V0(ik,3))
          FN(ik,3) = (V1(ik,1)*V0(ik,2))-(V1(ik,2)*V0(ik,1))
       END DO
+#if defined(MPI_OPT)
       IF (PRESENT(comm)) CALL MPI_BARRIER(comm,istat)
+#endif
       ! Check for zero area
       IF (ANY(SUM(FN*FN,DIM=2)==zero)) THEN
          istat=-327
          RETURN
       END IF
+#if defined(MPI_OPT)
       IF (PRESENT(comm)) THEN
          CALL mpialloc_1d_dbl(DOT00,nface,shar_rank,0,shar_comm,win_dot00)
          CALL mpialloc_1d_dbl(DOT01,nface,shar_rank,0,shar_comm,win_dot01)
@@ -193,13 +208,16 @@
          myend   = mystart + mydelta
          IF (myend > nface) myend=nface
       ELSE
+#endif
          ALLOCATE(DOT00(nface), DOT01(nface),&
                   DOT11(nface), invDenom(nface),&
                   STAT=istat)
          ALLOCATE(d(nface),STAT=istat)
          ALLOCATE(ihit_array(nface),STAT=istat)
          mystart = 1; myend = nface
+#if defined(MPI_OPT)
       END IF
+#endif
       IF (istat/=0) RETURN
       DO ik = mystart, myend
          ihit_array(ik) = 0
@@ -209,10 +227,12 @@
          d(ik)     = FN(ik,1)*A0(ik,1) + FN(ik,2)*A0(ik,2) + FN(ik,3)*A0(ik,3)
          invDenom(ik) = one / (DOT00(ik)*DOT11(ik) - DOT01(ik)*DOT01(ik))
       END DO
+#if defined(MPI_OPT)
       IF (PRESENT(comm)) THEN
          CALL MPI_BARRIER(shar_comm, istat)
          CALL MPI_COMM_FREE(shar_comm, istat)
       END IF
+#endif
       lwall_loaded = .true.
       RETURN
       END SUBROUTINE wall_load_txt
@@ -268,6 +288,7 @@
       nvertex = nu*nv
       nface   = 2*nu*nv
       istat = 0
+#if defined(MPI_OPT)
       IF (PRESENT(comm)) THEN
          CALL mpialloc_1d_dbl(PHI,nface,shar_rank,0,shar_comm,win_phi)
          CALL mpialloc_2d_dbl(vertex,nvertex,3,shar_rank,0,shar_comm,win_vertex)
@@ -277,10 +298,13 @@
          myend   = mystart + mydelta
          IF (myend > nface) myend=nface
       ELSE
+#endif
          ALLOCATE(PHI(nface),STAT=istat)
          ALLOCATE(vertex(nvertex,3),face(nface,3),STAT=istat)
          mystart = 1; myend=nface
+#if defined(MPI_OPT)
       END IF
+#endif
       i = 1  ! Tracks vertex index
       j = 1 ! Tracks face index
       IF (shar_rank==0)THEN
@@ -343,14 +367,18 @@
          i=i+1
          DEALLOCATE(r_temp,z_temp,x_temp,y_temp)
       END IF
+#if defined(MPI_OPT)
       IF (PRESENT(comm)) CALL MPI_BARRIER(shar_comm,istat)
+#endif
 
       ! Sort the array by toroidal angle
       DO ik = mystart, myend
          dex1 = face(ik,1)
          PHI(ik) = ATAN2(vertex(dex1,2),vertex(dex1,1))
       END DO
+#if defined(MPI_OPT)
       IF (PRESENT(comm)) CALL MPI_BARRIER(shar_comm,istat)
+#endif
 !      dex3 = nface
 !      DO WHILE (dex3 > 1)
 !         bubble = 0 !bubble in the greatest element out of order
@@ -380,6 +408,7 @@
 
 !      ALLOCATE(A0(nface,3),V0(nface,3),V1(nface,3),&
 !               V2(nface,3),FN(nface,3),STAT=istat)
+#if defined(MPI_OPT)
       IF (PRESENT(comm)) THEN
          CALL mpialloc_2d_dbl(A0,nface,3,shar_rank,0,shar_comm,win_a0)
          CALL mpialloc_2d_dbl(V0,nface,3,shar_rank,0,shar_comm,win_v0)
@@ -390,10 +419,13 @@
          myend   = mystart + mydelta
          IF (myend > nface) myend=nface
       ELSE
+#endif
          ALLOCATE(A0(nface,3),V0(nface,3),V1(nface,3),&
                   FN(nface,3),STAT=istat)
          mystart = 1; myend = nface
+#if defined(MPI_OPT)
       END IF
+#endif
       IF (istat/=0) RETURN
       ! Calculate the face normal
       ! W  = Vertex1-Vertex0
@@ -411,6 +443,7 @@
          FN(ik,2) = (V1(ik,3)*V0(ik,1))-(V1(ik,1)*V0(ik,3))
          FN(ik,3) = (V1(ik,1)*V0(ik,2))-(V1(ik,2)*V0(ik,1))
       END DO
+#if defined(MPI_OPT)
       IF (PRESENT(comm)) THEN
          CALL MPI_BARRIER(shar_comm, istat)
          CALL mpialloc_1d_dbl(DOT00,nface,shar_rank,0,shar_comm,win_dot00)
@@ -424,13 +457,16 @@
          myend   = mystart + mydelta
          IF (myend > nface) myend=nface
       ELSE
+#endif
          ALLOCATE(DOT00(nface), DOT01(nface),&
                   DOT11(nface), invDenom(nface),&
                   STAT=istat)
          ALLOCATE(d(nface),STAT=istat)
          ALLOCATE(ihit_array(nface),STAT=istat)
          mystart = 1; myend = nface
+#if defined(MPI_OPT)
       END IF
+#endif
       IF (istat/=0) RETURN
       DO ik = mystart, myend
          ihit_array(ik) = 0
@@ -440,10 +476,12 @@
          d(ik)     = FN(ik,1)*A0(ik,1) + FN(ik,2)*A0(ik,2) + FN(ik,3)*A0(ik,3)
          invDenom(ik) = one / (DOT00(ik)*DOT11(ik) - DOT01(ik)*DOT01(ik))
       END DO
+#if defined(MPI_OPT)
       IF (PRESENT(comm)) THEN
          CALL MPI_BARRIER(shar_comm, istat)
          CALL MPI_COMM_FREE(shar_comm, istat)
       END IF
+#endif
       lwall_loaded = .true.
       RETURN
       END SUBROUTINE wall_load_mn
@@ -628,6 +666,7 @@
       INTEGER, INTENT(inout), OPTIONAL :: shared_comm
       INTEGER :: ier
       IF (PRESENT(shared_comm)) THEN
+#if defined(MPI_OPT)
          CALL MPI_WIN_FENCE(0,win_vertex,istat)
          CALL MPI_WIN_FREE(win_vertex,istat)
          CALL MPI_WIN_FENCE(0,win_face,istat)
@@ -667,6 +706,7 @@
          IF (ASSOCIATED(d)) NULLIFY(d)
          IF (ASSOCIATED(ihit_array)) NULLIFY(ihit_array)
       ELSE
+#endif
          IF (ASSOCIATED(FN)) DEALLOCATE(FN)
          IF (ASSOCIATED(A0)) DEALLOCATE(A0)
          IF (ASSOCIATED(V0)) DEALLOCATE(V0)
@@ -717,7 +757,9 @@
 
       SUBROUTINE mpialloc_1d_int(array,n1,subid,mymaster,share_comm,win)
       ! Libraries
-      USE MPI
+#if defined(MPI_OPT)
+      USE mpi
+#endif
       USE ISO_C_BINDING
       IMPLICIT NONE
       ! Arguments
@@ -730,23 +772,29 @@
       ! Variables
       INTEGER :: disp_unit, ier
       INTEGER :: array_shape(1)
+#if defined(MPI_OPT)
       INTEGER(KIND=MPI_ADDRESS_KIND) :: window_size
+#endif
       TYPE(C_PTR) :: baseptr
       ! Initialization
       ier = 0
       array_shape(1) = n1
       disp_unit = 1
+#if defined(MPI_OPT)
       window_size = 0_MPI_ADDRESS_KIND
       IF (subid == mymaster) window_size = INT(n1,MPI_ADDRESS_KIND)*4_MPI_ADDRESS_KIND
       CALL MPI_WIN_ALLOCATE_SHARED(window_size, disp_unit, MPI_INFO_NULL, share_comm, baseptr, win ,ier)
       IF (subid /= mymaster) CALL MPI_WIN_SHARED_QUERY(win, 0, window_size, disp_unit, baseptr, ier)
       CALL C_F_POINTER(baseptr, array, array_shape)
+#endif
       RETURN
       END SUBROUTINE mpialloc_1d_int
 
       SUBROUTINE mpialloc_1d_dbl(array,n1,subid,mymaster,share_comm,win)
       ! Libraries
-      USE MPI
+#if defined(MPI_OPT)
+      USE mpi
+#endif
       USE ISO_C_BINDING
       IMPLICIT NONE
       ! Arguments
@@ -759,23 +807,29 @@
       ! Variables
       INTEGER :: disp_unit, ier
       INTEGER :: array_shape(1)
+#if defined(MPI_OPT)
       INTEGER(KIND=MPI_ADDRESS_KIND) :: window_size
+#endif
       TYPE(C_PTR) :: baseptr
       ! Initialization
       ier = 0
       array_shape(1) = n1
       disp_unit = 1
+#if defined(MPI_OPT)
       window_size = 0_MPI_ADDRESS_KIND
       IF (subid == mymaster) window_size = INT(n1,MPI_ADDRESS_KIND)*8_MPI_ADDRESS_KIND
       CALL MPI_WIN_ALLOCATE_SHARED(window_size, disp_unit, MPI_INFO_NULL, share_comm, baseptr, win ,ier)
       IF (subid /= mymaster) CALL MPI_WIN_SHARED_QUERY(win, 0, window_size, disp_unit, baseptr, ier)
       CALL C_F_POINTER(baseptr, array, array_shape)
+#endif
       RETURN
       END SUBROUTINE mpialloc_1d_dbl
 
       SUBROUTINE mpialloc_2d_int(array,n1,n2,subid,mymaster,share_comm,win)
       ! Libraries
-      USE MPI
+#if defined(MPI_OPT)
+      USE mpi
+#endif
       USE ISO_C_BINDING
       IMPLICIT NONE
       ! Arguments
@@ -789,24 +843,30 @@
       ! Variables
       INTEGER :: disp_unit, ier
       INTEGER :: array_shape(2)
+#if defined(MPI_OPT)
       INTEGER(KIND=MPI_ADDRESS_KIND) :: window_size
+#endif
       TYPE(C_PTR) :: baseptr
       ! Initialization
       ier = 0
       array_shape(1) = n1
       array_shape(2) = n2
       disp_unit = 1
+#if defined(MPI_OPT)
       window_size = 0_MPI_ADDRESS_KIND
       IF (subid == mymaster) window_size = INT(n1*n2,MPI_ADDRESS_KIND)*4_MPI_ADDRESS_KIND
       CALL MPI_WIN_ALLOCATE_SHARED(window_size, disp_unit, MPI_INFO_NULL, share_comm, baseptr, win ,ier)
       IF (subid /= mymaster) CALL MPI_WIN_SHARED_QUERY(win, 0, window_size, disp_unit, baseptr, ier)
       CALL C_F_POINTER(baseptr, array, array_shape)
+#endif
       RETURN
       END SUBROUTINE mpialloc_2d_int
 
       SUBROUTINE mpialloc_2d_dbl(array,n1,n2,subid,mymaster,share_comm,win)
       ! Libraries
-      USE MPI
+#if defined(MPI_OPT)
+      USE mpi
+#endif
       USE ISO_C_BINDING
       IMPLICIT NONE
       ! Arguments
@@ -820,18 +880,22 @@
       ! Variables
       INTEGER :: disp_unit, ier
       INTEGER :: array_shape(2)
+#if defined(MPI_OPT)
       INTEGER(KIND=MPI_ADDRESS_KIND) :: window_size
+#endif
       TYPE(C_PTR) :: baseptr
       ! Initialization
       ier = 0
       array_shape(1) = n1
       array_shape(2) = n2
       disp_unit = 1
+#if defined(MPI_OPT)
       window_size = 0_MPI_ADDRESS_KIND
       IF (subid == mymaster) window_size = INT(n1*n2,MPI_ADDRESS_KIND)*8_MPI_ADDRESS_KIND
       CALL MPI_WIN_ALLOCATE_SHARED(window_size, disp_unit, MPI_INFO_NULL, share_comm, baseptr, win ,ier)
       IF (subid /= mymaster) CALL MPI_WIN_SHARED_QUERY(win, 0, window_size, disp_unit, baseptr, ier)
       CALL C_F_POINTER(baseptr, array, array_shape)
+#endif
       RETURN
       END SUBROUTINE mpialloc_2d_dbl
 
