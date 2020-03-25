@@ -382,11 +382,15 @@ C-----------------------------------------------
       END IF
 
       IF (PRESENT(comm)) THEN
+#if defined(MPI_OPT)
          CALL MPI_BCAST(ig,1,MPI_INTEGER,0,comm,istat)
          CALL MPIDEALLOC(brtemp,win_brtemp)
          CALL MPIDEALLOC(bptemp,win_bptemp)
          CALL MPIDEALLOC(bztemp,win_bztemp)
          IF (mylocalid /= 0) CALL FSEEK(iunit,ig,1)
+#else
+         DEALLOCATE (brtemp, bztemp, bptemp)
+#endif
       ELSE
          DEALLOCATE (brtemp, bztemp, bptemp)
       END IF
@@ -634,11 +638,12 @@ C-----------------------------------------------
       INTEGER, DIMENSION(3)   :: dimlens
       CHARACTER(LEN=100) :: temp
       INTEGER :: nskip, sh(1)
+      INTEGER :: temp_rank
 #if defined(MPI_OPT)
       LOGICAL :: lMPIInit
       INTEGER :: mpi_rank, mpi_size, MPI_ERR
       INTEGER :: shar_rank, shar_comm, temp_comm, temp_size, 
-     1           temp_rank, win_brtemp, win_bptemp, win_bztemp
+     1           win_brtemp, win_bptemp, win_bztemp
 
       CALL MPI_INITIALIZED(lMPIInit, MPI_ERR)
       IF ((lMPIInit) .and. PRESENT(comm)) THEN
@@ -770,6 +775,7 @@ C-----------------------------------------------
          temp_size = 1; temp_rank = 0
       END IF
 #else
+      temp_rank = 0
       ALLOCATE (brtemp(nr0b,nz0b,np0b), bptemp(nr0b,nz0b,np0b),
      1          bztemp(nr0b,nz0b,np0b), bttemp(nbvac,3), stat=istat)
       IF (istat .ne. 0)STOP 'Error allocating bXtemp in mgrid_mod2 '
