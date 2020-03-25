@@ -667,7 +667,9 @@
                                                    snr,snphi,snz,&
                                                    brreal,bphireal,bzreal,comm)
       USE mpi_sharmem
+#if defined(MPI_OPT)
       USE mpi
+#endif
       USE EZspline_obj
       USE EZspline
       IMPLICIT NONE
