@@ -17,7 +17,7 @@
   PRECOMP:= cpp-mp-8 -traditional-cpp -E -P -C -DMACOSX
   COMPILE = gfortran
   COMPILE_FREE = gfortran -ffree-form -ffree-line-length-none -ffixed-line-length-none
-  LINK    = mpif90 $(FLAGS) -o
+  LINK    = gfortran $(FLAGS) -o
   LINK_AR = ar -ruvs
   LINK_C  = gcc -shared -Wl,-no_compact_unwind
 
