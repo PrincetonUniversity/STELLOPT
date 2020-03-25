@@ -342,14 +342,60 @@ wget http://ftp.mcs.anl.gov/pub/petsc/release-snapshots/petsc-3.12.4.tar.gz
 
 ======
 
+openmpi issues:
+
+wget https://download.open-mpi.org/release/open-mpi/v4.0/openmpi-4.0.3.tar.gz
+
+from the openmpi-4.0.3 README:
+ The symbols that now no longer appear by default in Open MPI's mpi.h
+  are:
+
+  - MPI_Address (replaced by MPI_Get_address)
+  - MPI_Errhandler_create (replaced by MPI_Comm_create_errhandler)
+  - MPI_Errhandler_get (replaced by MPI_Comm_get_errhandler)
+  - MPI_Errhandler_set (replaced by MPI_Comm_set_errhandler)
+  - MPI_Type_extent (replaced by MPI_Type_get_extent)
+  - MPI_Type_hindexed (replaced by MPI_Type_create_hindexed)
+  - MPI_Type_hvector (replaced by MPI_Type_create_hvector)
+  - MPI_Type_lb (replaced by MPI_Type_get_extent)
+  - MPI_Type_struct (replaced by MPI_Type_create_struct)
+  - MPI_Type_ub (replaced by MPI_Type_get_extent)
+  - MPI_LB (replaced by MPI_Type_create_resized)
+  - MPI_UB (replaced by MPI_Type_create_resized)
+  - MPI_COMBINER_HINDEXED_INTEGER
+  - MPI_COMBINER_HVECTOR_INTEGER
+  - MPI_COMBINER_STRUCT_INTEGER
+  - MPI_Handler_function (replaced by MPI_Comm_errhandler_function)
+
+  Although these symbols are no longer prototyped in mpi.h, they
+  are still present in the MPI library in Open MPI v4.0.1 and later
+  releases of the v4.0.x release stream. This enables legacy MPI
+  applications to link and run successfully with
+  Open MPI v4.0.x, even though they will fail to compile.
+
+  All that being said, if you are unable to immediately update your
+  application to stop using these legacy MPI-1 symbols, you can
+  re-enable them in mpi.h by configuring Open MPI with the
+  --enable-mpi1-compatibility flag.
+
+  NOTE: Open MPI v4.0.0 had an error where these symbols were not
+        included in the library if configured without --enable-mpi1-compatibility
+        (see https://github.com/open-mpi/ompi/issues/6114).
+        This is fixed in v4.0.1, where --enable-mpi1-compatibility
+        flag only controls what declarations are present in the MPI header.
 
 
+./configure CC=gcc CXX=g++ FC=gfortran --prefix=<directory>  --enable-static --enable-shared --enable-mpi-fortran=all
+--with-slurm --enable-mpi-cxx PKG_CONFIG=/mingw64/bin/pkg-config
 
+-finline-functions -fno-strict-aliasing added to CFLAGS
+-finline-functions aded to CPPFLAGS
 
+INTEGER*16 MPI datatype unsupported
 
+pacman -S mingw-w64-x86_64-perl
 
-
-
+pacman -S mingw-w64-cross-binutils
 
 
 
