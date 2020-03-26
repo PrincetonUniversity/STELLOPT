@@ -157,4 +157,4 @@
 #            LIBSTELL Shared Options
 #######################################################################
 
-LIB_SHARE = -L/opt/local/lib/gcc8 -lstdc++ -lgfortran -L/usr/lib -lz -lc -lm -lpthread -L/opt/local/lib/openmpi-gcc8 -lmpi -lmpi_mpifh $(LIBS)
+LIB_SHARE = -L/opt/local/lib/gcc8 -lstdc++ -lgfortran -L/usr/lib -lz -lc -lm -lpthread $(LIBS)
