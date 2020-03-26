@@ -1,6 +1,10 @@
 This is an experimental branch for compiling LIBSTELL under msys-mingw 
 on windows.
 
+Note:  
+- removed adas_mod_parallel.o from the ObjectsList file in LIBSTELL and commented it out in Release/Depends
+- renamed adas_mod_parallel.f90 to adas_mod_parallelf90
+
 ====================================================================================
 
 Known basics / fixes:
@@ -20,6 +24,9 @@ Current issue:
 
 - successfully compiling libstell.lib
 - working on libstell.dll
+
+- test compile of full system is searching for libstell.dll, but we are still compiling libstell.lib 
+- beams3d needs the same hotfix that SAM applied for libstell
 
 ===== 
 
@@ -64,9 +71,8 @@ make[1]: Leaving directory '/home/weir/src/stellopt/LIBSTELL'
 make: *** [makefile:41: clean_release] Error 2
 
 
-- This error appears to be pop up because the MPI environment doesn't declare
-the data type for the "comm" variable in the new mpi_inc 
-
+- This error appears to be pop up because the MPI environment doesn't declare the data type for the "comm" variable in the new mpi_inc 
+----> Fixed by Sam for LIBSTELL. NEEDS TO BE APPLIED TO OTHER MODULES
 
 
 =========================
