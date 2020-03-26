@@ -17,7 +17,7 @@
       CALL getarg(narg, arg, numchars)
 #elif defined(WIN64)
       numargs = iargc()
-      numchars = getarg(narg, arg)
+      CALL getarg(narg, arg)
 #elif defined(LINUX) || defined(DARWIN)
       INTEGER iargc
       numargs = iargc()
