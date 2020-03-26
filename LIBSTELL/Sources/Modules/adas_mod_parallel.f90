@@ -95,6 +95,7 @@ module adas_mod_parallel
        INTEGER, DIMENSION(3) :: dimlen
        CHARACTER(LEN=256) :: adasdir, table_str, var_str
 
+#if defined(MPI_OPT)
        ! Initialize
        CALL deallocate_adas_tables
        ! Load Electron impact iz =1 
@@ -374,13 +375,14 @@ module adas_mod_parallel
        !CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
        !CALL mpialloc(ex_1_3, dimlen(1), dimlen(2),dimlen(3), myid, local_master, comm, win_ex_13)
        !CALL adas_get_var_3D(table_str,var_str,dimlen(1),dimlen(2),dimlen(3),ex_1_3,myid,comm)
-
+#endif
        RETURN
 
        END SUBROUTINE adas_load_tables
 
        SUBROUTINE deallocate_adas_tables
        IMPLICIT NONE
+#if defined(MPI_OPT)
        IF (ASSOCIATED(ei_1_axis)) CALL mpidealloc(ei_1_axis,win_ei_1a)
        IF (ASSOCIATED(ei_2_axis)) CALL mpidealloc(ei_2_axis,win_ei_2a)
        IF (ASSOCIATED(cx_1_1_axis)) CALL mpidealloc(cx_1_1_axis,win_cx_11a)
@@ -441,6 +443,7 @@ module adas_mod_parallel
        IF (ASSOCIATED(ex_1_1)) CALL mpidealloc(ex_1_1,win_ex_11)
        IF (ASSOCIATED(ex_1_2)) CALL mpidealloc(ex_1_2,win_ex_12)
        IF (ASSOCIATED(ex_1_3)) CALL mpidealloc(ex_1_3,win_ex_13)
+#endif
        END SUBROUTINE deallocate_adas_tables
 
        SUBROUTINE adas_inq_var_size(filename,varname,n,myid,comm)
