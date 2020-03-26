@@ -1,0 +1,80 @@
+#!/bin/sh
+#     Script:     update
+#     Author:     S. Lazerson (lazerson@pppl.gov)
+#     Date:       10/06/11
+#     Purpose:    This script zips the various STELLOPT
+#                 programs into their zip files and then
+#                 zips these files into the STELLOPT zip
+#                 file.
+#
+#     Usage:      To compile all STELLOPT codes simply call this script:
+#                 `build_all`. To complile only individual codes/libraries
+#                 add the requested script names as arguments:
+#                 `build_all LIBSTELL VMEC2000`.
+#
+#     Options:
+#       --release
+#       --clean_release
+#       --debug
+#       --clean_debug
+#       --shared_release
+
+export FLAG_CALLED_FROM_BUILD_ALL=true
+
+
+# Set the default.
+RELEASE_TYPE=--clean_release
+
+# Check to see if a build options was givin
+if [ $# -ne 0 ]; then
+  for OPTION in --release --clean_release --debug --clean_debug --static_release --shared_release
+  do
+    # If command line arguments were given, then check to see
+    # which codes should be compiled.  Otherwise compile everything.
+    echo $@|grep -q -- $OPTION
+    if [ $? -eq 0 ]; then
+      RELEASE_TYPE=$OPTION
+      break  
+    fi
+  done
+fi
+
+echo Beginning build of STELLOPT with options: $RELEASE_TYPE
+
+MAKE_OPTIONS=`echo $RELEASE_TYPE | cut -b 3-`
+
+# Call the toplevel makfile to setup the output directories.
+make $MAKE_OPTIONS
+
+
+# Loop through all the available codes and make the ones specified on the
+# command line.  If no codes were specified, then make all of them.
+#for CODE in LIBSTELL ANIMEC BCYCLIC BEAMS3D BOOTSJ BNORM BOOZ_XFORM COBRAVMEC COILOPT DESCUR DESCUR_PLOT DIAGNO DKES FIELDLINES J_INVARIANT MAKEGRID NEO NESCOIL PENTA TORLINES VMEC2000 VMEC2PIES VMEC2SPEC VMEC2STEL VMEC2V690 VMEC2XGC STELLOPTV2
+for CODE in LIBSTELL
+do
+  match=0
+
+  # If command line arguments were given, then check to see
+  # which codes should be compiled.  Otherwise compile everything.
+  if [ $# -ne 0 ]; then
+    echo $@|grep -q $CODE
+    if [ $? -eq 0 ]; then
+      match=1  
+    fi
+  else
+    echo $CODE
+    match=1
+  fi
+
+  # Don't try to compile codes which you don't have directories for
+  if ! [ -d $CODE ]; then
+    match=0
+  fi
+
+  if [ $match -eq 1 ]; then
+    cd $CODE
+    make $MAKE_OPTIONS
+#    make $MAKE_OPTIONS -j
+    cd ..
+  fi
+done
