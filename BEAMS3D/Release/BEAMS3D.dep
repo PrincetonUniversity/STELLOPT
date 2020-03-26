@@ -212,6 +212,7 @@ beams3d_init_beams_bbnbi.o: \
       ../../LIBSTELL/Release/stel_kinds.o \
       ../../LIBSTELL/Release/mpi_params.o \
       beams3d_lines.o \
+      beams3d_grid.o \
       beams3d_runtime.o
 
 

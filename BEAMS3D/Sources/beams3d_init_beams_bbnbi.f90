@@ -13,6 +13,8 @@
       USE stel_kinds, ONLY: rprec
       USE beams3d_runtime
       USE beams3d_lines, ONLY: nparticles
+      USE beams3d_grid, ONLY: X_BEAMLET, Y_BEAMLET, Z_BEAMLET, &
+                           NX_BEAMLET, NY_BEAMLET, NZ_BEAMLET
       USE mpi_params
       USE mpi_inc
       USE hdf5
@@ -27,8 +29,7 @@
       INTEGER, DIMENSION(:), ALLOCATABLE :: N_start
       REAL(rprec) :: rtemp
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: Energy, X_start, Y_start
-      REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: X, Y, X_BEAMLET, Y_BEAMLET, Z_BEAMLET, &
-                                                  NX_BEAMLET, NY_BEAMLET, NZ_BEAMLET, U, V
+      REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: X, Y, U, V
       REAL(rprec), PARAMETER   :: E_error = .01 ! 1% energy spread
 
       ! For HDF5
@@ -89,6 +90,10 @@
             WRITE(6, '(A,I4)')      '   nbeamlets: ', dims(2)
             WRITE(6, '(A,I8)')      '   nparticles_start: ', nparticles_start
             CALL FLUSH(6)
+         END IF
+         IF (lascot) THEN
+            CALL beams3d_write_ascoth5('BBNBI')
+            IF (lverb) WRITE(6, '(A,I4)')      '   ASCOT5 File: Updated'
          END IF
       END IF
 
