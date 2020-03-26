@@ -30,7 +30,7 @@ libstell.lib : $(ObjectFiles)
 	$(CLEAN_ARCH)
 	
 libstell.dll : $(ObjectFiles) 
-	$(LINK_C) -Wl,--export-all-symbols -Wl,--enable-auto-import, -Wl,--whole-archive -o $@ $(ObjectFiles) $(LIB_LINK)
+	$(LINK_C) -Wl,--out-implib,libstell.dll.a -o $@ $(ObjectFiles) $(LIB_LINK)
 	$(CLEAN_ARCH)
 
 #Compile object files defined in OBJLIST.
