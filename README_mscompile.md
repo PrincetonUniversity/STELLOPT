@@ -104,6 +104,8 @@ Add /msys64/mingw64 and /msys64 to your user's environment PATH variable
 
 ============
 
+============
+
 Install the background modules that are necessary / generally helpful
 
 pacman -S mingw-w64-x86_64-fltk mingw-w64-x86_64-f2c
@@ -112,9 +114,13 @@ pacman -S mingw-w64-x86_64-gsl mingw-w64-x86_64-fgsl mingw-w64-x86_64-fftw
 pacman -S mingw-w64-x86_64-msmpi  #  SEE NOTE ON MPI BELOW
 pacman -S mingw-w64-x86_64-hdf4 mingw-w64-x86_64-hdf5
 
+----- the MSYS version of msmpi comes with headers for fortran mpi
+----- you have to manually compile the fortran modules yourself before proceeding (see README_msmpi.md) 
+
 ============
 
-SCALAPACK is available from a developer that is pushing to the main MSYS-REPO
+#  SCALAPACK is available from a developer that is pushing to the main MSYS-REPO
+#  SEE 
 
 cd ~
 mkdir src
@@ -190,9 +196,12 @@ Hello World from thread = 7
 
 ======
 
-You can either use the MSYS version of MSMPI, or you can install it yourself.  I have tested both, and there
-was no difference in the IMPLICIT type error above. The tests work for both.
------ the MSYS version comes with headers for fortran mpi 
+I recommend using the MSYS version of MSMPI - it is more up to date (version 10+), and includes the below bug-fixes
+- After installing mingw-w64-x86_64-msmpi follow the instructions in README_msmpi.md before proceeding
+
+- if you just want to test a local installation, then you can follow these instructions.
+
+----- the MSYS version comes with headers for fortran mpi: you have to manually compile the fortran codes (see  README_msmpi.md) 
 
 Instructions for installing MS-MPI yourself:
 
