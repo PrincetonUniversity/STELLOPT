@@ -12,7 +12,8 @@ MOD1_PATH = -I$(MYHOME)/libstell_dir
 MOD_PATH = 
 CLEAN_ARCH = 
 LIB_DIR = ../../LIBSTELL
-LIB = libstell.lib
+#LIB = libstell.lib
+LIB = libstell.dll
 
 # Handle Which Code is being CALLED
 ifeq ($(MAKECMDGOALS),xstelloptv2)
@@ -184,8 +185,8 @@ ifeq ($(LMPI),T)
   COMPILE = $(MPI_COMPILE)
   COMPILE_FREE = $(MPI_COMPILE_FREE)
   LINK    = $(MPI_COMPILE) $(FLAGS) -o 
-  #LINK_C  = $(MPI_LINK) -shared
-  LINK_C  = $(MPI_LINK) -shared -Wl,--export-all-symbols -Wl,--enable-auto-import, -Wl,--whole-archive
+  LINK_C  = $(MPI_LINK) -shared
+#  LINK_C  = $(MPI_LINK) -shared -Wl,--export-all-symbols -Wl,--enable-auto-import, -Wl,--whole-archive
 endif
 ifeq ($(LNETCDF),T)
   MOD1_PATH += $(NETCDF_INC)
@@ -241,7 +242,7 @@ ifeq ($(MAKECMDGOALS),libstell.lib)
   INC_PATH = 
 endif
 ifeq ($(MAKECMDGOALS),libstell.dll)
-  LINK = $(LINK_C)
+  LINK = $(LINK_C) -Wl,--out-implib,libstell_dll.a
   LIB_LINK = $(LIB_SHARE)
   COMPILE += -fPIC
   COMPILE_FREE += -fPIC
