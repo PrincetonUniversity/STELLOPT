@@ -5,6 +5,9 @@
 *.mod
 *.a
 *.so
+*.lib
+*.dll
+*.def
 *.zip
 .DS*
 *.dSYM
