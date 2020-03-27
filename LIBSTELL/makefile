@@ -12,7 +12,7 @@
   MAKE = makelibstell
   LIB_DIR = $(MYHOME)/libstell_dir
 
-.PHONY: release debug clean_release clean_debug static_release shared_release
+.PHONY: release debug clean_release clean_debug static_release shared_release clean
 
 release:
 	@echo "Beginning release compilation and archiving of libstell"
@@ -68,3 +68,9 @@ shared_release:
 	@echo "To free up space, delete all *.o files from Release"
 	@echo ""
 
+clean: 
+	@echo "CLEANING UP"
+	@cd $(REL); make -f $(MAKE) clean
+	@cd ..
+	@cd $(DBG); make -f $(MAKE) clean
+	@cd ..
