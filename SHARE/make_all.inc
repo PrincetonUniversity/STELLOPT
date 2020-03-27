@@ -6,14 +6,34 @@
 
 # Home bin specifies where the build scripts are located,
 # for example awk_cdir.awk.
-#HOME_BIN = ../../
-HOME_BIN = /home/weir
+HOME_BIN = ../../
 MOD1_PATH = -I$(MYHOME)/libstell_dir
 MOD_PATH = 
 CLEAN_ARCH = 
 LIB_DIR = ../../LIBSTELL
-#LIB = libstell.lib
-LIB = libstell.dll
+
+#######################################################################
+
+# Can we auto-detect which type of library to build?
+#    Two steps:   
+#       machine type (UNIX/POSIX versus WIN)
+#       static versus shared
+LIB :=
+ifeq ($(MACHINE),"mingw64")
+  ifneq (,$(findstring "shared",$(MAKECMDGOALS)))
+    LIB := libstell.dll
+  else
+    LIB := libstell.lib
+  endif
+else
+  ifneq (,$(findstring "shared",$(MAKECMDGOALS)))
+    LIB := libstell.so
+  else
+    LIB := libstell.a
+  endif
+endif
+
+#######################################################################
 
 # Handle Which Code is being CALLED
 ifeq ($(MAKECMDGOALS),xstelloptv2)
@@ -87,6 +107,7 @@ else ifeq ($(MAKECMDGOALS),test_stellopt_sfincs)
 else ifeq ($(MAKECMDGOALS),test_stellopt_terpsichore)
 else ifeq ($(MAKECMDGOALS),test_stellopt_travis)
 else
+  LIB_LINK =
   LGENE = F
   LCOILOPT = F
   LSFINCS = F
@@ -184,9 +205,11 @@ ifeq ($(LMPI),T)
   PRECOMP += -DMPI_OPT
   COMPILE = $(MPI_COMPILE)
   COMPILE_FREE = $(MPI_COMPILE_FREE)
+  LIB_LINK += $(MPI_LIB)
   LINK    = $(MPI_COMPILE) $(FLAGS) -o 
-  LINK_C  = $(MPI_LINK) -shared
-#  LINK_C  = $(MPI_LINK) -shared -Wl,--export-all-symbols -Wl,--enable-auto-import, -Wl,--whole-archive
+  LINK_C  = $(MPI_LINK)
+#  LINK_C  = $(MPI_LINK) -shared
+  LIB_SHARE += $(MPI_LIB)
 endif
 ifeq ($(LNETCDF),T)
   MOD1_PATH += $(NETCDF_INC)
@@ -228,6 +251,12 @@ ifeq ($(MAKECMDGOALS),libstell.a)
   COMPILE_FREE += -fPIC
   INC_PATH = 
 endif
+ifeq ($(MAKECMDGOALS),libstell.lib)
+  LINK = $(LINK_AR)
+  COMPILE += -fPIC
+  COMPILE_FREE += -fPIC
+  INC_PATH = 
+endif
 ifeq ($(MAKECMDGOALS),libstell.so)
   LINK = $(LINK_C)
   LIB_LINK = $(LIB_SHARE)
@@ -235,19 +264,23 @@ ifeq ($(MAKECMDGOALS),libstell.so)
   COMPILE_FREE += -fPIC
   INC_PATH = 
 endif
-ifeq ($(MAKECMDGOALS),libstell.lib)
-  LINK = $(LINK_AR)
-  COMPILE += -fPIC
-  COMPILE_FREE += -fPIC
-  INC_PATH = 
-endif
 ifeq ($(MAKECMDGOALS),libstell.dll)
-  LINK = $(LINK_C) -Wl,--out-implib,libstell_dll.a
+  LINK = $(LINK_C)
   LIB_LINK = $(LIB_SHARE)
   COMPILE += -fPIC
   COMPILE_FREE += -fPIC
   INC_PATH = 
 endif
 
+#######################################################################
+#      ld has a cool feature to deal with recursive dependencies
+#######################################################################
+
+LIB_LINK := -Wl,--start-group $(LIB_LINK) -Wl,--end-group
+ifeq ($(MAKECMDGOALS),libstell.dll)
+  LIB_LINK += -Wl,--output-def,libstell.def,--out-implib,libstell.dll.a
+endif
+
 #This must come here
 MOD_PATH+= -I
+
