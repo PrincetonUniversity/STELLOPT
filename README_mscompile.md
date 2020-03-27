@@ -1,9 +1,11 @@
 This is an experimental branch for compiling LIBSTELL under msys-mingw 
 on windows.
 
-Note:  
-- removed adas_mod_parallel.o from the ObjectsList file in LIBSTELL and commented it out in Release/Depends
-- renamed adas_mod_parallel.f90 to adas_mod_parallelf90
+I have changed the makefiles pretty significantly to make this system work and 
+some of the changes are general improvements. 
+---  Bug fixing for GCC/GFORTRAN 9.3
+---  Automatic selection of $(LIB) by detection of mingw64 versus UNIX build 
+---  Still working on 
 
 ====================================================================================
 
@@ -17,7 +19,9 @@ Known basics / fixes:
 Notes:
 -- The compiled files hdf5.mod are stored under /mingw64/include/static/ or /mingw64/include/shared. 
 -- If you are using the hdf5 *.dll files, you need to include the "shared" dir 
--- the mingw precompiler is based on gcc9 in this build. To avoid getcarg errors 
+-- the mingw precompiler is based on gcc9 in this build. 
+     ... To avoid getcarg and vmec_system errors you need to add a proper flag and system call
+     ... This is all about GCC9.3 compatability, not actual Windows compatability
 
 =========================
 Current issue:
@@ -48,6 +52,9 @@ Solved by adding a WIN64 macro that functions with GCC9. The type of iargc and g
       CALL getarg(narg, arg)
 !DEC$ ELSEIF DEFINED (WIN32)
 
+Similar issue with vmec_system.f. Solved by adding a WIN64 macro that functions with GCC9
+#elif defined(WIN64)
+      CALL SYSTEM(TRIM(cmd), ireturn)
 
 SOLVED / PREVIOUS ISSUE:  HOTFIX FROM SAM (git checkout origin/Lazerson -- LIBSTELL/Sources/Modules)
 
