@@ -20,8 +20,8 @@
 #######################################################################
 #          If you want to explicitly override user given flags
 #######################################################################
-#  FC = gfortran
-#  CC = gcc
+  FC = gfortran
+  CC = gcc
 #  FLAGS = -Wl,--enable-auto-import -Wl,--export-all-symbols -Wl,--enable-runtime-pseudo-reloc
 #
 #######################################################################
@@ -32,7 +32,8 @@
                  -Wl,--export-all-symbols \
                  -Wl,--enable-runtime-pseudo-reloc
 
-  HARD_CFLAGS = -Wl,-z-defs 
+  HARD_CFLAGS = \
+#                    -Wl,-z-defs 
 #                    -Wl,--no-undefined \
 #                    -Wl,--enable-auto-import \
 #                    -Wl,--export-all-symbols \
@@ -110,7 +111,7 @@ endif
 #
 # Let's not pollute the namespace if unnecessary
 #######################################################################
-  LMPI    = T
+  LMPI    = F
 
 ifeq ($(LMPI),T)
   MPI_COMPILE = mpif90 $(HARD_FFLAGS)
@@ -351,7 +352,7 @@ endif
 #                   
 #   Trying out a recursive tool in ld
 #
-LIB_SHARE = $(LIBS) -lz -lcurl -lmsvcrt -lm -lgfortran
+LIB_SHARE = $(LIBS) -lgfortran -lz -lcurl -lm -lgfortran -lmsvcrt
 
 #LIB_SHARE = $(LIBS) $(LIBS) -lz -lcurl -lmsvcrt -lm -lgfortran -lmsvcrt
 
