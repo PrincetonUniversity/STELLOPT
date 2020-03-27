@@ -18,6 +18,21 @@
 #       --debug
 #       --clean_debug
 #       --shared_release
+#
+#
+# This file calls multiple Makefiles:
+#
+# 1)   Pre-loop
+#  This files calls $(STELLOPT_DIR)/makefile
+#   makefile     includes   (creates directory structure)
+#      make.inc       includes
+#           make_$(MACHINE).inc (from SHARE)  ... no external makefiles
+# and       make_all.inc        (from SHARE)  
+#              (declares HOME_BIN, MOD_PATH, CLEAN_ARCH, and LIB)
+#
+#
+#
+
 
 export FLAG_CALLED_FROM_BUILD_ALL=true
 
@@ -27,7 +42,7 @@ RELEASE_TYPE=--clean_release
 
 # Check to see if a build options was givin
 if [ $# -ne 0 ]; then
-  for OPTION in --release --clean_release --debug --clean_debug --static_release --shared_release
+  for OPTION in --release --clean_release --debug --clean_debug --static_release --shared_release --clean
   do
     # If command line arguments were given, then check to see
     # which codes should be compiled.  Otherwise compile everything.
