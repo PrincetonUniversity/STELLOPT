@@ -14,24 +14,24 @@ LIB_DIR = ../../LIBSTELL
 
 #######################################################################
 
-# Can we auto-detect which type of library to build?
+#$(info $$MAKECMDGOALS is [${MAKECMDGOALS}])
+#$(info $$MACHINE is [${MACHINE}])
+# Can we auto-detect which type of library to build and link against?
 #    Two steps:   
 #       machine type (UNIX/POSIX versus WIN)
 #       static versus shared
-LIB :=
-ifeq ($(MACHINE),"mingw64")
-  ifneq (,$(findstring "shared",$(MAKECMDGOALS)))
+ifeq ($(strip $(MACHINE)),mingw64)
+  LIB := libstell.lib
+  ifeq ($(findstring libstell.dll,$(MAKECMDGOALS)),libstell.dll)
     LIB := libstell.dll
-  else
-    LIB := libstell.lib
   endif
 else
-  ifneq (,$(findstring "shared",$(MAKECMDGOALS)))
+  LIB := libstell.a
+  ifeq ($(findstring shared,$(MAKECMDGOALS)),shared)
     LIB := libstell.so
-  else
-    LIB := libstell.a
   endif
 endif
+#$(info $$LIB is [${LIB}])
 
 #######################################################################
 
