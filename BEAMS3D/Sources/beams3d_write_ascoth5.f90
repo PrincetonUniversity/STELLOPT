@@ -20,14 +20,17 @@
                                  ZEFF_ARR, TE, TI, NE, req_axis, zeq_axis, npot, &
                                  POT_SPL_S, ezspline_interp, phiedge_eq, TE_spl_s, &
                                  NE_spl_s, TI_spl_s, ZEFF_spl_s, nne, nte, nti, nzeff, &
-                                 plasma_mass, reff_eq, therm_factor
+                                 plasma_mass, reff_eq, therm_factor, &
+                                 X_BEAMLET, Y_BEAMLET, Z_BEAMLET, &
+                                 NX_BEAMLET, NY_BEAMLET, NZ_BEAMLET
       USE beams3d_runtime, ONLY: id_string, npoinc, nbeams, beam, t_end, lverb, &
                                     lvmec, lpies, lspec, lcoil, lmgrid, lbeam, lplasma_only, &
                                     lvessel, lvac, lbeam_simple, handle_err, nparticles_start, &
                                     HDF5_OPEN_ERR,HDF5_WRITE_ERR,&
                                     HDF5_CLOSE_ERR, BEAMS3D_VERSION, weight, e_beams, p_beams,&
                                     charge, Zatom, mass, ldepo, v_neut, &
-                                    lcollision, pi, pi2, t_end_in, nprocs_beams
+                                    lcollision, pi, pi2, t_end_in, nprocs_beams, &
+                                    div_beams, mass_beams, Zatom_beams, dex_beams
       USE safe_open_mod, ONLY: safe_open
       USE wall_mod, ONLY: nface,nvertex,face,vertex,ihit_array, wall_free
       USE beams3d_write_par
@@ -46,12 +49,13 @@
 !-----------------------------------------------------------------------
       INTEGER :: ier, iunit, i, d1, d2, d3, k, k1, k2, kmax ,ider
       INTEGER(HID_T) :: options_gid, bfield_gid, efield_gid, plasma_gid, &
-                        neutral_gid, wall_gid, marker_gid, qid_gid
+                        neutral_gid, wall_gid, marker_gid, qid_gid, &
+                        nbi_gid, inj_gid
       INTEGER, ALLOCATABLE, DIMENSION(:) :: itemp
       DOUBLE PRECISION :: rho_temp, s_temp, rho_max, dbl_temp
       DOUBLE PRECISION, ALLOCATABLE :: rtemp(:,:,:), r1dtemp(:)
       CHARACTER(LEN=10) ::  qid_str
-      CHARACTER(LEN=8) :: temp_str8
+      CHARACTER(LEN=8) :: temp_str8, inj_str8
 
 
       DOUBLE PRECISION, PARAMETER :: e_charge      = 1.60217662E-19 !e_c
@@ -350,6 +354,67 @@
                CALL close_hdf5(fid,ier)
                IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,'beams3d_ascot5_'//TRIM(id_string)//'.h5',ier)
             END IF
+         CASE('BBNBI')
+            !--------------------------------------------------------------
+            !           BEAM Model
+            !           Note BEAMS3D assumes each beam represents an energy
+            !--------------------------------------------------------------
+            IF (myworkid == master) THEN
+               CALL open_hdf5('beams3d_ascot5_'//TRIM(id_string)//'.h5',fid,ier,LCREATE=.false.)
+               IF (ier /= 0) CALL handle_err(HDF5_OPEN_ERR,'beams3d_ascot5_'//TRIM(id_string)//'.h5',ier)
+               CALL h5gcreate_f(fid,'nbi', nbi_gid, ier)
+               CALL write_att_hdf5(nbi_gid,'active',qid_str,ier)
+               CALL h5gcreate_f(nbi_gid,'nbi_'//qid_str, qid_gid, ier)
+               CALL write_att_hdf5(qid_gid,'date',temp_str8,ier)
+               CALL write_att_hdf5(qid_gid,'description','Data initialized from BEAMS3D',ier)
+               CALL write_var_hdf5(qid_gid,'ninj',ier,INTVAR=nbeams)
+               DO i = 1, nbeams
+                  d1 = Dex_beams(i)
+                  WRITE(inj_str8,'(i8)') i
+                  CALL h5gcreate_f(qid_gid,'inj'//ADJUSTL(inj_str8), inj_gid, ier)
+                  CALL write_var_hdf5(inj_gid,'id',ier,INTVAR=i)
+                  CALL write_var_hdf5(inj_gid,'power',ier,DBLVAR=P_BEAMS(i))
+                  CALL write_var_hdf5(inj_gid,'energy',ier,DBLVAR=E_BEAMS(i))
+                  CALL write_var_hdf5(inj_gid,'efrac',3,ier,DBLVAR=DBLE((/1, 0, 0/)))
+                  CALL write_var_hdf5(inj_gid,'div_h',ier,DBLVAR=div_beams(i))
+                  CALL write_var_hdf5(inj_gid,'div_v',ier,DBLVAR=div_beams(i))
+                  dbl_temp = 0
+                  CALL write_var_hdf5(inj_gid,'div_halo_frac',ier,DBLVAR=dbl_temp)
+                  CALL write_var_hdf5(inj_gid,'div_halo_v',ier,DBLVAR=dbl_temp)
+                  CALL write_var_hdf5(inj_gid,'div_halo_h',ier,DBLVAR=dbl_temp)
+                  CALL write_var_hdf5(inj_gid,'anum',ier,INTVAR=NINT(mass_beams(i)*5.97863320194E26))
+                  CALL write_var_hdf5(inj_gid,'znum',ier,INTVAR=NINT(Zatom_beams(i)*5.97863320194E26))
+                  CALL write_var_hdf5(inj_gid,'mass',ier,DBLVAR=mass_beams(i))
+                  ! Now Beamlets
+                  d2 = SIZE(X_BEAMLET(d1,:))
+                  ALLOCATE(r1dtemp(d2))
+                  
+                  CALL write_var_hdf5(inj_gid,'nbeamlet',ier,INTVAR=d2)
+                  r1dtemp = X_BEAMLET(d1,:)
+                  CALL write_var_hdf5(inj_gid,'beamletx',d2,ier,DBLVAR=r1dtemp)
+                  r1dtemp = Y_BEAMLET(d1,:)
+                  CALL write_var_hdf5(inj_gid,'beamlety',d2,ier,DBLVAR=r1dtemp)
+                  r1dtemp = Z_BEAMLET(d1,:)
+                  CALL write_var_hdf5(inj_gid,'beamletz',d2,ier,DBLVAR=r1dtemp)
+                  r1dtemp = NX_BEAMLET(d1,:)
+                  CALL write_var_hdf5(inj_gid,'beamletdx',d2,ier,DBLVAR=r1dtemp)
+                  r1dtemp = NY_BEAMLET(d1,:)
+                  CALL write_var_hdf5(inj_gid,'beamletdy',d2,ier,DBLVAR=r1dtemp)
+                  r1dtemp = NZ_BEAMLET(d1,:)
+                  CALL write_var_hdf5(inj_gid,'beamletdz',d2,ier,DBLVAR=r1dtemp)
+                  
+                  DEALLOCATE(r1dtemp)
+
+                  CALL h5gclose_f(inj_gid, ier)
+               END DO
+               CALL h5gclose_f(qid_gid, ier)
+               CALL h5gclose_f(nbi_gid, ier)
+
+               ! Close File
+               CALL close_hdf5(fid,ier)
+               IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,'beams3d_ascot5_'//TRIM(id_string)//'.h5',ier)
+            END IF
+
          CASE('MARKER')
             ! For now we assume we will only run this in deposition mode
             ! so that means we look at index (1,i) since
