@@ -17,20 +17,12 @@ include $(OBJLIST)
 .SUFFIXES :
 .SUFFIXES : .f .f90 .o
 
-libstell.a : $(ObjectFiles) 
+libstell.a libstell.lib : $(ObjectFiles) 
 	$(LINK) $@ $(ObjectFiles)
 	$(CLEAN_ARCH)
 	
-libstell.so : $(ObjectFiles) 
+libstell.so libstell.dll : $(ObjectFiles) 
 	$(LINK_C) -o $@ $(ObjectFiles) $(LIB_LINK)
-	$(CLEAN_ARCH)
-
-libstell.lib : $(ObjectFiles) 
-	$(LINK) $@ $(ObjectFiles)
-	$(CLEAN_ARCH)
-	
-libstell.dll : $(ObjectFiles) 
-	$(LINK_C) -Wl,--out-implib,libstell.dll.a -o $@ $(ObjectFiles) $(LIB_LINK)
 	$(CLEAN_ARCH)
 
 #Compile object files defined in OBJLIST.
