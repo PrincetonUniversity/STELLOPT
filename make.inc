@@ -1,6 +1,7 @@
 # Shamelessly stolen from ASCOT4
 MACHINE ?= $(shell uname -n | \
 	awk '/gmwmobilepc/{print "mingw64"}\
+	     /minikat/{print "macports_gmw"}\
 	     /lazersons-air/{print "macports"}\
 	     /Lazersons-MacBook-Air/{print "macports"}\
 	     /cori/{print "cori"}\
