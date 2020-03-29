@@ -1,3 +1,6 @@
+#   Editted for MINGW by Gavin Weir <gavin.weir@ipp.mpg.de>
+#      I didn't bother updating the checksums ... run with --skipchecksums
+#      see the README_mscompile.md document for detailed information
 
 _realname=netcdf-fortran
 pkgbase=mingw-w64-${_realname}
