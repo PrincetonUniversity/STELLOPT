@@ -1,0 +1,62 @@
+# NOTE:  several problems with netcdf-cxx version 4.3.1
+# NOTE:  cmake does not make ncxx-config with version 4.3.0, must use configure
+
+_realname=netcdf-cxx
+pkgbase=mingw-w64-${_realname}
+pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
+pkgver=4.3.0
+pkgrel=1
+pkgdesc="NetCDF c++ bindings (mingw-w64)"
+arch=('any')
+options=('staticlibs' '!buildflags' '!strip')
+#options=('!buildflags' '!strip')
+license=('custom')
+url="https://www.unidata.ucar.edu/downloads/netcdf/netcdf-cxx/index.jsp"
+depends=("${MINGW_PACKAGE_PREFIX}-netcdf")
+makedepends=("${MINGW_PACKAGE_PREFIX}-gcc"
+             "${MINGW_PACKAGE_PREFIX}-cmake")
+source=(${_realname}-${pkgver}.tar.gz::"https://github.com/Unidata/netcdf-cxx4/archive/v${pkgver}.tar.gz")
+
+prepare() {
+  cd "${srcdir}/${_realname}4-${pkgver}"
+  sed -i "s|libnetcdf_c__4_la_LDFLAGS = -version-info|libnetcdf_c__4_la_LDFLAGS = -no-undefined -version-info|g" cxx4/Makefile.am
+  autoreconf -vfi
+}
+
+build() {
+  [[ -d ${srcdir}/build-static-${MINGW_CHOST} ]] && rm -rf ${srcdir}/build-static-${MINGW_CHOST}
+  mkdir -p ${srcdir}/build-static-${MINGW_CHOST} && cd ${srcdir}/build-static-${MINGW_CHOST}
+
+  "${srcdir}/${_realname}4-${pkgver}"/configure \
+    --prefix=${MINGW_PREFIX} \
+    --build="$CHOST" \
+    --disable-shared
+  make
+
+  [[ -d ${srcdir}/build-shared-${MINGW_CHOST} ]] && rm -rf ${srcdir}/build-shared-${MINGW_CHOST}
+  mkdir -p ${srcdir}/build-shared-${MINGW_CHOST} && cd ${srcdir}/build-shared-${MINGW_CHOST}
+
+  "${srcdir}/${_realname}4-${pkgver}"/configure \
+    --prefix=${MINGW_PREFIX} \
+    --build="$CHOST" \
+    --enable-shared \
+    --enable-dll
+  make
+}
+
+package() {
+  cd ${srcdir}/build-static-${MINGW_CHOST}
+  make DESTDIR=${pkgdir} install
+
+  cd ${srcdir}/build-shared-${MINGW_CHOST}
+  make DESTDIR=${pkgdir} install
+
+  ${MINGW_PREFIX}/bin/strip --strip-unneeded ${pkgdir}${MINGW_PREFIX}/bin/*.dll
+  ${MINGW_PREFIX}/bin/strip -g ${pkgdir}${MINGW_PREFIX}/lib/*.a
+  
+  install -Dm644 ${srcdir}/${_realname}4-${pkgver}/COPYRIGHT \
+    ${pkgdir}${MINGW_PREFIX}/share/licenses/${_realname}4/COPYRIGHT
+
+  local PREFIX_DEPS=$(cygpath -am ${MINGW_PREFIX})
+  find ${pkgdir}${MINGW_PREFIX}/lib/pkgconfig -name *.pc -exec sed -i -e"s|${PREFIX_DEPS}|${MINGW_PREFIX}|g" {} \;
+}
