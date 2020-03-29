@@ -1,3 +1,6 @@
+#   Editted for MINGW by Gavin Weir <gavin.weir@ipp.mpg.de>
+#      I didn't bother updating the checksums ... run with --skipchecksums
+#      see the README_mscompile.md document for detailed information
 # NOTE:  several problems with netcdf-cxx version 4.3.1
 # NOTE:  cmake does not make ncxx-config with version 4.3.0, must use configure
 
