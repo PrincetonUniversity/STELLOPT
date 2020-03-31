@@ -418,7 +418,7 @@ MODULE beams3d_physics_mod
                   s_temp = fval(1)
                   IF (s_temp > one) EXIT
                END IF
-               IF ((q(1) > 5*rmax)  .or. (q(1) < rmin)) THEN; t = t_end(myline)+dt_local; RETURN; END IF  ! We're outside the grid
+               IF ((q(1) > rmax+0.5)  .or. (q(1) < rmin)) THEN; t = t_end(myline)+dt_local; RETURN; END IF  ! We're outside the grid
             END DO
             ! Take a step back
             qf = qf - myv_neut*dt_local
