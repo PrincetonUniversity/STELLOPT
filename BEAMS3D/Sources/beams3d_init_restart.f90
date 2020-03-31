@@ -26,8 +26,8 @@
 !          npoinc_extract Which save state to extract from file.
 !-----------------------------------------------------------------------
       IMPLICIT NONE
-      LOGICAL :: lplasma_old
-      INTEGER :: i, k, ier, npoinc_extract, npoinc_save
+      LOGICAL :: lplasma_old, ldepo_old
+      INTEGER :: i, k, ier, npoinc_extract, npoinc_save, state_flag
       INTEGER, DIMENSION(:), ALLOCATABLE :: beam2
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: mass2, charge2, Zatom2, &
                                                 weight2, t_end2
@@ -96,15 +96,18 @@
          CALL close_hdf5(fid,ier)
          IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,'beams3d_'//TRIM(restart_string)//'.h5',ier)
 
-         ! Decide where to 
-
-         ! Count the particles
-         !npoinc_extract=2 ! Starting point of particle
-         !k = 0
-         !DO i = 1, nparticles
-         !   IF (.not.neut_lines(npoinc_extract,i)) k=k+1
-         !END DO
-         k = COUNT(end_state == 0)
+         ! Decide what to do
+         !   IF depo run then start from initial born particle population
+         !   Otherwise start from wall hits
+         ldepo_old = .false.
+         state_flag = 0
+         IF (ANY(end_state==3)) ldepo_old = .true.
+         IF (ldepo_old) THEN
+            state_flag = 0
+         ELSE
+            state_flag = 2
+         END IF
+         k = COUNT(end_state == state_flag)
 
          ! Allocate the particles
          ALLOCATE(  R_start(k), phi_start(k), Z_start(k), &
@@ -115,7 +118,7 @@
          ! Now fill the arrays downselecting for non-shinethrough particles
          k = 1
          DO i = 1, nparticles
-            IF (end_state(i) > 0) CYCLE
+            IF (end_state(i) /= state_flag) CYCLE
             npoinc_extract = COUNT(R_lines(:,i)>0)-1
             R_start(k)   = R_lines(npoinc_extract,i)
             Z_start(k)   = Z_lines(npoinc_extract,i)
