@@ -82,7 +82,7 @@ HARD_LINK_FLAGS =
 #
 # Let's not pollute the namespace if unnecessary
 #######################################################################
-  LMPI    = F
+  LMPI    = T
 
 ifeq ($(LMPI),T)
   MPI_COMPILE = mpifort $(HARD_FFLAGS)
