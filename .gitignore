@@ -8,6 +8,7 @@
 *.lib
 *.dll
 *.def
+*.dylib
 *.zip
 .DS*
 *.dSYM
@@ -17,13 +18,16 @@ make.inc
 CMakeLists.txt
 */Release/*.f90
 */Release/*.f
+*/Release/*.mod
 */Debug/*.f90
 */Debug/*.f
+*/Debug/*.mod
 BENCHMARKS/STELLOPT_TEST/*/*
 BENCHMARKS/BEAMS3D_TEST/*
 update*
 COILGEOM
 bin
+bin/*
 setup
 xanimec
 xbcyclic
