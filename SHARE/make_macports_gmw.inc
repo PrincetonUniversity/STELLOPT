@@ -1,10 +1,57 @@
+#######################################################################
+#     This is a custom file compiling libstell on windows under
+#     msys/mingw.  Follow the instructions under README_mscompile.md
+#     to setup the environment
+#
+#
+# Note:  -Wl,-z-defs causes the compiler to fail immediately if there are undefined symbols in a library
+#        -Wl,--allow-multiple-definition will miss double definition errors in libraries
+#        -Wl,--enable-auto-import - allow omittion of decorations in code for dllimport/dllexport
+#        -Wl,--enable-runtime-pseudo-relocs -  allow relinking for structs/classes/etc in object files
+# -Wl,--export-all-symbols
+# -Wl,--whole-archive
+# -static-libstdc++
+# -static-libgcc
+# -static-libgfortran
+#
+# NOTE:
+#  "-Wl,--export-dynamic" is not supported for PX+ type targets (windows+mingw)
+#
+#
+#  gcc9 has a few differences in system calls. We put in some kluges for this
+#  by making a WIN64 macro.
+#
+#######################################################################
+#          If you want to explicitly override user given flags
+#######################################################################
+  FC = gfortran
+  CC = gcc
+#  FLAGS = -Wl,--enable-auto-import -Wl,--export-all-symbols -Wl,--enable-runtime-pseudo-reloc
+
+HARD_FFLAGS =  -Wl,--no-undefined \
+               -Wl,--enable-auto-import \
+               -Wl,--export-all-symbols \
+               -Wl,--enable-runtime-pseudo-reloc
+
+HARD_CFLAGS = \
+                    -Wl,-no_compact_unwind
+#                    -Wl,-z-defs
+#                    -Wl,--no-undefined \
+#                    -Wl,--enable-auto-import \
+#                    -Wl,--export-all-symbols \
+#                    -Wl,--enable-runtime-pseudo-reloc
+
+HARD_LINK_FLAGS = -Wl,--no-undefined \
+                  -Wl,-no_compact_unwind \
+                  -Wl,--enable-auto-import \
+                  -Wl,--export-all-symbols \
+                  -Wl,--enable-runtime-pseudo-reloc
 
 #######################################################################
 #            Find the source paths of the STELLOPT distribution.
 #######################################################################
   CURRENT_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
   STELLOPT_DIR:=$(abspath $(CURRENT_DIR)/../)
-
 
 #######################################################################
 #            Define User Specific Output Paths.
@@ -22,87 +69,174 @@
   SHELL = /bin/sh
   PWD1 = `pwd`
   PRECOMP:= cpp -traditional-cpp -E -P -C -DMACOSX
-  COMPILE = gfortran
-  COMPILE_FREE = gfortran -ffree-form -ffree-line-length-none -ffixed-line-length-none
-  LINK    = ld $(FLAGS) -o
+  COMPILE = $(FC) $(HARD_FFLAGS)
+#  COMPILE_FREE = gfortran -ffree-form -ffree-line-length-none -ffixed-line-length-none
+  COMPILE_FREE = $(FC) -ffree-form -ffree-line-length-none \
+                     -ffixed-line-length-none $(HARD_FFLAGS)
+  LINK    = ld $(FLAGS) $(HARD_LINK_FLAGS) -o
   LINK_AR = ar -ruvs
-  LINK_C  = gcc -shared -Wl,-no_compact_unwind
+  LINK_C  = $(CC) -shared $(HARD_CFLAGS)
 
 #######################################################################
 #            Define Compiler Flags
 #######################################################################
-#  FLAGS_R = -O2 -g -fexternal-blas -fbacktrace -fcheck=all
   FLAGS_R = -O2 -fexternal-blas -Wmissing-include-dirs
   FLAGS_D = -g -O0 -fcheck=all
-  LIBS    = -L/opt/local/lib -lopenblas -lscalapack
+
+#######################################################################
+#            Define LIBS:
+#            dependency order matters (highest left, lowest right)
+#
+#   SCALAPACK depends on FFTW3 and can depend on MPI
+#     Make sure that you set those flags appropriately depending on your build
+#
+#     NOTE: libm is necessary for basic math utilities
+#
+#######################################################################
+
+  LSCALAPACK = T
+  LOPENBLAS = T
+
+ifeq ($(LSCALAPACK),T)
+  ifeq ($(LOPENBLAS),T)
+    LIBS    = -L$(PORTSDIR)/lib -lscalapack -lopenblas
+  else
+    LIBS    = -L$(PORTSDIR)/lib -lscalapack -llapack -lblas
+  endif
+else
+  LIBS    = -L$(PORTSDIR)/lib -llapack -lblas
+endif
+
+#######################################################################
+#            FFTW3 Options
+#######################################################################
+  LFFTW3 = T
+
+ifeq ($(LFFTW3),T)
+  FFTWHOME = $(PORTSDIR)
+  FFTW3_INC = -I$(FFTWHOME)/include
+  FFTW3_LIB = -L$(FFTWHOME)/lib -lfftw3f -lfftw3
+endif
 
 #######################################################################
 #            MPI Options
+#
+# MPI RUN OPTIONS:
+#  MPI_RUN_OPTS = -np 4
+#  MPI_RUN_OPTS_SM = -np 16
+#  MPI_RUN_OPTS_MD = -np 64
+#  MPI_RUN_OPTS_LG = -np 256
+#
+# Let's not pollute the namespace if unnecessary
 #######################################################################
-  LMPI    = T
-  MPI_COMPILE = mpifort
-  MPI_COMPILE_FREE = mpifort -ffree-form \
-                     -ffree-line-length-none -ffixed-line-length-none
+  LMPI    = F
+
+ifeq ($(LMPI),T)
+  MPI_COMPILE = mpifort $(HARD_FFLAGS)
+  MPI_COMPILE_FREE = mpifort -ffree-form -fno-range-check \
+                     -ffree-line-length-none -ffixed-line-length-none \
+                     $(HARD_FFLAGS)
   MPI_COMPILE_C = mpicc
-  MPI_LINK = mpicc -shared -Wl,-no_compact_unwind
+  MPI_LINK = mpicc -shared -pthread $(HARD_LINK_FLAGS)
+
+  MPI_RUN = mpiexec
+  MPI_RUN_OPTS = -np 4
+
+  MPI_LIB = $(PORTSDIR)/mpich-gcc9/lib -lmpi -lpthread
+endif
 
 #######################################################################
 #            NAG Options
 #######################################################################
   LNAG = F
-  NAG_LIB = -L$(NAG_ROOT)/lib -lnag_nag
+
+ifeq ($(LNAG),T)
+  NAG_ROOT =
+  NAG_LIB =
+#  NAG_LIB = -L$(NAG_ROOT)/lib -lnag_nag
+endif
 
 #######################################################################
 #            NETCDF Options
+#
+# NOTE: NETCDF depends on HDF5 (and possibly your pthread library)
+#    netcdf-fortran depends on netcdf
+#    netcdf-c depends on HDF5 and its libraries
+#     (but netcdf-c "knows" where to find HDF5 libraries and libz, libcurl)
+#
+# Optionally you can use to automatically set the dependencies / order
+#    this slows down compilation on my computer
+#  NETCDF_INC = $(shell nc-config --fflags)  # fortran flags
+#  NETCDF_LIB = $(shell nc-config --flibs)   # fortran libs
 #######################################################################
   LNETCDF = T
-  NETCDF_INC = -I/opt/local/include
-  NETCDF_LIB = -L/opt/local/lib -lnetcdf -lnetcdff
 
-  # FOR GCC6
-  #NETCDF_LIB = -L$(NETCDF_HOME)/lib -lnetcdff
-
-#######################################################################
-#            NTCC Options
-#######################################################################
-  LNTCC = F
-  NTCC_INC = -I/Users/slazerso/Sims_PPPL/STELLOPT/NTCC/MAC/mod
-  NTCC_LIB = -L/Users/slazerso/Sims_PPPL/STELLOPT/NTCC/MAC/lib \
-             -lpreact -lsigsub -laladdinsub -lpreact -lpspline \
-             -lportlib -lezcdf
+ifeq ($(LNETCDF),T)
+  NETCDF_C_HOME = $(PORTSDIR)
+  NETCDF_F_HOME = $(PORTSDIR)
+  NETCDF_C = $(NETCDF_C_HOME)
+  NETCDF_F = $(NETCDF_F_HOME)
+  NETCDF_INC = -I$(NETCDF_F)/include -I$(NETCDF_C)/include
+  NETCDF_LIB = -L$(NETCDF_F)/lib -lnetcdff -L$(NETCDF_C)/lib -lnetcdf -lnetcdf -lm
+endif
 
 #######################################################################
 #            HDF5 Options
 #######################################################################
   LHDF5 = T
-  HDF5_INC = -I/opt/local/include
-  HDF5_LIB = -L/opt/local/lib -lhdf5 -lhdf5hl_fortran -lhdf5_hl \
-             -lhdf5_fortran
+
+ifeq ($(LHDF5),T)
+  HDF5_HOME = $(PORTSDIR)
+  HDF5_INC = -I$(HDF5_HOME)/include
+
+  HDF5_LIB = -L$(HDF5_HOME)/lib -lhdf5_hl_fortran -lhdf5_fortran -lhdf5_hl \
+             -lhdf5 -lz -lm -lcurl
+endif
+
+#######################################################################
+#            NTCC Options
+#######################################################################
+  LNTCC = F
+
+ifeq ($(LNTCC),T)
+  NTCC_INC =
+  NTCC_LIB =
+endif
 
 #######################################################################
 #             PGPLOT Options
 #######################################################################
   LPGPLOT = F
-  PGPLOT_INC = -I$(PGPLOT_DIR)
+
+ifeq ($(LPGPLOT),T)
+  PGPLOT_DIR = $(PORTSDIR)
+  PGPLOT_INC = -I$(PORTSDIR)/include
   PGPLOT_LIB = -L$(PGPLOT_DIR) -lpgplot -L/usr/X11R6/lib -lX11
+endif
 
 #######################################################################
 #             SILO Options
 #######################################################################
   LSILO = F
+
+ifeq ($(LSILO),T)
+  SILOHOME = $(PORTSDIR)
   SILO_INC = -I$(SILOHOME)/include
   SILO_LIB = -L$(SILOHOME)/lib -lsilo
+endif
 
 #######################################################################
 #            DKES/NEO Options
 #######################################################################
-  LDKES = T
+  LDKES = F
   LNEO  = T
 
 #######################################################################
 #            GENE Options
 #######################################################################
   LGENE = F
+
+ifeq ($(LGENE),T)
   GENE_INC = -I$(GENE_PATH)
   GENE_DIR = $(GENE_PATH)
   LIB_GENE = libgene.a
@@ -111,294 +245,113 @@
              -L$(FFTWHOME)/lib -lfftw3 \
              -L$(SLEPC_DIR)/$(PETSC_ARCH)/lib -lslepc \
              -L$(PETSC_DIR)/$(PETSC_ARCH)/lib -lpetsc -lX11
+endif
 
 #######################################################################
 #            COILOPT++ Options
 #######################################################################
   LCOILOPT = F
+
+ifeq ($(LCOILOPT),T)
   COILOPT_INC = -I$(COILOPT_PATH)
   COILOPTPP_DIR = $(COILOPT_PATH)
   LIB_COILOPTPP = libcoilopt++.a
+
+  GSLHOME = $(PORTSDIR)
   COILOPT_LIB = $(COILOPT_PATH)/$(LIB_COILOPTPP) \
                 -L$(GSLHOME)/lib -lgsl -lgslcblas -lstdc++ -lmpi_cxx
+endif
 
 #######################################################################
 #            TERPSICHORE Options
 #######################################################################
   LTERPSICHORE= F
+
+ifeq ($(LTERPSICHORE),T)
   TERPSICHORE_INC = -I$(TERPSICHORE_PATH)
   TERPSICHORE_DIR = $(TERPSICHORE_PATH)
   LIB_TERPSICHORE = libterpsichore.a
   TERPSICHORE_LIB = $(TERPSICHORE_DIR)/$(LIB_TERPSICHORE)
-
+endif
 #######################################################################
 #            TRAVIS Options
+#
+#    TRAVIS depends on the MCONF library and the standard C++ library
+#    MCONF depends on the stdc++ library and libc
 #######################################################################
   LTRAVIS= F
+
+ifeq ($(LTRAVIS),T)
   TRAVIS_DIR = $(TRAVIS_PATH)
   LIB_TRAVIS = libtravis64_sopt.a
   LIB_MCONF  = libmconf64.a
   TRAVIS_LIB = $(TRAVIS_DIR)/lib/$(LIB_TRAVIS) \
                $(TRAVIS_DIR)/mag_conf/lib/$(LIB_MCONF) -lstdc++
-
-#######################################################################
-#            SFINCS Options
-#######################################################################
-#
-#  LSFINCS = F
-#  SFINCS_DIR = /Users/mattland/sfincs/fortran/version3
-#  SFINCS_INC = -I$(SFINCS_DIR)
-#  LIB_SFINCS = libsfincs.a
-#
-#  PETSC_DIR=/opt/local/lib/petsc
-#  include ${PETSC_DIR}/lib/petsc/conf/variables
-#  # The above line defines the PETSC make variables PETSC_LIB, FC_LINKER_FLAGS, and FFLAGS, which are used below in SFINCS_LIB.
-#
-#  SFINCS_LIB = $(SFINCS_DIR)/$(LIB_SFINCS) \
-#	  $(PETSC_LIB) $(FC_LINKER_FLAGS) $(FFLAGS)
+endif
 
 #######################################################################
 #            REGCOIL Options
 #######################################################################
   LREGCOIL= F
+
+ifeq ($(LREGCOIL),T)
   REGCOIL_DIR = $(REGCOIL_PATH)
   REGCOIL_INC = -I$(REGCOIL_DIR)
   LIB_REGCOIL = libregcoil.a
   REGCOIL_LIB = $(REGCOIL_DIR)/$(LIB_REGCOIL) -fopenmp
+endif
+
+#######################################################################
+#            SFINCS Options
+#
+#   Note:  PETSC has a bunch of dependencies
+#
+#   Also: The included variables file defines the PETSC make variables
+#    PETSC_LIB, FC_LINKER_FLAGS, and FFLAGS, which are used below in
+#    SFINCS_LIB. Headsup for namespace conflicts: overlapping FFLAGS?
+#
+#   PETSC_DIR should be set as user env variable
+#
+#######################################################################
+
+  LSFINCS = F
+
+ifeq ($(LSFINCS),T)
+  SFINCS_DIR = $(SFINCS_PATH)
+  SFINCS_INC = -I$(SFINCS_DIR)
+  LIB_SFINCS = libsfincs.a
+
+  include ${PETSC_DIR}/lib/petsc/conf/variables
+
+  SFINCS_LIB = $(SFINCS_DIR)/$(LIB_SFINCS) \
+              -L$(PETSC_DIR)/$(PETSC_ARCH)/lib -lpetsc -lX11
+endif
 
 #######################################################################
 #            LIBSTELL Shared Options
 #######################################################################
+# Using c-compiler for link step:  need to include gfortran library
+#    Recursion through libraries is necessary to resolve undefined symbols
+#    Order matters! Moving left to right:
+#            search LIBS  and   add items to undefined symbol / function table
+#            re-search LIBS because there are recursive dependencies
+#            check libc resolve some and add more undefined symbols
+#            check gfortran lib and resolve more undefined symbols
+#            ... add some math/compression undefined symbols
+#            check zlib and resolve ... add more from gfortran / libc
+#            resolve the new ones from libc
+#            check libm for math symbols
+#            resolve the new ones from libc
+#            finally resolve the c-compiler undefined symbols for gfortran
+#
+#   Trying out a recursive tool from ld in make_all.inc
+#
+LIB_SHARE = $(LIBS) $(PORTSDIR)/gcc9 -lgfortran \
+           -lz -lcurl -lstdc++ -lc
 
-LIB_SHARE = -L/opt/local/lib/gcc8 -lgfortran -lstdc++ \
-            -L/opt/local/lib/openmpi-gcc8 -lmpi -lmpi_mpifh \
-            -L/usr/lib -lc -lm -lpthread $(LIBS) -lz
+# LIB_SHARE = -L/opt/local/lib/gcc8 -lgfortran -lstdc++ \
+#             -L/opt/local/lib/openmpi-gcc8 -lmpi -lmpi_mpifh \
+#             -L/usr/lib -lc -lm -lpthread $(LIBS) -lz
 
-#######################################################################
-#######################################################################
-#######################################################################
-#######################################################################
-#######################################################################
-#######################################################################
-#######################################################################
-#######################################################################
-#   DO NOT EDIT BELOW HERE DO NOT EDIT BELOW HERE
-
-#######################################################################
-#######################################################################
-#######################################################################
-#######################################################################
-#######################################################################
-#######################################################################
-#######################################################################
-#######################################################################
-
-# Home bin specifies where the build scripts are located,
-# for example awk_cdir.awk.
-HOME_BIN = ../../
-
-MOD1_PATH = -I$(MYHOME)/libstell_dir
-MOD_PATH =
-CLEAN_ARCH =
-LIB_DIR = ../../LIBSTELL
-LIB = libstell.a
-
-# Handle Which Code is being CALLED
-ifeq ($(MAKECMDGOALS),xstelloptv2)
-  PRECOMP += -DBNORM -DBEAMS3D_OPT -DJINV_OPT -DTXPORT_OPT -DDIAGNO_OPT -DSKS  -DSKS2
-  VMEC_DIR = ../../VMEC2000
-  LIB_VMEC= libvmec.a
-  MOD_PATH+= -I$(VMEC_DIR)/$(LOCTYPE)
-  BEAMS3D_DIR = ../../BEAMS3D
-  LIB_BEAMS3D = libbeams3d.a
-  MOD_PATH+= -I$(BEAMS3D_DIR)/$(LOCTYPE)
-  BOOTSJ_DIR = ../../BOOTSJ
-  LIB_BOOTSJ = libbootsj.a
-  MOD_PATH+= -I$(BOOTSJ_DIR)/$(LOCTYPE)
-  BNORM_DIR = ../../BNORM
-  LIB_BNORM = libbnorm.a
-  MOD_PATH+= -I$(BNORM_DIR)/$(LOCTYPE)
-  BOOZ_DIR = ../../BOOZ_XFORM
-  LIB_BOOZ= libbooz.a
-  MOD_PATH+= -I$(BOOZ_DIR)/$(LOCTYPE)
-  COBRA_DIR = ../../COBRAVMEC
-  LIB_COBRA = libcobra.a
-  MOD_PATH+= -I$(COBRA_DIR)/$(LOCTYPE)
-  DIAGNO_DIR = ../../DIAGNO
-  LIB_DIAGNO= libdiagno.a
-  MOD_PATH+= -I$(DIAGNO_DIR)/$(LOCTYPE)
-  JINV_DIR = ../../J_INVARIANT
-  LIB_JINV = libjinv.a
-  MOD_PATH+= -I$(JINV_DIR)/$(LOCTYPE)
-  MGRID_DIR= ../../MAKEGRID
-  LIB_MGRID= libmakegrid.a
-  MOD_PATH+= -I$(MGRID_DIR)/$(LOCTYPE)
-  LIB_LINK=  $(VMEC_DIR)/$(LOCTYPE)/$(LIB_VMEC)  \
-	$(BEAMS3D_DIR)/$(LOCTYPE)/$(LIB_BEAMS3D) \
-	$(BOOTSJ_DIR)/$(LOCTYPE)/$(LIB_BOOTSJ) \
-	$(BNORM_DIR)/$(LOCTYPE)/$(LIB_BNORM) \
-	$(BOOZ_DIR)/$(LOCTYPE)/$(LIB_BOOZ) \
-	$(COBRA_DIR)/$(LOCTYPE)/$(LIB_COBRA) \
-	$(DIAGNO_DIR)/$(LOCTYPE)/$(LIB_DIAGNO) \
-	$(JINV_DIR)/$(LOCTYPE)/$(LIB_JINV) \
-	$(MGRID_DIR)/$(LOCTYPE)/$(LIB_MGRID)
-  ifeq ($(LDKES),T)
-    DKES_DIR = ../../DKES
-    LIB_DKES = libdkes.a
-    MOD_PATH += -I$(DKES_DIR)/$(LOCTYPE)
-    PRECOMP += -DDKES_OPT
-    LIB_LINK += $(DKES_DIR)/$(LOCTYPE)/$(LIB_DKES)
-  else
-    DKES_DIR =
-    LIB_DKES =
-  endif
-  ifeq ($(LNEO),T)
-    NEO_DIR = ../../NEO
-    LIB_NEO = libneo.a
-    MOD_PATH += -I$(NEO_DIR)/$(LOCTYPE)
-    PRECOMP += -DNEO_OPT
-    LIB_LINK += $(NEO_DIR)/$(LOCTYPE)/$(LIB_NEO)
-  else
-    NEO_DIR =
-    LIB_NEO =
-  endif
-else
-  LGENE = F
-  LCOILOPT = F
-  LTERPSICHORE = F
-  LTRAVIS = F
-endif
-ifeq ($(MAKECMDGOALS),xanimec)
-  PRECOMP += -D_ANIMEC
-endif
-ifeq ($(MAKECMDGOALS),xvmec2000)
-  PRECOMP += -DSKS  -DSKS2
-endif
-ifeq ($(MAKECMDGOALS),xsiesta)
-  PRECOMP += -DSKS  -DSKS2
-endif
-ifeq ($(MAKECMDGOALS),xgtovmi)
-  ifeq ($(LPGPLOT),T)
-    MOD1_PATH += $(PGPLOT_INC)
-    LIB_LINK += $(PGPLOT_LIB)
-  endif
-endif
-ifeq ($(MAKECMDGOALS),xdes_plot)
-  ifeq ($(LPGPLOT),T)
-    MOD1_PATH += $(PGPLOT_INC)
-    LIB_LINK += $(PGPLOT_LIB)
-  endif
-endif
-
-# Other Codes
-ifeq ($(LGENE),T)
-  MOD1_PATH += $(GENE_INC)
-  PRECOMP += -DGENE
-  MOD_PATH += -I$(GENE_DIR)
-else
-  GENE_LIB =
-  GENE_DIR =
-  LIB_GENE =
-endif
-ifeq ($(LCOILOPT),T)
-  MOD1_PATH += $(COILOPT_INC)
-  PRECOMP += -DCOILOPTPP
-  MOD_PATH += -I$(COILOPTPP_DIR)
-else
-  COILOPT_LIB =
-  COILOPTPP_DIR =
-  LIB_COILOPTPP =
-endif
-ifeq ($(LTERPSICHORE),T)
-  MOD1_PATH += $(TERPSICHORE_INC)
-  PRECOMP += -DTERPSICHORE
-  MOD_PATH += -I$(TERPSICHORE_DIR)
-else
-  TERPSICHORE_LIB =
-  TERPSICHORE_DIR =
-  LIB_TERPSICHORE =
-endif
-ifeq ($(LTRAVIS),T)
-  PRECOMP += -DTRAVIS
-else
-  TRAVIS_LIB =
-  TRAVIS_DIR =
-  LIB_TRAVIS =
-endif
-ifeq ($(LREGCOIL),T)
-  MOD1_PATH += $(REGCOIL_INC)
-  PRECOMP += -DREGCOIL
-  MOD_PATH += -I$(REGCOIL_DIR)
-else
-  REGCOIL_LIB =
-  REGCOIL_DIR =
-  LIB_REGCOIL =
-endif
-
-# Handle other codes
-LIB_LINK += $(GENE_LIB) $(COILOPT_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB) $(REGCOIL_LIB)
-
-# Add libraries to LIB_LINK
-# LIB_LINK+= $(MYHOME)/libstell.a $(LIBS)
-# This version avoids referencing the bin directory for the symbolic link to lib.
-# Which we can't reference since we now have the awk file in the main directory.
-LIB_LINK+= $(LIB_DIR)/$(LOCTYPE)/$(LIB) $(LIBS)
-
-# 3rd Party Libs
-ifeq ($(LMPI),T)
-  PRECOMP += -DMPI_OPT
-  COMPILE = $(MPI_COMPILE)
-  COMPILE_FREE = $(MPI_COMPILE_FREE)
-  LINK    = $(MPI_COMPILE) $(FLAGS) -o
-  LINK_C  = $(MPI_LINK)
-endif
-ifeq ($(LNETCDF),T)
-  MOD1_PATH += $(NETCDF_INC)
-  PRECOMP += -DNETCDF
-  LIB_LINK += $(NETCDF_LIB)
-  MOD_PATH += $(NETCDF_INC)
-  LIB_SHARE += $(NETCDF_LIB)
-endif
-ifeq ($(LHDF5),T)
-  MOD1_PATH += $(HDF5_INC)
-  PRECOMP += -DLHDF5 -DH5_USE_16_API
-  LIB_LINK += $(HDF5_LIB)
-  MOD_PATH += $(HDF5_INC)
-  LIB_SHARE += $(HDF5_LIB)
-endif
-ifeq ($(LNAG),T)
-  PRECOMP += -DNAG
-  LIB_LINK += $(NAG_LIB)
-  LIB_SHARE += $(NAG_LIB)
-endif
-ifeq ($(LNTCC),T)
-  MOD1_PATH += $(NTCC_INC)
-  PRECOMP += -DLADAS -DNTCC
-  LIB_LINK += $(NTCC_LIB)
-  MOD_PATH += $(NTCC_INC)
-  LIB_SHARE += $(NTCC_LIB)
-endif
-ifeq ($(LSILO),T)
-  MOD1_PATH += $(SILO_INC)
-  PRECOMP += -DSILO_AVAI
-  LIB_LINK += $(SILO_LIB)
-  LIB_SHARE += $(SILO_LIB)
-endif
-
-# This is hear because of MPI above resetting LINK
-ifeq ($(MAKECMDGOALS),libstell.a)
-  LINK = $(LINK_AR)
-  COMPILE += -fPIC
-  COMPILE_FREE += -fPIC
-  INC_PATH =
-endif
-ifeq ($(MAKECMDGOALS),libstell.so)
-  LINK = $(LINK_C)
-  LIB_LINK = $(LIB_SHARE)
-  COMPILE += -fPIC
-  COMPILE_FREE += -fPIC
-  INC_PATH =
-endif
-
-#This must come here
-MOD_PATH+= -I
+######################################################################
+######################################################################
