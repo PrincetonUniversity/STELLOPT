@@ -383,12 +383,12 @@
                   CALL write_var_hdf5(inj_gid,'div_halo_v',ier,DBLVAR=dbl_temp)
                   CALL write_var_hdf5(inj_gid,'div_halo_h',ier,DBLVAR=dbl_temp)
                   CALL write_var_hdf5(inj_gid,'anum',ier,INTVAR=NINT(mass_beams(i)*5.97863320194E26))
-                  CALL write_var_hdf5(inj_gid,'znum',ier,INTVAR=NINT(Zatom_beams(i)*5.97863320194E26))
+                  CALL write_var_hdf5(inj_gid,'znum',ier,INTVAR=NINT(Zatom_beams(i)))
                   CALL write_var_hdf5(inj_gid,'mass',ier,DBLVAR=mass_beams(i))
                   ! Now Beamlets
                   d2 = SIZE(X_BEAMLET(d1,:))
                   ALLOCATE(r1dtemp(d2))
-                  
+
                   CALL write_var_hdf5(inj_gid,'nbeamlet',ier,INTVAR=d2)
                   r1dtemp = X_BEAMLET(d1,:)
                   CALL write_var_hdf5(inj_gid,'beamletx',d2,ier,DBLVAR=r1dtemp)
