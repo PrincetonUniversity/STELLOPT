@@ -91,6 +91,7 @@ test_beams3d:
 	$(MAKE) test_beams3d_basic
 	$(MAKE) test_beams3d_er
 	$(MAKE) test_beams3d_slow
+	$(MAKE) test_beams3d_depo
 	@echo "Tesing of BEAMS3D complete"
 	@echo ""
 
