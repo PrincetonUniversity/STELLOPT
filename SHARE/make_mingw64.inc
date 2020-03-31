@@ -1,21 +1,25 @@
 #######################################################################
-#     This is a custom file compiling libstell on windows under 
-#     msys/mingw.  Follow the instructions under README_mscompile.md 
+#     This is a custom file compiling libstell on windows under
+#     msys/mingw.  Follow the instructions under README_mscompile.md
 #     to setup the environment
 #
 #
 # Note:  -Wl,-z-defs causes the compiler to fail immediately if there are undefined symbols in a library
 #        -Wl,--allow-multiple-definition will miss double definition errors in libraries
 #        -Wl,--enable-auto-import - allow omittion of decorations in code for dllimport/dllexport
-#        -Wl,--enable-runtime-pseudo-relocs -  allow relinking for structs/classes/etc in object files 
-# -Wl,--export-all-symbols 
+#        -Wl,--enable-runtime-pseudo-relocs -  allow relinking for structs/classes/etc in object files
+# -Wl,--export-all-symbols
 # -Wl,--whole-archive
 # -static-libstdc++
-# -static-libgcc 
+# -static-libgcc
 # -static-libgfortran
 #
 # NOTE:
 #  "-Wl,--export-dynamic" is not supported for PX+ type targets (windows+mingw)
+#
+#
+#  gcc9 has a few differences in system calls. We put in some kluges for this
+#  by making a WIN64 macro.
 #
 #######################################################################
 #          If you want to explicitly override user given flags
@@ -23,31 +27,42 @@
   FC = gfortran
   CC = gcc
 #  FLAGS = -Wl,--enable-auto-import -Wl,--export-all-symbols -Wl,--enable-runtime-pseudo-reloc
-#
-#######################################################################
-#            Define Basic Utilities
-#######################################################################
-  HARD_FFLAGS =  -Wl,--no-undefined \
-                 -Wl,--enable-auto-import \
-                 -Wl,--export-all-symbols \
-                 -Wl,--enable-runtime-pseudo-reloc
 
-  HARD_CFLAGS = \
-#                    -Wl,-z-defs 
+HARD_FFLAGS =  -Wl,--no-undefined \
+               -Wl,--enable-auto-import \
+               -Wl,--export-all-symbols \
+               -Wl,--enable-runtime-pseudo-reloc
+
+HARD_CFLAGS = \
+#                    -Wl,-z-defs\
+#                    -Wl,-no_compact_unwind
 #                    -Wl,--no-undefined \
 #                    -Wl,--enable-auto-import \
 #                    -Wl,--export-all-symbols \
 #                    -Wl,--enable-runtime-pseudo-reloc
 
-  HARD_LINK_FLAGS = -Wl,--no-undefined \
-                    -Wl,-no_compact_unwind \
-                    -Wl,--enable-auto-import \
-                    -Wl,--export-all-symbols \
-                    -Wl,--enable-runtime-pseudo-reloc
+HARD_LINK_FLAGS = -Wl,--no-undefined \
+                  -Wl,-no_compact_unwind \
+                  -Wl,--enable-auto-import \
+                  -Wl,--export-all-symbols \
+                  -Wl,--enable-runtime-pseudo-reloc
+
+#######################################################################
+#            Find the source paths of the STELLOPT distribution.
+#######################################################################
+  CURRENT_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
+  STELLOPT_DIR:=$(abspath $(CURRENT_DIR)/../)
+
+#######################################################################
+#            Define Basic Utilities
+#######################################################################
+# Temporaryily copy STELLOPT_HOME to MYHOME since MYHOME is currently
+# used in all the makefiles.
+  MYHOME = $(STELLOPT_HOME)
+#  MYHOME = /home/weir/src/stellopt/bin
 
   SHELL = /bin/sh
   PWD1 = `pwd`
-  MYHOME = /home/weir/src/stellopt/bin
   PRECOMP:= cpp -traditional -DWIN64
   COMPILE = $(FC) $(HARD_FFLAGS)
   COMPILE_FREE = $(FC) -ffree-form -ffree-line-length-none \
@@ -60,12 +75,12 @@
 #######################################################################
 #            Define Compiler Flags
 #######################################################################
-  FLAGS_R = -O2 -fexternal-blas 
-  FLAGS_D = -g -O0 -fexternal-blas -fbacktrace -fcheck=all 
+  FLAGS_R = -O2 -fexternal-blas -Wmissing-include-dirs
+  FLAGS_D = -g -O0 -fexternal-blas -fbacktrace -fcheck=all
 
 #######################################################################
-#            Define LIBS: 
-#            dependency order matters (highest left, lowest right) 
+#            Define LIBS:
+#            dependency order matters (highest left, lowest right)
 #
 #   SCALAPACK depends on FFTW3 and can depend on MPI
 #     Make sure that you set those flags appropriately depending on your build
@@ -87,7 +102,7 @@ else
   LIBS    = -L/mingw64/lib -llapack -lblas
 endif
 
-#  LIBS    = -L/mingw64/lib -lscalapack -lopenblas -lmpi -lwinpthread -lgfortran 
+#  LIBS    = -L/mingw64/lib -lscalapack -lopenblas -lmpi -lwinpthread -lgfortran
 #
 #######################################################################
 #            FFTW3 Options
@@ -114,10 +129,10 @@ endif
   LMPI    = F
 
 ifeq ($(LMPI),T)
-  MPI_COMPILE = mpif90 $(HARD_FFLAGS)
-  MPI_COMPILE_FREE = mpif90 -ffree-form -fno-range-check \
+  MPI_COMPILE = mpifort $(HARD_FFLAGS)
+  MPI_COMPILE_FREE = mpifort -ffree-form -fno-range-check \
                      -ffree-line-length-none -ffixed-line-length-none \
-                     $(HARD_FFLAGS) 
+                     $(HARD_FFLAGS)
   MPI_COMPILE_C = mpicc
   MPI_LINK = mpicc -shared -pthread $(HARD_LINK_FLAGS)
 
@@ -143,7 +158,7 @@ endif
 #
 # NOTE: NETCDF depends on HDF5 (and possibly your pthread library)
 #    netcdf-fortran depends on netcdf
-#    netcdf-c depends on HDF5 and its libraries 
+#    netcdf-c depends on HDF5 and its libraries
 #     (but netcdf-c "knows" where to find HDF5 libraries and libz, libcurl)
 #
 # Optionally you can use to automatically set the dependencies / order
@@ -158,7 +173,7 @@ ifeq ($(LNETCDF),T)
   NETCDF_F_HOME = /mingw64
   NETCDF_C = $(NETCDF_C_HOME)
   NETCDF_F = $(NETCDF_F_HOME)
-  NETCDF_INC = -I$(NETCDF_F)/include -I$(NETCDF_C)/include 
+  NETCDF_INC = -I$(NETCDF_F)/include -I$(NETCDF_C)/include
   NETCDF_LIB = -L$(NETCDF_F)/lib -lnetcdff -L$(NETCDF_C)/lib -lnetcdf -lnetcdf -lm
 endif
 
@@ -176,14 +191,13 @@ ifeq ($(LHDF5),T)
              -lhdf5 -lz -lm -lcurl
 endif
 
-
 #######################################################################
 #            NTCC Options
 #######################################################################
   LNTCC = F
 
 ifeq ($(LNTCC),T)
-  NTCC_INC = 
+  NTCC_INC =
   NTCC_LIB =
 
 #  NTCC_INC = -I$(NTCC_HOME)/mod -I$(PSPLINE_HOME)/mod
@@ -199,8 +213,8 @@ endif
   LPGPLOT = F
 
 ifeq ($(LPGPLOT),T)
-  PGPLOT_DIR = 
-  PGPLOT_INC = 
+  PGPLOT_DIR =
+  PGPLOT_INC =
   PGPLOT_LIB =
 #
 #  PGPLOT_LIB = -L$(PGPLOT_DIR) -lpgplot -L/usr/X11R6/lib -lX11
@@ -213,8 +227,8 @@ endif
   LSILO = F
 
 ifeq ($(LSILO),T)
-  SILOHOME = 
-  SILO_INC = 
+  SILOHOME =
+  SILO_INC =
   SILO_LIB =
 #
 #  SILO_LIB = -L$(SILOHOME)/lib -lsilo
@@ -233,8 +247,8 @@ endif
   LGENE = F
 
 ifeq ($(LGENE),T)
-  GENE_INC = 
-  GENE_DIR = 
+  GENE_INC =
+  GENE_DIR =
   LIB_GENE = libgene.a
   GENE_LIB =
 
@@ -253,8 +267,8 @@ endif
   LCOILOPT = F
 
 ifeq ($(LCOILOPT),T)
-  COILOPT_INC = 
-  COILOPTPP_DIR = 
+  COILOPT_INC =
+  COILOPTPP_DIR =
   LIB_COILOPTPP = libcoilopt++.a
   COILOPT_LIB =
 
@@ -270,8 +284,8 @@ endif
   LTERPSICHORE = F
 
 ifeq ($(LTERPSICHORE),T)
-  TERPSICHORE_INC = 
-  TERPSICHORE_DIR = 
+  TERPSICHORE_INC =
+  TERPSICHORE_DIR =
   LIB_TERPSICHORE = libterpsichore.a
   TERPSICHORE_LIB =
 #
@@ -305,10 +319,10 @@ endif
   LREGCOIL= F
 
 ifeq ($(LREGCOIL),T)
-  REGCOIL_DIR = 
-  REGCOIL_INC = 
+  REGCOIL_DIR =
+  REGCOIL_INC =
   LIB_REGCOIL = libregcoil.a
-  REGCOIL_LIB = 
+  REGCOIL_LIB =
 #
 #  REGCOIL_LIB = $(REGCOIL_DIR)/$(LIB_REGCOIL) -fopenmp
 #
@@ -319,6 +333,12 @@ endif
 #
 #   Note:  PETSC has a bunch of dependencies
 #
+#   Also: The included variables file defines the PETSC make variables
+#    PETSC_LIB, FC_LINKER_FLAGS, and FFLAGS, which are used below in
+#    SFINCS_LIB. Headsup for namespace conflicts: overlapping FFLAGS?
+#
+#   PETSC_DIR should be set as user env variable
+#
 #######################################################################
 
   LSFINCS = F
@@ -327,11 +347,11 @@ ifeq ($(LSFINCS),T)
   SFINCS_DIR = $(SFINCS_PATH)
   SFINCS_INC = -I$(SFINCS_DIR)
   LIB_SFINCS = libsfincs.a
-  SFINCS_LIB =
-#
-#  SFINCS_LIB = $(SFINCS_DIR)/$(LIB_SFINCS) \
-#             -L$(PETSC_DIR)/$(PETSC_ARCH)/lib -lpetsc -lX11
-#
+
+  include ${PETSC_DIR}/lib/petsc/conf/variables
+
+  SFINCS_LIB = $(SFINCS_DIR)/$(LIB_SFINCS) \
+              -L$(PETSC_DIR)/$(PETSC_ARCH)/lib -lpetsc -lX11
 endif
 
 #######################################################################
@@ -342,15 +362,16 @@ endif
 #    Order matters! Moving left to right:
 #            search LIBS  and   add items to undefined symbol / function table
 #            re-search LIBS because there are recursive dependencies
-#            check msvcrt (libc in Windows) resolve some and add more undefined symbols
-#            check gfortran lib and resolve more undefined symbols ... add some math/compression undefined symbols
+#            check libc (msvcrt in windows) resolve some and add more undefined symbols
+#            check gfortran lib and resolve more undefined symbols
+#            ... add some math/compression undefined symbols
 #            check zlib and resolve ... add more from gfortran / libc
-#            resolve the new ones from msvcrt
+#            resolve the new ones from libc
 #            check libm for math symbols
-#            resolve the new ones from msvcrt
+#            resolve the new ones from libc
 #            finally resolve the c-compiler undefined symbols for gfortran
-#                   
-#   Trying out a recursive tool in ld
+#
+#   Trying out a recursive tool from ld in make_all.inc
 #
 LIB_SHARE = $(LIBS) -lgfortran -lz -lcurl -lm -lgfortran -lmsvcrt
 
@@ -359,9 +380,9 @@ LIB_SHARE = $(LIBS) -lgfortran -lz -lcurl -lm -lgfortran -lmsvcrt
 ######################################################################
 ######################################################################
 #
-#LIB_SHARE = -lmsvcrt -lgfortran -lz -lmsvcrt -lm $(LIBS) -lmsvcrt 
+#LIB_SHARE = -lmsvcrt -lgfortran -lz -lmsvcrt -lm $(LIBS) -lmsvcrt
 #
-#LIB_SHARE = -lmsvcrt -lgfortran -lstdc++ -lmpi -lz -lmsvcrt -lm -lwinpthread $(LIBS) -lmsvcrt 
+#LIB_SHARE = -lmsvcrt -lgfortran -lstdc++ -lmpi -lz -lmsvcrt -lm -lwinpthread $(LIBS) -lmsvcrt
 #
 #LIB_SHARE = -lgfortran -lstdc++ $(LIBS)
 #
@@ -408,4 +429,4 @@ LIB_SHARE = $(LIBS) -lgfortran -lz -lcurl -lm -lgfortran -lmsvcrt
 #            -L/mingw64/bin -lgfortran \
 #            -L/mingw64/bin/libgfortran-5.dll \
 #            -L/mingw64/bin -lgfortran \
-# 
+#
