@@ -233,6 +233,8 @@
          CALL FLUSH(6)
       END IF
 
+      !CALL wall_test
+
       ! For testing I put this here
       IF (lascot4) THEN
          CALL beams3d_write_ascoth4('INIT')
