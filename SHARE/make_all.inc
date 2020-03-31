@@ -8,8 +8,8 @@
 # for example awk_cdir.awk.
 HOME_BIN = ../../
 MOD1_PATH = -I$(MYHOME)/libstell_dir
-MOD_PATH = 
-CLEAN_ARCH = 
+MOD_PATH =
+CLEAN_ARCH =
 LIB_DIR = ../../LIBSTELL
 
 #######################################################################
@@ -17,7 +17,7 @@ LIB_DIR = ../../LIBSTELL
 #$(info $$MAKECMDGOALS is [${MAKECMDGOALS}])
 #$(info $$MACHINE is [${MACHINE}])
 # Can we auto-detect which type of library to build and link against?
-#    Two steps:   
+#    Two steps:
 #       machine type (UNIX/POSIX versus WIN)
 #       static versus shared
 ifeq ($(strip $(MACHINE)),mingw64)
@@ -77,7 +77,7 @@ ifeq ($(MAKECMDGOALS),xstelloptv2)
 	$(DIAGNO_DIR)/$(LOCTYPE)/$(LIB_DIAGNO) \
 	$(FIELDLINES_DIR)/$(LOCTYPE)/$(LIB_FIELDLINES) \
 	$(JINV_DIR)/$(LOCTYPE)/$(LIB_JINV) \
-	$(MGRID_DIR)/$(LOCTYPE)/$(LIB_MGRID) 
+	$(MGRID_DIR)/$(LOCTYPE)/$(LIB_MGRID)
   ifeq ($(LDKES),T)
     DKES_DIR = ../../DKES
     LIB_DKES = libdkes.a
@@ -85,8 +85,8 @@ ifeq ($(MAKECMDGOALS),xstelloptv2)
     PRECOMP += -DDKES_OPT
     LIB_LINK += $(DKES_DIR)/$(LOCTYPE)/$(LIB_DKES)
   else
-    DKES_DIR = 
-    LIB_DKES = 
+    DKES_DIR =
+    LIB_DKES =
   endif
   ifeq ($(LNEO),T)
     NEO_DIR = ../../NEO
@@ -95,8 +95,8 @@ ifeq ($(MAKECMDGOALS),xstelloptv2)
     PRECOMP += -DNEO_OPT
     LIB_LINK += $(NEO_DIR)/$(LOCTYPE)/$(LIB_NEO)
   else
-    NEO_DIR = 
-    LIB_NEO = 
+    NEO_DIR =
+    LIB_NEO =
   endif
 else ifeq ($(MAKECMDGOALS),help)
 else ifeq ($(MAKECMDGOALS),test_stellopt)
@@ -143,27 +143,27 @@ ifeq ($(LCOILOPT),T)
   PRECOMP += -DCOILOPTPP
   MOD_PATH += -I$(COILOPTPP_DIR)
 else
-  COILOPT_LIB = 
-  COILOPTPP_DIR = 
-  LIB_COILOPTPP = 
+  COILOPT_LIB =
+  COILOPTPP_DIR =
+  LIB_COILOPTPP =
 endif
 ifeq ($(LGENE),T)
   MOD1_PATH += $(GENE_INC)
   PRECOMP += -DGENE
   MOD_PATH += -I$(GENE_DIR)
 else
-  GENE_LIB = 
-  GENE_DIR = 
-  LIB_GENE = 
+  GENE_LIB =
+  GENE_DIR =
+  LIB_GENE =
 endif
 ifeq ($(LREGCOIL),T)
   MOD1_PATH += $(REGCOIL_INC)
   PRECOMP += -DREGCOIL
   MOD_PATH += -I$(REGCOIL_DIR)
 else
-  REGCOIL_LIB = 
-  REGCOIL_DIR = 
-  LIB_REGCOIL = 
+  REGCOIL_LIB =
+  REGCOIL_DIR =
+  LIB_REGCOIL =
 endif
 ifeq ($(LSFINCS),T)
   MOD1_PATH += $(SFINCS_INC)
@@ -179,16 +179,16 @@ ifeq ($(LTERPSICHORE),T)
   PRECOMP += -DTERPSICHORE
   MOD_PATH += -I$(TERPSICHORE_DIR)
 else
-  TERPSICHORE_LIB = 
-  TERPSICHORE_DIR = 
-  LIB_TERPSICHORE = 
+  TERPSICHORE_LIB =
+  TERPSICHORE_DIR =
+  LIB_TERPSICHORE =
 endif
 ifeq ($(LTRAVIS),T)
   PRECOMP += -DTRAVIS
 else
-  TRAVIS_LIB = 
-  TRAVIS_DIR = 
-  LIB_TRAVIS = 
+  TRAVIS_LIB =
+  TRAVIS_DIR =
+  LIB_TRAVIS =
 endif
 
 # Handle other codes
@@ -206,7 +206,7 @@ ifeq ($(LMPI),T)
   COMPILE = $(MPI_COMPILE)
   COMPILE_FREE = $(MPI_COMPILE_FREE)
   LIB_LINK += $(MPI_LIB)
-  LINK    = $(MPI_COMPILE) $(FLAGS) -o 
+  LINK    = $(MPI_COMPILE) $(FLAGS) -o
   LINK_C  = $(MPI_LINK)
 #  LINK_C  = $(MPI_LINK) -shared
   LIB_SHARE += $(MPI_LIB)
@@ -249,31 +249,32 @@ ifeq ($(MAKECMDGOALS),libstell.a)
   LINK = $(LINK_AR)
   COMPILE += -fPIC
   COMPILE_FREE += -fPIC
-  INC_PATH = 
+  INC_PATH =
 endif
 ifeq ($(MAKECMDGOALS),libstell.lib)
   LINK = $(LINK_AR)
   COMPILE += -fPIC
   COMPILE_FREE += -fPIC
-  INC_PATH = 
+  INC_PATH =
 endif
 ifeq ($(MAKECMDGOALS),libstell.so)
   LINK = $(LINK_C)
   LIB_LINK = $(LIB_SHARE)
   COMPILE += -fPIC
   COMPILE_FREE += -fPIC
-  INC_PATH = 
+  INC_PATH =
 endif
 ifeq ($(MAKECMDGOALS),libstell.dll)
   LINK = $(LINK_C)
   LIB_LINK = $(LIB_SHARE)
   COMPILE += -fPIC
   COMPILE_FREE += -fPIC
-  INC_PATH = 
+  INC_PATH =
 endif
 
 #######################################################################
 #      ld has a cool feature to deal with recursive dependencies
+#   untested with MPI!
 #######################################################################
 
 LIB_LINK := -Wl,--start-group $(LIB_LINK) -Wl,--end-group
@@ -283,4 +284,3 @@ endif
 
 #This must come here
 MOD_PATH+= -I
-
