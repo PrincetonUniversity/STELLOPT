@@ -20,7 +20,13 @@ LIB_DIR = ../../LIBSTELL
 #    Two steps:
 #       machine type (UNIX/POSIX versus WIN)
 #       static versus shared
-ifeq ($(strip $(MACHINE)),mingw64)
+#
+#ifeq ($(strip $(MACHINE)),mingw64)
+#ifneq (,$(findstring MINGW,$(shell uname -s)))
+#
+#tstresult = $(findstring MINGW,$(shell uname -s))
+#$(info $$tstresult is [${tstresult}])
+ifeq (MINGW,$(findstring MINGW,$(shell uname -s)))
   LIB := libstell.lib
   ifeq ($(findstring libstell.dll,$(MAKECMDGOALS)),libstell.dll)
     LIB := libstell.dll
@@ -245,26 +251,13 @@ ifeq ($(LSILO),T)
 endif
 
 # This is hear because of MPI above resetting LINK
-ifeq ($(MAKECMDGOALS),libstell.a)
+ifeq ($(MAKECMDGOALS), $(filter $(MAKECMDGOALS),libstell.a libstell.lib))
   LINK = $(LINK_AR)
   COMPILE += -fPIC
   COMPILE_FREE += -fPIC
   INC_PATH =
 endif
-ifeq ($(MAKECMDGOALS),libstell.lib)
-  LINK = $(LINK_AR)
-  COMPILE += -fPIC
-  COMPILE_FREE += -fPIC
-  INC_PATH =
-endif
-ifeq ($(MAKECMDGOALS),libstell.so)
-  LINK = $(LINK_C)
-  LIB_LINK = $(LIB_SHARE)
-  COMPILE += -fPIC
-  COMPILE_FREE += -fPIC
-  INC_PATH =
-endif
-ifeq ($(MAKECMDGOALS),libstell.dll)
+ifeq ($(MAKECMDGOALS), $(filter $(MAKECMDGOALS),libstell.so libstell.dll))
   LINK = $(LINK_C)
   LIB_LINK = $(LIB_SHARE)
   COMPILE += -fPIC
@@ -273,14 +266,31 @@ ifeq ($(MAKECMDGOALS),libstell.dll)
 endif
 
 #######################################################################
-#      ld has a cool feature to deal with recursive dependencies
-#   untested with MPI!
+#     ld has a cool feature to deal with recursive dependencies
+#
+#     not included in the default ld linker on osx with xcode
+#
 #######################################################################
 
-LIB_LINK := -Wl,--start-group $(LIB_LINK) -Wl,--end-group
+ifeq ($(shell uname -s),Darwin)
+  LIB_LINK := $(LIB_LINK) $(LIB_LINK)
+else
+  LIB_LINK := -Wl,--start-group $(LIB_LINK) -Wl,--end-group
+endif
+
+#######################################################################
+#   If compiling a DLL we should also make an import library
+#
+#######################################################################
+
 ifeq ($(MAKECMDGOALS),libstell.dll)
   LIB_LINK += -Wl,--output-def,libstell.def,--out-implib,libstell.dll.a
 endif
 
+#######################################################################
+
 #This must come here
 MOD_PATH+= -I
+
+#######################################################################
+#######################################################################

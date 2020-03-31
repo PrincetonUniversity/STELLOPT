@@ -26,7 +26,6 @@
 #######################################################################
   FC = gfortran
   CC = gcc
-#  FLAGS = -Wl,--enable-auto-import -Wl,--export-all-symbols -Wl,--enable-runtime-pseudo-reloc
 
 HARD_FFLAGS =  -Wl,--no-undefined \
                -Wl,--enable-auto-import \
@@ -67,7 +66,7 @@ HARD_LINK_FLAGS = -Wl,--no-undefined \
   COMPILE = $(FC) $(HARD_FFLAGS)
   COMPILE_FREE = $(FC) -ffree-form -ffree-line-length-none \
                        -ffixed-line-length-none $(HARD_FFLAGS)
-  LINK    = ld $(FLAGS) $(HARD_LINK_FLAGS) -o
+  LINK    = ld $(HARD_LINK_FLAGS) -o
   LINK_AR = ar -ruv
   LINK_C  = $(CC) -shared $(HARD_CFLAGS)
 
@@ -134,7 +133,7 @@ ifeq ($(LMPI),T)
                      -ffree-line-length-none -ffixed-line-length-none \
                      $(HARD_FFLAGS)
   MPI_COMPILE_C = mpicc
-  MPI_LINK = mpicc -shared -pthread $(HARD_LINK_FLAGS)
+  MPI_LINK = mpicc -shared -pthread $(HARD_CFLAGS)
 
   MPI_RUN = mpiexec
   MPI_RUN_OPTS = -np 4
@@ -238,7 +237,7 @@ endif
 #######################################################################
 #            DKES/NEO Options
 #######################################################################
-  LDKES = F
+  LDKES = T
   LNEO  = T
 
 #######################################################################
@@ -375,32 +374,8 @@ endif
 #
 LIB_SHARE = $(LIBS) -lgfortran -lz -lcurl -lm -lgfortran -lmsvcrt
 
-#LIB_SHARE = $(LIBS) $(LIBS) -lz -lcurl -lmsvcrt -lm -lgfortran -lmsvcrt
-
 ######################################################################
 ######################################################################
-#
-#LIB_SHARE = -lmsvcrt -lgfortran -lz -lmsvcrt -lm $(LIBS) -lmsvcrt
-#
-#LIB_SHARE = -lmsvcrt -lgfortran -lstdc++ -lmpi -lz -lmsvcrt -lm -lwinpthread $(LIBS) -lmsvcrt
-#
-#LIB_SHARE = -lgfortran -lstdc++ $(LIBS)
-#
-#  LIB_SHARE = \
-#            -L/mingw64/bin -lmpi \
-#            -L$(LIBS) \
-#            -L$(FFTW3_LIB) \
-#            -L$(NTCC_LIB) \
-#            -L$(HDF5_LIB) \
-#            -L$(NETCDF_LIB) \
-#            -L$(NAG_LIB) \
-#            -L$(PGPLOT_LIB) \
-#            -L$(SILO_LIB) \
-#            -L$(GENE_LIB) \
-#            -L$(COILOPT_LIB) \
-#            -L$(TERPSICHORE_LIB) \
-#            -L$(TRAVIS_LIB) \
-#            -L$(REGCOIL_LIB)
 #
 #  LIB_SHARE = \
 #          -L/mingw64/bin/libopenblas.dll \
