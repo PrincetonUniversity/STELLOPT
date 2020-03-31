@@ -36,6 +36,15 @@ MODULE beams3d_physics_mod
       USE mpi_params 
 
       !-----------------------------------------------------------------
+      !     Module PARAMETERS
+      !-----------------------------------------------------------------
+
+      DOUBLE PRECISION, PRIVATE, PARAMETER :: electron_mass = 9.10938356D-31 !m_e
+      DOUBLE PRECISION, PRIVATE, PARAMETER :: e_charge      = 1.60217662E-19 !e_c
+      DOUBLE PRECISION, PRIVATE, PARAMETER :: sqrt_pi       = 1.7724538509   !pi^(1/2)
+      DOUBLE PRECISION, PRIVATE, PARAMETER :: mpome         = 5.44602984424355D-4 !e_c
+
+      !-----------------------------------------------------------------
       !     SUBROUTINES
       !        BEAMS3D_PHYISCS(t,q) Slowing down and pitch angle
       !        BEAMS3D_FOLLOW_NEUT(t,q) Neutral particle following
@@ -83,9 +92,6 @@ MODULE beams3d_physics_mod
          !--------------------------------------------------------------
          DOUBLE PRECISION, PARAMETER :: half = 0.5D0 ! 1/2
          DOUBLE PRECISION, PARAMETER :: one  = 1.0D0 ! 1.0
-         DOUBLE PRECISION, PARAMETER :: electron_mass = 9.10938356D-31 !m_e
-         DOUBLE PRECISION, PARAMETER :: e_charge      = 1.60217662E-19 !e_c
-         DOUBLE PRECISION, PARAMETER :: sqrt_pi       = 1.7724538509   !pi^(1/2)
 
          !--------------------------------------------------------------
          !     Begin Subroutine
@@ -280,7 +286,7 @@ MODULE beams3d_physics_mod
          !--------------------------------------------------------------
          !     Local Parameters
          !--------------------------------------------------------------
-         INTEGER, PARAMETER :: num_depo = 250
+         INTEGER, PARAMETER :: num_depo = 256
          DOUBLE PRECISION, PARAMETER :: dl = 5D-3
          DOUBLE PRECISION, PARAMETER :: one = 1.0D0
          DOUBLE PRECISION, PARAMETER :: half = 0.5D0
@@ -308,7 +314,8 @@ MODULE beams3d_physics_mod
          !--------------------------------------------------------------
          !     Begin Subroutine
          !--------------------------------------------------------------
-         energy = half*mymass*q(4)*q(4)*1E-3  ! Vll = V_neut (doesn't change durring integration) needed in keV
+         ! Energy is needed in keV so 0.5*m*v*v/(ec*1000)
+         energy = half*mymass*q(4)*q(4)*1D-3/e_charge  ! Vll = V_neut (doesn't change durring integration) needed in keV
          qf(1) = q(1)*cos(q(2))
          qf(2) = q(1)*sin(q(2))
          qf(3) = q(3)
@@ -418,7 +425,7 @@ MODULE beams3d_physics_mod
                   s_temp = fval(1)
                   IF (s_temp > one) EXIT
                END IF
-               IF ((q(1) > rmax+0.5)  .or. (q(1) < rmin)) THEN; t = t_end(myline)+dt_local; RETURN; END IF  ! We're outside the grid
+               IF ((q(1) > rmax)  .or. (q(1) < rmin)) THEN; t = t_end(myline)+dt_local; RETURN; END IF  ! We're outside the grid
             END DO
             ! Take a step back
             qf = qf - myv_neut*dt_local
@@ -500,7 +507,8 @@ MODULE beams3d_physics_mod
          ! tevec electron temperature [keV]
          ! n1 array size
          ! This formula comes from the ADAS description of how to use the functions. (M. Gorelenkova)
-         telocal = telocal + to3*0.000544602984424355*energy
+         ! factor here is mp/me (assumes ion) Source NUBEAM: getsigs_adas.f, line 43
+         telocal = telocal + to3*mpome*energy
          CALL adas_sigvte_ioniz(myZ,telocal,num_depo,sigvei,ier)        ! Electron Impact ionization cross-section term.
          ! Do this because Ztarg changes for each point.
          !DO l = 1, num_depo
