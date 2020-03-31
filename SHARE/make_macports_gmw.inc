@@ -26,26 +26,13 @@
 #######################################################################
   FC = gfortran
   CC = gcc
-#  FLAGS = -Wl,--enable-auto-import -Wl,--export-all-symbols -Wl,--enable-runtime-pseudo-reloc
 
-HARD_FFLAGS =  -Wl,--no-undefined \
-               -Wl,--enable-auto-import \
-               -Wl,--export-all-symbols \
-               -Wl,--enable-runtime-pseudo-reloc
+HARD_FFLAGS = \
+              -Wl,--export-all-symbols
 
 HARD_CFLAGS = \
-                    -Wl,-no_compact_unwind
-#                    -Wl,-z-defs
-#                    -Wl,--no-undefined \
-#                    -Wl,--enable-auto-import \
-#                    -Wl,--export-all-symbols \
-#                    -Wl,--enable-runtime-pseudo-reloc
 
-HARD_LINK_FLAGS = -Wl,--no-undefined \
-                  -Wl,-no_compact_unwind \
-                  -Wl,--enable-auto-import \
-                  -Wl,--export-all-symbols \
-                  -Wl,--enable-runtime-pseudo-reloc
+HARD_LINK_FLAGS =
 
 #######################################################################
 #            Find the source paths of the STELLOPT distribution.
@@ -70,18 +57,48 @@ HARD_LINK_FLAGS = -Wl,--no-undefined \
   PWD1 = `pwd`
   PRECOMP:= cpp -traditional-cpp -E -P -C -DMACOSX
   COMPILE = $(FC) $(HARD_FFLAGS)
-#  COMPILE_FREE = gfortran -ffree-form -ffree-line-length-none -ffixed-line-length-none
   COMPILE_FREE = $(FC) -ffree-form -ffree-line-length-none \
                      -ffixed-line-length-none $(HARD_FFLAGS)
-  LINK    = ld $(FLAGS) $(HARD_LINK_FLAGS) -o
+  LINK    = $(FC) $(FLAGS) $(HARD_LINK_FLAGS) -o
   LINK_AR = ar -ruvs
-  LINK_C  = $(CC) -shared $(HARD_CFLAGS)
+  LINK_C  = $(CC) -shared \
+            -Wl,-no_compact_unwind \
+            $(HARD_CFLAGS)
 
 #######################################################################
 #            Define Compiler Flags
 #######################################################################
   FLAGS_R = -O2 -fexternal-blas -Wmissing-include-dirs
   FLAGS_D = -g -O0 -fcheck=all
+
+#######################################################################
+#            MPI Options
+#
+# MPI RUN OPTIONS:
+#  MPI_RUN_OPTS = -np 4
+#  MPI_RUN_OPTS_SM = -np 16
+#  MPI_RUN_OPTS_MD = -np 64
+#  MPI_RUN_OPTS_LG = -np 256
+#
+# Let's not pollute the namespace if unnecessary
+#######################################################################
+  LMPI    = T
+
+ifeq ($(LMPI),T)
+  MPI_COMPILE = mpifort $(HARD_FFLAGS)
+  MPI_COMPILE_FREE = mpifort -ffree-form -fno-range-check \
+                     -ffree-line-length-none -ffixed-line-length-none \
+                     $(HARD_FFLAGS)
+  MPI_COMPILE_C = mpicc
+  MPI_LINK = mpicc -shared -pthread \
+             -Wl,-no_compact_unwind \
+             $(HARD_CFLAGS)
+
+  MPI_RUN = mpiexec
+  MPI_RUN_OPTS = -np 4
+
+  MPI_LIB = -L$(PORTSDIR)/lib/mpich-gcc9 -lmpi -lmpifort
+endif
 
 #######################################################################
 #            Define LIBS:
@@ -115,34 +132,12 @@ endif
 ifeq ($(LFFTW3),T)
   FFTWHOME = $(PORTSDIR)
   FFTW3_INC = -I$(FFTWHOME)/include
-  FFTW3_LIB = -L$(FFTWHOME)/lib -lfftw3f -lfftw3
-endif
+  FFTW3_LIB = -L$(FFTWHOME)/lib -lfftw3_threads -lfftw3
 
-#######################################################################
-#            MPI Options
-#
-# MPI RUN OPTIONS:
-#  MPI_RUN_OPTS = -np 4
-#  MPI_RUN_OPTS_SM = -np 16
-#  MPI_RUN_OPTS_MD = -np 64
-#  MPI_RUN_OPTS_LG = -np 256
-#
-# Let's not pollute the namespace if unnecessary
-#######################################################################
-  LMPI    = F
+  ifeq ($(LMPI),T)
+    FFTW3_LIB := -L$(FFTWHOME)/lib -lfftw3_mpi $(FFTW3_LIB)
+  endif
 
-ifeq ($(LMPI),T)
-  MPI_COMPILE = mpifort $(HARD_FFLAGS)
-  MPI_COMPILE_FREE = mpifort -ffree-form -fno-range-check \
-                     -ffree-line-length-none -ffixed-line-length-none \
-                     $(HARD_FFLAGS)
-  MPI_COMPILE_C = mpicc
-  MPI_LINK = mpicc -shared -pthread $(HARD_LINK_FLAGS)
-
-  MPI_RUN = mpiexec
-  MPI_RUN_OPTS = -np 4
-
-  MPI_LIB = $(PORTSDIR)/mpich-gcc9/lib -lmpi -lpthread
 endif
 
 #######################################################################
@@ -154,6 +149,51 @@ ifeq ($(LNAG),T)
   NAG_ROOT =
   NAG_LIB =
 #  NAG_LIB = -L$(NAG_ROOT)/lib -lnag_nag
+endif
+
+#######################################################################
+#            TRAVIS Options
+#
+#    TRAVIS depends on the MCONF library and the standard C++ library
+#    MCONF depends on the stdc++ library and libc
+#######################################################################
+  LTRAVIS= F
+
+ifeq ($(LTRAVIS),T)
+  TRAVIS_DIR = $(TRAVIS_PATH)
+  LIB_TRAVIS = libtravis64_sopt.a
+  LIB_MCONF  = libmconf64.a
+  TRAVIS_LIB = -L$(TRAVIS_DIR)/lib/$(LIB_TRAVIS) \
+               -L$(TRAVIS_DIR)/mag_conf/lib/$(LIB_MCONF) \
+               -L$(PORTSDIR)/lib -lstdc++ \
+               -L$(PORTSDIR)/lib/gcc9 -lgfortran \
+               -L/usr/lib -pthread -lm -lc
+endif
+
+#######################################################################
+#            SFINCS Options
+#
+#   Note:  PETSC has a bunch of dependencies
+#
+#   Also: The included variables file defines the PETSC make variables
+#    PETSC_LIB, FC_LINKER_FLAGS, and FFLAGS, which are used below in
+#    SFINCS_LIB. Headsup for namespace conflicts: overlapping FFLAGS?
+#
+#   PETSC_DIR should be set as user env variable
+#
+#######################################################################
+
+  LSFINCS = F
+
+ifeq ($(LSFINCS),T)
+  SFINCS_DIR = $(SFINCS_PATH)
+  SFINCS_INC = -I$(SFINCS_DIR)
+  LIB_SFINCS = libsfincs.a
+
+  include ${PETSC_DIR}/lib/petsc/conf/variables
+
+  SFINCS_LIB = -L$(SFINCS_DIR)/$(LIB_SFINCS) \
+              -L$(PETSC_DIR)/$(PETSC_ARCH)/lib -lpetsc -lX11
 endif
 
 #######################################################################
@@ -176,8 +216,10 @@ ifeq ($(LNETCDF),T)
   NETCDF_F_HOME = $(PORTSDIR)
   NETCDF_C = $(NETCDF_C_HOME)
   NETCDF_F = $(NETCDF_F_HOME)
-  NETCDF_INC = -I$(NETCDF_F)/include -I$(NETCDF_C)/include
-  NETCDF_LIB = -L$(NETCDF_F)/lib -lnetcdff -L$(NETCDF_C)/lib -lnetcdf -lnetcdf -lm
+  NETCDF_INC = $(shell nc-config --fflags)
+  NETCDF_LIB = $(shell nc-config --flibs)
+#               -L$(PORTSDIR)/gcc9 -lgfortran \
+#               -L/usr/lib -pthread -lm -lc
 endif
 
 #######################################################################
@@ -190,7 +232,8 @@ ifeq ($(LHDF5),T)
   HDF5_INC = -I$(HDF5_HOME)/include
 
   HDF5_LIB = -L$(HDF5_HOME)/lib -lhdf5_hl_fortran -lhdf5_fortran -lhdf5_hl \
-             -lhdf5 -lz -lm -lcurl
+             -lhdf5 -lz -lcurl \
+             -L/usr/lib -pthread -lm -lc
 endif
 
 #######################################################################
@@ -228,7 +271,7 @@ endif
 #######################################################################
 #            DKES/NEO Options
 #######################################################################
-  LDKES = F
+  LDKES = T
   LNEO  = T
 
 #######################################################################
@@ -259,7 +302,9 @@ ifeq ($(LCOILOPT),T)
 
   GSLHOME = $(PORTSDIR)
   COILOPT_LIB = $(COILOPT_PATH)/$(LIB_COILOPTPP) \
-                -L$(GSLHOME)/lib -lgsl -lgslcblas -lstdc++ -lmpi_cxx
+                -L$(GSLHOME)/lib -lgsl -lgslcblas \
+                -L$(PORTSDIR)/lib -lstdc++ \
+                -L$(PORTSDIR)/lib/mpich-gcc9 -lmpi_cxx
 endif
 
 #######################################################################
@@ -273,21 +318,6 @@ ifeq ($(LTERPSICHORE),T)
   LIB_TERPSICHORE = libterpsichore.a
   TERPSICHORE_LIB = $(TERPSICHORE_DIR)/$(LIB_TERPSICHORE)
 endif
-#######################################################################
-#            TRAVIS Options
-#
-#    TRAVIS depends on the MCONF library and the standard C++ library
-#    MCONF depends on the stdc++ library and libc
-#######################################################################
-  LTRAVIS= F
-
-ifeq ($(LTRAVIS),T)
-  TRAVIS_DIR = $(TRAVIS_PATH)
-  LIB_TRAVIS = libtravis64_sopt.a
-  LIB_MCONF  = libmconf64.a
-  TRAVIS_LIB = $(TRAVIS_DIR)/lib/$(LIB_TRAVIS) \
-               $(TRAVIS_DIR)/mag_conf/lib/$(LIB_MCONF) -lstdc++
-endif
 
 #######################################################################
 #            REGCOIL Options
@@ -299,32 +329,6 @@ ifeq ($(LREGCOIL),T)
   REGCOIL_INC = -I$(REGCOIL_DIR)
   LIB_REGCOIL = libregcoil.a
   REGCOIL_LIB = $(REGCOIL_DIR)/$(LIB_REGCOIL) -fopenmp
-endif
-
-#######################################################################
-#            SFINCS Options
-#
-#   Note:  PETSC has a bunch of dependencies
-#
-#   Also: The included variables file defines the PETSC make variables
-#    PETSC_LIB, FC_LINKER_FLAGS, and FFLAGS, which are used below in
-#    SFINCS_LIB. Headsup for namespace conflicts: overlapping FFLAGS?
-#
-#   PETSC_DIR should be set as user env variable
-#
-#######################################################################
-
-  LSFINCS = F
-
-ifeq ($(LSFINCS),T)
-  SFINCS_DIR = $(SFINCS_PATH)
-  SFINCS_INC = -I$(SFINCS_DIR)
-  LIB_SFINCS = libsfincs.a
-
-  include ${PETSC_DIR}/lib/petsc/conf/variables
-
-  SFINCS_LIB = $(SFINCS_DIR)/$(LIB_SFINCS) \
-              -L$(PETSC_DIR)/$(PETSC_ARCH)/lib -lpetsc -lX11
 endif
 
 #######################################################################
@@ -344,14 +348,17 @@ endif
 #            resolve the new ones from libc
 #            finally resolve the c-compiler undefined symbols for gfortran
 #
-#   Trying out a recursive tool from ld in make_all.inc
+#   The recursive tool in ld is not available on Darwin. We repeat
+#   the shared library in make_all.inc after appending code libraries
 #
-LIB_SHARE = $(LIBS) $(PORTSDIR)/gcc9 -lgfortran \
-           -lz -lcurl -lstdc++ -lc
-
-# LIB_SHARE = -L/opt/local/lib/gcc8 -lgfortran -lstdc++ \
-#             -L/opt/local/lib/openmpi-gcc8 -lmpi -lmpi_mpifh \
-#             -L/usr/lib -lc -lm -lpthread $(LIBS) -lz
+LIB_SHARE = $(LIBS) \
+            -L$(PORTSDIR)/lib -lz
+ifeq ($(LMPI),T)
+  LIB_SHARE += -L$(PORTSDIR)/lib/mpich-gcc9 -lmpi -lmpifort
+endif
+LIB_SHARE += \
+            -L$(PORTSDIR)/lib/gcc9 -lgfortran -lstdc++ \
+            -L/usr/lib/ -lm -lpthread -lc
 
 ######################################################################
 ######################################################################
