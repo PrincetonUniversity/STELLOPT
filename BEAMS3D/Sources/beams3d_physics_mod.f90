@@ -271,7 +271,8 @@ MODULE beams3d_physics_mod
          !--------------------------------------------------------------
          USE beams3d_grid
          USE beams3d_lines, ONLY: myline,xlast,ylast,zlast
-         USE beams3d_runtime, ONLY: t_end, lvessel, to3, lplasma_only
+         USE beams3d_runtime, ONLY: t_end, lvessel, to3, lplasma_only, &
+                                    lvessel_beam
          USE wall_mod, ONLY: collide, uncount_wall_hit
 
          !--------------------------------------------------------------
@@ -374,7 +375,7 @@ MODULE beams3d_physics_mod
          !--------------------------------------------------------------
          !     Check to see if we hit the wall
          !--------------------------------------------------------------
-         IF (lbbnbi .and. lvessel .and. .not.(lplasma_only)) THEN
+         IF (lvessel_beam) THEN
             CALL collide(x0,y0,z0,qf(1),qf(2),qf(3),xw,yw,zw,ltest)
             IF (ltest) THEN
                q(1) = SQRT(qf(1)*qf(1)+qf(2)*qf(2))
@@ -571,7 +572,7 @@ MODULE beams3d_physics_mod
          DO
             qf = qf + myv_neut*dt_local
             t = t + dt_local
-            IF (lvessel .and. (.not.(lplasma_only) .or. lbbnbi)) CALL collide(x0,y0,z0,qf(1),qf(2),qf(3),xw,yw,zw,ltest)
+            IF (lvessel_beam) CALL collide(x0,y0,z0,qf(1),qf(2),qf(3),xw,yw,zw,ltest)
             IF (ltest) THEN
                q(1) = SQRT(qf(1)*qf(1)+qf(2)*qf(2))
                q(2) = ATAN2(qf(2),qf(1))
@@ -584,7 +585,7 @@ MODULE beams3d_physics_mod
             q(1) = SQRT(qf(1)*qf(1)+qf(2)*qf(2))
             q(2) = ATAN2(qf(2),qf(1))
             q(3) = qf(3)
-            IF ((q(1) > 5*rmax)  .or. (q(1) < rmin)) THEN; t = t_end(myline)+dt_local; RETURN; END IF  ! We're outside the grid
+            IF ((q(1) > 2*rmax)  .or. (q(1) < rmin)) THEN; t = t_end(myline)+dt_local; RETURN; END IF  ! We're outside the grid
          END DO
 
          RETURN
