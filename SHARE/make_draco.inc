@@ -4,7 +4,7 @@
   SHELL = /bin/sh
   PWD1 = `pwd`
   MYHOME = $(HOME)/bin
-  PRECOMP:= fpp -C -P -DLINUX
+  PRECOMP:= fpp -C -P -DLINUX -DHDF5_PAR
   COMPILE = ifort
   COMPILE_FREE = ifort
   LINK    = icc -Bstatic -o
