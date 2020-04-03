@@ -120,7 +120,6 @@
             END IF
          END IF
       END IF
-      IF (iflag/=0) WRITE(6,*) 'Error happened in chisq_regicoil_chi2_b, iflag=', iflag
 !DEC$ ENDIF      
 
       RETURN
