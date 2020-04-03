@@ -1,0 +1,236 @@
+# Microsoft Developer Studio Generated Dependency File, included by VMEC2000.mak
+
+beams3d_main.o: \
+      ../../LIBSTELL/$(TYPE)/wall_mod.o \
+      ../../LIBSTELL/$(TYPE)/mpi_params.o \
+      ../../LIBSTELL/$(TYPE)/read_wout_mod.o \
+      beams3d_runtime.o 
+
+
+out_beams3d_nag.o: \
+      ../../LIBSTELL/$(TYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(TYPE)/wall_mod.o \
+      ../../LIBSTELL/$(TYPE)/mpi_params.o \
+      ../../LIBSTELL/$(TYPE)/ezspline_obj.o \
+      ../../LIBSTELL/$(TYPE)/ezspline.o \
+      beams3d_runtime.o \
+      beams3d_lines.o \
+      beams3d_grid.o \
+      beams3d_physics_mod.o
+      
+
+beams3d_runtime.o: \
+      ../../LIBSTELL/$(TYPE)/mpi_params.o \
+      ../../LIBSTELL/$(TYPE)/ezspline.o \
+      ../../LIBSTELL/$(TYPE)/stel_kinds.o 
+      
+
+beams3d_init.o: \
+      ../../LIBSTELL/$(TYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(TYPE)/vmec_input.o \
+      ../../LIBSTELL/$(TYPE)/mpi_params.o \
+      ../../LIBSTELL/$(TYPE)/wall_mod.o \
+      ../../LIBSTELL/$(TYPE)/adas_mod_parallel.o \
+      beams3d_runtime.o \
+      beams3d_grid.o \
+      beams3d_input_mod.o \
+      beams3d_lines.o
+      
+
+beams3d_grid.o: \
+      ../../LIBSTELL/$(TYPE)/ezspline_obj.o \
+      ../../LIBSTELL/$(TYPE)/ezspline.o \
+      ../../LIBSTELL/$(TYPE)/stel_kinds.o 
+      
+
+beams3d_input_mod.o: \
+      ../../LIBSTELL/$(TYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(TYPE)/safe_open_mod.o \
+      ../../LIBSTELL/$(TYPE)/mpi_params.o \
+      beams3d_runtime.o \
+      beams3d_lines.o \
+      beams3d_grid.o 
+
+
+beams3d_follow.o: \
+      ../../LIBSTELL/$(TYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(TYPE)/safe_open_mod.o \
+      ../../LIBSTELL/$(TYPE)/wall_mod.o \
+      beams3d_runtime.o \
+      beams3d_lines.o \
+      beams3d_grid.o \
+      beams3d_physics_mod.o \
+      ../../LIBSTELL/$(TYPE)/mpi_params.o
+      
+
+beams3d_lines.o: \
+      ../../LIBSTELL/$(TYPE)/stel_kinds.o 
+      
+
+fpart_nag.o: \
+      ../../LIBSTELL/$(TYPE)/ezspline_obj.o \
+      ../../LIBSTELL/$(TYPE)/ezspline.o \
+      ../../LIBSTELL/$(TYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(TYPE)/mpi_params.o \
+      beams3d_grid.o \
+      beams3d_lines.o \
+      beams3d_runtime.o
+
+
+fpart_lsode.o: 
+
+
+fpart_rkh68.o: 
+      
+
+jacobian_lsode.o: \
+      ../../LIBSTELL/$(TYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(TYPE)/ezspline_obj.o \
+      ../../LIBSTELL/$(TYPE)/ezspline.o \
+      beams3d_grid.o \
+      beams3d_runtime.o
+      
+
+backspace_out.o:  
+      
+
+drkhvg.o:  
+      
+
+beams3d_write.o: \
+      ../../LIBSTELL/$(TYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(TYPE)/ez_hdf5.o \
+      ../../LIBSTELL/$(TYPE)/safe_open_mod.o \
+      ../../LIBSTELL/$(TYPE)/wall_mod.o \
+      ../../LIBSTELL/$(TYPE)/mpi_params.o \
+      beams3d_runtime.o \
+      beams3d_lines.o \
+      beams3d_grid.o
+      
+
+beams3d_write_ascoth4.o: \
+      ../../LIBSTELL/$(TYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(TYPE)/ez_hdf5.o \
+      ../../LIBSTELL/$(TYPE)/safe_open_mod.o \
+      ../../LIBSTELL/$(TYPE)/wall_mod.o \
+      ../../LIBSTELL/$(TYPE)/mpi_params.o \
+      beams3d_runtime.o \
+      beams3d_lines.o \
+      beams3d_write_parhdf5.o \
+      beams3d_grid.o
+      
+
+beams3d_write_ascoth5.o: \
+      ../../LIBSTELL/$(TYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(TYPE)/ez_hdf5.o \
+      ../../LIBSTELL/$(TYPE)/safe_open_mod.o \
+      ../../LIBSTELL/$(TYPE)/wall_mod.o \
+      ../../LIBSTELL/$(TYPE)/mpi_params.o \
+      beams3d_runtime.o \
+      beams3d_lines.o \
+      beams3d_write_parhdf5.o \
+      beams3d_grid.o
+      
+
+beams3d_write_parhdf5.o: \
+      ../../LIBSTELL/$(TYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(TYPE)/ez_hdf5.o \
+      ../../LIBSTELL/$(TYPE)/safe_open_mod.o \
+      ../../LIBSTELL/$(TYPE)/wall_mod.o \
+      ../../LIBSTELL/$(TYPE)/mpi_params.o \
+      beams3d_runtime.o \
+      beams3d_lines.o \
+      beams3d_grid.o
+      
+
+beams3d_read.o: \
+      beams3d_runtime.o 
+      
+
+beams3d_diagnostics.o: \
+      ../../LIBSTELL/$(TYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(TYPE)/safe_open_mod.o \
+      ../../LIBSTELL/$(TYPE)/ezspline.o \
+      ../../LIBSTELL/$(TYPE)/mpi_params.o \
+      beams3d_runtime.o \
+      beams3d_lines.o \
+      beams3d_grid.o
+      
+
+beams3d_init_coil.o: \
+      ../../LIBSTELL/$(TYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(TYPE)/mpi_params.o \
+      ../../LIBSTELL/$(TYPE)/vmec_input.o \
+      ../../LIBSTELL/$(TYPE)/biotsavart.o \
+      beams3d_runtime.o \
+      beams3d_grid.o
+      
+
+beams3d_init_mgrid.o: \
+      ../../LIBSTELL/$(TYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(TYPE)/mpi_params.o \
+      ../../LIBSTELL/$(TYPE)/mgrid_field_mod.o \
+      ../../LIBSTELL/$(TYPE)/vmec_input.o \
+      beams3d_runtime.o \
+      beams3d_grid.o
+      
+
+beams3d_init_vmec.o: \
+      ../../LIBSTELL/$(TYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(TYPE)/wall_mod.o \
+      ../../LIBSTELL/$(TYPE)/read_wout_mod.o \
+      ../../LIBSTELL/$(TYPE)/vmec_utils.o \
+      ../../LIBSTELL/$(TYPE)/virtual_casing_mod.o \
+      ../../LIBSTELL/$(TYPE)/mpi_params.o \
+      beams3d_runtime.o \
+      beams3d_grid.o
+      
+
+beams3d_init_restart.o: \
+      ../../LIBSTELL/$(TYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(TYPE)/mpi_params.o \
+      ../../LIBSTELL/$(TYPE)/ez_hdf5.o \
+      beams3d_runtime.o \
+      beams3d_grid.o
+
+
+beams3d_init_beams.o: \
+      ../../LIBSTELL/$(TYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(TYPE)/mpi_params.o \
+      beams3d_lines.o \
+      beams3d_runtime.o
+      
+      
+beams3d_init_beams_w7x.o: \
+      ../../LIBSTELL/$(TYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(TYPE)/mpi_params.o \
+      beams3d_lines.o \
+      beams3d_runtime.o
+      
+      
+beams3d_init_beams_bbnbi.o: \
+      ../../LIBSTELL/$(TYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(TYPE)/mpi_params.o \
+      beams3d_lines.o \
+      beams3d_grid.o \
+      beams3d_runtime.o
+
+
+beams3d_physics_mod.o: \
+      ../../LIBSTELL/$(TYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(TYPE)/adas_mod_parallel.o \
+      beams3d_runtime.o \
+      beams3d_lines.o \
+      beams3d_grid.o
+
+
+beams3d_free.o: \
+      ../../LIBSTELL/$(TYPE)/wall_mod.o \
+      beams3d_runtime.o \
+      beams3d_lines.o \
+      beams3d_grid.o
+
+
+gauss_rand.o:
+
+
