@@ -71,12 +71,13 @@
             mu_start_in, charge_in, mass_in, t_end_in, Zatom_in, &
             TE_AUX_S_BEAMS => TE_AUX_S, TE_AUX_F_BEAMS => TE_AUX_F, &
             NE_AUX_S_BEAMS => NE_AUX_S, NE_AUX_F_BEAMS => NE_AUX_F, &
-            TI_AUX_S_BEAMS => TI_AUX_S, TI_AUX_F_BEAMS => TI_AUX_F, nprocs_beams
+            TI_AUX_S_BEAMS => TI_AUX_S, TI_AUX_F_BEAMS => TI_AUX_F, nprocs_beams, &
+            ZEFF_AUX_S_BEAMS => ZEFF_AUX_S, ZEFF_AUX_F_BEAMS => ZEFF_AUX_F
       USE beams3d_lines, ONLY: nparticles_beams => nparticles, R_lines, Z_lines,&
             PHI_lines, vll_lines, moment_lines, neut_lines
       USE beams3d_grid, ONLY: nte, nne, nti, B_R, B_PHI, B_Z, raxis, zaxis, phiaxis,&
                               BR_spl, BZ_spl, BPHI_spl, MODB_spl, rmin, rmax, zmin, &
-                              zmax, phimin, phimax
+                              zmax, phimin, phimax, nzeff
       USE wall_mod, ONLY: wall_free
       USE beams3d_input_mod, ONLY: BCAST_BEAMS3D_INPUT
 !DEC$ ENDIF
@@ -328,6 +329,7 @@
                CALL MPI_BCAST(nne,1,MPI_INTEGER, master, MPI_COMM_MYWORLD,ierr_mpi)
                CALL MPI_BCAST(nte,1,MPI_INTEGER, master, MPI_COMM_MYWORLD,ierr_mpi)
                CALL MPI_BCAST(nti,1,MPI_INTEGER, master, MPI_COMM_MYWORLD,ierr_mpi)
+               CALL MPI_BCAST(nzeff,1,MPI_INTEGER, master, MPI_COMM_MYWORLD,ierr_mpi)
                CALL MPI_BCAST(nparticles_start,1,MPI_INTEGER, master, MPI_COMM_MYWORLD,ierr_mpi)
                CALL MPI_BCAST(rmin,nte,MPI_REAL8, master, MPI_COMM_MYWORLD,ierr_mpi)
                CALL MPI_BCAST(rmax,nte,MPI_REAL8, master, MPI_COMM_MYWORLD,ierr_mpi)
@@ -341,6 +343,8 @@
                CALL MPI_BCAST(NE_AUX_F_BEAMS,nne,MPI_REAL8, master, MPI_COMM_MYWORLD,ierr_mpi)
                CALL MPI_BCAST(TI_AUX_S_BEAMS,nti,MPI_REAL8, master, MPI_COMM_MYWORLD,ierr_mpi)
                CALL MPI_BCAST(TI_AUX_F_BEAMS,nti,MPI_REAL8, master, MPI_COMM_MYWORLD,ierr_mpi)
+               CALL MPI_BCAST(ZEFF_AUX_S_BEAMS,nzeff,MPI_REAL8, master, MPI_COMM_MYWORLD,ierr_mpi)
+               CALL MPI_BCAST(ZEFF_AUX_F_BEAMS,nzeff,MPI_REAL8, master, MPI_COMM_MYWORLD,ierr_mpi)
                CALL MPI_BCAST(R_start_in,nparticles_start,MPI_REAL8, master, MPI_COMM_MYWORLD,ierr_mpi)
                CALL MPI_BCAST(Z_start_in,nparticles_start,MPI_REAL8, master, MPI_COMM_MYWORLD,ierr_mpi)
                CALL MPI_BCAST(PHI_start_in,nparticles_start,MPI_REAL8, master, MPI_COMM_MYWORLD,ierr_mpi)
