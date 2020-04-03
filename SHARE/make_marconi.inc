@@ -33,11 +33,11 @@
   MPI_COMPILE_C = mpiifort
   MPI_LINK = mpiifort
   MPI_RUN  = srun
-  MPI_RUN_OPTS = --partition=knl_fua_prod --qos=knl_qos_fuadbg \
+  MPI_RUN_OPTS = --partition=skl_fua_dbg \
 		--time=0:30:00
-  MPI_RUN_OPTS_SM   = $(MPI_RUN_OPTS) --nodes=1 --ntasks-per-node=68
-  MPI_RUN_OPTS_MD   = $(MPI_RUN_OPTS) --nodes=2 --ntasks-per-node=68
-  MPI_RUN_OPTS_LG   = $(MPI_RUN_OPTS) --nodes=2 --ntasks-per-node=68
+  MPI_RUN_OPTS_SM   = $(MPI_RUN_OPTS) --nodes=1 --ntasks-per-node=24
+  MPI_RUN_OPTS_MD   = $(MPI_RUN_OPTS) --nodes=2 --ntasks-per-node=48
+  MPI_RUN_OPTS_LG   = $(MPI_RUN_OPTS) --nodes=4 --ntasks-per-node=48
 
 #######################################################################
 #            NAG Options
