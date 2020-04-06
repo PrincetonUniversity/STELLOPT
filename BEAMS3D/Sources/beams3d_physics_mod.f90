@@ -316,7 +316,8 @@ MODULE beams3d_physics_mod
          !     Begin Subroutine
          !--------------------------------------------------------------
          ! Energy is needed in keV so 0.5*m*v*v/(ec*1000)
-         energy = half*mymass*q(4)*q(4)*1D-3/e_charge  ! Vll = V_neut (doesn't change durring integration) needed in keV
+         !energy = half*mymass*q(4)*q(4)*1D-3/e_charge  ! Vll = V_neut (doesn't change durring integration) needed in keV
+         energy = half*mymass*q(4)*q(4)*1D-3  ! Vll = V_neut (doesn't change durring integration) needed in keV
          qf(1) = q(1)*cos(q(2))
          qf(2) = q(1)*sin(q(2))
          qf(3) = q(3)
@@ -381,6 +382,7 @@ MODULE beams3d_physics_mod
                q(1) = SQRT(qf(1)*qf(1)+qf(2)*qf(2))
                q(2) = ATAN2(qf(2),qf(1))
                q(3) = qf(3)
+               end_state(myline) = 4
                CALL uncount_wall_hit
                RETURN
             END IF
