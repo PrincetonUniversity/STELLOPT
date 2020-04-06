@@ -171,7 +171,7 @@
                CALL write_var_hdf5(fid,'Zatom',nparticles,ier,DBLVAR=Zatom,ATT='Particle Charge Number',&
                                    ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'Zatom',ier)
-               CALL write_var_hdf5(fid,'end_state',nparticles,ier,INTVAR=end_state,ATT='0: Orbiting; 1: Thermalized; 2: Wall Strike; 3: Shine-through',&
+               CALL write_var_hdf5(fid,'end_state',nparticles,ier,INTVAR=end_state,ATT='0: Orbiting; 1: Thermalized; 2: Wall Strike; 3: Shine-through; 4: Port-Load',&
                                    ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'end_state',ier)
                IF (ASSOCIATED(ihit_array)) THEN
@@ -303,6 +303,9 @@
                   CALL write_var_hdf5(fid,'Shinethrough',nbeams,ier,DBLVAR=shine_through,&
                                    ATT='Total Beam Shine Through [%]',ATT_NAME='description')
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'Shinethrough',ier)
+                  CALL write_var_hdf5(fid,'Shineport',nbeams,ier,DBLVAR=shine_port,&
+                                   ATT='Loss to Port [%]',ATT_NAME='description')
+                  IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'shine_port',ier)
                END IF
          END SELECT
          CALL close_hdf5(fid,ier)

@@ -34,7 +34,7 @@
                      dt_out, partvmax, fact_crit, fact_pa, fact_vsound
       LOGICAL, ALLOCATABLE     :: neut_lines(:,:)
       INTEGER, ALLOCATABLE     :: end_state(:)
-      REAL(rprec), ALLOCATABLE :: shine_through(:)
+      REAL(rprec), ALLOCATABLE :: shine_through(:), shine_port(:)
       REAL(rprec), ALLOCATABLE :: ndot_prof(:,:),epower_prof(:,:), &
                                   ipower_prof(:,:),j_prof(:,:), dist2d_prof(:,:,:)
 !      REAL(rprec), ALLOCATABLE :: dist_prof(:,:,:,:,:,:)
