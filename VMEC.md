@@ -391,6 +391,10 @@ coordinate systems can be found [Toroidal Coordinate](Toroidal Coordinates). A F
 library for manipulation of toroidal equilibria AJAX does exist and is
 distributed as part of the LIBSTELL package.
 
+MATLAB: A series of utilities for reading and plotting VMEC and 
+STELLOPT data can be found at the matlabVMEC Github repo. 
+(<https://github.com/lazersos/matlabVMEC>)
+
 MATLAB: matlabVMEC, provides a series of functions to read the VMEC data
 files into MATLAB, transform from Fourier to 'toroidal' coordinates,
 and provides a Graphical User Interface (GUI) for data exploration. It
