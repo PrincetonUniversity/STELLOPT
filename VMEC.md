@@ -395,12 +395,6 @@ MATLAB: A series of utilities for reading and plotting VMEC and
 STELLOPT data can be found at the matlabVMEC Github repo. 
 (<https://github.com/lazersos/matlabVMEC>)
 
-MATLAB: matlabVMEC, provides a series of functions to read the VMEC data
-files into MATLAB, transform from Fourier to 'toroidal' coordinates,
-and provides a Graphical User Interface (GUI) for data exploration. It
-can be obtained from the MATLAB Central File Exchange
-(<http://www.mathworks.com/matlabcentral/fileexchange/29031-matlabvmec>).
-
 IDL: ECHIDNA, provides a GUI for execution and visualization of VMEC via
 IDL.
 
