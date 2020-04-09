@@ -29,10 +29,7 @@ MODULE beams3d_physics_mod
                               phimin, eps1, eps2, eps3, raxis, phiaxis, zaxis
       USE EZspline_obj
       USE EZspline
-!      USE adas_mod_simpl
       USE adas_mod_parallel
-!      USE fpreact_calls
-!      USE periodic_table_mod
       USE mpi_params 
 
       !-----------------------------------------------------------------
