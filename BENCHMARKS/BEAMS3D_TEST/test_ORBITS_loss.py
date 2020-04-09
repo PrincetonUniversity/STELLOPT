@@ -22,7 +22,7 @@ if not data:
 print('BEAMS3D VERSION: ' + str(data['VERSION']))
 print('==== Vectors ====')
 varlist={}
-varlist['end_state']=np.array([0, 0, 0 ,0, 0, 0, 0, 0, 0, 2, 0, 0, 2, 0, 0, 2, 0, 0, 0, 0 ,0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2])
+varlist['end_state']=np.array([0, 0, 0 ,0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ,0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2])
 #print(data['end_state'])
 for temp in varlist:
     act = varlist[temp]
