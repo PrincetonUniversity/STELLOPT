@@ -71,7 +71,7 @@ SUBROUTINE beams3d_follow
     DOUBLE PRECISION, PARAMETER :: sqrt_pi       = 1.7724538509   !pi^(1/2)
     DOUBLE PRECISION, PARAMETER :: e_charge      = 1.60217662E-19 !e_c
 
-    DOUBLE PRECISION, PARAMETER :: lendt_m = 0.001  ! Maximum length to travel before updating physics [m]
+    DOUBLE PRECISION, PARAMETER :: lendt_m = 0.05  ! Maximum length to travel before updating physics [m]
     !-----------------------------------------------------------------------
     !     External Functions
     !          fpart_nag            RHS of ODE integrator (for NAG)    for BEAMS3D
