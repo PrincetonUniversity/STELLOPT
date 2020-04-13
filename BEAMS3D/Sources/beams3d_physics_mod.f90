@@ -87,6 +87,7 @@ MODULE beams3d_physics_mod
          !--------------------------------------------------------------
          !     Local Parameters
          !--------------------------------------------------------------
+         DOUBLE PRECISION, PARAMETER :: zero = 0.0D0 ! 1.0
          DOUBLE PRECISION, PARAMETER :: half = 0.5D0 ! 1/2
          DOUBLE PRECISION, PARAMETER :: one  = 1.0D0 ! 1.0
 
@@ -143,15 +144,15 @@ MODULE beams3d_physics_mod
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hx,hxi,hy,hyi,hz,hzi,&
                             TE4D(1,1,1,1),nr,nphi,nz)
-            te_temp = fval(1)
+            te_temp = max(fval(1),zero)
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hx,hxi,hy,hyi,hz,hzi,&
                             NE4D(1,1,1,1),nr,nphi,nz)
-            ne_temp = fval(1)
+            ne_temp = max(fval(1),zero)
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hx,hxi,hy,hyi,hz,hzi,&
                             TI4D(1,1,1,1),nr,nphi,nz)
-            ti_temp = fval(1)
+            ti_temp = max(fval(1),zero)
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hx,hxi,hy,hyi,hz,hzi,&
                             S4D(1,1,1,1),nr,nphi,nz)
@@ -181,6 +182,7 @@ MODULE beams3d_physics_mod
                tau_spit_inv = (1.0D0)/tau_spit
                vc3_tauinv = vcrit_cube*tau_spit_inv
             END IF
+
 
             !-----------------------------------------------------------
             !  Viscouse Velocity Reduction
