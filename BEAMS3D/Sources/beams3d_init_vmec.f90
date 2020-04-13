@@ -200,6 +200,7 @@
          IF (lasym) ALLOCATE(rmns_temp(mnmax_temp,2),zmnc_temp(mnmax_temp,2),&
                      bumns_temp(mnmax_temp,1),bvmns_temp(mnmax_temp,1), STAT = ier)
          IF (ier /= 0) CALL handle_err(ALLOC_ERR,'RMNS_TEMP ZMNC_TEMP BUMNS_TEMP BVMNS_TEMP',ier)
+         rmnc_temp = 0; zmns_temp =0
          IF (lnyquist) THEN
             xm_temp = xm_nyq
             xn_temp = -xn_nyq/nfp  ! Because init_virtual_casing uses (mu+nv) not (mu-nv*nfp)
