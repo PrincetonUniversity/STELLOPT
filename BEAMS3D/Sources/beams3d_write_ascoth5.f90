@@ -30,7 +30,8 @@
                                     HDF5_CLOSE_ERR, BEAMS3D_VERSION, weight, e_beams, p_beams,&
                                     charge, Zatom, mass, ldepo, v_neut, &
                                     lcollision, pi, pi2, t_end_in, nprocs_beams, &
-                                    div_beams, mass_beams, Zatom_beams, dex_beams
+                                    div_beams, mass_beams, Zatom_beams, dex_beams, &
+                                    qid_str_saved
       USE safe_open_mod, ONLY: safe_open
       USE wall_mod, ONLY: nface,nvertex,face,vertex,ihit_array, wall_free
       USE beams3d_write_par
@@ -52,6 +53,7 @@
                         neutral_gid, wall_gid, marker_gid, qid_gid, &
                         nbi_gid, inj_gid
       INTEGER, ALLOCATABLE, DIMENSION(:) :: itemp
+      REAL :: qid_flt
       DOUBLE PRECISION :: rho_temp, s_temp, rho_max, dbl_temp
       DOUBLE PRECISION, ALLOCATABLE :: rtemp(:,:,:), r1dtemp(:)
       CHARACTER(LEN=10) ::  qid_str
@@ -76,6 +78,9 @@
                !           OPTIONS
                !--------------------------------------------------------------
                CALL h5gcreate_f(fid,'options', options_gid, ier)
+               CALL RANDOM_NUMBER(qid_flt)
+               WRITE(qid_str,'(i10.10)') FLOOR(qid_flt*1.0E9)
+               qid_str_saved = qid_str
                CALL write_att_hdf5(options_gid,'active',qid_str,ier)
                CALL h5gcreate_f(options_gid,'opt_'//qid_str, qid_gid, ier)
                CALL DATE_AND_TIME(DATE=temp_str8)
@@ -165,6 +170,8 @@
                !     So psi is TOROIDAL FLUX.
                !--------------------------------------------------------------
                CALL h5gcreate_f(fid,'bfield', bfield_gid, ier)
+               CALL RANDOM_NUMBER(qid_flt)
+               WRITE(qid_str,'(i10.10)') FLOOR(qid_flt*1.0E9)
                CALL write_att_hdf5(bfield_gid,'active',qid_str,ier)
                CALL h5gcreate_f(bfield_gid,'B_STS_'//qid_str, qid_gid, ier)
                CALL write_att_hdf5(qid_gid,'date',temp_str8,ier)
@@ -212,6 +219,8 @@
                !           E-FIELD
                !--------------------------------------------------------------
                CALL h5gcreate_f(fid,'efield', efield_gid, ier)
+               CALL RANDOM_NUMBER(qid_flt)
+               WRITE(qid_str,'(i10.10)') FLOOR(qid_flt*1.0E9)
                CALL write_att_hdf5(efield_gid,'active',qid_str,ier)
                CALL h5gcreate_f(efield_gid,'E_1DS_'//qid_str, qid_gid, ier)
                CALL write_att_hdf5(qid_gid,'date',temp_str8,ier)
@@ -249,6 +258,8 @@
                !           PLASMA
                !--------------------------------------------------------------
                CALL h5gcreate_f(fid,'plasma', plasma_gid, ier)
+               CALL RANDOM_NUMBER(qid_flt)
+               WRITE(qid_str,'(i10.10)') FLOOR(qid_flt*1.0E9)
                CALL write_att_hdf5(plasma_gid,'active',qid_str,ier)
                CALL h5gcreate_f(plasma_gid,'plasma_1DS_'//qid_str, qid_gid, ier)
                CALL write_att_hdf5(qid_gid,'date',temp_str8,ier)
@@ -289,6 +300,8 @@
                !           NEUTRAL
                !--------------------------------------------------------------
                CALL h5gcreate_f(fid,'neutral', neutral_gid, ier)
+               CALL RANDOM_NUMBER(qid_flt)
+               WRITE(qid_str,'(i10.10)') FLOOR(qid_flt*1.0E9)
                CALL write_att_hdf5(neutral_gid,'active',qid_str,ier)
                CALL h5gcreate_f(neutral_gid,'N0_3D_'//qid_str, qid_gid, ier)
                CALL write_att_hdf5(qid_gid,'date',temp_str8,ier)
@@ -320,6 +333,8 @@
                !           WALL
                !--------------------------------------------------------------
                CALL h5gcreate_f(fid,'wall', wall_gid, ier)
+               CALL RANDOM_NUMBER(qid_flt)
+               WRITE(qid_str,'(i10.10)') FLOOR(qid_flt*1.0E9)
                CALL write_att_hdf5(wall_gid,'active',qid_str,ier)
                CALL h5gcreate_f(wall_gid,'wall_3D_'//qid_str, qid_gid, ier)
                CALL write_att_hdf5(qid_gid,'date',temp_str8,ier)
@@ -363,6 +378,8 @@
                CALL open_hdf5('beams3d_ascot5_'//TRIM(id_string)//'.h5',fid,ier,LCREATE=.false.)
                IF (ier /= 0) CALL handle_err(HDF5_OPEN_ERR,'beams3d_ascot5_'//TRIM(id_string)//'.h5',ier)
                CALL h5gcreate_f(fid,'nbi', nbi_gid, ier)
+               CALL RANDOM_NUMBER(qid_flt)
+               WRITE(qid_str,'(i10.10)') FLOOR(qid_flt*1.0E9)
                CALL write_att_hdf5(nbi_gid,'active',qid_str,ier)
                CALL h5gcreate_f(nbi_gid,'nbi_'//qid_str, qid_gid, ier)
                CALL write_att_hdf5(qid_gid,'date',temp_str8,ier)
@@ -440,6 +457,8 @@
                !           MARKER
                !--------------------------------------------------------------
                CALL h5gcreate_f(fid,'marker', marker_gid, ier)
+               CALL RANDOM_NUMBER(qid_flt)
+               WRITE(qid_str,'(i10.10)') FLOOR(qid_flt*1.0E9)
                CALL write_att_hdf5(marker_gid,'active',qid_str,ier)
                CALL h5gcreate_f(marker_gid,'gc_'//qid_str, qid_gid, ier)
                CALL write_var_hdf5(qid_gid,'n',ier,INTVAR=kmax)
@@ -452,7 +471,7 @@
                !           Update options
                !--------------------------------------------------------------
                CALL h5gopen_f(fid,'options', options_gid, ier)
-               CALL h5gopen_f(options_gid,'opt_'//qid_str, qid_gid, ier)
+               CALL h5gopen_f(options_gid,'opt_'//qid_str_saved, qid_gid, ier)
                CALL write_var_hdf5(qid_gid,'DIST_MIN_VR',ier,DBLVAR=DBLE(-partvmax))
                CALL write_var_hdf5(qid_gid,'DIST_MAX_VR',ier,DBLVAR=DBLE(partvmax))
                CALL write_var_hdf5(qid_gid,'DIST_MIN_VPHI',ier,DBLVAR=DBLE(-partvmax))
@@ -474,6 +493,7 @@
                CALL close_hdf5(fid,ier)
                IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,'beams3d_ascot5_'//TRIM(id_string)//'.h5',ier)
             END IF
+            CALL MPI_BCAST(qid_str,10,MPI_CHARACTER,master,MPI_COMM_BEAMS,ierr_mpi)
             ALLOCATE(rtemp(k1:k2,13,1))
             k = k1
             DO i = d1, d2
