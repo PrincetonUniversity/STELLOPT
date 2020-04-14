@@ -40,6 +40,9 @@ MODULE beams3d_physics_mod
       DOUBLE PRECISION, PRIVATE, PARAMETER :: e_charge      = 1.60217662E-19 !e_c
       DOUBLE PRECISION, PRIVATE, PARAMETER :: sqrt_pi       = 1.7724538509   !pi^(1/2)
       DOUBLE PRECISION, PRIVATE, PARAMETER :: mpome         = 5.44602984424355D-4 !e_c
+      DOUBLE PRECISION, PRIVATE, PARAMETER :: zero          = 0.0D0 ! 0.0
+      DOUBLE PRECISION, PRIVATE, PARAMETER :: half          = 0.5D0 ! 1/2
+      DOUBLE PRECISION, PRIVATE, PARAMETER :: one           = 1.0D0 ! 1.0
 
       !-----------------------------------------------------------------
       !     SUBROUTINES
@@ -83,13 +86,6 @@ MODULE beams3d_physics_mod
          REAL*8 :: xparam, yparam, zparam, hx, hy, hz, hxi, hyi, hzi
          INTEGER, parameter :: ict(8)=(/1,0,0,0,0,0,0,0/)
          REAL*8 :: fval(1)
-
-         !--------------------------------------------------------------
-         !     Local Parameters
-         !--------------------------------------------------------------
-         DOUBLE PRECISION, PARAMETER :: zero = 0.0D0 ! 1.0
-         DOUBLE PRECISION, PARAMETER :: half = 0.5D0 ! 1/2
-         DOUBLE PRECISION, PARAMETER :: one  = 1.0D0 ! 1.0
 
          !--------------------------------------------------------------
          !     Begin Subroutine
@@ -288,8 +284,6 @@ MODULE beams3d_physics_mod
          !--------------------------------------------------------------
          INTEGER, PARAMETER :: num_depo = 256
          DOUBLE PRECISION, PARAMETER :: dl = 5D-3
-         DOUBLE PRECISION, PARAMETER :: one = 1.0D0
-         DOUBLE PRECISION, PARAMETER :: half = 0.5D0
          DOUBLE PRECISION, PARAMETER :: stepsize(3)=(/0.25,0.05,0.01/)
 
          !--------------------------------------------------------------
@@ -473,19 +467,19 @@ MODULE beams3d_physics_mod
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hx,hxi,hy,hyi,hz,hzi,&
                             TI4D(1,1,1,1),nr,nphi,nz)
-            tilocal(l) = fval(1)
+            tilocal(l) = MAX(fval(1),zero)
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hx,hxi,hy,hyi,hz,hzi,&
                             TE4D(1,1,1,1),nr,nphi,nz)
-            telocal(l) = fval(1)
+            telocal(l) = MAX(fval(1),zero)
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hx,hxi,hy,hyi,hz,hzi,&
                             NE4D(1,1,1,1),nr,nphi,nz)
-            nelocal(l) = fval(1)
+            nelocal(l) = MAX(fval(1),zero)
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hx,hxi,hy,hyi,hz,hzi,&
                             ZEFF4D(1,1,1,1),nr,nphi,nz)
-            zefflocal(l) = fval(1)
+            zefflocal(l) = MAX(fval(1),zero)
          END DO
          tilocal = tilocal*1D-3
          telocal = telocal*1D-3
