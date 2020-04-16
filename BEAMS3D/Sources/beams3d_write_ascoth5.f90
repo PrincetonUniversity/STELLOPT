@@ -48,7 +48,7 @@
 !          ier          Error Flag
 !          iunit        File ID
 !-----------------------------------------------------------------------
-      INTEGER :: ier, iunit, i, d1, d2, d3, k, k1, k2, kmax ,ider
+      INTEGER :: ier, iunit, i, d1, d2, d3, k, k1, k2, kmax ,ider, nphi1
       INTEGER(HID_T) :: options_gid, bfield_gid, efield_gid, plasma_gid, &
                         neutral_gid, wall_gid, marker_gid, qid_gid, &
                         nbi_gid, inj_gid
@@ -174,6 +174,7 @@
                !         rho[0] = sqrt( (psi - Bdata->psi0) / delta );
                !     So psi is TOROIDAL FLUX.
                !--------------------------------------------------------------
+               nphi1 = nphi-1 ! confirmed with Poincare plot
                CALL h5gcreate_f(fid,'bfield', bfield_gid, ier)
                CALL RANDOM_NUMBER(qid_flt)
                WRITE(qid_str,'(i10.10)') FLOOR(qid_flt*1.0E9)
@@ -182,7 +183,7 @@
                CALL write_att_hdf5(qid_gid,'date',temp_str8,ier)
                CALL write_att_hdf5(qid_gid,'description','Data initialized from BEAMS3D',ier)
                CALL write_var_hdf5(qid_gid,'b_nr',ier,INTVAR=nr)
-               CALL write_var_hdf5(qid_gid,'b_nphi',ier,INTVAR=nphi)
+               CALL write_var_hdf5(qid_gid,'b_nphi',ier,INTVAR=nphi1)
                CALL write_var_hdf5(qid_gid,'b_nz',ier,INTVAR=nz)
                CALL write_var_hdf5(qid_gid,'b_rmin',ier,DBLVAR=raxis(1))
                CALL write_var_hdf5(qid_gid,'b_rmax',ier,DBLVAR=raxis(nr))
@@ -191,7 +192,7 @@
                CALL write_var_hdf5(qid_gid,'b_phimin',ier,DBLVAR=phiaxis(1)*180/pi)
                CALL write_var_hdf5(qid_gid,'b_phimax',ier,DBLVAR=phiaxis(nphi)*180/pi)
                CALL write_var_hdf5(qid_gid,'psi_nr',ier,INTVAR=nr)
-               CALL write_var_hdf5(qid_gid,'psi_nphi',ier,INTVAR=nphi)
+               CALL write_var_hdf5(qid_gid,'psi_nphi',ier,INTVAR=nphi1)
                CALL write_var_hdf5(qid_gid,'psi_nz',ier,INTVAR=nz)
                CALL write_var_hdf5(qid_gid,'psi_rmin',ier,DBLVAR=raxis(1))
                CALL write_var_hdf5(qid_gid,'psi_rmax',ier,DBLVAR=raxis(nr))
@@ -199,23 +200,23 @@
                CALL write_var_hdf5(qid_gid,'psi_zmax',ier,DBLVAR=zaxis(nz))
                CALL write_var_hdf5(qid_gid,'psi_phimin',ier,DBLVAR=phiaxis(1)*180/pi)
                CALL write_var_hdf5(qid_gid,'psi_phimax',ier,DBLVAR=phiaxis(nphi)*180/pi)
-               CALL write_var_hdf5(qid_gid,'axis_nphi',ier,INTVAR=nphi)
+               CALL write_var_hdf5(qid_gid,'axis_nphi',ier,INTVAR=nphi1)
                CALL write_var_hdf5(qid_gid,'axis_phimin',ier,DBLVAR=phiaxis(1)*180/pi)
                CALL write_var_hdf5(qid_gid,'axis_phimax',ier,DBLVAR=phiaxis(nphi)*180/pi)
                CALL write_var_hdf5(qid_gid,'toroidalPeriods',ier,INTVAR=FLOOR(pi2/phiaxis(nphi)))
-               CALL write_var_hdf5(qid_gid,'axisr',nphi,ier,DBLVAR=req_axis)
-               CALL write_var_hdf5(qid_gid,'axisz',nphi,ier,DBLVAR=zeq_axis)
+               CALL write_var_hdf5(qid_gid,'axisr',nphi,ier,DBLVAR=req_axis(1:nphi1))
+               CALL write_var_hdf5(qid_gid,'axisz',nphi,ier,DBLVAR=zeq_axis(1:nphi1))
                CALL write_var_hdf5(qid_gid,'psi0',ier,DBLVAR=DBLE(0))
                CALL write_var_hdf5(qid_gid,'psi1',ier,DBLVAR=DBLE(phiedge_eq))
-               ALLOCATE(rtemp(nr,nphi,nz))
-               rtemp = RESHAPE(B_R,(/nr,nphi,nz/),ORDER=(/1,2,3/))
-               CALL write_var_hdf5(qid_gid,'br',nr,nphi,nz,ier,DBLVAR=rtemp)
-               rtemp = RESHAPE(B_PHI,(/nr,nphi,nz/),ORDER=(/1,2,3/))
-               CALL write_var_hdf5(qid_gid,'bphi',nr,nphi,nz,ier,DBLVAR=rtemp)
-               rtemp = RESHAPE(B_Z,(/nr,nphi,nz/),ORDER=(/1,2,3/))
-               CALL write_var_hdf5(qid_gid,'bz',nr,nphi,nz,ier,DBLVAR=rtemp)
-               rtemp = RESHAPE(S_ARR,(/nr,nphi,nz/),ORDER=(/1,2,3/))
-               CALL write_var_hdf5(qid_gid,'psi',nr,nphi,nz,ier,DBLVAR=rtemp*DBLE(phiedge_eq))
+               ALLOCATE(rtemp(nr,nphi1,nz))
+               rtemp = B_R(1:nr,1:nphi1,1:nz)
+               CALL write_var_hdf5(qid_gid,'br',nr,nphi1,nz,ier,DBLVAR=rtemp)
+               rtemp = B_PHI(1:nr,1:nphi1,1:nz)
+               CALL write_var_hdf5(qid_gid,'bphi',nr,nphi1,nz,ier,DBLVAR=rtemp)
+               rtemp = B_Z(1:nr,1:nphi1,1:nz)
+               CALL write_var_hdf5(qid_gid,'bz',nr,nphi1,nz,ier,DBLVAR=rtemp)
+               rtemp = S_ARR(1:nr,1:nphi1,1:nz)
+               CALL write_var_hdf5(qid_gid,'psi',nr,nphi1,nz,ier,DBLVAR=rtemp*DBLE(phiedge_eq))
                DEALLOCATE(rtemp)
                CALL h5gclose_f(qid_gid, ier)
                CALL h5gclose_f(bfield_gid, ier)
@@ -312,7 +313,7 @@
                CALL write_att_hdf5(qid_gid,'date',temp_str8,ier)
                CALL write_att_hdf5(qid_gid,'description','Data initialized from BEAMS3D',ier)
                CALL write_var_hdf5(qid_gid,'nr',ier,INTVAR=nr)
-               CALL write_var_hdf5(qid_gid,'nphi',ier,INTVAR=nphi)
+               CALL write_var_hdf5(qid_gid,'nphi',ier,INTVAR=nphi1)
                CALL write_var_hdf5(qid_gid,'nz',ier,INTVAR=nz)
                CALL write_var_hdf5(qid_gid,'rmin',ier,DBLVAR=raxis(1))
                CALL write_var_hdf5(qid_gid,'rmax',ier,DBLVAR=raxis(nr))
@@ -324,11 +325,10 @@
                CALL write_var_hdf5(qid_gid,'anum',ier,INTVAR=1)
                CALL write_var_hdf5(qid_gid,'znum',ier,INTVAR=1)
                CALL write_var_hdf5(qid_gid,'maxwellian',ier,INTVAR=1)
-               ALLOCATE(rtemp(nr,nphi,nz))
-               rtemp = RESHAPE(S_ARR,(/nr,nphi,nz/),ORDER=(/1,2,3/))
+               ALLOCATE(rtemp(nr,nphi1,nz))
                rtemp = 0
-               CALL write_var_hdf5(qid_gid,'density',nr,nphi,nz,ier,DBLVAR=rtemp)
-               CALL write_var_hdf5(qid_gid,'temperature',nr,nphi,nz,ier,DBLVAR=rtemp)
+               CALL write_var_hdf5(qid_gid,'density',nr,nphi1,nz,ier,DBLVAR=rtemp)
+               CALL write_var_hdf5(qid_gid,'temperature',nr,nphi1,nz,ier,DBLVAR=rtemp)
                DEALLOCATE(rtemp)
                CALL h5gclose_f(qid_gid, ier)
                CALL h5gclose_f(neutral_gid, ier)
