@@ -31,7 +31,7 @@
                                     charge, Zatom, mass, ldepo, v_neut, &
                                     lcollision, pi, pi2, t_end_in, nprocs_beams, &
                                     div_beams, mass_beams, Zatom_beams, dex_beams, &
-                                    qid_str_saved
+                                    qid_str_saved, lascotfl
       USE safe_open_mod, ONLY: safe_open
       USE wall_mod, ONLY: nface,nvertex,face,vertex,ihit_array, wall_free
       USE beams3d_write_par
@@ -48,7 +48,7 @@
 !          ier          Error Flag
 !          iunit        File ID
 !-----------------------------------------------------------------------
-      INTEGER :: ier, iunit, i, d1, d2, d3, k, k1, k2, kmax ,ider
+      INTEGER :: ier, iunit, i, d1, d2, d3, k, k1, k2, kmax ,ider, nphi1
       INTEGER(HID_T) :: options_gid, bfield_gid, efield_gid, plasma_gid, &
                         neutral_gid, wall_gid, marker_gid, qid_gid, &
                         nbi_gid, inj_gid
@@ -68,8 +68,8 @@
       SELECT CASE (TRIM(write_type))
          CASE('INIT')
             IF (myworkid == master) THEN
-               CALL open_hdf5('beams3d_ascot5_'//TRIM(id_string)//'.h5',fid,ier,LCREATE=.true.)
-               IF (ier /= 0) CALL handle_err(HDF5_OPEN_ERR,'beams3d_ascot5_'//TRIM(id_string)//'.h5',ier)
+               CALL open_hdf5('ascot5_'//TRIM(id_string)//'.h5',fid,ier,LCREATE=.true.)
+               IF (ier /= 0) CALL handle_err(HDF5_OPEN_ERR,'ascot5_'//TRIM(id_string)//'.h5',ier)
 
                ! Define rho_max for use later on
                rho_max = SQRT(MAXVAL(MAXVAL(MAXVAL(S_ARR,3),2),1))
@@ -86,8 +86,10 @@
                CALL DATE_AND_TIME(DATE=temp_str8)
                CALL write_att_hdf5(qid_gid,'date',temp_str8,ier)
                CALL write_att_hdf5(qid_gid,'description','Data initialized from BEAMS3D',ier)
-               CALL write_var_hdf5(qid_gid,'SIM_MODE',ier,DBLVAR=DBLE(2))
-               CALL write_var_hdf5(qid_gid,'ENABLE_ADAPTIVE',ier,DBLVAR=DBLE(0))
+               i = 2; IF (lascotfl) i =4
+               CALL write_var_hdf5(qid_gid,'SIM_MODE',ier,DBLVAR=DBLE(i))
+               i = 0; IF (lascotfl) i =1
+               CALL write_var_hdf5(qid_gid,'ENABLE_ADAPTIVE',ier,DBLVAR=DBLE(i))
                CALL write_var_hdf5(qid_gid,'RECORD_MODE',ier,DBLVAR=DBLE(0))
                CALL write_var_hdf5(qid_gid,'FIXEDSTEP_USE_USERDEFINED',ier,DBLVAR=DBLE(1))
                CALL write_var_hdf5(qid_gid,'FIXEDSTEP_USERDEFINED',ier,DBLVAR=DBLE(5.0E-8))
@@ -97,7 +99,7 @@
                CALL write_var_hdf5(qid_gid,'ADAPTIVE_MAX_DRHO',ier,DBLVAR=DBLE(1.0))
                CALL write_var_hdf5(qid_gid,'ADAPTIVE_MAX_DPHI',ier,DBLVAR=DBLE(2))
                CALL write_var_hdf5(qid_gid,'ENABLE_ORBIT_FOLLOWING',ier,DBLVAR=DBLE(1))
-               IF (lcollision) THEN
+               IF (lcollision .and. .not. lascotfl) THEN
                   CALL write_var_hdf5(qid_gid,'ENABLE_COULOMB_COLLISIONS',ier,DBLVAR=DBLE(1))
                   CALL write_var_hdf5(qid_gid,'DISABLE_ENERGY_CCOLL',ier,DBLVAR=DBLE(0))
                   CALL write_var_hdf5(qid_gid,'DISABLE_PITCH_CCOLL',ier,DBLVAR=DBLE(0))
@@ -124,7 +126,8 @@
                CALL write_var_hdf5(qid_gid,'ENDCOND_MAX_TOROIDALORBS',ier,DBLVAR=DBLE(100))
                CALL write_var_hdf5(qid_gid,'ENABLE_DIST_5D',ier,DBLVAR=DBLE(0))
                CALL write_var_hdf5(qid_gid,'ENABLE_DIST_6D',ier,DBLVAR=DBLE(0))
-               CALL write_var_hdf5(qid_gid,'ENABLE_DIST_RHO5D',ier,DBLVAR=DBLE(1))
+               i = 1; IF (lascotfl) i =0
+               CALL write_var_hdf5(qid_gid,'ENABLE_DIST_RHO5D',ier,DBLVAR=DBLE(i))
                CALL write_var_hdf5(qid_gid,'ENABLE_DIST_RHO6D',ier,DBLVAR=DBLE(0))
                CALL write_var_hdf5(qid_gid,'DIST_MIN_R',ier,DBLVAR=raxis(1))
                CALL write_var_hdf5(qid_gid,'DIST_MAX_R',ier,DBLVAR=raxis(nr))
@@ -153,8 +156,10 @@
                CALL write_var_hdf5(qid_gid,'DIST_NBIN_THETA',ier,DBLVAR=DBLE(16))
                CALL write_var_hdf5(qid_gid,'DIST_NBIN_TIME',ier,DBLVAR=DBLE(1))
                CALL write_var_hdf5(qid_gid,'DIST_NBIN_CHARGE',ier,DBLVAR=DBLE(1))
-               CALL write_var_hdf5(qid_gid,'ENABLE_ORBITWRITE',ier,DBLVAR=DBLE(0))
-               CALL write_var_hdf5(qid_gid,'ORBITWRITE_MODE',ier,DBLVAR=DBLE(1))
+               i = 0; IF (lascotfl) i =1
+               CALL write_var_hdf5(qid_gid,'ENABLE_ORBITWRITE',ier,DBLVAR=DBLE(i))
+               i = 1; IF (lascotfl) i =0
+               CALL write_var_hdf5(qid_gid,'ORBITWRITE_MODE',ier,DBLVAR=DBLE(i))
                CALL write_var_hdf5(qid_gid,'ORBITWRITE_NPOINT',ier,DBLVAR=DBLE(npoinc))
                CALL write_var_hdf5(qid_gid,'ORBITWRITE_INTERVAL',ier,DBLVAR=DBLE(MAXVAL(t_end_in))/DBLE(npoinc))
                CALL write_var_hdf5(qid_gid,'ORBITWRITE_TOROIDALANGLES',ier,DBLVAR=DBLE(0))
@@ -169,6 +174,7 @@
                !         rho[0] = sqrt( (psi - Bdata->psi0) / delta );
                !     So psi is TOROIDAL FLUX.
                !--------------------------------------------------------------
+               nphi1 = nphi-1 ! confirmed with Poincare plot
                CALL h5gcreate_f(fid,'bfield', bfield_gid, ier)
                CALL RANDOM_NUMBER(qid_flt)
                WRITE(qid_str,'(i10.10)') FLOOR(qid_flt*1.0E9)
@@ -177,7 +183,7 @@
                CALL write_att_hdf5(qid_gid,'date',temp_str8,ier)
                CALL write_att_hdf5(qid_gid,'description','Data initialized from BEAMS3D',ier)
                CALL write_var_hdf5(qid_gid,'b_nr',ier,INTVAR=nr)
-               CALL write_var_hdf5(qid_gid,'b_nphi',ier,INTVAR=nphi)
+               CALL write_var_hdf5(qid_gid,'b_nphi',ier,INTVAR=nphi1)
                CALL write_var_hdf5(qid_gid,'b_nz',ier,INTVAR=nz)
                CALL write_var_hdf5(qid_gid,'b_rmin',ier,DBLVAR=raxis(1))
                CALL write_var_hdf5(qid_gid,'b_rmax',ier,DBLVAR=raxis(nr))
@@ -186,7 +192,7 @@
                CALL write_var_hdf5(qid_gid,'b_phimin',ier,DBLVAR=phiaxis(1)*180/pi)
                CALL write_var_hdf5(qid_gid,'b_phimax',ier,DBLVAR=phiaxis(nphi)*180/pi)
                CALL write_var_hdf5(qid_gid,'psi_nr',ier,INTVAR=nr)
-               CALL write_var_hdf5(qid_gid,'psi_nphi',ier,INTVAR=nphi)
+               CALL write_var_hdf5(qid_gid,'psi_nphi',ier,INTVAR=nphi1)
                CALL write_var_hdf5(qid_gid,'psi_nz',ier,INTVAR=nz)
                CALL write_var_hdf5(qid_gid,'psi_rmin',ier,DBLVAR=raxis(1))
                CALL write_var_hdf5(qid_gid,'psi_rmax',ier,DBLVAR=raxis(nr))
@@ -194,23 +200,23 @@
                CALL write_var_hdf5(qid_gid,'psi_zmax',ier,DBLVAR=zaxis(nz))
                CALL write_var_hdf5(qid_gid,'psi_phimin',ier,DBLVAR=phiaxis(1)*180/pi)
                CALL write_var_hdf5(qid_gid,'psi_phimax',ier,DBLVAR=phiaxis(nphi)*180/pi)
-               CALL write_var_hdf5(qid_gid,'axis_nphi',ier,INTVAR=nphi)
+               CALL write_var_hdf5(qid_gid,'axis_nphi',ier,INTVAR=nphi1)
                CALL write_var_hdf5(qid_gid,'axis_phimin',ier,DBLVAR=phiaxis(1)*180/pi)
                CALL write_var_hdf5(qid_gid,'axis_phimax',ier,DBLVAR=phiaxis(nphi)*180/pi)
                CALL write_var_hdf5(qid_gid,'toroidalPeriods',ier,INTVAR=FLOOR(pi2/phiaxis(nphi)))
-               CALL write_var_hdf5(qid_gid,'axisr',nphi,ier,DBLVAR=req_axis)
-               CALL write_var_hdf5(qid_gid,'axisz',nphi,ier,DBLVAR=zeq_axis)
+               CALL write_var_hdf5(qid_gid,'axisr',nphi,ier,DBLVAR=req_axis(1:nphi1))
+               CALL write_var_hdf5(qid_gid,'axisz',nphi,ier,DBLVAR=zeq_axis(1:nphi1))
                CALL write_var_hdf5(qid_gid,'psi0',ier,DBLVAR=DBLE(0))
                CALL write_var_hdf5(qid_gid,'psi1',ier,DBLVAR=DBLE(phiedge_eq))
-               ALLOCATE(rtemp(nr,nphi,nz))
-               rtemp = RESHAPE(B_R,(/nr,nphi,nz/),ORDER=(/1,2,3/))
-               CALL write_var_hdf5(qid_gid,'br',nr,nphi,nz,ier,DBLVAR=rtemp)
-               rtemp = RESHAPE(B_PHI,(/nr,nphi,nz/),ORDER=(/1,2,3/))
-               CALL write_var_hdf5(qid_gid,'bphi',nr,nphi,nz,ier,DBLVAR=rtemp)
-               rtemp = RESHAPE(B_Z,(/nr,nphi,nz/),ORDER=(/1,2,3/))
-               CALL write_var_hdf5(qid_gid,'bz',nr,nphi,nz,ier,DBLVAR=rtemp)
-               rtemp = RESHAPE(S_ARR,(/nr,nphi,nz/),ORDER=(/1,2,3/))
-               CALL write_var_hdf5(qid_gid,'psi',nr,nphi,nz,ier,DBLVAR=rtemp*DBLE(phiedge_eq))
+               ALLOCATE(rtemp(nr,nphi1,nz))
+               rtemp = B_R(1:nr,1:nphi1,1:nz)
+               CALL write_var_hdf5(qid_gid,'br',nr,nphi1,nz,ier,DBLVAR=rtemp)
+               rtemp = B_PHI(1:nr,1:nphi1,1:nz)
+               CALL write_var_hdf5(qid_gid,'bphi',nr,nphi1,nz,ier,DBLVAR=rtemp)
+               rtemp = B_Z(1:nr,1:nphi1,1:nz)
+               CALL write_var_hdf5(qid_gid,'bz',nr,nphi1,nz,ier,DBLVAR=rtemp)
+               rtemp = S_ARR(1:nr,1:nphi1,1:nz)
+               CALL write_var_hdf5(qid_gid,'psi',nr,nphi1,nz,ier,DBLVAR=rtemp*DBLE(phiedge_eq))
                DEALLOCATE(rtemp)
                CALL h5gclose_f(qid_gid, ier)
                CALL h5gclose_f(bfield_gid, ier)
@@ -307,7 +313,7 @@
                CALL write_att_hdf5(qid_gid,'date',temp_str8,ier)
                CALL write_att_hdf5(qid_gid,'description','Data initialized from BEAMS3D',ier)
                CALL write_var_hdf5(qid_gid,'nr',ier,INTVAR=nr)
-               CALL write_var_hdf5(qid_gid,'nphi',ier,INTVAR=nphi)
+               CALL write_var_hdf5(qid_gid,'nphi',ier,INTVAR=nphi1)
                CALL write_var_hdf5(qid_gid,'nz',ier,INTVAR=nz)
                CALL write_var_hdf5(qid_gid,'rmin',ier,DBLVAR=raxis(1))
                CALL write_var_hdf5(qid_gid,'rmax',ier,DBLVAR=raxis(nr))
@@ -319,11 +325,10 @@
                CALL write_var_hdf5(qid_gid,'anum',ier,INTVAR=1)
                CALL write_var_hdf5(qid_gid,'znum',ier,INTVAR=1)
                CALL write_var_hdf5(qid_gid,'maxwellian',ier,INTVAR=1)
-               ALLOCATE(rtemp(nr,nphi,nz))
-               rtemp = RESHAPE(S_ARR,(/nr,nphi,nz/),ORDER=(/1,2,3/))
+               ALLOCATE(rtemp(nr,nphi1,nz))
                rtemp = 0
-               CALL write_var_hdf5(qid_gid,'density',nr,nphi,nz,ier,DBLVAR=rtemp)
-               CALL write_var_hdf5(qid_gid,'temperature',nr,nphi,nz,ier,DBLVAR=rtemp)
+               CALL write_var_hdf5(qid_gid,'density',nr,nphi1,nz,ier,DBLVAR=rtemp)
+               CALL write_var_hdf5(qid_gid,'temperature',nr,nphi1,nz,ier,DBLVAR=rtemp)
                DEALLOCATE(rtemp)
                CALL h5gclose_f(qid_gid, ier)
                CALL h5gclose_f(neutral_gid, ier)
@@ -367,7 +372,7 @@
 
                ! Close file
                CALL close_hdf5(fid,ier)
-               IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,'beams3d_ascot5_'//TRIM(id_string)//'.h5',ier)
+               IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,'ascot5_'//TRIM(id_string)//'.h5',ier)
             END IF
          CASE('BBNBI')
             !--------------------------------------------------------------
@@ -375,8 +380,8 @@
             !           Note BEAMS3D assumes each beam represents an energy
             !--------------------------------------------------------------
             IF (myworkid == master) THEN
-               CALL open_hdf5('beams3d_ascot5_'//TRIM(id_string)//'.h5',fid,ier,LCREATE=.false.)
-               IF (ier /= 0) CALL handle_err(HDF5_OPEN_ERR,'beams3d_ascot5_'//TRIM(id_string)//'.h5',ier)
+               CALL open_hdf5('ascot5_'//TRIM(id_string)//'.h5',fid,ier,LCREATE=.false.)
+               IF (ier /= 0) CALL handle_err(HDF5_OPEN_ERR,'ascot5_'//TRIM(id_string)//'.h5',ier)
                CALL h5gcreate_f(fid,'nbi', nbi_gid, ier)
                CALL RANDOM_NUMBER(qid_flt)
                WRITE(qid_str,'(i10.10)') FLOOR(qid_flt*1.0E9)
@@ -429,7 +434,7 @@
 
                ! Close File
                CALL close_hdf5(fid,ier)
-               IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,'beams3d_ascot5_'//TRIM(id_string)//'.h5',ier)
+               IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,'ascot5_'//TRIM(id_string)//'.h5',ier)
             END IF
 
          CASE('MARKER')
@@ -451,8 +456,8 @@
             kmax = SUM(itemp)
             DEALLOCATE(itemp)
             IF (myworkid == master) THEN
-               CALL open_hdf5('beams3d_ascot5_'//TRIM(id_string)//'.h5',fid,ier,LCREATE=.false.)
-               IF (ier /= 0) CALL handle_err(HDF5_OPEN_ERR,'beams3d_ascot5_'//TRIM(id_string)//'.h5',ier)
+               CALL open_hdf5('ascot5_'//TRIM(id_string)//'.h5',fid,ier,LCREATE=.false.)
+               IF (ier /= 0) CALL handle_err(HDF5_OPEN_ERR,'ascot5_'//TRIM(id_string)//'.h5',ier)
                !--------------------------------------------------------------
                !           MARKER
                !--------------------------------------------------------------
@@ -491,7 +496,7 @@
                CALL h5gclose_f(options_gid, ier)
                ! Close file
                CALL close_hdf5(fid,ier)
-               IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,'beams3d_ascot5_'//TRIM(id_string)//'.h5',ier)
+               IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,'ascot5_'//TRIM(id_string)//'.h5',ier)
             END IF
             CALL MPI_BCAST(qid_str,10,MPI_CHARACTER,master,MPI_COMM_BEAMS,ierr_mpi)
             ALLOCATE(rtemp(k1:k2,13,1))
@@ -532,6 +537,91 @@
             CALL beams3d_write1d_parhdf5( 1, kmax, k1, k2, '/marker/gc_'//qid_str//'/weight', DBLVAR=rtemp(:,11,1))
             CALL beams3d_write1d_parhdf5( 1, kmax, k1, k2, '/marker/gc_'//qid_str//'/time',   DBLVAR=rtemp(:,12,1))
             CALL beams3d_write1d_parhdf5( 1, kmax, k1, k2, '/marker/gc_'//qid_str//'/id',     INTVAR=INT(rtemp(:,13,1)))
+            DEALLOCATE(rtemp)
+
+         CASE('FIELDLINES')
+            ! For now we assume we will only run this in deposition mode
+            ! so that means we look at index (1,i) since
+            !    0: starting point
+            !    1: Ionization point (or wall)
+            !    2: Gyrocenter
+            d1 = LBOUND(R_lines,DIM=2)
+            d2 = UBOUND(R_lines,DIM=2)
+            d3 = 0
+            ALLOCATE(itemp(nprocs_beams))
+            itemp = 0
+            IF (lbeam) d3 = 2
+            itemp(myworkid+1) = COUNT(end_state(d1:d2).ne.3) ! Don't count shinethrough particles
+            CALL MPI_ALLREDUCE(MPI_IN_PLACE, itemp, nprocs_beams, MPI_INTEGER, MPI_SUM, MPI_COMM_BEAMS, ierr_mpi)
+            k2 = SUM(itemp(1:myworkid+1))
+            k1 = k2 - itemp(myworkid+1) + 1
+            kmax = SUM(itemp)
+            DEALLOCATE(itemp)
+            IF (myworkid == master) THEN
+               CALL open_hdf5('ascot5_'//TRIM(id_string)//'.h5',fid,ier,LCREATE=.false.)
+               IF (ier /= 0) CALL handle_err(HDF5_OPEN_ERR,'ascot5_'//TRIM(id_string)//'.h5',ier)
+               !--------------------------------------------------------------
+               !           MARKER
+               !--------------------------------------------------------------
+               CALL h5gcreate_f(fid,'marker', marker_gid, ier)
+               CALL RANDOM_NUMBER(qid_flt)
+               WRITE(qid_str,'(i10.10)') FLOOR(qid_flt*1.0E9)
+               CALL write_att_hdf5(marker_gid,'active',qid_str,ier)
+               CALL h5gcreate_f(marker_gid,'fl_'//qid_str, qid_gid, ier)
+               CALL write_var_hdf5(qid_gid,'n',ier,INTVAR=kmax)
+               CALL DATE_AND_TIME(DATE=temp_str8)
+               CALL write_att_hdf5(qid_gid,'date',temp_str8,ier)
+               CALL write_att_hdf5(qid_gid,'description','Data initialized from BEAMS3D',ier)
+               CALL h5gclose_f(qid_gid, ier)
+               CALL h5gclose_f(marker_gid, ier)
+               !--------------------------------------------------------------
+               !           Update options
+               !--------------------------------------------------------------
+               CALL h5gopen_f(fid,'options', options_gid, ier)
+               CALL h5gopen_f(options_gid,'opt_'//qid_str_saved, qid_gid, ier)
+               CALL write_var_hdf5(qid_gid,'DIST_MIN_VR',ier,DBLVAR=DBLE(-partvmax))
+               CALL write_var_hdf5(qid_gid,'DIST_MAX_VR',ier,DBLVAR=DBLE(partvmax))
+               CALL write_var_hdf5(qid_gid,'DIST_MIN_VPHI',ier,DBLVAR=DBLE(-partvmax))
+               CALL write_var_hdf5(qid_gid,'DIST_MAX_VPHI',ier,DBLVAR=DBLE(partvmax))
+               CALL write_var_hdf5(qid_gid,'DIST_MIN_VZ',ier,DBLVAR=DBLE(-partvmax))
+               CALL write_var_hdf5(qid_gid,'DIST_MAX_VZ',ier,DBLVAR=DBLE(partvmax))
+               CALL write_var_hdf5(qid_gid,'DIST_MIN_VPA',ier,DBLVAR=DBLE(-partvmax))
+               CALL write_var_hdf5(qid_gid,'DIST_MAX_VPA',ier,DBLVAR=DBLE(partvmax))
+               CALL write_var_hdf5(qid_gid,'DIST_MIN_VPE',ier,DBLVAR=DBLE(0))
+               CALL write_var_hdf5(qid_gid,'DIST_MAX_VPE',ier,DBLVAR=DBLE(partvmax))
+               CALL write_var_hdf5(qid_gid,'DIST_NBIN_VR',ier,DBLVAR=DBLE(ns_prof4))
+               CALL write_var_hdf5(qid_gid,'DIST_NBIN_VPHI',ier,DBLVAR=DBLE(ns_prof4))
+               CALL write_var_hdf5(qid_gid,'DIST_NBIN_VZ',ier,DBLVAR=DBLE(ns_prof4))
+               CALL write_var_hdf5(qid_gid,'DIST_NBIN_VPA',ier,DBLVAR=DBLE(ns_prof4))
+               CALL write_var_hdf5(qid_gid,'DIST_NBIN_VPE',ier,DBLVAR=DBLE(ns_prof5))
+               CALL h5gclose_f(qid_gid, ier)
+               CALL h5gclose_f(options_gid, ier)
+               ! Close file
+               CALL close_hdf5(fid,ier)
+               IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,'ascot5_'//TRIM(id_string)//'.h5',ier)
+            END IF
+            CALL MPI_BCAST(qid_str,10,MPI_CHARACTER,master,MPI_COMM_BEAMS,ierr_mpi)
+            ALLOCATE(rtemp(k1:k2,7,1))
+            k = k1
+            DO i = d1, d2
+               IF (end_state(i) == 3) CYCLE
+               rtemp(k,1,1) = R_lines(d3,i)
+               rtemp(k,2,1) = PHI_lines(d3,i)*180/pi
+               rtemp(k,3,1) = Z_lines(d3,i)
+               dbl_temp     = 2*B_lines(d3,i)*moment_lines(d3,i)/mass(i) ! V_perp^2
+               rtemp(k,4,1) = vll_lines(d3,i)/SQRT(dbl_temp+vll_lines(d3,i)*vll_lines(d3,i)) ! pitch
+               rtemp(k,5,1) = weight(i) ! weight
+               rtemp(k,6,1) = 0.0 ! time
+               rtemp(k,7,1) = k
+               k=k+1
+            END DO
+            CALL beams3d_write1d_parhdf5( 1, kmax, k1, k2, '/marker/fl_'//qid_str//'/r',      DBLVAR=rtemp(:,1,1))
+            CALL beams3d_write1d_parhdf5( 1, kmax, k1, k2, '/marker/fl_'//qid_str//'/phi',    DBLVAR=rtemp(:,2,1))
+            CALL beams3d_write1d_parhdf5( 1, kmax, k1, k2, '/marker/fl_'//qid_str//'/z',      DBLVAR=rtemp(:,3,1))
+            CALL beams3d_write1d_parhdf5( 1, kmax, k1, k2, '/marker/fl_'//qid_str//'/pitch',  DBLVAR=rtemp(:,4,1))
+            CALL beams3d_write1d_parhdf5( 1, kmax, k1, k2, '/marker/fl_'//qid_str//'/weight', DBLVAR=rtemp(:,5,1))
+            CALL beams3d_write1d_parhdf5( 1, kmax, k1, k2, '/marker/fl_'//qid_str//'/time',   DBLVAR=rtemp(:,6,1))
+            CALL beams3d_write1d_parhdf5( 1, kmax, k1, k2, '/marker/fl_'//qid_str//'/id',     INTVAR=INT(rtemp(:,7,1)))
             DEALLOCATE(rtemp)
       END SELECT
 

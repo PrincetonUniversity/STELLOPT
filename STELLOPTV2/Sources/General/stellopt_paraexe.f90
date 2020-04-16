@@ -61,7 +61,7 @@
             lrestart_grid_beams => lrestart_grid, lrestart_particles_beams => lrestart_particles, &
             lbeam_simple_beams => lbeam_simple, &
             lplasma_only_beams => lplasma_only, lascot4_beams => lascot4, &
-            lbbnbi_beams => lbbnbi, &
+            lbbnbi_beams => lbbnbi, lascotfl_beams => lascotfl, &
             lcollision_beams => lcollision, lw7x_beams => lw7x, &
             coil_string_beams => coil_string, mgrid_string_beams => mgrid_string,&
             vessel_string_beams => vessel_string, restart_string_beams => restart_string, &
@@ -300,6 +300,7 @@
                lcoil_beams        = .FALSE.
                lmgrid_beams       = .FALSE.
                lascot_beams       = .FALSE.
+               lascotfl_beams     = .FALSE.
                lascot4_beams      = .FALSE.
                lbbnbi_beams       = .FALSE.
                lraw_beams         = .FALSE.
