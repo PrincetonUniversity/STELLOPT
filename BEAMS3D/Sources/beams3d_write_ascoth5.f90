@@ -72,7 +72,7 @@
                IF (ier /= 0) CALL handle_err(HDF5_OPEN_ERR,'ascot5_'//TRIM(id_string)//'.h5',ier)
 
                ! Define rho_max for use later on
-               rho_max = SQRT(MAXVAL(MAXVAL(MAXVAL(S_ARR,3),2),1))
+               rho_max = SQRT(MAXVAL(MAXVAL(MAXVAL(S_ARR,3),2),1))*1.2
 
                !--------------------------------------------------------------
                !           OPTIONS
@@ -206,7 +206,7 @@
                CALL write_var_hdf5(qid_gid,'toroidalPeriods',ier,INTVAR=FLOOR(pi2/phiaxis(nphi)))
                CALL write_var_hdf5(qid_gid,'axisr',nphi,ier,DBLVAR=req_axis(1:nphi1))
                CALL write_var_hdf5(qid_gid,'axisz',nphi,ier,DBLVAR=zeq_axis(1:nphi1))
-               CALL write_var_hdf5(qid_gid,'psi0',ier,DBLVAR=DBLE(0))
+               CALL write_var_hdf5(qid_gid,'psi0',ier,DBLVAR=DBLE(-1.0E-3)) ! This is because B_STS isn't that 
                CALL write_var_hdf5(qid_gid,'psi1',ier,DBLVAR=DBLE(phiedge_eq))
                ALLOCATE(rtemp(nr,nphi1,nz))
                rtemp = B_R(1:nr,1:nphi1,1:nz)
