@@ -449,7 +449,7 @@
             ALLOCATE(itemp(nprocs_beams))
             itemp = 0
             IF (lbeam) d3 = 2
-            itemp(myworkid+1) = COUNT(end_state(d1:d2).ge.3) ! Don't count shinethrough particles or port particles
+            itemp(myworkid+1) = COUNT(end_state(d1:d2).lt.3) ! Don't count shinethrough particles or port particles
             CALL MPI_ALLREDUCE(MPI_IN_PLACE, itemp, nprocs_beams, MPI_INTEGER, MPI_SUM, MPI_COMM_BEAMS, ierr_mpi)
             k2 = SUM(itemp(1:myworkid+1))
             k1 = k2 - itemp(myworkid+1) + 1
@@ -551,7 +551,7 @@
             ALLOCATE(itemp(nprocs_beams))
             itemp = 0
             IF (lbeam) d3 = 2
-            itemp(myworkid+1) = COUNT(end_state(d1:d2).ge.3) ! Don't count shinethrough particles
+            itemp(myworkid+1) = COUNT(end_state(d1:d2).lt.3) ! Don't count shinethrough particles
             CALL MPI_ALLREDUCE(MPI_IN_PLACE, itemp, nprocs_beams, MPI_INTEGER, MPI_SUM, MPI_COMM_BEAMS, ierr_mpi)
             k2 = SUM(itemp(1:myworkid+1))
             k1 = k2 - itemp(myworkid+1) + 1
