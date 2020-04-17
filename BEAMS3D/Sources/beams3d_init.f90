@@ -358,7 +358,7 @@
       END IF
 
       ! Determine maximum particle velocity
-      partvmax=MAXVAL(ABS(vll_start))*3.0/2.0
+      partvmax=MAXVAL(ABS(vll_start))*6.0/5.0
 
 
       ! Do a reality check
