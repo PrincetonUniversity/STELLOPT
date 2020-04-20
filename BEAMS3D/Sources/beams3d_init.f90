@@ -51,6 +51,7 @@
       bcs1=(/ 0, 0/)
       bcs2=(/-1,-1/)
       bcs3=(/ 0, 0/)
+      partvmax = 0.0
       
       ! If we pass a vessel then we want to use it for NBI injection
       lvessel_beam = .FALSE.
@@ -358,7 +359,7 @@
       END IF
 
       ! Determine maximum particle velocity
-      partvmax=MAXVAL(ABS(vll_start))*6.0/5.0
+      partvmax=MAX(MAXVAL(ABS(vll_start))*6.0/5.0,partvmax)
 
 
       ! Do a reality check
