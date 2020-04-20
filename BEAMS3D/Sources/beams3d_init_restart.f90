@@ -29,6 +29,7 @@
       LOGICAL :: lplasma_old, ldepo_old
       INTEGER :: i, k, ier, npoinc_extract, npoinc_save, state_flag
       INTEGER, DIMENSION(:), ALLOCATABLE :: beam2
+      REAL(rprec) :: vpartmax
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: mass2, charge2, Zatom2, &
                                                 weight2, t_end2
 !-----------------------------------------------------------------------
@@ -49,6 +50,9 @@
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'nparticles',ier)
          CALL read_scalar_hdf5(fid,'npoinc',ier,INTVAR=npoinc)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'npoinc',ier)
+         CALL read_scalar_hdf5(fid,'partvmax',ier,DBLVAR=vpartmax)
+         partvmax = MAX(partvmax,vpartmax)
+         IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'partvmax',ier)
          IF (ALLOCATED(v_neut)) DEALLOCATE(v_neut)
          IF (ALLOCATED(mass)) DEALLOCATE(mass)
          IF (ALLOCATED(charge)) DEALLOCATE(charge)
