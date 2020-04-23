@@ -53,8 +53,9 @@
       CHARACTER(LEN=10) ::  qid_str
       CHARACTER(LEN=8) :: temp_str8
 
-
+      DOUBLE PRECISION, PARAMETER :: ascot4_pi      = 3.141592653589793238462643383280
       DOUBLE PRECISION, PARAMETER :: e_charge      = 1.60217662E-19 !e_c
+      DOUBLE PRECISION, PARAMETER :: inv_amu       = 6.02214076208E+26 ! 1./AMU [1/kg]
 !-----------------------------------------------------------------------
 !     Begin Subroutine
 !-----------------------------------------------------------------------
@@ -87,7 +88,7 @@
                WHERE(rtemp < 1.0E-3) rtemp = 1.0E-3
                CALL write_var_hdf5(qid_gid,'s',nr,nphi,nz,ier,DBLVAR=rtemp)
                DEALLOCATE(rtemp)
-               CALL write_var_hdf5(qid_gid,'phi',nphi,ier,DBLVAR=360*phiaxis/pi2)
+               CALL write_var_hdf5(qid_gid,'phi',nphi,ier,DBLVAR=180*phiaxis/ascot4_pi)
                CALL write_var_hdf5(qid_gid,'r',nr,ier,DBLVAR=raxis)
                CALL write_var_hdf5(qid_gid,'z',nz,ier,DBLVAR=zaxis)
                CALL write_var_hdf5(qid_gid,'toroidalPeriods',ier,INTVAR=FLOOR(pi2/phiaxis(nphi)))
@@ -99,7 +100,7 @@
                   d2 = (i)*(nphi-1)
                   rtemp(d1:d2,1,1)=req_axis(1:(nphi-1))
                   rtemp(d1:d2,2,1)=zeq_axis(1:(nphi-1))
-                  rtemp(d1:d2,3,1)=360*(phiaxis(1:(nphi-1))+(i-1)*pi2/d3)/pi2
+                  rtemp(d1:d2,3,1)=180*(phiaxis(1:(nphi-1))+2*(i-1)*ascot4_pi/d3)/ascot4_pi
                END DO
                rtemp((nphi-1)*d3+1,1:2,1) = rtemp(1,1:2,1)
                rtemp((nphi-1)*d3+1,3,1) = 360
@@ -220,37 +221,40 @@
             d1 = LBOUND(R_lines,DIM=2)
             d2 = UBOUND(R_lines,DIM=2)
             d3 = 0
-            IF (lbeam) d3 = 1 ! ASCOT4 wants the neutral information
+            IF (lbeam) d3 = 2 ! Give ASCOT4 the gyrocenter
             ALLOCATE(i1dtemp(nprocs_beams))
             i1dtemp = 0
-            i1dtemp(myworkid+1) = COUNT(end_state(d1:d2)==0)
+            i1dtemp(myworkid+1) = COUNT(end_state(d1:d2).lt.3)
             CALL MPI_ALLREDUCE(MPI_IN_PLACE, i1dtemp, nprocs_beams, MPI_INTEGER, MPI_SUM, MPI_COMM_BEAMS, ierr_mpi)
             k2 = SUM(i1dtemp(1:myworkid+1))
             k1 = k2 - i1dtemp(myworkid+1) + 1
             kmax = SUM(i1dtemp)
             DEALLOCATE(i1dtemp)
-            ALLOCATE(rtemp(k1:k2,16,1))
+            ALLOCATE(rtemp(k1:k2,14,1))
             k = k1
             DO i = d1, d2
-               IF (end_state(i)>0) CYCLE
-               rtemp(k,1,1) = NINT(mass(i)*5.97863320194E26) ! Anum
-               rtemp(k,2,1) = mass(i)*5.97863320194E26 ! mass
+               IF (end_state(i).ge.3) CYCLE
+               rtemp(k,1,1) = NINT(mass(i)*inv_amu) ! Anum
+               rtemp(k,2,1) = mass(i)*inv_amu ! mass
                rtemp(k,3,1) = Zatom(i)
                rtemp(k,4,1) = Zatom(i)
-               rtemp(k,5,1) = 0.5*mass(i)*SUM(v_neut(:,i)*v_neut(:,i),DIM=1)*e_charge
+               dbl_temp     = 2*B_lines(d3,i)*moment_lines(d3,i)/mass(i) ! V_perp^2
+               rtemp(k,5,1) = 0.5*mass(i)*(vll_lines(d3,i)*vll_lines(d3,i)+dbl_temp)/e_charge
+               rtemp(k,10,1) = vll_lines(d3,i)/SQRT(dbl_temp+vll_lines(d3,i)*vll_lines(d3,i)) ! pitch
+               !rtemp(k,5,1) = 0.5*mass(i)*SUM(v_neut(:,i)*v_neut(:,i),DIM=1)*e_charge
                rtemp(k,6,1) = SQRT(S_lines(d3,i))
                dbl_temp = PHI_lines(d3,i)
                rtemp(k,7,1) = dbl_temp*180/pi
                rtemp(k,8,1) = R_lines(d3,i)
                rtemp(k,9,1) = Z_lines(d3,i)
                ! Now we get a little out of order since we need the components of the velocity
-               rtemp(k,10,1) = v_neut(2,i)*cos(dbl_temp)-v_neut(1,i)*sin(dbl_temp) ! Vphi
-               rtemp(k,11,1) = v_neut(1,i)*cos(dbl_temp)+v_neut(2,i)*sin(dbl_temp) ! Vr
-               rtemp(k,12,1) = v_neut(3,i) !Vz
-               rtemp(k,13,1) = Beam(i)
-               rtemp(k,14,1) = weight(i) ! weight
-               rtemp(k,15,1) = k
-               rtemp(k,16,1) = t_end(k)
+               !rtemp(k,10,1) = v_neut(2,i)*cos(dbl_temp)-v_neut(1,i)*sin(dbl_temp) ! Vphi
+               !rtemp(k,11,1) = v_neut(1,i)*cos(dbl_temp)+v_neut(2,i)*sin(dbl_temp) ! Vr
+               !rtemp(k,12,1) = v_neut(3,i) !Vz
+               rtemp(k,11,1) = Beam(i)
+               rtemp(k,12,1) = weight(i) ! weight
+               rtemp(k,13,1) = k
+               rtemp(k,14,1) = t_end(k)
                ! Now 17-19 are Bphi, Br, Bz
                ! Set to zero for now.
                k=k+1
@@ -270,19 +274,17 @@
                WRITE(iunit,'(A)') ' '
                WRITE(iunit,'(I8,A)') kmax,' # Number of particles (-1 means unknown number)'
                WRITE(iunit,'(A)') ' '
-               WRITE(iunit,'(A)') '16 # Number of different fields for each particle [10 first letters are significant]'
+               WRITE(iunit,'(I2,A)') SIZE(rtemp,DIM=2),' # Number of different fields for each particle [10 first letters are significant]'
                WRITE(iunit,'(A)') 'Anum      - mass number of particle        (integer)'
                WRITE(iunit,'(A)') 'mass      - mass of the particle           (amu)'
                WRITE(iunit,'(A)') 'Znum      - charge number of particle      (integer)'
                WRITE(iunit,'(A)') 'charge    - charge of the particle         (elemental charge)'
                WRITE(iunit,'(A)') 'energy    - kinetic energy of particle     (eV)'
                WRITE(iunit,'(A)') 'rho       - normalized poloidal flux       (real)'
-               WRITE(iunit,'(A)') 'phiprt    - toroidal angle of particle     (deg)'
-               WRITE(iunit,'(A)') 'Rprt      - R of particle                  (m)'
-               WRITE(iunit,'(A)') 'zprt      - z of particle                  (m)'
-               WRITE(iunit,'(A)') 'vphi      - toroidal velocity of particle  (m/s)'
-               WRITE(iunit,'(A)') 'vR        - radial velocity of particle    (m/s)'
-               WRITE(iunit,'(A)') 'vz        - vertical velocity of particle  (m/s)'
+               WRITE(iunit,'(A)') 'phi       - toroidal angle of particle     (deg)'
+               WRITE(iunit,'(A)') 'R         - R of particle                  (m)'
+               WRITE(iunit,'(A)') 'z         - z of particle                  (m)'
+               WRITE(iunit,'(A)') 'pitch     - pitch angle cosine of particle (vpar/vtot)'
                WRITE(iunit,'(A)') 'origin    - origin of the particle         ()'
                WRITE(iunit,'(A)') 'weight    - weight factor of particle      (particle/second)'
                WRITE(iunit,'(A)') 'id        - unique identifier of particle  (integer)'
@@ -296,9 +298,12 @@
                IF (myworkid == i) THEN
                   CALL safe_open(iunit,ier,'input.particles','old','formatted',ACCESS_IN='APPEND')
                   DO k = k1,k2
-                     WRITE(iunit,'(2(I8,E14.5E3),8(E18.9E3),2(I8,E18.9E3))') &
-                        NINT(rtemp(k,1,1)),rtemp(k,2,1),NINT(rtemp(k,3,1)),rtemp(k,4:12,1),&
-                        NINT(rtemp(k,13,1)),rtemp(k,14,1),NINT(rtemp(k,15,1)),rtemp(k,16,1)
+                     WRITE(iunit,'(2(I8,E14.5E3),6(E18.9E3),2(I8,E18.9E3))') &
+                        NINT(rtemp(k,1,1)),rtemp(k,2,1),&
+                        NINT(rtemp(k,3,1)),rtemp(k,4,1),&
+                        rtemp(k,5:10,1), &
+                        NINT(rtemp(k,11,1)),rtemp(k,12,1),&
+                        NINT(rtemp(k,13,1)),rtemp(k,14,1)
                   END DO
                   CALL FLUSH(iunit)
                   CLOSE(iunit)
