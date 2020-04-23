@@ -60,7 +60,9 @@
       CHARACTER(LEN=8) :: temp_str8, inj_str8
 
 
-      DOUBLE PRECISION, PARAMETER :: e_charge      = 1.60217662E-19 !e_c
+      !DOUBLE PRECISION, PARAMETER :: e_charge      = 1.60217662E-19 !e_c
+      DOUBLE PRECISION, PARAMETER :: e_charge      = 1.602176565e-19 !e_c
+      DOUBLE PRECISION, PARAMETER :: inv_amu       = 6.02214076208E+26 ! 1./AMU [1/kg]
 !-----------------------------------------------------------------------
 !     Begin Subroutine
 !-----------------------------------------------------------------------
@@ -93,7 +95,7 @@
                CALL write_var_hdf5(qid_gid,'RECORD_MODE',ier,DBLVAR=DBLE(0))
                CALL write_var_hdf5(qid_gid,'FIXEDSTEP_USE_USERDEFINED',ier,DBLVAR=DBLE(1))
                CALL write_var_hdf5(qid_gid,'FIXEDSTEP_USERDEFINED',ier,DBLVAR=DBLE(5.0E-8))
-               CALL write_var_hdf5(qid_gid,'FIXEDSTEP_GYRODEFINED',ier,DBLVAR=DBLE(20))
+               CALL write_var_hdf5(qid_gid,'FIXEDSTEP_GYRODEFINED',ier,DBLVAR=DBLE(16))
                CALL write_var_hdf5(qid_gid,'ADAPTIVE_TOL_ORBIT',ier,DBLVAR=DBLE(1.0E-8))
                CALL write_var_hdf5(qid_gid,'ADAPTIVE_TOL_CCOL',ier,DBLVAR=DBLE(0.01))
                CALL write_var_hdf5(qid_gid,'ADAPTIVE_MAX_DRHO',ier,DBLVAR=DBLE(1.0))
@@ -124,11 +126,11 @@
                CALL write_var_hdf5(qid_gid,'ENDCOND_MIN_THERMAL',ier,DBLVAR=DBLE(therm_factor))
                CALL write_var_hdf5(qid_gid,'ENDCOND_MAX_POLOIDALORBS',ier,DBLVAR=DBLE(100))
                CALL write_var_hdf5(qid_gid,'ENDCOND_MAX_TOROIDALORBS',ier,DBLVAR=DBLE(100))
-               CALL write_var_hdf5(qid_gid,'ENABLE_DIST_5D',ier,DBLVAR=DBLE(0))
+               CALL write_var_hdf5(qid_gid,'ENABLE_DIST_RHO6D',ier,DBLVAR=DBLE(0))
                CALL write_var_hdf5(qid_gid,'ENABLE_DIST_6D',ier,DBLVAR=DBLE(0))
                i = 1; IF (lascotfl) i =0
                CALL write_var_hdf5(qid_gid,'ENABLE_DIST_RHO5D',ier,DBLVAR=DBLE(i))
-               CALL write_var_hdf5(qid_gid,'ENABLE_DIST_RHO6D',ier,DBLVAR=DBLE(0))
+               CALL write_var_hdf5(qid_gid,'ENABLE_DIST_5D',ier,DBLVAR=DBLE(i))
                CALL write_var_hdf5(qid_gid,'DIST_MIN_R',ier,DBLVAR=raxis(1))
                CALL write_var_hdf5(qid_gid,'DIST_MAX_R',ier,DBLVAR=raxis(nr))
                CALL write_var_hdf5(qid_gid,'DIST_MIN_Z',ier,DBLVAR=zaxis(1))
@@ -404,7 +406,7 @@
                   CALL write_var_hdf5(inj_gid,'div_halo_frac',ier,DBLVAR=dbl_temp)
                   CALL write_var_hdf5(inj_gid,'div_halo_v',ier,DBLVAR=dbl_temp)
                   CALL write_var_hdf5(inj_gid,'div_halo_h',ier,DBLVAR=dbl_temp)
-                  CALL write_var_hdf5(inj_gid,'anum',ier,INTVAR=NINT(mass_beams(i)*5.97863320194E26))
+                  CALL write_var_hdf5(inj_gid,'anum',ier,INTVAR=NINT(mass_beams(i)*inv_amu))
                   CALL write_var_hdf5(inj_gid,'znum',ier,INTVAR=NINT(Zatom_beams(i)))
                   CALL write_var_hdf5(inj_gid,'mass',ier,DBLVAR=mass_beams(i))
                   ! Now Beamlets
@@ -513,9 +515,9 @@
                !CALL RANDOM_NUMBER(dbl_temp)
                !rtemp(i,6,1) = dbl_temp*pi2 ! zeta
                rtemp(k,6,1) = 0          ! zeta
-               rtemp(k,7,1) = NINT(mass(i)*5.97863320194E26) ! mass
+               rtemp(k,7,1) = mass(i)*inv_amu ! mass
                rtemp(k,8,1) = Zatom(i)
-               rtemp(k,9,1) = NINT(mass(i)*5.97863320194E26) ! Anum
+               rtemp(k,9,1) = NINT(mass(i)*inv_amu) ! Anum
                rtemp(k,10,1) = Zatom(i)
                rtemp(k,11,1) = weight(i) ! weight
                rtemp(k,12,1) = 0.0 ! time
