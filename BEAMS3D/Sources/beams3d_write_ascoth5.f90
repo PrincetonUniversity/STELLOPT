@@ -60,7 +60,9 @@
       CHARACTER(LEN=8) :: temp_str8, inj_str8
 
 
-      DOUBLE PRECISION, PARAMETER :: e_charge      = 1.60217662E-19 !e_c
+      !DOUBLE PRECISION, PARAMETER :: e_charge      = 1.60217662E-19 !e_c
+      DOUBLE PRECISION, PARAMETER :: e_charge      = 1.602176565e-19 !e_c
+      DOUBLE PRECISION, PARAMETER :: inv_amu       = 6.02214076208E+26 ! 1./AMU [1/kg]
 !-----------------------------------------------------------------------
 !     Begin Subroutine
 !-----------------------------------------------------------------------
@@ -404,7 +406,7 @@
                   CALL write_var_hdf5(inj_gid,'div_halo_frac',ier,DBLVAR=dbl_temp)
                   CALL write_var_hdf5(inj_gid,'div_halo_v',ier,DBLVAR=dbl_temp)
                   CALL write_var_hdf5(inj_gid,'div_halo_h',ier,DBLVAR=dbl_temp)
-                  CALL write_var_hdf5(inj_gid,'anum',ier,INTVAR=NINT(mass_beams(i)*5.97863320194E26))
+                  CALL write_var_hdf5(inj_gid,'anum',ier,INTVAR=NINT(mass_beams(i)*inv_amu))
                   CALL write_var_hdf5(inj_gid,'znum',ier,INTVAR=NINT(Zatom_beams(i)))
                   CALL write_var_hdf5(inj_gid,'mass',ier,DBLVAR=mass_beams(i))
                   ! Now Beamlets
@@ -513,9 +515,9 @@
                !CALL RANDOM_NUMBER(dbl_temp)
                !rtemp(i,6,1) = dbl_temp*pi2 ! zeta
                rtemp(k,6,1) = 0          ! zeta
-               rtemp(k,7,1) = NINT(mass(i)*5.97863320194E26) ! mass
+               rtemp(k,7,1) = mass(i)*inv_amu ! mass
                rtemp(k,8,1) = Zatom(i)
-               rtemp(k,9,1) = NINT(mass(i)*5.97863320194E26) ! Anum
+               rtemp(k,9,1) = NINT(mass(i)*inv_amu) ! Anum
                rtemp(k,10,1) = Zatom(i)
                rtemp(k,11,1) = weight(i) ! weight
                rtemp(k,12,1) = 0.0 ! time
