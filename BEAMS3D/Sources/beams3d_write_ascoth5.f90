@@ -54,13 +54,14 @@
                         nbi_gid, inj_gid
       INTEGER, ALLOCATABLE, DIMENSION(:) :: itemp
       REAL :: qid_flt
-      DOUBLE PRECISION :: rho_temp, s_temp, rho_max, dbl_temp
+      DOUBLE PRECISION :: rho_temp, s_temp, rho_max, dbl_temp, gammarel, v_total
       DOUBLE PRECISION, ALLOCATABLE :: rtemp(:,:,:), r1dtemp(:)
       CHARACTER(LEN=10) ::  qid_str
       CHARACTER(LEN=8) :: temp_str8, inj_str8
 
 
       !DOUBLE PRECISION, PARAMETER :: e_charge      = 1.60217662E-19 !e_c
+      DOUBLE PRECISION, PARAMETER :: c_speed       = 2.99792458E+08 !e_c
       DOUBLE PRECISION, PARAMETER :: e_charge      = 1.602176565e-19 !e_c
       DOUBLE PRECISION, PARAMETER :: inv_amu       = 6.02214076208E+26 ! 1./AMU [1/kg]
 !-----------------------------------------------------------------------
@@ -509,11 +510,13 @@
                rtemp(k,2,1) = PHI_lines(d3,i)*180/pi
                rtemp(k,3,1) = Z_lines(d3,i)
                dbl_temp     = 2*B_lines(d3,i)*moment_lines(d3,i)/mass(i) ! V_perp^2
-               rtemp(k,4,1) = 0.5*mass(i)*(vll_lines(d3,i)*vll_lines(d3,i)+dbl_temp)/e_charge
+               v_total      = SQRT(dbl_temp+vll_lines(d3,i)*vll_lines(d3,i))
+               gammarel     = SQRT(1.0 / ( (1.0+v_total/c_speed) * (1.0-v_total/c_speed) ))
+               rtemp(k,4,1) = (gammarel-1.0)*mass(i)*c_speed*c_speed/e_charge
+               rtemp(k,5,1) = vll_lines(d3,i)/v_total
+               !rtemp(k,4,1) = 0.5*mass(i)*(vll_lines(d3,i)*vll_lines(d3,i)+dbl_temp)/e_charge
                !rtemp(i,4,1) = 0.5*mass(i)*(vll_lines(d3,i)*vll_lines(d3,i)+dbl_temp)
-               rtemp(k,5,1) = vll_lines(d3,i)/SQRT(dbl_temp+vll_lines(d3,i)*vll_lines(d3,i)) ! pitch
-               !CALL RANDOM_NUMBER(dbl_temp)
-               !rtemp(i,6,1) = dbl_temp*pi2 ! zeta
+               !rtemp(k,5,1) = vll_lines(d3,i)/SQRT(dbl_temp+vll_lines(d3,i)*vll_lines(d3,i)) ! pitch
                rtemp(k,6,1) = 0          ! zeta
                rtemp(k,7,1) = mass(i)*inv_amu ! mass
                rtemp(k,8,1) = Zatom(i)
