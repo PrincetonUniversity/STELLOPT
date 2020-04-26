@@ -40,6 +40,7 @@ MODULE beams3d_physics_mod
       DOUBLE PRECISION, PRIVATE, PARAMETER :: e_charge      = 1.60217662E-19 !e_c
       DOUBLE PRECISION, PRIVATE, PARAMETER :: sqrt_pi       = 1.7724538509   !pi^(1/2)
       DOUBLE PRECISION, PRIVATE, PARAMETER :: mpome         = 5.44602984424355D-4 !e_c
+      DOUBLE PRECISION, PRIVATE, PARAMETER :: inv_dalton    = 6.02214076208E+26 ! 1./AMU [1/kg]
       DOUBLE PRECISION, PRIVATE, PARAMETER :: zero          = 0.0D0 ! 0.0
       DOUBLE PRECISION, PRIVATE, PARAMETER :: half          = 0.5D0 ! 1/2
       DOUBLE PRECISION, PRIVATE, PARAMETER :: one           = 1.0D0 ! 1.0
@@ -304,6 +305,9 @@ MODULE beams3d_physics_mod
          REAL*8 :: xparam, yparam, zparam, hx, hy, hz, hxi, hyi, hzi
          INTEGER, parameter :: ict(8)=(/1,0,0,0,0,0,0,0/)
          REAL*8 :: fval(1)
+         ! For Suzuki
+         INTEGER :: A_IN(1), Z_IN(1)
+         DOUBLE PRECISION :: ni_in(1)
 
          !--------------------------------------------------------------
          !     Begin Subroutine
@@ -512,6 +516,15 @@ MODULE beams3d_physics_mod
          !   CALL adas_btsigv(1,1,energy,tilocal(l),1,myZ,zefflocal(l),sigvcx(l),ier)  ! Charge Exchange ionization cross-section term.
          !END DO
          tau_inv = ((sigvii + sigvcx + sigvei)*nelocal) ! Delete a term if desired. (save a comment)
+
+         ! Run Suzuki Model
+         !DO l = 1, num_depo
+         !   ni_in(1) = nelocal(l)
+         !   Z_in(1)  = 1
+         !   A_in(1)  = 1 
+         !   CALL suzuki_sigma(1,energy(l)*inv_dalton,nelocal(l),telocal(l),ni_in,A_in,Z_in,tau_inv(l))
+         !END DO
+         !tau_inv = tau_inv*nelocal*ABS(q(4))*1E-4
 
          !--------------------------------------------------------------
          !     Calculate Ionization
