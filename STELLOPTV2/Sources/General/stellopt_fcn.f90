@@ -185,59 +185,63 @@
          END IF
       END DO
 
-      ! Apply normalization
-      aphi = aphi * norm_aphi
-      am   = am   * norm_am
-      ac   = ac   * norm_ac
-      ai   = ai   * norm_ai
-      ne_opt = ne_opt * norm_ne
-      zeff_opt = zeff_opt * norm_zeff
-      te_opt = te_opt * norm_te
-      ti_opt = ti_opt * norm_ti
-      th_opt = th_opt * norm_th
-      am_aux_f = am_aux_f * norm_am
-      ac_aux_f = ac_aux_f * norm_ac
-      ai_aux_f = ai_aux_f * norm_ai
-      phi_aux_f = phi_aux_f * norm_phi
-      ne_aux_f = ne_aux_f * norm_ne
-      zeff_aux_f = zeff_aux_f * norm_zeff
-      te_aux_f = te_aux_f * norm_te
-      ti_aux_f = ti_aux_f * norm_ti
-      th_aux_f = th_aux_f * norm_th
-      ah_aux_f = ah_aux_f * norm_ah
-      at_aux_f = at_aux_f * norm_at
-      beamj_aux_f = beamj_aux_f * norm_beamj
-      bootj_aux_f = bootj_aux_f * norm_bootj
-      emis_xics_f = emis_xics_f * norm_emis_xics
+      ! Apply normalization (Only to loaded variables)
+      WHERE(laphi_opt)            aphi = aphi * norm_aphi
+      WHERE(lam_opt)                am = am * norm_am
+      WHERE(lac_opt)                ac = ac * norm_ac
+      WHERE(lai_opt)                ai = ai * norm_ai
+      WHERE(lah_opt)                ah = ah * norm_ah
+      WHERE(lat_opt)                at = at * norm_at
+      WHERE(lne_opt)            ne_opt = ne_opt * norm_ne
+      WHERE(lte_opt)            te_opt = te_opt * norm_te
+      WHERE(lti_opt)            ti_opt = ti_opt * norm_ti
+      WHERE(lzeff_opt)        zeff_opt = zeff_opt * norm_zeff
+      WHERE(lth_opt)            th_opt = th_opt * norm_th
+      WHERE(lam_f_opt)        am_aux_f = am_aux_f * norm_am
+      WHERE(lac_f_opt)        ac_aux_f = ac_aux_f * norm_ac
+      WHERE(lai_f_opt)        ai_aux_f = ai_aux_f * norm_ai
+      WHERE(lah_f_opt)        ah_aux_f = ah_aux_f * norm_ah
+      WHERE(lat_f_opt)        at_aux_f = at_aux_f * norm_at
+      WHERE(lphi_f_opt)      phi_aux_f = phi_aux_f * norm_phi
+      WHERE(lne_f_opt)        ne_aux_f = ne_aux_f * norm_ne
+      WHERE(lte_f_opt)        te_aux_f = te_aux_f * norm_te
+      WHERE(lti_f_opt)        ti_aux_f = ti_aux_f * norm_ti
+      WHERE(lzeff_f_opt)    zeff_aux_f = zeff_aux_f * norm_zeff
+      WHERE(lth_f_opt)        th_aux_f = th_aux_f * norm_th
+      WHERE(lbootj_f_opt)  bootj_aux_f = bootj_aux_f * norm_bootj
+      WHERE(lbeamj_f_opt)  beamj_aux_f = beamj_aux_f * norm_beamj
+      WHERE(lemis_xics_f_opt) emis_xics_f = emis_xics_f * norm_emis_xics
 
       ! Handle cleanup
       IF (iflag < -2) THEN
          CALL stellopt_clean_up(ncnt,iflag)
          iflag = 0
          ! Now normalize arrays otherwise we'll be multiplying by normalizations on next iteration for non-varied quantities
-         aphi = aphi / norm_aphi
-         am   = am   / norm_am
-         ac   = ac   / norm_ac
-         ai   = ai   / norm_ai
-         ne_opt = ne_opt / norm_ne
-         zeff_opt = zeff_opt / norm_zeff
-         te_opt = te_opt / norm_te
-         ti_opt = ti_opt / norm_ti
-         th_opt = th_opt / norm_th
-         am_aux_f = am_aux_f / norm_am
-         ac_aux_f = ac_aux_f / norm_ac
-         ai_aux_f = ai_aux_f / norm_ai
-         phi_aux_f = phi_aux_f / norm_phi
-         ne_aux_f = ne_aux_f / norm_ne
-         zeff_aux_f = zeff_aux_f / norm_zeff
-         te_aux_f = te_aux_f / norm_te
-         ti_aux_f = ti_aux_f / norm_ti
-         th_aux_f = th_aux_f / norm_th
-         ah_aux_f = ah_aux_f / norm_ah
-         at_aux_f = at_aux_f / norm_at
-         bootj_aux_f = bootj_aux_f / norm_bootj
-         beamj_aux_f = beamj_aux_f / norm_beamj
-         emis_xics_f = emis_xics_f / norm_emis_xics
+         WHERE(laphi_opt)            aphi = aphi / norm_aphi
+         WHERE(lam_opt)                am = am / norm_am
+         WHERE(lac_opt)                ac = ac / norm_ac
+         WHERE(lai_opt)                ai = ai / norm_ai
+         WHERE(lah_opt)                ah = ah / norm_ah
+         WHERE(lat_opt)                at = at / norm_at
+         WHERE(lne_opt)            ne_opt = ne_opt / norm_ne
+         WHERE(lte_opt)            te_opt = te_opt / norm_te
+         WHERE(lti_opt)            ti_opt = ti_opt / norm_ti
+         WHERE(lzeff_opt)        zeff_opt = zeff_opt / norm_zeff
+         WHERE(lth_opt)            th_opt = th_opt / norm_th
+         WHERE(lam_f_opt)        am_aux_f = am_aux_f / norm_am
+         WHERE(lac_f_opt)        ac_aux_f = ac_aux_f / norm_ac
+         WHERE(lai_f_opt)        ai_aux_f = ai_aux_f / norm_ai
+         WHERE(lah_f_opt)        ah_aux_f = ah_aux_f / norm_ah
+         WHERE(lat_f_opt)        at_aux_f = at_aux_f / norm_at
+         WHERE(lphi_f_opt)      phi_aux_f = phi_aux_f / norm_phi
+         WHERE(lne_f_opt)        ne_aux_f = ne_aux_f / norm_ne
+         WHERE(lte_f_opt)        te_aux_f = te_aux_f / norm_te
+         WHERE(lti_f_opt)        ti_aux_f = ti_aux_f / norm_ti
+         WHERE(lzeff_f_opt)    zeff_aux_f = zeff_aux_f / norm_zeff
+         WHERE(lth_f_opt)        th_aux_f = th_aux_f / norm_th
+         WHERE(lbootj_f_opt)  bootj_aux_f = bootj_aux_f / norm_bootj
+         WHERE(lbeamj_f_opt)  beamj_aux_f = beamj_aux_f / norm_beamj
+         WHERE(lemis_xics_f_opt) emis_xics_f = emis_xics_f / norm_emis_xics
          RETURN
       END IF
 
