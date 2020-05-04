@@ -28,8 +28,7 @@
   CC = gcc
 
 HARD_FFLAGS = \
-
-#              -Wl,--export-all-symbols
+              -Wl,--export-all-symbols
 
 HARD_CFLAGS = \
 
