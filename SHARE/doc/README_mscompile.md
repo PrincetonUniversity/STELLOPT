@@ -4,8 +4,10 @@ on windows.
 I have changed the makefiles pretty significantly to make this system work and 
 some of the changes are general improvements. 
 ---  Bug fixing for GCC/GFORTRAN 9.3
----  Automatic selection of $(LIB) by detection of mingw64 versus UNIX build 
----  Still working on 
+---  Custom packagebuilds for MSMPI, netcdf, netcdf-cxx netcdf-fortran included
+---  Custom selection of $(LIB) extension in make_$(machine) file [default libstell.a / libstell.so]
+---  Automatic undefined symbol resolution in linking libraries by using recursive flags
+ .... this feature is not included on the DARWIN platform and has only been tested with GCC9.3 
 
 ====================================================================================
 
@@ -14,7 +16,6 @@ Known basics / fixes:
 -- change the user to your local user name: replace mine "weir" with yours
 -- You also have to copy the "awk_cdir.awk" file to the home folder for compilation
 -- the other changes I have made in this branch should be with you already...
-
 
 Notes:
 -- The compiled files hdf5.mod are stored under /mingw64/include/static/ or /mingw64/include/shared. 
@@ -26,11 +27,7 @@ Notes:
 =========================
 Current issue:
 
-- successfully compiling libstell.lib
-- working on libstell.dll
-
-- test compile of full system is searching for libstell.dll, but we are still compiling libstell.lib 
-- beams3d needs the same hotfix that SAM applied for libstell
+- Several codes needs the same hotfix that SAM applied for libstell (undeclared MPI variables in serial compilation)
 
 ===== 
 
@@ -111,23 +108,39 @@ Add /msys64/mingw64 and /msys64 to your user's environment PATH variable
 
 ============
 
-============
-
 Install the background modules that are necessary / generally helpful
 
 pacman -S mingw-w64-x86_64-fltk mingw-w64-x86_64-f2c
 pacman -S mingw-w64-x86_64-lapack mingw-w64-x86_64-openblas
 pacman -S mingw-w64-x86_64-gsl mingw-w64-x86_64-fgsl mingw-w64-x86_64-fftw
-pacman -S mingw-w64-x86_64-msmpi  #  SEE NOTE ON MPI BELOW
-pacman -S mingw-w64-x86_64-hdf4 mingw-w64-x86_64-hdf5
 
+============
+# INSTALL MSMPI from custom package build under $STELLOPT_PATH/SHARE/pkgbuilds
+---- I had to write a few custom builds to make this system work
 ----- the MSYS version of msmpi comes with headers for fortran mpi
------ you have to manually compile the fortran modules yourself before proceeding (see README_msmpi.md) 
+----- you have to manually compile the fortran modules yourself before 
+      proceeding ... I did this for you in the pkgbuild script already
+
+
+1) download and install the version of msmpisdk.msi and msmpisetup.exe indicated by the URL's in the shell script.
+
+2) In an msys2-mingw64 shell run the msmpi.sh script in the pkgbuild folder
+./msmpi.sh
+
+3) Run the package installer
+makepkg-mingw 
+
+4) install the package  
+pacman -U mingw-w64-x86_64....zst
+
+============
+
+# Next install HDF5
+pacman -S mingw-w64-x86_64-hdf4 mingw-w64-x86_64-hdf5
 
 ============
 
 #  SCALAPACK is available from a developer that is pushing to the main MSYS-REPO
-#  SEE 
 
 cd ~
 mkdir src
@@ -140,8 +153,9 @@ pacman -U mingw-w64-x86_64-scalapack-2.0.2-1-any.pkg.tar.zst
 
 =====================
 
-I had to write a few custom builds to make netcdf-c, netcdf-cxx, and 
-netcdf-fortran to compile together.
+# INSTALL NETCDF, NETDCDF-CXXX and NETCDF-FORTRAN (in that order)
+--- I had to write a few custom builds to make netcdf-c, netcdf-cxx, and 
+    netcdf-fortran to compile together.
 
 These are located under the STELLOPT/SHARE/pkgbuilds
 (WARNING: I set the prefix for installation to /mingw64)
@@ -149,15 +163,15 @@ These are located under the STELLOPT/SHARE/pkgbuilds
 I didn't bother to write new check-sums for the files, so go to each 
 directory, and type this:
 
-cd SHARE/pkgbuilds/mingw-w64-netcdf
+cd $STELLOPT_PATH/SHARE/pkgbuilds/mingw-w64-netcdf
 makepkg-mingw -sCLf --skipchecksums # download everything, configure and compile it, then create a package
 pacman -U mingw-w64-x86_64-netcdf-4.7.3-1-any.pkg.tar.zst  # installs
 
-cd SHARE/pkgbuilds/mingw-w64-netcdf-cxx
+cd $STELLOPT_PATH/SHARE/pkgbuilds/mingw-w64-netcdf-cxx
 makepkg-mingw -sCLf --skipchecksums
 pacman -U mingw-w64-x86_64-netcdf-cxx-4.3.0-1-any.pkg.tar.zst
 
-cd SHARE/pkgbuilds/mingw-w64-netcdf-fortran
+cd $STELLOPT_PATH/SHARE/pkgbuilds/mingw-w64-netcdf-fortran
 makepkg-mingw -sCLf --skipchecksums
 pacman -U mingw-w64-x86_64-netcdf-fortran-4.5.2-1-any.pkg.tar.zst
 
