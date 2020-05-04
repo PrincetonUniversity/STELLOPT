@@ -9,9 +9,11 @@
 *.dll
 *.def
 *.dylib
+*.exe
 *.zip
 .DS*
 *.dSYM
+*.log
 ._*
 __*
 make.inc
