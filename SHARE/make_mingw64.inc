@@ -26,25 +26,30 @@
 #######################################################################
   FC = gfortran
   CC = gcc
+  SHARED_EXT = .dll
+  STATIC_EXT = .lib
 
-HARD_FFLAGS =  -Wl,--no-undefined \
-               -Wl,--enable-auto-import \
-               -Wl,--export-all-symbols \
-               -Wl,--enable-runtime-pseudo-reloc
+HARD_FFLAGS = \
+#               -Wl,--fno-range-check \
+#              -Wl,--no-undefined 
+#              -Wl,--export-all-symbols 
+#              -Wl,--enable-auto-import 
+#              -Wl,--enable-runtime-pseudo-reloc
 
 HARD_CFLAGS = \
+#              -Wl,--no-undefined \
+#              -Wl,--enable-auto-import \
+#              -Wl,--export-all-symbols \
+#              -Wl,--enable-runtime-pseudo-reloc
 #                    -Wl,-z-defs\
 #                    -Wl,-no_compact_unwind
-#                    -Wl,--no-undefined \
-#                    -Wl,--enable-auto-import \
-#                    -Wl,--export-all-symbols \
-#                    -Wl,--enable-runtime-pseudo-reloc
 
-HARD_LINK_FLAGS = -Wl,--no-undefined \
-                  -Wl,-no_compact_unwind \
-                  -Wl,--enable-auto-import \
-                  -Wl,--export-all-symbols \
-                  -Wl,--enable-runtime-pseudo-reloc
+HARD_LINK_FLAGS = \
+#                  -Wl,--no-undefined \
+#                  -Wl,--enable-auto-import \
+#                  -Wl,--export-all-symbols \
+#                  -Wl,--enable-runtime-pseudo-reloc
+#                  -Wl,-no_compact_unwind
 
 #######################################################################
 #            Find the source paths of the STELLOPT distribution.
@@ -57,8 +62,8 @@ HARD_LINK_FLAGS = -Wl,--no-undefined \
 #######################################################################
 # Temporaryily copy STELLOPT_HOME to MYHOME since MYHOME is currently
 # used in all the makefiles.
-  MYHOME = $(STELLOPT_HOME)
-#  MYHOME = /home/weir/src/stellopt/bin
+  MYHOME = $(STELLOPT_DIR)/bin
+
 
   SHELL = /bin/sh
   PWD1 = `pwd`
@@ -66,7 +71,7 @@ HARD_LINK_FLAGS = -Wl,--no-undefined \
   COMPILE = $(FC) $(HARD_FFLAGS)
   COMPILE_FREE = $(FC) -ffree-form -ffree-line-length-none \
                        -ffixed-line-length-none $(HARD_FFLAGS)
-  LINK    = ld $(HARD_LINK_FLAGS) -o
+  LINK    = $(FC) $(HARD_LINK_FLAGS) -o
   LINK_AR = ar -ruv
   LINK_C  = $(CC) -shared $(HARD_CFLAGS)
 
@@ -101,8 +106,6 @@ else
   LIBS    = -L/mingw64/lib -llapack -lblas
 endif
 
-#  LIBS    = -L/mingw64/lib -lscalapack -lopenblas -lmpi -lwinpthread -lgfortran
-#
 #######################################################################
 #            FFTW3 Options
 #######################################################################
@@ -125,22 +128,33 @@ endif
 #
 # Let's not pollute the namespace if unnecessary
 #######################################################################
-  LMPI    = F
+  LMPI    = T
 
 ifeq ($(LMPI),T)
-  MPI_COMPILE = mpifort $(HARD_FFLAGS)
-  MPI_COMPILE_FREE = mpifort -ffree-form -fno-range-check \
-                     -ffree-line-length-none -ffixed-line-length-none \
+  MPI_COMPILE = mpifort \
+                 -fno-range-check \
+                $(HARD_FFLAGS)
+  MPI_COMPILE_FREE = mpifort \
+                     -ffree-form \
+                     -fno-range-check \
+                     -ffree-line-length-none \
+                     -ffixed-line-length-none \
                      $(HARD_FFLAGS)
-  MPI_COMPILE_C = mpicc
-  MPI_LINK = mpicc -shared -pthread $(HARD_CFLAGS)
+  MPI_COMPILE_C = mpicc \
+
+  MPI_LINK = mpicc -shared -pthread \
+             $(HARD_CFLAGS)
 
   MPI_RUN = mpiexec
   MPI_RUN_OPTS = -np 4
 
-  MPI_LIB = /mingw64/lib -lmpi -lwinpthread
+  MPI_LIB = -L/mingw64/lib -lmsmpi 
+  #-lwinpthread
+
+  LIBS += $(MPI_LIB)
 endif
 
+#                     -D_WIN64 -D INT_PTR_KIND\(\)=8 -fno-range-check \
 #######################################################################
 #            NAG Options
 #######################################################################
@@ -339,7 +353,6 @@ endif
 #   PETSC_DIR should be set as user env variable
 #
 #######################################################################
-
   LSFINCS = F
 
 ifeq ($(LSFINCS),T)
@@ -372,10 +385,17 @@ endif
 #
 #   Trying out a recursive tool from ld in make_all.inc
 #
-LIB_SHARE = $(LIBS) -lgfortran -lz -lcurl -lm -lgfortran -lmsvcrt
+
+LIB_SHARE = $(LIBS) \
+           -L/mingw64/lib -lz -lcurl
+ifeq ($(LMPI),T)
+  LIB_SHARE := $(LIB_SHARE) $(MPI_LIB)
+endif
+LIB_SHARE := $(LIB_SHARE) -lm -lgfortran -lmsvcrt
 
 ######################################################################
 ######################################################################
+#LIB_SHARE = $(LIBS) -lgfortran -lz -lcurl -lm -lgfortran -lmsvcrt
 #
 #  LIB_SHARE = \
 #          -L/mingw64/bin/libopenblas.dll \

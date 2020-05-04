@@ -11,33 +11,43 @@ MOD1_PATH = -I$(MYHOME)/libstell_dir
 MOD_PATH =
 CLEAN_ARCH =
 LIB_DIR = ../../LIBSTELL
+SHARED_EXT ?= .so
+STATIC_EXT ?= .a
+LIB = libstell$(STATIC_EXT)
 
 #######################################################################
 
+# For debugging print out the make-command goals and the machine name
 #$(info $$MAKECMDGOALS is [${MAKECMDGOALS}])
 #$(info $$MACHINE is [${MACHINE}])
+#
+# These are old switches that worked but were confusing
+#ifeq ($(strip $(MACHINE)),mingw64)
+#ifneq (,$(findstring MINGW,$(shell uname -s)))
+#
+# Debugging stuff
+#tstresult = $(findstring MINGW,$(shell uname -s))
+#$(info $$tstresult is [${tstresult}])
+#
 # Can we auto-detect which type of library to build and link against?
 #    Two steps:
 #       machine type (UNIX/POSIX versus WIN)
 #       static versus shared
 #
-#ifeq ($(strip $(MACHINE)),mingw64)
-#ifneq (,$(findstring MINGW,$(shell uname -s)))
 #
-#tstresult = $(findstring MINGW,$(shell uname -s))
-#$(info $$tstresult is [${tstresult}])
-ifeq (MINGW,$(findstring MINGW,$(shell uname -s)))
-  LIB := libstell.lib
-  ifeq ($(findstring libstell.dll,$(MAKECMDGOALS)),libstell.dll)
-    LIB := libstell.dll
-  endif
-else
-  LIB := libstell.a
-  ifeq ($(findstring shared,$(MAKECMDGOALS)),shared)
-    LIB := libstell.so
-  endif
-endif
-#$(info $$LIB is [${LIB}])
+# If the machine is using MINGW assume that it is WINDOWS
+#ifeq (MINGW,$(findstring MINGW,$(shell uname -s)))
+#  LIB := libstell.lib
+#  ifeq ($(findstring libstell.dll,$(MAKECMDGOALS)),libstell.dll)
+#    LIB := libstell.dll
+#  endif
+#else
+#  LIB := libstell.a
+#  ifeq ($(findstring shared,$(MAKECMDGOALS)),shared)
+#    LIB := libstell.so
+#  endif
+#endif
+##$(info $$LIB is [${LIB}])
 
 #######################################################################
 
@@ -214,7 +224,6 @@ ifeq ($(LMPI),T)
   LIB_LINK += $(MPI_LIB)
   LINK    = $(MPI_COMPILE) $(FLAGS) -o
   LINK_C  = $(MPI_LINK)
-#  LINK_C  = $(MPI_LINK) -shared
   LIB_SHARE += $(MPI_LIB)
 endif
 ifeq ($(LNETCDF),T)
@@ -251,13 +260,15 @@ ifeq ($(LSILO),T)
 endif
 
 # This is hear because of MPI above resetting LINK
-ifeq ($(MAKECMDGOALS), $(filter $(MAKECMDGOALS),libstell.a libstell.lib))
+#ifeq ($(MAKECMDGOALS), $(filter $(MAKECMDGOALS),libstell.a libstell.lib))
+ifeq ($(MAKECMDGOALS), libstell$(STATIC_EXT))
   LINK = $(LINK_AR)
   COMPILE += -fPIC
   COMPILE_FREE += -fPIC
   INC_PATH =
 endif
-ifeq ($(MAKECMDGOALS), $(filter $(MAKECMDGOALS),libstell.so libstell.dll))
+#ifeq ($(MAKECMDGOALS), $(filter $(MAKECMDGOALS),libstell.so libstell.dll))
+ifeq ($(MAKECMDGOALS), libstell$(SHARED_EXT))
   LINK = $(LINK_C)
   LIB_LINK = $(LIB_SHARE)
   COMPILE += -fPIC
