@@ -5,17 +5,8 @@
   REL = Release
   REL_PATH = $(PWD1)/$(REL)
   DBG_PATH = $(PWD1)/$(DBG)
-ifeq ($(strip $(MACHINE)),mingw64)
-  EXE_F = libstell.lib
-  EXE_F_SHARE = libstell.dll
-else
-  EXE_F = libstell.a
-  EXE_F_SHARE = libstell.so
-endif
-#  EXE_F = libstell.a
-#  EXE_F_SHARE = libstell.so
-#  EXE_F = libstell.lib
-#  EXE_F_SHARE = libstell.dll
+  EXE_F = libstell$(STATIC_EXT)
+  EXE_F_SHARE = libstell$(SHARED_EXT)
   MAKE = makelibstell
   LIB_DIR = $(MYHOME)/libstell_dir
 
@@ -57,7 +48,6 @@ static_release:
 	@-(umask 022; rm -rf $(LIB_DIR); ln -fs $(REL_PATH) $(LIB_DIR) 2> /dev/null; umask 077)
 	@cd $(REL); rm -f *.f *.f90 *.c; rm -f $(MAKE); ln -fs ../$(MAKE) .; make -f $(MAKE) $(EXE_F) FLAGS="$(FLAGS_R) $(MOD1_PATH)" SFLAGS="" TYPE="release"
 	@rm -f $(MYHOME)/$(EXE_F)
-	@rm -f $(MYHOME)/$(EXE_F)
 	@-(umask 022; rm -f $(MYHOME)/$(EXE_F); ln -fs $(REL_PATH)/$(EXE_F) $(MYHOME) 2> /dev/null; umask 077)
 	@echo "Static Release version - "$(EXE_F)" - is now updated"
 	@echo "To free up space, delete all *.o files from Release"
@@ -68,7 +58,7 @@ shared_release:
 	@-(umask 022; rm -rf $(LIB_DIR); ln -fs $(REL_PATH) $(LIB_DIR) 2> /dev/null; umask 077)
 	@cd $(REL); rm -f *.f *.f90 *.c; rm -f $(MAKE); ln -fs ../$(MAKE) .; make -f $(MAKE) $(EXE_F_SHARE) FLAGS="$(FLAGS_R) $(MOD1_PATH)" TYPE="release" LOCTYPE="Release"
 	@rm -f $(REL)\*.f; rm -f $(REL)\*.f90
-	@rm -f $(MYHOME)/$(EXE_F)
+	@rm -f $(MYHOME)/$(EXE_F_SHARE)
 	@-(umask 022; rm -f $(MYHOME)/$(EXE_F); ln -fs $(REL_PATH)/$(EXE_F) $(MYHOME) 2> /dev/null; ln -fs $(PWD1)/../pySTEL/VMECplot.py $(MYHOME)/VMECplot 2> /dev/null; umask 077)
 	@-(umask 022; rm -f $(MYHOME)/$(EXE_F_SHARE); ln -fs $(REL_PATH)/$(EXE_F_SHARE) $(MYHOME) 2> /dev/null; ln -fs $(PWD1)/../pySTEL/STELLOPT.py $(MYHOME)/STELLOPT 2> /dev/null; umask 077)
 	@echo "Shared release version - "$(EXE_F_SHARE)"- is now updated"

@@ -61,5 +61,6 @@ libstell.so libstell.dll : $(ObjectFiles)
          echo '$(COMPILE_FREE) $(FLAGS) $(MOD_PATH). $(INC_PATH) -c $<'; \
          $(COMPILE_FREE) $(FLAGS) $(MOD_PATH).. $(INC_PATH) -c $< ; \
       fi
+
 clean:
 	- rm -f *.o *.mod *.a *.so *.dll *.lib
