@@ -33,7 +33,7 @@
                                     div_beams, mass_beams, Zatom_beams, dex_beams, &
                                     qid_str_saved, lascotfl
       USE safe_open_mod, ONLY: safe_open
-      USE wall_mod, ONLY: nface,nvertex,face,vertex,ihit_array, wall_free
+      USE wall_mod, ONLY: nface,nvertex,face,vertex,ihit_array, wall_free, machine_string
       USE beams3d_write_par
       USE mpi_params
       USE mpi
@@ -95,7 +95,7 @@
                CALL write_var_hdf5(qid_gid,'ENABLE_ADAPTIVE',ier,DBLVAR=DBLE(i))
                CALL write_var_hdf5(qid_gid,'RECORD_MODE',ier,DBLVAR=DBLE(0))
                CALL write_var_hdf5(qid_gid,'FIXEDSTEP_USE_USERDEFINED',ier,DBLVAR=DBLE(1))
-               CALL write_var_hdf5(qid_gid,'FIXEDSTEP_USERDEFINED',ier,DBLVAR=DBLE(5.0E-8))
+               CALL write_var_hdf5(qid_gid,'FIXEDSTEP_USERDEFINED',ier,DBLVAR=DBLE(1.0E-8))
                CALL write_var_hdf5(qid_gid,'FIXEDSTEP_GYRODEFINED',ier,DBLVAR=DBLE(16))
                CALL write_var_hdf5(qid_gid,'ADAPTIVE_TOL_ORBIT',ier,DBLVAR=DBLE(1.0E-8))
                CALL write_var_hdf5(qid_gid,'ADAPTIVE_TOL_CCOL',ier,DBLVAR=DBLE(0.01))
@@ -120,7 +120,7 @@
                CALL write_var_hdf5(qid_gid,'ENDCOND_ENERGYLIM',ier,DBLVAR=DBLE(1))
                CALL write_var_hdf5(qid_gid,'ENDCOND_WALLHIT',ier,DBLVAR=DBLE(1))
                CALL write_var_hdf5(qid_gid,'ENDCOND_MAXORBS',ier,DBLVAR=DBLE(0))
-               CALL write_var_hdf5(qid_gid,'ENDCOND_MAX_SIMTIME',ier,DBLVAR=DBLE(MAXVAL(t_end_in)))
+               CALL write_var_hdf5(qid_gid,'ENDCOND_MAX_SIMTIME',ier,DBLVAR=DBLE(2*MAXVAL(t_end_in)))
                CALL write_var_hdf5(qid_gid,'ENDCOND_MAX_CPUTIME',ier,DBLVAR=DBLE(14000))
                CALL write_var_hdf5(qid_gid,'ENDCOND_MIN_RHO',ier,DBLVAR=DBLE(0))
                CALL write_var_hdf5(qid_gid,'ENDCOND_MIN_ENERGY',ier,DBLVAR=DBLE(10))
@@ -149,7 +149,7 @@
                CALL write_var_hdf5(qid_gid,'DIST_MIN_THETA',ier,DBLVAR=DBLE(0))
                CALL write_var_hdf5(qid_gid,'DIST_MAX_THETA',ier,DBLVAR=DBLE(360))
                CALL write_var_hdf5(qid_gid,'DIST_MIN_TIME',ier,DBLVAR=DBLE(0))
-               CALL write_var_hdf5(qid_gid,'DIST_MAX_TIME',ier,DBLVAR=DBLE(MAXVAL(t_end_in)))
+               CALL write_var_hdf5(qid_gid,'DIST_MAX_TIME',ier,DBLVAR=DBLE(2*MAXVAL(t_end_in)))
                CALL write_var_hdf5(qid_gid,'DIST_MIN_CHARGE',ier,DBLVAR=DBLE(-2))
                CALL write_var_hdf5(qid_gid,'DIST_MAX_CHARGE',ier,DBLVAR=DBLE(2))
                CALL write_var_hdf5(qid_gid,'DIST_NBIN_R',ier,DBLVAR=DBLE(32))
@@ -346,7 +346,7 @@
                CALL write_att_hdf5(wall_gid,'active',qid_str,ier)
                CALL h5gcreate_f(wall_gid,'wall_3D_'//qid_str, qid_gid, ier)
                CALL write_att_hdf5(qid_gid,'date',temp_str8,ier)
-               CALL write_att_hdf5(qid_gid,'description','Data initialized from BEAMS3D',ier)
+               CALL write_att_hdf5(qid_gid,'description','BEAMS3D: '//TRIM(machine_string),ier)
                CALL write_var_hdf5(qid_gid,'nelements',ier,INTVAR=nface)
                ALLOCATE(rtemp(3,nface,3))
                DO i = 1, nface
