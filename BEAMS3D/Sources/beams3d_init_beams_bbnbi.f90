@@ -12,7 +12,9 @@
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
       USE beams3d_runtime
-      USE beams3d_lines, ONLY: nparticles
+      USE beams3d_lines, ONLY: nparticles, partvmax
+      USE beams3d_grid, ONLY: X_BEAMLET, Y_BEAMLET, Z_BEAMLET, &
+                           NX_BEAMLET, NY_BEAMLET, NZ_BEAMLET
       USE mpi_params
       USE mpi_inc
       USE hdf5
@@ -27,8 +29,7 @@
       INTEGER, DIMENSION(:), ALLOCATABLE :: N_start
       REAL(rprec) :: rtemp
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: Energy, X_start, Y_start
-      REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: X, Y, X_BEAMLET, Y_BEAMLET, Z_BEAMLET, &
-                                                  NX_BEAMLET, NY_BEAMLET, NZ_BEAMLET, U, V
+      REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: X, Y, U, V
       REAL(rprec), PARAMETER   :: E_error = .01 ! 1% energy spread
 
       ! For HDF5
@@ -90,6 +91,10 @@
             WRITE(6, '(A,I8)')      '   nparticles_start: ', nparticles_start
             CALL FLUSH(6)
          END IF
+         IF (lascot) THEN
+            CALL beams3d_write_ascoth5('BBNBI')
+            IF (lverb) WRITE(6, '(A,I4)')      '   ASCOT5 File: Updated'
+         END IF
       END IF
 
       ! Broadcast and allocate the global variables
@@ -112,7 +117,6 @@
          k1 = 1; k2 = nparticles_start
          weight = 0
          DO i=1,nbeams
-            ! Cycle if not using beam
             j = Dex_beams(i)
             IF (lverb) WRITE(6, '(A,I2,A,I4,A,A,I2,A,F7.3,A,A,I2,A,I4)') '            E_BEAM(',i ,'): ',&
                      NINT(E_beams(i)*6.24150636309E15),' [keV]',& !(1.0E-3/ec)
@@ -127,6 +131,7 @@
             mass(k1:k2)         = mass_beams(i)
             charge(k1:k2)       = charge_beams(i)
             Zatom(k1:k2)        = Zatom_beams(i)
+            partvmax            = MAX(partvmax,6*SQRT(2*E_beams(i)/mass_beams(i))/5.0)
             ! Energy distribution
             CALL gauss_rand(nparticles_start, Energy)
             Energy = sqrt( (E_beams(i) + E_error*E_beams(i)*Energy)*(E_beams(i) + E_error*E_beams(i)*Energy) )
@@ -166,6 +171,7 @@
       END IF
 !DEC$ IF DEFINED (MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
+      CALL MPI_BCAST(partvmax,1,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(mu_start,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(t_end,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(mass,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)

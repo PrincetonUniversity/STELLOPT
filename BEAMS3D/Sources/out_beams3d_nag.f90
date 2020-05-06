@@ -129,8 +129,7 @@ SUBROUTINE out_beams3d_nag(t, q)
           Z_lines(mytdex,myline)       = zw
           t = t_end(myline)+dt
           l = get_wall_ik()
-          IF (lneut) THEN  
-             end_state(myline) = 3
+          IF (lneut) THEN
              wall_shine(mybeam,l) = wall_shine(mybeam,l) + weight(myline)*0.5*mymass*q(4)*q(4)/get_wall_area(l)
           ELSE
              end_state(myline) = 2

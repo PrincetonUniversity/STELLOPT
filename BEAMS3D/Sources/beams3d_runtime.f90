@@ -109,7 +109,7 @@ MODULE beams3d_runtime
                lvessel, lvac, lrestart_grid, lrestart_particles, lneut, &
                lbeam, lhitonly, lread_input, lplasma_only, lraw,&
                ldepo, lbeam_simple, ldebug, lcollision, lw7x, &
-               lascot, lascot4, lbbnbi
+               lascot, lascot4, lbbnbi, lvessel_beam, lascotfl
     INTEGER :: nextcur, npoinc, nbeams, nparticles_start, nprocs_beams
     INTEGER, DIMENSION(MAXBEAMS) :: Dex_beams
     INTEGER, ALLOCATABLE :: beam(:)
@@ -124,6 +124,7 @@ MODULE beams3d_runtime
     REAL(rprec), ALLOCATABLE :: R_start(:), phi_start(:), Z_start(:), vll_start(:), v_neut(:,:), mu_start(:), &
                                 & mass(:), charge(:), Zatom(:), t_end(:), weight(:)
     REAL(rprec), ALLOCATABLE :: extcur(:)
+    CHARACTER(LEN=10) ::  qid_str_saved ! For ASCOT5
     CHARACTER(256) :: id_string, mgrid_string, coil_string, &
     vessel_string, int_type, restart_string, bbnbi_string
 

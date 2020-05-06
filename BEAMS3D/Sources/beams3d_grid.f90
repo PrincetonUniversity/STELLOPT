@@ -36,6 +36,8 @@
 !         BPHI_spl       EZSpline Object for B_PHI
 !         BZ_spl         EZSpline Object for B_Z
 !         MODB_spl       EZSpline Object for MODB
+!         plasma_Zavg    <Z> = sum(n*Z*Z)/sum(n*Z) sum over j ion species
+!         plasma_Zmean   [Z] = sum(n*Z*Z*mi/mj)/sum(n*Z) sum over j ion species (mi: plasma mass)
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       INTEGER  ::    nr, nphi, nz, nte, nne, nti, nzeff, npot
@@ -46,14 +48,16 @@
                      win_S4D, win_U4D, win_POT4D, win_req_axis, win_zeq_axis, &
                      win_wall_load, win_wall_shine
       REAL(rprec) :: rmin, rmax, zmin, zmax, phimin, phimax, tmin, tmax, delta_t, &
-                     vc_adapt_tol, psiedge_eq, phiedge_eq, plasma_Z, plasma_mass, &
-                     reff_eq
+                     vc_adapt_tol, psiedge_eq, phiedge_eq, plasma_Zmean, plasma_mass, &
+                     reff_eq, plasma_Zavg, therm_factor
       REAL(rprec), POINTER :: raxis(:), zaxis(:), phiaxis(:)
       REAL(rprec), POINTER :: req_axis(:), zeq_axis(:)
       REAL(rprec), POINTER :: wall_load(:,:), wall_shine(:,:)
       REAL(rprec), POINTER :: B_R(:,:,:),B_PHI(:,:,:), B_Z(:,:,:), MODB(:,:,:),&
                                   TE(:,:,:), NE(:,:,:), TI(:,:,:), ZEFF_ARR(:,:,:), &
                                   S_ARR(:,:,:), U_ARR(:,:,:), POT_ARR(:,:,:)
+      REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: X_BEAMLET, Y_BEAMLET, Z_BEAMLET, &
+                                                  NX_BEAMLET, NY_BEAMLET, NZ_BEAMLET
       REAL(rprec), DIMENSION(:,:,:,:), POINTER :: BR4D, BPHI4D, BZ4D, MODB4D, &
                                   TE4D, NE4D, TI4D, ZEFF4D, &
                                   S4D, U4D, POT4D

@@ -40,7 +40,7 @@
       INTEGER :: numprocs_local, mylocalid, mylocalmaster
       INTEGER :: MPI_COMM_LOCAL
 !DEC$ ENDIF  
-      LOGICAL :: lnyquist
+      LOGICAL :: lnyquist, luse_vc, lcreate_wall
       INTEGER(KIND=BYTE_8) :: chunk
       INTEGER :: ier, s, i, j, k, nu, nv, mystart, myend, mnmax_temp, u, v
       INTEGER :: bcs1_s(2)
@@ -56,6 +56,9 @@
 !-----------------------------------------------------------------------
 !     Begin Subroutine
 !-----------------------------------------------------------------------
+      ! Handle what we do
+      luse_vc = (lcoil .and. .not.lplasma_only)
+      lcreate_wall = (lplasma_only .and. .not. lvessel)
 
       ! Divide up Work
       mylocalid = myworkid
@@ -164,7 +167,7 @@
 
 
       ! If we ask for a plasma-only run and do not provide a vessel then make one.
-      IF (lplasma_only .and. .not.lvessel) THEN
+      IF (lcreate_wall) THEN
          lvessel = .TRUE.  ! Do this so the other parts of the code know there is a vessel
          k = ns
          CALL wall_load_mn(DBLE(rmnc(1:mnmax,k)),DBLE(zmns(1:mnmax,k)),DBLE(xm),-DBLE(xn),mnmax,120,120,COMM=MPI_COMM_BEAMS)
@@ -173,7 +176,7 @@
       END IF
 
       ! Initialize Virtual Casing
-      IF (.not. lplasma_only) THEN
+      IF (luse_vc) THEN
          nu = 8 * mpol + 1 
          nu = 2 ** CEILING(log(DBLE(nu))/log(2.0_rprec))
          nv = 8 * ntor + 1
@@ -322,7 +325,7 @@
                B_R(i,j,k)   = br
                B_PHI(i,j,k) = bphi
                B_Z(i,j,k)   = bz
-            ELSE IF (lplasma_only) THEN  ! Overwrite data outside
+            ELSE IF (.not. luse_vc) THEN  ! Overwrite data outside
                B_R(i,j,k)   = br
                B_PHI(i,j,k) = bphi
                B_Z(i,j,k)   = bz
@@ -335,13 +338,13 @@
                IF (npot > 0) CALL EZspline_interp(POT_spl_s,sflx,POT_ARR(i,j,k),ier)
                IF (nzeff > 0) CALL EZspline_interp(ZEFF_spl_s,sflx,ZEFF_ARR(i,j,k),ier)
             END IF
-         ELSE IF (lplasma_only) THEN
+         ELSE IF (.not. luse_vc) THEN
             B_R(i,j,k)   = 0
             B_PHI(i,j,k) = 1
             B_Z(i,j,k)   = 0
          END IF
-         ! virtual casing
-         IF (.not. lplasma_only .and. sflx > 1) THEN
+         ! Virtual Casing
+         IF (luse_vc .and. sflx > 1) THEN
             xaxis_vc = raxis_g(i)*cos(phiaxis(j))
             yaxis_vc = raxis_g(i)*sin(phiaxis(j))
             zaxis_vc = zaxis_g(k)
@@ -380,7 +383,7 @@
 #endif
       
       ! Free variables
-      IF (.not. lplasma_only) CALL free_virtual_casing(MPI_COMM_BEAMS)
+      IF (luse_vc) CALL free_virtual_casing(MPI_COMM_BEAMS)
       IF (myworkid == master) THEN
          CALL read_wout_deallocate
       ELSE

@@ -98,6 +98,7 @@ PROGRAM BEAMS3D
         lascot = .false.
         lascot4 = .false.
         lbbnbi = .false.
+        lascotfl = .false.
         id_string = ''
         coil_string = ''
         mgrid_string = ''
@@ -119,6 +120,9 @@ PROGRAM BEAMS3D
                 lvac = .true.
             case ("-ascot","-ascot5")
                 lascot = .true.
+            case ("-ascot_fl","-ascot5_fl")
+                lascot = .true.
+                lascotfl = .true.
             case ("-ascot4")
                 lascot4 = .true.
             case ("-vmec")
@@ -188,7 +192,8 @@ PROGRAM BEAMS3D
                 write(6, *) '     -restart ext:  BEAMS3D HDF5 extension for starting particles'
                 write(6, *) '     -beam_simple:  Monoenergetic BEAMS'
                 write(6, *) '     -w7x:          W7-X beam model'
-                write(6, *) '     -ascot5:       Output data in ASCOT5 format'
+                write(6, *) '     -ascot5:       Output data in ASCOT5 gyro-center format'
+                write(6, *) '     -ascot5_fl:    Output data in ASCOT5 fieldline format'
                 write(6, *) '     -ascot4:       Output data in ASCOT4 format'
                 write(6, *) '     -beamlet:      Beamlet file for beam geometry'
                 write(6, *) '     -raw:          Treat coil currents as raw (scale factors)'
@@ -253,6 +258,8 @@ PROGRAM BEAMS3D
     IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
     CALL MPI_BCAST(lascot, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
     IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
+    CALL MPI_BCAST(lascotfl, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
+    IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
     CALL MPI_BCAST(lascot4, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
     IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
     CALL MPI_BCAST(lbbnbi, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
@@ -286,9 +293,14 @@ PROGRAM BEAMS3D
 
     ! Write Ouput
     CALL beams3d_write('TRAJECTORY_PARTIAL')
-      IF (lascot) THEN
-         CALL beams3d_write_ascoth5('MARKER')
-      END IF
+    IF (lascot) THEN
+        IF (lascotfl) THEN
+            CALL beams3d_write_ascoth5('FIELDLINES')
+        ELSE
+            CALL beams3d_write_ascoth5('MARKER')
+        END IF
+    END IF
+    IF (lascot4) CALL beams3d_write_ascoth4('MARKER')
 
     ! Write diagnostics stuff
     CALL beams3d_diagnostics

@@ -291,7 +291,7 @@
       CALL h5pset_fapl_mpio_f(fapl_id, MPI_COMM_BEAMS, info, ier)
       CALL h5pget_driver_f(fapl_id, driver_id, ier)
       ! Open file
-      CALL h5fopen_f('beams3d_ascot5_'//TRIM(id_string)//'.h5', H5F_ACC_RDWR_F, file_id, ier, access_prp = fapl_id)
+      CALL h5fopen_f('ascot5_'//TRIM(id_string)//'.h5', H5F_ACC_RDWR_F, file_id, ier, access_prp = fapl_id)
 !!!!!!! Begin writing
 
 !      WRITE(6,*) myworkid,dimsf,chunk_dims,counts,offset; CALL FLUSH(6)
@@ -355,7 +355,7 @@
             !PRINT *,'h5pcreate_f ',ier
 
             ! Open file
-            CALL h5fopen_f('beams3d_ascot5_'//TRIM(id_string)//'.h5', H5F_ACC_RDWR_F, file_id, ier, access_prp = H5P_DEFAULT_F)
+            CALL h5fopen_f('ascot5_'//TRIM(id_string)//'.h5', H5F_ACC_RDWR_F, file_id, ier, access_prp = H5P_DEFAULT_F)
             !PRINT *,'h5fopen_f ',ier
 
             ! Open or create the dataset and get/create dataspace identifer
