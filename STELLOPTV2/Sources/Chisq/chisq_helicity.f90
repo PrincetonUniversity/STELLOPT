@@ -41,7 +41,7 @@
 !----------------------------------------------------------------------
       IF (iflag < 0 ) RETURN
       IF (lasym) STOP 'ERROR: Helicity targeting requires lasym = .FALSE.'
-      dex = COUNT(sigma < bigno)*mnboz_b
+      dex = COUNT(ABS(sigma) < bigno)*mnboz_b
       l_heli = NINT(REAL(helicity))
       k_heli = NINT(AIMAG(helicity))
       IF (niter >= 0) THEN   
@@ -53,7 +53,7 @@
          END IF
          ! Now calculate chi_sq
          DO ik = 1, nsd
-            IF (sigma(ik) >= bigno) CYCLE
+            IF (ABS(sigma(ik)) >= bigno) CYCLE
             bmax  = MAXVAL(ABS(bmnc_b(1:mnboz_b,ik)))
             sj = (real(ik,rprec) - 1.5_dp)/REAL((ns_b-1),rprec)            !!This is correct (SPH)
             bnorm = 0.0
@@ -120,7 +120,7 @@
          ! CALCULATE mnboz_b becasue we don't know it yet (setup_booz.f)
          mnboz_b = (2*nboz+1)*(mboz-1) + (nboz + 1)
          DO ik = 1, nsd
-            IF (sigma(ik) < bigno) THEN
+            IF (ABS(sigma(ik)) < bigno) THEN
                lbooz(ik) = .TRUE.
                DO mn = 1, mnboz_b
                   mtargets = mtargets + 1

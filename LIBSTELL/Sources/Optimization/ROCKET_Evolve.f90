@@ -149,8 +149,10 @@
                           '           CHI_BEST'
                WRITE(6,'(70("="))')
             END IF
+#if defined(MPI_OPT)
             CALL MPI_BARRIER(MPI_COMM_STEL, ierr)
             IF (ierr .ne. 0) CALL mpi_stel_abort(ierr)
+#endif
             WRITE(6,'(2(6X,I5),7X,1ES12.4E3)') nfeval,myid,fnorm**2
          ELSE
             IF (fnorm < fnorm_personal) x_personal = x_temp
@@ -163,7 +165,7 @@
          ! Find the global minimum state
          update_global = 0
          fnorm_array   = 1.0E30
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
          CALL MPI_BARRIER(MPI_COMM_STEL, ierr)
          IF (ierr .ne. 0) CALL mpi_stel_abort(ierr)
          CALL MPI_ALLGATHER(fnorm, 1, MPI_REAL8, fnorm_array, &
@@ -219,8 +221,7 @@
                            MPI_COMM_STEL,ierr)
             IF (ierr .ne. 0) CALL mpi_stel_abort(ierr)
          END IF
-!DEC$ ELSE
-!DEC$ ENDIF
+#endif
          
          ! Output the xvectors
          DO i = 0, numprocs-1
@@ -232,10 +233,10 @@
                WRITE(iunit,'(ES22.12E3)') fnorm
                CLOSE(iunit)
             END IF
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
             CALL MPI_BARRIER(MPI_COMM_STEL,ierr)
             IF (ierr .ne. 0) CALL mpi_stel_abort(ierr)
-!DEC$ ENDIF
+#endif
          END DO
          
          ! Calculate the Velocity
@@ -277,14 +278,14 @@
          END DO
          !X_array(dex,:) = x_temp
 
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
          ! Update nfeval
          CALL MPI_BARRIER(MPI_COMM_STEL,ierr)
          IF (ierr .ne. 0) CALL mpi_stel_abort(ierr)
          CALL MPI_BCAST(nfeval,1,MPI_INTEGER,numprocs-1, &
                        MPI_COMM_STEL, ierr)
          IF (ierr .ne. 0) CALL mpi_stel_abort(ierr)
-!DEC$ ENDIF
+#endif
          generation = generation + 1
          
          ! Test for exit condition

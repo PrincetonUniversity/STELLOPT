@@ -14,8 +14,7 @@
                                neut_lines, moment_lines, S_lines, U_lines, &
                                shine_through, &
                                ndot_prof, epower_prof, ipower_prof, j_prof,&
-                               B_lines, dist2d_prof, end_state
-!      USE wall_mod, ONLY: wall_free
+                               B_lines, dist2d_prof, end_state, shine_port
       USE EZspline_obj
       USE mpi_sharmem
 !-----------------------------------------------------------------------
@@ -137,6 +136,7 @@
       IF (ALLOCATED(beam))      DEALLOCATE(beam)
       IF (ALLOCATED(weight))    DEALLOCATE(weight)
       IF (ALLOCATED(shine_through))    DEALLOCATE(shine_through)
+      IF (ALLOCATED(shine_port))    DEALLOCATE(shine_port)
       IF (ALLOCATED(ndot_prof))    DEALLOCATE(ndot_prof)
       IF (ALLOCATED(epower_prof))    DEALLOCATE(epower_prof)
       IF (ALLOCATED(ipower_prof))    DEALLOCATE(ipower_prof)

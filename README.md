@@ -1,18 +1,13 @@
 # INSTALLATION
-This version of STELLOPT makes use of the `make.inc` file to define
-compiler options and paths (in analogy to the old setup file).  These
-files are stored in the [SHARE](SHARE) folder.  Check to see if one exists
-for your computer system.  If it does, just create a symbolic link to
-it named `make.inc` in the directory above [SHARE](SHARE).  Otherwise copy 
-the `make_pppl.inc` file under a new name. By default, `make_pppl.inc`
-assumes that you want to compile all the codes. Please modify your own
-copy if needed.
-
-Creating a `make.inc` file is now mandatory, and please DO NOT track 
-your personal `make.inc` file via git.
-
-     cp SHARE/make_pppl.inc SHARE/make_pppl_myown.inc
-     ln -sf SHARE/make_pppl_myown.inc make.inc
+This version of STELLOPT makes use of `make_***.inc` files in the `SHARE`
+subdirectory to set various options at compile time.  The `make.inc` file
+in the main directory is a script which picks these files based on what
+is returned by the `uname -n` command on your machine.  This can be
+overridden by setting the environment variable `MACHINE` to the file you
+wish to use.  For example to use `SHARE/make_bobdole.inc` you would set
+`MACHINE=bobdole` before calling the build scripts.  It is also
+important to set `STELLOPT_PATH` to the path to your current directory
+where you've pulled the repository.
 
 Once a working copy is developed for your computer, you are welcome 
 to push it back to the main repository for other users.

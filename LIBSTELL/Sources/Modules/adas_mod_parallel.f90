@@ -95,6 +95,7 @@ module adas_mod_parallel
        INTEGER, DIMENSION(3) :: dimlen
        CHARACTER(LEN=256) :: adasdir, table_str, var_str
 
+#if defined(MPI_OPT)
        ! Initialize
        CALL deallocate_adas_tables
        ! Load Electron impact iz =1 
@@ -374,13 +375,14 @@ module adas_mod_parallel
        !CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
        !CALL mpialloc(ex_1_3, dimlen(1), dimlen(2),dimlen(3), myid, local_master, comm, win_ex_13)
        !CALL adas_get_var_3D(table_str,var_str,dimlen(1),dimlen(2),dimlen(3),ex_1_3,myid,comm)
-
+#endif
        RETURN
 
        END SUBROUTINE adas_load_tables
 
        SUBROUTINE deallocate_adas_tables
        IMPLICIT NONE
+#if defined(MPI_OPT)
        IF (ASSOCIATED(ei_1_axis)) CALL mpidealloc(ei_1_axis,win_ei_1a)
        IF (ASSOCIATED(ei_2_axis)) CALL mpidealloc(ei_2_axis,win_ei_2a)
        IF (ASSOCIATED(cx_1_1_axis)) CALL mpidealloc(cx_1_1_axis,win_cx_11a)
@@ -441,6 +443,7 @@ module adas_mod_parallel
        IF (ASSOCIATED(ex_1_1)) CALL mpidealloc(ex_1_1,win_ex_11)
        IF (ASSOCIATED(ex_1_2)) CALL mpidealloc(ex_1_2,win_ex_12)
        IF (ASSOCIATED(ex_1_3)) CALL mpidealloc(ex_1_3,win_ex_13)
+#endif
        END SUBROUTINE deallocate_adas_tables
 
        SUBROUTINE adas_inq_var_size(filename,varname,n,myid,comm)
@@ -651,6 +654,7 @@ module adas_mod_parallel
        integer, intent(in) :: beamchrg ! beam type: =neutral or =ion
 
        integer, parameter :: NEUTRAL=1, ION=2
+       real*8  :: zbeam         !     zbeam        : atomic charge of primate particle
        real*8  :: zion          !     izion        : atomic charge of secondary particle {1, ..., 10}
        integer :: npts_e, npts_t ! number of points for table
        real*8  :: xlr, xlr_t ! If XLR>0, then the X grid is equally spaced on a logarithmic scale:
@@ -660,10 +664,18 @@ module adas_mod_parallel
        istat=0
        sigv_adas=0
        sigv_adas_wrk1 =0; sigv_adas_wrk2=0
-       zion = DBLE(izneut_in)
 
-       IF (freact_type == 1) THEN
-          IF(beamchrg.eq.NEUTRAL) THEN
+       ! The the beam is an ion then flip it.
+       IF (beamchrg.eq.NEUTRAL) THEN
+          zbeam = DBLE(izneut_in)
+          zion  = DBLE(zion_in)
+       ELSE ! FLIP for ION-BEAM
+          zbeam = DBLE(zion_in)
+          zion  = DBLE(izneut_in)
+       END IF
+
+       IF (freact_type == 1) THEN ! Charge Exchange (cx_zneut_zion)
+          IF (zbeam == 1) THEN
              xlr    =  log(cx_1_1_axis(2)/cx_1_1_axis(1))
              xlr_t  =  log(cx_1_1_axis(6)/cx_1_1_axis(5))
              npts_e = SIZE(cx_1_1_btsigv,DIM=1)
@@ -672,7 +684,7 @@ module adas_mod_parallel
                                                xlr,npts_e,cx_1_1_axis(5),cx_1_1_axis(6),&
                                                xlr_t,npts_t,iwarn_adas)
              sigv_adas = sigv_adas_wrk1*(zion) ! This is the ADAS WAY
-          ELSE IF (beamchrg.eq.ION) THEN
+          ELSE IF (zbeam == 2) THEN
              IF (zion >=1 .and. zion < 2) THEN
                 xlr=log(cx_2_1_axis(2)/cx_2_1_axis(1))
                 xlr_t=log(cx_2_1_axis(6)/cx_2_1_axis(5))
@@ -703,7 +715,7 @@ module adas_mod_parallel
              istat = 1
           END IF
        ELSE IF (freact_type == 2) THEN
-          IF(beamchrg.eq.NEUTRAL) THEN
+          IF(zbeam == 1) THEN
              IF (zion >=1 .and. zion < 2) THEN
                 xlr=log(ii_1_1_axis(2)/ii_1_1_axis(1))
                 xlr_t=log(ii_1_1_axis(6)/ii_1_1_axis(5))
@@ -858,7 +870,7 @@ module adas_mod_parallel
                                                xlr_t,npts_t,iwarn_adas)
                 sigv_adas = sigv_adas_wrk1*(zion/10) ! This is the ADAS WAY
              END IF
-          ELSE IF (beamchrg.eq.ION) THEN
+          ELSE IF (zbeam == 2) THEN
              IF (zion >=1 .and. zion < 2) THEN
                 xlr=log(ii_2_1_axis(2)/ii_2_1_axis(1))
                 xlr_t=log(ii_2_1_axis(6)/ii_2_1_axis(5))

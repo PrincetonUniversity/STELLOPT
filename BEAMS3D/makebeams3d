@@ -5,7 +5,7 @@ CFILE   = '$*''.c'
 F90FILE = '$*''.f90'
 SPATH   = ../Sources
 #Contains list of source files (.o) and dependencies
-DEPLIST = BEAMS3D.dep
+DEPLIST = ../BEAMS3D.dep
 OBJLIST = ../ObjectList
 
 #Includes source files and dependency list
