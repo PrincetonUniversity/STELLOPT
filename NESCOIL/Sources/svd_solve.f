@@ -1,24 +1,26 @@
-      SUBROUTINE svd_solve(m, n, mp, np, a, b, v, w, nw, small)
+      SUBROUTINE svd_solve(m, n, mp, np, a, b, v, w, nw)
       USE stel_kinds
       IMPLICIT NONE
 C-----------------------------------------------
 C   D u m m y   A r g u m e n t s
 C-----------------------------------------------
-      INTEGER m, n, mp, np, nw
-      REAL(rprec), DIMENSION(mp,np) :: a
-      REAL(rprec), DIMENSION(n,n) :: v
-      REAL(rprec), DIMENSION(n) :: w
-      REAL(rprec), DIMENSION(m) :: b
-      REAL(rprec) :: small
+      INTEGER, INTENT(IN) :: m, n, mp, np
+      INTEGER, INTENT(OUT) :: nw
+      REAL(rprec), INTENT(IN) :: a(mp, np), b(m)
+      REAL(rprec), INTENT(OUT) :: v(n,n), w(n)
+c     REAL(rprec) :: small ! changed to local by C. ZHU (2020.5.7)
 C-----------------------------------------------
 C   L o c a l   P a r a m e t e r s
 C-----------------------------------------------
-!      REAL(rprec) :: small = 1.0e-10_dp
+      REAL(rprec) :: small = 1.0e-10_dp
 C-----------------------------------------------
 C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
       INTEGER :: istat, i, j
-      REAL(rprec), ALLOCATABLE :: u(:,:)
+      INTEGER :: INFO, LWORK, LDA, LDU, LDVT
+      REAL(rprec), ALLOCATABLE :: ap(:,:), WORK(:), u(:,:), VT(:,:)
+      INTEGER, ALLOCATABLE :: IWORK(:)
+      CHARACTER :: JOBZ
 C-----------------------------------------------
 
 c       Solves Matrix equation A * V = B for V using SVD method
@@ -53,23 +55,41 @@ c  Note u(m,n) is enough because needed part of a(mp,np) is copied to
 c  u(m,n), and a(mp,np) is never used directly. This saves space.
 c  It is essential to USE a local u since svdcmp changes it
 
+      ALLOCATE (ap(m,n),  stat=istat)
+      IF(istat.ne.0) STOP 'Stop: No memory in svd_nesc'
       ALLOCATE (u(m,n),  stat=istat)
+      IF(istat.ne.0) STOP 'Stop: No memory in svd_nesc'
+      ALLOCATE (VT(n,n),  stat=istat)
       IF(istat.ne.0) STOP 'Stop: No memory in svd_nesc'
 
 c.......................................
 c  Initialize ALL to zero to wipe out effects of old CALL
       w(:n) = 0                                !Zero ALL weights
       DO j = 1, n
-         u(:m,j) = a(:m,j)                  !Because U will be changed by svdcmp
+         ap(:m,j) = a(:m,j)                  !Because U will be changed by svdcmp
          v(:n,j) = 0
+         vt(:n,j) = 0
       END DO
 
 c  Do the SVD decomposition of a, i.e, of u into u, v and w
-       CALL svdcmp (u, m, n, m, n, w, v)
-
+c      CALL svdcmp (u, m, n, m, n, w, v)
 c  Sort weights and matrices with DECREASING weights so w(1) is biggest
 c  Permute weight w(i) AND column vectors U(*,i), V(*,i) at the same time
-       CALL sortsvd (m, n, m, n, w, u, v)
+c      CALL sortsvd (m, n, m, n, w, u, v)
+      LDA = M
+      LDU = M
+      LDVT = N
+      LWORK = max( 3*min(M,N) + max(max(M,N),7*min(M,N)), 
+     1     3*min(M,N) + max(max(M,N),5*min(M,N)*min(M,N)+4*min(M,N)), 
+     2     min(M,N)*(6+4*min(M,N))+max(M,N))
+      JOBZ = 'S' ! min(M,N)
+      ALLOCATE (WORK(LWORK),  stat=istat)
+      IF(istat.ne.0) STOP 'Stop: No memory in svd_nesc'
+      ALLOCATE (IWORK(8*min(M,N)),  stat=istat)
+      IF(istat.ne.0) STOP 'Stop: No memory in svd_nesc'
+      CALL DGESDD( JOBZ, M, N, AP, LDA, W, U, LDU, VT, LDVT, WORK,
+     1     LWORK, IWORK, INFO )
+      IF(info.ne.0) print *, "Error in SVD (DGESDD): info=",INFO
 
 c  Find nw = number of large weights (dcreasing ordered by sortsvd)
          DO nw = n, 1, -1          !Find first large weight and get out
@@ -85,14 +105,17 @@ c     and uses less memory due to the dual role of V
 c  Note: any optimization scheme to find the 'best' nw will
 
 c      First set the 1st vector with largest weight w(1)
-       v(:n,1) = SUM(u(:m,1)*b(:m)) *v(:n,1) /w(1)
+       v(:n,1) = SUM(u(:m,1)*b(:m)) *vt(1,:n) /w(1)
 c      Next add the vectors with successive weights (in decreasing order)
          DO i = 2, nw
             j = i - 1
-            v(:n,i) = v(:n,j) + SUM(u(:m,i)*b(:m)) *v(:n,i) / w(i)
+            v(:n,i) = v(:n,j) + SUM(u(:m,i)*b(:m))*vt(i,:n) / w(i)
          END DO
 c................................................
-
       DEALLOCATE (u, stat=istat)
+      DEALLOCATE (ap, stat=istat)
+      DEALLOCATE (vt, stat=istat)
+      DEALLOCATE (WORK, stat=istat)
+      DEALLOCATE (IWORK, stat=istat)
 
       END SUBROUTINE svd_solve

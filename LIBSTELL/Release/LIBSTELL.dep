@@ -1205,30 +1205,6 @@ drive_gmres.o : \
 gmres.o : \
       stel_constants.o \
       stel_kinds.o 
-      
-
-ajax_mod.o : \
-      linear1_mod.o \
-      spec_kind_mod.o \
-      spline1_mod.o 
-      
-
-linear1_mod.o : \
-      spec_kind_mod.o 
-      
-
-spline1_mod.o : \
-      spec_kind_mod.o 
-      
-
-track_mod.o : \
-      ajax_mod.o \
-      spec_kind_mod.o 
-      
-
-write_mod.o : \
-      spec_kind_mod.o \
-
 
 li_gbfa.o : \
       liprec.o 
@@ -1313,43 +1289,7 @@ boozer_utils.o : \
       stel_kinds.o \
       ezspline.o \
       ezspline_obj.o \
-      read_boozer_mod.o
-
-
-toms661.o : \
-      stel_kinds.o 
-      
-
-linear_shepard.o : \
-      real_precision.o 
-      
-
-qshep3d.o : \
-      real_precision.o 
-      
-      
-qshep2d.o : \
-      real_precision.o 
-      
-      
-cshep2d.o : \
-      real_precision.o 
-      
-
-qshepmd.o : \
-      real_precision.o \
-      qshepmdata.o
-      
-
-sheppack.o : \
-      qshep2d.o \
-      qshep3d.o \
-      qshepmd.o \
-      cshep2d.o \
-      linear_shepard.o
-      
-      
-real_precision.o : 
+      read_boozer_mod.o 
       
       
 boundary.o : \
