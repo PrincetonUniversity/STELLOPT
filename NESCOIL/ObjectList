@@ -63,4 +63,6 @@ Vsurface9.o \
 Vsurfcurdiag.o \
 Vprecal1.o \
 accuracy.o \
-Vsurface3.o 
+Vsurface3.o \
+svd_solve.o
+
