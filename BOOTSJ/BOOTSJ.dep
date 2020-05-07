@@ -12,7 +12,7 @@ allocate_angles.o: \
 allocate_radial.o: \
       parambs.o \
       vmec0.o \
-      ../../LIBSTELL/Debug/read_boozer_mod.o 
+      ../../LIBSTELL/$(LOCTYPE)/read_boozer_mod.o 
       
 
 bongrid.o: \
@@ -22,7 +22,7 @@ bongrid.o: \
 
 bootsj.o: \
       parambs.o \
-      ../../LIBSTELL/Debug/safe_open_mod.o \
+      ../../LIBSTELL/$(LOCTYPE)/safe_open_mod.o \
       trig.o \
       vmec0.o
 
@@ -35,8 +35,8 @@ caprsh2.o: \
 datain.o: \
       parambs.o \
       vmec0.o \
-      ../../LIBSTELL/Debug/read_boozer_mod.o \
-      ../../LIBSTELL/Debug/bootsj_input.o
+      ../../LIBSTELL/$(LOCTYPE)/read_boozer_mod.o \
+      ../../LIBSTELL/$(LOCTYPE)/bootsj_input.o
 
 
 deallocate_all.o: \
@@ -50,13 +50,13 @@ denmf.o: \
 
 
 doo_fft.o: \
-      ../../LIBSTELL/Debug/stel_kinds.o 
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o 
 
 
 driver.o: \
-      ../../LIBSTELL/Debug/stel_kinds.o \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
       parambs.o \
-      ../../LIBSTELL/Debug/safe_open_mod.o
+      ../../LIBSTELL/$(LOCTYPE)/safe_open_mod.o
 
 
 fraction.o: \
@@ -80,7 +80,7 @@ output.o: \
 
 
 parambs.o: \
-      ../../LIBSTELL/Debug/bootsj_input.o \
+      ../../LIBSTELL/$(LOCTYPE)/bootsj_input.o \
       vmec0.o
 
 
@@ -90,7 +90,7 @@ positiv.o: \
 
 
 read_boozer.o: \
-      ../../LIBSTELL/Debug/read_boozer_mod.o \
+      ../../LIBSTELL/$(LOCTYPE)/read_boozer_mod.o \
       parambs.o 
 
 
@@ -99,7 +99,7 @@ reorganz.o: \
 
 
 SIMPUN.o: \
-      ../../LIBSTELL/Debug/stel_kinds.o 
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o 
 
 
 smooth1.o: \
@@ -108,11 +108,11 @@ smooth1.o: \
 
 
 sumit.o: \
-      ../../LIBSTELL/Debug/stel_kinds.o 
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o 
 
 
 temp.o: \
-      ../../LIBSTELL/Debug/stel_kinds.o 
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o 
 
 
 tok_fraction.o: \
@@ -121,11 +121,11 @@ tok_fraction.o: \
 
 
 trig.o: \
-      ../../LIBSTELL/Debug/stel_kinds.o 
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o 
 
 
 vmec0.o: \
-      ../../LIBSTELL/Debug/stel_kinds.o 
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o 
 
 
 woflam.o: \
