@@ -138,9 +138,13 @@
          ALLOCATE(xm_temp(mnmax_temp),xn_temp(mnmax_temp))
          ALLOCATE(rmnc_temp(mnmax_temp,ns),zmns_temp(mnmax_temp,ns))
          ALLOCATE(jumnc_temp(mnmax_temp,ns),jvmnc_temp(mnmax_temp,ns))
+         xm_temp=0; xn_temp=0; rmnc_temp=0; zmns_temp=0;
+         jumnc_temp=0; jvmnc_temp=0
          IF (lasym) THEN
             ALLOCATE(rmns_temp(mnmax_temp,ns),zmnc_temp(mnmax_temp,ns))
             ALLOCATE(jumns_temp(mnmax_temp,ns),jvmns_temp(mnmax_temp,ns))
+            rmns_temp = 0; zmnc_temp=0
+            jumns_temp = 0; jvmns_temp=0
          END IF
          IF (lnyquist) THEN
             xm_temp = xm_nyq
