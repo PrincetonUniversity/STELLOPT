@@ -1,12 +1,12 @@
 &INDATA
-  MGRID_FILE = '/p/pies/Lazerson/Sims/MGRIDS/mgrid_c09r00.nc'
+  MGRID_FILE = '/Users/lazerson/Sims_Work/coils/NCSX/mgrid_c09r00.nc'
   LFREEB = T
   DELT =   9.00E-01
   TCON0 =   2.00E+00
   NFP =    3
   NCURR =    1
   MPOL =   11  NTOR =    6
-  NZETA  =   36
+  NZETA  =   24
   NS_ARRAY =   9   29   49   99
   NITER = 5000
   NSTEP =  200
