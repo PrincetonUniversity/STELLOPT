@@ -5,7 +5,7 @@ CFILE   = '$*''.c'
 F90FILE = '$*''.f90'
 SPATH   = ../Sources
 #Contains list of source files (.o) and dependencies
-DEPLIST = VMEC2000.dep
+DEPLIST = ../VMEC2000.dep
 OBJLIST = ../ObjectList
 
 #Includes source files and dependency list
