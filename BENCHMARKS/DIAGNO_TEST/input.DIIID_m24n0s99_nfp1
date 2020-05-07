@@ -1,6 +1,5 @@
  &INDATA
-  MGRID_FILE = '/p/pies/Lazerson/Sims/MGRIDS/mgrid_d3d_ef.nc'
-  MGRID_FILE = '/p/stellopt/MGRIDS/DIIID/mgrid_d3d_ef.nc'
+  MGRID_FILE = '/Users/lazerson/Sims_Work/coils/DIIID/mgrid_d3d_ef.nc'
   LFREEB = T   LASYM = T
   DELT = 1.00E-00
   TCON0 = 2.00E+00
@@ -11,7 +10,7 @@
   NITER = 3500
   NSTEP =  300
   NVACSKIP = 3
-  NS_ARRAY =                 9            29            49            99
+  NS_ARRAY =                16            29            49            99
   FTOL_ARRAY =    1.000000E-30  1.000000E-30  1.000000E-30  1.000000E-12
   NITER_ARRAY =           1000          2500          5000         20000
   PHIEDGE = -3.6607381E+00
