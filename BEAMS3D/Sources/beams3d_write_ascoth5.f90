@@ -61,7 +61,7 @@
 
 
       !DOUBLE PRECISION, PARAMETER :: e_charge      = 1.60217662E-19 !e_c
-      DOUBLE PRECISION, PARAMETER :: c_speed       = 2.99792458E+08 !e_c
+      DOUBLE PRECISION, PARAMETER :: c_speed       = 2.99792458E+08 !Speed of light [m/s]
       DOUBLE PRECISION, PARAMETER :: e_charge      = 1.602176565e-19 !e_c
       DOUBLE PRECISION, PARAMETER :: inv_amu       = 6.02214076208E+26 ! 1./AMU [1/kg]
 !-----------------------------------------------------------------------

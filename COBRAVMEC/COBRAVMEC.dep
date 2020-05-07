@@ -1,0 +1,148 @@
+ballooning_data.o : \
+      general_dimensions.o \
+      fmesh_quantities.o \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o
+
+
+cobra.o : \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      normalize_data.o \
+      ballooning_data.o \
+      readin_data.o \
+      ../../LIBSTELL/$(LOCTYPE)/safe_open_mod.o \
+      ../../LIBSTELL/$(LOCTYPE)/date_and_computer.o \
+      fmesh_quantities.o
+      
+
+
+coeffs.o : \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      normalize_data.o \
+      ballooning_data.o \
+      fmesh_quantities.o
+
+
+CP.o : \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o
+
+
+EQL.o : \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o
+
+
+fmesh_quantities.o : \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      general_dimensions.o \
+      readin_data.o
+
+
+general_dimensions.o : \
+
+
+get_ballooning_grate.o : \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      ballooning_data.o \
+      normalize_data.o \
+      readin_data.o \
+      general_dimensions.o \
+      fmesh_quantities.o
+
+
+get_lambda.o : \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      ballooning_data.o \
+      normalize_data.o \
+      readin_data.o \
+      general_dimensions.o \
+      fmesh_quantities.o
+
+
+geteigm.o : \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      ballooning_data.o
+
+
+getmatrix.o : \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      ballooning_data.o
+
+
+INP.o : \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o
+
+
+normalize_data.o : \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o
+
+
+obtain_field_line.o : \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      normalize_data.o \
+      ballooning_data.o \
+      general_dimensions.o \
+      fmesh_quantities.o
+
+
+obtain_theta.o : \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      ballooning_data.o \
+      general_dimensions.o \
+      normalize_data.o \
+      fmesh_quantities.o
+
+
+obtain_zeta.o : \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      ballooning_data.o \
+      general_dimensions.o \
+      fmesh_quantities.o
+
+
+order_input.o : \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(LOCTYPE)/read_wout_mod.o \
+      normalize_data.o \
+      readin_data.o \
+      fmesh_quantities.o \
+      ../../LIBSTELL/$(LOCTYPE)/vparams.o      
+
+
+polint.o : \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o
+
+
+readin_data.o : \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      general_dimensions.o 
+
+
+STM.o : \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o
+
+
+summod.o : \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o
+
+
+summodosd.o : \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      normalize_data.o \
+      ballooning_data.o \
+      general_dimensions.o \
+      fmesh_quantities.o \
+      summod.o 
+
+
+TVAL.o : \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o
+
+
+TVECT.o : \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o
+
+
+variat_eig_full.o : \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      ballooning_data.o
+
+

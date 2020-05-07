@@ -1,0 +1,64 @@
+# Microsoft Developer Studio Generated Dependency File, included by VMEC2000.mak
+
+main.o: \
+      spec_runtime.o 
+      
+
+spec_init.o: \
+      spec_runtime.o \
+      spec_input_mod.o
+      
+
+spec_init_input.o: \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(LOCTYPE)/vmec_input.o \
+      ../../LIBSTELL/$(LOCTYPE)/profile_functions.o \
+      spec_background.o \
+      spec_runtime.o \
+      spec_profile.o
+      
+
+spec_rat_prof.o: \
+      ../../LIBSTELL/$(LOCTYPE)/read_wout_mod.o \
+      spec_background.o \
+      spec_runtime.o \
+      spec_input_mod.o 
+      
+
+spec_init_wout.o: \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(LOCTYPE)/read_wout_mod.o \
+      spec_background.o \
+      spec_profile.o \
+      spec_runtime.o
+      
+
+spec_background.o: \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o 
+      
+
+spec_runtime.o: \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o 
+      
+
+spec_input_mod.o: \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(LOCTYPE)/safe_open_mod.o \
+      spec_runtime.o \
+      spec_background.o 
+      
+
+spec_input_mod.o: \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(LOCTYPE)/stel_constants.o \
+      ../../LIBSTELL/$(LOCTYPE)/vmec_input.o
+      
+
+write_spec_input.o: \
+      ../../LIBSTELL/$(LOCTYPE)/write_array_generic.o \
+      spec_background.o \
+      spec_runtime.o \
+      spec_profile.o
+      
+
+
