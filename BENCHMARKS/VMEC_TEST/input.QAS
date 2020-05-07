@@ -4,7 +4,6 @@
   NFP =    3
   NCURR =    1
   MPOL =   11  NTOR =    6
-  NZETA  =   32
   NVACSKIP =    6
 !----- Runtime Parameters -----
   DELT =  0.75
