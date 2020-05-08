@@ -18,6 +18,8 @@
             -assume noold_unit_star -g -traceback
   FLAGS_D = -I$(MKL_HOME)/include -fp-model strict -ip \
             -assume noold_unit_star -g -traceback
+  FLAGS_D+= -check all -check bounds -check noarg_temp_created \
+            -check uninit -ftrapuv -debug all
   LIBS    = -Wl,-rpath,$(MKL_HOME)/lib/intel64 \
             -L$(MKL_HOME)/lib/intel64 -lmkl_scalapack_lp64 \
             -lmkl_intel_lp64 -lmkl_core -lmkl_sequential \
