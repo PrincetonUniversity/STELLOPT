@@ -54,4 +54,6 @@ Specific Compilation Issues
 
 [Compiling on the RZG-MPE Cluster (Hydra, Draco, Cobra)](STELLOPT Compilation on Hydra (RZG-MPG))
 
+[Compiling on the CINECA Cluster (Marconi)](STELLOPT Compilation CINECA)
+
 [Compiling on an Ubuntu (Debian) Machine](STELLOPT Compilation Ubuntu)
