@@ -14,7 +14,7 @@
   
   SHELL = /bin/sh
   PWD1 = `pwd`
-  PRECOMP:= cpp-mp-8 -traditional-cpp -E -P -C -DMACOSX
+  PRECOMP:= cpp-mp-9 -traditional-cpp -E -P -C -DMACOSX
   COMPILE = gfortran
   COMPILE_FREE = gfortran -ffree-form -ffree-line-length-none -ffixed-line-length-none
   LINK    = gfortran $(FLAGS) -o
@@ -157,4 +157,4 @@
 #            LIBSTELL Shared Options
 #######################################################################
 
-LIB_SHARE = -L/opt/local/lib/gcc8 -lstdc++ -lgfortran -L/usr/lib -lz -lc -lm -lpthread $(LIBS)
+LIB_SHARE = -L/opt/local/lib/gcc9 -lstdc++ -lgfortran -L/usr/lib -lz -lc -lm -lpthread $(LIBS)
