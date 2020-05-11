@@ -23,7 +23,7 @@ Installation Steps
     sudo apt-get install libnetcdf-dev
     sudo apt-get install libnetcdff-dev
     sudo apt-get install libhdf5-serial-dev
-    sudo apt-get install libhdf5-tools
+    sudo apt-get install hdf5-tools
     sudo apt-get install libblas-dev
     sudo apt-get install liblapack-dev
     sudo apt-get install python3
@@ -31,6 +31,7 @@ Installation Steps
     sudo apt-get install python3-h5py
     sudo apt-get install pgplot5
     sudo apt-get install libncarg-dev
+    sudo apt-get install libscalapack-openmpi-dev
 
 3\. Setup your environment variables
 
