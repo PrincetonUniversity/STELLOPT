@@ -50,7 +50,7 @@ also chosen OpenMPI but the sources could also be built with MPICH.
     sudo port select --set python python27
     sudo port select --set python3 python37
     sudo port install py38-pyqt4 +gccX     (Note there is a weird issue with dbus requireing the port to be force installed)
-    sudo port install py38-matplotlib +dvipng +pyside +qt4 +gccX
+    sudo port install py38-matplotlib +dvipng +pyside +qt4 +tkinter +gccX
     sudo port install py38-h5py +gccX +openmpi
     # The following are needed for GENE
     #sudo port install petsc +gccX +openmpi +openblas -accelerate +metis +mumps +parmetis +suitesparse +superlu_dist +complex
