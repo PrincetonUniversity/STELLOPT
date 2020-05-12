@@ -1,4 +1,6 @@
 ObjectFiles = \
+suzuki_sigma.o \
+wall_mod_new.o \
 adas_mod_parallel.o \
 sort.o \
 str_length.o \
@@ -451,16 +453,6 @@ ezcdf_GenPut.o \
 ezcdf_GenGet.o \
 handle_err.o \
 ezcdf.o \
-polysvd.o \
-svdsolveb.o \
-pythag.o \
-svdsolveuv.o \
-svd_solve.o \
-SVBKSB.o \
-svdinv.o \
-SORTSVD.o \
-svdinv2.o \
-svdcmp.o \
 gmresr.o \
 dPackgmres.o \
 gmres.o \
