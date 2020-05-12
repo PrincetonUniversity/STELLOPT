@@ -270,7 +270,9 @@
                CALL RANDOM_NUMBER(qid_flt)
                WRITE(qid_str,'(i10.10)') FLOOR(qid_flt*1.0E9)
                CALL write_att_hdf5(plasma_gid,'active',qid_str,ier)
-               CALL h5gcreate_f(plasma_gid,'plasma_1DS_'//qid_str, qid_gid, ier)
+               ! 1DS acts screwy in the vacuum region
+               !CALL h5gcreate_f(plasma_gid,'plasma_1DS_'//qid_str, qid_gid, ier)
+               CALL h5gcreate_f(plasma_gid,'plasma_1D_'//qid_str, qid_gid, ier)
                CALL write_att_hdf5(qid_gid,'date',temp_str8,ier)
                CALL write_att_hdf5(qid_gid,'description','Data initialized from BEAMS3D',ier)
                CALL write_var_hdf5(qid_gid,'nion',ier,INTVAR=1)
@@ -280,8 +282,9 @@
                CALL write_var_hdf5(qid_gid,'charge',ier,INTVAR=1)
                CALL write_var_hdf5(qid_gid,'mass',ier,INTVAR=NINT(plasma_mass*5.97863320194E26))
                ALLOCATE(rtemp(nr,5,1))
-               CALL write_var_hdf5(qid_gid,'rhomin',ier,DBLVAR=DBLE(0))
-               CALL write_var_hdf5(qid_gid,'rhomax',ier,DBLVAR=DBLE(rho_max))
+               ! Only for 1DS
+               !CALL write_var_hdf5(qid_gid,'rhomin',ier,DBLVAR=DBLE(0))
+               !CALL write_var_hdf5(qid_gid,'rhomax',ier,DBLVAR=DBLE(rho_max))
                rtemp = 0
                rtemp(:,5,1) = 1
                DO i = 1, nr
