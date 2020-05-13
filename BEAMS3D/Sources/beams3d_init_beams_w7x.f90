@@ -61,10 +61,10 @@
          block = 1
       END IF
       nparticles = nparticles_start*nbeams
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(nparticles,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
-!DEC$ ENDIF
+#endif
       ALLOCATE( X_start(nparticles_start), Y_start(nparticles_start), STAT=ier   )
       IF (ier /= 0) CALL handle_err(ALLOC_ERR, 'X,Y_start etc.', ier)
       ALLOCATE(   R_start(nparticles), phi_start(nparticles), Z_start(nparticles), vll_start(nparticles), &
@@ -135,7 +135,8 @@
       END IF
       DEALLOCATE(X,Y,Energy,X_start,Y_start,block)
       weight = weight/nparticles_start
-!DEC$ IF DEFINED (MPI_OPT)
+
+#if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(mu_start,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(t_end,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
@@ -149,7 +150,7 @@
       CALL MPI_BCAST(vll_start,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(beam,nparticles,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(v_neut,nparticles*3,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
-!DEC$ ENDIF
+#endif
 
 
 !-----------------------------------------------------------------------

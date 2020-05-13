@@ -15,9 +15,9 @@
       USE beams3d_runtime
       USE beams3d_grid
       USE beams3d_lines
-!DEC$ IF DEFINED (LHDF5)
+#if defined(LHDF5)
       USE ez_hdf5
-!DEC$ ENDIF  
+#endif
       USE mpi_params
       USE mpi_inc
 !-----------------------------------------------------------------------
@@ -151,7 +151,7 @@
          END IF
       END IF
 
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(nparticles,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(nbeams,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
@@ -174,7 +174,7 @@
       CALL MPI_BCAST(vll_start,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(beam,nparticles,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(v_neut,nparticles*3,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
-!DEC$ ENDIF
+#endif
 
 
 !-----------------------------------------------------------------------

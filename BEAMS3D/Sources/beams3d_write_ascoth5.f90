@@ -36,7 +36,7 @@
       USE wall_mod, ONLY: nface,nvertex,face,vertex,ihit_array, wall_free, machine_string
       USE beams3d_write_par
       USE mpi_params
-      USE mpi
+      USE mpi_inc
 !-----------------------------------------------------------------------
 !     Input Variables
 !          write_type  Type of write to preform
