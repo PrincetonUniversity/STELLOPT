@@ -10,9 +10,9 @@
 !     Libraries
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
-!DEC$ IF DEFINED (LHDF5)
+#if defined(LHDF5)
       USE ez_hdf5
-!DEC$ ENDIF  
+#endif
       USE beams3d_lines
       USE beams3d_grid, ONLY: nr, nphi, nz, B_R, B_PHI, B_Z, raxis, &
                                  zaxis, phiaxis, S_ARR, U_ARR, POT_ARR, &
@@ -45,7 +45,7 @@
       IF (myworkid == master) THEN
          SELECT CASE (TRIM(write_type))
             CASE('GRID_INIT')
-!DEC$ IF DEFINED (LHDF5)
+#if defined(LHDF5)
                CALL open_hdf5('beams3d_'//TRIM(id_string)//'.h5',fid,ier,LCREATE=.true.)
                IF (ier /= 0) CALL handle_err(HDF5_OPEN_ERR,'beams3d_'//TRIM(id_string)//'.h5',ier)
                CALL write_scalar_hdf5(fid,'VERSION',ier,DBLVAR=BEAMS3D_VERSION,ATT='Version Number',ATT_NAME='description')
@@ -311,7 +311,7 @@
          CALL close_hdf5(fid,ier)
          IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,'beams3d_'//TRIM(id_string)//'.h5',ier)
       END IF
-!DEC$ ELSE
+#else
       WRITE(6,'(A)')  '   FILE: '//'beams3d_'//TRIM(id_string)//'.bin'
       CALL safe_open(iunit,ier,'beams3d_'//TRIM(id_string)//'.bin','replace','unformatted')
       WRITE(iunit,*) BEAMS3D_VERSION
@@ -347,7 +347,7 @@
       WRITE(iunit,*) B_Z
       WRITE(iunit,*) B_PHI
       CLOSE(iunit)
-!DEC$ ENDIF  
+#endif
 
       RETURN
 
