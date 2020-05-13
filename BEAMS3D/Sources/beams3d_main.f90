@@ -14,9 +14,9 @@ PROGRAM BEAMS3D
     USE wall_mod, ONLY: wall_free
     USE mpi_params
     USE mpi_inc
-!DEC$ IF DEFINED (LHDF5)
+#if defined(LHDF5)
     USE hdf5
-!DEC$ ENDIF
+#endif
 
     !-----------------------------------------------------------------------
     !     Local Variables
@@ -38,7 +38,7 @@ PROGRAM BEAMS3D
     !     Begin Program
     !-----------------------------------------------------------------------
     myworkid = master
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
     CALL MPI_INIT(ierr_mpi) ! MPI
     IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_INIT_ERR, 'beams3d_main', ierr_mpi)
     CALL MPI_COMM_DUP( MPI_COMM_WORLD, MPI_COMM_BEAMS, ierr_mpi)
@@ -58,15 +58,16 @@ PROGRAM BEAMS3D
     CALL MPI_INFO_SET(mpi_info_beams3d, "stripping_unit",    "1048576", ierr_mpi)
     CALL MPI_INFO_SET(mpi_info_beams3d, "romio_ds_read",     "disable", ierr_mpi)
     CALL MPI_INFO_SET(mpi_info_beams3d, "romio_ds_write",    "disable", ierr_mpi)
+#endif
 
-!DEC$ ENDIF
-!DEC$ IF DEFINED (LHDF5)
+#if defined(LHDF5)
     CALL H5GET_LIBVERSION_F(h5major, h5minor, h5rel, ier)
     h5par = 0
-!DEC$ ENDIF
-!DEC$ IF DEFINED (HDF5_PAR)
+#endif
+
+#if defined(HDF5_PAR)
     h5par = 1
-!DEC$ ENDIF
+#endif
 
     pi = 4.0 * ATAN(1.0)
     pi2 = 8.0 * ATAN(1.0)
@@ -203,23 +204,23 @@ PROGRAM BEAMS3D
                 write(6, *) '     -collisions:   Force collision operator'
                 write(6, *) '     -noverb:       Supress all screen output'
                 write(6, *) '     -help:         Output help message'
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
                 CALL MPI_FINALIZE(ierr_mpi)
                 IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_FINE_ERR, 'beams3d_main', ierr_mpi)
-!DEC$ ENDIF
+#endif
             end select
             i = i + 1
         END DO
         DEALLOCATE(args)
         WRITE(6, '(a,f5.2)') 'BEAMS3D Version ', BEAMS3D_VERSION
-!DEC$ IF DEFINED (LHDF5)
+#if defined(LHDF5)
         IF (h5par > 0) THEN
            WRITE(6,'(A)')      '-----  HDF5 (Parallel) Parameters  -----'
         ELSE
            WRITE(6,'(A)')      '-----  HDF5 Parameters  -----'
         ENDIF
         WRITE(6,'(A,I2,2(A,I2.2))')  '   HDF5_version:  ', h5major,'.',h5minor,' release: ',h5rel
-!DEC$ ENDIF
+#endif
         WRITE(6,'(A)')      '-----  MPI Parameters  -----'
         WRITE(6,'(A,I2,A,I2.2)')  '   MPI_version:  ', vmajor,'.',vminor
         WRITE(6,'(A,A)')  '   ', TRIM(mpi_lib_name(1:liblen))
@@ -229,7 +230,7 @@ PROGRAM BEAMS3D
         lverb = .false. ! Shutup the workers
     END IF
     ! Broadcast variables
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
     CALL MPI_BCAST(id_string, 256, MPI_CHARACTER, master, MPI_COMM_BEAMS, ierr_mpi)
     IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
     CALL MPI_BCAST(mgrid_string, 256, MPI_CHARACTER, master, MPI_COMM_BEAMS, ierr_mpi)
@@ -282,7 +283,7 @@ PROGRAM BEAMS3D
     IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_main',ierr_mpi)
     CALL MPI_BCAST(lw7x,1,MPI_LOGICAL, master, MPI_COMM_BEAMS,ierr_mpi)
     IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_main',ierr_mpi)
-!DEC$ ENDIF
+#endif
 
 
     ! Initialize the Calculation
@@ -308,14 +309,14 @@ PROGRAM BEAMS3D
     ! Clean up
     CALL beams3d_free(MPI_COMM_SHARMEM)
     CALL wall_free(ier,MPI_COMM_BEAMS)
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
     CALL MPI_BARRIER(MPI_COMM_BEAMS, ierr_mpi)
     IF (ierr_mpi /= 0) CALL handle_err(MPI_BARRIER_ERR, 'beams3d_main', ierr_mpi)
     ierr_mpi=0
     CALL MPI_INFO_FREE(mpi_info_beams3d, ierr_mpi)
     CALL MPI_FINALIZE(ierr_mpi)
     IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_FINE_ERR, 'beams3d_main', ierr_mpi)
-!DEC$ ENDIF
+#endif
     IF (lverb) WRITE(6, '(A)') '----- BEAMS3D DONE -----'
 
     !-----------------------------------------------------------------------

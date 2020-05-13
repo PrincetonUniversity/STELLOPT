@@ -22,21 +22,19 @@
       USE wall_mod
       USE mpi_params
       USE adas_mod_parallel, ONLY: adas_load_tables
-!DEC$ IF DEFINED (MPI_OPT)
-      USE mpi
+      USE mpi_inc
       USE mpi_sharmem
-!DEC$ ENDIF
 !-----------------------------------------------------------------------
 !     Local Variables
 !          ier            Error Flag
 !          iunit          File ID Number
 !-----------------------------------------------------------------------
       IMPLICIT NONE
-!DEC$ IF DEFINED (NAG)
+#if defined(NAG)
       LOGICAL        :: licval
       INTEGER        :: mkmaj, mkmin
       CHARACTER(128) :: impl,prec,pcode,hdware,opsys,fcomp,vend
-!DEC$ ENDIF
+#endif
       INTEGER :: i,j,k,ier, iunit, nextcur_in, nshar
       INTEGER :: bcs1(2), bcs2(2), bcs3(2), bcs1_s(2)
       REAL(rprec) :: br, bphi, bz, ti_temp, vtemp
@@ -60,10 +58,10 @@
       ! First Read The Input Namelist
       iunit = 11
       IF (lverb) WRITE(6,'(A)') '----- Input Parameters -----'
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'beams3d_init0',ierr_mpi)
-!DEC$ ENDIF
+#endif
 
       IF (lvmec .and. lread_input) THEN
          CALL read_beams3d_input('input.' // TRIM(id_string),ier)
@@ -500,10 +498,10 @@
          IF (nzeff > 0) CALL EZspline_free(ZEFF_spl_s,ier)
       END IF
 
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'beams3d_init',ierr_mpi)
-!DEC$ ENDIF
+#endif
 !-----------------------------------------------------------------------
 !     End Subroutine
 !-----------------------------------------------------------------------    

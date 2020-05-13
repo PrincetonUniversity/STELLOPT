@@ -209,7 +209,7 @@
          END DO
 !      END IF
 
-!DEC$ IF DEFINED (HDF5_PAR)
+#if defined(HDF5_PAR)
       ! Makes sure that NPARTICLES is divisible by the number of processes
       ! Needed for HDF5 parallel writes.
       IF (lbeam) THEN
@@ -218,7 +218,7 @@
             nparticles_start = (i1+1)*nprocs_beams
          END IF
       END IF
-!DEC$ ENDIF
+#endif
 
       END SUBROUTINE read_beams3d_input
 
@@ -293,15 +293,14 @@
       END SUBROUTINE write_beams3d_namelist
 
       SUBROUTINE BCAST_BEAMS3D_INPUT(local_master,comm,istat)
-!DEC$ IF DEFINED (MPI_OPT)
-      USE mpi
-!DEC$ ENDIF
+      USE mpi_inc
       IMPLICIT NONE
+      
       INTEGER, INTENT(inout) :: comm
       INTEGER, INTENT(in)    :: local_master
       INTEGER, INTENT(inout) :: istat
       IF (istat .ne. 0) RETURN
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
       CALL MPI_BCAST(lbeam, 1, MPI_LOGICAL, local_master, comm,istat)
       CALL MPI_BCAST(nr,1,MPI_INTEGER, local_master, comm,istat)
       CALL MPI_BCAST(nphi,1,MPI_INTEGER, local_master, comm,istat)
@@ -361,7 +360,7 @@
 
       CALL MPI_BCAST(follow_tol,1,MPI_REAL8, local_master, comm,istat)
       CALL MPI_BCAST(int_type, 256, MPI_CHARACTER, local_master, comm,istat)
-!DEC$ ENDIF
+#endif
       END SUBROUTINE BCAST_BEAMS3D_INPUT
 
       END MODULE beams3d_input_mod

@@ -15,7 +15,6 @@
                                shine_through, &
                                ndot_prof, epower_prof, ipower_prof, j_prof,&
                                B_lines, dist2d_prof, end_state, shine_port
-      USE EZspline_obj
       USE mpi_sharmem
 !-----------------------------------------------------------------------
 !     Local Variables

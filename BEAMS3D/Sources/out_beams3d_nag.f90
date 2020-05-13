@@ -24,8 +24,6 @@ SUBROUTINE out_beams3d_nag(t, q)
     USE beams3d_grid
     USE beams3d_physics_mod, ONLY: beams3d_physics
     USE wall_mod, ONLY: collide, get_wall_ik, get_wall_area
-    USE EZspline_obj
-    USE EZspline
     USE mpi_params
     !-----------------------------------------------------------------------
     !     Input Parameters
