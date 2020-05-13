@@ -155,6 +155,11 @@ beams3d_physics_mod.o: \
       beams3d_grid.o
       
 
+beams3d_randomize_particles.o: \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      beams3d_runtime.o
+      
+
 beams3d_read.o: \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
       ../../LIBSTELL/$(LOCTYPE)/safe_open_mod.o \
