@@ -9,9 +9,9 @@
 !     Libraries
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
-!DEC$ IF DEFINED (LHDF5)
+#if defined(LHDF5)
       USE ez_hdf5
-!DEC$ ENDIF  
+#endif
       USE beams3d_lines
       USE beams3d_grid
       USE beams3d_runtime
@@ -37,7 +37,7 @@
       IF (lverb) THEN
          WRITE(6,'(A)')  '----- READING DATA FROM FILE -----'
       END IF
-!DEC$ IF DEFINED (LHDF5)
+#if defined(LHDF5)
       IF (lverb) WRITE(6,'(A)')  '   FILE: '//'beams3d_'//TRIM(file_ext)//'.h5'
       CALL open_hdf5('beams3d_'//TRIM(file_ext)//'.h5',fid,ier,LCREATE=.false.)
       IF (ier /= 0) CALL handle_err(HDF5_OPEN_ERR,'beams3d_'//TRIM(file_ext)//'.h5',ier)
@@ -227,10 +227,10 @@
       ! Close the file
       CALL close_hdf5(fid,ier)
       IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,'beams3d_'//TRIM(file_ext)//'.h5',ier)
-
-!DEC$ ELSE
-
-!DEC$ ENDIF  
+#else
+      ! To be done
+      IF (lverb) WRITE(6,*) 'ERROR: Reading from non-HDF5 not implemented!'
+#endif
 
 !-----------------------------------------------------------------------
 !     End Subroutine

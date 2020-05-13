@@ -20,10 +20,8 @@
                                  MPI_REDU_ERR
       USE safe_open_mod, ONLY: safe_open
       USE EZspline
-!DEC$ IF DEFINED (MPI_OPT)
       USE mpi_params ! MPI
-      USE mpi
-!DEC$ ENDIF
+      USE mpi_inc
 !-----------------------------------------------------------------------
 !     Local Variables
 !          ier          Error Flag
@@ -39,12 +37,12 @@
       INTEGER, ALLOCATABLE  :: dist_func(:,:,:)
       REAL, ALLOCATABLE     :: real_mask(:)
       INTEGER, PARAMETER :: ndist = 100
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
       INTEGER :: status(MPI_STATUS_size) !mpi stuff
       INTEGER :: mystart, mypace, sender
       INTEGER, ALLOCATABLE :: revcounts(:), displs(:)
       REAL(rprec), ALLOCATABLE :: buffer_mast(:,:), buffer_slav(:,:)
-!DEC$ ENDIF
+#endif
 !-----------------------------------------------------------------------
 !     Begin Subroutine
 !-----------------------------------------------------------------------
@@ -75,10 +73,10 @@
       ALLOCATE(int_mask(mystart:myend))
       ALLOCATE(int_mask2(0:npoinc,mystart:myend))
       ALLOCATE(real_mask(mystart:myend))
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_BEAMS, ierr_mpi)
       IF (ierr_mpi /= 0) CALL handle_err(MPI_BARRIER_ERR, 'beams3d_follow', ierr_mpi)
-!DEC$ ENDIF
+#endif
       maxdist = partvmax
       mindist = -partvmax
 
@@ -120,7 +118,7 @@
          nlost(i)         = COUNT(end_state(mystart:myend) == 2 .and. beam(mystart:myend) == i)
       END DO
 
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
       IF (myworkid == master) THEN
          CALL MPI_REDUCE(MPI_IN_PLACE, dist_func,     nbeams*ndist*(npoinc+1), MPI_INTEGER,          MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
          CALL MPI_REDUCE(MPI_IN_PLACE, shine_through, nbeams,                  MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
@@ -132,7 +130,7 @@
          CALL MPI_REDUCE(shine_port,    shine_port,    nbeams,                  MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
          CALL MPI_REDUCE(nlost,         nlost,         nbeams,                  MPI_INTEGER,          MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
       END IF
-!DEC$ ENDIF
+#endif
 
       IF (myworkid == master) THEN
          ! Open the file

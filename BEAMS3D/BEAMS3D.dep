@@ -1,40 +1,38 @@
 # Microsoft Developer Studio Generated Dependency File, included by VMEC2000.mak
 
-beams3d_main.o: \
-      ../../LIBSTELL/$(LOCTYPE)/wall_mod.o \
-      ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
-      ../../LIBSTELL/$(LOCTYPE)/read_wout_mod.o \
-      beams3d_runtime.o 
+backspace_out.o:  
 
 
-out_beams3d_nag.o: \
+beams3d_diagnostics.o: \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
-      ../../LIBSTELL/$(LOCTYPE)/wall_mod.o \
-      ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
-      ../../LIBSTELL/$(LOCTYPE)/ezspline_obj.o \
+      ../../LIBSTELL/$(LOCTYPE)/safe_open_mod.o \
       ../../LIBSTELL/$(LOCTYPE)/ezspline.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_inc.o \
+      beams3d_runtime.o \
+      beams3d_lines.o \
+      beams3d_grid.o
+
+
+beams3d_follow.o: \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(LOCTYPE)/safe_open_mod.o \
+      ../../LIBSTELL/$(LOCTYPE)/wall_mod.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_inc.o \
       beams3d_runtime.o \
       beams3d_lines.o \
       beams3d_grid.o \
-      beams3d_physics_mod.o
-      
+      beams3d_physics_mod.o \
+      beams3d_write_parhdf5.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_params.o
 
-beams3d_runtime.o: \
-      ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
-      ../../LIBSTELL/$(LOCTYPE)/ezspline.o \
-      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o 
-      
 
-beams3d_init.o: \
-      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
-      ../../LIBSTELL/$(LOCTYPE)/vmec_input.o \
-      ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
+beams3d_free.o: \
       ../../LIBSTELL/$(LOCTYPE)/wall_mod.o \
-      ../../LIBSTELL/$(LOCTYPE)/adas_mod_parallel.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_sharmem.o \
       beams3d_runtime.o \
-      beams3d_grid.o \
-      beams3d_input_mod.o \
-      beams3d_lines.o
+      beams3d_lines.o \
+      beams3d_grid.o
       
 
 beams3d_grid.o: \
@@ -43,58 +41,144 @@ beams3d_grid.o: \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o 
       
 
+beams3d_init.o: \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(LOCTYPE)/vmec_input.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_inc.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_sharmem.o \
+      ../../LIBSTELL/$(LOCTYPE)/wall_mod.o \
+      ../../LIBSTELL/$(LOCTYPE)/adas_mod_parallel.o \
+      beams3d_runtime.o \
+      beams3d_grid.o \
+      beams3d_input_mod.o \
+      beams3d_lines.o
+
+
+beams3d_init_beams.o: \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_inc.o \
+      beams3d_lines.o \
+      beams3d_runtime.o
+      
+      
+beams3d_init_beams_bbnbi.o: \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_inc.o \
+      beams3d_lines.o \
+      beams3d_grid.o \
+      beams3d_runtime.o
+      
+      
+beams3d_init_beams_w7x.o: \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_inc.o \
+      beams3d_lines.o \
+      beams3d_runtime.o
+      
+
+beams3d_init_coil.o: \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_inc.o \
+      ../../LIBSTELL/$(LOCTYPE)/vmec_input.o \
+      ../../LIBSTELL/$(LOCTYPE)/biotsavart.o \
+      beams3d_runtime.o \
+      beams3d_grid.o
+      
+
+beams3d_init_mgrid.o: \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_inc.o \
+      ../../LIBSTELL/$(LOCTYPE)/mgrid_field_mod.o \
+      ../../LIBSTELL/$(LOCTYPE)/vmec_input.o \
+      beams3d_runtime.o \
+      beams3d_grid.o
+      
+
+beams3d_init_restart.o: \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_inc.o \
+      ../../LIBSTELL/$(LOCTYPE)/ez_hdf5.o \
+      beams3d_runtime.o \
+      beams3d_lines.o \
+      beams3d_grid.o
+      
+
+beams3d_init_vmec.o: \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(LOCTYPE)/wall_mod.o \
+      ../../LIBSTELL/$(LOCTYPE)/read_wout_mod.o \
+      ../../LIBSTELL/$(LOCTYPE)/vmec_utils.o \
+      ../../LIBSTELL/$(LOCTYPE)/virtual_casing_mod.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_inc.o \
+      beams3d_runtime.o \
+      beams3d_grid.o
+      
+
 beams3d_input_mod.o: \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
       ../../LIBSTELL/$(LOCTYPE)/safe_open_mod.o \
       ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_inc.o \
       beams3d_runtime.o \
       beams3d_lines.o \
       beams3d_grid.o 
-
-
-beams3d_follow.o: \
-      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
-      ../../LIBSTELL/$(LOCTYPE)/safe_open_mod.o \
-      ../../LIBSTELL/$(LOCTYPE)/wall_mod.o \
-      beams3d_runtime.o \
-      beams3d_lines.o \
-      beams3d_grid.o \
-      beams3d_physics_mod.o \
-      ../../LIBSTELL/$(LOCTYPE)/mpi_params.o
       
 
 beams3d_lines.o: \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o 
+
+
+beams3d_main.o: \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_inc.o \
+      ../../LIBSTELL/$(LOCTYPE)/wall_mod.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
+      ../../LIBSTELL/$(LOCTYPE)/read_wout_mod.o \
+      beams3d_runtime.o 
+
+
+beams3d_physics_mod.o: \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(LOCTYPE)/adas_mod_parallel.o \
+      ../../LIBSTELL/$(LOCTYPE)/EZspline_obj.o \
+      ../../LIBSTELL/$(LOCTYPE)/EZspline.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
+      beams3d_runtime.o \
+      beams3d_lines.o \
+      beams3d_grid.o
       
 
-fpart_nag.o: \
-      ../../LIBSTELL/$(LOCTYPE)/ezspline_obj.o \
-      ../../LIBSTELL/$(LOCTYPE)/ezspline.o \
+beams3d_randomize_particles.o: \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
       ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
-      beams3d_grid.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_inc.o \
       beams3d_lines.o \
       beams3d_runtime.o
-
-
-fpart_lsode.o: 
-
-
-fpart_rkh68.o: 
       
 
-jacobian_lsode.o: \
+beams3d_read.o: \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
-      ../../LIBSTELL/$(LOCTYPE)/ezspline_obj.o \
-      ../../LIBSTELL/$(LOCTYPE)/ezspline.o \
+      ../../LIBSTELL/$(LOCTYPE)/safe_open_mod.o \
+      ../../LIBSTELL/$(LOCTYPE)/wall_mod.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_sharmem.o \
+      ../../LIBSTELL/$(LOCTYPE)/ez_hdf5.o \
+      beams3d_lines.o \
       beams3d_grid.o \
-      beams3d_runtime.o
+      beams3d_runtime.o 
       
 
-backspace_out.o:  
-      
-
-drkhvg.o:  
+beams3d_runtime.o: \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_inc.o \
+      ../../LIBSTELL/$(LOCTYPE)/ezspline.o \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o 
       
 
 beams3d_write.o: \
@@ -105,7 +189,7 @@ beams3d_write.o: \
       ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
       beams3d_runtime.o \
       beams3d_lines.o \
-      beams3d_grid.o
+      beams3d_grid.o 
       
 
 beams3d_write_ascoth4.o: \
@@ -114,6 +198,7 @@ beams3d_write_ascoth4.o: \
       ../../LIBSTELL/$(LOCTYPE)/safe_open_mod.o \
       ../../LIBSTELL/$(LOCTYPE)/wall_mod.o \
       ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_inc.o \
       beams3d_runtime.o \
       beams3d_lines.o \
       beams3d_write_parhdf5.o \
@@ -126,6 +211,7 @@ beams3d_write_ascoth5.o: \
       ../../LIBSTELL/$(LOCTYPE)/safe_open_mod.o \
       ../../LIBSTELL/$(LOCTYPE)/wall_mod.o \
       ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_inc.o \
       beams3d_runtime.o \
       beams3d_lines.o \
       beams3d_write_parhdf5.o \
@@ -138,99 +224,47 @@ beams3d_write_parhdf5.o: \
       ../../LIBSTELL/$(LOCTYPE)/safe_open_mod.o \
       ../../LIBSTELL/$(LOCTYPE)/wall_mod.o \
       ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_inc.o \
       beams3d_runtime.o \
       beams3d_lines.o \
       beams3d_grid.o
       
 
-beams3d_read.o: \
-      beams3d_runtime.o 
+drkhvg.o:  
+
+
+fpart_lsode.o: 
       
 
-beams3d_diagnostics.o: \
+fpart_nag.o: \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
-      ../../LIBSTELL/$(LOCTYPE)/safe_open_mod.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
+      beams3d_grid.o \
+      beams3d_lines.o \
+      beams3d_runtime.o
+
+
+fpart_rkh68.o: 
+
+
+gauss_rand.o: \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o
+      
+
+jacobian_lsode.o: \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(LOCTYPE)/ezspline_obj.o \
       ../../LIBSTELL/$(LOCTYPE)/ezspline.o \
-      ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
-      beams3d_runtime.o \
-      beams3d_lines.o \
       beams3d_grid.o
-      
 
-beams3d_init_coil.o: \
-      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
-      ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
-      ../../LIBSTELL/$(LOCTYPE)/vmec_input.o \
-      ../../LIBSTELL/$(LOCTYPE)/biotsavart.o \
-      beams3d_runtime.o \
-      beams3d_grid.o
-      
 
-beams3d_init_mgrid.o: \
-      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
-      ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
-      ../../LIBSTELL/$(LOCTYPE)/mgrid_field_mod.o \
-      ../../LIBSTELL/$(LOCTYPE)/vmec_input.o \
-      beams3d_runtime.o \
-      beams3d_grid.o
-      
-
-beams3d_init_vmec.o: \
+out_beams3d_nag.o: \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
       ../../LIBSTELL/$(LOCTYPE)/wall_mod.o \
-      ../../LIBSTELL/$(LOCTYPE)/read_wout_mod.o \
-      ../../LIBSTELL/$(LOCTYPE)/vmec_utils.o \
-      ../../LIBSTELL/$(LOCTYPE)/virtual_casing_mod.o \
       ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
       beams3d_runtime.o \
-      beams3d_grid.o
-      
-
-beams3d_init_restart.o: \
-      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
-      ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
-      ../../LIBSTELL/$(LOCTYPE)/ez_hdf5.o \
-      beams3d_runtime.o \
-      beams3d_grid.o
-
-
-beams3d_init_beams.o: \
-      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
-      ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
-      beams3d_lines.o \
-      beams3d_runtime.o
-      
-      
-beams3d_init_beams_w7x.o: \
-      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
-      ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
-      beams3d_lines.o \
-      beams3d_runtime.o
-      
-      
-beams3d_init_beams_bbnbi.o: \
-      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
-      ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
       beams3d_lines.o \
       beams3d_grid.o \
-      beams3d_runtime.o
-
-
-beams3d_physics_mod.o: \
-      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
-      ../../LIBSTELL/$(LOCTYPE)/adas_mod_parallel.o \
-      beams3d_runtime.o \
-      beams3d_lines.o \
-      beams3d_grid.o
-
-
-beams3d_free.o: \
-      ../../LIBSTELL/$(LOCTYPE)/wall_mod.o \
-      beams3d_runtime.o \
-      beams3d_lines.o \
-      beams3d_grid.o
-
-
-gauss_rand.o:
+      beams3d_physics_mod.o
 
 
