@@ -100,6 +100,7 @@ PROGRAM BEAMS3D
         lascot4 = .false.
         lbbnbi = .false.
         lascotfl = .false.
+        lrandomize = .false.
         id_string = ''
         coil_string = ''
         mgrid_string = ''
@@ -180,6 +181,8 @@ PROGRAM BEAMS3D
                 lcollision = .true.
             case ("-plasma")
                 lplasma_only = .true.
+            case ("-rand")
+                lrandomize = .true.
             case ("-help", "-h") ! Output Help message
                 write(6, *) ' Beam MC Code'
                 write(6, *) ' Usage: xbeams3d <options>'
@@ -191,17 +194,18 @@ PROGRAM BEAMS3D
                 write(6, *) '     -mgrid file:   MAKEGRID File (for vacuum)'
                 write(6, *) '     -coil file:    Coils. File (for vacuum)'
                 write(6, *) '     -restart ext:  BEAMS3D HDF5 extension for starting particles'
+                write(6, *) '     -beamlet ext:  Beamlet file for beam geometry'
                 write(6, *) '     -beam_simple:  Monoenergetic BEAMS'
                 write(6, *) '     -w7x:          W7-X beam model'
                 write(6, *) '     -ascot5:       Output data in ASCOT5 gyro-center format'
                 write(6, *) '     -ascot5_fl:    Output data in ASCOT5 fieldline format'
                 write(6, *) '     -ascot4:       Output data in ASCOT4 format'
-                write(6, *) '     -beamlet:      Beamlet file for beam geometry'
                 write(6, *) '     -raw:          Treat coil currents as raw (scale factors)'
                 write(6, *) '     -vac:          Only vacuum field'
                 write(6, *) '     -plasma:       Only plasma field'
                 write(6, *) '     -depo:         Only Deposition'
                 write(6, *) '     -collisions:   Force collision operator'
+                write(6, *) '     -rand:         Randomize particle processor'
                 write(6, *) '     -noverb:       Supress all screen output'
                 write(6, *) '     -help:         Output help message'
 #if defined(MPI_OPT)
@@ -282,6 +286,8 @@ PROGRAM BEAMS3D
     CALL MPI_BCAST(lcollision,1,MPI_LOGICAL, master, MPI_COMM_BEAMS,ierr_mpi)
     IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_main',ierr_mpi)
     CALL MPI_BCAST(lw7x,1,MPI_LOGICAL, master, MPI_COMM_BEAMS,ierr_mpi)
+    IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_main',ierr_mpi)
+    CALL MPI_BCAST(lrandomize,1,MPI_LOGICAL, master, MPI_COMM_BEAMS,ierr_mpi)
     IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_main',ierr_mpi)
 #endif
 
