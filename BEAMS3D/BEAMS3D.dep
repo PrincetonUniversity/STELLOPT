@@ -157,6 +157,9 @@ beams3d_physics_mod.o: \
 
 beams3d_randomize_particles.o: \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_inc.o \
+      beams3d_lines.o \
       beams3d_runtime.o
       
 

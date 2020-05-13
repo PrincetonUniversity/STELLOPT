@@ -104,6 +104,7 @@
          IF (lbbnbi) WRITE(6,'(A)') '   BEAMLET BEAM Model!'
          IF (lplasma_only) WRITE(6,'(A)') '   MAGNETIC FIELD FROM PLASMA ONLY!'
          IF (lrestart_particles) WRITE(6,'(A)') '   Restarting particles!'
+         IF (lrandomize .and. lbeam) WRITE(6,'(A)') '   Randomizing particle processor!'
          IF (npot > 0) WRITE(6,'(A)') '   RAIDAL ELECTRIC FIELD PRESENT!'
          CALL FLUSH(6)
       END IF
@@ -316,6 +317,8 @@
          ELSE
             CALL beams3d_init_beams
          END IF
+         ! Randomize particles Only for beam depo runs
+         IF (lrandomize) CALL beams3d_randomize_particles
       ELSEIF (lrestart_particles) THEN
         CALL beams3d_init_restart
       ELSE
