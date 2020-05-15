@@ -505,7 +505,7 @@
          CASE ('spline','akima_spline','akima_spline_ip')
             CALL eval_prof_stel(s_val,type,val,21,ti_opt(0:20),ier,ti_spl)
          CASE ('te_ratio')
-            CALL eval_prof_stel(s_val,type,val,21,ti_opt(0:20),ier,ti_spl)
+            CALL eval_prof_stel(s_val,'akima_spline',val,21,ti_opt(0:20),ier,ti_spl)
             CALL get_equil_te(s_val,te_type,val2,ier)
             val = val*val2 
          CASE DEFAULT
@@ -904,7 +904,7 @@
       profile_norm = 0.0_rprec
       SELECT CASE (prof_type)
          CASE ('two_power','two_power_hollow','two_power_offset','two_lorentz','gauss_trunc', &
-               'gauss_trunc_offset','sum_atan','pedestal','bump','hollow','hollow2')
+               'gauss_trunc_offset','sum_atan','pedestal','bump','hollow','hollow2','te_ratio')
             profile_norm = 0.0_rprec  ! Don't normalize as we don't want to screw up our coefficients
          CASE ('power_series','power_series_edge0','power_series_0_boundaries', &
                'power_series_rho','power_series_rho2')
