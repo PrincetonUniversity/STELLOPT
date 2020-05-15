@@ -505,7 +505,7 @@
          CASE ('spline','akima_spline','akima_spline_ip')
             CALL eval_prof_stel(s_val,type,val,21,ti_opt(0:20),ier,ti_spl)
          CASE ('te_ratio')
-            CALL eval_prof_stel(s_val,type,val,21,ti_opt(0:20),ier,ti_spl)
+            CALL eval_prof_stel(s_val,'akima_spline',val,21,ti_opt(0:20),ier,ti_spl)
             CALL get_equil_te(s_val,te_type,val2,ier)
             val = val*val2 
          CASE DEFAULT
