@@ -138,6 +138,14 @@
       END IF
 
       ! Load the Vp Spline if using the beams
+      ! Note in VMEC dV/ds = \int\int sqrt(g) dtheta dphi
+      ! However VMEC integrates over u and v
+      ! So Vp is missing a factor of 4*pi*pi
+      ! Also is on the half grid
+      vp(1) = 1.5*vp(2) - 0.5*vp(3) ! Both on half grid
+      vp(2:ns-1) = 0.5*(vp(2:ns-1)+vp(3:ns)) ! Average to full grid
+      vp(ns) = 2*vp(ns) - vp(ns-1) ! ns on half grid, ns-1 on full grid
+      vp = vp*pi2*pi2
       bcs1_s=(/ 0, 0 /)
       CALL EZspline_init(Vp_spl_s,ns,bcs1_s,ier)
       IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init_vmec',ier)
