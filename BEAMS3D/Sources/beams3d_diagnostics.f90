@@ -181,10 +181,12 @@
       IF (lbeam .and. .not.ldepo) THEN
 
          ! Grid in rho, units in [/m^3]
-         DO k = 2, ns_prof1
-            s2 = REAL(k)/REAL(ns_prof1)
+         ! Note ns is number of cells not cell boundaries
+         DO k = 1, ns_prof1
+            s1 = REAL(k-0.5)/REAL(ns_prof1) ! Rho
+            s2 = s1*s1
             CALL EZspline_interp(Vp_spl_s,s2,vp_temp,ier)
-            vp_temp = vp_temp*2*s2
+            vp_temp = vp_temp*2*s1
             epower_prof(:,k) = epower_prof(:,k)/vp_temp
             ipower_prof(:,k) = ipower_prof(:,k)/vp_temp
             ndot_prof(:,k)   =   ndot_prof(:,k)/vp_temp
