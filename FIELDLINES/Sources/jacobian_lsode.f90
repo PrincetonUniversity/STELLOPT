@@ -34,8 +34,8 @@
       ! For splines
       INTEGER :: i,j,k
       REAL*8 :: xparam, yparam, zparam, hx, hy, hz, hxi, hyi, hzi
-      REAL*8 :: fval(4)
-      INTEGER, parameter :: ict(8)=(/1,1,1,1,0,0,0,0/)
+      REAL*8 :: fval(1,2) ! So weird behavior but this must match the sum of ict
+      INTEGER, parameter :: ict(10)=(/0,1,0,1,0,0,0,0,0,0/)
       REAL*8, PARAMETER :: one = 1
 !-----------------------------------------------------------------------
 !     Begin Subroutine
@@ -45,6 +45,7 @@
       z_temp = q(2)
       phi_temp = MOD(phi,delta_phi)
       IF (phi_temp < 0) phi_temp = delta_phi + phi_temp
+      pd = 0
       !CALL EZspline_isInDomain(BR_spl,r_temp,phi_temp,z_temp,ier)
       !IF (ier == 0) THEN
       IF ((r_temp >= rmin-eps1) .and. (r_temp <= rmax+eps1) .and. &
@@ -65,16 +66,16 @@
          zparam = (z_temp - zaxis(k)) * hzi
          !CALL EZspline_gradient(BR_spl,r_temp,phi_temp,z_temp,R_grad,ier)
          !CALL EZspline_gradient(BZ_spl,r_temp,phi_temp,z_temp,Z_grad,ier)
-         CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+         CALL R8FVTRICUB(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                          hx,hxi,hy,hyi,hz,hzi,&
                          BR4D(1,1,1,1),nr,nphi,nz)
-         pd(1,1) = fval(2) !dBR/dR
-         pd(1,2) = fval(4) ! dBR/dZ
-         CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+         pd(1,1) = fval(1,1) !dBR/dR
+         pd(1,2) = fval(1,2) ! dBR/dZ
+         CALL R8FVTRICUB(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                          hx,hxi,hy,hyi,hz,hzi,&
                          BZ4D(1,1,1,1),nr,nphi,nz)
-         pd(2,1) = fval(2) ! dBZ/dR
-         pd(2,2) = fval(4) ! dBZ/dZ
+         pd(2,1) = fval(1,1) ! dBZ/dR
+         pd(2,2) = fval(1,2) ! dBZ/dZ
       END IF
       RETURN
 !-----------------------------------------------------------------------

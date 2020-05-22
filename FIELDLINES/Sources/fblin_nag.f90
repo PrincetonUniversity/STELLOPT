@@ -11,8 +11,8 @@
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
       USE fieldlines_grid
-      USE EZspline_obj
-      USE EZspline
+!      USE EZspline_obj
+!      USE EZspline
 !-----------------------------------------------------------------------
 !     Input Variables
 !          phi        phi angle
@@ -37,7 +37,7 @@
       INTEGER :: i,j,k
       REAL*8 :: xparam, yparam, zparam, hx, hy, hz, hxi, hyi, hzi
       REAL*8 :: fval(1)
-      INTEGER, parameter :: ict(8)=(/1,0,0,0,0,0,0,0/)
+      INTEGER, parameter :: ict(10)=(/1,0,0,0,0,0,0,0,0,0/)
       REAL*8, PARAMETER :: one = 1
       
 !-----------------------------------------------------------------------
@@ -70,11 +70,11 @@
          !CALL EZspline_interp(BR_spl,r_temp,phi_temp,z_temp,br_temp,ier)
          !CALL EZspline_interp(BZ_spl,r_temp,phi_temp,z_temp,bz_temp,ier)
          ! Evaluate the Splines
-         CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+         CALL R8FVTRICUB(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                          hx,hxi,hy,hyi,hz,hzi,&
                          BR4D(1,1,1,1),nr,nphi,nz)
          br_temp = fval(1)
-         CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+         CALL R8FVTRICUB(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                          hx,hxi,hy,hyi,hz,hzi,&
                          BZ4D(1,1,1,1),nr,nphi,nz)
          bz_temp = fval(1)

@@ -40,7 +40,7 @@
       INTEGER :: i,j,k
       REAL*8 :: xparam, yparam, zparam, hx, hy, hz, hxi, hyi, hzi
       REAL*8 :: fval(1)
-      INTEGER, parameter :: ict(8)=(/1,0,0,0,0,0,0,0/)
+      INTEGER, parameter :: ict(10)=(/1,0,0,0,0,0,0,0,0,0/)
       REAL*8, PARAMETER :: one = 1
 
 !-----------------------------------------------------------------------
@@ -119,7 +119,7 @@
             xparam = (x0 - raxis(i)) * hxi
             yparam = (y0 - phiaxis(j)) * hyi
             zparam = (z0 - zaxis(k)) * hzi
-            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+            CALL R8FVTRICUB(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                        hx,hxi,hy,hyi,hz,hzi,&
                        MU4D(1,1,1,1),nr,nphi,nz)
             q(1) = q(1) + random_normal() * sqrt(fval(1)*ABS(dphi)) !EDIT
@@ -151,7 +151,7 @@
             xparam = (x0 - raxis(i)) * hxi
             yparam = (y0 - phiaxis(j)) * hyi
             zparam = (z0 - zaxis(k)) * hzi
-            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+            CALL R8FVTRICUB(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                        hx,hxi,hy,hyi,hz,hzi,&
                        MODB4D(1,1,1,1),nr,nphi,nz)
             B_lines(myline,myldex) = fval(1)
