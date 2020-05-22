@@ -40,7 +40,7 @@
       INTEGER :: i,j,k
       REAL*8 :: xparam, yparam, zparam, hx, hy, hz, hxi, hyi, hzi
       REAL*8 :: fval(1)
-      INTEGER, parameter :: ict(10)=(/1,0,0,0,0,0,0,0,0,0/)
+      INTEGER, parameter :: ict(8)=(/1,0,0,0,0,0,0,0/)
       REAL*8, PARAMETER :: one = 1
 
 !-----------------------------------------------------------------------
@@ -101,8 +101,6 @@
          IF (y0 < 0) y0 = delta_phi + y0
          z0 = q(2)
          zw = 0; ier=0
-         !CALL EZspline_isInDomain(MU_spl,x0,y0,z0,ier)
-         !IF (ier == 0) THEN
          IF ((x0 >= rmin-eps1) .and. (x0 <= rmax+eps1) .and. &
             (y0 >= phimin-eps2) .and. (y0 <= phimax+eps2) .and. &
             (z0 >= zmin-eps3) .and. (z0 <= zmax+eps3)) THEN
@@ -119,7 +117,7 @@
             xparam = (x0 - raxis(i)) * hxi
             yparam = (y0 - phiaxis(j)) * hyi
             zparam = (z0 - zaxis(k)) * hzi
-            CALL R8FVTRICUB(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                        hx,hxi,hy,hyi,hz,hzi,&
                        MU4D(1,1,1,1),nr,nphi,nz)
             q(1) = q(1) + random_normal() * sqrt(fval(1)*ABS(dphi)) !EDIT
@@ -134,8 +132,6 @@
          IF (y0 < 0) y0 = delta_phi + y0
          z0 = Z_lines(myline,myldex)
          zw = 0
-         !CALL EZspline_isInDomain(MODB_spl,x0,y0,z0,ier)
-         !IF (ier == 0) CALL EZspline_interp(MODB_spl,x0,y0,z0,zw,ier)
          IF ((x0 >= rmin-eps1) .and. (x0 <= rmax+eps1) .and. &
             (y0 >= phimin-eps2) .and. (y0 <= phimax+eps2) .and. &
             (z0 >= zmin-eps3) .and. (z0 <= zmax+eps3)) THEN
@@ -151,18 +147,12 @@
             xparam = (x0 - raxis(i)) * hxi
             yparam = (y0 - phiaxis(j)) * hyi
             zparam = (z0 - zaxis(k)) * hzi
-            CALL R8FVTRICUB(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                        hx,hxi,hy,hyi,hz,hzi,&
                        MODB4D(1,1,1,1),nr,nphi,nz)
             B_lines(myline,myldex) = fval(1)
          END IF
       END IF
-
-      !IF (lverb .and. ((phi+dphi) .ge. myldex*dphi)) THEN
-      !   CALL backspace_out(6,6)
-      !   WRITE(6,'(A,I3,A)',ADVANCE='no') '[',INT((100.*((myline-1)*nsteps+myldex)/(nsteps*myend))),']%'
-      !   CALL FLUSH(6)
-      !END IF
 
       ! Update position
       phi    = phi + dphi

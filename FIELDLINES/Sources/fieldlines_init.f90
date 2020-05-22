@@ -55,7 +55,6 @@
       IF (lvessel .and. lverb .and. .false.) THEN
          CALL wall_load_txt(TRIM(vessel_string),ier)
          IF (lverb) CALL wall_info(6)
-         !CALL collide(5.0_rprec,5.0_rprec,0.0_rprec,5.0_rprec,5.0_rprec,1.5_rprec,xw,yw,zw,lhit)
          CALL collide(6*1/100._rprec,6*1/100._rprec,0.0_rprec,6*1/100._rprec,6*1/100._rprec,1.5_rprec,xw,yw,zw,lhit)
          WRITE(*,*) xw,yw,zw,lhit
          DO i = 1, 100
@@ -151,18 +150,6 @@
       
       ! Output some information
       IF (lverb .and. .not.lrestart) THEN
-!DEC$ IF DEFINED (NAG)
-!         This doesn't work because A00ADF not supported in all NAG Marks
-!         CALL A00ADF(impl,prec,pcode,mkmaj,mkmin,hdware,opsys,fcomp,vend,licval)
-!         IF (.not.licval) THEN
-!            WRITE(6,'(A)') '!!!!!!  ERROR: Invalid NAG License  !!!!!!'
-!            ier = -1
-!            CALL handle_err(NAG_ERR,'fieldlines_init',ier)
-!         END IF
-!         WRITE(6,'(A,I3,A1,I2,A)') '   NAG Mark ',mkmaj,mkmin,' Detected!'
-!DEC$ ELSE
-!         CALL handle_err(NAG_ERR,'fieldlines_init',ier)
-!DEC$ ENDIF  
          WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   R   = [',rmin,',',rmax,'];  NR:   ',nr
          WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   PHI = [',phimin,',',phimax,'];  NPHI: ',nphi
          WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   Z   = [',zmin,',',zmax,'];  NZ:   ',nz
@@ -182,10 +169,6 @@
       IF (lrestart) THEN
          CALL fieldlines_init_restart
       ELSE
-         !ALLOCATE(raxis(nr),zaxis(nz),phiaxis(nphi),STAT=ier)
-         !IF (ier /= 0) CALL handle_err(ALLOC_ERR,'RAXIS ZAXIS PHIAXIS',ier)
-         !ALLOCATE(B_R(nr,nphi,nz),B_PHI(nr,nphi,nz),B_Z(nr,nphi,nz),STAT=ier)
-         !IF (ier /= 0) CALL handle_err(ALLOC_ERR,'BR BZ',ier)
          CALL mpialloc(raxis, nr, myid_sharmem, 0, MPI_COMM_SHARMEM, win_raxis)
          CALL mpialloc(phiaxis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_phiaxis)
          CALL mpialloc(zaxis, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_zaxis)
@@ -294,8 +277,6 @@
       ! Handle mu
       IF (lmu) THEN
          CALL init_random_seed()
-         !ALLOCATE(MU3D(nr,nphi,nz),STAT=ier)
-         !IF (ier /= 0) CALL handle_err(ALLOC_ERR,'MU3D2',ier)
          CALL mpialloc(MU3D, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_MU)
          CALL mpialloc(MU4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_MU4D)
          IF (myid_sharmem == master) THEN
@@ -358,8 +339,8 @@
          IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'fieldlines_init',ier)
          CALL EZspline_init(BZ_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
          IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'fieldlines_init',ier)
-         BR_spl%isHermite = 0
-         BZ_spl%isHermite = 0
+         BR_spl%isHermite = 1
+         BZ_spl%isHermite = 1
          BR_spl%x1 = raxis
          BZ_spl%x1 = raxis
          BR_spl%x2 = phiaxis
@@ -396,13 +377,6 @@
          CALL jacobian_lsode(2,phi_q,q,0,0,pd,2)
          PRINT *,myid_sharmem,phi_q,q,pd
       END IF
-      
-      ! DEALLOCATE Variables
-      ! Only master retains a copy for output
-      !IF (myworkid /= master) THEN
-      !   DEALLOCATE(raxis,zaxis,phiaxis)
-      !   DEALLOCATE(B_R,B_Z,B_PHI)
-      !END IF
 
 !DEC$ IF DEFINED (MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
