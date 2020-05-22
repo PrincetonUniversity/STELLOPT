@@ -240,7 +240,6 @@
                      CALL out_fieldlines_nag(phif_nag,q)
                      iwork(11) = 0; iwork(12)=0; iwork(13)=0;
                      IF ((istate == -1) .or. (istate ==-2) .or. (ABS(phif_nag) > ABS(phi_end(l))) ) EXIT
-                     !IF (ABS(phif_nag) > ABS(phi_end(l))) EXIT
                   END DO
                END DO
             CASE ("TEST")
@@ -257,16 +256,9 @@
       IF (ALLOCATED(q)) DEALLOCATE(q)
       IF (ALLOCATED(w)) DEALLOCATE(w)
       IF (ALLOCATED(iwork)) DEALLOCATE(iwork)
-      ! Do this here to conserve on memory
-!      IF (nruntype==runtype_old) THEN
-!         IF (EZspline_allocated(BR_spl)) CALL EZspline_free(BR_spl,ier)
-!         IF (EZspline_allocated(BZ_spl)) CALL EZspline_free(BZ_spl,ier)
-!         IF (EZspline_allocated(MU_spl)) CALL EZspline_free(MU_spl,ier)
-!         IF (EZspline_allocated(MODB_spl)) CALL EZspline_free(MODB_spl,ier)
-!      END IF
 
       ! Handle WALL Heat Map
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
     IF (ASSOCIATED(ihit_array)) THEN
       i = MPI_UNDEFINED
       IF (myid_sharmem == master) i = 0
@@ -277,11 +269,7 @@
       END IF
       CALL MPI_BARRIER(MPI_COMM_FIELDLINES, ierr_mpi)
     END IF
-      
-!      CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
-!      IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_follow',ierr_mpi)
-!      ! Don't worry about telling the slaves, they won't do any writing.
-!DEC$ ENDIF
+#endif
    
 !-----------------------------------------------------------------------
 !     End Subroutine
