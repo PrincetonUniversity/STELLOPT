@@ -120,7 +120,7 @@
                DO i = 2, nr
                   rtemp(i,2,1)=rtemp(i,2,1)+(rtemp(i-1,2,1)) ! Integral So volume
                END DO
-               rtemp(:,2,1) = rtemp(:,2:1)./(nr-1)
+               rtemp(:,2,1) = rtemp(:,2,1)/(nr-1)
                CALL write_var_hdf5(plasma_gid,'s',nr,ier,DBLVAR=sqrt(rtemp(:,1,1)))
                CALL write_var_hdf5(plasma_gid,'volume',nr,ier,DBLVAR=rtemp(:,2,1))
                DEALLOCATE(rtemp)
