@@ -42,7 +42,7 @@
                      ang_err, phimin_temp
       REAL(rprec) :: xw,yw,zw
       LOGICAL     :: lhit
-      DOUBLE PRECISION :: phi_q, q(2), qdot(2)
+      DOUBLE PRECISION :: phi_q, q(2), qdot(2), pd(2,2)
 !-----------------------------------------------------------------------
 !     External Functions
 !          A00ADF               NAG Detection
@@ -143,6 +143,11 @@
             phi_end(i)   = phimax_temp
          END DO
       END IF
+
+      ! These are helpers for range
+      eps1 = (rmax-rmin)*small
+      eps2 = (phimax-phimin)*small
+      eps3 = (zmax-zmin)*small
       
       ! Output some information
       IF (lverb .and. .not.lrestart) THEN
@@ -273,7 +278,7 @@
             bcs3=(/ 0, 0/)
             CALL EZspline_init(MODB_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
             IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'fieldlines_init:MODB_spl',ier)
-            MODB_spl%isHermite = 1
+            MODB_spl%isHermite = 0
             MODB_spl%x1 = raxis
             MODB_spl%x2 = phiaxis
             MODB_spl%x3 = zaxis
@@ -303,7 +308,7 @@
             bcs3=(/ 0, 0/)
             CALL EZspline_init(MU_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
             IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'fieldlines_init:MU_SPL',ier)
-            MU_spl%isHermite = 1
+            MU_spl%isHermite = 0
             MU_spl%x1 = raxis
             MU_spl%x2 = phiaxis
             MU_spl%x3 = zaxis
@@ -340,6 +345,10 @@
          END DO
       END IF
 
+      ! Allocated 4D Arrays
+      CALL mpialloc(BR4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_BR4D)
+      CALL mpialloc(BZ4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_BZ4D)
+
       ! Construct Splines (on master nodes of shared memeory)
       IF (myid_sharmem == master) THEN
          bcs1=(/ 0, 0/)
@@ -349,8 +358,8 @@
          IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'fieldlines_init',ier)
          CALL EZspline_init(BZ_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
          IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'fieldlines_init',ier)
-         BR_spl%isHermite = 1
-         BZ_spl%isHermite = 1
+         BR_spl%isHermite = 0
+         BZ_spl%isHermite = 0
          BR_spl%x1 = raxis
          BZ_spl%x1 = raxis
          BR_spl%x2 = phiaxis
@@ -369,14 +378,7 @@
          IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'fieldlines_init',ier)
          CALL EZspline_setup(BZ_spl,B_Z,ier,EXACT_DIM=.true.)
          IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'fieldlines_init',ier)
-      END IF
-
-      ! Allocated 4D Arrays
-      CALL mpialloc(BR4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_BR4D)
-      CALL mpialloc(BZ4D, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_BZ4D)
-
-      ! Copy Spline info to shared memory and Free
-      IF (myid_sharmem == master) THEN
+         ! Copy Spline info to shared memory and Free
          BR4D = BR_SPL%fspl
          BZ4D = BZ_SPL%fspl
          CALL EZspline_free(BR_spl,ier)
@@ -385,12 +387,14 @@
 
       IF (.FALSE.) THEN
          qdot = 0
-         q(1) = 0.7
+         q(1) = 1.5
          q(2) = 0.0
          phi_q = 0.0
          delta_phi = 0.01
          CALL fblin_nag(phi_q,q,qdot)
-         PRINT *,phi_q,q,qdot
+         PRINT *,myid_sharmem,phi_q,q,qdot
+         CALL jacobian_lsode(2,phi_q,q,0,0,pd,2)
+         PRINT *,myid_sharmem,phi_q,q,pd
       END IF
       
       ! DEALLOCATE Variables
