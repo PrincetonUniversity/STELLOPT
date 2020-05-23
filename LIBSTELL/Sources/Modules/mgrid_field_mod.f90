@@ -65,11 +65,12 @@
       mgrid_filename=TRIM(filename)
       nv_temp = nv
       nfp_temp = nfp
+      ! Assume that if comm is passed it is shared
 #if defined(MPI_OPT)
       IF (PRESENT(comm)) THEN
-         CALL MPI_COMM_SPLIT_TYPE(comm, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, shar_comm, istat)
-         CALL MPI_COMM_RANK(shar_comm, shar_rank, istat)
-         CALL MPI_COMM_SIZE(shar_comm, shar_size, istat)
+         !CALL MPI_COMM_SPLIT_TYPE(comm, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, shar_comm, istat)
+         CALL MPI_COMM_RANK(comm, shar_rank, istat)
+         CALL MPI_COMM_SIZE(comm, shar_size, istat)
       ELSE
 #endif
          shar_rank = 0; shar_size = 1
@@ -124,22 +125,14 @@
       eps1 = (rmax_mgrid-rmin_mgrid)*small
       eps2 = (phimax_mgrid-phimin_mgrid)*small
       eps3 = (zmax_mgrid-zmin_mgrid)*small
-      ! Recompose vacuum field for splines
-      IF (EZspline_allocated(brm_spl)) CALL EZspline_free(brm_spl,istat)
-      IF (EZspline_allocated(bphim_spl)) CALL EZspline_free(bphim_spl,istat)
-      IF (EZspline_allocated(bzm_spl)) CALL EZspline_free(bzm_spl,istat)
-!      IF (np0b == 1) THEN
-!         ALLOCATE(br_vac(1:nr0b,1:2,1:nz0b),bphi_vac(1:nr0b,1:2,1:nz0b),&
-!                  bz_vac(1:nr0b,1:2,1:nz0b),STAT=istat)
-!         ALLOCATE(r_vac(1:nr0b),phi_vac(1:2),z_vac(1:nz0b),STAT=istat)
 #if defined(MPI_OPT)
       IF (PRESENT(comm)) THEN
-         CALL MPIALLOC(BRV4D,8,nr0b,nphi_mgrid,nz0b,shar_rank,0,shar_comm,win_BRV4D)
-         CALL MPIALLOC(BPV4D,8,nr0b,nphi_mgrid,nz0b,shar_rank,0,shar_comm,win_BPV4D)
-         CALL MPIALLOC(BZV4D,8,nr0b,nphi_mgrid,nz0b,shar_rank,0,shar_comm,win_BZV4D)
-         CALL MPIALLOC(r_vac,nr0b,shar_rank,0,shar_comm,win_rvac)
-         CALL MPIALLOC(phi_vac,nphi_mgrid,shar_rank,0,shar_comm,win_phivac)
-         CALL MPIALLOC(z_vac,nz0b,shar_rank,0,shar_comm,win_zvac)
+         CALL MPIALLOC(BRV4D,8,nr0b,nphi_mgrid,nz0b,shar_rank,0,comm,win_BRV4D)
+         CALL MPIALLOC(BPV4D,8,nr0b,nphi_mgrid,nz0b,shar_rank,0,comm,win_BPV4D)
+         CALL MPIALLOC(BZV4D,8,nr0b,nphi_mgrid,nz0b,shar_rank,0,comm,win_BZV4D)
+         CALL MPIALLOC(r_vac,nr0b,shar_rank,0,comm,win_rvac)
+         CALL MPIALLOC(phi_vac,nphi_mgrid,shar_rank,0,comm,win_phivac)
+         CALL MPIALLOC(z_vac,nz0b,shar_rank,0,comm,win_zvac)
       ELSE
 #endif
          ALLOCATE(BRV4D(8,nr0b,nphi_mgrid,nz0b), STAT=istat)
@@ -191,7 +184,6 @@
          bzm_spl%x3 = z_vac
          CALL EZspline_setup(bzm_spl,bz_vac,istat,EXACT_DIM=.true.)
          DEALLOCATE(br_vac,bphi_vac,bz_vac)
-         DEALLOCATE(r_vac,phi_vac,z_vac)
          BRV4D = brm_spl%fspl
          BPV4D = bphim_spl%fspl
          BZV4D = bzm_spl%fspl
@@ -200,10 +192,7 @@
          CALL EZspline_free(bzm_spl,istat)
       END IF
 #if defined(MPI_OPT)
-      IF (PRESENT(comm)) THEN
-         CALL MPI_BARRIER(comm,istat)
-         CALL MPI_COMM_FREE(shar_comm,istat) 
-      END IF
+      IF (PRESENT(comm)) CALL MPI_BARRIER(comm,istat)
 #endif
       phimax_mgrid = MAXVAL(phi_vac)
       phimin_mgrid = MINVAL(phi_vac) 
