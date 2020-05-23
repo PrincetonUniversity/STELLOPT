@@ -161,7 +161,7 @@
       IF (mystart <= nlines) THEN
          SELECT CASE (TRIM(int_type))
             CASE ("NAG")
-!DEC$ IF DEFINED (NAG)
+#if defined(NAG)
                ALLOCATE(w(neqs_nag*21+28),STAT=ier)
                IF (ier /= 0) CALL handle_err(ALLOC_ERR,'W',ier)
                DO l = mystart, myend
@@ -176,10 +176,10 @@
                   CALL D02CJF(phi_nag,phif_nag,neqs_nag,q,fblin_nag,tol_nag,relab,out_fieldlines_nag,D02CJW,w,ier)
                   IF (ier < 0) CALL handle_err(D02CJF_ERR,'fieldlines_follow',ier)
                END DO
-!DEC$ ELSE
+#else
                ier = -1
                CALL handle_err(NAG_ERR,'fieldlines_follow',ier)
-!DEC$ ENDIF  
+#endif
             CASE ("RKH68")
                ier = 0
                DO l = mystart, myend

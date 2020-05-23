@@ -75,14 +75,14 @@
       ! First Read The Input Namelist
       iunit = 11
       IF (lverb) WRITE(6,'(A)') '----- Input Parameters -----'
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_init',ierr_mpi)
-!DEC$ ENDIF
+#endif
       IF (lvmec) THEN
          CALL read_fieldlines_input('input.' // TRIM(id_string),ier,myworkid)
          IF (lverb) WRITE(6,'(A)') '   FILE: input.' // TRIM(id_string)
-         IF (.not. lvac) CALL read_wout_file(TRIM(id_string),ier)
+         !IF (.not. lvac) CALL read_wout_file(TRIM(id_string),ier)
       ELSE IF (lpies) THEN
          CALL read_fieldlines_input(TRIM(id_string) // '.in',ier,myworkid)
          IF (lverb) WRITE(6,'(A)') '   FILE: ' // TRIM(id_string) // '.in'
@@ -103,16 +103,16 @@
          STOP
       END IF
       
-      IF (lplasma_only) THEN
-         IF (lvmec) THEN
-            rmin = 1.2*rmin_surf
-            rmax = 1.2*rmax_surf
-            zmin = -1.2*zmax_surf
-            zmax = 1.2*zmax_surf
-         ELSE IF (lpies) THEN
-         ELSE IF (lspec) THEN
-         END IF
-      END IF
+!      IF (lplasma_only) THEN
+!         IF (lvmec) THEN
+!            rmin = 1.2*rmin_surf
+!            rmax = 1.2*rmax_surf
+!            zmin = -1.2*zmax_surf
+!            zmax = 1.2*zmax_surf
+!         ELSE IF (lpies) THEN
+!         ELSE IF (lspec) THEN
+!         END IF
+!      END IF
       
       IF (lauto) THEN
          nlines = MAX(nprocs_fieldlines,128)
@@ -230,20 +230,20 @@
       IF (laxis_i)  CALL fieldlines_init_I
       
       IF (ANY(B_PHI .eq. 0)) THEN
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
          CALL MPI_FINALIZE(ierr_mpi)
          IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_FINE_ERR,'fieldlines_init',ierr_mpi)
-!DEC$ ENDIF
+#endif
          stop 'ERROR: B_PHI = 0 Found'
       END IF
       
       ! Handle outputting the B-FIELD
       IF (lemc3 .or. lbfield_only .or. lafield_only) THEN
          IF (lemc3 .and. myworkid==master) CALL fieldlines_write_emc3
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
          CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
          IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_init',ierr_mpi)
-!DEC$ ENDIF
+#endif
          RETURN
       END IF
 
@@ -378,10 +378,10 @@
          PRINT *,myid_sharmem,phi_q,q,pd
       END IF
 
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_init',ierr_mpi)
-!DEC$ ENDIF
+#endif
 !-----------------------------------------------------------------------
 !     End Subroutine
 !-----------------------------------------------------------------------    

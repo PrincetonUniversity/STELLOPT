@@ -27,10 +27,10 @@
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       INTEGER, PARAMETER :: BYTE_8 = SELECTED_INT_KIND (8)
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
       INTEGER :: sender, status(MPI_STATUS_SIZE)                     !mpi stuff
       INTEGER(KIND=BYTE_8),ALLOCATABLE :: mnum(:), moffsets(:)
-!DEC$ ENDIF  
+#endif
       INTEGER(KIND=BYTE_8) :: icount, chunk
       INTEGER :: s, i, j, k, nu, nv, mystart,myend
 
@@ -229,7 +229,7 @@
       !
 
 
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
       IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'fieldlines_init_nescoil 1',ierr_mpi)
       CALL MPI_BCAST(nfp,1,MPI_INTEGER, master, MPI_COMM_FIELDLINES,ierr_mpi)
@@ -256,7 +256,7 @@
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_init_nescoil 13',ierr_mpi)
       CALL MPI_BCAST(zcur,nuv,MPI_DOUBLE_PRECISION, master, MPI_COMM_FIELDLINES,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_init_nescoil 14',ierr_mpi)
-!DEC$ ENDIF
+#endif
       
       IF (lverb) THEN
          WRITE(6,'(A)') '----- NESCOIL Current Surface -----'
@@ -273,7 +273,7 @@
       myend = mystart + chunk - 1
 
       ! This section sets up the work so we can use ALLGATHERV
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
       IF (ALLOCATED(mnum)) DEALLOCATE(mnum)
       IF (ALLOCATED(moffsets)) DEALLOCATE(moffsets)
       ALLOCATE(mnum(nprocs_fieldlines), moffsets(nprocs_fieldlines))
@@ -290,7 +290,7 @@
       mystart = moffsets(myworkid+1)
       chunk  = mnum(myworkid+1)
       myend   = mystart + chunk - 1
-!DEC$ ENDIF
+#endif
       IF (lafield_only) THEN
             ! This is not supported
       ELSE
@@ -339,7 +339,7 @@
          CALL FLUSH(6)
       END IF    
       
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
       IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'torlines_init_external',ierr_mpi)
 !       ! Adjust indexing to send 2D arrays
@@ -354,13 +354,13 @@
                         MPI_COMM_FIELDLINES,ierr_mpi)
        DEALLOCATE(mnum)
        DEALLOCATE(moffsets)
-!DEC$ ENDIF
+#endif
       WHERE(B_PHI==0) B_PHI=1
 
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
       IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_init_vmec',ierr_mpi)
-!DEC$ ENDIF
+#endif
 !-----------------------------------------------------------------------
 !     End Subroutine
 !-----------------------------------------------------------------------    
