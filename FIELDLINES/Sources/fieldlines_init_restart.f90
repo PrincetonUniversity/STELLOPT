@@ -29,11 +29,10 @@
          WRITE(6,'(A)')  '----- Reading Restart File -----'
          WRITE(6,'(A)')  '   FILE: '//TRIM(restart_string)
       END IF
-      !PRINT *,'myworkid:',myworkid,TRIM(restart_string)
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
-!DEC$ ENDIF
-!DEC$ IF DEFINED (LHDF5)
+#endif
+#if defined(LHDF5)
       IF (myworkid == master) THEN
       CALL open_hdf5(TRIM(restart_string),fid,ier)
       PRINT *,'ier',ier
@@ -50,10 +49,10 @@
       CALL read_var_hdf5(fid,'B_Z',nr,nphi,nz,ier,DBLVAR=B_Z)
       CALL close_hdf5(fid,ier)
       END IF
-!DEC$ ENDIF
-!DEC$ IF DEFINED (MPI_OPT)
+#endif
+#if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
-!DEC$ ENDIF
+#endif
       rmin = MINVAL(raxis)
       rmax = MAXVAL(raxis)
       phimin = MINVAL(phiaxis)
@@ -64,21 +63,10 @@
          WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   R   = [',rmin,',',rmax,'];  NR:   ',nr
          WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   PHI = [',phimin,',',phimax,'];  NPHI: ',nphi
          WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   Z   = [',zmin,',',zmax,'];  NZ:   ',nz
-         !IF (lauto) WRITE(6,'(A)') '   AUTO CALCULATED STARTING POINTS!'
          WRITE(6,'(A,I4)')               '   # of Fieldlines: ',nlines
          CALL FLUSH(6)
       END IF
       RETURN
-      !IF (lauto) THEN
-      !   nlines = nr
-      !   IF (nlines > MAXLINES) nlines = MAXLINES-2
-      !   DO i = 1, nlines
-      !      r_start(i)   = i*(rmax-rmin)/nlines + rmin
-      !      z_start(i)   = 0.0
-      !      phi_start(i) = 0.0
-      !      phi_end(i)   = 2*pi*1000.
-      !   END DO
-      !END IF
 !-----------------------------------------------------------------------
 !     End Subroutine
 !-----------------------------------------------------------------------    
