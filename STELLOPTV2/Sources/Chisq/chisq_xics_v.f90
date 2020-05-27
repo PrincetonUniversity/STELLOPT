@@ -47,9 +47,8 @@
             x0(2)=phi0_xics(ik); x1(2)=phi1_xics(ik)
             x0(3)=z0_xics(ik); x1(3)=z1_xics(ik)
             xics_val = 0.0
-            CALL line_int(fcn_xics_v,x0,x1,xics_val,LENGTH=xics_length)
+            CALL line_int(fcn_xics_v,x0,x1,xics_val)
             CALL line_int(fcn_xics_bright,x0,x1,xics_bright)
-            !PRINT *,'TI_LENGTH (',ik,')',xics_length
             mtargets = mtargets + 1
             targets(mtargets) = target(ik)
             sigmas(mtargets)  = sigma(ik)

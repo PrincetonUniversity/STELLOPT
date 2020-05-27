@@ -287,13 +287,13 @@
            WRITE(6,*) '  ierr:   ',ierr
       END IF
       CALL FLUSH(6)
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
       CALL MPI_FINALIZE(ierr)   
-!DEC$ ENDIF
+#endif
       STOP
       END SUBROUTINE handle_err
 
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
     SUBROUTINE FIELDLINES_TRANSMIT_2DDBL(n1,n2,m1,m2,data_in,n1_gbl,n2_gbl,id,root,COMM_local,ier)
     USE stel_kinds, ONLY: rprec
     USE mpi
@@ -323,6 +323,6 @@
     CALL MPI_BARRIER(COMM_local, ier)
     RETURN
     END SUBROUTINE FIELDLINES_TRANSMIT_2DDBL
-!DEC$ ENDIF
+#endif
       
       END MODULE fieldlines_runtime
