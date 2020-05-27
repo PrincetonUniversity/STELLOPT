@@ -18,6 +18,8 @@
             -assume noold_unit_star -g -traceback
   FLAGS_D = -I$(MKL_HOME)/include -fp-model strict -ip \
             -assume noold_unit_star -g -traceback
+  FLAGS_D+= -check all -check bounds -check noarg_temp_created \
+            -check uninit -ftrapuv -debug all
   LIBS    = -Wl,-rpath,$(MKL_HOME)/lib/intel64 \
             -L$(MKL_HOME)/lib/intel64 -lmkl_scalapack_lp64 \
             -lmkl_intel_lp64 -lmkl_core -lmkl_sequential \
@@ -35,7 +37,7 @@
   MPI_RUN_OPTS = --nodes=1 --ntasks-per-node=32 --time=0:30:00 -p express
   MPI_RUN_OPTS_SM   = --nodes=1 --ntasks-per-node=32 --time=0:30:00 -p express
   MPI_RUN_OPTS_MD   = --nodes=8 --ntasks-per-node=32 --time=0:30:00 -p express
-  MPI_RUN_OPTS_LG   = --nodes=32 --ntasks-per-node=32 --time=0:30:00 -p express
+  MPI_RUN_OPTS_LG   = --nodes=16 --ntasks-per-node=32 --time=0:30:00 -p express
 #######################################################################
 #            NAG Options
 #######################################################################
@@ -54,6 +56,7 @@
 #            HDF5 Options
 #######################################################################
   LHDF5 = T
+  PRECOMP+= -DHDF5_PAR
   HDF5_INC = -I$(HDF5_HOME)/include 
   HDF5_LIB = -Wl,-rpath,$(HDF5_HOME)/lib -L$(HDF5_HOME)/lib \
              -lhdf5 -lhdf5_fortran -lhdf5_hl -lhdf5hl_fortran 
@@ -132,11 +135,10 @@
 #######################################################################
 #            SFINCS Options
 #######################################################################
-
   LSFINCS = F
   include ${PETSC_DIR}/lib/petsc/conf/variables
   SFINCS_DIR = $(SFINCS_PATH)/fortran/version3
-  SFINCS_INC = -I$(SFINCS_DIR) -I${PETSC_DIR}/include -I${PETSC_DIR}/${PETSC_ARCH}/include
+  SFINCS_INC = -I$(SFINCS_DIR) -I${PETSC_DIR}/include
   LIB_SFINCS = libsfincs.a
 
   SFINCS_LIB = $(SFINCS_DIR)/$(LIB_SFINCS) \

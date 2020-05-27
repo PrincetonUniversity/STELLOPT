@@ -67,13 +67,13 @@
       ier = 1
       SELECT CASE (TRIM(int_type))
          CASE ("NAG")
-!DEC$ IF DEFINED (NAG)
+#if defined(NAG)
             CALL D02CJF(phi0_nag,phi1_nag,neqs,q,fblin_tanmap_nag,tol_nag,relab,D02CJX,D02CJW,w,ier)
             IF (ier < 0) CALL handle_err(D02CJF_ERR,'follow_single',ier)
-!DEC$ ELSE
+#else
             ier = -1
             CALL handle_err(NAG_ERR,'follow_single',ier)
-!DEC$ ENDIF 
+#endif
          CASE ("RKH68")
             ier = 0
             CALL drkhvg(phi0_nag,q,neqs,phi1_nag-phi0_nag,2,fblin_tanmap_rkh68,rkh_work,iopt,ier)

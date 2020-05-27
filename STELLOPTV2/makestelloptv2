@@ -5,7 +5,7 @@ CFILE   = '$*''.c'
 F90FILE = '$*''.f90'
 SPATH   = ../Sources
 #Contains list of source files (.o) and dependencies
-DEPLIST = STELLOPTV2.dep
+DEPLIST = ../STELLOPTV2.dep
 OBJLIST = ../ObjectList
 
 #Includes source files and dependency list
@@ -15,7 +15,10 @@ VPATH = $(SPATH):$(SPATH)/Chisq:$(SPATH)/General:$(SPATH)/Modules
 
 .SUFFIXES :
 .SUFFIXES : .f .f90 .o
-xstelloptv2:  $(LIB) $(LIB_VMEC) $(LIB_BEAMS3D) $(LIB_BNORM) $(LIB_BOOTSJ) $(LIB_BOOZ) $(LIB_COBRA) $(LIB_DIAGNO) $(LIB_DKES) $(LIB_FIELDLINES) $(LIB_JINV) $(LIB_MGRID) $(LIB_NEO) $(LIB_GENE) $(LIB_COILOPTPP) $(LIB_REGCOIL) $(LIB_TERPSICHORE) $(ObjectFiles)
+xstelloptv2:  $(LIB) $(LIB_VMEC) $(LIB_BEAMS3D) $(LIB_BNORM) $(LIB_BOOTSJ) \
+	$(LIB_BOOZ) $(LIB_COBRA) $(LIB_DIAGNO) $(LIB_DKES) $(LIB_FIELDLINES) \
+	$(LIB_JINV) $(LIB_MGRID) $(LIB_NEO)  $(LIB_COILOPTPP) $(LIB_GENE) \
+	$(LIB_REGCOIL) $(LIB_TERPSICHORE) $(ObjectFiles)
 	$(LINK) $@ $(ObjectFiles) $(LIB_LINK)
 ifdef VMEC_DIR 
 	@rm $(VMEC_DIR)/$(LOCTYPE)/$(LIB_VMEC) 
@@ -157,15 +160,13 @@ $(LIB_MGRID) :
 $(LIB_NEO) :
 	@cd $(NEO_DIR); make $(TYPE); cd $(LOCTYPE); ar -cruv $(LIB_NEO) *.o *.mod
 
-#Construct GENE library
-ifdef LIB_GENE
-$(LIB_GENE) :
-	@cd $(GENE_DIR); ar -cruv $(LIB_GENE) *.o *.mod
-endif
-
 #Construct COILOPT library. 
 $(LIB_COILOPTPP) :
 	@cd $(COILOPTPP_DIR); make; ar -cruv $(LIB_COILOPTPP) *.o 
+
+#Construct GENE library
+$(LIB_GENE) :
+	@cd $(GENE_DIR); ar -cruv $(LIB_GENE) *.o *.mod
 
 #Construct COILOPT library. 
 $(LIB_REGCOIL) :

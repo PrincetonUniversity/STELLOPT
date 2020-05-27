@@ -38,17 +38,16 @@
 !-----------------------------------------------------------------------
       INTERFACE write_var_hdf5
          MODULE PROCEDURE write_scalar_hdf5, write_vector_hdf5,&
-                          write_arr2d_hdf5, write_arr3d_hdf5
-!         MODULE PROCEDURE write_vector_hdf5,&
-!                          write_arr2d_hdf5, write_arr3d_hdf5
+                          write_arr2d_hdf5, write_arr3d_hdf5, &
+                          write_arr4d_hdf5, write_arr5d_hdf5, &
+                          write_arr6d_hdf5
       END INTERFACE
       
       INTERFACE read_var_hdf5
-         ! GCC complains
          MODULE PROCEDURE read_scalar_hdf5, read_vector_hdf5,&
-                          read_arr2d_hdf5, read_arr3d_hdf5
-!         MODULE PROCEDURE read_vector_hdf5,&
-!                          read_arr2d_hdf5, read_arr3d_hdf5
+                          read_arr2d_hdf5, read_arr3d_hdf5,&
+                          read_arr4d_hdf5, read_arr5d_hdf5,&
+                          read_arr6d_hdf5
       END INTERFACE
       
       
@@ -558,6 +557,273 @@
       !-----------------------------------------------------------------
       
       !-----------------------------------------------------------------
+      SUBROUTINE write_arr4d_hdf5(file_id,var,n1,n2,n3,n4,ier,BOOVAR,INTVAR,FLTVAR,DBLVAR,ATT,ATT_NAME)
+      IMPLICIT NONE
+      INTEGER(HID_T), INTENT(in)    :: file_id
+      CHARACTER(LEN=*), INTENT(in)  :: var
+      INTEGER, INTENT(in)           :: n1
+      INTEGER, INTENT(in)           :: n2
+      INTEGER, INTENT(in)           :: n3
+      INTEGER, INTENT(in)           :: n4
+      INTEGER, INTENT(out)          :: ier
+      INTEGER, INTENT(in), OPTIONAL :: INTVAR(n1,n2,n3,n4)
+      LOGICAL, INTENT(in), OPTIONAL :: BOOVAR(n1,n2,n3,n4)
+      REAL, INTENT(in), OPTIONAL    :: FLTVAR(n1,n2,n3,n4)
+      DOUBLE PRECISION, INTENT(in), OPTIONAL  :: DBLVAR(n1,n2,n3,n4)
+      CHARACTER(LEN=*), INTENT(in), OPTIONAL :: ATT
+      CHARACTER(LEN=*), INTENT(in), OPTIONAL :: ATT_NAME
+      INTEGER        :: drank = 4
+      INTEGER        :: arank = 1
+      INTEGER        :: boo_temp(n1,n2,n3,n4)
+      INTEGER(HID_T) :: dset_id
+      INTEGER(HID_T) :: attr_id  
+      INTEGER(HID_T) :: dspace_id
+      INTEGER(HID_T) :: aspace_id
+      INTEGER(HID_T) :: atype_id
+      INTEGER(SIZE_T) :: attrlen
+      INTEGER(HSIZE_T), DIMENSION(4) :: ddims
+      INTEGER(HSIZE_T), DIMENSION(1) :: adims = (/1/)
+      INTEGER(HSIZE_T), DIMENSION(1) :: data_dims
+      CHARACTER(LEN=1024) ::  att_temp
+      
+      ier = 0
+      ddims(1)=n1
+      ddims(2)=n2
+      ddims(3)=n3
+      ddims(4)=n4
+      CALL h5screate_simple_f(drank,ddims,dspace_id,ier)
+      IF (ier /=0) RETURN
+      IF (PRESENT(INTVAR)) THEN
+         CALL h5dcreate_f(file_id,TRIM(var),H5T_NATIVE_INTEGER,dspace_id,dset_id,ier)
+         CALL h5dwrite_f(dset_id, H5T_NATIVE_INTEGER, INTVAR, ddims, ier)
+      ELSE IF (PRESENT(FLTVAR)) THEN
+         CALL h5dcreate_f(file_id,TRIM(var),H5T_NATIVE_DOUBLE,dspace_id,dset_id,ier)
+         CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, FLTVAR, ddims, ier)
+      ELSE IF (PRESENT(DBLVAR)) THEN
+         CALL h5dcreate_f(file_id,TRIM(var),H5T_NATIVE_DOUBLE,dspace_id,dset_id,ier)
+         CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, DBLVAR, ddims, ier)
+      ELSE IF (PRESENT(BOOVAR)) THEN
+         boo_temp = 0
+         WHERE(BOOVAR) boo_temp = 1
+         CALL h5dcreate_f(file_id,TRIM(var),H5T_NATIVE_INTEGER,dspace_id,dset_id,ier)
+         CALL h5dwrite_f(dset_id, H5T_NATIVE_INTEGER, boo_temp, ddims, ier)
+      ELSE
+         ier=-2
+      END IF
+      IF (PRESENT(ATT)) THEN
+         IF (PRESENT(ATT_NAME)) THEN
+            att_temp=TRIM(ATT_NAME)
+         ELSE
+            att_temp=TRIM('_att')
+         END IF
+         data_dims(1) = 1
+         CALL h5screate_simple_f(arank,adims,aspace_id,ier)
+         IF (ier /=0) RETURN
+         CALL h5tcopy_f(H5T_NATIVE_CHARACTER, atype_id,ier)
+         IF (ier /=0) RETURN
+         attrlen=LEN(TRIM(ATT))
+         CALL h5tset_size_f(atype_id,attrlen,ier)
+         IF (ier /=0) RETURN
+         CALL h5acreate_f(dset_id,TRIM(var) // '_' // TRIM(att_temp), atype_id, aspace_id, attr_id,ier)
+         IF (ier /=0) RETURN
+         data_dims(1)=1
+         CALL h5awrite_f(attr_id,atype_id,TRIM(ATT),data_dims,ier)
+         IF (ier /=0) RETURN
+         CALL h5aclose_f(attr_id,ier)
+         IF (ier /=0) RETURN
+         CALL h5sclose_f(aspace_id,ier)
+         IF (ier /=0) RETURN
+      END IF
+      IF (ier /=0) RETURN
+      CALL h5dclose_f(dset_id,ier)
+      IF (ier /=0) RETURN
+      CALL h5sclose_f(dspace_id,ier)
+      IF (ier /=0) RETURN
+      
+      END SUBROUTINE write_arr4d_hdf5   
+      !-----------------------------------------------------------------
+      
+      !-----------------------------------------------------------------
+      SUBROUTINE write_arr5d_hdf5(file_id,var,n1,n2,n3,n4,n5,ier,BOOVAR,INTVAR,FLTVAR,DBLVAR,ATT,ATT_NAME)
+      IMPLICIT NONE
+      INTEGER(HID_T), INTENT(in)    :: file_id
+      CHARACTER(LEN=*), INTENT(in)  :: var
+      INTEGER, INTENT(in)           :: n1
+      INTEGER, INTENT(in)           :: n2
+      INTEGER, INTENT(in)           :: n3
+      INTEGER, INTENT(in)           :: n4
+      INTEGER, INTENT(in)           :: n5
+      INTEGER, INTENT(out)          :: ier
+      INTEGER, INTENT(in), OPTIONAL :: INTVAR(n1,n2,n3,n4,n5)
+      LOGICAL, INTENT(in), OPTIONAL :: BOOVAR(n1,n2,n3,n4,n5)
+      REAL, INTENT(in), OPTIONAL    :: FLTVAR(n1,n2,n3,n4,n5)
+      DOUBLE PRECISION, INTENT(in), OPTIONAL  :: DBLVAR(n1,n2,n3,n4,n5)
+      CHARACTER(LEN=*), INTENT(in), OPTIONAL :: ATT
+      CHARACTER(LEN=*), INTENT(in), OPTIONAL :: ATT_NAME
+      INTEGER        :: drank = 5
+      INTEGER        :: arank = 1
+      INTEGER        :: boo_temp(n1,n2,n3,n4,n5)
+      INTEGER(HID_T) :: dset_id
+      INTEGER(HID_T) :: attr_id  
+      INTEGER(HID_T) :: dspace_id
+      INTEGER(HID_T) :: aspace_id
+      INTEGER(HID_T) :: atype_id
+      INTEGER(SIZE_T) :: attrlen
+      INTEGER(HSIZE_T), DIMENSION(5) :: ddims
+      INTEGER(HSIZE_T), DIMENSION(1) :: adims = (/1/)
+      INTEGER(HSIZE_T), DIMENSION(1) :: data_dims
+      CHARACTER(LEN=1024) ::  att_temp
+      
+      ier = 0
+      ddims(1)=n1
+      ddims(2)=n2
+      ddims(3)=n3
+      ddims(4)=n4
+      ddims(5)=n5
+      CALL h5screate_simple_f(drank,ddims,dspace_id,ier)
+      IF (ier /=0) RETURN
+      IF (PRESENT(INTVAR)) THEN
+         CALL h5dcreate_f(file_id,TRIM(var),H5T_NATIVE_INTEGER,dspace_id,dset_id,ier)
+         CALL h5dwrite_f(dset_id, H5T_NATIVE_INTEGER, INTVAR, ddims, ier)
+      ELSE IF (PRESENT(FLTVAR)) THEN
+         CALL h5dcreate_f(file_id,TRIM(var),H5T_NATIVE_DOUBLE,dspace_id,dset_id,ier)
+         CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, FLTVAR, ddims, ier)
+      ELSE IF (PRESENT(DBLVAR)) THEN
+         CALL h5dcreate_f(file_id,TRIM(var),H5T_NATIVE_DOUBLE,dspace_id,dset_id,ier)
+         CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, DBLVAR, ddims, ier)
+      ELSE IF (PRESENT(BOOVAR)) THEN
+         boo_temp = 0
+         WHERE(BOOVAR) boo_temp = 1
+         CALL h5dcreate_f(file_id,TRIM(var),H5T_NATIVE_INTEGER,dspace_id,dset_id,ier)
+         CALL h5dwrite_f(dset_id, H5T_NATIVE_INTEGER, boo_temp, ddims, ier)
+      ELSE
+         ier=-2
+      END IF
+      IF (PRESENT(ATT)) THEN
+         IF (PRESENT(ATT_NAME)) THEN
+            att_temp=TRIM(ATT_NAME)
+         ELSE
+            att_temp=TRIM('_att')
+         END IF
+         data_dims(1) = 1
+         CALL h5screate_simple_f(arank,adims,aspace_id,ier)
+         IF (ier /=0) RETURN
+         CALL h5tcopy_f(H5T_NATIVE_CHARACTER, atype_id,ier)
+         IF (ier /=0) RETURN
+         attrlen=LEN(TRIM(ATT))
+         CALL h5tset_size_f(atype_id,attrlen,ier)
+         IF (ier /=0) RETURN
+         CALL h5acreate_f(dset_id,TRIM(var) // '_' // TRIM(att_temp), atype_id, aspace_id, attr_id,ier)
+         IF (ier /=0) RETURN
+         data_dims(1)=1
+         CALL h5awrite_f(attr_id,atype_id,TRIM(ATT),data_dims,ier)
+         IF (ier /=0) RETURN
+         CALL h5aclose_f(attr_id,ier)
+         IF (ier /=0) RETURN
+         CALL h5sclose_f(aspace_id,ier)
+         IF (ier /=0) RETURN
+      END IF
+      IF (ier /=0) RETURN
+      CALL h5dclose_f(dset_id,ier)
+      IF (ier /=0) RETURN
+      CALL h5sclose_f(dspace_id,ier)
+      IF (ier /=0) RETURN
+      
+      END SUBROUTINE write_arr5d_hdf5   
+      !-----------------------------------------------------------------
+      
+      !-----------------------------------------------------------------
+      SUBROUTINE write_arr6d_hdf5(file_id,var,n1,n2,n3,n4,n5,n6,ier,BOOVAR,INTVAR,FLTVAR,DBLVAR,ATT,ATT_NAME)
+      IMPLICIT NONE
+      INTEGER(HID_T), INTENT(in)    :: file_id
+      CHARACTER(LEN=*), INTENT(in)  :: var
+      INTEGER, INTENT(in)           :: n1
+      INTEGER, INTENT(in)           :: n2
+      INTEGER, INTENT(in)           :: n3
+      INTEGER, INTENT(in)           :: n4
+      INTEGER, INTENT(in)           :: n5
+      INTEGER, INTENT(in)           :: n6
+      INTEGER, INTENT(out)          :: ier
+      INTEGER, INTENT(in), OPTIONAL :: INTVAR(n1,n2,n3,n4,n5,n6)
+      LOGICAL, INTENT(in), OPTIONAL :: BOOVAR(n1,n2,n3,n4,n5,n6)
+      REAL, INTENT(in), OPTIONAL    :: FLTVAR(n1,n2,n3,n4,n5,n6)
+      DOUBLE PRECISION, INTENT(in), OPTIONAL  :: DBLVAR(n1,n2,n3,n4,n5,n6)
+      CHARACTER(LEN=*), INTENT(in), OPTIONAL :: ATT
+      CHARACTER(LEN=*), INTENT(in), OPTIONAL :: ATT_NAME
+      INTEGER        :: drank = 6
+      INTEGER        :: arank = 1
+      INTEGER        :: boo_temp(n1,n2,n3,n4,n5,n6)
+      INTEGER(HID_T) :: dset_id
+      INTEGER(HID_T) :: attr_id  
+      INTEGER(HID_T) :: dspace_id
+      INTEGER(HID_T) :: aspace_id
+      INTEGER(HID_T) :: atype_id
+      INTEGER(SIZE_T) :: attrlen
+      INTEGER(HSIZE_T), DIMENSION(6) :: ddims
+      INTEGER(HSIZE_T), DIMENSION(1) :: adims = (/1/)
+      INTEGER(HSIZE_T), DIMENSION(1) :: data_dims
+      CHARACTER(LEN=1024) ::  att_temp
+      
+      ier = 0
+      ddims(1)=n1
+      ddims(2)=n2
+      ddims(3)=n3
+      ddims(4)=n4
+      ddims(5)=n5
+      ddims(6)=n6
+      CALL h5screate_simple_f(drank,ddims,dspace_id,ier)
+      IF (ier /=0) RETURN
+      IF (PRESENT(INTVAR)) THEN
+         CALL h5dcreate_f(file_id,TRIM(var),H5T_NATIVE_INTEGER,dspace_id,dset_id,ier)
+         CALL h5dwrite_f(dset_id, H5T_NATIVE_INTEGER, INTVAR, ddims, ier)
+      ELSE IF (PRESENT(FLTVAR)) THEN
+         CALL h5dcreate_f(file_id,TRIM(var),H5T_NATIVE_DOUBLE,dspace_id,dset_id,ier)
+         CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, FLTVAR, ddims, ier)
+      ELSE IF (PRESENT(DBLVAR)) THEN
+         CALL h5dcreate_f(file_id,TRIM(var),H5T_NATIVE_DOUBLE,dspace_id,dset_id,ier)
+         CALL h5dwrite_f(dset_id, H5T_NATIVE_DOUBLE, DBLVAR, ddims, ier)
+      ELSE IF (PRESENT(BOOVAR)) THEN
+         boo_temp = 0
+         WHERE(BOOVAR) boo_temp = 1
+         CALL h5dcreate_f(file_id,TRIM(var),H5T_NATIVE_INTEGER,dspace_id,dset_id,ier)
+         CALL h5dwrite_f(dset_id, H5T_NATIVE_INTEGER, boo_temp, ddims, ier)
+      ELSE
+         ier=-2
+      END IF
+      IF (PRESENT(ATT)) THEN
+         IF (PRESENT(ATT_NAME)) THEN
+            att_temp=TRIM(ATT_NAME)
+         ELSE
+            att_temp=TRIM('_att')
+         END IF
+         data_dims(1) = 1
+         CALL h5screate_simple_f(arank,adims,aspace_id,ier)
+         IF (ier /=0) RETURN
+         CALL h5tcopy_f(H5T_NATIVE_CHARACTER, atype_id,ier)
+         IF (ier /=0) RETURN
+         attrlen=LEN(TRIM(ATT))
+         CALL h5tset_size_f(atype_id,attrlen,ier)
+         IF (ier /=0) RETURN
+         CALL h5acreate_f(dset_id,TRIM(var) // '_' // TRIM(att_temp), atype_id, aspace_id, attr_id,ier)
+         IF (ier /=0) RETURN
+         data_dims(1)=1
+         CALL h5awrite_f(attr_id,atype_id,TRIM(ATT),data_dims,ier)
+         IF (ier /=0) RETURN
+         CALL h5aclose_f(attr_id,ier)
+         IF (ier /=0) RETURN
+         CALL h5sclose_f(aspace_id,ier)
+         IF (ier /=0) RETURN
+      END IF
+      IF (ier /=0) RETURN
+      CALL h5dclose_f(dset_id,ier)
+      IF (ier /=0) RETURN
+      CALL h5sclose_f(dspace_id,ier)
+      IF (ier /=0) RETURN
+      
+      END SUBROUTINE write_arr6d_hdf5   
+      !-----------------------------------------------------------------
+      
+      !-----------------------------------------------------------------
       SUBROUTINE read_scalar_hdf5(file_id,var,ierr,BOOVAR,INTVAR,FLTVAR,DBLVAR,ATT,ATT_NAME)
       IMPLICIT NONE
       INTEGER(HID_T), INTENT(in)    :: file_id
@@ -788,6 +1054,207 @@
       !IF (ier /=0) RETURN
       
       END SUBROUTINE read_arr3d_hdf5   
+      !-----------------------------------------------------------------
+      
+      !-----------------------------------------------------------------
+      SUBROUTINE read_arr4d_hdf5(file_id,var,n1,n2,n3,n4,ier,BOOVAR,INTVAR,FLTVAR,DBLVAR,ATT,ATT_NAME)
+      IMPLICIT NONE
+      INTEGER(HID_T), INTENT(in)    :: file_id
+      CHARACTER(LEN=*), INTENT(in)  :: var
+      INTEGER, INTENT(in)           :: n1
+      INTEGER, INTENT(in)           :: n2
+      INTEGER, INTENT(in)           :: n3
+      INTEGER, INTENT(in)           :: n4
+      INTEGER, INTENT(out)          :: ier
+      INTEGER, INTENT(out), OPTIONAL :: INTVAR(n1,n2,n3,n4)
+      LOGICAL, INTENT(out), OPTIONAL :: BOOVAR(n1,n2,n3,n4)
+      REAL, INTENT(out), OPTIONAL    :: FLTVAR(n1,n2,n3,n4)
+      DOUBLE PRECISION, INTENT(out), OPTIONAL  :: DBLVAR(n1,n2,n3,n4)
+      CHARACTER(LEN=*), INTENT(out), OPTIONAL :: ATT
+      CHARACTER(LEN=*), INTENT(out), OPTIONAL :: ATT_NAME
+      INTEGER        :: drank = 4
+      INTEGER        :: arank = 1
+      INTEGER        :: boo_temp(n1,n2,n3,n4)
+      INTEGER(HID_T) :: dset_id
+      INTEGER(HID_T) :: attr_id  
+      INTEGER(HID_T) :: dspace_id
+      INTEGER(HID_T) :: aspace_id
+      INTEGER(HID_T) :: atype_id
+      INTEGER(SIZE_T) :: attrlen
+      INTEGER(HSIZE_T), DIMENSION(4) :: ddims
+      INTEGER(HSIZE_T), DIMENSION(1) :: adims = (/1/)
+      INTEGER(HSIZE_T), DIMENSION(1) :: data_dims
+      CHARACTER(LEN=1024) ::  att_temp
+      
+      ier = 0
+      ddims(1)=n1
+      ddims(2)=n2
+      ddims(3)=n3
+      ddims(4)=n4
+      !ATT=''
+      !ATT_NAME=''
+      CALL h5dopen_f(file_id,TRIM(var), dset_id,ier)
+      IF (ier /=0) RETURN
+      IF (PRESENT(INTVAR)) THEN
+         INTVAR = 0
+         CALL h5dread_f(dset_id, H5T_NATIVE_INTEGER, INTVAR, ddims, ier)
+      ELSE IF (PRESENT(FLTVAR)) THEN
+         FLTVAR = 0
+         CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, FLTVAR, ddims, ier)
+      ELSE IF (PRESENT(DBLVAR)) THEN
+         DBLVAR = 0
+         CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, DBLVAR, ddims, ier)
+      ELSE IF (PRESENT(BOOVAR)) THEN
+         boo_temp = 0
+         CALL h5dread_f(dset_id, H5T_NATIVE_INTEGER, boo_temp, ddims, ier)
+         BOOVAR = .FALSE.
+         WHERE(boo_temp == 1) BOOVAR = .TRUE.
+      ELSE
+         ier=-2
+      END IF
+      IF (ier /=0) RETURN
+      CALL h5dclose_f(dset_id,ier)
+      IF (ier /=0) RETURN
+      !CALL h5sclose_f(dspace_id,ier)
+      !IF (ier /=0) RETURN
+      
+      END SUBROUTINE read_arr4d_hdf5   
+      !-----------------------------------------------------------------
+      
+      !-----------------------------------------------------------------
+      SUBROUTINE read_arr5d_hdf5(file_id,var,n1,n2,n3,n4,n5,ier,BOOVAR,INTVAR,FLTVAR,DBLVAR,ATT,ATT_NAME)
+      IMPLICIT NONE
+      INTEGER(HID_T), INTENT(in)    :: file_id
+      CHARACTER(LEN=*), INTENT(in)  :: var
+      INTEGER, INTENT(in)           :: n1
+      INTEGER, INTENT(in)           :: n2
+      INTEGER, INTENT(in)           :: n3
+      INTEGER, INTENT(in)           :: n4
+      INTEGER, INTENT(in)           :: n5
+      INTEGER, INTENT(out)          :: ier
+      INTEGER, INTENT(out), OPTIONAL :: INTVAR(n1,n2,n3,n4,n5)
+      LOGICAL, INTENT(out), OPTIONAL :: BOOVAR(n1,n2,n3,n4,n5)
+      REAL, INTENT(out), OPTIONAL    :: FLTVAR(n1,n2,n3,n4,n5)
+      DOUBLE PRECISION, INTENT(out), OPTIONAL  :: DBLVAR(n1,n2,n3,n4,n5)
+      CHARACTER(LEN=*), INTENT(out), OPTIONAL :: ATT
+      CHARACTER(LEN=*), INTENT(out), OPTIONAL :: ATT_NAME
+      INTEGER        :: drank = 5
+      INTEGER        :: arank = 1
+      INTEGER        :: boo_temp(n1,n2,n3,n4,n5)
+      INTEGER(HID_T) :: dset_id
+      INTEGER(HID_T) :: attr_id  
+      INTEGER(HID_T) :: dspace_id
+      INTEGER(HID_T) :: aspace_id
+      INTEGER(HID_T) :: atype_id
+      INTEGER(SIZE_T) :: attrlen
+      INTEGER(HSIZE_T), DIMENSION(5) :: ddims
+      INTEGER(HSIZE_T), DIMENSION(1) :: adims = (/1/)
+      INTEGER(HSIZE_T), DIMENSION(1) :: data_dims
+      CHARACTER(LEN=1024) ::  att_temp
+      
+      ier = 0
+      ddims(1)=n1
+      ddims(2)=n2
+      ddims(3)=n3
+      ddims(4)=n4
+      ddims(5)=n5
+      !ATT=''
+      !ATT_NAME=''
+      CALL h5dopen_f(file_id,TRIM(var), dset_id,ier)
+      IF (ier /=0) RETURN
+      IF (PRESENT(INTVAR)) THEN
+         INTVAR = 0
+         CALL h5dread_f(dset_id, H5T_NATIVE_INTEGER, INTVAR, ddims, ier)
+      ELSE IF (PRESENT(FLTVAR)) THEN
+         FLTVAR = 0
+         CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, FLTVAR, ddims, ier)
+      ELSE IF (PRESENT(DBLVAR)) THEN
+         DBLVAR = 0
+         CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, DBLVAR, ddims, ier)
+      ELSE IF (PRESENT(BOOVAR)) THEN
+         boo_temp = 0
+         CALL h5dread_f(dset_id, H5T_NATIVE_INTEGER, boo_temp, ddims, ier)
+         BOOVAR = .FALSE.
+         WHERE(boo_temp == 1) BOOVAR = .TRUE.
+      ELSE
+         ier=-2
+      END IF
+      IF (ier /=0) RETURN
+      CALL h5dclose_f(dset_id,ier)
+      IF (ier /=0) RETURN
+      !CALL h5sclose_f(dspace_id,ier)
+      !IF (ier /=0) RETURN
+      
+      END SUBROUTINE read_arr5d_hdf5   
+      !-----------------------------------------------------------------
+      
+      !-----------------------------------------------------------------
+      SUBROUTINE read_arr6d_hdf5(file_id,var,n1,n2,n3,n4,n5,n6,ier,BOOVAR,INTVAR,FLTVAR,DBLVAR,ATT,ATT_NAME)
+      IMPLICIT NONE
+      INTEGER(HID_T), INTENT(in)    :: file_id
+      CHARACTER(LEN=*), INTENT(in)  :: var
+      INTEGER, INTENT(in)           :: n1
+      INTEGER, INTENT(in)           :: n2
+      INTEGER, INTENT(in)           :: n3
+      INTEGER, INTENT(in)           :: n4
+      INTEGER, INTENT(in)           :: n5
+      INTEGER, INTENT(in)           :: n6
+      INTEGER, INTENT(out)          :: ier
+      INTEGER, INTENT(out), OPTIONAL :: INTVAR(n1,n2,n3,n4,n5,n6)
+      LOGICAL, INTENT(out), OPTIONAL :: BOOVAR(n1,n2,n3,n4,n5,n6)
+      REAL, INTENT(out), OPTIONAL    :: FLTVAR(n1,n2,n3,n4,n5,n6)
+      DOUBLE PRECISION, INTENT(out), OPTIONAL  :: DBLVAR(n1,n2,n3,n4,n5,n6)
+      CHARACTER(LEN=*), INTENT(out), OPTIONAL :: ATT
+      CHARACTER(LEN=*), INTENT(out), OPTIONAL :: ATT_NAME
+      INTEGER        :: drank = 6
+      INTEGER        :: arank = 1
+      INTEGER        :: boo_temp(n1,n2,n3,n4,n5,n6)
+      INTEGER(HID_T) :: dset_id
+      INTEGER(HID_T) :: attr_id  
+      INTEGER(HID_T) :: dspace_id
+      INTEGER(HID_T) :: aspace_id
+      INTEGER(HID_T) :: atype_id
+      INTEGER(SIZE_T) :: attrlen
+      INTEGER(HSIZE_T), DIMENSION(6) :: ddims
+      INTEGER(HSIZE_T), DIMENSION(1) :: adims = (/1/)
+      INTEGER(HSIZE_T), DIMENSION(1) :: data_dims
+      CHARACTER(LEN=1024) ::  att_temp
+      
+      ier = 0
+      ddims(1)=n1
+      ddims(2)=n2
+      ddims(3)=n3
+      ddims(4)=n4
+      ddims(5)=n5
+      ddims(6)=n6
+      !ATT=''
+      !ATT_NAME=''
+      CALL h5dopen_f(file_id,TRIM(var), dset_id,ier)
+      IF (ier /=0) RETURN
+      IF (PRESENT(INTVAR)) THEN
+         INTVAR = 0
+         CALL h5dread_f(dset_id, H5T_NATIVE_INTEGER, INTVAR, ddims, ier)
+      ELSE IF (PRESENT(FLTVAR)) THEN
+         FLTVAR = 0
+         CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, FLTVAR, ddims, ier)
+      ELSE IF (PRESENT(DBLVAR)) THEN
+         DBLVAR = 0
+         CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, DBLVAR, ddims, ier)
+      ELSE IF (PRESENT(BOOVAR)) THEN
+         boo_temp = 0
+         CALL h5dread_f(dset_id, H5T_NATIVE_INTEGER, boo_temp, ddims, ier)
+         BOOVAR = .FALSE.
+         WHERE(boo_temp == 1) BOOVAR = .TRUE.
+      ELSE
+         ier=-2
+      END IF
+      IF (ier /=0) RETURN
+      CALL h5dclose_f(dset_id,ier)
+      IF (ier /=0) RETURN
+      !CALL h5sclose_f(dspace_id,ier)
+      !IF (ier /=0) RETURN
+      
+      END SUBROUTINE read_arr6d_hdf5   
       !-----------------------------------------------------------------
          
 #endif

@@ -102,15 +102,14 @@ MODULE beams3d_runtime
     INTEGER, PARAMETER :: MPI_FINE_ERR = 89
 
     INTEGER, PARAMETER :: MAXPARTICLES = 2**18
-    INTEGER, PARAMETER :: NLOCAL = 136  ! Number of local processors
-    INTEGER, PARAMETER :: MAXBEAMS = 16
+    INTEGER, PARAMETER :: MAXBEAMS = 32
     INTEGER, PARAMETER :: MAXPROFLEN = 512
 
     LOGICAL :: lverb, lvmec, lpies, lspec, lcoil, lmgrid, &
                lvessel, lvac, lrestart_grid, lrestart_particles, lneut, &
                lbeam, lhitonly, lread_input, lplasma_only, lraw,&
                ldepo, lbeam_simple, ldebug, lcollision, lw7x, &
-               lascot, lascot4, lbbnbi
+               lascot, lascot4, lbbnbi, lvessel_beam, lascotfl, lrandomize
     INTEGER :: nextcur, npoinc, nbeams, nparticles_start, nprocs_beams
     INTEGER, DIMENSION(MAXBEAMS) :: Dex_beams
     INTEGER, ALLOCATABLE :: beam(:)
@@ -125,6 +124,7 @@ MODULE beams3d_runtime
     REAL(rprec), ALLOCATABLE :: R_start(:), phi_start(:), Z_start(:), vll_start(:), v_neut(:,:), mu_start(:), &
                                 & mass(:), charge(:), Zatom(:), t_end(:), weight(:)
     REAL(rprec), ALLOCATABLE :: extcur(:)
+    CHARACTER(LEN=10) ::  qid_str_saved ! For ASCOT5
     CHARACTER(256) :: id_string, mgrid_string, coil_string, &
     vessel_string, int_type, restart_string, bbnbi_string
 
@@ -137,9 +137,8 @@ CONTAINS
 
     SUBROUTINE handle_err(error_num, string_val, ierr)
         USE mpi_params
-!DEC$ IF DEFINED (MPI_OPT)
-        USE mpi
-!DEC$ ENDIF
+        USE mpi_inc
+        IMPLICIT NONE
         INTEGER, INTENT(in) :: error_num
         INTEGER, INTENT(in) :: ierr
         INTEGER, ALLOCATABLE :: error_array(:)
@@ -313,8 +312,7 @@ CONTAINS
             WRITE(6, *) '  ierr:   ', ierr
         END IF
         CALL FLUSH(6)
-!DEC$ IF DEFINED (MPI_OPT)
-        !WRITE(6,*) 'GOT HERE',TRIM(string_val),ierr; CALL FLUSH(6)
+#if defined(MPI_OPT)
         CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
         ALLOCATE(error_array(1:nprocs_beams))
         ierr_mpi = 0
@@ -324,18 +322,18 @@ CONTAINS
         IF (ANY(error_array .ne. 0)) CALL MPI_FINALIZE(ierr_mpi)
         DEALLOCATE(error_array)
         RETURN
-!DEC$ ELSE
+#else
         IF (error_num .eq. MPI_CHECK) RETURN
-!DEC$ ENDIF
+#endif
         PRINT *,myworkid,' calling STOP'
         CALL FLUSH(6)
         STOP
     END SUBROUTINE handle_err
 
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
     SUBROUTINE BEAMS3D_TRANSMIT_2DDBL(n1,n2,m1,m2,data_in,nproc,mnum,moffsets,id,root,COMM_local,ier)
     USE stel_kinds, ONLY: rprec
-    USE MPI
+    USE mpi_inc
     IMPLICIT NONE
     INTEGER, INTENT(in)           :: n1,n2,m1,m2,nproc,id,root,COMM_local
     INTEGER, INTENT(in)           :: mnum(nproc), moffsets(nproc)
@@ -393,7 +391,7 @@ CONTAINS
 
     SUBROUTINE BEAMS3D_TRANSMIT_2DLOG(n1,n2,m1,m2,data_in,nproc,mnum,moffsets,id,root,COMM_local,ier)
     USE stel_kinds, ONLY: rprec
-    USE mpi
+    USE mpi_inc
     IMPLICIT NONE
     INTEGER, INTENT(in)           :: n1,n2,m1,m2,nproc,id,root,COMM_local
     INTEGER, INTENT(in)           :: mnum(nproc), moffsets(nproc)
@@ -448,6 +446,6 @@ CONTAINS
     CALL MPI_BARRIER(COMM_local, ier)
     RETURN
     END SUBROUTINE BEAMS3D_TRANSMIT_2DLOG
-!DEC$ ENDIF
+#endif
 
 END MODULE beams3d_runtime

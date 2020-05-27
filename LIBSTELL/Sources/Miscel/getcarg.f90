@@ -11,7 +11,10 @@
 !-----------------------------------------------
       INTEGER :: numchars
 !-----------------------------------------------
-#if defined(WIN32)
+#if defined(WIN64)
+      numargs = iargc()
+      CALL getarg(narg, arg)
+#elif defined(WIN32)
       INTEGER :: nargs
       numargs = nargs() - 1
       CALL getarg(narg, arg, numchars)

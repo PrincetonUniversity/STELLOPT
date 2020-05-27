@@ -15,9 +15,9 @@
       USE beams3d_runtime
       USE beams3d_grid
       USE beams3d_lines
-!DEC$ IF DEFINED (LHDF5)
+#if defined(LHDF5)
       USE ez_hdf5
-!DEC$ ENDIF  
+#endif
       USE mpi_params
       USE mpi_inc
 !-----------------------------------------------------------------------
@@ -26,9 +26,10 @@
 !          npoinc_extract Which save state to extract from file.
 !-----------------------------------------------------------------------
       IMPLICIT NONE
-      LOGICAL :: lplasma_old
-      INTEGER :: i, k, ier, npoinc_extract, npoinc_save
+      LOGICAL :: lplasma_old, ldepo_old
+      INTEGER :: i, k, ier, npoinc_extract, npoinc_save, state_flag
       INTEGER, DIMENSION(:), ALLOCATABLE :: beam2
+      REAL(rprec) :: vpartmax
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: mass2, charge2, Zatom2, &
                                                 weight2, t_end2
 !-----------------------------------------------------------------------
@@ -49,6 +50,9 @@
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'nparticles',ier)
          CALL read_scalar_hdf5(fid,'npoinc',ier,INTVAR=npoinc)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'npoinc',ier)
+         CALL read_scalar_hdf5(fid,'partvmax',ier,DBLVAR=vpartmax)
+         partvmax = MAX(partvmax,vpartmax)
+         IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'partvmax',ier)
          IF (ALLOCATED(v_neut)) DEALLOCATE(v_neut)
          IF (ALLOCATED(mass)) DEALLOCATE(mass)
          IF (ALLOCATED(charge)) DEALLOCATE(charge)
@@ -96,15 +100,18 @@
          CALL close_hdf5(fid,ier)
          IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,'beams3d_'//TRIM(restart_string)//'.h5',ier)
 
-         ! Decide where to 
-
-         ! Count the particles
-         !npoinc_extract=2 ! Starting point of particle
-         !k = 0
-         !DO i = 1, nparticles
-         !   IF (.not.neut_lines(npoinc_extract,i)) k=k+1
-         !END DO
-         k = COUNT(end_state == 0)
+         ! Decide what to do
+         !   IF depo run then start from initial born particle population
+         !   Otherwise start from wall hits
+         ldepo_old = .false.
+         state_flag = 0
+         IF (ANY(end_state==3)) ldepo_old = .true.
+         IF (ldepo_old) THEN
+            state_flag = 0
+         ELSE
+            state_flag = 2
+         END IF
+         k = COUNT(end_state == state_flag)
 
          ! Allocate the particles
          ALLOCATE(  R_start(k), phi_start(k), Z_start(k), &
@@ -115,7 +122,7 @@
          ! Now fill the arrays downselecting for non-shinethrough particles
          k = 1
          DO i = 1, nparticles
-            IF (end_state(i) > 0) CYCLE
+            IF (end_state(i) /= state_flag) CYCLE
             npoinc_extract = COUNT(R_lines(:,i)>0)-1
             R_start(k)   = R_lines(npoinc_extract,i)
             Z_start(k)   = Z_lines(npoinc_extract,i)
@@ -128,7 +135,7 @@
             Zatom(k)    = Zatom2(i)
             beam(k)     = beam2(i)
             weight(k)   = weight2(i)
-            t_end(k)    = t_end2(i)
+            t_end(k)    = MAXVAL(t_end_in)
             k = k + 1
          END DO
          DEALLOCATE(R_lines, Z_lines, PHI_lines, vll_lines, moment_lines, neut_lines, end_state)
@@ -144,10 +151,11 @@
          END IF
       END IF
 
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(nparticles,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(nbeams,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
+      CALL MPI_BCAST(partvmax,1,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
       IF (myworkid /= master) THEN
          ALLOCATE(  R_start(nparticles), phi_start(nparticles), Z_start(nparticles), &
                     v_neut(3,nparticles), mass(nparticles), charge(nparticles), &
@@ -166,7 +174,7 @@
       CALL MPI_BCAST(vll_start,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(beam,nparticles,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(v_neut,nparticles*3,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
-!DEC$ ENDIF
+#endif
 
 
 !-----------------------------------------------------------------------
