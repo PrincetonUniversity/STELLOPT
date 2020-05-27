@@ -116,9 +116,11 @@
                   rtemp(i,1,1)=DBLE(i-1)/DBLE(nr-1)
                END DO
                CALL EZspline_interp( vp_spl_s, nr, rtemp(:,1,1), rtemp(:,2,1), ier)
+               rtemp(1,2,1) = 0 ! Volume is zero at axis (Vp is not)
                DO i = 2, nr
                   rtemp(i,2,1)=rtemp(i,2,1)+(rtemp(i-1,2,1)) ! Integral So volume
                END DO
+               rtemp(:,2,1) = rtemp(:,2,1)/(nr-1)
                CALL write_var_hdf5(plasma_gid,'s',nr,ier,DBLVAR=sqrt(rtemp(:,1,1)))
                CALL write_var_hdf5(plasma_gid,'volume',nr,ier,DBLVAR=rtemp(:,2,1))
                DEALLOCATE(rtemp)

@@ -74,7 +74,7 @@
       INTEGER, PRIVATE :: win_vertex, win_face, win_ihit
       INTEGER, PRIVATE :: ik_min
       INTEGER, PRIVATE :: nmin_vtex = 512
-      REAL, PRIVATE, PARAMETER                  :: deltal = 0.1
+      REAL, PRIVATE, PARAMETER                  :: deltal = 0.00
       DOUBLE PRECISION, PRIVATE, PARAMETER      :: zero = 0.0D+0
       DOUBLE PRECISION, PRIVATE, PARAMETER      :: one  = 1.0D+0
 
@@ -166,11 +166,8 @@
       zmin = MINVAL(vertex(:,3)) - deltal
       zmax = MAXVAL(vertex(:,3)) + deltal
       IF (PRESENT(comm)) THEN
-         PRINT *,'GOT HERE 1'
          CALL wall_create_new(wall,xmin,xmax,ymin,ymax,zmin,zmax,shar_comm)
-         PRINT *,'GOT HERE 2'
          CALL mpialloc_1d_int(ihit_array,nface,shar_rank,0,shar_comm,win_ihit)
-         PRINT *,'GOT HERE 3'
       ELSE
          CALL wall_create_new(wall,xmin,xmax,ymin,ymax,zmin,zmax)
          ALLOCATE(ihit_array(nface),STAT=istat)
@@ -397,6 +394,7 @@
             alphal = SUM(this%wall%FN(i,:)*(/drx,dry,drz/))
             betal  = SUM(this%wall%FN(i,:)*(/x0,y0,z0/))
             tloc   = (this%wall%d(i)-betal)/alphal
+!            WRITE(6,*) '*****',i,alphal,betal,tloc
             IF (tloc > one .or. tloc <=0) CYCLE
             V2x    = x0 + tloc*drx - this%wall%A0(i,1)
             V2y    = y0 + tloc*dry - this%wall%A0(i,2)
@@ -405,7 +403,7 @@
             DOT12  = this%wall%V1(i,1)*V2x + this%wall%V1(i,2)*V2y + this%wall%V1(i,3)*V2z
             alphal = (this%wall%DOT11(i)*DOT02 - this%wall%DOT01(i)*DOT12)*this%wall%invDenom(i)
             betal  = (this%wall%DOT00(i)*DOT12 - this%wall%DOT01(i)*DOT02)*this%wall%invDenom(i)
-            !WRITE(6,*) '*****',alphal,betal,tloc
+            WRITE(6,*) '********',i,alphal,betal,alphal+betal,tloc
             IF ((alphal < zero) .or. (betal < zero) .or. (alphal+betal > one)) CYCLE
             IF (tloc < tmin) THEN
                ik_minl = this%wall%imap(i)
@@ -433,6 +431,7 @@
             IF (xs > this%xmax(i) .or. xb < this%xmin(i) .or. &
                 ys > this%ymax(i) .or. yb < this%ymin(i) .or. &
                 zs > this%zmax(i) .or. zb < this%zmin(i)) CYCLE
+            PRINT *,'Seaching ',i,this%xmax(i),this%xmin(i),this%zmax(i),this%zmin(i)
             CALL collide_double_search(this%sub_walls(i),x0,y0,z0,x1,y1,z1,xw,yw,zw,lhit2,tmin2,ik_min2)
             ! IF we have a hit determine if it's closer to x0, y0, z0 than others
             CALL FLUSH(6)
@@ -920,16 +919,17 @@
 #endif
 
       ! Define the subdomains
-      deltax = (xmax-xmin)*deltal
-      deltay = (ymax-ymin)*deltal
-      deltaz = (zmax-zmin)*deltal
+      !deltax = MIN(xmean-xmin,xmax-xmean)*deltal
+      !deltay = MIN(ymean-ymin,ymax-ymean)*deltal
+      !deltaz = MIN(zmean-zmin,zmax-zmean)*deltal
       IF (shar_rank == 0) THEN
-         this%xmin = (/xmin,  xmin,  xmin,  xmin,  xmean, xmean, xmean, xmean/) - deltax
-         this%xmax = (/xmean, xmean, xmean, xmean, xmax,  xmax,  xmax,  xmax/)  + deltax
-         this%ymin = (/ymin,  ymin,  ymean, ymean, ymin,  ymin,  ymean, ymean/) - deltay
-         this%ymax = (/ymean, ymean, ymax,  ymax,  ymean, ymean, ymax,  ymax/)  + deltay
-         this%zmin = (/zmin,  zmean, zmin,  zmean, zmin,  zmean, zmin,  zmean/) - deltaz
-         this%zmax = (/zmean, zmax,  zmean, zmax,  zmean, zmax,  zmean, zmax/)  + deltaz
+         PRINT *,deltax,deltay,deltaz
+         this%xmin = (/xmin,  xmin,  xmin,  xmin,  xmean, xmean, xmean, xmean/) - deltal
+         this%xmax = (/xmean, xmean, xmean, xmean, xmax,  xmax,  xmax,  xmax/)  + deltal
+         this%ymin = (/ymin,  ymin,  ymean, ymean, ymin,  ymin,  ymean, ymean/) - deltal
+         this%ymax = (/ymean, ymean, ymax,  ymax,  ymean, ymean, ymax,  ymax/)  + deltal
+         this%zmin = (/zmin,  zmean, zmin,  zmean, zmin,  zmean, zmin,  zmean/) - deltal
+         this%zmax = (/zmean, zmax,  zmean, zmax,  zmean, zmax,  zmean, zmax/)  + deltal
       END IF
 
       ! Now fill subdomains (then recursively call)

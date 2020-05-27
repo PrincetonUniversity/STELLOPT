@@ -41,7 +41,7 @@
          IF (lverb) THEN
             WRITE(6,'(A)')  '----- WRITING DATA TO FILE -----'
          END IF
-!DEC$ IF DEFINED (LHDF5)
+#if defined(LHDF5)
          WRITE(6,'(A)')  '   FILE: '//'fieldlines_'//TRIM(id_string)//'.h5'
          CALL open_hdf5('fieldlines_'//TRIM(id_string)//'.h5',fid,ier,LCREATE=.true.)
          IF (ier /= 0) CALL handle_err(HDF5_OPEN_ERR,'fieldlines_'//TRIM(id_string)//'.h5',ier)
@@ -186,7 +186,7 @@
          CALL fieldlines_write2d_parhdf5(1, nlines, 0, nsteps, mystart, myend, 'Rhc_lines', DBLVAR=Rhc_lines)
          CALL fieldlines_write2d_parhdf5(1, nlines, 0, nsteps, mystart, myend, 'Zhc_lines', DBLVAR=Zhc_lines)
       END IF
-!DEC$ ELSE
+#else
       iunit = 100
       WRITE(6,'(A)')  '   FILE: '//'fieldlines_'//TRIM(id_string)//'.bin'
       CALL safe_open(iunit,ier,'fieldlines_'//TRIM(id_string)//'.bin','replace','unformatted')
@@ -213,7 +213,7 @@
       WRITE(iunit) B_Z
       WRITE(iunit) B_PHI
       CLOSE(iunit)
-!DEC$ ENDIF  
+#endif
 
 !-----------------------------------------------------------------------
 !     End Subroutine

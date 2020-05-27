@@ -11,8 +11,8 @@
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
       USE fieldlines_grid
-      USE EZspline_obj
-      USE EZspline
+!      USE EZspline_obj
+!      USE EZspline
 !-----------------------------------------------------------------------
 !     Input Variables
 !          phi        phi angle
@@ -67,9 +67,6 @@
          xparam = (r_temp - raxis(i)) * hxi
          yparam = (phi_temp - phiaxis(j)) * hyi
          zparam = (z_temp - zaxis(k)) * hzi
-         !CALL EZspline_interp(BR_spl,r_temp,phi_temp,z_temp,br_temp,ier)
-         !CALL EZspline_interp(BZ_spl,r_temp,phi_temp,z_temp,bz_temp,ier)
-         ! Evaluate the Splines
          CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                          hx,hxi,hy,hyi,hz,hzi,&
                          BR4D(1,1,1,1),nr,nphi,nz)

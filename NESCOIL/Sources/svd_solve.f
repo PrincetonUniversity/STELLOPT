@@ -1,19 +1,18 @@
-      SUBROUTINE svd_solve(m, n, mp, np, a, b, v, w, nw, small)
+      SUBROUTINE svd_solve(m, n, mp, np, a, b, v, w, nw)
       USE stel_kinds
       IMPLICIT NONE
 C-----------------------------------------------
 C   D u m m y   A r g u m e n t s
 C-----------------------------------------------
-      INTEGER m, n, mp, np, nw
-      REAL(rprec), DIMENSION(mp,np) :: a
-      REAL(rprec), DIMENSION(n,n) :: v
-      REAL(rprec), DIMENSION(n) :: w
-      REAL(rprec), DIMENSION(m) :: b
-      REAL(rprec) :: small
+      INTEGER, INTENT(IN) :: m, n, mp, np
+      INTEGER, INTENT(OUT) :: nw
+      REAL(rprec), INTENT(IN) :: a(mp, np), b(m)
+      REAL(rprec), INTENT(OUT) :: v(n,n), w(n)
+c     REAL(rprec) :: small ! changed to local by C. ZHU (2020.5.7)
 C-----------------------------------------------
 C   L o c a l   P a r a m e t e r s
 C-----------------------------------------------
-!      REAL(rprec) :: small = 1.0e-10_dp
+      REAL(rprec) :: small = 1.0e-10_dp
 C-----------------------------------------------
 C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
@@ -60,6 +59,8 @@ c  It is essential to USE a local u since svdcmp changes it
       IF(istat.ne.0) STOP 'Stop: No memory in svd_nesc'
       ALLOCATE (u(m,n),  stat=istat)
       IF(istat.ne.0) STOP 'Stop: No memory in svd_nesc'
+      ALLOCATE (VT(n,n),  stat=istat)
+      IF(istat.ne.0) STOP 'Stop: No memory in svd_nesc'
 
 c.......................................
 c  Initialize ALL to zero to wipe out effects of old CALL
@@ -67,6 +68,7 @@ c  Initialize ALL to zero to wipe out effects of old CALL
       DO j = 1, n
          ap(:m,j) = a(:m,j)                  !Because U will be changed by svdcmp
          v(:n,j) = 0
+         vt(:n,j) = 0
       END DO
 
 c  Do the SVD decomposition of a, i.e, of u into u, v and w
@@ -85,7 +87,7 @@ c      CALL sortsvd (m, n, m, n, w, u, v)
       IF(istat.ne.0) STOP 'Stop: No memory in svd_nesc'
       ALLOCATE (IWORK(8*min(M,N)),  stat=istat)
       IF(istat.ne.0) STOP 'Stop: No memory in svd_nesc'
-      CALL DGESDD( JOBZ, M, N, AP, LDA, W, U, LDU, V, LDVT, WORK,
+      CALL DGESDD( JOBZ, M, N, AP, LDA, W, U, LDU, VT, LDVT, WORK,
      1     LWORK, IWORK, INFO )
       IF(info.ne.0) print *, "Error in SVD (DGESDD): info=",INFO
 
@@ -103,16 +105,16 @@ c     and uses less memory due to the dual role of V
 c  Note: any optimization scheme to find the 'best' nw will
 
 c      First set the 1st vector with largest weight w(1)
-       v(:n,1) = SUM(u(:m,1)*b(:m)) *v(:n,1) /w(1)
+       v(:n,1) = SUM(u(:m,1)*b(:m)) *vt(1,:n) /w(1)
 c      Next add the vectors with successive weights (in decreasing order)
          DO i = 2, nw
             j = i - 1
-            v(:n,i) = v(:n,j) + SUM(u(:m,i)*b(:m)) *v(:n,i) / w(i)
+            v(:n,i) = v(:n,j) + SUM(u(:m,i)*b(:m))*vt(i,:n) / w(i)
          END DO
 c................................................
-
       DEALLOCATE (u, stat=istat)
       DEALLOCATE (ap, stat=istat)
+      DEALLOCATE (vt, stat=istat)
       DEALLOCATE (WORK, stat=istat)
       DEALLOCATE (IWORK, stat=istat)
 
