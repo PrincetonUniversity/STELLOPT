@@ -28,11 +28,11 @@
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       INTEGER, PARAMETER :: BYTE_8 = SELECTED_INT_KIND (8)
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
       INTEGER(KIND=BYTE_8),ALLOCATABLE :: mnum(:), moffsets(:)
       INTEGER :: numprocs_local, mylocalid, mylocalmaster
       INTEGER :: MPI_COMM_LOCAL
-!DEC$ ENDIF  
+#endif
       INTEGER(KIND=BYTE_8) :: chunk
       INTEGER :: ier, iunit, s, i, j, mystart, myend, k
       REAL(rprec)  :: br, bphi, bz
@@ -41,9 +41,11 @@
 !-----------------------------------------------------------------------
 
       ! Divide up Work
+#if defined(MPI_OPT)
       CALL MPI_COMM_DUP( MPI_COMM_SHARMEM, MPI_COMM_LOCAL, ierr_mpi)
       CALL MPI_COMM_RANK( MPI_COMM_LOCAL, mylocalid, ierr_mpi )              ! MPI
       CALL MPI_COMM_SIZE( MPI_COMM_LOCAL, numprocs_local, ierr_mpi )          ! MPI
+#endif
       mylocalmaster = master
 
       ! Read the input file for the EXTCUR array, NV, and NFP
@@ -56,11 +58,11 @@
             IF (ier /= 0) CALL handle_err(VMEC_INPUT_ERR,id_string,ier)
             CLOSE(iunit)
          END IF
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
          CALL MPI_BCAST(extcur_in,nigroup,MPI_DOUBLE_PRECISION, mylocalmaster, MPI_COMM_LOCAL,ierr_mpi)
          CALL MPI_BCAST(nv_in,1,MPI_INTEGER, mylocalmaster, MPI_COMM_LOCAL,ierr_mpi)
          CALL MPI_BCAST(nfp_in,1,MPI_INTEGER, mylocalmaster, MPI_COMM_LOCAL,ierr_mpi)
-!DEC$ ENDIF
+#endif
          DO i = 1, SIZE(extcur_in,DIM=1)
            IF (ABS(extcur_in(i)) > 0) nextcur = i
          END DO
@@ -96,9 +98,9 @@
       phimin = 0.0
       phimax = pi2 / nfp_in
       IF (mylocalid == mylocalmaster) FORALL(i = 1:nphi) phiaxis(i) = (i-1)*(phimax-phimin)/(nphi-1) + phimin
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_LOCAL, ierr_mpi)
-!DEC$ ENDIF
+#endif
       
       ! Break up the Work
       chunk = FLOOR(REAL(nr*nphi*nz) / REAL(numprocs_local))
@@ -106,7 +108,7 @@
       myend = mystart + chunk - 1
 
       ! This section sets up the work so we can use ALLGATHERV
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
       IF (ALLOCATED(mnum)) DEALLOCATE(mnum)
       IF (ALLOCATED(moffsets)) DEALLOCATE(moffsets)
       ALLOCATE(mnum(numprocs_local), moffsets(numprocs_local))
@@ -125,7 +127,7 @@
       myend   = mystart + chunk - 1
       DEALLOCATE(mnum)
       DEALLOCATE(moffsets)
-!DEC$ ENDIF
+#endif
       
       ! Get the fields
       DO s = mystart, myend
@@ -158,12 +160,12 @@
       END IF    
       
       ! Now recompose the array and send to everyone.
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
       CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)
       CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
       IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'beams3d_init_mgrid',ierr_mpi)
-!DEC$ ENDIF
+#endif
       
       RETURN
 !-----------------------------------------------------------------------

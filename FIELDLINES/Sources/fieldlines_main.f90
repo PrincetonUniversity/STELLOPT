@@ -44,7 +44,7 @@
       
       myworkid = master
       ierr_mpi = MPI_SUCCESS
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
       CALL MPI_INIT(ierr_mpi) ! MPI
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_INIT_ERR, 'fieldlines_main', ierr_mpi)
       CALL MPI_COMM_DUP( MPI_COMM_WORLD, MPI_COMM_FIELDLINES, ierr_mpi)
@@ -59,7 +59,7 @@
       CALL MPI_GET_VERSION(vmajor,vminor,ier)
       CALL MPI_GET_LIBRARY_VERSION(mpi_lib_name,liblen,ier)
       CALL MPI_ERRHANDLER_SET(MPI_COMM_WORLD,MPI_ERRORS_RETURN,ierr_mpi)
-!DEC$ ENDIF
+#endif
 
       ! Intialize variables
       CALL fieldlines_init_vars
@@ -188,10 +188,10 @@
                   write(6,*)'     -vecpot        Output Vector Potential on Grid (no fieldlines)'
                   write(6,*)'     -noverb        Supress all screen output'
                   write(6,*)'     -help          Output help message'
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
                   CALL MPI_FINALIZE(ierr_mpi)   
                   IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_FINE_ERR,'fieldlines_main',ierr_mpi)
-!DEC$ ENDIF
+#endif
             end select
             i = i + 1
          END DO
@@ -214,10 +214,8 @@
       coil_string = ADJUSTL(coil_string)
       vessel_string = TRIM(vessel_string)
       vessel_string = ADJUSTL(vessel_string)
-      ! Experimental and very slow
-      !IF (lvessel .and. lvmec .and. (lmgrid .or. lcoil) .and. .not.lvac) ladvanced = .true.
       ! Broadcast variables
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_init',ierr_mpi)
       CALL MPI_BCAST(id_string,256,MPI_CHARACTER, master, MPI_COMM_FIELDLINES,ierr_mpi)
@@ -280,7 +278,7 @@
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_main',ierr_mpi)
       CALL MPI_BCAST(nruntype,1,MPI_INTEGER, master, MPI_COMM_FIELDLINES,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_main',ierr_mpi)
-!DEC$ ENDIF
+#endif
       ! Handle different run type
       CALL fieldlines_init
       IF (lemc3 .or. lbfield_only .or. lafield_only) nruntype=runtype_norun
@@ -293,19 +291,19 @@
                      r_start(1),',',z_start(1),']'
             IF (lverb) WRITE(6,'(A,F8.5,A,F8.5,A)') '   EDGE_OUTER[R,Z]   = [',&
                      MAXVAL(r_start,MASK = r_start > 0),',',MAXVAL(z_start,MASK = r_start > 0),']'
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
             CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
             IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_init',ierr_mpi)
-!DEC$ ENDIF
+#endif
             CALL fieldlines_follow  ! This call on field grid
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
             CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
             IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_init',ierr_mpi)
-!DEC$ ENDIF
+#endif
             CALL fieldlines_init_subgrid
             CALL fieldlines_follow  ! This call on subgrid grid
             !CALL fieldlines_periodic_orbits  ! This call on subgrid grid
-            IF (lverb) CALL fieldlines_calc_surface_fit(25)
+            !IF (lverb) CALL fieldlines_calc_surface_fit(25)
          CASE(runtype_norun)
       END SELECT
       ! Output Date
@@ -335,10 +333,10 @@
       IF (EZspline_allocated(MU_spl)) CALL EZspline_free(MU_spl,ier)
       IF (EZspline_allocated(MODB_spl)) CALL EZspline_free(MODB_spl,ier)
 
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
       CALL MPI_FINALIZE(ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_FINE_ERR,'fieldlines_main',ierr_mpi)
-!DEC$ ENDIF
+#endif
       IF (lverb) WRITE(6,'(A)')'----- FIELDLINES DONE -----'
      
 !-----------------------------------------------------------------------

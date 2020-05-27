@@ -12,17 +12,15 @@
 !     Libraries
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
-      USE read_wout_mod, extcur_in => extcur, nextcur_vmec => nextcur
-      USE vmec_input, ONLY: nzeta_vmec => nzeta
+      USE read_wout_mod, phi_vmec => phi
       USE vmec_utils
       USE virtual_casing_mod, pi2_vc => pi2
-      USE fieldlines_runtime
+      USE fieldlines_runtime, extcur_fieldlines => extcur
       USE fieldlines_grid, ONLY: raxis_g => raxis, phiaxis, &
                                  zaxis_g => zaxis, nr, nphi, nz, &
                                  rmin, rmax, zmin, zmax, phimin, &
                                  phimax, vc_adapt_tol, B_R, B_Z, B_PHI,&
                                  BR_spl, BZ_spl
-      USE fieldlines_lines, ONLY: nlines
       USE wall_mod, ONLY: wall_load_mn, wall_info,vertex,face
       USE mpi_params                                                    ! MPI
 !      USE mpi
@@ -33,17 +31,18 @@
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       INTEGER, PARAMETER :: BYTE_8 = SELECTED_INT_KIND (8)
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
       INTEGER(KIND=BYTE_8),ALLOCATABLE :: mnum(:), moffsets(:)
       INTEGER :: numprocs_local, mylocalid, mylocalmaster
       INTEGER :: MPI_COMM_LOCAL
-!DEC$ ENDIF  
+#endif
+      LOGICAL :: lnyquist, luse_vc, lcreate_wall
       INTEGER(KIND=BYTE_8) :: chunk
-      INTEGER :: ier, s, i, j, k, nu, nv, mystart,myend
+      INTEGER :: ier, s, i, j, k, nu, nv, mystart, myend, mnmax_temp, u, v
       INTEGER, ALLOCATABLE :: xn_temp(:), xm_temp(:)
       REAL :: br_vc, bphi_vc, bz_vc, xaxis_vc, yaxis_vc, zaxis_vc,&
               bx_vc, by_vc
-      REAL(rprec) :: br, bphi, bz, sflx
+      REAL(rprec) :: br, bphi, bz, sflx, uflx
       DOUBLE PRECISION, ALLOCATABLE :: rmnc_temp(:,:),zmns_temp(:,:),&
                            bumnc_temp(:,:),bvmnc_temp(:,:),&
                            rmns_temp(:,:),zmnc_temp(:,:),&
@@ -52,92 +51,164 @@
 !-----------------------------------------------------------------------
 !     Begin Subroutine
 !-----------------------------------------------------------------------
+      ! Handle what we do
+      luse_vc = ((lcoil .or. lmgrid) .and. .not.lplasma_only)
 
       ! Divide up Work
-      IF ((nprocs_fieldlines) > nlocal) THEN
-         i = myworkid/nlocal
-         CALL MPI_COMM_SPLIT( MPI_COMM_FIELDLINES,i,myworkid,MPI_COMM_LOCAL,ierr_mpi)
-         CALL MPI_COMM_RANK( MPI_COMM_LOCAL, mylocalid, ierr_mpi )              ! MPI
-         CALL MPI_COMM_SIZE( MPI_COMM_LOCAL, numprocs_local, ierr_mpi )          ! MPI
-         mylocalmaster = master
-      ELSE
-         ! Basic copy of MPI_COMM_FIELDLINES
-         CALL MPI_COMM_DUP( MPI_COMM_FIELDLINES, MPI_COMM_LOCAL, ierr_mpi)
-         IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'fieldlines_init_vmec: MPI_COMM_DUP',ierr_mpi)
-         mylocalid = myworkid
-         mylocalmaster = master
-         numprocs_local = nprocs_fieldlines
-      END IF
+#if defined(MPI_OPT)
+      CALL MPI_COMM_DUP( MPI_COMM_SHARMEM, MPI_COMM_LOCAL, ierr_mpi)
+      CALL MPI_COMM_RANK( MPI_COMM_LOCAL, mylocalid, ierr_mpi )              ! MPI
+      CALL MPI_COMM_SIZE( MPI_COMM_LOCAL, numprocs_local, ierr_mpi )          ! MPI
+#endif
+      mylocalmaster = master
 
       ! Open VMEC file
-      ! Initialize Virtual Casing
-      nu = 8 * mpol
-      nu = 2 ** CEILING(log(DBLE(nu))/log(2.0_rprec))
-      IF (nu < 128) nu = 128
-      nv = 8 * ntor + 1
-      nv = 2 ** CEILING(log(DBLE(nv))/log(2.0_rprec))
-      IF (nv < 128) nv = 128
-      ALLOCATE(xm_temp(mnmax),xn_temp(mnmax), STAT=ier)
-      IF (ier /= 0) CALL handle_err(ALLOC_ERR,'XM_TEMP XN_TEMP',ier)
+      IF (myworkid == master) THEN
+         IF (ALLOCATED(extcur)) DEALLOCATE(extcur) ! From reading MGRID
+         CALL read_wout_file(TRIM(id_string),ier)
+         IF (ier /= 0) CALL handle_err(VMEC_WOUT_ERR,'beams3d_init_vmec',ier)
+      END IF
       
-      ! Initialize VC
-      IF (.not.lvolint .and. .not.lplasma_only) THEN
-         ! Load Variables
-         ALLOCATE(rmnc_temp(mnmax,2),zmns_temp(mnmax,2))
-         ALLOCATE(bumnc_temp(mnmax,1),bvmnc_temp(mnmax,1))
-         xm_temp=INT(xm)
-         xn_temp=-INT(xn)/nfp
-         rmnc_temp(:,1)=rmnc(:,ns-1)
-         rmnc_temp(:,2)=rmnc(:,ns)
-         zmns_temp(:,1)=zmns(:,ns-1)
-         zmns_temp(:,2)=zmns(:,ns)
+#if defined(MPI_OPT)
+      ! We do this to avoid multiple opens of wout file
+      CALL MPI_BCAST(ns,1,MPI_INTEGER, master, MPI_COMM_FIELDLINES,ierr_mpi)
+      CALL MPI_BCAST(mpol,1,MPI_INTEGER, master, MPI_COMM_FIELDLINES,ierr_mpi)
+      CALL MPI_BCAST(ntor,1,MPI_INTEGER, master, MPI_COMM_FIELDLINES,ierr_mpi)
+      CALL MPI_BCAST(nfp,1,MPI_INTEGER, master, MPI_COMM_FIELDLINES,ierr_mpi)
+      CALL MPI_BCAST(mnyq,1,MPI_INTEGER, master, MPI_COMM_FIELDLINES,ierr_mpi)
+      CALL MPI_BCAST(nnyq,1,MPI_INTEGER, master, MPI_COMM_FIELDLINES,ierr_mpi)
+      CALL MPI_BCAST(mnmax,1,MPI_INTEGER, master, MPI_COMM_FIELDLINES,ierr_mpi)
+      CALL MPI_BCAST(mnmax_nyq,1,MPI_INTEGER, master, MPI_COMM_FIELDLINES,ierr_mpi)
+      CALL MPI_BCAST(lasym,1,MPI_LOGICAL, master, MPI_COMM_FIELDLINES,ierr_mpi)
+      CALL MPI_BCAST(lthreed,1,MPI_LOGICAL, master, MPI_COMM_FIELDLINES,ierr_mpi)
+      CALL MPI_BCAST(lwout_opened,1,MPI_LOGICAL, master, MPI_COMM_FIELDLINES,ierr_mpi)
+      CALL MPI_BCAST(Aminor,1,MPI_DOUBLE_PRECISION, master, MPI_COMM_FIELDLINES,ierr_mpi)
+      IF (myworkid /= master) THEN
+         ALLOCATE(phi_vmec(ns))
+         ALLOCATE(xm(mnmax),xn(mnmax),xm_nyq(mnmax_nyq),xn_nyq(mnmax_nyq))
+         ALLOCATE(rmnc(mnmax,ns),zmns(mnmax,ns),bsupumnc(mnmax_nyq,ns),bsupvmnc(mnmax_nyq,ns))
+         IF (lasym) ALLOCATE(rmns(mnmax,ns),zmnc(mnmax,ns),bsupumns(mnmax_nyq,ns),bsupvmns(mnmax_nyq,ns))
+      END IF
+      CALL MPI_BCAST(phi_vmec,ns,MPI_DOUBLE_PRECISION, master, MPI_COMM_FIELDLINES,ierr_mpi)
+      CALL MPI_BCAST(xm,mnmax,MPI_DOUBLE_PRECISION, master, MPI_COMM_FIELDLINES,ierr_mpi)
+      CALL MPI_BCAST(xn,mnmax,MPI_DOUBLE_PRECISION, master, MPI_COMM_FIELDLINES,ierr_mpi)
+      CALL MPI_BCAST(xm_nyq,mnmax_nyq,MPI_DOUBLE_PRECISION, master, MPI_COMM_FIELDLINES,ierr_mpi)
+      CALL MPI_BCAST(xn_nyq,mnmax_nyq,MPI_DOUBLE_PRECISION, master, MPI_COMM_FIELDLINES,ierr_mpi)
+      CALL MPI_BCAST(rmnc,ns*mnmax,MPI_DOUBLE_PRECISION, master, MPI_COMM_FIELDLINES,ierr_mpi)
+      CALL MPI_BCAST(zmns,ns*mnmax,MPI_DOUBLE_PRECISION, master, MPI_COMM_FIELDLINES,ierr_mpi)
+      CALL MPI_BCAST(bsupumnc,ns*mnmax_nyq,MPI_DOUBLE_PRECISION, master, MPI_COMM_FIELDLINES,ierr_mpi)
+      CALL MPI_BCAST(bsupvmnc,ns*mnmax_nyq,MPI_DOUBLE_PRECISION, master, MPI_COMM_FIELDLINES,ierr_mpi)
+      IF (lasym) THEN
+         CALL MPI_BCAST(rmns,ns*mnmax,MPI_DOUBLE_PRECISION, master, MPI_COMM_FIELDLINES,ierr_mpi)
+         CALL MPI_BCAST(zmnc,ns*mnmax,MPI_DOUBLE_PRECISION, master, MPI_COMM_FIELDLINES,ierr_mpi)
+         CALL MPI_BCAST(bsupumns,ns*mnmax_nyq,MPI_DOUBLE_PRECISION, master, MPI_COMM_FIELDLINES,ierr_mpi)
+         CALL MPI_BCAST(bsupvmns,ns*mnmax_nyq,MPI_DOUBLE_PRECISION, master, MPI_COMM_FIELDLINES,ierr_mpi)
+      END IF
+#endif
+
+      ! Write info to screen
+      IF (lverb) THEN
+         WRITE(6,'(A)')               '----- VMEC Information -----'
+         WRITE(6,'(A,A)')             '   FILE: ',TRIM(id_string)
+         WRITE(6,'(A,F9.5,A,F9.5,A)') '   R       = [',rmin_surf,',',rmax_surf,']'
+         WRITE(6,'(A,F8.5,A,F8.5,A)') '   Z       = [',-zmax_surf,',',zmax_surf,']'
+         IF (ABS(Itor) > 1E8) THEN
+            WRITE(6,'(A,F7.3,A,F7.3,A)') '   BETA    = ',betatot,';  I  = ',Itor*1E-9,' [GA]'
+         ELSEIF (ABS(Itor) > 1E5) THEN
+            WRITE(6,'(A,F7.3,A,F7.3,A)') '   BETA    = ',betatot,';  I  = ',Itor*1E-6,' [MA]'
+         ELSEIF (ABS(Itor) > 1E2) THEN
+            WRITE(6,'(A,F7.3,A,F7.3,A)') '   BETA    = ',betatot,';  I  = ',Itor*1E-3,' [kA]'
+         ELSE
+            WRITE(6,'(A,F7.3,A,F7.3,A)') '   BETA    = ',betatot,';  I  = ',Itor,' [A]'
+         END IF
+         WRITE(6,'(A,F7.3,A)')        '   AMINOR  = ',Aminor,' [m]'
+         WRITE(6,'(A,F7.3,A)')        '   PHIEDGE = ',phi_vmec(ns),' [Wb]'
+         WRITE(6,'(A,F7.3,A)')        '   VOLUME  = ',Volume,' [m^3]'
+      END IF
+
+      IF (luse_vc) THEN
+         nu = 8 * mpol + 1 
+         nu = 2 ** CEILING(log(DBLE(nu))/log(2.0_rprec))
+         nv = 8 * ntor + 1
+         nv = 2 ** CEILING(log(DBLE(nv))/log(2.0_rprec))
+         IF (nv < 128) nv = 128
+
+         ! Handle Nyquist issues
+         IF (SIZE(xm_nyq) > SIZE(xm)) THEN
+            mnmax_temp = SIZE(xm_nyq)
+            lnyquist = .true.
+         ELSE
+            mnmax_temp = mnmax
+            lnyquist = .false.
+         END IF
+         ALLOCATE(xm_temp(mnmax_temp),xn_temp(mnmax_temp), STAT=ier)
+         IF (ier /= 0) CALL handle_err(ALLOC_ERR,'XM_TEMP XN_TEMP',ier)
+         ALLOCATE(rmnc_temp(mnmax_temp,2),zmns_temp(mnmax_temp,2),&
+                  bumnc_temp(mnmax_temp,1),bvmnc_temp(mnmax_temp,1), STAT = ier)
+         IF (ier /= 0) CALL handle_err(ALLOC_ERR,'RMNC_TEMP ZMNS_TEMP BUMNC_TEMP BVMNC_TEMP',ier)
+         IF (lasym) ALLOCATE(rmns_temp(mnmax_temp,2),zmnc_temp(mnmax_temp,2),&
+                     bumns_temp(mnmax_temp,1),bvmns_temp(mnmax_temp,1), STAT = ier)
+         IF (ier /= 0) CALL handle_err(ALLOC_ERR,'RMNS_TEMP ZMNC_TEMP BUMNS_TEMP BVMNS_TEMP',ier)
+         IF (lnyquist) THEN
+            xm_temp = xm_nyq
+            xn_temp = -xn_nyq/nfp  ! Because init_virtual_casing uses (mu+nv) not (mu-nv*nfp)
+            IF(lverb) WRITE(6,'(A)')        '   NYQUIST DETECTED IN WOUT FILE!'
+            DO u = 1,mnmax_temp
+               DO v = 1, mnmax
+                  IF ((xm(v) .eq. xm_nyq(u)) .and. (xn(v) .eq. xn_nyq(u))) THEN
+                     rmnc_temp(u,1) = rmnc(v,ns-1)
+                     zmns_temp(u,1) = zmns(v,ns-1)
+                     rmnc_temp(u,2) = rmnc(v,ns)
+                     zmns_temp(u,2) = zmns(v,ns)
+                     IF (lasym) THEN
+                        rmns_temp(u,1) = rmns(v,ns-1)
+                        zmnc_temp(u,1) = zmnc(v,ns-1)
+                        rmns_temp(u,2) = rmns(v,ns)
+                        zmnc_temp(u,2) = zmnc(v,ns)
+                     END IF
+                  END IF
+               END DO
+            END DO
+         ELSE
+            xm_temp = xm
+            xn_temp = -xn/nfp  ! Because init_virtual_casing uses (mu+nv) not (mu-nv*nfp)
+            rmnc_temp(:,1) = rmnc(:,ns-1)
+            zmns_temp(:,1) = zmns(:,ns-1)
+            rmnc_temp(:,2) = rmnc(:,ns)
+            zmns_temp(:,2) = zmns(:,ns)
+            IF (lasym) THEN
+               rmns_temp(:,1) = rmns(:,ns-1)
+               zmnc_temp(:,1) = zmnc(:,ns-1)
+               rmns_temp(:,2) = rmns(:,ns)
+               zmnc_temp(:,2) = zmnc(:,ns)
+            END IF
+         ENDIF
          bumnc_temp(:,1) = (1.5*bsupumnc(:,ns) - 0.5*bsupumnc(:,ns-1))
          bvmnc_temp(:,1) = (1.5*bsupvmnc(:,ns) - 0.5*bsupvmnc(:,ns-1))
          IF (lasym) THEN
-            ALLOCATE(rmns_temp(mnmax,2),zmnc_temp(mnmax,2))
-            ALLOCATE(bumns_temp(mnmax,1),bvmns_temp(mnmax,1))
-            rmns_temp(:,1)=rmns(:,ns-1)
-            rmns_temp(:,2)=rmns(:,ns)
-            zmnc_temp(:,1)=zmnc(:,ns-1)
-            zmnc_temp(:,2)=zmnc(:,ns)
             bumns_temp(:,1) = 1.5*bsupumns(:,ns) - 0.5*bsupumns(:,ns-1)
             bvmns_temp(:,1) = 1.5*bsupvmns(:,ns) - 0.5*bsupvmns(:,ns-1)
-            CALL init_virtual_casing(mnmax,nu,nv,xm_temp,xn_temp,&
+            CALL init_virtual_casing(mnmax_temp,nu,nv,xm_temp,xn_temp,&
                                          rmnc_temp,zmns_temp,nfp,&
                                          RMNS=rmns_temp, ZMNC=zmnc_temp,&
                                          BUMNC=bumnc_temp,BVMNC=bvmnc_temp,&
-                                         BUMNS=bumns_temp,BVMNS=bvmns_temp)
+                                         BUMNS=bumns_temp,BVMNS=bvmns_temp,&
+                                         COMM=MPI_COMM_FIELDLINES)
             DEALLOCATE(rmns_temp,zmnc_temp)
             DEALLOCATE(bumns_temp,bvmns_temp)
          ELSE
-            CALL init_virtual_casing(mnmax,nu,nv,xm_temp,xn_temp,&
+            CALL init_virtual_casing(mnmax_temp,nu,nv,xm_temp,xn_temp,&
                                          rmnc_temp,zmns_temp,nfp,&
-                                         BUMNC=bumnc_temp,BVMNC=bvmnc_temp)
+                                         BUMNC=bumnc_temp,BVMNC=bvmnc_temp,&
+                                         COMM=MPI_COMM_FIELDLINES)
          END IF
          DEALLOCATE(rmnc_temp,zmns_temp)
          DEALLOCATE(bumnc_temp,bvmnc_temp)
-      ELSE IF (.not. lplasma_only) THEN
-         xm_temp = INT(xm)
-         xn_temp = -INT(xn)
-         IF (lasym) THEN
-             CALL init_volint(mnmax,nu,nv,ns,xm_temp,xn_temp,rmnc,zmns,nfp,&
-                              JUMNC=isigng*currumnc, JVMNC=isigng*currvmnc,&
-                              RMNS=rmns,ZMNC=zmnc,&
-                              JUMNS=isigng*currumns, JVMNS=isigng*currvmns)
-         ELSE
-             CALL init_volint(mnmax,nu,nv,ns,xm_temp,xn_temp,rmnc,zmns,nfp,&
-                              JUMNC=isigng*currumnc, JVMNC=isigng*currvmnc)
-         END IF
+         
+         adapt_tol = 0.0
+         adapt_rel = vc_adapt_tol
+         DEALLOCATE(xm_temp,xn_temp)
       END IF
-      
-      DEALLOCATE(xm_temp,xn_temp)
-      adapt_tol = 1.0E-8
-      adapt_rel = vc_adapt_tol
-      IF (vc_adapt_tol < 0) adapt_tol = adapt_rel
-!DEC$ IF DEFINED (MPI_OPT)
-      CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
-      IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'fieldlines_init_vmec',ierr_mpi)
-!DEC$ ENDIF
       
       IF (lverb) THEN
          IF (.not.lplasma_only) CALL virtual_casing_info(6)
@@ -147,11 +218,12 @@
       
       ! Break up the Work
       chunk = FLOOR(REAL(nr*nphi*nz) / REAL(numprocs_local))
-      mystart = myworkid*chunk + 1
+      mystart = mylocalid*chunk + 1
       myend = mystart + chunk - 1
 
       ! This section sets up the work so we can use ALLGATHERV
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
+      CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
       IF (ALLOCATED(mnum)) DEALLOCATE(mnum)
       IF (ALLOCATED(moffsets)) DEALLOCATE(moffsets)
       ALLOCATE(mnum(numprocs_local), moffsets(numprocs_local))
@@ -168,7 +240,9 @@
       mystart = moffsets(mylocalid+1)
       chunk  = mnum(mylocalid+1)
       myend   = mystart + chunk - 1
-!DEC$ ENDIF
+      DEALLOCATE(mnum)
+      DEALLOCATE(moffsets)
+#endif
          IF (lafield_only) THEN
             DO s = mystart, myend
                i = MOD(s-1,nr)+1
@@ -263,9 +337,21 @@
             END DO
          END IF
       
+#if defined(MPI_OPT)
+      CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
+#endif
+      
       ! Free variables
-      IF (.not. lplasma_only) CALL free_virtual_casing
-      IF (.not. (lemc3 .or. ledge_start)) CALL read_wout_deallocate
+      IF (luse_vc) CALL free_virtual_casing(MPI_COMM_FIELDLINES)
+      IF (myworkid == master) THEN
+         CALL read_wout_deallocate
+      ELSE
+         lwout_opened = .FALSE.
+         DEALLOCATE(phi_vmec)
+         DEALLOCATE(xm,xn,xm_nyq,xn_nyq)
+         DEALLOCATE(rmnc,zmns,bsupumnc,bsupvmnc)
+         IF (lasym) DEALLOCATE(rmns,zmnc,bsupumns,bsupvmns)
+      END IF
       
       IF (lverb) THEN
          CALL backspace_out(6,36)
@@ -276,33 +362,12 @@
          CALL FLUSH(6)
       END IF    
       
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
-      IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_init_vmec',ierr_mpi)
-!       ! Adjust indexing to send 2D arrays
-       CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
-                        B_R,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
-                        MPI_COMM_LOCAL,ierr_mpi)
-       CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
-                        B_PHI,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
-                        MPI_COMM_LOCAL,ierr_mpi)
-       CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
-                        B_Z,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
-                        MPI_COMM_LOCAL,ierr_mpi)
-       DEALLOCATE(mnum)
-       DEALLOCATE(moffsets)
-!DEC$ ENDIF
-
-!DEC$ IF DEFINED (MPI_OPT)
-      !IF (nprocs_fieldlines > nlocal) THEN
-         ierr_mpi=0
-      !   For John Schmitt
-      !   CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)
-      !   IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'fieldlines_init_vmec: MPI_COMM_FREE',ierr_mpi)
-      !END IF
+      CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)
       CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
-      IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_init_vmec',ierr_mpi)
-!DEC$ ENDIF
+      IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'beams3d_init_vmec',ierr_mpi)
+#endif
 !-----------------------------------------------------------------------
 !     End Subroutine
 !-----------------------------------------------------------------------    

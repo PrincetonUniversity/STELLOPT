@@ -75,7 +75,7 @@
       s_min = 1
       s_max = 0
       tf    = MAXVAL(t_end_in)
-      MASS_BEAMS(1) = mass_orbit ! do this to diagnostic routine outputs the correct number
+      MASS_BEAMS(1) = mass_orbit ! do this so diagnostic routine outputs the correct number
       CHARGE_BEAMS(1) = Z_orbit*1.602176565E-19
       DO ik = 1, nsd
          IF (sigma_orbit(ik) .ge. bigno) CYCLE
@@ -147,7 +147,7 @@
          WRITE(6,'(A,F7.2,A,F7.2,A,I4)') '   Ne  = [',MINVAL(NE_AUX_F_BEAMS)/1E19,',',MAXVAL(NE_AUX_F_BEAMS)/1E19,'] 10^19 [m^-3];  Nne:   ',nne
          WRITE(6,'(A,F7.2,A,F7.2,A,I4)') '   Te  = [',MINVAL(TE_AUX_F_BEAMS)/1000,',',MAXVAL(TE_AUX_F_BEAMS)/1000,'] [keV];  Nte:   ',nte
          WRITE(6,'(A,F7.2,A,F7.2,A,I4)') '   Ti  = [',MINVAL(TI_AUX_F_BEAMS)/1000,',',MAXVAL(TI_AUX_F_BEAMS)/1000,'] [keV];  Nti:   ',nti
-         WRITE(6,'(A,F7.2,A,F7.2,A,I4)') '  Zeff = [',MINVAL(ZEFF_AUX_F_BEAMS),',',MAXVAL(ZEFF_AUX_F_BEAMS),'] [keV];  Nti:   ',nzeff
+         WRITE(6,'(A,F7.2,A,F7.2,A,I4)') '  Zeff = [',MINVAL(ZEFF_AUX_F_BEAMS),',',MAXVAL(ZEFF_AUX_F_BEAMS),'];      NZeff:   ',nzeff
          CALL FLUSH(6)
       END IF
 

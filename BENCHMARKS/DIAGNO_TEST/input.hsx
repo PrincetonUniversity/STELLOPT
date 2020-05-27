@@ -16,8 +16,7 @@
   PHIEDGE =   0.0409
 !----- Free Boundary Parameters -----
   LFREEB = T
-  MGRID_FILE = '/p/pies/Lazerson/Sims/MGRIDS/mgrid_qhs_cm.nc'
-  MGRID_FILE = '/p/stellopt/MGRIDS/HSX/mgrid_qhs_cm.nc'
+  MGRID_FILE = '/Users/lazerson/Sims_Work/coils/HSX/mgrid_qhs_cm.nc'
   NZETA = 0050
   EXTCUR(001) = -11017.71
   NVACSKIP = 0006

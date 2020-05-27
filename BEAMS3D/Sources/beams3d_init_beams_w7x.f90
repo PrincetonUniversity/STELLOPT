@@ -12,7 +12,7 @@
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
       USE beams3d_runtime
-      USE beams3d_lines, ONLY: nparticles
+      USE beams3d_lines, ONLY: nparticles, partvmax
       USE mpi_params
       USE mpi_inc
 
@@ -61,10 +61,10 @@
          block = 1
       END IF
       nparticles = nparticles_start*nbeams
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(nparticles,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
-!DEC$ ENDIF
+#endif
       ALLOCATE( X_start(nparticles_start), Y_start(nparticles_start), STAT=ier   )
       IF (ier /= 0) CALL handle_err(ALLOC_ERR, 'X,Y_start etc.', ier)
       ALLOCATE(   R_start(nparticles), phi_start(nparticles), Z_start(nparticles), vll_start(nparticles), &
@@ -89,6 +89,7 @@
             mass(k1:k2)         = mass_beams(i)
             charge(k1:k2)       = charge_beams(i)
             Zatom(k1:k2)        = Zatom_beams(i)
+            partvmax            = MAX(partvmax,6*SQRT(2*E_beams(i)/mass_beams(i))/5.0)
             ! Energy distribution
             CALL gauss_rand(nparticles_start, Energy)
             Energy = sqrt( (E_beams(i) + E_error*E_beams(i)*Energy)*(E_beams(i) + E_error*E_beams(i)*Energy) )
@@ -134,7 +135,8 @@
       END IF
       DEALLOCATE(X,Y,Energy,X_start,Y_start,block)
       weight = weight/nparticles_start
-!DEC$ IF DEFINED (MPI_OPT)
+
+#if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(mu_start,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(t_end,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
@@ -148,7 +150,7 @@
       CALL MPI_BCAST(vll_start,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(beam,nparticles,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(v_neut,nparticles*3,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
-!DEC$ ENDIF
+#endif
 
 
 !-----------------------------------------------------------------------

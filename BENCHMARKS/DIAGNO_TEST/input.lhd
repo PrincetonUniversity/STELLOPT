@@ -5,7 +5,7 @@
   EXTCUR( 4) =  -1.96000000000000E+04
   EXTCUR( 5) =  -3.28000000000000E+03
   EXTCUR( 6) =   1.22500000000000E+04
-  MGRID_FILE = '/u/slazerso/Sims/LHD/coils/lhd_ys4/mgrid.lhd_ys4.msize'
+  MGRID_FILE = '/Users/lazerson/Sims_Work/coils/LHD/lhd_ys4/mgrid_lhd_ys4_847_nzeta32.nc'
   LFREEB = T
   NZETA = 32
   DELT =  9.00000000000000E-01

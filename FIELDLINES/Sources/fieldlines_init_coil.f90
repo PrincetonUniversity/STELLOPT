@@ -40,11 +40,11 @@
 
       ! Divide up Work
       numprocs_local = 1; mylocalid = master
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
       CALL MPI_COMM_DUP( MPI_COMM_SHARMEM, MPI_COMM_LOCAL, ierr_mpi)
       CALL MPI_COMM_RANK( MPI_COMM_LOCAL, mylocalid, ierr_mpi )              ! MPI
       CALL MPI_COMM_SIZE( MPI_COMM_LOCAL, numprocs_local, ierr_mpi )          ! MPI
-!DEC$ ENDIF
+#endif
       mylocalmaster = master
       
       ! Read the input file for the EXTCUR array, NV, and NFP
@@ -56,10 +56,10 @@
          IF (ier /= 0) CALL handle_err(VMEC_INPUT_ERR,id_string,ier)
          CLOSE(iunit)
       END IF
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
       CALL MPI_BCAST(extcur_in,nigroup,MPI_REAL, mylocalmaster, MPI_COMM_LOCAL,ierr_mpi)
       IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'fieldlines_init_coil',ierr_mpi)
-!DEC$ ENDIF
+#endif
       
       ! Read the coils file
       CALL parse_coils_file(TRIM(coil_string))
@@ -112,7 +112,7 @@
       myend = mystart + chunk - 1
 
       ! This section sets up the work so we can use ALLGATHERV
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
       IF (ALLOCATED(mnum)) DEALLOCATE(mnum)
       IF (ALLOCATED(moffsets)) DEALLOCATE(moffsets)
       ALLOCATE(mnum(numprocs_local), moffsets(numprocs_local))
@@ -129,60 +129,60 @@
       mystart = moffsets(mylocalid+1)
       chunk  = mnum(mylocalid+1)
       myend   = mystart + chunk - 1
-!DEC$ ENDIF
-         IF (lafield_only) THEN
-            DO s = mystart, myend
-               i = MOD(s-1,nr)+1
-               j = MOD(s-1,nr*nphi)
-               j = FLOOR(REAL(j) / REAL(nr))+1
-               k = CEILING(REAL(s) / REAL(nr*nphi))
-               br = 0.; bphi = 0.; bz = 0.
-               br_temp   = 0.0;
-               bphi_temp = 0.0;
-               bz_temp   = 0.0;
-               DO ig = 1, nextcur
-                  IF (extcur_in(ig) == 0) CYCLE
-                  CALL afield(raxis(i), phiaxis(j), zaxis(k), br, bphi, bz, IG = ig)
-                  br_temp = br_temp + br
-                  bphi_temp = bphi_temp + bphi
-                  bz_temp = bz_temp + bz
-               END DO
-               B_R(i,j,k)   = br_temp
-               B_PHI(i,j,k) = bphi_temp
-               B_Z(i,j,k)   = bz_temp
-               IF (lverb .and. (MOD(s,nr) == 0)) THEN
-                  CALL backspace_out(6,6)
-                  WRITE(6,'(A,I3,A)',ADVANCE='no') '[',INT((100.*s)/(myend-mystart+1)),']%'
-                  CALL FLUSH(6)
-               END IF
+#endif
+      IF (lafield_only) THEN
+         DO s = mystart, myend
+            i = MOD(s-1,nr)+1
+            j = MOD(s-1,nr*nphi)
+            j = FLOOR(REAL(j) / REAL(nr))+1
+            k = CEILING(REAL(s) / REAL(nr*nphi))
+            br = 0.; bphi = 0.; bz = 0.
+            br_temp   = 0.0;
+            bphi_temp = 0.0;
+            bz_temp   = 0.0;
+            DO ig = 1, nextcur
+               IF (extcur_in(ig) == 0) CYCLE
+               CALL afield(raxis(i), phiaxis(j), zaxis(k), br, bphi, bz, IG = ig)
+               br_temp = br_temp + br
+               bphi_temp = bphi_temp + bphi
+               bz_temp = bz_temp + bz
             END DO
-         ELSE
-            DO s = mystart, myend
-               i = MOD(s-1,nr)+1
-               j = MOD(s-1,nr*nphi)
-               j = FLOOR(REAL(j) / REAL(nr))+1
-               k = CEILING(REAL(s) / REAL(nr*nphi))
-               br = 0.; bphi = 0.; bz = 0.
-               br_temp   = 0.0;
-               bphi_temp = 0.0;
-               bz_temp   = 0.0;
-               DO ig = 1, nextcur
-                  IF (extcur_in(ig) == 0) CYCLE
-                  CALL bfield(raxis(i), phiaxis(j), zaxis(k), br, bphi, bz, IG = ig)
-                  br_temp = br_temp + br
-                  bphi_temp = bphi_temp + bphi
-                  bz_temp = bz_temp + bz
-               END DO
-               B_R(i,j,k)   = br_temp
-               B_PHI(i,j,k) = bphi_temp
-               B_Z(i,j,k)   = bz_temp
-               IF (lverb .and. (MOD(s,nr) == 0)) THEN
-                  CALL backspace_out(6,6)
-                  WRITE(6,'(A,I3,A)',ADVANCE='no') '[',INT((100.*s)/(myend-mystart+1)),']%'
-                  CALL FLUSH(6)
-               END IF
+            B_R(i,j,k)   = br_temp
+            B_PHI(i,j,k) = bphi_temp
+            B_Z(i,j,k)   = bz_temp
+            IF (lverb .and. (MOD(s,nr) == 0)) THEN
+               CALL backspace_out(6,6)
+               WRITE(6,'(A,I3,A)',ADVANCE='no') '[',INT((100.*s)/(myend-mystart+1)),']%'
+               CALL FLUSH(6)
+            END IF
+         END DO
+      ELSE
+         DO s = mystart, myend
+            i = MOD(s-1,nr)+1
+            j = MOD(s-1,nr*nphi)
+            j = FLOOR(REAL(j) / REAL(nr))+1
+            k = CEILING(REAL(s) / REAL(nr*nphi))
+            br = 0.; bphi = 0.; bz = 0.
+            br_temp   = 0.0;
+            bphi_temp = 0.0;
+            bz_temp   = 0.0;
+            DO ig = 1, nextcur
+               IF (extcur_in(ig) == 0) CYCLE
+               CALL bfield(raxis(i), phiaxis(j), zaxis(k), br, bphi, bz, IG = ig)
+               br_temp = br_temp + br
+               bphi_temp = bphi_temp + bphi
+               bz_temp = bz_temp + bz
             END DO
-         END IF
+            B_R(i,j,k)   = br_temp
+            B_PHI(i,j,k) = bphi_temp
+            B_Z(i,j,k)   = bz_temp
+            IF (lverb .and. (MOD(s,nr) == 0)) THEN
+               CALL backspace_out(6,6)
+               WRITE(6,'(A,I3,A)',ADVANCE='no') '[',INT((100.*s)/(myend-mystart+1)),']%'
+               CALL FLUSH(6)
+            END IF
+         END DO
+      END IF
 
       ! Clean up the progress bar
       IF (lverb) THEN
@@ -197,34 +197,16 @@
       ! Free Variables
       CALL cleanup_biotsavart
 
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
       IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_init_coil1',ierr_mpi)
-!       ! Adjust indexing to send 2D arrays
-!       CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
-!                        B_R,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
-!                        MPI_COMM_LOCAL,ierr_mpi)
-!       CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
-!                        B_PHI,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
-!                        MPI_COMM_LOCAL,ierr_mpi)
-!       CALL MPI_ALLGATHERV(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,&
-!                        B_Z,mnum,moffsets-1,MPI_DOUBLE_PRECISION,&
-!                        MPI_COMM_LOCAL,ierr_mpi)
        DEALLOCATE(mnum)
        DEALLOCATE(moffsets)
-!DEC$ ENDIF
-
-
-      
-      
-!DEC$ IF DEFINED (MPI_OPT)
-      !IF (nprocs_fieldlines > nlocal) THEN
-         CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)
-         IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'fieldlines_init_coil: MPI_COMM_LOCAL',ierr_mpi)
-      !END IF
+      CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'fieldlines_init_coil: MPI_COMM_LOCAL',ierr_mpi)
       CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
       IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_init_coil',ierr_mpi)
-!DEC$ ENDIF
+#endif
       
       RETURN
 !-----------------------------------------------------------------------

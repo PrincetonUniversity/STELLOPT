@@ -14,14 +14,15 @@
 #######################################################################
 #            Define Compiler Flags
 #######################################################################
-  FLAGS_R = -I$(MKL_HOME)/include -O2 -fp-model strict -ip \
-            -assume noold_unit_star -axMIC-AVX512
-  FLAGS_D = -I$(MKL_HOME)/include -O2 -fp-model strict -ip \
-            -assume noold_unit_star -g -traceback -axMIC-AVX512
-  LIBS    = -Wl,-rpath,$(MKL_HOME)/lib/intel64 \
-            -L$(MKL_HOME)/lib/intel64 -lmkl_scalapack_lp64 \
-            -lmkl_intel_lp64 -lmkl_core -lmkl_sequential \
-            -lmkl_blacs_intelmpi_lp64  -lpthread -lm -lpthread
+  DIAG_DISABLE = -diag-disable=15009
+  FLAGS_R = -O2 -fp-model strict -ip -assume noold_unit_star \
+		-axMIC-AVX512 $(DIAG_DISABLE) \
+		-I$(MKL_LIB)
+  FLAGS_D = -g -traceback -O0 -fp-model strict -ip \
+		-assume noold_unit_star -axMIC-AVX512 $(DIAG_DISABLE) \
+		-I$(MKL_INC)
+  LIBS    = -L$(MKL_LIB)  -lmkl_intel_lp64 -lmkl_core -lmkl_sequential \
+		-lmkl_blacs_intelmpi_lp64 -lmkl_scalapack_lp64
 
 #######################################################################
 #            MPI Options
@@ -32,10 +33,11 @@
   MPI_COMPILE_C = mpiifort
   MPI_LINK = mpiifort
   MPI_RUN  = srun
-  MPI_RUN_OPTS = --partition=knl_fua_prod --qos=knl_qos_fuadbg --time=0:30:00
-  MPI_RUN_OPTS_SM   = $(MPI_RUN_OPTS) --nodes=1 --ntasks-per-node=68
-  MPI_RUN_OPTS_MD   = $(MPI_RUN_OPTS) --nodes=2 --ntasks-per-node=68
-  MPI_RUN_OPTS_LG   = $(MPI_RUN_OPTS) --nodes=2 --ntasks-per-node=68
+  MPI_RUN_OPTS = --partition=skl_fua_dbg \
+		--time=0:30:00
+  MPI_RUN_OPTS_SM   = $(MPI_RUN_OPTS) --nodes=1 --ntasks-per-node=24
+  MPI_RUN_OPTS_MD   = $(MPI_RUN_OPTS) --nodes=2 --ntasks-per-node=48
+  MPI_RUN_OPTS_LG   = $(MPI_RUN_OPTS) --nodes=4 --ntasks-per-node=48
 
 #######################################################################
 #            NAG Options
@@ -54,6 +56,7 @@
 #            HDF5 Options
 #######################################################################
   LHDF5 = T
+  PRECOMP+= -DHDF5_PAR
   HDF5_INC = -I$(HDF5_HOME)/include 
   HDF5_LIB = -Wl,-rpath,$(HDF5_HOME)/lib -L$(HDF5_HOME)/lib \
              -lhdf5 -lhdf5_fortran -lhdf5_hl -lhdf5hl_fortran 
@@ -113,7 +116,7 @@
 #######################################################################
 #            TERPSICHORE Options
 #######################################################################
-  LTERPSICHORE= F
+  LTERPSICHORE= T
   TERPSICHORE_INC = -I$(TERPSICHORE_PATH)
   TERPSICHORE_DIR = $(TERPSICHORE_PATH)
   LIB_TERPSICHORE = libterpsichore.a
@@ -122,12 +125,12 @@
 #######################################################################
 #            TRAVIS Options
 #######################################################################
-  LTRAVIS= F
+  LTRAVIS= T
   TRAVIS_DIR = $(TRAVIS_PATH)
   LIB_TRAVIS = libtravis64_sopt.a
   LIB_MCONF  = libmconf64.a
   TRAVIS_LIB = $(TRAVIS_DIR)/lib/$(LIB_TRAVIS) \
-               $(TRAVIS_DIR)/mag_conf/lib/$(LIB_MCONF) -lstdc++
+               $(TRAVIS_DIR)/magconf/lib/$(LIB_MCONF) -lstdc++
 
 #######################################################################
 #            SFINCS Options

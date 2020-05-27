@@ -20,10 +20,8 @@
                                  MPI_REDU_ERR
       USE safe_open_mod, ONLY: safe_open
       USE EZspline
-!DEC$ IF DEFINED (MPI_OPT)
       USE mpi_params ! MPI
-      USE mpi
-!DEC$ ENDIF
+      USE mpi_inc
 !-----------------------------------------------------------------------
 !     Local Variables
 !          ier          Error Flag
@@ -39,12 +37,12 @@
       INTEGER, ALLOCATABLE  :: dist_func(:,:,:)
       REAL, ALLOCATABLE     :: real_mask(:)
       INTEGER, PARAMETER :: ndist = 100
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
       INTEGER :: status(MPI_STATUS_size) !mpi stuff
       INTEGER :: mystart, mypace, sender
       INTEGER, ALLOCATABLE :: revcounts(:), displs(:)
       REAL(rprec), ALLOCATABLE :: buffer_mast(:,:), buffer_slav(:,:)
-!DEC$ ENDIF
+#endif
 !-----------------------------------------------------------------------
 !     Begin Subroutine
 !-----------------------------------------------------------------------
@@ -64,8 +62,10 @@
 
       ! Main Allocations
       IF (ALLOCATED(shine_through)) DEALLOCATE(shine_through)
+      IF (ALLOCATED(shine_port)) DEALLOCATE(shine_port)
       IF (ALLOCATED(nlost)) DEALLOCATE(nlost)
       ALLOCATE(shine_through(nbeams))
+      ALLOCATE(shine_port(nbeams))
       ALLOCATE(nlost(nbeams))
       ALLOCATE(partmask(mystart:myend))
       ALLOCATE(partmask2(0:npoinc,mystart:myend))
@@ -73,10 +73,10 @@
       ALLOCATE(int_mask(mystart:myend))
       ALLOCATE(int_mask2(0:npoinc,mystart:myend))
       ALLOCATE(real_mask(mystart:myend))
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_BEAMS, ierr_mpi)
       IF (ierr_mpi /= 0) CALL handle_err(MPI_BARRIER_ERR, 'beams3d_follow', ierr_mpi)
-!DEC$ ENDIF
+#endif
       maxdist = partvmax
       mindist = -partvmax
 
@@ -114,20 +114,23 @@
       shine_through = 0
       DO i = 1, nbeams
          shine_through(i) = 100.*COUNT(end_state(mystart:myend) == 3 .and. (beam(mystart:myend)==i),DIM=1)/COUNT(beam==i)
+         shine_port(i) = 100.*COUNT(end_state(mystart:myend) == 4 .and. (beam(mystart:myend)==i),DIM=1)/COUNT(beam==i)
          nlost(i)         = COUNT(end_state(mystart:myend) == 2 .and. beam(mystart:myend) == i)
       END DO
 
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
       IF (myworkid == master) THEN
          CALL MPI_REDUCE(MPI_IN_PLACE, dist_func,     nbeams*ndist*(npoinc+1), MPI_INTEGER,          MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
          CALL MPI_REDUCE(MPI_IN_PLACE, shine_through, nbeams,                  MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
+         CALL MPI_REDUCE(MPI_IN_PLACE, shine_port,    nbeams,                  MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
          CALL MPI_REDUCE(MPI_IN_PLACE, nlost,         nbeams,                  MPI_INTEGER,          MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
       ELSE
          CALL MPI_REDUCE(dist_func,     dist_func,     nbeams*ndist*(npoinc+1), MPI_INTEGER,          MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
          CALL MPI_REDUCE(shine_through, shine_through, nbeams,                  MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
+         CALL MPI_REDUCE(shine_port,    shine_port,    nbeams,                  MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
          CALL MPI_REDUCE(nlost,         nlost,         nbeams,                  MPI_INTEGER,          MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
       END IF
-!DEC$ ENDIF
+#endif
 
       IF (myworkid == master) THEN
          ! Open the file
@@ -150,9 +153,9 @@
 
             ! Screen Output
             IF (lverb) THEN
-               IF (i==1) WRITE(6,'(A)')  ' BEAMLINE     ENERGY [keV]   CHARGE [e]   MASS [Mp]   Particles [#]   Lost [%]  Shinethrough [%]'
-               WRITE(6,'(I5,3(11X,I3),8X,I8,2(8X,F5.1))') i,NINT(E_BEAMS(i)*6.24150636309E15),NINT(CHARGE_BEAMS(i)*6.24150636309E18),&
-                                         NINT(MASS_BEAMS(i)*5.97863320194E26), ninj, 100.*nlost(i)/ninj, shine_through(i)
+               IF (i==1) WRITE(6,'(A)')  ' BEAMLINE     ENERGY [keV]   CHARGE [e]   MASS [Mp]   Particles [#]   Lost [%]  Shinethrough [%]  Port [%]'
+               WRITE(6,'(I5,3(11X,I3),8X,I8,3(8X,F5.1))') i,NINT(E_BEAMS(i)*6.24150636309E15),NINT(CHARGE_BEAMS(i)*6.24150636309E18),&
+                                         NINT(MASS_BEAMS(i)*5.97863320194E26), ninj, 100.*nlost(i)/ninj, shine_through(i), shine_port(i)
                CALL FLUSH(6)
             END IF
             ! Write Distribution Function
@@ -178,10 +181,12 @@
       IF (lbeam .and. .not.ldepo) THEN
 
          ! Grid in rho, units in [/m^3]
-         DO k = 2, ns_prof
-            s2 = REAL(k)/REAL(ns_prof)
+         ! Note ns is number of cells not cell boundaries
+         DO k = 1, ns_prof1
+            s1 = REAL(k-0.5)/REAL(ns_prof1) ! Rho
+            s2 = s1*s1
             CALL EZspline_interp(Vp_spl_s,s2,vp_temp,ier)
-            vp_temp = vp_temp*2*s2
+            vp_temp = vp_temp*2*s1
             epower_prof(:,k) = epower_prof(:,k)/vp_temp
             ipower_prof(:,k) = ipower_prof(:,k)/vp_temp
             ndot_prof(:,k)   =   ndot_prof(:,k)/vp_temp
