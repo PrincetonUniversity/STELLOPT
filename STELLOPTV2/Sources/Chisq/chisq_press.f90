@@ -33,7 +33,7 @@
 !-----------------------------------------------------------------------
       LOGICAL ::  lreset_s = .true.
       INTEGER ::  ik, ier, dex
-      REAL(rprec) :: p_val, u_val, p_norm, s0
+      REAL(rprec) :: p_val, u_val, s0
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
@@ -42,7 +42,7 @@
       IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'PRESS ',ik,7
       IF (iflag == 1) WRITE(iunit_out,'(A)') 'R  PHI  Z  S  TARGET  SIGMA  VAL'
       IF (niter >= 0) THEN
-         s0 = 0.0; ier = 0; p_norm = 0.0; p_val = 0.0; u_val = 0.0
+         s0 = 0.0; ier = 0; p_val = 0.0; u_val = 0.0
          IF (ANY(s_press > 0)) lreset_s = .false.
          DO ik = 1, nprof
             IF (sigma(ik) >= bigno) CYCLE
