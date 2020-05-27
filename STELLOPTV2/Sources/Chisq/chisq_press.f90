@@ -43,8 +43,7 @@
       IF (iflag == 1) WRITE(iunit_out,'(A)') 'R  PHI  Z  S  TARGET  SIGMA  VAL'
       IF (niter >= 0) THEN
          s0 = 0.0; ier = 0; p_norm = 0.0; p_val = 0.0; u_val = 0.0
-         CALL get_equil_p(s0,p_norm,ier)
-         IF (ANY(s_ne > 0)) lreset_s = .false.
+         IF (ANY(s_press > 0)) lreset_s = .false.
          DO ik = 1, nprof
             IF (sigma(ik) >= bigno) CYCLE
             ! GET s if necessary
@@ -59,10 +58,10 @@
                p_val = 0.0
             END IF
             mtargets = mtargets + 1
-            targets(mtargets) = target(ik)/norm_press
+            targets(mtargets) = target(ik)
             sigmas(mtargets)  = sigma(ik)
-            vals(mtargets)    = p_val/p_norm
-            IF (iflag == 1) WRITE(iunit_out,'(7ES22.12E3)') r_press(ik),phi_press(ik),z_press(ik),s_press(ik),target(ik),sigma(ik),p_val/p_norm
+            vals(mtargets)    = p_val
+            IF (iflag == 1) WRITE(iunit_out,'(7ES22.12E3)') r_press(ik),phi_press(ik),z_press(ik),s_press(ik),target(ik),sigma(ik),p_val
          END DO
          IF (lreset_s) s_press(:) = -1.0
       ELSE
