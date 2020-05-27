@@ -679,6 +679,7 @@
       CALL get_equil_emis_xics(s,TRIM(emis_xics_type),bright,ier)
       CALL get_equil_phi(s,phi_type,phi_val,ier,phi_prime)
       CALL get_equil_RZ(s,u,v,Rt,Zt,ier,Rg,Zg)
+      !print *,s,u,v,bright,phi_val,phi_prime,Rg(3),Zg(3)
       !CALL get_equil_Bav(s,Bav,Bavsq,ier) !<B>,<B^2>
       !CALL get_equil_rho(s,rho,vp,grho,grho2,ier)
       ! To make these lines work we need to implement
@@ -719,113 +720,26 @@
       fval = fval*sqrt(dx*dx+dy*dy+dz*dz)
       RETURN
       END SUBROUTINE fcn_sxr
-      
-      SUBROUTINE line_int_faraday(r1,r2,val)
+
+      SUBROUTINE fcn_faraday(s,u,v,dx,dy,dz,fval,ier)
       IMPLICIT NONE
-      REAL(rprec), INTENT(in)   :: r1(3), r2(3)
-      REAL(rprec), INTENT(out)  :: val
-      INTEGER     :: i, j, k, ier
-      REAL(rprec) :: x1, y1, z1, x2, y2, z2, dx, dy, dz, xp, yp, zp, int_fac
-      REAL(rprec) :: xp1, yp1, zp1, delf, delt, rp, phip,s, dx2, dy2, dz2
-      REAL(rprec) :: ne_val, bx, by, bz
-      INTEGER, PARAMETER ::  nsteps=50
-      INTEGER, PARAMETER :: nop=3
-      INTEGER, PARAMETER :: int_step=2
-      real(rprec), dimension(nop), parameter :: ci=(/1._rprec/6._rprec,2._rprec/3._rprec,1._rprec/6._rprec/)
-      phip = r1(2);
-      s    = r2(2);
-      !IF (phip < 0) phip = phip+2*pi
-      !IF (s < 0) s = s+2*pi
-      !phip = MOD(phip,pi2/nfp)*nfp
-      !s    = MOD(s,pi2/nfp)*nfp
-      ier = 0; ne_val = 0.0
-      x1 = r1(1)*cos(phip); x2 = r2(1)*cos(s)
-      y1 = r1(1)*sin(phip); y2 = r2(1)*sin(s)
-      z1 = r1(3);            z2 = r2(3);
-      dx = (x2-x1)/nsteps
-      dy = (y2-y1)/nsteps
-      dz = (z2-z1)/nsteps
-      s=0; phip=0
-      DO i = 1, nsteps ! Get first boundary point
-         xp = x1+dx*(i-1)
-         yp = y1+dy*(i-1)
-         zp = z1+dz*(i-1)
-         rp = sqrt(xp*xp+yp*yp)
-         phip = ATAN2(yp,xp)
-         IF (phip < 0) phip = phip+2*pi
-         CALL get_equil_s(rp,phip,zp,s,ier)
-         IF (s <= 1.0_rprec) THEN
-            x1 = xp-dx
-            y1 = yp-dy
-            z1 = zp-dz
-            EXIT
-         END IF
-      END DO
-      DO i = 1, nsteps ! Get second boundary point
-         xp = x2-dx*(i-1)
-         yp = y2-dy*(i-1)
-         zp = z2-dz*(i-1)
-         IF ((xp == x1) .and. (yp == y1) .and. (zp == z1)) THEN
-            val = 0.0_rprec
-            RETURN
-         END IF
-         rp = sqrt(xp*xp+yp*yp)
-         phip = ATAN2(yp,xp)
-         IF (phip < 0) phip = phip+2*pi
-         CALL get_equil_s(rp,phip,zp,s,ier)
-         IF (s <= 1.0_rprec) THEN
-            x2 = xp+dx
-            y2 = yp+dy
-            z2 = zp+dz
-            dx = (x2-x1)/nsteps
-            dy = (y2-y1)/nsteps
-            dz = (z2-z1)/nsteps
-            EXIT
-         END IF
-      END DO
-      val =0
-      delt = 1.0_rprec/REAL(nop-1)
-      int_fac = 1.0_rprec/REAL(int_step)
-      DO i = 1, nsteps
-         DO j = 1, int_step
-            xp = x1+dx*(i-1)+(j-1)*int_fac*dx
-            yp = y1+dy*(i-1)+(j-1)*int_fac*dy
-            zp = z1+dz*(i-1)+(j-1)*int_fac*dz
-            delf = 0.0_rprec
-            dx2 = x1+dx*(i-1)+(j)*int_fac*dx - xp
-            dy2 = y1+dy*(i-1)+(j)*int_fac*dy - yp
-            dz2 = z1+dz*(i-1)+(j)*int_fac*dz - zp
-            DO k = 1, nop
-               rp = sqrt(xp*xp+yp*yp)
-               phip = ATAN2(yp,xp)
-               IF (phip < 0) phip = phip+2*pi
-               CALL get_equil_s(rp,phip,zp,s,ier)
-               IF (s <= 1.0_rprec .and. s >= 0.0_rprec) THEN
-                  CALL get_equil_ne(s,TRIM(ne_type),ne_val,ier)
-                  IF (ier /= 0) ne_val = 0.0_rprec
-                  CALL get_equil_B(rp,phip,zp,bx,by,bz,ier)
-                  IF (ier /= 0) THEN
-                     bx=0.0_rprec
-                     by=0.0_rprec
-                     bz=0.0_rprec
-                  END IF
-               ELSE
-                  ne_val = 0.0_rprec
-                  bx = 0.0_rprec
-                  by = 0.0_rprec
-                  bz = 0.0_rprec
-               END IF
-               !WRITE(27,*) rp, phip,zp,ne_val,s,delf
-               delf = delf + ci(k)*ne_val*ABS(bx*dx2+by*dy2+bz*dz2)
-               xp   = xp + k*dx2*delt
-               yp   = yp + k*dy2*delt
-               zp   = zp + k*dz2*delt
-            END DO
-            val = val + delf
-         END DO
-      END DO
+      REAL(rprec), INTENT(in) :: s,u,v,dx,dy,dz
+      REAL(rprec), INTENT(out) :: fval
+      INTEGER, INTENT(inout) :: ier
+      REAL(rprec) :: ne_val,br,bphi,bz,bx,by
+      fval = 0
+      IF (s>1) RETURN
+      CALL get_equil_ne(s,TRIM(ne_type),ne_val,ier)
+      CALL get_equil_Bcylsuv(s,u,v,br,bphi,bz,ier)
+      bx = br*cos(v)-bphi*sin(v)
+      by = br*sin(v)+bphi*cos(v)
+      IF (abs(ne_val) > 0) THEN
+         fval = ne_val*ABS(dx*bx+dy*by+dz*bz)
+      ELSE
+         fval = 0
+      END IF
       RETURN
-      END SUBROUTINE line_int_faraday
+      END SUBROUTINE fcn_faraday
          
          
       SUBROUTINE mntouv(k1,k,mnmax,nu,nv,xu,xv,fmn,xm,xn,f,signs,calc_trig)
