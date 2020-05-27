@@ -315,6 +315,7 @@
                          target_kappa_avg, sigma_kappa_avg, &
                          target_magwell, sigma_magwell, &
                          target_press, sigma_press, r_press, z_press, phi_press, s_press,&
+                         target_pressprime, sigma_pressprime, r_pressprime, z_pressprime, phi_pressprime, s_pressprime,&
                          target_te, sigma_te, r_te, z_te, phi_te, s_te,&
                          target_ne, sigma_ne, r_ne, z_ne, phi_ne, s_ne,&
                          target_ne_line, sigma_ne_line, r0_ne_line, phi0_ne_line, z0_ne_line,&
@@ -750,13 +751,18 @@
       sigma_te(:)     = bigno
       target_extcur   = 0.0
       sigma_extcur    = bigno
-      norm_press      = 1.0
       r_press(:)         = 0.0
       z_press(:)         = 0.0
       phi_press(:)       = 0.0
       s_press(:)         = -1.0
       target_press(:)    = 0.0
       sigma_press(:)     = bigno
+      r_pressprime(:)      = 0.0
+      z_pressprime(:)      = 0.0
+      phi_pressprime(:)    = 0.0
+      s_pressprime(:)      = -1.0
+      target_pressprime(:) = 0.0
+      sigma_pressprime(:)  = bigno
       r_te(:)         = 0.0
       z_te(:)         = 0.0
       phi_te(:)       = 0.0
@@ -2341,7 +2347,6 @@
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          WRITE(iunit,'(A)') '!          Plasma Pressure OPTIMIZATION'
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
-         WRITE(iunit,outflt) 'NORM_PRESS',norm_press
          DO ik = 1, UBOUND(sigma_press,DIM=1)
             IF (sigma_press(ik) < bigno .and. s_press(ik) < 0) THEN
                WRITE(iunit,"(5(2X,A,I3.3,A,1X,'=',1X,ES22.12E3))") &
@@ -2355,6 +2360,26 @@
                   'S_PRESS(',ik,')',s_press(ik),&
                   'TARGET_PRESS(',ik,')',target_press(ik),& 
                   'SIGMA_PRESS(',ik,')',sigma_press(ik)
+            END IF
+         END DO
+      END IF
+      IF (ANY(sigma_pressprime < bigno)) THEN
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,'(A)') '!          Plasma Pressure Gradient (dp/ds) OPTIMIZATION'
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         DO ik = 1, UBOUND(sigma_pressprime,DIM=1)
+            IF (sigma_pressprime(ik) < bigno .and. s_pressprime(ik) < 0) THEN
+               WRITE(iunit,"(5(2X,A,I3.3,A,1X,'=',1X,ES22.12E3))") &
+                  'R_PRESSPRIME(',ik,')',r_pressprime(ik),&
+                  'PHI_PRESSPRIME(',ik,')',phi_pressprime(ik),& 
+                  'Z_PRESSPRIME(',ik,')',z_pressprime(ik),&
+                  'TARGET_PRESSPRIME(',ik,')',target_pressprime(ik),& 
+                  'SIGMA_PRESSPRIME(',ik,')',sigma_pressprime(ik)
+            ELSE IF (sigma_pressprime(ik) < bigno .and. s_pressprime(ik) >= 0) THEN
+               WRITE(iunit,"(3(2X,A,I3.3,A,1X,'=',1X,ES22.12E3))") &
+                  'S_PRESSPRIME(',ik,')',s_pressprime(ik),&
+                  'TARGET_PRESSPRIME(',ik,')',target_pressprime(ik),& 
+                  'SIGMA_PRESSPRIME(',ik,')',sigma_pressprime(ik)
             END IF
          END DO
       END IF

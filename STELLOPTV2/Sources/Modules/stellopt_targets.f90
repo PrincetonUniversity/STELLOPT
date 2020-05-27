@@ -86,11 +86,12 @@
       REAL(rprec), DIMENSION(rosenbrock_dim) ::  target_Rosenbrock_F, &
                                                  sigma_Rosenbrock_F
       REAL(rprec), PARAMETER ::  bigno_ne = 1.0E27
-      REAL(rprec) ::  norm_press
       REAL(rprec) ::  qm_ratio
       REAL(rprec) ::  cutoff_te_line
       REAL(rprec), DIMENSION(nprof) ::  target_press, sigma_press, &
                                         r_press, z_press, phi_press, s_press  
+      REAL(rprec), DIMENSION(nprof) ::  target_pressprime, sigma_pressprime, &
+                                        r_pressprime, z_pressprime, phi_pressprime, s_pressprime  
       REAL(rprec), DIMENSION(nprof) ::  target_te, sigma_te, &
                                         r_te, z_te, phi_te, s_te  
       REAL(rprec), DIMENSION(nprof) ::  target_ne, sigma_ne, &
@@ -235,6 +236,7 @@
       INTEGER, PARAMETER :: jtarget_xics_w3    = 2044
       INTEGER, PARAMETER :: jtarget_xics_v     = 2045
       INTEGER, PARAMETER :: jtarget_press      = 203
+      INTEGER, PARAMETER :: jtarget_pressprime = 2033
       INTEGER, PARAMETER :: jtarget_vphi       = 204
       INTEGER, PARAMETER :: jtarget_iota       = 300  
       INTEGER, PARAMETER :: jtarget_iprime     = 301
@@ -336,6 +338,8 @@
             WRITE(iunit, out_format) 'External currents'
          CASE(jtarget_press)
             WRITE(iunit, out_format) 'Plasma Pressure'
+         CASE(jtarget_pressprime)
+            WRITE(iunit, out_format) 'Plasma Pressure Gradient (dp/ds)'
          CASE(jtarget_ne)
             WRITE(iunit, out_format) 'Electron Density'
          CASE(jtarget_line_ne)
