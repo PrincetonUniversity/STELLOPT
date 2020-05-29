@@ -51,7 +51,7 @@
       INTEGER :: ier, iunit, i, d1, d2, d3, k, k1, k2, kmax ,ider, nphi1
       INTEGER(HID_T) :: options_gid, bfield_gid, efield_gid, plasma_gid, &
                         neutral_gid, wall_gid, marker_gid, qid_gid, &
-                        nbi_gid, inj_gid
+                        nbi_gid, inj_gid, boozer_gid, mhd_gid
       INTEGER, ALLOCATABLE, DIMENSION(:) :: itemp
       REAL :: qid_flt
       DOUBLE PRECISION :: rho_temp, s_temp, rho_max, dbl_temp, gammarel, v_total
@@ -102,6 +102,7 @@
                CALL write_var_hdf5(qid_gid,'ADAPTIVE_MAX_DRHO',ier,DBLVAR=DBLE(1.0))
                CALL write_var_hdf5(qid_gid,'ADAPTIVE_MAX_DPHI',ier,DBLVAR=DBLE(2))
                CALL write_var_hdf5(qid_gid,'ENABLE_ORBIT_FOLLOWING',ier,DBLVAR=DBLE(1))
+               CALL write_var_hdf5(qid_gid,'ENABLE_MHD',ier,DBLVAR=DBLE(0))
                IF (lcollision .and. .not. lascotfl) THEN
                   CALL write_var_hdf5(qid_gid,'ENABLE_COULOMB_COLLISIONS',ier,DBLVAR=DBLE(1))
                   CALL write_var_hdf5(qid_gid,'DISABLE_ENERGY_CCOLL',ier,DBLVAR=DBLE(0))
@@ -122,6 +123,7 @@
                CALL write_var_hdf5(qid_gid,'ENDCOND_MAXORBS',ier,DBLVAR=DBLE(0))
                CALL write_var_hdf5(qid_gid,'ENDCOND_MAX_SIMTIME',ier,DBLVAR=DBLE(2*MAXVAL(t_end_in)))
                CALL write_var_hdf5(qid_gid,'ENDCOND_MAX_CPUTIME',ier,DBLVAR=DBLE(14000))
+               CALL write_var_hdf5(qid_gid,'ENDCOND_MAX_MILEAGE',ier,DBLVAR=DBLE(14000))
                CALL write_var_hdf5(qid_gid,'ENDCOND_MIN_RHO',ier,DBLVAR=DBLE(0))
                CALL write_var_hdf5(qid_gid,'ENDCOND_MIN_ENERGY',ier,DBLVAR=DBLE(10))
                CALL write_var_hdf5(qid_gid,'ENDCOND_MIN_THERMAL',ier,DBLVAR=DBLE(therm_factor))
@@ -167,6 +169,9 @@
                CALL write_var_hdf5(qid_gid,'ORBITWRITE_INTERVAL',ier,DBLVAR=DBLE(MAXVAL(t_end_in))/DBLE(npoinc))
                CALL write_var_hdf5(qid_gid,'ORBITWRITE_TOROIDALANGLES',ier,DBLVAR=DBLE(0))
                CALL write_var_hdf5(qid_gid,'ORBITWRITE_POLOIDALANGLES',ier,DBLVAR=DBLE(0))
+               CALL write_var_hdf5(qid_gid,'ENABLE_TRANSCOEF',ier,DBLVAR=DBLE(0))
+               CALL write_var_hdf5(qid_gid,'TRANSCOEF_INTERVAL',ier,DBLVAR=DBLE(-1))
+               CALL write_var_hdf5(qid_gid,'TRANSCOEF_NAVG',ier,DBLVAR=DBLE(5))
                CALL h5gclose_f(qid_gid, ier)
                CALL h5gclose_f(options_gid, ier)
 
@@ -345,6 +350,79 @@
 
 
                !--------------------------------------------------------------
+               !           BOOZER (DUMMY)
+               !--------------------------------------------------------------
+               CALL h5gcreate_f(fid,'boozer', boozer_gid, ier)
+               CALL RANDOM_NUMBER(qid_flt)
+               WRITE(qid_str,'(i10.10)') FLOOR(qid_flt*1.0E9)
+               CALL write_att_hdf5(boozer_gid,'active',qid_str,ier)
+               CALL h5gcreate_f(boozer_gid,'Boozer_'//qid_str, qid_gid, ier)
+               CALL write_att_hdf5(qid_gid,'date',temp_str8,ier)
+               CALL write_att_hdf5(qid_gid,'description','Dummy data initialized from BEAMS3D',ier)
+               CALL write_var_hdf5(qid_gid,'nr',ier,INTVAR=nr)
+               CALL write_var_hdf5(qid_gid,'nz',ier,INTVAR=nz)
+               CALL write_var_hdf5(qid_gid,'rmin',ier,DBLVAR=raxis(1))
+               CALL write_var_hdf5(qid_gid,'rmax',ier,DBLVAR=raxis(nr))
+               CALL write_var_hdf5(qid_gid,'zmin',ier,DBLVAR=zaxis(1))
+               CALL write_var_hdf5(qid_gid,'zmax',ier,DBLVAR=zaxis(nz))
+               CALL write_var_hdf5(qid_gid,'npsi',ier,INTVAR=ns_prof1)
+               CALL write_var_hdf5(qid_gid,'psimin',ier,DBLVAR=DBLE(0))
+               CALL write_var_hdf5(qid_gid,'psimax',ier,DBLVAR=ABS(phiedge_eq))
+               CALL write_var_hdf5(qid_gid,'psi0',ier,DBLVAR=DBLE(0))
+               CALL write_var_hdf5(qid_gid,'psi1',ier,DBLVAR=ABS(phiedge_eq))
+               CALL write_var_hdf5(qid_gid,'ntheta',ier,INTVAR=ns_prof2)
+               CALL write_var_hdf5(qid_gid,'nthetag',ier,INTVAR=ns_prof2)
+               CALL write_var_hdf5(qid_gid,'r0',ier,DBLVAR=req_axis(1))
+               CALL write_var_hdf5(qid_gid,'z0',ier,DBLVAR=zeq_axis(1))
+               CALL write_var_hdf5(qid_gid,'nrzs',ier,INTVAR=ns_prof1)
+               ALLOCATE(rtemp(ns_prof1,1,1))
+               rtemp = 0;
+               CALL write_var_hdf5(qid_gid,'nrzs',ier,INTVAR=ns_prof1)
+               CALL write_var_hdf5(qid_gid,'rs',ns_prof1,ier,DBLVAR=rtemp(:,1,1))
+               CALL write_var_hdf5(qid_gid,'zs',ns_prof1,ier,DBLVAR=rtemp(:,1,1))
+               DEALLOCATE(rtemp)
+               ALLOCATE(rtemp(nr,nz,1))
+               rtemp =0
+               CALL write_var_hdf5(qid_gid,'psi_rz',nr,nz,ier,DBLVAR=rtemp(:,:,1))
+               DEALLOCATE(rtemp)
+               ALLOCATE(rtemp(ns_prof1,ns_prof2,1))
+               rtemp =0
+               CALL write_var_hdf5(qid_gid,'theta_psithetageom',ns_prof1,ns_prof2,ier,DBLVAR=rtemp(:,:,1))
+               CALL write_var_hdf5(qid_gid,'nu_psitheta',ns_prof1,ns_prof2,ier,DBLVAR=rtemp(:,:,1))
+               DEALLOCATE(rtemp)
+               CALL h5gclose_f(qid_gid, ier)
+               CALL h5gclose_f(boozer_gid, ier)
+
+
+               !--------------------------------------------------------------
+               !           MHD (DUMMY)
+               !--------------------------------------------------------------
+               CALL h5gcreate_f(fid,'mhd', mhd_gid, ier)
+               CALL RANDOM_NUMBER(qid_flt)
+               WRITE(qid_str,'(i10.10)') FLOOR(qid_flt*1.0E9)
+               CALL write_att_hdf5(mhd_gid,'active',qid_str,ier)
+               CALL h5gcreate_f(mhd_gid,'MHD_STAT_'//qid_str, qid_gid, ier)
+               CALL write_att_hdf5(qid_gid,'date',temp_str8,ier)
+               CALL write_att_hdf5(qid_gid,'description','Dummy data initialized from BEAMS3D',ier)
+               CALL write_var_hdf5(qid_gid,'nmode',ier,INTVAR=2)
+               CALL write_var_hdf5(qid_gid,'nrho',ier,INTVAR=6)
+               CALL write_var_hdf5(qid_gid,'rhomin',ier,DBLVAR=DBLE(0))
+               CALL write_var_hdf5(qid_gid,'rhomax',ier,DBLVAR=DBLE(1))
+               CALL write_var_hdf5(qid_gid,'nmodes',2,ier,INTVAR=(/1,2/))
+               CALL write_var_hdf5(qid_gid,'mmodes',2,ier,INTVAR=(/3,4/))
+               CALL write_var_hdf5(qid_gid,'amplitude',2,ier,DBLVAR=DBLE((/0.1,2.0/)))
+               CALL write_var_hdf5(qid_gid,'omega',2,ier,DBLVAR=DBLE((/1.0,1.5/)))
+               CALL write_var_hdf5(qid_gid,'phase',2,ier,DBLVAR=DBLE((/0.0,0.78525/)))
+               ALLOCATE(rtemp(6,2,1))
+               rtemp = 1;
+               CALL write_var_hdf5(qid_gid,'alpha',6,2,ier,DBLVAR=rtemp(:,:,1))
+               CALL write_var_hdf5(qid_gid,'phi',6,2,ier,DBLVAR=rtemp(:,:,1))
+               DEALLOCATE(rtemp)
+               CALL h5gclose_f(qid_gid, ier)
+               CALL h5gclose_f(mhd_gid, ier)
+
+
+               !--------------------------------------------------------------
                !           WALL
                !--------------------------------------------------------------
                CALL h5gcreate_f(fid,'wall', wall_gid, ier)
@@ -487,21 +565,21 @@
                !--------------------------------------------------------------
                CALL h5gopen_f(fid,'options', options_gid, ier)
                CALL h5gopen_f(options_gid,'opt_'//qid_str_saved, qid_gid, ier)
-               CALL write_var_hdf5(qid_gid,'DIST_MIN_VR',ier,DBLVAR=DBLE(-partvmax))
-               CALL write_var_hdf5(qid_gid,'DIST_MAX_VR',ier,DBLVAR=DBLE(partvmax))
-               CALL write_var_hdf5(qid_gid,'DIST_MIN_VPHI',ier,DBLVAR=DBLE(-partvmax))
-               CALL write_var_hdf5(qid_gid,'DIST_MAX_VPHI',ier,DBLVAR=DBLE(partvmax))
-               CALL write_var_hdf5(qid_gid,'DIST_MIN_VZ',ier,DBLVAR=DBLE(-partvmax))
-               CALL write_var_hdf5(qid_gid,'DIST_MAX_VZ',ier,DBLVAR=DBLE(partvmax))
-               CALL write_var_hdf5(qid_gid,'DIST_MIN_VPA',ier,DBLVAR=DBLE(-partvmax))
-               CALL write_var_hdf5(qid_gid,'DIST_MAX_VPA',ier,DBLVAR=DBLE(partvmax))
-               CALL write_var_hdf5(qid_gid,'DIST_MIN_VPE',ier,DBLVAR=DBLE(0))
-               CALL write_var_hdf5(qid_gid,'DIST_MAX_VPE',ier,DBLVAR=DBLE(partvmax))
-               CALL write_var_hdf5(qid_gid,'DIST_NBIN_VR',ier,DBLVAR=DBLE(ns_prof4))
-               CALL write_var_hdf5(qid_gid,'DIST_NBIN_VPHI',ier,DBLVAR=DBLE(ns_prof4))
-               CALL write_var_hdf5(qid_gid,'DIST_NBIN_VZ',ier,DBLVAR=DBLE(ns_prof4))
-               CALL write_var_hdf5(qid_gid,'DIST_NBIN_VPA',ier,DBLVAR=DBLE(ns_prof4))
-               CALL write_var_hdf5(qid_gid,'DIST_NBIN_VPE',ier,DBLVAR=DBLE(ns_prof5))
+               CALL write_var_hdf5(qid_gid,'DIST_MIN_PR',ier,DBLVAR=DBLE(-partpmax))
+               CALL write_var_hdf5(qid_gid,'DIST_MAX_PR',ier,DBLVAR=DBLE(partpmax))
+               CALL write_var_hdf5(qid_gid,'DIST_MIN_PPHI',ier,DBLVAR=DBLE(-partpmax))
+               CALL write_var_hdf5(qid_gid,'DIST_MAX_PPHI',ier,DBLVAR=DBLE(partpmax))
+               CALL write_var_hdf5(qid_gid,'DIST_MIN_PZ',ier,DBLVAR=DBLE(-partpmax))
+               CALL write_var_hdf5(qid_gid,'DIST_MAX_PZ',ier,DBLVAR=DBLE(partpmax))
+               CALL write_var_hdf5(qid_gid,'DIST_MIN_PPA',ier,DBLVAR=DBLE(-partpmax))
+               CALL write_var_hdf5(qid_gid,'DIST_MAX_PPA',ier,DBLVAR=DBLE(partpmax))
+               CALL write_var_hdf5(qid_gid,'DIST_MIN_PPE',ier,DBLVAR=DBLE(0))
+               CALL write_var_hdf5(qid_gid,'DIST_MAX_PPE',ier,DBLVAR=DBLE(partpmax))
+               CALL write_var_hdf5(qid_gid,'DIST_NBIN_PR',ier,DBLVAR=DBLE(ns_prof4))
+               CALL write_var_hdf5(qid_gid,'DIST_NBIN_PPHI',ier,DBLVAR=DBLE(ns_prof4))
+               CALL write_var_hdf5(qid_gid,'DIST_NBIN_PZ',ier,DBLVAR=DBLE(ns_prof4))
+               CALL write_var_hdf5(qid_gid,'DIST_NBIN_PPA',ier,DBLVAR=DBLE(ns_prof4))
+               CALL write_var_hdf5(qid_gid,'DIST_NBIN_PPE',ier,DBLVAR=DBLE(ns_prof5))
                CALL h5gclose_f(qid_gid, ier)
                CALL h5gclose_f(options_gid, ier)
                ! Close file
@@ -591,21 +669,21 @@
                !--------------------------------------------------------------
                CALL h5gopen_f(fid,'options', options_gid, ier)
                CALL h5gopen_f(options_gid,'opt_'//qid_str_saved, qid_gid, ier)
-               CALL write_var_hdf5(qid_gid,'DIST_MIN_VR',ier,DBLVAR=DBLE(-partvmax))
-               CALL write_var_hdf5(qid_gid,'DIST_MAX_VR',ier,DBLVAR=DBLE(partvmax))
-               CALL write_var_hdf5(qid_gid,'DIST_MIN_VPHI',ier,DBLVAR=DBLE(-partvmax))
-               CALL write_var_hdf5(qid_gid,'DIST_MAX_VPHI',ier,DBLVAR=DBLE(partvmax))
-               CALL write_var_hdf5(qid_gid,'DIST_MIN_VZ',ier,DBLVAR=DBLE(-partvmax))
-               CALL write_var_hdf5(qid_gid,'DIST_MAX_VZ',ier,DBLVAR=DBLE(partvmax))
-               CALL write_var_hdf5(qid_gid,'DIST_MIN_VPA',ier,DBLVAR=DBLE(-partvmax))
-               CALL write_var_hdf5(qid_gid,'DIST_MAX_VPA',ier,DBLVAR=DBLE(partvmax))
-               CALL write_var_hdf5(qid_gid,'DIST_MIN_VPE',ier,DBLVAR=DBLE(0))
-               CALL write_var_hdf5(qid_gid,'DIST_MAX_VPE',ier,DBLVAR=DBLE(partvmax))
-               CALL write_var_hdf5(qid_gid,'DIST_NBIN_VR',ier,DBLVAR=DBLE(ns_prof4))
-               CALL write_var_hdf5(qid_gid,'DIST_NBIN_VPHI',ier,DBLVAR=DBLE(ns_prof4))
-               CALL write_var_hdf5(qid_gid,'DIST_NBIN_VZ',ier,DBLVAR=DBLE(ns_prof4))
-               CALL write_var_hdf5(qid_gid,'DIST_NBIN_VPA',ier,DBLVAR=DBLE(ns_prof4))
-               CALL write_var_hdf5(qid_gid,'DIST_NBIN_VPE',ier,DBLVAR=DBLE(ns_prof5))
+               CALL write_var_hdf5(qid_gid,'DIST_MIN_PR',ier,DBLVAR=DBLE(-partpmax))
+               CALL write_var_hdf5(qid_gid,'DIST_MAX_PR',ier,DBLVAR=DBLE(partpmax))
+               CALL write_var_hdf5(qid_gid,'DIST_MIN_PPHI',ier,DBLVAR=DBLE(-partpmax))
+               CALL write_var_hdf5(qid_gid,'DIST_MAX_PPHI',ier,DBLVAR=DBLE(partpmax))
+               CALL write_var_hdf5(qid_gid,'DIST_MIN_PZ',ier,DBLVAR=DBLE(-partpmax))
+               CALL write_var_hdf5(qid_gid,'DIST_MAX_PZ',ier,DBLVAR=DBLE(partpmax))
+               CALL write_var_hdf5(qid_gid,'DIST_MIN_PPA',ier,DBLVAR=DBLE(-partpmax))
+               CALL write_var_hdf5(qid_gid,'DIST_MAX_PPA',ier,DBLVAR=DBLE(partpmax))
+               CALL write_var_hdf5(qid_gid,'DIST_MIN_PPE',ier,DBLVAR=DBLE(0))
+               CALL write_var_hdf5(qid_gid,'DIST_MAX_PPE',ier,DBLVAR=DBLE(partpmax))
+               CALL write_var_hdf5(qid_gid,'DIST_NBIN_PR',ier,DBLVAR=DBLE(ns_prof4))
+               CALL write_var_hdf5(qid_gid,'DIST_NBIN_PPHI',ier,DBLVAR=DBLE(ns_prof4))
+               CALL write_var_hdf5(qid_gid,'DIST_NBIN_PZ',ier,DBLVAR=DBLE(ns_prof4))
+               CALL write_var_hdf5(qid_gid,'DIST_NBIN_PPA',ier,DBLVAR=DBLE(ns_prof4))
+               CALL write_var_hdf5(qid_gid,'DIST_NBIN_PPE',ier,DBLVAR=DBLE(ns_prof5))
                CALL h5gclose_f(qid_gid, ier)
                CALL h5gclose_f(options_gid, ier)
                ! Close file
