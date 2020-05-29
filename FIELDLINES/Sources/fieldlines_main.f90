@@ -24,6 +24,9 @@
       USE mpi_sharmem
       USE mpi_params
       USE mpi_inc
+#if defined(LHDF5)
+    USE hdf5
+#endif
 !-----------------------------------------------------------------------
 !     Local Variables
 !          numargs      Number of input arguments
@@ -34,10 +37,11 @@
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       integer                                      :: numargs,i,ier, vmajor, vminor, liblen, nshar
+      integer                                      :: h5major, h5minor, h5rel, h5par
       integer, parameter                           :: arg_len =256
+      character(LEN=MPI_MAX_LIBRARY_VERSION_STRING) :: mpi_lib_name
       character*(arg_len)                          :: arg1
       character*(arg_len),allocatable,dimension(:) :: args
-      character(LEN=MPI_MAX_LIBRARY_VERSION_STRING) :: mpi_lib_name
 !-----------------------------------------------------------------------
 !     Begin Program
 !-----------------------------------------------------------------------
@@ -59,6 +63,15 @@
       CALL MPI_GET_VERSION(vmajor,vminor,ier)
       CALL MPI_GET_LIBRARY_VERSION(mpi_lib_name,liblen,ier)
       CALL MPI_ERRHANDLER_SET(MPI_COMM_WORLD,MPI_ERRORS_RETURN,ierr_mpi)
+#endif
+
+#if defined(LHDF5)
+    CALL H5GET_LIBVERSION_F(h5major, h5minor, h5rel, ier)
+    h5par = 0
+#endif
+
+#if defined(HDF5_PAR)
+    h5par = 1
 #endif
 
       ! Intialize variables
@@ -197,6 +210,14 @@
          END DO
          DEALLOCATE(args)
          WRITE(6,'(a,f5.2)') 'FIELDLINES Version ',FIELDLINES_VERSION
+#if defined(LHDF5)
+        IF (h5par > 0) THEN
+           WRITE(6,'(A)')      '-----  HDF5 (Parallel) Parameters  -----'
+        ELSE
+           WRITE(6,'(A)')      '-----  HDF5 Parameters  -----'
+        ENDIF
+        WRITE(6,'(A,I2,2(A,I2.2))')  '   HDF5_version:  ', h5major,'.',h5minor,' release: ',h5rel
+#endif
          WRITE(6,'(A)')      '-----  MPI Parameters  -----'
          WRITE(6,'(A,I2,A,I2.2)')  '   MPI_version:  ', vmajor,'.',vminor
          WRITE(6,'(A,A)')  '   ', TRIM(mpi_lib_name(1:liblen))
