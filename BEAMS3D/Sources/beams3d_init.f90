@@ -18,7 +18,7 @@
       USE beams3d_lines, ONLY: nparticles, epower_prof, ipower_prof, &
                                ndot_prof, j_prof, dist2d_prof, partvmax, &
                                end_state, ns_prof1, ns_prof2, ns_prof3, &
-                               ns_prof4, ns_prof5
+                               ns_prof4, ns_prof5, partpmax
       USE wall_mod
       USE mpi_params
       USE adas_mod_parallel, ONLY: adas_load_tables
@@ -50,6 +50,7 @@
       bcs2=(/-1,-1/)
       bcs3=(/ 0, 0/)
       partvmax = 0.0
+      partpmax = 0.0
       
       ! If we pass a vessel then we want to use it for NBI injection
       lvessel_beam = .FALSE.
@@ -361,6 +362,7 @@
 
       ! Determine maximum particle velocity
       partvmax=MAX(MAXVAL(ABS(vll_start))*6.0/5.0,partvmax)
+      partpmax=MAX(MAXVAL(ABS(mass*vll_start))*6.0/5.0,partpmax)
 
 
       ! Do a reality check
