@@ -13,9 +13,7 @@ using git. The repository is maintained at GitHub.
 Get source code
 ----------
 
-If you want to get access to the source code, please send your GitHub account 
-name to Dr. Caoxiang Zhu (czhu[_at_]pppl[_dot_]gov) with some brief justifications.
-Once you obtained the access, you can visit the GitHub page at https://github.com/PrincetonUniversity/STELLOPT.
+The STELLOPT code is now fully open-sourced with MIT license. You can view the source code at https://github.com/PrincetonUniversity/STELLOPT.
 
 Installation Workflow
 ---------------------
@@ -26,7 +24,7 @@ should be:
 1.  Clone Repository
 2.  Repoint make.inc to the proper SHARE/make\_XXX.inc file (or make
     one if necessary).
-3.  Issue the command make from the root directory.
+3.  Issue the command make from the root directory by running `./build_all`.
 
 Development Workflow
 --------------------
