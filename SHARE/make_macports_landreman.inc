@@ -4,8 +4,7 @@
 #            Define User Specific Output Paths
 #######################################################################
   # Set a default directory if one has not already been defined.
-#  $STELLOPT_HOME ?= $(HOME)/stellopt/bin
-  STELLOPT_HOME = $(HOME)/stellopt/bin
+  STELLOPT_HOME ?= $(STELLOPT_PATH)/bin
 
 
 #######################################################################
@@ -43,7 +42,7 @@
   MPI_COMPILE_FREE = /opt/local/bin/mpif90 -ffree-form \
                      -ffree-line-length-none -ffixed-line-length-none
   MPI_COMPILE_C = gcc -shared -Wl,-no_compact_unwind
-  MPI_LINK = /opt/local/bin/mpif90
+  MPI_LINK = /opt/local/bin/mpif90 -shared
   MPI_RUN = mpiexec
   MPI_RUN_OPTS = -np 4
 #  MPI_RUN_OPTS_SM = -np 16
@@ -110,6 +109,12 @@
   LFFTW3 = F
   FFTW3_INC = 
   FFTW3_LIB = 
+
+#######################################################################
+#            DKES/NEO Options
+#######################################################################
+  LDKES = T
+  LNEO  = T
 
 #######################################################################
 #            GENE Options
