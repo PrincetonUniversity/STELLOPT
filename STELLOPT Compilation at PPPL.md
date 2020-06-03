@@ -86,6 +86,5 @@ compiler.
    module load python/3.6.4
 ```
 
-You will now be able to follow the instructions on the main compilation
-page to compile the code. Please be sure to point your the make.inc at
-SHARE/make\_pppl.inc.
+The PPPL cluster should be automatically detected otherwise
+please set `MACHINE=pppl_gcc` to properly compile the code.

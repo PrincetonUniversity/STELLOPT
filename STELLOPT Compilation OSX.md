@@ -25,9 +25,10 @@ also chosen OpenMPI but the sources could also be built with MPICH.
     <===OSX Version===>
     10.14 Mojave Something appears to be broken in scalapack build (GCC7/GCC8/GCC9)
     <===gccX version===>
-    #  gcc7 : Appears to be working
-    #  gcc8 : Problems with PetSc so no GENE/SFINCS
-    #  gcc9 : Unable to confirm
+    #  gcc7  : Appears to be working
+    #  gcc8  : Problems with PetSc so no GENE/SFINCS
+    #  gcc9  : Problems with PetSc so no GENE/SFINCS
+    #  gcc10 : Not tested 
     sudo port install gccX                   (gccX should be gcc7 or gcc8 or another gcc variant)
     sudo port install openmpi-gccX +fortran
     sudo port select --set mpi openmpi-gccX-fortran
@@ -44,54 +45,19 @@ also chosen OpenMPI but the sources could also be built with MPICH.
     # The following are needed for COILOPT++
     sudo port install silo +gccX -hdf5
     sudo port install gsl +gccX +optimize
-    # The following is for Python support
-    sudo port install python37 +gccX
+    # The following is for Python support (please take note of your python version)
+    sudo port install python38 +gccX
     sudo port select --set python python27
     sudo port select --set python3 python37
-    sudo port install py37-pyqt4 +gccX     (Note there is a weird issue with dbus requireing the port to be force installed)
-    sudo port install py37-matplotlib +dvipng +pyside +qt4 +gccX
-    sudo port install py37-h5py +gcc7 +openmpi
+    sudo port install py38-pyqt4 +gccX     (Note there is a weird issue with dbus requireing the port to be force installed)
+    sudo port install py38-matplotlib +dvipng +pyside +qt4 +tkinter +gccX
+    sudo port install py38-h5py +gccX +openmpi
     # The following are needed for GENE
-    sudo port install petsc +gccX +openmpi +openblas -accelerate +metis +mumps +parmetis +suitesparse +superlu_dist +complex
-    sudo port install slepc +gccX +openmpi +openblas +arpack -accelerate
+    #sudo port install petsc +gccX +openmpi +openblas -accelerate +metis +mumps +parmetis +suitesparse +superlu_dist +complex
+    #sudo port install slepc +gccX +openmpi +openblas +arpack -accelerate
     # NCARG has in issue with ESMF, but you don't need it for STELLOPT just XGTOVMI
     # I placed it here since it builds upon GSL and FFTW-3
     #sudo port install ncarg +gccX +openmpi
-
-    <===gcc8 version===>
-
-    Tested on: 
-    MacBook Pro (Retina, 15-inch, Mid 2015), 2.5 GHz Intel Core i7, 16 GB 1600 MHz DDR3
-    AMD Radeon R9 M370X 2048 MG Intel Iris Pro 1536 MB
-    macOS Mojave, Version 10.14.2
-    ** SEE NOTE ON MOJAVE
-
-    MacPorts installation version: MacPorts-2.5.4-10.14-Mojave 17-35-43-409.pkg
-
-    sudo port install gcc8
-    sudo port install openmpi
-    sudo port install hdf5 +fortran +gcc8 +hl +openmpi
-      (also asks for openmpi-gcc8. say yes.)
-     sudo port select --set mpi openmpi-gcc8-fortran
-    sudo port install netcdf +gcc8 +openmpi 
-    sudo port install netcdf-fortran +gcc8 +openmpi
-    sudo port install pgplot 
-       (C bindings broken in gcc8)
-    sudo port install OpenBLAS +gcc8 
-    sudo port install scalapack +gcc8 +openmpi +openblas
-
-    # NOTE!!!!
-    # COILOPT++, Python support, and GENE support packaged not installed/tested. 
-    # To Do:   Upate for gcc8
-
-    # NOTE2:  the soft-link for mpifort is broken here.  Redirect it to mpifort-openmpi-gcc8 using
-    # sudo rm /opt/local/bin/mpifort
-    # sudo ln -sf /opt/local/bin/mpifort-openmpi-gcc8 /opt/local/bin/mpifort
-    # 
-    # NOTE3: if you run into ld x86-64 architecture linking errors, remove all object / mod files (*.o/*.mod) and recompile.
-
-    # MOJAVE SUPPORT: 
-    OSX MOJAVE does not support universal build architectures (64-bit only). Change the line in /opt/local/macports.conf to x86_64 or bust.  Also to avoid x86_64 linking errors, you must remove all precompiled *.o files before building clean. 
 
 4\. Now the NCARG package broken as of this writing but there\'s a
 workaround. Download the tarball from the

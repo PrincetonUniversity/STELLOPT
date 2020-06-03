@@ -36,8 +36,5 @@ Cobra
 General Notes
 -------------
 
-You will need to repoint the make.inc file in the main directory at the
-appropriate file in SHARE. For example make.inc should point at
-SHARE/make\_cobra.inc to compile on Cobra. Also take care that you
-compile other codes (like GENE, SFINCS, etc.) first before compiling
-STELLOPT.
+The Cobra and Draco clusters are automatically detected
+by the make.inc script.
