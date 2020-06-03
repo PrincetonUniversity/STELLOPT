@@ -5,13 +5,13 @@ CFILE   = '$*''.c'
 F90FILE = '$*''.f90'
 SPATH   = ../Sources
 #Contains list of source files (.o) and dependencies
-DEPLIST = VMEC2000.dep
+DEPLIST = ../VMEC2000.dep
 OBJLIST = ../ObjectList
 
 #Includes source files and dependency list
 include $(DEPLIST)
 include $(OBJLIST)
-VPATH = $(SPATH):$(SPATH)/General:$(SPATH)/Initialization_Cleanup:$(SPATH)/Hessian:$(SPATH)/Splines:$(SPATH)/NESTOR_vacuum:$(SPATH)/Reconstruction:$(SPATH)/TimeStep:$(SPATH)/Input_Output
+VPATH = $(SPATH):$(SPATH)/General:$(SPATH)/Initialization_Cleanup:$(SPATH)/Hessian:$(SPATH)/Splines:$(SPATH)/NESTOR_vacuum:$(SPATH)/TimeStep:$(SPATH)/Input_Output
 
 .SUFFIXES :
 .SUFFIXES : .f .f90 .o

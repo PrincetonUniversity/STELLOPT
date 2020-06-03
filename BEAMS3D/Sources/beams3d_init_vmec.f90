@@ -24,7 +24,7 @@
                                  nte, nne, nti, TE, NE, TI, Vp_spl_s, S_ARR,&
                                  U_ARR, POT_ARR, POT_spl_s, nne, nte, nti, npot, &
                                  ZEFF_spl_s, nzeff, ZEFF_ARR, req_axis, zeq_axis, &
-                                 phiedge_eq
+                                 phiedge_eq, reff_eq
       USE wall_mod, ONLY: wall_load_mn, wall_info,vertex,face
       USE mpi_params
       USE mpi_inc
@@ -35,12 +35,12 @@
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       INTEGER, PARAMETER :: BYTE_8 = SELECTED_INT_KIND (8)
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
       INTEGER(KIND=BYTE_8),ALLOCATABLE :: mnum(:), moffsets(:)
       INTEGER :: numprocs_local, mylocalid, mylocalmaster
       INTEGER :: MPI_COMM_LOCAL
-!DEC$ ENDIF  
-      LOGICAL :: lnyquist
+#endif
+      LOGICAL :: lnyquist, luse_vc, lcreate_wall
       INTEGER(KIND=BYTE_8) :: chunk
       INTEGER :: ier, s, i, j, k, nu, nv, mystart, myend, mnmax_temp, u, v
       INTEGER :: bcs1_s(2)
@@ -56,6 +56,9 @@
 !-----------------------------------------------------------------------
 !     Begin Subroutine
 !-----------------------------------------------------------------------
+      ! Handle what we do
+      luse_vc = (lcoil .and. .not.lplasma_only)
+      lcreate_wall = (lplasma_only .and. .not. lvessel)
 
       ! Divide up Work
       mylocalid = myworkid
@@ -87,6 +90,7 @@
       CALL MPI_BCAST(lasym,1,MPI_LOGICAL, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(lthreed,1,MPI_LOGICAL, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(lwout_opened,1,MPI_LOGICAL, master, MPI_COMM_BEAMS,ierr_mpi)
+      CALL MPI_BCAST(Aminor,1,MPI_DOUBLE_PRECISION, master, MPI_COMM_BEAMS,ierr_mpi)
       IF (myworkid /= master) THEN
          ALLOCATE(vp(ns),phi(ns))
          ALLOCATE(xm(mnmax),xn(mnmax),xm_nyq(mnmax_nyq),xn_nyq(mnmax_nyq))
@@ -110,6 +114,7 @@
          CALL MPI_BCAST(bsupvmns,ns*mnmax_nyq,MPI_DOUBLE_PRECISION, master, MPI_COMM_BEAMS,ierr_mpi)
       END IF
       phiedge_eq = phi(ns)
+      reff_eq = Aminor
 #endif
 
       ! Write info to screen
@@ -127,42 +132,50 @@
          ELSE
             WRITE(6,'(A,F7.3,A,F7.3,A)') '   BETA    = ',betatot,';  I  = ',Itor,' [A]'
          END IF
+         WRITE(6,'(A,F7.3,A)')        '   AMINOR  = ',reff_eq,' [m]'
+         WRITE(6,'(A,F7.3,A)')        '   PHIEDGE = ',phiedge_eq,' [Wb]'
          WRITE(6,'(A,F7.3,A)')        '   VOLUME  = ',Volume,' [m^3]'
       END IF
 
       ! Load the Vp Spline if using the beams
+      ! Note in VMEC dV/ds = \int\int sqrt(g) dtheta dphi
+      ! However VMEC integrates over u and v
+      ! So Vp is missing a factor of 4*pi*pi
+      ! Also is on the half grid
+      vp(1) = 1.5*vp(2) - 0.5*vp(3) ! Both on half grid
+      vp(2:ns-1) = 0.5*(vp(2:ns-1)+vp(3:ns)) ! Average to full grid
+      vp(ns) = 2*vp(ns) - vp(ns-1) ! ns on half grid, ns-1 on full grid
+      vp = vp*pi2*pi2
       bcs1_s=(/ 0, 0 /)
       CALL EZspline_init(Vp_spl_s,ns,bcs1_s,ier)
       IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init_vmec',ier)
       Vp_spl_s%isHermite   = 1
-      vp = 4*pi*pi*vp/(ns-1)
       CALL EZspline_setup(Vp_spl_s,vp(1:ns),ier,EXACT_DIM=.true.)
       IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init_vmec',ier)
 
-      ! Calculate the axis values
-      chunk = FLOOR(REAL(nphi) / REAL(numprocs_local))
-      mystart = mylocalid*chunk + 1
-      myend = mystart + chunk - 1
-      DO i = mystart, myend
-         req_axis(i) = 0
-         zeq_axis(i) = 0
-         DO u = 1, mnmax
-            req_axis(i) = req_axis(i)+rmnc(u,1)*COS(xn(u)*phiaxis(i))
-            zeq_axis(i) = zeq_axis(i)+zmns(u,1)*SIN(xn(u)*phiaxis(i))
-         END DO
-      END DO
-      IF (lasym) THEN
-         DO i = mystart, myend
+      ! Calculate the axis values (need negative since we haven't flipped Kernel yet)
+      IF (mylocalid == master) THEN
+         DO i = 1, nphi
+            req_axis(i) = 0
+            zeq_axis(i) = 0
             DO u = 1, mnmax
-               req_axis(i) = req_axis(i)+rmns(u,1)*SIN(xn(u)*phiaxis(i))
-               zeq_axis(i) = zeq_axis(i)+zmnc(u,1)*COS(xn(u)*phiaxis(i))
+               req_axis(i) = req_axis(i)+rmnc(u,1)*COS(-xn(u)*phiaxis(i))
+               zeq_axis(i) = zeq_axis(i)+zmns(u,1)*SIN(-xn(u)*phiaxis(i))
             END DO
          END DO
+         IF (lasym) THEN
+            DO i = 1, nphi
+               DO u = 1, mnmax
+                  req_axis(i) = req_axis(i)+rmns(u,1)*SIN(-xn(u)*phiaxis(i))
+                  zeq_axis(i) = zeq_axis(i)+zmnc(u,1)*COS(-xn(u)*phiaxis(i))
+               END DO
+            END DO
+         END IF
       END IF
 
 
-      ! If we ask for a plasma-only run and don't provide a vessel then make one.
-      IF (lplasma_only .and. .not.lvessel) THEN
+      ! If we ask for a plasma-only run and do not provide a vessel then make one.
+      IF (lcreate_wall) THEN
          lvessel = .TRUE.  ! Do this so the other parts of the code know there is a vessel
          k = ns
          CALL wall_load_mn(DBLE(rmnc(1:mnmax,k)),DBLE(zmns(1:mnmax,k)),DBLE(xm),-DBLE(xn),mnmax,120,120,COMM=MPI_COMM_BEAMS)
@@ -171,7 +184,7 @@
       END IF
 
       ! Initialize Virtual Casing
-      IF (.not. lplasma_only) THEN
+      IF (luse_vc) THEN
          nu = 8 * mpol + 1 
          nu = 2 ** CEILING(log(DBLE(nu))/log(2.0_rprec))
          nv = 8 * ntor + 1
@@ -304,7 +317,7 @@
          sflx = 0.0
          ! The GetBcyl Routine returns -3 if cyl2flx thinks s>1
          ! however, if cyl2flx fails to converge then s may be
-         ! greater than 1 but cyl2flux won't throw the -3 code.
+         ! greater than 1 but cyl2flux will not throw the -3 code.
          ! In this case GetBcyl returns br,bphi,bz = 0.  So
          ! bphi == 0 or ier ==-3 indicate that a point is
          ! outside the VMEC domain.
@@ -312,7 +325,7 @@
                       br, bphi, bz, SFLX=sflx,UFLX=uflx,info=ier)
          IF (ier == 0 .and. bphi /= 0) THEN ! We have field data
             ! Save Grid data
-            S_ARR(i,j,k) = sflx
+            S_ARR(i,j,k) = MAX(sflx,0.0)
             IF (uflx<0)  uflx = uflx+pi2
             U_ARR(i,j,k) = uflx
             ! Handle equilibrium data
@@ -320,7 +333,7 @@
                B_R(i,j,k)   = br
                B_PHI(i,j,k) = bphi
                B_Z(i,j,k)   = bz
-            ELSE IF (lplasma_only) THEN  ! Overwrite data outside
+            ELSE IF (.not. luse_vc) THEN  ! Overwrite data outside
                B_R(i,j,k)   = br
                B_PHI(i,j,k) = bphi
                B_Z(i,j,k)   = bz
@@ -333,13 +346,13 @@
                IF (npot > 0) CALL EZspline_interp(POT_spl_s,sflx,POT_ARR(i,j,k),ier)
                IF (nzeff > 0) CALL EZspline_interp(ZEFF_spl_s,sflx,ZEFF_ARR(i,j,k),ier)
             END IF
-         ELSE IF (lplasma_only) THEN
+         ELSE IF (.not. luse_vc) THEN
             B_R(i,j,k)   = 0
             B_PHI(i,j,k) = 1
             B_Z(i,j,k)   = 0
          END IF
-         ! virtual casing
-         IF (.not. lplasma_only .and. sflx > 1) THEN
+         ! Virtual Casing
+         IF (luse_vc .and. sflx > 1) THEN
             xaxis_vc = raxis_g(i)*cos(phiaxis(j))
             yaxis_vc = raxis_g(i)*sin(phiaxis(j))
             zaxis_vc = zaxis_g(k)
@@ -378,7 +391,7 @@
 #endif
       
       ! Free variables
-      IF (.not. lplasma_only) CALL free_virtual_casing(MPI_COMM_BEAMS)
+      IF (luse_vc) CALL free_virtual_casing(MPI_COMM_BEAMS)
       IF (myworkid == master) THEN
          CALL read_wout_deallocate
       ELSE

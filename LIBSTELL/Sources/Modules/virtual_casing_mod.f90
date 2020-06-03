@@ -596,16 +596,16 @@
             kz_spl%x2(v) = DBLE(v-1)/DBLE(nvp)
             bn_spl%x2(v) = DBLE(v-1)/DBLE(nvp)
          END DO
-         x_spl%isHermite  = 1
-         y_spl%isHermite  = 1
-         z_spl%isHermite  = 1
-         nx_spl%isHermite = 1
-         ny_spl%isHermite = 1
-         nz_spl%isHermite = 1
-         kx_spl%isHermite = 1
-         ky_spl%isHermite = 1
-         kz_spl%isHermite = 1
-         bn_spl%isHermite = 1
+         x_spl%isHermite  = 0
+         y_spl%isHermite  = 0
+         z_spl%isHermite  = 0
+         nx_spl%isHermite = 0
+         ny_spl%isHermite = 0
+         nz_spl%isHermite = 0
+         kx_spl%isHermite = 0
+         ky_spl%isHermite = 0
+         kz_spl%isHermite = 0
+         bn_spl%isHermite = 0
          CALL EZspline_setup(x_spl,xreal,ier)
          CALL EZspline_setup(y_spl,yreal,ier)
          CALL EZspline_setup(z_spl,zreal,ier)
@@ -667,7 +667,9 @@
                                                    snr,snphi,snz,&
                                                    brreal,bphireal,bzreal,comm)
       USE mpi_sharmem
+#if defined(MPI_OPT)
       USE mpi
+#endif
       USE EZspline_obj
       USE EZspline
       IMPLICIT NONE
@@ -1465,50 +1467,38 @@
       DOUBLE PRECISION, INTENT(out) :: f(nfun)
       ! LOCAL VARIABLES
       INTEGER :: ier
-      DOUBLE PRECISION :: bn, bx, by, bz , xs, ys, zs, gf, gf3, nx, ny, nz, ax, ay, az
+      DOUBLE PRECISION :: bn, xs, ys, zs, gf, gf3, nx, ny, &
+                          nz, kx, ky, kz
       INTEGER :: i,j
       REAL*8 :: xparam, yparam, hx, hy, hxi, hyi
-      REAL*8 :: fval(1)
-      INTEGER, parameter :: ict(4)=(/1,0,0,0/)
+      REAL*8 :: xpi, xp2, xpi2, ypi, yp2, ypi2
+!      REAL*8 :: ax, axbar, bx, bxbar, ay, aybar, by, bybar
+      REAL*8 :: cx,cxi,hx2,cy,cyi,hy2 ! Non Hermite quantities
       ! BEGIN SUBROUTINE
-
-      xs = zero; ys = zero; zs = zero
-      !CALL EZspline_interp(x_spl,vec(1),vec(2),xs,ier)
-      !CALL EZspline_interp(y_spl,vec(1),vec(2),ys,ier)
-      !CALL EZspline_interp(z_spl,vec(1),vec(2),zs,ier)
-      !CALL EZspline_interp(kx_spl,vec(1),vec(2),ax,ier)
-      !CALL EZspline_interp(ky_spl,vec(1),vec(2),ay,ier)
-      !CALL EZspline_interp(kz_spl,vec(1),vec(2),az,ier)
-      !CALL EZspline_interp(bn_spl,vec(1),vec(2),bn,ier)
       CALL lookupgrid2d(vec(1),vec(2),i,j,hx,hy,hxi,hyi,xparam,yparam)
-      CALL r8herm2fcn(ict, 1, 1, fval, i, j, xparam, yparam, &
-                      hx, hxi, hy, hyi, X3D(1,1,1), nx1, nx2)
-      xs = fval(1)
-      CALL r8herm2fcn(ict, 1, 1, fval, i, j, xparam, yparam, &
-                      hx, hxi, hy, hyi, Y3D(1,1,1), nx1, nx2)
-      ys = fval(1)
-      CALL r8herm2fcn(ict, 1, 1, fval, i, j, xparam, yparam, &
-                      hx, hxi, hy, hyi, Z3D(1,1,1), nx1, nx2)
-      zs = fval(1)
-      CALL r8herm2fcn(ict, 1, 1, fval, i, j, xparam, yparam, &
-                      hx, hxi, hy, hyi, KX3D(1,1,1), nx1, nx2)
-      ax = fval(1)
-      CALL r8herm2fcn(ict, 1, 1, fval, i, j, xparam, yparam, &
-                      hx, hxi, hy, hyi, KY3D(1,1,1), nx1, nx2)
-      ay = fval(1)
-      CALL r8herm2fcn(ict, 1, 1, fval, i, j, xparam, yparam, &
-                      hx, hxi, hy, hyi, KZ3D(1,1,1), nx1, nx2)
-      az = fval(1)
-      CALL r8herm2fcn(ict, 1, 1, fval, i, j, xparam, yparam, &
-                      hx, hxi, hy, hyi, BN3D(1,1,1), nx1, nx2)
-      bn = fval(1)
+      xpi  = one - xparam;    ypi  = one - yparam
+      xp2  = xparam * xparam; yp2  = yparam * yparam
+      xpi2 = xpi * xpi;       ypi2 = ypi * ypi
+!      ax    = xp2 * (3 - 2 * xparam); ay    = yp2 * (3 - 2 * yparam)
+!      axbar = one - ax;               aybar = one - ay
+!      bx    = -xp2 * xpi;             by    = -yp2 * ypi
+!      bxbar = xpi2 * xparam;          bybar = ypi2 * yparam
+      ! non Hermite Quatitites
+      cx = xparam*(xp2-1); cxi = xpi*(xpi2-1); hx2 = hx*hx
+      cy = yparam*(yp2-1); cyi = ypi*(ypi2-1); hy2 = hy*hy
+      xs  =  evalbi2D(xparam, xpi, xp2, xpi2, cx, cxi, hx2, yparam, ypi, yp2, ypi2, cy, cyi, hy2, nx1, nx2,  X3D, i, j)
+      ys  =  evalbi2D(xparam, xpi, xp2, xpi2, cx, cxi, hx2, yparam, ypi, yp2, ypi2, cy, cyi, hy2, nx1, nx2,  Y3D, i, j)
+      zs  =  evalbi2D(xparam, xpi, xp2, xpi2, cx, cxi, hx2, yparam, ypi, yp2, ypi2, cy, cyi, hy2, nx1, nx2,  Z3D, i, j)
+      kx  =  evalbi2D(xparam, xpi, xp2, xpi2, cx, cxi, hx2, yparam, ypi, yp2, ypi2, cy, cyi, hy2, nx1, nx2, KX3D, i, j)
+      ky  =  evalbi2D(xparam, xpi, xp2, xpi2, cx, cxi, hx2, yparam, ypi, yp2, ypi2, cy, cyi, hy2, nx1, nx2, KY3D, i, j)
+      kz  =  evalbi2D(xparam, xpi, xp2, xpi2, cx, cxi, hx2, yparam, ypi, yp2, ypi2, cy, cyi, hy2, nx1, nx2, KZ3D, i, j)
+      bn  =  evalbi2D(xparam, xpi, xp2, xpi2, cx, cxi, hx2, yparam, ypi, yp2, ypi2, cy, cyi, hy2, nx1, nx2, BN3D, i, j)
 
-      !bn = zero
       gf   = one/DSQRT((x_nag-xs)*(x_nag-xs)+(y_nag-ys)*(y_nag-ys)+(z_nag-zs)*(z_nag-zs))
-      gf3  = gf*gf*gf
-      f(1) = norm_nag*(ay*(z_nag-zs)-az*(y_nag-ys)+bn*(x_nag-xs))*gf3
-      f(2) = norm_nag*(az*(x_nag-xs)-ax*(z_nag-zs)+bn*(y_nag-ys))*gf3
-      f(3) = norm_nag*(ax*(y_nag-ys)-ay*(x_nag-xs)+bn*(z_nag-zs))*gf3
+      gf3  = norm_nag*gf*gf*gf
+      f(1) = (ky*(z_nag-zs)-kz*(y_nag-ys)+bn*(x_nag-xs))*gf3
+      f(2) = (kz*(x_nag-xs)-kx*(z_nag-zs)+bn*(y_nag-ys))*gf3
+      f(3) = (kx*(y_nag-ys)-ky*(x_nag-xs)+bn*(z_nag-zs))*gf3
       !WRITE(427,*) vec(1),vec(2),xs,ys,zs
       RETURN
       ! END SUBROUTINE
@@ -1724,61 +1714,39 @@
       DOUBLE PRECISION, INTENT(out) :: f(nfun)
       ! LOCAL VARIABLES
       INTEGER :: ier
-      DOUBLE PRECISION :: bn, bx, by, bz , xs, ys, zs, gf, nx, ny, nz, ax, ay, az
+      DOUBLE PRECISION :: bn, xs, ys, zs, gf, nx, ny, nz, kx, ky, kz
       INTEGER :: i,j
       REAL*8 :: xparam, yparam, hx, hy, hxi, hyi
-      REAL*8 :: fval(1)
-      INTEGER, parameter :: ict(4)=(/1,0,0,0/)
+      REAL*8 :: xpi, xp2, xpi2, ypi, yp2, ypi2
+!      REAL*8 :: ax, axbar, bx, bxbar, ay, aybar, by, bybar
+      REAL*8 :: cx,cxi,hx2,cy,cyi,hy2 ! Non Hermite quantities
       ! BEGIN SUBROUTINE
-
-      xs = zero; ys = zero; zs = zero; ax = zero; ay = zero; az = zero
-      nx = zero; ny = zero; nz = zero; bn = zero
-      !CALL EZspline_interp(x_spl,vec(1),vec(2),xs,ier)
-      !CALL EZspline_interp(y_spl,vec(1),vec(2),ys,ier)
-      !CALL EZspline_interp(z_spl,vec(1),vec(2),zs,ier)
-      !CALL EZspline_interp(kx_spl,vec(1),vec(2),ax,ier)
-      !CALL EZspline_interp(ky_spl,vec(1),vec(2),ay,ier)
-      !CALL EZspline_interp(kz_spl,vec(1),vec(2),az,ier)
-      !CALL EZspline_interp(nx_spl,vec(1),vec(2),nx,ier)
-      !CALL EZspline_interp(ny_spl,vec(1),vec(2),ny,ier)
-      !CALL EZspline_interp(nz_spl,vec(1),vec(2),nz,ier)
-      !CALL EZspline_interp(bn_spl,vec(1),vec(2),bn,ier)
       CALL lookupgrid2d(vec(1),vec(2),i,j,hx,hy,hxi,hyi,xparam,yparam)
-      CALL r8herm2fcn(ict, 1, 1, fval, i, j, xparam, yparam, &
-                      hx, hxi, hy, hyi, X3D(1,1,1), nx1, nx2)
-      xs = fval(1)
-      CALL r8herm2fcn(ict, 1, 1, fval, i, j, xparam, yparam, &
-                      hx, hxi, hy, hyi, Y3D(1,1,1), nx1, nx2)
-      ys = fval(1)
-      CALL r8herm2fcn(ict, 1, 1, fval, i, j, xparam, yparam, &
-                      hx, hxi, hy, hyi, Z3D(1,1,1), nx1, nx2)
-      zs = fval(1)
-      CALL r8herm2fcn(ict, 1, 1, fval, i, j, xparam, yparam, &
-                      hx, hxi, hy, hyi, KX3D(1,1,1), nx1, nx2)
-      ax = fval(1)
-      CALL r8herm2fcn(ict, 1, 1, fval, i, j, xparam, yparam, &
-                      hx, hxi, hy, hyi, KY3D(1,1,1), nx1, nx2)
-      ay = fval(1)
-      CALL r8herm2fcn(ict, 1, 1, fval, i, j, xparam, yparam, &
-                      hx, hxi, hy, hyi, KZ3D(1,1,1), nx1, nx2)
-      az = fval(1)
-      CALL r8herm2fcn(ict, 1, 1, fval, i, j, xparam, yparam, &
-                      hx, hxi, hy, hyi, NX3D(1,1,1), nx1, nx2)
-      nx = fval(1)
-      CALL r8herm2fcn(ict, 1, 1, fval, i, j, xparam, yparam, &
-                      hx, hxi, hy, hyi, NY3D(1,1,1), nx1, nx2)
-      ny = fval(1)
-      CALL r8herm2fcn(ict, 1, 1, fval, i, j, xparam, yparam, &
-                      hx, hxi, hy, hyi, NZ3D(1,1,1), nx1, nx2)
-      nz = fval(1)
-      CALL r8herm2fcn(ict, 1, 1, fval, i, j, xparam, yparam, &
-                      hx, hxi, hy, hyi, BN3D(1,1,1), nx1, nx2)
-      bn = fval(1)
+      xpi  = one - xparam;    ypi  = one - yparam
+      xp2  = xparam * xparam; yp2  = yparam * yparam
+      xpi2 = xpi * xpi;       ypi2 = ypi * ypi
+!      ax    = xp2 * (3 - 2 * xparam); ay    = yp2 * (3 - 2 * yparam)
+!      axbar = one - ax;               aybar = one - ay
+!      bx    = -xp2 * xpi;             by    = -yp2 * ypi
+!      bxbar = xpi2 * xparam;          bybar = ypi2 * yparam
+      ! non Hermite Quatitites
+      cx = xparam*(xp2-1); cxi = xpi*(xpi2-1); hx2 = hx*hx
+      cy = yparam*(yp2-1); cyi = ypi*(ypi2-1); hy2 = hy*hy
+      xs  =  evalbi2D(xparam, xpi, xp2, xpi2, cx, cxi, hx2, yparam, ypi, yp2, ypi2, cy, cyi, hy2, nx1, nx2,  X3D, i, j)
+      ys  =  evalbi2D(xparam, xpi, xp2, xpi2, cx, cxi, hx2, yparam, ypi, yp2, ypi2, cy, cyi, hy2, nx1, nx2,  Y3D, i, j)
+      zs  =  evalbi2D(xparam, xpi, xp2, xpi2, cx, cxi, hx2, yparam, ypi, yp2, ypi2, cy, cyi, hy2, nx1, nx2,  Z3D, i, j)
+      kx  =  evalbi2D(xparam, xpi, xp2, xpi2, cx, cxi, hx2, yparam, ypi, yp2, ypi2, cy, cyi, hy2, nx1, nx2, KX3D, i, j)
+      ky  =  evalbi2D(xparam, xpi, xp2, xpi2, cx, cxi, hx2, yparam, ypi, yp2, ypi2, cy, cyi, hy2, nx1, nx2, KY3D, i, j)
+      kz  =  evalbi2D(xparam, xpi, xp2, xpi2, cx, cxi, hx2, yparam, ypi, yp2, ypi2, cy, cyi, hy2, nx1, nx2, KZ3D, i, j)
+      nx  =  evalbi2D(xparam, xpi, xp2, xpi2, cx, cxi, hx2, yparam, ypi, yp2, ypi2, cy, cyi, hy2, nx1, nx2, NX3D, i, j)
+      ny  =  evalbi2D(xparam, xpi, xp2, xpi2, cx, cxi, hx2, yparam, ypi, yp2, ypi2, cy, cyi, hy2, nx1, nx2, NY3D, i, j)
+      nz  =  evalbi2D(xparam, xpi, xp2, xpi2, cx, cxi, hx2, yparam, ypi, yp2, ypi2, cy, cyi, hy2, nx1, nx2, NZ3D, i, j)
+      bn  =  evalbi2D(xparam, xpi, xp2, xpi2, cx, cxi, hx2, yparam, ypi, yp2, ypi2, cy, cyi, hy2, nx1, nx2, BN3D, i, j)
 
-      gf   = one/DSQRT((x_nag-xs)*(x_nag-xs)+(y_nag-ys)*(y_nag-ys)+(z_nag-zs)*(z_nag-zs))
-      f(1) = norm_nag*(ax+bn*nx)*gf
-      f(2) = norm_nag*(ay+bn*ny)*gf
-      f(3) = norm_nag*(az+bn*nz)*gf    
+      gf   = norm_nag/DSQRT((x_nag-xs)*(x_nag-xs)+(y_nag-ys)*(y_nag-ys)+(z_nag-zs)*(z_nag-zs))
+      f(1) = (kx+bn*nx)*gf
+      f(2) = (ky+bn*ny)*gf
+      f(3) = (kz+bn*nz)*gf    
       RETURN
       ! END SUBROUTINE
       END SUBROUTINE funsub_nag_a
@@ -2099,12 +2067,12 @@
          jy3d_spl%x2=xv
          jz3d_spl%x2=xv
          ! default [0 1] x3
-         x3d_spl%isHermite = 1
-         y3d_spl%isHermite = 1
-         z3d_spl%isHermite = 1
-         jx3d_spl%isHermite = 1
-         jy3d_spl%isHermite = 1
-         jz3d_spl%isHermite = 1
+         x3d_spl%isHermite = 0
+         y3d_spl%isHermite = 0
+         z3d_spl%isHermite = 0
+         jx3d_spl%isHermite = 0
+         jy3d_spl%isHermite = 0
+         jz3d_spl%isHermite = 0
          CALL EZspline_setup(x3d_spl,x_temp,ier)
          CALL EZspline_setup(y3d_spl,y_temp,ier)
          CALL EZspline_setup(z3d_spl,z_temp,ier)
@@ -2214,46 +2182,80 @@
       DOUBLE PRECISION, INTENT(out) :: f(nfun)
       ! LOCAL VARIABLES
       INTEGER :: ier
-      DOUBLE PRECISION :: ax, ay, az , xs, ys, zs, gf, nx, ny, nz
+      DOUBLE PRECISION :: kx, ky, kz , xs, ys, zs, gf, nx, ny, nz
       INTEGER :: i,j,k
       REAL*8 :: xparam, yparam, zparam, hx, hy, hz, hxi, hyi, hzi
-      REAL*8 :: fval(1)
-      INTEGER, parameter :: ict(8)=(/1,0,0,0,0,0,0,0/)
+      REAL*8 :: xpi, xp2, xpi2, ypi, yp2, ypi2, zpi, zp2, zpi2
+!      REAL*8 :: ax, axbar, bx, bxbar, &
+!                ay, aybar, by, bybar, &
+!                az, azbar, bz, bzbar
+      REAL*8 :: cx,cxi,hx2,cy,cyi,hy2,cz,czi,hz2 ! Non Hermite quantities
       ! BEGIN SUBROUTINE
-
-      xs = zero; ys = zero; zs = zero
-      ax = zero; ay = zero; az = zero
-      !CALL EZspline_interp(x3d_spl,vec(1),vec(2),vec(3),xs,ier)
-      !CALL EZspline_interp(y3d_spl,vec(1),vec(2),vec(3),ys,ier)
-      !CALL EZspline_interp(z3d_spl,vec(1),vec(2),vec(3),zs,ier)
-      !CALL EZspline_interp(jx3d_spl,vec(1),vec(2),vec(3),ax,ier)
-      !CALL EZspline_interp(jy3d_spl,vec(1),vec(2),vec(3),ay,ier)
-      !CALL EZspline_interp(jz3d_spl,vec(1),vec(2),vec(3),az,ier)
       CALL lookupgrid3d(vec(1),vec(2),vec(3),i,j,k,hx,hy,hz,hxi,hyi,hzi,xparam,yparam,zparam)
-      CALL r8herm3fcn(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
-                      hx, hxi, hy, hyi, hz, hzi, X4D(1,1,1,1), nx1, nx2, nx3)
-      xs = fval(1)
-      CALL r8herm3fcn(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
-                      hx, hxi, hy, hyi, hz, hzi, Y4D(1,1,1,1), nx1, nx2, nx3)
-      ys = fval(1)
-      CALL r8herm3fcn(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
-                      hx, hxi, hy, hyi, hz, hzi, Z4D(1,1,1,1), nx1, nx2, nx3)
-      zs = fval(1)
-      CALL r8herm3fcn(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
-                      hx, hxi, hy, hyi, hz, hzi, JX4D(1,1,1,1), nx1, nx2, nx3)
-      ax = fval(1)
-      CALL r8herm3fcn(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
-                      hx, hxi, hy, hyi, hz, hzi, JY4D(1,1,1,1), nx1, nx2, nx3)
-      ay = fval(1)
-      CALL r8herm3fcn(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
-                      hx, hxi, hy, hyi, hz, hzi, JZ4D(1,1,1,1), nx1, nx2, nx3)
-      az = fval(1)
+      xpi  = one - xparam;    ypi  = one - yparam;    zpi  = one - zparam
+      xp2  = xparam * xparam; yp2  = yparam * yparam; zp2  = zparam * zparam
+      xpi2 = xpi * xpi;       ypi2 = ypi * ypi;       zpi2 = zpi * zpi
+!      ax    = xp2 * (3 - 2 * xparam); ay    = yp2 * (3 - 2 * yparam); az    = zp2 * (3 - 2 * zparam)
+!      axbar = one - ax;               aybar = one - ay;               azbar = one - az
+!      bx    = -xp2 * xpi;             by    = -yp2 * ypi;             bz    = -zp2 * zpi
+!      bxbar = xpi2 * xparam;          bybar = ypi2 * yparam;          bzbar = zpi2 * zparam
+      ! non Hermite Quatitites
+      cx = xparam*(xp2-1); cxi = xpi*(xpi2-1); hx2 = hx*hx
+      cy = yparam*(yp2-1); cyi = ypi*(ypi2-1); hy2 = hy*hy
+      cy = zparam*(zp2-1); czi = zpi*(zpi2-1); hz2 = hz*hz
+      xs  =  evaltri3D(xparam, xpi, xp2, xpi2, cx, cxi, hx2, &
+                       yparam, ypi, yp2, ypi2, cy, cyi, hy2, &
+                       zparam, zpi, zp2, zpi2, cz, czi, hz2, &
+                       nx1, nx2, nx3, X4D, i, j, k)
+      ys  =  evaltri3D(xparam, xpi, xp2, xpi2, cx, cxi, hx2, &
+                       yparam, ypi, yp2, ypi2, cy, cyi, hy2, &
+                       zparam, zpi, zp2, zpi2, cz, czi, hz2, &
+                       nx1, nx2, nx3, Y4D, i, j, k)
+      zs  =  evaltri3D(xparam, xpi, xp2, xpi2, cx, cxi, hx2, &
+                       yparam, ypi, yp2, ypi2, cy, cyi, hy2, &
+                       zparam, zpi, zp2, zpi2, cz, czi, hz2, &
+                       nx1, nx2, nx3, Z4D, i, j, k)
+      kx  =  evaltri3D(xparam, xpi, xp2, xpi2, cx, cxi, hx2, &
+                       yparam, ypi, yp2, ypi2, cy, cyi, hy2, &
+                       zparam, zpi, zp2, zpi2, cz, czi, hz2, &
+                       nx1, nx2, nx3, JX4D, i, j, k)
+      ky  =  evaltri3D(xparam, xpi, xp2, xpi2, cx, cxi, hx2, &
+                       yparam, ypi, yp2, ypi2, cy, cyi, hy2, &
+                       zparam, zpi, zp2, zpi2, cz, czi, hz2, &
+                       nx1, nx2, nx3, JY4D, i, j, k)
+      kz  =  evaltri3D(xparam, xpi, xp2, xpi2, cx, cxi, hx2, &
+                       yparam, ypi, yp2, ypi2, cy, cyi, hy2, &
+                       zparam, zpi, zp2, zpi2, cz, czi, hz2, &
+                       nx1, nx2, nx3, JZ4D, i, j, k)
+!      xs  =  evalch3D(ax, axbar, bx, bxbar, hx, &
+!                      ay, aybar, by, bybar, hy, &
+!                      az, azbar, bz, bzbar, hz, &
+!                      nx1, nx2, nx3, X4D, i, j, k)
+!      ys  =  evalch3D(ax, axbar, bx, bxbar, hx, &
+!                      ay, aybar, by, bybar, hy, &
+!                      az, azbar, bz, bzbar, hz, &
+!                      nx1, nx2, nx3, Y4D, i, j, k)
+!      zs  =  evalch3D(ax, axbar, bx, bxbar, hx, &
+!                      ay, aybar, by, bybar, hy, &
+!                      az, azbar, bz, bzbar, hz, &
+!                      nx1, nx2, nx3, Z4D, i, j, k)
+!      kx  =  evalch3D(ax, axbar, bx, bxbar, hx, &
+!                      ay, aybar, by, bybar, hy, &
+!                      az, azbar, bz, bzbar, hz, &
+!                      nx1, nx2, nx3, JX4D, i, j, k)
+!      ky  =  evalch3D(ax, axbar, bx, bxbar, hx, &
+!                      ay, aybar, by, bybar, hy, &
+!                      az, azbar, bz, bzbar, hz, &
+!                      nx1, nx2, nx3, JY4D, i, j, k)
+!      kz  =  evalch3D(ax, axbar, bx, bxbar, hx, &
+!                      ay, aybar, by, bybar, hy, &
+!                      az, azbar, bz, bzbar, hz, &
+!                      nx1, nx2, nx3, JZ4D, i, j, k)
 
-      gf   = one/DSQRT((x_nag-xs)*(x_nag-xs)+(y_nag-ys)*(y_nag-ys)+(z_nag-zs)*(z_nag-zs))
-      !PRINT *,xs,ys,zs,ax,ay,ax,gf
-      f(1) = norm_3d*ax*gf
-      f(2) = norm_3d*ay*gf
-      f(3) = norm_3d*az*gf    
+      gf   = norm_3d/DSQRT((x_nag-xs)*(x_nag-xs)+(y_nag-ys)*(y_nag-ys)+(z_nag-zs)*(z_nag-zs))
+      f(1) = kx*gf
+      f(2) = ky*gf
+      f(3) = kz*gf    
       RETURN
       ! END SUBROUTINE
       END SUBROUTINE funsub_nag_a3d
@@ -2269,46 +2271,81 @@
       DOUBLE PRECISION, INTENT(out) :: f(nfun)
       ! LOCAL VARIABLES
       INTEGER :: ier
-      DOUBLE PRECISION :: bn, ax, ay, az , xs, ys, zs, gf, gf3
+      DOUBLE PRECISION :: bn, kx, ky, kz , xs, ys, zs, gf, gf3
       INTEGER :: i,j,k
       REAL*8 :: xparam, yparam, zparam, hx, hy, hz, hxi, hyi, hzi
-      REAL*8 :: fval(1)
-      INTEGER, parameter :: ict(8)=(/1,0,0,0,0,0,0,0/)
+      REAL*8 :: xpi, xp2, xpi2, ypi, yp2, ypi2, zpi, zp2, zpi2
+!      REAL*8 :: ax, axbar, bx, bxbar, &
+!                ay, aybar, by, bybar, &
+!                az, azbar, bz, bzbar
+      REAL*8 :: cx,cxi,hx2,cy,cyi,hy2,cz,czi,hz2 ! Non Hermite quantities
       ! BEGIN SUBROUTINE
-
-      xs = zero; ys = zero; zs = zero
-      ax = zero; ay = zero; az = zero
-      !CALL EZspline_interp(x3d_spl,vec(1),vec(2),vec(3),xs,ier)
-      !CALL EZspline_interp(y3d_spl,vec(1),vec(2),vec(3),ys,ier)
-      !CALL EZspline_interp(z3d_spl,vec(1),vec(2),vec(3),zs,ier)
-      !CALL EZspline_interp(jx3d_spl,vec(1),vec(2),vec(3),ax,ier)
-      !CALL EZspline_interp(jy3d_spl,vec(1),vec(2),vec(3),ay,ier)
-      !CALL EZspline_interp(jz3d_spl,vec(1),vec(2),vec(3),az,ier)
       CALL lookupgrid3d(vec(1),vec(2),vec(3),i,j,k,hx,hy,hz,hxi,hyi,hzi,xparam,yparam,zparam)
-      CALL r8herm3fcn(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
-                      hx, hxi, hy, hyi, hz, hzi, X4D(1,1,1,1), nx1, nx2, nx3)
-      xs = fval(1)
-      CALL r8herm3fcn(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
-                      hx, hxi, hy, hyi, hz, hzi, Y4D(1,1,1,1), nx1, nx2, nx3)
-      ys = fval(1)
-      CALL r8herm3fcn(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
-                      hx, hxi, hy, hyi, hz, hzi, Z4D(1,1,1,1), nx1, nx2, nx3)
-      zs = fval(1)
-      CALL r8herm3fcn(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
-                      hx, hxi, hy, hyi, hz, hzi, JX4D(1,1,1,1), nx1, nx2, nx3)
-      ax = fval(1)
-      CALL r8herm3fcn(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
-                      hx, hxi, hy, hyi, hz, hzi, JY4D(1,1,1,1), nx1, nx2, nx3)
-      ay = fval(1)
-      CALL r8herm3fcn(ict, 1, 1, fval, i, j, k, xparam, yparam, zparam, &
-                      hx, hxi, hy, hyi, hz, hzi, JZ4D(1,1,1,1), nx1, nx2, nx3)
-      az = fval(1)
+      xpi  = one - xparam;    ypi  = one - yparam;    zpi  = one - zparam
+      xp2  = xparam * xparam; yp2  = yparam * yparam; zp2  = zparam * zparam
+      xpi2 = xpi * xpi;       ypi2 = ypi * ypi;       zpi2 = zpi * zpi
+!      ax    = xp2 * (3 - 2 * xparam); ay    = yp2 * (3 - 2 * yparam); az    = zp2 * (3 - 2 * zparam)
+!      axbar = one - ax;               aybar = one - ay;               azbar = one - az
+!      bx    = -xp2 * xpi;             by    = -yp2 * ypi;             bz    = -zp2 * zpi
+!      bxbar = xpi2 * xparam;          bybar = ypi2 * yparam;          bzbar = zpi2 * zparam
+      ! non Hermite Quatitites
+      cx = xparam*(xp2-1); cxi = xpi*(xpi2-1); hx2 = hx*hx
+      cy = yparam*(yp2-1); cyi = ypi*(ypi2-1); hy2 = hy*hy
+      cy = zparam*(zp2-1); czi = zpi*(zpi2-1); hz2 = hz*hz
+      xs  =  evaltri3D(xparam, xpi, xp2, xpi2, cx, cxi, hx2, &
+                       yparam, ypi, yp2, ypi2, cy, cyi, hy2, &
+                       zparam, zpi, zp2, zpi2, cz, czi, hz2, &
+                       nx1, nx2, nx3, X4D, i, j, k)
+      ys  =  evaltri3D(xparam, xpi, xp2, xpi2, cx, cxi, hx2, &
+                       yparam, ypi, yp2, ypi2, cy, cyi, hy2, &
+                       zparam, zpi, zp2, zpi2, cz, czi, hz2, &
+                       nx1, nx2, nx3, Y4D, i, j, k)
+      zs  =  evaltri3D(xparam, xpi, xp2, xpi2, cx, cxi, hx2, &
+                       yparam, ypi, yp2, ypi2, cy, cyi, hy2, &
+                       zparam, zpi, zp2, zpi2, cz, czi, hz2, &
+                       nx1, nx2, nx3, Z4D, i, j, k)
+      kx  =  evaltri3D(xparam, xpi, xp2, xpi2, cx, cxi, hx2, &
+                       yparam, ypi, yp2, ypi2, cy, cyi, hy2, &
+                       zparam, zpi, zp2, zpi2, cz, czi, hz2, &
+                       nx1, nx2, nx3, JX4D, i, j, k)
+      ky  =  evaltri3D(xparam, xpi, xp2, xpi2, cx, cxi, hx2, &
+                       yparam, ypi, yp2, ypi2, cy, cyi, hy2, &
+                       zparam, zpi, zp2, zpi2, cz, czi, hz2, &
+                       nx1, nx2, nx3, JY4D, i, j, k)
+      kz  =  evaltri3D(xparam, xpi, xp2, xpi2, cx, cxi, hx2, &
+                       yparam, ypi, yp2, ypi2, cy, cyi, hy2, &
+                       zparam, zpi, zp2, zpi2, cz, czi, hz2, &
+                       nx1, nx2, nx3, JZ4D, i, j, k)
+!      xs  =  evalch3D(ax, axbar, bx, bxbar, hx, &
+!                      ay, aybar, by, bybar, hy, &
+!                      az, azbar, bz, bzbar, hz, &
+!                      nx1, nx2, nx3, X4D, i, j, k)
+!      ys  =  evalch3D(ax, axbar, bx, bxbar, hx, &
+!                      ay, aybar, by, bybar, hy, &
+!                      az, azbar, bz, bzbar, hz, &
+!                      nx1, nx2, nx3, Y4D, i, j, k)
+!      zs  =  evalch3D(ax, axbar, bx, bxbar, hx, &
+!                      ay, aybar, by, bybar, hy, &
+!                      az, azbar, bz, bzbar, hz, &
+!                      nx1, nx2, nx3, Z4D, i, j, k)
+!      kx  =  evalch3D(ax, axbar, bx, bxbar, hx, &
+!                      ay, aybar, by, bybar, hy, &
+!                      az, azbar, bz, bzbar, hz, &
+!                      nx1, nx2, nx3, JX4D, i, j, k)
+!      ky  =  evalch3D(ax, axbar, bx, bxbar, hx, &
+!                      ay, aybar, by, bybar, hy, &
+!                      az, azbar, bz, bzbar, hz, &
+!                      nx1, nx2, nx3, JY4D, i, j, k)
+!      kz  =  evalch3D(ax, axbar, bx, bxbar, hx, &
+!                      ay, aybar, by, bybar, hy, &
+!                      az, azbar, bz, bzbar, hz, &
+!                      nx1, nx2, nx3, JZ4D, i, j, k)
 
       gf   = one/DSQRT((x_nag-xs)*(x_nag-xs)+(y_nag-ys)*(y_nag-ys)+(z_nag-zs)*(z_nag-zs))
-      gf3  = gf*gf*gf
-      f(1) = norm_3d*(ay*(z_nag-zs)-az*(y_nag-ys))*gf3
-      f(2) = norm_3d*(az*(x_nag-xs)-ax*(z_nag-zs))*gf3
-      f(3) = norm_3d*(ax*(y_nag-ys)-ay*(x_nag-xs))*gf3
+      gf3  = norm_3d*gf*gf*gf
+      f(1) = (ky*(z_nag-zs)-kz*(y_nag-ys))*gf3
+      f(2) = (kz*(x_nag-xs)-kx*(z_nag-zs))*gf3
+      f(3) = (kx*(y_nag-ys)-ky*(x_nag-xs))*gf3
       !WRITE(427,*) ax, ay, az
       RETURN
       ! END SUBROUTINE
@@ -2956,6 +2993,212 @@
       zparam = (x3_in - x3(k)) * hzi
       RETURN
       END SUBROUTINE lookupgrid3d
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      REAL*8 FUNCTION evalch2D(ax, axbar, bx, bxbar, hx, ay, aybar, by, bybar, hy, n1, n2, F, i, j)
+      IMPLICIT NONE
+      REAL*8, INTENT(in) :: ax, axbar, bx, bxbar, hx
+      REAL*8, INTENT(in) :: ay, aybar, by, bybar, hy
+      INTEGER, INTENT(in) :: n1, n2, i, j
+      REAL*8, INTENT(in) :: F(4,n1,n2)
+
+      evalch2D = axbar*(aybar*F(1,i,j)  +ay*F(1,i,j+1))+ &
+                    ax*(aybar*F(1,i+1,j)+ay*F(1,i+1,j+1)) &
+                   +hx*( &
+                        bxbar*(aybar*F(2,i,j)  +ay*F(2,i,j+1))+ &
+                           bx*(aybar*F(2,i+1,j)+ay*F(2,i+1,j+1)) &
+                        ) &
+                   +hy*( &
+                        axbar*(bybar*F(3,i,j)  +by*F(3,i,j+1))+ &
+                           ax*(bybar*F(3,i+1,j)+by*F(3,i+1,j+1)) &
+                        +hx*( &
+                              bxbar*(bybar*F(4,i,j)  +by*F(4,i,j+1))+ &
+                                 bx*(bybar*F(4,i+1,j)+by*F(4,i+1,j+1)) &
+                           ) )
+      RETURN
+      END FUNCTION evalch2D
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      REAL*8 FUNCTION evalbi2D(xp,xpi,xp2,xpi2,cx,cxi,hx2,yp,ypi,yp2,ypi2,cy,cyi,hy2, n1, n2, F, i, j)
+      IMPLICIT NONE
+      REAL*8, INTENT(in) :: xp, xpi, xp2, xpi2, cx, cxi, hx2
+      REAL*8, INTENT(in) :: yp, ypi, yp2, ypi2, cy, cyi, hy2
+      INTEGER, INTENT(in) :: n1, n2, i, j
+      REAL*8, INTENT(in) :: F(4,n1,n2)
+      REAL*8, PARAMETER :: sixth = 0.166666666666666667
+      REAL*8, PARAMETER :: z36th = 0.027777777777777776
+
+      evalbi2D = xpi*(ypi*F(1,i,j)  +yp*F(1,i,j+1))+ &
+                  xp*(ypi*F(1,i+1,j)+yp*F(1,i+1,j+1)) &
+                +sixth*hx2*( &
+                      cxi*(ypi*F(2,i,j)  +yp*F(2,i,j+1))+ &
+                      cx*(ypi*F(2,i+1,j)+yp*F(2,i+1,j+1)) ) &
+                +sixth*hy2*( &
+                      xpi*(cyi*F(3,i,j)  +cy*F(3,i,j+1))+ &
+                       xp*(cyi*F(3,i+1,j)+cy*F(3,i+1,j+1))) &
+                     +z36th*hx2*hy2*( &
+                              cxi*(cyi*F(4,i,j)  +cy*F(4,i,j+1))+ &
+                               cx*(cyi*F(4,i+1,j)+cy*F(4,i+1,j+1)) ) 
+      RETURN
+      END FUNCTION evalbi2D
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      REAL*8 FUNCTION evalch3D(ax, axbar, bx, bxbar, hx, ay, aybar, by, bybar, hy, az, azbar, bz, bzbar, hz, n1, n2, n3, F, i, j, k)
+      IMPLICIT NONE
+      REAL*8, INTENT(in) :: ax, axbar, bx, bxbar, hx
+      REAL*8, INTENT(in) :: ay, aybar, by, bybar, hy
+      REAL*8, INTENT(in) :: az, azbar, bz, bzbar, hz
+      INTEGER, INTENT(in) :: n1, n2, n3, i, j, k
+      REAL*8, INTENT(in) :: F(8,n1,n2,n3)
+
+      evalch3D=azbar*( &
+              axbar*(aybar* F(1,i,j,k)  +ay* F(1,i,j+1,k))+ &
+                 ax*(aybar* F(1,i+1,j,k)+ay* F(1,i+1,j+1,k))) &
+               +  az*( &
+              axbar*(aybar* F(1,i,j,k+1)  +ay* F(1,i,j+1,k+1))+ &
+                 ax*(aybar* F(1,i+1,j,k+1)+ay* F(1,i+1,j+1,k+1)))
+      evalch3D=evalch3D+hx*( &
+               azbar*( &
+               bxbar*(aybar* F(2,i,j,k)  +ay* F(2,i,j+1,k))+ &
+                  bx*(aybar* F(2,i+1,j,k)+ay* F(2,i+1,j+1,k))) &
+                + az*( &
+               bxbar*(aybar* F(2,i,j,k+1)  +ay* F(2,i,j+1,k+1))+ &
+                  bx*(aybar* F(2,i+1,j,k+1)+ay* F(2,i+1,j+1,k+1))) &
+               )
+      evalch3D=evalch3D+hy*( &
+               azbar*( &
+               axbar*(bybar* F(3,i,j,k)  +by* F(3,i,j+1,k))+ &
+                  ax*(bybar* F(3,i+1,j,k)+by* F(3,i+1,j+1,k))) &
+                + az*( &
+               axbar*(bybar* F(3,i,j,k+1)  +by* F(3,i,j+1,k+1))+ &
+                  ax*(bybar* F(3,i+1,j,k+1)+by* F(3,i+1,j+1,k+1))) &
+               )
+      evalch3D=evalch3D+hz*( &
+               bzbar*( &
+               axbar*(aybar* F(4,i,j,k)  +ay* F(4,i,j+1,k))+ &
+                  ax*(aybar* F(4,i+1,j,k)+ay* F(4,i+1,j+1,k))) &
+                + bz*( &
+               axbar*(aybar* F(4,i,j,k+1)  +ay* F(4,i,j+1,k+1))+ &
+                  ax*(aybar* F(4,i+1,j,k+1)+ay* F(4,i+1,j+1,k+1))) &
+               )
+      evalch3D=evalch3D+hx*hy*( &
+               azbar*( &
+               bxbar*(bybar* F(5,i,j,k)  +by* F(5,i,j+1,k))+ &
+                  bx*(bybar* F(5,i+1,j,k)+by* F(5,i+1,j+1,k))) &
+                + az*( &
+               bxbar*(bybar* F(5,i,j,k+1)  +by* F(5,i,j+1,k+1))+ &
+                  bx*(bybar* F(5,i+1,j,k+1)+by* F(5,i+1,j+1,k+1))) &
+               )
+      evalch3D=evalch3D+hx*hz*( &
+               bzbar*( &
+               bxbar*(aybar* F(6,i,j,k)  +ay* F(6,i,j+1,k))+ &
+                  bx*(aybar* F(6,i+1,j,k)+ay* F(6,i+1,j+1,k))) &
+                + bz*( &
+               bxbar*(aybar* F(6,i,j,k+1)  +ay* F(6,i,j+1,k+1))+ &
+                  bx*(aybar* F(6,i+1,j,k+1)+ay* F(6,i+1,j+1,k+1))) &
+               )
+      evalch3D=evalch3D+hy*hz*( &
+               bzbar*( &
+               axbar*(bybar* F(7,i,j,k)  +by* F(7,i,j+1,k))+ &
+                  ax*(bybar* F(7,i+1,j,k)+by* F(7,i+1,j+1,k))) &
+                + bz*( &
+               axbar*(bybar* F(7,i,j,k+1)  +by* F(7,i,j+1,k+1))+ &
+                  ax*(bybar* F(7,i+1,j,k+1)+by* F(7,i+1,j+1,k+1))) &
+               )
+      evalch3D=evalch3D+hx*hy*hz*( &
+               bzbar*( &
+               bxbar*(bybar* F(8,i,j,k)  +by* F(8,i,j+1,k))+ &
+                  bx*(bybar* F(8,i+1,j,k)+by* F(8,i+1,j+1,k))) &
+                + bz*( &
+               bxbar*(bybar* F(8,i,j,k+1)  +by* F(8,i,j+1,k+1))+ &
+                  bx*(bybar* F(8,i+1,j,k+1)+by* F(8,i+1,j+1,k+1))) &
+               )
+      RETURN
+      END FUNCTION evalch3D
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      REAL*8 FUNCTION evaltri3D(xp, xpi, xp2, xpi2, cx, cxi, hx2, &
+                                yp, ypi, yp2, ypi2, cy, cyi, hy2, &
+                                zp, zpi, zp2, zpi2, cz, czi, hz2, &
+                                n1, n2, n3, F, i, j, k)
+      IMPLICIT NONE
+      REAL*8, INTENT(in) :: xp, xpi, xp2, xpi2, cx, cxi, hx2
+      REAL*8, INTENT(in) :: yp, ypi, yp2, ypi2, cy, cyi, hy2
+      REAL*8, INTENT(in) :: zp, zpi, zp2, zpi2, cz, czi, hz2
+      INTEGER, INTENT(in) :: n1, n2, n3, i, j, k
+      REAL*8, INTENT(in) :: F(8,n1,n2,n3)
+      REAL*8, PARAMETER :: sixth  = 0.166666666666666667
+      REAL*8, PARAMETER :: z36th  = 0.027777777777777776
+      REAL*8, PARAMETER :: z216th = 0.004629629629629629
+
+      evaltri3D=zpi*( &
+              xpi*(ypi* F(1,i,j,k)  +yp* F(1,i,j+1,k))+ &
+                 xp*(ypi* F(1,i+1,j,k)+yp* F(1,i+1,j+1,k))) &
+               +  zp*( &
+              xpi*(ypi* F(1,i,j,k+1)  +yp* F(1,i,j+1,k+1))+ &
+                 xp*(ypi* F(1,i+1,j,k+1)+yp* F(1,i+1,j+1,k+1)))
+      evaltri3D=evaltri3D+sixth*hx2*( &
+               zpi*( &
+               cxi*(ypi* F(2,i,j,k)  +yp* F(2,i,j+1,k))+ &
+                  cx*(ypi* F(2,i+1,j,k)+yp* F(2,i+1,j+1,k))) &
+                + zp*( &
+               cxi*(ypi* F(2,i,j,k+1)  +yp* F(2,i,j+1,k+1))+ &
+                  cx*(ypi* F(2,i+1,j,k+1)+yp* F(2,i+1,j+1,k+1))) &
+               )
+      evaltri3D=evaltri3D+sixth*hy2*( &
+               zpi*( &
+               xpi*(cyi* F(3,i,j,k)  +cy* F(3,i,j+1,k))+ &
+                  xp*(cyi* F(3,i+1,j,k)+cy* F(3,i+1,j+1,k))) &
+                + zp*( &
+               xpi*(cyi* F(3,i,j,k+1)  +cy* F(3,i,j+1,k+1))+ &
+                  xp*(cyi* F(3,i+1,j,k+1)+cy* F(3,i+1,j+1,k+1))) &
+               )
+      evaltri3D=evaltri3D+sixth*hz2*( &
+               czi*( &
+               xpi*(ypi* F(4,i,j,k)  +yp* F(4,i,j+1,k))+ &
+                  xp*(ypi* F(4,i+1,j,k)+yp* F(4,i+1,j+1,k))) &
+                + cz*( &
+               xpi*(ypi* F(4,i,j,k+1)  +yp* F(4,i,j+1,k+1))+ &
+                  xp*(ypi* F(4,i+1,j,k+1)+yp* F(4,i+1,j+1,k+1))) &
+               )
+      evaltri3D=evaltri3D+z36th*hx2*hy2*( &
+               zpi*( &
+               cxi*(cyi* F(5,i,j,k)  +cy* F(5,i,j+1,k))+ &
+                  cx*(cyi* F(5,i+1,j,k)+cy* F(5,i+1,j+1,k))) &
+                + zp*( &
+               cxi*(cyi* F(5,i,j,k+1)  +cy* F(5,i,j+1,k+1))+ &
+                  cx*(cyi* F(5,i+1,j,k+1)+cy* F(5,i+1,j+1,k+1))) &
+               )
+      evaltri3D=evaltri3D+z36th*hx2*hz2*( &
+               czi*( &
+               cxi*(ypi* F(6,i,j,k)  +yp* F(6,i,j+1,k))+ &
+                  cx*(ypi* F(6,i+1,j,k)+yp* F(6,i+1,j+1,k))) &
+                + cz*( &
+               cxi*(ypi* F(6,i,j,k+1)  +yp* F(6,i,j+1,k+1))+ &
+                  cx*(ypi* F(6,i+1,j,k+1)+yp* F(6,i+1,j+1,k+1))) &
+               )
+      evaltri3D=evaltri3D+z36th*hy2*hz2*( &
+               czi*( &
+               xpi*(cyi* F(7,i,j,k)  +cy* F(7,i,j+1,k))+ &
+                  xp*(cyi* F(7,i+1,j,k)+cy* F(7,i+1,j+1,k))) &
+                + cz*( &
+               xpi*(cyi* F(7,i,j,k+1)  +cy* F(7,i,j+1,k+1))+ &
+                  xp*(cyi* F(7,i+1,j,k+1)+cy* F(7,i+1,j+1,k+1))) &
+               )
+      evaltri3D=evaltri3D+z216th*hx2*hy2*hz2*( &
+               czi*( &
+               cxi*(cyi* F(8,i,j,k)  +cy* F(8,i,j+1,k))+ &
+                  cx*(cyi* F(8,i+1,j,k)+cy* F(8,i+1,j+1,k))) &
+                + cz*( &
+               cxi*(cyi* F(8,i,j,k+1)  +cy* F(8,i,j+1,k+1))+ &
+                  cx*(cyi* F(8,i+1,j,k+1)+cy* F(8,i+1,j+1,k+1))) &
+               )
+      RETURN
+      END FUNCTION evaltri3D
       !-----------------------------------------------------------------
       
 !-----------------------------------------------------------------------

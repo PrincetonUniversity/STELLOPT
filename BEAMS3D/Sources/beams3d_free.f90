@@ -12,11 +12,9 @@
       USE beams3d_grid
       USE beams3d_lines, ONLY: R_lines, PHI_lines, Z_lines, vll_lines, &
                                neut_lines, moment_lines, S_lines, U_lines, &
-                               PE_lines, PI_lines, shine_through, &
+                               shine_through, &
                                ndot_prof, epower_prof, ipower_prof, j_prof,&
-                               B_lines
-!      USE wall_mod, ONLY: wall_free
-      USE EZspline_obj
+                               B_lines, dist2d_prof, end_state, shine_port
       USE mpi_sharmem
 !-----------------------------------------------------------------------
 !     Local Variables
@@ -57,13 +55,12 @@
       IF (ALLOCATED(vll_lines)) DEALLOCATE(vll_lines)
       IF (ALLOCATED(neut_lines)) DEALLOCATE(neut_lines)
       IF (ALLOCATED(moment_lines)) DEALLOCATE(moment_lines)
-      IF (ALLOCATED(PE_lines)) DEALLOCATE(PE_lines)
-      IF (ALLOCATED(PI_lines)) DEALLOCATE(PI_lines)
       IF (ALLOCATED(S_lines)) DEALLOCATE(S_lines)
       IF (ALLOCATED(U_lines)) DEALLOCATE(U_lines)
       IF (ALLOCATED(B_lines)) DEALLOCATE(B_lines)
       IF (ALLOCATED(weight)) DEALLOCATE(weight)
       IF (ALLOCATED(beam)) DEALLOCATE(beam)
+      IF (ALLOCATED(end_state)) DEALLOCATE(end_state)
       IF (PRESENT(IN_COMM)) THEN
          IF (ASSOCIATED(req_axis)) CALL mpidealloc(req_axis,win_req_axis)
          IF (ASSOCIATED(zeq_axis)) CALL mpidealloc(zeq_axis,win_zeq_axis)
@@ -92,6 +89,8 @@
          IF (ASSOCIATED(S4D))      CALL mpidealloc(S4D,win_S4D)
          IF (ASSOCIATED(U4D))      CALL mpidealloc(U4D,win_U4D)
          IF (ASSOCIATED(POT4D))    CALL mpidealloc(POT4D,win_POT4D)
+         IF (ASSOCIATED(wall_load))    CALL mpidealloc(wall_load,win_wall_load)
+         IF (ASSOCIATED(wall_shine))    CALL mpidealloc(wall_shine,win_wall_shine)
       ELSE
          IF (ASSOCIATED(req_axis)) DEALLOCATE(req_axis)
          IF (ASSOCIATED(zeq_axis)) DEALLOCATE(zeq_axis)
@@ -120,6 +119,8 @@
          IF (ASSOCIATED(S4D))      DEALLOCATE(S4D)
          IF (ASSOCIATED(U4D))      DEALLOCATE(U4D)
          IF (ASSOCIATED(POT4D))    DEALLOCATE(POT4D)
+         IF (ASSOCIATED(wall_load))    DEALLOCATE(wall_load)
+         IF (ASSOCIATED(wall_shine))    DEALLOCATE(wall_shine)
       ENDIF
       IF (ALLOCATED(R_start))   DEALLOCATE(R_start)
       IF (ALLOCATED(phi_start)) DEALLOCATE(phi_start)
@@ -134,10 +135,13 @@
       IF (ALLOCATED(beam))      DEALLOCATE(beam)
       IF (ALLOCATED(weight))    DEALLOCATE(weight)
       IF (ALLOCATED(shine_through))    DEALLOCATE(shine_through)
+      IF (ALLOCATED(shine_port))    DEALLOCATE(shine_port)
       IF (ALLOCATED(ndot_prof))    DEALLOCATE(ndot_prof)
       IF (ALLOCATED(epower_prof))    DEALLOCATE(epower_prof)
       IF (ALLOCATED(ipower_prof))    DEALLOCATE(ipower_prof)
       IF (ALLOCATED(j_prof))    DEALLOCATE(j_prof)
+!      IF (ALLOCATED(dist_prof))    DEALLOCATE(dist_prof)
+      IF (ALLOCATED(dist2d_prof))    DEALLOCATE(dist2d_prof)
       RETURN
 !-----------------------------------------------------------------------
 !     End Subroutine

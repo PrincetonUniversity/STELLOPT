@@ -1,4 +1,27 @@
-      SUBROUTINE convert_par(rmnc,zmns,lmns,rmns,zmnc,lmnc,rzl_array)
+!-------------------------------------------------------------------------------
+!>  @brief Convert Amn* quantities from internal representation.
+!>
+!>  The external representation matches the values in the wout file. External
+!>  representated quantites are for a single surface only.
+!>
+!>  @param[out]   rmnc      R Fourier amplitudes with external representation
+!>                          for symmetric parity.
+!>  @param[out]   zmns      Z Fourier amplitudes with external representation
+!>                          for symmetric parity.
+!>  @param[out]   lmns      Lambda Fourier amplitudes with external
+!>                          representation for symmetric parity.
+!>  @param[out]   rmnc      R Fourier amplitudes with external representation
+!>                          for asymmetric parity.
+!>  @param[out]   zmns      Z Fourier amplitudes with external representation
+!>                          for asymmetric parity.
+!>  @param[out]   lmns      Lambda Fourier amplitudes with external
+!>                          representation for asymmetric parity.
+!>  @param[inout] rzl_array Fourier amplitudes of R, Z, and lambda with internal
+!>                          representation.
+!-------------------------------------------------------------------------------
+      SUBROUTINE convert_par(rmnc, zmns, lmns,
+     &                       rmns, zmnc, lmnc,
+     &                       rzl_array)
       USE vmec_main
       USE vmec_params
       USE parallel_include_module
@@ -166,8 +189,31 @@ C-----------------------------------------------
       END DO
 
       END SUBROUTINE convert_par
-      
-      SUBROUTINE convert(rmnc,zmns,lmns,rmns,zmnc,lmnc,rzl_array,js)
+
+!-------------------------------------------------------------------------------
+!>  @brief Convert Amn* quantities from internal representation.
+!>
+!>  The external representation matches the values in the wout file.
+!>
+!>  @param[out]   rmnc      R Fourier amplitudes with external representation
+!>                          for symmetric parity.
+!>  @param[out]   zmns      Z Fourier amplitudes with external representation
+!>                          for symmetric parity.
+!>  @param[out]   lmns      Lambda Fourier amplitudes with external
+!>                          representation for symmetric parity.
+!>  @param[out]   rmnc      R Fourier amplitudes with external representation
+!>                          for asymmetric parity.
+!>  @param[out]   zmns      Z Fourier amplitudes with external representation
+!>                          for asymmetric parity.
+!>  @param[out]   lmns      Lambda Fourier amplitudes with external
+!>                          representation for asymmetric parity.
+!>  @param[inout] rzl_array Fourier amplitudes of R, Z, and lambda with internal
+!>                          representation.
+!>  @param[in]    js        Radial surface to convert quantities on.
+!-------------------------------------------------------------------------------
+      SUBROUTINE convert(rmnc, zmns, lmns,
+     &                   rmns, zmnc, lmnc,
+     &                   rzl_array, js)
       USE vmec_main
       USE vmec_params
       USE parallel_include_module

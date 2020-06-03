@@ -1,6 +1,6 @@
       FUNCTION splintx(x)
       USE vparams
-      USE vsvd
+      USE vsvd0
       USE csplinx
       IMPLICIT NONE
 C-----------------------------------------------

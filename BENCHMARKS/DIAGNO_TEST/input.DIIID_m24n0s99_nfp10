@@ -1,5 +1,5 @@
  &INDATA
-  MGRID_FILE = '/p/pies/Lazerson/Sims/MGRIDS/mgrid_d3d_ef.nc'
+  MGRID_FILE = '/Users/lazerson/Sims_Work/coils/DIIID/mgrid_d3d_ef.nc'
   LFREEB = F   LASYM = F
   DELT = 1.00E-00
   TCON0 = 2.00E+00

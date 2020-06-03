@@ -4,7 +4,7 @@
 #            Define User Specific Output Paths
 #######################################################################
   # Set a default directory if one has not already been defined.
-  STELLOPT_HOME ?= /Users/mattland/stellopt_github/mango/STELLOPT/bin
+  STELLOPT_HOME ?= $(STELLOPT_PATH)/bin
 
 
 #######################################################################
@@ -105,6 +105,13 @@
   LNEO  = T
 
 #######################################################################
+#            FFTW3 Options
+#######################################################################
+  LFFTW3 = F
+  FFTW3_INC = 
+  FFTW3_LIB = 
+
+#######################################################################
 #            GENE Options
 #######################################################################
   LGENE = F
@@ -173,14 +180,46 @@ MANGO_DIR = /Users/mattland/mango
 MANGO_INC = -I$(MANGO_DIR)/include
 LIB_MANGO = libmango.a
 
-ifeq ($(LMANGO),T)
-  PETSC_DIR=/opt/local/lib/petsc
-  include ${PETSC_DIR}/lib/petsc/conf/variables
-  # The above line defines the PETSC make variables PETSC_LIB, FC_LINKER_FLAGS, and FFLAGS, which are used below in MANGO_LIB.
+MANGO_PETSC_AVAILABLE = T
+MANGO_NLOPT_AVAILABLE = T
+MANGO_GSL_AVAILABLE = T
+
+# This next parameter matters only if MANGO_PETSC_AVAILABLE == T.
+# If false, a newer version of PETSc built by myself will be used.
+MANGO_USE_MACPORTS_PETSC = F
+
+ifeq ($(MANGO_PETSC_AVAILABLE),T)
+  ifeq ($(MANGO_USE_MACPORTS_PETSC),T)
+    PETSC_DIR=/opt/local/lib/petsc
+    PETSC_ARCH=
+    include ${PETSC_DIR}/lib/petsc/conf/variables
+    # The above line defines the PETSC make variables PETSC_LIB, FC_LINKER_FLAGS, and FFLAGS, which are used below in MANGO_LIB.
+  else
+    PETSC_DIR=/Users/mattland/petsc/petsc-3.12.2
+    PETSC_ARCH=arch-darwin-c-debug
+    include ${PETSC_DIR}/${PETSC_ARCH}/lib/petsc/conf/petscvariables
+    # The above line defines the PETSC make variables PETSC_LIB, FC_LINKER_FLAGS, and FFLAGS, which are used below in MANGO_LIB.
+  endif
+else
 endif
 
-MANGO_LIB = $(MANGO_DIR)/lib/$(LIB_MANGO) \
-	$(PETSC_LIB) $(FC_LINKER_FLAGS) $(FFLAGS) -lnlopt -lstdc++
+MANGO_LIB = $(MANGO_DIR)/lib/$(LIB_MANGO)
+#	$(PETSC_LIB) $(FC_LINKER_FLAGS) $(FFLAGS) -lnlopt -lstdc++
+
+ifeq ($(MANGO_PETSC_AVAILABLE),T)
+  MANGO_LIB += $(PETSC_LIB) $(FC_LINKER_FLAGS)
+endif
+
+ifeq ($(MANGO_NLOPT_AVAILABLE),T)
+  #EXTRA_C_COMPILE_FLAGS += -I/usr/local/include
+  MANGO_LIB += -lnlopt
+endif
+
+ifeq ($(MANGO_GSL_AVAILABLE),T)
+  #EXTRA_C_COMPILE_FLAGS += -I/opt/local/include
+  MANGO_LIB += -L/opt/local/lib -lgsl -lgslcblas
+endif
+
 
 #######################################################################
 #            REGCOIL Options
@@ -195,280 +234,4 @@ MANGO_LIB = $(MANGO_DIR)/lib/$(LIB_MANGO) \
 #            LIBSTELL Shared Options
 #######################################################################
 
-LIB_SHARE = -L/opt/local/lib/gcc8 -lstdc++ -lgfortran -L/usr/lib -lz -lc -lm -lpthread -L/opt/local/lib/openmpi-gcc8 -lmpi -lmpi_mpifh $(LIBS)
-
-# or,
-
-LIB_SHARE = /opt/local/lib/libnetcdf.dylib \
-         /opt/local/lib/libnetcdff.dylib \
-         /opt/local/lib/libnetcdf_c++4.dylib \
-         /opt/local/lib/libhdf5.dylib \
-         /opt/local/lib/libhdf5hl_fortran.dylib\
-         /opt/local/lib/libhdf5_hl.dylib \
-         /opt/local/lib/libhdf5_fortran.dylib\
-         /opt/local/lib/gcc6/libgfortran.dylib \
-         /opt/local/lib/gcc6/libstdc++.dylib \
-         /opt/local/lib/libopenblas.dylib \
-         /opt/local/lib/openmpi-gcc6/libmpi.dylib \
-         /opt/local/lib/openmpi-gcc6/libmpi_mpifh.12.dylib \
-         /opt/local/lib/libz.dylib \
-         /usr/lib/libc.dylib \
-         /usr/lib/libm.dylib \
-         /usr/lib/libpthread.dylib
-
-#######################################################################
-#######################################################################
-#######################################################################
-#######################################################################
-#######################################################################
-#######################################################################
-#######################################################################
-#######################################################################
-#   DO NOT EDIT BELOW HERE DO NOT EDIT BELOW HERE
-
-#######################################################################
-#######################################################################
-#######################################################################
-#######################################################################
-#######################################################################
-#######################################################################
-#######################################################################
-#######################################################################
-
-# Home bin specifies where the build scripts are located,
-# for example awk_cdir.awk.
-HOME_BIN = ../../
-MOD1_PATH = -I$(MYHOME)/libstell_dir
-MOD_PATH = 
-CLEAN_ARCH = 
-LIB_DIR = ../../LIBSTELL
-LIB = libstell.a
-
-# Handle Which Code is being CALLED
-ifeq ($(MAKECMDGOALS),xstelloptv2)
-  PRECOMP += -DBNORM -DBEAMS3D_OPT -DJINV_OPT -DTXPORT_OPT -DDIAGNO_OPT -DSKS  -DSKS2
-  VMEC_DIR = ../../VMEC2000
-  LIB_VMEC= libvmec.a
-  MOD_PATH+= -I$(VMEC_DIR)/$(LOCTYPE)
-  BEAMS3D_DIR = ../../BEAMS3D
-  LIB_BEAMS3D = libbeams3d.a
-  MOD_PATH+= -I$(BEAMS3D_DIR)/$(LOCTYPE)
-  BOOTSJ_DIR = ../../BOOTSJ
-  LIB_BOOTSJ = libbootsj.a
-  MOD_PATH+= -I$(BOOTSJ_DIR)/$(LOCTYPE)
-  BNORM_DIR = ../../BNORM
-  LIB_BNORM = libbnorm.a
-  MOD_PATH+= -I$(BNORM_DIR)/$(LOCTYPE)
-  BOOZ_DIR = ../../BOOZ_XFORM
-  LIB_BOOZ= libbooz.a
-  MOD_PATH+= -I$(BOOZ_DIR)/$(LOCTYPE)
-  COBRA_DIR = ../../COBRAVMEC
-  LIB_COBRA = libcobra.a
-  MOD_PATH+= -I$(COBRA_DIR)/$(LOCTYPE)
-  DIAGNO_DIR = ../../DIAGNO
-  LIB_DIAGNO= libdiagno.a
-  MOD_PATH+= -I$(DIAGNO_DIR)/$(LOCTYPE)
-  JINV_DIR = ../../J_INVARIANT
-  LIB_JINV = libjinv.a
-  MOD_PATH+= -I$(JINV_DIR)/$(LOCTYPE)
-  MGRID_DIR= ../../MAKEGRID
-  LIB_MGRID= libmakegrid.a
-  MOD_PATH+= -I$(MGRID_DIR)/$(LOCTYPE)
-  LIB_LINK=  $(VMEC_DIR)/$(LOCTYPE)/$(LIB_VMEC)  \
-	$(BEAMS3D_DIR)/$(LOCTYPE)/$(LIB_BEAMS3D) \
-	$(BOOTSJ_DIR)/$(LOCTYPE)/$(LIB_BOOTSJ) \
-	$(BNORM_DIR)/$(LOCTYPE)/$(LIB_BNORM) \
-	$(BOOZ_DIR)/$(LOCTYPE)/$(LIB_BOOZ) \
-	$(COBRA_DIR)/$(LOCTYPE)/$(LIB_COBRA) \
-	$(DIAGNO_DIR)/$(LOCTYPE)/$(LIB_DIAGNO) \
-	$(JINV_DIR)/$(LOCTYPE)/$(LIB_JINV) \
-	$(MGRID_DIR)/$(LOCTYPE)/$(LIB_MGRID) 
-  ifeq ($(LDKES),T)
-    DKES_DIR = ../../DKES
-    LIB_DKES = libdkes.a
-    MOD_PATH += -I$(DKES_DIR)/$(LOCTYPE)
-    PRECOMP += -DDKES_OPT
-    LIB_LINK += $(DKES_DIR)/$(LOCTYPE)/$(LIB_DKES)
-  else
-    DKES_DIR = 
-    LIB_DKES = 
-  endif
-  ifeq ($(LNEO),T)
-    NEO_DIR = ../../NEO
-    LIB_NEO = libneo.a
-    MOD_PATH += -I$(NEO_DIR)/$(LOCTYPE)
-    PRECOMP += -DNEO_OPT
-    LIB_LINK += $(NEO_DIR)/$(LOCTYPE)/$(LIB_NEO)
-  else
-    NEO_DIR = 
-    LIB_NEO = 
-  endif
-else ifeq ($(MAKECMDGOALS),help)
-else ifeq ($(MAKECMDGOALS),test_stellopt)
-else ifeq ($(MAKECMDGOALS),test_stellopt_coilopt)
-else ifeq ($(MAKECMDGOALS),test_stellopt_gene)
-else ifeq ($(MAKECMDGOALS),test_stellopt_regcoil)
-else ifeq ($(MAKECMDGOALS),test_stellopt_sfincs)
-else ifeq ($(MAKECMDGOALS),test_stellopt_terpsichore)
-else ifeq ($(MAKECMDGOALS),test_stellopt_travis)
-else
-  LGENE = F
-  LCOILOPT = F
-  LSFINCS = F
-  LMANGO = F
-  LREGCOIL= F
-  LTERPSICHORE = F
-  LTRAVIS = F
-endif
-ifeq ($(MAKECMDGOALS),xanimec)
-  PRECOMP += -D_ANIMEC
-endif
-ifeq ($(MAKECMDGOALS),xvmec2000)
-  PRECOMP += -DSKS  -DSKS2
-endif
-ifeq ($(MAKECMDGOALS),xsiesta)
-  PRECOMP += -DSKS  -DSKS2
-endif
-ifeq ($(MAKECMDGOALS),xgtovmi)
-  ifeq ($(LPGPLOT),T)
-    MOD1_PATH += $(PGPLOT_INC)
-    LIB_LINK += $(PGPLOT_LIB)
-  endif
-endif
-ifeq ($(MAKECMDGOALS),xdes_plot)
-  ifeq ($(LPGPLOT),T)
-    MOD1_PATH += $(PGPLOT_INC)
-    LIB_LINK += $(PGPLOT_LIB)
-  endif
-endif
-
-# Other Codes
-ifeq ($(LGENE),T)
-  MOD1_PATH += $(GENE_INC)
-  PRECOMP += -DGENE
-  MOD_PATH += -I$(GENE_DIR)
-else
-  GENE_LIB = 
-  GENE_DIR = 
-  LIB_GENE = 
-endif
-ifeq ($(LCOILOPT),T)
-  MOD1_PATH += $(COILOPT_INC)
-  PRECOMP += -DCOILOPTPP
-  MOD_PATH += -I$(COILOPTPP_DIR)
-else
-  COILOPT_LIB = 
-  COILOPTPP_DIR = 
-  LIB_COILOPTPP = 
-endif
-ifeq ($(LTERPSICHORE),T)
-  MOD1_PATH += $(TERPSICHORE_INC)
-  PRECOMP += -DTERPSICHORE
-  MOD_PATH += -I$(TERPSICHORE_DIR)
-else
-  TERPSICHORE_LIB = 
-  TERPSICHORE_DIR = 
-  LIB_TERPSICHORE = 
-endif
-ifeq ($(LTRAVIS),T)
-  PRECOMP += -DTRAVIS
-else
-  TRAVIS_LIB = 
-  TRAVIS_DIR = 
-  LIB_TRAVIS = 
-endif
-ifeq ($(LSFINCS),T)
-  MOD1_PATH += $(SFINCS_INC)
-  PRECOMP += -DSFINCS
-  MOD_PATH += -I$(SFINCS_DIR)
-else
-  SFINCS_LIB = 
-  SFINCS_DIR = 
-  LIB_SFINCS = 
-endif
-ifeq ($(LMANGO),T)
-  MOD1_PATH += $(MANGO_INC)
-  PRECOMP += -DMANGO
-  MOD_PATH += $(MANGO_INC)
-else
-  MANGO_LIB = 
-  MANGO_DIR = 
-  LIB_MANGO = 
-endif
-ifeq ($(LREGCOIL),T)
-  MOD1_PATH += $(REGCOIL_INC)
-  PRECOMP += -DREGCOIL
-  MOD_PATH += -I$(REGCOIL_DIR)
-else
-  REGCOIL_LIB = 
-  REGCOIL_DIR = 
-  LIB_REGCOIL = 
-endif
-
-# Handle other codes
-LIB_LINK += $(GENE_LIB) $(COILOPT_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB) $(SFINCS_LIB) $(MANGO_LIB) $(REGCOIL_LIB)
-
-# Add libraries to LIB_LINK
-# LIB_LINK+= $(MYHOME)/libstell.a $(LIBS)
-# This version avoids referencing the bin directory for the symbolic link to lib.
-# Which we can't reference since we now have the awk file in the main directory.
-LIB_LINK+= $(LIB_DIR)/$(LOCTYPE)/$(LIB) $(LIBS)
-
-# 3rd Party Libs
-ifeq ($(LMPI),T)
-  PRECOMP += -DMPI_OPT
-  COMPILE = $(MPI_COMPILE)
-  COMPILE_FREE = $(MPI_COMPILE_FREE)
-  LINK    = $(MPI_COMPILE) $(FLAGS) -o 
-  LINK_C  = $(MPI_LINK) 
-endif
-ifeq ($(LNETCDF),T)
-  MOD1_PATH += $(NETCDF_INC)
-  PRECOMP += -DNETCDF
-  LIB_LINK += $(NETCDF_LIB)
-  MOD_PATH += $(NETCDF_INC)
-  LIB_SHARE += $(NETCDF_LIB)
-endif
-ifeq ($(LHDF5),T)
-  MOD1_PATH += $(HDF5_INC)
-  PRECOMP += -DLHDF5 -DH5_USE_16_API
-  LIB_LINK += $(HDF5_LIB)
-  MOD_PATH += $(HDF5_INC)
-  LIB_SHARE += $(HDF5_LIB)
-endif
-ifeq ($(LNAG),T)
-  PRECOMP += -DNAG
-  LIB_LINK += $(NAG_LIB)
-  LIB_SHARE += $(NAG_LIB)
-endif
-ifeq ($(LNTCC),T)
-  MOD1_PATH += $(NTCC_INC)
-  PRECOMP += -DLADAS -DNTCC
-  LIB_LINK += $(NTCC_LIB)
-  MOD_PATH += $(NTCC_INC)
-  LIB_SHARE += $(NTCC_LIB)
-endif
-ifeq ($(LSILO),T)
-  MOD1_PATH += $(SILO_INC)
-  PRECOMP += -DSILO_AVAI
-  LIB_LINK += $(SILO_LIB)
-  LIB_SHARE += $(SILO_LIB)
-endif
-
-# This is hear because of MPI above resetting LINK
-ifeq ($(MAKECMDGOALS),libstell.a)
-  LINK = $(LINK_AR)
-  COMPILE += -fPIC
-  COMPILE_FREE += -fPIC
-  INC_PATH = 
-endif
-ifeq ($(MAKECMDGOALS),libstell.so)
-  LINK = $(LINK_C)
-  LIB_LINK = $(LIB_SHARE)
-  COMPILE += -fPIC
-  COMPILE_FREE += -fPIC
-  INC_PATH = 
-endif
-
-#This must come here
-MOD_PATH+= -I
+LIB_SHARE = $(LIBS)

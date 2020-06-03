@@ -75,7 +75,10 @@
       offset(1) = 0
       offset(2) = mystart-1
 
-!DEC$ IF DEFINED (HDF5_PAR)
+#if defined(HDF5_PAR)
+      ! Do this so we define the chunking correctly
+      CALL MPI_ALLREDUCE(MPI_IN_PLACE,chunk_dims(2),1,MPI_INTEGER,MPI_MAX,MPI_COMM_BEAMS,ier)
+
       ier = 0
       info = MPI_INFO_NULL
       ! Initialize
@@ -105,7 +108,8 @@
       ! Close the file space
       CALL h5sclose_f(fspace_id, ier)
 
-      ! Create the Memore Space
+      ! Create the Memory Space
+      chunk_dims(2) = myend-mystart+1 ! So we write correctly
       CALL h5screate_simple_f(rank, chunk_dims, mspace_id, ier)
 
       ! Select the Hyperslab in data
@@ -135,7 +139,7 @@
       ! Close the fortran interface
       CALL h5close_f(ier)
 
-!DEC$ ELSE
+#else
 
       DO i = 0, nprocs_beams-1
          IF (myworkid == i) THEN
@@ -201,8 +205,7 @@
          IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'beams3d_write_parhdf5',ierr_mpi)
          !IF (i == 1) STOP
       END DO
-
-!DEC$ ENDIF
+#endif
 
       ! Deallocate Helpers
       DEALLOCATE(dimsf,chunk_dims,counts,offset)
@@ -275,7 +278,9 @@
       counts(1) = 1
       offset(1) = mystart-1
 
-!DEC$ IF DEFINED (HDF5_PAR)
+#if defined(HDF5_PAR)
+      ! Do this so we define the chunking correctly
+      CALL MPI_ALLREDUCE(MPI_IN_PLACE,chunk_dims(1),1,MPI_INTEGER,MPI_MAX,MPI_COMM_BEAMS,ier)
       ier = 0
       info = MPI_INFO_NULL
       ! Initialize
@@ -285,7 +290,7 @@
       CALL h5pset_fapl_mpio_f(fapl_id, MPI_COMM_BEAMS, info, ier)
       CALL h5pget_driver_f(fapl_id, driver_id, ier)
       ! Open file
-      CALL h5fopen_f('beams3d_ascot5_'//TRIM(id_string)//'.h5', H5F_ACC_RDWR_F, file_id, ier, access_prp = fapl_id)
+      CALL h5fopen_f('ascot5_'//TRIM(id_string)//'.h5', H5F_ACC_RDWR_F, file_id, ier, access_prp = fapl_id)
 !!!!!!! Begin writing
 
 !      WRITE(6,*) myworkid,dimsf,chunk_dims,counts,offset; CALL FLUSH(6)
@@ -306,6 +311,7 @@
       CALL h5sclose_f(fspace_id, ier)
 
       ! Create the Memore Space
+      chunk_dims(1) = myend-mystart+1
       CALL h5screate_simple_f(rank, chunk_dims, mspace_id, ier)
 
       ! Select the Hyperslab in data
@@ -335,7 +341,7 @@
       ! Close the fortran interface
       CALL h5close_f(ier)
 
-!DEC$ ELSE
+#else
 
       DO i = 0, nprocs_beams-1
          IF (myworkid == i) THEN
@@ -348,7 +354,7 @@
             !PRINT *,'h5pcreate_f ',ier
 
             ! Open file
-            CALL h5fopen_f('beams3d_ascot5_'//TRIM(id_string)//'.h5', H5F_ACC_RDWR_F, file_id, ier, access_prp = H5P_DEFAULT_F)
+            CALL h5fopen_f('ascot5_'//TRIM(id_string)//'.h5', H5F_ACC_RDWR_F, file_id, ier, access_prp = H5P_DEFAULT_F)
             !PRINT *,'h5fopen_f ',ier
 
             ! Open or create the dataset and get/create dataspace identifer
@@ -402,7 +408,7 @@
          !IF (i == 1) STOP
       END DO
 
-!DEC$ ENDIF
+#endif
 
       ! Deallocate Helpers
       DEALLOCATE(dimsf,chunk_dims,counts,offset)

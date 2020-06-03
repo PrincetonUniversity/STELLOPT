@@ -15,7 +15,7 @@
                                  rmin, rmax, zmin, zmax, phimin, &
                                  phimax, B_R, B_Z, B_PHI
       USE vmec_input,  ONLY: curtor, raxis_cc, raxis_cs, zaxis_cc, &
-                             zaxis_cs, ntor, nfp, read_indata_namelist
+                             zaxis_cs, ntor, nfp, read_indata_namelist, ntord
       USE mpi_params
       USE mpi_inc
 !-----------------------------------------------------------------------
@@ -24,13 +24,12 @@
 !          iunit          File ID Number
 !-----------------------------------------------------------------------
       IMPLICIT NONE
-!DEC$ IF DEFINED (MPI_OPT)
-      INTEGER :: sender
-      INTEGER :: status(MPI_STATUS_SIZE)
-      REAL(rprec), ALLOCATABLE :: buffer_mast(:,:,:),buffer_slav(:,:,:)
-!DEC$ ENDIF  
-      INTEGER :: ier, iunit, i, j, myzs, myze, ik, chunk,&
-                 count, nv, mn
+      INTEGER, PARAMETER :: BYTE_8 = SELECTED_INT_KIND (8)
+      INTEGER(KIND=BYTE_8),ALLOCATABLE :: mnum(:), moffsets(:)
+      INTEGER :: numprocs_local, mylocalid, mylocalmaster
+      INTEGER :: MPI_COMM_LOCAL
+      INTEGER(KIND=BYTE_8) :: chunk
+      INTEGER :: ier, iunit, s, i, j, mystart, myend, k, mn, nv
       REAL(rprec)  :: fac, xp, yp, zp, ax, ay, az, bx, by, bz, br, bphi
       REAL(rprec), ALLOCATABLE :: xv(:), raxis(:), xaxis(:), yaxis(:),& 
                                   zaxis(:), dx(:), dy(:), dz(:), vx(:),&
@@ -40,13 +39,43 @@
 !-----------------------------------------------------------------------
 !     Begin Subroutine
 !-----------------------------------------------------------------------
+
+      ! Divide up Work
+      numprocs_local = 1; mylocalid = master
+#if defined(MPI_OPT)
+      CALL MPI_COMM_DUP( MPI_COMM_SHARMEM, MPI_COMM_LOCAL, ierr_mpi)
+      CALL MPI_COMM_RANK( MPI_COMM_LOCAL, mylocalid, ierr_mpi )              ! MPI
+      CALL MPI_COMM_SIZE( MPI_COMM_LOCAL, numprocs_local, ierr_mpi )          ! MPI
+#endif
+      mylocalmaster = master
+
+
       ! Reread INDATA
-      iunit = 11
-      OPEN(UNIT=iunit, FILE='input.' // TRIM(id_string), STATUS='OLD', IOSTAT=ier)
-      IF (ier /= 0) CALL handle_err(FILE_OPEN_ERR,id_string,ier)
-      CALL read_indata_namelist(iunit,ier)
-      IF (ier /= 0) CALL handle_err(VMEC_INPUT_ERR,id_string,ier)
-      CLOSE(iunit)
+      IF (mylocalid == mylocalmaster) THEN
+         iunit = 11
+         OPEN(UNIT=iunit, FILE='input.' // TRIM(id_string), STATUS='OLD', IOSTAT=ier)
+         IF (ier /= 0) CALL handle_err(FILE_OPEN_ERR,id_string,ier)
+         CALL read_indata_namelist(iunit,ier)
+         IF (ier /= 0) CALL handle_err(VMEC_INPUT_ERR,id_string,ier)
+         CLOSE(iunit)
+      ENDIF
+#if defined(MPI_OPT)
+      CALL MPI_BCAST(nfp,1,MPI_INTEGER, mylocalmaster, MPI_COMM_LOCAL,ierr_mpi)
+      IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'fieldlines_init_coil',ierr_mpi)
+      CALL MPI_BCAST(ntor,1,MPI_INTEGER, mylocalmaster, MPI_COMM_LOCAL,ierr_mpi)
+      IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'fieldlines_init_coil',ierr_mpi)
+      CALL MPI_BCAST(curtor,1,MPI_REAL, mylocalmaster, MPI_COMM_LOCAL,ierr_mpi)
+      IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'fieldlines_init_coil',ierr_mpi)
+      CALL MPI_BCAST(raxis_cc(0:ntord),ntord+1,MPI_REAL, mylocalmaster, MPI_COMM_LOCAL,ierr_mpi)
+      IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'fieldlines_init_coil',ierr_mpi)
+      CALL MPI_BCAST(raxis_cs(0:ntord),ntord+1,MPI_REAL, mylocalmaster, MPI_COMM_LOCAL,ierr_mpi)
+      IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'fieldlines_init_coil',ierr_mpi)
+      CALL MPI_BCAST(zaxis_cc(0:ntord),ntord+1,MPI_REAL, mylocalmaster, MPI_COMM_LOCAL,ierr_mpi)
+      IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'fieldlines_init_coil',ierr_mpi)
+      CALL MPI_BCAST(zaxis_cs(0:ntord),ntord+1,MPI_REAL, mylocalmaster, MPI_COMM_LOCAL,ierr_mpi)
+      IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'fieldlines_init_coil',ierr_mpi)
+#endif
+
       ! Construct the axis filament
       fac = curtor*1.0E-7
       nv = nphi*nfp+1
@@ -100,55 +129,70 @@
       vx(1:nv) = yaxis(1:nv)*dz(1:nv) - zaxis(1:nv)*dy(1:nv)
       vy(1:nv) = zaxis(1:nv)*dx(1:nv) - xaxis(1:nv)*dz(1:nv)
       vz(1:nv) = xaxis(1:nv)*dy(1:nv) - yaxis(1:nv)*dx(1:nv)
-      
-      
-      ! Get the fields
-      chunk  = nz/numprocs
-      IF (MOD(nz,numprocs) /= 0) chunk = chunk + 1
-      myzs = myid*chunk + 1
-      myze = myzs + chunk - 1
-      if (myze > nz) myze = nz
-      count = 0
-      IF (myzs <= nz) THEN
-         DO ik = myzs, myze
-            DO j = 1, nphi
-               DO i = 1, nr
-                  xp  = raxis_g(i)*cos(phiaxis(j))
-                  yp  = raxis_g(i)*sin(phiaxis(j))
-                  zp  = zaxis_g(ik)
-                  x1  = xp - xaxis
-                  y1  = yp - yaxis
-                  z1  = zp - zaxis
-                  r   = SQRT(x1*x1+y1*y1+z1*z1)
-                  IF (ANY(r .eq. 0)) CYCLE
-                  r12(1:nv) = r(2:nv+1)*r(2:nv+1)
-                  fa(1:nv)  = (r(2:nv+1)+r(1:nv))/&
-                              (r12(1:nv) * ( r12(1:nv) &
-                                            + x1(2:nv+1)*x1(1:nv)&
-                                            + y1(2:nv+1)*y1(1:nv)&
-                                            + z1(2:nv+1)*z1(1:nv)) )
-                  ax   = SUM(fa(1:nv)*dx(1:nv))
-                  ay   = SUM(fa(1:nv)*dy(1:nv))
-                  az   = SUM(fa(1:nv)*dz(1:nv))
-                  bx   = fac*(SUM(fa(1:nv)*vx(1:nv) - yp*az+zp*ay))
-                  by   = fac*(SUM(fa(1:nv)*vy(1:nv) - zp*ax+xp*az))
-                  bz   = fac*(SUM(fa(1:nv)*vz(1:nv) - xp*ay+yp*ax))
-                  br   = bx * cos(phiaxis(j)) + by * sin(phiaxis(j))
-                  bphi = by * cos(phiaxis(j)) - bx * sin(phiaxis(j))
-                  IF (lverb) PRINT *,'x,y,z,bx,by,bz',xp,yp,zp,bx,by,bz
-                  B_R(i,j,ik) = B_R(i,j,ik) + br
-                  B_PHI(i,j,ik) = B_PHI(i,j,ik) + bphi
-                  B_Z(i,j,ik) = B_Z(i,j,ik) + bz
-                  count = count + 1
-               END DO
-               IF (lverb) THEN
-                  CALL backspace_out(6,6)
-                  WRITE(6,'(A,I3,A)',ADVANCE='no') '[',INT((100.*count)/(nr*nphi*myze)),']%'
-                  CALL FLUSH(6)
-               END IF
-            END DO
-         END DO
-      END IF
+
+      ! Break up the Work
+      chunk = FLOOR(REAL(nr*nphi*nz) / REAL(numprocs_local))
+      mystart = mylocalid*chunk + 1
+      myend = mystart + chunk - 1
+
+      ! This section sets up the work so we can use ALLGATHERV
+#if defined(MPI_OPT)
+      IF (ALLOCATED(mnum)) DEALLOCATE(mnum)
+      IF (ALLOCATED(moffsets)) DEALLOCATE(moffsets)
+      ALLOCATE(mnum(numprocs_local), moffsets(numprocs_local))
+      CALL MPI_ALLGATHER(chunk,1,MPI_INTEGER,mnum,1,MPI_INTEGER,MPI_COMM_LOCAL,ierr_mpi)
+      CALL MPI_ALLGATHER(mystart,1,MPI_INTEGER,moffsets,1,MPI_INTEGER,MPI_COMM_LOCAL,ierr_mpi)
+      i = 1
+      DO
+         IF ((moffsets(numprocs_local)+mnum(numprocs_local)-1) == nr*nphi*nz) EXIT
+         IF (i == numprocs_local) i = 1
+         mnum(i) = mnum(i) + 1
+         moffsets(i+1:numprocs_local) = moffsets(i+1:numprocs_local) + 1
+         i=i+1
+      END DO
+      mystart = moffsets(mylocalid+1)
+      chunk  = mnum(mylocalid+1)
+      myend   = mystart + chunk - 1
+#endif
+
+      ! Put the field on the grid
+      DO s = mystart, myend
+         i = MOD(s-1,nr)+1
+         j = MOD(s-1,nr*nphi)
+         j = FLOOR(REAL(j) / REAL(nr))+1
+         k = CEILING(REAL(s) / REAL(nr*nphi))
+         xp  = raxis_g(i)*cos(phiaxis(j))
+         yp  = raxis_g(i)*sin(phiaxis(j))
+         zp  = zaxis_g(k)
+         x1  = xp - xaxis
+         y1  = yp - yaxis
+         z1  = zp - zaxis
+         r   = SQRT(x1*x1+y1*y1+z1*z1)
+         IF (ANY(r .eq. 0)) CYCLE
+         r12(1:nv) = r(2:nv+1)*r(2:nv+1)
+         fa(1:nv)  = (r(2:nv+1)+r(1:nv))/&
+                     (r12(1:nv) * ( r12(1:nv) &
+                                   + x1(2:nv+1)*x1(1:nv)&
+                                   + y1(2:nv+1)*y1(1:nv)&
+                                   + z1(2:nv+1)*z1(1:nv)) )
+         ax   = SUM(fa(1:nv)*dx(1:nv))
+         ay   = SUM(fa(1:nv)*dy(1:nv))
+         az   = SUM(fa(1:nv)*dz(1:nv))
+         bx   = fac*(SUM(fa(1:nv)*vx(1:nv) - yp*az+zp*ay))
+         by   = fac*(SUM(fa(1:nv)*vy(1:nv) - zp*ax+xp*az))
+         bz   = fac*(SUM(fa(1:nv)*vz(1:nv) - xp*ay+yp*ax))
+         br   = bx * cos(phiaxis(j)) + by * sin(phiaxis(j))
+         bphi = by * cos(phiaxis(j)) - bx * sin(phiaxis(j))
+         IF (lverb) PRINT *,'x,y,z,bx,by,bz',xp,yp,zp,bx,by,bz
+         B_R(i,j,k) = B_R(i,j,k) + br
+         B_PHI(i,j,k) = B_PHI(i,j,k) + bphi
+         B_Z(i,j,k) = B_Z(i,j,k) + bz
+         IF (lverb .and. (MOD(s,nr) == 0)) THEN
+            CALL backspace_out(6,6)
+            WRITE(6,'(A,I3,A)',ADVANCE='no') '[',INT((100.*s)/(myend-mystart+1)),']%'
+            CALL FLUSH(6)
+         END IF
+      END DO
       
       ! Clean up the progress bar
       IF (lverb) THEN
@@ -158,81 +202,21 @@
          CALL FLUSH(6)
       END IF    
       
-      ! Now recompose the array and send to everyone.
-!DEC$ IF DEFINED (MPI_OPT)
-      CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
-      IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_init_I',ierr_mpi)
-      IF (myid == master) THEN
-         ALLOCATE(buffer_mast(nr,nphi,3))
-         DO i = myze+1, nz
-            CALL MPI_RECV(buffer_mast,nr*nphi*3,MPI_DOUBLE_PRECISION,MPI_ANY_SOURCE,MPI_ANY_TAG,MPI_COMM_FIELDLINES,status,ierr_mpi)
-            IF (ierr_mpi /=0) CALL handle_err(MPI_RECV_ERR,'fieldlines_init_I',ierr_mpi)
-            sender = status(MPI_SOURCE)
-            j      = status(MPI_TAG)
-            B_R(:,:,j) = buffer_mast(:,:,1)
-            B_PHI(:,:,j) = buffer_mast(:,:,2)
-            B_Z(:,:,j) = buffer_mast(:,:,3)
-         END DO
-         DEALLOCATE(buffer_mast)
-      ELSE
-         IF (myzs <= nz) THEN
-            ALLOCATE(buffer_slav(nr,nphi,3))
-            DO j = myzs, myze
-               buffer_slav(:,:,1) = B_R(:,:,j)
-               buffer_slav(:,:,2) = B_PHI(:,:,j)
-               buffer_slav(:,:,3) = B_Z(:,:,j)
-               CALL MPI_SEND(buffer_slav,nr*nphi*3,MPI_DOUBLE_PRECISION,master,j,MPI_COMM_FIELDLINES,ierr_mpi)
-               IF (ierr_mpi /=0) CALL handle_err(MPI_SEND_ERR,'fieldlines_init_I',ierr_mpi)
-            END DO
-            DEALLOCATE(buffer_slav)
-         END IF
-      END IF
-      
-      ! Have master send info to slaves, in parts
-      CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
-      IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_init_I',ierr_mpi)
-      IF (myid == master) THEN
-         ALLOCATE(buffer_mast(nr,nphi,3))
-         DO i = 1, nz
-            buffer_mast(:,:,1) = B_R(:,:,i)
-            buffer_mast(:,:,2) = B_PHI(:,:,i)
-            buffer_mast(:,:,3) = B_Z(:,:,i)
-            DO j = 1, numprocs - 1
-               CALL MPI_SEND(buffer_mast,nr*nphi*3,MPI_DOUBLE_PRECISION,j,i,MPI_COMM_FIELDLINES,ierr_mpi)
-               IF (ierr_mpi /=0) CALL handle_err(MPI_SEND_ERR,'fieldlines_init_I',ierr_mpi)
-            END DO
-         END DO
-         DEALLOCATE(buffer_mast)
-      ELSE
-         ALLOCATE(buffer_slav(nr,nphi,3))
-         DO i = 1, nz
-            CALL MPI_RECV(buffer_slav,nr*nphi*3,MPI_DOUBLE_PRECISION,master,MPI_ANY_TAG,MPI_COMM_FIELDLINES,status,ierr_mpi)
-            IF (ierr_mpi /=0) CALL handle_err(MPI_RECV_ERR,'fieldlines_init_I',ierr_mpi)
-            j      = status(MPI_TAG)
-            B_R(:,:,j) = buffer_slav(:,:,1)
-            B_PHI(:,:,j) = buffer_slav(:,:,2)
-            B_Z(:,:,j) = buffer_slav(:,:,3)
-         END DO
-         DEALLOCATE(buffer_slav)
-      END IF
-      CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
-      !Old dumb way
-      !IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_init_mgrid',ierr_mpi)
-      !CALL MPI_BCAST(B_R,nr*nphi*nz,MPI_DOUBLE_PRECISION,master,MPI_COMM_FIELDLINES,ierr_mpi)
-      !IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'fieldlines_init_mgrid',ierr_mpi)
-      !CALL MPI_BCAST(B_Z,nr*nphi*nz,MPI_DOUBLE_PRECISION,master,MPI_COMM_FIELDLINES,ierr_mpi)
-      !IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'fieldlines_init_mgrid',ierr_mpi)
-!DEC$ ENDIF
-      
       ! Free Variables
       DEALLOCATE(xv, xaxis, yaxis, zaxis, raxis)
       DEALlOCATE(dx, dy, dz, vx, vy, vz)
       DEALLOCATE(x1, y1, z1, r, r12, fa)
-      
-!DEC$ IF DEFINED (MPI_OPT)
+
+#if defined(MPI_OPT)
+       DEALLOCATE(mnum)
+       DEALLOCATE(moffsets)
+      CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
+      IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_init_coil1',ierr_mpi)
+      CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'fieldlines_init_coil: MPI_COMM_LOCAL',ierr_mpi)
       CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
-      IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_init_I',ierr_mpi)
-!DEC$ ENDIF
+      IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_init_coil',ierr_mpi)
+#endif
       
       RETURN
 !-----------------------------------------------------------------------

@@ -104,6 +104,9 @@
       REAL(rprec), DIMENSION(nprof) ::  target_ti_line,sigma_ti_line, &
                                         r0_ti_line, phi0_ti_line, z0_ti_line, &
                                         r1_ti_line, phi1_ti_line, z1_ti_line
+      REAL(rprec), DIMENSION(nprof) ::  target_zeff_line,sigma_zeff_line, &
+                                        r0_zeff_line, phi0_zeff_line, z0_zeff_line, &
+                                        r1_zeff_line, phi1_zeff_line, z1_zeff_line
       REAL(rprec), DIMENSION(nprof) ::  target_xics,sigma_xics, &
                                         target_xics_bright,sigma_xics_bright, &
                                         target_xics_w3,sigma_xics_w3, &
@@ -185,10 +188,15 @@
       REAL(rprec) ::  target_regcoil_current_density, sigma_regcoil_current_density
       REAL(rprec) ::  target_curvature_p2, sigma_curvature_P2
       REAL(rprec), DIMENSION(nigroup)    :: target_coillen, sigma_coillen
-      INTEGER     :: npts_curv, npts_csep, npts_cself
+      REAL(rprec), DIMENSION(nigroup)    :: target_coilsegvar, sigma_coilsegvar
+      INTEGER     :: npts_biot, npts_clen, npts_torx, npts_curv, npts_csep, npts_cself, npts_crect
       REAL(rprec), DIMENSION(nigroup)    :: target_coilcrv,  sigma_coilcrv
       REAL(rprec), DIMENSION(nigroup)    :: target_coilself, sigma_coilself
       REAL(rprec)                        :: target_coilsep,  sigma_coilsep
+      REAL(rprec), DIMENSION(nigroup)    :: target_coiltorvar, sigma_coiltorvar, thwt_coiltorvar
+      REAL(rprec), DIMENSION(nigroup)    :: coilrectvmin, coilrectvmax, coilrectduu, coilrectdul
+      REAL(rprec), DIMENSION(nigroup)    :: target_coilrect, sigma_coilrect
+      REAL(rprec) :: coilrectpfw
 
       INTEGER, PARAMETER :: jtarget_aspect     = 100
       INTEGER, PARAMETER :: jtarget_rbtor      = 1001
@@ -221,10 +229,11 @@
       INTEGER, PARAMETER :: jtarget_line_te    = 2011
       INTEGER, PARAMETER :: jtarget_ti         = 202
       INTEGER, PARAMETER :: jtarget_line_ti    = 2021
-      INTEGER, PARAMETER :: jtarget_xics       = 2022
-      INTEGER, PARAMETER :: jtarget_xics_bright= 2023
-      INTEGER, PARAMETER :: jtarget_xics_w3    = 2024
-      INTEGER, PARAMETER :: jtarget_xics_v     = 2025
+      INTEGER, PARAMETER :: jtarget_line_zeff  = 2031
+      INTEGER, PARAMETER :: jtarget_xics       = 2042
+      INTEGER, PARAMETER :: jtarget_xics_bright= 2043
+      INTEGER, PARAMETER :: jtarget_xics_w3    = 2044
+      INTEGER, PARAMETER :: jtarget_xics_v     = 2045
       INTEGER, PARAMETER :: jtarget_press      = 203
       INTEGER, PARAMETER :: jtarget_vphi       = 204
       INTEGER, PARAMETER :: jtarget_iota       = 300  
@@ -259,6 +268,9 @@
       INTEGER, PARAMETER :: jtarget_coilcrv    = 615
       INTEGER, PARAMETER :: jtarget_coilsep    = 616
       INTEGER, PARAMETER :: jtarget_coilself   = 617
+      INTEGER, PARAMETER :: jtarget_coilsegvar = 618
+      INTEGER, PARAMETER :: jtarget_coiltorvar = 619
+      INTEGER, PARAMETER :: jtarget_coilrect   = 620
       INTEGER, PARAMETER :: jtarget_x          = 900
       INTEGER, PARAMETER :: jtarget_y          = 901
       INTEGER, PARAMETER :: jtarget_Rosenbrock_F   = 902
@@ -332,6 +344,8 @@
             WRITE(iunit, out_format) 'Line Integrated Electron Temperature'
          CASE(jtarget_line_ti)
             WRITE(iunit, out_format) 'Line Integrated Ion Temperature'
+         CASE(jtarget_line_zeff)
+            WRITE(iunit, out_format) 'Line Integrated Z-Effective'
          CASE(jtarget_xics)
             WRITE(iunit, out_format) 'XICS Signal'
          CASE(jtarget_xics_bright)
@@ -406,12 +420,18 @@
             WRITE(iunit, out_format) 'REGCOIL Current Density on Winding Surface'
          CASE(jtarget_coillen)
             WRITE(iunit, out_format) 'Coil Lengths'
+         CASE(jtarget_coilsegvar)
+            WRITE(iunit, out_format) 'Relative Coil Segment Length Variations'
+         CASE(jtarget_coiltorvar)
+            WRITE(iunit, out_format) 'RMS Coil Toroidal Excursions'
          CASE(jtarget_coilcrv)
             WRITE(iunit, out_format) 'Maximum Coil Curvature'
          CASE(jtarget_coilsep)
             WRITE(iunit, out_format) 'Minimum Coil Separation'
          CASE(jtarget_coilself)
             WRITE(iunit, out_format) 'Number of Coil Self-intersections'
+         CASE(jtarget_coilrect)
+            WRITE(iunit, out_format) 'Coil Excursion from v Bounds'
          CASE(jtarget_curvature_p2)
             WRITE(iunit, out_format) 'Maximum 2nd Principal Curvature'
       END SELECT

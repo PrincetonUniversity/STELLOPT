@@ -52,7 +52,10 @@ C-----------------------------------------------
       LOGICAL :: lthreed, lconm1
       INTEGER, DIMENSION(:), ALLOCATABLE :: ireflect
       INTEGER :: multi_ns_grid, iequi, itype_precon, irst,
-     1    iter1, iter2, iterc=1, ijacob, itfsq, iresidue, neqs, neqs1,
-     2    neqs2, irzloff, ivac, ndatap, ndatai
+     1    iter1, iter2, iterc=1, ijacob, itfsq, iresidue, neqs,
+     2    irzloff, ivac, ndatap, ndatai
+
+      REAL(dp) :: router
+      REAL(dp) :: rinner
 C-----------------------------------------------
       END MODULE vmec_main

@@ -1,8 +1,7 @@
-      SUBROUTINE allocate_ns (linterp, neqs2_old)
+      SUBROUTINE allocate_ns (linterp, neqs_old)
       USE vmec_main
       USE vmec_params, ONLY: ntmax
       USE realspace
-      USE vsvd
       USE vforces
       USE xstuff
       USE csplinx
@@ -16,7 +15,7 @@
 C-----------------------------------------------
 C   D u m m y   V a r i a b l e s
 C-----------------------------------------------
-      INTEGER, INTENT(in) :: neqs2_old
+      INTEGER, INTENT(in) :: neqs_old
       LOGICAL, INTENT(inout) :: linterp
 C-----------------------------------------------
 C   L o c a l   V a r i a b l e s
@@ -37,30 +36,24 @@ C-----------------------------------------------
 !     Save old xc, scalxc for possible interpolation or IF iterations restarted on same mesh...
 !
       IF (PARVMEC) THEN 
-         IF (neqs2_old.GT.0 .AND. ALLOCATED(pscalxc) .AND. linterp) THEN
-            ALLOCATE(pxc_old(neqs2_old),pscalxc_old(neqs2_old),
+         IF (neqs_old.GT.0 .AND. ALLOCATED(pscalxc) .AND. linterp) THEN
+            ALLOCATE(pxc_old(neqs_old),pscalxc_old(neqs_old),
      &               stat=istat1)
             IF (istat1.NE.0) THEN
                STOP 'allocation error #1 in allocate_ns'
             ENDIF
-            pxc_old(:neqs2_old) = pxc(:neqs2_old)
-            pscalxc_old(:neqs2_old) = pscalxc(:neqs2_old)
-            IF (lrecon) THEN
-               delr_mse = pxc(neqs2_old)
-            END IF
+            pxc_old(:neqs_old) = pxc(:neqs_old)
+            pscalxc_old(:neqs_old) = pscalxc(:neqs_old)
          END IF
       END IF
 
-      IF (neqs2_old .GT. 0 .AND. ALLOCATED(scalxc) .AND. linterp) THEN
-         ALLOCATE(xc_old(neqs2_old), scalxc_old(neqs2_old), stat=istat1)
+      IF (neqs_old .GT. 0 .AND. ALLOCATED(scalxc) .AND. linterp) THEN
+         ALLOCATE(xc_old(neqs_old), scalxc_old(neqs_old), stat=istat1)
          IF (istat1.ne.0) THEN
             STOP 'allocation error #1 in allocate_ns'
          END IF
-         xc_old(:neqs2_old) = xc(:neqs2_old)
-         scalxc_old(:neqs2_old) = scalxc(:neqs2_old)
-         IF (lrecon) THEN
-            delr_mse = xc(neqs2_old)
-         END IF
+         xc_old(:neqs_old) = xc(:neqs_old)
+         scalxc_old(:neqs_old) = scalxc(:neqs_old)
       END IF
 
 !
@@ -90,34 +83,9 @@ C-----------------------------------------------
          ALLOCATE(pfaclam(0:ntor,0:mpol1,1:ns,ntmax),stat=istat1)
       END IF
 
-      ALLOCATE(ireflect(ns*nzeta), indexr(2*ns) ,imid(2*ns),
-     &         stat=istat1)
+      ALLOCATE(ireflect(ns*nzeta), stat=istat1)
       IF (istat1.ne.0) THEN
          STOP 'allocation error #3 in allocate_ns'
-      END IF
-
-      ALLOCATE(current(ns),rm2(ns),vrm2(ns),
-     &         ovrm2(ns), ochip(ns), presph(ns), presint(ns),
-     &         w_ia(ns), w1_ia(ns), u_ia(ns), u1_ia(ns),
-     &         w_pa(ns), w1_pa(ns), u_pa(ns), u1_pa(ns),
-     &         w_ib(ns), w1_ib(ns), u_ib(ns), u1_ib(ns),
-     &         w_pb(ns), w1_pb(ns), u_pb(ns), u1_pb(ns),
-     &         rmid(2*ns),datamse(2*ns),qmid(2*ns),
-     &         shear(2*ns),presmid(2*ns),alfa(2*ns),curmid(2*ns),
-     &         curint(2*ns),psimid(2*ns),ageo(2*ns),volpsi(2*ns),
-     &         isplinef(ns),isplineh(ns),psplinef(ns),psplineh(ns),
-     &         phimid(2*ns),pm(ns,0:nobser+nobd),
-     &         im(ns,0:nobser+nobd),stat=istat1)
-      IF (istat1.ne.0) THEN
-         STOP 'allocation error #4 in allocate_ns'
-      END IF
-
-      IF (nbsets.gt.0) THEN
-         ALLOCATE(pmb(ns,0:nbcoil_max,nbsets,2),
-     &            imb(ns,0:nbcoil_max,nbsets,2),stat=istat1)
-      END IF
-      IF (istat1.ne.0) THEN
-         STOP 'allocation error #5 in allocate_ns'
       END IF
 
       ALLOCATE(ard(nsp1,2),arm(nsp1,2),brd(nsp1,2),brm(nsp1,2),
@@ -163,50 +131,48 @@ C-----------------------------------------------
       END IF
 
       IF(PARVMEC) THEN
-         ALLOCATE(pgc(neqs2), pxcdot(neqs2), pxsave(neqs2),
-     &            pxstore(neqs2), pcol_scale(neqs2), stat=istat1)
+         ALLOCATE(pgc(neqs), pxcdot(neqs), pxsave(neqs),
+     &            pxstore(neqs), pcol_scale(neqs), stat=istat1)
          pxstore = zero
          IF (istat1 .NE. 0) THEN
             STOP 'allocation error #9 in allocate_ns'
          END IF
 
          IF (.not.ALLOCATED(pxc)) THEN
-            ALLOCATE (pxc(neqs2), pscalxc(neqs2), stat=istat1)
+            ALLOCATE (pxc(neqs), pscalxc(neqs), stat=istat1)
             IF (istat1 .NE. 0) THEN
                STOP 'allocation error #10 in allocate_ns'
             END IF
-            pxc(:neqs2) = zero
+            pxc(:neqs) = zero
          END IF
 
          IF (ALLOCATED(pxc_old)) THEN
-            pxstore(1:neqs2_old) = pxc_old(1:neqs2_old)
-            pscalxc(1:neqs2_old) = pscalxc_old(1:neqs2_old)
+            pxstore(1:neqs_old) = pxc_old(1:neqs_old)
+            pscalxc(1:neqs_old) = pscalxc_old(1:neqs_old)
             DEALLOCATE (pxc_old, pscalxc_old)
          END IF
-         pxc(neqs2) = delr_mse
       END IF
 
-      ALLOCATE(gc(neqs2), xcdot(neqs2), xsave(neqs2),
-     &         xstore(neqs2), col_scale(neqs2), stat=istat1)
+      ALLOCATE(gc(neqs), xcdot(neqs), xsave(neqs),
+     &         xstore(neqs), col_scale(neqs), stat=istat1)
       xstore = zero
       IF (istat1 .NE. 0) THEN
          STOP 'allocation error #9 in allocate_ns'
       END IF
 
       IF (.NOT.ALLOCATED(xc)) THEN
-         ALLOCATE (xc(neqs2), scalxc(neqs2), stat=istat1)
+         ALLOCATE (xc(neqs), scalxc(neqs), stat=istat1)
          IF (istat1 .NE. 0) THEN
             STOP 'allocation error #10 in allocate_ns'
          END IF
-         xc(:neqs2) = zero
+         xc(:neqs) = zero
       END IF
 
       IF (ALLOCATED(xc_old)) THEN
-         xstore(1:neqs2_old) = xc_old(1:neqs2_old)
-         scalxc(1:neqs2_old) = scalxc_old(1:neqs2_old)
+         xstore(1:neqs_old) = xc_old(1:neqs_old)
+         scalxc(1:neqs_old) = scalxc_old(1:neqs_old)
          DEALLOCATE (xc_old, scalxc_old)
       END IF
-      xc(neqs2) = delr_mse
 
 !
 !     Allocate nrzt-dependent arrays (persistent) for funct3d

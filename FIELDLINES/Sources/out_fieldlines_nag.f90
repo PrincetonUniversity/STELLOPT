@@ -101,8 +101,6 @@
          IF (y0 < 0) y0 = delta_phi + y0
          z0 = q(2)
          zw = 0; ier=0
-         !CALL EZspline_isInDomain(MU_spl,x0,y0,z0,ier)
-         !IF (ier == 0) THEN
          IF ((x0 >= rmin-eps1) .and. (x0 <= rmax+eps1) .and. &
             (y0 >= phimin-eps2) .and. (y0 <= phimax+eps2) .and. &
             (z0 >= zmin-eps3) .and. (z0 <= zmax+eps3)) THEN
@@ -134,8 +132,6 @@
          IF (y0 < 0) y0 = delta_phi + y0
          z0 = Z_lines(myline,myldex)
          zw = 0
-         !CALL EZspline_isInDomain(MODB_spl,x0,y0,z0,ier)
-         !IF (ier == 0) CALL EZspline_interp(MODB_spl,x0,y0,z0,zw,ier)
          IF ((x0 >= rmin-eps1) .and. (x0 <= rmax+eps1) .and. &
             (y0 >= phimin-eps2) .and. (y0 <= phimax+eps2) .and. &
             (z0 >= zmin-eps3) .and. (z0 <= zmax+eps3)) THEN
@@ -157,12 +153,6 @@
             B_lines(myline,myldex) = fval(1)
          END IF
       END IF
-
-      !IF (lverb .and. ((phi+dphi) .ge. myldex*dphi)) THEN
-      !   CALL backspace_out(6,6)
-      !   WRITE(6,'(A,I3,A)',ADVANCE='no') '[',INT((100.*((myline-1)*nsteps+myldex)/(nsteps*myend))),']%'
-      !   CALL FLUSH(6)
-      !END IF
 
       ! Update position
       phi    = phi + dphi

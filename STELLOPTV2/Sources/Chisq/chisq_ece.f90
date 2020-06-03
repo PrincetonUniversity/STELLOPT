@@ -38,8 +38,8 @@
       IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'ECEREFLECT',ik,7
       IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA  REFLECT  FREQ  RADTX  RADTO  MIX'
       IF (niter >= 0) THEN
-      	 DO ij = 1, nsys
-      	    IF (ALL(sigma(ij,:) >= bigno,DIM=1)) CYCLE
+      	DO ij = 1, nsys
+      	   IF (ALL(sigma(ij,:) >= bigno,DIM=1)) CYCLE
             DO ik = 1, nprof
                IF (sigma(ij,ik) >= bigno) CYCLE
                mtargets = mtargets + 1
@@ -50,7 +50,7 @@
             END DO
          END DO
       ELSE
-      	 DO ij = 1, nsys
+      	DO ij = 1, nsys
             DO ik = 1, nprof
                IF (sigma(ij,ik) < bigno) THEN
                   mtargets = mtargets + 1

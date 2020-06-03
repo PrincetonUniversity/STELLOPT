@@ -197,7 +197,7 @@
       
       LOGICAL                  :: lverb, lkeep_mins, lneed_output, lrestart,&
                                   lrefit, lno_restart, lauto_domain, lparallel,&
-                                  ltriangulate, lcoil_geom
+                                  ltriangulate, lcoil_geom, lrenorm
       INTEGER                  :: nvars, mtargets, iter, mode, iunit_out,&
                                   cr_strategy, rho_exp, npopulation, noptimizers,&
                                   ier_paraexe
