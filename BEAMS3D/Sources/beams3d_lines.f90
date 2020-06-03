@@ -31,7 +31,7 @@
       REAL(rprec) :: xlast,ylast,zlast ! for storing position
       REAL(rprec) :: moment, mycharge, myZ, mymass, myv_neut(3), &
                      B_temp(4), rand_prob, cum_prob, tau, next_t, &
-                     dt_out, partvmax, fact_crit, fact_pa, fact_vsound
+                     dt_out, partvmax, fact_crit, fact_pa, fact_vsound, partpmax
       LOGICAL, ALLOCATABLE     :: neut_lines(:,:)
       INTEGER, ALLOCATABLE     :: end_state(:)
       REAL(rprec), ALLOCATABLE :: shine_through(:), shine_port(:)

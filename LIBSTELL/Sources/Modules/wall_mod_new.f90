@@ -159,12 +159,12 @@
       ! Now do the thing
       !CALL CALC_TREE_SIZE(nface,8,nmin_vtex)
       nsubdomains = 0
-      xmin = MINVAL(vertex(:,1)) - deltal
-      xmax = MAXVAL(vertex(:,1)) + deltal
-      ymin = MINVAL(vertex(:,2)) - deltal
-      ymax = MAXVAL(vertex(:,2)) + deltal
-      zmin = MINVAL(vertex(:,3)) - deltal
-      zmax = MAXVAL(vertex(:,3)) + deltal
+      xmin = MINVAL(vertex(:,1))! - deltal
+      xmax = MAXVAL(vertex(:,1))! + deltal
+      ymin = MINVAL(vertex(:,2))! - deltal
+      ymax = MAXVAL(vertex(:,2))! + deltal
+      zmin = MINVAL(vertex(:,3))! - deltal
+      zmax = MAXVAL(vertex(:,3))! + deltal
       IF (PRESENT(comm)) THEN
          CALL wall_create_new(wall,xmin,xmax,ymin,ymax,zmin,zmax,shar_comm)
          CALL mpialloc_1d_int(ihit_array,nface,shar_rank,0,shar_comm,win_ihit)
@@ -403,7 +403,7 @@
             DOT12  = this%wall%V1(i,1)*V2x + this%wall%V1(i,2)*V2y + this%wall%V1(i,3)*V2z
             alphal = (this%wall%DOT11(i)*DOT02 - this%wall%DOT01(i)*DOT12)*this%wall%invDenom(i)
             betal  = (this%wall%DOT00(i)*DOT12 - this%wall%DOT01(i)*DOT02)*this%wall%invDenom(i)
-            WRITE(6,*) '********',i,alphal,betal,alphal+betal,tloc
+            !WRITE(6,*) '********',i,alphal,betal,alphal+betal,tloc
             IF ((alphal < zero) .or. (betal < zero) .or. (alphal+betal > one)) CYCLE
             IF (tloc < tmin) THEN
                ik_minl = this%wall%imap(i)
@@ -431,7 +431,7 @@
             IF (xs > this%xmax(i) .or. xb < this%xmin(i) .or. &
                 ys > this%ymax(i) .or. yb < this%ymin(i) .or. &
                 zs > this%zmax(i) .or. zb < this%zmin(i)) CYCLE
-            PRINT *,'Seaching ',i,this%xmax(i),this%xmin(i),this%zmax(i),this%zmin(i)
+            !PRINT *,'Seaching ',i,this%xmax(i),this%xmin(i),this%zmax(i),this%zmin(i)
             CALL collide_double_search(this%sub_walls(i),x0,y0,z0,x1,y1,z1,xw,yw,zw,lhit2,tmin2,ik_min2)
             ! IF we have a hit determine if it's closer to x0, y0, z0 than others
             CALL FLUSH(6)
@@ -634,7 +634,7 @@
          that%DOT01(ntri)    = this%DOT01(i)
          that%DOT11(ntri)    = this%DOT11(i)
          that%d(ntri)        = this%d(i)
-         that%invDenom(ntri) = this%invDenom(ntri)
+         that%invDenom(ntri) = this%invDenom(i)
          that%A0(ntri,:)     = this%A0(i,:)
          that%V0(ntri,:)     = this%V0(i,:)
          that%V1(ntri,:)     = this%V1(i,:)
@@ -885,9 +885,9 @@
       ! Calculate the mean values Note all triangles are considered
       xmean = 0; ymean=0; zmean=0
       DO i = 1, this%wall%ntri
-         xtemp = 3*this%wall%A0(i,1)+(this%wall%V0(i,1)+this%wall%V1(i,1))
-         ytemp = 3*this%wall%A0(i,2)+(this%wall%V0(i,2)+this%wall%V1(i,2))
-         ztemp = 3*this%wall%A0(i,3)+(this%wall%V0(i,3)+this%wall%V1(i,3))
+         xtemp = 3*this%wall%A0(i,1)+this%wall%V0(i,1)+this%wall%V1(i,1)
+         ytemp = 3*this%wall%A0(i,2)+this%wall%V0(i,2)+this%wall%V1(i,2)
+         ztemp = 3*this%wall%A0(i,3)+this%wall%V0(i,3)+this%wall%V1(i,3)
          xmean = xmean + xtemp
          ymean = ymean + ytemp
          zmean = zmean + ztemp
