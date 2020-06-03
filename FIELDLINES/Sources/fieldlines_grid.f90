@@ -54,16 +54,5 @@
       REAL(rprec) ::  vb_ws, u0, v0, dr_m, rb_ws, zb_ws
       REAL(rprec), ALLOCATABLE :: rmnc_m(:), zmns_m(:), rmns_m(:), zmnc_m(:)
       
-      ! The following are for using the TOMS661 interpolation algorithm
-      INTEGER :: n_qshep, nq_qshep, nw_qshep, nr_qshep
-      INTEGER, ALLOCATABLE :: lnext_qshep(:)
-      INTEGER, ALLOCATABLE :: lcell_qshep(:,:,:)
-      REAL(rprec) :: rmin_qshep(3), rdel_qshep(3), rmax_qshep
-      REAL(rprec), ALLOCATABLE :: rsq1_qshep(:), rsq2_qshep(:)
-      REAL(rprec), ALLOCATABLE :: x_qshep(:), y_qshep(:), z_qshep(:)
-      REAL(rprec), ALLOCATABLE :: v_qshep(:,:)
-      REAL(rprec), ALLOCATABLE :: b1_qshep(:), b2_qshep(:)
-      REAL(rprec), ALLOCATABLE :: a1_qshep(:,:), a2_qshep(:,:)
-      
 
       END MODULE fieldlines_grid

@@ -16,7 +16,7 @@
 !     Local Variables
 !        nprocs_total :: total number of processors         
 !----------------------------------------------------------------------
-      INTEGER :: nprocs_total, vmajor, vminor, color, key, nshar
+      INTEGER :: nprocs_total, vmajor, vminor, color, key, nshar, ngshar
       INTEGER :: worker_group
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
@@ -33,6 +33,31 @@
          WRITE(6,'(4X,A,I2,A,I2.2)') 'MPI Version: ',vmajor,'.',vminor
          WRITE(6,*) '   Optimizers requested: ',noptimizers
          WRITE(6,*) '   Number of Processors: ',nprocs_total
+         CALL FLUSH(6)
+      END IF
+
+      ! See how many shared memory groups we have
+      CALL MPI_COMM_SPLIT_TYPE( MPI_COMM_STEL, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, MPI_COMM_MYWORLD, ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_init_mpi1',ierr_mpi)
+      CALL MPI_COMM_RANK(MPI_COMM_MYWORLD, myworkid, ierr_mpi)
+      CALL MPI_COMM_SIZE(MPI_COMM_MYWORLD, nshar, ierr_mpi )
+      CALL MPI_COMM_FREE(MPI_COMM_MYWORLD, ierr_mpi)
+
+      ! Count number of shared memory groups
+      ngshar = 0
+      IF (myworkid == master) ngshar = 1
+      CALL MPI_ALLREDUCE(MPI_IN_PLACE, ngshar, 1, MPI_INTEGER, MPI_SUM, MPI_COMM_STEL, ierr_mpi)
+      IF (myid == master) THEN
+         WRITE(6,*) '   Number of shared memory groups: ',ngshar
+         CALL FLUSH(6)
+      END IF
+
+      ! Now if nshar >= noptimizers we're fine
+      ! IF ngshar < noptimizer then we should guaruntee that we can have at least one optimizer
+      IF ((ngshar == 1) .and. (noptimizers /= 1)) noptimizers = 0
+      IF (ngshar < noptimizers) noptimizers = ngshar
+      IF (myid == master) THEN
+         WRITE(6,*) '   Optimizers adjusted to: ',noptimizers
          CALL FLUSH(6)
       END IF
 

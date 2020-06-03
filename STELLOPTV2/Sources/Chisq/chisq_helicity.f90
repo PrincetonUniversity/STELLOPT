@@ -42,7 +42,7 @@
 !----------------------------------------------------------------------
       IF (iflag < 0 ) RETURN
       IF (lasym) STOP 'ERROR: Helicity targeting requires lasym = .FALSE.'
-      dex = COUNT(sigma < bigno)*mnboz_b
+      dex = COUNT(ABS(sigma) < bigno)*mnboz_b
       l_heli = NINT(REAL(helicity))
       k_heli = NINT(AIMAG(helicity))
       IF (niter >= 0) THEN   
@@ -53,11 +53,9 @@
             CALL FLUSH(iunit_out)
          END IF
          ! Now calculate chi_sq
-         !print "(a,i6,a,i7,3(a,l1))","chisq_helicity mnboz_b=",mnboz_b," nsd=",nsd," allocated(bmnc_b)=",allocated(bmnc_b), &
-         !     " allocated(ixn_b):",allocated(ixn_b)," allocated(ixm_b):",allocated(ixm_b)
          booz_xform_initialized = ALLOCATED(bmnc_b)
          DO ik = 1, nsd
-            IF (sigma(ik) >= bigno) CYCLE
+            IF (ABS(sigma(ik)) >= bigno) CYCLE
             IF (booz_xform_initialized) THEN
                bmax  = MAXVAL(ABS(bmnc_b(1:mnboz_b,ik)))
             ELSE
@@ -87,7 +85,6 @@
                   END IF
                   bmn = 0 ! Any value is fine.
                END IF
-               !print "(a,l1,3(a,i4))","booz_xform_initialized=",booz_xform_initialized,"  mn=",mn,"  m=",m,"  n=",n
                !m_save(mn) = m
                !n_save(mn) = n
 !               ! Target for minimization Bmn-s with helicities other than the one desired
@@ -142,7 +139,7 @@
          ! CALCULATE mnboz_b becasue we don't know it yet (setup_booz.f)
          mnboz_b = (2*nboz+1)*(mboz-1) + (nboz + 1)
          DO ik = 1, nsd
-            IF (sigma(ik) < bigno) THEN
+            IF (ABS(sigma(ik)) < bigno) THEN
                lbooz(ik) = .TRUE.
                DO mn = 1, mnboz_b
                   mtargets = mtargets + 1

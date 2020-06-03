@@ -3,7 +3,6 @@
       USE vmec_params, ONLY: rss, zcs, rsc, zcc,                               &
                              meven, modd, ntmax, signgs
       USE realspace, ONLY: phip
-      USE vsvd
       USE xstuff
       USE precon2d
       USE parallel_include_module
@@ -26,7 +25,7 @@
 !   L o c a l   V a r i a b l e s
 !-----------------------------------------------
       INTEGER :: nsfix, jedge, delIter
-      REAL(dp) :: r1, tnorm, fac, tmp, tmp2(ns), ftotal
+      REAL(dp) :: r1, fac, tmp, tmp2(ns), ftotal
 
       INTEGER  :: i, j, k, l, m, blksize, left, right
       INTEGER, ALLOCATABLE, DIMENSION(:) :: counts, disps
@@ -80,44 +79,6 @@
 
 !     PRECONDITIONER MUST BE CALCULATED USING RAW (UNPRECONDITIONED) FORCES
       IF (ictrl_prec2d .GE. 2 .OR. ictrl_prec2d .EQ. -1) RETURN
-
-!
-!     PUT FORCES INTO PHIFSAVE UNITS USED BY PRECONDITIONERS, FNORM
-!
-      IF (phifac .eq. zero) THEN
-         STOP 'phifac = 0 in residue'
-      ELSE
-         tnorm = phifsave/phifac           !put all forces into phifac=phifsave units
-      END IF
-
-      IF (lrecon) THEN
-         CALL second0(tredon)
-         tmp = SUM(gcr(n0,m0,tlglob:trglob,1))
-         CALL MPI_Allreduce(tmp,r1,1,MPI_REAL8,MPI_SUM,NS_COMM,MPI_ERR)
-         CALL second0(tredoff)
-         allreduce_time = allreduce_time + (tredoff - tredon)
-         fsqsum0 = signgs*hs*r1/r0scale
-         nsfix = 1                   !fix origin for reconstruction mode
-         gcr(:,:,tlglob:trglob,:) = gcr(:,:,tlglob:trglob,:) * tnorm**2
-         gcz(:,:,tlglob:trglob,:) = gcz(:,:,tlglob:trglob,:) * tnorm**2
-         gcl(:,:,tlglob:trglob,:) = gcl(:,:,tlglob:trglob,:) * tnorm
-         IF (iopt_raxis .GT. 0 .AND.                                           &
-             iresidue   .EQ. 2 .AND.                                           &
-             fsq        .LT.fopt_axis) THEN
-            iresidue = 3
-         END IF
-         IF (iresidue .LT. 3) THEN
-            gcr(n0,m0,nsfix,1) = zero
-         END IF
-      ELSE
-!
-!     ADJUST PHIEDGE
-!
-         IF (imovephi .GT. 0) THEN
-            CALL movephi1 (gphifac)
-         END IF
-      END IF
-      gc(neqs1) = gphifac
 
 !
 !     COMPUTE INVARIANT RESIDUALS
@@ -289,7 +250,6 @@
       USE vmec_params, ONLY: rss, zcs, rsc, zcc,                               &
                              meven, modd, ntmax, signgs
       USE realspace, ONLY: phip
-      USE vsvd
       USE xstuff
       USE precon2d
 #ifdef _HBANGLE
@@ -310,7 +270,7 @@
 !   L o c a l   V a r i a b l e s
 !-----------------------------------------------
       INTEGER :: nsfix, jedge, delIter
-      REAL(dp) :: r1, tnorm, fac
+      REAL(dp) :: r1, fac
       INTEGER  :: i, j, k, l
 !-----------------------------------------------
 !
@@ -368,45 +328,6 @@
       END IF
 
 !
-!     PUT FORCES INTO PHIFSAVE UNITS USED BY PRECONDITIONERS, FNORM
-!
-      IF (phifac .eq. zero) THEN
-         STOP 'phifac = 0 in residue'
-      ELSE
-         tnorm = phifsave/phifac !put all forces into phifac=phifsave units
-      END IF
-
-      IF (lrecon) THEN
-!
-!       MOVE R(n=0,m=0) TO SATISFY LIMITER OR AXIS POSITION
-!       USE XC(NEQS2) TO STORE THIS PERTURBATION
-!       TO SATISFY FORCE BALANCE AT JS=1, ADJUST PFAC IN RADFOR
-!       ALSO, SCALE TOROIDAL FLUX AT EDGE TO MATCH MINOR RADIUS
-
-         r1 = SUM(gcr(:ns,n0,m0,1))
-         fsqsum0 = signgs*hs*r1/r0scale
-         nsfix = 1                   !fix origin for reconstruction mode
-         gcr = gcr*tnorm**2
-         gcz = gcz*tnorm**2
-         gcl = gcl*tnorm
-         IF (iopt_raxis .gt. 0 .and.                                           &
-             iresidue   .eq. 2 .and.                                           &
-             fsq        .lt. fopt_axis) THEN
-            iresidue = 3
-         END IF
-         IF (iresidue .lt. 3) THEN
-            gcr(nsfix,n0,m0,1) = zero
-         END IF
-      ELSE
-!
-!     ADJUST PHIEDGE
-!
-         IF (imovephi .gt. 0) THEN
-            CALL movephi1 (gphifac)
-         END IF
-      END IF
-      gc(neqs1) = gphifac
-!
 !     COMPUTE INVARIANT RESIDUALS
 !
       r1 = one/(2*r0scale)**2
@@ -415,12 +336,6 @@
 !ADD A V3FIT RELATED FLAG? ADD fsq criterion first
       delIter = iter2 - iter1
 
-!      IF (l_v3fit) THEN  ! MRC I don't this this is valid anymore.
-!  Coding for when run by V3FIT. Needed for correct computation
-!  of partial derivatives
-!         IF (iter2-iter1.lt.50) jedge = 1
-!      ELSE
-!  Coding for VMEC2000 run stand-alone
       IF (delIter       .lt. 50 .and.                                          &
           (fsqr + fsqz) .lt. 1.E-6_dp) THEN
          jedge = 1

@@ -9,7 +9,6 @@
       USE realspace
       USE vmec_params, ONLY: ntmax
       USE vacmod, ONLY: nuv, nuv3
-      USE vsvd
       USE timer_sub
       USE parallel_include_module
       USE parallel_vmec_module, ONLY: MyEnvVariables
@@ -102,7 +101,7 @@ C-----------------------------------------------
 C-----------------------------------------------
       INTERFACE
          SUBROUTINE initialize_radial(nsval, ns_old, delt0,
-     &                               lscreen, reset_file_name)
+     &                                lscreen, reset_file_name)
          USE vmec_main
          IMPLICIT NONE
          INTEGER, INTENT(in) :: nsval
@@ -118,7 +117,7 @@ C-----------------------------------------------
       CALL MyEnvVariables
       CALL InitRunVmec(COMM_WORLD,lfreeb)
       LV3FITCALL = l_v3fit
-      IF(LV3FITCALL) THEN
+      IF (LV3FITCALL) THEN
          IF (RUNVMEC_PASS.GT.1) THEN
             CALL Serial2Parallel4X(xc,pxc)
             CALL Serial2Parallel4X(xcdot,pxcdot)
@@ -148,6 +147,13 @@ C-----------------------------------------------
      &                     RUNVMEC_COMM_WORLD, MPI_ERR)
             CALL MPI_Bcast(lamscale, 1, MPI_REAL8, 0,
      &                     RUNVMEC_COMM_WORLD, MPI_ERR)
+
+            nsmin = t1lglob; nsmax = t1rglob
+            DO js = nsmin, nsmax
+               pphip(:,js) = phips(js)
+               pchip(:,js) = chips(js)
+            END DO
+
             CALL second0(bcasttoff)
             broadcast_time = broadcast_time + (bcasttoff - bcastton)
          END IF
@@ -232,7 +238,6 @@ C-----------------------------------------------
          GOTO 1000
       END IF
 
-      imovephi = 0
       jacob_off = 0
 
       IF (IAND(ictrl_flag, timestep_flag) .EQ. 0) GOTO 1000
@@ -334,8 +339,6 @@ C-----------------------------------------------
          IF (numsteps .GT. 0) THEN
             niter = niter_store
          END IF
-
-         IF (imatch_phiedge .eq. 3) imovephi = 1
 
          CALL Finalize_bst(.FALSE.) ! SAL 080119
 

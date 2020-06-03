@@ -273,8 +273,10 @@ C-----------------------------------------------
      1           win_brtemp, win_bptemp, win_bztemp
 C-----------------------------------------------
       mylocalid = 0
+#if defined(MPI_COMM)
       IF (PRESENT(comm)) CALL MPI_COMM_RANK(comm, 
      1                                      mylocalid, ier_flag)
+#endif
 
       CALL safe_open(iunit, istat, filename, 'old', 'unformatted')
       IF (istat .ne. 0) THEN
@@ -316,20 +318,29 @@ C-----------------------------------------------
 
       nbvac = nr0b*nz0b*nv
       IF (.NOT. ASSOCIATED(bvac)) THEN
+#if defined(MPI_OPT)
          IF (PRESENT(comm)) THEN
             CALL MPIALLOC(bvac,nbvac,3,mylocalid,0,comm,win_bvac)
          ELSE
+#endif
             ALLOCATE (bvac(nbvac,3))
+#if defined(MPI_OPT)
          END IF
+#endif
       ELSE IF (SIZE(bvac,1) .ne. nbvac) THEN
+#if defined(MPI_OPT)
          IF (PRESENT(comm)) THEN
             CALL MPIDEALLOC(bvac,win_bvac)
             CALL MPIALLOC(bvac,nbvac,3,mylocalid,0,comm,win_bvac)
          ELSE
+#endif
             DEALLOCATE (bvac);  ALLOCATE(bvac(nbvac,3))
+#if defined(MPI_OPT)
          END IF
+#endif
       END IF
 
+#if defined(MPI_OPT)
       IF (PRESENT(comm)) THEN
          CALL MPIALLOC(brtemp,nr0b,nz0b,np0b,
      1                 mylocalid,0,comm,win_brtemp)
@@ -338,9 +349,12 @@ C-----------------------------------------------
          CALL MPIALLOC(bztemp,nr0b,nz0b,np0b,
      1                 mylocalid,0,comm,win_bztemp)
       ELSE
+#endif
          ALLOCATE (brtemp(nr0b,nz0b,np0b), bptemp(nr0b,nz0b,np0b),
      1          bztemp(nr0b,nz0b,np0b), stat=istat)
+#if defined(MPI_OPT)
       END IF
+#endif
 
       IF (istat .ne. 0) THEN
         PRINT *,' allocation for b-vector storage failed'
@@ -382,11 +396,15 @@ C-----------------------------------------------
       END IF
 
       IF (PRESENT(comm)) THEN
+#if defined(MPI_OPT)
          CALL MPI_BCAST(ig,1,MPI_INTEGER,0,comm,istat)
          CALL MPIDEALLOC(brtemp,win_brtemp)
          CALL MPIDEALLOC(bptemp,win_bptemp)
          CALL MPIDEALLOC(bztemp,win_bztemp)
          IF (mylocalid /= 0) CALL FSEEK(iunit,ig,1)
+#else
+         DEALLOCATE (brtemp, bztemp, bptemp)
+#endif
       ELSE
          DEALLOCATE (brtemp, bztemp, bptemp)
       END IF
@@ -634,11 +652,12 @@ C-----------------------------------------------
       INTEGER, DIMENSION(3)   :: dimlens
       CHARACTER(LEN=100) :: temp
       INTEGER :: nskip, sh(1)
+      INTEGER :: temp_rank
 #if defined(MPI_OPT)
       LOGICAL :: lMPIInit
       INTEGER :: mpi_rank, mpi_size, MPI_ERR
       INTEGER :: shar_rank, shar_comm, temp_comm, temp_size, 
-     1           temp_rank, win_brtemp, win_bptemp, win_bztemp
+     1           win_brtemp, win_bptemp, win_bztemp
 
       CALL MPI_INITIALIZED(lMPIInit, MPI_ERR)
       IF ((lMPIInit) .and. PRESENT(comm)) THEN
@@ -770,6 +789,7 @@ C-----------------------------------------------
          temp_size = 1; temp_rank = 0
       END IF
 #else
+      temp_rank = 0
       ALLOCATE (brtemp(nr0b,nz0b,np0b), bptemp(nr0b,nz0b,np0b),
      1          bztemp(nr0b,nz0b,np0b), bttemp(nbvac,3), stat=istat)
       IF (istat .ne. 0)STOP 'Error allocating bXtemp in mgrid_mod2 '
@@ -918,14 +938,18 @@ C-----------------------------------------------
      
       istat = 0
 
+#if defined(MPI_OPT)
       IF (PRESENT(comm)) THEN
          IF (ASSOCIATED(bvac)) THEN
             CALL MPI_BARRIER(comm,istat)
             CALL mpidealloc(bvac,win_bvac)
          END IF
       ELSE
+#endif
          IF (ASSOCIATED(bvac)) DEALLOCATE (bvac,stat=istat)
+#if defined(MPI_OPT)
       END IF
+#endif
       IF (ASSOCIATED(xobser))
      1   DEALLOCATE (xobser, xobsqr, zobser, unpsiext, dsiext,
      2      psiext,plflux, iconnect, needflx, needbfld, plbfld,

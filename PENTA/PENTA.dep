@@ -1,0 +1,35 @@
+# Microsoft Developer Studio Generated Dependency File, included by DKES.mak
+
+penta_imp.o : \
+      read_input_file_mod.o \
+      penta_modules.o \
+      penta_subroutines.o 
+      
+
+read_input_file_mod.o : \
+      bspline90_22.o \
+      penta_modules.o \
+      ../../LIBSTELL/$(LOCTYPE)/read_wout_mod.o
+      
+
+penta_subroutines.o : \
+      bspline90_22.o \
+      penta_modules.o \
+      penta_functions_mod.o
+      
+
+bspline90_22.o : 
+      
+
+penta_modules.o : 
+      
+
+penta_functions_mod.o : \
+      bspline90_22.o \
+      penta_modules.o 
+      
+
+quanc8.o : 
+
+
+

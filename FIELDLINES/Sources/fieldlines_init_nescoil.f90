@@ -27,10 +27,10 @@
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       INTEGER, PARAMETER :: BYTE_8 = SELECTED_INT_KIND (8)
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
       INTEGER :: sender, status(MPI_STATUS_SIZE)                     !mpi stuff
       INTEGER(KIND=BYTE_8),ALLOCATABLE :: mnum(:), moffsets(:)
-!DEC$ ENDIF  
+#endif
       INTEGER(KIND=BYTE_8) :: icount, chunk
       INTEGER :: s, i, j, k, nu, nv, mystart,myend
 
@@ -59,7 +59,7 @@
       nu = 128; nv = 128; nuv = nu * nv; fnuv = REAL(1)/REAL(nuv)
 
       ! Read the NESCOIL FILE
-      IF (myid == master) THEN
+      IF (myworkid == master) THEN
           npos = 1
           CALL safe_open(iunit,ier,'nescout.'//TRIM(nescoil_string),'unknown','formatted')
           DO
@@ -229,7 +229,7 @@
       !
 
 
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
       IF (ierr_mpi /=0) CALL handle_err(MPI_BCAST_ERR,'fieldlines_init_nescoil 1',ierr_mpi)
       CALL MPI_BCAST(nfp,1,MPI_INTEGER, master, MPI_COMM_FIELDLINES,ierr_mpi)
@@ -256,7 +256,7 @@
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_init_nescoil 13',ierr_mpi)
       CALL MPI_BCAST(zcur,nuv,MPI_DOUBLE_PRECISION, master, MPI_COMM_FIELDLINES,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_init_nescoil 14',ierr_mpi)
-!DEC$ ENDIF
+#endif
       
       IF (lverb) THEN
          WRITE(6,'(A)') '----- NESCOIL Current Surface -----'
@@ -268,29 +268,29 @@
       END IF
       
       ! Break up the Work
-      chunk = FLOOR(REAL(nr*nphi*nz) / REAL(numprocs))
-      mystart = myid*chunk + 1
+      chunk = FLOOR(REAL(nr*nphi*nz) / REAL(nprocs_fieldlines))
+      mystart = myworkid*chunk + 1
       myend = mystart + chunk - 1
 
       ! This section sets up the work so we can use ALLGATHERV
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
       IF (ALLOCATED(mnum)) DEALLOCATE(mnum)
       IF (ALLOCATED(moffsets)) DEALLOCATE(moffsets)
-      ALLOCATE(mnum(numprocs), moffsets(numprocs))
+      ALLOCATE(mnum(nprocs_fieldlines), moffsets(nprocs_fieldlines))
       CALL MPI_ALLGATHER(chunk,1,MPI_INTEGER,mnum,1,MPI_INTEGER,MPI_COMM_FIELDLINES,ierr_mpi)
       CALL MPI_ALLGATHER(mystart,1,MPI_INTEGER,moffsets,1,MPI_INTEGER,MPI_COMM_FIELDLINES,ierr_mpi)
       i = 1
       DO
-         IF ((moffsets(numprocs)+mnum(numprocs)-1) == nr*nphi*nz) EXIT
-         IF (i == numprocs) i = 1
+         IF ((moffsets(nprocs_fieldlines)+mnum(nprocs_fieldlines)-1) == nr*nphi*nz) EXIT
+         IF (i == nprocs_fieldlines) i = 1
          mnum(i) = mnum(i) + 1
-         moffsets(i+1:numprocs) = moffsets(i+1:numprocs) + 1
+         moffsets(i+1:nprocs_fieldlines) = moffsets(i+1:nprocs_fieldlines) + 1
          i=i+1
       END DO
-      mystart = moffsets(myid+1)
-      chunk  = mnum(myid+1)
+      mystart = moffsets(myworkid+1)
+      chunk  = mnum(myworkid+1)
       myend   = mystart + chunk - 1
-!DEC$ ENDIF
+#endif
       IF (lafield_only) THEN
             ! This is not supported
       ELSE
@@ -317,7 +317,7 @@
                by_temp = SUM(dby)*fnuv
                bx = bx + (bx_temp * COS(alp * iper) - by_temp * SIN(alp * iper))
                by = by + (by_temp * COS(alp * iper) + bx_temp * SIN(alp * iper))
-               !IF (myid == 10) THEN; WRITE(6,*) fnuv; CALL FLUSH(6); STOP; END IF
+               !IF (myworkid == 10) THEN; WRITE(6,*) fnuv; CALL FLUSH(6); STOP; END IF
                B_Z(i,j,k) = B_Z(i,j,k) + SUM(dbz)*fnuv
             END DO
             B_R(i,j,k) = B_R(i,j,k) + bx * COS(phiaxis(j)) + by * sin(phiaxis(j))
@@ -339,7 +339,7 @@
          CALL FLUSH(6)
       END IF    
       
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
       IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'torlines_init_external',ierr_mpi)
 !       ! Adjust indexing to send 2D arrays
@@ -354,13 +354,13 @@
                         MPI_COMM_FIELDLINES,ierr_mpi)
        DEALLOCATE(mnum)
        DEALLOCATE(moffsets)
-!DEC$ ENDIF
+#endif
       WHERE(B_PHI==0) B_PHI=1
 
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
       IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_init_vmec',ierr_mpi)
-!DEC$ ENDIF
+#endif
 !-----------------------------------------------------------------------
 !     End Subroutine
 !-----------------------------------------------------------------------    

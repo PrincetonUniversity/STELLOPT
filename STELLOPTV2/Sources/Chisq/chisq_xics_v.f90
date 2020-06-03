@@ -31,7 +31,7 @@
 !        ti_val      Holds profile evaulation
 !-----------------------------------------------------------------------
       INTEGER ::  ik
-      REAL(rprec) :: xics_val, xics_length
+      REAL(rprec) :: xics_val, xics_length, xics_bright
       REAL(rprec) :: x0(3), x1(3)
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
@@ -47,13 +47,13 @@
             x0(2)=phi0_xics(ik); x1(2)=phi1_xics(ik)
             x0(3)=z0_xics(ik); x1(3)=z1_xics(ik)
             xics_val = 0.0
-            CALL line_int(fcn_xics_v,x0,x1,xics_val,LENGTH=xics_length)
-            !PRINT *,'TI_LENGTH (',ik,')',xics_length
+            CALL line_int(fcn_xics_v,x0,x1,xics_val)
+            CALL line_int(fcn_xics_bright,x0,x1,xics_bright)
             mtargets = mtargets + 1
             targets(mtargets) = target(ik)
             sigmas(mtargets)  = sigma(ik)
-            vals(mtargets)    = xics_val+xics_v0
-            IF (iflag == 1) WRITE(iunit_out,'(9ES22.12E3)') target(ik),sigma(ik),xics_val+xics_v0,x0(1),x0(2),x0(3),x1(1),x1(2),x1(3)
+            vals(mtargets)    = xics_val/xics_bright+xics_v0
+            IF (iflag == 1) WRITE(iunit_out,'(9ES22.12E3)') target(ik),sigma(ik),xics_val/xics_bright+xics_v0,x0(1),x0(2),x0(3),x1(1),x1(2),x1(3)
          END DO
       ELSE
          DO ik = 1, nprof

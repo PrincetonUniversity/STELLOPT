@@ -122,6 +122,9 @@
       ! LINE ION TEMPERATURE
       IF (ANY(sigma_ti_line < bigno)) &
          CALL chisq_line_ti(target_ti_line, sigma_ti_line, ncnt,iflag)
+      ! LINE ZEFFECTIVE
+      IF (ANY(sigma_zeff_line < bigno)) &
+         CALL chisq_line_zeff(target_zeff_line, sigma_zeff_line, ncnt,iflag)
       ! XICS Brightness
       IF (ANY(sigma_xics_bright < bigno)) &
          CALL chisq_xics_bright(target_xics_bright, sigma_xics_bright, ncnt,iflag)
@@ -190,13 +193,24 @@
       !------------- COIL GEOMETRY TARGETS ---------------------
       ! Coil lengths
       IF (ANY(sigma_coillen < bigno)) &
-         CALL chisq_coillen(target_coillen, sigma_coillen, ncnt, iflag)
+         CALL chisq_coillen(target_coillen, sigma_coillen, &
+                            target_coilsegvar, sigma_coilsegvar, &
+                            ncnt, iflag)
+      ! Coil-coil separation
       IF (sigma_coilsep < bigno) &
          CALL chisq_coilsep(target_coilsep, sigma_coilsep, ncnt, iflag)
+      ! Max coil curvature
       IF (ANY(sigma_coilcrv < bigno)) &
          CALL chisq_coilcrv(target_coilcrv, sigma_coilcrv, ncnt, iflag)
+      ! Coil self-intersection
       IF (ANY(sigma_coilself < bigno)) &
          CALL chisq_coilself(target_coilself, sigma_coilself, ncnt, iflag)
+      ! Coil toroidal varation (non-planarity)
+      IF (ANY(sigma_coiltorvar < bigno)) &
+         CALL chisq_coiltorvar(target_coiltorvar, sigma_coiltorvar, ncnt, iflag)
+      ! Coil excursion outside prescribed box
+      IF (ANY(sigma_coilrect < bigno)) &
+           CALL chisq_coilrect(target_coilrect, sigma_coilrect, ncnt, iflag)
 
       !------------- EXTERNAL TARGETS --------------------------
       !  This section of the code relys upon external libraries

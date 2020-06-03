@@ -12,12 +12,11 @@
       USE stel_kinds, ONLY: rprec
       USE ez_hdf5
       USE safe_open_mod, ONLY: safe_open
-      USE mpi_params, ONLY: master, myid, MPI_COMM_FIELDLINES, ierr_mpi
+      USE mpi_params, ONLY: master, myworkid, MPI_COMM_FIELDLINES, ierr_mpi
       USE wall_mod, ONLY: nface,nvertex,face,vertex,ihit_array
       USE fieldlines_lines
       USE fieldlines_grid, ONLY: nr, nphi, nz, B_R, B_PHI, B_Z, raxis, &
-                                 zaxis, phiaxis, n_qshep, x_qshep, &
-                                 y_qshep, z_qshep
+                                 zaxis, phiaxis
       USE fieldlines_runtime, ONLY: id_string, npoinc, lverb, lvmec, &
                                     lpies, lspec, lcoil, lmgrid, lmu, &
                                     lvessel, lvac, laxis_i, handle_err,&
@@ -38,11 +37,11 @@
 !-----------------------------------------------------------------------
 !     Begin Subroutine
 !-----------------------------------------------------------------------
-      IF (myid == master) THEN
+      IF (myworkid == master) THEN
          IF (lverb) THEN
             WRITE(6,'(A)')  '----- WRITING DATA TO FILE -----'
          END IF
-!DEC$ IF DEFINED (LHDF5)
+#if defined(LHDF5)
          WRITE(6,'(A)')  '   FILE: '//'fieldlines_'//TRIM(id_string)//'.h5'
          CALL open_hdf5('fieldlines_'//TRIM(id_string)//'.h5',fid,ier,LCREATE=.true.)
          IF (ier /= 0) CALL handle_err(HDF5_OPEN_ERR,'fieldlines_'//TRIM(id_string)//'.h5',ier)
@@ -99,14 +98,6 @@
          END IF
          ! Here we output the grid
          IF (ladvanced) THEN
-            CALL write_scalar_hdf5(fid,'n_grid',ier,INTVAR=n_qshep,ATT='Number of Gridpoints',ATT_NAME='description')
-            IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'n_grid',ier)
-            CALL write_var_hdf5(fid,'r_grid',n_qshep,ier,DBLVAR=x_qshep,ATT='Radial Grid [m]',ATT_NAME='description')
-            IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'r_grid',ier)
-            CALL write_var_hdf5(fid,'phi_grid',n_qshep,ier,DBLVAR=y_qshep,ATT='Toroidal Grid [rad]',ATT_NAME='description')
-            IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'phi_grid',ier)
-            CALL write_var_hdf5(fid,'z_grid',n_qshep,ier,DBLVAR=z_qshep,ATT='Vertical Grid [m]',ATT_NAME='description')
-            IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'z_grid',ier)
          ELSEIF (lafield_only) THEN
             CALL write_scalar_hdf5(fid,'nr',ier,INTVAR=nr,ATT='Number of Radial Gridpoints',ATT_NAME='description')
             IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'nr',ier)
@@ -172,8 +163,8 @@
       END IF
       
       ! Wait for everyone to catch up
-      CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
-      IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_follow',ierr_mpi)
+!      CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
+!      IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_follow',ierr_mpi)
       !  This is the parallel call.
       IF (.not. lbfield_only .and. .not. lafield_only .and. .not. lemc3) THEN
          mystart = LBOUND(R_lines,1)
@@ -195,7 +186,7 @@
          CALL fieldlines_write2d_parhdf5(1, nlines, 0, nsteps, mystart, myend, 'Rhc_lines', DBLVAR=Rhc_lines)
          CALL fieldlines_write2d_parhdf5(1, nlines, 0, nsteps, mystart, myend, 'Zhc_lines', DBLVAR=Zhc_lines)
       END IF
-!DEC$ ELSE
+#else
       iunit = 100
       WRITE(6,'(A)')  '   FILE: '//'fieldlines_'//TRIM(id_string)//'.bin'
       CALL safe_open(iunit,ier,'fieldlines_'//TRIM(id_string)//'.bin','replace','unformatted')
@@ -222,7 +213,7 @@
       WRITE(iunit) B_Z
       WRITE(iunit) B_PHI
       CLOSE(iunit)
-!DEC$ ENDIF  
+#endif
 
 !-----------------------------------------------------------------------
 !     End Subroutine

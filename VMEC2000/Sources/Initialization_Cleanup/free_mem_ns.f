@@ -2,7 +2,6 @@
       USE vmec_main
       USE realspace
       USE vforces
-      USE vsvd
       USE xstuff
       USE csplinx
       USE fbal
@@ -37,7 +36,6 @@ C-----------------------------------------------
       USE vmec_main
       USE realspace
       USE vforces
-      USE vsvd
       USE xstuff
       USE csplinx
       USE fbal
@@ -60,19 +58,8 @@ C-----------------------------------------------
       END IF
 
       IF (ALLOCATED(ireflect)) THEN
-         DEALLOCATE(ireflect, indexr, imid, stat=istat2)
+         DEALLOCATE(ireflect, stat=istat2)
       END IF
-
-      IF (ALLOCATED(current)) THEN
-         DEALLOCATE(current, rm2, vrm2, ovrm2, ochip, presph, presint,
-     &              w_ia, w1_ia, u_ia, u1_ia, w_pa, w1_pa, u_pa, u1_pa,
-     &              w_ib, w1_ib, u_ib, u1_ib, w_pb, w1_pb, u_pb, u1_pb,
-     &              rmid, datamse, qmid, shear, presmid, alfa, curmid,
-     &              curint, psimid, ageo, volpsi, isplinef, isplineh,
-     &              psplinef, psplineh, phimid, pm, im, stat=istat3)
-      END IF
-
-      IF (ALLOCATED(pmb)) DEALLOCATE(pmb, imb, stat=istat4)
 
       IF (ALLOCATED(ard)) THEN
          DEALLOCATE(ard, arm, brd, brm, crd, azd, azm, bzd, bzm, sm,

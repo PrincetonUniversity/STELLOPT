@@ -1,4 +1,10 @@
 ObjectFiles = \
+stellopt_write_auxfiles.o \
+stellopt_write_eqfile.o \
+stellopt_write_inputfile.o \
+stellopt_fieldlines.o \
+chisq_line_zeff.o \
+stellopt_renorm.o \
 stellopt_init_mpi.o \
 chisq_x.o \
 chisq_y.o \
@@ -79,6 +85,8 @@ chisq_coillen.o \
 chisq_coilsep.o \
 chisq_coilcrv.o \
 chisq_coilself.o \
+chisq_coiltorvar.o \
+chisq_coilrect.o \
 stellopt_neo.o \
 stellopt_fcn.o \
 stellopt_load_targets.o \
@@ -97,7 +105,6 @@ stellopt_orbits.o \
 stellopt_reinit_vmec.o \
 stellopt_cas3d.o \
 stellopt_optimize.o \
-stellopt_recon_opt.o \
 stellopt_triangulate.o \
 stellopt_txport.o \
 stellopt_bcast_vmec.o \
