@@ -13,7 +13,8 @@
       USE beams3d_lines
       USE beams3d_grid, ONLY: nr, nphi, nz, B_R, B_PHI, B_Z, raxis, &
                                  zaxis, phiaxis,vp_spl_s
-      USE beams3d_runtime, ONLY: id_string, npoinc, t_end, lbeam, &
+      USE beams3d_runtime, ONLY: id_string, npoinc, t_end, lbeam, lvac,&
+                                 lvmec, &
                                  nbeams, beam, e_beams, charge_beams, &
                                  mass_beams, lverb, p_beams, MPI_BARRIER_ERR,&
                                  MPI_BCAST_ERR,nprocs_beams,handle_err, ldepo,&
@@ -93,6 +94,7 @@
       ! Do not need R_lines or PHI_lines after this point
       IF (ALLOCATED(R_lines)) DEALLOCATE(R_lines)
       IF (ALLOCATED(PHI_lines)) DEALLOCATE(PHI_lines)
+      IF (ALLOCATED(neut_lines)) DEALLOCATE(neut_lines)
 
       ! Calculate distribution function
       ALLOCATE(dist_func(1:nbeams,1:ndist,0:npoinc))
@@ -170,16 +172,15 @@
             CALL FLUSH(iunit)
          END DO
          CLOSE(iunit)
-      ELSE
-         DEALLOCATE(dist_func)
       END IF
 
-      ! Do not need R_lines or PHI_lines after this point
-      IF (ALLOCATED(neut_lines)) DEALLOCATE(neut_lines)
+      DEALLOCATE(dist_func)
+      DEALLOCATE(int_mask2,int_mask)
+      DEALLOCATE(partmask2,partmask2t)
+      DEALLOCATE(partmask,real_mask)
 
-      ! BEAM DIAGNOSTICS
-      IF (lbeam .and. .not.ldepo) THEN
-
+      ! These diagnostics need Vp to be defined
+      IF (lvmec .and. .not.lvac .and. .not.ldepo) THEN
          ! Grid in rho, units in [/m^3]
          ! Note ns is number of cells not cell boundaries
          DO k = 1, ns_prof1
@@ -191,20 +192,12 @@
             ipower_prof(:,k) = ipower_prof(:,k)/vp_temp
             ndot_prof(:,k)   =   ndot_prof(:,k)/vp_temp
                j_prof(:,k)   =      j_prof(:,k)/vp_temp
+            dense_prof(:,k)  =  dense_prof(:,k)/vp_temp
          END DO
-
-         ! Was only needed if no weight specified
-         IF (myworkid == master) THEN
-            DEALLOCATE(dist_func)
-         END IF
 
       END IF
 
       CALL beams3d_write('DIAG')
-
-      DEALLOCATE(int_mask2,int_mask)
-      DEALLOCATE(partmask2,partmask2t)
-      DEALLOCATE(partmask,real_mask)
 
 
 !-----------------------------------------------------------------------
