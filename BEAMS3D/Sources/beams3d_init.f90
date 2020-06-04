@@ -16,12 +16,13 @@
       USE beams3d_grid
       USE beams3d_input_mod, ONLY: read_beams3d_input
       USE beams3d_lines, ONLY: nparticles, epower_prof, ipower_prof, &
-                               ndot_prof, j_prof, dist2d_prof, partvmax, &
+                               ndot_prof, j_prof, dense_prof, dist2d_prof, &
+                               partvmax, partpmax, &
                                end_state, ns_prof1, ns_prof2, ns_prof3, &
-                               ns_prof4, ns_prof5, partpmax
+                               ns_prof4, ns_prof5
       USE wall_mod
       USE mpi_params
-      USE adas_mod_parallel, ONLY: adas_load_tables
+      USE adas_mod_parallel, ONLY: adas_load_tables, adas_tables_avail
       USE mpi_inc
       USE mpi_sharmem
 !-----------------------------------------------------------------------
@@ -81,6 +82,13 @@
         lbeam = .false.
       END IF
 
+      ! Handle existence of ADAS for NBI
+      IF (lbeam .and. .not.lsuzuki .and. myid_sharmem==master) THEN
+         lsuzuki = .not.adas_tables_avail()
+      END IF
+      CALL MPI_BCAST(lsuzuki,1,MPI_LOGICAL, master, MPI_COMM_SHARMEM,ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'beams3d_init:lsuzuki',ierr_mpi)
+
       ! Output some information
       IF (lverb .and. .not.lrestart_grid) THEN
          WRITE(6,'(A,F9.5,A,F9.5,A,I4)') '   R   = [',rmin,',',rmax,'];  NR:   ',nr
@@ -103,6 +111,7 @@
          IF (lascotfl) WRITE(6,'(A)') '   ASCOT5 FIELDLINE OUTPUT ON!'
          IF (lascot4) WRITE(6,'(A)') '   ASCOT4 OUTPUT ON!'
          IF (lbbnbi) WRITE(6,'(A)') '   BEAMLET BEAM Model!'
+         IF (lsuzuki) WRITE(6,'(A)') '   SUZUKI DEPOSITION MODEL!'
          IF (lplasma_only) WRITE(6,'(A)') '   MAGNETIC FIELD FROM PLASMA ONLY!'
          IF (lrestart_particles) WRITE(6,'(A)') '   Restarting particles!'
          IF (lrandomize .and. lbeam) WRITE(6,'(A)') '   Randomizing particle processor!'
@@ -310,7 +319,7 @@
       
       ! Initialize beams (define a distribution of directions and weights)
       IF (lbeam) THEN
-         CALL adas_load_tables(myid_sharmem, MPI_COMM_SHARMEM)
+         IF (.not. lsuzuki) CALL adas_load_tables(myid_sharmem, MPI_COMM_SHARMEM)
          IF (lw7x) THEN
             CALL beams3d_init_beams_w7x
          ELSEIF (lbbnbi) THEN
@@ -343,7 +352,8 @@
          nbeams = 1
       END IF
       ALLOCATE(epower_prof(nbeams,ns_prof1), ipower_prof(nbeams,ns_prof1), &
-               ndot_prof(nbeams,ns_prof1), j_prof(nbeams,ns_prof1))
+               ndot_prof(nbeams,ns_prof1), j_prof(nbeams,ns_prof1), &
+               dense_prof(nbeams,ns_prof1))
       ALLOCATE(dist2d_prof(nbeams,ns_prof4,ns_prof5))
       !ALLOCATE(dist_prof(nbeams,ns_prof1,ns_prof2,ns_prof3,ns_prof4,ns_prof5))
       ipower_prof=0; epower_prof=0; ndot_prof=0; j_prof = 0; dist2d_prof=0
