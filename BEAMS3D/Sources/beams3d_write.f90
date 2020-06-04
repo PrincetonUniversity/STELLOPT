@@ -291,7 +291,9 @@
                      IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ipower_prof',ier)
                      CALL write_var_hdf5(fid,'j_prof',nbeams,ns_prof1,ier,DBLVAR=j_prof,&
                                          ATT='Total Beam Current Density [A*m^-2]',ATT_NAME='description')
-                     IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'J_prof',ier)
+                     CALL write_var_hdf5(fid,'dense_prof',nbeams,ns_prof1,ier,DBLVAR=dense_prof,&
+                                         ATT='Fast Ion Density [m^-3]',ATT_NAME='description')
+                     IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'dense_prof',ier)
                      !CALL write_var_hdf5(fid,'dist_prof',nbeams,ns_prof1,ns_prof2,ns_prof3,ns_prof4,ns_prof5,ier,DBLVAR=dist_prof,&
                      !                    ATT='Distribution Function [part/s]',ATT_NAME='description')
                      !IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'dist_prof',ier)
