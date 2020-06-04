@@ -14,6 +14,7 @@
                                neut_lines, moment_lines, S_lines, U_lines, &
                                shine_through, &
                                ndot_prof, epower_prof, ipower_prof, j_prof,&
+                               dense_prof, &
                                B_lines, dist2d_prof, end_state, shine_port
       USE mpi_sharmem
 !-----------------------------------------------------------------------
@@ -140,6 +141,7 @@
       IF (ALLOCATED(epower_prof))    DEALLOCATE(epower_prof)
       IF (ALLOCATED(ipower_prof))    DEALLOCATE(ipower_prof)
       IF (ALLOCATED(j_prof))    DEALLOCATE(j_prof)
+      IF (ALLOCATED(dense_prof))    DEALLOCATE(dense_prof)
 !      IF (ALLOCATED(dist_prof))    DEALLOCATE(dist_prof)
       IF (ALLOCATED(dist2d_prof))    DEALLOCATE(dist2d_prof)
       RETURN

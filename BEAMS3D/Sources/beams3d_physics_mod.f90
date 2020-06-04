@@ -268,7 +268,7 @@ MODULE beams3d_physics_mod
          USE beams3d_grid
          USE beams3d_lines, ONLY: myline,xlast,ylast,zlast
          USE beams3d_runtime, ONLY: t_end, lvessel, to3, lplasma_only, &
-                                    lvessel_beam
+                                    lvessel_beam, lsuzuki
          USE wall_mod, ONLY: collide, uncount_wall_hit
 
          !--------------------------------------------------------------
@@ -313,8 +313,14 @@ MODULE beams3d_physics_mod
          !     Begin Subroutine
          !--------------------------------------------------------------
          ! Energy is needed in keV so 0.5*m*v*v/(ec*1000)
-         !energy = half*mymass*q(4)*q(4)*1D-3/e_charge  ! Vll = V_neut (doesn't change durring integration) needed in keV
-         energy = half*mymass*q(4)*q(4)*1D-3  ! Vll = V_neut (doesn't change durring integration) needed in keV
+
+         ! This is the one that works for ADAS [kJ] E=0.5*m*v^2/1000
+         ! Vll = V_neut (doesn't change durring neutral integration)
+         ! energy in kJ
+         energy = half*mymass*q(4)*q(4)*1D-3
+         ! energy in keV (correct for Suzuki)
+         !energy = half*mymass*q(4)*q(4)*1D-3/e_charge 
+         
          qf(1) = q(1)*cos(q(2))
          qf(2) = q(1)*sin(q(2))
          qf(3) = q(3)
@@ -488,43 +494,48 @@ MODULE beams3d_physics_mod
          tilocal = tilocal*1D-3
          telocal = telocal*1D-3
          zeff_temp = SUM(zefflocal)/DBLE(num_depo)
-         !--------------------------------------------------------------
-         !     USE ADAS to calcualte ionization rates
-         !--------------------------------------------------------------
-         ! Arguments to btsigv(irtype,beamchrg,eabeam,tatarg,n,izbeam,iztarg,btsigv, istat )hatom_btsigv.f90
-         ! irtype 1:CX, 2:II
-         ! beamchrg 1:neutral, 2:ion
-         ! eabeam beam energy in keV/nucleon
-         ! tatarg target energy in keV/nucleon
-         ! n array size
-         ! izbeam  Beam Z (always int)
-         ! iztarg  Target Z (can be real)
-         ! btsigv  cross section
-         CALL adas_btsigv(2,1,energy,tilocal,num_depo,myZ,zeff_temp,sigvii,ier)  ! Ion Impact ionization cross-section term.
-         CALL adas_btsigv(1,1,energy,tilocal,num_depo,myZ,zeff_temp,sigvcx,ier)  ! Charge Exchange ionization cross-section term.
-         ! Arguments to sigvte(zneut,tevec,n1,sigv_adas,istat)
-         ! zneut charge (=1)
-         ! tevec electron temperature [keV]
-         ! n1 array size
-         ! This formula comes from the ADAS description of how to use the functions. (M. Gorelenkova)
-         ! factor here is mp/me (assumes ion) Source NUBEAM: getsigs_adas.f, line 43
-         telocal = telocal + to3*mpome*energy
-         CALL adas_sigvte_ioniz(myZ,telocal,num_depo,sigvei,ier)        ! Electron Impact ionization cross-section term.
-         ! Do this because Ztarg changes for each point.
-         !DO l = 1, num_depo
-         !   CALL adas_btsigv(2,1,energy,tilocal(l),1,myZ,zefflocal(l),sigvii(l),ier)  ! Ion Impact ionization cross-section term.
-         !   CALL adas_btsigv(1,1,energy,tilocal(l),1,myZ,zefflocal(l),sigvcx(l),ier)  ! Charge Exchange ionization cross-section term.
-         !END DO
-         tau_inv = ((sigvii + sigvcx + sigvei)*nelocal) ! Delete a term if desired. (save a comment)
-
-         ! Run Suzuki Model
-         !DO l = 1, num_depo
-         !   ni_in(1) = nelocal(l)
-         !   Z_in(1)  = 1
-         !   A_in(1)  = 1 
-         !   CALL suzuki_sigma(1,energy(l)*inv_dalton,nelocal(l),telocal(l),ni_in,A_in,Z_in,tau_inv(l))
-         !END DO
-         !tau_inv = tau_inv*nelocal*ABS(q(4))*1E-4
+         IF (lsuzuki) THEN
+            !--------------------------------------------------------------
+            !     USE Suzuki to calcualte ionization rates
+            !--------------------------------------------------------------
+            Z_in(1)  = NINT(mycharge/e_charge)
+            A_in(1)  = NINT(mymass*inv_dalton)
+            energy   = energy/(e_charge*A_in(1)) ! keV/amu
+            DO l = 1, num_depo
+               ni_in(1) = nelocal(l)/zefflocal(l)
+               CALL suzuki_sigma(1,energy(l),nelocal(l),telocal(l),ni_in,A_in,Z_in,tau_inv(l))
+            END DO
+            tau_inv = tau_inv*nelocal*ABS(q(4))*1E-4
+         ELSE
+            !--------------------------------------------------------------
+            !     USE ADAS to calcualte ionization rates
+            !--------------------------------------------------------------
+            ! Arguments to btsigv(irtype,beamchrg,eabeam,tatarg,n,izbeam,iztarg,btsigv, istat )hatom_btsigv.f90
+            ! irtype 1:CX, 2:II
+            ! beamchrg 1:neutral, 2:ion
+            ! eabeam beam energy in keV/nucleon
+            ! tatarg target energy in keV/nucleon
+            ! n array size
+            ! izbeam  Beam Z (always int)
+            ! iztarg  Target Z (can be real)
+            ! btsigv  cross section
+            CALL adas_btsigv(2,1,energy,tilocal,num_depo,myZ,zeff_temp,sigvii,ier)  ! Ion Impact ionization cross-section term.
+            CALL adas_btsigv(1,1,energy,tilocal,num_depo,myZ,zeff_temp,sigvcx,ier)  ! Charge Exchange ionization cross-section term.
+            ! Arguments to sigvte(zneut,tevec,n1,sigv_adas,istat)
+            ! zneut charge (=1)
+            ! tevec electron temperature [keV]
+            ! n1 array size
+            ! This formula comes from the ADAS description of how to use the functions. (M. Gorelenkova)
+            ! factor here is mp/me (assumes ion) Source NUBEAM: getsigs_adas.f, line 43
+            telocal = telocal + to3*mpome*energy
+            CALL adas_sigvte_ioniz(myZ,telocal,num_depo,sigvei,ier)        ! Electron Impact ionization cross-section term.
+            ! Do this because Ztarg changes for each point.
+            !DO l = 1, num_depo
+            !   CALL adas_btsigv(2,1,energy,tilocal(l),1,myZ,zefflocal(l),sigvii(l),ier)  ! Ion Impact ionization cross-section term.
+            !   CALL adas_btsigv(1,1,energy,tilocal(l),1,myZ,zefflocal(l),sigvcx(l),ier)  ! Charge Exchange ionization cross-section term.
+            !END DO
+            tau_inv = ((sigvii + sigvcx + sigvei)*nelocal) ! Delete a term if desired. (save a comment)
+         END IF
 
          !--------------------------------------------------------------
          !     Calculate Ionization
