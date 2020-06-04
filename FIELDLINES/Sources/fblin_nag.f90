@@ -37,7 +37,7 @@
       INTEGER :: i,j,k
       REAL*8 :: xparam, yparam, zparam, hx, hy, hz, hxi, hyi, hzi
       REAL*8 :: fval(1)
-      INTEGER, parameter :: ict(8)=(/1,0,0,0,0,0,0,0/)
+      INTEGER, PARAMETER :: ict(8)=(/1,0,0,0,0,0,0,0/)
       !INTEGER, parameter :: ict(10)=(/1,0,0,0,0,0,0,0,0,0/)
       REAL*8, PARAMETER :: one = 1
       

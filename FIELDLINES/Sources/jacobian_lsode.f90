@@ -35,8 +35,8 @@
       INTEGER :: i,j,k
       REAL*8 :: xparam, yparam, zparam, hx, hy, hz, hxi, hyi, hzi
       REAL*8 :: fval(1,2) ! So weird behavior but this must match the sum of ict
-      !INTEGER, parameter :: ict(8)=(/0,1,0,1,0,0,0,0/)
-      INTEGER, parameter :: ict(10)=(/0,1,0,1,0,0,0,0,0,0/)
+      INTEGER, PARAMETER :: ict(8)=(/0,1,0,1,0,0,0,0/)
+      !INTEGER, parameter :: ict(10)=(/0,1,0,1,0,0,0,0,0,0/)
       REAL*8, PARAMETER :: one = 1
 !-----------------------------------------------------------------------
 !     Begin Subroutine

@@ -261,7 +261,7 @@
             bcs3=(/ 0, 0/)
             CALL EZspline_init(MODB_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
             IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'fieldlines_init:MODB_spl',ier)
-            MODB_spl%isHermite = 0
+            MODB_spl%isHermite = 1
             MODB_spl%x1 = raxis
             MODB_spl%x2 = phiaxis
             MODB_spl%x3 = zaxis
@@ -289,7 +289,7 @@
             bcs3=(/ 0, 0/)
             CALL EZspline_init(MU_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
             IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'fieldlines_init:MU_SPL',ier)
-            MU_spl%isHermite = 0
+            MU_spl%isHermite = 1
             MU_spl%x1 = raxis
             MU_spl%x2 = phiaxis
             MU_spl%x3 = zaxis
