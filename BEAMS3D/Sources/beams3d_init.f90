@@ -19,7 +19,7 @@
                                ndot_prof, j_prof, dense_prof, dist2d_prof, &
                                partvmax, partpmax, &
                                end_state, ns_prof1, ns_prof2, ns_prof3, &
-                               ns_prof4, ns_prof5
+                               ns_prof4, ns_prof5, dist5d_prof, win_dist5d
       USE wall_mod
       USE mpi_params
       USE adas_mod_parallel, ONLY: adas_load_tables, adas_tables_avail
@@ -357,6 +357,9 @@
       ALLOCATE(dist2d_prof(nbeams,ns_prof4,ns_prof5))
       !ALLOCATE(dist_prof(nbeams,ns_prof1,ns_prof2,ns_prof3,ns_prof4,ns_prof5))
       ipower_prof=0; epower_prof=0; ndot_prof=0; j_prof = 0; dist2d_prof=0
+
+      ! ALLOCATE the 6D array of 5D distribution
+      CALL mpialloc(dist5d_prof, nbeams, ns_prof1, ns_prof2, ns_prof3, ns_prof4, ns_prof5, myid_sharmem, 0, MPI_COMM_SHARMEM, win_dist5d)
 
       ! In all cases create an end_state array
       ALLOCATE(end_state(nparticles))
