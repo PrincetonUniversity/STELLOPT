@@ -99,11 +99,12 @@ SUBROUTINE out_beams3d_nag(t, q)
        d3 = MAX(MIN(CEILING( MOD(x0,pi2)/phimax*ns_prof3         ), ns_prof3), 1) ! V Bin
        d4 = MAX(MIN(1+ns_prof4/2+FLOOR(0.5*ns_prof4*q(4)/partvmax), ns_prof4), 1) ! vll
        d5 = MAX(MIN(CEILING(ns_prof5*vperp/partvmax              ), ns_prof5), 1) ! Vperp
-       dist2d_prof(mybeam,d4,d5) = dist2d_prof(mybeam,d4,d5) + weight(myline)*dt
-       dense_prof(mybeam,d1)  =      dense_prof(mybeam,d1) + weight(myline)*dt
-       j_prof(mybeam,d1)      =      j_prof(mybeam,d1) + mycharge*q(4)*weight(myline)*dt
+       xw = weight(myline)*dt
+       !dist2d_prof(mybeam,d4,d5) = dist2d_prof(mybeam,d4,d5) + weight(myline)*dt
+       !dense_prof(mybeam,d1)  =      dense_prof(mybeam,d1) + weight(myline)*dt
+       j_prof(mybeam,d1)      =      j_prof(mybeam,d1) + mycharge*q(4)*xw
        !CALL MPI_WIN_LOCK(MPI_LOCK_EXCLUSIVE,myworkid,0,win_dist5d,ier)
-       dist5d_prof(mybeam,d1,d2,d3,d4,d5) = dist5d_prof(mybeam,d1,d2,d3,d4,d5) + weight(myline)*dt
+       dist5d_prof(mybeam,d1,d2,d3,d4,d5) = dist5d_prof(mybeam,d1,d2,d3,d4,d5) + xw
        !CALL MPI_WIN_UNLOCK(myworkid,win_dist5d,ier)
        IF (lcollision) CALL beams3d_physics(t,q)
        IF (ltherm) THEN

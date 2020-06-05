@@ -36,7 +36,7 @@
       LOGICAL, ALLOCATABLE     :: partmask(:), partmask2(:,:), partmask2t(:,:)
       INTEGER, ALLOCATABLE  :: int_mask(:), int_mask2(:,:), nlost(:)
       INTEGER, ALLOCATABLE  :: dist_func(:,:,:)
-      REAL, ALLOCATABLE     :: real_mask(:)
+      REAL, ALLOCATABLE     :: real_mask(:),vllaxis(:),vperpaxis(:)
       INTEGER, PARAMETER :: ndist = 100
 #if defined(MPI_OPT)
       INTEGER :: status(MPI_STATUS_size) !mpi stuff
@@ -180,7 +180,19 @@
       DEALLOCATE(partmask,real_mask)
 
       ! These diagnostics need Vp to be defined
-      IF (lvmec .and. .not.lvac .and. .not.ldepo) THEN
+      IF (lvmec .and. .not.lvac .and. .not.ldepo .and. myworkid == master) THEN
+         ! In the future we'll calculate values from the dist5d_prof array.
+         ALLOCATE(vllaxis(ns_prof4),vperpaxis(ns_prof5))
+         FORALL(k = 1:ns_prof4) vllaxis(k) = -partvmax+2*partvmax*(k-1)/(ns_prof4-1)
+         FORALL(k = 1:ns_prof5) vperpaxis(k) = partvmax*(k-1)/(ns_prof5-1)
+         ! We need to calculate the old values
+         dense_prof = SUM(SUM(SUM(SUM(dist5d_prof,DIM=6),DIM=5),DIM=4),DIM=3)
+         dist2d_prof = SUM(SUM(SUM(dist5d_prof,DIM=2),DIM=2),DIM=2)
+         ! This is an example of how to do this but we can't do this for j_prof since it's charge dependent
+         !DO k = 1, ns_prof4
+         !   j_prof = j_prof + SUM(SUM(SUM(SUM(dist5d_prof(:,:,:,:,k,:),DIM=6),DIM=5),DIM=4),DIM=3)*vllaxis(k)
+         !END DO
+         DEALLOCATE(vllaxis,vperpaxis)
          ! Grid in rho, units in [/m^3]
          ! Note ns is number of cells not cell boundaries
          DO k = 1, ns_prof1
