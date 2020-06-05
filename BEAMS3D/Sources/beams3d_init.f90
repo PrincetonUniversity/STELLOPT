@@ -51,7 +51,7 @@
       bcs2=(/-1,-1/)
       bcs3=(/ 0, 0/)
       partvmax = 0.0
-      partpmax = 0.0
+      partpmax = 9.10938356E-31 ! Electron mass
       
       ! If we pass a vessel then we want to use it for NBI injection
       lvessel_beam = .FALSE.
@@ -375,7 +375,7 @@
 
       ! Determine maximum particle velocity
       partvmax=MAX(MAXVAL(ABS(vll_start))*6.0/5.0,partvmax)
-      partpmax=MAX(MAXVAL(ABS(mass*vll_start))*6.0/5.0,partpmax)
+      partpmax=MAX(MAXVAL(ABS(mass)),partpmax)*partvmax
 
 
       ! Do a reality check
