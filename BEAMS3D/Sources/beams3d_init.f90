@@ -16,10 +16,12 @@
       USE beams3d_grid
       USE beams3d_input_mod, ONLY: read_beams3d_input
       USE beams3d_lines, ONLY: nparticles, epower_prof, ipower_prof, &
-                               ndot_prof, j_prof, dense_prof, dist2d_prof, &
+                               ndot_prof, j_prof, dense_prof, &
                                partvmax, partpmax, &
                                end_state, ns_prof1, ns_prof2, ns_prof3, &
-                               ns_prof4, ns_prof5, dist5d_prof, win_dist5d
+                               ns_prof4, ns_prof5, dist5d_prof, win_dist5d, &
+                               win_epower, win_ipower, win_ndot, win_jprof, &
+                               win_dense
       USE wall_mod
       USE mpi_params
       USE adas_mod_parallel, ONLY: adas_load_tables, adas_tables_avail
@@ -351,15 +353,21 @@
          beam  = 1
          nbeams = 1
       END IF
-      ALLOCATE(epower_prof(nbeams,ns_prof1), ipower_prof(nbeams,ns_prof1), &
-               ndot_prof(nbeams,ns_prof1), j_prof(nbeams,ns_prof1), &
-               dense_prof(nbeams,ns_prof1))
-      ALLOCATE(dist2d_prof(nbeams,ns_prof4,ns_prof5))
-      !ALLOCATE(dist_prof(nbeams,ns_prof1,ns_prof2,ns_prof3,ns_prof4,ns_prof5))
-      ipower_prof=0; epower_prof=0; ndot_prof=0; j_prof = 0; dist2d_prof=0
+      !ALLOCATE(epower_prof(nbeams,ns_prof1), ipower_prof(nbeams,ns_prof1), &
+      !         ndot_prof(nbeams,ns_prof1), j_prof(nbeams,ns_prof1), &
+      !         dense_prof(nbeams,ns_prof1))
+      !ipower_prof=0; epower_prof=0; ndot_prof=0; j_prof = 0
 
       ! ALLOCATE the 6D array of 5D distribution
+      CALL mpialloc(epower_prof, nbeams, ns_prof1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_epower)
+      CALL mpialloc(ipower_prof, nbeams, ns_prof1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_ipower)
+      CALL mpialloc(  ndot_prof, nbeams, ns_prof1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_ndot  )
+      CALL mpialloc(     j_prof, nbeams, ns_prof1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_jprof )
+      CALL mpialloc( dense_prof, nbeams, ns_prof1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_dense )
       CALL mpialloc(dist5d_prof, nbeams, ns_prof1, ns_prof2, ns_prof3, ns_prof4, ns_prof5, myid_sharmem, 0, MPI_COMM_SHARMEM, win_dist5d)
+      IF (myid_sharmem == master) THEN
+         dist5d_prof = 0; ipower_prof=0; epower_prof=0; ndot_prof=0; j_prof = 0
+      END IF
 
       ! In all cases create an end_state array
       ALLOCATE(end_state(nparticles))

@@ -28,7 +28,7 @@
       INTEGER,PARAMETER  :: ns_prof4 = 64 !vll-grid
       INTEGER,PARAMETER  :: ns_prof5 = 32 !vperp-grid
       INTEGER  :: nparticles, nsteps, myline, mybeam, mytdex, myend, mystart_save,myend_save
-      INTEGER  :: win_dist5d
+      INTEGER  :: win_epower, win_ipower, win_ndot, win_dense, win_jprof, win_dist5d
       REAL(rprec) :: xlast,ylast,zlast ! for storing position
       REAL(rprec) :: moment, mycharge, myZ, mymass, myv_neut(3), &
                      B_temp(4), rand_prob, cum_prob, tau, next_t, &
@@ -36,8 +36,8 @@
       LOGICAL, ALLOCATABLE     :: neut_lines(:,:)
       INTEGER, ALLOCATABLE     :: end_state(:)
       REAL(rprec), ALLOCATABLE :: shine_through(:), shine_port(:)
-      REAL(rprec), ALLOCATABLE :: ndot_prof(:,:),epower_prof(:,:), &
-                                  ipower_prof(:,:),j_prof(:,:), dense_prof(:,:), dist2d_prof(:,:,:)
+      REAL(rprec), DIMENSION(:,:), POINTER :: ndot_prof(:,:),epower_prof(:,:), &
+                                  ipower_prof(:,:),j_prof(:,:), dense_prof(:,:)
       REAL(rprec), DIMENSION(:,:,:,:,:,:), POINTER :: dist5d_prof
       REAL(rprec), ALLOCATABLE :: R_lines(:,:),Z_lines(:,:),PHI_lines(:,:),vll_lines(:,:),moment_lines(:,:),&
                                   S_lines(:,:),U_lines(:,:),B_lines(:,:)
