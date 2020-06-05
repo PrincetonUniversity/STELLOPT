@@ -187,7 +187,6 @@
          FORALL(k = 1:ns_prof5) vperpaxis(k) = partvmax*(k-1)/(ns_prof5-1)
          ! We need to calculate the old values
          dense_prof = SUM(SUM(SUM(SUM(dist5d_prof,DIM=6),DIM=5),DIM=4),DIM=3)
-         dist2d_prof = SUM(SUM(SUM(dist5d_prof,DIM=2),DIM=2),DIM=2)
          ! This is an example of how to do this but we can't do this for j_prof since it's charge dependent
          !DO k = 1, ns_prof4
          !   j_prof = j_prof + SUM(SUM(SUM(SUM(dist5d_prof(:,:,:,:,k,:),DIM=6),DIM=5),DIM=4),DIM=3)*vllaxis(k)
