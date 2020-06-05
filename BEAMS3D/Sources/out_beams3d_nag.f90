@@ -18,7 +18,7 @@ SUBROUTINE out_beams3d_nag(t, q)
                              vll_lines, neut_lines, mytdex, next_t,&
                              dt_out, xlast, ylast, zlast, dense_prof, &
                              ltherm, S_lines, U_lines, B_lines, &
-                             dist2d_prof, j_prof, ndot_prof, partvmax, &
+                             j_prof, ndot_prof, partvmax, &
                              ns_prof1, ns_prof2, ns_prof3, ns_prof4, &
                              ns_prof5, mymass, mycharge, mybeam, end_state, &
                              dist5d_prof, win_dist5d
@@ -100,7 +100,6 @@ SUBROUTINE out_beams3d_nag(t, q)
        d4 = MAX(MIN(1+ns_prof4/2+FLOOR(0.5*ns_prof4*q(4)/partvmax), ns_prof4), 1) ! vll
        d5 = MAX(MIN(CEILING(ns_prof5*vperp/partvmax              ), ns_prof5), 1) ! Vperp
        xw = weight(myline)*dt
-       !dist2d_prof(mybeam,d4,d5) = dist2d_prof(mybeam,d4,d5) + weight(myline)*dt
        !dense_prof(mybeam,d1)  =      dense_prof(mybeam,d1) + weight(myline)*dt
        j_prof(mybeam,d1)      =      j_prof(mybeam,d1) + mycharge*q(4)*xw
        !CALL MPI_WIN_LOCK(MPI_LOCK_EXCLUSIVE,myworkid,0,win_dist5d,ier)
