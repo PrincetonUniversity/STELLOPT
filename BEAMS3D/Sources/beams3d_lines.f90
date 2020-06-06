@@ -22,11 +22,7 @@
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       LOGICAL  ::  ltherm
-      INTEGER,PARAMETER  :: ns_prof1 = 128 !rho-Grid
-      INTEGER,PARAMETER  :: ns_prof2 = 32 !u-grid
-      INTEGER,PARAMETER  :: ns_prof3 = 32 !v-grid
-      INTEGER,PARAMETER  :: ns_prof4 = 64 !vll-grid
-      INTEGER,PARAMETER  :: ns_prof5 = 32 !vperp-grid
+      INTEGER  ::  ns_prof1, ns_prof2, ns_prof3, ns_prof4, ns_prof5
       INTEGER  :: nparticles, nsteps, myline, mybeam, mytdex, myend, mystart_save,myend_save
       INTEGER  :: win_epower, win_ipower, win_ndot, win_dense, win_jprof, win_dist5d
       REAL(rprec) :: xlast,ylast,zlast ! for storing position

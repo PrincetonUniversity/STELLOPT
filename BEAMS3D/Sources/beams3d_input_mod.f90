@@ -1,6 +1,6 @@
 !-----------------------------------------------------------------------
 !     Module:        beams3d_input_mod
-!     Authors:       S. Lazerson (lazerson@pppl.gov) M. McMillan (matthew.mcmillan@my.wheaton.edu)
+!     Authors:       S. Lazerson (samuel.lazerson@ipp.mpg.de) M. McMillan (matthew.mcmillan@my.wheaton.edu)
 !     Date:          06/20/2012
 !     Description:   This module contains the FIELDLINES input namelist and
 !                    subroutine which initializes and reads the
@@ -12,7 +12,8 @@
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
       USE beams3d_runtime
-      USE beams3d_lines, ONLY: nparticles
+      USE beams3d_lines, ONLY: nparticles, ns_prof1, ns_prof2, ns_prof3, &
+                               ns_prof4, ns_prof5, partvmax
       USE beams3d_grid, ONLY: nr, nphi, nz, rmin, rmax, zmin, zmax, &
                               phimin, phimax, vc_adapt_tol, nte, nne, nti,&
                               nzeff, npot, plasma_mass, plasma_Zavg, &
@@ -26,6 +27,8 @@
 !
 !-----------------------------------------------------------------------
       IMPLICIT NONE
+      ! These are helpers to give the ns1_prof variables user friendly names
+      INTEGER :: nrho_dist, ntheta_dist, nzeta_dist, nvpara_dist, nvperp_dist
 
 !-----------------------------------------------------------------------
 !     Input Namelists
@@ -70,7 +73,9 @@
                                   POT_AUX_S, POT_AUX_F, ZEFF_AUX_S, ZEFF_AUX_F, &
                                   P_beams, ldebug, ne_scale, te_scale, ti_scale, &
                                   zeff_scale, plasma_mass, plasma_Zavg, &
-                                  plasma_Zmean, therm_factor
+                                  plasma_Zmean, therm_factor, &
+                                  nrho_dist, ntheta_dist, nzeta_dist, &
+                                  nvpara_dist, nvperp_dist, partvmax
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -142,6 +147,16 @@
       plasma_Zavg  = 1.0
       plasma_mass = 1.6726219E-27 ! Assume Hydrogen
       therm_factor = 1.5 ! Factor at which to thermalize particles
+
+      ! Distribution Function Defaults
+      nrho_dist = 128
+      ntheta_dist=4
+      nzeta_dist=4
+      nvpara_dist=32
+      nvperp_dist=16
+      partvmax = 0 ! Allows user to set value
+
+
       ! Read namelist
 !      IF (ithread == local_master) THEN
          istat=0
@@ -158,6 +173,14 @@
             CALL handle_err(NAMELIST_READ_ERR,'beams3d_input in: input.'//TRIM(id_string),istat)
          END IF
          CLOSE(iunit)
+
+         ! Update dist function sizes
+         ns_prof1=nrho_dist
+         ns_prof2=ntheta_dist
+         ns_prof3=nzeta_dist
+         ns_prof4=nvpara_dist
+         ns_prof5=nvperp_dist
+
          NE_AUX_F = NE_AUX_F*ne_scale
          TE_AUX_F = TE_AUX_F*te_scale
          TI_AUX_F = TI_AUX_F*ti_scale
@@ -305,6 +328,14 @@
       CALL MPI_BCAST(nr,1,MPI_INTEGER, local_master, comm,istat)
       CALL MPI_BCAST(nphi,1,MPI_INTEGER, local_master, comm,istat)
       CALL MPI_BCAST(nz,1,MPI_INTEGER, local_master, comm,istat)
+
+
+      CALL MPI_BCAST(ns_prof1,1,MPI_INTEGER, local_master, comm,istat)
+      CALL MPI_BCAST(ns_prof2,1,MPI_INTEGER, local_master, comm,istat)
+      CALL MPI_BCAST(ns_prof3,1,MPI_INTEGER, local_master, comm,istat)
+      CALL MPI_BCAST(ns_prof4,1,MPI_INTEGER, local_master, comm,istat)
+      CALL MPI_BCAST(ns_prof5,1,MPI_INTEGER, local_master, comm,istat)
+      CALL MPI_BCAST(partvmax,1,MPI_REAL8, local_master, comm,istat)
 
       CALL MPI_BCAST(nbeams,1,MPI_INTEGER, local_master, comm,istat)
       CALL MPI_BCAST(nparticles_start,1,MPI_INTEGER, local_master, comm,istat)

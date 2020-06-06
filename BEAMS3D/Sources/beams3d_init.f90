@@ -52,7 +52,7 @@
       bcs1=(/ 0, 0/)
       bcs2=(/-1,-1/)
       bcs3=(/ 0, 0/)
-      partvmax = 0.0
+      !partvmax = 0.0
       partpmax = 9.10938356E-31 ! Electron mass
       
       ! If we pass a vessel then we want to use it for NBI injection
