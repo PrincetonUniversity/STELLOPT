@@ -113,7 +113,7 @@ MODULE beams3d_runtime
     INTEGER :: nextcur, npoinc, nbeams, nparticles_start, nprocs_beams
     INTEGER, DIMENSION(MAXBEAMS) :: Dex_beams
     INTEGER, ALLOCATABLE :: beam(:)
-    REAL(rprec) :: dt, follow_tol, pi, pi2, mu0, to3, dt_save, ne_scale, te_scale, ti_scale, zeff_scale
+    REAL(rprec) :: dt, follow_tol, pi, pi2, invpi2, mu0, to3, dt_save, ne_scale, te_scale, ti_scale, zeff_scale
     REAL(rprec), DIMENSION(MAXBEAMS) :: Adist_beams, Asize_beams, Div_beams, E_beams, mass_beams, &
                                         charge_beams, Zatom_beams, P_beams
     REAL(rprec), DIMENSION(MAXBEAMS, 2) :: r_beams, z_beams, phi_beams

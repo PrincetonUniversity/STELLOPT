@@ -275,9 +275,24 @@
       WRITE(iunit_out,outflt) 'FOLLOW_TOL',follow_tol
       WRITE(iunit_out,outflt) 'VC_ADAPT_TOL',vc_adapt_tol
       WRITE(iunit_out,outint) 'NPARTICLES_START',nparticles_start
+      WRITE(iunit_out,'(A)') '!---------- Plasma Parameters ------------'
       WRITE(iunit_out,outflt) 'PLASMA_MASS',plasma_mass
+      WRITE(iunit_out,outflt) 'PLASMA_ZAVG',plasma_zavg
+      WRITE(iunit_out,outflt) 'PLASMA_ZMEAN',plasma_zmean
+      WRITE(iunit_out,outflt) 'THERM_FACTOR',therm_factor
+      WRITE(iunit_out,'(A)') '!---------- Distribution Parameters ------------'
+      WRITE(iunit_out,outint) 'NRHO_DIST',ns_prof1
+      WRITE(iunit_out,outint) 'NTHETA_DIST',ns_prof2
+      WRITE(iunit_out,outint) 'NZETA_DIST',ns_prof3
+      WRITE(iunit_out,outint) 'NVPARA_DIST',ns_prof4
+      WRITE(iunit_out,outint) 'NVPERP_DIST',ns_prof5
+      WRITE(iunit_out,outflt) 'PARTVMAX',partvmax
       IF (lbeam) THEN
          WRITE(iunit_out,"(A)") '!---------- Profiles ------------'
+         WRITE(iunit_out,outflt) 'NE_SCALE',NE_SCALE
+         WRITE(iunit_out,outflt) 'TE_SCALE',TE_SCALE
+         WRITE(iunit_out,outflt) 'TI_SCALE',TI_SCALE
+         WRITE(iunit_out,outflt) 'ZEFF_SCALE',ZEFF_SCALE
          WRITE(iunit_out,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'NE_AUX_S',(ne_aux_s(n), n=1,nne)
          WRITE(iunit_out,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'NE_AUX_F',(ne_aux_f(n), n=1,nne)
          WRITE(iunit_out,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'TE_AUX_S',(te_aux_s(n), n=1,nte)
