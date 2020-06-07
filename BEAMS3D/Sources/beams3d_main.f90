@@ -71,6 +71,7 @@ PROGRAM BEAMS3D
 
     pi = 4.0 * ATAN(1.0)
     pi2 = 8.0 * ATAN(1.0)
+    invpi2 = 1./pi2
     mu0 = (16.0E-7) * ATAN(1.0)
     to3 = REAL(2)/REAL(3)
     lverb = .true.
