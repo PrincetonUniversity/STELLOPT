@@ -354,20 +354,20 @@
          beam  = 1
          nbeams = 1
       END IF
-      !ALLOCATE(epower_prof(nbeams,ns_prof1), ipower_prof(nbeams,ns_prof1), &
-      !         ndot_prof(nbeams,ns_prof1), j_prof(nbeams,ns_prof1), &
-      !         dense_prof(nbeams,ns_prof1))
-      !ipower_prof=0; epower_prof=0; ndot_prof=0; j_prof = 0
+      ALLOCATE(epower_prof(nbeams,ns_prof1), ipower_prof(nbeams,ns_prof1), &
+               ndot_prof(nbeams,ns_prof1), j_prof(nbeams,ns_prof1), &
+               dense_prof(nbeams,ns_prof1))
+      ipower_prof=0; epower_prof=0; ndot_prof=0; j_prof = 0
 
       ! ALLOCATE the 6D array of 5D distribution
-      CALL mpialloc(epower_prof, nbeams, ns_prof1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_epower)
-      CALL mpialloc(ipower_prof, nbeams, ns_prof1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_ipower)
-      CALL mpialloc(  ndot_prof, nbeams, ns_prof1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_ndot  )
-      CALL mpialloc(     j_prof, nbeams, ns_prof1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_jprof )
-      CALL mpialloc( dense_prof, nbeams, ns_prof1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_dense )
+      !CALL mpialloc(epower_prof, nbeams, ns_prof1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_epower)
+      !CALL mpialloc(ipower_prof, nbeams, ns_prof1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_ipower)
+      !CALL mpialloc(  ndot_prof, nbeams, ns_prof1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_ndot  )
+      !CALL mpialloc(     j_prof, nbeams, ns_prof1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_jprof )
+      !CALL mpialloc( dense_prof, nbeams, ns_prof1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_dense )
       CALL mpialloc(dist5d_prof, nbeams, ns_prof1, ns_prof2, ns_prof3, ns_prof4, ns_prof5, myid_sharmem, 0, MPI_COMM_SHARMEM, win_dist5d)
       IF (myid_sharmem == master) THEN
-         dist5d_prof = 0; ipower_prof=0; epower_prof=0; ndot_prof=0; j_prof = 0
+         dist5d_prof = 0; !ipower_prof=0; epower_prof=0; ndot_prof=0; j_prof = 0
       END IF
       h2_prof = ns_prof2*invpi2
       h3_prof = ns_prof3/phimax
