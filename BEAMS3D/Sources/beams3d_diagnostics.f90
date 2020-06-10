@@ -194,11 +194,13 @@
          DEALLOCATE(vllaxis,vperpaxis)
          ! Grid in rho, units in [/m^3]
          ! Note ns is number of cells not cell boundaries
+         ! Just a note here dV/drho = 2*rho*dV/dist
+         ! And we need dV so we multiply by drho=1./ns
          DO k = 1, ns_prof1
             s1 = REAL(k-0.5)/REAL(ns_prof1) ! Rho
             s2 = s1*s1
             CALL EZspline_interp(Vp_spl_s,s2,vp_temp,ier)
-            vp_temp = vp_temp*2*s1
+            vp_temp = vp_temp*2*s1*(1./REAL(ns_prof1))
             epower_prof(:,k) = epower_prof(:,k)/vp_temp
             ipower_prof(:,k) = ipower_prof(:,k)/vp_temp
             ndot_prof(:,k)   =   ndot_prof(:,k)/vp_temp
