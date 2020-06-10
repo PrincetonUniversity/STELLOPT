@@ -65,11 +65,12 @@
       ! NOPTIMIZERS < ngshar (we spread over groups nodes)
       ! NOPTIMIZERS == ngshar (optimizer a group )
       ! NOPTIMIZERS > ngshar (subdivide groups)
-      IF (noptimizers < ngshar) THEN
-         WRITE(6,*)  'NOPTIMIZERS < ngshar'
+      IF (noptimizers <= ngshar) THEN
+         k = noptimizers
          IF (MOD(ngshar,noptimizers)/=0) THEN ! we need to redefine NOPTIMIZERS
-            noptimizers = common_factor(ngshar, noptimizers, 1)
+            k = common_factor(ngshar, k, 1)
          END IF 
+         noptimizers = k
          ! Destroy MPI_COMM_STEL
          CALL MPI_COMM_FREE(MPI_COMM_STEL, ierr_mpi)
          ! Make MPI_COMM_STEL out of just shared comm masters
@@ -109,14 +110,14 @@
          END IF
 
       ELSE ! We subdivide the shared memory communicators
-         WRITE(6,*)  'NOPTIMIZERS >= ngshar'
-         IF (MOD(nshar,noptimizers)/=0) THEN ! we need to redefine NOPTIMIZERS
-            noptimizers = common_factor(nshar, noptimizers, 1)
+         k = MAX(noptimizers/ngshar,2) ! at least we need to divide each group by 2
+         IF (MOD(nshar,k)/=0) THEN ! we need to redefine k
+            k = common_factor(nshar, k, 1)
          END IF 
 
          ! Subdivide the shared memory communicator according to k
          key = myid
-         color = MOD(myworkid,noptimizers)
+         color = MOD(myworkid,k)
          CALL MPI_COMM_SPLIT(comm_share, color, key, MPI_COMM_MYWORLD, ierr_mpi)
          CALL MPI_COMM_RANK( MPI_COMM_MYWORLD, myworkid, ierr_mpi )
          CALL MPI_COMM_SIZE( MPI_COMM_MYWORLD, nshar, ierr_mpi )
