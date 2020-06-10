@@ -79,7 +79,8 @@
       shar_rank = 0; shar_size = 1;
 #if defined(MPI_OPT)
       IF (PRESENT(comm)) THEN
-         CALL MPI_COMM_SPLIT_TYPE(comm, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, shar_comm, istat)
+         CALL MPI_COMM_DUP(comm,shar_comm,istat)
+         !CALL MPI_COMM_SPLIT_TYPE(comm, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, shar_comm, istat)
          CALL MPI_COMM_RANK( shar_comm, shar_rank, istat )
          CALL MPI_COMM_SIZE( shar_comm, shar_size, istat)
       END IF
@@ -237,7 +238,8 @@
       shar_rank = 0; shar_size = 1;
 #if defined(MPI_OPT)
       IF (PRESENT(comm)) THEN
-         CALL MPI_COMM_SPLIT_TYPE(comm, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, shar_comm, istat)
+         CALL MPI_COMM_DUP(comm,shar_comm,istat)
+         !CALL MPI_COMM_SPLIT_TYPE(comm, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, shar_comm, istat)
          CALL MPI_COMM_RANK( shar_comm, shar_rank, istat )
          CALL MPI_COMM_SIZE( shar_comm, shar_size, istat)
       END IF

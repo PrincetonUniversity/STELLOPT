@@ -58,6 +58,7 @@
             lpies_beams => lpies, lspec_beams => lspec, &
             lmgrid_beams => lmgrid, lascot_beams => lascot, &
             lvessel_beams => lvessel, lcoil_beams => lcoil, &
+            lsuzuki_beams => lsuzuki, lrandomize_beams => lrandomize, &
             lrestart_grid_beams => lrestart_grid, lrestart_particles_beams => lrestart_particles, &
             lbeam_simple_beams => lbeam_simple, &
             lplasma_only_beams => lplasma_only, lascot4_beams => lascot4, &
@@ -316,6 +317,8 @@
                lread_input_beams  = .FALSE.
                lcollision_beams   = .FALSE.
                lw7x_beams   = .FALSE.
+               lrandomize_beams = .FALSE.
+               lsuzuki_beams = .FALSE.
                id_string_beams    = TRIM(file_str)
                coil_string_beams  = ''
                mgrid_string_beams = ''

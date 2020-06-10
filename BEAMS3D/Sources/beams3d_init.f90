@@ -16,12 +16,16 @@
       USE beams3d_grid
       USE beams3d_input_mod, ONLY: read_beams3d_input
       USE beams3d_lines, ONLY: nparticles, epower_prof, ipower_prof, &
-                               ndot_prof, j_prof, dist2d_prof, partvmax, &
+                               ndot_prof, j_prof, dense_prof, &
+                               partvmax, partpmax, &
                                end_state, ns_prof1, ns_prof2, ns_prof3, &
-                               ns_prof4, ns_prof5
+                               ns_prof4, ns_prof5, dist5d_prof, win_dist5d, &
+                               win_epower, win_ipower, win_ndot, win_jprof, &
+                               win_dense, nsh_prof4, h2_prof, h3_prof, &
+                               h4_prof, h5_prof
       USE wall_mod
       USE mpi_params
-      USE adas_mod_parallel, ONLY: adas_load_tables
+      USE adas_mod_parallel, ONLY: adas_load_tables, adas_tables_avail
       USE mpi_inc
       USE mpi_sharmem
 !-----------------------------------------------------------------------
@@ -49,7 +53,8 @@
       bcs1=(/ 0, 0/)
       bcs2=(/-1,-1/)
       bcs3=(/ 0, 0/)
-      partvmax = 0.0
+      !partvmax = 0.0
+      partpmax = 9.10938356E-31 ! Electron mass
       
       ! If we pass a vessel then we want to use it for NBI injection
       lvessel_beam = .FALSE.
@@ -80,6 +85,13 @@
         lbeam = .false.
       END IF
 
+      ! Handle existence of ADAS for NBI
+      IF (lbeam .and. .not.lsuzuki .and. myid_sharmem==master) THEN
+         lsuzuki = .not.adas_tables_avail()
+      END IF
+      CALL MPI_BCAST(lsuzuki,1,MPI_LOGICAL, master, MPI_COMM_SHARMEM,ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'beams3d_init:lsuzuki',ierr_mpi)
+
       ! Output some information
       IF (lverb .and. .not.lrestart_grid) THEN
          WRITE(6,'(A,F9.5,A,F9.5,A,I4)') '   R   = [',rmin,',',rmax,'];  NR:   ',nr
@@ -102,6 +114,7 @@
          IF (lascotfl) WRITE(6,'(A)') '   ASCOT5 FIELDLINE OUTPUT ON!'
          IF (lascot4) WRITE(6,'(A)') '   ASCOT4 OUTPUT ON!'
          IF (lbbnbi) WRITE(6,'(A)') '   BEAMLET BEAM Model!'
+         IF (lsuzuki) WRITE(6,'(A)') '   SUZUKI DEPOSITION MODEL!'
          IF (lplasma_only) WRITE(6,'(A)') '   MAGNETIC FIELD FROM PLASMA ONLY!'
          IF (lrestart_particles) WRITE(6,'(A)') '   Restarting particles!'
          IF (lrandomize .and. lbeam) WRITE(6,'(A)') '   Randomizing particle processor!'
@@ -309,7 +322,7 @@
       
       ! Initialize beams (define a distribution of directions and weights)
       IF (lbeam) THEN
-         CALL adas_load_tables(myid_sharmem, MPI_COMM_SHARMEM)
+         IF (.not. lsuzuki) CALL adas_load_tables(myid_sharmem, MPI_COMM_SHARMEM)
          IF (lw7x) THEN
             CALL beams3d_init_beams_w7x
          ELSEIF (lbbnbi) THEN
@@ -342,10 +355,22 @@
          nbeams = 1
       END IF
       ALLOCATE(epower_prof(nbeams,ns_prof1), ipower_prof(nbeams,ns_prof1), &
-               ndot_prof(nbeams,ns_prof1), j_prof(nbeams,ns_prof1))
-      ALLOCATE(dist2d_prof(nbeams,ns_prof4,ns_prof5))
-      !ALLOCATE(dist_prof(nbeams,ns_prof1,ns_prof2,ns_prof3,ns_prof4,ns_prof5))
-      ipower_prof=0; epower_prof=0; ndot_prof=0; j_prof = 0; dist2d_prof=0
+               ndot_prof(nbeams,ns_prof1), j_prof(nbeams,ns_prof1), &
+               dense_prof(nbeams,ns_prof1))
+      ipower_prof=0; epower_prof=0; ndot_prof=0; j_prof = 0
+
+      ! ALLOCATE the 6D array of 5D distribution
+      !CALL mpialloc(epower_prof, nbeams, ns_prof1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_epower)
+      !CALL mpialloc(ipower_prof, nbeams, ns_prof1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_ipower)
+      !CALL mpialloc(  ndot_prof, nbeams, ns_prof1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_ndot  )
+      !CALL mpialloc(     j_prof, nbeams, ns_prof1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_jprof )
+      !CALL mpialloc( dense_prof, nbeams, ns_prof1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_dense )
+      CALL mpialloc(dist5d_prof, nbeams, ns_prof1, ns_prof2, ns_prof3, ns_prof4, ns_prof5, myid_sharmem, 0, MPI_COMM_SHARMEM, win_dist5d)
+      IF (myid_sharmem == master) THEN
+         dist5d_prof = 0; !ipower_prof=0; epower_prof=0; ndot_prof=0; j_prof = 0
+      END IF
+      h2_prof = ns_prof2*invpi2
+      h3_prof = ns_prof3/phimax
 
       ! In all cases create an end_state array
       ALLOCATE(end_state(nparticles))
@@ -361,6 +386,10 @@
 
       ! Determine maximum particle velocity
       partvmax=MAX(MAXVAL(ABS(vll_start))*6.0/5.0,partvmax)
+      partpmax=MAX(MAXVAL(ABS(mass)),partpmax)*partvmax
+      nsh_prof4 = ns_prof4/2
+      h4_prof = 0.5*ns_prof4/partvmax
+      h5_prof = ns_prof5/partvmax
 
 
       ! Do a reality check
