@@ -12,19 +12,22 @@ SUBROUTINE out_beams3d_nag(t, q)
     USE stel_kinds, ONLY: rprec
     USE beams3d_runtime, ONLY: dt, lverb, pi2, lneut, t_end, lvessel, &
                                lhitonly, npoinc, lcollision, ldepo, &
-                               weight
+                               weight, invpi2
     USE beams3d_lines, ONLY: R_lines, Z_lines, PHI_lines, myline, moment, &
                              nsteps, nparticles, moment_lines, myend, &
                              vll_lines, neut_lines, mytdex, next_t,&
-                             dt_out, xlast, ylast, zlast,&
+                             dt_out, xlast, ylast, zlast, dense_prof, &
                              ltherm, S_lines, U_lines, B_lines, &
-                             dist2d_prof, j_prof, ndot_prof, partvmax, &
+                             j_prof, ndot_prof, partvmax, &
                              ns_prof1, ns_prof2, ns_prof3, ns_prof4, &
-                             ns_prof5, mymass, mycharge, mybeam, end_state
+                             ns_prof5, mymass, mycharge, mybeam, end_state, &
+                             dist5d_prof, win_dist5d, nsh_prof4, &
+                             h2_prof, h3_prof, h4_prof, h5_prof
     USE beams3d_grid
     USE beams3d_physics_mod, ONLY: beams3d_physics
     USE wall_mod, ONLY: collide, get_wall_ik, get_wall_area
     USE mpi_params
+    USE mpi_inc
     !-----------------------------------------------------------------------
     !     Input Parameters
     !          t          Location along fieldline in t
@@ -94,12 +97,18 @@ SUBROUTINE out_beams3d_nag(t, q)
        vperp = SQRT(2*moment*fval(1)/mymass)
        d1 = MAX(MIN(CEILING(SQRT(y0)*ns_prof1                    ), ns_prof1), 1) ! Rho Bin
        !d2 = MAX(MIN(CEILING( MOD(z0,pi2)/pi2*ns_prof2            ), ns_prof2), 1) ! U Bin
+       d2 = MAX(MIN(CEILING( z0*h2_prof            ), ns_prof2), 1) ! U Bin
        !d3 = MAX(MIN(CEILING( MOD(x0,pi2)/phimax*ns_prof3         ), ns_prof3), 1) ! V Bin
-       d4 = MAX(MIN(1+ns_prof4/2+FLOOR(0.5*ns_prof4*q(4)/partvmax), ns_prof4), 1) ! vll
-       d5 = MAX(MIN(CEILING(ns_prof5*vperp/partvmax              ), ns_prof5), 1) ! Vperp
-       dist2d_prof(mybeam,d4,d5) = dist2d_prof(mybeam,d4,d5) + weight(myline)*dt
-       !dist_prof(mybeam,d1,d2,d3,d4,d5) = dist_prof(mybeam,d1,d2,d3,d4,d5) + weight(myline)
-       j_prof(mybeam,d1)      =      j_prof(mybeam,d1) + mycharge*q(4)*weight(myline)*dt
+       d3 = MAX(MIN(CEILING( x0*h3_prof         ), ns_prof3), 1) ! V Bin
+       !d4 = MAX(MIN(1+ns_prof4/2+FLOOR(0.5*ns_prof4*q(4)/partvmax), ns_prof4), 1) ! vll
+       d4 = MAX(MIN(1+nsh_prof4+FLOOR(h4_prof*q(4)), ns_prof4), 1) ! vll
+       !d5 = MAX(MIN(CEILING(ns_prof5*vperp/partvmax              ), ns_prof5), 1) ! Vperp
+       d5 = MAX(MIN(CEILING(vperp*h5_prof             ), ns_prof5), 1) ! Vperp
+       xw = weight(myline)*dt
+       j_prof(mybeam,d1)      =      j_prof(mybeam,d1) + mycharge*q(4)*xw
+       !CALL MPI_WIN_LOCK(MPI_LOCK_EXCLUSIVE,myworkid,0,win_dist5d,ier)
+       dist5d_prof(mybeam,d1,d2,d3,d4,d5) = dist5d_prof(mybeam,d1,d2,d3,d4,d5) + xw
+       !CALL MPI_WIN_UNLOCK(myworkid,win_dist5d,ier)
        IF (lcollision) CALL beams3d_physics(t,q)
        IF (ltherm) THEN
           ndot_prof(mybeam,d1)   =   ndot_prof(mybeam,d1) + weight(myline)
