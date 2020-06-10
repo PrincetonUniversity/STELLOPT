@@ -23,6 +23,7 @@
 !----------------------------------------------------------------------
       INTEGER :: nprocs_total, vmajor, vminor, color, key, nshar, &
                  ngshar, comm_share, k
+      INTEGER, EXTERNAL :: common_factor
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
@@ -61,16 +62,22 @@
       ! Catch default behavoir
       IF (noptimizers < 0) noptimizers = nprocs_total
 
+      !IF (myid == master) THEN
+      !   k=3
+      !   color=4
+      !   k=common_factor(color,k,1)
+      !   PRINT *,k
+      !   STOP
+      !ENDIF 
+
       ! Logic here
       ! NOPTIMIZERS < ngshar (we spread over groups nodes)
       ! NOPTIMIZERS == ngshar (optimizer a group )
       ! NOPTIMIZERS > ngshar (subdivide groups)
       IF (noptimizers <= ngshar) THEN
-         k = noptimizers
          IF (MOD(ngshar,noptimizers)/=0) THEN ! we need to redefine NOPTIMIZERS
-            k = common_factor(ngshar, k, 1)
+            noptimizers = common_factor(ngshar, noptimizers, 1)
          END IF 
-         noptimizers = k
          ! Destroy MPI_COMM_STEL
          CALL MPI_COMM_FREE(MPI_COMM_STEL, ierr_mpi)
          ! Make MPI_COMM_STEL out of just shared comm masters
