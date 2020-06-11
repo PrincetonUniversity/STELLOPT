@@ -54,26 +54,17 @@
       IF (myworkid == master) ngshar = 1
       CALL MPI_ALLREDUCE(MPI_IN_PLACE, ngshar, 1, MPI_INTEGER, MPI_SUM, MPI_COMM_STEL, ierr_mpi)
       IF (myid == master) THEN
-         WRITE(6,*) '   Number of shared memory groups: ',ngshar
-         WRITE(6,*) '             Processors per group: ',nshar
+         WRITE(6,*) '   Shared memory groups: ',ngshar
+         WRITE(6,*) '   Processors per group: ',nshar
          CALL FLUSH(6)
       END IF
 
       ! Catch default behavoir
       IF (noptimizers < 0) noptimizers = nprocs_total
 
-      !IF (myid == master) THEN
-      !   k=3
-      !   color=4
-      !   k=common_factor(color,k,1)
-      !   PRINT *,k
-      !   STOP
-      !ENDIF 
-
       ! Logic here
-      ! NOPTIMIZERS < ngshar (we spread over groups nodes)
-      ! NOPTIMIZERS == ngshar (optimizer a group )
-      ! NOPTIMIZERS > ngshar (subdivide groups)
+      ! NOPTIMIZERS <= NSHARED_GROUPS (we spread over groups nodes)
+      ! NOPTIMIZERS > NSHARED_GROUPS (subdivide groups)
       IF (noptimizers <= ngshar) THEN
          IF (MOD(ngshar,noptimizers)/=0) THEN ! we need to redefine NOPTIMIZERS
             noptimizers = common_factor(ngshar, noptimizers, 1)
@@ -141,8 +132,6 @@
             IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_init_mpi5',ierr_mpi)
          END IF
 
-
-
       END IF
 
       ! Free the shared memory communicator
@@ -150,8 +139,8 @@
 
 
       IF (myid == master) THEN
-         WRITE(6,*) '             Number of workers per group:    ',nshar
-         WRITE(6,*) '   Number of available optimizer Threads:    ',numprocs
+         WRITE(6,*) '  Workers per optimizer: ',nshar
+         WRITE(6,*) '    Optimizers provided: ',numprocs
          CALL FLUSH(6)
       END IF
 
