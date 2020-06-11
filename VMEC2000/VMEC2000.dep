@@ -294,6 +294,7 @@ free_mem_nunv.o : \
 
 free_persistent_mem.o : \
       ../../LIBSTELL/$(LOCTYPE)/mgrid_mod.o \
+      parallel_vmec_module.o \
       vmec_main.o \
       xstuff.o 
       

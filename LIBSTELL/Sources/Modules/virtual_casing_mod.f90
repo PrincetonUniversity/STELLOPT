@@ -249,7 +249,8 @@
 #if defined(MPI_OPT)
       IF (PRESENT(comm)) THEN
          ! Get rank
-         CALL MPI_COMM_SPLIT_TYPE(comm, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, shar_comm, ier)
+         CALL MPI_COMM_DUP(comm,shar_comm,ier)
+         !CALL MPI_COMM_SPLIT_TYPE(comm, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, shar_comm, ier)
          CALL MPI_COMM_RANK(shar_comm, shar_rank, ier)
          CALL MPI_COMM_SIZE(shar_comm, shar_size, ier)
          ! Free if allocated
@@ -720,7 +721,8 @@
 #if defined(MPI_OPT)
       IF (PRESENT(comm)) THEN
          ! Get rank
-         CALL MPI_COMM_SPLIT_TYPE(comm, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, shar_comm, ier)
+         CALL MPI_COMM_DUP(comm,shar_comm,ier)
+         !CALL MPI_COMM_SPLIT_TYPE(comm, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, shar_comm, ier)
          CALL MPI_COMM_RANK(shar_comm, shar_rank, ier)
          CALL MPI_COMM_SIZE(shar_comm, shar_size, ier)
          ! Free if allocated
@@ -1895,7 +1897,8 @@
 #if defined(MPI_OPT)
       IF (PRESENT(comm)) THEN
          ! Get rank
-         CALL MPI_COMM_SPLIT_TYPE(comm, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, shar_comm, ier)
+         CALL MPI_COMM_DUP(comm,shar_comm,ier)
+         !CALL MPI_COMM_SPLIT_TYPE(comm, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, shar_comm, ier)
          CALL MPI_COMM_RANK(shar_comm, shar_rank, ier)
          CALL MPI_COMM_SIZE(shar_comm, shar_size, ier)
          ! Free if allocated
