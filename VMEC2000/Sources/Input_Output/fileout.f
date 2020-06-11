@@ -6,7 +6,8 @@
       USE xstuff, ONLY: xc, gc, xsave, scalxc
       USE vmec_main, ONLY: vp, iotas, phips, chips, mass, icurv
       USE vmec_main, ONLY: ireflect, nznt, phipf, specw, sp, sm
-      USE vmec_params, ONLY: uminus, output_flag
+      USE vmec_params, ONLY: uminus, output_flag, cleanup_flag,
+     &                       more_iter_flag
       USE realspace, ONLY: phip, sqrts, shalf, wint
       USE realspace, ONLY: pphip, psqrts, pshalf, pwint
       USE vacmod, ONLY: bsqvac, brv, bphiv, bzv, nv, nuv3,
@@ -116,7 +117,10 @@ C-----------------------------------------------
          CALL fileout(iseq, ictrl_flag, ier_flag, lscreen) 
       ENDIF
       ! SAL 06/11/2020 Moved here because of shared memory
-      CALL free_persistent_mem
+      IF (IAND(ictrl_flag, cleanup_flag) .ne. 0 .or.
+     &    ier_flag                       .ne. more_iter_flag) THEN
+          CALL free_persistent_mem
+      END IF
       !CALL MPI_Barrier(NS_COMM, MPI_ERR) !SAL 070719
       CALL second0(tfileoff)
       fileout_time = fileout_time + (tfileoff-tfileon)
