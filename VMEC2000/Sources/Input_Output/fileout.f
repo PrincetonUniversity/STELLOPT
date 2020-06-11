@@ -117,8 +117,9 @@ C-----------------------------------------------
          CALL fileout(iseq, ictrl_flag, ier_flag, lscreen) 
       ENDIF
       ! SAL 06/11/2020 Moved here because of shared memory
-      IF (.not.(IAND(ictrl_flag, cleanup_flag) .eq. 0 .or.
-     &    ier_flag                       .eq. more_iter_flag)) THEN
+      IF (IAND(ictrl_flag, cleanup_flag) .eq. 0 .or.
+     &    ier_flag                       .eq. more_iter_flag) THEN
+      ELSE
           CALL free_persistent_mem
       END IF
       !CALL MPI_Barrier(NS_COMM, MPI_ERR) !SAL 070719
