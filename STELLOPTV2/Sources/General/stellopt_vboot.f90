@@ -102,6 +102,7 @@
 
          ! Run VMEC
          iflag = 0
+         print *,'<----stellopt_vboot calling parvmec with proc_string='//trim(proc_string)
          CALL stellopt_paraexe('paravmec_run',proc_string,lscreen_local)
          iflag = ier_paraexe
          IF (iflag .ne.0) THEN
@@ -203,6 +204,7 @@
 
 !DEC$ IF DEFINED (SFINCS)
             IF (vboot_iteration==0) THEN
+               print *,'<----vboot_iteration==0. initializing AC profile'
                ! Evaluate the initial AC profile on the fine grid.
                DO radius_index = 2,Ns_fine
                   CALL get_equil_bootj(s_fine_half(radius_index),AC_profile_fine(radius_index),ier)

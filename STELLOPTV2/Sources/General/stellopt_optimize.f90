@@ -181,6 +181,7 @@
             fvec     = 0.0
             info     = FLAG_SINGLETASK
             nfev     = 0
+            print *,'<----optimize is calling stellopt_fcn the first time'
             CALL stellopt_fcn(mtargets, nvars, vars,fvec,info, nfev)
             c1 = enorm(mtargets,fvec)
             iunit = 12; info = 0
@@ -191,6 +192,7 @@
             CLOSE(iunit)
             info = FLAG_CLEANUP
             IF (myid == master) info = flag_cleanup_lev
+            print *,'<----optimize is calling stellopt_fcn again'
             call stellopt_fcn(mtargets, nvars, vars, fvec, info, nfev)
          CASE('one_iter_norm')
             ALLOCATE(fvec(mtargets))

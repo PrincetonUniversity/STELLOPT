@@ -80,6 +80,9 @@
             CALL MPI_COMM_SIZE(MPI_COMM_MYWORLD, numProcs_myworld, ierr_mpi)
             CALL MPI_COMM_RANK(MPI_COMM_MYWORLD, myRank_myworld, ierr_mpi)
 
+           ! print *,'<----stellopt_sfincs 83,numProcs_world,myRank_world,numProcs_myworld,myRank_myworld=', &
+           !          numProcs_world, myRank_world, numProcs_myworld, myRank_myworld
+
             IF (sfincs_min_procs > numProcs_myworld) THEN
                IF (myworkid==master) THEN
                   PRINT *,"WARNING! The number of procs in MPI_COMM_MYWORLD is smaller than sfincs_min_procs."
@@ -121,7 +124,8 @@
 
             color = radius_index_min ! This choice ensures that all procs handling the same radii get grouped into one MPI communicator.
             key = myworkid
-            CALL MPI_COMM_SPLIT(MPI_COMM_WORLD, color, key, MPI_COMM_SFINCS, ierr_mpi)
+            ! CALL MPI_COMM_SPLIT(MPI_COMM_WORLD, color, key, MPI_COMM_SFINCS, ierr_mpi)
+            CALL MPI_COMM_SPLIT(MPI_COMM_MYWORLD, color, key, MPI_COMM_SFINCS, ierr_mpi)
             CALL MPI_COMM_SIZE(MPI_COMM_SFINCS, numProcs_sfincs, ierr_mpi)
             CALL MPI_COMM_RANK(MPI_COMM_SFINCS, myRank_sfincs, ierr_mpi)
             WRITE (proc_assignments_string,fmt="(a,i5,a,i5,a,i4,a,i4,a,i5,a,i5,a)"),"Proc ",myRank_myWorld," of",numProcs_myWorld," in MPI_COMM_MYWORLD will handle radius",radius_index_min," to",radius_index_max," and has rank",myRank_sfincs," of",numProcs_sfincs," in MPI_COMM_SFINCS."
@@ -193,15 +197,21 @@
                   stop
                end select
 
+               !JCS print *, "<----200 id_string = "//trim(id_string)//", proc_string = "//trim(proc_string)
                IF (myRank_sfincs == 0) THEN
                   CALL SYSTEM('mkdir -p '//TRIM(directory_string)) ! -p mutes the warning printed if the directory already exists.
 
                   ! Copy the SFINCS input file into the new directory
                   unit_in = 11
                   unit_out = 12
-                  OPEN (unit=unit_in, file='input.'//TRIM(id_string),status='old',action='read',iostat=file_status)
+               !JCS print *, "<====210  id_string = "//trim(id_string)//", proc_string = "//trim(proc_string)//" id_tag = "//trim(id_tag)
+               print *,"<----Proc ",myRank_myWorld," of",numProcs_myWorld," is opening",trim(id_tag)
+                  !OPEN (unit=unit_in, file='input.'//TRIM(id_tag),status='old',action='read',iostat=file_status)
+                  OPEN (unit=unit_in, file=TRIM(id_tag),status='old',action='read',iostat=file_status)
+                  ! OPEN (unit=unit_in, file='input.'//TRIM(proc_string),status='old',action='read',iostat=file_status)
                   IF (file_status /= 0) THEN
-                     PRINT *,"Error opening stellopt input file input."//TRIM(id_string)
+                     !PRINT *,"Error opening stellopt input file input."//TRIM(proc_string)
+                     PRINT *,"Error opening stellopt input file "//TRIM(id_tag)
                      PRINT *,"iostat=",file_status
                      STOP
                   END IF
