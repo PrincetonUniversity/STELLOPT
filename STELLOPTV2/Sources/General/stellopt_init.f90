@@ -54,6 +54,7 @@
       ier = 0
 
       ! Read the OPTIMUM Namelist
+      !JCS print *,'<----init is reading calling read_stellopt_input with id_string='//trim(id_string)
       CALL read_stellopt_input(TRIM(id_string),ier,myid)
       !CALL bcast_vars(master,MPI_COMM_STEL,ierr_mpi)
       !IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'stellot_init:bcast_vars',ierr_mpi)
@@ -62,17 +63,23 @@
       IF (lcoil_geom) CALL namelist_input_makegrid(id_string)
 
       ! Handle MPI and shared memory
+      !JCS print *,'<----init is calling init_mpi'
       CALL stellopt_init_mpi
 
-      ! Send workers to the worker pool subroutine
+      ! Send workers to the worker pool subroutine stellopt_paraexe
+      ! The 'master' will continue on
       IF (myworkid .ne. master) THEN
          ltst  = .false.
          tstr1 = ''
          tstr2 = ''
          ier_paraexe = 0
+         print *,'<----stellopt_init:  Myworkid ', myworkid, ' is calling stellopt_paraexe in stellopt_init'
          CALL stellopt_paraexe(tstr1,tstr2,ltst)
+         print *,'<----stellopt_init:  Myworkid ', myworkid, ' is returning from stellopt_init'
          RETURN
       END IF
+      print *,'<----stellopt_init:  Myworkid ', myworkid, ' is continuing on. equil_type=', &
+             trim(equil_type), ' and id_string=',id_string
 
       ! Read the Equilibrium input
       CALL tolower(equil_type)

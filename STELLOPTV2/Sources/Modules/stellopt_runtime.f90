@@ -207,7 +207,7 @@
                                   factor, chisq_min, refit_param, pct_domain
       REAL(rprec), ALLOCATABLE :: vars(:),targets(:),sigmas(:),vals(:),&
                                   diag(:),vars_min(:),vars_max(:)
-      CHARACTER(256)           :: id_string, opt_type, proc_string, &
+      CHARACTER(256)           :: id_tag, id_string, opt_type, proc_string, &
                                   proc_string_old, screen_str, xvec_file
       
       REAL(rprec), PARAMETER :: STELLOPT_VERSION = 2.70

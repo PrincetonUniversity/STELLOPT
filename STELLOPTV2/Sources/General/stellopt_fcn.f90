@@ -280,7 +280,9 @@
       ! Handle making a temporary string
       IF (iflag .eq. -1) istat = 0
       WRITE(temp_str,'(i5)') istat
+      !JCS print *, '<----stellopt_fcn id_string  283= '//trim(id_string)
       proc_string = TRIM(TRIM(id_string) // '_opt' // TRIM(ADJUSTL(temp_str)))
+      !JCS print *, '<----stellopt_fcn proc_string  285= '//trim(proc_string)
 
       ! Handle coil geometry variations
       IF (lcoil_geom) THEN
@@ -299,12 +301,15 @@
             CASE('vmec2000_old','animec','flow','satire')
             CASE('paravmec','parvmec','vmec2000')
                iflag = 0
+               print *,'<----stellopt_fcn calling stellopt_paraexe/paravmec_run, proc_string='//trim(proc_string)
                CALL stellopt_paraexe('paravmec_run',proc_string,lscreen)
                iflag = ier_paraexe
                IF (lscreen .and. lverb) WRITE(6,*)  '-------------------------  PARAVMEC CALCULATION DONE  -----------------------'
             CASE('vboot')
                iflag = 0
+               print *,'<----stellopt_fcn calling stellopt_vboot, id_string=',trim(id_string), ' proc_string=',trim(proc_string)
                CALL stellopt_vboot(lscreen,iflag)
+               print *,'<----stellopt_fcn is back from stellopt_vboot, id_string=',trim(id_string), ' proc_string=',trim(proc_string)
             CASE('vmec2000_oneeq')
                IF (iflag .eq. -1) THEN
                   iflag = 0
