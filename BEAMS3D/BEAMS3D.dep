@@ -147,9 +147,9 @@ beams3d_main.o: \
 beams3d_physics_mod.o: \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
       ../../LIBSTELL/$(LOCTYPE)/adas_mod_parallel.o \
-      ../../LIBSTELL/$(LOCTYPE)/ezspline_obj.o \
-      ../../LIBSTELL/$(LOCTYPE)/ezspline.o \
       ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
+      ../../LIBSTELL/$(LOCTYPE)/ezspline.o \
+      ../../LIBSTELL/$(LOCTYPE)/ezspline_obj.o \
       beams3d_runtime.o \
       beams3d_lines.o \
       beams3d_grid.o
