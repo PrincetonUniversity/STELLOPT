@@ -81,7 +81,8 @@
       ! NOPTIMIZERS <= NSHARED_GROUPS (we spread over groups nodes)
       ! NOPTIMIZERS > NSHARED_GROUPS (subdivide groups)
       IF (noptimizers <= ngshar) THEN
-         WRITE(iunit,"(A)") "noptimizers <= ngshar."
+         IF (myid == master) WRITE(iunit,"(A)") "noptimizers <= ngshar."
+
          IF (MOD(ngshar,noptimizers)/=0) THEN ! we need to redefine NOPTIMIZERS
             noptimizers = common_factor(ngshar, noptimizers, 1)
          END IF 
@@ -125,16 +126,20 @@
          END IF
 
       ELSE ! Now handle the case noptimizers > ngshar:
-         WRITE(iunit,"(A)") "noptimizers > ngshar."
+         IF (myid == master) WRITE(iunit,"(A)") "noptimizers > ngshar."
+
          ! We subdivide the shared memory communicators
          k = MAX(noptimizers/ngshar,2) ! at least we need to divide each group by 2
+         IF (myid == master) WRITE(iunit,"(A,I5,A,I5)") "Initial k:",k,", MOD(nshar,k):",MOD(nshar,k)
          IF (MOD(nshar,k)/=0) THEN ! we need to redefine k
             k = common_factor(nshar, k, 1)
          END IF 
+         IF (myid == master) WRITE(iunit,"(A,I5)") "Final k:",k
 
          ! Subdivide the shared memory communicator according to k
          key = myid
          color = MOD(myworkid,k)
+         !color = myworkid / k ! Note integer division here, so FORTRAN rounds down.
          optimizer_group = color
          CALL MPI_COMM_SPLIT(comm_share, color, key, MPI_COMM_MYWORLD, ierr_mpi)
          CALL MPI_COMM_RANK( MPI_COMM_MYWORLD, myworkid, ierr_mpi )
@@ -169,6 +174,7 @@
       ! Record the MPI information for each processor.
       WRITE (proc_assignments_string, "(100(I5,A))") myid_world,",",myid_share,",",optimizer_group,",",myworkid
       IF (myid_world == master) THEN
+         WRITE (iunit,*)
          WRITE (iunit, "(A)") "rank in MPI_COMM_WORLD, rank in comm_share, optimizer group, rank in MPI_COMM_MYWORLD"
          WRITE (iunit, "(A)") TRIM(proc_assignments_string)
          DO tag = 1,nprocs_total - 1
