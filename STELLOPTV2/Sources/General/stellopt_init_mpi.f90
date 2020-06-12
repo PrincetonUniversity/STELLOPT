@@ -25,7 +25,7 @@
       INTEGER :: nprocs_total, vmajor, vminor, color, key, nshar, &
                  ngshar, comm_share, k
       INTEGER, EXTERNAL :: common_factor
-      INTEGER :: iunit, ierr, tag, myid_world, myid_share, optimizer_group
+      INTEGER :: iunit, ierr, tag, myid_world, myid_share, optimizer_color
       INTEGER, PARAMETER :: buffer_length = 1000
       CHARACTER(len=buffer_length) :: proc_assignments_string
       INTEGER :: mpi_status_local(MPI_STATUS_SIZE)
@@ -107,7 +107,7 @@
          color = MPI_UNDEFINED
          IF (myworkid == master) color = MOD(myid,noptimizers)
          CALL MPI_BCAST(color, 1, MPI_INTEGER, master, comm_share, ierr_mpi)
-         optimizer_group = color
+         optimizer_color = color
          CALL MPI_COMM_SPLIT(MPI_COMM_WORLD, color, key, MPI_COMM_MYWORLD, ierr_mpi)
          CALL MPI_COMM_RANK( MPI_COMM_MYWORLD, myworkid, ierr_mpi )              ! MPI
          CALL MPI_COMM_SIZE( MPI_COMM_MYWORLD, nshar, ierr_mpi )          ! MPI
@@ -140,7 +140,7 @@
          key = myid
          color = MOD(myworkid,k)
          !color = myworkid / k ! Note integer division here, so FORTRAN rounds down.
-         optimizer_group = color
+         optimizer_color = color
          CALL MPI_COMM_SPLIT(comm_share, color, key, MPI_COMM_MYWORLD, ierr_mpi)
          CALL MPI_COMM_RANK( MPI_COMM_MYWORLD, myworkid, ierr_mpi )
          CALL MPI_COMM_SIZE( MPI_COMM_MYWORLD, nshar, ierr_mpi )
@@ -172,10 +172,10 @@
       END IF
 
       ! Record the MPI information for each processor.
-      WRITE (proc_assignments_string, "(100(I5,A))") myid_world,",",myid_share,",",optimizer_group,",",myworkid
+      WRITE (proc_assignments_string, "(100(I5,A))") myid_world,",",myid_share,",",optimizer_color,",",myworkid
       IF (myid_world == master) THEN
          WRITE (iunit,*)
-         WRITE (iunit, "(A)") "rank in MPI_COMM_WORLD, rank in comm_share, optimizer group, rank in MPI_COMM_MYWORLD"
+         WRITE (iunit, "(A)") "rank in MPI_COMM_WORLD, rank in comm_share, optimizer color, rank in MPI_COMM_MYWORLD"
          WRITE (iunit, "(A)") TRIM(proc_assignments_string)
          DO tag = 1,nprocs_total - 1
             CALL MPI_RECV(proc_assignments_string,buffer_length,MPI_CHAR,tag,tag,MPI_COMM_WORLD,mpi_status_local,ierr_mpi)
