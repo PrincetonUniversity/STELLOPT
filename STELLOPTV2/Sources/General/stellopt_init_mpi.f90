@@ -75,7 +75,11 @@
       END IF
 
       ! Catch default behavoir
-      IF (noptimizers < 0) noptimizers = nprocs_total
+      IF (noptimizers <= 0) noptimizers = nprocs_total
+      IF (noptimizers > nproc_total) THEN
+         noptimizers = nprocs_total
+         IF (myid == master) WRITE(iunit,"(A)") "Lowering noptimizers to nprocs_total"
+      END IF
 
       ! Logic here
       ! NOPTIMIZERS <= NSHARED_GROUPS (we spread over groups nodes)
@@ -138,8 +142,8 @@
 
          ! Subdivide the shared memory communicator according to k
          key = myid
-         color = MOD(myworkid,k)
-         !color = myworkid / k ! Note integer division here, so FORTRAN rounds down.
+         !color = MOD(myworkid,k)
+         color = myworkid / (nshar / k) ! Note integer division here, in which FORTRAN will round down. No rounding should be needed for (nshar/k), but the preceding division may involve rounding down.
          optimizer_color = color
          CALL MPI_COMM_SPLIT(comm_share, color, key, MPI_COMM_MYWORLD, ierr_mpi)
          CALL MPI_COMM_RANK( MPI_COMM_MYWORLD, myworkid, ierr_mpi )
