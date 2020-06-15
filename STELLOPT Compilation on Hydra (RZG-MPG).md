@@ -33,8 +33,22 @@ Cobra
     module load petsc-complex
     module load slepc-complex
 
+IPP-HGW Theory (clus47)
+-----
+
+    module load intel
+    module load mkl
+    module load netcdf
+    module load hdf5
+    module load openmpi
+    module load petsc
+    module load slepc
+    module load nag_flib/intel/mk25
+
 General Notes
 -------------
 
 The Cobra and Draco clusters are automatically detected
-by the make.inc script.
+by the make.inc script. The IPP-HGW theory cluster
+requires the user to set the environment variable 
+MACHINE equal to 'theoryhgw'.

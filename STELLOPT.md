@@ -8,9 +8,7 @@ target physics parameters encompassing stellarator design and 3D
 equilibrium reconstruction. It is currently interfaced to the
 [VMEC](VMEC) 3D equilibrium solver.
 
-[STELLOPT](https://github.com/PrincetonUniversity/STELLOPT) is currently hosted on the Princeton University's GitHub repository. 
-It is not publicly accessed.
-If you want to get access to the source code, please send an email with your GitHub username to Dr. Caoxiang Zhu (czhu@pppl.gov) or Dr. Samuel Lazerson (samuel.lazerson@ipp.mpg.de).
+[STELLOPT](https://github.com/PrincetonUniversity/STELLOPT) is currently hosted on the Princeton University's GitHub repository.
 
 ------------------------------------------------------------------------
 
