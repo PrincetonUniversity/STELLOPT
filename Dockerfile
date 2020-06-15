@@ -57,12 +57,15 @@ WORKDIR /root
 #     make lib && cp libscalapack.a /lib64 && \
 #     cd ../ && rm -rf ${SCALAPACK}'
 
+# Get source code
+RUN ls -al
+RUN git clone https://github.com/PrincetonUniversity/STELLOPT.git
 # Compile STELLOPT
 ENV MACHINE="ubuntu"
-ENV STELLOPT_PATH=${DOCKERFILE_PATH}
+ENV STELLOPT_PATH=/root/STELLOPT
 RUN pwd
 RUN echo $STELLOPT_PATH
-RUN $STELLOPT_PATH/.build_all
+RUN cd $STELLOPT_PATH  && ./build_all
 
 # Remove stack limit, otherwise OpenMP crashes.
 # Setup path and the directory where we'll run the calculation
