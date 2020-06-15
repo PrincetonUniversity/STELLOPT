@@ -5,7 +5,7 @@
 !     Description:   This subroutine generates a coil data structure from
 !                    the stellopt splines and writes it to a file.
 !-----------------------------------------------------------------------
-      SUBROUTINE stellopt_spline_to_coil(nseg, lscreen)
+      SUBROUTINE stellopt_spline_to_coil(nseg, fixedcoils, lscreen)
 !-----------------------------------------------------------------------
 !     Libraries
 !-----------------------------------------------------------------------
@@ -19,6 +19,7 @@
 !     Subroutine Parameters
 !----------------------------------------------------------------------
       INTEGER, INTENT(in)           :: nseg
+      CHARACTER(*), INTENT(in)      :: fixedcoils
       LOGICAL, INTENT(inout)        :: lscreen
 !-----------------------------------------------------------------------
 !     Local Variables
@@ -146,9 +147,13 @@
                                               z_coil(1),0.,i,coil_name
          END IF
       END DO
-      WRITE(iunit,'(A)') 'end'
+
+      ! Append fixed coil data, if present
+      IF (LEN_TRIM(fixedcoils).GT.0) &
+         CALL append_fixed_coils(iunit, fixedcoils, n_coilgroups, lscreen)
 
       ! Close file
+      WRITE(iunit,'(A)') 'end'
       CLOSE(iunit)
 
       ! General Info
@@ -837,3 +842,66 @@ SUBROUTINE get_coil_vbounds(icoil, duu, dul, vmin, vmax)
   ! Clean up
   CALL cbspline_delete(XC_spl);  CALL cbspline_delete(YC_spl)
 END SUBROUTINE get_coil_vbounds
+
+!-----------------------------------------------------------------------
+SUBROUTINE append_fixed_coils(ounit, inname, maxdex, lscreen)
+  USE stel_kinds, ONLY : rprec
+  USE safe_open_mod
+  IMPLICIT NONE
+
+! Arguments
+  INTEGER, INTENT(IN)      :: ounit, maxdex
+  CHARACTER(*), INTENT(IN) :: inname
+  LOGICAL, INTENT(IN)      :: lscreen
+
+! Local variables
+  LOGICAL        :: firstgroup
+  INTEGER        :: istat, iunit
+  INTEGER        :: nlines, igroup, mingroup, offset
+  REAL(rprec)    :: xw, yw, zw, currin
+  CHARACTER(256) :: line, group_id
+
+! Open fixed coils file
+  iunit = ounit + 1
+  CALL safe_open(iunit, istat, TRIM(inname), 'old', 'formatted')
+  IF (istat.ne.0) THEN
+     PRINT *,'Error opening fixed coil file '//TRIM(inname)
+     RETURN
+  ENDIF
+
+! Determine the range of coil group indices.
+! For now, assume there is no start string.
+  firstgroup = .TRUE.
+  nlines = 0
+  DO
+     READ(iunit, '(a)', IOSTAT=istat) line
+     IF (istat.NE.0) EXIT !EOF condition
+     nlines = nlines + 1
+     READ(line,*,iostat=istat) xw, yw, zw, currin, igroup, group_id
+     IF (istat.eq.0) THEN ! Group info present
+        IF (firstgroup) THEN
+           mingroup = igroup
+           firstgroup = .FALSE.
+        ELSE
+           mingroup = MIN(mingroup, igroup)
+        ENDIF !!firstgroup
+     ENDIF ! Group info present
+  ENDDO
+
+  IF (lscreen) PRINT *,'Appending ',nlines,' lines from '//TRIM(inname)//' to coils.'
+  offset = maxdex + 1 - mingroup
+  REWIND(iunit)
+  DO
+     READ(iunit, '(a)', IOSTAT=istat) line
+     IF (istat.NE.0) EXIT !EOF condition
+     READ(line,*,iostat=istat) xw, yw, zw, currin, igroup, group_id
+     IF (istat.ne.0) THEN ! Group info not present
+        IF (LEN(TRIM(line)).GT.0) WRITE(ounit,'(A)') TRIM(line)
+     ELSE !Group info present
+        igroup = igroup + offset
+        WRITE(ounit,'(4e25.17,i5,A)') xw, yw, zw, currin, igroup, ' '//TRIM(group_id)
+     ENDIF
+  ENDDO
+
+  CALL safe_close(iunit) !Close the file when done
+END SUBROUTINE append_fixed_coils
