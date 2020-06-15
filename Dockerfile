@@ -1,7 +1,8 @@
 FROM ubuntu:latest
 MAINTAINER Caoxiang Zhu <czhu@pppl.gov> & STELLOPT developers
 
-RUN DEBIAN_FRONTEND="noninteractive" apt-get -q update && apt-get -y install \
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get -q update && apt-get -y install \
     gfortran g++ libopenmpi-dev openmpi-bin \
     libnetcdf-dev libnetcdff-dev libhdf5-serial-dev hdf5-tools \
     libblas-dev liblapack-dev libscalapack-openmpi-dev \
