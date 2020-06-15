@@ -62,7 +62,7 @@ WORKDIR /root
 RUN ls -al
 RUN git clone https://github.com/PrincetonUniversity/STELLOPT.git
 # Compile STELLOPT
-ENV MACHINE="ubuntu"
+ENV MACHINE="docker"
 ENV STELLOPT_PATH=/root/STELLOPT
 RUN pwd
 RUN echo $STELLOPT_PATH
