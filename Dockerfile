@@ -68,15 +68,6 @@ ENV STELLOPT_PATH=/home/STELLOPT
 RUN echo $STELLOPT_PATH
 RUN cd $STELLOPT_PATH  && ./build_all
 
-# Remove stack limit, otherwise OpenMP crashes.
-# Setup path and the directory where we'll run the calculation
-# Adapted from: https://denibertovic.com/posts/handling-permissions-with-docker-volumes/
-RUN echo '* - stack unlimited' > /etc/security/limits.d/90-core.conf
+# Add paths
 ENV PATH="${STELLOPT_PATH}/bin:${PATH}"
-ENV TMPDIR=/tmp
-ENV HOST_DIR=/host
-RUN mkdir ${HOST_DIR}
-WORKDIR ${HOST_DIR}
-COPY entrypoint.sh /usr/local/bin/entrypoint.sh
-ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD ["/bin/bash"]
