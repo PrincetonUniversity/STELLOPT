@@ -60,10 +60,9 @@ WORKDIR /root
 # Compile STELLOPT
 ENV MACHINE="ubuntu"
 ENV STELLOPT_PATH=${DOCKERFILE_PATH}
-RUN /bin/bash -l -c '\
-    echo $STELLOPT_PATH && \
-    cd $STELLOPT_PATH && \
-    ./build_all'
+RUN pwd
+RUN echo $STELLOPT_PATH
+RUN $STELLOPT_PATH/.build_all
 
 # Remove stack limit, otherwise OpenMP crashes.
 # Setup path and the directory where we'll run the calculation
