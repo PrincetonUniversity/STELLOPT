@@ -17,7 +17,7 @@ RUN apt-get -q update && apt-get -y install \
 # 3. LAPACK
 # 4. ScaLAPCK
 
-WORKDIR /root
+WORKDIR /home/STELLOPT
 
 # ENV OB_VER=0.2.19
 # ENV BLAS=OpenBLAS-${OB_VER}
@@ -59,12 +59,12 @@ WORKDIR /root
 #     cd ../ && rm -rf ${SCALAPACK}'
 
 # Get source code
-RUN ls -al
-RUN git clone https://github.com/PrincetonUniversity/STELLOPT.git
+#RUN ls -al
+#RUN git clone https://github.com/PrincetonUniversity/STELLOPT.git
+COPY . /home/STELLOPT
 # Compile STELLOPT
 ENV MACHINE="docker"
-ENV STELLOPT_PATH=/root/STELLOPT
-RUN pwd
+ENV STELLOPT_PATH=/home/STELLOPT
 RUN echo $STELLOPT_PATH
 RUN cd $STELLOPT_PATH  && ./build_all
 
