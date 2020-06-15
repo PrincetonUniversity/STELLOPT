@@ -213,6 +213,9 @@ SUBROUTINE beams3d_follow
                     myZ = Zatom(l)
                     mymass = mass(l)
                     moment = mu_start(l)
+                    fact_vsound = 1.5*sqrt(e_charge/plasma_mass)*therm_factor
+                    fact_pa   = plasma_mass*plasma_Zavg/(mymass*plasma_Zmean)
+                    fact_crit = SQRT(2*e_charge/plasma_mass)*(0.75*sqrt_pi*sqrt(plasma_mass/electron_mass))**(1.0/3.0) ! Wesson pg 226 5.4.9
                     myv_neut(:) = v_neut(:,myline)
                     IF (lbeam) lneut = .TRUE.
                     CALL out_beams3d_nag(tf_nag,q)
@@ -268,7 +271,9 @@ SUBROUTINE beams3d_follow
                     mymass = mass(l)
                     mybeam = Beam(l)
                     moment = mu_start(l)
-                    fact_crit = SQRT(2*e_charge/mymass)*(3*sqrt_pi*sqrt(mymass/electron_mass)*mymass/plasma_mass)**(1.0/3.0)
+                    fact_vsound = 1.5*sqrt(e_charge/plasma_mass)*therm_factor
+                    fact_pa   = plasma_mass*plasma_Zavg/(mymass*plasma_Zmean)
+                    fact_crit = SQRT(2*e_charge/plasma_mass)*(0.75*sqrt_pi*sqrt(plasma_mass/electron_mass))**(1.0/3.0) ! Wesson pg 226 5.4.9
                     myv_neut(:) = v_neut(:,myline)
                     IF (lbeam) lneut = .TRUE.
                     CALL out_beams3d_nag(tf_nag,q)
@@ -352,7 +357,8 @@ SUBROUTINE beams3d_follow
                     moment = mu_start(l)
                     fact_vsound = 1.5*sqrt(e_charge/plasma_mass)*therm_factor
                     fact_pa   = plasma_mass*plasma_Zavg/(mymass*plasma_Zmean)
-                    fact_crit = SQRT(2*e_charge/mymass)*(1.5*sqrt_pi*sqrt(2*plasma_mass/electron_mass))**(1.0/3.0) ! Wesson pg 226 5.4.9
+!                    fact_crit = SQRT(2*e_charge/mymass)*(1.5*sqrt_pi*sqrt(2*plasma_mass/electron_mass))**(1.0/3.0) ! Wesson pg 226 5.4.9
+                    fact_crit = SQRT(2*e_charge/plasma_mass)*(0.75*sqrt_pi*sqrt(plasma_mass/electron_mass))**(1.0/3.0) ! Wesson pg 226 5.4.9
                     myv_neut(:) = v_neut(:,myline)
                     IF (lbeam) lneut = .TRUE.
                     CALL out_beams3d_nag(tf_nag,q)
