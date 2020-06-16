@@ -76,7 +76,7 @@
 
       ! Catch default behavoir
       IF (noptimizers <= 0) noptimizers = nprocs_total
-      IF (noptimizers > nproc_total) THEN
+      IF (noptimizers > nprocs_total) THEN
          noptimizers = nprocs_total
          IF (myid == master) WRITE(iunit,"(A)") "Lowering noptimizers to nprocs_total"
       END IF
