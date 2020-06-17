@@ -1,6 +1,7 @@
 !-----------------------------------------------------------------------
 !     Subroutine:    stellopt_spline_to_coil
-!     Authors:       S. Lazerson (lazerson@pppl.gov)
+!     Authors:       S. Lazerson (samuel.lazerson@ipp.mpg.de) and
+!                    J. Breslau (jbreslau@pppl.gov)
 !     Date:          11/14/2016
 !     Description:   This subroutine generates a coil data structure from
 !                    the stellopt splines and writes it to a file.
@@ -905,3 +906,197 @@ SUBROUTINE append_fixed_coils(ounit, inname, maxdex, lscreen)
 
   CALL safe_close(iunit) !Close the file when done
 END SUBROUTINE append_fixed_coils
+
+!-----------------------------------------------------------------------
+SUBROUTINE get_coil_polypts(icoil, ninside)
+  USE stellopt_vars
+  USE stellopt_targets, ONLY : npts_cpoly, kopolyu, kopolyv
+  USE stellopt_cbspline
+  IMPLICIT NONE
+
+  ! Arguments
+  INTEGER, INTENT(IN)  :: icoil
+  INTEGER, INTENT(OUT) :: ninside
+
+  ! Local variables
+  TYPE(cbspline)                         :: C_spl
+  REAL(rprec), DIMENSION(:), ALLOCATABLE :: uc, vc
+  REAL(rprec)                            :: s_val
+  INTEGER                                :: ier, iseg, nknots, ncoefs, js1, js2
+  INTEGER                                :: ik, jpoly, inout
+  LOGICAL                                :: ldum
+
+  ninside = 0
+
+  IF (.NOT.lwindsurf) RETURN
+
+  ! Handle spline boundary conditions
+  CALL enforce_spline_bcs(icoil, ldum)
+  ncoefs = coil_nctrl(icoil)
+  nknots = ncoefs + 4
+
+  ! Get u,v coords along coil -- don't use spline_to_coil b/c we don't need x,y,z coords
+  ALLOCATE(uc(npts_cpoly), vc(npts_cpoly))
+
+  js1 =   FLOOR(1.0 + coil_splinesx(icoil,1)*(npts_cpoly - 1))
+  js2 = CEILING(1.0 + coil_splinesx(icoil,nknots)*(npts_cpoly - 1))
+
+  CALL cbspline_init(C_spl, ncoefs, ier)
+  CALL cbspline_setup(C_spl, ncoefs, &
+       coil_splinesx(icoil,1:nknots), coil_splinefx(icoil,1:ncoefs), ier)
+  DO iseg = 1, js1  ! Straight section above midplane
+     uc(iseg) = REAL(iseg-1)/REAL(npts_cpoly-1)
+  END DO
+  DO iseg = js1+1, js2-1
+     s_val = REAL(iseg-1)/REAL(npts_cpoly-1)
+     CALL cbspline_eval(C_spl, s_val, uc(iseg), ier)
+  END DO !iseg
+  DO iseg = js2, npts_cpoly  ! Straight section below midplane
+     uc(iseg) = REAL(iseg-1)/REAL(npts_cpoly-1)
+  END DO
+
+  CALL cbspline_setup(C_spl, ncoefs, &
+       coil_splinesy(icoil,1:nknots), coil_splinefy(icoil,1:ncoefs), ier)
+  DO iseg = js1+1, js2-1
+     s_val = REAL(iseg-1)/REAL(npts_cpoly-1)
+     CALL cbspline_eval(C_spl, s_val, vc(iseg), ier)
+  END DO !iseg
+  vc(1:js1) = coil_splinefy(icoil,1);  vc(js2:npts_cpoly) = coil_splinefy(icoil,1)
+  CALL cbspline_delete(C_spl)
+
+  ! Count incursions into keepout polygons
+  DO jpoly = LBOUND(kopolyu,DIM=2), UBOUND(kopolyu,DIM=2)
+     IF (ANY(kopolyu(:,jpoly).GE.0.0)) THEN
+        ik = MINLOC(kopolyu(:,jpoly),DIM=1) - 1
+        DO iseg = 1, npts_cpoly
+           CALL PNPOLY(vc(iseg), uc(iseg), &
+                kopolyv(1:ik,jpoly), kopolyu(1:ik,jpoly), ik, inout)
+           IF (inout.GE.0) ninside = ninside + 1
+        ENDDO !iseg
+     ENDIF
+  ENDDO !jpoly
+
+  DEALLOCATE(uc, vc)
+  RETURN
+CONTAINS
+!----------------------------------------------------------------------
+!     Courtesy: Jay Sandhu
+!               email: jsandhu@esri.com
+!
+!
+! Please cite David H. Douglas, COLLECTED ALGORITHMS, Cambridge MA:
+! Harvard Laboratory for Computer Graphics, 1974
+!
+! This is my reinvention buster.
+! 1974 1974 1974 1974 1974 1974 1974 1974 1974 1974 1974 1974
+!
+!     .................................................................
+!
+!        SUBROUTINE PNPOLY
+!
+!        PURPOSE
+!           TO DETERMINE WHETHER A POINT IS INSIDE A POLYGON
+!
+!        USAGE
+!           CALL PNPOLY (PX, PY, X, Y, N, INOUT )
+!
+!        DESCRIPTION OF THE PARAMETERS
+!           PX      - X-COORDINATE OF POINT IN QUESTION.
+!           PY      - Y-COORDINATE OF POINT IN QUESTION.
+!           X       - N LONG VECTOR CONTAINING X-COORDINATES OF
+!                     VERTICES OF POLYGON.
+!           Y       - N LONG VECTOR CONTAINING Y-COORDINATES OF
+!                     VERTICES OF POLYGON.
+!           N       - NUMBER OF VERTICES IN THE POLYGON.
+!           INOUT   - THE SIGNAL RETURNED:
+!                     -1 IF THE POINT IS OUTSIDE OF THE POLYGON,
+!                      0 IF THE POINT IS ON AN EDGE OR AT A VERTEX,
+!                      1 IF THE POINT IS INSIDE OF THE POLYGON.
+!
+!        REMARKS
+!           THE VERTICES MAY BE LISTED IN CLOCKWISE OR ANTICLOCKWISE
+!           ORDER.  FOR THIS SUBROUTINE A POINT IS CONSIDERED INSIDE
+!           THE POLYGON IF IT IS LOCATED IN THE ENCLOSED AREA DEFINED
+!           BY THE LINE FORMING THE POLYGON.
+!           THE INPUT POLYGON MAY BE A COMPOUND POLYGON CONSISTING
+!           OF SEVERAL SEPARATE SUBPOLYGONS. IF SO, THE FIRST VERTEX
+!           OF EACH SUBPOLYGON MUST BE REPEATED, AND WHEN CALCULATING
+!           N, THESE FIRST VERTICES MUST BE COUNTED TWICE.
+!           INOUT IS THE ONLY PARAMETER WHOSE VALUE IS CHANGED.
+!           PNPOLY CAN HANDLE ANY NUMBER OF VERTICES IN THE POLYGON.
+!           WRITTEN BY RANDOLPH FRANKLIN, UNIVERSITY OF OTTAWA, 6/72.
+!
+!        SUBROUTINES AND FUNCTION SUBPROGRAMS REQUIRED
+!           NONE
+!
+!        METHOD
+!           A VERTICAL SEMI-INFINITE LINE IS DRAWN UP FROM THE POINT
+!           IN QUESTION. IF IT CROSSES THE POLYGON AN ODD NUMBER OF
+!           TIMES, THE POINT IS INSIDE THE POLYGON.
+!
+!     .................................................................
+!
+  SUBROUTINE PNPOLY(PX,PY,X,Y,N,INOUT)
+    IMPLICIT NONE
+
+    REAL(rprec), INTENT(IN)               :: PX, PY
+    INTEGER, INTENT(IN)                   :: N
+    REAL(rprec), DIMENSION(N), INTENT(IN) :: X, Y
+    INTEGER, INTENT(OUT)                  :: INOUT
+
+    INTEGER I, J
+    REAL(rprec) :: XI, YI, XJ, YJ
+    LOGICAL IX, IY, JX, JY, EOR
+
+    !     EXCLUSIVE OR STATEMENT FUNCTION.
+    EOR(IX,IY) = (IX .OR. IY) .AND. .NOT.(IX .AND. IY)
+	
+    INOUT = -1
+
+    DO I = 1 , N
+       XI = X(I) - PX
+       YI = Y(I) - PY
+       !        CHECK WHETHER THE POINT IN QUESTION IS AT THIS VERTEX.
+       IF ( XI.EQ.0.0 .AND. YI.EQ.0.0 ) THEN
+          INOUT = 0
+          RETURN
+       ENDIF
+       !        J IS NEXT VERTEX NUMBER OF POLYGON.
+       J = 1 + MOD(I,N)
+       XJ = X(J) - PX
+       YJ = Y(J) - PY
+       !        IS THIS LINE OF 0 LENGTH ?
+       IF ( XI.EQ.XJ .AND. YI.EQ.YJ ) CYCLE
+       IX = XI.GE.0.0
+       IY = YI.GE.0.0
+       JX = XJ.GE.0.0
+       JY = YJ.GE.0.0
+       !        CHECK WHETHER (PX,PY) IS ON VERTICAL SIDE OF POLYGON.
+       IF ( XI.EQ.0.0 .AND. XJ.EQ.0.0 .AND. EOR(IY,JY) ) THEN
+          INOUT = 0
+          RETURN
+       ENDIF
+       !        CHECK WHETHER (PX,PY) IS ON HORIZONTAL SIDE OF POLYGON.
+       IF ( YI.EQ.0.0 .AND. YJ.EQ.0.0 .AND. EOR(IX,JX) ) THEN
+          INOUT = 0
+          RETURN
+       ENDIF
+       !        CHECK WHETHER BOTH ENDS OF THIS SIDE ARE COMPLETELY 1) TO RIGHT
+       !        OF, 2) TO LEFT OF, OR 3) BELOW (PX,PY).
+       IF ( .NOT.((IY .OR. JY) .AND. EOR(IX,JX)) ) CYCLE
+       !        DOES THIS SIDE OBVIOUSLY CROSS LINE RISING VERTICALLY FROM (PX,PY)
+       IF ( .NOT.(IY .AND. JY .AND. EOR(IX,JX)) ) THEN
+          IF ( (YI*XJ-XI*YJ)/(XJ-XI).LT.0.0 ) THEN
+             CYCLE
+          ELSEIF ( (YI*XJ-XI*YJ)/(XJ-XI).EQ.0.0 ) THEN
+             INOUT = 0
+             RETURN
+          ELSE
+             INOUT = -INOUT
+          ENDIF
+       ELSE
+          INOUT = -INOUT
+       ENDIF
+    ENDDO
+  END SUBROUTINE PNPOLY
+END SUBROUTINE get_coil_polypts

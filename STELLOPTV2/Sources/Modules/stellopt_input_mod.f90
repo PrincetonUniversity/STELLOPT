@@ -380,8 +380,9 @@
                          target_coilsep, sigma_coilsep, npts_csep, &
                          target_coilcrv, sigma_coilcrv, npts_curv, &
                          target_coilself, sigma_coilself, npts_cself, &
-                         target_coilrect, sigma_coilrect, coilrectpfw, npts_crect, &
+                         target_coilrect, sigma_coilrect, coilrectpfw, npts_crect, npts_cpoly, &
                          coilrectvmin, coilrectvmax, coilrectduu, coilrectdul, &
+                         target_coilpoly, sigma_coilpoly, kopolyu, kopolyv, &
                          target_ece,sigma_ece,freq_ece, mix_ece, vessel_ece, mirror_ece, &
                          antennaposition_ece, targetposition_ece, rbeam_ece, rfocus_ece, &
                          targettype_ece, antennatype_ece, nra_ece, nphi_ece, &
@@ -983,6 +984,11 @@
       coilrectduu       = 0.125
       coilrectdul       = 0.125
       npts_crect        = 360
+      target_coilpoly   = 0.0
+      sigma_coilpoly    = bigno
+      kopolyu(:,:)      = -1.0
+      kopolyv(:,:)      = -1.0
+      npts_cpoly        = 360
       target_curvature_P2    = 0.0
       sigma_curvature_P2     = bigno
 
@@ -1875,7 +1881,7 @@
       IF ((ANY(sigma_coillen < bigno)).OR.(ANY(sigma_coilsegvar < bigno)).OR.&
            (ANY(sigma_coilcrv < bigno)).OR.(sigma_coilsep < bigno).OR.&
            (ANY(sigma_coilself < bigno)).OR.(ANY(sigma_coiltorvar < bigno)).OR.&
-           (ANY(sigma_coilrect < bigno))) THEN
+           (ANY(sigma_coilrect < bigno)).OR.(ANY(sigma_coilpoly < bigno))) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          WRITE(iunit,'(A)') '!          COIL TARGETS'
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
@@ -1933,6 +1939,24 @@
             WRITE(iunit,"(2X,A,ES22.12E3)") 'COILRECTPFW = ',coilrectpfw
             WRITE(iunit,"(2X,A,I6.5)") 'NPTS_CRECT = ',npts_crect
          END IF
+         DO n = LBOUND(sigma_coilpoly,DIM=1), UBOUND(sigma_coilpoly,DIM=1)
+            IF (sigma_coilpoly(n) < bigno) THEN
+               WRITE(iunit,"(2X,A,I4.3,A,ES22.12E3)") 'TARGET_COILPOLY(',n,') = ',target_coilpoly(n)
+               WRITE(iunit,"(2X,A,I4.3,A,ES22.12E3)") 'SIGMA_COILPOLY(',n,') = ',sigma_coilpoly(n)
+            ENDIF
+         ENDDO !n
+         IF (ANY(sigma_coilpoly < bigno)) THEN
+            DO n = LBOUND(kopolyu,DIM=2), UBOUND(kopolyu,DIM=2)
+               IF (ANY(kopolyu(:,n) .GE. 0.0)) THEN
+                  WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+                  WRITE(iunit,'(A,I4.3)') '!       Keepout Polygon ',n
+                  ik = MINLOC(kopolyu(:,n),DIM=1) - 1
+                  WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,ES22.12E3))") 'KOPOLYU(:,',n,')',(kopolyu(m,n), m = 1, ik)
+                  WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,ES22.12E3))") 'KOPOLYV(:,',n,')',(kopolyv(m,n), m = 1, ik)
+               ENDIF
+            ENDDO !n
+            WRITE(iunit,"(2X,A,I6.5)") 'NPTS_CPOLY = ',npts_cpoly
+         ENDIF
       END IF
       IF (ANY(lbooz)) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
