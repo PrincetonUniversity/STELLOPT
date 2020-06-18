@@ -168,6 +168,7 @@
   INT_TYPE = 'LSODE'
   FOLLOW_TOL =  1.00000000000000E-09
   VC_ADAPT_TOL =  1.00000000000000E-06
+  R_START_IN(1) = 1.0 ! need this to turn off BEAM stuff
 /
 &END
 

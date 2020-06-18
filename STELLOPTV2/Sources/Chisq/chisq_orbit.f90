@@ -13,7 +13,7 @@
       USE stellopt_targets
       USE equil_vals
 !DEC$ IF DEFINED (BEAMS3D_OPT)
-      USE beams3d_input_mod, ONLY: read_beams3d_input, r_start_in
+      USE beams3d_input_mod, ONLY: read_beams3d_input, lbeam, lbbnbi
 !DEC$ ENDIF
       
       
@@ -63,7 +63,8 @@
          END DO
          iflag=0
 !DEC$ IF DEFINED (BEAMS3D_OPT)
-         r_start_in(1) = 1.0 ! So that the beams aren't read.
+         lbeam = .false.
+         lbbnbi = .false.
          CALL read_beams3d_input('input.'//TRIM(id_string), iflag)
 !DEC$ ENDIF
       END IF
