@@ -55,7 +55,9 @@ varlist['TXPORT_equil']=np.array([0.09588515305729, 0.09653944559713, 0.09552027
 for temp in varlist:
     act = varlist[temp]
     cal = data[temp]
-    perct = 100*sum(abs(act-cal)/max(abs(act)))
+    cal = np.where(act==0,0,cal)
+    div = np.where(act==0,1,act)
+    perct = 100*sum(abs(act-cal)/div)
     print('  '+temp+': '+str(max(cal))+'   '+str(max(act))+'   '+str(int(perct))+'%')
     if perct > failtol:
         lfail = 1
