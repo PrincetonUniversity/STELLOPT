@@ -22,9 +22,11 @@ The **master** branch contains the cutting edge version of the code while
 should be:
 
 1.  Clone Repository
-2.  Repoint make.inc to the proper SHARE/make\_XXX.inc file (or make
-    one if necessary).
-3.  Issue the command make from the root directory by running `./build_all`.
+2.  Set an environment variable `STELLOPT_PATH` equal to the path to the repository folder (for example `~/src/STELLOPT/`)
+3.  Some cluster and devices require the `MACHINE` variable to be set (specific links below).
+4.  Issue the command `./build_all` to build all the codes.
+
+To build a specific subcode enter the directory of the code and issue the command `make clean_release` to rebuild the whole code with optimization flags, `make clean_debug` to build the whole code for debugging, `make release` to only build files which have changed, `make debug` to only build files which have changed with debugging on, or `make` which aliases to `make release`.
 
 Development Workflow
 --------------------
