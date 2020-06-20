@@ -133,9 +133,10 @@
                WRITE(6,'(A,2X,1ES12.4)') '        Vscale: ',factor
                WRITE(6,'(A,2X,1I5)')     '          NPOP: ',npop
          CASE DEFAULT
-            WRITE(6,*) '!!!!!  UNKNOWN OPTIMIZATION TYPE  !!!!!'
-            WRITE(6,*) '       OPT_TYPE: ',TRIM(opt_type)
-            WRITE(6,*)
+            ! This 'case default' section is entered if either a MANGO algorithm is selected, 
+            ! or if an invalid opt_type is selected. In the latter case
+            ! there is no need to print a warning here, since the next select case block
+            ! will catch it.
          END SELECT
          IF (lauto_domain) WRITE(6,*) '  !!!!!! AUTO_DOMAIN Calculation !!!!!!!'
       END IF
