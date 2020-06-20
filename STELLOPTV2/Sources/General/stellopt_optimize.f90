@@ -24,7 +24,7 @@
 !----------------------------------------------------------------------
       IMPLICIT NONE
       !LOGICAL ::  lrestart
-      LOGICAL ::  lfile_exists
+      LOGICAL ::  lfile_exists, lskip_min
       INTEGER ::  ier, iunit,nvar_in, nprint, info, ldfjac,nfev,&
                   iunit_restart, nfev_save, npop, ndiv, i
       INTEGER, ALLOCATABLE :: ipvt(:)
@@ -141,6 +141,9 @@
          IF (lauto_domain) WRITE(6,*) '  !!!!!! AUTO_DOMAIN Calculation !!!!!!!'
       END IF
 
+      ! DEFAULT
+      lskip_min = .false.
+
       ! Do runs
       SELECT CASE(TRIM(opt_type))
          CASE('lmdif')
@@ -176,8 +179,10 @@
                        qtf, wa1, wa2, wa3, wa4,vars_min,vars_max)
             DEALLOCATE(ipvt, qtf, wa1, wa2, wa3, wa4, fjac)
          CASE('eval_xvec')
+            lskip_min = .true.
             CALL xvec_eval(stellopt_fcn,nvars,mtargets,xvec_file)
          CASE('one_iter','single','eval','single_iter')
+            lskip_min = .true.
             ALLOCATE(fvec(mtargets))
             fvec     = 0.0
             info     = FLAG_SINGLETASK
@@ -194,6 +199,7 @@
             IF (myid == master) info = flag_cleanup_lev
             call stellopt_fcn(mtargets, nvars, vars, fvec, info, nfev)
          CASE('one_iter_norm')
+            lskip_min = .true.
             ALLOCATE(fvec(mtargets))
             fvec     = 0.0
             info     = FLAG_SINGLETASK
@@ -236,6 +242,7 @@
             CLOSE(iunit)
             CLOSE(iunit_restart)
          CASE('map')
+            lskip_min = .true.
             nprint = 6
             npop   = npopulation
             ndiv   = mode
@@ -247,6 +254,7 @@
                 WRITE(6,*) '       See map.dat for data               '
             END IF
          CASE('map_linear')
+            lskip_min = .true.
             nprint = 6
             npop   = npopulation
             ndiv   = mode
@@ -258,6 +266,7 @@
                 WRITE(6,*) '       See map.dat for data               '
             END IF
          CASE('map_plane')
+            lskip_min = .true.
             nprint = 6
             npop   = npopulation
             ndiv   = mode
@@ -269,6 +278,7 @@
                 WRITE(6,*) '       See map.dat for data               '
             END IF
          CASE('map_hypers')
+            lskip_min = .true.
             ALLOCATE(wa1(nvars),fvec(mtargets))
             wa1 = vars
             nprint = 6
@@ -313,7 +323,7 @@
             END IF
       END SELECT
       ! Now output the minimum files
-      IF (myid == master .and. info /= 5) THEN
+      IF (myid == master .and. info /= 5 .and. .not.lskip_min) THEN
          IF (lrenorm) CALL stellopt_renorm(mtargets,fvec)
          nfev_save = nfev
          ier=0
