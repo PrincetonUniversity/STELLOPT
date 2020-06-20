@@ -24,13 +24,17 @@ MODULE MPI_SHARMEM
       MODULE PROCEDURE mpialloc_1d_boo, mpialloc_1d_int, mpialloc_1d_sgl, mpialloc_1d_dbl, &
                        mpialloc_2d_boo, mpialloc_2d_int, mpialloc_2d_sgl, mpialloc_2d_dbl, &
                        mpialloc_3d_boo, mpialloc_3d_int, mpialloc_3d_sgl, mpialloc_3d_dbl, &
-                       mpialloc_4d_boo, mpialloc_4d_int, mpialloc_4d_sgl, mpialloc_4d_dbl
+                       mpialloc_4d_boo, mpialloc_4d_int, mpialloc_4d_sgl, mpialloc_4d_dbl, &
+                       mpialloc_5d_boo, mpialloc_5d_int, mpialloc_5d_sgl, mpialloc_5d_dbl, &
+                       mpialloc_6d_boo, mpialloc_6d_int, mpialloc_6d_sgl, mpialloc_6d_dbl
    END INTERFACE
    INTERFACE mpidealloc
       MODULE PROCEDURE mpidealloc_1d_boo, mpidealloc_1d_int, mpidealloc_1d_sgl, mpidealloc_1d_dbl, &
                        mpidealloc_2d_boo, mpidealloc_2d_int, mpidealloc_2d_sgl, mpidealloc_2d_dbl, &
                        mpidealloc_3d_boo, mpidealloc_3d_int, mpidealloc_3d_sgl, mpidealloc_3d_dbl, &
-                       mpidealloc_4d_boo, mpidealloc_4d_int, mpidealloc_4d_sgl, mpidealloc_4d_dbl
+                       mpidealloc_4d_boo, mpidealloc_4d_int, mpidealloc_4d_sgl, mpidealloc_4d_dbl, &
+                       mpidealloc_5d_boo, mpidealloc_5d_int, mpidealloc_5d_sgl, mpidealloc_5d_dbl, &
+                       mpidealloc_6d_boo, mpidealloc_6d_int, mpidealloc_6d_sgl, mpidealloc_6d_dbl
    END INTERFACE
 
    CONTAINS
@@ -549,6 +553,310 @@ MODULE MPI_SHARMEM
       RETURN
       END SUBROUTINE mpialloc_4d_dbl
 
+      SUBROUTINE mpialloc_5d_boo(array,n1,n2,n3,n4,n5,subid,mymaster,share_comm,win)
+      ! Libraries
+      USE MPI
+      USE ISO_C_BINDING
+      IMPLICIT NONE
+      ! Arguments
+      LOGICAL, POINTER, INTENT(inout) :: array(:,:,:,:,:)
+      INTEGER, INTENT(in) :: n1
+      INTEGER, INTENT(in) :: n2
+      INTEGER, INTENT(in) :: n3
+      INTEGER, INTENT(in) :: n4
+      INTEGER, INTENT(in) :: n5
+      INTEGER, INTENT(in) :: subid
+      INTEGER, INTENT(in) :: mymaster
+      INTEGER, INTENT(in) :: share_comm
+      INTEGER, INTENT(inout) :: win
+      ! Variables
+      INTEGER :: disp_unit, ier
+      INTEGER :: array_shape(5)
+      INTEGER(KIND=MPI_ADDRESS_KIND) :: window_size
+      TYPE(C_PTR) :: baseptr
+      ! Initialization
+      ier = 0
+      array_shape(1) = n1
+      array_shape(2) = n2
+      array_shape(3) = n3
+      array_shape(4) = n4
+      array_shape(5) = n5
+      disp_unit = 1
+      window_size = 0_MPI_ADDRESS_KIND
+      IF (subid == mymaster) window_size = INT(n1*n2*n3*n4*n5,MPI_ADDRESS_KIND)*4_MPI_ADDRESS_KIND
+      CALL MPI_WIN_ALLOCATE_SHARED(window_size, disp_unit, MPI_INFO_NULL, share_comm, baseptr, win ,ier)
+      IF (subid /= mymaster) CALL MPI_WIN_SHARED_QUERY(win, 0, window_size, disp_unit, baseptr, ier)
+      CALL C_F_POINTER(baseptr, array, array_shape)
+      RETURN
+      END SUBROUTINE mpialloc_5d_boo
+
+      SUBROUTINE mpialloc_5d_int(array,n1,n2,n3,n4,n5,subid,mymaster,share_comm,win)
+      ! Libraries
+      USE MPI
+      USE ISO_C_BINDING
+      IMPLICIT NONE
+      ! Arguments
+      INTEGER, POINTER, INTENT(inout) :: array(:,:,:,:,:)
+      INTEGER, INTENT(in) :: n1
+      INTEGER, INTENT(in) :: n2
+      INTEGER, INTENT(in) :: n3
+      INTEGER, INTENT(in) :: n4
+      INTEGER, INTENT(in) :: n5
+      INTEGER, INTENT(in) :: subid
+      INTEGER, INTENT(in) :: mymaster
+      INTEGER, INTENT(in) :: share_comm
+      INTEGER, INTENT(inout) :: win
+      ! Variables
+      INTEGER :: disp_unit, ier
+      INTEGER :: array_shape(5)
+      INTEGER(KIND=MPI_ADDRESS_KIND) :: window_size
+      TYPE(C_PTR) :: baseptr
+      ! Initialization
+      ier = 0
+      array_shape(1) = n1
+      array_shape(2) = n2
+      array_shape(3) = n3
+      array_shape(4) = n4
+      array_shape(5) = n5
+      disp_unit = 1
+      window_size = 0_MPI_ADDRESS_KIND
+      IF (subid == mymaster) window_size = INT(n1*n2*n3*n4*n5,MPI_ADDRESS_KIND)*4_MPI_ADDRESS_KIND
+      CALL MPI_WIN_ALLOCATE_SHARED(window_size, disp_unit, MPI_INFO_NULL, share_comm, baseptr, win ,ier)
+      IF (subid /= mymaster) CALL MPI_WIN_SHARED_QUERY(win, 0, window_size, disp_unit, baseptr, ier)
+      CALL C_F_POINTER(baseptr, array, array_shape)
+      RETURN
+      END SUBROUTINE mpialloc_5d_int
+
+      SUBROUTINE mpialloc_5d_sgl(array,n1,n2,n3,n4,n5,subid,mymaster,share_comm,win)
+      ! Libraries
+      USE MPI
+      USE ISO_C_BINDING
+      IMPLICIT NONE
+      ! Arguments
+      REAL, POINTER, INTENT(inout) :: array(:,:,:,:,:)
+      INTEGER, INTENT(in) :: n1
+      INTEGER, INTENT(in) :: n2
+      INTEGER, INTENT(in) :: n3
+      INTEGER, INTENT(in) :: n4
+      INTEGER, INTENT(in) :: n5
+      INTEGER, INTENT(in) :: subid
+      INTEGER, INTENT(in) :: mymaster
+      INTEGER, INTENT(in) :: share_comm
+      INTEGER, INTENT(inout) :: win
+      ! Variables
+      INTEGER :: disp_unit, ier
+      INTEGER :: array_shape(5)
+      INTEGER(KIND=MPI_ADDRESS_KIND) :: window_size
+      TYPE(C_PTR) :: baseptr
+      ! Initialization
+      ier = 0
+      array_shape(1) = n1
+      array_shape(2) = n2
+      array_shape(3) = n3
+      array_shape(4) = n4
+      array_shape(5) = n5
+      disp_unit = 1
+      window_size = 0_MPI_ADDRESS_KIND
+      IF (subid == mymaster) window_size = INT(n1*n2*n3*n4*n5,MPI_ADDRESS_KIND)*4_MPI_ADDRESS_KIND
+      CALL MPI_WIN_ALLOCATE_SHARED(window_size, disp_unit, MPI_INFO_NULL, share_comm, baseptr, win ,ier)
+      IF (subid /= mymaster) CALL MPI_WIN_SHARED_QUERY(win, 0, window_size, disp_unit, baseptr, ier)
+      CALL C_F_POINTER(baseptr, array, array_shape)
+      RETURN
+      END SUBROUTINE mpialloc_5d_sgl
+
+      SUBROUTINE mpialloc_5d_dbl(array,n1,n2,n3,n4,n5,subid,mymaster,share_comm,win)
+      ! Libraries
+      USE MPI
+      USE ISO_C_BINDING
+      IMPLICIT NONE
+      ! Arguments
+      DOUBLE PRECISION, POINTER, INTENT(inout) :: array(:,:,:,:,:)
+      INTEGER, INTENT(in) :: n1
+      INTEGER, INTENT(in) :: n2
+      INTEGER, INTENT(in) :: n3
+      INTEGER, INTENT(in) :: n4
+      INTEGER, INTENT(in) :: n5
+      INTEGER, INTENT(in) :: subid
+      INTEGER, INTENT(in) :: mymaster
+      INTEGER, INTENT(in) :: share_comm
+      INTEGER, INTENT(inout) :: win
+      ! Variables
+      INTEGER :: disp_unit, ier
+      INTEGER :: array_shape(5)
+      INTEGER(KIND=MPI_ADDRESS_KIND) :: window_size
+      TYPE(C_PTR) :: baseptr
+      ! Initialization
+      ier = 0
+      array_shape(1) = n1
+      array_shape(2) = n2
+      array_shape(3) = n3
+      array_shape(4) = n4
+      array_shape(5) = n5
+      disp_unit = 1
+      window_size = 0_MPI_ADDRESS_KIND
+      IF (subid == mymaster) window_size = INT(n1*n2*n3*n4*n5,MPI_ADDRESS_KIND)*8_MPI_ADDRESS_KIND
+      CALL MPI_WIN_ALLOCATE_SHARED(window_size, disp_unit, MPI_INFO_NULL, share_comm, baseptr, win ,ier)
+      IF (subid /= mymaster) CALL MPI_WIN_SHARED_QUERY(win, 0, window_size, disp_unit, baseptr, ier)
+      CALL C_F_POINTER(baseptr, array, array_shape)
+      RETURN
+      END SUBROUTINE mpialloc_5d_dbl
+
+      SUBROUTINE mpialloc_6d_boo(array,n1,n2,n3,n4,n5,n6,subid,mymaster,share_comm,win)
+      ! Libraries
+      USE MPI
+      USE ISO_C_BINDING
+      IMPLICIT NONE
+      ! Arguments
+      LOGICAL, POINTER, INTENT(inout) :: array(:,:,:,:,:,:)
+      INTEGER, INTENT(in) :: n1
+      INTEGER, INTENT(in) :: n2
+      INTEGER, INTENT(in) :: n3
+      INTEGER, INTENT(in) :: n4
+      INTEGER, INTENT(in) :: n5
+      INTEGER, INTENT(in) :: n6
+      INTEGER, INTENT(in) :: subid
+      INTEGER, INTENT(in) :: mymaster
+      INTEGER, INTENT(in) :: share_comm
+      INTEGER, INTENT(inout) :: win
+      ! Variables
+      INTEGER :: disp_unit, ier
+      INTEGER :: array_shape(6)
+      INTEGER(KIND=MPI_ADDRESS_KIND) :: window_size
+      TYPE(C_PTR) :: baseptr
+      ! Initialization
+      ier = 0
+      array_shape(1) = n1
+      array_shape(2) = n2
+      array_shape(3) = n3
+      array_shape(4) = n4
+      array_shape(5) = n5
+      array_shape(6) = n6
+      disp_unit = 1
+      window_size = 0_MPI_ADDRESS_KIND
+      IF (subid == mymaster) window_size = INT(n1*n2*n3*n4*n5*n6,MPI_ADDRESS_KIND)*4_MPI_ADDRESS_KIND
+      CALL MPI_WIN_ALLOCATE_SHARED(window_size, disp_unit, MPI_INFO_NULL, share_comm, baseptr, win ,ier)
+      IF (subid /= mymaster) CALL MPI_WIN_SHARED_QUERY(win, 0, window_size, disp_unit, baseptr, ier)
+      CALL C_F_POINTER(baseptr, array, array_shape)
+      RETURN
+      END SUBROUTINE mpialloc_6d_boo
+
+      SUBROUTINE mpialloc_6d_int(array,n1,n2,n3,n4,n5,n6,subid,mymaster,share_comm,win)
+      ! Libraries
+      USE MPI
+      USE ISO_C_BINDING
+      IMPLICIT NONE
+      ! Arguments
+      INTEGER, POINTER, INTENT(inout) :: array(:,:,:,:,:,:)
+      INTEGER, INTENT(in) :: n1
+      INTEGER, INTENT(in) :: n2
+      INTEGER, INTENT(in) :: n3
+      INTEGER, INTENT(in) :: n4
+      INTEGER, INTENT(in) :: n5
+      INTEGER, INTENT(in) :: n6
+      INTEGER, INTENT(in) :: subid
+      INTEGER, INTENT(in) :: mymaster
+      INTEGER, INTENT(in) :: share_comm
+      INTEGER, INTENT(inout) :: win
+      ! Variables
+      INTEGER :: disp_unit, ier
+      INTEGER :: array_shape(6)
+      INTEGER(KIND=MPI_ADDRESS_KIND) :: window_size
+      TYPE(C_PTR) :: baseptr
+      ! Initialization
+      ier = 0
+      array_shape(1) = n1
+      array_shape(2) = n2
+      array_shape(3) = n3
+      array_shape(4) = n4
+      array_shape(5) = n5
+      array_shape(6) = n6
+      disp_unit = 1
+      window_size = 0_MPI_ADDRESS_KIND
+      IF (subid == mymaster) window_size = INT(n1*n2*n3*n4*n5*n6,MPI_ADDRESS_KIND)*4_MPI_ADDRESS_KIND
+      CALL MPI_WIN_ALLOCATE_SHARED(window_size, disp_unit, MPI_INFO_NULL, share_comm, baseptr, win ,ier)
+      IF (subid /= mymaster) CALL MPI_WIN_SHARED_QUERY(win, 0, window_size, disp_unit, baseptr, ier)
+      CALL C_F_POINTER(baseptr, array, array_shape)
+      RETURN
+      END SUBROUTINE mpialloc_6d_int
+
+      SUBROUTINE mpialloc_6d_sgl(array,n1,n2,n3,n4,n5,n6,subid,mymaster,share_comm,win)
+      ! Libraries
+      USE MPI
+      USE ISO_C_BINDING
+      IMPLICIT NONE
+      ! Arguments
+      REAL, POINTER, INTENT(inout) :: array(:,:,:,:,:,:)
+      INTEGER, INTENT(in) :: n1
+      INTEGER, INTENT(in) :: n2
+      INTEGER, INTENT(in) :: n3
+      INTEGER, INTENT(in) :: n4
+      INTEGER, INTENT(in) :: n5
+      INTEGER, INTENT(in) :: n6
+      INTEGER, INTENT(in) :: subid
+      INTEGER, INTENT(in) :: mymaster
+      INTEGER, INTENT(in) :: share_comm
+      INTEGER, INTENT(inout) :: win
+      ! Variables
+      INTEGER :: disp_unit, ier
+      INTEGER :: array_shape(6)
+      INTEGER(KIND=MPI_ADDRESS_KIND) :: window_size
+      TYPE(C_PTR) :: baseptr
+      ! Initialization
+      ier = 0
+      array_shape(1) = n1
+      array_shape(2) = n2
+      array_shape(3) = n3
+      array_shape(4) = n4
+      array_shape(5) = n5
+      array_shape(6) = n6
+      disp_unit = 1
+      window_size = 0_MPI_ADDRESS_KIND
+      IF (subid == mymaster) window_size = INT(n1*n2*n3*n4*n5*n6,MPI_ADDRESS_KIND)*4_MPI_ADDRESS_KIND
+      CALL MPI_WIN_ALLOCATE_SHARED(window_size, disp_unit, MPI_INFO_NULL, share_comm, baseptr, win ,ier)
+      IF (subid /= mymaster) CALL MPI_WIN_SHARED_QUERY(win, 0, window_size, disp_unit, baseptr, ier)
+      CALL C_F_POINTER(baseptr, array, array_shape)
+      RETURN
+      END SUBROUTINE mpialloc_6d_sgl
+
+      SUBROUTINE mpialloc_6d_dbl(array,n1,n2,n3,n4,n5,n6,subid,mymaster,share_comm,win)
+      ! Libraries
+      USE MPI
+      USE ISO_C_BINDING
+      IMPLICIT NONE
+      ! Arguments
+      DOUBLE PRECISION, POINTER, INTENT(inout) :: array(:,:,:,:,:,:)
+      INTEGER, INTENT(in) :: n1
+      INTEGER, INTENT(in) :: n2
+      INTEGER, INTENT(in) :: n3
+      INTEGER, INTENT(in) :: n4
+      INTEGER, INTENT(in) :: n5
+      INTEGER, INTENT(in) :: n6
+      INTEGER, INTENT(in) :: subid
+      INTEGER, INTENT(in) :: mymaster
+      INTEGER, INTENT(in) :: share_comm
+      INTEGER, INTENT(inout) :: win
+      ! Variables
+      INTEGER :: disp_unit, ier
+      INTEGER :: array_shape(6)
+      INTEGER(KIND=MPI_ADDRESS_KIND) :: window_size
+      TYPE(C_PTR) :: baseptr
+      ! Initialization
+      ier = 0
+      array_shape(1) = n1
+      array_shape(2) = n2
+      array_shape(3) = n3
+      array_shape(4) = n4
+      array_shape(5) = n5
+      array_shape(6) = n6
+      disp_unit = 1
+      window_size = 0_MPI_ADDRESS_KIND
+      IF (subid == mymaster) window_size = INT(n1*n2*n3*n4*n5*n6,MPI_ADDRESS_KIND)*8_MPI_ADDRESS_KIND
+      CALL MPI_WIN_ALLOCATE_SHARED(window_size, disp_unit, MPI_INFO_NULL, share_comm, baseptr, win ,ier)
+      IF (subid /= mymaster) CALL MPI_WIN_SHARED_QUERY(win, 0, window_size, disp_unit, baseptr, ier)
+      CALL C_F_POINTER(baseptr, array, array_shape)
+      RETURN
+      END SUBROUTINE mpialloc_6d_dbl
+
       SUBROUTINE mpidealloc_1d_boo(array,win)
       ! Libraries
       USE MPI
@@ -772,6 +1080,118 @@ MODULE MPI_SHARMEM
       IF (ASSOCIATED(array)) NULLIFY(array)
       RETURN
       END SUBROUTINE mpidealloc_4d_dbl
+
+      SUBROUTINE mpidealloc_5d_boo(array,win)
+      ! Libraries
+      USE MPI
+      IMPLICIT NONE
+      ! Arguments
+      LOGICAL, POINTER, INTENT(inout) :: array(:,:,:,:,:)
+      INTEGER, INTENT(inout) :: win
+      INTEGER :: ier
+      CALL MPI_WIN_FENCE(0,win,ier)
+      CALL MPI_WIN_FREE(win,ier)
+      IF (ASSOCIATED(array)) NULLIFY(array)
+      RETURN
+      END SUBROUTINE mpidealloc_5d_boo
+
+      SUBROUTINE mpidealloc_5d_int(array,win)
+      ! Libraries
+      USE MPI
+      IMPLICIT NONE
+      ! Arguments
+      INTEGER, POINTER, INTENT(inout) :: array(:,:,:,:,:)
+      INTEGER, INTENT(inout) :: win
+      INTEGER :: ier
+      CALL MPI_WIN_FENCE(0,win,ier)
+      CALL MPI_WIN_FREE(win,ier)
+      IF (ASSOCIATED(array)) NULLIFY(array)
+      RETURN
+      END SUBROUTINE mpidealloc_5d_int
+
+      SUBROUTINE mpidealloc_5d_sgl(array,win)
+      ! Libraries
+      USE MPI
+      IMPLICIT NONE
+      ! Arguments
+      REAL, POINTER, INTENT(inout) :: array(:,:,:,:,:)
+      INTEGER, INTENT(inout) :: win
+      INTEGER :: ier
+      CALL MPI_WIN_FENCE(0,win,ier)
+      CALL MPI_WIN_FREE(win,ier)
+      IF (ASSOCIATED(array)) NULLIFY(array)
+      RETURN
+      END SUBROUTINE mpidealloc_5d_sgl
+
+      SUBROUTINE mpidealloc_5d_dbl(array,win)
+      ! Libraries
+      USE MPI
+      IMPLICIT NONE
+      ! Arguments
+      DOUBLE PRECISION, POINTER, INTENT(inout) :: array(:,:,:,:,:)
+      INTEGER, INTENT(inout) :: win
+      INTEGER :: ier
+      CALL MPI_WIN_FENCE(0,win,ier)
+      CALL MPI_WIN_FREE(win,ier)
+      IF (ASSOCIATED(array)) NULLIFY(array)
+      RETURN
+      END SUBROUTINE mpidealloc_5d_dbl
+
+      SUBROUTINE mpidealloc_6d_boo(array,win)
+      ! Libraries
+      USE MPI
+      IMPLICIT NONE
+      ! Arguments
+      LOGICAL, POINTER, INTENT(inout) :: array(:,:,:,:,:,:)
+      INTEGER, INTENT(inout) :: win
+      INTEGER :: ier
+      CALL MPI_WIN_FENCE(0,win,ier)
+      CALL MPI_WIN_FREE(win,ier)
+      IF (ASSOCIATED(array)) NULLIFY(array)
+      RETURN
+      END SUBROUTINE mpidealloc_6d_boo
+
+      SUBROUTINE mpidealloc_6d_int(array,win)
+      ! Libraries
+      USE MPI
+      IMPLICIT NONE
+      ! Arguments
+      INTEGER, POINTER, INTENT(inout) :: array(:,:,:,:,:,:)
+      INTEGER, INTENT(inout) :: win
+      INTEGER :: ier
+      CALL MPI_WIN_FENCE(0,win,ier)
+      CALL MPI_WIN_FREE(win,ier)
+      IF (ASSOCIATED(array)) NULLIFY(array)
+      RETURN
+      END SUBROUTINE mpidealloc_6d_int
+
+      SUBROUTINE mpidealloc_6d_sgl(array,win)
+      ! Libraries
+      USE MPI
+      IMPLICIT NONE
+      ! Arguments
+      REAL, POINTER, INTENT(inout) :: array(:,:,:,:,:,:)
+      INTEGER, INTENT(inout) :: win
+      INTEGER :: ier
+      CALL MPI_WIN_FENCE(0,win,ier)
+      CALL MPI_WIN_FREE(win,ier)
+      IF (ASSOCIATED(array)) NULLIFY(array)
+      RETURN
+      END SUBROUTINE mpidealloc_6d_sgl
+
+      SUBROUTINE mpidealloc_6d_dbl(array,win)
+      ! Libraries
+      USE MPI
+      IMPLICIT NONE
+      ! Arguments
+      DOUBLE PRECISION, POINTER, INTENT(inout) :: array(:,:,:,:,:,:)
+      INTEGER, INTENT(inout) :: win
+      INTEGER :: ier
+      CALL MPI_WIN_FENCE(0,win,ier)
+      CALL MPI_WIN_FREE(win,ier)
+      IF (ASSOCIATED(array)) NULLIFY(array)
+      RETURN
+      END SUBROUTINE mpidealloc_6d_dbl
 #endif
    
 END MODULE MPI_SHARMEM

@@ -46,9 +46,15 @@
                      mtargets = mtargets + 1
                      targets(mtargets) = target(ik)
                      sigmas(mtargets)  = sigma(ik)
-                     vals(mtargets)    = 1+tanh(balloon_grate(ik,i,j)/sigma(ik))
-                     vals(mtargets)    = MAX(target(ik),balloon_grate(ik,i,j)) ! Assume negative to be stable
-                     IF (iflag == 1) WRITE(iunit_out,'(6ES22.12E3,2X,I3.3)') target(ik),sigma(ik),vals(mtargets),balloon_grate(ik,i,j),balloon_theta(i),balloon_zeta(j),ik
+                     IF (ik <= nrad) THEN
+                        vals(mtargets)    = 1+tanh(balloon_grate(ik,i,j)/sigma(ik))
+                        vals(mtargets)    = MAX(target(ik),balloon_grate(ik,i,j)) ! Assume negative to be stable
+                        grate             = balloon_grate(ik,i,j)
+                     ELSE
+                        vals(mtargets)   = target(ik)
+                        grate            = 0.0
+                     END IF
+                     IF (iflag == 1) WRITE(iunit_out,'(6ES22.12E3,2X,I3.3)') target(ik),sigma(ik),vals(mtargets),grate,balloon_theta(i),balloon_zeta(j),ik
                   END DO
                END DO
             END IF
