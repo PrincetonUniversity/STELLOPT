@@ -78,7 +78,9 @@ SUBROUTINE stellopt_optimize_mango(used_mango_algorithm)
 
 !DEC$ ELSE
     IMPLICIT NONE
-    LOGICAL, INTENT(OUT) :: used_mango_algorithm = .false.
+    LOGICAL, INTENT(OUT) :: used_mango_algorithm
+
+    used_mango_algorithm = .false.
 !DEC$ ENDIF
   END SUBROUTINE stellopt_optimize_mango
 
@@ -138,7 +140,8 @@ SUBROUTINE stellopt_optimize_mango(used_mango_algorithm)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !DEC$ IF DEFINED (MANGO)
-    SUBROUTINE mango_residual_function(N_parameters, x, N_terms, f, failed, problem, user_data)
+    SUBROUTINE mango_residual_function(N_parameters, x, N_terms, f, failed, problem, user_data) BIND(C)
+      ! "BIND(C)" is needed above because this subroutine will be called from C++ in MANGO.
       USE iso_c_binding
       USE mango_mod
       USE stellopt_runtime, ONLY: targets, sigmas
