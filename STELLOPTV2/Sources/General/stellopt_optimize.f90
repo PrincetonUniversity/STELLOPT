@@ -324,6 +324,7 @@
       END SELECT
       ! Now output the minimum files
       IF (myid == master .and. info /= 5 .and. .not.lskip_min) THEN
+         IF (.NOT.ALLOCATED(fvec)) ALLOCATE(fvec(mtargets))
          IF (lrenorm) CALL stellopt_renorm(mtargets,fvec)
          nfev_save = nfev
          ier=0
