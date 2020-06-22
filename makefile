@@ -31,6 +31,8 @@ pre_build:
 
 
 test_make:
+	@echo STELLOPT_HOME is $(STELLOPT_HOME)
+	@echo MACHINE is $(MACHINE)
 	@echo FC_LINKER_FLAGS is $(FC_LINKER_FLAGS)
 	@echo FFLAGS is $(FFLAGS)
 	@echo FLINKER is $(FLINKER)
