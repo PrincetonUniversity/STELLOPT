@@ -1,4 +1,4 @@
-SUBROUTINE stellopt_optimize_mango(used_mango_algorithm)
+SUBROUTINE stellopt_optimize_mango(used_mango_algorithm, N_function_evaluations)
         ! This subroutine sets its argument (used_mango_algorithm) to true or false corresponding to whether opt_type is a valid MANGO algorithm.
         ! Or, if STELLOPT was not built with MANGO, this function returns false.
  
@@ -15,6 +15,7 @@ SUBROUTINE stellopt_optimize_mango(used_mango_algorithm)
 !----------------------------------------------------------------------
       IMPLICIT NONE
       LOGICAL, INTENT(OUT) :: used_mango_algorithm
+      INTEGER, INTENT(OUT) :: N_function_evaluations
       DOUBLE PRECISION :: best_objective_function
       LOGICAL :: ltst
       CHARACTER(256) :: tstr1, tstr2
@@ -70,6 +71,8 @@ SUBROUTINE stellopt_optimize_mango(used_mango_algorithm)
 
       best_objective_function = mango_optimize(mango_problem_instance)
 
+      N_function_evaluations = mango_get_function_evaluations(mango_problem_instance)
+
       ! The last few steps must be done by all processes, not only those in MPI_COMM_STEL = mpi_comm_group_leaders.
       ltst  = .false.
       tstr1 = 'mango_finalize'
@@ -79,8 +82,10 @@ SUBROUTINE stellopt_optimize_mango(used_mango_algorithm)
 !DEC$ ELSE
     IMPLICIT NONE
     LOGICAL, INTENT(OUT) :: used_mango_algorithm
+    INTEGER, INTENT(OUT) :: N_function_evaluations
 
     used_mango_algorithm = .false.
+    N_function_evaluations = 0
 !DEC$ ENDIF
   END SUBROUTINE stellopt_optimize_mango
 
@@ -226,6 +231,7 @@ SUBROUTINE stellopt_optimize_mango(used_mango_algorithm)
 !----------------------------------------------------------------------
 
       print *,"stellopt_mango_finalize called on proc ",mango_get_mpi_rank_world(mango_problem_instance)
+
       DEALLOCATE(best_residual_function)
       CALL mango_problem_destroy(mango_problem_instance)
 

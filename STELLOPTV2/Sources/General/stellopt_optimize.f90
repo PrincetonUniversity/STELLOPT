@@ -314,7 +314,7 @@
                             wa1,fvec,c1,c2,factor,ftol,xtol,nfunc_max)
             DEALLOCATE(wa1)
          CASE DEFAULT
-            CALL stellopt_optimize_mango(used_mango_algorithm)
+            CALL stellopt_optimize_mango(used_mango_algorithm,nfev)
             IF (.not. used_mango_algorithm) THEN
                WRITE(6,*) '!!!!!  UNKNOWN OPTIMIZATION TYPE  !!!!!'
                WRITE(6,*) '       OPT_TYPE: ',TRIM(opt_type)
