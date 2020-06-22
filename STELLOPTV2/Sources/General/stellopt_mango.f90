@@ -147,6 +147,8 @@ SUBROUTINE stellopt_optimize_mango(used_mango_algorithm)
       USE mango_mod
       USE stellopt_runtime, ONLY: targets, sigmas
       USE mpi_params, ONLY: myworkid, myid
+      USE gade_mod, ONLY: GADE_CLEANUP
+      USE fdjac_mod, ONLY: flag_cleanup
 
       IMPLICIT NONE
 
@@ -159,9 +161,11 @@ SUBROUTINE stellopt_optimize_mango(used_mango_algorithm)
       TYPE(C_ptr), VALUE, INTENT(IN) :: user_data
 
       INTEGER :: iflag
-      INTEGER, SAVE :: N_function_evaluations = -1
+      INTEGER :: N_function_evaluations
 
-      N_function_evaluations = N_function_evaluations + 1
+      N_function_evaluations = mango_get_function_evaluations(problem)
+      ! The first time this subroutine is called, N_function_evaluations will be 0 (not 1).
+
       !print *,"Hello from mango_residual_function on proc",mango_get_mpi_rank_world(problem),", function_evaluations=",mango_get_function_evaluations(problem)
       print "(a,i4,a,i7)","Hello from mango_residual_function on proc",myid,", function_evaluations=",N_function_evaluations
 
@@ -188,6 +192,13 @@ SUBROUTINE stellopt_optimize_mango(used_mango_algorithm)
 
       failed = 0
       if (iflag < 0) failed = 1
+
+      ! When stellopt_fcn is called with iflag < -2, stellopt_fcn calls stellopt_clean_up (which writes the stellopt.<extension> file) and then stellopt_fcn immediately returns,
+      ! without actually evaluating the objective function again. We do this here in order to write the stellopt.<extension> file.
+      ! For now, we only record output from worker group 1, since (for now) mango_get_function_evaluations does not return meaningful results on other worker groups.
+      iflag = FLAG_CLEANUP ! All procs except master use this value, which has the effect of doing nothing in stellopt_clean_up.
+      IF (myid==0) iflag = GADE_CLEANUP
+      CALL stellopt_fcn(N_terms, N_parameters, x, f, iflag, N_function_evaluations)
 
     END SUBROUTINE mango_residual_function
 
