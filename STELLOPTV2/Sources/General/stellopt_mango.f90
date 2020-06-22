@@ -105,7 +105,8 @@ SUBROUTINE stellopt_optimize_mango(used_mango_algorithm)
 !----------------------------------------------------------------------
       IMPLICIT NONE
       INTEGER :: nvars_allprocs, mtargets_allprocs, ierr
-      EXTERNAL mango_residual_function
+      !EXTERNAL mango_residual_function
+      procedure(vector_function_interface) :: mango_residual_function
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
@@ -185,7 +186,8 @@ SUBROUTINE stellopt_optimize_mango(used_mango_algorithm)
       ! So we need to convert stellopt's f to mango's f here:
       f = sigmas * f + targets
 
-      failed = (iflag < 0)
+      failed = 0
+      if (iflag < 0) failed = 1
 
     END SUBROUTINE mango_residual_function
 
