@@ -48,13 +48,14 @@
 !-----------------------------------------------------------------------
       INTEGER :: ier
       REAL(rprec) :: r_temp, phi_temp, z_temp, modb_temp, br_temp, bz_temp, bphi_temp,&
-                      vll, A, B, rinv, binv, cinv, pot_temp
+                      vll, A, B, rinv, binv, cinv
       REAL(rprec) :: gradb(3),gradbr(3),gradbz(3),gradbphi(3),Efield(3),normb(3),bdgB(3),bxbdgB(3),ExB(3)
       ! For splines
       INTEGER :: i,j,k
       REAL*8 :: xparam, yparam, zparam, hx, hy, hz, hxi, hyi, hzi
-      REAL*8 :: fval(1,4)
+      REAL*8 :: fval(1,4), fvalE(1,3)
       INTEGER, parameter :: ict(8)=(/1,1,1,1,0,0,0,0/)
+      INTEGER, parameter :: ictE(8)=(/0,1,1,1,0,0,0,0/)
       REAL*8, PARAMETER :: one = 1
 !-----------------------------------------------------------------------
 !     Begin Subroutine
@@ -111,10 +112,10 @@
                          hx,hxi,hy,hyi,hz,hzi,&
                          MODB4D(1,1,1,1),nr,nphi,nz)
          modb_temp = fval(1,1); gradb(1:3) = fval(1,2:4)
-         CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+         CALL R8HERM3FCN(ictE,1,1,fvalE,i,j,k,xparam,yparam,zparam,&
                          hx,hxi,hy,hyi,hz,hzi,&
                          POT4D(1,1,1,1),nr,nphi,nz)
-         pot_temp = fval(1,1); Efield(1:3) =-fval(1,2:4)
+         Efield(1:3) =-fvalE(1,1:3)
          ! Fix gradients
          gradb(2)    = gradb(2)*rinv
          gradbr(2)   = gradbr(2)*rinv

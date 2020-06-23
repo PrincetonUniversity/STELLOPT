@@ -13,7 +13,8 @@
       USE beams3d_lines
       USE beams3d_grid, ONLY: nr, nphi, nz, B_R, B_PHI, B_Z, raxis, &
                                  zaxis, phiaxis,vp_spl_s
-      USE beams3d_runtime, ONLY: id_string, npoinc, t_end, lbeam, &
+      USE beams3d_runtime, ONLY: id_string, npoinc, t_end, lbeam, lvac,&
+                                 lvmec, &
                                  nbeams, beam, e_beams, charge_beams, &
                                  mass_beams, lverb, p_beams, MPI_BARRIER_ERR,&
                                  MPI_BCAST_ERR,nprocs_beams,handle_err, ldepo,&
@@ -35,7 +36,7 @@
       LOGICAL, ALLOCATABLE     :: partmask(:), partmask2(:,:), partmask2t(:,:)
       INTEGER, ALLOCATABLE  :: int_mask(:), int_mask2(:,:), nlost(:)
       INTEGER, ALLOCATABLE  :: dist_func(:,:,:)
-      REAL, ALLOCATABLE     :: real_mask(:)
+      REAL, ALLOCATABLE     :: real_mask(:),vllaxis(:),vperpaxis(:)
       INTEGER, PARAMETER :: ndist = 100
 #if defined(MPI_OPT)
       INTEGER :: status(MPI_STATUS_size) !mpi stuff
@@ -93,6 +94,7 @@
       ! Do not need R_lines or PHI_lines after this point
       IF (ALLOCATED(R_lines)) DEALLOCATE(R_lines)
       IF (ALLOCATED(PHI_lines)) DEALLOCATE(PHI_lines)
+      IF (ALLOCATED(neut_lines)) DEALLOCATE(neut_lines)
 
       ! Calculate distribution function
       ALLOCATE(dist_func(1:nbeams,1:ndist,0:npoinc))
@@ -170,41 +172,45 @@
             CALL FLUSH(iunit)
          END DO
          CLOSE(iunit)
-      ELSE
-         DEALLOCATE(dist_func)
       END IF
 
-      ! Do not need R_lines or PHI_lines after this point
-      IF (ALLOCATED(neut_lines)) DEALLOCATE(neut_lines)
+      DEALLOCATE(dist_func)
+      DEALLOCATE(int_mask2,int_mask)
+      DEALLOCATE(partmask2,partmask2t)
+      DEALLOCATE(partmask,real_mask)
 
-      ! BEAM DIAGNOSTICS
-      IF (lbeam .and. .not.ldepo) THEN
-
+      ! These diagnostics need Vp to be defined
+      IF (lvmec .and. .not.lvac .and. .not.ldepo .and. myworkid == master) THEN
+         ! In the future we'll calculate values from the dist5d_prof array.
+         ALLOCATE(vllaxis(ns_prof4),vperpaxis(ns_prof5))
+         FORALL(k = 1:ns_prof4) vllaxis(k) = -partvmax+2*partvmax*(k-1)/(ns_prof4-1)
+         FORALL(k = 1:ns_prof5) vperpaxis(k) = partvmax*(k-1)/(ns_prof5-1)
+         ! We need to calculate the old values
+         dense_prof = SUM(SUM(SUM(SUM(dist5d_prof,DIM=6),DIM=5),DIM=4),DIM=3)
+         ! This is an example of how to do this but we can't do this for j_prof since it's charge dependent
+         !DO k = 1, ns_prof4
+         !   j_prof = j_prof + SUM(SUM(SUM(SUM(dist5d_prof(:,:,:,:,k,:),DIM=6),DIM=5),DIM=4),DIM=3)*vllaxis(k)
+         !END DO
+         DEALLOCATE(vllaxis,vperpaxis)
          ! Grid in rho, units in [/m^3]
          ! Note ns is number of cells not cell boundaries
+         ! Just a note here dV/drho = 2*rho*dV/dist
+         ! And we need dV so we multiply by drho=1./ns
          DO k = 1, ns_prof1
             s1 = REAL(k-0.5)/REAL(ns_prof1) ! Rho
             s2 = s1*s1
             CALL EZspline_interp(Vp_spl_s,s2,vp_temp,ier)
-            vp_temp = vp_temp*2*s1
+            vp_temp = vp_temp*2*s1*(1./REAL(ns_prof1))
             epower_prof(:,k) = epower_prof(:,k)/vp_temp
             ipower_prof(:,k) = ipower_prof(:,k)/vp_temp
             ndot_prof(:,k)   =   ndot_prof(:,k)/vp_temp
                j_prof(:,k)   =      j_prof(:,k)/vp_temp
+            dense_prof(:,k)  =  dense_prof(:,k)/vp_temp
          END DO
-
-         ! Was only needed if no weight specified
-         IF (myworkid == master) THEN
-            DEALLOCATE(dist_func)
-         END IF
 
       END IF
 
       CALL beams3d_write('DIAG')
-
-      DEALLOCATE(int_mask2,int_mask)
-      DEALLOCATE(partmask2,partmask2t)
-      DEALLOCATE(partmask,real_mask)
 
 
 !-----------------------------------------------------------------------

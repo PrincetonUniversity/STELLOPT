@@ -1,4 +1,5 @@
 ObjectFiles = \
+common_factor.o \
 suzuki_sigma.o \
 wall_mod_new.o \
 adas_mod_parallel.o \
