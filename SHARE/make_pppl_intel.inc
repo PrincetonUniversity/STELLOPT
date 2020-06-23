@@ -38,7 +38,10 @@
   MPI_COMPILE_C = mpicc
   MPI_LINK = mpifort -shared -fpic
   MPI_RUN = srun
-  MPI_RUN_OPTS = -n 64 -p general -t 5:00:00 -J STELLOPT_BENCH
+  MPI_RUN_OPTS = -N 2 -n 64 -p general -t 30:00 -q debug --mem 8G -J STELLOPT_BENCH
+  MPI_RUN_OPTS_SM = -N 2 -n 64 -p general -t 30:00 -q debug --mem 8G -J STELLOPT_BENCH
+  MPI_RUN_OPTS_MD = -N 4 -n 128 -p general -t 2:00:00 --mem 8G -J STELLOPT_BENCH
+  MPI_RUN_OPTS_LG = -N 8 -n 256 -p general -t 2:00:00 --mem 8G -J STELLOPT_BENCH
 
 #######################################################################
 #            NAG Options
