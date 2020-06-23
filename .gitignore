@@ -18,6 +18,7 @@ CMakeLists.txt
 */Debug/*.f
 BENCHMARKS/STELLOPT_TEST/*/*
 BENCHMARKS/BEAMS3D_TEST/*
+core*
 update*
 COILGEOM
 bin

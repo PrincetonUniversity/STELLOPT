@@ -212,7 +212,7 @@ def read_stellopt(filename):
             stel_data[item+'_R'] = np.squeeze(stel_data[item][:,:,3])
             stel_data[item+'_PHI'] = np.squeeze(stel_data[item][:,:,4])
             stel_data[item+'_Z'] = np.squeeze(stel_data[item][:,:,5])
-        elif item in ['NE','TI','TE','IOTA','VPHI','PRESS','VACIOTA']:
+        elif item in ['NE','TI','TE','IOTA','VPHI','PRESS','VACIOTA','PRSSPRIME']:
             stel_data[item+'_target'] = np.squeeze(stel_data[item][:,:,4])
             stel_data[item+'_sigma'] = np.squeeze(stel_data[item][:,:,5])
             stel_data[item+'_equil'] = np.squeeze(stel_data[item][:,:,6])

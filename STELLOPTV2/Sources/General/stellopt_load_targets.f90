@@ -153,6 +153,9 @@
       ! PRESSURE PROFILE
       IF (ANY(sigma_press < bigno)) &
          CALL chisq_press(target_press, sigma_press, ncnt,iflag)
+      ! PRESSURE GRADIENT PROFILE (dp/ds)
+      IF (ANY(sigma_pressprime < bigno)) &
+         CALL chisq_pressprime(target_pressprime, sigma_pressprime, ncnt,iflag)
       ! ELECTRON DENSITY
       IF (ANY(sigma_ne < bigno_ne)) &
          CALL chisq_ne(target_ne, sigma_ne, ncnt,iflag)

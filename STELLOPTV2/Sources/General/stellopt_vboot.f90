@@ -80,7 +80,8 @@
 
       ier = 0
       DO radius_index = 1,Ns_fine
-         CALL eval_profile(s_fine_full(radius_index), beamj_type, AC_profile_fine(radius_index), beamj_aux_s, beamj_aux_f, ier)
+         CALL get_equil_beamj(s_fine_full(radius_index),AC_profile_fine(radius_index),ier)
+         !CALL eval_profile(s_fine_full(radius_index), beamj_type, AC_profile_fine(radius_index), beamj_aux_s, beamj_aux_f, ier)
       END DO
       curtor_beam = (SUM(AC_profile_fine) - 0.5*AC_profile_fine(1) - 0.5*AC_profile_fine(Ns_fine)) * ds_fine ! Integration using the trapezoid rule.
 
@@ -109,8 +110,9 @@
          END IF
          ! Save vmec wout files from each iteration:
          WRITE (iteration_string,fmt="(i4.4)") vboot_iteration
-         CALL system('cp wout_'//trim(proc_string)//".nc wout_"//trim(proc_string)//"_vboot"//trim(iteration_string)//".nc")
-         !CALL stellopt_paraexe('paravmec_write',trim(proc_string)//"_vboot"//trim(iteration_string),.true.) 
+         ! No SYSTEM CALLS!!!!!!!!!!!
+         !CALL system('cp wout_'//trim(proc_string)//".nc wout_"//trim(proc_string)//"_vboot"//trim(iteration_string)//".nc")
+         CALL stellopt_paraexe('paravmec_write',trim(proc_string)//"_vboot"//trim(iteration_string),.true.) 
 
          ! Load Equilibrium
          CALL stellopt_load_equil(lscreen_local,iflag)
@@ -155,7 +157,8 @@
                ! Evaluate the initial stellopt bootstrap AC profile on the bootsj s (a.k.a. rhoar) grid.
                AC_profile_fine = 0
                DO radius_index = 1,irup
-                  CALL eval_profile(rhoar(radius_index), bootj_type, AC_profile_fine(radius_index), bootj_aux_s, bootj_aux_f, ier)
+                  CALL get_equil_bootj(rhoar(radius_index),AC_profile_fine(radius_index),ier)
+                  !CALL eval_profile(rhoar(radius_index), bootj_type, AC_profile_fine(radius_index), bootj_aux_s, bootj_aux_f, ier)
                END DO
                WRITE(ibootlog,'(a,512(1X,E20.10))')  "AC_profile_fine: ",(AC_profile_fine(ik), ik=1,irup)
             END IF
@@ -166,7 +169,8 @@
             CALL fit_profile(bootj_type, irup, rhoar, dibs, 21, bootj_aux_f)
             ! Evaluate the fit:
             DO radius_index = 1, irup
-               CALL eval_profile(rhoar(radius_index), bootj_type, AC_fit_results(radius_index), bootj_aux_s, bootj_aux_f, ier)
+               CALL get_equil_bootj(rhoar(radius_index),AC_fit_results(radius_index),ier)
+               !CALL eval_profile(rhoar(radius_index), bootj_type, AC_fit_results(radius_index), bootj_aux_s, bootj_aux_f, ier)
             END DO
 
             !Test if the vboot iterations have converged, by comparing "L_1 norm of the difference between the last two AC profiles" to "L_1 norm of the latest AC profile":
@@ -201,7 +205,8 @@
             IF (vboot_iteration==0) THEN
                ! Evaluate the initial AC profile on the fine grid.
                DO radius_index = 2,Ns_fine
-                  CALL eval_profile(s_fine_half(radius_index), bootj_type, AC_profile_fine(radius_index), bootj_aux_s, bootj_aux_f, ier)
+                  CALL get_equil_bootj(s_fine_half(radius_index),AC_profile_fine(radius_index),ier)
+                  !CALL eval_profile(s_fine_half(radius_index), bootj_type, AC_profile_fine(radius_index), bootj_aux_s, bootj_aux_f, ier)
                END DO
                AC_profile_fine(1) = 0
             END IF
@@ -303,7 +308,8 @@
             CALL fit_profile(bootj_type, Ns_fine-1, s_fine_half(2:Ns_fine), sfincs_AC_half(2:Ns_fine), 21, bootj_aux_f)
             ! Evaluate the fit:
             DO radius_index = 2,Ns_fine
-               CALL eval_profile(s_fine_half(radius_index), bootj_type, AC_fit_results(radius_index), bootj_aux_s, bootj_aux_f, ier)
+               CALL get_equil_bootj(s_fine_half(radius_index),AC_fit_results(radius_index),ier)
+               !CALL eval_profile(s_fine_half(radius_index), bootj_type, AC_fit_results(radius_index), bootj_aux_s, bootj_aux_f, ier)
             END DO
             AC_fit_results(1) = 0
 
