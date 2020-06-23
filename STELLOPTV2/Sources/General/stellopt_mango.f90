@@ -167,12 +167,13 @@ SUBROUTINE stellopt_optimize_mango(used_mango_algorithm, N_function_evaluations)
 
       INTEGER :: iflag
       INTEGER :: N_function_evaluations
+      INTEGER :: rank_world
 
       N_function_evaluations = mango_get_function_evaluations(problem)
       ! The first time this subroutine is called, N_function_evaluations will be 0 (not 1).
 
       !print *,"Hello from mango_residual_function on proc",mango_get_mpi_rank_world(problem),", function_evaluations=",mango_get_function_evaluations(problem)
-      print "(a,i4,a,i7)","Hello from mango_residual_function on proc",myid,", function_evaluations=",N_function_evaluations
+      print "(a,i4,a,i7)","mango_residual_function A proc",rank_world,", function_evaluations=",N_function_evaluations
 
       ! iflag should be the processor number, except that iflag=-1 has the effect of turning 
       ! on output from VMEC and other codes, as traditionally is done for the first function evaluation.
@@ -185,6 +186,7 @@ SUBROUTINE stellopt_optimize_mango(used_mango_algorithm, N_function_evaluations)
       !print *,"size(f):",size(f)," f:",f
       !CALL stellopt_fcn(N_terms, N_parameters, x, f, iflag, mango_get_function_evaluations(problem))
       CALL stellopt_fcn(N_terms, N_parameters, x, f, iflag, N_function_evaluations)
+      print "(a,i4,a,i7)","mango_residual_function B proc",rank_world,", iflag=",iflag
 
 !      print "(a,i3,a,i8,4(a,1(es24.15)))","Proc",mango_get_mpi_rank_world(problem)," iflag:",iflag," f from stellopt_fcn:",f," targets:",targets," sigmas:",sigmas," f for mango:",sigmas*f+targets
 
@@ -204,6 +206,7 @@ SUBROUTINE stellopt_optimize_mango(used_mango_algorithm, N_function_evaluations)
       iflag = FLAG_CLEANUP ! All procs except master use this value, which has the effect of doing nothing in stellopt_clean_up.
       IF (myid==0) iflag = GADE_CLEANUP
       CALL stellopt_fcn(N_terms, N_parameters, x, f, iflag, N_function_evaluations)
+      print "(a,i4,a,i7,a,i2)","mango_residual_function C proc",rank_world,", iflag=",iflag," failed=",failed
 
     END SUBROUTINE mango_residual_function
 
