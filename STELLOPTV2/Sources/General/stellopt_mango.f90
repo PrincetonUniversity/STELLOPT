@@ -196,14 +196,23 @@ SUBROUTINE stellopt_optimize_mango(used_mango_algorithm, N_function_evaluations)
       f = sigmas * f + targets
 
       failed = 0
-      if (iflag < 0) failed = 1
+      IF (iflag < 0) failed = 1
+
+      if (failed==1) print "(a,i5)","Failure detected in mango_residual_function on proc",myid
 
       ! When stellopt_fcn is called with iflag < -2, stellopt_fcn calls stellopt_clean_up (which writes the stellopt.<extension> file) and then stellopt_fcn immediately returns,
       ! without actually evaluating the objective function again. We do this here in order to write the stellopt.<extension> file.
       ! For now, we only record output from worker group 1, since (for now) mango_get_function_evaluations does not return meaningful results on other worker groups.
-      iflag = FLAG_CLEANUP ! All procs except master use this value, which has the effect of doing nothing in stellopt_clean_up.
-      IF (myid==0) iflag = GADE_CLEANUP
-      CALL stellopt_fcn(N_terms, N_parameters, x, f, iflag, N_function_evaluations)
+
+      ! There is a slight problem in that N_function_evaluations, which was returned by mango_get_function_evaluations() above, is the number of completed evaluations before now,
+      ! whereas the global evaluation number for the present run in mango_out has not yet been assigned: this will only happen once this subroutine completes and control
+      ! is returned to mango itself. So the evaluation numbers in stellopt vs mango may not exactly agree (even accounting for the +1 offset in mango_out).
+      
+      IF (failed==0) THEN
+         iflag = FLAG_CLEANUP ! All procs except master use this value, which has the effect of doing nothing in stellopt_clean_up.
+         IF (myid==0) iflag = GADE_CLEANUP
+         CALL stellopt_fcn(N_terms, N_parameters, x, f, iflag, N_function_evaluations)
+      END IF
 
     END SUBROUTINE mango_residual_function
 
