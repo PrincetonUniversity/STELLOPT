@@ -63,7 +63,7 @@
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
-      print "(3(a,i5))", "stellopt_fcn called on rank",rank_world," with iflag=",iflag," ncnt=",ncnt ! MJL
+      print "(3(a,i05))", "stellopt_fcn called on rank",rank_world," with iflag=",iflag," ncnt=",ncnt ! MJL
 
       ! Load variables first
       norm_aphi = 1; norm_am = 1; norm_ac = 1; norm_ai = 1
@@ -232,7 +232,7 @@
 
       ! Handle cleanup
       IF (iflag < -2) THEN
-         print "(3(a,i5))", "stellopt_fcn calling stellopt_clean_up on rank",rank_world," with iflag=",iflag," ncnt=",ncnt ! MJL
+         print "(3(a,i05))", "stellopt_fcn calling stellopt_clean_up on rank",rank_world," with iflag=",iflag," ncnt=",ncnt ! MJL
          CALL stellopt_clean_up(ncnt,iflag)
          iflag = 0
          ! Now normalize arrays otherwise we'll be multiplying by normalizations on next iteration for non-varied quantities
@@ -313,7 +313,7 @@
          IF (lverb) WRITE(6,*) '---------------------------  EQUILIBRIUM CALCULATION  ------------------------'
       END IF
 
-      print "(2(a,i5))","stellopt_fcn AAA rank",rank_world," iflag=",iflag
+      print "(2(a,i05))","stellopt_fcn AAA rank",rank_world," iflag=",iflag
       ! Assume we've already read the stellopt input namelist and any input files.
       CALL tolower(equil_type)
          SELECT CASE (TRIM(equil_type))
@@ -321,7 +321,7 @@
             CASE('paravmec','parvmec','vmec2000')
                iflag = 0
                CALL stellopt_paraexe('paravmec_run',proc_string,lscreen)
-               print "(2(a,i5))","stellopt_fcn BBB just called paravmec_run rank",rank_world," ier_paraexe=",ier_paraexe
+               print "(2(a,i05))","stellopt_fcn BBB just called paravmec_run rank",rank_world," ier_paraexe=",ier_paraexe
                iflag = ier_paraexe
                IF (lscreen .and. lverb) WRITE(6,*)  '-------------------------  PARAVMEC CALCULATION DONE  -----------------------'
             CASE('vboot')
@@ -357,16 +357,16 @@
          ! a function call which is handles every equil_type.  Note these
          ! functions should handle iflag by returning immediately if
          ! iflag is set to a negative number upon entry.
-         print "(2(a,i5))","stellopt_fcn BBB rank",rank_world," iflag=",iflag
+         print "(2(a,i05))","stellopt_fcn BBB rank",rank_world," iflag=",iflag
          CALL stellopt_load_equil(lscreen,iflag)
-         print "(2(a,i5))","stellopt_fcn CCC rank",rank_world," iflag=",iflag
+         print "(2(a,i05))","stellopt_fcn CCC rank",rank_world," iflag=",iflag
 
          ! Calls to secondary codes
          proc_string_old = proc_string ! So we can find the DIAGNO files
          IF (ANY(sigma_balloon < bigno)) CALL stellopt_balloon(lscreen,iflag)
          ctemp_str = 'booz_xform'
          IF (ANY(lbooz) .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
-         print "(2(a,i5))","stellopt_fcn DDD rank",rank_world," iflag=",iflag
+         print "(2(a,i05))","stellopt_fcn DDD rank",rank_world," iflag=",iflag
          ctemp_str = 'bootsj'
          IF (ANY(sigma_bootstrap < bigno) .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
          ctemp_str = 'diagno'
@@ -404,21 +404,21 @@
            CALL stellopt_regcoil_chi2_b(lscreen, iflag)
          end if
 !DEC$ ENDIF
-         print "(2(a,i5))","stellopt_fcn MMM rank",rank_world," iflag=",iflag
+         print "(2(a,i05))","stellopt_fcn MMM rank",rank_world," iflag=",iflag
 
          ! Now we load target values if an error was found then
          ! exagerate the fvec values so that those directions are not
          ! searched this levenberg step
          IF (iflag == 0) THEN
-            print "(2(a,i5))","stellopt_fcn NNN rank",rank_world," iflag=0 so calling stellopt_load_targets"
+            print "(2(a,i05))","stellopt_fcn NNN rank",rank_world," iflag=0 so calling stellopt_load_targets"
             CALL stellopt_load_targets(m,fvec,iflag,ncnt)
-            print "(2(a,i5))","stellopt_fcn OOO rank",rank_world," done with stellopt_load_targets"
+            print "(2(a,i05))","stellopt_fcn OOO rank",rank_world," done with stellopt_load_targets"
             WHERE(ABS(fvec) > bigno) fvec = bigno
             ier_paraexe = 0
          ELSE
-            print "(2(a,i5))","stellopt_fcn PPP rank",rank_world," iflag.ne.0 so NOT calling stellopt_load_targets"
+            print "(2(a,i05))","stellopt_fcn PPP rank",rank_world," iflag.ne.0 so NOT calling stellopt_load_targets"
             IF (lscreen) RETURN ! Make sure we can do at least the initial integration
-            print "(2(a,i5))","stellopt_fcn QQQ rank",rank_world," setting fvec to 10*SQRT(bigno/m)"
+            print "(2(a,i05))","stellopt_fcn QQQ rank",rank_world," setting fvec to 10*SQRT(bigno/m)"
             fvec(1:m) = 10*SQRT(bigno/m)
             iflag = 0 ! Because we wish to continue
             ier_paraexe = 0
@@ -449,7 +449,7 @@
       WHERE(lbootj_f_opt)  bootj_aux_f = bootj_aux_f / norm_bootj
       WHERE(lbeamj_f_opt)  beamj_aux_f = beamj_aux_f / norm_beamj
       WHERE(lemis_xics_f_opt) emis_xics_f = emis_xics_f / norm_emis_xics
-      print "(a,i5)","stellopt_fcn returning. rank",rank_world
+      print "(a,i05)","stellopt_fcn returning. rank",rank_world
       RETURN
 !----------------------------------------------------------------------
 !     END SUBROUTINE

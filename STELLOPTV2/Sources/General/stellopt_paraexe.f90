@@ -111,7 +111,7 @@
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
-      print "(a,i5,a,i5,a,a,a,a)", "stellopt_paraexe called on rank",rank_world," with ier_paraexe=",ier_paraexe," code_str=",TRIM(in_parameter_1)," file_str=",TRIM(in_parameter_2)
+      print "(a,i05,a,i5,a,a,a,a)", "stellopt_paraexe called on rank",rank_world," with ier_paraexe=",ier_paraexe," code_str=",TRIM(in_parameter_1)," file_str=",TRIM(in_parameter_2)
 
       IF (ier_paraexe /= 0) RETURN
       code_str = TRIM(in_parameter_1)
@@ -120,7 +120,7 @@
       DO
          ! First get the name of the code blah
          ier_paraexe = 0; ierr_mpi = 0; ier = 0
-         print "(a,i5)", "stellopt_paraexe BBB rank",rank_world
+         print "(a,i05)", "stellopt_paraexe BBB rank",rank_world
 !DEC$ IF DEFINED (MPI_OPT)
          CALL MPI_BARRIER(MPI_COMM_MYWORLD,ierr_mpi)
          IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_paraexe: BARRIER1',ierr_mpi)
@@ -129,13 +129,13 @@
          CALL MPI_BCAST(file_str,256,MPI_CHARACTER,master,MPI_COMM_MYWORLD,ierr_mpi)
          IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_paraexe: BCAST2',ierr_mpi)
 !DEC$ ENDIF
-         print "(a,i5)", "stellopt_paraexe CCC rank",rank_world
+         print "(a,i05)", "stellopt_paraexe CCC rank",rank_world
 
          ! Now run the proper code
          CALL tolower(code_str)
          SELECT CASE (TRIM(code_str))
             CASE('parvmec_init')
-               print "(a,i5)", "stellopt_paraexe enter parvmec_init rank",rank_world
+               print "(a,i05)", "stellopt_paraexe enter parvmec_init rank",rank_world
                myseq=myid
                CALL MPI_BCAST(myseq,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
               ! Now make initializing VMEC call which preforms allocations
@@ -160,9 +160,9 @@
                CALL FinalizeRunVmec(RUNVMEC_COMM_WORLD)
                ier_paraexe=ictrl(2)
                in_parameter_2 = TRIM(file_str)
-               print "(a,i5)", "stellopt_paraexe exit parvmec_init rank",rank_world
+               print "(a,i05)", "stellopt_paraexe exit parvmec_init rank",rank_world
             CASE('paravmec_run')
-               print "(a,i5)", "stellopt_paraexe enter parvmec_run rank",rank_world
+               print "(a,i05)", "stellopt_paraexe enter parvmec_run rank",rank_world
 !DEC$ IF DEFINED (SKS2)
                ! Broadcast the sequence number
                myseq=myid          ! MPI
@@ -204,13 +204,15 @@
                END IF
                in_parameter_2 = TRIM(file_str)
                ier_paraexe = ier
-               print "(a,i5)", "stellopt_paraexe exit parvmec_run rank",rank_world
+               print "(a,i05)", "stellopt_paraexe exit parvmec_run rank",rank_world
 !DEC$ ENDIF
             CASE('paravmec_write')
-               print "(a,i5)", "stellopt_paraexe enter parvmec_write rank",rank_world
+               print "(a,i05)", "stellopt_paraexe parvmec_write AAA rank",rank_world
 !DEC$ IF DEFINED (SKS2)
                CALL MPI_BCAST(myseq,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
+               print "(a,i05)", "stellopt_paraexe parvmec_write BBB rank",rank_world
                IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_paraexe: BCAST2b',ierr_mpi)
+               print "(a,i05)", "stellopt_paraexe parvmec_write CCC rank",rank_world
                ictrl(1) = output_flag
                ictrl(2) = 0     ! vmec error flag  
                ictrl(3) = 0    ! Use multigrid
@@ -218,14 +220,18 @@
                ictrl(5) = myseq ! Output file sequence number
                reset_string =''
                NS_RESLTN = 0 ! Need to do this otherwise situations arrise which cause problems.
+               print "(a,i05)", "stellopt_paraexe parvmec_write DDD rank",rank_world
                CALL runvmec(ictrl,file_str,lscreen,MPI_COMM_MYWORLD,reset_string)
+               print "(a,i05)", "stellopt_paraexe parvmec_write EEE rank",rank_world
                LIFFREEB  = .FALSE. ! Already deallocated from before and we need to reset stuff
                CALL FinalizeRunVmec(RUNVMEC_COMM_WORLD) ! We don't allocate the vacuum communicator when we write
+               print "(a,i05)", "stellopt_paraexe parvmec_write FFF rank",rank_world
                ier=ictrl(2)
                CALL MPI_BCAST(ier,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
+               print "(a,i05)", "stellopt_paraexe parvmec_write YYY rank",rank_world
                IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_paraexe: BCAST2d',ierr_mpi)
                ier_paraexe = ier
-               print "(a,i5)", "stellopt_paraexe exit parvmec_write rank",rank_world
+               print "(a,i05)", "stellopt_paraexe parvmec_write ZZZ rank",rank_world
 !DEC$ ENDIF
             CASE('gene_parallel')  ! Parallel Gene
 !DEC$ IF DEFINED (MPI_OPT) .AND. DEFINED (GENE)
@@ -414,9 +420,9 @@
             CASE('booz_xform')
                proc_string = file_str
                ier = 0
-               print "(a,i5)", "stellopt_paraexe enter booz_xform rank",rank_world
+               print "(a,i05)", "stellopt_paraexe enter booz_xform rank",rank_world
                CALL stellopt_toboozer(lscreen,ier)
-               print "(a,i5)", "stellopt_paraexe exit booz_xform rank",rank_world
+               print "(a,i05)", "stellopt_paraexe exit booz_xform rank",rank_world
                ier_paraexe = ier
             CASE('bootsj')
                proc_string = file_str
@@ -451,7 +457,7 @@
                CALL stellopt_mango_finalize
             CASE('exit')  ! we send this when we want to terminate the code (everyone leaves)
                !PRINT *,'myid: ',myid,' exiting stellopt_paraexe'
-               print "(a,i5)", "stellopt_paraexe exit rank",rank_world
+               print "(a,i05)", "stellopt_paraexe exit rank",rank_world
                CALL MPI_COMM_FREE(MPI_COMM_MYWORLD,ierr_mpi)
                IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_paraexe: FREE',ierr_mpi)
                RETURN
@@ -460,10 +466,10 @@
                STOP
          END SELECT
          !lscreen = .false.
-         IF (myworkid == master) print "(a,i5)", "stellopt_paraexe master returning. rank",rank_world
+         IF (myworkid == master) print "(a,i05)", "stellopt_paraexe master returning. rank",rank_world
          IF (myworkid == master) RETURN ! The master process of the Communicator can leave
       END DO
-      print "(a,i5)", "stellopt_paraexe ZZZ returning. rank",rank_world
+      print "(a,i05)", "stellopt_paraexe ZZZ returning. rank",rank_world
       RETURN
 !----------------------------------------------------------------------
 !     END SUBROUTINE
