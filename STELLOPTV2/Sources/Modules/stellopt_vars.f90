@@ -165,6 +165,7 @@
 
 !DEC$ IF DEFINED (MANGO)
       TYPE(mango_problem) :: mango_problem_instance
+      integer :: rank_world
 !DEC$ ENDIF
       REAL(rprec), ALLOCATABLE :: best_residual_function(:)
       LOGICAL :: mango_bound_constraints = .true.

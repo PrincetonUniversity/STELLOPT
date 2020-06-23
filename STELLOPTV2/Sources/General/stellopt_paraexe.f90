@@ -82,7 +82,6 @@
       USE wall_mod, ONLY: wall_free
       USE beams3d_input_mod, ONLY: BCAST_BEAMS3D_INPUT
 !DEC$ ENDIF
-      use mango_mod
 !-----------------------------------------------------------------------
 !     Subroutine Parameters
 !----------------------------------------------------------------------
@@ -109,11 +108,9 @@
       LOGICAL :: lhit
       INTEGER :: i, myseq
       DOUBLE PRECISION :: x0,y0,z0,x1,y1,z1,xw,yw,zw, rr0,zz0,phi0
-      integer :: rank_world
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
-      rank_world = mango_get_mpi_rank_world(mango_problem_instance)
       print "(a,i5,a,i5,a,a,a,a)", "stellopt_paraexe called on rank",rank_world," with ier_paraexe=",ier_paraexe," code_str=",TRIM(in_parameter_1)," file_str=",TRIM(in_parameter_2)
 
       IF (ier_paraexe /= 0) RETURN

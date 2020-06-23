@@ -18,6 +18,7 @@
       USE mpi_params
       USE mpi_inc
       USE safe_open_mod, ONLY: safe_open
+      use stellopt_vars, only: rank_world
 !----------------------------------------------------------------------
 !     Local Variables
 !        nprocs_total :: total number of processors         
@@ -38,6 +39,7 @@
       CALL MPI_COMM_SIZE( MPI_COMM_STEL, nprocs_total, ierr_mpi )
       CALL MPI_COMM_RANK( MPI_COMM_STEL, myid, ierr_mpi)
       myid_world = myid
+      rank_world = myid
 
       IF (myid == master) THEN
          iunit = 80

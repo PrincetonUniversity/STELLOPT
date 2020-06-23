@@ -154,6 +154,7 @@ SUBROUTINE stellopt_optimize_mango(used_mango_algorithm, N_function_evaluations)
       USE mpi_params, ONLY: myworkid, myid
       USE gade_mod, ONLY: GADE_CLEANUP
       USE fdjac_mod, ONLY: flag_cleanup
+      USE stellopt_vars, only: rank_world
 
       IMPLICIT NONE
 
@@ -167,7 +168,6 @@ SUBROUTINE stellopt_optimize_mango(used_mango_algorithm, N_function_evaluations)
 
       INTEGER :: iflag
       INTEGER :: N_function_evaluations
-      INTEGER :: rank_world
 
       N_function_evaluations = mango_get_function_evaluations(problem)
       ! The first time this subroutine is called, N_function_evaluations will be 0 (not 1).

@@ -27,7 +27,6 @@
       USE vmec_main, ONLY:  multi_ns_grid
       USE read_wout_mod, ONLY: read_wout_file, write_wout_file, read_wout_deallocate
       USE mpi_params                                                    ! MPI
-      use mango_mod
       IMPLICIT NONE
       
 !-----------------------------------------------------------------------
@@ -61,11 +60,9 @@
       CHARACTER(len = 16)     :: temp_str
       CHARACTER(len = 128)    :: reset_string
       CHARACTER(len = 256)    :: ctemp_str
-      integer :: rank_world
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
-      rank_world = mango_get_mpi_rank_world(mango_problem_instance)
       print "(3(a,i5))", "stellopt_fcn called on rank",rank_world," with iflag=",iflag," ncnt=",ncnt ! MJL
 
       ! Load variables first
