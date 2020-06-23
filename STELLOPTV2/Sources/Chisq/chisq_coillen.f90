@@ -34,7 +34,7 @@
 !----------------------------------------------------------------------
       IF (iflag < 0) RETURN
       ik   = COUNT((sigma_l < bigno).OR.(sigma_v < bigno))
-      IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'LEN+SEG.SD ',ik, 7
+      IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'LEN_SEG_SD ',ik, 7
       IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA  VAL  TARGET  SIGMA  VAL'
       IF (niter >= 0) THEN
          DO ik = 1, nigroup
