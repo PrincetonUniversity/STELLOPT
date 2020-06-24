@@ -7,16 +7,17 @@ jobs:
     container: zhucaoxiang/stellopt:debug
     name: STELLOPT build and test
     steps:
-      # To use this repository's private action,
-      # you must check out the repository
-      - name: check
+      - name: checkout sources
+        uses: actions/checkout@v2
+        working-directory: /home/visitor
+      - name: compile
         run: |
-          cat /etc/passwd
           pwd
-          whoami
           echo $GITHUB_WORKSPACE
           cd /home/visitor
-          git clone https://github.com/PrincetonUniversity/STELLOPT.git
           ls -al
-          which xstelloptv2
-          ls /home
+          echo ${STELLOPT_PATH}
+          cd /home/visitor/STELLOPT && ./build_all 2>&1 | tee log.build
+        env:
+          MACHINE: docker
+          STELLOPT_PATH: /home/visitor/STELLOPT
