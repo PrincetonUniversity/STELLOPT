@@ -26,6 +26,7 @@ lost.
     you could have up to 8 copies of BEAMS3D running with 32 processors
     each. Below is an example (truncated) set of namelists: >
 
+
 ```fortran
 &INDATA
 ! Whatever initial equilibrium you want to start with
@@ -85,8 +86,7 @@ lost.
 /
 &END
 ```
-
-    In the above example the VMEC flux surface ns=10 is initialized at 400
+In the above example the VMEC flux surface ns=10 is initialized at 400
     (20x20) unique poloidal and toroidal points. At each of these points
     20 particles are launched with mangetic moments (MU\_ORBIT) and
     parallel velocities (VLL\_ORBIT) as specified in associated arrays.
@@ -106,7 +106,7 @@ lost.
     we've used the SINGLE\_ITER optimization type and set
     NPOPULATION=1) >
 
-```fortran
+```
 > mpiexec -np 2 /Users/lazerson/bin/xstelloptv2 input.BEAMS3D
 STELLOPT Version  2.70
   Equilibrium calculation provided by: 
