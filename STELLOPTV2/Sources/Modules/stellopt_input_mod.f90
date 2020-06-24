@@ -97,6 +97,7 @@
 !            lcoil_spline       Logical array to control coil spline control point variation
 !            lwindsurf          Logical to embed splined coils in a winding surface
 !            windsurfname       Character string naming file containing winding surface
+!            fixedcoilname      Character string naming optional file containing fixed-geometry coils
 !            lbound_opt         Logical array to control Boundary variation
 !            lrho_opt           Logical array to control HB Boundary variation
 !            rho_exp            Integer controling value of HB Boundary exponent (default 2)
@@ -252,7 +253,7 @@
                          lrho_opt, ldeltamn_opt, lbound_opt, laxis_opt, lmode_opt, &
                          lne_opt, lte_opt, lti_opt, lth_opt, lzeff_opt, &
                          lah_f_opt, lat_f_opt, lcoil_spline, lemis_xics_f_opt, &
-                         windsurfname, &
+                         windsurfname, fixedcoilname, &
                          dphiedge_opt, dcurtor_opt, dbcrit_opt, &
                          dpscale_opt, dmix_ece_opt, dxics_v0_opt, &
                          dextcur_opt, daphi_opt, dam_opt, dac_opt, &
@@ -684,6 +685,7 @@
       windsurfname    = ''
       windsurf%mmax   = -1
       windsurf%nmax   = -1
+      fixedcoilname   = ''
       mboz            = 64
       nboz            = 64
       target_x        = 0.0
@@ -1651,6 +1653,8 @@
          IF (lwindsurf) THEN
             WRITE(iunit,'(A,A,A)') "  WINDSURFNAME = '",TRIM(windsurfname),"'"
          ENDIF
+         IF (LEN_TRIM(fixedcoilname).GT.0) &
+              WRITE(iunit,'(A,A,A)') "  FIXEDCOILNAME = '",TRIM(fixedcoilname),"'"
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          WRITE(iunit,'(A)') '!       Coil Splines'
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
