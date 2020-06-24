@@ -1,8 +1,8 @@
 Tutorial: STELLOPT Energetic Particle Optimization
 ==================================================
+![](images/BEAMS3D_orbits.png)
 
-[image:BEAMS3D_orbits.jpg width=\"414\" height=\"225\" align=\"right\"](image:BEAMS3D_orbits.jpg width="414" height="225" align="right")The
-[STELLOPT](STELLOPT) code can target energetic particle confinement
+The [STELLOPT](STELLOPT) code can target energetic particle confinement
 using the [BEAMS3D](BEAMS3D) neutral beam package as a collision less
 gyro-particle integrator. When run in this manner the
 [STELLOPT](STELLOPT) code initialises the particle starting points and
@@ -14,8 +14,9 @@ lost.
 
 ------------------------------------------------------------------------
 
-1.  __**Input namelists**__ > In addition to the OPTIMUM name list
-    the BEAMS3D_INPUT name list must be included in the STELLOPT input
+1.  **Input namelists**
+    In addition to the OPTIMUM name list
+    the BEAMS3D\_INPUT name list must be included in the STELLOPT input
     file (also the INDATA namelist). The STELLOPT namelist should
     include the NPOPULATION parameter, this determines how to divide up
     the processors. For example if you has 256 processors available and
@@ -24,48 +25,82 @@ lost.
     an addition 31 processors sitting around to help run BEAMS3D. Thus
     you could have up to 8 copies of BEAMS3D running with 32 processors
     each. Below is an example (truncated) set of namelists: >
-    [code format=\"fortran\"](code format="fortran") &INDATA \... LFREEB
-    = F \... /&OPTIMUM \... NPOPULATION = 8 ! See text above \...
-    !\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\--
-    ! Particle Transport ! Mu = 0.5*m*v*v/B or (Thermal Energy)/B
-    !\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\--
-    NU_ORBIT = 10 ! Number of poloidal starting points per flux surface
-    NV_ORBIT = 10 ! Number of toroidal starting points per flux surface
-    NP_ORBIT = 20 ! Number of pitch angle to evaluate at each starting
-    point MASS_ORBIT = 6.64424E-27 ! Mass of energetic particles [kg]
-    (alpha in this case) Z_ORBIT = 2 ! Charge number of energetic
-    particles VLL_ORBIT = 20*7.76E5 ! Array of parallel velocities
-    [m/s] (NP_ORBIT) ! Array of Mangetic moments (NP_ORBIT) [J/T]
-    MU_ORBIT = 5.3405911000E-16 1.0681182200E-15 1.6021773300E-15
-    2.1362364400E-15 2.6702955500E-15 3.2043546600E-15 3.7384137700E-15
-    4.2724728800E-15 4.8065319900E-15 5.3405911000E-15 5.8746502100E-15
-    6.4087093200E-15 6.9427684300E-15 7.4768275400E-15 8.0108866500E-15
-    8.5449457600E-15 9.0790048700E-15 9.6130639800E-15 1.0147123090E-14
-    1.0681182200E-14 TARGET_ORBIT(10) = 0.0 SIGMA_ORBIT(10) = 1.0 !
-    Target and sigma for a given flux surface. / &BEAMS3D_INPUT ! Note
-    when run from inside STELLOPT the RMIN/RMAX ! ZMIN/ZMAX and
-    PHIMIN/PHIMAX parameters are ! automatically set. NR = 201 ! Radial
-    Grid points NZ = 201 ! Vertical Grid points NPHI = 60 ! Toroidal
-    grid points NPOINC = 2000 ! Number of output time steps (actual time
-    steps set by code) T_END_IN = 2*0.003 ! Maximum time to follow
-    particles (approximate slowing down time) INT_TYPE = 'LSODE' !
-    Integrator (NAG/LSODE/RKH68) FOLLOW_TOL = 1.00000000000000E-09 !
-    Trajectory following tolerance (NAG,LSODE) / &END [code](code) > In
-    the above example the VMEC flux surface ns=10 is initialized at 100
-    (10x10) unique poloidal and toroidal points. At each of these points
+
+```fortran
+&INDATA
+! Whatever initial equilibrium you want to start with
+/
+&OPTIMUM
+!-----------------------------------------------------------------------
+!          OPTIMIZER RUN CONTROL PARAMETERS
+!-----------------------------------------------------------------------
+  NFUNC_MAX = 1
+  EQUIL_TYPE = 'VMEC2000'
+  OPT_TYPE   = 'ONE_ITER'
+  FTOL =  1.00000000000000E-06
+  XTOL =  1.00000000000000E-30
+  GTOL =  1.00000000000000E-30
+  FACTOR =   100.0
+  EPSFCN =   1.0E-05
+  LKEEP_MINS = T
+  NOPTIMIZERS = 1
+!-----------------------------------------------------------------------
+!          OPTIMIZED QUANTITIES
+!-----------------------------------------------------------------------
+  LCURTOR_OPT = T   CURTOR_MIN  = -1.0E6  CURTOR_MAX  = -1.0E4
+!------------------------------------------------------------------------
+!       Particle Transport
+!       Mu = 0.5*m*v*v/B or (Thermal Energy)/B
+!------------------------------------------------------------------------
+  NU_ORBIT = 20
+  NV_ORBIT = 20
+  NP_ORBIT = 20
+  VLL_ORBIT = 20*7.76E5  ! 50 [keV]
+  VLL_ORBIT = 20*5.00E5
+  MASS_ORBIT = 1.6726219E-27
+  Z_ORBIT    = 1.0
+  ! 5-> 100[ev]  num2str(((5:95/19:100).*1000)*1.60217733E-19./1.5,'%20.10E')
+  MU_ORBIT  = 5.3405911000E-16    1.0681182200E-15    1.6021773300E-15    2.1362364400E-15    2.6702955500E-15
+    3.2043546600E-15    3.7384137700E-15    4.2724728800E-15    4.8065319900E-15    5.3405911000E-15
+    5.8746502100E-15    6.4087093200E-15    6.9427684300E-15    7.4768275400E-15    8.0108866500E-15
+    8.5449457600E-15    9.0790048700E-15    9.6130639800E-15    1.0147123090E-14    1.0681182200E-14
+  TARGET_ORBIT(10) = 0.0   SIGMA_ORBIT(10) = 1.0 
+/
+&BEAMS3D_INPUT
+  NR = 128
+  NZ = 128
+  NPHI = 36
+  RMIN =  4.36000000000000E-01
+  RMAX =  2.43600000000000E+00
+  ZMIN = -1.00000000000000E+00
+  ZMAX =  1.00000000000000E+00
+  PHIMIN =  0.00000000000000E+00
+  PHIMAX =  2.09439510239000E+00
+  NPOINC = 200
+  T_END_IN = 2*0.003
+  INT_TYPE = 'LSODE'
+  FOLLOW_TOL =  1.00000000000000E-09
+  VC_ADAPT_TOL =  1.00000000000000E-06
+  R_START_IN(1) = 1.0 ! need this to turn off BEAM stuff
+/
+&END
+```
+    In the above example the VMEC flux surface ns=10 is initialized at 400
+    (20x20) unique poloidal and toroidal points. At each of these points
     20 particles are launched with mangetic moments (MU_ORBIT) and
     parallel velocities (VLL_ORBIT) as specified in associated arrays.
     In this way the user can set the pitch angles which are evaluated,
-    the result being 2000 particles being launched from surface 10. If
+    the result being 8000 particles being launched from surface 10. If
     an additional surface had been specified (through TARGET_ORBIT and
-    SIGMA_ORBIT) the total number of particles followed would be 4,000
+    SIGMA_ORBIT) the total number of particles followed would be 16,000
     (and so on). It should be noted that while the STELLOPT electron
     temperature and density will be read, it is not used as only
     collisionless particle orbits are currently followed. Alternatively,
     the user may set an array called VPERP_ORBIT which then overrides
     MU_ORBIT. The equilibirum modB, VPERP_ORBIT and MASS_ORBIT are
     then used to calculate MU_ORBIT for the run.
-2.  __**Execute the code**__ > The coupled BEAMS3D/STELLOPT codes
+2.  **Execute the code**
+    The coupled BEAMS3D/STELLOPT codes
     will execute like any other STELLOPT run (note in this example
     we've used the SINGLE_ITER optimization type and set
     NPOPULATION=1) >

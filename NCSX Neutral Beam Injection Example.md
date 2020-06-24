@@ -7,13 +7,11 @@ namelist, please see the VMEC tutorials.
 
 ------------------------------------------------------------------------
 
-1.  \_\_**Edit the input namelist text file.**\_\_ \> The BEAMS3D\_INPUT
+1.  **Edit the input namelist text file.** The BEAMS3D\_INPUT
     namelist has been placed below the VMEC INDATA namelist (see free
     boundary example).
 
 <!-- -->
-
-    #!fortran
     &INDATA
     !----- Runtime Parameters -----
       DELT =   9.00E-01
