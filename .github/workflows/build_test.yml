@@ -13,6 +13,6 @@ jobs:
         run: |
           pwd
           uname -a
-          ls ../
-          docker info
+          ls -al
           which xstelloptv2
+          ls /home
