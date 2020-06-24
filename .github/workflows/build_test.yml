@@ -4,14 +4,15 @@ on: [push, pull_request]
 jobs:
   build:
     runs-on: ubuntu-latest
+    container: zhucaoxiang/stellopt:debug
     name: STELLOPT build and test
     steps:
       # To use this repository's private action,
       # you must check out the repository
       - uses: actions/checkout@v2
-      - name: container
-        uses: docker://zhucaoxiang/stellopt:debug
+      - name: check
         run: |
           pwd
           uname -a
           ls
+          docker info
