@@ -20,11 +20,11 @@ RUN cd $STELLOPT_PATH  && ./build_all 2>&1 | tee log.build
 RUN chmod 777 ${STELLOPT_PATH}/bin
 
 # add user
+WORKDIR /home/visitor
 RUN groupadd -r visitor -g 433 && \
 useradd -u 431 -r -g visitor -d /home/visitor -s /sbin/nologin -c "Docker image user" visitor && \
 chown -R visitor:visitor /home/visitor
 USER visitor
-WORKDIR /home/visitor
 
 # Set commands
 #ENV PATH="${STELLOPT_PATH}/bin:${PATH}"
