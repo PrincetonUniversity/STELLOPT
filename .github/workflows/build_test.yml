@@ -6,10 +6,8 @@ jobs:
     runs-on: ubuntu-latest
     container: zhucaoxiang/stellopt:debug
     name: STELLOPT image
-    env:
-      GITHUB_WORKSPACE: /home/visitor
-      MACHINE: docker
-      STELLOPT_PATH: /home/visitor/STELLOPT
+    volumes:
+      - ${$GITHUB_WORKSPACE}:/home/visitor
     steps:
       - name: checkout sources
         uses: actions/checkout@v2
@@ -21,4 +19,7 @@ jobs:
           ls -al
           echo ${STELLOPT_PATH}
           cd /home/visitor/STELLOPT && ./build_all 2>&1 | tee log.build
-
+        env:
+          GITHUB_WORKSPACE: /home/visitor
+          MACHINE: docker
+          STELLOPT_PATH: /home/visitor/STELLOPT
