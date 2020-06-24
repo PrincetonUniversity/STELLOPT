@@ -10,7 +10,7 @@ RUN apt-get -q update && apt-get -y install \
     make curl git-all
 
 # Install required python packages
-RUN python -m pip install --upgrade pip
+RUN python3 -m pip install --upgrade pip
 RUN pip install numpy scipy matplotlib notebook h5py xarray coilpy
 
 # Set commands
