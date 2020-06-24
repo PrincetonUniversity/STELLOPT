@@ -9,8 +9,5 @@ RUN apt-get -q update && apt-get -y install \
     python3 python3-numpy python3-h5py make curl \
     git-all
 
-WORKDIR /home/STELLOPT
-COPY . /home/STELLOPT
-
 # Set commands
 CMD ["/bin/bash"]
