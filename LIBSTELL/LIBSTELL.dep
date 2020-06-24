@@ -5,6 +5,8 @@ adas_mod_parallel.o :  \
       mpi_sharmem.o
       
 mpi_sharmem.o :  
+      
+common_factor.o :  
 
 str_length.o :  
 

@@ -77,3 +77,7 @@ do
     cd ..
   fi
 done
+
+cd LIBSTELL
+make shared_release
+cd ..
