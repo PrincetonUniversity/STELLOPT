@@ -4,21 +4,16 @@ on: [push, pull_request]
 jobs:
   build:
     runs-on: ubuntu-latest
-    #container: 
+    container: zhucaoxiang/stellopt:compile
     steps:
-      - uses: docker://zhucaoxiang/stellopt:debug
       # - name: checkout sources
       #   uses: actions/checkout@master
       - name: compile
         run: |
           pwd
-          echo $GITHUB_WORKSPACE
-          cd /home/visitor
-          git clone --single-branch --branch docker_build https://github.com/PrincetonUniversity/STELLOPT.git --
           ls -al
           echo ${STELLOPT_PATH}
           cd /home/visitor/STELLOPT && ./build_all 2>&1 | tee log.build
         env:
-          GITHUB_WORKSPACE: /home/visitor
           MACHINE: docker
-          STELLOPT_PATH: /home/visitor/STELLOPT
+          STELLOPT_PATH: ${{ github.workspace }}
