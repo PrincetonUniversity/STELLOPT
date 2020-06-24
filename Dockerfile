@@ -17,7 +17,8 @@ ENV MACHINE="docker"
 ENV STELLOPT_PATH=/home/STELLOPT
 RUN echo $STELLOPT_PATH
 RUN cd $STELLOPT_PATH  && ./build_all 2>&1 | tee log.build 
-RUN chmod 777 ${STELLOPT_PATH}/bin
+RUN chmod -R 755 ${STELLOPT_PATH}/BENCHMARKS
+RUN cp ${STELLOPT_PATH}/bin/* /usr/local/bin/
 
 # add user
 WORKDIR /home/visitor
@@ -27,6 +28,4 @@ chown -R visitor:visitor /home/visitor
 USER visitor
 
 # Set commands
-#ENV PATH="${STELLOPT_PATH}/bin:${PATH}"
-RUN cp ${STELLOPT_PATH}/bin/* /usr/local/bin/
 CMD ["/bin/bash"]
