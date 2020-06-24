@@ -9,7 +9,8 @@ jobs:
     steps:
       - name: checkout sources
         uses: actions/checkout@v2
-        working-directory: /home/visitor
+        env: 
+          GITHUB_WORKSPACE: /home/visitor
       - name: compile
         run: |
           pwd
