@@ -18,7 +18,7 @@ ENV STELLOPT_PATH=/home/STELLOPT
 RUN echo $STELLOPT_PATH
 RUN cd $STELLOPT_PATH  && ./build_all 2>&1 | tee log.build 
 RUN chmod -R 755 ${STELLOPT_PATH}/BENCHMARKS
-RUN cp ${STELLOPT_PATH}/bin/* /usr/local/bin/
+RUN cp -RP ${STELLOPT_PATH}/bin/* /usr/local/bin/
 
 # add user
 WORKDIR /home/visitor
