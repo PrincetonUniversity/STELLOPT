@@ -1,7 +1,7 @@
 Tutorial: STELLOPT Energetic Particle Optimization
 ==================================================
 
-[image:BEAMS3D\_orbits.jpg width=\"414\" height=\"225\" align=\"right\"](image:BEAMS3D_orbits.jpg width="414" height="225" align="right")The
+[image:BEAMS3D_orbits.jpg width=\"414\" height=\"225\" align=\"right\"](image:BEAMS3D_orbits.jpg width="414" height="225" align="right")The
 [STELLOPT](STELLOPT) code can target energetic particle confinement
 using the [BEAMS3D](BEAMS3D) neutral beam package as a collision less
 gyro-particle integrator. When run in this manner the
@@ -14,8 +14,8 @@ lost.
 
 ------------------------------------------------------------------------
 
-1.  \_\_**Input namelists**\_\_ \> In addition to the OPTIMUM name list
-    the BEAMS3D\_INPUT name list must be included in the STELLOPT input
+1.  __**Input namelists**__ > In addition to the OPTIMUM name list
+    the BEAMS3D_INPUT name list must be included in the STELLOPT input
     file (also the INDATA namelist). The STELLOPT namelist should
     include the NPOPULATION parameter, this determines how to divide up
     the processors. For example if you has 256 processors available and
@@ -23,54 +23,54 @@ lost.
     doing the optimization while each of those 8 processors would have
     an addition 31 processors sitting around to help run BEAMS3D. Thus
     you could have up to 8 copies of BEAMS3D running with 32 processors
-    each. Below is an example (truncated) set of namelists: \>
+    each. Below is an example (truncated) set of namelists: >
     [code format=\"fortran\"](code format="fortran") &INDATA \... LFREEB
     = F \... /&OPTIMUM \... NPOPULATION = 8 ! See text above \...
     !\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\--
-    ! Particle Transport ! Mu = 0.5\*m\*v\*v/B or (Thermal Energy)/B
+    ! Particle Transport ! Mu = 0.5*m*v*v/B or (Thermal Energy)/B
     !\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\--
-    NU\_ORBIT = 10 ! Number of poloidal starting points per flux surface
-    NV\_ORBIT = 10 ! Number of toroidal starting points per flux surface
-    NP\_ORBIT = 20 ! Number of pitch angle to evaluate at each starting
-    point MASS\_ORBIT = 6.64424E-27 ! Mass of energetic particles \[kg\]
-    (alpha in this case) Z\_ORBIT = 2 ! Charge number of energetic
-    particles VLL\_ORBIT = 20\*7.76E5 ! Array of parallel velocities
-    \[m/s\] (NP\_ORBIT) ! Array of Mangetic moments (NP\_ORBIT) \[J/T\]
-    MU\_ORBIT = 5.3405911000E-16 1.0681182200E-15 1.6021773300E-15
+    NU_ORBIT = 10 ! Number of poloidal starting points per flux surface
+    NV_ORBIT = 10 ! Number of toroidal starting points per flux surface
+    NP_ORBIT = 20 ! Number of pitch angle to evaluate at each starting
+    point MASS_ORBIT = 6.64424E-27 ! Mass of energetic particles [kg]
+    (alpha in this case) Z_ORBIT = 2 ! Charge number of energetic
+    particles VLL_ORBIT = 20*7.76E5 ! Array of parallel velocities
+    [m/s] (NP_ORBIT) ! Array of Mangetic moments (NP_ORBIT) [J/T]
+    MU_ORBIT = 5.3405911000E-16 1.0681182200E-15 1.6021773300E-15
     2.1362364400E-15 2.6702955500E-15 3.2043546600E-15 3.7384137700E-15
     4.2724728800E-15 4.8065319900E-15 5.3405911000E-15 5.8746502100E-15
     6.4087093200E-15 6.9427684300E-15 7.4768275400E-15 8.0108866500E-15
     8.5449457600E-15 9.0790048700E-15 9.6130639800E-15 1.0147123090E-14
-    1.0681182200E-14 TARGET\_ORBIT(10) = 0.0 SIGMA\_ORBIT(10) = 1.0 !
-    Target and sigma for a given flux surface. / &BEAMS3D\_INPUT ! Note
+    1.0681182200E-14 TARGET_ORBIT(10) = 0.0 SIGMA_ORBIT(10) = 1.0 !
+    Target and sigma for a given flux surface. / &BEAMS3D_INPUT ! Note
     when run from inside STELLOPT the RMIN/RMAX ! ZMIN/ZMAX and
     PHIMIN/PHIMAX parameters are ! automatically set. NR = 201 ! Radial
     Grid points NZ = 201 ! Vertical Grid points NPHI = 60 ! Toroidal
     grid points NPOINC = 2000 ! Number of output time steps (actual time
-    steps set by code) T\_END\_IN = 2\*0.003 ! Maximum time to follow
-    particles (approximate slowing down time) INT\_TYPE = \'LSODE\' !
-    Integrator (NAG/LSODE/RKH68) FOLLOW\_TOL = 1.00000000000000E-09 !
-    Trajectory following tolerance (NAG,LSODE) / &END [code](code) \> In
+    steps set by code) T_END_IN = 2*0.003 ! Maximum time to follow
+    particles (approximate slowing down time) INT_TYPE = 'LSODE' !
+    Integrator (NAG/LSODE/RKH68) FOLLOW_TOL = 1.00000000000000E-09 !
+    Trajectory following tolerance (NAG,LSODE) / &END [code](code) > In
     the above example the VMEC flux surface ns=10 is initialized at 100
     (10x10) unique poloidal and toroidal points. At each of these points
-    20 particles are launched with mangetic moments (MU\_ORBIT) and
-    parallel velocities (VLL\_ORBIT) as specified in associated arrays.
+    20 particles are launched with mangetic moments (MU_ORBIT) and
+    parallel velocities (VLL_ORBIT) as specified in associated arrays.
     In this way the user can set the pitch angles which are evaluated,
     the result being 2000 particles being launched from surface 10. If
-    an additional surface had been specified (through TARGET\_ORBIT and
-    SIGMA\_ORBIT) the total number of particles followed would be 4,000
+    an additional surface had been specified (through TARGET_ORBIT and
+    SIGMA_ORBIT) the total number of particles followed would be 4,000
     (and so on). It should be noted that while the STELLOPT electron
     temperature and density will be read, it is not used as only
     collisionless particle orbits are currently followed. Alternatively,
-    the user may set an array called VPERP\_ORBIT which then overrides
-    MU\_ORBIT. The equilibirum modB, VPERP\_ORBIT and MASS\_ORBIT are
-    then used to calculate MU\_ORBIT for the run.
-2.  \_\_**Execute the code**\_\_ \> The coupled BEAMS3D/STELLOPT codes
+    the user may set an array called VPERP_ORBIT which then overrides
+    MU_ORBIT. The equilibirum modB, VPERP_ORBIT and MASS_ORBIT are
+    then used to calculate MU_ORBIT for the run.
+2.  __**Execute the code**__ > The coupled BEAMS3D/STELLOPT codes
     will execute like any other STELLOPT run (note in this example
-    we\'ve used the SINGLE\_ITER optimization type and set
-    NPOPULATION=1) \>
-    [code format=\"bash\"](code format="bash") \>mpirun -np 128
-    /bin/xstelloptv2 input.LI383\_muscan STELLOPT Version 2.46
+    we've used the SINGLE_ITER optimization type and set
+    NPOPULATION=1) >
+    [code format=\"bash\"](code format="bash") >mpirun -np 128
+    /bin/xstelloptv2 input.LI383_muscan STELLOPT Version 2.46
     Equilibrium calculation provided by:
     =================================================================================
     ========= Variational Moments Equilibrium Code (v 8.52) =========
@@ -105,7 +105,7 @@ Accuracy of conversion =  100.00%
 Ballooning Stability Particle Orbits (BEAMS3D) ================== Number
 of Processors: 128 Number of Parameters: 13 Number of Targets: 99 !!!!
 EQUILIBRIUM RESTARTING NOT UTILIZED !!!! Number of Optimizer Threads: 1
-OPTIMIZER: SINGLE\_ITERATION NFUNC\_MAX: 100
+OPTIMIZER: SINGLE_ITERATION NFUNC_MAX: 100
 \-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-- EQUILIBRIUM
 CALCULATION \-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-- NS = 9 NO.
 FOURIER MODES = 94 FTOLV = 1.000E-06 NITER = 1000 INITIAL JACOBIAN
@@ -135,7 +135,7 @@ RAX(v=0) DELT WMHD 1 2.25E-02 1.23E-02 1.78E-06 1.578E+00 9.00E-01
 3.6366E+00 1800 6.07E-12 2.00E-12 4.87E-13 1.578E+00 4.86E-01 3.6366E+00
 2000 2.25E-12 6.99E-13 1.33E-13 1.578E+00 4.86E-01 3.6366E+00 2181
 1.00E-12 3.04E-13 4.65E-14 1.578E+00 4.86E-01 3.6366E+00 EXECUTION
-TERMINATED NORMALLY FILE : reset\_file NUMBER OF JACOBIAN RESETS = 5
+TERMINATED NORMALLY FILE : reset_file NUMBER OF JACOBIAN RESETS = 5
 TOTAL COMPUTATIONAL TIME 106.41 SECONDS TIME TO READ IN DATA 0.00
 SECONDS TIME TO WRITE DATA TO WOUT 0.06 SECONDS TIME IN EQFORCE 1.05
 SECONDS TIME IN FOURIER TRANSFORM 28.76 SECONDS TIME IN INVERSE FOURIER
@@ -146,32 +146,32 @@ FUNCT3D 9.01 SECONDS
 DONE \-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-- ASPECT RATIO:
 4.365 BETA: 0.042 (total) 0.584 (poloidal) 0.046 (toroidal) TORIDAL
 CURRENT: -0.174295786408E+06 TORIDAL FLUX: 0.514 VOLUME: 2.979 MAJOR
-RADIUS: 1.422 MINOR\_RADIUS: 0.326 STORED ENERGY: 0.192542558126E+06
-BEAMS3D Version 1.10 \-\-\-\-- Particle Initialization \-\-\-\-- S = \[
-0.09184, 0.09184\]; NS: 1 U = \[ 0.00000, 5.65487\]; NU: 10 V = \[
-0.00000, 5.65487\]; NV: 10 V\_\|\|= \[ 0.00E+00, 5.00E+05\]; NP: 20 Mu =
-\[ 0.00000, 1.07E-14\]; NP: 20 \-\-\-\-- Profile Initialization
-\-\-\-\-- Ne = \[ -0.00, 5.00\] 10\^19 \[m\^-3\]; Nne: 50 Te = \[ -0.00,
-4.58\] \[keV\]; Nte: 50 Ti = \[ -0.00, 4.58\] \[keV\]; Nti: 50 \-\-\-\--
-Input Parameters \-\-\-\-- R = \[ 0.95223, 1.82142\]; NR: 201 PHI = \[
-0.00000, 2.09440\]; NPHI: 60 Z = \[-0.66634, 0.66634\]; NZ: 201
+RADIUS: 1.422 MINOR_RADIUS: 0.326 STORED ENERGY: 0.192542558126E+06
+BEAMS3D Version 1.10 \-\-\-\-- Particle Initialization \-\-\-\-- S = [
+0.09184, 0.09184]; NS: 1 U = [ 0.00000, 5.65487]; NU: 10 V = [
+0.00000, 5.65487]; NV: 10 V_|= [ 0.00E+00, 5.00E+05]; NP: 20 Mu =
+[ 0.00000, 1.07E-14]; NP: 20 \-\-\-\-- Profile Initialization
+\-\-\-\-- Ne = [ -0.00, 5.00] 10^19 [m^-3]; Nne: 50 Te = [ -0.00,
+4.58] [keV]; Nte: 50 Ti = [ -0.00, 4.58] [keV]; Nti: 50 \-\-\-\--
+Input Parameters \-\-\-\-- R = [ 0.95223, 1.82142]; NR: 201 PHI = [
+0.00000, 2.09440]; NPHI: 60 Z = [-0.66634, 0.66634]; NZ: 201
 
 1.  of Particles to Start: 2000 \-\-\-\-- Vessel Information \-\-\-\--
     Wall Name : HARMONICS Date : TODAY Faces : 28800 \-\-\-\--
-    Constructing Splines \-\-\-\-- R = \[ 0.95223, 1.82142\]; NR: 201
-    PHI = \[ 0.00000, 2.09440\]; NPHI: 60 Z = \[-0.66634, 0.66634\]; NZ:
+    Constructing Splines \-\-\-\-- R = [ 0.95223, 1.82142]; NR: 201
+    PHI = [ 0.00000, 2.09440]; NPHI: 60 Z = [-0.66634, 0.66634]; NZ:
     201 HERMITE FORM: 1 \-\-\-\-- FOLLOWING PARTICLE TRAJECTORIES
     \-\-\-\-- Method: LSODE Particles: 2000 Steps: 15000 Delta-t:
-    0.2000E-06 NPOINC: 2000 dt\_out: 0.1500E-05 Tol: 0.1000E-08 Type: 10
+    0.2000E-06 NPOINC: 2000 dt_out: 0.1500E-05 Tol: 0.1000E-08 Type: 10
     \-\-\-\-- CONVERTING TO FLUX COORDINATES \-\-\-\-- \-\-\-\-- WRITING
-    DATA TO FILE \-\-\-\-- FILE: beams3d\_reset\_file.h5 \-\-\-\--
+    DATA TO FILE \-\-\-\-- FILE: beams3d_reset_file.h5 \-\-\-\--
     BEAMS3D DONE \-\-\-\-- ns flux Lost(%) 10 0.09184 33.5 \-\-\-\--
-    STELLOPT DONE \-\-\-\-- \> [code](code)
-2.  \_\_**Examine the output**\_\_ \> The STELLOPT code will run as it
+    STELLOPT DONE \-\-\-\-- > [code](code)
+2.  __**Examine the output**__ > The STELLOPT code will run as it
     usually does, however now BEAMS3D HDF5 output files will be
     produced. Given the large size of these files, only the first file
     HDF5 file produced will contain the full trajectory of particles
     followed (NPOINC locations along each trajectory). The additional
     files will just record the positions along the boundary where
-    particles left the equilibrium. The \'stellopt\' file will include
-    the loss fraction from each surface. \>
+    particles left the equilibrium. The 'stellopt' file will include
+    the loss fraction from each surface. >
