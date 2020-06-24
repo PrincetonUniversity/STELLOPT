@@ -3,7 +3,7 @@
 #######################################################################
   SHELL = /bin/sh
   PWD1 = `pwd`
-  MYHOME = $(HOME)/bin
+  MYHOME = $(STELLOPT_PATH)/bin
   PRECOMP:= /lib/cpp -traditional -DLINUX
   COMPILE = $(FC)
   COMPILE_FREE = $(FC) -ffree-form -ffree-line-length-none -ffixed-line-length-none
