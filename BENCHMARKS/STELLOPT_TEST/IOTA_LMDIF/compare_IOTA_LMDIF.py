@@ -10,7 +10,7 @@ except KeyError:
 	print("Please set environment variable STELLOPT_PATH")
 	sys.exit(1)
 
-failtol = 1.0
+failtol = 2.0
 filename='stellopt.IOTA_LMDIF'
 data=read_stellopt(filename)
 if not data:
@@ -22,7 +22,7 @@ lfail = 0;
 print('==== Vectors ====')
 varlist={}
 
-varlist['IOTA_equil']=np.array([0.09967333006457, 0.1010687307568, 0.1004024298436, 0.09981073759832])
+varlist['IOTA_equil']=np.array([0.1, 0.1, 0.1, 0.1])
 
 #print(data['IOTA_equil'][14,:].tolist())
 n = data['IOTA_equil'].shape
