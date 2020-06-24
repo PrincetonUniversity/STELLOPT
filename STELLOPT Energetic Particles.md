@@ -100,6 +100,8 @@ In the above example the VMEC flux surface ns=10 is initialized at 400
     the user may set an array called VPERP\_ORBIT which then overrides
     MU\_ORBIT. The equilibirum modB, VPERP\_ORBIT and MASS\_ORBIT are
     then used to calculate MU\_ORBIT for the run.
+
+
 **Execute the code**
     The coupled BEAMS3D/STELLOPT codes
     will execute like any other STELLOPT run (note in this example
@@ -277,7 +279,17 @@ BEAMS3D Version  2.70
        Steps:     29999   Delta-t:  0.1000E-06
       NPOINC:       200    dt_out:  0.1500E-04
          Tol:  0.1000E-08  Type: 10
-     Trajectory Calculation [  0]%
+                                    
+----- BEAM DIAGNOSTICS -----
+ BEAMLINE     ENERGY [keV]   CHARGE [e]   MASS [Mp]   Particles [#]   Lost [%]  Shinethrough [%]  Port [%]
+    1             0             1             1            8000         76.6          0.0          0.0
+----- BEAMS3D DONE -----
+------------------------  ORBIT CALCULATION (DONE)  ----------------------
+----- READING DATA FROM FILE -----
+   FILE: beams3d_BEAMS3D_opt0.h5
+    ns     flux     Lost(%)
+    10     0.09184    76.5
+----- STELLOPT DONE -----
 ```
 
 
