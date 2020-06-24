@@ -7,7 +7,7 @@ namelist, please see the VMEC tutorials.
 
 ------------------------------------------------------------------------
 
-1.  **Edit the input namelist text file.** The BEAMS3D\_INPUT
+**Edit the input namelist text file.** The BEAMS3D\_INPUT
     namelist has been placed below the VMEC INDATA namelist (see free
     boundary example).
 
@@ -241,7 +241,7 @@ namelist, please see the VMEC tutorials.
 &END
 ```
 
-2.  **Execute the code.**
+**Execute the code.**
     To execute the code, we first
     invoke the MPI execution command with the number of processors we
     wish to use. The BEAMS3D executable is passed next with the VMEC run
@@ -304,7 +304,7 @@ BEAMS3D Version 1.00
 ```
 
 
-3.  **Examine the output.**
+**Examine the output.**
     In this example two files will be
     created: beams3d\_ncsx\_c09r00.h5 and
     beam3d\_diag\_ncsx\_c09r00.txt. The first is an HDF5 file containing
