@@ -15,6 +15,7 @@ jobs:
         run: |
           cd ${STELLOPT_PATH}
           ./build_all 2>&1 | tee log.build
-      - test:
-        cd ${STELLOPT_PATH}/BENCHMARKS
-        make test_vmec
+      - name: test
+        run: |
+          cd ${STELLOPT_PATH}/BENCHMARKS
+          make test_vmec
