@@ -11,7 +11,7 @@ namelist, please see the VMEC tutorials.
     namelist has been placed below the VMEC INDATA namelist (see free
     boundary example).
 
-<!-- -->
+```fortran
     &INDATA
     !----- Runtime Parameters -----
       DELT =   9.00E-01
@@ -239,8 +239,10 @@ namelist, please see the VMEC tutorials.
       T_END_IN(1:2) = 2*0.0005 ! BEAM DEP
     /
     &END
+    ```
 
-1.  \_\_**Execute the code.**\_\_ \> To execute the code, we first
+1.  **Execute the code.**
+    To execute the code, we first
     invoke the MPI execution command with the number of processors we
     wish to use. The BEAMS3D executable is passed next with the VMEC run
     extension next. The coils option is passed next with the coil name
@@ -250,8 +252,7 @@ namelist, please see the VMEC tutorials.
     \'-vac\' flag. For trajectories only inside the plasma domain use
     the \'-plasma\' flag.
 
-<!-- -->
-
+```
     >mpirun -np 32 ~/bin/xbeams3d -vmec ncsx_c09r00 -coil coils.c09r00
     BEAMS3D Version 1.00
     ----- Input Parameters -----
@@ -275,14 +276,14 @@ namelist, please see the VMEC tutorials.
        Num Coils  =    4  EXTCUR =   30.123 [kA]
        Num Coils  =    2  EXTCUR =   94.241 [kA]
        Num Coils  =   18  EXTCUR =   45.514 [kA]
-    ----- Virtual Casing Information -----
+    ----- Virtual Casing Information -----
        INTEGRAL TYPE: Surface Current
        MIN_GRID_DISTANCE = 1.7679E-01
        NR =    1;   NU =   45;  NV =   36;  NFP =   3
        NUVP =   4860
        ABS_TOL = 1.0000E-06;   REL_TOL = 1.0000E-03
        MIN_CLS =      0   (16777216)
-    ----- INITIALIZING BEAMS -----
+    ----- INITIALIZING BEAMS -----
           nbeams:    2
           nparticles_start: 1000
     ----- Constructing Splines -----
@@ -299,9 +300,11 @@ namelist, please see the VMEC tutorials.
     ----- WRITING DATA TO FILE -----
        FILE: beams3d_ncsx_c09r00.h5
     ----- BEAMS3D DONE -----
-    >                                                                   
+    > 
+```                                                                  
 
-1.  \_\_**Examine the output.**\_\_ \> In this example two files will be
+1.  **Examine the output.**
+    In this example two files will be
     created: beams3d\_ncsx\_c09r00.h5 and
     beam3d\_diag\_ncsx\_c09r00.txt. The first is an HDF5 file containing
     the saved particle trajectory information for the run with the
@@ -309,7 +312,7 @@ namelist, please see the VMEC tutorials.
 
 ![](images/inject_ncsx_c09r00_full.png)
 
-\> The second file is a diagnostic file indicating the number of
+  The second file is a diagnostic file indicating the number of
 particles lost from the simulation domain and the evolution of the
 parallel velocity distribution function. Here is a sample of such a
 plot:

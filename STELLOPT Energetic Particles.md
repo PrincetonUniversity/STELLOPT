@@ -85,128 +85,208 @@ lost.
 /
 &END
 ```
+
     In the above example the VMEC flux surface ns=10 is initialized at 400
     (20x20) unique poloidal and toroidal points. At each of these points
-    20 particles are launched with mangetic moments (MU_ORBIT) and
-    parallel velocities (VLL_ORBIT) as specified in associated arrays.
+    20 particles are launched with mangetic moments (MU\_ORBIT) and
+    parallel velocities (VLL\_ORBIT) as specified in associated arrays.
     In this way the user can set the pitch angles which are evaluated,
     the result being 8000 particles being launched from surface 10. If
     an additional surface had been specified (through TARGET_ORBIT and
-    SIGMA_ORBIT) the total number of particles followed would be 16,000
+    SIGMA\_ORBIT) the total number of particles followed would be 16,000
     (and so on). It should be noted that while the STELLOPT electron
     temperature and density will be read, it is not used as only
     collisionless particle orbits are currently followed. Alternatively,
-    the user may set an array called VPERP_ORBIT which then overrides
-    MU_ORBIT. The equilibirum modB, VPERP_ORBIT and MASS_ORBIT are
-    then used to calculate MU_ORBIT for the run.
+    the user may set an array called VPERP\_ORBIT which then overrides
+    MU\_ORBIT. The equilibirum modB, VPERP\_ORBIT and MASS\_ORBIT are
+    then used to calculate MU\_ORBIT for the run.
 2.  **Execute the code**
     The coupled BEAMS3D/STELLOPT codes
     will execute like any other STELLOPT run (note in this example
-    we've used the SINGLE_ITER optimization type and set
+    we've used the SINGLE\_ITER optimization type and set
     NPOPULATION=1) >
-    [code format=\"bash\"](code format="bash") >mpirun -np 128
-    /bin/xstelloptv2 input.LI383_muscan STELLOPT Version 2.46
-    Equilibrium calculation provided by:
-    =================================================================================
-    ========= Variational Moments Equilibrium Code (v 8.52) =========
-    ========= (S. Hirshman, J. Whitson) ========= =========
-    <http://vmecwiki.pppl.wikispaces.net/VMEC> =========
-    =================================================================================
 
-Energetic Particle calculation provided by:
-=================================================================================
-========= BEAMS3D (v 1.10) ========= ========= (M. McMillan, S.
-Lazerson) ========= ========= lazerson\@pppl.gov ========= =========
-<http://vmecwiki.pppl.wikispaces.net/BEAMS3D> =========
-=================================================================================
+```fortran
+> mpiexec -np 2 /Users/lazerson/bin/xstelloptv2 input.BEAMS3D
+STELLOPT Version  2.70
+  Equilibrium calculation provided by: 
+  =================================================================================
+  =========   Parallel Variational Moments Equilibrium Code (v 9.0)       =========
+  =========                (S. Hirshman, J. Whitson)                      =========
+  =========         http://vmecwiki.pppl.wikispaces.net/VMEC              =========
+  =================================================================================
+     
+  Energetic Particle calculation provided by: 
+  =================================================================================
+  =========                      BEAMS3D (v 2.70)                         =========
+  =========                  (M. McMillan, S. Lazerson)                   =========
+  =========                       lazerson@pppl.gov                       =========
+  =========          http://vmecwiki.pppl.wikispaces.net/BEAMS3D          =========
+  =================================================================================
+     
+ -----  MPI Params.   -----
+    MPI Version:  3.01
+    Optimizers requested:            1
+    Number of Processors:            2
+    Shared memory groups:            1
+    Processors per group:            2
+   Workers per optimizer:            2
+     Optimizers provided:            1
+ -----  Optimization  -----
+    =======VARS=======
+     CURTOR:   Total Toroidal Current
+    ======TARGETS=====
+     Particle Orbits (BEAMS3D)
+    ==================
+    Number of Parameters:            1
+    Number of Targets:               1
+    !!!! EQUILIBRIUM RESTARTING NOT UTILIZED !!!!
+     OPTIMIZER: SINGLE_ITERATION
+     NFUNC_MAX:          100
+ ---------------------------  EQUILIBRIUM CALCULATION  ------------------------
 
-\-\-\-\-- Optimization \-\-\-\-- =======VARS======= PHIEDGE: Total
-Enclosed Toroidal Flux CURTOR: Total Toroidal Current RHO(-005, 001):
-Boundary Specifiction (Hirsh. -Bres.) RHO(-004, 001): Boundary
-Specifiction (Hirsh. -Bres.) RHO(-003, 001): Boundary Specifiction
-(Hirsh. -Bres.) RHO(-002, 001): Boundary Specifiction (Hirsh. -Bres.)
-RHO(-001, 001): Boundary Specifiction (Hirsh. -Bres.) RHO( 000, 001):
-Boundary Specifiction (Hirsh. -Bres.) RHO( 001, 001): Boundary
-Specifiction (Hirsh. -Bres.) RHO( 002, 001): Boundary Specifiction
-(Hirsh. -Bres.) RHO( 003, 001): Boundary Specifiction (Hirsh. -Bres.)
-RHO( 004, 001): Boundary Specifiction (Hirsh. -Bres.) RHO( 005, 001):
-Boundary Specifiction (Hirsh. -Bres.)
+  NS =    9 NO. FOURIER MODES =   94 FTOLV =  1.000E-06 NITER =   1000
+  PROCESSOR COUNT - RADIAL:    2
+ INITIAL JACOBIAN CHANGED SIGN!
+ TRYING TO IMPROVE INITIAL MAGNETIC AXIS GUESS
+  ---- Improved AXIS Guess ----
+      RAXIS_CC =    1.4888391525837754       0.11677945389900736       -2.7940380117869989E-003  -1.1018895172466669E-003  -2.6280314029721459E-005   1.8347864362562431E-003
+      ZAXIS_CS =   -0.0000000000000000       -3.6771928287768728E-002   1.2315609423830821E-002   8.3228855092970868E-004  -8.0307918459706570E-003  -2.9798398326088293E-003
+  -----------------------------
 
-Accuracy of conversion =  100.00%
----------------------------------
 
-###### TARGETS
+  ITER    FSQR      FSQZ      FSQL    RAX(v=0)    DELT       WMHD
 
-Ballooning Stability Particle Orbits (BEAMS3D) ================== Number
-of Processors: 128 Number of Parameters: 13 Number of Targets: 99 !!!!
-EQUILIBRIUM RESTARTING NOT UTILIZED !!!! Number of Optimizer Threads: 1
-OPTIMIZER: SINGLE_ITERATION NFUNC_MAX: 100
-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-- EQUILIBRIUM
-CALCULATION \-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-- NS = 9 NO.
-FOURIER MODES = 94 FTOLV = 1.000E-06 NITER = 1000 INITIAL JACOBIAN
-CHANGED SIGN! TRYING TO IMPROVE INITIAL MAGNETIC AXIS GUESS ITER FSQR
-FSQZ FSQL RAX(v=0) DELT WMHD 1 1.06E+00 1.63E-01 1.71E-01 1.604E+00
-9.00E-01 3.7587E+00 124 8.81E-07 3.71E-07 1.66E-07 1.582E+00 8.10E-01
-3.6372E+00 NS = 29 NO. FOURIER MODES = 94 FTOLV = 1.000E-08 NITER = 2000
-ITER FSQR FSQZ FSQL RAX(v=0) DELT WMHD 1 3.90E-02 1.86E-02 3.13E-04
-1.582E+00 9.00E-01 3.6369E+00 200 1.47E-07 4.25E-08 6.33E-08 1.581E+00
-6.87E-01 3.6366E+00 334 9.87E-09 1.78E-09 4.09E-09 1.579E+00 6.87E-01
-3.6366E+00 NS = 49 NO. FOURIER MODES = 94 FTOLV = 1.000E-10 NITER = 4000
-ITER FSQR FSQZ FSQL RAX(v=0) DELT WMHD 1 7.46E-03 3.99E-03 4.87E-06
-1.579E+00 9.00E-01 3.6366E+00 200 3.56E-07 8.49E-08 1.73E-07 1.581E+00
-6.00E-01 3.6366E+00 400 8.96E-09 1.79E-09 2.91E-09 1.579E+00 6.00E-01
-3.6366E+00 600 1.57E-09 3.83E-10 4.23E-10 1.578E+00 6.00E-01 3.6366E+00
-800 4.62E-10 8.32E-11 6.22E-11 1.578E+00 6.00E-01 3.6366E+00 991
-9.91E-11 1.91E-11 1.28E-11 1.578E+00 6.00E-01 3.6366E+00 NS = 99 NO.
-FOURIER MODES = 94 FTOLV = 1.000E-12 NITER = 10000 ITER FSQR FSQZ FSQL
-RAX(v=0) DELT WMHD 1 2.25E-02 1.23E-02 1.78E-06 1.578E+00 9.00E-01
-3.6366E+00 200 8.50E-07 2.35E-07 4.69E-07 1.582E+00 4.86E-01 3.6366E+00
-400 2.11E-08 4.23E-09 8.91E-09 1.579E+00 4.86E-01 3.6366E+00 600
-3.79E-09 7.59E-10 9.73E-10 1.578E+00 4.86E-01 3.6366E+00 800 1.19E-09
-2.54E-10 2.20E-10 1.578E+00 4.86E-01 3.6366E+00 1000 4.79E-10 8.89E-11
-5.58E-11 1.578E+00 4.86E-01 3.6366E+00 1200 1.61E-10 3.18E-11 1.71E-11
-1.578E+00 4.86E-01 3.6366E+00 1400 4.86E-11 1.35E-11 5.24E-12 1.578E+00
-4.86E-01 3.6366E+00 1600 1.68E-11 5.40E-12 1.70E-12 1.578E+00 4.86E-01
-3.6366E+00 1800 6.07E-12 2.00E-12 4.87E-13 1.578E+00 4.86E-01 3.6366E+00
-2000 2.25E-12 6.99E-13 1.33E-13 1.578E+00 4.86E-01 3.6366E+00 2181
-1.00E-12 3.04E-13 4.65E-14 1.578E+00 4.86E-01 3.6366E+00 EXECUTION
-TERMINATED NORMALLY FILE : reset_file NUMBER OF JACOBIAN RESETS = 5
-TOTAL COMPUTATIONAL TIME 106.41 SECONDS TIME TO READ IN DATA 0.00
-SECONDS TIME TO WRITE DATA TO WOUT 0.06 SECONDS TIME IN EQFORCE 1.05
-SECONDS TIME IN FOURIER TRANSFORM 28.76 SECONDS TIME IN INVERSE FOURIER
-XFORM 23.58 SECONDS TIME IN FORCES + SYMFORCES 21.96 SECONDS TIME IN
-BCOVAR 18.48 SECONDS TIME IN RESIDUE 2.64 SECONDS TIME (REMAINDER) IN
-FUNCT3D 9.01 SECONDS
-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-- VMEC CALCULATION
-DONE \-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-- ASPECT RATIO:
-4.365 BETA: 0.042 (total) 0.584 (poloidal) 0.046 (toroidal) TORIDAL
-CURRENT: -0.174295786408E+06 TORIDAL FLUX: 0.514 VOLUME: 2.979 MAJOR
-RADIUS: 1.422 MINOR_RADIUS: 0.326 STORED ENERGY: 0.192542558126E+06
-BEAMS3D Version 1.10 \-\-\-\-- Particle Initialization \-\-\-\-- S = [
-0.09184, 0.09184]; NS: 1 U = [ 0.00000, 5.65487]; NU: 10 V = [
-0.00000, 5.65487]; NV: 10 V_|= [ 0.00E+00, 5.00E+05]; NP: 20 Mu =
-[ 0.00000, 1.07E-14]; NP: 20 \-\-\-\-- Profile Initialization
-\-\-\-\-- Ne = [ -0.00, 5.00] 10^19 [m^-3]; Nne: 50 Te = [ -0.00,
-4.58] [keV]; Nte: 50 Ti = [ -0.00, 4.58] [keV]; Nti: 50 \-\-\-\--
-Input Parameters \-\-\-\-- R = [ 0.95223, 1.82142]; NR: 201 PHI = [
-0.00000, 2.09440]; NPHI: 60 Z = [-0.66634, 0.66634]; NZ: 201
 
-1.  of Particles to Start: 2000 \-\-\-\-- Vessel Information \-\-\-\--
-    Wall Name : HARMONICS Date : TODAY Faces : 28800 \-\-\-\--
-    Constructing Splines \-\-\-\-- R = [ 0.95223, 1.82142]; NR: 201
-    PHI = [ 0.00000, 2.09440]; NPHI: 60 Z = [-0.66634, 0.66634]; NZ:
-    201 HERMITE FORM: 1 \-\-\-\-- FOLLOWING PARTICLE TRAJECTORIES
-    \-\-\-\-- Method: LSODE Particles: 2000 Steps: 15000 Delta-t:
-    0.2000E-06 NPOINC: 2000 dt_out: 0.1500E-05 Tol: 0.1000E-08 Type: 10
-    \-\-\-\-- CONVERTING TO FLUX COORDINATES \-\-\-\-- \-\-\-\-- WRITING
-    DATA TO FILE \-\-\-\-- FILE: beams3d_reset_file.h5 \-\-\-\--
-    BEAMS3D DONE \-\-\-\-- ns flux Lost(%) 10 0.09184 33.5 \-\-\-\--
-    STELLOPT DONE \-\-\-\-- > [code](code)
-2.  __**Examine the output**__ > The STELLOPT code will run as it
+    1  1.06E+00  1.63E-01  1.71E-01  1.604E+00  9.00E-01  3.7586E+00
+  126  8.45E-07  2.61E-07  2.43E-07  1.582E+00  7.29E-01  3.6371E+00
+
+  NS =   29 NO. FOURIER MODES =   94 FTOLV =  1.000E-08 NITER =   2000
+  PROCESSOR COUNT - RADIAL:    2
+
+  ITER    FSQR      FSQZ      FSQL    RAX(v=0)    DELT       WMHD
+
+    1  4.11E-02  1.73E-02  3.13E-04  1.582E+00  9.00E-01  3.6367E+00
+  200  7.22E-08  8.49E-09  6.01E-09  1.580E+00  7.29E-01  3.6365E+00
+  286  9.46E-09  1.44E-09  1.38E-09  1.579E+00  7.29E-01  3.6365E+00
+
+  NS =   49 NO. FOURIER MODES =   94 FTOLV =  1.000E-10 NITER =   4000
+  PROCESSOR COUNT - RADIAL:    2
+
+  ITER    FSQR      FSQZ      FSQL    RAX(v=0)    DELT       WMHD
+
+    1  7.84E-03  4.35E-03  4.59E-06  1.579E+00  9.00E-01  3.6365E+00
+  200  1.19E-08  2.81E-09  9.58E-10  1.579E+00  6.87E-01  3.6365E+00
+  400  1.15E-09  2.06E-10  2.02E-10  1.578E+00  6.87E-01  3.6365E+00
+  600  3.18E-10  5.68E-11  3.77E-11  1.578E+00  6.87E-01  3.6365E+00
+  723  1.00E-10  1.79E-11  1.08E-11  1.578E+00  6.87E-01  3.6365E+00
+
+  NS =   99 NO. FOURIER MODES =   94 FTOLV =  1.000E-12 NITER =  10000
+  PROCESSOR COUNT - RADIAL:    2
+
+  ITER    FSQR      FSQZ      FSQL    RAX(v=0)    DELT       WMHD
+
+    1  2.21E-02  1.27E-02  1.79E-06  1.578E+00  9.00E-01  3.6365E+00
+  200  2.46E-08  9.25E-09  1.18E-10  1.578E+00  5.57E-01  3.6365E+00
+  400  9.75E-10  2.45E-10  1.71E-11  1.578E+00  5.57E-01  3.6365E+00
+  600  1.24E-10  3.59E-11  8.24E-12  1.578E+00  5.57E-01  3.6365E+00
+  800  3.70E-11  1.24E-11  3.43E-12  1.578E+00  5.57E-01  3.6365E+00
+ 1000  1.30E-11  4.65E-12  1.00E-12  1.578E+00  5.57E-01  3.6365E+00
+ 1200  4.45E-12  1.67E-12  2.64E-13  1.578E+00  5.57E-01  3.6365E+00
+ 1400  1.82E-12  6.66E-13  7.02E-14  1.578E+00  5.57E-01  3.6365E+00
+ 1522  9.97E-13  3.51E-13  2.99E-14  1.578E+00  5.57E-01  3.6365E+00
+
+ EXECUTION TERMINATED NORMALLY
+
+ FILE : BEAMS3D_opt0
+ NUMBER OF JACOBIAN RESETS =    4
+
+    TOTAL COMPUTATIONAL TIME (SEC)        16.89
+    TIME TO INPUT/OUTPUT                   0.06
+       READ IN DATA                        0.00
+       WRITE OUT DATA TO WOUT              0.06
+    TIME IN FUNCT3D                       16.65
+       BCOVAR FIELDS                       1.97
+       FOURIER TRANSFORM                   4.07
+       INVERSE FOURIER TRANSFORM           3.44
+       FORCES AND SYMMETRIZE               2.11
+       RESIDUE                             2.69
+       EQFORCE                             0.00
+ -------------------------  PARAVMEC CALCULATION DONE  -----------------------
+     ASPECT RATIO:    4.365
+             BETA:    0.042  (total)
+                      0.584  (poloidal)
+                      0.046  (toroidal)
+  TORIDAL CURRENT:   -0.174295786408E+06
+     TORIDAL FLUX:    0.514
+           VOLUME:    2.979
+     MAJOR RADIUS:    1.422
+     MINOR RADIUS:    0.326
+       AXIS FIELD:    1.539
+    STORED ENERGY:    0.192547218957E+06
+ ---------------------------  ORBIT CALCULATION  -------------------------
+ ----- Particle Initialization -----
+   Z   =  1
+   M   =   1.67E-27
+   S   = [  0.09184,  0.09184];   NS:        1
+   U   = [  0.00000,  5.96903];   NU:     20
+   V   = [  0.00000,  2.98451];   NV:     20
+   V_||= [  5.00E+05,  5.00E+05];  NP:     20
+   Mu  = [  0.00000,  1.07E-14];  NP:     20
+----- Profile Initialization -----
+   Ne  = [  -0.00,   0.10] 10^19 [m^-3];  Nne:     50
+   Te  = [  -0.00,   0.00] [keV];  Nte:     50
+   Ti  = [  -0.00,   0.00] [keV];  Nti:     50
+  Zeff = [  -1.00,   1.00];      NZeff:     50
+BEAMS3D Version  2.70
+----- Input Parameters -----
+   R   = [  0.95222,  1.82145];  NR:    128
+   PHI = [ 0.00000, 2.09440];  NPHI:   36
+   Z   = [-0.66631, 0.66631];  NZ:    128
+   # of Particles to Start:     8000
+   MAGNETIC FIELD FROM PLASMA ONLY!
+----- Profile Parameters -----
+   Te   = [  0.00000,  0.00100] keV;  NTE:     50
+   Ti   = [  0.00000,  0.00100] keV;  NTI:     50
+   Ne   = [  0.00000,  0.01000] E20 m^-3;  NNE:     50
+   Zeff = [  1.00000,  1.00000];  NZEFF:   50
+   PLASMA_MASS =    1.00728 amu
+   PLASMA_ZAVG =    1.00000 <Z>
+   PLASMA_ZMEAN =    1.00000 [Z]
+----- VMEC Information -----
+   FILE: BEAMS3D_opt0
+   R       = [  0.99173,  1.78194]
+   Z       = [-0.62680, 0.62680]
+   BETA    =   0.042;  I  =  -0.174 [MA]
+   AMINOR  =   0.326 [m]
+   PHIEDGE =   0.514 [Wb]
+   VOLUME  =   2.979 [m^3]
+ -----  Vessel Information  -----
+   Wall Name :  HARMONICS
+   Date      :  TODAY
+   Faces     :   28800
+                                    
+----- Constructing Splines -----
+   R   = [  0.95222,  1.82145];  NR:    128
+   PHI = [ 0.00000, 2.09440];  NPHI:   36
+   Z   = [-0.66631, 0.66631];  NZ:    128
+   HERMITE FORM: 1
+----- FOLLOWING PARTICLE TRAJECTORIES -----
+      Method: LSODE
+   Particles:      8000
+       Steps:     29999   Delta-t:  0.1000E-06
+      NPOINC:       200    dt_out:  0.1500E-04
+         Tol:  0.1000E-08  Type: 10
+     Trajectory Calculation [  0]%
+```
+
+
+2.  **Examine the output**
+    The STELLOPT code will run as it
     usually does, however now BEAMS3D HDF5 output files will be
     produced. Given the large size of these files, only the first file
     HDF5 file produced will contain the full trajectory of particles
     followed (NPOINC locations along each trajectory). The additional
     files will just record the positions along the boundary where
     particles left the equilibrium. The 'stellopt' file will include
-    the loss fraction from each surface. >
+    the loss fraction from each surface.
