@@ -11,8 +11,9 @@ jobs:
       # you must check out the repository
       - name: check
         run: |
+          cat /etc/passwd
           pwd
-          uname -a
+          git clone https://github.com/PrincetonUniversity/STELLOPT.git
           ls -al
           which xstelloptv2
           ls /home
