@@ -1,6 +1,6 @@
 Tutorial: STELLOPT Energetic Particle Optimization
 ==================================================
-![](images/BEAMS3D_orbits.png)
+![](images/BEAMS3D_orbits.jpg)
 
 The [STELLOPT](STELLOPT) code can target energetic particle confinement
 using the [BEAMS3D](BEAMS3D) neutral beam package as a collision less
