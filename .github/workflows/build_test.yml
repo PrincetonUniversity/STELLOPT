@@ -9,10 +9,10 @@ jobs:
     steps:
       # To use this repository's private action,
       # you must check out the repository
-      - uses: actions/checkout@v2
       - name: check
         run: |
           pwd
           uname -a
-          ls
+          ls ../
           docker info
+          which xstelloptv2
