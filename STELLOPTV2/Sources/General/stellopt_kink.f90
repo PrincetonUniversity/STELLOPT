@@ -19,7 +19,9 @@
                                iota_vmec => iotas, gmnc_vmec => gmnc, &
                                rmnc_vmec => rmnc, zmns_vmec => zmns, &
                                mass_vmec => mass, pres_vmec => pres, &
-                               phip_vmec => phip, vp_vmec => vp
+                               phip_vmec => phip, vp_vmec => vp, &
+                               xm_nyq_vmec => xm_nyq, xn_nyq_vmec => xn_nyq, &
+                               mnmax_nyq_vmec => mnmax_nyq
       USE vmec_input, ONLY: lfreeb_vmec => lfreeb
       USE mpi_params
       USE mpi_inc
@@ -40,9 +42,11 @@
 !        ier         Error flag
 !        iunit       File unit number
 !----------------------------------------------------------------------
-      INTEGER ::  ier, ik, mn, mystart, myend, mypace, nworkers, nmodes
+      INTEGER ::  ier, ik, mn, mystart, myend, mypace, nworkers, nmodes,&
+                  mpol_nyq, ntor_nyq
       INTEGER, ALLOCATABLE :: mnum(:)
       REAL(rprec) :: sigc, tauc, pbpc, pppc, fourpi, rmu0
+      REAL(rprec), ALLOCATABLE :: rmnc_temp(:,:), zmns_temp(:,:)
       CHARACTER(256) :: num_str
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
@@ -65,7 +69,7 @@
             NI    = nrad - 1
             MMAXDF = mmaxdf_kink
             NMAXDF = nmaxdf_kink
-            MLMNV = mnmax_vmec
+            MLMNV = mnmax_nyq_vmec
             MLMNB = mlmnb_kink
             IVAC=IVAC_KINK
             NVI   = NI+IVAC
@@ -77,17 +81,31 @@
             IF (myworkid == master) THEN
                fourpi = 16 * ATAN(1.0)
                rmu0 = fourpi * 1.0e-7
-               CALL safe_open(iunit_eq,ier,'terpsichore_eq.'//TRIM(proc_string),'unknown','formatted')
-               WRITE(iunit_eq,840)wb_vmec,gamma_vmec,1./REAL(NFP),0.,mnmax_vmec,nrad,mpol_vmec,&
-                               ntor_vmec,1,1,itfsq_vmec,niter_vmec,0
-               DO ik = 1, nrad
+               ! GMNC is a NYQUIST sized Variable
+               ALLOCATE(rmnc_temp(mnmax_nyq_vmec,nrad),zmns_temp(mnmax_nyq_vmec,nrad))
+               rmnc_temp = 0.0; zmns_temp = 0.0;
+               DO ik = 1, mnmax_nyq_vmec
                   DO mn = 1, mnmax_vmec
+                     IF ((xm_vmec(mn) .eq. xm_nyq_vmec(ik)) .and. (xn_vmec(mn) .eq. xn_nyq_vmec(ik))) THEN
+                        rmnc_temp(ik,1:nrad) = rmnc_vmec(mn,1:nrad)
+                        zmns_temp(ik,1:nrad) = zmns_vmec(mn,1:nrad)
+                     END IF
+                  END DO
+               END DO
+               mpol_nyq = MAXVAL(xm_nyq_vmec)+1
+               ntor_nyq = MAXVAL(xn_nyq_vmec)/NFP
+
+               CALL safe_open(iunit_eq,ier,'terpsichore_eq.'//TRIM(proc_string),'unknown','formatted')
+               WRITE(iunit_eq,840)wb_vmec,gamma_vmec,1./REAL(NFP),0.,mnmax_nyq_vmec,nrad,mpol_nyq,&
+                               ntor_nyq,1,1,itfsq_vmec,niter_vmec,0
+               DO ik = 1, nrad
+                  DO mn = 1, mnmax_nyq_vmec
                      sigc=0; tauc=0; pbpc=0; pppc=0
-                     IF (xm_vmec(mn) == 0 .and. xn_vmec(mn) == 0) THEN
+                     IF (xm_nyq_vmec(mn) == 0 .and. xn_nyq_vmec(mn) == 0) THEN
                         sigc = 1
                         tauc = 1
                      END IF
-                     WRITE(iunit_eq,850) xm_vmec(mn), xn_vmec(mn), rmnc_vmec(mn,ik), zmns_vmec(mn,ik), gmnc_vmec(mn,ik)
+                     WRITE(iunit_eq,850) xm_nyq_vmec(mn), xn_nyq_vmec(mn), rmnc_temp(mn,ik), zmns_temp(mn,ik), gmnc_vmec(mn,ik)
                      WRITE(iunit_eq,850) sigc ,tauc, pbpc, pppc
                   END DO
                END DO

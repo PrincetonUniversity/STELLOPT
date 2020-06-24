@@ -225,7 +225,8 @@
       REAL(rprec), DIMENSION(-mpol_rcws:mpol_rcws, -ntor_rcws:ntor_rcws) :: regcoil_rcws_zbound_c_max, regcoil_rcws_zbound_s_max
 
       CHARACTER(256)  ::  equil_type, te_type, ne_type, ti_type, th_type, &
-                          beamj_type, bootj_type, zeff_type, emis_xics_type,windsurfname, &
+                          beamj_type, bootj_type, zeff_type, emis_xics_type, &
+                          windsurfname, fixedcoilname, &
                           regcoil_nescin_filename, bootcalc_type, phi_type
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: sfincs_J_dot_B_flux_surface_average, sfincs_B_squared_flux_surface_average
       

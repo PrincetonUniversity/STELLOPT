@@ -301,7 +301,7 @@
 
       ! Handle coil geometry variations
       IF (lcoil_geom) THEN
-         CALL stellopt_spline_to_coil(npts_biot, lscreen)
+         CALL stellopt_spline_to_coil(npts_biot, fixedcoilname, lscreen)
          ctemp_str = 'write_mgrid'
          CALL stellopt_paraexe(ctemp_str,proc_string,lscreen)
       END IF
