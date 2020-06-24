@@ -14,7 +14,7 @@ lost.
 
 ------------------------------------------------------------------------
 
-1.  **Input namelists**
+**Input namelists**
     In addition to the OPTIMUM name list
     the BEAMS3D\_INPUT name list must be included in the STELLOPT input
     file (also the INDATA namelist). The STELLOPT namelist should
@@ -100,7 +100,7 @@ In the above example the VMEC flux surface ns=10 is initialized at 400
     the user may set an array called VPERP\_ORBIT which then overrides
     MU\_ORBIT. The equilibirum modB, VPERP\_ORBIT and MASS\_ORBIT are
     then used to calculate MU\_ORBIT for the run.
-2.  **Execute the code**
+**Execute the code**
     The coupled BEAMS3D/STELLOPT codes
     will execute like any other STELLOPT run (note in this example
     we've used the SINGLE\_ITER optimization type and set
@@ -281,7 +281,7 @@ BEAMS3D Version  2.70
 ```
 
 
-2.  **Examine the output**
+**Examine the output**
     The STELLOPT code will run as it
     usually does, however now BEAMS3D HDF5 output files will be
     produced. Given the large size of these files, only the first file
