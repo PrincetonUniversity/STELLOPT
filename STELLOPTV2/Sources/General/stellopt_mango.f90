@@ -25,8 +25,6 @@ SUBROUTINE stellopt_optimize_mango(used_mango_algorithm, N_function_evaluations)
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
 
-      print *,"Hello world from stellopt_optimize_mango"
-
       IF (.not. mango_does_algorithm_exist(TRIM(opt_type))) THEN
          ! Then opt_type is not a MANGO algorithm
          used_mango_algorithm = .false.
@@ -60,13 +58,8 @@ SUBROUTINE stellopt_optimize_mango(used_mango_algorithm, N_function_evaluations)
       CALL mango_set_print_residuals_in_output_file(mango_problem_instance, .false.) ! This line makes the mango_out file much smaller.
       IF (mango_bound_constraints) THEN
          IF (myid==0) THEN
-            PRINT *,"Adding bound constraints in mango:"
-            print *,"vars_min:",vars_min
-            print *,"vars_max:",vars_max
             CALL mango_set_bound_constraints(mango_problem_instance, vars_min, vars_max)
          END IF
-      ELSE
-         IF (myid==0) PRINT *,"NOT including bound constraints in mango."
       END IF
 
       best_objective_function = mango_optimize(mango_problem_instance)
@@ -126,15 +119,6 @@ SUBROUTINE stellopt_optimize_mango(used_mango_algorithm, N_function_evaluations)
       CALL MPI_BCAST(mtargets_allprocs, 1, MPI_INTEGER, 0, MPI_COMM_WORLD, ierr)
 
       ALLOCATE(best_residual_function(mtargets_allprocs))
-      !print *,"stellopt_mango_init called on proc ",mango_get_mpi_rank_world(mango_problem_instance)
-      !if (mango_is_proc0_world(mango_problem_instance)) then
-      if (.true.) THEN
-         print "(a,i4,a,i6)","Hello from stellopt_mango_init. nvars:",nvars," mtargets:",mtargets
-         !print *,"vars:",vars
-         !print *,"mtargets:",mtargets
-         !print *,"targets:",targets
-         !print *,"sigmas:",sigmas
-      end if
       CALL mango_problem_create_least_squares(mango_problem_instance, nvars_allprocs, vars, mtargets_allprocs, targets, sigmas, best_residual_function, mango_residual_function)
       CALL mango_mpi_partition_set_custom(mango_problem_instance, MPI_COMM_WORLD, MPI_COMM_STEL, MPI_COMM_MYWORLD)
       CALL mango_mpi_partition_write(mango_problem_instance, "mango_mpi")
@@ -150,7 +134,7 @@ SUBROUTINE stellopt_optimize_mango(used_mango_algorithm, N_function_evaluations)
       ! "BIND(C)" is needed above because this subroutine will be called from C++ in MANGO.
       USE iso_c_binding
       USE mango_mod
-      USE stellopt_runtime, ONLY: targets, sigmas
+      USE stellopt_runtime, ONLY: targets, sigmas, bigno, opt_type
       USE mpi_params, ONLY: myworkid, myid
       USE gade_mod, ONLY: GADE_CLEANUP
       USE fdjac_mod, ONLY: flag_cleanup
@@ -171,22 +155,50 @@ SUBROUTINE stellopt_optimize_mango(used_mango_algorithm, N_function_evaluations)
       N_function_evaluations = mango_get_function_evaluations(problem)
       ! The first time this subroutine is called, N_function_evaluations will be 0 (not 1).
 
-      !print *,"Hello from mango_residual_function on proc",mango_get_mpi_rank_world(problem),", function_evaluations=",mango_get_function_evaluations(problem)
-      print "(a,i4,a,i7)","Hello from mango_residual_function on proc",myid,", function_evaluations=",N_function_evaluations
+      ! There is a slight problem in that N_function_evaluations, which was returned by mango_get_function_evaluations() above, is the number of completed evaluations before now,
+      ! whereas the global evaluation number for the present run in mango_out has not yet been assigned: this will only happen once this subroutine completes and control
+      ! is returned to mango itself. So the evaluation numbers in stellopt vs mango may not exactly agree (even accounting for the +1 offset in mango_out).     
 
       ! iflag should be the processor number, except that iflag=-1 has the effect of turning 
       ! on output from VMEC and other codes, as traditionally is done for the first function evaluation.
       !iflag = mango_get_mpi_rank_group_leaders(problem)
       iflag = myid
-      !if (mango_get_function_evaluations(problem) <= 1 .and. mango_get_proc0_world(problem)) iflag = -1
       if (N_function_evaluations < 1 .and. myid==0) iflag = -1
 
-      !print "(4(a,i3),a,256(es24.15))","Proc",mango_get_mpi_rank_world(problem)," N_terms:",N_terms," N_parameters:",N_parameters," iflag:",iflag," x:",x
-      !print *,"size(f):",size(f)," f:",f
-      !CALL stellopt_fcn(N_terms, N_parameters, x, f, iflag, mango_get_function_evaluations(problem))
       CALL stellopt_fcn(N_terms, N_parameters, x, f, iflag, N_function_evaluations)
 
-!      print "(a,i3,a,i8,4(a,1(es24.15)))","Proc",mango_get_mpi_rank_world(problem)," iflag:",iflag," f from stellopt_fcn:",f," targets:",targets," sigmas:",sigmas," f for mango:",sigmas*f+targets
+      ! If a failure of any code occurs during stellopt_fcn, stellopt_fcn sets "fvec(1:m) = 10*SQRT(bigno/m)"
+      IF (maxval(f(1:N_terms)) < 10*SQRT(bigno/N_terms)) THEN
+         ! If we get here, stellopt_fcn must have succeeded.
+
+         failed = 0
+
+         ! When stellopt_fcn is called with iflag < -2, stellopt_fcn calls stellopt_clean_up (which writes the stellopt.<extension> file) and then stellopt_fcn immediately returns,
+         ! without actually evaluating the objective function again. We do this here in order to write the stellopt.<extension> file.
+         ! For now, we only record output from worker group 1, since (for now) mango_get_function_evaluations does not return meaningful results on other worker groups.
+
+         ! It is important to do this stellopt_clean_up step only if the previous stellopt_fcn succeeded. Otherwise stellopt_clean_up will
+         ! call stellopt_paraexe("parvmec_write") and this will hang.
+         iflag = FLAG_CLEANUP ! All procs except master use this value, which has the effect of doing nothing in stellopt_clean_up.
+         IF (myid==0) iflag = GADE_CLEANUP
+         CALL stellopt_fcn(N_terms, N_parameters, x, f, iflag, N_function_evaluations)
+
+      ELSE
+         ! If we get here, stellopt_fcn must have detected a failure.
+         failed = 1
+      END IF
+
+      IF (myid==0 .and. N_function_evaluations == 0) THEN
+         WRITE (6,"(A)") ""
+         WRITE (6,"(A)") "Optimization with MANGO (https://github.com/hiddenSymmetries/mango)"
+         WRITE (6,"(A,A)") " optimization algorithm: ",TRIM(opt_type)
+         WRITE (6,"(A)") ""
+         WRITE (6,"(A)") " worker group,  objective function"
+         WRITE (6,"(A)") " ---------------------------------"
+         FLUSH (6)
+      END IF
+
+      WRITE (6,"(I5,es24.15)") myid, SUM(f*f)
 
       ! Stellopt's convention is that fvec is (values - targets) / sigmas. This can be seen from the line
       ! fvec(1:m) = (vals(1:m)-targets(1:m))/ABS(sigmas(1:m))
@@ -194,25 +206,6 @@ SUBROUTINE stellopt_optimize_mango(used_mango_algorithm, N_function_evaluations)
       ! However mango's f vector should be the original values, not shifted and scaled by "targets" and "sigmas".
       ! So we need to convert stellopt's f to mango's f here:
       f = sigmas * f + targets
-
-      failed = 0
-      IF (iflag < 0) failed = 1
-
-      if (failed==1) print "(a,i5)","Failure detected in mango_residual_function on proc",myid
-
-      ! When stellopt_fcn is called with iflag < -2, stellopt_fcn calls stellopt_clean_up (which writes the stellopt.<extension> file) and then stellopt_fcn immediately returns,
-      ! without actually evaluating the objective function again. We do this here in order to write the stellopt.<extension> file.
-      ! For now, we only record output from worker group 1, since (for now) mango_get_function_evaluations does not return meaningful results on other worker groups.
-
-      ! There is a slight problem in that N_function_evaluations, which was returned by mango_get_function_evaluations() above, is the number of completed evaluations before now,
-      ! whereas the global evaluation number for the present run in mango_out has not yet been assigned: this will only happen once this subroutine completes and control
-      ! is returned to mango itself. So the evaluation numbers in stellopt vs mango may not exactly agree (even accounting for the +1 offset in mango_out).
-      
-      IF (failed==0) THEN
-         iflag = FLAG_CLEANUP ! All procs except master use this value, which has the effect of doing nothing in stellopt_clean_up.
-         IF (myid==0) iflag = GADE_CLEANUP
-         CALL stellopt_fcn(N_terms, N_parameters, x, f, iflag, N_function_evaluations)
-      END IF
 
     END SUBROUTINE mango_residual_function
 
@@ -238,8 +231,6 @@ SUBROUTINE stellopt_optimize_mango(used_mango_algorithm, N_function_evaluations)
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
-
-      print *,"stellopt_mango_finalize called on proc ",mango_get_mpi_rank_world(mango_problem_instance)
 
       DEALLOCATE(best_residual_function)
       CALL mango_problem_destroy(mango_problem_instance)
