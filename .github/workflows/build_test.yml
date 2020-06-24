@@ -4,10 +4,10 @@ on: [push, pull_request]
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: zhucaoxiang/stellopt:debug
-    name: STELLOPT image
-    volumes:
-      - ${$GITHUB_WORKSPACE}:/home/visitor
+    container: 
+      image: zhucaoxiang/stellopt:debug
+      volumes:
+        - ${$GITHUB_WORKSPACE}:/home/visitor
     steps:
       - name: checkout sources
         uses: actions/checkout@v2
@@ -16,6 +16,7 @@ jobs:
           pwd
           echo $GITHUB_WORKSPACE
           cd /home/visitor
+          git clone --single-branch --branch ${{github.ref}} https://github.com/PrincetonUniversity/STELLOPT.git --
           ls -al
           echo ${STELLOPT_PATH}
           cd /home/visitor/STELLOPT && ./build_all 2>&1 | tee log.build
