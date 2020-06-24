@@ -238,8 +238,8 @@ namelist, please see the VMEC tutorials.
       Z_BEAMS(2,2) =  0.00000000000000E+00
       T_END_IN(1:2) = 2*0.0005 ! BEAM DEP
     /
-    &END
-    ```
+&END
+```
 
 1.  **Execute the code.**
     To execute the code, we first
@@ -301,9 +301,11 @@ namelist, please see the VMEC tutorials.
        FILE: beams3d_ncsx_c09r00.h5
     ----- BEAMS3D DONE -----
     > 
-```                                                                  
+```
 
-1.  **Examine the output.**
+
+
+2.  **Examine the output.**
     In this example two files will be
     created: beams3d\_ncsx\_c09r00.h5 and
     beam3d\_diag\_ncsx\_c09r00.txt. The first is an HDF5 file containing
