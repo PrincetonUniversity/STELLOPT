@@ -5,15 +5,16 @@ jobs:
   build:
     runs-on: ubuntu-latest
     container: zhucaoxiang/stellopt:compile
+    env:
+      MACHINE: docker
+      STELLOPT_PATH: ${{ github.workspace }}
     steps:
-      # - name: checkout sources
-      #   uses: actions/checkout@master
+      - name: checkout sources
+        uses: actions/checkout@master
       - name: compile
         run: |
-          pwd
-          ls -al
-          echo ${STELLOPT_PATH}
-          cd /home/visitor/STELLOPT && ./build_all 2>&1 | tee log.build
-        env:
-          MACHINE: docker
-          STELLOPT_PATH: ${{ github.workspace }}
+          cd ${STELLOPT_PATH}
+          ./build_all 2>&1 | tee log.build
+      - test:
+        cd ${STELLOPT_PATH}/BENCHMARKS
+        make test_vmec
