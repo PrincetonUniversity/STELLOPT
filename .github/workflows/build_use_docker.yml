@@ -15,8 +15,10 @@ jobs:
         uses: actions/checkout@master
       - name: compile
         run: |
-          cd ${STELLOPT_PATH}
-          ./build_all 2>&1 | tee log.build
+          # cd ${STELLOPT_PATH}
+          # ./build_all --clean_debug 2>&1 | tee log.build
+          cd ${STELLOPT_PATH}/VMEC2000
+          make clean_debug
       - name: test
         run: |
           cd ${STELLOPT_PATH}/BENCHMARKS
