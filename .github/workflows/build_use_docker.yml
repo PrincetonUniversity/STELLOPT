@@ -20,4 +20,5 @@ jobs:
       - name: test
         run: |
           cd ${STELLOPT_PATH}/BENCHMARKS
-          make test_vmec_QAS
+          make test_vmec
+          
