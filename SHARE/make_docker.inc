@@ -22,11 +22,11 @@
 #            MPI Options
 #######################################################################
   LMPI    = T
-  MPI_COMPILE = mpif90
+  MPI_COMPILE = mpif90.openmpi
   MPI_COMPILE_FREE = mpif90 -ffree-form \
                      -ffree-line-length-none -ffixed-line-length-none
-  MPI_COMPILE_C = mpicc
-  MPI_LINK = mpif90
+  MPI_COMPILE_C = mpicc.openmpi
+  MPI_LINK = mpif90.openmpi
   MPI_RUN = mpiexec
   MPI_RUN_OPTS = 
 #  MPI_RUN_OPTS_SM = -np 16
