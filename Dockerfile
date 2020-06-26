@@ -8,9 +8,9 @@ COPY . /home/STELLOPT
 ENV MACHINE="docker"
 ENV STELLOPT_PATH=/home/STELLOPT
 RUN echo $STELLOPT_PATH
-RUN cd $STELLOPT_PATH  && ./build_all 2>&1 | tee log.build 
-RUN chmod -R 755 ${STELLOPT_PATH}/BENCHMARKS
+RUN cd $STELLOPT_PATH  && ./build_all -j4 2>&1 | tee log.build 
 RUN cp -RP ${STELLOPT_PATH}/bin/* /usr/local/bin/
+RUN cd BENCHMARKS && make test_vmec_QAS
 
 # add user
 WORKDIR /home/visitor
