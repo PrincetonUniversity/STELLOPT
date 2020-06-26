@@ -23,6 +23,9 @@ def get_s123():
     name = names[0].replace(module, ',')
     name = name.replace(func, ',')
     s1, s2, s3 = name.split(',')
+    # This is a catch for weird Macports OSX behavior
+    if s1=='___':
+        s1='__'
     return s1, s2, s3
 s1, s2, s3 = get_s123()
 
