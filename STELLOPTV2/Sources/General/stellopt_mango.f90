@@ -1,3 +1,23 @@
+! This file contains procedures for using the MANGO interface to optimization libraries,
+! https://github.com/hiddenSymmetries/mango
+
+! MANGO's fortran interface assumes DOUBLE PRECISION type, so DOUBLE PRECISION is used in many places here instead of REAL(rprec).
+
+
+!DEC$ IF DEFINED (MANGO)
+MODULE stellopt_mango_mod
+  ! This module defines a few variables used by MANGO that must persist beyond and between calls of the other subroutines in this file.
+
+  USE mango_mod
+
+  IMPLICIT NONE
+
+  TYPE(mango_problem) :: mango_problem_instance
+  DOUBLE PRECISION, ALLOCATABLE :: best_residual_function(:), mango_targets(:), mango_sigmas(:)
+
+END MODULE stellopt_mango_mod
+!DEC$ ENDIF
+
 SUBROUTINE stellopt_optimize_mango(used_mango_algorithm, N_function_evaluations)
         ! This subroutine sets its argument (used_mango_algorithm) to true or false corresponding to whether opt_type is a valid MANGO algorithm.
         ! Or, if STELLOPT was not built with MANGO, this function returns false.
@@ -7,8 +27,9 @@ SUBROUTINE stellopt_optimize_mango(used_mango_algorithm, N_function_evaluations)
 !     Libraries
 !-----------------------------------------------------------------------
       USE mango_mod
-      USE stellopt_runtime, ONLY: opt_type, targets, sigmas, epsfcn, lcentered_differences, vars_min, vars_max
-      USE stellopt_vars, ONLY: mango_problem_instance, nfunc_max, mango_bound_constraints
+      USE stellopt_mango_mod
+      USE stellopt_runtime, ONLY: opt_type, epsfcn, lcentered_differences, vars_min, vars_max
+      USE stellopt_vars, ONLY: nfunc_max, mango_bound_constraints
       USE mpi_params, ONLY: myid
 !-----------------------------------------------------------------------
 !     Local Variables
@@ -33,15 +54,6 @@ SUBROUTINE stellopt_optimize_mango(used_mango_algorithm, N_function_evaluations)
 
       ! If we make it here, then opt_type must be a MANGO algorithm.
       used_mango_algorithm = .true.
-
-      ! At this point in stellopt's execution, the 'targets' and 'sigmas' arrays have been allocated
-      ! but not populated with their values. However, mango_optimize() needs to know the values of 'targets' and 'sigmas'
-      ! before it starts evaluating the residual function. So, let's populate 'targets' and 'sigmas' now.
-      ! This is done by calling stellopt_load_targets().
-      m = -1
-      ncnt = 0
-      iflag = 0
-      CALL stellopt_load_targets(m,fvec_temp,iflag,ncnt)
 
       ! The first few steps must be done by all processes, not only those in MPI_COMM_STEL = mpi_comm_group_leaders.
       ltst  = .false.
@@ -94,8 +106,8 @@ SUBROUTINE stellopt_optimize_mango(used_mango_algorithm, N_function_evaluations)
 !     Libraries
 !-----------------------------------------------------------------------
       USE mango_mod
-      USE stellopt_runtime, ONLY: nvars, mtargets, vars, targets, sigmas
-      USE stellopt_vars, ONLY: mango_problem_instance, best_residual_function
+      USE stellopt_mango_mod
+      USE stellopt_runtime, ONLY: nvars, mtargets, vars
       USE mpi_inc
       USE mpi_params, ONLY: MPI_COMM_MYWORLD, MPI_COMM_STEL
 !-----------------------------------------------------------------------
@@ -104,7 +116,7 @@ SUBROUTINE stellopt_optimize_mango(used_mango_algorithm, N_function_evaluations)
       IMPLICIT NONE
       INTEGER :: nvars_allprocs, mtargets_allprocs, ierr
       !EXTERNAL mango_residual_function
-      procedure(vector_function_interface) :: mango_residual_function
+      PROCEDURE(vector_function_interface) :: mango_residual_function
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
@@ -119,7 +131,12 @@ SUBROUTINE stellopt_optimize_mango(used_mango_algorithm, N_function_evaluations)
       CALL MPI_BCAST(mtargets_allprocs, 1, MPI_INTEGER, 0, MPI_COMM_WORLD, ierr)
 
       ALLOCATE(best_residual_function(mtargets_allprocs))
-      CALL mango_problem_create_least_squares(mango_problem_instance, nvars_allprocs, vars, mtargets_allprocs, targets, sigmas, best_residual_function, mango_residual_function)
+      ALLOCATE(mango_targets(mtargets_allprocs))
+      ALLOCATE(mango_sigmas(mtargets_allprocs))
+      ! Shifting and scaling of the terms in the objective function is all handled by stellopt. MANGO's capability to shift and scale the residuals will not be used. Hence we set targets=0 and sigmas=1:
+      mango_targets = 0
+      mango_sigmas = 1
+      CALL mango_problem_create_least_squares(mango_problem_instance, nvars_allprocs, vars, mtargets_allprocs, mango_targets, mango_sigmas, best_residual_function, mango_residual_function)
       CALL mango_mpi_partition_set_custom(mango_problem_instance, MPI_COMM_WORLD, MPI_COMM_STEL, MPI_COMM_MYWORLD)
       CALL mango_mpi_partition_write(mango_problem_instance, "mango_mpi")
 
@@ -134,7 +151,8 @@ SUBROUTINE stellopt_optimize_mango(used_mango_algorithm, N_function_evaluations)
       ! "BIND(C)" is needed above because this subroutine will be called from C++ in MANGO.
       USE iso_c_binding
       USE mango_mod
-      USE stellopt_runtime, ONLY: targets, sigmas, bigno, opt_type
+      USE stellopt_mango_mod
+      USE stellopt_runtime, ONLY: bigno, opt_type
       USE mpi_params, ONLY: myworkid, myid
       USE gade_mod, ONLY: GADE_CLEANUP
       USE fdjac_mod, ONLY: flag_cleanup
@@ -200,13 +218,6 @@ SUBROUTINE stellopt_optimize_mango(used_mango_algorithm, N_function_evaluations)
 
       WRITE (6,"(I5,es24.15)") myid, SUM(f*f)
 
-      ! Stellopt's convention is that fvec is (values - targets) / sigmas. This can be seen from the line
-      ! fvec(1:m) = (vals(1:m)-targets(1:m))/ABS(sigmas(1:m))
-      ! at the end of stellopt_load_targets().
-      ! However mango's f vector should be the original values, not shifted and scaled by "targets" and "sigmas".
-      ! So we need to convert stellopt's f to mango's f here:
-      f = sigmas * f + targets
-
     END SUBROUTINE mango_residual_function
 
 !DEC$ ENDIF
@@ -223,7 +234,7 @@ SUBROUTINE stellopt_optimize_mango(used_mango_algorithm, N_function_evaluations)
 !     Libraries
 !-----------------------------------------------------------------------
       USE mango_mod
-      USE stellopt_vars, ONLY: mango_problem_instance, best_residual_function
+      USE stellopt_mango_mod
 !-----------------------------------------------------------------------
 !     Local Variables
 !----------------------------------------------------------------------
@@ -232,7 +243,7 @@ SUBROUTINE stellopt_optimize_mango(used_mango_algorithm, N_function_evaluations)
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
 
-      DEALLOCATE(best_residual_function)
+      DEALLOCATE(best_residual_function, mango_targets, mango_sigmas)
       CALL mango_problem_destroy(mango_problem_instance)
 
 !DEC$ ENDIF

@@ -36,7 +36,6 @@
       LOGICAL :: lsym
       INTEGER :: dex, ik, mn, n, m, k_heli, l_heli, num0, n1, n2, i_save
       REAL(rprec) :: bnorm, bmax, bmn, rad_sigma, sj, val
-      LOGICAL :: booz_xform_initialized
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
@@ -53,15 +52,9 @@
             CALL FLUSH(iunit_out)
          END IF
          ! Now calculate chi_sq
-         booz_xform_initialized = ALLOCATED(bmnc_b)
          DO ik = 1, nsd
             IF (ABS(sigma(ik)) >= bigno) CYCLE
-            IF (booz_xform_initialized) THEN
-               bmax  = MAXVAL(ABS(bmnc_b(1:mnboz_b,ik)))
-            ELSE
-               ! This case arises when mango is querying the sigmas and targets before the first equilibrium
-               bmax = 1.0 ! Any value is fine.
-            END IF
+            bmax  = MAXVAL(ABS(bmnc_b(1:mnboz_b,ik)))
             sj = (real(ik,rprec) - 1.5_dp)/REAL((ns_b-1),rprec)            !!This is correct (SPH)
             bnorm = 0.0
             num0 = mtargets + 1
@@ -70,21 +63,9 @@
                targets(mtargets) = target(ik)
                vals(mtargets)    = 0
                sigmas(mtargets)  = bigno
-               IF (booz_xform_initialized) THEN
-                  n = ixn_b(mn)/nfp_b
-                  m = ixm_b(mn)
-                  bmn = bmnc_b(mn,ik)
-               ELSE
-                  ! m and n must match the initialization in setup_booz.f:
-                  IF (mn <= (nboz+1)) THEN
-                     m = 0
-                     n = mn - 1
-                  ELSE
-                     m = FLOOR((mn + nboz - 1.0) / (nboz*2+1))
-                     n = mn - nboz - 2 - (m-1) * (nboz*2+1) - nboz
-                  END IF
-                  bmn = 0 ! Any value is fine.
-               END IF
+               n = ixn_b(mn)/nfp_b
+               m = ixm_b(mn)
+               bmn = bmnc_b(mn,ik)
                !m_save(mn) = m
                !n_save(mn) = n
 !               ! Target for minimization Bmn-s with helicities other than the one desired
