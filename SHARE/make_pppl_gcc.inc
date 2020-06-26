@@ -22,8 +22,6 @@
   NETCDF_F = $(NETCDF_FORTRAN_HOME)
   NETCDF_C = $(NETCDF_C_HOME)
   HDF5_HOME = $(HDF5_PARALLEL_HOME)
-  #NETCDF_F = /usr/pppl/gcc/6.1-pkgs/netcdf-fortran-4.4.4
-  #NETCDF_C = /usr/pppl/gcc/6.1-pkgs/netcdf-c-4.4.1
 
   LIBS    = -lopenblas -L$(SCALAPACK_HOME)/lib -lscalapack 
 
@@ -42,10 +40,10 @@
   MPI_COMPILE_C = mpicc
   MPI_LINK = mpicc -shared -pthread -Wl,--no-undefined -Wl,-export-dynamic
   MPI_RUN = srun
-  MPI_RUN_OPTS = -N 2 -n 64 -p general -t 2:00:00 -J STELLOPT_BENCH
-  MPI_RUN_OPTS_SM = -N 2 -n 64 -p general -t 2:00:00 -J STELLOPT_BENCH
-  MPI_RUN_OPTS_MD = -N 4 -n 128 -p general -t 2:00:00 -J STELLOPT_BENCH
-  MPI_RUN_OPTS_LG = -N 8 -n 256 -p general -t 2:00:00 -J STELLOPT_BENCH
+  MPI_RUN_OPTS = -N 2 -n 64 -p general -t 30:00 -q debug --mem 8G -J STELLOPT_BENCH
+  MPI_RUN_OPTS_SM = -N 2 -n 64 -p general -t 30:00 -q debug --mem 8G -J STELLOPT_BENCH
+  MPI_RUN_OPTS_MD = -N 4 -n 128 -p general -t 2:00:00 --mem 8G -J STELLOPT_BENCH
+  MPI_RUN_OPTS_LG = -N 8 -n 256 -p general -t 2:00:00 --mem 8G -J STELLOPT_BENCH
 
 #######################################################################
 #            NAG Options
