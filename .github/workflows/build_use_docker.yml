@@ -16,7 +16,7 @@ jobs:
       - name: compile
         run: |
           cd ${STELLOPT_PATH}
-          ./build_all -o clean_release -j 4
+          ./build_all -o clean_debug -j 2
       - name: test
         run: |
           cd ${STELLOPT_PATH}/BENCHMARKS
