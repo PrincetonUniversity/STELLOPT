@@ -541,6 +541,7 @@ eval_x_queued.o : \
 
 
 MAP_HYPERS.o : \
+      mpi_inc.o \
       safe_open_mod.o \
       stel_kinds.o
       
@@ -930,7 +931,8 @@ extcurz_T.o : \
 ipch_T.o : \
       stel_constants.o \
       stel_kinds.o \
-      safe_open_mod.o 
+      safe_open_mod.o \
+      integration_path.o 
       
 
 fftpack.o : \
@@ -1323,10 +1325,40 @@ coordinate_utilities.o : \
 
 suzuki_sigma.o : 
 
+stel_tools.o : \
+      ezspline.o \
+      ezspline_obj.o
 
+mir_tools.o : \
+      read_wout_mod.o \
+      ezspline_obj.o      
 
-      
+getcarg.o : \
+      mpi_inc.o
 
+vmec_chdir.o : \
+      mpi_inc.o
 
+thscte_T.o : \
+      stel_constants.o
 
+spline_cubic.o : \
+      mpi_inc.o
 
+second0.o : \
+      mpi_inc.o
+
+ezspline_cdfget3.o : \
+      ezcdf.o
+
+ezspline_cdfput3.o : \
+      ezcdf.o
+
+ezspline_cinterp.o : \
+      ezspline_obj.o
+
+gmres.o : \
+      mpi_inc.o
+
+compression.o : \
+      ezcdf.o
