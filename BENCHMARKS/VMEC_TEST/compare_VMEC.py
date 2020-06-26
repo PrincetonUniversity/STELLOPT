@@ -34,7 +34,6 @@ for key in ref:
     else:
         tol = args.tol
     try:
-        print(key)
         diff = np.linalg.norm(ref[key].values - data[key].values)/len(ref[key].values)
         unmatch = diff > tol
         if unmatch:

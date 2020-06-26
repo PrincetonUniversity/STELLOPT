@@ -9,8 +9,8 @@ ENV MACHINE="docker"
 ENV STELLOPT_PATH=/home/STELLOPT
 RUN echo $STELLOPT_PATH
 RUN cd $STELLOPT_PATH  && ./build_all -j4 2>&1 | tee log.build 
+RUN chmod -R 777 ${STELLOPT_PATH}/BENCHMARKS
 RUN cp -RP ${STELLOPT_PATH}/bin/* /usr/local/bin/
-RUN cd BENCHMARKS && make test_vmec_QAS
 
 # add user
 WORKDIR /home/visitor
@@ -18,6 +18,8 @@ RUN groupadd -r visitor -g 433 && \
 useradd -u 431 -r -g visitor -d /home/visitor -s /sbin/nologin -c "Docker image user" visitor && \
 chown -R visitor:visitor /home/visitor
 USER visitor
+
+RUN cd ${STELLOPT_PATH}/BENCHMARKS && make test_vmec_QAS
 
 # Set commands
 CMD ["/bin/bash"]
