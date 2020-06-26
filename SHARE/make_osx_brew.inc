@@ -27,16 +27,17 @@
   SCALAPACK_HOME ?= /usr/local/opt/scalapack
   FFTW_HOME ?= /usr/local/opt/fftw
   HDF5_HOME ?= /usr/local/opt/hdf5
-  NETCDF5_HOME ?= /usr/local/opt/netcdf
+  NETCDF_HOME ?= /usr/local/opt/netcdf
+  # netcdf needs manually installed netcdf-frotran; still have some issue
   
 
 #######################################################################
 #            Define Compiler Flags
 #######################################################################
-  FLAGS_R = -O2 -g -fexternal-blas -fbacktrace -fcheck=all 
-  FLAGS_D = -O0 -g -fexternal-blas -fcheck=all -fbacktrace -Wextra \
-   -Wtarget-lifetime -fbounds-check -ffpe-trap=zero -finit-real=snan
-  LIBS    = -lopenblas -L${SCALAPACK_HOME}/lib -lscalapack
+  FLAGS_R = -O2 -g -fbacktrace -fcheck=all 
+  FLAGS_D = -O0 -g -fcheck=all -fbacktrace -Wextra \
+            -Wtarget-lifetime -fbounds-check -ffpe-trap=zero -finit-real=snan
+  LIBS    = -L${SCALAPACK_HOME}/lib -lscalapack
 
 #######################################################################
 #            MPI Options
@@ -48,7 +49,7 @@
   MPI_COMPILE_C = mpicc 
   MPI_LINK = mpifort
   MPI_LINK = mpifort -shared  -Wl,-no_compact_unwind
-  MPI_RUN = mpiexec
+  MPI_RUN = mpirun
   MPI_RUN_OPTS = -np 2
 
 #######################################################################
@@ -61,8 +62,8 @@
 #            NETCDF Options
 #######################################################################
   LNETCDF = T
-  NETCDF_INC = -I${NETCDF5_HOME}/include
-  NETCDF_LIB = -L${NETCDF5_HOME}/lib -lnetcdf -lnetcdff
+  NETCDF_INC = -I${NETCDF_HOME}/include
+  NETCDF_LIB = -L${NETCDF_HOME}/lib -lnetcdf -lnetcdff
 
 #######################################################################
 #            FFTW3 Options
@@ -165,4 +166,4 @@
 #            LIBSTELL Shared Options
 #######################################################################
 
-LIB_SHARE = -L/opt/local/lib/gcc9 -lstdc++ -lgfortran -L/usr/lib -lz -lc -lm -lpthread $(LIBS)
+LIB_SHARE = -lc -lgfortran -lstdc++ -lmpi -lmpi_mpifh -lz -lc -lm -lpthread $(LIBS) -lc
