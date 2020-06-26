@@ -176,50 +176,13 @@ SFINCS_LIB = $(SFINCS_DIR)/$(LIB_SFINCS) \
 
 #LMANGO = F
 LMANGO = T
+
 MANGO_DIR = /Users/mattland/mango
-MANGO_INC = -I$(MANGO_DIR)/include
-LIB_MANGO = libmango.a
 
-MANGO_PETSC_AVAILABLE = T
-MANGO_NLOPT_AVAILABLE = T
-MANGO_GSL_AVAILABLE = T
-
-# This next parameter matters only if MANGO_PETSC_AVAILABLE == T.
-# If false, a newer version of PETSc built by myself will be used.
-MANGO_USE_MACPORTS_PETSC = F
-
-ifeq ($(MANGO_PETSC_AVAILABLE),T)
-  ifeq ($(MANGO_USE_MACPORTS_PETSC),T)
-    PETSC_DIR=/opt/local/lib/petsc
-    PETSC_ARCH=
-    include ${PETSC_DIR}/lib/petsc/conf/variables
-    # The above line defines the PETSC make variables PETSC_LIB, FC_LINKER_FLAGS, and FFLAGS, which are used below in MANGO_LIB.
-  else
-    PETSC_DIR=/Users/mattland/petsc/petsc-3.12.2
-    PETSC_ARCH=arch-darwin-c-debug
-    include ${PETSC_DIR}/${PETSC_ARCH}/lib/petsc/conf/petscvariables
-    # The above line defines the PETSC make variables PETSC_LIB, FC_LINKER_FLAGS, and FFLAGS, which are used below in MANGO_LIB.
-  endif
-else
-endif
-
-MANGO_LIB = $(MANGO_DIR)/lib/$(LIB_MANGO)
-#	$(PETSC_LIB) $(FC_LINKER_FLAGS) $(FFLAGS) -lnlopt -lstdc++
-
-ifeq ($(MANGO_PETSC_AVAILABLE),T)
-  MANGO_LIB += $(PETSC_LIB) $(FC_LINKER_FLAGS)
-endif
-
-ifeq ($(MANGO_NLOPT_AVAILABLE),T)
-  #EXTRA_C_COMPILE_FLAGS += -I/usr/local/include
-  MANGO_LIB += -lnlopt
-endif
-
-ifeq ($(MANGO_GSL_AVAILABLE),T)
-  #EXTRA_C_COMPILE_FLAGS += -I/opt/local/include
-  MANGO_LIB += -L/opt/local/lib -lgsl -lgslcblas
-endif
-
+# If LMANGO=T, any flags specified in the next 2 lines will be added to MANGO_F_COMPILE_FLAGS and MANGO_F_LINK_FLAGS respectively
+# as defined in $(MANGO_DIR)/lib/mangoMakeVariables
+MANGO_INC=
+MANGO_LIB=
 
 #######################################################################
 #            REGCOIL Options

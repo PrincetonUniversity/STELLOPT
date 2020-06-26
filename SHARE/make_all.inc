@@ -153,6 +153,11 @@ else
   LIB_SFINCS =
 endif
 ifeq ($(LMANGO),T)
+  # This next line will define the variables MANGO_C_COMPILE_FLAGS, MANGO_F_COMPILE_FLAGS, MANGO_C_LINK_FLAGS, and MANGO_F_LINK_FLAGS
+  include $(MANGO_DIR)/lib/mangoMakeVariables
+  # Add any flags defined by the individual stellopt make_*.inc files:
+  MANGO_INC += $(MANGO_F_COMPILE_FLAGS)
+  MANGO_LIB += $(MANGO_F_LINK_FLAGS)
   MOD1_PATH += $(MANGO_INC)
   PRECOMP += -DMANGO
   MOD_PATH += $(MANGO_INC)
