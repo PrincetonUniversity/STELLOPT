@@ -150,34 +150,14 @@
 #            MANGO Options
 #######################################################################
 
-#LMANGO = F
-LMANGO = T
-
-# Here we indicate which libraries MANGO was built with:
-MANGO_PETSC_AVAILABLE = T
-MANGO_NLOPT_AVAILABLE = T
-MANGO_GSL_AVAILABLE = T
+LMANGO = F
 
 MANGO_DIR = /u/mlan/mango
-MANGO_INC = -I$(MANGO_DIR)/include
-LIB_MANGO = libmango.a
 
-MANGO_LIB = $(MANGO_DIR)/lib/$(LIB_MANGO) -lstdc++
-
-ifeq ($(MANGO_PETSC_AVAILABLE),T)
-  include ${PETSC_DIR}/lib/petsc/conf/variables
-  # The above line defines the PETSC make variables PETSC_LIB, FC_LINKER_FLAGS, and FFLAGS, which are used below in MANGO_LIB.
-  MANGO_LIB += $(PETSC_LIB) $(FC_LINKER_FLAGS)
-  # I might need to add FFLAGS here?
-endif
-
-ifeq ($(MANGO_NLOPT_AVAILABLE),T)
-  MANGO_LIB += -L/u/mlan/nlopt/nlopt-2.6.1/install/lib64 -lnlopt
-endif
-
-ifeq ($(MANGO_GSL_AVAILABLE),T)
-  MANGO_LIB += -L $(GSL_HOME)/lib -lgsl
-endif
+# If LMANGO=T, any flags specified in the next 2 lines will be added to MANGO_F_COMPILE_FLAGS and MANGO_F_LINK_FLAGS respectively
+# as defined in $(MANGO_DIR)/lib/mangoMakeVariables
+MANGO_INC=
+MANGO_LIB=
 
 #######################################################################
 #            REGCOIL Options
