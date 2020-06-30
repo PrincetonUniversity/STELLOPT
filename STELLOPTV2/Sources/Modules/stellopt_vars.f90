@@ -221,7 +221,8 @@
                           windsurfname, fixedcoilname, &
                           regcoil_nescin_filename, bootcalc_type, phi_type
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: sfincs_J_dot_B_flux_surface_average, sfincs_B_squared_flux_surface_average
-      
+      REAL(rprec), DIMENSION(0:ntord) :: raxis_cc_initial, raxis_cs_initial, zaxis_cc_initial, zaxis_cs_initial
+
       ! Variables associated with the Rosenbrock test function
       INTEGER, PARAMETER :: ROSENBROCK_DIM = 20
       LOGICAL, DIMENSION(1:rosenbrock_dim)      ::  lRosenbrock_X_opt

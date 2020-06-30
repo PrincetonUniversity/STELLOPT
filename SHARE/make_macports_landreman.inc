@@ -31,7 +31,7 @@
   FLAGS_R = -O0 -g -Wmissing-include-dirs -fbacktrace -fcheck=all 
 #  FLAGS_R = -O2 -fexternal-blas -Wmissing-include-dirs
 #  FLAGS_D = -g -O0 -fcheck=all
-  FLAGS_R = $(FLAGS_D)
+  FLAGS_D = $(FLAGS_R)
 #  LIBS    = -L/opt/local/lib -lopenblas -lscalapack  
   LIBS    = -L/opt/local/lib -lopenblas 
 # Because scalapack is broken in macport for MPI4.0

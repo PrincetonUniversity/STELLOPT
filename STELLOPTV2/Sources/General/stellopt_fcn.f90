@@ -181,26 +181,82 @@
             IF (mf == 0) THEN
                raxis_cc(nf) = x(nvar_in)
                zaxis_cs(nf) = x(nvar_in)
+               print *,"Resetting raxis/zaxis because imodemn"
             END IF
          END IF
       END DO
 
-      IF (lreset_axis_every_iteration) THEN
-         ! MJL: Set initial axis shape to be the m=0 mode of the boundary shape.
-         ! This makes the result of a given call to stellopt_fcn independent of the previous calls.
-         ! Otherwise, the axis from the previous iteration is used as the initial guess, making VMEC results
-         ! depend on the history of previous calls to VMEC by this processor.
-         ! Setting lreset_axis_every_iteration=.true. is useful for testing, since it ensures that
-         ! results are less dependent on the number of processors.
-         ! The method below is not a unique way to set the initial axis guess - for strongly shaped
-         ! boundaries, a different approach may better ensure that the axis remains inside the boundary.
+      ! MJL June 2020: Handle various options for the initial guess for the magnetic axis shape.
+      ! If we do nothing here, the initial guess for the next VMEC calculation will be the
+      ! final axis from the previous VMEC calculation on this processor. This is often an excellent
+      ! guess, but it has the downside that it makes the objective function slightly
+      ! dependent on the history of previous evaluations of the objective function.
+      ! This can be a problem when evaluating the finite-difference Jacobian, where
+      ! small differences in the objective function matter a lot. This history-dependence
+      ! can also introduce dependence on the number of MPI processes, which may be
+      ! undesirable. Several alternative methods to initialize the axis shape are given here.
+      ! Note from LIBSTELL/Modules/vmec_input.f that raxis_cc/zaxis_cs have dimension(0:ntord),
+      ! while rbc/zbs have dimension(-ntord:ntord,0:mpol1d)
+      CALL tolower(axis_init_option)
+      SELECT CASE (TRIM(axis_init_option))
+      CASE("previous")
+         ! Use the axis shape from the end of the previous VMEC calculation.
+         ! In this case, the objective function becomes slightly history-dependent,
+         ! but we don't need to do anything here.
+      CASE("mean")
+         ! Set initial axis shape to be the m=0 mode of the boundary shape.
          DO nf = 0, ntord
             raxis_cc(nf) = rbc(nf, 0)
             zaxis_cc(nf) = zbc(nf, 0)
             raxis_cs(nf) = rbs(nf, 0)
             zaxis_cs(nf) = zbs(nf, 0)
          END DO
-      END IF
+      CASE("midpoint")
+         ! Set the initial axis shape to be, at each phi, the mean of the (theta=0) and (theta=pi) points
+         ! of the boundary. This approach may be a more accurate estimate than axis_init_option='mean'
+         ! for configurations with a strongly concave bean shape like W7-X.
+         DO nf = 0, ntord ! Handle the m=0 modes.
+            raxis_cc(nf) = rbc(nf, 0)
+            zaxis_cc(nf) = zbc(nf, 0)
+            raxis_cs(nf) = rbs(nf, 0)
+            zaxis_cs(nf) = zbs(nf, 0)
+         END DO
+         DO mf = 2, mpol1d, 2 ! Add even-m modes for m>0
+            ! Handle the n=0 modes:
+            nf=0
+            raxis_cc(nf) = raxis_cc(nf) + rbc(nf, mf)
+            zaxis_cc(nf) = zaxis_cc(nf) + zbc(nf, mf)
+            ! No need to include the sin(n*phi) modes for n=0 here.
+            ! Handle the n.ne.0 modes:
+            DO nf = 1, ntord
+               raxis_cc(nf) = raxis_cc(nf) + rbc(nf, mf) + rbc(-nf, mf)
+               zaxis_cc(nf) = zaxis_cc(nf) + zbc(nf, mf) + zbc(-nf, mf)
+               raxis_cs(nf) = raxis_cs(nf) + rbs(nf, mf) - rbs(-nf, mf)
+               zaxis_cs(nf) = zaxis_cs(nf) + zbs(nf, mf) - zbs(-nf, mf)
+            END DO
+         END DO
+      CASE("input")
+         ! Reset the axis shape to the shape specified in the input file
+         raxis_cc = raxis_cc_initial
+         zaxis_cc = zaxis_cc_initial
+         raxis_cs = raxis_cs_initial
+         zaxis_cs = zaxis_cs_initial
+      CASE("vmec")
+         ! Have VMEC's Initialization_Cleanup/guess_axis.f choose the axis.
+         ! This can be done by setting the axis here to something that is sure to trigger that subroutine.
+         raxis_cc = 0
+         zaxis_cc = 0
+         raxis_cs = 0
+         zaxis_cs = 0
+      CASE DEFAULT
+         CALL handle_err(NAMELIST_READ_ERR,"Unrecognized option for axis_init_option",0)
+      END SELECT
+
+      print *,"Reset initial axis guess in stellopt_fcn"
+      print *,"raxis_cc:",raxis_cc(0:5)
+      print *,"zaxis_cc:",zaxis_cc(0:5)
+      print *,"raxis_cs:",raxis_cs(0:5)
+      print *,"zaxis_cs:",zaxis_cs(0:5)
 
       ! Apply normalization (Only to loaded variables)
       WHERE(laphi_opt)            aphi = aphi * norm_aphi
