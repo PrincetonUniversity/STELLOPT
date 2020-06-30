@@ -239,7 +239,7 @@
 !-----------------------------------------------------------------------
       NAMELIST /optimum/ nfunc_max, equil_type, opt_type,&
                          ftol, xtol, gtol, epsfcn, factor, refit_param, &
-                         lcentered_differences, lreset_axis_every_iteration, &
+                         lcentered_differences, axis_init_option, &
                          cr_strategy, mode, lkeep_mins, lrefit,&
                          npopulation, noptimizers, &
                          lphiedge_opt, lcurtor_opt, lbcrit_opt, &
@@ -448,7 +448,7 @@
       refit_param     = 0.75
       rho_exp         = 4
       lcentered_differences = .FALSE.
-      lreset_axis_every_iteration = .FALSE.
+      axis_init_option = "previous"
       lxval_opt       = .FALSE.
       lyval_opt       = .FALSE.
       lkeep_mins      = .FALSE.
@@ -1464,6 +1464,8 @@
          WRITE(iunit,outstr) 'BOOTCALC_TYPE',TRIM(bootcalc_type)
          WRITE(iunit,outint) 'VBOOT_MAX_ITERATIONS',vboot_max_iterations
       END IF
+      WRITE(iunit,outstr) 'AXIS_INIT_OPTION',TRIM(axis_init_option)
+      WRITE(iunit,outboo) 'LCENTERED_DIFFERENCES',lcentered_differences
       WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
       WRITE(iunit,'(A)') '!       Optimized Quantities'
       WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
