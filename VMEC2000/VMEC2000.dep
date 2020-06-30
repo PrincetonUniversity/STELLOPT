@@ -46,6 +46,8 @@ blocktridiagonalsolver_bst.o : \
       parallel_vmec_module.o \
       ../../LIBSTELL/$(LOCTYPE)/mpi_inc.o \
 
+blocktridiagonalsolver.o : \
+      parallel_include_module.o 
       
 
 convert.o : \
@@ -586,6 +588,7 @@ analyt.o : \
       
 
 becoil.o : \
+      timer_sub.o \
       ../../LIBSTELL/$(LOCTYPE)/vparams.o \
       parallel_include_module.o \
       vacmod.o 
@@ -605,10 +608,12 @@ bextern.o : \
 
 fouri.o : \
       parallel_include_module.o \
-      vacmod.o 
+      vacmod.o \
+      timer_sub.o
       
 
 fourp.o : \
+      timer_sub.o \
       parallel_include_module.o \
       vacmod.o 
       
@@ -752,6 +757,7 @@ evolve.o : \
       
 
 gmres_mod.o : \
+      precon2d.o \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
       ../../LIBSTELL/$(LOCTYPE)/gmres.o \
       parallel_include_module.o \
