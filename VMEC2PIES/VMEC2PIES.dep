@@ -100,6 +100,13 @@ cyl2suv.o: \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
       pies_realspace.o
       
-     
+write_pies_coil.o : \
+      pies_runtime.o \
+      pies_background.o
       
+toroidal_flux.o : \
+      pies_runtime.o 
 
+main.o : \
+      pies_runtime.o
+      
