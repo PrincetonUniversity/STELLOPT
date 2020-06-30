@@ -1662,7 +1662,8 @@
                WRITE(iunit,"(2X,A,I4.3,A,1X,'=',1X,A)") 'COIL_TYPE(',n,')',"'"//COIL_TYPE(n)//"'"
                ik = MINLOC(coil_splinesx(n,:),DIM=1) - 1
                WRITE(iunit,"(2X,A,I4.3,A,1X,'=',10(2X,L1))") 'LCOIL_SPLINE(',n,',:)',(lcoil_spline(n,m), m = 1, ik-4)
-               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,ES22.12E3))") 'DCOIL_SPLINE(',n,',:)',(dcoil_spline(n,m), m = 1, ik-4)
+               IF (ANY(DCOIL_SPLINE(n,1:ik-4).NE.-1.0D0)) &
+                    WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,ES22.12E3))") 'DCOIL_SPLINE(',n,',:)',(dcoil_spline(n,m), m = 1, ik-4)
                WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,ES22.12E3))") 'COIL_SPLINESX(',n,',:)',(coil_splinesx(n,m), m = 1, ik)
                WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,ES22.12E3))") 'COIL_SPLINEFX(',n,',:)',(coil_splinefx(n,m), m = 1, ik-4)
                WRITE(iunit,"(2X,A,I4.3,A,1X,'=',5(2X,ES22.12E3))") 'COIL_SPLINESY(',n,',:)',(coil_splinesy(n,m), m = 1, ik)
