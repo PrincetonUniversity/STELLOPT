@@ -43,10 +43,10 @@ fieldlines_init.o: \
       fieldlines_lines.o
       
 
-fmag_nag.o: \
+fmag_nag.o : \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
-      fieldlines_runtime.o \
-      fieldlines_grid.o 
+      fieldlines_grid.o \
+      fieldlines_runtime.o
       
 
 fieldlines_find_axis.o: \
@@ -107,8 +107,9 @@ fieldlines_lines.o: \
 
 fblin_nag.o: \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
-      fieldlines_grid.o \
-      fieldlines_runtime.o
+      fieldlines_runtime.o \
+      fieldlines_grid.o
+
       
 
 fblin_tanmap_nag.o: \
@@ -248,4 +249,5 @@ fieldlines_init_nescoil.o: \
       fieldlines_runtime.o \
       fieldlines_grid.o
       
-      
+normal_vector.o : \
+      fieldlines_runtime.o             
