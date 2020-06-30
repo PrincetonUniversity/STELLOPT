@@ -608,7 +608,8 @@ bextern.o : \
 
 fouri.o : \
       parallel_include_module.o \
-      vacmod.o 
+      vacmod.o \
+      timer_sub.o
       
 
 fourp.o : \
