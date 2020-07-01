@@ -21,7 +21,6 @@
       USE blocktridiagonalsolver_bst, ONLY: Finalize_bst
       USE xstuff
       USE mpi_inc
-      USE vmec_input, ONLY: raxis_cc, raxis_cs, zaxis_cc, zaxis_cs ! MJL remove this eventually
       IMPLICIT NONE
 C-----------------------------------------------
 C   D u m m y   A r g u m e n t s
@@ -266,14 +265,6 @@ C-----------------------------------------------
       !BEGIN - Main loop that will be parallelized - SKS
       grid_id = 1
       old_vacuum_time = 0
-
-      ! <MJL>
-      WRITE(6,*)"runvmec axis"
-      WRITE(6,*) "raxis_cc:",raxis_cc(0:5)
-      WRITE(6,*) "zaxis_cc:",zaxis_cc(0:5)
-      WRITE(6,*) "raxis_cs:",raxis_cs(0:5)
-      WRITE(6,*) "zaxis_cs:",zaxis_cs(0:5)
-      ! </MJL>
 
       DO igrid = igrid0 - jacob_off, multi_ns_grid
          CALL second0(gridton)
