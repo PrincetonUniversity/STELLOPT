@@ -181,7 +181,6 @@
             IF (mf == 0) THEN
                raxis_cc(nf) = x(nvar_in)
                zaxis_cs(nf) = x(nvar_in)
-               print *,"Resetting raxis/zaxis because imodemn"
             END IF
          END IF
       END DO
@@ -251,12 +250,6 @@
       CASE DEFAULT
          CALL handle_err(NAMELIST_READ_ERR,"Unrecognized option for axis_init_option",0)
       END SELECT
-
-      print *,"Reset initial axis guess in stellopt_fcn"
-      print *,"raxis_cc:",raxis_cc(0:5)
-      print *,"zaxis_cc:",zaxis_cc(0:5)
-      print *,"raxis_cs:",raxis_cs(0:5)
-      print *,"zaxis_cs:",zaxis_cs(0:5)
 
       ! Apply normalization (Only to loaded variables)
       WHERE(laphi_opt)            aphi = aphi * norm_aphi

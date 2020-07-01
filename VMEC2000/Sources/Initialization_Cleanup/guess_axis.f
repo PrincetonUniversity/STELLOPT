@@ -44,7 +44,6 @@ C-----------------------------------------------
 !     YIELD A VALUE FOR THE JACOBIAN WITH THE CORRECT SIGN (SIGNGS)
 !     CHOOSES THE AXIS POSITION SO THE MIN VALUE OF THE JACOBIAN IS MAXIMIZED
 !
-      write(6,*) "Entering guess_axis_par"
       CALL second0(tguesson)
       ns12 = (ns + 1)/2
 
@@ -293,7 +292,6 @@ C-----------------------------------------------
 !     YIELD A VALUE FOR THE JACOBIAN WITH THE CORRECT SIGN (SIGNGS)
 !     CHOOSES THE AXIS POSITION SO THE MIN VALUE OF THE JACOBIAN IS MAXIMIZED
 !
-      write(6,*) "Entering guess_axis"
       CALL second0(tguesson)
       ns12 = (ns+1)/2
 
