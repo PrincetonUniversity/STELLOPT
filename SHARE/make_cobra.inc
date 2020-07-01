@@ -97,10 +97,7 @@
   LIB_FUTILS = libfutils.a
   GENE_INC = -I$(GENE_DIR) \
              -I$(FUTILS_DIR)
-  GENE_LIB = -L$(FFTW_HOME)/lib -lfftw3 -lfftw3f \
-             -L$(SLEPC_HOME)/lib -lslepc \
-             -L$(PETSC_HOME)/lib -lpetsc \
-             $(GENE_DIR)/$(LIB_GENE) \
+  GENE_LIB = $(GENE_DIR)/$(LIB_GENE) \
              $(FUTILS_DIR)/$(LIB_FUTILS)
 
 #######################################################################
@@ -135,13 +132,10 @@
 #            SFINCS Options
 #######################################################################
   LSFINCS = F
-  include ${PETSC_DIR}/lib/petsc/conf/variables
-  SFINCS_DIR = $(SFINCS_PATH)/fortran/version3
-  SFINCS_INC = -I$(SFINCS_DIR) -I${PETSC_DIR}/include
+  SFINCS_INC = -I$(SFINCS_DIR)
   LIB_SFINCS = libsfincs.a
 
-  SFINCS_LIB = $(SFINCS_DIR)/$(LIB_SFINCS) \
-        $(PETSC_LIB) $(FC_LINKER_FLAGS) $(FFLAGS)
+  SFINCS_LIB = $(SFINCS_DIR)/$(LIB_SFINCS)
 
 #######################################################################
 #            REGCOIL Options
