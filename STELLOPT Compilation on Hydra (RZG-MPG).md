@@ -16,9 +16,6 @@ Draco
     module load netcdf-mpi
     module load hdf5-mpi
     module load fftw
-    module load petsc-cplx
-    module load slepc-cplx
-    module load nag_flib/intel/mk24
 
 Cobra
 -----
@@ -30,8 +27,6 @@ Cobra
     module load hdf5-mpi/1.10.5
     module load netcdf-mpi/4.7.0
     module load fftw-mpi
-    module load petsc-complex
-    module load slepc-complex
 
 IPP-HGW Theory (clus47)
 -----
