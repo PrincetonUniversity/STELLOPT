@@ -160,7 +160,7 @@
 #            MANGO Options
 #######################################################################
 
-LMANGO = F
+LMANGO = T
 
 MANGO_DIR = /p/focus/share/mango
 
