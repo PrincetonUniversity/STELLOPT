@@ -829,6 +829,11 @@ chisq_y.o : \
       stellopt_targets.o \
       stellopt_vars.o
 
+stellopt_mango.o : \
+      stellopt_runtime.o \
+      stellopt_vars.o \
+      $(LIB_DIR)/$(LOCTYPE)/mpi_params.o 
+
 chisq_template.o : \
       stellopt_targets.o
 
