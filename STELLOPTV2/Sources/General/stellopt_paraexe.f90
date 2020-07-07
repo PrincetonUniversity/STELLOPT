@@ -434,8 +434,11 @@
                ier_paraexe = ier
             CASE('write_mgrid')
                CALL stellopt_write_mgrid(MPI_COMM_MYWORLD,file_str,lscreen)
+            CASE('mango_init')
+               CALL stellopt_mango_init
+            CASE('mango_finalize')
+               CALL stellopt_mango_finalize
             CASE('exit')  ! we send this when we want to terminate the code (everyone leaves)
-               !PRINT *,'myid: ',myid,' exiting stellopt_paraexe'
                CALL MPI_COMM_FREE(MPI_COMM_MYWORLD,ierr_mpi)
                IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_paraexe: FREE',ierr_mpi)
                RETURN
