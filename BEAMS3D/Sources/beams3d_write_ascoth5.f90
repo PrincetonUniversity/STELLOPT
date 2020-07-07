@@ -409,7 +409,7 @@
                CALL write_var_hdf5(qid_gid,'rhomax',ier,DBLVAR=DBLE(1))
                CALL write_var_hdf5(qid_gid,'nmodes',2,ier,INTVAR=(/1,2/))
                CALL write_var_hdf5(qid_gid,'mmodes',2,ier,INTVAR=(/3,4/))
-               CALL write_var_hdf5(qid_gid,'amplitude',2,ier,DBLVAR=DBLE((/0.1,2.0/)))
+               CALL write_var_hdf5(qid_gid,'amplitude',2,ier,DBLVAR=DBLE((/0.0,0.0/)))
                CALL write_var_hdf5(qid_gid,'omega',2,ier,DBLVAR=DBLE((/1.0,1.5/)))
                CALL write_var_hdf5(qid_gid,'phase',2,ier,DBLVAR=DBLE((/0.0,0.78525/)))
                ALLOCATE(rtemp(6,2,1))
