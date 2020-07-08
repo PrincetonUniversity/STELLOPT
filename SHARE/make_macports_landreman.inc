@@ -4,8 +4,7 @@
 #            Define User Specific Output Paths
 #######################################################################
   # Set a default directory if one has not already been defined.
-#  $STELLOPT_HOME ?= $(HOME)/stellopt/bin
-  STELLOPT_HOME = $(HOME)/stellopt/bin
+  STELLOPT_HOME ?= $(STELLOPT_PATH)/bin
 
 
 #######################################################################
@@ -20,42 +19,40 @@
   PRECOMP:= cpp -traditional-cpp -E -P -C -DMACOSX
   COMPILE = gfortran
   COMPILE_FREE = gfortran -ffree-form -ffree-line-length-none -ffixed-line-length-none
-  LINK    = ld $(FLAGS) -o
+  LINK    = mpif90 $(FLAGS) -o
   LINK_AR = ar -ruvs
   LINK_C  = gcc -shared -Wl,-no_compact_unwind
+#  LINK_C  = gcc -shared -Wl,--no-undefined -Wl,-export-dynamic 
 
 #######################################################################
 #            Define Compiler Flags
 #######################################################################
 #  FLAGS_R = -O2 -g -fexternal-blas -fbacktrace -fcheck=all 
+  FLAGS_R = -O0 -g -Wmissing-include-dirs -fbacktrace -fcheck=all 
 #  FLAGS_R = -O2 -fexternal-blas -Wmissing-include-dirs
-#  FLAGS_R = -O2 -Wmissing-include-dirs
-  FLAGS_R = -g -O0  -Wmissing-include-dirs
-  FLAGS_D = -g -O0 -fcheck=all 
+#  FLAGS_D = -g -O0 -fcheck=all
+  FLAGS_D = $(FLAGS_R)
 #  LIBS    = -L/opt/local/lib -lopenblas -lscalapack  
+  LIBS    = -L/opt/local/lib -lopenblas 
+# Because scalapack is broken in macport for MPI4.0
+#  LIBS += /Users/lazerson/Sims_Work/scalapack-2.0.2/libscalapack.a
   LIBS    = -L/opt/local/lib -framework Accelerate -lscalapack   -g
 
 #######################################################################
 #            MPI Options
 #######################################################################
   LMPI    = T
-  MPI_COMPILE = /opt/local/bin/mpif90 
-  MPI_COMPILE_FREE = /opt/local/bin/mpif90 -ffree-form \
+  MPI_COMPILE = mpif90
+  MPI_COMPILE_FREE = mpif90 -ffree-form \
                      -ffree-line-length-none -ffixed-line-length-none
-  MPI_COMPILE_C = gcc -shared -Wl,-no_compact_unwind
-  MPI_LINK = /opt/local/bin/mpif90
+  MPI_COMPILE_C = mpicc 
+  MPI_LINK = mpif90
+  MPI_LINK = mpif90 -shared  -Wl,-no_compact_unwind
   MPI_RUN = mpiexec
-  MPI_RUN_OPTS = -np 4
+  MPI_RUN_OPTS = -np 2
 #  MPI_RUN_OPTS_SM = -np 16
 #  MPI_RUN_OPTS_MD = -np 64
 #  MPI_RUN_OPTS_LG = -np 256
-
-  # For GCC6
-  #MPI_COMPILE = mpif90
-  #MPI_COMPILE_FREE = mpif90 -ffree-form \
-  #                   -ffree-line-length-none -ffixed-line-length-none
-  #MPI_COMPILE_C = mpicc
-  #MPI_LINK = mpif90
 
 #######################################################################
 #            NAG Options
@@ -70,15 +67,12 @@
   NETCDF_INC = -I/opt/local/include
   NETCDF_LIB = -L/opt/local/lib -lnetcdf -lnetcdff
 
-  # FOR GCC6
-  #NETCDF_LIB = -L$(NETCDF_HOME)/lib -lnetcdff
-
 #######################################################################
 #            NTCC Options
 #######################################################################
   LNTCC = F
-  NTCC_INC = -I/Users/slazerso/Sims_PPPL/STELLOPT/NTCC/MAC/mod
-  NTCC_LIB = -L/Users/slazerso/Sims_PPPL/STELLOPT/NTCC/MAC/lib \
+  NTCC_INC = -I/Users/lazerson/Sims_Work/pub/mod
+  NTCC_LIB = -L/Users/lazerson/Sims_Work/pub/lib \
              -lpreact -lsigsub -laladdinsub -lpreact -lpspline \
              -lportlib -lezcdf
 
@@ -94,15 +88,21 @@
 #             PGPLOT Options
 #######################################################################
   LPGPLOT = F
-  PGPLOT_INC = -I$(PGPLOT_DIR)
-  PGPLOT_LIB = -L$(PGPLOT_DIR) -lpgplot -L/usr/X11R6/lib -lX11
+  PGPLOT_INC = -I/opt/local/include
+  PGPLOT_LIB = -L/opt/local/lib -lpgplot -lX11
 
 #######################################################################
 #             SILO Options
 #######################################################################
   LSILO = F
-  SILO_INC = -I$(SILOHOME)/include
-  SILO_LIB = -L$(SILOHOME)/lib -lsilo
+  SILO_INC = -I/opt/local/include
+  SILO_LIB = -L/opt/local/lib -lsilo
+
+#######################################################################
+#            DKES/NEO Options
+#######################################################################
+  LDKES = T
+  LNEO  = T
 
 #######################################################################
 #            FFTW3 Options
@@ -151,14 +151,14 @@
   LIB_TRAVIS = libtravis64_sopt.a
   LIB_MCONF  = libmconf64.a
   TRAVIS_LIB = $(TRAVIS_DIR)/lib/$(LIB_TRAVIS) \
-               $(TRAVIS_DIR)/mag_conf/lib/$(LIB_MCONF) -lstdc++
+               $(TRAVIS_DIR)/magconf/lib/$(LIB_MCONF) -lstdc++
 
 #######################################################################
 #            SFINCS Options
 #######################################################################
 
-#LSFINCS = F
-LSFINCS = T
+LSFINCS = F
+#LSFINCS = T
 SFINCS_DIR = /Users/mattland/sfincs/fortran/version3
 SFINCS_INC = -I$(SFINCS_DIR)
 LIB_SFINCS = libsfincs.a
@@ -170,34 +170,31 @@ include ${PETSC_DIR}/lib/petsc/conf/variables
 SFINCS_LIB = $(SFINCS_DIR)/$(LIB_SFINCS) \
 	$(PETSC_LIB) $(FC_LINKER_FLAGS) $(FFLAGS)
 
-#######################################################################                                                                                       
-#            REGCOIL Options                                                                                                                                  
-#######################################################################                                                                                       
+#######################################################################
+#            MANGO Options
+#######################################################################
+
+#LMANGO = F
+LMANGO = T
+
+MANGO_DIR = /Users/mattland/mango
+
+# If LMANGO=T, any flags specified in the next 2 lines will be added to MANGO_F_COMPILE_FLAGS and MANGO_F_LINK_FLAGS respectively
+# as defined in $(MANGO_DIR)/lib/mangoMakeVariables
+MANGO_INC=
+MANGO_LIB=
+
+#######################################################################
+#            REGCOIL Options
+#######################################################################
   LREGCOIL= F
-#  REGCOIL_DIR = $(REGCOIL_PATH)
-  REGCOIL_DIR = /Users/mattland/regcoil
-  REGCOIL_INC = -I$(REGCOIL_DIR)
+  REGCOIL_DIR = $(REGCOIL_PATH)
+  REGCOIL_INC = -I$(REGCOIL_DIR) 
   LIB_REGCOIL = libregcoil.a
   REGCOIL_LIB = $(REGCOIL_DIR)/$(LIB_REGCOIL) -fopenmp
 
 #######################################################################
 #            LIBSTELL Shared Options
 #######################################################################
-LIB_SHARE = /opt/local/lib/libnetcdf.dylib \
-         /opt/local/lib/libnetcdff.dylib \
-         /opt/local/lib/libnetcdf_c++4.dylib \
-         /opt/local/lib/libhdf5.dylib \
-         /opt/local/lib/libhdf5hl_fortran.dylib\
-         /opt/local/lib/libhdf5_hl.dylib \
-         /opt/local/lib/libhdf5_fortran.dylib\
-         /opt/local/lib/gcc6/libgfortran.dylib \
-         /opt/local/lib/gcc6/libstdc++.dylib \
-         /opt/local/lib/libopenblas.dylib \
-         /opt/local/lib/openmpi-gcc6/libmpi.dylib \
-         /opt/local/lib/openmpi-gcc6/libmpi_mpifh.12.dylib \
-         /opt/local/lib/libz.dylib \
-         /usr/lib/libc.dylib \
-         /usr/lib/libm.dylib \
-         /usr/lib/libpthread.dylib
 
-
+LIB_SHARE = $(LIBS)

@@ -239,6 +239,7 @@
 !-----------------------------------------------------------------------
       NAMELIST /optimum/ nfunc_max, equil_type, opt_type,&
                          ftol, xtol, gtol, epsfcn, factor, refit_param, &
+                         lcentered_differences, axis_init_option, &
                          cr_strategy, mode, lkeep_mins, lrefit,&
                          npopulation, noptimizers, &
                          lphiedge_opt, lcurtor_opt, lbcrit_opt, &
@@ -274,6 +275,7 @@
                          beamj_type, bootj_type, zeff_type, phi_type, &
                          bootcalc_type, sfincs_s, sfincs_min_procs, sfincs_Er_option, &
                          vboot_tolerance, vboot_max_iterations, &
+                         mango_bound_constraints, &
                          ne_min, te_min, ti_min, th_min, beamj_f_min, &
                          bootj_f_min, zeff_min, zeff_f_min, phi_f_min, &
                          ne_max, te_max, ti_max, th_max, beamj_f_max, &
@@ -445,6 +447,8 @@
       noptimizers     = -1
       refit_param     = 0.75
       rho_exp         = 4
+      lcentered_differences = .FALSE.
+      axis_init_option = "previous"
       lxval_opt       = .FALSE.
       lyval_opt       = .FALSE.
       lkeep_mins      = .FALSE.
@@ -1460,6 +1464,8 @@
          WRITE(iunit,outstr) 'BOOTCALC_TYPE',TRIM(bootcalc_type)
          WRITE(iunit,outint) 'VBOOT_MAX_ITERATIONS',vboot_max_iterations
       END IF
+      WRITE(iunit,outstr) 'AXIS_INIT_OPTION',TRIM(axis_init_option)
+      WRITE(iunit,outboo) 'LCENTERED_DIFFERENCES',lcentered_differences
       WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
       WRITE(iunit,'(A)') '!       Optimized Quantities'
       WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
