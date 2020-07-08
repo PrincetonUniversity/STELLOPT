@@ -18,7 +18,7 @@
 
 .PHONY: test_vmec
 
-test_vmec: test_vmec_QAS
+test_vmec: 
 	@echo "Beginning testing of VMEC2000"
 	@cd $(VMEC_TEST_DIR); rm -f jxbout* mercier* threed1* wout*; 
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xvmec2000 input.DSHAPE
@@ -37,16 +37,15 @@ test_vmec: test_vmec_QAS
 	@cd $(VMEC_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xvmec2000 input.ATF
 	@cd $(VMEC_TEST_DIR); ./compare_ATF.py
 	@echo ""
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xvmec2000 input.QAS
+	@cd $(VMEC_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xvmec2000 input.QAS
+	@cd $(VMEC_TEST_DIR); ./compare_QAS.py
+	@echo ""
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xvmec2000 input.DIII-D
 	@cd $(VMEC_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xvmec2000 input.DIII-D
 	@cd $(VMEC_TEST_DIR); ./compare_DIII-D.py
 	@echo "Tesing of VMEC2000 complete"
-	@echo ""
-test_vmec_QAS:
-	@echo ""
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xvmec2000 input.QAS
-	@cd $(VMEC_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xvmec2000 input.QAS
-	@cd $(VMEC_TEST_DIR); ./compare_VMEC.py wout_QAS.nc wout_QAS_ref.nc
+
 test_diagno:
 	@echo "Beginning testing of DIAGNO"
 	@cd $(DIAGNO_TEST_DIR); rm -f diagno_bench.* diagno_flux.* diagno_surf.* test_loops_b.* test_loops_j.*; 
