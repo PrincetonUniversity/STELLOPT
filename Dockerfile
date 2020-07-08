@@ -19,7 +19,5 @@ useradd -u 431 -r -g visitor -d /home/visitor -s /sbin/nologin -c "Docker image 
 chown -R visitor:visitor /home/visitor
 USER visitor
 
-RUN cd ${STELLOPT_PATH}/BENCHMARKS && make test_vmec_QAS
-
 # Set commands
 CMD ["/bin/bash"]
