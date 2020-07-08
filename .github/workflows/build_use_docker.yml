@@ -19,4 +19,4 @@ jobs:
           ./build_all -o clean_debug -j 2
       - name: test
         run: |
-          mpiexec xstelloptv2 -h
+          mpiexec ./bin/xstelloptv2 -h
