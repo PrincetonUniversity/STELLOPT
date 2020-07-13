@@ -497,11 +497,15 @@ MODULE beams3d_physics_mod
          IF (lsuzuki) THEN
             !--------------------------------------------------------------
             !     USE Suzuki to calcualte ionization rates
+            !     Note: 10^18<ne<10^21
+            !           E(keV/amu)/100 < Te < E(keV/amu)/2
             !--------------------------------------------------------------
             Z_in(1)  = NINT(mycharge/e_charge)
             A_in(1)  = NINT(mymass*inv_dalton)
             energy   = energy/(e_charge*A_in(1)) ! keV/amu
             DO l = 1, num_depo
+               nelocal(l)  = MAX(MIN(nelocal(l),1E21),1E18)
+               telocal(l)  = MAX(MIN(telocal(l),energy(l)/2),energy(l)/100)
                ni_in(1) = nelocal(l)/zefflocal(l)
                CALL suzuki_sigma(1,energy(l),nelocal(l),telocal(l),ni_in,A_in,Z_in,tau_inv(l))
             END DO
