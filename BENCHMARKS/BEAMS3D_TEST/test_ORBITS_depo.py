@@ -21,10 +21,10 @@ if not data:
 
 # Calc values
 
-print('BEAMS3D VERSION: ' + str(data['VERSION']))
+print('BEAMS3D VERSION: ' + str(round(data['VERSION'],2)))
 print('==== Vectors ====')
 varlist={}
-varlist['Shinethrough']=np.array([0.4, 0.0, 0.0, 20.7, 20.5, 20.1])
+varlist['Shinethrough']=np.array([33.8, 17.8, 10.7, 23.6,  7.7,  3.3])
 for temp in varlist:
     act = varlist[temp]
     cal = data[temp]
