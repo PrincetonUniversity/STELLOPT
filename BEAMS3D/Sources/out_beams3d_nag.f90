@@ -169,7 +169,7 @@ SUBROUTINE out_beams3d_nag(t, q)
        zlast = q(3)
     END IF
     IF (lhitonly) mytdex = 0
-    IF (ABS((t+dt)) .ge. ABS(mytdex*dt_out)) mytdex = mytdex + 1
+    IF (ABS((t+dt)) .gt. ABS(mytdex*dt_out)) mytdex = mytdex + 1
     t = t + dt
 
     RETURN
