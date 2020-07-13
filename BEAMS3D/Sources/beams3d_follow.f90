@@ -91,6 +91,15 @@ SUBROUTINE beams3d_follow
     vel_max = MAXVAL(vll_start)
     dt = SIGN(lendt_m/vel_max,tf_max)      ! Keep this here so we print out max(dt)
     IF (ABS(dt) < 1E-9) dt = SIGN(1D-9,tf_max)  ! This is a limiter term for STELLOPT
+
+    !!!!!!!!! Make sure dt_out divisible by dt !!!!!!!!
+    !PRINT *,dt_out,dt
+    !PRINT *,CEILING(dt_out/dt)
+    dt = dt_out/CEILING(dt_out/dt)
+    !PRINT *,dt_out,dt
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
     nsteps = FLOOR(tf_max/dt)
     tol_nag = follow_tol
     neqs_nag = 4
@@ -160,13 +169,13 @@ SUBROUTINE beams3d_follow
        WRITE(6, '(A)') '----- FOLLOWING PARTICLE TRAJECTORIES -----'
        WRITE(6, '(A,A)')          '      Method: ', TRIM(int_type)
        WRITE(6, '(A,I9)')         '   Particles: ', nparticles
-       WRITE(6, '(A,I9,A,E11.4)') '       Steps: ', nsteps, '   Delta-t: ', dt
-       WRITE(6, '(A,I9,A,E11.4)') '      NPOINC: ', npoinc, '    dt_out: ', dt_out
+       WRITE(6, '(A,I9,A,EN11.3)') '       Steps: ', nsteps, '   Delta-t: ', dt
+       WRITE(6, '(A,I9,A,EN11.3)') '      NPOINC: ', npoinc, '    dt_out: ', dt_out
        SELECT CASE(TRIM(int_type))
           CASE("NAG")
-             WRITE(6, '(A,E11.4,A,A1)') '         Tol: ', follow_tol, '  Type: ', relab
+             WRITE(6, '(A,EN11.3,A,A1)') '         Tol: ', follow_tol, '  Type: ', relab
           CASE("LSODE")
-             WRITE(6, '(A,E11.4,A,I2)') '         Tol: ', follow_tol, '  Type: ', mf
+             WRITE(6, '(A,EN11.3,A,I2)') '         Tol: ', follow_tol, '  Type: ', mf
        END SELECT
        WRITE(6, '(5X,A,I3,A)', ADVANCE = 'no') 'Trajectory Calculation [', 0, ']%'
        CALL FLUSH(6)
