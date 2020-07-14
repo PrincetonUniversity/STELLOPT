@@ -169,13 +169,13 @@ SUBROUTINE beams3d_follow
        WRITE(6, '(A)') '----- FOLLOWING PARTICLE TRAJECTORIES -----'
        WRITE(6, '(A,A)')          '      Method: ', TRIM(int_type)
        WRITE(6, '(A,I9)')         '   Particles: ', nparticles
-       WRITE(6, '(A,I9,A,EN11.3)') '       Steps: ', nsteps, '   Delta-t: ', dt
-       WRITE(6, '(A,I9,A,EN11.3)') '      NPOINC: ', npoinc, '    dt_out: ', dt_out
+       WRITE(6, '(A,I9,A,EN12.3)') '       Steps: ', nsteps, '   Delta-t: ', dt
+       WRITE(6, '(A,I9,A,EN12.3)') '      NPOINC: ', npoinc, '    dt_out: ', dt_out
        SELECT CASE(TRIM(int_type))
           CASE("NAG")
-             WRITE(6, '(A,EN11.3,A,A1)') '         Tol: ', follow_tol, '  Type: ', relab
+             WRITE(6, '(A,EN12.3,A,A1)') '         Tol: ', follow_tol, '  Type: ', relab
           CASE("LSODE")
-             WRITE(6, '(A,EN11.3,A,I2)') '         Tol: ', follow_tol, '  Type: ', mf
+             WRITE(6, '(A,EN12.3,A,I2)') '         Tol: ', follow_tol, '  Type: ', mf
        END SELECT
        WRITE(6, '(5X,A,I3,A)', ADVANCE = 'no') 'Trajectory Calculation [', 0, ']%'
        CALL FLUSH(6)
