@@ -158,23 +158,18 @@
                CALL FinalizeRunVmec(RUNVMEC_COMM_WORLD)
                ier_paraexe=ictrl(2)
                in_parameter_2 = TRIM(file_str)
-               !print *, "<---Leaving stellopt_paraexe parevemc_init case handler"
             CASE('paravmec_run')
 !DEC$ IF DEFINED (SKS2)
                ! Broadcast the sequence number
-               !print *, "<---Entering stellopt_paraexe parevemc_run case handler, myid=",myid
                myseq=myid          ! MPI
                CALL MPI_BCAST(myseq,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
                IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_paraexe: BCAST2b',ierr_mpi)
                ! Now update the namelists
-               !JCS print *,'<----paraexe/parvmec myworkid=', myworkid, ' file_str=',trim(file_str)
                IF (myworkid == master) CALL stellopt_prof_to_vmec(file_str,ier)
                CALL stellopt_bcast_vmec(master,MPI_COMM_MYWORLD,ier)
                IF (ier .eq. 0) THEN
-                  !JCS print *,'<----calling stellopt_reinit in paraexe'
                   CALL stellopt_reinit_vmec
                   IF (myworkid == master) THEN
-                     !JCS print *,'<----making temp_input.'//trim(file_str)
                      iunit = 37; ier = 0
                      CALL safe_open(iunit,ier,TRIM('temp_input.'//TRIM(file_str)),'unknown','formatted')
                      CALL write_indata_namelist(iunit,ier)
@@ -188,7 +183,6 @@
                   reset_string =''
                   lhit = .FALSE.
                   NS_RESLTN = 0 ! Need to do this otherwise situations arrise which cause problems.
-                  !print *,'<----stellopt_paraexe running vmec temp_input.'//trim(file_str)
                   CALL runvmec(ictrl,file_str,lscreen,MPI_COMM_MYWORLD,reset_string)
                   CALL FinalizeSurfaceComm(NS_COMM)
                   CALL FinalizeRunVmec(RUNVMEC_COMM_WORLD)
@@ -197,14 +191,7 @@
                   IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_paraexe: BCAST2d',ierr_mpi)
                   IF (  ier == successful_term_flag  .or. &
                         ier == norm_term_flag) THEN
-                     ! JCS
                      IF (myworkid == master) CLOSE(UNIT=iunit,STATUS='delete')
-                     ! IF (myworkid == master) THEN
-		     !	CLOSE(UNIT=iunit)
-	             !	call flush(iunit)
-                     !   print *,'<----paraexe moving temp_input.',trim(file_str),' to input.',trim(file_str)
-                     !   CALL move_txtfile('temp_input.'//TRIM(file_str),'input.'//TRIM(file_str))
-                     !ENDIF
                      ier = 0
                   ELSE
                      IF (myworkid == master) CLOSE(UNIT=iunit)
@@ -213,11 +200,9 @@
                END IF
                in_parameter_2 = TRIM(file_str)
                ier_paraexe = ier
-               !print *, "<---Leaving stellopt_paraexe parevemc_run case handler"
 !DEC$ ENDIF
             CASE('paravmec_write')
 !DEC$ IF DEFINED (SKS2)
-               !print *, "<---Entering stellopt_paraexe parevemc_run case handler, myseq=",myseq
                CALL MPI_BCAST(myseq,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
                IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_paraexe: BCAST2b',ierr_mpi)
                ictrl(1) = output_flag
@@ -431,7 +416,6 @@
                ier_paraexe = ier
             CASE('sfincs')
                proc_string = file_str
-               !print *,'<----stellopt_paraexe Calling stellopt_sfincs. proc_string='//trim(proc_string)
                ier = 0
                CALL stellopt_sfincs(lscreen,ier)
                ier_paraexe = ier

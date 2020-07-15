@@ -43,8 +43,6 @@
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
-!      write (*,"(a,i5,a,i5,a,i5,a,i5)") '<----stellopt_cleanup called with iflag=', &
-!                       iflag,',ncnt=',ncnt
       ctype = iflag
       iflag = 0
       iunit = 10
