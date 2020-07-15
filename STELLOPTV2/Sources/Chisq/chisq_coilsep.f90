@@ -48,7 +48,7 @@
          IF (ANY(coil_splinesx(ic,:) >-1)) n_uniq = n_uniq + 1
       END DO
 
-      IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'MIN. COIL SEP. ',n_uniq+1,7
+      IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'MIN_COIL_SEP ',n_uniq+1,7
       IF (iflag == 1) WRITE(iunit_out,'(A)') 'C1 C2  TARGET  SIGMA  VAL  SLOC_1  SLOC_2'
       IF (sigma.ge.bigno) RETURN  !No targets if function is switched off.
       IF (.NOT.lcoil_geom) RETURN  !No targets if coils cannot be modified.

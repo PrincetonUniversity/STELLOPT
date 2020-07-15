@@ -70,7 +70,8 @@
             beam2(nparticles), weight2(nparticles), t_end2(nparticles), &
             end_state(nparticles))
          ALLOCATE(R_lines(0:npoinc,nparticles),Z_lines(0:npoinc,nparticles),PHI_lines(0:npoinc,nparticles),&
-            vll_lines(0:npoinc,nparticles),neut_lines(0:npoinc,nparticles),moment_lines(0:npoinc,nparticles))
+            vll_lines(0:npoinc,nparticles),neut_lines(0:npoinc,nparticles),moment_lines(0:npoinc,nparticles),&
+            S_lines(0:npoinc,nparticles))
          CALL read_var_hdf5(fid,'mass',nparticles,ier,DBLVAR=mass2)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'mass2',ier)
          CALL read_var_hdf5(fid,'charge',nparticles,ier,DBLVAR=charge2)
@@ -97,6 +98,8 @@
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'neut_lines',ier)
          CALL read_var_hdf5(fid,'moment_lines',npoinc+1,nparticles,ier,DBLVAR=moment_lines)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'moment_lines',ier)
+         CALL read_var_hdf5(fid,'S_lines',npoinc+1,nparticles,ier,DBLVAR=S_lines)
+         IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'S_lines',ier)
          CALL close_hdf5(fid,ier)
          IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,'beams3d_'//TRIM(restart_string)//'.h5',ier)
 
@@ -108,6 +111,9 @@
          IF (ANY(end_state==3)) ldepo_old = .true.
          IF (ldepo_old) THEN
             state_flag = 0
+            IF (lplasma_only) THEN 
+               WHERE(S_lines(1,:) >= 1) end_state = -1
+            END IF
          ELSE
             state_flag = 2
          END IF
@@ -138,7 +144,7 @@
             t_end(k)    = MAXVAL(t_end_in)
             k = k + 1
          END DO
-         DEALLOCATE(R_lines, Z_lines, PHI_lines, vll_lines, moment_lines, neut_lines, end_state)
+         DEALLOCATE(R_lines, Z_lines, PHI_lines, vll_lines, moment_lines, neut_lines, end_state, S_lines)
          DEALLOCATE(mass2, charge2, Zatom2, beam2, weight2, t_end2)
 
          ! Restore quantities

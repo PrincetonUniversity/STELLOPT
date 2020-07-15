@@ -18,7 +18,7 @@
 
 .PHONY: test_vmec
 
-test_vmec:
+test_vmec: 
 	@echo "Beginning testing of VMEC2000"
 	@cd $(VMEC_TEST_DIR); rm -f jxbout* mercier* threed1* wout*; 
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xvmec2000 input.DSHAPE
@@ -45,7 +45,6 @@ test_vmec:
 	@cd $(VMEC_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xvmec2000 input.DIII-D
 	@cd $(VMEC_TEST_DIR); ./compare_DIII-D.py
 	@echo "Tesing of VMEC2000 complete"
-	@echo ""
 
 test_diagno:
 	@echo "Beginning testing of DIAGNO"
@@ -186,6 +185,7 @@ test_stellopt_gade:
 test_stellopt_basic:
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.BASIC
 	@cd $(STELLOPT_TEST_DIR)/BASIC; $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.BASIC; rm -f *_opt*
+	@cd $(STELLOPT_TEST_DIR)/BASIC && ./compare_BASIC.py
 	@echo ""
 
 test_stellopt_beams3d:

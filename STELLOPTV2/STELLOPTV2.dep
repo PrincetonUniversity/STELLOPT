@@ -6,6 +6,7 @@ stellopt_write_auxfiles.o : \
       stellopt_input_mod.o 
 
 stellopt_write_eqfile.o : \
+      stellopt_input_mod.o \
       stellopt_runtime.o \
       $(LIB_DIR)/$(LOCTYPE)/mpi_inc.o \
       $(LIB_DIR)/$(LOCTYPE)/read_wout_mod.o
@@ -169,6 +170,7 @@ chisq_z0.o : \
 chisq_curvature.o : \
       stellopt_runtime.o \
       stellopt_targets.o \
+      equil_utils.o \
       equil_vals.o 
       
 
@@ -255,6 +257,7 @@ chisq_resjac.o : \
       stellopt_runtime.o \
       stellopt_targets.o \
       equil_vals.o \
+      equil_utils.o \
       $(LIB_DIR)/$(LOCTYPE)/read_boozer_mod.o
 
 chisq_iota.o : \
@@ -555,6 +558,8 @@ stellopt_fcn.o : \
       
 stellopt_main.o : \
       stellopt_runtime.o \
+      stellopt_input_mod.o \
+      $(LIB_DIR)/$(LOCTYPE)/mgrid_mod.o \
       $(LIB_DIR)/$(LOCTYPE)/mpi_params.o
       
       
@@ -823,3 +828,32 @@ chisq_y.o : \
       stellopt_runtime.o \
       stellopt_targets.o \
       stellopt_vars.o
+
+stellopt_mango.o : \
+      stellopt_runtime.o \
+      stellopt_vars.o \
+      $(LIB_DIR)/$(LOCTYPE)/mpi_params.o 
+
+chisq_template.o : \
+      stellopt_targets.o
+
+chisq_jinvariant.o : \
+      stellopt_targets.o 
+
+chisq_coillen.o : \
+      stellopt_targets.o 
+
+chisq_coilsep.o : \
+      stellopt_targets.o 
+
+chisq_coilcrv.o : \
+      stellopt_targets.o 
+
+chisq_coilself.o : \
+      stellopt_targets.o 
+
+chisq_coiltorvar.o : \
+      stellopt_targets.o 
+
+chisq_coilrect.o : \
+      stellopt_targets.o 

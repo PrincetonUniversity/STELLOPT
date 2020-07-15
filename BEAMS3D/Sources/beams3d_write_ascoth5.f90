@@ -377,7 +377,6 @@
                CALL write_var_hdf5(qid_gid,'nrzs',ier,INTVAR=ns_prof1)
                ALLOCATE(rtemp(ns_prof1,1,1))
                rtemp = 0;
-               CALL write_var_hdf5(qid_gid,'nrzs',ier,INTVAR=ns_prof1)
                CALL write_var_hdf5(qid_gid,'rs',ns_prof1,ier,DBLVAR=rtemp(:,1,1))
                CALL write_var_hdf5(qid_gid,'zs',ns_prof1,ier,DBLVAR=rtemp(:,1,1))
                DEALLOCATE(rtemp)
