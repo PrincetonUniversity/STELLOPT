@@ -133,7 +133,6 @@
          CALL tolower(code_str)
          SELECT CASE (TRIM(code_str))
             CASE('parvmec_init')
-               !print *, "<---Entering stellopt_paraexe parevemc_init case handler, myid=",myid
                myseq=myid
                CALL MPI_BCAST(myseq,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
               ! Now make initializing VMEC call which preforms allocations
