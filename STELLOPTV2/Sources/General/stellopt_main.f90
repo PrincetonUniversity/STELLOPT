@@ -74,7 +74,6 @@
          id_string=ADJUSTL(id_string)
          id_string=TRIM(id_string)
          id_tag=id_string
-         !JCS print *, '<-----stellopt_main has id_tag=id_string = ', id_string
          ! Cycle through Arguments
          i=2
          DO WHILE (i <= numargs)
@@ -150,9 +149,7 @@
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'stellopt_main',ierr_mpi)
 !DEC$ ENDIF
       ! Initialize the Calculation
-      !JCS print *,'<----main calling stellopt_init'
       CALL stellopt_init
-      !JCS print *,'<----main: returned from stellopt_init'
 
       ! The following commands will only be completed by master
       IF (myworkid == master .and. lrenorm) THEN
@@ -185,17 +182,14 @@
       END IF
 
       IF (myworkid == master) THEN
-         print *,'<-----stellopt_main master is calling stellopt_optimize'
          CALL stellopt_optimize
          ltst  = .false.
          tstr1 = 'exit'
          tstr2 = ''
-         print *,'<-----stellopt_main master is calling stellopt_paraexe'
          CALL stellopt_paraexe(tstr1,tstr2,ltst)
       END IF
 
       ! All procs (master and workers) will do this part
-      print *,'<-----stellopt_main going into clean up'
       ! Clean up
 !DEC$ IF DEFINED (MPI_OPT)
       CALL MPI_COMM_FREE(MPI_COMM_STEL, ierr_mpi)

@@ -90,7 +90,7 @@
          IF (MOD(ngshar,noptimizers)/=0) THEN ! we need to redefine NOPTIMIZERS
             noptimizers = common_factor(ngshar, noptimizers, 1)
          END IF 
-         ! Destroy MPI_COMM_STELa
+         ! Destroy MPI_COMM_STEL
          CALL MPI_COMM_FREE(MPI_COMM_STEL, ierr_mpi)
          ! Make MPI_COMM_STEL out of just shared comm masters
          key = myid
