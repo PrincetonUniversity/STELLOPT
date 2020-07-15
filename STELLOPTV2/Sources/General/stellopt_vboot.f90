@@ -102,7 +102,6 @@
 
          ! Run VMEC
          iflag = 0
-         print *,'<----stellopt_vboot calling parvmec with proc_string='//trim(proc_string)
          CALL stellopt_paraexe('paravmec_run',proc_string,lscreen_local)
          iflag = ier_paraexe
          IF (iflag .ne.0) THEN
