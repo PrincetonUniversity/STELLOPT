@@ -62,11 +62,8 @@
       !CALL MPI_COMM_FREE(MPI_COMM_MYWORLD, ierr_mpi)
       myid_share = myworkid
 
-      !JCS print *,'<----myid=',myid,'of ', nprocs_total,' total. myworkid=', &
-      !JCS         myworkid, ' of size ', nshar
       ! Count number of shared memory groups
       ngshar = 0
-      ! JCS Isn't there only 1 master, so only one cpu has ngshar  = 1?
       IF (myworkid == master) ngshar = 1
       CALL MPI_ALLREDUCE(MPI_IN_PLACE, ngshar, 1, MPI_INTEGER, MPI_SUM, MPI_COMM_STEL, ierr_mpi)
       IF (myid == master) THEN
@@ -94,7 +91,6 @@
             noptimizers = common_factor(ngshar, noptimizers, 1)
          END IF 
          ! Destroy MPI_COMM_STELa
-         !JCS print *,'<----Freeing mpi_comm_stell in init_mpi'
          CALL MPI_COMM_FREE(MPI_COMM_STEL, ierr_mpi)
          ! Make MPI_COMM_STEL out of just shared comm masters
          key = myid
@@ -158,7 +154,6 @@
          color = MPI_UNDEFINED
          IF (myworkid == master) color=0
          CALL MPI_COMM_SPLIT(MPI_COMM_WORLD, color, key, MPI_COMM_STEL, ierr_mpi)
-         !CALL MPI_COMM_SPLIT(MPI_COMM_MYWORLD, color, key, MPI_COMM_STEL, ierr_mpi)
          IF (myworkid == master)THEN
             CALL MPI_COMM_RANK( MPI_COMM_STEL, myid, ierr_mpi )              ! MPI
             IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_init_mpi4',ierr_mpi)
