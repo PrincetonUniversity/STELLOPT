@@ -16,7 +16,8 @@
   PWD1 = `pwd`
   PRECOMP:= cpp-mp-9 -traditional-cpp -E -P -C -DMACOSX
   COMPILE = gfortran
-  COMPILE_FREE = gfortran -ffree-form -ffree-line-length-none -ffixed-line-length-none
+  COMPILE_FREE = gfortran -ffree-form -ffree-line-length-none \
+                          -ffixed-line-length-none
   LINK    = gfortran $(FLAGS) -o
   LINK_AR = ar -ruvs
   LINK_C  = gcc -shared -Wl,-no_compact_unwind
@@ -24,7 +25,7 @@
 #######################################################################
 #            Define Compiler Flags
 #######################################################################
-  FLAGS_R = -O2 -g -fexternal-blas -fbacktrace -fcheck=all 
+  FLAGS_R = -O2 -g -fexternal-blas -fbacktrace -fcheck=all
   FLAGS_D = -O0 -g -fexternal-blas -fbacktrace -fcheck=all -fbounds-check
   LIBS    = -L/opt/local/lib -lopenblas -lscalapack
 
@@ -33,8 +34,8 @@
 #######################################################################
   LMPI    = T
   MPI_COMPILE = mpif90
-  MPI_COMPILE_FREE = mpif90 -ffree-form \
-                     -ffree-line-length-none -ffixed-line-length-none
+  MPI_COMPILE_FREE = mpif90 -ffree-form -ffree-line-length-none \
+                            -ffixed-line-length-none 
   MPI_COMPILE_C = mpicc 
   MPI_LINK = /opt/local/bin/mpif90
   MPI_LINK = mpif90 -shared  -Wl,-no_compact_unwind

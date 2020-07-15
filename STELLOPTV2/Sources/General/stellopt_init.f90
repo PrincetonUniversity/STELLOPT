@@ -1678,7 +1678,12 @@
          CLOSE(iunit)
       END IF
       
-      
+      ! Save the initial axis shape, in case axis_init_option="input"
+      raxis_cc_initial = raxis_cc
+      zaxis_cc_initial = zaxis_cc
+      raxis_cs_initial = raxis_cs
+      zaxis_cs_initial = zaxis_cs
+
 !DEC$ IF DEFINED (MPI_OPT)
       CALL MPI_BARRIER( MPI_COMM_STEL, ierr_mpi )                   ! MPI
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'stellot_init',ierr_mpi)

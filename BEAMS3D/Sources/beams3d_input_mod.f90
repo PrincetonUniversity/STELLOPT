@@ -149,7 +149,7 @@
       therm_factor = 1.5 ! Factor at which to thermalize particles
 
       ! Distribution Function Defaults
-      nrho_dist = 128
+      nrho_dist = 64
       ntheta_dist=4
       nzeta_dist=4
       nvpara_dist=32
