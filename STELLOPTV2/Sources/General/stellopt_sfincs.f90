@@ -193,7 +193,6 @@
                   stop
                end select
 
-               !JCS print *, "<----200 id_string = "//trim(id_string)//", proc_string = "//trim(proc_string)
                IF (myRank_sfincs == 0) THEN
                   CALL SYSTEM('mkdir -p '//TRIM(directory_string)) ! -p mutes the warning printed if the directory already exists.
 
