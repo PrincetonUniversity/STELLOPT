@@ -191,8 +191,12 @@
             WRITE(iunit,'(ES22.12E3)') c1
             CLOSE(iunit)
             info = FLAG_CLEANUP
+            !SELECT CASE (trim(tolower(equil_type)))
+            !   CASE('vboot')
+            !     equil_type='paravmec'
+            !equil_type = 'paravmec'
             IF (myid == master) info = flag_cleanup_lev
-            print *,'<----optimize is calling stellopt_fcn again'
+            !print *,'<----optimize is calling stellopt_fcn again with lev cleanup'
             call stellopt_fcn(mtargets, nvars, vars, fvec, info, nfev)
          CASE('one_iter_norm')
             ALLOCATE(fvec(mtargets))

@@ -219,7 +219,10 @@
             WRITE(ibootlog,'(a,512(1X,E20.10))')  "AC_profile_fine: ",(AC_profile_fine(ik), ik=2,Ns_fine,10)
             CALL FLUSH(ibootlog)
 
-            IF (exit_after_next_vmec_run) EXIT
+            IF (exit_after_next_vmec_run) THEN
+               print *, '<----Exiting the sfincs vboot do loop'
+               EXIT
+            END IF
 
             CALL stellopt_paraexe('sfincs',proc_string,lscreen_local); iflag = ier_paraexe
 

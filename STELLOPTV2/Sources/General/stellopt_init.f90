@@ -73,13 +73,13 @@
          tstr1 = ''
          tstr2 = ''
          ier_paraexe = 0
-         print *,'<----stellopt_init:  Myworkid ', myworkid, ' is calling stellopt_paraexe in stellopt_init'
+         !write (*,"(a,i5,a)") '<----stellopt_init:  Myworkid ', myworkid, ' is calling stellopt_paraexe in stellopt_init'
          CALL stellopt_paraexe(tstr1,tstr2,ltst)
-         print *,'<----stellopt_init:  Myworkid ', myworkid, ' is returning from stellopt_init'
+         !write (*,"(a,i5,a)") '<----stellopt_init:  Myworkid ', myworkid, ' is returning from stellopt_init'
          RETURN
       END IF
-      print *,'<----stellopt_init:  Myworkid ', myworkid, ' is continuing on. equil_type=', &
-             trim(equil_type), ' and id_string=',id_string
+      !write (*,"(6a)") '<----stellopt_init:  Myworkid ', myworkid, ' is continuing on. equil_type=', &
+      !       trim(equil_type), ' and id_string=',trim(id_string)
 
       ! Read the Equilibrium input
       CALL tolower(equil_type)
@@ -105,6 +105,9 @@
                  STOP
               END IF
               CLOSE(iunit)
+              ! SFINCS namelist is parsed and updated from the original input file
+              !     on each iteration (variable 'id_tag' holds this string)
+              !     See stellopt_vboot.f90 and stellopt_sfincs.f90 
               CALL stellopt_paraexe(tstr1,tstr2,ltst)
          CASE('test')
               id_string = id_string(7:LEN(id_string))
