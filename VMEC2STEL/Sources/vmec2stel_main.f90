@@ -34,7 +34,8 @@
                                 lqas, lneed_booz, lqps, lhelical, lballoon, lneo, &
                                 ldkes, lbootsj, ltxport, lmap_plane, ljdotb0, liota, &
                                 lkink, lvaciota, ljcurv, loutput_harm, lmode, lorbit, &
-                                lac, lam, lai
+                                lac, lam, lai, lphiedge, lpscale, lcurtor, lkappa, &
+                                lwell, lcurvature
       INTEGER                :: m,n,ns,j
       REAL(rprec)            :: bound_min, bound_max, var, var_min, var_max, &
                                 temp, rho_exp,r1t,r2t,z1t, delta, filter_harm, pi2
@@ -72,6 +73,9 @@
       lac = .FALSE.
       lam = .FALSE.
       lai = .FALSE.
+      lphiedge= .FALSE.
+      lpscale = .FALSE.
+      lcurtor = .FALSE.
       lmap_plane = .FALSE.
       lfix_ntor = .FALSE.
       llmdif    = .TRUE.
@@ -94,6 +98,9 @@
       lkink = .FALSE.
       lvaciota = .FALSE.
       lorbit = .FALSE.
+      lkappa = .FALSE.
+      lwell  = .FALSE.
+      lcurvature = .FALSE.
       loutput_harm = .FALSE.
       bound_min = -1.0
       bound_max = 2.0
@@ -131,6 +138,12 @@
                lac = .TRUE.
             CASE ("-ai")
                lai = .TRUE.
+            CASE ("-pscale")
+               lpscale = .TRUE.
+            CASE ("-curtor")
+               lcurtor = .TRUE.
+            CASE ("-phiedge")
+               lphiedge = .TRUE.
             CASE ("-rbc")
                lrbc     = .TRUE.
                lrhomn   = .FALSE.
@@ -226,6 +239,12 @@
                lorbit = .TRUE.
             CASE ("-harm")
                loutput_harm = .TRUE.
+            CASE ("-kappa")
+               lkappa= .TRUE.
+            CASE ("-magwell")
+               lwell= .TRUE.
+            CASE ("-curvature")
+               lcurvature= .TRUE.
             CASE ("-help","-h")
                WRITE(6,'(a,f5.2)') 'VMEC2STEL Version ',VMEC2STEL_VERSION
                WRITE(6,*) ' STELLOPTV2 Input Generation Utility'
@@ -233,6 +252,12 @@
                WRITE(6,*) '   <options>'
                WRITE(6,*) '   -vmec <ext>   VMEC input extension'
                WRITE(6,*) '   -bounds %min %max Min/Max scaling'
+               WRITE(6,*) '   -phiedge          Vary PHIEDGE'
+               WRITE(6,*) '   -pscale           Vary PSCALE'
+               WRITE(6,*) '   -curtor           Vary CURTOR'
+               WRITE(6,*) '   -am               Vary AM Array'
+               WRITE(6,*) '   -ai               Vary AC Array'
+               WRITE(6,*) '   -ac               Vary AI Array'
                WRITE(6,*) '   -filter %ratio    Boundary Harm. Filter'
                WRITE(6,*) '   -rbc              VMEC Boundary Representation'
                WRITE(6,*) '   -rhomn            H/B Boundary Representation (default)'
@@ -246,6 +271,7 @@
                WRITE(6,*) '   -map              N-Dimensional Mapping'
                WRITE(6,*) '   -map_plane        Hyperplane (2D) Mapping'
                WRITE(6,*) '   -basic            Basic Targets'
+               WRITE(6,*) '   -kappa            Plasma Elongation Target'
                WRITE(6,*) '   -qas              QAS Target'
                WRITE(6,*) '   -qps              QPS Target'
                WRITE(6,*) '   -helical          Helical Target'
@@ -256,9 +282,11 @@
                WRITE(6,*) '   -txport           Turbulent Transport Target'
                WRITE(6,*) '   -iota             Iota Profile Target'
                WRITE(6,*) '   -kink             Kink Stability (TERPSICHORE) Target'
-               WRITE(6,*) '   -jdotb0           Minimize <JdotB>'
-               WRITE(6,*) '   -jcurv            Minimize <Jcurv>'
+               WRITE(6,*) '   -jdotb0           <JdotB> Target'
+               WRITE(6,*) '   -jcurv            <Jcurv> Target'
                WRITE(6,*) '   -vaciota          Vacuum Iota (-S12/S11)'
+               WRITE(6,*) '   -magwell          Magnetic Well Target'
+               WRITE(6,*) '   -curvature        Curvature Kurtosis Target'
                WRITE(6,*) '   -orbit            Orbit (BEAMS3D) Target'
                WRITE(6,*) '   -help             This help message'
                STOP
@@ -335,6 +363,7 @@
       WRITE(6,'(A)')'!          OPTIMIZED QUANTITIES'
       WRITE(6,'(A)')'!-----------------------------------------------------------------------'
       IF (lvmec .and. .not. lmap_plane) THEN
+         lfreeb = .false.
          ! Read the input file
          INQUIRE(FILE='input.'//TRIM(id_string),EXIST=lexist)
       	IF (.not.lexist) STOP '!!!!!COULD not file input file!!!!!'
@@ -343,6 +372,8 @@
          CALL read_indata_namelist(iunit,ier)
          IF(ier /= 0) STOP '!!!!!ERROR reading &INDATA namelist!!!!!'
          CLOSE(iunit)
+         ! Handle lfreeb=.true. default
+         IF (ALL(extcur==0) .and. lfreeb) lfreeb = .FALSE.
          ! Fourier Transform rbc zbs
          rreal = 0; zreal=0;
          DO i = 1, nu
@@ -357,42 +388,48 @@
          END DO
          ! Handle the optimizer
          ! Handle PHIEDGE
-         var = phiedge
-         var_name = 'PHIEDGE'
-         IF (var == 0) var = 1
-         var_min = bound_min*var
-         var_max = bound_max*var
-         IF (var_max < var_min) THEN
-            temp = var_max
-            var_max = var_min
-            var_min = temp
+         IF (lphiedge) THEN
+            var = phiedge
+            var_name = 'PHIEDGE'
+            IF (var == 0) var = 1
+            var_min = bound_min*var
+            var_max = bound_max*var
+            IF (var_max < var_min) THEN
+               temp = var_max
+               var_max = var_min
+               var_min = temp
+            END IF
+            WRITE(6,onevar) 'L'//TRIM(var_name)//'_OPT',TRIM(var_name)//'_MIN',var_min,TRIM(var_name)//'_MAX',var_max,'D'//TRIM(var_name)//'_OPT',1.0
          END IF
-         WRITE(6,onevar) 'L'//TRIM(var_name)//'_OPT',TRIM(var_name)//'_MIN',var_min,TRIM(var_name)//'_MAX',var_max,'D'//TRIM(var_name)//'_OPT',1.0
          ! Handle CURTOR
-         var = curtor
-         var_name = 'CURTOR'
-         IF (var == 0) var = 1
-         var_min = bound_min*var
-         var_max = bound_max*var
-         IF (var_max < var_min) THEN
-            temp = var_max
-            var_max = var_min
-            var_min = temp
+         IF (lcurtor) THEN
+            var = curtor
+            var_name = 'CURTOR'
+            IF (var == 0) var = 1
+            var_min = bound_min*var
+            var_max = bound_max*var
+            IF (var_max < var_min) THEN
+               temp = var_max
+               var_max = var_min
+               var_min = temp
+            END IF
+            WRITE(6,onevar) 'L'//TRIM(var_name)//'_OPT',TRIM(var_name)//'_MIN',var_min,TRIM(var_name)//'_MAX',var_max,'D'//TRIM(var_name)//'_OPT',1.0
          END IF
-         WRITE(6,onevar) 'L'//TRIM(var_name)//'_OPT',TRIM(var_name)//'_MIN',var_min,TRIM(var_name)//'_MAX',var_max,'D'//TRIM(var_name)//'_OPT',1.0
          ! Handle PSCALE
-         var = pres_scale
-         var_name = 'PSCALE'
-         IF (var == 0) var = 1
-         var_min = bound_min*var
-         var_max = bound_max*var
-         IF (var_max < var_min) THEN
-            temp = var_max
-            var_max = var_min
-            var_min = temp
+         IF (lpscale) THEN
+            var = pres_scale
+            var_name = 'PSCALE'
+            IF (var == 0) var = 1
+            var_min = bound_min*var
+            var_max = bound_max*var
+            IF (var_max < var_min) THEN
+               temp = var_max
+               var_max = var_min
+               var_min = temp
+            END IF
+            IF (var_min < 0) var_min = 0  ! Positive Pressure
+            WRITE(6,onevar) 'L'//TRIM(var_name)//'_OPT',TRIM(var_name)//'_MIN',var_min,TRIM(var_name)//'_MAX',var_max,'D'//TRIM(var_name)//'_OPT',1.0
          END IF
-         IF (var_min < 0) var_min = 0  ! Positive Pressure
-         WRITE(6,onevar) 'L'//TRIM(var_name)//'_OPT',TRIM(var_name)//'_MIN',var_min,TRIM(var_name)//'_MAX',var_max,'D'//TRIM(var_name)//'_OPT',1.0
          IF (lfreeb) THEN
             ! Handle EXTCUR
             var_name = 'EXTCUR'
@@ -848,6 +885,8 @@
          WRITE(6,'(2X,A,F6.3,2X,A,ES10.1)') 'TARGET_Z0      = ',zaxis_cs(0),'SIGMA_Z0 = ',0.01*raxis_cs(0)
          WRITE(6,'(2X,A,F6.3,2X,A,ES10.1)') 'TARGET_VOLUME  = ',1.0,'SIGMA_VOLUME = ',0.01
          WRITE(6,'(2X,A,F6.3,2X,A,ES10.1)') 'TARGET_WP      = ',1.0,'SIGMA_WP = ',0.01
+      END IF
+      IF (lkappa) THEN
          WRITE(6,'(A)')'!-----------------------------------------------------------------------'
          WRITE(6,'(A)')'!          PLASMA ELONGATION (kappa)'
          WRITE(6,'(A)')'!             PHI is toroidal angle [0,2pi] over whole device'
@@ -981,6 +1020,20 @@
          WRITE(6,'(A)')'!       Flux surface averaged toroidal current density (<JCURV>)'
          WRITE(6,'(A)')'!------------------------------------------------------------------------'
          WRITE(6,'(2X,A,I3.3,A,I3.3,A,I3.3,A,I3.3,A)') 'TARGET_JCURV(1:',ns,') = ',ns,'*0.0  SIGMA_JCURV(1:',ns,') = ',ns,'*1.0'
+      END IF
+      IF (lwell) THEN
+         WRITE(6,'(A)')'!------------------------------------------------------------------------'
+         WRITE(6,'(A)')'!       Magnetic Well'
+         WRITE(6,'(A)')'!       Stable:    +'
+         WRITE(6,'(A)')'!       Un-stable: -'
+         WRITE(6,'(A)')'!------------------------------------------------------------------------'
+         WRITE(6,'(2X,A,I3.3,A,I3.3,A,I3.3,A,I3.3,A)') 'TARGET_MAGWELL(1:',ns,') = ',ns,'*1.0  SIGMA_MAGWELL(1:',ns,') = ',ns,'*1.0'
+      END IF
+      IF (lcurvature) THEN
+         WRITE(6,'(A)')'!------------------------------------------------------------------------'
+         WRITE(6,'(A)')'!       Curvature Kurtosis at Boundary'
+         WRITE(6,'(A)')'!------------------------------------------------------------------------'
+         WRITE(6,'(2X,A,F6.3,2X,A,ES10.1)') 'TARGET_CURVATURE = ',0.0,'SIGMA_CURVATURE = ',1.00
       END IF
       ! END OPTIMUM Namelist
       WRITE(6,'(A)') '/'
