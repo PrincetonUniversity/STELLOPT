@@ -310,11 +310,12 @@
          IF (lvmec) WRITE(6,'(2x,A)') 'EQUIL_TYPE = ''VMEC2000'''
          WRITE(6,'(2x,A)')            'OPT_TYPE   = ''LMDIF'''
          WRITE(6,'(2X,A,ES10.2)')     'FTOL       = ',1.0E-6
-         WRITE(6,'(2X,A,ES10.2)')     'XTOL       = ',1.0E-6
+         WRITE(6,'(2X,A,ES10.2)')     'XTOL       = ',1.0E-30
          WRITE(6,'(2X,A,ES10.2)')     'GTOL       = ',1.0E-30
          WRITE(6,'(2X,A,F6.1)')       'FACTOR     = ',10.0
          WRITE(6,'(2X,A,ES10.2)')     'EPSFCN     = ',1.0E-6
          WRITE(6,'(2X,A,I1.1)')       'MODE       = ',1
+         WRITE(6,'(2X,A,I1.1)')       'NOPTIMIZERS =',16
          WRITE(6,'(2X,A)')            'LKEEP_MINS = T'
       ELSEIF (lgade) THEN
          WRITE(6,'(A)')'!-----------------------------------------------------------------------'
@@ -936,7 +937,7 @@
          IF (lqas) WRITE(6,'(2X,A)') 'HELICITY = (1,0)'
          IF (lqps) WRITE(6,'(2X,A)') 'HELICITY = (0,1)'
          IF (lhelical) WRITE(6,'(2X,A)') 'HELICITY = (2,1)'
-         WRITE(6,'(2X,A,I3.3,A,I3.3,A,I3.3,A,I3.3,A)') 'TARGET_HELICITY(1:',ns,') = ',ns,'*0.0  SIGMA_HELICITY(1:',ns,') = ',ns,'*1.0'
+         WRITE(6,'(2X,A,I3.3,A,I3.3,A,I3.3,A,I3.3,A)') 'TARGET_HELICITY(1:',ns,') = ',ns,'*0.0  SIGMA_HELICITY(1:',ns,') = ',ns,'*-1.0'
       END IF
       IF (lballoon) THEN
          WRITE(6,'(A)')'!------------------------------------------------------------------------'
