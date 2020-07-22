@@ -30,9 +30,9 @@
 !
 !-----------------------------------------------------------------------
       INTEGER :: i,j, ier
-      INTEGER, PARAMETER :: ntheta_pts = 128
+      INTEGER, PARAMETER :: ntheta_pts = 64
       INTEGER, PARAMETER :: nzeta_pts = 4
-      REAL(rprec) :: s,u,v
+      REAL(rprec) :: s, u, v, vmax
       REAL(rprec), DIMENSION(nzeta_pts) :: kappa_avg, kappa_max, kurtosis,&
                                            kappa_sig, kappa_mu
       REAL(rprec) :: kappa(ntheta_pts,nzeta_pts)
@@ -41,14 +41,15 @@
 !----------------------------------------------------------------------
       IF (iflag < 0) RETURN
       IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'CURVATURE_KERT ',nzeta_pts,7
-      IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA  VAL  KURTOSIS  KURTOSIS_AVG  KURTOSIS_MAX  PHI'
+      IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA  VAL  KURTOSIS  KAPPA_AVG  KAPPA_MAX  PHI'
       IF (niter >= 0) THEN
          s=1.0
          kappa = 0
+         vmax = pi2/2
          DO i = 1, ntheta_pts
             DO j = 1, nzeta_pts
                u = pi2*(i-1)/ntheta_pts
-               v = pi2*(j-1)/nzeta_pts
+               v = vmax*(j-1)/nzeta_pts
                CALL get_equil_kappa(s,u,v,kappa(i,j),ier)
                !PRINT *,u,v,kappa(i,j),ier
             END DO
@@ -67,7 +68,7 @@
          kurtosis = kappa_mu/(kappa_sig*kappa_sig)
          DO j = 1, nzeta_pts
             mtargets = mtargets + 1
-            v = pi2*(j-1)/nzeta_pts
+            v = (vmax/nfp)*(j-1)/nzeta_pts
             targets(mtargets) = target
             sigmas(mtargets)  = sigma
             vals(mtargets)    = 0.44 + 0.5*TANH((kurtosis(j) -20)/15)
