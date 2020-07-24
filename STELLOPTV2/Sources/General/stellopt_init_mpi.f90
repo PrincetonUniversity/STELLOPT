@@ -81,6 +81,18 @@
          IF (myid == master) WRITE(iunit,"(A)") "Lowering noptimizers to nprocs_total"
       END IF
 
+      ! if using one_iter, override noptimizers to 1
+      CALL tolower(opt_type)
+      IF (trim(opt_type) == 'one_iter' .OR. trim(opt_type) == 'single' &
+          .OR. trim(opt_type) == 'eval' .OR. trim(opt_type) == 'single_iter' & 
+          .OR. trim(opt_type) == 'one_iter_norm') then
+         noptimizers = 1
+         IF (myid == master) THEN
+            WRITE(6,         *), 'Reset noptimizers=1 for single run.'
+            WRITE(iunit, '(A)'), 'Reset noptimizers=1 for single run.'
+         END IF
+      END IF
+
       ! Logic here
       ! NOPTIMIZERS <= NSHARED_GROUPS (we spread over groups nodes)
       ! NOPTIMIZERS > NSHARED_GROUPS (subdivide groups)

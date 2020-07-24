@@ -105,8 +105,9 @@
                   call GETCARG(i,args(i),numargs)
                   xvec_file = args(i)
                case ("-help","-h") ! Output Help message
-                  write(6,*)' STELLOPT Optimizer'
-                  write(6,*)' Usage: xstellopt input_file <options>'
+                  write(6,*)' STELLOPT Optimizer '
+                  WRITE(6,'(a,f5.2)') '  Version: ',STELLOPT_VERSION
+                  write(6,*)' Usage: xstelloptv2 input_file <options>'
                   write(6,*)'    <options>'
                   write(6,*)'     -restart          Restart a run from reset file'
                   write(6,*)'     -renorm           Renormalize sigmas'
@@ -117,8 +118,7 @@
                   write(6,*)'     -xvec_file file   X_VEC filename (OPT_TYPE: EVAL_XVEC)'
                   write(6,*)'     -help:            Output help message'
 !DEC$ IF DEFINED (MPI_OPT)
-                  CALL MPI_FINALIZE(ierr_mpi)   
-                  IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_FINE_ERR,'stellot_main',ierr_mpi)
+                  call MPI_ABORT( MPI_COMM_STEL, master, ierr_mpi )
 !DEC$ ENDIF
             end select
             i = i + 1
