@@ -59,8 +59,8 @@
          DO j = 1, nzeta_pts
             DO i = 1, ntheta_pts
               kappa_max(j) = MAX(kappa_max(j),kappa(i,j))
-              kappa_sig(j) = kappa_sig(j) + (kappa(i,j)-kappa_avg(j)*kappa_avg(j)) !/ntheta_pts
-              kappa_mu(j) = kappa_mu(j) + (kappa(i,j)-kappa_avg(j)*kappa_avg(j)*kappa_avg(j)*kappa_avg(j)) !/ntheta_pts
+              kappa_sig(j) = kappa_sig(j) + (kappa(i,j)-kappa_avg(j))**2 !/ntheta_pts
+              kappa_mu(j) = kappa_mu(j) + (kappa(i,j)-kappa_avg(j))**4 !/ntheta_pts
             END DO
          END DO
          kappa_sig = kappa_sig / ntheta_pts
