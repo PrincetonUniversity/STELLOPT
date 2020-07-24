@@ -370,7 +370,7 @@
          dist5d_prof = 0; !ipower_prof=0; epower_prof=0; ndot_prof=0; j_prof = 0
       END IF
       h2_prof = ns_prof2*invpi2
-      h3_prof = ns_prof3/phimax
+      h3_prof = ns_prof3*invpi2
 
       ! In all cases create an end_state array
       ALLOCATE(end_state(nparticles))
