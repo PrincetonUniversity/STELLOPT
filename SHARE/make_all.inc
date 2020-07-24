@@ -101,6 +101,7 @@ else
   LCOILOPT = F
   LSFINCS = F
   LREGCOIL= F
+  LMANGO = F
   LTERPSICHORE = F
   LTRAVIS = F
 endif
@@ -163,6 +164,20 @@ else
   SFINCS_DIR =
   LIB_SFINCS =
 endif
+ifeq ($(LMANGO),T)
+  # This next line will define the variables MANGO_C_COMPILE_FLAGS, MANGO_F_COMPILE_FLAGS, MANGO_C_LINK_FLAGS, and MANGO_F_LINK_FLAGS
+  include $(MANGO_DIR)/lib/mangoMakeVariables
+  # Add any flags defined by the individual stellopt make_*.inc files:
+  MANGO_INC += $(MANGO_F_COMPILE_FLAGS)
+  MANGO_LIB += $(MANGO_F_LINK_FLAGS)
+  MOD1_PATH += $(MANGO_INC)
+  PRECOMP += -DMANGO
+  MOD_PATH += $(MANGO_INC)
+else
+  MANGO_LIB =
+  MANGO_DIR =
+  LIB_MANGO =
+endif
 ifeq ($(LTERPSICHORE),T)
   MOD1_PATH += $(TERPSICHORE_INC)
   PRECOMP += -DTERPSICHORE
@@ -181,7 +196,7 @@ else
 endif
 
 # Handle other codes
-LIB_LINK += $(COILOPT_LIB) $(GENE_LIB) $(REGCOIL_LIB) $(SFINCS_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB)
+LIB_LINK += $(COILOPT_LIB) $(GENE_LIB) $(REGCOIL_LIB) $(SFINCS_LIB) $(MANGO_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB)
 
 # Add libraries to LIB_LINK
 # LIB_LINK+= $(MYHOME)/libstell.a $(LIBS)

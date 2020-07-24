@@ -287,7 +287,6 @@
       IF (mtargets .ne. m) THEN; iflag=-2; RETURN; END IF
       
       ! Calculate fvec
-      !PRINT *,m,mtargets,fvec
       fvec(1:m) = (vals(1:m)-targets(1:m))/ABS(sigmas(1:m))
       RETURN
 !----------------------------------------------------------------------
