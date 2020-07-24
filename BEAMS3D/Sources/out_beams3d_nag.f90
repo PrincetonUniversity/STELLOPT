@@ -94,16 +94,14 @@ SUBROUTINE out_beams3d_nag(t, q)
                        MODB4D(1,1,1,1),nr,nphi,nz)
        B_lines(mytdex, myline) = fval(1)
        ! Calc dist func bins
+       x0    = MOD(q(2),pi2)
+       IF (x0 < 0) x0 = x0 + pi2
        vperp = SQRT(2*moment*fval(1)/mymass)
-       d1 = MAX(MIN(CEILING(SQRT(y0)*ns_prof1                    ), ns_prof1), 1) ! Rho Bin
-       !d2 = MAX(MIN(CEILING( MOD(z0,pi2)/pi2*ns_prof2            ), ns_prof2), 1) ! U Bin
-       d2 = MAX(MIN(CEILING( z0*h2_prof            ), ns_prof2), 1) ! U Bin
-       !d3 = MAX(MIN(CEILING( MOD(x0,pi2)/phimax*ns_prof3         ), ns_prof3), 1) ! V Bin
-       d3 = MAX(MIN(CEILING( x0*h3_prof         ), ns_prof3), 1) ! V Bin
-       !d4 = MAX(MIN(1+ns_prof4/2+FLOOR(0.5*ns_prof4*q(4)/partvmax), ns_prof4), 1) ! vll
+       d1 = MAX(MIN(CEILING(SQRT(y0)*ns_prof1     ), ns_prof1), 1) ! Rho Bin
+       d2 = MAX(MIN(CEILING( z0*h2_prof           ), ns_prof2), 1) ! U Bin
+       d3 = MAX(MIN(CEILING( x0*h3_prof           ), ns_prof3), 1) ! V Bin
        d4 = MAX(MIN(1+nsh_prof4+FLOOR(h4_prof*q(4)), ns_prof4), 1) ! vll
-       !d5 = MAX(MIN(CEILING(ns_prof5*vperp/partvmax              ), ns_prof5), 1) ! Vperp
-       d5 = MAX(MIN(CEILING(vperp*h5_prof             ), ns_prof5), 1) ! Vperp
+       d5 = MAX(MIN(CEILING(vperp*h5_prof         ), ns_prof5), 1) ! Vperp
        xw = weight(myline)*dt
        j_prof(mybeam,d1)      =      j_prof(mybeam,d1) + mycharge*q(4)*xw
        !CALL MPI_WIN_LOCK(MPI_LOCK_EXCLUSIVE,myworkid,0,win_dist5d,ier)
