@@ -90,6 +90,10 @@
                sigma_volume = sigma_volume/temp
             CASE(jtarget_separatrix)
                WHERE(sigma_separatrix<bigno) sigma_separatrix = sigma_separatrix/temp
+            CASE(jtarget_press)
+               WHERE(sigma_press<bigno) sigma_press = sigma_press/temp
+            CASE(jtarget_pressprime)
+               WHERE(sigma_pressprime<bigno) sigma_pressprime = sigma_pressprime/temp
             CASE(jtarget_ne)
                WHERE(sigma_ne<bigno_ne) sigma_ne = sigma_ne/temp
             CASE(jtarget_te)

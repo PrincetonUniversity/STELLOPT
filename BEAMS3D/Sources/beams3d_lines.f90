@@ -22,18 +22,21 @@
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       LOGICAL  ::  ltherm
-      LOGICAL, ALLOCATABLE :: lost_lines(:)
-      INTEGER  :: ns_prof = 50
+      INTEGER  ::  ns_prof1, ns_prof2, ns_prof3, ns_prof4, ns_prof5, nsh_prof4
       INTEGER  :: nparticles, nsteps, myline, mybeam, mytdex, myend, mystart_save,myend_save
+      INTEGER  :: win_epower, win_ipower, win_ndot, win_dense, win_jprof, win_dist5d
       REAL(rprec) :: xlast,ylast,zlast ! for storing position
       REAL(rprec) :: moment, mycharge, myZ, mymass, myv_neut(3), &
                      B_temp(4), rand_prob, cum_prob, tau, next_t, &
-                     dt_out, partvmax
+                     dt_out, partvmax, fact_crit, fact_pa, fact_vsound, &
+                     partpmax, h2_prof, h3_prof, h4_prof, h5_prof
       LOGICAL, ALLOCATABLE     :: neut_lines(:,:)
-      REAL(rprec), ALLOCATABLE :: shine_through(:)
-      REAL(rprec), ALLOCATABLE :: ndot_prof(:,:),power_prof(:,:),epower_prof(:,:),ipower_prof(:,:),j_prof(:,:)
+      INTEGER, ALLOCATABLE     :: end_state(:)
+      REAL(rprec), ALLOCATABLE :: shine_through(:), shine_port(:)
+      REAL(rprec), DIMENSION(:,:), POINTER :: ndot_prof(:,:),epower_prof(:,:), &
+                                  ipower_prof(:,:),j_prof(:,:), dense_prof(:,:)
+      REAL(rprec), DIMENSION(:,:,:,:,:,:), POINTER :: dist5d_prof
       REAL(rprec), ALLOCATABLE :: R_lines(:,:),Z_lines(:,:),PHI_lines(:,:),vll_lines(:,:),moment_lines(:,:),&
-                                  S_lines(:,:),U_lines(:,:),PI_lines(:,:), PE_lines(:,:),&
-                                  B_lines(:,:)
+                                  S_lines(:,:),U_lines(:,:),B_lines(:,:)
 
       END MODULE beams3d_lines

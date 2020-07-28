@@ -58,7 +58,7 @@
       character(len=buffer_length) :: proc_assignments_string, base_directory_string, directory_string, file_line, file_line_lower, file_line_lower2
       character(len=buffer_length) :: working_directory
       integer :: tag, file_status, unit_in, unit_out
-      integer :: mpi_status(MPI_STATUS_SIZE)
+      integer :: mpi_status_local(MPI_STATUS_SIZE)
       LOGICAL :: lfile_check
       LOGICAL :: added_scanType
       REAL(rprec) :: sfincs_ne, sfincs_ni, sfincs_Te, sfincs_Ti, sfincs_d_ne_d_s, sfincs_d_ni_d_s, sfincs_d_Te_d_s, sfincs_d_Ti_d_s, delta_s
@@ -131,7 +131,7 @@
                IF (lscreen) WRITE(*,"(a)") TRIM(proc_assignments_string)
                DO i = 1,numProcs_myWorld - 1
                   tag = i
-                  CALL MPI_RECV(proc_assignments_string,buffer_length,MPI_CHAR,i,tag,MPI_COMM_MYWORLD,mpi_status,ierr_mpi)
+                  CALL MPI_RECV(proc_assignments_string,buffer_length,MPI_CHAR,i,tag,MPI_COMM_MYWORLD,mpi_status_local,ierr_mpi)
                   IF (lscreen) WRITE(*,"(a)") TRIM(proc_assignments_string)
                END DO
             ELSE

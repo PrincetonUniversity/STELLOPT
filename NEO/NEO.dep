@@ -1,0 +1,304 @@
+calccur.o : \
+     neo_precision.o \
+     neo_exchange.o \
+     neo_output.o \
+     neo_units.o \
+     partpa_cur.o
+     
+     
+eva2d.o : \
+     neo_precision.o
+     
+
+eva2d_fd.o : \
+     neo_precision.o
+     
+     
+eva2d_sd.o : \
+     neo_precision.o
+     
+     
+flint_bo.o : \
+     neo_precision.o \
+     neo_units.o \
+     neo_exchange.o \
+     neo_output.o \
+     partpa_bo.o \
+     neo_rk4dbo.o \
+     ../../LIBSTELL/$(LOCTYPE)/safe_open_mod.o
+     
+     
+flint_cur.o : \
+     neo_precision.o \
+     neo_units.o \
+     neo_exchange.o \
+     neo_output.o \
+     partpa_cur.o \
+     neo_rk4dcur.o
+     
+     
+neo_bderiv.o : \
+     neo_precision.o \
+     neo_input.o \
+     neo_work.o \
+     neo_units.o \
+     neo_parameters.o \
+     neo_control.o \
+     neo_spline.o
+     
+     
+neo_control.o : \
+     neo_precision.o
+     
+     
+neo_dealloc.o : \
+     neo_precision.o \
+     neo_input.o \
+     neo_work.o \
+     neo_exchange.o \
+     neo_units.o \
+     neo_parameters.o \
+     neo_control.o \
+     neo_spline.o
+     
+     
+neo_eval.o : \
+     neo_precision.o \
+     neo_input.o \
+     neo_work.o \
+     neo_exchange.o \
+     neo_units.o \
+     neo_parameters.o \
+     neo_control.o \
+     neo_spline.o
+     
+     
+neo_exchange.o : \
+     neo_precision.o
+     
+     
+neo.o : \
+     neo_precision.o \
+     neo_units.o \
+     neo_parameters.o \
+     neo_control.o \
+     neo_input.o \
+     neo_work.o \
+     neo_exchange.o \
+     neo_output.o \
+     sizey_bo.o \
+     ../../LIBSTELL/$(LOCTYPE)/safe_open_mod.o
+     
+     
+neo_fourier.o : \
+     neo_precision.o \
+     neo_input.o \
+     neo_work.o \
+     neo_exchange.o \
+     neo_parameters.o \
+     neo_control.o \
+     neo_units.o 
+     
+     
+neo_init.o : \
+     neo_precision.o \
+     neo_input.o \
+     neo_work.o \
+     neo_exchange.o \
+     neo_units.o \
+     neo_parameters.o \
+     neo_control.o \
+     neo_spline.o
+     
+     
+neo_init_s.o : \
+     neo_precision.o \
+     neo_input.o \
+     neo_work.o \
+     neo_exchange.o \
+     neo_units.o \
+     neo_parameters.o \
+     neo_control.o \
+     neo_spline.o
+     
+     
+neo_input.o : \
+     neo_precision.o
+     
+     
+neo_output.o : \
+     neo_precision.o
+     
+     
+neo_parameters.o : \
+     neo_precision.o \
+     nrtype.o
+     
+     
+neo_precision.o : \
+     nrtype.o
+     
+     
+neo_prep.o : \
+     neo_input.o \
+     neo_work.o \
+     neo_exchange.o \
+     neo_parameters.o \
+     neo_control.o \
+     neo_units.o \
+     neo_spline.o
+     
+     
+neo_read_control.o : \
+     neo_units.o \
+     neo_control.o \
+     neo_input.o \
+     neo_exchange.o \
+     sizey_bo.o \
+     sizey_cur.o \
+     ../../LIBSTELL/$(LOCTYPE)/safe_open_mod.o
+     
+     
+neo_read.o : \
+     neo_input.o \
+     neo_units.o \
+     neo_control.o \
+     neo_work.o \
+     neo_exchange.o
+     
+     
+neo_rhsbo.o : \
+     neo_precision.o
+     
+     
+neo_rhscur.o : \
+     neo_precision.o
+     
+     
+neo_rk4dbo.o : \
+     neo_precision.o
+     
+     
+neo_rk4dcur.o : \
+     neo_precision.o
+     
+     
+neo_spline2d.o : \
+     neo_precision.o \
+     neo_input.o \
+     neo_work.o \
+     neo_exchange.o \
+     neo_units.o \
+     neo_parameters.o \
+     neo_control.o \
+     neo_spline.o
+     
+     
+neo_spline.o : \
+     neo_precision.o
+     
+     
+neo_spline_test.o : \
+     neo_precision.o \
+     neo_input.o \
+     neo_work.o \
+     neo_units.o \
+     neo_parameters.o \
+     neo_control.o
+     
+     
+neo_units.o : \
+     neo_precision.o
+     
+     
+neo_work.o : \
+     neo_precision.o
+     
+     
+neo_zeros2d.o : \
+     neo_precision.o
+     
+     
+nrtype.o : \
+
+
+partpa_bo.o : \
+     neo_precision.o \
+     sizey_bo.o
+     
+     
+partpa_cur.o : \
+     neo_precision.o \
+     sizey_cur.o
+     
+     
+poi2d.o : \
+     neo_precision.o
+
+
+read_booz_in.o : \
+     neo_input.o \
+     neo_units.o \
+     neo_control.o \
+     neo_exchange.o \
+     ../../LIBSTELL/$(LOCTYPE)/read_boozer_mod.o 
+     
+     
+rhs_bo1.o : \
+     neo_precision.o \
+     partpa_bo.o \
+     neo_exchange.o
+     
+     
+rhs_cur1.o : \
+     neo_precision.o \
+     partpa_cur.o \
+     neo_exchange.o
+     
+rk4d_bo1.o : \
+     neo_precision.o \
+     sizey_bo.o \
+     neo_rhsbo.o
+     
+     
+rk4d_cur1.o : \
+     neo_precision.o \
+     sizey_cur.o \
+     neo_rhscur.o
+     
+     
+sizey_bo.o : \
+     neo_precision.o
+     
+     
+sizey_cur.o : \
+     neo_precision.o
+     
+     
+spfper.o : \
+     neo_precision.o
+
+
+spl2d.o : \
+     neo_precision.o
+
+
+splper.o : \
+     neo_precision.o
+
+
+splreg.o : \
+     neo_precision.o
+     
+neo_input_mod.o : \
+     neo_units.o \
+     neo_control.o \
+     neo_input.o \
+     neo_exchange.o \
+     sizey_bo.o \
+     sizey_cur.o \
+     ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+     ../../LIBSTELL/$(LOCTYPE)/vparams.o \
+     ../../LIBSTELL/$(LOCTYPE)/safe_open_mod.o
+     
+     

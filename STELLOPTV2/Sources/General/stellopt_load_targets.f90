@@ -153,6 +153,9 @@
       ! PRESSURE PROFILE
       IF (ANY(sigma_press < bigno)) &
          CALL chisq_press(target_press, sigma_press, ncnt,iflag)
+      ! PRESSURE GRADIENT PROFILE (dp/ds)
+      IF (ANY(sigma_pressprime < bigno)) &
+         CALL chisq_pressprime(target_pressprime, sigma_pressprime, ncnt,iflag)
       ! ELECTRON DENSITY
       IF (ANY(sigma_ne < bigno_ne)) &
          CALL chisq_ne(target_ne, sigma_ne, ncnt,iflag)
@@ -193,13 +196,24 @@
       !------------- COIL GEOMETRY TARGETS ---------------------
       ! Coil lengths
       IF (ANY(sigma_coillen < bigno)) &
-         CALL chisq_coillen(target_coillen, sigma_coillen, ncnt, iflag)
+         CALL chisq_coillen(target_coillen, sigma_coillen, &
+                            target_coilsegvar, sigma_coilsegvar, &
+                            ncnt, iflag)
+      ! Coil-coil separation
       IF (sigma_coilsep < bigno) &
          CALL chisq_coilsep(target_coilsep, sigma_coilsep, ncnt, iflag)
+      ! Max coil curvature
       IF (ANY(sigma_coilcrv < bigno)) &
          CALL chisq_coilcrv(target_coilcrv, sigma_coilcrv, ncnt, iflag)
+      ! Coil self-intersection
       IF (ANY(sigma_coilself < bigno)) &
          CALL chisq_coilself(target_coilself, sigma_coilself, ncnt, iflag)
+      ! Coil toroidal varation (non-planarity)
+      IF (ANY(sigma_coiltorvar < bigno)) &
+         CALL chisq_coiltorvar(target_coiltorvar, sigma_coiltorvar, ncnt, iflag)
+      ! Coil excursion outside prescribed box
+      IF (ANY(sigma_coilrect < bigno)) &
+           CALL chisq_coilrect(target_coilrect, sigma_coilrect, ncnt, iflag)
 
       !------------- EXTERNAL TARGETS --------------------------
       !  This section of the code relys upon external libraries
@@ -337,7 +351,6 @@
       IF (mtargets .ne. m) THEN; iflag=-2; RETURN; END IF
       
       ! Calculate fvec
-      !PRINT *,m,mtargets,fvec
       fvec(1:m) = (vals(1:m)-targets(1:m))/ABS(sigmas(1:m))
       RETURN
 !----------------------------------------------------------------------

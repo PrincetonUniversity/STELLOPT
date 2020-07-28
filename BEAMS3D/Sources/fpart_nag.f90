@@ -19,8 +19,6 @@
       USE beams3d_grid
       USE beams3d_runtime, ONLY: lneut
       USE beams3d_lines, ONLY: moment, mycharge, mymass, myv_neut, B_temp
-      USE EZspline_obj
-      USE EZspline
       USE mpi_params, ONLY: myworkid
 !-----------------------------------------------------------------------
 !     Input Variables
@@ -50,13 +48,14 @@
 !-----------------------------------------------------------------------
       INTEGER :: ier
       REAL(rprec) :: r_temp, phi_temp, z_temp, modb_temp, br_temp, bz_temp, bphi_temp,&
-                      vll, A, B, rinv, binv, cinv, pot_temp
-      REAL(rprec) :: gradb(3),gradbr(3),gradbz(3),gradbphi(3),Efield(3)
+                      vll, A, B, rinv, binv, cinv
+      REAL(rprec) :: gradb(3),gradbr(3),gradbz(3),gradbphi(3),Efield(3),normb(3),bdgB(3),bxbdgB(3),ExB(3)
       ! For splines
       INTEGER :: i,j,k
       REAL*8 :: xparam, yparam, zparam, hx, hy, hz, hxi, hyi, hzi
-      REAL*8 :: fval(4)
+      REAL*8 :: fval(1,4), fvalE(1,3)
       INTEGER, parameter :: ict(8)=(/1,1,1,1,0,0,0,0/)
+      INTEGER, parameter :: ictE(8)=(/0,1,1,1,0,0,0,0/)
       REAL*8, PARAMETER :: one = 1
 !-----------------------------------------------------------------------
 !     Begin Subroutine
@@ -100,45 +99,62 @@
          CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                          hx,hxi,hy,hyi,hz,hzi,&
                          BR4D(1,1,1,1),nr,nphi,nz)
-         br_temp = fval(1); gradbr(1:3) = fval(2:4)
+         br_temp = fval(1,1); gradbr(1:3) = fval(1,2:4)
          CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                          hx,hxi,hy,hyi,hz,hzi,&
                          BPHI4D(1,1,1,1),nr,nphi,nz)
-         bphi_temp = fval(1); gradbphi(1:3) = fval(2:4)
+         bphi_temp = fval(1,1); gradbphi(1:3) = fval(1,2:4)
          CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                          hx,hxi,hy,hyi,hz,hzi,&
                          BZ4D(1,1,1,1),nr,nphi,nz)
-         bz_temp = fval(1); gradbz(1:3) = fval(2:4)
+         bz_temp = fval(1,1); gradbz(1:3) = fval(1,2:4)
          CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                          hx,hxi,hy,hyi,hz,hzi,&
                          MODB4D(1,1,1,1),nr,nphi,nz)
-         modb_temp = fval(1); gradb(1:3) = fval(2:4)
-         CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+         modb_temp = fval(1,1); gradb(1:3) = fval(1,2:4)
+         CALL R8HERM3FCN(ictE,1,1,fvalE,i,j,k,xparam,yparam,zparam,&
                          hx,hxi,hy,hyi,hz,hzi,&
                          POT4D(1,1,1,1),nr,nphi,nz)
-         pot_temp = fval(1); Efield(1:3) = fval(2:4)
+         Efield(1:3) =-fvalE(1,1:3)
+         ! Fix gradients
+         gradb(2)    = gradb(2)*rinv
+         gradbr(2)   = gradbr(2)*rinv
+         gradbphi(2) = gradbphi(2)*rinv
+         gradbz(2)   = gradbz(2)*rinv
+         Efield(2)   = Efield(2)*rinv
          ! Calculated some helpers
          binv    = one/modb_temp
          cinv    = one/mycharge
-         A       = moment*binv*binv*cinv
-         B       = mymass*vll*vll*binv*binv*binv*binv*cinv
-         qdot(1) = A*( bphi_temp*gradb(3)-bz_temp*rinv*gradb(2) )  -  (bphi_temp*Efield(3)-bz_temp*rinv*Efield(2))*binv*binv + &
-                   B*( bphi_temp*br_temp*gradbz(1) + bphi_temp*bphi_temp*rinv*gradbz(2) + bphi_temp*bz_temp*gradbz(3) &
-                       - bz_temp*br_temp*gradbphi(1) - bz_temp*bphi_temp*rinv*gradbphi(2) - bz_temp*bz_temp*gradbphi(3) &
-                       - bz_temp*bphi_temp*br_temp*rinv) + vll*br_temp*binv
-             
-         qdot(2) = rinv*A*( bz_temp*gradb(1)-br_temp*gradb(3) )    - rinv*(bz_temp*Efield(1)-br_temp*Efield(3))*binv*binv +  &
-                   rinv*B*( bz_temp*br_temp*gradbr(1) + bz_temp*bphi_temp*rinv*gradbr(2) + bz_temp*bz_temp*gradbr(3) &
-                        - bz_temp*bphi_temp*bphi_temp*rinv - br_temp*br_temp*gradbz(1) - br_temp*bphi_temp*rinv*gradbz(2) &
-                        - br_temp*bz_temp*gradbz(3) ) + vll*bphi_temp*binv*rinv
+         ! Normalization
+         normb(1) = br_temp*binv
+         normb(2) = bphi_temp*binv
+         normb(3) = bz_temp*binv
+         ! (b.grad)B (https://mathworld.wolfram.com/ConvectiveOperator.html)
+         bdgB(1) = normb(1)*gradbr(1)   + normb(2)*gradbr(2)   + normb(3)*gradbr(3)   - normb(2)*bphi_temp*rinv
+         bdgB(2) = normb(1)*gradbphi(1) + normb(2)*gradbphi(2) + normb(3)*gradbphi(3) - normb(2)*br_temp*rinv
+         bdgB(3) = normb(1)*gradbz(1)   + normb(2)*gradbz(2)   + normb(3)*gradbz(3)
+         bxbdgB(1) = normb(2)*bdgB(3) - normb(3)*bdgB(2)
+         bxbdgB(2) = normb(3)*bdgB(1) - normb(1)*bdgB(3)
+         bxbdgB(3) = normb(1)*bdgB(2) - normb(2)*bdgB(1)
+         ! ExB/(B*B)
+         ExB(1) = Efield(2)*normb(3) - Efield(3)*normb(2)
+         ExB(2) = Efield(3)*normb(1) - Efield(1)*normb(3)
+         ExB(3) = Efield(1)*normb(2) - Efield(2)*normb(1)
+         ExB    = ExB*binv
+         ! Equations
+         A       = moment*binv*cinv
+         B       = mymass*vll*vll*binv*binv*cinv
+
+         qdot(1) = normb(2)*gradb(3)-normb(3)*gradb(2)
+         qdot(2) = normb(3)*gradb(1)-normb(1)*gradb(3)
+         qdot(3) = normb(1)*gradb(2)-normb(2)*gradb(1)
+         qdot(1:3) = A*qdot(1:3) + B*bxbdgB(1:3) + vll*normb(1:3) + ExB(1:3)
           
-         qdot(3) = A*( br_temp*rinv*gradb(2)-bphi_temp*gradb(1) )  - (br_temp*rinv*Efield(2)-bphi_temp*Efield(1))*binv*binv +  &
-                   B*( br_temp*br_temp*gradbphi(1) + br_temp*bphi_temp*rinv*gradbphi(2) + br_temp*bz_temp*gradbphi(3) &
-                       + br_temp*br_temp*bphi_temp*rinv - bphi_temp*br_temp*gradbr(1) - bphi_temp*bphi_temp*rinv*gradbr(2) &
-                       - bphi_temp*bz_temp*gradbr(3) + bphi_temp*bphi_temp*bphi_temp*rinv ) + vll*bz_temp*binv
-          
-         qdot(4) = -moment*binv*( br_temp*gradb(1) + bphi_temp*rinv*gradb(2) + bz_temp*gradb(3) )/mymass &
-                  +mycharge*binv*(br_temp*Efield(1) + bphi_temp*rinv*Efield(2) + bz_temp*Efield(3) )/mymass
+         qdot(4) = -moment*( normb(1)*gradb(1) + normb(2)*gradb(2) + normb(3)*gradb(3) ) &
+                  +mycharge*(normb(1)*Efield(1) + normb(2)*Efield(2) + normb(3)*Efield(3) )
+
+         qdot(2) = qdot(2)*rinv
+         qdot(4) = qdot(4)/mymass
       ELSE
          qdot(1:4) = 0
       END IF

@@ -31,7 +31,7 @@
             BEAMS3D_VERSION, mass_beams, charge_beams
       USE beams3d_grid, ONLY: nte, nne, nti, nzeff, rmin, rmax, zmin, zmax, &
                               phimin, phimax
-      USE beams3d_lines, ONLY: lost_lines
+      USE beams3d_lines, ONLY: end_state
 !DEC$ ENDIF
       USE mpi_params
       
@@ -75,7 +75,7 @@
       s_min = 1
       s_max = 0
       tf    = MAXVAL(t_end_in)
-      MASS_BEAMS(1) = mass_orbit ! do this to diagnostic routine outputs the correct number
+      MASS_BEAMS(1) = mass_orbit ! do this so diagnostic routine outputs the correct number
       CHARGE_BEAMS(1) = Z_orbit*1.602176565E-19
       DO ik = 1, nsd
          IF (sigma_orbit(ik) .ge. bigno) CYCLE
@@ -147,7 +147,7 @@
          WRITE(6,'(A,F7.2,A,F7.2,A,I4)') '   Ne  = [',MINVAL(NE_AUX_F_BEAMS)/1E19,',',MAXVAL(NE_AUX_F_BEAMS)/1E19,'] 10^19 [m^-3];  Nne:   ',nne
          WRITE(6,'(A,F7.2,A,F7.2,A,I4)') '   Te  = [',MINVAL(TE_AUX_F_BEAMS)/1000,',',MAXVAL(TE_AUX_F_BEAMS)/1000,'] [keV];  Nte:   ',nte
          WRITE(6,'(A,F7.2,A,F7.2,A,I4)') '   Ti  = [',MINVAL(TI_AUX_F_BEAMS)/1000,',',MAXVAL(TI_AUX_F_BEAMS)/1000,'] [keV];  Nti:   ',nti
-         WRITE(6,'(A,F7.2,A,F7.2,A,I4)') '  Zeff = [',MINVAL(ZEFF_AUX_F_BEAMS),',',MAXVAL(ZEFF_AUX_F_BEAMS),'] [keV];  Nti:   ',nzeff
+         WRITE(6,'(A,F7.2,A,F7.2,A,I4)') '  Zeff = [',MINVAL(ZEFF_AUX_F_BEAMS),',',MAXVAL(ZEFF_AUX_F_BEAMS),'];      NZeff:   ',nzeff
          CALL FLUSH(6)
       END IF
 
@@ -159,6 +159,7 @@
       IF (lscreen) WRITE(6,'(a)') '------------------------  ORBIT CALCULATION (DONE)  ----------------------'
       CALL FLUSH(6)
       
+      CALL beams3d_read(proc_string)
 
       ! Now analyze the results
       IF (ALLOCATED(orbit_lost_frac)) DEALLOCATE(orbit_lost_frac)
@@ -170,13 +171,14 @@
       IF (lscreen) WRITE(6,'(A)') '    ns     flux     Lost(%)'
       DO ik = 1, nsd
          IF (sigma_orbit(ik) .ge. bigno) CYCLE
-         orbit_lost_frac(ik) = DBLE(COUNT(lost_lines(u:v)))/DBLE(p)
+         orbit_lost_frac(ik) = DBLE(COUNT(end_state(u:v)==2))/DBLE(p)
          IF (lscreen) WRITE(6,'(3X,I3,3X,F9.5,3X,F5.1)') ik,rho(ik),orbit_lost_frac(ik)*100
          u = v + 1
          v = u + p - 1
       END DO
-      IF (ALLOCATED(lost_lines)) DEALLOCATE(lost_lines)
       iflag = 0
+
+      CALL beams3d_free
 
 
 !DEC$ ENDIF

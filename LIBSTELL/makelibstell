@@ -6,9 +6,9 @@ F90FILE = '$*''.f90'
 SPATH   = ../Sources
 
 #Contains list of source files (.o) and dependencies
-DEPLIST = LIBSTELL.dep
+DEPLIST = ../LIBSTELL.dep
 OBJLIST = ../ObjectList
-VPATH = $(SPATH):$(SPATH)/FFTpack:$(SPATH)/Coils:$(SPATH)/Modules:$(SPATH)/Linpack:$(SPATH)/Miscel:$(SPATH)/Optimization:$(SPATH)/Track:$(SPATH)/QMRpack:$(SPATH)/SMPINT:$(SPATH)/TOMS:$(SPATH)/Pspline:$(SPATH)/Ezcdf:$(SPATH)/SVDpack:$(SPATH)/GMRes:$(SPATH)/Lsode
+VPATH = $(SPATH):$(SPATH)/FFTpack:$(SPATH)/Coils:$(SPATH)/Modules:$(SPATH)/Linpack:$(SPATH)/Miscel:$(SPATH)/Optimization:$(SPATH)/QMRpack:$(SPATH)/SMPINT:$(SPATH)/TOMS:$(SPATH)/Pspline:$(SPATH)/Ezcdf:$(SPATH)/SVDpack:$(SPATH)/GMRes:$(SPATH)/Lsode
 
 #Includes source files and dependency list
 include $(DEPLIST)

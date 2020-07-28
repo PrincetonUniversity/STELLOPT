@@ -1,6 +1,6 @@
 !-----------------------------------------------------------------------
 !     Module:        beams3d_input_mod
-!     Authors:       S. Lazerson (lazerson@pppl.gov) M. McMillan (matthew.mcmillan@my.wheaton.edu)
+!     Authors:       S. Lazerson (samuel.lazerson@ipp.mpg.de) M. McMillan (matthew.mcmillan@my.wheaton.edu)
 !     Date:          06/20/2012
 !     Description:   This module contains the FIELDLINES input namelist and
 !                    subroutine which initializes and reads the
@@ -12,10 +12,12 @@
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
       USE beams3d_runtime
-      USE beams3d_lines, ONLY: nparticles
+      USE beams3d_lines, ONLY: nparticles, ns_prof1, ns_prof2, ns_prof3, &
+                               ns_prof4, ns_prof5, partvmax
       USE beams3d_grid, ONLY: nr, nphi, nz, rmin, rmax, zmin, zmax, &
                               phimin, phimax, vc_adapt_tol, nte, nne, nti,&
-                              nzeff, npot
+                              nzeff, npot, plasma_mass, plasma_Zavg, &
+                              plasma_Zmean, therm_factor
       USE safe_open_mod, ONLY: safe_open
       USE mpi_params
       USE mpi_inc
@@ -25,6 +27,8 @@
 !
 !-----------------------------------------------------------------------
       IMPLICIT NONE
+      ! These are helpers to give the ns1_prof variables user friendly names
+      INTEGER :: nrho_dist, ntheta_dist, nzeta_dist, nvpara_dist, nvperp_dist
 
 !-----------------------------------------------------------------------
 !     Input Namelists
@@ -68,7 +72,10 @@
                                   NE_AUX_S, NE_AUX_F, TI_AUX_S, TI_AUX_F, &
                                   POT_AUX_S, POT_AUX_F, ZEFF_AUX_S, ZEFF_AUX_F, &
                                   P_beams, ldebug, ne_scale, te_scale, ti_scale, &
-                                  zeff_scale
+                                  zeff_scale, plasma_mass, plasma_Zavg, &
+                                  plasma_Zmean, therm_factor, &
+                                  nrho_dist, ntheta_dist, nzeta_dist, &
+                                  nvpara_dist, nvperp_dist, partvmax
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -81,6 +88,7 @@
       INTEGER, INTENT(out) :: istat
       LOGICAL :: lexist
       INTEGER :: iunit, local_master, i1
+      CHARACTER(LEN=1000) :: line
       ! Initializations
       local_master = 0
       nr     = 101
@@ -135,6 +143,20 @@
       te_scale = 1.0
       ti_scale = 1.0
       zeff_scale = 1.0
+      plasma_Zmean = 1.0
+      plasma_Zavg  = 1.0
+      plasma_mass = 1.6726219E-27 ! Assume Hydrogen
+      therm_factor = 1.5 ! Factor at which to thermalize particles
+
+      ! Distribution Function Defaults
+      nrho_dist = 64
+      ntheta_dist=4
+      nzeta_dist=4
+      nvpara_dist=32
+      nvperp_dist=16
+      partvmax = 0 ! Allows user to set value
+
+
       ! Read namelist
 !      IF (ithread == local_master) THEN
          istat=0
@@ -144,8 +166,21 @@
          CALL safe_open(iunit,istat,TRIM(filename),'old','formatted')
          IF (istat /= 0) CALL handle_err(NAMELIST_READ_ERR,'beams3d_input in: input.'//TRIM(id_string),istat)
          READ(iunit,NML=beams3d_input,IOSTAT=istat)
-         IF (istat /= 0) CALL handle_err(NAMELIST_READ_ERR,'beams3d_input in: input.'//TRIM(id_string),istat)
+         IF (istat /= 0) THEN
+            backspace(iunit)
+            read(iunit,fmt='(A)') line
+            write(6,'(A)') 'Invalid line in namelist: '//TRIM(line)
+            CALL handle_err(NAMELIST_READ_ERR,'beams3d_input in: input.'//TRIM(id_string),istat)
+         END IF
          CLOSE(iunit)
+
+         ! Update dist function sizes
+         ns_prof1=nrho_dist
+         ns_prof2=ntheta_dist
+         ns_prof3=nzeta_dist
+         ns_prof4=nvpara_dist
+         ns_prof5=nvperp_dist
+
          NE_AUX_F = NE_AUX_F*ne_scale
          TE_AUX_F = TE_AUX_F*te_scale
          TI_AUX_F = TI_AUX_F*ti_scale
@@ -197,7 +232,7 @@
          END DO
 !      END IF
 
-!DEC$ IF DEFINED (HDF5_PAR)
+#if defined(HDF5_PAR)
       ! Makes sure that NPARTICLES is divisible by the number of processes
       ! Needed for HDF5 parallel writes.
       IF (lbeam) THEN
@@ -206,7 +241,7 @@
             nparticles_start = (i1+1)*nprocs_beams
          END IF
       END IF
-!DEC$ ENDIF
+#endif
 
       END SUBROUTINE read_beams3d_input
 
@@ -240,8 +275,24 @@
       WRITE(iunit_out,outflt) 'FOLLOW_TOL',follow_tol
       WRITE(iunit_out,outflt) 'VC_ADAPT_TOL',vc_adapt_tol
       WRITE(iunit_out,outint) 'NPARTICLES_START',nparticles_start
+      WRITE(iunit_out,'(A)') '!---------- Plasma Parameters ------------'
+      WRITE(iunit_out,outflt) 'PLASMA_MASS',plasma_mass
+      WRITE(iunit_out,outflt) 'PLASMA_ZAVG',plasma_zavg
+      WRITE(iunit_out,outflt) 'PLASMA_ZMEAN',plasma_zmean
+      WRITE(iunit_out,outflt) 'THERM_FACTOR',therm_factor
+      WRITE(iunit_out,'(A)') '!---------- Distribution Parameters ------------'
+      WRITE(iunit_out,outint) 'NRHO_DIST',ns_prof1
+      WRITE(iunit_out,outint) 'NTHETA_DIST',ns_prof2
+      WRITE(iunit_out,outint) 'NZETA_DIST',ns_prof3
+      WRITE(iunit_out,outint) 'NVPARA_DIST',ns_prof4
+      WRITE(iunit_out,outint) 'NVPERP_DIST',ns_prof5
+      WRITE(iunit_out,outflt) 'PARTVMAX',partvmax
       IF (lbeam) THEN
          WRITE(iunit_out,"(A)") '!---------- Profiles ------------'
+         WRITE(iunit_out,outflt) 'NE_SCALE',NE_SCALE
+         WRITE(iunit_out,outflt) 'TE_SCALE',TE_SCALE
+         WRITE(iunit_out,outflt) 'TI_SCALE',TI_SCALE
+         WRITE(iunit_out,outflt) 'ZEFF_SCALE',ZEFF_SCALE
          WRITE(iunit_out,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'NE_AUX_S',(ne_aux_s(n), n=1,nne)
          WRITE(iunit_out,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'NE_AUX_F',(ne_aux_f(n), n=1,nne)
          WRITE(iunit_out,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'TE_AUX_S',(te_aux_s(n), n=1,nte)
@@ -255,6 +306,7 @@
          DO n = 1, nbeams
             WRITE(iunit_out,"(A,I2.2)") '!---- BEAM #',n
             WRITE(iunit_out,vecvar) 'T_END_IN',n,t_end_in(n)
+            WRITE(iunit_out,vecvar) 'DEX_BEAMS',n,dex_beams(n)
             WRITE(iunit_out,vecvar) 'DIV_BEAMS',n,div_beams(n)
             WRITE(iunit_out,vecvar) 'ADIST_BEAMS',n,adist_beams(n)
             WRITE(iunit_out,vecvar) 'ASIZE_BEAMS',n,asize_beams(n)
@@ -279,19 +331,26 @@
       END SUBROUTINE write_beams3d_namelist
 
       SUBROUTINE BCAST_BEAMS3D_INPUT(local_master,comm,istat)
-!DEC$ IF DEFINED (MPI_OPT)
-      USE mpi
-!DEC$ ENDIF
+      USE mpi_inc
       IMPLICIT NONE
+      
       INTEGER, INTENT(inout) :: comm
       INTEGER, INTENT(in)    :: local_master
       INTEGER, INTENT(inout) :: istat
       IF (istat .ne. 0) RETURN
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
       CALL MPI_BCAST(lbeam, 1, MPI_LOGICAL, local_master, comm,istat)
       CALL MPI_BCAST(nr,1,MPI_INTEGER, local_master, comm,istat)
       CALL MPI_BCAST(nphi,1,MPI_INTEGER, local_master, comm,istat)
       CALL MPI_BCAST(nz,1,MPI_INTEGER, local_master, comm,istat)
+
+
+      CALL MPI_BCAST(ns_prof1,1,MPI_INTEGER, local_master, comm,istat)
+      CALL MPI_BCAST(ns_prof2,1,MPI_INTEGER, local_master, comm,istat)
+      CALL MPI_BCAST(ns_prof3,1,MPI_INTEGER, local_master, comm,istat)
+      CALL MPI_BCAST(ns_prof4,1,MPI_INTEGER, local_master, comm,istat)
+      CALL MPI_BCAST(ns_prof5,1,MPI_INTEGER, local_master, comm,istat)
+      CALL MPI_BCAST(partvmax,1,MPI_REAL8, local_master, comm,istat)
 
       CALL MPI_BCAST(nbeams,1,MPI_INTEGER, local_master, comm,istat)
       CALL MPI_BCAST(nparticles_start,1,MPI_INTEGER, local_master, comm,istat)
@@ -304,6 +363,7 @@
       CALL MPI_BCAST(phimin,1,MPI_REAL8, local_master, comm,istat)
       CALL MPI_BCAST(phimax,1,MPI_REAL8, local_master, comm,istat)
       CALL MPI_BCAST(vc_adapt_tol,1,MPI_REAL8, local_master, comm,istat)
+      CALL MPI_BCAST(plasma_mass,1,MPI_REAL8, local_master, comm,istat)
 
       CALL MPI_BCAST(nte,1,MPI_INTEGER, local_master, comm,istat)
       CALL MPI_BCAST(nne,1,MPI_INTEGER, local_master, comm,istat)
@@ -346,7 +406,7 @@
 
       CALL MPI_BCAST(follow_tol,1,MPI_REAL8, local_master, comm,istat)
       CALL MPI_BCAST(int_type, 256, MPI_CHARACTER, local_master, comm,istat)
-!DEC$ ENDIF
+#endif
       END SUBROUTINE BCAST_BEAMS3D_INPUT
 
       END MODULE beams3d_input_mod

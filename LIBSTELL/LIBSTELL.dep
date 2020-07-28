@@ -1,0 +1,1403 @@
+# Microsoft Developer Studio Generated Dependency File, included by LIBSTELL.mak
+      
+adas_mod_parallel.o :  \
+      mpi_inc.o \
+      mpi_sharmem.o
+      
+mpi_sharmem.o :  
+      
+common_factor.o :  
+
+str_length.o :  
+
+sort.o :  
+      
+xvec_eval.o : \
+      mpi_inc.o \
+      safe_open_mod.o \
+      mpi_params.o \
+      gade_mod.o \
+      stel_kinds.o 
+
+
+trip3d_mod.o : \
+      safe_open_mod.o \
+      stel_kinds.o \
+      mgrid_mod.o \
+      ezspline.o \
+      ezspline_obj.o
+
+
+ezhybrid_init.o : \
+      ezspline_obj.o 
+
+
+ezhybrid_cdfput3.o : \
+      ezcdf.o 
+
+
+ezhybrid_cdfget3.o : \
+      ezcdf.o 
+
+
+ezhybrid_initx.o : \
+      ezspline_obj.o \
+      ezspline.o
+
+      
+ezlinear_init.o : \
+      ezspline_obj.o 
+
+      
+ezspline_2netcdf.o : \
+      ezspline_obj.o \
+      ezcdf.o
+
+      
+ezspline_derivative.o : \
+      ezspline_obj.o 
+
+      
+ezspline_free.o : \
+      ezspline_obj.o 
+
+      
+ezspline_gradient.o : \
+      ezspline_obj.o 
+
+      
+ezspline_init.o : \
+      ezspline_obj.o 
+
+      
+ezspline_interp.o : \
+      ezspline_obj.o 
+
+      
+ezspline_isgridregular.o : \
+      ezspline_obj.o 
+
+      
+ezspline_isindomain.o : \
+      ezspline_obj.o 
+
+      
+ezspline_load.o : \
+      ezspline_obj.o \
+      ezcdf.o
+
+      
+ezspline_modulo.o : \
+      ezspline_obj.o 
+
+      
+ezspline_save.o : \
+      ezspline_obj.o \
+      ezcdf.o
+
+      
+ezspline_setup.o : \
+      ezspline_obj.o 
+
+      
+ezspline_setupx.o : \
+      ezspline_obj.o \
+      ezspline.o
+
+      
+ezspline_obj.o : \
+      ezspline_type.o 
+
+
+ezspline_type.o : 
+
+
+ezspline.o : \
+      ezspline_obj.o \
+      ezcdf.o
+      
+adas_mod_simpl.o : \
+      ezspline_obj.o \
+      ezspline.o \
+      adas_bms_splines.o 
+
+
+adas_bms_splines.o : \
+      ezspline_obj.o \
+      ezspline.o
+
+
+mpi_params.o : \
+
+
+magnetic_response.o : \
+      compression.o \
+      profiler.o \
+      stel_kinds.o \
+      v3_utilities.o 
+      
+
+boundary_T.o : \
+      safe_open_mod.o 
+      
+
+compression.o : \
+      stel_kinds.o \
+      mpi_inc.o \
+      v3_utilities.o 
+      
+
+integration_path.o : \
+      stel_kinds.o \
+      mpi_inc.o 
+
+
+init_bg_currents.o : \
+      mpi_inc.o \
+      biotsavart.o \
+      bcoils_mod.o \
+      mpi_params.o \
+      safe_open_mod.o 
+      
+
+init_modular_coils.o : \
+      modular_coils.o 
+      
+
+init_modular_currents.o : \
+      modular_coils.o 
+      
+
+init_modular_wsurf.o : \
+      modular_coils.o 
+      
+
+init_saddle_coils.o : \
+      saddle_coils.o 
+      
+
+init_saddle_currents.o : \
+      saddle_coils.o 
+      
+
+init_saddle_wsurf.o : \
+      mpi_inc.o \
+      mpi_params.o \
+      saddle_surface.o 
+      
+
+init_tf_coils.o : \
+      tf_coils.o 
+      
+
+init_vf_coils.o : \
+      vf_coils.o 
+      
+
+init_vf_currents.o : \
+      vf_coils.o 
+      
+
+initialize_coilsin.o : \
+      coilsnamin.o \
+      stel_kinds.o 
+      
+
+load_bg_currents.o : \
+      biotsavart.o \
+      bcoils_mod.o 
+      
+
+load_modular_coils.o : \
+      modular_coils.o \
+      tf_coils.o 
+      
+
+load_modular_currents.o : \
+      modular_coils.o 
+      
+
+load_modular_wsurf.o : \
+      modular_coils.o 
+      
+
+load_saddle_coils.o : \
+      saddle_coils.o 
+      
+
+load_saddle_currents.o : \
+      saddle_coils.o 
+      
+
+load_saddle_wsurf.o : \
+      saddle_surface.o 
+      
+
+load_tf_coils.o : \
+      tf_coils.o 
+      
+
+load_vf_coils.o : \
+      vf_coils.o 
+      
+
+load_vf_currents.o : \
+      vf_coils.o 
+      
+
+write_coilsin.o : \
+      coilsnamin.o \
+      stel_constants.o \
+      write_array_generic.o 
+      
+
+cfft99.o : \
+      stel_kinds.o 
+      
+
+functions.o : \
+      stel_kinds.o 
+      
+
+cftfax.o : \
+      stel_kinds.o 
+      
+
+cftrig.o : \
+      stel_kinds.o 
+      
+
+fact.o : \
+      stel_kinds.o 
+      
+
+fft99.o : \
+      stel_kinds.o 
+      
+
+fft991.o : \
+      stel_kinds.o 
+      
+
+fft99a.o : \
+      stel_kinds.o 
+      
+
+fft99b.o : \
+      stel_kinds.o 
+      
+
+fftfax.o : \
+      stel_kinds.o 
+      
+
+fftrig.o : \
+      stel_kinds.o 
+      
+
+fmn_to_uv.o : \
+      stel_kinds.o 
+      
+
+trigfact.o : \
+      stel_kinds.o 
+      
+
+vpassm.o : \
+      stel_kinds.o 
+      
+
+cfode.o : \
+      stel_kinds.o 
+      
+
+ewset.o : \
+      stel_kinds.o 
+      
+
+intdy.o : \
+      stel_kinds.o 
+      
+
+lsode.o : \
+      stel_kinds.o 
+      
+
+prepj.o : \
+      liprec.o \
+      stel_kinds.o 
+      
+
+solsy.o : \
+      liprec.o \
+      stel_kinds.o 
+      
+
+stode.o : \
+      stel_kinds.o 
+      
+
+vnorm.o : \
+      stel_kinds.o 
+      
+
+xerrwv.o : \
+      stel_kinds.o 
+      
+
+bextrema.o : \
+      stel_kinds.o 
+      
+
+build_matrices_legendre.o : \
+      stel_kinds.o 
+      
+
+CHFDV.o : \
+      stel_kinds.o 
+      
+
+convert_boundary.o : \
+      stel_kinds.o 
+      
+
+convert_boundary_PG.o : \
+      stel_kinds.o 
+      
+
+ddsum.o : \
+      stel_kinds.o 
+      
+
+erf.o : \
+      stel_kinds.o 
+      
+
+factorial.o : \
+      stel_kinds.o 
+      
+
+fmax.o : \
+      stel_kinds.o 
+      
+
+fmin.o : \
+      stel_kinds.o 
+      
+
+integral.o : \
+      stel_kinds.o 
+      
+
+legendre_to_power.o : \
+      stel_kinds.o 
+      
+
+multxy.o : \
+      stel_kinds.o 
+      
+
+PCHDF.o : \
+      stel_kinds.o 
+      
+
+PCHEV.o : \
+      stel_kinds.o 
+      
+
+PCHez.o : \
+      stel_kinds.o 
+      
+
+PCHFD.o : \
+      stel_kinds.o 
+      
+
+PCHIM.o : \
+      stel_kinds.o 
+      
+
+PCHSP.o : \
+      stel_kinds.o 
+      
+
+PCHST.o : \
+      stel_kinds.o 
+      
+
+point_wise_to_power.o : \
+      stel_kinds.o 
+      
+
+power_to_legendre.o : \
+      stel_kinds.o 
+      
+
+line_segment.o : \
+      stel_constants.o \
+      stel_kinds.o 
+      
+
+profile_functions.o : \
+      line_segment.o \
+      stel_kinds.o \
+      stel_constants.o \
+      functions.o \
+      vmec_input.o
+
+mpi_inc.o : \
+      mpi_params.o
+
+
+profiler.o : \
+      stel_kinds.o 
+      
+
+read_namelist.o : \
+      bootsj_input.o \
+      coilsnamin.o \
+      gade_mod.o \
+      optim_params.o \
+      vmec_input.o \
+      vmec_seq.o 
+      
+
+second0.o : \
+      stel_kinds.o 
+      
+
+solver.o : \
+      stel_kinds.o 
+      
+
+spline.o : \
+      stel_kinds.o 
+      
+
+spline_akima.o : \
+      stel_kinds.o 
+      
+
+spline_akima_int.o : \
+      stel_kinds.o 
+      
+
+spline_cubic.o : \
+      stel_kinds.o 
+      
+
+spline_cubic_int.o : \
+      stel_kinds.o 
+      
+
+spline_it.o : \
+      stel_kinds.o 
+      
+
+splint.o : \
+      stel_kinds.o 
+      
+
+strip_comments.o : \
+      safe_open_mod.o 
+      
+
+tridslv.o : \
+      stel_kinds.o 
+      
+
+crosovr.o : \
+      ga_mod.o \
+      stel_kinds.o 
+      
+
+DE_driver.o : \
+      mpi_inc.o \
+      de_mod.o \
+      gade_mod.o \
+      mpi_params.o \
+      safe_open_mod.o \
+      stel_kinds.o \
+      system_mod.o 
+      
+
+DE_Evaluate.o : \
+      de_mod.o \
+      stel_kinds.o 
+      
+
+MAP.o : \
+      mpi_inc.o \
+      mpi_params.o \
+      safe_open_mod.o \
+      gade_mod.o \
+      stel_kinds.o 
+
+
+eval_x_queued.o : \
+      mpi_inc.o \
+      safe_open_mod.o \
+      stel_kinds.o
+
+
+MAP_HYPERS.o : \
+      mpi_inc.o \
+      safe_open_mod.o \
+      stel_kinds.o
+      
+
+MAP_LINEAR.o : \
+      mpi_inc.o \
+      mpi_params.o \
+      safe_open_mod.o \
+      gade_mod.o \
+      stel_kinds.o 
+      
+
+GENERIC_Evolve.o : \
+      mpi_inc.o \
+      mpi_params.o \
+      safe_open_mod.o \
+      gade_mod.o \
+      stel_kinds.o 
+      
+
+MAP_PLANE.o : \
+      mpi_inc.o \
+      mpi_params.o \
+      safe_open_mod.o \
+      gade_mod.o \
+      stel_kinds.o 
+      
+
+DE_Evolve.o : \
+      mpi_inc.o \
+      de_mod.o \
+      gade_mod.o \
+      mpi_params.o \
+      stel_kinds.o 
+      
+
+PSO_Evolve.o : \
+      mpi_inc.o \
+      safe_open_mod.o \
+      mpi_params.o \
+      gade_mod.o \
+      stel_kinds.o 
+      
+
+DE2_Evolve.o : \
+      mpi_inc.o \
+      safe_open_mod.o \
+      mpi_params.o \
+      gade_mod.o \
+      stel_kinds.o 
+      
+
+ROCKET_Evolve.o : \
+      mpi_inc.o \
+      safe_open_mod.o \
+      mpi_params.o \
+      stel_kinds.o 
+      
+
+de_mpi.o : \
+      mpi_inc.o \
+      de_mod.o \
+      mpi_params.o 
+      
+
+de_parallel.o : \
+      de_mod.o 
+      
+
+DE_preset.o : \
+      de_mod.o \
+      stel_kinds.o 
+      
+
+dpmpar.o : \
+      stel_kinds.o 
+      
+
+enorm.o : \
+      stel_kinds.o 
+      
+
+fdjac_mod.o : \
+      mpi_inc.o \
+      safe_open_mod.o \
+      mpi_params.o \
+      stel_kinds.o 
+      
+
+fdjac_parallel.o : \
+      fdjac_mod.o 
+      
+
+ga_code.o : \
+      ga_mod.o 
+      
+
+ga_decode.o : \
+      ga_mod.o 
+      
+
+GA_driver.o : \
+      mpi_inc.o \
+      ga_mod.o \
+      mpi_params.o \
+      safe_open_mod.o \
+      system_mod.o 
+      
+
+ga_evalout.o : \
+      mpi_inc.o \
+      ga_mod.o \
+      mpi_params.o 
+      
+
+ga_evaluate.o : \
+      stel_kinds.o 
+      
+
+ga_fitness_mpi.o : \
+      mpi_inc.o \
+      ga_mod.o \
+      mpi_params.o 
+      
+
+ga_fitness_parallel.o : \
+      ga_mod.o 
+      
+
+ga_initial.o : \
+      mpi_inc.o \
+      ga_mod.o \
+      mpi_params.o \
+      safe_open_mod.o 
+      
+
+ga_micro.o : \
+      mpi_inc.o \
+      ga_mod.o \
+      mpi_params.o 
+      
+
+ga_mutate.o : \
+      mpi_inc.o \
+      ga_mod.o \
+      mpi_params.o 
+      
+
+ga_newgen.o : \
+      mpi_inc.o \
+      ga_mod.o \
+      mpi_params.o 
+      
+
+ga_niche.o : \
+      mpi_inc.o \
+      ga_mod.o \
+      mpi_params.o 
+      
+
+ga_possibl.o : \
+      mpi_inc.o \
+      ga_mod.o \
+      mpi_params.o 
+      
+
+GA_preset.o : \
+      ga_mod.o 
+      
+
+ga_restart.o : \
+      mpi_inc.o \
+      ga_mod.o \
+      mpi_params.o \
+      safe_open_mod.o 
+      
+
+ga_select.o : \
+      ga_mod.o 
+      
+
+ga_selectn.o : \
+      ga_mod.o 
+      
+
+ga_shuffle.o : \
+      ga_mod.o 
+      
+
+ga_sp.o : \
+      mpi_inc.o \
+      ga_mod.o \
+      mpi_params.o \
+      safe_open_mod.o 
+      
+
+timer.o :
+
+
+lbfgsb.o : \
+      timer.o \
+      dnrm2.o \
+      dpofa.o \
+      dtrsl.o 
+
+
+lbfgsb_driver.o : \
+      lbfgsb.o 
+      
+
+lmdif.o : \
+      mpi_inc.o \
+      fdjac_mod.o \
+      lmpar_mod.o \
+      mpi_params.o \
+      safe_open_mod.o \
+      stel_kinds.o 
+      
+
+lmdif1.o : \
+      fdjac_mod.o \
+      stel_kinds.o 
+      
+
+lmdif1_mp.o : \
+      stel_kinds.o 
+      
+
+lmpar.o : \
+      stel_kinds.o 
+      
+
+lmpar_mod.o : \
+      mpi_inc.o \
+      safe_open_mod.o \
+      fdjac_mod.o \
+      mpi_params.o \
+      stel_kinds.o 
+      
+
+lmpar_parallel.o : \
+      fdjac_mod.o \
+      lmpar_mod.o 
+      
+
+multiprocess.o : \
+      system_mod.o 
+      
+
+myfork.o : \
+      system_mod.o 
+      
+
+qrfac.o : \
+      stel_kinds.o 
+      
+
+qrsolv.o : \
+      stel_kinds.o 
+      
+
+ran3.o : \
+      stel_kinds.o 
+      
+
+unique_boundary.o : \
+      stel_kinds.o 
+      
+
+unique_boundary_PG.o : \
+      stel_kinds.o 
+      
+
+write_gade_nml.o : \
+      gade_mod.o \
+      stel_kinds.o \
+      write_array_generic.o 
+      
+
+polysvd.o : \
+      stel_constants.o \
+      stel_kinds.o 
+      
+
+pythag.o : \
+      stel_kinds.o 
+      
+
+SORTSVD.o : \
+      stel_kinds.o 
+      
+
+SVBKSB.o : \
+      stel_kinds.o 
+      
+
+svd_solve.o : \
+      stel_kinds.o 
+      
+
+svdcmp.o : \
+      stel_kinds.o 
+      
+
+svdinv.o : \
+      stel_kinds.o 
+      
+
+svdinv2.o : \
+      stel_kinds.o 
+      
+
+svdsolveb.o : \
+      safe_open_mod.o \
+      stel_kinds.o 
+      
+
+svdsolveuv.o : \
+      stel_kinds.o 
+      
+
+bcoils_mod.o : \
+      vcoilpts.o 
+      
+
+biotsavart.o : \
+      bsc_T.o \
+      safe_open_mod.o \
+      stel_kinds.o 
+      
+
+bnorm_mod.o : \
+      stel_constants.o \
+      vcoilpts.o 
+      
+
+bootsj_input.o : \
+      stel_kinds.o 
+      
+
+bsc_cdf.o : \
+      bsc_T.o \
+      ezcdf.o \
+      stel_constants.o \
+      stel_kinds.o \
+      v3_utilities.o 
+      
+
+coilsnamin.o : \
+      bcoils_mod.o \
+      bnorm_mod.o \
+      control_mod.o \
+      modular_coils.o \
+      saddle_coils.o \
+      saddle_surface.o \
+      tf_coils.o \
+      vcoilpts.o \
+      vf_coils.o 
+      
+
+date_and_computer.o : \
+      safe_open_mod.o \
+      system_mod.o 
+      
+
+v3f_vmec_comm.o : \
+      stel_kinds.o 
+      
+
+de_mod.o : \
+      gade_mod.o \
+      stel_kinds.o 
+      
+
+diagnostic_cdf.o : \
+      diagnostic_T.o \
+      ezcdf.o \
+      ipch_T.o \
+      mddc_cdf.o \
+      mddc_T.o \
+      stel_constants.o \
+      stel_kinds.o \
+      v3_utilities.o 
+      
+
+diagnostic_T.o : \
+      stel_kinds.o \
+      stel_constants.o \
+      mddc_T.o \
+      sxrch_T.o \
+      ipch_T.o \
+      thscte_T.o \
+      extcurz_T.o \
+      v3_utilities.o 
+      
+
+extcurz_T.o : \
+      stel_constants.o 
+      
+
+ipch_T.o : \
+      stel_constants.o \
+      stel_kinds.o \
+      safe_open_mod.o \
+      integration_path.o 
+      
+
+fftpack.o : \
+      stel_kinds.o 
+      
+
+ga_mod.o : \
+      gade_mod.o 
+      
+
+gade_mod.o : \
+      stel_kinds.o 
+      
+
+intpol_cdf.o : \
+      ezcdf.o \
+      ip_beamline.o \
+      stel_constants.o \
+      stel_kinds.o \
+      v3_utilities.o 
+      
+
+ip_beamline.o : \
+      math_utilities.o \
+      stel_constants.o \
+      stel_kinds.o \
+      v3_utilities.o 
+      
+
+ipsl_cdf.o : \
+      ezcdf.o \
+      intpol_cdf.o \
+      ip_beamline.o \
+      ipsl_T.o \
+      stel_constants.o \
+      stel_kinds.o \
+      v3_utilities.o 
+      
+
+ipsl_T.o : \
+      ip_beamline.o \
+      stel_constants.o \
+      stel_kinds.o \
+      v3_utilities.o 
+      
+
+cyl_flux.o : \
+      stel_constants.o \
+      stel_kinds.o 
+      
+
+sxrch_T.o : \
+      integration_path.o \
+      stel_constants.o \
+      stel_kinds.o \
+      safe_open_mod.o 
+      
+
+math_utilities.o : \
+      stel_constants.o \
+      stel_kinds.o 
+      
+
+mddc_cdf.o : \
+      bsc_cdf.o \
+      bsc_T.o \
+      ezcdf.o \
+      mddc_T.o \
+      stel_constants.o \
+      stel_kinds.o \
+      v3_utilities.o 
+      
+
+mddc_T.o : \
+      bsc_T.o \
+      stel_constants.o \
+      stel_kinds.o \
+      v3_utilities.o 
+      
+
+mgrid_mod.o : \
+      mpi_inc.o \
+      v3_utilities.o \
+      ezcdf.o \
+      safe_open_mod.o \
+      stel_kinds.o \
+      system_mod.o \
+      vmec_input.o \
+      vsvd0.o 
+      
+
+modular_coils.o : \
+      vcoilpts.o 
+      
+
+optim_params.o : \
+      vparams.o \
+      vsvd0.o 
+      
+
+packafile.o : \
+      safe_open_mod.o \
+      stel_constants.o \
+      stel_kinds.o 
+      
+
+read_boozer_mod.o : \
+      ezcdf.o \
+      safe_open_mod.o \
+      stel_constants.o \
+      stel_kinds.o 
+      
+
+read_response.o : \
+      mpi_inc.o \
+      bsc_cdf.o \
+      ezcdf.o \
+      mpi_params.o \
+      stel_constants.o \
+      stel_kinds.o 
+      
+
+read_response_nompi.o : \
+      bsc_cdf.o \
+      ezcdf.o \
+      stel_constants.o \
+      stel_kinds.o 
+      
+
+read_v3post_mod.o : \
+      ezcdf.o \
+      safe_open_mod.o \
+      stel_kinds.o 
+      
+
+read_wout_mod.o : \
+      ezcdf.o \
+      mgrid_mod.o \
+      safe_open_mod.o \
+      stel_constants.o \
+      stel_kinds.o \
+      vmec_input.o \
+      v3_utilities.o 
+      
+
+saddle_coils.o : \
+      vcoilpts.o 
+      
+
+saddle_surface.o : \
+      stel_constants.o 
+      
+
+stel_constants.o : \
+      stel_kinds.o 
+      
+
+sxrc_cdf.o : \
+      ezcdf.o \
+      stel_constants.o \
+      stel_kinds.o \
+      sxrc_T.o 
+      
+
+sxrc_T.o : \
+      safe_open_mod.o \
+      stel_constants.o \
+      stel_kinds.o 
+      
+
+tf_coils.o : \
+      stel_constants.o \
+      vcoilpts.o 
+      
+
+v3_utilities.o : \
+      mpi_inc.o \
+      stel_kinds.o 
+      
+
+v3post_rfun.o : \
+      stel_kinds.o 
+      
+
+vacfield_mod.o : \
+      biotsavart.o \
+      safe_open_mod.o \
+      stel_constants.o \
+      stel_kinds.o \
+      write_array_generic.o 
+      
+
+vcoilpts.o : \
+      stel_constants.o 
+      
+
+vertex_list.o : \
+      stel_kinds.o 
+      
+
+vf_coils.o : \
+      vcoilpts.o 
+      
+
+vmec_input.o : \
+      vparams.o \
+      vsvd0.o 
+      
+
+gist_mod.o : \
+      stel_kinds.o 
+      
+
+vmec_utils.o : \
+      cyl_flux.o \
+      read_wout_mod.o \
+      stel_constants.o \
+      stel_kinds.o 
+      
+
+vparams.o : \
+      stel_constants.o \
+      stel_kinds.o 
+      
+
+vsvd0.o : \
+      stel_kinds.o 
+      
+
+write_array_generic.o : \
+      stel_kinds.o 
+      
+
+ezcdf.o : \
+      ezcdf_attrib.o \
+      ezcdf_GenGet.o \
+      ezcdf_GenPut.o \
+      ezcdf_opncls.o 
+      
+
+ezcdf_attrib.o : \
+      ezcdf_inqvar.o 
+      
+
+ezcdf_GenGet.o : \
+      ezcdf_inqvar.o \
+      ezcdf_opncls.o 
+      
+
+ezcdf_GenPut.o : \
+      ezcdf_inqvar.o \
+      ezcdf_opncls.o 
+      
+
+
+
+
+daxpby.o : \
+      stel_kinds.o 
+      
+
+drandn.o : \
+      stel_kinds.o 
+      
+
+dutfx.o : \
+      stel_kinds.o 
+      
+
+drive_gmres.o : \
+      stel_kinds.o 
+      
+
+gmres.o : \
+      stel_constants.o \
+      stel_kinds.o 
+
+li_gbfa.o : \
+      liprec.o 
+      
+
+li_gbsl.o : \
+      liprec.o 
+      
+
+li_gefa.o : \
+      liprec.o 
+      
+
+li_gesl.o : \
+      liprec.o 
+      
+
+stepopt_mp.o : \
+      mpi_inc.o \
+      stel_kinds.o \
+      fdjac_mod.o \
+      safe_open_mod.o \
+      mpi_params.o
+      
+
+mgrid_field_mod.o : \
+      mpi_inc.o \
+      stel_kinds.o \
+      mgrid_mod.o \
+      ezspline_obj.o \
+      ezspline.o \
+      mpi_params.o
+      
+
+vessel_mod.o : \
+      ezspline.o \
+      ezspline_obj.o \
+      safe_open_mod.o 
+      
+
+wall_mod.o : \
+      safe_open_mod.o 
+      
+
+wall_mod_new.o : \
+      safe_open_mod.o 
+      
+
+virtual_casing_mod.o : \
+      ezspline_obj.o \
+      ezspline.o
+
+
+ez_hdf5.o : 
+      
+
+read_spec_mod.o : \
+      ez_hdf5.o \
+      read_wout_mod.o
+      
+
+read_pies_mod.o : \
+      read_wout_mod.o
+
+
+smpint.o : 
+
+
+dcuhre.o : 
+      
+
+nstab_input_mod.o : \
+      vparams.o \
+      stel_kinds.o 
+      
+
+lmpar_serial.o : \
+      stel_kinds.o 
+      
+
+lmder_serial.o : \
+      stel_kinds.o 
+      
+
+boozer_utils.o : \
+      stel_kinds.o \
+      ezspline.o \
+      ezspline_obj.o \
+      read_boozer_mod.o 
+      
+      
+boundary.o : \
+      stel_kinds.o
+      
+      
+tor_field.o : \
+      vcoilpts.o \
+      stel_constants.o 
+
+
+qshepmdata.o : \
+      real_precision.o 
+      
+
+givens.o :
+      
+
+rotate.o :
+
+
+coordinate_utilities.o : \
+      stel_kinds.o \
+      stel_constants.o 
+
+      
+daxpy.o :
+
+
+dcopy.o :
+
+
+ddot.o :
+
+
+dnrm2.o :
+
+
+dpofa.o :
+
+
+dscal.o :
+
+
+dtrsl.o :
+
+
+
+
+
+suzuki_sigma.o : 
+
+stel_tools.o : \
+      ezspline.o \
+      ezspline_obj.o
+
+mir_tools.o : \
+      read_wout_mod.o \
+      ezspline_obj.o      
+
+getcarg.o : \
+      mpi_inc.o
+
+vmec_chdir.o : \
+      mpi_inc.o
+
+thscte_T.o : \
+      stel_constants.o
+
+spline_cubic.o : \
+      mpi_inc.o
+
+second0.o : \
+      mpi_inc.o
+
+ezspline_cdfget3.o : \
+      ezcdf.o
+
+ezspline_cdfput3.o : \
+      ezcdf.o
+
+ezspline_cinterp.o : \
+      ezspline_obj.o
+
+gmres.o : \
+      mpi_inc.o
+
+compression.o : \
+      ezcdf.o

@@ -130,7 +130,7 @@
       END IF
       int_type = TRIM(int_type)
       int_type = ADJUSTL(int_type)
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_FIELDLINES,istat)
       CALL MPI_BCAST(nr,1,MPI_INTEGER, local_master, MPI_COMM_FIELDLINES,istat)
       CALL MPI_BCAST(nphi,1,MPI_INTEGER, local_master, MPI_COMM_FIELDLINES,istat)
@@ -157,7 +157,7 @@
       CALL MPI_BCAST(z_hc,MAXLINES,MPI_REAL8, local_master, MPI_COMM_FIELDLINES,istat)
       CALL MPI_BCAST(num_hcp,1,MPI_INTEGER, local_master, MPI_COMM_FIELDLINES,istat)
       CALL MPI_BCAST(delta_hc,1,MPI_REAL8, local_master, MPI_COMM_FIELDLINES,istat)
-!DEC$ ENDIF
+#endif
       IF (mu > 0.0) lmu=.true.
       END SUBROUTINE read_fieldlines_input
 

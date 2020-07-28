@@ -69,7 +69,7 @@
       counts(1) = 1
       offset(1) = mystart-1
 
-!DEC$ IF DEFINED (HDF5_PAR)
+#if defined(HDF5_PAR)
       CALL MPI_ALLREDUCE(MPI_IN_PLACE,chunk_dims(1),1,MPI_INTEGER,MPI_MAX,MPI_COMM_FIELDLINES,ier)
       ! Setup Helper Arrays
       ALLOCATE(stride(rank),block(rank))
@@ -138,7 +138,7 @@
 
       DEALLOCATE(stride,block)
 
-!DEC$ ELSE
+#else
 
       DO i = 0, nprocs_fieldlines-1
          IF (myworkid == i) THEN
@@ -192,7 +192,7 @@
          IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_write_parhdf5',ierr_mpi)
       END DO
 
-!DEC$ ENDIF
+#endif
 
       ! Deallocate Helpers
       DEALLOCATE(dimsf,chunk_dims,counts,offset)
@@ -269,7 +269,7 @@
       offset(1) = mystart-1
       offset(2) = 0
 
-!DEC$ IF DEFINED (HDF5_PAR)
+#if defined(HDF5_PAR)
       CALL MPI_ALLREDUCE(MPI_IN_PLACE,chunk_dims(1),1,MPI_INTEGER,MPI_MAX,MPI_COMM_FIELDLINES,ier)
       ! Setup Helper Arrays
       ALLOCATE(stride(rank),block(rank))
@@ -340,7 +340,7 @@
 
       DEALLOCATE(stride,block)
 
-!DEC$ ELSE
+#else
 
       DO i = 0, nprocs_fieldlines-1
          IF (myworkid == i) THEN
@@ -394,7 +394,7 @@
          IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_write_parhdf5',ierr_mpi)
       END DO
 
-!DEC$ ENDIF
+#endif
 
       ! Deallocate Helpers
       DEALLOCATE(dimsf,chunk_dims,counts,offset)
