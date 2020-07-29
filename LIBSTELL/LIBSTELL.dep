@@ -738,7 +738,6 @@ ga_sp.o : \
       safe_open_mod.o 
       
 
-
 lmdif.o : \
       mpi_inc.o \
       fdjac_mod.o \
@@ -1323,8 +1322,6 @@ rotate.o :
 coordinate_utilities.o : \
       stel_kinds.o \
       stel_constants.o 
-
-      
 
 suzuki_sigma.o : 
 
