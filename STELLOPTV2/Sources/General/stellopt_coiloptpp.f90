@@ -15,6 +15,7 @@
       USE iso_c_binding
       USE neswrite, ONLY: coil_separation
       USE mpi_params     
+      USE mpi_inc     
       
 !-----------------------------------------------------------------------
 !     Subroutine Parameters

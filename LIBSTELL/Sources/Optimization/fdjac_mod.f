@@ -4,7 +4,6 @@
       INTEGER, PARAMETER :: flag_singletask = -1, flag_cleanup = -100
       INTEGER, PARAMETER :: flag_cleanup_jac = -100
       INTEGER, PARAMETER :: flag_cleanup_lev = -101
-      INTEGER, PARAMETER :: flag_cleanup_lbfgsb = -102
 
       INTEGER :: m, n, ncnt, max_processors, num_lm_params
       INTEGER :: ix_min, jac_count, n_red                                !PPPL
