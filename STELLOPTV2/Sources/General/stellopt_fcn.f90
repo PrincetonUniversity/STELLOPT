@@ -35,7 +35,7 @@
 !        n       Number of function variables
 !        x       Vector of function variables
 !        fvec    Output array of function values
-!        iflag   Processor number
+!        iflag   >=0: Processor number or  <0: cleanup flag
 !        ncnt    Current function evaluation
 !----------------------------------------------------------------------
       INTEGER, INTENT(in)      ::  m, n, ncnt
@@ -69,6 +69,7 @@
       norm_ah   = 1; norm_at = 1; norm_phi = 1; norm_zeff = 1
       norm_ne   = 1; norm_te = 1; norm_ti  = 1; norm_th = 1
       norm_beamj = 1; norm_bootj = 1; norm_emis_xics = 1
+
 
       ! Save variables
       DO nvar_in = 1, n
@@ -369,8 +370,13 @@
                iflag = ier_paraexe
                IF (lscreen .and. lverb) WRITE(6,*)  '-------------------------  PARAVMEC CALCULATION DONE  -----------------------'
             CASE('vboot')
-               iflag = 0
-               CALL stellopt_vboot(lscreen,iflag)
+               if (iflag .lt. -1)  THEN
+                 ! do nothing
+                 iflag = 0
+               ELSE
+                 iflag = 0
+                 CALL stellopt_vboot(lscreen,iflag)
+               END IF
             CASE('vmec2000_oneeq')
                IF (iflag .eq. -1) THEN
                   iflag = 0
