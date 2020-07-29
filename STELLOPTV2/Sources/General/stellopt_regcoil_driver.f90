@@ -240,35 +240,6 @@
          if (sensitivity_option > 1 .and. exit_code == 0) then
             call regcoil_adjoint_solve()
          end if
-!!$
-!!$      ! JCS: I disabled all options except for #5 (for now)
-!!$      ! As REGCOIL development continues, future cases can 
-!!$      ! be handled with case statements here.
-!!$      ! write(6,'(a)') '<----select a case'
-!!$      select case (general_option)
-!!$      !case (1)
-!!$      !   call regcoil_solve()
-!!$      !case (2)
-!!$      !   call regcoil_compute_diagnostics_for_nescout_potential()
-!!$      !case (3)
-!!$      !   call regcoil_svd_scan()
-!!$      !case (4)
-!!$      !   call regcoil_auto_regularization_solve()
-!!$      case (5)
-!!$         ! write(6,'(a)') '<----auto_reg solve'
-!!$         call regcoil_auto_regularization_solve()
-!!$         ! After regcoil_auto_reg...solve, the value we want should be
-!!$         ! in the variable 'chi2_B_target'. Normal termination of regcoil
-!!$         ! returns the achieved chi2_B (miniumum). If there is an
-!!$         ! 'error' (too high or too low of current), the chi2_B will
-!!$         ! contain the chi2_B that was achieved with infinite
-!!$         ! regularization ! (well-spaced apart, straight-ish) coils
-!!$         ! See regcoil_auto_regularization_solve.f90 for the assignment
-!!$         ! of variables for external optimizers
-!!$         !     chi2_B_target, max_K_target, rms_K_target,
-!!$         !     max_Bnormal_target, chi2_K_target,
-!!$         !     coil_plasma_dist_min_target, Bnormal_total_target,
-!!$         !     + volume and area targets
  case default
          print *,"Invalid general_option:",general_option
          stop
