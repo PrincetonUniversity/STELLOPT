@@ -1632,7 +1632,7 @@
                                 ANY(sigma_regcoilpm_volume_plasma < bigno) .or.    &
                                 ANY(sigma_regcoilpm_volume_diff < bigno) .or.    &
                                 ANY(sigma_regcoilpm_d2p_dist_min < bigno) .or.    &
-                                ANY(sigma_regcoilpm_bnormal_total < bigno)) THEN ! .or. &
+                                ANY(sigma_regcoilpm_bnormal_total < bigno))) THEN ! .or. &
                          !       ANY(sigma_regcoilpm_K2 < bigno) )) THEN !  .or. &
          ! 'Disable' the target by assigning bigno to the sigmas
          sigma_regcoilpm_chi2_b = bigno
