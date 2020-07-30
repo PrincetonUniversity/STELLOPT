@@ -32,7 +32,10 @@ module adas_mod_parallel
                                                       ii_2_1_axis, ii_2_2_axis, &
                                                       ii_2_3_axis, ii_2_4_axis, &
                                                       ii_2_5_axis, ii_2_6_axis, &
-                                                      ii_2_7_axis, ii_2_8_axis
+                                                      ii_2_7_axis, ii_2_8_axis, &
+                                                      ex_1_1_e, ex_1_1_n, ex_1_1_t, & 
+                                                      ex_1_2_e, ex_1_2_n, ex_1_2_t, &
+                                                      ex_1_3_e, ex_1_3_n, ex_1_3_t
        DOUBLE PRECISION, POINTER, DIMENSION(:,:) :: cx_1_1_btsigv,cx_2_1_btsigv,cx_2_2_btsigv,&
                                                         ii_1_1_btsigv, ii_1_2_btsigv, &
                                                         ii_1_3_btsigv, ii_1_4_btsigv, &
@@ -43,6 +46,7 @@ module adas_mod_parallel
                                                         ii_2_3_btsigv, ii_2_4_btsigv, &
                                                         ii_2_5_btsigv, ii_2_6_btsigv, &
                                                         ii_2_7_btsigv, ii_2_8_btsigv
+       DOUBLE PRECISION, POINTER, DIMENSION(:,:,:) :: ex_1_1, ex_1_2, ex_1_3
        INTEGER :: win_ei_1a, win_ei_2a, win_cx_11a, win_cx_21a, win_cx_22a,&
                   win_ii_11a, win_ii_12a, win_ii_13a, win_ii_14a, win_ii_15a, &
                   win_ii_16a, win_ii_17a, win_ii_18a, win_ii_19a, win_ii_110a, &
@@ -52,13 +56,19 @@ module adas_mod_parallel
                   win_ii_11b, win_ii_12b, win_ii_13b, win_ii_14b, win_ii_15b, &
                   win_ii_16b, win_ii_17b, win_ii_18b, win_ii_19b, win_ii_110b, &
                   win_ii_21b, win_ii_22b, win_ii_23b, win_ii_24b, win_ii_25b, &
-                  win_ii_26b, win_ii_27b, win_ii_28b
+                  win_ii_26b, win_ii_27b, win_ii_28b, &
+                  win_ex_11_e, win_ex_11_n, win_ex_11_t, &
+                  win_ex_12_e, win_ex_12_n, win_ex_12_t, &
+                  win_ex_13_e, win_ex_13_n, win_ex_13_t, &
+                  win_ex_11, win_ex_12, win_ex_13, win_ex_14, win_ex_15, &
+                  win_ex_16, win_ex_17, win_ex_18, win_ex_19, win_ex_110
        INTEGER, PRIVATE, PARAMETER :: local_master=0
 !-----------------------------------------------------------------------
 !     INTERFACES
 !-----------------------------------------------------------------------
        PUBLIC :: adas_btsigv
        PUBLIC :: adas_sigvte_ioniz
+       PUBLIC :: adas_bms
 
        INTERFACE adas_sigvte_ioniz
           MODULE PROCEDURE adas_sigvte_ioniz_r8,adas_sigvte_ioniz_int
@@ -68,19 +78,75 @@ module adas_mod_parallel
           MODULE PROCEDURE adas_btsigv_int_int,adas_btsigv_int_r8,adas_btsigv_r8_r8,adas_btsigv_r8_int
        END INTERFACE
 
+       INTERFACE adas_bms
+          MODULE PROCEDURE adas_bms_int_r8
+       END INTERFACE
+
 !-----------------------------------------------------------------------
 !     SUBROUTINES
 !-----------------------------------------------------------------------
        CONTAINS
+
+       LOGICAL FUNCTION adas_tables_avail()
+       IMPLICIT NONE
+       CHARACTER(LEN=256) :: adasdir, file_str
+       adas_tables_avail = .FALSE.
+       CALL getenv('ADASDIR', adasdir)
+       INQUIRE(FILE=TRIM(adasdir),EXIST=adas_tables_avail)
+       IF (.not.adas_tables_avail) THEN
+            !WRITE(6,*) 'ADAS FILE: '//TRIM(adasdir)// 'not FOUND!'
+            RETURN
+       END IF
+       file_str=TRIM(adasdir) // '/tables/ei/ei_1_coldTarget.cdf'
+       INQUIRE(FILE=TRIM(file_str),EXIST=adas_tables_avail)
+       IF (.not.adas_tables_avail) THEN
+            !WRITE(6,*) 'ADAS FILE: '//TRIM(file_str)// 'not FOUND!'
+            RETURN
+       END IF
+       file_str=TRIM(adasdir) // '/tables/ei/ei_2_coldTarget.cdf'
+       INQUIRE(FILE=TRIM(file_str),EXIST=adas_tables_avail)
+       IF (.not.adas_tables_avail) THEN
+            !WRITE(6,*) 'ADAS FILE: '//TRIM(file_str)// 'not FOUND!'
+            RETURN
+       END IF
+       file_str=TRIM(adasdir) // '/tables/cx/cx_1_1_warmTarget.cdf'
+       INQUIRE(FILE=TRIM(file_str),EXIST=adas_tables_avail)
+       IF (.not.adas_tables_avail) THEN
+            !WRITE(6,*) 'ADAS FILE: '//TRIM(file_str)// 'not FOUND!'
+            RETURN
+       END IF
+       file_str=TRIM(adasdir) // '/tables/cx/cx_2_1_warmTarget.cdf'
+       INQUIRE(FILE=TRIM(file_str),EXIST=adas_tables_avail)
+       IF (.not.adas_tables_avail) THEN
+            !WRITE(6,*) 'ADAS FILE: '//TRIM(file_str)// 'not FOUND!'
+            RETURN
+       END IF
+       file_str=TRIM(adasdir) // '/tables/cx/cx_2_2_warmTarget.cdf'
+       INQUIRE(FILE=TRIM(file_str),EXIST=adas_tables_avail)
+       IF (.not.adas_tables_avail) THEN
+            !WRITE(6,*) 'ADAS FILE: '//TRIM(file_str)// 'not FOUND!'
+            RETURN
+       END IF
+       file_str=TRIM(adasdir) // '/tables/ii/ii_1_1_warmTarget.cdf'
+       INQUIRE(FILE=TRIM(file_str),EXIST=adas_tables_avail)
+       IF (.not.adas_tables_avail) THEN
+            !WRITE(6,*) 'ADAS FILE: '//TRIM(file_str)// 'not FOUND!'
+            RETURN
+       END IF
+
+       RETURN
+
+       END FUNCTION adas_tables_avail
 
 !       SUBROUTINE adas_load_tables
        SUBROUTINE adas_load_tables(myid,comm)
        IMPLICIT NONE
        INTEGER, INTENT(inout) :: myid
        INTEGER, INTENT(inout) :: comm
-       INTEGER, DIMENSION(2) :: dimlen
+       INTEGER, DIMENSION(3) :: dimlen
        CHARACTER(LEN=256) :: adasdir, table_str, var_str
 
+#if defined(MPI_OPT)
        ! Initialize
        CALL deallocate_adas_tables
        ! Load Electron impact iz =1 
@@ -304,10 +370,70 @@ module adas_mod_parallel
        CALL mpialloc(ii_2_8_btsigv, dimlen(1), dimlen(2), myid, local_master, comm, win_ii_28b)
        CALL adas_get_var_2D(table_str,var_str,dimlen(1),dimlen(2),ii_2_8_btsigv,myid,comm)
 
+       ! Beam Stopping 1-1
+       !table_str=TRIM(adasdir) // '/tables/sv/ex_1_1.cdf'
+       !var_str = 'energy_vec'
+       !CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       !CALL mpialloc(ex_1_1_e, dimlen(1), myid, local_master, comm, win_ex_11_e)
+       !CALL adas_get_var_1D(table_str,var_str,dimlen(1),ex_1_1_e,myid,comm)
+       !var_str = 'density_vec'
+       !CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       !CALL mpialloc(ex_1_1_n, dimlen(1), myid, local_master, comm, win_ex_11_n)
+       !CALL adas_get_var_1D(table_str,var_str,dimlen(1),ex_1_1_n,myid,comm)
+       !var_str = 'temp_vec'
+       !CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       !CALL mpialloc(ex_1_1_t, dimlen(1), myid, local_master, comm, win_ex_11_t)
+       !CALL adas_get_var_1D(table_str,var_str,dimlen(1),ex_1_1_t,myid,comm)
+       !var_str = 'sigv_excite'
+       !CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       !CALL mpialloc(ex_1_1, dimlen(1), dimlen(2),dimlen(3), myid, local_master, comm, win_ex_11)
+       !CALL adas_get_var_3D(table_str,var_str,dimlen(1),dimlen(2),dimlen(3),ex_1_1,myid,comm)
+
+       ! Beam Stopping 1-2
+       !table_str=TRIM(adasdir) // '/tables/sv/ex_1_2.cdf'
+       !var_str = 'energy_vec'
+       !CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       !CALL mpialloc(ex_1_2_e, dimlen(1), myid, local_master, comm, win_ex_12_e)
+       !CALL adas_get_var_1D(table_str,var_str,dimlen(1),ex_1_2_e,myid,comm)
+       !var_str = 'density_vec'
+       !CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       !CALL mpialloc(ex_1_2_n, dimlen(1), myid, local_master, comm, win_ex_12_n)
+       !CALL adas_get_var_1D(table_str,var_str,dimlen(1),ex_1_2_n,myid,comm)
+       !var_str = 'temp_vec'
+       !CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       !CALL mpialloc(ex_1_2_t, dimlen(1), myid, local_master, comm, win_ex_12_t)
+       !CALL adas_get_var_1D(table_str,var_str,dimlen(1),ex_1_2_t,myid,comm)
+       !var_str = 'sigv_excite'
+       !CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       !CALL mpialloc(ex_1_2, dimlen(1), dimlen(2),dimlen(3), myid, local_master, comm, win_ex_12)
+       !CALL adas_get_var_3D(table_str,var_str,dimlen(1),dimlen(2),dimlen(3),ex_1_2,myid,comm)
+
+       ! Beam Stopping 1-3
+       !table_str=TRIM(adasdir) // '/tables/sv/ex_1_3.cdf'
+       !var_str = 'energy_vec'
+       !CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       !CALL mpialloc(ex_1_3_e, dimlen(1), myid, local_master, comm, win_ex_13_e)
+       !CALL adas_get_var_1D(table_str,var_str,dimlen(1),ex_1_3_e,myid,comm)
+       !var_str = 'density_vec'
+       !CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       !CALL mpialloc(ex_1_3_n, dimlen(1), myid, local_master, comm, win_ex_13_n)
+       !CALL adas_get_var_1D(table_str,var_str,dimlen(1),ex_1_3_n,myid,comm)
+       !var_str = 'temp_vec'
+       !CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       !CALL mpialloc(ex_1_3_t, dimlen(1), myid, local_master, comm, win_ex_13_t)
+       !CALL adas_get_var_1D(table_str,var_str,dimlen(1),ex_1_3_t,myid,comm)
+       !var_str = 'sigv_excite'
+       !CALL adas_inq_var_size(table_str,var_str,dimlen,myid,comm)
+       !CALL mpialloc(ex_1_3, dimlen(1), dimlen(2),dimlen(3), myid, local_master, comm, win_ex_13)
+       !CALL adas_get_var_3D(table_str,var_str,dimlen(1),dimlen(2),dimlen(3),ex_1_3,myid,comm)
+#endif
+       RETURN
+
        END SUBROUTINE adas_load_tables
 
        SUBROUTINE deallocate_adas_tables
        IMPLICIT NONE
+#if defined(MPI_OPT)
        IF (ASSOCIATED(ei_1_axis)) CALL mpidealloc(ei_1_axis,win_ei_1a)
        IF (ASSOCIATED(ei_2_axis)) CALL mpidealloc(ei_2_axis,win_ei_2a)
        IF (ASSOCIATED(cx_1_1_axis)) CALL mpidealloc(cx_1_1_axis,win_cx_11a)
@@ -355,22 +481,36 @@ module adas_mod_parallel
        IF (ASSOCIATED(ii_2_6_btsigv)) CALL mpidealloc(ii_2_6_btsigv,win_ii_26b)
        IF (ASSOCIATED(ii_2_7_btsigv)) CALL mpidealloc(ii_2_7_btsigv,win_ii_27b)
        IF (ASSOCIATED(ii_2_8_btsigv)) CALL mpidealloc(ii_2_8_btsigv,win_ii_28b)
+
+       IF (ASSOCIATED(ex_1_1_e)) CALL mpidealloc(ex_1_1_e,win_ex_11_e)
+       IF (ASSOCIATED(ex_1_1_n)) CALL mpidealloc(ex_1_1_n,win_ex_11_n)
+       IF (ASSOCIATED(ex_1_1_t)) CALL mpidealloc(ex_1_1_t,win_ex_11_t)
+       IF (ASSOCIATED(ex_1_2_e)) CALL mpidealloc(ex_1_2_e,win_ex_12_e)
+       IF (ASSOCIATED(ex_1_2_n)) CALL mpidealloc(ex_1_2_n,win_ex_12_n)
+       IF (ASSOCIATED(ex_1_2_t)) CALL mpidealloc(ex_1_2_t,win_ex_12_t)
+       IF (ASSOCIATED(ex_1_3_e)) CALL mpidealloc(ex_1_3_e,win_ex_13_e)
+       IF (ASSOCIATED(ex_1_3_n)) CALL mpidealloc(ex_1_3_n,win_ex_13_n)
+       IF (ASSOCIATED(ex_1_3_t)) CALL mpidealloc(ex_1_3_t,win_ex_13_t)
+       IF (ASSOCIATED(ex_1_1)) CALL mpidealloc(ex_1_1,win_ex_11)
+       IF (ASSOCIATED(ex_1_2)) CALL mpidealloc(ex_1_2,win_ex_12)
+       IF (ASSOCIATED(ex_1_3)) CALL mpidealloc(ex_1_3,win_ex_13)
+#endif
        END SUBROUTINE deallocate_adas_tables
 
        SUBROUTINE adas_inq_var_size(filename,varname,n,myid,comm)
        IMPLICIT NONE
        CHARACTER(LEN=256), INTENT(in) :: filename, varname
-       INTEGER, DIMENSION(2), INTENT(out)  :: n
+       INTEGER, DIMENSION(3), INTENT(out)  :: n
        INTEGER, INTENT(inout) :: comm, myid
        INTEGER :: ncid, varid, ier, ndims, i
-       INTEGER, DIMENSION(2) :: dimid
+       INTEGER, DIMENSION(3) :: dimid
        n   = 0
 #if defined(NETCDF)
        IF (myid == local_master) THEN
           ier = NF90_OPEN(filename,NF90_NOWRITE,ncid)
           ier = NF90_INQ_VARID(ncid,varname,varid)
           ier = NF90_INQUIRE_VARIABLE(ncid,varid,NDIMS = ndims, DIMIDS=dimid)
-          IF ((ndims) > 2) ndims=2
+          IF ((ndims) > 3) ndims=3
           DO i = 1, ndims
              ier = NF90_INQUIRE_DIMENSION(ncid,dimid(i),LEN = n(i))
           END DO
@@ -429,6 +569,29 @@ module adas_mod_parallel
        RETURN
 #endif
        END SUBROUTINE adas_get_var_2D
+
+       SUBROUTINE adas_get_var_3D(filename,varname,n,m,l,var,myid,comm)
+       IMPLICIT NONE
+       CHARACTER(LEN=256), INTENT(in) :: filename, varname
+       INTEGER, INTENT(in)  :: n, m, l
+       DOUBLE PRECISION, DIMENSION(n,m,l), INTENT(inout) :: var
+       INTEGER, INTENT(inout) :: comm, myid
+       INTEGER :: ncid, varid, ier, ndims, i
+       INTEGER :: dimid(3)
+#if defined(NETCDF)
+       IF (myid == local_master) THEN
+          ier = NF90_OPEN(filename,NF90_NOWRITE,ncid)
+          ier = NF90_INQ_VARID(ncid,varname,varid)
+          ier = NF90_GET_VAR(ncid, varid, var)
+          ier = NF90_CLOSE(ncid)
+       END IF
+#endif
+#if defined(MPI_OPT)
+       ier = 0
+       CALL MPI_BCAST(var, n*m*l, MPI_DOUBLE, local_master, comm, ier)
+       RETURN
+#endif
+       END SUBROUTINE adas_get_var_3D
 
        SUBROUTINE ADAS_SIGVTE_IONIZ_R8(zneut,tevec,n1,sigv_adas,istat)
        ! calculates <sig*v> electron impact ionization
@@ -542,6 +705,7 @@ module adas_mod_parallel
        integer, intent(in) :: beamchrg ! beam type: =neutral or =ion
 
        integer, parameter :: NEUTRAL=1, ION=2
+       real*8  :: zbeam         !     zbeam        : atomic charge of primate particle
        real*8  :: zion          !     izion        : atomic charge of secondary particle {1, ..., 10}
        integer :: npts_e, npts_t ! number of points for table
        real*8  :: xlr, xlr_t ! If XLR>0, then the X grid is equally spaced on a logarithmic scale:
@@ -551,10 +715,18 @@ module adas_mod_parallel
        istat=0
        sigv_adas=0
        sigv_adas_wrk1 =0; sigv_adas_wrk2=0
-       zion = DBLE(izneut_in)
 
-       IF (freact_type == 1) THEN
-          IF(beamchrg.eq.NEUTRAL) THEN
+       ! The the beam is an ion then flip it.
+       IF (beamchrg.eq.NEUTRAL) THEN
+          zbeam = DBLE(izneut_in)
+          zion  = DBLE(zion_in)
+       ELSE ! FLIP for ION-BEAM
+          zbeam = DBLE(zion_in)
+          zion  = DBLE(izneut_in)
+       END IF
+
+       IF (freact_type == 1) THEN ! Charge Exchange (cx_zneut_zion)
+          IF (zbeam == 1) THEN
              xlr    =  log(cx_1_1_axis(2)/cx_1_1_axis(1))
              xlr_t  =  log(cx_1_1_axis(6)/cx_1_1_axis(5))
              npts_e = SIZE(cx_1_1_btsigv,DIM=1)
@@ -563,7 +735,7 @@ module adas_mod_parallel
                                                xlr,npts_e,cx_1_1_axis(5),cx_1_1_axis(6),&
                                                xlr_t,npts_t,iwarn_adas)
              sigv_adas = sigv_adas_wrk1*(zion) ! This is the ADAS WAY
-          ELSE IF (beamchrg.eq.ION) THEN
+          ELSE IF (zbeam == 2) THEN
              IF (zion >=1 .and. zion < 2) THEN
                 xlr=log(cx_2_1_axis(2)/cx_2_1_axis(1))
                 xlr_t=log(cx_2_1_axis(6)/cx_2_1_axis(5))
@@ -594,7 +766,7 @@ module adas_mod_parallel
              istat = 1
           END IF
        ELSE IF (freact_type == 2) THEN
-          IF(beamchrg.eq.NEUTRAL) THEN
+          IF(zbeam == 1) THEN
              IF (zion >=1 .and. zion < 2) THEN
                 xlr=log(ii_1_1_axis(2)/ii_1_1_axis(1))
                 xlr_t=log(ii_1_1_axis(6)/ii_1_1_axis(5))
@@ -749,7 +921,7 @@ module adas_mod_parallel
                                                xlr_t,npts_t,iwarn_adas)
                 sigv_adas = sigv_adas_wrk1*(zion/10) ! This is the ADAS WAY
              END IF
-          ELSE IF (beamchrg.eq.ION) THEN
+          ELSE IF (zbeam == 2) THEN
              IF (zion >=1 .and. zion < 2) THEN
                 xlr=log(ii_2_1_axis(2)/ii_2_1_axis(1))
                 xlr_t=log(ii_2_1_axis(6)/ii_2_1_axis(5))
@@ -830,5 +1002,96 @@ module adas_mod_parallel
        END IF
        RETURN
        END SUBROUTINE adas_btsigv_int_r8
+
+       SUBROUTINE adas_bms_int_r8(EB, Nevec, ZB, CONC, TI, ZI, NE, SIGVI, iERR)
+       !Compute beam stopping rate coefficient on impurity
+!                            9 = array initialisation error)
+!
+       REAL*8,  INTENT(IN)  :: EB(nevec)    ! Beam energy [KeV/amu]
+       INTEGER, INTENT(IN)  :: nevec        ! Energy vector size
+       INTEGER, INTENT(IN)  :: ZB           ! Beam Particle Charge Number
+       REAL*8,  INTENT(IN)  :: conc(nevec)  !target species fraction
+!                                            : Z_imp * N_imp/SUM(Z_imp*N_imp) (0 < conc(i) <= 1)
+!                                            : where,
+!                                            : Z_imp -- Particle Nuclear Charge Number 
+!                                            : N_imp -- impurity density
+       REAL*8,  INTENT(IN)  :: TI(nevec)    ! Target temperature [KeV/amu] 
+       REAL*8,  INTENT(IN)  :: ZI           ! Target Nuclear Charge Number
+       REAL*8,  INTENT(IN)  :: NE(nevec)    ! Equivalent electron density [cm**-3]
+!                                              N_el*SUM(Z_imp^2* N_imp)/SUM(Z_imp * N_imp)/Z_imp
+       REAL*8,  INTENT(OUT) :: SIGVI(nevec) !Beam Stopping Rate Coefficient [m**3/s]
+       INTEGER              :: iERR
+!     iERR     : Error Code (0 = OK,                             
+!                            1 = unsupported beam species
+!                            2 = unsupported target species
+!                            3 = input data corrupted (negative beam energy, densities or temperatures)
+!                            4 = input data out of range
+!                            5 = adas file reading error
+!                            6 = spline output data invalid (negative)
+!                            7 = spline error
+!                            8 = array allocation error
+!                            9 = array initialisation error)
+       INTEGER :: n, m, l, i
+       REAL*8  :: nfrac, mfrac, lfrac, sigvi_wrk
+
+       SIGVI = 0
+       iERR  = 0
+       IF (ZB == 1) THEN ! H beam
+            IF (ZI < 1) THEN
+               PRINT *,'ERROR: ZI_r8 < 1'
+               iERR = 2
+               RETURN
+            ELSE IF (ZI <2) THEN
+               DO i=1, nevec
+                  n = MIN(COUNT(ex_1_1_e < EB(i)),1)
+                  m = MIN(COUNT(ex_1_1_n < NE(i)),1)
+                  l = MIN(COUNT(ex_1_1_t < TI(i)),1)
+                  nfrac = (EB(i) - ex_1_1_e(n))/(ex_1_1_e(n+1)-ex_1_1_e(n))
+                  mfrac = (NE(i) - ex_1_1_n(m))/(ex_1_1_n(m+1)-ex_1_1_n(m))
+                  lfrac = (TI(i) - ex_1_1_t(l))/(ex_1_1_t(l+1)-ex_1_1_t(l))
+                  sigvi(i) = ex_1_1(n,m,l) + nfrac*(ex_1_1(n+1,m  ,l  )-ex_1_1(n,m,l)) &
+                                            + mfrac*(ex_1_1(n  ,m+1,l  )-ex_1_1(n,m,l)) &
+                                            + lfrac*(ex_1_1(n  ,m  ,l+1)-ex_1_1(n,m,l))
+                  n = MIN(COUNT(ex_1_2_e < EB(i)),1)
+                  m = MIN(COUNT(ex_1_2_n < NE(i)),1)
+                  l = MIN(COUNT(ex_1_2_t < TI(i)),1)
+                  nfrac = (EB(i) - ex_1_2_e(n))/(ex_1_2_e(n+1)-ex_1_2_e(n))
+                  mfrac = (NE(i) - ex_1_2_n(m))/(ex_1_2_n(m+1)-ex_1_2_n(m))
+                  lfrac = (TI(i) - ex_1_2_t(l))/(ex_1_2_t(l+1)-ex_1_2_t(l))
+                  sigvi_wrk = ex_1_2(n,m,l) + nfrac*(ex_1_2(n+1,m  ,l  )-ex_1_2(n,m,l)) &
+                                            + mfrac*(ex_1_2(n  ,m+1,l  )-ex_1_2(n,m,l)) &
+                                            + lfrac*(ex_1_2(n  ,m  ,l+1)-ex_1_2(n,m,l))
+                  sigvi(i) = sigvi(i) + (sigvi_wrk-sigvi(i)) * (ZI-1)
+               END DO
+            ELSE IF (ZI <3) THEN
+               DO i=1, nevec
+                  n = MIN(COUNT(ex_1_2_e < EB(i)),1)
+                  m = MIN(COUNT(ex_1_2_n < NE(i)),1)
+                  l = MIN(COUNT(ex_1_2_t < TI(i)),1)
+                  nfrac = (EB(i) - ex_1_2_e(n))/(ex_1_2_e(n+1)-ex_1_2_e(n))
+                  mfrac = (NE(i) - ex_1_2_n(m))/(ex_1_2_n(m+1)-ex_1_2_n(m))
+                  lfrac = (TI(i) - ex_1_2_t(l))/(ex_1_2_t(l+1)-ex_1_2_t(l))
+                  sigvi(i) = ex_1_2(n,m,l) + nfrac*(ex_1_2(n+1,m  ,l  )-ex_1_2(n,m,l)) &
+                                            + mfrac*(ex_1_2(n  ,m+1,l  )-ex_1_2(n,m,l)) &
+                                            + lfrac*(ex_1_2(n  ,m  ,l+1)-ex_1_2(n,m,l))
+                  n = MIN(COUNT(ex_1_3_e < EB(i)),1)
+                  m = MIN(COUNT(ex_1_3_n < NE(i)),1)
+                  l = MIN(COUNT(ex_1_3_t < TI(i)),1)
+                  nfrac = (EB(i) - ex_1_3_e(n))/(ex_1_3_e(n+1)-ex_1_3_e(n))
+                  mfrac = (NE(i) - ex_1_3_n(m))/(ex_1_3_n(m+1)-ex_1_3_n(m))
+                  lfrac = (TI(i) - ex_1_3_t(l))/(ex_1_3_t(l+1)-ex_1_3_t(l))
+                  sigvi_wrk = ex_1_3(n,m,l) + nfrac*(ex_1_3(n+1,m  ,l  )-ex_1_3(n,m,l)) &
+                                            + mfrac*(ex_1_3(n  ,m+1,l  )-ex_1_3(n,m,l)) &
+                                            + lfrac*(ex_1_3(n  ,m  ,l+1)-ex_1_3(n,m,l))
+                  sigvi(i) = sigvi(i) + (sigvi_wrk-sigvi(i)) * (ZI-2)
+               END DO
+            END IF
+
+       ELSE
+            PRINT *,'ERROR: Non-Hydrogenic species missing'
+            iERR = 1
+       END IF
+       RETURN
+       END SUBROUTINE adas_bms_int_r8
 
 end module adas_mod_parallel

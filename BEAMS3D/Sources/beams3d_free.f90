@@ -12,11 +12,12 @@
       USE beams3d_grid
       USE beams3d_lines, ONLY: R_lines, PHI_lines, Z_lines, vll_lines, &
                                neut_lines, moment_lines, S_lines, U_lines, &
-                               PE_lines, PI_lines, shine_through, &
+                               shine_through, &
+                               B_lines, end_state, shine_port, &
                                ndot_prof, epower_prof, ipower_prof, j_prof,&
-                               B_lines
-!      USE wall_mod, ONLY: wall_free
-      USE EZspline_obj
+                               dense_prof, dist5d_prof, &
+                               win_ndot, win_epower, win_ipower, win_jprof, &
+                               win_dense, win_dist5d
       USE mpi_sharmem
 !-----------------------------------------------------------------------
 !     Local Variables
@@ -57,13 +58,12 @@
       IF (ALLOCATED(vll_lines)) DEALLOCATE(vll_lines)
       IF (ALLOCATED(neut_lines)) DEALLOCATE(neut_lines)
       IF (ALLOCATED(moment_lines)) DEALLOCATE(moment_lines)
-      IF (ALLOCATED(PE_lines)) DEALLOCATE(PE_lines)
-      IF (ALLOCATED(PI_lines)) DEALLOCATE(PI_lines)
       IF (ALLOCATED(S_lines)) DEALLOCATE(S_lines)
       IF (ALLOCATED(U_lines)) DEALLOCATE(U_lines)
       IF (ALLOCATED(B_lines)) DEALLOCATE(B_lines)
       IF (ALLOCATED(weight)) DEALLOCATE(weight)
       IF (ALLOCATED(beam)) DEALLOCATE(beam)
+      IF (ALLOCATED(end_state)) DEALLOCATE(end_state)
       IF (PRESENT(IN_COMM)) THEN
          IF (ASSOCIATED(req_axis)) CALL mpidealloc(req_axis,win_req_axis)
          IF (ASSOCIATED(zeq_axis)) CALL mpidealloc(zeq_axis,win_zeq_axis)
@@ -92,6 +92,19 @@
          IF (ASSOCIATED(S4D))      CALL mpidealloc(S4D,win_S4D)
          IF (ASSOCIATED(U4D))      CALL mpidealloc(U4D,win_U4D)
          IF (ASSOCIATED(POT4D))    CALL mpidealloc(POT4D,win_POT4D)
+         IF (ASSOCIATED(wall_load))   CALL mpidealloc(wall_load,win_wall_load)
+         IF (ASSOCIATED(wall_shine))  CALL mpidealloc(wall_shine,win_wall_shine)
+         !IF (ASSOCIATED(ndot_prof))    CALL mpidealloc(ndot_prof,win_ndot)
+         !IF (ASSOCIATED(epower_prof))  CALL mpidealloc(epower_prof,win_epower)
+         !IF (ASSOCIATED(ipower_prof))  CALL mpidealloc(ipower_prof,win_ipower)
+         !IF (ASSOCIATED(j_prof))       CALL mpidealloc(j_prof,win_jprof)
+         !IF (ASSOCIATED(dense_prof))   CALL mpidealloc(dense_prof,win_dense)
+         IF (ASSOCIATED(ndot_prof))    DEALLOCATE(ndot_prof)
+         IF (ASSOCIATED(epower_prof))    DEALLOCATE(epower_prof)
+         IF (ASSOCIATED(ipower_prof))    DEALLOCATE(ipower_prof)
+         IF (ASSOCIATED(j_prof))    DEALLOCATE(j_prof)
+         IF (ASSOCIATED(dense_prof))    DEALLOCATE(dense_prof)
+         IF (ASSOCIATED(dist5d_prof)) CALL mpidealloc(dist5d_prof,win_dist5d)
       ELSE
          IF (ASSOCIATED(req_axis)) DEALLOCATE(req_axis)
          IF (ASSOCIATED(zeq_axis)) DEALLOCATE(zeq_axis)
@@ -120,6 +133,14 @@
          IF (ASSOCIATED(S4D))      DEALLOCATE(S4D)
          IF (ASSOCIATED(U4D))      DEALLOCATE(U4D)
          IF (ASSOCIATED(POT4D))    DEALLOCATE(POT4D)
+         IF (ASSOCIATED(wall_load))    DEALLOCATE(wall_load)
+         IF (ASSOCIATED(wall_shine))    DEALLOCATE(wall_shine)
+         IF (ASSOCIATED(ndot_prof))    DEALLOCATE(ndot_prof)
+         IF (ASSOCIATED(epower_prof))    DEALLOCATE(epower_prof)
+         IF (ASSOCIATED(ipower_prof))    DEALLOCATE(ipower_prof)
+         IF (ASSOCIATED(j_prof))    DEALLOCATE(j_prof)
+         IF (ASSOCIATED(dense_prof))    DEALLOCATE(dense_prof)
+         IF (ASSOCIATED(dist5d_prof))   DEALLOCATE(dist5d_prof)
       ENDIF
       IF (ALLOCATED(R_start))   DEALLOCATE(R_start)
       IF (ALLOCATED(phi_start)) DEALLOCATE(phi_start)
@@ -134,10 +155,7 @@
       IF (ALLOCATED(beam))      DEALLOCATE(beam)
       IF (ALLOCATED(weight))    DEALLOCATE(weight)
       IF (ALLOCATED(shine_through))    DEALLOCATE(shine_through)
-      IF (ALLOCATED(ndot_prof))    DEALLOCATE(ndot_prof)
-      IF (ALLOCATED(epower_prof))    DEALLOCATE(epower_prof)
-      IF (ALLOCATED(ipower_prof))    DEALLOCATE(ipower_prof)
-      IF (ALLOCATED(j_prof))    DEALLOCATE(j_prof)
+      IF (ALLOCATED(shine_port))    DEALLOCATE(shine_port)
       RETURN
 !-----------------------------------------------------------------------
 !     End Subroutine

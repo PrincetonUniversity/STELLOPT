@@ -13,17 +13,16 @@
       USE beams3d_lines
       USE beams3d_grid, ONLY: nr, nphi, nz, B_R, B_PHI, B_Z, raxis, &
                                  zaxis, phiaxis,vp_spl_s
-      USE beams3d_runtime, ONLY: id_string, npoinc, t_end, lbeam, &
+      USE beams3d_runtime, ONLY: id_string, npoinc, t_end, lbeam, lvac,&
+                                 lvmec, &
                                  nbeams, beam, e_beams, charge_beams, &
                                  mass_beams, lverb, p_beams, MPI_BARRIER_ERR,&
                                  MPI_BCAST_ERR,nprocs_beams,handle_err, ldepo,&
                                  MPI_REDU_ERR
       USE safe_open_mod, ONLY: safe_open
       USE EZspline
-!DEC$ IF DEFINED (MPI_OPT)
       USE mpi_params ! MPI
-      USE mpi
-!DEC$ ENDIF
+      USE mpi_inc
 !-----------------------------------------------------------------------
 !     Local Variables
 !          ier          Error Flag
@@ -37,31 +36,25 @@
       LOGICAL, ALLOCATABLE     :: partmask(:), partmask2(:,:), partmask2t(:,:)
       INTEGER, ALLOCATABLE  :: int_mask(:), int_mask2(:,:), nlost(:)
       INTEGER, ALLOCATABLE  :: dist_func(:,:,:)
-      REAL, ALLOCATABLE     :: real_mask(:)
+      REAL, ALLOCATABLE     :: real_mask(:),vllaxis(:),vperpaxis(:)
       INTEGER, PARAMETER :: ndist = 100
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
       INTEGER :: status(MPI_STATUS_size) !mpi stuff
       INTEGER :: mystart, mypace, sender
       INTEGER, ALLOCATABLE :: revcounts(:), displs(:)
       REAL(rprec), ALLOCATABLE :: buffer_mast(:,:), buffer_slav(:,:)
-!DEC$ ENDIF
+#endif
 !-----------------------------------------------------------------------
 !     Begin Subroutine
 !-----------------------------------------------------------------------
       IF (lverb) WRITE(6,'(A)')  '----- BEAM DIAGNOSTICS -----'
 
 
-      ! DEALLOCATE stuff we don't need
+      ! DEALLOCATE stuff we do not need
       IF (ALLOCATED(Z_lines)) DEALLOCATE(Z_lines)
       IF (ALLOCATED(moment_lines)) DEALLOCATE(moment_lines)
       IF (ALLOCATED(U_lines)) DEALLOCATE(U_lines)
       IF (ALLOCATED(B_lines)) DEALLOCATE(B_lines)
-
-
-      IF (.not. lbeam) THEN
-         beam = 1
-         nbeams = 1
-      END IF
 
       CALL FLUSH(6)
 
@@ -70,8 +63,10 @@
 
       ! Main Allocations
       IF (ALLOCATED(shine_through)) DEALLOCATE(shine_through)
+      IF (ALLOCATED(shine_port)) DEALLOCATE(shine_port)
       IF (ALLOCATED(nlost)) DEALLOCATE(nlost)
       ALLOCATE(shine_through(nbeams))
+      ALLOCATE(shine_port(nbeams))
       ALLOCATE(nlost(nbeams))
       ALLOCATE(partmask(mystart:myend))
       ALLOCATE(partmask2(0:npoinc,mystart:myend))
@@ -79,18 +74,12 @@
       ALLOCATE(int_mask(mystart:myend))
       ALLOCATE(int_mask2(0:npoinc,mystart:myend))
       ALLOCATE(real_mask(mystart:myend))
-      maxdist=MAXVAl(MAXVAL(vll_lines,DIM=2,MASK=(ABS(vll_lines)<1E8)),DIM=1)
-      mindist=MINVAl(MINVAL(vll_lines,DIM=2,MASK=(ABS(vll_lines)<1E8)),DIM=1)
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_BEAMS, ierr_mpi)
       IF (ierr_mpi /= 0) CALL handle_err(MPI_BARRIER_ERR, 'beams3d_follow', ierr_mpi)
-      CALL MPI_ALLREDUCE(MPI_IN_PLACE,maxdist,1,MPI_DOUBLE_PRECISION,MPI_MAX,MPI_COMM_BEAMS,ierr_mpi)
-      IF (ierr_mpi /= 0) CALL handle_err(MPI_REDU_ERR, 'beams3d_diagnostic1', ierr_mpi)
-      CALL MPI_ALLREDUCE(MPI_IN_PLACE,mindist,1,MPI_DOUBLE_PRECISION,MPI_MIN,MPI_COMM_BEAMS,ierr_mpi)
-      IF (ierr_mpi /= 0) CALL handle_err(MPI_REDU_ERR, 'beams3d_diagnostic2', ierr_mpi)
-!DEC$ ENDIF
-      maxdist = max(ABS(mindist),ABS(maxdist))
-      mindist = -maxdist
+#endif
+      maxdist = partvmax
+      mindist = -partvmax
 
       ! Setup masking arrays
       FORALL(i=0:npoinc) int_mask2(i,mystart:myend) = beam(mystart:myend)              ! Index of beams
@@ -102,9 +91,10 @@
       WHERE(int_mask < 0) int_mask = 0
       FORALL(j=mystart:myend) real_mask(j) = S_lines(int_mask(j),j) ! Starting points in s
 
-      ! Don't need R_lines or PHI_lines after this point
+      ! Do not need R_lines or PHI_lines after this point
       IF (ALLOCATED(R_lines)) DEALLOCATE(R_lines)
       IF (ALLOCATED(PHI_lines)) DEALLOCATE(PHI_lines)
+      IF (ALLOCATED(neut_lines)) DEALLOCATE(neut_lines)
 
       ! Calculate distribution function
       ALLOCATE(dist_func(1:nbeams,1:ndist,0:npoinc))
@@ -125,21 +115,24 @@
       ! Calculate shinethrough and loss
       shine_through = 0
       DO i = 1, nbeams
-         shine_through(i) = 100.*COUNT(neut_lines(1,mystart:myend) .and. (beam(mystart:myend)==i),DIM=1)/COUNT(beam==i)
-         nlost(i)         = COUNT(lost_lines(mystart:myend).and. beam(mystart:myend) == i)
+         shine_through(i) = 100.*COUNT(end_state(mystart:myend) == 3 .and. (beam(mystart:myend)==i),DIM=1)/COUNT(beam==i)
+         shine_port(i) = 100.*COUNT(end_state(mystart:myend) == 4 .and. (beam(mystart:myend)==i),DIM=1)/COUNT(beam==i)
+         nlost(i)         = COUNT(end_state(mystart:myend) == 2 .and. beam(mystart:myend) == i)
       END DO
 
-!DEC$ IF DEFINED (MPI_OPT)
+#if defined(MPI_OPT)
       IF (myworkid == master) THEN
          CALL MPI_REDUCE(MPI_IN_PLACE, dist_func,     nbeams*ndist*(npoinc+1), MPI_INTEGER,          MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
          CALL MPI_REDUCE(MPI_IN_PLACE, shine_through, nbeams,                  MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
+         CALL MPI_REDUCE(MPI_IN_PLACE, shine_port,    nbeams,                  MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
          CALL MPI_REDUCE(MPI_IN_PLACE, nlost,         nbeams,                  MPI_INTEGER,          MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
       ELSE
          CALL MPI_REDUCE(dist_func,     dist_func,     nbeams*ndist*(npoinc+1), MPI_INTEGER,          MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
          CALL MPI_REDUCE(shine_through, shine_through, nbeams,                  MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
+         CALL MPI_REDUCE(shine_port,    shine_port,    nbeams,                  MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
          CALL MPI_REDUCE(nlost,         nlost,         nbeams,                  MPI_INTEGER,          MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
       END IF
-!DEC$ ENDIF
+#endif
 
       IF (myworkid == master) THEN
          ! Open the file
@@ -162,9 +155,9 @@
 
             ! Screen Output
             IF (lverb) THEN
-               IF (i==1) WRITE(6,'(A)')  ' BEAMLINE     ENERGY [keV]   CHARGE [e]   MASS [Mp]   Particles [#]   Lost [%]  Shinethrough [%]'
-               WRITE(6,'(I5,3(11X,I3),8X,I8,2(8X,F5.1))') i,NINT(E_BEAMS(i)*6.24150636309E15),NINT(CHARGE_BEAMS(i)*6.24150636309E18),&
-                                         NINT(MASS_BEAMS(i)*5.97863320194E26), ninj, 100.*nlost(i)/ninj, shine_through(i)
+               IF (i==1) WRITE(6,'(A)')  ' BEAMLINE     ENERGY [keV]   CHARGE [e]   MASS [Mp]   Particles [#]   Lost [%]  Shinethrough [%]  Port [%]'
+               WRITE(6,'(I5,3(11X,I3),8X,I8,3(8X,F5.1))') i,NINT(E_BEAMS(i)*6.24150636309E15),NINT(CHARGE_BEAMS(i)*6.24150636309E18),&
+                                         NINT(MASS_BEAMS(i)*5.97863320194E26), ninj, 100.*nlost(i)/ninj, shine_through(i), shine_port(i)
                CALL FLUSH(6)
             END IF
             ! Write Distribution Function
@@ -179,97 +172,45 @@
             CALL FLUSH(iunit)
          END DO
          CLOSE(iunit)
-      ELSE
-         DEALLOCATE(dist_func)
       END IF
 
-      ! Don't need R_lines or PHI_lines after this point
-      IF (ALLOCATED(neut_lines)) DEALLOCATE(neut_lines)
-
-      ! BEAM DIAGNOSTICS
-      IF (lbeam .and. .not.ldepo) THEN
-
-         ! Birth Profiles and Power deposition and current profile
-         IF (ALLOCATED(ndot_prof)) DEALLOCATE(ndot_prof)
-         IF (ALLOCATED(epower_prof)) DEALLOCATE(epower_prof)
-         IF (ALLOCATED(ipower_prof)) DEALLOCATE(ipower_prof)
-         IF (ALLOCATED(j_prof)) DEALLOCATE(j_prof)
-         ALLOCATE(ndot_prof(1:nbeams,1:ns_prof))
-         ALLOCATE(epower_prof(1:nbeams,1:ns_prof))
-         ALLOCATE(ipower_prof(1:nbeams,1:ns_prof))
-         ALLOCATE(j_prof(1:nbeams,1:ns_prof))
-
-         !Initialize arrays
-         ndot_prof = 0
-         epower_prof = 0
-         ipower_prof = 0
-         j_prof = 0
-
-         ! Loop over beam lines
-         DO k = 1, ns_prof
-            s1 = REAL(k-1)/REAL(ns_prof)
-            s2 = REAL(k)/REAL(ns_prof)
-            partmask(mystart:myend)  = ((real_mask(mystart:myend) >= s1) .and. (real_mask(mystart:myend) < s2))
-            partmask2(:,mystart:myend) = ((S_lines(:,mystart:myend) >= s1) .and. (S_lines(:,mystart:myend) < s2))
-            CALL EZspline_interp(Vp_spl_s,s2,vp_temp,ier)
-            DO i = 1, nbeams
-               partmask2t(:,mystart:myend)=(partmask2(:,mystart:myend).and.(int_mask2(:,mystart:myend)==i))
-               ndot_prof(i,k) = COUNT((partmask(mystart:myend).and.(beam(mystart:myend)==i)))/vp_temp
-               epower_prof(i,k) = SUM(SUM(PE_lines(:,mystart:myend),DIM=1,MASK=partmask2t(:,mystart:myend)))/vp_temp
-               ipower_prof(i,k) = SUM(SUM(PI_lines(:,mystart:myend),DIM=1,MASK=partmask2t(:,mystart:myend)))/vp_temp
-               real_mask(mystart:myend)=SUM(vll_lines(:,mystart:myend),MASK=partmask2t(:,mystart:myend),DIM=1)*(t_end-int_mask*dt_out)/(COUNT(partmask2t(:,mystart:myend),DIM=1)+1)
-               j_prof(i,k) = SUM(real_mask)
-            END DO
-         END DO
-
-!DEC$ IF DEFINED (MPI_OPT)
-         IF (myworkid == master) THEN
-            CALL MPI_REDUCE(MPI_IN_PLACE, ndot_prof,   nbeams*ns_prof, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
-            CALL MPI_REDUCE(MPI_IN_PLACE, epower_prof, nbeams*ns_prof, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
-            CALL MPI_REDUCE(MPI_IN_PLACE, ipower_prof, nbeams*ns_prof, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
-            CALL MPI_REDUCE(MPI_IN_PLACE, j_prof,      nbeams*ns_prof, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
-         ELSE
-            CALL MPI_REDUCE(ndot_prof,   ndot_prof,   nbeams*ns_prof, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
-            CALL MPI_REDUCE(epower_prof, epower_prof, nbeams*ns_prof, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
-            CALL MPI_REDUCE(ipower_prof, ipower_prof, nbeams*ns_prof, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
-            CALL MPI_REDUCE(j_prof,      j_prof,      nbeams*ns_prof, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
-         END IF
-!DEC$ ENDIF
-
-         IF (myworkid == master) THEN
-            DO i = 1, nbeams
-               ninj  = COUNT(beam .eq. i)
-               ndot_prof(i,:) = (P_beams(i)/E_beams(i))*REAL(ndot_prof(i,:)) / REAL(ninj)
-               epower_prof(i,:) = (P_beams(i)/E_beams(i))*epower_prof(i,:)/ REAL(ninj)
-               ipower_prof(i,:) = (P_beams(i)/E_beams(i))*ipower_prof(i,:)/ REAL(ninj)
-            END DO
-            DEALLOCATE(dist_func)
-         END IF
-
-      END IF
-
-      ! Give master a full copy of lost_lines (for STELLOPT interface)
-      partmask(mystart:myend) = lost_lines(mystart:myend)
-      IF (myworkid == master) THEN
-           DEALLOCATE(lost_lines)
-           ALLOCATE(lost_lines(1:nparticles),revcounts(nprocs_beams),displs(nprocs_beams))
-           lost_lines(mystart:myend) = partmask(mystart:myend)
-      ELSE
-           ALLOCATE(revcounts(nprocs_beams),displs(nprocs_beams))
-      END IF
-      CALL MPI_GATHER(mystart,1,MPI_INTEGER,displs,1,MPI_INTEGER,master, MPI_COMM_BEAMS, ierr_mpi)
-      CALL MPI_GATHER(myend-mystart+1,1,MPI_INTEGER,revcounts,1,MPI_INTEGER,master, MPI_COMM_BEAMS, ierr_mpi)
-      CALL MPI_GATHERV(partmask(mystart:myend),myend-mystart+1,MPI_LOGICAL,&
-                       lost_lines,revcounts,displs,MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
-      IF (ALLOCATED(revcounts)) DEALLOCATE(revcounts)
-      IF (ALLOCATED(displs)) DEALLOCATE(displs)
-      IF (myworkid /= master) DEALLOCATE(lost_lines)
-
-      CALL beams3d_write('DIAG')
-
+      DEALLOCATE(dist_func)
       DEALLOCATE(int_mask2,int_mask)
       DEALLOCATE(partmask2,partmask2t)
       DEALLOCATE(partmask,real_mask)
+
+      ! These diagnostics need Vp to be defined
+      IF (lvmec .and. .not.lvac .and. .not.ldepo .and. myworkid == master) THEN
+         ! In the future we'll calculate values from the dist5d_prof array.
+         ALLOCATE(vllaxis(ns_prof4),vperpaxis(ns_prof5))
+         FORALL(k = 1:ns_prof4) vllaxis(k) = -partvmax+2*partvmax*(k-1)/(ns_prof4-1)
+         FORALL(k = 1:ns_prof5) vperpaxis(k) = partvmax*(k-1)/(ns_prof5-1)
+         ! We need to calculate the old values
+         dense_prof = SUM(SUM(SUM(SUM(dist5d_prof,DIM=6),DIM=5),DIM=4),DIM=3)
+         ! This is an example of how to do this but we can't do this for j_prof since it's charge dependent
+         !DO k = 1, ns_prof4
+         !   j_prof = j_prof + SUM(SUM(SUM(SUM(dist5d_prof(:,:,:,:,k,:),DIM=6),DIM=5),DIM=4),DIM=3)*vllaxis(k)
+         !END DO
+         DEALLOCATE(vllaxis,vperpaxis)
+         ! Grid in rho, units in [/m^3]
+         ! Note ns is number of cells not cell boundaries
+         ! Just a note here dV/drho = 2*rho*dV/dist
+         ! And we need dV so we multiply by drho=1./ns
+         DO k = 1, ns_prof1
+            s1 = REAL(k-0.5)/REAL(ns_prof1) ! Rho
+            s2 = s1*s1
+            CALL EZspline_interp(Vp_spl_s,s2,vp_temp,ier)
+            vp_temp = vp_temp*2*s1*(1./REAL(ns_prof1))
+            epower_prof(:,k) = epower_prof(:,k)/vp_temp
+            ipower_prof(:,k) = ipower_prof(:,k)/vp_temp
+            ndot_prof(:,k)   =   ndot_prof(:,k)/vp_temp
+               j_prof(:,k)   =      j_prof(:,k)/vp_temp
+            dense_prof(:,k)  =  dense_prof(:,k)/vp_temp
+         END DO
+
+      END IF
+
+      CALL beams3d_write('DIAG')
 
 
 !-----------------------------------------------------------------------

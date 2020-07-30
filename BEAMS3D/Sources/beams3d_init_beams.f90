@@ -12,7 +12,7 @@
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
       USE beams3d_runtime
-      USE beams3d_lines, ONLY: nparticles
+      USE beams3d_lines, ONLY: nparticles, partvmax
       USE mpi_params
       USE mpi_inc
 
@@ -22,142 +22,118 @@
 !          iunit          File ID Number
 !-----------------------------------------------------------------------
       IMPLICIT NONE
-      INTEGER :: ier, i, j, k
-!      REAL(rprec)  :: br
-      REAL(rprec), ALLOCATABLE :: X(:,:), Y(:,:), block(:,:), Energy(:), R_temp(:)
-      REAL(rprec)              :: magZ, magX, magV_neut, magV, xx(3), yy(3), zz(3)
+      INTEGER :: ier, i, j, k, k1, k2
+      INTEGER, DIMENSION(:), ALLOCATABLE :: N_start
+      REAL(rprec) :: rtemp, nx, ny ,nz
+      REAL(rprec), DIMENSION(:), ALLOCATABLE :: Energy, X_start, Y_start
+      REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: X, Y, U, V
+      REAL(rprec), PARAMETER   :: E_error = .01 ! 1% energy spread
 !-----------------------------------------------------------------------
 !     Begin Subroutine
 !-----------------------------------------------------------------------
 
       CALL init_random_seed
       IF (lverb) THEN
-        WRITE(6, '(A)') '----- INITIALIZING BEAMS -----'
-        WRITE(6, '(A,I4)') '      nbeams: ', nbeams
-        WRITE(6, '(A,I6)') '      nparticles_start: ', nparticles_start
-        DO i=1, nbeams
-           WRITE(6, '(A,I2,A,I4,A,A,I2,A,F7.3,A)') '            E_BEAM(',i ,'): ',&
+         WRITE(6, '(A)') '----- INITIALIZING BEAMS -----'
+         WRITE(6, '(A,I4)') '      nbeams: ', nbeams
+         WRITE(6, '(A,I6)') '      nparticles_start: ', nparticles_start
+         DO i=1, nbeams
+            WRITE(6, '(A,I2,A,I4,A,A,I2,A,F7.3,A)') '            E_BEAM(',i ,'): ',&
                      NINT(E_beams(i)*6.24150636309E15),' [keV]',& !(1.0E-3/ec)
                                      ' P_BEAM(',i ,'): ',&
                      (P_beams(i)*1E-6),' [MW]'
-        END DO
-        CALL FLUSH(6)
-      END IF
-
-      ALLOCATE (X(nparticles_start, nbeams), Y(nparticles_start, nbeams), &
-                  & Energy(nparticles_start), block(nparticles_start, nbeams), STAT=ier )
-      IF (ier /= 0) CALL handle_err(ALLOC_ERR, 'X, Y, weight', ier)
-      !ALLOCATE (R_temp(nparticles_start),STAT=ier)
-      !IF (ier /= 0) CALL handle_err(ALLOC_ERR, 'R_temp', ier)
-
-      IF (myworkid == master) THEN
-         block = 0
-         nparticles = 0
-         DO i=1,nbeams
-            CALL gauss_rand(nparticles_start, X(:,i))
-            CALL gauss_rand(nparticles_start, Y(:,i))
-            X(:,i) = Div_beams(i)*Adist_beams(i)*X(:,i)
-            Y(:,i) = Div_beams(i)*Adist_beams(i)*Y(:,i)
-          ! Limit distribution so all particles make it through
-          !R_temp = SQRT(X(:,i)*X(:,i) + Y(:,i)*Y(:,i))
-          !X(:,i) = Asize_beams(i)*X(:,i)/R_temp
-          !Y(:,i) = Asize_beams(i)*Y(:,i)/R_temp
-            DO j = 1,nparticles_start
-               IF ((X(j,i)*X(j,i) + Y(j,i)*Y(j,i)) <= Asize_beams(i)*Asize_beams(i)) THEN
-                  block(j,i)    = 1
-                  nparticles = nparticles + 1
-               END IF
-            END DO
          END DO
+         !IF (lascot) THEN
+         !   CALL beams3d_write_ascoth5('BEAM')
+         !   IF (lverb) WRITE(6, '(A,I4)')      '   ASCOT5 File: Updated'
+         !END IF
+         CALL FLUSH(6)
       END IF
 
-!DEC$ IF DEFINED (MPI_OPT)
-      CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
-      CALL MPI_BCAST(nparticles,1,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
-!DEC$ ENDIF
-
+      nparticles = nbeams*nparticles_start
       ALLOCATE(   R_start(nparticles), phi_start(nparticles), Z_start(nparticles), vll_start(nparticles), &
-                & v_neut(3,nparticles), mass(nparticles), charge(nparticles), Zatom(nparticles), &
-                & mu_start(nparticles), t_end(nparticles), &
-                & beam(nparticles), weight(nparticles), STAT=ier   )
-      IF (ier /= 0) CALL handle_err(ALLOC_ERR, 'R,phi,Z _start, etc.', ier)
-
+                  v_neut(3,nparticles), mass(nparticles), charge(nparticles), Zatom(nparticles), &
+                  mu_start(nparticles), t_end(nparticles), &
+                  beam(nparticles), weight(nparticles))
       IF (myworkid == master) THEN
-      k = 0
-!     Make beam distributions
-      DO i=1,nbeams
-!         Div_beams is total angle; twice horizontal to edge angle.
-          CALL gauss_rand(nparticles_start, Energy)
-          Energy = sqrt( (E_beams(i) + E_beams(i)/100*Energy)*(E_beams(i) + E_beams(i)/100*Energy) )
-          IF (lbeam_simple) Energy = E_beams(i)
-          DO j=1,nparticles_start
-              IF (block(j,i) /= 0) THEN
-                  k = k + 1
-                  beam(k)         = i
-                  mu_start(k)     = 0
-                  t_end(k)        = t_end_in(i)
-                  mass(k)         = mass_beams(i)
-                  charge(k)       = charge_beams(i)
-                  Zatom(k)        = Zatom_beams(i)
-                  weight(k)       = P_beams(i)/Energy(j)
+         ALLOCATE(N_start(nparticles_start),X_start(nparticles_start),Y_start(nparticles_start),&
+                  Energy(nparticles_start), U(3,nparticles_start), V(3,nparticles_start))
+         k1 = 1; k2 = nparticles_start
+         DO i = 1, nbeams
+            ! Beam Geometry
+            nx                  = R_beams(i,2)*cos(PHI_beams(i,2))-R_beams(i,1)*cos(PHI_beams(i,1))
+            ny                  = R_beams(i,2)*sin(PHI_beams(i,2))-R_beams(i,1)*sin(PHI_beams(i,1))
+            nz                  = Z_beams(i,2)-Z_beams(i,1)
+            rtemp               = 1.0/sqrt(nx*nx+ny*ny+nz*nz)
+            nx                  = nx*rtemp
+            ny                  = ny*rtemp
+            nz                  = nz*rtemp
+            ! Basics
+            beam(k1:k2)         = i
+            mu_start(k1:k2)     = 0
+            t_end(k1:k2)        = t_end_in(i)
+            mass(k1:k2)         = mass_beams(i)
+            charge(k1:k2)       = charge_beams(i)
+            Zatom(k1:k2)        = Zatom_beams(i)
+            partvmax            = MAX(partvmax,6*SQRT(2*E_beams(i)/mass_beams(i))/5.0)
+            ! Energy distribution
+            CALL gauss_rand(nparticles_start, Energy)
+            Energy = sqrt( (E_beams(i) + E_error*E_beams(i)*Energy)*(E_beams(i) + E_error*E_beams(i)*Energy) )
+            IF (lbeam_simple) Energy = E_beams(i)
+            weight(k1:k2)       = P_beams(i)/Energy
+            R_start(k1:k2)      = R_beams(i,1)
+            PHI_start(k1:k2)    = PHI_beams(i,1)
+            Z_start(k1:k2)      = Z_beams(i,1)
+            ! Now calculate Divergence (use small angle tan(div)=div here)
+            CALL gauss_rand(nparticles_start,X_start)
+            CALL gauss_rand(nparticles_start,Y_start)
+            U(1,:) = SQRT(X_start*X_start+Y_start*Y_start)
+            V(1,:) = ATAN2(Y_start,X_start)
+            X_start = Div_beams(i)*U(1,:)*COS(V(1,:))
+            Y_start = Div_beams(i)*U(1,:)*SIN(V(1,:))
+            ! Calcualte Divergence vectors (assume N are unit vectors)
+            U(1,:) = ny
+            U(2,:) = -nx
+            U(3,:) = 0.0
+            V(1,:) = U(2,:)*nz
+            V(2,:) =-U(1,:)*nz
+            V(3,:) = U(1,:)*ny-U(2,:)*nx
+            ! Starting Velocity 
+            vll_start(k1:k2) = SQRT(2*Energy/mass_beams(i))  ! speed E=0.5*mv^2
+            v_neut(1,k1:k2)  = (nx + U(1,:)*X_Start + V(1,:)*Y_start)*vll_start(k1:k2)
+            v_neut(2,k1:k2)  = (ny + U(2,:)*X_Start + V(2,:)*Y_start)*vll_start(k1:k2)
+            v_neut(3,k1:k2)  = (nz + U(3,:)*X_Start + V(3,:)*Y_start)*vll_start(k1:k2)
+            k1 = k2 + 1
+            k2 = k2 + nparticles_start
+         END DO
+         DEALLOCATE(N_start,X_Start,Y_start,Energy, U, V)
+         weight = weight/nparticles_start
 
-                  magV_neut         = sqrt( 2*Energy(j)/mass(k) )
-                  IF (magV_neut == 0) magV_neut = 1
-
-                  magZ              = sqrt( (r_beams(i,2)*cos(phi_beams(i,2))-r_beams(i,1)*cos(phi_beams(i,1))) &
-                                             & *(r_beams(i,2)*cos(phi_beams(i,2))-r_beams(i,1)*cos(phi_beams(i,1))) &
-                                          & + (r_beams(i,2)*sin(phi_beams(i,2))-r_beams(i,1)*sin(phi_beams(i,1))) &
-                                             & *(r_beams(i,2)*sin(phi_beams(i,2))-r_beams(i,1)*sin(phi_beams(i,1))) &
-                                          & + (z_beams(i,2)-z_beams(i,1))*(z_beams(i,2)-z_beams(i,1)) )
-                  IF (magZ == 0) magZ = 1
-
-                  magX              = sqrt( ((r_beams(i,2)*cos(phi_beams(i,2))-r_beams(i,1)*cos(phi_beams(i,1))) &
-                                                &*(z_beams(i,2)-z_beams(i,1)))*&
-                                            ((r_beams(i,2)*cos(phi_beams(i,2))-r_beams(i,1)*cos(phi_beams(i,1))) &
-                                                &*(z_beams(i,2)-z_beams(i,1))) + &
-                                            ((r_beams(i,2)*sin(phi_beams(i,2))-r_beams(i,1)*sin(phi_beams(i,1))) &
-                                                &*(z_beams(i,2)-z_beams(i,1)))*&
-                                            ((r_beams(i,2)*sin(phi_beams(i,2))-r_beams(i,1)*sin(phi_beams(i,1))) &
-                                                &*(z_beams(i,2)-z_beams(i,1))) + &
-                                            (1 - (z_beams(i,2)-z_beams(i,1))*(z_beams(i,2)-z_beams(i,1)))*&
-                                            (1 - (z_beams(i,2)-z_beams(i,1))*(z_beams(i,2)-z_beams(i,1))) )
-                  IF (magX == 0) magX = 1
-
-                  magV              = sqrt( Adist_beams(i)*Adist_beams(i) + X(j,i)*X(j,i) + Y(j,i)*Y(j,i) )
-                  IF (magV == 0) magV = 1
-
-                  R_start(k)       = r_beams(i,1)
-                  phi_start(k)     = phi_beams(i,1)
-                  Z_start(k)       = z_beams(i,1)
-
-                  zz(1)              = (r_beams(i,2)*cos(phi_beams(i,2))-r_beams(i,1)*cos(phi_beams(i,1)))/magZ
-                  zz(2)              = (r_beams(i,2)*sin(phi_beams(i,2))-r_beams(i,1)*sin(phi_beams(i,1)))/magZ
-                  zz(3)              = (z_beams(i,2)-z_beams(i,1))/magZ
-                  xx(1)              = -(r_beams(i,2)*cos(phi_beams(i,2))-r_beams(i,1)*cos(phi_beams(i,1)))*&
-                                       &(z_beams(i,2)-z_beams(i,1))/magX
-                  xx(2)              = -(r_beams(i,2)*sin(phi_beams(i,2))-r_beams(i,1)*sin(phi_beams(i,1)))*&
-                                       &(z_beams(i,2)-z_beams(i,1))/magX
-                  xx(3)              = ( 1 - (z_beams(i,2)-z_beams(i,1))*(z_beams(i,2)-z_beams(i,1)) )/magX
-                  yy(1)              = zz(2)*xx(3) - zz(3)*xx(2)
-                  yy(2)              = zz(3)*xx(1) - zz(1)*xx(3)
-                  yy(3)              = zz(1)*xx(2) - zz(2)*xx(1)
-                  !v_neut(1,k)      = magV_neut*(Adist_beams(i)*zz(1) + X(j,i)*xx(1) + Y(j,i)*yy(1))/magV
-                  !v_neut(2,k)      = magV_neut*(Adist_beams(i)*zz(2) + X(j,i)*xx(2) + Y(j,i)*yy(2))/magV
-                  !v_neut(3,k)      = magV_neut*(Adist_beams(i)*zz(3) + X(j,i)*xx(3) + Y(j,i)*yy(3))/magV
-                  v_neut(1,k)      = (Adist_beams(i)*zz(1) + X(j,i)*xx(1) + Y(j,i)*yy(1))/magV
-                  v_neut(2,k)      = (Adist_beams(i)*zz(2) + X(j,i)*xx(2) + Y(j,i)*yy(2))/magV
-                  v_neut(3,k)      = (Adist_beams(i)*zz(3) + X(j,i)*xx(3) + Y(j,i)*yy(3))/magV
-                  v_neut(:,k)      = magV_neut*v_neut(:,k)/SQRT(SUM(v_neut(:,k)**2,DIM=1))
-
-                  vll_start(k) = sqrt( v_neut(1,k)*v_neut(1,k) + v_neut(2,k)*v_neut(2,k) + v_neut(3,k)*v_neut(3,k) )
-                  !PRINT *, k, weight(j,i), v_neut(:,k)
-              END IF
-          END DO
-      END DO
-      weight = weight/nparticles
       END IF
-      DEALLOCATE(X,Y,Energy,block)
-!DEC$ IF DEFINED (MPI_OPT)
+
+!      OLD WAY
+!      IF (myworkid == master) THEN
+!         block = 0
+!         nparticles = 0
+!         DO i=1,nbeams
+!            Asq = Asize_beams(i)*Asize_beams(i)
+!            CALL gauss_rand(nparticles_start, RHO)
+!            CALL gauss_rand(nparticles_start, U)
+!            X(:,i) = Div_beams(i)*Adist_beams(i)*RHO*COS(U*pi2)
+!            Y(:,i) = Div_beams(i)*Adist_beams(i)*RHO*SIN(U*pi2)
+!            !X(:,i) = Div_beams(i)*Adist_beams(i)*X(:,i)
+!            !Y(:,i) = Div_beams(i)*Adist_beams(i)*Y(:,i)
+!            DO j = 1,nparticles_start
+!               IF ((X(j,i)*X(j,i) + Y(j,i)*Y(j,i)) <= Asq) THEN
+!                  block(j,i)    = 1
+!                  nparticles = nparticles + 1
+!               END IF
+!            END DO
+!         END DO
+!      END IF
+!      DEALLOCATE(RHO,U)
+
+#if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(mu_start,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(t_end,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
@@ -171,7 +147,7 @@
       CALL MPI_BCAST(vll_start,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(beam,nparticles,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(v_neut,nparticles*3,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
-!DEC$ ENDIF
+#endif
 
 
 !-----------------------------------------------------------------------

@@ -12,10 +12,8 @@
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
       USE fieldlines_grid
-      USE fieldlines_runtime, ONLY: lmu, mu, ladvanced
-      USE sheppack
-      USE EZspline_obj
-      USE EZspline
+!      USE EZspline_obj
+!      USE EZspline
 !-----------------------------------------------------------------------
 !     Input Variables
 !          phi        phi angle
@@ -40,8 +38,9 @@
       ! For splines
       INTEGER :: i,j,k
       REAL*8 :: xparam, yparam, zparam, hx, hy, hz, hxi, hyi, hzi
-      REAL*8 :: fval(4)
-      INTEGER, parameter :: ict(8)=(/1,1,1,1,0,0,0,0/)
+      REAL*8 :: fval(1,3) ! So weird behavior but this must match the sum of ict
+      INTEGER, parameter :: ict(8)=(/1,1,0,1,0,0,0,0/)
+      !INTEGER, parameter :: ict(10)=(/1,1,0,1,0,0,0,0,0,0/)
       REAL*8, PARAMETER :: one = 1
       
 !-----------------------------------------------------------------------
@@ -70,22 +69,20 @@
          xparam = (r_temp - raxis(i)) * hxi
          yparam = (phi_temp - phiaxis(j)) * hyi
          zparam = (z_temp - zaxis(k)) * hzi
-         ! Trajectory
-         !CALL EZspline_interp(BR_spl,r_temp,phi_temp,z_temp,br_temp,ier)
-         !CALL EZspline_interp(BZ_spl,r_temp,phi_temp,z_temp,bz_temp,ier)
-         ! Map
-         !CALL EZspline_derivative(BR_spl,1,0,0,r_temp,phi_temp,z_temp,drdr,ier)
-         !CALL EZspline_derivative(BR_spl,0,0,1,r_temp,phi_temp,z_temp,drdz,ier)
-         !CALL EZspline_derivative(BZ_spl,1,0,0,r_temp,phi_temp,z_temp,dzdr,ier)
-         !CALL EZspline_derivative(BZ_spl,0,0,1,r_temp,phi_temp,z_temp,dzdz,ier)
          CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                          hx,hxi,hy,hyi,hz,hzi,&
                          BR4D(1,1,1,1),nr,nphi,nz)
-         br_temp = fval(1); drdr = fval(2); drdz = fval(4)
+         !CALL R8FVTRICUB(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+         !                hx,hxi,hy,hyi,hz,hzi,&
+         !                BR4D(1,1,1,1),nr,nphi,nz)
+         br_temp = fval(1,1); drdr = fval(1,2); drdz = fval(1,3)
          CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                          hx,hxi,hy,hyi,hz,hzi,&
                          BZ4D(1,1,1,1),nr,nphi,nz)
-         bz_temp = fval(1); dzdr = fval(2); dzdz = fval(4)
+         !CALL R8FVTRICUB(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+         !                hx,hxi,hy,hyi,hz,hzi,&
+         !                BZ4D(1,1,1,1),nr,nphi,nz)
+         bz_temp = fval(1,1); dzdr = fval(1,2); dzdz = fval(1,3)
       ELSE
          br_temp = 0.0
          bz_temp = 0.0

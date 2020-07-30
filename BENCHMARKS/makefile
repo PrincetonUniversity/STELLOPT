@@ -18,7 +18,7 @@
 
 .PHONY: test_vmec
 
-test_vmec:
+test_vmec: 
 	@echo "Beginning testing of VMEC2000"
 	@cd $(VMEC_TEST_DIR); rm -f jxbout* mercier* threed1* wout*; 
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xvmec2000 input.DSHAPE
@@ -45,7 +45,6 @@ test_vmec:
 	@cd $(VMEC_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xvmec2000 input.DIII-D
 	@cd $(VMEC_TEST_DIR); ./compare_DIII-D.py
 	@echo "Tesing of VMEC2000 complete"
-	@echo ""
 
 test_diagno:
 	@echo "Beginning testing of DIAGNO"
@@ -88,10 +87,48 @@ test_fieldlines:
 
 test_beams3d:
 	@echo "Beginning testing of BEAMS3D"
+	$(MAKE) test_beams3d_basic
+	$(MAKE) test_beams3d_er
+	$(MAKE) test_beams3d_loss
+	$(MAKE) test_beams3d_slow
+	$(MAKE) test_beams3d_depo
+	@echo "Tesing of BEAMS3D complete"
+	@echo ""
+
+test_beams3d_basic:
 	@cd $(BEAMS3D_TEST_DIR); rm -f *.h5 *.txt; 
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS -plasma
 	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS -plasma
 	@cd $(BEAMS3D_TEST_DIR); ./test_ORBITS.py
+	@echo ""
+
+test_beams3d_er:
+	@cd $(BEAMS3D_TEST_DIR); rm -f *.h5 *.txt; 
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_er -plasma
+	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_er -plasma
+	@cd $(BEAMS3D_TEST_DIR); ./test_ORBITS_er.py
+	@echo ""
+	@echo ""
+
+test_beams3d_loss:
+	@cd $(BEAMS3D_TEST_DIR); rm -f *.h5 *.txt; 
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_loss -plasma
+	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_loss -plasma
+	@cd $(BEAMS3D_TEST_DIR); ./test_ORBITS_loss.py
+	@echo ""
+
+test_beams3d_slow:
+	@cd $(BEAMS3D_TEST_DIR); rm -f *.h5 *.txt; 
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_slow -plasma -collisions
+	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_slow -plasma -collisions
+	@cd $(BEAMS3D_TEST_DIR); ./test_ORBITS_slow.py
+	@echo ""
+
+test_beams3d_depo:
+	@cd $(BEAMS3D_TEST_DIR); rm -f *.h5 *.txt; 
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_depo -plasma -depo -suzuki
+	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_depo -plasma -depo -suzuki
+	@cd $(BEAMS3D_TEST_DIR); ./test_ORBITS_depo.py
 	@echo ""
 
 test_stellopt:
@@ -148,6 +185,7 @@ test_stellopt_gade:
 test_stellopt_basic:
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.BASIC
 	@cd $(STELLOPT_TEST_DIR)/BASIC; $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.BASIC; rm -f *_opt*
+	@cd $(STELLOPT_TEST_DIR)/BASIC && ./compare_BASIC.py
 	@echo ""
 
 test_stellopt_beams3d:

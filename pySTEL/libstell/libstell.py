@@ -1,8 +1,5 @@
 # LIBSTELL Module
-
-s1 = ""
-s2 = "mp"
-s3 = "__"
+from . import s1, s2, s3
 
 def read_vmec(file):
     import os, sys

@@ -1,51 +1,48 @@
 # INSTALLATION
-This version of STELLOPT makes use of the `make.inc` file to define
-compiler options and paths (in analogy to the old setup file).  These
-files are stored in the [SHARE](SHARE) folder.  Check to see if one exists
-for your computer system.  If it does, just create a symbolic link to
-it named `make.inc` in the directory above [SHARE](SHARE).  Otherwise copy 
-the `make_pppl.inc` file under a new name. By default, `make_pppl.inc`
-assumes that you want to compile all the codes. Please modify your own
-copy if needed.
+This version of STELLOPT makes use of `make_***.inc` files in the `SHARE`
+subdirectory to set various options at compile time.  The `make.inc` file
+in the main directory is a script which picks these files based on what
+is returned by the `uname -n` command on your machine.  This can be
+overridden by setting the environment variable `MACHINE` to the file you
+wish to use.  For example to use `SHARE/make_bobdole.inc` you would set
+`MACHINE=bobdole` before calling the build scripts.  It is also
+important to set `STELLOPT_PATH` to the path to your current directory
+where you've pulled the repository.
 
-Creating a `make.inc` file is now mandatory, and please DO NOT track 
-your personal `make.inc` file via git.
+Once you configure the environment variables, you can begin to compile the code by
 
-     cp SHARE/make_pppl.inc SHARE/make_pppl_myown.inc
-     ln -sf SHARE/make_pppl_myown.inc make.inc
+     ./build_all 
 
-Once a working copy is developed for your computer, you are welcome 
-to push it back to the main repository for other users.
-Before beginning, it is recommened to create an install branch. To do 
-this issue the following commands from main directory:
+By default, it will compile all the codes in the folder with the option `clean_release`.
+You can customize the script by providing additional commandline arguments, like `./build_all -o release -j 4 STELLOPTV2`. To check the options, type `./build_all -h`.
 
-     git checkout -b install
-
-The -b option tells us to create a new branch (you could also issue
-two commands).  Now you'll be on your install branch feel free to
-edit files as necessary for your installation.  To build the code 
-use the build_all script which will systematically build and compile 
-all the files.
+There is also a Docker image available for use at https://hub.docker.com/r/zhucaoxiang/stellopt.
 
 For more information, please view [STELLOPT compilation](https://princetonuniversity.github.io/STELLOPT/STELLOPT%20Compilation).
 
-
 # EDITING CODE
-To edit the code please first checkout a new branch with the feature
-you'd like.  Then when you want your changes merged into master,
-please push your branch to the remote:
-
-     git push origin <branchname>
-
+Once a working copy is developed for your computer, you are welcome 
+to push it back to the main repository for other users.
+You can ask for a write permission and push your changes into a remote branch.
 Then submit a pull request through 
 [GitHub](https://github.com/PrincetonUniversity/STELLOPT/pulls).
 
+Or you can share your changes via [git fork](https://docs.github.com/en/github/getting-started-with-github/fork-a-repo), which doesn't require you have the write permission.
 
-# PYTHON INTERFACE
+GitHub actions will be triggered by each push and pull-request. The code will be compiled with debug option and you can check the full log at [GitHub actions](https://github.com/PrincetonUniversity/STELLOPT/actions).
+
+# UTILITIES
 A Python interface using CTYPES is also included but it requires a
 static shared build of LIBSTELL.  This is still a highly experimental
-option.
+option. You can find the python scripts at `./pySTEL`.
 
+There are also some other plotting packages developed by group members.
+Here are some examples.
+
+  - [matlabVMEC](https://github.com/lazersos/matlabVMEC): MATLAB packages for various codes.
+  - [coilpy](https://github.com/zhucaoxiang/CoilPy): Python package for toroidal Fourier surface, coils, FOCUS and STELLOPT.
+
+If you are willing to share your code, please add your contributions here.
 
 # REPORT BUGS
 If you find any bugs or have any suggestions, please submit an issue 
@@ -59,4 +56,4 @@ You can find some wiki pages at
 [GitHub pages](https://princetonuniversity.github.io/STELLOPT/).
 This is automatically generated from the `markdown` source files 
 in the [gh-pages](https://github.com/PrincetonUniversity/STELLOPT/tree/gh-pages) branch. 
-Everyone is welcome to contribute to the wiki pages.
+You are welcome to report/fix/update the wiki pages.

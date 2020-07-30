@@ -13,7 +13,7 @@
       USE vmec_main
       USE vmec_params
       USE vacmod
-      USE vsvd
+!      USE vsvd
       USE vspline
       USE timer_sub
       USE mgrid_mod, ONLY: nextcur, curlabel, nfper0, read_mgrid, free_mgrid,&

@@ -1,56 +1,41 @@
 #!/bin/sh
-#     Script:     update
-#     Author:     S. Lazerson (lazerson@pppl.gov)
-#     Date:       10/06/11
-#     Purpose:    This script zips the various STELLOPT
-#                 programs into their zip files and then
-#                 zips these files into the STELLOPT zip
-#                 file.
-#
-#     Usage:      To compile all STELLOPT codes simply call this script:
-#                 `build_all`. To complile only individual codes/libraries
-#                 add the requested script names as arguments:
-#                 `build_all LIBSTELL VMEC2000`.
-#
-#     Options:
-#       --release
-#       --clean_release
-#       --debug
-#       --clean_debug
-#       --shared_release
 
 export FLAG_CALLED_FROM_BUILD_ALL=true
 
+# A POSIX variable
+OPTIND=1         # Reset in case getopts has been used previously in the shell.
 
-# Set the default.
-RELEASE_TYPE=--clean_release
-#RELEASE_TYPE=--clean_debug
+# Initialize variables:
+MAKE_OPTION="clean_release"
+NUM_PROCS=1
 
-# Check to see if a build options was givin
-if [ $# -ne 0 ]; then
-  for OPTION in --release --clean_release --debug --clean_debug
-  do
-    # If command line arguments were given, then check to see
-    # which codes should be compiled.  Otherwise compile everything.
-    echo $@|grep -q -- $OPTION
-    if [ $? -eq 0 ]; then
-      RELEASE_TYPE=$OPTION
-      break  
-    fi
-  done
-fi
+# Check optional build variables
+while getopts "h?o:j:" opt; do
+    case "$opt" in
+    h|\?)
+        echo "./build_all -o MAKE_OPTION -j NUM_PROCS CODE_NAME"
+	      echo "    MAKE_OPTION: compile options, one of {clean_release, release, clean_debug, debug}."
+	      echo "    NUM_PROCS: number of CPUs for parallel make (default: 1)."
+	      echo "    CODE: code list to be compiled (default: full list)"
+        exit 0
+        ;;
+    o)  MAKE_OPTION=$OPTARG
+        ;;
+    j)  NUM_PROCS=$OPTARG
+        ;;
+    esac
+done
 
-echo Beginning build of STELLOPT with options: $RELEASE_TYPE
-
-MAKE_OPTIONS=`echo $RELEASE_TYPE | cut -b 3-`
-
+echo "Begin building STELLOPT with option: $MAKE_OPTION with $NUM_PROCS CPUs."
 # Call the toplevel makfile to setup the output directories.
-make $MAKE_OPTIONS
+make $MAKE_OPTION
 
+shift $((OPTIND-1))
+[ "${1:-}" = "--" ] && shift
 
 # Loop through all the available codes and make the ones specified on the
 # command line.  If no codes were specified, then make all of them.
-for CODE in LIBSTELL ANIMEC BCYCLIC BEAMS3D BOOTSJ BNORM BOOZ_XFORM COBRAVMEC COILOPT DESCUR DESCUR_PLOT DIAGNO DKES FIELDLINES GTOVMI IPIES J_INVARIANT JMC MAKEGRID NEO NESCOIL PENTA SIESTA STELLOPT STELLTRANS TORLINES V3FITA VMEC2000 VMEC2PIES VMEC2SPEC VMEC2STEL VMEC2V690 VMEC2XGC STELLOPTV2
+for CODE in LIBSTELL ANIMEC BCYCLIC BEAMS3D BOOTSJ BNORM BOOZ_XFORM COBRAVMEC COILOPT DESCUR DESCUR_PLOT DIAGNO DKES FIELDLINES J_INVARIANT MAKEGRID NEO NESCOIL PENTA TORLINES VMEC2000 VMEC2PIES VMEC2SPEC VMEC2STEL VMEC2V690 VMEC2XGC STELLOPTV2
 do
   match=0
 
@@ -62,7 +47,6 @@ do
       match=1  
     fi
   else
-    echo $CODE
     match=1
   fi
 
@@ -72,9 +56,14 @@ do
   fi
 
   if [ $match -eq 1 ]; then
+    echo "Begin building $CODE"
     cd $CODE
-    make $MAKE_OPTIONS
-#    make $MAKE_OPTIONS -j
+    make $MAKE_OPTION -j $NUM_PROCS
     cd ..
   fi
 done
+
+# make a dynamic library
+cd LIBSTELL
+make shared_release
+cd ..

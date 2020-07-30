@@ -26,11 +26,13 @@
                                     lvessel, lvac, lbeam_simple, handle_err, nparticles_start, &
                                     HDF5_OPEN_ERR,HDF5_WRITE_ERR,&
                                     HDF5_CLOSE_ERR, BEAMS3D_VERSION, weight, e_beams, p_beams,&
-                                    charge, Zatom, mass, ldepo, v_neut,lcollision, pi, pi2, t_end_in
+                                    charge, Zatom, mass, ldepo, v_neut,lcollision, pi, pi2, &
+                                    t_end_in, nprocs_beams
       USE safe_open_mod, ONLY: safe_open
       USE wall_mod, ONLY: nface,nvertex,face,vertex,ihit_array, wall_free
       USE beams3d_write_par
       USE mpi_params
+      USE mpi_inc
 !-----------------------------------------------------------------------
 !     Input Variables
 !          write_type  Type of write to preform
@@ -42,17 +44,18 @@
 !          ier          Error Flag
 !          iunit        File ID
 !-----------------------------------------------------------------------
-      INTEGER :: ier, iunit, i, d1, d2, d3
+      INTEGER :: ier, iunit, i, d1, d2, d3, k, k1, k2, kmax
       INTEGER(HID_T) :: options_gid, bfield_gid, efield_gid, plasma_gid, &
-                        neutral_gid, wall_gid, marker_gid, qid_gid, pid_gid
+                        neutral_gid, wall_gid, marker_gid, qid_gid
       INTEGER, ALLOCATABLE :: i1dtemp(:)
       DOUBLE PRECISION :: dbl_temp
       DOUBLE PRECISION, ALLOCATABLE :: rtemp(:,:,:), r1dtemp(:)
       CHARACTER(LEN=10) ::  qid_str
       CHARACTER(LEN=8) :: temp_str8
 
-
+      DOUBLE PRECISION, PARAMETER :: ascot4_pi      = 3.141592653589793238462643383280
       DOUBLE PRECISION, PARAMETER :: e_charge      = 1.60217662E-19 !e_c
+      DOUBLE PRECISION, PARAMETER :: inv_amu       = 6.02214076208E+26 ! 1./AMU [1/kg]
 !-----------------------------------------------------------------------
 !     Begin Subroutine
 !-----------------------------------------------------------------------
@@ -82,10 +85,10 @@
                rtemp = RESHAPE(B_Z,(/nr,nphi,nz/),ORDER=(/1,2,3/))
                CALL write_var_hdf5(qid_gid,'bz',nr,nphi,nz,ier,DBLVAR=rtemp)
                rtemp = RESHAPE(S_ARR,(/nr,nphi,nz/),ORDER=(/1,2,3/))
-               WHERE(rtemp < 1.0E-2) rtemp = 1.0E-2
+               WHERE(rtemp < 1.0E-3) rtemp = 1.0E-3
                CALL write_var_hdf5(qid_gid,'s',nr,nphi,nz,ier,DBLVAR=rtemp)
                DEALLOCATE(rtemp)
-               CALL write_var_hdf5(qid_gid,'phi',nphi,ier,DBLVAR=360*phiaxis/pi2)
+               CALL write_var_hdf5(qid_gid,'phi',nphi,ier,DBLVAR=180*phiaxis/ascot4_pi)
                CALL write_var_hdf5(qid_gid,'r',nr,ier,DBLVAR=raxis)
                CALL write_var_hdf5(qid_gid,'z',nz,ier,DBLVAR=zaxis)
                CALL write_var_hdf5(qid_gid,'toroidalPeriods',ier,INTVAR=FLOOR(pi2/phiaxis(nphi)))
@@ -97,7 +100,7 @@
                   d2 = (i)*(nphi-1)
                   rtemp(d1:d2,1,1)=req_axis(1:(nphi-1))
                   rtemp(d1:d2,2,1)=zeq_axis(1:(nphi-1))
-                  rtemp(d1:d2,3,1)=360*(phiaxis(1:(nphi-1))+(i-1)*pi2/d3)/pi2
+                  rtemp(d1:d2,3,1)=180*(phiaxis(1:(nphi-1))+2*(i-1)*ascot4_pi/d3)/ascot4_pi
                END DO
                rtemp((nphi-1)*d3+1,1:2,1) = rtemp(1,1:2,1)
                rtemp((nphi-1)*d3+1,3,1) = 360
@@ -113,14 +116,16 @@
                   rtemp(i,1,1)=DBLE(i-1)/DBLE(nr-1)
                END DO
                CALL EZspline_interp( vp_spl_s, nr, rtemp(:,1,1), rtemp(:,2,1), ier)
+               rtemp(1,2,1) = 0 ! Volume is zero at axis (Vp is not)
                DO i = 2, nr
                   rtemp(i,2,1)=rtemp(i,2,1)+(rtemp(i-1,2,1)) ! Integral So volume
                END DO
+               rtemp(:,2,1) = rtemp(:,2,1)/(nr-1)
                CALL write_var_hdf5(plasma_gid,'s',nr,ier,DBLVAR=sqrt(rtemp(:,1,1)))
                CALL write_var_hdf5(plasma_gid,'volume',nr,ier,DBLVAR=rtemp(:,2,1))
                DEALLOCATE(rtemp)
                
-               CALL h5gclose_f(pid_gid, ier)
+               CALL h5gclose_f(plasma_gid, ier)
                CALL h5gclose_f(qid_gid, ier)
                CALL h5gclose_f(bfield_gid, ier)
 
@@ -162,7 +167,7 @@
 
                ! Close file
                CALL close_hdf5(fid,ier)
-               IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,'beams3d_ascot5_'//TRIM(id_string)//'.h5',ier)
+               IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,'beams3d_ascot4_'//TRIM(id_string)//'.h5',ier)
 
                ! Write the input text file
                ier = 0; iunit = 411
@@ -175,12 +180,12 @@
                rtemp(:,5,1) = 1
                DO i = 1, nr
                   rtemp(i,1,1)=DBLE(i-1)/DBLE(nr-1)
-               END DO
-               IF (nte > 0)   CALL EZspline_interp( TE_spl_s,   nr, rtemp(:,1,1), rtemp(:,2,1), ier)
-               IF (nne > 0)   CALL EZspline_interp( NE_spl_s,   nr, rtemp(:,1,1), rtemp(:,3,1), ier)
-               IF (nti > 0)   CALL EZspline_interp( TI_spl_s,   nr, rtemp(:,1,1), rtemp(:,4,1), ier)
-               IF (nzeff > 0) CALL EZspline_interp( ZEFF_spl_s, nr, rtemp(:,1,1), rtemp(:,5,1), ier)
-               rtemp(nr,1,1) = 1.0; rtemp(nr,2,1) = 0; rtemp(nr,4,1) = 0 ! Default Te and Ti at edge to zero
+               END DO ! Treat rtemp(:,1,1) as rho not s.
+               IF (nte > 0)   CALL EZspline_interp( TE_spl_s,   nr, rtemp(:,1,1)**2, rtemp(:,2,1), ier)
+               IF (nne > 0)   CALL EZspline_interp( NE_spl_s,   nr, rtemp(:,1,1)**2, rtemp(:,3,1), ier)
+               IF (nti > 0)   CALL EZspline_interp( TI_spl_s,   nr, rtemp(:,1,1)**2, rtemp(:,4,1), ier)
+               IF (nzeff > 0) CALL EZspline_interp( ZEFF_spl_s, nr, rtemp(:,1,1)**2, rtemp(:,5,1), ier)
+               rtemp(nr,1,1) = 1.0; rtemp(nr,2,1) = 1.0; rtemp(nr,4,1) = 1.0 ! Default Te and Ti to almost zero
                WRITE(iunit,'(2X,I4,2X,I4,2X,A)') nr,2,'# Nrad,Nion'
                WRITE(iunit,'(2X,I4,2X,I4,2X,A)') 1,6,'# ion Znum'
                WRITE(iunit,'(2X,I4,2X,I4,2X,A)') 1,12,'# ion Anum'
@@ -214,6 +219,107 @@
                CLOSE(iunit)
             END IF
          CASE('MARKER')
+            ! Downselect the markers
+            d1 = LBOUND(R_lines,DIM=2)
+            d2 = UBOUND(R_lines,DIM=2)
+            d3 = 0
+            IF (lbeam) d3 = 2 ! Give ASCOT4 the gyrocenter
+            ALLOCATE(i1dtemp(nprocs_beams))
+            i1dtemp = 0
+            i1dtemp(myworkid+1) = COUNT(end_state(d1:d2).lt.3)
+            CALL MPI_ALLREDUCE(MPI_IN_PLACE, i1dtemp, nprocs_beams, MPI_INTEGER, MPI_SUM, MPI_COMM_BEAMS, ierr_mpi)
+            k2 = SUM(i1dtemp(1:myworkid+1))
+            k1 = k2 - i1dtemp(myworkid+1) + 1
+            kmax = SUM(i1dtemp)
+            DEALLOCATE(i1dtemp)
+            ALLOCATE(rtemp(k1:k2,14,1))
+            k = k1
+            DO i = d1, d2
+               IF (end_state(i).ge.3) CYCLE
+               rtemp(k,1,1) = NINT(mass(i)*inv_amu) ! Anum
+               rtemp(k,2,1) = mass(i)*inv_amu ! mass
+               rtemp(k,3,1) = Zatom(i)
+               rtemp(k,4,1) = Zatom(i)
+               dbl_temp     = 2*B_lines(d3,i)*moment_lines(d3,i)/mass(i) ! V_perp^2
+               rtemp(k,5,1) = 0.5*mass(i)*(vll_lines(d3,i)*vll_lines(d3,i)+dbl_temp)/e_charge
+               rtemp(k,10,1) = vll_lines(d3,i)/SQRT(dbl_temp+vll_lines(d3,i)*vll_lines(d3,i)) ! pitch
+               !rtemp(k,5,1) = 0.5*mass(i)*SUM(v_neut(:,i)*v_neut(:,i),DIM=1)*e_charge
+               rtemp(k,6,1) = SQRT(S_lines(d3,i))
+               dbl_temp = PHI_lines(d3,i)
+               rtemp(k,7,1) = dbl_temp*180/pi
+               rtemp(k,8,1) = R_lines(d3,i)
+               rtemp(k,9,1) = Z_lines(d3,i)
+               ! Now we get a little out of order since we need the components of the velocity
+               !rtemp(k,10,1) = v_neut(2,i)*cos(dbl_temp)-v_neut(1,i)*sin(dbl_temp) ! Vphi
+               !rtemp(k,11,1) = v_neut(1,i)*cos(dbl_temp)+v_neut(2,i)*sin(dbl_temp) ! Vr
+               !rtemp(k,12,1) = v_neut(3,i) !Vz
+               rtemp(k,11,1) = Beam(i)
+               rtemp(k,12,1) = weight(i) ! weight
+               rtemp(k,13,1) = k
+               rtemp(k,14,1) = t_end(k)
+               ! Now 17-19 are Bphi, Br, Bz
+               ! Set to zero for now.
+               k=k+1
+            END DO
+
+            ! First write the header
+            IF (myworkid==master) THEN
+               ! Write the input text file
+               ier = 0; iunit = 411
+               CALL safe_open(iunit,ier,'input.particles','replace','formatted')
+               WRITE(iunit,'(A)') ' PARTICLE INITIAL DATA FOR ASCOT'
+               WRITE(iunit,'(A)') ' 4 VERSION ====================='
+               WRITE(iunit,'(A)') ' '
+               WRITE(iunit,'(A)') ' 2  # Number of comment lines, max length 256 char, (defined in prtRead_lineLength)'
+               WRITE(iunit,'(A,F5.2)') 'Particles Generated by BEAMS3D v.',BEAMS3D_VERSION
+               WRITE(iunit,'(A)') 'Created from run: '//TRIM(id_string)
+               WRITE(iunit,'(A)') ' '
+               WRITE(iunit,'(I8,A)') kmax,' # Number of particles (-1 means unknown number)'
+               WRITE(iunit,'(A)') ' '
+               WRITE(iunit,'(I2,A)') SIZE(rtemp,DIM=2),' # Number of different fields for each particle [10 first letters are significant]'
+               WRITE(iunit,'(A)') 'Anum      - mass number of particle        (integer)'
+               WRITE(iunit,'(A)') 'mass      - mass of the particle           (amu)'
+               WRITE(iunit,'(A)') 'Znum      - charge number of particle      (integer)'
+               WRITE(iunit,'(A)') 'charge    - charge of the particle         (elemental charge)'
+               WRITE(iunit,'(A)') 'energy    - kinetic energy of particle     (eV)'
+               WRITE(iunit,'(A)') 'rho       - normalized poloidal flux       (real)'
+               WRITE(iunit,'(A)') 'phi       - toroidal angle of particle     (deg)'
+               WRITE(iunit,'(A)') 'R         - R of particle                  (m)'
+               WRITE(iunit,'(A)') 'z         - z of particle                  (m)'
+               WRITE(iunit,'(A)') 'pitch     - pitch angle cosine of particle (vpar/vtot)'
+               WRITE(iunit,'(A)') 'origin    - origin of the particle         ()'
+               WRITE(iunit,'(A)') 'weight    - weight factor of particle      (particle/second)'
+               WRITE(iunit,'(A)') 'id        - unique identifier of particle  (integer)'
+               WRITE(iunit,'(A)') 'Tmax      - maximum time to follow the prt (s)'
+               WRITE(iunit,'(A)') ' '
+               CALL FLUSH(iunit)
+               CLOSE(iunit)
+            END IF
+            ! Now write the file
+            DO i = 0, nprocs_beams-1
+               IF (myworkid == i) THEN
+                  CALL safe_open(iunit,ier,'input.particles','old','formatted',ACCESS_IN='APPEND')
+                  DO k = k1,k2
+                     WRITE(iunit,'(2(I8,E14.5E3),6(E18.9E3),2(I8,E18.9E3))') &
+                        NINT(rtemp(k,1,1)),rtemp(k,2,1),&
+                        NINT(rtemp(k,3,1)),rtemp(k,4,1),&
+                        rtemp(k,5:10,1), &
+                        NINT(rtemp(k,11,1)),rtemp(k,12,1),&
+                        NINT(rtemp(k,13,1)),rtemp(k,14,1)
+                  END DO
+                  CALL FLUSH(iunit)
+                  CLOSE(iunit)
+                  DEALLOCATE(rtemp)
+               END IF
+               CALL MPI_BARRIER(MPI_COMM_BEAMS,ierr_mpi)
+            END DO
+            IF (myworkid == master) THEN
+               CALL safe_open(iunit,ier,'input.particles','old','formatted',ACCESS_IN='APPEND')
+               WRITE(iunit,'(A)') '#EOF'
+               CALL FLUSH(iunit)
+               CLOSE(iunit)
+            END IF
+
       END SELECT
 
       RETURN
