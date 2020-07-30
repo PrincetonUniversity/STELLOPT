@@ -61,11 +61,21 @@
 !              lregcoil_rcws_zbound_c_opt, lregcoil_rcws_zbound_s_opt
 !              dregcoil_rcws_rbound_c_opt, dregcoil_rcws_rbound_s_opt,
 !              dregcoil_rcws_zbound_c_opt, dregcoil_rcws_zbound_s_opt
+!            REGCOILPM specific variables
+!              regcoilpm_dipole_surface_separation
+!              regcoil_current_density
+!              regcoil_nlambda
+!              regcoil_num_field_periods
+!              lregcoil_rcws_rbound_c_opt, lregcoil_rcws_rbound_s_opt,
+!              lregcoil_rcws_zbound_c_opt, lregcoil_rcws_zbound_s_opt
+!              dregcoil_rcws_rbound_c_opt, dregcoil_rcws_rbound_s_opt,
+!              dregcoil_rcws_zbound_c_opt, dregcoil_rcws_zbound_s_opt
 !
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       LOGICAL  ::  lphiedge_opt, lcurtor_opt, lpscale_opt, lbcrit_opt,&
                    lmix_ece_opt, lregcoil_winding_surface_separation_opt, lregcoil_toroidal_field, &
+                   lregcoilpm_dipole_surface_separation_opt, lregcoilpm_toroidal_field, &
                    lxval_opt, lyval_opt, &
                    lxics_v0_opt
       LOGICAL, DIMENSION(nigroup)  ::  lextcur_opt
@@ -94,14 +104,17 @@
       REAL(rprec)     ::  dphiedge_opt, dcurtor_opt, dbcrit_opt, &
                           dpscale_opt, dmix_ece_opt, dxval_opt, dyval_opt, &
                           dregcoil_winding_surface_separation_opt, &
+                          dregcoilpm_dipole_surface_separation_opt, &
                           dxics_v0_opt
       REAL(rprec)     ::  phiedge_min, curtor_min, bcrit_min, &
                           pscale_min, mix_ece_min, xval_min, yval_min, &
                           regcoil_winding_surface_separation_min, &
+                          regcoilpm_dipole_surface_separation_min, &
                           xics_v0_min
       REAL(rprec)     ::  phiedge_max, curtor_max, bcrit_max, &
                           pscale_max, mix_ece_max, xval_max, yval_max, &
                           regcoil_winding_surface_separation_max, &
+                          regcoilpm_dipole_surface_separation_max, &
                           xics_v0_max
       REAL(rprec), DIMENSION(nigroup)  ::  dextcur_opt,extcur_min,extcur_max
       REAL(rprec), DIMENSION(1:20)     ::  daphi_opt, aphi_min, aphi_max
@@ -128,6 +141,9 @@
       ! FOR REGCOIL WINDING SURFACE Fourier Series Representation
       INTEGER, PARAMETER :: mpol_rcws = 32    ! maximum poloidal mode number (min = -max)
       INTEGER, PARAMETER :: ntor_rcws = 32    ! maximum toroidal mode number (min = -max)
+      ! FOR REGCOILPM DIPOLE Fourier Series Representation
+      INTEGER, PARAMETER :: mpol_rcpmds = 32    ! maximum poloidal mode number (min = -max)
+      INTEGER, PARAMETER :: ntor_rcpmds = 32    ! maximum toroidal mode number (min = -max)
       ! Reserving space for the maximum number of Fourier components
       ! that might be varied/optimized. Each of RC, RS, ZC, ZS may have
       ! spectral components spanning the range of m and n in:
@@ -135,6 +151,7 @@
       ! (this is slightly different than what is used in nescoil, where
       ! the m<0 components are not used)
       INTEGER, PARAMETER :: mnprod_x4_rcws = 4 * (2*32+1) * (2*32+1)
+      INTEGER, PARAMETER :: mnprod_x4_rcpmds = 4 * (2*32+1) * (2*32+1)
       ! FOR REGCOIL BNORMAL ON TARGET PLAMSA SURFACE
       ! These should match or exceed the settings for REGCOIL's
       ! NTHETA_PLASMA and NZETA_PLASMA
@@ -157,6 +174,19 @@
                                                       dregcoil_rcws_rbound_s_opt, &
                                                       dregcoil_rcws_zbound_c_opt, &
                                                       dregcoil_rcws_zbound_s_opt
+      REAL(rprec)                       :: regcoilpm_dipole_surface_separation
+      REAL(rprec)                       :: regcoilpm_target_value
+      INTEGER :: regcoilpm_nlambda, regcoilpm_num_field_periods
+      LOGICAL, DIMENSION(-mpol_rcpmds:mpol_rcpmds, &
+                         -ntor_rcpmds:ntor_rcpmds) :: lregcoilpm_ds_rbound_c_opt , &
+                                                      lregcoilpm_ds_rbound_s_opt, &
+                                                      lregcoilpm_ds_zbound_c_opt, &
+                                                      lregcoilpm_ds_zbound_s_opt
+      REAL(rprec), DIMENSION(-mpol_rcpmds:mpol_rcpmds, &
+                             -ntor_rcpmds:ntor_rcpmds) :: dregcoilpm_ds_rbound_c_opt , &
+                                                          dregcoilpm_ds_rbound_s_opt, &
+                                                          dregcoilpm_ds_zbound_c_opt, &
+                                                          dregcoilpm_ds_zbound_s_opt
       REAL(rprec), DIMENSION(0:20)      ::  te_opt, ti_opt, ne_opt, th_opt, zeff_opt                                     
       REAL(rprec), DIMENSION(ndatafmax) ::  ne_aux_s, te_aux_s, &
                                             ti_aux_s, th_aux_s, &
@@ -224,10 +254,19 @@
       REAL(rprec), DIMENSION(-mpol_rcws:mpol_rcws, -ntor_rcws:ntor_rcws) :: regcoil_rcws_zbound_c_min, regcoil_rcws_zbound_s_min
       REAL(rprec), DIMENSION(-mpol_rcws:mpol_rcws, -ntor_rcws:ntor_rcws) :: regcoil_rcws_zbound_c_max, regcoil_rcws_zbound_s_max
 
+      ! RegcoilPM Dipole Surface (rcds): Boundary+min/max
+      REAL(rprec), DIMENSION(-mpol_rcpmds:mpol_rcpmds, -ntor_rcpmds:ntor_rcpmds) :: regcoilpm_ds_rbound_c, regcoilpm_ds_rbound_s
+      REAL(rprec), DIMENSION(-mpol_rcpmds:mpol_rcpmds, -ntor_rcpmds:ntor_rcpmds) :: regcoilpm_ds_rbound_c_min, regcoilpm_ds_rbound_s_min
+      REAL(rprec), DIMENSION(-mpol_rcpmds:mpol_rcpmds, -ntor_rcpmds:ntor_rcpmds) :: regcoilpm_ds_rbound_c_max, regcoilpm_ds_rbound_s_max
+      REAL(rprec), DIMENSION(-mpol_rcpmds:mpol_rcpmds, -ntor_rcpmds:ntor_rcpmds) :: regcoilpm_ds_zbound_c, regcoilpm_ds_zbound_s
+      REAL(rprec), DIMENSION(-mpol_rcpmds:mpol_rcpmds, -ntor_rcpmds:ntor_rcpmds) :: regcoilpm_ds_zbound_c_min, regcoilpm_ds_zbound_s_min
+      REAL(rprec), DIMENSION(-mpol_rcpmds:mpol_rcpmds, -ntor_rcpmds:ntor_rcpmds) :: regcoilpm_ds_zbound_c_max, regcoilpm_ds_zbound_s_max
+
       CHARACTER(256)  ::  equil_type, te_type, ne_type, ti_type, th_type, &
                           beamj_type, bootj_type, zeff_type, emis_xics_type, &
                           windsurfname, fixedcoilname, &
-                          regcoil_nescin_filename, bootcalc_type, phi_type
+                          regcoil_nescin_filename, bootcalc_type, phi_type, &
+                          regcoilpm_nescin_filename
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: sfincs_J_dot_B_flux_surface_average, sfincs_B_squared_flux_surface_average
       REAL(rprec), DIMENSION(0:ntord) :: raxis_cc_initial, raxis_cs_initial, zaxis_cc_initial, zaxis_cs_initial
 
@@ -302,12 +341,16 @@
       INTEGER, PARAMETER ::  izaxis_cc  = 913
       INTEGER, PARAMETER ::  izaxis_cs  = 914
       INTEGER, PARAMETER ::  iregcoil_winding_surface_separation   = 5150
-      !INTEGER, PARAMETER ::  iregcoil_current_density   = 5151
       ! 5152 - 5159 reserved for future REGCOIIL options
       INTEGER, PARAMETER ::  iregcoil_rcws_rbound_c = 5160
       INTEGER, PARAMETER ::  iregcoil_rcws_rbound_s = 5161
       INTEGER, PARAMETER ::  iregcoil_rcws_zbound_c = 5162
       INTEGER, PARAMETER ::  iregcoil_rcws_zbound_s = 5163
+      INTEGER, PARAMETER ::  iregcoilpm_dipole_surface_separation   = 5170
+      INTEGER, PARAMETER ::  iregcoilpm_ds_rbound_c = 5180
+      INTEGER, PARAMETER ::  iregcoilpm_ds_rbound_s = 5181
+      INTEGER, PARAMETER ::  iregcoilpm_ds_zbound_c = 5182
+      INTEGER, PARAMETER ::  iregcoilpm_ds_zbound_s = 5183
       INTEGER, PARAMETER ::  iRosenbrock_X = 5500
       
       REAL(rprec), PARAMETER :: ne_norm = 1.0E18
@@ -538,6 +581,19 @@
             WRITE(iunit,out_format_2DB) 'REGCOIL_RCWS_zbound_c(',var_dex1,',',var_dex2,'):  REGCOIL Winding Surface Boundary Vertical Specification (COS MN)'
          CASE(iregcoil_rcws_zbound_s)
             WRITE(iunit,out_format_2DB) 'REGCOIL_RCWS_zbound_s(',var_dex1,',',var_dex2,'):  REGCOIL Winding Surface Boundary Vertical Specification (SIN MN)'
+         ! END of REGCOIL cases
+
+         ! REGCOILPM cases
+         CASE(iregcoilpm_dipole_surface_separation)
+            WRITE(iunit,out_format) 'REGCOILPM_SEPARATION: Dipole surface separation'
+         CASE(iregcoilpm_ds_rbound_c)
+            WRITE(iunit,out_format_2DB) 'REGCOILPM_DS_rbound_c(',var_dex1,',',var_dex2,'):  REGCOILPM Dipole Surface Boundary Radial Specification (COS MN)'
+         CASE(iregcoilpm_ds_rbound_s)
+            WRITE(iunit,out_format_2DB) 'REGCOILPM_DS_rbound_s(',var_dex1,',',var_dex2,'):  REGCOILPM Dipole Surface Boundary Radial Specification (SIN MN)'
+         CASE(iregcoilpm_ds_zbound_c)
+            WRITE(iunit,out_format_2DB) 'REGCOILPM_DS_zbound_c(',var_dex1,',',var_dex2,'):  REGCOILPM Dipole Surface Boundary Vertical Specification (COS MN)'
+         CASE(iregcoilpm_ds_zbound_s)
+            WRITE(iunit,out_format_2DB) 'REGCOILPM_DS_zbound_s(',var_dex1,',',var_dex2,'):  REGCOILPM Dipole Surface Boundary Vertical Specification (SIN MN)'
          ! END of REGCOIL cases
 
          ! Rosenbrock test function

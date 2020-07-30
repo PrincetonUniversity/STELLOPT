@@ -18,7 +18,7 @@ VPATH = $(SPATH):$(SPATH)/Chisq:$(SPATH)/General:$(SPATH)/Modules
 xstelloptv2:  $(LIB) $(LIB_VMEC) $(LIB_BEAMS3D) $(LIB_BNORM) $(LIB_BOOTSJ) \
 	$(LIB_BOOZ) $(LIB_COBRA) $(LIB_DIAGNO) $(LIB_DKES) $(LIB_FIELDLINES) \
 	$(LIB_JINV) $(LIB_MGRID) $(LIB_NEO)  $(LIB_COILOPTPP) $(LIB_GENE) \
-	$(LIB_REGCOIL) $(LIB_TERPSICHORE) $(ObjectFiles)
+	$(LIB_REGCOIL) $(LIB_REGCOILPM) $(LIB_TERPSICHORE) $(ObjectFiles)
 	$(LINK) $@ $(ObjectFiles) $(LIB_LINK)
 ifdef VMEC_DIR 
 	@rm $(VMEC_DIR)/$(LOCTYPE)/$(LIB_VMEC) 
@@ -64,6 +64,9 @@ ifdef COILOPTPP_DIR
 endif
 ifdef REGCOIL_DIR
 	@rm $(REGCOIL_DIR)/$(LIB_REGCOIL)
+endif
+ifdef REGCOILPM_DIR
+	@rm $(REGCOILPM_DIR)/$(LIB_REGCOILPM)
 endif
 ifdef TERPSICHORE_DIR
 	@rm $(TERPSICHORE_DIR)/$(LIB_TERPSICHORE)
@@ -168,9 +171,13 @@ $(LIB_COILOPTPP) :
 $(LIB_GENE) :
 	@cd $(GENE_DIR); ar -cruv $(LIB_GENE) *.o *.mod
 
-#Construct COILOPT library. 
+#Construct REGCOIL library. 
 $(LIB_REGCOIL) :
 	@cd $(REGCOIL_DIR); make; ar -cruv $(LIB_REGCOIL) *.o 
+
+#Construct REGCOILPM library. 
+$(LIB_REGCOILPM) :
+	@cd $(REGCOILPM_DIR); make; ar -cruv $(LIB_REGCOILPM) *.o 
 
 #Construct TERPSICHORE library. 
 $(LIB_TERPSICHORE) :

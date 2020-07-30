@@ -337,6 +337,74 @@
       IF (ANY(sigma_regcoil_c2p_dist_min < bigno)) THEN
          CALL chisq_regcoil_c2p_dist_min(target_regcoil_c2p_dist_min, sigma_regcoil_c2p_dist_min, ncnt,iflag)
       END IF
+       ! REGCOILPM Coil Optimization (CHI2_B targets)
+      IF (ANY(sigma_regcoilpm_chi2_b < bigno)) THEN
+         CALL chisq_regcoilpm_chi2_b(target_regcoilpm_chi2_b, sigma_regcoilpm_chi2_b, ncnt,iflag)
+      END IF
+      ! REGCOILPM Coil Optimization (LAMBDA targets)
+      IF (ANY(sigma_regcoilpm_lambda < bigno)) THEN
+         CALL chisq_regcoilpm_lambda(target_regcoilpm_lambda, sigma_regcoilpm_lambda, ncnt,iflag)
+      END IF
+      ! REGCOILPM Coil Optimization (MAX_M targets)
+      IF (ANY(sigma_regcoilpm_max_M < bigno)) THEN
+         CALL chisq_regcoilpm_max_M(target_regcoilpm_max_M, sigma_regcoilpm_max_M, ncnt,iflag)
+      END IF
+      ! REGCOILPM Coil Optimization (RMS_M targets)
+      IF (ANY(sigma_regcoilpm_rms_M < bigno)) THEN
+         CALL chisq_regcoilpm_rms_M(target_regcoilpm_rms_M, sigma_regcoilpm_rms_M, ncnt,iflag)
+      END IF
+      ! REGCOILPM Coil Optimization (chi2_M targets)
+      IF (ANY(sigma_regcoilpm_chi2_M < bigno)) THEN
+         CALL chisq_regcoilpm_chi2_M(target_regcoilpm_chi2_M, sigma_regcoilpm_chi2_M, ncnt,iflag)
+      END IF
+      ! REGCOILPM Coil Optimization (max_bnormal targets)
+      IF (ANY(sigma_regcoilpm_max_bnormal < bigno)) THEN
+         CALL chisq_regcoilpm_max_bnormal(target_regcoilpm_max_bnormal, sigma_regcoilpm_max_bnormal, ncnt,iflag)
+      END IF
+      ! REGCOILPM Coil Optimization (area_coil targets)
+      IF (ANY(sigma_regcoilpm_area_dipole < bigno)) THEN
+         CALL chisq_regcoilpm_area_dipole(target_regcoilpm_area_dipole, sigma_regcoilpm_area_dipole, ncnt,iflag)
+      END IF
+      ! REGCOILPM Coil Optimization (area_plasma targets)
+      IF (ANY(sigma_regcoilpm_area_plasma < bigno)) THEN
+         CALL chisq_regcoilpm_area_plasma(target_regcoilpm_area_plasma, sigma_regcoilpm_area_plasma, ncnt,iflag)
+      END IF
+      ! REGCOILPM Coil Optimization (area_diff targets)
+      IF (ANY(sigma_regcoilpm_area_diff < bigno)) THEN
+         CALL chisq_regcoilpm_area_diff(target_regcoilpm_area_diff, sigma_regcoilpm_area_diff, ncnt,iflag)
+      END IF
+      ! REGCOILPM Coil Optimization (volume_coil targets)
+      IF (ANY(sigma_regcoilpm_volume_dipole < bigno)) THEN
+         CALL chisq_regcoilpm_volume_dipole(target_regcoilpm_volume_dipole, sigma_regcoilpm_volume_dipole, ncnt,iflag)
+      END IF
+      ! REGCOILPM Coil Optimization (volume_plasma targets)
+      IF (ANY(sigma_regcoilpm_volume_plasma < bigno)) THEN
+         CALL chisq_regcoilpm_volume_plasma(target_regcoilpm_volume_plasma, sigma_regcoilpm_volume_plasma, ncnt,iflag)
+      END IF
+      ! REGCOILPM Coil Optimization (volume_diff targets)
+      IF (ANY(sigma_regcoilpm_volume_diff < bigno)) THEN
+         CALL chisq_regcoilpm_volume_diff(target_regcoilpm_volume_diff, sigma_regcoilpm_volume_diff, ncnt,iflag)
+      END IF
+      ! REGCOILPM Coil Optimization (bnormal_total targets)
+      IF (ANY(sigma_regcoilpm_bnormal_total < bigno)) THEN
+         CALL chisq_regcoilpm_bnormal_total(target_regcoilpm_bnormal_total, sigma_regcoilpm_bnormal_total, ncnt,iflag)
+      END IF
+  !    ! REGCOILPM Coil Optimization (K2 targets)
+  !    IF (ANY(sigma_regcoilpm_K2 < bigno)) THEN
+  !       CALL chisq_regcoilpm_k2(target_regcoilpm_K2, sigma_regcoilpm_K2, ncnt,iflag)
+  !    END IF
+      ! REGCOILPM Coil Optimization (current potential targets)
+      IF (ANY(sigma_regcoilpm_current_potential < bigno)) THEN
+         CALL chisq_regcoilpm_current_potential(target_regcoilpm_current_potential, sigma_regcoilpm_current_potential, ncnt,iflag)
+      END IF
+      ! REGCOILPM Coil Optimization (max current potential targets)
+      IF (ANY(sigma_regcoilpm_max_current_potential < bigno)) THEN
+         CALL chisq_regcoilpm_max_current_potential(target_regcoilpm_max_current_potential, sigma_regcoilpm_max_current_potential, ncnt,iflag)
+      END IF
+       ! REGCOILPM Coil Optimization (coil plasma distance min targets)
+      IF (ANY(sigma_regcoilpm_d2p_dist_min < bigno)) THEN
+         CALL chisq_regcoilpm_d2p_dist_min(target_regcoilpm_d2p_dist_min, sigma_regcoilpm_d2p_dist_min, ncnt,iflag)
+      END IF
       IF (sigma_curvature_p2 < bigno) &
          CALL chisq_curvature_p2(target_curvature_p2, sigma_curvature_p2, ncnt, iflag)
 

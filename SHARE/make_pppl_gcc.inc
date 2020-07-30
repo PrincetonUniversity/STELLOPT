@@ -139,11 +139,20 @@
 #######################################################################
 #            REGCOIL Options
 #######################################################################
-  LREGCOIL= T
+  LREGCOIL= F
   REGCOIL_DIR = $(REGCOIL_PATH)
   REGCOIL_INC = -I$(REGCOIL_DIR) 
   LIB_REGCOIL = libregcoil.a
   REGCOIL_LIB = $(REGCOIL_DIR)/$(LIB_REGCOIL) -fopenmp
+
+#######################################################################
+#            REGCOILPM Options
+#######################################################################
+  LREGCOILPM= T
+  REGCOILPM_DIR = $(REGCOIL_PM_PATH)
+  REGCOILPM_INC = -I$(REGCOILPM_DIR) 
+  LIB_REGCOILPM = libregcoil.a
+  REGCOILPM_LIB = $(REGCOILPM_DIR)/$(LIB_REGCOILPM) -fopenmp
 
 #######################################################################
 #            SFINCS Options

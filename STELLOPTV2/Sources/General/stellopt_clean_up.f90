@@ -188,6 +188,8 @@
                IF (ier == 0) CLOSE(iunit,STATUS='delete')
                OPEN(iunit,FILE=TRIM('regcoil_nescout.'//TRIM(proc_string)),STATUS='unknown',IOSTAT=ier)
                IF (ier == 0) CLOSE(iunit,STATUS='delete')
+               OPEN(iunit,FILE=TRIM('regcoilpm_nescout.'//TRIM(proc_string)),STATUS='unknown',IOSTAT=ier)
+               IF (ier == 0) CLOSE(iunit,STATUS='delete')
                OPEN(iunit,FILE=TRIM('wout_'//TRIM(proc_string)//'.nc'),STATUS='unknown',IOSTAT=ier)
                IF (ier == 0) CLOSE(iunit,STATUS='delete')
             END DO

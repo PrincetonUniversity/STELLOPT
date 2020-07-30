@@ -13,6 +13,9 @@
 !DEC$ IF DEFINED (REGCOIL)
       USE regcoil_variables, ONLY: load_bnorm_regcoil => load_bnorm
 !DEC$ ENDIF
+!DEC$ IF DEFINED (REGCOILPM)
+      USE regcoil_variables, ONLY: load_bnorm_regcoilpm => load_bnorm
+!DEC$ ENDIF
 
 !-----------------------------------------------------------------------
 !     Subroutine Parameters
@@ -140,6 +143,36 @@
                    CALL copy_txtfile('regcoil_nescout.'//TRIM(proc_string_old),&
                                      'regcoil_nescout.'//TRIM(proc_string))
                    IF (load_bnorm_regcoil) THEN
+                       CALL move_txtfile('bnorm.'//TRIM(proc_string_old),&
+                                         'bnorm.'//TRIM(proc_string))
+                   END IF
+                     
+              END IF
+!DEC$ ENDIF
+!DEC$ IF DEFINED (REGCOILPM)
+              ! Currently inside of LEV and GADE cleanup loop, and 
+              ! 'Keeping the mins' section
+              IF ( (  ANY(sigma_regcoilpm_chi2_b < bigno) .or.   &
+                      ANY(sigma_regcoilpm_lambda < bigno) .or.    &
+                      ANY(sigma_regcoilpm_max_M < bigno) .or.    &
+                      ANY(sigma_regcoilpm_rms_M < bigno) .or.    &
+                      ANY(sigma_regcoilpm_chi2_M < bigno) .or.    &
+                      ANY(sigma_regcoilpm_max_bnormal < bigno) .or.    &
+                      ANY(sigma_regcoilpm_area_dipole < bigno) .or.    &
+                      ANY(sigma_regcoilpm_area_plasma < bigno) .or.    &
+                      ANY(sigma_regcoilpm_area_diff < bigno) .or.    &
+                      ANY(sigma_regcoilpm_volume_dipole < bigno) .or.    &
+                      ANY(sigma_regcoilpm_volume_plasma < bigno) .or.    &
+                      ANY(sigma_regcoilpm_volume_diff < bigno) .or.    &
+                      ANY(sigma_regcoilpm_bnormal_total < bigno)) .or. &
+                   (ANY(lregcoilpm_ds_rbound_c_opt) .or. ANY(lregcoilpm_ds_rbound_s_opt) .or. &
+                    ANY(lregcoilpm_ds_zbound_c_opt) .or. ANY(lregcoilpm_ds_zbound_s_opt) ) ) THEN
+                   !print *, '<---In LEV/GADE cleanup.'
+                   !print *, '<---proc_string_old = ', proc_string_old
+                   !print *, '<---proc_string = ', proc_string
+                   CALL copy_txtfile('regcoilpm_nescout.'//TRIM(proc_string_old),&
+                                     'regcoilpm_nescout.'//TRIM(proc_string))
+                   IF (load_bnorm_regcoilpm) THEN
                        CALL move_txtfile('bnorm.'//TRIM(proc_string_old),&
                                          'bnorm.'//TRIM(proc_string))
                    END IF

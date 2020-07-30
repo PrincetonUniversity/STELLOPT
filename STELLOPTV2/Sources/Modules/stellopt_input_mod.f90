@@ -40,6 +40,16 @@
       !                             rc_zmnc_stellopt, rc_zmns_stellopt, &
       !                             rc_nfp => nfp
 !DEC$ ENDIF
+!DEC$ IF DEFINED (REGCOILPM)
+      USE regcoil_variables, ONLY: rcpm_nfp => nfp, rmnc_dipole => rmnc_coil, &
+                        rmns_dipole => rmns_coil, zmns_dipole => zmns_coil, &
+                        zmnc_dipole => zmnc_coil, mnmax_dipole => mnmax_coil, &
+                        xm_dipole => xm_coil, xn_dipole => xn_coil, &
+                        verbose_dipole => verbose, regcoilpm_nml
+      !USE regcoil_variables, ONLY: rc_rmnc_stellopt, rc_rmns_stellopt, &
+      !                             rc_zmnc_stellopt, rc_zmns_stellopt, &
+      !                             rc_nfp => nfp
+!DEC$ ENDIF
       
 !-----------------------------------------------------------------------
 !     Module Variables
@@ -390,6 +400,7 @@
                          targettype_ece, antennatype_ece, nra_ece, nphi_ece, &
                          target_kink, sigma_kink,mlmnb_kink,mlmns_kink,ivac_kink,&
                          nj_kink, nk_kink, lssl_kink, lssd_kink, mmaxdf_kink, nmaxdf_kink, &
+                         ! REGCOIL
                          lregcoil_winding_surface_separation_opt, &
                          dregcoil_winding_surface_separation_opt, &
                          target_regcoil_winding_surface_separation, &
@@ -425,6 +436,41 @@
                          regcoil_rcws_zbound_c_min, regcoil_rcws_zbound_s_min, &
                          regcoil_rcws_rbound_c_max, regcoil_rcws_rbound_s_max, &
                          regcoil_rcws_zbound_c_max, regcoil_rcws_zbound_s_max, &
+                         ! REGCOILPM
+                         lregcoilpm_dipole_surface_separation_opt, &
+                         dregcoilpm_dipole_surface_separation_opt, &
+                         target_regcoilpm_dipole_surface_separation, &
+                         sigma_regcoilpm_dipole_surface_separation, &
+                         target_regcoilpm_chi2_b, sigma_regcoilpm_chi2_b, &
+                         target_regcoilpm_lambda, sigma_regcoilpm_lambda, &
+                         target_regcoilpm_rms_M, sigma_regcoilpm_rms_M, &
+                         target_regcoilpm_max_M, sigma_regcoilpm_max_M, &
+                         target_regcoilpm_chi2_M, sigma_regcoilpm_chi2_M, &
+                         target_regcoilpm_max_bnormal, sigma_regcoilpm_max_bnormal, &
+                         target_regcoilpm_area_dipole, sigma_regcoilpm_area_dipole, &
+                         target_regcoilpm_area_plasma, sigma_regcoilpm_area_plasma, &
+                         target_regcoilpm_area_diff, sigma_regcoilpm_area_diff, &
+                         target_regcoilpm_volume_dipole, sigma_regcoilpm_volume_dipole, &
+                         target_regcoilpm_volume_plasma, sigma_regcoilpm_volume_plasma, &
+                         target_regcoilpm_volume_diff, sigma_regcoilpm_volume_diff, &
+                         target_regcoilpm_bnormal_total, sigma_regcoilpm_bnormal_total, &                         
+ !                        target_regcoilpm_K2, sigma_regcoilpm_K2, &                         
+                         target_regcoilpm_current_potential, sigma_regcoilpm_current_potential, &                         
+                         target_regcoilpm_max_current_potential, sigma_regcoilpm_max_current_potential, &                         
+                         target_regcoilpm_d2p_dist_min, sigma_regcoilpm_d2p_dist_min, &                         
+                         regcoilpm_dipole_surface_separation, &
+                         regcoilpm_target_value, &
+                         regcoilpm_nescin_filename, &
+                         regcoilpm_num_field_periods, &
+                         lregcoilpm_toroidal_field, &
+                         lregcoilpm_ds_rbound_c_opt, lregcoilpm_ds_rbound_s_opt, &
+                         lregcoilpm_ds_zbound_c_opt, lregcoilpm_ds_zbound_s_opt, &
+                         dregcoilpm_ds_rbound_c_opt, dregcoilpm_ds_rbound_s_opt, &
+                         dregcoilpm_ds_zbound_c_opt, dregcoilpm_ds_zbound_s_opt, &
+                         regcoilpm_ds_rbound_c_min, regcoilpm_ds_rbound_s_min, &
+                         regcoilpm_ds_zbound_c_min, regcoilpm_ds_zbound_s_min, &
+                         regcoilpm_ds_rbound_c_max, regcoilpm_ds_rbound_s_max, &
+                         regcoilpm_ds_zbound_c_max, regcoilpm_ds_zbound_s_max, &
                          target_curvature_P2, sigma_curvature_P2, &
                          lRosenbrock_X_opt, dRosenbrock_X_opt, &
                          Rosenbrock_X, Rosenbrock_X_min, Rosenbrock_X_max, &
@@ -567,7 +613,22 @@
       dregcoil_rcws_rbound_s_opt = -1.0
       dregcoil_rcws_zbound_c_opt = -1.0
       dregcoil_rcws_zbound_s_opt = -1.0
-      ! Rosenbrock test function variables
+      ! REGCOILPM Winding surface options
+      regcoilpm_nescin_filename = ''
+      regcoilpm_num_field_periods = -1.0
+      lregcoilpm_dipole_surface_separation_opt    = .FALSE.
+      dregcoilpm_dipole_surface_separation_opt    = -1.0
+      !lregcoilpm_current_density_opt    = .FALSE.
+      !dregcoilpm_current_density_opt    = -1.0
+      lregcoilpm_ds_rbound_c_opt = .FALSE.
+      lregcoilpm_ds_rbound_s_opt = .FALSE.
+      lregcoilpm_ds_zbound_c_opt = .FALSE.
+      lregcoilpm_ds_zbound_s_opt = .FALSE.
+      dregcoilpm_ds_rbound_c_opt = -1.0
+      dregcoilpm_ds_rbound_s_opt = -1.0
+      dregcoilpm_ds_zbound_c_opt = -1.0
+      dregcoilpm_ds_zbound_s_opt = -1.0
+       ! Rosenbrock test function variables
       lRosenbrock_X_opt(1:ROSENBROCK_DIM) = .FALSE.
       dRosenbrock_X_opt(1:ROSENBROCK_DIM) = -1.0
       Rosenbrock_X(1:ROSENBROCK_DIM)      = 3
@@ -671,8 +732,53 @@
       sigma_regcoil_max_current_potential  = bigno
       target_regcoil_c2p_dist_min = 0.0
       sigma_regcoil_c2p_dist_min  = bigno
-      !target_regcoil_current_density = 8.0e6
-      !sigma_regcoil_current_density  = bigno
+
+      ! More REGCOILPM Options
+      target_regcoilpm_dipole_surface_separation = 0.0
+      sigma_regcoilpm_dipole_surface_separation = bigno
+      regcoilpm_dipole_surface_separation = 1.0
+      regcoilpm_dipole_surface_separation_min = 1.0e-3
+      regcoilpm_dipole_surface_separation_max = 10.
+      regcoilpm_target_value = 0.0
+      lregcoilpm_toroidal_field = .false.
+      regcoilpm_ds_rbound_c_min = -bigno;  regcoilpm_ds_rbound_c_max = bigno
+      regcoilpm_ds_rbound_s_min = -bigno;  regcoilpm_ds_rbound_s_max = bigno
+      regcoilpm_ds_zbound_c_min = -bigno;  regcoilpm_ds_zbound_c_max = bigno
+      regcoilpm_ds_zbound_s_min = -bigno;  regcoilpm_ds_zbound_s_max = bigno
+      target_regcoilpm_chi2_b = 0.0
+      sigma_regcoilpm_chi2_b  = bigno
+      target_regcoilpm_lambda = 0.0
+      sigma_regcoilpm_lambda  = bigno
+      target_regcoilpm_max_M = 0.0
+      sigma_regcoilpm_max_M  = bigno
+      target_regcoilpm_rms_M = 0.0
+      sigma_regcoilpm_rms_M  = bigno
+      target_regcoilpm_chi2_M = 0.0
+      sigma_regcoilpm_chi2_M  = bigno
+      target_regcoilpm_max_bnormal = 0.0
+      sigma_regcoilpm_max_bnormal  = bigno
+      target_regcoilpm_area_dipole = 0.0
+      sigma_regcoilpm_area_dipole  = bigno
+      target_regcoilpm_area_plasma = 0.0
+      sigma_regcoilpm_area_plasma  = bigno
+      target_regcoilpm_area_diff = 0.0
+      sigma_regcoilpm_area_diff  = bigno
+      target_regcoilpm_volume_plasma = 0.0
+      sigma_regcoilpm_volume_plasma  = bigno
+      target_regcoilpm_volume_dipole = 0.0
+      sigma_regcoilpm_volume_dipole  = bigno
+      target_regcoilpm_volume_diff = 0.0
+      sigma_regcoilpm_volume_diff  = bigno
+      target_regcoilpm_bnormal_total = 0.0
+      sigma_regcoilpm_bnormal_total  = bigno
+!      target_regcoilpm_K2 = 0.0
+!      sigma_regcoilpm_K2  = bigno
+      target_regcoilpm_current_potential = 0.0
+      sigma_regcoilpm_current_potential  = bigno
+      target_regcoilpm_max_current_potential = 0.0
+      sigma_regcoilpm_max_current_potential  = bigno
+      target_regcoilpm_d2p_dist_min = 0.0
+      sigma_regcoilpm_d2p_dist_min  = bigno
       
       ne_type         = 'akima_spline'
       zeff_type       = 'akima_spline'
@@ -1201,12 +1307,81 @@
          end do
          
          if (myid==master) then
-            WRITE(6,*) '<----STELLOPT_INPUT_MOD: Finished parsing nescoil data and', &
+            WRITE(6,*) '<----STELLOPT_INPUT_MOD (REGCOIL): Finished parsing nescoil data and', &
                  ' assigning stellopt variables'
          end if
       END IF
 !DEC$ ENDIF
       ! End of REGCOIL winding surface optimization initializion steps
+
+      ! REGCOILPM winding surface optimization
+      ! If targeting chi2_b on the plasma boundary AND varying the winding
+      ! surface Fourier series, then load the nescin file from the regcoil
+      ! namelist
+
+!DEC$ IF DEFINED (REGCOILPM)
+      IF ( ( ANY(sigma_regcoilpm_chi2_b < bigno) .or.   &
+             ANY(sigma_regcoilpm_lambda < bigno) .or.    &
+             ANY(sigma_regcoilpm_max_M < bigno) .or.    &
+             ANY(sigma_regcoilpm_current_potential < bigno) .or.    &
+             ANY(sigma_regcoilpm_max_current_potential < bigno) .or.    &
+             ANY(sigma_regcoilpm_rms_M < bigno) .or.    &
+             ANY(sigma_regcoilpm_chi2_M < bigno) .or.    &
+             ANY(sigma_regcoilpm_max_bnormal < bigno) .or.    &
+             ANY(sigma_regcoilpm_area_dipole < bigno) .or.    &
+             ANY(sigma_regcoilpm_area_plasma < bigno) .or.    &
+             ANY(sigma_regcoilpm_area_diff < bigno) .or.    &
+             ANY(sigma_regcoilpm_volume_dipole < bigno) .or.    &
+             ANY(sigma_regcoilpm_volume_plasma < bigno) .or.    &
+             ANY(sigma_regcoilpm_volume_diff < bigno) .or.    &
+             ANY(sigma_regcoilpm_d2p_dist_min < bigno) .or.    &
+             ANY(sigma_regcoilpm_bnormal_total < bigno) ) & ! .or.    &
+            ! ANY(sigma_regcoilpm_K2 < bigno) )  &
+             .and. &
+           ( ANY(lregcoilpm_ds_rbound_c_opt) .or. &
+             ANY(lregcoilpm_ds_rbound_s_opt) .or. &
+             ANY(lregcoilpm_ds_zbound_c_opt) .or. &
+             ANY(lregcoilpm_ds_zbound_s_opt) ) ) THEN
+         rcpm_nfp = regcoilpm_num_field_periods
+         regcoilpm_ds_rbound_c = 0
+         regcoilpm_ds_rbound_s = 0
+         regcoilpm_ds_zbound_c = 0
+         regcoilpm_ds_zbound_s = 0
+         IF (myid == master) THEN
+            WRITE(6,*) '<----REGCOILPM: Reading NESCIN Spectrum from file'
+         end if
+         verbose_dipole = (myid == master)
+         ! We need to read geometry_option_coil and nescin_filename from the input namelist before the coil surface can be loaded.
+         CALL safe_open(iunit, istat, TRIM(filename), 'old', 'formatted')
+         READ(iunit, nml=regcoilpm_nml, iostat=istat)
+         CLOSE(iunit)
+         call regcoil_init_coil_surface() 
+         IF (myid == master) THEN
+            WRITE(6,*) '<----REGCOILPM: Initializing winding surface with NESCIN Spectrum'
+         end if
+
+         do imn = 1, mnmax_dipole
+            m = xm_dipole(imn)
+            n = xn_dipole(imn)/(-regcoilpm_num_field_periods) ! Convert from regcoil/vmec to nescin convention
+            IF (m < -mpol_rcpmds .or. m > mpol_rcpmds .or. n < -ntor_rcpmds .or. n > ntor_rcpmds) THEN
+               WRITE(6,*) "Error! (m,n) values in nescin file exceed mpol_rcpmds or ntor_rcpmds."
+               WRITE(6,*) "mpol_rcpmds=",mpol_rcpmds," ntor_rcpmds=",ntor_rcpmds
+               WRITE(6,*) "m=",m,"  n=",n
+               STOP
+            END IF
+            regcoilpm_ds_rbound_c(m, n) = rmnc_dipole(imn)
+            regcoilpm_ds_rbound_s(m, n) = rmns_dipole(imn)
+            regcoilpm_ds_zbound_c(m, n) = zmnc_dipole(imn)
+            regcoilpm_ds_zbound_s(m, n) = zmns_dipole(imn)
+         end do
+         
+         if (myid==master) then
+            WRITE(6,*) '<----STELLOPT_INPUT_MOD (REGCOILPM): Finished parsing nescoil data and', &
+                 ' assigning stellopt variables'
+         end if
+      END IF
+!DEC$ ENDIF
+      ! End of REGCOILPM winding surface optimization initializion steps
 
       ! If fixed boundary optimization or mapping turn off restart
       IF (ANY(ANY(lbound_opt,2),1) .or. opt_type=='map') lno_restart = .true.
@@ -1411,6 +1586,75 @@
          WRITE(6,*) '!!!!!!!!!!!!!!!!!!!! WARNING !!!!!!!!!!!!!!!!!!!!!!!!!'
          WRITE(6,*) '  Coil optimization with the REGCOIL'
          WRITE(6,*) '  code has been disabled.  Coil optimziation'
+         WRITE(6,*) '  has been turned off.  Contact your vendor for'
+         WRITE(6,*) '  further information.'
+      END IF
+!DEC$ ENDIF
+!DEC$ IF DEFINED (REGCOILPM)
+      IF (myid == master .and. (ANY(sigma_regcoilpm_chi2_b < bigno) .or.   &
+                                ANY(sigma_regcoilpm_lambda < bigno) .or.    &
+                                ANY(sigma_regcoilpm_max_M < bigno) .or.    &
+                                ANY(sigma_regcoilpm_current_potential < bigno) .or.    &
+                                ANY(sigma_regcoilpm_max_current_potential < bigno) .or.    &
+                                ANY(sigma_regcoilpm_rms_M < bigno) .or.    &
+                                ANY(sigma_regcoilpm_chi2_M < bigno) .or.    &
+                                ANY(sigma_regcoilpm_max_bnormal < bigno) .or.    &
+                                ANY(sigma_regcoilpm_area_dipole < bigno) .or.    &
+                                ANY(sigma_regcoilpm_area_plasma < bigno) .or.    &
+                                ANY(sigma_regcoilpm_area_diff < bigno) .or.    &
+                                ANY(sigma_regcoilpm_volume_dipole < bigno) .or.    &
+                                ANY(sigma_regcoilpm_volume_plasma < bigno) .or.    &
+                                ANY(sigma_regcoilpm_volume_diff < bigno) .or.    &
+                                ANY(sigma_regcoilpm_d2p_dist_min < bigno) .or.    &
+                                ANY(sigma_regcoilpm_bnormal_total < bigno) )) THEN  ! .or.  &
+                             !   ANY(sigma_regcoilpm_K2 < bigno) )) THEN ! .or. &
+         WRITE(6,*)        " Stellarator REGCOILPM Optimization provided by: "
+         WRITE(6,"(2X,A)") "================================================================================="
+         WRITE(6,"(2X,A)") "=========                           REGCOILPM                            ========="
+         WRITE(6,"(2X,A)") "=========                        (M. Landreman)                         ========="
+         WRITE(6,"(2X,A)") "=========               Matt dot Landreman at gmail dot com             ========="
+         WRITE(6,"(2X,A)") "================================================================================="
+         WRITE(6,*)        "    "
+      END IF
+!DEC$ ELSE
+      IF (myid == master .and. (ANY(sigma_regcoilpm_chi2_b < bigno) .or.   &
+                                ANY(sigma_regcoilpm_lambda < bigno) .or.    &
+                                ANY(sigma_regcoilpm_max_M < bigno) .or.    &
+                                ANY(sigma_regcoilpm_current_potential < bigno) .or.    &
+                                ANY(sigma_regcoilpm_max_current_potential < bigno) .or.    &
+                                ANY(sigma_regcoilpm_rms_M < bigno) .or.    &
+                                ANY(sigma_regcoilpm_chi2_M < bigno) .or.    &
+                                ANY(sigma_regcoilpm_max_bnormal < bigno) .or.    &
+                                ANY(sigma_regcoilpm_area_dipole < bigno) .or.    &
+                                ANY(sigma_regcoilpm_area_plasma < bigno) .or.    &
+                                ANY(sigma_regcoilpm_area_diff < bigno) .or.    &
+                                ANY(sigma_regcoilpm_volume_dipole < bigno) .or.    &
+                                ANY(sigma_regcoilpm_volume_plasma < bigno) .or.    &
+                                ANY(sigma_regcoilpm_volume_diff < bigno) .or.    &
+                                ANY(sigma_regcoilpm_d2p_dist_min < bigno) .or.    &
+                                ANY(sigma_regcoilpm_bnormal_total < bigno)) THEN ! .or. &
+                         !       ANY(sigma_regcoilpm_K2 < bigno) )) THEN !  .or. &
+         ! 'Disable' the target by assigning bigno to the sigmas
+         sigma_regcoilpm_chi2_b = bigno
+         sigma_regcoilpm_lambda = bigno
+         sigma_regcoilpm_max_M = bigno
+         sigma_regcoilpm_current_potential = bigno
+         sigma_regcoilpm_max_current_potential = bigno
+         sigma_regcoilpm_rms_M = bigno
+         sigma_regcoilpm_chi2_M  = bigno
+         sigma_regcoilpm_max_bnormal  = bigno
+         sigma_regcoilpm_area_dipole  = bigno
+         sigma_regcoilpm_area_plasma  = bigno
+         sigma_regcoilpm_area_diff  = bigno
+         sigma_regcoilpm_volume_plasma  = bigno
+         sigma_regcoilpm_volume_dipole  = bigno
+         sigma_regcoilpm_volume_diff  = bigno
+         sigma_regcoilpm_d2p_dist_min = bigno
+         sigma_regcoilpm_bnormal_total  = bigno
+!         sigma_regcoilpm_K2  = bigno
+         WRITE(6,*) '!!!!!!!!!!!!!!!!!!!! WARNING !!!!!!!!!!!!!!!!!!!!!!!!!'
+         WRITE(6,*) '  Coil optimization with the REGCOILPM'
+         WRITE(6,*) '  code has been disabled.  Dipole optimziation'
          WRITE(6,*) '  has been turned off.  Contact your vendor for'
          WRITE(6,*) '  further information.'
       END IF
@@ -2573,6 +2817,228 @@
         END IF
         ! end of Options for winding surface (Fourier Series) variation
       END IF  ! End of REGCOIL options
+
+      ! REGCOILPM Options
+      !
+      IF ( (lregcoilpm_dipole_surface_separation_opt) .or.  &
+          (ANY(lregcoilpm_ds_rbound_s_opt)) .or. (ANY(lregcoilpm_ds_rbound_c_opt)) .or. &
+          (ANY(lregcoilpm_ds_zbound_s_opt)) .or. (ANY(lregcoilpm_ds_zbound_c_opt)) ) THEN
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,'(A)') '!          REGCOILPM OPTIMIZATION'  
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,outflt) 'REGCOILPM_TARGET_VALUE',regcoilpm_target_value
+ 
+         ! Options for uniform winding surface separations
+         IF (lregcoilpm_dipole_surface_separation_opt) THEN
+            WRITE(iunit,outflt) &
+                   'REGCOILPM_DIPOLE_SURFACE_SEPARATION', &
+                   regcoilpm_dipole_surface_separation
+            WRITE(iunit,outboo) 'LREGCOILPM_DIPOLE_SURFACE_SEPARATION', &
+                   lregcoilpm_dipole_surface_separation_opt
+            WRITE(iunit,outflt) 'REGCOILPM_DIPOLE_SURFACE_SEPARATION_MIN', &
+                   regcoilpm_dipole_surface_separation_min, &
+                   'REGCOILPM_DIPOLE_SURFACE_SEPARATION_MAX', &
+                   regcoilpm_dipole_surface_separation_max
+            IF (dregcoilpm_dipole_surface_separation_opt > 0) &
+                 WRITE(iunit,outflt) 'DREGCOILPM_DIPOLE_SURFACE_SEPARATION', &
+                          dregcoilpm_dipole_surface_separation_opt
+         END IF
+         ! end of uniform winding surface separation options
+
+         ! Dipole surface component OR separation optimization
+         IF ( (ANY(lregcoilpm_ds_rbound_s_opt)) .or. (ANY(lregcoilpm_ds_rbound_c_opt)) .or. &
+              (ANY(lregcoilpm_ds_zbound_s_opt)) .or. (ANY(lregcoilpm_ds_zbound_c_opt)) .or. &
+              lregcoilpm_dipole_surface_separation_opt ) THEN
+             DO ii = 1,UBOUND(target_regcoilpm_chi2_b, 1)
+                IF (sigma_regcoilpm_chi2_b(ii) < bigno) THEN
+                    WRITE(iunit,"(2(2X,A,I4.3,A,ES22.12E3))") &
+                           'TARGET_REGCOILPM_CHI2_B(',ii,') = ', target_regcoilpm_chi2_b(ii), &
+                           'SIGMA_REGCOILPM_CHI2_B(',ii,') = ', sigma_regcoilpm_chi2_b(ii)
+                END IF
+             END DO
+
+             DO ii = 1,UBOUND(target_regcoilpm_lambda, 1)
+                IF (sigma_regcoilpm_lambda(ii) < bigno) THEN
+                    WRITE(iunit,"(2(2X,A,I4.3,A,E22.14))") &
+                           'TARGET_REGCOILPM_LAMBDA(',ii,') = ', target_regcoilpm_lambda(ii), &
+                           'SIGMA_REGCOILPM_LAMBDA(',ii,') = ', sigma_regcoilpm_lambda(ii)
+                END IF
+             END DO
+
+             DO ii = 1,UBOUND(target_regcoilpm_max_M, 1)
+                IF (sigma_regcoilpm_max_M(ii) < bigno) THEN
+                    WRITE(iunit,"(2(2X,A,I4.3,A,E22.14))") &
+                           'TARGET_REGCOILPM_MAX_M(',ii,') = ', target_regcoilpm_max_M(ii), &
+                           'SIGMA_REGCOILPM_MAX_M(',ii,') = ', sigma_regcoilpm_max_M(ii)
+                END IF
+             END DO
+             DO ii = 1,UBOUND(target_regcoilpm_current_potential, 1)
+                IF (sigma_regcoilpm_current_potential(ii) < bigno) THEN
+                    WRITE(iunit,"(2(2X,A,I4.3,A,E22.14))") &
+                           'TARGET_REGCOILPM_CURRENT_POTENTIAL(',ii,') = ', target_regcoilpm_current_potential(ii), &
+                           'SIGMA_REGCOILPM_CURRENT_POTENTIAL(',ii,') = ', sigma_regcoilpm_current_potential(ii)
+                END IF
+             END DO
+             DO ii = 1,UBOUND(target_regcoilpm_max_current_potential, 1)
+                IF (sigma_regcoilpm_max_current_potential(ii) < bigno) THEN
+                    WRITE(iunit,"(2(2X,A,I4.3,A,E22.14))") &
+                           'TARGET_REGCOILPM_MAX_CURRENT_POTENTIAL(',ii,') = ', target_regcoilpm_max_current_potential(ii), &
+                           'SIGMA_REGCOILPM_MAX_CURRENT_POTENTIAL(',ii,') = ', sigma_regcoilpm_max_current_potential(ii)
+                END IF
+             END DO
+             DO ii = 1,UBOUND(target_regcoilpm_rms_M, 1)
+                IF (sigma_regcoilpm_rms_M(ii) < bigno) THEN
+                    WRITE(iunit,"(2(2X,A,I4.3,A,E22.14))") &
+                           'TARGET_REGCOILPM_RMS_M(',ii,') = ', target_regcoilpm_rms_M(ii), &
+                           'SIGMA_REGCOILPM_RMS_M(',ii,') = ', sigma_regcoilpm_rms_M(ii)
+                END IF
+             END DO
+             DO ii = 1,UBOUND(target_regcoilpm_chi2_M, 1)
+                IF (sigma_regcoilpm_chi2_M(ii) < bigno) THEN
+                    WRITE(iunit,"(2(2X,A,I4.3,A,E22.14))") &
+                           'TARGET_REGCOILPM_CHI2_M(',ii,') = ', target_regcoilpm_chi2_M(ii), &
+                           'SIGMA_REGCOILPM_CHI2_M(',ii,') = ', sigma_regcoilpm_chi2_M(ii)
+                END IF
+             END DO
+              DO ii = 1,UBOUND(target_regcoilpm_max_bnormal, 1)
+                IF (sigma_regcoilpm_max_bnormal(ii) < bigno) THEN
+                    WRITE(iunit,"(2(2X,A,I4.3,A,E22.14))") &
+                           'TARGET_REGCOILPM_MAX_BNORMAL(',ii,') = ', target_regcoilpm_max_bnormal(ii), &
+                           'SIGMA_REGCOILPM_MAX_BNORMAL(',ii,') = ', sigma_regcoilpm_max_bnormal(ii)
+                END IF
+             END DO
+              DO ii = 1,UBOUND(target_regcoilpm_area_dipole, 1)
+                IF (sigma_regcoilpm_area_dipole(ii) < bigno) THEN
+                    WRITE(iunit,"(2(2X,A,I4.3,A,E22.14))") &
+                           'TARGET_REGCOILPM_AREA_DIPOLE(',ii,') = ', target_regcoilpm_area_dipole(ii), &
+                           'SIGMA_REGCOILPM_AREA_DIPOLE(',ii,') = ', sigma_regcoilpm_area_dipole(ii)
+                END IF
+             END DO
+              DO ii = 1,UBOUND(target_regcoilpm_area_plasma, 1)
+                IF (sigma_regcoilpm_area_plasma(ii) < bigno) THEN
+                    WRITE(iunit,"(2(2X,A,I4.3,A,E22.14))") &
+                           'TARGET_REGCOILPM_AREA_PLASMA(',ii,') = ', target_regcoilpm_area_plasma(ii), &
+                           'SIGMA_REGCOILPM_AREA_PLASMA(',ii,') = ', sigma_regcoilpm_area_plasma(ii)
+                END IF
+             END DO
+              DO ii = 1,UBOUND(target_regcoilpm_area_diff, 1)
+                IF (sigma_regcoilpm_area_diff(ii) < bigno) THEN
+                    WRITE(iunit,"(2(2X,A,I4.3,A,E22.14))") &
+                           'TARGET_REGCOILPM_AREA_DIFF(',ii,') = ', target_regcoilpm_area_diff(ii), &
+                           'SIGMA_REGCOILPM_AREA_DIFF(',ii,') = ', sigma_regcoilpm_area_diff(ii)
+                END IF
+             END DO
+              DO ii = 1,UBOUND(target_regcoilpm_volume_dipole, 1)
+                IF (sigma_regcoilpm_volume_dipole(ii) < bigno) THEN
+                    WRITE(iunit,"(2(2X,A,I4.3,A,E22.14))") &
+                           'TARGET_REGCOILPM_VOLUME_DIPOLE(',ii,') = ', target_regcoilpm_volume_dipole(ii), &
+                           'SIGMA_REGCOILPM_VOLUME_DIPOLE(',ii,') = ', sigma_regcoilpm_volume_dipole(ii)
+                END IF
+             END DO
+              DO ii = 1,UBOUND(target_regcoilpm_volume_plasma, 1)
+                IF (sigma_regcoilpm_volume_plasma(ii) < bigno) THEN
+                    WRITE(iunit,"(2(2X,A,I4.3,A,E22.14))") &
+                           'TARGET_REGCOILPM_VOLUME_PLASMA(',ii,') = ', target_regcoilpm_volume_plasma(ii), &
+                           'SIGMA_REGCOILPM_VOLUME_PLASMA(',ii,') = ', sigma_regcoilpm_volume_plasma(ii)
+                END IF
+             END DO
+              DO ii = 1,UBOUND(target_regcoilpm_volume_diff, 1)
+                IF (sigma_regcoilpm_volume_diff(ii) < bigno) THEN
+                    WRITE(iunit,"(2(2X,A,I4.3,A,E22.14))") &
+                           'TARGET_REGCOILPM_VOLUME_DIFF(',ii,') = ', target_regcoilpm_volume_diff(ii), &
+                           'SIGMA_REGCOILPM_VOLUME_DIFF(',ii,') = ', sigma_regcoilpm_volume_diff(ii)
+                END IF
+             END DO
+              DO ii = 1,UBOUND(target_regcoilpm_bnormal_total, 1)
+                IF (sigma_regcoilpm_bnormal_total(ii) < bigno) THEN
+                    WRITE(iunit,"(2(2X,A,I4.3,A,E22.14))") &
+                           'TARGET_REGCOILPM_BNORMAL_TOTAL(',ii,') = ', target_regcoilpm_bnormal_total(ii), &
+                           'SIGMA_REGCOILPM_BNORMAL_TOTAL(',ii,') = ', sigma_regcoilpm_bnormal_total(ii)
+                END IF
+             END DO
+!               DO ii = 1,UBOUND(target_regcoilpm_K2, 1)
+!                IF (sigma_regcoilpm_K2(ii) < bigno) THEN
+!                    WRITE(iunit,"(2(2X,A,I4.3,A,E22.14))") &
+!                           'TARGET_REGCOILPM_K2(',ii,') = ', target_regcoilpm_K2(ii), &
+!                           'SIGMA_REGCOILPM_K2(',ii,') = ', sigma_regcoilpm_K2(ii)
+!                END IF
+!             END DO
+             DO ii = 1,UBOUND(target_regcoilpm_d2p_dist_min, 1)
+                IF (sigma_regcoilpm_d2p_dist_min(ii) < bigno) THEN
+                    WRITE(iunit,"(2(2X,A,I4.3,A,E22.14))") &
+                           'TARGET_REGCOILPM_D2P_DIST_MIN(',ii,') = ', target_regcoilpm_d2p_dist_min(ii), &
+                           'SIGMA_REGCOILPM_D2P_DIST_MIN(',ii,') = ', sigma_regcoilpm_d2p_dist_min(ii)
+                END IF
+             END DO
+           END IF
+
+         ! Options for winding surface (Fourier Series) variation
+         IF (  (ANY(lregcoilpm_ds_rbound_c_opt)) .or. (ANY(lregcoilpm_ds_rbound_s_opt)) .or. &
+               (ANY(lregcoilpm_ds_zbound_c_opt)) .or. (ANY(lregcoilpm_ds_zbound_s_opt)) ) THEN
+
+             ! Boundary components
+             ! r-boundary cos components
+             DO m = LBOUND(lregcoilpm_ds_rbound_c_opt,DIM=1), UBOUND(lregcoilpm_ds_rbound_s_opt,DIM=1)
+                 DO n = LBOUND(lregcoilpm_ds_rbound_c_opt,DIM=2), UBOUND(lregcoilpm_ds_rbound_s_opt,DIM=2)
+                     IF(lregcoilpm_ds_rbound_c_opt(m,n) ) THEN
+                         WRITE(iunit,'(A)') '! REGCOIL Winding surface R-boundary cos component'
+                         WRITE(iunit,"(2X,A,I4.3,A,I4.3,A,1X,'=',1X,L1,4(2X,A,I4.3,A,I4.3,A,1X,'=',1X,E19.12))") &
+                                'LREGCOILPM_DS_RBOUND_C_OPT(',m,',',n,')', lregcoilpm_ds_rbound_c_opt(m, n), &
+                                'REGCOILPM_DS_RBOUND_C(',m,',',n,')', regcoilpm_ds_rbound_c(m, n), &
+                                'DREGCOILPM_DS_RBOUND_C_OPT(',m,',',n,')', dregcoilpm_ds_rbound_c_opt(m,n), &
+                                'REGCOILPM_DS_RBOUND_C_MIN(',m,',',n,')', regcoilpm_ds_rbound_c_min(m,n), &
+                                'REGCOILPM_DS_RBOUND_C_MAX(',m,',',n,')', regcoilpm_ds_rbound_c_max(m,n)
+                     END IF
+                 END DO
+             END DO
+
+             ! r-boundary sin components 
+             DO m = LBOUND(lregcoilpm_ds_rbound_s_opt,DIM=1), UBOUND(lregcoilpm_ds_rbound_s_opt,DIM=1)
+                 DO n = LBOUND(lregcoilpm_ds_rbound_s_opt,DIM=2), UBOUND(lregcoilpm_ds_rbound_s_opt,DIM=2)
+                     IF(lregcoilpm_ds_rbound_s_opt(m,n)  ) THEN
+                         WRITE(iunit,'(A)') '! REGCOIL Winding surface R-boundary sin component'
+                         WRITE(iunit,"(2X,A,I4.3,A,I4.3,A,1X,'=',1X,L1,4(2X,A,I4.3,A,I4.3,A,1X,'=',1X,E19.12))") &
+                                'LREGCOILPM_DS_RBOUND_S_OPT(',m,',',n,')', lregcoilpm_ds_rbound_s_opt(m, n), &
+                                'REGCOILPM_DS_RBOUND_S(',m,',',n,')', regcoilpm_ds_rbound_s(m, n), &
+                                'DREGCOILPM_DS_RBOUND_S_OPT(',m,',',n,')', dregcoilpm_ds_rbound_s_opt(m,n), &
+                                'REGCOILPM_DS_RBOUND_S_MIN(',m,',',n,')', regcoilpm_ds_rbound_s_min(m,n), &
+                                'REGCOILPM_DS_RBOUND_S_MAX(',m,',',n,')', regcoilpm_ds_rbound_s_max(m,n)
+                     END IF
+                 END DO
+             END DO
+
+             ! z-boundary cos components - not implemented yet
+             DO m = LBOUND(lregcoilpm_ds_zbound_c_opt,DIM=1), UBOUND(lregcoilpm_ds_zbound_c_opt,DIM=1)
+                 DO n = LBOUND(lregcoilpm_ds_zbound_c_opt,DIM=2), UBOUND(lregcoilpm_ds_zbound_c_opt,DIM=2)
+                     IF(lregcoilpm_ds_zbound_c_opt(m,n) ) THEN
+                         WRITE(iunit,'(A)') '! REGCOIL Winding surface Z-boundary cos component'
+                         WRITE(iunit,"(2X,A,I4.3,A,I4.3,A,1X,'=',1X,L1,4(2X,A,I4.3,A,I4.3,A,1X,'=',1X,E19.12))") &
+                                'LREGCOILPM_DS_ZBOUND_C_OPT(',m,',',n,')', lregcoilpm_ds_zbound_c_opt(m, n), &
+                                'REGCOILPM_DS_ZBOUND_C(',m,',',n,')', regcoilpm_ds_zbound_c(m, n), &
+                                'DREGCOILPM_DS_ZBOUND_C_OPT(',m,',',n,')', dregcoilpm_ds_zbound_c_opt(m,n), &
+                                'REGCOILPM_DS_ZBOUND_C_MIN(',m,',',n,')', regcoilpm_ds_zbound_c_min(m,n), &
+                                'REGCOILPM_DS_ZBOUND_C_MAX(',m,',',n,')', regcoilpm_ds_zbound_c_max(m,n)
+                     END IF
+                 END DO
+             END DO
+
+             ! z-boundary sin components
+             DO m = LBOUND(lregcoilpm_ds_zbound_s_opt,DIM=1), UBOUND(lregcoilpm_ds_zbound_s_opt,DIM=1)
+                 DO n = LBOUND(lregcoilpm_ds_zbound_s_opt,DIM=2), UBOUND(lregcoilpm_ds_zbound_s_opt,DIM=2)
+                     IF( lregcoilpm_ds_zbound_s_opt(m,n) ) THEN
+                         WRITE(iunit,'(A)') '! REGCOIL Winding surface Z-boundary sin component'
+                         WRITE(iunit,"(2X,A,I4.3,A,I4.3,A,1X,'=',1X,L1,4(2X,A,I4.3,A,I4.3,A,1X,'=',1X,E19.12))") &
+                                'LREGCOILPM_DS_ZBOUND_S_OPT(',m,',',n,')', lregcoilpm_ds_zbound_s_opt(m, n), &
+                                'REGCOILPM_DS_ZBOUND_S(',m,',',n,')', regcoilpm_ds_zbound_s(m, n), &
+                                'DREGCOILPM_DS_ZBOUND_S_OPT(',m,',',n,')', dregcoilpm_ds_zbound_s_opt(m,n), &
+                                'REGCOILPM_DS_ZBOUND_S_MIN(',m,',',n,')', regcoilpm_ds_zbound_s_min(m,n), &
+                                'REGCOILPM_DS_ZBOUND_S_MAX(',m,',',n,')', regcoilpm_ds_zbound_s_max(m,n)
+                     END IF
+                 END DO
+             END DO
+        END IF
+        ! end of Options for winding surface (Fourier Series) variation
+      END IF  ! End of REGCOILPM options
 
       IF (ANY(sigma_extcur < bigno)) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'

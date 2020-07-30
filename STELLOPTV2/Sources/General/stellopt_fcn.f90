@@ -111,6 +111,8 @@
          IF (var_dex(nvar_in) == ixics_v0) xics_v0 = x(nvar_in)
          IF (var_dex(nvar_in) == iregcoil_winding_surface_separation) &
                 regcoil_winding_surface_separation = x(nvar_in)
+         IF (var_dex(nvar_in) == iregcoilpm_dipole_surface_separation) &
+                regcoilpm_dipole_surface_separation = x(nvar_in)
          IF (var_dex(nvar_in) == ibcrit) bcrit = x(nvar_in)
          IF (var_dex(nvar_in) == iextcur) extcur(arr_dex(nvar_in,1)) = x(nvar_in)
          IF (var_dex(nvar_in) == iaphi) aphi(arr_dex(nvar_in,1)) = x(nvar_in)
@@ -154,6 +156,10 @@
          IF (var_dex(nvar_in) == iregcoil_rcws_rbound_s) regcoil_rcws_rbound_s(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
          IF (var_dex(nvar_in) == iregcoil_rcws_zbound_c) regcoil_rcws_zbound_c(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
          IF (var_dex(nvar_in) == iregcoil_rcws_zbound_s) regcoil_rcws_zbound_s(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
+         IF (var_dex(nvar_in) == iregcoilpm_ds_rbound_c) regcoilpm_ds_rbound_c(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
+         IF (var_dex(nvar_in) == iregcoilpm_ds_rbound_s) regcoilpm_ds_rbound_s(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
+         IF (var_dex(nvar_in) == iregcoilpm_ds_zbound_c) regcoilpm_ds_zbound_c(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
+         IF (var_dex(nvar_in) == iregcoilpm_ds_zbound_s) regcoilpm_ds_zbound_s(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
          IF (var_dex(nvar_in) == iRosenbrock_X) Rosenbrock_X(arr_dex(nvar_in,1)) = x(nvar_in)
       END DO
 
@@ -458,6 +464,26 @@
            ! Unstested parallel call is commented out here.
            ! ctemp_str = 'regcoil_driver'
            ! CALL stellopt_paraexe(ctemp_str,proc_string,lscreen)
+         end if
+!DEC$ ENDIF
+!DEC$ IF DEFINED (REGCOILPM)
+         IF ( ( ANY(sigma_regcoilpm_chi2_b < bigno) .or.   &
+                ANY(sigma_regcoilpm_lambda < bigno) .or.    &
+                ANY(sigma_regcoilpm_max_M < bigno) .or.    &
+                ANY(sigma_regcoilpm_current_potential < bigno) .or.    &
+                ANY(sigma_regcoilpm_max_current_potential < bigno) .or.    &
+	        ANY(sigma_regcoilpm_rms_M < bigno) .or.    &
+	        ANY(sigma_regcoilpm_chi2_M < bigno) .or.    &
+	        ANY(sigma_regcoilpm_max_bnormal < bigno) .or.    &
+	        ANY(sigma_regcoilpm_area_dipole < bigno) .or.    &
+	        ANY(sigma_regcoilpm_area_plasma < bigno) .or.    &
+	        ANY(sigma_regcoilpm_area_diff < bigno) .or.    &
+	        ANY(sigma_regcoilpm_volume_dipole < bigno) .or.    &
+	        ANY(sigma_regcoilpm_volume_plasma < bigno) .or.    &
+	        ANY(sigma_regcoilpm_volume_diff < bigno) .or.    &
+                ANY(sigma_regcoilpm_d2p_dist_min < bigno) .or.    &
+	        ANY(sigma_regcoilpm_bnormal_total < bigno) ) .and. (iflag >=0)) then
+           CALL stellopt_regcoilpm_driver(proc_string, lscreen, iflag)
          end if
 !DEC$ ENDIF
 

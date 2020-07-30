@@ -243,6 +243,24 @@
                     END IF
                  END DO
               END DO
+              ! REGCOILPM options
+              IF (lregcoilpm_dipole_surface_separation_opt) nvars = nvars + 1
+              DO m = -mpol_rcpmds, mpol_rcpmds
+                 DO n = -ntor_rcws, ntor_rcws
+                    IF (lregcoilpm_ds_rbound_c_opt(m,n)) THEN
+                       nvars = nvars + 1
+                    END IF
+                    IF (lregcoilpm_ds_rbound_s_opt(m,n)) THEN
+                       nvars = nvars + 1
+                    END IF
+                    IF (lregcoilpm_ds_zbound_c_opt(m,n)) THEN
+                       nvars = nvars + 1
+                    END IF
+                    IF (lregcoilpm_ds_zbound_s_opt(m,n)) THEN
+                       nvars = nvars + 1
+                    END IF
+                 END DO
+              END DO
          CASE('spec')
          CASE('test')
             IF (lxval_opt)  nvars = nvars + 1
@@ -278,6 +296,7 @@
               IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'stellot_init',ierr_mpi)
 !DEC$ ENDIF
               ! Now count
+              ! REGCOIL variables
               IF (lregcoil_winding_surface_separation_opt) THEN
                  IF (lauto_domain) THEN
                     regcoil_winding_surface_separation_min = &
@@ -379,6 +398,110 @@
                     END DO
                  END DO
               END IF
+              ! END REGCOIL
+              ! REGCOILPM variables
+              IF (lregcoilpm_dipole_surface_separation_opt) THEN
+                 IF (lauto_domain) THEN
+                    regcoilpm_dipole_surface_separation_min = &
+                        regcoilpm_dipole_surface_separation - &
+                        ABS(pct_domain*regcoilpm_dipole_surface_separation)
+                    regcoilpm_dipole_surface_separation_max = &
+                        regcoilpm_dipole_surface_separation + &
+                        ABS(pct_domain*regcoilpm_dipole_surface_separation)
+                 END IF
+                 nvar_in = nvar_in + 1
+                 vars(nvar_in) = regcoilpm_dipole_surface_separation
+                 vars_min(nvar_in) = regcoilpm_dipole_surface_separation_min
+                 vars_max(nvar_in) = regcoilpm_dipole_surface_separation_max
+                 var_dex(nvar_in) = iregcoilpm_dipole_surface_separation
+                 diag(nvar_in)    = dregcoilpm_dipole_surface_separation_opt
+                 arr_dex(nvar_in,1) = 1
+              END IF
+              IF (ANY(lregcoilpm_ds_rbound_c_opt) ) THEN
+                 DO m = -mpol_rcpmds,mpol_rcpmds
+                    DO n = -ntor_rcpmds,ntor_rcpmds
+                       ! IF (m==0 .and. n<=0) CYCLE
+                       IF (lregcoilpm_ds_rbound_c_opt(m,n)) THEN
+                          IF (lauto_domain) THEN
+                             regcoilpm_ds_rbound_c_min(m,n) = regcoilpm_ds_rbound_c(m,n) - ABS(pct_domain*regcoilpm_ds_rbound_c(m,n))
+                             regcoilpm_ds_rbound_c_max(m,n) = regcoilpm_ds_rbound_c(m,n) + ABS(pct_domain*regcoilpm_ds_rbound_c(m,n))
+                          END IF
+                          nvar_in = nvar_in + 1
+                          vars(nvar_in) = regcoilpm_ds_rbound_c(m,n)
+                          vars_min(nvar_in) = regcoilpm_ds_rbound_c_min(m,n)
+                          vars_max(nvar_in) = regcoilpm_ds_rbound_c_max(m,n)
+                          var_dex(nvar_in) = iregcoilpm_ds_rbound_c
+                          diag(nvar_in)    = dregcoilpm_ds_rbound_c_opt(m,n)
+                          arr_dex(nvar_in,1) = m
+                          arr_dex(nvar_in,2) = n
+                       END IF
+                    END DO
+                 END DO
+              END IF
+              IF (ANY(lregcoilpm_ds_rbound_s_opt) ) THEN
+                 DO m = -mpol_rcpmds,mpol_rcpmds
+                    DO n = -ntor_rcpmds,ntor_rcpmds
+                       ! IF (m==0 .and. n<=0) CYCLE
+                       IF (lregcoilpm_ds_rbound_s_opt(m,n)) THEN
+                          IF (lauto_domain) THEN
+                             regcoilpm_ds_rbound_s_min(m,n) = regcoilpm_ds_rbound_s(m,n) - ABS(pct_domain*regcoilpm_ds_rbound_s(m,n))
+                             regcoilpm_ds_rbound_s_max(m,n) = regcoilpm_ds_rbound_s(m,n) + ABS(pct_domain*regcoilpm_ds_rbound_s(m,n))
+                          END IF
+                          nvar_in = nvar_in + 1
+                          vars(nvar_in) = regcoilpm_ds_rbound_s(m,n)
+                          vars_min(nvar_in) = regcoilpm_ds_rbound_s_min(m,n)
+                          vars_max(nvar_in) = regcoilpm_ds_rbound_s_max(m,n)
+                          var_dex(nvar_in) = iregcoilpm_ds_rbound_s
+                          diag(nvar_in)    = dregcoilpm_ds_rbound_s_opt(m,n)
+                          arr_dex(nvar_in,1) = m
+                          arr_dex(nvar_in,2) = n
+                       END IF
+                    END DO
+                 END DO
+              END IF
+              IF (ANY(lregcoilpm_ds_zbound_c_opt) ) THEN
+                 DO m = -mpol_rcpmds,mpol_rcpmds
+                    DO n = -ntor_rcpmds,ntor_rcpmds
+                       ! IF (m==0 .and. n<=0) CYCLE
+                       IF (lregcoilpm_ds_zbound_c_opt(m,n)) THEN
+                          IF (lauto_domain) THEN
+                             regcoilpm_ds_zbound_c_min(m,n) = regcoilpm_ds_zbound_c(m,n) - ABS(pct_domain*regcoilpm_ds_zbound_c(m,n))
+                             regcoilpm_ds_zbound_c_max(m,n) = regcoilpm_ds_zbound_c(m,n) + ABS(pct_domain*regcoilpm_ds_zbound_c(m,n))
+                          END IF
+                          nvar_in = nvar_in + 1
+                          vars(nvar_in) = regcoilpm_ds_zbound_c(m,n)
+                          vars_min(nvar_in) = regcoilpm_ds_zbound_c_min(m,n)
+                          vars_max(nvar_in) = regcoilpm_ds_zbound_c_max(m,n)
+                          var_dex(nvar_in) = iregcoilpm_ds_zbound_c
+                          diag(nvar_in)    = dregcoilpm_ds_zbound_c_opt(m,n)
+                          arr_dex(nvar_in,1) = m
+                          arr_dex(nvar_in,2) = n
+                       END IF
+                    END DO
+                 END DO
+              END IF
+              IF (ANY(lregcoilpm_ds_zbound_s_opt) ) THEN
+                 DO m = -mpol_rcpmds,mpol_rcpmds
+                    DO n = -ntor_rcpmds,ntor_rcpmds
+                       ! IF (m==0 .and. n<=0) CYCLE
+                       IF (lregcoilpm_ds_zbound_s_opt(m,n)) THEN
+                          IF (lauto_domain) THEN
+                             regcoilpm_ds_zbound_s_min(m,n) = regcoilpm_ds_zbound_s(m,n) - ABS(pct_domain*regcoilpm_ds_zbound_s(m,n))
+                             regcoilpm_ds_zbound_s_max(m,n) = regcoilpm_ds_zbound_s(m,n) + ABS(pct_domain*regcoilpm_ds_zbound_s(m,n))
+                          END IF
+                          nvar_in = nvar_in + 1
+                          vars(nvar_in) = regcoilpm_ds_zbound_s(m,n)
+                          vars_min(nvar_in) = regcoilpm_ds_zbound_s_min(m,n)
+                          vars_max(nvar_in) = regcoilpm_ds_zbound_s_max(m,n)
+                          var_dex(nvar_in) = iregcoilpm_ds_zbound_s
+                          diag(nvar_in)    = dregcoilpm_ds_zbound_s_opt(m,n)
+                          arr_dex(nvar_in,1) = m
+                          arr_dex(nvar_in,2) = n
+                       END IF
+                    END DO
+                 END DO
+              END IF
+              ! END REGCOILPM
               IF (lphiedge_opt) THEN
                  IF (lauto_domain) THEN
                     phiedge_min = phiedge - ABS(pct_domain*phiedge)

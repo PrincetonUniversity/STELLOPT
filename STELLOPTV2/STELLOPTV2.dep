@@ -263,6 +263,143 @@ chisq_regcoil_bnormal_total.o : \
       stellopt_input_mod.o \
       stellopt_vars.o \
       equil_vals.o
+
+
+chisq_regcoilpm_chi2_b.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      stellopt_input_mod.o \
+      stellopt_vars.o \
+      equil_vals.o
+
+
+chisq_regcoilpm_lambda.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      stellopt_input_mod.o \
+      stellopt_vars.o \
+      equil_vals.o
+
+  
+chisq_regcoilpm_k2.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      stellopt_input_mod.o \
+      stellopt_vars.o \
+      equil_vals.o
+      
+       
+chisq_regcoilpm_max_current_potential.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      stellopt_input_mod.o \
+      stellopt_vars.o \
+      equil_vals.o
+      
+       
+chisq_regcoilpm_current_potential.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      stellopt_input_mod.o \
+      stellopt_vars.o \
+      equil_vals.o
+      
+
+chisq_regcoilpm_max_k.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      stellopt_input_mod.o \
+      stellopt_vars.o \
+      equil_vals.o
+      
+        
+chisq_regcoilpm_rms_k.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      stellopt_input_mod.o \
+      stellopt_vars.o \
+      equil_vals.o
+
+
+chisq_regcoilpm_max_bnormal.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      stellopt_input_mod.o \
+      stellopt_vars.o \
+      equil_vals.o
+      
+ 
+chisq_regcoilpm_chi2_k.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      stellopt_input_mod.o \
+      stellopt_vars.o \
+      equil_vals.o
+      
+ 
+chisq_regcoilpm_area_dipole.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      stellopt_input_mod.o \
+      stellopt_vars.o \
+      equil_vals.o
+      
+ 
+chisq_regcoilpm_area_plasma.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      stellopt_input_mod.o \
+      stellopt_vars.o \
+      equil_vals.o
+      
+ 
+chisq_regcoilpm_area_diff.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      stellopt_input_mod.o \
+      stellopt_vars.o \
+      equil_vals.o
+      
+ 
+chisq_regcoilpm_volume_dipole.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      stellopt_input_mod.o \
+      stellopt_vars.o \
+      equil_vals.o
+      
+ 
+chisq_regcoilpm_volume_plasma.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      stellopt_input_mod.o \
+      stellopt_vars.o \
+      equil_vals.o
+
+
+
+chisq_regcoilpm_volume_diff.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      stellopt_input_mod.o \
+      stellopt_vars.o \
+      equil_vals.o
+      
+ 
+chisq_regcoilpm_d2p_dist_min.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      stellopt_input_mod.o \
+      stellopt_vars.o \
+      equil_vals.o
+
+
+chisq_regcoilpm_bnormal_total.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      stellopt_input_mod.o \
+      stellopt_vars.o \
+      equil_vals.o
       
 chisq_rosenbrock.o : \
       stellopt_runtime.o \
@@ -857,6 +994,13 @@ stellopt_clean_up.o : \
       
 
 stellopt_regcoil_driver.o : \
+      stellopt_runtime.o \
+      stellopt_input_mod.o \
+      stellopt_vars.o \
+      equil_utils.o
+      
+
+stellopt_regcoilpm_driver.o : \
       stellopt_runtime.o \
       stellopt_input_mod.o \
       stellopt_vars.o \
