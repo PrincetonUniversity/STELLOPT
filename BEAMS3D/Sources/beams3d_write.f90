@@ -107,6 +107,10 @@
                CALL write_var_hdf5(fid,'Weight',nparticles,ier,DBLVAR=weight,ATT='Weight',&
                                   ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'Weight',ier)
+               IF (ALLOCATED(GFactor)) THEN
+                  CALL write_var_hdf5(fid,'GFactor',ns_prof1,ier,DBLVAR=GFactor,ATT='(1-l31)/Zeff',ATT_NAME='description')
+                  IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'GFactor',ier)
+               END IF
                IF (ASSOCIATED(TE)) THEN
                   CALL write_var_hdf5(fid,'TE',nr,nphi,nz,ier,DBLVAR=TE,ATT='Electron Temperature [eV]',ATT_NAME='description')
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'TE',ier)
