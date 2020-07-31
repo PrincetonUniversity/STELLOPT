@@ -1018,6 +1018,7 @@ mddc_T.o : \
       
 
 mgrid_mod.o : \
+      mpi_sharmem.o \
       mpi_inc.o \
       v3_utilities.o \
       ezcdf.o \
