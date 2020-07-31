@@ -9,6 +9,9 @@
 !                           "Bootstrap current control in stellarators", 
 !                           Phys. Fluids B1, 1663 (1989). 
 !                           aip.scitation.org/doi/10.1063/1.858945
+!                    The Total correction is
+!                    j_nbcd = j_f * [1 - Z_f/Zeff*(1-l31)]
+!                    we return (1-l31)/Zeff
 !-----------------------------------------------------------------------
       SUBROUTINE vmec_ohkawa(sflx,zeff,Gfac)
 !-----------------------------------------------------------------------
@@ -22,7 +25,7 @@
 !     Arguments
 !          sflx			Normalized Toroidal Flux
 !          zeff         Effective plasma charge
-!          Gfac         Correction Factor (l31)
+!          Gfac         Correction Factor (1-l31)/zeff
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       REAL(rprec), INTENT(in) :: sflx, zeff
@@ -138,8 +141,8 @@
       ALLOCATE(tz(nu*nv,2))
       tz = 0
       DO zt = 1, nu*nv
-         u = MOD(zt-1,nu)/REAL(nu-1)
-         v = FLOOR(zt/REAL(nu+1))/REAL(nv-1)
+         u = MOD(zt-1,nu)/REAL(nu)
+         v = FLOOR(zt/REAL(nu+1))/REAL(nv)
          tz(zt,1) = u*pi2
          tz(zt,2) = v*pi2/nfp
       END DO
@@ -196,16 +199,18 @@
 
       ! Calculate trapped and passing fractions
       fp = 0.75 * avgbobm2 * sum(lam/avgbpov)*sumg/(nla-1)
-      ft = 1-fp
-      x = ft/fp
-      IF (fp <= 0) RETURN ! G=0
+      fp = MAX(MIN(fp,1.0),0.0)
+      IF (fp == 0) RETURN
+      x = (1-fp)/fp
 
       ! Calculate G~l31
-      d = 1.414*zeff &
-         + z2 * x * (0.754 + 2.657*zeff + 2 * z2) &
+      d = 1.414*zeff +z2 &
+         + x * (0.754 + 2.657*zeff + 2 * z2) &
          + x  * x * (0.348 + 1.243*zeff +     z2)
-      a = 0.754 + 2.21 * zeff + z2 * x * (0.348 + 1.243 * zeff + z2)
-      Gfac = x*a/d
+      a = 0.754 + 2.21 * zeff + z2 + x * (0.348 + 1.243 * zeff + z2)
+      Gfac = (1 - x*a/d)/zeff
+
+      !STOP
 
       ! Cleanup
       DEALLOCATE(b,g)
