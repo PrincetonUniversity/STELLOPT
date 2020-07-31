@@ -14,7 +14,7 @@
       USE beams3d_grid, ONLY: nr, nphi, nz, B_R, B_PHI, B_Z, raxis, &
                                  zaxis, phiaxis,vp_spl_s
       USE beams3d_runtime, ONLY: id_string, npoinc, t_end, lbeam, lvac,&
-                                 lvmec, &
+                                 lvmec, charge_beams, &
                                  nbeams, beam, e_beams, charge_beams, &
                                  mass_beams, lverb, p_beams, MPI_BARRIER_ERR,&
                                  MPI_BCAST_ERR,nprocs_beams,handle_err, ldepo,&
@@ -39,9 +39,7 @@
       REAL, ALLOCATABLE     :: real_mask(:),vllaxis(:),vperpaxis(:)
       INTEGER, PARAMETER :: ndist = 100
 #if defined(MPI_OPT)
-      INTEGER :: status(MPI_STATUS_size) !mpi stuff
-      INTEGER :: mystart, mypace, sender
-      INTEGER, ALLOCATABLE :: revcounts(:), displs(:)
+      INTEGER :: mystart, mypace
       REAL(rprec), ALLOCATABLE :: buffer_mast(:,:), buffer_slav(:,:)
 #endif
 !-----------------------------------------------------------------------
@@ -182,16 +180,25 @@
       ! These diagnostics need Vp to be defined
       IF (lvmec .and. .not.lvac .and. .not.ldepo .and. myworkid == master) THEN
          ! In the future we'll calculate values from the dist5d_prof array.
-         ALLOCATE(vllaxis(ns_prof4),vperpaxis(ns_prof5))
-         FORALL(k = 1:ns_prof4) vllaxis(k) = -partvmax+2*partvmax*(k-1)/(ns_prof4-1)
-         FORALL(k = 1:ns_prof5) vperpaxis(k) = partvmax*(k-1)/(ns_prof5-1)
+         !ALLOCATE(vllaxis(ns_prof4),vperpaxis(ns_prof5))
+         !ALLOCATE(dist_func(nbeams,ns_prof1,ns_prof4))
+         !FORALL(k = 1:ns_prof4) vllaxis(k) = -partvmax+2*partvmax*(k-1)/(ns_prof4-1)
+         !FORALL(k = 1:ns_prof5) vperpaxis(k) = partvmax*(k-1)/(ns_prof5-1)
          ! We need to calculate the old values
          dense_prof = SUM(SUM(SUM(SUM(dist5d_prof,DIM=6),DIM=5),DIM=4),DIM=3)
-         ! This is an example of how to do this but we can't do this for j_prof since it's charge dependent
+         ! Calculated J_fast
+         !dist_func = SUM(SUM(SUM(dist5d_prof,DIM=6),DIM=4),DIM=3)
          !DO k = 1, ns_prof4
-         !   j_prof = j_prof + SUM(SUM(SUM(SUM(dist5d_prof(:,:,:,:,k,:),DIM=6),DIM=5),DIM=4),DIM=3)*vllaxis(k)
+         !   j_prof = j_prof + dist_func(:,:,k)*vllaxis(k)
          !END DO
-         DEALLOCATE(vllaxis,vperpaxis)
+         !IF (ANY(charge_beams>0)) THEN
+         !   DO k = 1, ns_prof1
+         !      j_prof(1:nbeams,k) = j_prof(1:nbeams,k)*charge_beams(1:nbeams)
+         !   END DO
+         !ELSE
+         !   j_prof = j_prof * 1.60217662E-19 
+         !END IF
+         !DEALLOCATE(vllaxis,vperpaxis,dist_func)
          ! Grid in rho, units in [/m^3]
          ! Note ns is number of cells not cell boundaries
          ! Just a note here dV/drho = 2*rho*dV/dist
