@@ -50,6 +50,7 @@
             DO j = 1, nzeta_pts
                u = pi2*(i-1)/ntheta_pts
                v = vmax*(j-1)/nzeta_pts
+               ier = 0
                CALL get_equil_kappa(s,u,v,kappa(i,j),ier)
                !PRINT *,u,v,kappa(i,j),ier
             END DO
