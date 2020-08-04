@@ -9,7 +9,7 @@
 !     Libraries
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
-      USE stellopt_vars, ONLY: ntor_rcws, mpol_rcws, rosenbrock_dim
+      USE stellopt_vars, ONLY: ntor_rcws, mpol_rcws, mnprod_fps, rosenbrock_dim
       USE vparams, ONLY: nsd
       USE vsvd0, ONLY : nigroup
 
@@ -183,6 +183,9 @@
       INTEGER     ::  numws
       REAL(rprec) ::  target_coil_bnorm, sigma_coil_bnorm
       INTEGER     ::  nu_bnorm,nv_bnorm
+
+      REAL(rprec),DIMENSION(mnprod_fps) ::  target_famus_bn, sigma_famus_bn
+
       REAL(rprec) ::  target_regcoil_winding_surface_separation
       REAL(rprec) ::  sigma_regcoil_winding_surface_separation
       REAL(rprec),DIMENSION((2*ntor_rcws+1)*(2*mpol_rcws+1)*4) ::  target_regcoil_chi2_b, sigma_regcoil_chi2_b
@@ -248,7 +251,8 @@
       INTEGER, PARAMETER :: jtarget_bprobe     = 501
       INTEGER, PARAMETER :: jtarget_segrog     = 502
       INTEGER, PARAMETER :: jtarget_fluxloop   = 503
-      INTEGER, PARAMETER :: jtarget_regcoil_chi2_b          = 504
+      INTEGER, PARAMETER :: jtarget_famus_bn                = 5020
+      INTEGER, PARAMETER :: jtarget_regcoil_chi2_b          = 5040
       INTEGER, PARAMETER :: jtarget_regcoil_current_density = 5041
       INTEGER, PARAMETER :: jtarget_curvature_P2            = 505
       INTEGER, PARAMETER :: jtarget_balloon    = 601
@@ -422,6 +426,8 @@
             WRITE(iunit, out_format) 'REGCOIL Chi^2 B'
          CASE(jtarget_regcoil_current_density)
             WRITE(iunit, out_format) 'REGCOIL Current Density on Winding Surface'
+         CASE(jtarget_famus_bn)
+            WRITE(iunit, out_format) 'FAMUS BNORMAL ON PLASMA'
          CASE(jtarget_coillen)
             WRITE(iunit, out_format) 'Coil Lengths'
          CASE(jtarget_coilsegvar)

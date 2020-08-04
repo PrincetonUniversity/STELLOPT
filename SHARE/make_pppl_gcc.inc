@@ -139,11 +139,22 @@
 #######################################################################
 #            REGCOIL Options
 #######################################################################
-  LREGCOIL= T
+  LREGCOIL= F
   REGCOIL_DIR = $(REGCOIL_PATH)
   REGCOIL_INC = -I$(REGCOIL_DIR) 
   LIB_REGCOIL = libregcoil.a
   REGCOIL_LIB = $(REGCOIL_DIR)/$(LIB_REGCOIL) -fopenmp
+
+
+#######################################################################
+#            FAMUS Options
+#######################################################################
+  LFAMUS= T
+  FAMUS_DIR = $(FAMUS_PATH)
+  FAMUS_INC = -I$(FAMUS_DIR) 
+  LIB_FAMUS = libfamus.a
+  FAMUS_LIB = $(FAMUS_DIR)/$(LIB_FAMUS)
+
 
 #######################################################################
 #            SFINCS Options

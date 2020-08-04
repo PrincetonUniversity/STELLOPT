@@ -410,7 +410,17 @@
                          regcoil_rcws_zbound_c_min, regcoil_rcws_zbound_s_min, &
                          regcoil_rcws_rbound_c_max, regcoil_rcws_rbound_s_max, &
                          regcoil_rcws_zbound_c_max, regcoil_rcws_zbound_s_max, &
-                         target_curvature_P2, sigma_curvature_P2, &
+                         famusin_filename, &
+                         target_famus_bn, sigma_famus_bn, &                         
+                         lfamus_ds_rbound_c_opt, lfamus_ds_rbound_s_opt, &
+                         lfamus_ds_zbound_c_opt, lfamus_ds_zbound_s_opt, &
+                         dfamus_ds_rbound_c_opt, dfamus_ds_rbound_s_opt, &
+                         dfamus_ds_zbound_c_opt, dfamus_ds_zbound_s_opt, &
+                         famus_ds_rbound_c_min, famus_ds_rbound_s_min, &
+                         famus_ds_zbound_c_min, famus_ds_zbound_s_min, &
+                         famus_ds_rbound_c_max, famus_ds_rbound_s_max, &
+                         famus_ds_zbound_c_max, famus_ds_zbound_s_max, &
+                          target_curvature_P2, sigma_curvature_P2, &
                          lRosenbrock_X_opt, dRosenbrock_X_opt, &
                          Rosenbrock_X, Rosenbrock_X_min, Rosenbrock_X_max, &
                          target_Rosenbrock_F, sigma_Rosenbrock_F
@@ -537,7 +547,16 @@
       drho_opt(:,:)     = -1.0
       ddeltamn_opt(:,:) = -1.0
       dcoil_spline(:,:) = -1.0
-      ! REGCOIL Winding surface options
+      ! FAMUS dipole surface options
+      lfamus_ds_rbound_c_opt = .FALSE.
+      lfamus_ds_rbound_s_opt = .FALSE.
+      lfamus_ds_zbound_c_opt = .FALSE.
+      lfamus_ds_zbound_s_opt = .FALSE.
+      dfamus_ds_rbound_c_opt = -1.0
+      dfamus_ds_rbound_s_opt = -1.0
+      dfamus_ds_zbound_c_opt = -1.0
+      dfamus_ds_zbound_s_opt = -1.0
+       ! REGCOIL Winding surface options
       regcoil_nescin_filename = ''
       regcoil_num_field_periods = -1.0
       lregcoil_winding_surface_separation_opt    = .FALSE.
@@ -605,6 +624,15 @@
       coil_splinefx_min       = -bigno;  coil_splinefx_max       = bigno
       coil_splinefy_min       = -bigno;  coil_splinefy_max       = bigno
       coil_splinefz_min       = -bigno;  coil_splinefz_max       = bigno
+
+      ! More FAMUS Options
+      famus_ds_rbound_c_min = -bigno;  famus_ds_rbound_c_max = bigno
+      famus_ds_rbound_s_min = -bigno;  famus_ds_rbound_s_max = bigno
+      famus_ds_zbound_c_min = -bigno;  famus_ds_zbound_c_max = bigno
+      famus_ds_zbound_s_min = -bigno;  famus_ds_zbound_s_max = bigno
+      target_famus_bn = 0.0
+      sigma_famus_bn  = bigno
+
       ! More REGCOIL Options
       target_regcoil_winding_surface_separation = 0.0
       sigma_regcoil_winding_surface_separation = bigno
@@ -1140,6 +1168,85 @@
 !DEC$ ENDIF
       ! End of REGCOIL winding surface optimization initializion steps
 
+!DEC$ IF DEFINED (FAMUS)
+      ! FAMUS dipole) surface optimization
+      IF ( ( ANY(sigma_famus_bn < bigno) )  &
+             .and. &
+           ( ANY(lfamus_ds_rbound_c_opt) .or. &
+             ANY(lfamus_ds_rbound_s_opt) .or. &
+             ANY(lfamus_ds_zbound_c_opt) .or. &
+             ANY(lfamus_ds_zbound_s_opt) ) ) THEN
+         famus_ds_rbound_c = 0
+         famus_ds_rbound_s = 0
+         famus_ds_zbound_c = 0
+         famus_ds_zbound_s = 0
+   
+         ! initialize famus
+         IF (myid == master) THEN
+            WRITE(6,*) '<----stellopt_input_mod: FAMUS: Initialzied famus_ds_* to zeros'
+         end if
+
+         if (myid==master) then
+            WRITE(6,*) '<----STELLOPT_INPUT_MOD: Leaving FAMUS section'
+         end if
+      END IF
+
+!<-----COPIED FROM REGCOIL INIT SECTION
+!         rc_nfp = regcoil_num_field_periods
+!         regcoil_rcws_rbound_c = 0
+!         regcoil_rcws_rbound_s = 0
+!         regcoil_rcws_zbound_c = 0
+!         regcoil_rcws_zbound_s = 0
+!         IF (myid == master) THEN
+!            WRITE(6,*) '<----REGCOIL: Reading NESCIN Spectrum from file'
+!         end if
+!         !call regcoil_read_nescin_spectrum(regcoil_nescin_filename, (myid == master)) 
+!         verbose = (myid == master)
+!         ! We need to read geometry_option_coil and nescin_filename from the input namelist before the coil surface can be loaded.
+!         CALL safe_open(iunit, istat, TRIM(filename), 'old', 'formatted')
+!         READ(iunit, nml=regcoil_nml, iostat=istat)
+!         CLOSE(iunit)
+!         call regcoil_init_coil_surface() 
+!         IF (myid == master) THEN
+!            WRITE(6,*) '<----REGCOIL: Initializing winding surface with NESCIN Spectrum'
+!         end if
+!         !call regcoil_initupdate_nescin_coil_surface((myid == master))
+!         ! parse the rc_(r/z)mn(c/s)_stellopt arrays and populate the regcoil_rcws_(r/z)bound_(c/s) 2D arrays
+!         !do ii = -mpol_rcws,mpol_rcws
+!         !   do jj = -ntor_rcws,ntor_rcws
+!         !      regcoil_rcws_rbound_c(ii, jj) = rc_rmnc_stellopt(ii,jj)
+!         !      regcoil_rcws_rbound_s(ii, jj) = rc_rmns_stellopt(ii,jj)
+!         !      regcoil_rcws_zbound_c(ii, jj) = rc_zmnc_stellopt(ii,jj)
+!         !      regcoil_rcws_zbound_s(ii, jj) = rc_zmns_stellopt(ii,jj)
+!         !   end do
+!         !end do
+!         do imn = 1, mnmax_coil
+!            m = xm_coil(imn)
+!            n = xn_coil(imn)/(-regcoil_num_field_periods) ! Convert from regcoil/vmec to nescin convention
+!            IF (m < -mpol_rcws .or. m > mpol_rcws .or. n < -ntor_rcws .or. n > ntor_rcws) THEN
+!               WRITE(6,*) "Error! (m,n) values in nescin file exceed mpol_rcws or ntor_rcws."
+!               WRITE(6,*) "mpol_rcws=",mpol_rcws," ntor_rcws=",ntor_rcws
+!               WRITE(6,*) "m=",m,"  n=",n
+!               STOP
+!            END IF
+!            regcoil_rcws_rbound_c(m, n) = rmnc_coil(imn)
+!            regcoil_rcws_rbound_s(m, n) = rmns_coil(imn)
+!            regcoil_rcws_zbound_c(m, n) = zmnc_coil(imn)
+!            regcoil_rcws_zbound_s(m, n) = zmns_coil(imn)
+!         end do
+!         
+!         if (myid==master) then
+!            WRITE(6,*) '<----STELLOPT_INPUT_MOD: Finished parsing nescoil data and', &
+!                 ' assigning stellopt variables'
+!         end if
+!      END IF
+
+
+      ! End of FAMUS winding surface optimization initializion steps
+!DEC$ ENDIF
+
+
+
       ! If fixed boundary optimization or mapping turn off restart
       IF (ANY(ANY(lbound_opt,2),1) .or. opt_type=='map') lno_restart = .true.
       ! Test for proper normalization on ne profile
@@ -1273,6 +1380,28 @@
             WRITE(6,*) '  has been turned off.  Contact your vendor for'
             WRITE(6,*) '  further information.'
          END IF
+      END IF
+!DEC$ ENDIF
+!DEC$ IF DEFINED (FAMUS)
+      IF (myid == master .and. (ANY(sigma_famus_bn < bigno))) THEN ! .or. &
+         WRITE(6,*)        " Stellarator FAMUS Optimization provided by: "
+         WRITE(6,"(2X,A)") "================================================================================="
+         WRITE(6,"(2X,A)") "=========                           FAMUS                               ========="
+         WRITE(6,"(2X,A)") "=========                       Caoxiang Zhu                            ========="
+         WRITE(6,"(2X,A)") "=========                       czhu@pppl.gov                           ========="
+         WRITE(6,"(2X,A)") "================================================================================="
+         WRITE(6,*)        "    "
+      END IF
+!DEC$ ELSE
+      IF (myid == master .and. (ANY(sigma_famus_bn < bigno) )) THEN 
+         ! 'Disable' the target by assigning bigno to the sigmas
+         sigma_famus_bn = bigno
+         !sigma_regcoil_current_density = bigno
+         WRITE(6,*) '!!!!!!!!!!!!!!!!!!!! WARNING !!!!!!!!!!!!!!!!!!!!!!!!!'
+         WRITE(6,*) '  Coil optimization with the FAMUS'
+         WRITE(6,*) '  code has been disabled.  Coil optimziation'
+         WRITE(6,*) '  has been turned off.  Contact your vendor for'
+         WRITE(6,*) '  further information.'
       END IF
 !DEC$ ENDIF
 !DEC$ IF DEFINED (REGCOIL)
@@ -2214,6 +2343,90 @@
          WRITE(iunit,outflt) 'TARGET_COIL_BNORM',target_coil_bnorm
          WRITE(iunit,outflt) 'SIGMA_COIL_BNORM',sigma_coil_bnorm
       END IF
+
+      
+      ! FAMUS
+      IF ( (ANY(lfamus_ds_rbound_s_opt)) .or. (ANY(lfamus_ds_rbound_s_opt)) .or.  &
+           (ANY(lfamus_ds_rbound_s_opt)) .or.(ANY(lfamus_ds_rbound_s_opt)) ) THEN
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,'(A)') '!          FAMUS OPTIMIZATION'  
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+
+         DO ii = 1,UBOUND(target_famus_bn, 1)
+            IF (sigma_famus_bn(ii) < bigno) THEN
+                WRITE(iunit,"(2(2X,A,I4.3,A,E22.14))") &
+                    'TARGET_FAMUS_BN(',ii,') = ', target_famus_bn(ii), &
+                    'SIGMA_FAMUS_BN(',ii,') = ', sigma_famus_bn(ii)
+            END IF
+         END DO
+         ! Options for winding surface (Fourier Series) variation
+         IF (  (ANY(lfamus_ds_rbound_c_opt)) .or. (ANY(lfamus_ds_rbound_s_opt)) .or. &
+               (ANY(lfamus_ds_zbound_c_opt)) .or. (ANY(lfamus_ds_zbound_s_opt)) ) THEN
+
+             ! Boundary components
+             ! r-boundary cos components
+             DO m = LBOUND(lfamus_ds_rbound_c_opt,DIM=1), UBOUND(lfamus_ds_rbound_s_opt,DIM=1)
+                 DO n = LBOUND(lfamus_ds_rbound_c_opt,DIM=2), UBOUND(lfamus_ds_rbound_s_opt,DIM=2)
+                     IF(lfamus_ds_rbound_c_opt(m,n) ) THEN
+                         WRITE(iunit,'(A)') '! FAMUS Winding surface R-boundary cos component'
+                         WRITE(iunit,"(2X,A,I4.3,A,I4.3,A,1X,'=',1X,L1,4(2X,A,I4.3,A,I4.3,A,1X,'=',1X,E19.12))") &
+                                'LFAMUS_DS_RBOUND_C_OPT(',m,',',n,')', lfamus_ds_rbound_c_opt(m, n), &
+                                'FAMUS_DS_RBOUND_C(',m,',',n,')', famus_ds_rbound_c(m, n), &
+                                'DFAMUS_DS_RBOUND_C_OPT(',m,',',n,')', dfamus_ds_rbound_c_opt(m,n), &
+                                'FAMUS_DS_RBOUND_C_MIN(',m,',',n,')', famus_ds_rbound_c_min(m,n), &
+                                'FAMUS_DS_RBOUND_C_MAX(',m,',',n,')', famus_ds_rbound_c_max(m,n)
+                     END IF
+                 END DO
+             END DO
+
+             ! r-boundary sin components 
+             DO m = LBOUND(lfamus_ds_rbound_s_opt,DIM=1), UBOUND(lfamus_ds_rbound_s_opt,DIM=1)
+                 DO n = LBOUND(lfamus_ds_rbound_s_opt,DIM=2), UBOUND(lfamus_ds_rbound_s_opt,DIM=2)
+                     IF(lfamus_ds_rbound_s_opt(m,n)  ) THEN
+                         WRITE(iunit,'(A)') '! FAMUS Winding surface R-boundary sin component'
+                         WRITE(iunit,"(2X,A,I4.3,A,I4.3,A,1X,'=',1X,L1,4(2X,A,I4.3,A,I4.3,A,1X,'=',1X,E19.12))") &
+                                'LFAMUS_DS_RBOUND_S_OPT(',m,',',n,')', lfamus_ds_rbound_s_opt(m, n), &
+                                'FAMUS_DS_RBOUND_S(',m,',',n,')', famus_ds_rbound_s(m, n), &
+                                'DFAMUS_DS_RBOUND_S_OPT(',m,',',n,')', dfamus_ds_rbound_s_opt(m,n), &
+                                'FAMUS_DS_RBOUND_S_MIN(',m,',',n,')', famus_ds_rbound_s_min(m,n), &
+                                'FAMUS_DS_RBOUND_S_MAX(',m,',',n,')', famus_ds_rbound_s_max(m,n)
+                     END IF
+                 END DO
+             END DO
+
+             ! z-boundary cos components - not implemented yet
+             DO m = LBOUND(lfamus_ds_zbound_c_opt,DIM=1), UBOUND(lfamus_ds_zbound_c_opt,DIM=1)
+                 DO n = LBOUND(lfamus_ds_zbound_c_opt,DIM=2), UBOUND(lfamus_ds_zbound_c_opt,DIM=2)
+                     IF(lfamus_ds_zbound_c_opt(m,n) ) THEN
+                         WRITE(iunit,'(A)') '! FAMUS Winding surface Z-boundary cos component'
+                         WRITE(iunit,"(2X,A,I4.3,A,I4.3,A,1X,'=',1X,L1,4(2X,A,I4.3,A,I4.3,A,1X,'=',1X,E19.12))") &
+                                'LFAMUS_DS_ZBOUND_C_OPT(',m,',',n,')', lfamus_ds_zbound_c_opt(m, n), &
+                                'FAMUS_DS_ZBOUND_C(',m,',',n,')', famus_ds_zbound_c(m, n), &
+                                'DFAMUS_DS_ZBOUND_C_OPT(',m,',',n,')', dfamus_ds_zbound_c_opt(m,n), &
+                                'FAMUS_DS_ZBOUND_C_MIN(',m,',',n,')', famus_ds_zbound_c_min(m,n), &
+                                'FAMUS_DS_ZBOUND_C_MAX(',m,',',n,')', famus_ds_zbound_c_max(m,n)
+                     END IF
+                 END DO
+             END DO
+
+             ! z-boundary sin components
+             DO m = LBOUND(lfamus_ds_zbound_s_opt,DIM=1), UBOUND(lfamus_ds_zbound_s_opt,DIM=1)
+                 DO n = LBOUND(lfamus_ds_zbound_s_opt,DIM=2), UBOUND(lfamus_ds_zbound_s_opt,DIM=2)
+                     IF( lfamus_ds_zbound_s_opt(m,n) ) THEN
+                         WRITE(iunit,'(A)') '! FAMUS Winding surface Z-boundary sin component'
+                         WRITE(iunit,"(2X,A,I4.3,A,I4.3,A,1X,'=',1X,L1,4(2X,A,I4.3,A,I4.3,A,1X,'=',1X,E19.12))") &
+                                'LFAMUS_DS_ZBOUND_S_OPT(',m,',',n,')', lfamus_ds_zbound_s_opt(m, n), &
+                                'FAMUS_DS_ZBOUND_S(',m,',',n,')', famus_ds_zbound_s(m, n), &
+                                'DFAMUS_DS_ZBOUND_S_OPT(',m,',',n,')', dfamus_ds_zbound_s_opt(m,n), &
+                                'FAMUS_DS_ZBOUND_S_MIN(',m,',',n,')', famus_ds_zbound_s_min(m,n), &
+                                'FAMUS_DS_ZBOUND_S_MAX(',m,',',n,')', famus_ds_zbound_s_max(m,n)
+                     END IF
+                 END DO
+             END DO
+        END IF
+        ! end of Options for winding surface (Fourier Series) variation
+      END IF  ! End of FAMUS 
+
 
       ! REGCOIL Options
       ! This section runs if the current density, surface separation or

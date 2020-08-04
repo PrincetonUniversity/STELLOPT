@@ -153,7 +153,11 @@
          IF (var_dex(nvar_in) == icoil_splinefx)   coil_splinefx(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
          IF (var_dex(nvar_in) == icoil_splinefy)   coil_splinefy(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
          IF (var_dex(nvar_in) == icoil_splinefz)   coil_splinefz(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
-         IF (var_dex(nvar_in) == iregcoil_rcws_rbound_c) regcoil_rcws_rbound_c(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
+         IF (var_dex(nvar_in) == ifamus_ds_rbound_c) famus_ds_rbound_c(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
+         IF (var_dex(nvar_in) == ifamus_ds_rbound_s) famus_ds_rbound_s(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
+         IF (var_dex(nvar_in) == ifamus_ds_zbound_c) famus_ds_zbound_c(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
+         IF (var_dex(nvar_in) == ifamus_ds_zbound_s) famus_ds_zbound_s(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
+          IF (var_dex(nvar_in) == iregcoil_rcws_rbound_c) regcoil_rcws_rbound_c(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
          IF (var_dex(nvar_in) == iregcoil_rcws_rbound_s) regcoil_rcws_rbound_s(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
          IF (var_dex(nvar_in) == iregcoil_rcws_zbound_c) regcoil_rcws_zbound_c(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
          IF (var_dex(nvar_in) == iregcoil_rcws_zbound_s) regcoil_rcws_zbound_s(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
@@ -443,6 +447,14 @@
          ctemp_str = 'coilopt++'
          IF (sigma_coil_bnorm < bigno .and. (iflag>=0)) CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
 !DEC$ ENDIF
+!DEC$ IF DEFINED (FAMUS)
+         ctemp_str = 'famus'
+         write(6,*) '<----stellopt_fcn checking famus request'
+         IF ( ( ANY(sigma_famus_bn < bigno) ) .and. (iflag >=0)) then
+            write(6,*) '<----stellopt_fcn calling paraexe for ',trim(ctemp_str)
+            CALL stellopt_paraexe(ctemp_str,proc_string,lscreen)
+         END IF
+!DEC$ ENDIF
 !DEC$ IF DEFINED (REGCOIL)
          ! JCS: skipping parallelization for now 
          ! ctemp_str = 'regcoil_chi2_b'
@@ -456,7 +468,9 @@
          ! exagerate the fvec values so that those directions are not
          ! searched this levenberg step
          IF (iflag == 0) THEN
+            print *, '<----stellopt_fcn calling load_targets'
             CALL stellopt_load_targets(m,fvec,iflag,ncnt)
+            print *, '<----stellopt_fcn returned from load_targets'
             WHERE(ABS(fvec) > bigno) fvec = bigno
             ier_paraexe = 0
          ELSE

@@ -127,6 +127,14 @@ chisq_coil_bnorm.o : \
       $(LIB_DIR)/$(LOCTYPE)/safe_open_mod.o \
       $(LIB_DIR)/$(LOCTYPE)/mpi_params.o
 
+
+chisq_famus_bn.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      stellopt_input_mod.o \
+      stellopt_vars.o \
+      equil_vals.o
+
       
 chisq_regcoil_chi2_b.o : \
       stellopt_runtime.o \
@@ -728,6 +736,14 @@ stellopt_clean_up.o : \
       $(LIB_DIR)/$(LOCTYPE)/safe_open_mod.o 
       
 
+stellopt_famus_driver.o : \
+      stellopt_runtime.o \
+      stellopt_input_mod.o \
+      stellopt_vars.o \
+      equil_utils.o \
+      $(LIB_DIR)/Release/mpi_params.o \
+      $(LIB_DIR)/Release/mpi_inc.o
+      
 stellopt_regcoil_chi2_b.o : \
       stellopt_runtime.o \
       stellopt_input_mod.o \

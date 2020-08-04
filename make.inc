@@ -3,6 +3,7 @@ MACHINE ?= $(shell uname -n | \
 	awk '/lazersons-air/{print "macports"}\
 	     /Lazersons-MacBook-Air/{print "macports"}\
 	     /cori/{print "cori"}\
+	     /ellis/{print "pppl_gcc"}\
 	     /dawson/{print "pppl_gcc"}\
 	     /sunfire/{print "pppl_gcc"}\
 	     /kruskal/{print "pppl_gcc"}\

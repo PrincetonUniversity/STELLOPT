@@ -89,6 +89,7 @@ else
   LCOILOPT = F
   LSFINCS = F
   LREGCOIL= F
+  LFAMUS= F
   LMANGO = F
   LTERPSICHORE = F
   LTRAVIS = F
@@ -143,6 +144,15 @@ else
   REGCOIL_DIR = 
   LIB_REGCOIL = 
 endif
+ifeq ($(LFAMUS),T)
+  MOD1_PATH += $(FAMUS_INC)
+  PRECOMP += -DFAMUS
+  MOD_PATH += -I$(FAMUS_DIR)
+else
+  FAMUS_LIB = 
+  FAMUS_DIR = 
+  LIB_FAMUS = 
+endif
 ifeq ($(LSFINCS),T)
   MOD1_PATH += $(SFINCS_INC)
   PRECOMP += -DSFINCS
@@ -184,7 +194,7 @@ else
 endif
 
 # Handle other codes
-LIB_LINK += $(COILOPT_LIB) $(GENE_LIB) $(REGCOIL_LIB) $(SFINCS_LIB) $(MANGO_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB)
+LIB_LINK += $(COILOPT_LIB) $(GENE_LIB) $(REGCOIL_LIB) $(FAMUS_LIB) $(SFINCS_LIB) $(MANGO_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB)
 
 # Add libraries to LIB_LINK
 # LIB_LINK+= $(MYHOME)/libstell.a $(LIBS)

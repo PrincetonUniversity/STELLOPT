@@ -397,6 +397,10 @@
 !DEC$ ENDIF
             CASE('coilopt++')
                CALL stellopt_coiloptpp(file_str,lscreen)
+            CASE('famus')
+               print *, '<----paraexe calling famus'
+               WRITE (6, *) '<----stellopt_paraxe calling famus_driver with file_str = ', file_str
+               CALL stellopt_famus_driver(file_str,lscreen,ier)
             CASE('regcoil_chi2_b')
                CALL stellopt_regcoil_chi2_b(lscreen,ier)
             CASE('terpsichore')
