@@ -741,8 +741,8 @@ stellopt_famus_driver.o : \
       stellopt_input_mod.o \
       stellopt_vars.o \
       equil_utils.o \
-      $(LIB_DIR)/Release/mpi_params.o \
-      $(LIB_DIR)/Release/mpi_inc.o
+      $(LIB_DIR)/$(LOCTYPE)/mpi_params.o \
+      $(LIB_DIR)/$(LOCTYPE)/mpi_inc.o
       
 stellopt_regcoil_chi2_b.o : \
       stellopt_runtime.o \
