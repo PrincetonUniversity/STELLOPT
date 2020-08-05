@@ -6,7 +6,7 @@ STELLOPT Optimizer Comparision
 On this page we provide a simple tutorial exercise to demonstrate how
 each optimizers works. The basis of this tutorial is a circular cross
 section tokamak fixed boundary VMEC equilibria with a major radius of 3
-and a minor radius of 1 \[m\]. The optimization goal to to change the
+and a minor radius of 1 [m]. The optimization goal to to change the
 major radius to 10 m. While this is a trivial example problem, it
 highlight the ability of the optimizers to perform a basic task.
 
@@ -170,28 +170,40 @@ more realistic problems, the existence of many local minima may be
 missed by the choice of MODE=1,3,4. Choosing MODE=2,5 creates a more
 'search-like' behavior.
 
-------------------------------------------------------------------------
 
 ### The Particle Swarm Algorithm
-----------------------------
 
 In this section we evaluate the Particle Swarm Algorithm in STELLOPT. We
-will use the following OPTIMUM name list for STELLOPT: [code](code)
-&OPTIMUM
-!\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\--
-! OPTIMIZER RUN CONTROL PARAMETERS
-!\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\--
-NFUNC\_MAX = 25 EQUIL\_TYPE = \'VMEC2000\' OPT\_TYPE = \'PSO\' FTOL =
-1.0E-4 XTOL = 1.0E-2 FACTOR = 0.10 EPSFCN = 0.5 NPOPULATION = 16
-NOPTIMIZERS = 8 LKEEP\_MINS = T
-!\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\--
-! OPTIMIZED QUANTITIES
-!\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\--
-LBOUND\_OPT(0,0) = T RBC\_MIN(0,0)=2.0 RBC\_MAX(0,0)=20.0 RHO\_EXP = 4
-!\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\--
-! PLASMA PROPERTIES
-!\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\--
-TARGET\_R0 = 10.0 SIGMA\_R0 = 1.0 / [code](code) As for the Genetic
+will use the following OPTIMUM name list for STELLOPT:
+
+	&OPTIMUM
+	!------------------------------------------------------------------
+	! OPTIMIZER RUN CONTROL PARAMETERS
+	!------------------------------------------------------------------
+	  NFUNC_MAX = 25
+	  EQUIL_TYPE = 'VMEC2000' 
+	  OPT_TYPE = 'PSO' 
+	  FTOL = 1.0E-4
+	  XTOL = 1.0E-2
+	  FACTOR = 0.10
+	  EPSFCN = 0.5
+	  NPOPULATION = 16
+	  NOPTIMIZERS = 8
+	  LKEEP_MINS = T
+	!------------------------------------------------------------------
+	! OPTIMIZED QUANTITIES
+	!------------------------------------------------------------------
+	  LBOUND_OPT(0,0) = T 
+	  RBC_MIN(0,0)=2.0 
+	  RBC_MAX(0,0)=20.0 
+	  RHO_EXP = 4
+	!------------------------------------------------------------------
+	! PLASMA PROPERTIES
+	!------------------------------------------------------------------
+	  TARGET_R0 = 10.0 SIGMA_R0 = 1.0 
+	/
+
+As for the Genetic
 Algorithm with Differential Evolution, bounding values on the variables
 are required. Our choice of parameters includes FACTOR, which defines
 the maximum step size of any particle in terms of the bounding space. In
