@@ -39,6 +39,7 @@ MODULE beams3d_physics_mod
       DOUBLE PRECISION, PRIVATE, PARAMETER :: electron_mass = 9.10938356D-31 !m_e
       DOUBLE PRECISION, PRIVATE, PARAMETER :: e_charge      = 1.60217662E-19 !e_c
       DOUBLE PRECISION, PRIVATE, PARAMETER :: sqrt_pi       = 1.7724538509   !pi^(1/2)
+      DOUBLE PRECISION, PRIVATE, PARAMETER :: inv_sqrt2     = 0.7071067812   !pi^(1/2)
       DOUBLE PRECISION, PRIVATE, PARAMETER :: mpome         = 5.44602984424355D-4 !e_c
       DOUBLE PRECISION, PRIVATE, PARAMETER :: inv_dalton    = 6.02214076208E+26 ! 1./AMU [1/kg]
       DOUBLE PRECISION, PRIVATE, PARAMETER :: zero          = 0.0D0 ! 0.0
@@ -644,8 +645,10 @@ MODULE beams3d_physics_mod
          !     Local variables
          !--------------------------------------------------------------
          INTEGER          :: ier
-         DOUBLE PRECISION :: binv, rho(3), x, y, phi_temp, br_temp, bp_temp, bz_temp,&
-                             bx_temp, by_temp, modb_temp, r_temp, z_temp
+         DOUBLE PRECISION :: r_temp, phi_temp, z_temp, x, y, &
+                             br_temp, bp_temp, bz_temp, modb_temp, &
+                             bx_temp, by_temp, binv, &
+                             rho(3), rho2(3) 
          ! For splines
          INTEGER :: i,j,k
          REAL*8 :: xparam, yparam, zparam, hx, hy, hz, hxi, hyi, hzi
@@ -659,12 +662,14 @@ MODULE beams3d_physics_mod
          end_state(myline) = 0
          CALL RANDOM_NUMBER(rand_prob)
 
-         ! Evaluate splines
+         ! Handle inputs
          ier = 0
          phi_temp = MOD(q(2),phimax)
          IF (phi_temp < 0) phi_temp = phi_temp + phimax
          r_temp = q(1)
          z_temp = q(3)
+
+         ! Eval Spline
          i = MIN(MAX(COUNT(raxis < r_temp),1),nr-1)
          j = MIN(MAX(COUNT(phiaxis < phi_temp),1),nphi-1)
          k = MIN(MAX(COUNT(zaxis < z_temp),1),nz-1)
@@ -677,10 +682,6 @@ MODULE beams3d_physics_mod
          xparam = (r_temp - raxis(i)) * hxi
          yparam = (phi_temp - phiaxis(j)) * hyi
          zparam = (z_temp - zaxis(k)) * hzi
-         !CALL EZspline_interp(BR_spl,r_temp,phi_temp,z_temp,br_temp,ier)
-         !CALL EZspline_interp(BPHI_spl,r_temp,phi_temp,z_temp,bp_temp,ier)
-         !CALL EZspline_interp(BZ_spl,r_temp,phi_temp,z_temp,bz_temp,ier)
-         !CALL EZspline_interp(MODB_spl,r_temp,phi_temp,z_temp,modb_temp,ier)
          CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                          hx,hxi,hy,hyi,hz,hzi,&
                          BR4D(1,1,1,1),nr,nphi,nz)
@@ -701,31 +702,90 @@ MODULE beams3d_physics_mod
          by_temp = br_temp*sin(q(2))+bp_temp*cos(q(2))
          binv = one/modb_temp
 
+         ! rg = m*vperp/(q*B)
+         ! Neutral position is average of gyrocenter |B|
+         ! So step but then recalc at new position
+
+         ! Calculate Gyroradius
+         rho(1) = myv_neut(2)*bz_temp - myv_neut(3)*by_temp
+         rho(2) = myv_neut(3)*bx_temp - myv_neut(1)*bz_temp
+         rho(3) = myv_neut(1)*by_temp - myv_neut(2)*bx_temp
+         !rho = rho*binv
+         rho    = (mymass*binv*binv/mycharge)*rho 
+
+         ! Calculate BxRg
+         rho2(1) = by_temp*rho(3) - bz_temp*rho(2)
+         rho2(2) = bz_temp*rho(1) - bx_temp*rho(3)
+         rho2(3) = bx_temp*rho(2) - by_temp*rho(1)
+         rho2 = rho2*binv
+
+         ! Since rho==rg then rho2==rg but sqrt(rho+rho2)==rhog
+         rho = inv_sqrt2 * rho * cos(pi2*rand_prob)
+         rho2 = inv_sqrt2* rho2 * sin(pi2*rand_prob)
+
+         ! Move to Gyrocenter
+         x = q(1)*cos(q(2)) + rho(1) + rho2(1)
+         y = q(1)*sin(q(2)) + rho(2) + rho2(2)
+         z_temp= q(3) + rho(3) + rho2(3)
+         r_temp = sqrt(x*x + y*y)
+         phi_temp = ATAN2(y,x)
+         IF (phi_temp<0) phi_temp = phi_temp + pi2
+
+         ! Save on full toroidal grid
+         q(1) = r_temp
+         q(2) = phi_temp
+         q(3) = z_temp
+
+         ! Modify phi for splines
+         phi_temp = MOD(phi_temp,phimax)
+
+         ! Now recompute Splines
+         i = MIN(MAX(COUNT(raxis < r_temp),1),nr-1)
+         j = MIN(MAX(COUNT(phiaxis < phi_temp),1),nphi-1)
+         k = MIN(MAX(COUNT(zaxis < z_temp),1),nz-1)
+         hx     = raxis(i+1) - raxis(i)
+         hy     = phiaxis(j+1) - phiaxis(j)
+         hz     = zaxis(k+1) - zaxis(k)
+         hxi    = one / hx
+         hyi    = one / hy
+         hzi    = one / hz
+         xparam = (r_temp - raxis(i)) * hxi
+         yparam = (phi_temp - phiaxis(j)) * hyi
+         zparam = (z_temp - zaxis(k)) * hzi
+         CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                         hx,hxi,hy,hyi,hz,hzi,&
+                         BR4D(1,1,1,1),nr,nphi,nz)
+         br_temp = fval(1)
+         CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                         hx,hxi,hy,hyi,hz,hzi,&
+                         BPHI4D(1,1,1,1),nr,nphi,nz)
+         bp_temp = fval(1)
+         CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                         hx,hxi,hy,hyi,hz,hzi,&
+                         BZ4D(1,1,1,1),nr,nphi,nz)
+         bz_temp = fval(1)
+         CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                         hx,hxi,hy,hyi,hz,hzi,&
+                         MODB4D(1,1,1,1),nr,nphi,nz)
+         modb_temp = fval(1)
+         bx_temp = br_temp*cos(q(2))-bp_temp*sin(q(2))
+         by_temp = br_temp*sin(q(2))+bp_temp*cos(q(2))
+         binv = one/modb_temp
+
+
          ! Calculate the parallel velocity vll=v.B/B
-         q(4) = binv*( myv_neut(1)*bx_temp + myv_neut(2)*by_temp + myv_neut(3)*bz_temp )
+         q(4) = binv*SUM(myv_neut*(/bx_temp,by_temp,bz_temp/))
+         !q(4) = binv*( myv_neut(1)*bx_temp + myv_neut(2)*by_temp + myv_neut(3)*bz_temp )
 
          ! Calculate the magnetic moment mu = m*vperp^2/(2*B)=m*(v.v-vll.vll)/(2*B)
-         moment = 0.5*binv*mymass*(myv_neut(1)*myv_neut(1) + myv_neut(2)*myv_neut(2) + myv_neut(3)*myv_neut(3) - q(4)*q(4) )
+         moment = 0.5*binv*mymass*(SUM(myv_neut*myv_neut) - q(4)*q(4))
+         !moment = 0.5*binv*mymass*(myv_neut(1)*myv_neut(1) + myv_neut(2)*myv_neut(2) + myv_neut(3)*myv_neut(3) - q(4)*q(4) )
 
          ! Check to see we didn't inject perfectly parallel (negative moment possible)
          IF (moment <= 0) THEN
             moment = 1000*TINY(moment)
             RETURN
          END IF
-
-         ! Calculate Gyroradius
-         rho(1) = myv_neut(2)*bz_temp - myv_neut(3)*by_temp
-         rho(2) = myv_neut(3)*bx_temp - myv_neut(1)*bz_temp
-         rho(3) = myv_neut(1)*by_temp - myv_neut(2)*bx_temp
-         rho    = (mymass*binv*binv/mycharge)*rho 
-
-         ! Move to Gyrocenter
-         x = q(1)*cos(q(2)) + rho(1)
-         y = q(1)*sin(q(2)) + rho(2)
-         q(1) = sqrt(x*x + y*y)
-         q(2) = ATAN2(y,x)
-         IF (q(2) < 0) q(2) = q(2)+pi2
-         q(3) = q(3) + rho(3)
 
          RETURN
 
