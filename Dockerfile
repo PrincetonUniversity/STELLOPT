@@ -14,8 +14,8 @@ RUN cp -RP ${STELLOPT_PATH}/bin/* /usr/local/bin/
 
 # add user
 WORKDIR /home/visitor
-RUN groupadd -r visitor -g 433 && \
-useradd -u 431 -r -g visitor -d /home/visitor -s /sbin/nologin -c "Docker image user" visitor && \
+RUN groupadd -r visitor -g 999 && \
+useradd -u 999 -r -g visitor -d /home/visitor -s /sbin/nologin -c "Docker image user" visitor && \
 chown -R visitor:visitor /home/visitor
 USER visitor
 
