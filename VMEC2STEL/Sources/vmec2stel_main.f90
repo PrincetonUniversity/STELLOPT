@@ -222,6 +222,7 @@
             CASE ("-fix_ntor")
                lfix_ntor = .TRUE.
             CASE ("-bootstrap")
+               lneed_booz = .TRUE.
                lbootsj = .TRUE.
             CASE ("-jdotb0")
                ljdotb0 = .TRUE.
@@ -967,7 +968,7 @@
          WRITE(6,'(A)')'!       Bootstrap Current Calculation (as calculated by BOOTSJ)'
          WRITE(6,'(A)')'!       NE/TE/TI profiles required!'
          WRITE(6,'(A)')'!------------------------------------------------------------------------'
-         WRITE(6,'(2X,A,I3.3,A,I3.3,A,I3.3,A,I3.3,A)') 'TARGET_BOOTSTRAP(1:',ns-1,') = ',ns-1,'*0.0  SIGMA_BOOTSTRAP(1:',ns-1,') = ',ns-1,'*1.0'
+         WRITE(6,'(2X,A,I3.3,A,I3.3,A,I3.3,A,I3.3,A)') 'TARGET_BOOTSTRAP(2:',ns,') = ',ns-1,'*0.0  SIGMA_BOOTSTRAP(1:',ns-1,') = ',ns-1,'*1.0'
       END IF
       IF (lkink) THEN
          WRITE(6,'(A)')'!------------------------------------------------------------------------'
@@ -1005,7 +1006,8 @@
          WRITE(6,'(2X,A)') 'LGLOBAL_TXPORT = F'
          WRITE(6,'(2X,A)') 'NZ_TXPORT = 128'
          WRITE(6,'(2X,A)') 'NALPHA_TXPORT = 1'
-         WRITE(6,'(2X,A)') 'ALPHA0_TXPORT = 0.0'
+         WRITE(6,'(2X,A)') 'ALPHA_START_TXPORT = 0.0'
+         WRITE(6,'(2X,A,ES10.8)') 'ALPHA_END_TXPORT = ', pi2/(2*nfp)
          DO i = 2, ns
             WRITE(6,target3) 'TARGET_TXPORT',i,0.0,'SIGMA_TXPORT',i,1.0,'S_TXPORT',i,REAL(i)/REAL(ns)
          END DO
@@ -1045,6 +1047,18 @@
       END IF
       IF (lbootsj) THEN
          WRITE(6,'(A)') '&BOOTIN'
+         WRITE(6,'(A)')'!------------------------------------------------------------------------'
+         WRITE(6,'(A)')'!       Notes'
+         WRITE(6,'(A)')'!       ZEFF:  Effective Ion Charge'
+         WRITE(6,'(A)')'!       DENS0: Maximum density (10^20 m^-3) IFF TEMPRES>=0'
+         WRITE(6,'(A)')'!       TEMPRES:  Controls density profile shape'
+         WRITE(6,'(A)')'!       TETI:  TETI Ratio'
+         WRITE(6,'(A)')'!       Note defaults below use STELLOPT NE, TE, TI'
+         WRITE(6,'(A)')'!------------------------------------------------------------------------'
+         WRITE(6,'(A)') '  ZEFF1 = 1'
+         WRITE(6,'(A)') '  TEMPRES = -1.0 ! Switch (-1: use STEL prof, >0: use alternative)'
+         WRITE(6,'(A)') '  DENS0 = 0.5 ! Density (10^20 m^-3)'
+         WRITE(6,'(A)') '  TETI = -1.0 ! TE/TI ratio (set negative to use STEL TI profile)'
          WRITE(6,'(A)') '/'
       END IF
       IF (lorbit) THEN
