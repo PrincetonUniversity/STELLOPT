@@ -94,20 +94,15 @@
 !-----------------------------------------------------------------------
 !          REGCOIL Options
 !-----------------------------------------------------------------------
-  REGCOIL_CURRENT_DENSITY = 2.82e6
+  REGCOIL_TARGET_VALUE = 2.82e6
   LREGCOIL_WINDING_SURFACE_SEPARATION_OPT = T
   REGCOIL_WINDING_SURFACE_SEPARATION = 1.0
   SIGMA_REGCOIL_WINDING_SURFACE_SEPARATION = 1.0
-!  LREGCOIL_CURRENT_DENSITY_OPT = T
-!  SIGMA_REGCOIL_CURRENT_DENSITY = 1.0e4
 
 !------------------------------------------------------------------------
 !       REGCOIL TARGETING
 !------------------------------------------------------------------------
-!  TARGET_REGCOIL_BNORM = 0.0  SIGMA_REGCOIL_BNORM = 1.0  
   TARGET_REGCOIL_CHI2_B = 0.0  SIGMA_REGCOIL_CHI2_B = 1.0  
-!  TARGET_REGCOIL_CURRENT_DENSITY = 5.0e6
-!  SIGMA_REGCOIL_CURRENT_DENSITY = 1.0e3
 
 /
 
@@ -127,6 +122,7 @@
   target_option = 'rms_K'
   geometry_option_plasma = 2
 
+  load_bnorm = .false.
   
 ! wout file is dynamically set by stellopt
 !  wout_filename = 'wout_HSX_jnt.nc'
