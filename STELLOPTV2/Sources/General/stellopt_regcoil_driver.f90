@@ -44,7 +44,7 @@
       !USE regcoil_read_bnorm
       !USE regcoil_read_nescin_spectrum
       !USE regcoil_validate_input
-      USE regcoil_variables
+      USE regcoil_variables, local_regcoil_nescin_filename => nescin_filename
 !DEC$ ENDIF
 
 !-----------------------------------------------------------------------
@@ -83,12 +83,14 @@
       !write(6,*) "proc_str=",proc_string," file_str=",file_str
 
       ! Run bnorm if required
-      if (load_bnorm) then
+!      if (load_bnorm) then
          coil_separation = regcoil_winding_surface_separation 
-         ! Run BNORM code
-         call stellopt_bnorm(file_str,lscreen)
-         bnorm_filename = 'bnorm.' // TRIM(file_str)
-      end if
+!         ! Run BNORM code
+!         call stellopt_bnorm(file_str,lscreen)
+!         bnorm_filename = 'bnorm.' // TRIM(file_str)
+!      end if
+
+      local_regcoil_nescin_filename = 'regcoil_nescout.' // trim(proc_string)
 
       ! IF (lscreen) WRITE(6,'(a,a)') '<---- proc_string=', proc_string
       wout_filename = 'wout_'//TRIM(proc_string)//'.nc'
@@ -118,8 +120,7 @@
                 END IF
              END do
          END do
-         CALL safe_open(iunit, istat, TRIM('regcoil_nescout.'// &
-                   TRIM(proc_string)), 'replace', 'formatted')
+         CALL safe_open(iunit, istat, TRIM(local_regcoil_nescin_filename), 'replace', 'formatted')
          !write(6,'(a)'), '<----JCSwrite_output'
          write (iunit, '(a)') '------ Plasma information from VMEC ----'
          write (iunit, '(a)') 'np     iota_edge       phip_edge       curpol'
@@ -191,7 +192,10 @@
         write(6,'(a)') 'K====-----<<<<REGCOIL ERROR: Do not optimize both separation AND Fourier series simultaneously'
       END IF
 
+
+!!      print *,'<----regcoil_driver calling regcoil_init_coil_surface'
       call regcoil_init_coil_surface()
+!!      print *,'<----regcoil_driver back from regcoil_init_coil_surface'
 
 
 !!$      IF ((ANY(lregcoil_rcws_rbound_s_opt)) .or. (ANY(lregcoil_rcws_rbound_c_opt)) .or. &
@@ -202,7 +206,7 @@
 !!$      END IF
 
       ! Initialize some of the vectors and matrices needed:
-      ! write(6,'(a)') '<----read bnorm'
+!!      write(6,'(a)') '<----read bnorm'
       IF (load_bnorm) THEN
          call stellopt_bnorm(proc_string,lscreen)
          bnorm_filename = 'bnorm.' // TRIM(proc_string)
@@ -220,7 +224,7 @@
          call regcoil_init_sensitivity()
       endif
 
-      ! write(6,'(a)') '<----build matrices'
+!!      write(6,'(a)') '<----build matrices'
       CALL regcoil_build_matrices()
       CALL regcoil_prepare_solve()
 
