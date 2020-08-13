@@ -353,6 +353,31 @@ def read_stellopt(filename):
             stel_data[item+'_tradx'] = np.squeeze(stel_data[item][:,:,4])
             stel_data[item+'_trado'] = np.squeeze(stel_data[item][:,:,5])
             stel_data[item+'_mix'] = np.squeeze(stel_data[item][:,:,6])
+        elif item == 'MAGWELL':
+            stel_data[item+'_target'] = np.squeeze(stel_data[item][:,:,0])
+            stel_data[item+'_sigma'] = np.squeeze(stel_data[item][:,:,1])
+            stel_data[item+'_equil'] = np.squeeze(stel_data[item][:,:,2])
+            stel_data[item+'_chisq'] = ((stel_data[item+'_target'] - stel_data[item+'_equil'])/stel_data[item+'_sigma'])**2
+            stel_data[item+'_Bsqav'] = np.squeeze(stel_data[item][:,:,3])
+            stel_data[item+'_p'] = np.squeeze(stel_data[item][:,:,4])
+            stel_data[item+'_pp'] = np.squeeze(stel_data[item][:,:,5])
+            stel_data[item+'_k'] = np.squeeze(stel_data[item][:,:,6])
+        elif item == 'CURVATURE_KERT':
+            stel_data[item+'_target'] = np.squeeze(stel_data[item][:,:,0])
+            stel_data[item+'_sigma'] = np.squeeze(stel_data[item][:,:,1])
+            stel_data[item+'_equil'] = np.squeeze(stel_data[item][:,:,2])
+            stel_data[item+'_chisq'] = ((stel_data[item+'_target'] - stel_data[item+'_equil'])/stel_data[item+'_sigma'])**2
+            stel_data[item+'_kurtosis'] = np.squeeze(stel_data[item][:,:,3])
+            stel_data[item+'_kappa_avg'] = np.squeeze(stel_data[item][:,:,4])
+            stel_data[item+'_kappa_max'] = np.squeeze(stel_data[item][:,:,5])
+            stel_data[item+'_phi'] = np.squeeze(stel_data[item][:,:,6])
+        elif item == 'CURVATURE_P2':
+            stel_data[item+'_target'] = np.squeeze(stel_data[item][:,:,0])
+            stel_data[item+'_sigma'] = np.squeeze(stel_data[item][:,:,1])
+            stel_data[item+'_equil'] = np.squeeze(stel_data[item][:,:,2])
+            stel_data[item+'_chisq'] = ((stel_data[item+'_target'] - stel_data[item+'_equil'])/stel_data[item+'_sigma'])**2
+            stel_data[item+'_p1'] = np.squeeze(stel_data[item][:,:,3])
+            stel_data[item+'_p2'] = np.squeeze(stel_data[item][:,:,4])
 
     return stel_data;
 
