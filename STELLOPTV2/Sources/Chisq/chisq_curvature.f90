@@ -49,7 +49,7 @@
          DO i = 1, ntheta_pts
             DO j = 1, nzeta_pts
                u = pi2*(i-1)/ntheta_pts
-               v = vmax*(j-1)/nzeta_pts
+               v = vmax*(j-1)/(nzeta_pts-1)
                ier = 0
                CALL get_equil_kappa(s,u,v,kappa(i,j),ier)
                !PRINT *,u,v,kappa(i,j),ier
@@ -69,7 +69,7 @@
          kurtosis = kappa_mu/(kappa_sig*kappa_sig)
          DO j = 1, nzeta_pts
             mtargets = mtargets + 1
-            v = (vmax/nfp)*(j-1)/nzeta_pts
+            v = (vmax/nfp)*(j-1)/(nzeta_pts-1)
             targets(mtargets) = target
             sigmas(mtargets)  = sigma
             vals(mtargets)    = 0.44 + 0.5*TANH((kurtosis(j) -20)/15)
