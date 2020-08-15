@@ -30,7 +30,7 @@
       integer, parameter :: nfax = 13
       INTEGER ::  i,j,n,narr,ier, iunit_rzuv
       ! FOR TRAVIS
-      INTEGER(4)     :: nra,nphi,QOemul,wmode
+      INTEGER(4)     :: nra,nphi,QOemul,wmode,ECEerror
       INTEGER(4)     :: travisoutTEMP,travisScrOut
       INTEGER(4)     :: maxSteps,stopray,npass,maxHarm,nrho,nu
       INTEGER(8)     :: mconf8=0,mVessel=0,mMirror=0
@@ -39,7 +39,7 @@
       REAL(8)        :: antennaPosition(3),targetPosition(3),rbeam(2),rfocus(2)
       REAL(8), ALLOCATABLE :: te_prof(:),ne_prof(:),z_prof(:)
       CHARACTER(4)   :: antennaCoordType,targetPositionType
-      CHARACTER(256) :: B0type,labelType,equiname
+      CHARACTER(256) :: B0type,labelType,equiname,interpType
       CHARACTER(256) :: hamilt,dieltensor
       INTEGER, ALLOCATABLE :: mnum(:)
       INTEGER       :: mystart,myend, chunk, numprocs_local,s
@@ -65,13 +65,19 @@
          CASE('vmec2000','animec','flow','satire','parvmec','paravmec','vboot','vmec2000_oneeq')
 !DEC$ IF DEFINED (TRAVIS)
 
+
+
+            ! Handle Output
+            CALL Disable_Output_f77
+            CALL Disable_printout_f77
+
+            ! Obligatory setup
+            CALL set_hedi_f77('ece')
+
             ! Load equilibrium
             equiname = 'wout_'//TRIM(proc_string)//'.nc'
-            ier = mcLoad(mconf8,equiname)
-            IF (ier /=1) THEN
-               iflag = -1
-               RETURN
-            END IF
+            CALL set_EquiFile_f77(equiname)
+
 !DEC$ IF DEFINED (MPI_OPT)
             CALL MPI_COMM_RANK(MPI_COMM_MYWORLD, myworkid, ierr_mpi)
             CALL MPI_COMM_SIZE(MPI_COMM_MYWORLD, numprocs_local, ierr_mpi)
@@ -102,20 +108,12 @@
             CALL MPI_BCAST(z_prof,nrad,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
 !DEC$ ENDIF
 
-
-            ! Handle Output
-            !travisOutTemp = 0; travisScrOut=0;
-            !IF (lscreen) travisScrOut = 0;
-            !CALL set_TracingOutput_f77(travisOutTemp,travisScrOut)
-            CALL Disable_Output_f77
-
             ! Handle Vessel and Mirrors
             vessel_ece = TRIM(vessel_ece)
             mirror_ece = TRIM(mirror_ece)
             CALL set_VesselMirrors_f77(vessel_ece,mirror_ece)
 
             ! Allocate Arrays
-            !narr = MAXVAL(COUNT(sigma_ece < bigno,DIM=2),DIM=1)
             narr = 0
             DO i = 1, nsys
                DO j = 1, nprof
@@ -154,10 +152,10 @@
 
             ! Loop over ECE systems
             n=1
-            antennaCoordType     = antennatype_ece(1:4)
-            targetPositionType     = targettype_ece(1:4)
-            nra = nra_ece
-            nphi = nphi_ece
+            antennaCoordType   = antennatype_ece(1:4)
+            targetPositionType = targettype_ece(1:4)
+            nra                = nra_ece
+            nphi               = nphi_ece
             DO i = 1,nsys
 
                ! Don't evaluate if not set or not in [mystart,myend]
@@ -166,9 +164,9 @@
 
                ! Set Antenna Position
                antennaPosition(1:3) = antennaPosition_ece(i,1:3)
-               targetPosition(1:3) = targetPosition_ece(i,1:3)
-               rbeam(1:2) = rbeam_ece(i,1:2)
-               QOemul = 0
+               targetPosition(1:3)  = targetPosition_ece(i,1:3)
+               rbeam(1:2)  = rbeam_ece(i,1:2)
+               QOemul      = 0
                IF (rbeam_ece(i,3) > 0) QOemul = 1
                Rfocus(1:2) = rfocus_ece(i,1:2)
                phibx       = rfocus_ece(i,3)
@@ -177,15 +175,19 @@
                                      antennaCoordType,targetPositionType)
 
                ! Init Equilibrium
-               hgrid   = Aminor/30; dphi = 2; B0type  = 'at angle on magn.axis'; phi_ref = 0; B_scale = 1; B0_ref = Baxis
+               hgrid   = Aminor/30
+               dphi    = 2
+               B0type  = 'at angle on magn.axis'
+               phi_ref = 0
+               B_scale = 1
+               B0_ref  = Baxis
                CALL initEquilibr_f77(hgrid, dphi, B0_ref, phi_ref, B_scale, B0type)
 
-               ! Set Configuration
-               CALL SET_MAGCONFIG_F77(mConf8,mVessel,mMirror)
 
                ! Set Profiles
-               labelType = 'tor_rho'
-               CALL set_nTZ_profs_f77(nrad, sqrt(rho), ne_prof, te_prof, z_prof, labelType)
+               labelType  = 'tor_rho'
+               interpType = 'spline'
+               CALL set_nTZ_profs_f77(nrad, sqrt(rho), ne_prof, te_prof, z_prof, labelType, interpType)
 
                ! Set Configuration
                !maxSteps     = 5000   ! upper number of steps on the trajectory
@@ -209,9 +211,9 @@
                DO j = mystart,myend
                   IF (sigma_ece(i,j) >= bigno) CYCLE
                   wmode = 0 ! O-mode
-                  CALL run_ECE_Beam_f77m(n,freq_ece(i,j), wmode, radto_ece(i,j))
+                  CALL run_ECE_Beam_f77m(n,freq_ece(i,j), wmode, radto_ece(i,j),ECEerror)
                   wmode = 1 ! X-mode
-                  CALL run_ECE_Beam_f77m(n,freq_ece(i,j), wmode, radtx_ece(i,j))
+                  CALL run_ECE_Beam_f77m(n,freq_ece(i,j), wmode, radtx_ece(i,j),ECEerror)
                END DO
 
                ! Free the vessel here (only loaded if we get to here)
