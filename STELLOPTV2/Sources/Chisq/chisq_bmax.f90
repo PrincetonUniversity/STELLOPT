@@ -62,7 +62,7 @@
             !DO u = 1, nu_b
             !   bmax(u) = MAXVAL(modb_booz(u,:,ik))
             !END DO
-            bmax_global = MAXVAL(MAXVAL(modb_booz(u,:,ik),2),1)
+            bmax_global = MAXVAL(MAXVAL(modb_booz(:,:,ik),2),1)
             mtargets = mtargets + 1
             targets(mtargets) = target(ik)
             sigmas(mtargets)  = sigma(ik)
