@@ -9,7 +9,7 @@
 !     Libraries
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
-      USE stellopt_vars, ONLY: ntor_rcws, mpol_rcws, mnprod_fps, rosenbrock_dim
+      USE stellopt_vars, ONLY: ntor_rcws, mpol_rcws, famus_mn_plasma, rosenbrock_dim
       USE vparams, ONLY: nsd
       USE vsvd0, ONLY : nigroup
 
@@ -184,7 +184,9 @@
       REAL(rprec) ::  target_coil_bnorm, sigma_coil_bnorm
       INTEGER     ::  nu_bnorm,nv_bnorm
 
-      REAL(rprec),DIMENSION(mnprod_fps) ::  target_famus_bn, sigma_famus_bn
+!DEC$ IF DEFINED(FAMUS)
+      REAL(rprec),DIMENSION(famus_mn_plasma) ::  target_famus_bn, sigma_famus_bn
+!DEC$ ENDIF
 
       REAL(rprec) ::  target_regcoil_winding_surface_separation
       REAL(rprec) ::  sigma_regcoil_winding_surface_separation

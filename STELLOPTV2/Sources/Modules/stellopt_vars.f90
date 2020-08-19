@@ -14,6 +14,12 @@
 !-----------------------------------------------------------------------
       USE vparams, ONLY: ndatafmax, mpol1d, ntord 
       USE vsvd0
+
+!DEC$ IF DEFINED(FAMUS)
+      USE famus_globals, ONLY: famus_toroidalsurface => toroidalsurface, &
+                    famus_arbitrarycoil => arbitrarycoil
+!DEC$ ENDIF
+
 !-----------------------------------------------------------------------
 !     Module Variables
 !            nfunc_max          Maximum number of function evaluations
@@ -150,34 +156,58 @@
                                                       dregcoil_rcws_zbound_c_opt, &
                                                       dregcoil_rcws_zbound_s_opt
       ! FOR FAMUS DIPOLE SURFACE Fourier Series Representation
-      INTEGER, PARAMETER :: mpol_fds = 64    ! maximum poloidal mode number (min = -max)
-      INTEGER, PARAMETER :: ntor_fds = 64    ! maximum toroidal mode number (min = -max)
-      ! Reserving space for the maximum number of Fourier components
+!DEC$ IF DEFINED(FAMUS)
+      type(famus_arbitrarycoil), dimension(:), allocatable :: famus_coils
+      ! famus_coil will be allocated and read in by famus support
+      ! function. In stellopt_input_mod, this coil and its subcomponents
+      ! will be copied to internal stellopt variables. These variables
+      ! may or may not be available for optimization with and/or without
+      ! limits.  Here, reserve enough space to allow for the largest
+      ! possible number of variables.
+      character(256) :: famus_dipolecoil_filename, famusin_filename
+      INTEGER, PARAMETER :: famus_num_coils =  16392! maximum number of
+      !    dipole coils  (128x128)
+      ! Reserving space for the maximum number of coils components
       ! that might be varied/optimized. Each of RC, RS, ZC, ZS may have
       ! spectral components spanning the range of m and n in:
       !       (-mpol_rcws:mpmol_rcws,  -ntor_rcws:ntor_rcws)
       ! (this is slightly different than what is used in nescoil, where
       ! the m<0 components are not used)
-      INTEGER, PARAMETER :: mnprod_fds = 4 * (2*mpol_fds+1) * (2*ntor_fds+1)
       ! FOR FAMUS BNORMAL ON TARGET PLAMSA SURFACE
       ! These should match or exceed the settings for FAMUS's
       ! NTETA and NZETA
       ! Number of grid points in poloidal and toroidal directions used to
       ! evaluate surface integrals on the plasma surface
-      INTEGER, PARAMETER :: mpol_fps = 256    ! Poloidal direction
-      INTEGER, PARAMETER :: ntor_fps = 256    ! Toroidal direction
-      INTEGER, PARAMETER :: mnprod_fps = mpol_fps * ntor_fps
-
-      LOGICAL, DIMENSION(-mpol_fds:mpol_fds, &
-                         -ntor_fds:ntor_fds) :: lfamus_ds_rbound_c_opt , &
-                                                  lfamus_ds_rbound_s_opt, &
-                                                  lfamus_ds_zbound_c_opt, &
-                                                  lfamus_ds_zbound_s_opt
-      REAL(rprec), DIMENSION(-mpol_fds:mpol_fds, &
-                             -ntor_fds:ntor_fds) :: dfamus_ds_rbound_c_opt , &
-                                                      dfamus_ds_rbound_s_opt, &
-                                                      dfamus_ds_zbound_c_opt, &
-                                                      dfamus_ds_zbound_s_opt
+      INTEGER, PARAMETER :: famus_mpol_plasma = 256    ! Poloidal direction
+      INTEGER, PARAMETER :: famus_ntor_plasma = 256    ! Toroidal direction
+      INTEGER, PARAMETER :: famus_mn_plasma = famus_mpol_plasma * famus_ntor_plasma
+      INTEGER :: famus_ncoils, famus_momentq
+      LOGICAL, DIMENSION(1:famus_num_coils) :: lfamus_dc_ox_opt, &
+                                               lfamus_dc_oy_opt, &
+                                               lfamus_dc_oz_opt, &
+                                               lfamus_dc_M_0_opt, &
+                                               lfamus_dc_mp_opt, &
+                                               lfamus_dc_mt_opt
+      REAL(rprec),DIMENSION(1:famus_num_coils) :: dfamus_dc_ox_opt, & 
+                                                  dfamus_dc_oy_opt, &
+                                                  dfamus_dc_oz_opt, &
+                                                  dfamus_dc_M_0_opt, &
+                                                  dfamus_dc_mp_opt, &
+                                                  dfamus_dc_mt_opt
+      ! FAMUS Dipole Coil Parameters: Values +min/max
+       REAL(rprec), DIMENSION(1:famus_num_coils) :: famus_dc_ox, famus_dc_ox_min, famus_dc_ox_max
+       REAL(rprec), DIMENSION(1:famus_num_coils) :: famus_dc_oy, famus_dc_oy_min, famus_dc_oy_max
+       REAL(rprec), DIMENSION(1:famus_num_coils) :: famus_dc_oz, famus_dc_oz_min, famus_dc_oz_max
+       REAL(rprec), DIMENSION(1:famus_num_coils) :: famus_dc_M_0, famus_dc_M_0_min, famus_dc_M_0_max
+       REAL(rprec), DIMENSION(1:famus_num_coils) :: famus_dc_mp, famus_dc_mp_min, famus_dc_mp_max
+       REAL(rprec), DIMENSION(1:famus_num_coils) :: famus_dc_mt, famus_dc_mt_min, famus_dc_mt_max
+      ! FAMUS Dipole Coil Parameters: Values that aren't optimized
+       INTEGER, DIMENSION(1:famus_num_coils) :: famus_dc_itype, famus_dc_symmetry, &
+                                                famus_dc_Lc, famus_dc_Ic
+       REAL(rprec), DIMENSION(1:famus_num_coils) :: famus_dc_pho
+       CHARACTER(LEN=15), DIMENSION(1:famus_num_coils) :: famus_dc_name
+                 
+!DEC$ ENDIF
 
       REAL(rprec), DIMENSION(0:20)      ::  te_opt, ti_opt, ne_opt, th_opt, zeff_opt                                     
       REAL(rprec), DIMENSION(ndatafmax) ::  ne_aux_s, te_aux_s, &
@@ -238,14 +268,6 @@
       REAL(rprec), DIMENSION(nigroup,maxcoilctrl) :: coil_splinefx_min,coil_splinefy_min,coil_splinefz_min,&
                                                      coil_splinefx_max,coil_splinefy_max,coil_splinefz_max
 
-      ! FAMUS Dipole Surface (ds): Boundary+min/max
-      REAL(rprec), DIMENSION(-mpol_fds:mpol_fds, -ntor_fds:ntor_fds) :: famus_ds_rbound_c,     famus_ds_rbound_s
-      REAL(rprec), DIMENSION(-mpol_fds:mpol_fds, -ntor_fds:ntor_fds) :: famus_ds_rbound_c_min, famus_ds_rbound_s_min
-      REAL(rprec), DIMENSION(-mpol_fds:mpol_fds, -ntor_fds:ntor_fds) :: famus_ds_rbound_c_max, famus_ds_rbound_s_max
-      REAL(rprec), DIMENSION(-mpol_fds:mpol_fds, -ntor_fds:ntor_fds) :: famus_ds_zbound_c,     famus_ds_zbound_s
-      REAL(rprec), DIMENSION(-mpol_fds:mpol_fds, -ntor_fds:ntor_fds) :: famus_ds_zbound_c_min, famus_ds_zbound_s_min
-      REAL(rprec), DIMENSION(-mpol_fds:mpol_fds, -ntor_fds:ntor_fds) :: famus_ds_zbound_c_max, famus_ds_zbound_s_max
-
       ! Regcoil Winding Surface (rcws): Boundary+min/max
       REAL(rprec), DIMENSION(-mpol_rcws:mpol_rcws, -ntor_rcws:ntor_rcws) :: regcoil_rcws_rbound_c, regcoil_rcws_rbound_s
       REAL(rprec), DIMENSION(-mpol_rcws:mpol_rcws, -ntor_rcws:ntor_rcws) :: regcoil_rcws_rbound_c_min, regcoil_rcws_rbound_s_min
@@ -256,7 +278,7 @@
 
       CHARACTER(256)  ::  equil_type, te_type, ne_type, ti_type, th_type, &
                           beamj_type, bootj_type, zeff_type, emis_xics_type, &
-                          windsurfname, fixedcoilname, famusin_filename, &
+                          windsurfname, fixedcoilname, &
                           regcoil_nescin_filename, bootcalc_type, phi_type
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: sfincs_J_dot_B_flux_surface_average, sfincs_B_squared_flux_surface_average
       REAL(rprec), DIMENSION(0:ntord) :: raxis_cc_initial, raxis_cs_initial, zaxis_cc_initial, zaxis_cs_initial
@@ -338,11 +360,13 @@
       INTEGER, PARAMETER ::  iregcoil_rcws_rbound_s = 5161
       INTEGER, PARAMETER ::  iregcoil_rcws_zbound_c = 5162
       INTEGER, PARAMETER ::  iregcoil_rcws_zbound_s = 5163
-      INTEGER, PARAMETER ::  ifamus_ds_rbound_c = 5200
-      INTEGER, PARAMETER ::  ifamus_ds_rbound_s = 5201
-      INTEGER, PARAMETER ::  ifamus_ds_zbound_c = 5202
-      INTEGER, PARAMETER ::  ifamus_ds_zbound_s = 5203
-       INTEGER, PARAMETER ::  iRosenbrock_X = 5500
+      INTEGER, PARAMETER ::  ifamus_dc_ox = 5200
+      INTEGER, PARAMETER ::  ifamus_dc_oy = 5201
+      INTEGER, PARAMETER ::  ifamus_dc_oz = 5202
+      INTEGER, PARAMETER ::  ifamus_dc_M_0 = 5203
+      INTEGER, PARAMETER ::  ifamus_dc_mp = 5204
+      INTEGER, PARAMETER ::  ifamus_dc_mt = 5205
+      INTEGER, PARAMETER ::  iRosenbrock_X = 5500
       
       REAL(rprec), PARAMETER :: ne_norm = 1.0E18
       
@@ -561,16 +585,22 @@
          CASE(icoil_splinefz)
             WRITE(iunit,out_format_2DB) 'COIL_SPLINEZ(',var_dex1,',',var_dex2,'):  Coil Spline Ctrl Pts (Z)'
 
+!DEC$ IF DEFINED(FAMUS)
          ! FAMUS cases
-         CASE(ifamus_ds_rbound_c)
-            WRITE(iunit,out_format_2DB) 'FAMUS_DS_RBOUND_C(',var_dex1,',',var_dex2,'):  FAMUS Winding Surface Boundary Radial Specification (COS MN)'
-         CASE(ifamus_ds_rbound_s)
-            WRITE(iunit,out_format_2DB) 'FAMUS_DS_RBOUND_S(',var_dex1,',',var_dex2,'):  FAMUS Winding Surface Boundary Radial Specification (SIN MN)'
-         CASE(ifamus_ds_zbound_c)
-            WRITE(iunit,out_format_2DB) 'FAMUS_DS_ZBOUND_C(',var_dex1,',',var_dex2,'):  FAMUS Winding Surface Boundary Vertical Specification (COS MN)'
-         CASE(ifamus_ds_zbound_s)
-            WRITE(iunit,out_format_2DB) 'FAMUS_DS_ZBOUND_S(',var_dex1,',',var_dex2,'):  FAMUS Winding Surface Boundary Vertical Specification (SIN MN)'
+         CASE(ifamus_dc_ox)
+            WRITE(iunit,out_format_1D) 'FAMUS_DC_OX(',var_dex1,'):  FAMUS Dipole Coil Parameters (OX)'
+         CASE(ifamus_dc_oy)
+            WRITE(iunit,out_format_1D) 'FAMUS_DC_OY(',var_dex1,'):  FAMUS Dipole Coil Parameters (OY)'
+         CASE(ifamus_dc_oz)
+            WRITE(iunit,out_format_1D) 'FAMUS_DC_OZ(',var_dex1,'):  FAMUS Dipole Coil Parameters (OZ)'
+         CASE(ifamus_dc_M_0)
+            WRITE(iunit,out_format_1D) 'FAMUS_DC_M_0(',var_dex1,'):  FAMUS Dipole Coil Parameters (M_0)'
+         CASE(ifamus_dc_mp)
+            WRITE(iunit,out_format_1D) 'FAMUS_DC_MP(',var_dex1,'):  FAMUS Dipole Coil Parameters (MP)'
+         CASE(ifamus_dc_mt)
+            WRITE(iunit,out_format_1D) 'FAMUS_DC_MT(',var_dex1,'):  FAMUS Dipole Coil Parameters (MT)'
          ! END of FAMUS cases
+!DEC$ ENDIF
 
          ! REGCOIL cases
          CASE(iregcoil_winding_surface_separation)

@@ -1,4 +1,6 @@
 ObjectFiles = \
+chisq_famus_bn.o \
+stellopt_famus_driver.o \
 chisq_pressprime.o \
 stellopt_write_auxfiles.o \
 stellopt_write_eqfile.o \
@@ -50,7 +52,6 @@ chisq_mse.o \
 chisq_balloon.o \
 chisq_pmin.o \
 chisq_coil_bnorm.o \
-chisq_famus_bn.o \
 chisq_regcoil_chi2_b.o \
 chisq_rosenbrock.o \
 chisq_vessel.o \
@@ -96,7 +97,6 @@ stellopt_toboozer.o \
 stellopt_init.o \
 stellopt_bnorm.o \
 stellopt_coiloptpp.o \
-stellopt_famus_driver.o \
 stellopt_regcoil_chi2_b.o \
 stellopt_bootsj.o \
 stellopt_sfincs.o \

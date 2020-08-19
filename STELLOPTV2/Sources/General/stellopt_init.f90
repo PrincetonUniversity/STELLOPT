@@ -62,9 +62,11 @@
       ! Handle coil geometry
       IF (lcoil_geom) CALL namelist_input_makegrid(id_string)
 
+      print *,'<---stellopt_init, calling stellopt_init_mpi, myid=',myid,' myworkid=',myworkid
       ! Handle MPI and shared memory
       CALL stellopt_init_mpi
-
+      
+      print *,'<---stellopt_init, post stellopt_init_mpi, myid=',myid,' myworkid=',myworkid
       ! Send workers to the worker pool subroutine stellopt_paraexe
       ! The 'master' will continue on
       IF (myworkid .ne. master) THEN
@@ -72,6 +74,7 @@
          tstr1 = ''
          tstr2 = ''
          ier_paraexe = 0
+         print *, '<----stellopt_init, myworkid=', myworkid,' is going to stellopt_paraexe'
          CALL stellopt_paraexe(tstr1,tstr2,ltst)
          RETURN
       END IF
@@ -228,25 +231,31 @@
               END DO
               ier = 0
 
+!DEC$ IF DEFINED(FAMUS)
               ! FAMUS options
               print *, '<----counting famus opts'
-              DO m = -mpol_fds, mpol_fds
-                 DO n = -ntor_fds, ntor_fds
-                    IF (lfamus_ds_rbound_c_opt(m,n)) THEN
-                       nvars = nvars + 1
-                    END IF
-                    IF (lfamus_ds_rbound_s_opt(m,n)) THEN
-                       nvars = nvars + 1
-                    END IF
-                    IF (lfamus_ds_zbound_c_opt(m,n)) THEN
-                       nvars = nvars + 1
-                    END IF
-                    IF (lfamus_ds_zbound_s_opt(m,n)) THEN
-                       nvars = nvars + 1
-                    END IF
-                 END DO
+              DO m = 1,famus_num_coils
+                 IF (lfamus_dc_ox_opt(m)) THEN
+                    nvars = nvars + 1
+                 END IF
+                 IF (lfamus_dc_oy_opt(m)) THEN
+                    nvars = nvars + 1
+                 END IF
+                 IF (lfamus_dc_oz_opt(m)) THEN
+                    nvars = nvars + 1
+                 END IF
+                 IF (lfamus_dc_M_0_opt(m)) THEN
+                    nvars = nvars + 1
+                 END IF
+                 IF (lfamus_dc_mp_opt(m)) THEN
+                    nvars = nvars + 1
+                 END IF
+                 IF (lfamus_dc_mt_opt(m)) THEN
+                    nvars = nvars + 1
+                 END IF
               END DO
               print *, '<----done counting famus opts'
+!DEC$ ENDIF
 
               ! REGCOIL options
               IF (lregcoil_winding_surface_separation_opt) nvars = nvars + 1
@@ -302,94 +311,112 @@
               IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'stellot_init',ierr_mpi)
 !DEC$ ENDIF
               ! Now count
-              ! famus - make sure to update 'rcws' with 'ds' (or
-              ! whatever is appropriate)
+!DEC$ IF DEFINED (FAMUS)
               print *, '<----counting famus opts 2'
-              IF (ANY(lfamus_ds_rbound_c_opt) ) THEN
-                 DO m = -mpol_fds,mpol_fds
-                    DO n = -ntor_fds,ntor_fds
-                       ! IF (m==0 .and. n<=0) CYCLE
-                       IF (lfamus_ds_rbound_c_opt(m,n)) THEN
+              IF (ANY(lfamus_dc_ox_opt) ) THEN
+                 DO m = 1,famus_num_coils
+                       IF (lfamus_dc_ox_opt(m)) THEN
                           IF (lauto_domain) THEN
-                             famus_ds_rbound_c_min(m,n) = famus_ds_rbound_c(m,n) - ABS(pct_domain*famus_ds_rbound_c(m,n))
-                             famus_ds_rbound_c_max(m,n) = famus_ds_rbound_c(m,n) + ABS(pct_domain*famus_ds_rbound_c(m,n))
+                             famus_dc_ox_min(m) = famus_dc_ox(m) - ABS(pct_domain*famus_dc_ox(m))
+                             famus_dc_ox_max(m) = famus_dc_ox(m) + ABS(pct_domain*famus_dc_ox(m))
                           END IF
                           nvar_in = nvar_in + 1
-                          vars(nvar_in) = famus_ds_rbound_c(m,n)
-                          vars_min(nvar_in) = famus_ds_rbound_c_min(m,n)
-                          vars_max(nvar_in) = famus_ds_rbound_c_max(m,n)
-                          var_dex(nvar_in) = ifamus_ds_rbound_c
-                          diag(nvar_in)    = dfamus_ds_rbound_c_opt(m,n)
+                          vars(nvar_in) = famus_dc_ox(m)
+                          vars_min(nvar_in) = famus_dc_ox_min(m)
+                          vars_max(nvar_in) = famus_dc_ox_max(m)
+                          var_dex(nvar_in) = ifamus_dc_ox
+                          diag(nvar_in)    = dfamus_dc_ox_opt(m)
                           arr_dex(nvar_in,1) = m
-                          arr_dex(nvar_in,2) = n
                        END IF
-                    END DO
                  END DO
               END IF
-              IF (ANY(lfamus_ds_rbound_s_opt) ) THEN
-                 DO m = -mpol_fds,mpol_fds
-                    DO n = -ntor_fds,ntor_fds
-                       ! IF (m==0 .and. n<=0) CYCLE
-                       IF (lfamus_ds_rbound_s_opt(m,n)) THEN
+              IF (ANY(lfamus_dc_oy_opt) ) THEN
+                 DO m = 1,famus_num_coils
+                       IF (lfamus_dc_oy_opt(m)) THEN
                           IF (lauto_domain) THEN
-                             famus_ds_rbound_s_min(m,n) = famus_ds_rbound_s(m,n) - ABS(pct_domain*famus_ds_rbound_s(m,n))
-                             famus_ds_rbound_s_max(m,n) = famus_ds_rbound_s(m,n) + ABS(pct_domain*famus_ds_rbound_s(m,n))
+                             famus_dc_oy_min(m) = famus_dc_oy(m) - ABS(pct_domain*famus_dc_oy(m))
+                             famus_dc_oy_max(m) = famus_dc_oy(m) + ABS(pct_domain*famus_dc_oy(m))
                           END IF
                           nvar_in = nvar_in + 1
-                          vars(nvar_in) = famus_ds_rbound_s(m,n)
-                          vars_min(nvar_in) = famus_ds_rbound_s_min(m,n)
-                          vars_max(nvar_in) = famus_ds_rbound_s_max(m,n)
-                          var_dex(nvar_in) = ifamus_ds_rbound_s
-                          diag(nvar_in)    = dfamus_ds_rbound_s_opt(m,n)
+                          vars(nvar_in) = famus_dc_oy(m)
+                          vars_min(nvar_in) = famus_dc_oy_min(m)
+                          vars_max(nvar_in) = famus_dc_oy_max(m)
+                          var_dex(nvar_in) = ifamus_dc_oy
+                          diag(nvar_in)    = dfamus_dc_oy_opt(m)
                           arr_dex(nvar_in,1) = m
-                          arr_dex(nvar_in,2) = n
                        END IF
-                    END DO
                  END DO
               END IF
-              IF (ANY(lfamus_ds_zbound_c_opt) ) THEN
-                 DO m = -mpol_fds,mpol_fds
-                    DO n = -ntor_fds,ntor_fds
-                       ! IF (m==0 .and. n<=0) CYCLE
-                       IF (lfamus_ds_zbound_c_opt(m,n)) THEN
+               IF (ANY(lfamus_dc_oz_opt) ) THEN
+                 DO m = 1,famus_num_coils
+                       IF (lfamus_dc_oz_opt(m)) THEN
                           IF (lauto_domain) THEN
-                             famus_ds_zbound_c_min(m,n) = famus_ds_zbound_c(m,n) - ABS(pct_domain*famus_ds_zbound_c(m,n))
-                             famus_ds_zbound_c_max(m,n) = famus_ds_zbound_c(m,n) + ABS(pct_domain*famus_ds_zbound_c(m,n))
+                             famus_dc_oz_min(m) = famus_dc_oz(m) - ABS(pct_domain*famus_dc_oz(m))
+                             famus_dc_oz_max(m) = famus_dc_oz(m) + ABS(pct_domain*famus_dc_oz(m))
                           END IF
                           nvar_in = nvar_in + 1
-                          vars(nvar_in) = famus_ds_zbound_c(m,n)
-                          vars_min(nvar_in) = famus_ds_zbound_c_min(m,n)
-                          vars_max(nvar_in) = famus_ds_zbound_c_max(m,n)
-                          var_dex(nvar_in) = ifamus_ds_zbound_c
-                          diag(nvar_in)    = dfamus_ds_zbound_c_opt(m,n)
+                          vars(nvar_in) = famus_dc_oz(m)
+                          vars_min(nvar_in) = famus_dc_oz_min(m)
+                          vars_max(nvar_in) = famus_dc_oz_max(m)
+                          var_dex(nvar_in) = ifamus_dc_oz
+                          diag(nvar_in)    = dfamus_dc_oz_opt(m)
                           arr_dex(nvar_in,1) = m
-                          arr_dex(nvar_in,2) = n
                        END IF
-                    END DO
                  END DO
               END IF
-              IF (ANY(lfamus_ds_zbound_s_opt) ) THEN
-                 DO m = -mpol_fds,mpol_fds
-                    DO n = -ntor_fds,ntor_fds
-                       ! IF (m==0 .and. n<=0) CYCLE
-                       IF (lfamus_ds_zbound_s_opt(m,n)) THEN
+               IF (ANY(lfamus_dc_M_0_opt) ) THEN
+                 DO m = 1,famus_num_coils
+                       IF (lfamus_dc_M_0_opt(m)) THEN
                           IF (lauto_domain) THEN
-                             famus_ds_zbound_s_min(m,n) = famus_ds_zbound_s(m,n) - ABS(pct_domain*famus_ds_zbound_s(m,n))
-                             famus_ds_zbound_s_max(m,n) = famus_ds_zbound_s(m,n) + ABS(pct_domain*famus_ds_zbound_s(m,n))
+                             famus_dc_M_0_min(m) = famus_dc_M_0(m) - ABS(pct_domain*famus_dc_M_0(m))
+                             famus_dc_M_0_max(m) = famus_dc_M_0(m) + ABS(pct_domain*famus_dc_M_0(m))
                           END IF
                           nvar_in = nvar_in + 1
-                          vars(nvar_in) = famus_ds_zbound_s(m,n)
-                          vars_min(nvar_in) = famus_ds_zbound_s_min(m,n)
-                          vars_max(nvar_in) = famus_ds_zbound_s_max(m,n)
-                          var_dex(nvar_in) = ifamus_ds_zbound_s
-                          diag(nvar_in)    = dfamus_ds_zbound_s_opt(m,n)
+                          vars(nvar_in) = famus_dc_M_0(m)
+                          vars_min(nvar_in) = famus_dc_M_0_min(m)
+                          vars_max(nvar_in) = famus_dc_M_0_max(m)
+                          var_dex(nvar_in) = ifamus_dc_M_0
+                          diag(nvar_in)    = dfamus_dc_M_0_opt(m)
                           arr_dex(nvar_in,1) = m
-                          arr_dex(nvar_in,2) = n
                        END IF
-                    END DO
+                 END DO
+              END IF
+               IF (ANY(lfamus_dc_mp_opt) ) THEN
+                 DO m = 1,famus_num_coils
+                       IF (lfamus_dc_mp_opt(m)) THEN
+                          IF (lauto_domain) THEN
+                             famus_dc_mp_min(m) = famus_dc_mp(m) - ABS(pct_domain*famus_dc_mp(m))
+                             famus_dc_mp_max(m) = famus_dc_mp(m) + ABS(pct_domain*famus_dc_mp(m))
+                          END IF
+                          nvar_in = nvar_in + 1
+                          vars(nvar_in) = famus_dc_mp(m)
+                          vars_min(nvar_in) = famus_dc_mp_min(m)
+                          vars_max(nvar_in) = famus_dc_mp_max(m)
+                          var_dex(nvar_in) = ifamus_dc_mp
+                          diag(nvar_in)    = dfamus_dc_mp_opt(m)
+                          arr_dex(nvar_in,1) = m
+                       END IF
+                 END DO
+              END IF
+               IF (ANY(lfamus_dc_mt_opt) ) THEN
+                 DO m = 1,famus_num_coils
+                       IF (lfamus_dc_mt_opt(m)) THEN
+                          IF (lauto_domain) THEN
+                             famus_dc_mt_min(m) = famus_dc_mt(m) - ABS(pct_domain*famus_dc_mt(m))
+                             famus_dc_mt_max(m) = famus_dc_mt(m) + ABS(pct_domain*famus_dc_mt(m))
+                          END IF
+                          nvar_in = nvar_in + 1
+                          vars(nvar_in) = famus_dc_mt(m)
+                          vars_min(nvar_in) = famus_dc_mt_min(m)
+                          vars_max(nvar_in) = famus_dc_mt_max(m)
+                          var_dex(nvar_in) = ifamus_dc_mt
+                          diag(nvar_in)    = dfamus_dc_mt_opt(m)
+                          arr_dex(nvar_in,1) = m
+                       END IF
                  END DO
               END IF
               print *, '<----done counting famus opts 2'
+!DEC$ ENDIF
               ! REGCOIL
               IF (lregcoil_winding_surface_separation_opt) THEN
                  IF (lauto_domain) THEN

@@ -153,11 +153,15 @@
          IF (var_dex(nvar_in) == icoil_splinefx)   coil_splinefx(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
          IF (var_dex(nvar_in) == icoil_splinefy)   coil_splinefy(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
          IF (var_dex(nvar_in) == icoil_splinefz)   coil_splinefz(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
-         IF (var_dex(nvar_in) == ifamus_ds_rbound_c) famus_ds_rbound_c(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
-         IF (var_dex(nvar_in) == ifamus_ds_rbound_s) famus_ds_rbound_s(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
-         IF (var_dex(nvar_in) == ifamus_ds_zbound_c) famus_ds_zbound_c(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
-         IF (var_dex(nvar_in) == ifamus_ds_zbound_s) famus_ds_zbound_s(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
-          IF (var_dex(nvar_in) == iregcoil_rcws_rbound_c) regcoil_rcws_rbound_c(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
+!DEC$ IF DEFINED(FAMUS)
+         IF (var_dex(nvar_in) == ifamus_dc_ox) famus_dc_ox(arr_dex(nvar_in,1)) = x(nvar_in)
+         IF (var_dex(nvar_in) == ifamus_dc_oy) famus_dc_oy(arr_dex(nvar_in,1)) = x(nvar_in)
+         IF (var_dex(nvar_in) == ifamus_dc_oz) famus_dc_oz(arr_dex(nvar_in,1)) = x(nvar_in)
+         IF (var_dex(nvar_in) == ifamus_dc_M_0) famus_dc_M_0(arr_dex(nvar_in,1)) = x(nvar_in)
+         IF (var_dex(nvar_in) == ifamus_dc_mp) famus_dc_mp(arr_dex(nvar_in,1)) = x(nvar_in)
+         IF (var_dex(nvar_in) == ifamus_dc_mt) famus_dc_mt(arr_dex(nvar_in,1)) = x(nvar_in)
+!DEC$ ENDIF
+         IF (var_dex(nvar_in) == iregcoil_rcws_rbound_c) regcoil_rcws_rbound_c(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
          IF (var_dex(nvar_in) == iregcoil_rcws_rbound_s) regcoil_rcws_rbound_s(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
          IF (var_dex(nvar_in) == iregcoil_rcws_zbound_c) regcoil_rcws_zbound_c(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
          IF (var_dex(nvar_in) == iregcoil_rcws_zbound_s) regcoil_rcws_zbound_s(arr_dex(nvar_in,1),arr_dex(nvar_in,2)) = x(nvar_in)
@@ -449,7 +453,7 @@
 !DEC$ ENDIF
 !DEC$ IF DEFINED (FAMUS)
          ctemp_str = 'famus'
-         write(6,*) '<----stellopt_fcn checking famus request'
+         print *, '<----stellopt_fcn checking famus request'
          IF ( ( ANY(sigma_famus_bn < bigno) ) .and. (iflag >=0)) then
             write(6,*) '<----stellopt_fcn calling paraexe for ',trim(ctemp_str)
             CALL stellopt_paraexe(ctemp_str,proc_string,lscreen)

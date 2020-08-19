@@ -37,6 +37,7 @@
       
       myid = master
 !DEC$ IF DEFINED (MPI_OPT)
+      print *,'<----main is calling mpi_init'
       CALL MPI_INIT( ierr_mpi )                                         ! MPI
       color = 0
       CALL MPI_COMM_SPLIT( MPI_COMM_WORLD,color,myid,MPI_COMM_STEL,ierr_mpi)
@@ -45,6 +46,7 @@
       CALL MPI_ERRHANDLER_SET(MPI_COMM_WORLD,MPI_ERRORS_RETURN,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_main',ierr_mpi)
 !DEC$ ENDIF
+      print *,'<----main is done with mpi_init stuff'
       pi = 4.0 * ATAN(1.0)
       pi2 = 8.0 * ATAN(1.0)
       mu0 = 16.0E-7 * ATAN(1.0)
@@ -127,7 +129,7 @@
          DEALLOCATE(args)
          WRITE(6,'(a,f5.2)') 'STELLOPT Version ',STELLOPT_VERSION
       ELSE 
-         lverb=.false.   ! Shutup the slaves
+         lverb=.false.   ! The workers will be 'quiet'
       END IF
       ! Broadcast variables
 !DEC$ IF DEFINED (MPI_OPT)
@@ -149,8 +151,9 @@
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'stellopt_main',ierr_mpi)
 !DEC$ ENDIF
       ! Initialize the Calculation
+      print *,'<----stellopt_main is calling stellopt_init, myid=',myid, 'myworkid=',myworkid
       CALL stellopt_init
-
+      print *,'<----stellopt_main is back from stellopt_init, myid=',myid , 'myworkid=',myworkid
       ! The following commands will only be completed by master
       IF (myworkid == master .and. lrenorm) THEN
          ! Now do one run with renorm
@@ -182,13 +185,15 @@
       END IF
 
       IF (myworkid == master) THEN
+         print *,'<----stellopt_main, myworkid=master is calling stellopt_optimize myid=', myid,' myworkid=',myworkid
          CALL stellopt_optimize
          ltst  = .false.
          tstr1 = 'exit'
          tstr2 = ''
+         print *,'<----stellopt_main, master is calling stellopt_optimize with exit <> false'
          CALL stellopt_paraexe(tstr1,tstr2,ltst)
       END IF
-
+      print *,'<----stellopt_main, myworkid=',myworkid,' is about to do cleanup!'
       ! All procs (master and workers) will do this part
       ! Clean up
 !DEC$ IF DEFINED (MPI_OPT)
