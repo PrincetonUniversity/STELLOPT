@@ -99,6 +99,7 @@
       IF (ALLOCATED(Z_lines)) DEALLOCATE(Z_lines)
       IF (ALLOCATED(PHI_lines)) DEALLOCATE(PHI_lines)
       IF (ALLOCATED(U_lines)) DEALLOCATE(U_lines)
+      IF (ALLOCATED(B_lines)) DEALLOCATE(B_lines)
       IF (ALLOCATED(goodline)) DEALLOCATE(goodline)
       
       ! Allocations
