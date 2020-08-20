@@ -84,6 +84,8 @@
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
+      CALL MPI_BARRIER(MPI_COMM_MYWORLD,ierr_mpi)
+      CALL MPI_COMM_SIZE( MPI_COMM_MYWORLD, nprocs_myworld, ierr_mpi )
       print *, '<----famus_driver entry famus_id = ',famus_id,' myid=',myid, &
                ' proc_string=',trim(proc_string), ' file_str=',trim(file_str), &
                ' iflag=', iflag, ' myworkid = ', myworkid,' famus_dc_ox(1)=',famus_dc_ox(1)
@@ -102,22 +104,24 @@
       !myworkid = master
       famus_color = 0
       famus_key = myworkid
-!       CALL MPI_COMM_RANK(MPI_COMM_MYWORLD, famus_rankWorld, ierr_mpi)
-!       CALL MPI_COMM_SPLIT(MPI_COMM_MYWORLD, famus_color, famus_rankWorld, famus_MPI_COMM_FAMUS, ierr_mpi)
-      CALL MPI_COMM_FREE(FAMUS_MPI_COMM_FAMUS, ierr_mpi)
-      CALL MPI_COMM_SPLIT(MPI_COMM_MYWORLD, famus_color, famus_key, FAMUS_MPI_COMM_FAMUS, ierr_mpi)
-      CALL MPI_COMM_SIZE(FAMUS_MPI_COMM_FAMUS, nprocs_myworld, ierr_mpi)
+!      CALL MPI_COMM_FREE(FAMUS_MPI_COMM_FAMUS, ierr_mpi)
+      FAMUS_MPI_COMM_FAMUS = MPI_COMM_MYWORLD
+!      CALL MPI_COMM_SPLIT(MPI_COMM_MYWORLD, famus_color, famus_key, FAMUS_MPI_COMM_FAMUS, ierr_mpi)
+      CALL MPI_COMM_SIZE(FAMUS_MPI_COMM_FAMUS, famus_ncpu, ierr_mpi)
       CALL MPI_COMM_RANK(FAMUS_MPI_COMM_FAMUS, myrank_myworld, ierr_mpi)
-      print *,'<---checkup 2: famus_dc_ox(1)=',famus_dc_ox(1)
+      famus_id = myrank_myworld
+      print *, '<----famus_driver post comm redifine famus_id = ',famus_id,' of ',famus_ncpu,' myid=',myid, &
+               ' proc_string=',trim(proc_string), ' file_str=',trim(file_str), &
+               ' iflag=', iflag, ' myworkid = ', myworkid,' famus_dc_ox(1)=',famus_dc_ox(1)
 
-     famus_id = myrank_myworld
-     famus_ncpu = nprocs_myworld
+!     famus_ncpu = famus_ncpu
+      CALL MPI_BARRIER(FAMUS_MPI_COMM_FAMUS,ierr_mpi)
 
 ! STEP 1.
-      print *, '<----famus_driver post mpi split famus_id = ',famus_id,' myid=', myid, &
+      print *, '<----famus_driver post mpi split myid=', myid, &
                ' proc_string=',trim(proc_string), ' file_str=',trim(file_str), &
-               ' iflag=', iflag, ' myworkid = ', myworkid,' myrank_myworld=',myrank_myworld, &
-               ' nprocs_myworld=', nprocs_myworld, '--->'
+               ' iflag=', iflag, ' myworkid = ', myworkid,' famus_id=',famus_id, &
+               ' famus_ncpu=', famus_ncpu, '--->'
       ! Run bnorm if required ( JCS - is this handled correctly in the MPI
       ! environment? Do all procs help, or does only master do this?)
       !if (load_bnorm_famus) then
@@ -266,9 +270,9 @@
 
       end if
 
-      print *, '<----famus_driver: myrank_myworld=',myrank_myworld,' waiting at mpi_barrier #1'
+      print *, '<----famus_driver: famus_id=',famus_id,' waiting at mpi_barrier #1'
       CALL MPI_BARRIER(FAMUS_MPI_COMM_FAMUS,ierr_mpi)
-      print *, '<----famus_driver: myrank_myworld=',myrank_myworld,' moving on from mpi_barrier #1'
+      print *, '<----famus_driver: famus_id=',famus_id,' moving on from mpi_barrier #1'
 
 ! STEP 3: Initialize FAMUS
        write(6,*) '<----famus_driver: Step 3'
@@ -288,11 +292,13 @@
 !      call MPI_COMM_RANK( famus_MPI_COMM_FAMUS, famus_id, ierr )
 !      call MPI_COMM_SIZE( famus_MPI_COMM_FAMUS, famus_ncpu, ierr )
 
-
 ! STEP 4: check_input
        write(6,*) '<----famus_driver: Step 4'
        
+! what is 'myid' in famus?
        call check_input
+      !CALL MPI_BARRIER(MPI_COMM_MYWORLD,ierr_mpi)
+      CALL MPI_BARRIER(FAMUS_MPI_COMM_FAMUS,ierr_mpi)
 
        write(6,*) '<----famus_driver: Begin execution with famus_ncpu =', famus_ncpu
 
@@ -306,6 +312,8 @@
 
        !call fousurf2
        call fousurf
+      !CALL MPI_BARRIER(MPI_COMM_MYWORLD,ierr_mpi)
+      CALL MPI_BARRIER(FAMUS_MPI_COMM_FAMUS,ierr_mpi)
 
 !       select case( famus_case_surface )
 !
@@ -333,9 +341,13 @@
       !                  famus_input_coils = famusin_out_filename
 
        end select
+      !CALL MPI_BARRIER(MPI_COMM_MYWORLD,ierr_mpi)
+      CALL MPI_BARRIER(FAMUS_MPI_COMM_FAMUS,ierr_mpi)
 
        write(6,*) '<----famus_driver: myid=',myid,',famus_id=',famus_id,' is handling packeddof'
        call packdof(famus_xdof)  ! packdof in xdof array;
+      !CALL MPI_BARRIER(MPI_COMM_MYWORLD,ierr_mpi)
+      CALL MPI_BARRIER(FAMUS_MPI_COMM_FAMUS,ierr_mpi)
 
 !       write(6,*) '<----famus_driver: myid=',myid,' is calling mpi_barrier (myworld)'
 !       call MPI_BARRIER( MPI_COMM_MYWORLD, ierr )
@@ -345,6 +357,8 @@
        famus_case_bnormal = 0
        print *,'<----famus_case_optimize=',famus_case_optimize
        if (famus_case_optimize /= 0) call solvers       ! call different solvers;
+      !CALL MPI_BARRIER(MPI_COMM_MYWORLD,ierr_mpi)
+      CALL MPI_BARRIER(FAMUS_MPI_COMM_FAMUS,ierr_mpi)
 
 !       write(6,*) '<----famus_driver: myid=',myid,' is calling mpi_barrier (myworld)'
       ! call MPI_BARRIER( famus_MPI_COMM_MYWORLD, ierr )
@@ -353,16 +367,21 @@
 
   write(6,*) '<----famus_driver: myid=',myid,',famus_id=',famus_id,' is calling unpacking'
   call unpacking(famus_xdof)  ! unpack the optimized xdof array;
+      !CALL MPI_BARRIER(MPI_COMM_MYWORLD,ierr_mpi)
+      CALL MPI_BARRIER(FAMUS_MPI_COMM_FAMUS,ierr_mpi)
  !JCS should this be myid or famus_id?
   !    write(6, *) "-----------POST-PROCESSING myid=0-----------------------------------"
   !    if (famus_id == 0) write(6, *) "-----------POST-PROCESSING famus_id=0-----------------------------------"
       print *,  '<----famus_driver: post unpacking'
       print *,  '<----famus_driver: famus_id=',famus_id,' myid=',myid,' beginning diagnos'
        call diagnos
+      CALL MPI_BARRIER(FAMUS_MPI_COMM_FAMUS,ierr_mpi)
       print *,  '<----famus_driver: famus_id=',famus_id,' myid=',myid,' beginning prepare_ind'
        call prepare_inductance()
+      CALL MPI_BARRIER(FAMUS_MPI_COMM_FAMUS,ierr_mpi)
       print *,  '<----famus_driver: famus_id=',famus_id,' myid=',myid,' beginning famus_bnormal'
        call famus_bnormal(0)
+      CALL MPI_BARRIER(FAMUS_MPI_COMM_FAMUS,ierr_mpi)
 !      select case( famus_case_postproc )
 !      case( 0 ) 
 !      case( 1 ) ; call diagnos ; 
@@ -387,6 +406,7 @@
 !      call MPI_BARRIER( MPI_COMM_MYWORLD, ierr )
 !      call MPI_COMM_FREE( FAMUS_MPI_COMM_FAMUS, ierr_mpi)
 !JCS  if(myid == 0) write(ounit, *) "-------------------------------------------------------------"
+      CALL MPI_BARRIER(FAMUS_MPI_COMM_FAMUS,ierr_mpi)
 
 !JCS  call MPI_FINALIZE( ierr )
 

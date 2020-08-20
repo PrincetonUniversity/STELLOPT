@@ -402,6 +402,8 @@
                print *, '<----paraexe calling famus'
                proc_string = file_str
                WRITE (6, *) '<----stellopt_paraxe calling famus_driver with file_str = ', file_str
+               CALL MPI_BARRIER(MPI_COMM_MYWORLD,ierr_mpi)
+               IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_paraexe/famus',ierr_mpi)
                CALL stellopt_famus_driver(file_str,lscreen,ier)
                WRITE (6, *) '<----stellopt_paraxe returned from famus_driver with file_str = ', file_str
 !DEC$ ENDIF

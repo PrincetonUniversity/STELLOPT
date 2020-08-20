@@ -1231,6 +1231,9 @@
            
          CALL famus_rdcoils_mpi(famus_dipolecoil_filename, famus_ncoils, famus_momentq)
          print *,' K==========-----famus_export_coil_should be usable_now by myid=',myid
+
+         call mpi_comm_free(FAMUS_MPI_COMM_FAMUS, ierr)
+
             ! famus_export_coil should be usable now by all procs.
          print *,'<---checkup: famus_export_coil(1)%ox=', famus_export_coil(1)%ox 
      endif 
