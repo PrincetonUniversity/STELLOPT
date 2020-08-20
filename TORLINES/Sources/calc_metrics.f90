@@ -80,10 +80,10 @@
       CALL EZspline_init(z1_spl,k,nu,nv,bcs1,bcs2,bcs2,ier)
       r1_spl%x1 = rho
       z1_spl%x1 = rho
-      r1_spl%x2(1:nu-1) = xu(1:nu)*pi2
-      z1_spl%x2(1:nu-1) = xu(1:nu)*pi2
-      r1_spl%x3(1:nv-1) = xv(1:nv)*pi2
-      z1_spl%x3(1:nv-1) = xv(1:nv)*pi2
+      r1_spl%x2(1:nu) = xu(1:nu)*pi2
+      z1_spl%x2(1:nu) = xu(1:nu)*pi2
+      r1_spl%x3(1:nv) = xv(1:nv)*pi2
+      z1_spl%x3(1:nv) = xv(1:nv)*pi2
       r1_spl%isHermite    = 1
       z1_spl%isHermite    = 1
       CALL EZspline_setup(r1_spl,rreal(1:k,1:nu,1:nv),ier,exact_dim=.true.)
