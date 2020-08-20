@@ -91,9 +91,9 @@
             IF (myworkid == master) THEN
                CALL FLUSH(6)
                DO i = 1,nrad
-                  CALL get_equil_ne(rho(i),TRIM(ne_type),ne_prof(i),ier)
-                  CALL get_equil_te(rho(i),TRIM(te_type),te_prof(i),ier)
-                  CALL get_equil_zeff(rho(i),TRIM(zeff_type),z_prof(i),ier)
+                  CALL get_equil_ne(shat(i),TRIM(ne_type),ne_prof(i),ier)
+                  CALL get_equil_te(shat(i),TRIM(te_type),te_prof(i),ier)
+                  CALL get_equil_zeff(shat(i),TRIM(zeff_type),z_prof(i),ier)
                END DO
                te_prof = te_prof*1.0E-3 ! Must be in keV
             ELSE
@@ -178,6 +178,7 @@
                hgrid   = Aminor/30
                dphi    = 2
                B0type  = 'at angle on magn.axis'
+               B0type  = 'noscale'
                phi_ref = 0
                B_scale = 1
                B0_ref  = Baxis
@@ -187,7 +188,7 @@
                ! Set Profiles
                labelType  = 'tor_rho'
                interpType = 'spline'
-               CALL set_nTZ_profs_f77(nrad, sqrt(rho), ne_prof, te_prof, z_prof, labelType, interpType)
+               CALL set_nTZ_profs_f77(nrad, rho, ne_prof, te_prof, z_prof, labelType, interpType)
 
                ! Set Configuration
                !maxSteps     = 5000   ! upper number of steps on the trajectory

@@ -38,13 +38,13 @@
       IF (iflag < 0) RETURN
       ik = COUNT(sigma < bigno)
       IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'MAGWELL ',ik,7
-      IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA  MAGWELL  <B**2>  P  dP/ds'
+      IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA  MAGWELL  <B**2>  P  dP/drho k'
       IF (niter >= 0) THEN
          DO ik = 1, nsd
             IF (sigma(ik) >= bigno) CYCLE
-            CALL get_equil_Bav(rho(ik),Bav,Bsqav,ier,dBsqav)
-            CALL get_equil_p(rho(ik),p,ier,pp)
-            CALL get_equil_volume(rho(ik),V,ier,Vp)
+            CALL get_equil_Bav(rho(ik),Bav,Bsqav,ier,dBsqav) ! stel_tools (rho)
+            CALL get_equil_volume(shat(ik),V,ier,Vp)
+            CALL get_equil_p(shat(ik),p,ier,pp)
             W = V*(2*mu0*pp/Vp+dBsqav)/Bsqav
             ! Output value
             mtargets = mtargets + 1
