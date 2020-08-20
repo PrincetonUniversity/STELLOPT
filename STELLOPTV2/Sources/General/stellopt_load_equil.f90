@@ -123,28 +123,30 @@
             Baxis   = 0.5*SUM(3*bmnc_vmec(:,2)-bmnc_vmec(:,3),1) ! Asymmetric part zero at phi=0
             ! May need to create some radial arrays
             IF (ALLOCATED(rho)) DEALLOCATE(rho)
-            ALLOCATE(rho(ns_vmec))
-            FORALL(u=1:ns_vmec) rho(u) = REAL(u-1)/REAL(ns_vmec-1)
+            IF (ALLOCATED(shat)) DEALLOCATE(shat)
+            ALLOCATE(rho(ns_vmec), shat(ns_vmec))
+            FORALL(u=1:ns_vmec) shat(u) = REAL(u-1)/REAL(ns_vmec-1)
+            rho = sqrt(shat); rho(1) = 0
             nfp     = nfp_vmec
             ! Get the external currents
             IF (ALLOCATED(extcur)) DEALLOCATE(extcur)
             ALLOCATE(extcur(nextcur))
             extcur(1:nextcur) = extcur_vmec(1:nextcur)
             ! Radial Splines Arrays
-            CALL setup_prof_spline(pres_spl,  ns_vmec, rho, pres_vmec, iflag)
-            CALL setup_prof_spline(iota_spl,  ns_vmec, rho, iota_vmec, iflag)
-            !CALL setup_prof_spline(ip_spl,    ns_vmec, rho, ip_vmec,   iflag)
-            CALL setup_prof_spline(jdotb_spl, ns_vmec, rho, jdotb_vmec, iflag)
-            CALL setup_prof_spline(jcurv_spl, ns_vmec, rho, jcurv_vmec, iflag)
+            CALL setup_prof_spline(pres_spl,  ns_vmec, shat, pres_vmec, iflag)
+            CALL setup_prof_spline(iota_spl,  ns_vmec, shat, iota_vmec, iflag)
+            !CALL setup_prof_spline(ip_spl,    ns_vmec, shat, ip_vmec,   iflag)
+            CALL setup_prof_spline(jdotb_spl, ns_vmec, shat, jdotb_vmec, iflag)
+            CALL setup_prof_spline(jcurv_spl, ns_vmec, shat, jcurv_vmec, iflag)
             ALLOCATE(Vol(ns_vmec))
             FORALL(u=1:ns_vmec) Vol(u) = SUM(vp_vmec(1:u))
-            CALL setup_prof_spline(V_spl,     ns_vmec, rho, Vol, iflag)
+            CALL setup_prof_spline(V_spl,     ns_vmec, shat, Vol, iflag)
             DEALLOCATE(Vol)
 
             ! Handle the FLOW arrays
             IF (TRIM(equil_type)=='flow' .or. TRIM(equil_type)=='satire') THEN
                mach0 = SQRT(machsq_vmec)
-               CALL setup_prof_spline(omega_spl, ns_vmec, rho, omega_vmec, iflag)
+               CALL setup_prof_spline(omega_spl, ns_vmec, shat, omega_vmec, iflag)
             END IF
 
             ! Get the realspace R and Z and metric elements
