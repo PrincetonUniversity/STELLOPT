@@ -369,7 +369,10 @@ MODULE beams3d_physics_mod
                   s_temp = fval(1)
                   IF (s_temp < one) EXIT
                END IF
-               IF ((q(1) > 5*rmax)  .or. (q(1) < rmin)) THEN; t = t_end(myline)+dt_local; RETURN; END IF  ! We're outside the grid
+               IF ((q(1) > 5*rmax)  .or. (q(1) < rmin)) THEN
+                  t = t_end(myline)+dt_local
+                  RETURN
+               END IF  ! We're outside the grid
             END DO
             ! Take a step back
             qf = qf - myv_neut*dt_local
@@ -410,6 +413,7 @@ MODULE beams3d_physics_mod
                IF (phi_temp < 0) phi_temp = phi_temp + phimax
                !CALL EZspline_isInDomain(S_spl,q(1),phi_temp,q(3),ier)
                !IF (ier==0) THEN
+               ! Assume we're in grid and only want to bug out if we're outside the grid
                IF ((q(1) >= rmin-eps1) .and. (q(1) <= rmax+eps1) .and. &
                    (phi_temp >= phimin-eps2) .and. (phi_temp <= phimax+eps2) .and. &
                    (q(3) >= zmin-eps3) .and. (q(3) <= zmax+eps3)) THEN
@@ -431,12 +435,14 @@ MODULE beams3d_physics_mod
                                   S4D(1,1,1,1),nr,nphi,nz)
                   s_temp = fval(1)
                   IF (s_temp > one) EXIT
+               ELSE
+                  EXIT
                END IF
-               IF ((q(1) > rmax)  .or. (q(1) < rmin)) THEN; t = t_end(myline)+dt_local; RETURN; END IF  ! We're outside the grid
             END DO
             ! Take a step back
             qf = qf - myv_neut*dt_local
          END DO
+         ! If we're outside the grid now then we hit the grid before the wall
          qe=qf + myv_neut*dt_local
 
          !--------------------------------------------------------------
