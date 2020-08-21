@@ -40,7 +40,7 @@ function. The code uses either a modified
 to find a best fit set of equilibrium inputs to the set of desired
 targets. The quality of fit is determined by the Chi-squared
 metric
-\$$ \chi_i^2=\sum \frac{\left(f_i^{target}-f_i^{equilbria}\right)^2 }{\sigma_i^2} .$$
+\$$ \chi_i^2=\frac{\left(f_i^{target}-f_i^{equilbria}\right)^2 }{\sigma_i^2} .$$
 The sigma here represents the tolerance of the target value. The goal of
 the code is to minimize the total chi-squared value.
 
