@@ -21,7 +21,7 @@
 # Crutch for broken module vars
   NETCDF_F = $(NETCDF_FORTRAN_HOME)
   NETCDF_C = $(NETCDF_C_HOME)
-  HDF5_HOME = $(HDF5_PARALLEL_HOME)
+#  HDF5_HOME = $(HDF5_PARALLEL_HOME)
 
   LIBS    = -lopenblas -L$(SCALAPACK_HOME)/lib -lscalapack 
 
@@ -104,8 +104,10 @@
   LIB_GENE = libgene.a
   GENE_LIB = $(GENE_DIR)/$(LIB_GENE) \
              -L$(FFTW_HOME)/lib -lfftw3 \
-             -L$(SLEPC_DIR)/$(PETSC_ARCH)/lib -lslepc \
-             -L$(PETSC_DIR)/$(PETSC_ARCH)/lib -lpetsc -lX11
+             -L$(SLEPC_DIR)/lib -lslepc \
+             -L$(PETSC_DIR)/lib -lpetsc -lX11
+#             -L$(SLEPC_DIR)/$(PETSC_ARCH)/lib -lslepc \
+#             -L$(PETSC_DIR)/$(PETSC_ARCH)/lib -lpetsc -lX11
 
 #######################################################################
 #            COILOPT++ Options
@@ -165,13 +167,14 @@
   SFINCS_INC = -I$(SFINCS_DIR)
   LIB_SFINCS = libsfincs.a
   SFINCS_LIB = $(SFINCS_DIR)/$(LIB_SFINCS) \
-             -L$(PETSC_DIR)/$(PETSC_ARCH)/lib -lpetsc -lX11
+             -L$(PETSC_DIR)/lib -lpetsc -lX11
+#             -L$(PETSC_DIR)/$(PETSC_ARCH)/lib -lpetsc -lX11
 
 #######################################################################
 #            MANGO Options
 #######################################################################
 
-LMANGO = T
+LMANGO = F
 
 MANGO_DIR = /p/focus/share/mango
 

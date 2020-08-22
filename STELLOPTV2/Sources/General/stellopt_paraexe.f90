@@ -116,8 +116,12 @@
       IF (ier_paraexe /= 0) RETURN
       code_str = TRIM(in_parameter_1)
       file_str = TRIM(in_parameter_2)
+      print *, '<----paraexe entry: myid=',myid,', myworkid=',myworkid, &
+               ', code_str=',trim(code_str),', file_str= ', trim(file_str)
       ierr_mpi = 0
       DO
+      print *, '<----paraexe do loop entry: myid=',myid,', myworkid=',myworkid, &
+               ', code_str=',trim(code_str),', file_str= ', trim(file_str)
          ! First get the name of the code blah
          ier_paraexe = 0; ierr_mpi = 0; ier = 0
 !DEC$ IF DEFINED (MPI_OPT)
@@ -128,6 +132,8 @@
          CALL MPI_BCAST(file_str,256,MPI_CHARACTER,master,MPI_COMM_MYWORLD,ierr_mpi)
          IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_paraexe: BCAST2',ierr_mpi)
 !DEC$ ENDIF
+      print *, '<----paraexe entry post broadcast: myid=',myid,', myworkid=',myworkid, &
+               ', code_str=',trim(code_str),', file_str= ', trim(file_str)
 
          ! Now run the proper code
          CALL tolower(code_str)
@@ -399,7 +405,8 @@
                CALL stellopt_coiloptpp(file_str,lscreen)
 !DEC$ IF DEFINED (FAMUS)
             CASE('famus')
-               print *, '<----paraexe calling famus'
+               print *, '<----paraexe calling famus : myid=',myid,', myworkid=',myworkid, &
+               ', code_str=',trim(code_str),', file_str= ', trim(file_str)
                proc_string = file_str
                WRITE (6, *) '<----stellopt_paraxe calling famus_driver with file_str = ', file_str
                CALL MPI_BARRIER(MPI_COMM_MYWORLD,ierr_mpi)
@@ -458,6 +465,12 @@
                STOP
          END SELECT
          !lscreen = .false.
+
+      print *, '<----paraexe exit : myid=',myid,', myworkid=',myworkid, &
+               ', code_str=',trim(code_str),', file_str= ', trim(file_str)
+      IF (myworkid == master) then
+         print *, '<----myid=',myid,'myworkid=', myworkid,' is about to RETURN'
+      END IF
          IF (myworkid == master) RETURN ! The master process of the Communicator can leave
       END DO
       RETURN

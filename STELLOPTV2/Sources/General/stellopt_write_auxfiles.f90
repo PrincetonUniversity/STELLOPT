@@ -112,6 +112,25 @@
          END DO
       END IF
 !DEC$ ENDIF
+!DEC$ IF DEFINED (FAMUS)
+              ! Currently inside of LEV and GADE cleanup loop, and 
+              ! 'Keeping the mins' section
+              ! FAMUS dipole) surface optimization
+              IF ( ( ANY(sigma_famus_bn < bigno) )  &
+                     .and. &
+                   ( ANY(lfamus_dc_ox_opt) .or. &
+                     ANY(lfamus_dc_oy_opt) .or. &
+                     ANY(lfamus_dc_oz_opt) .or. &
+                     ANY(lfamus_dc_M_0_opt) .or. &
+                     ANY(lfamus_dc_mp_opt) .or. &
+                     ANY(lfamus_dc_mt_opt) ) ) THEN
+
+                   CALL copy_txtfile(TRIM(proc_string_old)//'.boundary',&
+                                     TRIM(proc_string)//'.boundary')
+                   CALL copy_txtfile(TRIM(proc_string_old)//'.focus',&
+                                     TRIM(proc_string)//'.focus')
+              END IF
+!DEC$ ENDIF
 !DEC$ IF DEFINED (REGCOIL)
               ! Currently inside of LEV and GADE cleanup loop, and 
               ! 'Keeping the mins' section

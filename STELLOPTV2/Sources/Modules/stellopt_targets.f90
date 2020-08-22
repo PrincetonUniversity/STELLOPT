@@ -9,7 +9,11 @@
 !     Libraries
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
+!DEC$ IF DEFINED(FAMUS)
       USE stellopt_vars, ONLY: ntor_rcws, mpol_rcws, famus_mn_plasma, rosenbrock_dim
+!DEC$ ELSE
+      USE stellopt_vars, ONLY: ntor_rcws, mpol_rcws, rosenbrock_dim
+!DEC$ ENDIF
       USE vparams, ONLY: nsd
       USE vsvd0, ONLY : nigroup
 

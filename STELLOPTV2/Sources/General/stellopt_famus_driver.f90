@@ -84,13 +84,13 @@
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
-      CALL MPI_BARRIER(MPI_COMM_MYWORLD,ierr_mpi)
       CALL MPI_COMM_SIZE( MPI_COMM_MYWORLD, nprocs_myworld, ierr_mpi )
-      print *, '<----famus_driver entry famus_id = ',famus_id,' myid=',myid, &
+      print *, '<----famus_driver entry famus_id = ',famus_id,' myid=',myid, ' of ',nprocs_myworld,' in myworld', &
                ' proc_string=',trim(proc_string), ' file_str=',trim(file_str), &
                ' iflag=', iflag, ' myworkid = ', myworkid,' famus_dc_ox(1)=',famus_dc_ox(1)
       IF (iflag < 0) RETURN
-      print *,'<---checkup 1: famus_dc_ox(1)=',famus_dc_ox(1)
+      CALL MPI_BARRIER(MPI_COMM_MYWORLD,ierr_mpi)
+      print *,'<---checkup post entry mpi_barrier 1: famus_dc_ox(1)=',famus_dc_ox(1)
       lscreen = .true.
       IF (lscreen) then
          WRITE(6,'(a)') 'lscreen=true : -------------  FAMUS CALCULATION 2 ---------'
@@ -105,6 +105,7 @@
       famus_color = 0
       famus_key = myworkid
 !      CALL MPI_COMM_FREE(FAMUS_MPI_COMM_FAMUS, ierr_mpi)
+      !FAMUS_MPI_COMM_MYWORLD = MPI_COMM_MYWORLD
       FAMUS_MPI_COMM_FAMUS = MPI_COMM_MYWORLD
 !      CALL MPI_COMM_SPLIT(MPI_COMM_MYWORLD, famus_color, famus_key, FAMUS_MPI_COMM_FAMUS, ierr_mpi)
       CALL MPI_COMM_SIZE(FAMUS_MPI_COMM_FAMUS, famus_ncpu, ierr_mpi)
