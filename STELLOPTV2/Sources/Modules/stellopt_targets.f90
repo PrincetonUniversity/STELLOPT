@@ -188,9 +188,8 @@
       REAL(rprec) ::  target_coil_bnorm, sigma_coil_bnorm
       INTEGER     ::  nu_bnorm,nv_bnorm
 
-!DEC$ IF DEFINED(FAMUS)
+      ! FAMUS-related targets.
       REAL(rprec),DIMENSION(famus_mn_plasma) ::  target_famus_bn, sigma_famus_bn
-!DEC$ ENDIF
 
       REAL(rprec) ::  target_regcoil_winding_surface_separation
       REAL(rprec) ::  sigma_regcoil_winding_surface_separation

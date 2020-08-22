@@ -418,9 +418,9 @@
                          regcoil_rcws_zbound_c_min, regcoil_rcws_zbound_s_min, &
                          regcoil_rcws_rbound_c_max, regcoil_rcws_rbound_s_max, &
                          regcoil_rcws_zbound_c_max, regcoil_rcws_zbound_s_max, &
+                         target_famus_bn, sigma_famus_bn, &  
 !DEC$ IF DEFINED(FAMUS)
                          famusin_filename, famus_dipolecoil_filename, &
-                         target_famus_bn, sigma_famus_bn, &  
                          lfamus_dc_ox_opt, lfamus_dc_oy_opt, &
                          lfamus_dc_oz_opt, lfamus_dc_M_0_opt, &
                          lfamus_dc_mp_opt, lfamus_dc_mt_opt, &
@@ -657,9 +657,9 @@
       famus_dc_M_0_min = -bigno;  famus_dc_M_0_max = bigno
       famus_dc_mp_min = -bigno;  famus_dc_mp_max = bigno
       famus_dc_mt_min = -bigno;  famus_dc_mt_max = bigno
+!DEC$ ENDIF
       target_famus_bn = 0.0
       sigma_famus_bn  = bigno
-!DEC$ ENDIF
 
       ! More REGCOIL Options
       target_regcoil_winding_surface_separation = 0.0
