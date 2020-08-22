@@ -411,8 +411,6 @@ MODULE beams3d_physics_mod
                q(3) = qf(3)
                phi_temp = MODULO(q(2), phimax)
                IF (phi_temp < 0) phi_temp = phi_temp + phimax
-               !CALL EZspline_isInDomain(S_spl,q(1),phi_temp,q(3),ier)
-               !IF (ier==0) THEN
                ! Assume we're in grid and only want to bug out if we're outside the grid
                IF ((q(1) >= rmin-eps1) .and. (q(1) <= rmax+eps1) .and. &
                    (phi_temp >= phimin-eps2) .and. (phi_temp <= phimax+eps2) .and. &
@@ -429,15 +427,13 @@ MODULE beams3d_physics_mod
                   xparam = (q(1) - raxis(i)) * hxi
                   yparam = (phi_temp - phiaxis(j)) * hyi
                   zparam = (q(3) - zaxis(k)) * hzi
-                  !CALL EZspline_interp(S_spl,q(1),phi_temp,q(3),s_temp,ier)
                   CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                                   hx,hxi,hy,hyi,hz,hzi,&
                                   S4D(1,1,1,1),nr,nphi,nz)
                   s_temp = fval(1)
                   IF (s_temp > one) EXIT
-               ELSE
-                  EXIT
                END IF
+               IF ((q(1) > rmax)  .or. (q(1) < rmin)) THEN; t = t_end(myline)+dt_local; RETURN; END IF  ! We're outside the grid
             END DO
             ! Take a step back
             qf = qf - myv_neut*dt_local
