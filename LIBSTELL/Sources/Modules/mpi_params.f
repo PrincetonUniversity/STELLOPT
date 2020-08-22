@@ -65,13 +65,12 @@ c                    differently.
       INTEGER, INTENT(out) :: mystart, myend
       INTEGER :: delta, local_size, local_rank, istat
       mystart = n1; myend = n2
-      IF (COMM < 0) RETURN
 #if defined(MPI_OPT)
       CALL MPI_COMM_SIZE( comm, local_size, istat)
       CALL MPI_COMM_RANK( comm, local_rank, istat )
-      delta = CEILING(REAL(n2-n1+1)/REAL(local_size))
+      delta = FLOOR(REAL(n2-n1+1)/REAL(local_size))
       mystart = n1 + local_rank*delta
-      myend   = mystart + delta
+      myend   = mystart + delta - 1
       IF (myend > n2) myend=n2
 #endif
       RETURN
