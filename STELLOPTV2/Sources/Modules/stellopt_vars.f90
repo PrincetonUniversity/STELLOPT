@@ -155,7 +155,10 @@
                                                       dregcoil_rcws_rbound_s_opt, &
                                                       dregcoil_rcws_zbound_c_opt, &
                                                       dregcoil_rcws_zbound_s_opt
-      ! FOR FAMUS DIPOLE SURFACE Fourier Series Representation
+      ! FOR FAMUS DIPOLE SURFACE 
+      INTEGER, PARAMETER :: famus_mpol_plasma = 256    ! Poloidal direction
+      INTEGER, PARAMETER :: famus_ntor_plasma = 256    ! Toroidal direction
+      INTEGER, PARAMETER :: famus_mn_plasma = famus_mpol_plasma * famus_ntor_plasma
 !DEC$ IF DEFINED(FAMUS)
       type(famus_arbitrarycoil), dimension(:), allocatable :: famus_coils
       ! famus_coil will be allocated and read in by famus support
@@ -178,9 +181,6 @@
       ! NTETA and NZETA
       ! Number of grid points in poloidal and toroidal directions used to
       ! evaluate surface integrals on the plasma surface
-      INTEGER, PARAMETER :: famus_mpol_plasma = 256    ! Poloidal direction
-      INTEGER, PARAMETER :: famus_ntor_plasma = 256    ! Toroidal direction
-      INTEGER, PARAMETER :: famus_mn_plasma = famus_mpol_plasma * famus_ntor_plasma
       INTEGER :: famus_ncoils, famus_momentq
       LOGICAL, DIMENSION(1:famus_num_coils) :: lfamus_dc_ox_opt, &
                                                lfamus_dc_oy_opt, &

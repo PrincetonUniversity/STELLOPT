@@ -41,9 +41,9 @@
       USE stellopt_runtime
       USE stellopt_targets
       USE stellopt_input_mod
-      USE stellopt_vars, ONLY: famus_mn_plasma, famus_num_coils, famusin_filename
       USE mpi_params, ONLY: MPI_COMM_MYWORLD, myid
 !DEC$ IF DEFINED (FAMUS)
+      USE stellopt_vars, ONLY: famus_mn_plasma, famus_num_coils, famusin_filename
       USE famus_globals, ONLY: bn_famus => bn, Nzeta, Nteta, focusin, &
                   famus_call_from_ext_opt => call_from_ext_opt, &
                   famus_init_from_ext_opt => init_from_ext_opt, &
