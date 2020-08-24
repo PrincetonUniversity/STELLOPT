@@ -46,7 +46,7 @@ SUBROUTINE out_beams3d_nag(t, q)
     DOUBLE PRECISION    :: q2(4),qdot(4)
     ! For splines
     INTEGER :: i,j,k,l
-    REAL*8 :: xparam, yparam, zparam, h1, h2, h3, hi1, hi2, hi3
+    REAL*8 :: xparam, yparam, zparam !, hx, hy, hz, hxi, hyi, hzi
     REAL*8 :: fval(1)
     INTEGER, parameter :: ict(8)=(/1,0,0,0,0,0,0,0/)
     REAL*8, PARAMETER :: one = 1
@@ -70,23 +70,21 @@ SUBROUTINE out_beams3d_nag(t, q)
        i = MIN(MAX(COUNT(raxis < q(1)),1),nr-1)
        j = MIN(MAX(COUNT(phiaxis < x0),1),nphi-1)
        k = MIN(MAX(COUNT(zaxis < q(3)),1),nz-1)
-       h1 = hr(i); h2 = hp(j); h3 = hz(k)
-       hi1 = hri(i); hi2 = hpi(j); hi3 = hzi(k)
        xparam = (q(1) - raxis(i)) * hri(i)
        yparam = (x0 - phiaxis(j)) * hpi(j)
        zparam = (q(3) - zaxis(k)) * hzi(k)
        CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
-                       h1,hi1,h2,hi2,h3,hi3, &
+                       hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                        S4D(1,1,1,1),nr,nphi,nz)
        y0 = fval(1)
        S_lines(mytdex, myline) = y0 
        CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
-                       h1,hi1,h2,hi2,h3,hi3, &
+                       hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                        U4D(1,1,1,1),nr,nphi,nz)
        z0 = fval(1)
        U_lines(mytdex, myline) = z0
        CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
-                       h1,hi1,h2,hi2,h3,hi3, &
+                       hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                        MODB4D(1,1,1,1),nr,nphi,nz)
        B_lines(mytdex, myline) = fval(1)
        ! Calc dist func bins
