@@ -72,16 +72,17 @@
 !-----------------------------------------------------------------------
 !          OPTIMIZER RUN CONTROL PARAMETERS
 !-----------------------------------------------------------------------
-  NFUNC_MAX  =  500
+  NFUNC_MAX  =  50
   EQUIL_TYPE = 'VMEC2000_ONEEQ'
   OPT_TYPE   = 'LMDIF_bounded'
   FTOL       =   1.00E-06
   XTOL       =   1.00E-06
   GTOL       =   1.00E-30
-  FACTOR     =   0.1
+  FACTOR     =   10.
   EPSFCN     =   1.00E-04
   MODE       = 1
   LKEEP_MINS = T
+  NOPTIMIZERS = 16
 
 !-----------------------------------------------------------------------
 !          OPTIMIZED QUANTITIES
@@ -123,6 +124,7 @@
   geometry_option_plasma = 2
 
   load_bnorm = .false.
+!  load_bnorm = .true.
   
 ! wout file is dynamically set by stellopt
 !  wout_filename = 'wout_HSX_jnt.nc'
