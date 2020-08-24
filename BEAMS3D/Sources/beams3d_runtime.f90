@@ -108,8 +108,6 @@ MODULE beams3d_runtime
     INTEGER, PARAMETER :: MAXBEAMS = 32
     INTEGER, PARAMETER :: MAXPROFLEN = 512
 
-    DOUBLE PRECISION, PARAMETER :: one           = 1.0D0 ! 1.0
-
     LOGICAL :: lverb, lvmec, lpies, lspec, lcoil, lmgrid, &
                lvessel, lvac, lrestart_grid, lrestart_particles, lneut, &
                lbeam, lhitonly, lread_input, lplasma_only, lraw,&
