@@ -433,14 +433,12 @@ MODULE beams3d_physics_mod
                   s_temp = fval(1)
                   IF (s_temp > one) EXIT
                ELSE
-                  CYCLE
+                  EXIT
                END IF
-               !IF ((q(1) > rmax)  .or. (q(1) < rmin)) THEN; t = t_end(myline)+dt_local; RETURN; END IF  ! We're outside the grid
             END DO
             ! Take a step back
             qf = qf - myv_neut*dt_local
          END DO
-         ! If we're outside the grid now then we hit the grid before the wall
          qe=qf + myv_neut*dt_local
 
          !--------------------------------------------------------------
@@ -499,6 +497,8 @@ MODULE beams3d_physics_mod
          tilocal = tilocal*1D-3
          telocal = telocal*1D-3
          zeff_temp = SUM(zefflocal)/DBLE(num_depo)
+         tau_inv = zero
+         
          IF (lsuzuki) THEN
             !--------------------------------------------------------------
             !     USE Suzuki to calcualte ionization rates
@@ -564,6 +564,11 @@ MODULE beams3d_physics_mod
          q(2) = ATAN2(qf(2),qf(1))
          q(3) = qf(3)
          IF (l < num_depo-1) THEN
+            IF ( (rlocal(l) <= rmin) .or. (rlocal(l) >= rmax) .or. &
+                 (zlocal(l) <= zmin) .or. (zlocal(l) >= zmax) ) THEN 
+               t = t_end(myline) + dt_local
+               RETURN
+            END IF
             i = MIN(MAX(COUNT(raxis < rlocal(l)),1),nr-1)
             j = MIN(MAX(COUNT(phiaxis < plocal(l)),1),nphi-1)
             k = MIN(MAX(COUNT(zaxis < zlocal(l)),1),nz-1)
