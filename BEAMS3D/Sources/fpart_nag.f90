@@ -52,7 +52,7 @@
       REAL(rprec) :: gradb(3),gradbr(3),gradbz(3),gradbphi(3),Efield(3),normb(3),bdgB(3),bxbdgB(3),ExB(3)
       ! For splines
       INTEGER :: i,j,k
-      REAL*8 :: xparam, yparam, zparam
+      REAL*8 :: xparam, yparam, zparam, h1, h2, h3, hi1, hi2, hi3
       REAL*8 :: fval(1,4), fvalE(1,3)
       INTEGER, parameter :: ict(8)=(/1,1,1,1,0,0,0,0/)
       INTEGER, parameter :: ictE(8)=(/0,1,1,1,0,0,0,0/)
@@ -79,6 +79,8 @@
          i = MIN(MAX(COUNT(raxis < r_temp),1),nr-1)
          j = MIN(MAX(COUNT(phiaxis < phi_temp),1),nphi-1)
          k = MIN(MAX(COUNT(zaxis < z_temp),1),nz-1)
+         h1 = hr(i); h2 = hp(j); h3 = hz(k)
+         hi1 = hri(i); hi2 = hpi(j); hi3 = hzi(k)
          xparam = (r_temp - raxis(i)) * hri(i)
          yparam = (phi_temp - phiaxis(j)) * hpi(j)
          zparam = (z_temp - zaxis(k)) * hzi(k)
@@ -91,23 +93,23 @@
          !                hx,hxi,hy,hyi,hz,hzi,ier)
          ! Evaluate the Splines
          CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
-                         hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                         h1,hi1,h2,hi2,h3,hi3, &
                          BR4D(1,1,1,1),nr,nphi,nz)
          br_temp = fval(1,1); gradbr(1:3) = fval(1,2:4)
          CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
-                         hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                         h1,hi1,h2,hi2,h3,hi3, &
                          BPHI4D(1,1,1,1),nr,nphi,nz)
          bphi_temp = fval(1,1); gradbphi(1:3) = fval(1,2:4)
          CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
-                         hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                         h1,hi1,h2,hi2,h3,hi3, &
                          BZ4D(1,1,1,1),nr,nphi,nz)
          bz_temp = fval(1,1); gradbz(1:3) = fval(1,2:4)
          CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
-                         hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                         h1,hi1,h2,hi2,h3,hi3, &
                          MODB4D(1,1,1,1),nr,nphi,nz)
          modb_temp = fval(1,1); gradb(1:3) = fval(1,2:4)
          CALL R8HERM3FCN(ictE,1,1,fvalE,i,j,k,xparam,yparam,zparam,&
-                         hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                         h1,hi1,h2,hi2,h3,hi3, &
                          POT4D(1,1,1,1),nr,nphi,nz)
          Efield(1:3) =-fvalE(1,1:3)
          ! Fix gradients
