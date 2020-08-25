@@ -129,7 +129,7 @@
          k = 1
          DO i = 1, nparticles
             IF (end_state(i) /= state_flag) CYCLE
-            npoinc_extract = COUNT(R_lines(:,i)>0)-1
+            npoinc_extract = COUNT(R_lines(:,i)>0)
             R_start(k)   = R_lines(npoinc_extract,i)
             Z_start(k)   = Z_lines(npoinc_extract,i)
             phi_start(k) = PHI_lines(npoinc_extract,i)
