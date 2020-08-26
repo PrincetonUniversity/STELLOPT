@@ -28,7 +28,7 @@
       IMPLICIT NONE
       LOGICAL :: lplasma_old, ldepo_old
       INTEGER :: i, k, ier, npoinc_extract, npoinc_save, state_flag
-      INTEGER, DIMENSION(:), ALLOCATABLE :: beam2
+      INTEGER, DIMENSION(:), ALLOCATABLE :: beam2, start_dex
       REAL(rprec) :: vpartmax
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: mass2, charge2, Zatom2, &
                                                 weight2, t_end2
@@ -103,6 +103,11 @@
          CALL close_hdf5(fid,ier)
          IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,'beams3d_'//TRIM(restart_string)//'.h5',ier)
 
+
+         ! Helper for where to start loading particles
+         ALLOCATE(start_dex(nparticles))
+         start_dex=0 ! Default
+
          ! Decide what to do
          !   IF depo run then start from initial born particle population
          !   Otherwise start from wall hits
@@ -111,11 +116,15 @@
          IF (ANY(end_state==3)) ldepo_old = .true.
          IF (ldepo_old) THEN
             state_flag = 0
+            start_dex = 2
             IF (lplasma_only) THEN 
                WHERE(S_lines(1,:) >= 1) end_state = -1
             END IF
          ELSE
             state_flag = 2
+            DO i = 1, nparticles
+               start_dex(i) = COUNT(R_lines(:,i)>0) - 1 ! Note indexed from 0
+            END DO
          END IF
          k = COUNT(end_state == state_flag)
 
@@ -129,7 +138,7 @@
          k = 1
          DO i = 1, nparticles
             IF (end_state(i) /= state_flag) CYCLE
-            npoinc_extract = COUNT(R_lines(:,i)>0)
+            npoinc_extract = start_dex(i)
             R_start(k)   = R_lines(npoinc_extract,i)
             Z_start(k)   = Z_lines(npoinc_extract,i)
             phi_start(k) = PHI_lines(npoinc_extract,i)
@@ -145,7 +154,7 @@
             k = k + 1
          END DO
          DEALLOCATE(R_lines, Z_lines, PHI_lines, vll_lines, moment_lines, neut_lines, end_state, S_lines)
-         DEALLOCATE(mass2, charge2, Zatom2, beam2, weight2, t_end2)
+         DEALLOCATE(mass2, charge2, Zatom2, beam2, weight2, t_end2, start_dex)
 
          ! Restore quantities
          nparticles = k-1
