@@ -68,7 +68,7 @@ c                    differently.
 #if defined(MPI_OPT)
       CALL MPI_COMM_SIZE( comm, local_size, istat)
       CALL MPI_COMM_RANK( comm, local_rank, istat )
-      delta = FLOOR(REAL(n2-n1+1)/REAL(local_size))
+      delta = CEILING(REAL(n2-n1+1)/REAL(local_size))
       mystart = n1 + local_rank*delta
       myend   = mystart + delta - 1
       IF (myend > n2) myend=n2
