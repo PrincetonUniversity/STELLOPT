@@ -50,6 +50,10 @@
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'nparticles',ier)
          CALL read_scalar_hdf5(fid,'npoinc',ier,INTVAR=npoinc)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'npoinc',ier)
+         IF (lverb) THEN
+            WRITE(6,'(A,I8)') '   NPARTICLES_OLD: ', nparticles
+            WRITE(6,'(A,I8)') '   NPOINC_OLD: ', npoinc
+         END IF
          !CALL read_scalar_hdf5(fid,'partvmax',ier,DBLVAR=vpartmax)
          !partvmax = MAX(partvmax,vpartmax)
          !IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'partvmax',ier)
@@ -128,6 +132,10 @@
          END IF
          k = COUNT(end_state == state_flag)
 
+         IF (lverb) THEN
+            WRITE(6,'(A,I8)') '   NPARTICLES_RESTART: ', k
+         END IF
+
          ! Allocate the particles
          ALLOCATE(  R_start(k), phi_start(k), Z_start(k), &
                     v_neut(3,k), mass(k), charge(k), &
@@ -161,7 +169,6 @@
          npoinc = npoinc_save
          nbeams = MAXVAL(beam)
          IF (lverb) THEN
-            WRITE(6,'(A,I8)') '   # of Particles: ', nparticles
             WRITE(6,'(A,I6)') '   # of Beams: ', nbeams
          END IF
       END IF
