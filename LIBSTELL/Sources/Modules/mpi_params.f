@@ -63,7 +63,7 @@ c                    differently.
       INTEGER, INTENT(inout) :: comm
       INTEGER, INTENT(in) :: n1, n2
       INTEGER, INTENT(out) :: mystart, myend
-      INTEGER :: delta, local_size, local_rank, istat
+      INTEGER :: delta, local_size, local_rank, istat, maxend, k, i
       mystart = n1; myend = n2
 #if defined(MPI_OPT)
       CALL MPI_COMM_SIZE( comm, local_size, istat)
@@ -71,7 +71,18 @@ c                    differently.
       delta = CEILING(REAL(n2-n1+1)/REAL(local_size))
       mystart = n1 + local_rank*delta
       myend   = mystart + delta - 1
-      IF (myend > n2) myend=n2
+      maxend = local_size*delta
+      IF (maxend>n2) THEN
+         k = maxend-n2
+         DO i = (local_size-k), local_size-1
+            IF (local_rank > i) THEN
+                  mystart = mystart - 1
+                  myend   = myend - 1
+            ELSEIF (local_rank==i) THEN
+                  myend = myend - 1
+            END IF
+         END DO
+      END IF
 #endif
       RETURN
       END SUBROUTINE MPI_CALC_MYRANGE
