@@ -82,29 +82,8 @@
       !mf = 10
       mf=21
 
-      ! Break up the work
-      mypace  = nlines
-      mystart = 1
-      myend   = nlines
-      IF (ALLOCATED(mnum)) DEALLOCATE(mnum)
-      ALLOCATE(mnum(nprocs_fieldlines))
-      mnum = FLOOR(REAL(nlines)/REAL(nprocs_fieldlines))
-      DO
-         IF (SUM(mnum) == nlines) EXIT
-         DO i = 1, nprocs_fieldlines
-            mnum(i) = mnum(i) + 1
-            IF (SUM(mnum) == nlines) EXIT
-         END DO
-         IF (SUM(mnum) == nlines) EXIT
-      END DO
-      mypace = mnum(myworkid+1)
-      IF (myworkid == 0) THEN
-         mystart = 1
-      ELSE
-         mystart = SUM(mnum(1:myworkid))+1
-      END IF
-      myend   = mystart+mypace-1
-      DEALLOCATE(mnum)
+      ! Break up the Work
+      CALL MPI_CALC_MYRANGE(MPI_COMM_FIELDLINES,1, nlines, mystart, myend)
 
       ! Set the helper arrays
       IF (lhitonly) nsteps=2
