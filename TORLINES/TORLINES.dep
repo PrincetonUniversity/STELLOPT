@@ -1,4 +1,10 @@
 # Microsoft Developer Studio Generated Dependency File, included by VMEC2000.mak
+      
+
+torlines_write_parhdf5.o: \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_inc.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
+      torlines_runtime.o 
 
 backspace_out.o: 
       

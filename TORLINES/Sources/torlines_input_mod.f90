@@ -13,7 +13,7 @@
       USE stel_kinds
       USE torlines_runtime
       USE torlines_background
-      USE torlines_realspace, ONLY: nu, nv, k
+      USE torlines_realspace, ONLY: nu, nv, nrho
       USE torlines_fieldlines, ONLY: nlines
       USE virtual_casing_mod, ONLY: nu_vc, nv_vc
       
@@ -50,7 +50,7 @@
 !                   phimin and phimax) to properly represent a given
 !                   field period.
 !-----------------------------------------------------------------------
-      NAMELIST /torlines_input/   k, nu, nv, bound_separation, nu_vc, nv_vc,&
+      NAMELIST /torlines_input/   nrho, nu, nv, bound_separation, nu_vc, nv_vc,&
                                   r_start, phi_start, phi_end,z_start,&
                                   npoinc, dphi, follow_tol,&
                                   vc_adapt_tol, int_type, lvc_field, &
@@ -68,7 +68,7 @@
       INTEGER :: iunit, istat
       ! Initializations
       istat = 0
-      k = 50
+      nrho = 50
       nu = -1
       nv = -1
       nu_vc = -1
