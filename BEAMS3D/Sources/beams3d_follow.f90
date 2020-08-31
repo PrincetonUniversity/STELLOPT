@@ -111,7 +111,7 @@ SUBROUTINE beams3d_follow
     END IF
 
     ! Break up the work
-      CALL MPI_CALC_MYRANGE(MPI_COMM_BEAMS, 1, nparticles, mystart, myend)
+    CALL MPI_CALC_MYRANGE(MPI_COMM_BEAMS, 1, nparticles, mystart, myend)
 
     ! Save mystart and myend
     mystart_save = mystart
