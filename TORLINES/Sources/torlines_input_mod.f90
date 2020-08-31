@@ -66,6 +66,7 @@
       SUBROUTINE read_torlines_input(iunit, istat)
       IMPLICIT NONE
       INTEGER :: iunit, istat
+      CHARACTER(LEN=1000) :: line
       ! Initializations
       istat = 0
       nrho = 50
@@ -94,7 +95,12 @@
       S1_EMC3    = 0.8
       ! Read namelist
       READ(iunit,NML=torlines_input,IOSTAT=istat)
-      IF (istat /= 0) CALL handle_err(NAMELIST_READ_ERR,'torlines_input in: input.'//TRIM(id_string),istat)
+      IF (istat /= 0) THEN
+         backspace(iunit)
+         read(iunit,fmt='(A)') line
+         write(6,'(A)') 'Invalid line in namelist: '//TRIM(line)
+         IF (istat /= 0) CALL handle_err(NAMELIST_READ_ERR,'torlines_input in: input.'//TRIM(id_string),istat)
+      END IF
       ! Adjust EMC3 VARS
       NZONET   = NZONE_EMC3
       SRF_POLO = NPOLO_EMC3
