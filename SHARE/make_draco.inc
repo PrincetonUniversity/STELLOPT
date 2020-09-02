@@ -168,6 +168,17 @@ MANGO_LIB=
   LIB_REGCOIL = libregcoil.a
   REGCOIL_LIB = $(REGCOIL_DIR)/$(LIB_REGCOIL) -qopenmp
 
+
+#######################################################################
+#            FAMUS Options
+#######################################################################
+  LFAMUS= T
+  FAMUS_DIR = $(FAMUS_PATH)
+  FAMUS_INC = -I$(FAMUS_DIR) 
+  LIB_FAMUS = libfamus.a
+  FAMUS_LIB = $(FAMUS_DIR)/$(LIB_FAMUS)
+
+
 #######################################################################
 #            LIBSTELL Shared Options
 #######################################################################

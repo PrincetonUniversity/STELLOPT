@@ -176,7 +176,7 @@
 
 &optimum
     nfunc_max = 50
-    equil_type = 'VMEC2000_ONEEQ'
+    equil_type = 'VMEC2000'
     opt_type = 'LMDIF_BOUNDED'
 !    opt_type = 'one_iter'
     bootcalc_type = ''

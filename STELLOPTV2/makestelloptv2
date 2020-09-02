@@ -178,7 +178,8 @@ $(LIB_REGCOIL) :
 
 #Construct FAMUS library. 
 $(LIB_FAMUS) :
-	@cd $(FAMUS_DIR); make CC=gfortran; ar -cruv $(LIB_FAMUS) *.o 
+	# @cd $(FAMUS_DIR); make CC=gfortran; ar -cruv $(LIB_FAMUS) *.o 
+	@cd $(FAMUS_DIR); make; ar -cruv $(LIB_FAMUS) *.o 
 
 #Construct TERPSICHORE library. 
 $(LIB_TERPSICHORE) :

@@ -19,7 +19,7 @@
 !-----------------------------------------------------------------------
       USE stellopt_runtime
       USE stellopt_input_mod
-      USE stellopt_vars, !  my_mpol => mpol_fds, my_ntor => ntor_fds
+      USE stellopt_vars !  my_mpol => mpol_fds, my_ntor => ntor_fds
       USE equil_utils
       USE neswrite, ONLY: coil_separation
       USE read_wout_mod, ONLY: rmnc_vmec => rmnc, rmns_vmec => rmns, &
