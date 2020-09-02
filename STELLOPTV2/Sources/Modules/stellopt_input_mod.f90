@@ -1201,7 +1201,7 @@
       print *,'<----input_mod is checking for famus flags'
       ! FAMUS dipole) surface optimization
       IF ( ( ANY(sigma_famus_bn < bigno) )  &
-             .and. &
+             .or. &
            ( ANY(lfamus_dc_ox_opt) .or. &
              ANY(lfamus_dc_oy_opt) .or. &
              ANY(lfamus_dc_oz_opt) .or. &
