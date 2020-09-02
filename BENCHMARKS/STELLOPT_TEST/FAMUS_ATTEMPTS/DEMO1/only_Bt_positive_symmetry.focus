@@ -1,0 +1,7 @@
+ # Total number of coils
+             1
+ #-----------------           1 ---------------------------
+ #coil_type     coil_name
+     3  0  bg_BtBz_01
+ # Ic     I    Lc  Bz  (Ic control I; Lc control Bz)
+  0  1.000000000000000E+07  0  0.000000000000000E+00
