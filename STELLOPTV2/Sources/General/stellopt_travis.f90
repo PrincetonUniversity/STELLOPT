@@ -177,7 +177,8 @@
                ! Init Equilibrium
                hgrid   = Aminor/30
                dphi    = 2
-               B0type  = 'at angle on magn.axis'
+               !B0type  = 'at angle on magn.axis'
+               B0type  = 'noscale'
                phi_ref = 0
                B_scale = 1
                B0_ref  = Baxis
@@ -186,7 +187,7 @@
 
                ! Set Profiles
                labelType  = 'tor_rho'
-               interpType = 'spline'
+               interpType = 'linear'
                CALL set_nTZ_profs_f77(nrad, sqrt(rho), ne_prof, te_prof, z_prof, labelType, interpType)
 
                ! Set Configuration
