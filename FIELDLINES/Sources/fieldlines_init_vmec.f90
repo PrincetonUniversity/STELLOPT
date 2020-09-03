@@ -215,34 +215,11 @@
          WRITE(6,'(5X,A,I3.3,A)',ADVANCE='no') 'Plasma Field Calculation [',0,']%'
          CALL FLUSH(6)
       END IF
-      
-      ! Break up the Work
-      chunk = FLOOR(REAL(nr*nphi*nz) / REAL(numprocs_local))
-      mystart = mylocalid*chunk + 1
-      myend = mystart + chunk - 1
 
-      ! This section sets up the work so we can use ALLGATHERV
-#if defined(MPI_OPT)
-      CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
-      IF (ALLOCATED(mnum)) DEALLOCATE(mnum)
-      IF (ALLOCATED(moffsets)) DEALLOCATE(moffsets)
-      ALLOCATE(mnum(numprocs_local), moffsets(numprocs_local))
-      CALL MPI_ALLGATHER(chunk,1,MPI_INTEGER,mnum,1,MPI_INTEGER,MPI_COMM_LOCAL,ierr_mpi)
-      CALL MPI_ALLGATHER(mystart,1,MPI_INTEGER,moffsets,1,MPI_INTEGER,MPI_COMM_LOCAL,ierr_mpi)
-      i = 1
-      DO
-         IF ((moffsets(numprocs_local)+mnum(numprocs_local)-1) == nr*nphi*nz) EXIT
-         IF (i == numprocs_local) i = 1
-         mnum(i) = mnum(i) + 1
-         moffsets(i+1:numprocs_local) = moffsets(i+1:numprocs_local) + 1
-         i=i+1
-      END DO
-      mystart = moffsets(mylocalid+1)
-      chunk  = mnum(mylocalid+1)
-      myend   = mystart + chunk - 1
-      DEALLOCATE(mnum)
-      DEALLOCATE(moffsets)
-#endif
+      ! Break up the Work
+      CALL MPI_CALC_MYRANGE(MPI_COMM_LOCAL,1, nr*nphi*nz, mystart, myend)
+
+
          IF (lafield_only) THEN
             DO s = mystart, myend
                i = MOD(s-1,nr)+1

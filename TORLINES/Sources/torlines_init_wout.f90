@@ -38,9 +38,7 @@
       USE mpi_params
       USE EZspline_obj
       USE EZspline
-!DEC$ IF DEFINED (MPI_OPT)
-      use mpi
-!DEC$ ENDIF  
+      use mpi_inc
 !-----------------------------------------------------------------------
 !     Local Variables
 !          iunit       File Unit Number
@@ -129,14 +127,14 @@
       END IF
       ! ----- Interpolate VMEC arrays to the temp array
       CALL EZspline_init(f_spl,ns,bcs1,ier)
-      ALLOCATE(rho(k),rho_vmec(ns),fmn(k),ftemp(1:ns))
-      ALLOCATE(rmnc_sav(mnmax,k),zmns_sav(mnmax,k))
-      ALLOCATE(bsupumnc_temp(mnmax,k),bsupvmnc_temp(mnmax,k))
-      ALLOCATE(bmnc_temp(mnmax,k))
+      ALLOCATE(rho_vmec(ns),fmn(nrho),ftemp(1:ns))
+      ALLOCATE(rmnc_sav(mnmax,nrho),zmns_sav(mnmax,nrho))
+      ALLOCATE(bsupumnc_temp(mnmax_nyq,nrho),bsupvmnc_temp(mnmax_nyq,nrho))
+      ALLOCATE(bmnc_temp(mnmax_nyq,nrho))
       IF (lasym) THEN
-         ALLOCATE(rmns_sav(mnmax,k),zmnc_sav(mnmax,k))
-         ALLOCATE(bsupumns_temp(mnmax,k),bsupvmns_temp(mnmax,k))
-         ALLOCATE(bmns_temp(mnmax,k))
+         ALLOCATE(rmns_sav(mnmax,nrho),zmnc_sav(mnmax,nrho))
+         ALLOCATE(bsupumns_temp(mnmax_nyq,nrho),bsupvmns_temp(mnmax_nyq,nrho))
+         ALLOCATE(bmns_temp(mnmax_nyq,nrho))
       END IF
       ! Setup Rho_VMEC
       FORALL(ik = 1:ns) rho_vmec(ik) =  SQRT(REAL(ik-1) / REAL(ns-1))
@@ -148,18 +146,25 @@
       !IF (lverb) PRINT *,re,ae
       r1 = (re-ae)+(bound_separation-1) ! This is the real scale
       !IF (lverb) PRINT *,r1,re-ae
-      FORALL(ik = 1:k) rho(ik) =  REAL(ik-1) / REAL(k-1)
-      rho = rho * r1  ! Scale rho
-      j=k
-      DO ik = 1, k
-         IF (rho(ik) >= (re-ae)) THEN
-            rho(ik) = 1.0
-            j = ik
-            nexternal = k-j
-            EXIT
-         END IF
-      END DO
-      FORALL(ik = 1:k) rho(ik) =  REAL(ik-1) / REAL(j-1)
+      IF (myid_sharmem==master) THEN
+         FORALL(ik = 1:nrho) rho(ik) =  REAL(ik-1) / REAL(nrho-1)
+         rho = rho * r1  ! Scale rho
+         j=nrho
+         DO ik = 1, nrho
+            IF (rho(ik) >= (re-ae)) THEN
+               rho(ik) = 1.0
+               j = ik
+               nexternal = nrho-j
+               EXIT
+            END IF
+         END DO
+         FORALL(ik = 1:nrho) rho(ik) =  REAL(ik-1) / REAL(j-1)
+      END IF
+#if defined(MPI_OPT)
+      CALL MPI_BCAST(nexternal,1,MPI_INTEGER, master, MPI_COMM_SHARMEM,ierr_mpi)
+      CALL MPI_BCAST(j,1,MPI_INTEGER, master, MPI_COMM_SHARMEM,ierr_mpi)
+      CALL MPI_BARRIER(MPI_COMM_SHARMEM,ierr_mpi)
+#endif
       !IF (lverb) PRINT *,rho
       ! Spline to rho axis (all quantities now on full grid)
       DO mn = 1, mnmax
@@ -170,7 +175,7 @@
          ftemp(1) = 0.0
          CALL EZspline_setup(f_spl,ftemp,ier)
          IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'EZspline_setup/torlines_setup_wout1',ier)
-         CALL EZspline_interp(f_spl,k,rho,fmn,ier)
+         CALL EZspline_interp(f_spl,nrho,rho,fmn,ier)
          rmnc_sav(mn,:) = f0_temp+fmn*SQRT(rho)**(INT(xm(mn))-2)
          IF (xm(mn) < 2) rmnc_sav(mn,1) = f0_temp
          ! ZMNS
@@ -179,36 +184,9 @@
          ftemp(1) = 0.0
          CALL EZspline_setup(f_spl,ftemp,ier)
          IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'EZspline_setup/torlines_setup_wout2',ier)
-         CALL EZspline_interp(f_spl,k,rho,fmn,ier)
+         CALL EZspline_interp(f_spl,nrho,rho,fmn,ier)
          zmns_sav(mn,:) = f0_temp+fmn*SQRT(rho)**(INT(xm(mn))-2)
          IF (xm(mn) < 2) zmns_sav(mn,1) = f0_temp
-         ! BSUPUMNC
-         f0_temp = bsupumnc(mn,1)
-         ftemp(1:ns) = (bsupumnc(mn,1:ns)-f0_temp)*rho_vmec(1:ns)**(-INT(xm(mn))/2.+1)
-         ftemp(1) = 0.0
-         CALL EZspline_setup(f_spl,ftemp,ier)
-         IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'EZspline_setup/torlines_setup_wout3',ier)
-         CALL EZspline_interp(f_spl,k,rho,fmn,ier)
-         bsupumnc_temp(mn,:) = f0_temp+fmn*SQRT(rho)**(INT(xm(mn))-2)
-         IF (xm(mn) < 2) bsupumnc_temp(mn,1) = f0_temp
-         ! BSUPVMNC
-         f0_temp = bsupvmnc(mn,1)
-         ftemp(1:ns) = (bsupvmnc(mn,1:ns)-f0_temp)*rho_vmec(1:ns)**(-INT(xm(mn))/2.+1)
-         ftemp(1) = 0.0
-         CALL EZspline_setup(f_spl,ftemp,ier)
-         IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'EZspline_setup/torlines_setup_wout4',ier)
-         CALL EZspline_interp(f_spl,k,rho,fmn,ier)
-         bsupvmnc_temp(mn,:) = f0_temp+fmn*SQRT(rho)**(INT(xm(mn))-2)
-         IF (xm(mn) < 2) bsupvmnc_temp(mn,1) = f0_temp
-         ! BMNC
-         f0_temp = bmnc(mn,1)
-         ftemp(1:ns) = (bmnc(mn,1:ns)-f0_temp)*rho_vmec(1:ns)**(-INT(xm(mn))/2.+1)
-         ftemp(1) = 0.0
-         CALL EZspline_setup(f_spl,ftemp,ier)
-         IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'EZspline_setup/torlines_setup_wout4',ier)
-         CALL EZspline_interp(f_spl,k,rho,fmn,ier)
-         bmnc_temp(mn,:) = f0_temp+fmn*SQRT(rho)**(INT(xm(mn))-2)
-         IF (xm(mn) < 2) bmnc_temp(mn,1) = f0_temp
          IF (lasym) THEN
             ! RMNS
             f0_temp = rmns(mn,1)
@@ -216,7 +194,7 @@
             ftemp(1) = 0.0
             CALL EZspline_setup(f_spl,ftemp,ier)
             IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'EZspline_setup/torlines_init_wout',ier)
-            CALL EZspline_interp(f_spl,k,rho,fmn,ier)
+            CALL EZspline_interp(f_spl,nrho,rho,fmn,ier)
             rmns_sav(mn,:) = f0_temp+fmn*SQRT(rho)**(INT(xm(mn))-2)
             IF (xm(mn) < 2) rmns_sav(mn,1) = f0_temp
             ! ZMNC
@@ -225,50 +203,82 @@
             ftemp(1) = 0.0
             CALL EZspline_setup(f_spl,ftemp,ier)
             IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'EZspline_setup/torlines_init_wout',ier)
-            CALL EZspline_interp(f_spl,k,rho,fmn,ier)
+            CALL EZspline_interp(f_spl,nrho,rho,fmn,ier)
             zmnc_sav(mn,:) = f0_temp+fmn*SQRT(rho)**(INT(xm(mn))-2)
             IF (xm(mn) < 2) zmnc_sav(mn,1) = f0_temp
+         END IF
+      END DO
+      ! Nyquist sized arrays
+      DO mn = 1, mnmax_nyq
+         ! BSUPUMNC
+         f0_temp = bsupumnc(mn,1)
+         ftemp(1:ns) = (bsupumnc(mn,1:ns)-f0_temp)*rho_vmec(1:ns)**(-INT(xm_nyq(mn))/2.+1)
+         ftemp(1) = 0.0
+         CALL EZspline_setup(f_spl,ftemp,ier)
+         IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'EZspline_setup/torlines_setup_wout3',ier)
+         CALL EZspline_interp(f_spl,nrho,rho,fmn,ier)
+         bsupumnc_temp(mn,:) = f0_temp+fmn*SQRT(rho)**(INT(xm_nyq(mn))-2)
+         IF (xm_nyq(mn) < 2) bsupumnc_temp(mn,1) = f0_temp
+         ! BSUPVMNC
+         f0_temp = bsupvmnc(mn,1)
+         ftemp(1:ns) = (bsupvmnc(mn,1:ns)-f0_temp)*rho_vmec(1:ns)**(-INT(xm_nyq(mn))/2.+1)
+         ftemp(1) = 0.0
+         CALL EZspline_setup(f_spl,ftemp,ier)
+         IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'EZspline_setup/torlines_setup_wout4',ier)
+         CALL EZspline_interp(f_spl,nrho,rho,fmn,ier)
+         bsupvmnc_temp(mn,:) = f0_temp+fmn*SQRT(rho)**(INT(xm_nyq(mn))-2)
+         IF (xm_nyq(mn) < 2) bsupvmnc_temp(mn,1) = f0_temp
+         ! BMNC
+         f0_temp = bmnc(mn,1)
+         ftemp(1:ns) = (bmnc(mn,1:ns)-f0_temp)*rho_vmec(1:ns)**(-INT(xm_nyq(mn))/2.+1)
+         ftemp(1) = 0.0
+         CALL EZspline_setup(f_spl,ftemp,ier)
+         IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'EZspline_setup/torlines_setup_wout4',ier)
+         CALL EZspline_interp(f_spl,nrho,rho,fmn,ier)
+         bmnc_temp(mn,:) = f0_temp+fmn*SQRT(rho)**(INT(xm_nyq(mn))-2)
+         IF (xm_nyq(mn) < 2) bmnc_temp(mn,1) = f0_temp
+         IF (lasym) THEN
             ! BSUPUMNS
             f0_temp = bsupumns(mn,1)
-            ftemp(1:ns) = (bsupumns(mn,1:ns)-f0_temp)*rho_vmec(1:ns)**(-INT(xm(mn))/2.+1)
+            ftemp(1:ns) = (bsupumns(mn,1:ns)-f0_temp)*rho_vmec(1:ns)**(-INT(xm_nyq(mn))/2.+1)
             ftemp(1) = 0.0
             CALL EZspline_setup(f_spl,ftemp,ier)
             IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'EZspline_setup/torlines_init_wout',ier)
-            CALL EZspline_interp(f_spl,k,rho,fmn,ier)
-            bsupumns_temp(mn,:) = f0_temp+fmn*SQRT(rho)**(INT(xm(mn))-2)
-            IF (xm(mn) < 2) bsupumns_temp(mn,1) = f0_temp
+            CALL EZspline_interp(f_spl,nrho,rho,fmn,ier)
+            bsupumns_temp(mn,:) = f0_temp+fmn*SQRT(rho)**(INT(xm_nyq(mn))-2)
+            IF (xm_nyq(mn) < 2) bsupumns_temp(mn,1) = f0_temp
             ! BSUPVMNS
             f0_temp = bsupvmns(mn,1)
-            ftemp(1:ns) = (bsupvmns(mn,1:ns)-f0_temp)*rho_vmec(1:ns)**(-INT(xm(mn))/2.+1)
+            ftemp(1:ns) = (bsupvmns(mn,1:ns)-f0_temp)*rho_vmec(1:ns)**(-INT(xm_nyq(mn))/2.+1)
             ftemp(1) = 0.0
             CALL EZspline_setup(f_spl,ftemp,ier)
             IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'EZspline_setup/torlines_init_wout',ier)
-            CALL EZspline_interp(f_spl,k,rho,fmn,ier)
-            bsupvmns_temp(mn,:) = f0_temp+fmn*SQRT(rho)**(INT(xm(mn))-2)
-            IF (xm(mn) < 2) bsupvmns_temp(mn,1) = f0_temp
+            CALL EZspline_interp(f_spl,nrho,rho,fmn,ier)
+            bsupvmns_temp(mn,:) = f0_temp+fmn*SQRT(rho)**(INT(xm_nyq(mn))-2)
+            IF (xm_nyq(mn) < 2) bsupvmns_temp(mn,1) = f0_temp
             ! BMNS
             f0_temp = bmns(mn,1)
-            ftemp(1:ns) = (bmns(mn,1:ns)-f0_temp)*rho_vmec(1:ns)**(-INT(xm(mn))/2.+1)
+            ftemp(1:ns) = (bmns(mn,1:ns)-f0_temp)*rho_vmec(1:ns)**(-INT(xm_nyq(mn))/2.+1)
             ftemp(1) = 0.0
             CALL EZspline_setup(f_spl,ftemp,ier)
             IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,'EZspline_setup/torlines_init_wout',ier)
-            CALL EZspline_interp(f_spl,k,rho,fmn,ier)
-            bmns_temp(mn,:) = f0_temp+fmn*SQRT(rho)**(INT(xm(mn))-2)
-            IF (xm(mn) < 2) bmns_temp(mn,1) = f0_temp
+            CALL EZspline_interp(f_spl,nrho,rho,fmn,ier)
+            bmns_temp(mn,:) = f0_temp+fmn*SQRT(rho)**(INT(xm_nyq(mn))-2)
+            IF (xm_nyq(mn) < 2) bmns_temp(mn,1) = f0_temp
          END IF
       END DO
       DEALLOCATE(ftemp,fmn)
       CALL EZspline_free(f_spl,ier)
-!DEC$ IF DEFINED (MPI_OPT)
-      CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
+#if defined(MPI_OPT)
+      CALL MPI_BARRIER(MPI_COMM_SHARMEM,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'torlines_main',ierr_mpi)
-!DEC$ ENDIF
-      IF ((k > ns) .and. (bound_separation <= 1)) THEN
-         k = ns
-         vsurf = k
+#endif
+      IF ((nrho > ns) .and. (bound_separation <= 1)) THEN
+         nrho = ns
+         vsurf = nrho
       ELSE
          dr = 1./(ns-1)
-         DO ik = 1, k
+         DO ik = 1, nrho
             IF (rho(ik) <= 1.0) vsurf = ik
          END DO
       END IF
@@ -277,37 +287,49 @@
       ! Setup VC if needed
       IF (.not.lvac .and. lvc_field .and. (bound_separation > 1)) THEN
          ! Initialize the Virtual Casing
-         ALLOCATE(xm_temp(mnmax),xn_temp(mnmax), STAT=ier)
-         ALLOCATE(rmnc_tempr(mnmax,2),zmns_tempr(mnmax,2))
-         ALLOCATE(bsupumnc_tempr(mnmax,1),bsupvmnc_tempr(mnmax,1))
-         xm_temp=xm
-         xn_temp=-xn/nfp
-         rmnc_tempr(:,1)=rmnc(:,ns-1)
-         rmnc_tempr(:,2)=rmnc(:,ns)
-         zmns_tempr(:,1)=zmns(:,ns-1)
-         zmns_tempr(:,2)=zmns(:,ns)
+         ALLOCATE(xm_temp(mnmax_nyq),xn_temp(mnmax_nyq), STAT=ier)
+         ALLOCATE(rmnc_tempr(mnmax_nyq,2),zmns_tempr(mnmax_nyq,2))
+         ALLOCATE(bsupumnc_tempr(mnmax_nyq,1),bsupvmnc_tempr(mnmax_nyq,1))
+         IF (lasym) THEN
+            ALLOCATE(rmns_tempr(mnmax_nyq,2),zmnc_tempr(mnmax_nyq,2))
+            ALLOCATE(bsupumns_tempr(mnmax_nyq,1),bsupvmns_tempr(mnmax_nyq,1))
+         END IF
+         xm_temp=xm_nyq
+         xn_temp=-xn_nyq/nfp
+         DO u = 1, mnmax_nyq
+            DO v = 1, mnmax
+               IF ((xm(v) .eq. xm_nyq(u)) .and. (xn(v) .eq. xn_nyq(u))) THEN
+                  rmnc_tempr(u,1)=rmnc(v,ns-1)
+                  rmnc_tempr(u,2)=rmnc(v,ns)
+                  zmns_tempr(u,1)=zmns(v,ns-1)
+                  zmns_tempr(u,2)=zmns(v,ns)
+                  IF (lasym) THEN
+                     rmns_tempr(u,1)=rmns(v,ns-1)
+                     rmns_tempr(u,2)=rmns(v,ns)
+                     zmnc_tempr(u,1)=zmnc(v,ns-1)
+                     zmnc_tempr(u,2)=zmnc(v,ns)
+                  END IF
+               END IF
+            END DO
+         END DO
          bsupumnc_tempr(:,1) = bsupumnc(:,ns)
          bsupvmnc_tempr(:,1) = bsupvmnc(:,ns)
          IF (lasym) THEN
-            ALLOCATE(rmns_tempr(mnmax,2),zmnc_tempr(mnmax,2))
-            ALLOCATE(bsupumns_tempr(mnmax,1),bsupvmns_tempr(mnmax,1))
-            rmns_tempr(:,1)=rmns(:,ns-1)
-            rmns_tempr(:,2)=rmns(:,ns)
-            zmnc_tempr(:,1)=zmnc(:,ns-1)
-            zmnc_tempr(:,2)=zmnc(:,ns)
             bsupumns_tempr(:,1) = bsupumns(:,ns)
             bsupvmns_tempr(:,1) = bsupvmns(:,ns)
-            CALL init_virtual_casing(mnmax,nu_vc,nv_vc,xm_temp,xn_temp,&
+            CALL init_virtual_casing(mnmax_nyq,nu_vc,nv_vc,xm_temp,xn_temp,&
                                      rmnc_tempr,zmns_tempr,nfp,&
                                      RMNS=rmns_tempr, ZMNC=zmnc_tempr,&
                                      BUMNC=bsupumnc_tempr,BVMNC=bsupvmnc_tempr,&
-                                     BUMNS=bsupumns_tempr,BVMNS=bsupvmns_tempr)
+                                     BUMNS=bsupumns_tempr,BVMNS=bsupvmns_tempr,&
+                                     COMM=MPI_COMM_FIELDLINES)
             DEALLOCATE(rmns_tempr,zmnc_tempr)
             DEALLOCATE(bsupumns_tempr,bsupvmns_tempr)
          ELSE
-            CALL init_virtual_casing(mnmax,nu_vc,nv_vc,xm_temp,xn_temp,&
+            CALL init_virtual_casing(mnmax_nyq,nu_vc,nv_vc,xm_temp,xn_temp,&
                                      rmnc_tempr,zmns_tempr,nfp,&
-                                     BUMNC=bsupumnc_tempr,BVMNC=bsupvmnc_tempr)
+                                     BUMNC=bsupumnc_tempr,BVMNC=bsupvmnc_tempr,&
+                                     COMM=MPI_COMM_FIELDLINES)
          END IF
          DEALLOCATE(rmnc_tempr,zmns_tempr)
          DEALLOCATE(bsupumnc_tempr,bsupvmnc_tempr)
@@ -334,33 +356,46 @@
          adapt_rel = vc_adapt_tol
       END IF
       ! Now transform everthing into realspace
-      ALLOCATE(xu(1:nu),xv(1:nv))
-      ALLOCATE(xm_sav(mnmax),xn_sav(mnmax), STAT=ier)
-      ALLOCATE(rreal(1:k,1:nu,1:nv),zreal(1:k,1:nu,1:nv),&
-               bsreal(1:k,1:nu,1:nv),bureal(1:k,1:nu,1:nv),&
-               bvreal(1:k,1:nu,1:nv),breal(1:k,1:nu,1:nv),STAT=ier)
-      IF (ier /= 0) CALL handle_err(ALLOC_ERR,'REAL SPACE',ier)
-      rreal  = 0
-      zreal  = 0
-      bsreal = 0
-      bureal = 0
-      bvreal = 0
-      xm_sav = INT(xm)
-      xn_sav = -INT(xn)/nfp
-      FORALL(ik = 1:nu) xu(ik) = REAL(ik-1)/REAL(nu-1)
-      FORALL(ik = 1:nv) xv(ik) = REAL(ik-1)/REAL(nv-1)
-      CALL mntouv(1,k,mnmax,nu,nv,xu,xv,rmnc_sav,xm_sav,xn_sav,rreal,0,1)
-      CALL mntouv(1,k,mnmax,nu,nv,xu,xv,zmns_sav,xm_sav,xn_sav,zreal,1,0)
-      CALL mntouv(1,k,mnmax,nu,nv,xu,xv,bsupumnc_temp,xm_sav,xn_sav,bureal,0,0)
-      CALL mntouv(1,k,mnmax,nu,nv,xu,xv,bsupvmnc_temp,xm_sav,xn_sav,bvreal,0,0)
-      CALL mntouv(1,k,mnmax,nu,nv,xu,xv,bmnc_temp,xm_sav,xn_sav,breal,0,0)
-      IF (lasym) THEN
-         CALL mntouv(1,k,mnmax,nu,nv,xu,xv,rmns_sav,xm_sav,xn_sav,rreal,1,0)
-         CALL mntouv(1,k,mnmax,nu,nv,xu,xv,zmnc_sav,xm_sav,xn_sav,zreal,0,0)
-         CALL mntouv(1,k,mnmax,nu,nv,xu,xv,bsupumns_temp,xm_sav,xn_sav,bureal,1,0)
-         CALL mntouv(1,k,mnmax,nu,nv,xu,xv,bsupvmns_temp,xm_sav,xn_sav,bvreal,1,0)
-         CALL mntouv(1,k,mnmax,nu,nv,xu,xv,bmns_temp,xm_sav,xn_sav,breal,1,0)
+      !ALLOCATE(xu(1:nu),xv(1:nv))
+      IF (myid_sharmem==master) THEN
+         rreal  = 0
+         zreal  = 0
+         bsreal = 0
+         bureal = 0
+         bvreal = 0
+         ! Do Nyquist first so we have harmonic for jacobian later
+         ALLOCATE(xm_sav(mnmax_nyq),xn_sav(mnmax_nyq), STAT=ier)
+         xm_sav = INT(xm_nyq)
+         xn_sav = -INT(xn_nyq)/nfp
+         CALL mntouv(1,nrho,mnmax_nyq,nu,nv,xu,xv,bsupumnc_temp,xm_sav,xn_sav,bureal,0,1)
+         CALL mntouv(1,nrho,mnmax_nyq,nu,nv,xu,xv,bsupvmnc_temp,xm_sav,xn_sav,bvreal,0,0)
+         CALL mntouv(1,nrho,mnmax_nyq,nu,nv,xu,xv,bmnc_temp,xm_sav,xn_sav,breal,0,0)
+         IF (lasym) THEN
+            CALL mntouv(1,nrho,mnmax_nyq,nu,nv,xu,xv,bsupumns_temp,xm_sav,xn_sav,bureal,1,0)
+            CALL mntouv(1,nrho,mnmax_nyq,nu,nv,xu,xv,bsupvmns_temp,xm_sav,xn_sav,bvreal,1,0)
+            CALL mntouv(1,nrho,mnmax_nyq,nu,nv,xu,xv,bmns_temp,xm_sav,xn_sav,breal,1,0)
+         END IF
+         DEALLOCATE(xm_sav,xn_sav)
+         ALLOCATE(xm_sav(mnmax),xn_sav(mnmax), STAT=ier)
+         xm_sav = INT(xm)
+         xn_sav = -INT(xn)/nfp
+         FORALL(ik = 1:nu) xu(ik) = REAL(ik-1)/REAL(nu-1)
+         FORALL(ik = 1:nv) xv(ik) = REAL(ik-1)/REAL(nv-1)
+         CALL mntouv(1,nrho,mnmax,nu,nv,xu,xv,rmnc_sav,xm_sav,xn_sav,rreal,0,1)
+         CALL mntouv(1,nrho,mnmax,nu,nv,xu,xv,zmns_sav,xm_sav,xn_sav,zreal,1,0)
+         IF (lasym) THEN
+            CALL mntouv(1,nrho,mnmax,nu,nv,xu,xv,rmns_sav,xm_sav,xn_sav,rreal,1,0)
+            CALL mntouv(1,nrho,mnmax,nu,nv,xu,xv,zmnc_sav,xm_sav,xn_sav,zreal,0,0)
+         END IF
+      ELSE
+         ALLOCATE(xm_sav(mnmax),xn_sav(mnmax), STAT=ier)
+         xm_sav = INT(xm)
+         xn_sav = -INT(xn)/nfp
       END IF
+
+#if defined(MPI_OPT)
+      CALL MPI_BARRIER(MPI_COMM_SHARMEM,ierr_mpi)
+#endif
       DEALLOCATE(bsupumnc_temp,bsupvmnc_temp, bmnc_temp)
       IF (ALLOCATED(rmns_temp)) DEALLOCATE(bsupumns_temp,bsupvmns_temp, bmns_temp)
       ! Calculated the external surfaces
@@ -406,53 +441,55 @@
                        + zmnc_m(mn)*cos(ixm_m(mn)*u0)
          END DO
          IF (rb_ws*zb_ws < 0) isgn = -1
-         DO v = 1, nv ! So we do nv=1 always
-            DO u = 1, nu
-               u0 = alub*(u - 1)
-               v0 = alvb*(v - 1)  !!Np*(Real toroidal angle)
-               b1 = v0 - pi2/6
-               c1 = v0 + pi2/6
-               r1 = b1
-               ier = 0
-               DO
-                 call fzero(Map_v, b1, c1, r1, re, ae, ier)
-                 IF (ier <= 1) THEN
-                    EXIT
-                 ELSE IF (ier <5) THEN !F(B) = 0 (but we need to recalc B)
-                    CALL MAp_v(b1)
-                    EXIT
-                 ELSE IF (ier ==5) THEN
-                    r1=b1
-                    b1=r1 - pi2/6
-                    c1=r1 + pi2/6
-                 END IF
-               END DO
-               IF (lvessel) THEN
-                  b1 = pi2*xv(v)/nfp
-                  v0 = v0/nfp
-                  x0 = rreal(vsurf,u,v)*cos(v0)
-                  y0 = rreal(vsurf,u,v)*sin(v0)
-                  z0 = zreal(vsurf,u,v)
-                  x2 = rb_ws*cos(v0)
-                  y2 = rb_ws*sin(v0)
-                  z2 = zb_ws
-                  xw = 0; yw = 0; zw = 0
-                  CALL collide(x0,y0,z0,x2,y2,z2,xw,yw,zw,lhit)
-                  IF (lhit) THEN
-                     rb_ws = sqrt(xw*xw+yw*yw)
-                     zb_ws = zw
+         IF (myid_sharmem==master) THEN
+            DO v = 1, nv ! So we do nv=1 always
+               DO u = 1, nu
+                  u0 = alub*(u - 1)
+                  v0 = alvb*(v - 1)  !!Np*(Real toroidal angle)
+                  b1 = v0 - pi2/6
+                  c1 = v0 + pi2/6
+                  r1 = b1
+                  ier = 0
+                  DO
+                    call fzero(Map_v, b1, c1, r1, re, ae, ier)
+                    IF (ier <= 1) THEN
+                       EXIT
+                    ELSE IF (ier <5) THEN !F(B) = 0 (but we need to recalc B)
+                       CALL MAp_v(b1)
+                       EXIT
+                    ELSE IF (ier ==5) THEN
+                       r1=b1
+                       b1=r1 - pi2/6
+                       c1=r1 + pi2/6
+                    END IF
+                  END DO
+                  IF (lvessel) THEN
+                     b1 = pi2*xv(v)/nfp
+                     v0 = v0/nfp
+                     x0 = rreal(vsurf,u,v)*cos(v0)
+                     y0 = rreal(vsurf,u,v)*sin(v0)
+                     z0 = zreal(vsurf,u,v)
+                     x2 = rb_ws*cos(v0)
+                     y2 = rb_ws*sin(v0)
+                     z2 = zb_ws
+                     xw = 0; yw = 0; zw = 0
+                     CALL collide(x0,y0,z0,x2,y2,z2,xw,yw,zw,lhit)
+                     IF (lhit) THEN
+                        rb_ws = sqrt(xw*xw+yw*yw)
+                        zb_ws = zw
+                     END IF
                   END IF
-               END IF
-               rreal(k,u,v) = rb_ws
-               zreal(k,u,v) = zb_ws
-               dr = (rreal(k,u,v) - rreal(vsurf,u,v))/(k-vsurf)
-               dz = (zreal(k,u,v) - zreal(vsurf,u,v))/(k-vsurf)
-               DO ik = 1, k-vsurf-1
-                  rreal(vsurf+ik,u,v) = ik*dr+rreal(vsurf,u,v)
-                  zreal(vsurf+ik,u,v) = ik*dz+zreal(vsurf,u,v)
+                  rreal(nrho,u,v) = rb_ws
+                  zreal(nrho,u,v) = zb_ws
+                  dr = (rreal(nrho,u,v) - rreal(vsurf,u,v))/(nrho-vsurf)
+                  dz = (zreal(nrho,u,v) - zreal(vsurf,u,v))/(nrho-vsurf)
+                  DO ik = 1, nrho-vsurf-1
+                     rreal(vsurf+ik,u,v) = ik*dr+rreal(vsurf,u,v)
+                     zreal(vsurf+ik,u,v) = ik*dz+zreal(vsurf,u,v)
+                  END DO
                END DO
             END DO
-         END DO
+         END IF
          ier = 0
          IF (ALLOCATED(rmnc_m)) DEALLOCATE(rmnc_m)
          IF (ALLOCATED(zmns_m)) DEALLOCATE(zmns_m)
@@ -461,25 +498,28 @@
          IF (ALLOCATED(rmns_m)) DEALLOCATE(rmns_m)
          IF (ALLOCATED(zmnc_m)) DEALLOCATE(zmnc_m)
       END IF
-      rreal(:,:,1) = rreal(:,:,nv)
-      zreal(:,:,1) = zreal(:,:,nv)
-      bureal(:,:,1) = bureal(:,:,nv)
-      bvreal(:,:,1) = bvreal(:,:,nv)
       IF (lvessel) CALL wall_free(ier)
-      ! Redefine rho from [0, 1]
-      IF (ALLOCATED(rho)) DEALLOCATE(rho)
-      ALLOCATE(rho(k))
-      !FORALL(ik = 1:k) rho(ik) = REAL(ik-1)/REAL(k-1)       ! Equidistant
-      !FORALL(ik = 1:k) rho(ik) = (rreal(ik,1,1)-rreal(1,1,1))/(rreal(k,1,1)-rreal(1,1,1)) ! Rout
-      FORALL(ik = 1:k) rho(ik) = sqrt((rreal(ik,1,1)-rreal(1,1,1))**2+(zreal(ik,1,1)-zreal(1,1,1))**2) ! rho_out
-      rho = rho / rho(k)
+      IF (myid_sharmem==master) THEN
+         rreal(:,:,nv) = rreal(:,:,1)
+         zreal(:,:,nv) = zreal(:,:,1)
+         bureal(:,:,nv) = bureal(:,:,1)
+         bvreal(:,:,nv) = bvreal(:,:,1)
+         ! Redefine rho from [0, 1]
+         !FORALL(ik = 1:nrho) rho(ik) = REAL(ik-1)/REAL(k-1)       ! Equidistant
+         !FORALL(ik = 1:nrho) rho(ik) = (rreal(ik,1,1)-rreal(1,1,1))/(rreal(k,1,1)-rreal(1,1,1)) ! Rout
+         FORALL(ik = 1:nrho) rho(ik) = sqrt((rreal(ik,1,1)-rreal(1,1,1))**2+(zreal(ik,1,1)-zreal(1,1,1))**2) ! rho_out
+         rho = rho / rho(nrho)
+      END IF
       ! Now do some cleanup
-      ALLOCATE(rs(1:k,1:nu,1:nv),ru(1:k,1:nu,1:nv),rv(1:k,1:nu,1:nv),&
-               zs(1:k,1:nu,1:nv),zu(1:k,1:nu,1:nv),zv(1:k,1:nu,1:nv),&
-               g11(1:k,1:nu,1:nv),g12(1:k,1:nu,1:nv),g13(1:k,1:nu,1:nv),&
-               g22(1:k,1:nu,1:nv),g23(1:k,1:nu,1:nv),g33(1:k,1:nu,1:nv),&
-               detg(1:k,1:nu,1:nv),STAT=ier)
+      ALLOCATE(rs(1:nrho,1:nu,1:nv),ru(1:nrho,1:nu,1:nv),rv(1:nrho,1:nu,1:nv),&
+               zs(1:nrho,1:nu,1:nv),zu(1:nrho,1:nu,1:nv),zv(1:nrho,1:nu,1:nv),&
+               g11(1:nrho,1:nu,1:nv),g12(1:nrho,1:nu,1:nv),g13(1:nrho,1:nu,1:nv),&
+               g22(1:nrho,1:nu,1:nv),g23(1:nrho,1:nu,1:nv),g33(1:nrho,1:nu,1:nv),&
+               detg(1:nrho,1:nu,1:nv),STAT=ier)
       IF (ier /= 0) CALL handle_err(ALLOC_ERR,'METRICS',ier)
+#if defined(MPI_OPT)
+      CALL MPI_BARRIER(MPI_COMM_SHARMEM,ierr_mpi)
+#endif
       CALL calc_metrics
       ! Deallocations
       IF (ALLOCATED(rho_vmec)) DEALLOCATE(rho_vmec)

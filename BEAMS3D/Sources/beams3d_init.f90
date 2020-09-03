@@ -203,6 +203,12 @@
          CALL mpialloc(raxis, nr, myid_sharmem, 0, MPI_COMM_SHARMEM, win_raxis)
          CALL mpialloc(phiaxis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_phiaxis)
          CALL mpialloc(zaxis, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_zaxis)
+         CALL mpialloc(hr, nr, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hr)
+         CALL mpialloc(hp, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hp)
+         CALL mpialloc(hz, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hz)
+         CALL mpialloc(hri, nr, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hri)
+         CALL mpialloc(hpi, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hpi)
+         CALL mpialloc(hzi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hzi)
          CALL mpialloc(B_R, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_B_R)
          CALL mpialloc(B_PHI, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_B_PHI)
          CALL mpialloc(B_Z, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_B_Z)
@@ -220,6 +226,18 @@
             FORALL(i = 1:nphi) phiaxis(i) = (i-1)*(phimax-phimin)/(nphi-1) + phimin
             S_ARR = 1.5
             POT_ARR = 0
+            ! Setup grid helpers
+            ! Note: All helpers are defined in terms of differences on half grid
+            !       so values are indexed from 1 to n-1.  Which we store at n
+            !        i = MIN(MAX(COUNT(raxis < r_temp),1),nr-1)
+            !        hr(i) = raxis(i+1) - raxis(i)
+            !        hri    = one / hr
+            FORALL(i = 1:nr-1) hr(i) = raxis(i+1) - raxis(i)
+            FORALL(i = 1:nz-1) hz(i) = zaxis(i+1) - zaxis(i)
+            FORALL(i = 1:nphi-1) hp(i) = phiaxis(i+1) - phiaxis(i)
+            hri = one / hr
+            hpi = one / hp
+            hzi = one / hz
          END IF
          CALL MPI_BARRIER(MPI_COMM_SHARMEM, ier)
          ! Put the vacuum field on the background grid

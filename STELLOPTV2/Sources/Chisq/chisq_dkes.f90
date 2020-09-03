@@ -11,7 +11,7 @@
 !-----------------------------------------------------------------------
       USE stellopt_runtime
       USE stellopt_targets
-      USE equil_utils, ONLY: get_equil_phi,rho, phi_type
+      USE equil_utils, ONLY: get_equil_phi,shat, phi_type
 !DEC$ IF DEFINED (DKES_OPT)
       USE dkes_realspace, ONLY: DKES_L11p, DKES_L33p, DKES_L31p, &
                                 DKES_L11m, DKES_L33m, DKES_L31m, &
@@ -48,12 +48,12 @@
             targets(mtargets) = target_dkes(ik)
             sigmas(mtargets)  = sigma_dkes(ik)
 !DEC$ IF DEFINED (DKES_OPT)
-            CALL get_equil_phi(rho(ik),phi_type,phi_temp,ier_phi,dkes_efield)
+            CALL get_equil_phi(shat(ik),phi_type,phi_temp,ier_phi,dkes_efield)
             IF (ier_phi < 0) dkes_efield = 0.0
             vals(mtargets)    = 0.5*(DKES_L11p(ik)+DKES_L11m(ik))
             IF (iflag == 1) WRITE(iunit_out,'(15ES22.12E3)') &
                target(ik),sigma(ik),vals(mtargets),&
-               rho(ik), nu_dkes(ik), dkes_efield, &
+               shat(ik), nu_dkes(ik), dkes_efield, &
                DKES_L11p(ik),DKES_L11m(ik),DKES_L33p(ik),&
                DKES_L33m(ik),DKES_L31p(ik),DKES_L31m(ik),&
                DKES_scal11(ik),DKES_scal33(ik),DKES_scal31(ik)
@@ -61,7 +61,7 @@
             vals(mtargets) = target_dkes(ik)
             IF (iflag == 1) WRITE(iunit_out,'(15ES22.12E3)') &
                target(ik),sigma(ik),vals(mtargets),&
-               rho(ik), nu_dkes(ik), dkes_efield, &
+               shat(ik), nu_dkes(ik), dkes_efield, &
                0.0, 0.0, 0.0,&
                0.0, 0.0, 0.0,&
                0.0, 0.0, 0.0

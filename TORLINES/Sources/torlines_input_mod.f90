@@ -13,7 +13,7 @@
       USE stel_kinds
       USE torlines_runtime
       USE torlines_background
-      USE torlines_realspace, ONLY: nu, nv, k
+      USE torlines_realspace, ONLY: nu, nv, nrho
       USE torlines_fieldlines, ONLY: nlines
       USE virtual_casing_mod, ONLY: nu_vc, nv_vc
       
@@ -50,7 +50,7 @@
 !                   phimin and phimax) to properly represent a given
 !                   field period.
 !-----------------------------------------------------------------------
-      NAMELIST /torlines_input/   k, nu, nv, bound_separation, nu_vc, nv_vc,&
+      NAMELIST /torlines_input/   nrho, nu, nv, bound_separation, nu_vc, nv_vc,&
                                   r_start, phi_start, phi_end,z_start,&
                                   npoinc, dphi, follow_tol,&
                                   vc_adapt_tol, int_type, lvc_field, &
@@ -66,9 +66,10 @@
       SUBROUTINE read_torlines_input(iunit, istat)
       IMPLICIT NONE
       INTEGER :: iunit, istat
+      CHARACTER(LEN=1000) :: line
       ! Initializations
       istat = 0
-      k = 50
+      nrho = 50
       nu = -1
       nv = -1
       nu_vc = -1
@@ -94,7 +95,12 @@
       S1_EMC3    = 0.8
       ! Read namelist
       READ(iunit,NML=torlines_input,IOSTAT=istat)
-      IF (istat /= 0) CALL handle_err(NAMELIST_READ_ERR,'torlines_input in: input.'//TRIM(id_string),istat)
+      IF (istat /= 0) THEN
+         backspace(iunit)
+         read(iunit,fmt='(A)') line
+         write(6,'(A)') 'Invalid line in namelist: '//TRIM(line)
+         IF (istat /= 0) CALL handle_err(NAMELIST_READ_ERR,'torlines_input in: input.'//TRIM(id_string),istat)
+      END IF
       ! Adjust EMC3 VARS
       NZONET   = NZONE_EMC3
       SRF_POLO = NPOLO_EMC3

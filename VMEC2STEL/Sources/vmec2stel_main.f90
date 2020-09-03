@@ -35,7 +35,7 @@
                                 ldkes, lbootsj, ltxport, lmap_plane, ljdotb0, liota, &
                                 lkink, lvaciota, ljcurv, loutput_harm, lmode, lorbit, &
                                 lac, lam, lai, lphiedge, lpscale, lcurtor, lkappa, &
-                                lwell, lcurvature
+                                lwell, lcurvature, lfieldlines
       INTEGER                :: m,n,ns,j
       REAL(rprec)            :: bound_min, bound_max, var, var_min, var_max, &
                                 temp, rho_exp,r1t,r2t,z1t, delta, filter_harm, pi2
@@ -98,6 +98,7 @@
       lkink = .FALSE.
       lvaciota = .FALSE.
       lorbit = .FALSE.
+      lfieldlines = .FALSE.
       lkappa = .FALSE.
       lwell  = .FALSE.
       lcurvature = .FALSE.
@@ -238,6 +239,8 @@
                lkink = .TRUE.
             CASE ("-orbit")
                lorbit = .TRUE.
+            CASE ("-fieldlines")
+               lfieldlines = .TRUE.
             CASE ("-harm")
                loutput_harm = .TRUE.
             CASE ("-kappa")
@@ -1077,6 +1080,26 @@
          WRITE(6,'(2X,A)') 'FOLLOW_TOL = 1.0E-9'
          WRITE(6,'(2X,A)') 'T_END_IN = 2*1.0E-2'
          WRITE(6,'(2X,A)') 'R_START_IN(1) = 1.0'
+         WRITE(6,'(A)') '/'
+      END IF
+      IF (lfieldlines) THEN
+         WRITE(6,'(A)') '&FIELDLINES_INPUT'
+         WRITE(6,'(2X,A)') 'NR = 128'
+         WRITE(6,'(2X,A,I3)') 'NPHI = ',180/nfp
+         WRITE(6,'(2X,A)') 'NZ = 128'
+         WRITE(6,'(2X,A,F6.3)') 'RMAX = ',MAXVAL(MAXVAL(rreal,2),1)+0.5
+         WRITE(6,'(2X,A,F6.3)') 'RMIN = ',MINVAL(MINVAL(rreal,2),1)-0.5
+         WRITE(6,'(2X,A,F6.3)') 'ZMAX = ',MAXVAL(MAXVAL(zreal,2),1)+0.5
+         WRITE(6,'(2X,A,F6.3)') 'ZMIN = ',MINVAL(MINVAL(zreal,2),1)-0.5
+         WRITE(6,'(2X,A,F6.3)') 'PHIMIN = ',0.0
+         WRITE(6,'(2X,A,F12.10)') 'PHIMAX = ',pi2/nfp
+         WRITE(6,'(2X,A)') 'NPOINC = 16'
+         WRITE(6,'(2X,A)') 'INT_TYPE = ''LSODE'''
+         WRITE(6,'(2X,A)') 'FOLLOW_TOL = 1.0E-9'
+         WRITE(6,'(2X,2(A,F6.3))') 'R_START = ',sum(raxis_cc),'  ',MAXVAL(rreal(:,1))
+         WRITE(6,'(2X,2(A,F6.3))') 'Z_START = ',0.0,'  ',MAXVAL(zreal(:,1))
+         WRITE(6,'(2X,A)') 'PHI_START = 2*0.0'
+         WRITE(6,'(2X,A,E20.10)') 'PHI_END = 2*',1000*pi2/nfp
          WRITE(6,'(A)') '/'
       END IF
       CALL FLUSH(6)
