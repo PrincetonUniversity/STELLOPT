@@ -111,28 +111,7 @@ SUBROUTINE beams3d_follow
     END IF
 
     ! Break up the work
-    mypace  = nparticles
-    mystart = 1
-    myend   = nparticles
-    IF (ALLOCATED(mnum)) DEALLOCATE(mnum)
-    ALLOCATE(mnum(nprocs_beams))
-    mnum = 0
-    DO
-       IF (SUM(mnum) == nparticles) EXIT
-       DO i = 1, nprocs_beams
-          mnum(i) = mnum(i) + 1
-          IF (SUM(mnum) == nparticles) EXIT
-       END DO
-       IF (SUM(mnum) == nparticles) EXIT
-    END DO
-    mypace  = mnum(myworkid+1)
-    IF (myworkid == 0) THEN
-       mystart = 1
-    ELSE
-       mystart = SUM(mnum(1:myworkid))+1
-    END IF
-    myend   = mystart+mypace-1
-    DEALLOCATE(mnum)
+    CALL MPI_CALC_MYRANGE(MPI_COMM_BEAMS, 1, nparticles, mystart, myend)
 
     ! Save mystart and myend
     mystart_save = mystart

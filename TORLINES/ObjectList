@@ -1,4 +1,5 @@
 ObjectFiles = \
+torlines_write_parhdf5.o \
 fblin.o \
 torlines_main.o \
 torlines_fieldlines.o \
