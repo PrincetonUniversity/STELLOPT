@@ -6,6 +6,13 @@
 !                    parameter as outline at:
 !                    https://fusion.gat.com/pubs-ext/ComPlasmaPhys/A22135.pdf
 !                    Here W > 0 implies stability
+!                    
+!                    Edited by A. LeViness (alevines@pppl.gov)
+!                    09/03/2020
+!                    When sigma < 0, use the target as a limit:
+!                    Make chisq very large when magwell is below limit,
+!                    zero otherwise
+!                    Meant to allow to optimize for W > 0
 !-----------------------------------------------------------------------
       SUBROUTINE chisq_magwell(target,sigma,niter,iflag)
 !-----------------------------------------------------------------------
@@ -36,12 +43,12 @@
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
       IF (iflag < 0) RETURN
-      ik = COUNT(sigma < bigno)
+      ik = COUNT(ABS(sigma) < bigno)
       IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'MAGWELL ',ik,7
       IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA  MAGWELL  <B**2>  P  dP/drho k'
       IF (niter >= 0) THEN
          DO ik = 1, nsd
-            IF (sigma(ik) >= bigno) CYCLE
+            IF (ABS(sigma(ik)) >= bigno) CYCLE
             CALL get_equil_Bav(rho(ik),Bav,Bsqav,ier,dBsqav) ! stel_tools (rho)
             CALL get_equil_volume(shat(ik),V,ier,Vp)
             CALL get_equil_p(shat(ik),p,ier,pp)
@@ -50,12 +57,19 @@
             mtargets = mtargets + 1
             targets(mtargets) = target(ik)
             sigmas(mtargets)  = sigma(ik)
-            vals(mtargets)    = W
+            ! Added by A. LeViness: make chisq = very large if W exceeds target value, zero otherwise
+            IF (sigma(ik) < 0.0 .AND. W < target(ik)) THEN
+               vals(mtargets) = 10000
+            ELSE IF (sigma(ik) < 0.0 .AND. W >= target(ik)) THEN
+               vals(mtargets) = target(ik)
+            ELSE
+               vals(mtargets) = W
+            END IF
             IF (iflag == 1) WRITE(iunit_out,'(6ES22.12E3,2X,I3.3)') target(ik),sigma(ik),W, Bsqav, p, pp, ik
          END DO
       ELSE
          DO ik = 1, nsd
-            IF (sigma(ik) >= bigno) CYCLE
+            IF (ABS(sigma(ik)) >= bigno) CYCLE
             mtargets = mtargets + 1
             IF (niter == -2) target_dex(mtargets)=jtarget_magwell
          END DO
