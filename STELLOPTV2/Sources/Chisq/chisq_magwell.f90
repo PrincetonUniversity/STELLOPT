@@ -8,11 +8,10 @@
 !                    Here W > 0 implies stability
 !                    
 !                    Edited by A. LeViness (alevines@pppl.gov)
-!                    09/03/2020
-!                    When sigma < 0, use the target as a limit:
-!                    Make chisq very large when magwell is below limit,
-!                    zero otherwise
-!                    Meant to allow to optimize for W > 0
+!                    09/08/2020
+!                    When sigma < 0, set a floor:
+!                    Make chisq very large when magwell is below target,
+!                    very small otherwise
 !-----------------------------------------------------------------------
       SUBROUTINE chisq_magwell(target,sigma,niter,iflag)
 !-----------------------------------------------------------------------
@@ -38,7 +37,7 @@
 !-----------------------------------------------------------------------
       INTEGER     :: ik, ier
       REAL(rprec) :: modb, Bsqav, dBsqav, p, pp, W, Vp,temp1, temp2, &
-                     rhosqav, V, Bav
+                     rhosqav, V, Bav, x
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
@@ -57,11 +56,11 @@
             mtargets = mtargets + 1
             targets(mtargets) = target(ik)
             sigmas(mtargets)  = sigma(ik)
-            ! Added by A. LeViness: make chisq = very large if W exceeds target value, zero otherwise
-            IF (sigma(ik) < 0.0 .AND. W < target(ik)) THEN
-               vals(mtargets) = 10000
-            ELSE IF (sigma(ik) < 0.0 .AND. W >= target(ik)) THEN
-               vals(mtargets) = target(ik)
+            ! Added by A. LeViness: make chisq very large if W exceeds is less than target, very small otherwise
+            IF (sigma(ik) < 0.0) THEN
+               x = target(ik) - W
+               targets(mtargets) = 0
+               vals(mtargets) = 5 * x * (1 + tanh(100 * x))
             ELSE
                vals(mtargets) = W
             END IF

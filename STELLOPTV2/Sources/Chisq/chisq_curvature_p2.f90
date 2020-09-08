@@ -6,10 +6,10 @@
 !           curvature to reduce concave regions
 !
 !                    Edited by A. LeViness (alevines@pppl.gov)
-!                    09/04/2020
+!                    09/08/2020
 !                    When sigma < 0, use the target as a limit:
 !                    Have normal chisq when |P2| is below limit,
-!                    zero otherwise
+!                    very small otherwise
 !                    Allow normal penalizing of |P2| below a certain
 !                    value, but don't penalize |P2| closer to zero 
 !-----------------------------------------------------------------------
@@ -45,7 +45,7 @@
       REAL(rprec), DIMENSION(num_coeffs) :: rmnc, zmns
       REAL(rprec) :: cosangle, sinangle, cosphi, sinphi
       INTEGER :: i,j,k
-      REAL(rprec) :: u,v, angle, phi
+      REAL(rprec) :: u,v, angle, phi, w
 
 
       !----------------BEGIN SUBROUTINE --------------
@@ -153,10 +153,13 @@
         mtargets = mtargets + 1
         targets(mtargets) = target
         sigmas(mtargets) = sigma
-        vals(mtargets) = -1*minval(P2)
         ! Addition by A. LeViness
-        IF (sigma < 0.0 .AND. ABS(minval(P2)) <= target) THEN
-            vals(mtargets) = target
+        IF (sigma < 0.0) THEN
+            w = (-1 * minval(P2)) - target
+            targets(mtargets) = 0
+            vals(mtargets) = 0.5 * w * (1 + tanh(10 * w))
+        ELSE
+            vals(mtargets) = -1 * minval(P2)
         END IF
         IF (iflag == 1) WRITE(iunit_out,'(5ES22.12E3)') target,sigma,vals(mtargets),MINVAL(P1),MINVAL(P2)
 
