@@ -283,9 +283,9 @@
                CALL write_var_hdf5(qid_gid,'nion',ier,INTVAR=1)
                CALL write_var_hdf5(qid_gid,'nrho',ier,INTVAR=nr)
                CALL write_var_hdf5(qid_gid,'znum',ier,INTVAR=1)
-               CALL write_var_hdf5(qid_gid,'anum',ier,INTVAR=1)
+               CALL write_var_hdf5(qid_gid,'anum',ier,INTVAR=NINT(plasma_mass*inv_amu))
                CALL write_var_hdf5(qid_gid,'charge',ier,INTVAR=1)
-               CALL write_var_hdf5(qid_gid,'mass',ier,INTVAR=NINT(plasma_mass*5.97863320194E26))
+               CALL write_var_hdf5(qid_gid,'mass',ier,DBLVAR=plasma_mass*inv_amu)
                ALLOCATE(rtemp(nr,5,1))
                ! Only for 1DS
                CALL write_var_hdf5(qid_gid,'rhomin',ier,DBLVAR=DBLE(0))
