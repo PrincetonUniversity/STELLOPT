@@ -137,7 +137,6 @@
                ! Init Equilibrium
                hgrid   = Aminor/30
                dphi    = 2
-               B0type  = 'at angle on magn.axis'
                B0type  = 'noscale'
                phi_ref = 0
                B_scale = 1
