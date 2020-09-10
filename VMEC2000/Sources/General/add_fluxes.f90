@@ -129,12 +129,18 @@
       DO js = 2, ns
          top = icurv(js)
          bot = 0
+#ifdef _ANIMEC
          DO l = js, nrzt, ns
-            top = top - wint(l)*(guu(l)*bsupu(l) + guv(l)*bsupv(l))
-            bot = bot + wint(l)*overg(l)*guu(l)
+             top = top-wint(l)*(guu(l)*bsupu(l)+guv(l)*bsupv(l))*sigma_an(l)
+             bot = bot + wint(l)*sigma_an(l)*overg(l)*guu(l)
          END DO
-         IF (bot .ne. zero) chips(js) = top/bot
-         IF (phips(js) .ne. zero) iotas(js) = chips(js)/phips(js)
+#else
+         DO l = js, nrzt, ns
+             top = top - wint(l)*(guu(l)*bsupu(l) + guv(l)*bsupv(l))
+             bot = bot + wint(l)*overg(l)*guu(l)
+         END DO
+#endif        IF (bot .ne. zero) chips(js) = top/bot
+            IF (phips(js) .ne. zero) iotas(js) = chips(js)/phips(js)
       END DO
 
  100  CONTINUE

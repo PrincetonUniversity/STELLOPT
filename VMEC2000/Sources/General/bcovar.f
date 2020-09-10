@@ -752,7 +752,7 @@
 !
 !WAC: UPDATE buco, bvco AFTER pressure called
 #ifdef _ANIMEC
-      IF (iequi .EQ. 1) papr = pmap*pres/vp
+      IF (iequi .EQ. 1) papr = pmap*pres(1:ns)/vp(1:ns)
 #endif
       CALL calc_fbal(bsubuh, bsubvh)
     
@@ -931,3 +931,172 @@
       lu(2:nrzt,0) = bsq(2:nrzt)*r12(2:nrzt)
 
       END SUBROUTINE bcovar
+
+#ifdef _ANIMEC
+      SUBROUTINE an_pressure(gp, scratch1)
+      USE stel_kinds, ONLY: rprec, dp
+      USE realspace, ONLY: sigma_an, wint, pperp, ppar, onembc
+      USE vforces, r12 => armn_o, gsqrt => azmn_o,
+     &             bsq => bzmn_o
+      USE vmec_main, ONLY: phot, tpotb, pppr, pmap, mass, pres, vp, pd
+     &                    ,wp, gamma, wpar, wper, ns, nznt, nrzt, vpphi,
+     &                     zero, one, nthreed, pperp_ns1=>dbsq, p5=> cp5
+     &                    ,bcrit, medge, phedg, hs, pperp_ns, ohs, bbar
+      USE vmec_params, ONLY: signgs
+      USE vparams, ONLY: twopi
+      USE fbal
+!
+!     WAC (11/30/07): See description of anisotropic pressure below
+!     SPH (12/24/07): Replaced "gp" with bsubu_e to avoid overwriting phipog
+!
+      IMPLICIT NONE
+!-----------------------------------------------
+!   D u m m y   A r g u m e n t s
+!-----------------------------------------------
+      REAL(rprec), DIMENSION(nrzt)               :: gp, scratch1
+!-----------------------------------------------
+!   L o c a l   P a r a m e t e r s
+!-----------------------------------------------
+      INTEGER     :: js   , lk   , l
+      REAL        :: pparden, pres_pv, pppr_pv
+      REAL(dp)    :: eps, normalization
+      REAL(rprec), PARAMETER :: c1p5 = (one + p5)
+!-----------------------------------------------
+!
+!********0*********0*********0*********0*********0*********0*********0**
+!                                                                      *
+!                 Anisotropic Pressure Model                           *
+!          The adjoint method for the shape gradient figure of merit   *
+!          proposed by Antonsen, Paul and Landreman. An anisotropic    *
+!          pressure based on a magnetic well figure of merit given by  *
+!          p_parallel(s,B) = pth[1 + phot(s)*H(s,B)]                   *
+!          H(s,B)=0.5*(B-Bbar)^2                                       *
+!          phot(s)= Delta_p*omega constitutes the                      *
+!          the flux surface averaged 'hot' particle contibution to     *
+!          p_parallel. We use the bcrit parameter to identify Delta_p, *
+!          omega is the radial weight function. phot is used internally*
+!          for omega, tpotb is used for omega' in the routine          *
+!          profile_functions.                                          *
+!********0*********0*********0*********0*********0*********0*********0**
+
+!********0*********0*********0*********0*********0*********0*********0**
+!   2.  Compute Thermal Pressure and Hot Particle Pressure Amplitude.  *
+!********0*********0*********0*********0*********0*********0*********0**
+!
+
+!...Initial setup for pressure required to calculate (B-Bbar)^2
+      if (ALL(pres.eq.0))pres(2:ns) = mass(2:ns)/vp(2:ns)**gamma
+      pd(2:ns) = bcrit*phot(2:ns)
+      do js = 2,ns
+         gp(js:nrzt:ns)      = pres(js)  !pressure from previous iteration
+         scratch1(js:nrzt:ns)= pd(js) ! delta*w(s)
+      END DO
+
+      bsq(1:nrzt:ns) = 0
+      gsqrt(1:nrzt:ns) = 0
+      scratch1(1:nrzt:ns) = 0
+      wint(1:nrzt:ns) = 0
+      ! Compute bbar
+      bbar = twopi*twopi*hs*sum(abs(gsqrt(1:nrzt))*wint(1:nrzt)
+     &        *sqrt((one+one)*bsq(1:nrzt))*scratch1(1:nrzt))
+      normalization = twopi*twopi*hs*sum(vp(2:ns)*pd(2:ns))
+      bbar = bbar/normalization
+
+      ! sigma_an = ppar/(pres*delta*w(s))
+      eps = EPSILON(eps)
+      sigma_an = p5*(sqrt((one+one)*bsq(1:nrzt))-bbar)
+     &      *(sqrt((one+one)*bsq(1:nrzt))-bbar)/(gp+eps)
+      ! onembc = pperp/(pres*delta*w(s))
+      onembc = (p5*bbar*bbar - bsq(1:nrzt))/(gp+eps)
+      ! (1 + p_{\perp}/p)*sqrtg
+      pperp = (one + scratch1*sigma_an)*gsqrt(1:nrzt)
+
+      ! pperp = (1 + p_{||}/p)*sqrtg at this point
+      DO js = 2,ns
+         pmap(js) = DOT_PRODUCT(pperp(js:nrzt:ns), wint(js:nrzt:ns))
+      END DO
+
+      DO js = 2,ns
+           pmap(js) = signgs*pmap(js)
+           pres(js) = mass(js) / pmap(js)**gamma    !updated thermal pressure
+           pppr(js) = pres(js) * pd(js)   !parallel pressure modification to thermal pressure
+      END DO
+!
+!********0*********0*********0*********0*********0*********0*********0**
+!   3.  Compute P-Parallel, P-Perp.                                    *
+!********0*********0*********0*********0*********0*********0*********0**
+
+      DO js = 2,ns
+         scratch1(js:nrzt:ns) = pppr(js) ! p(s)*delta*w(s)
+      END DO
+
+      ! p_{||}=delta*w(s)*0.5*(B-Bbar)^2
+      ppar = scratch1*sigma_an
+      ! p_{\perp}=delta*w(s)*0.5*(Bbar^2-B^2)
+      pperp = scratch1*onembc
+
+      ! Scratch for adding to thermal pressure
+      DO js = 2,ns
+         scratch1(js:nrzt:ns) = pres(js)
+      END DO
+
+      ! Add thermal pressure
+      ppar = ppar + scratch1
+      pperp= pperp+ scratch1
+
+!
+!********0*********0*********0*********0*********0*********0*********0**
+!   4.  Compute P_perp at the plasma-vacuum interface.                 *
+!********0*********0*********0*********0*********0*********0*********0**
+!
+      pparden = MAX(pppr(ns-1),1.e-30_dp)
+      DO lk=1,nznt
+         l = ns-1 + ns*(lk-1)
+!     pperp_ns1(lk) = (pperp(l)-pres(ns-1))/pparden
+                  pperp_ns1(lk) = pperp(l)
+      END DO
+      pparden = MAX(pppr(ns),1.e-30_dp)
+      DO lk=1,nznt
+         l = ns + ns*(lk-1)                             !!SPH12-27-12: l = ns, not ns-1
+!     pperp_ns(lk) = (pperp(l)-pres(ns))/pparden
+                  pperp_ns(lk) = pperp(l)
+      END DO
+            
+      pres_pv = medge / (c1p5*pmap(ns)-p5*pmap(ns-1))**gamma
+!      pppr_pv = pres_pv * phedg
+
+      DO lk=1,nznt
+         pperp_ns(lk)=c1p5 * pperp_ns(lk) - p5 * pperp_ns1(lk)
+ !        pperp_ns(lk)=(c1p5*pperp_ns(lk)-
+!     &                 p5*pperp_ns1(lk))*pppr_pv + pres_pv
+      END DO
+!
+!********0*********0*********0*********0*********0*********0*********0**
+!   5.  Compute Sigma_an. Determine Volume Averaged Pressures.            *
+!********0*********0*********0*********0*********0*********0*********0**
+!
+      wper = 0
+      gp = gsqrt(1:nrzt)*pperp
+      sigma_an = one + (pperp-ppar)/(2*bsq(1:nrzt))
+
+      pperp(1:nrzt:ns) = 0
+      sigma_an(1:nrzt:ns) = 1
+
+      IF (ALL(phot.eq.zero) .AND. ANY(sigma_an.ne.one))
+     1   STOP 'SIGMA_AN != 1'
+
+      pppr(1) = 0
+      DO js = 2,ns
+         pppr(js) = DOT_PRODUCT(gp(js:nrzt:ns),wint(js:nrzt:ns))
+      END DO
+      pppr(2:ns) = signgs*pppr(2:ns)/vp(2:ns)
+
+      wp    = hs*DOT_PRODUCT(vp(2:ns),pres(2:ns))
+      wpar  = hs*DOT_PRODUCT(pmap(2:ns),pres(2:ns))
+!      whpar = wpar - wp
+      wper  = hs*DOT_PRODUCT(vp(2:ns),pppr(2:ns))
+!      whper = wper - wp
+
+
+      END SUBROUTINE an_pressure
+#endif

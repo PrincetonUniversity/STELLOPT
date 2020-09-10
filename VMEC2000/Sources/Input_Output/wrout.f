@@ -149,7 +149,6 @@
      3   currumnc, currvmnc, currumns, currvmns
 #ifdef _ANIMEC
      3  ,sigmnc  , taumnc  , pparmnc , ppermnc , pbprmnc , ppprmnc ,
-     4   hotdmnc , hotdmns ,
      5   sigmns  , taumns  , pparmns , ppermns , pbprmns , ppprmns
       REAL(dp), DIMENSION(:,:), ALLOCATABLE :: sigma_ana, tau_ana,
      1                      ppara, pperpa, pbprima, ppprima, densita     
@@ -159,7 +158,7 @@
       REAL(dp), DIMENSION(:), ALLOCATABLE :: gmn, bmn,
      1   bsubumn, bsubvmn, bsubsmn, bsupumn, bsupvmn
 #ifdef _ANIMEC
-     2  ,sigmn  , taumn  , pparmn , ppermn , pbprmn , ppprmn , hotdmn
+     2  ,sigmn  , taumn  , pparmn , ppermn , pbprmn , ppprmn
 #endif
       REAL(dp), DIMENSION(:), ALLOCATABLE :: bsubumnc_sur  !MRC 10-15-15
       REAL(dp), DIMENSION(:), ALLOCATABLE :: bsubvmnc_sur
@@ -225,7 +224,7 @@
 #ifdef _ANIMEC
      3   sigmn(mnmax_nyq0)  ,
      4   taumn(mnmax_nyq0)  , pparmn(mnmax_nyq0) , ppermn(mnmax_nyq0) ,
-     5   pbprmn(mnmax_nyq0) , ppprmn(mnmax_nyq0) , hotdmn(mnmax_nyq0) ,
+     5   pbprmn(mnmax_nyq0) , ppprmn(mnmax_nyq0) ,
 #endif
      6   stat=istat)
 
@@ -252,7 +251,7 @@
      5          sigmnc(mnmax_nyq0,ns)  ,
      6          taumnc(mnmax_nyq0,ns)  , pparmnc(mnmax_nyq0,ns) ,
      7          ppermnc(mnmax_nyq0,ns) , pbprmnc(mnmax_nyq0,ns) ,
-     8          ppprmnc(mnmax_nyq0,ns) , hotdmnc(mnmax_nyq0,ns) ,
+     8          ppprmnc(mnmax_nyq0,ns) ,
 #endif
      9          stat=istat)
       IF (lasym) THEN
@@ -265,7 +264,7 @@
      4          sigmns(mnmax_nyq0,ns)  ,
      5          taumns(mnmax_nyq0,ns)  , pparmns(mnmax_nyq0,ns) ,
      6          ppermns(mnmax_nyq0,ns) , pbprmns(mnmax_nyq0,ns) ,
-     7          ppprmns(mnmax_nyq0,ns) , hotdmns(mnmax_nyq0,ns) ,
+     7          ppprmns(mnmax_nyq0,ns) ,
 #endif
      8          stat=istat)
 #ifdef _ANIMEC
@@ -562,6 +561,15 @@
 !     ELIMINATE THESE EVENTUALLY: DON'T NEED THEM - CAN COMPUTE FROM GSQRT
       CALL cdf_define(nwout, vn_bsupumnc, bsupumnc, dimname=r3dim)
       CALL cdf_define(nwout, vn_bsupvmnc, bsupvmnc, dimname=r3dim)
+#ifdef _ANIMEC
+      CALL cdf_write(nwout, vn_pparmnc, pparmnc) !Half mesh
+      CALL cdf_write(nwout, vn_ppermnc, ppermnc) !Half mesh
+      !CALL cdf_write(nwout, vn_hotdmnc, hotdmnc) !Half mesh
+      CALL cdf_write(nwout, vn_sigmnc, sigmnc) !Half mesh
+      CALL cdf_write(nwout, vn_taumnc, taumnc) !Half mesh
+      CALL cdf_write(nwout, vn_pbprmnc, pbprmnc) !Half mesh
+      CALL cdf_write(nwout, vn_ppprmnc, ppprmnc) !Half mesh
+#endif
 !     IF (lfreeb) THEN
 !         CALL cdf_define(nwout, vn_rbc, rbc, 
 !    1                dimname=(/'n_mode','m_mode'/))
@@ -619,6 +627,22 @@
 !     ELIMINATE THESE EVENTUALLY: DON'T NEED THEM
       CALL cdf_define(nwout, vn_bsupumns, bsupumns, dimname=r3dim)
       CALL cdf_define(nwout, vn_bsupvmns, bsupvmns, dimname=r3dim)
+#ifdef _ANIMEC
+      CALL cdf_define(nwout, vn_pparmns, pparmns, dimname=r3dim)
+      CALL cdf_setatt(nwout, vn_pparmns, ln_pparmns)
+      CALL cdf_define(nwout, vn_ppermns, ppermns, dimname=r3dim)
+      CALL cdf_setatt(nwout, vn_ppermns, ln_ppermns)
+                                      !CALL cdf_define(nwout, vn_hotdmns, hotdmns, dimname=r3dim)
+      !CALL cdf_setatt(nwout, vn_hotdmns, ln_hotdmns)
+      CALL cdf_define(nwout, vn_sigmns, sigmns, dimname=r3dim)
+      CALL cdf_setatt(nwout, vn_sigmns, ln_sigmns)
+      CALL cdf_define(nwout, vn_taumns, taumns, dimname=r3dim)
+      CALL cdf_setatt(nwout, vn_taumns, ln_taumns)
+      CALL cdf_define(nwout, vn_pbprmns, pbprmns, dimname=r3dim)
+      CALL cdf_setatt(nwout, vn_pbprmns, ln_pbprmns)
+      CALL cdf_define(nwout, vn_ppprmns, ppprmns, dimname=r3dim)
+      CALL cdf_setatt(nwout, vn_ppprmns, ln_ppprmns)
+#endif
 
  800  CONTINUE
 
@@ -830,66 +854,61 @@
  900  CONTINUE
 
 #ifdef _ANIMEC
-!... CALCULATE RADIAL DERIVATIVES OF HOT PARTICLE PRESSURE TERMS
-!... STORE IN ARRAYS pm AND pd PREVIOUSLY USED IN PRESSURE AND EQFOR
+!... CALCULATE RADIAL DERIVATIVES OF PERTURBED PRESSURE TERMS
+!... ARRAY pd CONTAINS -Delta_p(omega'+omega*V"/V') ==> -bcrit*(tpotb+phot*pppr/vp)
+!... STORED IN HALF INTEGER MESH COMPUTED IN SUBROUTIE AN_PRESSURE OF MODULE BCOVAR
+!... USE pmap TO CALCULATE RADIAL DERIVATIVE OF -Delta_p(omega'+omega*V"/V')
+!... USE papr TO STORE RADIAL DERIVATIVE OF THE UNPERTURBED PRESSURE p(s).
       eps = EPSILON(eps)
       DO js=2,ns-1
-         pd(js) = ohs * (pres(js+1) * phot(js+1) - pres(js) * phot(js))
-         pmap(js) = ohs * (tpotb(js+1) - tpotb(js))
+         pmap(js) = ohs * (pd(js+1) - pd(js))
+         papr(js) = ohs * (pres(js+1) - pres(js))
       END DO
 !... INTERPOLATE (EXTRAPOLATE) TO HALF INTEGER MESH
-      pdh = c1p5 * pd(2) - p5 * pd(3)
+      pdh = c1p5 * papr(2) - p5 * papr(3)
       pmh = c1p5 * pmap(2) - p5 * pmap(3)
-      pde = c1p5 * pd(ns-1) - p5 * pd(ns-2)
+      pde = c1p5 * papr(ns-1) - p5 * papr(ns-2)
       pme = c1p5 * pmap(ns-1) - p5 * pmap(ns-2)
       DO js=ns-2,2,-1
-         pd(js+1) = p5*(pd(js+1) + pd(js)) / (pres(js+1)*phot(js+1)+eps)
+!     pd(js+1) = p5*(pd(js+1) + pd(js)) / (pres(js+1)*phot(js+1)+eps)
+         papr(js+1) = p5 * (papr(js+1) + papr(js))
          pmap(js+1) = p5 * (pmap(js+1) + pmap(js))
       END DO
-      pd(2)  = pdh / (pres(2)*phot(2)+eps)
-      pd(ns) = pde / (pres(ns)*phot(ns)+eps)
-      pmap(2)  = pmh
-      pmap(ns) = pme
+!      pd(2)  = pdh / (pres(2)*phot(2)+eps)
+!      pd(ns) = pde / (pres(ns)*phot(ns)+eps)
+      papr(2)    = pdh
+      papr(ns)   = pde
+      pmap(2)    = pmh
+      pmap(ns)   = pme
 !ALTERNATE EXTRAPOLATION
-      pd(2) = 2*pd(3) - pd(4)
-      pd(ns) = 2*pd(ns-1) - pd(ns-2) 
-
-!CALCULATE HOT PARTICLE PARALLEL AND PERPENDICULAR PRESSURE GRADIENT; DENSITY
-      DO 20 js = 2, ns 
-        hotdam = pres(js) * phot(js) / SQRT(tpotb(js)+eps)
-        DO 10 lk = 1, nznt  
-!  
-           omtbc = one - tpotb(js) * onembc(js,lk)
-           optbc = one + tpotb(js) * onembc(js,lk)
-        IF (onembc(js,lk) <= zero) THEN
-           densit(js,lk)= (ppar(js,lk) - pres(js))*hotdam / 
-     &                    (pres(js)*phot(js)+eps)
-           pbprim(js,lk) =  (ppar(js,lk) -pres(js)) *
-     &             (pd(js) + onembc(js,lk) * pmap(js) / (omtbc+eps))
-           ppprim(js,lk) =  (pperp(js,lk)-pres(js)) *
-     &            (pd(js) + optbc * pmap(js) / (omtbc * tpotb(js)+eps))
-        ELSE
-          densit(js,lk) = hotdam * (one - onembc(js,lk)) *
-     &  (optbc - 2*(tpotb(js)*onembc(js,lk))**c1p5) / (omtbc*optbc+eps)
-          pbprim(js,lk) =  (ppar(js,lk) -pres(js)) * pd(js) +
-     &    ( 2 * tpotb(js) * onembc(js,lk)**2 * (ppar(js,lk)-pres(js))
-     &   + pres(js)*phot(js)*(one-onembc(js,lk))*onembc(js,lk)*(one -5
-     & *(tpotb(js)*onembc(js,lk))**c1p5))* pmap(js) / (omtbc*optbc+eps)
-          ppprim(js,lk) =  (pperp(js,lk)-pres(js)) * pd(js) +
-     & ((pperp(js,lk)-pres(js))*(one+3*(tpotb(js)*onembc(js,lk))**2) /
-     &  (tpotb(js)+eps)+ pres(js)*phot(js)*tpotb(js)
-     &   *(one-onembc(js,lk))**2
-     &   * onembc(js,lk)*(two*optbc-sqrt(tpotb(js)*onembc(js,lk))*(7.5
-     &   - 3.5_dp*(tpotb(js)*onembc(js,lk))**2))/(omtbc*optbc+eps))
-     &   * pmap(js)/ (omtbc * optbc + eps)
-        END IF  
-   10   END DO
-   20  END DO
-#endif
+!      papr(2) = 2*papr(3) - papr(4)
+!      papr(ns) = 2*papr(ns-1) - papr(ns-2)
+!CALCULATE PERTURBED PARALLEL AND PERPENDICULAR PRESSURE GRADIENT BASED
+!ON ADJOINT METHOD FIGURE OF MERIT
+      densit = zero
+      DO  js = 2, ns
+        DO lk = 1, nznt
+!       dp_{||}/ds
+        pbprim(js,lk) = p5*pmap(js)*(sqrt((one+one)*bsq(js,lk))-bbar)
+     &         * (sqrt((one+one)*bsq(js,lk))-bbar)
+!        pbprim(js,lk) = p5*tpotb(js)*bcrit
+!     &         * (sqrt((one+one)*bsq(js,lk))-bbar)
+!     &         * (sqrt((one+one)*bsq(js,lk))-bbar)
+!       dp_{\perp}/ds
+!        ppprim(js,lk) = p5*tpotb(js)*bcrit
+!     &         * (bbar*bbar-(one+one)*bsq(js,lk))
+        ppprim(js,lk) = p5*pmap(js)*(bbar*bbar-(one+one)*bsq(js,lk))
+        END DO
+      END DO
+      DO js = 2, ns
+         bsq(js,:nznt) = SQRT(2*ABS(bsq(js,:nznt)))
+      END DO
+#else
 !SPH100209: COMPUTE |B| = SQRT(|B|**2) and store in bsq, bsqa
       DO js = 2, ns
          bsq(js,:nznt) = SQRT(2*ABS(bsq(js,:nznt)-pres(js)))
       END DO
+#endif
 
       tmult = p5/r0scale**2
 !SPH: FIXED THIS 03-05-07 TO CALL symmetrization routine
@@ -932,6 +951,15 @@
          bsubsmn = 0
          bsupumn = 0
          bsupvmn = 0
+#ifdef _ANIMEC
+         pparmn  = 0
+         ppermn  = 0
+         sigmn   = 0
+         taumn   = 0
+         pbprmn  = 0
+         ppprmn  = 0
+         !hotdmn  = 0
+#endif
 
          MN2: DO mn = 1, mnmax_nyq0
             n = NINT(xn_nyq0(mn))/nfp
@@ -964,7 +992,6 @@
                   taumn(mn)   = taumn(mn)   + tcosi*tau_an(js,lk)
                   pbprmn(mn)  = pbprmn(mn)  + tcosi*pbprim(js,lk)
                   ppprmn(mn)  = ppprmn(mn)  + tcosi*ppprim(js,lk)
-                  hotdmn(mn)  = hotdmn(mn)  + tcosi*densit(js,lk)
 #endif
                END DO
             END DO
@@ -986,7 +1013,6 @@
          taumnc(:,js)   = taumn(:)
          pbprmnc(:,js)  = pbprmn(:)
          ppprmnc(:,js)  = ppprmn(:)
-         hotdmnc(:,js)  = hotdmn(:)
 #endif
       END DO RADIUS2
 
@@ -1028,7 +1054,7 @@
       bsupumnc(:,1) = 0;  bsupvmnc(:,1) = 0
 
 #ifdef _ANIMEC
-      hotdmnc(:,1)  = 0;  pparmnc(:,1)  = 0;  ppermnc(:,1) = 0
+      pparmnc(:,1)  = 0;  ppermnc(:,1) = 0
       pbprmnc(:,1)  = 0;  ppprmnc(:,1)  = 0
       sigmnc(:,1)   = 0;  taumnc(:,1)   = 0   
 #endif
@@ -1050,7 +1076,6 @@
          taumn   = 0
          pbprmn  = 0
          ppprmn  = 0
-         hotdmn  = 0
 #endif
          MN3: DO mn = 1, mnmax_nyq0
             n = NINT(xn_nyq0(mn))/nfp
@@ -1083,7 +1108,6 @@
                   taumn(mn)   = taumn(mn)   + tsini*tau_ana(js,lk)
                   pbprmn(mn)  = pbprmn(mn)  + tsini*pbprima(js,lk)
                   ppprmn(mn)  = ppprmn(mn)  + tsini*ppprima(js,lk)
-                  hotdmn(mn)  = hotdmn(mn)  + tsini*densita(js,lk)
 #endif
                   jlk = jlk+ns
                END DO
@@ -1104,7 +1128,6 @@
          taumns(:,js)   = taumn(:)
          pbprmns(:,js)  = pbprmn(:)
          ppprmns(:,js)  = ppprmn(:)
-         hotdmns(:,js)  = hotdmn(:)
 #endif
       END DO RADIUS3
 
@@ -1114,7 +1137,7 @@
       bsubsmnc(:,1) = 2*bsubsmnc(:,2) - bsubsmnc(:,3)
       bsupumns(:,1) = 0;  bsupvmns(:,1) = 0
 #ifdef _ANIMEC
-      hotdmns(:,1)  = 0;  pparmns(:,1)  = 0;  ppermns(:,1) = 0
+      pparmns(:,1)  = 0;  ppermns(:,1) = 0
       pbprmns(:,1)  = 0;  ppprmns(:,1)  = 0
       sigmns(:,1)   = 0;  taumns(:,1)   = 0   
 #endif
@@ -1336,7 +1359,7 @@
      1               bsubumnc(mn,js), bsubvmnc(mn,js), bsubsmns(mn,js),
      2               bsupumnc(mn,js), bsupvmnc(mn,js)
 #ifdef _ANIMEC
-     3              ,pparmnc (mn,js), ppermnc (mn,js), hotdmnc (mn,js),
+     3              ,pparmnc (mn,js), ppermnc (mn,js),
      4               pbprmnc (mn,js), ppprmnc (mn,js), sigmnc  (mn,js),
      5               taumnc  (mn,js)
 #endif
@@ -1345,7 +1368,7 @@
      1               bsubumns(mn,js), bsubvmns(mn,js), bsubsmnc(mn,js), 
      2               bsupumns(mn,js), bsupvmns(mn,js)
 #ifdef _ANIMEC
-     3              ,pparmns (mn,js), ppermns (mn,js), hotdmns (mn,js),
+     3              ,pparmns (mn,js), ppermns (mn,js),
      4               pbprmns (mn,js), ppprmns (mn,js), sigmns  (mn,js),
      5               taumns  (mn,js)
 #endif
@@ -1619,13 +1642,13 @@
       IF (ALLOCATED(gmnc)) DEALLOCATE(gmnc, bmnc, bsubumnc, bsubvmnc,
      1                                bsubsmns, bsupumnc, bsupvmnc
 #ifdef _ANIMEC
-     2   ,sigmnc,taumnc,pparmnc,ppermnc,pbprmnc,ppprmnc,hotdmnc
+     2   ,sigmnc,taumnc,pparmnc,ppermnc,pbprmnc,ppprmnc
 #endif
      3                                )
       IF (ALLOCATED(gmns)) DEALLOCATE(gmns, bmns, bsubumns, bsubvmns,
      1                                bsubsmnc, bsupumns, bsupvmns
 #ifdef _ANIMEC
-     2   ,sigmns,taumns,pparmns,ppermns,pbprmns,ppprmns,hotdmns
+     2   ,sigmns,taumns,pparmns,ppermns,pbprmns,ppprmns
 #endif
      3                                )
 #ifdef _ANIMEC
@@ -1637,7 +1660,6 @@
      1             bsubsmn, bsupumn, bsupvmn,
 #ifdef _ANIMEC
      2             sigmn, taumn, pparmn, ppermn, pbprmn, ppprmn,
-     3             hotdmn,
 #endif
      4             stat=istat)
 

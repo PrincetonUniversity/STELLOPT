@@ -507,19 +507,29 @@ C-----------------------------------------------
  150  FORMAT(/' NORMALIZED TOROIDAL FLUX COEFFICIENTS aphi',
      &       ' (EXPANSION IN S):',/,1x,35('-'))
 #ifdef _ANIMEC
-         IF (ANY(ah .ne. zero)) THEN
-            WRITE(nthreed,160)
-            n = NonZeroLen(ah,SIZE(ah))
-            WRITE(nthreed,135)(ah(i-1),i=1, n)
-            WRITE(nthreed,165)
-            n = NonZeroLen(at,SIZE(at))
-            WRITE(nthreed,135)(at(i-1),i=1, n)
-         END IF
 
- 160  FORMAT(' HOT PARTICLE PRESSURE COEFFICIENTS ah',
-     &       ' (EXPANSION IN TOROIDAL FLUX):',/,1x,35('-'))
- 165  FORMAT(' HOT PARTICLE TPERP/T|| COEFFICIENTS at',
-     &       ' (EXPANSION IN TOROIDAL FLUX):',/,1x,35('-'))
+      WRITE(nthreed,145)
+      WRITE(nthreed,146) TRIM(photp_type)
+      WRITE(nthreed,147)
+      SELECT CASE (TRIM(photp_type))
+      CASE ('line_segment')
+        WRITE(nthreed,"('ah_aux_s is' )")
+        WRITE(nthreed,135)(ah_aux_s(i),i=1, SIZE(ah_aux_s))
+        WRITE(nthreed,"('ah_aux_f is' )")
+        WRITE(nthreed,135)(ah_aux_f(i),i=1, SIZE(ah_aux_f))
+      CASE DEFAULT
+        IF (ANY(ah .ne. zero)) THEN
+           WRITE(nthreed,160)
+           WRITE(nthreed,135)(ah(i-1),i=1, SIZE(ah))
+           WRITE(nthreed,165)
+           WRITE(nthreed,135)(at(i-1),i=1, SIZE(at))
+        END IF
+      END SELECT
+
+ 160  FORMAT(' MAGNETIC WELL RADIAL WEIGHT FUNCTION COEFFICIENTS ah',
+     1  ' (EXPANSION IN TOROIDAL FLUX):',/,1x,35('-'))
+ 165  FORMAT(' HOT PARTICLE TPERP/T|| COEFFICIENTS at (EXPANSION',
+     1  ' IN TOROIDAL FLUX -- not used for this model):',/,1x,35('-'))
 #endif
 
 !  Fourier Boundary Coefficients

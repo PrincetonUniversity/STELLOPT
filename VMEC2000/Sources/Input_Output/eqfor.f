@@ -67,6 +67,10 @@ C-----------------------------------------------
      &   tol, toroidal_flux, vnorm, vprime, wght0, xmax,
      &   xmida, xmidb, xmin, rzmax, rzmin, zxmax, zxmin, zaxis0,
      &   zmax, zmin, yr1u, yz1u, waist(2), height(2)
+#ifdef _ANIMEC
+     &   ,sumpar, sumper, sumpp2, sumpb2, betpar, betper, bet_s_to,
+     &   bet_s_ew, bmax_t, bmin_t, betplp, betplb
+#endif
       REAL(dp) :: d_of_kappa, tmpxc, rmssum
       INTEGER :: istat1, OFU, j, k
 C-----------------------------------------------
@@ -137,7 +141,14 @@ C-----------------------------------------------
       tau(1) = 0
       tau(2:nrzt) = signgs*wint(2:nrzt)*gsqrt(2:nrzt)
       DO i = 2, ns
+#ifdef _ANIMEC
+!BSQ contains only magnetic pressure set in call to routine mirror_crit
+         s2 = SUM(bsq(i:nrzt:ns)*tau(i:nrzt:ns))/vp(i)
+!#elif defined _FLOW
+!         s2 = SUM((bsq(i:nrzt:ns)-prot(i:nrzt:ns))*tau(i:nrzt:ns))/vp(i)
+#else
          s2 = SUM(bsq(i:nrzt:ns)*tau(i:nrzt:ns))/vp(i) - pres(i)
+#endif
          overr(i) = SUM(tau(i:nrzt:ns)/r12(i:nrzt:ns)) / vp(i)
          beta_vol(i) = pres(i)/s2
       END DO
@@ -155,7 +166,11 @@ C-----------------------------------------------
      1         '       (NORMED TO SUM OF INDIVIDUAL TERMS)',//,
      1         '      S     <RADIAL    TOROIDAL      IOTA     ',
      1         ' <JSUPU>    <JSUPV>     d(VOL)/',
+#ifdef _ANIMEC
+     2         '   d(P_||)/    <M>     PRESF    <BSUBU>    <BSUBV>',
+#else
      2         '   d(PRES)/    <M>     PRESF    <BSUBU>    <BSUBV>',
+#endif
      3         '      <J.B>      <B.B>',/,
      4         '             FORCE>      FLUX                  ',
      5         '                       d(PHI) ',
@@ -383,14 +398,24 @@ C-----------------------------------------------
      3   ' BMAX(u=0)             = ',f14.6/' BMIN(u=pi)            = ',
      4   f14.6/' BMAX(u=pi)            = ',f14.6/)
 
+#ifdef _ANIMEC
+      sumbtot = 2*vnorm*SUM(bsq(2:nrzt)*tau(2:nrzt))
+#else
       sumbtot = 2*(vnorm*SUM(bsq(2:nrzt)*tau(2:nrzt)) - sump)
-      sumbtor = vnorm*SUM(tau(2:nrzt)*(r12(2:nrzt)*bsupv(2:nrzt))**2) 
+#endif
+      sumbtor = vnorm*SUM(tau(2:nrzt)*(r12(2:nrzt)*bsupv(2:nrzt))**2)
       sumbpol = sumbtot - sumbtor
       betapol = 2*sump/sumbpol
       sump20 = 2*sump
       sump2 = SUM(pres(2:ns)*pres(2:ns)*vp(2:ns)*vnorm)
       betatot = sump20/sumbtot
       betator = sump20/sumbtor
+#ifdef _ANIMEC
+      sumpar = vnorm*SUM(tau(2:nrzt)*ppar(2:nrzt))
+      sumper = vnorm*SUM(tau(2:nrzt)*pperp(2:nrzt))
+      sumpp2 = vnorm*SUM(tau(2:nrzt)*pperp(2:nrzt)*pperp(2:nrzt))
+      sumpb2 = vnorm*SUM(tau(2:nrzt)*ppar(2:nrzt)*ppar(2:nrzt))
+#endif
       VolAvgB = SQRT(ABS(sumbtot/volume_p))
       IonLarmor = 0.0032_dp/VolAvgB
       jPS2(2:ns1) = (jpar2(2:ns1) - jdotb(2:ns1)**2/bdotb(2:ns1))
@@ -580,6 +605,47 @@ C-----------------------------------------------
       END DO
       END IF
   820 FORMAT(i5,1p,4e12.4)
+#ifdef _ANIMEC
+      bmax_t = -HUGE(bmax_t)
+      bmin_t =  HUGE(bmin_t)
+      DO js=2,ns
+        DO lk=1,nznt
+            l=js +(lk-1)*ns
+            bmax_t = MAX(bmax_t,sqrt(two*bsq(l)))
+            bmin_t = MIN(bmin_t,sqrt(two*bsq(l)))
+        END DO
+      END DO
+!      print *, 'sumpar =', sumpar,'  sumper=',sumper,'  sumpp2=', sumpp2
+!     1        ,'sumpb2 =', sumpb2
+      betpar = sumpar / sumbtot
+      betper = sumper / sumbtot
+      bet_s_to = two*sqrt((two*sumpp2+sumpb2)/(3*volume_p)) /
+     1           (sumbtot/volume_p)
+      bet_s_ew = two*sqrt((sumpp2+sumpb2)/(two*volume_p)) /
+     1           (sumbtot/volume_p)
+      betplp = sumper / sumbpol
+      betplb = sumpar / sumbpol
+      WRITE (nthreed, 150) betatot, betapol, betator
+     1 ,two*(two*betper+betpar)/3, two*betper, betpar+betper,
+     2  bet_s_to,bet_s_ew, two*(two*betplp+betplb)/3, betplp+betplb
+
+  150 FORMAT(/,' From volume averages over plasma, betas are',/,
+     1   ' beta thermal total    = ',f14.6,/,
+     2   ' beta thermal poloidal = ',f14.6,/,
+     3   ' beta thermal toroidal = ',f14.6,/,
+     4   ' beta total            = ',f14.6,/,
+     5   ' beta diamagnetic      = ',f14.6,/,
+     6   ' beta equal weight     = ',f14.6,/,
+     7   ' beta-star total       = ',f14.6,/,
+     8   ' beta-star equal weight= ',f14.6,/,
+     9   ' beta poloidal total   = ',f14.6,/,
+     A   ' beta poloidal (EW)    = ',f14.6,/   )
+#else
+      WRITE (nthreed, 152) betatot, betapol, betator
+ 152  FORMAT(/,' From volume averages over plasma, betas are',/,
+     B   ' beta total    = ',f14.6,/,' beta poloidal = ',f14.6,/,
+     C   ' beta toroidal = ',f14.6,/)
+#endif
 
       betstr = two*SQRT(sump2/volume_p)/(sumbtot/volume_p)
 
@@ -589,9 +655,23 @@ C-----------------------------------------------
      2   ' beta toroidal = ',f14.6,/)
 
       IF(rank.EQ.0) WRITE (nthreed, 160) rbtor, betaxis, betstr
-  160 FORMAT(' R * Btor-vac         = ',f14.6,' [Wb/M]',/,
+#ifdef _ANIMEC
+       1     ,bmax_t, bmin_t, bmax_t/bmin_t,bcrit
+#endif
+  160 FORMAT(/,' R * Btor-vac         = ',f14.6,' [Wb/M]',/,
      1       ' Peak Beta            = ',f14.6,/,
-     2       ' Beta-star            = ',f14.6,/)
+     2       ' Beta-star            = ',f14.6,
+#ifdef _ANIMEC
+     1       ' Peak Thermal Beta    = ',f14.6,/,
+     2       ' Beta-star (thermal)  = ',f14.6,/,
+     3       ' B_max                = ',f14.6,' [T]',/,
+     4       ' B_min                = ',f14.6,' [T]',/,
+     5       ' B_max / B_min        = ',f14.6,/,
+     6     ' B_crit               = ',f14.6,' [T]',/)
+#else
+     7 /)
+#endif
+
 
 !
 !

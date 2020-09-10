@@ -12,7 +12,7 @@
      1                       zu   , zv  , phip
 #ifdef _ANIMEC
      2                      ,pp3 
-      USE fbal, ONLY: bimax_ppargrad
+      USE fbal, ONLY: EPwell_ppargrad
 #endif
 #ifdef NETCDF
       USE ezcdf
@@ -359,8 +359,7 @@
       IF (lasym) CALL fsym_invfft (bsubsu, bsubsv)
 
 #ifdef _ANIMEC
-      CALL bimax_ppargrad(pp1, pp2, gsqrt, ppar, onembc, pres, 
-     1                    phot,tpotb)
+      CALL EPwell_ppargrad(pp2, gsqrt, bsq, pres)
 #endif
 
 !     SKIPS Bsubs Correction - uses Bsubs from metric elements
@@ -384,9 +383,15 @@
      2   + bsupv1(:)*(bsubv(js+1,:,0) - bsubv(js,:,0)))
      3   + (pres(js+1) - pres(js))*ohs*jxb(:)
 #ifdef _ANIMEC
-!WAC Last two lines of brho contain hot particle parallel pressure gradients
-     4   + ohs*((pres(js+1)*phot(js+1) - pres(js)*phot(js)) * pp2(js,:)
-     5   +      (tpotb(js+1)           - tpotb(js)      ) * pp1(js,:))
+!   WAC Last two lines of brho contain parallel pressure gradients from magnetic
+!   well figure of merit of the adjoint on the full integer mesh
+!4   + ohs*((pres(js+1)*phot(js+1) - pres(js)*phot(js)) * pp2(js,:)
+!5   +      (tpotb(js+1)           - tpotb(js)      ) * pp1(js,:))
+!     4   + ohs*((pres(js+1) - pres(js)) ! contribution from thermal pressure
+!     5          * p5 * (gsqrt(js,:) * pd(js) + gsqrt(js+1,:) * pd(js+1))
+     4   + ohs*(pd(js+1)-pd(js))*pp2(js,:)
+!(tpotb(js) + tpotb(js+1))*pp2(js,:)
+!     4   +  ohs*(pd(js+1)   - pd(js)) * pp2(js,:)
 #endif
 !
 !     SUBTRACT FLUX-SURFACE AVERAGE FORCE BALANCE FROM brho, OTHERWISE
@@ -610,10 +615,13 @@
 !     1       STOP ' SQGB2 <= 0 in JXBFORCE'
          pprime(:) = ohs*(pres(js+1)-pres(js))/mu0              !dp/ds here
 #ifdef _ANIMEC
-!WAC  Last two lines of 'pprime' contain the hot particle parallel pressure
-     1 + ohs*((pres(js+1)*phot(js+1) - pres(js)*phot(js))*pp2(js,:nznt) 
-     2 +      (tpotb(js+1)           - tpotb(js)      )  *pp1(js,:nznt))
-     3  / mu0
+!   WAC  Last two lines of 'pprime' contain the adjoint method figure of merit
+!   parallel pressure term on the full integer mesh
+     1 + ohs*(pd(js+1) - pd(js)) * pp2(js,:nznt)
+     2 /(gsqrt(js,:nznt)*mu0)
+!     1 + ohs*(pd(js+1) - pd(js)) * pp2(js,:nznt) / (gsqrt(js,:nznt)*mu0)
+!     2 + ohs*(pres(js+1) - pres(js)) * p5 * (pd(js+1) + pd(js)) / mu0
+!     3       / mu0      !Use only if call to   EPwell_ppargrad is active
 #endif
          kperpu(:nznt) = p5*(bsubv(js+1,:nznt,0) + bsubv(js,:nznt,0))*
      1                       pprime(:)/sqgb2

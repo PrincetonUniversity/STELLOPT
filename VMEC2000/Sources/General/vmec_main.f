@@ -44,7 +44,7 @@ C-----------------------------------------------
       REAL(dp), DIMENSION(:), ALLOCATABLE :: bsubu0, dbsq, rbsq
 #ifdef _ANIMEC
       REAL(dp), DIMENSION(:), ALLOCATABLE :: pperp_ns
-      REAL(dp) :: medge, phedg
+      REAL(dp) :: medge, phedg, bbar
 #endif
       REAL(dp) :: rbtor, rbtor0, ctor, delbsq, res0, res1, delt0r   !DO NOT remove res0, delt0r -> V3FIT
       REAL(dp), DIMENSION(ndatafmax) ::
