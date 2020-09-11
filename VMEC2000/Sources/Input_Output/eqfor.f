@@ -645,18 +645,18 @@ C-----------------------------------------------
  152  FORMAT(/,' From volume averages over plasma, betas are',/,
      B   ' beta total    = ',f14.6,/,' beta poloidal = ',f14.6,/,
      C   ' beta toroidal = ',f14.6,/)
+
+    IF(rank.EQ.0) WRITE (nthreed, 150) betatot, betapol, betator
+  150 FORMAT(/,' From volume averages over plasma, betas are',/,
+   1   ' beta total    = ',f14.6,/,' beta poloidal = ',f14.6,/,
+   2   ' beta toroidal = ',f14.6,/)
 #endif
 
       betstr = two*SQRT(sump2/volume_p)/(sumbtot/volume_p)
 
-      IF(rank.EQ.0) WRITE (nthreed, 150) betatot, betapol, betator
-  150 FORMAT(/,' From volume averages over plasma, betas are',/,
-     1   ' beta total    = ',f14.6,/,' beta poloidal = ',f14.6,/,
-     2   ' beta toroidal = ',f14.6,/)
-
       IF(rank.EQ.0) WRITE (nthreed, 160) rbtor, betaxis, betstr
 #ifdef _ANIMEC
-       1     ,bmax_t, bmin_t, bmax_t/bmin_t,bcrit
+     1     ,bmax_t, bmin_t, bmax_t/bmin_t,bcrit
 #endif
   160 FORMAT(/,' R * Btor-vac         = ',f14.6,' [Wb/M]',/,
      1       ' Peak Beta            = ',f14.6,/,

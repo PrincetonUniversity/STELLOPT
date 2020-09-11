@@ -30,6 +30,7 @@
       CHARACTER(len=20) :: pcurr_type  !  len=12 -> len=20 J Hanson 2010-03-16
       CHARACTER(len=20) :: piota_type
       CHARACTER(len=20) :: pmass_type
+      CHARACTER(len=20) :: photp_type
       REAL(rprec), DIMENSION(ndatafmax) :: am_aux_s, am_aux_f,                 &
      &   ai_aux_s, ai_aux_f, ac_aux_s, ac_aux_f
 
@@ -73,7 +74,7 @@
 
       NAMELIST /indata/ mgrid_file, time_slice, nfp, ncurr, nsin,
      1   niter, nstep, nvacskip, delt, ftol, gamma, am, ai, ac, aphi,
-     1   pcurr_type, pmass_type, piota_type,
+     1   pcurr_type, pmass_type, piota_type, photp_type,
      1   am_aux_s, am_aux_f, ai_aux_s, ai_aux_f, ac_aux_s, ac_aux_f,  ! J Hanson 2010-03-16
      1   ah, at, bcrit,                                               ! WAC (anisotropic pres)
      1   ph_type, ah_aux_s, ah_aux_f,
@@ -162,6 +163,7 @@
       pcurr_type = 'power_series'
       piota_type = 'power_series'
       pmass_type = 'power_series'
+      photp_type = 'power_series'
 
 !     ANISTROPY PARAMETERS
       bcrit = 1

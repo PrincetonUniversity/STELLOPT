@@ -9,6 +9,7 @@
       USE parallel_include_module, ONLY: grank, mgrid_file_read_time,
      &                                   LPRECOND
       USE parallel_vmec_module, ONLY: RUNVMEC_COMM_WORLD
+      USE vmec_input, ONLY: photp_type
       IMPLICIT NONE
 C-----------------------------------------------
 C   D u m m y   A r g u m e n t s

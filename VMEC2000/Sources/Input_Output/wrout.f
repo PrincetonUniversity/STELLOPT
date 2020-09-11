@@ -56,8 +56,10 @@
      E  vn_bsupumnc, vn_bsupvmnc, vn_rmns, vn_zmnc, vn_lmnc, vn_gmns,
      F  vn_bmns, vn_bsubumns, vn_bsubvmns, vn_bsubsmnc, vn_bsupumns, 
      G  vn_bsupvmns, vn_rbc, vn_zbs, vn_rbs, vn_zbc,
-     H  ln_version, ln_extension, ln_mgrid,
-
+     H  vn_sigmnc, vn_taumnc, vn_sigmns, vn_taumns,
+     I  vn_pparmnc, vn_ppermnc, vn_pbprmnc, vn_ppprmnc,
+     J  vn_pparmns, vn_ppermns, vn_pbprmns, vn_ppprmns,
+     K  ln_version, ln_extension, ln_mgrid,
      &  vn_bsubumnc_sur, vn_bsubvmnc_sur,                      !MRC 10-15-15
      &  vn_bsupumnc_sur, vn_bsupvmnc_sur,
      &  vn_bsubumns_sur, vn_bsubvmns_sur,
@@ -85,7 +87,9 @@
      E  ln_bsupumnc, ln_bsupvmnc, ln_rmns, ln_zmnc, ln_lmnc, ln_gmns,
      F  ln_bmns, ln_bsubumns, ln_bsubvmns, ln_bsubsmnc, ln_bsupumns, 
      G  ln_bsupvmns, ln_rbc, ln_zbs, ln_rbs, ln_zbc,
-
+     H  ln_sigmnc, ln_taumnc, ln_sigmns, ln_taumns,
+     I  ln_pparmnc, ln_ppermnc, ln_pbprmnc, ln_ppprmnc,
+     J  ln_pparmns, ln_ppermns, ln_pbprmns, ln_ppprmns,
      &  ln_bsubumnc_sur, ln_bsubvmnc_sur,          !MRC 10-15-15
      &  ln_bsupumnc_sur, ln_bsupvmnc_sur,
      &  ln_bsubumns_sur, ln_bsubvmns_sur,
@@ -562,13 +566,20 @@
       CALL cdf_define(nwout, vn_bsupumnc, bsupumnc, dimname=r3dim)
       CALL cdf_define(nwout, vn_bsupvmnc, bsupvmnc, dimname=r3dim)
 #ifdef _ANIMEC
-      CALL cdf_write(nwout, vn_pparmnc, pparmnc) !Half mesh
-      CALL cdf_write(nwout, vn_ppermnc, ppermnc) !Half mesh
-      !CALL cdf_write(nwout, vn_hotdmnc, hotdmnc) !Half mesh
-      CALL cdf_write(nwout, vn_sigmnc, sigmnc) !Half mesh
-      CALL cdf_write(nwout, vn_taumnc, taumnc) !Half mesh
-      CALL cdf_write(nwout, vn_pbprmnc, pbprmnc) !Half mesh
-      CALL cdf_write(nwout, vn_ppprmnc, ppprmnc) !Half mesh
+      CALL cdf_define(nwout, vn_pparmnc, pparmnc, dimname=r3dim)
+      CALL cdf_setatt(nwout, vn_pparmnc, ln_pparmnc)
+      CALL cdf_define(nwout, vn_ppermnc, ppermnc, dimname=r3dim)
+      CALL cdf_setatt(nwout, vn_ppermnc, ln_ppermnc)
+    !CALL cdf_define(nwout, vn_hotdmnc, hotdmnc, dimname=r3dim)
+    !CALL cdf_setatt(nwout, vn_hotdmnc, ln_hotdmnc)
+      CALL cdf_define(nwout, vn_sigmnc, sigmnc, dimname=r3dim)
+      CALL cdf_setatt(nwout, vn_sigmnc, ln_sigmnc)
+      CALL cdf_define(nwout, vn_taumnc, taumnc, dimname=r3dim)
+      CALL cdf_setatt(nwout, vn_taumnc, ln_taumnc)
+      CALL cdf_define(nwout, vn_pbprmnc, pbprmnc, dimname=r3dim)
+      CALL cdf_setatt(nwout, vn_pbprmnc, ln_pbprmnc)
+      CALL cdf_define(nwout, vn_ppprmnc, ppprmnc, dimname=r3dim)
+      CALL cdf_setatt(nwout, vn_ppprmnc, ln_ppprmnc)
 #endif
 !     IF (lfreeb) THEN
 !         CALL cdf_define(nwout, vn_rbc, rbc, 
@@ -758,7 +769,7 @@
 #endif
 
 #ifdef _ANIMEC
-         WRITE (nwout2, *) wb, wpar, gamma, pfac,
+         WRITE (nwout2, *) wb, wpar, gamma, 1,
 #else
          WRITE (nwout2, *) wb, wp, gamma, 1,
 #endif
@@ -1258,6 +1269,17 @@
 !     GET RID OF THESE EVENTUALLY: DON'T NEED THEM (can express in terms of lambdas)
       CALL cdf_write(nwout, vn_bsupumnc, bsupumnc)
       CALL cdf_write(nwout, vn_bsupvmnc, bsupvmnc)
+
+#ifdef _ANIMEC
+      CALL cdf_write(nwout, vn_pparmnc, pparmnc) !Half mesh
+      CALL cdf_write(nwout, vn_ppermnc, ppermnc) !Half mesh
+    !CALL cdf_write(nwout, vn_hotdmnc, hotdmnc) !Half mesh
+      CALL cdf_write(nwout, vn_sigmnc, sigmnc) !Half mesh
+      CALL cdf_write(nwout, vn_taumnc, taumnc) !Half mesh
+      CALL cdf_write(nwout, vn_pbprmnc, pbprmnc) !Half mesh
+      CALL cdf_write(nwout, vn_ppprmnc, ppprmnc) !Half mesh
+#endif
+
 
       IF (lfreeb) THEN        !MRC    10-15-15
          CALL cdf_write(nwout, vn_bsubumnc_sur, bsubumnc_sur)
