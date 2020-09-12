@@ -89,6 +89,7 @@
                   CALL get_equil_ne(shat(i),TRIM(ne_type),ne_prof(i),ier)
                   CALL get_equil_te(shat(i),TRIM(te_type),te_prof(i),ier)
                   CALL get_equil_zeff(shat(i),TRIM(zeff_type),z_prof(i),ier)
+                  PRINT *,shat(i),ne_prof(i),te_prof(i),z_prof(i)
                END DO
                te_prof = te_prof*1.0E-3 ! Must be in keV
             ELSE
@@ -118,21 +119,18 @@
             IF (mystart <= myend) THEN
 
                ! Handle Output
-               CALL Disable_Output_f77
+               !CALL Disable_Output_f77
                CALL Disable_printout_f77
 
                ! Obligatory setup
+               CALL closeErrorReport_f77()
+               CALL set_caller_name_f77('Stellopt','ECE')
                CALL set_hedi_f77('ece')
 
                ! Setup mirrors and vessel
                vessel_ece = TRIM(vessel_ece)
                mirror_ece = TRIM(mirror_ece)
                CALL set_VesselMirrors_f77(vessel_ece,mirror_ece)
-
-               ! Set Profiles
-               labelType  = 'tor_rho'
-               interpType = 'spline'
-               CALL set_nTZ_profs_f77(nrad, rho, ne_prof, te_prof, z_prof, labelType, interpType)
 
                ! Init Equilibrium
                hgrid   = Aminor/30
@@ -144,9 +142,17 @@
                B_dir   = SIGN(1.0D0, Baxis)
                CALL initEquilibr_f77(hgrid, dphi, B0_ref, phi_ref, B_dir, B_scale, B0type)
 
+               ! Set Plasma size
+               CALL set_plasmaSize_f77(rho(nrad), rho(nrad)-rho(nrad-1))
+
                ! Load the equilibrium
                equiname = 'wout_'//TRIM(proc_string)//'.nc'
                CALL set_EquiFile_f77(equiname)
+
+               ! Set Profiles
+               labelType  = 'tor_rho'
+               interpType = 'spline'
+               CALL set_nTZ_profs_f77(nrad, rho, ne_prof, te_prof, z_prof, labelType, interpType)
 
                ! Loop over ECE systems
                n=1
@@ -190,6 +196,9 @@
                   CALL set_Antenna_f77( rbeam, rfocus, phibx, QOemul, nra, nphi, &
                                         antennaPosition, targetPosition, &
                                         antennaCoordType,targetPositionType)
+                  
+                  ! Need this here
+                  !CALL Disable_Output_f77
 
                   ! Cycle over frequencies
                   DO j = mystart,myend
