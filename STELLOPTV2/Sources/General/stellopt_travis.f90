@@ -44,18 +44,18 @@
       INTEGER, ALLOCATABLE :: mnum(:)
       INTEGER       :: mystart,myend, chunk, numprocs_local,s
 
-      INTERFACE
-         INTEGER(4) FUNCTION mcload(mconf,name) 
-            INTEGER(8)   :: mconf
-            CHARACTER(*) :: name
-         END FUNCTION mcLoad
-         SUBROUTINE mcFree(mconf) 
-            INTEGER(8)   :: mconf
-         END SUBROUTINE mcFree
-         SUBROUTINE VesselFree(mconf) 
-            INTEGER(8)   :: mconf
-         END SUBROUTINE VesselFree
-      END INTERFACE
+!      INTERFACE
+!         INTEGER(4) FUNCTION mcload(mconf,name) 
+!            INTEGER(8)   :: mconf
+!            CHARACTER(*) :: name
+!         END FUNCTION mcLoad
+!         SUBROUTINE mcFree(mconf) 
+!            INTEGER(8)   :: mconf
+!         END SUBROUTINE mcFree
+!         SUBROUTINE VesselFree(mconf) 
+!            INTEGER(8)   :: mconf
+!         END SUBROUTINE VesselFree
+!      END INTERFACE
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
@@ -89,7 +89,6 @@
                   CALL get_equil_ne(shat(i),TRIM(ne_type),ne_prof(i),ier)
                   CALL get_equil_te(shat(i),TRIM(te_type),te_prof(i),ier)
                   CALL get_equil_zeff(shat(i),TRIM(zeff_type),z_prof(i),ier)
-                  PRINT *,shat(i),ne_prof(i),te_prof(i),z_prof(i)
                END DO
                te_prof = te_prof*1.0E-3 ! Must be in keV
             ELSE
@@ -119,7 +118,7 @@
             IF (mystart <= myend) THEN
 
                ! Handle Output
-               !CALL Disable_Output_f77
+               CALL Disable_Output_f77
                CALL Disable_printout_f77
 
                ! Obligatory setup
@@ -198,7 +197,7 @@
                                         antennaCoordType,targetPositionType)
                   
                   ! Need this here
-                  !CALL Disable_Output_f77
+                  CALL Disable_Output_f77
 
                   ! Cycle over frequencies
                   DO j = mystart,myend
@@ -207,12 +206,14 @@
                      CALL run_ECE_Beam_f77m(n,freq_ece(i,j), wmode, radto_ece(i,j),ECEerror)
                      wmode = 1 ! X-mode
                      CALL run_ECE_Beam_f77m(n,freq_ece(i,j), wmode, radtx_ece(i,j),ECEerror)
-                     PRINT *,myworkid,i,j,ECEerror
+                     !PRINT *,myworkid,i,j,ECEerror
                   END DO
 
-               ! Free the vessel here (only loaded if we get to here)
-               !CALL VesselFree(mVessel)
                END DO
+
+               ! Free the stuff we loaded.
+               CALL Free_MagConfig_f77()
+               
             END IF
 
 #if defined(MPI_OPT)
