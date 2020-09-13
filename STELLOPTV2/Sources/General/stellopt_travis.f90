@@ -215,7 +215,7 @@
 
             ! Deallocate variables
             DEALLOCATE(te_prof,ne_prof,z_prof)
-            IF (myworkid /= master) DEALLOCATE(radto_ece,radtx_ece,rho,shat)
+            IF (myworkid /= master) DEALLOCATE(radto_ece,radtx_ece,rho)
 
             ! Print to screen
             IF (lscreen) THEN
