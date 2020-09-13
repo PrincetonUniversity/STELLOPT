@@ -44,18 +44,6 @@
       INTEGER, ALLOCATABLE :: mnum(:)
       INTEGER       :: mystart,myend, chunk, numprocs_local,s
 
-!      INTERFACE
-!         INTEGER(4) FUNCTION mcload(mconf,name) 
-!            INTEGER(8)   :: mconf
-!            CHARACTER(*) :: name
-!         END FUNCTION mcLoad
-!         SUBROUTINE mcFree(mconf) 
-!            INTEGER(8)   :: mconf
-!         END SUBROUTINE mcFree
-!         SUBROUTINE VesselFree(mconf) 
-!            INTEGER(8)   :: mconf
-!         END SUBROUTINE VesselFree
-!      END INTERFACE
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
@@ -77,6 +65,7 @@
 #if defined(MPI_OPT)
             CALL MPI_COMM_RANK(MPI_COMM_MYWORLD, myworkid, ierr_mpi)
             CALL MPI_BCAST(nrad,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
+            CALL MPI_BCAST(proc_string,256,MPI_CHARACTER,master,MPI_COMM_MYWORLD,ierr_mpi)
             CALL MPI_BCAST(Aminor,1,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
             CALL MPI_BCAST(Baxis,1,MPI_DOUBLE_PRECISION,master,MPI_COMM_MYWORLD,ierr_mpi)
 #endif
@@ -137,8 +126,8 @@
                B0type  = 'noscale'
                phi_ref = 0
                B_scale = 1
-               B0_ref  = Baxis
-               B_dir   = SIGN(1.0D0, Baxis)
+               B0_ref  = ABS(Baxis)
+               B_dir   = 0
                CALL initEquilibr_f77(hgrid, dphi, B0_ref, phi_ref, B_dir, B_scale, B0type)
 
                ! Set Plasma size
@@ -161,11 +150,10 @@
                nphi               = nphi_ece
                DO i = 1,nsys
 
-                  ! Don't evaluate if not set or not in [mystart,myend]
+                  ! Don't evaluate if not set
                   IF (ALL(sigma_ece(i,:) >= bigno)) CYCLE
-                  IF (sigma_ece(i,mystart) >= bigno) CYCLE
 
-               ! Set Configuration
+                  ! Set Configuration
                   maxSteps     = 5000   ! upper number of steps on the trajectory
                   maxlength    = 5      ! upper limit of the trajectory length [m]
                   maxStepSize  = 10     ! max step-size for ODE-integrator [wave_length]
@@ -206,14 +194,13 @@
                      CALL run_ECE_Beam_f77m(n,freq_ece(i,j), wmode, radto_ece(i,j),ECEerror)
                      wmode = 1 ! X-mode
                      CALL run_ECE_Beam_f77m(n,freq_ece(i,j), wmode, radtx_ece(i,j),ECEerror)
-                     !PRINT *,myworkid,i,j,ECEerror
                   END DO
 
                END DO
 
                ! Free the stuff we loaded.
                CALL Free_MagConfig_f77()
-               
+
             END IF
 
 #if defined(MPI_OPT)
@@ -227,9 +214,8 @@
 #endif
 
             ! Deallocate variables
-            !CALL MCFREE(mconf8)
             DEALLOCATE(te_prof,ne_prof,z_prof)
-            IF (myworkid /= master) DEALLOCATE(radto_ece,radtx_ece,rho)
+            IF (myworkid /= master) DEALLOCATE(radto_ece,radtx_ece,rho,shat)
 
             ! Print to screen
             IF (lscreen) THEN
