@@ -56,7 +56,7 @@
 !        XC(rss) = .5*(Rss + Zcs), XC(zcs) = .5*(Rss - Zcs) -> 0
 !        XC(rsc) = .5*(Rsc + Zcc), XC(zcc) = .5*(Rsc - Zcc) -> 0
 !     THIS IMPLIES THE CONSTRAINT
-!        3D ONLY : GC(zcs) = 0;  
+!        3D ONLY : GC(zcs) = 0;
 !        ASYM:     GC(zcc) = 0
 !
 
@@ -84,7 +84,7 @@
 !     COMPUTE INVARIANT RESIDUALS
 !
       r1 = one/(2*r0scale)**2
-      jedge = 0    
+      jedge = 0
       delIter = iter2-iter1
 
       IF (delIter       .lt. 50 .and.                                        &
@@ -107,7 +107,7 @@
 !     PERFORM PRECONDITIONING AND COMPUTE RESIDUES
 !
       IF (ictrl_prec2d .EQ. 1) THEN
-         
+
          IF (l_colscale .AND. lactive) THEN
             CALL SAXLASTNTYPE(pgc, pcol_scale, pgc)
          END IF
@@ -158,7 +158,7 @@
          ftotal = SUM(tmp2(2:ns))
          fsql1 = hs*ftotal
 
-         CALL PadSides(pgc)  
+         CALL PadSides(pgc)
 
       ENDIF
 
@@ -202,7 +202,7 @@
      &    ictrl_prec2d .NE. 0) THEN
          gcz(:,tlglob:trglob) = 0
       END IF
- 
+
       DEALLOCATE(temp)
       END SUBROUTINE constrain_m1_par
 
@@ -242,7 +242,7 @@
       DO n = 0, ntor
          gcz(n,tlglob:trglob) = fac(tlglob:trglob)*gcz(n,tlglob:trglob)
       END DO
- 
+
       END SUBROUTINE scale_m1_par
 
       SUBROUTINE residue (gcr, gcz, gcl)
@@ -299,7 +299,7 @@
 !        XC(rss) = .5*(Rss + Zcs), XC(zcs) = .5*(Rss - Zcs) -> 0
 !        XC(rsc) = .5*(Rsc + Zcc), XC(zcc) = .5*(Rsc - Zcc) -> 0
 !     THIS IMPLIES THE CONSTRAINT
-!        3D ONLY : GC(zcs) = 0;  
+!        3D ONLY : GC(zcs) = 0;
 !        ASYM:     GC(zcc) = 0
 !
 
@@ -331,7 +331,7 @@
 !     COMPUTE INVARIANT RESIDUALS
 !
       r1 = one/(2*r0scale)**2
-      jedge = 0    
+      jedge = 0
 !SPH-JAH013108: MUST INCLUDE EDGE FORCE (INITIALLY) FOR V3FITA TO WORK
 !ADD A V3FIT RELATED FLAG? ADD fsq criterion first
       delIter = iter2 - iter1
@@ -446,7 +446,7 @@
      &    ictrl_prec2d .NE. 0) THEN
          gcz = 0
       END IF
- 
+
       END SUBROUTINE constrain_m1
 
       SUBROUTINE scale_m1(gcr, gcz)
@@ -465,17 +465,16 @@
 !-----------------------------------------------
       IF (.not.lconm1) RETURN
 
-      fac = (ard(:,nodd) + brd(:,nodd))                                        &
-          / (ard(:,nodd) + brd(:,nodd) + azd(:,nodd) + bzd(:,nodd))
+      fac = (ard(1:ns,nodd) + brd(1:ns,nodd))                                        &
+          / (ard(1:ns,nodd) + brd(1:ns,nodd) + azd(1:ns,nodd) + bzd(1:ns,nodd))
       DO n = 0, ntor
          gcr(:,n) = fac*gcr(:,n)
       END DO
 
-      fac = (azd(:,nodd) + bzd(:,nodd))                                        &
-          / (ard(:,nodd) + brd(:,nodd) + azd(:,nodd) + bzd(:,nodd))
+      fac = (azd(1:ns,nodd) + bzd(1:ns,nodd))                                        &
+          / (ard(1:ns,nodd) + brd(1:ns,nodd) + azd(1:ns,nodd) + bzd(1:ns,nodd))
       DO n = 0, ntor
          gcz(:,n) = fac*gcz(:,n)
       END DO
- 
-      END SUBROUTINE scale_m1
 
+      END SUBROUTINE scale_m1

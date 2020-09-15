@@ -7,7 +7,7 @@
 
       SUBROUTINE calc_fbal_par(bsubu, bsubv)
       USE vmec_main, ONLY: buco, bvco, equif, iequi,
-     1                     jcurv, jcuru, chipf, vp, pres, 
+     1                     jcurv, jcuru, chipf, vp, pres,
      2                     phipf, vpphi, presgrad, ohs
 #ifdef _ANIMEC
      3                    ,pmap, pd, phot, tpotb, zero, one
@@ -23,7 +23,7 @@
 #endif
       USE vmec_input, ONLY: nzeta
       USE vmec_dim, ONLY: ntheta3
-      USE parallel_include_module 
+      USE parallel_include_module
       IMPLICIT NONE
 !-----------------------------------------------
       REAL(dp), INTENT(in) :: bsubu(nznt,ns),
@@ -50,27 +50,27 @@
 !     FROM AMPERE'S LAW, JcurX are angle averages of jac*JsupX, so
 !                        JcurX = (dV/ds)/twopi**2 <JsupX> where <...> is flux surface average
       !nsmin=MAX(2,t1lglob); nsmax=MIN(t1rglob,ns-1)
+      nsmin=MAX(2,tlglob); nsmax=MIN(trglob,ns-1)
 #ifdef _ANIMEC
       IF (ANY(phot .ne. zero)) THEN
          pp3(1:nrzt:ns) = 0
-         DO js = 2,ns
-            DO lk = 1,nznt
-               pp3(js:nrzt:ns) = gsqrt(js:nrzt:ns)/vp(js)
+         DO js = nsmin,nsmax
+C            DO lk = 1,nznt
+            pp3(js:nrzt:ns) = gsqrt(js:nrzt:ns)/vp(js)
 !               l = js +(lk-1)*ns
 !               pp3(l) = gsqrt(l)/vp(js)
-            END DO
+C            END DO
          END DO
 
          CALL EPwell_ppargrad(pp2,pp3,bsq,pres)
 
-         DO js = 2, ns1
+         DO js = nsmin, ns1
             pmap(js) = SUM(pp2(js:nrzt:ns)*wint(js:nrzt:ns))
          END DO
       ELSE
          pmap   = 0
       END IF
 #endif
-      nsmin=MAX(2,tlglob); nsmax=MIN(trglob,ns-1)
       DO js = nsmin, nsmax
          jcurv(js) = (signgs*ohs)*(buco(js+1) - buco(js))
          jcuru(js) =-(signgs*ohs)*(bvco(js+1) - bvco(js))
@@ -94,8 +94,8 @@
       END SUBROUTINE calc_fbal_par
 
       SUBROUTINE calc_fbal(bsubu, bsubv)
-      USE vmec_main, ONLY: buco, bvco, equif, 
-     1                     jcurv, jcuru, chipf, vp, pres, 
+      USE vmec_main, ONLY: buco, bvco, equif,
+     1                     jcurv, jcuru, chipf, vp, pres,
      2                     phipf, vpphi, presgrad, ohs
 #ifdef _ANIMEC
      3                    ,pmap, pd, phot, tpotb, zero
@@ -106,7 +106,7 @@
 #ifdef _ANIMEC
      1                    ,pperp, ppar, onembc, sigma_an,
      2                     pp1, pp2, pp3
-      USE vforces, gsqrt => azmn_o
+      USE vforces, gsqrt => azmn_o, bsq => bzmn_o
 #endif
 
       IMPLICIT NONE
@@ -125,7 +125,26 @@
          buco(js) = SUM(bsubu(js:nrzt:ns)*wint(js:nrzt:ns))
          bvco(js) = SUM(bsubv(js:nrzt:ns)*wint(js:nrzt:ns))
       END DO
+#ifdef _ANIMEC
+      IF (ANY(phot .ne. zero)) THEN
+         pp3(1:nrzt:ns) = 0
+         DO js = 2,ns
+            DO lk = 1,nznt
+               pp3(js:nrzt:ns) = gsqrt(js:nrzt:ns)/vp(js)
+!               l = js +(lk-1)*ns
+!               pp3(l) = gsqrt(l)/vp(js)
+            END DO
+         END DO
 
+         CALL EPwell_ppargrad(pp2,pp3,bsq,pres)
+
+         DO js = 2, ns1
+            pmap (js) = SUM(pp2(js:nrzt:ns)*wint(js:nrzt:ns))
+         END DO
+      ELSE
+         pmap   = 0
+      END IF
+#endif
 !     FROM AMPERE'S LAW, JcurX are angle averages of jac*JsupX, so
 !                        JcurX = (dV/ds)/twopi**2 <JsupX> where <...> is flux surface average
       DO js = 2, ns1
@@ -134,6 +153,13 @@
 !FOR RFP vpphi(js) = (vp(js+1)/phip(js+1) + vp(js)/phip(js))/2
          vpphi(js) = (vp(js+1) + vp(js))/2
          presgrad(js) = (pres(js+1) - pres(js))*ohs
+#ifdef _ANIMEC
+!...pd contains Delta_p*omega ==> bcrit*phot on
+!...the half integer mesh computed in subroutine an_pressure of module bcovar
+         t4 = signgs*pmap(js)*ohs*(pd(js+1)-pd(js))
+!         t4 = signgs*pmap(js)*p5*bcrit*(tpotb(js)+tpotb(js+1))
+         presgrad(js) = presgrad(js) + t4
+#endif
          equif(js) = (-phipf(js)*jcuru(js) + chipf(js)*jcurv(js))
      1                /vpphi(js) + presgrad(js)
       END DO
@@ -290,7 +316,7 @@ C-----------------------------------------------
   !********0*********0*********0*********0*********0*********0*********0**
   !   2.  Compute Tau-minimum, Sigma-minimum, Peak Hot Particle Beta.    *
   !********0*********0*********0*********0*********0*********0*********0**
-  
+
         eps = EPSILON(eps)
         whpar = wpar - wp
         whper = wper - wp

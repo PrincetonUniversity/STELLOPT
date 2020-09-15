@@ -7,6 +7,9 @@
      &                     pguu, pguv, pgvv, pru, pzu,
      &                     pr1, prv, pzv, pshalf, pwint, pz1,
      &                     pru0, pzu0, psqrts
+#ifdef _ANIMEC
+     &                     , pperp, sigma_an
+#endif
       USE vforces, r12 => parmn_o, ru12 => pazmn_e, gsqrt => pazmn_o,
      &             rs => pbzmn_e, zs => pbrmn_e, zu12 => parmn_e,
      &             bsubu_e => pclmn_e, bsubv_e => pblmn_e,
@@ -24,7 +27,7 @@
 !   D u m m y   A r g u m e n t s
 !-----------------------------------------------
       REAL(dp), DIMENSION(nznt,ns,0:1), INTENT(INOUT) :: lu, lv
-      REAL(dp), DIMENSION((1+ntor)*(1+mpol1),1:ns,1:2*ntmax), 
+      REAL(dp), DIMENSION((1+ntor)*(1+mpol1),1:ns,1:2*ntmax),
      &   INTENT(IN) :: tpxc
       INTEGER, INTENT(inout) :: ier_flag
 !-----------------------------------------------
@@ -36,14 +39,14 @@
 !-----------------------------------------------
 !   L o c a l   V a r i a b l e s
 !-----------------------------------------------
-      INTEGER :: l, js, ndim
+      INTEGER :: l, js, ndim, index, lk
       REAL(dp) :: r2, volume, curpol_temp
 #ifndef _HBANGLE
       REAL(dp) :: arnorm, aznorm, tcon_mul
 #endif
       REAL(dp) :: bcastton, bcasttoff
       REAL(dp), POINTER, DIMENSION(:,:) :: luu, luv, lvv, tau
-      REAL(dp), DIMENSION(:,:), POINTER :: bsupu, bsubuh, 
+      REAL(dp), DIMENSION(:,:), POINTER :: bsupu, bsubuh,
      &                                      bsupv, bsubvh, r12sq
       LOGICAL :: lctor
       INTEGER :: i, j, k, nsmin, nsmax, istat
@@ -60,7 +63,7 @@
 !     POINTER ALIAS ASSIGNMENTS
 
       tau => pextra1(:,:,1)
-      luu => pextra2(:,:,1)  
+      luu => pextra2(:,:,1)
       luv => pextra3(:,:,1)
       lvv => pextra4(:,:,1)
 
@@ -77,7 +80,7 @@
       nsmin=t1lglob; nsmax=t1rglob
       pguu(:,nsmin:nsmax) = 0
       pguv(:,nsmin:nsmax) = 0
-      pgvv(:,nsmin:nsmax) = 0  
+      pgvv(:,nsmin:nsmax) = 0
 
 !
 !     COMPUTE METRIC ELEMENTS GIJ ON HALF MESH
@@ -145,7 +148,7 @@
 
 !CATCH THIS AFTER WHERE LINE BELOW phipog = 0
       nsmin = MAX(2,tlglob); nsmax = t1rglob
-      WHERE (gsqrt(:,nsmin:nsmax) .ne. zero) 
+      WHERE (gsqrt(:,nsmin:nsmax) .ne. zero)
          phipog(:,nsmin:nsmax) = one/gsqrt(:,nsmin:nsmax)
       END WHERE
       phipog(:,1) = 0
@@ -194,9 +197,9 @@
 
 !
 !     UPDATE IOTA EITHER OF TWO WAYS:
-!     1)  FOR ictrl_prec2d = 0, SOLVE THE LINEAR ALGEBRAIC EQUATION <Bsubu> = icurv 
+!     1)  FOR ictrl_prec2d = 0, SOLVE THE LINEAR ALGEBRAIC EQUATION <Bsubu> = icurv
 !         FOR iotas (after testing, this is preferred way)
-!     2)  FOR ictrl_prec2d > 0, EVOLVE IOTAS IN TIME, USING Force-iota  = <Bsubu> - icurv. 
+!     2)  FOR ictrl_prec2d > 0, EVOLVE IOTAS IN TIME, USING Force-iota  = <Bsubu> - icurv.
 !         IOTAS IS "STORED" AT LOCATION LAMBDA-SC(0,0) IN XC-ARRAY
 !
 
@@ -221,6 +224,7 @@
 !
 !     COMPUTE MAGNETIC AND KINETIC PRESSURE ON RADIAL HALF-MESH
 !
+
       nsmin = t1lglob
       nsmax = t1rglob
       DO l = nsmin, nsmax
@@ -235,22 +239,65 @@
       IF (ictrl_prec2d .LE. 1) THEN
          DO l = tlglob, trglob
             wblocal(l) = SUM(pwint(:,l)*gsqrt(:,l) * bsq(:,l))
-            wplocal(l) = vp(l)*pres(l)
+C            wplocal(l) = vp(l)*pres(l)
          END DO
 
          CALL Gather1XArray(wblocal)
          wbtotal = SUM(wblocal(2:ns))
+C         CALL Gather1XArray(wplocal)
+C         wptotal = SUM(wplocal(2:ns))
+         wb = hs*ABS(wbtotal)
+C         wp = hs*wptotal
+      END IF
+
+#ifdef _ANIMEC
+!SPH: MAKE CALL HERE (bsubX_e are used for scratch arrays)
+      CALL an_pressure(bsubu_e, bsubv_e)
+
+      nsmin = tlglob
+      nsmax = t1rglob
+      DO l = nsmin, nsmax
+        DO lk = 1,nznt
+          index = l + (lk-1)*ns
+          bsq(lk,l) = bsq(lk,l) + pperp(index)
+          phipog(lk,l) = phipog(lk,l)*sigma_an(index)
+          bsubuh(lk,l) = bsubuh(lk,l)*sigma_an(index)
+          bsubvh(lk,l) = bsubvh(lk,l)*sigma_an(index)
+        END DO
+      END DO
+
+!WAC-SPH: MODIFY EFFECTIVE CURRENT K = curl(sigma_an*B)
+C      phipog(1:nrzt) = phipog(1:nrzt)*sigma_an(1:nrzt)
+C      bsubuh(1:nrzt) = bsubuh(1:nrzt)*sigma_an(1:nrzt)
+C      bsubvh(1:nrzt) = bsubvh( 1:nrzt)*sigma_an(1:nrzt)
+#else
+      nsmin = MAX(2,tlglob)
+      nsmax = MIN(ns,t1rglob)
+      pres(nsmin:nsmax) = mass(nsmin:nsmax)/vp(nsmin:nsmax)**gamma
+      pres(1)=0
+
+      IF (ictrl_prec2d .LE. 1) THEN
+         DO l = tlglob, trglob
+            wplocal(l) = vp(l)*pres(l)
+         END DO
          CALL Gather1XArray(wplocal)
          wptotal = SUM(wplocal(2:ns))
-         wb = hs*ABS(wbtotal)
          wp = hs*wptotal
       END IF
+
+      nsmin = tlglob
+      nsmax = t1rglob
+      DO l=nsmin, nsmax
+         bsq(:,l) = bsq(:,l) + pres(l)
+      END DO
+
+#endif
 
 !     ADD KINETIC PRESSURE TO MAGNETIC PRESSURE
       nsmin = tlglob
       nsmax = t1rglob
       DO l=nsmin, nsmax
-         bsq(:,l) = bsq(:,l) + pres(l)
+C         bsq(:,l) = bsq(:,l) + pres(l)
          lvv(:,l) = phipog(:,l)*pgvv(:,l)
       END DO
 
@@ -278,7 +325,7 @@
      &                + p5*((lvv(:,l)+lvv(:,l+1))*lu(:,l,1) +
      &                      bsubu_e(:,l) + bsubu_e(:,l+1))
       END DO
-      bsubv_e(:,ns) = bsubv_e(:,ns) 
+      bsubv_e(:,ns) = bsubv_e(:,ns)
      &              + p5*(lvv(:,ns)*lu(:,ns,1) + bsubu_e(:,ns))
 
 !
@@ -312,7 +359,7 @@
          lctor = lfreeb .AND. ictrl_prec2d.GT.1      !Yields better accuracy in solution
       END IF
 
-      IF (lctor) THEN       
+      IF (lctor) THEN
          IF (ictrl_prec2d .EQ. 2) THEN
             ctor_prec2d = p5*(buco(ns) - buco(ns1))
          END IF
@@ -330,7 +377,7 @@
       DO l = nsmin, nsmax
          lvv(:,l) = bdamp(l)
       END DO
-     
+
       IF (rank.EQ.0) THEN
          IF (ANY(bsubvh(:,1) .ne. zero)) ier_flag = bsub_bad_js1_flag
          IF (ANY(bsubuh(:,1) .ne. zero)) ier_flag = bsub_bad_js1_flag
@@ -338,7 +385,7 @@
 
       nsmin = tlglob
       nsmax = MIN(trglob,ns - 1)
-      bsubu_e(:,nsmin:nsmax) = p5*(bsubuh(:,nsmin:nsmax) + 
+      bsubu_e(:,nsmin:nsmax) = p5*(bsubuh(:,nsmin:nsmax) +
      &                             bsubuh(:,nsmin+1:nsmax+1))
       IF (trglob .EQ. ns) bsubu_e(:,ns) = p5*bsubuh(:,ns)
 
@@ -393,7 +440,7 @@
      &                        * rzu_fac(nsmin:nsmax)
          rru_fac(nsmin:nsmax) = psqrts(1,nsmin:nsmax)
      &                        * rru_fac(nsmin:nsmax)
-         frcc_fac(nsmin:nsmax) = one/rzu_fac(nsmin:nsmax)  
+         frcc_fac(nsmin:nsmax) = one/rzu_fac(nsmin:nsmax)
          rzu_fac(nsmin:nsmax) = rzu_fac(nsmin:nsmax)/2
          fzsc_fac(nsmin:nsmax) =-one/rru_fac(nsmin:nsmax)
          rru_fac(nsmin:nsmax) = rru_fac(nsmin:nsmax)/2
@@ -430,7 +477,7 @@
          tcon0 = MIN(ABS(tcon0), one)                              !!ignore large tcon0 from old-style files
          tcon_mul = tcon0*(1 + r2*(one/60 + r2/(200*120)))
 
-         tcon_mul = tcon_mul/((4*r0scale**2)**2)                   !!Scaling of ard, azd (2*r0scale**2); 
+         tcon_mul = tcon_mul/((4*r0scale**2)**2)                   !!Scaling of ard, azd (2*r0scale**2);
                                                                    !!Scaling of cos**2 in alias (4*r0scale**2)
          tcon = tcon0
          DO js = MAX(2,tlglob), MIN(ns-1,trglob)
@@ -516,7 +563,7 @@
       END DO
 
       END SUBROUTINE bcovar_par
-      
+
       SUBROUTINE bcovar (lu, lv)
       USE vmec_main, fpsi => bvco, p5 => cp5
       USE vmec_params, ONLY: ns4, signgs, pdamp, lamscale
@@ -530,7 +577,7 @@
       USE precon2d, ONLY: ictrl_prec2d, lHess_exact,
      &                    ctor_prec2d
 #ifdef _HBANGLE
-      USE angle_constraints, ONLY: precondn_rho, ard2, arm2,            
+      USE angle_constraints, ONLY: precondn_rho, ard2, arm2,
      &                             azd2, azm2, brd2, brm2, bzd2, bzm2
 #endif
       USE fbal
@@ -554,16 +601,15 @@
       REAL(dp)                        :: arnorm, aznorm, tcon_mul
 #endif
       REAL(dp), POINTER, DIMENSION(:) :: luu, luv, lvv, tau
-      REAL(dp), DIMENSION(:), POINTER :: bsupu, bsubuh, 
+      REAL(dp), DIMENSION(:), POINTER :: bsupu, bsubuh,
      &                                   bsupv, bsubvh, r12sq
       LOGICAL                         :: lctor
 !-----------------------------------------------
       ndim = 1 + nrzt
-
 !
 !     POINTER ALIAS ASSIGNMENTS
-!   
-      tau => extra1(:,1);  luu => extra2(:,1);  
+!
+      tau => extra1(:,1);  luu => extra2(:,1);
       luv => extra3(:,1);  lvv => extra4(:,1)
 
       bsupu => luu;  bsubuh => bsubu_o
@@ -575,7 +621,7 @@
 !     FOR OPTIMIZATION ON CRAY, MUST USE COMPILER DIRECTIVES TO
 !     GET VECTORIZATION OF LOOPS INVOLVING (MORE THAN ONE) POINTER!
 !
-      guu(ndim) = 0;  guv = 0;  gvv = 0  
+      guu(ndim) = 0;  guv = 0;  gvv = 0
 
 !
 !     COMPUTE METRIC ELEMENTS GIJ ON HALF MESH
@@ -584,7 +630,7 @@
 !
 
       r12sq(1:nrzt) = sqrts(1:nrzt)*sqrts(1:nrzt)
-      guu(1:nrzt)   = ru(1:nrzt,0)*ru(1:nrzt,0) 
+      guu(1:nrzt)   = ru(1:nrzt,0)*ru(1:nrzt,0)
      &              + zu(1:nrzt,0)*zu(1:nrzt,0) + r12sq(1:nrzt)*
      &              ( ru(1:nrzt,1)*ru(1:nrzt,1)
      &            +   zu(1:nrzt,1)*zu(1:nrzt,1))
@@ -631,13 +677,13 @@
       END IF
 
       tau(1:nrzt) = gsqrt(1:nrzt)
-      gsqrt(1:nrzt) = r12(1:nrzt)*tau(1:nrzt)      
+      gsqrt(1:nrzt) = r12(1:nrzt)*tau(1:nrzt)
       gsqrt(1:nrzt:ns) = gsqrt(2:nrzt:ns)
 
       gvv(2:nrzt) = gvv(2:nrzt) + r12sq(2:nrzt)
 
 !CATCH THIS AFTER WHERE LINE BELOW   phipog = 0
-      WHERE (gsqrt(2:ndim) .ne. zero) 
+      WHERE (gsqrt(2:ndim) .ne. zero)
          phipog(2:ndim) = one/gsqrt(2:ndim)
       END WHERE
       phipog(1:ndim:ns) = 0
@@ -668,9 +714,9 @@
          lu(js:nrzt:ns,0) = lu(js:nrzt:ns,0) + phipf(js)
       END DO
 
-      bsupu(2:nrzt) = p5*phipog(2:nrzt)*(lv(2:nrzt,0) + lv(1:nrzt-1,0) 
+      bsupu(2:nrzt) = p5*phipog(2:nrzt)*(lv(2:nrzt,0) + lv(1:nrzt-1,0)
      &              + shalf(2:nrzt)*(lv(2:nrzt,1) + lv(1:nrzt-1,1)))
-      bsupv(2:nrzt) = p5*phipog(2:nrzt)*(lu(2:nrzt,0) + lu(1:nrzt-1,0) 
+      bsupv(2:nrzt) = p5*phipog(2:nrzt)*(lu(2:nrzt,0) + lu(1:nrzt-1,0)
      &              + shalf(2:nrzt)*(lu(2:nrzt,1) + lu(1:nrzt-1,1)))
 !v8.49: add ndim points
       bsupu(1)=0;  bsupu(ndim)=0
@@ -678,13 +724,13 @@
 
 !
 !     UPDATE IOTA EITHER OF TWO WAYS:
-!     1)  FOR ictrl_prec2d = 0, SOLVE THE LINEAR ALGEBRAIC EQUATION <Bsubu> = icurv 
-!         FOR iotas  
-!     2)  FOR ictrl_prec2d > 0, EVOLVE IOTAS IN TIME, USING Force-iota  = <Bsubu> - icurv IN TOMNSP. 
+!     1)  FOR ictrl_prec2d = 0, SOLVE THE LINEAR ALGEBRAIC EQUATION <Bsubu> = icurv
+!         FOR iotas
+!     2)  FOR ictrl_prec2d > 0, EVOLVE IOTAS IN TIME, USING Force-iota  = <Bsubu> - icurv IN TOMNSP.
 !
-!     NEED TO DO IT WAY (#2) TO EASILY COMPUTE THE HESSIAN ELEMENTS DUE TO LAMBDA-VARIATIONS. 
-!     IOTAS IS "STORED" AT LOCATION LAMBDA-SC(0,0) IN XC-ARRAY [USE THIS COMPONENT SO IT 
-!     WILL WORK EVEN FOR 2D PLASMA], ALTHOUGH ITS VARIATION IS LIKE THAT OF LV-CS(0,0), 
+!     NEED TO DO IT WAY (#2) TO EASILY COMPUTE THE HESSIAN ELEMENTS DUE TO LAMBDA-VARIATIONS.
+!     IOTAS IS "STORED" AT LOCATION LAMBDA-SC(0,0) IN XC-ARRAY [USE THIS COMPONENT SO IT
+!     WILL WORK EVEN FOR 2D PLASMA], ALTHOUGH ITS VARIATION IS LIKE THAT OF LV-CS(0,0),
 !     WITH N -> 1 IN THE HESSIAN CALCULATION ROUTINES (Compute_Hessian_Flam_lam, etc.)
 !
 
@@ -708,7 +754,7 @@
 !
 !     COMPUTE MAGNETIC AND KINETIC PRESSURE ON RADIAL HALF-MESH
 !
-      bsq(:nrzt) = p5*(bsupu(:nrzt)*bsubuh(:nrzt) 
+      bsq(:nrzt) = p5*(bsupu(:nrzt)*bsubuh(:nrzt)
      &           +     bsupv(:nrzt)*bsubvh(:nrzt))
 
       wb = hs*ABS(SUM(wint(:nrzt)*gsqrt(:nrzt)*bsq(:nrzt)))
@@ -743,7 +789,7 @@
       lvv = lvv*shalf
       bsubu_e(:nrzt) = guv(:nrzt)*bsupu(:nrzt)*sigma_an(:nrzt)          !sigma_an=1 isotropic
       bsubu_e(ndim) = 0
-      bsubv_e(1:nrzt) = bsubv_e(1:nrzt) 
+      bsubv_e(1:nrzt) = bsubv_e(1:nrzt)
      &                + p5*((lvv(1:nrzt) + lvv(2:ndim))*lu(1:nrzt,1) +
      &                      bsubu_e(1:nrzt) + bsubu_e(2:ndim))
 
@@ -755,7 +801,7 @@
       IF (iequi .EQ. 1) papr = pmap*pres(1:ns)/vp(1:ns)
 #endif
       CALL calc_fbal(bsubuh, bsubvh)
-    
+
       rbtor0= c1p5*fpsi(2)  - p5*fpsi(3)
       rbtor = c1p5*fpsi(ns) - p5*fpsi(ns-1)
 !
@@ -781,7 +827,7 @@
       ELSE
          lctor = lfreeb .and. ictrl_prec2d.gt.1      !Yields better accuracy in solution
       END IF
-      IF (lctor) THEN       
+      IF (lctor) THEN
          IF (ictrl_prec2d .eq. 2) THEN
             ctor_prec2d = signgs*twopi*p5*(buco(ns) - buco(ns1))
          END IF
@@ -815,7 +861,7 @@
          lu(:nrzt,0) = bsupv(:nrzt)
          lv(:nrzt,0) = bsupu(:nrzt)
       END IF
- 
+
 !
 !     COMPUTE PRECONDITIONING (1D) AND SCALING PARAMETERS
 !     NO NEED TO RECOMPUTE WHEN 2D-PRECONDITIONER ON
@@ -864,7 +910,7 @@
          tcon0 = MIN(ABS(tcon0), one)                              !!ignore large tcon0 from old-style files
          tcon_mul = tcon0*(1 + r2*(one/60 + r2/(200*120)))
 
-         tcon_mul = tcon_mul/((4*r0scale**2)**2)                   !!Scaling of ard, azd (2*r0scale**2); 
+         tcon_mul = tcon_mul/((4*r0scale**2)**2)                   !!Scaling of ard, azd (2*r0scale**2);
                                                                    !!Scaling of cos**2 in alias (4*r0scale**2)
 
          DO js = 2, ns - 1
@@ -896,7 +942,7 @@
 
 !     ADJUST <bsubvh> AFTER MESH-BLENDING
          DO js = 2, ns
-            curpol_temp = fpsi(js) 
+            curpol_temp = fpsi(js)
      &                  - SUM(bsubvh(js:nrzt:ns)*wint(js:nrzt:ns))
             DO l = js, nrzt, ns
                bsubvh(l) = bsubvh(l) + curpol_temp
@@ -1061,7 +1107,7 @@
 !     pperp_ns(lk) = (pperp(l)-pres(ns))/pparden
                   pperp_ns(lk) = pperp(l)
       END DO
-            
+
       pres_pv = medge / (c1p5*pmap(ns)-p5*pmap(ns-1))**gamma
 !      pppr_pv = pres_pv * phedg
 

@@ -1,4 +1,4 @@
-      SUBROUTINE runvmec(ictrl_array, input_file0, 
+      SUBROUTINE runvmec(ictrl_array, input_file0,
      &                   lscreen, COMM_WORLD, reset_file_name)
       USE vmec_main
       USE vmec_params, ONLY: bad_jacobian_flag, more_iter_flag,
@@ -59,12 +59,12 @@ C-----------------------------------------------
 !
 !            value     flag-name              calls routines to...
 !            -----     ---------              ---------------------
-!              1       restart_flag           reset internal run-control parameters (for example, if 
+!              1       restart_flag           reset internal run-control parameters (for example, if
 !                                             jacobian was bad, to try a smaller time-step)
 !              2       readin_flag            read in data from input_file and initialize parameters/arrays
 !                                             which do not dependent on radial grid size
 !                                             allocate internal grid-dependent arrays used by vmec;
-!                                             initialize internal grid-dependent vmec profiles (xc, iota, etc); 
+!                                             initialize internal grid-dependent vmec profiles (xc, iota, etc);
 !                                             setup loop for radial multi-grid meshes or, if ns_index = ictrl_array(4)
 !                                             is > 0, use radial grid points specified by ns_array[ns_index]
 !              4       timestep_flag          iterate vmec either by "niter" time steps or until ftol satisfied,
@@ -72,7 +72,7 @@ C-----------------------------------------------
 !                                             to caller after numsteps, rather than niter, steps.
 !              8       output_flag            write out output files (wout, jxbout)
 !             16       cleanup_flag           cleanup (deallocate arrays) - this terminates present run of the sequence
-!                                             This flag will be ignored if the run might be continued. For example, 
+!                                             This flag will be ignored if the run might be continued. For example,
 !                                             if ier_flag (see below) returns the value more_iter_flag, the cleanup
 !                                             code will be skipped even if cleanup_flag is set, so that the run
 !                                             could be continued on the next call to runvmec.
@@ -85,13 +85,13 @@ C-----------------------------------------------
 !                  specifies vmec error condition (if nonzero)
 !     numsteps = ictrl_array(3)
 !                  number time steps to evolve the equilibrium. Iterations will stop EITHER if numsteps > 0 and
-!                  when the number of vmec iterations exceeds numsteps; OR if the ftol condition is satisfied, 
+!                  when the number of vmec iterations exceeds numsteps; OR if the ftol condition is satisfied,
 !                  whichever comes first. The timestep_flag must be set (in ictrl_flag) for this to be in effect.
-!                  If numsteps <= 0, then vmec will choose consecutive (and increasing) values from the ns_array 
+!                  If numsteps <= 0, then vmec will choose consecutive (and increasing) values from the ns_array
 !                  until ftol is satisfied on each successive multi-grid.
 !     ns_index = ictrl_array(4)
 !                  if > 0 on entry, specifies index (in ns_array) of the radial grid to be used for the present iteration
-!                  phase. If ns_index <= 0, vmec will use the previous value of this index (if the ftol 
+!                  phase. If ns_index <= 0, vmec will use the previous value of this index (if the ftol
 !                  condition was not satisfied during the last call to runvmec) or the next value of this index,
 !                  and it will iterate through each successive non-zero member of the ns_array until ftol-convergence
 !                  occurs on each multigrid.
@@ -217,7 +217,7 @@ C-----------------------------------------------
 !        COMPUTE INITIAL SOLUTION ON COARSE GRID
 !        IF PREVIOUS SEQUENCE DID NOT CONVERGE WELL
 !
-!        IF (lreseta) THEN    !NOTE: where externally, lreseta = T, set restart_flag bit 
+!        IF (lreseta) THEN    !NOTE: where externally, lreseta = T, set restart_flag bit
 !                                    (ictrl_flag = IOR(ictrl_flag,restart_flag))
          igrid0 = 1
          ns_old = 0
@@ -314,7 +314,7 @@ C-----------------------------------------------
 
          grid_size(grid_id) = nsval
          grid_procs(grid_id) = nranks
-         
+
 !  JDH 2012-06-20. V3FIT fix, inserted with change from VMEC 8.48 -> 8.49
 !  (Not sure just what in initialize_radial messes up convergence - happens slowly)
 !  Logical l_v3fit is declared in vmec_input, available via vmec_main

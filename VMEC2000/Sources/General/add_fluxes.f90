@@ -19,7 +19,7 @@
 !-----------------------------------------------
 !   L o c a l   V a r i a b l e s
 !-----------------------------------------------
-      INTEGER :: js, l
+      INTEGER :: js, l, index
       REAL(rprec) :: top, bot
 
       INTEGER :: i, j, k, nsmin, nsmax, lnsnum, istat
@@ -37,9 +37,24 @@
         top = icurv(js)
         bot = 0
         DO j=1,nznt
-          top = top - pwint(j,js)*(pguu(j,js)*bsupu(j,js) &
-            + pguv(j,js)*bsupv(j,js))
-          bot = bot + pwint(j,js)*overg(j,js)*pguu(j,js)
+#ifdef _ANIMEC
+           index = js +(j-1)*ns
+         ! DO l = js, nrzt, ns
+           top = top - pwint(j,js)*(pguu(j,js)*bsupu(j,js) &
+                 + pguv(j,js)*bsupv(j,js))*sigma_an(index)
+           bot = bot + pwint(j,js)*sigma_an(index)*overg(j,js)*pguu(j,js)
+             ! top = top-wint(l)*(guu(l)*bsupu(l)+guv(l)*bsupv(l))*sigma_an(l)
+             ! bot = bot + wint(l)*sigma_an(l)*overg(l)*guu(l)
+         ! END DO
+#else
+           top = top - pwint(j,js)*(pguu(j,js)*bsupu(j,js) &
+                 + pguv(j,js)*bsupv(j,js))
+           bot = bot + pwint(j,js)*overg(j,js)*pguu(j,js)
+         ! DO l = js, nrzt, ns
+           ! top = top - wint(l)*(guu(l)*bsupu(l) + guv(l)*bsupv(l))
+           ! bot = bot + wint(l)*overg(l)*guu(l)
+         ! END DO
+#endif
         END DO
         IF (bot.ne.zero) chips(js) = top/bot
         IF (phips(js).ne.zero)  iotas(js) = chips(js)/phips(js)
@@ -96,7 +111,7 @@
 
       SUBROUTINE add_fluxes(overg, bsupu, bsupv, lcurrent)
       USE vmec_main
-      USE realspace, ONLY: wint, guu, guv, chip, phip, sigma_an 
+      USE realspace, ONLY: wint, guu, guv, chip, phip, sigma_an
 
       IMPLICIT NONE
 !-----------------------------------------------
@@ -139,8 +154,9 @@
              top = top - wint(l)*(guu(l)*bsupu(l) + guv(l)*bsupv(l))
              bot = bot + wint(l)*overg(l)*guu(l)
          END DO
-#endif        IF (bot .ne. zero) chips(js) = top/bot
-            IF (phips(js) .ne. zero) iotas(js) = chips(js)/phips(js)
+#endif
+         IF (bot .ne. zero) chips(js) = top/bot
+         IF (phips(js) .ne. zero) iotas(js) = chips(js)/phips(js)
       END DO
 
  100  CONTINUE

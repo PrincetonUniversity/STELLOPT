@@ -3,7 +3,7 @@
       USE vmec_params
       USE realspace
       USE vforces, r12 => armn_o, bsupu => crmn_e, bsupv => czmn_e,
-     1   gsqrt => azmn_o, bsq => bzmn_o, izeta => azmn_e, 
+     1   gsqrt => azmn_o, bsq => bzmn_o, izeta => azmn_e,
      2   brho => bzmn_e, bphi => czmn_o, curtheta => brmn_e
 #ifdef _ANIMEC
      3  ,tau_an => brmn_o
@@ -84,7 +84,7 @@ C-----------------------------------------------
       rmags => rzl_array(1,:,0,rcc)
       zmags => rzl_array(1,:,0,zcs+ntmax)
       rmncc => rzl_array(:,:,:,rcc)
-      zmnsc => rzl_array(:,:,:,zsc+ntmax) 
+      zmnsc => rzl_array(:,:,:,zsc+ntmax)
       IF (lasym) THEN
          rmaga => rzl_array(1,:,0,rcs)
          zmaga => rzl_array(1,:,0,zcc+ntmax)
@@ -123,7 +123,7 @@ C-----------------------------------------------
 !     NOTE: JXBFORCE ROUTINE MUST BE CALLED TO COMPUTE IZETA, JDOTB
 !           ON OUTPUT, J, IZETA, JDOTB ARE IN MKS UNITS (1/MU0 FACTOR)
 !
-!     CAUTION: THIS CALL WILL WRITE OVER br, bz 
+!     CAUTION: THIS CALL WILL WRITE OVER br, bz
 !
 
       CALL jxbforce(bsupu, bsupv, bsubu, bsubv, crmn_o, rcon, zcon,
@@ -271,7 +271,7 @@ C-----------------------------------------------
       circum_p = twopi*SUM(surf_area(:nznt))
       surf_area(:nznt) = wint(ns:nrzt:ns)*SQRT(
      1     + (r1(ns:nrzt:ns,0) + r1(ns:nrzt:ns,1))**2*guu_1u(:nznt)
-     2     +((rv(ns:nrzt:ns,0) + rv(ns:nrzt:ns,1))*zu0(ns:nrzt:ns) 
+     2     +((rv(ns:nrzt:ns,0) + rv(ns:nrzt:ns,1))*zu0(ns:nrzt:ns)
      3     - (zv(ns:nrzt:ns,0) + zv(ns:nrzt:ns,1))*ru0(ns:nrzt:ns))**2)
       surf_area_p = twopi**2*SUM(surf_area(:nznt))
       DEALLOCATE (guu_1u)
@@ -281,22 +281,22 @@ C-----------------------------------------------
 !     Also, estimate mean elongation of plasma from the following relations
 !     for an axisymmetric torus with elliptical cross section and semi-axes
 !     a and a * kappa (kappa >= 1)
-!     
+!
 !     surf_area _p = 2*pi*R * 2*pi*a ctwiddle(kappa_p)
 !     volume_p    = 2*pi*R * pi*a ** 2 * kappa_p
 !     cross_area _p =   pi*a ** 2 * kappa_p
 !
-!     The cirumference of an ellipse of semi-axes a and a * kappa_p is 
+!     The cirumference of an ellipse of semi-axes a and a * kappa_p is
 !        2 * pi * a ctwiddle(kappa_p)
 !     The exact form for ctwiddle is 4 E(1 - kappa_p^2) / (2 pi), where
-!      E is the complete elliptic integral of the second kind 
+!      E is the complete elliptic integral of the second kind
 !     (with parameter argument m, not modulus argument k)
 !
 !  The coding below implements an approximate inverse of the function
 !  d(kappa) = ctwiddle(kappa) / sqrt(kappa)
 !  The approximate inverse is
 !	   kappa = 1 + (pi^2/8) * (d^2+sqrt(d^4-1)-1)
-!  Note that the variable aminor_p, for an elliptic cross section, 
+!  Note that the variable aminor_p, for an elliptic cross section,
 !  would be a * sqrt(kappa)
 !
       d_of_kappa = surf_area_p * aminor_p / ( 2 * volume_p)
@@ -341,7 +341,7 @@ C-----------------------------------------------
 !
 !       Note: tau = |gsqrt|*wint
 !
-      ALLOCATE (btor_vac(nznt), btor1(nznt), dbtor(nznt), 
+      ALLOCATE (btor_vac(nznt), btor1(nznt), dbtor(nznt),
      1          phat(nznt), redge(nznt))
       delphid_exact = zero                         !Eq. 20 in Shafranov
       musubi = zero
@@ -493,7 +493,7 @@ C-----------------------------------------------
             IF(rank.EQ.0) WRITE (nthreed, 95)
             noff = 1 + nzeta/2
          END IF
-          
+
          ygeo(1) = zero
          DO js = 2, ns
             zmin =  HUGE(zmin)
@@ -540,10 +540,10 @@ C-----------------------------------------------
 
             rgeo = p5*(xmidb + xmida)              !Geometric major radius
             ygeo(js) = p5*(xmidb - xmida)          !Geometric minor radius
-   
+
             yinden(js) = (xmida - xmin)/(xmax - xmin) !Geometric indentation
             yellip(js) = (zmax - zmin)/(xmax - xmin)  !Geometric ellipticity
-   
+
             ytrian(js) = (rgeo - rzmax)/(xmax - xmin) !Geometric triangularity
             yshift(js) = (r1(1+lt,0)-rgeo)/(xmax - xmin) !Geometric shift
 
@@ -557,7 +557,7 @@ C-----------------------------------------------
 
             IF (nplanes .eq. 1) THEN
                IF(rank.EQ.0) WRITE (nthreed, 120) js, psi(js), ygeo(js),
-     1        yellip(js), yinden(js), ytrian(js), yshift(js), jpar_perp, 
+     1        yellip(js), yinden(js), ytrian(js), yshift(js), jpar_perp,
      2        jparPS_perp
             ELSE
                IF(rank.EQ.0) WRITE (nthreed, 120) js, psi(js), ygeo(js),
@@ -575,7 +575,7 @@ C-----------------------------------------------
       fac = p5/mu0
       IF(rank.EQ.0) WRITE (nthreed, 140) sump/mu0, pavg/mu0,
      1   fac*sumbpol,  fac*sumbpol/volume_p, fac*sumbtor, fac*sumbtor/
-     2   volume_p, fac*sumbtot, fac*sumbtot/volume_p, c1p5*sump/mu0, 
+     2   volume_p, fac*sumbtot, fac*sumbtot/volume_p, c1p5*sump/mu0,
      3   c1p5*pavg/mu0
   140 FORMAT(' Volume Integrals (Joules) and Volume ',
      1   'Averages (Pascals)',/,24x,'Integral',6x,'Average',/,
@@ -642,14 +642,14 @@ C-----------------------------------------------
      A   ' beta poloidal (EW)    = ',f14.6,/   )
 #else
       WRITE (nthreed, 152) betatot, betapol, betator
- 152  FORMAT(/,' From volume averages over plasma, betas are',/,
+  152 FORMAT(/,' From volume averages over plasma, betas are',/,
      B   ' beta total    = ',f14.6,/,' beta poloidal = ',f14.6,/,
      C   ' beta toroidal = ',f14.6,/)
 
-    IF(rank.EQ.0) WRITE (nthreed, 150) betatot, betapol, betator
+      IF(rank.EQ.0) WRITE (nthreed, 150) betatot, betapol, betator
   150 FORMAT(/,' From volume averages over plasma, betas are',/,
-   1   ' beta total    = ',f14.6,/,' beta poloidal = ',f14.6,/,
-   2   ' beta toroidal = ',f14.6,/)
+     1   ' beta total    = ',f14.6,/,' beta poloidal = ',f14.6,/,
+     2   ' beta toroidal = ',f14.6,/)
 #endif
 
       betstr = two*SQRT(sump2/volume_p)/(sumbtot/volume_p)
@@ -735,15 +735,15 @@ C-----------------------------------------------
       IF(rank.EQ.0) WRITE (nthreed, 170) rshaf, rcen, rlao,
      1   scaling_ratio, s3, smaleli, musubi, betai, lambda
 !      IF (lrecon.AND.rank.EQ.0) WRITE (nthreed, 172) dmusubi_meas
-      IF(rank.EQ.0) WRITE (nthreed, 174) delta1, delta2, delta3, 
-     1   s11, s12, s13, s2, s2/fgeo, s2/flao, 
-     5   musubi + s11,musubi + s12, 
-     6   musubi + s13, 
-     8   p5*s11 + s2, p5*s12 + s2/fgeo, p5*s13 + s2/flao, 
-     A   p5*(3*betai+smaleli-musubi)/(s11+s2) - one, 
-     B   p5*(3*betai+smaleli-musubi)/(s12+s2/fgeo) - one, 
-     C   p5*(3*betai+smaleli-musubi)/(s13+s2/flao) - one, 
-     D   p5*(betai+smaleli+musubi)/s2 - one, 
+      IF(rank.EQ.0) WRITE (nthreed, 174) delta1, delta2, delta3,
+     1   s11, s12, s13, s2, s2/fgeo, s2/flao,
+     5   musubi + s11,musubi + s12,
+     6   musubi + s13,
+     8   p5*s11 + s2, p5*s12 + s2/fgeo, p5*s13 + s2/flao,
+     A   p5*(3*betai+smaleli-musubi)/(s11+s2) - one,
+     B   p5*(3*betai+smaleli-musubi)/(s12+s2/fgeo) - one,
+     C   p5*(3*betai+smaleli-musubi)/(s13+s2/flao) - one,
+     D   p5*(betai+smaleli+musubi)/s2 - one,
      E   p5*fgeo*(betai+smaleli+musubi)/s2 - one,
      F   p5*flao*(betai+smaleli+musubi)/s2 - one
 
@@ -768,7 +768,7 @@ C-----------------------------------------------
      7   ' betai                   = ',f14.6,/,
      9   ' lambda                  = ',f14.6,/)
   172 FORMAT(' musubi (diamagnetism)   = ',f14.6)
-  174 FORMAT(/,32x,'R = RT',12x,'R = RG',12x,'R = RL',/, 
+  174 FORMAT(/,32x,'R = RT',12x,'R = RG',12x,'R = RL',/,
      1       20x,3(10x,8('-')),/,
      1   ' delta = 1 - RT/R     = ',3(f14.6,4x),/,
      2   ' s1                   = ',3(f14.6,4x),/,
