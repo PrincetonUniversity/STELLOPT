@@ -269,19 +269,19 @@
                                       ATT='Maximum velocity of dist func [m/s]',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'partvmax',ier)
                CALL write_scalar_hdf5(fid,'ns_prof1',ier,INTVAR=ns_prof1,&
-                                   ATT='Rho Grid Points [0,1]',ATT_NAME='description')
+                                   ATT='Rho Dist. Grid Points [0,1]',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ns_prof1',ier)
                CALL write_scalar_hdf5(fid,'ns_prof2',ier,INTVAR=ns_prof2,&
-                                   ATT='U Grid Points [0,2pi]',ATT_NAME='description')
+                                   ATT='U Dist. Grid Points [0,2pi]',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ns_prof2',ier)
                CALL write_scalar_hdf5(fid,'ns_prof3',ier,INTVAR=ns_prof3,&
-                                   ATT='V Grid Points [0,2pi/nfp]',ATT_NAME='description')
+                                   ATT='V Dist. Grid Points [0,2pi]',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ns_prof3',ier)
                CALL write_scalar_hdf5(fid,'ns_prof4',ier,INTVAR=ns_prof4,&
-                                   ATT='VLL Grid Points[-vmax,vmax]',ATT_NAME='description')
+                                   ATT='VLL Dist. Grid Points[-vmax,vmax]',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ns_prof4',ier)
                CALL write_scalar_hdf5(fid,'ns_prof5',ier,INTVAR=ns_prof5,&
-                                   ATT='Vperp Grid Points [0, vmax]',ATT_NAME='description')
+                                   ATT='Vperp Dist. Grid Points [0, vmax]',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ns_prof5',ier)
                IF (ASSOCIATED(ndot_prof)) THEN
                   CALL write_var_hdf5(fid,'ndot_prof',nbeams,ns_prof1,ier,DBLVAR=ndot_prof,&
@@ -310,7 +310,7 @@
                END IF
                IF (ASSOCIATED(dist5d_prof)) THEN
                   CALL write_var_hdf5(fid,'dist_prof',nbeams,ns_prof1,ns_prof2,ns_prof3,ns_prof4,ns_prof5,ier,DBLVAR=dist5d_prof,&
-                                      ATT='Distribution Function [part/s] (nbeam,nrho,ntheta,nzeta,nvll,nvperp)',ATT_NAME='description')
+                                      ATT='Distribution Function [part/s] (nbeam,nrho,npol,ntor,nvll,nvperp)',ATT_NAME='description')
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'dist_prof',ier)
                END IF
                IF (lbeam) THEN
