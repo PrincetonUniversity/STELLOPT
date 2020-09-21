@@ -148,4 +148,4 @@ should then be used for transforming the remaining quantities.
 
 [Boozer Transformation for NCSX-Like Configuration](Boozer Transformation for NCSX-Like Configuration)
 
-[Explanation of the VMEC to Boozer coordinate transformation](https://bitbucket.org/lazerson_princeton/stellopt/wiki/docs/Transformation%20from%20VMEC%20to%20Boozer%20Coordinates.pdf)
+[Explanation of the VMEC to Boozer coordinate transformation](docs/Transformation from VMEC to Boozer Coordinates.pdf)
