@@ -65,7 +65,8 @@
 #######################################################################
   LFFTW3 = F
   FFTW3_INC = -I$(FFTW_HOME)/include
-  FFTW3_LIB = -L$(FFTW_HOME)/lib -lfftw3 -lfftw3f 
+  FFTW3_LIB = -L$(FFTW_HOME)/lib -lfftw3 -lfftw3f \
+              -Wl,-rpath,$(FFTW_HOME)/lib
 
 #######################################################################
 #             PGPLOT Options
