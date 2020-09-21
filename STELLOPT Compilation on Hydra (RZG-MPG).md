@@ -1,9 +1,8 @@
 STELLOPT Compilation at the MPCDF (RZG-MPG Machines)
 ====================================================
 
-This page details how to compile the STELLOPT family of codes on Hydra
-at [Rechenzentrum Garching](@http://www.rzg.mpg.de/) (RZG-MPE). In order
-to do so you will need an account on their system. These build
+This page details how to compile the STELLOPT family of codes
+at [Max-Plank Computational Data Facility (formerly Rechenzentrum Garching)](@http://www.rzg.mpg.de/) (MPCDF). In order to do so you will need an account on their system. These build
 instructions are for the Intel based compilers
 
 Draco
@@ -27,6 +26,18 @@ Cobra
     module load hdf5-mpi/1.10.5
     module load netcdf-mpi/4.7.0
     module load fftw-mpi
+
+Raven
+-----
+
+    module load git
+    module load intel/19.1.2
+    module load mkl
+    module load impi/2019.8
+    module load netcdf-mpi
+    module load hdf5-mpi
+    module load fftw-mpi
+    module load anaconda/3/2020.02
 
 IPP-HGW Theory (clus47)
 -----

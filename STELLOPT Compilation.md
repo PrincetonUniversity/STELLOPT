@@ -52,7 +52,7 @@ Specific Compilation Issues
 
 [Compiling on a Redhat/CentOS (RPM) Machine](STELLOPT Compilation CentOS)
 
-[Compiling on the RZG-MPE Cluster (Hydra, Draco, Cobra)](STELLOPT Compilation on Hydra (RZG-MPG))
+[Compiling on the MPCDF Clusters (Draco, Cobra, Raven)](STELLOPT Compilation on Hydra (RZG-MPG))
 
 [Compiling on the CINECA Cluster (Marconi)](STELLOPT Compilation CINECA)
 
