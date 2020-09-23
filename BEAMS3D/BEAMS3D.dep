@@ -184,7 +184,6 @@ beams3d_runtime.o: \
 
 beams3d_volume.o: \
       beams3d_runtime.o \
-      beams3d_lines.o \
       beams3d_grid.o
       
 
