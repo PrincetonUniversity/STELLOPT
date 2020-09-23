@@ -386,6 +386,7 @@
       CALL mpialloc(dist5d_prof, nbeams, ns_prof1, ns_prof2, ns_prof3, ns_prof4, ns_prof5, myid_sharmem, 0, MPI_COMM_SHARMEM, win_dist5d)
       IF (myid_sharmem == master) THEN
          dist5d_prof = 0; !ipower_prof=0; epower_prof=0; ndot_prof=0; j_prof = 0
+         CALL beams3d_volume
       END IF
       h2_prof = ns_prof2*invpi2
       h3_prof = ns_prof3*invpi2
