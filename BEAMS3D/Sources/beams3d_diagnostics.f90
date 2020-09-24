@@ -18,7 +18,7 @@
                                  nbeams, beam, e_beams, charge_beams, &
                                  mass_beams, lverb, p_beams, MPI_BARRIER_ERR,&
                                  MPI_BCAST_ERR,nprocs_beams,handle_err, ldepo,&
-                                 MPI_REDU_ERR
+                                 MPI_REDU_ERR, pi2
       USE safe_open_mod, ONLY: safe_open
       USE EZspline
       USE mpi_params ! MPI
@@ -31,12 +31,13 @@
 !          ns           Number of flux divisions for current calculation
 !-----------------------------------------------------------------------
       IMPLICIT NONE
-      INTEGER :: ier, iunit, istat, i, j, k, ninj, sbeam, ebeam
-      REAL(rprec) :: maxdist,mindist,v1,v2,dist,ddist,s1,s2, vp_temp
+      INTEGER :: ier, iunit, istat, i, j, k, nhalf, ninj, sbeam, ebeam
+      REAL(rprec) :: maxdist,mindist,v1,v2,dist,ddist,s1,s2, vp_temp, dvll, dvperp
       LOGICAL, ALLOCATABLE     :: partmask(:), partmask2(:,:), partmask2t(:,:)
       INTEGER, ALLOCATABLE  :: int_mask(:), int_mask2(:,:), nlost(:)
       INTEGER, ALLOCATABLE  :: dist_func(:,:,:)
       REAL, ALLOCATABLE     :: real_mask(:),vllaxis(:),vperpaxis(:)
+      REAL, ALLOCATABLE     :: help3d(:,:,:)
       INTEGER, PARAMETER :: ndist = 100
 #if defined(MPI_OPT)
       INTEGER :: mystart, mypace
@@ -179,26 +180,12 @@
 
       ! These diagnostics need Vp to be defined
       IF (lvmec .and. .not.lvac .and. .not.ldepo .and. myworkid == master) THEN
-         ! In the future we'll calculate values from the dist5d_prof array.
-         !ALLOCATE(vllaxis(ns_prof4),vperpaxis(ns_prof5))
-         !ALLOCATE(dist_func(nbeams,ns_prof1,ns_prof4))
-         !FORALL(k = 1:ns_prof4) vllaxis(k) = -partvmax+2*partvmax*(k-1)/(ns_prof4-1)
-         !FORALL(k = 1:ns_prof5) vperpaxis(k) = partvmax*(k-1)/(ns_prof5-1)
-         ! We need to calculate the old values
-         dense_prof = SUM(SUM(SUM(SUM(dist5d_prof,DIM=6),DIM=5),DIM=4),DIM=3)
-         ! Calculated J_fast
-         !dist_func = SUM(SUM(SUM(dist5d_prof,DIM=6),DIM=4),DIM=3)
-         !DO k = 1, ns_prof4
-         !   j_prof = j_prof + dist_func(:,:,k)*vllaxis(k)
-         !END DO
-         !IF (ANY(charge_beams>0)) THEN
-         !   DO k = 1, ns_prof1
-         !      j_prof(1:nbeams,k) = j_prof(1:nbeams,k)*charge_beams(1:nbeams)
-         !   END DO
-         !ELSE
-         !   j_prof = j_prof * 1.60217662E-19 
-         !END IF
-         !DEALLOCATE(vllaxis,vperpaxis,dist_func)
+         ! Allocate the parallel and perpendicular velcoity axis
+         nhalf = ns_prof4/2
+         ALLOCATE(vllaxis(ns_prof4),vperpaxis(ns_prof5))
+         FORALL(k = 1:ns_prof4) vllaxis(k) = partvmax*REAL(k-nhalf-0.5)/REAL(nhalf)
+         FORALL(k = 1:ns_prof5) vperpaxis(k) = partvmax*REAL(k-0.5)/REAL(ns_prof5)
+         ! First normalize the 5D phase space density by dVolume
          ! Grid in rho, units in [/m^3]
          ! Note ns is number of cells not cell boundaries
          ! Just a note here dV/drho = 2*rho*dV/dist
@@ -208,12 +195,33 @@
             s2 = s1*s1
             CALL EZspline_interp(Vp_spl_s,s2,vp_temp,ier)
             vp_temp = vp_temp*2*s1*(1./REAL(ns_prof1))
+            dist5d_prof(:,k,:,:,:,:) = dist5d_prof(:,k,:,:,:,:)/vp_temp
             epower_prof(:,k) = epower_prof(:,k)/vp_temp
             ipower_prof(:,k) = ipower_prof(:,k)/vp_temp
             ndot_prof(:,k)   =   ndot_prof(:,k)/vp_temp
-               j_prof(:,k)   =      j_prof(:,k)/vp_temp
-            dense_prof(:,k)  =  dense_prof(:,k)/vp_temp
          END DO
+         dense_prof = SUM(SUM(SUM(SUM(dist5d_prof,DIM=6),DIM=5),DIM=4),DIM=3) ! [m^-3]
+         ! Now calculate J_fast
+         ALLOCATE(help3d(nbeams,ns_prof1,ns_prof4))
+         help3d = SUM(SUM(SUM(dist5d_prof,DIM=6),DIM=4),DIM=3)
+         j_prof = 0
+         DO k = 1, ns_prof4
+            j_prof = j_prof + help3d(:,:,k)*vllaxis(k)
+         END DO
+         DEALLOCATE(help3d)
+         DO k = 1, ns_prof1
+            j_prof(1:nbeams,k) = j_prof(1:nbeams,k)*charge_beams(1:nbeams) ! [A*m^-2]
+         END DO
+         ! Normalize to velocity space volume element
+         dvll = partvmax*2/ns_prof4 ! dVll
+         dvperp = pi2*partvmax/ns_prof5 ! dVperp
+         DO k = 1, ns_prof5 ! VPERP
+            !s2 = REAL(k-0.5)/REAL(ns_prof5) ! Vperp_frac
+            vp_temp = vperpaxis(k)*dvll*dvperp
+            dist5d_prof(:,:,:,:,:,k) = dist5d_prof(:,:,:,:,:,k)/vp_temp
+         END DO
+         ! DEALLOCATIONS
+         DEALLOCATE(vperpaxis,vllaxis)
 
       END IF
 

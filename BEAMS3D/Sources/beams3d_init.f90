@@ -371,6 +371,8 @@
          t_end = t_end_in(1:nparticles)
          beam  = 1
          nbeams = 1
+         charge_beams(1) = charge_in(1)
+         mass_beams(1)   = mass_in(1)
       END IF
       ALLOCATE(epower_prof(nbeams,ns_prof1), ipower_prof(nbeams,ns_prof1), &
                ndot_prof(nbeams,ns_prof1), j_prof(nbeams,ns_prof1), &
