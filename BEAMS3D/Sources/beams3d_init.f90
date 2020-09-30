@@ -103,7 +103,10 @@
          WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   Z   = [',zmin,',',zmax,'];  NZ:   ',nz
          IF (lbeam) THEN
             WRITE(6,'(A,I8)')               '   # of Particles to Start: ', nparticles_start
-            WRITE(6,'(A,I6)')                          '   # of Beams: ', nbeams
+            WRITE(6,'(A,I6)')                          '   # of Beams:   ', nbeams
+         ELSEIF (lfusion) THEN
+            WRITE(6,'(A,I8)')               '   # of Particles to Start: ', nparticles_start
+            WRITE(6,'(A,I6)')                          '   # of species: ', nbeams
          ELSE
             WRITE(6,'(A,I8)')               '   # of Particles to Start: ', nparticles
          END IF
@@ -119,7 +122,7 @@
          IF (lascot4) WRITE(6,'(A)') '   ASCOT4 OUTPUT ON!'
          IF (lbbnbi) WRITE(6,'(A)') '   BEAMLET BEAM Model!'
          IF (lsuzuki) WRITE(6,'(A)') '   SUZUKI DEPOSITION MODEL!'
-         IF (lsuzuki) WRITE(6,'(A)') '   NUCLEAR FUSION BIRTH MODEL!'
+         IF (lfusion) WRITE(6,'(A)') '   NUCLEAR FUSION BIRTH MODEL!'
          IF (lplasma_only) WRITE(6,'(A)') '   MAGNETIC FIELD FROM PLASMA ONLY!'
          IF (lrestart_particles) WRITE(6,'(A)') '   Restarting particles!'
          IF (lrandomize .and. lbeam) WRITE(6,'(A)') '   Randomizing particle processor!'
