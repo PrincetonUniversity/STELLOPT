@@ -31,7 +31,7 @@
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       INTEGER :: s,i,j,k,k1,k2
-      REAL(rprec) :: maxrate, dV, Ntotal, w_total, vpart
+      REAL(rprec) :: maxrateDT, dV, Ntotal, w_total, vpart
       REAL(rprec), DIMENSION(3) :: q
       REAL(rprec), ALLOCATABLE, DIMENSION(:) :: X_rand, Y_rand, Z_rand, &
                                                 P_rand
@@ -80,7 +80,7 @@
       IF (mylocalid == mylocalmaster) THEN
          rateDT = 0
       END IF
-      Ntotal = 0
+      Ntotal = 0; maxrateDT = 0
       
       ! Break up the Work
       CALL MPI_CALC_MYRANGE(MPI_COMM_LOCAL, 1, nr*nphi*nz, mystart, myend)
@@ -95,6 +95,7 @@
          IF ((i==nr) .or. (j==nphi) .or. (k==nz)) CYCLE
          q = (/raxis(i), phiaxis(j), zaxis(k)/)+0.5*(/hr(i),hp(j),hz(k)/) ! Half grid
          CALL beams3d_DTRATE(q,rateDT(i,j,k))
+         maxrateDT = MAX(rateDT(i,j,k),maxrateDT)
          ! We really want the total number of particles in the box (dV=rdrdpdz)
          dV = (raxis(i)+0.5*hr(i))*hr(i)*hp(j)*hz(k)
          rateDT(i,j,k) = rateDT(i,j,k) * dV
@@ -103,13 +104,26 @@
 #if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
       CALL MPI_ALLREDUCE(MPI_IN_PLACE,Ntotal,1,MPI_DOUBLE_PRECISION,MPI_SUM,MPI_COMM_LOCAL,ierr_mpi)
+      CALL MPI_ALLREDUCE(MPI_IN_PLACE,maxrateDT,1,MPI_DOUBLE_PRECISION,MPI_MAX,MPI_COMM_LOCAL,ierr_mpi)
 #endif
 
       ! Calculate a new nparticles_start
       IF (myworkid == master) THEN
+         DO s = 1, nr*nphi*nz
+            i = MOD(s-1,nr)+1
+            j = MOD(s-1,nr*nphi)
+            j = FLOOR(REAL(j) / REAL(nr))+1
+            k = CEILING(REAL(s) / REAL(nr*nphi))
+            WRITE(327,*) i,j,k,rateDT(i,j,k)
+         END DO
+         PRINT *,NTOTAL
          rateDT = nparticles_start*rateDT/Ntotal ! Particles per box
-         WHERE(rateDT > 0) rateDT = NINT(MAX(rateDT,1.0))
+         !WHERE(rateDT > 0) rateDT = MAX(rateDT,1.0)
+         rateDT = FLOOR(rateDT)
          nparticles_start = SUM(SUM(SUM(rateDT,3),2),1)
+         IF (lverb) THEN
+            WRITE(6, '(A,ES11.4,A,I8)') '          max D-T rate ', maxrateDT,'; nparticles = ',nparticles_start
+         END IF
       END IF
 
 #if defined(MPI_OPT)
