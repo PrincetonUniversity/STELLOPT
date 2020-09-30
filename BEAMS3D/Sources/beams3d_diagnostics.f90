@@ -18,7 +18,7 @@
                                  nbeams, beam, e_beams, charge_beams, &
                                  mass_beams, lverb, p_beams, MPI_BARRIER_ERR,&
                                  MPI_BCAST_ERR,nprocs_beams,handle_err, ldepo,&
-                                 MPI_REDU_ERR, pi2
+                                 MPI_REDU_ERR, pi2, weight
       USE safe_open_mod, ONLY: safe_open
       USE EZspline
       USE mpi_params ! MPI
@@ -31,12 +31,12 @@
 !          ns           Number of flux divisions for current calculation
 !-----------------------------------------------------------------------
       IMPLICIT NONE
-      INTEGER :: ier, iunit, istat, i, j, k, nhalf, ninj, sbeam, ebeam
-      REAL(rprec) :: maxdist,mindist,v1,v2,dist,ddist,s1,s2, vp_temp, dvll, dvperp
+      INTEGER :: ier, iunit, istat, i, j, k, nhalf, sbeam, ebeam, ninj2
+      REAL(rprec) :: maxdist,mindist,v1,v2,dist,ddist,s1,s2, vp_temp, dvll, dvperp, ninj
       LOGICAL, ALLOCATABLE     :: partmask(:), partmask2(:,:), partmask2t(:,:)
-      INTEGER, ALLOCATABLE  :: int_mask(:), int_mask2(:,:), nlost(:)
+      INTEGER, ALLOCATABLE  :: int_mask(:), int_mask2(:,:)
       INTEGER, ALLOCATABLE  :: dist_func(:,:,:)
-      REAL, ALLOCATABLE     :: real_mask(:),vllaxis(:),vperpaxis(:)
+      REAL, ALLOCATABLE     :: real_mask(:),vllaxis(:),vperpaxis(:), nlost(:)
       REAL, ALLOCATABLE     :: help3d(:,:,:)
       INTEGER, PARAMETER :: ndist = 100
 #if defined(MPI_OPT)
@@ -114,9 +114,12 @@
       ! Calculate shinethrough and loss
       shine_through = 0
       DO i = 1, nbeams
-         shine_through(i) = 100.*COUNT(end_state(mystart:myend) == 3 .and. (beam(mystart:myend)==i),DIM=1)/COUNT(beam==i)
-         shine_port(i) = 100.*COUNT(end_state(mystart:myend) == 4 .and. (beam(mystart:myend)==i),DIM=1)/COUNT(beam==i)
-         nlost(i)         = COUNT(end_state(mystart:myend) == 2 .and. beam(mystart:myend) == i)
+         nlost(i)          =      SUM(weight(mystart:myend), MASK = (end_state(mystart:myend) == 2 .and. (beam(mystart:myend)==i)))
+         shine_through(i)  = 100.*SUM(weight(mystart:myend), MASK = (end_state(mystart:myend) == 3 .and. (beam(mystart:myend)==i)))/SUM(weight,MASK=(beam==i))
+         shine_port(i)     = 100.*SUM(weight(mystart:myend), MASK = (end_state(mystart:myend) == 4 .and. (beam(mystart:myend)==i)))/SUM(weight,MASK=(beam==i))
+         !shine_through(i) = 100.*COUNT(end_state(mystart:myend) == 3 .and. (beam(mystart:myend)==i),DIM=1)/COUNT(beam==i)
+         !shine_port(i) = 100.*COUNT(end_state(mystart:myend) == 4 .and. (beam(mystart:myend)==i),DIM=1)/COUNT(beam==i)
+         !nlost(i)         = COUNT(end_state(mystart:myend) == 2 .and. beam(mystart:myend) == i)
       END DO
 
 #if defined(MPI_OPT)
@@ -124,12 +127,12 @@
          CALL MPI_REDUCE(MPI_IN_PLACE, dist_func,     nbeams*ndist*(npoinc+1), MPI_INTEGER,          MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
          CALL MPI_REDUCE(MPI_IN_PLACE, shine_through, nbeams,                  MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
          CALL MPI_REDUCE(MPI_IN_PLACE, shine_port,    nbeams,                  MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
-         CALL MPI_REDUCE(MPI_IN_PLACE, nlost,         nbeams,                  MPI_INTEGER,          MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
+         CALL MPI_REDUCE(MPI_IN_PLACE, nlost,         nbeams,                  MPI_REAL,          MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
       ELSE
          CALL MPI_REDUCE(dist_func,     dist_func,     nbeams*ndist*(npoinc+1), MPI_INTEGER,          MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
          CALL MPI_REDUCE(shine_through, shine_through, nbeams,                  MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
          CALL MPI_REDUCE(shine_port,    shine_port,    nbeams,                  MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
-         CALL MPI_REDUCE(nlost,         nlost,         nbeams,                  MPI_INTEGER,          MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
+         CALL MPI_REDUCE(nlost,         nlost,         nbeams,                  MPI_REAL,          MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
       END IF
 #endif
 
@@ -146,7 +149,8 @@
             WRITE(iunit,'((I5,3(2X,E22.12)))') i,E_BEAMS(i),CHARGE_BEAMS(i),MASS_BEAMS(i)
 
             ! Output beam losses
-            ninj  = COUNT(beam .eq. i)
+            ninj  = SUM(weight,MASK=(beam==i))
+            ninj2  = COUNT(beam==i)
             WRITE(iunit,'(A)') ' Particles Launched  Particles Lost  Lost(%)  TIME_END'
             WRITE(iunit,'(6X,I10,11X,I5,7x,F5.1,6x,E22.12)') ninj, nlost(i), 100.*nlost(i)/ninj, MAXVAL(t_end)
             WRITE(iunit,'(A)') ' '
@@ -156,7 +160,7 @@
             IF (lverb) THEN
                IF (i==1) WRITE(6,'(A)')  ' BEAMLINE     ENERGY [keV]   CHARGE [e]   MASS [Mp]   Particles [#]   Lost [%]  Shinethrough [%]  Port [%]'
                WRITE(6,'(I5,3(9X,I5),8X,I8,3(8X,F5.1))') i,NINT(E_BEAMS(i)*6.24150636309E15),NINT(CHARGE_BEAMS(i)*6.24150636309E18),&
-                                         NINT(MASS_BEAMS(i)*5.97863320194E26), ninj, 100.*nlost(i)/ninj, shine_through(i), shine_port(i)
+                                         NINT(MASS_BEAMS(i)*5.97863320194E26), ninj2, 100.*nlost(i)/ninj, shine_through(i), shine_port(i)
                CALL FLUSH(6)
             END IF
             ! Write Distribution Function
