@@ -103,6 +103,7 @@ PROGRAM BEAMS3D
         lascotfl = .false.
         lrandomize = .false.
         lsuzuki = .false.
+        lfusion = .false.
         id_string = ''
         coil_string = ''
         mgrid_string = ''
@@ -187,6 +188,8 @@ PROGRAM BEAMS3D
                 lrandomize = .true.
             case ("-suzuki")
                 lsuzuki = .true.
+            case ("-fusion")
+                lfusion = .true.
             case ("-help", "-h") ! Output Help message
                 write(6, *) ' Beam MC Code'
                 write(6, *) ' Usage: xbeams3d <options>'
@@ -211,6 +214,7 @@ PROGRAM BEAMS3D
                 write(6, *) '     -collisions:   Force collision operator'
                 write(6, *) '     -rand:         Randomize particle processor'
                 write(6, *) '     -suzuki:       Force Suzuki NBI model'
+                write(6, *) '     -fusion:       Fusion Reaction Rates for birth'
                 write(6, *) '     -noverb:       Supress all screen output'
                 write(6, *) '     -help:         Output help message'
 #if defined(MPI_OPT)
@@ -295,6 +299,8 @@ PROGRAM BEAMS3D
     CALL MPI_BCAST(lrandomize,1,MPI_LOGICAL, master, MPI_COMM_BEAMS,ierr_mpi)
     IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_main',ierr_mpi)
     CALL MPI_BCAST(lsuzuki,1,MPI_LOGICAL, master, MPI_COMM_BEAMS,ierr_mpi)
+    IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_main',ierr_mpi)
+    CALL MPI_BCAST(lfusion,1,MPI_LOGICAL, master, MPI_COMM_BEAMS,ierr_mpi)
     IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_main',ierr_mpi)
 #endif
 
