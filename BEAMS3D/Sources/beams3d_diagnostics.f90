@@ -152,7 +152,7 @@
             ninj  = SUM(weight,MASK=(beam==i))
             ninj2  = COUNT(beam==i)
             WRITE(iunit,'(A)') ' Particles Launched  Particles Lost  Lost(%)  TIME_END'
-            WRITE(iunit,'(6X,I10,11X,I5,7x,F5.1,6x,E22.12)') ninj, nlost(i), 100.*nlost(i)/ninj, MAXVAL(t_end)
+            WRITE(iunit,'(6X,I10,11X,I5,7x,F5.1,6x,E22.12)') ninj2, nlost(i), 100.*nlost(i)/ninj, MAXVAL(t_end)
             WRITE(iunit,'(A)') ' '
             CALL FLUSH(iunit)
 
