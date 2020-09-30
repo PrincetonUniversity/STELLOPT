@@ -199,6 +199,11 @@
             END DO
             IF (nbeams == 0)  CALL handle_err(BAD_BEAMDEX_ERR,'beams3d_input in: input.'//TRIM(id_string),nbeams)
          END IF
+         IF (lfusion) THEN
+            r_start_in = -1
+            nparticles = nparticles_start*4
+            nbeams = 4
+         END IF
          nte = 0
          DO WHILE ((TE_AUX_S(nte+1) >= 0.0).and.(nte<MAXPROFLEN))
             nte = nte + 1
