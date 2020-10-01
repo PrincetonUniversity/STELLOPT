@@ -15,6 +15,7 @@
       USE beams3d_runtime
       USE beams3d_grid
       USE beams3d_lines
+      USE beams3d_physics_mod, ONLY: beams3d_MODB
 #if defined(LHDF5)
       USE ez_hdf5
 #endif
@@ -29,7 +30,8 @@
       LOGICAL :: lplasma_old, ldepo_old
       INTEGER :: i, k, ier, npoinc_extract, npoinc_save, state_flag
       INTEGER, DIMENSION(:), ALLOCATABLE :: beam2, start_dex
-      REAL(rprec) :: vpartmax
+      REAL(rprec) :: vpartmax, B_help
+      REAL(rprec), DIMENSION(3) :: q
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: mass2, charge2, Zatom2, &
                                                 weight2, t_end2
 !-----------------------------------------------------------------------
@@ -75,7 +77,7 @@
             end_state(nparticles))
          ALLOCATE(R_lines(0:npoinc,nparticles),Z_lines(0:npoinc,nparticles),PHI_lines(0:npoinc,nparticles),&
             vll_lines(0:npoinc,nparticles),neut_lines(0:npoinc,nparticles),moment_lines(0:npoinc,nparticles),&
-            S_lines(0:npoinc,nparticles))
+            S_lines(0:npoinc,nparticles),B_lines(0:npoinc,nparticles))
          CALL read_var_hdf5(fid,'mass',nparticles,ier,DBLVAR=mass2)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'mass2',ier)
          CALL read_var_hdf5(fid,'charge',nparticles,ier,DBLVAR=charge2)
@@ -104,6 +106,8 @@
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'moment_lines',ier)
          CALL read_var_hdf5(fid,'S_lines',npoinc+1,nparticles,ier,DBLVAR=S_lines)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'S_lines',ier)
+         CALL read_var_hdf5(fid,'B_lines',npoinc+1,nparticles,ier,DBLVAR=B_lines)
+         IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'B_lines',ier)
          CALL close_hdf5(fid,ier)
          IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,'beams3d_'//TRIM(restart_string)//'.h5',ier)
 
@@ -151,7 +155,7 @@
             Z_start(k)   = Z_lines(npoinc_extract,i)
             phi_start(k) = PHI_lines(npoinc_extract,i)
             vll_start(k) = vll_lines(npoinc_extract,i)
-            mu_start(k)  = moment_lines(npoinc_extract,i)
+            mu_start(k)  = moment_lines(npoinc_extract,i)*B_lines(npoinc_extract,i)
             v_neut(3,k)   = 0.0
             mass(k)      = mass2(i)
             charge(k)   = charge2(i)
@@ -159,9 +163,12 @@
             beam(k)     = beam2(i)
             weight(k)   = weight2(i)
             t_end(k)    = MAXVAL(t_end_in)
+            q = (/R_start(k), phi_start(k), Z_start(k)/)
+            CALL beams3d_MODB(q,B_help)
+            mu_start(k) = mu_start(k)/B_help
             k = k + 1
          END DO
-         DEALLOCATE(R_lines, Z_lines, PHI_lines, vll_lines, moment_lines, neut_lines, end_state, S_lines)
+         DEALLOCATE(R_lines, Z_lines, PHI_lines, vll_lines, moment_lines, neut_lines, end_state, S_lines, B_lines)
          DEALLOCATE(mass2, charge2, Zatom2, beam2, weight2, t_end2, start_dex)
 
          ! Restore quantities
@@ -198,6 +205,7 @@
       CALL MPI_BCAST(v_neut,nparticles*3,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
 #endif
 
+      RETURN
 
 !-----------------------------------------------------------------------
 !     End Subroutine
