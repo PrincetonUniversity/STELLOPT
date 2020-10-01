@@ -92,6 +92,7 @@ test_beams3d:
 	$(MAKE) test_beams3d_loss
 	$(MAKE) test_beams3d_slow
 	$(MAKE) test_beams3d_depo
+	$(MAKE) test_beams3d_fusion
 	@echo "Tesing of BEAMS3D complete"
 	@echo ""
 
@@ -129,6 +130,12 @@ test_beams3d_depo:
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_depo -plasma -depo -suzuki
 	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_depo -plasma -depo -suzuki
 	@cd $(BEAMS3D_TEST_DIR); ./test_ORBITS_depo.py
+	@echo ""
+
+test_beams3d_fusion:
+	@cd $(BEAMS3D_TEST_DIR); rm -f *.h5 *.txt; 
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_fusion -plasma -fusion -collisions
+	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_fusion -plasma -fusion -collisions
 	@echo ""
 
 test_stellopt:

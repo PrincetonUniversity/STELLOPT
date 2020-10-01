@@ -181,8 +181,8 @@
          k = ns
          i = 120
          j = 180
-         CALL wall_load_mn(DBLE(rmnc(1:mnmax,k)),DBLE(zmns(1:mnmax,k)),DBLE(xm),-DBLE(xn),mnmax,i,j,COMM=MPI_COMM_BEAMS)
-         IF (lverb) CALL wall_info(6)
+         CALL wall_load_mn(DBLE(rmnc(1:mnmax,k)),DBLE(zmns(1:mnmax,k)),DBLE(xm),-DBLE(xn),mnmax,i,j,COMM=MPI_COMM_LOCAL)
+         !IF (lverb) CALL wall_info(6)
          !IF (mylocalid /= master) DEALLOCATE(vertex,face)
       END IF
 

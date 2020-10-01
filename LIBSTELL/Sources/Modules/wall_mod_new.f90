@@ -74,7 +74,7 @@
       INTEGER, PRIVATE :: win_vertex, win_face, win_ihit
       INTEGER, PRIVATE :: ik_min
       INTEGER, PRIVATE :: nmin_vtex = 512
-      REAL, PRIVATE, PARAMETER                  :: deltal = 0.00
+      REAL, PRIVATE, PARAMETER                  :: deltal = 0.1
       DOUBLE PRECISION, PRIVATE, PARAMETER      :: zero = 0.0D+0
       DOUBLE PRECISION, PRIVATE, PARAMETER      :: one  = 1.0D+0
 
@@ -308,14 +308,14 @@
       IF (PRESENT(comm)) CALL MPI_BARRIER(shar_comm,istat)
 #endif
       ! Now create the wall
-      !CALL CALC_TREE_SIZE(nface,64,nmin_vtex)
+      CALL CALC_TREE_SIZE(nface,64,nmin_vtex)
       nsubdomains = 0
-      xmin = MINVAL(vertex(:,1)) - deltal
-      xmax = MAXVAL(vertex(:,1)) + deltal
-      ymin = MINVAL(vertex(:,2)) - deltal
-      ymax = MAXVAL(vertex(:,2)) + deltal
-      zmin = MINVAL(vertex(:,3)) - deltal
-      zmax = MAXVAL(vertex(:,3)) + deltal
+      xmin = MINVAL(vertex(:,1))! - deltal
+      xmax = MAXVAL(vertex(:,1))! + deltal
+      ymin = MINVAL(vertex(:,2))! - deltal
+      ymax = MAXVAL(vertex(:,2))! + deltal
+      zmin = MINVAL(vertex(:,3))! - deltal
+      zmax = MAXVAL(vertex(:,3))! + deltal
       IF (PRESENT(comm)) THEN
          CALL wall_create_new(wall,xmin,xmax,ymin,ymax,zmin,zmax,shar_comm)
          CALL mpialloc_1d_int(ihit_array,nface,shar_rank,0,shar_comm,win_ihit)
@@ -381,7 +381,7 @@
       LOGICAL, INTENT(out) :: lhit
       LOGICAL :: lhit2
       INTEGER :: i, ik_min2
-      DOUBLE PRECISION :: xs, ys, zs, xb, yb, zb, drx, dry, drz
+      DOUBLE PRECISION :: xs, ys, zs, xb, yb, zb, drx, dry, drz, xw2, yw2, zw2
       DOUBLE PRECISION :: alphal, betal, tloc, DOT02, DOT12, tmin2, &
                           V2x, V2y, V2z
       ! All INTENT OUT variables need default values
@@ -391,10 +391,13 @@
          dry = y1-y0
          drz = z1-z0
          DO i = 1, this%wall%ntri
-            alphal = SUM(this%wall%FN(i,:)*(/drx,dry,drz/))
-            betal  = SUM(this%wall%FN(i,:)*(/x0,y0,z0/))
+            alphal = this%wall%FN(i,1)*drx + &
+                     this%wall%FN(i,2)*dry + &
+                     this%wall%FN(i,3)*drz
+            betal  = this%wall%FN(i,1)*x0 + &
+                     this%wall%FN(i,2)*y0 + &
+                     this%wall%FN(i,3)*z0
             tloc   = (this%wall%d(i)-betal)/alphal
-!            WRITE(6,*) '*****',i,alphal,betal,tloc
             IF (tloc > one .or. tloc <=0) CYCLE
             V2x    = x0 + tloc*drx - this%wall%A0(i,1)
             V2y    = y0 + tloc*dry - this%wall%A0(i,2)
@@ -403,7 +406,6 @@
             DOT12  = this%wall%V1(i,1)*V2x + this%wall%V1(i,2)*V2y + this%wall%V1(i,3)*V2z
             alphal = (this%wall%DOT11(i)*DOT02 - this%wall%DOT01(i)*DOT12)*this%wall%invDenom(i)
             betal  = (this%wall%DOT00(i)*DOT12 - this%wall%DOT01(i)*DOT02)*this%wall%invDenom(i)
-            !WRITE(6,*) '********',i,alphal,betal,alphal+betal,tloc
             IF ((alphal < zero) .or. (betal < zero) .or. (alphal+betal > one)) CYCLE
             IF (tloc < tmin) THEN
                ik_minl = this%wall%imap(i)
@@ -431,15 +433,14 @@
             IF (xs > this%xmax(i) .or. xb < this%xmin(i) .or. &
                 ys > this%ymax(i) .or. yb < this%ymin(i) .or. &
                 zs > this%zmax(i) .or. zb < this%zmin(i)) CYCLE
-            !PRINT *,'Seaching ',i,this%xmax(i),this%xmin(i),this%zmax(i),this%zmin(i)
-            CALL collide_double_search(this%sub_walls(i),x0,y0,z0,x1,y1,z1,xw,yw,zw,lhit2,tmin2,ik_min2)
+            CALL collide_double_search(this%sub_walls(i),x0,y0,z0,x1,y1,z1,xw2,yw2,zw2,lhit2,tmin2,ik_min2)
             ! IF we have a hit determine if it's closer to x0, y0, z0 than others
-            CALL FLUSH(6)
             IF (lhit2) THEN
                IF (tmin2 < tmin) THEN
-                 tmin   = tmin2
-                 ik_minl = ik_min2
-                 lhit   = .TRUE.
+                  xw = xw2; yw = yw2; zw = zw2
+                  tmin   = tmin2
+                  ik_minl = ik_min2
+                  lhit   = .TRUE.
                END IF
             END IF
          END DO
@@ -542,6 +543,36 @@
       RETURN
       END SUBROUTINE wall_test
 
+      SUBROUTINE wall_dump
+      IMPLICIT NONE
+      CALL wall_dump_priv(wall,0,0)
+      END SUBROUTINE wall_dump
+
+      RECURSIVE SUBROUTINE wall_dump_priv(this,idex,isub)
+      IMPLICIT NONE
+      TYPE(wall_collection), INTENT(in) :: this
+      INTEGER,INTENT(in) :: idex,isub
+      INTEGER :: i,j
+
+      IF (ASSOCIATED(this%wall%A0)) THEN
+           DO j = 1, this%wall%ntri
+              WRITE(327,*) this%wall%A0(j,:),this%wall%V0(j,:),this%wall%V1(j,:),idex,isub
+           END DO
+           CALL FLUSH(327)
+      ELSEIF (ASSOCIATED(this%sub_walls)) THEN
+         DO i = 1, this%nwall
+            WRITE(328,*) this%xmin(i),this%xmax(i), &
+                         this%ymin(i),this%ymax(i), &
+                         this%zmin(i),this%zmax(i), i,idex
+            CALL wall_dump_priv(this%sub_walls(i),idex+1,i)
+         END DO
+         CALL FLUSH(328)
+      END IF
+
+      RETURN
+
+      END SUBROUTINE wall_dump_priv
+
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!    Class Constructors
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!      
@@ -555,7 +586,8 @@
       REAL, INTENT(in) :: xmin, ymin, zmin, xmax, ymax, zmax
       INTEGER, INTENT(inout), OPTIONAL :: shared_comm
       LOGICAL, DIMENSION(:), ALLOCATABLE :: SKIP_MASK
-      INTEGER :: i, j, d1, d2, d3, ntri, mystart, myend, shar_rank, istat
+      INTEGER, DIMENSION(:), ALLOCATABLE :: ntri_arr
+      INTEGER :: i, j, d1, d2, d3, ntri, mystart, myend, shar_rank, shar_size, istat
       REAL :: ximin,ximax,yimin,yimax,zimin,zimax
 
       ! Calculate indicies to work over
@@ -565,6 +597,17 @@
          i=-1
          CALL MPI_CALC_MYRANGE(i,1,this%ntri,mystart,myend)
       END IF
+
+      ! Get number of helpers
+      shar_size = 1
+      shar_rank = 0
+#if defined(MPI_OPT)
+      CALL MPI_COMM_SIZE(shared_comm, shar_size, istat)
+      CALL MPI_COMM_RANK(shared_comm, shar_rank, istat)
+#endif
+      ALLOCATE(ntri_arr(shar_size))
+      ntri_arr = 0
+
 
       ! Allocate helper array
       ALLOCATE(SKIP_MASK(mystart:myend))
@@ -585,11 +628,13 @@
          ntri = ntri + 1
          SKIP_MASK(i) = .FALSE.
       END DO
+      ntri_arr(shar_rank+1)=ntri
 
       ! Set number of triangles in subdomain
       IF (PRESENT(shared_comm)) THEN
 #if defined(MPI_OPT)
          CALL MPI_ALLREDUCE(MPI_IN_PLACE,ntri,1,MPI_INTEGER,MPI_SUM,shared_comm,istat)
+         CALL MPI_ALLREDUCE(MPI_IN_PLACE,ntri_arr,shar_size,MPI_INTEGER,MPI_SUM,shared_comm,istat)
 #endif
       END IF
       that%ntri = ntri
@@ -597,13 +642,13 @@
       ! If there were no triangles then get out of here
       IF (ntri < 1) THEN
          DEALLOCATE(SKIP_MASK)
+         DEALLOCATE(ntri_arr)
          RETURN
       END IF
 
       ! Allocate the arrays
 #if defined(MPI_OPT)
       IF (PRESENT(shared_comm)) THEN
-         CALL MPI_COMM_RANK( shared_comm, shar_rank, istat )
          CALL mpialloc_1d_int(that%imap,     ntri, shar_rank, 0, shared_comm, that%win_imap)
          CALL mpialloc_1d_dbl(that%DOT00,    ntri, shar_rank, 0, shared_comm, that%win_DOT00)
          CALL mpialloc_1d_dbl(that%DOT01,    ntri, shar_rank, 0, shared_comm, that%win_DOT01)
@@ -626,7 +671,11 @@
 #endif
 
       ! Now copy the important arrays
-      ntri = 1
+      ntri = 0
+      DO i = 0,shar_rank
+         ntri = ntri + ntri_arr(i+1)
+      END DO
+      ntri = ntri - ntri_arr(shar_rank+1) + 1
       DO i = mystart, myend
          IF (SKIP_MASK(i)) CYCLE
          that%imap(ntri)     = this%imap(i)
@@ -644,6 +693,7 @@
 
       ! Deallocate helper
       DEALLOCATE(SKIP_MASK)
+      DEALLOCATE(ntri_arr)
 
       RETURN
       END SUBROUTINE wall_element_subcopy
@@ -658,7 +708,8 @@
       REAL, INTENT(in) :: xmin, ymin, zmin, xmax, ymax, zmax
       INTEGER, INTENT(inout), OPTIONAL :: shared_comm
       LOGICAL, DIMENSION(:), ALLOCATABLE :: SKIP_MASK
-      INTEGER :: i, d1, d2, d3, ntri, mystart, myend, shar_rank, istat
+      INTEGER, DIMENSION(:), ALLOCATABLE :: ntri_arr
+      INTEGER :: i, d1, d2, d3, ntri, mystart, myend, shar_rank, shar_size, istat
       REAL :: ximin,ximax,yimin,yimax,zimin,zimax
       ntri = 0
 
@@ -669,6 +720,16 @@
          i=-1
          CALL MPI_CALC_MYRANGE(i,1,nface,mystart,myend)
       END IF
+
+      ! Get number of helpers
+      shar_size = 1
+      shar_rank = 0
+#if defined(MPI_OPT)
+      CALL MPI_COMM_SIZE(shared_comm, shar_size, istat)
+      CALL MPI_COMM_RANK(shared_comm, shar_rank, istat)
+#endif
+      ALLOCATE(ntri_arr(shar_size))
+      ntri_arr = 0
 
       ! Allocate Helper Array
       ALLOCATE(SKIP_MASK(mystart:myend))
@@ -691,11 +752,13 @@
          SKIP_MASK = .FALSE.
          ntri = ntri + 1
       END DO
+      ntri_arr(shar_rank+1)=ntri
 
-      ! Set number of triangles
+      ! Set number of triangles in subdomain
       IF (PRESENT(shared_comm)) THEN
 #if defined(MPI_OPT)
          CALL MPI_ALLREDUCE(MPI_IN_PLACE,ntri,1,MPI_INTEGER,MPI_SUM,shared_comm,istat)
+         CALL MPI_ALLREDUCE(MPI_IN_PLACE,ntri_arr,shar_size,MPI_INTEGER,MPI_SUM,shared_comm,istat)
 #endif
       END IF
       this%ntri = ntri
@@ -726,7 +789,11 @@
 #endif
 
       ! Calculate Basis vectors in subdomain
-      ntri = 1
+      ntri = 0
+      DO i = 0,shar_rank
+         ntri = ntri + ntri_arr(i+1)
+      END DO
+      ntri = ntri - ntri_arr(shar_rank+1) + 1
       DO i = mystart, myend
          IF (SKIP_MASK(i)) CYCLE
          d1 = face(i,1)
@@ -739,6 +806,7 @@
          ntri = ntri + 1
       END DO
       DEALLOCATE(SKIP_MASK)
+      DEALLOCATE(ntri_arr)
 
       ! Calculate working dimensions over subdomain triangles
       IF (PRESENT(shared_comm)) THEN
@@ -892,9 +960,9 @@
          ymean = ymean + ytemp
          zmean = zmean + ztemp
       END DO
-      xmean = xmean / (3*this%wall%ntri)
-      ymean = ymean / (3*this%wall%ntri)
-      zmean = zmean / (3*this%wall%ntri)
+      xmean = xmean / REAL(3*this%wall%ntri)
+      ymean = ymean / REAL(3*this%wall%ntri)
+      zmean = zmean / REAL(3*this%wall%ntri)
 
       ! Now Allocate the Subdomains
       ALLOCATE(this%sub_walls(8))
@@ -919,18 +987,21 @@
 #endif
 
       ! Define the subdomains
-      !deltax = MIN(xmean-xmin,xmax-xmean)*deltal
-      !deltay = MIN(ymean-ymin,ymax-ymean)*deltal
-      !deltaz = MIN(zmean-zmin,zmax-zmean)*deltal
+      deltax = MAX(MIN(xmean-xmin,xmax-xmean),deltal)*deltal
+      deltay = MAX(MIN(ymean-ymin,ymax-ymean),deltal)*deltal
+      deltaz = MAX(MIN(zmean-zmin,zmax-zmean),deltal)*deltal
       IF (shar_rank == 0) THEN
-         PRINT *,deltax,deltay,deltaz
-         this%xmin = (/xmin,  xmin,  xmin,  xmin,  xmean, xmean, xmean, xmean/) - deltal
-         this%xmax = (/xmean, xmean, xmean, xmean, xmax,  xmax,  xmax,  xmax/)  + deltal
-         this%ymin = (/ymin,  ymin,  ymean, ymean, ymin,  ymin,  ymean, ymean/) - deltal
-         this%ymax = (/ymean, ymean, ymax,  ymax,  ymean, ymean, ymax,  ymax/)  + deltal
-         this%zmin = (/zmin,  zmean, zmin,  zmean, zmin,  zmean, zmin,  zmean/) - deltal
-         this%zmax = (/zmean, zmax,  zmean, zmax,  zmean, zmax,  zmean, zmax/)  + deltal
+         this%xmin = (/xmin,  xmin,  xmin,  xmin,  xmean, xmean, xmean, xmean/) - deltax
+         this%xmax = (/xmean, xmean, xmean, xmean, xmax,  xmax,  xmax,  xmax/)  + deltax
+         this%ymin = (/ymin,  ymin,  ymean, ymean, ymin,  ymin,  ymean, ymean/) - deltay
+         this%ymax = (/ymean, ymean, ymax,  ymax,  ymean, ymean, ymax,  ymax/)  + deltay
+         this%zmin = (/zmin,  zmean, zmin,  zmean, zmin,  zmean, zmin,  zmean/) - deltaz
+         this%zmax = (/zmean, zmax,  zmean, zmax,  zmean, zmax,  zmean, zmax/)  + deltaz
       END IF
+
+#if defined(MPI_OPT)
+      CALL MPI_BARRIER(shared_comm, ier)
+#endif
 
       ! Now fill subdomains (then recursively call)
       ! must do all 8 to keep arrays linked
@@ -1316,6 +1387,7 @@
       INTEGER, INTENT(in) :: n1, n2
       INTEGER, INTENT(out) :: mystart, myend
       INTEGER :: delta, local_size, local_rank, istat
+      INTEGER :: maxend, k, i
       mystart = n1; myend = n2
       IF (COMM < 0) RETURN
 #if defined(MPI_OPT)
@@ -1323,8 +1395,19 @@
       CALL MPI_COMM_RANK( comm, local_rank, istat )
       delta = CEILING(REAL(n2-n1+1)/REAL(local_size))
       mystart = n1 + local_rank*delta
-      myend   = mystart + delta
-      IF (myend > n2) myend=n2
+      myend   = mystart + delta - 1
+      maxend = local_size*delta
+      IF (maxend>n2) THEN
+         k = maxend-n2
+         DO i = (local_size-k), local_size-1
+            IF (local_rank > i) THEN
+                  mystart = mystart - 1
+                  myend   = myend - 1
+            ELSEIF (local_rank==i) THEN
+                  myend = myend - 1
+            END IF
+         END DO
+      END IF
 #endif
       RETURN
       END SUBROUTINE MPI_CALC_MYRANGE
