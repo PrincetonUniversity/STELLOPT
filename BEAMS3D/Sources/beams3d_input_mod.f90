@@ -59,23 +59,25 @@
 !                   phimin and phimax) to properly represent a given
 !                   field period.
 !-----------------------------------------------------------------------
-      NAMELIST /beams3d_input/ nr, nphi, nz, rmin, rmax, zmin, zmax,&
-                                  phimin, phimax, nparticles_start,&
-                                  r_start_in, phi_start_in, z_start_in,&
-                                  vll_start_in,&
-                                  npoinc, follow_tol, t_end_in, mu_start_in,&
-                                  charge_in, mass_in, Zatom_in, &
-                                  vc_adapt_tol, int_type, Adist_beams,&
-                                  Asize_beams, Div_beams, E_beams, Dex_beams, &
-                                  mass_beams, charge_beams, Zatom_beams, r_beams,&
-                                  z_beams, phi_beams, TE_AUX_S, TE_AUX_F,&
-                                  NE_AUX_S, NE_AUX_F, TI_AUX_S, TI_AUX_F, &
-                                  POT_AUX_S, POT_AUX_F, ZEFF_AUX_S, ZEFF_AUX_F, &
-                                  P_beams, ldebug, ne_scale, te_scale, ti_scale, &
-                                  zeff_scale, plasma_mass, plasma_Zavg, &
-                                  plasma_Zmean, therm_factor, &
-                                  nrho_dist, ntheta_dist, nzeta_dist, &
-                                  nvpara_dist, nvperp_dist, partvmax
+      NAMELIST /beams3d_input/ nr, nphi, nz, rmin, rmax, zmin, zmax, &
+                               phimin, phimax, nparticles_start, &
+                               r_start_in, phi_start_in, z_start_in, &
+                               vll_start_in, npoinc, follow_tol, &
+                               t_end_in, mu_start_in, charge_in, &
+                               mass_in, Zatom_in, vc_adapt_tol,  &
+                               int_type, Adist_beams, Asize_beams, &
+                               Div_beams, E_beams, Dex_beams, &
+                               mass_beams, charge_beams, Zatom_beams, &
+                               r_beams, z_beams, phi_beams, TE_AUX_S, &
+                               TE_AUX_F, NE_AUX_S, NE_AUX_F, TI_AUX_S, &
+                               TI_AUX_F, POT_AUX_S, POT_AUX_F, &
+                               ZEFF_AUX_S, ZEFF_AUX_F, P_beams, &
+                               ldebug, ne_scale, te_scale, ti_scale, &
+                               zeff_scale, plasma_mass, plasma_Zavg, &
+                               plasma_Zmean, therm_factor, &
+                               fusion_scale, nrho_dist, ntheta_dist, & 
+                               nzeta_dist, nvpara_dist, nvperp_dist, &
+                               partvmax
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -143,6 +145,7 @@
       te_scale = 1.0
       ti_scale = 1.0
       zeff_scale = 1.0
+      fusion_scale = 1.0
       plasma_Zmean = 1.0
       plasma_Zavg  = 1.0
       plasma_mass = 1.6726219E-27 ! Assume Hydrogen
@@ -201,7 +204,6 @@
          END IF
          IF (lfusion) THEN
             r_start_in = -1
-            nparticles = nparticles_start*4
             nbeams = 4
          END IF
          nte = 0
@@ -240,7 +242,7 @@
 #if defined(HDF5_PAR)
       ! Makes sure that NPARTICLES is divisible by the number of processes
       ! Needed for HDF5 parallel writes.
-      IF (lbeam) THEN
+      IF (lbeam .or. lfusion) THEN
          i1 = nparticles_start/nprocs_beams
          IF (i1*nprocs_beams .ne. nparticles_start) THEN
             nparticles_start = (i1+1)*nprocs_beams
