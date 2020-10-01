@@ -139,19 +139,19 @@
                   beam(nparticles), weight(nparticles), v_neut(3,nparticles))
       v_neut = 0
       ! BEAM 1 D+T -> He4
-      E_BEAMS(1) = 3.52E6*e_charge
+      E_BEAMS(1) = 3.52E6*e_charge*fusion_scale
       MASS_BEAMS(1) = mHe4
       CHARGE_BEAMS(1) = 2*e_charge
       ! BEAM 2 D+D -> T (+p) fast Tritium
-      E_BEAMS(2) = 1.01E6*e_charge
+      E_BEAMS(2) = 1.01E6*e_charge*fusion_scale
       MASS_BEAMS(2) = mT
       CHARGE_BEAMS(2) = e_charge
       ! BEAM 3 D+D -> (T) +p fast proton
-      E_BEAMS(3) = 3.02E6*e_charge
+      E_BEAMS(3) = 3.02E6*e_charge*fusion_scale
       MASS_BEAMS(3) = mp
       CHARGE_BEAMS(3) = e_charge
       ! BEAM 4 D+D -> He3
-      E_BEAMS(4) = 0.82E6*e_charge !D+D -> He3
+      E_BEAMS(4) = 0.82E6*e_charge*fusion_scale
       MASS_BEAMS(4) = mHe3
       CHARGE_BEAMS(4) = 2*e_charge
 
