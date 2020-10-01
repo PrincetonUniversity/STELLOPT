@@ -36,7 +36,7 @@
       INTEGER, ALLOCATABLE, DIMENSION(:,:,:) :: n3d
       REAL(rprec) :: maxrateDT, maxrateDDT, maxrateDDHe, &
                      dV, w_total, vpart, dr, dphi, &
-                     dz, X1_rand, Y1_rand, Z1_rand, sval
+                     dz, X1_rand, Y1_rand, Z1_rand, sval, sfactor
       REAL(rprec), DIMENSION(3) :: q
       REAL(rprec), ALLOCATABLE, DIMENSION(:) :: X_rand, Y_rand, Z_rand, P_rand
       DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:,:,:) :: temp3d
@@ -163,9 +163,11 @@
          ! First we initialize by grid voxel
          ALLOCATE(n3d(nr,nphi,nz))
          n3d = 0
+         sfactor = 0
+         IF (lplasma_only) sfactor = 0.90
          DO s = 1,nparticles_start
             sval = 2
-            DO WHILE (sval >= 1)
+            DO WHILE (sval >= sfactor)
                CALL RANDOM_NUMBER(X1_RAND)
                CALL RANDOM_NUMBER(Y1_RAND)
                CALL RANDOM_NUMBER(Z1_RAND)
@@ -188,7 +190,8 @@
          CALL RANDOM_NUMBER(Z_RAND)
          ! Uniform about 0
          CALL RANDOM_NUMBER(P_rand)
-         P_rand = 2*(P_rand-0.5)
+         !P_rand = 2*(P_rand-0.5)
+         P_rand = cos(pi*P_rand)
          k1 = 1
          ! Do the D-T -> H4 reaction
          vpart = sqrt(2*E_BEAMS(1)/mHe4)
