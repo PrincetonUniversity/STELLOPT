@@ -27,10 +27,10 @@
 !          npoinc_extract Which save state to extract from file.
 !-----------------------------------------------------------------------
       IMPLICIT NONE
-      LOGICAL :: lplasma_old, ldepo_old
+      LOGICAL :: lplasma_old, ldepo_old, lfusion_old
       INTEGER :: i, k, ier, npoinc_extract, npoinc_save, state_flag
       INTEGER, DIMENSION(:), ALLOCATABLE :: beam2, start_dex
-      REAL(rprec) :: vpartmax, B_help
+      REAL(rprec) :: vpartmax, B_help, version_old
       REAL(rprec), DIMENSION(3) :: q
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: mass2, charge2, Zatom2, &
                                                 weight2, t_end2
@@ -44,6 +44,7 @@
 
       IF (myworkid == master) THEN
          ! Save quantities
+         lfusion_old = .FALSE.
          npoinc_save = npoinc
          ! Read the data
          CALL open_hdf5(TRIM(restart_string),fid,ier,LCREATE=.false.)
@@ -52,9 +53,16 @@
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'nparticles',ier)
          CALL read_scalar_hdf5(fid,'npoinc',ier,INTVAR=npoinc)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'npoinc',ier)
+         CALL read_scalar_hdf5(fid,'VERSION',ier,DBLVAR=version_old)
+         IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'version_old',ier)
+         IF (version_old >= 2.8) THEN
+            CALL read_scalar_hdf5(fid,'lfusion',ier,BOOVAR=lfusion_old)
+            IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'lfusion',ier)
+         END IF
          IF (lverb) THEN
             WRITE(6,'(A,I8)') '   NPARTICLES_OLD: ', nparticles
             WRITE(6,'(A,I8)') '   NPOINC_OLD: ', npoinc
+            IF (lfusion_old) WRITE(6,'(A,I8)') '   FUSION RUN DETECTED'
          END IF
          !CALL read_scalar_hdf5(fid,'partvmax',ier,DBLVAR=vpartmax)
          !partvmax = MAX(partvmax,vpartmax)
@@ -117,12 +125,16 @@
          start_dex=0 ! Default
 
          ! Decide what to do
-         !   IF depo run then start from initial born particle population
-         !   Otherwise start from wall hits
+         !   IF lfusion_old then start from 0
+         !   IF ldepo run then start from 2
+         !   ELSE Start from wall_hit
          ldepo_old = .false.
          state_flag = 0
          IF (ANY(end_state==3)) ldepo_old = .true.
-         IF (ldepo_old) THEN
+         IF (lfusion_old) THEN
+            end_state = 0
+            state_flag = 0
+         ELSEIF (ldepo_old) THEN
             state_flag = 0
             start_dex = 2
             IF (lplasma_only) THEN 
