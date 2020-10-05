@@ -306,7 +306,7 @@
       DO j = 0, 24
          DO i = -n/2, n/2
             IF ((j.eq.0) .and. (i<0)) CYCLE
-            WRITE(555,'(2(2X,A,I4,A,I3,A,ES18.10))') 'RBC(',-i,',',j,') = ', rmnc(i,j),'  ZBS(',-i,',',j,') = ', zmns(i,j)
+            WRITE(555,'(2(2X,A,I4,A,I3,A,EN18.10))') 'RBC(',-i,',',j,') = ', rmnc(i,j),'  ZBS(',-i,',',j,') = ', zmns(i,j)
          END DO
       END DO
       CALL FFTW_FREE(real_2d)
