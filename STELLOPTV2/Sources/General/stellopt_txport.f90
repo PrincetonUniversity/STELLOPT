@@ -441,6 +441,8 @@
                ! Calculated q_proxy     
                CALL tolower(txport_proxy)
                SELECT CASE(TRIM(txport_proxy))
+                  CASE('prox_g11')
+                     vqqprox = g11
                   CASE('prox1')
                      qqfac=(one+one/(rhsrkp*(one+(tau_s*slocav)**2)))
                      dkp  = rkp_p-rkp_cr
