@@ -303,6 +303,7 @@
 #endif
       CALL mpidealloc(rateDT,win_rateDT)
       CALL mpidealloc(rateDDT,win_rateDDT)
+      CALL mpidealloc(rateDDHe,win_rateDDHe)
 
 
       ! Now we calcualte values over particles (share the work)
