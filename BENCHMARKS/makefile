@@ -92,6 +92,7 @@ test_beams3d:
 	$(MAKE) test_beams3d_loss
 	$(MAKE) test_beams3d_slow
 	$(MAKE) test_beams3d_depo
+	$(MAKE) test_beams3d_dist
 	$(MAKE) test_beams3d_fusion
 	@echo "Tesing of BEAMS3D complete"
 	@echo ""
@@ -132,6 +133,13 @@ test_beams3d_depo:
 	@cd $(BEAMS3D_TEST_DIR); ./test_ORBITS_depo.py
 	@echo ""
 
+test_beams3d_dist:
+	@cd $(BEAMS3D_TEST_DIR); rm -f *.h5 *.txt; 
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_dist -plasma -collisions
+	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_dist -plasma -collisions
+	@cd $(BEAMS3D_TEST_DIR); ./test_ORBITS_dist.py
+	@echo ""
+
 test_beams3d_fusion:
 	@cd $(BEAMS3D_TEST_DIR); rm -f *.h5 *.txt; 
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_fusion -plasma -fusion -collisions
@@ -151,7 +159,7 @@ test_stellopt:
 	$(MAKE) test_stellopt_recon_tok
 	$(MAKE) test_stellopt_vboot_tokamak_bootsj
 	@if [ $LCOILOPT ]; then\
-		@echo "----COILOPT OPTION----"; \
+		echo "----COILOPT OPTION----"; \
 		$(MAKE) test_stellopt_coilopt;\
 	fi
 	@if [ $LGENE ]; then\
@@ -246,19 +254,14 @@ test_stellopt_gene:
 	@cd $(STELLOPT_TEST_DIR)/GENE; $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xstelloptv2 input.GENE; rm -f *_opt*
 	@echo ""
 
-test_stellopt_regcoil:
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xstelloptv2 input.REGCOIL_UNIFORM;
-	@cd $(STELLOPT_TEST_DIR)/REGCOIL/UNIFORM; $(MPI_RUN) $(MPI_RUN_OPTS_LG) $(MYHOME)/xstelloptv2 input.REGCOIL_UNIFORM; rm -f *_opt*
-	@echo ""
-
 test_stellopt_sfincs:
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.vboot_tokamak_sfincs;
 	@cd $(STELLOPT_TEST_DIR)/vboot_tokamak_sfincs; $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.vboot_tokamak_sfincs; rm -f *_opt*
 	@echo ""
 
 test_stellopt_terpsichore:
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xstelloptv2 input.TERPSICHORE
-	@cd $(STELLOPT_TEST_DIR)/TERPSICHORE; $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xstelloptv2 input.TERPSICHORE; rm -f *_opt*
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.TERPSICHORE
+	@cd $(STELLOPT_TEST_DIR)/TERPSICHORE; $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xstelloptv2 input.TERPSICHORE; rm -f *_opt*
 	@echo ""
 
 test_stellopt_travis:
