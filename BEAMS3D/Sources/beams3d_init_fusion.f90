@@ -278,7 +278,7 @@
             charge(k1:k2)    = CHARGE_BEAMS(4)
             Zatom(k1:k2)     = 2
             t_end(k1:k2)     = t_end_in(1)
-            weight(k1:k2)    = rateDDT(i,j,k)/n3d(i,j,k)
+            weight(k1:k2)    = rateDDHe(i,j,k)/n3d(i,j,k)
             k1 = k2+1
          END DO
          ! Deallocate and cleanup
