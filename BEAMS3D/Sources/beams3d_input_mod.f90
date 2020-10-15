@@ -207,6 +207,7 @@
          IF (lfusion) THEN
             r_start_in = -1
             nbeams = 4
+            IF (lfusion_alpha) nbeams = 1
          END IF
          nte = 0
          DO WHILE ((TE_AUX_S(nte+1) >= 0.0).and.(nte<MAXPROFLEN))
