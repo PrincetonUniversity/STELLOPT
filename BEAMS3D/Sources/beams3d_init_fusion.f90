@@ -123,15 +123,18 @@
       ! Output reaction rate info
       IF (myworkid == master) THEN
          IF (lverb) THEN
-            WRITE(6, '(A,ES11.4,A)') '      max D + T -> He4   rate: ', maxrateDT,' [part/(m^3 s)'
-            WRITE(6, '(A,ES11.4,A)') '      max D + D -> T + p rate: ', maxrateDDT,' [part/(m^3 s)'
-            WRITE(6, '(A,ES11.4,A)') '      max D + D -> He3   rate: ', maxrateDDHe,' [part/(m^3 s)'
+            WRITE(6, '(A,ES11.4,A)') '      max D + T -> He4   rate: ', maxrateDT,' [part/(m^3 s)]'
+            IF (.not. lfusion_alpha) THEN
+               WRITE(6, '(A,ES11.4,A)') '      max D + D -> T + p rate: ', maxrateDDT,' [part/(m^3 s)]'
+               WRITE(6, '(A,ES11.4,A)') '      max D + D -> He3   rate: ', maxrateDDHe,' [part/(m^3 s)]'
+            END IF
          END IF
       END IF
 
       ! From this point forward we act like a NB calc in the initialization sense
       ! Eventually we'll include DD-T and DD-He3 as BEAM(2 and (3))
       nbeams = 4
+      IF (lfusion_alpha) nbeams = 1 ! Do alphas only
       nparticles = nbeams*nparticles_start
       ALLOCATE(   R_start(nparticles), phi_start(nparticles), Z_start(nparticles), vll_start(nparticles), &
                   mass(nparticles), charge(nparticles), Zatom(nparticles), &
@@ -142,18 +145,20 @@
       E_BEAMS(1) = 3.52E6*e_charge*fusion_scale
       MASS_BEAMS(1) = mHe4
       CHARGE_BEAMS(1) = 2*e_charge
-      ! BEAM 2 D+D -> T (+p) fast Tritium
-      E_BEAMS(2) = 1.01E6*e_charge*fusion_scale
-      MASS_BEAMS(2) = mT
-      CHARGE_BEAMS(2) = e_charge
-      ! BEAM 3 D+D -> (T) +p fast proton
-      E_BEAMS(3) = 3.02E6*e_charge*fusion_scale
-      MASS_BEAMS(3) = mp
-      CHARGE_BEAMS(3) = e_charge
-      ! BEAM 4 D+D -> He3
-      E_BEAMS(4) = 0.82E6*e_charge*fusion_scale
-      MASS_BEAMS(4) = mHe3
-      CHARGE_BEAMS(4) = 2*e_charge
+      IF (.not. lfusion_alpha) THEN
+         ! BEAM 2 D+D -> T (+p) fast Tritium
+         E_BEAMS(2) = 1.01E6*e_charge*fusion_scale
+         MASS_BEAMS(2) = mT
+         CHARGE_BEAMS(2) = e_charge
+         ! BEAM 3 D+D -> (T) +p fast proton
+         E_BEAMS(3) = 3.02E6*e_charge*fusion_scale
+         MASS_BEAMS(3) = mp
+         CHARGE_BEAMS(3) = e_charge
+         ! BEAM 4 D+D -> He3
+         E_BEAMS(4) = 0.82E6*e_charge*fusion_scale
+         MASS_BEAMS(4) = mHe3
+         CHARGE_BEAMS(4) = 2*e_charge
+      END IF
 
       ! Now we need to monte-carlo our way to get particles inside the grid
       dr = raxis(nr)-raxis(1)
@@ -215,72 +220,74 @@
             weight(k1:k2)    = rateDT(i,j,k)/n3d(i,j,k)
             k1 = k2+1
          END DO
-         ! Do the D-D -> T reaction
-         vpart = sqrt(2*E_BEAMS(2)/mT)
-         DO s = 1,nr*nphi*nz
-            i = MOD(s-1,nr)+1
-            j = MOD(s-1,nr*nphi)
-            j = FLOOR(REAL(j) / REAL(nr))+1
-            k = CEILING(REAL(s) / REAL(nr*nphi))
-            IF (n3d(i,j,k)==0) CYCLE
-            k2 = n3d(i,j,k)+k1-1
-            R_start(k1:k2)   =   raxis(i) + X_rand(k1:k2)*hr(i)
-            phi_start(k1:k2) = phiaxis(j) + Y_rand(k1:k2)*hp(j)
-            Z_start(k1:k2)   =   zaxis(k) + Z_rand(k1:k2)*hz(k)
-            vll_start(k1:k2) = vpart*P_rand(k1:k2) ! Need to add scaling factor here
-            mu_start(k1:k2)  = E_BEAMS(2) ! Total energy for now
-            beam(k1:k2)      = 2
-            mass(k1:k2)      = MASS_BEAMS(2)
-            charge(k1:k2)    = CHARGE_BEAMS(2)
-            Zatom(k1:k2)     = 1
-            t_end(k1:k2)     = t_end_in(1)
-            weight(k1:k2)    = rateDDT(i,j,k)/n3d(i,j,k)
-            k1 = k2+1
-         END DO
-         ! Do the D-D -> p reaction
-         vpart = sqrt(2*E_BEAMS(3)/mp)
-         DO s = 1,nr*nphi*nz
-            i = MOD(s-1,nr)+1
-            j = MOD(s-1,nr*nphi)
-            j = FLOOR(REAL(j) / REAL(nr))+1
-            k = CEILING(REAL(s) / REAL(nr*nphi))
-            IF (n3d(i,j,k)==0) CYCLE
-            k2 = n3d(i,j,k)+k1-1
-            R_start(k1:k2)   =   raxis(i) + X_rand(k1:k2)*hr(i)
-            phi_start(k1:k2) = phiaxis(j) + Y_rand(k1:k2)*hp(j)
-            Z_start(k1:k2)   =   zaxis(k) + Z_rand(k1:k2)*hz(k)
-            vll_start(k1:k2) = vpart*P_rand(k1:k2) ! Need to add scaling factor here
-            mu_start(k1:k2)  = E_BEAMS(3) ! Total energy for now
-            beam(k1:k2)      = 3
-            mass(k1:k2)      = MASS_BEAMS(3)
-            charge(k1:k2)    = CHARGE_BEAMS(3)
-            Zatom(k1:k2)     = 1
-            t_end(k1:k2)     = t_end_in(1)
-            weight(k1:k2)    = rateDDT(i,j,k)/n3d(i,j,k)
-            k1 = k2+1
-         END DO
-         ! Do the D-D -> He3 reaction
-         vpart = sqrt(2*E_BEAMS(4)/mHe3)
-         DO s = 1,nr*nphi*nz
-            i = MOD(s-1,nr)+1
-            j = MOD(s-1,nr*nphi)
-            j = FLOOR(REAL(j) / REAL(nr))+1
-            k = CEILING(REAL(s) / REAL(nr*nphi))
-            IF (n3d(i,j,k)==0) CYCLE
-            k2 = n3d(i,j,k)+k1-1
-            R_start(k1:k2)   =   raxis(i) + X_rand(k1:k2)*hr(i)
-            phi_start(k1:k2) = phiaxis(j) + Y_rand(k1:k2)*hp(j)
-            Z_start(k1:k2)   =   zaxis(k) + Z_rand(k1:k2)*hz(k)
-            vll_start(k1:k2) = vpart*P_rand(k1:k2) ! Need to add scaling factor here
-            mu_start(k1:k2)  = E_BEAMS(4) ! Total energy for now
-            beam(k1:k2)      = 4
-            mass(k1:k2)      = MASS_BEAMS(4)
-            charge(k1:k2)    = CHARGE_BEAMS(4)
-            Zatom(k1:k2)     = 2
-            t_end(k1:k2)     = t_end_in(1)
-            weight(k1:k2)    = rateDDT(i,j,k)/n3d(i,j,k)
-            k1 = k2+1
-         END DO
+         IF (.not. lfusion_alpha) THEN
+            ! Do the D-D -> T reaction
+            vpart = sqrt(2*E_BEAMS(2)/mT)
+            DO s = 1,nr*nphi*nz
+               i = MOD(s-1,nr)+1
+               j = MOD(s-1,nr*nphi)
+               j = FLOOR(REAL(j) / REAL(nr))+1
+               k = CEILING(REAL(s) / REAL(nr*nphi))
+               IF (n3d(i,j,k)==0) CYCLE
+               k2 = n3d(i,j,k)+k1-1
+               R_start(k1:k2)   =   raxis(i) + X_rand(k1:k2)*hr(i)
+               phi_start(k1:k2) = phiaxis(j) + Y_rand(k1:k2)*hp(j)
+               Z_start(k1:k2)   =   zaxis(k) + Z_rand(k1:k2)*hz(k)
+               vll_start(k1:k2) = vpart*P_rand(k1:k2) ! Need to add scaling factor here
+               mu_start(k1:k2)  = E_BEAMS(2) ! Total energy for now
+               beam(k1:k2)      = 2
+               mass(k1:k2)      = MASS_BEAMS(2)
+               charge(k1:k2)    = CHARGE_BEAMS(2)
+               Zatom(k1:k2)     = 1
+               t_end(k1:k2)     = t_end_in(1)
+               weight(k1:k2)    = rateDDT(i,j,k)/n3d(i,j,k)
+               k1 = k2+1
+            END DO
+            ! Do the D-D -> p reaction
+            vpart = sqrt(2*E_BEAMS(3)/mp)
+            DO s = 1,nr*nphi*nz
+               i = MOD(s-1,nr)+1
+               j = MOD(s-1,nr*nphi)
+               j = FLOOR(REAL(j) / REAL(nr))+1
+               k = CEILING(REAL(s) / REAL(nr*nphi))
+               IF (n3d(i,j,k)==0) CYCLE
+               k2 = n3d(i,j,k)+k1-1
+               R_start(k1:k2)   =   raxis(i) + X_rand(k1:k2)*hr(i)
+               phi_start(k1:k2) = phiaxis(j) + Y_rand(k1:k2)*hp(j)
+               Z_start(k1:k2)   =   zaxis(k) + Z_rand(k1:k2)*hz(k)
+               vll_start(k1:k2) = vpart*P_rand(k1:k2) ! Need to add scaling factor here
+               mu_start(k1:k2)  = E_BEAMS(3) ! Total energy for now
+               beam(k1:k2)      = 3
+               mass(k1:k2)      = MASS_BEAMS(3)
+               charge(k1:k2)    = CHARGE_BEAMS(3)
+               Zatom(k1:k2)     = 1
+               t_end(k1:k2)     = t_end_in(1)
+               weight(k1:k2)    = rateDDT(i,j,k)/n3d(i,j,k)
+               k1 = k2+1
+            END DO
+            ! Do the D-D -> He3 reaction
+            vpart = sqrt(2*E_BEAMS(4)/mHe3)
+            DO s = 1,nr*nphi*nz
+               i = MOD(s-1,nr)+1
+               j = MOD(s-1,nr*nphi)
+               j = FLOOR(REAL(j) / REAL(nr))+1
+               k = CEILING(REAL(s) / REAL(nr*nphi))
+               IF (n3d(i,j,k)==0) CYCLE
+               k2 = n3d(i,j,k)+k1-1
+               R_start(k1:k2)   =   raxis(i) + X_rand(k1:k2)*hr(i)
+               phi_start(k1:k2) = phiaxis(j) + Y_rand(k1:k2)*hp(j)
+               Z_start(k1:k2)   =   zaxis(k) + Z_rand(k1:k2)*hz(k)
+               vll_start(k1:k2) = vpart*P_rand(k1:k2) ! Need to add scaling factor here
+               mu_start(k1:k2)  = E_BEAMS(4) ! Total energy for now
+               beam(k1:k2)      = 4
+               mass(k1:k2)      = MASS_BEAMS(4)
+               charge(k1:k2)    = CHARGE_BEAMS(4)
+               Zatom(k1:k2)     = 2
+               t_end(k1:k2)     = t_end_in(1)
+               weight(k1:k2)    = rateDDHe(i,j,k)/n3d(i,j,k)
+               k1 = k2+1
+            END DO
+         END IF
          ! Deallocate and cleanup
          DEALLOCATE(X_rand,Y_rand,Z_rand,P_rand)
          partvmax = SQRT(MAXVAL(2*mu_start/mass)) ! Partvmax from max energy

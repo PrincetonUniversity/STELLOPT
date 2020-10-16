@@ -88,8 +88,8 @@
           .OR. trim(opt_type) == 'one_iter_norm') then
          noptimizers = 1
          IF (myid == master) THEN
-            WRITE(6,         *), 'Reset noptimizers=1 for single run.'
-            WRITE(iunit, '(A)'), 'Reset noptimizers=1 for single run.'
+            WRITE(6,         *)  'Reset noptimizers=1 for single run.'
+            WRITE(iunit, '(A)')  'Reset noptimizers=1 for single run.'
          END IF
       END IF
 
