@@ -82,7 +82,7 @@ should look like:
  ZMIN = -1.5                       ! Minimum extent of vertical grid, overridden if using mgrid
  ZMAX = 1.5                        ! Maximum extent of radial grid, overridden if using mgrid
  PHIMIN = 0.0                      ! Minimum extent of toroidal grid, overridden if using mgrid
- PHIMAX = 0.628                    ! Maximum extent of toroidal grid, overridden if using mgrid
+ PHIMAX = 1.2566370614             ! Maximum extent of toroidal grid, overridden if using mgrid
  R_START_IN =  3.6  3.7  3.8       ! Radial starting locations of particles [m]
  Z_START_IN =  0.0  0.0  0.0       ! Vertical starting locations of particles [m]
  PHI_START_IN =  0.0  0.0  0.0     ! Toroidal starting locations of particles (radians)
@@ -160,7 +160,10 @@ and BEASM3D\_INPUT namelists in it.
 | -hitonly | NONE | Only save vessel strike points.|
 | -plasma | NONE | Only compute fields inside the plasma domain (places wall at LCFS) |
 | -raw | NONE | Treats EXTCUR array as raw values (EXTCUR is a scale factor applied to what\'s in the coils file). |
+| -suzuki | NONE | Use Suzuki beam deposition model (default if no ADAS/PREACT). |
 | -w7x | NONE | Use W7-X beam shape model. |
+| -fusion | NONE | Use nuclear fusion thermal birth model. |
+| -fusion_alpha | NONE | Use nuclear fusion thermal birth model (alphas only). |
 | -noverb | NONE | Suppresses screen output |
 | -help | NONE | Print help message. |
 
@@ -227,3 +230,11 @@ bins by VLL the particles at each NPOINC time step.
 ### Tutorials
 
 [NCSX Neutral Beam Injection Example](NCSX Neutral Beam Injection Example.md)
+
+------------------------------------------------------------------------
+
+### References
+
+-   [McMillan, M. and Lazerson, S.A. \"BEAMS3D: Neutral beam injection model.\" Plasma Phys. and Control. Fusion 56, 095019 (2014)](https://doi.org/10.1088/0741-3335/56/9/095019)
+-   [Lazerson, S.A. et al. \"Validation of the BEASM3D neutral beam deposition model on Wendelstein 7-X\" Nuclear Fusion 60, 706020 (2014)](https://doi.org/10.1088/1741-4326/ab8e61)
+
