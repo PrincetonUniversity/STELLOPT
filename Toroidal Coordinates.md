@@ -75,7 +75,7 @@ Thus conversion from one convention is simply a matter of flipping
 arrays about the toroidal mode index (n) and negating odd coefficients
 (sin).
 
-More information about the coordinates systems can be found [here](https://princetonuniversity.github.io/FOCUS/Coil_design_codes_benchmark.html).
+More information about the coordinates systems can be found [here](https://princetonuniversity.github.io/FOCUS/notes/Coil_design_codes_benchmark.html).
 
 ------------------------------------------------------------------------
 
