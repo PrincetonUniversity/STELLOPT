@@ -202,6 +202,12 @@ a VMEC input file.
        FILE: beams3d_ncsx_c09r00_free.h5
     ----- BEAMS3D DONE -----
 
+The BENCHMARKS directory contains a set of tests for BEAMS3D based on an
+axisymmetric VMEC tokamak equilibrium.  The input files are located
+in the BEAMS3D_TEST subdirectory.  They can all be invoked by
+calling make beams3d_test from the BENCHMARKS directory.  The
+comparrision scripts require Python.
+
 ------------------------------------------------------------------------
 
 ### Output Data Format
