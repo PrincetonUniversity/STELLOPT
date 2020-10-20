@@ -14,7 +14,7 @@ Draco
     module load impi
     module load netcdf-mpi
     module load hdf5-mpi
-    module load fftw
+    module load fftw-mpi
 
 Cobra
 -----
@@ -58,3 +58,8 @@ The Cobra and Draco clusters are automatically detected
 by the make.inc script. The IPP-HGW theory cluster
 requires the user to set the environment variable 
 MACHINE equal to 'theoryhgw'.
+
+For the benchmark tests you'll need python3
+packages.  It's best to install a copy of miniconda
+locally on your account and setup your packages
+from there (Draco & Cobra). [miniconda downloads](https://docs.conda.io/en/latest/miniconda.html)
