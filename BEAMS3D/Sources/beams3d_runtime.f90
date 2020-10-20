@@ -30,6 +30,8 @@
 !     v2.70 06/09/20 - Converged on format of dV/drho factor
 !                    - ASCOT5 interface updated
 !                    - DIST5D implemented
+!     v2.80 09/24/20 - DIST5D Normalized to phase space volume
+!                    - J and dense now calculated in diagnostics
 !-----------------------------------------------------------------------
 MODULE beams3d_runtime
     !-----------------------------------------------------------------------
@@ -114,11 +116,13 @@ MODULE beams3d_runtime
                lvessel, lvac, lrestart_grid, lrestart_particles, lneut, &
                lbeam, lhitonly, lread_input, lplasma_only, lraw,&
                ldepo, lbeam_simple, ldebug, lcollision, lw7x, lsuzuki, &
-               lascot, lascot4, lbbnbi, lvessel_beam, lascotfl, lrandomize
+               lascot, lascot4, lbbnbi, lvessel_beam, lascotfl, lrandomize, &
+               lfusion, lfusion_alpha
     INTEGER :: nextcur, npoinc, nbeams, nparticles_start, nprocs_beams
     INTEGER, DIMENSION(MAXBEAMS) :: Dex_beams
     INTEGER, ALLOCATABLE :: beam(:)
-    REAL(rprec) :: dt, follow_tol, pi, pi2, invpi2, mu0, to3, dt_save, ne_scale, te_scale, ti_scale, zeff_scale
+    REAL(rprec) :: dt, follow_tol, pi, pi2, invpi2, mu0, to3, dt_save, &
+                   ne_scale, te_scale, ti_scale, zeff_scale, fusion_scale
     REAL(rprec), DIMENSION(MAXBEAMS) :: Adist_beams, Asize_beams, Div_beams, E_beams, mass_beams, &
                                         charge_beams, Zatom_beams, P_beams
     REAL(rprec), DIMENSION(MAXBEAMS, 2) :: r_beams, z_beams, phi_beams
@@ -133,7 +137,7 @@ MODULE beams3d_runtime
     CHARACTER(256) :: id_string, mgrid_string, coil_string, &
     vessel_string, int_type, restart_string, bbnbi_string
 
-    REAL(rprec), PARAMETER :: BEAMS3D_VERSION = 2.75
+    REAL(rprec), PARAMETER :: BEAMS3D_VERSION = 2.80
     !-----------------------------------------------------------------------
     !     Subroutines
     !          handle_err  Controls Program Termination

@@ -18,7 +18,7 @@
                                  nbeams, beam, e_beams, charge_beams, &
                                  mass_beams, lverb, p_beams, MPI_BARRIER_ERR,&
                                  MPI_BCAST_ERR,nprocs_beams,handle_err, ldepo,&
-                                 MPI_REDU_ERR
+                                 MPI_REDU_ERR, pi2, weight
       USE safe_open_mod, ONLY: safe_open
       USE EZspline
       USE mpi_params ! MPI
@@ -31,12 +31,13 @@
 !          ns           Number of flux divisions for current calculation
 !-----------------------------------------------------------------------
       IMPLICIT NONE
-      INTEGER :: ier, iunit, istat, i, j, k, ninj, sbeam, ebeam
-      REAL(rprec) :: maxdist,mindist,v1,v2,dist,ddist,s1,s2, vp_temp
+      INTEGER :: ier, iunit, istat, i, j, k, nhalf, sbeam, ebeam, ninj2
+      REAL(rprec) :: maxdist,mindist,v1,v2,dist,ddist,s1,s2, vp_temp, dvll, dvperp, ninj
       LOGICAL, ALLOCATABLE     :: partmask(:), partmask2(:,:), partmask2t(:,:)
-      INTEGER, ALLOCATABLE  :: int_mask(:), int_mask2(:,:), nlost(:)
+      INTEGER, ALLOCATABLE  :: int_mask(:), int_mask2(:,:)
       INTEGER, ALLOCATABLE  :: dist_func(:,:,:)
-      REAL, ALLOCATABLE     :: real_mask(:),vllaxis(:),vperpaxis(:)
+      REAL, ALLOCATABLE     :: real_mask(:),vllaxis(:),vperpaxis(:), nlost(:)
+      REAL, ALLOCATABLE     :: help3d(:,:,:)
       INTEGER, PARAMETER :: ndist = 100
 #if defined(MPI_OPT)
       INTEGER :: mystart, mypace
@@ -113,9 +114,12 @@
       ! Calculate shinethrough and loss
       shine_through = 0
       DO i = 1, nbeams
-         shine_through(i) = 100.*COUNT(end_state(mystart:myend) == 3 .and. (beam(mystart:myend)==i),DIM=1)/COUNT(beam==i)
-         shine_port(i) = 100.*COUNT(end_state(mystart:myend) == 4 .and. (beam(mystart:myend)==i),DIM=1)/COUNT(beam==i)
-         nlost(i)         = COUNT(end_state(mystart:myend) == 2 .and. beam(mystart:myend) == i)
+         nlost(i)          =      SUM(weight(mystart:myend), MASK = (end_state(mystart:myend) == 2 .and. (beam(mystart:myend)==i)))
+         shine_through(i)  = 100.*SUM(weight(mystart:myend), MASK = (end_state(mystart:myend) == 3 .and. (beam(mystart:myend)==i)))/SUM(weight,MASK=(beam==i))
+         shine_port(i)     = 100.*SUM(weight(mystart:myend), MASK = (end_state(mystart:myend) == 4 .and. (beam(mystart:myend)==i)))/SUM(weight,MASK=(beam==i))
+         !shine_through(i) = 100.*COUNT(end_state(mystart:myend) == 3 .and. (beam(mystart:myend)==i),DIM=1)/COUNT(beam==i)
+         !shine_port(i) = 100.*COUNT(end_state(mystart:myend) == 4 .and. (beam(mystart:myend)==i),DIM=1)/COUNT(beam==i)
+         !nlost(i)         = COUNT(end_state(mystart:myend) == 2 .and. beam(mystart:myend) == i)
       END DO
 
 #if defined(MPI_OPT)
@@ -123,12 +127,12 @@
          CALL MPI_REDUCE(MPI_IN_PLACE, dist_func,     nbeams*ndist*(npoinc+1), MPI_INTEGER,          MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
          CALL MPI_REDUCE(MPI_IN_PLACE, shine_through, nbeams,                  MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
          CALL MPI_REDUCE(MPI_IN_PLACE, shine_port,    nbeams,                  MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
-         CALL MPI_REDUCE(MPI_IN_PLACE, nlost,         nbeams,                  MPI_INTEGER,          MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
+         CALL MPI_REDUCE(MPI_IN_PLACE, nlost,         nbeams,                  MPI_REAL,          MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
       ELSE
          CALL MPI_REDUCE(dist_func,     dist_func,     nbeams*ndist*(npoinc+1), MPI_INTEGER,          MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
          CALL MPI_REDUCE(shine_through, shine_through, nbeams,                  MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
          CALL MPI_REDUCE(shine_port,    shine_port,    nbeams,                  MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
-         CALL MPI_REDUCE(nlost,         nlost,         nbeams,                  MPI_INTEGER,          MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
+         CALL MPI_REDUCE(nlost,         nlost,         nbeams,                  MPI_REAL,          MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
       END IF
 #endif
 
@@ -145,17 +149,18 @@
             WRITE(iunit,'((I5,3(2X,E22.12)))') i,E_BEAMS(i),CHARGE_BEAMS(i),MASS_BEAMS(i)
 
             ! Output beam losses
-            ninj  = COUNT(beam .eq. i)
+            ninj  = SUM(weight,MASK=(beam==i))
+            ninj2  = COUNT(beam==i)
             WRITE(iunit,'(A)') ' Particles Launched  Particles Lost  Lost(%)  TIME_END'
-            WRITE(iunit,'(6X,I10,11X,I5,7x,F5.1,6x,E22.12)') ninj, nlost(i), 100.*nlost(i)/ninj, MAXVAL(t_end)
+            WRITE(iunit,'(6X,I10,11X,I5,7x,F5.1,6x,E22.12)') ninj2, NINT(ninj2*nlost(i)/ninj), 100.*nlost(i)/ninj, MAXVAL(t_end)
             WRITE(iunit,'(A)') ' '
             CALL FLUSH(iunit)
 
             ! Screen Output
             IF (lverb) THEN
                IF (i==1) WRITE(6,'(A)')  ' BEAMLINE     ENERGY [keV]   CHARGE [e]   MASS [Mp]   Particles [#]   Lost [%]  Shinethrough [%]  Port [%]'
-               WRITE(6,'(I5,3(11X,I3),8X,I8,3(8X,F5.1))') i,NINT(E_BEAMS(i)*6.24150636309E15),NINT(CHARGE_BEAMS(i)*6.24150636309E18),&
-                                         NINT(MASS_BEAMS(i)*5.97863320194E26), ninj, 100.*nlost(i)/ninj, shine_through(i), shine_port(i)
+               WRITE(6,'(I5,3(9X,I5),8X,I8,3(8X,F5.1))') i,NINT(E_BEAMS(i)*6.24150636309E15),NINT(CHARGE_BEAMS(i)*6.24150636309E18),&
+                                         NINT(MASS_BEAMS(i)*5.97863320194E26), ninj2, 100.*nlost(i)/ninj, shine_through(i), shine_port(i)
                CALL FLUSH(6)
             END IF
             ! Write Distribution Function
@@ -179,26 +184,12 @@
 
       ! These diagnostics need Vp to be defined
       IF (lvmec .and. .not.lvac .and. .not.ldepo .and. myworkid == master) THEN
-         ! In the future we'll calculate values from the dist5d_prof array.
-         !ALLOCATE(vllaxis(ns_prof4),vperpaxis(ns_prof5))
-         !ALLOCATE(dist_func(nbeams,ns_prof1,ns_prof4))
-         !FORALL(k = 1:ns_prof4) vllaxis(k) = -partvmax+2*partvmax*(k-1)/(ns_prof4-1)
-         !FORALL(k = 1:ns_prof5) vperpaxis(k) = partvmax*(k-1)/(ns_prof5-1)
-         ! We need to calculate the old values
-         dense_prof = SUM(SUM(SUM(SUM(dist5d_prof,DIM=6),DIM=5),DIM=4),DIM=3)
-         ! Calculated J_fast
-         !dist_func = SUM(SUM(SUM(dist5d_prof,DIM=6),DIM=4),DIM=3)
-         !DO k = 1, ns_prof4
-         !   j_prof = j_prof + dist_func(:,:,k)*vllaxis(k)
-         !END DO
-         !IF (ANY(charge_beams>0)) THEN
-         !   DO k = 1, ns_prof1
-         !      j_prof(1:nbeams,k) = j_prof(1:nbeams,k)*charge_beams(1:nbeams)
-         !   END DO
-         !ELSE
-         !   j_prof = j_prof * 1.60217662E-19 
-         !END IF
-         !DEALLOCATE(vllaxis,vperpaxis,dist_func)
+         ! Allocate the parallel and perpendicular velcoity axis
+         nhalf = ns_prof4/2
+         ALLOCATE(vllaxis(ns_prof4),vperpaxis(ns_prof5))
+         FORALL(k = 1:ns_prof4) vllaxis(k) = partvmax*REAL(k-nhalf-0.5)/REAL(nhalf)
+         FORALL(k = 1:ns_prof5) vperpaxis(k) = partvmax*REAL(k-0.5)/REAL(ns_prof5)
+         ! First normalize the 5D phase space density by dVolume
          ! Grid in rho, units in [/m^3]
          ! Note ns is number of cells not cell boundaries
          ! Just a note here dV/drho = 2*rho*dV/dist
@@ -208,12 +199,33 @@
             s2 = s1*s1
             CALL EZspline_interp(Vp_spl_s,s2,vp_temp,ier)
             vp_temp = vp_temp*2*s1*(1./REAL(ns_prof1))
+            dist5d_prof(:,k,:,:,:,:) = dist5d_prof(:,k,:,:,:,:)/vp_temp
             epower_prof(:,k) = epower_prof(:,k)/vp_temp
             ipower_prof(:,k) = ipower_prof(:,k)/vp_temp
             ndot_prof(:,k)   =   ndot_prof(:,k)/vp_temp
-               j_prof(:,k)   =      j_prof(:,k)/vp_temp
-            dense_prof(:,k)  =  dense_prof(:,k)/vp_temp
          END DO
+         dense_prof = SUM(SUM(SUM(SUM(dist5d_prof,DIM=6),DIM=5),DIM=4),DIM=3) ! [m^-3]
+         ! Now calculate J_fast
+         ALLOCATE(help3d(nbeams,ns_prof1,ns_prof4))
+         help3d = SUM(SUM(SUM(dist5d_prof,DIM=6),DIM=4),DIM=3)
+         j_prof = 0
+         DO k = 1, ns_prof4
+            j_prof = j_prof + help3d(:,:,k)*vllaxis(k)
+         END DO
+         DEALLOCATE(help3d)
+         DO k = 1, ns_prof1
+            j_prof(1:nbeams,k) = j_prof(1:nbeams,k)*charge_beams(1:nbeams) ! [A*m^-2]
+         END DO
+         ! Normalize to velocity space volume element
+         dvll = partvmax*2/ns_prof4 ! dVll
+         dvperp = pi2*partvmax/ns_prof5 ! dVperp
+         DO k = 1, ns_prof5 ! VPERP
+            !s2 = REAL(k-0.5)/REAL(ns_prof5) ! Vperp_frac
+            vp_temp = vperpaxis(k)*dvll*dvperp
+            dist5d_prof(:,:,:,:,:,k) = dist5d_prof(:,:,:,:,:,k)/vp_temp
+         END DO
+         ! DEALLOCATIONS
+         DEALLOCATE(vperpaxis,vllaxis)
 
       END IF
 
