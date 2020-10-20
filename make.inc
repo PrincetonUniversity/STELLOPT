@@ -11,6 +11,7 @@ MACHINE ?= $(shell uname -n | \
 	     /vulcan/{print "vulcan"}\
 	     /Matts-MBP/{print "macports_landreman"}\
 	     /Matts-MacBook-Pro/{print "macports_landreman"}\
+	     /raven/{print "raven"}\
 	     /cobra/{print "cobra"}\
 	     /draco/{print "draco"}')
 

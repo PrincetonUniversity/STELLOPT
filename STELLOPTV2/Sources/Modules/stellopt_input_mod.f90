@@ -411,6 +411,7 @@
                          regcoil_rcws_rbound_c_max, regcoil_rcws_rbound_s_max, &
                          regcoil_rcws_zbound_c_max, regcoil_rcws_zbound_s_max, &
                          target_curvature_P2, sigma_curvature_P2, &
+                         target_gamma_c, sigma_gamma_c, &
                          lRosenbrock_X_opt, dRosenbrock_X_opt, &
                          Rosenbrock_X, Rosenbrock_X_min, Rosenbrock_X_max, &
                          target_Rosenbrock_F, sigma_Rosenbrock_F
@@ -995,6 +996,8 @@
       npts_crect        = 360
       target_curvature_P2    = 0.0
       sigma_curvature_P2     = bigno
+      target_gamma_c    = 0.0
+      sigma_gamma_c     = bigno
 
       ! Read name list
       lexist            = .false.
@@ -2103,6 +2106,20 @@
            IF (sigma_magwell(ik) < bigno)  WRITE(iunit,"(2(2X,A,I3.3,A,ES22.12E3))") &
                           'TARGET_MAGWELL(',ik,') = ',target_magwell(ik), &
                           'SIGMA_MAGWELL(',ik,') = ',sigma_magwell(ik)
+         END DO
+      END IF 
+      IF (ANY(sigma_gamma_c < bigno)) THEN
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,'(A)') '!          Gamma_c Energetic Particle Metric'  
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         n=0
+         DO ik = 1,UBOUND(sigma_gamma_c,DIM=1)
+            IF(sigma_gamma_c(ik) < bigno) n=ik
+         END DO
+         DO ik = 1, n
+           IF (sigma_gamma_c(ik) < bigno)  WRITE(iunit,"(2(2X,A,I3.3,A,ES22.12E3))") &
+                          'TARGET_GAMMA_C(',ik,') = ',target_gamma_c(ik), &
+                          'SIGMA_GAMMA_C(',ik,') = ',sigma_gamma_c(ik)
          END DO
       END IF
       IF (ANY(sigma_jcurv < bigno)) THEN
