@@ -69,7 +69,7 @@ SUBROUTINE beams3d_follow
     DOUBLE PRECISION, PARAMETER :: sqrt_pi       = 1.7724538509   !pi^(1/2)
     DOUBLE PRECISION, PARAMETER :: e_charge      = 1.60217662E-19 !e_c
 
-    DOUBLE PRECISION, PARAMETER :: lendt_m = 0.05  ! Maximum length to travel before updating physics [m]
+!    DOUBLE PRECISION, PARAMETER :: lendt_m = 0.05  ! Maximum length to travel before updating physics [m]
     !-----------------------------------------------------------------------
     !     External Functions
     !          fpart_nag            RHS of ODE integrator (for NAG)    for BEAMS3D
@@ -325,6 +325,10 @@ SUBROUTINE beams3d_follow
                     itol = 2; rtol = follow_tol; atol(:) = follow_tol
                     myline = l
                     mytdex = 0
+                    ! Setup timestep (not yet working)
+                    !dt = SIGN(lendt_m/vll_start(l),tf_max) ! Reset timestep for each particle
+                    !IF (ABS(dt) < 1E-9) dt = SIGN(1D-9,tf_max)  ! This is a limiter term for STELLOPT
+                    !dt = dt_out/CEILING(dt_out/dt)
                     ! Initialize the calculation
                     ltherm = .false.
                     lneut  = .false.
@@ -345,7 +349,6 @@ SUBROUTINE beams3d_follow
                     moment = mu_start(l)
                     fact_vsound = 1.5*sqrt(e_charge/plasma_mass)*therm_factor
                     fact_pa   = plasma_mass*plasma_Zavg/(mymass*plasma_Zmean)
-!                    fact_crit = SQRT(2*e_charge/mymass)*(1.5*sqrt_pi*sqrt(2*plasma_mass/electron_mass))**(1.0/3.0) ! Wesson pg 226 5.4.9
                     fact_crit = SQRT(2*e_charge/plasma_mass)*(0.75*sqrt_pi*sqrt(plasma_mass/electron_mass))**(1.0/3.0) ! Wesson pg 226 5.4.9
                     myv_neut(:) = v_neut(:,myline)
                     IF (lbeam) lneut = .TRUE.
