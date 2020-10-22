@@ -58,22 +58,17 @@ should look like:
 
 ```fortran
 &INDATA
- ! VMEC input namelist (only need coil currents for usual runs)
+ ! VMEC input namelist (only need coil currents for runs with vacuum fields)
  EXTCUR(1) = 10000.00
  EXTCUR(2) = 10000.00
  EXTCUR(3) = 12000.00
  EXTCUR(4) = 12000.00
  EXTCUR(5) = 6000.00
- ! VMEC Axis info (for putting a current on axis -axis option)
- !     This information is utilized if you want to place the net toroidal current
- !     on a magnetic axis.  Useful for doing vacuum tokamak equilibria
- CURTOR = 5000.0
- NFP = 5
- NTOR = 6
- RAXIS = 3.6  0.1 0.001
- ZAXIS = 0.0  0.1 0.001
 /
 &BEAMS3D_INPUT
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!            GRID PARAMETERS                                        !!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  NR = 201                          ! Number of radial gridpoints, overridden if using mgrid
  NPHI = 36                         ! Number of toroidal gridpoints, overridden if using mgrid
  NZ = 201                          ! Number of vertical gridpoints, overridden if using mgrid
@@ -83,6 +78,43 @@ should look like:
  ZMAX = 1.5                        ! Maximum extent of radial grid, overridden if using mgrid
  PHIMIN = 0.0                      ! Minimum extent of toroidal grid, overridden if using mgrid
  PHIMAX = 1.2566370614             ! Maximum extent of toroidal grid, overridden if using mgrid
+ VC_ADAPT_TOL = 1.0E-3             ! Virtual casing tolerance (for plasma field outside)
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!            PLASMA PARAMETERS                                      !!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ PLASMA_MASS  = 1.6726231E-27       ! Mean plasma mass [kg]
+ PLASMA_ZAVG  = 1.0                 ! <Z>
+ PLASMA_ZMEAN = 1.0                 ! [Z]
+ TE_SCALE  = 1.0                    ! Electron Temperature Scaling factor
+ TE_AUX_S  = 0.0 0.5 1.0            ! Electron Temperature Knots [0,1]
+ TE_AUX_F  = 0.0 1.0 2.0            ! Electron Temperature [eV]
+ NE_SCALE  = 1.0                    ! Electron Density Scaling factor
+ NE_AUX_S  = 0.0 0.5 1.0            ! Electron Density Knots [0,1]
+ NE_AUX_F  = 0.0 1.0 2.0            ! Electron Density [m^-3]
+ TI_SCALE  = 1.0                    ! Ion Temperature Scaling factor
+ TI_AUX_S  = 0.0 0.5 1.0            ! Ion Temperature Knots [0,1]
+ TI_AUX_F  = 0.0 1.0 2.0            ! Ion Temperature [eV]
+ POT_AUX_S  = 0.0 0.5 1.0           ! Electrostatic Potential Knots [0,1]
+ POT_AUX_F  = 0.0 1.0 2.0           ! Electrostatic Potential [V] (Phi, not dPhi/dr)
+ THERM_FACTOR = 1.5                 ! Factor at which to thermalize (Vtherm*THERM_FACTOR)
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!            DISTRIBUTION FUNCTION                                  !!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ NRHO_DIST   = 64                   ! Radial bins (0,1)
+ NTHETA_DIST = 4                    ! Poloidal bins (0,2*pi)
+ NZETA_DIST  = 4                    ! Toroidal bins (0,2*pi), 4*NFP is a good option
+ NVPARA_DIST = 32                   ! Parallel velocity bins (-vmin,vmax)
+ NVPERP_DIST = 64                   ! Perpendicular velocity bins (0,vmax)
+ PARTVMAX    = 3.0E6                ! Maximum velocity in dist. (vmax)
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!            PARTICLE INTEGRATION PARAMETERS                        !!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ INT_TYPE = 'LSODE'                 ! Particle trajectory integration method (NAG, RKH68, LSODE)
+ FOLLOW_TOL = 1.0E-12               ! Trajectory following tolerance (NAG, LSODE)
+ NPOINC = 100                       ! Number of trajector points to save per particle
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!            PARTICLE INITIAL CONDITION (INDIVIDUAL)                !!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  R_START_IN =  3.6  3.7  3.8       ! Radial starting locations of particles [m]
  Z_START_IN =  0.0  0.0  0.0       ! Vertical starting locations of particles [m]
  PHI_START_IN =  0.0  0.0  0.0     ! Toroidal starting locations of particles (radians)
@@ -92,32 +124,25 @@ should look like:
  MASS_IN     =   3*1.6726231E-27   ! Particle mass [kg]
  ZATOM_IN    =   3*1.0             ! Particle charge number
  T_END_IN    =   3*0.001           ! How long to follow particles [s]
- NPOINC = 500                      ! Number of toroidal points per-period to output the field line trajectory
- INT_TYPE = 'NAG'                  ! Particle trajectory integration method (NAG, RKH68, LSODE)
- FOLLOW_TOL = 1.0E-12              ! Trajectory following tolerance
- VC_ADAPT_TOL = 1.0E-7             ! Virtual casing tolerance (if using plasma field from equilibria)
- ! The following is used if modeling beam deposition as well
- NPARTICLES_START = 500            ! Number of particles per beam line
- ASIZE_BEAMS = 0.15                ! Aperature Size [m]
- ADIST_BEAMS = 2.0                 ! Aperature Distance [m]
- DIV_BEAMS = 0.1                   ! Beam divergence [rad] (small angle approximation used)
- E_BEAMS   = 6.408E-15             ! Beam energy [J]
- MASS_BEAMS = 1.6726231E-27        ! Beam particle mass [kg]
- CHARGE_BEAMS = 1.60217733E-19     ! Beam particle charge [C]
- ZATOM_BEAMS = 1.0                 ! Beam particle charge number
- R_beams(1,1) = 1.673              ! Neutral beam radial position (Beam #1)
- R_beams(1,2) = 1.400              ! Point defining beam line (Beam #1)
- Z_beams(1,1) = 0.0                ! Neutral beam vertical position (Beam #1)
- Z_beams(1,2) = 0.0                ! Point defining beam line (Beam #1)
- PHI_BEAMS(1,1) = 0.0              ! Neutral beam toroidal poition (Beam #1)
- PHI_BEAMS(1,2) = 1.047            ! Point defining beam line (Beam #1)
- ADIST_BEAMS = 0.1                 ! Beam Appearture distance
- TE_AUX_S  = 0.0 0.5 1.0           ! Electron Temperature Profile (radial knots)
- TE_AUX_F  = 0.0 1.0 2.0           ! Electron Temperature Profile (values)
- NE_AUX_S  = 0.0 0.5 1.0           ! Electron Density Profile (radial knots)
- NE_AUX_F  = 0.0 1.0 2.0           ! Electron Density Profile (values)
- TI_AUX_S  = 0.0 0.5 1.0           ! Ion Temperature Profile (radial knots)
- TI_AUX_F  = 0.0 1.0 2.0           ! Ion Temperature Profile (values)
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!            PARTICLE INITIAL CONDITION (Neutral Beam)              !!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ NPARTICLES_START = 1024           ! Number of particles per beamline
+ R_BEAMS(1,1:2) = 1.673 1.400      ! R chord deffinition (start,end) BEAM#1
+ Z_BEAMS(1,1:2) = 0.000 0.000      ! Z chord deffinition (start,end) BEAM#1
+ PHI_BEAMS(1,1:2) = 0.000 0.000    ! PHI chord deffinition (start,end) BEAM#1
+ ASIZE_BEAMS(1)   = 0.15           ! Aperature Size [m] BEAM#1
+ ADIST_BEAMS(1)   = 2.00           ! Aperature Distance [m] BEAM#1
+ DIV_BEAMS(1)     = 0.1            ! Beam divergence [rad] BEAM#1
+ E_BEAMS(1)       = 0.1            ! Beam Energy [J] BEAM#1
+ MASS_BEAMS(1)    = 1.6726231E-27  ! Beam species mass [kg] BEAM#1
+ CHARGE_BEAMS(1)  = 1.0            ! Beam species charge [C] BEAM#1
+ ZATOM_BEAMS(1)   = 1.0            ! Beam species Z [norm] BEAM#1
+ T_END_IN(1)      = 0.05           ! How long to follow particles [s]
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!            PARTICLE INITIAL CONDITION (Fusion Reactions)          !!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ FUSION_SCALE     = 1.0            ! Scaleing Factor to apply to energy
 /
 &END
 ```
@@ -150,6 +175,7 @@ and BEASM3D\_INPUT namelists in it.
 | -mgrid | NONE | Makegrid style vacuum grid file |
 | -vessel | NONE | First wall file |
 | -beamlet | NONE | Beamlet deffintion HDF5 file. |
+| -restart | NONE | Restart run from particles in previous run (HDF5 file) |
 | -vac | NONE | Only compute the vacuum field |
 | -beam_simple | NONE | Assume monoenergetic beams (normally 1% variance around injection energy) |
 | -collisions | NONE | Force use of slowing down/scattering operator. |
