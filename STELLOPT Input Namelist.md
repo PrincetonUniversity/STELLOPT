@@ -166,6 +166,10 @@ Particle Swarm evolution.
 | EPSFCN | Ratio of global attractor to local (local = 1.0) |
 | FACTOR | Scaling factor for maximum velocity|
 
+### ONE_ITER
+
+To run STELLOPT codes on an input file, without optimization, set OPT_TYLE = 'ONE_ITER'.
+
 ### Mapping (gridded)
 
 The STELLOPT code can perform a gridded mapping of the n-dimensional
