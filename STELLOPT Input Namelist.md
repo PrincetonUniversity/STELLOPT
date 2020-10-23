@@ -13,7 +13,8 @@ Table of Contents
  * [Runtime Control](#runtime-control) 
     * [LMDIF](#lmdif) 
     * [GADE](#gade) 
-    * [PSO](#pso) 
+    * [PSO](#pso)
+    * [ONE_ITER](#one-iter)
     * [Mapping (gridded)](#mapping-gridded) 
     * [Mapping (hyperplane)](#mapping-hyperplane) 
  * [Variables](#variables) 
@@ -168,7 +169,7 @@ Particle Swarm evolution.
 
 ### ONE_ITER
 
-To run STELLOPT codes on an input file, without optimization, set OPT_TYLE = 'ONE_ITER'.
+To run STELLOPT codes on an input file, without optimization, set OPT_TYPE = 'ONE_ITER'.
 
 ### Mapping (gridded)
 
