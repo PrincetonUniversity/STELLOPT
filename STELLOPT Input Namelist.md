@@ -14,7 +14,7 @@ Table of Contents
     * [LMDIF](#lmdif) 
     * [GADE](#gade) 
     * [PSO](#pso)
-    * [ONE_ITER](#one-iter)
+    * [ONE_ITER](#one_iter)
     * [Mapping (gridded)](#mapping-gridded) 
     * [Mapping (hyperplane)](#mapping-hyperplane) 
  * [Variables](#variables) 
