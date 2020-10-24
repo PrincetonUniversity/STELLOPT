@@ -270,6 +270,9 @@
          !CALL beams3d_init_spec
       END IF
 
+      ! Adjust the torodial distribution function grid
+      ns_prof2 = MAX(ns_prof2,4*NINT(pi2/phimax)) ! Min 4 per field period
+
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!              Initialize Vessel (we need nbeams here)
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -534,7 +537,7 @@
       ALLOCATE(end_state(nparticles))
       end_state=0
 
-      ! Setup 
+      ! Setup distribution
       ALLOCATE(epower_prof(nbeams,ns_prof1), ipower_prof(nbeams,ns_prof1), &
                ndot_prof(nbeams,ns_prof1), j_prof(nbeams,ns_prof1), &
                dense_prof(nbeams,ns_prof1))

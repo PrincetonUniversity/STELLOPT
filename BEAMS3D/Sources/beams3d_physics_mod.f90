@@ -12,13 +12,13 @@ MODULE beams3d_physics_mod
       !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
       USE beams3d_runtime, ONLY: lneut, pi, pi2, dt, lverb, ADAS_ERR, &
-                                 dt_save, lbbnbi, weight
+                                 dt_save, lbbnbi, weight, t_end
       USE beams3d_lines, ONLY: R_lines, Z_lines, PHI_lines, &
                                myline, mytdex, moment, ltherm, &
                                nsteps, nparticles, vll_lines, &
                                moment_lines, mybeam, mycharge, myZ, &
                                mymass, myv_neut, B_temp, rand_prob, &
-                               cum_prob, tau, &
+                               cum_prob, tau, dt_out, &
                                epower_prof, ipower_prof, &
                                end_state, fact_crit, fact_pa, fact_vsound, &
                                ns_prof1, ns_prof2, ns_prof3, ns_prof4, &
@@ -1291,5 +1291,129 @@ MODULE beams3d_physics_mod
          RETURN
 
       END SUBROUTINE beams3d_SFLX
+
+      !-----------------------------------------------------------------
+      !     Function:      beams3d_fbounce
+      !     Authors:       S. Lazerson (samuel.lazerson@ipp.mpg.de)
+      !     Date:          10/24/2020
+      !     Description:   Calculates pseudo bounce frequency.
+      !                    Uses large aspect ratio cicular cross
+      !                    sction formulation.
+      !-----------------------------------------------------------------
+      SUBROUTINE beams3d_fbounce(q,mu,mass,fbounce)
+         !--------------------------------------------------------------
+         !     Input Parameters
+         !          q            (q(1),q(2),q(3)) = (R,phi,Z)
+         !          mu           Magnetic moment (J/T)
+         !          mass         Particle mass (kg)
+         !          fbounce      Reaction rate (part/(m^3*s))
+         !--------------------------------------------------------------
+         IMPLICIT NONE
+         DOUBLE PRECISION, INTENT(inout) :: q(3)
+         DOUBLE PRECISION, INTENT(inout) :: mu
+         DOUBLE PRECISION, INTENT(inout) :: mass
+         DOUBLE PRECISION, INTENT(out) :: fbounce
+
+         !--------------------------------------------------------------
+         !     Local Variables
+         !        r_temp     Helpers (r,phi,z)
+         !        i,j,k      Spline Grid indicies
+         !        xparam     Spline subgrid factor [0,1] (yparam,zparam)
+         !        ict        Spline output control
+         !        fval       Spline output array
+         !--------------------------------------------------------------
+         DOUBLE PRECISION :: r_temp, z_temp, phi_temp, vperp, R0, Z0, r
+         ! For splines
+         INTEGER :: i,j,k
+         REAL*8 :: xparam, yparam, zparam
+         INTEGER, parameter :: ict(8)=(/1,0,0,0,0,0,0,0/)
+         REAL*8 :: fval(1)
+
+         !--------------------------------------------------------------
+         !     Begin Subroutine
+         !--------------------------------------------------------------
+
+         ! Setup position in a vll arrays
+         r_temp   = q(1)
+         phi_temp = MODULO(q(2), phimax)
+         IF (phi_temp < 0) phi_temp = phi_temp + phimax
+         z_temp   = q(3)
+
+         ! Initialize values
+         fbounce = zero
+         R0      = (raxis(nr)-raxis(1))*half+raxis(1)
+         Z0      = (zaxis(nr)-zaxis(1))*half+zaxis(1)
+         r       = SQRT((r_temp-R0)*(r_temp-R0)+(z_temp-Z0)*(z_temp-Z0))
+
+         ! Check that we're inside the domain then proceed
+         IF ((r_temp >= rmin-eps1) .and. (r_temp <= rmax+eps1) .and. &
+             (phi_temp >= phimin-eps2) .and. (phi_temp <= phimax+eps2) .and. &
+             (z_temp >= zmin-eps3) .and. (z_temp <= zmax+eps3)) THEN
+            i = MIN(MAX(COUNT(raxis < r_temp),1),nr-1)
+            j = MIN(MAX(COUNT(phiaxis < phi_temp),1),nphi-1)
+            k = MIN(MAX(COUNT(zaxis < z_temp),1),nz-1)
+            xparam = (r_temp - raxis(i)) * hri(i)
+            yparam = (phi_temp - phiaxis(j)) * hpi(j)
+            zparam = (z_temp - zaxis(k)) * hzi(k)
+            ! Evaluate the Splines
+            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                            hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                            MODB4D(1,1,1,1),nr,nphi,nz)
+            !vperp = SQRT(2*mu*fval(1)/mass)
+            !fbounce = vperp*SQRT(half*r/R0)/(R0*pi2) ! assume q=1
+            fbounce = SQRT(r*mu*fval(1)/(mass*R0*R0*R0*pi2*pi2))
+         ELSE
+            RETURN
+         END IF
+
+         RETURN
+
+      END SUBROUTINE beams3d_fbounce
+
+      !-----------------------------------------------------------------
+      !     Function:      beams3d_calc_dt
+      !     Authors:       S. Lazerson (samuel.lazerson@ipp.mpg.de)
+      !     Date:          10/24/2020
+      !     Description:   Calculates the timestep using the bounce
+      !                    frequency from beasm3d_fbounce.
+      !-----------------------------------------------------------------
+      SUBROUTINE beams3d_calc_dt(q,mu,mass,dt)
+         !--------------------------------------------------------------
+         !     Input Parameters
+         !          q            (q(1),q(2),q(3),q(4)) = (R,phi,Z,vll)
+         !          mu           Magnetic moment (J/T)
+         !          fbounce      Reaction rate (part/(m^3*s))
+         !--------------------------------------------------------------
+         IMPLICIT NONE
+         DOUBLE PRECISION, INTENT(inout) :: q(4)
+         DOUBLE PRECISION, INTENT(inout) :: mu
+         DOUBLE PRECISION, INTENT(inout) :: mass
+         DOUBLE PRECISION, INTENT(out) :: dt
+
+         !--------------------------------------------------------------
+         !     Local Variables
+         !        freq_bounce Approx bounce frequency
+         !--------------------------------------------------------------
+         DOUBLE PRECISION :: freq_bounce
+
+         !--------------------------------------------------------------
+         !     Begin Subroutine
+         !--------------------------------------------------------------
+
+         ! Get bounce frequncy
+         CALL beams3d_fbounce(q(1:3),mu,mass,freq_bounce)
+
+         ! Timestep is a fraction of bounce frequency
+         dt = one/(64*freq_bounce)
+
+         ! Needs to be a even multiple of NPOINC
+         dt = MIN(dt_out/CEILING(dt_out/dt),dt_out)
+
+         ! Limiter term for STELLOPT
+         IF (ABS(dt) < 1E-9) dt = SIGN(1D-9,t_end(myline))
+
+         RETURN
+
+      END SUBROUTINE beams3d_calc_dt
 
 END MODULE beams3d_physics_mod
