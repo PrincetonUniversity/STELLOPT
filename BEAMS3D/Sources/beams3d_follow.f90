@@ -69,7 +69,7 @@ SUBROUTINE beams3d_follow
     DOUBLE PRECISION, PARAMETER :: sqrt_pi       = 1.7724538509   !pi^(1/2)
     DOUBLE PRECISION, PARAMETER :: e_charge      = 1.60217662E-19 !e_c
 
-    DOUBLE PRECISION, PARAMETER :: lendt_m = 0.05  ! Maximum length to travel before updating physics [m]
+!    DOUBLE PRECISION, PARAMETER :: lendt_m = 0.05  ! Maximum length to travel before updating physics [m]
     !-----------------------------------------------------------------------
     !     External Functions
     !          fpart_nag            RHS of ODE integrator (for NAG)    for BEAMS3D
@@ -87,10 +87,9 @@ SUBROUTINE beams3d_follow
     ier = 0
     i = MAXLOC(ABS(t_end),1)
     tf_max = t_end(i)
-    dt_out = tf_max/npoinc
+    dt_out = tf_max/(npoinc+1)
     vel_max = MAXVAL(vll_start)
     dt = SIGN(lendt_m/vel_max,tf_max)      ! Keep this here so we print out max(dt)
-    IF (ABS(dt) < 1E-9) dt = SIGN(1D-9,tf_max)  ! This is a limiter term for STELLOPT
 
     !!!!!!!!! Make sure dt_out divisible by dt !!!!!!!!
     !PRINT *,dt_out,dt
@@ -98,6 +97,7 @@ SUBROUTINE beams3d_follow
     dt = dt_out/CEILING(dt_out/dt)
     !PRINT *,dt_out,dt
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    IF (ABS(dt) < 1E-9) dt = SIGN(1D-9,tf_max)  ! This is a limiter term for STELLOPT
 
 
     nsteps = FLOOR(tf_max/dt)
@@ -230,7 +230,7 @@ SUBROUTINE beams3d_follow
                        CALL D02CJF(t_nag,tf_nag,neqs_nag,q,fpart_nag,tol_nag,relab,out_beams3d_nag,D02CJW,w,ier)
                        IF (ier < 0) CALL handle_err(D02CJF_ERR, 'beams3d_follow', ier)
                        CALL out_beams3d_nag(tf_nag,q)
-                       IF (tf_nag > t_end(l)) EXIT
+                       IF (ABS(tf_nag) > ABS(t_end(l))) EXIT
                     END DO
                 END DO
 #else
@@ -345,9 +345,11 @@ SUBROUTINE beams3d_follow
                     moment = mu_start(l)
                     fact_vsound = 1.5*sqrt(e_charge/plasma_mass)*therm_factor
                     fact_pa   = plasma_mass*plasma_Zavg/(mymass*plasma_Zmean)
-!                    fact_crit = SQRT(2*e_charge/mymass)*(1.5*sqrt_pi*sqrt(2*plasma_mass/electron_mass))**(1.0/3.0) ! Wesson pg 226 5.4.9
                     fact_crit = SQRT(2*e_charge/plasma_mass)*(0.75*sqrt_pi*sqrt(plasma_mass/electron_mass))**(1.0/3.0) ! Wesson pg 226 5.4.9
                     myv_neut(:) = v_neut(:,myline)
+                    ! Setup timestep
+                    CALL beams3d_calc_dt(q,moment,mymass,dt)
+                    ! Begin handling particle.
                     IF (lbeam) lneut = .TRUE.
                     CALL out_beams3d_nag(tf_nag,q)
                     IF (lbeam) THEN
@@ -368,7 +370,8 @@ SUBROUTINE beams3d_follow
                        mytdex = 3
                        tf_nag = tf_nag - dt  ! Because out advances t by dt
                        dt_out = (t_end(l) - t_nag)/(npoinc-2) ! Adjust dt slightly to keep indexing correct.
-                       CALL FLUSH(6)
+                       ! Adjust timestep timestep
+                       CALL beams3d_calc_dt(q,moment,mymass,dt)
                     END IF
                     DO
                         IF (lcollision) istate = 1
