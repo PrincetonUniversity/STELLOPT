@@ -87,10 +87,9 @@ SUBROUTINE beams3d_follow
     ier = 0
     i = MAXLOC(ABS(t_end),1)
     tf_max = t_end(i)
-    dt_out = tf_max/npoinc
+    dt_out = tf_max/(npoinc+1)
     vel_max = MAXVAL(vll_start)
     dt = SIGN(lendt_m/vel_max,tf_max)      ! Keep this here so we print out max(dt)
-    IF (ABS(dt) < 1E-9) dt = SIGN(1D-9,tf_max)  ! This is a limiter term for STELLOPT
 
     !!!!!!!!! Make sure dt_out divisible by dt !!!!!!!!
     !PRINT *,dt_out,dt
@@ -98,6 +97,7 @@ SUBROUTINE beams3d_follow
     dt = dt_out/CEILING(dt_out/dt)
     !PRINT *,dt_out,dt
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    IF (ABS(dt) < 1E-9) dt = SIGN(1D-9,tf_max)  ! This is a limiter term for STELLOPT
 
 
     nsteps = FLOOR(tf_max/dt)
@@ -230,7 +230,7 @@ SUBROUTINE beams3d_follow
                        CALL D02CJF(t_nag,tf_nag,neqs_nag,q,fpart_nag,tol_nag,relab,out_beams3d_nag,D02CJW,w,ier)
                        IF (ier < 0) CALL handle_err(D02CJF_ERR, 'beams3d_follow', ier)
                        CALL out_beams3d_nag(tf_nag,q)
-                       IF (tf_nag > t_end(l)) EXIT
+                       IF (ABS(tf_nag) > ABS(t_end(l))) EXIT
                     END DO
                 END DO
 #else
@@ -325,10 +325,6 @@ SUBROUTINE beams3d_follow
                     itol = 2; rtol = follow_tol; atol(:) = follow_tol
                     myline = l
                     mytdex = 0
-                    ! Setup timestep (not yet working)
-                    !dt = SIGN(lendt_m/vll_start(l),tf_max) ! Reset timestep for each particle
-                    !IF (ABS(dt) < 1E-9) dt = SIGN(1D-9,tf_max)  ! This is a limiter term for STELLOPT
-                    !dt = dt_out/CEILING(dt_out/dt)
                     ! Initialize the calculation
                     ltherm = .false.
                     lneut  = .false.
@@ -351,6 +347,9 @@ SUBROUTINE beams3d_follow
                     fact_pa   = plasma_mass*plasma_Zavg/(mymass*plasma_Zmean)
                     fact_crit = SQRT(2*e_charge/plasma_mass)*(0.75*sqrt_pi*sqrt(plasma_mass/electron_mass))**(1.0/3.0) ! Wesson pg 226 5.4.9
                     myv_neut(:) = v_neut(:,myline)
+                    ! Setup timestep
+                    CALL beams3d_calc_dt(q,moment,mymass,dt)
+                    ! Begin handling particle.
                     IF (lbeam) lneut = .TRUE.
                     CALL out_beams3d_nag(tf_nag,q)
                     IF (lbeam) THEN
@@ -371,7 +370,8 @@ SUBROUTINE beams3d_follow
                        mytdex = 3
                        tf_nag = tf_nag - dt  ! Because out advances t by dt
                        dt_out = (t_end(l) - t_nag)/(npoinc-2) ! Adjust dt slightly to keep indexing correct.
-                       CALL FLUSH(6)
+                       ! Adjust timestep timestep
+                       CALL beams3d_calc_dt(q,moment,mymass,dt)
                     END IF
                     DO
                         IF (lcollision) istate = 1
