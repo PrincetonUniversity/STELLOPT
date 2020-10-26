@@ -118,7 +118,7 @@ MODULE beams3d_runtime
                ldepo, lbeam_simple, ldebug, lcollision, lw7x, lsuzuki, &
                lascot, lascot4, lbbnbi, lvessel_beam, lascotfl, lrandomize, &
                lfusion, lfusion_alpha
-    INTEGER :: nextcur, npoinc, nbeams, nparticles_start, nprocs_beams
+    INTEGER :: nextcur, npoinc, nbeams, nparticles_start, nprocs_beams, ndt, ndt_max
     INTEGER, DIMENSION(MAXBEAMS) :: Dex_beams
     INTEGER, ALLOCATABLE :: beam(:)
     REAL(rprec) :: dt, follow_tol, pi, pi2, invpi2, mu0, to3, dt_save, &
