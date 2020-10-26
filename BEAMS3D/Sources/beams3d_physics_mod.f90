@@ -7,26 +7,30 @@
 !-----------------------------------------------------------------------
 MODULE beams3d_physics_mod
 
-      !-----------------------------------------------------------------------
+      !-----------------------------------------------------------------
       !     Libraries
-      !-----------------------------------------------------------------------
+      !-----------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
       USE beams3d_runtime, ONLY: lneut, pi, pi2, dt, lverb, ADAS_ERR, &
-                                 dt_save, lbbnbi, weight, t_end
+                                 dt_save, lbbnbi, weight, t_end, ndt, &
+                                 ndt_max, npoinc, lendt_m
       USE beams3d_lines, ONLY: R_lines, Z_lines, PHI_lines, &
                                myline, mytdex, moment, ltherm, &
                                nsteps, nparticles, vll_lines, &
                                moment_lines, mybeam, mycharge, myZ, &
                                mymass, myv_neut, B_temp, rand_prob, &
-                               cum_prob, tau, dt_out, &
+                               cum_prob, tau, &
                                epower_prof, ipower_prof, &
-                               end_state, fact_crit, fact_pa, fact_vsound, &
+                               end_state, fact_crit, fact_pa, &
+                               fact_vsound, &
                                ns_prof1, ns_prof2, ns_prof3, ns_prof4, &
                                ns_prof5
-      USE beams3d_grid, ONLY: BR_spl, BZ_spl, delta_t, BPHI_spl, MODB_spl, MODB4D, &
+      USE beams3d_grid, ONLY: BR_spl, BZ_spl, delta_t, BPHI_spl, &
+                              MODB_spl, MODB4D, &
                               phimax, S4D, TE4D, NE4D, TI4D, ZEFF4D, &
                               nr, nphi, nz, rmax, rmin, zmax, zmin, &
-                              phimin, eps1, eps2, eps3, raxis, phiaxis, zaxis, &
+                              phimin, eps1, eps2, eps3, raxis, phiaxis,&
+                              zaxis, &
                               hr, hp, hz, hri, hpi, hzi
       USE EZspline_obj
       USE EZspline
@@ -1394,23 +1398,29 @@ MODULE beams3d_physics_mod
          !     Local Variables
          !        freq_bounce Approx bounce frequency
          !--------------------------------------------------------------
-         DOUBLE PRECISION :: freq_bounce
+         DOUBLE PRECISION :: freq_bounce, tf_max
 
          !--------------------------------------------------------------
          !     Begin Subroutine
          !--------------------------------------------------------------
 
+         ! Define max time to follow particle
+         tf_max = t_end(myline)
+
          ! Get bounce frequncy
-         CALL beams3d_fbounce(q(1:3),mu,mass,freq_bounce)
+         !CALL beams3d_fbounce(q(1:3),mu,mass,freq_bounce)
 
          ! Timestep is a fraction of bounce frequency
-         dt = one/(64*freq_bounce)
+         !dt = one/(64*freq_bounce)
+         !dt = SIGN(MAX(dt,1D-9),tf_max) ! Limiter and sign
 
-         ! Needs to be a even multiple of NPOINC
-         dt = MIN(dt_out/CEILING(dt_out/dt),dt_out)
+         ! Use max distance
+         dt = lendt_m/q(4)
+         dt = SIGN(MAX(dt,1D-9),tf_max) ! Limiter and sign
 
-         ! Limiter term for STELLOPT
-         IF (ABS(dt) < 1E-9) dt = SIGN(1D-9,t_end(myline))
+         ! Make subtimestep fit (min 2 due to logic)
+         ndt_max = MAX(CEILING(tf_max/(dt*NPOINC)),2)
+         dt = tf_max/(ndt_max*NPOINC)
 
          RETURN
 
