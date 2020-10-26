@@ -12,11 +12,11 @@ SUBROUTINE out_beams3d_nag(t, q)
     USE stel_kinds, ONLY: rprec
     USE beams3d_runtime, ONLY: dt, lverb, pi2, lneut, t_end, lvessel, &
                                lhitonly, npoinc, lcollision, ldepo, &
-                               weight, invpi2
+                               weight, invpi2, ndt, ndt_max
     USE beams3d_lines, ONLY: R_lines, Z_lines, PHI_lines, myline, moment, &
                              nsteps, nparticles, moment_lines, myend, &
                              vll_lines, neut_lines, mytdex, next_t,&
-                             dt_out, xlast, ylast, zlast, dense_prof, &
+                             xlast, ylast, zlast, dense_prof, &
                              ltherm, S_lines, U_lines, B_lines, &
                              j_prof, ndot_prof, partvmax, &
                              ns_prof1, ns_prof2, ns_prof3, ns_prof4, &
@@ -160,8 +160,12 @@ SUBROUTINE out_beams3d_nag(t, q)
        ylast = q(1)*sin(q(2))
        zlast = q(3)
     END IF
-    IF (lhitonly) mytdex = 0
-    IF (ABS((t+dt)) .gt. ABS(mytdex*dt_out)) mytdex = mytdex + 1
+    ndt = ndt + 1
+    IF (ndt .eq. ndt_max) THEN
+       mytdex = mytdex + 1
+       ndt = 1
+    END IF
+    IF (lhitonly) mytdex = 1
     IF (mytdex > npoinc) t = t_end(myline)
     t = t + dt
 
