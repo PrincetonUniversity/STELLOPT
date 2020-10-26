@@ -185,7 +185,7 @@ SUBROUTINE beams3d_follow
                 DO l = mystart, myend
                     ltherm = .false.
                     lneut  = .false.
-                    ndt    = 0
+                    ndt    = ndt_max-1 ! we only record first point
                     q(1) = R_start(l)
                     q(2) = phi_start(l)
                     q(3) = Z_start(l)
@@ -221,7 +221,7 @@ SUBROUTINE beams3d_follow
                        mytdex = 3; ndt =1
                        tf_nag = tf_nag - dt  ! Because out advances t by dt
                        ! Adjust timestep timestep
-                       CALL beams3d_calc_dt(q,moment,mymass,dt)
+                       !CALL beams3d_calc_dt(q,moment,mymass,dt)
                     END IF
                     DO ! Must do it this way becasue lbeam changes q(4) values
                        CALL D02CJF(t_nag,tf_nag,neqs_nag,q,fpart_nag,tol_nag,relab,out_beams3d_nag,D02CJW,w,ier)
@@ -239,7 +239,7 @@ SUBROUTINE beams3d_follow
                 DO l = mystart, myend
                     myline = l
                     mytdex = 0
-                    ndt    = 0
+                    ndt    = ndt_max-1 ! we only record first point
                     ltherm = .false.
                     lneut  = .false.
                     q(1) = R_start(l)
@@ -281,7 +281,7 @@ SUBROUTINE beams3d_follow
                        mytdex = 3; ndt =1
                        tf_nag = tf_nag - dt  ! Because out advances t by dt
                        ! Adjust timestep timestep
-                       CALL beams3d_calc_dt(q,moment,mymass,dt)
+                       !CALL beams3d_calc_dt(q,moment,mymass,dt)
                     END IF
                     DO
                         CALL drkhvg(t_nag, q, neqs_nag, dt, 2, fpart_rkh68, rkh_work, iopt, ier)
@@ -323,7 +323,7 @@ SUBROUTINE beams3d_follow
                     itol = 2; rtol = follow_tol; atol(:) = follow_tol
                     myline = l
                     mytdex = 0
-                    ndt    = 1
+                    ndt    = ndt_max-1 ! we only record first point
                     ! Initialize the calculation
                     ltherm = .false.
                     lneut  = .false.
@@ -355,13 +355,13 @@ SUBROUTINE beams3d_follow
                        lcollision = .FALSE.
                        ! Follow into plasma
                        CALL beams3d_follow_neut(t_nag,q)
-                       mytdex = 1; ndt =1
+                       mytdex = 1
                        tf_nag = t_nag
                        CALL out_beams3d_nag(tf_nag,q)
                        IF (tf_nag > t_end(l)) CYCLE  ! Detect end shinethrough particle
                        ! Ionize
                        CALL beams3d_ionize(tf_nag,q)
-                       mytdex = 2; ndt =1
+                       mytdex = 2
                        CALL out_beams3d_nag(tf_nag,q)
                        IF (ldepo) CYCLE
                        ltherm = .FALSE.
