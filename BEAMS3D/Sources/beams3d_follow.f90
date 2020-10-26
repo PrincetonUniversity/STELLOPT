@@ -348,7 +348,7 @@ SUBROUTINE beams3d_follow
                     fact_crit = SQRT(2*e_charge/plasma_mass)*(0.75*sqrt_pi*sqrt(plasma_mass/electron_mass))**(1.0/3.0) ! Wesson pg 226 5.4.9
                     myv_neut(:) = v_neut(:,myline)
                     ! Setup timestep
-                    CALL beams3d_calc_dt(q,moment,mymass,dt)
+                    !CALL beams3d_calc_dt(q,moment,mymass,dt)
                     ! Begin handling particle.
                     IF (lbeam) lneut = .TRUE.
                     CALL out_beams3d_nag(tf_nag,q)
@@ -371,7 +371,7 @@ SUBROUTINE beams3d_follow
                        tf_nag = tf_nag - dt  ! Because out advances t by dt
                        dt_out = (t_end(l) - t_nag)/(npoinc-2) ! Adjust dt slightly to keep indexing correct.
                        ! Adjust timestep timestep
-                       CALL beams3d_calc_dt(q,moment,mymass,dt)
+                       !CALL beams3d_calc_dt(q,moment,mymass,dt)
                     END IF
                     DO
                         IF (lcollision) istate = 1
