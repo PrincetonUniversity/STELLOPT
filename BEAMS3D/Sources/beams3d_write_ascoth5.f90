@@ -151,7 +151,7 @@
                CALL write_var_hdf5(qid_gid,'DIST_MIN_THETA',ier,DBLVAR=DBLE(0))
                CALL write_var_hdf5(qid_gid,'DIST_MAX_THETA',ier,DBLVAR=DBLE(360))
                CALL write_var_hdf5(qid_gid,'DIST_MIN_TIME',ier,DBLVAR=DBLE(0))
-               CALL write_var_hdf5(qid_gid,'DIST_MAX_TIME',ier,DBLVAR=DBLE(2*MAXVAL(t_end_in)))
+               CALL write_var_hdf5(qid_gid,'DIST_MAX_TIME',ier,DBLVAR=DBLE(MAXVAL(t_end_in)))
                CALL write_var_hdf5(qid_gid,'DIST_MIN_CHARGE',ier,DBLVAR=DBLE(-2))
                CALL write_var_hdf5(qid_gid,'DIST_MAX_CHARGE',ier,DBLVAR=DBLE(2))
                CALL write_var_hdf5(qid_gid,'DIST_NBIN_R',ier,DBLVAR=DBLE(32))
@@ -214,7 +214,8 @@
                CALL write_var_hdf5(qid_gid,'toroidalPeriods',ier,INTVAR=FLOOR(pi2/phiaxis(nphi)))
                CALL write_var_hdf5(qid_gid,'axisr',nphi,ier,DBLVAR=req_axis(1:nphi1))
                CALL write_var_hdf5(qid_gid,'axisz',nphi,ier,DBLVAR=zeq_axis(1:nphi1))
-               CALL write_var_hdf5(qid_gid,'psi0',ier,DBLVAR=DBLE(-1.0E-3)) ! This is because B_STS isn't that 
+               !CALL write_var_hdf5(qid_gid,'psi0',ier,DBLVAR=DBLE(-1.0E-3)) ! This is because B_STS isn't that 
+               CALL write_var_hdf5(qid_gid,'psi0',ier,DBLVAR=DBLE(0)) ! This is because B_STS isn't that 
                CALL write_var_hdf5(qid_gid,'psi1',ier,DBLVAR=DBLE(phiedge_eq))
                ALLOCATE(rtemp(nr,nphi1,nz))
                rtemp = B_R(1:nr,1:nphi1,1:nz)
@@ -224,6 +225,9 @@
                rtemp = B_Z(1:nr,1:nphi1,1:nz)
                CALL write_var_hdf5(qid_gid,'bz',nr,nphi1,nz,ier,DBLVAR=rtemp)
                rtemp = S_ARR(1:nr,1:nphi1,1:nz)
+               DO k = 1, nphi1
+                  rtemp(:,i,:) = rtemp(:,i,:) - MINVAL(MINVAL(rtemp(:,i,:),DIM=2),DIM=1)
+               END DO
                CALL write_var_hdf5(qid_gid,'psi',nr,nphi1,nz,ier,DBLVAR=rtemp*DBLE(phiedge_eq))
                DEALLOCATE(rtemp)
                CALL h5gclose_f(qid_gid, ier)
