@@ -126,7 +126,7 @@
 #            TRAVIS Options
 #######################################################################
   LTRAVIS= T
-  TRAVIS_DIR = $(TRAVIS_PATH)
+  TRAVIS_DIR = $(TRAVIS_PATH)/TRAVIS-src
   LIB_TRAVIS = libtravis64_sopt.a
   LIB_MCONF  = libmconf64.a
   TRAVIS_LIB = $(TRAVIS_DIR)/lib/$(LIB_TRAVIS) \
