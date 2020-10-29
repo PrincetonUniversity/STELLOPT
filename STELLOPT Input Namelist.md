@@ -13,7 +13,8 @@ Table of Contents
  * [Runtime Control](#runtime-control) 
     * [LMDIF](#lmdif) 
     * [GADE](#gade) 
-    * [PSO](#pso) 
+    * [PSO](#pso)
+    * [ONE_ITER](#one_iter)
     * [Mapping (gridded)](#mapping-gridded) 
     * [Mapping (hyperplane)](#mapping-hyperplane) 
  * [Variables](#variables) 
@@ -165,6 +166,10 @@ Particle Swarm evolution.
 | XTOL | Desired relative error in approximate solution. | 
 | EPSFCN | Ratio of global attractor to local (local = 1.0) |
 | FACTOR | Scaling factor for maximum velocity|
+
+### ONE_ITER
+
+To run STELLOPT codes on an input file, without optimization, set OPT_TYPE = 'ONE_ITER'.
 
 ### Mapping (gridded)
 
