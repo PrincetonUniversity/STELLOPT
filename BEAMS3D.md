@@ -262,11 +262,12 @@ bins by VLL the particles at each NPOINC time step.
 ### Tutorials
 
 [NCSX Neutral Beam Injection Example](NCSX Neutral Beam Injection Example.md)
+[Benchmarking and Validation](BEAMS3D Validation and Benchmarking on HPC systems.md)
 
 ------------------------------------------------------------------------
 
 ### References
 
 -   [McMillan, M. and Lazerson, S.A. \"BEAMS3D: Neutral beam injection model.\" Plasma Phys. and Control. Fusion 56, 095019 (2014)](https://doi.org/10.1088/0741-3335/56/9/095019)
--   [Lazerson, S.A. et al. \"Validation of the BEASM3D neutral beam deposition model on Wendelstein 7-X\" Nuclear Fusion 60, 706020 (2014)](https://doi.org/10.1088/1741-4326/ab8e61)
+-   [Lazerson, S.A. et al. \"Validation of the BEASM3D neutral beam deposition model on Wendelstein 7-X\" Nuclear Fusion 60, 706020 (2020)](https://doi.org/10.1088/1741-4326/ab8e61)
 
