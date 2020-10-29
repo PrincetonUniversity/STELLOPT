@@ -22,7 +22,7 @@ Installation Steps
     sudo apt-get install g++
     sudo apt-get install libnetcdf-dev
     sudo apt-get install libnetcdff-dev
-    sudo apt-get install libhdf5-serial-dev
+    sudo apt-get install libhdf5-openmpi-dev
     sudo apt-get install hdf5-tools
     sudo apt-get install libblas-dev
     sudo apt-get install liblapack-dev
