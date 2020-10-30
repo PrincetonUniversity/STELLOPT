@@ -51,11 +51,12 @@
       DOUBLE PRECISION, POINTER, DIMENSION(:) :: B_help
       DOUBLE PRECISION, POINTER, DIMENSION(:,:,:) :: rateDT, rateDDT, rateDDHe
 
-      DOUBLE PRECISION, PARAMETER :: e_charge = 1.60217662E-19 !e_c
-      DOUBLE PRECISION, PARAMETER :: mHe4     = 6.6464731D-27
-      DOUBLE PRECISION, PARAMETER :: mT       = 5.0082671D-27
-      DOUBLE PRECISION, PARAMETER :: mp       = 1.6726219D-27
-      DOUBLE PRECISION, PARAMETER :: mHe3     = 5.0082335D-27
+      REAL(rprec),      PARAMETER :: S_LIM_MAX = 0.81 ! Max S if lplasma_only
+      DOUBLE PRECISION, PARAMETER :: e_charge  = 1.60217662E-19 !e_c
+      DOUBLE PRECISION, PARAMETER :: mHe4      = 6.6464731D-27
+      DOUBLE PRECISION, PARAMETER :: mT        = 5.0082671D-27
+      DOUBLE PRECISION, PARAMETER :: mp        = 1.6726219D-27
+      DOUBLE PRECISION, PARAMETER :: mHe3      = 5.0082335D-27
 
 !-----------------------------------------------------------------------
 !     Begin Subroutine
@@ -169,7 +170,7 @@
          ALLOCATE(n3d(nr,nphi,nz))
          n3d = 0
          sfactor = 0
-         IF (lplasma_only) sfactor = 0.90
+         IF (lplasma_only) sfactor = S_LIM_MAX
          DO s = 1,nparticles_start
             sval = 2
             DO WHILE (sval >= sfactor)
