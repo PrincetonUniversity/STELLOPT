@@ -47,6 +47,7 @@
       mgrid_string  = ''
       vessel_string = ''
       restart_string = ''
+      line_select = 96
       
       RETURN
 !-----------------------------------------------------------------------

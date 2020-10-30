@@ -37,7 +37,8 @@
 !                    - Wall strike points saved.
 !     v1.41 03/02/17 - Various edits for long runs
 !                    - Field construction improved for large machines
-!     v1.XX 09/22/17 - Store iota_axis in file.
+!     v1.75 10/30/20 - Store iota_axis in file.
+!                    - Added restarting from FIELDLINES run for FLD
 !-----------------------------------------------------------------------
       MODULE fieldlines_runtime
 !-----------------------------------------------------------------------
@@ -124,7 +125,8 @@
                          lreverse, lhitonly, lafield_only, lraw, lemc3, &
                          lerror_field, lwall_trans, ledge_start, lnescoil,&
                          lmodb, lfield_start
-      INTEGER         :: nextcur, npoinc, nruntype, num_hcp, nprocs_fieldlines
+      INTEGER         :: nextcur, npoinc, nruntype, num_hcp, &
+                         nprocs_fieldlines, line_select
       REAL(rprec)     :: mu, dphi, follow_tol, pi, pi2, mu0, delta_hc, iota0
       REAL(rprec), DIMENSION(MAXLINES)     :: r_start, phi_start, &
                                               z_start, phi_end, &
@@ -134,7 +136,7 @@
                          vessel_string, int_type, restart_string, &
                          nescoil_string
       
-      REAL(rprec), PARAMETER :: FIELDLINES_VERSION = 1.50
+      REAL(rprec), PARAMETER :: FIELDLINES_VERSION = 1.75
 !-----------------------------------------------------------------------
 !     Subroutines
 !          handle_err  Controls Program Termination

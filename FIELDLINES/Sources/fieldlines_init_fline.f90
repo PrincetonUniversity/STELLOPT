@@ -26,7 +26,7 @@
       REAL(rprec) :: dphi_old
       REAL(rprec), ALLOCATABLE, DIMENSION(:,:) :: R_old, Z_old, PHI_old
 
-      INTEGER, PARAMETER :: line_select = 64
+!      INTEGER, PARAMETER :: line_select = 64
       INTEGER, PARAMETER :: nnew_lines = 2**17
 !-----------------------------------------------------------------------
 !     Begin Subroutine
