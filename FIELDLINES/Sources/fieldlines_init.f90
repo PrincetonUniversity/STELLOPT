@@ -113,8 +113,9 @@
 !         ELSE IF (lspec) THEN
 !         END IF
 !      END IF
-      
-      IF (lauto) THEN
+      IF (lfield_start) THEN
+         CALL fieldlines_init_fline
+      ELSE IF (lauto) THEN
          nlines = MAX(nprocs_fieldlines,128)
          IF (nruntype == runtype_full) THEN
             rmin_temp = r_start(1)
