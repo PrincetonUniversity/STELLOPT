@@ -40,6 +40,7 @@
       ledge_start = .false.
       lnescoil    = .false.
       lmodb       = .false.
+      lfield_start = .false.
       nruntype = runtype_old
       id_string     = ''
       coil_string   = ''
