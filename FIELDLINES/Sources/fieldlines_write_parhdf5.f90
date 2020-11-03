@@ -84,7 +84,6 @@
 
       ! Open file
       CALL h5fopen_f('fieldlines_'//TRIM(id_string)//'.h5', H5F_ACC_RDWR_F, file_id, ier, access_prp = fapl_id)
-      CALL h5pclose_f(fapl_id,ier)
 
       ! Create File Space
       CALL h5screate_simple_f(rank, dimsf, fspace_id, ier)
