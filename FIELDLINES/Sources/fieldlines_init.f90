@@ -74,7 +74,6 @@
       
       ! First Read The Input Namelist
       iunit = 11
-      IF (lverb) WRITE(6,'(A)') '----- Input Parameters -----'
 #if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_init',ierr_mpi)
@@ -113,8 +112,9 @@
 !         ELSE IF (lspec) THEN
 !         END IF
 !      END IF
-      
-      IF (lauto) THEN
+      IF (lfield_start) THEN
+         CALL fieldlines_init_fline
+      ELSE IF (lauto) THEN
          nlines = MAX(nprocs_fieldlines,128)
          IF (nruntype == runtype_full) THEN
             rmin_temp = r_start(1)
@@ -150,6 +150,7 @@
       
       ! Output some information
       IF (lverb .and. .not.lrestart) THEN
+         WRITE(6,'(A)') '----- Input Parameters -----'
          WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   R   = [',rmin,',',rmax,'];  NR:   ',nr
          WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   PHI = [',phimin,',',phimax,'];  NPHI: ',nphi
          WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   Z   = [',zmin,',',zmax,'];  NZ:   ',nz

@@ -134,6 +134,9 @@
          IF (lfusion_old) THEN
             end_state = 0
             state_flag = 0
+            IF (lplasma_only) THEN 
+               WHERE(S_lines(1,:) >= 1) end_state = -1
+            END IF
          ELSEIF (ldepo_old) THEN
             state_flag = 0
             start_dex = 2
