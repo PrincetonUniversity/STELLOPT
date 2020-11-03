@@ -240,6 +240,15 @@ fieldlines_init_restart.o: \
       fieldlines_grid.o
       
 
+fieldlines_init_fline.o: \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_inc.o \
+      ../../LIBSTELL/$(LOCTYPE)/ez_hdf5.o \
+      fieldlines_lines.o \
+      fieldlines_runtime.o 
+      
+
 fieldlines_init_nescoil.o: \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
       ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
