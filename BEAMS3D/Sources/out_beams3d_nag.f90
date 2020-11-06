@@ -161,7 +161,7 @@ SUBROUTINE out_beams3d_nag(t, q)
        zlast = q(3)
     END IF
     ndt = ndt + 1
-    IF (ndt .eq. ndt_max) THEN
+    IF (ndt .ge. ndt_max) THEN ! ge needed if npoinc = ndt
        mytdex = mytdex + 1
        ndt = 1
     END IF
