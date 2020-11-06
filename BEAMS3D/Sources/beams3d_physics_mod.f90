@@ -18,7 +18,7 @@ MODULE beams3d_physics_mod
                                myline, mytdex, moment, ltherm, &
                                nsteps, nparticles, vll_lines, &
                                moment_lines, mybeam, mycharge, myZ, &
-                               mymass, myv_neut, B_temp, rand_prob, &
+                               mymass, myv_neut, rand_prob, &
                                cum_prob, tau, &
                                epower_prof, ipower_prof, &
                                end_state, fact_crit, fact_pa, &
@@ -826,8 +826,6 @@ MODULE beams3d_physics_mod
             e1 = e1*binv/bnz
             e2 = (/ by_temp*e1(3)-bz_temp*e1(2), bz_temp*e1(1)-bx_temp*e1(3), bx_temp*e1(2)-by_temp*e1(1) /)
             e2 = e2*binv
-            !e1 = (/ -B_temp(3)*B_temp(1)*binv/bnz, -B_temp(3)*B_temp(2)*binv/bnz, binv*bnz /)
-            !e2 = binv*(/ B_temp(2)*e1(3)-B_temp(3)*e1(2), B_temp(3)*e1(1)-B_temp(1)*e1(3), B_temp(1)*e1(2)-B_temp(2)*e1(1) /)
          END IF
 
          CALL RANDOM_NUMBER(theta)
