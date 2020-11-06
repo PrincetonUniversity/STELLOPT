@@ -1053,7 +1053,7 @@ MODULE beams3d_physics_mod
 
          reactrate = 1E-6*CARR(1)*theta*SQRT(eta/(mrc2*ti_temp*ti_temp*ti_temp))*EXP(-3*eta)
 
-         reactrate = reactrate*0.25*ne_temp*ne_temp/(ze_temp*ze_temp)
+         reactrate = reactrate*0.125*ne_temp*ne_temp/(ze_temp*ze_temp)
 
          RETURN
 
@@ -1155,7 +1155,7 @@ MODULE beams3d_physics_mod
 
          reactrate = 1E-6*CARR(1)*theta*SQRT(eta/(mrc2*ti_temp*ti_temp*ti_temp))*EXP(-3*eta)
 
-         reactrate = reactrate*0.25*ne_temp*ne_temp/(ze_temp*ze_temp)
+         reactrate = reactrate*0.125*ne_temp*ne_temp/(ze_temp*ze_temp)
 
          RETURN
 
