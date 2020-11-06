@@ -27,7 +27,7 @@
       INTEGER  :: win_epower, win_ipower, win_ndot, win_dense, win_jprof, win_dist5d
       REAL(rprec) :: xlast,ylast,zlast ! for storing position
       REAL(rprec) :: moment, mycharge, myZ, mymass, myv_neut(3), &
-                     B_temp(4), rand_prob, cum_prob, tau, next_t, &
+                     rand_prob, cum_prob, tau, next_t, &
                      partvmax, fact_crit, fact_pa, fact_vsound, &
                      partpmax, h2_prof, h3_prof, h4_prof, h5_prof
       LOGICAL, ALLOCATABLE     :: neut_lines(:,:)

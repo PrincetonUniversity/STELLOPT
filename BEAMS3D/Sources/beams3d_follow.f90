@@ -190,7 +190,6 @@ SUBROUTINE beams3d_follow
                     q(2) = phi_start(l)
                     q(3) = Z_start(l)
                     q(4) = vll_start(l)
-                    B_temp(:) = 1.0
                     t_nag = 0.0
                     tf_nag = 0.0
                     mycharge = charge(l)
@@ -249,7 +248,6 @@ SUBROUTINE beams3d_follow
                     xlast = q(1)*cos(q(2))
                     ylast = q(1)*sin(q(2))
                     zlast = q(3)
-                    B_temp(:) = 1.0
                     t_nag = 0.0
                     tf_nag = 0.0
                     mycharge = charge(l)
@@ -334,7 +332,6 @@ SUBROUTINE beams3d_follow
                     xlast = q(1)*cos(q(2))
                     ylast = q(1)*sin(q(2))
                     zlast = q(3)
-                    B_temp(:) = 1.0
                     t_nag = 0.0
                     tf_nag = 0.0
                     mycharge = charge(l)
