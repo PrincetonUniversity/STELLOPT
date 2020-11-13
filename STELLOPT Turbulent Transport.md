@@ -23,21 +23,23 @@ direct calculation of turbulence, instead they return quantities which
 are related to the growth rates. This results in much simpler (faster)
 calculations. The idea being that if the quantities which influence
 growth rates are minimized, so will the growth rates. The following
-table lists the available proxies \|\| Name \|\| Description \|\| \|\|
-prox1 \|\| Ion Temperature Gradient (ITG) proxy \|\| \|\| prox1b \|\|
-Ion Temperature Gradient (ITG) proxy \|\| \|\| prox1c \|\| Ion
-Temperature Gradient (ITG) proxy \|\| \|\| prox1d \|\| Ion Temperature
-Gradient (ITG) proxy \|\| \|\| prox1e \|\| Ion Temperature Gradient
-(ITG) proxy \|\| \|\| prox1f \|\| Ion Temperature Gradient (ITG) proxy
-\|\| \|\| prox1g \|\| Ion Temperature Gradient (ITG) proxy \|\| \|\|
-tem\_overlap \|\| Trapped Electron Mode (TEM) proxy (feedback on
-curvature) \|\| \|\| tem\_bounce \|\| Trapped Electron Mode (TEM) proxy
-(feedback on curvature and magnetic well) \|\| \|\| tem\_bounce\_tau
-\|\| Trapped Electron Mode (TEM) proxy (feedback on curv. and mag well.
-weighted) \|\| \|\| gene \|\| Runs the GENE code in linear mode in
-serial mode (see next section) \|\| \|\| gene\_parallel \|\| Runs the
-GENE code in linear mode in parallel mode (see next section) \|\| At
-each radial location you wish to evaluate the turbulent transport proxy
+table lists the available proxies 
+
+| Name | Description | 
+| prox1  | Ion Temperature Gradient (ITG) proxy | 
+| prox1b | Ion Temperature Gradient (ITG) proxy |
+| prox1c | Ion Temperature Gradient (ITG) proxy |
+| prox1d | Ion Temperature Gradient (ITG) proxy |
+| prox1e | Ion Temperature Gradient (ITG) proxy |
+| prox1f | Ion Temperature Gradient (ITG) proxy |
+| prox1g | Ion Temperature Gradient (ITG) proxy |
+| tem\_overlap | Trapped Electron Mode (TEM) proxy (feedback on curvature) |
+| tem\_bounce  | Trapped Electron Mode (TEM) proxy (feedback on curvature and magnetic well) |
+| tem\_bounce\_tau | Trapped Electron Mode (TEM) proxy (feedback on curv. and mag well. weighted) |
+| gene \|\| Runs the GENE code in linear serial mode (see next section) |
+| gene\_parallel \|\| Runs the GENE code in linear parallel mode (see next section) |
+
+ At each radial location you wish to evaluate the turbulent transport proxy
 you\'ll need to set a target (TARGET\_TXPORT), sigma (SIGMA\_TXPORT),
 and normalized toroidal flux value (S\_TXPORT). Additional name lists
 for the GIST code will also need to be included in the input file an
@@ -187,7 +189,6 @@ Here is an example parameters file:
     bpar = .f.             ! Calculation of parallel magnetic fluctuations (beta >0)
     delzonal = .f.         ! Suppress zonal flows (phi)
     delazonal = .f.        ! Suppress zonal flows (A)
-
     courant = 0.4
     pressure_off=.f.
     /
