@@ -1236,8 +1236,8 @@ MODULE beams3d_physics_mod
       SUBROUTINE beams3d_SFLX(q,S)
          !--------------------------------------------------------------
          !     Input Parameters
-         !          q            (q(1),q(2),q(3)) = (R,phi,Z)
-         !          reactrate    Reaction rate (part/(m^3*s))
+         !          q    (q(1),q(2),q(3)) = (R,phi,Z)
+         !          S    Backbround grid flux
          !--------------------------------------------------------------
          IMPLICIT NONE
          DOUBLE PRECISION, INTENT(inout) :: q(3)
@@ -1286,8 +1286,6 @@ MODULE beams3d_physics_mod
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             S4D(1,1,1,1),nr,nphi,nz)
             S = max(fval(1),zero)
-         ELSE
-            RETURN
          END IF
 
          RETURN
