@@ -214,7 +214,6 @@ SUBROUTINE beams3d_follow
                        CALL beams3d_ionize(tf_nag,q)
                        mytdex = 2; ndt =1
                        CALL out_beams3d_nag(tf_nag,q)
-                       IF (ldepo) CYCLE
                        ltherm = .FALSE.
                        lcollision = .TRUE.
                        mytdex = 3; ndt =1
@@ -222,6 +221,7 @@ SUBROUTINE beams3d_follow
                        ! Adjust timestep timestep
                        !CALL beams3d_calc_dt(q,moment,mymass,dt)
                     END IF
+                    IF (ldepo) CYCLE
                     DO ! Must do it this way becasue lbeam changes q(4) values
                        CALL D02CJF(t_nag,tf_nag,neqs_nag,q,fpart_nag,tol_nag,relab,out_beams3d_nag,D02CJW,w,ier)
                        IF (ier < 0) CALL handle_err(D02CJF_ERR, 'beams3d_follow', ier)
@@ -273,7 +273,6 @@ SUBROUTINE beams3d_follow
                        CALL beams3d_ionize(tf_nag,q)
                        mytdex = 2; ndt =1
                        CALL out_beams3d_nag(tf_nag,q)
-                       IF (ldepo) CYCLE
                        ltherm = .FALSE.
                        lcollision = .TRUE.
                        mytdex = 3; ndt =1
@@ -281,6 +280,7 @@ SUBROUTINE beams3d_follow
                        ! Adjust timestep timestep
                        !CALL beams3d_calc_dt(q,moment,mymass,dt)
                     END IF
+                    IF (ldepo) CYCLE
                     DO
                         CALL drkhvg(t_nag, q, neqs_nag, dt, 2, fpart_rkh68, rkh_work, iopt, ier)
                         IF (ier < 0) CALL handle_err(RKH68_ERR, 'beams3d_follow', ier)
@@ -360,7 +360,6 @@ SUBROUTINE beams3d_follow
                        CALL beams3d_ionize(tf_nag,q)
                        mytdex = 2
                        CALL out_beams3d_nag(tf_nag,q)
-                       IF (ldepo) CYCLE
                        ltherm = .FALSE.
                        lcollision = .TRUE.
                        mytdex = 3; ndt =1
@@ -368,6 +367,7 @@ SUBROUTINE beams3d_follow
                        ! Adjust timestep timestep
                        !CALL beams3d_calc_dt(q,moment,mymass,dt)
                     END IF
+                    IF (ldepo) CYCLE
                     DO
                         IF (lcollision) istate = 1
                         CALL FLUSH(6)
