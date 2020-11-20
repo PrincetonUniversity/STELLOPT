@@ -59,7 +59,7 @@ condition if they were present.
      1                  ! Output control (1: basic, 2: detailed, 10: simple)
      0                  ! Lab specific switch (0: PPPL)
      0                  ! Input format swtich (0: BOOZ_XFORM)
-     2                  ! Reference value for eps_eff (1: inner flux surface, 2:
+     2                  ! Reference |B| value for eps_eff (1: inner flux surface, 2: max on flux surface)
      0                  ! WRITE_PROGRESS
      0                  ! Controls additional output (0: none, 1: theta/phi dump)
      0                  ! Spline routine testing (0: none, 1: along given phi, 2: along given theta, 3: diagonal)
