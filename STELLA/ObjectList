@@ -1,0 +1,4 @@
+ObjectFiles = \
+stella.o \
+stella_stellopt.o
+

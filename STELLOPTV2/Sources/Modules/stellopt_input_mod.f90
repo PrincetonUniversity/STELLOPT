@@ -212,6 +212,15 @@
 !            s_txport           Array of normalized toroidal fluxes to calculated turbulent transport
 !            target_dkes        Array of target values for drift kinetic optimization
 !            nu_dkes            Array of nu values for DKES optimization [m] (Efield from phi array)
+!            target_knosos_1nu  Array of target values for drift kinetic optimization (1/nu regime)
+!            target_knosos_snu  Array of target values for drift kinetic optimization (sqrtnu regime)      
+!            target_knosos_sbp  Array of target values for drift kinetic optimization (sb-p regime)
+!            target_knosos_fic  Array of target values for drift kinetic optimization (fast ion confinement)
+!            target_knosos_qer  Array of target values for drift kinetic optimization (radial electric field and energy flux)
+!            target_knosos_dbo  Array of target values for drift kinetic optimization (test)
+!!            nu_knosos          Array of nu values for KNOSOS optimization [m] (Efield from phi array)
+!            target_stella_q1  Array of target values for turbulence optimization (q1)
+!            target_stella_q2  Array of target values for turbulence optimization (q2)
 !            target_limter      Target array minimum distance between plasma and limiter surface
 !            r_limiter          Array of (ntheta,nzeta) radial limiter values [m]
 !            z_limiter          Array of (ntheta,nzeta) vertical limiter values [m] 
@@ -371,6 +380,14 @@
                          lglobal_txport, nz_txport, nalpha_txport, alpha_start_txport, alpha_end_txport, &
                          target_txport, sigma_txport, s_txport, txport_proxy,&
                          target_dkes, sigma_dkes, nu_dkes, &
+                         target_knosos_1nu, sigma_knosos_1nu, &
+                         target_knosos_snu, sigma_knosos_snu, &
+                         target_knosos_sbp, sigma_knosos_sbp, &
+                         target_knosos_fic, sigma_knosos_fic, &
+                         target_knosos_qer, sigma_knosos_qer, &
+                         target_knosos_dbo, sigma_knosos_dbo, &
+                         target_stella_q1, sigma_stella_q1, &
+                         target_stella_q2, sigma_stella_q2, &
                          target_jdotb,sigma_jdotb,target_bmin,sigma_bmin,&
                          target_bmax,sigma_bmax,target_jcurv,sigma_jcurv,&
                          target_orbit,sigma_orbit,nu_orbit,nv_orbit,&
@@ -949,6 +966,23 @@
       target_dkes       = 0.0
       sigma_dkes        = bigno
       nu_dkes           = 0.01
+      target_knosos_1nu = 0.0
+      sigma_knosos_1nu  = bigno
+      target_knosos_snu = 0.0
+      sigma_knosos_snu  = bigno
+      target_knosos_sbp = 0.0
+      sigma_knosos_sbp  = bigno
+      target_knosos_fic = 0.0
+      sigma_knosos_fic  = bigno
+      target_knosos_qer = 0.0
+      sigma_knosos_qer  = bigno
+      target_knosos_dbo = 0.0
+      sigma_knosos_dbo  = bigno
+!      nu_knosos         = 0.01
+      target_stella_q1  = 0.0
+      sigma_stella_q1   = bigno
+      target_stella_q2  = 0.0
+      sigma_stella_q2   = bigno
       target_jdotb      = 0.0
       sigma_jdotb       = bigno
       target_jcurv      = 0.0
@@ -1320,6 +1354,58 @@
          END IF
       END IF
 !DEC$ ENDIF
+!DEC$ IF DEFINED (KNOSOS_OPT) 
+      IF (myid == master .and. (ANY(sigma_knosos_1nu < bigno) .or. ANY(sigma_knosos_snu < bigno) .or. ANY(sigma_knosos_sbp < bigno) .or.&
+           ANY(sigma_knosos_fic < bigno) .or. ANY(sigma_knosos_qer < bigno) .or. ANY(sigma_knosos_dbo < bigno))) THEN
+         WRITE(6,*)        " KiNetic Orbit-averaging SOlver for Stellarators (KNOSOS) provided by: "
+         WRITE(6,"(2X,A)") "================================================================================="
+         WRITE(6,"(2X,A)") "=========         KiNetic Orbit-averaging SOlver for Stellarators       ========="
+         WRITE(6,"(2X,A)") "=========               Drift Kinetic Equation Solver                   ========="
+         WRITE(6,"(2X,A)") "=========                      (J.L. Velasco et al.)                    ========="
+         WRITE(6,"(2X,A)") "=========                   joseluis.velasco@ciemat.es                  ========="
+         WRITE(6,"(2X,A)") "================================================================================="
+         WRITE(6,*)        "    "
+      END IF
+!DEC$ ELSE
+      IF (ANY(sigma_knosos_1nu < bigno) .or. ANY(sigma_knosos_snu < bigno) .or. ANY(sigma_knosos_sbp < bigno) .or.&
+           ANY(sigma_knosos_fic < bigno) .or. ANY(sigma_knosos_qer < bigno) .or. ANY(sigma_knosos_dbo < bigno)) THEN
+         IF (ANY(sigma_knosos_1nu < bigno)) sigma_knosos_1nu(:) = bigno
+         IF (ANY(sigma_knosos_snu < bigno)) sigma_knosos_snu(:) = bigno
+         IF (ANY(sigma_knosos_sbp < bigno)) sigma_knosos_sbp(:) = bigno
+         IF (ANY(sigma_knosos_fic < bigno)) sigma_knosos_fic(:) = bigno
+         IF (ANY(sigma_knosos_qer < bigno)) sigma_knosos_qer(:) = bigno
+         IF (ANY(sigma_knosos_dbo < bigno)) sigma_knosos_dbo(:) = bigno
+         IF (myid == master) THEN
+            WRITE(6,*) '!!!!!!!!!!!!!!!!!!!! WARNING !!!!!!!!!!!!!!!!!!!!!!!!!'
+            WRITE(6,*) '  Drift-kinetic optimization with the KNOSOS'
+            WRITE(6,*) '  code has been disabled.  Drift-kinetic optimization'
+            WRITE(6,*) '  has been turned off.  Contact your vendor for'
+            WRITE(6,*) '  further information.'
+         END IF
+      END IF
+!DEC$ ENDIF
+!DEC$ IF DEFINED (STELLA_OPT) 
+      IF (myid == master .and. (ANY(sigma_stella_q1 < bigno) .or. ANY(sigma_stella_q2 < bigno))) THEN
+         WRITE(6,*)        " stella "
+         WRITE(6,"(2X,A)") "================================================================================="
+         WRITE(6,"(2X,A)") "=========                            stella                             ========="
+         WRITE(6,"(2X,A)") "=========                        (M. Barnes et al.)                     ========="
+         WRITE(6,"(2X,A)") "================================================================================="
+         WRITE(6,*)        "    "
+      END IF
+!DEC$ ELSE
+      IF (ANY(sigma_stella_q1 < bigno) .or. ANY(sigma_stella_q2 < bigno)) THEN
+         IF (ANY(sigma_stella_q1 < bigno)) sigma_stella_q1(:) = bigno
+         IF (ANY(sigma_stella_q2 < bigno)) sigma_stella_q2(:) = bigno
+         IF (myid == master) THEN
+            WRITE(6,*) '!!!!!!!!!!!!!!!!!!!! WARNING !!!!!!!!!!!!!!!!!!!!!!!!!'
+            WRITE(6,*) '  Turbulence optimization with the stella code has'
+            WRITE(6,*) '  been disabled.  Turbulence optimization has been'
+            WRITE(6,*) '  turned off. Contact your vendor for further'
+            WRITE(6,*) '  information.'
+         END IF
+      END IF
+!DEC$ ENDIF  
       IF (myid == master .and. (ANY(sigma_fluxloop < bigno) .or. ANY(sigma_bprobe < bigno) .or. ANY(sigma_segrog < bigno) )) THEN
          WRITE(6,*)        " Magnetic Diagnostic calculation provided by: "
          WRITE(6,"(2X,A)") "================================================================================="
@@ -1414,6 +1500,14 @@
       target_neo(1)       = 0.0;  sigma_neo(1)       = bigno
       target_dkes(1)      = 0.0;  sigma_dkes(1)      = bigno
       target_dkes(2)      = 0.0;  sigma_dkes(2)      = bigno
+      target_knosos_1nu(1)= 0.0;  sigma_knosos_1nu(1)= bigno
+      target_knosos_snu(1)= 0.0;  sigma_knosos_snu(1)= bigno
+      target_knosos_sbp(1)= 0.0;  sigma_knosos_sbp(1)= bigno
+      target_knosos_fic(1)= 0.0;  sigma_knosos_fic(1)= bigno
+      target_knosos_qer(1)= 0.0;  sigma_knosos_qer(1)= bigno
+      target_knosos_dbo(1)= 0.0;  sigma_knosos_dbo(1)= bigno
+      target_stella_q1(1) = 0.0;  sigma_stella_q1(1) = bigno
+      target_stella_q2(1) = 0.0;  sigma_stella_q2(1) = bigno
       target_helicity(1)  = 0.0;  sigma_helicity(1)  = bigno
       target_Jstar(1)     = 0.0;  sigma_Jstar(1)     = bigno
 
@@ -2077,6 +2171,112 @@
                           'NU_DKES(',ik,') = ',nu_dkes(ik)
          END DO
       END IF
+      IF (ANY(sigma_knosos_1nu < bigno) .or. ANY(sigma_knosos_snu < bigno) .or. ANY(sigma_knosos_sbp < bigno) .or.&
+          ANY(sigma_knosos_fic < bigno) .or. ANY(sigma_knosos_qer < bigno) .or. ANY(sigma_knosos_dbo < bigno)) THEN
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,'(A)') '!          DRIFT-KINETICS (KNOSOS)'
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         IF(ANY(sigma_knosos_1nu < bigno)) THEN
+            n=0
+            DO ik = 1,UBOUND(sigma_knosos_1nu,DIM=1)
+               IF(sigma_knosos_1nu(ik) < bigno) n=ik
+            END DO
+            DO ik = 1, n
+               IF (sigma_knosos_1nu(ik) < bigno) WRITE(iunit,"(3(2X,A,I3.3,A,ES22.12E3))") &
+                    'TARGET_KNOSOS_1NU(',ik,') = ',target_knosos_1nu(ik), &
+                    'SIGMA_KNOSOS_1NU(',ik,') = ',sigma_knosos_1nu(ik)!, &
+!                    'NU_KNOSOS(',ik,') = ',nu_knosos(ik)
+            END DO
+         END IF
+         IF(ANY(sigma_knosos_snu < bigno)) THEN
+            n=0
+            DO ik = 1,UBOUND(sigma_knosos_snu,DIM=1)
+               IF(sigma_knosos_snu(ik) < bigno) n=ik
+            END DO
+            DO ik = 1, n
+               IF (sigma_knosos_snu(ik) < bigno) WRITE(iunit,"(3(2X,A,I3.3,A,ES22.12E3))") &
+                    'TARGET_KNOSOS_SNU(',ik,') = ',target_knosos_snu(ik), &
+                    'SIGMA_KNOSOS_SNU(',ik,') = ',sigma_knosos_snu(ik)!, &
+!                    'NU_KNOSOS(',ik,') = ',nu_knosos(ik)
+            END DO
+         END IF
+         IF(ANY(sigma_knosos_sbp < bigno)) THEN
+            n=0
+            DO ik = 1,UBOUND(sigma_knosos_sbp,DIM=1)
+               IF(sigma_knosos_sbp(ik) < bigno) n=ik
+            END DO
+            DO ik = 1, n
+               IF (sigma_knosos_sbp(ik) < bigno) WRITE(iunit,"(3(2X,A,I3.3,A,ES22.12E3))") &
+                    'TARGET_KNOSOS_SBP(',ik,') = ',target_knosos_sbp(ik), &
+                    'SIGMA_KNOSOS_SBP(',ik,') = ',sigma_knosos_sbp(ik)!, &
+!                    'NU_KNOSOS(',ik,') = ',nu_knosos(ik)
+            END DO
+         END IF
+         IF(ANY(sigma_knosos_fic < bigno)) THEN
+            n=0
+            DO ik = 1,UBOUND(sigma_knosos_fic,DIM=1)
+               IF(sigma_knosos_fic(ik) < bigno) n=ik
+            END DO
+            DO ik = 1, n
+               IF (sigma_knosos_fic(ik) < bigno) WRITE(iunit,"(3(2X,A,I3.3,A,ES22.12E3))") &
+                    'TARGET_KNOSOS_FIC(',ik,') = ',target_knosos_fic(ik), &
+                    'SIGMA_KNOSOS_FIC(',ik,') = ',sigma_knosos_fic(ik)!, &
+!                    'NU_KNOSOS(',ik,') = ',nu_knosos(ik)
+            END DO
+         END IF
+         IF(ANY(sigma_knosos_qer < bigno)) THEN
+            n=0
+            DO ik = 1,UBOUND(sigma_knosos_qer,DIM=1)
+               IF(sigma_knosos_qer(ik) < bigno) n=ik
+            END DO
+            DO ik = 1, n
+               IF (sigma_knosos_qer(ik) < bigno) WRITE(iunit,"(3(2X,A,I3.3,A,ES22.12E3))") &
+                    'TARGET_KNOSOS_QER(',ik,') = ',target_knosos_qer(ik), &
+                    'SIGMA_KNOSOS_QER(',ik,') = ',sigma_knosos_qer(ik)!, &
+!                    'NU_KNOSOS(',ik,') = ',nu_knosos(ik)
+            END DO
+         END IF
+         IF(ANY(sigma_knosos_dbo < bigno)) THEN
+            n=0
+            DO ik = 1,UBOUND(sigma_knosos_dbo,DIM=1)
+               IF(sigma_knosos_dbo(ik) < bigno) n=ik
+            END DO
+            DO ik = 1, n
+               IF (sigma_knosos_dbo(ik) < bigno) WRITE(iunit,"(3(2X,A,I3.3,A,ES22.12E3))") &
+                    'TARGET_KNOSOS_DBO(',ik,') = ',target_knosos_dbo(ik), &
+                    'SIGMA_KNOSOS_DBO(',ik,') = ',sigma_knosos_dbo(ik)!, &
+!                    'NU_KNOSOS(',ik,') = ',nu_knosos(ik)
+            END DO
+         END IF
+      END IF
+      
+      IF (ANY(sigma_stella_q1 < bigno) .or. ANY(sigma_stella_q2 < bigno)) THEN
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,'(A)') '!          TURBULENCE (stella)                                         '
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         IF(ANY(sigma_stella_q1 < bigno)) THEN
+            n=0
+            DO ik = 1,UBOUND(sigma_stella_q1,DIM=1)
+               IF(sigma_stella_q1(ik) < bigno) n=ik
+            END DO
+            DO ik = 1, n
+               IF (sigma_stella_q1(ik) < bigno) WRITE(iunit,"(3(2X,A,I3.3,A,ES22.12E3))") &
+                    'TARGET_STELLA_Q1(',ik,') = ',target_stella_q1(ik), &
+                    'SIGMA_STELLA_Q1(',ik,') = ',sigma_stella_q1(ik)
+            END DO
+         END IF
+         IF(ANY(sigma_stella_q2 < bigno)) THEN
+            n=0
+            DO ik = 1,UBOUND(sigma_stella_q2,DIM=1)
+               IF(sigma_stella_q2(ik) < bigno) n=ik
+            END DO
+            DO ik = 1, n
+               IF (sigma_stella_q2(ik) < bigno) WRITE(iunit,"(3(2X,A,I3.3,A,ES22.12E3))") &
+                    'TARGET_STELLA_Q2(',ik,') = ',target_stella_q2(ik), &
+                    'SIGMA_STELLA_Q2(',ik,') = ',sigma_stella_q2(ik)
+            END DO
+         END IF
+      END IF      
       IF (ANY(sigma_jdotb < bigno)) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          WRITE(iunit,'(A)') '!          Parllel Current (<J.B>)'  

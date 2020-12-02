@@ -13,7 +13,9 @@ MACHINE ?= $(shell uname -n | \
 	     /Matts-MacBook-Pro/{print "macports_landreman"}\
 	     /raven/{print "raven"}\
 	     /cobra/{print "cobra"}\
-	     /draco/{print "draco"}')
+	     /draco/{print "draco"}\
+	     /xula01/{print "xula"}\
+	     /xula02/{print "xula"}')
 
 ifneq ($(strip $(MACHINE)),)
 	include $(STELLOPT_PATH)/SHARE/make_$(MACHINE).inc

@@ -1,0 +1,23 @@
+ObjectFiles = \
+global.o \
+knosos_stellopt.o \
+amb_and_qn.o \
+ana_ntv.o \
+banana.o \
+coefficients.o \
+configuration.o \
+database.o \
+errors.o \
+input.o \
+knosos.o \
+lagrange.o \
+low_collisionality.o \
+low_collisionality_new.o \
+mpi_and_end.o \
+pfirsch_schlueter.o \
+plasmas.o \
+plateau.o \
+times.o \
+trace_impurities.o \
+transport.o
+

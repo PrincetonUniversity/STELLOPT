@@ -1,0 +1,77 @@
+global.o : 
+
+
+knosos_stellopt.o :
+
+
+amb_and_qn.o : \
+	global.o
+
+
+ana_ntv.o : \
+        global.o
+
+
+banana.o : \
+	global.o
+
+
+coefficients.o : \
+	global.o
+
+
+configuration.o : \
+	global.o
+
+
+database.o : \
+	global.o
+
+
+errors.o : \
+	global.o
+
+
+input.o : \
+	global.o
+
+
+knosos.o : \
+	global.o
+
+
+lagrange.o : \
+	global.o
+
+
+low_collisionality.o : \
+	global.o
+
+
+mpi_and_end.o : \
+	global.o
+
+
+plasmas.o : \
+	global.o
+
+
+plateau.o : \
+	global.o
+
+
+pfirsch_schlueter.o : \
+	global.o
+
+
+times.o : \
+	global.o
+
+
+trace_impurities.o : \
+	global.o
+
+
+transport.o : \
+	global.o
+

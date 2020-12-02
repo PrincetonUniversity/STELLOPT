@@ -1,0 +1,12 @@
+#!/bin/bash -l
+# Initial working directory:
+#SBATCH -D ./
+#SBATCH --time=50:00:00
+#SBATCH --ntasks=80
+
+rm xvec.dat input.*.00000 temp_input.* mercier.* boozmn_* wout_* jxbout_* parvmecinfo.txt results.knosos threed1.* var_labels fort.* input_dkes.* mono.opt
+ulimit -s unlimited
+export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}
+INPUT=`ls input.*`
+srun -n $SLURM_NTASKS /mnt/lustre/home/u6156/STELLOPT/CIEMAT/xintel/xstelloptv2 $INPUT
+

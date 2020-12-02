@@ -1,0 +1,5 @@
+stella_stellopt.o :
+
+
+stella.o : \
+	stella_stellopt.o

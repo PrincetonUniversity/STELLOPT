@@ -162,6 +162,14 @@
                                         s_txport
       CHARACTER(256)                ::  txport_proxy
       REAL(rprec), DIMENSION(nsd)   ::  target_DKES, sigma_DKES, nu_DKES
+      REAL(rprec), DIMENSION(nsd)   ::  target_knosos_1nu,sigma_knosos_1nu
+      REAL(rprec), DIMENSION(nsd)   ::  target_knosos_snu,sigma_knosos_snu
+      REAL(rprec), DIMENSION(nsd)   ::  target_knosos_sbp,sigma_knosos_sbp
+      REAL(rprec), DIMENSION(nsd)   ::  target_knosos_fic,sigma_knosos_fic
+      REAL(rprec), DIMENSION(nsd)   ::  target_knosos_qer,sigma_knosos_qer
+      REAL(rprec), DIMENSION(nsd)   ::  target_knosos_dbo,sigma_knosos_dbo
+      REAL(rprec), DIMENSION(nsd)   ::  target_stella_q1,sigma_stella_q1
+      REAL(rprec), DIMENSION(nsd)   ::  target_stella_q2,sigma_stella_q2
       REAL(rprec), DIMENSION(nu_max,nv_max) ::  target_separatrix, sigma_separatrix, &
                                                 r_separatrix, z_separatrix, phi_separatrix
       REAL(rprec), DIMENSION(nu_max,nv_max) ::  target_limiter, sigma_limiter, &
@@ -260,6 +268,14 @@
       INTEGER, PARAMETER :: jtarget_resjac     = 606
       INTEGER, PARAMETER :: jtarget_txport     = 607
       INTEGER, PARAMETER :: jtarget_dkes       = 608
+      INTEGER, PARAMETER :: jtarget_knosos_1nu = 6081
+      INTEGER, PARAMETER :: jtarget_knosos_snu = 6082
+      INTEGER, PARAMETER :: jtarget_knosos_sbp = 6083
+      INTEGER, PARAMETER :: jtarget_knosos_fic = 6084
+      INTEGER, PARAMETER :: jtarget_knosos_qer = 6085
+      INTEGER, PARAMETER :: jtarget_knosos_dbo = 6080
+      INTEGER, PARAMETER :: jtarget_stella_q1  = 6180
+      INTEGER, PARAMETER :: jtarget_stella_q2  = 6181
       INTEGER, PARAMETER :: jtarget_jdotb      = 609
       INTEGER, PARAMETER :: jtarget_jcurv      = 6091
       INTEGER, PARAMETER :: jtarget_bmin       = 610
@@ -402,6 +418,22 @@
             WRITE(iunit, out_format) 'Particle Orbits (BEAMS3D)'
          CASE(jtarget_dkes)
             WRITE(iunit, out_format) 'Drift-Kinetics (DKES)'
+         CASE(jtarget_knosos_1nu)
+            WRITE(iunit, out_format) 'KNOSOS 1/nu transport'
+         CASE(jtarget_knosos_snu)
+            WRITE(iunit, out_format) 'KNOSOS sqrtnu transport'
+         CASE(jtarget_knosos_sbp)
+            WRITE(iunit, out_format) 'KNOSOS superbanana-plateau transport'
+         CASE(jtarget_knosos_fic)
+            WRITE(iunit, out_format) 'KNOSOS fast ion confinement'
+         CASE(jtarget_knosos_dbo)
+            WRITE(iunit, out_format) 'KNOSOS test'
+         CASE(jtarget_knosos_qer)
+            WRITE(iunit, out_format) 'KNOSOS radial electric field and/or energy flux'
+         CASE(jtarget_stella_q1)
+            WRITE(iunit, out_format) 'stella calculation, q1'
+         CASE(jtarget_stella_q2)
+            WRITE(iunit, out_format) 'stella calculation, q2'
          CASE(jtarget_jdotb)
             WRITE(iunit, out_format) '<J.B>'
          CASE(jtarget_jcurv)

@@ -74,6 +74,8 @@ chisq_jdotb.o \
 chisq_kink.o \
 chisq_bmax.o \
 chisq_dkes.o \
+chisq_knosos.o \
+chisq_stella.o \
 chisq_wp.o \
 chisq_bootstrap.o \
 chisq_beta.o \
@@ -113,6 +115,8 @@ stellopt_paraexe.o \
 stellopt_prof_to_vmec.o \
 stellopt_kink.o \
 stellopt_dkes.o \
+stellopt_knosos.o \
+stellopt_stella.o \
 stellopt_prof_refit.o \
 stellopt_travis.o \
 stellopt_load_equil.o \

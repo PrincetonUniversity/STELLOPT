@@ -248,6 +248,24 @@
       ! DKES
       IF (ANY(sigma_dkes < bigno)) &
          CALL chisq_dkes(target_dkes, sigma_dkes, ncnt,iflag)
+      ! KNOSOS
+      IF (ANY(sigma_knosos_1nu < bigno)) &
+         CALL chisq_knosos(target_knosos_1nu, sigma_knosos_1nu, ncnt,iflag , jtarget_knosos_1nu)
+      IF (ANY(sigma_knosos_snu < bigno)) &
+         CALL chisq_knosos(target_knosos_snu, sigma_knosos_snu, ncnt,iflag , jtarget_knosos_snu)
+      IF (ANY(sigma_knosos_sbp < bigno)) &
+         CALL chisq_knosos(target_knosos_sbp, sigma_knosos_sbp, ncnt,iflag , jtarget_knosos_sbp)
+      IF (ANY(sigma_knosos_fic < bigno)) &
+         CALL chisq_knosos(target_knosos_fic, sigma_knosos_fic, ncnt,iflag , jtarget_knosos_fic)
+      IF (ANY(sigma_knosos_sbp < bigno)) &
+         CALL chisq_knosos(target_knosos_qer, sigma_knosos_qer, ncnt,iflag , jtarget_knosos_qer)
+      IF (ANY(sigma_knosos_dbo < bigno)) &
+         CALL chisq_knosos(target_knosos_dbo, sigma_knosos_dbo, ncnt,iflag , jtarget_knosos_dbo)
+      ! STELLA
+!      IF (ANY(sigma_stella_q1 < bigno)) &
+!         CALL chisq_stella(target_stella_q1, sigma_stella_q1, ncnt,iflag, jtarget_stella_q1)
+!      IF (ANY(sigma_stella_q2 < bigno)) &
+!         CALL chisq_stella(target_stella_q2, sigma_stella_q2, ncnt,iflag, jtarget_stella_q2)      
       ! TXPORT
       IF (ANY(sigma_txport < bigno)) &
          CALL chisq_txport(target_txport, sigma_txport, ncnt,iflag)

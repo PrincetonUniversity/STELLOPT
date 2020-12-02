@@ -21,7 +21,9 @@
       USE dkes_realspace
 !DEC$ ENDIF
       USE safe_open_mod
-      
+      USE mpi_params
+      USE mpi_inc 
+
 !-----------------------------------------------------------------------
 !     Subroutine Parameters
 !        iflag         Error flag
@@ -34,7 +36,7 @@
 !        ier         Error flag
 !        iunit       File unit number
 !----------------------------------------------------------------------
-      INTEGER :: ir, irun, istat, neqs, ik, ier_phi
+      INTEGER :: ir, irun, istat, neqs, jk, ik, ier_phi !JLVG
       REAL(rprec), DIMENSION(:), POINTER :: f0p1, f0p2, f0m1, f0m2
       REAL(rprec) :: tcpu0, tcpu1, tcpui, tcput, tcpu, tcpua, dkes_efield,&
                      phi_temp
@@ -43,7 +45,7 @@
       INTEGER :: numargs, icount, index_blank, iodata, iout_opt,&
                  idata, iout
       INTEGER :: m, n ! nmax, mmax (revmoed due to conflict with dkes_realspace
-      CHARACTER :: output_file*64, opt_file*64, dkes_input_file*64, temp_str*64
+      CHARACTER :: output_file*64, opt_file*64, dkes_input_file*64, temp_str*64, temp_str2*64 !JLVG
       LOGICAL :: lexist  
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
@@ -53,7 +55,6 @@
       lscreen_dkes = lscreen
       IF (lscreen) WRITE(6,'(a)') ' ---------------------------    DKES CALCULATION     -------------------------'
       ! Now we need to mimic some behavior to avoid reading from command line
-      arg1(1) = proc_string
       arg1(5) = 'F'
       ! Enter the main loop
       IF (ALLOCATED(DKES_L11p)) DEALLOCATE(DKES_L11p)
@@ -71,6 +72,7 @@
       DKES_L11p=0.0; DKES_L33p=0.0; DKES_L31p=0.0
       DKES_L11m=0.0; DKES_L33m=0.0; DKES_L31m=0.0
       DKES_scal11=0.0; DKES_scal33=0.0; DKES_scal31=0.0
+      jk=0 !JLVG
       DO ik = 2, nsd
          ipmb = 0
          DKES_rad_dex = ik
@@ -80,24 +82,42 @@
          CALL second0 (tcpu0)
          ! Get ER based on phi specification
          ier_phi = 0
-         CALL get_equil_phi(rho(ik),phi_type,phi_temp,ier_phi,dkes_efield)
+         ier_phi=-1 !JLVG
+!         CALL get_equil_phi(rho(ik),phi_type,phi_temp,ier_phi,dkes_efield) !JLVG
          IF (ier_phi < 0) dkes_efield = 0.0
          !!!! CALL read_dkes_input
+         WRITE(temp_str,'(i3.3)') ik
+         arg1(1) = TRIM(proc_string) // '_s' // TRIM(temp_str)
          WRITE(arg1(2),'(i3)') ik
          WRITE(arg1(3),'(e20.10)') nu_dkes(ik)
          dkes_efield = 0.0
          WRITE(arg1(4),'(e20.10)') dkes_efield
          IF (lscreen) arg1(5) = 'T'
-         WRITE(temp_str,'(i3.3)') ik
          ier_phi = 0
-         CALL dkes_input_prepare(arg1,5,dkes_input_file,ier_phi)
+         !JLVG--------------------------------------------------------------------------------
+         IF(myworkid == 0) CALL dkes_input_prepare(arg1,5,dkes_input_file,ier_phi)
+         CALL MPI_BCAST(dkes_input_file,64,MPI_CHARACTER,0,MPI_COMM_MYWORLD,ierr_mpi)
+         jk=jk+1
+         IF(myworkid+1 == jk) temp_str2=dkes_input_file
+      END DO
+      dkes_input_file=temp_str2 !JLVG
+      jk=0 
+      DO ik = 2, nsd
+         ipmb = 0
+         DKES_rad_dex = ik
+         WRITE(temp_str,'(i3.3)') ik
+         IF(.not. lbooz(ik)) CYCLE
+         IF(sigma_dkes(ik) >= bigno) CYCLE
+         jk=jk+1 
+         IF(myworkid+1 /= jk ) CYCLE 
+         !JLVG--------------------------------------------------------------------------------
          output_file= 'dkesout.' // TRIM(proc_string) // '_s' // TRIM(temp_str)
          opt_file= 'opt_dkes.' // TRIM(proc_string) // '_s' // TRIM(temp_str)       !DAS 2/21/2000  !Probably won't need
          summary_file = 'results.' // TRIM(proc_string) //'_s' // TRIM(temp_str) !record file addition
          !  OPEN INPUT AND OUTPUT FILES FOR READING (AND WRITING OUTPUT)
-         idata    = 7
-         iout     = 30
-         iout_opt = 14
+         idata    = 7000+myworkid
+         iout     = 30000+myworkid
+         iout_opt = 14000+myworkid
          iodata = idata
          CALL safe_open(iodata, istat, dkes_input_file, 'old', 'formatted')
          IF (istat .ne. 0) STOP 'Error reading input file in DKES'
@@ -164,6 +184,7 @@
             efield1 = efield(irun)
             cmul1 = cmul(irun)
             if(ir .eq. 1) then
+               itab_out=90000+myworkid
                call safe_open(itab_out, istat, summary_file,'unknown', &
               'formatted')
                write(itab_out,'("*",/,"cmul",a1,"efield",a1,"weov",a1,"wtov", &
@@ -211,6 +232,19 @@
          CLOSE(unit=ioout)
          CLOSE(unit=ioout_opt)
       END DO
+      !JLVG--------------------------------------------------------------------------------
+      DO ik = 2, nsd
+         CALL MPI_BCAST(DKES_L11p(ik),1,MPI_REAL8,ik,MPI_COMM_MYWORLD,ierr_mpi)
+         CALL MPI_BCAST(DKES_L11m(ik),1,MPI_REAL8,ik,MPI_COMM_MYWORLD,ierr_mpi)
+         CALL MPI_BCAST(DKES_L33p(ik),1,MPI_REAL8,ik,MPI_COMM_MYWORLD,ierr_mpi)
+         CALL MPI_BCAST(DKES_L33m(ik),1,MPI_REAL8,ik,MPI_COMM_MYWORLD,ierr_mpi)
+         CALL MPI_BCAST(DKES_L31p(ik),1,MPI_REAL8,ik,MPI_COMM_MYWORLD,ierr_mpi)
+         CALL MPI_BCAST(DKES_L31m(ik),1,MPI_REAL8,ik,MPI_COMM_MYWORLD,ierr_mpi)
+         CALL MPI_BCAST(DKES_scal11(ik),1,MPI_REAL8,ik,MPI_COMM_MYWORLD,ierr_mpi)
+         CALL MPI_BCAST(DKES_scal33(ik),1,MPI_REAL8,ik,MPI_COMM_MYWORLD,ierr_mpi)
+         CALL MPI_BCAST(DKES_scal31(ik),1,MPI_REAL8,ik,MPI_COMM_MYWORLD,ierr_mpi)
+      END DO
+      !JLVG--------------------------------------------------------------------------------
       IF (lscreen) WRITE(6,'(a)') ' -----------------  DKES CALCULATION (DONE) ----------------'
 !DEC$ ELSE
       IF (lscreen) WRITE(6,'(a)') ' !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'

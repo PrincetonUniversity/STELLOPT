@@ -65,6 +65,7 @@
       CALL move_txtfile('neo_cur.'//TRIM(proc_string_old),'neo_cur.'//TRIM(proc_string))
       CALL move_txtfile('neolog.'//TRIM(proc_string_old),'neolog.'//TRIM(proc_string))
       CALL move_txtfile('neo_out.'//TRIM(proc_string_old),'neo_out.'//TRIM(proc_string))
+      CALL move_txtfile('kn_out.'//TRIM(proc_string_old),'kn_out.'//TRIM(proc_string))
       CALL move_txtfile('tprof.'//TRIM(proc_string_old),'tprof.'//TRIM(proc_string))
       CALL move_txtfile('jprof.'//TRIM(proc_string_old),'jprof.'//TRIM(proc_string))
       CALL move_txtfile('dprof.'//TRIM(proc_string_old),'dprof.'//TRIM(proc_string))
@@ -80,6 +81,7 @@
          CALL move_txtfile('dkesout.'//TRIM(proc_string_old)//TRIM(ADJUSTL(temp_str)),'dkesout.'//TRIM(proc_string)//TRIM(ADJUSTL(temp_str)))
          CALL move_txtfile('opt_dkes.'//TRIM(proc_string_old)//TRIM(ADJUSTL(temp_str)),'opt_dkes.'//TRIM(proc_string)//TRIM(ADJUSTL(temp_str)))
          CALL move_txtfile('results.'//TRIM(proc_string_old)//TRIM(ADJUSTL(temp_str)),'results.'//TRIM(proc_string)//TRIM(ADJUSTL(temp_str)))
+         CALL move_txtfile('kn_log.'//TRIM(proc_string_old)//TRIM(ADJUSTL(temp_str)),'kn_log.'//TRIM(proc_string)//TRIM(ADJUSTL(temp_str)))
       END DO
       IF (ANY(sigma_orbit .lt. bigno)) THEN
          lverb_beams = .FALSE.
