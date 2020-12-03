@@ -57,7 +57,7 @@
       ns=-1
       DO ik=2,nsd
          IF(.not. lbooz(ik)) CYCLE
-         IF(sigma_stella_q1(ik) >= bigno .and. sigma_stella_q2) CYCLE
+         IF(sigma_stella_q1(ik) >= bigno .and. sigma_stella_q2(ik) >= bigno) CYCLE
          ns=ns+1
          IF(myworkid == ns ) WRITE(temp_str,'(i3.3)') ik
       END DO
@@ -101,7 +101,7 @@
       IF (myworkid == master) THEN
          DO ik=2,nsd
             IF(.not. lbooz(ik)) CYCLE
-            IF(sigma_stella_q1(ik) >= bigno .and. sigma_stella_q2(ik)) CYCLE
+            IF(sigma_stella_q1(ik) >= bigno .and. sigma_stella_q2(ik) >= bigno) CYCLE
             WRITE(w_u3,'(1(1x,i8),6(1x,e17.10))') ik,STELLA_Q1(ik),STELLA_Q2(ik)
          END DO
          IF (lscreen) WRITE(6,'(2X,I8,1(2X,E17.10))') ik,STELLA_Q1(ik),STELLA_Q2(ik)

@@ -182,9 +182,29 @@ else
   TRAVIS_DIR = 
   LIB_TRAVIS = 
 endif
+  ifeq ($(LKNOSOS),T)
+    KNOSOS_DIR = ../../KNOSOS
+    LIB_KNOSOS = libknosos.a
+    MOD_PATH += -I$(KNOSOS_DIR)/$(LOCTYPE)
+    PRECOMP += -DKNOSOS_OPT
+    LIB_LINK += $(KNOSOS_DIR)/$(LOCTYPE)/$(LIB_KNOSOS)
+  else
+    KNOSOS_DIR =
+    LIB_KNOSOS =
+  endif
+  ifeq ($(LSTELLA),T)
+    STELLA_DIR = ../../STELLA
+    LIB_STELLA = libstella.a
+    MOD_PATH += -I$(STELLA_DIR)/$(LOCTYPE)
+    PRECOMP += -DSTELLA_OPT
+    LIB_LINK += $(STELLA_DIR)/$(LOCTYPE)/$(LIB_STELLA)
+  else
+    STELLA_DIR =
+    LIB_STELLA =
+  endif
 
 # Handle other codes
-LIB_LINK += $(COILOPT_LIB) $(GENE_LIB) $(REGCOIL_LIB) $(SFINCS_LIB) $(MANGO_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB)
+LIB_LINK += $(KNOSOS_LIB) $(STELLA_LIB) $(COILOPT_LIB) $(GENE_LIB) $(REGCOIL_LIB) $(SFINCS_LIB) $(MANGO_LIB) $(TERPSICHORE_LIB) $(TRAVIS_LIB)
 
 # Add libraries to LIB_LINK
 # LIB_LINK+= $(MYHOME)/libstell.a $(LIBS)

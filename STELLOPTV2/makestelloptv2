@@ -16,7 +16,7 @@ VPATH = $(SPATH):$(SPATH)/Chisq:$(SPATH)/General:$(SPATH)/Modules
 .SUFFIXES :
 .SUFFIXES : .f .f90 .o
 xstelloptv2:  $(LIB) $(LIB_VMEC) $(LIB_BEAMS3D) $(LIB_BNORM) $(LIB_BOOTSJ) \
-	$(LIB_BOOZ) $(LIB_COBRA) $(LIB_DIAGNO) $(LIB_DKES) $(LIB_KNOSOS) $(LIB_FIELDLINES) \
+	$(LIB_BOOZ) $(LIB_COBRA) $(LIB_DIAGNO) $(LIB_DKES) $(LIB_KNOSOS) $(LIB_STELLA) $(LIB_FIELDLINES) \
 	$(LIB_JINV) $(LIB_MGRID) $(LIB_NEO)  $(LIB_COILOPTPP) $(LIB_GENE) \
 	$(LIB_REGCOIL) $(LIB_TERPSICHORE) $(ObjectFiles)
 	$(LINK) $@ $(ObjectFiles) $(LIB_LINK)
@@ -46,6 +46,9 @@ ifdef DKES_DIR
 endif
 ifdef KNOSOS_DIR
 	@rm $(KNOSOS_DIR)/$(LOCTYPE)/$(LIB_KNOSOS)
+endif
+ifdef STELLA_DIR
+	@rm $(STELLA_DIR)/$(LOCTYPE)/$(LIB_STELLA)
 endif
 ifdef FIELDLINES_DIR
 	@rm $(FIELDLINES_DIR)/$(LOCTYPE)/$(LIB_FIELDLINES)
@@ -150,6 +153,10 @@ $(LIB_DKES) :
 #Construct KNOSOS library. 
 $(LIB_KNOSOS) :
 	@cd $(KNOSOS_DIR); make $(TYPE); cd $(LOCTYPE); ar -cruv $(LIB_KNOSOS) *.o *.mod
+
+#Construct STELLA library
+$(LIB_STELLA) :
+	@cd $(STELLA_DIR); make $(TYPE); cd $(LOCTYPE); ar -cruv $(LIB_STELLA) *.o *.mod
 	
 #Construct DKES library. 
 $(LIB_JINV) :

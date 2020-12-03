@@ -144,20 +144,20 @@
 #            KNOSOS Options
 #######################################################################
   LKNOSOS = T
-  KNOSOS_PATH = ../../KNOSOS
-  KNOSOS_INC = -I$(KNOSOS_PATH)
-  KNOSOS_DIR = $(KNOSOS_PATH)
-  LIB_KNOSOS = libknosos.a
-  KNOSOS_LIB = -lfftw3 
+  KNOSOS_PATH = ../../KNOSOS 
+  KNOSOS_INC = -I$(KNOSOS_PATH) 
+  KNOSOS_DIR = $(KNOSOS_PATH) 
+  LIB_KNOSOS = libknosos.a 
+  KNOSOS_LIB = -lfftw3  
 
 #######################################################################
 #            STELLA Options
 #######################################################################
   LSTELLA = T
-  STELLA_PATH= ../../STELLA
-  STELLA_INC = -I$(STELLA_PATH)
-  STELLA_DIR = $(STELLA_PATH)
-  LIB_STELLA = libstella.a
+  STELLA_PATH= ../../STELLA 
+  STELLA_INC = -I$(STELLA_PATH) 
+  STELLA_DIR = $(STELLA_PATH) 
+  LIB_STELLA = libstella.a 
 #  STELLA_LIB = -lfftw3 #$(STELLA_DIR)/$(LIB_STELLA) \
 #       -L${PETSC_DIR}/lib -lpetsc \
 #       -L/${MKL_HOME}/lib/intel64 -mkl \
@@ -314,7 +314,7 @@ ifeq ($(MAKECMDGOALS),xstelloptv2)
   ifeq ($(LKNOSOS),T)
     KNOSOS_DIR = ../../KNOSOS
     LIB_KNOSOS = libknosos.a
-    MOD_PATH+= -I$(KNOSOS_DIR)/$(LOCTYPE)
+    MOD_PATH += -I$(KNOSOS_DIR)/$(LOCTYPE)
     PRECOMP += -DKNOSOS_OPT
     LIB_LINK += $(KNOSOS_DIR)/$(LOCTYPE)/$(LIB_KNOSOS)
   else
@@ -489,4 +489,4 @@ ifeq ($(MAKECMDGOALS),libstell.so)
 endif
 
 #This must come here
-MOD_PATH+= -I
+MOD_PATHi += -I
