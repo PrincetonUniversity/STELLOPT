@@ -194,9 +194,9 @@
          ZEFF_AUX_F = ZEFF_AUX_F*zeff_scale
          lbeam = .true.
          IF (r_start_in(1) /= -1) lbeam = .false.
-         IF (lbeam) lcollision = .true.
          IF (lfusion .or. lrestart_particles) lbeam = .false.
          IF (lbbnbi) lbeam = .true.
+         IF (lbeam) lcollision = .true.
          nbeams = 0
          DO WHILE ((Asize_beams(nbeams+1) >= 0.0).and.(nbeams<MAXBEAMS))
             nbeams = nbeams + 1
