@@ -15,9 +15,9 @@
 #            Define Compiler Flags
 #######################################################################
   FLAGS_R = -I$(MKL_HOME)/include -O2 -fp-model strict -ip \
-            -assume noold_unit_star
+            -assume noold_unit_star -xCORE-AVX512 -qopt-zmm-usage=high
   FLAGS_D = -I$(MKL_HOME)/include -O2 -fp-model strict -ip \
-            -assume noold_unit_star -g -traceback
+            -assume noold_unit_star -g -traceback -xCORE-AVX512 -qopt-zmm-usage=high
   LIBS    = -Wl,-rpath,$(MKL_HOME)/lib/intel64 \
             -L$(MKL_HOME)/lib/intel64 -lmkl_scalapack_lp64 \
             -lmkl_intel_lp64 -lmkl_core -lmkl_sequential \
