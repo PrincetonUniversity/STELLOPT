@@ -12,7 +12,7 @@ MODULE beams3d_physics_mod
       !-----------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
       USE beams3d_runtime, ONLY: lneut, pi, pi2, dt, lverb, ADAS_ERR, &
-                                 dt_save, lbbnbi, weight, t_end, ndt, &
+                                 dt_save, lbbnbi, weight, ndt, &
                                  ndt_max, npoinc, lendt_m
       USE beams3d_lines, ONLY: R_lines, Z_lines, PHI_lines, &
                                myline, mytdex, moment, ltherm, &
@@ -24,7 +24,7 @@ MODULE beams3d_physics_mod
                                end_state, fact_crit, fact_pa, &
                                fact_vsound, &
                                ns_prof1, ns_prof2, ns_prof3, ns_prof4, &
-                               ns_prof5
+                               ns_prof5, my_end
       USE beams3d_grid, ONLY: BR_spl, BZ_spl, delta_t, BPHI_spl, &
                               MODB_spl, MODB4D, &
                               phimax, S4D, TE4D, NE4D, TI4D, ZEFF4D, &
@@ -267,7 +267,7 @@ MODULE beams3d_physics_mod
          !--------------------------------------------------------------
          USE beams3d_grid
          USE beams3d_lines, ONLY: myline,xlast,ylast,zlast
-         USE beams3d_runtime, ONLY: t_end, lvessel, to3, lplasma_only, &
+         USE beams3d_runtime, ONLY: lvessel, to3, lplasma_only, &
                                     lvessel_beam, lsuzuki
          USE wall_mod, ONLY: collide, uncount_wall_hit
 
@@ -363,7 +363,7 @@ MODULE beams3d_physics_mod
                   IF (s_temp < one) EXIT
                END IF
                IF ((q(1) > 5*rmax)  .or. (q(1) < rmin)) THEN
-                  t = t_end(myline)+dt_local
+                  t = my_end+dt_local
                   RETURN
                END IF  ! We're outside the grid
             END DO
@@ -547,7 +547,7 @@ MODULE beams3d_physics_mod
          IF (l < num_depo-1) THEN
             IF ( (rlocal(l) <= rmin) .or. (rlocal(l) >= rmax) .or. &
                  (zlocal(l) <= zmin) .or. (zlocal(l) >= zmax) ) THEN 
-               t = t_end(myline) + dt_local
+               t = my_end + dt_local
                RETURN
             END IF
             i = MIN(MAX(COUNT(raxis < rlocal(l)),1),nr-1)
@@ -594,7 +594,7 @@ MODULE beams3d_physics_mod
             q(1) = SQRT(qf(1)*qf(1)+qf(2)*qf(2))
             q(2) = ATAN2(qf(2),qf(1))
             q(3) = qf(3)
-            IF ((q(1) > 2*rmax)  .or. (q(1) < rmin)) THEN; t = t_end(myline)+dt_local; RETURN; END IF  ! We're outside the grid
+            IF ((q(1) > 2*rmax)  .or. (q(1) < rmin)) THEN; t = my_end+dt_local; RETURN; END IF  ! We're outside the grid
          END DO
 
          RETURN
@@ -1401,7 +1401,7 @@ MODULE beams3d_physics_mod
          !--------------------------------------------------------------
 
          ! Define max time to follow particle
-         tf_max = t_end(myline)
+         tf_max = my_end
 
          ! Get bounce frequncy
          !CALL beams3d_fbounce(q(1:3),mu,mass,freq_bounce)
