@@ -17,7 +17,7 @@
 #            Define Compiler Flags
 #######################################################################
   FLAGS_R = -I$(MKL_HOME)/include -O2 -fp-model strict -ip \
-            -assume noold_unit_star -g -traceback
+            -assume noold_unit_star -g -traceback -xCORE-AVX2
   FLAGS_D = -I$(MKL_HOME)/include -fp-model strict -ip \
             -assume noold_unit_star -g -traceback
   FLAGS_D+= -check all -check bounds -check noarg_temp_created \
