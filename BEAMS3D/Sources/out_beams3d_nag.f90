@@ -22,7 +22,7 @@ SUBROUTINE out_beams3d_nag(t, q)
                              ns_prof1, ns_prof2, ns_prof3, ns_prof4, &
                              ns_prof5, mymass, mycharge, mybeam, end_state, &
                              dist5d_prof, win_dist5d, nsh_prof4, &
-                             h2_prof, h3_prof, h4_prof, h5_prof
+                             h2_prof, h3_prof, h4_prof, h5_prof, my_end
     USE beams3d_grid
     USE beams3d_physics_mod, ONLY: beams3d_physics
     USE wall_mod, ONLY: collide, get_wall_ik, get_wall_area
@@ -105,7 +105,7 @@ SUBROUTINE out_beams3d_nag(t, q)
        IF (ltherm) THEN
           ndot_prof(mybeam,d1)   =   ndot_prof(mybeam,d1) + weight(myline)
           end_state(myline) = 1
-          t = t_end(myline)
+          t = my_end
        END IF
     ELSE
        IF (lneut) end_state(myline)=3
@@ -126,7 +126,7 @@ SUBROUTINE out_beams3d_nag(t, q)
           R_lines(mytdex,myline)       = q2(1)
           PHI_lines(mytdex,myline)     = q2(2)
           Z_lines(mytdex,myline)       = zw
-          t = t_end(myline)+dt
+          t = my_end+dt
           l = get_wall_ik()
           IF (lneut) THEN
              wall_shine(mybeam,l) = wall_shine(mybeam,l) + weight(myline)*0.5*mymass*q(4)*q(4)/get_wall_area(l)
@@ -166,7 +166,7 @@ SUBROUTINE out_beams3d_nag(t, q)
        ndt = 1
     END IF
     IF (lhitonly) mytdex = 1
-    IF (mytdex > npoinc) t = t_end(myline)
+    IF (mytdex > npoinc) t = my_end
     t = t + dt
 
     RETURN

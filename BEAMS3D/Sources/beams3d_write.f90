@@ -150,9 +150,9 @@
                CALL write_scalar_hdf5(fid,'npoinc',ier,INTVAR=npoinc,ATT='Number of steps per trajectory period',&
                                       ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'npoinc',ier)
-               CALL write_var_hdf5(fid,'t_end',nparticles,ier,DBLVAR=t_end,ATT='Time at End of Trajectory [s]',&
-                                   ATT_NAME='description')
-               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'t_end',ier)
+               !CALL write_var_hdf5(fid,'t_end',nparticles,ier,DBLVAR=t_end,ATT='Time at End of Trajectory [s]',&
+               !                    ATT_NAME='description')
+               !IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'t_end',ier)
                CALL write_var_hdf5(fid,'mass',nparticles,ier,DBLVAR=mass,ATT='Particle Mass [kg]',&
                                    ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'mass',ier)
