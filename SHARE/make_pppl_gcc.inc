@@ -21,7 +21,7 @@
 # Crutch for broken module vars
   NETCDF_F = $(NETCDF_FORTRAN_HOME)
   NETCDF_C = $(NETCDF_C_HOME)
-  HDF5_HOME = $(HDF5_PARALLEL_HOME)
+  # $(HDF5_HOME) is used.
 
   LIBS    = -lopenblas -L$(SCALAPACK_HOME)/lib -lscalapack 
 

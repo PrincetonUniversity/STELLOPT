@@ -18,7 +18,7 @@
       USE stel_kinds, ONLY: rprec
       USE beams3d_grid
       USE beams3d_runtime, ONLY: lneut
-      USE beams3d_lines, ONLY: moment, mycharge, mymass, myv_neut, B_temp
+      USE beams3d_lines, ONLY: moment, mycharge, mymass, myv_neut
       USE mpi_params, ONLY: myworkid
 !-----------------------------------------------------------------------
 !     Input Variables
