@@ -32,6 +32,8 @@
 !                    - DIST5D implemented
 !     v2.80 09/24/20 - DIST5D Normalized to phase space volume
 !                    - J and dense now calculated in diagnostics
+!     v2.90 12/07/20 - Thermal fusion birth model
+!                    - T_END now outputs last timestep time.
 !-----------------------------------------------------------------------
 MODULE beams3d_runtime
     !-----------------------------------------------------------------------
@@ -138,7 +140,7 @@ MODULE beams3d_runtime
     CHARACTER(256) :: id_string, mgrid_string, coil_string, &
     vessel_string, int_type, restart_string, bbnbi_string
 
-    REAL(rprec), PARAMETER :: BEAMS3D_VERSION = 2.80
+    REAL(rprec), PARAMETER :: BEAMS3D_VERSION = 2.90
     !-----------------------------------------------------------------------
     !     Subroutines
     !          handle_err  Controls Program Termination
