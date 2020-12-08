@@ -90,7 +90,6 @@
       CALL mpialloc(rateDT,   nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_rateDT)
       CALL mpialloc(rateDDT,  nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_rateDDT)
       CALL mpialloc(rateDDHe, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_rateDDHe)
-      CALL mpialloc(rateDDHe, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_rateDDHe)
 
       ! Initialize helpers
       IF (mylocalid == mylocalmaster) THEN
