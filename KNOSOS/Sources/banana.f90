@@ -309,8 +309,12 @@ SUBROUTINE CALC_B0
   Bmax_av=Bmax_av/npt
   Bmin_av=Bmin_av/npt
 !new0
-!  KN_DBO=(Bmax_var/npt-Bmax_av*Bmax_av+Bmin_var/npt-Bmin_av*Bmin_av)/borbic(0,0)/borbic(0,0)
-!  RETURN
+  KN_DBO=(Bmax_var/npt-Bmax_av*Bmax_av+Bmin_var/npt-Bmin_av*Bmin_av)/borbic(0,0)/borbic(0,0)
+  borbic0=borbic
+  borbis0=borbis
+  dborbic0dpsi=dborbicdpsi
+  dborbis0dpsi=dborbisdpsi
+  RETURN 
 !new0
   epsilon=((Bmax_av/Bmin_av)-1.)/2.
   shift_twopi=.FALSE.
@@ -524,7 +528,12 @@ SUBROUTINE CALC_B0
   END DO
   dist=SQRT(dist)/borbic(0,0)
   KN_DBO=dist
-!  dist=SQRT(dist)/ABS(borbic(helN,helM))
+  !  dist=SQRT(dist)/ABS(borbic(helN,helM))
+
+  borbic0=borbic
+  borbis0=borbis
+  dborbic0dpsi=dborbicdpsi
+  dborbis0dpsi=dborbisdpsi
     
 END SUBROUTINE CALC_B0
 
