@@ -3572,11 +3572,11 @@ SUBROUTINE INTEGRATE_G(nalpha,nalphab,nlambda,lambda,i_p,npoint,g,notg,&
            ind=(ia-1)*nalphab+il
            D11_zt(ia,il)=0
            CALL LAGRANGE(thetape(1:tnalpha,il),D11_ale(1:tnalpha),tnalpha,&
-                & theta(ia),D11_zt(ia,il),2)
+                & theta(ia),D11_zt(ia,il),1)
            IF(QN) THEN!.OR.NTV)THEN
               dn1_zt(ia,il)=0
               CALL LAGRANGE(thetape(1:tnalpha,il),dn1_ale(1:tnalpha),tnalpha,&
-                 & theta(ia),dn1_zt(ia,il),2)
+                 & theta(ia),dn1_zt(ia,il),1)
            END IF
  !           IF(DEBUG.AND.ipoint.EQ.1) WRITE(3450+myrank,'(10(1pe13.5),10I6)') &
  !                & zetap(il),theta(ia),dn1_zt(ia,il),D11_zt(ia,il)
