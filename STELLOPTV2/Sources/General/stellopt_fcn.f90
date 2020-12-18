@@ -436,11 +436,10 @@
 
          ! NOTE ALL parallel secondary codes go here
 !DEC$ IF DEFINED (KNOSOS_OPT)
-!         IF (ANY(sigma_knosos_1nu < bigno) .or. ANY(sigma_knosos_snu < bigno) .or. ANY(sigma_knosos_sbp < bigno) .or. &
-!             ANY(sigma_knosos_fic < bigno) .or. ANY(sigma_knosos_qer < bigno) .or. ANY(sigma_knosos_dbo < bigno)) CALL stellopt_knosos(lscreen,iflag)
          ctemp_str = 'knosos'
          IF ((ANY(sigma_knosos_1nu < bigno) .or. ANY(sigma_knosos_snu < bigno) .or. ANY(sigma_knosos_sbp < bigno) .or. &
-              ANY(sigma_knosos_fic < bigno) .or. ANY(sigma_knosos_qer < bigno) .or. ANY(sigma_knosos_dbo < bigno)) .and. (iflag>=0)) &
+              ANY(sigma_knosos_fic < bigno) .or. ANY(sigma_knosos_qer < bigno) .or. ANY(sigma_knosos_vbt < bigno) .or. &
+              ANY(sigma_knosos_vbb < bigno) .or. ANY(sigma_knosos_wbw < bigno) .or. ANY(sigma_knosos_dbo < bigno)) .and. (iflag>=0)) &
               CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
 !DEC$ ENDIF
 !DEC$ IF DEFINED (STELLA_OPT)

@@ -644,7 +644,7 @@ SUBROUTINE READ_BFIELD(s0)
 
   borbic0=borbic
   borbis0=borbis
-  IF(USE_B0.OR.KN_STELLOPT(6)) CALL CALC_B0()
+  IF(USE_B0.OR.KN_STELLOPT(6).OR.KN_STELLOPT(7).OR.KN_STELLOPT(8).OR.KN_STELLOPT(9)) CALL CALC_B0()
 
   read_addkes=.FALSE.
   OPEN(unit=1,file='add_ddkes2.data',form='formatted',iostat=iostat,action='read')
@@ -1619,7 +1619,7 @@ SUBROUTINE FILL_BGRID(nz,nt,s,flagB1)
   REAL*8 FSA
   
   Bmax=0
-  IF(KN_STELLOPT(6)) THEN
+  IF(KN_STELLOPT(9)) THEN
      ifile=iout
   ELSE IF(flagB1) THEN
      ifile=1200+myrank
@@ -1649,7 +1649,7 @@ SUBROUTINE FILL_BGRID(nz,nt,s,flagB1)
   avB =FSA(nz,nt,Bzt    ,Jac,1)
   avB2=FSA(nz,nt,Bzt*Bzt,Jac,1)
 
-  IF(.NOT.KNOSOS_STELLOPT.OR.KN_STELLOPT(6)) THEN
+  IF(.NOT.KNOSOS_STELLOPT.OR.KN_STELLOPT(9)) THEN
      IF(.NOT.KNOSOS_STELLOPT) OPEN(unit=ifile,form='formatted',action='write')
      DO iz=1,nz
         DO it=1,nt

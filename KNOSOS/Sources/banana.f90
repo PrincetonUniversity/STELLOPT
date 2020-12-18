@@ -201,7 +201,7 @@ SUBROUTINE CALC_B0
   dborbis0dpsi=0
   !Determine helicity of B_0
   Bmax=0
-  IF(KN_STELLOPT(6)) THEN
+  IF(KN_STELLOPT(6).OR.KN_STELLOPT(7).OR.KN_STELLOPT(8).OR.KN_STELLOPT(9)) THEN
      helN=nzperiod
      helM=0
   ELSE
@@ -293,6 +293,7 @@ SUBROUTINE CALC_B0
   !Find maximum of B, minimum of B and contours of minima B
   DO it=1,npt
      DO iz=1,npt
+        IF(KN_STELLOPT(8).AND.iz.LE.npt/2) KN_WBW=KN_WBW+Bzt(iz,it)*zeta(iz)*zeta(iz)
         IF(Bzt(iz,it).GT.Bmax_th(it)) Bmax_th(it)=Bzt(iz,it)
         IF(Bzt(iz,it).LT.Bmin_th(it)) THEN
            Bmin_th(it)=Bzt(iz,it)
@@ -308,14 +309,15 @@ SUBROUTINE CALC_B0
   END DO
   Bmax_av=Bmax_av/npt
   Bmin_av=Bmin_av/npt
-!new0
-  KN_DBO=(Bmax_var/npt-Bmax_av*Bmax_av+Bmin_var/npt-Bmin_av*Bmin_av)/borbic(0,0)/borbic(0,0)
+  IF(KN_STELLOPT(8)) KN_WBW=KN_WBW/(borbic(0,0)*TWOPI*TWOPI*npt*npt/2)
+  IF(KN_STELLOPT(6)) KN_VBT=(Bmax_var/npt-Bmax_av*Bmax_av)/borbic(0,0)/borbic(0,0)
+  IF(KN_STELLOPT(7)) KN_VBB=(Bmin_var/npt-Bmin_av*Bmin_av)/borbic(0,0)/borbic(0,0)
   borbic0=borbic
   borbis0=borbis
   dborbic0dpsi=dborbicdpsi
   dborbis0dpsi=dborbisdpsi
-  RETURN 
-!new0
+  IF(.NOT.KN_STELLOPT(9)) RETURN
+
   epsilon=((Bmax_av/Bmin_av)-1.)/2.
   shift_twopi=.FALSE.
   IF(ABS(zetat(izmin(npt/2),npt/2)-PI).GT.(0.1*PI)) THEN
@@ -527,7 +529,7 @@ SUBROUTINE CALC_B0
      END DO
   END DO
   dist=SQRT(dist)/borbic(0,0)
-  KN_DBO=dist
+  IF(KN_STELLOPT(9)) KN_DBO=dist
   !  dist=SQRT(dist)/ABS(borbic(helN,helM))
 
   borbic0=borbic

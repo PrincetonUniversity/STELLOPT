@@ -167,6 +167,9 @@
       REAL(rprec), DIMENSION(nsd)   ::  target_knosos_sbp,sigma_knosos_sbp
       REAL(rprec), DIMENSION(nsd)   ::  target_knosos_fic,sigma_knosos_fic
       REAL(rprec), DIMENSION(nsd)   ::  target_knosos_qer,sigma_knosos_qer
+      REAL(rprec), DIMENSION(nsd)   ::  target_knosos_vbt,sigma_knosos_vbt
+      REAL(rprec), DIMENSION(nsd)   ::  target_knosos_vbb,sigma_knosos_vbb
+      REAL(rprec), DIMENSION(nsd)   ::  target_knosos_wbw,sigma_knosos_wbw
       REAL(rprec), DIMENSION(nsd)   ::  target_knosos_dbo,sigma_knosos_dbo
       REAL(rprec), DIMENSION(nsd)   ::  target_stella_q1,sigma_stella_q1
       REAL(rprec), DIMENSION(nsd)   ::  target_stella_q2,sigma_stella_q2
@@ -273,7 +276,10 @@
       INTEGER, PARAMETER :: jtarget_knosos_sbp = 6083
       INTEGER, PARAMETER :: jtarget_knosos_fic = 6084
       INTEGER, PARAMETER :: jtarget_knosos_qer = 6085
-      INTEGER, PARAMETER :: jtarget_knosos_dbo = 6080
+      INTEGER, PARAMETER :: jtarget_knosos_vbt = 6086
+      INTEGER, PARAMETER :: jtarget_knosos_vbb = 6087
+      INTEGER, PARAMETER :: jtarget_knosos_wbw = 6088
+      INTEGER, PARAMETER :: jtarget_knosos_dbo = 6089
       INTEGER, PARAMETER :: jtarget_stella_q1  = 6180
       INTEGER, PARAMETER :: jtarget_stella_q2  = 6181
       INTEGER, PARAMETER :: jtarget_jdotb      = 609
@@ -426,6 +432,12 @@
             WRITE(iunit, out_format) 'KNOSOS superbanana-plateau transport'
          CASE(jtarget_knosos_fic)
             WRITE(iunit, out_format) 'KNOSOS fast ion confinement'
+         CASE(jtarget_knosos_vbt)
+            WRITE(iunit, out_format) 'KNOSOS variance of B maxima'
+         CASE(jtarget_knosos_vbb)
+            WRITE(iunit, out_format) 'KNOSOS variance of B minima'
+         CASE(jtarget_knosos_wbw)
+            WRITE(iunit, out_format) 'KNOSOS width of B well'
          CASE(jtarget_knosos_dbo)
             WRITE(iunit, out_format) 'KNOSOS test'
          CASE(jtarget_knosos_qer)

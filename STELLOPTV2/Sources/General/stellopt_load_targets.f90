@@ -257,8 +257,14 @@
          CALL chisq_knosos(target_knosos_sbp, sigma_knosos_sbp, ncnt,iflag , jtarget_knosos_sbp)
       IF (ANY(sigma_knosos_fic < bigno)) &
          CALL chisq_knosos(target_knosos_fic, sigma_knosos_fic, ncnt,iflag , jtarget_knosos_fic)
-      IF (ANY(sigma_knosos_sbp < bigno)) &
+      IF (ANY(sigma_knosos_qer < bigno)) &
          CALL chisq_knosos(target_knosos_qer, sigma_knosos_qer, ncnt,iflag , jtarget_knosos_qer)
+      IF (ANY(sigma_knosos_vbt < bigno)) &
+         CALL chisq_knosos(target_knosos_vbt, sigma_knosos_vbt, ncnt,iflag , jtarget_knosos_vbt)
+      IF (ANY(sigma_knosos_vbb < bigno)) &
+         CALL chisq_knosos(target_knosos_vbb, sigma_knosos_vbb, ncnt,iflag , jtarget_knosos_vbb)
+      IF (ANY(sigma_knosos_wbw < bigno)) &
+         CALL chisq_knosos(target_knosos_wbw, sigma_knosos_wbw, ncnt,iflag , jtarget_knosos_wbw)
       IF (ANY(sigma_knosos_dbo < bigno)) &
          CALL chisq_knosos(target_knosos_dbo, sigma_knosos_dbo, ncnt,iflag , jtarget_knosos_dbo)
       ! STELLA

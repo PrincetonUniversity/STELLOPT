@@ -12,7 +12,8 @@
 !-----------------------------------------------------------------------
         USE stellopt_runtime, ONLY:  proc_string, bigno
         USE equil_utils, ONLY: rho
-        USE stellopt_targets, ONLY: sigma_knosos_1nu, sigma_knosos_snu, sigma_knosos_sbp, sigma_knosos_fic, sigma_knosos_qer, sigma_knosos_dbo, lbooz, nsd
+        USE stellopt_targets, ONLY: sigma_knosos_1nu, sigma_knosos_snu, sigma_knosos_sbp, sigma_knosos_fic, &
+             & sigma_knosos_qer, sigma_knosos_vbt, sigma_knosos_vbb, sigma_knosos_wbw, sigma_knosos_dbo, lbooz, nsd
 !DEC$ IF DEFINED (KNOSOS_OPT)
         USE knosos_stellopt_mod
 !DEC$ ENDIF
@@ -55,16 +56,22 @@
       IF (ALLOCATED(KNOSOS_SBP)) DEALLOCATE(KNOSOS_SBP)
       IF (ALLOCATED(KNOSOS_FIC)) DEALLOCATE(KNOSOS_FIC)
       IF (ALLOCATED(KNOSOS_QER)) DEALLOCATE(KNOSOS_QER)
+      IF (ALLOCATED(KNOSOS_VBT)) DEALLOCATE(KNOSOS_VBT)
+      IF (ALLOCATED(KNOSOS_VBB)) DEALLOCATE(KNOSOS_VBB)
+      IF (ALLOCATED(KNOSOS_WBW)) DEALLOCATE(KNOSOS_WBW)
       IF (ALLOCATED(KNOSOS_DBO)) DEALLOCATE(KNOSOS_DBO)
-      ALLOCATE(KNOSOS_1NU(nsd),KNOSOS_SNU(nsd),KNOSOS_SBP(nsd),KNOSOS_FIC(nsd),KNOSOS_QER(nsd),KNOSOS_DBO(nsd))
-      KNOSOS_1NU=0.0; KNOSOS_SNU=0.0; KNOSOS_SBP=0.0; KNOSOS_FIC=0.0; KNOSOS_QER=0.0; KNOSOS_DBO=0.0
-      KN_1NU=0.0; KN_SNU=0.0; KN_SBP=0.0; KN_FIC=0.0; KN_QER=0.0; KN_DBO=0.0
+      ALLOCATE(KNOSOS_1NU(nsd),KNOSOS_SNU(nsd),KNOSOS_SBP(nsd),KNOSOS_FIC(nsd),KNOSOS_QER(nsd),&
+           KNOSOS_VBT(nsd),KNOSOS_VBB(nsd),KNOSOS_WBW(nsd),KNOSOS_DBO(nsd))
+      KNOSOS_1NU=0.0; KNOSOS_SNU=0.0; KNOSOS_SBP=0.0; KNOSOS_FIC=0.0; KNOSOS_QER=0.0;
+      KNOSOS_VBT=0.0; KNOSOS_VBB=0.0; KNOSOS_WBW=0.0; KNOSOS_DBO=0.0;
+      KN_1NU=0.0; KN_SNU=0.0; KN_SBP=0.0; KN_FIC=0.0; KN_QER=0.0; KN_VBT=0.0; KN_VBB=0.0; KN_WBW=0.0; KN_DBO=0.0
 
       ns=-1
       DO ik=2,nsd
          IF(.not. lbooz(ik)) CYCLE
          IF(sigma_knosos_1nu(ik) >= bigno .and. sigma_knosos_snu(ik) >= bigno .and. sigma_knosos_sbp(ik) >= bigno .and. &
-            sigma_knosos_fic(ik) >= bigno .and. sigma_knosos_qer(ik) >= bigno .and. sigma_knosos_dbo(ik) >= bigno) CYCLE
+            sigma_knosos_fic(ik) >= bigno .and. sigma_knosos_qer(ik) >= bigno .and. sigma_knosos_vbt(ik) >= bigno .and. &
+            sigma_knosos_vbb(ik) >= bigno .and. sigma_knosos_wbw(ik) >= bigno .and. sigma_knosos_dbo(ik) >= bigno) CYCLE
          ns=ns+1
          IF(myworkid == ns ) WRITE(temp_str,'(i3.3)') ik
       END DO
@@ -79,6 +86,9 @@
       IF(ANY(sigma_knosos_snu < bigno)) KN_STELLOPT(2)=.TRUE.
       IF(ANY(sigma_knosos_fic < bigno)) KN_STELLOPT(4)=.TRUE.      
       IF(ANY(sigma_knosos_dbo < bigno)) KN_STELLOPT(6)=.TRUE.      
+      IF(ANY(sigma_knosos_vbt < bigno)) KN_STELLOPT(7)=.TRUE.
+      IF(ANY(sigma_knosos_vbb < bigno)) KN_STELLOPT(8)=.TRUE.
+      IF(ANY(sigma_knosos_wbw < bigno)) KN_STELLOPT(9)=.TRUE.      
       CALL READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)      
 !!$      !Allocate some transport-related quantities
 !!$      ALLOCATE(nb(nbb,ns,nerr),dnbdpsi(nbb,ns,nerr),Tb(nbb,ns,nerr),dTbdpsi(nbb,ns,nerr),&
@@ -113,14 +123,27 @@
       DO ik=2,nsd
          IF(.not. lbooz(ik)) CYCLE
          IF(sigma_knosos_1nu(ik) >= bigno .and. sigma_knosos_snu(ik) >= bigno .and. sigma_knosos_sbp(ik) >= bigno .and. &
-            sigma_knosos_fic(ik) >= bigno .and. sigma_knosos_qer(ik) >= bigno .and. sigma_knosos_dbo(ik) >= bigno) CYCLE
+            sigma_knosos_fic(ik) >= bigno .and. sigma_knosos_qer(ik) >= bigno .and. sigma_knosos_vbt(ik) >= bigno .and. &
+            sigma_knosos_vbb(ik) >= bigno .and. sigma_knosos_wbw(ik) >= bigno .and. sigma_knosos_dbo(ik) >= bigno) CYCLE
          jk=jk+1
          IF(myworkid+1 /= jk ) CYCLE
+         KN_STELLOPT=.FALSE.
+         IF(sigma_knosos_1nu(ik) < bigno) KN_STELLOPT(1)=.TRUE.
+         IF(sigma_knosos_snu(ik) < bigno) KN_STELLOPT(2)=.TRUE.
+         IF(sigma_knosos_fic(ik) < bigno) KN_STELLOPT(4)=.TRUE.      
+         IF(sigma_knosos_dbo(ik) < bigno) KN_STELLOPT(9)=.TRUE.      
+         IF(sigma_knosos_vbt(ik) < bigno) KN_STELLOPT(6)=.TRUE.
+         IF(sigma_knosos_vbb(ik) < bigno) KN_STELLOPT(7)=.TRUE.
+         IF(sigma_knosos_wbw(ik) < bigno) KN_STELLOPT(8)=.TRUE.     
          KN_DKESFILE='boozmn_'//TRIM(proc_string)//'.nc'
          CALL READ_BFIELD(s_kn(ik))
+         KNOSOS_VBT(ik)=KN_VBT
+         KNOSOS_VBB(ik)=KN_VBB
+         KNOSOS_WBW(ik)=KN_WBW
          KNOSOS_DBO(ik)=KN_DBO
          IF(sigma_knosos_1nu(ik) >= bigno .and. sigma_knosos_snu(ik) >= bigno .and. sigma_knosos_sbp(ik) >= bigno .and. &
-            sigma_knosos_fic(ik) >= bigno .and. sigma_knosos_qer(ik) >= bigno ) CYCLE
+            sigma_knosos_fic(ik) >= bigno .and. sigma_knosos_qer(ik) >= bigno .and. sigma_knosos_vbt(ik) >= bigno .and. &
+            sigma_knosos_vbb(ik) >= bigno .and. sigma_knosos_wbw(ik) >= bigno .and. sigma_knosos_dbo(ik) >= bigno) CYCLE
          CALL CALC_DATABASE(ik,s_kn(ik))
          KNOSOS_1NU(ik)=KN_1NU
          KNOSOS_SNU(ik)=KN_SNU
@@ -138,19 +161,23 @@
       CALL MPI_ALLREDUCE(MPI_IN_PLACE,KNOSOS_SBP,nsd,MPI_REAL8,MPI_SUM,MPI_COMM_MYWORLD,ierr_mpi)
       CALL MPI_ALLREDUCE(MPI_IN_PLACE,KNOSOS_FIC,nsd,MPI_REAL8,MPI_SUM,MPI_COMM_MYWORLD,ierr_mpi)
       CALL MPI_ALLREDUCE(MPI_IN_PLACE,KNOSOS_QER,nsd,MPI_REAL8,MPI_SUM,MPI_COMM_MYWORLD,ierr_mpi)
+      CALL MPI_ALLREDUCE(MPI_IN_PLACE,KNOSOS_VBT,nsd,MPI_REAL8,MPI_SUM,MPI_COMM_MYWORLD,ierr_mpi)
+      CALL MPI_ALLREDUCE(MPI_IN_PLACE,KNOSOS_VBB,nsd,MPI_REAL8,MPI_SUM,MPI_COMM_MYWORLD,ierr_mpi)
+      CALL MPI_ALLREDUCE(MPI_IN_PLACE,KNOSOS_WBW,nsd,MPI_REAL8,MPI_SUM,MPI_COMM_MYWORLD,ierr_mpi)
       CALL MPI_ALLREDUCE(MPI_IN_PLACE,KNOSOS_DBO,nsd,MPI_REAL8,MPI_SUM,MPI_COMM_MYWORLD,ierr_mpi)
 !DEC$ ENDIF      
       IF (myworkid == master) THEN
          DO ik=2,nsd
             IF(.not. lbooz(ik)) CYCLE
             IF(sigma_knosos_1nu(ik) >= bigno .and. sigma_knosos_snu(ik) >= bigno .and. sigma_knosos_sbp(ik) >= bigno .and. &
-               sigma_knosos_fic(ik) >= bigno .and. sigma_knosos_qer(ik) >= bigno .and. sigma_knosos_dbo(ik) >= bigno ) CYCLE
-            WRITE(w_u3,'(1(1x,i8),6(1x,e17.10))') ik,KNOSOS_1NU(ik),&
-                 & KNOSOS_SNU(ik),KNOSOS_SBP(ik),KNOSOS_FIC(ik),KNOSOS_QER(ik),KNOSOS_DBO(ik)
+               sigma_knosos_fic(ik) >= bigno .and. sigma_knosos_qer(ik) >= bigno .and. sigma_knosos_vbt(ik) >= bigno .and. &
+               sigma_knosos_vbb(ik) >= bigno .and. sigma_knosos_wbw(ik) >= bigno .and. sigma_knosos_dbo(ik) >= bigno) CYCLE
+            WRITE(w_u3,'(1(1x,i8),20(1x,e17.10))') ik,KNOSOS_1NU(ik),&
+                 & KNOSOS_SNU(ik),KNOSOS_SBP(ik),KNOSOS_FIC(ik),KNOSOS_QER(ik),KNOSOS_VBT(ik),KNOSOS_VBB(ik),KNOSOS_WBW(ik),KNOSOS_DBO(ik)
             eff_ripple(ik)=KNOSOS_1NU(ik)
          END DO
          IF (lscreen) WRITE(6,'(2X,I8,1(2X,E17.10))') ik,KNOSOS_1NU(ik),&
-              KNOSOS_SNU(ik),KNOSOS_SBP(ik),KNOSOS_FIC(ik),KNOSOS_QER(ik),KNOSOS_DBO(ik)
+              KNOSOS_SNU(ik),KNOSOS_SBP(ik),KNOSOS_FIC(ik),KNOSOS_QER(ik),KNOSOS_VBT(ik),KNOSOS_VBB(ik),KNOSOS_WBW(ik),KNOSOS_DBO(ik)
          CALL FLUSH(6)
          CLOSE(w_u3)
       END IF
