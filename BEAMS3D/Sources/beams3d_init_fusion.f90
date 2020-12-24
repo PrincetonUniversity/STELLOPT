@@ -12,7 +12,7 @@
       USE stel_kinds, ONLY: rprec
       USE beams3d_runtime
       USE beams3d_grid, ONLY: nr, nphi, nz, hr, hp, hz, raxis, zaxis, &
-                              phiaxis
+                              phiaxis, S4D, U4D
       USE beams3d_lines, ONLY: nparticles, partvmax
       USE beams3d_physics_mod, ONLY: beams3d_DTRATE, beams3d_MODB, &
                                      beams3d_SFLX, beams3d_DDTRATE, &
@@ -33,12 +33,16 @@
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       INTEGER :: s,i,j,k,k1,k2
+      INTEGER :: minik(2)
       INTEGER, ALLOCATABLE, DIMENSION(:,:,:) :: n3d
       REAL(rprec) :: maxrateDT, maxrateDDT, maxrateDDHe, &
                      dV, w_total, vpart, dr, dphi, &
-                     dz, X1_rand, Y1_rand, Z1_rand, sval, sfactor
+                     dz, X1_rand, Y1_rand, Z1_rand, sval, sfactor, &
+                     rtemp, roffset, utemp, rerr, uerr
       REAL(rprec), DIMENSION(3) :: q
-      REAL(rprec), ALLOCATABLE, DIMENSION(:) :: X_rand, Y_rand, Z_rand, P_rand
+      REAL(rprec), ALLOCATABLE, DIMENSION(:) :: X_rand, Y_rand, Z_rand, &
+                                                P_rand, R_axis, Z_axis
+      DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:,:)   :: f2d
       DOUBLE PRECISION, ALLOCATABLE, DIMENSION(:,:,:) :: temp3d
 
 #if defined(MPI_OPT)
@@ -47,12 +51,13 @@
 #endif
 
       ! Shared memory variables
-      INTEGER :: win_rateDT, win_rateDDT, win_rateDDHe, win_B_help, win_l3d
+      INTEGER :: win_rateDT, win_rateDDT, win_rateDDHe, win_B_help, &
+                 win_l3d
       LOGICAL,          POINTER, DIMENSION(:,:,:) :: l3d
       DOUBLE PRECISION, POINTER, DIMENSION(:) :: B_help
       DOUBLE PRECISION, POINTER, DIMENSION(:,:,:) :: rateDT, rateDDT, rateDDHe
 
-      REAL(rprec),      PARAMETER :: S_LIM_MAX = 1.0 ! Max S if lplasma_only
+      REAL(rprec),      PARAMETER :: S_LIM_MAX = 0.90 ! Max S if lplasma_only
       DOUBLE PRECISION, PARAMETER :: e_charge  = 1.60217662E-19 !e_c
       DOUBLE PRECISION, PARAMETER :: mHe4      = 6.6464731D-27
       DOUBLE PRECISION, PARAMETER :: mT        = 5.0082671D-27
@@ -101,6 +106,7 @@
 #if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
 #endif
+
       DO s = mystart, myend
          i = MOD(s-1,nr)+1
          j = MOD(s-1,nr*nphi)
@@ -175,21 +181,39 @@
       dphi = phiaxis(nphi)-phiaxis(1)
       dz = zaxis(nz)-zaxis(1)
       IF (myworkid == master) THEN
+         ! We'll calc the roffset helper
+         roffset=0.0
          ! Handle that l3d is on half grid
          l3d(:,nphi,:) = l3d(:,1,:)
          ALLOCATE(n3d(nr,nphi,nz))
          n3d = 0
-         DO s = 1,nparticles_start
-            DO
-               CALL RANDOM_NUMBER(X1_RAND)
-               CALL RANDOM_NUMBER(Y1_RAND)
-               CALL RANDOM_NUMBER(Z1_RAND)
-               q(1) = X1_RAND*dr+raxis(1)
-               q(2) = Y1_RAND*dphi+phiaxis(1)
-               q(3) = Z1_RAND*dz+zaxis(1)
-               i = MIN(MAX(COUNT(raxis < q(1)),2),nr-1)
-               j = MIN(MAX(COUNT(phiaxis < q(2)),1),nphi-1)
-               k = MIN(MAX(COUNT(zaxis < q(3)),2),nz-1)
+         ! Do a check to make sure we asked for enough particles
+         k1 = COUNT(l3d)
+         IF ((nparticles_start < k1) .and. lverb) THEN
+            WRITE(6,'(A)') '  Number of markers less than needed '
+            WRITE(6,'(A,I7)') '     Suggest: ', k1
+            k2 = nparticles_start
+         ELSE
+            WHERE(l3d) n3d=1
+            k2 = nparticles_start-k1
+         END IF
+         ALLOCATE(f2d(nr,nz))
+         DO s = 1,k2
+         	DO
+               ! Random numbers
+               CALL RANDOM_NUMBER(X1_rand) ! s
+               CALL RANDOM_NUMBER(Y1_rand) ! phi
+               CALL RANDOM_NUMBER(Z1_rand) ! u
+               ! Calc j dex
+               j = MIN(MAX(NINT(Y1_rand*nphi),1),nphi-1)
+               ! Calc u = [0,2*pi]
+               utemp = Z1_rand*pi2
+               ! Calc sval =[0,1]
+               rtemp = ABS(X1_rand*X1_rand-roffset)
+               ! Now we need to find the proper point
+               f2d = ((U4D(1,:,j,:)-utemp)**2)*((S4D(1,:,j,:)-rtemp)**2)
+               minik = MINLOC(f2d)
+               i = MIN(MAX(minik(1),2),nr-1); k = MIN(MAX(minik(2),2),nz-1)
                IF (l3d(i,j,k) .and. l3d(i+1, j,   k)   .and. l3d(i-1, j,   k) &
                               .and. l3d(i,   j,   k+1) .and. l3d(i,   j,   k-1) &
                               .and. l3d(i+1, j,   k+1) .and. l3d(i+1, j,   k-1) &
@@ -200,6 +224,7 @@
             END DO
             n3d(i,j,k) = n3d(i,j,k) + 1
          END DO
+         DEALLOCATE(f2d)
 
          ! Now for each voxel we calcualte the starting points
          ALLOCATE(X_rand(nparticles),Y_rand(nparticles),Z_rand(nparticles),P_rand(nparticles))
@@ -303,8 +328,9 @@
             END DO
          END IF
          ! Deallocate and cleanup
-         DEALLOCATE(X_rand,Y_rand,Z_rand,P_rand)
+         DEALLOCATE(X_rand,Y_rand,Z_rand,P_rand,n3d)
          partvmax = SQRT(MAXVAL(2*mu_start/mass)) ! Partvmax from max energy
+         weight = weight*NINT(pi2/phiaxis(nphi)) ! NFP factor
       END IF
 
 #if defined(MPI_OPT)

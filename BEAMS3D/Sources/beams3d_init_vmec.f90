@@ -54,6 +54,7 @@
                            rmns_temp(:,:),zmnc_temp(:,:),&
                            bumns_temp(:,:),bvmns_temp(:,:)
       LOGICAL :: lold_field = .true.  ! If false we attempt to subtract the vacuum field from the VMEC total field
+      INTEGER, PARAMETER :: scaleup=2
 !-----------------------------------------------------------------------
 !     Begin Subroutine
 !-----------------------------------------------------------------------
@@ -125,17 +126,17 @@
          WRITE(6,'(A,F9.5,A,F9.5,A)') '   R       = [',rmin_surf,',',rmax_surf,']'
          WRITE(6,'(A,F8.5,A,F8.5,A)') '   Z       = [',-zmax_surf,',',zmax_surf,']'
          IF (ABS(Itor) > 1E8) THEN
-            WRITE(6,'(A,F7.3,A,F7.3,A)') '   BETA    = ',betatot,';  I  = ',Itor*1E-9,' [GA]'
+            WRITE(6,'(A,F7.2,A,F7.2,A)') '   BETA    = ',betatot,';  I  = ',Itor*1E-9,' [GA]'
          ELSEIF (ABS(Itor) > 1E5) THEN
-            WRITE(6,'(A,F7.3,A,F7.3,A)') '   BETA    = ',betatot,';  I  = ',Itor*1E-6,' [MA]'
+            WRITE(6,'(A,F7.2,A,F7.2,A)') '   BETA    = ',betatot,';  I  = ',Itor*1E-6,' [MA]'
          ELSEIF (ABS(Itor) > 1E2) THEN
-            WRITE(6,'(A,F7.3,A,F7.3,A)') '   BETA    = ',betatot,';  I  = ',Itor*1E-3,' [kA]'
+            WRITE(6,'(A,F7.2,A,F7.2,A)') '   BETA    = ',betatot,';  I  = ',Itor*1E-3,' [kA]'
          ELSE
-            WRITE(6,'(A,F7.3,A,F7.3,A)') '   BETA    = ',betatot,';  I  = ',Itor,' [A]'
+            WRITE(6,'(A,F7.2,A,F7.2,A)') '   BETA    = ',betatot,';  I  = ',Itor,' [A]'
          END IF
-         WRITE(6,'(A,F7.3,A)')        '   AMINOR  = ',reff_eq,' [m]'
-         WRITE(6,'(A,F7.3,A)')        '   PHIEDGE = ',phiedge_eq,' [Wb]'
-         WRITE(6,'(A,F7.3,A)')        '   VOLUME  = ',Volume,' [m^3]'
+         WRITE(6,'(A,F7.2,A)')        '   AMINOR  = ',reff_eq,' [m]'
+         WRITE(6,'(A,F7.2,A)')        '   PHIEDGE = ',phiedge_eq,' [Wb]'
+         WRITE(6,'(A,F7.2,A)')        '   VOLUME  = ',Volume,' [m^3]'
       END IF
 
       ! Load the Vp Spline if using the beams
@@ -283,7 +284,7 @@
       CALL MPI_CALC_MYRANGE(MPI_COMM_LOCAL, 1, nr*nphi*nz, mystart, myend)
 
       IF (mylocalid == mylocalmaster) THEN
-         TE = 0; NE = 0; TI=0; S_ARR=1.5; U_ARR=0; POT_ARR=0; ZEFF_ARR = 1;
+         TE = 0; NE = 0; TI=0; S_ARR=scaleup*scaleup; U_ARR=0; POT_ARR=0; ZEFF_ARR = 1;
       END IF
 #if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
@@ -371,6 +372,8 @@
       
       ! Free variables
       IF (luse_vc) CALL free_virtual_casing(MPI_COMM_BEAMS)
+
+      ! Calculate Gfactor for mgrid
       IF (myworkid == master) THEN
          ! Only master has Gfactor
          ALLOCATE(Gfactor(ns_prof1))
@@ -381,6 +384,74 @@
             ! sflx=s uflx=Zeff
             CALL vmec_ohkawa(sflx,uflx,Gfactor(s)) ! (1-l31)/Zeff
          END DO
+      ENDIF
+
+      ! Expand the VMEC geometric grid for s>1
+      ALLOCATE(rmnc_temp(mnmax,ns*scaleup),zmns_temp(mnmax,ns*scaleup))
+      rmnc_temp(:,1:ns) = rmnc(:,1:ns)
+      zmns_temp(:,1:ns) = zmns(:,1:ns)
+      nv = ntor + 1
+      DO s = 2,ns ! Remove magnetic axis from geometric axis
+         rmnc_temp(1:nv,s) = rmnc_temp(1:nv,s) - rmnc(1:nv,1)
+         zmns_temp(1:nv,s) = zmns_temp(1:nv,s) - zmns(1:nv,1)
+      END DO
+      DO s = ns+1,ns*scaleup
+         rmnc_temp(:,s) = rmnc_temp(:,ns)*REAL(s)/REAL(ns)
+         zmns_temp(:,s) = zmns_temp(:,ns)*REAL(s)/REAL(ns)
+      END DO
+      DO s = 2,ns*scaleup ! Add magnetic axis from geometric axis
+         rmnc_temp(1:nv,s) = rmnc_temp(1:nv,s) + rmnc(1:nv,1)
+         zmns_temp(1:nv,s) = zmns_temp(1:nv,s) + zmns(1:nv,1)
+      END DO
+      IF (lasym) THEN
+         ALLOCATE(rmns_temp(mnmax,ns*scaleup),zmnc_temp(mnmax,ns*scaleup))
+         rmns_temp(:,1:ns) = rmns(:,1:ns)
+         zmnc_temp(:,1:ns) = zmnc(:,1:ns)
+         DO s = 2,ns ! Remove magnetic axis from geometric axis
+            rmns_temp(1:nv,s) = rmns_temp(1:nv,s) - rmns(1:nv,1)
+            zmnc_temp(1:nv,s) = zmnc_temp(1:nv,s) - zmnc(1:nv,1)
+         END DO
+         DO s = ns+1,ns*scaleup
+            rmns_temp(:,s) = rmns_temp(:,ns)*REAL(s)/REAL(ns)
+            zmnc_temp(:,s) = zmnc_temp(:,ns)*REAL(s)/REAL(ns)
+         END DO
+         DO s = 2,ns*scaleup ! Add magnetic axis from geometric axis
+            rmns_temp(1:nv,s) = rmns_temp(1:nv,s) + rmns(1:nv,1)
+            zmnc_temp(1:nv,s) = zmnc_temp(1:nv,s) + zmnc(1:nv,1)
+         END DO
+      END IF
+      DEALLOCATE(rmnc,zmns,bsupumnc,bsupvmnc)
+      ns = ns*scaleup
+      ALLOCATE(rmnc(1:mnmax,1:ns),zmns(1:mnmax,1:ns), &
+         bsupumnc(1:mnmax_nyq,1:ns),bsupvmnc(1:mnmax_nyq,1:ns))
+      rmnc=rmnc_temp; zmns=zmns_temp; bsupumnc=0; bsupvmnc=0
+      DEALLOCATE(rmnc_temp,zmns_temp,rzl_local)
+      IF (lasym) THEN
+         DEALLOCATE(rmns,zmnc,bsupumns,bsupvmns)
+         ALLOCATE(rmns(1:mnmax,1:ns),zmnc(1:mnmax,1:ns), &
+            bsupumns(1:mnmax_nyq,1:ns),bsupvmns(1:mnmax_nyq,1:ns))
+         rmns=rmnc_temp; zmnc=zmns_temp; bsupumns=0; bsupvmns=0
+         DEALLOCATE(rmns_temp,zmnc_temp)
+      END IF
+      DO s = mystart, myend ! Now fill in grid
+         i = MOD(s-1,nr)+1
+         j = MOD(s-1,nr*nphi)
+         j = FLOOR(REAL(j) / REAL(nr))+1
+         k = CEILING(REAL(s) / REAL(nr*nphi))
+         sflx = 0.0
+         IF (S_ARR(i,j,k)<=1.0) CYCLE
+         CALL GetBcyl(raxis_g(i),phiaxis(j),zaxis_g(k),&
+                      br, bphi, bz, SFLX=sflx,UFLX=uflx,info=ier)
+         ! note that s in now rho since we grid different in the outer region
+         if (ier .ne. 0) CYCLE
+         sflx = sflx*sflx*scaleup*scaleup
+         S_ARR(i,j,k) = MAX(sflx,0.0)
+         IF (uflx<0)  uflx = uflx+pi2
+         U_ARR(i,j,k) = uflx
+      END DO
+
+      ! Deallocations
+      IF (myworkid == master) THEN
          CALL read_wout_deallocate
       ELSE
          lwout_opened = .FALSE.
