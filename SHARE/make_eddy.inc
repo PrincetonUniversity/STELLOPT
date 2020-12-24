@@ -20,10 +20,10 @@
 	-check noarg_temp_created -check uninit \
 	-ftrapuv -init=zero,arrays -debug all -I${MKLROOT}/include -mkl 
 
-  LIBS     =  -L${MKLROOT}/lib/intel64 \
+  LIBS =  -L${MKLROOT}/lib/intel64 \
   	      -lmkl_scalapack_lp64 -lmkl_blacs_intelmpi_lp64 \
-	      -lpthread -lm -ldl \
-	      -L$(SCALAPACK_HOME)/lib -lscalapack
+	        -lpthread -lm -ldl \
+	        -L$(SCALAPACK_HOME)/lib -lscalapack
 
 #######################################################################
 #            MPI Options
@@ -34,7 +34,7 @@
   MPI_COMPILE_C = mpicc
   MPI_LINK = mpiifort -shared -fpic
   MPI_RUN = srun
-  MPI_RUN_OPTS = -n 64 -p general -t 5:00:00 -J STELLOPT_BENCH
+  MPI_RUN_OPTS = -n 32 -t 30:00 -J STELLOPT_BENCH
 
 #######################################################################
 #            NAG Options
@@ -150,4 +150,4 @@
 #######################################################################
 #            LIBSTELL Shared Options
 #######################################################################
-LIB_SHARE = -lc -lgfortran -lstdc++ -lmpi -lmpi_mpifh -lz -lc -lm -lpthread $(LIBS) -lc
+LIB_SHARE = -lc -lgfortran -lstdc++ -lmpi -lz -lc -lm -lpthread $(LIBS) -lc
