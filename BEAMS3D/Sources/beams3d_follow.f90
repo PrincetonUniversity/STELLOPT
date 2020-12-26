@@ -178,6 +178,10 @@ SUBROUTINE beams3d_follow
     neut_lines(0, mystart:myend) = .FALSE.
     IF (lbeam) neut_lines(0, mystart:myend) = .TRUE.
 
+    ! Some helpers
+    fact_vsound = 1.5*sqrt(e_charge/plasma_mass)*therm_factor
+    fact_crit = SQRT(2*e_charge/plasma_mass)*(0.75*sqrt_pi*sqrt(plasma_mass/electron_mass))**(1.0/3.0) ! Wesson pg 226 5.4.9
+
     ! Follow Trajectories
     IF (mystart <= nparticles) THEN
         SELECT CASE (TRIM(int_type))
@@ -200,9 +204,7 @@ SUBROUTINE beams3d_follow
                     mymass = mass(l)
                     moment = mu_start(l)
                     my_end = t_end(l)
-                    fact_vsound = 1.5*sqrt(e_charge/plasma_mass)*therm_factor
                     fact_pa   = plasma_mass*plasma_Zavg/(mymass*plasma_Zmean)
-                    fact_crit = SQRT(2*e_charge/plasma_mass)*(0.75*sqrt_pi*sqrt(plasma_mass/electron_mass))**(1.0/3.0) ! Wesson pg 226 5.4.9
                     myv_neut(:) = v_neut(:,myline)
                     IF (lbeam) lneut = .TRUE.
                     CALL out_beams3d_nag(tf_nag,q)
@@ -261,9 +263,7 @@ SUBROUTINE beams3d_follow
                     mybeam = Beam(l)
                     moment = mu_start(l)
                     my_end = t_end(l)
-                    fact_vsound = 1.5*sqrt(e_charge/plasma_mass)*therm_factor
                     fact_pa   = plasma_mass*plasma_Zavg/(mymass*plasma_Zmean)
-                    fact_crit = SQRT(2*e_charge/plasma_mass)*(0.75*sqrt_pi*sqrt(plasma_mass/electron_mass))**(1.0/3.0) ! Wesson pg 226 5.4.9
                     myv_neut(:) = v_neut(:,myline)
                     IF (lbeam) lneut = .TRUE.
                     CALL out_beams3d_nag(tf_nag,q)
@@ -347,9 +347,7 @@ SUBROUTINE beams3d_follow
                     mybeam = Beam(l)
                     moment = mu_start(l)
                     my_end = t_end(l)
-                    fact_vsound = 1.5*sqrt(e_charge/plasma_mass)*therm_factor
                     fact_pa   = plasma_mass*plasma_Zavg/(mymass*plasma_Zmean)
-                    fact_crit = SQRT(2*e_charge/plasma_mass)*(0.75*sqrt_pi*sqrt(plasma_mass/electron_mass))**(1.0/3.0) ! Wesson pg 226 5.4.9
                     myv_neut(:) = v_neut(:,myline)
                     ! Setup timestep
                     !CALL beams3d_calc_dt(q,moment,mymass,dt)
