@@ -17,8 +17,8 @@
  NR = 128
  NZ = 128
  NPHI = 30
- RMIN = 0.436
- RMAX = 2.436
+ RMIN = 1.0
+ RMAX = 2.4
  ZMIN = -1.0
  ZMAX = 1.0
  PHIMIN = 0.0
