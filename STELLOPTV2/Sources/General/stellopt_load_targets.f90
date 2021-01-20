@@ -192,6 +192,10 @@
       ! CURRENT DENSITY <JCURV>
       IF (ANY(sigma_jcurv < bigno)) &
          CALL chisq_jcurv(target_jcurv, sigma_jcurv, ncnt,iflag)
+      ! Radial derivative of B00
+      IF (ANY(sigma_raderb00 < bigno)) &
+         CALL chisq_raderb00(target_raderb00, sigma_raderb00, ncnt,iflag)
+
          
       !------------- COIL GEOMETRY TARGETS ---------------------
       ! Coil lengths

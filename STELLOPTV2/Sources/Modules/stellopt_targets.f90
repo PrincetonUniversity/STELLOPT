@@ -4,7 +4,7 @@
 !     Date:          05/25/2012
 !     Description:   This module contains the STELLOPT target variables.
 !-----------------------------------------------------------------------
-      MODULE stellopt_targets       
+      MODULE stellopt_targets
 !-----------------------------------------------------------------------
 !     Libraries
 !-----------------------------------------------------------------------
@@ -18,10 +18,10 @@
 !            mboz               Poloidal Fourier Content for Boozer
 !            nboz               Toroidal Fourier Content for Boozer
 !            target_phiedge     Target for PHIEDGE
-!            target_curtor      Target for CURTOR      
-!            target_curtor_max  Target for upper limit on CURTOR      
+!            target_curtor      Target for CURTOR
+!            target_curtor_max  Target for upper limit on CURTOR
 !            target_volume	     Target for volume
-!            target_beta        Target for Beta     
+!            target_beta        Target for Beta
 !            target_rbtor	     Target for R*Btor
 !            target_r0   	     Target for Raxis (phi=0)
 !            target_z0   	     Target for Zaxis (phi=0)
@@ -89,13 +89,13 @@
       REAL(rprec) ::  qm_ratio
       REAL(rprec) ::  cutoff_te_line
       REAL(rprec), DIMENSION(nprof) ::  target_press, sigma_press, &
-                                        r_press, z_press, phi_press, s_press  
+                                        r_press, z_press, phi_press, s_press
       REAL(rprec), DIMENSION(nprof) ::  target_pressprime, sigma_pressprime, &
-                                        r_pressprime, z_pressprime, phi_pressprime, s_pressprime  
+                                        r_pressprime, z_pressprime, phi_pressprime, s_pressprime
       REAL(rprec), DIMENSION(nprof) ::  target_te, sigma_te, &
-                                        r_te, z_te, phi_te, s_te  
+                                        r_te, z_te, phi_te, s_te
       REAL(rprec), DIMENSION(nprof) ::  target_ne, sigma_ne, &
-                                        r_ne, z_ne, phi_ne, s_ne  
+                                        r_ne, z_ne, phi_ne, s_ne
       REAL(rprec), DIMENSION(nprof) ::  target_ne_line,sigma_ne_line, &
                                         r0_ne_line, phi0_ne_line, z0_ne_line, &
                                         r1_ne_line, phi1_ne_line, z1_ne_line
@@ -121,13 +121,13 @@
                                         r0_sxr, phi0_sxr, z0_sxr, &
                                         r1_sxr, phi1_sxr, z1_sxr
       REAL(rprec), DIMENSION(nprof) ::  target_ti, sigma_ti, &
-                                        r_ti, z_ti, phi_ti, s_ti   
+                                        r_ti, z_ti, phi_ti, s_ti
       REAL(rprec), DIMENSION(nprof) ::  target_vphi, sigma_vphi, &
-                                        r_vphi, z_vphi, phi_vphi, s_vphi   
+                                        r_vphi, z_vphi, phi_vphi, s_vphi
       REAL(rprec), DIMENSION(nprof) ::  target_iota, sigma_iota, &
-                                        r_iota, z_iota, phi_iota, s_iota   
+                                        r_iota, z_iota, phi_iota, s_iota
       REAL(rprec), DIMENSION(nprof) ::  target_vaciota, sigma_vaciota, &
-                                        r_vaciota, z_vaciota, phi_vaciota, s_vaciota   
+                                        r_vaciota, z_vaciota, phi_vaciota, s_vaciota
       REAL(rprec), DIMENSION(nprof) ::  target_mse, sigma_mse, &
                                         r_mse, z_mse, phi_mse, s_mse,&
                                         a1_mse, a2_mse, a3_mse, a4_mse,&
@@ -137,7 +137,7 @@
       REAL(rprec), DIMENSION(nprof) ::  target_segrog, sigma_segrog, &
                                         target_fluxloop, sigma_fluxloop
       CHARACTER(256)                ::  magdiag_coil
-      REAL(rprec), DIMENSION(nprof) ::  target_extcur, sigma_extcur 
+      REAL(rprec), DIMENSION(nprof) ::  target_extcur, sigma_extcur
       CHARACTER(256)                ::  vessel_string
       REAL(rprec)                   ::  target_vessel, sigma_vessel
       REAL(rprec), DIMENSION(nprof) ::  balloon_theta, balloon_zeta
@@ -173,6 +173,7 @@
       REAL(rprec), DIMENSION(nsd)   ::  target_knosos_dbo,sigma_knosos_dbo
       REAL(rprec), DIMENSION(nsd)   ::  target_stella_q1,sigma_stella_q1
       REAL(rprec), DIMENSION(nsd)   ::  target_stella_q2,sigma_stella_q2
+      REAL(rprec), DIMENSION(nsd)   ::  target_raderb00,sigma_raderb00
       REAL(rprec), DIMENSION(nu_max,nv_max) ::  target_separatrix, sigma_separatrix, &
                                                 r_separatrix, z_separatrix, phi_separatrix
       REAL(rprec), DIMENSION(nu_max,nv_max) ::  target_limiter, sigma_limiter, &
@@ -190,7 +191,7 @@
       INTEGER                            :: nra_ece, nphi_ece
       REAL(rprec), DIMENSION(nsys,3)     :: antennaposition_ece, targetposition_ece,rbeam_ece,rfocus_ece
       CHARACTER(256)                     :: vessel_ece,mirror_ece,targettype_ece,antennatype_ece
-      
+
       INTEGER     ::  numws
       REAL(rprec) ::  target_coil_bnorm, sigma_coil_bnorm
       INTEGER     ::  nu_bnorm,nv_bnorm
@@ -249,9 +250,9 @@
       INTEGER, PARAMETER :: jtarget_press      = 203
       INTEGER, PARAMETER :: jtarget_pressprime = 2033
       INTEGER, PARAMETER :: jtarget_vphi       = 204
-      INTEGER, PARAMETER :: jtarget_iota       = 300  
+      INTEGER, PARAMETER :: jtarget_iota       = 300
       INTEGER, PARAMETER :: jtarget_iprime     = 301
-      INTEGER, PARAMETER :: jtarget_vaciota    = 302  
+      INTEGER, PARAMETER :: jtarget_vaciota    = 302
       INTEGER, PARAMETER :: jtarget_mse        = 401
       INTEGER, PARAMETER :: jtarget_faraday    = 402
       INTEGER, PARAMETER :: jtarget_sxr        = 403
@@ -298,10 +299,12 @@
       INTEGER, PARAMETER :: jtarget_x          = 900
       INTEGER, PARAMETER :: jtarget_y          = 901
       INTEGER, PARAMETER :: jtarget_Rosenbrock_F   = 902
-      
+      INTEGER, PARAMETER :: jtarget_raderb00   = 903
+
+
 
       CONTAINS
-      
+
       SUBROUTINE write_targets(iunit,var_num)
       INTEGER, INTENT(in) :: iunit, var_num
       CHARACTER*(*), PARAMETER ::  out_format = '(5X,A)'
@@ -482,9 +485,11 @@
             WRITE(iunit, out_format) 'Coil Excursion from v Bounds'
          CASE(jtarget_curvature_p2)
             WRITE(iunit, out_format) 'Maximum 2nd Principal Curvature'
+         CASE(jtarget_raderb00)
+            WRITE(iunit, out_format) 'Radial derivative of B00'
       END SELECT
       END SUBROUTINE write_targets
-      
-      
-      
+
+
+
       END MODULE stellopt_targets

@@ -365,6 +365,12 @@ chisq_stella.o : \
       $(STELLA_DIR)/$(LOCTYPE)/stella_stellopt.o
 
 
+chisq_raderb00.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      equil_utils.o 
+      
+
 chisq_dkes.o : \
       stellopt_runtime.o \
       stellopt_targets.o \
