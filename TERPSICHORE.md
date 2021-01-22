@@ -4,6 +4,12 @@ TERPSICHORE
 The TERPSICHORE code calculates ideal kink stability from VMEC
 equilibria.
 
+TERPSCHORE is managed by the Swiss Plasma Center at the Ecole Polytechnique Federale de Lausanne (EPFL).
+STELLOPT only has an interface with it.
+If you want to obtain the source code of TERPSCHORE, please contact edith.grueter@epfl.ch or wilfred.cooper@epfl.ch.
+
+After downloading the source code, you can direct the env var `TERPSCHORE_PATH` to the TERPSCHORE folder and set `LTERPSCHORE=T` in the makefile.
+
 ------------------------------------------------------------------------
 
 ### Theory

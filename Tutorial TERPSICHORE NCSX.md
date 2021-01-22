@@ -6,13 +6,17 @@ equilibrium.
 
 ------------------------------------------------------------------------
 
-\> 1. \_\_**Generate the equilibrium file**\_\_ \> TERPSICHORE in
-standalone mode requires the user to provide a text file (named fort.18)
+## Generate the equilibrium file
+
+TERPSICHORE in standalone mode requires the user to provide a text file (named fort.18)
 which described the VMEC equilibrium. One can run STELLOPT (with kink
 targeting turned on) to generate these files (terpsichore\_eq.ext
 files). In this example we provide one based on the LI383
-equilibrium.[examples/fort.18](examples/fort.18) \> 2. \_\_**Modify and
-recompile TERPSICHORE**\_\_ \> The TERPSICHORE source must be modified
+equilibrium.  [examples/fort.18](examples/fort.18) 
+
+## Modify and recompile TERPSICHORE
+
+The TERPSICHORE source must be modified
 for a given set of parameters. The file to edit is tpr\_modules\_ap.f.
 Edit the header as so
 
@@ -28,8 +32,11 @@ Edit the header as so
            MMAXDF=127
            NMAXDF=31
 
-\> The simply rebuild the code by running the \'make\' command. \> \> 2.
-\_\_**Setup the input file**\_\_ \> With the code compiled you\'ll need
+The simply rebuild the code by running the `make` command.
+
+## Setup the input file
+
+With the code compiled you\'ll need
 to generate an input file. The one below can be used to examine the n=1
 family of modes in the equilibrium. You\'ll notice in the stability mode
 table that not just the n=1 modes are examined. This is because in
@@ -134,13 +141,14 @@ n=\...-5,-2,1,4,7\...
     C   NEV NITMAX         AL0     EPSPAM  IGREEN MPINIT
           1   4500  -0.500E-04   1.000E-04      0      0
     C
-
-\> 3. \_\_**Run the code**\_\_ \> Now we can execute the code by passing
+    
+## Run the code
+Now we can execute the code by passing
 the TERPSICHORE input file to the code through standard in
 
     >> ./tpr_ap.x < terpsichore_input_01
 
-\> First some information from the input files is printed on the screen.
+First some information from the input files is printed on the screen.
 
     1
      ###### TERPSICHORE #########  EQINVM  ######### TERPSICHORE #### 
@@ -171,9 +179,9 @@ the TERPSICHORE input file to the code through standard in
      npwall    awall     ewall     dwall     gwall     drwal     dzwal
         3    1.200E+00 2.000E+00-3.200E-01 5.200E+00 0.000E+00-1.000E-01
     rplmin =  1.0000E-05 xplo =  1.0000E-06 djp =  4.0000E-02 wct =  6.6667E-01 curfac=  1.0000E+00
-    [[code]]
-    > The equilibrium profiles are output VMEC (iota, plasma mass, differential volume, pressure)
-    > [[code format="bash"]]
+    
+The equilibrium profiles are output VMEC (iota, plasma mass, differential volume, pressure)
+
         IOTA      M          VP         P
     0.00E+00 0.00E+00 0.00000000E+00 0.00E+00
     2.25E-01 4.47E+04 2.25268473E+00 5.61E-02
@@ -227,9 +235,9 @@ the TERPSICHORE input file to the code through standard in
     EPS 1.920E-01 EL 1.091E+01 NPER 3 GAM 0.000E+00 ALPHA 0.00E+00
     LMNV 94 LMNL263 LMNB264
     Number of Modes in the Lambda Reconstruction Table:1537
-    [[code]]
-    > The recalculated equilibrium profiles are now output. The differential volume (VVP) should be the same as before. The residual force balance (EQUI) should also be less than 1E-2, otherwise the boozer modes should be increased (except perhaps at the edge)
-    > [[code format="bash"]]
+    
+The recalculated equilibrium profiles are now output. The differential volume (VVP) should be the same as before. The residual force balance (EQUI) should also be less than 1E-2, otherwise the boozer modes should be increased (except perhaps at the edge)
+
     ***** LGIKVM, RECONSTRUCTED EQUILIBRIUM *****
     I         VVP(I)    PVP(I)   PVPI(I)   PARPVI(I)   CJVP(I)    CIVP(I)    EQUI
     1 2.2526847E+00 4.1877E-03-2.1561E-03-0.0000E+00-7.8124E-03-2.0656E-02 8.8773E-01
@@ -280,9 +288,9 @@ the TERPSICHORE input file to the code through standard in
     46 1.9721292E+00-3.0521E-02-3.0509E-02-0.0000E+00-2.2083E-02 1.0907E-01-1.9366E-04
     47 1.9680927E+00-1.8064E-02-1.8047E-02-0.0000E+00-9.3479E-03 6.6335E-02-4.4431E-04
     48 1.9645663E+00 0.0000E+00 0.0000E+00-0.0000E+00 0.0000E+00 0.0000E+00 0.0000E+00
-    [[code]]
-    > The midplane positions of the plasma vacuum interface (PVI) are output. Here the vacuum construction can often fail because the conducting wall has not been sufficiently well built. The code will then stop and print and error message. For NOWALL=1 make sure the value of GWALL lies between the interior and exterior PVI values. If the pseudo-surfaces intersect on surfaces ~1-3, increasing the values of PVAC,QVAC can help. If the intersection occurs for values close to IVAC, decrease PVAC, QVAC.
-    > [[code format="bash"]]
+    
+The midplane positions of the plasma vacuum interface (PVI) are output. Here the vacuum construction can often fail because the conducting wall has not been sufficiently well built. The code will then stop and print and error message. For NOWALL=1 make sure the value of GWALL lies between the interior and exterior PVI values. If the pseudo-surfaces intersect on surfaces ~1-3, increasing the values of PVAC,QVAC can help. If the intersection occurs for values close to IVAC, decrease PVAC, QVAC.
+
     PLASMA-VACUUM INTERFACE AND WALL EXTREMUM POSITIONS
     INTERIOR WALL|INTERIOR PVI|EXTERIOR PVI|EXTERIOR WALL| WALL / PVI
     4.02483E+00 4.16864E+00 6.15511E+00 6.27756E+00 1.13404E+00
@@ -339,9 +347,8 @@ the TERPSICHORE input file to the code through standard in
     PLASMA VOLUME = 8.316995E+01 m^3
     AFVEN FREQUENCY SQUARED x MU_0 x MASS DENSITY = 2.827659E+01
     1
-    [[code]]
-    > 
-    > [[code format="bash"]]
+
+
     ####### TERPSICHORE ######## STABIN ####### TERPSICHORE ######
     NSTA MMS NSMIN NSMAX MODEL
     3 25 -20 22 0
@@ -775,5 +782,3 @@ the TERPSICHORE input file to the code through standard in
     14 7 2.46410908E-03
     20 10 1.15232245E-03
     9 4 4.51602990E-04
-
-\>
