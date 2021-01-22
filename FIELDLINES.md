@@ -122,15 +122,15 @@ name lists should look like:
      ZAXIS = 0.0  0.1 0.001
     /
     &FIELDLINES_INPUT
-     NR = 251                          ! Number of radial gridpoints, overridden if using mgrid
-     NPHI = 36                         ! Number of toroidal gridpoints, overridden if using mgrid
-     NZ = 301                          ! Number of vertical gridpoints, overridden if using mgrid
-     RMIN = 2.5                        ! Minimum extent of radial grid, overridden if using mgrid
-     RMAX = 5.0                        ! Maximum extent of radial grid, overridden if using mgrid
-     ZMIN = -1.5                       ! Minimum extent of vertical grid, overridden if using mgrid
-     ZMAX = 1.5                        ! Maximum extent of radial grid, overridden if using mgrid
-     PHIMIN = 0.0                      ! Minimum extent of toroidal grid, overridden if using mgrid
-     PHIMAX = 0.628                    ! Maximum extent of toroidal grid, overrideen if using mgrid
+     NR = 251                          ! Number of radial gridpoints
+     NPHI = 36                         ! Number of toroidal gridpoints
+     NZ = 301                          ! Number of vertical gridpoints
+     RMIN = 2.5                        ! Minimum extent of radial grid
+     RMAX = 5.0                        ! Maximum extent of radial grid
+     ZMIN = -1.5                       ! Minimum extent of vertical grid
+     ZMAX = 1.5                        ! Maximum extent of vertical grid
+     PHIMIN = 0.0                      ! Minimum extent of toroidal grid, overridden by mgrid or coils file
+     PHIMAX = 0.628                    ! Maximum extent of toroidal grid, overridden by mgrid or coils file
      MU = 0.0                          ! Fieldline diffusion (mu=sqrt(D*tau*2))
      R_START =  3.6  3.7  3.8          ! Radial starting locations of fieldlines
      Z_START =  0.0  0.0  0.0          ! Vertical starting locations of fieldlines
