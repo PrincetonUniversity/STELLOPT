@@ -88,6 +88,7 @@ chisq_coilcrv.o \
 chisq_coilself.o \
 chisq_coiltorvar.o \
 chisq_coilrect.o \
+chisq_coilpoly.o \
 stellopt_neo.o \
 stellopt_fcn.o \
 stellopt_load_targets.o \

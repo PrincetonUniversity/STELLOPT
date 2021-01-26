@@ -61,6 +61,7 @@
       INTEGER, PARAMETER :: nv_max = 361
       INTEGER, PARAMETER :: nsys   = 16
       INTEGER, PARAMETER :: npart_max = 16384
+      INTEGER, PARAMETER :: maxkopoly = 16, maxpolypts = 128
       REAL(rprec) ::  target_phiedge, sigma_phiedge
       REAL(rprec) ::  target_curtor, sigma_curtor
       REAL(rprec) ::  target_curtor_max, sigma_curtor_max
@@ -190,7 +191,7 @@
       REAL(rprec) ::  target_curvature_p2, sigma_curvature_P2
       REAL(rprec), DIMENSION(nigroup)    :: target_coillen, sigma_coillen
       REAL(rprec), DIMENSION(nigroup)    :: target_coilsegvar, sigma_coilsegvar
-      INTEGER     :: npts_biot, npts_clen, npts_torx, npts_curv, npts_csep, npts_cself, npts_crect
+      INTEGER     :: npts_biot, npts_clen, npts_torx, npts_curv, npts_csep, npts_cself, npts_crect, npts_cpoly
       REAL(rprec), DIMENSION(nigroup)    :: target_coilcrv,  sigma_coilcrv
       REAL(rprec), DIMENSION(nigroup)    :: target_coilself, sigma_coilself
       REAL(rprec)                        :: target_coilsep,  sigma_coilsep
@@ -198,6 +199,8 @@
       REAL(rprec), DIMENSION(nigroup)    :: coilrectvmin, coilrectvmax, coilrectduu, coilrectdul
       REAL(rprec), DIMENSION(nigroup)    :: target_coilrect, sigma_coilrect
       REAL(rprec) :: coilrectpfw
+      REAL(rprec), DIMENSION(nigroup)    :: target_coilpoly, sigma_coilpoly
+      REAL(rprec), DIMENSION(maxpolypts,maxkopoly) :: kopolyu, kopolyv
 
       INTEGER, PARAMETER :: jtarget_aspect     = 100
       INTEGER, PARAMETER :: jtarget_rbtor      = 1001
@@ -273,6 +276,7 @@
       INTEGER, PARAMETER :: jtarget_coilsegvar = 618
       INTEGER, PARAMETER :: jtarget_coiltorvar = 619
       INTEGER, PARAMETER :: jtarget_coilrect   = 620
+      INTEGER, PARAMETER :: jtarget_coilpoly   = 621
       INTEGER, PARAMETER :: jtarget_x          = 900
       INTEGER, PARAMETER :: jtarget_y          = 901
       INTEGER, PARAMETER :: jtarget_Rosenbrock_F   = 902
@@ -436,6 +440,8 @@
             WRITE(iunit, out_format) 'Number of Coil Self-intersections'
          CASE(jtarget_coilrect)
             WRITE(iunit, out_format) 'Coil Excursion from v Bounds'
+         CASE(jtarget_coilpoly)
+            WRITE(iunit, out_format) 'Coil Intrusions into Polygonal Keepout Regions'
          CASE(jtarget_curvature_p2)
             WRITE(iunit, out_format) 'Maximum 2nd Principal Curvature'
       END SELECT
