@@ -25,6 +25,7 @@
                                  U_ARR, POT_ARR, POT_spl_s, nne, nte, nti, npot, &
                                  ZEFF_spl_s, nzeff, ZEFF_ARR, req_axis, zeq_axis, &
                                  phiedge_eq, reff_eq
+      USE beams3d_lines, ONLY: GFactor, ns_prof1
       USE wall_mod, ONLY: wall_load_mn, wall_info,vertex,face
       USE mpi_params
       USE mpi_inc
@@ -124,17 +125,17 @@
          WRITE(6,'(A,F9.5,A,F9.5,A)') '   R       = [',rmin_surf,',',rmax_surf,']'
          WRITE(6,'(A,F8.5,A,F8.5,A)') '   Z       = [',-zmax_surf,',',zmax_surf,']'
          IF (ABS(Itor) > 1E8) THEN
-            WRITE(6,'(A,F7.3,A,F7.3,A)') '   BETA    = ',betatot,';  I  = ',Itor*1E-9,' [GA]'
+            WRITE(6,'(A,F7.2,A,F7.2,A)') '   BETA    = ',betatot,';  I  = ',Itor*1E-9,' [GA]'
          ELSEIF (ABS(Itor) > 1E5) THEN
-            WRITE(6,'(A,F7.3,A,F7.3,A)') '   BETA    = ',betatot,';  I  = ',Itor*1E-6,' [MA]'
+            WRITE(6,'(A,F7.2,A,F7.2,A)') '   BETA    = ',betatot,';  I  = ',Itor*1E-6,' [MA]'
          ELSEIF (ABS(Itor) > 1E2) THEN
-            WRITE(6,'(A,F7.3,A,F7.3,A)') '   BETA    = ',betatot,';  I  = ',Itor*1E-3,' [kA]'
+            WRITE(6,'(A,F7.2,A,F7.2,A)') '   BETA    = ',betatot,';  I  = ',Itor*1E-3,' [kA]'
          ELSE
-            WRITE(6,'(A,F7.3,A,F7.3,A)') '   BETA    = ',betatot,';  I  = ',Itor,' [A]'
+            WRITE(6,'(A,F7.2,A,F7.2,A)') '   BETA    = ',betatot,';  I  = ',Itor,' [A]'
          END IF
-         WRITE(6,'(A,F7.3,A)')        '   AMINOR  = ',reff_eq,' [m]'
-         WRITE(6,'(A,F7.3,A)')        '   PHIEDGE = ',phiedge_eq,' [Wb]'
-         WRITE(6,'(A,F7.3,A)')        '   VOLUME  = ',Volume,' [m^3]'
+         WRITE(6,'(A,F7.2,A)')        '   AMINOR  = ',reff_eq,' [m]'
+         WRITE(6,'(A,F7.2,A)')        '   PHIEDGE = ',phiedge_eq,' [Wb]'
+         WRITE(6,'(A,F7.2,A)')        '   VOLUME  = ',Volume,' [m^3]'
       END IF
 
       ! Load the Vp Spline if using the beams
@@ -178,8 +179,10 @@
       IF (lcreate_wall) THEN
          lvessel = .TRUE.  ! Do this so the other parts of the code know there is a vessel
          k = ns
-         CALL wall_load_mn(DBLE(rmnc(1:mnmax,k)),DBLE(zmns(1:mnmax,k)),DBLE(xm),-DBLE(xn),mnmax,120,120,COMM=MPI_COMM_BEAMS)
-         IF (lverb) CALL wall_info(6)
+         i = 120
+         j = 180
+         CALL wall_load_mn(DBLE(rmnc(1:mnmax,k)),DBLE(zmns(1:mnmax,k)),DBLE(xm),-DBLE(xn),mnmax,i,j,COMM=MPI_COMM_LOCAL)
+         !IF (lverb) CALL wall_info(6)
          !IF (mylocalid /= master) DEALLOCATE(vertex,face)
       END IF
 
@@ -277,32 +280,7 @@
       END IF
       
       ! Break up the Work
-      chunk = FLOOR(REAL(nr*nphi*nz) / REAL(numprocs_local))
-      mystart = mylocalid*chunk + 1
-      myend = mystart + chunk - 1
-
-      ! This section sets up the work so we can use ALLGATHERV
-#if defined(MPI_OPT)
-      CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
-      IF (ALLOCATED(mnum)) DEALLOCATE(mnum)
-      IF (ALLOCATED(moffsets)) DEALLOCATE(moffsets)
-      ALLOCATE(mnum(numprocs_local), moffsets(numprocs_local))
-      CALL MPI_ALLGATHER(chunk,1,MPI_INTEGER,mnum,1,MPI_INTEGER,MPI_COMM_LOCAL,ierr_mpi)
-      CALL MPI_ALLGATHER(mystart,1,MPI_INTEGER,moffsets,1,MPI_INTEGER,MPI_COMM_LOCAL,ierr_mpi)
-      i = 1
-      DO
-         IF ((moffsets(numprocs_local)+mnum(numprocs_local)-1) == nr*nphi*nz) EXIT
-         IF (i == numprocs_local) i = 1
-         mnum(i) = mnum(i) + 1
-         moffsets(i+1:numprocs_local) = moffsets(i+1:numprocs_local) + 1
-         i=i+1
-      END DO
-      mystart = moffsets(mylocalid+1)
-      chunk  = mnum(mylocalid+1)
-      myend   = mystart + chunk - 1
-      DEALLOCATE(mnum)
-      DEALLOCATE(moffsets)
-#endif
+      CALL MPI_CALC_MYRANGE(MPI_COMM_LOCAL, 1, nr*nphi*nz, mystart, myend)
 
       IF (mylocalid == mylocalmaster) THEN
          TE = 0; NE = 0; TI=0; S_ARR=1.5; U_ARR=0; POT_ARR=0; ZEFF_ARR = 1;
@@ -394,6 +372,15 @@
       ! Free variables
       IF (luse_vc) CALL free_virtual_casing(MPI_COMM_BEAMS)
       IF (myworkid == master) THEN
+         ! Only master has Gfactor
+         ALLOCATE(Gfactor(ns_prof1))
+         DO s = 1, ns_prof1
+            sflx = REAL(s-1 + 0.5)/ns_prof1 ! Half grid rho
+            sflx = sflx*sflx
+            CALL EZspline_interp(ZEFF_spl_s,sflx,uflx,ier)
+            ! sflx=s uflx=Zeff
+            CALL vmec_ohkawa(sflx,uflx,Gfactor(s)) ! (1-l31)/Zeff
+         END DO
          CALL read_wout_deallocate
       ELSE
          lwout_opened = .FALSE.

@@ -174,6 +174,13 @@
                case ("-full")
                    nruntype = runtype_full
                    lauto = .true.
+               case ("-field_start")
+                   lfield_start = .true.
+                   i = i + 1
+                   CALL GETCARG(i,restart_string,numargs)
+                   i = i + 1
+                   CALL GETCARG(i,args(i),numargs)
+                   READ(args(i),*,IOSTAT=ier) line_select
                case ("-help","-h") ! Output Help message
                   WRITE(6,'(a,f5.2)') 'FIELDLINES Version ',FIELDLINES_VERSION
                   write(6,*)' Fieldline Tracing Code'
@@ -188,6 +195,7 @@
                   write(6,*)'     -coil file:    Coils. File (for vacuum)'
                   write(6,*)'     -nescoil file: NESCOIL File (for vacuum)'
                   !write(6,*)'     -restart ext:  FIELDLINES HDF5 extension.'
+                  write(6,*)'     -field_start file line:  Restart from a field line.'
                   write(6,*)'     -axis          Coil on mag_axis with curtor'
                   write(6,*)'     -full          Full Auto calculation'
                   write(6,*)'     -vac           Only vacuum field'
@@ -296,6 +304,10 @@
       CALL MPI_BCAST(ledge_start,1,MPI_LOGICAL, master, MPI_COMM_FIELDLINES,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_main',ierr_mpi)
       CALL MPI_BCAST(lmodb,1,MPI_LOGICAL, master, MPI_COMM_FIELDLINES,ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_main',ierr_mpi)
+      CALL MPI_BCAST(lfield_start,1,MPI_LOGICAL, master, MPI_COMM_FIELDLINES,ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_main',ierr_mpi)
+      CALL MPI_BCAST(line_select,1,MPI_INTEGER, master, MPI_COMM_FIELDLINES,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_main',ierr_mpi)
       CALL MPI_BCAST(nruntype,1,MPI_INTEGER, master, MPI_COMM_FIELDLINES,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_main',ierr_mpi)

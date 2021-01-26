@@ -1,4 +1,5 @@
 ObjectFiles = \
+vmec_ohkawa.o \
 common_factor.o \
 suzuki_sigma.o \
 wall_mod_new.o \

@@ -78,6 +78,7 @@
       INTEGER, INTENT(in) :: ithread
       LOGICAL :: lexist
       INTEGER :: i, iunit, local_master
+      CHARACTER(LEN=1000) :: line
       ! Initializations
       local_master = 0
       nr     = 101
@@ -114,7 +115,12 @@
          !OPEN(UNIT=iunit,FILE=TRIM(filename),STATUS='old',FORM='formatted')
          IF (istat /= 0) CALL handle_err(FILE_OPEN_ERR,'fieldlines_input in: input.'//TRIM(id_string),istat)
          READ(iunit,NML=fieldlines_input,IOSTAT=istat)
+         IF (istat /= 0) THEN
+            backspace(iunit)
+            read(iunit,fmt='(A)') line
+            write(6,'(A)') 'Invalid line in namelist: '//TRIM(line)
          IF (istat /= 0) CALL handle_err(NAMELIST_READ_ERR,'fieldlines_input in: input.'//TRIM(id_string),istat)
+         END IF
          CLOSE(iunit)
          nlines = 0
          i = 1

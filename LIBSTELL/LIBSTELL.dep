@@ -1,5 +1,9 @@
 # Microsoft Developer Studio Generated Dependency File, included by LIBSTELL.mak
       
+vmec_ohkawa.o :  \
+      stel_kinds.o \
+      read_wout_mod.o
+      
 adas_mod_parallel.o :  \
       mpi_inc.o \
       mpi_sharmem.o
@@ -1014,6 +1018,7 @@ mddc_T.o : \
       
 
 mgrid_mod.o : \
+      mpi_sharmem.o \
       mpi_inc.o \
       v3_utilities.o \
       ezcdf.o \

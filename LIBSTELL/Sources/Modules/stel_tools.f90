@@ -2451,6 +2451,15 @@
       s = coord(1)
       th = coord(2)
       phi = coord(3)
+      ! suppose nfp = 4, then:  \phi \in -pi/2 to pi/2: phi goes to phi*nfp
+      !                         \phi \in pi/2 to pi: phi goes to (phi - pi/2)* nfp
+      !                         \phi \in pi to 3*pi/2: phi goes to (phi - pi)* nfp
+      !                         \phi \in 3*pi/2 to 2*pi: phi goes to (phi - 3*pi/2)* nfp
+      ! at 2pi/nfp = pi/2   (-)  : phi*nfp     at pi/2   (+): 0*nfp
+      !  at pi     (-)  : phi*nfp/2   at pi     (+): 0*nfp
+      !  at 3*pi/2 (-)  : phi*nfp/2   at 3*pi/2 (+): 0*nfp
+      !  at 2*pi   (-)  : phi*nfp/2   at 2*pi   (+): 0*nfp
+
       phi = MOD(phi,pi2/nfp)*nfp
       IF (phi < 0) THEN
          phi = -MOD(ABS(phi),pi2)
@@ -2467,8 +2476,14 @@
       n1 = 0
       rho_val = SQRT(s)
       DO WHILE(ABS(dth) >= search_tol .and. n1 < 500)
-         IF (th < 0) th = th + pi2
-         IF (th > pi2) th = MOD(th,pi2)
+         IF (th < 0) then
+           th = th + pi2
+           th1 = th1 + pi2
+         end if
+         IF (th > pi2) then
+           th = MOD(th,pi2)
+           th1 = th1 - pi2
+         end if
          !CALL EZSpline_interp(L_spl,th,phi,rho_val,lam,ier)
          !CALL EZSpline_interp(Lu_spl,th,phi,rho_val,dlam,ier)
          CALL lookupgrid3d(th,phi,rho_val,i,j,k,hx,hy,hz,hxi,hyi,hzi,xparam,yparam,zparam)
@@ -2480,9 +2495,12 @@
                          hx, hxi, hy, hyi, hz, hzi, &
                          LU4D(1,1,1,1), nx1, nx2, nx3)
          dlam = fval(1)
+         ! JCS - how does this behave near the th~th1~2pi boundary?
          dth = -(th + lam - th1)/(one+dlam)
          n1 = n1 + 1
+!         write (*,'(A,I4,(2es22.12))') "<--n1,th,dth= ",n1,th,dth
          th = th + 0.5*dth
+!         if (n1 .eq. 500) write (*,'(A,(3es22.12))') "<--1 = 500,s,th,phi= ",s,th,phi
       END DO
       coord(1) = s
       coord(2) = th

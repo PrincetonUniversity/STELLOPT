@@ -31,21 +31,60 @@ c                    differently.
       INTEGER :: MPI_COMM_DIAGNO = 332                           !communicator for BOOZ_XFORM code
       INTEGER :: MPI_COMM_PARVMEC = 101                           !communicator for PARVMEC code
 
-!DEC$ IF DEFINED (MPI_OPT)
       CONTAINS
       
       SUBROUTINE mpi_stel_abort(error)
+#if defined(MPI_OPT)
       USE MPI
+#endif
       IMPLICIT NONE        
       INTEGER, INTENT(in)                 :: error
       INTEGER                             :: length, temp
       CHARACTER(LEN=MPI_MAX_ERROR_STRING) :: message
+#if defined(MPI_OPT)
       CALL MPI_ERROR_STRING(error,message,length,temp)
       WRITE(6,*) '!!!!!!!!!!!!MPI_ERROR DETECTED!!!!!!!!!!!!!!'
       WRITE(6,*) '  MESSAGE: ',message(1:length)
       WRITE(6,*) '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
       CALL FLUSH(6) 
+#else
+      WRITE(6,*) '!!!!!!!!!!!!MPI_ERROR DETECTED!!!!!!!!!!!!!!'
+      WRITE(6,*) '  MPI_STEL_ABORT CALLED BUT NO MPI'
+      WRITE(6,*) '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+#endif
       !CALL MPI_ABORT(MPI_COMM_STEL,1,temp)
-      END SUBROUTINE
-!DEC$ ENDIF  
+      END SUBROUTINE mpi_stel_abort
+
+      SUBROUTINE MPI_CALC_MYRANGE(comm,n1,n2,mystart,myend)
+#if defined(MPI_OPT)
+      USE mpi
+#endif
+      IMPLICIT NONE
+      INTEGER, INTENT(inout) :: comm
+      INTEGER, INTENT(in) :: n1, n2
+      INTEGER, INTENT(out) :: mystart, myend
+      INTEGER :: delta, local_size, local_rank, istat, maxend, k, i
+      mystart = n1; myend = n2
+#if defined(MPI_OPT)
+      CALL MPI_COMM_SIZE( comm, local_size, istat)
+      CALL MPI_COMM_RANK( comm, local_rank, istat )
+      delta = CEILING(REAL(n2-n1+1)/REAL(local_size))
+      mystart = n1 + local_rank*delta
+      myend   = mystart + delta - 1
+      maxend = local_size*delta
+      IF (maxend>n2) THEN
+         k = maxend-n2
+         DO i = (local_size-k), local_size-1
+            IF (local_rank > i) THEN
+                  mystart = mystart - 1
+                  myend   = myend - 1
+            ELSEIF (local_rank==i) THEN
+                  myend = myend - 1
+            END IF
+         END DO
+      END IF
+#endif
+      RETURN
+      END SUBROUTINE MPI_CALC_MYRANGE
+
       END MODULE mpi_params
