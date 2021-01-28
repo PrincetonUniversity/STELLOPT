@@ -42,6 +42,7 @@
       INTEGER :: i,j,k,ier, iunit, nextcur_in, nshar
       INTEGER :: bcs1(2), bcs2(2), bcs3(2), bcs1_s(2)
       REAL(rprec) :: br, bphi, bz, ti_temp, vtemp
+      REAL(rprec), DIMENSION(:), ALLOCATABLE :: R_wall_temp
 !-----------------------------------------------------------------------
 !     External Functions
 !          A00ADF               NAG Detection
@@ -280,6 +281,18 @@
       ! Load vessel if not done already vessel
       IF (lvessel .and. (.not. lwall_loaded)) THEN
          CALL wall_load_txt(TRIM(vessel_string),ier,MPI_COMM_BEAMS)
+      END IF
+      ! Do a check either way
+      IF (lverb .and. lvessel) THEN
+         ALLOCATE(R_wall_temp(nvertex))
+         FORALL (i = 1:nvertex) R_wall_temp(i) = SQRT(vertex(i,1)*vertex(i,1)+vertex(i,2)*vertex(i,2))
+         IF ((MINVAL(R_wall_temp)<rmin) .or. &
+             (MAXVAL(R_wall_temp)>rmax) .or. &
+             (MINVAL(vertex(:,3))<zmin) .or. &
+             (MAXVAL(vertex(:,3))>zmax)) THEN
+            WRITE(6,'(A)') '   WALL OUTSIDE GRID DOMAIN!'
+         END IF
+         DEALLOCATE(R_wall_temp)
       END IF
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
