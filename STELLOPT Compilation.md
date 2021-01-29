@@ -10,6 +10,9 @@ The STELLOPT Suite compiles a subset of included codes and can link to
 precompiled codes (expanding it\'s capabilities). STELLOPT is maintained
 using git. The repository is maintained at GitHub.
 
+To use the MANGO library of optimization algorithms in STELLOPT,
+you should first obtain and build MANGO following the [instructions here](https://hiddensymmetries.github.io/mango/gettingStarted.html).
+
 Get source code
 ----------
 

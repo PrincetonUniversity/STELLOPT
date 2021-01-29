@@ -14,6 +14,7 @@ Table of Contents
     * [LMDIF](#lmdif) 
     * [GADE](#gade) 
     * [PSO](#pso)
+    * [MANGO algorithms](#mango)
     * [ONE_ITER](#one_iter)
     * [Mapping (gridded)](#mapping-gridded) 
     * [Mapping (hyperplane)](#mapping-hyperplane) 
@@ -166,6 +167,15 @@ Particle Swarm evolution.
 | XTOL | Desired relative error in approximate solution. | 
 | EPSFCN | Ratio of global attractor to local (local = 1.0) |
 | FACTOR | Scaling factor for maximum velocity|
+
+### MANGO algorithms
+
+Over 30 additional optimization algorithms are available in STELLOPT
+via the [MANGO library](https://hiddensymmetries.github.io/mango/index.html),
+which includes interfaces to the PETSc, GSL, NLOpt, and HOPSPACK packages. To use
+one of these algorithms, you must link to MANGO when building STELLOPT,
+and then set OPT_TYPE equal to one of the MANGO algorithms, e.g. 'petsc_pounders'.
+For more details, see the [STELLOPT MANGO documentation](STELLOPT MANGO algorithms).
 
 ### ONE_ITER
 

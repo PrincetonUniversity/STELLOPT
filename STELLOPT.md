@@ -3,7 +3,7 @@
 STELLOPT
 ========
 
-The STELLOPT code is design to optimize 3D MHD equilibria to a set of
+The STELLOPT code is designed to optimize 3D MHD equilibria for a set of
 target physics parameters encompassing stellarator design and 3D
 equilibrium reconstruction. It is currently interfaced to the
 [VMEC](VMEC) 3D equilibrium solver.
@@ -33,16 +33,19 @@ etc.) or non-linear functions of the equilibrium itself (stability,
 particle transport, etc). The function used to fit these targets is the
 MHD equilibrium itself. Here the input parameters to the equilibrium
 serve as a set of coefficients parameterizing our non-linear fit
-function. The code uses either a modified
-[Levenberg-Marquardt algorithm](http://en.wikipedia.org/wiki/Levenberg%E2%80%93Marquardt_algorithm),
-[genetic algorithm](http://en.wikipedia.org/wiki/Genetic_algorithm), or
-[differential evolution](http://en.wikipedia.org/wiki/Differential_evolution)
-to find a best fit set of equilibrium inputs to the set of desired
-targets. The quality of fit is determined by the Chi-squared
+function. 
+The quality of fit is determined by the Chi-squared
 metric
 \$$ \chi_i^2=\frac{\left(f_i^{target}-f_i^{equilbria}\right)^2 }{\sigma_i^2} .$$
 The sigma here represents the tolerance of the target value. The goal of
 the code is to minimize the total chi-squared value.
+STELLOPT natively provides a few optimization algorithms: a modified
+[Levenberg-Marquardt algorithm](http://en.wikipedia.org/wiki/Levenberg%E2%80%93Marquardt_algorithm),
+[genetic algorithm](http://en.wikipedia.org/wiki/Genetic_algorithm), and
+[differential evolution](http://en.wikipedia.org/wiki/Differential_evolution).
+Over 30 more optimization algorithms are available if you
+build STELLOPT with the [MANGO library](https://hiddensymmetries.github.io/mango/),
+discussed in [more detail here](STELLOPT MANGO algorithms).
 
 ![STELLOPT NCSX Reconstruction](images/stellopt_example.jpg)
 
@@ -177,6 +180,8 @@ invoked durring the run.
 [Compiling STELLOPT](STELLOPT Compilation)
 
 [The STELLOPT OPTIMUM namelist](STELLOPT Input Namelist)
+
+[STELLOPT MANGO algorithms](STELLOPT MANGO algorithms)
 
 [Boundary Representations Explained](STELLOPT Fixed Boundary Optimization)
 
