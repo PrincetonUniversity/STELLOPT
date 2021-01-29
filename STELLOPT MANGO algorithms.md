@@ -68,13 +68,13 @@ as discussed in more detail below.
 
 The variable `AXIS_INIT_OPTION` affects how the magnetic axis in VMEC is initialized.
 Available settings are `"previous"`, `"mean"`, `"midpoint"`, `"input"`, and `"vmec"`.
-The default value is `"previous"`. For `"previous"`, the initial guess for the next VMEC calculation will be the             
-final axis from the previous VMEC calculation on this processor. This is often an excellent    
-guess, but it has the downside that it makes the objective function slightly                   
-dependent on the history of previous evaluations of the objective function.                    
-This can be a problem when evaluating the finite-difference Jacobian, where                    
-small differences in the objective function matter a lot. This history-dependence              
-can also introduce dependence on the number of MPI processes, which may be                     
+The default value is `"previous"`. For `"previous"`, the initial guess for the next VMEC calculation will be the
+final axis from the previous VMEC calculation on this processor. This is often an excellent
+guess, but it has the downside that it makes the objective function slightly
+dependent on the history of previous evaluations of the objective function.
+This can be a problem when evaluating the finite-difference Jacobian, where
+small differences in the objective function matter a lot. This history-dependence
+can also introduce dependence on the number of MPI processes, which may be
 undesirable. It is STRONGLY RECOMMENDED that you set `AXIS_INIT_OPTION` to something
 other than `"previous"` to avoid these problems. A recommended setting is `"vmec"`,
 which invokes VMEC's internal mechanism for initializing the axis shape as a deterministic
