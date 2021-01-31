@@ -21,7 +21,7 @@
 # Crutch for broken module vars
   NETCDF_F = $(NETCDF_FORTRAN_HOME)
   NETCDF_C = $(NETCDF_C_HOME)
-  HDF5_HOME = $(HDF5_PARALLEL_HOME)
+  #HDF5_HOME = $(HDF5_PARALLEL_HOME)
   #NETCDF_F = /usr/pppl/gcc/6.1-pkgs/netcdf-fortran-4.4.4
   #NETCDF_C = /usr/pppl/gcc/6.1-pkgs/netcdf-c-4.4.1
 
@@ -122,7 +122,7 @@
 #######################################################################
 #            TERPSICHORE Options
 #######################################################################
-  LTERPSICHORE= F
+  LTERPSICHORE= T
   TERPSICHORE_INC = -I$(TERPSICHORE_PATH)
   TERPSICHORE_DIR = $(TERPSICHORE_PATH)
   LIB_TERPSICHORE = libterpsichore.a
@@ -141,7 +141,7 @@
 #######################################################################
 #            REGCOIL Options
 #######################################################################
-  LREGCOIL= T
+  LREGCOIL= F
   REGCOIL_DIR = $(REGCOIL_PATH)
   REGCOIL_INC = -I$(REGCOIL_DIR) 
   LIB_REGCOIL = libregcoil.a
