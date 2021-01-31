@@ -80,20 +80,21 @@
                CALL safe_open(iunit_eq,ier,'terpsichore_eq.'//TRIM(proc_string),'unknown','formatted')
                WRITE(iunit_eq,840)wb_vmec,gamma_vmec,1./REAL(NFP),0.,mnmax_vmec,nrad,mpol_vmec,&
                                ntor_vmec,1,1,itfsq_vmec,niter_vmec,0
+               pbpc=0; pppc=0
                DO ik = 1, nrad
                   DO mn = 1, mnmax_vmec
-                     sigc=0; tauc=0; pbpc=0; pppc=0
                      IF (xm_vmec(mn) == 0 .and. xn_vmec(mn) == 0) THEN
-                        sigc = 1
-                        tauc = 1
+                        sigc = 1;  tauc = 1
+                     ELSE
+                        sigc = 0;  tauc = 0
                      END IF
                      WRITE(iunit_eq,850) xm_vmec(mn), xn_vmec(mn), rmnc_vmec(mn,ik), zmns_vmec(mn,ik), gmnc_vmec(mn,ik)
                      WRITE(iunit_eq,850) sigc ,tauc, pbpc, pppc
-                  END DO
-               END DO
+                  END DO !mn
+               END DO !ik
                WRITE(iunit_eq,850)(iota_vmec(ik),mass_vmec(ik),pres_vmec(ik)*rmu0,-phip_vmec(ik),vp_vmec(ik),ik=1,nrad)
                CLOSE(iunit_eq)
-            END IF
+            END IF !MPI root
 
             ! This section divides up the work for parallel execution
             mystart = 1; myend = nsys; mypace = 1
@@ -218,7 +219,7 @@
       END SELECT
       IF (lscreen) WRITE(6,'(a)') ' -------------------------  KINK STABILITY DONE  ----------------------'
       RETURN
- 840  FORMAT(1x,1pe22.12,1x,1p3e12.5,8i4,i1)
+ 840  FORMAT(1x,1pe22.12,1x,1p3e15.5,8i6,i3)
  850  FORMAT(1x,1p5e22.14)
 !----------------------------------------------------------------------
 !     END SUBROUTINE
