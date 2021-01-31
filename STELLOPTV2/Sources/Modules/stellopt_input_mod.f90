@@ -95,8 +95,8 @@
 !            lah_f_opt          Logical array to control AH_AUX_F variation
 !            lat_f_opt          Logical array to control AT_AUX_F variation
 !            lcoil_spline       Logical array to control coil spline control point variation
-!            lwindsurf          Logical to embed splined coils in a winding surface
-!            windsurfname       Character string naming file containing winding surface
+!            lwindsurf          Logical array to embed splined coils in winding surfaces
+!            windsurfname       Character string array naming files containing winding surfaces
 !            fixedcoilname      Character string naming optional file containing fixed-geometry coils
 !            lbound_opt         Logical array to control Boundary variation
 !            lrho_opt           Logical array to control HB Boundary variation
@@ -287,7 +287,7 @@
                          rbc_min, rbc_max, zbs_min, zbs_max, &
                          rbs_min, rbs_max, zbc_min, zbc_max, &
                          mboz, nboz, rho_exp, &
-                         coil_type, &
+                         coil_type, coil_surf, &
                          coil_splinesx,coil_splinesy,coil_splinesz,&
                          coil_splinefx,coil_splinefy,coil_splinefz,&
                          coil_splinefx_min,coil_splinefy_min,coil_splinefz_min,&
@@ -424,7 +424,7 @@
       INTEGER, INTENT(out) :: istat
       INTEGER, INTENT(in) :: ithread
       LOGICAL :: lexist
-      INTEGER :: i, ierr, iunit, local_master
+      INTEGER :: i, ierr, iunit, local_master, isurf
       CHARACTER(LEN=1000) :: line
 
       ! Variables used in regcoil section to parse nescin spectrum
@@ -491,7 +491,7 @@
       lmode_opt(:,:)      = .FALSE.
       laxis_opt(:)        = .FALSE.
       lcoil_spline(:,:)   = .FALSE.
-      lwindsurf           = .FALSE.
+      lwindsurf(:)        = .FALSE.
       dphiedge_opt    = -1.0
       dcurtor_opt     = -1.0
       dpscale_opt     = -1.0
@@ -678,9 +678,10 @@
       coil_splinefz(:,:) = 0
       coil_nctrl(:)  = 0
       coil_type(:)    = 'U'    ! Default to "unknown"
-      windsurfname    = ''
-      windsurf%mmax   = -1
-      windsurf%nmax   = -1
+      coil_surf(:)    = 1      ! Default to 1st winding surface for back-compat
+      windsurfname(:) = ''
+      windsurf(:)%mmax   = -1
+      windsurf(:)%nmax   = -1
       fixedcoilname   = ''
       mboz            = 64
       nboz            = 64
@@ -1031,11 +1032,14 @@
       IF (ANY(ANY(lcoil_spline,2),1)) THEN
          lcoil_geom = .true.
 
-         IF (LEN_TRIM(windsurfname).gt.0) THEN
-            CALL read_winding_surface(windsurfname, ierr)
-            IF (ierr.ne.0) CALL handle_err(CWS_READ_ERR, windsurfname, ierr)
-            lwindsurf = .TRUE.
-         ENDIF
+         DO isurf=1,maxwindsurf
+            IF (LEN_TRIM(windsurfname(isurf)).gt.0) THEN
+               CALL read_winding_surface(windsurfname(isurf), isurf, ierr)
+               IF (ierr.ne.0) CALL handle_err(CWS_READ_ERR, &
+                    windsurfname(isurf), ierr)
+               lwindsurf(isurf) = .TRUE.
+            ENDIF
+         ENDDO !isurf
 
          ! Count knots, error check
          DO i=1,nigroup
@@ -1045,7 +1049,7 @@
                  CALL handle_err(KNOT_DEF_ERR, 'read_stellopt_input', n)
             IF (COUNT(coil_splinesy(i,:) >= 0.0) - 4 .NE. coil_nctrl(i)) &
                  CALL handle_err(KNOT_MISMATCH_ERR, 'read_stellopt_input', coil_nctrl(i))
-            IF ((.NOT.lwindsurf) .AND. (COUNT(coil_splinesz(i,:) >= 0.0) - 4 .NE. coil_nctrl(i))) &
+            IF ((.NOT.lwindsurf(coil_surf(i))) .AND. (COUNT(coil_splinesz(i,:) >= 0.0) - 4 .NE. coil_nctrl(i))) &
                  CALL handle_err(KNOT_MISMATCH_ERR, 'read_stellopt_input', coil_nctrl(i))
             IF (ANY(lcoil_spline(i,MAX(coil_nctrl(i)+1,1):maxcoilctrl))) &
                  CALL handle_err(KNOT_MISMATCH_ERR, 'read_stellopt_input', coil_nctrl(i))
@@ -1646,8 +1650,12 @@
       END IF
 
       IF (ANY(lcoil_spline)) THEN
-         IF (lwindsurf) THEN
-            WRITE(iunit,'(A,A,A)') "  WINDSURFNAME = '",TRIM(windsurfname),"'"
+         IF (ANY(lwindsurf)) THEN
+            !WRITE(iunit,'(A,A,A)') "  WINDSURFNAME = '",(/ TRIM(windsurfname(j)), j=1,maxwindsurf /),"'"
+            WRITE(iunit,'(A)') "  WINDSURFNAME = '"//TRIM(windsurfname(1))//"'"
+            DO m=2,COUNT(lwindsurf)
+               WRITE(iunit,'(A)') "    '"//TRIM(windsurfname(m))//"'"
+            END DO
          ENDIF
          IF (LEN_TRIM(fixedcoilname).GT.0) &
               WRITE(iunit,'(A,A,A)') "  FIXEDCOILNAME = '",TRIM(fixedcoilname),"'"
@@ -1660,6 +1668,7 @@
                WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
                WRITE(iunit,'(A,I4.3)') '!       Coil Number ',n
                WRITE(iunit,"(2X,A,I4.3,A,1X,'=',1X,A)") 'COIL_TYPE(',n,')',"'"//COIL_TYPE(n)//"'"
+               WRITE(iunit,"(2X,A,I4.3,A,1X,'=',1X,I4)") 'COIL_SURF(',n,')',COIL_SURF(n)
                ik = MINLOC(coil_splinesx(n,:),DIM=1) - 1
                WRITE(iunit,"(2X,A,I4.3,A,1X,'=',10(2X,L1))") 'LCOIL_SPLINE(',n,',:)',(lcoil_spline(n,m), m = 1, ik-4)
                IF (ANY(DCOIL_SPLINE(n,1:ik-4).NE.-1.0D0)) &
