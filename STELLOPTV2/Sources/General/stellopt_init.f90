@@ -202,10 +202,10 @@
                  END DO
               END DO
               ctrl_dofs = 3                 !x,y,z at each point
-              IF (lwindsurf) ctrl_dofs = 2  ! u,v  at each point
+              IF (ANY(lwindsurf)) ctrl_dofs = 2  ! u,v  at each point
               DO n = LBOUND(lcoil_spline,DIM=1), UBOUND(lcoil_spline,DIM=1)
                  nknots = COUNT(coil_splinesx(n,:) >= 0.0)
-                 IF (lwindsurf.AND.(coil_type(n).eq.'A')) THEN
+                 IF (lwindsurf(coil_surf(n)).AND.(coil_type(n).eq.'A')) THEN
                     lcoil_spline(n,1:3) = .FALSE.
                     lcoil_spline(n,nknots-6:nknots-4) = .FALSE.
                     if (lcoil_spline(n,nknots-7)) nvars = nvars - 1
@@ -1497,7 +1497,7 @@
                              coil_splinefz_max(n,m) = coil_splinefz(n,m) + ABS(pct_domain*coil_splinefz(n,m))
                           END IF
 
-                          IF ((m > 1).OR.(coil_type(n).NE.'M').OR.(.NOT.lwindsurf)) THEN !u0 fixed for mod on ws
+                          IF ((m > 1).OR.(coil_type(n).NE.'M').OR.(.NOT.lwindsurf(coil_surf(n)))) THEN !u0 fixed for mod on ws
                              nvar_in = nvar_in + 1
                              vars(nvar_in) = coil_splinefx(n,m)
                              vars_min(nvar_in) = coil_splinefx_min(n,m)
@@ -1509,7 +1509,7 @@
                           END IF
 
                           ! v fixed for all-spline mod on ws @ pt n-4
-                          IF ((m.NE.nknots-5).OR.(coil_type(n).NE.'A').OR.(.NOT.lwindsurf)) THEN
+                          IF ((m.NE.nknots-5).OR.(coil_type(n).NE.'A').OR.(.NOT.lwindsurf(coil_surf(n)))) THEN
                              nvar_in = nvar_in + 1
                              vars(nvar_in) = coil_splinefy(n,m)
                              vars_min(nvar_in) = coil_splinefy_min(n,m)
@@ -1522,7 +1522,7 @@
 
                           ! z gets ignored if winding surface is present;
                           !  z0 is held fixed for modular coils.
-                          IF ((.NOT.lwindsurf).AND.((m > 1).OR.(coil_type(n).NE.'M'))) THEN
+                          IF ((.NOT.lwindsurf(coil_surf(n))).AND.((m > 1).OR.(coil_type(n).NE.'M'))) THEN
                              nvar_in = nvar_in + 1
                              vars(nvar_in) = coil_splinefz(n,m)
                              vars_min(nvar_in) = coil_splinefz_min(n,m)
