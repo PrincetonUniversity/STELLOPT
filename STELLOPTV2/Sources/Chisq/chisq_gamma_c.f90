@@ -39,6 +39,7 @@
 !-----------------------------------------------------------------------
       LOGICAL :: lsym
       INTEGER :: dex, ik, i, j, k, ier, jmin, igc2, igc3, igc4, igc5, igc6, igc7, ierrgc2
+      INTEGER :: igc8
       REAL(rprec) :: s, rovera, theta, zeta, delzeta, u, v, coszeta, sinzeta
       REAL(rprec) :: coszeta_fp, sinzeta_fp
 
@@ -156,12 +157,15 @@
                        'replace','formatted')
           CALL safe_open(igc7, ierrgc2, 'gc7.'//trim(proc_string),  &
                        'replace','formatted')
+          CALL safe_open(igc8, ierrgc2, 'gc8.'//trim(proc_string),  &
+                       'replace','formatted')
           write(igc2,*), 'j rho suv_pest suv_vmec uv_mod_vmec_fix R Z X Y'
           write(igc3,*), 'j modB Br Bphi Bz Bx By Bsups(j) Bsupu(j) Bsupv(j)'
           write(igc4,*), 'j gradR_init3 gradZ_init3 gradB_init3 gradR3 gradZ3 gradB3'
           write(igc5,*), 'j esubu3 esubv3 es_init3 eu_init3 ev_init3 gradS3 grad_psi_norm(j) dBdpsi(j) sqrtg '
           write(igc6,*), 'j X Y Z bnxyz(1:3) Bxyz(1:3) modB dxyzds(1:3) dxyzdu(1:3) dxyzdv(1:3) grads_xyz(1:3) gradu_xyz(1:3) gradv_xyz(1:3) e_theta_norm binormal(1:3) grad_psi_xyz(1:3) dVdb_t1 dBsupphidpsi dBdpsi sqrtg ds jac_suvxyz'
           write(igc7,*), 'j bdotgradb(1:3) kappa_g'
+          write(igc8,*), 'j PEST(Rad,Pol,Tor) X Y Z Bx By Bz gradPsi_x gradPsi_y gradPsi_z e_theta_norm dBsupphidpsi'
           !first time through calculate fields and some basic parameters
 !--------------------------------- DO j = 1,nsteps over each step along line
           DO j = 1,nsteps
@@ -237,6 +241,12 @@
             gradR(1) = gradR_init(1)
             gradZ(1) = gradZ_init(1)
            
+!new
+           ! need B/B^phi .  modB is easy. B^phi = B dot grad(phi) = B dot grad(v) dv/dphia
+           ! modB / (B dot grad(phi)) = 1 / (b dot grad(phi))
+           !
+           ! d(Bdot grad(phi) ) / dpsi = gradB(3) / NFP
+           dBsupphidpsi(j) = gradB(3) / NFP
 
             ! Calc grad(s)
             ! grad(s) = ( (d (X,Y,Z) / du) x (d (X,Y,Z) / dv) ) /  
@@ -650,7 +660,7 @@
               ! set the value of kappa_g for the last index
 
                 kappa_g(j) = dot_product(bdotgradb, binormal(j,:))
-             write(igc7,'(1X,I8,4(2X,E16.8))') j,&
+             write(igc7,'(1X,I8,4(2X,E16.8))') j, &
                        bdotgradb(1), bdotgradb(2), bdotgradb(3), kappa_g(j)
               END IF  
                
@@ -740,12 +750,6 @@
 !            !Rose version of BPHI, verified that these agree
 !            !Bsupv(j) = dot_product(Bxyz,e_phi)/R(j)
 !            !write(*,*) 'Bsupv rose',Bsupv(j)
-!new
-           ! need B/B^phi .  modB is easy. B^phi = B dot grad(phi) = B dot grad(v) dv/dphia
-           ! modB / (B dot grad(phi)) = 1 / (b dot grad(phi))
-           !
-           ! d(Bdot grad(phi) ) / dpsi = gradB(3) / NFP
-           dBsupphidpsi(j) = gradB(3) / NFP
 
 
 
@@ -783,6 +787,12 @@
                                                  grad_psi_xyz(1), grad_psi_xyz(2), grad_psi_xyz(3), &
                                                  dVdb_t1(j), dBsupphidpsi(j), dBdpsi(j), &
                                                  sqrtg, ds(j), jac_suvxyz
+            write(igc8,'(1X,I8,14(2X,E16.8))') j, s_initA, u_initA, &
+                       v_initA, X, Y, Z, Bx, By, Bz, grad_psi_xyz(1), &
+                       grad_psi_xyz(2), grad_psi_xyz(3), &
+                       e_theta_norm(j), dBsupphidpsi(j)
+
+
 
              !advance the step- note, this zeta and theta are the PEST coordinates
             zeta = zeta + delzeta
@@ -804,6 +814,7 @@
           close(igc5)
           close(igc6)
           close(igc7)
+          close(igc8)
           !write(igc2,*), "u,v,R,Z,X,Y,Br,Bphi,Bz,Bsups,Bsupu,Bsupv"
           !do j = 1,nsteps
             !  WRITE(6,'(2X,I3,8(2X,E11.4))')
