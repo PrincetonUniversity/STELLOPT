@@ -40,11 +40,11 @@
       LOGICAL :: lsym
       INTEGER :: dex, ik, i, j, k, ier, jmin, igc2, igc3, igc4, igc5, igc6, igc7, ierrgc2
       INTEGER :: igc8
-      REAL(rprec) :: s, rovera, theta, zeta, delzeta, u, v, coszeta, sinzeta
+      REAL(rprec) :: s, rovera, theta, zeta_p, delzeta_p, u, v, coszeta_p, sinzeta_p
       REAL(rprec) :: coszeta_fp, sinzeta_fp
 
       REAL(rprec) :: s_initA, u_initA, v_initA, s_initB, u_initB, v_initB
-      REAL(rprec) :: iota, iotap, minB, maxB, B_refl, psi_a, B_zeta
+      REAL(rprec) :: iota, iotap, minB, maxB, B_refl, psi_a, B_zeta_p
       REAL(rprec) :: X, Y, Xp, Yp, Z, Zp, R, dpsidr, dpsidz, X_fp, Y_fp
       REAL(rprec) :: Bx, By, Bz, Br, Bphi, Bx_fp, By_fp
       REAL(rprec) :: bxn, byn, bzn, bxnp, bynp, bznp, bxn2p, byn2p, bzn2p
@@ -62,8 +62,8 @@
       REAL(rprec), DIMENSION(3) :: Bxyz_fp
       REAL(rprec), DIMENSION(3) :: e_phi, e_r, e_z, grads, gradbtest
       REAL(rprec), DIMENSION(3) :: grads_xyz, gradu_xyz, gradv_xyz
-      REAL(rprec), DIMENSION(3) :: grad_zeta, grad_psi_x_b, grad_psi_xyz
-      REAL(rprec), DIMENSION(3) :: bdotgradb, grad_psi_x_b_xyz, grad_zeta_xyz,bdotgradb_sp
+      REAL(rprec), DIMENSION(3) :: grad_zeta_p, grad_psi_x_b, grad_psi_xyz
+      REAL(rprec), DIMENSION(3) :: bdotgradb, grad_psi_x_b_xyz, grad_zeta_p_xyz,bdotgradb_sp
       INTEGER, PARAMETER :: ntransits = 400
       INTEGER, PARAMETER :: delzetadiv = 400
       INTEGER, PARAMETER :: nsteps = ntransits*delzetadiv
@@ -81,6 +81,7 @@
       REAL(rprec), DIMENSION(nsteps) :: grad_psi_norm, grad_psi_i
       REAL(rprec), DIMENSION(nsteps) :: e_theta_norm, e_theta_i
       REAL(rprec), DIMENSION(nsteps) :: dBsupvdpsi, dVdb_t1, dBsupphidpsi
+      REAL(rprec), DIMENSION(nsteps) :: dBsupv
       REAL(rprec), DIMENSION(nsteps) :: Bsups, Bsupu, Bsupv
       REAL(rprec), DIMENSION(nsteps, 3) :: binormal
     
@@ -106,7 +107,7 @@
       IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA  GAMMA_C  K'
       IF (niter >= 0) THEN
         pi2 = 2.0_rprec*3.14159265358979_rprec
-        delzeta = 1.0_rprec/delzetadiv !step size
+        delzeta_p = -1.0_rprec/delzetadiv !step size
         !delzeta = -0.0034433355_rprec !for comparison with ROSE
         psi_a = phiedge !Toroidal flux at the edge
 
@@ -133,7 +134,7 @@
           write (*,*) 'psi_a', psi_a
 
           !Initialize starting point
-          theta = zero; zeta = zero
+          theta = zero; zeta_p = zero
           sflCrd(1) = s
           sflCrd(2) = zero
           sflCrd(3) = zero
@@ -182,8 +183,8 @@
             !           out: s, theta, phi('vmec'
             CALL pest2vmec(sflCrd) !convert to VMEC coordinates
             s_initB = sflCrd(1)  ! sflCrd now has VMEC coordinates!!! s=s
-            u_initB = sflCrd(2)  ! theta (vmec) <- the only part that chaanges
-            v_initB = sflCrd(3)  ! zeta (vmec) <- goes from 0-> 2pi over a field period 
+            u_initB = sflCrd(2)  ! u (vmec) <- changes to VMEC coords
+            v_initB = sflCrd(3)  ! v (vmec) <- goes from 0-> 2pi over a field period 
             u = modulo(u_initB,pi2) ! does nothing in this position (jcs)
             v = modulo(v_initB,pi2) ! does nothing in this position (jcs)
             ! Be careful mixing the two sets of ccordinates! 
@@ -198,8 +199,7 @@
            !  The equivalent 'Laboratory' Phi = v_vmec/NFP 
             CALL get_equil_RZ(s, u, v, R, Z, ier, gradR_init, gradZ_init)
            ! at this point, gradR, gradZ are calculated for a single field period
-           ! derivatives are w.r.t rho=sqrt(s),u,v
-! NO (U,V, RHO)!!!!
+           ! derivatives are w.r.t  (U,V, RHO)!!!!
             CALL get_equil_Bflx(s, u, v, Bsups(j), Bsupu(j), Bsupv(j), ier, B_GRAD = gradB_init)
            ! at this point, Bsups, Bsupu, Bsupv, gradB are calculated for a single field period
            ! derivatives are w.r.t rho=sqrt(s),u,v
@@ -209,6 +209,7 @@
             !by nfp in the Bphi terms only. It seems weird but agrees with ROSE
 ! comment above may be out of date.
             CALL get_equil_Bcylsuv(s, u, v, Br, Bphi, Bz, ier, modB(j))
+            CALL get_equil_Bcylsuv2(s, u, v, ier, dBsupv)
            ! at this point, Br, Bphi, Bz, modB, are calculated for a single field period
             ! Warning - Br and Bphi come from s,u,v conversion.
 
@@ -216,37 +217,44 @@
             ! zeta was the same as zeta (pest). Now it is being mixed with R
             ! to make X, Y.
             ! X, Y are full torus, X_fp, Y_fp are single field period
-            X=R*cos(zeta)
-            Y=R*sin(zeta)
-            X_fp=R*cos(v)
-            Y_fp=R*sin(v)
+            X=R*cos(-zeta_p)
+            !Y=R*sin(zeta_p)  ! JCS / AB Check Sign
+            Y=R*sin(-zeta_p)  ! JCS / AB Check Sign
+            !X_fp=R*cos(v)
+            !Y_fp=R*sin(v)
 
 
             ! Convert radial gradients from d/drho to d/ds
             ! s = rho^2; ds/drho = 2*rho; drho/ds = 1/(2*rho) = 0.5/rovera
-! old
-            !gradB(3) = 0.5*gradB(3)/rho(i)
-            !gradR(3) = 0.5*gradR(3)/rho(i)
-            !gradZ(3) = 0.5*gradZ(3)/rho(i)
-            ! JCS There is no rho(i) in this scope (unless it was assigned elsewhere in included via a 'use' statement?
             ! - use rovera from above
             ! gradX(1) = dX/du, gradX(2) = dX/dv, gradX(3) = dX/dsqrt(s)
-            gradB(3) = gradB_init(3)/rovera / two
-            gradR(3) = gradR_init(3)/rovera / two
-            gradZ(3) = gradZ_init(3)/rovera / two
-            gradB(2) = gradB_init(2)
-            gradR(2) = gradR_init(2)
-            gradZ(2) = gradZ_init(2)
             gradB(1) = gradB_init(1)
             gradR(1) = gradR_init(1)
             gradZ(1) = gradZ_init(1)
+            gradB(2) = gradB_init(2)
+            gradR(2) = gradR_init(2)
+            gradZ(2) = gradZ_init(2)
+            gradB(3) = gradB_init(3) / (two * rovera)
+            gradR(3) = gradR_init(3) / (two * rovera)
+            gradZ(3) = gradZ_init(3) / (two * rovera)
            
 !new
            ! need B/B^phi .  modB is easy. B^phi = B dot grad(phi) = B dot grad(v) dv/dphia
            ! modB / (B dot grad(phi)) = 1 / (b dot grad(phi))
            !
            ! d(Bdot grad(phi) ) / dpsi = gradB(3) / NFP
-           dBsupphidpsi(j) = gradB(3) / NFP
+           !dBsupphidpsi(j) = gradB(3) / NFP ! this needs to be fixed (JCS)
+           !dBsupphidpsi(j) = gradB(3) *pi2/psi_a ! this needs to be fixed (JCS)
+           ! dBsupphidpsi calculation begins here
+           ! B^phi = Toroidal component of B vevtor   psi=toroidal flux / 2pi
+           !dBsupphidpsi(j) = gradB(3) *pi2/psi_a ! this needs to be fixed (JCS)
+           dBsupphidpsi(j) = dBsupv(3)*(pi2/psi_a) / (two * rovera)
+           ! Following AB's description (Eqs 39-45)
+           !
+
+! note to self: I am here!           
+           ! see below
+           ! dBdpsi(j) = gradB(3)*pi2/psi_a !This has been verified with nothing (JCS)
 
             ! Calc grad(s)
             ! grad(s) = ( (d (X,Y,Z) / du) x (d (X,Y,Z) / dv) ) /  
@@ -317,7 +325,7 @@
 !old`            ! dB/dpsi
 !            dBdpsi(j) = gradB(3)*pi2/psi_a !This has been verified with ROSE
 !new            ! dB/dpsi
-            dBdpsi(j) = gradB(1)*pi2/psi_a !This has been verified with nothing (JCS)
+            dBdpsi(j) = gradB(3)*pi2/psi_a !This has been verified with nothing (JCS)
 
             !Calculate crude arclength
             ! ds gives the distance between the current point and the previous point.
@@ -371,31 +379,33 @@
 !          v, which goes from 0->2pi on a field period
            !coszeta_fp = cos(v) ! dX_fp/dR
            !sinzeta_fp = sin(v) ! dY_fp/dR 
-           coszeta = cos(zeta) ! dX/dR
-           sinzeta = sin(zeta) ! dY/dR 
+           ! the above comment is out of date
+           ! note the '-' sign
+           coszeta_p = cos(-zeta_p) ! dX/dR
+           sinzeta_p = sin(-zeta_p) ! dY/dR 
 !  go from dR/(rho,u,v) and dZ(rho,u,v) and dPhi(rho,u,v) to
 !  dx/d(rho,u,v), dy/d(rho,u,v),  dz/d(rho,u,v),
 ! on the full torus
 ! (x) - component of d(xyz)/d(sqrt(s))
-           dxyzds(1) = gradR(3)*coszeta ! dR/dsqrt(s) * dX/dR=dX/dsqrt(s)
+           dxyzds(1) = gradR(3)*coszeta_p ! dR/dsqrt(s) * dX/dR=dX/dsqrt(s)
 ! (y) - component of d(xyz)/d(sqrt(s))
-           dxyzds(2) = gradR(3)*sinzeta  ! dR/dsqrt(s) * dy/dR = dy/dsqrt(s)
+           dxyzds(2) = gradR(3)*sinzeta_p  ! dR/dsqrt(s) * dy/dR = dy/dsqrt(s)
 ! (z) - component of d(xyz)/d(sqrt(s))
            dxyzds(3) = gradZ(3)
 
 ! (x) - components of d(xyz)/d(u)
-           dxyzdu(1) = gradR(1)*coszeta ! dR/du * dX/dR = dX/du
+           dxyzdu(1) = gradR(1)*coszeta_p ! dR/du * dX/dR = dX/du
 ! (y) - components of d(xyz)/d(u)
-           dxyzdu(2) = gradR(1)*sinzeta  ! dR/du * dY/dR = dY/du
+           dxyzdu(2) = gradR(1)*sinzeta_p  ! dR/du * dY/dR = dY/du
 ! (z) - components of d(xyz)/d(u)
            dxyzdu(3) = gradZ(1) 
 
 ! (x) - components of d(xyz)/d(v)
 ! dX/dv = dR/dv * dX/dR + dX/dPhi * dPhi/dv
-           dxyzdv(1) = gradR(2)*coszeta - R*sinzeta/nfp
+           dxyzdv(1) = gradR(2)*coszeta_p - R*sinzeta_p/nfp
 ! (y) - components of d(xyz)/d(v)
 ! dY/dv = dR/dv * dY/dR + dY/dPhi * dPhi/dv
-           dxyzdv(2) = gradR(2)*sinzeta + R*coszeta /nfp!
+           dxyzdv(2) = gradR(2)*sinzeta_p + R*coszeta_p /nfp!
 ! (z) - components of d(xyz)/d(v)
            dxyzdv(3) = gradZ(2)
 ! Now have d(xyz)/dsqrt(s), d(xyz)/du, and d(xyz)/dv projected in cartestian coordinates (x,y,z)
@@ -415,7 +425,7 @@
            ! cross den is first part of denominator
            CALL cross_product(dxyzdv, dxyzds, crossden)
 !           !write(*,*) 'crossden', crossden
-           jac_suvxyz = dot_product(crossden, dxyzdu) 
+           jac_suvxyz = -1.0_rprec * dot_product(crossden, dxyzdu) 
 
            !Now form gradpsi: crossnum is numerator part
            CALL cross_product(dxyzdu, dxyzdv, crossnum)
@@ -423,7 +433,7 @@
            ! and grad(sqrt(s)) - including
            grads_xyz = crossnum/jac_suvxyz
 !           !write(*,*) 'denom',dot_product(crossden, dxyzdu(j,:))
-           grad_psi_xyz = grads_xyz * psi_a
+           grad_psi_xyz = grads_xyz * psi_a / pi2  ! JCS added pi2 
            norm_grad_psi_xyz = sqrt(grad_psi_xyz(1)**2 + grad_psi_xyz(2)**2 &
                                     + grad_psi_xyz(3)**2)
 !           !write(*,*) 'grads',grads(1),grads(2),grads(3)
@@ -445,19 +455,21 @@
             ! Here, the pest zeta is mixed in.
             ! Bxyz contains the B vector on the full torus, Bxyz_fp contain the
             ! B vectors on a sigle field period
-            Bx = Br*cos(zeta) - Bphi*sin(zeta)
-            By = Br*sin(zeta) + Bphi*cos(zeta)
-            Bx_fp = Br*cos(v) - Bphi*sin(v)
-            By_fp = Br*sin(v) + Bphi*cos(v)
+            ! CHECK THIS USAGE OF ZETA_P!!!! JCS
+            ! zeta_p = -zeta_vmec
+            Bx = Br*cos(-zeta_p) - Bphi*sin(-zeta_p)
+            By = Br*sin(-zeta_p) + Bphi*cos(-zeta_p)
+            !Bx_fp = Br*cos(v) - Bphi*sin(v)
+            !By_fp = Br*sin(v) + Bphi*cos(v)
             Bxyz(1) = Bx
             Bxyz(2) = By
             Bxyz(3) = Bz
             bnxyz(1) = Bx / modB(j)
             bnxyz(2) = By / modB(j)
             bnxyz(3) = Bz / modB(j)
-            Bxyz_fp(1) = Bx_fp
-            Bxyz_fp(2) = By_fp
-            Bxyz_fp(3) = Bz
+            !Bxyz_fp(1) = Bx_fp
+            !Bxyz_fp(2) = By_fp
+            !Bxyz_fp(3) = Bz
             !write(*,*) 'Bxyz',Bxyz(1),Bxyz(2),Bxyz(3),modB(j), ier
            
             
@@ -517,7 +529,7 @@
             ! surface.  Note: the original version used the full torus coords,
             ! the new version uses the signle-fp coords
             !e_r
-!old
+!old - is only used for the dot product with grad_psi_xyz
             e_r(1) = X/R
             e_r(2) = Y/R
             e_r(3) = 0.0_rprec
@@ -527,7 +539,7 @@
 !            e_r(3) = 0.0_rprec
 
             !e_phi
-! old
+! old - e_phi is not used
             e_phi(1) = -Y/R
            e_phi(2) = X/R
             e_phi(3) = 0.0_rprec
@@ -535,7 +547,7 @@
 !            e_phi(1) = -Y_fp/R
 !            e_phi(2) = X_fp/R
 !            e_phi(3) = 0.0_rprec
-
+! e_z is only used for the dot products with grad_psi_xyz
             !e_z (can move this outside the loop if desired for speed)
             e_z(1) = 0.0
             e_z(2) = 0.0
@@ -560,8 +572,8 @@
             !quantity in Gamma_c is squared, this doesn't matter
             !the division by 2pi is needed to match with rose convention
 !old            e_theta_norm(j) = sqrt(dpsidr*dpsidr + dpsidz*dpsidz)/Bphi/pi2
-!new
-            e_theta_norm(j) = sqrt(dpsidr*dpsidr + dpsidz*dpsidz)/Bphi
+!new  JCS added Abs part. Eqn 41 of nemov has || operator
+            e_theta_norm(j) = abs(sqrt(dpsidr*dpsidr + dpsidz*dpsidz)/Bphi)
             !write(*,*) j,'e_theta_norm, B_zeta, Bphi',e_theta_norm(j),Bphi
 
 
@@ -710,9 +722,9 @@
 !            grad_zeta(1) = -Y/R/R
 !            grad_zeta(2) = X/R/R
 !new - JCS does grad_zeta = grad_phi?
-            grad_zeta_xyz(1) = -Y_fp
-            grad_zeta_xyz(2) = X_fp
-            grad_zeta_xyz(3) = 0.0_rprec
+            grad_zeta_p_xyz(1) = -Y_fp
+            grad_zeta_p_xyz(2) = X_fp
+            grad_zeta_p_xyz(3) = 0.0_rprec
 
 
 
@@ -726,7 +738,7 @@
             !dvdB_t1 is the first term in the brackets of dVdb
             ! = iota' ( grad_psi cross b_hat) dot grad_zeta
             CALL cross_product(grad_psi_xyz, bnxyz, grad_psi_x_b_xyz)
-            dVdb_t1(j) = iotap*dot_product(grad_psi_x_b_xyz, grad_zeta_xyz)
+            dVdb_t1(j) = iotap*dot_product(grad_psi_x_b_xyz, grad_zeta_p_xyz)
 
 !NOTE TO SELF; I am here
 
@@ -791,18 +803,18 @@
                        v_initA, X, Y, Z, Bx, By, Bz, grad_psi_xyz(1), &
                        grad_psi_xyz(2), grad_psi_xyz(3), &
                        e_theta_norm(j), dBsupphidpsi(j)
-
+! JCS Moded Y, grad_psi_xyz & e_theta_norm
 
 
              !advance the step- note, this zeta and theta are the PEST coordinates
-            zeta = zeta + delzeta
-            theta = theta + (iota * delzeta)
+            zeta_p = zeta_p + delzeta_p
+            theta = theta + (iota * delzeta_p)
             !zeta = modulo(zeta, pi2)
             !theta = modulo(theta, pi2)
             ! reset sflCrd to contain the next PEST coordinate
             sflCrd(1) = s !s should be constant, but in case of numerical precision errors
             sflCrd(2) = theta
-            sflCrd(3) = zeta
+            sflCrd(3) = zeta_p
             ! on exit, the sflCrd variable now contains the PEST coordinate of the next point
            END DO
           !------------------------------END DO j = 1,nsteps over each step along line
@@ -834,7 +846,7 @@
           write(*,*) 'deltabp',deltabp
 
           !Go through each value of bp
-          write (*,*) '<---Starting loop i=1,bpstep'
+!          write (*,*) '<---Starting loop i=1,bpstep'
 !--------------------------------- DO i = 1,bpstep over each bp step
           DO i=1,bpstep
             grad_psi_i = 1.0E10_rprec !This term appears in the denominator
@@ -848,8 +860,8 @@
             !we also set all the well_mask indices to 1.
             in_well = 0
 
-            write (*,*) 'beginning bp',i
-            write (*,*) 'Bmin, Bmax, B_refl', minB, maxB, B_refl
+!            write (*,*) 'beginning bp',i
+!            write (*,*) 'Bmin, Bmax, B_refl', minB, maxB, B_refl
             
             well_start = 0 !this is the array of all the indices where wells begin
             well_stop = 0 !this is the array of all the indices where wells end
@@ -860,7 +872,7 @@
             e_theta_min = 0
             cur_Bmin = B_refl !this should be the maximum value in any well
 
-            write (*,*) '<---Starting loop j=1,nsteps'
+!            write (*,*) '<---Starting loop j=1,nsteps'
 !--------------------------------- DO j = 1,nsteps 
             DO j=1,nsteps
               ! Not in a well and shouldn't be 
@@ -889,11 +901,11 @@
                 e_theta_i(well_start(cur_well):well_stop(cur_well)) = e_theta_min
 
                 !test output
-                write(*,*) 'exiting well',cur_well
-                write(*,*) 'well start,stop',well_start(cur_well), well_stop(cur_well)
-                write(*,*) 'minima',grad_psi_min, e_theta_min
+!                write(*,*) 'exiting well',cur_well
+!                write(*,*) 'well start,stop',well_start(cur_well), well_stop(cur_well)
+!                write(*,*) 'minima',grad_psi_min, e_theta_min
                 !print out the Bmin
-                write (*,*) "Bmin, zeta for well ",cur_well, cur_Bmin, zeta*4.0_rprec/pi2
+!                write (*,*) "Bmin, zeta for well ",cur_well, cur_Bmin, zeta_p*4.0_rprec/pi2
          
 
                 !reset minimum of modB, psi and e
@@ -929,14 +941,14 @@
                   cur_Bmin = modB(j)
                   e_theta_min = e_theta_norm(j)
                   grad_psi_min = grad_psi_norm(j)
-                  zeta = j*delzeta
+                  zeta_p = j*delzeta_p
                   jmin = j
                 END IF
               END IF
             
             END DO
 !------------------------------END DO j = 1,nsteps 
-            write (*,*) '<---Finished loop j=1,nsteps'
+!            write (*,*) '<---Finished loop j=1,nsteps'
             !If we ended in the middle of a well, we'll have one more well_start
             !than well stop, let's correct that
             IF (well_start(cur_well) .NE. 0) THEN
@@ -944,20 +956,20 @@
             END IF 
             
             nwells = cur_well - 1
-            write(*,*) 'well number',nwells
-            DO k = 1,nwells
-              write(*,*) 'well',k,well_start(k), well_stop(k)
-            END DO 
-            DO j = 1,nsteps
-              write(*,*) j,B_refl,modB(j),grad_psi_norm(j),grad_psi_i(j),e_theta_norm(j),e_theta_i(j)
-            END DO
+!            write(*,*) 'well number',nwells
+!            DO k = 1,nwells
+!              write(*,*) 'well',k,well_start(k), well_stop(k)
+!            END DO 
+!            DO j = 1,nsteps
+!              write(*,*) j,B_refl,modB(j),grad_psi_norm(j),grad_psi_i(j),e_theta_norm(j),e_theta_i(j)
+!            END DO
 
             !We've assembled all the info we need to compute the major quantities
             !for each well, we integrate the various quantities, dgdb, dGdb, dIdb, and dVdb
             gamma_c = 0.0_rprec
             vrovervt = 0.0_rprec
             wellgamma_c = 0.0_rprec
-            write (*,*) '<---Starting loop k=1,nwells'
+!            write (*,*) '<---Starting loop k=1,nwells'
 !----------------------------- DO k = 1,nwells
             DO k = 1,nwells
 
@@ -1000,14 +1012,14 @@
 
 
               !vrovervt ratio of radial to poloidal drifts
-              write (*,*) '---------------------------------------'
-              write (*,*) 'well k,b ', k, B_refl,well_start(k),well_stop(k)
-              write (*,*) 'dIdb ', dIdb
-              write (*,*) 'dgdb ' , dgdb
-              write (*,*) 'dbigGdb', dbigGdb
-              write (*,*) 'dVdb ', dVdb
-              write (*,*) 'etheta0 ', e_theta_i(j-1)
-              write (*,*) 'grad_psi ', grad_psi_i(j-1)
+!              write (*,*) '---------------------------------------'
+!              write (*,*) 'well k,b ', k, B_refl,well_start(k),well_stop(k)
+!              write (*,*) 'dIdb ', dIdb
+!              write (*,*) 'dgdb ' , dgdb
+!              write (*,*) 'dbigGdb', dbigGdb
+!              write (*,*) 'dVdb ', dVdb
+!              write (*,*) 'etheta0 ', e_theta_i(j-1)
+!              write (*,*) 'grad_psi ', grad_psi_i(j-1)
               IF (well_start(k) < well_stop(k)) THEN
 
                 temp = dgdb/grad_psi_i(well_start(k))/dIdb / minB / e_theta_i(well_start(k))
@@ -1016,19 +1028,19 @@
               ELSE
                 vrovervt = 0.0
               END IF
-              write (*,*) 'vrovervt ', vrovervt
+!              write (*,*) 'vrovervt ', vrovervt
 
               gamma_c = 4.0_rprec/pi2 * atan(vrovervt)
               wellGamma_c = wellGamma_c + (gamma_c * gamma_c * dIdb)
-              write (*,*) 'wellGamma_c ', wellGamma_c
-              write (*,*) 'gamma_c, wellGamma_c', gamma_c, wellGamma_c
+!              write (*,*) 'wellGamma_c ', wellGamma_c
+!              write (*,*) 'gamma_c, wellGamma_c', gamma_c, wellGamma_c
             END DO !end sum over all wells           
 !--------------------------END DO k = 1,nwells
-            write (*,*) '<---finished loop k=1,nwells'
+!            write (*,*) '<---finished loop k=1,nwells'
             bigGamma_c = bigGamma_c + wellGamma_c * pi2/4.0_rprec/sqrt(2.0_rprec)*deltabp
           END DO !end integration over bp
 !------------------------------END DO i = 1,bpstep over each bp step
-          write (*,*) '<---Finished loop i=1,bpstep'
+!          write (*,*) '<---Finished loop i=1,bpstep'
           bigGamma_c = bigGamma_c/dloverb
           write(*,*) 'dloverb',dloverb
           write(*,*) 'bigGamma_c',bigGamma_c
