@@ -146,27 +146,27 @@
           Bx2p = zero; By2p = zero; Bz2p = zero;
 
           write (*,*) '--------------------------------------------'
-          CALL safe_open(igc2, ierrgc2, 'gc2.'//trim(proc_string),  &
-                       'replace','formatted')
-          CALL safe_open(igc3, ierrgc2, 'gc3.'//trim(proc_string),  &
-                       'replace','formatted')
-          CALL safe_open(igc4, ierrgc2, 'gc4.'//trim(proc_string),  &
-                       'replace','formatted')
-          CALL safe_open(igc5, ierrgc2, 'gc5.'//trim(proc_string),  &
-                       'replace','formatted')
-          CALL safe_open(igc6, ierrgc2, 'gc6.'//trim(proc_string),  &
-                       'replace','formatted')
-          CALL safe_open(igc7, ierrgc2, 'gc7.'//trim(proc_string),  &
-                       'replace','formatted')
-          CALL safe_open(igc8, ierrgc2, 'gc8.'//trim(proc_string),  &
-                       'replace','formatted')
-          write(igc2,*), 'j rho suv_pest suv_vmec uv_mod_vmec_fix R Z X Y'
-          write(igc3,*), 'j modB Br Bphi Bz Bx By Bsups(j) Bsupu(j) Bsupv(j)'
-          write(igc4,*), 'j gradR_init3 gradZ_init3 gradB_init3 gradR3 gradZ3 gradB3'
-          write(igc5,*), 'j esubu3 esubv3 es_init3 eu_init3 ev_init3 gradS3 grad_psi_norm(j) dBdpsi(j) sqrtg '
-          write(igc6,*), 'j X Y Z bnxyz(1:3) Bxyz(1:3) modB dxyzds(1:3) dxyzdu(1:3) dxyzdv(1:3) grads_xyz(1:3) gradu_xyz(1:3) gradv_xyz(1:3) e_theta_norm binormal(1:3) grad_psi_xyz(1:3) dVdb_t1 dBsupphidpsi dBdpsi sqrtg ds jac_suvxyz'
-          write(igc7,*), 'j bdotgradb(1:3) kappa_g'
-          write(igc8,*), 'j PEST(Rad,Pol,Tor) X Y Z Bx By Bz gradPsi_x gradPsi_y gradPsi_z e_theta_norm dBsupphidpsi'
+!          CALL safe_open(igc2, ierrgc2, 'gc2.'//trim(proc_string),  &
+!                       'replace','formatted')
+!          CALL safe_open(igc3, ierrgc2, 'gc3.'//trim(proc_string),  &
+!                       'replace','formatted')
+!          CALL safe_open(igc4, ierrgc2, 'gc4.'//trim(proc_string),  &
+!                       'replace','formatted')
+!          CALL safe_open(igc5, ierrgc2, 'gc5.'//trim(proc_string),  &
+!                       'replace','formatted')
+!          CALL safe_open(igc6, ierrgc2, 'gc6.'//trim(proc_string),  &
+!                       'replace','formatted')
+!          CALL safe_open(igc7, ierrgc2, 'gc7.'//trim(proc_string),  &
+!                       'replace','formatted')
+!          CALL safe_open(igc8, ierrgc2, 'gc8.'//trim(proc_string),  &
+!                       'replace','formatted')
+!          write(igc2,*), 'j rho suv_pest suv_vmec uv_mod_vmec_fix R Z X Y'
+!          write(igc3,*), 'j modB Br Bphi Bz Bx By Bsups(j) Bsupu(j) Bsupv(j)'
+!          write(igc4,*), 'j gradR_init3 gradZ_init3 gradB_init3 gradR3 gradZ3 gradB3'
+!          write(igc5,*), 'j esubu3 esubv3 es_init3 eu_init3 ev_init3 gradS3 grad_psi_norm(j) dBdpsi(j) sqrtg '
+!          write(igc6,*), 'j X Y Z bnxyz(1:3) Bxyz(1:3) modB dxyzds(1:3) dxyzdu(1:3) dxyzdv(1:3) grads_xyz(1:3) gradu_xyz(1:3) gradv_xyz(1:3) e_theta_norm binormal(1:3) grad_psi_xyz(1:3) dVdb_t1 dBsupphidpsi dBdpsi sqrtg ds jac_suvxyz'
+!          write(igc7,*), 'j bdotgradb(1:3) kappa_g'
+!          write(igc8,*), 'j PEST(Rad,Pol,Tor) X Y Z Bx By Bz gradPsi_x gradPsi_y gradPsi_z e_theta_norm dBsupphidpsi'
           !first time through calculate fields and some basic parameters
 !--------------------------------- DO j = 1,nsteps over each step along line
           DO j = 1,nsteps
@@ -653,8 +653,8 @@
               bdotgradb(3) = (bzn - bznp)/ds(j)
               ! set the value of kappa_g for the 1st index
               kappa_g(j-1) = dot_product(bdotgradb, binormal(j-1,:))
-             write(igc7,'(1X,I8,4(2X,E16.8))') 1,&
-                       bdotgradb(1), bdotgradb(2), bdotgradb(3), kappa_g(1)
+!             write(igc7,'(1X,I8,4(2X,E16.8))') 1,&
+!                       bdotgradb(1), bdotgradb(2), bdotgradb(3), kappa_g(1)
             END IF 
 
             IF (j >= 3) THEN ! handles the j-1 index
@@ -663,8 +663,8 @@
               bdotgradb(3) = (bzn - bzn2p)/(ds(j-1)+ds(j))
               ! set the value of kappa_g for the 2nd thru 2nd-to-last index
               kappa_g(j-1) = dot_product(bdotgradb, binormal(j-1, :))
-             write(igc7,'(1X,I8,4(2X,E16.8))') (j-1),&
-                       bdotgradb(1), bdotgradb(2), bdotgradb(3), kappa_g(j-1)
+!             write(igc7,'(1X,I8,4(2X,E16.8))') (j-1),&
+!                       bdotgradb(1), bdotgradb(2), bdotgradb(3), kappa_g(j-1)
               IF (j == nsteps) THEN ! handle the last point
                 bdotgradb(1) = (bxn - bxnp)/(ds(j))
                 bdotgradb(2) = (byn - bynp)/(ds(j))
@@ -672,8 +672,8 @@
               ! set the value of kappa_g for the last index
 
                 kappa_g(j) = dot_product(bdotgradb, binormal(j,:))
-             write(igc7,'(1X,I8,4(2X,E16.8))') j, &
-                       bdotgradb(1), bdotgradb(2), bdotgradb(3), kappa_g(j)
+!             write(igc7,'(1X,I8,4(2X,E16.8))') j, &
+!                       bdotgradb(1), bdotgradb(2), bdotgradb(3), kappa_g(j)
               END IF  
                
             END IF
@@ -765,46 +765,46 @@
 
 
 
-           write(igc2,'(1X,I8,13(2X,E16.8))') j,rovera,s_initA, u_initA, v_initA, s_initB, u_initB, v_initB, u, v,R,Z,X,Y
-            write(igc3,'(1X,I8,9(2X,E16.8))') j,modB(j),Br,Bphi,Bz,Bx,By,Bsups(j),Bsupu(j),Bsupv(j)
-            write(igc4,'(1X,I8,18(2X,E16.8))') j,gradR_init(1),gradR_init(2),gradR_init(3), & 
-                                                 gradZ_init(1),gradZ_init(2),gradZ_init(3), &
-                                                 gradB_init(1),gradB_init(2),gradB_init(3), &
-                                                 gradR(1),gradR(2),gradR(3), & 
-                                                 gradZ(1),gradZ(2),gradZ(3), &
-                                                 gradB(1),gradB(2),gradB(3)
-
-            write(igc5,'(1X,I8,21(2X,E16.8))') j,esubu(1), esubu(2), esubu(3), &
-                                                 esubv(1), esubv(2), esubv(3), &
-                                                 es_init(1), es_init(2), es_init(3), &
-                                                 eu_init(1), eu_init(2), eu_init(3), &
-                                                 ev_init(1), ev_init(2), ev_init(3), &
-                                                 gradS(1), gradS(2), gradS(3), &
-                                                 grad_psi_norm(j), dBdpsi(j), &
-                                                 sqrtg
+!           write(igc2,'(1X,I8,13(2X,E16.8))') j,rovera,s_initA, u_initA, v_initA, s_initB, u_initB, v_initB, u, v,R,Z,X,Y
+!            write(igc3,'(1X,I8,9(2X,E16.8))') j,modB(j),Br,Bphi,Bz,Bx,By,Bsups(j),Bsupu(j),Bsupv(j)
+!            write(igc4,'(1X,I8,18(2X,E16.8))') j,gradR_init(1),gradR_init(2),gradR_init(3), & 
+!                                                 gradZ_init(1),gradZ_init(2),gradZ_init(3), &
+!                                                 gradB_init(1),gradB_init(2),gradB_init(3), &
+!                                                 gradR(1),gradR(2),gradR(3), & 
+!                                                 gradZ(1),gradZ(2),gradZ(3), &
+!                                                 gradB(1),gradB(2),gradB(3)
+!!
+!            write(igc5,'(1X,I8,21(2X,E16.8))') j,esubu(1), esubu(2), esubu(3), &
+!                                                 esubv(1), esubv(2), esubv(3), &
+!                                                 es_init(1), es_init(2), es_init(3), &
+!                                                 eu_init(1), eu_init(2), eu_init(3), &
+!                                                 ev_init(1), ev_init(2), ev_init(3), &
+!                                                 gradS(1), gradS(2), gradS(3), &
+!                                                 grad_psi_norm(j), dBdpsi(j), &
+!                                                 sqrtg
 ! igc6: has full torus X,Y,Z coords, Bvector in (x,y,z) coords). d(xyz)/ds, d(xyz)/du and d(xyz)/dv in (x,y,z) values
 ! for easy plotting.  Also has gradS, gradU and gradV in (x,y,z) values
 !  Also has d(b-unit vector)/dl = (b dot grad)B
 !   which is kappa = curvature vectors in (x,y,z) coordintes
-             write(igc6,'(1X,I8,41(2X,E16.8))') j,X,Y,Z,bnxyz(1), bnxyz(2), bnxyz(3), &
-                                                 Bxyz(1), Bxyz(2), Bxyz(3), modB(j), &
-                                                 dxyzds(1),dxyzds(2),dxyzds(3), &
-                                                 dxyzdu(1),dxyzdu(2),dxyzdu(3), &
-                                                 dxyzdv(1),dxyzdv(2),dxyzdv(3), &
-                                                 grads_xyz(1), grads_xyz(2), grads_xyz(3), &
-                                                 gradu_xyz(1), gradu_xyz(2), gradu_xyz(3), &
-                                                 gradv_xyz(1), gradv_xyz(2), gradv_xyz(3), &
-                                                 e_theta_norm(j), binormal(j,1), binormal(j,2), &
-                                                 binormal(j,3), &
-                                                 grad_psi_xyz(1), grad_psi_xyz(2), grad_psi_xyz(3), &
-                                                 dVdb_t1(j), dBsupphidpsi(j), dBdpsi(j), &
-                                                 sqrtg, ds(j), jac_suvxyz
-            write(igc8,'(1X,I8,14(2X,E16.8))') j, s_initA, u_initA, &
-                       v_initA, X, Y, Z, Bx, By, Bz, grad_psi_xyz(1), &
-                       grad_psi_xyz(2), grad_psi_xyz(3), &
-                       e_theta_norm(j), dBsupphidpsi(j)
-! JCS Moded Y, grad_psi_xyz & e_theta_norm
-
+!             write(igc6,'(1X,I8,41(2X,E16.8))') j,X,Y,Z,bnxyz(1), bnxyz(2), bnxyz(3), &
+!                                                 Bxyz(1), Bxyz(2), Bxyz(3), modB(j), &
+!                                                 dxyzds(1),dxyzds(2),dxyzds(3), &
+!!                                                 dxyzdu(1),dxyzdu(2),dxyzdu(3), &
+!                                                 dxyzdv(1),dxyzdv(2),dxyzdv(3), &
+!                                                 grads_xyz(1), grads_xyz(2), grads_xyz(3), &
+!                                                 gradu_xyz(1), gradu_xyz(2), gradu_xyz(3), &
+!                                                 gradv_xyz(1), gradv_xyz(2), gradv_xyz(3), &
+!                                                 e_theta_norm(j), binormal(j,1), binormal(j,2), &
+!                                                 binormal(j,3), &
+!                                                 grad_psi_xyz(1), grad_psi_xyz(2), grad_psi_xyz(3), &
+!                                                 dVdb_t1(j), dBsupphidpsi(j), dBdpsi(j), &
+!                                                 sqrtg, ds(j), jac_suvxyz
+!            write(igc8,'(1X,I8,14(2X,E16.8))') j, s_initA, u_initA, &
+!                       v_initA, X, Y, Z, Bx, By, Bz, grad_psi_xyz(1), &
+!                       grad_psi_xyz(2), grad_psi_xyz(3), &
+!                       e_theta_norm(j), dBsupphidpsi(j)
+!! JCS Moded Y, grad_psi_xyz & e_theta_norm
+!
 
              !advance the step- note, this zeta and theta are the PEST coordinates
             zeta_p = zeta_p + delzeta_p
@@ -820,13 +820,13 @@
           !------------------------------END DO j = 1,nsteps over each step along line
           ! Print things out to a file for post-analysis
           !CALL safe_open(igc2, ierrgc2, 'gc2.'//trim(proc_string), 'replace','formatted')
-          close(igc2)
-          close(igc3)
-          close(igc4)
-          close(igc5)
-          close(igc6)
-          close(igc7)
-          close(igc8)
+!          close(igc2)
+!          close(igc3)
+!          close(igc4)
+!          close(igc5)
+!          close(igc6)
+!          close(igc7)
+!          close(igc8)
           !write(igc2,*), "u,v,R,Z,X,Y,Br,Bphi,Bz,Bsups,Bsupu,Bsupv"
           !do j = 1,nsteps
             !  WRITE(6,'(2X,I3,8(2X,E11.4))')
