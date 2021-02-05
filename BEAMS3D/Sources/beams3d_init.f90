@@ -42,6 +42,7 @@
       INTEGER :: i,j,k,ier, iunit, nextcur_in, nshar
       INTEGER :: bcs1(2), bcs2(2), bcs3(2), bcs1_s(2)
       REAL(rprec) :: br, bphi, bz, ti_temp, vtemp
+      REAL(rprec), DIMENSION(:), ALLOCATABLE :: R_wall_temp
 !-----------------------------------------------------------------------
 !     External Functions
 !          A00ADF               NAG Detection
@@ -578,7 +579,20 @@
 
       ! Setup wall heat flux tracking
       IF (lwall_loaded) THEN
-         IF (lverb) CALL wall_info(6)
+         IF (lverb) THEN
+            CALL wall_info(6)
+            ALLOCATE(R_wall_temp(nvertex))
+            FORALL (i = 1:nvertex) R_wall_temp(i) = SQRT(vertex(i,1)*vertex(i,1)+vertex(i,2)*vertex(i,2))
+            WRITE(6,'(A,F9.5,A,F9.5,A)') '   R_WALL   = [',MINVAL(R_wall_temp),',',MAXVAL(R_wall_temp),']'
+            WRITE(6,'(A,F9.5,A,F9.5,A)') '   Z_WALL   = [',MINVAL(vertex(:,3)),',',MAXVAL(vertex(:,3)),']'
+            IF ((MINVAL(R_wall_temp)<rmin) .or. &
+                (MAXVAL(R_wall_temp)>rmax) .or. &
+                (MINVAL(vertex(:,3))<zmin) .or. &
+                (MAXVAL(vertex(:,3))>zmax)) THEN
+               IF (.not. lplasma_only) WRITE(6,'(A)') '   WALL OUTSIDE GRID DOMAIN!'
+            END IF
+            DEALLOCATE(R_wall_temp)
+         END IF
          CALL FLUSH(6)
          CALL mpialloc(wall_load, nbeams, nface, myid_sharmem, 0, MPI_COMM_SHARMEM, win_wall_load)
          IF (myid_sharmem == master) wall_load = 0
