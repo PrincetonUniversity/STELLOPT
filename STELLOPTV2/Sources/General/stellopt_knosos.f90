@@ -73,9 +73,9 @@
             sigma_knosos_fic(ik) >= bigno .and. sigma_knosos_qer(ik) >= bigno .and. sigma_knosos_vbt(ik) >= bigno .and. &
             sigma_knosos_vbb(ik) >= bigno .and. sigma_knosos_wbw(ik) >= bigno .and. sigma_knosos_dbo(ik) >= bigno) CYCLE
          ns=ns+1
-         IF(myworkid == ns ) WRITE(temp_str,'(i3.3)') ik
+         IF(myworkid == ns ) WRITE(temp_str,'(A,I3.3)') '_s',ik
       END DO
-      KN_EXT='kn_log.'//TRIM(proc_string)//'_s'//TRIM(temp_str)      
+      KN_EXT='kn_log.'//TRIM(proc_string)//TRIM(ADJUSTL(temp_str))
 !      IF (myworkid == ns) THEN
 !         KN_EXT=
 !      ELSE

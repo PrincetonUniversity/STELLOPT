@@ -36,6 +36,8 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
   NAMELIST /surfaces/ NS,S,SMIN,SMAX,DIRDB,DIRS
   !Namelist 'species' contains the list of species calculated
   NAMELIST /species/ NBB,ZB,AB,REGB,ZEFF
+  !Namelist 'knosos_in' contains other variables
+  NAMELIST /knosos_in/ WBW
   !Namelist 'others' contains other variables
   NAMELIST /others/ QN,TRACE_IMP,PLATEAU_OR_PS,USE_B0,&
        & IMP1NU,CLOSEST_LAMBDA,MODEL_ALPHAD,ONE_ALPHA,EXTRA_ALPHA,RE_SOURCE,&
@@ -201,6 +203,16 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
   IF(iostat.EQ.0) THEN
      IF(myrank.EQ.0) WRITE(ioutt,*) 'File "input.parameters" found'
      READ (1,nml=parameters)
+     CLOSE(1)
+  END IF
+
+  WBW=0
+  !Read namelist 'parameters'
+  OPEN(unit=1,file="input.knosos",form='formatted',action='read',iostat=iostat) 
+  IF(iostat.NE.0) OPEN(unit=1,file="../input.knosos",form='formatted',action='read',iostat=iostat) 
+  IF(iostat.EQ.0) THEN
+     IF(myrank.EQ.0) WRITE(ioutt,*) 'File "input.knosos" found'
+     READ (1,nml=knosos_in)
      CLOSE(1)
   END IF
 
@@ -530,9 +542,10 @@ SUBROUTINE READ_INPUT(ns,s,nbb,Zb,Ab,regb,Zeff)
      WRITE(ioutt,nml=parameters)
      WRITE(ioutt,nml=surfaces)
      WRITE(ioutt,nml=species)
+     WRITE(ioutt,nml=knosos_in)
      WRITE(ioutt,nml=others)
   END IF
-
+  CLOSE(ioutt)
 
 END SUBROUTINE READ_INPUT
 
