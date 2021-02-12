@@ -98,7 +98,7 @@
       maxrateDT = 0; maxrateDDT = 0; maxrateDDHe = 0
 
       ! Setup masking
-      sfactor = 2
+      sfactor = 1
       IF (lplasma_only) sfactor = S_LIM_MAX
       
       ! Break up the Work
