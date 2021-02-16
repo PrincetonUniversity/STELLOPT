@@ -14,7 +14,8 @@
                                 raxis_eqdsk => raxis, &
                                 zaxis_eqdsk => zaxis, get_eqdsk_B, &
                                 get_eqdsk_flux, read_eqdsk_deallocate, &
-                                nlim, xlim, zlim
+                                nlim, xlim, zlim, ntitle, btor, &
+                                rcenter, sp
       USE beams3d_runtime
       USE beams3d_grid, ONLY: raxis_g => raxis, phiaxis, &
                                  zaxis_g => zaxis, nr, nphi, nz, &
@@ -66,15 +67,18 @@
       IF (lverb) THEN
          betatot = 0
          WRITE(6,'(A)')               '----- EQDSK Information -----'
+         WRITE(6,'(A)') '  HEADER: '//ntitle(1)//ntitle(2)//ntitle(3)//ntitle(4)//ntitle(5)
+         WRITE(6,'(A,F7.2,A,F7.2,A)') '   B  = ',Btor,' [T] @ R = ',rcenter,' [m]'
          IF (ABS(totcur) > 1E8) THEN
-            WRITE(6,'(A,F7.2,A,F7.2,A)') '   BETA    = ',betatot,';  I  = ',totcur*1E-9,' [GA]'
+            WRITE(6,'(A,F7.2,A)') '   I  = ',totcur*1E-9,' [GA]'
          ELSEIF (ABS(totcur) > 1E5) THEN
-            WRITE(6,'(A,F7.2,A,F7.2,A)') '   BETA    = ',betatot,';  I  = ',totcur*1E-6,' [MA]'
+            WRITE(6,'(A,F7.2,A)') '   I  = ',totcur*1E-6,' [MA]'
          ELSEIF (ABS(totcur) > 1E2) THEN
-            WRITE(6,'(A,F7.2,A,F7.2,A)') '   BETA    = ',betatot,';  I  = ',totcur*1E-3,' [kA]'
+            WRITE(6,'(A,F7.2,A)') '   I  = ',totcur*1E-3,' [kA]'
          ELSE
-            WRITE(6,'(A,F7.2,A,F7.2,A)') '   BETA    = ',betatot,';  I  = ',totcur,' [A]'
+            WRITE(6,'(A,F7.2,A)') '   I  = ',totcur,' [A]'
          END IF
+         WRITE(6,'(A,F7.2,A)')        '   P_MAX = ',MAXVAL(sp)*1E-3,' [kPa]'
          WRITE(6,'(A,F7.2,A)')        '   PHIEDGE = ',psimx(1),' [Wb]'
          WRITE(6,'(A)')               '   Using EQDSK sized grids!'
       END IF
@@ -92,7 +96,6 @@
          CALL wall_load_seg(nlim,xlim,zlim,k,ier,COMM=MPI_COMM_LOCAL)
          IF (ier==-327) WRITE(6,'(A)') 'ERROR: EQDSK Limiter has repeated index.'
          ier = 0
-         lvessel = .FALSE.
       END IF
       
       IF (lverb) THEN
@@ -123,7 +126,7 @@
 
          ! Flux
          CALL get_eqdsk_flux(raxis_g(i),zaxis_g(k),sflx,uflx)
-         S_ARR(i,:,k)=sflx
+         S_ARR(i,:,k)=sqrt(sflx) ! Actually rho
          U_ARR(i,:,k)=uflx
 
          IF (sflx <= 1) THEN
