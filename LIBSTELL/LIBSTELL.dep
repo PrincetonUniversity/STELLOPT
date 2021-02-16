@@ -1,5 +1,9 @@
 # Microsoft Developer Studio Generated Dependency File, included by LIBSTELL.mak
       
+read_eqdsk_mod.o :  \
+      stel_kinds.o \
+      read_wout_mod.o
+      
 vmec_ohkawa.o :  \
       stel_kinds.o \
       read_wout_mod.o
@@ -1259,6 +1263,10 @@ wall_mod.o : \
       
 
 wall_mod_new.o : \
+      safe_open_mod.o 
+      
+
+wall_mod_new2.o : \
       safe_open_mod.o 
       
 

@@ -34,6 +34,7 @@
 !                    - J and dense now calculated in diagnostics
 !     v2.90 12/07/20 - Thermal fusion birth model
 !                    - T_END now outputs last timestep time.
+!     v2.95 02/16/21 - Added interface to eqdsk files.
 !-----------------------------------------------------------------------
 MODULE beams3d_runtime
     !-----------------------------------------------------------------------
@@ -119,7 +120,7 @@ MODULE beams3d_runtime
                lbeam, lhitonly, lread_input, lplasma_only, lraw,&
                ldepo, lbeam_simple, ldebug, lcollision, lw7x, lsuzuki, &
                lascot, lascot4, lbbnbi, lvessel_beam, lascotfl, lrandomize, &
-               lfusion, lfusion_alpha
+               lfusion, lfusion_alpha, leqdsk
     INTEGER :: nextcur, npoinc, nbeams, nparticles_start, nprocs_beams, ndt, ndt_max
     INTEGER, DIMENSION(MAXBEAMS) :: Dex_beams
     INTEGER, ALLOCATABLE :: beam(:)
@@ -138,9 +139,9 @@ MODULE beams3d_runtime
     REAL(rprec), ALLOCATABLE :: extcur(:)
     CHARACTER(LEN=10) ::  qid_str_saved ! For ASCOT5
     CHARACTER(256) :: id_string, mgrid_string, coil_string, &
-    vessel_string, int_type, restart_string, bbnbi_string
+    vessel_string, int_type, restart_string, bbnbi_string, eqdsk_string
 
-    REAL(rprec), PARAMETER :: BEAMS3D_VERSION = 2.90
+    REAL(rprec), PARAMETER :: BEAMS3D_VERSION = 2.95
     !-----------------------------------------------------------------------
     !     Subroutines
     !          handle_err  Controls Program Termination
