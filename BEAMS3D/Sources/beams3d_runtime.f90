@@ -141,7 +141,7 @@ MODULE beams3d_runtime
     CHARACTER(256) :: id_string, mgrid_string, coil_string, &
     vessel_string, int_type, restart_string, bbnbi_string, eqdsk_string
 
-    REAL(rprec), PARAMETER :: BEAMS3D_VERSION = 2.90
+    REAL(rprec), PARAMETER :: BEAMS3D_VERSION = 2.95
     !-----------------------------------------------------------------------
     !     Subroutines
     !          handle_err  Controls Program Termination
