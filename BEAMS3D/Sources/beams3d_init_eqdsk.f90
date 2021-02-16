@@ -15,7 +15,7 @@
                                 zaxis_eqdsk => zaxis, get_eqdsk_B, &
                                 get_eqdsk_flux, read_eqdsk_deallocate, &
                                 nlim, xlim, zlim, ntitle, btor, &
-                                rcenter, sp
+                                rcenter, sp, nbndry, xbndry, zbndry
       USE beams3d_runtime
       USE beams3d_grid, ONLY: raxis_g => raxis, phiaxis, &
                                  zaxis_g => zaxis, nr, nphi, nz, &
@@ -80,7 +80,13 @@
          END IF
          WRITE(6,'(A,F7.2,A)')        '   P_MAX = ',MAXVAL(sp)*1E-3,' [kPa]'
          WRITE(6,'(A,F7.2,A)')        '   PHIEDGE = ',psimx(1),' [Wb]'
-         WRITE(6,'(A)')               '   Using EQDSK sized grids!'
+         IF (lcreate_wall) THEN
+            IF (lplasma_only) THEN
+               WRITE(6,'(A)')         '   Using EQDSK Separatrix as wall'
+            ELSE
+               WRITE(6,'(A)')         '   Using EQDSK Limiter as wall'
+            END IF
+         END IF
       END IF
 
 
@@ -93,8 +99,13 @@
          lvessel = .TRUE.
          k = 128
          ier = 0
-         CALL wall_load_seg(nlim,xlim,zlim,k,ier,COMM=MPI_COMM_LOCAL)
-         IF (ier==-327) WRITE(6,'(A)') 'ERROR: EQDSK Limiter has repeated index.'
+         IF (lplasma_only) THEN
+            CALL wall_load_seg(nbndry,xbndry,zbndry,k,ier,COMM=MPI_COMM_LOCAL)
+            IF (ier==-327) WRITE(6,'(A)') 'ERROR: EQDSK Boundary has repeated index.'
+         ELSE
+            CALL wall_load_seg(nlim,xlim,zlim,k,ier,COMM=MPI_COMM_LOCAL)
+            IF (ier==-327) WRITE(6,'(A)') 'ERROR: EQDSK Limiter has repeated index.'
+         END IF
          ier = 0
       END IF
       
