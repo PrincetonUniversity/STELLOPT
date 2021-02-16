@@ -438,6 +438,182 @@
       RETURN
       END SUBROUTINE wall_load_mn
 
+      SUBROUTINE wall_load_seg(npts,rseg,zseg,nphi,istat,comm)
+#if defined(MPI_OPT)
+      USE mpi
+#endif
+      IMPLICIT NONE
+      INTEGER, INTENT(in) :: npts, nphi
+      DOUBLE PRECISION, INTENT(in) :: rseg(npts)
+      DOUBLE PRECISION, INTENT(in) :: Zseg(npts)
+      INTEGER, INTENT(inout)       :: istat
+      INTEGER, INTENT(inout), OPTIONAL :: comm
+      INTEGER :: shar_comm, shar_rank, shar_size
+      INTEGER :: nseg, ij, ik, il, im
+      DOUBLE PRECISION :: xt, yt, zt, dphi
+      INTEGER :: iunit, dex1, dex2, dex3
+      
+      shar_rank = 0; shar_size = 1;
+      dphi = 8.0D+00 * ATAN(one)/nphi
+#if defined(MPI_OPT)
+      IF (PRESENT(comm)) THEN
+         CALL MPI_COMM_SPLIT_TYPE(comm, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, shar_comm, istat)
+         CALL MPI_COMM_RANK( shar_comm, shar_rank, istat )
+         CALL MPI_COMM_SIZE( shar_comm, shar_size, istat)
+      END IF
+#endif
+      machine_string = '          SEGMENTS'
+      date = '      TODAY'
+      nseg = npts-1
+      nvertex = nseg * 4 * nphi
+      nface   = nseg * 2 * nphi
+#if defined(MPI_OPT)
+      IF (PRESENT(comm)) THEN
+         CALL mpialloc_2d_dbl(vertex,nvertex,3,shar_rank,0,shar_comm,win_vertex)
+         CALL mpialloc_2d_int(face,nface,3,shar_rank,0,shar_comm,win_face)
+         mydelta = CEILING(REAL(nface) / REAL(shar_size))
+         mystart = 1 + shar_rank*mydelta
+         myend   = mystart + mydelta
+         IF (myend > nface) myend=nface
+      ELSE
+#endif
+         ALLOCATE(vertex(nvertex,3),face(nface,3),STAT=istat)
+         mystart = 1; myend=nface
+#if defined(MPI_OPT)
+      END IF
+#endif
+      IF (istat/=0) RETURN
+      IF (shar_rank == 0) THEN
+         il = 1; im = 1
+         DO ik = 1, nphi
+            DO ij = 1, nseg
+               ! create the 4 points
+               vertex(il,1) = rseg(ij)*cos(dphi*(ik-1))
+               vertex(il,2) = rseg(ij)*sin(dphi*(ik-1))
+               vertex(il,3) = zseg(ij)
+               vertex(il+1,1) = rseg(ij+1)*cos(dphi*(ik-1))
+               vertex(il+1,2) = rseg(ij+1)*sin(dphi*(ik-1))
+               vertex(il+1,3) = zseg(ij+1)
+               vertex(il+2,1) = rseg(ij)*cos(dphi*ik)
+               vertex(il+2,2) = rseg(ij)*sin(dphi*ik)
+               vertex(il+2,3) = zseg(ij)
+               vertex(il+3,1) = rseg(ij+1)*cos(dphi*ik)
+               vertex(il+3,2) = rseg(ij+1)*sin(dphi*ik)
+               vertex(il+3,3) = zseg(ij+1)
+               ! Create the 2 triangles
+               face(im,1) = il
+               face(im,2) = il+2
+               face(im,3) = il+1
+               face(im+1,1) = il+2
+               face(im+1,2) = il+3
+               face(im+1,3) = il+1
+               ! Adjust index
+               im = im + 2
+               il = il + 4
+            END DO 
+         END DO
+      END IF
+#if defined(MPI_OPT)
+      IF (PRESENT(comm)) CALL MPI_BARRIER(comm,istat)
+      IF (istat/=0) RETURN
+      IF (PRESENT(comm)) THEN
+         CALL mpialloc_2d_dbl(A0,nface,3,shar_rank,0,shar_comm,win_a0)
+         CALL mpialloc_2d_dbl(V0,nface,3,shar_rank,0,shar_comm,win_v0)
+         CALL mpialloc_2d_dbl(V1,nface,3,shar_rank,0,shar_comm,win_v1)
+         CALL mpialloc_2d_dbl(FN,nface,3,shar_rank,0,shar_comm,win_fn)
+         CALL mpialloc_1d_dbl(xmin,nface,shar_rank,0,shar_comm,win_xmin)
+         CALL mpialloc_1d_dbl(ymin,nface,shar_rank,0,shar_comm,win_ymin)
+         CALL mpialloc_1d_dbl(zmin,nface,shar_rank,0,shar_comm,win_zmin)
+         CALL mpialloc_1d_dbl(xmax,nface,shar_rank,0,shar_comm,win_xmax)
+         CALL mpialloc_1d_dbl(ymax,nface,shar_rank,0,shar_comm,win_ymax)
+         CALL mpialloc_1d_dbl(zmax,nface,shar_rank,0,shar_comm,win_zmax)
+         mydelta = CEILING(REAL(nface) / REAL(shar_size))
+         mystart = 1 + shar_rank*mydelta
+         myend   = mystart + mydelta
+         IF (myend > nface) myend=nface
+      ELSE
+#endif
+         ALLOCATE(A0(nface,3),V0(nface,3),V1(nface,3),&
+                  FN(nface,3),STAT=istat)
+         ALLOCATE(xmin(nface),ymin(nface),zmin(nface),&
+            xmax(nface),ymax(nface),zmax(nface),STAT=istat)
+         mystart = 1; myend = nface
+#if defined(MPI_OPT)
+      END IF
+#endif
+      IF (istat/=0) RETURN
+      ! Calculate the face normal
+      ! V  = Vertex1-Vertex0
+      ! W  = Vertex2-Vertex0
+      ! FN = VxW/|VxW|
+      ! d  = -Vertex0.FN (. is dot product) (note weve absorbed the negative)
+      DO ik = mystart, myend
+         dex1 = face(ik,1)
+         dex2 = face(ik,2)
+         dex3 = face(ik,3)
+         A0(ik,:) = vertex(dex1,:)
+         V0(ik,:)  = vertex(dex3,:)-vertex(dex1,:)
+         V1(ik,:)  = vertex(dex2,:)-vertex(dex1,:)
+         FN(ik,1) = (V1(ik,2)*V0(ik,3))-(V1(ik,3)*V0(ik,2))
+         FN(ik,2) = (V1(ik,3)*V0(ik,1))-(V1(ik,1)*V0(ik,3))
+         FN(ik,3) = (V1(ik,1)*V0(ik,2))-(V1(ik,2)*V0(ik,1))
+         xmin(ik) = min(vertex(dex1,1),vertex(dex2,1),vertex(dex3,1))
+         xmax(ik) = max(vertex(dex1,1),vertex(dex2,1),vertex(dex3,1))
+         ymin(ik) = min(vertex(dex1,2),vertex(dex2,2),vertex(dex3,2))
+         ymax(ik) = max(vertex(dex1,2),vertex(dex2,2),vertex(dex3,2))
+         zmin(ik) = min(vertex(dex1,3),vertex(dex2,3),vertex(dex3,3))
+         zmax(ik) = max(vertex(dex1,3),vertex(dex2,3),vertex(dex3,3))
+      END DO
+#if defined(MPI_OPT)
+      IF (PRESENT(comm)) CALL MPI_BARRIER(comm,istat)
+#endif
+      ! Check for zero area
+      IF (ANY(SUM(FN*FN,DIM=2)==zero)) THEN
+         istat=-327
+         RETURN
+      END IF
+#if defined(MPI_OPT)
+      IF (PRESENT(comm)) THEN
+         CALL mpialloc_1d_dbl(DOT00,nface,shar_rank,0,shar_comm,win_dot00)
+         CALL mpialloc_1d_dbl(DOT01,nface,shar_rank,0,shar_comm,win_dot01)
+         CALL mpialloc_1d_dbl(DOT11,nface,shar_rank,0,shar_comm,win_dot11)
+         CALL mpialloc_1d_dbl(invDenom,nface,shar_rank,0,shar_comm,win_invDenom)
+         CALL mpialloc_1d_dbl(d,nface,shar_rank,0,shar_comm,win_d)
+         CALL mpialloc_1d_int(ihit_array,nface,shar_rank,0,shar_comm,win_ihit)
+         mydelta = CEILING(REAL(nface) / REAL(shar_size))
+         mystart = 1 + shar_rank*mydelta
+         myend   = mystart + mydelta
+         IF (myend > nface) myend=nface
+      ELSE
+#endif
+         ALLOCATE(DOT00(nface), DOT01(nface),&
+                  DOT11(nface), invDenom(nface),&
+                  STAT=istat)
+         ALLOCATE(d(nface),STAT=istat)
+         ALLOCATE(ihit_array(nface),STAT=istat)
+         mystart = 1; myend = nface
+#if defined(MPI_OPT)
+      END IF
+#endif
+      IF (istat/=0) RETURN
+      DO ik = mystart, myend
+         ihit_array(ik) = 0
+         DOT00(ik) = V0(ik,1)*V0(ik,1) + V0(ik,2)*V0(ik,2) + V0(ik,3)*V0(ik,3)
+         DOT01(ik) = V0(ik,1)*V1(ik,1) + V0(ik,2)*V1(ik,2) + V0(ik,3)*V1(ik,3)
+         DOT11(ik) = V1(ik,1)*V1(ik,1) + V1(ik,2)*V1(ik,2) + V1(ik,3)*V1(ik,3)
+         d(ik)     = FN(ik,1)*A0(ik,1) + FN(ik,2)*A0(ik,2) + FN(ik,3)*A0(ik,3)
+         invDenom(ik) = one / (DOT00(ik)*DOT11(ik) - DOT01(ik)*DOT01(ik))
+      END DO
+#if defined(MPI_OPT)
+      IF (PRESENT(comm)) THEN
+         CALL MPI_BARRIER(shar_comm, istat)
+         CALL MPI_COMM_FREE(shar_comm, istat)
+      END IF
+#endif
+      lwall_loaded = .true.
+      RETURN
+      END SUBROUTINE wall_load_seg
+
       SUBROUTINE wall_dump(filename,istat)
       CHARACTER(LEN=*), INTENT(in) :: filename
       INTEGER, INTENT(inout)       :: istat
