@@ -125,6 +125,16 @@
          RETURN
       END SUBROUTINE setup_eqdsk_helpers
 
+      SUBROUTINE get_eqdsk_grid(nr_out,nz_out,rmin_out,rmax_out,zmin_out,zmax_out)
+         IMPLICIT NONE
+         INTEGER, INTENT(out) :: nr_out, nz_out
+         REAL(rprec), INTENT(out) :: rmin_out, rmax_out, zmin_out, zmax_out
+         nr_out = nr; nz_out= nz
+         rmin_out = rmin; zmin_out = zmin
+         rmax_out = rmax; zmax_out = zmax
+         RETURN
+      END SUBROUTINE get_eqdsk_grid
+
       SUBROUTINE get_eqdsk_B(r,z,br,bp,bz)
          IMPLICIT NONE
          REAL(rprec), INTENT(in) :: r,z
@@ -142,17 +152,20 @@
          ip = CEILING((r-rmin)/dr) 
          km = FLOOR((z-zmin)/dz) 
          kp = CEILING((z-zmin)/dz)
+         im = MIN(MAX(im,1),nr-1); km = MIN(MAX(km,1),nz-1)
+         ip = MIN(MAX(ip,2),nr); kp = MIN(MAX(kp,2),nz)
          di = r-rmin-im*dr
          dk = z-zmin-km*dz
          rho = psixz(im,km)*(1-di)*(1-dk) &
              + psixz(ip,km)*(di)*(1-dk) &
              + psixz(im,kp)*(1-di)*(dk) &
              + psixz(ip,kp)*di*dk
-         rho = rho-psiaxis/psidim
+         rho = (rho-psiaxis)/psidim
          jm = FLOOR(nr*rho)
          jp = CEILING(nr*rho)
-         dj = rho-jm*rho
-         IF (rho<=1) bp = sf(jm) + (sf(jp)-sf(jm))*nr*dj
+         jm = MIN(MAX(jm,1),nr-1); jp = MIN(MAX(jp,2),nr);
+         dj = rho-jm/nr
+         IF (rho<=1) bp = (sf(jm) + (sf(jp)-sf(jm))*nr*dj)*rinv
          dpdr = (psixz(ip,km)-psixz(im,km))/dr
          dpdz = (psixz(im,kp)-psixz(im,km))/dz
          br = -dpdz*rinv
@@ -175,13 +188,15 @@
          ip = CEILING((r-rmin)/dr) 
          km = FLOOR((z-zmin)/dz) 
          kp = CEILING((z-zmin)/dz)
+         im = MIN(MAX(im,1),nr-1); km = MIN(MAX(km,1),nz-1)
+         ip = MIN(MAX(ip,2),nr); kp = MIN(MAX(kp,2),nz)
          di = r-rmin-im*dr
          dk = z-zmin-km*dz
          rho = psixz(im,km)*(1-di)*(1-dk) &
              + psixz(ip,km)*(di)*(1-dk) &
              + psixz(im,kp)*(1-di)*(dk) &
              + psixz(ip,kp)*di*dk
-         rho = rho-psiaxis/psidim
+         rho = (rho-psiaxis)/psidim
          theta = ATAN2(z-zaxis,r-raxis)
          RETURN
       END SUBROUTINE get_eqdsk_flux
@@ -203,17 +218,20 @@
          ip = CEILING((r-rmin)/dr) 
          km = FLOOR((z-zmin)/dz) 
          kp = CEILING((z-zmin)/dz)
+         im = MIN(MAX(im,1),nr-1); km = MIN(MAX(km,1),nz-1)
+         ip = MIN(MAX(ip,2),nr); kp = MIN(MAX(kp,2),nz)
          di = r-rmin-im*dr
          dk = z-zmin-km*dz
          rho = psixz(im,km)*(1-di)*(1-dk) &
              + psixz(ip,km)*(di)*(1-dk) &
              + psixz(im,kp)*(1-di)*(dk) &
              + psixz(ip,kp)*di*dk
-         rho = rho-psiaxis/psidim
+         rho = (rho-psiaxis)/psidim
          IF (rho<=1) THEN
             jm  = FLOOR(nr*rho)
             jp  = CEILING(nr*rho)
-            dj  = rho - jm*rho
+            jm = MIN(MAX(jm,1),nr-1); jp = MIN(MAX(jp,2),nr);
+            dj = rho-jm/nr
             pp  = spp(jm)  + ( spp(jp)- spp(jm))*nr*dj
             ffp = sffp(jm) + (sffp(jp)-sffp(jm))*nr*dj
             jtor = r*pp + ffp*rinv
