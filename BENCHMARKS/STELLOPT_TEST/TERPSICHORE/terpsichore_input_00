@@ -35,10 +35,10 @@ C
            1           1           0           2
 C
 C    PVAC        PARFAC      QONAX        QN         DSVAC       QVAC    NOWALL
-  1.2500e+00  0.0000e-00  0.6500e-00  0.0000e-00  1.0000e-00  1.2500e+00     -1
+  1.0500e+00  0.0000e-00  0.6500e-00  0.0000e-00  1.0000e-00  1.0500e+00     -2
 
 C    AWALL       EWALL       DWALL       GWALL       DRWAL       DZWAL   NPWALL
-  3.5000e+00  1.0000e+00  5.0000e-01  0.0000e-00  0.0000e-00  0.0000e-00      0
+  1.5000e+00  1.0000e+00  5.0000e-01  0.0000e-00  0.0000e-00  0.0000e-00      0
 C
 C    RPLMIN       XPLO      DELTAJP      COEB        COEC        COEP
   1.0000e-05  1.0000e-06  4.0000e-02  1.0000e-00  1.0000e-00  
@@ -73,6 +73,7 @@ C
 C   NEV NITMAX         AL0     EPSPAM IGREEN MPINIT
       1   1500  -5.0E-03  1.0E-04      0      0
 C
+
 
 
 
