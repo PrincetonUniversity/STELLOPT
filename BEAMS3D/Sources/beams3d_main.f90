@@ -84,6 +84,7 @@ PROGRAM BEAMS3D
         lvmec = .false.
         lpies = .false.
         lspec = .false.
+        leqdsk = .false.
         lcoil = .false.
         lmgrid = .false.
         lvessel = .false.
@@ -111,6 +112,7 @@ PROGRAM BEAMS3D
         vessel_string = ''
         restart_string = ''
         bbnbi_string = ''
+        eqdsk_string = ''
 
         ! First Handle the input arguments
         CALL GETCARG(1, arg1, numargs)
@@ -149,6 +151,15 @@ PROGRAM BEAMS3D
                 lpies = .false.
                 lvmec = .false.
                 CALL GETCARG(i, id_string, numargs)
+            case ("-eqdsk")
+                i = i + 1
+                lvmec = .false.
+                lpies = .false.
+                lspec = .false.
+                leqdsk = .true.
+                CALL GETCARG(i, id_string, numargs)
+                i = i + 1
+                CALL GETCARG(i, eqdsk_string, numargs)
             case ("-mgrid")
                 i = i + 1
                 lmgrid = .true.
@@ -199,6 +210,7 @@ PROGRAM BEAMS3D
                 write(6, *) ' Usage: xbeams3d <options>'
                 write(6, *) '    <options>'
                 write(6, *) '     -vmec ext:     VMEC input/wout extension'
+                write(6, *) '     -eqdsk in gf   BEAMS3D input file and gfile'
                 !write(6,*)'     -pies ext:   PIES input extension (must have &INDATA namelist)'
                 !write(6,*)'     -spec ext:     SPEC input extension (must have &INDATA namelist)'
                 write(6, *) '     -vessel file:  Vessel File (for limiting)'
@@ -207,7 +219,6 @@ PROGRAM BEAMS3D
                 write(6, *) '     -restart ext:  BEAMS3D HDF5 extension for starting particles'
                 write(6, *) '     -beamlet ext:  Beamlet file for beam geometry'
                 write(6, *) '     -beam_simple:  Monoenergetic BEAMS'
-                write(6, *) '     -w7x:          W7-X beam model'
                 write(6, *) '     -ascot5:       Output data in ASCOT5 gyro-center format'
                 write(6, *) '     -ascot5_fl:    Output data in ASCOT5 fieldline format'
                 write(6, *) '     -ascot4:       Output data in ASCOT4 format'
@@ -261,11 +272,15 @@ PROGRAM BEAMS3D
     IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
     CALL MPI_BCAST(restart_string, 256, MPI_CHARACTER, master, MPI_COMM_BEAMS, ierr_mpi)
     IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
+    CALL MPI_BCAST(eqdsk_string, 256, MPI_CHARACTER, master, MPI_COMM_BEAMS, ierr_mpi)
+    IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
     CALL MPI_BCAST(lvmec, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
     IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
     CALL MPI_BCAST(lpies, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
     IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
     CALL MPI_BCAST(lspec, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
+    IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
+    CALL MPI_BCAST(leqdsk, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
     IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
     CALL MPI_BCAST(lmgrid, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
     IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)

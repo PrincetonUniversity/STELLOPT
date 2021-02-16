@@ -12,6 +12,7 @@
       USE stel_kinds, ONLY: rprec
       USE vmec_input,  ONLY: extcur_in => extcur, read_indata_namelist,&
                              nv_in => nzeta, nfp_in => nfp, nigroup
+      USE read_eqdsk_mod, ONLY: read_gfile, get_eqdsk_grid
       USE beams3d_runtime
       USE beams3d_grid
       USE beams3d_input_mod, ONLY: read_beams3d_input
@@ -42,6 +43,7 @@
       INTEGER :: i,j,k,ier, iunit, nextcur_in, nshar
       INTEGER :: bcs1(2), bcs2(2), bcs3(2), bcs1_s(2)
       REAL(rprec) :: br, bphi, bz, ti_temp, vtemp
+      REAL(rprec), DIMENSION(:), ALLOCATABLE :: R_wall_temp
 !-----------------------------------------------------------------------
 !     External Functions
 !          A00ADF               NAG Detection
@@ -81,6 +83,13 @@
       ELSE IF (lspec .and. lread_input) THEN
          CALL read_beams3d_input('input.' // TRIM(id_string),ier)
          IF (lverb) WRITE(6,'(A)') '   FILE: input.' // TRIM(id_string)
+      ELSE IF (leqdsk .and. lread_input) THEN
+         CALL read_beams3d_input('input.' // TRIM(id_string),ier)
+         IF (lverb) WRITE(6,'(A)') '   FILE: input.' // TRIM(id_string)
+         CALL read_gfile(eqdsk_string,ier)
+         IF (lverb) WRITE(6,'(A)') '   G-FILE: '// TRIM(eqdsk_string)
+         CALL get_eqdsk_grid(nr,nz,rmin,rmax,zmin,zmax)
+         phimin = 0; phimax=pi2; nphi = 3;
       END IF
 
       IF (lrestart_particles) THEN
@@ -132,7 +141,7 @@
 
       ! Construct 1D splines
       bcs1_s=(/ 0, 0 /)
-      IF (lvmec .and. .not.lvac) THEN
+      IF ((lvmec .or. leqdsk) .and. .not.lvac) THEN
          IF (lverb) WRITE(6,'(A)') '----- Profile Parameters -----'
          ! TE
          IF (nte>0) THEN
@@ -268,6 +277,10 @@
          !CALL beams3d_init_pies
       ELSE IF (lspec .and. .not.lvac) THEN
          !CALL beams3d_init_spec
+      ELSE IF (leqdsk) THEN
+         CALL mpialloc(req_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_req_axis)
+         CALL mpialloc(zeq_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_zeq_axis)
+         CALL beams3d_init_eqdsk
       END IF
 
       ! Adjust the torodial distribution function grid
@@ -578,7 +591,20 @@
 
       ! Setup wall heat flux tracking
       IF (lwall_loaded) THEN
-         IF (lverb) CALL wall_info(6)
+         IF (lverb) THEN
+            CALL wall_info(6)
+            ALLOCATE(R_wall_temp(nvertex))
+            FORALL (i = 1:nvertex) R_wall_temp(i) = SQRT(vertex(i,1)*vertex(i,1)+vertex(i,2)*vertex(i,2))
+            WRITE(6,'(A,F9.5,A,F9.5,A)') '   R_WALL   = [',MINVAL(R_wall_temp),',',MAXVAL(R_wall_temp),']'
+            WRITE(6,'(A,F9.5,A,F9.5,A)') '   Z_WALL   = [',MINVAL(vertex(:,3)),',',MAXVAL(vertex(:,3)),']'
+            IF ((MINVAL(R_wall_temp)<rmin) .or. &
+                (MAXVAL(R_wall_temp)>rmax) .or. &
+                (MINVAL(vertex(:,3))<zmin) .or. &
+                (MAXVAL(vertex(:,3))>zmax)) THEN
+               IF (.not. lplasma_only) WRITE(6,'(A)') '   WALL OUTSIDE GRID DOMAIN!'
+            END IF
+            DEALLOCATE(R_wall_temp)
+         END IF
          CALL FLUSH(6)
          CALL mpialloc(wall_load, nbeams, nface, myid_sharmem, 0, MPI_COMM_SHARMEM, win_wall_load)
          IF (myid_sharmem == master) wall_load = 0
