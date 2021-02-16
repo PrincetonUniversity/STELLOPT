@@ -92,6 +92,7 @@ test_beams3d:
 	$(MAKE) test_beams3d_loss
 	$(MAKE) test_beams3d_slow
 	$(MAKE) test_beams3d_depo
+	$(MAKE) test_beams3d_eqdsk
 	$(MAKE) test_beams3d_fusion
 	@echo "Tesing of BEAMS3D complete"
 	@echo ""
