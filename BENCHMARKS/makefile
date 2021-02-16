@@ -92,6 +92,7 @@ test_beams3d:
 	$(MAKE) test_beams3d_loss
 	$(MAKE) test_beams3d_slow
 	$(MAKE) test_beams3d_depo
+	$(MAKE) test_beams3d_eqdsk
 	$(MAKE) test_beams3d_fusion
 	@echo "Tesing of BEAMS3D complete"
 	@echo ""
@@ -137,6 +138,13 @@ test_beams3d_fusion:
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_fusion -plasma -fusion -collisions -depo
 	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_fusion -plasma -fusion -collisions -depo
 	@cd $(BEAMS3D_TEST_DIR); ./test_ORBITS_fusion.py
+	@echo ""
+
+test_beams3d_eqdsk:
+	@cd $(BEAMS3D_TEST_DIR); rm -f *.h5 *.txt; 
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -eqdsk ORBITS_eqdsk g164723.03059 -depo
+	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -eqdsk ORBITS_eqdsk g164723.03059 -depo
+	#@cd $(BEAMS3D_TEST_DIR); ./test_ORBITS_fusion.py
 	@echo ""
 
 test_stellopt:
@@ -269,10 +277,12 @@ test_fieldlines_full:
 	@cd $(FIELDLINES_TEST_DIR); ./compare_NCSX_s1.py
 	@echo ""
 
-test_fieldlines_coll:
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xfieldlines -vmec NCSX_s1_coll -coil coils.NCSX -vac -vessel NCSX_wall_trimesh.dat -hitonly
-	@cd $(FIELDLINES_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xfieldlines -vmec NCSX_s1_coll -vac -coil coils.NCSX -vac -vessel NCSX_wall_trimesh.dat -hitonly
+test_fieldlines_coll: fieldlines_NCSX_s1.h5
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xfieldlines -vmec NCSX_s1_coll -coil coils.NCSX -vac -vessel NCSX_wall_trimesh.dat -hitonly -field_start fieldlines_NCSX_s1.h5 114
+	@cd $(FIELDLINES_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_MD) $(MYHOME)/xfieldlines -vmec NCSX_s1_coll -vac -coil coils.NCSX -vac -vessel NCSX_wall_trimesh.dat -hitonly -field_start fieldlines_NCSX_s1.h5 114
 	@echo ""
+
+fieldlines_NCSX_s1.h5: test_fieldlines_full
 
 clean_test:
 	@cd $(VMEC_TEST_DIR); rm -f dcon* jxbout* mercier* threed1* parvmecinfo* wout*

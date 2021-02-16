@@ -63,6 +63,8 @@
 !DEC$ IF DEFINED (MPI_OPT)
             CALL MPI_BCAST(nrad,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
             IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_kink: BCAST nrad',ierr_mpi)
+            CALL MPI_BCAST(mnmax_vmec,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
+            IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_kink: BCAST mnmax_vmec',ierr_mpi)
             CALL MPI_BCAST(mnmax_nyq_vmec,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
             IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_kink: BCAST mnmax_nyq_vmec',ierr_mpi)
 !DEC$ ENDIF
