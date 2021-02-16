@@ -12,6 +12,7 @@
       USE stel_kinds, ONLY: rprec
       USE vmec_input,  ONLY: extcur_in => extcur, read_indata_namelist,&
                              nv_in => nzeta, nfp_in => nfp, nigroup
+      USE read_eqdsk_mod, ONLY: read_gfile, get_eqdsk_grid
       USE beams3d_runtime
       USE beams3d_grid
       USE beams3d_input_mod, ONLY: read_beams3d_input
@@ -82,6 +83,13 @@
       ELSE IF (lspec .and. lread_input) THEN
          CALL read_beams3d_input('input.' // TRIM(id_string),ier)
          IF (lverb) WRITE(6,'(A)') '   FILE: input.' // TRIM(id_string)
+      ELSE IF (leqdsk .and. lread_input) THEN
+         CALL read_beams3d_input('input.' // TRIM(id_string),ier)
+         IF (lverb) WRITE(6,'(A)') '   FILE: input.' // TRIM(id_string)
+         CALL read_gfile(eqdsk_string,ier)
+         IF (lverb) WRITE(6,'(A)') '   G-FILE: '// TRIM(eqdsk_string)
+         CALL get_eqdsk_grid(nr,nz,rmin,rmax,zmin,zmax)
+         phimin = 0; phimax=pi2; nphi = 3;
       END IF
 
       IF (lrestart_particles) THEN
@@ -133,7 +141,7 @@
 
       ! Construct 1D splines
       bcs1_s=(/ 0, 0 /)
-      IF (lvmec .and. .not.lvac) THEN
+      IF ((lvmec .or. leqdsk) .and. .not.lvac) THEN
          IF (lverb) WRITE(6,'(A)') '----- Profile Parameters -----'
          ! TE
          IF (nte>0) THEN
@@ -269,6 +277,10 @@
          !CALL beams3d_init_pies
       ELSE IF (lspec .and. .not.lvac) THEN
          !CALL beams3d_init_spec
+      ELSE IF (leqdsk) THEN
+         CALL mpialloc(req_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_req_axis)
+         CALL mpialloc(zeq_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_zeq_axis)
+         CALL beams3d_init_eqdsk
       END IF
 
       ! Adjust the torodial distribution function grid
