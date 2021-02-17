@@ -142,9 +142,9 @@ test_beams3d_fusion:
 
 test_beams3d_eqdsk:
 	@cd $(BEAMS3D_TEST_DIR); rm -f *.h5 *.txt; 
-	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -eqdsk ORBITS_eqdsk g164723.03059 -depo
-	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -eqdsk ORBITS_eqdsk g164723.03059 -depo
-	#@cd $(BEAMS3D_TEST_DIR); ./test_ORBITS_fusion.py
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -eqdsk ORBITS_eqdsk g164723.03059 -depo -suzuki
+	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -eqdsk ORBITS_eqdsk g164723.03059 -depo -suzuki
+	@cd $(BEAMS3D_TEST_DIR); ./test_ORBITS_eqdsk.py
 	@echo ""
 
 test_stellopt:
