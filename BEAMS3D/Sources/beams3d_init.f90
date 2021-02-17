@@ -89,7 +89,7 @@
          CALL read_gfile(eqdsk_string,ier)
          IF (lverb) WRITE(6,'(A)') '   G-FILE: '// TRIM(eqdsk_string)
          CALL get_eqdsk_grid(nr,nz,rmin,rmax,zmin,zmax)
-         phimin = 0; phimax=pi2; nphi = 3;
+         phimin = 0; phimax=pi2
       END IF
 
       IF (lrestart_particles) THEN
