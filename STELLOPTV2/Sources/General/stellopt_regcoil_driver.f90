@@ -44,7 +44,7 @@
       !USE regcoil_read_bnorm
       !USE regcoil_read_nescin_spectrum
       !USE regcoil_validate_input
-      USE regcoil_variables, local_regcoil_nescin_filename => nescin_filename
+      USE regcoil_variables, local_regcoil_nescin_filename => nescin_filename,  rc_nfp => nfp
 !DEC$ ENDIF
 
 !-----------------------------------------------------------------------
