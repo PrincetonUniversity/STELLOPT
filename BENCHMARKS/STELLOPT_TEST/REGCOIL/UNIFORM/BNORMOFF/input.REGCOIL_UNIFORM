@@ -1,0 +1,145 @@
+&INDATA
+!----- Runtime Parameters -----
+  DELT =   0.80
+  NITER = 10000
+  NSTEP =  200
+  TCON0 =   2.00E+00
+  !NS_ARRAY    =      16       32       64      128
+  !NITER_ARRAY =    1000     2000     4000    10000
+  !FTOL_ARRAY  = 1.0E-06  1.0E-08  1.0E-10  1.0E-12
+  NS_ARRAY    = 51
+  NITER_ARRAY = 10000
+  FTOL_ARRAY  = 1.0E-7
+  PRECON_TYPE = 'none'
+  PREC2D_THRESHOLD =   1.000000E-19
+!----- Grid Parameters -----
+  LASYM = F
+  NFP = 0004
+  MPOL = 0008
+  NTOR = 0008
+  PHIEDGE =   4.2857
+!----- Free Boundary Parameters -----
+  LFREEB = F
+  MGRID_FILE = ''
+  NZETA  =   50
+  NVACSKIP =    6
+  EXTCUR(01) =  -1.10177100000000E+04
+!----- Pressure Parameters -----
+  GAMMA =    0.000000000000E+000
+  BLOAT =    1.000000000000E+000
+  SPRES_PED =    1.000000000000E+000
+  PRES_SCALE =   0.000000000000E+000
+  PMASS_TYPE = 'two_lorentz'
+  AM = 1.00000000000000E+00  1.00000000000000E+00  3.33970890955404E-01
+  1.35141966628902E+00  1.00000000000000E+00  1.00000000000000E+00
+  1.00000000000000E+00  1.00000000000000E+00  0.00000000000000E+00
+!----- Current/Iota Parameters -----
+  CURTOR =   0.000000000000E+000
+  NCURR = 1
+  PCURR_TYPE = 'sum_atan'
+  AC =
+    0.00000000000000E+00  1.00000000000000E+00  1.00423652381532E+01
+  1.50747420899044E+00  1.00000000000000E+00  0.00000000000000E+00
+  0.00000000000000E+00  0.00000000000000E+00  0.00000000000000E+00
+!----- Axis Parameters -----
+  RAXIS =6.1368E+00 1.1229E+00 1.0024E-01 -2.9680E-03 -9.5120E-04 4.0618E-05 -7.5315E-06 -4.4580E-06 6.2808E-07
+  ZAXIS = 0.0000E+00 -8.4784E-01 -8.8964E-02 3.2230E-03 1.2592E-03 -2.9197E-05 -4.8354E-07 3.8041E-06 -2.0700E-07
+!----- Boundary Parameters -----
+  RBC(0,0) = 6.0000E+00  ZBS(0,0) = 0.0000E+00
+  RBC(1,0) = 9.9964E-01  ZBS(1,0) = -6.5392E-01
+  RBC(2,0) = 1.0618E-01  ZBS(2,0) = -1.0618E-01
+  RBC(3,0) = 1.7525E-02  ZBS(3,0) = -1.7525E-02
+  RBC(-2,1) = -1.9951E-02  ZBS(-2,1) = -1.9951E-02
+  RBC(-1,1) = 2.3732E-02  ZBS(-1,1) = 2.3731E-02
+  RBC(0,1) = 9.3853E-01  ZBS(0,1) = 1.0615E+00
+  RBC(1,1) = -4.1191E-01  ZBS(1,1) = 4.1191E-01
+  RBC(2,1) = -1.0489E-01  ZBS(2,1) = 1.0489E-01
+  RBC(3,1) = 3.6654E-03  ZBS(3,1) = -3.6654E-03
+  RBC(-1,2) = -1.0484E-02  ZBS(-1,2) = -1.0484E-02
+  RBC(0,2) = 9.1713E-02  ZBS(0,2) = 1.2724E-01
+  RBC(1,2) = 5.6209E-02  ZBS(1,2) = 1.8034E-01
+  RBC(2,2) = 1.6000E-01  ZBS(2,2) = -1.6000E-01
+  RBC(3,2) = -1.8126E-02  ZBS(3,2) = 5.1722E-03
+  RBC(4,2) = -5.8417E-03  ZBS(4,2) = 5.8417E-03
+  RBC(0,3) = 8.8936E-03  ZBS(0,3) = 8.8936E-03
+  RBC(1,3) = 1.1047E-02  ZBS(1,3) = -1.1047E-02
+  RBC(2,3) = 1.2245E-02  ZBS(2,3) = 1.2245E-02
+  RBC(4,3) = -6.6618E-04  ZBS(4,3) = 6.6618E-04
+  RBC(3,4) = -1.0677E-02  ZBS(3,4) = 1.0677E-02
+/
+
+&OPTIMUM
+!-----------------------------------------------------------------------
+!          OPTIMIZER RUN CONTROL PARAMETERS
+!-----------------------------------------------------------------------
+  NFUNC_MAX  =  50
+  EQUIL_TYPE = 'VMEC2000_ONEEQ'
+  OPT_TYPE   = 'LMDIF_bounded'
+  FTOL       =   1.00E-06
+  XTOL       =   1.00E-06
+  GTOL       =   1.00E-30
+  FACTOR     =   10.
+  EPSFCN     =   1.00E-04
+  MODE       = 1
+  LKEEP_MINS = T
+  NOPTIMIZERS = 16
+
+!-----------------------------------------------------------------------
+!          OPTIMIZED QUANTITIES
+!-----------------------------------------------------------------------
+
+!-----------------------------------------------------------------------
+!          PLASMA PROPERTIES
+!-----------------------------------------------------------------------
+
+!-----------------------------------------------------------------------
+!          REGCOIL Options
+!-----------------------------------------------------------------------
+  REGCOIL_TARGET_VALUE = 2.82e6
+  LREGCOIL_WINDING_SURFACE_SEPARATION_OPT = T
+  REGCOIL_WINDING_SURFACE_SEPARATION = 1.0
+  SIGMA_REGCOIL_WINDING_SURFACE_SEPARATION = 1.0
+
+!------------------------------------------------------------------------
+!       REGCOIL TARGETING
+!------------------------------------------------------------------------
+  TARGET_REGCOIL_CHI2_B = 0.0  SIGMA_REGCOIL_CHI2_B = 1.0  
+
+/
+
+&regcoil_nml
+  nlambda = 51
+!  lambda_min = 1e-18
+!  lambda_max = 1e-11
+
+  ntheta_plasma = 64
+  ntheta_coil   = 64
+  nzeta_plasma  = 64
+  nzeta_coil    = 64
+  mpol_potential = 8
+  ntor_potential = 8
+
+  general_option = 5
+  target_option = 'rms_K'
+  geometry_option_plasma = 2
+
+  load_bnorm = .false.
+!  load_bnorm = .true.
+  
+! wout file is dynamically set by stellopt
+!  wout_filename = 'wout_HSX_jnt.nc'
+
+  geometry_option_coil=2
+! separation is dynamically set by stellopt
+!  separation = 0.15
+
+  net_poloidal_current_Amperes = 0.0
+  net_toroidal_current_Amperes = 0.0
+
+  symmetry_option = 1
+/
+
+/
+&END
+
+
