@@ -11,7 +11,7 @@
 !-----------------------------------------------------------------------
       USE stellopt_runtime
       USE stellopt_targets
-      USE equil_utils, ONLY: get_equil_jdotb, rho
+      USE equil_utils, ONLY: get_equil_jdotb, shat
       
 !-----------------------------------------------------------------------
 !     Input/Output Variables
@@ -28,7 +28,7 @@
 !
 !-----------------------------------------------------------------------
       INTEGER     :: ik,ier
-      REAL(rprec) :: local_jdotb, s
+      REAL(rprec) :: local_jdotb
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
@@ -41,12 +41,11 @@
             IF (sigma(ik) >= bigno) CYCLE
             mtargets = mtargets + 1
             ier = 0
-            s = rho(ik)
-            CALL get_equil_jdotb(s,local_jdotb,ier)
+            CALL get_equil_jdotb(shat(ik),local_jdotb,ier)
             targets(mtargets) = target(ik)
             sigmas(mtargets)  = sigma(ik)
             vals(mtargets)    = local_jdotb
-            IF (iflag == 1) WRITE(iunit_out,'(4ES22.12E3)') target(ik),sigma(ik),local_jdotb,rho(ik)
+            IF (iflag == 1) WRITE(iunit_out,'(4ES22.12E3)') target(ik),sigma(ik),local_jdotb,shat(ik)
          END DO
       ELSE
          DO ik = 1, nsd

@@ -162,6 +162,7 @@
                                         s_txport
       CHARACTER(256)                ::  txport_proxy
       REAL(rprec), DIMENSION(nsd)   ::  target_DKES, sigma_DKES, nu_DKES
+      REAL(rprec), DIMENSION(nsd)        :: target_gamma_c, sigma_gamma_c
       REAL(rprec), DIMENSION(nu_max,nv_max) ::  target_separatrix, sigma_separatrix, &
                                                 r_separatrix, z_separatrix, phi_separatrix
       REAL(rprec), DIMENSION(nu_max,nv_max) ::  target_limiter, sigma_limiter, &
@@ -283,6 +284,7 @@
       INTEGER, PARAMETER :: jtarget_regcoil_current_potential      = 5055
       INTEGER, PARAMETER :: jtarget_regcoil_max_current_potential  = 5056
       INTEGER, PARAMETER :: jtarget_curvature_P2    = 505
+      INTEGER, PARAMETER :: jtarget_gamma_c    = 506
       INTEGER, PARAMETER :: jtarget_balloon    = 601
       INTEGER, PARAMETER :: jtarget_kink       = 6011
       INTEGER, PARAMETER :: jtarget_bootstrap  = 602
@@ -502,6 +504,8 @@
             WRITE(iunit, out_format) 'Coil Excursion from v Bounds'
          CASE(jtarget_curvature_p2)
             WRITE(iunit, out_format) 'Maximum 2nd Principal Curvature'
+         CASE(jtarget_gamma_c)
+            WRITE(iunit, out_format) 'Gamma_c'
       END SELECT
       END SUBROUTINE write_targets
       

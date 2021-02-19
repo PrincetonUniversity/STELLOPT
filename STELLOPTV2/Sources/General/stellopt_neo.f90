@@ -372,7 +372,6 @@
             ALLOCATE(save_array(no_fluxs,17)); save_array=0
             DO fluxs_arr_i = mystart,myend
                psi_ind = fluxs_arr_i
-               !IF (psi_ind .GE. 1 .AND. psi_ind .LE. npsi) THEN
                CALL neo_init_s(psi,dpsi)
                IF(psi_ind.EQ.1) dpsi=psi
                CALL flint_bo()
@@ -385,12 +384,6 @@
                ELSE IF (ref_swi .EQ. 2) THEN
                   b_ref = bmref
                   r_ref = rt0
-               ELSE
-                  ! This is checked above and would break the code if caught here
-                  !IF (lscreen) WRITE (6,*) 'FATAL: This ref_swi ',ref_swi,' is not implemented!'
-                  !IF (myworkid == master) CLOSE(w_u3)
-                  !iflag = -1
-                  !RETURN
                END IF
                epstot = epstot * (b_ref/bmref)**2 * (r_ref/rt0)**2
                epspar = epspar * (b_ref/bmref)**2 * (r_ref/rt0)**2

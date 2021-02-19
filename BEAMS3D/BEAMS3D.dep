@@ -1,5 +1,16 @@
 # Microsoft Developer Studio Generated Dependency File, included by VMEC2000.mak
 
+beams3d_init_fusion.o: \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_inc.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_sharmem.o \
+      beams3d_runtime.o \
+      beams3d_lines.o \
+      beams3d_grid.o \
+      beams3d_physics_mod.o
+
+
 backspace_out.o:  
 
 
@@ -48,6 +59,7 @@ beams3d_init.o: \
       ../../LIBSTELL/$(LOCTYPE)/mpi_inc.o \
       ../../LIBSTELL/$(LOCTYPE)/mpi_sharmem.o \
       ../../LIBSTELL/$(LOCTYPE)/wall_mod.o \
+      ../../LIBSTELL/$(LOCTYPE)/read_eqdsk_mod.o \
       ../../LIBSTELL/$(LOCTYPE)/adas_mod_parallel.o \
       beams3d_runtime.o \
       beams3d_grid.o \
@@ -118,6 +130,18 @@ beams3d_init_vmec.o: \
       ../../LIBSTELL/$(LOCTYPE)/virtual_casing_mod.o \
       ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
       ../../LIBSTELL/$(LOCTYPE)/mpi_inc.o \
+      beams3d_lines.o \
+      beams3d_runtime.o \
+      beams3d_grid.o
+      
+
+beams3d_init_eqdsk.o: \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(LOCTYPE)/wall_mod.o \
+      ../../LIBSTELL/$(LOCTYPE)/read_eqdsk_mod.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_inc.o \
+      beams3d_lines.o \
       beams3d_runtime.o \
       beams3d_grid.o
       
@@ -179,6 +203,11 @@ beams3d_runtime.o: \
       ../../LIBSTELL/$(LOCTYPE)/mpi_inc.o \
       ../../LIBSTELL/$(LOCTYPE)/ezspline.o \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o 
+
+
+beams3d_volume.o: \
+      beams3d_runtime.o \
+      beams3d_grid.o
       
 
 beams3d_write.o: \

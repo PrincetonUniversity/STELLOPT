@@ -12,6 +12,7 @@
       USE stel_kinds, ONLY: rprec
       USE vmec_input,  ONLY: extcur_in => extcur, read_indata_namelist,&
                              nv_in => nzeta, nfp_in => nfp, nigroup
+      USE read_eqdsk_mod, ONLY: read_gfile, get_eqdsk_grid
       USE beams3d_runtime
       USE beams3d_grid
       USE beams3d_input_mod, ONLY: read_beams3d_input
@@ -42,6 +43,7 @@
       INTEGER :: i,j,k,ier, iunit, nextcur_in, nshar
       INTEGER :: bcs1(2), bcs2(2), bcs3(2), bcs1_s(2)
       REAL(rprec) :: br, bphi, bz, ti_temp, vtemp
+      REAL(rprec), DIMENSION(:), ALLOCATABLE :: R_wall_temp
 !-----------------------------------------------------------------------
 !     External Functions
 !          A00ADF               NAG Detection
@@ -59,6 +61,10 @@
       ! If we pass a vessel then we want to use it for NBI injection
       lvessel_beam = .FALSE.
       IF (lvessel) lvessel_beam = .TRUE.
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !!              Initialize Runtime from namelist
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       
       ! First Read The Input Namelist
       iunit = 11
@@ -77,6 +83,13 @@
       ELSE IF (lspec .and. lread_input) THEN
          CALL read_beams3d_input('input.' // TRIM(id_string),ier)
          IF (lverb) WRITE(6,'(A)') '   FILE: input.' // TRIM(id_string)
+      ELSE IF (leqdsk .and. lread_input) THEN
+         CALL read_beams3d_input('input.' // TRIM(id_string),ier)
+         IF (lverb) WRITE(6,'(A)') '   FILE: input.' // TRIM(id_string)
+         CALL read_gfile(eqdsk_string,ier)
+         IF (lverb) WRITE(6,'(A)') '   G-FILE: '// TRIM(eqdsk_string)
+         CALL get_eqdsk_grid(nr,nz,rmin,rmax,zmin,zmax)
+         phimin = 0; phimax=pi2
       END IF
 
       IF (lrestart_particles) THEN
@@ -99,7 +112,10 @@
          WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   Z   = [',zmin,',',zmax,'];  NZ:   ',nz
          IF (lbeam) THEN
             WRITE(6,'(A,I8)')               '   # of Particles to Start: ', nparticles_start
-            WRITE(6,'(A,I6)')                          '   # of Beams: ', nbeams
+            WRITE(6,'(A,I6)')                          '   # of Beams:   ', nbeams
+         ELSEIF (lfusion) THEN
+            WRITE(6,'(A,I8)')               '   # of Particles to Start: ', nparticles_start
+            WRITE(6,'(A,I6)')                          '   # of species: ', nbeams
          ELSE
             WRITE(6,'(A,I8)')               '   # of Particles to Start: ', nparticles
          END IF
@@ -115,6 +131,7 @@
          IF (lascot4) WRITE(6,'(A)') '   ASCOT4 OUTPUT ON!'
          IF (lbbnbi) WRITE(6,'(A)') '   BEAMLET BEAM Model!'
          IF (lsuzuki) WRITE(6,'(A)') '   SUZUKI DEPOSITION MODEL!'
+         IF (lfusion) WRITE(6,'(A)') '   NUCLEAR FUSION BIRTH MODEL!'
          IF (lplasma_only) WRITE(6,'(A)') '   MAGNETIC FIELD FROM PLASMA ONLY!'
          IF (lrestart_particles) WRITE(6,'(A)') '   Restarting particles!'
          IF (lrandomize .and. lbeam) WRITE(6,'(A)') '   Randomizing particle processor!'
@@ -124,7 +141,7 @@
 
       ! Construct 1D splines
       bcs1_s=(/ 0, 0 /)
-      IF (lvmec .and. .not.lvac) THEN
+      IF ((lvmec .or. leqdsk) .and. .not.lvac) THEN
          IF (lverb) WRITE(6,'(A)') '----- Profile Parameters -----'
          ! TE
          IF (nte>0) THEN
@@ -195,6 +212,9 @@
          
       END IF
 
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !!              Initialize Background Grids
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       IF (lrestart_grid) THEN
          !CALL beams3d_init_restart
@@ -203,6 +223,12 @@
          CALL mpialloc(raxis, nr, myid_sharmem, 0, MPI_COMM_SHARMEM, win_raxis)
          CALL mpialloc(phiaxis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_phiaxis)
          CALL mpialloc(zaxis, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_zaxis)
+         CALL mpialloc(hr, nr, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hr)
+         CALL mpialloc(hp, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hp)
+         CALL mpialloc(hz, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hz)
+         CALL mpialloc(hri, nr, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hri)
+         CALL mpialloc(hpi, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hpi)
+         CALL mpialloc(hzi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hzi)
          CALL mpialloc(B_R, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_B_R)
          CALL mpialloc(B_PHI, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_B_PHI)
          CALL mpialloc(B_Z, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_B_Z)
@@ -220,6 +246,18 @@
             FORALL(i = 1:nphi) phiaxis(i) = (i-1)*(phimax-phimin)/(nphi-1) + phimin
             S_ARR = 1.5
             POT_ARR = 0
+            ! Setup grid helpers
+            ! Note: All helpers are defined in terms of differences on half grid
+            !       so values are indexed from 1 to n-1.  Which we store at n
+            !        i = MIN(MAX(COUNT(raxis < r_temp),1),nr-1)
+            !        hr(i) = raxis(i+1) - raxis(i)
+            !        hri    = one / hr
+            FORALL(i = 1:nr-1) hr(i) = raxis(i+1) - raxis(i)
+            FORALL(i = 1:nz-1) hz(i) = zaxis(i+1) - zaxis(i)
+            FORALL(i = 1:nphi-1) hp(i) = phiaxis(i+1) - phiaxis(i)
+            hri = one / hr
+            hpi = one / hp
+            hzi = one / hz
          END IF
          CALL MPI_BARRIER(MPI_COMM_SHARMEM, ier)
          ! Put the vacuum field on the background grid
@@ -239,16 +277,27 @@
          !CALL beams3d_init_pies
       ELSE IF (lspec .and. .not.lvac) THEN
          !CALL beams3d_init_spec
-      END IF
-      
-      ! Setup vessel
-      IF (lvessel .and. (.not. lwall_loaded)) THEN
-         CALL wall_load_txt(TRIM(vessel_string),ier,MPI_COMM_BEAMS)
-         IF (lverb) CALL wall_info(6)
-         CALL FLUSH(6)
+      ELSE IF (leqdsk) THEN
+         CALL mpialloc(req_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_req_axis)
+         CALL mpialloc(zeq_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_zeq_axis)
+         CALL beams3d_init_eqdsk
       END IF
 
-      !CALL wall_test
+      ! Adjust the torodial distribution function grid
+      ns_prof2 = MAX(ns_prof2,4*NINT(pi2/phimax)) ! Min 4 per field period
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !!              Initialize Vessel (we need nbeams here)
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      
+      ! Load vessel if not done already vessel
+      IF (lvessel .and. (.not. lwall_loaded)) THEN
+         CALL wall_load_txt(TRIM(vessel_string),ier,MPI_COMM_BEAMS)
+      END IF
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !!              Secondary Code Output
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       ! For testing I put this here
       IF (lascot4) THEN
@@ -257,6 +306,10 @@
       IF (lascot) THEN
          CALL beams3d_write_ascoth5('INIT')
       END IF
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !!              Setup Splines
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       ! Construct 3D Profile Splines
       IF (.not. lvac) THEN
@@ -316,90 +369,6 @@
          
       ! Construct MODB
       IF (myid_sharmem == master) MODB = SQRT(B_R*B_R+B_PHI*B_PHI+B_Z*B_Z)
-
-      ! Initialize Random Number generator
-      CALL RANDOM_SEED
-      
-      ! Initialize beams (define a distribution of directions and weights)
-      IF (lbeam) THEN
-         IF (.not. lsuzuki) CALL adas_load_tables(myid_sharmem, MPI_COMM_SHARMEM)
-         IF (lw7x) THEN
-            CALL beams3d_init_beams_w7x
-         ELSEIF (lbbnbi) THEN
-            CALL beams3d_init_beams_bbnbi
-         ELSE
-            CALL beams3d_init_beams
-         END IF
-         ! Randomize particles Only for beam depo runs
-         IF (lrandomize) CALL beams3d_randomize_particles
-      ELSEIF (lrestart_particles) THEN
-        CALL beams3d_init_restart
-      ELSE
-        ALLOCATE(  R_start(nparticles), phi_start(nparticles), Z_start(nparticles), &
-           v_neut(3,nparticles), mass(nparticles), charge(nparticles), &
-           mu_start(nparticles), Zatom(nparticles), t_end(nparticles), vll_start(nparticles), &
-           beam(nparticles), weight(nparticles) )
-
-         R_start = r_start_in(1:nparticles)
-         phi_start = phi_start_in(1:nparticles)
-         Z_start = z_start_in(1:nparticles)
-         vll_start = vll_start_in(1:nparticles)
-         v_neut = 0.0
-         weight = 1.0/nparticles
-         Zatom = Zatom_in(1:nparticles)
-         mass = mass_in(1:nparticles)
-         charge = charge_in(1:nparticles)
-         mu_start = mu_start_in(1:nparticles)
-         t_end = t_end_in(1:nparticles)
-         beam  = 1
-         nbeams = 1
-      END IF
-      ALLOCATE(epower_prof(nbeams,ns_prof1), ipower_prof(nbeams,ns_prof1), &
-               ndot_prof(nbeams,ns_prof1), j_prof(nbeams,ns_prof1), &
-               dense_prof(nbeams,ns_prof1))
-      ipower_prof=0; epower_prof=0; ndot_prof=0; j_prof = 0
-
-      ! ALLOCATE the 6D array of 5D distribution
-      !CALL mpialloc(epower_prof, nbeams, ns_prof1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_epower)
-      !CALL mpialloc(ipower_prof, nbeams, ns_prof1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_ipower)
-      !CALL mpialloc(  ndot_prof, nbeams, ns_prof1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_ndot  )
-      !CALL mpialloc(     j_prof, nbeams, ns_prof1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_jprof )
-      !CALL mpialloc( dense_prof, nbeams, ns_prof1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_dense )
-      CALL mpialloc(dist5d_prof, nbeams, ns_prof1, ns_prof2, ns_prof3, ns_prof4, ns_prof5, myid_sharmem, 0, MPI_COMM_SHARMEM, win_dist5d)
-      IF (myid_sharmem == master) THEN
-         dist5d_prof = 0; !ipower_prof=0; epower_prof=0; ndot_prof=0; j_prof = 0
-      END IF
-      h2_prof = ns_prof2*invpi2
-      h3_prof = ns_prof3/phimax
-
-      ! In all cases create an end_state array
-      ALLOCATE(end_state(nparticles))
-      end_state=0
-
-      ! Setup wall heat flux tracking
-      IF (lwall_loaded) THEN
-         CALL mpialloc(wall_load, nbeams, nface, myid_sharmem, 0, MPI_COMM_SHARMEM, win_wall_load)
-         IF (myid_sharmem == master) wall_load = 0
-         CALL mpialloc(wall_shine, nbeams, nface, myid_sharmem, 0, MPI_COMM_SHARMEM, win_wall_shine)
-         IF (myid_sharmem == master) wall_shine = 0
-      END IF
-
-      ! Determine maximum particle velocity
-      partvmax=MAX(MAXVAL(ABS(vll_start))*6.0/5.0,partvmax)
-      partpmax=MAX(MAXVAL(ABS(mass)),partpmax)*partvmax
-      nsh_prof4 = ns_prof4/2
-      h4_prof = 0.5*ns_prof4/partvmax
-      h5_prof = ns_prof5/partvmax
-
-
-      ! Do a reality check
-      IF (ANY(ABS(vll_start)>3E8) .and. lverb) THEN
-            ! This is an error code check
-            PRINT *,'!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-            PRINT *,'!!!!!  Super-luminal particle velocity detected  !!!!!'
-            PRINT *,'!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-            STOP
-      END IF
 
 
       ! Construct Splines on shared memory master nodes
@@ -505,6 +474,8 @@
          CALL FLUSH(6)
       END IF
 
+      IF (myid_sharmem==master) CALL beams3d_volume !requires S_ARR
+
       ! Output Grid
       CALL beams3d_write('GRID_INIT')
       CALL mpidealloc(B_R,win_B_R)
@@ -528,6 +499,117 @@
          IF (nti > 0) CALL EZspline_free(TI_spl_s,ier)
          IF (npot > 0) CALL EZspline_free(POT_spl_s,ier)
          IF (nzeff > 0) CALL EZspline_free(ZEFF_spl_s,ier)
+      END IF
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !!              Initialize Particles
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      ! Initialize Random Number generator
+      CALL RANDOM_SEED
+      
+      ! Initialize beams (define a distribution of directions and weights)
+      IF (lbeam) THEN
+         IF (.not. lsuzuki) CALL adas_load_tables(myid_sharmem, MPI_COMM_SHARMEM)
+         IF (lw7x) THEN
+            CALL beams3d_init_beams_w7x
+         ELSEIF (lbbnbi) THEN
+            CALL beams3d_init_beams_bbnbi
+         ELSE
+            CALL beams3d_init_beams
+         END IF
+         ! Randomize particles Only for beam depo runs
+         IF (lrandomize) CALL beams3d_randomize_particles
+      ELSEIF (lrestart_particles) THEN
+         CALL beams3d_init_restart
+      ELSEIF (lfusion) THEN
+         CALL beams3d_init_fusion
+      ELSE
+        ALLOCATE(  R_start(nparticles), phi_start(nparticles), Z_start(nparticles), &
+           v_neut(3,nparticles), mass(nparticles), charge(nparticles), &
+           mu_start(nparticles), Zatom(nparticles), t_end(nparticles), vll_start(nparticles), &
+           beam(nparticles), weight(nparticles) )
+
+         R_start = r_start_in(1:nparticles)
+         phi_start = phi_start_in(1:nparticles)
+         Z_start = z_start_in(1:nparticles)
+         vll_start = vll_start_in(1:nparticles)
+         v_neut = 0.0
+         weight = 1.0/nparticles
+         Zatom = Zatom_in(1:nparticles)
+         mass = mass_in(1:nparticles)
+         charge = charge_in(1:nparticles)
+         mu_start = mu_start_in(1:nparticles)
+         t_end = t_end_in(1:nparticles)
+         beam  = 1
+         nbeams = 1
+         charge_beams(1) = charge_in(1)
+         mass_beams(1)   = mass_in(1)
+      END IF
+      ! In all cases create an end_state array
+      ALLOCATE(end_state(nparticles))
+      end_state=0
+
+      ! Setup distribution
+      ALLOCATE(epower_prof(nbeams,ns_prof1), ipower_prof(nbeams,ns_prof1), &
+               ndot_prof(nbeams,ns_prof1), j_prof(nbeams,ns_prof1), &
+               dense_prof(nbeams,ns_prof1))
+      ipower_prof=0; epower_prof=0; ndot_prof=0; j_prof = 0
+
+      ! ALLOCATE the 6D array of 5D distribution
+      !CALL mpialloc(epower_prof, nbeams, ns_prof1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_epower)
+      !CALL mpialloc(ipower_prof, nbeams, ns_prof1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_ipower)
+      !CALL mpialloc(  ndot_prof, nbeams, ns_prof1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_ndot  )
+      !CALL mpialloc(     j_prof, nbeams, ns_prof1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_jprof )
+      !CALL mpialloc( dense_prof, nbeams, ns_prof1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_dense )
+      CALL mpialloc(dist5d_prof, nbeams, ns_prof1, ns_prof2, ns_prof3, ns_prof4, ns_prof5, myid_sharmem, 0, MPI_COMM_SHARMEM, win_dist5d)
+      IF (myid_sharmem == master) THEN
+         dist5d_prof = 0; !ipower_prof=0; epower_prof=0; ndot_prof=0; j_prof = 0
+      END IF
+      h2_prof = ns_prof2*invpi2
+      h3_prof = ns_prof3*invpi2
+
+      ! Determine maximum particle velocity
+      partvmax=MAX(MAXVAL(ABS(vll_start))*6.0/5.0,partvmax)
+      !partpmax=MAX(MAXVAL(ABS(partvmax*mass)),partpmax)
+      nsh_prof4 = ns_prof4/2
+      h4_prof = 0.5*ns_prof4/partvmax
+      h5_prof = ns_prof5/partvmax
+
+      ! Do a reality check
+      IF (ANY(ABS(vll_start)>3E8) .and. lverb) THEN
+            ! This is an error code check
+            PRINT *,'!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+            PRINT *,'!!!!!  Super-luminal particle velocity detected  !!!!!'
+            PRINT *,'!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+            STOP
+      END IF
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !!              Wall Load Helpers here
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      ! Setup wall heat flux tracking
+      IF (lwall_loaded) THEN
+         IF (lverb) THEN
+            CALL wall_info(6)
+            ALLOCATE(R_wall_temp(nvertex))
+            FORALL (i = 1:nvertex) R_wall_temp(i) = SQRT(vertex(i,1)*vertex(i,1)+vertex(i,2)*vertex(i,2))
+            WRITE(6,'(A,F9.5,A,F9.5,A)') '   R_WALL   = [',MINVAL(R_wall_temp),',',MAXVAL(R_wall_temp),']'
+            WRITE(6,'(A,F9.5,A,F9.5,A)') '   Z_WALL   = [',MINVAL(vertex(:,3)),',',MAXVAL(vertex(:,3)),']'
+            IF ((MINVAL(R_wall_temp)<rmin) .or. &
+                (MAXVAL(R_wall_temp)>rmax) .or. &
+                (MINVAL(vertex(:,3))<zmin) .or. &
+                (MAXVAL(vertex(:,3))>zmax)) THEN
+               IF (.not. lplasma_only) WRITE(6,'(A)') '   WALL OUTSIDE GRID DOMAIN!'
+            END IF
+            DEALLOCATE(R_wall_temp)
+         END IF
+         CALL FLUSH(6)
+         CALL mpialloc(wall_load, nbeams, nface, myid_sharmem, 0, MPI_COMM_SHARMEM, win_wall_load)
+         IF (myid_sharmem == master) wall_load = 0
+         CALL mpialloc(wall_shine, nbeams, nface, myid_sharmem, 0, MPI_COMM_SHARMEM, win_wall_shine)
+         IF (myid_sharmem == master) wall_shine = 0
       END IF
 
 #if defined(MPI_OPT)

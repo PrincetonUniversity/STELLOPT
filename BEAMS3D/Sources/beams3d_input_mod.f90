@@ -54,28 +54,33 @@
 !                           (note set to negative value to use non-adaptive integration)
 !            int_type       Field line integration method
 !                           'NAG','LSODE','RKH68'
+!            plasma_mass    Mean plasma mass in [kg]
+!            plasma_Zavg    <Z> = sum(n_k*Z_k^2)/sum(n_k*Z_k)
+!            plasma_Zmean   [Z] = sum(n_k*Z_k^2*(m_k/plasma_mass))/sum(n_k*Z_k)
 !
 !            NOTE:  Some grid parameters may be overriden (such as
 !                   phimin and phimax) to properly represent a given
 !                   field period.
 !-----------------------------------------------------------------------
-      NAMELIST /beams3d_input/ nr, nphi, nz, rmin, rmax, zmin, zmax,&
-                                  phimin, phimax, nparticles_start,&
-                                  r_start_in, phi_start_in, z_start_in,&
-                                  vll_start_in,&
-                                  npoinc, follow_tol, t_end_in, mu_start_in,&
-                                  charge_in, mass_in, Zatom_in, &
-                                  vc_adapt_tol, int_type, Adist_beams,&
-                                  Asize_beams, Div_beams, E_beams, Dex_beams, &
-                                  mass_beams, charge_beams, Zatom_beams, r_beams,&
-                                  z_beams, phi_beams, TE_AUX_S, TE_AUX_F,&
-                                  NE_AUX_S, NE_AUX_F, TI_AUX_S, TI_AUX_F, &
-                                  POT_AUX_S, POT_AUX_F, ZEFF_AUX_S, ZEFF_AUX_F, &
-                                  P_beams, ldebug, ne_scale, te_scale, ti_scale, &
-                                  zeff_scale, plasma_mass, plasma_Zavg, &
-                                  plasma_Zmean, therm_factor, &
-                                  nrho_dist, ntheta_dist, nzeta_dist, &
-                                  nvpara_dist, nvperp_dist, partvmax
+      NAMELIST /beams3d_input/ nr, nphi, nz, rmin, rmax, zmin, zmax, &
+                               phimin, phimax, nparticles_start, &
+                               r_start_in, phi_start_in, z_start_in, &
+                               vll_start_in, npoinc, follow_tol, &
+                               t_end_in, mu_start_in, charge_in, &
+                               mass_in, Zatom_in, vc_adapt_tol,  &
+                               int_type, Adist_beams, Asize_beams, &
+                               Div_beams, E_beams, Dex_beams, &
+                               mass_beams, charge_beams, Zatom_beams, &
+                               r_beams, z_beams, phi_beams, TE_AUX_S, &
+                               TE_AUX_F, NE_AUX_S, NE_AUX_F, TI_AUX_S, &
+                               TI_AUX_F, POT_AUX_S, POT_AUX_F, &
+                               ZEFF_AUX_S, ZEFF_AUX_F, P_beams, &
+                               ldebug, ne_scale, te_scale, ti_scale, &
+                               zeff_scale, plasma_mass, plasma_Zavg, &
+                               plasma_Zmean, therm_factor, &
+                               fusion_scale, nrho_dist, ntheta_dist, & 
+                               nzeta_dist, nvpara_dist, nvperp_dist, &
+                               partvmax, lendt_m
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -143,10 +148,12 @@
       te_scale = 1.0
       ti_scale = 1.0
       zeff_scale = 1.0
+      fusion_scale = 1.0
       plasma_Zmean = 1.0
       plasma_Zavg  = 1.0
       plasma_mass = 1.6726219E-27 ! Assume Hydrogen
       therm_factor = 1.5 ! Factor at which to thermalize particles
+      lendt_m = 0.05 ! Max distance a particle travels
 
       ! Distribution Function Defaults
       nrho_dist = 64
@@ -187,6 +194,8 @@
          ZEFF_AUX_F = ZEFF_AUX_F*zeff_scale
          lbeam = .true.
          IF (r_start_in(1) /= -1) lbeam = .false.
+         IF (lfusion .or. lrestart_particles) lbeam = .false.
+         IF (lbbnbi) lbeam = .true.
          IF (lbeam) lcollision = .true.
          nbeams = 0
          DO WHILE ((Asize_beams(nbeams+1) >= 0.0).and.(nbeams<MAXBEAMS))
@@ -198,6 +207,11 @@
                nbeams = nbeams + 1
             END DO
             IF (nbeams == 0)  CALL handle_err(BAD_BEAMDEX_ERR,'beams3d_input in: input.'//TRIM(id_string),nbeams)
+         END IF
+         IF (lfusion) THEN
+            r_start_in = -1
+            nbeams = 4
+            IF (lfusion_alpha) nbeams = 1
          END IF
          nte = 0
          DO WHILE ((TE_AUX_S(nte+1) >= 0.0).and.(nte<MAXPROFLEN))
@@ -235,7 +249,7 @@
 #if defined(HDF5_PAR)
       ! Makes sure that NPARTICLES is divisible by the number of processes
       ! Needed for HDF5 parallel writes.
-      IF (lbeam) THEN
+      IF (lbeam .or. lfusion) THEN
          i1 = nparticles_start/nprocs_beams
          IF (i1*nprocs_beams .ne. nparticles_start) THEN
             nparticles_start = (i1+1)*nprocs_beams
