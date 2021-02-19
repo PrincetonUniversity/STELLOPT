@@ -3,79 +3,83 @@
 #######################################################################
   SHELL = /bin/sh
   PWD1 = `pwd`
-  MYHOME = $(STELLOPT_PATH)/bin
-  PRECOMP:= /lib/cpp -traditional -DLINUX
-  COMPILE = $(FC)
-  COMPILE_FREE = $(FC) -ffree-form -ffree-line-length-none -ffixed-line-length-none
-  LINK    = ld $(FLAGS) -o
+  MYHOME = $(HOME)/bin
+  PRECOMP:= fpp -C -P -DLINUX
+  COMPILE = ifort
+  COMPILE_FREE = ifort
+  LINK    = ftn -Bstatic -o
   LINK_AR = ar -ruv
-  LINK_C  = $(CC) -shared -Wl,-z-defs
+  LINK_C  = icc -shared -Wl,-z-defs
 
 #######################################################################
 #            Define Compiler Flags
 #######################################################################
-  FLAGS_R = -O2 -fexternal-blas -fPIC
-  FLAGS_D = -g -O0 -fexternal-blas -fbacktrace -fcheck=all -fPIC
-  LIBS    = -L/usr/lib -lscalapack-openmpi -lblas -llapack
+  FLAGS_R = -I$(MKL_HOME)/include -O2 -fp-model strict -ip \
+            -assume noold_unit_star
+  FLAGS_D = -I$(MKL_HOME)/include -O2 -fp-model strict -ip \
+            -assume noold_unit_star -g -traceback
+  LIBS    = -Wl,-rpath,$(MKL_HOME)/lib/intel64 \
+            -L$(MKL_HOME)/lib/intel64 -lmkl_scalapack_lp64 \
+            -lmkl_intel_lp64 -lmkl_core -lmkl_sequential \
+            -lmkl_blacs_intelmpi_lp64  -lpthread -lm -lpthread
 
 #######################################################################
 #            MPI Options
 #######################################################################
   LMPI    = T
-  MPI_COMPILE = mpif90
-  MPI_COMPILE_FREE = mpif90 -ffree-form \
-                     -ffree-line-length-none -ffixed-line-length-none
-  MPI_COMPILE_C = mpicc
-  MPI_LINK = mpif90 -fPIC
-  MPI_RUN = mpiexec
-  MPI_RUN_OPTS = 
-#  MPI_RUN_OPTS_SM = -np 16
-#  MPI_RUN_OPTS_MD = -np 64
-#  MPI_RUN_OPTS_LG = -np 256
+  MPI_COMPILE = mpiifort
+  MPI_COMPILE_FREE = mpiifort
+  MPI_COMPILE_C = mpiifort
+  MPI_LINK = mpiifort
+  MPI_RUN  = srun
+  MPI_RUN_OPTS = --nodes=1 --ntasks-per-node=96 --time=0:30:00 -p express
+  MPI_RUN_OPTS_SM   = --nodes=1 --ntasks-per-node=96 --time=0:30:00 -p express
+  MPI_RUN_OPTS_MD   = --nodes=8 --ntasks-per-node=96 --time=0:30:00 -p express
+  MPI_RUN_OPTS_LG   = --nodes=32 --ntasks-per-node=96 --time=0:30:00 -p express
 
 #######################################################################
 #            NAG Options
 #######################################################################
   LNAG = F
-  NAG_LIB = -L$(NAG_ROOT)/lib -lnag_nag
+  NAG_LIB = $(NAGFLIB) $(NAGMKLLIB)
 
 #######################################################################
 #            NETCDF Options
 #######################################################################
   LNETCDF = T
-  NETCDF_INC = -I/usr/include
-  NETCDF_LIB = -L/usr/lib -lnetcdf -lnetcdff
-
-#######################################################################
-#            NTCC Options
-#######################################################################
-  LNTCC = F
-  NTCC_INC = -I/usr/include
-  NTCC_LIB = -L/usr/lib -laladdinsub -lr8slatec -ladpak\
-             -lcppsub -lcomput -lpspline -lportlib -lezcdf -lmds_sub \
-             -lmdstransp -lvaxonly
+  NETCDF_INC = $(shell nc-config --fflags)
+  NETCDF_LIB = $(shell nc-config --flibs)
 
 #######################################################################
 #            HDF5 Options
 #######################################################################
   LHDF5 = T
-  HDF5_INC = -I/usr/include/hdf5/openmpi
-  HDF5_LIB = -L/usr/lib/x86_64-linux-gnu/hdf5/openmpi \
-             -lhdf5 -lhdf5hl_fortran -lhdf5_hl -lhdf5_fortran
+  PRECOMP+= -DHDF5_PAR
+  HDF5_INC = -I$(HDF5_HOME)/include 
+  HDF5_LIB = -Wl,-rpath,$(HDF5_HOME)/lib -L$(HDF5_HOME)/lib \
+             -lhdf5 -lhdf5_fortran -lhdf5_hl -lhdf5hl_fortran 
+
+#######################################################################
+#            FFTW3 Options
+#######################################################################
+  LFFTW3 = T
+  FFTW3_INC = -I$(FFTW_HOME)/include
+  FFTW3_LIB = -L$(FFTW_HOME)/lib -lfftw3 -lfftw3f \
+              -Wl,-rpath,$(FFTW_HOME)/lib
 
 #######################################################################
 #             PGPLOT Options
 #######################################################################
   LPGPLOT = F
-  PGPLOT_INC = -I$(PGPLOT_DIR)
-  PGPLOT_LIB = -L$(PGPLOT_DIR) -lpgplot -L/usr/lib/x86_64-linux-gnu -lX11
+  PGPLOT_INC =
+  PGPLOT_LIB = 
 
 #######################################################################
 #             SILO Options
 #######################################################################
   LSILO = F
-  SILO_INC = -I$(SILOHOME)/include
-  SILO_LIB = -L$(SILOHOME)/lib/x86_64-linux-gnu -lsiloh5
+  SILO_INC = -I$(SILO_DIR)/include
+  SILO_LIB = -L$(SILO_DIR)/lib -lsilo
 
 #######################################################################
 #            DKES/NEO Options
@@ -87,14 +91,14 @@
 #            GENE Options
 #######################################################################
   LGENE = F
-  GENE_INC = -I$(GENE_PATH)
-  GENE_DIR = $(GENE_PATH)
+  GENE_DIR = $(GENE_PATH)/bin/obj_cobra
+  FUTILS_DIR = $(GENE_PATH)/external/cobra/futils-gene-mod/src
   LIB_GENE = libgene.a
+  LIB_FUTILS = libfutils.a
+  GENE_INC = -I$(GENE_DIR) \
+             -I$(FUTILS_DIR)
   GENE_LIB = $(GENE_DIR)/$(LIB_GENE) \
-             -L/u/slazerso/src/GENE17_2016/external/pppl_cluster/futils/src -lfutils \
-             -L$(FFTWHOME)/lib -lfftw3 \
-             -L$(SLEPC_DIR)/$(PETSC_ARCH)/lib -lslepc \
-             -L$(PETSC_DIR)/$(PETSC_ARCH)/lib -lpetsc -lX11
+             $(FUTILS_DIR)/$(LIB_FUTILS)
 
 #######################################################################
 #            COILOPT++ Options
@@ -103,8 +107,7 @@
   COILOPT_INC = -I$(COILOPT_PATH)
   COILOPTPP_DIR = $(COILOPT_PATH)
   LIB_COILOPTPP = libcoilopt++.a
-  COILOPT_LIB = $(COILOPT_PATH)/$(LIB_COILOPTPP) \
-                -L$(GSLHOME)/lib/x86_64-linux-gnu -lgsl -lgslcblas -lstdc++ -lmpi_cxx
+  COILOPT_LIB = $(COILOPT_PATH)/$(LIB_COILOPTPP) 
 
 #######################################################################
 #            TERPSICHORE Options
@@ -126,6 +129,15 @@
                $(TRAVIS_DIR)/mag_conf/lib/$(LIB_MCONF) -lstdc++
 
 #######################################################################
+#            SFINCS Options
+#######################################################################
+  LSFINCS = F
+  SFINCS_INC = -I$(SFINCS_DIR)
+  LIB_SFINCS = libsfincs.a
+
+  SFINCS_LIB = $(SFINCS_DIR)/$(LIB_SFINCS)
+
+#######################################################################
 #            REGCOIL Options
 #######################################################################
   LREGCOIL= F
@@ -137,4 +149,7 @@
 #######################################################################
 #            LIBSTELL Shared Options
 #######################################################################
-LIB_SHARE = -lc -lgfortran -lstdc++ -lmpi -lmpi_mpifh -lz -lc -lm -lpthread $(LIBS) -lc
+  LIB_SHARE = $(LIBS) $(NETCDF_LIB) $(HDF5_LIB) \
+             -lifport -lifcoremt -limf -lm -lc \
+             -lpthread 
+

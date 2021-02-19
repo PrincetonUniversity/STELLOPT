@@ -65,7 +65,8 @@
       ! Handle MPI and shared memory
       CALL stellopt_init_mpi
 
-      ! Send workers to the worker pool subroutine
+      ! Send workers to the worker pool subroutine stellopt_paraexe
+      ! The 'master' will continue on
       IF (myworkid .ne. master) THEN
          ltst  = .false.
          tstr1 = ''
@@ -99,6 +100,9 @@
                  STOP
               END IF
               CLOSE(iunit)
+              ! SFINCS namelist is parsed and updated from the original input file
+              !     on each iteration (variable 'id_tag' holds this string)
+              !     See stellopt_vboot.f90 and stellopt_sfincs.f90 
               CALL stellopt_paraexe(tstr1,tstr2,ltst)
          CASE('test')
               id_string = id_string(7:LEN(id_string))
