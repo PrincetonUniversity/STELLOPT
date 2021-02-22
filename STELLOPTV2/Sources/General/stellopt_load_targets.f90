@@ -180,6 +180,12 @@
       ! Magnetic Well
       IF (ANY(sigma_magwell < bigno)) &
          CALL chisq_magwell(target_magwell, sigma_magwell, ncnt,iflag)
+      ! QS f_T metric
+      IF (ANY(sigma_qsft < bigno)) &
+         CALL chisq_qsft(target_qsft, sigma_qsft, ncnt,iflag)
+      ! QS f_P metric
+      IF (ANY(sigma_qsfp < bigno)) &
+         CALL chisq_qsfp(target_qsfp, sigma_qsfp, ncnt,iflag)
       ! B_min
       IF (ANY(sigma_bmin < bigno)) &
          CALL chisq_bmin(target_bmin, sigma_bmin, ncnt,iflag)

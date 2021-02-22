@@ -24,6 +24,8 @@ stellopt_coil_to_vac.o \
 stellopt_winding_surface.o \
 stellopt_cbspline.o \
 stellopt_spline_to_coil.o \
+chisq_qsft.o \
+chisq_qsfp.o \
 chisq_line_te.o \
 chisq_bmin.o \
 chisq_helicity.o \

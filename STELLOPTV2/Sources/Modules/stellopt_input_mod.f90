@@ -317,6 +317,8 @@
                          target_kappa_box, sigma_kappa_box, phi_kappa_box, &
                          target_kappa_avg, sigma_kappa_avg, &
                          target_magwell, sigma_magwell, &
+                         target_qsft, sigma_qsft, &
+                         target_qsfp, sigma_qsfp, & ! Helicity input was introduced for Boozer form
                          target_press, sigma_press, r_press, z_press, phi_press, s_press,&
                          target_pressprime, sigma_pressprime, r_pressprime, z_pressprime, phi_pressprime, s_pressprime,&
                          target_te, sigma_te, r_te, z_te, phi_te, s_te,&
@@ -731,6 +733,10 @@
       sigma_curvature  = bigno
       target_magwell   = 0.0
       sigma_magwell    = bigno
+      target_qsft      = 0.0
+      sigma_qsft       = bigno
+      target_qsfp      = 0.0
+      sigma_qsfp       = bigno
       target_kappa     = 0.0
       sigma_kappa      = bigno
       phi_kappa        = 0.0
@@ -2103,6 +2109,34 @@
            IF (sigma_magwell(ik) < bigno)  WRITE(iunit,"(2(2X,A,I3.3,A,ES22.12E3))") &
                           'TARGET_MAGWELL(',ik,') = ',target_magwell(ik), &
                           'SIGMA_MAGWELL(',ik,') = ',sigma_magwell(ik)
+         END DO
+      END IF
+      IF (ANY(sigma_qsft < bigno)) THEN
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,'(A)') '!          Quasisymmetry f_T (f_T=0 truly quasisymmetric)'  
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         n=0
+         DO ik = 1,UBOUND(sigma_qsft,DIM=1)
+            IF(sigma_qsft(ik) < bigno) n=ik
+         END DO
+         DO ik = 1, n
+           IF (sigma_qsft(ik) < bigno)  WRITE(iunit,"(2(2X,A,I3.3,A,ES22.12E3))") &
+                          'TARGET_QSFT(',ik,') = ',target_qsft(ik), &
+                          'SIGMA_QSFT(',ik,') = ',sigma_qsft(ik)
+         END DO
+      END IF
+      IF (ANY(sigma_qsfp < bigno)) THEN
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,'(A)') '!          Quasisymmetry f_P (f_P=0 truly quasisymmetric)'  
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         n=0
+         DO ik = 1,UBOUND(sigma_qsfp,DIM=1)
+            IF(sigma_qsfp(ik) < bigno) n=ik
+         END DO
+         DO ik = 1, n
+           IF (sigma_qsfp(ik) < bigno)  WRITE(iunit,"(2(2X,A,I3.3,A,ES22.12E3))") &
+                          'TARGET_QSFP(',ik,') = ',target_qsfp(ik), &
+                          'SIGMA_QSFP(',ik,') = ',sigma_qsfp(ik)
          END DO
       END IF
       IF (ANY(sigma_jcurv < bigno)) THEN

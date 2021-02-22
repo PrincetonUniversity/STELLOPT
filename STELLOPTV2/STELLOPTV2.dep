@@ -80,7 +80,7 @@ chisq_aspect_max.o : \
       stellopt_runtime.o \
       stellopt_targets.o \
       equil_vals.o 
-      
+        
 
 chisq_balloon.o : \
       stellopt_runtime.o \

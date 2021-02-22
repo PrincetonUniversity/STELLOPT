@@ -150,6 +150,8 @@
       REAL(rprec), DIMENSION(nsd)   ::  target_neo, sigma_neo
       REAL(rprec), DIMENSION(nsd)   ::  target_Jstar, sigma_Jstar
       REAL(rprec), DIMENSION(nsd)   ::  target_magwell, sigma_magwell
+      REAL(rprec), DIMENSION(nsd)   ::  target_qsft, sigma_qsft
+      REAL(rprec), DIMENSION(nsd)   ::  target_qsfp, sigma_qsfp
       REAL(rprec), DIMENSION(nsd)   ::  target_helicity, sigma_helicity
       REAL(rprec), DIMENSION(nsd)   ::  target_helicity_old, sigma_helicity_old
       COMPLEX                       ::  helicity
@@ -217,6 +219,8 @@
       INTEGER, PARAMETER :: jtarget_volume     = 104
       INTEGER, PARAMETER :: jtarget_wp         = 105
       INTEGER, PARAMETER :: jtarget_magwell    = 1051
+      INTEGER, PARAMETER :: jtarget_qsft       = 1052
+      INTEGER, PARAMETER :: jtarget_qsfp       = 1053
       INTEGER, PARAMETER :: jtarget_aspect_max = 106
       INTEGER, PARAMETER :: jtarget_gradp_max  = 107
       INTEGER, PARAMETER :: jtarget_pmin       = 108
@@ -322,6 +326,10 @@
             WRITE(iunit, out_format) 'Plasma Stored Energy'
          CASE(jtarget_magwell)
             WRITE(iunit, out_format) 'Magnetic Well'
+         CASE(jtarget_qsft)
+            WRITE(iunit, out_format) 'Quasisymmetry f_T'
+         CASE(jtarget_qsfp)
+            WRITE(iunit, out_format) 'Quasisymmetry f_P'
          CASE(jtarget_gradp_max)
             WRITE(iunit, out_format) 'Max Pressure Gradient (upper limit)'
          CASE(jtarget_pmin)
