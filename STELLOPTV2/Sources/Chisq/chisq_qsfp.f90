@@ -16,7 +16,7 @@
       USE vmec_main,          ONLY: hs
       USE read_wout_mod,      ONLY: pres, ns, nfp, bmnc_vmec=>bmnc, ntor_vmec=>ntor, mpol_vmec=>mpol, mnmode_vmec=>mnmax, &
                                 xm_nyq, xn_nyq, gmnc_vmec=>gmnc, vp_vmec=>vp, phi_vmec=>phi, &
-                                iotas, bsupumnc, bsupvmnc, bsubumnc, bsubvmnc, signgs, amin=>Aminor_p, Rmax=>Rmajor_p
+                                iotas, bsupumnc, bsupvmnc, bsubumnc, bsubvmnc, signgs=>sgs, amin=>Aminor, Rmax=>Rmajor
 
 !-----------------------------------------------------------------------
 !     Input/Output Variables
@@ -85,6 +85,21 @@
             dv = xv(2)-xv(1)
             B = 0_rprec
             J = 0_rprec
+            dBdtheta = 0_rprec
+            dBdphi = 0_rprec
+            d2Bdphi2 = 0_rprec
+            d2Bdtheta2 = 0_rprec
+            d2Bdthetadphi = 0_rprec
+            Bsubphi = 0_rprec
+            Bsubtheta = 0_rprec
+            Bsupphi = 0_rprec
+            Bsuptheta = 0_rprec
+            dBsupphidphi = 0_rprec
+            dBsupphidtheta = 0_rprec
+            dBsupthetadphi = 0_rprec
+            dBsupthetadtheta = 0_rprec
+            BdotgradB = 0_rprec
+            BcrossgradpsidotgradB = 0_rprec
             normalization = 0
             DO is=1, nprof
                 DO iu=1,nu
