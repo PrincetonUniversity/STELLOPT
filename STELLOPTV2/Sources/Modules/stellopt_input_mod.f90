@@ -430,7 +430,8 @@
                          lRosenbrock_X_opt, dRosenbrock_X_opt, &
                          Rosenbrock_X, Rosenbrock_X_min, Rosenbrock_X_max, &
                          target_Rosenbrock_F, sigma_Rosenbrock_F
-       
+      ! JCS To do: Add Gammac control options
+ 
 !-----------------------------------------------------------------------
 !     Subroutines
 !         read_stellopt_input:   Reads optimum namelist

@@ -169,6 +169,11 @@
       INTEGER                           ::  vboot_max_iterations
       LOGICAL :: mango_bound_constraints = .true. ! If a mango optimization algorithm is used, this variable determines whether or not mango will impose bound (a.k.a. box) constraints.
 
+!   Control parameters for the Gamma_c metric
+      INTEGER :: gammac_bpstep_J = 50,    &
+                 gammac_transits_J = 400, &
+                 gammac_delzetadiv_J = 400
+
       REAL(rprec), DIMENSION(ndatafmax) ::  ne_aux_f, te_aux_f, &
                                             ti_aux_f, th_aux_f,&
                                             zeff_aux_f, &

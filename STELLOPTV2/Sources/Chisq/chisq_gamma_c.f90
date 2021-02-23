@@ -37,7 +37,7 @@
 !        ier         Error Flag
 !        te_val      Holds profile evaulation
 !-----------------------------------------------------------------------
-      LOGICAL :: lsym
+      LOGICAL :: lsym, lgammac_debug
       INTEGER :: dex, ik, i, j, k, ier, jmin, igc2, igc3, igc4, igc5, igc6, igc7, ierrgc2
       INTEGER :: igc8
       REAL(rprec) :: s, rovera, theta, zeta_p, delzeta_p, u, v, coszeta_p, sinzeta_p
@@ -64,10 +64,10 @@
       REAL(rprec), DIMENSION(3) :: grads_xyz, gradu_xyz, gradv_xyz
       REAL(rprec), DIMENSION(3) :: grad_zeta_p, grad_psi_x_b, grad_psi_xyz
       REAL(rprec), DIMENSION(3) :: bdotgradb, grad_psi_x_b_xyz, grad_zeta_p_xyz,bdotgradb_sp
-      INTEGER, PARAMETER :: ntransits = 400
-      INTEGER, PARAMETER :: delzetadiv = 400
-      INTEGER, PARAMETER :: nsteps = ntransits*delzetadiv
-      INTEGER, PARAMETER :: bpstep = 80 !division in b'
+      INTEGER, PARAMETER :: gammac_ntransits = 400
+      INTEGER, PARAMETER :: gammac_delzetadiv = 400
+      INTEGER, PARAMETER :: nsteps = gammac_ntransits*gammac_delzetadiv
+      INTEGER, PARAMETER :: gammac_bpstep = 80 !division in b'
 
       
       real(rprec), DIMENSION(3) :: gradR, gradZ, gradB, gradB_xyz
@@ -91,7 +91,7 @@
       integer :: in_well, cur_well, nwells
 
       REAL(rprec) :: deltabp, den
-      REAL(rprec), DIMENSION(bpstep) :: bp
+      REAL(rprec), DIMENSION(gammac_bpstep) :: bp
 
       real(rprec) :: grad_psi_min, e_theta_min, cur_Bmin
 
@@ -107,7 +107,7 @@
       IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA  GAMMA_C  K'
       IF (niter >= 0) THEN
         pi2 = 2.0_rprec*3.14159265358979_rprec
-        delzeta_p = -1.0_rprec/delzetadiv !step size
+        delzeta_p = -1.0_rprec/gammac_delzetadiv !step size
         !delzeta = -0.0034433355_rprec !for comparison with ROSE
         psi_a = phiedge !Toroidal flux at the edge
 
@@ -127,11 +127,13 @@
           CALL get_equil_iota(s,iota,ier,iotap) ! get d(iota)/ds
           !CALL EZspline_interp(iota_spl,s,iota,ier)
           !CALL EZspline_derivative(iota_spl,1,s,iotap,ier)
-          write (*,*) 's', s
-          write (*,*) 'nfp', nfp
-          write (*,*) 'iota', iota
-          write (*,*) 'iotap', iotap
-          write (*,*) 'psi_a', psi_a
+          IF (lgammac_debug == 1) then
+            write (iunit_out,*) 's', s
+            write (iunit_out,*) 'nfp', nfp
+            write (iunit_out,*) 'iota', iota
+            write (iunit_out,*) 'iotap', iotap
+            write (iunit_out,*) 'psi_a', psi_a
+          end if
 
           !Initialize starting point
           theta = zero; zeta_p = zero
@@ -145,7 +147,7 @@
           Bxp = zero; Byp = zero; Bzp = zero;
           Bx2p = zero; By2p = zero; Bz2p = zero;
 
-          write (*,*) '--------------------------------------------'
+          if (lgammac_debug == 1) write (iunit_out,*) '--------------------------------------------'
 !          CALL safe_open(igc2, ierrgc2, 'gc2.'//trim(proc_string),  &
 !                       'replace','formatted')
 !          CALL safe_open(igc3, ierrgc2, 'gc3.'//trim(proc_string),  &
@@ -181,6 +183,9 @@
             !  on input, phi is converted to 'vmec' phi which goes
             !  from 0->2pi over a field period.
             !           out: s, theta, phi('vmec'
+            ! For compatibility with stell_tools/pest2vmec, invert the poloidal and toroidal angles
+            sflCrd(2) = -sflCrd(2)
+            sflCrd(3) = -sflCrd(3)
             CALL pest2vmec(sflCrd) !convert to VMEC coordinates
             s_initB = sflCrd(1)  ! sflCrd now has VMEC coordinates!!! s=s
             u_initB = sflCrd(2)  ! u (vmec) <- changes to VMEC coords
@@ -239,22 +244,13 @@
             gradZ(3) = gradZ_init(3) / (two * rovera)
            
 !new
-           ! need B/B^phi .  modB is easy. B^phi = B dot grad(phi) = B dot grad(v) dv/dphia
-           ! modB / (B dot grad(phi)) = 1 / (b dot grad(phi))
-           !
-           ! d(Bdot grad(phi) ) / dpsi = gradB(3) / NFP
-           !dBsupphidpsi(j) = gradB(3) / NFP ! this needs to be fixed (JCS)
-           !dBsupphidpsi(j) = gradB(3) *pi2/psi_a ! this needs to be fixed (JCS)
            ! dBsupphidpsi calculation begins here
            ! B^phi = Toroidal component of B vevtor   psi=toroidal flux / 2pi
-           !dBsupphidpsi(j) = gradB(3) *pi2/psi_a ! this needs to be fixed (JCS)
+           ! see VMEC notes
            dBsupphidpsi(j) = dBsupv(3)*(pi2/psi_a) / (two * rovera)
            ! Following AB's description (Eqs 39-45)
            !
 
-! note to self: I am here!           
-           ! see below
-           ! dBdpsi(j) = gradB(3)*pi2/psi_a !This has been verified with nothing (JCS)
 
             ! Calc grad(s)
             ! grad(s) = ( (d (X,Y,Z) / du) x (d (X,Y,Z) / dv) ) /  
@@ -314,7 +310,7 @@
             es = es_init/sqrtg
             eu = eu_init/sqrtg
             ev = ev_init/sqrtg
-! gradS is grad psi? - check JCS
+! gradS is grad psi
             gradS = es * phiedge
             ! grad_psi is for the points on a single field period (not full torus)
             grad_psi = gradS ! in cylindrical coordinates
@@ -344,8 +340,6 @@
             !integrate dloverb
             dloverb = dloverb + ds(j)/modB(j)
 
-! JCS Commenting out the rest, up to what is needed for the code to run
-! looks like it generates:
 !      dB/ds, dB/dpsi, dB/dr, dB/phi, dB/dz, gradB=dB/d(x,y,z)
 ! I have gradB = dB/d(s,u,v)
 ! Later , will want dB/dx, dB/dy, and dB/dz for B dot grad(|B|) = d (bx (x) + by(y) + bz(z)) / d(l)
@@ -359,27 +353,12 @@
 !           ! were evaluated on the VMEC grid for a single field period
 !           ! and may need to be projected/rotataed to account for
 !           ! full-torus coordinates
-! JCS - Handle projecctions to single field period
-! or, do i want to put these on the full torus for simplicity?
-           ! the x terms 
-!           coszeta = cos(zeta)
-!           sinzeta = sin(zeta)
-!           dxyzdu(1) = gradR(1)*coszeta
-!           dxyzdv(1) = gradR(2)*coszeta - R/nfp*sinzeta
-!           dxyzds(1) = gradR(3)*coszeta
-!           !and the y terms
-!           !dxyzdu(2) = gradR(1)*sinzeta
-!           !dxyzdv(2) = gradR(2)*sinzeta + R/nfp*coszeta
-!           !dxyzds(2) = gradR(3)*sinzeta
-!           !dxyzdu(3) = gradZ(1)
-!           !dxyzdv(3) = gradZ(2)
-!           !dxyzds(3) = gradZ(3)
 
 !          coszeta, sinzeta are the cos and sin values of the vmec coordinate
 !          v, which goes from 0->2pi on a field period
-           !coszeta_fp = cos(v) ! dX_fp/dR
-           !sinzeta_fp = sin(v) ! dY_fp/dR 
+
            ! the above comment is out of date
+
            ! note the '-' sign
            coszeta_p = cos(-zeta_p) ! dX/dR
            sinzeta_p = sin(-zeta_p) ! dY/dR 
@@ -474,54 +453,7 @@
            
             
             
-            !get_equil_xxx are supposed to return derivatives
-            !but they seem to return nonsense, so let's just
-            !create our own finite differences
-!            del = 0.005_rprec
-!
-!            
-!            !CALL get_equil_Bcylsuv(s-del,u,v,Brt,Bpt,Bzt,ier,modbm,gradbtest)
-!            !CALL get_equil_Bcylsuv(s+del,u,v,Brt,Bpt,Bzt,ier,modbp,gradbtest)
-!            !dBds = (modbp-modbm)/2/del
-!            !dBdpsi(j) = dBds*pi2/psi_a !This has been verified with ROSE
-!            !write(*,*) dBdpsi',dBdpsi(j)
-!            
-!            !Calculate dB/dr, dB/dth and dB/dz
-!            !Also calculate dB(xyz)d(rthetaz) which we'll need later
-!            Brt = 0.0_rprec
-!            Bpt = 0.0_rprec
-!            Bzt = 0.0_rprec
-!            CALL get_equil_B(R+del,MODULO(zeta, pi2), Z,Bxt,Byt,Bzt,ier)
-!            modbp = sqrt(Bxt*Bxt + Byt*Byt + Bzt*Bzt)
-!            CALL get_equil_B(R-del,MODULO(zeta, pi2), Z,Bxt2,Byt2,Bzt2,ier)
-!            modbm = sqrt(Bxt2*Bxt2 + Byt2*Byt2 + Bzt2*Bzt2)
-!            dBdr = (modbp-modbm)/2.0_rprec/del
-!
-!            CALL get_equil_B(R,MODULO(zeta, pi2), Z+del,Bxt,Byt,Bzt,ier)
-!            modbp = sqrt(Bxt*Bxt + Byt*Byt + Bzt*Bzt)
-!            CALL get_equil_B(R,MODULO(zeta, pi2), Z-del,Bxt2,Byt2,Bzt2,ier)
-!            modbm = sqrt(Bxt2*Bxt2 + Byt2*Byt2 + Bzt2*Bzt2)
-!            dBdz = (modbp-modbm)/2.0_rprec/del
-!            
-!
-!            phip = MODULO(zeta+del, pi2)
-!            CALL get_equil_B(R, phip, Z,Bxt,Byt,Bzt,ier)
-!            modbp = sqrt(Bxt*Bxt + Byt*Byt + Bzt*Bzt)
-!            phim = MODULO(zeta-del, pi2)
-!            CALL get_equil_B(R, phim, Z,Bxt2,Byt2,Bzt2,ier)
-!            modbm = sqrt(Bxt2*Bxt2 + Byt2*Byt2 + Bzt2*Bzt2)
-!            dBdphi = (modbp-modbm)/2.0_rprec/del
-!
-!
-!            gradB(3) = dBdz
-!            gradB(1) = dBdr*X/R - dBdphi*Y/R
-!            gradB(2) = dBdr*Y/R + dBdphi*X/R
-!
-
 ! JCS the 'old' gradB was w.r.t (x,y,z) coordinates
-! JCS At this point, lets review what is needed at the end,
-!   and what is is that we have right now.
-!!
 ! need a grad_psi.  check for normalization grad_psi ~ grad_s * psi_lcfs
             !Calculate |e_theta|  (cylindrical ?? JCS)
 ! e_r, e_phi and e_z are expressed in the (x,y,z)-components 
@@ -612,33 +544,6 @@
             !geodesic curvature
             kappa_g(j) = 0.0_rprec
 
-!old
-!            IF (j > 2) THEN
-!              bdotgradb(1) = (Bx/modB(j) - Bx2p/modB(j-2))/(ds(j-1)+ds(j))
-!              bdotgradb(2) = (By/modB(j) - By2p/modB(j-2))/(ds(j-1)+ds(j))
-!              bdotgradb(3) = (Bz/modB(j) - Bz2p/modB(j-2))/(ds(j-1)+ds(j))
-!              !write (*,*) 'bdotgradb2 j=',j-1,bdotgradb
-!              kappa_g(j-1) = dot_product(bdotgradb, binormal(j-1, :))
-!              !write (*,*) 'kappa_g2 j=',j-1, kappa_g(j-1)
-!              IF (j == nsteps) THEN
-!                bdotgradb(1) = (Bx/modB(j) - Bxp/modB(j-1))/(ds(j))
-!                bdotgradb(2) = (By/modB(j) - Byp/modB(j-1))/(ds(j))
-!                bdotgradb(3) = (Bz/modB(j) - Bzp/modB(j-1))/(ds(j))
-!                kappa_g(j) = dot_product(bdotgradb, binormal(j,:))
-!                !write (*,*) 'bdotgrad b, j=',nsteps,bdotgradb
-!                !write (*,*) 'kappa_g, j=',nsteps, kappa_g(j)
-!              END IF  
-!               
-!            END IF
-!            IF (j == 2) THEN !handle the first index
-!              bdotgradb(1) = (Bx/modB(j) - Bxp/modB(j-1))/(ds(j-1))
-!              bdotgradb(2) = (By/modB(j) - Byp/modB(j-1))/(ds(j-1))
-!              bdotgradb(3) = (Bz/modB(j) - Bzp/modB(j-1))/(ds(j-1))
-!
-!              kappa_g(j-1) = dot_product(bdotgradb, binormal(j-1,:))
-!              !write (*,*) 'bdotgrad b, j=1',bdotgradb
-!              !write (*,*) 'kappa_g, j=1', kappa_g(j-1)
-!            END IF 
 !new
 ! Use central differences to calculated bdotgradb - 
 ! Since this is done in a loop, three (3) values need to be calculated.
@@ -697,16 +602,6 @@
 
 
 
-            !calculate bdotgradb = partial b-vector / partial l
-!            !write (*,*) 'tangential', Bxyz/modB(j)
-!            !write (*,*) 'normal',grad_psi(j,:)/grad_psi_norm(j)
-!            !write (*,*) 'nxb',binormal(j,:)
-!            !write (*,*) 'bdotgradb',bdotgradb
-!            !write (*,*) 'kappa_g', kappa_g(j)
-
-
-
-
             !kappa_g(j) = dot_product(Bxyz, gradB)/modB(j)/modB(j)
             !write (*,*) 'gradB', gradB
             !write (*,*) 'kappa_g', kappa_g(j)
@@ -729,11 +624,6 @@
 
 
 
-! old
-!            !dvdB_t1 is the first term in the brackets of dVdb
-!            ! = iota' ( grad_psi cross b_hat) dot grad_zeta
-!            CALL cross_product(grad_psi, Bxyz, grad_psi_x_b)
-!            dVdb_t1(j) = iotap*dot_product(grad_psi_x_b, grad_zeta)/modB(j)
 !new
             !dvdB_t1 is the first term in the brackets of dVdb
             ! = iota' ( grad_psi cross b_hat) dot grad_zeta
@@ -746,23 +636,6 @@
 
 !  JCS  - check this.  dBsubvdpsi - check which index is appropriate and
 ! the normalization
-
-!old
-!            !Get B^v and derivatives
-!            !CALL get_equil_Bflx(s,u,v,temp1,temp2,Bsupv(j),ier,Bgrad)
-!            dBsupvdpsi(j) = gradB(3)
-!            !CALL get_equil_Bsupv(s,u,v,Bsupv(j),ier)
-!            !Use finite derivatives because ezspline derivs are broken
-!            !CALL get_equil_Bsupv(s+del,u,v,modbp,ier)
-!            !CALL get_equil_Bsupv(s-del,u,v,modbm,ier)
-!            !dBsupvdpsi(j) = (modbp - modbm)/2.0_rprec/del
-!            dBsupvdpsi(j) = dBsupvdpsi(j)*pi2/psi_a
-!            !Both values verified with ROSE
-!
-!            !Rose version of BPHI, verified that these agree
-!            !Bsupv(j) = dot_product(Bxyz,e_phi)/R(j)
-!            !write(*,*) 'Bsupv rose',Bsupv(j)
-
 
 
 !           write(igc2,'(1X,I8,13(2X,E16.8))') j,rovera,s_initA, u_initA, v_initA, s_initB, u_initB, v_initB, u, v,R,Z,X,Y
@@ -837,18 +710,20 @@
           maxB = MAXVAL(modB)
 
           !Make the bp array
-          DO i=1,bpstep
-            bp(i) = 1.0_rprec + (maxB-minB)/minB * (i-0.5_rprec) / bpstep 
+          DO i=1,gammac_bpstep
+            bp(i) = 1.0_rprec + (maxB-minB)/minB * (i-0.5_rprec) / gammac_bpstep 
           END DO
-          deltabp = (maxB - minB)/minB/bpstep 
-          write(*,*) 'minB',minB
-          write(*,*) 'maxB',maxB
-          write(*,*) 'deltabp',deltabp
+          deltabp = (maxB - minB)/minB/gammac_bpstep 
+          if (lgammac_debug == 1) then
+            write(*,*) 'minB',minB
+            write(*,*) 'maxB',maxB
+            write(*,*) 'deltabp',deltabp
+          end if
 
           !Go through each value of bp
 !          write (*,*) '<---Starting loop i=1,bpstep'
 !--------------------------------- DO i = 1,bpstep over each bp step
-          DO i=1,bpstep
+          DO i=1,gammac_bpstep
             grad_psi_i = 1.0E10_rprec !This term appears in the denominator
             e_theta_i = 0
 
@@ -1042,14 +917,16 @@
 !------------------------------END DO i = 1,bpstep over each bp step
 !          write (*,*) '<---Finished loop i=1,bpstep'
           bigGamma_c = bigGamma_c/dloverb
-          write(*,*) 'dloverb',dloverb
-          write(*,*) 'bigGamma_c',bigGamma_c
-          
+          if (lgammac_debug == 1) then
+            write(*,*) 'dloverb',dloverb
+            write(*,*) 'bigGamma_c',bigGamma_c
+          end if
 
           vals(mtargets) = bigGamma_c
           sigmas(mtargets) = ABS(sigma(ik))
           targets(mtargets) = target(ik)
           IF (iflag ==1) THEN
+            !WRITE(iunit_out,'(3ES22.12E3,3(1X,I5))') targets(mtargets),sigmas(mtargets),vals(mtargets),ik
             WRITE(iunit_out,'(3ES22.12E3,3(1X,I5))') targets(mtargets),sigmas(mtargets),vals(mtargets),ik
           END IF
 
