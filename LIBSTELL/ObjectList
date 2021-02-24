@@ -1,4 +1,5 @@
 ObjectFiles = \
+read_hint_mod.o \
 read_eqdsk_mod.o \
 vmec_ohkawa.o \
 common_factor.o \
