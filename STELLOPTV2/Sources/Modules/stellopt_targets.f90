@@ -150,8 +150,8 @@
       REAL(rprec), DIMENSION(nsd)   ::  target_neo, sigma_neo
       REAL(rprec), DIMENSION(nsd)   ::  target_Jstar, sigma_Jstar
       REAL(rprec), DIMENSION(nsd)   ::  target_magwell, sigma_magwell
-      REAL(rprec), DIMENSION(nsd)   ::  target_qsft, sigma_qsft
-      REAL(rprec), DIMENSION(nsd)   ::  target_qsfp, sigma_qsfp
+      REAL(rprec), DIMENSION(nprof) ::  target_qsft, sigma_qsft
+      REAL(rprec), DIMENSION(nprof) ::  target_qsfp, sigma_qsfp
       REAL(rprec), DIMENSION(nsd)   ::  target_helicity, sigma_helicity
       REAL(rprec), DIMENSION(nsd)   ::  target_helicity_old, sigma_helicity_old
       COMPLEX                       ::  helicity

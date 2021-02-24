@@ -733,10 +733,10 @@
       sigma_curvature  = bigno
       target_magwell   = 0.0
       sigma_magwell    = bigno
-      target_qsft      = 0.0
-      sigma_qsft       = bigno
-      target_qsfp      = 0.0
-      sigma_qsfp       = bigno
+      target_qsft(:)   = 0.0
+      sigma_qsft(:)    = bigno
+      target_qsfp(:)   = 0.0
+      sigma_qsfp(:)    = bigno
       target_kappa     = 0.0
       sigma_kappa      = bigno
       phi_kappa        = 0.0

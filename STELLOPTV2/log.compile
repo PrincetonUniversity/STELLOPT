@@ -1,0 +1,718 @@
+Beginning release compilation and linking of stelloptv2
+make[1]: Entering directory `/u/erodrigu/STELLOPT/STELLOPTV2/Release'
+make[2]: Entering directory `/u/erodrigu/STELLOPT/LIBSTELL'
+Beginning release compilation and archiving of libstell
+make[3]: Entering directory `/u/erodrigu/STELLOPT/LIBSTELL/Release'
+make[3]: `libstell.a' is up to date.
+make[3]: Leaving directory `/u/erodrigu/STELLOPT/LIBSTELL/Release'
+Release version - libstell.a - is now updated
+To free up space, delete all *.o files from Release
+
+make[2]: Leaving directory `/u/erodrigu/STELLOPT/LIBSTELL'
+make[2]: Entering directory `/u/erodrigu/STELLOPT/VMEC2000'
+Beginning release compilation and linking of xvmec2000
+make[3]: Entering directory `/u/erodrigu/STELLOPT/VMEC2000/Release'
+make[4]: Entering directory `/u/erodrigu/STELLOPT/LIBSTELL'
+Beginning release compilation and archiving of libstell
+make[5]: Entering directory `/u/erodrigu/STELLOPT/LIBSTELL/Release'
+make[5]: `libstell.a' is up to date.
+make[5]: Leaving directory `/u/erodrigu/STELLOPT/LIBSTELL/Release'
+Release version - libstell.a - is now updated
+To free up space, delete all *.o files from Release
+
+make[4]: Leaving directory `/u/erodrigu/STELLOPT/LIBSTELL'
+mpifort -O2 -fexternal-blas -I/u/erodrigu/STELLOPT/bin/libstell_dir -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include -o  xvmec2000 blocktridiagonalsolver_bst.o blocktridiagonalsolver.o forces.o getfsq.o alias.o convert.o vmec_persistent.o bcovar.o spectrum.o symrzl.o vmec_dim.o precondn.o symforce.o scalfor.o residue.o jacobian.o angle_constraints.o vmec_main.o aspectratio.o realspace.o add_fluxes.o lamcal.o totzsp_mod.o fbal.o csplinx.o vforces.o funct3d.o tomnsp_mod.o directaccess.o vmec_params.o xstuff.o close_all_files.o allocate_funct3d.o free_mem_funct3d.o magnetic_fluxes.o guess_axis.o open_output_files.o allocate_ns.o reset_params.o heading.o vsetup.o free_mem_nunv.o profil3d.o load_xc_from_wout.o allocate_nunv.o profil1d.o init_geometry.o fixaray.o free_mem_ns.o free_persistent_mem.o initialize_radial.o precon2d.o sort_data.o initspline.o setspline.o set_dual.o splints.o add_tension.o splinint.o splintx.o gety2.o getspline.o jacprod.o vspline.o setup_int.o precal.o vacmod0.o fourp.o becoil.o vac_persistent.o analysum2.o vacmod.o surface.o vacuum.o bextern.o analyt.o fouri.o scalpot.o tolicu.o analysum.o belicu.o greenf.o interp.o vmec_history.o runvmec.o evolve.o restart.o parallel_include_module.o gmres_mod.o eqsolve.o vmec.o parallel_vmec_module.o freeb_data.o bss.o wrout.o fileout.o timer_sub.o printout.o getbrho.o vmec_io.o eqfor.o fsym_invfft.o dump_output.o fsym_fft.o read_indata.o getcurmid.o vmercier.o readin.o write_dcon.o jxbforce.o mercier.o TestWout.o elongation.o         ../../LIBSTELL/Release/libstell.a -lopenblas -L/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/scalapack-2.1.0/lib -lscalapack  /usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/blacs-1.1alpha/lib/blacs_MPI-LINUX-0.a /usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/blacs-1.1alpha/lib/blacsF77init_MPI-LINUX-0.a /usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/blacs-1.1alpha/lib/blacsCinit_MPI-LINUX-0.a -L/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/lib -lnetcdf -L/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/lib -lnetcdff -L/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/lib -lhdf5_hl -lhdf5_fortran -lhdf5 -lhdf5hl_fortran -lpthread -lz -lm
+make[3]: Leaving directory `/u/erodrigu/STELLOPT/VMEC2000/Release'
+Release version - xvmec2000 - is now updated
+To free up space, delete all *.o files from Release
+
+make[2]: Leaving directory `/u/erodrigu/STELLOPT/VMEC2000'
+a - add_fluxes.o
+a - add_tension.o
+a - alias.o
+a - allocate_funct3d.o
+a - allocate_ns.o
+a - allocate_nunv.o
+a - analysum2.o
+a - analysum.o
+a - analyt.o
+a - angle_constraints.o
+a - aspectratio.o
+a - bcovar.o
+a - becoil.o
+a - belicu.o
+a - bextern.o
+a - blocktridiagonalsolver_bst.o
+a - blocktridiagonalsolver.o
+a - bss.o
+a - close_all_files.o
+a - convert.o
+a - csplinx.o
+a - directaccess.o
+a - dump_output.o
+a - elongation.o
+a - eqfor.o
+a - eqsolve.o
+a - evolve.o
+a - fbal.o
+a - fileout.o
+a - fixaray.o
+a - forces.o
+a - fouri.o
+a - fourp.o
+a - freeb_data.o
+a - free_mem_funct3d.o
+a - free_mem_ns.o
+a - free_mem_nunv.o
+a - free_persistent_mem.o
+a - fsym_fft.o
+a - fsym_invfft.o
+a - funct3d.o
+a - getbrho.o
+a - getcurmid.o
+a - getfsq.o
+a - getspline.o
+a - gety2.o
+a - gmres_mod.o
+a - greenf.o
+a - guess_axis.o
+a - heading.o
+a - init_geometry.o
+a - initialize_radial.o
+a - initspline.o
+a - interp.o
+a - jacobian.o
+a - jacprod.o
+a - jxbforce.o
+a - lamcal.o
+a - load_xc_from_wout.o
+a - magnetic_fluxes.o
+a - mercier.o
+a - open_output_files.o
+a - parallel_include_module.o
+a - parallel_vmec_module.o
+a - precal.o
+a - precon2d.o
+a - precondn.o
+a - printout.o
+a - profil1d.o
+a - profil3d.o
+a - read_indata.o
+a - readin.o
+a - realspace.o
+a - reset_params.o
+a - residue.o
+a - restart.o
+a - runvmec.o
+a - scalfor.o
+a - scalpot.o
+a - set_dual.o
+a - setspline.o
+a - setup_int.o
+a - sort_data.o
+a - spectrum.o
+a - splinint.o
+a - splints.o
+a - splintx.o
+a - surface.o
+a - symforce.o
+a - symrzl.o
+a - TestWout.o
+a - timer_sub.o
+a - tolicu.o
+a - tomnsp_mod.o
+a - totzsp_mod.o
+a - vacmod0.o
+a - vacmod.o
+a - vac_persistent.o
+a - vacuum.o
+a - vforces.o
+a - vmec_dim.o
+a - vmec_history.o
+a - vmec_io.o
+a - vmec_main.o
+a - vmec.o
+a - vmec_params.o
+a - vmec_persistent.o
+a - vmercier.o
+a - vsetup.o
+a - vspline.o
+a - write_dcon.o
+a - wrout.o
+a - xstuff.o
+make[2]: Entering directory `/u/erodrigu/STELLOPT/BEAMS3D'
+Beginning release compilation and linking of beams3d
+make[3]: Entering directory `/u/erodrigu/STELLOPT/BEAMS3D/Release'
+make[4]: Entering directory `/u/erodrigu/STELLOPT/LIBSTELL'
+Beginning release compilation and archiving of libstell
+make[5]: Entering directory `/u/erodrigu/STELLOPT/LIBSTELL/Release'
+make[5]: `libstell.a' is up to date.
+make[5]: Leaving directory `/u/erodrigu/STELLOPT/LIBSTELL/Release'
+Release version - libstell.a - is now updated
+To free up space, delete all *.o files from Release
+
+make[4]: Leaving directory `/u/erodrigu/STELLOPT/LIBSTELL'
+mpifort -O2 -fexternal-blas -I/u/erodrigu/STELLOPT/bin/libstell_dir -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include -o  xbeams3d beams3d_randomize_particles.o beams3d_init_beams_bbnbi.o beams3d_write_ascoth4.o beams3d_write_ascoth5.o beams3d_write_parhdf5.o beams3d_init_beams_w7x.o beams3d_lines.o beams3d_init.o drkhvg.o beams3d_init_mgrid.o jacobian_lsode.o beams3d_write.o beams3d_diagnostics.o fpart_nag.o beams3d_main.o beams3d_runtime.o beams3d_physics_mod.o beams3d_free.o beams3d_init_restart.o out_beams3d_nag.o beams3d_read.o beams3d_init_coil.o beams3d_init_vmec.o beams3d_grid.o backspace_out.o beams3d_follow.o gauss_rand.o beams3d_input_mod.o beams3d_init_beams.o fpart_rkh68.o fpart_lsode.o         ../../LIBSTELL/Release/libstell.a -lopenblas -L/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/scalapack-2.1.0/lib -lscalapack  /usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/blacs-1.1alpha/lib/blacs_MPI-LINUX-0.a /usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/blacs-1.1alpha/lib/blacsF77init_MPI-LINUX-0.a /usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/blacs-1.1alpha/lib/blacsCinit_MPI-LINUX-0.a -L/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/lib -lnetcdf -L/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/lib -lnetcdff -L/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/lib -lhdf5_hl -lhdf5_fortran -lhdf5 -lhdf5hl_fortran -lpthread -lz -lm
+make[3]: Leaving directory `/u/erodrigu/STELLOPT/BEAMS3D/Release'
+Release version - xbeams3d - is now updated
+To free up space, delete all *.o files from Release
+
+make[2]: Leaving directory `/u/erodrigu/STELLOPT/BEAMS3D'
+a - backspace_out.o
+a - beams3d_diagnostics.o
+a - beams3d_follow.o
+a - beams3d_free.o
+a - beams3d_grid.o
+a - beams3d_init_beams_bbnbi.o
+a - beams3d_init_beams.o
+a - beams3d_init_beams_w7x.o
+a - beams3d_init_coil.o
+a - beams3d_init_mgrid.o
+a - beams3d_init.o
+a - beams3d_init_restart.o
+a - beams3d_init_vmec.o
+a - beams3d_input_mod.o
+a - beams3d_lines.o
+a - beams3d_main.o
+a - beams3d_physics_mod.o
+a - beams3d_randomize_particles.o
+a - beams3d_read.o
+a - beams3d_runtime.o
+a - beams3d_write_ascoth4.o
+a - beams3d_write_ascoth5.o
+a - beams3d_write.o
+a - beams3d_write_parhdf5.o
+a - drkhvg.o
+a - fpart_lsode.o
+a - fpart_nag.o
+a - fpart_rkh68.o
+a - gauss_rand.o
+a - jacobian_lsode.o
+a - out_beams3d_nag.o
+a - beams3d_grid.mod
+a - beams3d_input_mod.mod
+a - beams3d_lines.mod
+a - beams3d_physics_mod.mod
+a - beams3d_runtime.mod
+a - beams3d_write_par.mod
+make[2]: Entering directory `/u/erodrigu/STELLOPT/BNORM'
+Beginning release compilation and linking of bnorm
+make[3]: Entering directory `/u/erodrigu/STELLOPT/BNORM/Release'
+make[4]: Entering directory `/u/erodrigu/STELLOPT/LIBSTELL'
+Beginning release compilation and archiving of libstell
+make[5]: Entering directory `/u/erodrigu/STELLOPT/LIBSTELL/Release'
+make[5]: `libstell.a' is up to date.
+make[5]: Leaving directory `/u/erodrigu/STELLOPT/LIBSTELL/Release'
+Release version - libstell.a - is now updated
+To free up space, delete all *.o files from Release
+
+make[4]: Leaving directory `/u/erodrigu/STELLOPT/LIBSTELL'
+mpifort -O2 -fexternal-blas -I/u/erodrigu/STELLOPT/bin/libstell_dir -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include -o  xbnorm normal_info.o Map_v.o bnormal.o bn_fouri.o bn_read_vmecf90.o FZERO.o bn_vecpot.o regint.o neswrite.o bn_alloc.o meshes.o vecpot.o scaleup_boundary.o bn_write_nescoil_input.o bn_surface.o bn_read_commandline.o bn_bfield_parallel.o bnvariables.o bfield_n.o bn_precal.o normal_vector.o         ../../LIBSTELL/Release/libstell.a -lopenblas -L/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/scalapack-2.1.0/lib -lscalapack  /usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/blacs-1.1alpha/lib/blacs_MPI-LINUX-0.a /usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/blacs-1.1alpha/lib/blacsF77init_MPI-LINUX-0.a /usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/blacs-1.1alpha/lib/blacsCinit_MPI-LINUX-0.a -L/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/lib -lnetcdf -L/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/lib -lnetcdff -L/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/lib -lhdf5_hl -lhdf5_fortran -lhdf5 -lhdf5hl_fortran -lpthread -lz -lm
+make[3]: Leaving directory `/u/erodrigu/STELLOPT/BNORM/Release'
+Release version - xbnorm - is now updated
+To free up space, delete all *.o files from Release
+
+make[2]: Leaving directory `/u/erodrigu/STELLOPT/BNORM'
+a - bfield_n.o
+a - bn_alloc.o
+a - bn_bfield_parallel.o
+a - bn_fouri.o
+a - bnormal.o
+a - bn_precal.o
+a - bn_read_commandline.o
+a - bn_read_vmecf90.o
+a - bn_surface.o
+a - bnvariables.o
+a - bn_vecpot.o
+a - bn_write_nescoil_input.o
+a - FZERO.o
+a - Map_v.o
+a - meshes.o
+a - neswrite.o
+a - normal_info.o
+a - normal_vector.o
+a - regint.o
+a - scaleup_boundary.o
+a - vecpot.o
+a - bnvariables.mod
+a - meshes.mod
+a - neswrite.mod
+a - normal_info.mod
+make[2]: Entering directory `/u/erodrigu/STELLOPT/BOOTSJ'
+Beginning release compilation and linking of bootsj
+make[3]: Entering directory `/u/erodrigu/STELLOPT/BOOTSJ/Release'
+make[4]: Entering directory `/u/erodrigu/STELLOPT/LIBSTELL'
+Beginning release compilation and archiving of libstell
+make[5]: Entering directory `/u/erodrigu/STELLOPT/LIBSTELL/Release'
+make[5]: `libstell.a' is up to date.
+make[5]: Leaving directory `/u/erodrigu/STELLOPT/LIBSTELL/Release'
+Release version - libstell.a - is now updated
+To free up space, delete all *.o files from Release
+
+make[4]: Leaving directory `/u/erodrigu/STELLOPT/LIBSTELL'
+mpifort -O2 -fexternal-blas -I/u/erodrigu/STELLOPT/bin/libstell_dir -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include -o  xbootsj al31.o output.o bootsj.o driver.o temp.o woflam.o reorganz.o vmec0.o do_fft.o bongrid.o caprsh2.o othersums.o datain.o trig.o SIMPUN.o fraction.o sumit.o allocate_radial.o denmf.o parambs.o grad.o allocate_angles.o positiv.o deallocate_all.o smooth1.o tok_fraction.o read_boozer.o         ../../LIBSTELL/Release/libstell.a -lopenblas -L/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/scalapack-2.1.0/lib -lscalapack  /usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/blacs-1.1alpha/lib/blacs_MPI-LINUX-0.a /usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/blacs-1.1alpha/lib/blacsF77init_MPI-LINUX-0.a /usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/blacs-1.1alpha/lib/blacsCinit_MPI-LINUX-0.a -L/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/lib -lnetcdf -L/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/lib -lnetcdff -L/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/lib -lhdf5_hl -lhdf5_fortran -lhdf5 -lhdf5hl_fortran -lpthread -lz -lm
+make[3]: Leaving directory `/u/erodrigu/STELLOPT/BOOTSJ/Release'
+Release version - xbootsj - is now updated
+To free up space, delete all *.o files from Release
+
+make[2]: Leaving directory `/u/erodrigu/STELLOPT/BOOTSJ'
+a - al31.o
+a - allocate_angles.o
+a - allocate_radial.o
+a - bongrid.o
+a - bootsj.o
+a - caprsh2.o
+a - datain.o
+a - deallocate_all.o
+a - denmf.o
+a - do_fft.o
+a - driver.o
+a - fraction.o
+a - grad.o
+a - othersums.o
+a - output.o
+a - parambs.o
+a - positiv.o
+a - read_boozer.o
+a - reorganz.o
+a - SIMPUN.o
+a - smooth1.o
+a - sumit.o
+a - temp.o
+a - tok_fraction.o
+a - trig.o
+a - vmec0.o
+a - woflam.o
+a - parambs.mod
+a - trig.mod
+a - vmec0.mod
+make[2]: Entering directory `/u/erodrigu/STELLOPT/BOOZ_XFORM'
+Beginning release compilation and linking of booz_xform
+make[3]: Entering directory `/u/erodrigu/STELLOPT/BOOZ_XFORM/Release'
+make[4]: Entering directory `/u/erodrigu/STELLOPT/LIBSTELL'
+Beginning release compilation and archiving of libstell
+make[5]: Entering directory `/u/erodrigu/STELLOPT/LIBSTELL/Release'
+make[5]: `libstell.a' is up to date.
+make[5]: Leaving directory `/u/erodrigu/STELLOPT/LIBSTELL/Release'
+Release version - libstell.a - is now updated
+To free up space, delete all *.o files from Release
+
+make[4]: Leaving directory `/u/erodrigu/STELLOPT/LIBSTELL'
+mpifort -O2 -fexternal-blas -I/u/erodrigu/STELLOPT/bin/libstell_dir -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include -o  xbooz_xform booz_jac.o read_wout_booz.o foranl.o allocate_boozer.o transpmn.o boozer_xform.o setup_booz.o write_boozmn.o harfun.o trigfunc.o booz_params.o vcoords.o boozer.o free_mem_boozer.o boozer_coords.o booz_persistent.o         ../../LIBSTELL/Release/libstell.a -lopenblas -L/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/scalapack-2.1.0/lib -lscalapack  /usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/blacs-1.1alpha/lib/blacs_MPI-LINUX-0.a /usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/blacs-1.1alpha/lib/blacsF77init_MPI-LINUX-0.a /usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/blacs-1.1alpha/lib/blacsCinit_MPI-LINUX-0.a -L/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/lib -lnetcdf -L/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/lib -lnetcdff -L/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/lib -lhdf5_hl -lhdf5_fortran -lhdf5 -lhdf5hl_fortran -lpthread -lz -lm
+make[3]: Leaving directory `/u/erodrigu/STELLOPT/BOOZ_XFORM/Release'
+Release version - xbooz_xform - is now updated
+To free up space, delete all *.o files from Release
+
+make[2]: Leaving directory `/u/erodrigu/STELLOPT/BOOZ_XFORM'
+a - allocate_boozer.o
+a - boozer_coords.o
+a - boozer.o
+a - boozer_xform.o
+a - booz_jac.o
+a - booz_params.o
+a - booz_persistent.o
+a - foranl.o
+a - free_mem_boozer.o
+a - harfun.o
+a - read_wout_booz.o
+a - setup_booz.o
+a - transpmn.o
+a - trigfunc.o
+a - vcoords.o
+a - write_boozmn.o
+a - booz_params.mod
+a - booz_persistent.mod
+make[2]: Entering directory `/u/erodrigu/STELLOPT/COBRAVMEC'
+Beginning release compilation and linking of cobravmec
+make[3]: Entering directory `/u/erodrigu/STELLOPT/COBRAVMEC/Release'
+make[4]: Entering directory `/u/erodrigu/STELLOPT/LIBSTELL'
+Beginning release compilation and archiving of libstell
+make[5]: Entering directory `/u/erodrigu/STELLOPT/LIBSTELL/Release'
+make[5]: `libstell.a' is up to date.
+make[5]: Leaving directory `/u/erodrigu/STELLOPT/LIBSTELL/Release'
+Release version - libstell.a - is now updated
+To free up space, delete all *.o files from Release
+
+make[4]: Leaving directory `/u/erodrigu/STELLOPT/LIBSTELL'
+mpifort -O2 -fexternal-blas -I/u/erodrigu/STELLOPT/bin/libstell_dir -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include -o  xcobravmec ballooning_data.o EQL.o coeffs.o obtain_theta.o INP.o polint.o CP.o general_dimensions.o normalize_data.o fmesh_quantities.o get_lambda.o obtain_field_line.o variat_eig_full.o TVAL.o obtain_zeta.o order_input.o geteigm.o STM.o get_ballooning_grate.o cobra.o readin_data.o TVECT.o getmatrix.o summod.o summodosd.o         ../../LIBSTELL/Release/libstell.a -lopenblas -L/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/scalapack-2.1.0/lib -lscalapack  /usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/blacs-1.1alpha/lib/blacs_MPI-LINUX-0.a /usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/blacs-1.1alpha/lib/blacsF77init_MPI-LINUX-0.a /usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/blacs-1.1alpha/lib/blacsCinit_MPI-LINUX-0.a -L/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/lib -lnetcdf -L/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/lib -lnetcdff -L/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/lib -lhdf5_hl -lhdf5_fortran -lhdf5 -lhdf5hl_fortran -lpthread -lz -lm
+make[3]: Leaving directory `/u/erodrigu/STELLOPT/COBRAVMEC/Release'
+Release version - xcobravmec - is now updated
+To free up space, delete all *.o files from Release
+
+make[2]: Leaving directory `/u/erodrigu/STELLOPT/COBRAVMEC'
+a - ballooning_data.o
+a - cobra.o
+a - coeffs.o
+a - CP.o
+a - EQL.o
+a - fmesh_quantities.o
+a - general_dimensions.o
+a - get_ballooning_grate.o
+a - geteigm.o
+a - get_lambda.o
+a - getmatrix.o
+a - INP.o
+a - normalize_data.o
+a - obtain_field_line.o
+a - obtain_theta.o
+a - obtain_zeta.o
+a - order_input.o
+a - polint.o
+a - readin_data.o
+a - STM.o
+a - summod.o
+a - summodosd.o
+a - TVAL.o
+a - TVECT.o
+a - variat_eig_full.o
+a - ballooning_data.mod
+a - fmesh_quantities.mod
+a - general_dimensions.mod
+a - normalize_data.mod
+a - readin_data.mod
+a - summod.mod
+make[2]: Entering directory `/u/erodrigu/STELLOPT/DIAGNO'
+Beginning release compilation and linking of diagno
+make[3]: Entering directory `/u/erodrigu/STELLOPT/DIAGNO/Release'
+make[4]: Entering directory `/u/erodrigu/STELLOPT/LIBSTELL'
+Beginning release compilation and archiving of libstell
+make[5]: Entering directory `/u/erodrigu/STELLOPT/LIBSTELL/Release'
+make[5]: `libstell.a' is up to date.
+make[5]: Leaving directory `/u/erodrigu/STELLOPT/LIBSTELL/Release'
+Release version - libstell.a - is now updated
+To free up space, delete all *.o files from Release
+
+make[4]: Leaving directory `/u/erodrigu/STELLOPT/LIBSTELL'
+mpifort -O2 -fexternal-blas -I/u/erodrigu/STELLOPT/bin/libstell_dir -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include -o  xdiagno dflux_simpson.o diagno_bfield.o db_bode.o dflux_midpoint.o diagno_input_mod.o diagno_mirnov.o diagno_runtime.o diagno_rogowski_new.o diagno_init_spec.o db_simpson.o diagno_init_coil.o diagno.o diagno_init_vmec.o diagno_flux.o diagno_rogowski.o diagno_bench.o diagno_bprobes.o dflux_bode.o db_midpoint.o         ../../LIBSTELL/Release/libstell.a -lopenblas -L/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/scalapack-2.1.0/lib -lscalapack  /usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/blacs-1.1alpha/lib/blacs_MPI-LINUX-0.a /usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/blacs-1.1alpha/lib/blacsF77init_MPI-LINUX-0.a /usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/blacs-1.1alpha/lib/blacsCinit_MPI-LINUX-0.a -L/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/lib -lnetcdf -L/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/lib -lnetcdff -L/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/lib -lhdf5_hl -lhdf5_fortran -lhdf5 -lhdf5hl_fortran -lpthread -lz -lm
+make[3]: Leaving directory `/u/erodrigu/STELLOPT/DIAGNO/Release'
+Release version - xdiagno - is now updated
+To free up space, delete all *.o files from Release
+
+make[2]: Leaving directory `/u/erodrigu/STELLOPT/DIAGNO'
+a - db_bode.o
+a - db_midpoint.o
+a - db_simpson.o
+a - dflux_bode.o
+a - dflux_midpoint.o
+a - dflux_simpson.o
+a - diagno_bench.o
+a - diagno_bfield.o
+a - diagno_bprobes.o
+a - diagno_flux.o
+a - diagno_init_coil.o
+a - diagno_init_spec.o
+a - diagno_init_vmec.o
+a - diagno_input_mod.o
+a - diagno_mirnov.o
+a - diagno.o
+a - diagno_rogowski_new.o
+a - diagno_rogowski.o
+a - diagno_runtime.o
+a - diagno_input_mod.mod
+a - diagno_runtime.mod
+make[2]: Entering directory `/u/erodrigu/STELLOPT/DKES'
+Beginning release compilation and linking of dkes
+make[3]: Entering directory `/u/erodrigu/STELLOPT/DKES/Release'
+make[4]: Entering directory `/u/erodrigu/STELLOPT/LIBSTELL'
+Beginning release compilation and archiving of libstell
+make[5]: Entering directory `/u/erodrigu/STELLOPT/LIBSTELL/Release'
+make[5]: `libstell.a' is up to date.
+make[5]: Leaving directory `/u/erodrigu/STELLOPT/LIBSTELL/Release'
+Release version - libstell.a - is now updated
+To free up space, delete all *.o files from Release
+
+make[4]: Leaving directory `/u/erodrigu/STELLOPT/LIBSTELL'
+mpifort -O2 -fexternal-blas -I/u/erodrigu/STELLOPT/bin/libstell_dir -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include -o  xdkes cescale.o printout.o vcmain.o wrdisk.o lcalc.o vnamecl2.o dkes_input.o dkes2.o blox.o residue.o dkes_realspace.o wrout.o blk5d.o header.o vimatrix.o rddisk.o dkes_input_prepare.o SORTI.o filit.o         ../../LIBSTELL/Release/libstell.a -lopenblas -L/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/scalapack-2.1.0/lib -lscalapack  /usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/blacs-1.1alpha/lib/blacs_MPI-LINUX-0.a /usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/blacs-1.1alpha/lib/blacsF77init_MPI-LINUX-0.a /usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/blacs-1.1alpha/lib/blacsCinit_MPI-LINUX-0.a -L/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/lib -lnetcdf -L/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/lib -lnetcdff -L/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/lib -lhdf5_hl -lhdf5_fortran -lhdf5 -lhdf5hl_fortran -lpthread -lz -lm
+make[3]: Leaving directory `/u/erodrigu/STELLOPT/DKES/Release'
+Release version - xdkes - is now updated
+To free up space, delete all *.o files from Release
+
+make[2]: Leaving directory `/u/erodrigu/STELLOPT/DKES'
+a - blk5d.o
+a - blox.o
+a - cescale.o
+a - dkes2.o
+a - dkes_input.o
+a - dkes_input_prepare.o
+a - dkes_realspace.o
+a - filit.o
+a - header.o
+a - lcalc.o
+a - printout.o
+a - rddisk.o
+a - residue.o
+a - SORTI.o
+a - vcmain.o
+a - vimatrix.o
+a - vnamecl2.o
+a - wrdisk.o
+a - wrout.o
+a - dkes_input.mod
+a - dkes_realspace.mod
+a - vcmain.mod
+a - vimatrix.mod
+a - vnamecl2.mod
+make[2]: Entering directory `/u/erodrigu/STELLOPT/FIELDLINES'
+Beginning release compilation and linking of fieldlines
+make[3]: Entering directory `/u/erodrigu/STELLOPT/FIELDLINES/Release'
+make[4]: Entering directory `/u/erodrigu/STELLOPT/LIBSTELL'
+Beginning release compilation and archiving of libstell
+make[5]: Entering directory `/u/erodrigu/STELLOPT/LIBSTELL/Release'
+make[5]: `libstell.a' is up to date.
+make[5]: Leaving directory `/u/erodrigu/STELLOPT/LIBSTELL/Release'
+Release version - libstell.a - is now updated
+To free up space, delete all *.o files from Release
+
+make[4]: Leaving directory `/u/erodrigu/STELLOPT/LIBSTELL'
+mpifort -O2 -fexternal-blas -I/u/erodrigu/STELLOPT/bin/libstell_dir -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include -o  xfieldlines fieldlines_calc_surface_fit.o fieldlines_init_vars.o fieldlines_write_parhdf5.o fieldlines_lines.o follow_single.o Map_v.o random.o fieldlines_init_vmec_edgestart.o fieldlines_main.o fieldlines_runtime.o fieldlines_init_I.o fieldlines_init_coil.o fieldlines_init_vmec.o fieldlines_write.o monit_find_axis.o fieldlines_find_hc.o backspace_out.o fieldlines_follow.o fieldlines_input_mod.o fieldlines_write_emc3.o FZERO.o out_fieldlines_nag.o fieldlines_init.o fieldlines_init_restart.o fblin_lsode.o fblin_nag.o fmap_nag.o fieldlines_init_subgrid.o fblin_rkh68.o jacobian_tanmap_lsode.o fieldlines_grid.o jacobian_lsode.o normal_vector.o fieldlines_find_axis.o fblin_tanmap_lsode.o fblin_tanmap_nag.o fieldlines_init_mgrid.o scaleup_boundary.o fblin_tanmap_rkh68.o fieldlines_init_nescoil.o drkhvg.o faxis_nag.o         ../../LIBSTELL/Release/libstell.a -lopenblas -L/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/scalapack-2.1.0/lib -lscalapack  /usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/blacs-1.1alpha/lib/blacs_MPI-LINUX-0.a /usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/blacs-1.1alpha/lib/blacsF77init_MPI-LINUX-0.a /usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/blacs-1.1alpha/lib/blacsCinit_MPI-LINUX-0.a -L/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/lib -lnetcdf -L/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/lib -lnetcdff -L/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/lib -lhdf5_hl -lhdf5_fortran -lhdf5 -lhdf5hl_fortran -lpthread -lz -lm
+make[3]: Leaving directory `/u/erodrigu/STELLOPT/FIELDLINES/Release'
+Release version - xfieldlines - is now updated
+To free up space, delete all *.o files from Release
+
+make[2]: Leaving directory `/u/erodrigu/STELLOPT/FIELDLINES'
+a - backspace_out.o
+a - drkhvg.o
+a - faxis_nag.o
+a - fblin_lsode.o
+a - fblin_nag.o
+a - fblin_rkh68.o
+a - fblin_tanmap_lsode.o
+a - fblin_tanmap_nag.o
+a - fblin_tanmap_rkh68.o
+a - fieldlines_calc_surface_fit.o
+a - fieldlines_find_axis.o
+a - fieldlines_find_hc.o
+a - fieldlines_follow.o
+a - fieldlines_grid.o
+a - fieldlines_init_coil.o
+a - fieldlines_init_I.o
+a - fieldlines_init_mgrid.o
+a - fieldlines_init_nescoil.o
+a - fieldlines_init.o
+a - fieldlines_init_restart.o
+a - fieldlines_init_subgrid.o
+a - fieldlines_init_vars.o
+a - fieldlines_init_vmec_edgestart.o
+a - fieldlines_init_vmec.o
+a - fieldlines_input_mod.o
+a - fieldlines_lines.o
+a - fieldlines_main.o
+a - fieldlines_runtime.o
+a - fieldlines_write_emc3.o
+a - fieldlines_write.o
+a - fieldlines_write_parhdf5.o
+a - fmap_nag.o
+a - follow_single.o
+a - FZERO.o
+a - jacobian_lsode.o
+a - jacobian_tanmap_lsode.o
+a - Map_v.o
+a - monit_find_axis.o
+a - normal_vector.o
+a - out_fieldlines_nag.o
+a - random.o
+a - scaleup_boundary.o
+a - fieldlines_grid.mod
+a - fieldlines_input_mod.mod
+a - fieldlines_lines.mod
+a - fieldlines_runtime.mod
+a - fieldlines_write_par.mod
+a - random.mod
+make[2]: Entering directory `/u/erodrigu/STELLOPT/J_INVARIANT'
+Beginning release compilation and linking of j_invariant
+make[3]: Entering directory `/u/erodrigu/STELLOPT/J_INVARIANT/Release'
+make[4]: Entering directory `/u/erodrigu/STELLOPT/LIBSTELL'
+Beginning release compilation and archiving of libstell
+make[5]: Entering directory `/u/erodrigu/STELLOPT/LIBSTELL/Release'
+make[5]: `libstell.a' is up to date.
+make[5]: Leaving directory `/u/erodrigu/STELLOPT/LIBSTELL/Release'
+Release version - libstell.a - is now updated
+To free up space, delete all *.o files from Release
+
+make[4]: Leaving directory `/u/erodrigu/STELLOPT/LIBSTELL'
+mpifort -O2 -fexternal-blas -I/u/erodrigu/STELLOPT/bin/libstell_dir -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include -o  xjinvariant rhs.o j_inv_calc.o J_invariant.o B_and_J_Library.o sfmin.o BJdata.o jac.o         ../../LIBSTELL/Release/libstell.a -lopenblas -L/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/scalapack-2.1.0/lib -lscalapack  /usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/blacs-1.1alpha/lib/blacs_MPI-LINUX-0.a /usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/blacs-1.1alpha/lib/blacsF77init_MPI-LINUX-0.a /usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/blacs-1.1alpha/lib/blacsCinit_MPI-LINUX-0.a -L/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/lib -lnetcdf -L/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/lib -lnetcdff -L/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/lib -lhdf5_hl -lhdf5_fortran -lhdf5 -lhdf5hl_fortran -lpthread -lz -lm
+make[3]: Leaving directory `/u/erodrigu/STELLOPT/J_INVARIANT/Release'
+Release version - xjinvariant - is now updated
+To free up space, delete all *.o files from Release
+
+make[2]: Leaving directory `/u/erodrigu/STELLOPT/J_INVARIANT'
+a - B_and_J_Library.o
+a - BJdata.o
+a - jac.o
+a - J_invariant.o
+a - j_inv_calc.o
+a - rhs.o
+a - sfmin.o
+a - b_and_j_library.mod
+a - bjdata.mod
+make[2]: Entering directory `/u/erodrigu/STELLOPT/MAKEGRID'
+Beginning release compilation and linking of makegrid
+make[3]: Entering directory `/u/erodrigu/STELLOPT/MAKEGRID/Release'
+make[4]: Entering directory `/u/erodrigu/STELLOPT/LIBSTELL'
+Beginning release compilation and archiving of libstell
+make[5]: Entering directory `/u/erodrigu/STELLOPT/LIBSTELL/Release'
+make[5]: `libstell.a' is up to date.
+make[5]: Leaving directory `/u/erodrigu/STELLOPT/LIBSTELL/Release'
+Release version - libstell.a - is now updated
+To free up space, delete all *.o files from Release
+
+make[4]: Leaving directory `/u/erodrigu/STELLOPT/LIBSTELL'
+mpifort -O2 -fexternal-blas -I/u/erodrigu/STELLOPT/bin/libstell_dir -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include -o  xgrid namelist_input_makegrid.o interactive_input.o task_mgrid.o task_mgrid_rs.o task_circ_tor_grid.o coil_group_report.o fft_local.o makegrid_global.o makegrid.o write_mgrid.o sym_check.o         ../../LIBSTELL/Release/libstell.a -lopenblas -L/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/scalapack-2.1.0/lib -lscalapack  /usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/blacs-1.1alpha/lib/blacs_MPI-LINUX-0.a /usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/blacs-1.1alpha/lib/blacsF77init_MPI-LINUX-0.a /usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/blacs-1.1alpha/lib/blacsCinit_MPI-LINUX-0.a -L/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/lib -lnetcdf -L/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/lib -lnetcdff -L/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/lib -lhdf5_hl -lhdf5_fortran -lhdf5 -lhdf5hl_fortran -lpthread -lz -lm
+make[3]: Leaving directory `/u/erodrigu/STELLOPT/MAKEGRID/Release'
+Release version - xgrid - is now updated
+To free up space, delete all *.o files from Release
+
+make[2]: Leaving directory `/u/erodrigu/STELLOPT/MAKEGRID'
+a - coil_group_report.o
+a - fft_local.o
+a - interactive_input.o
+a - makegrid_global.o
+a - makegrid.o
+a - namelist_input_makegrid.o
+a - sym_check.o
+a - task_circ_tor_grid.o
+a - task_mgrid.o
+a - task_mgrid_rs.o
+a - write_mgrid.o
+a - makegrid_global.mod
+a - sym_check.mod
+a - write_mgrid.mod
+make[2]: Entering directory `/u/erodrigu/STELLOPT/NEO'
+Beginning release compilation and linking of neo
+make[3]: Entering directory `/u/erodrigu/STELLOPT/NEO/Release'
+make[4]: Entering directory `/u/erodrigu/STELLOPT/LIBSTELL'
+Beginning release compilation and archiving of libstell
+make[5]: Entering directory `/u/erodrigu/STELLOPT/LIBSTELL/Release'
+make[5]: `libstell.a' is up to date.
+make[5]: Leaving directory `/u/erodrigu/STELLOPT/LIBSTELL/Release'
+Release version - libstell.a - is now updated
+To free up space, delete all *.o files from Release
+
+make[4]: Leaving directory `/u/erodrigu/STELLOPT/LIBSTELL'
+mpifort -O2 -fexternal-blas -I/u/erodrigu/STELLOPT/bin/libstell_dir -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include -o  xneo neo_precision.o splper.o poi2d.o rk4d_bo1.o neo_fourier.o eva2d.o neo_rhscur.o nrtype.o neo_spline_test.o neo.o neo_init.o neo_init_s.o neo_eval.o neo_exchange.o neo_rk4dbo.o sizey_bo.o neo_spline2d.o rhs_bo1.o splreg.o neo_dealloc.o neo_work.o neo_spline.o neo_rk4dcur.o rhs_cur1.o neo_read.o eva2d_fd.o neo_prep.o neo_read_control.o neo_output.o spl2d.o flint_cur.o eva2d_sd.o rk4d_cur1.o sizey_cur.o neo_input.o neo_bderiv.o spfper.o neo_control.o read_booz_in.o calccur.o neo_parameters.o partpa_bo.o partpa_cur.o neo_input_mod.o neo_rhsbo.o neo_units.o flint_bo.o neo_zeros2d.o         ../../LIBSTELL/Release/libstell.a -lopenblas -L/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/scalapack-2.1.0/lib -lscalapack  /usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/blacs-1.1alpha/lib/blacs_MPI-LINUX-0.a /usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/blacs-1.1alpha/lib/blacsF77init_MPI-LINUX-0.a /usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/blacs-1.1alpha/lib/blacsCinit_MPI-LINUX-0.a -L/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/lib -lnetcdf -L/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/lib -lnetcdff -L/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/lib -lhdf5_hl -lhdf5_fortran -lhdf5 -lhdf5hl_fortran -lpthread -lz -lm
+make[3]: Leaving directory `/u/erodrigu/STELLOPT/NEO/Release'
+Release version - xneo - is now updated
+To free up space, delete all *.o files from Release
+
+make[2]: Leaving directory `/u/erodrigu/STELLOPT/NEO'
+a - calccur.o
+a - eva2d_fd.o
+a - eva2d.o
+a - eva2d_sd.o
+a - flint_bo.o
+a - flint_cur.o
+a - neo_bderiv.o
+a - neo_control.o
+a - neo_dealloc.o
+a - neo_eval.o
+a - neo_exchange.o
+a - neo_fourier.o
+a - neo_init.o
+a - neo_init_s.o
+a - neo_input_mod.o
+a - neo_input.o
+a - neo.o
+a - neo_output.o
+a - neo_parameters.o
+a - neo_precision.o
+a - neo_prep.o
+a - neo_read_control.o
+a - neo_read.o
+a - neo_rhsbo.o
+a - neo_rhscur.o
+a - neo_rk4dbo.o
+a - neo_rk4dcur.o
+a - neo_spline2d.o
+a - neo_spline.o
+a - neo_spline_test.o
+a - neo_units.o
+a - neo_work.o
+a - neo_zeros2d.o
+a - nrtype.o
+a - partpa_bo.o
+a - partpa_cur.o
+a - poi2d.o
+a - read_booz_in.o
+a - rhs_bo1.o
+a - rhs_cur1.o
+a - rk4d_bo1.o
+a - rk4d_cur1.o
+a - sizey_bo.o
+a - sizey_cur.o
+a - spfper.o
+a - spl2d.o
+a - splper.o
+a - splreg.o
+a - neo_control.mod
+a - neo_exchange.mod
+a - neo_input.mod
+a - neo_input_mod.mod
+a - neo_output.mod
+a - neo_parameters.mod
+a - neo_precision.mod
+a - neo_rhsbo.mod
+a - neo_rhscur.mod
+a - neo_rk4dbo.mod
+a - neo_rk4dcur.mod
+a - neo_spline.mod
+a - neo_units.mod
+a - neo_work.mod
+a - nrtype.mod
+a - partpa_bo.mod
+a - partpa_cur.mod
+a - sizey_bo.mod
+a - sizey_cur.mod
+/lib/cpp -traditional -DLINUX -DBNORM -DBEAMS3D_OPT -DJINV_OPT -DTXPORT_OPT -DDIAGNO_OPT -DSKS  -DSKS2 -DDKES_OPT -DNEO_OPT -DMPI_OPT -DNETCDF -DLHDF5 -DH5_USE_16_API ../Sources/Modules/stellopt_input_mod.f90
+mpifort -ffree-form -ffree-line-length-none -ffixed-line-length-none -O2 -fexternal-blas -I/u/erodrigu/STELLOPT/bin/libstell_dir -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include  -I../../VMEC2000/Release -I../../BEAMS3D/Release -I../../BOOTSJ/Release -I../../BNORM/Release -I../../BOOZ_XFORM/Release -I../../COBRAVMEC/Release -I../../DIAGNO/Release -I../../FIELDLINES/Release -I../../J_INVARIANT/Release -I../../MAKEGRID/Release -I../../DKES/Release -I../../NEO/Release -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include -I.. -c ../Sources/Modules/stellopt_input_mod.f90
+/lib/cpp -traditional -DLINUX -DBNORM -DBEAMS3D_OPT -DJINV_OPT -DTXPORT_OPT -DDIAGNO_OPT -DSKS  -DSKS2 -DDKES_OPT -DNEO_OPT -DMPI_OPT -DNETCDF -DLHDF5 -DH5_USE_16_API ../Sources/General/stellopt_write_auxfiles.f90
+mpifort -ffree-form -ffree-line-length-none -ffixed-line-length-none -O2 -fexternal-blas -I/u/erodrigu/STELLOPT/bin/libstell_dir -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include  -I../../VMEC2000/Release -I../../BEAMS3D/Release -I../../BOOTSJ/Release -I../../BNORM/Release -I../../BOOZ_XFORM/Release -I../../COBRAVMEC/Release -I../../DIAGNO/Release -I../../FIELDLINES/Release -I../../J_INVARIANT/Release -I../../MAKEGRID/Release -I../../DKES/Release -I../../NEO/Release -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include -I.. -c ../Sources/General/stellopt_write_auxfiles.f90
+mpifort -ffree-form -ffree-line-length-none -ffixed-line-length-none -O2 -fexternal-blas -I/u/erodrigu/STELLOPT/bin/libstell_dir -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include  -I../../VMEC2000/Release -I../../BEAMS3D/Release -I../../BOOTSJ/Release -I../../BNORM/Release -I../../BOOZ_XFORM/Release -I../../COBRAVMEC/Release -I../../DIAGNO/Release -I../../FIELDLINES/Release -I../../J_INVARIANT/Release -I../../MAKEGRID/Release -I../../DKES/Release -I../../NEO/Release -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include -I. -c ../Sources/General/stellopt_write_eqfile.f90
+/lib/cpp -traditional -DLINUX -DBNORM -DBEAMS3D_OPT -DJINV_OPT -DTXPORT_OPT -DDIAGNO_OPT -DSKS  -DSKS2 -DDKES_OPT -DNEO_OPT -DMPI_OPT -DNETCDF -DLHDF5 -DH5_USE_16_API ../Sources/General/stellopt_write_inputfile.f90
+mpifort -ffree-form -ffree-line-length-none -ffixed-line-length-none -O2 -fexternal-blas -I/u/erodrigu/STELLOPT/bin/libstell_dir -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include  -I../../VMEC2000/Release -I../../BEAMS3D/Release -I../../BOOTSJ/Release -I../../BNORM/Release -I../../BOOZ_XFORM/Release -I../../COBRAVMEC/Release -I../../DIAGNO/Release -I../../FIELDLINES/Release -I../../J_INVARIANT/Release -I../../MAKEGRID/Release -I../../DKES/Release -I../../NEO/Release -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include -I.. -c ../Sources/General/stellopt_write_inputfile.f90
+mpifort -ffree-form -ffree-line-length-none -ffixed-line-length-none -O2 -fexternal-blas -I/u/erodrigu/STELLOPT/bin/libstell_dir -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include  -I../../VMEC2000/Release -I../../BEAMS3D/Release -I../../BOOTSJ/Release -I../../BNORM/Release -I../../BOOZ_XFORM/Release -I../../COBRAVMEC/Release -I../../DIAGNO/Release -I../../FIELDLINES/Release -I../../J_INVARIANT/Release -I../../MAKEGRID/Release -I../../DKES/Release -I../../NEO/Release -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include -I. -c ../Sources/General/stellopt_renorm.f90
+/lib/cpp -traditional -DLINUX -DBNORM -DBEAMS3D_OPT -DJINV_OPT -DTXPORT_OPT -DDIAGNO_OPT -DSKS  -DSKS2 -DDKES_OPT -DNEO_OPT -DMPI_OPT -DNETCDF -DLHDF5 -DH5_USE_16_API ../Sources/General/stellopt_init_mpi.f90
+mpifort -ffree-form -ffree-line-length-none -ffixed-line-length-none -O2 -fexternal-blas -I/u/erodrigu/STELLOPT/bin/libstell_dir -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include  -I../../VMEC2000/Release -I../../BEAMS3D/Release -I../../BOOTSJ/Release -I../../BNORM/Release -I../../BOOZ_XFORM/Release -I../../COBRAVMEC/Release -I../../DIAGNO/Release -I../../FIELDLINES/Release -I../../J_INVARIANT/Release -I../../MAKEGRID/Release -I../../DKES/Release -I../../NEO/Release -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include -I.. -c ../Sources/General/stellopt_init_mpi.f90
+/lib/cpp -traditional -DLINUX -DBNORM -DBEAMS3D_OPT -DJINV_OPT -DTXPORT_OPT -DDIAGNO_OPT -DSKS  -DSKS2 -DDKES_OPT -DNEO_OPT -DMPI_OPT -DNETCDF -DLHDF5 -DH5_USE_16_API ../Sources/Chisq/chisq_regcoil_chi2_b.f90
+mpifort -ffree-form -ffree-line-length-none -ffixed-line-length-none -O2 -fexternal-blas -I/u/erodrigu/STELLOPT/bin/libstell_dir -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include  -I../../VMEC2000/Release -I../../BEAMS3D/Release -I../../BOOTSJ/Release -I../../BNORM/Release -I../../BOOZ_XFORM/Release -I../../COBRAVMEC/Release -I../../DIAGNO/Release -I../../FIELDLINES/Release -I../../J_INVARIANT/Release -I../../MAKEGRID/Release -I../../DKES/Release -I../../NEO/Release -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include -I.. -c ../Sources/Chisq/chisq_regcoil_chi2_b.f90
+mpifort -ffree-form -ffree-line-length-none -ffixed-line-length-none -O2 -fexternal-blas -I/u/erodrigu/STELLOPT/bin/libstell_dir -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include  -I../../VMEC2000/Release -I../../BEAMS3D/Release -I../../BOOTSJ/Release -I../../BNORM/Release -I../../BOOZ_XFORM/Release -I../../COBRAVMEC/Release -I../../DIAGNO/Release -I../../FIELDLINES/Release -I../../J_INVARIANT/Release -I../../MAKEGRID/Release -I../../DKES/Release -I../../NEO/Release -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include -I. -c ../Sources/Chisq/chisq_rosenbrock.f90
+/lib/cpp -traditional -DLINUX -DBNORM -DBEAMS3D_OPT -DJINV_OPT -DTXPORT_OPT -DDIAGNO_OPT -DSKS  -DSKS2 -DDKES_OPT -DNEO_OPT -DMPI_OPT -DNETCDF -DLHDF5 -DH5_USE_16_API ../Sources/General/stellopt_fcn.f90
+mpifort -ffree-form -ffree-line-length-none -ffixed-line-length-none -O2 -fexternal-blas -I/u/erodrigu/STELLOPT/bin/libstell_dir -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include  -I../../VMEC2000/Release -I../../BEAMS3D/Release -I../../BOOTSJ/Release -I../../BNORM/Release -I../../BOOZ_XFORM/Release -I../../COBRAVMEC/Release -I../../DIAGNO/Release -I../../FIELDLINES/Release -I../../J_INVARIANT/Release -I../../MAKEGRID/Release -I../../DKES/Release -I../../NEO/Release -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include -I.. -c ../Sources/General/stellopt_fcn.f90
+mpifort -ffree-form -ffree-line-length-none -ffixed-line-length-none -O2 -fexternal-blas -I/u/erodrigu/STELLOPT/bin/libstell_dir -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include  -I../../VMEC2000/Release -I../../BEAMS3D/Release -I../../BOOTSJ/Release -I../../BNORM/Release -I../../BOOZ_XFORM/Release -I../../COBRAVMEC/Release -I../../DIAGNO/Release -I../../FIELDLINES/Release -I../../J_INVARIANT/Release -I../../MAKEGRID/Release -I../../DKES/Release -I../../NEO/Release -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include -I. -c ../Sources/General/stellopt_load_targets.f90
+/lib/cpp -traditional -DLINUX -DBNORM -DBEAMS3D_OPT -DJINV_OPT -DTXPORT_OPT -DDIAGNO_OPT -DSKS  -DSKS2 -DDKES_OPT -DNEO_OPT -DMPI_OPT -DNETCDF -DLHDF5 -DH5_USE_16_API ../Sources/General/stellopt_toboozer.f90
+mpifort -ffree-form -ffree-line-length-none -ffixed-line-length-none -O2 -fexternal-blas -I/u/erodrigu/STELLOPT/bin/libstell_dir -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include  -I../../VMEC2000/Release -I../../BEAMS3D/Release -I../../BOOTSJ/Release -I../../BNORM/Release -I../../BOOZ_XFORM/Release -I../../COBRAVMEC/Release -I../../DIAGNO/Release -I../../FIELDLINES/Release -I../../J_INVARIANT/Release -I../../MAKEGRID/Release -I../../DKES/Release -I../../NEO/Release -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include -I.. -c ../Sources/General/stellopt_toboozer.f90
+/lib/cpp -traditional -DLINUX -DBNORM -DBEAMS3D_OPT -DJINV_OPT -DTXPORT_OPT -DDIAGNO_OPT -DSKS  -DSKS2 -DDKES_OPT -DNEO_OPT -DMPI_OPT -DNETCDF -DLHDF5 -DH5_USE_16_API ../Sources/General/stellopt_init.f90
+mpifort -ffree-form -ffree-line-length-none -ffixed-line-length-none -O2 -fexternal-blas -I/u/erodrigu/STELLOPT/bin/libstell_dir -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include  -I../../VMEC2000/Release -I../../BEAMS3D/Release -I../../BOOTSJ/Release -I../../BNORM/Release -I../../BOOZ_XFORM/Release -I../../COBRAVMEC/Release -I../../DIAGNO/Release -I../../FIELDLINES/Release -I../../J_INVARIANT/Release -I../../MAKEGRID/Release -I../../DKES/Release -I../../NEO/Release -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include -I.. -c ../Sources/General/stellopt_init.f90
+mpifort -ffree-form -ffree-line-length-none -ffixed-line-length-none -O2 -fexternal-blas -I/u/erodrigu/STELLOPT/bin/libstell_dir -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include  -I../../VMEC2000/Release -I../../BEAMS3D/Release -I../../BOOTSJ/Release -I../../BNORM/Release -I../../BOOZ_XFORM/Release -I../../COBRAVMEC/Release -I../../DIAGNO/Release -I../../FIELDLINES/Release -I../../J_INVARIANT/Release -I../../MAKEGRID/Release -I../../DKES/Release -I../../NEO/Release -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include -I. -c ../Sources/General/stellopt_bnorm.f90
+/lib/cpp -traditional -DLINUX -DBNORM -DBEAMS3D_OPT -DJINV_OPT -DTXPORT_OPT -DDIAGNO_OPT -DSKS  -DSKS2 -DDKES_OPT -DNEO_OPT -DMPI_OPT -DNETCDF -DLHDF5 -DH5_USE_16_API ../Sources/General/stellopt_coiloptpp.f90
+mpifort -ffree-form -ffree-line-length-none -ffixed-line-length-none -O2 -fexternal-blas -I/u/erodrigu/STELLOPT/bin/libstell_dir -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include  -I../../VMEC2000/Release -I../../BEAMS3D/Release -I../../BOOTSJ/Release -I../../BNORM/Release -I../../BOOZ_XFORM/Release -I../../COBRAVMEC/Release -I../../DIAGNO/Release -I../../FIELDLINES/Release -I../../J_INVARIANT/Release -I../../MAKEGRID/Release -I../../DKES/Release -I../../NEO/Release -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include -I.. -c ../Sources/General/stellopt_coiloptpp.f90
+/lib/cpp -traditional -DLINUX -DBNORM -DBEAMS3D_OPT -DJINV_OPT -DTXPORT_OPT -DDIAGNO_OPT -DSKS  -DSKS2 -DDKES_OPT -DNEO_OPT -DMPI_OPT -DNETCDF -DLHDF5 -DH5_USE_16_API ../Sources/General/stellopt_regcoil_chi2_b.f90
+mpifort -ffree-form -ffree-line-length-none -ffixed-line-length-none -O2 -fexternal-blas -I/u/erodrigu/STELLOPT/bin/libstell_dir -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include  -I../../VMEC2000/Release -I../../BEAMS3D/Release -I../../BOOTSJ/Release -I../../BNORM/Release -I../../BOOZ_XFORM/Release -I../../COBRAVMEC/Release -I../../DIAGNO/Release -I../../FIELDLINES/Release -I../../J_INVARIANT/Release -I../../MAKEGRID/Release -I../../DKES/Release -I../../NEO/Release -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include -I.. -c ../Sources/General/stellopt_regcoil_chi2_b.f90
+/lib/cpp -traditional -DLINUX -DBNORM -DBEAMS3D_OPT -DJINV_OPT -DTXPORT_OPT -DDIAGNO_OPT -DSKS  -DSKS2 -DDKES_OPT -DNEO_OPT -DMPI_OPT -DNETCDF -DLHDF5 -DH5_USE_16_API ../Sources/General/stellopt_bootsj.f90
+mpifort -ffree-form -ffree-line-length-none -ffixed-line-length-none -O2 -fexternal-blas -I/u/erodrigu/STELLOPT/bin/libstell_dir -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include  -I../../VMEC2000/Release -I../../BEAMS3D/Release -I../../BOOTSJ/Release -I../../BNORM/Release -I../../BOOZ_XFORM/Release -I../../COBRAVMEC/Release -I../../DIAGNO/Release -I../../FIELDLINES/Release -I../../J_INVARIANT/Release -I../../MAKEGRID/Release -I../../DKES/Release -I../../NEO/Release -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include -I.. -c ../Sources/General/stellopt_bootsj.f90
+/lib/cpp -traditional -DLINUX -DBNORM -DBEAMS3D_OPT -DJINV_OPT -DTXPORT_OPT -DDIAGNO_OPT -DSKS  -DSKS2 -DDKES_OPT -DNEO_OPT -DMPI_OPT -DNETCDF -DLHDF5 -DH5_USE_16_API ../Sources/General/stellopt_sfincs.f90
+mpifort -ffree-form -ffree-line-length-none -ffixed-line-length-none -O2 -fexternal-blas -I/u/erodrigu/STELLOPT/bin/libstell_dir -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include  -I../../VMEC2000/Release -I../../BEAMS3D/Release -I../../BOOTSJ/Release -I../../BNORM/Release -I../../BOOZ_XFORM/Release -I../../COBRAVMEC/Release -I../../DIAGNO/Release -I../../FIELDLINES/Release -I../../J_INVARIANT/Release -I../../MAKEGRID/Release -I../../DKES/Release -I../../NEO/Release -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include -I.. -c ../Sources/General/stellopt_sfincs.f90
+mpifort -ffree-form -ffree-line-length-none -ffixed-line-length-none -O2 -fexternal-blas -I/u/erodrigu/STELLOPT/bin/libstell_dir -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include  -I../../VMEC2000/Release -I../../BEAMS3D/Release -I../../BOOTSJ/Release -I../../BNORM/Release -I../../BOOZ_XFORM/Release -I../../COBRAVMEC/Release -I../../DIAGNO/Release -I../../FIELDLINES/Release -I../../J_INVARIANT/Release -I../../MAKEGRID/Release -I../../DKES/Release -I../../NEO/Release -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include -I. -c ../Sources/General/stellopt_clean_up.f90
+/lib/cpp -traditional -DLINUX -DBNORM -DBEAMS3D_OPT -DJINV_OPT -DTXPORT_OPT -DDIAGNO_OPT -DSKS  -DSKS2 -DDKES_OPT -DNEO_OPT -DMPI_OPT -DNETCDF -DLHDF5 -DH5_USE_16_API ../Sources/General/stellopt_main.f90
+mpifort -ffree-form -ffree-line-length-none -ffixed-line-length-none -O2 -fexternal-blas -I/u/erodrigu/STELLOPT/bin/libstell_dir -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include  -I../../VMEC2000/Release -I../../BEAMS3D/Release -I../../BOOTSJ/Release -I../../BNORM/Release -I../../BOOZ_XFORM/Release -I../../COBRAVMEC/Release -I../../DIAGNO/Release -I../../FIELDLINES/Release -I../../J_INVARIANT/Release -I../../MAKEGRID/Release -I../../DKES/Release -I../../NEO/Release -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include -I.. -c ../Sources/General/stellopt_main.f90
+mpifort -ffree-form -ffree-line-length-none -ffixed-line-length-none -O2 -fexternal-blas -I/u/erodrigu/STELLOPT/bin/libstell_dir -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include  -I../../VMEC2000/Release -I../../BEAMS3D/Release -I../../BOOTSJ/Release -I../../BNORM/Release -I../../BOOZ_XFORM/Release -I../../COBRAVMEC/Release -I../../DIAGNO/Release -I../../FIELDLINES/Release -I../../J_INVARIANT/Release -I../../MAKEGRID/Release -I../../DKES/Release -I../../NEO/Release -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include -I. -c ../Sources/General/stellopt_balloon.f90
+/lib/cpp -traditional -DLINUX -DBNORM -DBEAMS3D_OPT -DJINV_OPT -DTXPORT_OPT -DDIAGNO_OPT -DSKS  -DSKS2 -DDKES_OPT -DNEO_OPT -DMPI_OPT -DNETCDF -DLHDF5 -DH5_USE_16_API ../Sources/General/stellopt_magdiags.f90
+mpifort -ffree-form -ffree-line-length-none -ffixed-line-length-none -O2 -fexternal-blas -I/u/erodrigu/STELLOPT/bin/libstell_dir -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include  -I../../VMEC2000/Release -I../../BEAMS3D/Release -I../../BOOTSJ/Release -I../../BNORM/Release -I../../BOOZ_XFORM/Release -I../../COBRAVMEC/Release -I../../DIAGNO/Release -I../../FIELDLINES/Release -I../../J_INVARIANT/Release -I../../MAKEGRID/Release -I../../DKES/Release -I../../NEO/Release -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include -I.. -c ../Sources/General/stellopt_magdiags.f90
+mpifort -ffree-form -ffree-line-length-none -ffixed-line-length-none -O2 -fexternal-blas -I/u/erodrigu/STELLOPT/bin/libstell_dir -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include  -I../../VMEC2000/Release -I../../BEAMS3D/Release -I../../BOOTSJ/Release -I../../BNORM/Release -I../../BOOZ_XFORM/Release -I../../COBRAVMEC/Release -I../../DIAGNO/Release -I../../FIELDLINES/Release -I../../J_INVARIANT/Release -I../../MAKEGRID/Release -I../../DKES/Release -I../../NEO/Release -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include -I. -c ../Sources/General/stellopt_cas3d.f90
+/lib/cpp -traditional -DLINUX -DBNORM -DBEAMS3D_OPT -DJINV_OPT -DTXPORT_OPT -DDIAGNO_OPT -DSKS  -DSKS2 -DDKES_OPT -DNEO_OPT -DMPI_OPT -DNETCDF -DLHDF5 -DH5_USE_16_API ../Sources/General/stellopt_optimize.f90
+mpifort -ffree-form -ffree-line-length-none -ffixed-line-length-none -O2 -fexternal-blas -I/u/erodrigu/STELLOPT/bin/libstell_dir -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include  -I../../VMEC2000/Release -I../../BEAMS3D/Release -I../../BOOTSJ/Release -I../../BNORM/Release -I../../BOOZ_XFORM/Release -I../../COBRAVMEC/Release -I../../DIAGNO/Release -I../../FIELDLINES/Release -I../../J_INVARIANT/Release -I../../MAKEGRID/Release -I../../DKES/Release -I../../NEO/Release -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include -I.. -c ../Sources/General/stellopt_optimize.f90
+/lib/cpp -traditional -DLINUX -DBNORM -DBEAMS3D_OPT -DJINV_OPT -DTXPORT_OPT -DDIAGNO_OPT -DSKS  -DSKS2 -DDKES_OPT -DNEO_OPT -DMPI_OPT -DNETCDF -DLHDF5 -DH5_USE_16_API ../Sources/General/stellopt_txport.f90
+mpifort -ffree-form -ffree-line-length-none -ffixed-line-length-none -O2 -fexternal-blas -I/u/erodrigu/STELLOPT/bin/libstell_dir -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include  -I../../VMEC2000/Release -I../../BEAMS3D/Release -I../../BOOTSJ/Release -I../../BNORM/Release -I../../BOOZ_XFORM/Release -I../../COBRAVMEC/Release -I../../DIAGNO/Release -I../../FIELDLINES/Release -I../../J_INVARIANT/Release -I../../MAKEGRID/Release -I../../DKES/Release -I../../NEO/Release -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include -I.. -c ../Sources/General/stellopt_txport.f90
+/lib/cpp -traditional -DLINUX -DBNORM -DBEAMS3D_OPT -DJINV_OPT -DTXPORT_OPT -DDIAGNO_OPT -DSKS  -DSKS2 -DDKES_OPT -DNEO_OPT -DMPI_OPT -DNETCDF -DLHDF5 -DH5_USE_16_API ../Sources/General/stellopt_paraexe.f90
+mpifort -ffree-form -ffree-line-length-none -ffixed-line-length-none -O2 -fexternal-blas -I/u/erodrigu/STELLOPT/bin/libstell_dir -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include  -I../../VMEC2000/Release -I../../BEAMS3D/Release -I../../BOOTSJ/Release -I../../BNORM/Release -I../../BOOZ_XFORM/Release -I../../COBRAVMEC/Release -I../../DIAGNO/Release -I../../FIELDLINES/Release -I../../J_INVARIANT/Release -I../../MAKEGRID/Release -I../../DKES/Release -I../../NEO/Release -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include -I.. -c ../Sources/General/stellopt_paraexe.f90
+mpifort -ffree-form -ffree-line-length-none -ffixed-line-length-none -O2 -fexternal-blas -I/u/erodrigu/STELLOPT/bin/libstell_dir -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include  -I../../VMEC2000/Release -I../../BEAMS3D/Release -I../../BOOTSJ/Release -I../../BNORM/Release -I../../BOOZ_XFORM/Release -I../../COBRAVMEC/Release -I../../DIAGNO/Release -I../../FIELDLINES/Release -I../../J_INVARIANT/Release -I../../MAKEGRID/Release -I../../DKES/Release -I../../NEO/Release -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include -I. -c ../Sources/General/stellopt_prof_to_vmec.f90
+/lib/cpp -traditional -DLINUX -DBNORM -DBEAMS3D_OPT -DJINV_OPT -DTXPORT_OPT -DDIAGNO_OPT -DSKS  -DSKS2 -DDKES_OPT -DNEO_OPT -DMPI_OPT -DNETCDF -DLHDF5 -DH5_USE_16_API ../Sources/General/stellopt_kink.f90
+mpifort -ffree-form -ffree-line-length-none -ffixed-line-length-none -O2 -fexternal-blas -I/u/erodrigu/STELLOPT/bin/libstell_dir -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include  -I../../VMEC2000/Release -I../../BEAMS3D/Release -I../../BOOTSJ/Release -I../../BNORM/Release -I../../BOOZ_XFORM/Release -I../../COBRAVMEC/Release -I../../DIAGNO/Release -I../../FIELDLINES/Release -I../../J_INVARIANT/Release -I../../MAKEGRID/Release -I../../DKES/Release -I../../NEO/Release -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include -I.. -c ../Sources/General/stellopt_kink.f90
+mpifort -ffree-form -ffree-line-length-none -ffixed-line-length-none -O2 -fexternal-blas -I/u/erodrigu/STELLOPT/bin/libstell_dir -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include  -I../../VMEC2000/Release -I../../BEAMS3D/Release -I../../BOOTSJ/Release -I../../BNORM/Release -I../../BOOZ_XFORM/Release -I../../COBRAVMEC/Release -I../../DIAGNO/Release -I../../FIELDLINES/Release -I../../J_INVARIANT/Release -I../../MAKEGRID/Release -I../../DKES/Release -I../../NEO/Release -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include -I. -c ../Sources/General/stellopt_prof_refit.f90
+/lib/cpp -traditional -DLINUX -DBNORM -DBEAMS3D_OPT -DJINV_OPT -DTXPORT_OPT -DDIAGNO_OPT -DSKS  -DSKS2 -DDKES_OPT -DNEO_OPT -DMPI_OPT -DNETCDF -DLHDF5 -DH5_USE_16_API ../Sources/General/stellopt_travis.f90
+mpifort -ffree-form -ffree-line-length-none -ffixed-line-length-none -O2 -fexternal-blas -I/u/erodrigu/STELLOPT/bin/libstell_dir -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include  -I../../VMEC2000/Release -I../../BEAMS3D/Release -I../../BOOTSJ/Release -I../../BNORM/Release -I../../BOOZ_XFORM/Release -I../../COBRAVMEC/Release -I../../DIAGNO/Release -I../../FIELDLINES/Release -I../../J_INVARIANT/Release -I../../MAKEGRID/Release -I../../DKES/Release -I../../NEO/Release -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include -I.. -c ../Sources/General/stellopt_travis.f90
+mpifort -ffree-form -ffree-line-length-none -ffixed-line-length-none -O2 -fexternal-blas -I/u/erodrigu/STELLOPT/bin/libstell_dir -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include  -I../../VMEC2000/Release -I../../BEAMS3D/Release -I../../BOOTSJ/Release -I../../BNORM/Release -I../../BOOZ_XFORM/Release -I../../COBRAVMEC/Release -I../../DIAGNO/Release -I../../FIELDLINES/Release -I../../J_INVARIANT/Release -I../../MAKEGRID/Release -I../../DKES/Release -I../../NEO/Release -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include -I. -c ../Sources/General/stellopt_load_equil.f90
+mpifort -O2 -fexternal-blas -I/u/erodrigu/STELLOPT/bin/libstell_dir -I/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/include -I/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/include  -I/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/include -o  xstelloptv2 chisq_pressprime.o stellopt_write_auxfiles.o stellopt_write_eqfile.o stellopt_write_inputfile.o stellopt_fieldlines.o chisq_line_zeff.o stellopt_renorm.o stellopt_init_mpi.o chisq_x.o chisq_y.o chisq_xics.o chisq_xics_bright.o chisq_xics_w3.o chisq_xics_v.o chisq_magwell.o chisq_helicity_ornl.o stellopt_vboot.o chisq_kappa.o chisq_kappa_box.o chisq_kappa_avg.o stellopt_write_mgrid.o stellopt_coil_to_vac.o stellopt_winding_surface.o stellopt_cbspline.o stellopt_spline_to_coil.o chisq_qsft.o chisq_qsfp.o chisq_line_te.o chisq_bmin.o chisq_helicity.o chisq_betapol.o chisq_fluxloops.o chisq_curtor_max.o chisq_curtor.o chisq_volume.o chisq_jstar.o chisq_phiedge.o chisq_resjac.o chisq_txport.o chisq_betator.o chisq_bprobes.o chisq_vphi.o chisq_press.o chisq_template.o chisq_ece.o chisq_te.o chisq_sxr.o chisq_iota.o chisq_vaciota.o chisq_mse.o chisq_balloon.o chisq_pmin.o chisq_coil_bnorm.o chisq_regcoil_chi2_b.o chisq_rosenbrock.o chisq_vessel.o chisq_b0.o chisq_z0.o chisq_curvature.o chisq_curvature_p2.o chisq_neo.o chisq_extcur.o chisq_aspect_max.o chisq_segrog.o chisq_r0.o chisq_rbtor.o chisq_limiter.o chisq_aspect.o chisq_orbit.o chisq_line_ne.o chisq_jcurv.o chisq_line_ti.o chisq_separatrix.o chisq_jdotb.o chisq_kink.o chisq_bmax.o chisq_dkes.o chisq_wp.o chisq_bootstrap.o chisq_beta.o chisq_ti.o chisq_ne.o chisq_faraday.o chisq_gradp_max.o chisq_jinvariant.o chisq_coillen.o chisq_coilsep.o chisq_coilcrv.o chisq_coilself.o chisq_coiltorvar.o chisq_coilrect.o stellopt_neo.o stellopt_fcn.o stellopt_load_targets.o stellopt_toboozer.o stellopt_init.o stellopt_bnorm.o stellopt_coiloptpp.o stellopt_regcoil_chi2_b.o stellopt_bootsj.o stellopt_sfincs.o stellopt_clean_up.o stellopt_main.o stellopt_balloon.o stellopt_magdiags.o stellopt_orbits.o stellopt_reinit_vmec.o stellopt_cas3d.o stellopt_optimize.o stellopt_triangulate.o stellopt_txport.o stellopt_bcast_vmec.o stellopt_paraexe.o stellopt_prof_to_vmec.o stellopt_kink.o stellopt_dkes.o stellopt_prof_refit.o stellopt_travis.o stellopt_load_equil.o stellopt_vars.o equil_utils.o stellopt_input_mod.o equil_vals.o stellopt_runtime.o stellopt_targets.o stellopt_mango.o ../../VMEC2000/Release/libvmec.a ../../BEAMS3D/Release/libbeams3d.a ../../BOOTSJ/Release/libbootsj.a ../../BNORM/Release/libbnorm.a ../../BOOZ_XFORM/Release/libbooz.a ../../COBRAVMEC/Release/libcobra.a ../../DIAGNO/Release/libdiagno.a ../../FIELDLINES/Release/libfieldlines.a ../../J_INVARIANT/Release/libjinv.a ../../MAKEGRID/Release/libmakegrid.a  ../../DKES/Release/libdkes.a ../../NEO/Release/libneo.a        ../../LIBSTELL/Release/libstell.a -lopenblas -L/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/scalapack-2.1.0/lib -lscalapack  /usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/blacs-1.1alpha/lib/blacs_MPI-LINUX-0.a /usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/blacs-1.1alpha/lib/blacsF77init_MPI-LINUX-0.a /usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/blacs-1.1alpha/lib/blacsCinit_MPI-LINUX-0.a -L/usr/pppl/gcc/9.3-pkgs/netcdf-c-4.7.3/lib -lnetcdf -L/usr/pppl/gcc/9.3-pkgs/netcdf-fortran-4.5.2/lib -lnetcdff -L/usr/pppl/gcc/9.3-pkgs/openmpi-4.0.3-pkgs/hdf5-parallel-1.12.0/lib -lhdf5_hl -lhdf5_fortran -lhdf5 -lhdf5hl_fortran -lpthread -lz -lm
+make[1]: Leaving directory `/u/erodrigu/STELLOPT/STELLOPTV2/Release'
+Release version - xstelloptv2 - is now updated
+To free up space, delete all *.o files from Release
+

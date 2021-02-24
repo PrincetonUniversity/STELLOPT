@@ -14,9 +14,9 @@
       USE equil_utils
       USE stellopt_targets
       USE vmec_main,          ONLY: hs
-      USE read_wout_mod,      ONLY: pres, ns, nfp, bmnc_vmec=>bmnc, ntor_vmec=>ntor, mpol_vmec=>mpol, mnmode_vmec=>mnmax, &
+      USE read_wout_mod,      ONLY: pres, ns, num_per=>nfp, bmnc_vmec=>bmnc, ntor_vmec=>ntor, mpol_vmec=>mpol, mnmode_vmec=>mnmax, &
                                 xm_nyq, xn_nyq, gmnc_vmec=>gmnc, vp_vmec=>vp, phi_vmec=>phi, &
-                                iotas, bsupumnc, bsupvmnc, bsubumnc, bsubvmnc, signgs=>sgs, amin=>Aminor, Rmax=>Rmajor
+                                iotas, bsupumnc, bsupvmnc, bsubumnc, bsubvmnc, isigng, amin=>Aminor, Rmax=>Rmajor
 
 !-----------------------------------------------------------------------
 !     Input/Output Variables
@@ -46,7 +46,7 @@
       IF (iflag < 0) RETURN
       IF (lasym) STOP 'ERROR: Helicity targeting requires lasym = .FALSE.'
       l_heli = NINT(REAL(helicity))
-      k_heli = NINT(AIMAG(helicity))
+      k_heli = num_per*NINT(AIMAG(helicity))
       IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'QSFP',1,3
       IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA  QSFP'
       IF (niter >= 0) THEN
@@ -101,7 +101,9 @@
             BdotgradB = 0_rprec
             BcrossgradpsidotgradB = 0_rprec
             normalization = 0
-            DO is=1, nprof
+            bbar = 0
+            DO is=2, nprof
+            	IF (sigma(is) >= bigno) CYCLE
                 DO iu=1,nu
                     DO iv=1,nv
                         angle = pi2*(real(xm_nyq(1:mnmode_vmec))*xu(iu)-real(xn_nyq(1:mnmode_vmec))*xv(iv))
@@ -111,7 +113,7 @@
                         dBdphi(iu,iv) = sum(xn_nyq(1:mnmode_vmec)*bmnc_vmec(1:mnmode_vmec,is)*sin_angle)
                         d2Bdtheta2(iu,iv) = sum(-xm_nyq(1:mnmode_vmec)*xm_nyq(1:mnmode_vmec)*bmnc_vmec(1:mnmode_vmec,is)*cos_angle)
                         d2Bdphi2(iu,iv) = sum(-xn_nyq(1:mnmode_vmec)*xn_nyq(1:mnmode_vmec)*bmnc_vmec(1:mnmode_vmec,is)*cos_angle)
-                        d2Bdthetadphid(iu,iv) = sum(xm_nyq(1:mnmode_vmec)*xn_nyq(1:mnmode_vmec)*bmnc_vmec(1:mnmode_vmec,is)*cos_angle)
+                        d2Bdthetadphi(iu,iv) = sum(xm_nyq(1:mnmode_vmec)*xn_nyq(1:mnmode_vmec)*bmnc_vmec(1:mnmode_vmec,is)*cos_angle)
                         B(iu,iv) = sum(bmnc_vmec(1:mnmode_vmec,is)*cos_angle)
                         Bsuptheta(iu,iv) = sum(bsupumnc(1:mnmode_vmec,is)*cos_angle)
                         Bsupphi(iu,iv) = sum(bsupvmnc(1:mnmode_vmec,is)*cos_angle)
@@ -121,12 +123,12 @@
                         dBsupthetadphi(iu,iv) = sum(xn_nyq(1:mnmode_vmec)*bsupumnc(1:mnmode_vmec,is)*sin_angle)
                         dBsupphidtheta(iu,iv) = sum(-xm_nyq(1:mnmode_vmec)*bsupvmnc(1:mnmode_vmec,is)*sin_angle)
                         dBsupphidphi(iu,iv) = sum(xn_nyq(1:mnmode_vmec)*bsupvmnc(1:mnmode_vmec,is)*sin_angle)
-                        J(iu,iv) = sum(gmnc_vmec(1:mnmode_vmec,is)*cos_angle)*signgs/psi0
+                        J(iu,iv) = sum(gmnc_vmec(1:mnmode_vmec,is)*isigng*cos_angle)/psi0
                     END DO
                 END DO
                 G = sum(Bsubphi)/nu/nv
                 I = sum(Bsubtheta)/nu/nv
-                F = (l_heli*G-k_heli*I)/(l_heli*iotas(is)+k_heli);
+                F = (l_heli*G-k_heli*I)/(l_heli*iotas(is)+k_heli)
 
                 BdotgradB = Bsuptheta*dBdtheta+Bsupphi*dBdphi
                 BcrossgradpsidotgradB =(dBdtheta*Bsubphi-dBdphi*Bsubtheta)/J
@@ -145,7 +147,7 @@
                 IF (iflag == 1) WRITE(iunit_out,'(3ES22.12E3)') target(is),sigma(is),fp_val
             end do
       ELSE
-        DO is = 1, nprof
+        DO is = 2, nprof
             IF (sigma(is) < bigno) THEN
                 mtargets = mtargets + 1
                 IF (niter == -2) target_dex(mtargets) = jtarget_qsfp

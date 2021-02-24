@@ -206,7 +206,21 @@ chisq_magwell.o : \
       stellopt_runtime.o \
       stellopt_targets.o \
       equil_utils.o
+
       
+chisq_qsft.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      equil_utils.o \
+      equil_vals.o      
+      
+
+chisq_qsfp.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      equil_utils.o \
+      equil_vals.o      
+
 
 chisq_bprobes.o : \
       stellopt_runtime.o \
