@@ -136,26 +136,21 @@ PROGRAM BEAMS3D
             case ("-vmec")
                 i = i + 1
                 lvmec = .true.
-                lpies = .false.
-                lspec = .false.
                 CALL GETCARG(i, id_string, numargs)
             case ("-pies")
                 i = i + 1
                 lpies = .true.
-                lvmec = .false.
-                lspec = .false.
                 CALL GETCARG(i, id_string, numargs)
             case ("-spec")
                 i = i + 1
                 lspec = .true.
-                lpies = .false.
-                lvmec = .false.
+                CALL GETCARG(i, id_string, numargs)
+            case ("-hint")
+                i = i + 1
+                lhint = .true.
                 CALL GETCARG(i, id_string, numargs)
             case ("-eqdsk")
                 i = i + 1
-                lvmec = .false.
-                lpies = .false.
-                lspec = .false.
                 leqdsk = .true.
                 CALL GETCARG(i, id_string, numargs)
                 i = i + 1
@@ -210,6 +205,7 @@ PROGRAM BEAMS3D
                 write(6, *) ' Usage: xbeams3d <options>'
                 write(6, *) '    <options>'
                 write(6, *) '     -vmec ext:     VMEC input/wout extension'
+                write(6, *) '     -hint ext:     HINT input/wout extension'
                 write(6, *) '     -eqdsk in gf   BEAMS3D input file and gfile'
                 !write(6,*)'     -pies ext:   PIES input extension (must have &INDATA namelist)'
                 !write(6,*)'     -spec ext:     SPEC input extension (must have &INDATA namelist)'
@@ -279,6 +275,8 @@ PROGRAM BEAMS3D
     CALL MPI_BCAST(lpies, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
     IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
     CALL MPI_BCAST(lspec, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
+    IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
+    CALL MPI_BCAST(lhint, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
     IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
     CALL MPI_BCAST(leqdsk, 1, MPI_LOGICAL, master, MPI_COMM_BEAMS, ierr_mpi)
     IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR, 'beams3d_main', ierr_mpi)
