@@ -2467,8 +2467,14 @@
       n1 = 0
       rho_val = SQRT(s)
       DO WHILE(ABS(dth) >= search_tol .and. n1 < 500)
-         IF (th < 0) th = th + pi2
-         IF (th > pi2) th = MOD(th,pi2)
+         IF (th < 0) then
+           th = th + pi2
+           th1 = th1 + pi2
+         end if
+         IF (th > pi2) then
+           th = MOD(th,pi2)
+           th1 = th1 - pi2
+         end if
          !CALL EZSpline_interp(L_spl,th,phi,rho_val,lam,ier)
          !CALL EZSpline_interp(Lu_spl,th,phi,rho_val,dlam,ier)
          CALL lookupgrid3d(th,phi,rho_val,i,j,k,hx,hy,hz,hxi,hyi,hzi,xparam,yparam,zparam)
