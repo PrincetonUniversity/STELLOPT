@@ -21,7 +21,7 @@
       ! HINT Variables
       INTEGER, PARAMETER, PRIVATE :: DTYPE =  SELECTED_REAL_KIND(15)
       INTEGER ::  tstep, nr, nz, nphi, nfp
-      DOUBLE PRECISION :: time, rmin, rmax, zmin, zmax, phimax
+      DOUBLE PRECISION, PRIVATE :: time, rmin, rmax, zmin, zmax, phimax
       DOUBLE PRECISION, PRIVATE :: pi2, dr, dp, dz
       REAL(DTYPE), DIMENSION(:,:,:), POINTER, PRIVATE :: BR3D, BPHI3D, BZ3D
       REAL(DTYPE), DIMENSION(:,:,:), POINTER, PRIVATE :: VR3D, VPHI3D, VZ3D
@@ -105,6 +105,14 @@
          phimax_out = phimax
          RETURN
       END SUBROUTINE get_hint_grid
+
+      SUBROUTINE get_hint_maxp(presmax)
+         IMPLICIT NONE
+         REAL(rprec), INTENT(out) :: presmax
+         presmax = -1
+         IF (ASSOCIATED(PRES)) presmax = MAXVAL(MAXVAL(MAXVAL(PRES,DIM=3),DIM=2),DIM=1)
+         RETURN
+      END SUBROUTINE get_hint_maxp
 
       SUBROUTINE get_hint_B(r,phi,z,br,bp,bz)
          IMPLICIT NONE
