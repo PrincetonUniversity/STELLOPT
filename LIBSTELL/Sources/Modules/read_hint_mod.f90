@@ -57,7 +57,7 @@
          ! Open File
          OPEN(UNIT=iunit, STATUS='old', FILE=TRIM(filename), &
           POSITION='rewind', ACTION='read',&
-           FORM='unformatted', IOSTAT=istat, CONVERT='little_endian')
+           FORM='unformatted', IOSTAT=istat, CONVERT='big_endian')
 
          ! Read Grid Information
          READ(iunit) tstep
@@ -79,6 +79,7 @@
          ALLOCATE(PRES(nr,nz,nphi))
          READ(iunit) (((PRES(i,j,k), i = 1, nr), j = 1, nz), k = 1, nphi)
          CLOSE(iunit)
+         PRES = PRES / (pi2 *2E-7)
 
          ! Helpers
          CALL setup_hint_helpers
