@@ -92,8 +92,9 @@
          CALL get_eqdsk_grid(nr,nz,rmin,rmax,zmin,zmax)
          phimin = 0; phimax=pi2
       ELSE IF (lhint .and. lread_input) THEN
-         CALL read_beams3d_input('input.' // TRIM(id_string),ier)
-         IF (lverb) WRITE(6,'(A)') '   FILE: input.' // TRIM(id_string)
+         CALL read_beams3d_input(TRIM(id_string)//'.input',ier)
+         IF (lverb) WRITE(6,'(A)') '   FILE:     ' // TRIM(id_string) // '.input'
+         IF (lverb) WRITE(6,'(A)') '   MAG_FILE: ' // TRIM(id_string) // '.magslice'
          CALL read_hint_mag(TRIM(id_string)//'.magslice',ier)
          phimin = 0
          CALL get_hint_grid(nr,nz,nphi,rmin,rmax,zmin,zmax,phimax)
@@ -285,7 +286,7 @@
       ELSE IF (lspec .and. .not.lvac) THEN
          !CALL beams3d_init_spec
       ELSE IF (lhint .and. .not.lvac) THEN
-         !CALL beams3d_init_hint
+         CALL beams3d_init_hint
       ELSE IF (leqdsk) THEN
          CALL mpialloc(req_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_req_axis)
          CALL mpialloc(zeq_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_zeq_axis)
