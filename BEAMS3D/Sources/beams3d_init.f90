@@ -149,7 +149,7 @@
 
       ! Construct 1D splines
       bcs1_s=(/ 0, 0 /)
-      IF ((lvmec .or. leqdsk) .and. .not.lvac) THEN
+      IF ((lvmec .or. leqdsk .or. lhint) .and. .not.lvac) THEN
          IF (lverb) WRITE(6,'(A)') '----- Profile Parameters -----'
          ! TE
          IF (nte>0) THEN
@@ -286,6 +286,8 @@
       ELSE IF (lspec .and. .not.lvac) THEN
          !CALL beams3d_init_spec
       ELSE IF (lhint .and. .not.lvac) THEN
+         CALL mpialloc(req_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_req_axis)
+         CALL mpialloc(zeq_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_zeq_axis)
          CALL beams3d_init_hint
       ELSE IF (leqdsk) THEN
          CALL mpialloc(req_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_req_axis)
