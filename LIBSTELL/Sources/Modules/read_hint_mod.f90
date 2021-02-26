@@ -23,6 +23,7 @@
       INTEGER ::  tstep, nr, nz, nphi, nfp
       DOUBLE PRECISION, PRIVATE :: time, rmin, rmax, zmin, zmax, phimax
       DOUBLE PRECISION, PRIVATE :: pi2, dr, dp, dz
+      REAL(DTYPE), DIMENSION(:), POINTER, PRIVATE :: raxis, zaxis
       REAL(DTYPE), DIMENSION(:,:,:), POINTER, PRIVATE :: BR3D, BPHI3D, BZ3D
       REAL(DTYPE), DIMENSION(:,:,:), POINTER, PRIVATE :: VR3D, VPHI3D, VZ3D
       REAL(DTYPE), DIMENSION(:,:,:), POINTER, PRIVATE :: PRES
@@ -90,9 +91,21 @@
 
       SUBROUTINE setup_hint_helpers
          IMPLICIT NONE
+         INTEGER :: i, j, k
+         INTEGER :: ij(2)
          dp = phimax/(nphi-1)
          dr = (rmax-rmin)/(nr-1)
          dz = (zmax-zmin)/(nz-1)
+         IF (ASSOCIATED(PRES)) THEN
+            ALLOCATE(raxis(nphi),zaxis(nphi))
+            DO k = 1 , nphi
+               ij = MAXLOC(PRES(:,:,k))
+               raxis(k) = rmin + dr*ij(1)
+               zaxis(k) = zmin + dz*ij(2)
+            END DO
+            !PRINT *,raxis
+            !PRINT *,zaxis
+         END IF
          RETURN
       END SUBROUTINE setup_hint_helpers
 
@@ -114,6 +127,26 @@
          IF (ASSOCIATED(PRES)) presmax = MAXVAL(MAXVAL(MAXVAL(PRES,DIM=3),DIM=2),DIM=1)
          RETURN
       END SUBROUTINE get_hint_maxp
+
+      SUBROUTINE get_hint_magaxis(phi_in,raxis_out,zaxis_out)
+         IMPLICIT NONE
+         REAL(rprec), INTENT(in)  :: phi_in
+         REAL(rprec), INTENT(out) :: raxis_out
+         REAL(rprec), INTENT(out) :: zaxis_out
+         INTEGER :: km, kp
+         REAL(rprec) :: phim, dk
+         raxis_out = -1; zaxis_out = 0
+         phim = MOD(phi_in,phimax)
+         IF (phim < 0) phim = phim + pi2
+         km = FLOOR((phim)/dp) 
+         kp = CEILING((phim)/dp)
+         km = MIN(MAX(km,1),nphi-1)
+         kp = MIN(MAX(kp,2),nphi)
+         dk = phim  -km*dp
+         raxis_out = raxis(km) + (raxis(kp)-raxis(km))*dk
+         zaxis_out = zaxis(km) + (zaxis(kp)-zaxis(km))*dk
+         RETURN
+      END SUBROUTINE get_hint_magaxis
 
       SUBROUTINE get_hint_B(r,phi,z,br,bp,bz)
          IMPLICIT NONE
@@ -220,6 +253,8 @@
          IF (ASSOCIATED(VPHI3D)) DEALLOCATE(VPHI3D)
          IF (ASSOCIATED(VZ3D))   DEALLOCATE(VZ3D)
          IF (ASSOCIATED(PRES))   DEALLOCATE(PRES)
+         IF (ASSOCIATED(raxis))  DEALLOCATE(raxis)
+         IF (ASSOCIATED(zaxis))  DEALLOCATE(zaxis)
          RETURN
       END SUBROUTINE read_hint_deallocate
 
