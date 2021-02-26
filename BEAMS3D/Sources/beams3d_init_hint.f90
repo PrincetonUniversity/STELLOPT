@@ -22,7 +22,8 @@
       USE beams3d_lines, ONLY: GFactor, ns_prof1
       USE wall_mod, ONLY: wall_load_seg, wall_info,vertex,face, wall_dump
       USE read_hint_mod, ONLY: get_hint_grid, get_hint_B, get_hint_press, &
-                               get_hint_maxp, read_hint_deallocate
+                               get_hint_maxp, read_hint_deallocate, &
+                               get_hint_magaxis
       USE mpi_params
       USE mpi_inc
 !-----------------------------------------------------------------------
@@ -75,8 +76,9 @@
       END IF
 
       ! Calculate the axis values
-      !req_axis(:) = raxis_eqdsk
-      !zeq_axis(:) = zaxis_eqdsk
+      DO s = 1, nphi
+         CALL get_hint_magaxis(phiaxis(s),req_axis(s),zeq_axis(s))
+      END DO
 
       
       IF (lverb) THEN
@@ -109,8 +111,12 @@
          ! Flux
          CALL get_hint_press(raxis_g(i),phiaxis(j),zaxis_g(k),sflx)
          sflx = MAX(sflx,0.0)
-         S_ARR(i,:,k)=sqrt((pres_max-sflx)/pres_max) ! Actually rho
-         U_ARR(i,:,k)=0
+         sflx = (pres_max-sflx)/pres_max 
+         S_ARR(i,j,k)=sflx
+
+         ! Poloidal Angle
+         CALL get_hint_magaxis(phiaxis(j),brtemp,bztemp)
+         U_ARR(i,j,k)=ATAN2(zaxis_g(k)-bztemp,raxis_g(i)-brtemp)
 
          IF (sflx <= 1) THEN
             tetemp = 0; netemp = 0; titemp=0; pottemp=0; zetemp=0
@@ -119,8 +125,8 @@
             IF (nti > 0) CALL EZspline_interp(TI_spl_s,sflx,titemp,ier)
             IF (npot > 0) CALL EZspline_interp(POT_spl_s,sflx,pottemp,ier)
             IF (nzeff > 0) CALL EZspline_interp(ZEFF_spl_s,sflx,zetemp,ier)
-            NE(i,:,k) = netemp; TE(i,:,k) = tetemp; TI(i,:,k) = titemp
-            POT_ARR(i,:,k) = pottemp; ZEFF_ARR(i,:,k) = zetemp
+            NE(i,j,k) = netemp; TE(i,j,k) = tetemp; TI(i,j,k) = titemp
+            POT_ARR(i,j,k) = pottemp; ZEFF_ARR(i,j,k) = zetemp
          END IF
          IF (MOD(s,nr) == 0) THEN
             IF (lverb) THEN
