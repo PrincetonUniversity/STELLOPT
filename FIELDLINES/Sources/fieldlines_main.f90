@@ -125,37 +125,29 @@
                case ("-vmec")
                    i = i + 1
                    lvmec = .true.
-                   lpies = .false.
-                   lspec = .false.
                    CALL GETCARG(i,id_string,numargs)
                case ("-pies")
                    i = i + 1
                    lpies = .true.
-                   lvmec = .false.
-                   lspec = .false.
                    CALL GETCARG(i,id_string,numargs)
                case ("-spec")
                    i = i + 1
                    lspec = .true.
-                   lpies = .false.
-                   lvmec = .false.
+                   CALL GETCARG(i,id_string,numargs)
+               case ("-hint")
+                   i = i + 1
+                   lhint = .true.
                    CALL GETCARG(i,id_string,numargs)
                case ("-mgrid")
                    i = i + 1
                    lmgrid = .true.
-                   lcoil  = .false.
-                   lnescoil = .false.
                    CALL GETCARG(i,mgrid_string,numargs)
                case ("-coil","-coils")
                    i = i + 1
                    lcoil  = .true.
-                   lmgrid = .false.
-                   lnescoil = .false.
                    CALL GETCARG(i,coil_string,numargs)
                case ("-nescoil")
                    i = i + 1
-                   lcoil  = .false.
-                   lmgrid = .false.
                    lnescoil = .true.
                    CALL GETCARG(i,nescoil_string,numargs)
                case ("-restart")
@@ -187,6 +179,7 @@
                   write(6,*)' Usage: xfieldlines <options>'
                   write(6,*)'    <options>'
                   write(6,*)'     -vmec ext:     VMEC input/wout extension'
+                  write(6,*)'     -vmec ext:     HINT input/magslice extension'
                   !write(6,*)'     -pies ext:   PIES input extension (must have &INDATA namelist)'
                   !write(6,*)'     -spec ext:     SPEC input extension (must have &INDATA namelist)'
                   write(6,*)'     -vessel file:  Vessel File (for limiting)'
@@ -258,6 +251,8 @@
       CALL MPI_BCAST(restart_string,256,MPI_CHARACTER, master, MPI_COMM_FIELDLINES,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_main',ierr_mpi)
       CALL MPI_BCAST(lvmec,1,MPI_LOGICAL, master, MPI_COMM_FIELDLINES,ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_main',ierr_mpi)
+      CALL MPI_BCAST(lhint,1,MPI_LOGICAL, master, MPI_COMM_FIELDLINES,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_main',ierr_mpi)
       CALL MPI_BCAST(lhitonly,1,MPI_LOGICAL, master, MPI_COMM_FIELDLINES,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_main',ierr_mpi)

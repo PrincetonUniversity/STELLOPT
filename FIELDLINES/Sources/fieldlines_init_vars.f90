@@ -21,6 +21,7 @@
       lpies    = .false.
       lspec    = .false.
       lcoil    = .false.
+      lhint    = .false.
       lmgrid   = .false.
       lmu      = .false.
       lvessel  = .false.
