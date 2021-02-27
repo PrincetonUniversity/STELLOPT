@@ -23,7 +23,8 @@
       USE wall_mod, ONLY: wall_load_seg, wall_info,vertex,face, wall_dump
       USE read_hint_mod, ONLY: get_hint_grid, get_hint_B, get_hint_press, &
                                get_hint_maxp, read_hint_deallocate, &
-                               get_hint_magaxis
+                               get_hint_magaxis, get_hint_gridB, &
+                               get_hint_gridpress
       USE mpi_params
       USE mpi_inc
 !-----------------------------------------------------------------------
@@ -103,13 +104,13 @@
          sflx = 0.0
 
          ! Bfield
-         CALL get_hint_B(raxis_g(i),phiaxis(j),zaxis_g(k),brtemp,bptemp,bztemp)
+         CALL get_hint_gridB(i,j,k,brtemp,bptemp,bztemp)
          B_R(i,j,k) = brtemp
          B_PHI(i,j,k) = bptemp
          B_Z(i,j,k) = bztemp
 
          ! Flux
-         CALL get_hint_press(raxis_g(i),phiaxis(j),zaxis_g(k),sflx)
+         CALL get_hint_gridpress(i,j,k,sflx)
          sflx = MAX(sflx,0.0)
          sflx = (pres_max-sflx)/pres_max 
          S_ARR(i,j,k)=sflx
