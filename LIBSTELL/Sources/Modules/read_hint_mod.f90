@@ -21,6 +21,7 @@
       ! HINT Variables
       INTEGER, PARAMETER, PRIVATE :: DTYPE =  SELECTED_REAL_KIND(15)
       INTEGER ::  tstep, nr, nz, nphi, nfp
+      DOUBLE PRECISION, PRIVATE, PARAMETER :: one           = 1.0D0 ! 1.0
       DOUBLE PRECISION, PRIVATE :: time, rmin, rmax, zmin, zmax, phimax
       DOUBLE PRECISION, PRIVATE :: pi2, dr, dp, dz
       REAL(DTYPE), DIMENSION(:), POINTER, PRIVATE :: raxis, zaxis
@@ -66,21 +67,33 @@
          READ(iunit) nr, nz, nphi, nfp
          READ(iunit) rmin_d, zmin_d, rmax_d, zmax_d
 
-         rmin = rmin_d; rmax = rmax_d; zmin = zmin_d; zmax=zmax_d; phimax=8.0 * ATAN(1.0) / nfp
+         ! Correct
+         nphi = nphi + 1
+
+         rmin = rmin_d; rmax = rmax_d; zmin = zmin_d; zmax=zmax_d; phimax=8.0 * ATAN(one) / nfp
 
          ! Read magnetic field
          ALLOCATE(BR3D(nr,nz,nphi),BPHI3D(nr,nz,nphi),BZ3D(nr,nz,nphi))
-         READ(iunit) (((BR3D(i,j,k), BPHI3D(i,j,k), BZ3D(i,j,k), i = 1, nr), j = 1, nz), k = 1, nphi)
+         READ(iunit) (((BR3D(i,j,k), BPHI3D(i,j,k), BZ3D(i,j,k), i = 1, nr), j = 1, nz), k = 1, nphi-1)
 
          ! Read velocity field
          ALLOCATE(VR3D(nr,nz,nphi),VPHI3D(nr,nz,nphi),VZ3D(nr,nz,nphi))
-         READ(iunit) (((VR3D(i,j,k), VPHI3D(i,j,k), VZ3D(i,j,k), i = 1, nr), j = 1, nz), k = 1, nphi)
+         READ(iunit) (((VR3D(i,j,k), VPHI3D(i,j,k), VZ3D(i,j,k), i = 1, nr), j = 1, nz), k = 1, nphi-1)
 
          ! Read Pressure field
          ALLOCATE(PRES(nr,nz,nphi))
-         READ(iunit) (((PRES(i,j,k), i = 1, nr), j = 1, nz), k = 1, nphi)
+         READ(iunit) (((PRES(i,j,k), i = 1, nr), j = 1, nz), k = 1, nphi-1)
          CLOSE(iunit)
          PRES = PRES / (pi2 *2E-7)
+
+         ! Replicate points
+         BR3D(:,:,nphi)   = BR3D(:,:,1)
+         BPHI3D(:,:,nphi) = BPHI3D(:,:,1)
+         BZ3D(:,:,nphi)   = BZ3D(:,:,1)
+         VR3D(:,:,nphi)   = VR3D(:,:,1)
+         VPHI3D(:,:,nphi) = VPHI3D(:,:,1)
+         VZ3D(:,:,nphi)   = VZ3D(:,:,1)
+         PRES(:,:,nphi)   = PRES(:,:,1)
 
          ! Helpers
          CALL setup_hint_helpers
@@ -93,9 +106,9 @@
          IMPLICIT NONE
          INTEGER :: i, j, k
          INTEGER :: ij(2)
-         dp = phimax/(nphi-1)
-         dr = (rmax-rmin)/(nr-1)
-         dz = (zmax-zmin)/(nz-1)
+         dp = phimax/DBLE(nphi-1)
+         dr = (rmax-rmin)/DBLE(nr-1)
+         dz = (zmax-zmin)/DBLE(nz-1)
          IF (ASSOCIATED(PRES)) THEN
             ALLOCATE(raxis(nphi),zaxis(nphi))
             DO k = 1 , nphi
@@ -103,8 +116,6 @@
                raxis(k) = rmin + dr*ij(1)
                zaxis(k) = zmin + dz*ij(2)
             END DO
-            !PRINT *,raxis
-            !PRINT *,zaxis
          END IF
          RETURN
       END SUBROUTINE setup_hint_helpers
@@ -174,37 +185,49 @@
          dj = z-zmin-jm*dz
          dk = phim  -km*dp
 
-         f1 = BR3D(im,jm,km)*(1-di)*(1-dj) &
-            + BR3D(ip,jm,km)*(di)*(1-dj) &
-            + BR3D(im,jp,km)*(1-di)*(dj) &
+         f1 = BR3D(im,jm,km)*(one-di)*(one-dj) &
+            + BR3D(ip,jm,km)*(di)*(one-dj) &
+            + BR3D(im,jp,km)*(one-di)*(dj) &
             + BR3D(ip,jp,km)*di*dj
-         f2 = BR3D(im,jm,kp)*(1-di)*(1-dj) &
-            + BR3D(ip,jm,kp)*(di)*(1-dj) &
-            + BR3D(im,jp,kp)*(1-di)*(dj) &
+         f2 = BR3D(im,jm,kp)*(one-di)*(one-dj) &
+            + BR3D(ip,jm,kp)*(di)*(one-dj) &
+            + BR3D(im,jp,kp)*(one-di)*(dj) &
             + BR3D(ip,jp,kp)*di*dj
          br = f1+ (f2-f1)*dk
 
-         f1 = BPHI3D(im,jm,km)*(1-di)*(1-dj) &
-            + BPHI3D(ip,jm,km)*(di)*(1-dj) &
-            + BPHI3D(im,jp,km)*(1-di)*(dj) &
+         f1 = BPHI3D(im,jm,km)*(one-di)*(one-dj) &
+            + BPHI3D(ip,jm,km)*(di)*(one-dj) &
+            + BPHI3D(im,jp,km)*(one-di)*(dj) &
             + BPHI3D(ip,jp,km)*di*dj
-         f2 = BPHI3D(im,jm,kp)*(1-di)*(1-dj) &
-            + BPHI3D(ip,jm,kp)*(di)*(1-dj) &
-            + BPHI3D(im,jp,kp)*(1-di)*(dj) &
+         f2 = BPHI3D(im,jm,kp)*(one-di)*(one-dj) &
+            + BPHI3D(ip,jm,kp)*(di)*(one-dj) &
+            + BPHI3D(im,jp,kp)*(one-di)*(dj) &
             + BPHI3D(ip,jp,kp)*di*dj
          bp = f1+ (f2-f1)*dk
 
-         f1 = BZ3D(im,jm,km)*(1-di)*(1-dj) &
-            + BZ3D(ip,jm,km)*(di)*(1-dj) &
-            + BZ3D(im,jp,km)*(1-di)*(dj) &
+         f1 = BZ3D(im,jm,km)*(one-di)*(one-dj) &
+            + BZ3D(ip,jm,km)*(di)*(one-dj) &
+            + BZ3D(im,jp,km)*(one-di)*(dj) &
             + BZ3D(ip,jp,km)*di*dj
-         f2 = BZ3D(im,jm,kp)*(1-di)*(1-dj) &
-            + BZ3D(ip,jm,kp)*(di)*(1-dj) &
-            + BZ3D(im,jp,kp)*(1-di)*(dj) &
+         f2 = BZ3D(im,jm,kp)*(one-di)*(one-dj) &
+            + BZ3D(ip,jm,kp)*(di)*(one-dj) &
+            + BZ3D(im,jp,kp)*(one-di)*(dj) &
             + BZ3D(ip,jp,kp)*di*dj
          bz = f1+ (f2-f1)*dk
          RETURN
       END SUBROUTINE get_hint_B
+
+      SUBROUTINE get_hint_gridB(i,j,k,br,bp,bz)
+         IMPLICIT NONE
+         INTEGER, INTENT(in) :: i,j,k
+         REAL(rprec), INTENT(out) :: br, bp, bz
+         br = 0; bp = 0; bz=0
+         IF (i>nr .or. j>nphi .or. k>nz) RETURN
+         br = BR3D(i,k,j)
+         bp = BPHI3D(i,k,j)
+         bz = BZ3D(i,k,j)
+         RETURN
+      END SUBROUTINE get_hint_gridB
 
       SUBROUTINE get_hint_press(r,phi,z,press)
          IMPLICIT NONE
@@ -232,17 +255,27 @@
          dj = z-zmin-jm*dz
          dk = phim  -km*dp
 
-         f1 = PRES(im,jm,km)*(1-di)*(1-dj) &
-            + PRES(ip,jm,km)*(di)*(1-dj) &
-            + PRES(im,jp,km)*(1-di)*(dj) &
+         f1 = PRES(im,jm,km)*(one-di)*(one-dj) &
+            + PRES(ip,jm,km)*(di)*(one-dj) &
+            + PRES(im,jp,km)*(one-di)*(dj) &
             + PRES(ip,jp,km)*di*dj
-         f2 = PRES(im,jm,kp)*(1-di)*(1-dj) &
-            + PRES(ip,jm,kp)*(di)*(1-dj) &
-            + PRES(im,jp,kp)*(1-di)*(dj) &
+         f2 = PRES(im,jm,kp)*(one-di)*(one-dj) &
+            + PRES(ip,jm,kp)*(di)*(one-dj) &
+            + PRES(im,jp,kp)*(one-di)*(dj) &
             + PRES(ip,jp,kp)*di*dj
          press = f1+ (f2-f1)*dk
          RETURN
       END SUBROUTINE get_hint_press
+
+      SUBROUTINE get_hint_gridpress(i,j,k,press)
+         IMPLICIT NONE
+         INTEGER, INTENT(in) :: i,j,k
+         REAL(rprec), INTENT(out) :: press
+         press = 0
+         IF (i>nr .or. j>nphi .or. k>nz) RETURN
+         press = PRES(i,k,j)
+         RETURN
+      END SUBROUTINE get_hint_gridpress
 
       SUBROUTINE read_hint_deallocate
          IMPLICIT NONE
