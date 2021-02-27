@@ -137,7 +137,7 @@
                          vessel_string, int_type, restart_string, &
                          nescoil_string
       
-      REAL(rprec), PARAMETER :: FIELDLINES_VERSION = 1.75
+      REAL(rprec), PARAMETER :: FIELDLINES_VERSION = 1.80
 !-----------------------------------------------------------------------
 !     Subroutines
 !          handle_err  Controls Program Termination

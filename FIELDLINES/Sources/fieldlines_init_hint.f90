@@ -19,7 +19,7 @@
       USE wall_mod, ONLY: wall_load_mn, wall_info,vertex,face
       USE read_hint_mod, ONLY: get_hint_grid, get_hint_B, get_hint_press, &
                                get_hint_maxp, read_hint_deallocate, &
-                               get_hint_magaxis
+                               get_hint_magaxis, get_hint_gridB
       USE mpi_params                                                    ! MPI
 !      USE mpi
 !-----------------------------------------------------------------------
@@ -84,10 +84,10 @@
             k = CEILING(REAL(s) / REAL(nr*nphi))
 
             ! Bfield
-            CALL get_hint_B(raxis_g(i),phiaxis(j),zaxis_g(k),br,bphi,bz)
-            B_R(i,j,k) = br
-            B_PHI(i,j,k) = bphi
-            B_Z(i,j,k) = bz
+            CALL get_hint_gridB(i,j,k,br,bphi,bz)
+            B_R(i,j,k)   = B_R(i,j,k)   + br
+            B_PHI(i,j,k) = B_PHI(i,j,k) + bphi
+            B_Z(i,j,k)   = B_Z(i,j,k)   + bz
 
             IF (lverb .and. (MOD(s,nr) == 0)) THEN
                CALL backspace_out(6,6)
