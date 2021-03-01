@@ -132,11 +132,12 @@
 
                 BdotgradB = Bsuptheta*dBdtheta+Bsupphi*dBdphi
                 BcrossgradpsidotgradB =(dBdtheta*Bsubphi-dBdphi*Bsubtheta)/J
-                fp_local = BcrossgradpsidotgradB-F*BdotgradB;
+                fp_local = BcrossgradpsidotgradB-F*BdotgradB
                 
                 ! Find appropriate normalisation
-                bbar = sum(B*B*J)/sum(J)
-                normalization = bbar**1.5
+                !bbar = sum(B*B*J)/sum(J)
+                !normalization = bbar**1.5
+		normalization = psi0**3/amin**6
                 fp_val = sqrt(sum(fp_local*fp_local*J)/sum(J))/normalization
 
                 ! Output value

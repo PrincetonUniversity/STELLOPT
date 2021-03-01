@@ -129,8 +129,9 @@
                 ft_local = (dBdtheta*dBdotgradBdphi-dBdphi*dBdotgradBdtheta) ! /J(1:nu,1:nv,is)
                 
                 ! Find appropriate normalisation
-                normalization = sum(B*B*J)/sum(J)
-                normalization = abs(normalization*normalization*amin/Rmax/Rmax/Rmax)
+                !normalization = sum(B*B*J)/sum(J)
+                !normalization = abs(normalization*normalization*amin/Rmax/Rmax/Rmax)
+		normalization = psi0**4/amin**7/Rmax**3
 	    	!print *, normalization
 
                 ft_val = sqrt(sum(ft_local*ft_local/J)/sum(J))/normalization

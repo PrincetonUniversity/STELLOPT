@@ -1,0 +1,7 @@
+Ft minimisation using the local normalisation of fT (i.e., using <B^2> rather than psi0).
+-input.copy: minimise f_T at various points targeting the aspect ratio as well. (slurm.1078463)
+	The execution seemed to stop for some memory issue. The analysis shows that f_T was
+	reduced (though seemingly not monomotonically when compared to the psi0 normalisation f_T),
+	noticeably leading to a reduction in QS residual, but tilting the curves rather than 
+	displacing them downwards. epseff seems to be going in the opposite direction to the 
+	f_T trend. The final product also seems to look worse than the usual f_B situation.
