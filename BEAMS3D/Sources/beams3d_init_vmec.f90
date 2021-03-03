@@ -59,7 +59,7 @@
 !     Begin Subroutine
 !-----------------------------------------------------------------------
       ! Handle what we do
-      luse_vc = (lcoil .and. .not.lplasma_only)
+      luse_vc = ((lmgrid .or. lcoil) .and. .not.lplasma_only)
       lcreate_wall = (lplasma_only .and. .not. lvessel)
 
       ! Divide up Work
