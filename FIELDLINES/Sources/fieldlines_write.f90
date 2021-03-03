@@ -24,7 +24,7 @@
                                     HDF5_CLOSE_ERR, FIELDLINES_VERSION,&
                                     ladvanced, lbfield_only, lreverse,&
                                     lafield_only, lemc3, lmodb, &
-                                    MPI_BARRIER_ERR, iota0
+                                    MPI_BARRIER_ERR, iota0, lhint
       USE fieldlines_write_par
       USE mpi_inc
 !-----------------------------------------------------------------------
@@ -54,6 +54,8 @@
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'lpies',ier)
          CALL write_scalar_hdf5(fid,'lspec',ier,BOOVAR=lspec,ATT='SPEC input',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'lspec',ier)
+         CALL write_scalar_hdf5(fid,'lhint',ier,BOOVAR=lhint,ATT='HINT input',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'lhint',ier)
          CALL write_scalar_hdf5(fid,'lcoil',ier,BOOVAR=lcoil,ATT='Coil input',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'lcoil',ier)
          CALL write_scalar_hdf5(fid,'lmgrid',ier,BOOVAR=lmgrid,ATT='MGRID input',ATT_NAME='description')

@@ -39,6 +39,7 @@
 !                    - Field construction improved for large machines
 !     v1.75 10/30/20 - Store iota_axis in file.
 !                    - Added restarting from FIELDLINES run for FLD
+!     v1.80 02/27/21 - Added interface to HINT magnetic fields
 !-----------------------------------------------------------------------
       MODULE fieldlines_runtime
 !-----------------------------------------------------------------------
@@ -124,7 +125,7 @@
                          ladvanced, lauto, lplasma_only, lbfield_only,&
                          lreverse, lhitonly, lafield_only, lraw, lemc3, &
                          lerror_field, lwall_trans, ledge_start, lnescoil,&
-                         lmodb, lfield_start
+                         lmodb, lfield_start, lhint
       INTEGER         :: nextcur, npoinc, nruntype, num_hcp, &
                          nprocs_fieldlines, line_select
       REAL(rprec)     :: mu, dphi, follow_tol, pi, pi2, mu0, delta_hc, iota0
@@ -136,7 +137,7 @@
                          vessel_string, int_type, restart_string, &
                          nescoil_string
       
-      REAL(rprec), PARAMETER :: FIELDLINES_VERSION = 1.75
+      REAL(rprec), PARAMETER :: FIELDLINES_VERSION = 1.80
 !-----------------------------------------------------------------------
 !     Subroutines
 !          handle_err  Controls Program Termination

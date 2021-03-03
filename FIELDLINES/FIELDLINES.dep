@@ -36,6 +36,7 @@ fieldlines_init.o: \
       ../../LIBSTELL/$(LOCTYPE)/vmec_input.o \
       ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
       ../../LIBSTELL/$(LOCTYPE)/vessel_mod.o \
+      ../../LIBSTELL/$(LOCTYPE)/read_hint_mod.o \
       random.o \
       fieldlines_runtime.o \
       fieldlines_grid.o \
@@ -218,6 +219,15 @@ fieldlines_init_vmec.o: \
       ../../LIBSTELL/$(LOCTYPE)/read_wout_mod.o \
       ../../LIBSTELL/$(LOCTYPE)/vmec_utils.o \
       ../../LIBSTELL/$(LOCTYPE)/virtual_casing_mod.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
+      fieldlines_runtime.o \
+      fieldlines_lines.o \
+      fieldlines_grid.o
+      
+
+fieldlines_init_hint.o: \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(LOCTYPE)/read_hint_mod.o \
       ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
       fieldlines_runtime.o \
       fieldlines_lines.o \
