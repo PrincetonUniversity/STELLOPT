@@ -75,7 +75,7 @@
                IF (ier /= 0) CALL handle_err(HDF5_OPEN_ERR,'ascot5_'//TRIM(id_string)//'.h5',ier)
 
                ! Define rho_max for use later on
-               rho_max = SQRT(MAXVAL(MAXVAL(MAXVAL(S_ARR,3),2),1))*1.2
+               rho_max = SQRT(MAXVAL(MAXVAL(MAXVAL(S_ARR,3),2),1))
 
                !--------------------------------------------------------------
                !           OPTIONS
@@ -306,10 +306,14 @@
                IF (nzeff > 0) CALL EZspline_interp( ZEFF_spl_s, nr, rtemp(:,1,1)**2, rtemp(:,5,1), ier)
                rtemp(d1:,2:4,1) = 0
                rtemp(:,5,1)=rtemp(:,3,1)/rtemp(:,5,1)
-               WHERE(rtemp(:,2,1) < 10) rtemp(:,2,1)=10
-               WHERE(rtemp(:,4,1) < 10) rtemp(:,4,1)=10
-               WHERE(rtemp(:,3,1) < 1.0E18) rtemp(:,3,1)=1.0E18
-               WHERE(rtemp(:,5,1) < 1.0E18) rtemp(:,5,1)=1.0E18
+               !WHERE(rtemp(:,2,1) < 1) rtemp(:,2,1)=1
+               !WHERE(rtemp(:,4,1) < 1) rtemp(:,4,1)=1
+               !WHERE(rtemp(:,3,1) < 1.0E16) rtemp(:,3,1)=1.0E16
+               !WHERE(rtemp(:,5,1) < 1.0E16) rtemp(:,5,1)=1.0E16
+               WHERE(rtemp(:,2,1) < 0.03) rtemp(:,2,1)=0.03
+               WHERE(rtemp(:,4,1) < 0.03) rtemp(:,4,1)=0.03
+               WHERE(rtemp(:,3,1) < 1.0E10) rtemp(:,3,1)=1.0E10
+               WHERE(rtemp(:,5,1) < 1.0E10) rtemp(:,5,1)=1.0E10
                CALL write_var_hdf5( qid_gid, 'rho',          nr, ier, DBLVAR=rtemp(1:nr,1,1))
                CALL write_var_hdf5( qid_gid, 'etemperature', nr, ier, DBLVAR=rtemp(1:nr,2,1))
                CALL write_var_hdf5( qid_gid, 'edensity',     nr, ier, DBLVAR=rtemp(1:nr,3,1))

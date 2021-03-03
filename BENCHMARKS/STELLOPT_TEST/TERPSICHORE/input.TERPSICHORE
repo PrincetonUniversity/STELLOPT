@@ -137,7 +137,7 @@
 !         Requires STELLOPT to be linked to TERPSICHORE.
 !         Also requires the terpsichore_input file.
 !------------------------------------------------------------------------
-  MLMNB_KINK =   264  IVAC_KINK =    24
+  MLMNB_KINK =   458  IVAC_KINK =    24
   TARGET_KINK(001) =  -1.0  SIGMA_KINK(001) =   1.0   MLMNS_KINK(001) =   76
   TARGET_KINK(002) =  -1.0  SIGMA_KINK(002) =   1.0   MLMNS_KINK(002) =   91
 / 
