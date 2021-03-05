@@ -14,6 +14,8 @@ targeting turned on) to generate these files (terpsichore\_eq.ext
 files). In this example we provide one based on the LI383
 equilibrium.  [examples/fort.18](examples/fort.18) 
 
+TO DO: Provide the input file that was used to generate the above fort.18 file.
+
 ## Modify and recompile TERPSICHORE
 
 The TERPSICHORE source must be modified
