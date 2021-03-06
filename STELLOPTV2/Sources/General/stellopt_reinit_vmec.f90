@@ -184,7 +184,7 @@
 !
 
       IF (lconm1 .and. (lthreed .or. lasym)) THEN
-         ALLOCATE (temp(SIZE(rbss,1)))
+         ALLOCATE (temp(SIZE(rbcc,1)))
          IF (lthreed) THEN
             mj = 1+joff
             temp = rbss(:,mj)
