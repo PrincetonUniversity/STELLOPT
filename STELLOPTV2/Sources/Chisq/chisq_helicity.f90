@@ -35,7 +35,8 @@
 !-----------------------------------------------------------------------
       LOGICAL :: lsym
       INTEGER :: dex, ik, mn, n, m, k_heli, l_heli, num0, n1, n2, i_save
-      REAL(rprec) :: bnorm, bmax, bmn, rad_sigma, sj, val
+      REAL(rprec) :: bnorm, bmax, bmn, sj, val
+      REAL(rprec), DIMENSION(:), ALLOCATABLE :: rad_sigma
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
@@ -51,6 +52,8 @@
             WRITE(iunit_out,'(A)') 'TARGET  SIGMA  VALS  BNORM  K  MBOZ  NBOZ'
             CALL FLUSH(iunit_out)
          END IF
+         ! Allocate radial weighting
+         ALLOCATE(rad_sigma(1:mnboz_b))
          ! Now calculate chi_sq
          DO ik = 1, nsd
             IF (ABS(sigma(ik)) >= bigno) CYCLE
@@ -96,12 +99,10 @@
 
             IF (sigma(ik) < 0.0) THEN
                rad_sigma = 1
-            ELSE IF (m < 3) THEN
-               rad_sigma = sj
-            ELSE IF (m == 3) THEN
-               rad_sigma = sj**1.5
             ELSE
                rad_sigma = sj*sj
+               WHERE(ixm_b<3) rad_sigma = sj
+               WHERE(ixm_b==3) rad_sigma = sj**1.5
             END IF
 
             vals(num0:mtargets) = vals(num0:mtargets)/bnorm
@@ -113,6 +114,7 @@
                END DO
             END IF
          END DO
+         DEALLOCATE(rad_sigma)
       ELSE
          ! Consistency check
          mboz = MAX(6*mpol, 2, mboz)             
