@@ -1,4 +1,5 @@
 ObjectFiles = \
+beams3d_init_hint.o \
 beams3d_init_eqdsk.o \
 beams3d_init_fusion.o \
 beams3d_volume.o \
