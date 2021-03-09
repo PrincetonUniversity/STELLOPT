@@ -13,6 +13,7 @@
       USE vmec_input,  ONLY: extcur_in => extcur, read_indata_namelist,&
                              nv_in => nzeta, nfp_in => nfp, nigroup
       USE read_eqdsk_mod, ONLY: read_gfile, get_eqdsk_grid
+      USE read_hint_mod, ONLY: read_hint_mag, get_hint_grid
       USE beams3d_runtime
       USE beams3d_grid
       USE beams3d_input_mod, ONLY: read_beams3d_input
@@ -74,7 +75,7 @@
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'beams3d_init0',ierr_mpi)
 #endif
 
-      IF (lvmec .and. lread_input) THEN
+      IF (lvmec.and. lread_input) THEN
          CALL read_beams3d_input('input.' // TRIM(id_string),ier)
          IF (lverb) WRITE(6,'(A)') '   FILE: input.' // TRIM(id_string)
       ELSE IF (lpies .and. lread_input) THEN
@@ -90,6 +91,13 @@
          IF (lverb) WRITE(6,'(A)') '   G-FILE: '// TRIM(eqdsk_string)
          CALL get_eqdsk_grid(nr,nz,rmin,rmax,zmin,zmax)
          phimin = 0; phimax=pi2
+      ELSE IF (lhint .and. lread_input) THEN
+         CALL read_beams3d_input(TRIM(id_string)//'.input',ier)
+         IF (lverb) WRITE(6,'(A)') '   FILE:     ' // TRIM(id_string) // '.input'
+         IF (lverb) WRITE(6,'(A)') '   MAG_FILE: ' // TRIM(id_string) // '.magslice'
+         CALL read_hint_mag(TRIM(id_string)//'.magslice',ier)
+         phimin = 0
+         CALL get_hint_grid(nr,nz,nphi,rmin,rmax,zmin,zmax,phimax)
       END IF
 
       IF (lrestart_particles) THEN
@@ -141,7 +149,7 @@
 
       ! Construct 1D splines
       bcs1_s=(/ 0, 0 /)
-      IF ((lvmec .or. leqdsk) .and. .not.lvac) THEN
+      IF ((lvmec .or. leqdsk .or. lhint) .and. .not.lvac) THEN
          IF (lverb) WRITE(6,'(A)') '----- Profile Parameters -----'
          ! TE
          IF (nte>0) THEN
@@ -277,6 +285,10 @@
          !CALL beams3d_init_pies
       ELSE IF (lspec .and. .not.lvac) THEN
          !CALL beams3d_init_spec
+      ELSE IF (lhint .and. .not.lvac) THEN
+         CALL mpialloc(req_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_req_axis)
+         CALL mpialloc(zeq_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_zeq_axis)
+         CALL beams3d_init_hint
       ELSE IF (leqdsk) THEN
          CALL mpialloc(req_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_req_axis)
          CALL mpialloc(zeq_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_zeq_axis)

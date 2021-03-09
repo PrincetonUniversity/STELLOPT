@@ -81,7 +81,6 @@
 !DEC$ IF DEFINED (MPI_OPT)
             IF (myworkid == master) THEN
                CALL read_wout_booz(TRIM(input_extension),num_booz,ier)
-               CLOSE(iunit)
             END IF
             CALL MPI_BCAST(ier,1,MPI_INTEGER,master,MPI_COMM_MYWORLD,ierr_mpi)
             IF (ier .ne. 0) THEN; iflag=ier; RETURN; END IF
