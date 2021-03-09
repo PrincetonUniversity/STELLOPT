@@ -54,6 +54,9 @@
 !                           (note set to negative value to use non-adaptive integration)
 !            int_type       Field line integration method
 !                           'NAG','LSODE','RKH68'
+!            plasma_mass    Mean plasma mass in [kg]
+!            plasma_Zavg    <Z> = sum(n_k*Z_k^2)/sum(n_k*Z_k)
+!            plasma_Zmean   [Z] = sum(n_k*Z_k^2*(m_k/plasma_mass))/sum(n_k*Z_k)
 !
 !            NOTE:  Some grid parameters may be overriden (such as
 !                   phimin and phimax) to properly represent a given
@@ -77,7 +80,7 @@
                                plasma_Zmean, therm_factor, &
                                fusion_scale, nrho_dist, ntheta_dist, & 
                                nzeta_dist, nvpara_dist, nvperp_dist, &
-                               partvmax
+                               partvmax, lendt_m
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -150,6 +153,7 @@
       plasma_Zavg  = 1.0
       plasma_mass = 1.6726219E-27 ! Assume Hydrogen
       therm_factor = 1.5 ! Factor at which to thermalize particles
+      lendt_m = 0.05 ! Max distance a particle travels
 
       ! Distribution Function Defaults
       nrho_dist = 64
@@ -190,9 +194,9 @@
          ZEFF_AUX_F = ZEFF_AUX_F*zeff_scale
          lbeam = .true.
          IF (r_start_in(1) /= -1) lbeam = .false.
-         IF (lbeam) lcollision = .true.
          IF (lfusion .or. lrestart_particles) lbeam = .false.
          IF (lbbnbi) lbeam = .true.
+         IF (lbeam) lcollision = .true.
          nbeams = 0
          DO WHILE ((Asize_beams(nbeams+1) >= 0.0).and.(nbeams<MAXBEAMS))
             nbeams = nbeams + 1

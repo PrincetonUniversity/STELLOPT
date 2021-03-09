@@ -12,17 +12,17 @@ SUBROUTINE out_beams3d_nag(t, q)
     USE stel_kinds, ONLY: rprec
     USE beams3d_runtime, ONLY: dt, lverb, pi2, lneut, t_end, lvessel, &
                                lhitonly, npoinc, lcollision, ldepo, &
-                               weight, invpi2
+                               weight, invpi2, ndt, ndt_max
     USE beams3d_lines, ONLY: R_lines, Z_lines, PHI_lines, myline, moment, &
                              nsteps, nparticles, moment_lines, myend, &
                              vll_lines, neut_lines, mytdex, next_t,&
-                             dt_out, xlast, ylast, zlast, dense_prof, &
+                             xlast, ylast, zlast, dense_prof, &
                              ltherm, S_lines, U_lines, B_lines, &
                              j_prof, ndot_prof, partvmax, &
                              ns_prof1, ns_prof2, ns_prof3, ns_prof4, &
                              ns_prof5, mymass, mycharge, mybeam, end_state, &
                              dist5d_prof, win_dist5d, nsh_prof4, &
-                             h2_prof, h3_prof, h4_prof, h5_prof
+                             h2_prof, h3_prof, h4_prof, h5_prof, my_end
     USE beams3d_grid
     USE beams3d_physics_mod, ONLY: beams3d_physics
     USE wall_mod, ONLY: collide, get_wall_ik, get_wall_area
@@ -105,7 +105,7 @@ SUBROUTINE out_beams3d_nag(t, q)
        IF (ltherm) THEN
           ndot_prof(mybeam,d1)   =   ndot_prof(mybeam,d1) + weight(myline)
           end_state(myline) = 1
-          t = t_end(myline)
+          t = my_end
        END IF
     ELSE
        IF (lneut) end_state(myline)=3
@@ -126,7 +126,7 @@ SUBROUTINE out_beams3d_nag(t, q)
           R_lines(mytdex,myline)       = q2(1)
           PHI_lines(mytdex,myline)     = q2(2)
           Z_lines(mytdex,myline)       = zw
-          t = t_end(myline)+dt
+          t = my_end+dt
           l = get_wall_ik()
           IF (lneut) THEN
              wall_shine(mybeam,l) = wall_shine(mybeam,l) + weight(myline)*0.5*mymass*q(4)*q(4)/get_wall_area(l)
@@ -160,9 +160,13 @@ SUBROUTINE out_beams3d_nag(t, q)
        ylast = q(1)*sin(q(2))
        zlast = q(3)
     END IF
-    IF (lhitonly) mytdex = 0
-    IF (ABS((t+dt)) .gt. ABS(mytdex*dt_out)) mytdex = mytdex + 1
-    IF (mytdex > npoinc) t = t_end(myline)
+    ndt = ndt + 1
+    IF (ndt .ge. ndt_max) THEN ! ge needed if npoinc = ndt
+       mytdex = mytdex + 1
+       ndt = 1
+    END IF
+    IF (lhitonly) mytdex = 1
+    IF (mytdex > npoinc) t = my_end
     t = t + dt
 
     RETURN

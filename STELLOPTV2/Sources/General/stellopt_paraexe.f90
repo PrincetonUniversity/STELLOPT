@@ -19,6 +19,7 @@
       USE stellopt_input_mod
       USE stellopt_vars
       USE equil_vals, ONLY: kx_gene
+      USE equil_utils, ONLY: move_txtfile
       USE wall_mod, ONLY: wall_free
       USE mpi_params
       USE mpi_inc
@@ -56,6 +57,7 @@
             lread_input_beams => lread_input, lvmec_beams => lvmec, &
             lverb_beams => lverb, lbeam_beams => lbeam, &
             lpies_beams => lpies, lspec_beams => lspec, &
+            leqdsk_beams => leqdsk, eqdsk_string_beams => eqdsk_string, &
             lmgrid_beams => lmgrid, lascot_beams => lascot, &
             lvessel_beams => lvessel, lcoil_beams => lcoil, &
             lsuzuki_beams => lsuzuki, lrandomize_beams => lrandomize, &
@@ -298,6 +300,7 @@
                lvmec_beams        = .TRUE.  ! Use VMEC Equilibria
                lpies_beams        = .FALSE.
                lspec_beams        = .FALSE.
+               leqdsk_beams       = .FALSE.
                lcoil_beams        = .FALSE.
                lmgrid_beams       = .FALSE.
                lascot_beams       = .FALSE.
@@ -324,6 +327,7 @@
                mgrid_string_beams = ''
                vessel_string_beams = ''
                restart_string_beams = ''
+               eqdsk_string_beams = ''
                IF (myworkid .eq. master) lverb_beams = lscreen
 
 

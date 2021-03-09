@@ -14,8 +14,8 @@
 #######################################################################
 #            Define Compiler Flags
 #######################################################################
-  FLAGS_R = -O2 -fexternal-blas
-  FLAGS_D = -g -O0 -fexternal-blas -fbacktrace -fcheck=all 
+  FLAGS_R = -O2 -fexternal-blas -fPIC
+  FLAGS_D = -g -O0 -fexternal-blas -fbacktrace -fcheck=all -fPIC
   LIBS    = -L/usr/lib -lscalapack-openmpi -lblas -llapack
 
 #######################################################################
@@ -26,7 +26,7 @@
   MPI_COMPILE_FREE = mpif90 -ffree-form \
                      -ffree-line-length-none -ffixed-line-length-none
   MPI_COMPILE_C = mpicc
-  MPI_LINK = mpif90
+  MPI_LINK = mpif90 -fPIC
   MPI_RUN = mpiexec
   MPI_RUN_OPTS = 
 #  MPI_RUN_OPTS_SM = -np 16
@@ -137,3 +137,4 @@
 #######################################################################
 #            LIBSTELL Shared Options
 #######################################################################
+LIB_SHARE = -lc -lgfortran -lstdc++ -lmpi -lmpi_mpifh -lz -lc -lm -lpthread $(LIBS) -lc

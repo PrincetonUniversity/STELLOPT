@@ -33,7 +33,7 @@
       REAL(rprec) :: vpartmax, B_help, version_old
       REAL(rprec), DIMENSION(3) :: q
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: mass2, charge2, Zatom2, &
-                                                weight2, t_end2
+                                                weight2
 !-----------------------------------------------------------------------
 !     Begin Subroutine
 !-----------------------------------------------------------------------
@@ -81,8 +81,7 @@
          IF (ALLOCATED(vll_lines)) DEALLOCATE(vll_lines)
          IF (ALLOCATED(neut_lines)) DEALLOCATE(neut_lines)
          ALLOCATE(mass2(nparticles),charge2(nparticles),Zatom2(nparticles),&
-            beam2(nparticles), weight2(nparticles), t_end2(nparticles), &
-            end_state(nparticles))
+            beam2(nparticles), weight2(nparticles), end_state(nparticles))
          ALLOCATE(R_lines(0:npoinc,nparticles),Z_lines(0:npoinc,nparticles),PHI_lines(0:npoinc,nparticles),&
             vll_lines(0:npoinc,nparticles),neut_lines(0:npoinc,nparticles),moment_lines(0:npoinc,nparticles),&
             S_lines(0:npoinc,nparticles),B_lines(0:npoinc,nparticles))
@@ -98,8 +97,6 @@
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'beam2',ier)
          CALL read_var_hdf5(fid,'end_state',nparticles,ier,INTVAR=end_state)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'end_state',ier)
-         CALL read_var_hdf5(fid,'t_end',nparticles,ier,DBLVAR=t_end2)
-         IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'t_end2',ier)
          CALL read_var_hdf5(fid,'R_lines',npoinc+1,nparticles,ier,DBLVAR=R_lines)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'R_lines',ier)
          CALL read_var_hdf5(fid,'Z_lines',npoinc+1,nparticles,ier,DBLVAR=Z_lines)
@@ -134,6 +131,9 @@
          IF (lfusion_old) THEN
             end_state = 0
             state_flag = 0
+            IF (lplasma_only) THEN 
+               WHERE(S_lines(0,:) >= 1) end_state = -1
+            END IF
          ELSEIF (ldepo_old) THEN
             state_flag = 0
             start_dex = 2
@@ -181,7 +181,7 @@
             k = k + 1
          END DO
          DEALLOCATE(R_lines, Z_lines, PHI_lines, vll_lines, moment_lines, neut_lines, end_state, S_lines, B_lines)
-         DEALLOCATE(mass2, charge2, Zatom2, beam2, weight2, t_end2, start_dex)
+         DEALLOCATE(mass2, charge2, Zatom2, beam2, weight2, start_dex)
 
          ! Restore quantities
          nparticles = k-1

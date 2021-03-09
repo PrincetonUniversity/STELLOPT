@@ -21,7 +21,7 @@
 # Crutch for broken module vars
   NETCDF_F = $(NETCDF_FORTRAN_HOME)
   NETCDF_C = $(NETCDF_C_HOME)
-  HDF5_HOME = $(HDF5_PARALLEL_HOME)
+  # $(HDF5_HOME) is used.
 
   LIBS    = -lopenblas -L$(SCALAPACK_HOME)/lib -lscalapack 
 
@@ -120,7 +120,7 @@
 #######################################################################
 #            TERPSICHORE Options
 #######################################################################
-  LTERPSICHORE= F
+  LTERPSICHORE= T
   TERPSICHORE_INC = -I$(TERPSICHORE_PATH)
   TERPSICHORE_DIR = $(TERPSICHORE_PATH)
   LIB_TERPSICHORE = libterpsichore.a
@@ -160,7 +160,7 @@
 #            MANGO Options
 #######################################################################
 
-LMANGO = T
+LMANGO = F
 
 MANGO_DIR = /p/focus/share/mango
 
