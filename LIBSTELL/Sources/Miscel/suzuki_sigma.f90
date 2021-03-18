@@ -94,7 +94,7 @@
       DO i = 1, n_Z-1
          l = ind_Z(i)
          k = 0
-         DO j = 1, 10
+         DO j = 1, 9
             IF (Z_IMP(j) == Z_in(l) .and. Zeff > ZEFFMIN_IMP(j) .and. Zeff < ZEFFMAX_IMP(j)) THEN
                k = j
                CONTINUE
