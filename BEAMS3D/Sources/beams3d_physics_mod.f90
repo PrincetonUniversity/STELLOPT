@@ -30,7 +30,7 @@ MODULE beams3d_physics_mod
                               phimax, S4D, TE4D, NE4D, TI4D, ZEFF4D, &
                               nr, nphi, nz, rmax, rmin, zmax, zmin, &
                               phimin, eps1, eps2, eps3, raxis, phiaxis,&
-                              zaxis, &
+                              zaxis, U4D, &
                               hr, hp, hz, hri, hpi, hzi
       USE EZspline_obj
       USE EZspline
@@ -1291,6 +1291,110 @@ MODULE beams3d_physics_mod
          RETURN
 
       END SUBROUTINE beams3d_SFLX
+
+      !-----------------------------------------------------------------
+      !     Function:      beams3d_suv2rzp
+      !     Authors:       S. Lazerson (samuel.lazerson@ipp.mpg.de)
+      !     Date:          03/07/2021
+      !     Description:   Returns R and Z given s,u,v coordinate
+      !-----------------------------------------------------------------
+      SUBROUTINE beams3d_suv2rzp(s,u,v,r_out,z_out,phi_out)
+         !--------------------------------------------------------------
+         !     Input Parameters
+         !          s            Normalized Toroidal Flux
+         !          u            Poloidal Angle
+         !          v            Toroidal Angle
+         !          r_out        Major Radius Distance R
+         !          z_out        Vertical Distance Z
+         !          phi_out      Toroidal Angle
+         !--------------------------------------------------------------
+         IMPLICIT NONE
+         DOUBLE PRECISION, INTENT(inout) :: s
+         DOUBLE PRECISION, INTENT(inout) :: u
+         DOUBLE PRECISION, INTENT(inout) :: v
+         DOUBLE PRECISION, INTENT(inout) :: r_out
+         DOUBLE PRECISION, INTENT(inout) :: z_out
+         DOUBLE PRECISION, INTENT(out) :: phi_out
+
+         !--------------------------------------------------------------
+         !     Local Variables
+         !        residual   Residual Error
+         !--------------------------------------------------------------
+         INTEGER          :: n
+         DOUBLE PRECISION :: s0, u0, residual, tau, delR, delZ, fnorm, &
+                             factor
+
+         ! For splines
+         INTEGER :: i,j,k
+         REAL*8 :: xparam, yparam, zparam
+         INTEGER, parameter :: ict(8)=(/1,1,1,1,0,0,0,0/)
+         REAL*8 :: fvals(1,4),fvalu(1,4) !(f,df/fR,df/dphi,dfdZ)
+
+         !--------------------------------------------------------------
+         !     Begin Subroutine
+         !--------------------------------------------------------------
+         residual = 1.0
+         factor = 0.5
+         IF (r_out<0) r_out = raxis(1)+(raxis(nr)-raxis(1))*.75
+!         r_out = (raxis(1)+raxis(nr))*0.5
+!         z_out = (zaxis(1)+zaxis(nz))*0.5
+         
+         ! PHI does not change
+         phi_out = MOD(v,MAXVAL(phiaxis))
+         j = MIN(MAX(COUNT(phiaxis < phi_out),1),nphi-1)
+         yparam = (phi_out - phiaxis(j)) * hpi(j)
+
+         ! Adjust u
+         u = MOD(u,pi2)
+
+         fnorm = s*s+u*u
+         fnorm = MIN(1./fnorm,1E5)
+         n = 1
+
+         ! Loop Basically a NEWTON's METHOD
+         !  F(R,Z) = (s0-s(R,Z))*(u0-u(R,Z))
+         !  dF/dR  = -ds/dR*(u0-u(R,Z))-du/dR*(s0-s(R,Z))
+         !  dF/dZ  = -ds/dZ*(u0-u(R,Z))-du/dZ*(s0-s(R,Z))
+         DO WHILE (residual > 1.0E-3 .and. n<250)
+            i = MIN(MAX(COUNT(raxis < r_out),1),nr-1)
+            k = MIN(MAX(COUNT(zaxis < z_out),1),nz-1)
+            xparam = (r_out - raxis(i)) * hri(i)
+            zparam = (z_out - zaxis(k)) * hzi(k)
+            ! Evaluate the Splines
+            CALL R8HERM3FCN(ict,1,1,fvals,i,j,k,xparam,yparam,zparam,&
+                            hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                            S4D(1,1,1,1),nr,nphi,nz)
+            CALL R8HERM3FCN(ict,1,1,fvalu,i,j,k,xparam,yparam,zparam,&
+                            hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                            U4D(1,1,1,1),nr,nphi,nz)
+            s0   = fvals(1,1)-s
+            u0   = fvalu(1,1)-u
+            residual = (s0*s0+u0*u0)*fnorm
+            tau = fvals(1,2)*fvalu(1,4)-fvals(1,4)*fvalu(1,2)
+            !tau = MAX(tau,0.0001)
+            delR = -(  s0*fvalu(1,4) + u0*fvals(1,4))/tau
+            delZ = -(  s0*fvalu(1,2) + u0*fvals(1,2))/tau
+            !delR = ( s0*fvalu(1,4) - u0*fvals(1,4))/tau !( (s0-s)du/dR - (u0-u)*ds/dR)/tau
+            !delZ = (-s0*fvalu(1,2) + u0*fvals(1,2))/tau !(-(s0-s)du/dZ)+ (u0-u)*ds/dZ)/tau
+            delR = MIN(MAX(delR,-1.0),1.0)
+            delZ = MIN(MAX(delZ,-1.0),1.0)
+            WRITE(6,*) '----- ',s,u,s0,u0,r_out,z_out,residual,tau,delR,delZ
+
+            IF (residual < 0.01) THEN
+               delR = delR*0.5
+               delZ = delZ*0.5
+            END IF
+
+            r_out = MAX(MIN(r_out + delR*factor,raxis(nr)),raxis(1))
+            z_out = MAX(MIN(z_out + delZ*factor,zaxis(nz)),zaxis(1))
+            WRITE(6,*) '----- ',s,u,s0,u0,r_out,z_out,residual
+            n=n+1
+         END DO
+
+
+         RETURN
+
+      END SUBROUTINE beams3d_suv2rzp
 
       !-----------------------------------------------------------------
       !     Function:      beams3d_fbounce
