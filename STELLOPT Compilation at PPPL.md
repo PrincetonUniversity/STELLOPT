@@ -8,7 +8,7 @@ This page details how to compile/use the STELLOPT family of codes at the
 loaded then compilation can begin.
 
 PPPL has several clusters, "portal", "stellar", and "traverse".
-For more information, please with [PPPL Research Computing](https://pppl-intranet.princeton.edu/departments/computing-and-information-technology/research-computing).
+For more information, please visit [PPPL Research Computing](https://pppl-intranet.princeton.edu/departments/computing-and-information-technology/research-computing).
 
 ------------------------------------------------------------------------
 
