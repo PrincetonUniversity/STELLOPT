@@ -1,90 +1,87 @@
-STELLOPT Compilation at the PPPL cluster
+STELLOPT Compilation & Usage at the PPPL clusters
 ========================================
 
 ![](images/PPPL-LOGO-FNLWH-GRADIENT_300px_WEB.jpg)
 
-This page details how to compile the STELLOPT family of codes at the
-[PPPL](@http://www.pppl.gov/) cluster. The proper modules need to be
-loaded then compilation can begin. Please note that if you require
-additional module to be loaded you should do this before loading the
-compiler. This will prevent the \$PATH variable from searching the wrong
-directories.
+This page details how to compile/use the STELLOPT family of codes at the
+[PPPL](@http://www.pppl.gov/) clusters. The proper modules need to be
+loaded then compilation can begin.
+
+PPPL has several clusters, "portal", "stellar", and "traverse".
+For more information, please with [PPPL Research Computing](https://pppl-intranet.princeton.edu/departments/computing-and-information-technology/research-computing).
 
 ------------------------------------------------------------------------
 
-### GENERAL Instructions
+# Compilation
 
-On the PPPL cluster, STELLOPT is now maintained as an installed module.
-Use the following command to load stellopt
+On the PPPL clusters, there are third-party modules maintained by Dr. Caoxiang Zhu.
+Here are the information to load the existing modules.
 
-    module load stellopt
+## Portal
 
-To load the most current version of the code. This will load all the
-necessary modules. The /bin/ directory will be added to your path
-variable as well so codes can be called without specifying the full
-path. Such as:
+Intel compiler with OpenMPI
+```batch
+module load mod_stellopt
+module load stellopt/intel 
+```
+GCC compiler with OpenMPI
+```batch
+module load mod_stellopt
+module load stellopt/gcc 
+```
+
+You can set the env variable `$STELLOPT_PATH` to the folder containing STELLOPT sources.
+By default, it will use the makefiles `SHARE/make_pppl_intel.inc` and `SHARE/make_pppl_gcc.inc`, respectively.
+You can copy and customize the makefile based on your needs.
+
+**PPPL portal has issues with MPI-shared memory. It causes errors in `BEAMS3D` (see [#109](https://github.com/PrincetonUniversity/STELLOPT/issues/109)) and in free-boundary VMEC (occasionally).**
+
+## Stellar
+
+Intel compiler with Intel MPI
+```batch
+module use /home/caoxiang/module
+module load stellopt/intel 
+```
+GCC compiler (to be updated)
+
+Stellar is using Intel CPUs, so it is recommended to use the Intel compiler.
+The corresponding makefile is `SHARE/make_stellar.inc`.
+
+## Traverse
+
+Traverse is a GPU-based cluster, so it is not recommended to use STELLOPT on it.
+If you would like to use STELLLOPT on it, please refer to the general compilation page.
+
+# Usage
+
+If you want to use the compiled executables directly, you can load the following modules directly.
+The `/bin/` directory will be added to your path variable as well so codes can be called without specifying the full path. Such as:
 
 	mpirun -np 64 xstelloptv2 input.test
 
-There are more avaliable versions. To list all the available versions,
-you can do the following
+There are more avaliable versions.
+You can use `module avail stellopt` to list all the possible versions. 
 
+## Portal
+
+The `develop` branch compiled by Intel compiler with OpenMPI
+```batch
+module load mod_stellopt
+module load stellopt/develop_intel
 ```
-module avail stellopt
-```
-
-To check the details of each version, you can use `module what-is
-stellopt` or `module show stellopt`.
-
-
-------------------------------------------------------------------------
-
-### GNU
-
-Load the appropriate module files for the [GNU](https://gcc.gnu.org/)
-compiler.
-
-```
-     module load gcc/8.1.0
-     module load szip
-     module load openmpi
-     module load gsl
-     module load hdf
-     module load scalapack
-     module load blacs
-     module load fftw
-     module load hdf5-parallel
-     module load curl
-     module load netcdf-c
-     module load netcdf-fortran
-     module load netcdf-cxx4
-     module load matlab
-     module load python/3.6.4
+The `develop` branch compiled by GCC compiler with OpenMPI (default)
+```batch
+module load mod_stellopt
+module load stellopt/develop_gcc 
 ```
 
-------------------------------------------------------------------------
+## Stellar
 
-### Intel
-
-Load the appropriate module files for the [Intel](https://software.intel.com/en-us/fortran-compilers)
-compiler.
-
+The `develop` branch compiled by Intel compiler with Intel MPI (default)
+```batch
+module use /home/caoxiang/module
+module load stellopt/develop_intel
 ```
-   module load intel
-   module load openmpi
-   module load szip
-   module load hdf
-   module load hdf5-parallel
-   module load netcdf-c
-   module load netcdf-fortran
-   module load lapack
-   module load petsc_complex
-   module load fftw
-   module load slepc_complex
-   module load scalapack
-   module load blacs
-   module load python/3.6.4
-```
+GCC compiler (to be updated)
 
-The PPPL cluster should be automatically detected otherwise
-please set `MACHINE=pppl_gcc` to properly compile the code.
