@@ -375,7 +375,8 @@
                CALL neo_init_s(psi,dpsi)
                IF(psi_ind.EQ.1) dpsi=psi
                CALL flint_bo()
-               reff=reff+drdpsi*dpsi
+               !reff=reff+drdpsi*dpsi
+               reff = drdpsi*dpsi
                IF (reff /= reff) reff = 0
                IF (calc_cur .EQ. 1) CALL flint_cur()
                IF (ref_swi .EQ. 1) THEN
@@ -414,6 +415,12 @@
             END IF
 !DEC$ ENDIF
             IF (myworkid == master) THEN
+               ! Fix reff
+               reff = 0
+               DO fluxs_arr_i = 1, no_fluxs
+                  reff = reff + save_array(fluxs_arr_i,2)
+                  save_array(fluxs_arr_i,2) = reff
+               END DO
                DO fluxs_arr_i = 1, no_fluxs
                   psi_ind = fluxs_arr_i
                   epstot = save_array(fluxs_arr_i,1)

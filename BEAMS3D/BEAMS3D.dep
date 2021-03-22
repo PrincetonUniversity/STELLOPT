@@ -1,5 +1,11 @@
 # Microsoft Developer Studio Generated Dependency File, included by VMEC2000.mak
 
+
+beams3d_distnorm.o: \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      beams3d_runtime.o \
+      beams3d_lines.o 
+
 beams3d_init_fusion.o: \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
       ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \

@@ -169,6 +169,7 @@
                CALL write_var_hdf5(qid_gid,'ORBITWRITE_INTERVAL',ier,DBLVAR=DBLE(MAXVAL(t_end_in))/DBLE(npoinc))
                CALL write_var_hdf5(qid_gid,'ORBITWRITE_TOROIDALANGLES',ier,DBLVAR=DBLE(0))
                CALL write_var_hdf5(qid_gid,'ORBITWRITE_POLOIDALANGLES',ier,DBLVAR=DBLE(0))
+               CALL write_var_hdf5(qid_gid,'ORBITWRITE_RADIALDISTANCES',ier,DBLVAR=DBLE(0))
                CALL write_var_hdf5(qid_gid,'ENABLE_TRANSCOEF',ier,DBLVAR=DBLE(0))
                CALL write_var_hdf5(qid_gid,'TRANSCOEF_INTERVAL',ier,DBLVAR=DBLE(-1))
                CALL write_var_hdf5(qid_gid,'TRANSCOEF_NAVG',ier,DBLVAR=DBLE(5))
