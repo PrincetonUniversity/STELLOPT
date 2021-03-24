@@ -802,7 +802,7 @@ MODULE beams3d_physics_mod
          !--------------------------------------------------------------
          ier = 0
          phi_temp = MOD(q(2),phimax)
-         IF (phi_temp < 0) phi_temp = phi_temp + phimax
+         IF (phi_temp < zero) phi_temp = phi_temp + phimax
          r_temp = q(1)
          z_temp = q(3)
 
@@ -818,7 +818,7 @@ MODULE beams3d_physics_mod
          vperp  = sqrt( 2*modb_temp*moment/mymass )
 
          ! Unit vectors
-         IF (bnz == 0) THEN
+         IF (bnz == zero) THEN
             e1    = (/one,zero,zero/)
             e2    = (/zero,one,zero/)
          ELSE
@@ -1334,7 +1334,7 @@ MODULE beams3d_physics_mod
          !     Begin Subroutine
          !--------------------------------------------------------------
          residual = 1.0
-         factor = 0.5
+         factor = 1.0
          IF (r_out<0) r_out = raxis(1)+(raxis(nr)-raxis(1))*.75
 !         r_out = (raxis(1)+raxis(nr))*0.5
 !         z_out = (zaxis(1)+zaxis(nz))*0.5
@@ -1355,7 +1355,7 @@ MODULE beams3d_physics_mod
          !  F(R,Z) = (s0-s(R,Z))*(u0-u(R,Z))
          !  dF/dR  = -ds/dR*(u0-u(R,Z))-du/dR*(s0-s(R,Z))
          !  dF/dZ  = -ds/dZ*(u0-u(R,Z))-du/dZ*(s0-s(R,Z))
-         DO WHILE (residual > 1.0E-3 .and. n<250)
+         DO WHILE (residual > 1.0E-3 .and. n<500)
             i = MIN(MAX(COUNT(raxis < r_out),1),nr-1)
             k = MIN(MAX(COUNT(zaxis < z_out),1),nz-1)
             xparam = (r_out - raxis(i)) * hri(i)
@@ -1367,18 +1367,26 @@ MODULE beams3d_physics_mod
             CALL R8HERM3FCN(ict,1,1,fvalu,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             U4D(1,1,1,1),nr,nphi,nz)
-            s0   = fvals(1,1)-s
+            IF (fvals(1,1) > 1.05) THEN
+              r_out = raxis(MOD(n,nr-1)+1)
+              z_out = zaxis(MOD(n,nz-1)+1)
+            END IF
+            fvals(1,2:4) = 0.5*fvals(1,2:4)/sqrt(fvals(1,1))
+            s0   = sqrt(fvals(1,1))-s
             u0   = fvalu(1,1)-u
             residual = (s0*s0+u0*u0)*fnorm
             tau = fvals(1,2)*fvalu(1,4)-fvals(1,4)*fvalu(1,2)
             !tau = MAX(tau,0.0001)
-            delR = -(  s0*fvalu(1,4) + u0*fvals(1,4))/tau
-            delZ = -(  s0*fvalu(1,2) + u0*fvals(1,2))/tau
+            !delR = -(  s0*fvalu(1,4) + u0*fvals(1,4))/tau
+            !delZ = -(  s0*fvalu(1,2) + u0*fvals(1,2))/tau
+            !Newtwon
+            delR =-(s0*fvals(1,2) + u0*fvalu(1,2))/(fvals(1,2)**2 + fvalu(1,2)**2)
+            delZ =-(s0*fvalu(1,4) + u0*fvalu(1,4))/(fvals(1,4)**2 + fvalu(1,4)**2)
             !delR = ( s0*fvalu(1,4) - u0*fvals(1,4))/tau !( (s0-s)du/dR - (u0-u)*ds/dR)/tau
             !delZ = (-s0*fvalu(1,2) + u0*fvals(1,2))/tau !(-(s0-s)du/dZ)+ (u0-u)*ds/dZ)/tau
-            delR = MIN(MAX(delR,-1.0),1.0)
-            delZ = MIN(MAX(delZ,-1.0),1.0)
-            WRITE(6,*) '----- ',s,u,s0,u0,r_out,z_out,residual,tau,delR,delZ
+            delR = MIN(MAX(delR,-hr(1)),hr(1))
+            delZ = MIN(MAX(delZ,-hz(1)),hz(1))
+            !WRITE(6,*) '----- ',s,u,s0,u0,r_out,z_out,residual,tau,delR,delZ
 
             IF (residual < 0.01) THEN
                delR = delR*0.5
@@ -1387,7 +1395,7 @@ MODULE beams3d_physics_mod
 
             r_out = MAX(MIN(r_out + delR*factor,raxis(nr)),raxis(1))
             z_out = MAX(MIN(z_out + delZ*factor,zaxis(nz)),zaxis(1))
-            WRITE(6,*) '----- ',s,u,s0,u0,r_out,z_out,residual
+            !WRITE(6,*) '----- ',s,u,s0,u0,r_out,z_out,residual
             n=n+1
          END DO
 

@@ -3,6 +3,8 @@
 
 beams3d_distnorm.o: \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      beams3d_physics_mod.o \
+      beams3d_grid.o \
       beams3d_runtime.o \
       beams3d_lines.o 
 

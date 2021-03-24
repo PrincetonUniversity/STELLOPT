@@ -628,19 +628,6 @@
 
       ! Some tests
       IF (.false. .and. lverb) THEN
-         rtemp = -1
-         ztemp = 0
-         DO i = 1, 25
-            DO j = 1, 10
-               stemp = (i-0.5)/25
-               utemp = pi2*(j-1)/10
-               vtemp = 0
-               CALL beams3d_suv2rzp(stemp,utemp,vtemp,rtemp,ztemp,phitemp)
-               WRITE(327,*) i,j,stemp,utemp,vtemp,rtemp,ztemp,phitemp
-               CALL FLUSH(327)
-               STOP
-            END DO
-         END DO
          CALL beams3d_distnorm
          STOP
       END IF
