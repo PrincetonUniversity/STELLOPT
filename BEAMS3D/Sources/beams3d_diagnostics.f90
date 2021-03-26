@@ -82,7 +82,7 @@
 
       ! Setup masking arrays
       FORALL(i=0:npoinc) int_mask2(i,mystart:myend) = beam(mystart:myend)              ! Index of beams
-      WHERE(      ( (R_lines(:,mystart:myend)==0) .and. (PHI_lines(:,mystart:myend)==-1) )&
+      WHERE(      ( (R_lines(:,mystart:myend)==0.0) .and. (PHI_lines(:,mystart:myend)==-1.0) )&
              .or. (neut_lines(:,mystart:myend)) ) int_mask2(:,mystart:myend) = 0  ! Mask the neutral and lost particles
       int_mask(mystart:myend) = 0
       IF (lbeam) int_mask(mystart:myend) = 3
@@ -199,7 +199,7 @@
             s2 = s1*s1
             CALL EZspline_interp(Vp_spl_s,s2,vp_temp,ier)
             vp_temp = vp_temp*2*s1*(1./REAL(ns_prof1))
-            dist5d_prof(:,k,:,:,:,:) = dist5d_prof(:,k,:,:,:,:)/vp_temp
+            !dist5d_prof(:,k,:,:,:,:) = dist5d_prof(:,k,:,:,:,:)/vp_temp
             epower_prof(:,k) = epower_prof(:,k)/vp_temp
             ipower_prof(:,k) = ipower_prof(:,k)/vp_temp
             ndot_prof(:,k)   =   ndot_prof(:,k)/vp_temp
