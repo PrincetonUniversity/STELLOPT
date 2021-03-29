@@ -107,15 +107,15 @@
       phimax =  pi2
       nparticles_start = 10
 
-      r_start_in   = -1
-      z_start_in   = -1
-      phi_start_in = -1
-      vll_start_in = -1
-      t_end_in     = -1
-      mu_start_in  = -1
-      mass_in      = -1
-      charge_in    = -1
-      Zatom_in     = -1
+      r_start_in   = -1.0
+      z_start_in   = -1.0
+      phi_start_in = -1.0
+      vll_start_in = -1.0
+      t_end_in     = -1.0
+      mu_start_in  = -1.0
+      mass_in      = -1.0
+      charge_in    = -1.0
+      Zatom_in     = -1.0
 
       Adist_beams = 1.0_rprec
       Asize_beams = -1.0_rprec
@@ -157,7 +157,7 @@
 
       ! Distribution Function Defaults
       nrho_dist = 64
-      ntheta_dist=4
+      ntheta_dist=8
       nzeta_dist=4
       nvpara_dist=32
       nvperp_dist=16
@@ -193,7 +193,7 @@
          TI_AUX_F = TI_AUX_F*ti_scale
          ZEFF_AUX_F = ZEFF_AUX_F*zeff_scale
          lbeam = .true.
-         IF (r_start_in(1) /= -1) lbeam = .false.
+         IF (r_start_in(1) /= -1.0) lbeam = .false.
          IF (lfusion .or. lrestart_particles) lbeam = .false.
          IF (lbbnbi) lbeam = .true.
          IF (lbeam) lcollision = .true.

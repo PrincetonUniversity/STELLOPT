@@ -1174,8 +1174,8 @@ C-----------------------------------------------
          snew = xc_opt(1) + dels*factor
          IF (snew .lt. zero) THEN
             xc_opt(1) = -snew/2               !Prevents oscillations around origin s=0
-            xc_opt(2) = xc_opt(2) + twopi/2 
-            delu = -delu
+            !xc_opt(2) = xc_opt(2) + twopi/2 
+            !delu = -delu
 !             factor = (-snew/2-xc_opt(1))/dels
 !             xc_opt(1) = -snew/2
          ELSE

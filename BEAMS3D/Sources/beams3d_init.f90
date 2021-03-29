@@ -30,6 +30,7 @@
       USE adas_mod_parallel, ONLY: adas_load_tables, adas_tables_avail
       USE mpi_inc
       USE mpi_sharmem
+      USE beams3d_physics_mod, ONLY: beams3d_suv2rzp ! remove if test below removed
 !-----------------------------------------------------------------------
 !     Local Variables
 !          ier            Error Flag
@@ -45,6 +46,7 @@
       INTEGER :: bcs1(2), bcs2(2), bcs3(2), bcs1_s(2)
       REAL(rprec) :: br, bphi, bz, ti_temp, vtemp
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: R_wall_temp
+      REAL(rprec) :: stemp, utemp, rtemp, ztemp, phitemp
 !-----------------------------------------------------------------------
 !     External Functions
 !          A00ADF               NAG Detection
@@ -231,12 +233,12 @@
          CALL mpialloc(raxis, nr, myid_sharmem, 0, MPI_COMM_SHARMEM, win_raxis)
          CALL mpialloc(phiaxis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_phiaxis)
          CALL mpialloc(zaxis, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_zaxis)
-         CALL mpialloc(hr, nr, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hr)
-         CALL mpialloc(hp, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hp)
-         CALL mpialloc(hz, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hz)
-         CALL mpialloc(hri, nr, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hri)
-         CALL mpialloc(hpi, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hpi)
-         CALL mpialloc(hzi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hzi)
+         CALL mpialloc(hr, nr-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hr)
+         CALL mpialloc(hp, nphi-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hp)
+         CALL mpialloc(hz, nz-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hz)
+         CALL mpialloc(hri, nr-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hri)
+         CALL mpialloc(hpi, nphi-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hpi)
+         CALL mpialloc(hzi, nz-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hzi)
          CALL mpialloc(B_R, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_B_R)
          CALL mpialloc(B_PHI, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_B_PHI)
          CALL mpialloc(B_Z, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_B_Z)
@@ -622,6 +624,12 @@
          IF (myid_sharmem == master) wall_load = 0
          CALL mpialloc(wall_shine, nbeams, nface, myid_sharmem, 0, MPI_COMM_SHARMEM, win_wall_shine)
          IF (myid_sharmem == master) wall_shine = 0
+      END IF
+
+      ! Some tests
+      IF (.false. .and. lverb) THEN
+         CALL beams3d_distnorm
+         STOP
       END IF
 
 #if defined(MPI_OPT)
