@@ -89,12 +89,12 @@
                CALL DATE_AND_TIME(DATE=temp_str8)
                CALL write_att_hdf5(qid_gid,'date',temp_str8,ier)
                CALL write_att_hdf5(qid_gid,'description','Data initialized from BEAMS3D',ier)
-               i = 2; IF (lascotfl) i =4
+               i = 1; IF (lascotfl) i =4
                CALL write_var_hdf5(qid_gid,'SIM_MODE',ier,DBLVAR=DBLE(i))
                i = 0; IF (lascotfl) i =1
                CALL write_var_hdf5(qid_gid,'ENABLE_ADAPTIVE',ier,DBLVAR=DBLE(i))
                CALL write_var_hdf5(qid_gid,'RECORD_MODE',ier,DBLVAR=DBLE(0))
-               CALL write_var_hdf5(qid_gid,'FIXEDSTEP_USE_USERDEFINED',ier,DBLVAR=DBLE(1))
+               CALL write_var_hdf5(qid_gid,'FIXEDSTEP_USE_USERDEFINED',ier,DBLVAR=DBLE(0))
                CALL write_var_hdf5(qid_gid,'FIXEDSTEP_USERDEFINED',ier,DBLVAR=DBLE(1.0E-8))
                CALL write_var_hdf5(qid_gid,'FIXEDSTEP_GYRODEFINED',ier,DBLVAR=DBLE(16))
                CALL write_var_hdf5(qid_gid,'ADAPTIVE_TOL_ORBIT',ier,DBLVAR=DBLE(1.0E-8))
@@ -123,7 +123,7 @@
                CALL write_var_hdf5(qid_gid,'ENDCOND_MAXORBS',ier,DBLVAR=DBLE(0))
                CALL write_var_hdf5(qid_gid,'ENDCOND_MAX_SIMTIME',ier,DBLVAR=DBLE(2*MAXVAL(t_end_in)))
                CALL write_var_hdf5(qid_gid,'ENDCOND_MAX_CPUTIME',ier,DBLVAR=DBLE(14000))
-               CALL write_var_hdf5(qid_gid,'ENDCOND_MAX_MILEAGE',ier,DBLVAR=DBLE(14000))
+               CALL write_var_hdf5(qid_gid,'ENDCOND_MAX_MILEAGE',ier,DBLVAR=DBLE(1.0))
                CALL write_var_hdf5(qid_gid,'ENDCOND_MIN_RHO',ier,DBLVAR=DBLE(0))
                CALL write_var_hdf5(qid_gid,'ENDCOND_MIN_ENERGY',ier,DBLVAR=DBLE(10))
                CALL write_var_hdf5(qid_gid,'ENDCOND_MIN_THERMAL',ier,DBLVAR=DBLE(therm_factor))
@@ -146,12 +146,12 @@
                   CALL write_var_hdf5(qid_gid,'DIST_MAX_RHO',ier,DBLVAR=DBLE(1.0))
                ELSE
                   CALL write_var_hdf5(qid_gid,'ENDCOND_MAX_RHO',ier,DBLVAR=DBLE(4.00))
-                  CALL write_var_hdf5(qid_gid,'DIST_MAX_RHO',ier,DBLVAR=DBLE(1.5))
+                  CALL write_var_hdf5(qid_gid,'DIST_MAX_RHO',ier,DBLVAR=DBLE(1.2))
                ENDIF
                CALL write_var_hdf5(qid_gid,'DIST_MIN_THETA',ier,DBLVAR=DBLE(0))
                CALL write_var_hdf5(qid_gid,'DIST_MAX_THETA',ier,DBLVAR=DBLE(360))
                CALL write_var_hdf5(qid_gid,'DIST_MIN_TIME',ier,DBLVAR=DBLE(0))
-               CALL write_var_hdf5(qid_gid,'DIST_MAX_TIME',ier,DBLVAR=DBLE(MAXVAL(t_end_in)))
+               CALL write_var_hdf5(qid_gid,'DIST_MAX_TIME',ier,DBLVAR=DBLE(2.0*MAXVAL(t_end_in)))
                CALL write_var_hdf5(qid_gid,'DIST_MIN_CHARGE',ier,DBLVAR=DBLE(-2))
                CALL write_var_hdf5(qid_gid,'DIST_MAX_CHARGE',ier,DBLVAR=DBLE(2))
                CALL write_var_hdf5(qid_gid,'DIST_NBIN_R',ier,DBLVAR=DBLE(32))
@@ -169,6 +169,7 @@
                CALL write_var_hdf5(qid_gid,'ORBITWRITE_INTERVAL',ier,DBLVAR=DBLE(MAXVAL(t_end_in))/DBLE(npoinc))
                CALL write_var_hdf5(qid_gid,'ORBITWRITE_TOROIDALANGLES',ier,DBLVAR=DBLE(0))
                CALL write_var_hdf5(qid_gid,'ORBITWRITE_POLOIDALANGLES',ier,DBLVAR=DBLE(0))
+               CALL write_var_hdf5(qid_gid,'ORBITWRITE_RADIALDISTANCES',ier,DBLVAR=DBLE(0))
                CALL write_var_hdf5(qid_gid,'ENABLE_TRANSCOEF',ier,DBLVAR=DBLE(0))
                CALL write_var_hdf5(qid_gid,'TRANSCOEF_INTERVAL',ier,DBLVAR=DBLE(-1))
                CALL write_var_hdf5(qid_gid,'TRANSCOEF_NAVG',ier,DBLVAR=DBLE(5))
@@ -280,8 +281,8 @@
                WRITE(qid_str,'(i10.10)') FLOOR(qid_flt*1.0E9)
                CALL write_att_hdf5(plasma_gid,'active',qid_str,ier)
                ! 1DS acts screwy in the vacuum region
-               CALL h5gcreate_f(plasma_gid,'plasma_1DS_'//qid_str, qid_gid, ier)
-               !CALL h5gcreate_f(plasma_gid,'plasma_1D_'//qid_str, qid_gid, ier)
+               !CALL h5gcreate_f(plasma_gid,'plasma_1DS_'//qid_str, qid_gid, ier)
+               CALL h5gcreate_f(plasma_gid,'plasma_1D_'//qid_str, qid_gid, ier)
                CALL write_att_hdf5(qid_gid,'date',temp_str8,ier)
                CALL write_att_hdf5(qid_gid,'description','Data initialized from BEAMS3D',ier)
                CALL write_var_hdf5(qid_gid,'nion',ier,INTVAR=1)
@@ -619,7 +620,7 @@
                rtemp(k,13,1) = k
                k=k+1
             END DO
-            WHERE(rtemp(:,4,1)==0) rtemp(:,5,1)=0.0 ! avoid NAN pitch angle
+            WHERE(rtemp(:,4,1)==0.0) rtemp(:,5,1)=0.0 ! avoid NAN pitch angle
             WHERE(rtemp(:,1,1)<raxis(1)) rtemp(:,1,1)=raxis(1) ! avoid NAN pitch angle
             CALL beams3d_write1d_parhdf5( 1, kmax, k1, k2, '/marker/gc_'//qid_str//'/r',      DBLVAR=rtemp(:,1,1))
             CALL beams3d_write1d_parhdf5( 1, kmax, k1, k2, '/marker/gc_'//qid_str//'/phi',    DBLVAR=rtemp(:,2,1))
