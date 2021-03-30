@@ -24,7 +24,7 @@ if not data:
 print('BEAMS3D VERSION: ' + str(round(data['VERSION'],2)))
 print('==== Vectors ====')
 varlist={}
-varlist['Shinethrough']=np.array([34, 18, 10, 15, 4, 2])
+varlist['Shinethrough']=np.array([34, 18, 10, 1, 1, 1])
 #print(data['Shinethrough'])
 for temp in varlist:
     act = varlist[temp]
