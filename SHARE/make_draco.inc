@@ -17,7 +17,7 @@
 #            Define Compiler Flags
 #######################################################################
   FLAGS_R = -I$(MKL_HOME)/include -O2 -fp-model strict -ip \
-            -assume noold_unit_star -g -traceback -xCORE-AVX2
+            -assume noold_unit_star -g -traceback
   FLAGS_D = -I$(MKL_HOME)/include -fp-model strict -ip \
             -assume noold_unit_star -g -traceback
   FLAGS_D+= -check all -check bounds -check noarg_temp_created \
@@ -50,9 +50,11 @@
 #            NETCDF Options
 #######################################################################
   LNETCDF = T
-  NETCDF_INC = -I$(NETCDF_HOME)/include 
-  NETCDF_LIB = -Wl,-rpath,$(NETCDF_HOME)/lib -L$(NETCDF_HOME)/lib \
-               -lnetcdf -lnetcdff 
+  NETCDF_INC = $(shell nc-config --fflags)
+  NETCDF_LIB = $(shell nc-config --flibs)
+#  NETCDF_INC = -I$(NETCDF_HOME)/include 
+#  NETCDF_LIB = -Wl,-rpath,$(NETCDF_HOME)/lib -L$(NETCDF_HOME)/lib \
+#               -lnetcdf -lnetcdff 
 
 #######################################################################
 #            HDF5 Options
@@ -82,8 +84,8 @@
 #######################################################################
   LFFTW3 = F
   FFTW3_INC = -I$(FFTW_HOME)/include
-  FFTW3_LIB = -L$(FFTW_HOME)/lib -lfftw3 -lfftw3f \
-              -Wl,-rpath,$(FFTW_HOME)/lib
+  FFTW3_LIB = -Wl,-rpath,$(FFTW_HOME)/lib -L$(FFTW_HOME)/lib \
+              -lfftw3 -lfftw3f 
 
 #######################################################################
 #            DKES/NEO Options
