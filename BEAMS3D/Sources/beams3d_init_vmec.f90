@@ -55,6 +55,7 @@
                            bumns_temp(:,:),bvmns_temp(:,:)
       LOGICAL :: lold_field = .true.  ! If false we attempt to subtract the vacuum field from the VMEC total field
       INTEGER, PARAMETER :: scaleup=2
+      LOGICAL, ALLOCATABLE, DIMENSION(:) :: lsmooth
 !-----------------------------------------------------------------------
 !     Begin Subroutine
 !-----------------------------------------------------------------------
@@ -282,6 +283,8 @@
       
       ! Break up the Work
       CALL MPI_CALC_MYRANGE(MPI_COMM_LOCAL, 1, nr*nphi*nz, mystart, myend)
+      ALLOCATE(lsmooth(mystart:myend))
+      lsmooth = .false.
 
       IF (mylocalid == mylocalmaster) THEN
          TE = 0; NE = 0; TI=0; S_ARR=scaleup*scaleup; U_ARR=0; POT_ARR=0; ZEFF_ARR = 1;
@@ -317,7 +320,7 @@
                B_R(i,j,k)   = br
                B_PHI(i,j,k) = bphi
                B_Z(i,j,k)   = bz
-               sflx = 1.0 ! Assume s=1 for lplasma_only
+               sflx = 1.5 ! Assume s=1 for lplasma_only
             END IF
             IF (sflx <= 1) THEN
                IF (nte > 0) CALL EZspline_interp(TE_spl_s,sflx,TE(i,j,k),ier)
@@ -396,8 +399,15 @@
          zmns_temp(1:nv,s) = zmns_temp(1:nv,s) - zmns(1:nv,1)
       END DO
       DO s = ns+1,ns*scaleup
-         rmnc_temp(:,s) = rmnc_temp(:,ns)*REAL(s)/REAL(ns)
-         zmns_temp(:,s) = zmns_temp(:,ns)*REAL(s)/REAL(ns)
+         sflx = REAL(s)/REAL(ns)
+         uflx = SQRT(REAL(s)/REAL(ns*scaleup))
+         WHERE (MOD(NINT(xm),2)==1)
+            rmnc_temp(:,s) = rmnc_temp(:,ns)*sflx**1.5
+            zmns_temp(:,s) = zmns_temp(:,ns)*sflx**1.5
+         ELSEWHERE
+            rmnc_temp(:,s) = rmnc_temp(:,ns)*sflx
+            zmns_temp(:,s) = zmns_temp(:,ns)*sflx
+         END WHERE
       END DO
       DO s = 2,ns*scaleup ! Add magnetic axis from geometric axis
          rmnc_temp(1:nv,s) = rmnc_temp(1:nv,s) + rmnc(1:nv,1)
@@ -412,8 +422,15 @@
             zmnc_temp(1:nv,s) = zmnc_temp(1:nv,s) - zmnc(1:nv,1)
          END DO
          DO s = ns+1,ns*scaleup
-            rmns_temp(:,s) = rmns_temp(:,ns)*REAL(s)/REAL(ns)
-            zmnc_temp(:,s) = zmnc_temp(:,ns)*REAL(s)/REAL(ns)
+            sflx = REAL(s)/REAL(ns)
+            uflx = SQRT(REAL(s)/REAL(ns*scaleup))
+            WHERE (MOD(NINT(xm),2)==1)
+               rmns_temp(:,s) = rmns_temp(:,ns)*sflx*uflx
+               zmnc_temp(:,s) = zmnc_temp(:,ns)*sflx*uflx
+            ELSEWHERE
+               rmns_temp(:,s) = rmns_temp(:,ns)*sflx
+               zmnc_temp(:,s) = zmnc_temp(:,ns)*sflx
+            END WHERE
          END DO
          DO s = 2,ns*scaleup ! Add magnetic axis from geometric axis
             rmns_temp(1:nv,s) = rmns_temp(1:nv,s) + rmns(1:nv,1)
@@ -443,11 +460,27 @@
          CALL GetBcyl(raxis_g(i),phiaxis(j),zaxis_g(k),&
                       br, bphi, bz, SFLX=sflx,UFLX=uflx,info=ier)
          ! note that s in now rho since we grid different in the outer region
-         if (ier .ne. 0) CYCLE
+         IF (ier .ne. 0) THEN
+            lsmooth(s) = .true.
+            CYCLE
+         END IF
          sflx = sflx*sflx*scaleup*scaleup
-         S_ARR(i,j,k) = MAX(sflx,0.0)
+         S_ARR(i,j,k) = MAX(sflx,1.01)
          IF (uflx<0)  uflx = uflx+pi2
          U_ARR(i,j,k) = uflx
+      END DO
+
+      ! Smooth
+      DO s = mystart, myend ! Now fill in grid
+         IF (.not.lsmooth(s)) CYCLE
+         i = MOD(s-1,nr)+1
+         j = MOD(s-1,nr*nphi)
+         j = FLOOR(REAL(j) / REAL(nr))+1
+         k = CEILING(REAL(s) / REAL(nr*nphi))
+         IF (i==1 .or. i==nr) CYCLE
+         IF (k==1 .or. k==nz) CYCLE
+         S_ARR(i,j,k) = (MAX(S_ARR(i-1,j,k),S_ARR(i+1,j,k)) &
+                  + MAX(S_ARR(i,j,k-1),S_ARR(i,j,k+1)))*0.5 
       END DO
 
       ! Deallocations
@@ -459,7 +492,9 @@
          DEALLOCATE(xm,xn,xm_nyq,xn_nyq)
          DEALLOCATE(rmnc,zmns,bsupumnc,bsupvmnc)
          IF (lasym) DEALLOCATE(rmns,zmnc,bsupumns,bsupvmns)
+         DEALLOCATE(rzl_local)
       END IF
+      DEALLOCATE(lsmooth)
       
       IF (lverb) THEN
          CALL backspace_out(6,36)
