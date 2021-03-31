@@ -311,7 +311,6 @@ C-----------------------------------------------
          IF (istat .ne. 0) ier_flag = 9
       END IF
 #if defined(MPI_OPT)
-      CALL MPI_BCAST(nr0b,1,ier_flag,0,shar_comm,MPI_ERR)
       CALL MPI_BCAST(nr0b,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
       CALL MPI_BCAST(nz0b,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
       CALL MPI_BCAST(np0b,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
