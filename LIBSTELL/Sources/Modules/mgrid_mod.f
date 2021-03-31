@@ -320,6 +320,7 @@ C-----------------------------------------------
       CALL MPI_BCAST(zminb,1,MPI_REAL8,0,shar_comm,MPI_ERR)
       CALL MPI_BCAST(rmaxb,1,MPI_REAL8,0,shar_comm,MPI_ERR)
       CALL MPI_BCAST(zmaxb,1,MPI_REAL8,0,shar_comm,MPI_ERR)
+      CALL MPI_BCAST(ier_flag,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
 #endif
 !
 !     CALCULATE HELPERS AND CHECK NFP AND NV
