@@ -312,7 +312,6 @@ C-----------------------------------------------
       END IF
 #if defined(MPI_OPT)
       CALL MPI_BCAST(nr0b,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
-      CALL MPI_BCAST(nr0b,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
       CALL MPI_BCAST(nz0b,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
       CALL MPI_BCAST(np0b,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
       CALL MPI_BCAST(nfper0,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
