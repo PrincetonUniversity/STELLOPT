@@ -6,7 +6,7 @@
 !           curvature to reduce concave regions
 !
 !                    Edited by A. LeViness (alevines@pppl.gov)
-!                    09/08/2020
+!                    03/30/2021
 !                    When sigma < 0, use the target as a limit:
 !                    Have normal chisq when |P2| is below limit,
 !                    very small otherwise
@@ -157,7 +157,7 @@
         IF (sigma < 0.0) THEN
             w = (-1 * minval(P2)) - target
             targets(mtargets) = 0
-            vals(mtargets) = 0.5 * w * (1 + tanh(10 * w))
+            vals(mtargets) = 1 * w * (1 + tanh(1000 * w))
         ELSE
             vals(mtargets) = -1 * minval(P2)
         END IF

@@ -8,7 +8,7 @@
 !                    Here W > 0 implies stability
 !                    
 !                    Edited by A. LeViness (alevines@pppl.gov)
-!                    09/08/2020
+!                    03/30/2021
 !                    When sigma < 0, set a floor:
 !                    Make chisq very large when magwell is below target,
 !                    very small otherwise
@@ -60,7 +60,7 @@
             IF (sigma(ik) < 0.0) THEN
                x = target(ik) - W
                targets(mtargets) = 0
-               vals(mtargets) = 5 * x * (1 + tanh(100 * x))
+               vals(mtargets) = 100 * x * (1 + tanh(100000 * x))
             ELSE
                vals(mtargets) = W
             END IF
