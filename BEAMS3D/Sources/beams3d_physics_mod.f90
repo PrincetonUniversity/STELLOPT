@@ -438,20 +438,14 @@ MODULE beams3d_physics_mod
          plocal(num_depo) = ATAN2(qe(2),qe(1))
          zlocal(num_depo) = qe(3)
          DO i = 2, num_depo-1
-            rlocal(i) = (i-1)*(rlocal(num_depo)-rlocal(1))/REAL(num_depo-1) + rlocal(1)
-            plocal(i) = (i-1)*(plocal(num_depo)-plocal(1))/REAL(num_depo-1) + plocal(1)
-            zlocal(i) = (i-1)*(zlocal(num_depo)-zlocal(1))/REAL(num_depo-1) + zlocal(1)
+            qf = (i-1)*(qe-qs)/(REAL(num_depo-1)) + qs
+            rlocal(i) = sqrt(qf(1)*qf(1)+qf(2)*qf(2))
+            plocal(i) = atan2(qf(2),qf(1))
+            zlocal(i) = qf(3)
          END DO
-         plocal = MODULO(plocal, phimax)
+         plocal = MODULO(plocal, phimax) ! Dont need to check for negative then
          ! Compute temp/density along path
          DO l = 1, num_depo
-            !CALL R8HERM3xyz(rlocal(l),plocal(l),zlocal(l),&
-            !                TI_spl%x1(1),TI_spl%n1,&
-            !                TI_spl%x2(1),TI_spl%n2,&
-            !                TI_spl%x3(1),TI_spl%n3,&
-            !                TI_spl%ilin1,TI_spl%ilin2,TI_spl%ilin3,&
-            !                i,j,k,xparam,yparam,zparam,&
-            !                hx,hxi,hy,hyi,hz,hzi,ier)
             i = MIN(MAX(COUNT(raxis < rlocal(l)),1),nr-1)
             j = MIN(MAX(COUNT(phiaxis < plocal(l)),1),nphi-1)
             k = MIN(MAX(COUNT(zaxis < zlocal(l)),1),nz-1)
@@ -491,12 +485,12 @@ MODULE beams3d_physics_mod
             energy   = energy/(e_charge*A_in(1)) ! keV/amu
             DO l = 1, num_depo
                nelocal(l)  = MAX(MIN(nelocal(l),1E21),1E18)
-               telocal(l)  = MAX(MIN(telocal(l),energy(l)/2),1.0E-3)
+               telocal(l)  = MAX(MIN(telocal(l),energy(l)*0.5),energy(l)*0.01)
                ni_in(1) = nelocal(l)/zefflocal(l)
                Z_in(1)  = NINT(zefflocal(l))
                CALL suzuki_sigma(1,energy(l),nelocal(l),telocal(l),ni_in,A_in,Z_in,tau_inv(l))
             END DO
-            tau_inv = tau_inv*nelocal*ABS(q(4))*1E-4
+            tau_inv = tau_inv*nelocal*ABS(q(4))*1E-4 !cm^2 to m^2 for sigma
          ELSE
             !--------------------------------------------------------------
             !     USE ADAS to calcualte ionization rates
