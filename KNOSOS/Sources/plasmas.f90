@@ -34,9 +34,14 @@ SUBROUTINE READ_PLASMAS(nbb,ZEFF,s0,ZB,AB,nb,dnbdpsi,Tb,dTbdpsi,Epsi)
   !If there are more than two species, look for the effective charge 
   IF(nbb.GE.3) THEN
      DO ib=3,nbb   !Incorrect if nbb>3, especially if not trace
-        nb(ib)     =     ne*(ZEFF-1.)/ZB(ib)/(ZB(ib)-1)
-        dnbdpsi(ib)=dnedpsi*(ZEFF-1.)/ZB(ib)/(ZB(ib)-1)
-!        dnbdpsi(ib)=0 !eta'=0
+        IF(ib.EQ.3) THEN
+           nb(ib)     =     ne*(ZEFF-1.)/ZB(ib)/(ZB(ib)-1)
+           dnbdpsi(ib)=dnedpsi*(ZEFF-1.)/ZB(ib)/(ZB(ib)-1)
+        ELSE
+           nb(ib)=ne/1000.
+           dnbdpsi(ib)=dnedpsi/1000.
+        END IF
+        IF(ib.GT.nbulk.AND.SS_IMP) dnbdpsi(ib)=0        
      END DO
   END IF
   !Impose quasineutrality
@@ -83,7 +88,7 @@ SUBROUTINE READ_PLASMAS(nbb,ZEFF,s0,ZB,AB,nb,dnbdpsi,Tb,dTbdpsi,Epsi)
   !Impurities have the same temperature than the bulk ions
   Tb(2:nbb)     =Ti     *(1.0+RGAUSS(iperr))
   dTbdpsi(2:nbb)=dTidpsi*(1.0+RGAUSS(iperr))
- 
+  IF(nbb.GT.nbulk.AND.SS_IMP) dTbdpsi(nbulk+1:nbb)=0        
   !Read electrostatic potential (varphi0 is ignored)
   IF(.NOT.SOLVE_AMB) THEN
      IF(TRIVIAL_AMB) THEN
@@ -430,6 +435,7 @@ SUBROUTINE READ_PROFILE(s0,filename,q,dqdpsi,nbb)
      END DO
      ns=is-1
      CLOSE(1)
+     IF(rho(ns).LT.0.9) rho=rho/rad_a
      s=rho*rho
      dqdx_p(1)=(-3*q_p(1)+4*q_p(2)-q_p(3))/(rho(3)-rho(1))
      DO is=2,ns-1

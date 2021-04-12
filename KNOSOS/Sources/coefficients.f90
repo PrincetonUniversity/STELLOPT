@@ -222,7 +222,7 @@ SUBROUTINE EXTREME_POINT(z_in,t_in,flag_in,z_out,t_out,B_out,hBpp_out,vd,flag_ou
   dB=(dBdz+dBdt*iota)/iBtpBz  !not exactly dBdl, but proportional to it and with the same sign
 
   !Locate extrema of B by finding (z_l,t_l) where dBdl changes sign
-  DO WHILE (ABS(dz_l).GT.PREC_EXTR) 
+  DO WHILE (ABS(dz_l).GT.PREC_EXTR)
      dBold=dB
      z_l=z_l+dz_l
      t_l=t_l+dt_l 
@@ -256,6 +256,7 @@ SUBROUTINE EXTREME_POINT(z_in,t_in,flag_in,z_out,t_out,B_out,hBpp_out,vd,flag_ou
      GOTO 1
   END IF
 
+  
 END SUBROUTINE EXTREME_POINT
 
 
@@ -623,13 +624,13 @@ SUBROUTINE BOUNCES(iw,z1x,t1x,B1x,hBpp1x,vd1x, &
   REAL*8 Bp2,hBpp2,vd2(nqv)
   REAL*8 NaN
   !Time
-!  CHARACTER*30, PARAMETER :: routine="BOUNCES"
-!  INTEGER, SAVE :: ntotal=0
-!  REAL*8,  SAVE :: ttotal=0
-!  REAL*8,  SAVE :: t0=0
-!  REAL*8 tstart
+  CHARACTER*30, PARAMETER :: routine="BOUNCES"
+  INTEGER, SAVE :: ntotal=0
+  REAL*8,  SAVE :: ttotal=0
+  REAL*8,  SAVE :: t0=0
+  REAL*8 tstart
 
-!  CALL CPU_TIME(tstart)
+  CALL CPU_TIME(tstart)
 
 !  NaN=1/0. does not work for some compilers
   NaN=0.
@@ -666,7 +667,7 @@ SUBROUTINE BOUNCES(iw,z1x,t1x,B1x,hBpp1x,vd1x, &
        &             Bp2,hBpp2,vd2,  &
        &             zbx,bbx,hBppbx,vdbx,nq,Q)
   
-!  CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
+  CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
   
 END SUBROUTINE BOUNCES
 
@@ -736,7 +737,6 @@ SUBROUTINE BOUNCE_POINT(z_in,t_in,Bbounce,z_lim,t_lim, &
      B_old=B
      z_l=z_l+dz_l
      t_l=t_l+dt_l      !t_lim and z_lim are probably redundant
-     CALL FLUSH(iout)
      IF ((ABS(t_l-t_in).GT.ABS(t_lim-t_in)).OR.(ABS(z_l-z_in).GT.ABS(z_lim-z_in))) THEN
         z_l=z_l-dz_l     !do not go beyond (z_lim,t_lim)
         t_l=t_l-dt_l     !(there, no particles for small Bbounce, other wells for large Bbounce)
@@ -905,9 +905,14 @@ SUBROUTINE BOUNCE_INTEGRAL(iw,z_ini,t_ini,z_fin,t_fin,lambd, &
      END IF
 
      !Convergence is checked looking at the total integral (Q+Qana)
-     IF(nint.GE.nmin.AND.(dzl.LT.PREC_EXTR.OR.&
-          & (ABS(1-(Q(1)+Qana(1))/(Qold(1)+Qana(1))).LT.PREC_BINT.AND.&
-          & (ABS(1-(Q(2)+Qana(2))/(Qold(2)+Qana(2))).LT.PREC_BINT)))) EXIT
+!     IF(FAST_IONS) THEN
+!        IF(nint.GE.nmin.AND.(dzl.LT.PREC_EXTR.OR.&
+!             & (ABS(1-(Q(6)+Qana(6))/(Qold(6)+Qana(6))).LT.PREC_BINT))) EXIT
+!     ELSE
+        IF(nint.GE.nmin.AND.(dzl.LT.PREC_EXTR.OR.&
+             & (ABS(1-(Q(1)+Qana(1))/(Qold(1)+Qana(1))).LT.PREC_BINT.AND.&
+             & (ABS(1-(Q(2)+Qana(2))/(Qold(2)+Qana(2))).LT.PREC_BINT)))) EXIT
+!     END IF
           
      Qold=Q
      nfrac=nfrac*3
@@ -978,10 +983,11 @@ SUBROUTINE BOUNCE_INTEGRAND(iw,z_ini,z_l,t_l,cosnm,sinnm,lambd,nq,Qint)
   lambdaB0=lambd*B_0
   sqrt1mlb=SQRT(1.-lambdaB0)
   IF(lambdaB0.GE.1) THEN
-     IF(lambdaB0-1.GT.1E-4) THEN
-        serr="lambda*B>1"
+!     IF(lambdaB0-1.GT.1E-4) THEN
+     serr="lambda*B>1"
+!     WRITE(iout,*) 'lambda*B>1'
 !        CALL END_ALL(serr,.FALSE.)
-     END IF
+!     END IF
      RETURN
   END IF
   denom=aiBtpBz*B_0
@@ -1006,6 +1012,7 @@ SUBROUTINE BOUNCE_INTEGRAND(iw,z_ini,z_l,t_l,cosnm,sinnm,lambd,nq,Qint)
      END IF
      Qint(6)=sqrt1mlb                 ! J/2v
      Qint(7)=B_0/sqrt1mlb/2/sgnB      ! -(dJ/dlambda)/2v
+!     Qint(7)=B_0/sqrt1mlb/2      ! -(dJ/dlambda)/2v
      IF(SOLVE_QN) THEN                ! contribution of each mode to radial ExB drift
         factnm(1:Nnm)=(Btheta*np(1:Nnm)*nzperiod-Bzeta*mp(1:Nnm))/sqrt1mlb/aiBtpBz
         Qint(8    :7+Nnm )=-factnm(1:Nnm)*sinnm(1:Nnm)
@@ -1021,7 +1028,7 @@ SUBROUTINE BOUNCE_INTEGRAND(iw,z_ini,z_l,t_l,cosnm,sinnm,lambd,nq,Qint)
   END IF
 
   Qint(1:nq)=Qint(1:nq)*aiBtpBz/B_0   !dl=dz*(dz/dl)
-  IF(DEBUG.AND.(iw.EQ.J0.OR.J0.EQ.0)) & 
+  IF(DEBUG.AND.(iw.EQ.L0.OR.L0.EQ.0)) & 
        & WRITE(2200+myrank,'(I6,7(1pe13.5))') iw,z_l,(Qint(iq),iq=1,nq0),lambd
 
 !  CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
@@ -1076,7 +1083,7 @@ SUBROUTINE BOUNCE_INTEGRAND_MINF(iw,z_l,zb,lambda,Bb,Bpb,hBppb,vdb,nq,Qint)
   Qint(4)=Qint(4)-qdiv*vdb(2)
   Qint(5)=Qint(5)-qdiv*vdb(3)
 
-  IF(DEBUG.AND.(iw.EQ.J0.OR.J0.EQ.0)) WRITE(2300+myrank,'(I6,10(1pe13.5))') &
+  IF(DEBUG.AND.(iw.EQ.L0.OR.L0.EQ.0)) WRITE(2300+myrank,'(I6,10(1pe13.5))') &
   & iw,z_l,qdiv,qdiv-qdiv,qdiv*vdb(1),qdiv*vdb(2),qdiv*vdb(3),lambda
 
 END SUBROUTINE BOUNCE_INTEGRAND_MINF
@@ -1130,7 +1137,7 @@ SUBROUTINE ANA_INTEGRAL(iw,dzb,lambda,Bb,Bpb,hBppb,vdb,nq,Qana)
   Qana(4)=Qana(4)+Ib*vdb(2)
   Qana(5)=Qana(5)+Ib*vdb(3)
 
-  IF(DEBUG.AND.(iw.EQ.J0.OR.J0.EQ.0)) WRITE(2600+myrank,'(I6,10(1pe13.5))') iw,lambda,Ib
+  IF(DEBUG.AND.(iw.EQ.L0.OR.L0.EQ.0)) WRITE(2600+myrank,'(I6,10(1pe13.5))') iw,lambda,Ib
 
 END SUBROUTINE ANA_INTEGRAL
 

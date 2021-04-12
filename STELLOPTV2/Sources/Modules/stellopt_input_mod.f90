@@ -215,7 +215,8 @@
 !            target_knosos_1nu  Array of target values for drift kinetic optimization (1/nu regime)
 !            target_knosos_snu  Array of target values for drift kinetic optimization (sqrtnu regime)      
 !            target_knosos_sbp  Array of target values for drift kinetic optimization (sb-p regime)
-!            target_knosos_fic  Array of target values for drift kinetic optimization (fast ion confinement)
+!            target_knosos_gmc  Array of target values for drift kinetic optimization (gamma_c for fast ion confinement)
+!            target_knosos_gma  Array of target values for drift kinetic optimization (gamma_alpha fast ion confinement)
 !            target_knosos_qer  Array of target values for drift kinetic optimization (radial electric field and energy flux)
 !            target_knosos_vbt  Array of target values for drift kinetic optimization (test)
 !            target_knosos_vbb  Array of target values for drift kinetic optimization (test)
@@ -387,7 +388,8 @@
                          target_knosos_1nu, sigma_knosos_1nu, &
                          target_knosos_snu, sigma_knosos_snu, &
                          target_knosos_sbp, sigma_knosos_sbp, &
-                         target_knosos_fic, sigma_knosos_fic, &
+                         target_knosos_gmc, sigma_knosos_gmc, &
+                         target_knosos_gma, sigma_knosos_gma, &
                          target_knosos_qer, sigma_knosos_qer, &
                          target_knosos_vbt, sigma_knosos_vbt, &
                          target_knosos_vbb, sigma_knosos_vbb, &
@@ -980,8 +982,10 @@
       sigma_knosos_snu  = bigno
       target_knosos_sbp = 0.0
       sigma_knosos_sbp  = bigno
-      target_knosos_fic = 0.0
-      sigma_knosos_fic  = bigno
+      target_knosos_gmc = 0.0
+      sigma_knosos_gmc  = bigno
+      target_knosos_gma = 0.0
+      sigma_knosos_gma  = bigno
       target_knosos_qer = 0.0
       sigma_knosos_qer  = bigno
       target_knosos_vbt = 0.0
@@ -1372,7 +1376,7 @@
 !DEC$ ENDIF
 !DEC$ IF DEFINED (KNOSOS_OPT) 
       IF (myid == master .and. (ANY(sigma_knosos_1nu < bigno) .or. ANY(sigma_knosos_snu < bigno) .or. ANY(sigma_knosos_sbp < bigno) .or.&
-           ANY(sigma_knosos_fic < bigno) .or. ANY(sigma_knosos_qer < bigno) .or. ANY(sigma_knosos_vbt < bigno) .or. &
+           ANY(sigma_knosos_gmc < bigno) .or. ANY(sigma_knosos_gma < bigno) .or. ANY(sigma_knosos_qer < bigno) .or. ANY(sigma_knosos_vbt < bigno) .or. &
            ANY(sigma_knosos_vbb < bigno) .or. ANY(sigma_knosos_wbw < bigno) .or. ANY(sigma_knosos_dbo < bigno))) THEN
          WRITE(6,*)        " KiNetic Orbit-averaging SOlver for Stellarators (KNOSOS) provided by: "
          WRITE(6,"(2X,A)") "================================================================================="
@@ -1385,12 +1389,13 @@
       END IF
 !DEC$ ELSE
       IF (ANY(sigma_knosos_1nu < bigno) .or. ANY(sigma_knosos_snu < bigno) .or. ANY(sigma_knosos_sbp < bigno) .or.&
-           ANY(sigma_knosos_fic < bigno) .or. ANY(sigma_knosos_qer < bigno) .or. ANY(sigma_knosos_vbt < bigno) .or &
+           ANY(sigma_knosos_gmc < bigno) .or. ANY(sigma_knosos_gma < bigno) .or. ANY(sigma_knosos_qer < bigno) .or. ANY(sigma_knosos_vbt < bigno) .or. &
            ANY(sigma_knosos_vbb < bigno) .or. ANY(sigma_knosos_wbw < bigno) .or. ANY(sigma_knosos_dbo < bigno)) THEN
          IF (ANY(sigma_knosos_1nu < bigno)) sigma_knosos_1nu(:) = bigno
          IF (ANY(sigma_knosos_snu < bigno)) sigma_knosos_snu(:) = bigno
          IF (ANY(sigma_knosos_sbp < bigno)) sigma_knosos_sbp(:) = bigno
-         IF (ANY(sigma_knosos_fic < bigno)) sigma_knosos_fic(:) = bigno
+         IF (ANY(sigma_knosos_gmc < bigno)) sigma_knosos_gmc(:) = bigno
+         IF (ANY(sigma_knosos_gma < bigno)) sigma_knosos_gma(:) = bigno
          IF (ANY(sigma_knosos_qer < bigno)) sigma_knosos_qer(:) = bigno
          IF (ANY(sigma_knosos_vbt < bigno)) sigma_knosos_vbt(:) = bigno
          IF (ANY(sigma_knosos_vbb < bigno)) sigma_knosos_vbb(:) = bigno
@@ -1524,7 +1529,8 @@
       target_knosos_1nu(1)= 0.0;  sigma_knosos_1nu(1)= bigno
       target_knosos_snu(1)= 0.0;  sigma_knosos_snu(1)= bigno
       target_knosos_sbp(1)= 0.0;  sigma_knosos_sbp(1)= bigno
-      target_knosos_fic(1)= 0.0;  sigma_knosos_fic(1)= bigno
+      target_knosos_gmc(1)= 0.0;  sigma_knosos_gmc(1)= bigno
+      target_knosos_gma(1)= 0.0;  sigma_knosos_gma(1)= bigno
       target_knosos_qer(1)= 0.0;  sigma_knosos_qer(1)= bigno
       target_knosos_vbt(1)= 0.0;  sigma_knosos_vbt(1)= bigno
       target_knosos_vbb(1)= 0.0;  sigma_knosos_vbb(1)= bigno
@@ -2196,7 +2202,7 @@
          END DO
       END IF
       IF (ANY(sigma_knosos_1nu < bigno) .or. ANY(sigma_knosos_snu < bigno) .or. ANY(sigma_knosos_sbp < bigno) .or.&
-           ANY(sigma_knosos_fic < bigno) .or. ANY(sigma_knosos_qer < bigno) .or. ANY(sigma_knosos_vbt < bigno) .or.&
+           ANY(sigma_knosos_gmc < bigno) .or. ANY(sigma_knosos_gma < bigno) .or. ANY(sigma_knosos_qer < bigno) .or. ANY(sigma_knosos_vbt < bigno) .or. &
            ANY(sigma_knosos_vbb < bigno) .or. ANY(sigma_knosos_wbw < bigno) .or. ANY(sigma_knosos_dbo < bigno)) THEN
          WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
          WRITE(iunit,'(A)') '!          DRIFT-KINETICS (KNOSOS)'
@@ -2237,15 +2243,27 @@
 !                    'NU_KNOSOS(',ik,') = ',nu_knosos(ik)
             END DO
          END IF
-         IF(ANY(sigma_knosos_fic < bigno)) THEN
+         IF(ANY(sigma_knosos_gma < bigno)) THEN
             n=0
-            DO ik = 1,UBOUND(sigma_knosos_fic,DIM=1)
-               IF(sigma_knosos_fic(ik) < bigno) n=ik
+            DO ik = 1,UBOUND(sigma_knosos_gma,DIM=1)
+               IF(sigma_knosos_gma(ik) < bigno) n=ik
             END DO
             DO ik = 1, n
-               IF (sigma_knosos_fic(ik) < bigno) WRITE(iunit,"(3(2X,A,I3.3,A,ES22.12E3))") &
-                    'TARGET_KNOSOS_FIC(',ik,') = ',target_knosos_fic(ik), &
-                    'SIGMA_KNOSOS_FIC(',ik,') = ',sigma_knosos_fic(ik)!, &
+               IF (sigma_knosos_gma(ik) < bigno) WRITE(iunit,"(3(2X,A,I3.3,A,ES22.12E3))") &
+                    'TARGET_KNOSOS_GMA(',ik,') = ',target_knosos_gma(ik), &
+                    'SIGMA_KNOSOS_GMA(',ik,') = ',sigma_knosos_gma(ik)!, &
+!                    'NU_KNOSOS(',ik,') = ',nu_knosos(ik)
+            END DO
+         END IF
+         IF(ANY(sigma_knosos_gmc < bigno)) THEN
+            n=0
+            DO ik = 1,UBOUND(sigma_knosos_gmc,DIM=1)
+               IF(sigma_knosos_gmc(ik) < bigno) n=ik
+            END DO
+            DO ik = 1, n
+               IF (sigma_knosos_gmc(ik) < bigno) WRITE(iunit,"(3(2X,A,I3.3,A,ES22.12E3))") &
+                    'TARGET_KNOSOS_GMC(',ik,') = ',target_knosos_gmc(ik), &
+                    'SIGMA_KNOSOS_GMC(',ik,') = ',sigma_knosos_gmc(ik)!, &
 !                    'NU_KNOSOS(',ik,') = ',nu_knosos(ik)
             END DO
          END IF

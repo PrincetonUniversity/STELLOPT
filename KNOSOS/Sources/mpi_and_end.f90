@@ -66,7 +66,11 @@ SUBROUTINE DISTRIBUTE_MPI(ns,rank)
   
   IF(ns.EQ.1.AND.nerr.EQ.1) THEN
 
-     rank=0
+     IF(FAST_IONS) THEN
+        rank=myrank
+     ELSE
+        rank=0
+     END IF
 
   ELSE IF(numprocs.GE.nerr*ns) THEN
 

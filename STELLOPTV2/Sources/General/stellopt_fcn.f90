@@ -438,7 +438,7 @@
 !DEC$ IF DEFINED (KNOSOS_OPT)
          ctemp_str = 'knosos'
          IF ((ANY(sigma_knosos_1nu < bigno) .or. ANY(sigma_knosos_snu < bigno) .or. ANY(sigma_knosos_sbp < bigno) .or. &
-              ANY(sigma_knosos_fic < bigno) .or. ANY(sigma_knosos_qer < bigno) .or. ANY(sigma_knosos_vbt < bigno) .or. &
+              ANY(sigma_knosos_gmc < bigno) .or. ANY(sigma_knosos_gma < bigno) .or. ANY(sigma_knosos_qer < bigno) .or. ANY(sigma_knosos_vbt < bigno) .or. &
               ANY(sigma_knosos_vbb < bigno) .or. ANY(sigma_knosos_wbw < bigno) .or. ANY(sigma_knosos_dbo < bigno)) .and. (iflag>=0)) &
               CALL stellopt_paraexe(ctemp_str,proc_string,lscreen); iflag = ier_paraexe
 !DEC$ ENDIF

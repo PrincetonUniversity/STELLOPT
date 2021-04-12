@@ -259,8 +259,10 @@
          CALL chisq_knosos(target_knosos_snu, sigma_knosos_snu, ncnt,iflag , jtarget_knosos_snu)
       IF (ANY(sigma_knosos_sbp < bigno)) &
          CALL chisq_knosos(target_knosos_sbp, sigma_knosos_sbp, ncnt,iflag , jtarget_knosos_sbp)
-      IF (ANY(sigma_knosos_fic < bigno)) &
-         CALL chisq_knosos(target_knosos_fic, sigma_knosos_fic, ncnt,iflag , jtarget_knosos_fic)
+      IF (ANY(sigma_knosos_gmc < bigno)) &
+         CALL chisq_knosos(target_knosos_gmc, sigma_knosos_gmc, ncnt,iflag , jtarget_knosos_gmc)
+      IF (ANY(sigma_knosos_gma < bigno)) &
+         CALL chisq_knosos(target_knosos_gma, sigma_knosos_gma, ncnt,iflag , jtarget_knosos_gma)
       IF (ANY(sigma_knosos_qer < bigno)) &
          CALL chisq_knosos(target_knosos_qer, sigma_knosos_qer, ncnt,iflag , jtarget_knosos_qer)
       IF (ANY(sigma_knosos_vbt < bigno)) &

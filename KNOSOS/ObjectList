@@ -8,6 +8,7 @@ coefficients.o \
 configuration.o \
 database.o \
 errors.o \
+fast_ion_confinement.o \
 input.o \
 knosos.o \
 lagrange.o \

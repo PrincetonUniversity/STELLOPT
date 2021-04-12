@@ -1,57 +1,88 @@
 
 !Solve transport
 
-!!$SUBROUTINE TRANSPORT(nbb,ns,dt,s,Zb,Ab,nb,dnbdpsi,Gb,Sb,Tb,dTbdpsi,Qb,Pb,Epsi)
-!!$
-!!$!----------------------------------------------------------------------------------------------- 
-!!$!For densities and temperatures and electrostatic potential given by nb, dnbdpsi, Tb, dTbdpsi,
-!!$!and Er for nbb species of charge Zb and mass Ab at ns surfaces s, calculate evolution 
-!!$!after time step dt
-!!$!----------------------------------------------------------------------------------------------- 
-!!$  USE GLOBAL
-!!$  USE KNOSOS_STELLOPT_MOD
-!!$  IMPLICIT NONE
-!!$  !Input
-!!$  INTEGER nbb,ns
-!!$  REAL*8 dt,s(ns),Zb(nbb),Ab(nbb),Gb(nbb,ns),Sb(nbb,ns),Qb(nbb,ns),Pb(nbb,ns)
-!!$  !Input/output
-!!$  REAL*8 nb(nbb,ns),dnbdpsi(nbb,ns),Tb(nbb,ns),dTbdpsi(nbb,ns),Epsi(ns)
-!!$  !Others
-!!$  REAL*8, PARAMETER  ::  prefact_Epsi=1213173.45142083 !e/(8pi^2m)
-!!$  REAL*8, PARAMETER :: e4omemieps02=5516.42011 !units are m^6/s^4
-!!$  REAL*8, PARAMETER :: ne_edge=0.1
-!!$  REAL*8, PARAMETER :: Ti_edge=50.0
-!!$  REAL*8, PARAMETER :: Te_edge=50.0
-!!$  INTEGER ib,is,iostat
-!!$  REAL*8 dsdV(ns),dVdpsi(ns),dsdr(ns),psi(ns)
-!!$!  REAL*8 extnb(nbb,ns+1),extTb(nbb,ns+1)
-!!$  REAL*8 dGbdpsi(nbb,ns),dQbdpsi(nbb,ns),dEpsids(ns),dErdr(ns)
-!!$  REAL*8 Pin(ns),ohm(nbb,ns),coulomb(nbb,ns),nue(ns),loglambda(ns)
-!!$  REAL*8 dnbdt(nbb,ns),dTbdt(nbb,ns),dnbTbdt(nbb,ns),dEpsidt(ns)
-!!$  REAL*8 fact_Epsi(ns)
-!!$#ifdef MPIandPETSc
-!!$  INCLUDE "mpif.h"
-!!$
-!!$  IF(numprocs.GT.1) THEN
-!!$     DO ib=1,nbb
-!!$        CALL REAL_ALLREDUCE(nb(ib,:),ns)
-!!$        CALL REAL_ALLREDUCE(Gb(ib,:),ns)
-!!$        CALL REAL_ALLREDUCE(Sb(ib,:),ns)
-!!$        CALL REAL_ALLREDUCE(Tb(ib,:),ns)
-!!$        CALL REAL_ALLREDUCE(Qb(ib,:),ns)
-!!$        CALL REAL_ALLREDUCE(Pb(ib,:),ns)
-!!$     END DO
-!!$     CALL REAL_ALLREDUCE(Epsi,ns)
-!!$  END IF
-!!$
-!!$#endif     
-!!$
-!!$  dsdV=1./(TWOPI*PI*rad_R*rad_a*rad_a)
-!!$  dVdpsi=1./(dsdV*atorflux)
-!!$  dsdr=2*SQRT(s)/rad_a
-!!$  psi=atorflux*s
-!!$ 
-!!$  IF(myrank.EQ.0.AND.KN_STELLOPT(5)) THEN
+SUBROUTINE TRANSPORT(nbb,ns,dt,s,Zb,Ab,regb,nb,dnbdpsi,Gb,Sb,Tb,dTbdpsi,Qb,Pb,Epsi)
+
+!----------------------------------------------------------------------------------------------- 
+!For densities and temperatures and electrostatic potential given by nb, dnbdpsi, Tb, dTbdpsi,
+!and Er for nbb species of charge Zb and mass Ab at ns surfaces s, calculate evolution 
+!after time step dt
+!----------------------------------------------------------------------------------------------- 
+  USE GLOBAL
+  USE KNOSOS_STELLOPT_MOD
+  IMPLICIT NONE
+  !Input
+  INTEGER nbb,ns,regb(nbb)
+  REAL*8 dt,s(ns),Zb(nbb),Ab(nbb),Gb(nbb,ns),Sb(nbb,ns),Qb(nbb,ns),Pb(nbb,ns)
+  !Input/output
+  REAL*8 nb(nbb,ns),dnbdpsi(nbb,ns),Tb(nbb,ns),dTbdpsi(nbb,ns),Epsi(ns)
+  !Others
+  REAL*8, PARAMETER  ::  prefact_Epsi=1213173.45142083 !e/(8pi^2m)
+  REAL*8, PARAMETER :: e4omemieps02=5516.42011 !units are m^6/s^4
+  REAL*8, PARAMETER :: ne_edge=0.1
+  REAL*8, PARAMETER :: Ti_edge=50.0
+  REAL*8, PARAMETER :: Te_edge=50.0
+  REAL*8, PARAMETER :: cgb=10
+  REAL*8, PARAMETER :: fgb=0.000288993908
+  INTEGER ib,is!,iostat
+  REAL*8 dsdV(ns),dVdpsi(ns),dsdr(ns),psi(ns)
+  REAL*8 ds,Dgb(ns),Dnc(ns),dlnnbds(ns),expo(ns),nI(ns)
+!!  REAL*8 extnb(nbb,ns+1),extTb(nbb,ns+1)
+!  REAL*8 dGbdpsi(nbb,ns),dQbdpsi(nbb,ns),dEpsids(ns),dErdr(ns)
+!  REAL*8 Pin(ns),ohm(nbb,ns),coulomb(nbb,ns),nue(ns),loglambda(ns)
+!  REAL*8 dnbdt(nbb,ns),dTbdt(nbb,ns),dnbTbdt(nbb,ns),dEpsidt(ns)
+!  REAL*8 fact_Epsi(ns)
+#ifdef MPIandPETSc
+  INCLUDE "mpif.h"
+
+  IF(numprocs.GT.1) THEN
+     DO ib=1,nbb
+        CALL REAL_ALLREDUCE(nb(ib,:),ns)
+        CALL REAL_ALLREDUCE(Gb(ib,:),ns)
+        CALL REAL_ALLREDUCE(Sb(ib,:),ns)
+        CALL REAL_ALLREDUCE(Tb(ib,:),ns)
+        CALL REAL_ALLREDUCE(Qb(ib,:),ns)
+        CALL REAL_ALLREDUCE(Pb(ib,:),ns)
+     END DO
+     CALL REAL_ALLREDUCE(Epsi,ns)
+  END IF
+
+#endif
+
+  dt=dt
+  dnbdpsi=dnbdpsi
+  
+  IF(.NOT.SS_IMP) RETURN
+  
+  dsdV=1./(TWOPI*PI*rad_R*rad_a*rad_a)
+  dVdpsi=1./(dsdV*atorflux)
+  dsdr=2*SQRT(s)/rad_a
+  psi=atorflux*s
+
+
+  DO ib=nbulk+1,nbb
+     IF(regb(ib).EQ.2) THEN
+        delta=1.5
+     ELSE
+        delta=3.5
+     END IF    
+     Dgb(:)=fgb*cgb*((Tb(ib,:)/Ab(ib))**1.5/(Zb(ib)*borbic(0,0)/Ab(ib))**2)*rad_a/rad_R/rad_R
+     Dnc(:)=Gb(ib,:)/(Zb(ib)*Epsi(:)/Tb(ib,:))
+     dlnnbds(:)=(Zb(ib)*Epsi(:)/Tb(ib,:)-delta*dTbdpsi(ib,:)/Tb(ib,:))*Dnc(:)/(Dnc(:)+Dgb(:))
+     !Integral
+     expo=0
+     expo(1)=dlnnbds(1)*s(1)/2.
+     DO is=2,ns
+        ds=s(is)-s(is-1)
+        expo(is)=expo(is)+0.5*(dlnnbds(is)+dlnnbds(is-1))*ds
+     END DO
+     nI(:)=EXP(expo(:))/EXP(expo(ns))
+     DO is=1,ns
+        WRITE(7000+myrank,'(1000(1pe13.5))') s,Epsi*psip,Tb(ib,is),dlnnbds(is),nI(is)
+     END DO
+  END DO
+ 
+!!$  IF(myrank.EQ.0.AND.KN_STELLOPT(x)) THEN
 !!$     Pin=0
 !!$     DO ib=1,nbb
 !!$        Pin=Pin+Qb(ib,:)*nb(ib,:)*Tb(ib,:)*1.60218*dVdpsi
@@ -122,10 +153,10 @@
 !!$!     CALL DERIVE(extpsi,extTb(ib,:),ns,4,dTbdpsi(ib,:))
 !!$!  END DO
 !!$  Epsi=Epsi+dt*dEpsidt    
-!!$
-!!$END SUBROUTINE TRANSPORT
-!!$
-!!$
+
+END SUBROUTINE TRANSPORT
+
+
 !!$!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!$!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!$

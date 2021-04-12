@@ -3,10 +3,10 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-SUBROUTINE CALC_DATABASE(is,s0)
+SUBROUTINE CALC_DATABASE(s,is,ns)
 
 !----------------------------------------------------------------------------------------------- 
-!Solve the monoenergetic drift kinetic equation at s0 for several values of cmul and efield,
+!Solve the monoenergetic drift kinetic equation at s(is) for several values of cmul and efield,
 !either hard-coded or read from namelist 'parameters'
 !Generate a database of transport coefficients that can be:
 !-compared with DKES;
@@ -17,8 +17,8 @@ SUBROUTINE CALC_DATABASE(is,s0)
   USE KNOSOS_STELLOPT_MOD
   IMPLICIT NONE
   !Input 
-  INTEGER is
-  REAL*8 s0
+  INTEGER is,ns
+  REAL*8 s(ns)
   !Others
   CHARACTER*100 filename
   INTEGER nalphab
@@ -63,6 +63,12 @@ SUBROUTINE CALC_DATABASE(is,s0)
   !if not low-collisionality problems
   cmul_PS=1E10
   cmul_1NU=1E10
+
+  IF(KN_STELLOPT(4)) THEN
+     CALL CALC_FAST_ION_CONFINEMENT(S,NS,MAL,MLAMBDA)
+     IF(.NOT.KN_STELLOPT(1)) RETURN
+  END IF
+  
   IF(.NOT.JPP.AND..NOT.NO_PLATEAU) THEN
      cmul_PS =-1.0   !this may be necessary if there is 
      cmul_1NU=-1.0   !some connection imposed between regimes
@@ -145,7 +151,7 @@ SUBROUTINE CALC_DATABASE(is,s0)
         WRITE(6000+myrank,'("cc")')  
      END IF
      WRITE(6000+myrank,'(5(1pe13.5),"  NaN",1pe13.5,"  r,R,B,io,xkn,ft,<b^2>")') &
-          & SQRT(s0)*rad_a,rad_R,borbic(0,0),ABS(iota),ABS(borbic(0,1))/eps,avb2
+          & SQRT(s(is))*rad_a,rad_R,borbic(0,0),ABS(iota),ABS(borbic(0,1))/eps,avb2
      IF(is.EQ.1) WRITE(6000+myrank,'("c         eps_eff     g11_ft      efield_u    g11_er    ex_er")')  
      WRITE(6000+myrank,'("cfit ",2(1pe13.5),"      NaN        NaN      NaN")') eps_eff,g11_ft
 

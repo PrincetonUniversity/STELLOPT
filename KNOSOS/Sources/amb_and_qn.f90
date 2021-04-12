@@ -140,7 +140,7 @@ SUBROUTINE SOLVE_DKE_QN_AMB(it,NBB,ZB,AB,REGB,S,nb,dnbdpsi,Tb,dTbdpsi,Epsi,Gb,Qb
         WRITE(600+myrank,'(1000(1pe13.5))') s,Epsi*psip,&
              & (Gb(ib)/psip,Qb(ib)/psip,L1b(ib)/psip/psip,L2b(ib)/psip/psip,&
              & nb(ib),dnbdpsi(ib)/nb(ib)*psip,Tb(ib),dTbdpsi(ib)/Tb(ib)*psip,&
-             & zb(ib),ib=1,MIN(2,NBB)),ephi1oTsize,iota,spol,psip
+             & zb(ib),ib=1,MAX(2,NBB)),ephi1oTsize,iota,spol,psip
 
         IF(TASK3D) WRITE(5600+myrank,'(1000(1pe13.5))') SQRT(s),&
              & nb(1)*1E19,nb(2)*1E19,ZERO,Tb(1),Tb(2),ZERO,&
@@ -151,16 +151,24 @@ SUBROUTINE SOLVE_DKE_QN_AMB(it,NBB,ZB,AB,REGB,S,nb,dnbdpsi,Tb,dTbdpsi,Epsi,Gb,Qb
 
      !Find most stable root
      IF(nroot.GT.1) THEN
-        DO iEpsi=1,NER
-           Epsi=Epsimin+(iEpsi-1)*dEpsi
-           IF(Epsi.GT.Epsi1(1).AND.Epsi.LT.Epsi2(3)) q=q+Jr(iEpsi)
-        END DO
-        IF(q.GE.0) THEN
+        IF(ER_ROOT.EQ.-1) THEN
            Epsi=Epsi1(1)
            CALL CALC_FLUXES(it,NBB,ZB,AB,REGB,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,&
                 & Gb,Qb,L1b,L2b,ephi1oTsize)   
-        ELSE
+        ELSE IF(ER_ROOT.EQ.1) THEN
            Epsi=Epsi1(3)
+        ELSE
+           DO iEpsi=1,NER
+              Epsi=Epsimin+(iEpsi-1)*dEpsi
+              IF(Epsi.GT.Epsi1(1).AND.Epsi.LT.Epsi2(3)) q=q+Jr(iEpsi)
+           END DO
+           IF(q.GE.0) THEN
+              Epsi=Epsi1(1)
+              CALL CALC_FLUXES(it,NBB,ZB,AB,REGB,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,&
+                   & Gb,Qb,L1b,L2b,ephi1oTsize)   
+           ELSE
+              Epsi=Epsi1(3)
+           END IF
         END IF
      ELSE IF(nroot.EQ.0) THEN
         Gb=0
@@ -310,14 +318,15 @@ SUBROUTINE CALC_FLUXES(it,NBB,ZB,AB,REGB,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,Gb,Qb,L1b,
 
   phi1c=0
 
+
   DO jt=MOD(jt0,10),jt0
      
-     IF(jt.EQ.0.AND.(.NOT.DKES_READ.OR..NOT.(REGB(1).EQ.-1.AND.REGB(2).EQ.-1))) CYCLE
+!     IF(jt.EQ.0.AND.(.NOT.DKES_READ.OR..NOT.(REGB(1).EQ.-1.AND.REGB(2).EQ.-1))) CYCLE
 !     IF(jt.GT.0.AND.SUM(regb(1:nbb)).EQ.0) CYCLE
      IF((MOD(jt0,10).NE.MOD(jt,10)).AND.jt.NE.0) CYCLE
 
      IF(jt.EQ.00) WRITE(iout,&
-          & '(" Using DKES transport coefficients")')
+          & '(" Using DKES transport coefficients if available")')
      IF(jt.EQ.01) WRITE(iout,&
           & '(" Without tangential magnetic drift, not solving quasineutrality")')
      IF(jt.EQ.02) WRITE(iout,&
@@ -337,7 +346,6 @@ SUBROUTINE CALC_FLUXES(it,NBB,ZB,AB,REGB,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,Gb,Qb,L1b,
         IF(ib.EQ.1) WRITE(iout,'(" Electrons")')
         IF(ib.EQ.2) WRITE(iout,'(" Bulk ions, Z=",f3.0,", A=",f6.3)') ZB(ib),AB(ib)
         IF(ib.GT.2) WRITE(iout,'(" Impurities #",I2,", Z=",f4.0,", A=",f8.4)') ib,ZB(ib),AB(ib)
-
         !Calculate (v,species)-dependent constants
         CALL DKE_CONSTANTS(ib,NBB,ZB,AB,REGB,nb,dnbdpsi,Tb,dTbdpsi,Epsi,.TRUE.)      
         D11=0 !default: adiabatic
@@ -367,7 +375,7 @@ SUBROUTINE CALC_FLUXES(it,NBB,ZB,AB,REGB,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,Gb,Qb,L1b,
 
               !Check convergence
               dL2dv=D11(1,1)*x2(iv)*weight(iv)
-              IF(DEBUG) WRITE(4400+myrank,'(2I4,30(1pe13.5))') ib,iv,s,Epsi*psip,L2rhs(ib,1,1),dL2dv
+              IF(DEBUG) WRITE(4400+myrank,'(2I4,30(1pe13.5))') ib,iv,s,Epsi*psip,x2(iv),L2rhs(ib,1,1),dL2dv
               !Check convergence
               IF(regb(ib).GT.-2.AND.iv.GT.iv0.AND.jv(2).GT.jv(1).AND.PREC_INTV.GT.0) THEN
                   IF (dL2dV.LT.PREC_DQDV*L2rhs(ib,1,1)) THEN
@@ -492,7 +500,7 @@ SUBROUTINE CALC_FLUXES(it,NBB,ZB,AB,REGB,s,nb,dnbdpsi,Tb,dTbdpsi,Epsi,Gb,Qb,L1b,
       !Plots results
       CALL PLOT_FLUX(jt,jt0,nbb,s,Epsi,Gb,Qb,L1b,L2b,Zb,nb,dnbdpsi,Tb,dTbdpsi,ephi1oTsize,&
            & Grhs(:,1,1),Qrhs(:,1,1),L1rhs(:,1,1),L2rhs(:,1,1),Gphi,Qphi,L1phi,L2phi)
-
+      
    END DO
    DEALLOCATE(Grhs,Qrhs,L1rhs,L2rhs,Gphi,Qphi,L1phi,L2phi)
    DEALLOCATE(n1nmrhs,Mbbnmrhs,trMnmrhs)
@@ -561,23 +569,7 @@ SUBROUTINE CALC_MONOENERGETIC(ib,Zb,Ab,regb,regp,jt,iv,Epsi,phi1c,Mbbnm,trMnm,&
      END IF
   END IF
   !Determine regime in which species ib is:
-  IF(regb.EQ.-1) THEN !use DKES
-     IF(.NOT.DKES_READ) RETURN
-     CALL INTERP_DATABASE(jt-1,iv,Epsi,D11(1,1),D31,.FALSE.) 
-     !Correction of DKES with the effect of the tangential magnetic drift
-     IF(TANG_VM.AND.cmul.LT.cmul_1nu) THEN
-        CALL CALC_LOW_COLLISIONALITY(iv,Epsi,phi1c,Mbbnm,trMnm,&
-             & dD11,nalphab,zeta,theta,dn1dv,dn1nmdv)
-        D11(1,1)=D11(1,1)+dD11(1,1)
-        TANG_VM=.FALSE.  
-        INC_EXB=.TRUE.
-        CALL CALC_LOW_COLLISIONALITY(iv,Epsi,phi1c,Mbbnm,trMnm,&
-             & dD11,nalphab,zeta,theta,dn1dv,dn1nmdv)
-        D11(1,1)=D11(1,1)-dD11(1,1)
-        TANG_VM=.TRUE.
-        INC_EXB=.FALSE.
-     END IF
-  ELSE IF(regb.EQ.0) THEN      !depends on collisionality
+  IF(regb.LE.0) THEN  !depends on collisionality
      IF(cmul.GT.cmul_1NU) THEN
         IF(DKES_READ) THEN
            CALL INTERP_DATABASE(jt-1,iv,Epsi,D11(1,1),D31,.FALSE.)
@@ -590,11 +582,30 @@ SUBROUTINE CALC_MONOENERGETIC(ib,Zb,Ab,regb,regp,jt,iv,Epsi,phi1c,Mbbnm,trMnm,&
            END IF
         END IF
      ELSE
-        IF(FAST_AMB) THEN
-           CALL INTERP_DATABASE(jt-1,iv,Epsi,D11(1,1),D31,.TRUE.) 
-        ELSE
-           CALL CALC_LOW_COLLISIONALITY(iv,Epsi,phi1c,Mbbnm,trMnm,&
-                & D11,nalphab,zeta,theta,dn1dv,dn1nmdv)
+        IF(regb.EQ.-1.AND.DKES_READ) THEN
+           CALL INTERP_DATABASE(jt-1,iv,Epsi,D11(1,1),D31,.FALSE.)
+           !Correction of DKES with the effect of the tangential magnetic drift
+           IF(TANG_VM) THEN
+              CALL CALC_LOW_COLLISIONALITY(iv,Epsi,phi1c,Mbbnm,trMnm,&
+                   & dD11,nalphab,zeta,theta,dn1dv,dn1nmdv)
+!              D11(1,1)=D11(1,1)*dD11(1,1)
+              D11(1,1)=D11(1,1)+dD11(1,1)
+              TANG_VM=.FALSE.  
+              INC_EXB=.TRUE.
+              CALL CALC_LOW_COLLISIONALITY(iv,Epsi,phi1c,Mbbnm,trMnm,&
+                   & dD11,nalphab,zeta,theta,dn1dv,dn1nmdv)
+!              D11(1,1)=D11(1,1)/dD11(1,1)
+              D11(1,1)=D11(1,1)-dD11(1,1)
+              TANG_VM=.TRUE.
+              INC_EXB=.FALSE.
+           END IF
+        ELSE IF(regb.EQ.0.OR..NOT.DKES_READ) THEN
+           IF(FAST_AMB) THEN
+              CALL INTERP_DATABASE(jt-1,iv,Epsi,D11(1,1),D31,.TRUE.) 
+           ELSE
+              CALL CALC_LOW_COLLISIONALITY(iv,Epsi,phi1c,Mbbnm,trMnm,&
+                   & D11,nalphab,zeta,theta,dn1dv,dn1nmdv)
+           END IF
         END IF
      END IF !regime set from input
   ELSE IF(regb.EQ.1) THEN

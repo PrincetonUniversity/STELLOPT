@@ -181,11 +181,10 @@ SUBROUTINE CALC_B0
   LOGICAL shift_twopi
   INTEGER iz,iz0,it,ieta,iturn,ibranch,imat,ipar,n,m,np1,mp1,fint
   INTEGER izmin(npt),hel_N,hel_M
-  REAL*8 Bmax,epsilon,iotat,dist,distb
-  REAL*8 Bmax_th(npt),Bmin_th(npt),val_B(nsurf),Bzt(npt,npt),B0(npt,npt),B0zt(npt,npt),Bg(npt),Btemp
+  REAL*8 epsilon,iotat,dist,distb
+  REAL*8 Bmax_th(npt),Bmin_th(npt),val_B(nsurf),Bzt(npt,npt),B0(npt,npt),B0zt(npt,npt),Bg(npt)!,Btemp
   REAL*8 Bmax_var,Bmin_var
   REAL*8 val_eta(nsurf),zeta(npt),theta(npt),temp(npt),zetat(npt,npt),zetal(nsurf,npt),zeta0(npt,npt)
-  REAL*8 WBW0,WBW1,WBW2,WBW3
   !Matrix
   INTEGER ierr,lwork,rank
   INTEGER, ALLOCATABLE :: iwork(:)
@@ -292,26 +291,9 @@ SUBROUTINE CALC_B0
   END DO
 
   !Find maximum of B, minimum of B and contours of minima B
-  WBW0=0
-  WBW1=0
-  WBW2=0
-  WBW3=0
   DO it=1,npt
      DO iz=1,npt
-        IF(KN_STELLOPT(8).AND.iz.LE.npt/2) THEN
-           WBW0=WBW0+Bzt(iz,it)*zeta(iz)*zeta(iz)
-           WBW1=WBW1+Bzt(iz,it)*zeta(iz)
-           IF(zeta(iz)/PI.LT.0.5) THEN
-              WBW2=WBW2+Bzt(iz,it)*zeta(iz)
-           ELSE
-              WBW2=WBW2+Bzt(iz,it)
-           END IF
-           IF(zeta(iz)/PI.LT.0.2) THEN
-              WBW3=WBW3+Bzt(iz,it)*zeta(iz)*zeta(iz)*zeta(iz)
-           ELSE
-              WBW3=WBW3+Bzt(iz,it)*0.008
-           END IF
-        END IF
+        IF(KN_STELLOPT(8).AND.iz.LE.npt/2) KN_WBW=KN_WBW+Bzt(iz,it)*zeta(iz)*zeta(iz)
         IF(Bzt(iz,it).GT.Bmax_th(it)) Bmax_th(it)=Bzt(iz,it)
         IF(Bzt(iz,it).LT.Bmin_th(it)) THEN
            Bmin_th(it)=Bzt(iz,it)
@@ -327,25 +309,7 @@ SUBROUTINE CALC_B0
   END DO
   Bmax_av=Bmax_av/npt
   Bmin_av=Bmin_av/npt
-  IF(KN_STELLOPT(8)) THEN
-     WBW0=WBW0/(borbic(0,0)*TWOPI*TWOPI*npt*npt/2)
-     WBW1=WBW1/(borbic(0,0)*TWOPI*npt*npt/2)
-     WBW2=WBW2/(borbic(0,0)*TWOPI*npt*npt/2)
-     WBW3=WBW3/(borbic(0,0)*TWOPI*npt*npt/2)
-     IF(WBW.EQ.0) THEN
-        KN_WBW=WBW0
-     ELSE IF(WBW.EQ.1) THEN
-        KN_WBW=WBW1
-     ELSE IF(WBW.EQ.2) THEN
-        KN_WBW=WBW2
-     ELSE IF(WBW.EQ.3) THEN
-        KN_WBW=WBW3
-     END IF
-     WRITE(iout,*) 'WBW0=',WBW0
-     WRITE(iout,*) 'WBW1=',WBW1
-     WRITE(iout,*) 'WBW2=',WBW2
-     WRITE(iout,*) 'WBW3=',WBW3
-  END IF
+  IF(KN_STELLOPT(8)) KN_WBW=KN_WBW/(borbic(0,0)*TWOPI*TWOPI*npt*npt/2)
   IF(KN_STELLOPT(6)) KN_VBT=(Bmax_var/npt-Bmax_av*Bmax_av)/borbic(0,0)/borbic(0,0)
   IF(KN_STELLOPT(7)) KN_VBB=(Bmin_var/npt-Bmin_av*Bmin_av)/borbic(0,0)/borbic(0,0)
   borbic0=borbic
