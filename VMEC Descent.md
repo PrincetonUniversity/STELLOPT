@@ -18,7 +18,7 @@ $$V=\frac{\partial X}{\partial t},~\frac{\partial V}{\partial t} + \frac{1}{\tau
 
 From the appendix of that paper the best choice for $$\tau$$ is found to be:
 
-$$\frac{1}{\tau} = -\frad{d}{dt}\left(ln\left(|F|^2\right)\right)$$
+$$\frac{1}{\tau} = -\frac{d}{dt}\left(ln\left(|F|^2\right)\right)$$
 
 In the paper they proposd and algorithm with $$P=V/\Delta t$$ giving,
 
@@ -26,7 +26,7 @@ $$P_n = \beta_nP_{n-1}+F_n$$
 
 $$X_{n+1} = X_n + \left(\Delta t\right)^2P_n$$
 
-where $$beta_n=|F|^2_n/|F|^2_{n-1}$$
+where $$\beta_n=\left|F\right|^2_n/\left|F\right|^2_{n-1}$$
 
 which resembles the momentum method ($$\beta\lt1$$ fixed), but with a 
 dependence on $$F_n$$ and $$F_{n-1}$$ which are likely to vary a
