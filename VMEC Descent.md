@@ -18,7 +18,7 @@ $$V=\frac{\partial X}{\partial t},~\frac{\partial V}{\partial t} + \frac{1}{\tau
 
 From the appendix of that paper the best choice for $$\tau$$ is found to be:
 
-$$\frac{1}{\tau} = -\frac{d}{dt}\left(ln\left(|F|^2\right)\right)$$
+$$\frac{1}{\tau} = -\frac{d}{dt}\left(ln\left(|F|^2\right)\right) \Rightarrow \frac{\Delta t}{\tau}=-ln\left(|F|^2_n/|F|^2_{n-1}\right)$$
 
 In the paper they proposd and algorithm with $$P=V/\Delta t$$ giving,
 
@@ -54,4 +54,10 @@ $$\frac{\left(V_n-V_{n-1}\right)}{\Delta t}+\frac{1}{\tau_n}\frac{\left(V_n+V_{n
 
 or equivalently
 
-$$\left(1+\frac{\Delta t}{2\tau_n}\right)P_n - \left(1-\frac{\Delta t}{2\tau_n}\right)P_{n-1} = F_n
+$$\left(1+\frac{\Delta t}{2\tau_n}\right)P_n - \left(1-\frac{\Delta t}{2\tau_n}\right)P_{n-1} = F_n $$
+
+The code defines $$\bar\tau=<\hattau_n,...,\hat\tau_{n-9}>\Delta t_n/2$$ where
+
+$$ \hat\tau_n = min\left(0.15, |ln\left(\frac{|F|^2_n}{|F|^2_n-1}\right)|\right)/\Delta t_n$$
+
+this implies that $$\hat\tau\in\left[0.00,0.15\right]/\Delta t_n$$.  We note that in this formulation $$F$$ is the preconditioned force.  If $$\Delta t$$ is reduced (because of the Jacobian becoming negative), the iteration is restarted form the initial state.
