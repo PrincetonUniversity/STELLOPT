@@ -56,7 +56,7 @@ or equivalently
 
 $$\left(1+\frac{\Delta t}{2\tau_n}\right)P_n - \left(1-\frac{\Delta t}{2\tau_n}\right)P_{n-1} = F_n $$
 
-The code defines $$\bar\tau=<\hattau_n,...,\hat\tau_{n-9}>\Delta t_n/2$$ where
+The code defines $$\bar\tau=<\hat\tau_n,...,\hat\tau_{n-9}>\Delta t_n/2$$ where
 
 $$ \hat\tau_n = min\left(0.15, |ln\left(\frac{|F|^2_n}{|F|^2_n-1}\right)|\right)/\Delta t_n$$
 
