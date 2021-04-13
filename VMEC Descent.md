@@ -58,7 +58,7 @@ $$\left(1+\frac{\Delta t}{2\tau_n}\right)P_n - \left(1-\frac{\Delta t}{2\tau_n}\
 
 Thus the code defines $$\frac{\Delta t}{2\tau_n}=:\bar\tau_n:=<\hat\tau_n,...,\hat\tau_{n-9}>\Delta t_n/2$$ where
 
-$$ \hat\tau_n = min\left(0.15, |ln\left(\frac{|F|^2_n}{|F|_{n-1}}\right)|\right)/\Delta t_n$$
+$$ \hat\tau_n = min\left(0.15, |ln\left(\frac{|F|^2_n}{|F|^2_{n-1}}\right)|\right)/\Delta t_n$$
 
 this implies that $$\hat\tau_n\in\left[0.00,0.15\right]/\Delta t_n$$.  
 
