@@ -26,7 +26,9 @@ $$P_n = \beta_nP_{n-1}+F_n$$
 
 $$X_{n+1} = X_n + \left(\Delta t\right)^2P_n$$
 
-where $$\beta_n=\lvertF\rvert^2_n/\left|F\right|^2_{n-1}$$
+where 
+
+$$\beta_n=|F|^2_n/|F|^2_{n-1}$$
 
 which resembles the momentum method ($$\beta\lt1$$ fixed), but with a 
 dependence on $$F_n$$ and $$F_{n-1}$$ which are likely to vary a
@@ -45,3 +47,11 @@ with $$\bar\tau_n$$ averaged over the last 10 iterations.
 The timestep within a given iteration can be assumed to be constant which implies a specific time discretization of velocity:
 
 $$\frac{\partial V}{\partial t} + \frac{1}{\tau}V = F\left(X\right)$$
+
+which can be rewritten
+
+$$\frac{\left(V_n-V_{n-1}\right)}{\Delta t}+\frac{1}{\tau_n}\frac{\left(V_n+V_{n-1}\right)}{2} = F_n$$
+
+or equivalently
+
+$$\left(1+\frac{\Delta t}{2\tau_n}\right)P_n - \left(1-\frac{\Delta t}{2\tau_n}\right)P_{n-1} = F_n
