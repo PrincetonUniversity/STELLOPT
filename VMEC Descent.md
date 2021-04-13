@@ -7,7 +7,7 @@ by Florian Hindenlang.
 
 ---
 
-The published algorithm by (Hirshman and Betancourt, 1991) is a
+The published algorithm by ([Hirshman and Betancourt, 1991](https://doi.org/10.1016/0021-9991(91)90267-O)) is a
 Richardson scheme of the form:
 
 $$\frac{\partial^2 X}{\partial t^2} + \frac{1}{\tau}\frac{\partial X}{\partial t} = F\left(X\right)$$
