@@ -410,6 +410,7 @@ Python: PySTEL is also available in the repository.
 - [VMEC Advanced Profiles](VMEC Advanced Profiles)
 - [VMEC PEST1 Coordinates](VMEC PEST1 Coordinates)
 - [Toroidal Coordinate](Toroidal Coordinates)
+- [VMEC Descent Algorithm](VMEC Descent)
 
 ------------------------------------------------------------------------
 
