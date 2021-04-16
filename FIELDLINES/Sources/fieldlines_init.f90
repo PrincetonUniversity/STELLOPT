@@ -13,6 +13,7 @@
       USE vmec_input,  ONLY: extcur_in => extcur, read_indata_namelist,&
                              nv_in => nzeta, nfp_in => nfp, nigroup
       USE read_wout_mod, ONLY:  read_wout_file, rmin_surf, rmax_surf, zmax_surf
+      USE read_hint_mod, ONLY: read_hint_mag, get_hint_grid
       USE fieldlines_runtime
       USE fieldlines_grid
       USE fieldlines_input_mod, ONLY: read_fieldlines_input
@@ -88,6 +89,13 @@
       ELSE IF (lspec) THEN
          CALL read_fieldlines_input('input.' // TRIM(id_string),ier,myworkid)
          IF (lverb) WRITE(6,'(A)') '   FILE: input.' // TRIM(id_string)
+      ELSE IF (lhint) THEN
+         CALL read_fieldlines_input(TRIM(id_string)//'.input',ier,myworkid)
+         IF (lverb) WRITE(6,'(A)') '   FILE:     ' // TRIM(id_string) // '.input'
+         IF (lverb) WRITE(6,'(A)') '   MAG_FILE: ' // TRIM(id_string) // '.magslice'
+         CALL read_hint_mag(TRIM(id_string)//'.magslice',ier)
+         phimin = 0
+         CALL get_hint_grid(nr,nz,nphi,rmin,rmax,zmin,zmax,phimax)
       END IF
 
       ! TESTING LMU
@@ -202,6 +210,8 @@
          !CALL fieldlines_init_pies
       ELSE IF (lspec .and. .not.lvac) THEN
          !CALL fieldlines_init_spec
+      ELSE IF (lhint .and. .not.lvac) THEN
+         CALL fieldlines_init_hint
       END IF
 
       !ERROR FIELD code section

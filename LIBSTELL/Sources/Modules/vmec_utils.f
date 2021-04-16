@@ -1041,11 +1041,19 @@ C-----------------------------------------------
 !     COMPUTE Ru, Zu, Rv, Zv IF REQUIRED
 !
       IF ((PRESENT(ru) .or. PRESENT(zu) .or. 
-     1     PRESENT(rv) .or. PRESENT(zv)) .and. info.eq.0)
-     2    CALL flx2cyl(rzl_in, c_flx, r_cyl_out, ns_loc, ntor_loc, 
-     3         mpol_loc, ntmax_loc, lthreed_loc, lasym_loc, 
-     4         iflag, MSCALE=mscale, NSCALE=nscale, 
-     5         RU=ru, ZU=zu, RV=rv, ZV=zv)
+     1     PRESENT(rv) .or. PRESENT(zv)) .and. info.eq.0) THEN
+         IF (lscale) THEN
+            CALL flx2cyl(rzl_in, c_flx, r_cyl_out, ns_loc, ntor_loc, 
+     1         mpol_loc, ntmax_loc, lthreed_loc, lasym_loc, 
+     2         iflag, MSCALE=mscale_loc, NSCALE=nscale_loc, 
+     3         RU=ru, ZU=zu, RV=rv, ZV=zv)
+         ELSE
+            CALL flx2cyl(rzl_in, c_flx, r_cyl_out, ns_loc, ntor_loc, 
+     1         mpol_loc, ntmax_loc, lthreed_loc, lasym_loc, 
+     2         iflag, 
+     3         RU=ru, ZU=zu, RV=rv, ZV=zv)
+         END IF
+      END IF
 
     
       END SUBROUTINE cyl2flx
@@ -1174,8 +1182,8 @@ C-----------------------------------------------
          snew = xc_opt(1) + dels*factor
          IF (snew .lt. zero) THEN
             xc_opt(1) = -snew/2               !Prevents oscillations around origin s=0
-            xc_opt(2) = xc_opt(2) + twopi/2 
-            delu = -delu
+            !xc_opt(2) = xc_opt(2) + twopi/2 
+            !delu = -delu
 !             factor = (-snew/2-xc_opt(1))/dels
 !             xc_opt(1) = -snew/2
          ELSE

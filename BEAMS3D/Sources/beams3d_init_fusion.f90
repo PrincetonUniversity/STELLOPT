@@ -32,7 +32,7 @@
 !          X_rand           Random number arrays (X,Y,Z,P)
 !-----------------------------------------------------------------------
       IMPLICIT NONE
-      INTEGER :: s,i,j,k,k1,k2
+      INTEGER :: s,i,j,k,k1,k2, nr1, nphi1, nz1
       INTEGER :: minik(2)
       INTEGER, ALLOCATABLE, DIMENSION(:,:,:) :: n3d
       REAL(rprec) :: maxrateDT, maxrateDDT, maxrateDDHe, &
@@ -84,12 +84,17 @@
          WRITE(6, '(A,I6)') '      nparticles_start: ', nparticles_start
          CALL FLUSH(6)
       END IF
+
+      ! We Work with half grid
+      nr1   = nr - 1
+      nphi1 = nphi - 1
+      nz1   = nz - 1
      
       ! We need to first define the reaction rate over the grid
-      CALL mpialloc(l3d,      nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_l3d)
-      CALL mpialloc(rateDT,   nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_rateDT)
-      CALL mpialloc(rateDDT,  nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_rateDDT)
-      CALL mpialloc(rateDDHe, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_rateDDHe)
+      CALL mpialloc(l3d,      nr1, nphi1, nz1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_l3d)
+      CALL mpialloc(rateDT,   nr1, nphi1, nz1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_rateDT)
+      CALL mpialloc(rateDDT,  nr1, nphi1, nz1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_rateDDT)
+      CALL mpialloc(rateDDHe, nr1, nphi1, nz1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_rateDDHe)
 
       ! Initialize helpers
       IF (mylocalid == mylocalmaster) THEN
@@ -98,22 +103,22 @@
       maxrateDT = 0; maxrateDDT = 0; maxrateDDHe = 0
 
       ! Setup masking
-      sfactor = 2
+      sfactor = 1
       IF (lplasma_only) sfactor = S_LIM_MAX
       
       ! Break up the Work
-      CALL MPI_CALC_MYRANGE(MPI_COMM_LOCAL, 1, nr*nphi*nz, mystart, myend)
+      CALL MPI_CALC_MYRANGE(MPI_COMM_LOCAL, 1, nr1*nphi1*nz1, mystart, myend)
 #if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
 #endif
 
       DO s = mystart, myend
-         i = MOD(s-1,nr)+1
-         j = MOD(s-1,nr*nphi)
-         j = FLOOR(REAL(j) / REAL(nr))+1
-         k = CEILING(REAL(s) / REAL(nr*nphi))
+         i = MOD(s-1,nr1)+1
+         j = MOD(s-1,nr1*nphi1)
+         j = FLOOR(REAL(j) / REAL(nr1))+1
+         k = CEILING(REAL(s) / REAL(nr1*nphi1))
          ! S on full grid
-         IF ((i==nr) .or. (j==nphi) .or. (k==nz)) CYCLE
+         !IF ((i==nr) .or. (j==nphi) .or. (k==nz)) CYCLE
          q = (/raxis(i), phiaxis(j), zaxis(k)/)+0.5*(/hr(i),hp(j),hz(k)/) ! Half grid
          CALL beams3d_DTRATE(q,rateDT(i,j,k))
          maxrateDT = MAX(rateDT(i,j,k),maxrateDT)
@@ -184,8 +189,7 @@
          ! We'll calc the roffset helper
          roffset=0.0
          ! Handle that l3d is on half grid
-         l3d(:,nphi,:) = l3d(:,1,:)
-         ALLOCATE(n3d(nr,nphi,nz))
+         ALLOCATE(n3d(nr1,nphi1,nz1))
          n3d = 0
          ! Do a check to make sure we asked for enough particles
          k1 = COUNT(l3d)
@@ -197,7 +201,7 @@
             WHERE(l3d) n3d=1
             k2 = nparticles_start-k1
          END IF
-         ALLOCATE(f2d(nr,nz))
+         ALLOCATE(f2d(nr1,nz1))
          DO s = 1,k2
          	DO
                ! Random numbers
@@ -205,7 +209,7 @@
                CALL RANDOM_NUMBER(Y1_rand) ! phi
                CALL RANDOM_NUMBER(Z1_rand) ! u
                ! Calc j dex
-               j = MIN(MAX(NINT(Y1_rand*nphi),1),nphi-1)
+               j = MIN(MAX(NINT(Y1_rand*nphi1),1),nphi1)
                ! Calc u = [0,2*pi]
                utemp = Z1_rand*pi2
                ! Calc sval =[0,1]
@@ -213,14 +217,8 @@
                ! Now we need to find the proper point
                f2d = ((U4D(1,:,j,:)-utemp)**2)*((S4D(1,:,j,:)-rtemp)**2)
                minik = MINLOC(f2d)
-               i = MIN(MAX(minik(1),2),nr-1); k = MIN(MAX(minik(2),2),nz-1)
-               IF (l3d(i,j,k) .and. l3d(i+1, j,   k)   .and. l3d(i-1, j,   k) &
-                              .and. l3d(i,   j,   k+1) .and. l3d(i,   j,   k-1) &
-                              .and. l3d(i+1, j,   k+1) .and. l3d(i+1, j,   k-1) &
-                              .and. l3d(i-1, j,   k+1) .and. l3d(i-1, j,   k-1) &
-                              .and. l3d(i+1, j+1, k)   .and. l3d(i-1, j+1, k) &
-                              .and. l3d(i  , j+1, k+1) .and. l3d(i,   j+1, k-1)) &
-                  EXIT
+               i = MIN(MAX(minik(1),2),nr1); k = MIN(MAX(minik(2),2),nz1)
+               IF (l3d(i,j,k)) EXIT
             END DO
             n3d(i,j,k) = n3d(i,j,k) + 1
          END DO
@@ -239,11 +237,11 @@
          k1 = 1
          ! Do the D-T -> H4 reaction
          vpart = sqrt(2*E_BEAMS(1)/mHe4)
-         DO s = 1,nr*nphi*nz
-            i = MOD(s-1,nr)+1
-            j = MOD(s-1,nr*nphi)
-            j = FLOOR(REAL(j) / REAL(nr))+1
-            k = CEILING(REAL(s) / REAL(nr*nphi))
+         DO s = 1,nr1*nphi1*nz1
+            i = MOD(s-1,nr1)+1
+            j = MOD(s-1,nr1*nphi1)
+            j = FLOOR(REAL(j) / REAL(nr1))+1
+            k = CEILING(REAL(s) / REAL(nr1*nphi1))
             IF (n3d(i,j,k)==0) CYCLE
             k2 = n3d(i,j,k)+k1-1
             R_start(k1:k2)   =   raxis(i) + X_rand(k1:k2)*hr(i)
@@ -262,11 +260,11 @@
          IF (.not. lfusion_alpha) THEN
             ! Do the D-D -> T reaction
             vpart = sqrt(2*E_BEAMS(2)/mT)
-            DO s = 1,nr*nphi*nz
-               i = MOD(s-1,nr)+1
-               j = MOD(s-1,nr*nphi)
-               j = FLOOR(REAL(j) / REAL(nr))+1
-               k = CEILING(REAL(s) / REAL(nr*nphi))
+            DO s = 1,nr1*nphi1*nz1
+               i = MOD(s-1,nr1)+1
+               j = MOD(s-1,nr1*nphi1)
+               j = FLOOR(REAL(j) / REAL(nr1))+1
+               k = CEILING(REAL(s) / REAL(nr1*nphi1))
                IF (n3d(i,j,k)==0) CYCLE
                k2 = n3d(i,j,k)+k1-1
                R_start(k1:k2)   =   raxis(i) + X_rand(k1:k2)*hr(i)
@@ -284,11 +282,11 @@
             END DO
             ! Do the D-D -> p reaction
             vpart = sqrt(2*E_BEAMS(3)/mp)
-            DO s = 1,nr*nphi*nz
-               i = MOD(s-1,nr)+1
-               j = MOD(s-1,nr*nphi)
-               j = FLOOR(REAL(j) / REAL(nr))+1
-               k = CEILING(REAL(s) / REAL(nr*nphi))
+            DO s = 1,nr1*nphi1*nz1
+               i = MOD(s-1,nr1)+1
+               j = MOD(s-1,nr1*nphi1)
+               j = FLOOR(REAL(j) / REAL(nr1))+1
+               k = CEILING(REAL(s) / REAL(nr1*nphi1))
                IF (n3d(i,j,k)==0) CYCLE
                k2 = n3d(i,j,k)+k1-1
                R_start(k1:k2)   =   raxis(i) + X_rand(k1:k2)*hr(i)
@@ -306,11 +304,11 @@
             END DO
             ! Do the D-D -> He3 reaction
             vpart = sqrt(2*E_BEAMS(4)/mHe3)
-            DO s = 1,nr*nphi*nz
-               i = MOD(s-1,nr)+1
-               j = MOD(s-1,nr*nphi)
-               j = FLOOR(REAL(j) / REAL(nr))+1
-               k = CEILING(REAL(s) / REAL(nr*nphi))
+            DO s = 1,nr1*nphi1*nz1
+               i = MOD(s-1,nr1)+1
+               j = MOD(s-1,nr1*nphi1)
+               j = FLOOR(REAL(j) / REAL(nr1))+1
+               k = CEILING(REAL(s) / REAL(nr1*nphi1))
                IF (n3d(i,j,k)==0) CYCLE
                k2 = n3d(i,j,k)+k1-1
                R_start(k1:k2)   =   raxis(i) + X_rand(k1:k2)*hr(i)

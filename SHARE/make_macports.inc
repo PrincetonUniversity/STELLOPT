@@ -27,7 +27,7 @@
 #######################################################################
   FLAGS_R = -O2 -g -fexternal-blas -fbacktrace -fcheck=all
   FLAGS_D = -O0 -g -fexternal-blas -fbacktrace -fcheck=all -fbounds-check
-  LIBS    = -L/opt/local/lib -lopenblas -lscalapack
+  LIBS    = -L/usr/lib -L/opt/local/lib -lopenblas -lscalapack
 
 #######################################################################
 #            MPI Options
@@ -125,7 +125,7 @@
 #######################################################################
 #            TRAVIS Options
 #######################################################################
-  LTRAVIS= T
+  LTRAVIS= F
   TRAVIS_DIR = $(TRAVIS_PATH)
   LIB_TRAVIS = libtravis64_sopt.a
   LIB_MCONF  = libmconf64.a

@@ -13,7 +13,7 @@ except KeyError:
 
 lfail = 0
 failtol = 5.0
-filename='beams3d_ORBITS_depo.h5'
+filename='beams3d_ORBITS_eqdsk.h5'
 data=read_beams3d(filename)
 if not data:
     print('ERROR Opening File: '+filename)
@@ -24,7 +24,7 @@ if not data:
 print('BEAMS3D VERSION: ' + str(round(data['VERSION'],2)))
 print('==== Vectors ====')
 varlist={}
-varlist['Shinethrough']=np.array([34, 18, 10, 1, 1, 1])
+varlist['Shinethrough']=np.array([11, 3, 1, 10, 3, 1])
 #print(data['Shinethrough'])
 for temp in varlist:
     act = varlist[temp]

@@ -12,6 +12,8 @@
       USE stel_kinds, ONLY: rprec
       USE vmec_input,  ONLY: extcur_in => extcur, read_indata_namelist,&
                              nv_in => nzeta, nfp_in => nfp, nigroup
+      USE read_eqdsk_mod, ONLY: read_gfile, get_eqdsk_grid
+      USE read_hint_mod, ONLY: read_hint_mag, get_hint_grid
       USE beams3d_runtime
       USE beams3d_grid
       USE beams3d_input_mod, ONLY: read_beams3d_input
@@ -28,6 +30,7 @@
       USE adas_mod_parallel, ONLY: adas_load_tables, adas_tables_avail
       USE mpi_inc
       USE mpi_sharmem
+      USE beams3d_physics_mod, ONLY: beams3d_suv2rzp ! remove if test below removed
 !-----------------------------------------------------------------------
 !     Local Variables
 !          ier            Error Flag
@@ -42,6 +45,8 @@
       INTEGER :: i,j,k,ier, iunit, nextcur_in, nshar
       INTEGER :: bcs1(2), bcs2(2), bcs3(2), bcs1_s(2)
       REAL(rprec) :: br, bphi, bz, ti_temp, vtemp
+      REAL(rprec), DIMENSION(:), ALLOCATABLE :: R_wall_temp
+      REAL(rprec) :: stemp, utemp, rtemp, ztemp, phitemp
 !-----------------------------------------------------------------------
 !     External Functions
 !          A00ADF               NAG Detection
@@ -72,7 +77,7 @@
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'beams3d_init0',ierr_mpi)
 #endif
 
-      IF (lvmec .and. lread_input) THEN
+      IF (lvmec.and. lread_input) THEN
          CALL read_beams3d_input('input.' // TRIM(id_string),ier)
          IF (lverb) WRITE(6,'(A)') '   FILE: input.' // TRIM(id_string)
       ELSE IF (lpies .and. lread_input) THEN
@@ -81,6 +86,20 @@
       ELSE IF (lspec .and. lread_input) THEN
          CALL read_beams3d_input('input.' // TRIM(id_string),ier)
          IF (lverb) WRITE(6,'(A)') '   FILE: input.' // TRIM(id_string)
+      ELSE IF (leqdsk .and. lread_input) THEN
+         CALL read_beams3d_input('input.' // TRIM(id_string),ier)
+         IF (lverb) WRITE(6,'(A)') '   FILE: input.' // TRIM(id_string)
+         CALL read_gfile(eqdsk_string,ier)
+         IF (lverb) WRITE(6,'(A)') '   G-FILE: '// TRIM(eqdsk_string)
+         CALL get_eqdsk_grid(nr,nz,rmin,rmax,zmin,zmax)
+         phimin = 0; phimax=pi2
+      ELSE IF (lhint .and. lread_input) THEN
+         CALL read_beams3d_input(TRIM(id_string)//'.input',ier)
+         IF (lverb) WRITE(6,'(A)') '   FILE:     ' // TRIM(id_string) // '.input'
+         IF (lverb) WRITE(6,'(A)') '   MAG_FILE: ' // TRIM(id_string) // '.magslice'
+         CALL read_hint_mag(TRIM(id_string)//'.magslice',ier)
+         phimin = 0
+         CALL get_hint_grid(nr,nz,nphi,rmin,rmax,zmin,zmax,phimax)
       END IF
 
       IF (lrestart_particles) THEN
@@ -132,7 +151,7 @@
 
       ! Construct 1D splines
       bcs1_s=(/ 0, 0 /)
-      IF (lvmec .and. .not.lvac) THEN
+      IF ((lvmec .or. leqdsk .or. lhint) .and. .not.lvac) THEN
          IF (lverb) WRITE(6,'(A)') '----- Profile Parameters -----'
          ! TE
          IF (nte>0) THEN
@@ -214,12 +233,12 @@
          CALL mpialloc(raxis, nr, myid_sharmem, 0, MPI_COMM_SHARMEM, win_raxis)
          CALL mpialloc(phiaxis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_phiaxis)
          CALL mpialloc(zaxis, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_zaxis)
-         CALL mpialloc(hr, nr, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hr)
-         CALL mpialloc(hp, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hp)
-         CALL mpialloc(hz, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hz)
-         CALL mpialloc(hri, nr, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hri)
-         CALL mpialloc(hpi, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hpi)
-         CALL mpialloc(hzi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hzi)
+         CALL mpialloc(hr, nr-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hr)
+         CALL mpialloc(hp, nphi-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hp)
+         CALL mpialloc(hz, nz-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hz)
+         CALL mpialloc(hri, nr-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hri)
+         CALL mpialloc(hpi, nphi-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hpi)
+         CALL mpialloc(hzi, nz-1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_hzi)
          CALL mpialloc(B_R, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_B_R)
          CALL mpialloc(B_PHI, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_B_PHI)
          CALL mpialloc(B_Z, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_B_Z)
@@ -268,6 +287,14 @@
          !CALL beams3d_init_pies
       ELSE IF (lspec .and. .not.lvac) THEN
          !CALL beams3d_init_spec
+      ELSE IF (lhint .and. .not.lvac) THEN
+         CALL mpialloc(req_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_req_axis)
+         CALL mpialloc(zeq_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_zeq_axis)
+         CALL beams3d_init_hint
+      ELSE IF (leqdsk) THEN
+         CALL mpialloc(req_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_req_axis)
+         CALL mpialloc(zeq_axis, nphi, myid_sharmem, 0, MPI_COMM_SHARMEM, win_zeq_axis)
+         CALL beams3d_init_eqdsk
       END IF
 
       ! Adjust the torodial distribution function grid
@@ -280,6 +307,10 @@
       ! Load vessel if not done already vessel
       IF (lvessel .and. (.not. lwall_loaded)) THEN
          CALL wall_load_txt(TRIM(vessel_string),ier,MPI_COMM_BEAMS)
+         IF (lverb) THEN
+            IF (ier /=0 ) WRITE(6,'(A)') 'ERROR: Loading VESSEL : ' // TRIM(vessel_string)
+            IF (ier ==-327 ) WRITE(6,'(A)') '   ZERO Area Triagle detected!!!!'
+         END IF
       END IF
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -578,12 +609,31 @@
 
       ! Setup wall heat flux tracking
       IF (lwall_loaded) THEN
-         IF (lverb) CALL wall_info(6)
+         IF (lverb) THEN
+            CALL wall_info(6)
+            ALLOCATE(R_wall_temp(nvertex))
+            FORALL (i = 1:nvertex) R_wall_temp(i) = SQRT(vertex(i,1)*vertex(i,1)+vertex(i,2)*vertex(i,2))
+            WRITE(6,'(A,F9.5,A,F9.5,A)') '   R_WALL   = [',MINVAL(R_wall_temp),',',MAXVAL(R_wall_temp),']'
+            WRITE(6,'(A,F9.5,A,F9.5,A)') '   Z_WALL   = [',MINVAL(vertex(:,3)),',',MAXVAL(vertex(:,3)),']'
+            IF ((MINVAL(R_wall_temp)<rmin) .or. &
+                (MAXVAL(R_wall_temp)>rmax) .or. &
+                (MINVAL(vertex(:,3))<zmin) .or. &
+                (MAXVAL(vertex(:,3))>zmax)) THEN
+               IF (.not. lplasma_only) WRITE(6,'(A)') '   WALL OUTSIDE GRID DOMAIN!'
+            END IF
+            DEALLOCATE(R_wall_temp)
+         END IF
          CALL FLUSH(6)
          CALL mpialloc(wall_load, nbeams, nface, myid_sharmem, 0, MPI_COMM_SHARMEM, win_wall_load)
          IF (myid_sharmem == master) wall_load = 0
          CALL mpialloc(wall_shine, nbeams, nface, myid_sharmem, 0, MPI_COMM_SHARMEM, win_wall_shine)
          IF (myid_sharmem == master) wall_shine = 0
+      END IF
+
+      ! Some tests
+      IF (.false. .and. lverb) THEN
+         CALL beams3d_distnorm
+         STOP
       END IF
 
 #if defined(MPI_OPT)
