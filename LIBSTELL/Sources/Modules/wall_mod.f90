@@ -77,6 +77,7 @@
       DOUBLE PRECISION, ALLOCATABLE :: r_temp(:,:),z_temp(:,:)
       
       shar_rank = 0; shar_size = 1;
+      lwall_loaded = .false.
 #if defined(MPI_OPT)
       IF (PRESENT(comm)) THEN
          CALL MPI_COMM_SPLIT_TYPE(comm, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, shar_comm, istat)

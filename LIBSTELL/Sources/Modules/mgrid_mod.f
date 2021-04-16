@@ -264,36 +264,76 @@ C-----------------------------------------------
 C-----------------------------------------------
 C   L o c a l   V a r i a b l e s
 C-----------------------------------------------
-      REAL(rprec), DIMENSION(:,:,:), POINTER :: 
+      REAL(rprec), DIMENSION(:,:,:), ALLOCATABLE :: 
      1           brtemp, bztemp, bptemp
       INTEGER :: iunit = 50
       INTEGER :: istat, ig, i, j, n, n1, m, nsets_max, k
       LOGICAL :: lstyle_2000
-      INTEGER :: nskip, sh(1), mylocalid,
+      LOGICAL :: lMPIInit, lraw_local, lmode_local
+      INTEGER :: mpi_rank, mpi_size, MPI_ERR
+      INTEGER :: shar_rank, shar_comm, temp_comm, temp_size, 
      1           win_brtemp, win_bptemp, win_bztemp
+      INTEGER :: nskip, sh(1), bookmark
 C-----------------------------------------------
-      mylocalid = 0
-#if defined(MPI_COMM)
-      IF (PRESENT(comm)) CALL MPI_COMM_RANK(comm, 
-     1                                      mylocalid, ier_flag)
+      lraw_local = .false.; lmode_local = .false.; istat = 0
+      mpi_rank = 0; mpi_size = 1
+      shar_comm = -1; shar_rank = 0
+#if defined(MPI_OPT)
+      CALL MPI_INITIALIZED(lMPIInit, MPI_ERR)
+      IF ((lMPIInit) .and. PRESENT(comm)) THEN
+         CALL MPI_COMM_RANK(comm, mpi_rank, istat)
+         CALL MPI_COMM_SIZE(comm, mpi_size, istat)
+         CALL MPI_COMM_SPLIT_TYPE(comm, 
+     1           MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, 
+     2           shar_comm, istat)
+         CALL MPI_COMM_RANK(shar_comm, shar_rank, istat)
+      END IF
 #endif
-
-      CALL safe_open(iunit, istat, filename, 'old', 'unformatted')
+!
+!     OPEN FILE
+!
+      IF (shar_rank .eq. 0) CALL safe_open(iunit, istat, filename,
+     1                       'old', 'unformatted')
+#if defined(MPI_OPT)
+      CALL MPI_BCAST(istat,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
+#endif
       IF (istat .ne. 0) THEN
          ier_flag = 9
          RETURN
       END IF
-
-      READ (iunit,iostat=istat) nr0b, nz0b, np0b, nfper0, nextcur
-      IF (istat .ne. 0) ier_flag = 9
-
+!
+!     READ IN BASIC DATA
+!
+      IF (shar_rank .eq. 0) THEN
+         READ (iunit,iostat=istat) nr0b, nz0b, np0b, nfper0, nextcur
+         IF (istat .ne. 0) ier_flag = 9
+         READ(iunit,iostat=istat) rminb, zminb, rmaxb, zmaxb
+         IF (istat .ne. 0) ier_flag = 9
+      END IF
+#if defined(MPI_OPT)
+      CALL MPI_BCAST(nr0b,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
+      CALL MPI_BCAST(nz0b,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
+      CALL MPI_BCAST(np0b,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
+      CALL MPI_BCAST(nfper0,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
+      CALL MPI_BCAST(nextcur,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
+      CALL MPI_BCAST(rminb,1,MPI_REAL8,0,shar_comm,MPI_ERR)
+      CALL MPI_BCAST(zminb,1,MPI_REAL8,0,shar_comm,MPI_ERR)
+      CALL MPI_BCAST(rmaxb,1,MPI_REAL8,0,shar_comm,MPI_ERR)
+      CALL MPI_BCAST(zmaxb,1,MPI_REAL8,0,shar_comm,MPI_ERR)
+      CALL MPI_BCAST(ier_flag,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
+#endif
+!
+!     CALCULATE HELPERS AND CHECK NFP AND NV
+!
+      delrb = (rmaxb-rminb)/(nr0b-1)
+      delzb = (zmaxb-zminb)/(nz0b-1)
+      nbvac = nr0b*nz0b*nv
       IF (nfper0.NE.nfp .OR. MOD(np0b, nv).NE.0) RETURN
-
       lstyle_2000 = (nextcur < 0)
       nextcur = ABS(nextcur)
-      READ(iunit,iostat=istat) rminb, zminb, rmaxb, zmaxb
-      IF (istat .ne. 0) ier_flag = 9
-
+!
+!     CHECK NEXTCUR
+!
       IF (nextcur .eq. 0) THEN
         PRINT *,' NEXTCUR = 0 IN READING MGRID FILE'
         ier_flag = 9
@@ -303,70 +343,85 @@ C-----------------------------------------------
       END IF
 
       IF (ier_flag .ne. 0) RETURN
-
-      ALLOCATE (curlabel(5*(nextcur/5+1)), stat=istat)    !MIN of 5 for printing
-      curlabel = " "
-      READ(iunit,iostat=istat) (curlabel(n),n=1,nextcur)
-      IF (istat .ne. 0) THEN
-         PRINT *,' reading mgrid file failed (curlabel)'
-         ier_flag = 9
-         RETURN
-      END IF
-
 !
-!     NOTE: ADD UP CONTRIBUTION TO BVAC DIRECTLY FOR ALL EXTERNAL CURRENT GROUPS
-
-      nbvac = nr0b*nz0b*nv
+!     ALLOCATE NEXTCUR SIZED ARRAYS
+!
+      IF (.NOT. ASSOCIATED(curlabel)) THEN
+         ALLOCATE (curlabel(nextcur), stat=istat)
+      ELSE IF (SIZE(curlabel) .ne. nextcur) THEN
+         DEALLOCATE (curlabel)
+         ALLOCATE (curlabel(nextcur), stat=istat)
+      END IF
+!
+!     READ NEXTCUR SIZED ARRAYS
+!
+      IF (shar_rank .eq. 0) THEN
+         READ(iunit,iostat=istat) (curlabel(n),n=1,nextcur)
+      END IF
+#if defined(MPI_OPT)
+      CALL MPI_BCAST(bookmark,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
+      CALL MPI_BCAST(curlabel,SIZE(curlabel),MPI_CHARACTER,
+     1               0,shar_comm,MPI_ERR)
+!      IF (lraw_local)
+!     1  CALL MPI_BCAST(raw_coil_current,nextcur,MPI_REAL8,0,
+!     1                 shar_comm,MPI_ERR)
+#endif
+!
+!     ALLOCATE BVAC ARRAY
+!
+#if defined(MPI_OPT)
       IF (.NOT. ASSOCIATED(bvac)) THEN
-#if defined(MPI_OPT)
          IF (PRESENT(comm)) THEN
-            CALL MPIALLOC(bvac,nbvac,3,mylocalid,0,comm,win_bvac)
+            CALL MPIALLOC(bvac,nbvac,3,shar_rank,0,shar_comm,win_bvac)
          ELSE
-#endif
             ALLOCATE (bvac(nbvac,3))
-#if defined(MPI_OPT)
          END IF
-#endif
       ELSE IF (SIZE(bvac,1) .ne. nbvac) THEN
-#if defined(MPI_OPT)
          IF (PRESENT(comm)) THEN
             CALL MPIDEALLOC(bvac,win_bvac)
-            CALL MPIALLOC(bvac,nbvac,3,mylocalid,0,comm,win_bvac)
+            CALL MPIALLOC(bvac,nbvac,3,shar_rank,0,shar_comm,win_bvac)
          ELSE
-#endif
             DEALLOCATE (bvac);  ALLOCATE(bvac(nbvac,3))
-#if defined(MPI_OPT)
          END IF
-#endif
       END IF
-
-#if defined(MPI_OPT)
-      IF (PRESENT(comm)) THEN
-         CALL MPIALLOC(brtemp,nr0b,nz0b,np0b,
-     1                 mylocalid,0,comm,win_brtemp)
-         CALL MPIALLOC(bptemp,nr0b,nz0b,np0b,
-     1                 mylocalid,0,comm,win_bptemp)
-         CALL MPIALLOC(bztemp,nr0b,nz0b,np0b,
-     1                 mylocalid,0,comm,win_bztemp)
-      ELSE
+#else
+      IF (.NOT. ASSOCIATED(bvac)) THEN
+         ALLOCATE (bvac(nbvac,3))
+      ELSE IF (SIZE(bvac,1) .ne. nbvac) THEN
+         DEALLOCATE (bvac);  ALLOCATE(bvac(nbvac,3),STAT=istat)
+      END IF
 #endif
+      IF (istat .ne. 0) STOP 'Error allocating bvac in mgrid_mod'
+!
+!     INITIALIZE BVAC ARRAY
+!
+      IF (shar_rank .eq. 0) bvac = 0
+!
+!     DEALLOCATE HELPER ARRAYS
+!
+      IF (ALLOCATED(brtemp)) DEALLOCATE(brtemp)
+      IF (ALLOCATED(bptemp)) DEALLOCATE(bptemp)
+      IF (ALLOCATED(bztemp)) DEALLOCATE(bztemp)
+!
+!     ALLOCATE BVAC HELPER ARRAYS
+!
+      nskip = np0b/nv
+      IF (shar_rank .eq. 0) THEN
          ALLOCATE (brtemp(nr0b,nz0b,np0b), bptemp(nr0b,nz0b,np0b),
-     1          bztemp(nr0b,nz0b,np0b), stat=istat)
-#if defined(MPI_OPT)
+     1             bztemp(nr0b,nz0b,np0b), stat=istat)
+         IF (istat .ne. 0)STOP 'Error allocating bXtemp in mgrid_mod2 '
+         brtemp = 0
+         bptemp = 0
+         bztemp = 0
       END IF
-#endif
-
-      IF (istat .ne. 0) THEN
-        PRINT *,' allocation for b-vector storage failed'
-        ier_flag = 9
-        RETURN
-      END IF
-
+!
+!     READ BVAC HELPER ARRAYS
+!
       bvac = 0
       nskip = np0b/nv
       sh(1) = nbvac
       
-      IF (mylocalid == 0) THEN
+      IF (shar_rank == 0) THEN
          DO ig = 1,nextcur
             IF (lstyle_2000) THEN
                READ(iunit, iostat=istat) brtemp, bptemp, bztemp
@@ -392,35 +447,30 @@ C-----------------------------------------------
      1               RESHAPE(bztemp(:,:,1:np0b:nskip),sh)
 
          END DO
-         CALL FTELL(iunit,ig)
       END IF
+      np0b = nv
 
       IF (PRESENT(comm)) THEN
 #if defined(MPI_OPT)
-         CALL MPI_BCAST(ig,1,MPI_INTEGER,0,comm,istat)
-         CALL MPIDEALLOC(brtemp,win_brtemp)
-         CALL MPIDEALLOC(bptemp,win_bptemp)
-         CALL MPIDEALLOC(bztemp,win_bztemp)
-         IF (mylocalid /= 0) CALL FSEEK(iunit,ig,1)
-#else
-         DEALLOCATE (brtemp, bztemp, bptemp)
+         CALL MPI_BCAST(istat,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
 #endif
-      ELSE
-         DEALLOCATE (brtemp, bztemp, bptemp)
       END IF
-	
-      np0b = nv
-
-      CALL assign_bptrs(bvac)
 
       IF (istat .ne. 0) THEN
          ier_flag = 9
          RETURN
       END IF
 
-      IF (lstyle_2000) THEN
+      IF (ALLOCATED(brtemp)) DEALLOCATE(brtemp)
+      IF (ALLOCATED(bptemp)) DEALLOCATE(bptemp)
+      IF (ALLOCATED(bztemp)) DEALLOCATE(bztemp)
+
+      CALL assign_bptrs(bvac)
+
+      IF (lstyle_2000 .and. shar_rank ==0) THEN
          READ (iunit, iostat=istat) mgrid_mode
          IF (istat .eq. 0) THEN
+            lraw_local = .true.
             ALLOCATE (raw_coil_current(nextcur))
             READ (iunit, iostat=istat) raw_coil_current(1:nextcur)
             IF (istat .ne. 0) mgrid_mode = 'N'
@@ -429,11 +479,25 @@ C-----------------------------------------------
          mgrid_mode = 'N'         !Old-style, no mode info
       END IF
 
+#if defined(MPI_OPT)
+      CALL MPI_BCAST(mgrid_mode,1,MPI_CHARACTER,0,shar_comm,MPI_ERR)
+      CALL MPI_BCAST(lraw_local,1,MPI_LOGICAL,0,shar_comm,MPI_ERR)
+      IF (lraw_local)
+     1   CALL MPI_BCAST(raw_coil_current,nextcur,MPI_REAL8,0,
+     1                  shar_comm,MPI_ERR)
+#endif
+
 !
 !     READ IN EXTERNAL POLOIDAL FLUX, FIELD MEASURMENT
 !     LOOP COORDINATES AND LABELS
 !
-      READ(iunit,iostat=istat) nobser, nobd, nbsets
+      IF(shar_rank ==0) READ(iunit,iostat=istat) nobser, nobd, nbsets
+#if defined(MPI_OPT)
+      CALL MPI_BCAST(istat,1,MPI_CHARACTER,0,shar_comm,MPI_ERR)
+      CALL MPI_BCAST(nobser,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
+      CALL MPI_BCAST(nobd,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
+      CALL MPI_BCAST(nbsets,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
+#endif
       IF (istat.ne.0) THEN
          nobser = 0
          nobd   = 0
@@ -444,7 +508,10 @@ C-----------------------------------------------
 
       nbfldn = SUM(nbfld(:nbsets))
       ALLOCATE (nbcoils(nbsets), stat=istat)
-      READ(iunit) (nbcoils(n),n=1,nbsets)
+      IF(shar_rank ==0) READ(iunit) (nbcoils(n),n=1,nbsets)
+#if defined(MPI_OPT)
+      CALL MPI_BCAST(nbcoils,nbsets,MPI_INTEGER,0,shar_comm,MPI_ERR)
+#endif
 
       nbcoil_max = MAXVAL(nbcoils(:nbsets))
 
@@ -489,39 +556,68 @@ C-----------------------------------------------
 
       IF (nobser+nobd .gt. 0) iconnect(:4,:nobser+nobd) = 0
 
-      READ(iunit) (xobser(n), zobser(n),n=1,nobser)
-      READ(iunit) (dsilabel(n),n=1,nobd)
-      READ(iunit) ((iconnect(j,n),j=1,4),n=1,nobd)
+      IF(shar_rank ==0) THEN
+         READ(iunit) (xobser(n), zobser(n),n=1,nobser)
+         READ(iunit) (dsilabel(n),n=1,nobd)
+         READ(iunit) ((iconnect(j,n),j=1,4),n=1,nobd)
 
-      IF (nbcoil_max.gt.0 .and. nbsets.gt.0) THEN
-         rbcoil(:nbcoil_max,:nbsets) = 0
-         zbcoil(:nbcoil_max,:nbsets) = 0
-         abcoil(:nbcoil_max,:nbsets) = 0
+         IF (nbcoil_max.gt.0 .and. nbsets.gt.0) THEN
+            rbcoil(:nbcoil_max,:nbsets) = 0
+            zbcoil(:nbcoil_max,:nbsets) = 0
+            abcoil(:nbcoil_max,:nbsets) = 0
 
-         DO n=1,nbsets
-           IF (nbcoils(n).gt.0) THEN
-           READ(iunit) n1,bloopnames(n1)
-           READ(iunit)(rbcoil(m,n),zbcoil(m,n),abcoil(m,n),
+            DO n=1,nbsets
+              IF (nbcoils(n).gt.0) THEN
+                 READ(iunit) n1,bloopnames(n1)
+                 READ(iunit)(rbcoil(m,n),zbcoil(m,n),abcoil(m,n),
      1             m=1,nbcoils(n))
-           ENDIF
-         ENDDO
+              ENDIF
+            ENDDO
 
-         dbcoil(:nbcoil_max,:nbsets,:nextcur) = 0
-      END IF
-      DO ig = 1,nextcur
-        !un-connected coil fluxes
-         READ(iunit) (unpsiext(n,ig),n=1,nobser)
-         DO n = 1,nbsets
-            READ(iunit) (dbcoil(m,n,ig),m=1,nbcoils(n))
+            dbcoil(:nbcoil_max,:nbsets,:nextcur) = 0
+         END IF
+         DO ig = 1,nextcur
+            !un-connected coil fluxes
+            READ(iunit) (unpsiext(n,ig),n=1,nobser)
+            DO n = 1,nbsets
+               READ(iunit) (dbcoil(m,n,ig),m=1,nbcoils(n))
+            ENDDO
          ENDDO
-      ENDDO
+      END IF
+#if defined(MPI_OPT)
+      CALL MPI_BCAST(xobser,nobser,MPI_REAL8,0,shar_comm,MPI_ERR)
+      CALL MPI_BCAST(zobser,nobser,MPI_REAL8,0,shar_comm,MPI_ERR)
+      CALL MPI_BCAST(dsilabel,SIZE(dsilabel),MPI_CHARACTER,0,
+     1               shar_comm,MPI_ERR)
+      CALL MPI_BCAST(iconnect,SIZE(iconnect),MPI_INTEGER,0,
+     1               shar_comm,MPI_ERR)
+      CALL MPI_BCAST(bloopnames,SIZE(bloopnames),MPI_CHARACTER,0,
+     1               shar_comm,MPI_ERR)
+      CALL MPI_BCAST(rbcoil,SIZE(rbcoil),MPI_REAL8,0,
+     1               shar_comm,MPI_ERR)
+      CALL MPI_BCAST(zbcoil,SIZE(zbcoil),MPI_REAL8,0,
+     1               shar_comm,MPI_ERR)
+      CALL MPI_BCAST(abcoil,SIZE(abcoil),MPI_REAL8,0,
+     1               shar_comm,MPI_ERR)
+      CALL MPI_BCAST(unpsiext,SIZE(unpsiext),MPI_REAL8,0,
+     1               shar_comm,MPI_ERR)
+      CALL MPI_BCAST(dbcoil,SIZE(dbcoil),MPI_REAL8,0,
+     1               shar_comm,MPI_ERR)
+#endif
 
 !
 !     READ LIMITER & PROUT PLOTTING SPECS
 !
       ALLOCATE (limitr(nlimset), nsetsn(nigroup))
 
-      READ (iunit,iostat=istat) nlim,(limitr(i),i=1,nlim)
+      IF(shar_rank ==0) THEN
+         READ (iunit,iostat=istat) nlim,(limitr(i),i=1,nlim)
+      END IF
+#if defined(MPI_OPT)
+      CALL MPI_BCAST(istat,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
+      CALL MPI_BCAST(limitr,SIZE(limitr),MPI_INTEGER,0,
+     1               shar_comm,MPI_ERR)
+#endif
       IF (istat .ne. 0)then
         nlim = 0
         IF (lscreen) PRINT *,' No limiter data in mgrid file'
@@ -545,10 +641,22 @@ C-----------------------------------------------
          RETURN
       END IF
 
-      READ(iunit, iostat=istat)
-     1   ((rlim(i,j),zlim(i,j),i=1,limitr(j)),j=1,nlim)
-      READ(iunit, iostat=istat) nsets,(nsetsn(i), i=1,nsets)
-
+      IF(shar_rank ==0) THEN
+         READ(iunit, iostat=istat)
+     1        ((rlim(i,j),zlim(i,j),i=1,limitr(j)),j=1,nlim)
+         READ(iunit, iostat=istat) nsets,(nsetsn(i), i=1,nsets)
+      END IF
+#if defined(MPI_OPT)
+      CALL MPI_BCAST(istat,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
+      CALL MPI_BCAST(rlim,SIZE(rlim),MPI_REAL8,0,
+     1               shar_comm,MPI_ERR)
+      CALL MPI_BCAST(zlim,SIZE(zlim),MPI_REAL8,0,
+     1               shar_comm,MPI_ERR)
+      CALL MPI_BCAST(nsets,1,MPI_INTEGER,0,
+     1               shar_comm,MPI_ERR)
+      CALL MPI_BCAST(nsetsn,SIZE(nsetsn),MPI_INTEGER,0,
+     1               shar_comm,MPI_ERR)
+#endif
       IF (nsets .gt. nigroup) THEN
          PRINT *, 'nsets>nigroup'
          ier_flag = 9
@@ -566,18 +674,33 @@ C-----------------------------------------------
          RETURN
       END IF
 
+
       ALLOCATE (pfcspec(nparts,nsets_max,nsets), stat=istat)
 
 !     NOTE TO RMW: SHOULD READ IN NPARTS HERE (PUT INTO MGRID FILE)
 
-      READ(iunit, iostat=istat) (((pfcspec(i,j,k),i=1,nparts),
-     1        j=1,nsetsn(k)), k=1,nsets)
+      IF(shar_rank ==0) THEN
+         READ(iunit, iostat=istat) (((pfcspec(i,j,k),i=1,nparts),
+     1                                   j=1,nsetsn(k)), k=1,nsets)
 
+         READ(iunit, iostat=istat) rx1,rx2,zy1,zy2,condif,
+     1                             nrgrid,nzgrid,tokid
+      END IF
+#if defined(MPI_OPT)
+      CALL MPI_BCAST(istat,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
+      CALL MPI_BCAST(pfcspec,SIZE(pfcspec),MPI_REAL8,0,
+     1               shar_comm,MPI_ERR)
+      CALL MPI_BCAST(rx1,1,MPI_REAL8,0,shar_comm,MPI_ERR)
+      CALL MPI_BCAST(rx2,1,MPI_REAL8,0,shar_comm,MPI_ERR)
+      CALL MPI_BCAST(zy1,1,MPI_REAL8,0,shar_comm,MPI_ERR)
+      CALL MPI_BCAST(zy2,1,MPI_REAL8,0,shar_comm,MPI_ERR)
+      CALL MPI_BCAST(condif,1,MPI_REAL8,0,shar_comm,MPI_ERR)
+      CALL MPI_BCAST(nrgrid,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
+      CALL MPI_BCAST(nzgrid,1,MPI_INTEGER,0,shar_comm,MPI_ERR)
+      CALL MPI_BCAST(tokid,30,MPI_CHARACTER,0,
+     1               shar_comm,MPI_ERR)
+#endif
       DEALLOCATE (limitr, nsetsn)
-
-      READ(iunit, iostat=istat) rx1,rx2,zy1,zy2,condif,
-     1  nrgrid,nzgrid,tokid
-
       IF (istat .ne. 0) THEN
          ier_flag = 9
          RETURN
@@ -595,10 +718,15 @@ C-----------------------------------------------
 
  900  CONTINUE
 
-      CLOSE (iunit)
+      IF(shar_rank ==0) CLOSE (iunit)
 
-      delrb = (rmaxb-rminb)/(nr0b-1)
-      delzb = (zmaxb-zminb)/(nz0b-1)
+      
+
+#if defined(MPI_OPT)
+      IF ((lMPIInit) .and. PRESENT(comm)) THEN
+        CALL MPI_COMM_FREE(shar_comm,istat)
+      END IF
+#endif
 
 !
 !     SUM UP CONTRIBUTIONS FROM INDIVIDUAL COIL GROUPS
