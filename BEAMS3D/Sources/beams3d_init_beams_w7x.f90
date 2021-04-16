@@ -103,19 +103,19 @@
             dybeam          = ybeam(2)-ybeam(1)
             dzbeam          = zbeam(2)-zbeam(1)
             dlbeam          = SQRT(dxbeam*dxbeam+dybeam*dybeam+dzbeam*dzbeam)
-            IF (dlbeam == 0) dlbeam = 1
+            IF (dlbeam == 0.0) dlbeam = 1
             dxbeam = dxbeam/dlbeam; dybeam=dybeam/dlbeam; dzbeam=dzbeam/dlbeam
             dxbeam2         = dybeam ! normal direction dbeam x hat(z)
             dybeam2         = -dxbeam
             dzbeam2         = 0
             dlbeam          = SQRT(dxbeam2*dxbeam2+dybeam2*dybeam2) ! because dzbeam2=0
-            IF (dlbeam == 0) dlbeam = 1
+            IF (dlbeam == 0.0) dlbeam = 1
             dxbeam2 = dxbeam2/dlbeam; dybeam2=dybeam2/dlbeam; ! because dzbeam2=0
             dxbeam3         = dybeam2*dzbeam                  ! because dzbeam2=0
             dybeam3         =                - dxbeam2*dzbeam ! because dzbeam2=0
             dzbeam3         = dxbeam2*dybeam - dybeam2*dxbeam
             dlbeam          = SQRT(dxbeam3*dxbeam3+dybeam3*dybeam3+dzbeam3*dzbeam3)
-            IF (dlbeam == 0) dlbeam = 1
+            IF (dlbeam == 0.0) dlbeam = 1
             dxbeam3 = dxbeam3/dlbeam; dybeam3=dybeam3/dlbeam; dzbeam3=dzbeam3/dlbeam
             ! Starting Points
             X_start          = xbeam(1) + dxbeam2*X(:,i) + dxbeam3*Y(:,i)

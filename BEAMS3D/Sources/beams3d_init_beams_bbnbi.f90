@@ -72,7 +72,7 @@
          CALL h5dclose_f(h5_did, ier)
          CALL h5close_f(ier)
 
-         i = 1
+         i = 1; j=0
          k2 = 0
          DO
             IF (Dex_beams(i)<1) EXIT

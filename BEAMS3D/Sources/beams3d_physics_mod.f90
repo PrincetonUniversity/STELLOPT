@@ -30,7 +30,7 @@ MODULE beams3d_physics_mod
                               phimax, S4D, TE4D, NE4D, TI4D, ZEFF4D, &
                               nr, nphi, nz, rmax, rmin, zmax, zmin, &
                               phimin, eps1, eps2, eps3, raxis, phiaxis,&
-                              zaxis, &
+                              zaxis, U4D, &
                               hr, hp, hz, hri, hpi, hzi
       USE EZspline_obj
       USE EZspline
@@ -438,20 +438,14 @@ MODULE beams3d_physics_mod
          plocal(num_depo) = ATAN2(qe(2),qe(1))
          zlocal(num_depo) = qe(3)
          DO i = 2, num_depo-1
-            rlocal(i) = (i-1)*(rlocal(num_depo)-rlocal(1))/REAL(num_depo-1) + rlocal(1)
-            plocal(i) = (i-1)*(plocal(num_depo)-plocal(1))/REAL(num_depo-1) + plocal(1)
-            zlocal(i) = (i-1)*(zlocal(num_depo)-zlocal(1))/REAL(num_depo-1) + zlocal(1)
+            qf = (i-1)*(qe-qs)/(REAL(num_depo-1)) + qs
+            rlocal(i) = sqrt(qf(1)*qf(1)+qf(2)*qf(2))
+            plocal(i) = atan2(qf(2),qf(1))
+            zlocal(i) = qf(3)
          END DO
-         plocal = MODULO(plocal, phimax)
+         plocal = MODULO(plocal, phimax) ! Dont need to check for negative then
          ! Compute temp/density along path
          DO l = 1, num_depo
-            !CALL R8HERM3xyz(rlocal(l),plocal(l),zlocal(l),&
-            !                TI_spl%x1(1),TI_spl%n1,&
-            !                TI_spl%x2(1),TI_spl%n2,&
-            !                TI_spl%x3(1),TI_spl%n3,&
-            !                TI_spl%ilin1,TI_spl%ilin2,TI_spl%ilin3,&
-            !                i,j,k,xparam,yparam,zparam,&
-            !                hx,hxi,hy,hyi,hz,hzi,ier)
             i = MIN(MAX(COUNT(raxis < rlocal(l)),1),nr-1)
             j = MIN(MAX(COUNT(phiaxis < plocal(l)),1),nphi-1)
             k = MIN(MAX(COUNT(zaxis < zlocal(l)),1),nz-1)
@@ -491,12 +485,12 @@ MODULE beams3d_physics_mod
             energy   = energy/(e_charge*A_in(1)) ! keV/amu
             DO l = 1, num_depo
                nelocal(l)  = MAX(MIN(nelocal(l),1E21),1E18)
-               telocal(l)  = MAX(MIN(telocal(l),energy(l)/2),1.0E-3)
+               telocal(l)  = MAX(MIN(telocal(l),energy(l)*0.5),energy(l)*0.01)
                ni_in(1) = nelocal(l)/zefflocal(l)
                Z_in(1)  = NINT(zefflocal(l))
                CALL suzuki_sigma(1,energy(l),nelocal(l),telocal(l),ni_in,A_in,Z_in,tau_inv(l))
             END DO
-            tau_inv = tau_inv*nelocal*ABS(q(4))*1E-4
+            tau_inv = tau_inv*nelocal*ABS(q(4))*1E-4 !cm^2 to m^2 for sigma
          ELSE
             !--------------------------------------------------------------
             !     USE ADAS to calcualte ionization rates
@@ -802,7 +796,7 @@ MODULE beams3d_physics_mod
          !--------------------------------------------------------------
          ier = 0
          phi_temp = MOD(q(2),phimax)
-         IF (phi_temp < 0) phi_temp = phi_temp + phimax
+         IF (phi_temp < zero) phi_temp = phi_temp + phimax
          r_temp = q(1)
          z_temp = q(3)
 
@@ -818,7 +812,7 @@ MODULE beams3d_physics_mod
          vperp  = sqrt( 2*modb_temp*moment/mymass )
 
          ! Unit vectors
-         IF (bnz == 0) THEN
+         IF (bnz == zero) THEN
             e1    = (/one,zero,zero/)
             e2    = (/zero,one,zero/)
          ELSE
@@ -1291,6 +1285,118 @@ MODULE beams3d_physics_mod
          RETURN
 
       END SUBROUTINE beams3d_SFLX
+
+      !-----------------------------------------------------------------
+      !     Function:      beams3d_suv2rzp
+      !     Authors:       S. Lazerson (samuel.lazerson@ipp.mpg.de)
+      !     Date:          03/07/2021
+      !     Description:   Returns R and Z given s,u,v coordinate
+      !-----------------------------------------------------------------
+      SUBROUTINE beams3d_suv2rzp(s,u,v,r_out,z_out,phi_out)
+         !--------------------------------------------------------------
+         !     Input Parameters
+         !          s            Normalized Toroidal Flux
+         !          u            Poloidal Angle
+         !          v            Toroidal Angle
+         !          r_out        Major Radius Distance R
+         !          z_out        Vertical Distance Z
+         !          phi_out      Toroidal Angle
+         !--------------------------------------------------------------
+         IMPLICIT NONE
+         DOUBLE PRECISION, INTENT(inout) :: s
+         DOUBLE PRECISION, INTENT(inout) :: u
+         DOUBLE PRECISION, INTENT(inout) :: v
+         DOUBLE PRECISION, INTENT(inout) :: r_out
+         DOUBLE PRECISION, INTENT(inout) :: z_out
+         DOUBLE PRECISION, INTENT(out) :: phi_out
+
+         !--------------------------------------------------------------
+         !     Local Variables
+         !        residual   Residual Error
+         !--------------------------------------------------------------
+         INTEGER          :: n
+         DOUBLE PRECISION :: s0, u0, residual, tau, delR, delZ, fnorm, &
+                             factor
+
+         ! For splines
+         INTEGER :: i,j,k
+         REAL*8 :: xparam, yparam, zparam
+         INTEGER, parameter :: ict(8)=(/1,1,1,1,0,0,0,0/)
+         REAL*8 :: fvals(1,4),fvalu(1,4) !(f,df/fR,df/dphi,dfdZ)
+
+         !--------------------------------------------------------------
+         !     Begin Subroutine
+         !--------------------------------------------------------------
+         residual = 1.0
+         factor = 1.0
+         IF (r_out<0) r_out = raxis(1)+(raxis(nr)-raxis(1))*.75
+!         r_out = (raxis(1)+raxis(nr))*0.5
+!         z_out = (zaxis(1)+zaxis(nz))*0.5
+         
+         ! PHI does not change
+         phi_out = MOD(v,MAXVAL(phiaxis))
+         j = MIN(MAX(COUNT(phiaxis < phi_out),1),nphi-1)
+         yparam = (phi_out - phiaxis(j)) * hpi(j)
+
+         ! Adjust u
+         u = MOD(u,pi2)
+
+         fnorm = s*s+u*u
+         fnorm = MIN(1./fnorm,1E5)
+         n = 1
+
+         ! Loop Basically a NEWTON's METHOD
+         !  F(R,Z) = (s0-s(R,Z))*(u0-u(R,Z))
+         !  dF/dR  = -ds/dR*(u0-u(R,Z))-du/dR*(s0-s(R,Z))
+         !  dF/dZ  = -ds/dZ*(u0-u(R,Z))-du/dZ*(s0-s(R,Z))
+         DO WHILE (residual > 1.0E-3 .and. n<500)
+            i = MIN(MAX(COUNT(raxis < r_out),1),nr-1)
+            k = MIN(MAX(COUNT(zaxis < z_out),1),nz-1)
+            xparam = (r_out - raxis(i)) * hri(i)
+            zparam = (z_out - zaxis(k)) * hzi(k)
+            ! Evaluate the Splines
+            CALL R8HERM3FCN(ict,1,1,fvals,i,j,k,xparam,yparam,zparam,&
+                            hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                            S4D(1,1,1,1),nr,nphi,nz)
+            CALL R8HERM3FCN(ict,1,1,fvalu,i,j,k,xparam,yparam,zparam,&
+                            hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                            U4D(1,1,1,1),nr,nphi,nz)
+            IF (fvals(1,1) > 1.05) THEN
+              r_out = raxis(MOD(n,nr-1)+1)
+              z_out = zaxis(MOD(n,nz-1)+1)
+            END IF
+            fvals(1,2:4) = 0.5*fvals(1,2:4)/sqrt(fvals(1,1))
+            s0   = sqrt(fvals(1,1))-s
+            u0   = fvalu(1,1)-u
+            residual = (s0*s0+u0*u0)*fnorm
+            tau = fvals(1,2)*fvalu(1,4)-fvals(1,4)*fvalu(1,2)
+            !tau = MAX(tau,0.0001)
+            !delR = -(  s0*fvalu(1,4) + u0*fvals(1,4))/tau
+            !delZ = -(  s0*fvalu(1,2) + u0*fvals(1,2))/tau
+            !Newtwon
+            delR =-(s0*fvals(1,2) + u0*fvalu(1,2))/(fvals(1,2)**2 + fvalu(1,2)**2)
+            delZ =-(s0*fvalu(1,4) + u0*fvalu(1,4))/(fvals(1,4)**2 + fvalu(1,4)**2)
+            !delR = ( s0*fvalu(1,4) - u0*fvals(1,4))/tau !( (s0-s)du/dR - (u0-u)*ds/dR)/tau
+            !delZ = (-s0*fvalu(1,2) + u0*fvals(1,2))/tau !(-(s0-s)du/dZ)+ (u0-u)*ds/dZ)/tau
+            delR = MIN(MAX(delR,-hr(1)),hr(1))
+            delZ = MIN(MAX(delZ,-hz(1)),hz(1))
+            !WRITE(6,*) '----- ',s,u,s0,u0,r_out,z_out,residual,tau,delR,delZ
+
+            IF (residual < 0.01) THEN
+               delR = delR*0.5
+               delZ = delZ*0.5
+            END IF
+
+            r_out = MAX(MIN(r_out + delR*factor,raxis(nr)),raxis(1))
+            z_out = MAX(MIN(z_out + delZ*factor,zaxis(nz)),zaxis(1))
+            !WRITE(6,*) '----- ',s,u,s0,u0,r_out,z_out,residual
+            n=n+1
+         END DO
+
+
+         RETURN
+
+      END SUBROUTINE beams3d_suv2rzp
 
       !-----------------------------------------------------------------
       !     Function:      beams3d_fbounce
