@@ -6,7 +6,7 @@
 #endif
      4                 )
 ! ... from SPH 2009-10-05; changes for modB sine-harmonics included
-      USE vmec_input, ONLY: ns_array, ftol_array, lwouttxt
+      USE vmec_input, ONLY: ns_array, ftol_array, lwouttxt, lnyquist
       USE vmec_params
       USE vmec_main
       USE vmercier
@@ -117,7 +117,6 @@
 !   L o c a l   P a r a m e t e r s
 !-----------------------------------------------
       REAL(dp), PARAMETER :: c1p5 = 1.5_dp
-      LOGICAL :: lnyquist = .TRUE.                               !=false, suppress nyquist stuff
 #ifdef NETCDF
       CHARACTER(LEN=*), PARAMETER, DIMENSION(1) ::
      1             r1dim = (/'radius'/), mn1dim = (/'mn_mode'/),
