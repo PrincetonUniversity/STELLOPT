@@ -143,6 +143,9 @@
       ! FARADAY ROTATION
       IF (ANY(sigma_faraday < bigno_ne)) &
          CALL chisq_faraday(target_faraday, sigma_faraday, ncnt,iflag)
+      ! VISUAL BREMSSTRAHLUNG
+      IF (ANY(sigma_visbrem_line < bigno)) &
+         CALL chisq_line_visbrem(target_visbrem_line, sigma_visbrem_line, ncnt,iflag)
          
       !------------- OTHER TARGETS -------------------
       !  ECE Reflectometry

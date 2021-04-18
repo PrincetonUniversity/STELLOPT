@@ -26,11 +26,14 @@
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       INTEGER     :: domain_flag, nfit_targs, nfit_coefs
-      REAL(rprec) :: R_target, PHI_target, Z_target, SUM_target
+      REAL(rprec) :: R_target, PHI_target, Z_target, SUM_target, visbrem_lambda
       REAL(rprec), ALLOCATABLE :: fit_targs(:,:), fit_coefs(:)
       CHARACTER(LEN=256) :: fit_type
       TYPE(EZspline1_r8) :: prof_spl,Bhat_spl,L2_spl
       DOUBLE PRECISION, PARAMETER :: delta_TEM = 0.9999
+      DOUBLE PRECISION, PARAMETER :: Ry = 2.1798723611035D-18 ! Rydberg Energy (J)
+      DOUBLE PRECISION, PARAMETER :: hc = 1.98644582D-25 ! hc [m^3kg/s^2]
+      DOUBLE PRECISION, PARAMETER :: ec = 1.60217662D-19 ! Electron Charge
       DOUBLE PRECISION :: lam_TEM
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -743,6 +746,30 @@
       END IF
       RETURN
       END SUBROUTINE fcn_faraday
+
+      SUBROUTINE fcn_bremsstrahlung(s,u,v,dx,dy,dz,fval,ier)
+      IMPLICIT NONE
+      REAL(rprec), INTENT(in) :: s,u,v,dx,dy,dz
+      REAL(rprec), INTENT(out) :: fval
+      INTEGER, INTENT(inout) :: ier
+      REAL(rprec) :: ne_val,te_val,ze_val,gauntff,x
+      fval = 0
+      IF (s>1) RETURN
+      CALL get_equil_ne(s,TRIM(ne_type),ne_val,ier)
+      CALL get_equil_Te(s,TRIM(ne_type),te_val,ier)
+      CALL get_equil_zeff(s,TRIM(zeff_type),ze_val,ier)
+      te_val = te_val*ec ! eV to J
+      x =ze_val*ze_val*Ry/(te_val) !GAMMA^2=Z*Z*Ry/kT
+      CALL GAUNT_FREEFREE(x,gauntff)
+      IF (abs(te_val) > 0) THEN
+         fval = gauntff*ne_val*ne_val*ze_val*EXP(hc/(visbrem_lambda*te_val)) &
+                /(visbrem_lambda*visbrem_lambda*sqrt(te_val))
+         fval = fval*ABS(dx*dx+dy*dy+dz*dz)
+      ELSE
+         fval = 0
+      END IF
+      RETURN
+      END SUBROUTINE fcn_bremsstrahlung
          
          
       SUBROUTINE mntouv(k1,k,mnmax,nu,nv,xu,xv,fmn,xm,xn,f,signs,calc_trig)
