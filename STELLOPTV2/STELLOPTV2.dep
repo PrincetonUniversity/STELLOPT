@@ -299,6 +299,12 @@ chisq_line_zeff.o : \
       equil_utils.o 
       
 
+chisq_line_visbrem.o : \
+      stellopt_runtime.o \
+      stellopt_targets.o \
+      equil_utils.o 
+      
+
 chisq_ece.o : \
       stellopt_runtime.o \
       stellopt_targets.o \
