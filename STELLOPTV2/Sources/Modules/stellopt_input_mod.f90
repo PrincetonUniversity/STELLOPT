@@ -818,7 +818,7 @@
       z1_zeff_line(:)   = 0.0
       target_visbrem_line(:) = 0.0
       sigma_visbrem_line(:) = bigno
-      sigma_visbrem_line(:) = 0.632E-6 !632 nm
+      lambda_visbrem_line(:) = 0.632E-6 !632 nm
       calib_visbrem_line(:) = 1.0
       r0_visbrem_line(:)   = 0.0
       phi0_visbrem_line(:) = 0.0
