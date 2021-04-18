@@ -1,5 +1,7 @@
 # Microsoft Developer Studio Generated Dependency File, included by LIBSTELL.mak
       
+gaunt_freefree.o :  
+      
 read_hint_mod.o :  \
       stel_kinds.o 
       
