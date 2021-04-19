@@ -232,6 +232,19 @@ def read_stellopt(filename):
             stel_data[item+'_R1'] = np.squeeze(stel_data[item][:,:,6])
             stel_data[item+'_PHI1'] = np.squeeze(stel_data[item][:,:,7])
             stel_data[item+'_Z1'] = np.squeeze(stel_data[item][:,:,8])
+        elif item == 'VISBREMLINE':
+            stel_data[item+'_target'] = np.squeeze(stel_data[item][:,:,0])
+            stel_data[item+'_sigma'] = np.squeeze(stel_data[item][:,:,1])
+            stel_data[item+'_equil'] = np.squeeze(stel_data[item][:,:,2])
+            stel_data[item+'_LAMBDA'] = np.squeeze(stel_data[item][:,:,3])
+            stel_data[item+'_CALIB'] = np.squeeze(stel_data[item][:,:,4])
+            stel_data[item+'_chisq'] = ((stel_data[item+'_target'] - stel_data[item+'_equil']*stel_data[item+'_CALIB'])/stel_data[item+'_sigma'])**2
+            stel_data[item+'_R0'] = np.squeeze(stel_data[item][:,:,5])
+            stel_data[item+'_PHI0'] = np.squeeze(stel_data[item][:,:,6])
+            stel_data[item+'_Z0'] = np.squeeze(stel_data[item][:,:,7])
+            stel_data[item+'_R1'] = np.squeeze(stel_data[item][:,:,8])
+            stel_data[item+'_PHI1'] = np.squeeze(stel_data[item][:,:,9])
+            stel_data[item+'_Z1'] = np.squeeze(stel_data[item][:,:,10])
         elif item == 'MSE':
             stel_data[item+'_target'] = np.squeeze(stel_data[item][:,:,4])
             stel_data[item+'_sigma'] = np.squeeze(stel_data[item][:,:,5])
