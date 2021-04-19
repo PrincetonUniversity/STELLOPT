@@ -716,7 +716,7 @@
       fval = 0
       IF (s>1) RETURN
       CALL get_equil_ne(s,TRIM(ne_type),ne_val,ier)
-      CALL get_equil_te(s,TRIM(ne_type),te_val,ier)
+      CALL get_equil_te(s,TRIM(te_type),te_val,ier)
       CALL get_equil_zeff(s,TRIM(ne_type),zeff_val,ier)
       IF (abs(te_val) > 0) THEN
          fval = zeff_val*ne_val*ne_val*sqrt(te_val)
@@ -756,14 +756,17 @@
       fval = 0
       IF (s>1) RETURN
       CALL get_equil_ne(s,TRIM(ne_type),ne_val,ier)
-      CALL get_equil_Te(s,TRIM(ne_type),te_val,ier)
+      CALL get_equil_Te(s,TRIM(te_type),te_val,ier)
       CALL get_equil_zeff(s,TRIM(zeff_type),ze_val,ier)
       te_val = te_val*ec ! eV to J
       x =ze_val*ze_val*Ry/(te_val) !GAMMA^2=Z*Z*Ry/kT
       CALL GAUNT_FREEFREE(x,gauntff)
       IF (abs(te_val) > 0) THEN
-         fval = gauntff*ne_val*ne_val*ze_val*EXP(hc/(visbrem_lambda*te_val)) &
+         fval = gauntff*ne_val*ne_val*ze_val*EXP(-hc/(visbrem_lambda*te_val)) &
                 /(visbrem_lambda*visbrem_lambda*sqrt(te_val))
+         ! This factor is 8*pi*e^6*sqrt(2)/(3*(4*pi/(mu0*c^2))^3*me^3/2*c^2*sqrt(3*pi)) YUK
+         fval = fval*6.0647053688D-55
+         !PRINT *,s,ne_val,te_val,ze_val,gauntff,fval
          fval = fval*ABS(dx*dx+dy*dy+dz*dz)
       ELSE
          fval = 0
