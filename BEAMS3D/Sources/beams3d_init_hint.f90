@@ -20,7 +20,6 @@
                                  ZEFF_spl_s, nzeff, ZEFF_ARR, req_axis, zeq_axis, &
                                  phiedge_eq, reff_eq
       USE beams3d_lines, ONLY: GFactor, ns_prof1
-      USE wall_mod, ONLY: wall_load_seg, wall_info,vertex,face, wall_dump
       USE read_hint_mod, ONLY: get_hint_grid, get_hint_B, get_hint_press, &
                                get_hint_maxp, read_hint_deallocate, &
                                get_hint_magaxis, get_hint_gridB, &

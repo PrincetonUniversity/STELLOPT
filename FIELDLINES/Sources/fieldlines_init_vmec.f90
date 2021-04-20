@@ -21,7 +21,6 @@
                                  rmin, rmax, zmin, zmax, phimin, &
                                  phimax, vc_adapt_tol, B_R, B_Z, B_PHI,&
                                  BR_spl, BZ_spl
-      USE wall_mod, ONLY: wall_load_mn, wall_info,vertex,face
       USE mpi_params                                                    ! MPI
 !      USE mpi
 !-----------------------------------------------------------------------
