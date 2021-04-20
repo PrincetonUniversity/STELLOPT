@@ -13,7 +13,7 @@
       USE read_eqdsk_mod, ONLY: totcur, psimx, psilim, &
                                 raxis_eqdsk => raxis, &
                                 zaxis_eqdsk => zaxis, get_eqdsk_B, &
-                                get_eqdsk_flux, read_eqdsk_deallocate, &
+                                get_eqdsk_fluxs, read_eqdsk_deallocate, &
                                 nlim, xlim, zlim, ntitle, btor, &
                                 rcenter, sp, nbndry, xbndry, zbndry
       USE beams3d_runtime
@@ -27,7 +27,7 @@
                                  ZEFF_spl_s, nzeff, ZEFF_ARR, req_axis, zeq_axis, &
                                  phiedge_eq, reff_eq
       USE beams3d_lines, ONLY: GFactor, ns_prof1
-      USE wall_mod, ONLY: wall_load_seg, wall_info,vertex,face, wall_dump
+      USE wall_mod, ONLY: wall_load_seg
       USE mpi_params
       USE mpi_inc
 !-----------------------------------------------------------------------

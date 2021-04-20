@@ -26,7 +26,7 @@
                                  ZEFF_spl_s, nzeff, ZEFF_ARR, req_axis, zeq_axis, &
                                  phiedge_eq, reff_eq
       USE beams3d_lines, ONLY: GFactor, ns_prof1
-      USE wall_mod, ONLY: wall_load_mn, wall_info,vertex,face
+      USE wall_mod, ONLY: wall_load_mn
       USE mpi_params
       USE mpi_inc
 !-----------------------------------------------------------------------
@@ -184,8 +184,6 @@
          i = 120
          j = 180
          CALL wall_load_mn(DBLE(rmnc(1:mnmax,k)),DBLE(zmns(1:mnmax,k)),DBLE(xm),-DBLE(xn),mnmax,i,j,COMM=MPI_COMM_LOCAL)
-         !IF (lverb) CALL wall_info(6)
-         !IF (mylocalid /= master) DEALLOCATE(vertex,face)
       END IF
 
       ! Initialize Virtual Casing
