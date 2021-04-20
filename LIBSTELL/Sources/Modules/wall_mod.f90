@@ -48,12 +48,19 @@
       
 !-----------------------------------------------------------------------
 !     Subroutines
-!         wall_load_txt:   Loads trianular mesh from file
+!         wall_load_txt:   Loads triangular mesh from file
 !         wall_load_mn:    Creates wall from harmonics
+!         wall_load_seg:   Creates wall from segments
 !         wall_dump:       Dumps triangulation data
-!         wall_info:       Prints wall info.
-!         wall_collide:    Calculates collision with wall
+!         wall_info:       Prints wall info
+!         collide:         Calculates collision with wall
+!                          Has to implementations, for double and float
+!         uncount_wall_hit Reduces hit count for last location by one
 !         wall_free:       Frees module memory
+!-----------------------------------------------------------------------
+!     Functions
+!         get_wall_ik      Gets index of last hit
+!         get_wall_area    Gets area of certain wall index
 !-----------------------------------------------------------------------
       INTERFACE collide
          MODULE PROCEDURE collide_double, collide_float
@@ -63,6 +70,13 @@
       CONTAINS
       
       SUBROUTINE wall_load_txt(filename,istat,comm)
+      !-----------------------------------------------------------------------
+      ! wall_load_txt: Loads triangular mesh from file
+      !-----------------------------------------------------------------------
+      ! param[in]: filename. The file name to load in
+      ! param[in, out]: istat. Integer that shows error if != 0
+      ! param[in, out]: comm. MPI communicator, handles shared memory
+      !-----------------------------------------------------------------------
 #if defined(MPI_OPT)
       USE mpi
 #endif
@@ -214,6 +228,18 @@
       END SUBROUTINE wall_load_txt
 
       SUBROUTINE wall_load_mn(Rmn,Zmn,xm,xn,mn,nu,nv,comm)
+      !-----------------------------------------------------------------------
+      ! wall_load_mn: Creates wall from harmonics
+      !-----------------------------------------------------------------------
+      ! param[in]: Rmn. Harmonics in R direction
+      ! param[in]: Zmn. Harmonics in Z direction
+      ! param[in]: xm. 
+      ! param[in]: xn. 
+      ! param[in]: mn. 
+      ! param[in]: nu. 
+      ! param[in]: nv. 
+      ! param[in, out]: comm. MPI communicator, handles shared memory
+      !-----------------------------------------------------------------------
 #if defined(MPI_OPT)
       USE mpi
 #endif
@@ -436,6 +462,16 @@
       END SUBROUTINE wall_load_mn
 
       SUBROUTINE wall_load_seg(npts,rseg,zseg,nphi,istat,comm)
+      !-----------------------------------------------------------------------
+      ! wall_load_seg: Creates wall from segments
+      !-----------------------------------------------------------------------
+      ! param[in]: npts. Number of points in r and Z direction
+      ! param[in]: rseg. Segments in r direction (with npts number of points)
+      ! param[in]: zseg. Segmetns in z direction (with npts number of points)
+      ! param[in]: nphi. Number of points in phi direction
+      ! param[in, out]: istat. Integer that shows error if != 0
+      ! param[in, out]: comm. MPI communicator, handles shared memory
+      !-----------------------------------------------------------------------
 #if defined(MPI_OPT)
       USE mpi
 #endif
@@ -612,6 +648,12 @@
       END SUBROUTINE wall_load_seg
 
       SUBROUTINE wall_dump(filename,istat)
+      !-----------------------------------------------------------------------
+      ! wall_dump: Dumps triangulation data
+      !-----------------------------------------------------------------------
+      ! param[in]: filename. The file name to load in
+      ! param[in, out]: istat. Integer that shows error if != 0
+      !-----------------------------------------------------------------------
       CHARACTER(LEN=*), INTENT(in) :: filename
       INTEGER, INTENT(inout)       :: istat
       INTEGER :: iunit, ik
@@ -631,6 +673,11 @@
 
       
       SUBROUTINE wall_info(iunit)
+      !-----------------------------------------------------------------------
+      ! wall_info: Prints wall info
+      !-----------------------------------------------------------------------
+      ! param[in]: iunit. Location to print information about wall
+      !-----------------------------------------------------------------------
       IMPLICIT NONE
       INTEGER, INTENT(in)    :: iunit
       WRITE(iunit,'(A)')         ' -----  Vessel Information  -----'
@@ -641,6 +688,20 @@
       END SUBROUTINE wall_info
 
       SUBROUTINE collide_float(x0,y0,z0,x1,y1,z1,xw,yw,zw,lhit)
+      !-----------------------------------------------------------------------
+      ! collide_float: Implementation of collide for floating point values
+      !-----------------------------------------------------------------------
+      ! param[in]: x0. x-location of first point of the line segment to check
+      ! param[in]: y0. y-location of first point of the line segment to check
+      ! param[in]: z0. z-location of first point of the line segment to check
+      ! param[in]: x1. x-location of second point of the line segment to check
+      ! param[in]: y1. y-location of second point of the line segment to check
+      ! param[in]: z1. z-location of second point of the line segment to check
+      ! param[out]: xw. x-location of hit (if hit has been found)
+      ! param[out]: yw. y-location of hit (if hit has been found)
+      ! param[out]: zw. z-location of hit (if hit has been found)
+      ! param[out]: lhit. Logical that shows if hit has been found or not
+      !-----------------------------------------------------------------------
       IMPLICIT NONE
       REAL, INTENT(in) :: x0, y0, z0, x1, y1, z1
       REAL, INTENT(out) :: xw, yw, zw
@@ -657,6 +718,20 @@
       END SUBROUTINE collide_float
 
       SUBROUTINE collide_double(x0,y0,z0,x1,y1,z1,xw,yw,zw,lhit)
+      !-----------------------------------------------------------------------
+      ! collide_double: Implementation of collide for double precision values
+      !-----------------------------------------------------------------------
+      ! param[in]: x0. x-location of first point of the line segment to check
+      ! param[in]: y0. y-location of first point of the line segment to check
+      ! param[in]: z0. z-location of first point of the line segment to check
+      ! param[in]: x1. x-location of second point of the line segment to check
+      ! param[in]: y1. y-location of second point of the line segment to check
+      ! param[in]: z1. z-location of second point of the line segment to check
+      ! param[out]: xw. x-location of hit (if hit has been found)
+      ! param[out]: yw. y-location of hit (if hit has been found)
+      ! param[out]: zw. z-location of hit (if hit has been found)
+      ! param[out]: lhit. Logical that shows if hit has been found or not
+      !-----------------------------------------------------------------------
       IMPLICIT NONE
       DOUBLE PRECISION, INTENT(in) :: x0, y0, z0, x1, y1, z1
       DOUBLE PRECISION, INTENT(out) :: xw, yw, zw
@@ -703,17 +778,31 @@
       END SUBROUTINE collide_double
 
       SUBROUTINE uncount_wall_hit
+      !-----------------------------------------------------------------------
+      ! uncount_wall_hit: Reduces ihit_array at last found hit location with one
+      !-----------------------------------------------------------------------
          IMPLICIT NONE
          ihit_array(ik_min) = ihit_array(ik_min) - 1
       END SUBROUTINE
 
       INTEGER FUNCTION get_wall_ik()
+      !-----------------------------------------------------------------------
+      ! get_wall_ik: Gets index of last hit location
+      !-----------------------------------------------------------------------
+      ! return[integer]: get_wall_ik. Last hit index 
+      !-----------------------------------------------------------------------
          IMPLICIT NONE
          get_wall_ik = ik_min
          RETURN
       END FUNCTION
 
       DOUBLE PRECISION FUNCTION get_wall_area(ik)
+      !-----------------------------------------------------------------------
+      ! get_wall_ik: Gets index of last hit location
+      !-----------------------------------------------------------------------
+      ! param[in]: ik. Index of wall location to check
+      ! return[double]: get_wall_area. Area of wall location checked 
+      !-----------------------------------------------------------------------
          IMPLICIT NONE
          INTEGER, INTENT(in) :: ik
          get_wall_area = 0.5*SQRT(SUM(FN(ik,:)*FN(ik,:)))
@@ -721,6 +810,12 @@
       END FUNCTION
 
       SUBROUTINE wall_free(istat,shared_comm)
+      !-----------------------------------------------------------------------
+      ! wall_free: Removes wall from memory
+      !-----------------------------------------------------------------------
+      ! param[in, out]: istat. Integer that shows error if != 0
+      ! param[in, out]: shared_comm. MPI communicator, handles shared memory
+      !-----------------------------------------------------------------------
 #if defined(MPI_OPT)
       USE mpi
 #endif
@@ -812,6 +907,11 @@
       END SUBROUTINE wall_free
 
       SUBROUTINE mpialloc_1d_int(array,n1,subid,mymaster,share_comm,win)
+      !-----------------------------------------------------------------------
+      ! mpialloc_1d_int: Allocated a 1D integer array to shared memory
+      ! Taken from LIBSTELL/Sources/Modules/mpi_sharemem.f90
+      ! Included here to reduce dependencies
+      !-----------------------------------------------------------------------
       ! Libraries
 #if defined(MPI_OPT)
       USE mpi
@@ -847,6 +947,11 @@
       END SUBROUTINE mpialloc_1d_int
 
       SUBROUTINE mpialloc_1d_dbl(array,n1,subid,mymaster,share_comm,win)
+      !-----------------------------------------------------------------------
+      ! mpialloc_1d_int: Allocated a 1D double array to shared memory
+      ! Taken from LIBSTELL/Sources/Modules/mpi_sharemem.f90
+      ! Included here to reduce dependencies
+      !-----------------------------------------------------------------------
       ! Libraries
 #if defined(MPI_OPT)
       USE mpi
@@ -882,6 +987,11 @@
       END SUBROUTINE mpialloc_1d_dbl
 
       SUBROUTINE mpialloc_2d_int(array,n1,n2,subid,mymaster,share_comm,win)
+      !-----------------------------------------------------------------------
+      ! mpialloc_1d_int: Allocated a 2D integer array to shared memory
+      ! Taken from LIBSTELL/Sources/Modules/mpi_sharemem.f90
+      ! Included here to reduce dependencies
+      !-----------------------------------------------------------------------
       ! Libraries
 #if defined(MPI_OPT)
       USE mpi
@@ -919,6 +1029,11 @@
       END SUBROUTINE mpialloc_2d_int
 
       SUBROUTINE mpialloc_2d_dbl(array,n1,n2,subid,mymaster,share_comm,win)
+      !-----------------------------------------------------------------------
+      ! mpialloc_1d_int: Allocated a 2D double array to shared memory
+      ! Taken from LIBSTELL/Sources/Modules/mpi_sharemem.f90
+      ! Included here to reduce dependencies
+      !-----------------------------------------------------------------------
       ! Libraries
 #if defined(MPI_OPT)
       USE mpi
