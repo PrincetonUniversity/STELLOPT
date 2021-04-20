@@ -70,11 +70,8 @@
       CHARACTER(LEN=*), INTENT(in) :: filename
       INTEGER, INTENT(inout)       :: istat
       INTEGER, INTENT(inout), OPTIONAL :: comm
-      INTEGER :: iunit, ik, dex1, dex2, dex3, bubble
+      INTEGER :: iunit, ik, dex1, dex2, dex3
       INTEGER :: shar_comm, shar_rank, shar_size
-      DOUBLE PRECISION :: rt1,rt2,rt3
-      DOUBLE PRECISION, DIMENSION(3) :: temp
-      DOUBLE PRECISION, ALLOCATABLE :: r_temp(:,:),z_temp(:,:)
       
       shar_rank = 0; shar_size = 1;
       lwall_loaded = .false.
@@ -224,10 +221,9 @@
       DOUBLE PRECISION, INTENT(in) :: Rmn(mn), Zmn(mn), xm(mn), xn(mn)
       INTEGER, INTENT(in) :: mn, nu, nv
       INTEGER, INTENT(inout), OPTIONAL :: comm
-      INTEGER :: u, v, i, j, istat, dex1, dex2, dex3, ik, bubble, nv2
+      INTEGER :: u, v, i, j, istat, dex1, dex2, dex3, ik, nv2
       INTEGER :: shar_comm, shar_rank, shar_size
       DOUBLE PRECISION :: pi2, th, zt, pi
-      DOUBLE PRECISION, DIMENSION(3) :: temp
       DOUBLE PRECISION, ALLOCATABLE :: r_temp(:,:),z_temp(:,:),x_temp(:,:),y_temp(:,:)
 
       machine_string = '          HARMONICS'
@@ -451,8 +447,8 @@
       INTEGER, INTENT(inout), OPTIONAL :: comm
       INTEGER :: shar_comm, shar_rank, shar_size
       INTEGER :: nseg, ij, ik, il, im
-      DOUBLE PRECISION :: xt, yt, zt, dphi
-      INTEGER :: iunit, dex1, dex2, dex3
+      DOUBLE PRECISION :: dphi
+      INTEGER :: dex1, dex2, dex3
       
       shar_rank = 0; shar_size = 1;
       dphi = 8.0D+00 * ATAN(one)/nphi
@@ -731,7 +727,6 @@
       IMPLICIT NONE
       INTEGER, INTENT(inout) :: istat
       INTEGER, INTENT(inout), OPTIONAL :: shared_comm
-      INTEGER :: ier
       IF (PRESENT(shared_comm)) THEN
 #if defined(MPI_OPT)
          CALL MPI_WIN_FENCE(0,win_vertex,istat)
