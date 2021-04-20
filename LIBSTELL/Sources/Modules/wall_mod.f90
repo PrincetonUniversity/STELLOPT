@@ -660,79 +660,6 @@
       RETURN
       END SUBROUTINE collide_float
 
-      SUBROUTINE collide_float_vec(x0,y0,z0,x1,y1,z1,xw,yw,zw,lhit)
-      IMPLICIT NONE
-      REAL, INTENT(in) :: x0, y0, z0, x1, y1, z1
-      REAL, INTENT(out) :: xw, yw, zw
-      LOGICAL, INTENT(out) :: lhit
-      DOUBLE PRECISION :: x0d, y0d, z0d, x1d, y1d, z1d
-      DOUBLE PRECISION :: xwd, ywd, zwd
-      LOGICAL          :: lhit2
-      xw=zero; yw=zero; zw=zero; lhit=.FALSE.
-      x0d=x0; y0d=y0; z0d=z0
-      x1d=x1; y1d=y1; z1d=z1
-      CALL collide_double_vec(x0d,y0d,z0d,x1d,y1d,z1d,xwd,ywd,zwd,lhit2)
-      xw=xwd; yw=ywd; zw=zwd; lhit=lhit2
-      RETURN
-      END SUBROUTINE collide_float_vec
-
-      SUBROUTINE collide_double_vec(x0,y0,z0,x1,y1,z1,xw,yw,zw,lhit)
-      IMPLICIT NONE
-      DOUBLE PRECISION, INTENT(in) :: x0, y0, z0, x1, y1, z1
-      DOUBLE PRECISION, INTENT(out) :: xw, yw, zw
-      LOGICAL, INTENT(out) :: lhit
-      INTEGER :: ik, k1,k2
-      DOUBLE PRECISION :: drx, dry, drz, V2x, V2y, V2z, DOT02l, DOT12l, tloc, tmin, alphal, betal
-      REAL :: xs,ys,zs,xb,yb,zb
-      xw=zero; yw=zero; zw=zero; lhit=.FALSE.
-      ik_min = zero
-      tmin = 2
-      k1 = 1; k2 = nface
-      ! Define DR
-      drx = x1-x0
-      dry = y1-y0
-      drz = z1-z0
-      ! min/max
-      xs = min(x0,x1)
-      ys = min(y0,y1)
-      zs = min(z0,z1)
-      xb = max(x0,x1)
-      yb = max(y0,y1)
-      zb = max(z0,z1)
-      ! Calculate distance along trajectory to hit triangle
-      DO ik = k1,k2
-         IF (xb<xmin(ik) .or. xs>xmax(ik) .or. &
-             yb<ymin(ik) .or. ys>ymax(ik) .or. &
-             zb<zmin(ik) .or. zs>zmax(ik)) CYCLE
-         alphal = FN(ik,1)*drx + FN(ik,2)*dry + FN(ik,3)*drz
-         betal = FN(ik,1)*x0 + FN(ik,2)*y0 + FN(ik,3)*z0
-         !IF (alphal < zero) CYCLE  ! we get wrong face
-         tloc = (d(ik)-betal)/alphal
-         IF (tloc > one) CYCLE
-         IF (tloc <= zero) CYCLE
-         V2x = x0 + tloc*drx - A0(ik,1)
-         V2y = y0 + tloc*dry - A0(ik,2)
-         V2z = z0 + tloc*drz - A0(ik,3)
-         DOT02l = V0(ik,1)*V2x + V0(ik,2)*V2y + V0(ik,3)*V2z
-         DOT12l = V1(ik,1)*V2x + V1(ik,2)*V2y + V1(ik,3)*V2z
-         alphal = (DOT11(ik)*DOT02l-DOT01(ik)*DOT12l)*invDenom(ik)
-         betal  = (DOT00(ik)*DOT12l-DOT01(ik)*DOT02l)*invDenom(ik)
-         IF ((alphal < zero) .or. (betal < zero) .or. (alphal+betal > one)) CYCLE
-         IF (tloc < tmin) THEN
-            ik_min = ik
-            tmin = tloc
-         END IF
-      END DO
-      IF (ik_min > zero) THEN
-         lhit = .TRUE.
-         xw   = x0 + tmin*drx
-         yw   = y0 + tmin*dry
-         zw   = z0 + tmin*drz
-         ihit_array(ik_min) = ihit_array(ik_min) + 1
-      END IF
-      RETURN
-      END SUBROUTINE collide_double_vec
-
       SUBROUTINE collide_double(x0,y0,z0,x1,y1,z1,xw,yw,zw,lhit)
       IMPLICIT NONE
       DOUBLE PRECISION, INTENT(in) :: x0, y0, z0, x1, y1, z1
@@ -888,36 +815,6 @@
       lwall_loaded = .false.
       RETURN
       END SUBROUTINE wall_free
-
-      SUBROUTINE wall_test
-      LOGICAL :: lhit
-      INTEGER :: i
-      DOUBLE PRECISION :: pi2,x0,y0,z0,r0,rho0,x1,y1,z1,xw,yw,zw, rr0,zz0,phi0, rho1, rr1, zz1
-      r0 = 10.0   ! R0
-      rho0 = 0.975
-      rho1 = 1.025 ! rho
-      z0 = 0 ! Z0
-      pi2 = (8.0 * ATAN(1.0))
-      phi0 = 0
-      CALL collide(r0+rho0,DBLE(0.0),z0,r0+rho1,DBLE(0.0),z0,xw,yw,zw,lhit)
-      WRITE(6,*) xw,yw,zw,lhit
-      DO i = 1, 10000
-         rr0 = rho0*cos(pi2*(i-1)/10000.)
-         zz0 = rho0*sin(pi2*(i-1)/10000.)
-         rr1 = rho1*cos(pi2*(i-1)/10000.)
-         zz1 = rho1*sin(pi2*(i-1)/10000.)
-         x0 = (r0+rr0)*cos(phi0)
-         y0 = (r0+rr0)*sin(phi0)
-         z0 = z0 + zz1
-         x1 = (r0+rr1)*cos(phi0)
-         y1 = (r0+rr1)*sin(phi0)
-         z1 = z0 + zz1
-         CALL collide(x0,y0,z0,x1,y1,z1,xw,yw,zw,lhit)
-         !WRITE(327,'(9(1X,E22.12))') x0,y0,z0,x1,y1,z1,xw,yw,zw
-         CALL FLUSH(327)
-      END DO
-      RETURN
-      END SUBROUTINE wall_test
 
       SUBROUTINE mpialloc_1d_int(array,n1,subid,mymaster,share_comm,win)
       ! Libraries
