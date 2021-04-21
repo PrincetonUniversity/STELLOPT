@@ -13,7 +13,7 @@
       USE read_eqdsk_mod, ONLY: totcur, psimx, psilim, &
                                 raxis_eqdsk => raxis, &
                                 zaxis_eqdsk => zaxis, get_eqdsk_B, &
-                                get_eqdsk_fluxs, read_eqdsk_deallocate, &
+                                get_eqdsk_flux, read_eqdsk_deallocate, &
                                 nlim, xlim, zlim, ntitle, btor, &
                                 rcenter, sp, nbndry, xbndry, zbndry
       USE beams3d_runtime
