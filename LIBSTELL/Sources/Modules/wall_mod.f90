@@ -89,6 +89,7 @@
       
       shar_rank = 0; shar_size = 1;
       lwall_loaded = .false.
+      ! initialize MPI
 #if defined(MPI_OPT)
       IF (PRESENT(comm)) THEN
          CALL MPI_COMM_SPLIT_TYPE(comm, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, shar_comm, istat)
@@ -96,11 +97,15 @@
          CALL MPI_COMM_SIZE( shar_comm, shar_size, istat)
       END IF
 #endif
+      ! open file, return if fails
       CALL safe_open(iunit,istat,TRIM(filename),'old','formatted')
       IF (istat/=0) RETURN
+      ! read info
       READ(iunit,'(A)') machine_string
       READ(iunit,'(A)') date
       READ(iunit,*) nvertex,nface
+      ! allocate shared memory with of mesh
+      ! calculate which part each node has to calculate using mydelta
 #if defined(MPI_OPT)
       IF (PRESENT(comm)) THEN
          CALL mpialloc_2d_dbl(vertex,nvertex,3,shar_rank,0,shar_comm,win_vertex)
@@ -111,11 +116,13 @@
          IF (myend > nface) myend=nface
       ELSE
 #endif
+         ! if no MPI, allocate everything on one node
          ALLOCATE(vertex(nvertex,3),face(nface,3),STAT=istat)
          mystart = 1; myend=nface
 #if defined(MPI_OPT)
       END IF
 #endif
+      ! read in the mesh on allocated memory
       IF (istat/=0) RETURN
       IF (shar_rank == 0) THEN
          DO ik = 1, nvertex
@@ -125,7 +132,9 @@
             READ(iunit,*) face(ik,1),face(ik,2),face(ik,3)
          END DO
       END IF
+      ! close file
       CLOSE(iunit)
+      ! allocate memory for information about the mesh
 #if defined(MPI_OPT)
       IF (PRESENT(comm)) CALL MPI_BARRIER(comm,istat)
       IF (istat/=0) RETURN
@@ -155,6 +164,7 @@
       END IF
 #endif
       IF (istat/=0) RETURN
+      ! Precalculate information about mesh
       ! Calculate the face normal
       ! V  = Vertex1-Vertex0
       ! W  = Vertex2-Vertex0
@@ -185,6 +195,7 @@
          istat=-327
          RETURN
       END IF
+      ! allocate memory for information about mesh triangles 
 #if defined(MPI_OPT)
       IF (PRESENT(comm)) THEN
          CALL mpialloc_1d_dbl(DOT00,nface,shar_rank,0,shar_comm,win_dot00)
@@ -208,6 +219,7 @@
 #if defined(MPI_OPT)
       END IF
 #endif
+      ! if no error, calculate information about mesh triangles
       IF (istat/=0) RETURN
       DO ik = mystart, myend
          ihit_array(ik) = 0
@@ -217,12 +229,14 @@
          d(ik)     = FN(ik,1)*A0(ik,1) + FN(ik,2)*A0(ik,2) + FN(ik,3)*A0(ik,3)
          invDenom(ik) = one / (DOT00(ik)*DOT11(ik) - DOT01(ik)*DOT01(ik))
       END DO
+      ! sync MPI
 #if defined(MPI_OPT)
       IF (PRESENT(comm)) THEN
          CALL MPI_BARRIER(shar_comm, istat)
          CALL MPI_COMM_FREE(shar_comm, istat)
       END IF
 #endif
+      ! set wall as loaded and return
       lwall_loaded = .true.
       RETURN
       END SUBROUTINE wall_load_txt
@@ -252,12 +266,14 @@
       DOUBLE PRECISION :: pi2, th, zt, pi
       DOUBLE PRECISION, ALLOCATABLE :: r_temp(:,:),z_temp(:,:),x_temp(:,:),y_temp(:,:)
 
+      ! create info usually read from file manually
       machine_string = '          HARMONICS'
       date = '      TODAY'
       pi2 = 8.0D+00 * ATAN(one)
       pi  = 4.0E+00 * ATAN(one)
       nv2 = nv/2
       shar_rank = 0; shar_size = 1;
+      ! initialize MPI
 #if defined(MPI_OPT)
       IF (PRESENT(comm)) THEN
          CALL MPI_COMM_SPLIT_TYPE(comm, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, shar_comm, istat)
@@ -265,6 +281,7 @@
          CALL MPI_COMM_SIZE( shar_comm, shar_size, istat)
       END IF
 #endif
+      ! If shared memory rank not changed above, create temporary locations from harmonic calculations
       IF (shar_rank==0)THEN
          ALLOCATE(r_temp(nu,nv),z_temp(nu,nv),x_temp(nu,nv),y_temp(nu,nv))
          r_temp(:,:) = 0
@@ -289,6 +306,8 @@
       nvertex = nu*nv
       nface   = 2*nu*nv
       istat = 0
+      ! allocate shared memory with of mesh
+      ! calculate which part each node has to calculate using mydelta
 #if defined(MPI_OPT)
       IF (PRESENT(comm)) THEN
          CALL mpialloc_2d_dbl(vertex,nvertex,3,shar_rank,0,shar_comm,win_vertex)
@@ -299,6 +318,7 @@
          IF (myend > nface) myend=nface
       ELSE
 #endif
+         ! if no MPI, allocate everything on one node
          ALLOCATE(vertex(nvertex,3),face(nface,3),STAT=istat)
          mystart = 1; myend=nface
 #if defined(MPI_OPT)
@@ -306,6 +326,7 @@
 #endif
       i = 1  ! Tracks vertex index
       j = 1 ! Tracks face index
+      ! Do further calculations to create mesh if shared memory rank is zero
       IF (shar_rank==0)THEN
          DO v = 1, nv-1
             DO u = 1, nu-1
@@ -364,11 +385,14 @@
          face(j,3) = i - nu + 1
          j = j + 1
          i=i+1
+         ! remove temperary information
          DEALLOCATE(r_temp,z_temp,x_temp,y_temp)
       END IF
+      ! if using MPI, wait here
 #if defined(MPI_OPT)
       IF (PRESENT(comm)) CALL MPI_BARRIER(shar_comm,istat)
 #endif
+      ! allocate memory for information about the mesh
 #if defined(MPI_OPT)
       IF (PRESENT(comm)) THEN
          CALL mpialloc_2d_dbl(A0,nface,3,shar_rank,0,shar_comm,win_a0)
@@ -396,6 +420,7 @@
       END IF
 #endif
       IF (istat/=0) RETURN
+      ! Precalculate information about mesh
       ! Calculate the face normal
       ! W  = Vertex1-Vertex0
       ! W  = Vertex2-Vertex0
@@ -418,6 +443,7 @@
          zmin(ik) = min(vertex(dex1,3),vertex(dex2,3),vertex(dex3,3))
          zmax(ik) = max(vertex(dex1,3),vertex(dex2,3),vertex(dex3,3))
       END DO
+      ! allocate memory for information about mesh triangles 
 #if defined(MPI_OPT)
       IF (PRESENT(comm)) THEN
          CALL MPI_BARRIER(shar_comm, istat)
@@ -442,6 +468,7 @@
 #if defined(MPI_OPT)
       END IF
 #endif
+      ! if no error, calculate information about mesh triangles
       IF (istat/=0) RETURN
       DO ik = mystart, myend
          ihit_array(ik) = 0
@@ -451,12 +478,14 @@
          d(ik)     = FN(ik,1)*A0(ik,1) + FN(ik,2)*A0(ik,2) + FN(ik,3)*A0(ik,3)
          invDenom(ik) = one / (DOT00(ik)*DOT11(ik) - DOT01(ik)*DOT01(ik))
       END DO
+      ! sync MPI
 #if defined(MPI_OPT)
       IF (PRESENT(comm)) THEN
          CALL MPI_BARRIER(shar_comm, istat)
          CALL MPI_COMM_FREE(shar_comm, istat)
       END IF
 #endif
+      ! set wall as loaded and return
       lwall_loaded = .true.
       RETURN
       END SUBROUTINE wall_load_mn
@@ -488,6 +517,7 @@
       
       shar_rank = 0; shar_size = 1;
       dphi = 8.0D+00 * ATAN(one)/nphi
+      ! initialize MPI
 #if defined(MPI_OPT)
       IF (PRESENT(comm)) THEN
          CALL MPI_COMM_SPLIT_TYPE(comm, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, shar_comm, istat)
@@ -495,11 +525,14 @@
          CALL MPI_COMM_SIZE( shar_comm, shar_size, istat)
       END IF
 #endif
+      ! create info usually read from file manually
       machine_string = '          SEGMENTS'
       date = '      TODAY'
       nseg = npts-1
       nvertex = nseg * 4 * nphi
       nface   = nseg * 2 * nphi
+      ! allocate shared memory with of mesh
+      ! calculate which part each node has to calculate using mydelta
 #if defined(MPI_OPT)
       IF (PRESENT(comm)) THEN
          CALL mpialloc_2d_dbl(vertex,nvertex,3,shar_rank,0,shar_comm,win_vertex)
@@ -515,6 +548,7 @@
 #if defined(MPI_OPT)
       END IF
 #endif
+      ! if no error, and shared rank is zero, create triangles from input info
       IF (istat/=0) RETURN
       IF (shar_rank == 0) THEN
          il = 1; im = 1
@@ -546,6 +580,8 @@
             END DO 
          END DO
       END IF
+      ! if using MPI, wait here
+      ! allocate memory for information about the mesh
 #if defined(MPI_OPT)
       IF (PRESENT(comm)) CALL MPI_BARRIER(comm,istat)
       IF (istat/=0) RETURN
@@ -575,6 +611,7 @@
       END IF
 #endif
       IF (istat/=0) RETURN
+      ! Precalculate information about mesh
       ! Calculate the face normal
       ! V  = Vertex1-Vertex0
       ! W  = Vertex2-Vertex0
@@ -605,6 +642,7 @@
          istat=-327
          RETURN
       END IF
+      ! allocate memory for information about mesh triangles 
 #if defined(MPI_OPT)
       IF (PRESENT(comm)) THEN
          CALL mpialloc_1d_dbl(DOT00,nface,shar_rank,0,shar_comm,win_dot00)
@@ -628,6 +666,7 @@
 #if defined(MPI_OPT)
       END IF
 #endif
+      ! if no error, calculate information about mesh triangles
       IF (istat/=0) RETURN
       DO ik = mystart, myend
          ihit_array(ik) = 0
@@ -637,12 +676,14 @@
          d(ik)     = FN(ik,1)*A0(ik,1) + FN(ik,2)*A0(ik,2) + FN(ik,3)*A0(ik,3)
          invDenom(ik) = one / (DOT00(ik)*DOT11(ik) - DOT01(ik)*DOT01(ik))
       END DO
+      ! sync MPI
 #if defined(MPI_OPT)
       IF (PRESENT(comm)) THEN
          CALL MPI_BARRIER(shar_comm, istat)
          CALL MPI_COMM_FREE(shar_comm, istat)
       END IF
 #endif
+      ! set wall as loaded and return
       lwall_loaded = .true.
       RETURN
       END SUBROUTINE wall_load_seg
@@ -657,7 +698,9 @@
       CHARACTER(LEN=*), INTENT(in) :: filename
       INTEGER, INTENT(inout)       :: istat
       INTEGER :: iunit, ik
+      ! open file
       CALL safe_open(iunit,istat,'wall_dump.'//TRIM(filename),'unknown','formatted')
+      ! for every face, output info
       DO ik = 1, nface
          WRITE(iunit,'(13(ES20.10))')  A0(ik,1), A0(ik,2), A0(ik,3), &
                                        FN(ik,1), FN(ik,2), FN(ik,3),&
@@ -667,6 +710,7 @@
       END DO
       WRITE(iunit,*) '#  V0(ik,1), V0(ik,2), V0(ik,3), FN(ik,1), FN(ik,2), FN(ik,3),',&
                         'V(ik,1), V(ik,2), V(ik,3), W(ik,1), W(ik,2), W(ik,3), d(ik)'
+      ! close file
       CLOSE(iunit)
       RETURN
       END SUBROUTINE wall_dump
@@ -709,6 +753,7 @@
       DOUBLE PRECISION :: x0d, y0d, z0d, x1d, y1d, z1d
       DOUBLE PRECISION :: xwd, ywd, zwd
       LOGICAL          :: lhit2
+      ! function simply converts from floating point to double to help compiler
       xw=zero; yw=zero; zw=zero; lhit=.FALSE.
       x0d=x0; y0d=y0; z0d=z0
       x1d=x1; y1d=y1; z1d=z1
@@ -752,8 +797,10 @@
          betal = FN(ik,1)*x0 + FN(ik,2)*y0 + FN(ik,3)*z0
          !IF (alphal < zero) CYCLE  ! we get wrong face
          tloc = (d(ik)-betal)/alphal
+         ! check if tloc gives possible hit
          IF (tloc > one) CYCLE
          IF (tloc <= zero) CYCLE
+         ! if so, calculate alpha and beta again
          V2x = x0 + tloc*drx - A0(ik,1)
          V2y = y0 + tloc*dry - A0(ik,2)
          V2z = z0 + tloc*drz - A0(ik,3)
@@ -761,12 +808,14 @@
          DOT12l = V1(ik,1)*V2x + V1(ik,2)*V2y + V1(ik,3)*V2z
          alphal = (DOT11(ik)*DOT02l-DOT01(ik)*DOT12l)*invDenom(ik)
          betal  = (DOT00(ik)*DOT12l-DOT01(ik)*DOT02l)*invDenom(ik)
+         ! check if these fulfill requirements and if so, store best index
          IF ((alphal < zero) .or. (betal < zero) .or. (alphal+betal > one)) CYCLE
          IF (tloc < tmin) THEN
             ik_min = ik
             tmin = tloc
          END IF
       END DO
+      ! if any index stored, hit was found, calculate location and increment ihit_array
       IF (ik_min > zero) THEN
          lhit = .TRUE.
          xw   = x0 + tmin*drx
