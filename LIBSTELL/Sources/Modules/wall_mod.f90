@@ -30,6 +30,7 @@
 
       LOGICAL, PRIVATE, ALLOCATABLE            :: lmask(:)
       INTEGER, PRIVATE                         :: mystart, myend, mydelta, ik_min
+      INTEGER, PRIVATE                         :: count_one, count_zero, count_reject, count_hit, count_accept
       INTEGER, PRIVATE                         :: win_vertex, win_face, &
                                                   win_fn, win_a0, win_v0, win_v1, &
                                                   win_dot00, win_dot01, win_dot11, &
@@ -238,6 +239,11 @@
 #endif
       ! set wall as loaded and return
       lwall_loaded = .true.
+      count_one = 0
+      count_zero = 0
+      count_reject = 0 
+      count_hit = 0
+      count_accept = 0
       RETURN
       END SUBROUTINE wall_load_txt
 
@@ -798,8 +804,14 @@
          !IF (alphal < zero) CYCLE  ! we get wrong face
          tloc = (d(ik)-betal)/alphal
          ! check if tloc gives possible hit
-         IF (tloc > one) CYCLE
-         IF (tloc <= zero) CYCLE
+         IF (tloc > one) THEN 
+            count_one = count_one + 1 
+            CYCLE
+         END IF
+         IF (tloc <= zero) THEN
+            count_zero = count_zero + 1 
+            CYCLE
+         END IF
          ! if so, calculate alpha and beta again
          V2x = x0 + tloc*drx - A0(ik,1)
          V2y = y0 + tloc*dry - A0(ik,2)
@@ -809,10 +821,16 @@
          alphal = (DOT11(ik)*DOT02l-DOT01(ik)*DOT12l)*invDenom(ik)
          betal  = (DOT00(ik)*DOT12l-DOT01(ik)*DOT02l)*invDenom(ik)
          ! check if these fulfill requirements and if so, store best index
-         IF ((alphal < zero) .or. (betal < zero) .or. (alphal+betal > one)) CYCLE
+         IF ((alphal < zero) .or. (betal < zero) .or. (alphal+betal > one)) THEN
+            count_reject = count_reject + 1 
+            CYCLE
+         END IF
          IF (tloc < tmin) THEN
+            count_hit = count_hit + 1 
             ik_min = ik
             tmin = tloc
+         ELSE
+            count_accept = count_accept + 1 
          END IF
       END DO
       ! if any index stored, hit was found, calculate location and increment ihit_array
@@ -825,6 +843,36 @@
       END IF
       RETURN
       END SUBROUTINE collide_double
+
+      INTEGER FUNCTION get_count_one()
+         IMPLICIT NONE
+         get_count_one = count_one
+         RETURN
+      END FUNCTION
+
+      INTEGER FUNCTION get_count_zero()
+         IMPLICIT NONE
+         get_count_zero = count_zero
+         RETURN
+      END FUNCTION
+
+      INTEGER FUNCTION get_count_reject()
+         IMPLICIT NONE
+         get_count_reject = count_reject
+         RETURN
+      END FUNCTION
+
+      INTEGER FUNCTION get_count_hit()
+         IMPLICIT NONE
+         get_count_hit = count_hit
+         RETURN
+      END FUNCTION
+
+      INTEGER FUNCTION get_count_accept()
+         IMPLICIT NONE
+         get_count_accept = count_accept
+         RETURN
+      END FUNCTION
 
       SUBROUTINE uncount_wall_hit
       !-----------------------------------------------------------------------
