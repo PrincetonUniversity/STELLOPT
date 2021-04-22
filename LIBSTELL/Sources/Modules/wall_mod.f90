@@ -881,20 +881,17 @@
       ! param[out]: lhit. Logical that shows if hit has been found or not
       !-----------------------------------------------------------------------
       IMPLICIT NONE
-      ! import BLAS ddot
-      EXTERNAL DDOT
-      DOUBLE PRECISION  :: DDOT
 
       DOUBLE PRECISION, INTENT(in) :: x0, y0, z0, x1, y1, z1
       DOUBLE PRECISION, INTENT(out) :: xw, yw, zw
       LOGICAL, INTENT(out) :: lhit
+      DOUBLE PRECISION :: tmin, V2x, V2y, V2z, DOT02l, DOT12l
+      DOUBLE PRECISION :: dr(3), r0(3)
+      DOUBLE PRECISION :: V2(nface, 3)
+      DOUBLE PRECISION :: alphal(nface), betal(nface), tloc(nface)
       INTEGER :: ik, k1,k2
-      DOUBLE PRECISION :: DOT02l, DOT12l, tloc, tmin, alphal, betal
-      DOUBLE PRECISION :: dr(3), r0(3), V2(3)
+      LOGICAL :: logical_ab(nface)
       xw=zero; yw=zero; zw=zero; lhit=.FALSE.
-      ik_min = zero
-      tmin = 2
-      k1 = 1; k2 = nface
       ! make vector out of x0, y0, z0
       r0(1) = x0
       r0(2) = y0
@@ -904,25 +901,31 @@
       dr(2) = y1-y0
       dr(3) = z1-z0
       ! Calculate distance along trajectory to hit triangle
+      alphal = MATMUL(FN, dr)
+      betal = MATMUL(FN, r0)
+
+      tloc = (d - betal) / alphal
+
+      ik_min = zero
+      tmin = 2
+      k1 = 1; k2 = nface
       DO ik = k1,k2
-         alphal = DDOT(3, FN(ik, :), 1, dr, 1)
-         betal = DDOT(3, FN(ik, :), 1, r0, 1)
-         !IF (alphal < zero) CYCLE  ! we get wrong face
-         tloc = (d(ik)-betal)/alphal
          ! check if tloc gives possible hit
-         IF (tloc > one) CYCLE
-         IF (tloc <= zero) CYCLE
+         IF (tloc(ik) > one) CYCLE
+         IF (tloc(ik) <= zero) CYCLE
          ! if so, calculate alpha and beta again
-         V2 = r0 + tloc * dr - A0(ik, :)
-         DOT02l = DDOT(3, V0(ik, :), 1, V2, 1)
-         DOT12l = DDOT(3, V1(ik, :), 1, V2, 1)
-         alphal = (DOT11(ik)*DOT02l-DOT01(ik)*DOT12l)*invDenom(ik)
-         betal  = (DOT00(ik)*DOT12l-DOT01(ik)*DOT02l)*invDenom(ik)
+         V2x = x0 + tloc(ik)*dr(1) - A0(ik,1)
+         V2y = y0 + tloc(ik)*dr(2) - A0(ik,2)
+         V2z = z0 + tloc(ik)*dr(3) - A0(ik,3)
+         DOT02l = V0(ik,1)*V2x + V0(ik,2)*V2y + V0(ik,3)*V2z
+         DOT12l = V1(ik,1)*V2x + V1(ik,2)*V2y + V1(ik,3)*V2z
+         alphal(ik) = (DOT11(ik)*DOT02l-DOT01(ik)*DOT12l)*invDenom(ik)
+         betal(ik)  = (DOT00(ik)*DOT12l-DOT01(ik)*DOT02l)*invDenom(ik)
          ! check if these fulfill requirements and if so, store best index
-         IF ((alphal < zero) .or. (betal < zero) .or. (alphal+betal > one)) CYCLE
-         IF (tloc < tmin) THEN
+         IF ((alphal(ik) < zero) .or. (betal(ik) < zero) .or. (alphal(ik)+betal(ik) > one)) CYCLE
+         IF (tloc(ik) < tmin) THEN
             ik_min = ik
-            tmin = tloc
+            tmin = tloc(ik)
          END IF
       END DO
       ! if any index stored, hit was found, calculate location and increment ihit_array
@@ -983,16 +986,14 @@
       ! param[out]: lhit. Logical that shows if hit has been found or not
       !-----------------------------------------------------------------------
       IMPLICIT NONE
-      ! import BLAS ddot
-      EXTERNAL DDOT
-      DOUBLE PRECISION  :: DDOT
 
       DOUBLE PRECISION, INTENT(in) :: x0, y0, z0, x1, y1, z1
       DOUBLE PRECISION, INTENT(out) :: xw, yw, zw
       LOGICAL, INTENT(out) :: lhit
-      INTEGER :: ik, k1,k2
-      DOUBLE PRECISION :: tmin, V2x, V2y, V2z
-      DOUBLE PRECISION :: dr(3), r0(3), V2(3)
+      INTEGER :: ik
+      DOUBLE PRECISION :: tmin
+      DOUBLE PRECISION :: dr(3), r0(3)
+      DOUBLE PRECISION :: V2(nface, 3)
       DOUBLE PRECISION :: alphal(nface), betal(nface), tloc(nface), DOT02l(nface), DOT12l(nface)
       LOGICAL :: logical_ab(nface)
       xw=zero; yw=zero; zw=zero; lhit=.FALSE.
@@ -1009,19 +1010,14 @@
       betal = MATMUL(FN, r0)
 
       tloc = (d - betal) / alphal
-      
-      k1 = 1; k2 = nface
-      DO ik = k1,k2
-         V2x = x0 + tloc(ik)*dr(1) - A0(ik,1)
-         V2y = y0 + tloc(ik)*dr(2) - A0(ik,2)
-         V2z = z0 + tloc(ik)*dr(3) - A0(ik,3)
-         DOT02l(ik) = V0(ik,1)*V2x + V0(ik,2)*V2y + V0(ik,3)*V2z
-         DOT12l(ik) = V1(ik,1)*V2x + V1(ik,2)*V2y + V1(ik,3)*V2z
-         !V2 = r0 + tloc(ik) * dr - A0(ik, :)
-         !DOT02l(ik) = DDOT(3, V0(ik, :), 1, V2, 1)
-         !DOT12l(ik) = DDOT(3, V1(ik, :), 1, V2, 1)
-      END DO
 
+      V2 = -A0 + MATMUL(RESHAPE(tloc, (/nface, 1/)), RESHAPE(dr, (/1, 3/)))
+      DO ik = 1, nface
+         V2(ik, :) = V2(ik, :) + r0(:)
+      ENDDO
+      DOT02l = SUM(V0 * V2, DIM=2)
+      DOT12l = SUM(V1 * V2, DIM=2)
+      
       alphal = (DOT11 * DOT02l - DOT01*DOT12l) * invDenom
       betal = (DOT00 * DOT12l - DOT01*DOT02l) * invDenom
       logical_ab = (alphal > zero) .and. (betal < zero) .and. (alphal+betal < one) .and. (tloc < one) .and. (tloc >= zero)
