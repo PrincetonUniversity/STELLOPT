@@ -14,7 +14,7 @@
 #######################################################################
 #            Define Compiler Flags
 #######################################################################
-  FLAGS_R = -O2 -fexternal-blas
+  FLAGS_R = -O2 -fexternal-blas -fopenmp
   FLAGS_D = -g -O0 -fexternal-blas -fbacktrace -fcheck=all 
   LIBS    = -L/usr/lib -lblas -llapack -lscalapack-openmpi \
             -lblacs-openmpi -lblacsCinit-openmpi -lblacsF77init-openmpi
