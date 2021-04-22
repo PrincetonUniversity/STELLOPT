@@ -13,6 +13,7 @@
 !     Libraries
 !-----------------------------------------------------------------------
       USE safe_open_mod
+      USE omp_lib
       
 !-----------------------------------------------------------------------
 !     Module Variables
@@ -792,6 +793,7 @@
       dry = y1-y0
       drz = z1-z0
       ! Calculate distance along trajectory to hit triangle
+!$omp parallel do firstprivate(drx, dry, drz, x0, y0, z0) private(alphal, betal, V2x, V2y, V2z, DOT02l, DOT12l) shared(ik_min, tmin, FN, V0, V1, DOT11, DOT00)
       DO ik = k1,k2
          alphal = FN(ik,1)*drx + FN(ik,2)*dry + FN(ik,3)*drz
          betal = FN(ik,1)*x0 + FN(ik,2)*y0 + FN(ik,3)*z0
@@ -815,6 +817,7 @@
             tmin = tloc
          END IF
       END DO
+!$omp end parallel do 
       ! if any index stored, hit was found, calculate location and increment ihit_array
       IF (ik_min > zero) THEN
          lhit = .TRUE.
