@@ -33,16 +33,12 @@
       INTEGER, PRIVATE                         :: win_vertex, win_face, &
                                                   win_fn, win_a0, win_v0, win_v1, &
                                                   win_dot00, win_dot01, win_dot11, &
-                                                  win_d, win_ihit, win_invDenom, &
-                                                  win_xmin, win_ymin, win_zmin, &
-                                                  win_xmax, win_ymax, win_zmax
+                                                  win_d, win_ihit, win_invDenom
       DOUBLE PRECISION, PRIVATE, POINTER   :: FN(:,:), d(:), t(:), r0(:,:), dr(:,:)
       DOUBLE PRECISION, PRIVATE, POINTER   :: A0(:,:), V0(:,:), V1(:,:), V2(:,:),&
                                                   DOT00(:), DOT01(:), DOT02(:),&
                                                   DOT11(:), DOT12(:),&
-                                                  invDenom(:), alpha(:), beta(:), &
-                                                  xmin(:),ymin(:),zmin(:), &
-                                                  xmax(:),ymax(:),zmax(:)
+                                                  invDenom(:), alpha(:), beta(:)
       DOUBLE PRECISION, PRIVATE, PARAMETER      :: zero = 0.0D+0
       DOUBLE PRECISION, PRIVATE, PARAMETER      :: one  = 1.0D+0
       
@@ -143,12 +139,6 @@
          CALL mpialloc_2d_dbl(V0,nface,3,shar_rank,0,shar_comm,win_v0)
          CALL mpialloc_2d_dbl(V1,nface,3,shar_rank,0,shar_comm,win_v1)
          CALL mpialloc_2d_dbl(FN,nface,3,shar_rank,0,shar_comm,win_fn)
-         CALL mpialloc_1d_dbl(xmin,nface,shar_rank,0,shar_comm,win_xmin)
-         CALL mpialloc_1d_dbl(ymin,nface,shar_rank,0,shar_comm,win_ymin)
-         CALL mpialloc_1d_dbl(zmin,nface,shar_rank,0,shar_comm,win_zmin)
-         CALL mpialloc_1d_dbl(xmax,nface,shar_rank,0,shar_comm,win_xmax)
-         CALL mpialloc_1d_dbl(ymax,nface,shar_rank,0,shar_comm,win_ymax)
-         CALL mpialloc_1d_dbl(zmax,nface,shar_rank,0,shar_comm,win_zmax)
          mydelta = CEILING(REAL(nface) / REAL(shar_size))
          mystart = 1 + shar_rank*mydelta
          myend   = mystart + mydelta
@@ -157,8 +147,6 @@
 #endif
          ALLOCATE(A0(nface,3),V0(nface,3),V1(nface,3),&
                   FN(nface,3),STAT=istat)
-         ALLOCATE(xmin(nface),ymin(nface),zmin(nface),&
-            xmax(nface),ymax(nface),zmax(nface),STAT=istat)
          mystart = 1; myend = nface
 #if defined(MPI_OPT)
       END IF
@@ -180,12 +168,6 @@
          FN(ik,1) = (V1(ik,2)*V0(ik,3))-(V1(ik,3)*V0(ik,2))
          FN(ik,2) = (V1(ik,3)*V0(ik,1))-(V1(ik,1)*V0(ik,3))
          FN(ik,3) = (V1(ik,1)*V0(ik,2))-(V1(ik,2)*V0(ik,1))
-         xmin(ik) = min(vertex(dex1,1),vertex(dex2,1),vertex(dex3,1))
-         xmax(ik) = max(vertex(dex1,1),vertex(dex2,1),vertex(dex3,1))
-         ymin(ik) = min(vertex(dex1,2),vertex(dex2,2),vertex(dex3,2))
-         ymax(ik) = max(vertex(dex1,2),vertex(dex2,2),vertex(dex3,2))
-         zmin(ik) = min(vertex(dex1,3),vertex(dex2,3),vertex(dex3,3))
-         zmax(ik) = max(vertex(dex1,3),vertex(dex2,3),vertex(dex3,3))
       END DO
 #if defined(MPI_OPT)
       IF (PRESENT(comm)) CALL MPI_BARRIER(comm,istat)
@@ -399,12 +381,6 @@
          CALL mpialloc_2d_dbl(V0,nface,3,shar_rank,0,shar_comm,win_v0)
          CALL mpialloc_2d_dbl(V1,nface,3,shar_rank,0,shar_comm,win_v1)
          CALL mpialloc_2d_dbl(FN,nface,3,shar_rank,0,shar_comm,win_fn)
-         CALL mpialloc_1d_dbl(xmin,nface,shar_rank,0,shar_comm,win_xmin)
-         CALL mpialloc_1d_dbl(ymin,nface,shar_rank,0,shar_comm,win_ymin)
-         CALL mpialloc_1d_dbl(zmin,nface,shar_rank,0,shar_comm,win_zmin)
-         CALL mpialloc_1d_dbl(xmax,nface,shar_rank,0,shar_comm,win_xmax)
-         CALL mpialloc_1d_dbl(ymax,nface,shar_rank,0,shar_comm,win_ymax)
-         CALL mpialloc_1d_dbl(zmax,nface,shar_rank,0,shar_comm,win_zmax)
          mydelta = CEILING(REAL(nface) / REAL(shar_size))
          mystart = 1 + shar_rank*mydelta
          myend   = mystart + mydelta
@@ -413,8 +389,6 @@
 #endif
          ALLOCATE(A0(nface,3),V0(nface,3),V1(nface,3),&
                   FN(nface,3),STAT=istat)
-         ALLOCATE(xmin(nface),ymin(nface),zmin(nface),&
-            xmax(nface),ymax(nface),zmax(nface),STAT=istat)
          mystart = 1; myend = nface
 #if defined(MPI_OPT)
       END IF
@@ -436,12 +410,6 @@
          FN(ik,1) = (V1(ik,2)*V0(ik,3))-(V1(ik,3)*V0(ik,2))
          FN(ik,2) = (V1(ik,3)*V0(ik,1))-(V1(ik,1)*V0(ik,3))
          FN(ik,3) = (V1(ik,1)*V0(ik,2))-(V1(ik,2)*V0(ik,1))
-         xmin(ik) = min(vertex(dex1,1),vertex(dex2,1),vertex(dex3,1))
-         xmax(ik) = max(vertex(dex1,1),vertex(dex2,1),vertex(dex3,1))
-         ymin(ik) = min(vertex(dex1,2),vertex(dex2,2),vertex(dex3,2))
-         ymax(ik) = max(vertex(dex1,2),vertex(dex2,2),vertex(dex3,2))
-         zmin(ik) = min(vertex(dex1,3),vertex(dex2,3),vertex(dex3,3))
-         zmax(ik) = max(vertex(dex1,3),vertex(dex2,3),vertex(dex3,3))
       END DO
       ! allocate memory for information about mesh triangles 
 #if defined(MPI_OPT)
@@ -590,12 +558,6 @@
          CALL mpialloc_2d_dbl(V0,nface,3,shar_rank,0,shar_comm,win_v0)
          CALL mpialloc_2d_dbl(V1,nface,3,shar_rank,0,shar_comm,win_v1)
          CALL mpialloc_2d_dbl(FN,nface,3,shar_rank,0,shar_comm,win_fn)
-         CALL mpialloc_1d_dbl(xmin,nface,shar_rank,0,shar_comm,win_xmin)
-         CALL mpialloc_1d_dbl(ymin,nface,shar_rank,0,shar_comm,win_ymin)
-         CALL mpialloc_1d_dbl(zmin,nface,shar_rank,0,shar_comm,win_zmin)
-         CALL mpialloc_1d_dbl(xmax,nface,shar_rank,0,shar_comm,win_xmax)
-         CALL mpialloc_1d_dbl(ymax,nface,shar_rank,0,shar_comm,win_ymax)
-         CALL mpialloc_1d_dbl(zmax,nface,shar_rank,0,shar_comm,win_zmax)
          mydelta = CEILING(REAL(nface) / REAL(shar_size))
          mystart = 1 + shar_rank*mydelta
          myend   = mystart + mydelta
@@ -604,8 +566,6 @@
 #endif
          ALLOCATE(A0(nface,3),V0(nface,3),V1(nface,3),&
                   FN(nface,3),STAT=istat)
-         ALLOCATE(xmin(nface),ymin(nface),zmin(nface),&
-            xmax(nface),ymax(nface),zmax(nface),STAT=istat)
          mystart = 1; myend = nface
 #if defined(MPI_OPT)
       END IF
@@ -627,12 +587,6 @@
          FN(ik,1) = (V1(ik,2)*V0(ik,3))-(V1(ik,3)*V0(ik,2))
          FN(ik,2) = (V1(ik,3)*V0(ik,1))-(V1(ik,1)*V0(ik,3))
          FN(ik,3) = (V1(ik,1)*V0(ik,2))-(V1(ik,2)*V0(ik,1))
-         xmin(ik) = min(vertex(dex1,1),vertex(dex2,1),vertex(dex3,1))
-         xmax(ik) = max(vertex(dex1,1),vertex(dex2,1),vertex(dex3,1))
-         ymin(ik) = min(vertex(dex1,2),vertex(dex2,2),vertex(dex3,2))
-         ymax(ik) = max(vertex(dex1,2),vertex(dex2,2),vertex(dex3,2))
-         zmin(ik) = min(vertex(dex1,3),vertex(dex2,3),vertex(dex3,3))
-         zmax(ik) = max(vertex(dex1,3),vertex(dex2,3),vertex(dex3,3))
       END DO
 #if defined(MPI_OPT)
       IF (PRESENT(comm)) CALL MPI_BARRIER(comm,istat)
@@ -901,19 +855,7 @@
          CALL MPI_WIN_FENCE(0,win_invdenom,istat)
          CALL MPI_WIN_FREE(win_invdenom,istat)
          CALL MPI_WIN_FENCE(0,win_ihit,istat)
-         CALL MPI_WIN_FREE(win_ihit,istat)
-         CALL MPI_WIN_FENCE(0,win_xmin,istat)
-         CALL MPI_WIN_FREE(win_xmin,istat)
-         CALL MPI_WIN_FENCE(0,win_ymin,istat)
-         CALL MPI_WIN_FREE(win_ymin,istat)
-         CALL MPI_WIN_FENCE(0,win_zmin,istat)
-         CALL MPI_WIN_FREE(win_zmin,istat)
-         CALL MPI_WIN_FENCE(0,win_xmax,istat)
-         CALL MPI_WIN_FREE(win_xmax,istat)
-         CALL MPI_WIN_FENCE(0,win_ymax,istat)
-         CALL MPI_WIN_FREE(win_ymax,istat)
-         CALL MPI_WIN_FENCE(0,win_zmax,istat)
-         CALL MPI_WIN_FREE(win_zmax,istat)
+         CALL MPI_WIN_FREE(win_ihit,istat)    
          IF (ASSOCIATED(vertex)) NULLIFY(vertex)
          IF (ASSOCIATED(face)) NULLIFY(face)
          IF (ASSOCIATED(FN)) NULLIFY(FN)
@@ -925,12 +867,6 @@
          IF (ASSOCIATED(DOT11)) NULLIFY(DOT11)
          IF (ASSOCIATED(d)) NULLIFY(d)
          IF (ASSOCIATED(ihit_array)) NULLIFY(ihit_array)
-         IF (ASSOCIATED(xmin)) NULLIFY(xmin)
-         IF (ASSOCIATED(ymin)) NULLIFY(ymin)
-         IF (ASSOCIATED(zmin)) NULLIFY(zmin)
-         IF (ASSOCIATED(xmax)) NULLIFY(xmax)
-         IF (ASSOCIATED(ymax)) NULLIFY(ymax)
-         IF (ASSOCIATED(zmax)) NULLIFY(zmax)
       ELSE
 #endif
          IF (ASSOCIATED(FN)) DEALLOCATE(FN)
@@ -945,12 +881,6 @@
          IF (ASSOCIATED(vertex)) DEALLOCATE(vertex)
          IF (ASSOCIATED(face)) DEALLOCATE(face)
          IF (ASSOCIATED(ihit_array)) DEALLOCATE(ihit_array)
-         IF (ASSOCIATED(xmin)) DEALLOCATE(xmin)
-         IF (ASSOCIATED(ymin)) DEALLOCATE(ymin)
-         IF (ASSOCIATED(zmin)) DEALLOCATE(zmin)
-         IF (ASSOCIATED(xmax)) DEALLOCATE(xmax)
-         IF (ASSOCIATED(ymax)) DEALLOCATE(ymax)
-         IF (ASSOCIATED(zmax)) DEALLOCATE(zmax)
       END IF
       machine_string=''
       date=''
