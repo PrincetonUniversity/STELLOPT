@@ -827,16 +827,20 @@
       drx = x1-x0
       dry = y1-y0
       drz = z1-z0
-      ! Calculate distance along trajectory to hit triangle
+      ! Check every triangles
+      ! for information check these sources:
+      ! https://tinyurl.com/td442z38 (Ray-Triangle Intersection: Geometric Solution)
+      ! https://cseweb.ucsd.edu/classes/wi17/cse169-a/slides/CSE169_12.pdf 
       DO ik = k1,k2
+         ! calculate whether or not this line segment ever hits the plane of the triangle
          alphal = FN(ik,1)*drx + FN(ik,2)*dry + FN(ik,3)*drz
          betal = FN(ik,1)*x0 + FN(ik,2)*y0 + FN(ik,3)*z0
-         !IF (alphal < zero) CYCLE  ! we get wrong face
+         ! tloc indicated when hit. If hit between r0 and r1, tloc between 0 and 1
          tloc = (d(ik)-betal)/alphal
-         ! check if tloc gives possible hit
          IF (tloc > one) CYCLE
          IF (tloc <= zero) CYCLE
-         ! if so, calculate alpha and beta again
+         ! If the line segment hits the plane of the triangle
+         ! calculate if it actually hits on the triangle
          V2x = x0 + tloc*drx - A0(ik,1)
          V2y = y0 + tloc*dry - A0(ik,2)
          V2z = z0 + tloc*drz - A0(ik,3)
@@ -844,8 +848,9 @@
          DOT12l = V1(ik,1)*V2x + V1(ik,2)*V2y + V1(ik,3)*V2z
          alphal = DOT11(ik)*DOT02l-DOT01(ik)*DOT12l
          betal  = DOT00(ik)*DOT12l-DOT01(ik)*DOT02l
-         ! check if these fulfill requirements and if so, store best index
+         ! In that case, these should be false
          IF ((alphal < zero) .or. (betal < zero) .or. (alphal+betal > one)) CYCLE
+         ! else check if this was the closest hit, and then store
          IF (tloc < tmin) THEN
             ik_min = ik
             tmin = tloc
