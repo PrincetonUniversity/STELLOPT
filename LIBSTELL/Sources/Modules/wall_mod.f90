@@ -28,19 +28,15 @@
       CHARACTER(LEN=256) :: date
 
 
-      LOGICAL, PRIVATE, ALLOCATABLE            :: lmask(:)
       INTEGER, PRIVATE                         :: mystart, myend, mydelta, ik_min
+      INTEGER, PRIVATE                         :: count_a, count_u, count_v, count_t, count_hit
       INTEGER, PRIVATE                         :: win_vertex, win_face, &
-                                                  win_fn, win_a0, win_v0, win_v1, &
-                                                  win_dot00, win_dot01, win_dot11, &
-                                                  win_d, win_ihit, win_invDenom
-      DOUBLE PRECISION, PRIVATE, POINTER   :: FN(:,:), d(:), t(:), r0(:,:), dr(:,:)
-      DOUBLE PRECISION, PRIVATE, POINTER   :: A0(:,:), V0(:,:), V1(:,:), V2(:,:),&
-                                                  DOT00(:), DOT01(:), DOT02(:),&
-                                                  DOT11(:), DOT12(:),&
-                                                  invDenom(:), alpha(:), beta(:)
+                                                  win_tN, win_v0, win_e0, win_e1, &
+                                                  win_ihit
+      DOUBLE PRECISION, PRIVATE, POINTER   :: tN(:,:), v0(:,:), e2(:,:), e1(:,:)
       DOUBLE PRECISION, PRIVATE, PARAMETER      :: zero = 0.0D+0
       DOUBLE PRECISION, PRIVATE, PARAMETER      :: one  = 1.0D+0
+      DOUBLE PRECISION, PRIVATE, PARAMETER      :: epsilon = 0.0000001D+0
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -135,18 +131,18 @@
       IF (PRESENT(comm)) CALL MPI_BARRIER(comm,istat)
       IF (istat/=0) RETURN
       IF (PRESENT(comm)) THEN
-         CALL mpialloc_2d_dbl(A0,nface,3,shar_rank,0,shar_comm,win_a0)
-         CALL mpialloc_2d_dbl(V0,nface,3,shar_rank,0,shar_comm,win_v0)
-         CALL mpialloc_2d_dbl(V1,nface,3,shar_rank,0,shar_comm,win_v1)
-         CALL mpialloc_2d_dbl(FN,nface,3,shar_rank,0,shar_comm,win_fn)
+         CALL mpialloc_2d_dbl(v0,nface,3,shar_rank,0,shar_comm,win_v0)
+         CALL mpialloc_2d_dbl(e2,nface,3,shar_rank,0,shar_comm,win_e0)
+         CALL mpialloc_2d_dbl(e1,nface,3,shar_rank,0,shar_comm,win_e1)
+         CALL mpialloc_2d_dbl(tN,nface,3,shar_rank,0,shar_comm,win_tN)
          mydelta = CEILING(REAL(nface) / REAL(shar_size))
          mystart = 1 + shar_rank*mydelta
          myend   = mystart + mydelta
          IF (myend > nface) myend=nface
       ELSE
 #endif
-         ALLOCATE(A0(nface,3),V0(nface,3),V1(nface,3),&
-                  FN(nface,3),STAT=istat)
+         ALLOCATE(v0(nface,3),e2(nface,3),e1(nface,3),&
+                  tN(nface,3),STAT=istat)
          mystart = 1; myend = nface
 #if defined(MPI_OPT)
       END IF
@@ -154,37 +150,32 @@
       IF (istat/=0) RETURN
       ! Precalculate information about mesh
       ! Calculate the face normal
-      ! V  = Vertex1-Vertex0
-      ! W  = Vertex2-Vertex0
-      ! FN = VxW/|VxW|
-      ! d  = -Vertex0.FN (. is dot product) (note weve absorbed the negative)
+      ! v0: vertex 0
+      ! e2: edge 2 (from 2 to 0)
+      ! e1: edge 1 (from 1 to 0)
+      ! tN: triangle normal
       DO ik = mystart, myend
          dex1 = face(ik,1)
          dex2 = face(ik,2)
          dex3 = face(ik,3)
-         A0(ik,:) = vertex(dex1,:)
-         V0(ik,:)  = vertex(dex3,:)-vertex(dex1,:)
-         V1(ik,:)  = vertex(dex2,:)-vertex(dex1,:)
-         FN(ik,1) = (V1(ik,2)*V0(ik,3))-(V1(ik,3)*V0(ik,2))
-         FN(ik,2) = (V1(ik,3)*V0(ik,1))-(V1(ik,1)*V0(ik,3))
-         FN(ik,3) = (V1(ik,1)*V0(ik,2))-(V1(ik,2)*V0(ik,1))
+         v0(ik,:) = vertex(dex1,:)
+         e2(ik,:)  = vertex(dex3,:)-vertex(dex1,:)
+         e1(ik,:)  = vertex(dex2,:)-vertex(dex1,:)
+         tN(ik,1) = (e1(ik,2)*e2(ik,3))-(e1(ik,3)*e2(ik,2))
+         tN(ik,2) = (e1(ik,3)*e2(ik,1))-(e1(ik,1)*e2(ik,3))
+         tN(ik,3) = (e1(ik,1)*e2(ik,2))-(e1(ik,2)*e2(ik,1))
       END DO
 #if defined(MPI_OPT)
       IF (PRESENT(comm)) CALL MPI_BARRIER(comm,istat)
 #endif
       ! Check for zero area
-      IF (ANY(SUM(FN*FN,DIM=2)==zero)) THEN
+      IF (ANY(SUM(tN*tN,DIM=2)==zero)) THEN
          istat=-327
          RETURN
       END IF
       ! allocate memory for information about mesh triangles 
 #if defined(MPI_OPT)
       IF (PRESENT(comm)) THEN
-         CALL mpialloc_1d_dbl(DOT00,nface,shar_rank,0,shar_comm,win_dot00)
-         CALL mpialloc_1d_dbl(DOT01,nface,shar_rank,0,shar_comm,win_dot01)
-         CALL mpialloc_1d_dbl(DOT11,nface,shar_rank,0,shar_comm,win_dot11)
-         CALL mpialloc_1d_dbl(invDenom,nface,shar_rank,0,shar_comm,win_invDenom)
-         CALL mpialloc_1d_dbl(d,nface,shar_rank,0,shar_comm,win_d)
          CALL mpialloc_1d_int(ihit_array,nface,shar_rank,0,shar_comm,win_ihit)
          mydelta = CEILING(REAL(nface) / REAL(shar_size))
          mystart = 1 + shar_rank*mydelta
@@ -192,24 +183,15 @@
          IF (myend > nface) myend=nface
       ELSE
 #endif
-         ALLOCATE(DOT00(nface), DOT01(nface),&
-                  DOT11(nface), invDenom(nface),&
-                  STAT=istat)
-         ALLOCATE(d(nface),STAT=istat)
          ALLOCATE(ihit_array(nface),STAT=istat)
          mystart = 1; myend = nface
 #if defined(MPI_OPT)
       END IF
 #endif
-      ! if no error, calculate information about mesh triangles
+      ! if no error, set hit array to zero
       IF (istat/=0) RETURN
       DO ik = mystart, myend
          ihit_array(ik) = 0
-         DOT00(ik) = V0(ik,1)*V0(ik,1) + V0(ik,2)*V0(ik,2) + V0(ik,3)*V0(ik,3)
-         DOT01(ik) = V0(ik,1)*V1(ik,1) + V0(ik,2)*V1(ik,2) + V0(ik,3)*V1(ik,3)
-         DOT11(ik) = V1(ik,1)*V1(ik,1) + V1(ik,2)*V1(ik,2) + V1(ik,3)*V1(ik,3)
-         d(ik)     = FN(ik,1)*A0(ik,1) + FN(ik,2)*A0(ik,2) + FN(ik,3)*A0(ik,3)
-         invDenom(ik) = one / (DOT00(ik)*DOT11(ik) - DOT01(ik)*DOT01(ik))
       END DO
       ! sync MPI
 #if defined(MPI_OPT)
@@ -220,6 +202,11 @@
 #endif
       ! set wall as loaded and return
       lwall_loaded = .true.
+      count_a = 0
+      count_u = 0
+      count_v = 0
+      count_t = 0
+      count_hit = 0
       RETURN
       END SUBROUTINE wall_load_txt
 
@@ -377,18 +364,18 @@
       ! allocate memory for information about the mesh
 #if defined(MPI_OPT)
       IF (PRESENT(comm)) THEN
-         CALL mpialloc_2d_dbl(A0,nface,3,shar_rank,0,shar_comm,win_a0)
-         CALL mpialloc_2d_dbl(V0,nface,3,shar_rank,0,shar_comm,win_v0)
-         CALL mpialloc_2d_dbl(V1,nface,3,shar_rank,0,shar_comm,win_v1)
-         CALL mpialloc_2d_dbl(FN,nface,3,shar_rank,0,shar_comm,win_fn)
+         CALL mpialloc_2d_dbl(v0,nface,3,shar_rank,0,shar_comm,win_v0)
+         CALL mpialloc_2d_dbl(e2,nface,3,shar_rank,0,shar_comm,win_e0)
+         CALL mpialloc_2d_dbl(e1,nface,3,shar_rank,0,shar_comm,win_e1)
+         CALL mpialloc_2d_dbl(tN,nface,3,shar_rank,0,shar_comm,win_tN)
          mydelta = CEILING(REAL(nface) / REAL(shar_size))
          mystart = 1 + shar_rank*mydelta
          myend   = mystart + mydelta
          IF (myend > nface) myend=nface
       ELSE
 #endif
-         ALLOCATE(A0(nface,3),V0(nface,3),V1(nface,3),&
-                  FN(nface,3),STAT=istat)
+         ALLOCATE(v0(nface,3),e2(nface,3),e1(nface,3),&
+                  tN(nface,3),STAT=istat)
          mystart = 1; myend = nface
 #if defined(MPI_OPT)
       END IF
@@ -398,28 +385,23 @@
       ! Calculate the face normal
       ! W  = Vertex1-Vertex0
       ! W  = Vertex2-Vertex0
-      ! FN = VxW/|VxW|
-      ! d  = -Vertex0.FN (. is dot product) (not weve dropped the minus in our formulation)
+      ! tN = VxW/|VxW|
+      ! d  = -Vertex0.tN (. is dot product) (not weve dropped the minus in our formulation)
       DO ik = mystart, myend
          dex1 = face(ik,1)
          dex2 = face(ik,2)
          dex3 = face(ik,3)
-         A0(ik,:) = vertex(dex1,:)
-         V0(ik,:)  = vertex(dex3,:)-vertex(dex1,:)
-         V1(ik,:)  = vertex(dex2,:)-vertex(dex1,:)
-         FN(ik,1) = (V1(ik,2)*V0(ik,3))-(V1(ik,3)*V0(ik,2))
-         FN(ik,2) = (V1(ik,3)*V0(ik,1))-(V1(ik,1)*V0(ik,3))
-         FN(ik,3) = (V1(ik,1)*V0(ik,2))-(V1(ik,2)*V0(ik,1))
+         v0(ik,:) = vertex(dex1,:)
+         e2(ik,:)  = vertex(dex3,:)-vertex(dex1,:)
+         e1(ik,:)  = vertex(dex2,:)-vertex(dex1,:)
+         tN(ik,1) = (e1(ik,2)*e2(ik,3))-(e1(ik,3)*e2(ik,2))
+         tN(ik,2) = (e1(ik,3)*e2(ik,1))-(e1(ik,1)*e2(ik,3))
+         tN(ik,3) = (e1(ik,1)*e2(ik,2))-(e1(ik,2)*e2(ik,1))
       END DO
-      ! allocate memory for information about mesh triangles 
+      ! allocate memory for hit count array 
 #if defined(MPI_OPT)
       IF (PRESENT(comm)) THEN
          CALL MPI_BARRIER(shar_comm, istat)
-         CALL mpialloc_1d_dbl(DOT00,nface,shar_rank,0,shar_comm,win_dot00)
-         CALL mpialloc_1d_dbl(DOT01,nface,shar_rank,0,shar_comm,win_dot01)
-         CALL mpialloc_1d_dbl(DOT11,nface,shar_rank,0,shar_comm,win_dot11)
-         CALL mpialloc_1d_dbl(invDenom,nface,shar_rank,0,shar_comm,win_invDenom)
-         CALL mpialloc_1d_dbl(d,nface,shar_rank,0,shar_comm,win_d)
          CALL mpialloc_1d_int(ihit_array,nface,shar_rank,0,shar_comm,win_ihit)
          mydelta = CEILING(REAL(nface) / REAL(shar_size))
          mystart = 1 + shar_rank*mydelta
@@ -427,24 +409,15 @@
          IF (myend > nface) myend=nface
       ELSE
 #endif
-         ALLOCATE(DOT00(nface), DOT01(nface),&
-                  DOT11(nface), invDenom(nface),&
-                  STAT=istat)
-         ALLOCATE(d(nface),STAT=istat)
          ALLOCATE(ihit_array(nface),STAT=istat)
          mystart = 1; myend = nface
 #if defined(MPI_OPT)
       END IF
 #endif
-      ! if no error, calculate information about mesh triangles
+      ! if no error, zero hit count array to zero
       IF (istat/=0) RETURN
       DO ik = mystart, myend
          ihit_array(ik) = 0
-         DOT00(ik) = V0(ik,1)*V0(ik,1) + V0(ik,2)*V0(ik,2) + V0(ik,3)*V0(ik,3)
-         DOT01(ik) = V0(ik,1)*V1(ik,1) + V0(ik,2)*V1(ik,2) + V0(ik,3)*V1(ik,3)
-         DOT11(ik) = V1(ik,1)*V1(ik,1) + V1(ik,2)*V1(ik,2) + V1(ik,3)*V1(ik,3)
-         d(ik)     = FN(ik,1)*A0(ik,1) + FN(ik,2)*A0(ik,2) + FN(ik,3)*A0(ik,3)
-         invDenom(ik) = one / (DOT00(ik)*DOT11(ik) - DOT01(ik)*DOT01(ik))
       END DO
       ! sync MPI
 #if defined(MPI_OPT)
@@ -554,18 +527,18 @@
       IF (PRESENT(comm)) CALL MPI_BARRIER(comm,istat)
       IF (istat/=0) RETURN
       IF (PRESENT(comm)) THEN
-         CALL mpialloc_2d_dbl(A0,nface,3,shar_rank,0,shar_comm,win_a0)
-         CALL mpialloc_2d_dbl(V0,nface,3,shar_rank,0,shar_comm,win_v0)
-         CALL mpialloc_2d_dbl(V1,nface,3,shar_rank,0,shar_comm,win_v1)
-         CALL mpialloc_2d_dbl(FN,nface,3,shar_rank,0,shar_comm,win_fn)
+         CALL mpialloc_2d_dbl(v0,nface,3,shar_rank,0,shar_comm,win_v0)
+         CALL mpialloc_2d_dbl(e2,nface,3,shar_rank,0,shar_comm,win_e0)
+         CALL mpialloc_2d_dbl(e1,nface,3,shar_rank,0,shar_comm,win_e1)
+         CALL mpialloc_2d_dbl(tN,nface,3,shar_rank,0,shar_comm,win_tN)
          mydelta = CEILING(REAL(nface) / REAL(shar_size))
          mystart = 1 + shar_rank*mydelta
          myend   = mystart + mydelta
          IF (myend > nface) myend=nface
       ELSE
 #endif
-         ALLOCATE(A0(nface,3),V0(nface,3),V1(nface,3),&
-                  FN(nface,3),STAT=istat)
+         ALLOCATE(v0(nface,3),e2(nface,3),e1(nface,3),&
+                  tN(nface,3),STAT=istat)
          mystart = 1; myend = nface
 #if defined(MPI_OPT)
       END IF
@@ -575,35 +548,30 @@
       ! Calculate the face normal
       ! V  = Vertex1-Vertex0
       ! W  = Vertex2-Vertex0
-      ! FN = VxW/|VxW|
-      ! d  = -Vertex0.FN (. is dot product) (note weve absorbed the negative)
+      ! tN = VxW/|VxW|
+      ! d  = -Vertex0.tN (. is dot product) (note weve absorbed the negative)
       DO ik = mystart, myend
          dex1 = face(ik,1)
          dex2 = face(ik,2)
          dex3 = face(ik,3)
-         A0(ik,:) = vertex(dex1,:)
-         V0(ik,:)  = vertex(dex3,:)-vertex(dex1,:)
-         V1(ik,:)  = vertex(dex2,:)-vertex(dex1,:)
-         FN(ik,1) = (V1(ik,2)*V0(ik,3))-(V1(ik,3)*V0(ik,2))
-         FN(ik,2) = (V1(ik,3)*V0(ik,1))-(V1(ik,1)*V0(ik,3))
-         FN(ik,3) = (V1(ik,1)*V0(ik,2))-(V1(ik,2)*V0(ik,1))
+         v0(ik,:) = vertex(dex1,:)
+         e2(ik,:)  = vertex(dex3,:)-vertex(dex1,:)
+         e1(ik,:)  = vertex(dex2,:)-vertex(dex1,:)
+         tN(ik,1) = (e1(ik,2)*e2(ik,3))-(e1(ik,3)*e2(ik,2))
+         tN(ik,2) = (e1(ik,3)*e2(ik,1))-(e1(ik,1)*e2(ik,3))
+         tN(ik,3) = (e1(ik,1)*e2(ik,2))-(e1(ik,2)*e2(ik,1))
       END DO
 #if defined(MPI_OPT)
       IF (PRESENT(comm)) CALL MPI_BARRIER(comm,istat)
 #endif
       ! Check for zero area
-      IF (ANY(SUM(FN*FN,DIM=2)==zero)) THEN
+      IF (ANY(SUM(tN*tN,DIM=2)==zero)) THEN
          istat=-327
          RETURN
       END IF
       ! allocate memory for information about mesh triangles 
 #if defined(MPI_OPT)
       IF (PRESENT(comm)) THEN
-         CALL mpialloc_1d_dbl(DOT00,nface,shar_rank,0,shar_comm,win_dot00)
-         CALL mpialloc_1d_dbl(DOT01,nface,shar_rank,0,shar_comm,win_dot01)
-         CALL mpialloc_1d_dbl(DOT11,nface,shar_rank,0,shar_comm,win_dot11)
-         CALL mpialloc_1d_dbl(invDenom,nface,shar_rank,0,shar_comm,win_invDenom)
-         CALL mpialloc_1d_dbl(d,nface,shar_rank,0,shar_comm,win_d)
          CALL mpialloc_1d_int(ihit_array,nface,shar_rank,0,shar_comm,win_ihit)
          mydelta = CEILING(REAL(nface) / REAL(shar_size))
          mystart = 1 + shar_rank*mydelta
@@ -611,10 +579,6 @@
          IF (myend > nface) myend=nface
       ELSE
 #endif
-         ALLOCATE(DOT00(nface), DOT01(nface),&
-                  DOT11(nface), invDenom(nface),&
-                  STAT=istat)
-         ALLOCATE(d(nface),STAT=istat)
          ALLOCATE(ihit_array(nface),STAT=istat)
          mystart = 1; myend = nface
 #if defined(MPI_OPT)
@@ -624,11 +588,6 @@
       IF (istat/=0) RETURN
       DO ik = mystart, myend
          ihit_array(ik) = 0
-         DOT00(ik) = V0(ik,1)*V0(ik,1) + V0(ik,2)*V0(ik,2) + V0(ik,3)*V0(ik,3)
-         DOT01(ik) = V0(ik,1)*V1(ik,1) + V0(ik,2)*V1(ik,2) + V0(ik,3)*V1(ik,3)
-         DOT11(ik) = V1(ik,1)*V1(ik,1) + V1(ik,2)*V1(ik,2) + V1(ik,3)*V1(ik,3)
-         d(ik)     = FN(ik,1)*A0(ik,1) + FN(ik,2)*A0(ik,2) + FN(ik,3)*A0(ik,3)
-         invDenom(ik) = one / (DOT00(ik)*DOT11(ik) - DOT01(ik)*DOT01(ik))
       END DO
       ! sync MPI
 #if defined(MPI_OPT)
@@ -656,14 +615,13 @@
       CALL safe_open(iunit,istat,'wall_dump.'//TRIM(filename),'unknown','formatted')
       ! for every face, output info
       DO ik = 1, nface
-         WRITE(iunit,'(13(ES20.10))')  A0(ik,1), A0(ik,2), A0(ik,3), &
-                                       FN(ik,1), FN(ik,2), FN(ik,3),&
-                                       V0(ik,1), V0(ik,2), V0(ik,3),&
-                                       V1(ik,1), V1(ik,2), V1(ik,3), &
-                                       d(ik)
+         WRITE(iunit,'(13(ES20.10))')  v0(ik,1), v0(ik,2), v0(ik,3), &
+                                       tN(ik,1), tN(ik,2), tN(ik,3),&
+                                       e2(ik,1), e2(ik,2), e2(ik,3),&
+                                       e1(ik,1), e1(ik,2), e1(ik,3)
       END DO
-      WRITE(iunit,*) '#  V0(ik,1), V0(ik,2), V0(ik,3), FN(ik,1), FN(ik,2), FN(ik,3),',&
-                        'V(ik,1), V(ik,2), V(ik,3), W(ik,1), W(ik,2), W(ik,3), d(ik)'
+      WRITE(iunit,*) '#  e2(ik,1), e2(ik,2), e2(ik,3), tN(ik,1), tN(ik,2), tN(ik,3),',&
+                        'V(ik,1), V(ik,2), V(ik,3), W(ik,1), W(ik,2), W(ik,3)'
       ! close file
       CLOSE(iunit)
       RETURN
@@ -735,8 +693,9 @@
       DOUBLE PRECISION, INTENT(in) :: x0, y0, z0, x1, y1, z1
       DOUBLE PRECISION, INTENT(out) :: xw, yw, zw
       LOGICAL, INTENT(out) :: lhit
-      INTEGER :: ik, k1,k2
-      DOUBLE PRECISION :: drx, dry, drz, V2x, V2y, V2z, DOT02l, DOT12l, tloc, tmin, alphal, betal
+      INTEGER :: ik, k1, k2
+      DOUBLE PRECISION :: drx, dry, drz, t, tmin, hx, hy, hz, a
+      DOUBLE PRECISION :: f, sx, sy, sz, qx, qy, qz, u, v
       xw=zero; yw=zero; zw=zero; lhit=.FALSE.
       ik_min = zero
       tmin = 2
@@ -746,35 +705,53 @@
       dry = y1-y0
       drz = z1-z0
       ! Check every triangles
-      ! for information check these sources:
-      ! https://tinyurl.com/td442z38 (Ray-Triangle Intersection: Geometric Solution)
-      ! https://cseweb.ucsd.edu/classes/wi17/cse169-a/slides/CSE169_12.pdf 
+      ! Based on Moller-Trumbore algorithm:
+      ! https://en.wikipedia.org/wiki/M%C3%B6ller%E2%80%93Trumbore_intersection_algorith
       DO ik = k1,k2
-         ! calculate whether or not this line segment ever hits the plane of the triangle
-         alphal = FN(ik,1)*drx + FN(ik,2)*dry + FN(ik,3)*drz
-         betal = FN(ik,1)*x0 + FN(ik,2)*y0 + FN(ik,3)*z0
-         ! tloc indicated when hit. If hit between r0 and r1, tloc between 0 and 1
-         tloc = (d(ik)-betal)/alphal
-         IF (tloc > one) CYCLE
-         IF (tloc <= zero) CYCLE
-         ! If the line segment hits the plane of the triangle
-         ! calculate if it actually hits on the triangle
-         V2x = x0 + tloc*drx - A0(ik,1)
-         V2y = y0 + tloc*dry - A0(ik,2)
-         V2z = z0 + tloc*drz - A0(ik,3)
-         DOT02l = V0(ik,1)*V2x + V0(ik,2)*V2y + V0(ik,3)*V2z
-         DOT12l = V1(ik,1)*V2x + V1(ik,2)*V2y + V1(ik,3)*V2z
-         alphal = (DOT11(ik)*DOT02l-DOT01(ik)*DOT12l)*invDenom(ik)
-         betal  = (DOT00(ik)*DOT12l-DOT01(ik)*DOT02l)*invDenom(ik)
-         ! In that case, these should be false
-         IF ((alphal < zero) .or. (betal < zero) .or. (alphal+betal > one)) CYCLE
-         ! else check if this was the closest hit, and then store
-         IF (tloc < tmin) THEN
+         hx = dry * e2(ik, 3) - drz * e2(ik, 2)
+         hy = drz * e2(ik, 1) - drx * e2(ik, 3)
+         hz = drx * e2(ik, 2) - dry * e2(ik, 1)
+
+         a = e1(ik, 1) * hx + e1(ik, 2) * hy + e1(ik, 3) * hz
+         ! check ray not parallel to triangle
+         if (a > -epsilon .and. a < epsilon) THEN
+            count_a = count_a + 1
+            CYCLE
+         end if
+
+         f = one/a
+         sx = x0 - v0(ik, 1)
+         sy = x0 - v0(ik, 2)
+         sz = x0 - v0(ik, 3)
+
+         u = f * (sx * hx + sy * hy + sz * hz)
+         ! check if hit is not behind or more than one time dr away
+         if (u < zero .or. u > one) THEN
+            count_u = count_u + 1
+            ! TODO: No cycle here yet, don't know why isn't working with CYCLE
+         end if
+
+         qx = sy * e1(ik, 3) - sz * e1(ik, 2)
+         qy = sz * e1(ik, 1) - sx * e1(ik, 3)
+         qz = sx * e1(ik, 2) - sy * e1(ik, 1)
+
+         v = f * (drx * qx + dry * qy + drz * qz)
+         ! check if hit is on triangle
+         if (v < zero .or. u + v > one) THEN
+            count_v = count_v + 1
+            CYCLE
+         end if
+
+         ! if so, calculate t (time to hit)
+         t = f * e2(ik,1)*qx + e2(ik,2)*qy + e2(ik,3)*qz
+         if (t > epsilon .and. t < tmin) THEN
+            tmin = t
             ik_min = ik
-            tmin = tloc
-         END IF
-      END DO
-      ! if any index stored, hit was found, calculate location and increment ihit_array
+            count_hit = count_hit + 1
+         else
+            count_t = count_t + 1
+         end if
+      end do
       IF (ik_min > zero) THEN
          lhit = .TRUE.
          xw   = x0 + tmin*drx
@@ -804,6 +781,32 @@
          RETURN
       END FUNCTION
 
+      INTEGER FUNCTION get_count_a()
+         IMPLICIT NONE
+         get_count_a = count_a
+         RETURN
+      END FUNCTION
+      INTEGER FUNCTION get_count_u()
+         IMPLICIT NONE
+         get_count_u = count_u
+         RETURN
+      END FUNCTION
+      INTEGER FUNCTION get_count_v()
+         IMPLICIT NONE
+         get_count_v = count_v
+         RETURN
+      END FUNCTION
+      INTEGER FUNCTION get_count_t()
+         IMPLICIT NONE
+         get_count_t = count_t
+         RETURN
+      END FUNCTION
+      INTEGER FUNCTION get_count_hit()
+         IMPLICIT NONE
+         get_count_hit = count_hit
+         RETURN
+      END FUNCTION
+      
       DOUBLE PRECISION FUNCTION get_wall_area(ik)
       !-----------------------------------------------------------------------
       ! get_wall_ik: Gets index of last hit location
@@ -813,7 +816,7 @@
       !-----------------------------------------------------------------------
          IMPLICIT NONE
          INTEGER, INTENT(in) :: ik
-         get_wall_area = 0.5*SQRT(SUM(FN(ik,:)*FN(ik,:)))
+         get_wall_area = 0.5*SQRT(SUM(tN(ik,:)*tN(ik,:)))
          RETURN
       END FUNCTION
 
@@ -836,48 +839,29 @@
          CALL MPI_WIN_FREE(win_vertex,istat)
          CALL MPI_WIN_FENCE(0,win_face,istat)
          CALL MPI_WIN_FREE(win_face,istat)
-         CALL MPI_WIN_FENCE(0,win_fn,istat)
-         CALL MPI_WIN_FREE(win_fn,istat)
-         CALL MPI_WIN_FENCE(0,win_a0,istat)
-         CALL MPI_WIN_FREE(win_a0,istat)
+         CALL MPI_WIN_FENCE(0,win_tN,istat)
+         CALL MPI_WIN_FREE(win_tN,istat)
          CALL MPI_WIN_FENCE(0,win_v0,istat)
          CALL MPI_WIN_FREE(win_v0,istat)
-         CALL MPI_WIN_FENCE(0,win_v1,istat)
-         CALL MPI_WIN_FREE(win_v1,istat)
-         CALL MPI_WIN_FENCE(0,win_dot00,istat)
-         CALL MPI_WIN_FREE(win_dot00,istat)
-         CALL MPI_WIN_FENCE(0,win_dot01,istat)
-         CALL MPI_WIN_FREE(win_dot01,istat)
-         CALL MPI_WIN_FENCE(0,win_dot11,istat)
-         CALL MPI_WIN_FREE(win_dot11,istat)
-         CALL MPI_WIN_FENCE(0,win_d,istat)
-         CALL MPI_WIN_FREE(win_d,istat)
-         CALL MPI_WIN_FENCE(0,win_invdenom,istat)
-         CALL MPI_WIN_FREE(win_invdenom,istat)
+         CALL MPI_WIN_FENCE(0,win_e0,istat)
+         CALL MPI_WIN_FREE(win_e0,istat)
+         CALL MPI_WIN_FENCE(0,win_e1,istat)
+         CALL MPI_WIN_FREE(win_e1,istat)
          CALL MPI_WIN_FENCE(0,win_ihit,istat)
          CALL MPI_WIN_FREE(win_ihit,istat)    
          IF (ASSOCIATED(vertex)) NULLIFY(vertex)
          IF (ASSOCIATED(face)) NULLIFY(face)
-         IF (ASSOCIATED(FN)) NULLIFY(FN)
-         IF (ASSOCIATED(A0)) NULLIFY(A0)
-         IF (ASSOCIATED(V0)) NULLIFY(V0)
-         IF (ASSOCIATED(V1)) NULLIFY(V1)
-         IF (ASSOCIATED(DOT00)) NULLIFY(DOT00)
-         IF (ASSOCIATED(DOT01)) NULLIFY(DOT01)
-         IF (ASSOCIATED(DOT11)) NULLIFY(DOT11)
-         IF (ASSOCIATED(d)) NULLIFY(d)
+         IF (ASSOCIATED(tN)) NULLIFY(tN)
+         IF (ASSOCIATED(v0)) NULLIFY(v0)
+         IF (ASSOCIATED(e2)) NULLIFY(e2)
+         IF (ASSOCIATED(e1)) NULLIFY(e1)
          IF (ASSOCIATED(ihit_array)) NULLIFY(ihit_array)
       ELSE
 #endif
-         IF (ASSOCIATED(FN)) DEALLOCATE(FN)
-         IF (ASSOCIATED(A0)) DEALLOCATE(A0)
-         IF (ASSOCIATED(V0)) DEALLOCATE(V0)
-         IF (ASSOCIATED(V1)) DEALLOCATE(V1)
-         IF (ASSOCIATED(DOT00)) DEALLOCATE(DOT00)
-         IF (ASSOCIATED(DOT01)) DEALLOCATE(DOT01)
-         IF (ASSOCIATED(DOT11)) DEALLOCATE(DOT11)
-         IF (ASSOCIATED(invDenom)) DEALLOCATE(invDenom)
-         IF (ASSOCIATED(d)) DEALLOCATE(d)
+         IF (ASSOCIATED(tN)) DEALLOCATE(tN)
+         IF (ASSOCIATED(v0)) DEALLOCATE(v0)
+         IF (ASSOCIATED(e2)) DEALLOCATE(e2)
+         IF (ASSOCIATED(e1)) DEALLOCATE(e1)
          IF (ASSOCIATED(vertex)) DEALLOCATE(vertex)
          IF (ASSOCIATED(face)) DEALLOCATE(face)
          IF (ASSOCIATED(ihit_array)) DEALLOCATE(ihit_array)
