@@ -329,6 +329,9 @@
                          r1_ti_line, phi1_ti_line, z1_ti_line, &
                          target_zeff_line, sigma_zeff_line, r0_zeff_line, phi0_zeff_line, z0_zeff_line,&
                          r1_zeff_line, phi1_zeff_line, z1_zeff_line, &
+                         target_visbrem_line, sigma_visbrem_line, lambda_visbrem_line, calib_visbrem_line, &
+                         r0_visbrem_line, phi0_visbrem_line, z0_visbrem_line,&
+                         r1_visbrem_line, phi1_visbrem_line, z1_visbrem_line, &
                          target_ti, sigma_ti, r_ti, z_ti, phi_ti, s_ti,&
                          target_xics, sigma_xics, r0_xics, phi0_xics, z0_xics,&
                          r1_xics, phi1_xics, z1_xics, target_xics_bright, sigma_xics_bright, &
@@ -813,6 +816,16 @@
       r1_zeff_line(:)   = 0.0
       phi1_zeff_line(:) = 0.0
       z1_zeff_line(:)   = 0.0
+      target_visbrem_line(:) = 0.0
+      sigma_visbrem_line(:) = bigno
+      lambda_visbrem_line(:) = 0.632E-6 !632 nm
+      calib_visbrem_line(:) = 1.0
+      r0_visbrem_line(:)   = 0.0
+      phi0_visbrem_line(:) = 0.0
+      z0_visbrem_line(:)   = 0.0
+      r1_visbrem_line(:)   = 0.0
+      phi1_visbrem_line(:) = 0.0
+      z1_visbrem_line(:)   = 0.0
       target_xics(:)        = 0.0
       sigma_xics(:)         = bigno
       target_xics_bright(:) = 0.0
@@ -2500,6 +2513,26 @@
                   'Z1_ZEFF_LINE(',ik,')',z1_zeff_line(ik),&
                   'TARGET_ZEFF_LINE(',ik,')',target_zeff_line(ik),&
                   'SIGMA_ZEFF_LINE(',ik,')',sigma_zeff_line(ik)
+            END IF
+         END DO
+      END IF
+      IF (ANY(sigma_visbrem_line < bigno)) THEN
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         WRITE(iunit,'(A)') '!          LINE INTEGRATED VISUAL BREMSSTRAHLUNG'
+         WRITE(iunit,'(A)') '!----------------------------------------------------------------------'
+         DO ik = 1, UBOUND(sigma_visbrem_line,DIM=1)
+            IF (sigma_visbrem_line(ik) < bigno) THEN
+               WRITE(iunit,"(10(2X,A,I3.3,A,1X,'=',1X,ES22.12E3))") &
+                  'R0_VISBREM_LINE(',ik,')',r0_visbrem_line(ik),&
+                  'PHI0_VISBREM_LINE(',ik,')',phi0_visbrem_line(ik),&
+                  'Z0_VISBREM_LINE(',ik,')',z0_visbrem_line(ik),&
+                  'R1_VISBREM_LINE(',ik,')',r1_visbrem_line(ik),&
+                  'PHI1_VISBREM_LINE(',ik,')',phi1_visbrem_line(ik),&
+                  'Z1_VISBREM_LINE(',ik,')',z1_visbrem_line(ik),&
+                  'TARGET_VISBREM_LINE(',ik,')',target_visbrem_line(ik),&
+                  'SIGMA_VISBREM_LINE(',ik,')',sigma_visbrem_line(ik),&
+                  'LAMBDA_VISBREM_LINE(',ik,')',lambda_visbrem_line(ik),&
+                  'CALIB_VISBREM_LINE(',ik,')',calib_visbrem_line(ik)
             END IF
          END DO
       END IF

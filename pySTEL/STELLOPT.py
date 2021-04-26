@@ -804,7 +804,8 @@ class MyApp(QMainWindow):
 					'XICS','XICS_BRIGHT','XICS_W3','XICS_V',\
 					'S11','S12','S21','S22','MAGWELL','VACIOTA',\
 					'CURVATURE_KERT','CURVATURE_P2',\
-					'ECEREFLECT','SXR','IOTA','PRESS','PRESSPRIME']:
+					'ECEREFLECT','SXR','IOTA','PRESS','PRESSPRIME'\
+					'VISBREMLINE']:
 			for item in self.stel_data:
 				if (name+'_target' == item):
 					self.ui.ComboBoxOPTplot_type.addItem(name+'_evolution')
