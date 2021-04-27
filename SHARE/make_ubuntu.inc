@@ -2,11 +2,12 @@
 #            Define Basic Utilities
 #######################################################################
   SHELL = /bin/sh
+  FC = gfortran
   PWD1 = `pwd`
   MYHOME = $(HOME)/bin
   PRECOMP:= /lib/cpp -traditional -DLINUX
   COMPILE = $(FC)
-  COMPILE_FREE = $(FC) -ffree-form -ffree-line-length-none -ffixed-line-length-none
+  COMPILE_FREE = $(FC) -ffree-form -ffree-line-length-none -ffixed-line-length-none -fopenmp -foffload=-lm
   LINK    = ld $(FLAGS) -o
   LINK_AR = ar -ruv
   LINK_C  = $(CC) -shared -Wl,-z-defs
@@ -14,7 +15,7 @@
 #######################################################################
 #            Define Compiler Flags
 #######################################################################
-  FLAGS_R = -O2 -fexternal-blas -fopenmp
+  FLAGS_R = -O2 -fexternal-blas
   FLAGS_D = -g -O0 -fexternal-blas -fbacktrace -fcheck=all 
   LIBS    = -L/usr/lib -lblas -llapack -lscalapack-openmpi \
             -lblacs-openmpi -lblacsCinit-openmpi -lblacsF77init-openmpi
@@ -22,7 +23,7 @@
 #######################################################################
 #            MPI Options
 #######################################################################
-  LMPI    = T
+  LMPI    = F
   MPI_COMPILE = mpif90.openmpi
   MPI_COMPILE_FREE = mpif90 -ffree-form \
                      -ffree-line-length-none -ffixed-line-length-none
