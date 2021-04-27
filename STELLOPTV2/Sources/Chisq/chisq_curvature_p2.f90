@@ -43,7 +43,8 @@
       !----------------BEGIN SUBROUTINE --------------
 
       IF (iflag < 0) RETURN
-      IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'P2     ',1,3
+      IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'CURVATURE_P2 ',1,5
+      IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA  VAL  P1  P2'
       IF (niter >= 0) THEN
         !Only consider the boundary
         rmnc = rmnc_full(:, ns)
@@ -145,7 +146,7 @@
         targets(mtargets) = target
         sigmas(mtargets) = sigma
         vals(mtargets) = -1*minval(P2)
-        IF (iflag == 1) WRITE(iunit_out,'(3ES22.12E3)') target,sigma,-1*minval(P2)
+        IF (iflag == 1) WRITE(iunit_out,'(5ES22.12E3)') target,sigma,vals(mtargets),MINVAL(P1),MINVAL(P2)
 
       ELSE
         IF (sigma < bigno) THEN

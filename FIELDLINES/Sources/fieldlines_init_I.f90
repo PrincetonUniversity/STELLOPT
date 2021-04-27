@@ -130,30 +130,9 @@
       vy(1:nv) = zaxis(1:nv)*dx(1:nv) - xaxis(1:nv)*dz(1:nv)
       vz(1:nv) = xaxis(1:nv)*dy(1:nv) - yaxis(1:nv)*dx(1:nv)
 
-      ! Break up the Work
-      chunk = FLOOR(REAL(nr*nphi*nz) / REAL(numprocs_local))
-      mystart = mylocalid*chunk + 1
-      myend = mystart + chunk - 1
 
-      ! This section sets up the work so we can use ALLGATHERV
-#if defined(MPI_OPT)
-      IF (ALLOCATED(mnum)) DEALLOCATE(mnum)
-      IF (ALLOCATED(moffsets)) DEALLOCATE(moffsets)
-      ALLOCATE(mnum(numprocs_local), moffsets(numprocs_local))
-      CALL MPI_ALLGATHER(chunk,1,MPI_INTEGER,mnum,1,MPI_INTEGER,MPI_COMM_LOCAL,ierr_mpi)
-      CALL MPI_ALLGATHER(mystart,1,MPI_INTEGER,moffsets,1,MPI_INTEGER,MPI_COMM_LOCAL,ierr_mpi)
-      i = 1
-      DO
-         IF ((moffsets(numprocs_local)+mnum(numprocs_local)-1) == nr*nphi*nz) EXIT
-         IF (i == numprocs_local) i = 1
-         mnum(i) = mnum(i) + 1
-         moffsets(i+1:numprocs_local) = moffsets(i+1:numprocs_local) + 1
-         i=i+1
-      END DO
-      mystart = moffsets(mylocalid+1)
-      chunk  = mnum(mylocalid+1)
-      myend   = mystart + chunk - 1
-#endif
+      ! Break up the Work
+      CALL MPI_CALC_MYRANGE(MPI_COMM_LOCAL,1, nr*nphi*nz, mystart, myend)
 
       ! Put the field on the grid
       DO s = mystart, myend
@@ -208,8 +187,6 @@
       DEALLOCATE(x1, y1, z1, r, r12, fa)
 
 #if defined(MPI_OPT)
-       DEALLOCATE(mnum)
-       DEALLOCATE(moffsets)
       CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
       IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_init_coil1',ierr_mpi)
       CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)

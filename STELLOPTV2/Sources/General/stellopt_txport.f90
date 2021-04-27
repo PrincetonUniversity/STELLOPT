@@ -27,10 +27,10 @@
       USE stellopt_input_mod
       USE stellopt_vars
       USE stellopt_targets
-      USE equil_vals
-      USE equil_utils
-      USE booz_persistent
-      USE read_boozer_mod
+!      USE equil_vals
+      USE equil_utils, shat_vmec=>shat
+!      USE booz_persistent
+!      USE read_boozer_mod
       USE EZspline_obj
       USE EZspline
 !DEC$ IF DEFINED (GENE)
@@ -441,6 +441,8 @@
                ! Calculated q_proxy     
                CALL tolower(txport_proxy)
                SELECT CASE(TRIM(txport_proxy))
+                  CASE('prox_g11')
+                     vqqprox = g11
                   CASE('prox1')
                      qqfac=(one+one/(rhsrkp*(one+(tau_s*slocav)**2)))
                      dkp  = rkp_p-rkp_cr

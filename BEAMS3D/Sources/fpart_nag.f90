@@ -18,7 +18,7 @@
       USE stel_kinds, ONLY: rprec
       USE beams3d_grid
       USE beams3d_runtime, ONLY: lneut
-      USE beams3d_lines, ONLY: moment, mycharge, mymass, myv_neut, B_temp
+      USE beams3d_lines, ONLY: moment, mycharge, mymass, myv_neut
       USE mpi_params, ONLY: myworkid
 !-----------------------------------------------------------------------
 !     Input Variables
@@ -52,7 +52,7 @@
       REAL(rprec) :: gradb(3),gradbr(3),gradbz(3),gradbphi(3),Efield(3),normb(3),bdgB(3),bxbdgB(3),ExB(3)
       ! For splines
       INTEGER :: i,j,k
-      REAL*8 :: xparam, yparam, zparam, hx, hy, hz, hxi, hyi, hzi
+      REAL*8 :: xparam, yparam, zparam
       REAL*8 :: fval(1,4), fvalE(1,3)
       INTEGER, parameter :: ict(8)=(/1,1,1,1,0,0,0,0/)
       INTEGER, parameter :: ictE(8)=(/0,1,1,1,0,0,0,0/)
@@ -79,15 +79,9 @@
          i = MIN(MAX(COUNT(raxis < r_temp),1),nr-1)
          j = MIN(MAX(COUNT(phiaxis < phi_temp),1),nphi-1)
          k = MIN(MAX(COUNT(zaxis < z_temp),1),nz-1)
-         hx     = raxis(i+1) - raxis(i)
-         hy     = phiaxis(j+1) - phiaxis(j)
-         hz     = zaxis(k+1) - zaxis(k)
-         hxi    = one / hx
-         hyi    = one / hy
-         hzi    = one / hz
-         xparam = (r_temp - raxis(i)) * hxi
-         yparam = (phi_temp - phiaxis(j)) * hyi
-         zparam = (z_temp - zaxis(k)) * hzi
+         xparam = (r_temp - raxis(i)) * hri(i)
+         yparam = (phi_temp - phiaxis(j)) * hpi(j)
+         zparam = (z_temp - zaxis(k)) * hzi(k)
          !CALL R8HERM3xyz(r_temp,phi_temp,z_temp,&
          !                BR_spl%x1(1),BR_spl%n1,&
          !                BR_spl%x2(1),BR_spl%n2,&
@@ -97,23 +91,23 @@
          !                hx,hxi,hy,hyi,hz,hzi,ier)
          ! Evaluate the Splines
          CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
-                         hx,hxi,hy,hyi,hz,hzi,&
+                         hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                          BR4D(1,1,1,1),nr,nphi,nz)
          br_temp = fval(1,1); gradbr(1:3) = fval(1,2:4)
          CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
-                         hx,hxi,hy,hyi,hz,hzi,&
+                         hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                          BPHI4D(1,1,1,1),nr,nphi,nz)
          bphi_temp = fval(1,1); gradbphi(1:3) = fval(1,2:4)
          CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
-                         hx,hxi,hy,hyi,hz,hzi,&
+                         hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                          BZ4D(1,1,1,1),nr,nphi,nz)
          bz_temp = fval(1,1); gradbz(1:3) = fval(1,2:4)
          CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
-                         hx,hxi,hy,hyi,hz,hzi,&
+                         hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                          MODB4D(1,1,1,1),nr,nphi,nz)
          modb_temp = fval(1,1); gradb(1:3) = fval(1,2:4)
          CALL R8HERM3FCN(ictE,1,1,fvalE,i,j,k,xparam,yparam,zparam,&
-                         hx,hxi,hy,hyi,hz,hzi,&
+                         hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                          POT4D(1,1,1,1),nr,nphi,nz)
          Efield(1:3) =-fvalE(1,1:3)
          ! Fix gradients

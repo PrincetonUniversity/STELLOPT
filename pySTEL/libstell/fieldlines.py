@@ -33,6 +33,23 @@ def read_fieldlines(file):
     fieldline_data['B_Z'] = bztemp
     return fieldline_data
 
+def calc_reff(data):
+    import numpy as np
+    x = np.zeros(data['R_lines'].shape)
+    y = np.zeros(data['Z_lines'].shape)
+    nstep = data['nsteps']
+    for i in range(data['nsteps']):
+        x[i,:] = data['R_lines'][i,:]-data['R_lines'][i,0]
+        y[i,:] = data['Z_lines'][i,:]-data['Z_lines'][i,0]
+    theta  = np.arctan2(y,x)
+    dtheta = np.diff(theta,axis=0)
+    dtheta = np.where(dtheta<-np.pi,dtheta+2*np.pi,dtheta)
+    dtheta = np.where(dtheta>np.pi,dtheta-2*np.pi,dtheta)
+    theta  = np.cumsum(dtheta,axis=0)
+    out         = {}
+    out  = np.mean(np.sqrt(x*x+y*y),axis=0)
+    return out
+
 def calc_iota(data):
     import numpy as np
     x = np.zeros(data['R_lines'].shape)

@@ -13,7 +13,7 @@
       USE beams3d_lines, ONLY: R_lines, PHI_lines, Z_lines, vll_lines, &
                                neut_lines, moment_lines, S_lines, U_lines, &
                                shine_through, &
-                               B_lines, end_state, shine_port, &
+                               B_lines, end_state, shine_port, Gfactor, &
                                ndot_prof, epower_prof, ipower_prof, j_prof,&
                                dense_prof, dist5d_prof, &
                                win_ndot, win_epower, win_ipower, win_jprof, &
@@ -64,12 +64,19 @@
       IF (ALLOCATED(weight)) DEALLOCATE(weight)
       IF (ALLOCATED(beam)) DEALLOCATE(beam)
       IF (ALLOCATED(end_state)) DEALLOCATE(end_state)
+      IF (ALLOCATED(Gfactor)) DEALLOCATE(Gfactor)
       IF (PRESENT(IN_COMM)) THEN
          IF (ASSOCIATED(req_axis)) CALL mpidealloc(req_axis,win_req_axis)
          IF (ASSOCIATED(zeq_axis)) CALL mpidealloc(zeq_axis,win_zeq_axis)
          IF (ASSOCIATED(raxis))    CALL mpidealloc(raxis,win_raxis)
          IF (ASSOCIATED(phiaxis))  CALL mpidealloc(phiaxis,win_phiaxis)
          IF (ASSOCIATED(zaxis))    CALL mpidealloc(zaxis,win_zaxis)
+         IF (ASSOCIATED(hr))       CALL mpidealloc(hr,win_hr)
+         IF (ASSOCIATED(hp))       CALL mpidealloc(hp,win_hp)
+         IF (ASSOCIATED(hz))       CALL mpidealloc(hz,win_hz)
+         IF (ASSOCIATED(hri))      CALL mpidealloc(hri,win_hri)
+         IF (ASSOCIATED(hpi))      CALL mpidealloc(hpi,win_hpi)
+         IF (ASSOCIATED(hzi))      CALL mpidealloc(hzi,win_hzi)
          IF (ASSOCIATED(B_R))      CALL mpidealloc(B_R,win_B_R)
          IF (ASSOCIATED(B_PHI))    CALL mpidealloc(B_PHI,win_B_PHI)
          IF (ASSOCIATED(B_Z))      CALL mpidealloc(B_Z,win_B_Z)
@@ -111,6 +118,12 @@
          IF (ASSOCIATED(raxis))    DEALLOCATE(raxis)
          IF (ASSOCIATED(phiaxis))  DEALLOCATE(phiaxis)
          IF (ASSOCIATED(zaxis))    DEALLOCATE(zaxis)
+         IF (ASSOCIATED(hr))       DEALLOCATE(hr)
+         IF (ASSOCIATED(hp))       DEALLOCATE(hp)
+         IF (ASSOCIATED(hz))       DEALLOCATE(hz)
+         IF (ASSOCIATED(hri))      DEALLOCATE(hri)
+         IF (ASSOCIATED(hpi))      DEALLOCATE(hpi)
+         IF (ASSOCIATED(hzi))      DEALLOCATE(hzi)
          IF (ASSOCIATED(B_R))      DEALLOCATE(B_R)
          IF (ASSOCIATED(B_PHI))    DEALLOCATE(B_PHI)
          IF (ASSOCIATED(B_Z))      DEALLOCATE(B_Z)

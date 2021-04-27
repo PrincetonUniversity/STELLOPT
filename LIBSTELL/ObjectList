@@ -1,4 +1,8 @@
 ObjectFiles = \
+gaunt_freefree.o \
+read_hint_mod.o \
+read_eqdsk_mod.o \
+vmec_ohkawa.o \
 common_factor.o \
 suzuki_sigma.o \
 wall_mod_new.o \

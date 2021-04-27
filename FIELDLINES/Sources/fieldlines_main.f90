@@ -125,37 +125,29 @@
                case ("-vmec")
                    i = i + 1
                    lvmec = .true.
-                   lpies = .false.
-                   lspec = .false.
                    CALL GETCARG(i,id_string,numargs)
                case ("-pies")
                    i = i + 1
                    lpies = .true.
-                   lvmec = .false.
-                   lspec = .false.
                    CALL GETCARG(i,id_string,numargs)
                case ("-spec")
                    i = i + 1
                    lspec = .true.
-                   lpies = .false.
-                   lvmec = .false.
+                   CALL GETCARG(i,id_string,numargs)
+               case ("-hint")
+                   i = i + 1
+                   lhint = .true.
                    CALL GETCARG(i,id_string,numargs)
                case ("-mgrid")
                    i = i + 1
                    lmgrid = .true.
-                   lcoil  = .false.
-                   lnescoil = .false.
                    CALL GETCARG(i,mgrid_string,numargs)
                case ("-coil","-coils")
                    i = i + 1
                    lcoil  = .true.
-                   lmgrid = .false.
-                   lnescoil = .false.
                    CALL GETCARG(i,coil_string,numargs)
                case ("-nescoil")
                    i = i + 1
-                   lcoil  = .false.
-                   lmgrid = .false.
                    lnescoil = .true.
                    CALL GETCARG(i,nescoil_string,numargs)
                case ("-restart")
@@ -174,12 +166,20 @@
                case ("-full")
                    nruntype = runtype_full
                    lauto = .true.
+               case ("-field_start")
+                   lfield_start = .true.
+                   i = i + 1
+                   CALL GETCARG(i,restart_string,numargs)
+                   i = i + 1
+                   CALL GETCARG(i,args(i),numargs)
+                   READ(args(i),*,IOSTAT=ier) line_select
                case ("-help","-h") ! Output Help message
                   WRITE(6,'(a,f5.2)') 'FIELDLINES Version ',FIELDLINES_VERSION
                   write(6,*)' Fieldline Tracing Code'
                   write(6,*)' Usage: xfieldlines <options>'
                   write(6,*)'    <options>'
                   write(6,*)'     -vmec ext:     VMEC input/wout extension'
+                  write(6,*)'     -vmec ext:     HINT input/magslice extension'
                   !write(6,*)'     -pies ext:   PIES input extension (must have &INDATA namelist)'
                   !write(6,*)'     -spec ext:     SPEC input extension (must have &INDATA namelist)'
                   write(6,*)'     -vessel file:  Vessel File (for limiting)'
@@ -188,6 +188,7 @@
                   write(6,*)'     -coil file:    Coils. File (for vacuum)'
                   write(6,*)'     -nescoil file: NESCOIL File (for vacuum)'
                   !write(6,*)'     -restart ext:  FIELDLINES HDF5 extension.'
+                  write(6,*)'     -field_start file line:  Restart from a field line.'
                   write(6,*)'     -axis          Coil on mag_axis with curtor'
                   write(6,*)'     -full          Full Auto calculation'
                   write(6,*)'     -vac           Only vacuum field'
@@ -251,6 +252,8 @@
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_main',ierr_mpi)
       CALL MPI_BCAST(lvmec,1,MPI_LOGICAL, master, MPI_COMM_FIELDLINES,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_main',ierr_mpi)
+      CALL MPI_BCAST(lhint,1,MPI_LOGICAL, master, MPI_COMM_FIELDLINES,ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_main',ierr_mpi)
       CALL MPI_BCAST(lhitonly,1,MPI_LOGICAL, master, MPI_COMM_FIELDLINES,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_main',ierr_mpi)
       CALL MPI_BCAST(lpies,1,MPI_LOGICAL, master, MPI_COMM_FIELDLINES,ierr_mpi)
@@ -296,6 +299,10 @@
       CALL MPI_BCAST(ledge_start,1,MPI_LOGICAL, master, MPI_COMM_FIELDLINES,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_main',ierr_mpi)
       CALL MPI_BCAST(lmodb,1,MPI_LOGICAL, master, MPI_COMM_FIELDLINES,ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_main',ierr_mpi)
+      CALL MPI_BCAST(lfield_start,1,MPI_LOGICAL, master, MPI_COMM_FIELDLINES,ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_main',ierr_mpi)
+      CALL MPI_BCAST(line_select,1,MPI_INTEGER, master, MPI_COMM_FIELDLINES,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_main',ierr_mpi)
       CALL MPI_BCAST(nruntype,1,MPI_INTEGER, master, MPI_COMM_FIELDLINES,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_main',ierr_mpi)
