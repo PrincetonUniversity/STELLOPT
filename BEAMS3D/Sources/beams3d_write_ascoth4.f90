@@ -306,7 +306,7 @@
                      WRITE(iunit,'(2X,I6,2X,A)') 100,'# Distribution: id'
                      DO j = 1, 100
                         xt = 4.8*div_beams(i)*(j-1)/99
-                        yt = EXP(-0.5*(xt-div_beams(i))**2) ! Gausian random centered on div_beams
+                        yt = EXP(-0.5*((xt-div_beams(i))/(div_beams(i)))**2) ! Gausian random centered on div_beams
                         WRITE(iunit,'(2(2X,ES18.10),2X,A)') xt,yt,'# DiscreteDistribution: data point'
                      END DO
                   END DO
