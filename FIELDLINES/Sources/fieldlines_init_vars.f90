@@ -21,6 +21,7 @@
       lpies    = .false.
       lspec    = .false.
       lcoil    = .false.
+      lhint    = .false.
       lmgrid   = .false.
       lmu      = .false.
       lvessel  = .false.
@@ -40,12 +41,14 @@
       ledge_start = .false.
       lnescoil    = .false.
       lmodb       = .false.
+      lfield_start = .false.
       nruntype = runtype_old
       id_string     = ''
       coil_string   = ''
       mgrid_string  = ''
       vessel_string = ''
       restart_string = ''
+      line_select = 96
       
       RETURN
 !-----------------------------------------------------------------------

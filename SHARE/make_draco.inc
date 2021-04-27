@@ -50,9 +50,11 @@
 #            NETCDF Options
 #######################################################################
   LNETCDF = T
-  NETCDF_INC = -I$(NETCDF_HOME)/include 
-  NETCDF_LIB = -Wl,-rpath,$(NETCDF_HOME)/lib -L$(NETCDF_HOME)/lib \
-               -lnetcdf -lnetcdff 
+  NETCDF_INC = $(shell nc-config --fflags)
+  NETCDF_LIB = $(shell nc-config --flibs)
+#  NETCDF_INC = -I$(NETCDF_HOME)/include 
+#  NETCDF_LIB = -Wl,-rpath,$(NETCDF_HOME)/lib -L$(NETCDF_HOME)/lib \
+#               -lnetcdf -lnetcdff 
 
 #######################################################################
 #            HDF5 Options
@@ -82,8 +84,8 @@
 #######################################################################
   LFFTW3 = F
   FFTW3_INC = -I$(FFTW_HOME)/include
-  FFTW3_LIB = -L$(FFTW_HOME)/lib -lfftw3 -lfftw3f \
-              -Wl,-rpath,$(FFTW_HOME)/lib
+  FFTW3_LIB = -Wl,-rpath,$(FFTW_HOME)/lib -L$(FFTW_HOME)/lib \
+              -lfftw3 -lfftw3f 
 
 #######################################################################
 #            DKES/NEO Options
@@ -101,10 +103,7 @@
   LIB_FUTILS = libfutils.a
   GENE_INC = -I$(GENE_DIR) \
              -I$(FUTILS_DIR)
-  GENE_LIB = -L$(FFTW_HOME)/lib -lfftw3 -lfftw3f -Xlinker \
-             -L$(SLEPC_HOME)/lib -lslepc \
-             -L$(PETSC_HOME)/lib -lpetsc \
-             $(GENE_DIR)/$(LIB_GENE) \
+  GENE_LIB = $(GENE_DIR)/$(LIB_GENE) \
              $(FUTILS_DIR)/$(LIB_FUTILS)
 
 #######################################################################
@@ -139,13 +138,10 @@
 #            SFINCS Options
 #######################################################################
   LSFINCS = F
-  include ${PETSC_DIR}/lib/petsc/conf/variables
   SFINCS_DIR = $(SFINCS_PATH)/fortran/version3
-  SFINCS_INC = -I$(SFINCS_DIR) -I${PETSC_DIR}/include
+  SFINCS_INC = -I$(SFINCS_DIR)
   LIB_SFINCS = libsfincs.a
-
-  SFINCS_LIB = $(SFINCS_DIR)/$(LIB_SFINCS) \
-        $(PETSC_LIB) $(FC_LINKER_FLAGS) $(FFLAGS)
+  SFINCS_LIB = $(SFINCS_DIR)/$(LIB_SFINCS) 
 
 #######################################################################
 #            MANGO Options

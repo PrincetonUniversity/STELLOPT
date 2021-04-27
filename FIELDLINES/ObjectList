@@ -1,4 +1,6 @@
 ObjectFiles = \
+fieldlines_init_hint.o \
+fieldlines_init_fline.o \
 fieldlines_calc_surface_fit.o \
 fieldlines_init_vars.o \
 fieldlines_write_parhdf5.o \

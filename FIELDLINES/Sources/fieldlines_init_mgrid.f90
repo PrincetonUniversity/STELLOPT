@@ -104,31 +104,10 @@
       phimin = 0.0
       phimax = pi2 / nfp_in
       FORALL(i = 1:nphi) phiaxis(i) = (i-1)*(phimax-phimin)/(nphi-1) + phimin
-      
-      ! Break up the Work
-      chunk = FLOOR(REAL(nr*nphi*nz) / REAL(numprocs_local))
-      mystart = myworkid*chunk + 1
-      myend = mystart + chunk - 1
 
-      ! This section sets up the work so we can use ALLGATHERV
-#if defined(MPI_OPT)
-      IF (ALLOCATED(mnum)) DEALLOCATE(mnum)
-      IF (ALLOCATED(moffsets)) DEALLOCATE(moffsets)
-      ALLOCATE(mnum(numprocs_local), moffsets(numprocs_local))
-      CALL MPI_ALLGATHER(chunk,1,MPI_INTEGER,mnum,1,MPI_INTEGER,MPI_COMM_LOCAL,ierr_mpi)
-      CALL MPI_ALLGATHER(mystart,1,MPI_INTEGER,moffsets,1,MPI_INTEGER,MPI_COMM_LOCAL,ierr_mpi)
-      i = 1
-      DO
-         IF ((moffsets(numprocs_local)+mnum(numprocs_local)-1) == nr*nphi*nz) EXIT
-         IF (i == numprocs_local) i = 1
-         mnum(i) = mnum(i) + 1
-         moffsets(i+1:numprocs_local) = moffsets(i+1:numprocs_local) + 1
-         i=i+1
-      END DO
-      mystart = moffsets(mylocalid+1)
-      chunk  = mnum(mylocalid+1)
-      myend   = mystart + chunk - 1
-#endif
+      ! Break up the Work
+      CALL MPI_CALC_MYRANGE(MPI_COMM_LOCAL,1, nr*nphi*nz, mystart, myend)
+
       IF (lafield_only) THEN
          STOP '!!!!!!!!!lafield_only requires coils file!!!!!!!!!'
       ELSE
@@ -166,8 +145,6 @@
 #if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_LOCAL,ierr_mpi)
       IF (ierr_mpi /=0) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_init_coil1',ierr_mpi)
-       DEALLOCATE(mnum)
-       DEALLOCATE(moffsets)
       CALL MPI_COMM_FREE(MPI_COMM_LOCAL,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'fieldlines_init_coil: MPI_COMM_LOCAL',ierr_mpi)
       CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)

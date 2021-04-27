@@ -108,6 +108,10 @@
       REAL(rprec), DIMENSION(nprof) ::  target_zeff_line,sigma_zeff_line, &
                                         r0_zeff_line, phi0_zeff_line, z0_zeff_line, &
                                         r1_zeff_line, phi1_zeff_line, z1_zeff_line
+      REAL(rprec), DIMENSION(nprof) ::  target_visbrem_line,sigma_visbrem_line, lambda_visbrem_line, &
+                                        r0_visbrem_line, phi0_visbrem_line, z0_visbrem_line, &
+                                        r1_visbrem_line, phi1_visbrem_line, z1_visbrem_line, &
+                                        calib_visbrem_line
       REAL(rprec), DIMENSION(nprof) ::  target_xics,sigma_xics, &
                                         target_xics_bright,sigma_xics_bright, &
                                         target_xics_w3,sigma_xics_w3, &
@@ -162,6 +166,7 @@
                                         s_txport
       CHARACTER(256)                ::  txport_proxy
       REAL(rprec), DIMENSION(nsd)   ::  target_DKES, sigma_DKES, nu_DKES
+      REAL(rprec), DIMENSION(nsd)        :: target_gamma_c, sigma_gamma_c
       REAL(rprec), DIMENSION(nu_max,nv_max) ::  target_separatrix, sigma_separatrix, &
                                                 r_separatrix, z_separatrix, phi_separatrix
       REAL(rprec), DIMENSION(nu_max,nv_max) ::  target_limiter, sigma_limiter, &
@@ -231,6 +236,7 @@
       INTEGER, PARAMETER :: jtarget_ti         = 202
       INTEGER, PARAMETER :: jtarget_line_ti    = 2021
       INTEGER, PARAMETER :: jtarget_line_zeff  = 2031
+      INTEGER, PARAMETER :: jtarget_visbrem_line = 2032
       INTEGER, PARAMETER :: jtarget_xics       = 2042
       INTEGER, PARAMETER :: jtarget_xics_bright= 2043
       INTEGER, PARAMETER :: jtarget_xics_w3    = 2044
@@ -251,6 +257,7 @@
       INTEGER, PARAMETER :: jtarget_regcoil_chi2_b          = 504
       INTEGER, PARAMETER :: jtarget_regcoil_current_density = 5041
       INTEGER, PARAMETER :: jtarget_curvature_P2            = 505
+      INTEGER, PARAMETER :: jtarget_gamma_c    = 506
       INTEGER, PARAMETER :: jtarget_balloon    = 601
       INTEGER, PARAMETER :: jtarget_kink       = 6011
       INTEGER, PARAMETER :: jtarget_bootstrap  = 602
@@ -350,6 +357,8 @@
             WRITE(iunit, out_format) 'Line Integrated Ion Temperature'
          CASE(jtarget_line_zeff)
             WRITE(iunit, out_format) 'Line Integrated Z-Effective'
+         CASE(jtarget_visbrem_line)
+            WRITE(iunit, out_format) 'Line Integrated Visual Bremsstrahlung'
          CASE(jtarget_xics)
             WRITE(iunit, out_format) 'XICS Signal'
          CASE(jtarget_xics_bright)
@@ -438,6 +447,8 @@
             WRITE(iunit, out_format) 'Coil Excursion from v Bounds'
          CASE(jtarget_curvature_p2)
             WRITE(iunit, out_format) 'Maximum 2nd Principal Curvature'
+         CASE(jtarget_gamma_c)
+            WRITE(iunit, out_format) 'Gamma_c'
       END SELECT
       END SUBROUTINE write_targets
       
