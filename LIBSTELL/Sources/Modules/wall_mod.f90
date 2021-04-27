@@ -237,6 +237,7 @@
          CALL MPI_COMM_FREE(shar_comm, istat)
       END IF
 #endif
+!$omp target update to(DOT00, DOT01, DOT11, d, invDenom, FN, A0, V0, V1)
       ! set wall as loaded and return
       lwall_loaded = .true.
       RETURN
@@ -793,7 +794,7 @@
       dry = y1-y0
       drz = z1-z0
       ! Calculate distance along trajectory to hit triangle
-!$omp parallel do firstprivate(drx, dry, drz, x0, y0, z0) private(alphal, betal, V2x, V2y, V2z, DOT02l, DOT12l) shared(ik_min, tmin, FN, V0, V1, DOT11, DOT00)
+!$omp target teams distribute parallel do map(to: drx, dry, drz, x0, y0, z0) map(from: ik_min, tmin)
       DO ik = k1,k2
          alphal = FN(ik,1)*drx + FN(ik,2)*dry + FN(ik,3)*drz
          betal = FN(ik,1)*x0 + FN(ik,2)*y0 + FN(ik,3)*z0
@@ -817,7 +818,7 @@
             tmin = tloc
          END IF
       END DO
-!$omp end parallel do 
+!$omp end target teams distribute parallel do
       ! if any index stored, hit was found, calculate location and increment ihit_array
       IF (ik_min > zero) THEN
          lhit = .TRUE.
