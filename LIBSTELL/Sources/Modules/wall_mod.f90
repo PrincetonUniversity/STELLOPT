@@ -29,14 +29,13 @@
 
 
       INTEGER, PRIVATE                         :: mystart, myend, mydelta, ik_min
-      INTEGER, PRIVATE                         :: count_a, count_u, count_v, count_t, count_hit
       INTEGER, PRIVATE                         :: win_vertex, win_face, &
                                                   win_tN, win_v0, win_e0, win_e1, &
                                                   win_ihit
       DOUBLE PRECISION, PRIVATE, POINTER   :: tN(:,:), v0(:,:), e2(:,:), e1(:,:)
       DOUBLE PRECISION, PRIVATE, PARAMETER      :: zero = 0.0D+0
       DOUBLE PRECISION, PRIVATE, PARAMETER      :: one  = 1.0D+0
-      DOUBLE PRECISION, PRIVATE, PARAMETER      :: epsilon = 0.0000001D+0
+      DOUBLE PRECISION, PRIVATE, PARAMETER      :: epsilon = 1D-6
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -202,11 +201,6 @@
 #endif
       ! set wall as loaded and return
       lwall_loaded = .true.
-      count_a = 0
-      count_u = 0
-      count_v = 0
-      count_t = 0
-      count_hit = 0
       RETURN
       END SUBROUTINE wall_load_txt
 
@@ -698,7 +692,7 @@
       DOUBLE PRECISION :: f, sx, sy, sz, qx, qy, qz, u, v
       xw=zero; yw=zero; zw=zero; lhit=.FALSE.
       ik_min = zero
-      tmin = 2
+      tmin = one
       k1 = 1; k2 = nface
       ! Define DR
       drx = x1-x0
@@ -706,7 +700,7 @@
       drz = z1-z0
       ! Check every triangles
       ! Based on Moller-Trumbore algorithm:
-      ! https://en.wikipedia.org/wiki/M%C3%B6ller%E2%80%93Trumbore_intersection_algorith
+      ! https://en.wikipedia.org/wiki/M%C3%B6ller%E2%80%93Trumbore_intersection_algorithm
       DO ik = k1,k2
          hx = dry * e2(ik, 3) - drz * e2(ik, 2)
          hy = drz * e2(ik, 1) - drx * e2(ik, 3)
@@ -714,22 +708,16 @@
 
          a = e1(ik, 1) * hx + e1(ik, 2) * hy + e1(ik, 3) * hz
          ! check ray not parallel to triangle
-         if (a > -epsilon .and. a < epsilon) THEN
-            count_a = count_a + 1
-            CYCLE
-         end if
+         if (a > -epsilon .and. a < epsilon) CYCLE
 
-         f = one/a
+         f = one / a
          sx = x0 - v0(ik, 1)
-         sy = x0 - v0(ik, 2)
-         sz = x0 - v0(ik, 3)
+         sy = y0 - v0(ik, 2)
+         sz = z0 - v0(ik, 3)
 
          u = f * (sx * hx + sy * hy + sz * hz)
          ! check if hit is not behind or more than one time dr away
-         if (u < zero .or. u > one) THEN
-            count_u = count_u + 1
-            ! TODO: No cycle here yet, don't know why isn't working with CYCLE
-         end if
+         if (u < zero .or. u > one) CYCLE
 
          qx = sy * e1(ik, 3) - sz * e1(ik, 2)
          qy = sz * e1(ik, 1) - sx * e1(ik, 3)
@@ -737,19 +725,13 @@
 
          v = f * (drx * qx + dry * qy + drz * qz)
          ! check if hit is on triangle
-         if (v < zero .or. u + v > one) THEN
-            count_v = count_v + 1
-            CYCLE
-         end if
+         if (v < -epsilon .or. u + v > one + epsilon) CYCLE
 
          ! if so, calculate t (time to hit)
-         t = f * e2(ik,1)*qx + e2(ik,2)*qy + e2(ik,3)*qz
+         t = f * (e2(ik,1) * qx + e2(ik,2) * qy + e2(ik,3) * qz)
          if (t > epsilon .and. t < tmin) THEN
             tmin = t
             ik_min = ik
-            count_hit = count_hit + 1
-         else
-            count_t = count_t + 1
          end if
       end do
       IF (ik_min > zero) THEN
@@ -778,32 +760,6 @@
       !-----------------------------------------------------------------------
          IMPLICIT NONE
          get_wall_ik = ik_min
-         RETURN
-      END FUNCTION
-
-      INTEGER FUNCTION get_count_a()
-         IMPLICIT NONE
-         get_count_a = count_a
-         RETURN
-      END FUNCTION
-      INTEGER FUNCTION get_count_u()
-         IMPLICIT NONE
-         get_count_u = count_u
-         RETURN
-      END FUNCTION
-      INTEGER FUNCTION get_count_v()
-         IMPLICIT NONE
-         get_count_v = count_v
-         RETURN
-      END FUNCTION
-      INTEGER FUNCTION get_count_t()
-         IMPLICIT NONE
-         get_count_t = count_t
-         RETURN
-      END FUNCTION
-      INTEGER FUNCTION get_count_hit()
-         IMPLICIT NONE
-         get_count_hit = count_hit
          RETURN
       END FUNCTION
       
