@@ -41,6 +41,7 @@
                                                   invDenom(:), alpha(:), beta(:)
       DOUBLE PRECISION, PRIVATE, PARAMETER      :: zero = 0.0D+0
       DOUBLE PRECISION, PRIVATE, PARAMETER      :: one  = 1.0D+0
+      DOUBLE PRECISION, PRIVATE, PARAMETER      :: epsilon = 1D-6
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -803,7 +804,7 @@
          alphal = DOT11(ik)*DOT02l-DOT01(ik)*DOT12l
          betal  = DOT00(ik)*DOT12l-DOT01(ik)*DOT02l
          ! In that case, these should be false
-         IF ((alphal < zero) .or. (betal < zero) .or. (alphal+betal > one)) CYCLE
+         IF ((alphal < -epsilon) .or. (betal < -epsilon) .or. (alphal+betal > one + epsilon)) CYCLE
          ! else check if this was the closest hit, and then store
          IF (tloc < tmin) THEN
             ik_min = ik
