@@ -782,10 +782,9 @@
       drx = x1-x0
       dry = y1-y0
       drz = z1-z0
-      ! Check every triangles
-      ! for information check these sources:
-      ! https://tinyurl.com/td442z38 (Ray-Triangle Intersection: Geometric Solution)
-      ! https://cseweb.ucsd.edu/classes/wi17/cse169-a/slides/CSE169_12.pdf 
+      ! Check every triangle
+      ! Based on Badouel's algorithm
+      ! Source: https://graphics.stanford.edu/courses/cs348b-98/gg/intersect.html
       DO ik = k1,k2
          ! calculate whether or not this line segment ever hits the plane of the triangle
          alphal = FN(ik,1)*drx + FN(ik,2)*dry + FN(ik,3)*drz
