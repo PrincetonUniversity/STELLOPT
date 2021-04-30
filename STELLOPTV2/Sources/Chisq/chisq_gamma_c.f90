@@ -193,7 +193,7 @@
             write(igc6,*) 'j X Y Z bnxyz(1:3) Bxyz(1:3) modB dxyzds(1:3) dxyzdu(1:3) dxyzdv(1:3) grads_xyz(1:3) gradu_xyz(1:3) gradv_xyz(1:3) e_theta_norm binormal(1:3) grad_psi_xyz(1:3) dVdb_t1 dBsupphidpsi dBdpsi sqrtg ds jac_suvxyz'
             write(igc7,*) 'j bdotgradb(1:3) kappa_g'
             write(igc8,*) 'j PEST(Rad,Pol,Tor) X Y Z Bx By Bz gradPsi_x gradPsi_y gradPsi_z e_theta_norm dBsupphidpsi'
-            write(igc11,*) 'j ds(j)'
+            write(igc11,*) 'j ds(j) dVdb_t1'
           END IF
 
 !          first time through calculate fields and some basic parameters
@@ -760,7 +760,7 @@
                                                  grad_psi_xyz(1), grad_psi_xyz(2), grad_psi_xyz(3), &
                                                  dVdb_t1(j), dBsupphidpsi(j), dBdpsi(j), &
                                                  sqrtg, ds(j), jac_suvxyz
-             write(igc11,'(1X,I8,2X,E16.8)') j,ds(j)
+             write(igc11,'(1X,I8,2(2X,E16.8))') j,ds(j),dVdb_t1(j)
 
             !write(igc8,'(1X,I8,14(2X,E16.8))') j, phi_N, u_initA, &
             write(igc8,'(1X,I8,14(2X,E16.8))') j, psi_p, u_initA, &
@@ -948,6 +948,7 @@
             gamma_c = 0.0_rprec
             vrovervt = 0.0_rprec
             wellgamma_c = 0.0_rprec
+            wellGamma_c = 0.0_rprec
             if (LGCXFILES .eqv. .true.) then
               write(igc10,*) 'number of wells:',nwells
             END IF
