@@ -2518,10 +2518,9 @@
       REAL*8 :: fval(1)
       INTEGER, parameter :: ict(10)=(/1,0,0,0,0,0,0,0,0,0/)
       s = coord(1)
-      th = -coord(2)
-      ! phi = coord(3)
-      ! JCS Added '-' sign during GAMMAC test.
-      phi = -coord(3)
+      th = coord(2)
+      phi = coord(3)
+
       ! suppose nfp = 4, then:  \phi \in -pi/2 to pi/2: phi goes to phi*nfp
       !                         \phi \in pi/2 to pi: phi goes to (phi - pi/2)* nfp
       !                         \phi \in pi to 3*pi/2: phi goes to (phi - pi)* nfp
