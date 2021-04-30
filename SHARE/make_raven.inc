@@ -4,10 +4,10 @@
   SHELL = /bin/sh
   PWD1 = `pwd`
   MYHOME = $(HOME)/bin
-  PRECOMP:= cpp -traditional -DLINUX
+  PRECOMP:= fpp -C -P -DLINUX
   COMPILE = ifort
   COMPILE_FREE = ifort
-  LINK    = ftn -Bstatic -o
+  LINK    = ifort -Bstatic -o
   LINK_AR = ar -ruv
   LINK_C  = icc -shared -Wl,-z-defs
 
@@ -15,7 +15,7 @@
 #            Define Compiler Flags
 #######################################################################
   FLAGS_R = -I$(MKL_HOME)/include -O2 -fp-model strict -ip \
-            -assume noold_unit_star -xCORE-AVX512 -qopt-zmm-usage=high
+            -assume noold_unit_star -xCORE-AVX512 -qopt-zmm-usage=high -g -traceback
   FLAGS_D = -I$(MKL_HOME)/include -O2 -fp-model strict -ip \
             -assume noold_unit_star -g -traceback -xCORE-AVX512 -qopt-zmm-usage=high
   LIBS    =  ${MKLROOT}/lib/intel64/libmkl_scalapack_ilp64.a \
