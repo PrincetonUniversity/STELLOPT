@@ -13,6 +13,7 @@
 !     Libraries
 !-----------------------------------------------------------------------
       USE safe_open_mod
+      USE omp_lib
       
 !-----------------------------------------------------------------------
 !     Module Variables
@@ -231,6 +232,7 @@
 #if defined(MPI_OPT)
       END IF
 #endif
+!$omp target update to(DOT00, DOT01, DOT11, d, invDenom, FN, A0, V0, V1)
       ! set wall as loaded and return
       lwall_loaded = .true.
       RETURN
@@ -785,6 +787,7 @@
       ! Check every triangle
       ! Based on Badouel's algorithm
       ! Source: https://graphics.stanford.edu/courses/cs348b-98/gg/intersect.html
+!$omp target teams distribute parallel do map(to: drx, dry, drz, x0, y0, z0) map(from: ik_min, tmin)
       DO ik = k1,k2
          ! calculate whether or not this line segment ever hits the plane of the triangle
          alphal = FN(ik,1)*drx + FN(ik,2)*dry + FN(ik,3)*drz
@@ -810,6 +813,7 @@
             tmin = tloc
          END IF
       END DO
+!$omp end target teams distribute parallel do
       ! if any index stored, hit was found, calculate location and increment ihit_array
       IF (ik_min > zero) THEN
          lhit = .TRUE.
