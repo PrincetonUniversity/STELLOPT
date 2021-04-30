@@ -125,7 +125,9 @@
             IF (ALLOCATED(rho)) DEALLOCATE(rho)
             IF (ALLOCATED(shat)) DEALLOCATE(shat)
             ALLOCATE(rho(ns_vmec), shat(ns_vmec))
-            FORALL(u=1:ns_vmec) shat(u) = REAL(u-1)/REAL(ns_vmec-1)
+            ! 'shat' is the normalized toroidal flux for the following
+            ! quantities.
+            FORALL(u=1:ns_vmec) shat(u) = REAL(u-1,rprec)/REAL(ns_vmec-1,rprec)
             rho = sqrt(shat); rho(1) = 0
             nfp     = nfp_vmec
             ! Get the external currents
