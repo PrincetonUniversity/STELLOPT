@@ -13,6 +13,7 @@
 !     Libraries
 !-----------------------------------------------------------------------
       USE safe_open_mod
+      USE omp_lib
       
 !-----------------------------------------------------------------------
 !     Module Variables
@@ -697,10 +698,11 @@
       ! Define DR
       drx = x1-x0
       dry = y1-y0
-      drz = z1-z0
+      drz = z1-z0 
       ! Check every triangles
       ! Based on Moller-Trumbore algorithm:
       ! https://en.wikipedia.org/wiki/M%C3%B6ller%E2%80%93Trumbore_intersection_algorithm
+!$omp parallel do firstprivate(drx, dry, drz, x0, y0, z0) private(hx, hy, hz, a, f, sx, sy, sz, u, qx, qy, qz, v, t) shared(ik_min, tmin)
       DO ik = k1,k2
          hx = dry * e2(ik, 3) - drz * e2(ik, 2)
          hy = drz * e2(ik, 1) - drx * e2(ik, 3)
@@ -734,6 +736,7 @@
             ik_min = ik
          end if
       end do
+!$omp end parallel do
       IF (ik_min > zero) THEN
          lhit = .TRUE.
          xw   = x0 + tmin*drx
