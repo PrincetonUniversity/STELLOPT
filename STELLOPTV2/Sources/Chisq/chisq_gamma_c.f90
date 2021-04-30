@@ -39,7 +39,7 @@
 !-----------------------------------------------------------------------
       LOGICAL :: lsym
       INTEGER :: dex, ik, i, j, k, ier, jmin, igc2, igc3, igc4, igc5, igc6, igc7, ierrgc2
-      INTEGER :: igc8, igc9, igc10
+      INTEGER :: igc8, igc9, igc10, igc11
       REAL(rprec) :: phi_N, rovera, theta, zeta_p, delzeta_p, u, v, coszeta_p, sinzeta_p
       REAL(rprec) :: coszeta_fp, sinzeta_fp, psi_p
 
@@ -184,6 +184,8 @@
                           'replace','formatted')
             CALL safe_open(igc10, ierrgc2, 'gc10.'//trim(proc_string),  &
                           'replace','formatted')
+            CALL safe_open(igc11, ierrgc2, 'gc11.'//trim(proc_string),  &
+                          'replace','formatted')
             write(igc2,*) 'j rho suv_pest suv_vmec uv_mod_vmec_fix R Z X Y'
             write(igc3,*) 'j modB Br Bphi Bz Bx By Bsups(j) Bsupu(j) Bsupv(j)'
             write(igc4,*) 'j gradR_init3 gradZ_init3 gradB_init3 gradR3 gradZ3 gradB3'
@@ -191,6 +193,7 @@
             write(igc6,*) 'j X Y Z bnxyz(1:3) Bxyz(1:3) modB dxyzds(1:3) dxyzdu(1:3) dxyzdv(1:3) grads_xyz(1:3) gradu_xyz(1:3) gradv_xyz(1:3) e_theta_norm binormal(1:3) grad_psi_xyz(1:3) dVdb_t1 dBsupphidpsi dBdpsi sqrtg ds jac_suvxyz'
             write(igc7,*) 'j bdotgradb(1:3) kappa_g'
             write(igc8,*) 'j PEST(Rad,Pol,Tor) X Y Z Bx By Bz gradPsi_x gradPsi_y gradPsi_z e_theta_norm dBsupphidpsi'
+            write(igc11,*) 'j ds(j)'
           END IF
 
 !          first time through calculate fields and some basic parameters
@@ -757,6 +760,8 @@
                                                  grad_psi_xyz(1), grad_psi_xyz(2), grad_psi_xyz(3), &
                                                  dVdb_t1(j), dBsupphidpsi(j), dBdpsi(j), &
                                                  sqrtg, ds(j), jac_suvxyz
+             write(igc11,'(1X,I8,2X,E16.8)') j,ds(j)
+
             !write(igc8,'(1X,I8,14(2X,E16.8))') j, phi_N, u_initA, &
             write(igc8,'(1X,I8,14(2X,E16.8))') j, psi_p, u_initA, &
                        v_initA, X, Y, Z, Bx, By, Bz, grad_psi_xyz(1), &
@@ -788,6 +793,7 @@
           close(igc6)
           close(igc7)
           close(igc8)
+          close(igc11)
           !write(igc2,*), "u,v,R,Z,X,Y,Br,Bphi,Bz,Bsups,Bsupu,Bsupv"
           !do j = 1,nsteps
             !  WRITE(6,'(2X,I3,8(2X,E11.4))')
