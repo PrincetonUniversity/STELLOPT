@@ -911,12 +911,8 @@
             ik_min = zero
             tmin = one + epsilon
             !WRITE(6, *) b_index, wall%nblocks
-            IF (b_index > wall%nblocks) EXIT
+            IF (b_index > wall%nblocks .or. b_index < 1) EXIT
             b = wall%blocks(b_index)
-            !WRITE(6, *) x0, y0, z0, x1, y1, z1
-            tDeltaX = MIN(ABS((b%xmax - x0) / drx), ABS((b%xmin - x0) / drx))
-            tDeltaY = MIN(ABS((b%ymax - y0) / dry), ABS((b%ymin - y0) / dry))
-            tDeltaZ = MIN(ABS((b%zmax - z0) / drz), ABS((b%zmin - z0) / drz))
 
             k1 = 1; k2 = b%nfaces
             ! Check every triangle
