@@ -57,6 +57,7 @@
       CHARACTER(LEN=256) :: date
 
       TYPE(wall_type), PRIVATE :: wall
+      TYPE(block), PRIVATE:: b
 
       LOGICAL, PRIVATE, ALLOCATABLE            :: lmask(:)
       INTEGER, PRIVATE                         :: mystart, myend, mydelta, ik_min
@@ -885,7 +886,6 @@
       DOUBLE PRECISION, INTENT(in) :: x0, y0, z0, x1, y1, z1
       DOUBLE PRECISION, INTENT(out) :: xw, yw, zw
       LOGICAL, INTENT(out) :: lhit
-      TYPE(block) :: b
       INTEGER :: ik, k1,k2, b_index
       DOUBLE PRECISION :: drx, dry, drz, V2x, V2y, V2z, DOT02l, DOT12l, tloc, tmin, alphal, betal
       DOUBLE PRECISION :: tDeltaXfwd, tDeltaXbck, tDeltaYfwd, tDeltaYbck, tDeltaZfwd, tDeltaZbck
@@ -1096,7 +1096,11 @@
       ! uncount_wall_hit: Reduces ihit_array at last found hit location with one
       !-----------------------------------------------------------------------
          IMPLICIT NONE
-         ihit_array(ik_min) = ihit_array(ik_min) - 1
+         if (lwall_acc) THEN
+            b%ihit_array(ik_min) = b%ihit_array(ik_min) - 1
+         ELSE
+            ihit_array(ik_min) = ihit_array(ik_min) - 1
+         END IF
       END SUBROUTINE
 
       INTEGER FUNCTION get_wall_ik()
@@ -1119,7 +1123,11 @@
       !-----------------------------------------------------------------------
          IMPLICIT NONE
          INTEGER, INTENT(in) :: ik
-         get_wall_area = 0.5*SQRT(SUM(FN(ik,:)*FN(ik,:)))
+         IF (lwall_acc) THEN
+            get_wall_area = 0.5*SQRT(SUM(b%FN(ik,:)*b%FN(ik,:)))
+         ELSE
+            get_wall_area = 0.5*SQRT(SUM(FN(ik,:)*FN(ik,:)))
+         END IF
          RETURN
       END FUNCTION
 
