@@ -826,7 +826,7 @@
       IF (lwall_acc) THEN
          WRITE(iunit,'(3X,A,I7)')    'Blocks    : ',wall%nblocks
          DO i=1,wall%nblocks
-            WRITE(iunit,'(3X,A,I2,A,I7)')    'Block ', i, '  : ', wall%blocks(i)%nfaces
+            WRITE(iunit,'(3X,A,I4,A,I7)')    'Block ', i, '  : ', wall%blocks(i)%nfaces
          END DO
          
       ELSE
