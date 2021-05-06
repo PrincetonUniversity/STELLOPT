@@ -1,7 +1,8 @@
 !-----------------------------------------------------------------------
 !     Module:        wall_mod
-!     Authors:       S. Lazerson (lazerson@pppl.gov)
-!     Date:          05/02/2012
+!     Authors:       S. Lazerson (lazerson@pppl.gov),
+!                    D.J. Engels (d.j.engels@student.tue.nl)
+!     Date:          May 2021
 !     Description:   This module handles defining a wall as a set of
 !                    triangular facets which can be used to calculate
 !                    if and where a particle hits the mesh.
@@ -17,15 +18,18 @@
 
 !-----------------------------------------------------------------------
 !     Types
-!         Wall       The full wall, information about the vertices and the number of blocks
+!         Wall_Type  The full wall, information about the vertices and the number of blocks
 !         Block      A block is a part of the uniform grid, an area in space with triangles in it      
 !-----------------------------------------------------------------------
       TYPE block
-         INTEGER :: nfaces
-         INTEGER :: win_d, win_FN, win_A0, &
-                    win_V0, win_V1, win_V2, win_DOT00, win_DOT11, &
-                    win_DOT01, win_DOT02, win_DOT12, win_ihit
+         INTEGER :: nfaces  ! number of faces in block
+         LOGICAL :: isshared  ! whether or not shared memory active
+         ! shared memory pointsers
+         INTEGER :: win_d, win_FN, win_A0, win_V0, win_V1, &
+                    win_DOT00, win_DOT11, win_DOT01, win_ihit
+         ! bounds of block
          DOUBLE PRECISION :: xmin, xmax, ymin, ymax, zmin, zmax
+         ! non-shared memory pointers
          INTEGER,          DIMENSION(:),   POINTER :: ihit_array => null()
          DOUBLE PRECISION, DIMENSION(:),   POINTER :: d => null()
          DOUBLE PRECISION, DIMENSION(:),   POINTER :: DOT00 => null()
@@ -38,6 +42,8 @@
       END TYPE block
 
       TYPE wall_type
+         ! number of blocks
+         ! and the step that has to be done in the list to move one in x/y/z-direction
          integer :: nblocks, xstep, ystep, zstep
          TYPE (block), DIMENSION(:), POINTER :: blocks => null()
       END TYPE wall_type
@@ -47,32 +53,41 @@
 !     Module Variables
 !         
 !-----------------------------------------------------------------------
-      
       LOGICAL            :: lwall_loaded, lwall_acc
       INTEGER            :: nvertex, nface
       INTEGER, POINTER :: face(:,:)
-      INTEGER, POINTER :: ihit_array(:)
       DOUBLE PRECISION, POINTER   :: vertex(:,:)
       CHARACTER(LEN=256) :: machine_string
       CHARACTER(LEN=256) :: date
 
-      TYPE(wall_type), PRIVATE :: wall
-      TYPE(block), PRIVATE:: b
-
-      LOGICAL, PRIVATE, ALLOCATABLE            :: lmask(:)
       INTEGER, PRIVATE                         :: mystart, myend, mydelta, ik_min
-      INTEGER, PRIVATE                         :: win_vertex, win_face, &
-                                                  win_fn, win_a0, win_v0, win_v1, &
-                                                  win_dot00, win_dot01, win_dot11, &
-                                                  win_d, win_ihit, win_invDenom
-      DOUBLE PRECISION, PRIVATE, POINTER   :: FN(:,:), d(:), t(:), r0(:,:), dr(:,:)
-      DOUBLE PRECISION, PRIVATE, POINTER   :: A0(:,:), V0(:,:), V1(:,:), V2(:,:),&
-                                                  DOT00(:), DOT01(:), DOT02(:),&
-                                                  DOT11(:), DOT12(:),&
-                                                  invDenom(:), alpha(:), beta(:)
+      INTEGER, PRIVATE                         :: shar_rank, shar_size
+      INTEGER, PRIVATE                         :: win_vertex, win_face
+
+      DOUBLE PRECISION, PRIVATE, POINTER       :: invDenom(:)
+                                                  
       DOUBLE PRECISION, PRIVATE, PARAMETER      :: zero = 0.0D+0
       DOUBLE PRECISION, PRIVATE, PARAMETER      :: one  = 1.0D+0
       DOUBLE PRECISION, PRIVATE, PARAMETER      :: epsilon = 1D-6
+
+      LOGICAL, PRIVATE, PARAMETER               :: lverb = .FALSE.
+
+!------------------ Variables for naive approach
+      
+      INTEGER, POINTER :: ihit_array(:)
+      INTEGER, PRIVATE                         :: win_fn, win_a0, win_v0, win_v1, &
+                                                  win_dot00, win_dot01, win_dot11, &
+                                                  win_d, win_ihit, win_invDenom
+
+      DOUBLE PRECISION, PRIVATE, POINTER       :: FN(:,:), d(:)
+      DOUBLE PRECISION, PRIVATE, POINTER       :: A0(:,:), V0(:,:), V1(:,:), V2(:,:),&
+                                                  DOT00(:), DOT01(:), DOT02(:),&
+                                                  DOT11(:), DOT12(:)
+
+!------------------ Variables for accelerated approach
+
+      TYPE(wall_type), PRIVATE :: wall
+      TYPE(block), PRIVATE:: b
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -784,6 +799,10 @@
       RETURN
       END SUBROUTINE wall_load_seg
 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!    Wall info
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
       SUBROUTINE wall_dump(filename,istat)
       !-----------------------------------------------------------------------
       ! wall_dump: Dumps triangulation data
@@ -835,6 +854,10 @@
       END IF      
       RETURN
       END SUBROUTINE wall_info
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!    Wall collide
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       SUBROUTINE collide_float(x0,y0,z0,x1,y1,z1,xw,yw,zw,lhit)
       !-----------------------------------------------------------------------
