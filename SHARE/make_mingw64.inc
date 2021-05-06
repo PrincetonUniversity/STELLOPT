@@ -21,6 +21,10 @@
 #  gcc9 has a few differences in system calls. We put in some kluges for this
 #  by making a WIN64 macro.
 #
+#
+#  if SHARED_EXT and/or STATIC_EXT are not defined here, then they will be
+#  defined for Linux/Darwin (*.a / *.so) in make_all.inc
+#
 #######################################################################
 #          If you want to explicitly override user given flags
 #######################################################################
@@ -31,9 +35,9 @@
 
 HARD_FFLAGS = \
 #               -Wl,--fno-range-check \
-#              -Wl,--no-undefined 
-#              -Wl,--export-all-symbols 
-#              -Wl,--enable-auto-import 
+#              -Wl,--no-undefined
+#              -Wl,--export-all-symbols
+#              -Wl,--enable-auto-import
 #              -Wl,--enable-runtime-pseudo-reloc
 
 HARD_CFLAGS = \
@@ -148,7 +152,7 @@ ifeq ($(LMPI),T)
   MPI_RUN = mpiexec
   MPI_RUN_OPTS = -np 4
 
-  MPI_LIB = -L/mingw64/lib -lmsmpi 
+  MPI_LIB = -L/mingw64/lib -lmsmpi
   #-lwinpthread
 
   LIBS += $(MPI_LIB)

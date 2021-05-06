@@ -15,7 +15,7 @@ VPATH = $(SPATH):$(SPATH)/General:$(SPATH)/Initialization_Cleanup:$(SPATH)/Hessi
 
 .SUFFIXES :
 .SUFFIXES : .f .f90 .o
-xvmec2000:  $(LIB) $(ObjectFiles)
+xvmec2000 xvmec2000.exe:  $(LIB) $(ObjectFiles)
 	$(LINK) $@ $(ObjectFiles) $(LIB_LINK)
 #Compile object files defined in OBJLIST.
 .f.o :
@@ -53,8 +53,8 @@ xvmec2000:  $(LIB) $(ObjectFiles)
          echo '$(COMPILE_FREE) $(FLAGS) $(MOD_PATH). -c $<'; \
          $(COMPILE_FREE) $(FLAGS) $(MOD_PATH).. -c $<; \
       fi
-      
-#Check that library files are current. 
+
+#Check that library files are current.
 $(LIB) :
 	@cd $(LIB_DIR); make $(TYPE)
 
