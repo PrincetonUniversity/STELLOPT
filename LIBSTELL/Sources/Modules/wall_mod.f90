@@ -109,8 +109,140 @@
          MODULE PROCEDURE collide_double, collide_float
       END INTERFACE
 
+      INTERFACE free_mpi_array
+         MODULE PROCEDURE free_mpi_array1d_int, free_mpi_array1d_flt, free_mpi_array1d_dbl, &
+                          free_mpi_array2d_int,                       free_mpi_array2d_dbl
+      END INTERFACE
+
       PRIVATE :: mpialloc_1d_int,mpialloc_1d_dbl,mpialloc_2d_int,mpialloc_2d_dbl
+      PRIVATE :: free_mpi_array1d_int, free_mpi_array1d_dbl, free_mpi_array2d_int, free_mpi_array2d_dbl
       CONTAINS
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!    Wall Constructors
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      SUBROUTINE INIT_BLOCK(this,xmin,xmax,ymin,ymax,zmin,zmax,nface,istat,comm,shar_comm)
+         TYPE(block) :: this
+         DOUBLE PRECISION, INTENT(in) :: xmin, ymin, zmin, xmax, ymax, zmax
+         INTEGER, INTENT(in) :: nface
+         INTEGER, INTENT(inout) :: istat
+         INTEGER, INTENT(inout), OPTIONAL :: comm, shar_comm
+         INTEGER :: ik, i, dex1, dex2, dex3
+
+         this%xmin = xmin
+         this%xmax = xmax
+         this%ymin = ymin
+         this%ymax = ymax
+         this%zmin = zmin
+         this%zmax = zmax
+         this%nfaces = nface
+
+         IF (lverb) WRITE(6, *) 'Block intialized', xmin, xmax, ymin, ymax, zmin, zmax, nface
+
+         IF (lverb) WRITE(6, *) 'Allocate block info'
+
+         ! allocate memory for information about the mesh
+#if defined(MPI_OPT)
+         IF (PRESENT(comm)) CALL MPI_BARRIER(comm,istat)
+         IF (istat/=0) RETURN
+         IF (PRESENT(comm)) THEN
+            CALL mpialloc_2d_dbl(this%A0,nface,3,shar_rank,0,shar_comm,this%win_a0)
+            CALL mpialloc_2d_dbl(this%V0,nface,3,shar_rank,0,shar_comm,this%win_v0)
+            CALL mpialloc_2d_dbl(this%V1,nface,3,shar_rank,0,shar_comm,this%win_v1)
+            CALL mpialloc_2d_dbl(this%FN,nface,3,shar_rank,0,shar_comm,this%win_fn)
+            this%isshared = .TRUE.
+            mydelta = CEILING(REAL(nface) / REAL(shar_size))
+            mystart = 1 + shar_rank*mydelta
+            myend   = mystart + mydelta
+            IF (myend > nface) myend=nface
+         ELSE
+#endif
+            ALLOCATE(this%A0(nface,3),this%V0(nface,3),this%V1(nface,3),&
+                  this%FN(nface,3),STAT=istat)
+            this%isshared = .FALSE.
+            mystart = 1; myend = nface
+#if defined(MPI_OPT)
+         END IF
+#endif
+         IF (lverb) WRITE(6, *) 'Calculate mesh in block info'
+
+         IF (istat/=0) RETURN
+         ! Precalculate information about mesh
+         ! Calculate the face normal
+         ! V  = Vertex1-Vertex0
+         ! W  = Vertex2-Vertex0
+         ! FN = VxW/|VxW|
+         ! d  = -Vertex0.FN (. is dot product) (note weve absorbed the negative)
+         DO ik = mystart, myend
+            dex1 = face(ik,1)
+            dex2 = face(ik,2)
+            dex3 = face(ik,3)
+            this%A0(ik,:) = vertex(dex1,:)
+            this%V0(ik,:) = vertex(dex3,:)-vertex(dex1,:)
+            this%V1(ik,:) = vertex(dex2,:)-vertex(dex1,:)
+            this%FN(ik,1) = (this%V1(ik,2)*this%V0(ik,3))-(this%V1(ik,3)*this%V0(ik,2))
+            this%FN(ik,2) = (this%V1(ik,3)*this%V0(ik,1))-(this%V1(ik,1)*this%V0(ik,3))
+            this%FN(ik,3) = (this%V1(ik,1)*this%V0(ik,2))-(this%V1(ik,2)*this%V0(ik,1))
+         END DO
+#if defined(MPI_OPT)
+         IF (PRESENT(comm)) CALL MPI_BARRIER(comm,istat)
+#endif
+         ! Check for zero area
+         IF (ANY(SUM(this%FN*this%FN,DIM=2)==zero)) THEN
+            istat=-327
+            IF (lverb) WRITE(6, *) 'Found zero area in block'
+            RETURN
+         END IF
+
+         IF (lverb) WRITE(6, *) 'Allocate pre-calculate in block'
+         ! allocate memory for information about mesh triangles 
+#if defined(MPI_OPT)
+         IF (PRESENT(comm)) THEN
+            IF (lverb) WRITE(6, *) shar_rank, shar_comm
+            CALL mpialloc_1d_dbl(this%DOT00,nface,shar_rank,0,shar_comm,this%win_dot00)
+            CALL mpialloc_1d_dbl(this%DOT01,nface,shar_rank,0,shar_comm,this%win_dot01)
+            CALL mpialloc_1d_dbl(this%DOT11,nface,shar_rank,0,shar_comm,this%win_dot11)
+            IF (lverb) WRITE(6, *) 'Allocate pre-calculate in block 2'
+            CALL mpialloc_1d_dbl(invDenom,nface,shar_rank,0,shar_comm,win_invDenom)
+            IF (lverb) WRITE(6, *) 'Allocate pre-calculate in block 3'
+            CALL mpialloc_1d_dbl(this%d,nface,shar_rank,0,shar_comm,this%win_d)
+            IF (lverb) WRITE(6, *) 'Allocate pre-calculate in block 4'
+            CALL mpialloc_1d_int(this%ihit_array,nface,shar_rank,0,shar_comm,this%win_ihit)
+            IF (lverb) WRITE(6, *) 'Allocate pre-calculate in block 5'
+            mydelta = CEILING(REAL(nface) / REAL(shar_size))
+            mystart = 1 + shar_rank*mydelta
+            myend   = mystart + mydelta
+            IF (myend > nface) myend=nface
+         ELSE
+#endif
+            ALLOCATE(this%DOT00(nface), this%DOT01(nface), this%DOT11(nface), invDenom(nface), STAT=istat)
+            ALLOCATE(this%d(nface),STAT=istat)
+            ALLOCATE(this%ihit_array(nface),STAT=istat)
+            mystart = 1; myend = nface
+#if defined(MPI_OPT)
+         END IF
+#endif
+         ! if no error, calculate information about mesh triangles
+         IF (lverb)  WRITE(6, *) 'Pre-calculate in block'
+         IF (istat/=0) RETURN
+         DO i = mystart, myend
+            this%ihit_array(i) = 0
+            this%DOT00(i) = this%V0(i,1)*this%V0(i,1) + this%V0(i,2)*this%V0(i,2) + this%V0(i,3)*this%V0(i,3)
+            this%DOT01(i) = this%V0(i,1)*this%V1(i,1) + this%V0(i,2)*this%V1(i,2) + this%V0(i,3)*this%V1(i,3)
+            this%DOT11(i) = this%V1(i,1)*this%V1(i,1) + this%V1(i,2)*this%V1(i,2) + this%V1(i,3)*this%V1(i,3)
+            this%d(i)     = this%FN(i,1)*this%A0(i,1) + this%FN(i,2)*this%A0(i,2) + this%FN(i,3)*this%A0(i,3)
+            invDenom(i) = one / (this%DOT00(i)*this%DOT11(i) - this%DOT01(i)*this%DOT01(i))
+         END DO
+         ! Multiply with invDenom to reduce calculations later
+         DO i = mystart, myend
+            this%DOT00(i) = this%DOT00(i) * invDenom(i)
+            this%DOT01(i) = this%DOT01(i) * invDenom(i)
+            this%DOT11(i) = this%DOT11(i) * invDenom(i)
+         END DO
+         ! Clear memory
+         CALL free_mpi_array(win_invDenom, invDenom, this%isshared)
+      END SUBROUTINE
       
       SUBROUTINE wall_load_txt(filename,istat,comm)
       !-----------------------------------------------------------------------
@@ -129,7 +261,10 @@
       INTEGER, INTENT(inout), OPTIONAL :: comm
       DOUBLE PRECISION :: xmin, ymin, zmin, xmax, ymax, zmax
       INTEGER :: iunit, ik, i, dex1, dex2, dex3
-      INTEGER :: shar_comm, shar_rank, shar_size
+      INTEGER :: shar_comm
+      LOGICAL :: shared, first
+
+      first = .true.
       
       shar_rank = 0; shar_size = 1;
       lwall_loaded = .false.
@@ -156,14 +291,16 @@
 #if defined(MPI_OPT)
          IF (PRESENT(comm)) THEN
             CALL mpialloc_2d_dbl(vertex,nvertex,3,shar_rank,0,shar_comm,win_vertex)
+            shared = .true.
          ELSE
 #endif
             ! if no MPI, allocate everything on one node
             ALLOCATE(vertex(nvertex,3),STAT=istat)
+            shared = .false.
 #if defined(MPI_OPT)
          END IF
 #endif
-         WRITE(6, *) 'Vertex allocation'
+         IF (lverb) WRITE(6, *) 'Vertex allocation'
          ! read in the mesh on allocated memory
          IF (istat/=0) RETURN
          IF (shar_rank == 0) THEN
@@ -171,7 +308,7 @@
                READ(iunit,*) vertex(ik,1),vertex(ik,2),vertex(ik,3)
             END DO
          END IF
-         WRITE(6, *) 'Vertex reading'
+         IF (lverb) WRITE(6, *) 'Vertex reading'
          ! Read in uniform grid
          READ(iunit, *) wall%nblocks, wall%xstep, wall%ystep, wall%zstep
          ALLOCATE(wall%blocks(wall%nblocks))
@@ -179,7 +316,7 @@
          DO ik=1, wall%nblocks
             READ(iunit, *) xmin,xmax,ymin,ymax,zmin,zmax
             READ(iunit, *) nface
-            WRITE(6, *) 'Block reading: ', ik, nface
+            IF (lverb) WRITE(6, *) 'Block reading: ', ik, nface
 #if defined(MPI_OPT)
             IF (PRESENT(comm)) THEN
                CALL mpialloc_2d_int(face,nface,3,shar_rank,0,shar_comm,win_face)
@@ -199,25 +336,24 @@
                READ(iunit,*) face(i,1),face(i,2),face(i,3)
             END DO
 
-            WRITE(6, *) 'Init block: ', ik
+            IF (lverb) WRITE(6, *) 'Init block: ', ik
 
             CALL INIT_BLOCK(wall%blocks(ik),xmin,xmax,ymin,ymax,zmin,zmax,nface,istat,comm,shar_comm)
 
-            WRITE(6, *) 'Init block done: ', ik
+            IF (lverb) WRITE(6, *) 'Init block done: ', ik
 
-#if defined(MPI_OPT)
-            IF (PRESENT(comm)) THEN
-               CALL MPI_WIN_FENCE(0,win_face,istat)
-               CALL MPI_WIN_FREE(win_face,istat)
-            ELSE
-#endif
-            IF (ASSOCIATED(face)) NULLIFY(face)
-#if defined(MPI_OPT)
-            END IF
-#endif
+            CALL free_mpi_array(win_face, face, shared)
          END DO
+         CALL free_mpi_array(win_vertex, vertex, shared)
          ! close file
          CLOSE(iunit)
+         ! sync MPI
+#if defined(MPI_OPT)
+         IF (PRESENT(comm)) THEN
+            CALL MPI_BARRIER(shar_comm, istat)
+            CALL MPI_COMM_FREE(shar_comm, istat)
+         END IF
+#endif
       ELSE
          lwall_acc = .false.
          ! allocate shared memory with of mesh
@@ -377,7 +513,7 @@
       INTEGER, INTENT(in) :: mn, nu, nv
       INTEGER, INTENT(inout), OPTIONAL :: comm
       INTEGER :: u, v, i, j, istat, dex1, dex2, dex3, ik, nv2
-      INTEGER :: shar_comm, shar_rank, shar_size
+      INTEGER :: shar_comm
       DOUBLE PRECISION :: pi2, th, zt, pi
       DOUBLE PRECISION, ALLOCATABLE :: r_temp(:,:),z_temp(:,:),x_temp(:,:),y_temp(:,:)
 
@@ -623,7 +759,7 @@
       DOUBLE PRECISION, INTENT(in) :: Zseg(npts)
       INTEGER, INTENT(inout)       :: istat
       INTEGER, INTENT(inout), OPTIONAL :: comm
-      INTEGER :: shar_comm, shar_rank, shar_size
+      INTEGER :: shar_comm
       INTEGER :: nseg, ij, ik, il, im
       DOUBLE PRECISION :: dphi
       INTEGER :: dex1, dex2, dex3
@@ -1154,139 +1290,26 @@
          RETURN
       END FUNCTION
 
-      SUBROUTINE INIT_BLOCK(this,xmin,xmax,ymin,ymax,zmin,zmax,nface,istat,comm,shar_comm)
-         TYPE(block) :: this
-         DOUBLE PRECISION, INTENT(in) :: xmin, ymin, zmin, xmax, ymax, zmax
-         INTEGER, INTENT(in) :: nface
-         INTEGER, INTENT(inout) :: istat
-         INTEGER, INTENT(inout), OPTIONAL :: comm, shar_comm
-         INTEGER :: ik, i, dex1, dex2, dex3, shar_rank, shar_size
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!    Wall Destructors
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-         shar_rank = 0; shar_size = 1;
-
-         ! initialize MPI
-#if defined(MPI_OPT)
-         IF (PRESENT(comm)) THEN
-            CALL MPI_COMM_RANK( shar_comm, shar_rank, istat)
-            CALL MPI_COMM_SIZE( shar_comm, shar_size, istat)
-         END IF
-#endif
-         this%xmin = xmin
-         this%xmax = xmax
-         this%ymin = ymin
-         this%ymax = ymax
-         this%zmin = zmin
-         this%zmax = zmax
-         this%nfaces = nface
-
-         WRITE(6, *) 'Block intialized', xmin, xmax, ymin, ymax, zmin, zmax, nface
-
-         WRITE(6, *) 'Allocate block info'
-
-         ! allocate memory for information about the mesh
-#if defined(MPI_OPT)
-         IF (PRESENT(comm)) CALL MPI_BARRIER(comm,istat)
-         IF (istat/=0) RETURN
-         IF (PRESENT(comm)) THEN
-            CALL mpialloc_2d_dbl(this%A0,nface,3,shar_rank,0,shar_comm,this%win_a0)
-            CALL mpialloc_2d_dbl(this%V0,nface,3,shar_rank,0,shar_comm,this%win_v0)
-            CALL mpialloc_2d_dbl(this%V1,nface,3,shar_rank,0,shar_comm,this%win_v1)
-            CALL mpialloc_2d_dbl(this%FN,nface,3,shar_rank,0,shar_comm,this%win_fn)
-            mydelta = CEILING(REAL(nface) / REAL(shar_size))
-            mystart = 1 + shar_rank*mydelta
-            myend   = mystart + mydelta
-            IF (myend > nface) myend=nface
-         ELSE
-#endif
-            ALLOCATE(this%A0(nface,3),this%V0(nface,3),this%V1(nface,3),&
-                  this%FN(nface,3),STAT=istat)
-            mystart = 1; myend = nface
-#if defined(MPI_OPT)
-         END IF
-#endif
-         WRITE(6, *) 'Calculate mesh in block info'
-
-         IF (istat/=0) RETURN
-         ! Precalculate information about mesh
-         ! Calculate the face normal
-         ! V  = Vertex1-Vertex0
-         ! W  = Vertex2-Vertex0
-         ! FN = VxW/|VxW|
-         ! d  = -Vertex0.FN (. is dot product) (note weve absorbed the negative)
-         DO ik = mystart, myend
-            dex1 = face(ik,1)
-            dex2 = face(ik,2)
-            dex3 = face(ik,3)
-            this%A0(ik,:) = vertex(dex1,:)
-            this%V0(ik,:) = vertex(dex3,:)-vertex(dex1,:)
-            this%V1(ik,:) = vertex(dex2,:)-vertex(dex1,:)
-            this%FN(ik,1) = (this%V1(ik,2)*this%V0(ik,3))-(this%V1(ik,3)*this%V0(ik,2))
-            this%FN(ik,2) = (this%V1(ik,3)*this%V0(ik,1))-(this%V1(ik,1)*this%V0(ik,3))
-            this%FN(ik,3) = (this%V1(ik,1)*this%V0(ik,2))-(this%V1(ik,2)*this%V0(ik,1))
-         END DO
-#if defined(MPI_OPT)
-         IF (PRESENT(comm)) CALL MPI_BARRIER(comm,istat)
-#endif
-         ! Check for zero area
-         IF (ANY(SUM(this%FN*this%FN,DIM=2)==zero)) THEN
-            istat=-327
-            WRITE(6, *) 'Found zero area in block'
-            RETURN
-         END IF
-
-         WRITE(6, *) 'Pre-calculate in block'
-         ! allocate memory for information about mesh triangles 
-#if defined(MPI_OPT)
-         IF (PRESENT(comm)) THEN
-            CALL mpialloc_1d_dbl(this%DOT00,nface,shar_rank,0,shar_comm,this%win_dot00)
-            CALL mpialloc_1d_dbl(this%DOT01,nface,shar_rank,0,shar_comm,this%win_dot01)
-            CALL mpialloc_1d_dbl(this%DOT11,nface,shar_rank,0,shar_comm,win_dot11)
-            CALL mpialloc_1d_dbl(invDenom,nface,shar_rank,0,shar_comm,win_invDenom)
-            CALL mpialloc_1d_dbl(this%d,nface,shar_rank,0,shar_comm,this%win_d)
-            CALL mpialloc_1d_int(this%ihit_array,nface,shar_rank,0,shar_comm,this%win_ihit)
-            mydelta = CEILING(REAL(nface) / REAL(shar_size))
-            mystart = 1 + shar_rank*mydelta
-            myend   = mystart + mydelta
-            IF (myend > nface) myend=nface
-         ELSE
-#endif
-            ALLOCATE(this%DOT00(nface), this%DOT01(nface), this%DOT11(nface), invDenom(nface), STAT=istat)
-            ALLOCATE(this%d(nface),STAT=istat)
-            ALLOCATE(this%ihit_array(nface),STAT=istat)
-            mystart = 1; myend = nface
-#if defined(MPI_OPT)
-         END IF
-#endif
-         ! if no error, calculate information about mesh triangles
-         IF (istat/=0) RETURN
-         DO i = mystart, myend
-            this%ihit_array(i) = 0
-            this%DOT00(i) = this%V0(i,1)*this%V0(i,1) + this%V0(i,2)*this%V0(i,2) + this%V0(i,3)*this%V0(i,3)
-            this%DOT01(i) = this%V0(i,1)*this%V1(i,1) + this%V0(i,2)*this%V1(i,2) + this%V0(i,3)*this%V1(i,3)
-            this%DOT11(i) = this%V1(i,1)*this%V1(i,1) + this%V1(i,2)*this%V1(i,2) + this%V1(i,3)*this%V1(i,3)
-            this%d(i)     = this%FN(i,1)*this%A0(i,1) + this%FN(i,2)*this%A0(i,2) + this%FN(i,3)*this%A0(i,3)
-            invDenom(i) = one / (this%DOT00(i)*this%DOT11(i) - this%DOT01(i)*this%DOT01(i))
-         END DO
-         ! Multiply with invDenom to reduce calculations later
-         DO i = mystart, myend
-            this%DOT00(i) = this%DOT00(i) * invDenom(i)
-            this%DOT01(i) = this%DOT01(i) * invDenom(i)
-            this%DOT11(i) = this%DOT11(i) * invDenom(i)
-         END DO
-         ! sync MPI
-#if defined(MPI_OPT)
-         IF (PRESENT(comm)) THEN
-            CALL MPI_BARRIER(shar_comm, istat)
-            CALL MPI_COMM_FREE(shar_comm, istat)
-            CALL MPI_WIN_FENCE(0,win_invdenom,istat)
-            CALL MPI_WIN_FREE(win_invdenom,istat)
-         ELSE
-#endif
-            IF (ASSOCIATED(invDenom)) DEALLOCATE(invDenom)
-#if defined(MPI_OPT)
-         END IF
-#endif
-      END SUBROUTINE
+      SUBROUTINE BLOCK_DESTROY(this)
+         IMPLICIT NONE
+         TYPE(block), INTENT(inout) :: this
+         this % nfaces = 0
+         CALL free_mpi_array(this % win_d, this % d, this % isshared)
+         CALL free_mpi_array(this % win_FN, this % FN, this % isshared)
+         CALL free_mpi_array(this % win_A0, this % A0, this % isshared)
+         CALL free_mpi_array(this % win_V0, this % V0, this % isshared)
+         CALL free_mpi_array(this % win_V1, this % V1, this % isshared)
+         CALL free_mpi_array(this % win_DOT00, this % DOT00, this % isshared)
+         CALL free_mpi_array(this % win_DOT01, this % DOT01, this % isshared)
+         CALL free_mpi_array(this % win_DOT11, this % DOT11, this % isshared)
+         CALL free_mpi_array(this % win_ihit, this % ihit_array, this % isshared)
+         this % isshared = .FALSE.
+         RETURN
+         END SUBROUTINE BLOCK_DESTROY
 
       SUBROUTINE wall_free(istat,shared_comm)
       !-----------------------------------------------------------------------
@@ -1301,67 +1324,79 @@
       IMPLICIT NONE
       INTEGER, INTENT(inout) :: istat
       INTEGER, INTENT(inout), OPTIONAL :: shared_comm
-      IF (PRESENT(shared_comm)) THEN
-#if defined(MPI_OPT)
-         CALL MPI_WIN_FENCE(0,win_vertex,istat)
-         CALL MPI_WIN_FREE(win_vertex,istat)
-         CALL MPI_WIN_FENCE(0,win_face,istat)
-         CALL MPI_WIN_FREE(win_face,istat)
-         CALL MPI_WIN_FENCE(0,win_fn,istat)
-         CALL MPI_WIN_FREE(win_fn,istat)
-         CALL MPI_WIN_FENCE(0,win_a0,istat)
-         CALL MPI_WIN_FREE(win_a0,istat)
-         CALL MPI_WIN_FENCE(0,win_v0,istat)
-         CALL MPI_WIN_FREE(win_v0,istat)
-         CALL MPI_WIN_FENCE(0,win_v1,istat)
-         CALL MPI_WIN_FREE(win_v1,istat)
-         CALL MPI_WIN_FENCE(0,win_dot00,istat)
-         CALL MPI_WIN_FREE(win_dot00,istat)
-         CALL MPI_WIN_FENCE(0,win_dot01,istat)
-         CALL MPI_WIN_FREE(win_dot01,istat)
-         CALL MPI_WIN_FENCE(0,win_dot11,istat)
-         CALL MPI_WIN_FREE(win_dot11,istat)
-         CALL MPI_WIN_FENCE(0,win_d,istat)
-         CALL MPI_WIN_FREE(win_d,istat)
-         CALL MPI_WIN_FENCE(0,win_ihit,istat)
-         CALL MPI_WIN_FREE(win_ihit,istat)    
-         IF (ASSOCIATED(vertex)) NULLIFY(vertex)
-         IF (ASSOCIATED(face)) NULLIFY(face)
-         IF (ASSOCIATED(FN)) NULLIFY(FN)
-         IF (ASSOCIATED(A0)) NULLIFY(A0)
-         IF (ASSOCIATED(V0)) NULLIFY(V0)
-         IF (ASSOCIATED(V1)) NULLIFY(V1)
-         IF (ASSOCIATED(DOT00)) NULLIFY(DOT00)
-         IF (ASSOCIATED(DOT01)) NULLIFY(DOT01)
-         IF (ASSOCIATED(DOT11)) NULLIFY(DOT11)
-         IF (ASSOCIATED(d)) NULLIFY(d)
-         IF (ASSOCIATED(ihit_array)) NULLIFY(ihit_array)
+      INTEGER :: i
+      ! Check if have to delete acceerated wall or the normal one
+      IF (lwall_acc) THEN
+         IF (ASSOCIATED(wall%blocks)) THEN
+            DO i = 1, wall%nblocks
+               CALL BLOCK_DESTROY(wall%blocks(i))
+            END DO
+            DEALLOCATE(wall%blocks)
+            wall%nblocks = -1
+         END IF
       ELSE
+         IF (PRESENT(shared_comm)) THEN
+#if defined(MPI_OPT)
+            CALL MPI_WIN_FENCE(0,win_vertex,istat)
+            CALL MPI_WIN_FREE(win_vertex,istat)
+            CALL MPI_WIN_FENCE(0,win_face,istat)
+            CALL MPI_WIN_FREE(win_face,istat)
+            CALL MPI_WIN_FENCE(0,win_fn,istat)
+            CALL MPI_WIN_FREE(win_fn,istat)
+            CALL MPI_WIN_FENCE(0,win_a0,istat)
+            CALL MPI_WIN_FREE(win_a0,istat)
+            CALL MPI_WIN_FENCE(0,win_v0,istat)
+            CALL MPI_WIN_FREE(win_v0,istat)
+            CALL MPI_WIN_FENCE(0,win_v1,istat)
+            CALL MPI_WIN_FREE(win_v1,istat)
+            CALL MPI_WIN_FENCE(0,win_dot00,istat)
+            CALL MPI_WIN_FREE(win_dot00,istat)
+            CALL MPI_WIN_FENCE(0,win_dot01,istat)
+            CALL MPI_WIN_FREE(win_dot01,istat)
+            CALL MPI_WIN_FENCE(0,win_dot11,istat)
+            CALL MPI_WIN_FREE(win_dot11,istat)
+            CALL MPI_WIN_FENCE(0,win_d,istat)
+            CALL MPI_WIN_FREE(win_d,istat)
+            CALL MPI_WIN_FENCE(0,win_ihit,istat)
+            CALL MPI_WIN_FREE(win_ihit,istat)    
+            IF (ASSOCIATED(vertex)) NULLIFY(vertex)
+            IF (ASSOCIATED(face)) NULLIFY(face)
+            IF (ASSOCIATED(FN)) NULLIFY(FN)
+            IF (ASSOCIATED(A0)) NULLIFY(A0)
+            IF (ASSOCIATED(V0)) NULLIFY(V0)
+            IF (ASSOCIATED(V1)) NULLIFY(V1)
+            IF (ASSOCIATED(DOT00)) NULLIFY(DOT00)
+            IF (ASSOCIATED(DOT01)) NULLIFY(DOT01)
+            IF (ASSOCIATED(DOT11)) NULLIFY(DOT11)
+            IF (ASSOCIATED(d)) NULLIFY(d)
+            IF (ASSOCIATED(ihit_array)) NULLIFY(ihit_array)
+         ELSE
 #endif
-         IF (ASSOCIATED(FN)) DEALLOCATE(FN)
-         IF (ASSOCIATED(A0)) DEALLOCATE(A0)
-         IF (ASSOCIATED(V0)) DEALLOCATE(V0)
-         IF (ASSOCIATED(V1)) DEALLOCATE(V1)
-         IF (ASSOCIATED(DOT00)) DEALLOCATE(DOT00)
-         IF (ASSOCIATED(DOT01)) DEALLOCATE(DOT01)
-         IF (ASSOCIATED(DOT11)) DEALLOCATE(DOT11)
-         IF (ASSOCIATED(d)) DEALLOCATE(d)
-         IF (ASSOCIATED(vertex)) DEALLOCATE(vertex)
-         IF (ASSOCIATED(face)) DEALLOCATE(face)
-         IF (ASSOCIATED(ihit_array)) DEALLOCATE(ihit_array)
+            IF (ASSOCIATED(FN)) DEALLOCATE(FN)
+            IF (ASSOCIATED(A0)) DEALLOCATE(A0)
+            IF (ASSOCIATED(V0)) DEALLOCATE(V0)
+            IF (ASSOCIATED(V1)) DEALLOCATE(V1)
+            IF (ASSOCIATED(DOT00)) DEALLOCATE(DOT00)
+            IF (ASSOCIATED(DOT01)) DEALLOCATE(DOT01)
+            IF (ASSOCIATED(DOT11)) DEALLOCATE(DOT11)
+            IF (ASSOCIATED(d)) DEALLOCATE(d)
+            IF (ASSOCIATED(vertex)) DEALLOCATE(vertex)
+            IF (ASSOCIATED(face)) DEALLOCATE(face)
+            IF (ASSOCIATED(ihit_array)) DEALLOCATE(ihit_array)
+         END IF
       END IF
       machine_string=''
       date=''
       nface = -1
       nvertex = -1
 
-      IF (lwall_acc) THEN
-
-
-      END IF
       lwall_loaded = .false.
       RETURN
       END SUBROUTINE wall_free
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!    Memory Allocation Subroutines
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       SUBROUTINE mpialloc_1d_int(array,n1,subid,mymaster,share_comm,win)
       !-----------------------------------------------------------------------
