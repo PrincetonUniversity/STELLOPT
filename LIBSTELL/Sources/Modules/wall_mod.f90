@@ -1504,6 +1504,115 @@
       RETURN
       END SUBROUTINE mpialloc_2d_dbl
 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!    Memory Freeing Subroutines
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      SUBROUTINE free_mpi_array1d_int(win_local,array_local,isshared)
+         IMPLICIT NONE
+         LOGICAL, INTENT(in) :: isshared
+         INTEGER, INTENT(inout) :: win_local
+         INTEGER, POINTER, INTENT(inout) :: array_local(:)
+         INTEGER :: istat
+         istat=0
+#if defined(MPI_OPT)
+         IF (isshared) THEN
+            CALL MPI_WIN_FENCE(0, win_local,istat)
+            CALL MPI_WIN_FREE(win_local,istat)
+            IF (ASSOCIATED(array_local)) NULLIFY(array_local)
+         ELSE
+#endif
+            IF (ASSOCIATED(array_local)) DEALLOCATE(array_local)
+#if defined(MPI_OPT)
+         ENDIF
+#endif
+         RETURN
+         END SUBROUTINE free_mpi_array1d_int
+   
+         SUBROUTINE free_mpi_array1d_flt(win_local,array_local,isshared)
+         IMPLICIT NONE
+         LOGICAL, INTENT(in) :: isshared
+         INTEGER, INTENT(inout) :: win_local
+         REAL, POINTER, INTENT(inout) :: array_local(:)
+         INTEGER :: istat
+         istat=0
+#if defined(MPI_OPT)
+         IF (isshared) THEN
+            CALL MPI_WIN_FENCE(0, win_local,istat)
+            CALL MPI_WIN_FREE(win_local,istat)
+            IF (ASSOCIATED(array_local)) NULLIFY(array_local)
+         ELSE
+#endif
+            IF (ASSOCIATED(array_local)) DEALLOCATE(array_local)
+#if defined(MPI_OPT)
+         ENDIF
+#endif
+         RETURN
+         END SUBROUTINE free_mpi_array1d_flt
+   
+         SUBROUTINE free_mpi_array1d_dbl(win_local,array_local,isshared)
+         IMPLICIT NONE
+         LOGICAL, INTENT(in) :: isshared
+         INTEGER, INTENT(inout) :: win_local
+         DOUBLE PRECISION, POINTER, INTENT(inout) :: array_local(:)
+         INTEGER :: istat
+         istat=0
+#if defined(MPI_OPT)
+         IF (isshared) THEN
+            CALL MPI_WIN_FENCE(0, win_local,istat)
+            CALL MPI_WIN_FREE(win_local,istat)
+            IF (ASSOCIATED(array_local)) NULLIFY(array_local)
+         ELSE
+#endif
+            IF (ASSOCIATED(array_local)) DEALLOCATE(array_local)
+#if defined(MPI_OPT)
+         ENDIF
+#endif
+         RETURN
+         END SUBROUTINE free_mpi_array1d_dbl
+   
+         SUBROUTINE free_mpi_array2d_int(win_local,array_local,isshared)
+         IMPLICIT NONE
+         LOGICAL, INTENT(in) :: isshared
+         INTEGER, INTENT(inout) :: win_local
+         INTEGER, POINTER, INTENT(inout) :: array_local(:,:)
+         INTEGER :: istat
+         istat=0
+#if defined(MPI_OPT)
+         IF (isshared) THEN
+            CALL MPI_WIN_FENCE(0, win_local,istat)
+            CALL MPI_WIN_FREE(win_local,istat)
+            IF (ASSOCIATED(array_local)) NULLIFY(array_local)
+         ELSE
+#endif
+            IF (ASSOCIATED(array_local)) DEALLOCATE(array_local)
+#if defined(MPI_OPT)
+         ENDIF
+#endif
+         RETURN
+         END SUBROUTINE free_mpi_array2d_int
+   
+         SUBROUTINE free_mpi_array2d_dbl(win_local,array_local,isshared)
+         IMPLICIT NONE
+         LOGICAL, INTENT(in) :: isshared
+         INTEGER, INTENT(inout) :: win_local
+         DOUBLE PRECISION, POINTER, INTENT(inout) :: array_local(:,:)
+         INTEGER :: istat
+         istat=0
+#if defined(MPI_OPT)
+         IF (isshared) THEN
+            CALL MPI_WIN_FENCE(0, win_local,istat)
+            CALL MPI_WIN_FREE(win_local,istat)
+            IF (ASSOCIATED(array_local)) NULLIFY(array_local)
+         ELSE
+#endif
+            IF (ASSOCIATED(array_local)) DEALLOCATE(array_local)
+#if defined(MPI_OPT)
+         ENDIF
+#endif
+         RETURN
+         END SUBROUTINE free_mpi_array2d_dbl
+
 !-----------------------------------------------------------------------
 !     End Module
 !-----------------------------------------------------------------------
