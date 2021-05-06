@@ -22,7 +22,7 @@
 #######################################################################
 #            MPI Options
 #######################################################################
-  LMPI    = F
+  LMPI    = T
   MPI_COMPILE = mpif90.openmpi
   MPI_COMPILE_FREE = mpif90 -ffree-form \
                      -ffree-line-length-none -ffixed-line-length-none
