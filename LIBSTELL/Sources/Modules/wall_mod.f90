@@ -26,7 +26,7 @@
          LOGICAL :: isshared  ! whether or not shared memory active
          ! shared memory pointsers
          INTEGER :: win_d, win_FN, win_A0, win_V0, win_V1, &
-                    win_DOT00, win_DOT11, win_DOT01, win_ihit
+                    win_DOT00, win_DOT11, win_DOT01, win_ihit, win_invDenom
          ! bounds of block
          DOUBLE PRECISION :: xmin, xmax, ymin, ymax, zmin, zmax
          ! non-shared memory pointers
@@ -35,6 +35,7 @@
          DOUBLE PRECISION, DIMENSION(:),   POINTER :: DOT00 => null()
          DOUBLE PRECISION, DIMENSION(:),   POINTER :: DOT01 => null()
          DOUBLE PRECISION, DIMENSION(:),   POINTER :: DOT11 => null()
+         DOUBLE PRECISION, DIMENSION(:),   POINTER :: invDenom => null()
          DOUBLE PRECISION, DIMENSION(:,:), POINTER :: FN => null()
          DOUBLE PRECISION, DIMENSION(:,:), POINTER :: A0 => null()
          DOUBLE PRECISION, DIMENSION(:,:), POINTER :: V0 => null()
@@ -70,7 +71,7 @@
       DOUBLE PRECISION, PRIVATE, PARAMETER      :: one  = 1.0D+0
       DOUBLE PRECISION, PRIVATE, PARAMETER      :: epsilon = 1D-6
 
-      LOGICAL, PRIVATE, PARAMETER               :: lverb = .FALSE.
+      LOGICAL, PRIVATE, PARAMETER               :: lverb = .TRUE.
 
 !------------------ Variables for naive approach
       
@@ -204,7 +205,7 @@
             CALL mpialloc_1d_dbl(this%DOT01,nface,shar_rank,0,shar_comm,this%win_dot01)
             CALL mpialloc_1d_dbl(this%DOT11,nface,shar_rank,0,shar_comm,this%win_dot11)
             IF (lverb) WRITE(6, *) 'Allocate pre-calculate in block 2'
-            CALL mpialloc_1d_dbl(invDenom,nface,shar_rank,0,shar_comm,win_invDenom)
+            CALL mpialloc_1d_dbl(this%invDenom,nface,shar_rank,0,shar_comm,this%win_invDenom)
             IF (lverb) WRITE(6, *) 'Allocate pre-calculate in block 3'
             CALL mpialloc_1d_dbl(this%d,nface,shar_rank,0,shar_comm,this%win_d)
             IF (lverb) WRITE(6, *) 'Allocate pre-calculate in block 4'
@@ -232,16 +233,16 @@
             this%DOT01(i) = this%V0(i,1)*this%V1(i,1) + this%V0(i,2)*this%V1(i,2) + this%V0(i,3)*this%V1(i,3)
             this%DOT11(i) = this%V1(i,1)*this%V1(i,1) + this%V1(i,2)*this%V1(i,2) + this%V1(i,3)*this%V1(i,3)
             this%d(i)     = this%FN(i,1)*this%A0(i,1) + this%FN(i,2)*this%A0(i,2) + this%FN(i,3)*this%A0(i,3)
-            invDenom(i) = one / (this%DOT00(i)*this%DOT11(i) - this%DOT01(i)*this%DOT01(i))
+            this%invDenom(i) = one / (this%DOT00(i)*this%DOT11(i) - this%DOT01(i)*this%DOT01(i))
          END DO
          ! Multiply with invDenom to reduce calculations later
          DO i = mystart, myend
-            this%DOT00(i) = this%DOT00(i) * invDenom(i)
-            this%DOT01(i) = this%DOT01(i) * invDenom(i)
-            this%DOT11(i) = this%DOT11(i) * invDenom(i)
+            this%DOT00(i) = this%DOT00(i) * this%invDenom(i)
+            this%DOT01(i) = this%DOT01(i) * this%invDenom(i)
+            this%DOT11(i) = this%DOT11(i) * this%invDenom(i)
          END DO
          ! Clear memory
-         CALL free_mpi_array(win_invDenom, invDenom, this%isshared)
+         CALL free_mpi_array(this%win_invDenom, this%invDenom, this%isshared)
       END SUBROUTINE
       
       SUBROUTINE wall_load_txt(filename,istat,comm)
