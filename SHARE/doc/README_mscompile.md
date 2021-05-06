@@ -1,13 +1,14 @@
-This is an experimental branch for compiling LIBSTELL under msys-mingw 
+This is an experimental branch for compiling LIBSTELL under msys-mingw
 on windows.
 
-I have changed the makefiles pretty significantly to make this system work and 
-some of the changes are general improvements. 
+I have changed the makefiles pretty significantly to make this system work and
+some of the changes are general improvements.
 ---  Bug fixing for GCC/GFORTRAN 9.3
 ---  Custom packagebuilds for MSMPI, netcdf, netcdf-cxx netcdf-fortran included
 ---  Custom selection of $(LIB) extension in make_$(machine) file [default libstell.a / libstell.so]
 ---  Automatic undefined symbol resolution in linking libraries by using recursive flags
- .... this feature is not included on the DARWIN platform and has only been tested with GCC9.3 
+ .... this feature is not included on the DARWIN platform and has only been tested with GCC9.3
+
 
 ====================================================================================
 
@@ -18,18 +19,54 @@ Known basics / fixes:
 -- the other changes I have made in this branch should be with you already...
 
 Notes:
--- The compiled files hdf5.mod are stored under /mingw64/include/static/ or /mingw64/include/shared. 
--- If you are using the hdf5 *.dll files, you need to include the "shared" dir 
--- the mingw precompiler is based on gcc9 in this build. 
+-- The compiled files hdf5.mod are stored under /mingw64/include/static/ or /mingw64/include/shared.
+-- If you are using the hdf5 *.dll files, you need to include the "shared" dir
+-- the mingw precompiler is based on gcc9 in this build.
      ... To avoid getcarg and vmec_system errors you need to add a proper flag and system call
      ... This is all about GCC9.3 compatability, not actual Windows compatability
+-- the output files are windows executables without the ".exe" file ending. Just rename them.
+-- to run xvmec2000.exe, put it in the same folder as the input file, open a cmd.exe in that folder and run
+(for example)
+"xvmec2000.exe input.DSHAPE"
+
+-- To compile the shared libraries, first compile the static libraries
+i.e.,
+
+./build_all
+
+./build_all LIBSTELL ANIMEC BCYCLIC BEAMS3D BOOTSJ BNORM BOOZ_XFORM COBRAVMEC COILOPT DESCUR DESCUR_PLOT DIAGNO DKES FIELDLINES J_INVARIANT MAKEGRID NEO NESCOIL PENTA TORLINES VMEC2000 VMEC2PIES VMEC2SPEC VMEC2STEL VMEC2V690 VMEC2XGC STELLOPTV2 --shared_release
+
 
 =========================
 Current issue:
 
+- need to convert "libtell.lib" into a dll or get stellopt to compile it directly
+
+=====
+
+SOLVED / PREVIOUS ISSUE:
+- to run xvmec2000.exe, put it in the same folder as the input file, open a cmd.exe in that folder and run
+(for example)
+xvmec2000.exe input.DSHAPE
+
+=====
+
+SOLVED / PREVIOUS ISSUE:
+- in order to install netcdf-fortran to your msys file system, you will need to make sure that pacman does not check the pgp keys
+vi /etc/pacman.conf
+
+- find the line that says "SigLevel =" and uncomment "SigLevel Never", while commenting out the next line
+"
+SigLevel Never
+#SigLevel = Required DatabaseOptional
+"
+
+=====
+
+SOLVED / PREVIOUS ISSUE:
 - Several codes needs the same hotfix that SAM applied for libstell (undeclared MPI variables in serial compilation)
 
-===== 
+=====
 
 SOLVED / PREVIOUS ISSUE:  Wrote a new WIN64 macro (note: this should work on any format, it is specific for GCC9)
 
@@ -53,6 +90,8 @@ Similar issue with vmec_system.f. Solved by adding a WIN64 macro that functions 
 #elif defined(WIN64)
       CALL SYSTEM(TRIM(cmd), ireturn)
 
+=====
+
 SOLVED / PREVIOUS ISSUE:  HOTFIX FROM SAM (git checkout origin/Lazerson -- LIBSTELL/Sources/Modules)
 
 ...
@@ -75,7 +114,7 @@ make[1]: Leaving directory '/home/weir/src/stellopt/LIBSTELL'
 make: *** [makefile:41: clean_release] Error 2
 
 
-- This error appears to be pop up because the MPI environment doesn't declare the data type for the "comm" variable in the new mpi_inc 
+- This error appears to be pop up because the MPI environment doesn't declare the data type for the "comm" variable in the new mpi_inc
 ----> Fixed by Sam for LIBSTELL. NEEDS TO BE APPLIED TO OTHER MODULES
 
 
@@ -118,7 +157,7 @@ pacman -S mingw-w64-x86_64-gsl mingw-w64-x86_64-fgsl mingw-w64-x86_64-fftw
 # INSTALL MSMPI from custom package build under $STELLOPT_PATH/SHARE/pkgbuilds
 ---- I had to write a few custom builds to make this system work
 ----- the MSYS version of msmpi comes with headers for fortran mpi
------ you have to manually compile the fortran modules yourself before 
+----- you have to manually compile the fortran modules yourself before
       proceeding ... I did this for you in the pkgbuild script already
 
 
@@ -128,9 +167,9 @@ pacman -S mingw-w64-x86_64-gsl mingw-w64-x86_64-fgsl mingw-w64-x86_64-fftw
 ./msmpi.sh
 
 3) Run the package installer
-makepkg-mingw 
+makepkg-mingw
 
-4) install the package  
+4) install the package
 pacman -U mingw-w64-x86_64....zst
 
 ============
@@ -154,13 +193,13 @@ pacman -U mingw-w64-x86_64-scalapack-2.0.2-1-any.pkg.tar.zst
 =====================
 
 # INSTALL NETCDF, NETDCDF-CXXX and NETCDF-FORTRAN (in that order)
---- I had to write a few custom builds to make netcdf-c, netcdf-cxx, and 
+--- I had to write a few custom builds to make netcdf-c, netcdf-cxx, and
     netcdf-fortran to compile together.
 
 These are located under the STELLOPT/SHARE/pkgbuilds
 (WARNING: I set the prefix for installation to /mingw64)
 
-I didn't bother to write new check-sums for the files, so go to each 
+I didn't bother to write new check-sums for the files, so go to each
 directory, and type this:
 
 cd $STELLOPT_PATH/SHARE/pkgbuilds/mingw-w64-netcdf
@@ -176,7 +215,7 @@ makepkg-mingw -sCLf --skipchecksums
 pacman -U mingw-w64-x86_64-netcdf-fortran-4.5.2-1-any.pkg.tar.zst
 
 NOTE: the netcdf-fortran installation might throw an error because HDF5 includes a netcdf header in the same spot
-- I used the netcdf-fortran one and overwrote the HDF5 one 
+- I used the netcdf-fortran one and overwrote the HDF5 one
 (etc. In principal, the netcdf-fortran one contains the stuff from netcdf-c already and is the more complete of the two)
 
 ====================================================================================
@@ -222,7 +261,7 @@ I recommend using the MSYS version of MSMPI - it is more up to date (version 10+
 
 - if you just want to test a local installation, then you can follow these instructions.
 
------ the MSYS version comes with headers for fortran mpi: you have to manually compile the fortran codes (see  README_msmpi.md) 
+----- the MSYS version comes with headers for fortran mpi: you have to manually compile the fortran codes (see  README_msmpi.md)
 
 Instructions for installing MS-MPI yourself:
 
@@ -308,7 +347,7 @@ cp libblas.dll /mingw64/lib/
 
 rm *.o
 
-Overwrite the blas file that you installed with the faster version: Openblas 
+Overwrite the blas file that you installed with the faster version: Openblas
 --- make sure to close your MSYS2 MINGW64 shell, then open an MSYS2 shell:
 pacman -S mingw-w64-x86_64-openblas
 
@@ -339,7 +378,7 @@ g++ lapack_test.cpp -llapack -o lapack_test     # build
 close your msys2 shell and your mingw64 shell
 
 
-If you choose to do this you  should reinstall openblas + scalapack to make 
+If you choose to do this you  should reinstall openblas + scalapack to make
 sure you have optimized libraries.
 
 ===============================================================
@@ -347,17 +386,17 @@ On-going projects:
 
 
 SILO    - UNSUCCESSFUL SO FAR: stupid symlinks in tarballs break my PKGBUILD solution.
-... working around that problem caused another of course: 
+... working around that problem caused another of course:
         - SILO tries to identify the computer by searching a bunch of lists. Doesn't catch our environment.
 
 # From scratch (Work-in-progress):
 wget https://wci.llnl.gov/content/assets/docs/simulation/computer-codes/silo/silo-4.10.2/silo-4.10.2-bsd.tar.gz
 
 edit the "src/Makefile.am" before configuration:
-- replace the lines:   
-     libsilo_la_LDFLAGS = -avoid-version 
+- replace the lines:
+     libsilo_la_LDFLAGS = -avoid-version
 with:
-     libsilo_la_LDFLAGS = -no-undefined -avoid-version 
+     libsilo_la_LDFLAGS = -no-undefined -avoid-version
 
 mkdir build
 cd build
@@ -402,7 +441,7 @@ make check
 make install
 
 
-PETSC    - UNSUCCESSFUL SO FAR, still working on SILO 
+PETSC    - UNSUCCESSFUL SO FAR, still working on SILO
 
 --- You have to install python2 for this package ---
 

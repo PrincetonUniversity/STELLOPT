@@ -1,8 +1,32 @@
 # LIBSTELL Module
 
-s1 = ""
-s2 = "mp"
-s3 = "__"
+import os as _os
+import sys, platform
+import ctypes as _ct
+
+os = platform.system()
+is_64bits = sys.maxsize > 2**32
+
+if os=='Windows':
+    libstell_path = _os.environ["STELLOPT_PATH"]+"/LIBSTELL/Release/libstell.dll"
+
+    s1 = "__"
+    s2 = "MOD"
+    s3 = ""
+elif os=='Linux' or os=='Darwin':
+    libstell_path = _os.environ["STELLOPT_PATH"]+"/LIBSTELL/Release/libstell.so"
+
+    s1 = ""
+    s2 = "mp"
+    s3 = "__"
+# end if
+
+if is_64bits:   # 64-bit architecture
+    ls_handle = _ct.c_longlong
+else:
+    ls_handle = _ct.c_long
+# end if
+
 
 def read_vmec(file):
     import os, sys
@@ -11,7 +35,7 @@ def read_vmec(file):
     import numpy as np
     # Load Libraries
     try:
-        libstell = ct.cdll.LoadLibrary(os.environ["STELLOPT_PATH"]+"/LIBSTELL/Release/libstell.so")
+        libstell = ct.cdll.LoadLibrary(libstell_path)
         qtCreatorPath=os.environ["STELLOPT_PATH"]
     except KeyError:
         print("Please set environment variable STELLOPT_PATH")
@@ -146,7 +170,7 @@ def cfunct(theta,zeta,fmnc,xm,xn):
         fmnsinmt=(fmn*sinmt).T
         f[k,:,:]=np.matmul(fmncosmt, cosnz)-np.matmul(fmnsinmt, sinnz)
     return f
-    
+
 def sfunct(theta,zeta,fmnc,xm,xn):
     import numpy as np
     f=0
@@ -244,7 +268,7 @@ def calc_jll(vmec_data, theta, zeta ):
     # CALC_JLL(vmec_data,theta,zeta) Calculates the parallel current density.
     # This funciton takes a VMEC data structure (as read by read_vmec) and
     # theta/zeta arrays as input and outputs the parallel current density.
-    
+
     # Example usage (Matlab)
     #      theta=0:2*pi/359:2*pi;
     #      zeta=0:2*pi/63:2*pi;
@@ -256,18 +280,18 @@ def calc_jll(vmec_data, theta, zeta ):
     #      zeta=np.linspace(0, 2*np.pi, 64)
     #      vmec_data=read_vmec('wout.nc')
     #      jll=calc_jll(vmec_data, theta, zeta)
-    
-    
+
+
     # Maintained by: Samuel Lazerson (lazerson@pppl.gov)
     # Version:       1.00
-    
+
     b =cfunct(theta,zeta,vmec_data['bmnc'],    vmec_data['xm_nyq'],vmec_data['xn_nyq'])
     g =cfunct(theta,zeta,vmec_data['gmnc'],    vmec_data['xm_nyq'],vmec_data['xn_nyq'])
     bu=cfunct(theta,zeta,vmec_data['bsubumnc'],vmec_data['xm_nyq'],vmec_data['xn_nyq'])
     bv=cfunct(theta,zeta,vmec_data['bsubvmnc'],vmec_data['xm_nyq'],vmec_data['xn_nyq'])
     ju=cfunct(theta,zeta,vmec_data['currumnc'],vmec_data['xm_nyq'],vmec_data['xn_nyq'])
     jv=cfunct(theta,zeta,vmec_data['currvmnc'],vmec_data['xm_nyq'],vmec_data['xn_nyq'])
-    
+
     if (vmec_data['iasym']):
         b =b +sfunct(theta,zeta,vmec_data['bmns'],    vmec_data['xm_nyq'],vmec_data['xn_nyq'])
         g =g +sfunct(theta,zeta,vmec_data['gmns'],    vmec_data['xm_nyq'],vmec_data['xn_nyq'])
@@ -275,8 +299,8 @@ def calc_jll(vmec_data, theta, zeta ):
         bv=bv+sfunct(theta,zeta,vmec_data['bsubvmns'],vmec_data['xm_nyq'],vmec_data['xn_nyq'])
         ju=ju+sfunct(theta,zeta,vmec_data['currumns'],vmec_data['xm_nyq'],vmec_data['xn_nyq'])
         jv=jv+sfunct(theta,zeta,vmec_data['currvmns'],vmec_data['xm_nyq'],vmec_data['xn_nyq'])
-    
-    
+
+
     jll = (bu*ju+bv*jv)/(g*b)
     return jll
 
@@ -285,7 +309,7 @@ def safe_close(iunit):
     import ctypes as ct
     # Load Libraries
     try:
-        libstell = ct.cdll.LoadLibrary(os.environ["STELLOPT_PATH"]+"/LIBSTELL/Release/libstell.so")
+        libstell = ct.cdll.LoadLibrary(libstell_path)
         qtCreatorPath=os.environ["STELLOPT_PATH"]
     except KeyError:
         print("Please set environment variable STELLOPT_PATH")
@@ -302,7 +326,7 @@ def safe_open(iunit,istat,filename,filestat,fileform,record_in,access_in,delim_i
     import ctypes as ct
     # Load Libraries
     try:
-        libstell = ct.cdll.LoadLibrary(os.environ["STELLOPT_PATH"]+"/LIBSTELL/Release/libstell.so")
+        libstell = ct.cdll.LoadLibrary(libstell_path)
         qtCreatorPath=os.environ["STELLOPT_PATH"]
     except KeyError:
         print("Please set environment variable STELLOPT_PATH")
@@ -336,7 +360,7 @@ def read_indata_namelist(iunit,istat):
     import numpy as np
     # Load Libraries
     try:
-        libstell = ct.cdll.LoadLibrary(os.environ["STELLOPT_PATH"]+"/LIBSTELL/Release/libstell.so")
+        libstell = ct.cdll.LoadLibrary(libstell_path)
     except KeyError:
         print("Please set environment variable STELLOPT_PATH")
         sys.exit(1)
@@ -450,7 +474,7 @@ def set_module_var(module,var,val):
     import numpy as np
     # Load Libraries
     try:
-        libstell = ct.cdll.LoadLibrary(os.environ["STELLOPT_PATH"]+"/LIBSTELL/Release/libstell.so")
+        libstell = ct.cdll.LoadLibrary(libstell_path)
         qtCreatorPath=os.environ["STELLOPT_PATH"]
     except KeyError:
         print("Please set environment variable STELLOPT_PATH")
@@ -498,7 +522,7 @@ def write_indata_namelist(iunit,istat):
     import numpy as np
     # Load Libraries
     try:
-        libstell = ct.cdll.LoadLibrary(os.environ["STELLOPT_PATH"]+"/LIBSTELL/Release/libstell.so")
+        libstell = ct.cdll.LoadLibrary(libstell_path)
         qtCreatorPath=os.environ["STELLOPT_PATH"]
     except KeyError:
         print("Please set environment variable STELLOPT_PATH")
@@ -521,7 +545,7 @@ def pcurr(xx):
     import numpy.ctypeslib as npct
     # Load Libraries
     try:
-        libstell = ct.cdll.LoadLibrary(os.environ["STELLOPT_PATH"]+"/LIBSTELL/Release/libstell.so")
+        libstell = ct.cdll.LoadLibrary(libstell_path)
         qtCreatorPath=os.environ["STELLOPT_PATH"]
     except KeyError:
         print("Please set environment variable STELLOPT_PATH")
@@ -540,7 +564,7 @@ def pmass(xx):
     import numpy.ctypeslib as npct
     # Load Libraries
     try:
-        libstell = ct.cdll.LoadLibrary(os.environ["STELLOPT_PATH"]+"/LIBSTELL/Release/libstell.so")
+        libstell = ct.cdll.LoadLibrary(libstell_path)
         qtCreatorPath=os.environ["STELLOPT_PATH"]
     except KeyError:
         print("Please set environment variable STELLOPT_PATH")
@@ -559,7 +583,7 @@ def piota(xx):
     import numpy.ctypeslib as npct
     # Load Libraries
     try:
-        libstell = ct.cdll.LoadLibrary(os.environ["STELLOPT_PATH"]+"/LIBSTELL/Release/libstell.so")
+        libstell = ct.cdll.LoadLibrary(libstell_path)
         qtCreatorPath=os.environ["STELLOPT_PATH"]
     except KeyError:
         print("Please set environment variable STELLOPT_PATH")

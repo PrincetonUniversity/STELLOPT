@@ -1,1 +1,177 @@
-include ../makestelloptv2
+#This makefile goes in dirs Debug and Release (first level below STELLOPTV2)
+include ../../make.inc
+FFILE   = '$*''.f'
+CFILE   = '$*''.c'
+F90FILE = '$*''.f90'
+SPATH   = ../Sources
+#Contains list of source files (.o) and dependencies
+DEPLIST = STELLOPTV2.dep
+OBJLIST = ../ObjectList
+
+#Includes source files and dependency list
+include $(DEPLIST)
+include $(OBJLIST)
+VPATH = $(SPATH):$(SPATH)/Chisq:$(SPATH)/General:$(SPATH)/Modules
+
+.SUFFIXES :
+.SUFFIXES : .f .f90 .o
+xstelloptv2:  $(LIB) $(LIB_VMEC) $(LIB_BEAMS3D) $(LIB_BNORM) $(LIB_BOOTSJ) \
+	$(LIB_BOOZ) $(LIB_COBRA) $(LIB_DIAGNO) $(LIB_DKES) $(LIB_FIELDLINES) \
+	$(LIB_JINV) $(LIB_MGRID) $(LIB_NEO)  $(LIB_COILOPTPP) $(LIB_GENE) \
+	$(LIB_REGCOIL) $(LIB_TERPSICHORE) $(ObjectFiles)
+	$(LINK) $@ $(ObjectFiles) $(LIB_LINK)
+ifdef VMEC_DIR 
+	@rm $(VMEC_DIR)/$(LOCTYPE)/$(LIB_VMEC) 
+endif
+ifdef BEAMS3D_DIR
+	@rm $(BEAMS3D_DIR)/$(LOCTYPE)/$(LIB_BEAMS3D)
+endif
+ifdef BNORM_DIR
+	@rm $(BNORM_DIR)/$(LOCTYPE)/$(LIB_BNORM)
+endif
+ifdef BOOTSJ_DIR
+	@rm $(BOOTSJ_DIR)/$(LOCTYPE)/$(LIB_BOOTSJ)
+endif
+ifdef BOOZ_DIR
+	@rm $(BOOZ_DIR)/$(LOCTYPE)/$(LIB_BOOZ)
+endif
+ifdef COBRA_DIR
+	@rm $(COBRA_DIR)/$(LOCTYPE)/$(LIB_COBRA)
+endif
+ifdef DIAGNO_DIR
+	@rm $(DIAGNO_DIR)/$(LOCTYPE)/$(LIB_DIAGNO)
+endif
+ifdef DKES_DIR
+	@rm $(DKES_DIR)/$(LOCTYPE)/$(LIB_DKES)
+endif
+ifdef FIELDLINES_DIR
+	@rm $(FIELDLINES_DIR)/$(LOCTYPE)/$(LIB_FIELDLINES)
+endif
+ifdef JINV_DIR
+	@rm $(JINV_DIR)/$(LOCTYPE)/$(LIB_JINV)
+endif
+ifdef MGRID_DIR
+	@rm $(MGRID_DIR)/$(LOCTYPE)/$(LIB_MGRID)
+endif
+ifdef NEO_DIR
+	@rm $(NEO_DIR)/$(LOCTYPE)/$(LIB_NEO)
+endif
+ifdef GENE_DIR
+	@rm $(GENE_DIR)/$(LIB_GENE)
+endif
+ifdef COILOPTPP_DIR
+	@rm $(COILOPTPP_DIR)/$(LIB_COILOPTPP)
+endif
+ifdef REGCOIL_DIR
+	@rm $(REGCOIL_DIR)/$(LIB_REGCOIL)
+endif
+ifdef TERPSICHORE_DIR
+	@rm $(TERPSICHORE_DIR)/$(LIB_TERPSICHORE)
+endif
+#Compile object files defined in OBJLIST.
+.f.o :
+	@if grep -q '^!DEC\$$' $<; \
+      then \
+         awk -f $(HOME_BIN)/awk_cdir.awk $< > $(CFILE) ; \
+         echo '$(PRECOMP) $<'; $(PRECOMP) $(CFILE) $(FFILE); \
+         rm -f $(CFILE); echo '$(COMPILE) $(FLAGS) $(MOD_PATH).. -c $<'; \
+         $(COMPILE) $(FLAGS) $(MOD_PATH).. -c $(FFILE); \
+      elif grep -q '^#if' $<; \
+      then \
+         cp $< $(CFILE); \
+         echo '$(PRECOMP) $<'; $(PRECOMP) $(CFILE) $(FFILE); \
+         rm -f $(CFILE); echo '$(COMPILE) $(FLAGS) $(MOD_PATH).. -c $<'; \
+         $(COMPILE) $(FLAGS) $(MOD_PATH).. -c $(FFILE); \
+      else \
+         echo '$(COMPILE) $(FLAGS) $(MOD_PATH). -c $<'; \
+         $(COMPILE) $(FLAGS) $(MOD_PATH). -c $<; \
+      fi
+
+.f90.o :
+	@if grep -q '^!DEC\$$' $<; \
+      then \
+         awk -f $(HOME_BIN)/awk_cdir.awk $< > $(CFILE) ; \
+         echo '$(PRECOMP) $<'; $(PRECOMP) $(CFILE) $(F90FILE); \
+         rm -f $(CFILE); echo '$(COMPILE_FREE) $(FLAGS) $(MOD_PATH).. -c $<'; \
+        $(COMPILE_FREE) $(FLAGS) $(MOD_PATH).. -c $(F90FILE); \
+      elif grep -q '^#if' $<; \
+      then \
+         cp $< $(CFILE); \
+         echo '$(PRECOMP) $<'; $(PRECOMP) $(CFILE) $(F90FILE); \
+         rm -f $(CFILE); echo '$(COMPILE_FREE) $(FLAGS) $(MOD_PATH).. -c $<'; \
+        $(COMPILE_FREE) $(FLAGS) $(MOD_PATH).. -c $(F90FILE); \
+      else \
+         echo '$(COMPILE_FREE) $(FLAGS) $(MOD_PATH). -c $<'; \
+         $(COMPILE_FREE) $(FLAGS) $(MOD_PATH).. -c $<; \
+      fi
+      
+#Check that library files are current. 
+$(LIB) :
+	@cd $(LIB_DIR); make $(TYPE)
+
+clean:
+	- rm -f *.o *.mod
+
+#Construct vmec library. 
+$(LIB_VMEC) :
+	@cd $(VMEC_DIR); make $(TYPE); cd $(LOCTYPE); ar -cruv $(LIB_VMEC) *.o 
+	
+#Construct beams3d library. 
+$(LIB_BEAMS3D) :
+	@cd $(BEAMS3D_DIR); make $(TYPE); cd $(LOCTYPE); ar -cruv $(LIB_BEAMS3D) *.o *.mod
+	
+#Construct bnorm library. 
+$(LIB_BNORM) :
+	@cd $(BNORM_DIR); make $(TYPE); cd $(LOCTYPE); ar -cruv $(LIB_BNORM) *.o *.mod
+	
+#Construct bootsj library. 
+$(LIB_BOOTSJ) :
+	@cd $(BOOTSJ_DIR); make $(TYPE); cd $(LOCTYPE); ar -cruv $(LIB_BOOTSJ) *.o *.mod
+	
+#Construct boozer library. 
+$(LIB_BOOZ) :
+	@cd $(BOOZ_DIR); make $(TYPE); cd $(LOCTYPE); ar -cruv $(LIB_BOOZ) *.o *.mod
+	
+#Construct cobra library. 
+$(LIB_COBRA) :
+	@cd $(COBRA_DIR); make $(TYPE); cd $(LOCTYPE); ar -cruv $(LIB_COBRA) *.o *.mod
+	
+#Construct diagno library. 
+$(LIB_DIAGNO) :
+	@cd $(DIAGNO_DIR); make $(TYPE); cd $(LOCTYPE); ar -cruv $(LIB_DIAGNO) *.o *.mod
+	
+#Construct DKES library. 
+$(LIB_DKES) :
+	@cd $(DKES_DIR); make $(TYPE); cd $(LOCTYPE); ar -cruv $(LIB_DKES) *.o *.mod
+	
+#Construct DKES library. 
+$(LIB_JINV) :
+	@cd $(JINV_DIR); make $(TYPE); cd $(LOCTYPE); ar -cruv $(LIB_JINV) *.o *.mod
+	
+#Construct fieldlines library. 
+$(LIB_FIELDLINES) :
+	@cd $(FIELDLINES_DIR); make $(TYPE); cd $(LOCTYPE); ar -cruv $(LIB_FIELDLINES) *.o *.mod
+	
+#Construct MAKEGRID library. 
+$(LIB_MGRID) :
+	@cd $(MGRID_DIR); make $(TYPE); cd $(LOCTYPE); ar -cruv $(LIB_MGRID) *.o *.mod
+	
+#Construct NEO library. 
+$(LIB_NEO) :
+	@cd $(NEO_DIR); make $(TYPE); cd $(LOCTYPE); ar -cruv $(LIB_NEO) *.o *.mod
+
+#Construct COILOPT library. 
+$(LIB_COILOPTPP) :
+	@cd $(COILOPTPP_DIR); make; ar -cruv $(LIB_COILOPTPP) *.o 
+
+#Construct GENE library
+$(LIB_GENE) :
+	@cd $(GENE_DIR); ar -cruv $(LIB_GENE) *.o *.mod
+
+#Construct COILOPT library. 
+$(LIB_REGCOIL) :
+	@cd $(REGCOIL_DIR); make; ar -cruv $(LIB_REGCOIL) *.o 
+
+#Construct TERPSICHORE library. 
+$(LIB_TERPSICHORE) :
+	@cd $(TERPSICHORE_DIR);make; ar -cruv $(LIB_TERPSICHORE) *.o *.mod
