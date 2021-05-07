@@ -217,7 +217,7 @@
             IF (myend > nface) myend=nface
          ELSE
 #endif
-            ALLOCATE(this%DOT00(nface), this%DOT01(nface), this%DOT11(nface), invDenom(nface), STAT=istat)
+            ALLOCATE(this%DOT00(nface), this%DOT01(nface), this%DOT11(nface), this%invDenom(nface), STAT=istat)
             ALLOCATE(this%d(nface),STAT=istat)
             ALLOCATE(this%ihit_array(nface),STAT=istat)
             mystart = 1; myend = nface
@@ -1067,9 +1067,9 @@
          zfwd = .false.
          zbck = .false.
 
-         tcompx = zero
-         tcompy = zero
-         tcompz = zero
+         tcompx = zero - epsilon
+         tcompy = zero - epsilon
+         tcompz = zero - epsilon
          !WRITE(6, *) x0, y0, z0, x1, y1, z1
          k1 = 1; k2 = wall%nblocks
          DO b_index = k1,k2
@@ -1163,38 +1163,9 @@
                b_index = b_index - wall%zstep
                tcompz = tDeltaZbck + epsilon
             ELSE
-               ! If no collision found, check numerical margins
-               IF (tmin < one) THEN
+               EXIT               
                   EXIT
-               ELSE
-                  IF (DeltaXfwd < epsilon .and. DeltaXfwd > -epsilon .and. .not. xbck) THEN
-                     !WRITE(6, *) 'Doing forward x-step due to numerical'
-                     b_index = b_index + wall%xstep
-                     xfwd = .true.
-                  ELSE IF (DeltaXbck < epsilon .and. DeltaXbck > -epsilon .and. .not. xfwd) THEN
-                     !WRITE(6, *) 'Doing backward x-step due to numerical'
-                     b_index = b_index - wall%xstep
-                     xbck = .true.
-                  ELSE IF (DeltaYfwd < epsilon .and. DeltaYfwd > -epsilon .and. .not. ybck) THEN
-                     !WRITE(6, *) 'Doing forward y-step due to numerical'
-                     b_index = b_index + wall%ystep
-                     yfwd = .true.
-                  ELSE IF (DeltaYbck < epsilon .and. DeltaYbck > -epsilon .and. .not. yfwd) THEN
-                     !WRITE(6, *) 'Doing backward y-step due to numerical'
-                     b_index = b_index - wall%ystep
-                     ybck = .true.
-                  ELSE IF (DeltaZfwd < epsilon .and. DeltaZfwd > -epsilon .and. .not. zbck) THEN
-                     !WRITE(6, *) 'Doing forward z-step due to numerical'
-                     b_index = b_index + wall%zstep
-                     zfwd = .true.
-                  ELSE IF (DeltaZbck < epsilon .and. DeltaZbck > -epsilon .and. .not. zfwd) THEN
-                     !WRITE(6, *) 'Doing backward z-step due to numerical'
-                     b_index = b_index - wall%zstep
-                     zbck = .true.
-                  ELSE
-                     EXIT
-                  END IF
-               END IF 
+               EXIT               
             END IF
          END DO
 
