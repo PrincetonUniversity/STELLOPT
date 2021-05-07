@@ -77,7 +77,7 @@
       DOUBLE PRECISION, PRIVATE, PARAMETER      :: one  = 1.0D+0
       DOUBLE PRECISION, PRIVATE, PARAMETER      :: epsilon = 1D-6
 
-      LOGICAL, PRIVATE, PARAMETER               :: lverb = .TRUE.
+      LOGICAL, PRIVATE, PARAMETER               :: lsmartstart = .TRUE.
 
 !------------------ Variables for naive approach
       
