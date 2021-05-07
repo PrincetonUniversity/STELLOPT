@@ -1,4 +1,10 @@
 # INSTALLATION
+
+The instructions for compiling on Windows are under:
+SHARE/docs/README_mscompile.md
+and
+SHARE/docs/README_msmpi.md
+
 This version of STELLOPT makes use of the `make.inc` file to define
 compiler options and paths (in analogy to the old setup file).  These
 files are stored in the [SHARE](SHARE) folder.  Check to see if one exists
