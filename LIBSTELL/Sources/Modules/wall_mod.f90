@@ -1065,7 +1065,7 @@
       DOUBLE PRECISION :: tDeltaXfwd, tDeltaXbck, tDeltaYfwd, tDeltaYbck, tDeltaZfwd, tDeltaZbck
       DOUBLE PRECISION :: DeltaXfwd, DeltaXbck, DeltaYfwd, DeltaYbck, DeltaZfwd, DeltaZbck
       DOUBLE PRECISION :: tcompx, tcompy, tcompz
-      LOGICAL :: xfwd, xbck, yfwd, ybck, zfwd, zbck
+      LOGICAL :: xout, yout, zout
       xw=zero; yw=zero; zw=zero; lhit=.FALSE.
       ik_min = zero
       tmin = one + epsilon
@@ -1074,12 +1074,9 @@
       dry = y1-y0
       drz = z1-z0
       IF (lwall_acc) THEN
-         xfwd = .false.
-         xbck = .false.
-         yfwd = .false.
-         ybck = .false.
-         zfwd = .false.
-         zbck = .false.
+         xout = .false.
+         yout = .false.
+         zout = .false.
 
          tcompx = zero
          tcompy = zero
@@ -1088,15 +1085,100 @@
          k1 = 1; k2 = wall%nblocks
          b_found = -1
          IF (lsmartstart) THEN
-            bx = INT((x0 - wall%xmin) / wall%stepsize)
-            by = INT((y0 - wall%ymin) / wall%stepsize)
-            bz = INT((z0 - wall%zmin) / wall%stepsize)
+            bx = INT((x0 - wall%xmin) / wall%stepsize) + 1
+            by = INT((y0 - wall%ymin) / wall%stepsize) + 1
+            bz = INT((z0 - wall%zmin) / wall%stepsize) + 1
 
-            IF (bx < 0 .or. by < 0 .or. bz < 0) THEN
+            ! Check if outside the grid anywhere
+            IF (bx < 1 .or. by < 1 .or. bz < 1 .or. bx > wall%bx .or. by > wall%by .or. bz > wall%bz) THEN
+               !WRITE(6, *) bx, by, bz, wall%bx, wall%by, wall%bz
+               
+               ! Check closest block in grid
+               ! Also keep track which dimension is out of bounds
+               IF (bx < 1) THEN 
+                  bx = 1
+                  xout = .TRUE.
+               ELSE IF (bx > wall%bx) THEN
+                  bx = wall%bx
+                  xout = .TRUE.
+               END IF
+
+               IF (by < 1) THEN 
+                  by = 1
+                  yout = .TRUE.
+               ELSE IF (by > wall%by) THEN
+                  by = wall%by
+                  yout = .TRUE.
+               END IF
+
+               IF (bz < 1) THEN 
+                  bz = 1
+                  zout = .TRUE.
+               ELSE IF (bz > wall%bz) THEN
+                  bz = wall%bz
+                  zout = .TRUE.
+               END IF
+
+               b_found = bz + (by - 1) * wall%ystep + (bx - 1) * wall%xstep
+               b = wall%blocks(b_found)
+
+               ! Check where grid is entered in nearest block
+               ! Check if it went into the nearest block within the current distance for each dimension
+               ! Only check for dimension that were out of bounds
+               IF (xout) THEN
+                  DeltaXfwd = (b%xmax - x0)
+                  DeltaXbck = (b%xmin - x0)
+
+                  tDeltaXfwd = DeltaXfwd / drx
+                  tDeltaXbck = DeltaXbck / drx
+
+                  IF (tDeltaXfwd < tmin .and. tDeltaXfwd > tcompx ) THEN
+                     tcompx = tDeltaXfwd + epsilon
+                  ELSE IF (tDeltaXbck < tmin .and. tDeltaXbck > tcompx) THEN
+                     tcompx = tDeltaXbck + epsilon
+                  END IF
+               END IF
+
+               IF (yout) THEN
+                  DeltaYfwd = (b%ymax - y0)
+                  DeltaYbck = (b%ymin - y0)
+
+                  tDeltaYfwd = DeltaYfwd / dry
+                  tDeltaYbck = DeltaYbck / dry
+                  IF (tDeltaYfwd < tmin .and. tDeltaYfwd > tcompy) THEN
+                     tcompy = tDeltaYfwd + epsilon
+                  ELSE IF (tDeltaYbck < tmin .and. tDeltaYbck > tcompy) THEN
+                     tcompy = tDeltaYbck + epsilon
+                  END IF
+               END IF
+
+               IF (zout) THEN
+                  DeltaZfwd = (b%zmax - z0)
+                  DeltaZbck = (b%zmin - z0)
+
+                  tDeltaZfwd = DeltaZfwd / drz
+                  tDeltaZbck = DeltaZbck / drz
+
+                  IF (tDeltaZfwd < tmin .and. tDeltaZfwd > tcompz) THEN
+                     tcompz = tDeltaZfwd + epsilon
+                  ELSE IF (tDeltaZbck < tmin .and. tDeltaZbck > tcompz) THEN
+                     tcompz = tDeltaZbck + epsilon
+                  END IF
+               END IF
+
+               !WRITE(6, *) tmin, xout, yout, zout
+               !WRITE(6, *) tmin, tDeltaXfwd, tDeltaXbck, tDeltaYfwd, tDeltaYbck, tDeltaZfwd, tDeltaZbck
+               !WRITE(6, *) tcompx, tcompy, tcompz
+
+               ! If it did not enter any dimension in time, set block to -1
+               IF ((tcompx == zero .and. xout) .or. (tcompy == zero .and. yout) .or. (tcompz == zero .and. zout)) THEN
+                  b_found = -1                         
                b_found = -1
+                  b_found = -1                         
+               END IF
             ELSE
-               b_found = bz + by * wall%ystep + bx * wall%xstep + 1
-               IF (b_found > wall%nblocks) b_found = -1
+               ! If not outside grid, set b_found
+               b_found = bz + (by - 1) * wall%ystep + (bx - 1) * wall%xstep
             END IF
          ELSE
             DO b_index = k1,k2
@@ -1109,11 +1191,6 @@
          END IF
 
          !WRITE(6, *) bx, by, bz, b_found
-
-         ! Add one to start to use for finding boundary of grid
-         bx = bx + 1;
-         by = by + 1;
-         bz = bz + 1;
 
          DO WHILE (.true.)
             xw=zero; yw=zero; zw=zero; lhit=.FALSE.
@@ -1178,64 +1255,38 @@
             IF (tDeltaXfwd < tmin .and. tDeltaXfwd > tcompx ) THEN
                !WRITE(6, *) 'Doing forward x-step'
                bx = bx + 1
-               IF (bx > wall%bx) THEN
-                  !WRITE(6, *) bx, by, bz
-                  !WRITE(6, *) 'Exit due to hit boundary'
-                  EXIT
-               END IF
-               
+               IF (bx > wall%bx) EXIT               
                b_found = b_found + wall%xstep
                tcompx = tDeltaXfwd + epsilon
             ELSE IF (tDeltaXbck < tmin .and. tDeltaXbck > tcompx) THEN
                !WRITE(6, *) 'Doing backward x-step'
                bx = bx - 1
-               IF (bx < 1) THEN
-                  !WRITE(6, *) bx, by, bz
-                  !WRITE(6, *) 'Exit due to hit boundary'
-                  EXIT
-               END IF
+               IF (bx < 1) EXIT
                b_found = b_found - wall%xstep
                tcompx = tDeltaXbck + epsilon
             ELSE IF (tDeltaYfwd < tmin .and. tDeltaYfwd > tcompy) THEN
                !WRITE(6, *) 'Doing forward y-step'
                by = by + 1
-               IF (by > wall%by) THEN
-                  !WRITE(6, *) bx, by, bz
-                  !WRITE(6, *) 'Exit due to hit boundary'
-                  EXIT
-               END IF
+               IF (by > wall%by) EXIT
                b_found = b_found + wall%ystep
                tcompy = tDeltaYfwd + epsilon
             ELSE IF (tDeltaYbck < tmin .and. tDeltaYbck > tcompy) THEN
                !WRITE(6, *) 'Doing backward y-step'
                by = by - 1
-               IF (by < 1) THEN
-                  !WRITE(6, *) bx, by, bz
-                  !WRITE(6, *) 'Exit due to hit boundary'
-                  EXIT
-               END IF
+               IF (by < 1) EXIT
                b_found = b_found - wall%ystep
                tcompy = tDeltaYbck + epsilon
             ELSE IF (tDeltaZfwd < tmin .and. tDeltaZfwd > tcompz) THEN
                !WRITE(6, *) 'Doing forward z-step'
                bz = bz + 1
-               IF (bz > wall%bz) THEN
-                  !WRITE(6, *) b%zmax .eq. wall%zmax, b%zmax, wall%zmax
-                  !WRITE(6, *) bx, by, bz, wall%bz
-                  !WRITE(6, *) 'Exit due to hit boundary'
-                  EXIT
-               END IF
+               IF (bz > wall%bz) EXIT
                b_found = b_found + wall%zstep
                tcompz = tDeltaZfwd + epsilon
                !WRITE(6, *) b%zmax, wall%zmax, b%zmax .eq. wall%zmax
             ELSE IF (tDeltaZbck < tmin .and. tDeltaZbck > tcompz) THEN
                !WRITE(6, *) 'Doing backward z-step'
                bz = bz - 1
-               IF (bz < 1) THEN
-                  !WRITE(6, *) bx, by, bz
-                  !WRITE(6, *) 'Exit due to hit boundary'
-                  EXIT
-               END IF
+               IF (bz < 1) EXIT
                b_found = b_found - wall%zstep
                tcompz = tDeltaZbck + epsilon
             ELSE
