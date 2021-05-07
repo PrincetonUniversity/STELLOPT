@@ -46,6 +46,12 @@
          ! number of blocks
          ! and the step that has to be done in the list to move one in x/y/z-direction
          integer :: nblocks, xstep, ystep, zstep
+         ! Bounds of total grid
+         DOUBLE PRECISION :: xmin, xmax, ymin, ymax, zmin, zmax
+         ! Step of grid
+         DOUBLE PRECISION :: stepsize
+         ! Number of blocks in each direction
+         INTEGER          :: bx, by, bz
          TYPE (block), DIMENSION(:), POINTER :: blocks => null()
       END TYPE wall_type
 
@@ -138,6 +144,14 @@
          this%zmin = zmin
          this%zmax = zmax
          this%nfaces = nface
+
+         ! Keep track of size of wall
+         IF (this%xmin < wall%xmin) wall%xmin = this%xmin
+         IF (this%xmax > wall%xmax) wall%xmax = this%xmax
+         IF (this%ymin < wall%ymin) wall%ymin = this%ymin
+         IF (this%ymax > wall%ymax) wall%ymax = this%ymax
+         IF (this%zmin < wall%zmin) wall%zmin = this%zmin
+         IF (this%zmax > wall%zmax) wall%zmax = this%zmax
 
          IF (lverb) WRITE(6, *) 'Block intialized', xmin, xmax, ymin, ymax, zmin, zmax, nface
 
@@ -1046,7 +1060,7 @@
       DOUBLE PRECISION, INTENT(in) :: x0, y0, z0, x1, y1, z1
       DOUBLE PRECISION, INTENT(out) :: xw, yw, zw
       LOGICAL, INTENT(out) :: lhit
-      INTEGER :: ik, k1,k2, b_index
+      INTEGER :: ik, k1,k2, b_index, b_found, bx, by, bz
       DOUBLE PRECISION :: drx, dry, drz, V2x, V2y, V2z, DOT02l, DOT12l, tloc, tmin, alphal, betal
       DOUBLE PRECISION :: tDeltaXfwd, tDeltaXbck, tDeltaYfwd, tDeltaYbck, tDeltaZfwd, tDeltaZbck
       DOUBLE PRECISION :: DeltaXfwd, DeltaXbck, DeltaYfwd, DeltaYbck, DeltaZfwd, DeltaZbck
@@ -1067,26 +1081,49 @@
          zfwd = .false.
          zbck = .false.
 
-         tcompx = zero - epsilon
-         tcompy = zero - epsilon
-         tcompz = zero - epsilon
+         tcompx = zero
+         tcompy = zero
+         tcompz = zero
          !WRITE(6, *) x0, y0, z0, x1, y1, z1
          k1 = 1; k2 = wall%nblocks
-         DO b_index = k1,k2
-            b = wall%blocks(b_index)
-            IF (x0 <= b%xmax .and. x0 >= b%xmin .and. y0 <= b%ymax .and. y0 >= b%ymin .and. z0 <= b%zmax .and. z0 >= b%zmin) THEN
-               !WRITE(6, *) 'True for: ', b_index, b%xmax, b%xmin, b%ymax, b%ymin, b%zmax, b%zmin
-               EXIT
+         b_found = -1
+         IF (lsmartstart) THEN
+            bx = INT((x0 - wall%xmin) / wall%stepsize)
+            by = INT((y0 - wall%ymin) / wall%stepsize)
+            bz = INT((z0 - wall%zmin) / wall%stepsize)
+
+            IF (bx < 0 .or. by < 0 .or. bz < 0) THEN
+               b_found = -1
+            ELSE
+               b_found = bz + by * wall%ystep + bx * wall%xstep + 1
+               IF (b_found > wall%nblocks) b_found = -1
             END IF
-         END DO
+         ELSE
+            DO b_index = k1,k2
+               b = wall%blocks(b_index)
+               IF (x0 <= b%xmax .and. x0 >= b%xmin .and. y0 <= b%ymax .and. y0 >= b%ymin .and. z0 <= b%zmax .and. z0 >= b%zmin) THEN
+                  b_found = b_index
+                  EXIT
+               END IF
+            END DO
+         END IF
+
+         !WRITE(6, *) bx, by, bz, b_found
+
+         ! Add one to start to use for finding boundary of grid
+         bx = bx + 1;
+         by = by + 1;
+         bz = bz + 1;
 
          DO WHILE (.true.)
             xw=zero; yw=zero; zw=zero; lhit=.FALSE.
             ik_min = zero
             tmin = one + epsilon
-            !WRITE(6, *) b_index, wall%nblocks
-            IF (b_index > wall%nblocks .or. b_index < 1) EXIT
-            b = wall%blocks(b_index)
+            !WRITE(6, *) b_found, wall%nblocks
+            IF (b_found > wall%nblocks .or. b_found < 1) EXIT
+            b = wall%blocks(b_found)
+
+            ! WRITE(6, *) 'True for: ', b_found, b%xmax, b%xmin, b%ymax, b%ymin, b%zmax, b%zmin
 
             k1 = 1; k2 = b%nfaces
             ! Check every triangle
@@ -1134,38 +1171,75 @@
 
             !WRITE(6, *) tmin, drx, dry, drz
             !WRITE(6, *) DeltaXfwd, DeltaXbck, DeltaYfwd, DeltaYbck, DeltaZfwd, DeltaZbck
-            !WRITE(6, *) tDeltaXfwd, tDeltaXbck, tDeltaYfwd, tDeltaYbck, tDeltaZfwd, tDeltaZbck
+            !WRITE(6, *) tmin, tDeltaXfwd, tDeltaXbck, tDeltaYfwd, tDeltaYbck, tDeltaZfwd, tDeltaZbck
 
             ! check if leaves block before hits. 
             ! Compare with tcomp to make sure that ray always moves in positive times 
-            IF (tDeltaXfwd < tmin .and. tDeltaXfwd > tcompx) THEN
+            IF (tDeltaXfwd < tmin .and. tDeltaXfwd > tcompx ) THEN
                !WRITE(6, *) 'Doing forward x-step'
-               b_index = b_index + wall%xstep
+               bx = bx + 1
+               IF (bx > wall%bx) THEN
+                  !WRITE(6, *) bx, by, bz
+                  !WRITE(6, *) 'Exit due to hit boundary'
+                  EXIT
+               END IF
+               
+               b_found = b_found + wall%xstep
                tcompx = tDeltaXfwd + epsilon
             ELSE IF (tDeltaXbck < tmin .and. tDeltaXbck > tcompx) THEN
                !WRITE(6, *) 'Doing backward x-step'
-               b_index = b_index - wall%xstep
+               bx = bx - 1
+               IF (bx < 1) THEN
+                  !WRITE(6, *) bx, by, bz
+                  !WRITE(6, *) 'Exit due to hit boundary'
+                  EXIT
+               END IF
+               b_found = b_found - wall%xstep
                tcompx = tDeltaXbck + epsilon
             ELSE IF (tDeltaYfwd < tmin .and. tDeltaYfwd > tcompy) THEN
                !WRITE(6, *) 'Doing forward y-step'
-               b_index = b_index + wall%ystep
+               by = by + 1
+               IF (by > wall%by) THEN
+                  !WRITE(6, *) bx, by, bz
+                  !WRITE(6, *) 'Exit due to hit boundary'
+                  EXIT
+               END IF
+               b_found = b_found + wall%ystep
                tcompy = tDeltaYfwd + epsilon
             ELSE IF (tDeltaYbck < tmin .and. tDeltaYbck > tcompy) THEN
                !WRITE(6, *) 'Doing backward y-step'
-               b_index = b_index - wall%ystep
+               by = by - 1
+               IF (by < 1) THEN
+                  !WRITE(6, *) bx, by, bz
+                  !WRITE(6, *) 'Exit due to hit boundary'
+                  EXIT
+               END IF
+               b_found = b_found - wall%ystep
                tcompy = tDeltaYbck + epsilon
             ELSE IF (tDeltaZfwd < tmin .and. tDeltaZfwd > tcompz) THEN
                !WRITE(6, *) 'Doing forward z-step'
-               b_index = b_index + wall%zstep
+               bz = bz + 1
+               IF (bz > wall%bz) THEN
+                  !WRITE(6, *) b%zmax .eq. wall%zmax, b%zmax, wall%zmax
+                  !WRITE(6, *) bx, by, bz, wall%bz
+                  !WRITE(6, *) 'Exit due to hit boundary'
+                  EXIT
+               END IF
+               b_found = b_found + wall%zstep
                tcompz = tDeltaZfwd + epsilon
+               !WRITE(6, *) b%zmax, wall%zmax, b%zmax .eq. wall%zmax
             ELSE IF (tDeltaZbck < tmin .and. tDeltaZbck > tcompz) THEN
                !WRITE(6, *) 'Doing backward z-step'
-               b_index = b_index - wall%zstep
+               bz = bz - 1
+               IF (bz < 1) THEN
+                  !WRITE(6, *) bx, by, bz
+                  !WRITE(6, *) 'Exit due to hit boundary'
+                  EXIT
+               END IF
+               b_found = b_found - wall%zstep
                tcompz = tDeltaZbck + epsilon
             ELSE
-               EXIT               
-                  EXIT
-               EXIT               
+               EXIT                         
             END IF
          END DO
 
