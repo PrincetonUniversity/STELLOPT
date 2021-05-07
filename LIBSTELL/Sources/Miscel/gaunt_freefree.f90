@@ -97,7 +97,7 @@
       delta = xlog10 - table_gff0(idex)
       gff = ( ( delta * table_s3(idex) + table_s2(idex) ) * delta + &
                                          table_s1(idex) ) * delta + &
-           + table_gff0(idex)
+            table_gff0(idex)
       RETURN
 
 !-----------------------------------------------------------------------
