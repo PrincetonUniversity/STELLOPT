@@ -767,7 +767,7 @@
          ! This factor is 8*pi*e^6*sqrt(2)/(3*(4*pi/(mu0*c^2))^3*me^3/2*c^2*sqrt(3*pi)) YUK
          fval = fval*6.0647053688D-55
          !PRINT *,s,ne_val,te_val,ze_val,gauntff,fval
-         fval = fval*ABS(dx*dx+dy*dy+dz*dz)
+         fval = fval*sqrt(dx*dx+dy*dy+dz*dz)
       ELSE
          fval = 0
       END IF
