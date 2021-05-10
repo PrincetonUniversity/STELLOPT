@@ -412,7 +412,7 @@
          ! sync MPI and clear vertex info
 #if defined(MPI_OPT)
          IF (PRESENT(comm)) THEN
-            CALL MPI_BARRIER(shar_comm, istat)
+            CALL MPI_BARRIER(comm, istat)
             CALL MPI_COMM_FREE(shar_comm, istat)
             CALL free_mpi_array(win_vertex, vertex, shared)
          END IF
