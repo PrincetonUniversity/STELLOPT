@@ -39,14 +39,14 @@
 !-----------------------------------------------------------------------
       LOGICAL :: lsym
       INTEGER :: dex, ik, i, j, k, ier, jmin, igc2, igc3, igc4, igc5, igc6, igc7, ierrgc2
-      INTEGER :: igc8, igc9, igc10, igc11
+      INTEGER :: igc8, igc9, igc10, igc11, igc12, igc13, igc14
       REAL(rprec) :: phi_N, rovera, theta, zeta_p, delzeta_p, u, v, coszeta_p, sinzeta_p
       REAL(rprec) :: coszeta_fp, sinzeta_fp, psi_p
 
-      REAL(rprec) :: u_initA, v_initA, u_initB, v_initB
+      REAL(rprec) :: u_initA, v_initA, u_initB, v_initB, v_initA1
       REAL(rprec) :: iota, iotap, minB, maxB, B_refl, psi_a, B_zeta_p
       REAL(rprec) :: X, Y, Xp, Yp, Z, Zp, R, dpsidr, dpsidz, X_fp, Y_fp
-      REAL(rprec) :: Bx, By, Bz, Br, Bphi, Bx_fp, By_fp
+      REAL(rprec) :: Bx, By, Bz, Br, Bphi, Bx_fp, By_fp, Bx1, By1, Bz1
       REAL(rprec) :: bxn, byn, bzn, bxnp, bynp, bznp, bxn2p, byn2p, bzn2p
       REAL(rprec) :: Bxp, Byp, Bzp, Bx2p, By2p, Bz2p
       REAL(rprec) :: temp, sqrt_bbb, modbp, modbm, del 
@@ -64,10 +64,11 @@
       REAL(rprec), DIMENSION(3) :: grads_xyz, gradu_xyz, gradv_xyz
       REAL(rprec), DIMENSION(3) :: grad_zeta_p, grad_psi_x_b, grad_psi_xyz
       REAL(rprec), DIMENSION(3) :: bdotgradb, grad_psi_x_b_xyz, grad_zeta_p_xyz,bdotgradb_sp
-      INTEGER, PARAMETER :: gammac_ntransits = 400
-      INTEGER, PARAMETER :: gammac_delzetadiv = 400
-      INTEGER, PARAMETER :: nsteps = gammac_ntransits*gammac_delzetadiv
-      INTEGER, PARAMETER :: gammac_bpstep = 80 !division in b'
+      INTEGER :: gammac_ntransits = 400
+      !INTEGER :: gammac_delzetadiv = 400
+      INTEGER :: gammac_delzetadiv = 4000
+      INTEGER :: nsteps ! = gammac_ntransits*gammac_delzetadiv
+      INTEGER :: gammac_bpstep = 80 !division in b'
 
       
       real(rprec), DIMENSION(3) :: gradR, gradZ, gradB, gradB_xyz
@@ -77,21 +78,21 @@
       REAL(rprec), DIMENSION(3) :: es, eu, ev, es_init, eu_init, ev_init
       real(rprec), DIMENSION(3) :: dxyzdu, dxyzdv, dxyzds
 
-      REAL(rprec), DIMENSION(nsteps) :: ds, modB, dBdpsi, kappa_g
-      REAL(rprec), DIMENSION(nsteps) :: grad_psi_norm, grad_psi_i
-      REAL(rprec), DIMENSION(nsteps) :: e_theta_norm, e_theta_i
-      REAL(rprec), DIMENSION(nsteps) :: dBsupvdpsi, dVdb_t1, dBsupphidpsi
-      REAL(rprec), DIMENSION(nsteps) :: dBsupv
-      REAL(rprec), DIMENSION(nsteps) :: Bsups, Bsupu, Bsupv
-      REAL(rprec), DIMENSION(nsteps, 3) :: binormal
-    
-      integer, parameter :: maxwells = 5000
+      REAL(rprec), DIMENSION(:), allocatable :: ds, modB, dBdpsi, kappa_g
+      REAL(rprec), DIMENSION(:), allocatable :: grad_psi_norm, grad_psi_i
+      REAL(rprec), DIMENSION(:), allocatable :: e_theta_norm, e_theta_i
+      REAL(rprec), DIMENSION(:), allocatable :: dBsupvdpsi, dVdb_t1, dBsupphidpsi
+      REAL(rprec), DIMENSION(:), allocatable :: dBsupv
+      REAL(rprec), DIMENSION(:), allocatable :: Bsups, Bsupu, Bsupv
+      REAL(rprec), DIMENSION(:,:), allocatable :: binormal
 
-      integer, dimension(maxwells) :: well_start, well_stop
+      integer :: maxwells = 5000
+
+      integer, dimension(:), allocatable :: well_start, well_stop
       integer :: in_well, cur_well, nwells
 
       REAL(rprec) :: deltabp, den
-      REAL(rprec), DIMENSION(gammac_bpstep) :: bp
+      REAL(rprec), DIMENSION(:), allocatable :: bp
 
       real(rprec) :: grad_psi_min, e_theta_min, cur_Bmin
 
@@ -110,6 +111,28 @@
       IF (iflag == 1) WRITE(iunit_out,'(A,2(2X,I3.3))') 'GAMMA_C ',dex,4
       IF (iflag == 1) WRITE(iunit_out,'(A)') 'TARGET  SIGMA  GAMMA_C  K'
       IF (niter >= 0) THEN
+!       Allocated space for variables
+        nsteps = gammac_ntransits*gammac_delzetadiv
+        allocate ( ds(nsteps) )
+        allocate ( modB(nsteps) )
+        allocate ( dBdpsi(nsteps) )
+        allocate ( kappa_g(nsteps) )
+        allocate ( grad_psi_norm(nsteps) )
+        allocate ( grad_psi_i(nsteps) )
+        allocate ( e_theta_norm(nsteps) )
+        allocate ( e_theta_i(nsteps) )
+        allocate ( dBsupvdpsi(nsteps) )
+        allocate ( dVdb_t1(nsteps) )
+        allocate ( dBsupphidpsi(nsteps) )
+        allocate ( dBsupv(nsteps) )
+        allocate ( Bsups(nsteps) )
+        allocate ( Bsupu(nsteps) )
+        allocate ( Bsupv(nsteps) )
+        allocate ( binormal(nsteps,3) )
+        allocate ( well_start(maxwells) )
+        allocate ( well_stop(maxwells) )
+        allocate ( bp(gammac_bpstep) )
+
         pi2 = 2.0_rprec*3.14159265358979_rprec
 !        delzeta_p is the stepsize in the toroidal direction of the
 !        pest coordinate
@@ -186,6 +209,12 @@
                           'replace','formatted')
             CALL safe_open(igc11, ierrgc2, 'gc11.'//trim(proc_string),  &
                           'replace','formatted')
+            CALL safe_open(igc12, ierrgc2, 'gc12.'//trim(proc_string),  &
+                          'replace','formatted')
+            CALL safe_open(igc13, ierrgc2, 'gc13.'//trim(proc_string),  &
+                          'replace','formatted')
+            CALL safe_open(igc14, ierrgc2, 'gc14.'//trim(proc_string),  &
+                          'replace','formatted')
             write(igc2,*) 'j rho suv_pest suv_vmec uv_mod_vmec_fix R Z X Y'
             write(igc3,*) 'j modB Br Bphi Bz Bx By Bsups(j) Bsupu(j) Bsupv(j)'
             write(igc4,*) 'j gradR_init3 gradZ_init3 gradB_init3 gradR3 gradZ3 gradB3'
@@ -261,8 +290,8 @@
 !           X, Y are full torus, X_fp, Y_fp are single field period
             X=R*cos(-zeta_p) ! zeta_p is -1 * laboratory toroidal angle
             Y=R*sin(-zeta_p)  
-!          X_fp=R*cos(v)
-!          Y_fp=R*sin(v)
+          X_fp=R*cos(v)
+          Y_fp=R*sin(v)
 
 
 !           Convert radial gradients from d/drho to d/ds
@@ -360,7 +389,7 @@
               ! X, and Xp are alright to use in this context (JCS) X_fp, and Y_fp would be wrong 
               ds(j) = sqrt((X-Xp)*(X-Xp) + (Y-Yp)*(Y-Yp) + (Z-Zp)*(Z-Zp))
 !              IF (j == 2) ds(1) = ds(j)
-              IF (j == 2) ds(1) = 0
+              IF (j == 2) ds(1) = zero
             END IF
             ! update Xp, Yp, Zp for next iteration
             Xp = X
@@ -590,6 +619,7 @@
               if (LGCXFILES .eqv. .true.) then
                 write(igc7,'(1X,I8,4(2X,E16.8))') 1,&
                        bdotgradb(1), bdotgradb(2), bdotgradb(3), kappa_g(1)
+                write(igc13,'((E16.8))') kappa_g(1)
               END IF
             END IF 
 
@@ -602,6 +632,7 @@
               if (LGCXFILES .eqv. .true.) then
                 write(igc7,'(1X,I8,4(2X,E16.8))') (j-1),&
                        bdotgradb(1), bdotgradb(2), bdotgradb(3), kappa_g(j-1)
+                write(igc13,'((E16.8))') kappa_g(j-1)
               END IF
               IF (j == nsteps) THEN ! handle the last point
                 bdotgradb(1) = (bxn - bxnp)/(ds(j))
@@ -613,6 +644,7 @@
                 if (LGCXFILES .eqv. .true.) then
                   write(igc7,'(1X,I8,4(2X,E16.8))') j, &
                        bdotgradb(1), bdotgradb(2), bdotgradb(3), kappa_g(j)
+                  write(igc13,'((E16.8))') kappa_g(j)
                 END IF
               END IF   
             END IF
@@ -695,17 +727,6 @@
 
 
 
-            !The terms that go into gV
-!old
-!            grad_zeta(1) = -Y/R/R
-!            grad_zeta(2) = X/R/R
-!new - JCS does grad_zeta = grad_phi?
-            grad_zeta_p_xyz(1) = -Y_fp
-            grad_zeta_p_xyz(2) = X_fp
-            grad_zeta_p_xyz(3) = 0.0_rprec
-
-
-
 
 !new
             !dvdB_t1 is the first term in the brackets of dVdb
@@ -762,12 +783,38 @@
                                                  sqrtg, ds(j), jac_suvxyz
              write(igc11,'(1X,I8,2(2X,E16.8))') j,ds(j),dVdb_t1(j)
 
-            !write(igc8,'(1X,I8,14(2X,E16.8))') j, phi_N, u_initA, &
-            write(igc8,'(1X,I8,14(2X,E16.8))') j, psi_p, u_initA, &
+             write(igc8,'(1X,I8,14(2X,E16.8))') j, psi_p, u_initA, &
                        v_initA, X, Y, Z, Bx, By, Bz, grad_psi_xyz(1), &
                        grad_psi_xyz(2), grad_psi_xyz(3), &
                        e_theta_norm(j), dBsupphidpsi(j)
-!! JCS Moded Y, grad_psi_xyz & e_theta_norm
+             IF (j .gt. 2) THEN
+               write(igc12,'(12(E16.10,2X))') v_initA, Bsupv(j), &
+                          grad_psi_norm(j), dBdpsi(j), &
+                          Bx, By, Bz, e_theta_norm(j), dBsupphidpsi(j), &
+                          ds(j), dVdb_t1(j)
+             ELSE IF (j .eq. 2) THEN
+               write(igc12,'(12(E16.10,2X))') v_initA1, Bsupv(1), &
+                          grad_psi_norm(1), dBdpsi(1), &
+                          Bx1, By1, Bz1, e_theta_norm(1), dBsupphidpsi(1), &
+                          ds(1), dVdb_t1(1)
+               write(igc12,'(12(E16.10,2X))') v_initA, Bsupv(2), &
+                          grad_psi_norm(2), dBdpsi(2), &
+                          Bx, By, Bz, e_theta_norm(2), dBsupphidpsi(2), &
+                          ds(2), dVdb_t1(2)
+             ELSE
+               v_initA1 = v_initA
+               Bx1 = Bx
+               By1 = By
+               Bz1 = Bz
+             END IF
+
+             write(igc14,'(17(E16.10, 2X))') , &
+               grads_xyz(1), grads_xyz(2), grads_xyz(3), &
+               gradu_xyz(1), gradu_xyz(2), gradu_xyz(3), &
+               grad_psi_xyz(1), grad_psi_xyz(2), grad_psi_xyz(3), &
+               norm_grad_psi_xyz,  &
+               es(1), es(2), es(3), eu(1), eu(2), eu(3), grad_psi_norm(j)
+ 
 !
            END IF
 
@@ -794,6 +841,9 @@
           close(igc7)
           close(igc8)
           close(igc11)
+          close(igc12)
+          close(igc13)
+          close(igc14)
           !write(igc2,*), "u,v,R,Z,X,Y,Br,Bphi,Bz,Bsups,Bsupu,Bsupv"
           !do j = 1,nsteps
             !  WRITE(6,'(2X,I3,8(2X,E11.4))')
@@ -947,7 +997,6 @@
             !for each well, we integrate the various quantities, dgdb, dGdb, dIdb, and dVdb
             gamma_c = 0.0_rprec
             vrovervt = 0.0_rprec
-            wellgamma_c = 0.0_rprec
             wellGamma_c = 0.0_rprec
             if (LGCXFILES .eqv. .true.) then
               write(igc10,*) 'number of wells:',nwells
@@ -1050,6 +1099,29 @@
           
         END DO !end loop over flux surfaces
 !------------------------------END DO ik = 1,nsd over each surface
+!       Deallocate space for variables
+        deallocate ( ds )
+        deallocate ( modB )
+        deallocate ( dBdpsi )
+        deallocate ( kappa_g )
+        deallocate ( grad_psi_norm )
+        deallocate ( grad_psi_i )
+        deallocate ( e_theta_norm )
+        deallocate ( e_theta_i )
+        deallocate ( dBsupvdpsi )
+        deallocate ( dVdb_t1 )
+        deallocate ( dBsupphidpsi )
+        deallocate ( dBsupv )
+        deallocate ( Bsups )
+        deallocate ( Bsupu )
+        deallocate ( Bsupv )
+        deallocate ( binormal )
+        deallocate ( well_start )
+        deallocate ( well_stop )
+        deallocate ( bp )
+
+
+
       ELSE !This is the initialization loop that just counts targets
         DO ik = 1, nsd
           IF (sigma(ik) < bigno) THEN
