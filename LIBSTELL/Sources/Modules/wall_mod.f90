@@ -400,8 +400,20 @@
             CALL INIT_BLOCK(wall%blocks(ik),xmin,xmax,ymin,ymax,zmin,zmax,nface,istat,comm,shar_comm)
 
             IF (lverb_start .and. shar_rank == 0) WRITE(6, *) 'Init block done: ', ik
+#if defined(MPI_OPT)
+            IF (PRESENT(comm)) THEN
+               CALL MPI_WIN_FENCE(0,win_face,istat)
+               CALL MPI_WIN_FREE(win_face,istat)
+            ENDIF
+#endif
             CALL free_mpi_array(win_face, face, shared)
          END DO
+#if defined(MPI_OPT)
+         IF (PRESENT(comm)) THEN
+            CALL MPI_WIN_FENCE(0,win_vertex,istat)
+            CALL MPI_WIN_FREE(win_vertex,istat)
+         ENDIF
+#endif
          CALL free_mpi_array(win_vertex, vertex, shared)
          ! close file
          CLOSE(iunit)
