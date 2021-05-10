@@ -144,7 +144,7 @@
 
 #if defined(MPI_OPT)
          IF (PRESENT(comm)) THEN 
-            CALL MPI_BARRIER(comm,istat)
+            CALL MPI_BARRIER(shar_comm,istat)
             CALL MPI_Bcast(xmin,1,MPI_DOUBLE_PRECISION,0,shar_comm,istat)
             CALL MPI_Bcast(xmax,1,MPI_DOUBLE_PRECISION,0,shar_comm,istat)
             CALL MPI_Bcast(ymin,1,MPI_DOUBLE_PRECISION,0,shar_comm,istat)
@@ -176,7 +176,7 @@
             ! allocate memory for information about the mesh
 #if defined(MPI_OPT)
             IF (PRESENT(comm)) THEN 
-               CALL MPI_BARRIER(comm,istat)
+               CALL MPI_BARRIER(shar_comm,istat)
                IF (istat/=0) RETURN
                CALL mpialloc_2d_dbl(this%A0,nface,3,shar_rank,0,shar_comm,this%win_a0)
                CALL mpialloc_2d_dbl(this%V0,nface,3,shar_rank,0,shar_comm,this%win_v0)
@@ -217,7 +217,7 @@
                this%FN(ik,3) = (this%V1(ik,1)*this%V0(ik,2))-(this%V1(ik,2)*this%V0(ik,1))
             END DO
 #if defined(MPI_OPT)
-            IF (PRESENT(comm)) CALL MPI_BARRIER(comm,istat)
+            IF (PRESENT(comm)) CALL MPI_BARRIER(shar_comm,istat)
 #endif
             ! Check for zero area
             IF (ANY(SUM(this%FN*this%FN,DIM=2)==zero)) THEN
@@ -379,7 +379,7 @@
 #if defined(MPI_OPT)
             IF (PRESENT(comm)) THEN
                CALL MPI_Bcast(nface,1,MPI_INTEGER,0,shar_comm,istat)
-               CALL MPI_BARRIER(comm,istat)
+               CALL MPI_BARRIER(shar_comm,istat)
                CALL mpialloc_2d_int(face,nface,3,shar_rank,0,shar_comm,win_face)
             ELSE
 #endif
