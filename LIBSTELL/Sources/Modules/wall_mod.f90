@@ -402,17 +402,17 @@
             IF (lverb_start .and. shar_rank == 0) WRITE(6, *) 'Init block done: ', ik
             CALL free_mpi_array(win_face, face, shared)
          END DO
-         ! Clear vertex info
-         CALL free_mpi_array(win_vertex, vertex, shared)
          ! close file
          CLOSE(iunit)
-         ! sync MPI
+         ! sync MPI and clear vertex info
 #if defined(MPI_OPT)
          IF (PRESENT(comm)) THEN
             CALL MPI_BARRIER(shar_comm, istat)
             CALL MPI_COMM_FREE(shar_comm, istat)
+            CALL free_mpi_array(win_vertex, vertex, shared)
          END IF
 #endif
+         IF (lverb_start) WRITE(6, *) 'Done reading wall from txt: ', shar_rank
       ELSE
          lwall_acc = .false.
          ! allocate shared memory with of mesh
