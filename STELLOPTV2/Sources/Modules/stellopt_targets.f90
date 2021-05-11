@@ -209,6 +209,11 @@
       REAL(rprec),DIMENSION(mnprod_ps) ::  target_regcoil_K2, sigma_regcoil_K2
       !REAL(rprec) ::  target_regcoil_current_density, sigma_regcoil_current_density
       REAL(rprec) ::  target_curvature_p2, sigma_curvature_P2
+      INTEGER ::  gammac_transits
+      INTEGER ::  gammac_zetadiv
+      INTEGER ::  gammac_bpsteps
+      INTEGER ::  gammac_maxwells
+      LOGICAL ::  gammac_lgcx_files
       REAL(rprec), DIMENSION(nigroup)    :: target_coillen, sigma_coillen
       REAL(rprec), DIMENSION(nigroup)    :: target_coilsegvar, sigma_coilsegvar
       INTEGER     :: npts_biot, npts_clen, npts_torx, npts_curv, npts_csep, npts_cself, npts_crect

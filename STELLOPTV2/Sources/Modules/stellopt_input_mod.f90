@@ -432,7 +432,9 @@
                          target_gamma_c, sigma_gamma_c, &
                          lRosenbrock_X_opt, dRosenbrock_X_opt, &
                          Rosenbrock_X, Rosenbrock_X_min, Rosenbrock_X_max, &
-                         target_Rosenbrock_F, sigma_Rosenbrock_F
+                         target_Rosenbrock_F, sigma_Rosenbrock_F, &
+                         gammac_transits, gammac_zetadiv, gammac_bpsteps, &
+                         gammac_maxwells, gammac_lgcx_files
        
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -678,6 +680,12 @@
       !target_regcoil_current_density = 8.0e6
       !sigma_regcoil_current_density  = bigno
       
+      gammac_transits = 400
+      gammac_zetadiv = 400
+      gammac_bpsteps = 80
+      gammac_maxwells = 5000
+      gammac_lgcx_files = .false.
+
       ne_type         = 'akima_spline'
       zeff_type       = 'akima_spline'
       phi_type        = 'akima_spline'
