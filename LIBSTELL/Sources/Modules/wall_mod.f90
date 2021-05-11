@@ -144,13 +144,12 @@
 
 #if defined(MPI_OPT)
          IF (PRESENT(comm)) THEN 
-            CALL MPI_Bcast(xmin,1,MPI_DOUBLE_PRECISION,0,comm,istat)
-            CALL MPI_Bcast(xmax,1,MPI_DOUBLE_PRECISION,0,comm,istat)
-            CALL MPI_Bcast(ymin,1,MPI_DOUBLE_PRECISION,0,comm,istat)
-            CALL MPI_Bcast(ymax,1,MPI_DOUBLE_PRECISION,0,comm,istat)
-            CALL MPI_Bcast(zmin,1,MPI_DOUBLE_PRECISION,0,comm,istat)
-            CALL MPI_Bcast(zmax,1,MPI_DOUBLE_PRECISION,0,comm,istat)
-            CALL MPI_BARRIER(comm,istat)
+            CALL MPI_Bcast(xmin,1,MPI_DOUBLE_PRECISION,0,shar_comm,istat)
+            CALL MPI_Bcast(xmax,1,MPI_DOUBLE_PRECISION,0,shar_comm,istat)
+            CALL MPI_Bcast(ymin,1,MPI_DOUBLE_PRECISION,0,shar_comm,istat)
+            CALL MPI_Bcast(ymax,1,MPI_DOUBLE_PRECISION,0,shar_comm,istat)
+            CALL MPI_Bcast(zmin,1,MPI_DOUBLE_PRECISION,0,shar_comm,istat)
+            CALL MPI_Bcast(zmax,1,MPI_DOUBLE_PRECISION,0,shar_comm,istat)
          END IF
 #endif
          this%xmin = xmin
@@ -176,7 +175,7 @@
             ! allocate memory for information about the mesh
 #if defined(MPI_OPT)
             IF (PRESENT(comm)) THEN 
-               CALL MPI_BARRIER(comm,istat)
+               CALL MPI_BARRIER(shar_comm,istat)
                IF (istat/=0) RETURN
                CALL mpialloc_2d_dbl(this%A0,nface,3,shar_rank,0,shar_comm,this%win_a0)
                CALL mpialloc_2d_dbl(this%V0,nface,3,shar_rank,0,shar_comm,this%win_v0)
@@ -217,7 +216,7 @@
                this%FN(ik,3) = (this%V1(ik,1)*this%V0(ik,2))-(this%V1(ik,2)*this%V0(ik,1))
             END DO
 #if defined(MPI_OPT)
-            IF (PRESENT(comm)) CALL MPI_BARRIER(comm,istat)
+            IF (PRESENT(comm)) CALL MPI_BARRIER(shar_comm,istat)
 #endif
             ! Check for zero area
             IF (ANY(SUM(this%FN*this%FN,DIM=2)==zero)) THEN
@@ -230,6 +229,7 @@
             ! allocate memory for information about mesh triangles 
 #if defined(MPI_OPT)
             IF (PRESENT(comm)) THEN
+               CALL MPI_BARRIER(shar_comm,istat)
                CALL mpialloc_1d_dbl(this%DOT00,nface,shar_rank,0,shar_comm,this%win_dot00)
                CALL mpialloc_1d_dbl(this%DOT01,nface,shar_rank,0,shar_comm,this%win_dot01)
                CALL mpialloc_1d_dbl(this%DOT11,nface,shar_rank,0,shar_comm,this%win_dot11)
@@ -267,13 +267,13 @@
                this%DOT11(i) = this%DOT11(i) * invDenom(i)
             END DO
             ! Clear memory
+#if defined(MPI_OPT)
+            IF (PRESENT(comm)) CALL MPI_BARRIER(shar_comm,istat)
+#endif
             CALL free_mpi_array(win_invDenom, invDenom, this%isshared)
          ELSE
             IF (lverb_start) WRITE(6, *) 'Skipped due to nface 0', shar_rank
          END IF
-#if defined(MPI_OPT)
-         IF (PRESENT(comm)) CALL MPI_BARRIER(comm,istat)
-#endif
       END SUBROUTINE INIT_BLOCK
       
       SUBROUTINE wall_load_txt(filename,istat,comm)
@@ -324,9 +324,8 @@
          IF (shar_rank == 0) READ(iunit,*) nvertex,nface
 #if defined(MPI_OPT)
          IF (PRESENT(comm)) THEN
-            CALL MPI_Bcast(nvertex,1,MPI_INTEGER,0,comm,istat)
-            CALL MPI_Bcast(nface,1,MPI_INTEGER,0,comm,istat)
-            CALL MPI_BARRIER(comm,istat)
+            CALL MPI_Bcast(nvertex,1,MPI_INTEGER,0,shar_comm,istat)
+            CALL MPI_Bcast(nface,1,MPI_INTEGER,0,shar_comm,istat)
             CALL mpialloc_2d_dbl(vertex,nvertex,3,shar_rank,0,shar_comm,win_vertex)
             shared = .true.
          ELSE
@@ -351,19 +350,18 @@
 
 #if defined(MPI_OPT)
          IF (PRESENT(comm)) THEN
-            CALL MPI_Bcast(wall%nblocks,1,MPI_INTEGER,0,comm,istat)
-            CALL MPI_Bcast(wall%xstep,1,MPI_INTEGER,0,comm,istat)
-            CALL MPI_Bcast(wall%ystep,1,MPI_INTEGER,0,comm,istat)
-            CALL MPI_Bcast(wall%zstep,1,MPI_INTEGER,0,comm,istat)
-            CALL MPI_Bcast(wall%stepsize,1,MPI_DOUBLE_PRECISION,0,comm,istat)
-            CALL MPI_Bcast(wall%bx,1,MPI_INTEGER,0,comm,istat)
-            CALL MPI_Bcast(wall%by,1,MPI_INTEGER,0,comm,istat)
-            CALL MPI_Bcast(wall%bz,1,MPI_INTEGER,0,comm,istat)
-            CALL MPI_BARRIER(comm,istat)
-            IF (istat/=0) RETURN
+            CALL MPI_Bcast(wall%nblocks,1,MPI_INTEGER,0,shar_comm,istat)
+            CALL MPI_Bcast(wall%xstep,1,MPI_INTEGER,0,shar_comm,istat)
+            CALL MPI_Bcast(wall%ystep,1,MPI_INTEGER,0,shar_comm,istat)
+            CALL MPI_Bcast(wall%zstep,1,MPI_INTEGER,0,shar_comm,istat)
+            CALL MPI_Bcast(wall%stepsize,1,MPI_DOUBLE_PRECISION,0,shar_comm,istat)
+            CALL MPI_Bcast(wall%bx,1,MPI_INTEGER,0,shar_comm,istat)
+            CALL MPI_Bcast(wall%by,1,MPI_INTEGER,0,shar_comm,istat)
+            CALL MPI_Bcast(wall%bz,1,MPI_INTEGER,0,shar_comm,istat)
          END IF
 #endif
-         ALLOCATE(wall%blocks(wall%nblocks))
+         ALLOCATE(wall%blocks(wall%nblocks), STAT=istat)
+         IF (istat/=0) RETURN
 
          ! This is the maximum wall size possible
          wall%xmin = 1D+8
@@ -383,8 +381,7 @@
             END IF
 #if defined(MPI_OPT)
             IF (PRESENT(comm)) THEN
-               CALL MPI_Bcast(nface,1,MPI_INTEGER,0,comm,istat)
-               CALL MPI_BARRIER(comm,istat)
+               CALL MPI_Bcast(nface,1,MPI_INTEGER,0,shar_comm,istat)
                CALL mpialloc_2d_int(face,nface,3,shar_rank,0,shar_comm,win_face)
             ELSE
 #endif
@@ -393,12 +390,17 @@
 #if defined(MPI_OPT)
             END IF
 #endif
+            IF (istat/=0) RETURN
             IF (shar_rank == 0) THEN
                IF (lverb_start) WRITE(6, *) 'Block reading'
                DO i=1, nface
                   READ(iunit,*) face(i,1),face(i,2),face(i,3)
                END DO
             END IF
+
+#if defined(MPI_OPT)
+            IF (PRESENT(comm)) CALL MPI_BARRIER(shar_comm,istat)
+#endif
 
             IF (lverb_start .and. shar_rank == 0) WRITE(6, *) 'Init block: ', ik
 
@@ -410,11 +412,11 @@
          ! close file
          CLOSE(iunit)
          ! sync MPI and clear vertex info
+         CALL free_mpi_array(win_vertex, vertex, shared)
 #if defined(MPI_OPT)
          IF (PRESENT(comm)) THEN
-            CALL MPI_BARRIER(comm, istat)
+            CALL MPI_BARRIER(shar_comm, istat)
             CALL MPI_COMM_FREE(shar_comm, istat)
-            CALL free_mpi_array(win_vertex, vertex, shared)
          END IF
 #endif
          IF (lverb_start) WRITE(6, *) 'Done reading wall from txt: ', shar_rank
