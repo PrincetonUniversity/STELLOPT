@@ -65,8 +65,8 @@
 !-----------------------------------------------------------------------
       IMPLICIT NONE
       LOGICAL  ::  lphiedge_opt, lcurtor_opt, lpscale_opt, lbcrit_opt,&
-                   lmix_ece_opt, lregcoil_winding_surface_separation_opt,&
-                   lregcoil_current_density_opt, lxval_opt, lyval_opt, &
+                   lmix_ece_opt, lregcoil_winding_surface_separation_opt, lregcoil_toroidal_field, &
+                   lxval_opt, lyval_opt, &
                    lxics_v0_opt
       LOGICAL, DIMENSION(nigroup)  ::  lextcur_opt
       LOGICAL, DIMENSION(1:20)  ::  laphi_opt
@@ -94,15 +94,15 @@
       REAL(rprec)     ::  dphiedge_opt, dcurtor_opt, dbcrit_opt, &
                           dpscale_opt, dmix_ece_opt, dxval_opt, dyval_opt, &
                           dregcoil_winding_surface_separation_opt, &
-                          dregcoil_current_density_opt, dxics_v0_opt
+                          dxics_v0_opt
       REAL(rprec)     ::  phiedge_min, curtor_min, bcrit_min, &
                           pscale_min, mix_ece_min, xval_min, yval_min, &
                           regcoil_winding_surface_separation_min, &
-                          regcoil_current_density_min, xics_v0_min
+                          xics_v0_min
       REAL(rprec)     ::  phiedge_max, curtor_max, bcrit_max, &
                           pscale_max, mix_ece_max, xval_max, yval_max, &
                           regcoil_winding_surface_separation_max, &
-                          regcoil_current_density_max, xics_v0_max
+                          xics_v0_max
       REAL(rprec), DIMENSION(nigroup)  ::  dextcur_opt,extcur_min,extcur_max
       REAL(rprec), DIMENSION(1:20)     ::  daphi_opt, aphi_min, aphi_max
       REAL(rprec), DIMENSION(0:20)     ::  dam_opt, dac_opt, dai_opt,&
@@ -134,10 +134,18 @@
       !       (-mpol_rcws:mpmol_rcws,  -ntor_rcws:ntor_rcws)
       ! (this is slightly different than what is used in nescoil, where
       ! the m<0 components are not used)
-      INTEGER, PARAMETER ::  mnprod_x4_rcws = 4 * (2*32+1) * (2*32+1)
+      INTEGER, PARAMETER :: mnprod_x4_rcws = 4 * (2*32+1) * (2*32+1)
+      ! FOR REGCOIL BNORMAL ON TARGET PLAMSA SURFACE
+      ! These should match or exceed the settings for REGCOIL's
+      ! NTHETA_PLASMA and NZETA_PLASMA
+      ! Number of grid points in poloidal and toroidal directions used to
+      ! evaluate surface integrals on the plasma surface
+      INTEGER, PARAMETER :: mpol_ps = 256    ! Poloidal direction
+      INTEGER, PARAMETER :: ntor_ps = 256    ! Toroidal direction
+      INTEGER, PARAMETER :: mnprod_ps = mpol_ps * ntor_ps
 
       REAL(rprec)                       :: regcoil_winding_surface_separation
-      REAL(rprec)                       :: regcoil_current_density
+      REAL(rprec)                       :: regcoil_target_value
       INTEGER :: regcoil_nlambda, regcoil_num_field_periods
       LOGICAL, DIMENSION(-mpol_rcws:mpol_rcws, &
                          -ntor_rcws:ntor_rcws) :: lregcoil_rcws_rbound_c_opt , &
@@ -294,7 +302,7 @@
       INTEGER, PARAMETER ::  izaxis_cc  = 913
       INTEGER, PARAMETER ::  izaxis_cs  = 914
       INTEGER, PARAMETER ::  iregcoil_winding_surface_separation   = 5150
-      INTEGER, PARAMETER ::  iregcoil_current_density   = 5151
+      !INTEGER, PARAMETER ::  iregcoil_current_density   = 5151
       ! 5152 - 5159 reserved for future REGCOIIL options
       INTEGER, PARAMETER ::  iregcoil_rcws_rbound_c = 5160
       INTEGER, PARAMETER ::  iregcoil_rcws_rbound_s = 5161
@@ -522,8 +530,6 @@
          ! REGCOIL cases
          CASE(iregcoil_winding_surface_separation)
             WRITE(iunit,out_format) 'REGCOIL_SEPARATION: Coil winding surface separation'
-         CASE(iregcoil_current_density)
-            WRITE(iunit,out_format) 'REGCOIL_SEPARATION: Winding surface current density'
          CASE(iregcoil_rcws_rbound_c)
             WRITE(iunit,out_format_2DB) 'REGCOIL_RCWS_rbound_c(',var_dex1,',',var_dex2,'):  REGCOIL Winding Surface Boundary Radial Specification (COS MN)'
          CASE(iregcoil_rcws_rbound_s)

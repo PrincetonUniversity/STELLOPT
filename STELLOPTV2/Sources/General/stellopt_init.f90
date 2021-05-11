@@ -55,6 +55,7 @@
 
       ! Read the OPTIMUM Namelist
       CALL read_stellopt_input(TRIM(id_string),ier,myid)
+      IF (ier /=0) CALL handle_err(NAMELIST_READ_ERR,'IN READ_STELLOPT_INPUT',ier)
       !CALL bcast_vars(master,MPI_COMM_STEL,ierr_mpi)
       !IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'stellot_init:bcast_vars',ierr_mpi)
 
@@ -229,7 +230,7 @@
 
               ! REGCOIL options
               IF (lregcoil_winding_surface_separation_opt) nvars = nvars + 1
-              IF (lregcoil_current_density_opt) nvars = nvars + 1
+              !IF (lregcoil_current_density_opt) nvars = nvars + 1
               DO m = -mpol_rcws, mpol_rcws
                  DO n = -ntor_rcws, ntor_rcws
                     IF (lregcoil_rcws_rbound_c_opt(m,n)) THEN
@@ -296,23 +297,6 @@
                  vars_max(nvar_in) = regcoil_winding_surface_separation_max
                  var_dex(nvar_in) = iregcoil_winding_surface_separation
                  diag(nvar_in)    = dregcoil_winding_surface_separation_opt
-                 arr_dex(nvar_in,1) = 1
-              END IF
-              IF (lregcoil_current_density_opt) THEN
-                 IF (lauto_domain) THEN
-                    regcoil_current_density_min = &
-                        regcoil_current_density - &
-                        ABS(pct_domain*regcoil_current_density)
-                    regcoil_current_density_max = &
-                        regcoil_current_density + &
-                        ABS(pct_domain*regcoil_current_density)
-                 END IF
-                 nvar_in = nvar_in + 1
-                 vars(nvar_in) = regcoil_current_density
-                 vars_min(nvar_in) = regcoil_current_density_min
-                 vars_max(nvar_in) = regcoil_current_density_max
-                 var_dex(nvar_in) = iregcoil_current_density
-                 diag(nvar_in)    = dregcoil_current_density_opt
                  arr_dex(nvar_in,1) = 1
               END IF
               IF (ANY(lregcoil_rcws_rbound_c_opt) ) THEN
@@ -1592,11 +1576,13 @@
 
       ! Now initalize the targets
       mtargets = 1
+      ier = 0
       CALL stellopt_load_targets(mtargets,fvec_temp,ier,-1)          ! Count
+      IF (ier /=0) CALL handle_err(NAMELIST_READ_ERR,'IN STELLOPT_LOAD_TARGETS COUNTS',ier)
       ALLOCATE(vals(mtargets),targets(mtargets),sigmas(mtargets),target_dex(mtargets))
       mtargets = 1
       CALL stellopt_load_targets(mtargets,fvec_temp,ier,-2)          ! Load index
-      IF (ier /=0) CALL handle_err(NAMELIST_READ_ERR,'IN STELLOPT_LOAD_TARGETS',ier)
+      IF (ier /=0) CALL handle_err(NAMELIST_READ_ERR,'IN STELLOPT_LOAD_TARGETS LOAD INDEX',ier)
       IF (lverb) THEN
          WRITE(6,*) '-----  Optimization  -----'
          WRITE(6,*) '   =======VARS======='

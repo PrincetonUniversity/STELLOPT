@@ -26,12 +26,13 @@
       !LOGICAL ::  lrestart
       LOGICAL ::  lfile_exists, lskip_min
       INTEGER ::  ier, iunit,nvar_in, nprint, info, ldfjac,nfev,&
-                  iunit_restart, nfev_save, npop, ndiv, i
+                  iunit_restart, nfev_save, npop, ndiv, ii
       INTEGER, ALLOCATABLE :: ipvt(:)
       REAL(rprec)              ::  target_fitness, c1, c2
       REAL(rprec), ALLOCATABLE ::  qtf(:), wa1(:), wa2(:), wa3(:), &
                                    wa4(:), fvec(:)
       REAL(rprec), ALLOCATABLE ::  fjac(:,:)
+
       LOGICAL :: used_mango_algorithm
       REAL(rprec), EXTERNAL :: enorm
       EXTERNAL stellopt_fcn
@@ -177,7 +178,7 @@
                        ftol, xtol, gtol, nfunc_max, epsfcn, diag, mode, &
                        factor, nprint, info, nfev, fjac, ldfjac, ipvt, &
                        qtf, wa1, wa2, wa3, wa4,vars_min,vars_max)
-            DEALLOCATE(ipvt, qtf, wa1, wa2, wa3, wa4, fjac)
+            DEALLOCATE(ipvt, qtf, wa1, wa2, wa3, wa4, fvec, fjac)
          CASE('eval_xvec')
             lskip_min = .true.
             CALL xvec_eval(stellopt_fcn,nvars,mtargets,xvec_file)

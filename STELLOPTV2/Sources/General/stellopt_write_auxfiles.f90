@@ -10,7 +10,10 @@
       USE stellopt_input_mod
       USE equil_utils, ONLY: move_txtfile, copy_txtfile, copy_boozer_file
       USE beams3d_runtime, ONLY: id_string_beams => id_string, lverb_beams => lverb
-      
+!DEC$ IF DEFINED (REGCOIL)
+      USE regcoil_variables, ONLY: load_bnorm_regcoil => load_bnorm
+!DEC$ ENDIF
+
 !-----------------------------------------------------------------------
 !     Subroutine Parameters
 !        NONE
@@ -115,14 +118,32 @@
 !DEC$ IF DEFINED (REGCOIL)
               ! Currently inside of LEV and GADE cleanup loop, and 
               ! 'Keeping the mins' section
-              IF ( ANY(sigma_regcoil_chi2_b < bigno) .and. &
-                 ( ANY(lregcoil_rcws_rbound_c_opt) .or. ANY(lregcoil_rcws_rbound_s_opt) .or. &
-                   ANY(lregcoil_rcws_zbound_c_opt) .or. ANY(lregcoil_rcws_zbound_s_opt) ) ) THEN
+              IF ( (  ANY(sigma_regcoil_chi2_b < bigno) .or.   &
+                      ANY(sigma_regcoil_lambda < bigno) .or.    &
+                      ANY(sigma_regcoil_max_K < bigno) .or.    &
+                      ANY(sigma_regcoil_rms_K < bigno) .or.    &
+                      ANY(sigma_regcoil_chi2_k < bigno) .or.    &
+                      ANY(sigma_regcoil_max_bnormal < bigno) .or.    &
+                      ANY(sigma_regcoil_area_coil < bigno) .or.    &
+                      ANY(sigma_regcoil_area_plasma < bigno) .or.    &
+                      ANY(sigma_regcoil_area_diff < bigno) .or.    &
+                      ANY(sigma_regcoil_volume_coil < bigno) .or.    &
+                      ANY(sigma_regcoil_volume_plasma < bigno) .or.    &
+                      ANY(sigma_regcoil_volume_diff < bigno) .or.    &
+                      ANY(sigma_regcoil_bnormal_total < bigno) .or. &
+                      ANY(sigma_regcoil_K2 < bigno)  ) .and. &
+                   (ANY(lregcoil_rcws_rbound_c_opt) .or. ANY(lregcoil_rcws_rbound_s_opt) .or. &
+                    ANY(lregcoil_rcws_zbound_c_opt) .or. ANY(lregcoil_rcws_zbound_s_opt) ) ) THEN
                    !print *, '<---In LEV/GADE cleanup.'
                    !print *, '<---proc_string_old = ', proc_string_old
                    !print *, '<---proc_string = ', proc_string
                    CALL copy_txtfile('regcoil_nescout.'//TRIM(proc_string_old),&
                                      'regcoil_nescout.'//TRIM(proc_string))
+                   IF (load_bnorm_regcoil) THEN
+                       CALL move_txtfile('bnorm.'//TRIM(proc_string_old),&
+                                         'bnorm.'//TRIM(proc_string))
+                   END IF
+                     
               END IF
 !DEC$ ENDIF
 !DEC$ IF DEFINED (TERPSICHORE)
