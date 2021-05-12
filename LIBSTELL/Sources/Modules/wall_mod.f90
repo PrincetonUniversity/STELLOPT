@@ -68,7 +68,7 @@
       DOUBLE PRECISION, PRIVATE, PARAMETER      :: epsilon = 1D-6
 
       LOGICAL, PRIVATE, PARAMETER               :: lverb_start = .FALSE.
-      LOGICAL, PRIVATE, PARAMETER               :: lverb_calc  = .TRUE.
+      LOGICAL, PRIVATE, PARAMETER               :: lverb_calc  = .FALSE.
       LOGICAL, PRIVATE, PARAMETER               :: lsmartstart = .TRUE.
 
 !------------------ Variables for naive approach
@@ -388,12 +388,12 @@
          IF (istat/=0) RETURN
 
          ! This is the maximum wall size possible
-         wall%xmin = 1D+8
-         wall%xmax = -1D+8
-         wall%ymin = 1D+8
-         wall%ymax = -1D+8
-         wall%zmin = 1D+8
-         wall%zmax = -1D+8
+         wall%xmin = 1D+20
+         wall%xmax = -1D+20
+         wall%ymin = 1D+20
+         wall%ymax = -1D+20
+         wall%zmin = 1D+20
+         wall%zmax = -1D+20
          IF (lverb_start) WRITE(6, *) 'Start blocks loop. Rank and wall info: ', shar_rank, wall%nblocks, wall%bx, wall%by, wall%bz         
          DO ik=1, wall%nblocks
             IF (shar_rank == 0 .and. lverb_start) WRITE(6, *) '----------------------------------------------------------'
@@ -403,23 +403,29 @@
                READ(iunit, *) nface
                IF (lverb_start) WRITE(6, *) 'Block reading allocation: ', ik, nface
             END IF
+
 #if defined(MPI_OPT)
-            IF (PRESENT(comm)) THEN
-               CALL MPI_Bcast(nface,1,MPI_INTEGER,0,shar_comm,istat)
-               CALL mpialloc_1d_int(bface,nface,shar_rank,0,shar_comm,win_bface)
-            ELSE
+            IF (PRESENT(comm)) MPI_Bcast(nface,1,MPI_INTEGER,0,shar_comm,istat)
+#endif
+            ! Only allocate and read faces if there are faces to read for this block
+            IF (nface > 0) THEN
+#if defined(MPI_OPT)
+               IF (PRESENT(comm)) THEN
+                  CALL mpialloc_1d_int(bface,nface,shar_rank,0,shar_comm,win_bface)
+               ELSE
 #endif
                ! if no MPI, allocate everything on one node
-               ALLOCATE(bface(nface),STAT=istat)
+                  ALLOCATE(bface(nface),STAT=istat)
 #if defined(MPI_OPT)
-            END IF
+               END IF
 #endif
-            IF (istat/=0) RETURN
-            IF (shar_rank == 0) THEN
-               IF (lverb_start) WRITE(6, *) 'Block reading'
-               DO i=1, nface
-                  READ(iunit,*) bface(i)
-               END DO
+               IF (istat/=0) RETURN
+               IF (shar_rank == 0) THEN
+                  IF (lverb_start) WRITE(6, *) 'Block reading'
+                  DO i=1, nface
+                     READ(iunit,*) bface(i)
+                  END DO
+               END IF
             END IF
 
 #if defined(MPI_OPT)
@@ -431,7 +437,8 @@
             CALL INIT_BLOCK(wall%blocks(ik),xmin,xmax,ymin,ymax,zmin,zmax,nface,istat,comm,shar_comm)
 
             IF (lverb_start .and. shar_rank == 0) WRITE(6, *) 'Init block done: ', ik
-            CALL free_mpi_array(win_bface, bface, shared)
+            ! Also only deallocate if nface > 0
+            IF (nface > 0) CALL free_mpi_array(win_bface, bface, shared)
          END DO
       END IF
       ! close file
@@ -999,14 +1006,19 @@
       ! param[out]: lhit. Logical that shows if hit has been found or not
       !-----------------------------------------------------------------------
       IMPLICIT NONE
+      ! Ray positions
       DOUBLE PRECISION, INTENT(in) :: x0, y0, z0, x1, y1, z1
+      ! Hit positions and logical if hit was found
       DOUBLE PRECISION, INTENT(out) :: xw, yw, zw
       LOGICAL, INTENT(out) :: lhit
-      INTEGER :: ik, i, k1,k2, b_index, b_found, bx, by, bz
+      ! Loop integers, block integers, and block step in x/y/z. i_min is lowest block step index
+      INTEGER :: ik, i, k1,k2, b_index, b_found, bx, by, bz, i_min
+      ! Hit calculation
       DOUBLE PRECISION :: drx, dry, drz, V2x, V2y, V2z, DOT02l, DOT12l, tloc, tmin, alphal, betal
-      DOUBLE PRECISION :: tDeltaXfwd, tDeltaXbck, tDeltaYfwd, tDeltaYbck, tDeltaZfwd, tDeltaZbck
-      DOUBLE PRECISION :: DeltaXfwd, DeltaXbck, DeltaYfwd, DeltaYbck, DeltaZfwd, DeltaZbck
-      DOUBLE PRECISION :: tcompx, tcompy, tcompz
+      ! Time until block step
+      DOUBLE PRECISION :: tDelta(6), tcomp(3)
+      LOGICAL :: tcompmask(6)
+      ! Whether or not out of grid in x/y/z
       LOGICAL :: xout, yout, zout
       xw=zero; yw=zero; zw=zero; lhit=.FALSE.
       ik_min = zero
@@ -1020,9 +1032,9 @@
          yout = .false.
          zout = .false.
 
-         tcompx = zero
-         tcompy = zero
-         tcompz = zero
+         tcomp(1) = zero
+         tcomp(2) = zero
+         tcomp(3) = zero
          IF (lverb_calc) WRITE(6, *) x0, y0, z0, x1, y1, z1
          k1 = 1; k2 = wall%nblocks
          b_found = -1
@@ -1068,51 +1080,43 @@
                ! Check if it went into the nearest block within the current distance for each dimension
                ! Only check for dimension that were out of bounds
                IF (xout) THEN
-                  DeltaXfwd = (b%xmax - x0)
-                  DeltaXbck = (b%xmin - x0)
+                  tDelta(1) = (b%xmax - x0) / drx
+                  tDelta(2) = (b%xmin - x0) / drx
 
-                  tDeltaXfwd = DeltaXfwd / drx
-                  tDeltaXbck = DeltaXbck / drx
-
-                  IF (tDeltaXfwd < tmin .and. tDeltaXfwd > tcompx ) THEN
-                     tcompx = tDeltaXfwd + epsilon
-                  ELSE IF (tDeltaXbck < tmin .and. tDeltaXbck > tcompx) THEN
-                     tcompx = tDeltaXbck + epsilon
+                  IF (tDelta(1) < tmin .and. tDelta(1) > tcomp(1) ) THEN
+                     tcomp(1) = tDelta(1) + epsilon
+                  ELSE IF (tDelta(2) < tmin .and. tDelta(2) > tcomp(1)) THEN
+                     tcomp(1) = tDelta(2) + epsilon
                   END IF
                END IF
 
                IF (yout) THEN
-                  DeltaYfwd = (b%ymax - y0)
-                  DeltaYbck = (b%ymin - y0)
+                  tDelta(3) = (b%ymax - y0) / dry
+                  tDelta(4) = (b%ymin - y0) / dry
 
-                  tDeltaYfwd = DeltaYfwd / dry
-                  tDeltaYbck = DeltaYbck / dry
-                  IF (tDeltaYfwd < tmin .and. tDeltaYfwd > tcompy) THEN
-                     tcompy = tDeltaYfwd + epsilon
-                  ELSE IF (tDeltaYbck < tmin .and. tDeltaYbck > tcompy) THEN
-                     tcompy = tDeltaYbck + epsilon
+                  IF (tDelta(3) < tmin .and. tDelta(3) > tcomp(2)) THEN
+                     tcomp(2) = tDelta(3) + epsilon
+                  ELSE IF (tDelta(4) < tmin .and. tDelta(4) > tcomp(2)) THEN
+                     tcomp(2) = tDelta(4) + epsilon
                   END IF
                END IF
 
                IF (zout) THEN
-                  DeltaZfwd = (b%zmax - z0)
-                  DeltaZbck = (b%zmin - z0)
+                  tDelta(5) = (b%zmax - z0) / drz
+                  tDelta(6) = (b%zmin - z0) / drz
 
-                  tDeltaZfwd = DeltaZfwd / drz
-                  tDeltaZbck = DeltaZbck / drz
-
-                  IF (tDeltaZfwd < tmin .and. tDeltaZfwd > tcompz) THEN
-                     tcompz = tDeltaZfwd + epsilon
-                  ELSE IF (tDeltaZbck < tmin .and. tDeltaZbck > tcompz) THEN
-                     tcompz = tDeltaZbck + epsilon
+                  IF (tDelta(5) < tmin .and. tDelta(5) > tcomp(3)) THEN
+                     tcomp(3) = tDelta(5) + epsilon
+                  ELSE IF (tDelta(6) < tmin .and. tDelta(6) > tcomp(3)) THEN
+                     tcomp(3) = tDelta(6) + epsilon
                   END IF
                END IF
 
                IF (lverb_calc) WRITE(6, *) tmin, xout, yout, zout
-               IF (lverb_calc) WRITE(6, *) tcompx, tcompy, tcompz
+               IF (lverb_calc) WRITE(6, *) tcomp(1), tcomp(2), tcomp(3)
 
                ! If it did not enter any dimension in time, set block to -1
-               IF ((tcompx == zero .and. xout) .or. (tcompy == zero .and. yout) .or. (tcompz == zero .and. zout)) THEN
+               IF ((tcomp(1) == zero .and. xout) .or. (tcomp(2) == zero .and. yout) .or. (tcomp(3) == zero .and. zout)) THEN
                   b_found = -1                         
                END IF
             ELSE
@@ -1120,6 +1124,7 @@
                b_found = bz + (by - 1) * wall%ystep + (bx - 1) * wall%xstep
             END IF
          ELSE
+            ! Alternative slow looping to find start index, check for GPU acceleration
             DO b_index = k1,k2
                b = wall%blocks(b_index)
                IF (x0 <= b%xmax .and. x0 >= b%xmin .and. y0 <= b%ymax .and. y0 >= b%ymin .and. z0 <= b%zmax .and. z0 >= b%zmin) THEN
@@ -1170,66 +1175,92 @@
                   ik_min = ik
                   tmin = tloc
                END IF
-            END DO
+            END DO            
 
-            DeltaXfwd = (b%xmax - x0)
-            DeltaXbck = (b%xmin - x0)
-            DeltaYfwd = (b%ymax - y0)
-            DeltaYbck = (b%ymin - y0)
-            DeltaZfwd = (b%zmax - z0)
-            DeltaZbck = (b%zmin - z0)
-
-            tDeltaXfwd = DeltaXfwd / drx
-            tDeltaXbck = DeltaXbck / drx
-            tDeltaYfwd = DeltaYfwd / dry
-            tDeltaYbck = DeltaYbck / dry
-            tDeltaZfwd = DeltaZfwd / drz
-            tDeltaZbck = DeltaZbck / drz
+            tDelta(1) = (b%xmax - x0) / drx
+            tDelta(2) = (b%xmin - x0) / drx
+            tDelta(3) = (b%ymax - y0) / dry
+            tDelta(4) = (b%ymin - y0) / dry
+            tDelta(5) = (b%zmax - z0) / drz
+            tDelta(6) = (b%zmin - z0) / drz
 
             IF (lverb_calc) WRITE(6, *) tmin, drx, dry, drz
-            IF (lverb_calc) WRITE(6, *) tmin, tDeltaXfwd, tDeltaXbck, tDeltaYfwd, tDeltaYbck, tDeltaZfwd, tDeltaZbck
+            IF (lverb_calc) WRITE(6, *) tmin, tDelta
+
+            DO i = 1, 6
+               IF (tDelta(i) < zero) tDelta(i) = 1D+20
+               ik = (i - 1) / 2 + 1
+               tcompmask(i) = tDelta(i) > tcomp(ik)
+            END DO
 
             ! check if leaves block before hits. 
             ! Compare with tcomp to make sure that ray always moves in positive times 
-            IF (tDeltaXfwd < tmin .and. tDeltaXfwd > tcompx ) THEN
-               IF (lverb_calc) WRITE(6, *) 'Doing forward x-step'
-               bx = bx + 1
-               IF (bx > wall%bx) EXIT               
-               b_found = b_found + wall%xstep
-               tcompx = tDeltaXfwd + epsilon
-            ELSE IF (tDeltaXbck < tmin .and. tDeltaXbck > tcompx) THEN
-               IF (lverb_calc) WRITE(6, *) 'Doing backward x-step'
-               bx = bx - 1
-               IF (bx < 1) EXIT
-               b_found = b_found - wall%xstep
-               tcompx = tDeltaXbck + epsilon
-            ELSE IF (tDeltaYfwd < tmin .and. tDeltaYfwd > tcompy) THEN
-               IF (lverb_calc) WRITE(6, *) 'Doing forward y-step'
-               by = by + 1
-               IF (by > wall%by) EXIT
-               b_found = b_found + wall%ystep
-               tcompy = tDeltaYfwd + epsilon
-            ELSE IF (tDeltaYbck < tmin .and. tDeltaYbck > tcompy) THEN
-               IF (lverb_calc) WRITE(6, *) 'Doing backward y-step'
-               by = by - 1
-               IF (by < 1) EXIT
-               b_found = b_found - wall%ystep
-               tcompy = tDeltaYbck + epsilon
-            ELSE IF (tDeltaZfwd < tmin .and. tDeltaZfwd > tcompz) THEN
-               IF (lverb_calc) WRITE(6, *) 'Doing forward z-step'
-               bz = bz + 1
-               IF (bz > wall%bz) EXIT
-               b_found = b_found + wall%zstep
-               tcompz = tDeltaZfwd + epsilon
-            ELSE IF (tDeltaZbck < tmin .and. tDeltaZbck > tcompz) THEN
-               IF (lverb_calc) WRITE(6, *) 'Doing backward z-step'
-               bz = bz - 1
-               IF (bz < 1) EXIT
-               b_found = b_found - wall%zstep
-               tcompz = tDeltaZbck + epsilon
-            ELSE
-               EXIT                         
-            END IF
+            i_min = MINLOC(tDelta, 1, tcompmask)
+            IF (lverb_calc) WRITE(6, *) i_min, tcompmask, tcomp
+            SELECT CASE (i_min)
+            CASE (1)
+               IF (tDelta(1) < tmin) THEN
+                  IF (lverb_calc) WRITE(6, *) 'Doing forward x-step'
+                  bx = bx + 1
+                  IF (bx > wall%bx) EXIT               
+                  b_found = b_found + wall%xstep
+                  tcomp(1) = tDelta(1) + epsilon
+               ELSE
+                  EXIT
+               END IF
+            CASE (2)
+               IF (tDelta(2) < tmin) THEN
+                  IF (lverb_calc) WRITE(6, *) 'Doing backward x-step'
+                  bx = bx - 1
+                  IF (bx < 1) EXIT
+                  b_found = b_found - wall%xstep
+                  tcomp(1) = tDelta(2) + epsilon
+               ELSE
+                  EXIT
+               END IF
+            CASE (3)
+               IF (tDelta(3) < tmin) THEN
+                  IF (lverb_calc) WRITE(6, *) 'Doing forward y-step'
+                  by = by + 1
+                  IF (by > wall%by) EXIT
+                  b_found = b_found + wall%ystep
+                  tcomp(2) = tDelta(3) + epsilon
+               ELSE
+                  EXIT
+               END IF
+            CASE (4)
+               IF (tDelta(4) < tmin) THEN
+                  IF (lverb_calc) WRITE(6, *) 'Doing backward y-step'
+                  by = by - 1
+                  IF (by < 1) EXIT
+                  b_found = b_found - wall%ystep
+                  tcomp(2) = tDelta(4) + epsilon
+               ELSE
+                  EXIT
+               END IF
+            CASE (5)
+               IF (tDelta(5) < tmin) THEN
+                  IF (lverb_calc) WRITE(6, *) 'Doing forward z-step'
+                  bz = bz + 1
+                  IF (bz > wall%bz) EXIT
+                  b_found = b_found + wall%zstep
+                  tcomp(3) = tDelta(5) + epsilon
+               ELSE
+                  EXIT
+               END IF
+            CASE (6)
+               IF (tDelta(6) < tmin) THEN
+                  IF (lverb_calc) WRITE(6, *) 'Doing backward z-step'
+                  bz = bz - 1
+                  IF (bz < 1) EXIT
+                  b_found = b_found - wall%zstep
+                  tcomp(3) = tDelta(6) + epsilon
+               ELSE
+                  EXIT
+               END IF
+            CASE DEFAULT
+               EXIT
+            END SELECT
          END DO
 
          ! if any index stored, hit was found, calculate location and increment ihit_array
@@ -1240,8 +1271,7 @@
             zw   = z0 + tmin*drz
             ihit_array(ik_min) = ihit_array(ik_min) + 1
          END IF
-
-
+      ! Unaccelerated method
       ELSE
          k1 = 1; k2 = nface
          
