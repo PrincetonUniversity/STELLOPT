@@ -307,6 +307,10 @@
       ! Load vessel if not done already vessel
       IF (lvessel .and. (.not. lwall_loaded)) THEN
          CALL wall_load_txt(TRIM(vessel_string),ier,MPI_COMM_BEAMS)
+         IF (lverb) THEN
+            IF (ier /=0 ) WRITE(6,'(A)') 'ERROR: Loading VESSEL : ' // TRIM(vessel_string)
+            IF (ier ==-327 ) WRITE(6,'(A)') '   ZERO Area Triagle detected!!!!'
+         END IF
       END IF
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
