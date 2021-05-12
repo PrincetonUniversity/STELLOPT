@@ -405,7 +405,7 @@
             END IF
 
 #if defined(MPI_OPT)
-            IF (PRESENT(comm)) MPI_Bcast(nface,1,MPI_INTEGER,0,shar_comm,istat)
+            IF (PRESENT(comm)) CALL MPI_Bcast(nface,1,MPI_INTEGER,0,shar_comm,istat)
 #endif
             ! Only allocate and read faces if there are faces to read for this block
             IF (nface > 0) THEN
