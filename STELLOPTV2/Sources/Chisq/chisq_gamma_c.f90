@@ -889,9 +889,12 @@
             !we also set all the well_mask indices to 1.
             in_well = 0
 
-            write (igc9,*) 'beginning bp',i
-            write (igc9,*) 'Bmin, Bmax, B_refl', minB, maxB, B_refl
-            write (igc10, *) 'B_refl ', B_refl
+            IF (LGCXFILES .eqv. .true.) THEN
+              write (igc9,*) 'beginning bp',i
+              write (igc9,*) 'Bmin, Bmax, B_refl', minB, maxB, B_refl
+              write (igc10, *) 'B_refl ', B_refl
+            END IF
+
             well_start = 0 !this is the array of all the indices where wells begin
             well_stop = 0 !this is the array of all the indices where wells end
             cur_well = 1 !this is the index of the current well
