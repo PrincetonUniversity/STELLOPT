@@ -318,8 +318,7 @@
       IF (lvessel) THEN
          CALL wall_load_txt(TRIM(vessel_string),ier)
          IF (ier /= 0) CALL handle_err(WALL_ERR,'fieldlines_init',ier)
-         IF (myworkid /= master .and. ASSOCIATED(face)) DEALLOCATE(face)     ! Do this to save memory
-         IF (myworkid /= master .and. ASSOCIATED(vertex)) DEALLOCATE(vertex) ! Do this to save memory
+         IF (myworkid /= master) DEALLOCATE(face, vertex)     ! Do this to save memory
          IF (lverb) THEN
             CALL wall_info(6)
             IF (lwall_trans) WRITE(6,'(A)')'   !!!!! Poincare Screen  !!!!!'
