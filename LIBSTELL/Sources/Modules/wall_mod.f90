@@ -24,11 +24,11 @@
       TYPE block
          INTEGER :: nfaces  ! number of faces in block
          LOGICAL :: isshared  ! whether or not shared memory active
-         ! shared memory pointsers
+         ! shared memory point to faces in block
          INTEGER :: win_face
          ! bounds of block in x/y/z
          DOUBLE PRECISION :: rmin(3), rmax(3)
-         ! non-shared memory pointers
+         ! non-shared memory pointer to faces in block
          INTEGER,          DIMENSION(:),   POINTER :: face => null()
       END TYPE block
 
@@ -121,7 +121,7 @@
       CONTAINS
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!    Wall Constructors
+!!    Wall Constructor
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       SUBROUTINE INIT_BLOCK(this,xmin,xmax,ymin,ymax,zmin,zmax,nface,istat,comm,shar_comm)
@@ -145,6 +145,7 @@
             CALL MPI_Bcast(zmax,1,MPI_DOUBLE_PRECISION,0,shar_comm,istat)
          END IF
 #endif
+         ! Set bounds block
          this%rmin(1) = xmin
          this%rmax(1) = xmax
          this%rmin(2) = ymin
@@ -161,9 +162,8 @@
 
          IF (lverb_start) WRITE(6, *) 'Block intialized', xmin, xmax, ymin, ymax, zmin, zmax, nface
 
-         ! Only allocate and precalculate if there is actually faces in this block
+         ! Only allocate if there is actually faces in this block
          IF (nface > 0) THEN
-            ! allocate memory for information about the mesh
 #if defined(MPI_OPT)
             IF (PRESENT(comm)) THEN 
                CALL MPI_BARRIER(shar_comm,istat)
@@ -177,8 +177,9 @@
 #if defined(MPI_OPT)
             END IF
 #endif
+            ! Copy faces into block
             this%face(:) = bface(:)
-            ! Clear memory
+            ! Block MPI
 #if defined(MPI_OPT)
             IF (PRESENT(comm)) CALL MPI_BARRIER(shar_comm,istat)
 #endif
@@ -228,13 +229,14 @@
          READ(iunit,'(A)') date
          READ(iunit,*) nvertex,nface
       END IF
-      ! Check if nvertex nface  = 0 -> accelerated structure
+      ! Check if nvertex & nface  = 0 -> accelerated structure
       lwall_acc = .false.
       IF (nvertex == 0 .and. nface == 0) THEN
          IF (shar_rank == 0 .and. lverb_start) WRITE(6, *) 'Accelerated'
          lwall_acc = .true.
          IF (shar_rank == 0) READ(iunit,*) nvertex,nface
       END IF
+      ! Broadcast info to MPI and allocate vertex and face info
 #if defined(MPI_OPT)
       IF (PRESENT(comm)) THEN
          CALL MPI_Bcast(nvertex,1,MPI_INTEGER,0,shar_comm,istat)
@@ -363,13 +365,14 @@
 #if defined(MPI_OPT)
       END IF
 #endif
+      ! If accelerated, read in uniform grid
       if (lwall_acc) THEN
          IF (lverb_start) WRITE(6, *) 'Start accelerated reading. MPI Rank: ', shar_rank
-         ! Read in uniform grid
          IF (shar_rank == 0) THEN
             READ(iunit, *) wall%nblocks, wall%step(1), wall%step(2), wall%step(3)
             READ(iunit, *) wall%stepsize, wall%br(1), wall%br(2), wall%br(3)
          END IF
+         ! If MPI, broadcast this info again
 #if defined(MPI_OPT)
          IF (PRESENT(comm)) THEN
             CALL MPI_Bcast(wall%nblocks,1,MPI_INTEGER,0,shar_comm,istat)
@@ -378,6 +381,7 @@
             CALL MPI_Bcast(wall%br,3,MPI_INTEGER,0,shar_comm,istat)
          END IF
 #endif
+         ! Allocate room for all the blocks
          ALLOCATE(wall%blocks(wall%nblocks), STAT=istat)
          IF (istat/=0) RETURN
 
@@ -387,10 +391,11 @@
             wall%rmax(i) = -1D+20
          END DO
 
+         ! Start looping over all blocks
          IF (lverb_start) WRITE(6, *) 'Start blocks loop. Rank and wall info: ', shar_rank, wall%nblocks, wall%br         
          DO ik=1, wall%nblocks
-            IF (shar_rank == 0 .and. lverb_start) WRITE(6, *) '----------------------------------------------------------'
             IF (lverb_start) WRITE(6, *) 'In loop', shar_rank, ik
+            ! Read in the bounds of the block and the number of faces
             IF (shar_rank == 0) THEN
                READ(iunit, *) xmin,xmax,ymin,ymax,zmin,zmax
                READ(iunit, *) nface
@@ -407,11 +412,12 @@
                   CALL mpialloc_1d_int(bface,nface,shar_rank,0,shar_comm,win_bface)
                ELSE
 #endif
-               ! if no MPI, allocate everything on one node
+                  ! if no MPI, allocate everything on one node
                   ALLOCATE(bface(nface),STAT=istat)
 #if defined(MPI_OPT)
                END IF
 #endif
+               ! Read all the faces
                IF (istat/=0) RETURN
                IF (shar_rank == 0) THEN
                   IF (lverb_start) WRITE(6, *) 'Block reading'
@@ -425,8 +431,8 @@
             IF (PRESENT(comm)) CALL MPI_BARRIER(shar_comm,istat)
 #endif
 
+            ! Initialize the block
             IF (lverb_start .and. shar_rank == 0) WRITE(6, *) 'Init block: ', ik
-
             CALL INIT_BLOCK(wall%blocks(ik),xmin,xmax,ymin,ymax,zmin,zmax,nface,istat,comm,shar_comm)
 
             IF (lverb_start .and. shar_rank == 0) WRITE(6, *) 'Init block done: ', ik
@@ -1006,9 +1012,9 @@
       LOGICAL, INTENT(out) :: lhit
       ! Loop integers, block integers
       INTEGER :: ik, i, k1,k2, b_index, b_found
-      ! Block step in x/y/z
+      ! In which block the ray is in x/y/z
       INTEGER :: br(3)
-      ! Line direction/position
+      ! Line direction/position vectors
       DOUBLE PRECISION :: dr(3), r0(3)
       ! Hit calculation
       DOUBLE PRECISION :: V2x, V2y, V2z, DOT02l, DOT12l, tloc, tmin, alphal, betal
@@ -1047,6 +1053,7 @@
          k1 = 1; k2 = wall%nblocks
          b_found = -1
          IF (lsmartstart) THEN
+            ! If smart start, do integer division to find which block the line is in
             DO i=1,3
                br(i) = INT((r0(i) - wall%rmin(i)) / wall%stepsize) + 1
             END DO
@@ -1067,6 +1074,7 @@
                   END IF
                END DO
                
+               ! Find correct block
                b_found = br(3) + (br(2) - 1) * wall%step(2) + (br(1) - 1) * wall%step(1)
                b = wall%blocks(b_found)
 
@@ -1113,10 +1121,13 @@
 
          IF (lverb_calc) WRITE(6, *) br, b_found
 
+         ! Traverse blocks
          DO WHILE (.true.)
+            ! Reset hit info
             xw=zero; yw=zero; zw=zero; lhit=.FALSE.
             ik_min = zero
             tmin = one + epsilon
+            ! If outside block, exit
             IF (b_found > wall%nblocks .or. b_found < 1) EXIT
             b = wall%blocks(b_found)
 
@@ -1154,6 +1165,7 @@
                END IF
             END DO
             
+            ! Check when the line will leave the block
             DO i=1,3
                IF (step(i) .eq. 1) THEN
                   tDelta(i) = (b%rmax(i) - r0(i)) / dr(i)
@@ -1165,9 +1177,10 @@
             IF (lverb_calc) WRITE(6, *) tmin, dr
             IF (lverb_calc) WRITE(6, *) tmin, tDelta
 
-            ! check if leaves block before hits. 
-            ! Compare with tcomp to make sure that ray always moves in positive times 
+            ! Check if leaves block before hits. 
+            ! Compare with tcomp to make sure that ray always moves in positive time direction 
             IF (ANY(tDelta < tmin .and. tDelta > tcomp)) THEN
+               ! If true, find which direction is smallest time until leave block
                IF (tDelta(1) < tDelta(2)) THEN
                   IF (tDelta(1) < tDelta(3)) THEN
                      i = 1
@@ -1185,11 +1198,14 @@
                      IF (lverb_calc) WRITE(6, *) 'Doing z-step: ', step(i) 
                   END IF
                END IF
+               ! Having found exit direction, step in that direction
                br(i) = br(i) + step(i)
+               ! If leave grid, exit
                IF (br(i) > wall%br(i) .or. br(i) < 1) EXIT    
                b_found = b_found + wall%step(i) * step(i)
                tcomp(i) = tDelta(i) + epsilon
             ELSE 
+               ! If none smaller than hit time, exit loop. Hit found.
                EXIT
             END IF
          END DO
