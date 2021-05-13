@@ -718,21 +718,9 @@
             bznp = bzn
 
 
-
-
-
             !kappa_g(j) = dot_product(Bxyz, gradB)/modB(j)/modB(j)
             !write (*,*) 'gradB', gradB
             !write (*,*) 'kappa_g', kappa_g(j)
-
-
-
-
-
-
-
-
-!new
             !dvdB_t1 is the first term in the brackets of dVdb
             ! = iota' ( grad_psi cross b_hat) dot grad_zeta
             CALL cross_product(grad_psi_xyz, bnxyz, grad_psi_x_b_xyz)
@@ -744,9 +732,6 @@
 
 !  JCS  - check this.  dBsubvdpsi - check which index is appropriate and
 ! the normalization
-
-
-
             if (LGCXFILES .eqv. .true.) then
 !             R, Z is from get_equil_RZ, which was calculated on a single
 !             field period. The X and Y values were calculated by using
