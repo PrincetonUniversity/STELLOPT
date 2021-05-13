@@ -24,24 +24,24 @@
       TYPE block
          INTEGER :: nfaces  ! number of faces in block
          LOGICAL :: isshared  ! whether or not shared memory active
-         ! shared memory pointsers
+         ! shared memory point to faces in block
          INTEGER :: win_face
-         ! bounds of block
-         DOUBLE PRECISION :: xmin, xmax, ymin, ymax, zmin, zmax
-         ! non-shared memory pointers
+         ! bounds of block in x/y/z
+         DOUBLE PRECISION :: rmin(3), rmax(3)
+         ! non-shared memory pointer to faces in block
          INTEGER,          DIMENSION(:),   POINTER :: face => null()
       END TYPE block
 
       TYPE wall_type
          ! number of blocks
          ! and the step that has to be done in the list to move one in x/y/z-direction
-         integer :: nblocks, xstep, ystep, zstep
-         ! Bounds of total grid
-         DOUBLE PRECISION :: xmin, xmax, ymin, ymax, zmin, zmax
-         ! Step of grid
+         integer :: nblocks, step(3)
+         ! Bounds of total grid in x/y/z
+         DOUBLE PRECISION :: rmin(3), rmax(3)
+         ! Step of grid in space
          DOUBLE PRECISION :: stepsize
          ! Number of blocks in each direction
-         INTEGER          :: bx, by, bz
+         INTEGER          :: br(3)
          TYPE (block), DIMENSION(:), POINTER :: blocks => null()
       END TYPE wall_type
 
@@ -121,7 +121,7 @@
       CONTAINS
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!    Wall Constructors
+!!    Wall Constructor
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       SUBROUTINE INIT_BLOCK(this,xmin,xmax,ymin,ymax,zmin,zmax,nface,istat,comm,shar_comm)
@@ -133,7 +133,7 @@
          INTEGER, INTENT(in) :: nface
          INTEGER, INTENT(inout) :: istat
          INTEGER, INTENT(inout), OPTIONAL :: comm, shar_comm
-         INTEGER :: ik, i, dex1, dex2, dex3
+         INTEGER :: i
 
 #if defined(MPI_OPT)
          IF (PRESENT(comm)) THEN 
@@ -145,27 +145,25 @@
             CALL MPI_Bcast(zmax,1,MPI_DOUBLE_PRECISION,0,shar_comm,istat)
          END IF
 #endif
-         this%xmin = xmin
-         this%xmax = xmax
-         this%ymin = ymin
-         this%ymax = ymax
-         this%zmin = zmin
-         this%zmax = zmax
+         ! Set bounds block
+         this%rmin(1) = xmin
+         this%rmax(1) = xmax
+         this%rmin(2) = ymin
+         this%rmax(2) = ymax
+         this%rmin(3) = zmin
+         this%rmax(3) = zmax
          this%nfaces = nface
 
          ! Keep track of size of wall
-         IF (this%xmin < wall%xmin) wall%xmin = this%xmin
-         IF (this%xmax > wall%xmax) wall%xmax = this%xmax
-         IF (this%ymin < wall%ymin) wall%ymin = this%ymin
-         IF (this%ymax > wall%ymax) wall%ymax = this%ymax
-         IF (this%zmin < wall%zmin) wall%zmin = this%zmin
-         IF (this%zmax > wall%zmax) wall%zmax = this%zmax
+         DO i=1,3
+            IF (this%rmin(i) < wall%rmin(i)) wall%rmin(i) = this%rmin(i)
+            IF (this%rmax(i) > wall%rmax(i)) wall%rmax(i) = this%rmax(i)
+         END DO
 
          IF (lverb_start) WRITE(6, *) 'Block intialized', xmin, xmax, ymin, ymax, zmin, zmax, nface
 
-         ! Only allocate and precalculate if there is actually faces in this block
+         ! Only allocate if there is actually faces in this block
          IF (nface > 0) THEN
-            ! allocate memory for information about the mesh
 #if defined(MPI_OPT)
             IF (PRESENT(comm)) THEN 
                CALL MPI_BARRIER(shar_comm,istat)
@@ -179,8 +177,9 @@
 #if defined(MPI_OPT)
             END IF
 #endif
+            ! Copy faces into block
             this%face(:) = bface(:)
-            ! Clear memory
+            ! Block MPI
 #if defined(MPI_OPT)
             IF (PRESENT(comm)) CALL MPI_BARRIER(shar_comm,istat)
 #endif
@@ -230,13 +229,14 @@
          READ(iunit,'(A)') date
          READ(iunit,*) nvertex,nface
       END IF
-      ! Check if nvertex nface  = 0 -> accelerated structure
+      ! Check if nvertex & nface  = 0 -> accelerated structure
       lwall_acc = .false.
       IF (nvertex == 0 .and. nface == 0) THEN
          IF (shar_rank == 0 .and. lverb_start) WRITE(6, *) 'Accelerated'
          lwall_acc = .true.
          IF (shar_rank == 0) READ(iunit,*) nvertex,nface
       END IF
+      ! Broadcast info to MPI and allocate vertex and face info
 #if defined(MPI_OPT)
       IF (PRESENT(comm)) THEN
          CALL MPI_Bcast(nvertex,1,MPI_INTEGER,0,shar_comm,istat)
@@ -365,39 +365,37 @@
 #if defined(MPI_OPT)
       END IF
 #endif
+      ! If accelerated, read in uniform grid
       if (lwall_acc) THEN
          IF (lverb_start) WRITE(6, *) 'Start accelerated reading. MPI Rank: ', shar_rank
-         ! Read in uniform grid
          IF (shar_rank == 0) THEN
-            READ(iunit, *) wall%nblocks, wall%xstep, wall%ystep, wall%zstep
-            READ(iunit, *) wall%stepsize, wall%bx, wall%by, wall%bz
+            READ(iunit, *) wall%nblocks, wall%step(1), wall%step(2), wall%step(3)
+            READ(iunit, *) wall%stepsize, wall%br(1), wall%br(2), wall%br(3)
          END IF
+         ! If MPI, broadcast this info again
 #if defined(MPI_OPT)
          IF (PRESENT(comm)) THEN
             CALL MPI_Bcast(wall%nblocks,1,MPI_INTEGER,0,shar_comm,istat)
-            CALL MPI_Bcast(wall%xstep,1,MPI_INTEGER,0,shar_comm,istat)
-            CALL MPI_Bcast(wall%ystep,1,MPI_INTEGER,0,shar_comm,istat)
-            CALL MPI_Bcast(wall%zstep,1,MPI_INTEGER,0,shar_comm,istat)
+            CALL MPI_Bcast(wall%step,3,MPI_INTEGER,0,shar_comm,istat)
             CALL MPI_Bcast(wall%stepsize,1,MPI_DOUBLE_PRECISION,0,shar_comm,istat)
-            CALL MPI_Bcast(wall%bx,1,MPI_INTEGER,0,shar_comm,istat)
-            CALL MPI_Bcast(wall%by,1,MPI_INTEGER,0,shar_comm,istat)
-            CALL MPI_Bcast(wall%bz,1,MPI_INTEGER,0,shar_comm,istat)
+            CALL MPI_Bcast(wall%br,3,MPI_INTEGER,0,shar_comm,istat)
          END IF
 #endif
+         ! Allocate room for all the blocks
          ALLOCATE(wall%blocks(wall%nblocks), STAT=istat)
          IF (istat/=0) RETURN
 
          ! This is the maximum wall size possible
-         wall%xmin = 1D+20
-         wall%xmax = -1D+20
-         wall%ymin = 1D+20
-         wall%ymax = -1D+20
-         wall%zmin = 1D+20
-         wall%zmax = -1D+20
-         IF (lverb_start) WRITE(6, *) 'Start blocks loop. Rank and wall info: ', shar_rank, wall%nblocks, wall%bx, wall%by, wall%bz         
+         DO i=1,3 
+            wall%rmin(i) = 1D+20
+            wall%rmax(i) = -1D+20
+         END DO
+
+         ! Start looping over all blocks
+         IF (lverb_start) WRITE(6, *) 'Start blocks loop. Rank and wall info: ', shar_rank, wall%nblocks, wall%br         
          DO ik=1, wall%nblocks
-            IF (shar_rank == 0 .and. lverb_start) WRITE(6, *) '----------------------------------------------------------'
             IF (lverb_start) WRITE(6, *) 'In loop', shar_rank, ik
+            ! Read in the bounds of the block and the number of faces
             IF (shar_rank == 0) THEN
                READ(iunit, *) xmin,xmax,ymin,ymax,zmin,zmax
                READ(iunit, *) nface
@@ -414,11 +412,12 @@
                   CALL mpialloc_1d_int(bface,nface,shar_rank,0,shar_comm,win_bface)
                ELSE
 #endif
-               ! if no MPI, allocate everything on one node
+                  ! if no MPI, allocate everything on one node
                   ALLOCATE(bface(nface),STAT=istat)
 #if defined(MPI_OPT)
                END IF
 #endif
+               ! Read all the faces
                IF (istat/=0) RETURN
                IF (shar_rank == 0) THEN
                   IF (lverb_start) WRITE(6, *) 'Block reading'
@@ -432,8 +431,8 @@
             IF (PRESENT(comm)) CALL MPI_BARRIER(shar_comm,istat)
 #endif
 
+            ! Initialize the block
             IF (lverb_start .and. shar_rank == 0) WRITE(6, *) 'Init block: ', ik
-
             CALL INIT_BLOCK(wall%blocks(ik),xmin,xmax,ymin,ymax,zmin,zmax,nface,istat,comm,shar_comm)
 
             IF (lverb_start .and. shar_rank == 0) WRITE(6, *) 'Init block done: ', ik
@@ -1006,144 +1005,133 @@
       ! param[out]: lhit. Logical that shows if hit has been found or not
       !-----------------------------------------------------------------------
       IMPLICIT NONE
-      ! Ray positions
+      ! Line positions
       DOUBLE PRECISION, INTENT(in) :: x0, y0, z0, x1, y1, z1
       ! Hit positions and logical if hit was found
       DOUBLE PRECISION, INTENT(out) :: xw, yw, zw
       LOGICAL, INTENT(out) :: lhit
-      ! Loop integers, block integers, and block step in x/y/z. i_min is lowest block step index
-      INTEGER :: ik, i, k1,k2, b_index, b_found, bx, by, bz, i_min
+      ! Loop integers, block integers
+      INTEGER :: ik, i, k1,k2, b_index, b_found
+      ! In which block the ray is in x/y/z
+      INTEGER :: br(3)
+      ! Line direction/position vectors
+      DOUBLE PRECISION :: dr(3), r0(3)
       ! Hit calculation
-      DOUBLE PRECISION :: drx, dry, drz, V2x, V2y, V2z, DOT02l, DOT12l, tloc, tmin, alphal, betal
+      DOUBLE PRECISION :: V2x, V2y, V2z, DOT02l, DOT12l, tloc, tmin, alphal, betal
+      ! Whether or not a step is in negative or positive direction in x/y/z
+      INTEGER :: step(3)
       ! Time until block step
-      DOUBLE PRECISION :: tDelta(6), tcomp(3)
-      LOGICAL :: tcompmask(6)
+      DOUBLE PRECISION :: tDelta(3), tcomp(3)
       ! Whether or not out of grid in x/y/z
-      LOGICAL :: xout, yout, zout
+      LOGICAL :: outlow(3), outhigh(3)
       xw=zero; yw=zero; zw=zero; lhit=.FALSE.
       ik_min = zero
       tmin = one + epsilon
       ! Define DR
-      drx = x1-x0
-      dry = y1-y0
-      drz = z1-z0
+      dr(1) = x1-x0
+      dr(2) = y1-y0
+      dr(3) = z1-z0
       IF (lwall_acc) THEN
-         xout = .false.
-         yout = .false.
-         zout = .false.
+         ! initialize
+         r0(1) = x0
+         r0(2) = y0
+         r0(3) = z0
+         DO i=1,3
+            outlow(i) = .false.
+            outhigh(i) = .false.
+            tcomp(i) = zero
+            ! check direction line to determine in which direction to step through the blocks
+            IF (dr(i) < zero) THEN
+               step(i) = -1
+            ELSE
+               step(i) = 1
+            END IF
+         END DO
 
-         tcomp(1) = zero
-         tcomp(2) = zero
-         tcomp(3) = zero
          IF (lverb_calc) WRITE(6, *) x0, y0, z0, x1, y1, z1
+
          k1 = 1; k2 = wall%nblocks
          b_found = -1
          IF (lsmartstart) THEN
-            bx = INT((x0 - wall%xmin) / wall%stepsize) + 1
-            by = INT((y0 - wall%ymin) / wall%stepsize) + 1
-            bz = INT((z0 - wall%zmin) / wall%stepsize) + 1
-
+            ! If smart start, do integer division to find which block the line is in
+            DO i=1,3
+               br(i) = INT((r0(i) - wall%rmin(i)) / wall%stepsize) + 1
+            END DO
+                        
             ! Check if outside the grid anywhere
-            IF (bx < 1 .or. by < 1 .or. bz < 1 .or. bx > wall%bx .or. by > wall%by .or. bz > wall%bz) THEN
-               IF (lverb_calc) WRITE(6, *) bx, by, bz, wall%bx, wall%by, wall%bz
-               
+            IF (ANY(br < 1) .or. ANY(br > wall%br)) THEN
+               IF (lverb_calc) WRITE(6, *) br, wall%br
+
                ! Check closest block in grid
                ! Also keep track which dimension is out of bounds
-               IF (bx < 1) THEN 
-                  bx = 1
-                  xout = .TRUE.
-               ELSE IF (bx > wall%bx) THEN
-                  bx = wall%bx
-                  xout = .TRUE.
-               END IF
-
-               IF (by < 1) THEN 
-                  by = 1
-                  yout = .TRUE.
-               ELSE IF (by > wall%by) THEN
-                  by = wall%by
-                  yout = .TRUE.
-               END IF
-
-               IF (bz < 1) THEN 
-                  bz = 1
-                  zout = .TRUE.
-               ELSE IF (bz > wall%bz) THEN
-                  bz = wall%bz
-                  zout = .TRUE.
-               END IF
-
-               b_found = bz + (by - 1) * wall%ystep + (bx - 1) * wall%xstep
+               DO i=1,3
+                  IF (br(i) < 1) THEN 
+                     br(i) = 1
+                     outlow(i) = .TRUE.
+                  ELSE IF (br(i) > wall%br(i)) THEN
+                     br(i) = wall%br(i)
+                     outhigh(i) = .TRUE.
+                  END IF
+               END DO
+               
+               ! Find correct block
+               b_found = br(3) + (br(2) - 1) * wall%step(2) + (br(1) - 1) * wall%step(1)
                b = wall%blocks(b_found)
 
                ! Check where grid is entered in nearest block
                ! Check if it went into the nearest block within the current distance for each dimension
                ! Only check for dimension that were out of bounds
-               IF (xout) THEN
-                  tDelta(1) = (b%xmax - x0) / drx
-                  tDelta(2) = (b%xmin - x0) / drx
-
-                  IF (tDelta(1) < tmin .and. tDelta(1) > tcomp(1) ) THEN
-                     tcomp(1) = tDelta(1) + epsilon
-                  ELSE IF (tDelta(2) < tmin .and. tDelta(2) > tcomp(1)) THEN
-                     tcomp(1) = tDelta(2) + epsilon
+               DO i=1,3
+                  IF (outlow(i) .and. step(i) .eq. 1) THEN
+                     tDelta(i) = (b%rmin(i) - r0(i)) / dr(i)
+                     IF (tDelta(i) < tmin) THEN
+                        tcomp(i) = tDelta(i) + epsilon
+                     END IF
                   END IF
-               END IF
 
-               IF (yout) THEN
-                  tDelta(3) = (b%ymax - y0) / dry
-                  tDelta(4) = (b%ymin - y0) / dry
-
-                  IF (tDelta(3) < tmin .and. tDelta(3) > tcomp(2)) THEN
-                     tcomp(2) = tDelta(3) + epsilon
-                  ELSE IF (tDelta(4) < tmin .and. tDelta(4) > tcomp(2)) THEN
-                     tcomp(2) = tDelta(4) + epsilon
+                  IF (outhigh(i) .and. step(i) .eq. -1) THEN
+                     tDelta(i) = (b%rmax(i) - r0(i)) / dr(i)
+                     IF (tDelta(i) < tmin) THEN
+                        tcomp(i) = tDelta(i) + epsilon
+                     END IF
                   END IF
-               END IF
+               END DO
 
-               IF (zout) THEN
-                  tDelta(5) = (b%zmax - z0) / drz
-                  tDelta(6) = (b%zmin - z0) / drz
-
-                  IF (tDelta(5) < tmin .and. tDelta(5) > tcomp(3)) THEN
-                     tcomp(3) = tDelta(5) + epsilon
-                  ELSE IF (tDelta(6) < tmin .and. tDelta(6) > tcomp(3)) THEN
-                     tcomp(3) = tDelta(6) + epsilon
-                  END IF
-               END IF
-
-               IF (lverb_calc) WRITE(6, *) tmin, xout, yout, zout
-               IF (lverb_calc) WRITE(6, *) tcomp(1), tcomp(2), tcomp(3)
-
+               IF (lverb_calc) WRITE(6, *) tmin, outlow, outhigh
+               IF (lverb_calc) WRITE(6, *) tcomp
+               
                ! If it did not enter any dimension in time, set block to -1
-               IF ((tcomp(1) == zero .and. xout) .or. (tcomp(2) == zero .and. yout) .or. (tcomp(3) == zero .and. zout)) THEN
+               IF (ANY((tcomp == zero) .and. (outlow .or. outhigh))) THEN
                   b_found = -1                         
                END IF
             ELSE
                ! If not outside grid, set b_found
-               b_found = bz + (by - 1) * wall%ystep + (bx - 1) * wall%xstep
+               b_found = br(3) + (br(2) - 1) * wall%step(2) + (br(1) - 1) * wall%step(1)
             END IF
          ELSE
             ! Alternative slow looping to find start index, check for GPU acceleration
             DO b_index = k1,k2
                b = wall%blocks(b_index)
-               IF (x0 <= b%xmax .and. x0 >= b%xmin .and. y0 <= b%ymax .and. y0 >= b%ymin .and. z0 <= b%zmax .and. z0 >= b%zmin) THEN
+               IF (ALL(r0 <=b%rmax .and. r0 >=b%rmin)) THEN
                   b_found = b_index
                   EXIT
                END IF
             END DO
          END IF
 
-         IF (lverb_calc) WRITE(6, *) bx, by, bz, b_found
+         IF (lverb_calc) WRITE(6, *) br, b_found
 
+         ! Traverse blocks
          DO WHILE (.true.)
+            ! Reset hit info
             xw=zero; yw=zero; zw=zero; lhit=.FALSE.
             ik_min = zero
             tmin = one + epsilon
+            ! If outside block, exit
             IF (b_found > wall%nblocks .or. b_found < 1) EXIT
             b = wall%blocks(b_found)
 
-            IF (lverb_calc) WRITE(6, *) 'True for: ', b_found, b%xmax, b%xmin, b%ymax, b%ymin, b%zmax, b%zmin
+            IF (lverb_calc) WRITE(6, *) 'True for: ', b_found, b%rmax, b%rmin
 
             k1 = 1; k2 = b%nfaces
             ! Check every triangle
@@ -1153,17 +1141,17 @@
                ! get ik by reading face number in block
                ik = b%face(i)
                ! calculate whether or not this line segment ever hits the plane of the triangle
-               alphal = FN(ik,1)*drx + FN(ik,2)*dry + FN(ik,3)*drz
-               betal = FN(ik,1)*x0 + FN(ik,2)*y0 + FN(ik,3)*z0
+               alphal = FN(ik,1)*dr(1) + FN(ik,2)*dr(2) + FN(ik,3)*dr(3)
+               betal = FN(ik,1)*r0(1) + FN(ik,2)*r0(2) + FN(ik,3)*r0(3)
                ! tloc indicated when hit. If hit between r0 and r1, tloc between 0 and 1
                tloc = (d(ik)-betal)/alphal
                IF (tloc > one) CYCLE
                IF (tloc <= zero) CYCLE
                ! If the line segment hits the plane of the triangle
                ! calculate if it actually hits on the triangle
-               V2x = x0 + tloc*drx - A0(ik,1)
-               V2y = y0 + tloc*dry - A0(ik,2)
-               V2z = z0 + tloc*drz - A0(ik,3)
+               V2x = x0 + tloc*dr(1) - A0(ik,1)
+               V2y = y0 + tloc*dr(2) - A0(ik,2)
+               V2z = z0 + tloc*dr(3) - A0(ik,3)
                DOT02l = V0(ik,1)*V2x + V0(ik,2)*V2y + V0(ik,3)*V2z
                DOT12l = V1(ik,1)*V2x + V1(ik,2)*V2y + V1(ik,3)*V2z
                alphal = DOT11(ik)*DOT02l-DOT01(ik)*DOT12l
@@ -1175,100 +1163,59 @@
                   ik_min = ik
                   tmin = tloc
                END IF
-            END DO            
-
-            tDelta(1) = (b%xmax - x0) / drx
-            tDelta(2) = (b%xmin - x0) / drx
-            tDelta(3) = (b%ymax - y0) / dry
-            tDelta(4) = (b%ymin - y0) / dry
-            tDelta(5) = (b%zmax - z0) / drz
-            tDelta(6) = (b%zmin - z0) / drz
-
-            IF (lverb_calc) WRITE(6, *) tmin, drx, dry, drz
-            IF (lverb_calc) WRITE(6, *) tmin, tDelta
-
-            DO i = 1, 6
-               IF (tDelta(i) < zero) tDelta(i) = 1D+20
-               ik = (i - 1) / 2 + 1
-               tcompmask(i) = tDelta(i) > tcomp(ik)
+            END DO
+            
+            ! Check when the line will leave the block
+            DO i=1,3
+               IF (step(i) .eq. 1) THEN
+                  tDelta(i) = (b%rmax(i) - r0(i)) / dr(i)
+               ELSE
+                  tDelta(i) = (b%rmin(i) - r0(i)) / dr(i)
+               END IF
             END DO
 
-            ! check if leaves block before hits. 
-            ! Compare with tcomp to make sure that ray always moves in positive times 
-            i_min = MINLOC(tDelta, 1, tcompmask)
-            IF (lverb_calc) WRITE(6, *) i_min, tcompmask, tcomp
-            SELECT CASE (i_min)
-            CASE (1)
-               IF (tDelta(1) < tmin) THEN
-                  IF (lverb_calc) WRITE(6, *) 'Doing forward x-step'
-                  bx = bx + 1
-                  IF (bx > wall%bx) EXIT               
-                  b_found = b_found + wall%xstep
-                  tcomp(1) = tDelta(1) + epsilon
+            IF (lverb_calc) WRITE(6, *) tmin, dr
+            IF (lverb_calc) WRITE(6, *) tmin, tDelta
+
+            ! Check if leaves block before hits. 
+            ! Compare with tcomp to make sure that ray always moves in positive time direction 
+            IF (ANY(tDelta < tmin .and. tDelta > tcomp)) THEN
+               ! If true, find which direction is smallest time until leave block
+               IF (tDelta(1) < tDelta(2)) THEN
+                  IF (tDelta(1) < tDelta(3)) THEN
+                     i = 1
+                     IF (lverb_calc) WRITE(6, *) 'Doing x-step: ', step(i) 
+                  ELSE 
+                     i = 3
+                     IF (lverb_calc) WRITE(6, *) 'Doing z-step: ', step(i) 
+                  END IF
                ELSE
-                  EXIT
+                  IF (tDelta(2) < tDelta(3)) THEN
+                     i = 2
+                     IF (lverb_calc) WRITE(6, *) 'Doing y-step: ', step(i) 
+                  ELSE
+                     i = 3
+                     IF (lverb_calc) WRITE(6, *) 'Doing z-step: ', step(i) 
+                  END IF
                END IF
-            CASE (2)
-               IF (tDelta(2) < tmin) THEN
-                  IF (lverb_calc) WRITE(6, *) 'Doing backward x-step'
-                  bx = bx - 1
-                  IF (bx < 1) EXIT
-                  b_found = b_found - wall%xstep
-                  tcomp(1) = tDelta(2) + epsilon
-               ELSE
-                  EXIT
-               END IF
-            CASE (3)
-               IF (tDelta(3) < tmin) THEN
-                  IF (lverb_calc) WRITE(6, *) 'Doing forward y-step'
-                  by = by + 1
-                  IF (by > wall%by) EXIT
-                  b_found = b_found + wall%ystep
-                  tcomp(2) = tDelta(3) + epsilon
-               ELSE
-                  EXIT
-               END IF
-            CASE (4)
-               IF (tDelta(4) < tmin) THEN
-                  IF (lverb_calc) WRITE(6, *) 'Doing backward y-step'
-                  by = by - 1
-                  IF (by < 1) EXIT
-                  b_found = b_found - wall%ystep
-                  tcomp(2) = tDelta(4) + epsilon
-               ELSE
-                  EXIT
-               END IF
-            CASE (5)
-               IF (tDelta(5) < tmin) THEN
-                  IF (lverb_calc) WRITE(6, *) 'Doing forward z-step'
-                  bz = bz + 1
-                  IF (bz > wall%bz) EXIT
-                  b_found = b_found + wall%zstep
-                  tcomp(3) = tDelta(5) + epsilon
-               ELSE
-                  EXIT
-               END IF
-            CASE (6)
-               IF (tDelta(6) < tmin) THEN
-                  IF (lverb_calc) WRITE(6, *) 'Doing backward z-step'
-                  bz = bz - 1
-                  IF (bz < 1) EXIT
-                  b_found = b_found - wall%zstep
-                  tcomp(3) = tDelta(6) + epsilon
-               ELSE
-                  EXIT
-               END IF
-            CASE DEFAULT
+               ! Having found exit direction, step in that direction
+               br(i) = br(i) + step(i)
+               ! If leave grid, exit
+               IF (br(i) > wall%br(i) .or. br(i) < 1) EXIT    
+               b_found = b_found + wall%step(i) * step(i)
+               tcomp(i) = tDelta(i) + epsilon
+            ELSE 
+               ! If none smaller than hit time, exit loop. Hit found.
                EXIT
-            END SELECT
+            END IF
          END DO
 
          ! if any index stored, hit was found, calculate location and increment ihit_array
          IF (ik_min > zero) THEN
             lhit = .TRUE.
-            xw   = x0 + tmin*drx
-            yw   = y0 + tmin*dry
-            zw   = z0 + tmin*drz
+            xw   = x0 + tmin*dr(1)
+            yw   = y0 + tmin*dr(2)
+            zw   = z0 + tmin*dr(3)
             ihit_array(ik_min) = ihit_array(ik_min) + 1
          END IF
       ! Unaccelerated method
@@ -1280,7 +1227,7 @@
          ! Source: https://graphics.stanford.edu/courses/cs348b-98/gg/intersect.html
          DO ik = k1,k2
             ! calculate whether or not this line segment ever hits the plane of the triangle
-            alphal = FN(ik,1)*drx + FN(ik,2)*dry + FN(ik,3)*drz
+            alphal = FN(ik,1)*dr(1) + FN(ik,2)*dr(2) + FN(ik,3)*dr(3)
             betal = FN(ik,1)*x0 + FN(ik,2)*y0 + FN(ik,3)*z0
             ! tloc indicated when hit. If hit between r0 and r1, tloc between 0 and 1
             tloc = (d(ik)-betal)/alphal
@@ -1288,9 +1235,9 @@
             IF (tloc <= zero) CYCLE
             ! If the line segment hits the plane of the triangle
             ! calculate if it actually hits on the triangle
-            V2x = x0 + tloc*drx - A0(ik,1)
-            V2y = y0 + tloc*dry - A0(ik,2)
-            V2z = z0 + tloc*drz - A0(ik,3)
+            V2x = x0 + tloc*dr(1) - A0(ik,1)
+            V2y = y0 + tloc*dr(2) - A0(ik,2)
+            V2z = z0 + tloc*dr(3) - A0(ik,3)
             DOT02l = V0(ik,1)*V2x + V0(ik,2)*V2y + V0(ik,3)*V2z
             DOT12l = V1(ik,1)*V2x + V1(ik,2)*V2y + V1(ik,3)*V2z
             alphal = DOT11(ik)*DOT02l-DOT01(ik)*DOT12l
@@ -1306,9 +1253,9 @@
          ! if any index stored, hit was found, calculate location and increment ihit_array
          IF (ik_min > zero) THEN
             lhit = .TRUE.
-            xw   = x0 + tmin*drx
-            yw   = y0 + tmin*dry
-            zw   = z0 + tmin*drz
+            xw   = x0 + tmin*dr(1)
+            yw   = y0 + tmin*dr(2)
+            zw   = z0 + tmin*dr(3)
             ihit_array(ik_min) = ihit_array(ik_min) + 1
          END IF
       END IF
