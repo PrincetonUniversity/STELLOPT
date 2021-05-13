@@ -50,8 +50,10 @@
                vals(mtargets)    = KNOSOS_snu(ik)
             ELSE IF(jtarget_knosos.EQ.jtarget_knosos_sbp) THEN
                vals(mtargets)    = KNOSOS_sbp(ik)
-            ELSE IF(jtarget_knosos.EQ.jtarget_knosos_fic) THEN
-               vals(mtargets)    = KNOSOS_fic(ik)
+            ELSE IF(jtarget_knosos.EQ.jtarget_knosos_gmc) THEN
+               vals(mtargets)    = KNOSOS_gmc(ik)
+            ELSE IF(jtarget_knosos.EQ.jtarget_knosos_gma) THEN
+               vals(mtargets)    = KNOSOS_gma(ik)
             ELSE IF(jtarget_knosos.EQ.jtarget_knosos_qer) THEN
                vals(mtargets)    = KNOSOS_qer(ik)
             ELSE IF(jtarget_knosos.EQ.jtarget_knosos_vbt) THEN

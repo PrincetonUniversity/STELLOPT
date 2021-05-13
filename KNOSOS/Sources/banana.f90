@@ -181,8 +181,8 @@ SUBROUTINE CALC_B0
   LOGICAL shift_twopi
   INTEGER iz,iz0,it,ieta,iturn,ibranch,imat,ipar,n,m,np1,mp1,fint
   INTEGER izmin(npt),hel_N,hel_M
-  REAL*8 Bmax,epsilon,iotat,dist,distb
-  REAL*8 Bmax_th(npt),Bmin_th(npt),val_B(nsurf),Bzt(npt,npt),B0(npt,npt),B0zt(npt,npt),Bg(npt),Btemp
+  REAL*8 epsilon,iotat,dist,distb
+  REAL*8 Bmax_th(npt),Bmin_th(npt),val_B(nsurf),Bzt(npt,npt),B0(npt,npt),B0zt(npt,npt),Bg(npt)!,Btemp
   REAL*8 Bmax_var,Bmin_var
   REAL*8 val_eta(nsurf),zeta(npt),theta(npt),temp(npt),zetat(npt,npt),zetal(nsurf,npt),zeta0(npt,npt)
   !Matrix

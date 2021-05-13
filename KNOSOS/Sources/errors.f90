@@ -4,7 +4,7 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-SUBROUTINE INIT_RANDOMSEED()
+SUBROUTINE INIT_RANDOMSEED(manual_seed)
 
 !----------------------------------------------------------------------------------------------- 
 !Initialize the random number generator
@@ -13,27 +13,29 @@ SUBROUTINE INIT_RANDOMSEED()
   USE GLOBAL
   IMPLICIT NONE
 
-  INTEGER i,n!,clock
-  REAL dummy,rand
+  INTEGER i,n,manual_seed!,clock
+  REAL dummy
+!#ifdef MPIandPETSc
+!  INCLUDE "mpif.h"
+!#endif
 
+  IF(ALLOCATED(seed)) DEALLOCATE(seed)
   CALL RANDOM_SEED(size=n)
   ALLOCATE(seed(n))
+  seed=11111111*(1+manual_seed)
 !  CALL SYSTEM_CLOCK(COUNT=clock)
-!  seed=clock+37*(/(i-1,i=1,n)/)
-  OPEN(89,FILE='/dev/urandom',ACCESS='stream',FORM='UNFORMATTED')
-  DO i=0,myrank*myrank !make sure different seeds are generated
-     READ(89) seed
+  !  seed=clock+37*(/(i-1,i=1,n)/)
+  IF(RSEED) THEN
+     OPEN(89,FILE='/dev/urandom',ACCESS='stream',FORM='UNFORMATTED')
+     DO i=0,myrank*myrank+111 !make sure different seeds are generated
+        READ(89) seed
+     END DO
+     CLOSE(89)
+  END IF
+  CALL RANDOM_SEED(PUT=seed)
+  DO i=1,111*(1+manual_seed)
+     CALL RANDOM_NUMBER(dummy)
   END DO
-  CLOSE(89)
-#ifdef MPIandPETSc
-  dummy=rand(seed)
-  CALL RANDOM_SEED(PUT = seed)
-  dummy=rand(seed)
-#else
-  dummy=rand(seed(1))
-  CALL RANDOM_SEED(PUT = seed)
-  dummy=rand(seed(1))
-#endif
 
 END SUBROUTINE INIT_RANDOMSEED
 
@@ -55,15 +57,17 @@ REAL*8 FUNCTION RGAUSS(sigma)
   REAL*8 sigma
   !Others
   REAL*8 x1,x2,w,y1,y2
-  REAL rand
+  REAL*8 ran
 
   rgauss=0
   IF(sigma.LT.0) RETURN
   !  CALL RANDOM_SEED()
   w=10
   DO WHILE (w.GE.1.0.OR.w.EQ.0)
-     x1=2.0*rand(0)-1.0
-     x2=2.0*rand(0)-1.0
+     CALL RANDOM_NUMBER(ran)
+     x1=2.0*ran-1.0
+     CALL RANDOM_NUMBER(ran)
+     x2=2.0*ran-1.0
      w=x1*x1+x2*x2
   END DO
 
@@ -169,6 +173,41 @@ SUBROUTINE AVERAGE_SAMPLES(nbb,ns,s,Epsi,Gb,Qb)
 END SUBROUTINE AVERAGE_SAMPLES
 
 
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+REAL*8 FUNCTION REL_DIST(q1,q2)
+
+  USE GLOBAL
+  IMPLICIT NONE  
+  !Input
+  REAL*8 q1,q2
+
+  rel_dist=MAX(ABS(q1/q2-1),ABS(q2/q1-1))
+  
+END FUNCTION REL_DIST
+  
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+LOGICAL FUNCTION CONVERGED_Q(q1,q2,prec)
+
+  USE GLOBAL
+  IMPLICIT NONE  
+  !Input
+  REAL*8 q1,q2,prec
+  !Others
+  REAL*8 REL_DIST
+
+  converged_q=REL_DIST(q1,q2).LT.prec
+  
+END FUNCTION CONVERGED_Q
+  
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
 

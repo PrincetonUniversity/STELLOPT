@@ -32,6 +32,10 @@ errors.o : \
 	global.o
 
 
+fast_ion_confinement.o : \
+	global.o
+
+
 input.o : \
 	global.o
 

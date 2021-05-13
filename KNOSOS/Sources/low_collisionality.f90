@@ -1,4 +1,3 @@
-
 !Calculate neoclassical transport at low collisionalities
 !Include 1/nu,sqrtnu and superbanana-plateau; do not need splitting B=B_0+delta*B_1
 
@@ -40,8 +39,11 @@ SUBROUTINE CALC_LOW_COLLISIONALITY(jv,Epsi,phi1c,Mbbnm,trMnm,D11,&
         CONVERGED=.TRUE.
      END IF
      !Write monoenergetic transport coefficients using DKES normalization
-     CALL CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
-          & D11,nalphab,zeta,theta,dn1dv,dn1nm)
+     nalphab=-1
+     DO WHILE(nalphab.LT.0) 
+        CALL CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
+             & D11,nalphab,zeta,theta,dn1dv,dn1nm)
+     END DO
      IF(.NOT.KNOSOS_STELLOPT) WRITE(200+myrank,'(3(1pe13.5)," NaN ",2(1pe13.5)," &
           & NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN")') &
           & nu(jv)/v(jv)/2.,Epsi/v(jv)*psip,vmconst(jv)/v(jv),fdkes(jv)*D11(1,1),fdkes(jv)*D11(1,1)
@@ -159,7 +161,7 @@ SUBROUTINE CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
   !Alpha neighbours
   REAL*8, ALLOCATABLE, SAVE :: zlw(:),zrw(:)
   REAL*8, ALLOCATABLE       :: tlw(:),trw(:)
-  INTEGER ipoint,ila,il,ia
+  INTEGER ipoint,ila,jla,il,ia
 !!$  !Second adiabatic invariant
 !!$  LOGICAL, ALLOCATABLE :: readpoint(:)
 !!$  INTEGER ja,ia,il
@@ -220,7 +222,7 @@ SUBROUTINE CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
 
   IF(PHI1_READ) bnmc0=bnmc0+2*borbic(0,0)*phi1c/vdconst(jv) 
 
- !Find and characterize wells
+  !Find and characterize wells
   ALLOCATE(connected(nwx,nwx),bottom(nwx),&
        & z1(nwx),t1(nwx),B1(nwx),hBpp1(nwx),vd1(nqv,nwx),&
        & zb(nwx),tb(nwx),Bb(nwx),hBppb(nwx),vdb(nqv,nwx),&
@@ -279,14 +281,26 @@ SUBROUTINE CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
 
   CALL EXCLUDE_WELLS(na,nalpha,nalphab,nw,bottom,connected,&
        & alphap_w,z1,zb,z2,Bb,Bt,zetax,thetax)
-  
-  IF(ALLOCATED(lambda)) DEALLOCATE(lambda,i_p)
-  ALLOCATE(lambda(nlambda),one_o_lambda(nlambda),i_p(nlambda,nalpha,nalphab))
 
   !Set global grid in lambda
+  IF(ALLOCATED(lambda)) DEALLOCATE(lambda,i_p)
+  ALLOCATE(lambda(nlambdax),one_o_lambda(nlambdax))
   CALL CREATE_LAMBDA_GRID(nlambda,nw,Bb,Bt,&
-       & lambdab_w,lambdac_w,lambdac,dlambdap,lambda,one_o_lambda) 
-
+       & lambdab_w,lambdac_w,lambdac,dlambdap,lambda,one_o_lambda)
+  !Resize arrays (nlambdax->nlambda)
+  ALLOCATE(temp(nlambda))
+  temp=lambda(1:nlambda);      DEALLOCATE(lambda);      ALLOCATE(lambda(nlambda));      lambda=temp
+  temp=one_o_lambda(1:nlambda);DEALLOCATE(one_o_lambda);ALLOCATE(one_o_lambda(nlambda));one_o_lambda=temp
+  DEALLOCATE(temp)
+  ALLOCATE(i_p(nlambda,nalpha,nalphab))
+  IF(LJMAP.GT.0) THEN
+     jla=1
+     DO ila=2,nlambda
+        IF(ABS(lambda(ila)-LJMAP).LT.ABS(lambda(jla)-LJMAP)) jla=ila
+     END DO
+     lambda(jla)=LJMAP
+  END IF
+  
   !For each point in the (zeta,theta) grid, determine well and absolute point
   !For each absolute point, determine alpha, lambda and well number
   IF(ALLOCATED(i_l)) DEALLOCATE(i_l)
@@ -306,19 +320,19 @@ SUBROUTINE CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
           & i_p_ap1I,i_p_ap1II,i_p_ap2I,i_p_ap2II,i_p_ap2III,i_p_ap2IV,&
           & i_p_am1I,i_p_am1II,i_p_am2I,i_p_am2II,i_p_am2III,i_p_am2IV,&
           & wm1I,wm1II,wm2I,wm2II,wm2III,wm2IV,wp1I,wp1II,wp2I,wp2II,wp2III,wp2IV)
-#ifdef MPIandPETSc
-     CALL MatDestroy(matCOL,ierr)
-     CALL MatDestroy(matVEAf,ierr)
-     CALL MatDestroy(matVEAb,ierr)
-     IF(CALC_DIFF) THEN
-        CALL MatDestroy(matDIFf,ierr)
-        CALL MatDestroy(matDIFb,ierr)
-     END IF
-     IF(TANG_VM) THEN
-        CALL MatDestroy(matVMAf,ierr)
-        CALL MatDestroy(matVMAb,ierr)
-     END IF
-#endif
+!!$#ifdef MPIandPETSc
+!!$     CALL MatDestroy(matCOL,ierr)
+!!$     CALL MatDestroy(matVEAf,ierr)
+!!$     CALL MatDestroy(matVEAb,ierr)
+!!$     IF(CALC_DIFF) THEN
+!!$        CALL MatDestroy(matDIFf,ierr)
+!!$        CALL MatDestroy(matDIFb,ierr)
+!!$     END IF
+!!$     IF(TANG_VM) THEN
+!!$        CALL MatDestroy(matVMAf,ierr)
+!!$        CALL MatDestroy(matVMAb,ierr)
+!!$     END IF
+!!$#endif
   END IF
   ALLOCATE(nbif(npoint),i_p_ap1(npoint),i_p_am1(npoint),i_p_ap2(npoint),i_p_am2(npoint))
   ALLOCATE(i_p_lm1(npoint),i_p_lp1(nbifx,npoint))
@@ -348,7 +362,7 @@ SUBROUTINE CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
   IF(DEBUG) THEN
      DO ia=1,nalpha
         DO il=1,nalphab
-           WRITE(3000+myrank,'(6(1pe13.5),2I5)') zetap(il),thetap(ia,il),&
+           WRITE(3000+myrank,'(6(1pe13.5),2I5,1pe23.15)') zetap(il),thetap(ia,il),&
                 &  zetax(ia,il),thetax(ia,il),alphap(ia),B_al(ia,il),ia,il
         END DO
      END DO
@@ -390,36 +404,7 @@ SUBROUTINE CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
                  &  nlambda,lambda,zlw,tlw,zrw,trw,& 
                  &  BI1,BI2,BI3,BI4,BI5,BI6,BI7,Nnmp,BI8)
 
-  IF(KN_STELLOPT(4)) THEN
-     IF(ALLOCATED(gint)) DEALLOCATE(gint)
-     ALLOCATE(gint(npoint,Nnmp))
-     gint=0
-     gint(:,1)=2.0*ATAN(BI3/BI4/atorflux)/PI
-     gint(:,1)=gint(:,1)*gint(:,1)
-     CALL INTEGRATE_G(nalpha,nalphab,nlambda,lambda,i_p,npoint,gint,.TRUE., &
-          & zetap,thetap,theta(1:nalphab),B_al,vds_al,D11,dn1dv(1:nalphab,1:nalphab),dn1nm)
-     KN_FIC=D11(1,1)
-     D11=0
-     IF(.NOT.KN_STELLOPT(1)) RETURN
-  END IF
-!!$  ALLOCATE(Jnorm(nlambda,nalpha))
-!!$  ALLOCATE(readpoint(npoint)) 
-!!$  Jnorm=0
-!!$  DO ila=1,nlambda
-!!$     DO ia=1,na
-!!$        readpoint=.FALSE.
-!!$        DO ja=ia,nalpha,na
-!!$           DO il=1,nalphab
-!!$              ipoint=i_p(ila,ja,il)
-!!$              IF(readpoint(ipoint)) CYCLE
-!!$              Jnorm(ila,ia)=Jnorm(ila,ia)+BI6(ipoint)
-!!$              readpoint(ipoint)=.TRUE.
-!!$           END DO
-!!$        END DO
-!!$     END DO
-!!$  END DO
-
-    !Put longest well first
+  !Put longest well first
   DO ipoint=2,npoint
      imax=0
      dzmax=0
@@ -699,12 +684,13 @@ SUBROUTINE CALC_LOW_COLLISIONALITY_NANL(nal,nlambda,jv,Epsi,phi1c,Mbbnm,trMnm,&
   END IF
 
   !Calculate dn_1dv and D_{11} integrating it the velocity space and taking the flux-surface-average
-  IF(GEN_FLAG(4)) THEN
-     CALL INTEGRATE_G(nalpha,nalphab,nlambda,lambda,i_p,npoint,gint,.FALSE., &
-          & zetap,thetap,theta(1:nalphab),B_al,vds_al,D11,dn1dv(1:nalphab,1:nalphab),dn1nm)
-  ELSE
+
+  IF(INT_G_NEW) THEN        
      CALL INTEGRATE_G_NEW(nalpha,nalphab,nlambda,lambda,i_p,npoint,gint(:,1),.FALSE., &
           & thetap,B_al,vds_al(1,:,:),D11(1,1))
+  ELSE
+     CALL INTEGRATE_G(nalpha,nalphab,nlambda,lambda,i_p,npoint,gint,.FALSE., &
+          & zetap,thetap,theta(1:nalphab),B_al,vds_al,D11,dn1dv(1:nalphab,1:nalphab),dn1nm)
   END IF
      
   IF(.NOT.PHI1_READ.OR..NOT.IMP1NU) THEN
@@ -1082,10 +1068,10 @@ SUBROUTINE CREATE_ANGULAR_GRID(na,nalpha,nalphab,alphap,dalphap,offset,&
      alphap(ia)=thetap(ia,1)-iota*zetap(1)  !...alpha has the correct sign
   END DO
 
-  IF(NTURN.EQ.2) THEN
-     dalphap(2)=thetap(nalpha/NTURN+1,1)-thetap(1,1)
-     dalphap(3)=thetap(2,1)-thetap(nalpha/NTURN+1,1)
-  END IF
+!  IF(NTURN.EQ.2) THEN
+!     dalphap(2)=thetap(nalpha/NTURN+1,1)-thetap(1,1)
+!     dalphap(3)=thetap(2,1)-thetap(nalpha/NTURN+1,1)
+!  END IF
 
   CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
 
@@ -1205,32 +1191,62 @@ SUBROUTINE CREATE_LAMBDA_GRID(nlambda,nw,Bb,Bt,&
   INTEGER nlambda,nw
   REAL*8 Bb(nw),Bt(nw)
   !Output
-  REAL*8 lambdab_w(nw),lambdac_w(nw),lambdac,dlambdap,lambda(nlambda),one_o_lambda(nlambda)
+  REAL*8 lambdab_w(nw),lambdac_w(nw),lambdac,dlambdap,lambda(nlambdax),one_o_lambda(nlambdax)
+!  REAL*8 lambdab_w(nw),lambdac_w(nw),lambdac,dlambdap,lambda(nlambda),one_o_lambda(nlambda)
   !Others
   CHARACTER*100 serr
   LOGICAL passing
-  INTEGER ila,iw
-  REAL*8 lambdab,B1,B2,dummy,vdummy(Nnmp),dlambda(nlambda),fact
+  INTEGER iw,ila!,jla
+  REAL*8 lambdab,B1,B2,dummy,vdummy(Nnmp),dlambda(nlambdax),fact
+  REAL*8 glambdac,glambdab
   !Time
   CHARACTER*30, PARAMETER :: routine="CREATE_LAMBDA_GRID"
   INTEGER, SAVE :: ntotal=0
   REAL*8,  SAVE :: ttotal=0
   REAL*8,  SAVE :: t0=0
   REAL*8 tstart
-
+#ifdef MPIandPETSc
+  INCLUDE "mpif.h"
+  INTEGER ierr
+!  REAL*8 la(2,1)
+#endif
+  
   CALL CPU_TIME(tstart)
-
+  
   !Create uniform grid
   lambdab_w=1./Bb
   lambdab=MAXVAL(lambdab_w)
   lambdac_w=1./Bt
-  lambdac=MINVAL(lambdac_w)+PREC_EXTR
-  dlambdap=(lambdab-lambdac)/nlambda
-  DO ila=1,nlambda
-     lambda(ila)=lambdac+(ila-1)*dlambdap
+  lambdac=MINVAL(lambdac_w)
+  glambdac=lambdac+PREC_EXTR
+  glambdab=lambdab
+
+  IF(GLOBALFI) THEN
+#ifdef MPIandPETSc
+!!$     la(2,1)=myrank
+!!$     la(1,1)=lambdac
+!!$     CALL MPI_ALLREDUCE(MPI_IN_PLACE,la,1,MPI_DOUBLE_INT, MPI_MINLOC,MPI_COMM_WORLD,ierr)
+!!$     glambdac=la(1,1)
+!!$     la(1,1)=lambdab
+!!$     CALL MPI_ALLREDUCE(MPI_IN_PLACE,la,1,MPI_DOUBLE_INT, MPI_MAXLOC,MPI_COMM_WORLD,ierr)
+!!$     glambdab=la(1,1)
+     CALL MPI_BCAST(glambdac,1,MPI_REAL8,12,MPI_COMM_WORLD,ierr)
+     CALL MPI_BCAST(glambdab,1,MPI_REAL8,12,MPI_COMM_WORLD,ierr)     
+#endif
+     dlambdap=(glambdab-glambdac)/nlambda
+     lambda(1)=glambdac+INT((lambdac-glambdac)/dlambdap)*dlambdap
+     IF(lambda(1).LT.lambdac) lambda(1)=lambda(1)+dlambdap
+     nlambda=(lambdab-lambdac+ALMOST_ZERO)/dlambdap
+  ELSE
+     lambda(1)=glambdac
+     dlambdap=(lambdab-lambdac)/nlambda
+  END IF
+  DO ila=2,nlambda
+     lambda(ila)=lambda(1)+(ila-1)*dlambdap
   END DO
+
   !Change to grid that is thinner closer to lambda
-  IF(ILAGRID) THEN
+  IF(ILAGRID.AND..NOT.GLOBALFI) THEN
      lambda(1) =lambdac  
      dlambda(1)=PREC_B*lambdac*lambdac
      DO ila=2,nlambda
@@ -1341,6 +1357,7 @@ SUBROUTINE LABEL_GRIDPOINTS(nalpha,nalphab,nlambda,nw,bottom,connected,&
            i_p(1,ia,il)=1
         END DO
      END DO
+     i_p(1,:,:)=1
      i_l(1)=1
      dist=0
      DO iw=1,nw
@@ -1645,6 +1662,21 @@ SUBROUTINE FIND_ALPHA_NEIGHBOURS(npoint,i_p,i_w,i_l,i_p_lm1,i_p_lp1,nbifx,nbif,z
      END DO
   END IF
 
+!!$    DO ial=1,nalpha
+!!$     iap1=ial+1
+!!$     IF(iap1.GT.nalpha) iap1=1
+!!$     iam1=ial-1
+!!$     IF(iam1.LT.1) iam1=nalpha
+!!$     DO il=1,nalphab
+!!$        DO ila=1,nlambda
+!!$           ipoint=i_p(ila,ial,il)
+!!$           IF(ipoint.EQ.0) CYCLE
+!!$           dalpha_ap1(ipoint)=thetap(iap1,1)-thetap(ial,1)
+!!$           dalpha_am1(ipoint)=thetap(ial,1)-thetap(iam1,1)
+!!$        END DO
+!!$     END DO
+!!$  END DO
+  
   !For each point in the (zeta,theta) grid, determine two neighbours in alpha
   i_p_ap1=0
   i_p_am1=0
@@ -2090,7 +2122,7 @@ SUBROUTINE FIND_ALPHA_NEIGHBOURS(npoint,i_p,i_w,i_l,i_p_lm1,i_p_lp1,nbifx,nbif,z
   END DO
   
   !Look for value of dalpha at other values of lambda
-123  DO ipoint=2,npoint
+123 DO ipoint=2,npoint
      IF(dalpha_am1(ipoint).LT.PREC_EXTR) THEN
         jpoint=ipoint
         DO ila=i_l(ipoint),nlambda
@@ -2105,6 +2137,7 @@ SUBROUTINE FIND_ALPHA_NEIGHBOURS(npoint,i_p,i_w,i_l,i_p_lm1,i_p_lp1,nbifx,nbif,z
         DO ila=1,i_l(ipoint)
            IF(dalpha_am1(ipoint).GT.PREC_EXTR) EXIT
            jpoint=i_p_lm1(jpoint)
+           IF(jpoint.EQ.0) EXIT
            IF(dalpha_am1(jpoint).GT.PREC_EXTR) THEN
               dalpha_am1(ipoint)=dalpha_am1(jpoint)
               EXIT
@@ -2125,6 +2158,7 @@ SUBROUTINE FIND_ALPHA_NEIGHBOURS(npoint,i_p,i_w,i_l,i_p_lm1,i_p_lp1,nbifx,nbif,z
         DO ila=1,i_l(ipoint)
            IF(dalpha_ap1(ipoint).GT.PREC_EXTR) EXIT
            jpoint=i_p_lm1(jpoint)
+           IF(jpoint.EQ.0) EXIT
            IF(dalpha_ap1(jpoint).GT.PREC_EXTR) THEN
               dalpha_ap1(ipoint)=dalpha_ap1(jpoint)
               EXIT
@@ -2198,14 +2232,14 @@ SUBROUTINE FIND_ALPHA_NEIGHBOURS(npoint,i_p,i_w,i_l,i_p_lm1,i_p_lp1,nbifx,nbif,z
 !     IF(ABS(wm1I(ipoint)).LT.ALMOST_ZERO) WRITE(iout,*) ipoint,i_p_lp1(1,ipoint),i_p_lm1(ipoint)
 !     IF(ABS(wp1I(ipoint)).LT.ALMOST_ZERO) WRITE(iout,*) -ipoint,i_p_lp1(1,ipoint),i_p_lm1(ipoint)
      DO ipoint=2,npoint
-        WRITE(3400+myrank,'(2I6,1pe23.15,2I6,1pe23.15,2I6,2(1pe23.15))') &
+        WRITE(3400+myrank,'(2I6,1pe23.15,2I6,1pe23.15,2I6,20(1pe23.15))') &
              & -ipoint          ,i_l(ipoint)          ,BI6(ipoint),&
              & i_p_am1I(ipoint) ,i_l(i_p_am1I(ipoint)) ,BI6(i_p_am1I(ipoint)),&
-             & i_p_am1II(ipoint),i_l(i_p_am1II(ipoint)),BI6(i_p_am1II(ipoint)),wm1I(ipoint)
-        WRITE(3400+myrank,'(2I6,1pe23.15,2I6,1pe23.15,2I6,2(1pe23.15))') &
+             & i_p_am1II(ipoint),i_l(i_p_am1II(ipoint)),BI6(i_p_am1II(ipoint)),wm1I(ipoint),dalpha_am1(ipoint)
+        WRITE(3400+myrank,'(2I6,1pe23.15,2I6,1pe23.15,2I6,20(1pe23.15))') &
              & ipoint           ,i_l(ipoint)          ,BI6(ipoint),&
              & i_p_ap1I(ipoint) ,i_l(i_p_ap1I(ipoint)) ,BI6(i_p_ap1I(ipoint)),&
-             & i_p_ap1II(ipoint),i_l(i_p_ap1II(ipoint)),BI6(i_p_ap1II(ipoint)),wp1I(ipoint)
+             & i_p_ap1II(ipoint),i_l(i_p_ap1II(ipoint)),BI6(i_p_ap1II(ipoint)),wp1I(ipoint),dalpha_ap1(ipoint)
      END DO
      CALL FLUSH(3400+myrank)
   END IF
@@ -2293,7 +2327,8 @@ SUBROUTINE COEFFICIENTS_DKE(npoint,i_w,i_l,nw,z1,t1,B1,hBpp1,vd1,&
   REAL*8 BI1(npoint),BI2(npoint),BI3(npoint),BI4(npoint),BI5(npoint),BI6(npoint),BI7(npoint)
   REAL*8 BI8(npoint,nmodes)
   !Others
-  INTEGER ipoint,iw,ila,nq
+  INTEGER ipoint,iw,ila,nq!,nav(nlambda)
+!  REAL*8 BI4av(nlambda)
   REAL*8, ALLOCATABLE :: Q(:)
   !Time
   CHARACTER*30, PARAMETER :: routine="COEFFICIENTS_DKE"
@@ -2308,6 +2343,8 @@ SUBROUTINE COEFFICIENTS_DKE(npoint,i_w,i_l,nw,z1,t1,B1,hBpp1,vd1,&
   IF(SOLVE_QN) nq=nq+nmodes
   ALLOCATE(Q(nq))
 
+!!$  BI4av=0
+!!$  nav=0
   DO ipoint=1,npoint
      iw =i_w(ipoint)
      ila=i_l(ipoint)
@@ -2328,9 +2365,19 @@ SUBROUTINE COEFFICIENTS_DKE(npoint,i_w,i_l,nw,z1,t1,B1,hBpp1,vd1,&
           &  ipoint,ila,iw,BI1(ipoint),BI2(ipoint),BI3(ipoint),&
           &  BI4(ipoint),BI5(ipoint),BI6(ipoint),BI7(ipoint),BI8(ipoint,1),&
           & npoint,zlw(ipoint),tlw(ipoint),zrw(ipoint),trw(ipoint)
+!!$     BI4av(ila)=BI4av(ila)+BI4(ipoint)
+!!$     nav(ila)  =nav(ila)+1
   END DO
-  IF(DEBUG) CALL FLUSH(3100+myrank)
-
+!!$  DO ipoint=1,npoint
+!!$     ila=i_l(ipoint)
+!!$     IF(nav(ila).EQ.0) nav(ila)=1
+!!$     BI4(ipoint)=BI4av(ila)/nav(ila)
+!!$     WRITE(3100+myrank,'(3I6,8(1pe13.5),I5,4(1pe13.5))') &
+!!$          &  ipoint,ila,iw,BI1(ipoint),BI2(ipoint),BI3(ipoint),&
+!!$          &  BI4(ipoint),BI5(ipoint),BI6(ipoint),BI7(ipoint),BI8(ipoint,1),&
+!!$          & npoint,zlw(ipoint),tlw(ipoint),zrw(ipoint),trw(ipoint)
+!!$  END DO
+  
   CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
 
 END SUBROUTINE COEFFICIENTS_DKE
@@ -2381,6 +2428,20 @@ SUBROUTINE INIT_LINEAR_PROBLEM(npoint,nnz,matCOL,matVEAf,matVEAb,matVMAf,matVMAb
   CALL CPU_TIME(tstart)
 
   npoint_ps=npoint
+
+  IF(ntotal.NE.0) THEN
+     CALL MatDestroy(matCOL,ierr)
+     CALL MatDestroy(matVEAf,ierr)
+     CALL MatDestroy(matVEAb,ierr)
+     IF(CALC_DIFF) THEN
+        CALL MatDestroy(matDIFf,ierr)
+        CALL MatDestroy(matDIFb,ierr)
+     END IF
+     IF(TANG_VM) THEN
+        CALL MatDestroy(matVMAf,ierr)
+        CALL MatDestroy(matVMAb,ierr)
+     END IF
+  END IF
   
   !Number of non-zero elements per row
   DO iz=1,npoint
@@ -2545,7 +2606,7 @@ SUBROUTINE FILL_DKE_ROW(ipoint,npoint,&
 !  REAL*8 tstart
 
 !  CALL CPU_TIME(tstart)
-
+  
   j_p_lm1=i_p_lm1(ipoint)
   IF(j_p_lm1.EQ.1.AND.i_p_lp1(1,ipoint).EQ.0) THEN
      WRITE(serr,"(A7,I5,A9)") "Orbit ",ipoint, " isolated"
@@ -2685,166 +2746,87 @@ SUBROUTINE FILL_DKE_ROW(ipoint,npoint,&
   !d_psi J d_alpha g
   IF(nnz.NE.1) THEN
      d=BI5
-     IF(CENTERED_ALPHA) THEN
-        denom=dalpha_ap1+dalpha_am1
-        matVEAf(i_p_ap1I)  =wp1I  *( d/denom)
-        matVEAf(i_p_ap1II) =wp1II *( d/denom)
-        matVEAf(i_p_am1I)  =wm1I  *(-d/denom)
-        matVEAf(i_p_am1II) =wm1II *(-d/denom)
-        matVEAb(i_p_ap1I)  =wp1I  *( d/denom)
-        matVEAb(i_p_ap1II) =wp1II *( d/denom)
-        matVEAb(i_p_am1I)  =wm1I  *(-d/denom)
-        matVEAb(i_p_am1II) =wm1II *(-d/denom)
-        
-!!$        denom=7*(dalpha_ap1+dalpha_am1)-dalpha_ap2-dalpha_am2
-!!$        matVEAf(i_p_ap2I)  =wp2I  *(  -d/denom)
-!!$        matVEAf(i_p_ap2II) =wp2II *(  -d/denom)
-!!$        matVEAf(i_p_ap2III)=wp2III*(  -d/denom)
-!!$        matVEAf(i_p_ap2IV) =wp2IV *(  -d/denom)
-!!$        matVEAf(i_p_ap1I)  =wp1I  *(+8*d/denom)
-!!$        matVEAf(i_p_ap1II) =wp1II *(+8*d/denom)
-!!$        matVEAf(i_p_am1I)  =wm1I  *(-8*d/denom)
-!!$        matVEAf(i_p_am1II) =wm1II *(-8*d/denom)
-!!$        matVEAf(i_p_am2I)  =wm2I  *(  +d/denom)
-!!$        matVEAf(i_p_am2II) =wm2II *(  +d/denom)
-!!$        matVEAf(i_p_am2III)=wm2III*(  +d/denom)
-!!$        matVEAf(i_p_am2IV) =wm2IV *(  +d/denom)
-!!$        matVEAb(i_p_ap2I)  =wp2I  *(  -d/denom)
-!!$        matVEAb(i_p_ap2II) =wp2II *(  -d/denom)
-!!$        matVEAb(i_p_ap2III)=wp2III*(  -d/denom)
-!!$        matVEAb(i_p_ap2IV) =wp2IV *(  -d/denom)
-!!$        matVEAb(i_p_ap1I)  =wp1I  *(+8*d/denom)
-!!$        matVEAb(i_p_ap1II) =wp1II *(+8*d/denom)
-!!$        matVEAb(i_p_am1I)  =wm1I  *(-8*d/denom)
-!!$        matVEAb(i_p_am1II) =wm1II *(-8*d/denom)
-!!$        matVEAb(i_p_am2I)  =wm2I  *(  +d/denom)
-!!$        matVEAb(i_p_am2II) =wm2II *(  +d/denom)
-!!$        matVEAb(i_p_am2III)=wm2III*(  +d/denom)
-!!$        matVEAb(i_p_am2IV) =wm2IV *(  +d/denom)
+!!$     ELSE IF(SECOND_ORDER_ALPHA.AND.i_p_ap2I.NE.0) THEN
+!!$           denom=dalpha_ap1*dalpha_ap2*(dalpha_ap1+dalpha_ap2)
+!!$           matVEAf(i_p_ap2I  )=wp2I  *(-d*dalpha_ap1*dalpha_ap1/denom)
+!!$           matVEAf(i_p_ap2II )=wp2II *(-d*dalpha_ap1*dalpha_ap1/denom)
+!!$           matVEAf(i_p_ap2III)=wp2III*(-d*dalpha_ap1*dalpha_ap1/denom)
+!!$           matVEAf(i_p_ap2IV )=wp2IV *(-d*dalpha_ap1*dalpha_ap1/denom)
+!!$           matVEAf(i_p_ap1I )=wp1I* (+d*(dalpha_ap1+dalpha_ap2)*&
+!!$                & (dalpha_ap1+dalpha_ap2)/denom)
+!!$           matVEAf(i_p_ap1II)=wp1II*(+d*(dalpha_ap1+dalpha_ap2)*&
+!!$                & (dalpha_ap1+dalpha_ap2)/denom)                      
+!!$           matVEAf(ipoint )=+d*&
+!!$                & (dalpha_ap1*dalpha_ap1-(dalpha_ap1+dalpha_ap2)*(dalpha_ap1+dalpha_ap2))&
+!!$                & /denom
+!!$        IF(SECOND_ORDER_ALPHA.AND.i_p_am2I.NE.0) THEN
+!!$           denom=dalpha_am1*dalpha_am2*(dalpha_am1+dalpha_am2)
+!!$           matVEAb(i_p_am2I  )=wm2I  *(+d*dalpha_am1*dalpha_am1/denom)
+!!$           matVEAb(i_p_am2II )=wm2II *(+d*dalpha_am1*dalpha_am1/denom)
+!!$           matVEAb(i_p_am2III)=wm2III*(+d*dalpha_am1*dalpha_am1/denom)
+!!$           matVEAb(i_p_am2IV )=wm2IV *(+d*dalpha_am1*dalpha_am1/denom)
+!!$           matVEAb(i_p_am1I  )=wm1I  *(-d*(dalpha_am1+dalpha_am2)*(dalpha_am1+dalpha_am2)/denom)
+!!$           matVEAb(i_p_am1II )=wm1II *(-d*(dalpha_am1+dalpha_am2)*(dalpha_am1+dalpha_am2)/denom)
+!!$           matVEAb(ipoint )=-d*(dalpha_am1*dalpha_am1-(dalpha_am1+dalpha_am2)*(dalpha_am1+dalpha_am2))&
+!!$                & /denom
+     IF(NEW_DALPHA.AND.wp1I.LT.-100) THEN
+        IF(BI3oBI7.GT.0) THEN
+           dlambda=dlambda_lp1(ipoint)
+        ELSE
+           dlambda=dlambda_lm1(ipoint)
+        END IF
+        matVEAf(i_p_ap1I )= d/dalpha_ap1
+        matVEAf(i_p_ap1II)= d*ABS(BI3oBI7)/dlambda
+        matVEAf(ipoint )  =-d*(1./dalpha_ap1+ABS(BI3oBI7)/dlambda)
+        IF(CALC_DIFF.AND.nbif(ipoint).GT.0) THEN
+           sumb=d*ABS(BI3oBI7)/dlambda2*dlambda
+           j_p_lm1=i_p_lm1(ipoint)
+           j_p_lp1=i_p_lp1(1,ipoint)
+           matDIFf(j_p_lp1)=sumb
+           matDIFf(ipoint) =-2*sumb
+           matDIFf(j_p_lm1)=sumb
+        END IF
      ELSE
-        IF(SECOND_ORDER_ALPHA.AND.i_p_ap2I.NE.0) THEN
-           denom=dalpha_ap1*dalpha_ap2*(dalpha_ap1+dalpha_ap2)
-           matVEAf(i_p_ap2I  )=wp2I  *(-d*dalpha_ap1*dalpha_ap1/denom)
-           matVEAf(i_p_ap2II )=wp2II *(-d*dalpha_ap1*dalpha_ap1/denom)
-           matVEAf(i_p_ap2III)=wp2III*(-d*dalpha_ap1*dalpha_ap1/denom)
-           matVEAf(i_p_ap2IV )=wp2IV *(-d*dalpha_ap1*dalpha_ap1/denom)
-           matVEAf(i_p_ap1I )=wp1I* (+d*(dalpha_ap1+dalpha_ap2)*&
-                & (dalpha_ap1+dalpha_ap2)/denom)
-           matVEAf(i_p_ap1II)=wp1II*(+d*(dalpha_ap1+dalpha_ap2)*&
-                & (dalpha_ap1+dalpha_ap2)/denom)                      
-           matVEAf(ipoint )=+d*&
-                & (dalpha_ap1*dalpha_ap1-(dalpha_ap1+dalpha_ap2)*(dalpha_ap1+dalpha_ap2))&
-                & /denom
-        ELSE
-           IF(NEW_DALPHA.AND.wp1I.LT.-100) THEN
-              IF(BI3oBI7.GT.0) THEN
-                 dlambda=dlambda_lp1(ipoint)
-              ELSE
-                 dlambda=dlambda_lm1(ipoint)
-              END IF
-              matVEAf(i_p_ap1I )= d/dalpha_ap1
-              matVEAf(i_p_ap1II)= d*ABS(BI3oBI7)/dlambda
-              matVEAf(ipoint )  =-d*(1./dalpha_ap1+ABS(BI3oBI7)/dlambda)
-              IF(CALC_DIFF.AND.nbif(ipoint).GT.0) THEN
-                 sumb=d*ABS(BI3oBI7)/dlambda2*dlambda
-                 j_p_lm1=i_p_lm1(ipoint)
-                 j_p_lp1=i_p_lp1(1,ipoint)
-                 matDIFf(j_p_lp1)=sumb
-                 matDIFf(ipoint) =-2*sumb
-                 matDIFf(j_p_lm1)=sumb
-              END IF
-           ELSE
-              matVEAf(i_p_ap1I )=wp1I *(+d/dalpha_ap1)
-              matVEAf(i_p_ap1II)=matVEAf(i_p_ap1II)+wp1II*(+d/dalpha_ap1)
-              matVEAf(ipoint )         =-d/dalpha_ap1
-           END IF
-        END IF
-        IF(SECOND_ORDER_ALPHA.AND.i_p_am2I.NE.0) THEN
-           denom=dalpha_am1*dalpha_am2*(dalpha_am1+dalpha_am2)
-           matVEAb(i_p_am2I  )=wm2I  *(+d*dalpha_am1*dalpha_am1/denom)
-           matVEAb(i_p_am2II )=wm2II *(+d*dalpha_am1*dalpha_am1/denom)
-           matVEAb(i_p_am2III)=wm2III*(+d*dalpha_am1*dalpha_am1/denom)
-           matVEAb(i_p_am2IV )=wm2IV *(+d*dalpha_am1*dalpha_am1/denom)
-           matVEAb(i_p_am1I  )=wm1I  *(-d*(dalpha_am1+dalpha_am2)*(dalpha_am1+dalpha_am2)/denom)
-           matVEAb(i_p_am1II )=wm1II *(-d*(dalpha_am1+dalpha_am2)*(dalpha_am1+dalpha_am2)/denom)
-           matVEAb(ipoint )=-d*(dalpha_am1*dalpha_am1-(dalpha_am1+dalpha_am2)*(dalpha_am1+dalpha_am2))&
-                & /denom
-        ELSE
-           IF(NEW_DALPHA.AND.wm1I.LT.-100) THEN
-              IF(BI3oBI7.GT.0) THEN
-                 dlambda=dlambda_lm1(ipoint)
-              ELSE
-                 dlambda=dlambda_lp1(ipoint)
-              END IF
-              matVEAb(i_p_am1I )=-d/dalpha_am1
-              matVEAb(i_p_am1II)=-d*ABS(BI3oBI7)/dlambda
-              matVEAb(ipoint )  = d*(1/dalpha_am1+ABS(BI3oBI7)/dlambda)
-              IF(CALC_DIFF.AND.nbif(ipoint).GT.0) THEN
-                 sumb=d*ABS(BI3oBI7)/dlambda2*dlambda
-                 j_p_lm1=i_p_lm1(ipoint)
-                 j_p_lp1=i_p_lp1(1,ipoint)
-                 matDIFb(j_p_lp1)=sumb
-                 matDIFb(ipoint) =-2*sumb
-                 matDIFb(j_p_lm1)=sumb
-              END IF
-              ELSE
-              matVEAb(i_p_am1I )=wm1I *(-d/dalpha_am1)
-              matVEAb(i_p_am1II)=matVEAb(i_p_am1II)+wm1II*(-d/dalpha_am1)
-              matVEAb(ipoint )         =+d/dalpha_am1
-           END IF
-        END IF
+        matVEAf(i_p_ap1I )=wp1I *(+d/dalpha_ap1)
+        matVEAf(i_p_ap1II)=matVEAf(i_p_ap1II)+wp1II*(+d/dalpha_ap1)
+        matVEAf(ipoint )         =-d/dalpha_ap1
      END IF
-
-     IF(TANG_VM) THEN
-        d=-BI4
-        IF(CENTERED_ALPHA) THEN
-           denom=dalpha_ap1+dalpha_am1
-           matVMAf(i_p_ap1I)  =wp1I  *( d/denom)
-           matVMAf(i_p_ap1II) =wp1II *( d/denom)
-           matVMAf(i_p_am1I)  =wm1I  *(-d/denom)
-           matVMAf(i_p_am1II) =wm1II *(-d/denom)
-           matVMAb(i_p_ap1I)  =wp1I  *( d/denom)
-           matVMAb(i_p_ap1II) =wp1II *( d/denom)
-           matVMAb(i_p_am1I)  =wm1I  *(-d/denom)
-           matVMAb(i_p_am1II) =wm1II *(-d/denom)
-!!$           denom=7*(dalpha_ap1+dalpha_am1)-dalpha_ap2-dalpha_am2
-!!$           matVMAf(i_p_ap2I)  =wp2I  *(  -d/denom)
-!!$           matVMAf(i_p_ap2II) =wp2II *(  -d/denom)
-!!$           matVMAf(i_p_ap2III)=wp2III*(  -d/denom)
-!!$           matVMAf(i_p_ap2IV) =wp2IV *(  -d/denom)
-!!$           matVMAf(i_p_ap1I)  =wp1I  *(+8*d/denom)
-!!$           matVMAf(i_p_ap1II) =wp1II *(+8*d/denom)
-!!$           matVMAf(i_p_am1I)  =wm1I  *(-8*d/denom)
-!!$           matVMAf(i_p_am1II) =wm1II *(-8*d/denom)
-!!$           matVMAf(i_p_am2I)  =wm2I  *(  +d/denom)
-!!$           matVMAf(i_p_am2II) =wm2II *(  +d/denom)
-!!$           matVMAf(i_p_am2III)=wm2III*(  +d/denom)
-!!$           matVMAf(i_p_am2IV) =wm2IV *(  +d/denom)
-!!$           matVMAb(i_p_ap2I)  =wp2I  *(  -d/denom)
-!!$           matVMAb(i_p_ap2II) =wp2II *(  -d/denom)
-!!$           matVMAb(i_p_ap2III)=wp2III*(  -d/denom)
-!!$           matVMAb(i_p_ap2IV) =wp2IV *(  -d/denom)
-!!$           matVMAb(i_p_ap1I)  =wp1I  *(+8*d/denom)
-!!$           matVMAb(i_p_ap1II) =wp1II *(+8*d/denom)
-!!$           matVMAb(i_p_am1I)  =wm1I  *(-8*d/denom)
-!!$           matVMAb(i_p_am1II) =wm1II *(-8*d/denom)
-!!$           matVMAb(i_p_am2I)  =wm2I  *(  +d/denom)
-!!$           matVMAb(i_p_am2II) =wm2II *(  +d/denom)  
-!!$           matVMAb(i_p_am2III)=wm2III*(  +d/denom)
-!!$           matVMAb(i_p_am2IV) =wm2IV *(  +d/denom)  
+     IF(NEW_DALPHA.AND.wm1I.LT.-100) THEN
+        IF(BI3oBI7.GT.0) THEN
+           dlambda=dlambda_lm1(ipoint)
         ELSE
-           IF(d.LT.0) THEN
-              IF(SECOND_ORDER_ALPHA.AND.i_p_ap2I.NE.0) THEN
-                 denom=dalpha_ap1*dalpha_ap2*(dalpha_ap1+dalpha_ap2)
-                 matVMAf(i_p_ap2I  )=wp2I  *(-d*dalpha_ap1*dalpha_ap1/denom)
-                 matVMAf(i_p_ap2II )=wp2II *(-d*dalpha_ap1*dalpha_ap1/denom)
-                 matVMAf(i_p_ap2III)=wp2III*(-d*dalpha_ap1*dalpha_ap1/denom)
-                 matVMAf(i_p_ap2IV )=wp2IV *(-d*dalpha_ap1*dalpha_ap1/denom)
-                 matVMAf(i_p_ap1I )=wp1I* (+d*(dalpha_ap1+dalpha_ap2)*(dalpha_ap1+dalpha_ap2)/denom)
-                 matVMAf(i_p_ap1II)=wp1II*(+d*(dalpha_ap1+dalpha_ap2)*(dalpha_ap1+dalpha_ap2)/denom)
-                 matVMAf(ipoint )=+d*&
-                      & (dalpha_ap1*dalpha_ap1-(dalpha_ap1+dalpha_ap2)*(dalpha_ap1+dalpha_ap2))/denom
-              ELSE
+           dlambda=dlambda_lp1(ipoint)
+        END IF
+        matVEAb(i_p_am1I )=-d/dalpha_am1
+        matVEAb(i_p_am1II)=-d*ABS(BI3oBI7)/dlambda
+        matVEAb(ipoint )  = d*(1/dalpha_am1+ABS(BI3oBI7)/dlambda)
+        IF(CALC_DIFF.AND.nbif(ipoint).GT.0) THEN
+           sumb=d*ABS(BI3oBI7)/dlambda2*dlambda
+           j_p_lm1=i_p_lm1(ipoint)
+           j_p_lp1=i_p_lp1(1,ipoint)
+           matDIFb(j_p_lp1)=sumb
+           matDIFb(ipoint) =-2*sumb
+           matDIFb(j_p_lm1)=sumb
+        END IF
+     ELSE
+        matVEAb(i_p_am1I )=wm1I *(-d/dalpha_am1)
+        matVEAb(i_p_am1II)=matVEAb(i_p_am1II)+wm1II*(-d/dalpha_am1)
+        matVEAb(ipoint )         =+d/dalpha_am1
+     END IF
+     
+     IF(TANG_VM) THEN
+        d=-BI4 
+        IF(d.LT.0) THEN
+!!$              IF(SECOND_ORDER_ALPHA.AND.i_p_ap2I.NE.0) THEN
+!!$                 denom=dalpha_ap1*dalpha_ap2*(dalpha_ap1+dalpha_ap2)
+!!$                 matVMAf(i_p_ap2I  )=wp2I  *(-d*dalpha_ap1*dalpha_ap1/denom)
+!!$                 matVMAf(i_p_ap2II )=wp2II *(-d*dalpha_ap1*dalpha_ap1/denom)
+!!$                 matVMAf(i_p_ap2III)=wp2III*(-d*dalpha_ap1*dalpha_ap1/denom)
+!!$                 matVMAf(i_p_ap2IV )=wp2IV *(-d*dalpha_ap1*dalpha_ap1/denom)
+!!$                 matVMAf(i_p_ap1I )=wp1I* (+d*(dalpha_ap1+dalpha_ap2)*(dalpha_ap1+dalpha_ap2)/denom)
+!!$                 matVMAf(i_p_ap1II)=wp1II*(+d*(dalpha_ap1+dalpha_ap2)*(dalpha_ap1+dalpha_ap2)/denom)
+!!$                 matVMAf(ipoint )=+d*&
+!!$                      & (dalpha_ap1*dalpha_ap1-(dalpha_ap1+dalpha_ap2)*(dalpha_ap1+dalpha_ap2))/denom
                  IF(NEW_DALPHA.AND.wp1I.LT.-100) THEN
                     IF(BI3oBI7.GT.0) THEN
                        dlambda=dlambda_lp1(ipoint)
@@ -2864,21 +2846,17 @@ SUBROUTINE FILL_DKE_ROW(ipoint,npoint,&
                     matVMAf(i_p_ap1II)=matVMAf(i_p_ap1II)+wp1II*(+d/dalpha_ap1)
                     matVMAf(ipoint )         =-d/dalpha_ap1
                  END IF
-!                 matVMAf(i_p_ap1I )=wp1I *(+d/dalpha_ap1)
-!                 matVMAf(i_p_ap1II)=wp1II*(+d/dalpha_ap1)             
-!                 matVMAf(ipoint )         =-d/dalpha_ap1
-              END IF
-              IF(SECOND_ORDER_ALPHA.AND.i_p_am2I.NE.0) THEN
-                 denom=dalpha_am1*dalpha_am2*(dalpha_am1+dalpha_am2) 
-                 matVMAb(i_p_am2I  )=wm2I  *(+d*dalpha_am1*dalpha_am1/denom)
-                 matVMAb(i_p_am2II )=wm2II *(+d*dalpha_am1*dalpha_am1/denom)
-                 matVMAb(i_p_am2III)=wm2III*(+d*dalpha_am1*dalpha_am1/denom)
-                 matVMAb(i_p_am2IV )=wm2IV *(+d*dalpha_am1*dalpha_am1/denom)
-                 matVMAb(i_p_am1I  )=wm1I  *(-d*(dalpha_am1+dalpha_am2)*(dalpha_am1+dalpha_am2)/denom)
-                 matVMAb(i_p_am1II )=wm1II *(-d*(dalpha_am1+dalpha_am2)*(dalpha_am1+dalpha_am2)/denom)
-                 matVMAb(ipoint )=-d*&
-                      & (dalpha_am1*dalpha_am1-(dalpha_am1+dalpha_am2)*(dalpha_am1+dalpha_am2))/denom
-              ELSE
+
+!!$              IF(SECOND_ORDER_ALPHA.AND.i_p_am2I.NE.0) THEN
+!!$                 denom=dalpha_am1*dalpha_am2*(dalpha_am1+dalpha_am2) 
+!!$                 matVMAb(i_p_am2I  )=wm2I  *(+d*dalpha_am1*dalpha_am1/denom)
+!!$                 matVMAb(i_p_am2II )=wm2II *(+d*dalpha_am1*dalpha_am1/denom)
+!!$                 matVMAb(i_p_am2III)=wm2III*(+d*dalpha_am1*dalpha_am1/denom)
+!!$                 matVMAb(i_p_am2IV )=wm2IV *(+d*dalpha_am1*dalpha_am1/denom)
+!!$                 matVMAb(i_p_am1I  )=wm1I  *(-d*(dalpha_am1+dalpha_am2)*(dalpha_am1+dalpha_am2)/denom)
+!!$                 matVMAb(i_p_am1II )=wm1II *(-d*(dalpha_am1+dalpha_am2)*(dalpha_am1+dalpha_am2)/denom)
+!!$                 matVMAb(ipoint )=-d*&
+!!$                      & (dalpha_am1*dalpha_am1-(dalpha_am1+dalpha_am2)*(dalpha_am1+dalpha_am2))/denom
                  IF(NEW_DALPHA.AND.wm1I.LT.-100) THEN
                     IF(BI3oBI7.GT.0) THEN
                        dlambda=dlambda_lm1(ipoint)
@@ -2901,22 +2879,17 @@ SUBROUTINE FILL_DKE_ROW(ipoint,npoint,&
                     matVMAb(i_p_am1II)=matVMAb(i_p_am1II)+wm1II*(-d/dalpha_am1)
                     matVMAb(ipoint )         =+d/dalpha_am1
                  END IF
-              END IF
-!              matVMAb(i_p_am1I )=wm1I *(-d/dalpha_am1)
-!              matVMAb(i_p_am1II)=wm1II*(-d/dalpha_am1)
-!              matVMAb(ipoint )         =+d/dalpha_am1
            ELSE IF(d.GT.0) THEN
-              IF(SECOND_ORDER_ALPHA.AND.i_p_am2I.NE.0) THEN
-                 denom=dalpha_am1*dalpha_am2*(dalpha_am1+dalpha_am2)
-                 matVMAf(i_p_am2I  )=wm2I  *(+d*dalpha_am1*dalpha_am1/denom)
-                 matVMAf(i_p_am2II )=wm2II *(+d*dalpha_am1*dalpha_am1/denom)
-                 matVMAf(i_p_am2III)=wm2III*(+d*dalpha_am1*dalpha_am1/denom)
-                 matVMAf(i_p_am2IV )=wm2IV *(+d*dalpha_am1*dalpha_am1/denom)
-                 matVMAf(i_p_am1I  )=wm1I  *(-d*(dalpha_am1+dalpha_am2)*(dalpha_am1+dalpha_am2)/denom)
-                 matVMAf(i_p_am1II )=wm1II *(-d*(dalpha_am1+dalpha_am2)*(dalpha_am1+dalpha_am2)/denom)
-                 matVMAf(ipoint )=-d*&
-                      & (dalpha_am1*dalpha_am1-(dalpha_am1+dalpha_am2)*(dalpha_am1+dalpha_am2))/denom
-              ELSE
+!!$              IF(SECOND_ORDER_ALPHA.AND.i_p_am2I.NE.0) THEN
+!!$                 denom=dalpha_am1*dalpha_am2*(dalpha_am1+dalpha_am2)
+!!$                 matVMAf(i_p_am2I  )=wm2I  *(+d*dalpha_am1*dalpha_am1/denom)
+!!$                 matVMAf(i_p_am2II )=wm2II *(+d*dalpha_am1*dalpha_am1/denom)
+!!$                 matVMAf(i_p_am2III)=wm2III*(+d*dalpha_am1*dalpha_am1/denom)
+!!$                 matVMAf(i_p_am2IV )=wm2IV *(+d*dalpha_am1*dalpha_am1/denom)
+!!$                 matVMAf(i_p_am1I  )=wm1I  *(-d*(dalpha_am1+dalpha_am2)*(dalpha_am1+dalpha_am2)/denom)
+!!$                 matVMAf(i_p_am1II )=wm1II *(-d*(dalpha_am1+dalpha_am2)*(dalpha_am1+dalpha_am2)/denom)
+!!$                 matVMAf(ipoint )=-d*&
+!!$                      & (dalpha_am1*dalpha_am1-(dalpha_am1+dalpha_am2)*(dalpha_am1+dalpha_am2))/denom
                  IF(NEW_DALPHA.AND.wm1I.LT.-100) THEN
                     IF(BI3oBI7.GT.0) THEN
                        dlambda=dlambda_lm1(ipoint)
@@ -2930,55 +2903,47 @@ SUBROUTINE FILL_DKE_ROW(ipoint,npoint,&
                        sumb=d*ABS(BI3oBI7)/dlambda2*dlambda
                        j_p_lm1=i_p_lm1(ipoint)
                        j_p_lp1=i_p_lp1(1,ipoint)
+                       matDIFb(j_p_lp1)=sumb
+                       matDIFb(ipoint) =-2*sumb
+                       matDIFb(j_p_lm1)=sumb
                     END IF
                  ELSE
                     matVMAf(i_p_am1I )=wm1I *(-d/dalpha_am1)
                     matVMAf(i_p_am1II)=matVMAf(i_p_am1II)+wm1II*(-d/dalpha_am1)
                     matVMAf(ipoint )         =+d/dalpha_am1
-                 END IF                    
-!                 matVMAf(i_p_am1I )=wm1I *(-d/dalpha_am1)
-!                 matVMAf(i_p_am1II)=wm1II*(-d/dalpha_am1)
-!                 matVMAf(ipoint )         =+d/dalpha_am1
-              END IF
-              IF(SECOND_ORDER_ALPHA.AND.i_p_ap2I.NE.0) THEN
-                 denom=dalpha_ap1*dalpha_ap2*(dalpha_ap1+dalpha_ap2)
-                 matVMAb(i_p_ap2I  )=wp2I  *(-d*dalpha_ap1*dalpha_ap1/denom)
-                 matVMAb(i_p_ap2II )=wp2II *(-d*dalpha_ap1*dalpha_ap1/denom)
-                 matVMAb(i_p_ap2III)=wp2III*(-d*dalpha_ap1*dalpha_ap1/denom)
-                 matVMAb(i_p_ap2IV )=wp2IV *(-d*dalpha_ap1*dalpha_ap1/denom)
-                 matVMAb(i_p_ap1I )=wp1I* (+d*(dalpha_ap1+dalpha_ap2)*(dalpha_ap1+dalpha_ap2)/denom)
-                 matVMAb(i_p_ap1II)=wp1II*(+d*(dalpha_ap1+dalpha_ap2)*(dalpha_ap1+dalpha_ap2)/denom)
-                 matVMAb(ipoint )=+d*&
-                      & (dalpha_ap1*dalpha_ap1-(dalpha_ap1+dalpha_ap2)*(dalpha_ap1+dalpha_ap2))/denom
-              ELSE
-                 IF(NEW_DALPHA.AND.wm1I.LT.-100) THEN
+                 END IF
+!!$              IF(SECOND_ORDER_ALPHA.AND.i_p_ap2I.NE.0) THEN
+!!$                 denom=dalpha_ap1*dalpha_ap2*(dalpha_ap1+dalpha_ap2)
+!!$                 matVMAb(i_p_ap2I  )=wp2I  *(-d*dalpha_ap1*dalpha_ap1/denom)
+!!$                 matVMAb(i_p_ap2II )=wp2II *(-d*dalpha_ap1*dalpha_ap1/denom)
+!!$                 matVMAb(i_p_ap2III)=wp2III*(-d*dalpha_ap1*dalpha_ap1/denom)
+!!$                 matVMAb(i_p_ap2IV )=wp2IV *(-d*dalpha_ap1*dalpha_ap1/denom)
+!!$                 matVMAb(i_p_ap1I )=wp1I* (+d*(dalpha_ap1+dalpha_ap2)*(dalpha_ap1+dalpha_ap2)/denom)
+!!$                 matVMAb(i_p_ap1II)=wp1II*(+d*(dalpha_ap1+dalpha_ap2)*(dalpha_ap1+dalpha_ap2)/denom)
+!!$                 matVMAb(ipoint )=+d*&
+!!$                      & (dalpha_ap1*dalpha_ap1-(dalpha_ap1+dalpha_ap2)*(dalpha_ap1+dalpha_ap2))/denom
+                 IF(NEW_DALPHA.AND.wp1I.LT.-100) THEN
                     IF(BI3oBI7.GT.0) THEN
-                       dlambda=dlambda_lm1(ipoint)
-                    ELSE
                        dlambda=dlambda_lp1(ipoint)
+                    ELSE
+                       dlambda=dlambda_lm1(ipoint)
                     END IF
-                    matVMAb(i_p_am1I )=-d/dalpha_am1
-                    matVMAb(i_p_am1II)=-d*ABS(BI3oBI7)/dlambda
-                    matVMAb(ipoint )  = d*(1/dalpha_am1+ABS(BI3oBI7)/dlambda)
+                    matVMAb(i_p_ap1I )= d/dalpha_ap1
+                    matVMAb(i_p_ap1II)= d*ABS(BI3oBI7)/dlambda
+                    matVMAb(ipoint )  =-d*(1./dalpha_ap1+ABS(BI3oBI7)/dlambda)
                     IF(CALC_DIFF.AND.nbif(ipoint).GT.0) THEN
                        sumb=d*ABS(BI3oBI7)/dlambda2*dlambda
                        j_p_lm1=i_p_lm1(ipoint)
                        j_p_lp1=i_p_lp1(1,ipoint)
                     END IF
                  ELSE
-                    matVMAb(i_p_am1I )=wm1I *(-d/dalpha_am1)
-                    matVMAb(i_p_am1II)=matVMAb(i_p_am1II)+wm1II*(-d/dalpha_am1)
-                    matVMAb(ipoint )         =+d/dalpha_am1
-                 END IF   
-!                 matVMAb(i_p_ap1I )=wp1I *(+d/dalpha_ap1)
-!                 matVMAb(i_p_ap1II)=wp1II*(+d/dalpha_ap1)             
-!                 matVMAb(ipoint )         =-d/dalpha_ap1
+                    matVMAb(i_p_ap1I )=wp1I *(+d/dalpha_ap1)
+                    matVMAb(i_p_ap1II)=matVMAb(i_p_ap1II)+wp1II*(+d/dalpha_ap1)
+                    matVMAb(ipoint )         =-d/dalpha_ap1
+                 END IF
               END IF
-
            END IF
         END IF
-     END IF
-  END IF
 
   IF(DEBUG) THEN
      WRITE(3150+myrank,'(10I6,5(1pe13.5),I4)') ipoint,i_p_am2,i_p_am1,i_p_ap1,i_p_ap2
@@ -3380,7 +3345,7 @@ SUBROUTINE INTEGRATE_G(nalpha,nalphab,nlambda,lambda,i_p,npoint,g,notg,&
   !Others
   REAL*8, PARAMETER :: F5o12 =0.416666666666667
   REAL*8, PARAMETER :: F13o12=1.083333333333333
-  INTEGER ia,il,ial,ila,jla,kla,ipoint,jpoint,kpoint,ind,nm
+  INTEGER ia,il,ial,ila,jla,kla,ipoint,jpoint,kpoint,nm
   REAL*8 fdlambda,fhdlambda2,lambdaB,d3vdlambdadK,dlambda,fint
   REAL*8 D11_alp(nalpha*nalphab),D11_ale(3*nalpha),D11_zt(nalphab,nalphab)
   REAL*8 dn1_alp(nalpha*nalphab),dn1_ale(3*nalpha)
@@ -3412,7 +3377,6 @@ SUBROUTINE INTEGRATE_G(nalpha,nalphab,nlambda,lambda,i_p,npoint,g,notg,&
      DO ipoint=1,npoint  
         WRITE(3500+myrank,'(I6,1(1pe13.5),2I6)') ipoint,g(ipoint,1),nalpha,nlambda
      END DO
-     CALL FLUSH(3500+myrank)
   END IF
 
   IF(CALCULATED_INT.AND.PRE_INTV) GOTO 123
@@ -3440,6 +3404,7 @@ SUBROUTINE INTEGRATE_G(nalpha,nalphab,nlambda,lambda,i_p,npoint,g,notg,&
 
   D11p=0
   IF(QN) dn1nmp=0
+
   DO il=1,nalphab
      IF(aiota/nzperiod.LT.1) THEN
         IF(iota.GT.0) THEN
@@ -3544,7 +3509,17 @@ SUBROUTINE INTEGRATE_G(nalpha,nalphab,nlambda,lambda,i_p,npoint,g,notg,&
  !                & zetap(il),thetap(ia,il),dn1_alp(ial),D11_alp(ial),vds_al(1,ia,il)
         END DO
      END DO
-
+     
+     IF(DEBUG) THEN
+        DO ia=1,nalpha
+           DO il=1,nalphab
+              ial=(il-1)*nalpha+ia
+              WRITE(3700+myrank,'(3(1pe13.5),2I6)') &
+                  & zetap(il),thetap(ia,il),D11_alp(ial),il,ia           
+           END DO
+        END DO
+     ENDIF
+     
      !Copy values to extended grid and interpolate to square grid
      dn1_zt=0
      DO il=1,nalphab
@@ -3569,17 +3544,16 @@ SUBROUTINE INTEGRATE_G(nalpha,nalphab,nlambda,lambda,i_p,npoint,g,notg,&
         
         !Interpolation to square grid
         DO ia=1,nalphab
-           ind=(ia-1)*nalphab+il
            D11_zt(ia,il)=0
            CALL LAGRANGE(thetape(1:tnalpha,il),D11_ale(1:tnalpha),tnalpha,&
-                & theta(ia),D11_zt(ia,il),1)
+                & theta(ia),D11_zt(ia,il),0)
            IF(QN) THEN!.OR.NTV)THEN
               dn1_zt(ia,il)=0
               CALL LAGRANGE(thetape(1:tnalpha,il),dn1_ale(1:tnalpha),tnalpha,&
-                 & theta(ia),dn1_zt(ia,il),1)
+                 & theta(ia),dn1_zt(ia,il),0)
            END IF
- !           IF(DEBUG.AND.ipoint.EQ.1) WRITE(3450+myrank,'(10(1pe13.5),10I6)') &
- !                & zetap(il),theta(ia),dn1_zt(ia,il),D11_zt(ia,il)
+           IF(DEBUG.AND.ipoint.EQ.1) WRITE(3800+myrank,'(3(1pe13.5),2I6)') &
+                & zetap(il),theta(ia),D11_zt(ia,il),il,ia
         END DO
      END DO
      !Flux surface average
@@ -3627,7 +3601,7 @@ SUBROUTINE INTEGRATE_G(nalpha,nalphab,nlambda,lambda,i_p,npoint,g,notg,&
 
  CALCULATED_INT=.TRUE.
 
-  CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
+ CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
 
 END SUBROUTINE INTEGRATE_G
 
@@ -3683,7 +3657,6 @@ SUBROUTINE INTEGRATE_G_NEW(nalpha,nalphab,nlambda,lambda,i_p,npoint,g,notg,&
      DO ipoint=1,npoint  
         WRITE(3500+myrank,'(I6,1(1pe13.5),2I6)') ipoint,g(ipoint),nalpha,nlambda
      END DO
-     CALL FLUSH(3500+myrank)
   END IF
   
   !Precalculate quantities
@@ -3704,9 +3677,13 @@ SUBROUTINE INTEGRATE_G_NEW(nalpha,nalphab,nlambda,lambda,i_p,npoint,g,notg,&
            END IF
         END DO
         IF(nla.EQ.0) CYCLE
-        g1oB=g(i_p(nla,ia,il))*(1+fdlambda)-g(i_p(nla-1,ia,il))*fdlambda
+        IF(nla.GT.1) THEN
+           g1oB=g(i_p(nla,ia,il))*(1+fdlambda)-g(i_p(nla-1,ia,il))*fdlambda
+        ELSE
+           g1oB=g(i_p(nla,ia,il))
+        END IF
         IF(notg) THEN
-           offset=-2*g1oB*SQRT(1-lambda(1)*modB)
+           offset=2*g1oB*SQRT(1-lambda(1)*modB)
         ELSE
            offset=-2*g1oB*vds_al(ia,il)*0.25*SQRT(1-lambda(1)*modB)
         END IF
@@ -3716,8 +3693,8 @@ SUBROUTINE INTEGRATE_G_NEW(nalpha,nalphab,nlambda,lambda,i_p,npoint,g,notg,&
            d3vdlambdadK=modB/sqrt1mlB
            ipoint=i_p(ila,ia,il)
            IF(notg) THEN
-              dD11=-g(ipoint)*d3vdlambdadK
-              doffset=-g1oB*d3vdlambdadK
+              dD11=g(ipoint)*d3vdlambdadK
+              doffset=g1oB*d3vdlambdadK
            ELSE
               dD11=-g(ipoint)*(vds_al(ia,il)*(1.0-0.5*lambdaB)/2.)*d3vdlambdadK
               doffset=-g1oB*vds_al(ia,il)*0.25*d3vdlambdadK
@@ -3733,14 +3710,13 @@ SUBROUTINE INTEGRATE_G_NEW(nalpha,nalphab,nlambda,lambda,i_p,npoint,g,notg,&
         END DO
         D11_alp(ia,il)=D11_alp(ia,il)*dlambda+offset
         
-        IF(DEBUG) WRITE(3451+myrank,'(2I6,5(1pe13.5),10I6)') &
+        IF(DEBUG) WRITE(3451+myrank,'(2I6,6(1pe13.5),10I6)') &
              & il,ia,D11_alp(ia,il),vds_al(ia,il)
      END DO
   END DO
   !Flux surface average
   D11=FSA2(nalpha,nalphab,thetap(:,1),D11_alp,aiBtpBz/B_al/B_al,1)
   CALCULATED_INT=.TRUE.
-
   CALL CALCULATE_TIME(routine,ntotal,t0,tstart,ttotal)
 
 END SUBROUTINE INTEGRATE_G_NEW
@@ -3885,3 +3861,176 @@ END SUBROUTINE FILL_ORBI
 
 
 
+!!$  IF((nbif(ipoint).EQ.1.AND.nbif(j_p_lm1).EQ.1).OR.&
+!!$  IF((nbif(ipoint).EQ.1).OR.&
+!!$       (j_p_lm1.EQ.1.AND..NOT.PREC_TOP)) THEN
+!!$     j_p_lp1=i_p_lp1(1,ipoint)
+!!$     denom=twodlambda*(dlambda_lm1(ipoint)*dlambda_lm1(ipoint)+dlambda_lp1(ipoint)*dlambda_lp1(ipoint))/4
+!!$     matCOL(j_p_lp1)= b*dlambda_lp1(ipoint)/denom+ a/twodlambda
+!!$     matCOL(ipoint) =-b*twodlambda         /denom
+!!$     matCOL(j_p_lm1)= b*dlambda_lm1(ipoint)/denom- a/twodlambda
+!!$  ELSE
+!!$     DO ibif=1,nbif(j_p_lm1)
+!!$        jpoint=i_p_lp1(ibif,j_p_lm1)
+!!$!        jpoint=ipoint
+!!$        IF(j_p_lm1.EQ.1) THEN
+!!$           bm=BI2(jpoint)
+!!$           matCOL(i_p_lp1(1,jpoint))=matCOL(i_p_lp1(1,jpoint))-bm/(dlambda_lp1(jpoint)*twodlambda)
+!!$        ELSE
+!!$           j_p_lm2=i_p_lm1(j_p_lm1)
+!!$           bm=BI2(j_p_lm1)
+!!$           fourdlambda2=(dlambda_lp1(j_p_lm1)+dlambda_lm1(j_p_lm1))*twodlambda
+!!$           matCOL(j_p_lm2)=matCOL(j_p_lm2)+bm/fourdlambda2
+!!$           matCOL(jpoint )=matCOL(jpoint) -bm/fourdlambda2
+!!$        END IF
+!!$
+!!$        DO jbif=1,nbif(jpoint)
+!!$           j_p_lp1=i_p_lp1(jbif,jpoint)
+!!$           j_p_lp2=i_p_lp1(1  ,j_p_lp1)
+!!$           IF(j_p_lp2.EQ.0) CYCLE
+!!$           bp=BI2(j_p_lp1)
+!!$           IF(j_p_lm1.EQ.1) THEN
+!!$              fourdlambda2=dlambda_lp1(jpoint)*(dlambda_lp1(j_p_lp1)+dlambda_lm1(j_p_lp1))
+!!$           ELSE
+!!$              fourdlambda2=twodlambda*(dlambda_lp1(j_p_lp1)+dlambda_lm1(j_p_lp1)) 
+!!$           END IF
+!!$           matCOL(j_p_lp2)=matCOL(j_p_lp2)+bp/fourdlambda2
+!!$           matCOL(jpoint) =matCOL(jpoint) -bp/fourdlambda2
+!!$        END DO
+!!$     END DO
+!!$
+!!$     END IF
+!!$     IF(CENTERED_ALPHA) THEN
+!!$        denom=dalpha_ap1+dalpha_am1
+!!$        matVEAf(i_p_ap1I)  =wp1I  *( d/denom)
+!!$        matVEAf(i_p_ap1II) =wp1II *( d/denom)
+!!$        matVEAf(i_p_am1I)  =wm1I  *(-d/denom)
+!!$        matVEAf(i_p_am1II) =wm1II *(-d/denom)
+!!$        matVEAb(i_p_ap1I)  =wp1I  *( d/denom)
+!!$        matVEAb(i_p_ap1II) =wp1II *( d/denom)
+!!$        matVEAb(i_p_am1I)  =wm1I  *(-d/denom)
+!!$        matVEAb(i_p_am1II) =wm1II *(-d/denom)
+!!$
+!!$        denom=7*(dalpha_ap1+dalpha_am1)-dalpha_ap2-dalpha_am2
+!!$        matVEAf(i_p_ap2I)  =wp2I  *(  -d/denom)
+!!$        matVEAf(i_p_ap2II) =wp2II *(  -d/denom)
+!!$        matVEAf(i_p_ap2III)=wp2III*(  -d/denom)
+!!$        matVEAf(i_p_ap2IV) =wp2IV *(  -d/denom)
+!!$        matVEAf(i_p_ap1I)  =wp1I  *(+8*d/denom)
+!!$        matVEAf(i_p_ap1II) =wp1II *(+8*d/denom)
+!!$        matVEAf(i_p_am1I)  =wm1I  *(-8*d/denom)
+!!$        matVEAf(i_p_am1II) =wm1II *(-8*d/denom)
+!!$        matVEAf(i_p_am2I)  =wm2I  *(  +d/denom)
+!!$        matVEAf(i_p_am2II) =wm2II *(  +d/denom)
+!!$        matVEAf(i_p_am2III)=wm2III*(  +d/denom)
+!!$        matVEAf(i_p_am2IV) =wm2IV *(  +d/denom)
+!!$        matVEAb(i_p_ap2I)  =wp2I  *(  -d/denom)
+!!$        matVEAb(i_p_ap2II) =wp2II *(  -d/denom)
+!!$        matVEAb(i_p_ap2III)=wp2III*(  -d/denom)
+!!$        matVEAb(i_p_ap2IV) =wp2IV *(  -d/denom)
+!!$        matVEAb(i_p_ap1I)  =wp1I  *(+8*d/denom)
+!!$        matVEAb(i_p_ap1II) =wp1II *(+8*d/denom)
+!!$        matVEAb(i_p_am1I)  =wm1I  *(-8*d/denom)
+!!$        matVEAb(i_p_am1II) =wm1II *(-8*d/denom)
+!!$        matVEAb(i_p_am2I)  =wm2I  *(  +d/denom)
+!!$        matVEAb(i_p_am2II) =wm2II *(  +d/denom)
+!!$        matVEAb(i_p_am2III)=wm2III*(  +d/denom)
+!!$        matVEAb(i_p_am2IV) =wm2IV *(  +d/denom)
+!!$     ELSE IF(SECOND_ORDER_ALPHA.AND.i_p_ap2I.NE.0) THEN
+!!$           denom=dalpha_ap1*dalpha_ap2*(dalpha_ap1+dalpha_ap2)
+!!$           matVEAf(i_p_ap2I  )=wp2I  *(-d*dalpha_ap1*dalpha_ap1/denom)
+!!$           matVEAf(i_p_ap2II )=wp2II *(-d*dalpha_ap1*dalpha_ap1/denom)
+!!$           matVEAf(i_p_ap2III)=wp2III*(-d*dalpha_ap1*dalpha_ap1/denom)
+!!$           matVEAf(i_p_ap2IV )=wp2IV *(-d*dalpha_ap1*dalpha_ap1/denom)
+!!$           matVEAf(i_p_ap1I )=wp1I* (+d*(dalpha_ap1+dalpha_ap2)*&
+!!$                & (dalpha_ap1+dalpha_ap2)/denom)
+!!$           matVEAf(i_p_ap1II)=wp1II*(+d*(dalpha_ap1+dalpha_ap2)*&
+!!$                & (dalpha_ap1+dalpha_ap2)/denom)                      
+!!$           matVEAf(ipoint )=+d*&
+!!$                & (dalpha_ap1*dalpha_ap1-(dalpha_ap1+dalpha_ap2)*(dalpha_ap1+dalpha_ap2))&
+!!$                & /denom
+!!$        IF(SECOND_ORDER_ALPHA.AND.i_p_am2I.NE.0) THEN
+!!$           denom=dalpha_am1*dalpha_am2*(dalpha_am1+dalpha_am2)
+!!$           matVEAb(i_p_am2I  )=wm2I  *(+d*dalpha_am1*dalpha_am1/denom)
+!!$           matVEAb(i_p_am2II )=wm2II *(+d*dalpha_am1*dalpha_am1/denom)
+!!$           matVEAb(i_p_am2III)=wm2III*(+d*dalpha_am1*dalpha_am1/denom)
+!!$           matVEAb(i_p_am2IV )=wm2IV *(+d*dalpha_am1*dalpha_am1/denom)
+!!$           matVEAb(i_p_am1I  )=wm1I  *(-d*(dalpha_am1+dalpha_am2)*(dalpha_am1+dalpha_am2)/denom)
+!!$           matVEAb(i_p_am1II )=wm1II *(-d*(dalpha_am1+dalpha_am2)*(dalpha_am1+dalpha_am2)/denom)
+!!$           matVEAb(ipoint )=-d*(dalpha_am1*dalpha_am1-(dalpha_am1+dalpha_am2)*(dalpha_am1+dalpha_am2))&
+!!$                & /denom
+!!$        IF(CENTERED_ALPHA) THEN
+!!$           denom=dalpha_ap1+dalpha_am1
+!!$           matVMAf(i_p_ap1I)  =wp1I  *( d/denom)
+!!$           matVMAf(i_p_ap1II) =wp1II *( d/denom)
+!!$           matVMAf(i_p_am1I)  =wm1I  *(-d/denom)
+!!$           matVMAf(i_p_am1II) =wm1II *(-d/denom)
+!!$           matVMAb(i_p_ap1I)  =wp1I  *( d/denom)
+!!$           matVMAb(i_p_ap1II) =wp1II *( d/denom)
+!!$           matVMAb(i_p_am1I)  =wm1I  *(-d/denom)
+!!$           matVMAb(i_p_am1II) =wm1II *(-d/denom)
+!!$           denom=7*(dalpha_ap1+dalpha_am1)-dalpha_ap2-dalpha_am2
+!!$           matVMAf(i_p_ap2I)  =wp2I  *(  -d/denom)
+!!$           matVMAf(i_p_ap2II) =wp2II *(  -d/denom)
+!!$           matVMAf(i_p_ap2III)=wp2III*(  -d/denom)
+!!$           matVMAf(i_p_ap2IV) =wp2IV *(  -d/denom)
+!!$           matVMAf(i_p_ap1I)  =wp1I  *(+8*d/denom)
+!!$           matVMAf(i_p_ap1II) =wp1II *(+8*d/denom)
+!!$           matVMAf(i_p_am1I)  =wm1I  *(-8*d/denom)
+!!$           matVMAf(i_p_am1II) =wm1II *(-8*d/denom)
+!!$           matVMAf(i_p_am2I)  =wm2I  *(  +d/denom)
+!!$           matVMAf(i_p_am2II) =wm2II *(  +d/denom)
+!!$           matVMAf(i_p_am2III)=wm2III*(  +d/denom)
+!!$           matVMAf(i_p_am2IV) =wm2IV *(  +d/denom)
+!!$           matVMAb(i_p_ap2I)  =wp2I  *(  -d/denom)
+!!$           matVMAb(i_p_ap2II) =wp2II *(  -d/denom)
+!!$           matVMAb(i_p_ap2III)=wp2III*(  -d/denom)
+!!$           matVMAb(i_p_ap2IV) =wp2IV *(  -d/denom)
+!!$           matVMAb(i_p_ap1I)  =wp1I  *(+8*d/denom)
+!!$           matVMAb(i_p_ap1II) =wp1II *(+8*d/denom)
+!!$           matVMAb(i_p_am1I)  =wm1I  *(-8*d/denom)
+!!$           matVMAb(i_p_am1II) =wm1II *(-8*d/denom)
+!!$           matVMAb(i_p_am2I)  =wm2I  *(  +d/denom)
+!!$           matVMAb(i_p_am2II) =wm2II *(  +d/denom)  
+!!$           matVMAb(i_p_am2III)=wm2III*(  +d/denom)
+!!$           matVMAb(i_p_am2IV) =wm2IV *(  +d/denom)  
+!!$              IF(SECOND_ORDER_ALPHA.AND.i_p_ap2I.NE.0) THEN
+!!$                 denom=dalpha_ap1*dalpha_ap2*(dalpha_ap1+dalpha_ap2)
+!!$                 matVMAf(i_p_ap2I  )=wp2I  *(-d*dalpha_ap1*dalpha_ap1/denom)
+!!$                 matVMAf(i_p_ap2II )=wp2II *(-d*dalpha_ap1*dalpha_ap1/denom)
+!!$                 matVMAf(i_p_ap2III)=wp2III*(-d*dalpha_ap1*dalpha_ap1/denom)
+!!$                 matVMAf(i_p_ap2IV )=wp2IV *(-d*dalpha_ap1*dalpha_ap1/denom)
+!!$                 matVMAf(i_p_ap1I )=wp1I* (+d*(dalpha_ap1+dalpha_ap2)*(dalpha_ap1+dalpha_ap2)/denom)
+!!$                 matVMAf(i_p_ap1II)=wp1II*(+d*(dalpha_ap1+dalpha_ap2)*(dalpha_ap1+dalpha_ap2)/denom)
+!!$                 matVMAf(ipoint )=+d*&
+!!$                      & (dalpha_ap1*dalpha_ap1-(dalpha_ap1+dalpha_ap2)*(dalpha_ap1+dalpha_ap2))/denom
+!!$              IF(SECOND_ORDER_ALPHA.AND.i_p_am2I.NE.0) THEN
+!!$                 denom=dalpha_am1*dalpha_am2*(dalpha_am1+dalpha_am2) 
+!!$                 matVMAb(i_p_am2I  )=wm2I  *(+d*dalpha_am1*dalpha_am1/denom)
+!!$                 matVMAb(i_p_am2II )=wm2II *(+d*dalpha_am1*dalpha_am1/denom)
+!!$                 matVMAb(i_p_am2III)=wm2III*(+d*dalpha_am1*dalpha_am1/denom)
+!!$                 matVMAb(i_p_am2IV )=wm2IV *(+d*dalpha_am1*dalpha_am1/denom)
+!!$                 matVMAb(i_p_am1I  )=wm1I  *(-d*(dalpha_am1+dalpha_am2)*(dalpha_am1+dalpha_am2)/denom)
+!!$                 matVMAb(i_p_am1II )=wm1II *(-d*(dalpha_am1+dalpha_am2)*(dalpha_am1+dalpha_am2)/denom)
+!!$                 matVMAb(ipoint )=-d*&
+!!$                      & (dalpha_am1*dalpha_am1-(dalpha_am1+dalpha_am2)*(dalpha_am1+dalpha_am2))/denom
+!!$              IF(SECOND_ORDER_ALPHA.AND.i_p_am2I.NE.0) THEN
+!!$                 denom=dalpha_am1*dalpha_am2*(dalpha_am1+dalpha_am2)
+!!$                 matVMAf(i_p_am2I  )=wm2I  *(+d*dalpha_am1*dalpha_am1/denom)
+!!$                 matVMAf(i_p_am2II )=wm2II *(+d*dalpha_am1*dalpha_am1/denom)
+!!$                 matVMAf(i_p_am2III)=wm2III*(+d*dalpha_am1*dalpha_am1/denom)
+!!$                 matVMAf(i_p_am2IV )=wm2IV *(+d*dalpha_am1*dalpha_am1/denom)
+!!$                 matVMAf(i_p_am1I  )=wm1I  *(-d*(dalpha_am1+dalpha_am2)*(dalpha_am1+dalpha_am2)/denom)
+!!$                 matVMAf(i_p_am1II )=wm1II *(-d*(dalpha_am1+dalpha_am2)*(dalpha_am1+dalpha_am2)/denom)
+!!$                 matVMAf(ipoint )=-d*&
+!!$                      & (dalpha_am1*dalpha_am1-(dalpha_am1+dalpha_am2)*(dalpha_am1+dalpha_am2))/denom                    
+!!$              IF(SECOND_ORDER_ALPHA.AND.i_p_ap2I.NE.0) THEN
+!!$                 denom=dalpha_ap1*dalpha_ap2*(dalpha_ap1+dalpha_ap2)
+!!$                 matVMAb(i_p_ap2I  )=wp2I  *(-d*dalpha_ap1*dalpha_ap1/denom)
+!!$                 matVMAb(i_p_ap2II )=wp2II *(-d*dalpha_ap1*dalpha_ap1/denom)
+!!$                 matVMAb(i_p_ap2III)=wp2III*(-d*dalpha_ap1*dalpha_ap1/denom)
+!!$                 matVMAb(i_p_ap2IV )=wp2IV *(-d*dalpha_ap1*dalpha_ap1/denom)
+!!$                 matVMAb(i_p_ap1I )=wp1I* (+d*(dalpha_ap1+dalpha_ap2)*(dalpha_ap1+dalpha_ap2)/denom)
+!!$                 matVMAb(i_p_ap1II)=wp1II*(+d*(dalpha_ap1+dalpha_ap2)*(dalpha_ap1+dalpha_ap2)/denom)
+!!$                 matVMAb(ipoint )=+d*&
+!!$                      & (dalpha_ap1*dalpha_ap1-(dalpha_ap1+dalpha_ap2)*(dalpha_ap1+dalpha_ap2))/denom

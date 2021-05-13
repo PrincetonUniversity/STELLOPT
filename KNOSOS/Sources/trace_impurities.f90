@@ -449,7 +449,7 @@ SUBROUTINE CALCULATE_F(nalphab,zeta,theta,B,f_c,f_s)
   INTEGER, PARAMETER :: nlambda=2056!1028!256
   INTEGER, PARAMETER :: nlx=10000!5000!2560
   INTEGER ilp,jlp,ila,iz,it,frac,numint
-  REAL*8 z_l(nlx,1),t_l(nlx,1),B_l(nlx,1),dzeta,dBdz,dBdt,lambda,dlambda,sqrt1mlb(nlambda,nlx),Bmax,FSA
+  REAL*8 z_l(nlx,1),t_l(nlx,1),B_l(nlx,1),dzeta,dBdz,dBdt,lambda,dlambda,sqrt1mlb(nlambda,nlx),Bmaxt,FSA
   REAL*8 intg4(nlambda,nlx),g4(nlx,1,nlambda)!,g4zt(nalphab,nalphab,nlambda)
   REAL*8 fact,dummy,vdummy(Nnmp)
   REAL*8 numm,demm,num(nlx/nalphab),denom(nlx/nalphab),FSAg4(nlambda)
@@ -464,11 +464,11 @@ SUBROUTINE CALCULATE_F(nalphab,zeta,theta,B,f_c,f_s)
   CALL CPU_TIME(tstart)
 
   !Locate maximum of B
-  Bmax=0
+  Bmaxt=0
   DO iz=1,nalphab
      DO it=1,nalphab
-        IF(B(iz,it).GT.Bmax) THEN
-           Bmax=B(iz,it)
+        IF(B(iz,it).GT.Bmaxt) THEN
+           Bmaxt=B(iz,it)
            z_l(1,1)= zeta(iz)
            t_l(1,1)=theta(it)
         END IF
@@ -565,7 +565,7 @@ SUBROUTINE CALCULATE_U(nalphab,zeta,theta,B,dBdz,dBdt,Ze_T,phi1,dphi1dz,dphi1dt,
   !Others
   INTEGER, SAVE :: i1,i2=0
   INTEGER iz,it,n,m,np1,mp1
-  REAL*8, SAVE :: Bmax
+  REAL*8, SAVE :: Bmaxt
   COMPLEX*16 denom
   REAL*8 rhs0(nalphab,nalphab),rhs1(nalphab,nalphab),rhs2(nalphab,nalphab)  
   COMPLEX*16 rhs0nm(nalphab,nalphab),u0nm(nalphab,nalphab)
@@ -621,13 +621,13 @@ SUBROUTINE CALCULATE_U(nalphab,zeta,theta,B,dBdz,dBdt,Ze_T,phi1,dphi1dz,dphi1dt,
   CALL FFTB_KN(nalphab,u1nm,u1)
   CALL FFTB_KN(nalphab,u2nm,u2)
 
-  !Substract value at (zeta,theta) where B=Bmax
+  !Substract value at (zeta,theta) where B=Bmaxt
   IF(i2.EQ.0) THEN
-     Bmax=0
+     Bmaxt=0
      DO iz=1,nalphab
         DO it=1,nalphab
-           IF(B(iz,it).GT.Bmax) THEN
-              Bmax=B(iz,it)
+           IF(B(iz,it).GT.Bmaxt) THEN
+              Bmaxt=B(iz,it)
               i1=iz
               i2=it
            END IF
@@ -643,7 +643,7 @@ SUBROUTINE CALCULATE_U(nalphab,zeta,theta,B,dBdz,dBdt,Ze_T,phi1,dphi1dz,dphi1dt,
         DO it=1,nalphab
            WRITE(5200+myrank,'(20(1pe13.5))') &
                 & zeta(iz),theta(it),u0(iz,it),u1(iz,it),u2(iz,it),phi1(iz,it),&
-                & B(iz,it),Bmax,(1./Bmax/Bmax-1./B(iz,it)/B(iz,it))*(Bzeta/iota)
+                & B(iz,it),Bmaxt,(1./Bmaxt/Bmaxt-1./B(iz,it)/B(iz,it))*(Bzeta/iota)
         END DO
      END DO
   END IF
