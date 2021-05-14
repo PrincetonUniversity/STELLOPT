@@ -90,6 +90,7 @@
 
       INTEGER, PRIVATE                         :: win_bface
       INTEGER, POINTER                         :: bface(:)
+      INTEGER                                  :: nface_block
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -124,13 +125,13 @@
 !!    Wall Constructor
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      SUBROUTINE INIT_BLOCK(this,xmin,xmax,ymin,ymax,zmin,zmax,nface,istat,comm,shar_comm)
+      SUBROUTINE INIT_BLOCK(this,xmin,xmax,ymin,ymax,zmin,zmax,nface_block,istat,comm,shar_comm)
 #if defined(MPI_OPT)
          USE mpi
 #endif
          TYPE(block) :: this
          DOUBLE PRECISION, INTENT(in) :: xmin, ymin, zmin, xmax, ymax, zmax
-         INTEGER, INTENT(in) :: nface
+         INTEGER, INTENT(in) :: nface_block
          INTEGER, INTENT(inout) :: istat
          INTEGER, INTENT(inout), OPTIONAL :: comm, shar_comm
          INTEGER :: i
@@ -152,7 +153,7 @@
          this%rmax(2) = ymax
          this%rmin(3) = zmin
          this%rmax(3) = zmax
-         this%nfaces = nface
+         this%nfaces = nface_block
 
          ! Keep track of size of wall
          DO i=1,3
@@ -160,19 +161,19 @@
             IF (this%rmax(i) > wall%rmax(i)) wall%rmax(i) = this%rmax(i)
          END DO
 
-         IF (lverb_start) WRITE(6, *) 'Block intialized', xmin, xmax, ymin, ymax, zmin, zmax, nface
+         IF (lverb_start) WRITE(6, *) 'Block intialized', xmin, xmax, ymin, ymax, zmin, zmax, nface_block
 
          ! Only allocate if there is actually faces in this block
-         IF (nface > 0) THEN
+         IF (nface_block > 0) THEN
 #if defined(MPI_OPT)
             IF (PRESENT(comm)) THEN 
                CALL MPI_BARRIER(shar_comm,istat)
                IF (istat/=0) RETURN
-               CALL mpialloc_1d_int(this%face, nface, shar_rank, 0, shar_comm, this%win_face)
+               CALL mpialloc_1d_int(this%face, nface_block, shar_rank, 0, shar_comm, this%win_face)
                this%isshared = .TRUE.
             ELSE
 #endif
-               ALLOCATE(this%face(nface),STAT=istat)
+               ALLOCATE(this%face(nface_block),STAT=istat)
                this%isshared = .FALSE.
 #if defined(MPI_OPT)
             END IF
@@ -184,7 +185,7 @@
             IF (PRESENT(comm)) CALL MPI_BARRIER(shar_comm,istat)
 #endif
          ELSE
-            IF (lverb_start) WRITE(6, *) 'Skipped due to nface 0', shar_rank
+            IF (lverb_start) WRITE(6, *) 'Skipped due to nface_block 0', shar_rank
          END IF
       END SUBROUTINE INIT_BLOCK
       
@@ -396,22 +397,22 @@
             ! Read in the bounds of the block and the number of faces
             IF (shar_rank == 0) THEN
                READ(iunit, *) xmin,xmax,ymin,ymax,zmin,zmax
-               READ(iunit, *) nface
-               IF (lverb_start) WRITE(6, *) 'Block reading allocation: ', ik, nface
+               READ(iunit, *) nface_block
+               IF (lverb_start) WRITE(6, *) 'Block reading allocation: ', ik, nface_block
             END IF
 
 #if defined(MPI_OPT)
-            IF (PRESENT(comm)) CALL MPI_Bcast(nface,1,MPI_INTEGER,0,shar_comm,istat)
+            IF (PRESENT(comm)) CALL MPI_Bcast(nface_block,1,MPI_INTEGER,0,shar_comm,istat)
 #endif
             ! Only allocate and read faces if there are faces to read for this block
-            IF (nface > 0) THEN
+            IF (nface_block > 0) THEN
 #if defined(MPI_OPT)
                IF (PRESENT(comm)) THEN
-                  CALL mpialloc_1d_int(bface,nface,shar_rank,0,shar_comm,win_bface)
+                  CALL mpialloc_1d_int(bface,nface_block,shar_rank,0,shar_comm,win_bface)
                ELSE
 #endif
                   ! if no MPI, allocate everything on one node
-                  ALLOCATE(bface(nface),STAT=istat)
+                  ALLOCATE(bface(nface_block),STAT=istat)
 #if defined(MPI_OPT)
                END IF
 #endif
@@ -419,7 +420,7 @@
                IF (istat/=0) RETURN
                IF (shar_rank == 0) THEN
                   IF (lverb_start) WRITE(6, *) 'Block reading'
-                  DO i=1, nface
+                  DO i=1, nface_block
                      READ(iunit,*) bface(i)
                   END DO
                END IF
@@ -431,11 +432,11 @@
 
             ! Initialize the block
             IF (lverb_start .and. shar_rank == 0) WRITE(6, *) 'Init block: ', ik
-            CALL INIT_BLOCK(wall%blocks(ik),xmin,xmax,ymin,ymax,zmin,zmax,nface,istat,comm,shar_comm)
+            CALL INIT_BLOCK(wall%blocks(ik),xmin,xmax,ymin,ymax,zmin,zmax,nface_block,istat,comm,shar_comm)
 
             IF (lverb_start .and. shar_rank == 0) WRITE(6, *) 'Init block done: ', ik
             ! Also only deallocate if nface > 0
-            IF (nface > 0) CALL free_mpi_array(win_bface, bface, shared)
+            IF (nface_block > 0) CALL free_mpi_array(win_bface, bface, shared)
          END DO
       END IF
       ! close file
