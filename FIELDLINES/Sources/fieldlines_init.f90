@@ -214,28 +214,8 @@
          CALL fieldlines_init_hint
       END IF
 
-      !ERROR FIELD code section
-      ! Note that for this to make sense the code must be run with NFP=1 and PHIMAX=2*pi
-      IF ((lerror_field) .and. (myid_sharmem == master)) THEN
-         IF (lverb) WRITE(6,'(A)') '!!!!!ADDING STATIC ERROR FIELD!!!!!'
-         b_err   = 2.5*2.0E-5
-         ang_err = pi2*0./360.
-         b_err  = SQRT((b_err*b_err)/2)
-         bx_err = b_err * COS(ang_err)
-         by_err = b_err * SIN(ang_err)
-         bz_err = 0
-         DO k = 1, nz
-            DO j = 1, nphi
-               DO i = 1, nr
-                  br_err = bx_err*cos(phiaxis(j)) + by_err*sin(phiaxis(j))
-                  bphi_err = by_err*cos(phiaxis(j)) - bx_err*sin(phiaxis(j))
-                  B_R(i,j,k) = B_R(i,j,k) + br_err
-                  B_PHI(i,j,k) = B_PHI(i,j,k) + bphi_err
-                  B_Z(i,j,k) = B_Z(i,j,k) + bz_err
-               END DO
-            END DO
-         END DO
-      END IF
+      ! Handle error fields
+      IF (lerror_field) CALL fieldlines_init_errorfield
 
       ! Put curtor on axis and calculate the field
       IF (laxis_i)  CALL fieldlines_init_I

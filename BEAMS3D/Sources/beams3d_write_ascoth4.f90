@@ -22,12 +22,14 @@
                                  NE_spl_s, TI_spl_s, ZEFF_spl_s, POT_spl_s, vp_spl_s, &
                                  nne, nte, nti, nzeff, npot, plasma_mass
       USE beams3d_runtime, ONLY: id_string, npoinc, nbeams, beam, t_end, lverb, &
-                                    lvmec, lpies, lspec, lcoil, lmgrid, lbeam, &
+                                    lvmec, lpies, lspec, lcoil, lmgrid, lbeam, lbbnbi, &
                                     lvessel, lvac, lbeam_simple, handle_err, nparticles_start, &
                                     HDF5_OPEN_ERR,HDF5_WRITE_ERR,&
-                                    HDF5_CLOSE_ERR, BEAMS3D_VERSION, weight, e_beams, p_beams,&
+                                    HDF5_CLOSE_ERR, BEAMS3D_VERSION, weight, &
                                     charge, Zatom, mass, ldepo, v_neut,lcollision, pi, pi2, &
-                                    t_end_in, nprocs_beams
+                                    t_end_in, nprocs_beams, &
+                                    R_beams, PHI_beams, Z_beams, mass_beams, e_beams, p_beams, &
+                                    div_beams, charge_beams
       USE safe_open_mod, ONLY: safe_open
       USE wall_mod, ONLY: nface,nvertex,face,vertex,ihit_array, wall_free
       USE beams3d_write_par
@@ -44,11 +46,11 @@
 !          ier          Error Flag
 !          iunit        File ID
 !-----------------------------------------------------------------------
-      INTEGER :: ier, iunit, i, d1, d2, d3, k, k1, k2, kmax
+      INTEGER :: ier, iunit, i, j, d1, d2, d3, k, k1, k2, kmax
       INTEGER(HID_T) :: options_gid, bfield_gid, efield_gid, plasma_gid, &
                         neutral_gid, wall_gid, marker_gid, qid_gid
       INTEGER, ALLOCATABLE :: i1dtemp(:)
-      DOUBLE PRECISION :: dbl_temp
+      DOUBLE PRECISION :: dbl_temp,xt,yt,zt,nvecx,nvecy,nvecz
       DOUBLE PRECISION, ALLOCATABLE :: rtemp(:,:,:), r1dtemp(:)
       CHARACTER(LEN=10) ::  qid_str
       CHARACTER(LEN=8) :: temp_str8
@@ -217,6 +219,107 @@
                DEALLOCATE(rtemp)
 
                CLOSE(iunit)
+
+               ! Write the injector/distributions/fullenergies files if not lbbnbi
+               IF (.not. lbbnbi) THEN
+                  ! Injector
+                  ier = 0; iunit = 411
+                  CALL safe_open(iunit,ier,'injector','replace','formatted')
+                  WRITE(iunit,'(A)') '# Injector [BEAMS3D] (Pinis, obstacles, output surface, Pini powers):'
+                  WRITE(iunit,'(2X,I4,2X,A)') nbeams,'# Injector: # Injector ID'
+                  WRITE(iunit,'(2X,I4,2X,A)') nbeams,'# Injector: # of Pinis'
+                  DO i = 1, nbeams
+                     WRITE(iunit,'(A)') '# Pini:'
+                     WRITE(iunit,'(2X,I6,2X,A)') 327198,'# Beamlet weights id'
+                     WRITE(iunit,'(2X,I6,2X,A)') 411198,'# Energy fractions id'
+                     WRITE(iunit,'(A)') ' 0.00000000000000D+00   0.00000000000000D+00      # Horizontal & vertical misalignment:'
+                     WRITE(iunit,'(2X,I4,2X,A)') 1,'# Pini: # of beamlets'
+                     WRITE(iunit,'(A)') '# Beamlet (IDs, coords, direction):'
+                     WRITE(iunit,'(2(2X,I6),2X,A)') 718201+i,818201+i,'# Beamlet: disp. id, ANums id.'
+                     xt = R_beams(i,1)*cos(PHI_beams(i,1))
+                     yt = R_beams(i,1)*sin(PHI_beams(i,1))
+                     zt = Z_beams(i,1)
+                     WRITE(iunit,'(3(2X,ES18.10),2X,A)') xt,yt,zt,'# Point: x, y, z'
+                     ! Steering angle defined as relative from the PINI to the zaxis 
+                     !   +theta is downwards
+                     !   +phi is clockwise?
+                     nvecx = -xt; nvecy=-yt; nvecz = -zt
+                     nvecx = R_beams(i,2)*cos(PHI_beams(i,2)) + nvecx
+                     nvecy = R_beams(i,2)*sin(PHI_beams(i,2)) + nvecy
+                     nvecz = Z_beams(i,2)                     + nvecz
+                     WRITE(iunit,'(3(2X,ES18.10),2X,A)') -ATAN2(nvecz,sqrt(nvecx*nvecx+nvecy*nvecy)),ATAN2(nvecy,nvecx)+ATAN2(yt,xt),1.0,'# Vector: theta, phi, length'
+                  END DO
+                  WRITE(iunit,'(A)') '       0           # Injector: # of obstacles'
+                  WRITE(iunit,'(A)') '# Output surface:'
+                  WRITE(iunit,'(A,I2.2,A)') '# Quad (',nbeams,' Triangles):'
+                  DO i = 1, nbeams
+                     xt = R_beams(i,1)*cos(PHI_beams(i,1))
+                     yt = R_beams(i,1)*sin(PHI_beams(i,1))
+                     zt = Z_beams(i,1)
+                     nvecx = -xt; nvecy=-yt; nvecz = -zt
+                     nvecx = R_beams(i,2)*cos(PHI_beams(i,2)) + nvecx
+                     nvecy = R_beams(i,2)*sin(PHI_beams(i,2)) + nvecy
+                     nvecz = Z_beams(i,2)                     + nvecz
+                     dbl_temp = sqrt(nvecx*nvecx+nvecy*nvecy+nvecz*nvecz)
+                     nvecx = nvecx/dbl_temp
+                     nvecy = nvecy/dbl_temp
+                     nvecz = nvecz/dbl_temp
+                     xt  = xt + nvecx
+                     yt  = yt + nvecy
+                     zt  = zt + nvecz
+                     dbl_temp = nvecx
+                     nvecx = nvecy
+                     nvecy = dbl_temp
+                     nvecz = 0
+                     ! Note triangle is automatically reflected
+                     WRITE(iunit,'(A)') '# Triangle (3 Points):'
+                     WRITE(iunit,'(3(2X,ES18.10),2X,A)') xt+nvecx,yt+nvecy,zt-1,'# Point: x, y, z'
+                     WRITE(iunit,'(3(2X,ES18.10),2X,A)') xt+nvecx,yt+nvecy,zt+1,'# Point: x, y, z'
+                     WRITE(iunit,'(3(2X,ES18.10),2X,A)') xt-nvecx,yt-nvecy,zt+1,'# Point: x, y, z'
+                  END DO
+                  WRITE(iunit,'(2X,I6,2X,A)') 107193,'# Pini powers id'
+                  CLOSE(iunit)
+                  ! distributions
+                  ier = 0; iunit = 411
+                  CALL safe_open(iunit,ier,'distributions','replace','formatted')
+                  WRITE(iunit,'(2X,I6,2X,A)') nbeams+3,'- # of discrete distributions'
+                  WRITE(iunit,'(A)') '# The possible energy fractions & probabilities'
+                  WRITE(iunit,'(2(2X,I6),2X,A)') 411198,1,'# DiscreteDistribution: id, # of keys'
+                  WRITE(iunit,'(2(2X,ES18.10),2X,A)') 1.0,1.0,'# DiscreteDistribution: data point'
+                  WRITE(iunit,'(A)') '# Beamlet weights distribution:'
+                  WRITE(iunit,'(2(2X,I6),2X,A)') 327198,1,'# DiscreteDistribution: id, # of keys'
+                  WRITE(iunit,'(2(2X,ES18.10),2X,A)') 1.0,1.0,'# DiscreteDistribution: data point'
+                  WRITE(iunit,'(A)') '# The powers of the PINIs in Watts'
+                  WRITE(iunit,'(2(2X,I6),2X,A)') 107193,nbeams,'# DiscreteDistribution: id, # of keys'
+                  DO i = 1, nbeams
+                     WRITE(iunit,'(2(2X,ES18.10),2X,A)') DBLE(i),P_beams(i),'# DiscreteDistribution: data point'
+                  END DO
+                  WRITE(iunit,'(A)') '# The emitted isotopes and their probabilities'
+                  DO i = 1, nbeams
+                     WRITE(iunit,'(2(2X,I6),2X,A)') 818201+i,1,'# DiscreteDistribution: id, # of keys'
+                     WRITE(iunit,'(2(2X,ES18.10),2X,A)') DBLE(NINT(mass_beams(i)*inv_amu)),DBLE(NINT(charge_beams(i)/e_charge)),'# DiscreteDistribution: data point' !Mass then Z
+                  END DO
+                  WRITE(iunit,'(2X,I6,2X,A)') nbeams,'- # of discrete distributions'
+                  DO i = 1, nbeams
+                     WRITE(iunit,'(A)') '# Beamlet dispersion distribution:'
+                     WRITE(iunit,'(2X,I6,2X,A)') 718201+i,'# Distribution: id'
+                     WRITE(iunit,'(2X,I6,2X,A)') 100,'# Distribution: id'
+                     DO j = 1, 100
+                        xt = 4.8*div_beams(i)*(j-1)/99
+                        yt = EXP(-0.5*((xt-div_beams(i))/(div_beams(i)))**2) ! Gausian random centered on div_beams
+                        WRITE(iunit,'(2(2X,ES18.10),2X,A)') xt,yt,'# DiscreteDistribution: data point'
+                     END DO
+                  END DO
+                  CLOSE(iunit)
+                  ! fullenergies
+                  ier = 0; iunit = 411
+                  CALL safe_open(iunit,ier,'fullenergies','replace','formatted')
+                  WRITE(iunit,'(A)') '# Injector: Full energies of particles from each PINI'
+                  DO i = 1, nbeams
+                     WRITE(iunit,'(2X,ES18.10,2X,A,I4)') DBLE(NINT(E_beams(i)/e_charge)),'# PINI  ',i 
+                  END DO
+                  CLOSE(iunit)
+               END IF
             END IF
          CASE('MARKER')
             ! Downselect the markers
