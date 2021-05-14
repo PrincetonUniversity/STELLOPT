@@ -31,7 +31,7 @@
                                     charge, Zatom, mass, ldepo, v_neut, &
                                     lcollision, pi, pi2, t_end_in, nprocs_beams, &
                                     div_beams, mass_beams, Zatom_beams, dex_beams, &
-                                    qid_str_saved, lascotfl
+                                    qid_str_saved, lascotfl, R_beams, PHI_beams, Z_beams
       USE safe_open_mod, ONLY: safe_open
       USE wall_mod, ONLY: nface,nvertex,face,vertex,ihit_array, wall_free, machine_string
       USE beams3d_write_par
@@ -467,6 +467,68 @@
                CALL h5gclose_f(wall_gid, ier)
 
                ! Close file
+               CALL close_hdf5(fid,ier)
+               IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,'ascot5_'//TRIM(id_string)//'.h5',ier)
+            END IF
+         CASE('BBNBI_BASIC')
+            !--------------------------------------------------------------
+            !           BEAM Model
+            !           Note BEAMS3D assumes each beam represents an energy
+            !           this is based on the basic beam model
+            !--------------------------------------------------------------
+            IF (myworkid == master) THEN
+               CALL open_hdf5('ascot5_'//TRIM(id_string)//'.h5',fid,ier,LCREATE=.false.)
+               IF (ier /= 0) CALL handle_err(HDF5_OPEN_ERR,'ascot5_'//TRIM(id_string)//'.h5',ier)
+               CALL h5gcreate_f(fid,'nbi', nbi_gid, ier)
+               CALL RANDOM_NUMBER(qid_flt)
+               WRITE(qid_str,'(i10.10)') FLOOR(qid_flt*1.0E9)
+               CALL write_att_hdf5(nbi_gid,'active',qid_str,ier)
+               CALL h5gcreate_f(nbi_gid,'nbi_'//qid_str, qid_gid, ier)
+               CALL write_att_hdf5(qid_gid,'date',temp_str8,ier)
+               CALL write_att_hdf5(qid_gid,'description','Data initialized from BEAMS3D',ier)
+               CALL write_var_hdf5(qid_gid,'ninj',ier,INTVAR=nbeams)
+               DO i = 1, nbeams
+                  !d1 = Dex_beams(i)
+                  WRITE(inj_str8,'(i8)') i
+                  CALL h5gcreate_f(qid_gid,'inj'//ADJUSTL(inj_str8), inj_gid, ier)
+                  CALL write_var_hdf5(inj_gid,'id',ier,INTVAR=i)
+                  CALL write_var_hdf5(inj_gid,'power',ier,DBLVAR=P_BEAMS(i))
+                  CALL write_var_hdf5(inj_gid,'energy',ier,DBLVAR=E_BEAMS(i))
+                  CALL write_var_hdf5(inj_gid,'efrac',3,ier,DBLVAR=DBLE((/1, 0, 0/)))
+                  CALL write_var_hdf5(inj_gid,'div_h',ier,DBLVAR=div_beams(i))
+                  CALL write_var_hdf5(inj_gid,'div_v',ier,DBLVAR=div_beams(i))
+                  dbl_temp = 0
+                  CALL write_var_hdf5(inj_gid,'div_halo_frac',ier,DBLVAR=dbl_temp)
+                  CALL write_var_hdf5(inj_gid,'div_halo_v',ier,DBLVAR=dbl_temp)
+                  CALL write_var_hdf5(inj_gid,'div_halo_h',ier,DBLVAR=dbl_temp)
+                  CALL write_var_hdf5(inj_gid,'anum',ier,INTVAR=NINT(mass_beams(i)*inv_amu))
+                  CALL write_var_hdf5(inj_gid,'znum',ier,INTVAR=NINT(Zatom_beams(i)))
+                  CALL write_var_hdf5(inj_gid,'mass',ier,DBLVAR=mass_beams(i))
+                  ! Now treat each beam as a Source with single beamlet
+                  d2 = 1
+                  ALLOCATE(r1dtemp(d2))
+                  CALL write_var_hdf5(inj_gid,'nbeamlet',ier,INTVAR=d2)
+                  r1dtemp = R_beams(i,1)*cos(PHI_beams(i,1))
+                  CALL write_var_hdf5(inj_gid,'beamletx',d2,ier,DBLVAR=r1dtemp)
+                  r1dtemp = R_beams(i,1)*sin(PHI_beams(i,1))
+                  CALL write_var_hdf5(inj_gid,'beamlety',d2,ier,DBLVAR=r1dtemp)
+                  r1dtemp = Z_beams(i,1)
+                  CALL write_var_hdf5(inj_gid,'beamletz',d2,ier,DBLVAR=r1dtemp)
+                  r1dtemp = R_beams(i,2)*cos(PHI_beams(i,2)) - R_beams(i,1)*cos(PHI_beams(i,1))
+                  CALL write_var_hdf5(inj_gid,'beamletdx',d2,ier,DBLVAR=r1dtemp)
+                  r1dtemp = R_beams(i,2)*sin(PHI_beams(i,2)) - R_beams(i,1)*sin(PHI_beams(i,1))
+                  CALL write_var_hdf5(inj_gid,'beamletdy',d2,ier,DBLVAR=r1dtemp)
+                  r1dtemp = Z_beams(i,2) - Z_beams(i,1)
+                  CALL write_var_hdf5(inj_gid,'beamletdz',d2,ier,DBLVAR=r1dtemp)
+                  
+                  DEALLOCATE(r1dtemp)
+
+                  CALL h5gclose_f(inj_gid, ier)
+               END DO
+               CALL h5gclose_f(qid_gid, ier)
+               CALL h5gclose_f(nbi_gid, ier)
+
+               ! Close File
                CALL close_hdf5(fid,ier)
                IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,'ascot5_'//TRIM(id_string)//'.h5',ier)
             END IF
