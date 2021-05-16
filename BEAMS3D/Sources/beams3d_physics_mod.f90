@@ -1358,6 +1358,7 @@ MODULE beams3d_physics_mod
             CALL R8HERM3FCN(ict,1,1,fvals,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             S4D(1,1,1,1),nr,nphi,nz)
+            ! MJL 2021-05-16 Interpolation here should probably not be done in U, due to the seam where U wraps from 2pi to 0? See out_beams3d_nag.f90.
             CALL R8HERM3FCN(ict,1,1,fvalu,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             U4D(1,1,1,1),nr,nphi,nz)

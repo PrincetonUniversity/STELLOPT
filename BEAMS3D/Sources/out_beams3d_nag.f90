@@ -50,6 +50,7 @@ SUBROUTINE out_beams3d_nag(t, q)
     REAL*8 :: fval(1)
     INTEGER, parameter :: ict(8)=(/1,0,0,0,0,0,0,0/)
     REAL*8, PARAMETER :: one = 1
+    REAL*8 :: x_for_u, y_for_u
     !-----------------------------------------------------------------------
     !     Begin Function
     !-----------------------------------------------------------------------
@@ -77,12 +78,19 @@ SUBROUTINE out_beams3d_nag(t, q)
                        hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                        S4D(1,1,1,1),nr,nphi,nz)
        y0 = fval(1)
-       S_lines(mytdex, myline) = y0 
+       S_lines(mytdex, myline) = y0
+       
        CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                        hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                       U4D(1,1,1,1),nr,nphi,nz)
-       z0 = fval(1)
+                       X4D(1,1,1,1),nr,nphi,nz)
+       x_for_u = fval(1)
+       CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                       hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                       Y4D(1,1,1,1),nr,nphi,nz)
+       y_for_u = fval(1)
+       z0 = atan2(y_for_u, x_for_u)
        U_lines(mytdex, myline) = z0
+       
        CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                        hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                        MODB4D(1,1,1,1),nr,nphi,nz)
