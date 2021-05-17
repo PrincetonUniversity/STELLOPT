@@ -129,9 +129,6 @@
       INTERFACE get_equil_Bcylsuv
          MODULE PROCEDURE get_equil_Bcylsuv_dbl, get_equil_Bcylsuv_sgl
       END INTERFACE
-      INTERFACE get_equil_Bcylsuv2
-         MODULE PROCEDURE get_equil_Bcylsuv2_dbl, get_equil_Bcylsuv2_sgl
-      END INTERFACE
       INTERFACE get_equil_Bcyl
          MODULE PROCEDURE get_equil_Bcyl_dbl, get_equil_Bcyl_sgl
       END INTERFACE
@@ -2150,72 +2147,6 @@
       RETURN
       END SUBROUTINE get_equil_Bcylsuv_sgl
       
-      SUBROUTINE get_equil_Bcylsuv2_dbl(s_val,u_val,v_val,ier,dBphidpsi)
-      USE EZspline
-      IMPLICIT NONE
-      DOUBLE PRECISION, INTENT(in)    ::  s_val
-      DOUBLE PRECISION, INTENT(in)    ::  u_val
-      DOUBLE PRECISION, INTENT(in)    ::  v_val
-      DOUBLE PRECISION, INTENT(out)   ::  dBphidpsi(3)
-      INTEGER, INTENT(inout)     ::  ier
-      DOUBLE PRECISION :: rho_val
-      INTEGER :: i,j,k
-      REAL*8 :: xparam, yparam, zparam, hx, hy, hz, hxi, hyi, hzi
-      REAL*8 :: fval1(1)
-      REAL*8 :: fval2(1,3)
-      INTEGER, parameter :: ict1(10)=(/1,0,0,0,0,0,0,0,0,0/)
-      INTEGER, parameter :: ict3(10)=(/0,1,1,1,0,0,0,0,0,0/)
-      IF (ier < 0) RETURN
-      rho_val = SQRT(s_val)
-!      CALL EZSPLINE_isInDomain(R_spl,u_val,v_val,rho_val,ier)
-!      IF (ier == 0) THEN
-!         R_grad = 0; Z_grad = 0
-!         CALL EZspline_interp(R_spl,u_val,v_val,rho_val,r_val,ier)
-!         CALL EZspline_interp(Bs_spl,u_val,v_val,rho_val,Bs,ier)
-!         CALL EZspline_interp(Bu_spl,u_val,v_val,rho_val,Bu,ier)
-!         CALL EZspline_interp(Bv_spl,u_val,v_val,rho_val,Bv,ier)
-!         CALL EZspline_interp(Ru_spl,u_val,v_val,rho_val,R_grad(1),ier)
-!         CALL EZspline_interp(Rv_spl,u_val,v_val,rho_val,R_grad(2),ier)
-!         CALL EZspline_interp(Zu_spl,u_val,v_val,rho_val,Z_grad(1),ier)
-!         CALL EZspline_interp(Zv_spl,u_val,v_val,rho_val,Z_grad(2),ier)
-      IF (isingrid(u_val,v_val,rho_val)) THEN
-         CALL lookupgrid3d(u_val,v_val,rho_val,i,j,k,hx,hy,hz,hxi,hyi,hzi,xparam,yparam,zparam)
-         !CALL r8fvtricub(ict1, 1, 1, fval1, i, j, k, xparam, yparam, zparam, &
-         !                hx, hxi, hy, hyi, hz, hzi, &
-         !                BV4D(1,1,1,1), nx1, nx2, nx3)
-         !Bv = fval1(1)
-            CALL r8fvtricub(ict3, 1, 1, fval2, i, j, k, xparam, yparam, zparam, &
-                           hx, hxi, hy, hyi, hz, hzi, &
-                           BV4D(1,1,1,1), nx1, nx2, nx3)
-            dBphidpsi(1) = fval2(1,1)
-            dBphidpsi(2) = fval2(1,2)
-            dBphidpsi(3) = fval2(1,3)
-      ELSE
-         ier   = 9
-            dBphidpsi(1) = 0
-            dBphidpsi(2) = 0
-            dBphidpsi(3) = 0
-      END IF
-      RETURN
-      END SUBROUTINE get_equil_Bcylsuv2_dbl
-      
-      SUBROUTINE get_equil_Bcylsuv2_sgl(s_val,u_val,v_val,ier,dBphidpsi)
-      IMPLICIT NONE
-      REAL, INTENT(in)    ::  s_val
-      REAL, INTENT(in)    ::  u_val
-      REAL, INTENT(in)    ::  v_val
-      REAL, INTENT(out)   ::  dBphidpsi(3)
-      INTEGER, INTENT(inout)     ::  ier
-      DOUBLE PRECISION    ::  s_dbl
-      DOUBLE PRECISION    ::  u_dbl
-      DOUBLE PRECISION    ::  v_dbl
-      DOUBLE PRECISION    ::  dBphidpsi_dbl(3)
-      s_dbl = s_val; u_dbl = u_val; v_dbl = v_val
-      CALL get_equil_Bcylsuv2_dbl(s_dbl,u_dbl,v_dbl,ier,dBphidpsi_dbl)
-      dBphidpsi = dBphidpsi_dbl
-      RETURN
-      END SUBROUTINE get_equil_Bcylsuv2_sgl
-      
       SUBROUTINE get_equil_B_dbl(r_val,phi_val,z_val,bx,by,bz,ier,modb_val,B_grad)
       USE EZspline
       IMPLICIT NONE
@@ -2520,16 +2451,6 @@
       s = coord(1)
       th = coord(2)
       phi = coord(3)
-
-      ! suppose nfp = 4, then:  \phi \in -pi/2 to pi/2: phi goes to phi*nfp
-      !                         \phi \in pi/2 to pi: phi goes to (phi - pi/2)* nfp
-      !                         \phi \in pi to 3*pi/2: phi goes to (phi - pi)* nfp
-      !                         \phi \in 3*pi/2 to 2*pi: phi goes to (phi - 3*pi/2)* nfp
-      ! at 2pi/nfp = pi/2   (-)  : phi*nfp     at pi/2   (+): 0*nfp
-      !  at pi     (-)  : phi*nfp/2   at pi     (+): 0*nfp
-      !  at 3*pi/2 (-)  : phi*nfp/2   at 3*pi/2 (+): 0*nfp
-      !  at 2*pi   (-)  : phi*nfp/2   at 2*pi   (+): 0*nfp
-
       phi = MOD(phi,pi2/nfp)*nfp
       IF (phi < 0) THEN
          phi = -MOD(ABS(phi),pi2)
@@ -2565,12 +2486,9 @@
                          hx, hxi, hy, hyi, hz, hzi, &
                          LU4D(1,1,1,1), nx1, nx2, nx3)
          dlam = fval(1)
-         ! JCS - how does this behave near the th~th1~2pi boundary?
          dth = -(th + lam - th1)/(one+dlam)
          n1 = n1 + 1
-!         write (*,'(A,I4,(2es22.12))') "<--n1,th,dth= ",n1,th,dth
          th = th + 0.5*dth
-!         if (n1 .eq. 500) write (*,'(A,(3es22.12))') "<--1 = 500,s,th,phi= ",s,th,phi
       END DO
       coord(1) = s
       coord(2) = th

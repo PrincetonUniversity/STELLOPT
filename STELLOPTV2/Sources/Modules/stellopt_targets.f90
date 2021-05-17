@@ -9,7 +9,7 @@
 !     Libraries
 !-----------------------------------------------------------------------
       USE stel_kinds, ONLY: rprec
-      USE stellopt_vars, ONLY: ntor_rcws, mpol_rcws, mnprod_ps, rosenbrock_dim
+      USE stellopt_vars, ONLY: ntor_rcws, mpol_rcws, rosenbrock_dim
       USE vparams, ONLY: nsd
       USE vsvd0, ONLY : nigroup
 
@@ -191,29 +191,8 @@
       REAL(rprec) ::  target_regcoil_winding_surface_separation
       REAL(rprec) ::  sigma_regcoil_winding_surface_separation
       REAL(rprec),DIMENSION((2*ntor_rcws+1)*(2*mpol_rcws+1)*4) ::  target_regcoil_chi2_b, sigma_regcoil_chi2_b
-      REAL(rprec),DIMENSION((2*ntor_rcws+1)*(2*mpol_rcws+1)*4) ::  target_regcoil_lambda, sigma_regcoil_lambda
-      REAL(rprec),DIMENSION((2*ntor_rcws+1)*(2*mpol_rcws+1)*4) ::  target_regcoil_rms_K, sigma_regcoil_rms_K
-      REAL(rprec),DIMENSION((2*ntor_rcws+1)*(2*mpol_rcws+1)*4) ::  target_regcoil_max_K, sigma_regcoil_max_K
-      REAL(rprec),DIMENSION((2*ntor_rcws+1)*(2*mpol_rcws+1)*4) ::  target_regcoil_current_potential, sigma_regcoil_current_potential
-      REAL(rprec),DIMENSION((2*ntor_rcws+1)*(2*mpol_rcws+1)*4) ::  target_regcoil_max_current_potential, sigma_regcoil_max_current_potential
-      REAL(rprec),DIMENSION((2*ntor_rcws+1)*(2*mpol_rcws+1)*4) ::  target_regcoil_chi2_K, sigma_regcoil_chi2_K
-      REAL(rprec),DIMENSION((2*ntor_rcws+1)*(2*mpol_rcws+1)*4) ::  target_regcoil_max_bnormal, sigma_regcoil_max_bnormal
-      REAL(rprec),DIMENSION((2*ntor_rcws+1)*(2*mpol_rcws+1)*4) ::  target_regcoil_area_coil, sigma_regcoil_area_coil
-      REAL(rprec),DIMENSION((2*ntor_rcws+1)*(2*mpol_rcws+1)*4) ::  target_regcoil_area_plasma, sigma_regcoil_area_plasma
-      REAL(rprec),DIMENSION((2*ntor_rcws+1)*(2*mpol_rcws+1)*4) ::  target_regcoil_area_diff, sigma_regcoil_area_diff
-      REAL(rprec),DIMENSION((2*ntor_rcws+1)*(2*mpol_rcws+1)*4) ::  target_regcoil_volume_coil, sigma_regcoil_volume_coil
-      REAL(rprec),DIMENSION((2*ntor_rcws+1)*(2*mpol_rcws+1)*4) ::  target_regcoil_volume_plasma, sigma_regcoil_volume_plasma
-      REAL(rprec),DIMENSION((2*ntor_rcws+1)*(2*mpol_rcws+1)*4) ::  target_regcoil_volume_diff, sigma_regcoil_volume_diff
-      REAL(rprec),DIMENSION((2*ntor_rcws+1)*(2*mpol_rcws+1)*4) ::  target_regcoil_c2p_dist_min, sigma_regcoil_c2p_dist_min
-      REAL(rprec),DIMENSION(mnprod_ps) ::  target_regcoil_bnormal_total, sigma_regcoil_bnormal_total
-      REAL(rprec),DIMENSION(mnprod_ps) ::  target_regcoil_K2, sigma_regcoil_K2
-      !REAL(rprec) ::  target_regcoil_current_density, sigma_regcoil_current_density
+      REAL(rprec) ::  target_regcoil_current_density, sigma_regcoil_current_density
       REAL(rprec) ::  target_curvature_p2, sigma_curvature_P2
-      INTEGER ::  gammac_transits
-      INTEGER ::  gammac_zetadiv
-      INTEGER ::  gammac_bpsteps
-      INTEGER ::  gammac_maxwells
-      LOGICAL ::  gammac_lgcx_files
       REAL(rprec), DIMENSION(nigroup)    :: target_coillen, sigma_coillen
       REAL(rprec), DIMENSION(nigroup)    :: target_coilsegvar, sigma_coilsegvar
       INTEGER     :: npts_biot, npts_clen, npts_torx, npts_curv, npts_csep, npts_cself, npts_crect
@@ -275,25 +254,9 @@
       INTEGER, PARAMETER :: jtarget_bprobe     = 501
       INTEGER, PARAMETER :: jtarget_segrog     = 502
       INTEGER, PARAMETER :: jtarget_fluxloop   = 503
-      INTEGER, PARAMETER :: jtarget_regcoil_chi2_b          = 5040
-      !INTEGER, PARAMETER :: jtarget_regcoil_current_density = 5041
-      INTEGER, PARAMETER :: jtarget_regcoil_lambda          = 5041
-      INTEGER, PARAMETER :: jtarget_regcoil_max_K           = 5042
-      INTEGER, PARAMETER :: jtarget_regcoil_rms_K           = 5043
-      INTEGER, PARAMETER :: jtarget_regcoil_chi2_k          = 5044
-      INTEGER, PARAMETER :: jtarget_regcoil_max_bnormal     = 5045
-      INTEGER, PARAMETER :: jtarget_regcoil_area_coil       = 5046
-      INTEGER, PARAMETER :: jtarget_regcoil_area_plasma     = 5047
-      INTEGER, PARAMETER :: jtarget_regcoil_area_diff       = 5048
-      INTEGER, PARAMETER :: jtarget_regcoil_volume_plasma   = 5049
-      INTEGER, PARAMETER :: jtarget_regcoil_volume_coil     = 5050
-      INTEGER, PARAMETER :: jtarget_regcoil_volume_diff     = 5051
-      INTEGER, PARAMETER :: jtarget_regcoil_bnormal_total   = 5052
-      INTEGER, PARAMETER :: jtarget_regcoil_c2p_dist_min    = 5053
-      INTEGER, PARAMETER :: jtarget_regcoil_K2              = 5054
-      INTEGER, PARAMETER :: jtarget_regcoil_current_potential      = 5055
-      INTEGER, PARAMETER :: jtarget_regcoil_max_current_potential  = 5056
-      INTEGER, PARAMETER :: jtarget_curvature_P2    = 505
+      INTEGER, PARAMETER :: jtarget_regcoil_chi2_b          = 504
+      INTEGER, PARAMETER :: jtarget_regcoil_current_density = 5041
+      INTEGER, PARAMETER :: jtarget_curvature_P2            = 505
       INTEGER, PARAMETER :: jtarget_gamma_c    = 506
       INTEGER, PARAMETER :: jtarget_balloon    = 601
       INTEGER, PARAMETER :: jtarget_kink       = 6011
@@ -466,40 +429,8 @@
             WRITE(iunit, out_format) 'COILOPT++ Normal Field'
          CASE(jtarget_regcoil_chi2_b)
             WRITE(iunit, out_format) 'REGCOIL Chi^2 B'
-         CASE(jtarget_regcoil_lambda)
-            WRITE(iunit, out_format) 'REGCOIL LAMBDA'
-         CASE(jtarget_regcoil_rms_K)
-            WRITE(iunit, out_format) 'REGCOIL RMS K'
-         CASE(jtarget_regcoil_max_K)
-            WRITE(iunit, out_format) 'REGCOIL MAX K'
-         CASE(jtarget_regcoil_current_potential)
-            WRITE(iunit, out_format) 'REGCOIL CURRENT POTENTIAL'
-         CASE(jtarget_regcoil_max_current_potential)
-            WRITE(iunit, out_format) 'REGCOIL MAX CURRENT POTENTIAL'
-         CASE(jtarget_regcoil_chi2_k)
-            WRITE(iunit, out_format) 'REGCOIL Chi^2 K'
-         CASE(jtarget_regcoil_max_bnormal)
-            WRITE(iunit, out_format) 'REGCOIL MAX BNormal'
-         CASE(jtarget_regcoil_c2p_dist_min)
-            WRITE(iunit, out_format) 'REGCOIL COIL PLASMA DISTANCE MIN'
-         CASE(jtarget_regcoil_area_coil)
-            WRITE(iunit, out_format) 'REGCOIL AREA COIL'
-         CASE(jtarget_regcoil_area_plasma)
-            WRITE(iunit, out_format) 'REGCOIL AREA PLASMA'
-         CASE(jtarget_regcoil_area_diff)
-            WRITE(iunit, out_format) 'REGCOIL AREA DIFF'
-         CASE(jtarget_regcoil_volume_coil)
-            WRITE(iunit, out_format) 'REGCOIL VOLUME COIL'
-         CASE(jtarget_regcoil_volume_plasma)
-            WRITE(iunit, out_format) 'REGCOIL VOLUME PLASMA'
-         CASE(jtarget_regcoil_volume_diff)
-            WRITE(iunit, out_format) 'REGCOIL VOLUME DIFF'
-         CASE(jtarget_regcoil_bnormal_total)
-            WRITE(iunit, out_format) 'REGCOIL BNORMAL TOTAL'
-         CASE(jtarget_regcoil_K2)
-            WRITE(iunit, out_format) 'REGCOIL K2'
-         !CASE(jtarget_regcoil_current_density)
-         !   WRITE(iunit, out_format) 'REGCOIL Current Density on Winding Surface'
+         CASE(jtarget_regcoil_current_density)
+            WRITE(iunit, out_format) 'REGCOIL Current Density on Winding Surface'
          CASE(jtarget_coillen)
             WRITE(iunit, out_format) 'Coil Lengths'
          CASE(jtarget_coilsegvar)
