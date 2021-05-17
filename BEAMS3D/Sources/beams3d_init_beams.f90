@@ -43,11 +43,11 @@
                                      ' P_BEAM(',i ,'): ',&
                      (P_beams(i)*1E-6),' [MW]'
          END DO
-         !IF (lascot) THEN
-         !   CALL beams3d_write_ascoth5('BEAM')
-         !   IF (lverb) WRITE(6, '(A,I4)')      '   ASCOT5 File: Updated'
-         !END IF
          CALL FLUSH(6)
+      END IF
+      IF (lascot) THEN
+         CALL beams3d_write_ascoth5('BBNBI_BASIC')
+         IF (lverb) WRITE(6, '(A,I4)')      '   ASCOT5 File: Updated'
       END IF
 
       nparticles = nbeams*nparticles_start
