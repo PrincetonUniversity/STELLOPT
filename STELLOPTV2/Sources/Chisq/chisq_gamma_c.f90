@@ -1006,6 +1006,7 @@
                 write(igc10,'(1X,I8,I8,I8,2(2x,E16.8))') k,well_start(k), well_stop(k)
               END IF
               DO j = well_start(k),well_stop(k)
+                ! Original method (v1.0)
                 !double check that we're in a valid well
                 if (grad_psi_i(j) > 1.0E8_rprec) CYCLE
                 if (e_theta_i(j) == 0.0_rprec) CYCLE
@@ -1036,6 +1037,7 @@
 
               END DO !end integration over a single well
 !-------------------------END DO j = well_start(k),well_stop(k)
+! End of Original method (v1.0)
 
               !vrovervt ratio of radial to poloidal drifts
 !              write (*,*) '---------------------------------------'
