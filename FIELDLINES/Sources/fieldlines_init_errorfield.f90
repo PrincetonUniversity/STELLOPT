@@ -47,7 +47,7 @@
          DO ig = 1, 20
             IF (errorfield_amp(ig) .eq. 0) CYCLE
             WRITE(6,'(A,I2.2,A,E11.4,A,F5.3,A)') 'n = ',ig,'; B = ',errorfield_amp(ig),&
-                          ' T; phase = ',errorfield_phase(ig), 'rad'
+                          ' [T]; phase = ',errorfield_phase(ig), ' [rad]'
          END DO
          CALL FLUSH(6)
       END IF
@@ -64,8 +64,10 @@
          bx_err = 0
          by_err = 0
          DO ig = 1, 20
-            bx_err = errorfield_amp(ig) * COS(ig*phiaxis(j)+errorfield_phase(ig))
-            by_err = errorfield_amp(ig) * SIN(ig*phiaxis(j)+errorfield_phase(ig))
+            !bx_err = errorfield_amp(ig) * COS(ig*phiaxis(j)-errorfield_phase(ig))
+            !by_err = errorfield_amp(ig) * SIN(ig*phiaxis(j)-errorfield_phase(ig))
+            bx_err = errorfield_amp(ig) * COS(-errorfield_phase(ig))
+            by_err = errorfield_amp(ig) * SIN(-errorfield_phase(ig))
             B_R(i,j,k) = B_R(i,j,k) + bx_err*cos(phiaxis(j)) + by_err*sin(phiaxis(j))
             B_PHI(i,j,k) = B_PHI(i,j,k) + by_err*cos(phiaxis(j)) - bx_err*sin(phiaxis(j))
          END DO
