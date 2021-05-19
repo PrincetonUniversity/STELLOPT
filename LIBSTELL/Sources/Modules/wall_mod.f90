@@ -937,18 +937,22 @@
       !-----------------------------------------------------------------------
       IMPLICIT NONE
       INTEGER, INTENT(in)    :: iunit
-      INTEGER                :: i
+      INTEGER                :: i, c, max_c
+      DOUBLE PRECISION       :: mean_c
       WRITE(iunit,'(A)')         ' -----  Vessel Information  -----'
       WRITE(iunit,'(3X,A,A)')    'Wall Name : ',TRIM(machine_string(10:))
       WRITE(iunit,'(3X,A,A)')    'Date      : ',TRIM(date(6:))
+      WRITE(iunit,'(3X,A,I7)')   'Faces     : ',nface
       IF (lwall_acc) THEN
          WRITE(iunit,'(3X,A,I7)')    'Blocks    : ',wall%nblocks
+         c = 0; max_c = 0
          DO i=1,wall%nblocks
-            WRITE(iunit,'(3X,A,I6,A,I7)')    'Block ', i, '  : ', wall%blocks(i)%nfaces
+            IF (wall%blocks(i)%nfaces > max_c) max_c = wall%blocks(i)%nfaces
+            c = c + wall%blocks(i)%nfaces
          END DO
-         
-      ELSE
-         WRITE(iunit,'(3X,A,I7)')   'Faces     : ',nface
+         mean_c = c / wall%nblocks
+         WRITE(iunit,'(3X,A,F9.2)')    'Mean faces per block: ', mean_c
+         WRITE(iunit,'(3X,A,I7)')   'Highest faces per block: ', max_c       
       END IF      
       RETURN
       END SUBROUTINE wall_info
