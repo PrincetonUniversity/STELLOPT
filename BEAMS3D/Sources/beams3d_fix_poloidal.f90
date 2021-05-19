@@ -25,7 +25,6 @@
       
 !-----------------------------------------------------------------------
 !     Local Variables
-!        i           Helper index
 !-----------------------------------------------------------------------
       INTEGER :: mystart, mystep, win_X4D, win_Y4D, ier
       INTEGER :: bcs1(2), bcs2(2), bcs3(2)
@@ -104,6 +103,9 @@
          END DO
       END DO
       WHERE ( R_lines < 0 ) U_lines = 0
+
+      ! Wait to deallocate till everyone is done with the memory
+      CALL MPI_BARRIER(MPI_COMM_SHARMEM, ier)
 
       ! DEALLOCATX X and Y
       CALL mpidealloc(X4D,win_X4D)
