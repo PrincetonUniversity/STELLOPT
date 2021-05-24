@@ -50,7 +50,7 @@
 !DEC$ IF DEFINED (DKES_OPT)
             CALL get_equil_phi(rho(ik),phi_type,phi_temp,ier_phi,dkes_efield)
             IF (ier_phi < 0) dkes_efield = 0.0
-            vals(mtargets)    = 0.5*(DKES_L11p(ik)+DKES_L11m(ik))
+            vals(mtargets)    = 0.5*(DKES_L31p(ik)+DKES_L31m(ik))
             IF (iflag == 1) WRITE(iunit_out,'(15ES22.12E3)') &
                target(ik),sigma(ik),vals(mtargets),&
                rho(ik), nu_dkes(ik), dkes_efield, &

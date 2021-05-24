@@ -123,7 +123,7 @@
 !     REAL(rprec), PARAMETER :: radial_position = 0.5_dp
 !     REAL(rprec), PARAMETER :: cmul = 0.05_dp
 !     REAL(rprec), PARAMETER :: efield = 0._dp
-      INTEGER, PARAMETER :: max_bmns = 25
+      INTEGER, PARAMETER :: max_bmns = 50
       INTEGER            :: legendre_modes = 100
       INTEGER            :: coupling_order = 4
       INTEGER, PARAMETER :: mhi = 100
@@ -335,7 +335,7 @@
      1     i2,",",2x,"ibbi = 1,")') mpolb, ntorb
       WRITE (iunit,'(1x,"chip = ",f7.4,",","  psip = ",f7.4,",")')
      1     chip, psip
-      WRITE (iunit,'(1x,"btheta = ",f7.4,","," bzeta = ",f7.4,",")')
+      WRITE (iunit,'(1x,"btheta = ",f7.4,","," bzeta = ",f9.4,",")')
      1     btheta, bzeta
 !
 !     Write out ONLY the top max_bmns largest Bmn's:
