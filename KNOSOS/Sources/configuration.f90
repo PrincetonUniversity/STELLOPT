@@ -50,8 +50,6 @@ SUBROUTINE READ_BFIELD(s0)
   STELL_ANTISYMMETRIC=.FALSE.
   
   CALL READ_BOOZMNDATA(s0,boozmndata_read)
-  WRITE(iout,*) 'here',boozmndata_read
-  CALL FLUSH(iout)
 
   IF(.NOT.boozmndata_read) CALL READ_BOOZMNNC(s0,boozmndata_read)
 
@@ -803,7 +801,7 @@ SUBROUTINE INTERPOLATE_FIELD(s0,booz_read)
   REAL*8 s0
   !Others
   INTEGER imn,n,m,is,is0,is1
-  REAL*8 fs0,fs1,f_ext(mpolb)
+  REAL*8 fs0,fs1,f_ext(mboz_b)
   !Time
   CHARACTER*30, PARAMETER :: routine="INTERPOLATE_FIELD"
   INTEGER, SAVE :: ntotal=0
@@ -819,7 +817,7 @@ SUBROUTINE INTERPOLATE_FIELD(s0,booz_read)
         is0=js_b(1)
         is1=js_b(2)
         f_ext(1)=SQRT(s0/s_b(js_b(1)))
-        DO imn=2,mpolb
+        DO imn=2,mboz_b
            f_ext(imn)=f_ext(imn)*f_ext(imn-1)
         END DO
      ELSE IF(s0.GT.s_b(js_b(jsn))) THEN

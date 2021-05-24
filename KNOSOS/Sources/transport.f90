@@ -26,7 +26,7 @@ SUBROUTINE TRANSPORT(nbb,ns,dt,s,Zb,Ab,regb,nb,dnbdpsi,Gb,Sb,Tb,dTbdpsi,Qb,Pb,Ep
   REAL*8, PARAMETER :: fgb=0.000288993908
   INTEGER ib,is!,iostat
   REAL*8 dsdV(ns),dVdpsi(ns),dsdr(ns),psi(ns)
-  REAL*8 ds,Dgb(ns),Dnc(ns),dlnnbds(ns),expo(ns),nI(ns)
+  REAL*8 ds,Dgb(ns),Dnc(ns),dlnnbds(ns),expo(ns),nI(ns),deltab
 !!  REAL*8 extnb(nbb,ns+1),extTb(nbb,ns+1)
 !  REAL*8 dGbdpsi(nbb,ns),dQbdpsi(nbb,ns),dEpsids(ns),dErdr(ns)
 !  REAL*8 Pin(ns),ohm(nbb,ns),coulomb(nbb,ns),nue(ns),loglambda(ns)
@@ -62,13 +62,13 @@ SUBROUTINE TRANSPORT(nbb,ns,dt,s,Zb,Ab,regb,nb,dnbdpsi,Gb,Sb,Tb,dTbdpsi,Qb,Pb,Ep
 
   DO ib=nbulk+1,nbb
      IF(regb(ib).EQ.2) THEN
-        delta=1.5
+        deltab=1.5
      ELSE
-        delta=3.5
+        deltab=3.5
      END IF    
      Dgb(:)=fgb*cgb*((Tb(ib,:)/Ab(ib))**1.5/(Zb(ib)*borbic(0,0)/Ab(ib))**2)*rad_a/rad_R/rad_R
      Dnc(:)=Gb(ib,:)/(Zb(ib)*Epsi(:)/Tb(ib,:))
-     dlnnbds(:)=(Zb(ib)*Epsi(:)/Tb(ib,:)-delta*dTbdpsi(ib,:)/Tb(ib,:))*Dnc(:)/(Dnc(:)+Dgb(:))
+     dlnnbds(:)=(Zb(ib)*Epsi(:)/Tb(ib,:)-deltab*dTbdpsi(ib,:)/Tb(ib,:))*Dnc(:)/(Dnc(:)+Dgb(:))
      !Integral
      expo=0
      expo(1)=dlnnbds(1)*s(1)/2.
