@@ -4,7 +4,7 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-SUBROUTINE CALC_FAST_ION_CONFINEMENT(s,ns,nal,nlambda)
+SUBROUTINE CALC_FAST_ION_CONFINEMENT(s,is,ns,nal,nlambda)
   
 !--------------------------------------------------------------------------------------------- 
 !Calculate neoclassical transport of fast ions
@@ -19,7 +19,7 @@ SUBROUTINE CALC_FAST_ION_CONFINEMENT(s,ns,nal,nlambda)
 #endif
   IMPLICIT NONE
 !  Input
-  INTEGER ns,nlambda,nal
+  INTEGER is,ns,nlambda,nal
   REAL*8 s(ns)
   !Others
   INTEGER, SAVE :: nalpha,nalphab,nalphab_save,npoint
@@ -188,13 +188,13 @@ SUBROUTINE CALC_FAST_ION_CONFINEMENT(s,ns,nal,nlambda)
                  &  BI1,BI2,BI3,BI4,BI5,BI6,BI7,Nnmp,BI8)
 
   IF(MODELFI) THEN
-     CALL FAST_ION_MODELS(nalpha,nalphab,nlambda,lambda,i_p,npoint,&
+     CALL FAST_ION_MODELS(s,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
           & BI1,BI3,BI4,BI6,zlw,zrw,thetap,theta,B_al,vds_al,tau,ia_out)
   ELSE
-!     CALL FAST_ION_JMAP(s,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
+!     CALL FAST_ION_JMAP(s,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
 !          & BI1,BI3,BI4,BI6,zlw,zrw,thetap,theta,tau)
 #ifdef MPIandPETSc
-     CALL FAST_ION_ORBITS(nalpha,nalphab,nlambda,lambda,i_p,npoint,&
+     CALL FAST_ION_ORBITS(s,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
           &   BI1,BI3,BI4,BI6,zlw,tlw,zrw,trw,tau)!
 #endif
   END IF
@@ -210,7 +210,7 @@ END SUBROUTINE CALC_FAST_ION_CONFINEMENT
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-SUBROUTINE FAST_ION_MODELS(nalpha,nalphab,nlambda,lambda,i_p,npoint,&
+SUBROUTINE FAST_ION_MODELS(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
      BI1,BI3,BI4,BI6,zlw,zrw,thetap,theta,B_al,vds_al,tau,ia_out)
 
 !-----------------------------------------------------------------------------------------------
@@ -220,8 +220,8 @@ SUBROUTINE FAST_ION_MODELS(nalpha,nalphab,nlambda,lambda,i_p,npoint,&
   USE KNOSOS_STELLOPT_MOD  
   IMPLICIT NONE
   !Input
-  INTEGER nalpha,nalphab,nlambda,i_p(nlambda,nalpha,nalphab),npoint
-  REAL*8 thetap(nalpha,nalphab),theta(nalphab),B_al(nalpha,nalphab),vds_al(Nnmp,nalpha,nalphab)
+  INTEGER is,ns,nalpha,nalphab,nlambda,i_p(nlambda,nalpha,nalphab),npoint
+  REAL*8 vs(ns),thetap(nalpha,nalphab),theta(nalphab),B_al(nalpha,nalphab),vds_al(Nnmp,nalpha,nalphab)
   REAL*8 lambda(nlambda)
   REAL*8 BI1(npoint),BI3(npoint),BI4(npoint),BI6(npoint),zlw(npoint),zrw(npoint)
   !Output
@@ -255,8 +255,8 @@ SUBROUTINE FAST_ION_MODELS(nalpha,nalphab,nlambda,lambda,i_p,npoint,&
 
   CALL CPU_TIME(tstart)
 
-  s0=eps*eps*rad_R*rad_R/rad_a/rad_a
-  
+  s0=vs(is)
+
 !  gth=(2./PI)*ATAN((1.-s0)/(2.0*PI))
  
   !Model 0: Nemov's Gamma_c
@@ -290,6 +290,7 @@ SUBROUTINE FAST_ION_MODELS(nalpha,nalphab,nlambda,lambda,i_p,npoint,&
               BI(6,ila,ial)=2*BI6(jpoint)/rad_R
            END IF
         END DO
+        IF(il0(ial).EQ.0) CYCLE
         ipoint=i_p(ila,ial,il0(ial))
         IF(ipoint.LE.1) CYCLE
         DO il=1,nalphab 
@@ -498,7 +499,7 @@ SUBROUTINE FAST_ION_MODELS(nalpha,nalphab,nlambda,lambda,i_p,npoint,&
         END IF
      END DO
      D(jla)=D(jla)/(2*tau_a/TWOEFI)
-     s0=eps*eps*rad_R*rad_R/rad_a/rad_a
+     s0=vs(is)
      tau_d(jla)=tau_a/TWOEFI
   END DO
 
@@ -631,7 +632,7 @@ END SUBROUTINE FAST_ION_MODELS
 
 #ifdef MPIandPETSc     
 
-SUBROUTINE FAST_ION_JMAP(vs,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
+SUBROUTINE FAST_ION_JMAP(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
      & BI1,BI3,BI4,BI6,zlw,zrw,thetap,theta,tau)
 
 !-----------------------------------------------------------------------------------------------
@@ -688,7 +689,7 @@ SUBROUTINE FAST_ION_JMAP(vs,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
 
   !Create table of gamma_c^* and other quantities (ignoring small ripples)
   !and find maximum gamma_c^*
-  s0=eps*eps*rad_R*rad_R/rad_a/rad_a
+  s0=vs(is)
   g=2.0*ATAN(BI3/ABS(BI4*atorflux))/PI
   il0=0
 
@@ -985,7 +986,7 @@ END SUBROUTINE FAST_ION_JMAP
 
 
 
-SUBROUTINE FAST_ION_ORBITS(nalpha,nalphab,nlambda,lambda,i_p,npoint,&
+SUBROUTINE FAST_ION_ORBITS(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
      & BI1,BI3,BI4,BI6,zlw,tlw,zrw,trw,tau)
 
 !-----------------------------------------------------------------------------------------------
@@ -995,8 +996,8 @@ SUBROUTINE FAST_ION_ORBITS(nalpha,nalphab,nlambda,lambda,i_p,npoint,&
   USE KNOSOS_STELLOPT_MOD  
   IMPLICIT NONE
   !Input
-  INTEGER nalpha,nalphab,nlambda,i_p(nlambda,nalpha,nalphab),npoint
-  REAL*8 lambda(nlambda),zlw(npoint),tlw(npoint),zrw(npoint),trw(npoint)
+  INTEGER is,ns,nalpha,nalphab,nlambda,i_p(nlambda,nalpha,nalphab),npoint
+  REAL*8 vs(ns),lambda(nlambda),zlw(npoint),tlw(npoint),zrw(npoint),trw(npoint)
   REAL*8 BI1(npoint),BI3(npoint),BI4(npoint),BI6(npoint)
   !Output
   REAL*8 tau(npoint)
@@ -1029,7 +1030,7 @@ SUBROUTINE FAST_ION_ORBITS(nalpha,nalphab,nlambda,lambda,i_p,npoint,&
   
   CALL CPU_TIME(tstart)
   
-  s0=eps*eps*rad_R*rad_R/rad_a/rad_a
+  s0=vs(is)
 
   da=(TWOPI/nalpha)*FIDELTA
   ds=0.05*FIDELTA

@@ -76,7 +76,7 @@ MODULE GLOBAL
   INTEGER, PARAMETER :: ntorbd=128
   INTEGER, PARAMETER :: mpold = 1100
   INTEGER, PARAMETER :: ntord = 1100
-  INTEGER, PARAMETER :: nmd=2*mpolbd*ntorbd/nsamp
+  INTEGER, PARAMETER :: nmd=2*mpolbd*ntorbd
   INTEGER mpolb,ntorb,nzperiod,Nnm,Nnmp
   INTEGER, PARAMETER :: rprec   = SELECTED_REAL_KIND(12,100)
   REAL*8 mp(nmd),np(nmd),ext_mp(nmd),ext_np(nmd)
