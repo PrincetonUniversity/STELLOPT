@@ -425,10 +425,13 @@ SUBROUTINE beams3d_follow
     istate = 0
     CALL handle_err(MPI_CHECK,'beams3d_follow',istate)
 
-!       Deallocations
+    !Deallocations
     IF (ALLOCATED(q)) DEALLOCATE(q)
     IF (ALLOCATED(w)) DEALLOCATE(w)
     IF (ALLOCATED(iwork)) DEALLOCATE(iwork)
+
+    ! Fix U_lines
+    CALL beams3d_fix_poloidal
 
     ! First reduce the cumulative arrays over shared memory groups then allreduce between shared memeory groups
 #if defined(MPI_OPT)
