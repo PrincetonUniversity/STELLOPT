@@ -67,9 +67,7 @@
       DOUBLE PRECISION, PRIVATE, PARAMETER      :: one  = 1.0D+0
       DOUBLE PRECISION, PRIVATE, PARAMETER      :: epsilon = 1D-6
 
-      LOGICAL, PRIVATE, PARAMETER               :: lverb_start = .FALSE.
-      LOGICAL, PRIVATE, PARAMETER               :: lverb_calc  = .FALSE.
-      LOGICAL, PRIVATE, PARAMETER               :: lsmartstart = .TRUE.
+      LOGICAL, PRIVATE, PARAMETER               :: lverb = .FALSE.
 
 !------------------ Variables for naive approach
       
@@ -161,7 +159,7 @@
             IF (this%rmax(i) > wall%rmax(i)) wall%rmax(i) = this%rmax(i)
          END DO
 
-         IF (lverb_start) WRITE(6, *) 'Block intialized', xmin, xmax, ymin, ymax, zmin, zmax, nface_block
+         IF (lverb) WRITE(6, *) 'Block intialized', xmin, xmax, ymin, ymax, zmin, zmax, nface_block
 
          ! Only allocate if there is actually faces in this block
          IF (nface_block > 0) THEN
@@ -185,7 +183,7 @@
             IF (PRESENT(comm)) CALL MPI_BARRIER(shar_comm,istat)
 #endif
          ELSE
-            IF (lverb_start) WRITE(6, *) 'Skipped due to nface_block 0', shar_rank
+            IF (lverb) WRITE(6, *) 'Skipped due to nface_block 0', shar_rank
          END IF
       END SUBROUTINE INIT_BLOCK
       
@@ -231,7 +229,7 @@
       ! Check if nvertex & nface  = 0 -> accelerated structure
       lwall_acc = .false.
       IF (nvertex == 0 .and. nface == 0) THEN
-         IF (shar_rank == 0 .and. lverb_start) WRITE(6, *) 'Accelerated'
+         IF (shar_rank == 0 .and. lverb) WRITE(6, *) 'Accelerated'
          lwall_acc = .true.
          IF (shar_rank == 0) READ(iunit,*) nvertex,nface
       END IF
@@ -253,7 +251,7 @@
 #endif
 
       ! read in the mesh on allocated memory
-      IF (lverb_start) WRITE(6, *) 'Vertex & face allocating & reading. MPI Rank: ', shar_rank
+      IF (lverb) WRITE(6, *) 'Vertex & face allocating & reading. MPI Rank: ', shar_rank
       IF (istat/=0) RETURN
       IF (shar_rank == 0) THEN
          DO ik = 1, nvertex
@@ -265,7 +263,7 @@
       END IF
 
       ! allocate memory for information about the mesh
-      IF (lverb_start) WRITE(6, *) 'Pre-calculation allocation & reading. MPI Rank: ', shar_rank
+      IF (lverb) WRITE(6, *) 'Pre-calculation allocation & reading. MPI Rank: ', shar_rank
 #if defined(MPI_OPT)
       IF (PRESENT(comm)) CALL MPI_BARRIER(shar_comm,istat)
       IF (istat/=0) RETURN
@@ -366,7 +364,7 @@
 #endif
       ! If accelerated, read in uniform grid
       if (lwall_acc) THEN
-         IF (lverb_start) WRITE(6, *) 'Start accelerated reading. MPI Rank: ', shar_rank
+         IF (lverb) WRITE(6, *) 'Start accelerated reading. MPI Rank: ', shar_rank
          IF (shar_rank == 0) THEN
             READ(iunit, *) wall%nblocks, wall%step(1), wall%step(2), wall%step(3)
             READ(iunit, *) wall%stepsize, wall%br(1), wall%br(2), wall%br(3)
@@ -391,14 +389,14 @@
          END DO
 
          ! Start looping over all blocks
-         IF (lverb_start) WRITE(6, *) 'Start blocks loop. Rank and wall info: ', shar_rank, wall%nblocks, wall%br         
+         IF (lverb) WRITE(6, *) 'Start blocks loop. Rank and wall info: ', shar_rank, wall%nblocks, wall%br         
          DO ik=1, wall%nblocks
-            IF (lverb_start) WRITE(6, *) 'In loop', shar_rank, ik
+            IF (lverb) WRITE(6, *) 'In loop', shar_rank, ik
             ! Read in the bounds of the block and the number of faces
             IF (shar_rank == 0) THEN
                READ(iunit, *) xmin,xmax,ymin,ymax,zmin,zmax
                READ(iunit, *) nface_block
-               IF (lverb_start) WRITE(6, *) 'Block reading allocation: ', ik, nface_block
+               IF (lverb) WRITE(6, *) 'Block reading allocation: ', ik, nface_block
             END IF
 
 #if defined(MPI_OPT)
@@ -419,7 +417,7 @@
                ! Read all the faces
                IF (istat/=0) RETURN
                IF (shar_rank == 0) THEN
-                  IF (lverb_start) WRITE(6, *) 'Block reading'
+                  IF (lverb) WRITE(6, *) 'Block reading'
                   DO i=1, nface_block
                      READ(iunit,*) bface(i)
                   END DO
@@ -431,10 +429,10 @@
 #endif
 
             ! Initialize the block
-            IF (lverb_start .and. shar_rank == 0) WRITE(6, *) 'Init block: ', ik
+            IF (lverb .and. shar_rank == 0) WRITE(6, *) 'Init block: ', ik
             CALL INIT_BLOCK(wall%blocks(ik),xmin,xmax,ymin,ymax,zmin,zmax,nface_block,istat,comm,shar_comm)
 
-            IF (lverb_start .and. shar_rank == 0) WRITE(6, *) 'Init block done: ', ik
+            IF (lverb .and. shar_rank == 0) WRITE(6, *) 'Init block done: ', ik
             ! Also only deallocate if nface > 0
             IF (nface_block > 0) CALL free_mpi_array(win_bface, bface, shared)
          END DO
@@ -448,7 +446,7 @@
          CALL MPI_COMM_FREE(shar_comm, istat)
       END IF
 #endif
-      IF (lverb_start) WRITE(6, *) 'Done reading wall from txt: ', shar_rank
+      IF (lverb) WRITE(6, *) 'Done reading wall from txt: ', shar_rank
       ! set wall as loaded and return
       lwall_loaded = .true.
       RETURN
@@ -1051,78 +1049,60 @@
             END IF
          END DO
 
-         IF (lverb_calc) WRITE(6, *) x0, y0, z0, x1, y1, z1
-
          k1 = 1; k2 = wall%nblocks
          b_found = -1
-         IF (lsmartstart) THEN
-            ! If smart start, do integer division to find which block the line is in
+
+         ! Do integer division to find which block the line is in
+         DO i=1,3
+            br(i) = INT((r0(i) - wall%rmin(i)) / wall%stepsize) + 1
+         END DO
+                     
+         ! Check if outside the grid anywhere
+         IF (ANY(br < 1) .or. ANY(br > wall%br)) THEN
+
+            ! Check closest block in grid
+            ! Also keep track which dimension is out of bounds
             DO i=1,3
-               br(i) = INT((r0(i) - wall%rmin(i)) / wall%stepsize) + 1
-            END DO
-                        
-            ! Check if outside the grid anywhere
-            IF (ANY(br < 1) .or. ANY(br > wall%br)) THEN
-               IF (lverb_calc) WRITE(6, *) br, wall%br
-
-               ! Check closest block in grid
-               ! Also keep track which dimension is out of bounds
-               DO i=1,3
-                  IF (br(i) < 1) THEN 
-                     br(i) = 1
-                     outlow(i) = .TRUE.
-                  ELSE IF (br(i) > wall%br(i)) THEN
-                     br(i) = wall%br(i)
-                     outhigh(i) = .TRUE.
-                  END IF
-               END DO
-               
-               ! Find correct block
-               b_found = br(3) + (br(2) - 1) * wall%step(2) + (br(1) - 1) * wall%step(1)
-               b = wall%blocks(b_found)
-
-               ! Check where grid is entered in nearest block
-               ! Check if it went into the nearest block within the current distance for each dimension
-               ! Only check for dimension that were out of bounds
-               DO i=1,3
-                  IF (outlow(i) .and. step(i) .eq. 1) THEN
-                     tDelta(i) = (b%rmin(i) - r0(i)) / dr(i)
-                     IF (tDelta(i) < tmin) THEN
-                        tcomp(i) = tDelta(i) + epsilon
-                     END IF
-                  END IF
-
-                  IF (outhigh(i) .and. step(i) .eq. -1) THEN
-                     tDelta(i) = (b%rmax(i) - r0(i)) / dr(i)
-                     IF (tDelta(i) < tmin) THEN
-                        tcomp(i) = tDelta(i) + epsilon
-                     END IF
-                  END IF
-               END DO
-
-               IF (lverb_calc) WRITE(6, *) tmin, outlow, outhigh
-               IF (lverb_calc) WRITE(6, *) tcomp
-               
-               ! If it did not enter any dimension in time, set block to -1
-               IF (ANY((tcomp == zero) .and. (outlow .or. outhigh))) THEN
-                  b_found = -1                         
+               IF (br(i) < 1) THEN 
+                  br(i) = 1
+                  outlow(i) = .TRUE.
+               ELSE IF (br(i) > wall%br(i)) THEN
+                  br(i) = wall%br(i)
+                  outhigh(i) = .TRUE.
                END IF
-            ELSE
-               ! If not outside grid, set b_found
-               b_found = br(3) + (br(2) - 1) * wall%step(2) + (br(1) - 1) * wall%step(1)
+            END DO
+            
+            ! Find correct block
+            b_found = br(3) + (br(2) - 1) * wall%step(2) + (br(1) - 1) * wall%step(1)
+            b = wall%blocks(b_found)
+
+            ! Check where grid is entered in nearest block
+            ! Check if it went into the nearest block within the current distance for each dimension
+            ! Only check for dimension that were out of bounds
+            DO i=1,3
+               IF (outlow(i) .and. step(i) .eq. 1) THEN
+                  tDelta(i) = (b%rmin(i) - r0(i)) / dr(i)
+                  IF (tDelta(i) < tmin) THEN
+                     tcomp(i) = tDelta(i) + epsilon
+                  END IF
+               END IF
+
+               IF (outhigh(i) .and. step(i) .eq. -1) THEN
+                  tDelta(i) = (b%rmax(i) - r0(i)) / dr(i)
+                  IF (tDelta(i) < tmin) THEN
+                     tcomp(i) = tDelta(i) + epsilon
+                  END IF
+               END IF
+            END DO
+            
+            ! If it did not enter any dimension in time, set block to -1
+            IF (ANY((tcomp == zero) .and. (outlow .or. outhigh))) THEN
+               b_found = -1                         
             END IF
          ELSE
-            ! Alternative slow looping to find start index, check for GPU acceleration
-            DO b_index = k1,k2
-               b = wall%blocks(b_index)
-               IF (ALL(r0 <=b%rmax .and. r0 >=b%rmin)) THEN
-                  b_found = b_index
-                  EXIT
-               END IF
-            END DO
+            ! If not outside grid, set b_found
+            b_found = br(3) + (br(2) - 1) * wall%step(2) + (br(1) - 1) * wall%step(1)
          END IF
-
-         IF (lverb_calc) WRITE(6, *) br, b_found
 
          ! Traverse blocks
          DO WHILE (.true.)
@@ -1133,8 +1113,6 @@
             ! If outside block, exit
             IF (b_found > wall%nblocks .or. b_found < 1) EXIT
             b = wall%blocks(b_found)
-
-            IF (lverb_calc) WRITE(6, *) 'True for: ', b_found, b%rmax, b%rmin
 
             k1 = 1; k2 = b%nfaces
             ! Check every triangle
@@ -1177,9 +1155,6 @@
                END IF
             END DO
 
-            IF (lverb_calc) WRITE(6, *) tmin, dr
-            IF (lverb_calc) WRITE(6, *) tmin, tDelta
-
             ! Check if leaves block before hits. 
             ! Compare with tcomp to make sure that ray always moves in positive time direction 
             IF (ANY(tDelta < tmin .and. tDelta > tcomp)) THEN
@@ -1187,18 +1162,14 @@
                IF (tDelta(1) < tDelta(2)) THEN
                   IF (tDelta(1) < tDelta(3)) THEN
                      i = 1
-                     IF (lverb_calc) WRITE(6, *) 'Doing x-step: ', step(i) 
                   ELSE 
                      i = 3
-                     IF (lverb_calc) WRITE(6, *) 'Doing z-step: ', step(i) 
                   END IF
                ELSE
                   IF (tDelta(2) < tDelta(3)) THEN
                      i = 2
-                     IF (lverb_calc) WRITE(6, *) 'Doing y-step: ', step(i) 
                   ELSE
                      i = 3
-                     IF (lverb_calc) WRITE(6, *) 'Doing z-step: ', step(i) 
                   END IF
                END IF
                ! Having found exit direction, step in that direction
