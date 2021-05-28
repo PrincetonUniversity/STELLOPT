@@ -4,6 +4,14 @@
 !     Date:          02/11/2013
 !     Description:   This subroutine targets the second principal
 !           curvature to reduce concave regions
+!
+!                    Edited by A. LeViness (alevines@pppl.gov)
+!                    03/30/2021
+!                    When sigma < 0, use the target as a limit:
+!                    Have normal chisq when |P2| is below limit,
+!                    very small otherwise
+!                    Allow normal penalizing of |P2| below a certain
+!                    value, but don't penalize |P2| closer to zero 
 !-----------------------------------------------------------------------
       SUBROUTINE chisq_curvature_P2(target,sigma,niter,iflag)
       !-----------------------------------------------------------------------
@@ -37,7 +45,7 @@
       REAL(rprec), DIMENSION(num_coeffs) :: rmnc, zmns
       REAL(rprec) :: cosangle, sinangle, cosphi, sinphi
       INTEGER :: i,j,k
-      REAL(rprec) :: u,v, angle, phi
+      REAL(rprec) :: u,v, angle, phi, w
 
 
       !----------------BEGIN SUBROUTINE --------------
@@ -145,11 +153,18 @@
         mtargets = mtargets + 1
         targets(mtargets) = target
         sigmas(mtargets) = sigma
-        vals(mtargets) = -1*minval(P2)
+        ! Addition by A. LeViness
+        IF (sigma < 0.0) THEN
+            w = (-1 * minval(P2)) - target
+            targets(mtargets) = 0
+            vals(mtargets) = 1 * w * (1 + tanh(1000 * w))
+        ELSE
+            vals(mtargets) = -1 * minval(P2)
+        END IF
         IF (iflag == 1) WRITE(iunit_out,'(5ES22.12E3)') target,sigma,vals(mtargets),MINVAL(P1),MINVAL(P2)
 
       ELSE
-        IF (sigma < bigno) THEN
+        IF (ABS(sigma) < bigno) THEN
             mtargets = mtargets + 1
             IF (niter == -2) target_dex(mtargets)=jtarget_curvature_P2
         END IF

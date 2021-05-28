@@ -1,6 +1,6 @@
 ObjectFiles = \
 chisq_line_visbrem.o \
-chisq_gamma_c.o \
+chisq_gamma_c_v2_mod.o \
 chisq_pressprime.o \
 stellopt_write_auxfiles.o \
 stellopt_write_eqfile.o \
@@ -53,6 +53,22 @@ chisq_balloon.o \
 chisq_pmin.o \
 chisq_coil_bnorm.o \
 chisq_regcoil_chi2_b.o \
+chisq_regcoil_lambda.o \
+chisq_regcoil_max_k.o \
+chisq_regcoil_max_bnormal.o \
+chisq_regcoil_chi2_k.o \
+chisq_regcoil_rms_k.o \
+chisq_regcoil_area_coil.o \
+chisq_regcoil_area_plasma.o \
+chisq_regcoil_area_diff.o \
+chisq_regcoil_volume_coil.o \
+chisq_regcoil_volume_plasma.o \
+chisq_regcoil_volume_diff.o \
+chisq_regcoil_c2p_dist_min.o \
+chisq_regcoil_bnormal_total.o \
+chisq_regcoil_k2.o \
+chisq_regcoil_current_potential.o \
+chisq_regcoil_max_current_potential.o \
 chisq_rosenbrock.o \
 chisq_vessel.o \
 chisq_b0.o \
@@ -97,7 +113,7 @@ stellopt_toboozer.o \
 stellopt_init.o \
 stellopt_bnorm.o \
 stellopt_coiloptpp.o \
-stellopt_regcoil_chi2_b.o \
+stellopt_regcoil_driver.o \
 stellopt_bootsj.o \
 stellopt_sfincs.o \
 stellopt_clean_up.o \
