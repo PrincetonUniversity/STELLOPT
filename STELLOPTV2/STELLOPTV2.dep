@@ -44,7 +44,7 @@ chisq_orbit.o : \
       equil_vals.o
 
 
-chisq_gamma_c.o : \
+chisq_gamma_c_v2_mod.o : \
       stellopt_runtime.o \
       stellopt_targets.o \
       equil_utils.o \
@@ -814,7 +814,8 @@ stellopt_load_equil.o : \
 stellopt_load_targets.o : \
       stellopt_runtime.o \
       stellopt_input_mod.o \
-      stellopt_targets.o 
+      stellopt_targets.o \
+      chisq_gamma_c_v2_mod.o
       
       
 stellopt_init.o : \

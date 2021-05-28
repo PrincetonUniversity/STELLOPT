@@ -125,7 +125,7 @@
             IF (ALLOCATED(rho)) DEALLOCATE(rho)
             IF (ALLOCATED(shat)) DEALLOCATE(shat)
             ALLOCATE(rho(ns_vmec), shat(ns_vmec))
-            FORALL(u=1:ns_vmec) shat(u) = REAL(u-1)/REAL(ns_vmec-1)
+            FORALL(u=1:ns_vmec) shat(u) = REAL(u-1,rprec)/REAL(ns_vmec-1,rprec)
             rho = sqrt(shat); rho(1) = 0
             nfp     = nfp_vmec
             ! Get the external currents
@@ -151,9 +151,9 @@
 
             ! Get the realspace R and Z and metric elements
             nu = 8 * mpol_vmec + 1
-            nu = 2 ** CEILING(log(REAL(nu))/log(2.0_rprec))
+            nu = 2 ** CEILING(log(REAL(nu, rprec))/log(2.0_rprec))
             nv = 4 * ntor_vmec + 5                                      ! Use at least 5 toroidal points
-            nv = 2 ** CEILING(log(REAL(nv))/log(2.0_rprec)) + 1  ! Odd so we get nfp/2 plane
+            nv = 2 ** CEILING(log(REAL(nv, rprec))/log(2.0_rprec)) + 1  ! Odd so we get nfp/2 plane
             ! Handle Nyquist issues
             IF (SIZE(xm_nyq_vmec) > SIZE(xm_vmec)) THEN
                mnmax_temp = SIZE(xm_nyq_vmec)

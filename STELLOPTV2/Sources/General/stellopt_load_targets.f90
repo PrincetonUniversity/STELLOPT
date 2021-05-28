@@ -14,6 +14,7 @@
       USE stellopt_runtime
       USE stellopt_input_mod
       USE stellopt_targets
+      USE chisq_gamma_c_v2
       IMPLICIT NONE
       
 !-----------------------------------------------------------------------
