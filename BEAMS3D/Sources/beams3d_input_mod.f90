@@ -17,7 +17,8 @@
       USE beams3d_grid, ONLY: nr, nphi, nz, rmin, rmax, zmin, zmax, &
                               phimin, phimax, vc_adapt_tol, nte, nne, nti,&
                               nzeff, npot, plasma_mass, plasma_Zavg, &
-                              plasma_Zmean, therm_factor
+                              plasma_Zmean, therm_factor, &
+                              B_kick_min, B_kick_max, freq_kick, E_kick
       USE safe_open_mod, ONLY: safe_open
       USE mpi_params
       USE mpi_inc
@@ -80,7 +81,8 @@
                                plasma_Zmean, therm_factor, &
                                fusion_scale, nrho_dist, ntheta_dist, & 
                                nzeta_dist, nvpara_dist, nvperp_dist, &
-                               partvmax, lendt_m
+                               partvmax, lendt_m, &
+                               B_kick_min, B_kick_max, freq_kick, E_kick
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -155,6 +157,12 @@
       therm_factor = 1.5 ! Factor at which to thermalize particles
       lendt_m = 0.05 ! Max distance a particle travels
 
+      ! Kick model defaults
+      B_kick_min = -1.0 ! T
+      B_kick_max = 0.0 ! T
+      freq_kick = 38.5E6 ! Hz
+      E_kick = 100 !V/m
+
       ! Distribution Function Defaults
       nrho_dist = 64
       ntheta_dist=8
@@ -192,11 +200,12 @@
          TE_AUX_F = TE_AUX_F*te_scale
          TI_AUX_F = TI_AUX_F*ti_scale
          ZEFF_AUX_F = ZEFF_AUX_F*zeff_scale
-         lbeam = .true.
+         lbeam = .true.; lkick = .false.
          IF (r_start_in(1) /= -1.0) lbeam = .false.
          IF (lfusion .or. lrestart_particles) lbeam = .false.
          IF (lbbnbi) lbeam = .true.
          IF (lbeam) lcollision = .true.
+         IF (B_kick_min >=0 ) lkick = .true.
          nbeams = 0
          DO WHILE ((Asize_beams(nbeams+1) >= 0.0).and.(nbeams<MAXBEAMS))
             nbeams = nbeams + 1
