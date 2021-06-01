@@ -220,23 +220,23 @@
       ! open file, return if fails
       CALL safe_open(iunit,istat,TRIM(filename),'old','formatted')
       IF (istat/=0) RETURN
-      nvertex = -1; nface = -1
+      lwall_acc = .false.
       ! read info
       IF (shar_rank == 0) THEN
          READ(iunit,'(A)') machine_string
          READ(iunit,'(A)') date
          READ(iunit,*) nvertex,nface
-      END IF
-      ! Check if nvertex & nface  = 0 -> accelerated structure
-      lwall_acc = .false.
-      IF (nvertex == 0 .and. nface == 0) THEN
-         IF (shar_rank == 0 .and. lverb) WRITE(6, *) 'Accelerated'
-         lwall_acc = .true.
-         IF (shar_rank == 0) READ(iunit,*) nvertex,nface
+         ! Check if nvertex & nface  = 0 -> accelerated structure
+         IF (nvertex == 0 .and. nface == 0) THEN
+            IF (lverb) WRITE(6,*) 'Accelerated'
+            lwall_acc = .true.
+            READ(iunit,*) nvertex,nface    
+         END IF
       END IF
       ! Broadcast info to MPI and allocate vertex and face info
 #if defined(MPI_OPT)
       IF (PRESENT(comm)) THEN
+         CALL MPI_Bcast(lwall_acc,1,MPI_LOGICAL,0,shar_comm,istat)
          CALL MPI_Bcast(nvertex,1,MPI_INTEGER,0,shar_comm,istat)
          CALL MPI_Bcast(nface,1,MPI_INTEGER,0,shar_comm,istat)
          CALL mpialloc_2d_dbl(vertex,nvertex,3,shar_rank,0,shar_comm,win_vertex)
