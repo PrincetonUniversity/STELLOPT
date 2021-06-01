@@ -31,7 +31,9 @@ MODULE beams3d_physics_mod
                               nr, nphi, nz, rmax, rmin, zmax, zmin, &
                               phimin, eps1, eps2, eps3, raxis, phiaxis,&
                               zaxis, U4D, &
-                              hr, hp, hz, hri, hpi, hzi
+                              hr, hp, hz, hri, hpi, hzi, &
+                              B_kick_min, B_kick_max, E_kick, freq_kick, &
+                              plasma_mass
       USE EZspline_obj
       USE EZspline
       USE adas_mod_parallel
@@ -44,7 +46,7 @@ MODULE beams3d_physics_mod
       DOUBLE PRECISION, PRIVATE, PARAMETER :: electron_mass = 9.10938356D-31 !m_e
       DOUBLE PRECISION, PRIVATE, PARAMETER :: e_charge      = 1.60217662E-19 !e_c
       DOUBLE PRECISION, PRIVATE, PARAMETER :: sqrt_pi       = 1.7724538509   !pi^(1/2)
-      DOUBLE PRECISION, PRIVATE, PARAMETER :: inv_sqrt2     = 0.7071067812   !pi^(1/2)
+      DOUBLE PRECISION, PRIVATE, PARAMETER :: inv_sqrt2     = 0.7071067812   !1/sqrt(2)
       DOUBLE PRECISION, PRIVATE, PARAMETER :: mpome         = 5.44602984424355D-4 !e_c
       DOUBLE PRECISION, PRIVATE, PARAMETER :: inv_dalton    = 6.02214076208E+26 ! 1./AMU [1/kg]
       DOUBLE PRECISION, PRIVATE, PARAMETER :: zero          = 0.0D0 ! 0.0
@@ -239,6 +241,17 @@ MODULE beams3d_physics_mod
            !!The pitch angle MUST NOT go outside [-1,1] nor be NaN; but could happen accidentally with the distribution.
            IF (ABS(zeta) >  0.999D+00) zeta =  SIGN(0.999D+00,zeta)
            vll = zeta*speed
+
+           !------------------------------------------------------------
+           !  Kick Model Scattering
+           !------------------------------------------------------------
+           IF (modb>=B_kick_min .and. modb<=B_kick_max) THEN
+              zeta_o = vll/speed   ! Record the current pitch.
+              sigma = zeta_o*zeta_o/(one-zeta_o*zeta_o)
+              zeta_mean = pi2*4*SQRT(pi*1E-7*ne_temp*plasma_mass)*E_kick*freq_kick/(modb*modb)
+              zeta = EXP(LOG(sigma)-zeta_mean)
+              vll = SQRT(zeta/(one+zeta))*speed
+           END IF
 
            !------------------------------------------------------------
            !  Final Moment and vll update (return q(4))
