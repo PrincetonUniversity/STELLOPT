@@ -220,6 +220,7 @@
       ! open file, return if fails
       CALL safe_open(iunit,istat,TRIM(filename),'old','formatted')
       IF (istat/=0) RETURN
+      nvertex = -1; nface = -1
       ! read info
       IF (shar_rank == 0) THEN
          READ(iunit,'(A)') machine_string
