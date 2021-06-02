@@ -22,7 +22,7 @@ MODULE beams3d_physics_mod
                                cum_prob, tau, &
                                epower_prof, ipower_prof, &
                                end_state, fact_crit, fact_pa, &
-                               fact_vsound, &
+                               fact_vsound, fact_kick, &
                                ns_prof1, ns_prof2, ns_prof3, ns_prof4, &
                                ns_prof5, my_end
       USE beams3d_grid, ONLY: BR_spl, BZ_spl, delta_t, BPHI_spl, &
@@ -248,7 +248,9 @@ MODULE beams3d_physics_mod
            IF (modb>=B_kick_min .and. modb<=B_kick_max) THEN
               zeta_o = vll/speed   ! Record the current pitch.
               sigma = zeta_o*zeta_o/(one-zeta_o*zeta_o)
-              zeta_mean = pi2*4*SQRT(pi*1E-7*ne_temp*plasma_mass)*E_kick*freq_kick/(modb*modb)
+              !zeta_mean = pi2*4*SQRT(pi*1E-7*ne_temp*plasma_mass)*E_kick*freq_kick/(modb*modb)
+              !fact_kick = pi2*4*SQRT(pi*1E-7*plamsa_mass)*E_kick*freq_kick
+              zeta_mean = fact_kick*SQRT(ne_temp)/(modb*modb)
               zeta = EXP(LOG(sigma)-zeta_mean)
               vll = SQRT(zeta/(one+zeta))*speed
            END IF
