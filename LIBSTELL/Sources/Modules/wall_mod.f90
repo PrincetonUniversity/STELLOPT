@@ -124,6 +124,21 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       SUBROUTINE INIT_BLOCK(this,xmin,xmax,ymin,ymax,zmin,zmax,nface_block,istat,comm,shar_comm)
+      !-----------------------------------------------------------------------
+      ! init_block: Initializes a single block of the accelerated uniform grid
+      !-----------------------------------------------------------------------
+      ! param[in]: this. Current block
+      ! param[in]: xmin. Minimum x position of block
+      ! param[in]: xmax. Maximum x position of block
+      ! param[in]: ymin. Minimum y position of block
+      ! param[in]: ymax. Maximum y position of block
+      ! param[in]: zmin. Minimum z position of block
+      ! param[in]: zmax. Maximum z position of block
+      ! param[in]: nface_block. Number of faces in block
+      ! param[in, out]: istat. Integer that shows error if != 0
+      ! param[in, out]: comm. MPI communicator, handles communication between nodes
+      ! param[in, out]: shar_comm. Shared MPI communicator, handles shared memory
+      !-----------------------------------------------------------------------
 #if defined(MPI_OPT)
          USE mpi
 #endif
