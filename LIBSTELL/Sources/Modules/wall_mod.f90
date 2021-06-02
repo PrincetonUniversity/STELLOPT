@@ -1013,7 +1013,7 @@
       DOUBLE PRECISION, INTENT(out) :: xw, yw, zw
       LOGICAL, INTENT(out) :: lhit
       ! Loop integers, block integers
-      INTEGER :: ik, i, k1,k2, b_index, b_found
+      INTEGER :: ik, i, k1, k2, b_found
       ! In which block the ray is in x/y/z
       INTEGER :: br(3)
       ! Line direction/position vectors
