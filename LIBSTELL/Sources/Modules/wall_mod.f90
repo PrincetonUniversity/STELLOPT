@@ -217,7 +217,7 @@
       LOGICAL, INTENT(in) :: shared
       INTEGER, INTENT(inout) :: istat
       INTEGER, INTENT(inout), OPTIONAL :: comm, shar_comm
-      DOUBLE PRECISION :: rmin(3), rmax(3)
+      DOUBLE PRECISION :: rmin, rmax
       INTEGER :: nface_block
       INTEGER :: i
       ! Used for original mesh. Places one big block around the full mesh
@@ -225,7 +225,6 @@
       wall%nblocks = 1
       wall%step = 1
       wall%br = 1
-      wall%stepsize = 1D+20  ! So large that it will always be larger than coordinate
       
       ! Allocate room for all the blocks
       ALLOCATE(wall%blocks(wall%nblocks), STAT=istat)
@@ -238,9 +237,11 @@
       END DO
 
       ! Get minimum and maximum. Increase by a meter to make sure block is large enough
-      rmin = MINVAL(vertex, DIM=1) - 1
-      rmax = MAXVAL(vertex, DIM=1) + 1
+      rmin = MINVAL(vertex) - 0.5
+      rmax = MAXVAL(vertex) + 0.5
       nface_block = nface
+
+      wall%stepsize = rmax - rmin  ! Only one block so maximum - minimum is stepsize
 
 #if defined(MPI_OPT)
       IF (PRESENT(comm)) THEN
@@ -265,7 +266,7 @@
 
       ! Initialize the block
       IF (lverb .and. shar_rank == 0) WRITE(6, *) 'Init block'
-      CALL INIT_BLOCK(wall%blocks(1),rmin(1),rmax(1),rmin(2),rmax(2),rmin(3),rmax(3),nface_block,istat,comm,shar_comm)
+      CALL INIT_BLOCK(wall%blocks(1),rmin,rmax,rmin,rmax,rmin,rmax,nface_block,istat,comm,shar_comm)
 
       IF (lverb .and. shar_rank == 0) WRITE(6, *) 'Init block done'
       ! Also only deallocate if nface > 0
