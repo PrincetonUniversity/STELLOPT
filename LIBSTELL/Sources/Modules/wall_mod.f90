@@ -431,23 +431,9 @@
          d(ik)     = FN(ik,1)*A0(ik,1) + FN(ik,2)*A0(ik,2) + FN(ik,3)*A0(ik,3)
          invDenom(ik) = one / (DOT00(ik)*DOT11(ik) - DOT01(ik)*DOT01(ik))
       END DO
-      ! Multiply with invDenom to reduce calculations later
-      DO ik = mystart, myend
-         DOT00(ik) = DOT00(ik) * invDenom(ik)
-         DOT01(ik) = DOT01(ik) * invDenom(ik)
-         DOT11(ik) = DOT11(ik) * invDenom(ik)
-      END DO
 ! sync MPI
 #if defined(MPI_OPT)
-      IF (PRESENT(comm)) THEN
-         CALL MPI_BARRIER(shar_comm, istat)
-         CALL MPI_WIN_FENCE(0,win_invdenom,istat)
-         CALL MPI_WIN_FREE(win_invdenom,istat)
-      ELSE
-#endif
-         IF (ASSOCIATED(invDenom)) DEALLOCATE(invDenom)
-#if defined(MPI_OPT)
-      END IF
+      IF (PRESENT(comm)) CALL MPI_BARRIER(shar_comm, istat)
 #endif
       ! If accelerated, read in uniform grid
       if (lwall_acc) THEN
@@ -768,23 +754,11 @@
          d(ik)     = FN(ik,1)*A0(ik,1) + FN(ik,2)*A0(ik,2) + FN(ik,3)*A0(ik,3)
          invDenom(ik) = one / (DOT00(ik)*DOT11(ik) - DOT01(ik)*DOT01(ik))
       END DO
-      ! Multiply with invDenom to reduce calculations later
-      DO ik = mystart, myend
-         DOT00(ik) = DOT00(ik) * invDenom(ik)
-         DOT01(ik) = DOT01(ik) * invDenom(ik)
-         DOT11(ik) = DOT11(ik) * invDenom(ik)
-      END DO
       ! sync MPI and clear invDenom
 #if defined(MPI_OPT)
       IF (PRESENT(comm)) THEN
          CALL MPI_BARRIER(shar_comm, istat)
          CALL MPI_COMM_FREE(shar_comm, istat)
-         CALL MPI_WIN_FENCE(0,win_invdenom,istat)
-         CALL MPI_WIN_FREE(win_invdenom,istat)
-      ELSE
-#endif
-         IF (ASSOCIATED(invDenom)) DEALLOCATE(invDenom)
-#if defined(MPI_OPT)
       END IF
 #endif
       ! Create fake block
@@ -969,23 +943,11 @@
          d(ik)     = FN(ik,1)*A0(ik,1) + FN(ik,2)*A0(ik,2) + FN(ik,3)*A0(ik,3)
          invDenom(ik) = one / (DOT00(ik)*DOT11(ik) - DOT01(ik)*DOT01(ik))
       END DO
-      ! Multiply with invDenom to reduce calculations later
-      DO ik = mystart, myend
-         DOT00(ik) = DOT00(ik) * invDenom(ik)
-         DOT01(ik) = DOT01(ik) * invDenom(ik)
-         DOT11(ik) = DOT11(ik) * invDenom(ik)
-      END DO
       ! sync MPI
 #if defined(MPI_OPT)
       IF (PRESENT(comm)) THEN
          CALL MPI_BARRIER(shar_comm, istat)
          CALL MPI_COMM_FREE(shar_comm, istat)
-         CALL MPI_WIN_FENCE(0,win_invdenom,istat)
-         CALL MPI_WIN_FREE(win_invdenom,istat)
-      ELSE
-#endif
-         IF (ASSOCIATED(invDenom)) DEALLOCATE(invDenom)
-#if defined(MPI_OPT)
       END IF
 #endif
       ! Create fake block
@@ -1232,8 +1194,8 @@
             V2z = z0 + tloc*dr(3) - A0(ik,3)
             DOT02l = V0(ik,1)*V2x + V0(ik,2)*V2y + V0(ik,3)*V2z
             DOT12l = V1(ik,1)*V2x + V1(ik,2)*V2y + V1(ik,3)*V2z
-            alphal = DOT11(ik)*DOT02l-DOT01(ik)*DOT12l
-            betal  = DOT00(ik)*DOT12l-DOT01(ik)*DOT02l
+            alphal = (DOT11(ik)*DOT02l-DOT01(ik)*DOT12l)*invDenom(ik)
+            betal  = (DOT00(ik)*DOT12l-DOT01(ik)*DOT02l)*invDenom(ik)
             ! In that case, these should be false
             IF ((alphal < -epsilon) .or. (betal < -epsilon) .or. (alphal+betal > one + epsilon)) CYCLE
             ! else check if this was the closest hit, and then store
@@ -1381,6 +1343,8 @@
          CALL MPI_WIN_FREE(win_dot11,istat)
          CALL MPI_WIN_FENCE(0,win_d,istat)
          CALL MPI_WIN_FREE(win_d,istat)
+         CALL MPI_WIN_FENCE(0,win_invdenom,istat)
+         CALL MPI_WIN_FREE(win_invdenom,istat)
          CALL MPI_WIN_FENCE(0,win_ihit,istat)
          CALL MPI_WIN_FREE(win_ihit,istat)    
          IF (ASSOCIATED(vertex)) NULLIFY(vertex)
@@ -1403,6 +1367,7 @@
          IF (ASSOCIATED(DOT00)) DEALLOCATE(DOT00)
          IF (ASSOCIATED(DOT01)) DEALLOCATE(DOT01)
          IF (ASSOCIATED(DOT11)) DEALLOCATE(DOT11)
+         IF (ASSOCIATED(invDenom)) DEALLOCATE(invDenom)
          IF (ASSOCIATED(d)) DEALLOCATE(d)
          IF (ASSOCIATED(vertex)) DEALLOCATE(vertex)
          IF (ASSOCIATED(face)) DEALLOCATE(face)
