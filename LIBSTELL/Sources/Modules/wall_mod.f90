@@ -754,15 +754,18 @@
          d(ik)     = FN(ik,1)*A0(ik,1) + FN(ik,2)*A0(ik,2) + FN(ik,3)*A0(ik,3)
          invDenom(ik) = one / (DOT00(ik)*DOT11(ik) - DOT01(ik)*DOT01(ik))
       END DO
-      ! sync MPI and clear invDenom
+#if defined(MPI_OPT)
+      IF (PRESENT(comm)) CALL MPI_BARRIER(comm,istat)
+#endif
+      ! Create fake block
+      CALL INIT_ONE_BLOCK(shared, istat, comm, shar_comm)
+      ! sync MPI
 #if defined(MPI_OPT)
       IF (PRESENT(comm)) THEN
          CALL MPI_BARRIER(shar_comm, istat)
          CALL MPI_COMM_FREE(shar_comm, istat)
       END IF
 #endif
-      ! Create fake block
-      CALL INIT_ONE_BLOCK(shared, istat, comm, shar_comm)
       ! set wall as loaded and return
       lwall_loaded = .true.
       RETURN
@@ -943,6 +946,11 @@
          d(ik)     = FN(ik,1)*A0(ik,1) + FN(ik,2)*A0(ik,2) + FN(ik,3)*A0(ik,3)
          invDenom(ik) = one / (DOT00(ik)*DOT11(ik) - DOT01(ik)*DOT01(ik))
       END DO
+#if defined(MPI_OPT)
+      IF (PRESENT(comm)) CALL MPI_BARRIER(comm,istat)
+#endif
+      ! Create fake block
+      CALL INIT_ONE_BLOCK(shared, istat, comm, shar_comm)
       ! sync MPI
 #if defined(MPI_OPT)
       IF (PRESENT(comm)) THEN
@@ -950,8 +958,6 @@
          CALL MPI_COMM_FREE(shar_comm, istat)
       END IF
 #endif
-      ! Create fake block
-      CALL INIT_ONE_BLOCK(shared, istat, comm, shar_comm)
       ! set wall as loaded and return
       lwall_loaded = .true.
       RETURN
