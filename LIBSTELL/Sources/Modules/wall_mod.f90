@@ -50,7 +50,7 @@
 !     Module Variables
 !         
 !-----------------------------------------------------------------------
-      LOGICAL            :: lwall_loaded, lwall_acc
+      LOGICAL            :: lwall_loaded
       INTEGER            :: nvertex, nface
       INTEGER, POINTER :: face(:,:)
       DOUBLE PRECISION, POINTER   :: vertex(:,:)
@@ -124,6 +124,21 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       SUBROUTINE INIT_BLOCK(this,xmin,xmax,ymin,ymax,zmin,zmax,nface_block,istat,comm,shar_comm)
+      !-----------------------------------------------------------------------
+      ! init_block: Initializes a single block of the accelerated uniform grid
+      !-----------------------------------------------------------------------
+      ! param[in]: this. Current block
+      ! param[in]: xmin. Minimum x position of block
+      ! param[in]: xmax. Maximum x position of block
+      ! param[in]: ymin. Minimum y position of block
+      ! param[in]: ymax. Maximum y position of block
+      ! param[in]: zmin. Minimum z position of block
+      ! param[in]: zmax. Maximum z position of block
+      ! param[in]: nface_block. Number of faces in block
+      ! param[in, out]: istat. Integer that shows error if != 0
+      ! param[in, out]: comm. MPI communicator, handles communication between nodes
+      ! param[in, out]: shar_comm. Shared MPI communicator, handles shared memory
+      !-----------------------------------------------------------------------
 #if defined(MPI_OPT)
          USE mpi
 #endif
@@ -186,6 +201,77 @@
             IF (lverb) WRITE(6, *) 'Skipped due to nface_block 0', shar_rank
          END IF
       END SUBROUTINE INIT_BLOCK
+
+      SUBROUTINE INIT_ONE_BLOCK(shared, istat, comm, shar_comm)
+      !-----------------------------------------------------------------------
+      ! init_one_block: Initializes a big block to fake usage of uniform grid. Used when using non-accelerated mesh
+      !-----------------------------------------------------------------------
+      ! param[in]: shared. Whether or not shared memory is used
+      ! param[in, out]: istat. Integer that shows error if != 0
+      ! param[in, out]: comm. MPI communicator, handles communication between nodes
+      ! param[in, out]: shar_comm. Shared MPI communicator, handles shared memory
+      !-----------------------------------------------------------------------
+#if defined(MPI_OPT)
+      USE mpi
+#endif
+      LOGICAL, INTENT(in) :: shared
+      INTEGER, INTENT(inout) :: istat
+      INTEGER, INTENT(inout), OPTIONAL :: comm, shar_comm
+      DOUBLE PRECISION :: rmin, rmax
+      INTEGER :: nface_block
+      INTEGER :: i
+      ! Used for original mesh. Places one big block around the full mesh
+      IF (lverb) WRITE(6, *) 'Creating one block for full mesh. MPI Rank: ', shar_rank
+      wall%nblocks = 1
+      wall%step = 1
+      wall%br = 1
+      
+      ! Allocate room for all the blocks
+      ALLOCATE(wall%blocks(wall%nblocks), STAT=istat)
+      IF (istat/=0) RETURN
+
+      ! This is the maximum wall size possible
+      DO i=1,3 
+         wall%rmin(i) = 1D+20
+         wall%rmax(i) = -1D+20
+      END DO
+
+      ! Get minimum and maximum. Increase by a meter to make sure block is large enough
+      rmin = MINVAL(vertex) - 0.5
+      rmax = MAXVAL(vertex) + 0.5
+      nface_block = nface
+
+      wall%stepsize = rmax - rmin  ! Only one block so maximum - minimum is stepsize
+
+#if defined(MPI_OPT)
+      IF (PRESENT(comm)) THEN
+         CALL mpialloc_1d_int(bface,nface_block,shar_rank,0,shar_comm,win_bface)
+      ELSE
+#endif
+         ! if no MPI, allocate everything on one node
+         ALLOCATE(bface(nface_block),STAT=istat)
+#if defined(MPI_OPT)
+      END IF
+#endif
+      ! Set all the faces, only with shar_rank = 0
+      IF (shar_rank == 0) THEN
+         DO i=1, nface_block
+            bface(i) = i
+         END DO
+      END IF
+
+#if defined(MPI_OPT)
+      IF (PRESENT(comm)) CALL MPI_BARRIER(shar_comm,istat)
+#endif
+
+      ! Initialize the block
+      IF (lverb .and. shar_rank == 0) WRITE(6, *) 'Init block'
+      CALL INIT_BLOCK(wall%blocks(1),rmin,rmax,rmin,rmax,rmin,rmax,nface_block,istat,comm,shar_comm)
+
+      IF (lverb .and. shar_rank == 0) WRITE(6, *) 'Init block done'
+      ! Also only deallocate if nface > 0
+      IF (nface_block > 0) CALL free_mpi_array(win_bface, bface, shared)
+      END SUBROUTINE INIT_ONE_BLOCK
       
       SUBROUTINE wall_load_txt(filename,istat,comm)
       !-----------------------------------------------------------------------
@@ -205,7 +291,7 @@
       DOUBLE PRECISION :: xmin, ymin, zmin, xmax, ymax, zmax
       INTEGER :: iunit, ik, i, dex1, dex2, dex3
       INTEGER :: shar_comm
-      LOGICAL :: shared
+      LOGICAL :: shared, lwall_acc
       
       shar_rank = 0; shar_size = 1;
       lwall_loaded = .false.
@@ -345,23 +431,9 @@
          d(ik)     = FN(ik,1)*A0(ik,1) + FN(ik,2)*A0(ik,2) + FN(ik,3)*A0(ik,3)
          invDenom(ik) = one / (DOT00(ik)*DOT11(ik) - DOT01(ik)*DOT01(ik))
       END DO
-      ! Multiply with invDenom to reduce calculations later
-      DO ik = mystart, myend
-         DOT00(ik) = DOT00(ik) * invDenom(ik)
-         DOT01(ik) = DOT01(ik) * invDenom(ik)
-         DOT11(ik) = DOT11(ik) * invDenom(ik)
-      END DO
 ! sync MPI
 #if defined(MPI_OPT)
-      IF (PRESENT(comm)) THEN
-         CALL MPI_BARRIER(shar_comm, istat)
-         CALL MPI_WIN_FENCE(0,win_invdenom,istat)
-         CALL MPI_WIN_FREE(win_invdenom,istat)
-      ELSE
-#endif
-         IF (ASSOCIATED(invDenom)) DEALLOCATE(invDenom)
-#if defined(MPI_OPT)
-      END IF
+      IF (PRESENT(comm)) CALL MPI_BARRIER(shar_comm, istat)
 #endif
       ! If accelerated, read in uniform grid
       if (lwall_acc) THEN
@@ -437,6 +509,9 @@
             ! Also only deallocate if nface > 0
             IF (nface_block > 0) CALL free_mpi_array(win_bface, bface, shared)
          END DO
+      ELSE
+         ! Else fake the accelerated wall by creation one large block around the full mesh
+         CALL INIT_ONE_BLOCK(shared, istat, comm, shar_comm)
       END IF
       ! close file
       CLOSE(iunit)
@@ -475,6 +550,7 @@
       INTEGER, INTENT(inout), OPTIONAL :: comm
       INTEGER :: u, v, i, j, istat, dex1, dex2, dex3, ik, nv2
       INTEGER :: shar_comm
+      LOGICAL :: shared
       DOUBLE PRECISION :: pi2, th, zt, pi
       DOUBLE PRECISION, ALLOCATABLE :: r_temp(:,:),z_temp(:,:),x_temp(:,:),y_temp(:,:)
 
@@ -524,6 +600,7 @@
       IF (PRESENT(comm)) THEN
          CALL mpialloc_2d_dbl(vertex,nvertex,3,shar_rank,0,shar_comm,win_vertex)
          CALL mpialloc_2d_int(face,nface,3,shar_rank,0,shar_comm,win_face)
+         shared = .true.
          mydelta = CEILING(REAL(nface) / REAL(shar_size))
          mystart = 1 + shar_rank*mydelta
          myend   = mystart + mydelta
@@ -532,6 +609,7 @@
 #endif
          ! if no MPI, allocate everything on one node
          ALLOCATE(vertex(nvertex,3),face(nface,3),STAT=istat)
+         shared = .false.
          mystart = 1; myend=nface
 #if defined(MPI_OPT)
       END IF
@@ -676,25 +754,15 @@
          d(ik)     = FN(ik,1)*A0(ik,1) + FN(ik,2)*A0(ik,2) + FN(ik,3)*A0(ik,3)
          invDenom(ik) = one / (DOT00(ik)*DOT11(ik) - DOT01(ik)*DOT01(ik))
       END DO
-      ! Multiply with invDenom to reduce calculations later
-      DO ik = mystart, myend
-         DOT00(ik) = DOT00(ik) * invDenom(ik)
-         DOT01(ik) = DOT01(ik) * invDenom(ik)
-         DOT11(ik) = DOT11(ik) * invDenom(ik)
-      END DO
       ! sync MPI and clear invDenom
 #if defined(MPI_OPT)
       IF (PRESENT(comm)) THEN
          CALL MPI_BARRIER(shar_comm, istat)
          CALL MPI_COMM_FREE(shar_comm, istat)
-         CALL MPI_WIN_FENCE(0,win_invdenom,istat)
-         CALL MPI_WIN_FREE(win_invdenom,istat)
-      ELSE
-#endif
-         IF (ASSOCIATED(invDenom)) DEALLOCATE(invDenom)
-#if defined(MPI_OPT)
       END IF
 #endif
+      ! Create fake block
+      CALL INIT_ONE_BLOCK(shared, istat, comm, shar_comm)
       ! set wall as loaded and return
       lwall_loaded = .true.
       RETURN
@@ -721,6 +789,7 @@
       INTEGER, INTENT(inout)       :: istat
       INTEGER, INTENT(inout), OPTIONAL :: comm
       INTEGER :: shar_comm
+      LOGICAL :: shared
       INTEGER :: nseg, ij, ik, il, im
       DOUBLE PRECISION :: dphi
       INTEGER :: dex1, dex2, dex3
@@ -747,6 +816,7 @@
       IF (PRESENT(comm)) THEN
          CALL mpialloc_2d_dbl(vertex,nvertex,3,shar_rank,0,shar_comm,win_vertex)
          CALL mpialloc_2d_int(face,nface,3,shar_rank,0,shar_comm,win_face)
+         shared = .true.
          mydelta = CEILING(REAL(nface) / REAL(shar_size))
          mystart = 1 + shar_rank*mydelta
          myend   = mystart + mydelta
@@ -754,6 +824,7 @@
       ELSE
 #endif
          ALLOCATE(vertex(nvertex,3),face(nface,3),STAT=istat)
+         shared = .false.
          mystart = 1; myend=nface
 #if defined(MPI_OPT)
       END IF
@@ -872,25 +943,15 @@
          d(ik)     = FN(ik,1)*A0(ik,1) + FN(ik,2)*A0(ik,2) + FN(ik,3)*A0(ik,3)
          invDenom(ik) = one / (DOT00(ik)*DOT11(ik) - DOT01(ik)*DOT01(ik))
       END DO
-      ! Multiply with invDenom to reduce calculations later
-      DO ik = mystart, myend
-         DOT00(ik) = DOT00(ik) * invDenom(ik)
-         DOT01(ik) = DOT01(ik) * invDenom(ik)
-         DOT11(ik) = DOT11(ik) * invDenom(ik)
-      END DO
       ! sync MPI
 #if defined(MPI_OPT)
       IF (PRESENT(comm)) THEN
          CALL MPI_BARRIER(shar_comm, istat)
          CALL MPI_COMM_FREE(shar_comm, istat)
-         CALL MPI_WIN_FENCE(0,win_invdenom,istat)
-         CALL MPI_WIN_FREE(win_invdenom,istat)
-      ELSE
-#endif
-         IF (ASSOCIATED(invDenom)) DEALLOCATE(invDenom)
-#if defined(MPI_OPT)
       END IF
 #endif
+      ! Create fake block
+      CALL INIT_ONE_BLOCK(shared, istat, comm, shar_comm)
       ! set wall as loaded and return
       lwall_loaded = .true.
       RETURN
@@ -942,17 +1003,15 @@
       WRITE(iunit,'(3X,A,A)')    'Wall Name : ',TRIM(machine_string(10:))
       WRITE(iunit,'(3X,A,A)')    'Date      : ',TRIM(date(6:))
       WRITE(iunit,'(3X,A,I7)')   'Faces     : ',nface
-      IF (lwall_acc) THEN
-         WRITE(iunit,'(3X,A,I7)')    'Blocks    : ',wall%nblocks
-         c = 0; max_c = 0
-         DO i=1,wall%nblocks
-            IF (wall%blocks(i)%nfaces > max_c) max_c = wall%blocks(i)%nfaces
-            c = c + wall%blocks(i)%nfaces
-         END DO
-         mean_c = c / wall%nblocks
-         WRITE(iunit,'(3X,A,F9.2)')    'Mean faces per block: ', mean_c
-         WRITE(iunit,'(3X,A,I7)')   'Highest faces per block: ', max_c       
-      END IF      
+      WRITE(iunit,'(3X,A,I7)')    'Blocks    : ',wall%nblocks
+      c = 0; max_c = 0
+      DO i=1,wall%nblocks
+         IF (wall%blocks(i)%nfaces > max_c) max_c = wall%blocks(i)%nfaces
+         c = c + wall%blocks(i)%nfaces
+      END DO
+      mean_c = c / wall%nblocks
+      WRITE(iunit,'(3X,A,F9.2)')    'Mean faces per block: ', mean_c
+      WRITE(iunit,'(3X,A,I7)')   'Highest faces per block: ', max_c       
       RETURN
       END SUBROUTINE wall_info
 
@@ -1033,177 +1092,97 @@
       dr(1) = x1-x0
       dr(2) = y1-y0
       dr(3) = z1-z0
-      IF (lwall_acc) THEN
-         ! initialize
-         r0(1) = x0
-         r0(2) = y0
-         r0(3) = z0
-         DO i=1,3
-            outlow(i) = .false.
-            outhigh(i) = .false.
-            tcomp(i) = zero
-            ! check direction line to determine in which direction to step through the blocks
-            IF (dr(i) < zero) THEN
-               step(i) = -1
-            ELSE
-               step(i) = 1
-            END IF
-         END DO
-
-         k1 = 1; k2 = wall%nblocks
-         b_found = -1
-
-         ! Do integer division to find which block the line is in
-         DO i=1,3
-            br(i) = INT((r0(i) - wall%rmin(i)) / wall%stepsize) + 1
-         END DO
-                     
-         ! Check if outside the grid anywhere
-         IF (ANY(br < 1) .or. ANY(br > wall%br)) THEN
-
-            ! Check closest block in grid
-            ! Also keep track which dimension is out of bounds
-            DO i=1,3
-               IF (br(i) < 1) THEN 
-                  br(i) = 1
-                  outlow(i) = .TRUE.
-               ELSE IF (br(i) > wall%br(i)) THEN
-                  br(i) = wall%br(i)
-                  outhigh(i) = .TRUE.
-               END IF
-            END DO
-            
-            ! Find correct block
-            b_found = br(3) + (br(2) - 1) * wall%step(2) + (br(1) - 1) * wall%step(1)
-            b = wall%blocks(b_found)
-
-            ! Check where grid is entered in nearest block
-            ! Check if it went into the nearest block within the current distance for each dimension
-            ! Only check for dimension that were out of bounds
-            DO i=1,3
-               IF (outlow(i) .and. step(i) .eq. 1) THEN
-                  tDelta(i) = (b%rmin(i) - r0(i)) / dr(i)
-                  IF (tDelta(i) < tmin) THEN
-                     tcomp(i) = tDelta(i) + epsilon
-                  END IF
-               END IF
-
-               IF (outhigh(i) .and. step(i) .eq. -1) THEN
-                  tDelta(i) = (b%rmax(i) - r0(i)) / dr(i)
-                  IF (tDelta(i) < tmin) THEN
-                     tcomp(i) = tDelta(i) + epsilon
-                  END IF
-               END IF
-            END DO
-            
-            ! If it did not enter any dimension in time, set block to -1
-            IF (ANY((tcomp == zero) .and. (outlow .or. outhigh))) THEN
-               b_found = -1                         
-            END IF
+      ! initialize
+      r0(1) = x0
+      r0(2) = y0
+      r0(3) = z0
+      DO i=1,3
+         outlow(i) = .false.
+         outhigh(i) = .false.
+         tcomp(i) = zero
+         ! check direction line to determine in which direction to step through the blocks
+         IF (dr(i) < zero) THEN
+            step(i) = -1
          ELSE
-            ! If not outside grid, set b_found
-            b_found = br(3) + (br(2) - 1) * wall%step(2) + (br(1) - 1) * wall%step(1)
+            step(i) = 1
          END IF
+      END DO
 
-         ! Traverse blocks
-         DO WHILE (.true.)
-            ! Reset hit info
-            xw=zero; yw=zero; zw=zero; lhit=.FALSE.
-            ik_min = zero
-            tmin = one + epsilon
-            ! If outside block, exit
-            IF (b_found > wall%nblocks .or. b_found < 1) EXIT
-            b = wall%blocks(b_found)
+      k1 = 1; k2 = wall%nblocks
+      b_found = -1
 
-            k1 = 1; k2 = b%nfaces
-            ! Check every triangle
-            ! Based on Badouel's algorithm
-            ! Source: https://graphics.stanford.edu/courses/cs348b-98/gg/intersect.html
-            DO i = k1,k2
-               ! get ik by reading face number in block
-               ik = b%face(i)
-               ! calculate whether or not this line segment ever hits the plane of the triangle
-               alphal = FN(ik,1)*dr(1) + FN(ik,2)*dr(2) + FN(ik,3)*dr(3)
-               betal = FN(ik,1)*r0(1) + FN(ik,2)*r0(2) + FN(ik,3)*r0(3)
-               ! tloc indicated when hit. If hit between r0 and r1, tloc between 0 and 1
-               tloc = (d(ik)-betal)/alphal
-               IF (tloc > one) CYCLE
-               IF (tloc <= zero) CYCLE
-               ! If the line segment hits the plane of the triangle
-               ! calculate if it actually hits on the triangle
-               V2x = x0 + tloc*dr(1) - A0(ik,1)
-               V2y = y0 + tloc*dr(2) - A0(ik,2)
-               V2z = z0 + tloc*dr(3) - A0(ik,3)
-               DOT02l = V0(ik,1)*V2x + V0(ik,2)*V2y + V0(ik,3)*V2z
-               DOT12l = V1(ik,1)*V2x + V1(ik,2)*V2y + V1(ik,3)*V2z
-               alphal = DOT11(ik)*DOT02l-DOT01(ik)*DOT12l
-               betal  = DOT00(ik)*DOT12l-DOT01(ik)*DOT02l
-               ! In that case, these should be false
-               IF ((alphal < -epsilon) .or. (betal < -epsilon) .or. (alphal+betal > one + epsilon)) CYCLE
-               ! else check if this was the closest hit, and then store
-               IF (tloc < tmin) THEN
-                  ik_min = ik
-                  tmin = tloc
-               END IF
-            END DO
-            
-            ! Check when the line will leave the block
-            DO i=1,3
-               IF (step(i) .eq. 1) THEN
-                  tDelta(i) = (b%rmax(i) - r0(i)) / dr(i)
-               ELSE
-                  tDelta(i) = (b%rmin(i) - r0(i)) / dr(i)
-               END IF
-            END DO
+      ! Do integer division to find which block the line is in
+      DO i=1,3
+         br(i) = INT((r0(i) - wall%rmin(i)) / wall%stepsize) + 1
+      END DO
+                  
+      ! Check if outside the grid anywhere
+      IF (ANY(br < 1) .or. ANY(br > wall%br)) THEN
 
-            ! Check if leaves block before hits. 
-            ! Compare with tcomp to make sure that ray always moves in positive time direction 
-            IF (ANY(tDelta < tmin .and. tDelta > tcomp)) THEN
-               ! If true, find which direction is smallest time until leave block
-               IF (tDelta(1) < tDelta(2)) THEN
-                  IF (tDelta(1) < tDelta(3)) THEN
-                     i = 1
-                  ELSE 
-                     i = 3
-                  END IF
-               ELSE
-                  IF (tDelta(2) < tDelta(3)) THEN
-                     i = 2
-                  ELSE
-                     i = 3
-                  END IF
-               END IF
-               ! Having found exit direction, step in that direction
-               br(i) = br(i) + step(i)
-               ! If leave grid, exit
-               IF (br(i) > wall%br(i) .or. br(i) < 1) EXIT    
-               b_found = b_found + wall%step(i) * step(i)
-               tcomp(i) = tDelta(i) + epsilon
-            ELSE 
-               ! If none smaller than hit time, exit loop. Hit found.
-               EXIT
+         ! Check closest block in grid
+         ! Also keep track which dimension is out of bounds
+         DO i=1,3
+            IF (br(i) < 1) THEN 
+               br(i) = 1
+               outlow(i) = .TRUE.
+            ELSE IF (br(i) > wall%br(i)) THEN
+               br(i) = wall%br(i)
+               outhigh(i) = .TRUE.
             END IF
          END DO
-
-         ! if any index stored, hit was found, calculate location and increment ihit_array
-         IF (ik_min > zero) THEN
-            lhit = .TRUE.
-            xw   = x0 + tmin*dr(1)
-            yw   = y0 + tmin*dr(2)
-            zw   = z0 + tmin*dr(3)
-            ihit_array(ik_min) = ihit_array(ik_min) + 1
-         END IF
-      ! Unaccelerated method
-      ELSE
-         k1 = 1; k2 = nface
          
+         ! Find correct block
+         b_found = br(3) + (br(2) - 1) * wall%step(2) + (br(1) - 1) * wall%step(1)
+         b = wall%blocks(b_found)
+
+         ! Check where grid is entered in nearest block
+         ! Check if it went into the nearest block within the current distance for each dimension
+         ! Only check for dimension that were out of bounds
+         DO i=1,3
+            IF (outlow(i) .and. step(i) .eq. 1) THEN
+               tDelta(i) = (b%rmin(i) - r0(i)) / dr(i)
+               IF (tDelta(i) < tmin) THEN
+                  tcomp(i) = tDelta(i) + epsilon
+               END IF
+            END IF
+
+            IF (outhigh(i) .and. step(i) .eq. -1) THEN
+               tDelta(i) = (b%rmax(i) - r0(i)) / dr(i)
+               IF (tDelta(i) < tmin) THEN
+                  tcomp(i) = tDelta(i) + epsilon
+               END IF
+            END IF
+         END DO
+         
+         ! If it did not enter any dimension in time, set block to -1
+         IF (ANY((tcomp == zero) .and. (outlow .or. outhigh))) THEN
+            b_found = -1                         
+         END IF
+      ELSE
+         ! If not outside grid, set b_found
+         b_found = br(3) + (br(2) - 1) * wall%step(2) + (br(1) - 1) * wall%step(1)
+      END IF
+
+      ! Traverse blocks
+      DO WHILE (.true.)
+         ! Reset hit info
+         xw=zero; yw=zero; zw=zero; lhit=.FALSE.
+         ik_min = zero
+         tmin = one + epsilon
+         ! If outside block, exit
+         IF (b_found > wall%nblocks .or. b_found < 1) EXIT
+         b = wall%blocks(b_found)
+
+         k1 = 1; k2 = b%nfaces
          ! Check every triangle
          ! Based on Badouel's algorithm
          ! Source: https://graphics.stanford.edu/courses/cs348b-98/gg/intersect.html
-         DO ik = k1,k2
+         DO i = k1,k2
+            ! get ik by reading face number in block
+            ik = b%face(i)
             ! calculate whether or not this line segment ever hits the plane of the triangle
             alphal = FN(ik,1)*dr(1) + FN(ik,2)*dr(2) + FN(ik,3)*dr(3)
-            betal = FN(ik,1)*x0 + FN(ik,2)*y0 + FN(ik,3)*z0
+            betal = FN(ik,1)*r0(1) + FN(ik,2)*r0(2) + FN(ik,3)*r0(3)
             ! tloc indicated when hit. If hit between r0 and r1, tloc between 0 and 1
             tloc = (d(ik)-betal)/alphal
             IF (tloc > one) CYCLE
@@ -1215,8 +1194,8 @@
             V2z = z0 + tloc*dr(3) - A0(ik,3)
             DOT02l = V0(ik,1)*V2x + V0(ik,2)*V2y + V0(ik,3)*V2z
             DOT12l = V1(ik,1)*V2x + V1(ik,2)*V2y + V1(ik,3)*V2z
-            alphal = DOT11(ik)*DOT02l-DOT01(ik)*DOT12l
-            betal  = DOT00(ik)*DOT12l-DOT01(ik)*DOT02l
+            alphal = (DOT11(ik)*DOT02l-DOT01(ik)*DOT12l)*invDenom(ik)
+            betal  = (DOT00(ik)*DOT12l-DOT01(ik)*DOT02l)*invDenom(ik)
             ! In that case, these should be false
             IF ((alphal < -epsilon) .or. (betal < -epsilon) .or. (alphal+betal > one + epsilon)) CYCLE
             ! else check if this was the closest hit, and then store
@@ -1225,14 +1204,52 @@
                tmin = tloc
             END IF
          END DO
-         ! if any index stored, hit was found, calculate location and increment ihit_array
-         IF (ik_min > zero) THEN
-            lhit = .TRUE.
-            xw   = x0 + tmin*dr(1)
-            yw   = y0 + tmin*dr(2)
-            zw   = z0 + tmin*dr(3)
-            ihit_array(ik_min) = ihit_array(ik_min) + 1
+         
+         ! Check when the line will leave the block
+         DO i=1,3
+            IF (step(i) .eq. 1) THEN
+               tDelta(i) = (b%rmax(i) - r0(i)) / dr(i)
+            ELSE
+               tDelta(i) = (b%rmin(i) - r0(i)) / dr(i)
+            END IF
+         END DO
+
+         ! Check if leaves block before hits. 
+         ! Compare with tcomp to make sure that ray always moves in positive time direction 
+         IF (ANY(tDelta < tmin .and. tDelta > tcomp)) THEN
+            ! If true, find which direction is smallest time until leave block
+            IF (tDelta(1) < tDelta(2)) THEN
+               IF (tDelta(1) < tDelta(3)) THEN
+                  i = 1
+               ELSE 
+                  i = 3
+               END IF
+            ELSE
+               IF (tDelta(2) < tDelta(3)) THEN
+                  i = 2
+               ELSE
+                  i = 3
+               END IF
+            END IF
+            ! Having found exit direction, step in that direction
+            br(i) = br(i) + step(i)
+            ! If leave grid, exit
+            IF (br(i) > wall%br(i) .or. br(i) < 1) EXIT    
+            b_found = b_found + wall%step(i) * step(i)
+            tcomp(i) = tDelta(i) + epsilon
+         ELSE 
+            ! If none smaller than hit time, exit loop. Hit found.
+            EXIT
          END IF
+      END DO
+
+      ! if any index stored, hit was found, calculate location and increment ihit_array
+      IF (ik_min > zero) THEN
+         lhit = .TRUE.
+         xw   = x0 + tmin*dr(1)
+         yw   = y0 + tmin*dr(2)
+         zw   = z0 + tmin*dr(3)
+         ihit_array(ik_min) = ihit_array(ik_min) + 1
       END IF
       RETURN
       END SUBROUTINE collide_double
@@ -1297,14 +1314,12 @@
       INTEGER, INTENT(inout), OPTIONAL :: shared_comm
       INTEGER :: i
       ! Check if have to delete accelerated wall or the normal one
-      IF (lwall_acc) THEN
-         IF (ASSOCIATED(wall%blocks)) THEN
-            DO i = 1, wall%nblocks
-               CALL BLOCK_DESTROY(wall%blocks(i))
-            END DO
-            DEALLOCATE(wall%blocks)
-            wall%nblocks = -1
-         END IF
+      IF (ASSOCIATED(wall%blocks)) THEN
+         DO i = 1, wall%nblocks
+            CALL BLOCK_DESTROY(wall%blocks(i))
+         END DO
+         DEALLOCATE(wall%blocks)
+         wall%nblocks = -1
       END IF
       IF (PRESENT(shared_comm)) THEN
 #if defined(MPI_OPT)
@@ -1328,6 +1343,8 @@
          CALL MPI_WIN_FREE(win_dot11,istat)
          CALL MPI_WIN_FENCE(0,win_d,istat)
          CALL MPI_WIN_FREE(win_d,istat)
+         CALL MPI_WIN_FENCE(0,win_invdenom,istat)
+         CALL MPI_WIN_FREE(win_invdenom,istat)
          CALL MPI_WIN_FENCE(0,win_ihit,istat)
          CALL MPI_WIN_FREE(win_ihit,istat)    
          IF (ASSOCIATED(vertex)) NULLIFY(vertex)
@@ -1350,6 +1367,7 @@
          IF (ASSOCIATED(DOT00)) DEALLOCATE(DOT00)
          IF (ASSOCIATED(DOT01)) DEALLOCATE(DOT01)
          IF (ASSOCIATED(DOT11)) DEALLOCATE(DOT11)
+         IF (ASSOCIATED(invDenom)) DEALLOCATE(invDenom)
          IF (ASSOCIATED(d)) DEALLOCATE(d)
          IF (ASSOCIATED(vertex)) DEALLOCATE(vertex)
          IF (ASSOCIATED(face)) DEALLOCATE(face)
