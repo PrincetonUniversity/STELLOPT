@@ -252,7 +252,7 @@ MODULE beams3d_physics_mod
               !fact_kick = pi2*4*SQRT(pi*1E-7*plamsa_mass)*E_kick*freq_kick
               zeta_mean = fact_kick*SQRT(ne_temp)/(modb*modb)
               zeta = EXP(LOG(sigma)-zeta_mean)
-              vll = SQRT(zeta/(one+zeta))*speed
+              vll = SQRT(zeta/(one+zeta))*SIGN(speed,vll)
            END IF
 
            !------------------------------------------------------------
