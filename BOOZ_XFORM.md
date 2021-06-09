@@ -99,33 +99,34 @@ code through read_booz_mod. The output file is a binary file a general
 prescription for reading the file can be found below (taken from
 read_boozer_file):
 
-    #!fortran
-           read(iunit, iostat=ierr, err=100) nfp_b, ns_b, aspect_b, max_b, rmin_b, betaxis_b
+```fortran
+read(iunit, iostat=ierr, err=100) nfp_b, ns_b, aspect_b, max_b, rmin_b, betaxis_b
 
-           do nsval = 2, ns_b
-              read(iunit, iostat=ierr, err=100) iota_b(nsval), pres_b(nsval), beta_b(nsval), phip_b(nsval), phi_b(nsval), bvco_b(nsval), buco_b(nsval)
-           end do
+do nsval = 2, ns_b
+  read(iunit, iostat=ierr, err=100) iota_b(nsval), pres_b(nsval), beta_b(nsval), phip_b(nsval), phi_b(nsval), bvco_b(nsval), buco_b(nsval)
+end do
 
-           read(iunit, iostat=ierr, err=100) mboz_b, nboz_b, mnboz_b
+read(iunit, iostat=ierr, err=100) mboz_b, nboz_b, mnboz_b
 
-           read(iunit, iostat=ierr, err=100) version
+read(iunit, iostat=ierr, err=100) version
 
-           read(iunit, iostat=ierr, end=200, err=100) nsval
+read(iunit, iostat=ierr, end=200, err=100) nsval
 
-           do mn = 1, mnboz_b
-              read(iunit, iostat=ierr, err=100) ixn_b(mn), ixm_b(mn)
-           end do
+do mn = 1, mnboz_b
+  read(iunit, iostat=ierr, err=100) ixn_b(mn), ixm_b(mn)
+end do
 
-           do mn = 1, mnboz_b
-              read(iunit, iostat=ierr, err=100, end=200) bmn_b(mn,nsval), rmnc_b(mn,nsval), zmns_b(mn,nsval), pmns_b(mn,nsval), gmn_b(mn,nsval)
-           end do
+do mn = 1, mnboz_b
+  read(iunit, iostat=ierr, err=100, end=200) bmn_b(mn,nsval), rmnc_b(mn,nsval), zmns_b(mn,nsval), pmns_b(mn,nsval), gmn_b(mn,nsval)
+end do
 
-           do while (ierr .eq. 0)
-              read(iunit, iostat=ierr, end=200, err=100) nsval
-              do mn = 1, mnboz_b
-                 read(iunit, iostat=ierr, err=100, end=200) bmn_b(mn,nsval), rmnc_b(mn,nsval), zmns_b(mn,nsval), pmns_b(mn,nsval), gmn_b(mn,nsval)
-              end do
-           end do
+do while (ierr .eq. 0)
+  read(iunit, iostat=ierr, end=200, err=100) nsval
+  do mn = 1, mnboz_b
+     read(iunit, iostat=ierr, err=100, end=200) bmn_b(mn,nsval), rmnc_b(mn,nsval), zmns_b(mn,nsval), pmns_b(mn,nsval), gmn_b(mn,nsval)
+  end do
+end do
+```
 
 Note that this is for version v1.0. The latest version v2.0 outputs in
 [netCDF](https://www.unidata.ucar.edu/software/netcdf/) format.
