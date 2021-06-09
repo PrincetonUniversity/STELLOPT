@@ -718,6 +718,12 @@
      &                         currumns, currvmns)
       END IF
 
+!     Handle issue of xm_nyq being 0 for older text files
+      IF (version_ .le. (8.0+eps_w)) THEN
+            xm_nyq=xm
+            xn_nyq=xn
+      END IF
+      
       mnyq = INT(MAXVAL(xm_nyq));  nnyq = INT(MAXVAL(ABS(xn_nyq)))/nfp
 
 !
