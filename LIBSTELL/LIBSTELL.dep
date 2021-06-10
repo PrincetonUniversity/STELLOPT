@@ -1268,14 +1268,6 @@ wall_mod.o : \
       safe_open_mod.o 
       
 
-wall_mod_new.o : \
-      safe_open_mod.o 
-      
-
-wall_mod_new2.o : \
-      safe_open_mod.o 
-      
-
 virtual_casing_mod.o : \
       ezspline_obj.o \
       ezspline.o
