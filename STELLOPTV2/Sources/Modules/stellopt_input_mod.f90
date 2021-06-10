@@ -24,7 +24,7 @@
                             ai, ai_aux_s, ai_aux_f, piota_type, &
                             ah, ah_aux_s, ah_aux_f, ph_type, &
                             at, at_aux_s, at_aux_f, pt_type, &
-                            aphi, lnyquist
+                            aphi
       USE vmec_params, ONLY: version_vmec=> version_
       USE mpi_params                                                    ! MPI
 !DEC$ IF DEFINED (GENE)
@@ -1234,8 +1234,7 @@
          WRITE(6,"(2X,A)") "=========    (D. V. ANDERSON, W. A. COOPER, R. GRUBER AND U. SCHWENN)   ========="
          WRITE(6,"(2X,A)") "=========                   wilfred.cooper@epfl.ch                      ========="
          WRITE(6,"(2X,A)") "================================================================================="
-         WRITE(6,*)        "    "
-         IF (lnyquist) STOP "To use TERPSICHORE, you have to use lnyquist=.f. in VMEC!"
+         WRITE(6,*)        "    "         
       END IF
 !DEC$ ELSE
       IF (ANY(sigma_kink < bigno)) THEN
