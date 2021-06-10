@@ -3,7 +3,11 @@
 !     Authors:       S. Lazerson (samuel.lazerson@ipp.mpg.de)
 !     Date:          05/14/2021
 !     Description:   This subroutine adds and errorfield to the existing
-!                    background field.
+!                    background field.  We assume a perturbation to the
+!                    radial component of the magnetic field
+!                       B_R=B_0*cos(n*phi)
+!                    then from div(B)=0 and B_Z=0 we get
+!                       B_phi=-B_0*sin(n*phi)/n
 !-----------------------------------------------------------------------
       SUBROUTINE fieldlines_init_errorfield
 !-----------------------------------------------------------------------
@@ -28,7 +32,6 @@
       INTEGER :: MPI_COMM_LOCAL
       INTEGER(KIND=BYTE_8) :: chunk
       INTEGER :: ier, iunit, s, i, j, mystart, myend, k, ig
-      REAL(rprec)  :: bx_err, by_err
 !-----------------------------------------------------------------------
 !     Begin Subroutine
 !-----------------------------------------------------------------------
@@ -47,7 +50,7 @@
          DO ig = 1, 20
             IF (errorfield_amp(ig) .eq. 0) CYCLE
             WRITE(6,'(A,I2.2,A,E11.4,A,F5.3,A)') 'n = ',ig,'; B = ',errorfield_amp(ig),&
-                          ' T; phase = ',errorfield_phase(ig), 'rad'
+                          ' [T]; phase = ',errorfield_phase(ig), ' [rad]'
          END DO
          CALL FLUSH(6)
       END IF
@@ -56,18 +59,15 @@
       CALL MPI_CALC_MYRANGE(MPI_COMM_LOCAL,1, nr*nphi*nz, mystart, myend)
 
       ! Loop
+      ! Here's the logic the index defines n
       DO s = mystart, myend
          i = MOD(s-1,nr)+1
          j = MOD(s-1,nr*nphi)
          j = FLOOR(REAL(j) / REAL(nr))+1
          k = CEILING(REAL(s) / REAL(nr*nphi))
-         bx_err = 0
-         by_err = 0
          DO ig = 1, 20
-            bx_err = errorfield_amp(ig) * COS(ig*phiaxis(j)+errorfield_phase(ig))
-            by_err = errorfield_amp(ig) * SIN(ig*phiaxis(j)+errorfield_phase(ig))
-            B_R(i,j,k) = B_R(i,j,k) + bx_err*cos(phiaxis(j)) + by_err*sin(phiaxis(j))
-            B_PHI(i,j,k) = B_PHI(i,j,k) + by_err*cos(phiaxis(j)) - bx_err*sin(phiaxis(j))
+            B_R(i,j,k) = B_R(i,j,k) + errorfield_amp(ig)*COS(ig*phiaxis(j)-errorfield_phase(ig))
+            B_PHI(i,j,k) = B_PHI(i,j,k) - errorfield_amp(ig)*SIN(ig*phiaxis(j)-errorfield_phase(ig))/ig
          END DO
       END DO 
 
