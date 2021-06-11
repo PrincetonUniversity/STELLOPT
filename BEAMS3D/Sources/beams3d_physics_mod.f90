@@ -182,6 +182,8 @@ MODULE beams3d_physics_mod
                vc3_tauinv = vcrit_cube*tau_spit_inv
             END IF
 
+            vc3_tauinv = zero
+            tau_spit_inv = zero
 
             !-----------------------------------------------------------
             !  Viscouse Velocity Reduction
@@ -200,8 +202,6 @@ MODULE beams3d_physics_mod
             reduction = dve + dvi
             newspeed = speed - reduction*dt
             vfrac = newspeed/speed
-            !Ebench = half*mymass*newspeed*newspeed/e_charge
-            !IF ((Ebench <= 1000.) .or. (Ebench <= 1.5*te_temp)) THEN !Benchmark Thermalize
 
             !-----------------------------------------------------------
             !  Thermalize particle or adjust vll and moment
@@ -231,14 +231,13 @@ MODULE beams3d_physics_mod
            !------------------------------------------------------------
            !  Pitch Angle Scattering
            !------------------------------------------------------------
-           !v_s = half*vc3_tauinv
            speed_cube = 2*vc3_tauinv*fact_pa*dt/(speed*speed*speed) ! redefine as inverse
            zeta_o = vll/speed   ! Record the current pitch.
            CALL gauss_rand(1,zeta)  ! A random from a standard normal (1,1)
            sigma = sqrt( ABS((1.0D0-zeta_o*zeta_o)*speed_cube) ) ! The standard deviation.
            zeta_mean = zeta_o *(1.0D0 - speed_cube )  ! The new mean in the distribution.
            zeta = zeta*sigma + zeta_mean  ! The new pitch angle.
-           !!The pitch angle MUST NOT go outside [-1,1] nor be NaN; but could happen accidentally with the distribution.
+           !!!The pitch angle MUST NOT go outside [-1,1] nor be NaN; but could happen accidentally with the distribution.
            IF (ABS(zeta) >  0.999D+00) zeta =  SIGN(0.999D+00,zeta)
            vll = zeta*speed
 
@@ -247,12 +246,12 @@ MODULE beams3d_physics_mod
            !------------------------------------------------------------
            IF (modb>=B_kick_min .and. modb<=B_kick_max) THEN
               zeta_o = vll/speed   ! Record the current pitch.
-              sigma = zeta_o*zeta_o/(one-zeta_o*zeta_o)
+              !sigma = zeta_o*(one-zeta_o*zeta_o)
               !zeta_mean = pi2*4*SQRT(pi*1E-7*ne_temp*plasma_mass)*E_kick*freq_kick/(modb*modb)
               !fact_kick = pi2*4*SQRT(pi*1E-7*plamsa_mass)*E_kick*freq_kick
-              zeta_mean = fact_kick*SQRT(ne_temp)/(modb*modb)
-              zeta = EXP(LOG(sigma)-zeta_mean)
-              vll = SQRT(zeta/(one+zeta))*SIGN(speed,vll)
+              !zeta_mean = fact_kick*SQRT(ne_temp)/(modb*modb)
+              zeta = zeta_o-zeta_o*(one-zeta_o*zeta_o)*dt*fact_kick*SQRT(ne_temp)/(modb*modb)
+              vll = zeta*speed
            END IF
 
            !------------------------------------------------------------
