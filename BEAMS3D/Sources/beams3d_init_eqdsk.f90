@@ -27,7 +27,7 @@
                                  ZEFF_spl_s, nzeff, ZEFF_ARR, req_axis, zeq_axis, &
                                  phiedge_eq, reff_eq
       USE beams3d_lines, ONLY: GFactor, ns_prof1
-      USE wall_mod, ONLY: wall_load_seg, wall_info,vertex,face, wall_dump
+      USE wall_mod, ONLY: wall_load_seg
       USE mpi_params
       USE mpi_inc
 !-----------------------------------------------------------------------
@@ -44,7 +44,8 @@
       LOGICAL :: lcreate_wall
       INTEGER :: ier, s, i, j, k
       REAL(rprec) :: brtemp, bptemp, bztemp, betatot, sflx, uflx, &
-                     tetemp,netemp,titemp,zetemp,pottemp
+                     tetemp,netemp,titemp,zetemp,pottemp, rsmax, rsmin,&
+                     zsmax, zsmin
 
 !-----------------------------------------------------------------------
 !     Begin Subroutine
@@ -94,6 +95,12 @@
       req_axis(:) = raxis_eqdsk
       zeq_axis(:) = zaxis_eqdsk
 
+      ! Use the vessel as a mask for rho
+      zsmax = MAXVAL(zbndry)
+      zsmin = MINVAL(zbndry)
+      rsmax = MAXVAL(xbndry)
+      rsmin = MINVAL(xbndry)
+
       ! If we ask for a plasma-only run and do not provide a vessel then make one.
       IF (lcreate_wall) THEN
          lvessel = .TRUE.
@@ -137,6 +144,10 @@
 
          ! Flux
          CALL get_eqdsk_flux(raxis_g(i),zaxis_g(k),sflx,uflx)
+         IF (zaxis_g(k)>zsmax .or. zaxis_g(k)<zsmin .or. &
+             raxis_g(i)>rsmax .or. raxis_g(i)<rsmin) THEN
+            IF (sflx<1) sflx = 2-sflx ! Handle flux issue
+         END IF
          S_ARR(i,:,k)=sqrt(sflx) ! Actually rho
          U_ARR(i,:,k)=uflx
 
@@ -165,6 +176,7 @@
       
 
       ! Calculate Gfactor for mgrid
+      !   Still needs to be done for EQDSK
       IF (myworkid == master) THEN
          ! Only master has Gfactor
          ALLOCATE(Gfactor(ns_prof1))
@@ -179,14 +191,7 @@
       ENDIF
 
       ! Deallocations
-!      IF (myworkid == master) THEN
-         CALL read_eqdsk_deallocate
-!      ELSE
-!         DEALLOCATE(vp,phi)
-!         DEALLOCATE(xm,xn,xm_nyq,xn_nyq)
-!         DEALLOCATE(rmnc,zmns,bsupumnc,bsupvmnc)
-!         IF (lasym) DEALLOCATE(rmns,zmnc,bsupumns,bsupvmns)
-!      END IF
+      CALL read_eqdsk_deallocate
       
       IF (lverb) THEN
          CALL backspace_out(6,36)

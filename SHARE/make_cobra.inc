@@ -47,9 +47,11 @@
 #            NETCDF Options
 #######################################################################
   LNETCDF = T
-  NETCDF_INC = -I$(NETCDF_HOME)/include 
-  NETCDF_LIB = -Wl,-rpath,$(NETCDF_HOME)/lib -L$(NETCDF_HOME)/lib \
-               -lnetcdf -lnetcdff 
+  NETCDF_INC = $(shell nc-config --fflags)
+  NETCDF_LIB = $(shell nc-config --flibs)
+#  NETCDF_INC = -I$(NETCDF_HOME)/include 
+#  NETCDF_LIB = -Wl,-rpath,$(NETCDF_HOME)/lib -L$(NETCDF_HOME)/lib \
+#               -lnetcdf -lnetcdff 
 
 #######################################################################
 #            HDF5 Options
