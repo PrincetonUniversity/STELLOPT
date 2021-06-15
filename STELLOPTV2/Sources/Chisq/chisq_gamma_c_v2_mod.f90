@@ -322,8 +322,8 @@ contains
            
 !           dBsupphidpsi calculation begins here
 !           B^phi = Toroidal component of B vevtor   psi=toroidal flux / 2pi
-!           see VMEC notes
-            dBsupphidpsi(j) = dBsupv(3)*(pi2/psi_a) / (two * rovera)
+!           see VMEC notes.  Also, note the (-) sign
+            dBsupphidpsi(j) = -dBsupv(3)*(pi2/psi_a) / (two * rovera)
 !           Following AB's description (Eqs 39-45)
 !
  
@@ -694,9 +694,12 @@ contains
 !old
 !            grad_zeta(1) = -Y/R/R
 !            grad_zeta(2) = X/R/R
-!new - JCS does grad_zeta = grad_phi?
-            grad_zeta_p_xyz(1) = -Y_fp
-            grad_zeta_p_xyz(2) = X_fp
+!new - JCS does grad_zeta = grad_phi? I don't think so
+!            grad_zeta_p_xyz(1) = -Y_fp
+!            grad_zeta_p_xyz(2) = X_fp
+!            grad_zeta_p_xyz(3) = 0.0_rprec
+            grad_zeta_p_xyz(1) = -Y
+            grad_zeta_p_xyz(2) = X
             grad_zeta_p_xyz(3) = 0.0_rprec
 
 
