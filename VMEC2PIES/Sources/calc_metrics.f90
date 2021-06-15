@@ -66,8 +66,8 @@
       END IF
       DO u=1,nu
          DO v=1,nv
-            rs(1:k-1,u,v) = (rreal(2:k,u,v)-rreal(0:k-2,u,v))/(rho(2:k)-rho(0:k))
-            zs(1:k-1,u,v) = (zreal(2:k,u,v)-zreal(0:k-2,u,v))/(rho(2:k)-rho(0:k))
+            rs(1:k-1,u,v) = (rreal(2:k,u,v)-rreal(0:k-2,u,v))/(rho(2:k)-rho(0:k-2))
+            zs(1:k-1,u,v) = (zreal(2:k,u,v)-zreal(0:k-2,u,v))/(rho(2:k)-rho(0:k-2))
             rs(0,u,v)     = (rreal(1,u,v) - rreal(0,u,v))/(rho(1)-rho(0))
             zs(0,u,v)     = (zreal(1,u,v) - zreal(0,u,v))/(rho(1)-rho(0))
             rs(k,u,v)     = (rreal(k,u,v) - rreal(k-1,u,v))/(rho(k)-rho(k-1))
