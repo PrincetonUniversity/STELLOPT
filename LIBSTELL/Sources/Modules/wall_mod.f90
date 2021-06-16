@@ -210,77 +210,6 @@
             IF (lverb) WRITE(6, *) 'Skipped due to nface_block 0', shar_rank
          END IF
       END SUBROUTINE INIT_BLOCK
-
-      SUBROUTINE INIT_ONE_BLOCK(shared, istat, comm, shar_comm)
-      !-----------------------------------------------------------------------
-      ! init_one_block: Initializes a big block to fake usage of uniform grid. Used when using non-accelerated mesh
-      !-----------------------------------------------------------------------
-      ! param[in]: shared. Whether or not shared memory is used
-      ! param[in, out]: istat. Integer that shows error if != 0
-      ! param[in, out]: comm. MPI communicator, handles communication between nodes
-      ! param[in, out]: shar_comm. Shared MPI communicator, handles shared memory
-      !-----------------------------------------------------------------------
-#if defined(MPI_OPT)
-      USE mpi
-#endif
-      LOGICAL, INTENT(in) :: shared
-      INTEGER, INTENT(inout) :: istat
-      INTEGER, INTENT(inout), OPTIONAL :: comm, shar_comm
-      DOUBLE PRECISION :: rmin, rmax
-      INTEGER :: nface_block
-      INTEGER :: i
-      ! Used for original mesh. Places one big block around the full mesh
-      IF (lverb) WRITE(6, *) 'Creating one block for full mesh. MPI Rank: ', shar_rank
-      wall%nblocks = 1
-      wall%step = 1
-      wall%br = 1
-      
-      ! Allocate room for all the blocks
-      ALLOCATE(wall%blocks(wall%nblocks), STAT=istat)
-      IF (istat/=0) RETURN
-
-      ! This is the maximum wall size possible
-      DO i=1,3 
-         wall%rmin(i) = 1D+20
-         wall%rmax(i) = -1D+20
-      END DO
-
-      ! Get minimum and maximum. Increase by a meter to make sure block is large enough
-      rmin = MINVAL(vertex) - 0.5
-      rmax = MAXVAL(vertex) + 0.5
-      nface_block = nface
-
-      wall%stepsize = rmax - rmin  ! Only one block so maximum - minimum is stepsize
-
-#if defined(MPI_OPT)
-      IF (PRESENT(comm)) THEN
-         CALL mpialloc_1d_int(bface,nface_block,shar_rank,0,shar_comm,win_bface)
-      ELSE
-#endif
-         ! if no MPI, allocate everything on one node
-         ALLOCATE(bface(nface_block),STAT=istat)
-#if defined(MPI_OPT)
-      END IF
-#endif
-      ! Set all the faces, only with shar_rank = 0
-      IF (shar_rank == 0) THEN
-         DO i=1, nface_block
-            bface(i) = i
-         END DO
-      END IF
-
-#if defined(MPI_OPT)
-      IF (PRESENT(comm)) CALL MPI_BARRIER(shar_comm,istat)
-#endif
-
-      ! Initialize the block
-      IF (lverb .and. shar_rank == 0) WRITE(6, *) 'Init block'
-      CALL INIT_BLOCK(wall%blocks(1),rmin,rmax,rmin,rmax,rmin,rmax,nface_block,istat,comm,shar_comm)
-
-      IF (lverb .and. shar_rank == 0) WRITE(6, *) 'Init block done'
-      ! Also only deallocate if nface > 0
-      IF (nface_block > 0) CALL free_mpi_array(win_bface, bface, shared)
-      END SUBROUTINE INIT_ONE_BLOCK
       
       SUBROUTINE wall_load_txt(filename,istat,comm)
       !-----------------------------------------------------------------------
@@ -519,8 +448,7 @@
             IF (nface_block > 0) CALL free_mpi_array(win_bface, bface, shared)
          END DO
       ELSE
-         ! Else fake the accelerated wall by creation one large block around the full mesh
-         ! CALL INIT_ONE_BLOCK(shared, istat, comm, shar_comm)
+         ! Else create an accelerated wall manually
 #if defined(MPI_OPT)
          IF (PRESENT(comm)) THEN
             CALL ACCELERATE_WALL(vertex, face, nvertex, nface, wall, istat, comm, shar_comm)
@@ -777,12 +705,16 @@
          invDenom(ik) = one / (DOT00(ik)*DOT11(ik) - DOT01(ik)*DOT01(ik))
       END DO
 #if defined(MPI_OPT)
-      IF (PRESENT(comm)) CALL MPI_BARRIER(comm,istat)
+      IF (PRESENT(comm)) THEN 
+         CALL MPI_BARRIER(comm,istat)
+      ! Create an accelerated wall manually
+         CALL ACCELERATE_WALL(vertex, face, nvertex, nface, wall, istat, comm, shar_comm)
+      ELSE
 #endif
-      ! Create fake block
-      CALL INIT_ONE_BLOCK(shared, istat, comm, shar_comm)
-      ! sync MPI
+         CALL ACCELERATE_WALL(vertex, face, nvertex, nface, wall, istat)
 #if defined(MPI_OPT)
+      END IF
+      ! sync MPI
       IF (PRESENT(comm)) THEN
          CALL MPI_BARRIER(shar_comm, istat)
          CALL MPI_COMM_FREE(shar_comm, istat)
@@ -969,12 +901,16 @@
          invDenom(ik) = one / (DOT00(ik)*DOT11(ik) - DOT01(ik)*DOT01(ik))
       END DO
 #if defined(MPI_OPT)
-      IF (PRESENT(comm)) CALL MPI_BARRIER(comm,istat)
+      IF (PRESENT(comm)) THEN 
+         CALL MPI_BARRIER(comm,istat)
+         ! Create an accelerated wall manually
+         CALL ACCELERATE_WALL(vertex, face, nvertex, nface, wall, istat, comm, shar_comm)
+      ELSE
 #endif
-      ! Create fake block
-      CALL INIT_ONE_BLOCK(shared, istat, comm, shar_comm)
-      ! sync MPI
+         CALL ACCELERATE_WALL(vertex, face, nvertex, nface, wall, istat)
 #if defined(MPI_OPT)
+      END IF
+      ! sync MPI
       IF (PRESENT(comm)) THEN
          CALL MPI_BARRIER(shar_comm, istat)
          CALL MPI_COMM_FREE(shar_comm, istat)
