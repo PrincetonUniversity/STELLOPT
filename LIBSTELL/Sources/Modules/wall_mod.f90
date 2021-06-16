@@ -86,6 +86,8 @@
       TYPE(wall_type), PRIVATE :: wall
       TYPE(block), PRIVATE:: b
 
+      INTEGER, PRIVATE                         :: nfaces_per_block = 75
+
       INTEGER, PRIVATE                         :: win_bface
       INTEGER, POINTER                         :: bface(:)
       INTEGER                                  :: nface_block
@@ -101,6 +103,13 @@
 !                          Has to implementations, for double and float
 !         uncount_wall_hit Reduces hit count for last location by one
 !         wall_free:       Frees module memory
+!     Subroutines (wall acceleration creation)
+!         ACCELERATE_WALL:   Main function to create an accelerated wall from a vertex/face list
+!         GET_BLOCK_SIZE :   Gets the desired block size
+!         SET_NFACE      :   Sets the nfaces_per_block variable
+!         CREATE_BLOCKS  :   Creates the grid of blocks
+!         FILL_BLOCKS    :   Fills the blocks with vertices
+!         WRITE_WALL_ACC :   Writes the new accelerated mesh to .txt
 !-----------------------------------------------------------------------
 !     Functions
 !         get_wall_ik      Gets index of last hit
@@ -112,11 +121,11 @@
 
       INTERFACE free_mpi_array
          MODULE PROCEDURE free_mpi_array1d_int, free_mpi_array1d_flt, free_mpi_array1d_dbl, &
-                          free_mpi_array2d_int,                       free_mpi_array2d_dbl
+                          free_mpi_array2d_int, free_mpi_array2d_dbl, free_mpi_array2d_boo
       END INTERFACE
 
       PRIVATE :: mpialloc_1d_int,mpialloc_1d_dbl,mpialloc_2d_int,mpialloc_2d_dbl
-      PRIVATE :: free_mpi_array1d_int, free_mpi_array1d_dbl, free_mpi_array2d_int, free_mpi_array2d_dbl
+      PRIVATE :: free_mpi_array1d_int, free_mpi_array1d_dbl, free_mpi_array2d_int, free_mpi_array2d_dbl, free_mpi_array2d_boo
       CONTAINS
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -511,7 +520,20 @@
          END DO
       ELSE
          ! Else fake the accelerated wall by creation one large block around the full mesh
-         CALL INIT_ONE_BLOCK(shared, istat, comm, shar_comm)
+         ! CALL INIT_ONE_BLOCK(shared, istat, comm, shar_comm)
+#if defined(MPI_OPT)
+         IF (PRESENT(comm)) THEN
+            CALL ACCELERATE_WALL(vertex, face, nvertex, nface, wall, istat, comm, shar_comm)
+         ELSE
+#endif
+            CALL ACCELERATE_WALL(vertex, face, nvertex, nface, wall, istat)
+#if defined(MPI_OPT)
+         END IF
+         IF (PRESENT(comm)) CALL MPI_BARRIER(shar_comm, istat)
+#endif
+         IF (istat/=0) RETURN
+         IF (shar_rank == 0) CALL WRITE_WALL_ACC(wall, filename, istat)
+         IF (istat/=0) RETURN
       END IF
       ! close file
       CLOSE(iunit)
@@ -1009,15 +1031,18 @@
       WRITE(iunit,'(3X,A,A)')    'Wall Name : ',TRIM(machine_string(10:))
       WRITE(iunit,'(3X,A,A)')    'Date      : ',TRIM(date(6:))
       WRITE(iunit,'(3X,A,I7)')   'Faces     : ',nface
-      WRITE(iunit,'(3X,A,I7)')    'Blocks    : ',wall%nblocks
       c = 0; max_c = 0
-      DO i=1,wall%nblocks
-         IF (wall%blocks(i)%nfaces > max_c) max_c = wall%blocks(i)%nfaces
-         c = c + wall%blocks(i)%nfaces
-      END DO
-      mean_c = c / wall%nblocks
-      WRITE(iunit,'(3X,A,F9.2)')    'Mean faces per block: ', mean_c
-      WRITE(iunit,'(3X,A,I7)')   'Highest faces per block: ', max_c       
+      IF (wall%nblocks > 0) THEN
+         WRITE(iunit,'(3X,A,I7)')    'Blocks    : ',wall%nblocks
+         DO i=1,wall%nblocks
+            IF (wall%blocks(i)%nfaces > max_c) max_c = wall%blocks(i)%nfaces
+            c = c + wall%blocks(i)%nfaces
+         END DO
+         mean_c = c / wall%nblocks
+         WRITE(iunit,'(3X,A,F9.2)')    'Mean faces per block: ', mean_c
+         WRITE(iunit,'(3X,A,I7)')   'Highest faces per block: ', max_c   
+      END IF
+          
       RETURN
       END SUBROUTINE wall_info
 
@@ -1293,6 +1318,331 @@
       END FUNCTION
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!    Wall acceleration creation
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      SUBROUTINE ACCELERATE_WALL(vertex, face, nvertex, nface, acc, istat, comm, shar_comm)
+         DOUBLE PRECISION, POINTER, INTENT(in)   :: vertex(:,:)
+         INTEGER, POINTER, INTENT(in) :: face(:,:)
+         INTEGER, INTENT(in) :: nvertex, nface
+         TYPE(wall_type), INTENT(inout) :: acc
+         INTEGER, OPTIONAL :: istat
+         INTEGER, INTENT(inout), OPTIONAL :: comm, shar_comm
+   
+         DOUBLE PRECISION :: size
+         
+         IF (shar_rank == 0) WRITE(6, *) 'Creating accelerated wall.'
+         IF (shar_rank == 0) CALL WALL_INFO(6)
+   
+         CALL GET_BLOCK_SIZE(vertex, nface, size)
+
+         IF (shar_rank == 0) WRITE(6, *) 'Creating blocks. Chosen size:', size
+   
+         CALL CREATE_BLOCKS(vertex, acc, size, istat)
+   
+#if defined(MPI_OPT)
+         IF (PRESENT(comm)) CALL MPI_BARRIER(shar_comm,istat)
+#endif
+
+         IF (shar_rank == 0) WRITE(6, *) 'Filling blocks. Number of blocks: ', acc%nblocks
+   
+#if defined(MPI_OPT)
+         IF (PRESENT(comm)) THEN 
+            CALL FILL_BLOCKS(vertex, face, nvertex, nface, acc, istat, comm, shar_comm)
+            CALL MPI_BARRIER(shar_comm,istat)
+         ELSE
+#endif
+            CALL FILL_BLOCKS(vertex, face, nvertex, nface, acc, istat)
+#if defined(MPI_OPT)
+         END IF
+#endif
+   
+         IF (shar_rank == 0) WRITE(6, *) 'Done creating accelerated wall'
+      END SUBROUTINE ACCELERATE_WALL
+   
+      SUBROUTINE GET_BLOCK_SIZE(vertex, nface, size)
+         DOUBLE PRECISION, POINTER, INTENT(in)   :: vertex(:,:)
+         INTEGER, INTENT(in) :: nface
+         DOUBLE PRECISION, INTENT(out) :: size
+   
+         DOUBLE PRECISION :: wall_size(3), square_wall_size
+         INTEGER :: i, nblocks_desired
+   
+         square_wall_size = MAXVAL(MAXVAL(vertex, DIM=1) - MINVAL(vertex, DIM=1)) + 0.1
+         wall_size = MAXVAL(vertex, DIM=1) - MINVAL(vertex, DIM=1)
+         nblocks_desired = nface / nfaces_per_block + 1
+   
+         DO i=1,100000
+            size = square_wall_size / i
+            IF (CEILING(wall_size(1)/size) * CEILING(wall_size(2)/size) * CEILING(wall_size(3)/size)> nblocks_desired) EXIT
+         END DO      
+      END SUBROUTINE GET_BLOCK_SIZE
+   
+      SUBROUTINE SET_NFACE(new_nfaces_per_block)
+         INTEGER, INTENT(in) :: new_nfaces_per_block
+   
+         nfaces_per_block = new_nfaces_per_block
+   
+      END SUBROUTINE
+   
+      SUBROUTINE CREATE_BLOCKS(vertex, acc, size, istat)
+         DOUBLE PRECISION, POINTER, INTENT(in)   :: vertex(:,:)
+         TYPE(wall_type), INTENT(inout) :: acc
+         DOUBLE PRECISION, INTENT(in) :: size
+         INTEGER, OPTIONAL :: istat
+   
+         DOUBLE PRECISION :: wall_size(3), rmin(3), buffer
+         DOUBLE PRECISION :: tmp
+         INTEGER :: i, j, xi, yi, zi
+         INTEGER :: nblocks(3)
+   
+         DOUBLE PRECISION, POINTER :: xs(:), ys(:), zs(:)
+   
+         rmin = MINVAL(vertex, DIM=1)
+         wall_size = MAXVAL(vertex, DIM=1) - rmin
+         DO i=1,3
+            nblocks(i) = INT(wall_size(i) / size) + 1
+            buffer = nblocks(i) * size - wall_size(i)
+            IF (i .eq. 1) ALLOCATE(xs(nblocks(i)),STAT=istat)
+            IF (i .eq. 2) ALLOCATE(ys(nblocks(i)),STAT=istat)
+            if (i .eq. 3) ALLOCATE(zs(nblocks(i)),STAT=istat)
+   
+            DO j=1,nblocks(i)
+               tmp = rmin(i) - buffer / 2 + (j - 1) * size
+               IF (i .eq. 1) xs(j) = tmp
+               IF (i .eq. 2) ys(j) = tmp
+               if (i .eq. 3) zs(j) = tmp
+            END DO
+         END DO
+   
+         acc%nblocks = nblocks(1) * nblocks(2) * nblocks(3)
+         acc%stepsize = size
+         acc%br = nblocks
+         acc%step(3) = 1
+         acc%step(2) = nblocks(3)
+         acc%step(1) = nblocks(2) * nblocks(3)
+   
+         ALLOCATE(acc%blocks(acc%nblocks),STAT=istat)
+   
+         i = 1
+         DO xi=1, nblocks(1)
+            DO yi=1, nblocks(2)
+               DO zi=1, nblocks(3)
+                  acc%blocks(i)%rmin(1) = xs(xi)
+                  acc%blocks(i)%rmin(2) = ys(yi)
+                  acc%blocks(i)%rmin(3) = zs(zi)
+                  
+                  acc%blocks(i)%rmax(1) = xs(xi) + size
+                  acc%blocks(i)%rmax(2) = ys(yi) + size
+                  acc%blocks(i)%rmax(3) = zs(zi) + size
+                  
+                  acc%blocks(i)%nfaces = 0
+                  i = i + 1
+               END DO
+            END DO
+         END DO
+      END SUBROUTINE CREATE_BLOCKS
+   
+      SUBROUTINE FILL_BLOCKS(vertex, face, nvertex, nface, acc, istat, comm, shar_comm)
+         DOUBLE PRECISION, POINTER, INTENT(in)   :: vertex(:,:)
+         INTEGER, POINTER, INTENT(in) :: face(:,:)
+         INTEGER, INTENT(in) :: nvertex, nface
+         TYPE(wall_type), INTENT(inout) :: acc
+         INTEGER, OPTIONAL :: istat
+         INTEGER, INTENT(inout), OPTIONAL :: comm, shar_comm
+         ! Whether or not shared memory is used
+         LOGICAL :: shared
+         ! Integer for shared memory
+         INTEGER :: win_counter_arr, win_mask_face
+
+         ! Integer array that counters number of faces in each block 
+         INTEGER, POINTER :: counter_arr(:)
+         ! Integer array that determines how to split blocks over threads. Only used with MPI
+         INTEGER, POINTER :: mysplit(:)
+   
+         ! Block bounds
+         DOUBLE PRECISION :: rmin(3), rmax(3)
+         ! Masks if vertex in block or face already in block
+         LOGICAL, POINTER :: mask_face(:, :)
+         LOGICAL, POINTER :: mask(:)
+         ! Loop integers and counter
+         INTEGER :: i, j, k, counter
+         
+         ! Split blocks between threads
+         ! Also allocate counter_arr and mask_face
+#if defined(MPI_OPT)
+         IF (PRESENT(comm)) THEN
+            shared = .TRUE.
+            mydelta = CEILING(REAL(acc%nblocks) / REAL(shar_size))
+            mystart = 1 + shar_rank*mydelta
+            myend   = mystart + mydelta
+            IF (myend > acc%nblocks) myend=acc%nblocks
+            CALL mpialloc_1d_int(counter_arr, acc%nblocks, shar_rank, 0, shar_comm, win_counter_arr)
+            CALL mpialloc_2d_boo(mask_face, nface, acc%nblocks, shar_rank, 0, shar_comm, win_mask_face)
+         ELSE
+#endif
+            shared = .FALSE.
+            mystart = 1; myend = acc%nblocks
+            ALLOCATE(counter_arr(acc%nblocks))
+            ALLOCATE(mask_face(nface, acc%nblocks))
+#if defined(MPI_OPT)
+         END IF
+#endif
+         counter_arr = 0
+         mask_face = .FALSE.
+
+         ! Allocate mask
+         ALLOCATE(mask(nvertex), STAT=istat)
+
+#if defined(MPI_OPT)
+         IF (PRESENT(comm)) CALL MPI_BARRIER(shar_comm,istat)
+#endif
+
+         ! Find how many vertices in each block
+         IF (shar_rank == 0 .and. lverb) WRITE(6, *) 'Filling blocks: Finding the number of vertices in each block'
+         DO i=mystart, myend
+            ! Define bounds block
+            rmin = acc%blocks(i)%rmin - epsilon
+            rmax = acc%blocks(i)%rmax + epsilon
+   
+            ! Check which vertices are in block         
+            mask(:) = (vertex(:,1) < rmax(1) .and. vertex(:,1) .GE. rmin(1) &
+            .and. vertex(:,2) < rmax(2) .and. vertex(:,2) .GE. rmin(2) &
+            .and. vertex(:,3) < rmax(3) .and. vertex(:,3) .GE. rmin(3))
+   
+            ! Count number of vertices
+            DO j=1,nvertex
+               IF (mask(j)) THEN
+                  mask_face(:, i) = mask_face(:, i) .or. ANY(j == face, DIM=2)
+               END IF       
+            END DO
+
+            counter_arr(i) = COUNT(mask_face(:, i))
+         END DO
+
+#if defined(MPI_OPT)
+         IF (PRESENT(comm)) CALL MPI_BARRIER(shar_comm,istat)
+#endif
+
+         ! Allocate face arrays for each block. Each thread executes this
+         ! Also sets size of block for each thread
+         IF (shar_rank == 0 .and. lverb) WRITE(6, *) 'Filling blocks: Allocating each block'
+         DO i=1, acc%nblocks
+            IF (counter_arr(i) > 0) THEN
+#if defined(MPI_OPT)
+               IF (PRESENT(comm)) THEN 
+                  CALL mpialloc_1d_int(acc%blocks(i)%face, counter_arr(i), shar_rank, 0, shar_comm, acc%blocks(i)%win_face)
+               ELSE
+#endif
+                  ALLOCATE(acc%blocks(i)%face(counter_arr(i)), STAT=istat)
+#if defined(MPI_OPT)
+               END IF
+#endif
+            END IF
+            acc%blocks(i)%nfaces = counter_arr(i)
+            acc%blocks(i)%isshared = shared
+         END DO
+
+         ! Efficiently divide blocks over threads
+         IF (shar_rank == 0 .and. lverb) WRITE(6, *) 'Filling blocks: Dividing work'
+#if defined(MPI_OPT)
+         IF (PRESENT(comm)) THEN
+            ALLOCATE(mysplit(shar_size + 1))
+            DO j=0,100
+               mydelta = CEILING(SUM(counter_arr) / REAL(shar_size) / REAL(100 + j) * 100D+0)
+               mysplit = 0
+               counter = 0
+               k=2
+               DO i=1, acc%nblocks
+                  counter = counter + counter_arr(i)
+                  IF (counter > mydelta) THEN
+                     mysplit(k) = i
+                     k = k + 1
+                     IF (k > shar_size + 1) k = shar_size + 1
+                     counter = 0
+                  END IF
+               END DO
+               mysplit(k) = acc%nblocks
+               IF (k .eq. shar_size + 1) EXIT
+            END DO
+            mystart = 1 + mysplit(shar_rank + 1)
+            myend   = mysplit(shar_rank + 2)
+            IF (mystart > acc%nblocks .OR. myend .eq. 0) myend=mystart
+            DEALLOCATE(mysplit)
+         ELSE
+#endif
+            mystart = 1; myend = acc%nblocks
+#if defined(MPI_OPT)
+         END IF
+         IF (PRESENT(comm)) CALL MPI_BARRIER(shar_comm,istat)
+#endif
+
+         ! Actually assign faces to blocks
+         IF (shar_rank == 0 .and. lverb) WRITE(6, *) 'Filling blocks: Putting faces in each block'
+         DO i=mystart, myend
+            ! Skip if for some reason out of bounds
+            IF (i > acc%nblocks) EXIT
+            ! Only add if actually faces in the block
+            IF (counter_arr(i) > 0) THEN    
+               ! Add faces to list
+               counter = 0
+               DO k=1, nface
+                  IF (mask_face(k, i))  THEN
+                     counter = counter + 1
+                     acc%blocks(i)%face(counter) = k
+                  END IF
+               END DO
+            END IF           
+         END DO
+         
+         ! Cleanup
+#if defined(MPI_OPT)
+         IF (PRESENT(comm)) CALL MPI_BARRIER(shar_comm,istat)
+#endif
+         IF (shar_rank == 0 .and. lverb) WRITE(6, *) 'Filling blocks: Starting cleanup fill blocks'
+         DEALLOCATE(mask)
+         CALL free_mpi_array(win_mask_face, mask_face, shared)
+         CALL free_mpi_array(win_counter_arr, counter_arr, shared)
+         END SUBROUTINE FILL_BLOCKS
+   
+      SUBROUTINE WRITE_WALL_ACC(acc, filename, istat)
+         TYPE(wall_type), INTENT(in) :: acc
+         CHARACTER(LEN=*), INTENT(in) :: filename
+         INTEGER, OPTIONAL :: istat
+   
+         INTEGER            :: ppos, i
+         CHARACTER(LEN=256) :: filename_res
+   
+         ppos = scan(trim(filename),".", BACK= .true.)
+         filename_res = filename(1:ppos - 1) // "_acc.dat"
+   
+         OPEN(10, file=filename_res, STATUS="UNKNOWN", ACTION="WRITE")
+   
+         WRITE(10, *) 'MACHINE: ', TRIM(machine_string(10:))
+         WRITE(10, *) 'DATE: ', TRIM(date(6:))
+         WRITE(10, "(I12, I12)") 0, 0
+         WRITE(10, "(I12, I12)") nvertex, nface
+         WRITE(10, "(E20.10, E20.10, E20.10)") vertex
+         WRITE(10, "(I12, I12, I12)") face
+   
+         WRITE(10, "(I12, I12, I12, I12)") acc%nblocks, acc%step
+         WRITE(10, "(E20.10, I12, I12, I12)") acc%stepsize, acc%br
+   
+         DO i=1,acc%nblocks
+            WRITE(10, "(6(E20.10))") acc%blocks(i)%rmin(1), acc%blocks(i)%rmax(1), acc%blocks(i)%rmin(2), &
+                                     acc%blocks(i)%rmax(2), acc%blocks(i)%rmin(3), acc%blocks(i)%rmax(3)
+            WRITE(10, "(I12)") acc%blocks(i)%nfaces
+            IF (acc%blocks(i)%nfaces > 0) WRITE(10, "(I12)") acc%blocks(i)%face
+         END DO
+   
+         CLOSE(10)
+
+         WRITE(6, *) 'Result of wall acceleration written to: ', filename_res
+   
+      END SUBROUTINE WRITE_WALL_ACC
+   
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!    Wall Destructors
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -1557,6 +1907,48 @@
       RETURN
       END SUBROUTINE mpialloc_2d_dbl
 
+      SUBROUTINE mpialloc_2d_boo(array,n1,n2,subid,mymaster,share_comm,win)
+         !-----------------------------------------------------------------------
+         ! mpialloc_2d_boo: Allocated a 2D boolean array to shared memory
+         ! Taken from LIBSTELL/Sources/Modules/mpi_sharemem.f90
+         ! Included here to reduce dependencies
+         !-----------------------------------------------------------------------
+         ! Libraries
+#if defined(MPI_OPT)
+         USE mpi
+#endif        
+         USE ISO_C_BINDING
+         IMPLICIT NONE
+         ! Arguments
+         LOGICAL, POINTER, INTENT(inout) :: array(:,:)
+         INTEGER, INTENT(in) :: n1
+         INTEGER, INTENT(in) :: n2
+         INTEGER, INTENT(in) :: subid
+         INTEGER, INTENT(in) :: mymaster
+         INTEGER, INTENT(in) :: share_comm
+         INTEGER, INTENT(inout) :: win
+         ! Variables
+         INTEGER :: disp_unit, ier
+         INTEGER :: array_shape(2)
+#if defined(MPI_OPT)
+         INTEGER(KIND=MPI_ADDRESS_KIND) :: window_size
+#endif
+         TYPE(C_PTR) :: baseptr
+         ! Initialization
+         ier = 0
+         array_shape(1) = n1
+         array_shape(2) = n2
+         disp_unit = 1
+#if defined(MPI_OPT)
+         window_size = 0_MPI_ADDRESS_KIND
+         IF (subid == mymaster) window_size = INT(n1*n2,MPI_ADDRESS_KIND)*4_MPI_ADDRESS_KIND
+         CALL MPI_WIN_ALLOCATE_SHARED(window_size, disp_unit, MPI_INFO_NULL, share_comm, baseptr, win ,ier)
+         IF (subid /= mymaster) CALL MPI_WIN_SHARED_QUERY(win, 0, window_size, disp_unit, baseptr, ier)
+         CALL C_F_POINTER(baseptr, array, array_shape)
+#endif
+         RETURN
+         END SUBROUTINE mpialloc_2d_boo
+
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!    Memory Freeing Subroutines
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1666,6 +2058,26 @@
          RETURN
          END SUBROUTINE free_mpi_array2d_dbl
 
+         SUBROUTINE free_mpi_array2d_boo(win_local, array_local, isshared)
+         IMPLICIT NONE
+         LOGICAL, INTENT(in) :: isshared
+         INTEGER, INTENT(inout) :: win_local
+         LOGICAL, POINTER, INTENT(inout) :: array_local(:,:)
+         INTEGER :: istat
+         istat=0
+#if defined(MPI_OPT)
+         IF (isshared) THEN
+            CALL MPI_WIN_FENCE(0, win_local,istat)
+            CALL MPI_WIN_FREE(win_local,istat)
+            IF (ASSOCIATED(array_local)) NULLIFY(array_local)
+         ELSE
+#endif
+            IF (ASSOCIATED(array_local)) DEALLOCATE(array_local)
+#if defined(MPI_OPT)
+         ENDIF
+#endif
+         RETURN
+         END SUBROUTINE free_mpi_array2d_boo
 !-----------------------------------------------------------------------
 !     End Module
 !-----------------------------------------------------------------------

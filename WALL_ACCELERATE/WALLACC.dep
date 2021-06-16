@@ -1,0 +1,5 @@
+# Microsoft Developer Studio Generated Dependency File, included by VMEC2000.mak
+
+wall_accelerate_main.o: \
+      ../../LIBSTELL/$(LOCTYPE)/safe_open_mod.o  \
+      ../../LIBSTELL/$(LOCTYPE)/wall_mod.o   

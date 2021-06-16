@@ -54,7 +54,7 @@
 !-----------------------------------------------------------------------
       ! TESTING
       IF (lvessel .and. lverb .and. .false.) THEN
-         CALL wall_load_txt(TRIM(vessel_string),ier)
+         CALL wall_load_txt(TRIM(vessel_string),ier, MPI_COMM_FIELDLINES)
          IF (lverb) CALL wall_info(6)
          CALL collide(6*1/100._rprec,6*1/100._rprec,0.0_rprec,6*1/100._rprec,6*1/100._rprec,1.5_rprec,xw,yw,zw,lhit)
          WRITE(*,*) xw,yw,zw,lhit
@@ -296,9 +296,8 @@
 
       ! Get setup vessel
       IF (lvessel) THEN
-         CALL wall_load_txt(TRIM(vessel_string),ier)
+         CALL wall_load_txt(TRIM(vessel_string),ier, MPI_COMM_FIELDLINES)
          IF (ier /= 0) CALL handle_err(WALL_ERR,'fieldlines_init',ier)
-         IF (myworkid /= master) DEALLOCATE(vertex,face) ! Do this to save memory
          IF (lverb) THEN
             CALL wall_info(6)
             IF (lwall_trans) WRITE(6,'(A)')'   !!!!! Poincare Screen  !!!!!'
