@@ -18,7 +18,7 @@ module chisq_gamma_c_v2
                             maxwells => gammac_maxwells, &
                             lgcxfiles => gammac_lgcx_files
       USE equil_vals
-!      USE stel_tools
+      USE stel_tools
       USE stellopt_input_mod
 !      USE read_boozer_mod
 !      USE read_wout_mod, ONLY: ns
@@ -70,7 +70,7 @@ contains
       REAL(rprec) :: Bxt2, Byt2, Bzt2
       REAL(rprec) :: g,dsdx,dudx,dvdx,dsdy,dudy,dvdy,dsdz,dudz,dvdz
       REAL(rprec) :: sqrtg, jacobian, jac_suvxyz
-      REAL(rprec) :: norm_grad_psi_xyz
+      REAL(rprec) :: norm_grad_psi_xyz, norm_binormal, this_dotproduct
       REAL(rprec), DIMENSION(3) :: sflCrd, Bxyz, bnxyz, crossnum, crossden
       REAL(rprec), DIMENSION(3) :: Bxyz_fp
       REAL(rprec), DIMENSION(3) :: e_phi, e_r, e_z, grads, gradbtest
@@ -91,7 +91,7 @@ contains
       REAL(rprec), DIMENSION(3) :: es, eu, ev, es_init, eu_init, ev_init
       real(rprec), DIMENSION(3) :: dxyzdu, dxyzdv, dxyzds
       real(rprec), DIMENSION(5) :: modbzeros_extraargs
-      REAL(rprec), DIMENSION(:), allocatable :: ds, modB, dBdpsi, kappa_g
+      REAL(rprec), DIMENSION(:), allocatable :: ds, modB, dBdpsi, kappa_g, kappa_g2
       REAL(rprec), DIMENSION(:), allocatable :: grad_psi_norm, grad_psi_i
       REAL(rprec), DIMENSION(:), allocatable :: e_theta_norm, e_theta_i
       REAL(rprec), DIMENSION(:), allocatable :: dBsupvdpsi, dVdb_t1, dBsupphidpsi
@@ -129,6 +129,7 @@ contains
         allocate ( modB(nsteps) )
         allocate ( dBdpsi(nsteps) )
         allocate ( kappa_g(nsteps) )
+        allocate ( kappa_g2(nsteps) )
         allocate ( grad_psi_norm(nsteps) )
         allocate ( grad_psi_i(nsteps) )
         allocate ( e_theta_norm(nsteps) )
@@ -227,14 +228,15 @@ contains
                           'replace','formatted')
             CALL safe_open(igc14, ierrgc2, 'gc14.'//trim(proc_string),  &
                           'replace','formatted')
-            write(igc2,*) 'j rho suv_pest suv_vmec uv_mod_vmec_fix R Z X Y'
-            write(igc3,*) 'j modB Br Bphi Bz Bx By Bsups(j) Bsupu(j) Bsupv(j)'
-            write(igc4,*) 'j gradR_init3 gradZ_init3 gradB_init3 gradR3 gradZ3 gradB3'
-            write(igc5,*) 'j esubu3 esubv3 es_init3 eu_init3 ev_init3 gradS3 grad_psi_norm(j) dBdpsi(j) sqrtg '
-            write(igc6,*) 'j X Y Z bnxyz(1:3) Bxyz(1:3) modB dxyzds(1:3) dxyzdu(1:3) dxyzdv(1:3) grads_xyz(1:3) gradu_xyz(1:3) gradv_xyz(1:3) e_theta_norm binormal(1:3) grad_psi_xyz(1:3) dVdb_t1 dBsupphidpsi dBdpsi sqrtg ds jac_suvxyz'
-            write(igc7,*) 'j bdotgradb(1:3) kappa_g'
-            write(igc8,*) 'j PEST(Rad,Pol,Tor) X Y Z Bx By Bz gradPsi_x gradPsi_y gradPsi_z e_theta_norm dBsupphidpsi'
-            write(igc11,*) 'j ds(j) dVdb_t1'
+
+!            write(igc2,*) 'j rho suv_pest suv_vmec uv_mod_vmec_fix R Z X Y'
+!            write(igc3,*) 'j modB Br Bphi Bz Bx By Bsups(j) Bsupu(j) Bsupv(j)'
+!            write(igc4,*) 'j gradR_init3 gradZ_init3 gradB_init3 gradR3 gradZ3 gradB3'
+!            write(igc5,*) 'j esubu3 esubv3 es_init3 eu_init3 ev_init3 gradS3 grad_psi_norm(j) dBdpsi(j) sqrtg '
+!            write(igc6,*) 'j X Y Z bnxyz(1:3) Bxyz(1:3) modB dxyzds(1:3) dxyzdu(1:3) dxyzdv(1:3) grads_xyz(1:3) gradu_xyz(1:3) gradv_xyz(1:3) e_theta_norm binormal(1:3) grad_psi_xyz(1:3) dVdb_t1 dBsupphidpsi dBdpsi sqrtg ds jac_suvxyz'
+!            write(igc7,*) 'j bdotgradb(1:3) kappa_g'
+!            write(igc8,*) 'j PEST(Rad,Pol,Tor) X Y Z Bx By Bz gradPsi_x gradPsi_y gradPsi_z e_theta_norm dBsupphidpsi'
+!            write(igc11,*) 'j ds(j) dVdb_t1'
           END IF
 
 !          first time through calculate fields and some basic parameters
@@ -289,6 +291,16 @@ contains
             CALL get_equil_Bflx(phi_N, u, v, Bsups(j), Bsupu(j), Bsupv(j), ier, B_GRAD = gradB_init)
 !           at this point, Bsups, Bsupu, Bsupv, gradB are calculated for a single field period
 !           derivatives are w.r.t rho=sqrt(s),u,v
+
+            ! step three: kappa_g on single-FP
+            call get_equil_kappa(phi_N, u, v, kappa_g(j), ier)
+!!!!!!WARNING
+!        Where the code takes V as an input it is asking for a value
+!        running from 0 to 2*pi over a field period.  However,
+!        where the code takes PHI as an input it is asking for
+!        the real toroidal angle, 0 to 2*pi over the device.  So
+!        PHI = V/NFP.
+!-----------------------------------------------------------------------
 
 !          Get B field
             CALL get_equil_Bcylsuv(phi_N, u, v, Br, Bphi, Bz, ier, modB(j))
@@ -610,9 +622,10 @@ contains
 
             bdotgradb = 0.0_rprec
 ! step three: kappa_g on full torus
+ 
 !  -- cross product of bdotgradb and binormal
             !geodesic curvature
-            kappa_g(j) = 0.0_rprec
+            kappa_g2(j) = 0.0_rprec
 
 !new
 ! Use central differences to calculated bdotgradb - 
@@ -627,11 +640,12 @@ contains
               bdotgradb(2) = (byn - bynp)/ds(j)
               bdotgradb(3) = (bzn - bznp)/ds(j)
               ! set the value of kappa_g for the 1st index
-              kappa_g(j-1) = dot_product(bdotgradb, binormal(j-1,:))
+              norm_binormal = sqrt((binormal(j-1,1))**2 +(binormal(j-1,2))**2 +(binormal(j-1,3))**2)   
+              kappa_g2(j-1) = dot_product(bdotgradb, binormal(j-1,:)) / norm_binormal
               if (LGCXFILES .eqv. .true.) then
                 write(igc7,'(1X,I8,4(2X,E16.8))') 1,&
-                       bdotgradb(1), bdotgradb(2), bdotgradb(3), kappa_g(1)
-                write(igc13,'((E16.8))') kappa_g(1)
+                       bdotgradb(1), bdotgradb(2), bdotgradb(3), kappa_g2(1)
+                write(igc13,'((E16.8))') kappa_g2(1)
               END IF
             END IF 
 
@@ -640,42 +654,29 @@ contains
               bdotgradb(2) = (byn - byn2p)/(ds(j-1)+ds(j))
               bdotgradb(3) = (bzn - bzn2p)/(ds(j-1)+ds(j))
               ! set the value of kappa_g for the 2nd thru 2nd-to-last index
-              kappa_g(j-1) = dot_product(bdotgradb, binormal(j-1, :))
+              norm_binormal = sqrt((binormal(j-1,1))**2 +(binormal(j-1,2))**2 +(binormal(j-1,3))**2)   
+              kappa_g2(j-1) = dot_product(bdotgradb, binormal(j-1, :)) / norm_binormal
               if (LGCXFILES .eqv. .true.) then
                 write(igc7,'(1X,I8,4(2X,E16.8))') (j-1),&
-                       bdotgradb(1), bdotgradb(2), bdotgradb(3), kappa_g(j-1)
-                write(igc13,'((E16.8))') kappa_g(j-1)
+                       bdotgradb(1), bdotgradb(2), bdotgradb(3), kappa_g2(j-1)
+                write(igc13,'((E16.8))') kappa_g2(j-1)
               END IF
+
               IF (j == nsteps) THEN ! handle the last point
                 bdotgradb(1) = (bxn - bxnp)/(ds(j))
                 bdotgradb(2) = (byn - bynp)/(ds(j))
                 bdotgradb(3) = (bzn - bznp)/(ds(j))
               ! set the value of kappa_g for the last index
 
-                kappa_g(j) = dot_product(bdotgradb, binormal(j,:))
+                norm_binormal = sqrt((binormal(j,1))**2 +(binormal(j,2))**2 +(binormal(j,3))**2)   
+                kappa_g2(j) = dot_product(bdotgradb, binormal(j,:)) / norm_binormal
                 if (LGCXFILES .eqv. .true.) then
                   write(igc7,'(1X,I8,4(2X,E16.8))') j, &
-                       bdotgradb(1), bdotgradb(2), bdotgradb(3), kappa_g(j)
-                  write(igc13,'((E16.8))') kappa_g(j)
+                       bdotgradb(1), bdotgradb(2), bdotgradb(3), kappa_g2(j)
+                  write(igc13,'((E16.8))') kappa_g2(j)
                 END IF
               END IF   
             END IF
-
-            ! Keep track off the previous 2 sets of Bx, By, Bz  (B?p, and B?2p)
-            Bx2p = Bxp
-            By2p = Byp
-            Bz2p = Bzp
-            Bxp = Bx
-            Byp = By
-            Bzp = Bz
-
-            ! Keep track off the previous 2 sets of bx, by, bz  (b?p, and b?2p)
-            bxn2p = bxnp
-            byn2p = bynp
-            bzn2p = bznp
-            bxnp = bxn
-            bynp = byn
-            bznp = bzn
 
             !calculate bdotgradb = partial b-vector / partial l
 !            !write (*,*) 'tangential', Bxyz/modB(j)
@@ -698,8 +699,8 @@ contains
 !            grad_zeta_p_xyz(1) = -Y_fp
 !            grad_zeta_p_xyz(2) = X_fp
 !            grad_zeta_p_xyz(3) = 0.0_rprec
-            grad_zeta_p_xyz(1) = -Y
-            grad_zeta_p_xyz(2) = X
+            grad_zeta_p_xyz(1) = -Y/R
+            grad_zeta_p_xyz(2) = X/R
             grad_zeta_p_xyz(3) = 0.0_rprec
 
 
@@ -1132,7 +1133,7 @@ contains
                 dIdb = dIdb + temp
                 
                 !dgdb
-                temp = ds(j) * grad_psi_norm(j) * kappa_g(j) 
+                temp = ds(j) * grad_psi_norm(j) * kappa_g2(j) 
                 temp = temp/bp(i)/bp(i)/2.0_rprec/modB(j)
                 temp = temp*(sqrt_bbb + 1.0_rprec/sqrt_bbb)
                 dgdb = dgdb + temp
@@ -1211,6 +1212,7 @@ contains
         deallocate ( modB )
         deallocate ( dBdpsi )
         deallocate ( kappa_g )
+        deallocate ( kappa_g2 )
         deallocate ( grad_psi_norm )
         deallocate ( grad_psi_i )
         deallocate ( e_theta_norm )
