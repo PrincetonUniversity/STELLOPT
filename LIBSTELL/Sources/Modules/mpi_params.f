@@ -29,6 +29,7 @@ c                    differently.
       INTEGER :: MPI_COMM_BEAMS = 330                            !communicator for BEAMS3D code
       INTEGER :: MPI_COMM_BOOZER = 331                           !communicator for BOOZ_XFORM code
       INTEGER :: MPI_COMM_DIAGNO = 332                           !communicator for BOOZ_XFORM code
+      INTEGER :: MPI_COMM_WALLACC = 333                          !communicator for WALLACC code
       INTEGER :: MPI_COMM_PARVMEC = 101                           !communicator for PARVMEC code
 
       CONTAINS
