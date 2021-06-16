@@ -97,7 +97,7 @@ contains
       REAL(rprec), DIMENSION(:), allocatable :: dBsupvdpsi, dVdb_t1, dBsupphidpsi
       REAL(rprec), DIMENSION(:), allocatable :: dBsupv
       REAL(rprec), DIMENSION(:), allocatable :: Bsups, Bsupu, Bsupv
-      REAL(rprec), DIMENSION(:,:), allocatable :: binormal
+      REAL(rprec), DIMENSION(:,:), allocatable :: binormal, myCoords
 
 !      integer :: maxwells = 5000
 
@@ -142,6 +142,7 @@ contains
         allocate ( Bsupu(nsteps) )
         allocate ( Bsupv(nsteps) )
         allocate ( binormal(nsteps,3) )
+        allocate ( myCoords(nsteps,3) )
         allocate ( well_start(maxwells) )
         allocate ( well_stop(maxwells) )
         allocate ( bp(gammac_bpstep) )
@@ -314,8 +315,9 @@ contains
 !           X, Y are full torus, X_fp, Y_fp are single field period
             X=R*cos(-zeta_p) ! zeta_p is -1 * laboratory toroidal angle
             Y=R*sin(-zeta_p)  
-          X_fp=R*cos(v)
-          Y_fp=R*sin(v)
+
+            X_fp=R*cos(v)
+            Y_fp=R*sin(v)
 
 
 !           Convert radial gradients from d/drho to d/ds
@@ -412,8 +414,8 @@ contains
             IF (j > 1) THEN
               ! X, and Xp are alright to use in this context (JCS) X_fp, and Y_fp would be wrong 
               ds(j) = sqrt((X-Xp)*(X-Xp) + (Y-Yp)*(Y-Yp) + (Z-Zp)*(Z-Zp))
-!              IF (j == 2) ds(1) = ds(j)
-              IF (j == 2) ds(1) = zero
+              IF (j == 2) ds(1) = ds(j)
+!              IF (j == 2) ds(1) = zero
             END IF
             ! update Xp, Yp, Zp for next iteration
             Xp = X
@@ -421,7 +423,9 @@ contains
             Zp = Z
             !integrate dloverb
             dloverb = dloverb + ds(j)/modB(j)
-
+            myCoords(j,1) = X
+            myCoords(j,2) = Y
+            myCoords(j,3) = Z
 !      dB/ds, dB/dpsi, dB/dr, dB/phi, dB/dz, gradB=dB/d(x,y,z)
 ! I have gradB = dB/d(s,u,v)
 ! Later , will want dB/dx, dB/dy, and dB/dz for B dot grad(|B|) = d (bx (x) + by(y) + bz(z)) / d(l)
@@ -636,12 +640,17 @@ contains
            bzn = bnxyz(3)
 
             IF (j == 2) THEN !handle the first index
+              !bdotgradb(1) = (bxn - bxnp)/ds(j)
+              !bdotgradb(2) = (byn - bynp)/ds(j)
+              !bdotgradb(3) = (bzn - bznp)/ds(j)
               bdotgradb(1) = (bxn - bxnp)/ds(j)
               bdotgradb(2) = (byn - bynp)/ds(j)
               bdotgradb(3) = (bzn - bznp)/ds(j)
+
+
+
               ! set the value of kappa_g for the 1st index
-              norm_binormal = sqrt((binormal(j-1,1))**2 +(binormal(j-1,2))**2 +(binormal(j-1,3))**2)   
-              kappa_g2(j-1) = dot_product(bdotgradb, binormal(j-1,:)) / norm_binormal
+              kappa_g2(j-1) = dot_product(bdotgradb, binormal(j-1,:)) 
               if (LGCXFILES .eqv. .true.) then
                 write(igc7,'(1X,I8,4(2X,E16.8))') 1,&
                        bdotgradb(1), bdotgradb(2), bdotgradb(3), kappa_g2(1)
@@ -650,12 +659,32 @@ contains
             END IF 
 
             IF (j >= 3) THEN ! handles the j-1 index
-              bdotgradb(1) = (bxn - bxn2p)/(ds(j-1)+ds(j))
-              bdotgradb(2) = (byn - byn2p)/(ds(j-1)+ds(j))
-              bdotgradb(3) = (bzn - bzn2p)/(ds(j-1)+ds(j))
+              !bdotgradb(1) = (bxn - bxn2p)/(ds(j-1)+ds(j))
+              !bdotgradb(2) = (byn - byn2p)/(ds(j-1)+ds(j))
+              !bdotgradb(3) = (bzn - bzn2p)/(ds(j-1)+ds(j))
+              bdotgradb(1) =  bynp * (bxn - bxn2p) / (myCoords(j,2) - myCoords(j-2,2)) + &
+                             -bynp * (byn - byn2p) / (myCoords(j,1) - myCoords(j-2,1)) + &
+                              bznp * (bxn - bxn2p) / (myCoords(j,3) - myCoords(j-2,3)) + &
+                             -bznp * (bzn - bzn2p) / (myCoords(j,1) - myCoords(j-2,1)) 
+              bdotgradb(2) = -bznp * (bzn - bzn2p) / (myCoords(j,2) - myCoords(j-2,2)) + &
+                              bznp * (byn - byn2p) / (myCoords(j,3) - myCoords(j-2,3)) + &
+                              bxnp * (byn - byn2p) / (myCoords(j,1) - myCoords(j-2,1)) + &
+                             -bxnp * (bxn - bxn2p) / (myCoords(j,2) - myCoords(j-2,2)) 
+              bdotgradb(3) =  bxnp * (bzn - bzn2p) / (myCoords(j,1) - myCoords(j-2,1)) + &
+                             -bxnp * (bxn - bxn2p) / (myCoords(j,3) - myCoords(j-2,3)) + &
+                              bynp * (bzn - bzn2p) / (myCoords(j,2) - myCoords(j-2,2)) + &
+                             -bynp * (byn - byn2p) / (myCoords(j,3) - myCoords(j-2,3))  
+
+              !bdotgradb(1) = (bxn - bxn2p)/(ds(j-1)+ds(j))
+              !bdotgradb(2) = (byn - byn2p)/(ds(j-1)+ds(j))
+              !bdotgradb(3) = (bzn - bzn2p)/(ds(j-1)+ds(j))
+
+
+
+
+
               ! set the value of kappa_g for the 2nd thru 2nd-to-last index
-              norm_binormal = sqrt((binormal(j-1,1))**2 +(binormal(j-1,2))**2 +(binormal(j-1,3))**2)   
-              kappa_g2(j-1) = dot_product(bdotgradb, binormal(j-1, :)) / norm_binormal
+              kappa_g2(j-1) = dot_product(bdotgradb, binormal(j-1, :))
               if (LGCXFILES .eqv. .true.) then
                 write(igc7,'(1X,I8,4(2X,E16.8))') (j-1),&
                        bdotgradb(1), bdotgradb(2), bdotgradb(3), kappa_g2(j-1)
@@ -663,13 +692,15 @@ contains
               END IF
 
               IF (j == nsteps) THEN ! handle the last point
+                !bdotgradb(1) = (bxn - bxnp)/(ds(j))
+                !bdotgradb(2) = (byn - bynp)/(ds(j))
+                !bdotgradb(3) = (bzn - bznp)/(ds(j))
                 bdotgradb(1) = (bxn - bxnp)/(ds(j))
                 bdotgradb(2) = (byn - bynp)/(ds(j))
                 bdotgradb(3) = (bzn - bznp)/(ds(j))
               ! set the value of kappa_g for the last index
 
-                norm_binormal = sqrt((binormal(j,1))**2 +(binormal(j,2))**2 +(binormal(j,3))**2)   
-                kappa_g2(j) = dot_product(bdotgradb, binormal(j,:)) / norm_binormal
+                kappa_g2(j) = dot_product(bdotgradb, binormal(j,:)) 
                 if (LGCXFILES .eqv. .true.) then
                   write(igc7,'(1X,I8,4(2X,E16.8))') j, &
                        bdotgradb(1), bdotgradb(2), bdotgradb(3), kappa_g2(j)
@@ -699,9 +730,12 @@ contains
 !            grad_zeta_p_xyz(1) = -Y_fp
 !            grad_zeta_p_xyz(2) = X_fp
 !            grad_zeta_p_xyz(3) = 0.0_rprec
-            grad_zeta_p_xyz(1) = -Y/R
-            grad_zeta_p_xyz(2) = X/R
-            grad_zeta_p_xyz(3) = 0.0_rprec
+            !grad_zeta_p_xyz(1) = -Y/R
+            !grad_zeta_p_xyz(2) = X/R
+            !grad_zeta_p_xyz(3) = 0.0_rprec
+            grad_zeta_p_xyz(1) = gradv_xyz(1)
+            grad_zeta_p_xyz(2) = gradv_xyz(2)
+            grad_zeta_p_xyz(3) = gradv_xyz(3)
 
 
 ! old
