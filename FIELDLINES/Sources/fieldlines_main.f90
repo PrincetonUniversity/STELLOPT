@@ -336,7 +336,7 @@
       
 
       ! Clean up
-      IF (lvessel) CALL wall_free(ier)
+      IF (lvessel) CALL wall_free(ier, MPI_COMM_FIELDLINES)
       IF (ASSOCIATED(raxis)) CALL mpidealloc(raxis,win_raxis)
       IF (ASSOCIATED(phiaxis)) CALL mpidealloc(phiaxis,win_phiaxis)
       IF (ASSOCIATED(zaxis)) CALL mpidealloc(zaxis,win_zaxis)
