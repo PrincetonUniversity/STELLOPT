@@ -666,8 +666,8 @@ contains
                              -bynp * (byn - byn2p) / (myCoords(j,1) - myCoords(j-2,1)) + &
                               bznp * (bxn - bxn2p) / (myCoords(j,3) - myCoords(j-2,3)) + &
                              -bznp * (bzn - bzn2p) / (myCoords(j,1) - myCoords(j-2,1)) 
-              bdotgradb(2) = -bznp * (bzn - bzn2p) / (myCoords(j,2) - myCoords(j-2,2)) + &
-                              bznp * (byn - byn2p) / (myCoords(j,3) - myCoords(j-2,3)) + &
+              bdotgradb(2) =  bznp * (byn - byn2p) / (myCoords(j,3) - myCoords(j-2,3)) + &
+                             -bznp * (bzn - bzn2p) / (myCoords(j,2) - myCoords(j-2,2)) + &
                               bxnp * (byn - byn2p) / (myCoords(j,1) - myCoords(j-2,1)) + &
                              -bxnp * (bxn - bxn2p) / (myCoords(j,2) - myCoords(j-2,2)) 
               bdotgradb(3) =  bxnp * (bzn - bzn2p) / (myCoords(j,1) - myCoords(j-2,1)) + &
