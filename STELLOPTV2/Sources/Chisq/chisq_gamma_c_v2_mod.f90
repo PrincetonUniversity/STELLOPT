@@ -405,7 +405,9 @@ contains
                                   & + grad_psi(3)*grad_psi(3))/pi2
 
             ! dB/dpsi
-            dBdpsi(j) = gradB(3)*pi2/psi_a !This has been verified with nothing (JCS)
+            !dBdpsi(j) = gradB(3)*pi2/psi_a !This has been verified with nothing (JCS)
+            ! added a -1 sign to match julia
+            dBdpsi(j) = -gradB(3)*pi2/psi_a !This has been verified with nothing (JCS)
 
             !Calculate crude arclength
             ! ds gives the distance between the current point and the previous point.
