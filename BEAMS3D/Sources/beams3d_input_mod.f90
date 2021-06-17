@@ -80,7 +80,7 @@
                                plasma_Zmean, therm_factor, &
                                fusion_scale, nrho_dist, ntheta_dist, & 
                                nzeta_dist, nvpara_dist, nvperp_dist, &
-                               partvmax, lendt_m
+                               partvmax, lendt_m, te_col_min
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -154,6 +154,7 @@
       plasma_mass = 1.6726219E-27 ! Assume Hydrogen
       therm_factor = 1.5 ! Factor at which to thermalize particles
       lendt_m = 0.05 ! Max distance a particle travels
+      te_col_min = 10 ! Min electron temperature to consider in collisions
 
       ! Distribution Function Defaults
       nrho_dist = 64

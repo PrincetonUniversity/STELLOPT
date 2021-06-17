@@ -13,7 +13,7 @@ MODULE beams3d_physics_mod
       USE stel_kinds, ONLY: rprec
       USE beams3d_runtime, ONLY: lneut, pi, pi2, dt, lverb, ADAS_ERR, &
                                  dt_save, lbbnbi, weight, ndt, &
-                                 ndt_max, npoinc, lendt_m
+                                 ndt_max, npoinc, lendt_m, te_col_min
       USE beams3d_lines, ONLY: R_lines, Z_lines, PHI_lines, &
                                myline, mytdex, moment, ltherm, &
                                nsteps, nparticles, vll_lines, &
@@ -172,7 +172,7 @@ MODULE beams3d_physics_mod
             !  Calculate Coulomb Logarithm (NRL pg. 35)
             !     te in eV and ne in cm^-3
             !-----------------------------------------------------------
-            IF ((te_temp > 10).and.(ne_temp > 0)) THEN
+            IF ((te_temp > te_col_min).and.(ne_temp > 0)) THEN
                coulomb_log = 35 - log( fact_coul*sqrt(ne_temp*1E-6/te_temp)/(vbeta*vbeta))
 !               IF (te_temp < 10*myZ*myZ) THEN
 !                  coulomb_log = 23 - log( myZ*sqrt(ne_temp*1E-6/(te_cube) )   )
