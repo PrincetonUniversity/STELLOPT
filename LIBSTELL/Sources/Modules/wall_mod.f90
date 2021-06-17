@@ -1348,7 +1348,9 @@
          wall%rmin(2) = ys(1)
          wall%rmin(3) = zs(1)
 
-         WRITE(6,*) 'Rmin found', wall%rmin
+         wall%rmax(1) = xs(nblocks(1))
+         wall%rmax(2) = ys(nblocks(2))
+         wall%rmax(3) = zs(nblocks(3))
    
          wall%nblocks = nblocks(1) * nblocks(2) * nblocks(3)
          wall%stepsize = size
