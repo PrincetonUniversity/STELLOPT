@@ -1397,12 +1397,12 @@
 #if defined(MPI_OPT)
          IF (PRESENT(comm)) THEN
             shared = .TRUE.
-            mydelta = CEILING(REAL(acc%nblocks) / REAL(shar_size))
+            mydelta = CEILING(REAL(wall%nblocks) / REAL(shar_size))
             mystart = 1 + shar_rank*mydelta
             myend   = mystart + mydelta
-            IF (myend > acc%nblocks) myend=acc%nblocks
-            CALL mpialloc_1d_int(counter_arr, acc%nblocks, shar_rank, 0, shar_comm, win_counter_arr)
-            CALL mpialloc_2d_boo(mask_face, nface, acc%nblocks, shar_rank, 0, shar_comm, win_mask_face)
+            IF (myend > wall%nblocks) myend=wall%nblocks
+            CALL mpialloc_1d_int(counter_arr, wall%nblocks, shar_rank, 0, shar_comm, win_counter_arr)
+            CALL mpialloc_2d_boo(mask_face, nface, wall%nblocks, shar_rank, 0, shar_comm, win_mask_face)
          ELSE
 #endif
             shared = .FALSE.
@@ -1455,7 +1455,7 @@
             IF (counter_arr(i) > 0) THEN
 #if defined(MPI_OPT)
                IF (PRESENT(comm)) THEN 
-                  CALL mpialloc_1d_int(acc%blocks(i)%face, counter_arr(i), shar_rank, 0, shar_comm, acc%blocks(i)%win_face)
+                  CALL mpialloc_1d_int(wall%blocks(i)%face, counter_arr(i), shar_rank, 0, shar_comm, wall%blocks(i)%win_face)
                ELSE
 #endif
                   ALLOCATE(wall%blocks(i)%face(counter_arr(i)), STAT=istat)
@@ -1477,7 +1477,7 @@
                mysplit = 0
                counter = 0
                k=2
-               DO i=1, acc%nblocks
+               DO i=1, wall%nblocks
                   counter = counter + counter_arr(i)
                   IF (counter > mydelta) THEN
                      mysplit(k) = i
@@ -1486,12 +1486,12 @@
                      counter = 0
                   END IF
                END DO
-               mysplit(k) = acc%nblocks
+               mysplit(k) = wall%nblocks
                IF (k .eq. shar_size + 1) EXIT
             END DO
             mystart = 1 + mysplit(shar_rank + 1)
             myend   = mysplit(shar_rank + 2)
-            IF (mystart > acc%nblocks .OR. myend .eq. 0) myend=mystart
+            IF (mystart > wall%nblocks .OR. myend .eq. 0) myend=mystart
             DEALLOCATE(mysplit)
          ELSE
 #endif
