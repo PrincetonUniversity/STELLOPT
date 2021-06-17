@@ -107,10 +107,10 @@
          k = 128
          ier = 0
          IF (lplasma_only) THEN
-            CALL wall_load_seg(nbndry,xbndry,zbndry,k,ier,COMM=MPI_COMM_LOCAL)
+            CALL wall_load_seg(nbndry,xbndry,zbndry,k,ier,VERB=lverb,COMM=MPI_COMM_LOCAL)
             IF (ier==-327) WRITE(6,'(A)') 'ERROR: EQDSK Boundary has repeated index.'
          ELSE
-            CALL wall_load_seg(nlim,xlim,zlim,k,ier,COMM=MPI_COMM_LOCAL)
+            CALL wall_load_seg(nlim,xlim,zlim,k,ier,VERB=lverb,COMM=MPI_COMM_LOCAL)
             IF (ier==-327) WRITE(6,'(A)') 'ERROR: EQDSK Limiter has repeated index.'
          END IF
          ier = 0
