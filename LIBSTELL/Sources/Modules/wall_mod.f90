@@ -87,7 +87,7 @@
       TYPE(wall_type), PRIVATE :: wall
       TYPE(block), PRIVATE:: b
 
-      INTEGER, PRIVATE                         :: nfaces_per_block = 75
+      INTEGER, PRIVATE                         :: nfaces_per_block = 50
 
       INTEGER, PRIVATE                         :: win_bface
       INTEGER, POINTER                         :: bface(:)
