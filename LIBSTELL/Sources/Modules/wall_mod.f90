@@ -235,7 +235,7 @@
       LOGICAL :: shared, lwall_acc
 
       IF (PRESENT(verb)) lverb = verb
-      IF (lverb) WRITE(6,*) '---------- Creating wall mesh ----------'
+      IF (lverb) WRITE(6,*) '-----  Creating wall mesh  -----'
       
       shar_rank = 0; shar_size = 1;
       lwall_loaded = .false.
@@ -513,7 +513,7 @@
       DOUBLE PRECISION, ALLOCATABLE :: r_temp(:,:),z_temp(:,:),x_temp(:,:),y_temp(:,:)
 
       IF (PRESENT(verb)) lverb = verb
-      IF (lverb) WRITE(6,*) '---------- Creating wall mesh ----------'
+      IF (lverb) WRITE(6,*) '-----  Creating wall mesh  -----'
 
       ! create info usually read from file manually
       machine_string = '          HARMONICS'
@@ -765,7 +765,7 @@
       INTEGER :: dex1, dex2, dex3
 
       IF (PRESENT(verb)) lverb = verb
-      IF (lverb) WRITE(6,*) '---------- Creating wall mesh ----------'
+      IF (lverb) WRITE(6,*) '-----  Creating wall mesh  -----'
       
       shar_rank = 0; shar_size = 1;
       dphi = 8.0D+00 * ATAN(one)/nphi
@@ -1286,7 +1286,7 @@
    
          DOUBLE PRECISION :: size
          
-         IF (lverb) WRITE(6, *) '---------- Creating accelerated wall ---------------'
+         IF (lverb) WRITE(6, *) '-----  Creating accelerated wall  -----'
          IF (lverb) CALL WALL_INFO(6)
    
          CALL GET_BLOCK_SIZE(size)
@@ -1312,7 +1312,7 @@
          END IF
 #endif
    
-         IF (lverb) WRITE(6, *) 'Done creating accelerated wall'
+         IF (lverb) WRITE(6, *) '-----  Done creating accelerated wall  -----'
       END SUBROUTINE ACCELERATE_WALL
    
       SUBROUTINE GET_BLOCK_SIZE(size)
