@@ -144,8 +144,8 @@
          qdot(3) = normb(1)*gradb(2)-normb(2)*gradb(1)
          qdot(1:3) = A*qdot(1:3) + B*bxbdgB(1:3) + vll*normb(1:3) + ExB(1:3)
           
-         qdot(4) = -moment*( normb(1)*gradb(1) + normb(2)*gradb(2) + normb(3)*gradb(3) ) &
-                  +mycharge*(normb(1)*Efield(1) + normb(2)*Efield(2) + normb(3)*Efield(3) )
+         qdot(4) = -moment*( normb(1)*gradb(1) + normb(2)*gradb(2) + normb(3)*gradb(3) )
+!                  +mycharge*(normb(1)*Efield(1) + normb(2)*Efield(2) + normb(3)*Efield(3) )
 
          qdot(2) = qdot(2)*rinv
          qdot(4) = qdot(4)/mymass
