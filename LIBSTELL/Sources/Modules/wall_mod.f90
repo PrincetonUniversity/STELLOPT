@@ -447,6 +447,7 @@
             ! Also only deallocate if nface > 0
             IF (nface_block > 0) CALL free_mpi_array(win_bface, bface, shared)
          END DO
+         WRITE(6,*) 'Rmin found', wall%rmin
       ELSE
          ! Else create an accelerated wall manually
 #if defined(MPI_OPT)
@@ -1342,6 +1343,12 @@
                if (i .eq. 3) zs(j) = tmp
             END DO
          END DO
+
+         wall%rmin(1) = xs(1)
+         wall%rmin(2) = ys(1)
+         wall%rmin(3) = zs(1)
+
+         WRITE(6,*) 'Rmin found', wall%rmin
    
          wall%nblocks = nblocks(1) * nblocks(2) * nblocks(3)
          wall%stepsize = size
