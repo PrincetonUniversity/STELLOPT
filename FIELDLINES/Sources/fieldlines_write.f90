@@ -85,18 +85,15 @@
          IF (ASSOCIATED(vertex)) THEN
             CALL write_var_hdf5(fid,'wall_vertex',nvertex,3,ier,DBLVAR=vertex,ATT='Wall Verticies (x,y,z) [m]',ATT_NAME='description')
             IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'wall_vertex',ier)
-            DEALLOCATE(vertex)
          END IF
          IF (ASSOCIATED(face)) THEN
             CALL write_var_hdf5(fid,'wall_faces',nface,3,ier,INTVAR=face,ATT='Wall Faces',ATT_NAME='description')
             IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'wall_faces',ier)
-            DEALLOCATE(face)
          END IF
          IF (ASSOCIATED(ihit_array)) THEN
             CALL write_var_hdf5(fid,'wall_strikes',nface,ier,INTVAR=ihit_array,&
                                       ATT='Wall Strikes',ATT_NAME='description')
             IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'wall_strikes',ier)
-            DEALLOCATE(ihit_array)
          END IF
          ! Here we output the grid
          IF (ladvanced) THEN
