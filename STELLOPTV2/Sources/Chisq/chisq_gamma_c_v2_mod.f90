@@ -770,7 +770,8 @@ contains
             !dvdB_t1 is the first term in the brackets of dVdb
             ! = iota' ( grad_psi cross b_hat) dot grad_zeta
             CALL cross_product(grad_psi_xyz, bnxyz, grad_psi_x_b_xyz)
-            dVdb_t1(j) = iotap*dot_product(grad_psi_x_b_xyz, grad_zeta_p_xyz) / norm_grad_psi_xyz
+            !dVdb_t1(j) = iotap*dot_product(grad_psi_x_b_xyz, grad_zeta_p_xyz) / norm_grad_psi_xyz
+            dVdb_t1(j) = iota*dot_product(grad_psi_x_b_xyz, grad_zeta_p_xyz) / norm_grad_psi_xyz
 !  need grad_psi normalization?
 
 !NOTE TO SELF; I am here
