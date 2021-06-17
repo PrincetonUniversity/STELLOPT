@@ -24,6 +24,7 @@ PROGRAM WALL_ACCELERATE
          character*(arg_len),allocatable,dimension(:) :: args
          CHARACTER(arg_len)                           :: vessel_string
          INTEGER                                      :: nface_des = 0
+         logical                                      :: lverb = .FALSE.
 
    !-----------------------------------------------------------------------
    !     Error codes (same as FIELDLINES)
@@ -66,6 +67,7 @@ PROGRAM WALL_ACCELERATE
 #endif
 
          IF (myworkid == master) THEN
+            lverb = .TRUE.
             numargs=0
             i=0
             arg1=''
@@ -123,11 +125,11 @@ PROGRAM WALL_ACCELERATE
          IF (nface_des .NE. 0)  CALL SET_NFACE(nface_des)
    
 #if defined(MPI_OPT)
-         CALL wall_load_txt(vessel_string, ier, MPI_COMM_WALLACC)  
+         CALL wall_load_txt(vessel_string, ier, lverb, MPI_COMM_WALLACC)  
          CALL MPI_BARRIER(MPI_COMM_WALLACC,ierr_mpi)
          IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'wall_acc_main',ierr_mpi)
 #else
-         CALL wall_load_txt(vessel_string, ier) 
+         CALL wall_load_txt(vessel_string, ier, lverb) 
 #endif
             
          ! Clean up
