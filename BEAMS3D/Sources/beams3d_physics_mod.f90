@@ -13,7 +13,7 @@ MODULE beams3d_physics_mod
       USE stel_kinds, ONLY: rprec
       USE beams3d_runtime, ONLY: lneut, pi, pi2, dt, lverb, ADAS_ERR, &
                                  dt_save, lbbnbi, weight, ndt, &
-                                 ndt_max, npoinc, lendt_m
+                                 ndt_max, npoinc, lendt_m, te_col_min
       USE beams3d_lines, ONLY: R_lines, Z_lines, PHI_lines, &
                                myline, mytdex, moment, ltherm, &
                                nsteps, nparticles, vll_lines, &
@@ -22,7 +22,7 @@ MODULE beams3d_physics_mod
                                cum_prob, tau, &
                                epower_prof, ipower_prof, &
                                end_state, fact_crit, fact_pa, &
-                               fact_vsound, fact_kick, &
+                               fact_vsound, fact_coul, fact_kick, &
                                ns_prof1, ns_prof2, ns_prof3, ns_prof4, &
                                ns_prof5, my_end
       USE beams3d_grid, ONLY: BR_spl, BZ_spl, delta_t, BPHI_spl, &
@@ -49,6 +49,7 @@ MODULE beams3d_physics_mod
       DOUBLE PRECISION, PRIVATE, PARAMETER :: inv_sqrt2     = 0.7071067812   !1/sqrt(2)
       DOUBLE PRECISION, PRIVATE, PARAMETER :: mpome         = 5.44602984424355D-4 !e_c
       DOUBLE PRECISION, PRIVATE, PARAMETER :: inv_dalton    = 6.02214076208E+26 ! 1./AMU [1/kg]
+      DOUBLE PRECISION, PRIVATE, PARAMETER :: inv_cspeed    = 3.3356409520E-09 ! 1./c [s/m]
       DOUBLE PRECISION, PRIVATE, PARAMETER :: zero          = 0.0D0 ! 0.0
       DOUBLE PRECISION, PRIVATE, PARAMETER :: half          = 0.5D0 ! 1/2
       DOUBLE PRECISION, PRIVATE, PARAMETER :: one           = 1.0D0 ! 1.0
@@ -88,7 +89,8 @@ MODULE beams3d_physics_mod
          DOUBLE PRECISION    :: r_temp, phi_temp, z_temp, vll, te_temp, ne_temp, ti_temp, speed, newspeed, &
                           zeta, sigma, zeta_mean, zeta_o, v_s, tau_inv, tau_spit_inv, &
                           reduction, dve,dvi, tau_spit, v_crit, coulomb_log, te_cube, &
-                          inv_mymass, speed_cube, vcrit_cube, vfrac, modb, s_temp, vc3_tauinv
+                          inv_mymass, speed_cube, vcrit_cube, vfrac, modb, s_temp, &
+                          vc3_tauinv, vbeta
          DOUBLE PRECISION :: Ebench  ! for ASCOT Benchmark
          ! For splines
          INTEGER :: i,j,k, l
@@ -128,13 +130,6 @@ MODULE beams3d_physics_mod
             xparam = (r_temp - raxis(i)) * hri(i)
             yparam = (phi_temp - phiaxis(j)) * hpi(j)
             zparam = (z_temp - zaxis(k)) * hzi(k)
-            !CALL R8HERM3xyz(r_temp,phi_temp,z_temp,&
-            !                MODB_spl%x1(1),MODB_spl%n1,&
-            !                MODB_spl%x2(1),MODB_spl%n2,&
-            !                MODB_spl%x3(1),MODB_spl%n3,&
-            !                MODB_spl%ilin1,MODB_spl%ilin2,MODB_spl%ilin3,&
-            !                i,j,k,xparam,yparam,zparam,&
-            !                hx,hxi,hy,hyi,hz,hzi,ier)
             ! Evaluate the Splines
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
@@ -157,25 +152,31 @@ MODULE beams3d_physics_mod
                             S4D(1,1,1,1),nr,nphi,nz)
             s_temp = fval(1)
 
-            ! Helpers
+            !-----------------------------------------------------------
+            !  Helpers
+            !     v_s       Local Sound Speed
+            !     speed     Total particle speed
+            !-----------------------------------------------------------
             te_cube = te_temp * te_temp * te_temp
             inv_mymass = 1/mymass
+            v_s = fact_vsound*sqrt(ti_temp)
+            speed = sqrt( vll*vll + 2*moment*modb*inv_mymass )
+            vbeta = max(ABS(speed-v_s)*inv_cspeed,1E-6)
 
             !-----------------------------------------------------------
             !  Calculate Coulomb Logarithm (NRL pg. 35)
             !     te in eV and ne in cm^-3
             !-----------------------------------------------------------
-            IF ((te_temp > 0).and.(ne_temp > 0)) THEN
-               IF (te_temp < 10*myZ*myZ) THEN
-                  coulomb_log = 23 - log( myZ*sqrt(ne_temp*1E-6/(te_cube) )   )
-               ELSE
-                  coulomb_log = 24 - log( sqrt(ne_temp*1E-6)/(te_temp) )
-               END IF
-               IF (coulomb_log .le. 1) coulomb_log = 1
+            IF ((te_temp > te_col_min).and.(ne_temp > 0)) THEN
+               coulomb_log = 35 - log( fact_coul*sqrt(ne_temp*1E-6/te_temp)/(vbeta*vbeta))
+!               IF (te_temp < 10*myZ*myZ) THEN
+!                  coulomb_log = 23 - log( myZ*sqrt(ne_temp*1E-6/(te_cube) )   )
+!               ELSE
+!                  coulomb_log = 24 - log( sqrt(ne_temp*1E-6)/(te_temp) )
+!               END IF
+               coulomb_log = max(coulomb_log,one)
                ! Callen Ch2 pg41 eq2.135 (fact*Vtherm; Vtherm = SQRT(2*E/mass) so E in J not eV)
-               !v_crit = fact_crit*SQRT(2*te_temp*inv_mymass*e_charge)
                v_crit = fact_crit*SQRT(te_temp)
-               !v_crit = (( 0.75*sqrt_pi*electron_mass*inv_mymass )**0.33333333333 )*sqrt(te_temp)*5.93096892024D5
                vcrit_cube = v_crit*v_crit*v_crit
                tau_spit = 3.777183D41*mymass*SQRT(te_cube)/(ne_temp*myZ*myZ*coulomb_log)  ! note ne should be in m^-3 here
                tau_spit_inv = (1.0D0)/tau_spit
@@ -192,8 +193,6 @@ MODULE beams3d_physics_mod
             !     newspeed  New total speed
             !     vfrac     Ratio between new and old speed (helper) 
             !-----------------------------------------------------------
-            v_s = fact_vsound*sqrt(ti_temp)
-            speed = sqrt( vll*vll + 2*moment*modb*inv_mymass )
             dve   = speed*tau_spit_inv
             dvi   = vc3_tauinv/(speed*speed)
             reduction = dve + dvi
@@ -243,10 +242,6 @@ MODULE beams3d_physics_mod
            !------------------------------------------------------------
            IF (modb>=B_kick_min .and. modb<=B_kick_max) THEN
               zeta_o = vll/speed   ! Record the current pitch.
-              !sigma = zeta_o*(one-zeta_o*zeta_o)
-              !zeta_mean = pi2*4*SQRT(pi*1E-7*ne_temp*plasma_mass)*E_kick*freq_kick/(modb*modb)
-              !fact_kick = pi2*4*SQRT(pi*1E-7*plamsa_mass)*E_kick*freq_kick
-              !zeta_mean = fact_kick*SQRT(ne_temp)/(modb*modb)
               zeta = zeta_o-zeta_o*(one-zeta_o*zeta_o)*dt*fact_kick*SQRT(ne_temp)/(modb*modb)
               vll = zeta*speed
            END IF
