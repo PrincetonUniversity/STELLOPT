@@ -1641,9 +1641,9 @@
       !-----------------------------------------------------------------------
          IMPLICIT NONE
          TYPE(block), INTENT(inout) :: this
-         this % nfaces = 0
-         CALL free_mpi_array(this % win_face, this % face, this % isshared)
-         this % isshared = .FALSE.
+         IF (this%nfaces > 0) CALL free_mpi_array(this%win_face, this%face, this%isshared)
+         this%isshared = .FALSE.
+         this%nfaces = 0
          RETURN
          END SUBROUTINE BLOCK_DESTROY
 
