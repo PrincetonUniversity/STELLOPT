@@ -182,9 +182,6 @@ MODULE beams3d_physics_mod
                vc3_tauinv = vcrit_cube*tau_spit_inv
             END IF
 
-            vc3_tauinv = zero
-            tau_spit_inv = zero
-
             !-----------------------------------------------------------
             !  Viscouse Velocity Reduction
             !     v_s       Local Sound Speed
@@ -199,7 +196,6 @@ MODULE beams3d_physics_mod
             speed = sqrt( vll*vll + 2*moment*modb*inv_mymass )
             dve   = speed*tau_spit_inv
             dvi   = vc3_tauinv/(speed*speed)
-            dve = zero; dvi = zero;
             reduction = dve + dvi
             newspeed = speed - reduction*dt
             vfrac = newspeed/speed
