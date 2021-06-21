@@ -131,6 +131,7 @@ PROGRAM WALL_ACCELERATE
 #else
          CALL wall_load_txt(vessel_string, ier, lverb) 
 #endif
+         if (lverb) CALL WALL_INFO(6)
             
          ! Clean up
 #if defined(MPI_OPT)
