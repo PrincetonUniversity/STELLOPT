@@ -715,6 +715,8 @@
          d(ik)     = FN(ik,1)*A0(ik,1) + FN(ik,2)*A0(ik,2) + FN(ik,3)*A0(ik,3)
          invDenom(ik) = one / (DOT00(ik)*DOT11(ik) - DOT01(ik)*DOT01(ik))
       END DO
+      ! Set very low number of faces/block for meshes that won't be saved to .dat anyway
+      CALL SET_NFACE(10)
 #if defined(MPI_OPT)
       IF (PRESENT(comm)) THEN 
          CALL MPI_BARRIER(comm,istat)
@@ -916,6 +918,8 @@
          d(ik)     = FN(ik,1)*A0(ik,1) + FN(ik,2)*A0(ik,2) + FN(ik,3)*A0(ik,3)
          invDenom(ik) = one / (DOT00(ik)*DOT11(ik) - DOT01(ik)*DOT01(ik))
       END DO
+      ! Set very low number of faces/block for meshes that won't be saved to .dat anyway
+      CALL SET_NFACE(10)
 #if defined(MPI_OPT)
       IF (PRESENT(comm)) THEN 
          CALL MPI_BARRIER(comm,istat)
@@ -1366,8 +1370,10 @@
    
          DOUBLE PRECISION, POINTER :: xs(:), ys(:), zs(:)
    
+         ! Find size of mesh
          rmin = MINVAL(vertex, DIM=1)
          wall_size = MAXVAL(vertex, DIM=1) - rmin
+         ! For each dimension, find bounds of blocks in a very ugly way
          DO i=1,3
             nblocks(i) = INT(wall_size(i) / size) + 1
             buffer = nblocks(i) * size - wall_size(i)
@@ -1383,6 +1389,7 @@
             END DO
          END DO
 
+         ! Set info about wall
          wall%rmin(1) = xs(1)
          wall%rmin(2) = ys(1)
          wall%rmin(3) = zs(1)
@@ -1398,6 +1405,7 @@
          wall%step(2) = nblocks(3)
          wall%step(1) = nblocks(2) * nblocks(3)
    
+         ! Set bound of each block
          ALLOCATE(wall%blocks(wall%nblocks),STAT=istat)
    
          i = 1
