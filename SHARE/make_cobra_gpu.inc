@@ -15,7 +15,7 @@
 #            Define Compiler Flags
 #######################################################################
   FLAGS_R = -I$(MKL_HOME)/include -O2 -Kieee -Mipa \
-            -Mnodefaultunit -mp=gpu -Minfo=mp -gpu=cuda11.1,cc70
+            -Mnodefaultunit -mp=gpu -Minfo=mp -gpu=cuda11.2,cc70
   FLAGS_D = -I$(MKL_HOME)/include -O2 -Kieee -Mipa \
             -Mnodefaultunit -g -traceback -mp=gpu -Minfo=mp -gpu=cuda11.1,cc70
   LIBS    = -Wl,-rpath,$(MKL_HOME)/lib/intel64 \
@@ -27,10 +27,10 @@
 #            MPI Options
 #######################################################################
   LMPI    = T
-  MPI_COMPILE = mpipgfortran-20.4
-  MPI_COMPILE_FREE = mpipgfortran-20.4
-  MPI_COMPILE_C = mpipgfortran-20.4
-  MPI_LINK = mpipgfortran-20.4
+  MPI_COMPILE = mpipgfortran
+  MPI_COMPILE_FREE = mpipgfortran
+  MPI_COMPILE_C = mpipgfortran
+  MPI_LINK = mpipgfortran
   MPI_RUN  = srun
   MPI_RUN_OPTS = --nodes=1 --ntasks-per-node=40 --time=0:30:00 -p express
   MPI_RUN_OPTS_SM   = --nodes=1 --ntasks-per-node=40 --time=0:30:00 -p express
@@ -46,7 +46,7 @@
 #######################################################################
 #            NETCDF Options
 #######################################################################
-  LNETCDF = T
+  LNETCDF = F
   NETCDF_INC = $(shell nc-config --fflags)
   NETCDF_LIB = $(shell nc-config --flibs)
 #  NETCDF_INC = -I$(NETCDF_HOME)/include 
@@ -56,7 +56,7 @@
 #######################################################################
 #            HDF5 Options
 #######################################################################
-  LHDF5 = T
+  LHDF5 = F
   PRECOMP+= -DHDF5_PAR
   HDF5_INC = -I$(HDF5_HOME)/include 
   HDF5_LIB = -Wl,-rpath,$(HDF5_HOME)/lib -L$(HDF5_HOME)/lib \
