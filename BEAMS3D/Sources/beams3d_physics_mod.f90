@@ -234,7 +234,8 @@ MODULE beams3d_physics_mod
            zeta_mean = zeta_o *(1.0D0 - speed_cube )  ! The new mean in the distribution.
            zeta = zeta*sigma + zeta_mean  ! The new pitch angle.
            !!!The pitch angle MUST NOT go outside [-1,1] nor be NaN; but could happen accidentally with the distribution.
-           IF (ABS(zeta) >  0.999D+00) zeta =  SIGN(0.999D+00,zeta)
+           zeta = MIN(MAX(zeta,-0.999D+00),0.999D+00)
+           !IF (ABS(zeta) >  0.999D+00) zeta =  SIGN(0.999D+00,zeta)
            vll = zeta*speed
 
            !------------------------------------------------------------
