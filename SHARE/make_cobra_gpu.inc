@@ -17,7 +17,7 @@
   FLAGS_R = -I$(MKL_HOME)/include -O2 -Kieee -Mipa \
             -Mnodefaultunit -mp=gpu -Minfo=mp -gpu=cuda11.2,cc70
   FLAGS_D = -I$(MKL_HOME)/include -O2 -Kieee -Mipa \
-            -Mnodefaultunit -g -traceback -mp=gpu -Minfo=mp -gpu=cuda11.1,cc70
+            -Mnodefaultunit -g -traceback -mp=gpu -Minfo=mp -gpu=cuda11.2,cc70
   LIBS    = -Wl,-rpath,$(MKL_HOME)/lib/intel64 \
             -L$(MKL_HOME)/lib/intel64 -lmkl_scalapack_lp64 \
             -lmkl_intel_lp64 -lmkl_core -lmkl_sequential \
@@ -46,7 +46,7 @@
 #######################################################################
 #            NETCDF Options
 #######################################################################
-  LNETCDF = F
+  LNETCDF = T
   NETCDF_INC = $(shell nc-config --fflags)
   NETCDF_LIB = $(shell nc-config --flibs)
 #  NETCDF_INC = -I$(NETCDF_HOME)/include 
@@ -56,7 +56,7 @@
 #######################################################################
 #            HDF5 Options
 #######################################################################
-  LHDF5 = F
+  LHDF5 = T
   PRECOMP+= -DHDF5_PAR
   HDF5_INC = -I$(HDF5_HOME)/include 
   HDF5_LIB = -Wl,-rpath,$(HDF5_HOME)/lib -L$(HDF5_HOME)/lib \
