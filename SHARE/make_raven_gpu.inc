@@ -14,9 +14,9 @@
 #######################################################################
 #            Define Compiler Flags
 #######################################################################
-  FLAGS_R = -I$(MKL_HOME)/include -O2 -Kieee -Mipa \
+  FLAGS_R = -I$(MKL_HOME)/include -O2 -Kieee  \
             -Mnodefaultunit -mp=gpu -Minfo=mp -gpu=cuda11.2,cc70
-  FLAGS_D = -I$(MKL_HOME)/include -O2 -Kieee -Mipa \
+  FLAGS_D = -I$(MKL_HOME)/include -O2 -Kieee  \
             -Mnodefaultunit -g -traceback -mp=gpu -Minfo=mp -gpu=cuda11.2,cc70
   LIBS    =  ${MKLROOT}/lib/intel64/libmkl_blas95_lp64.a \
              ${MKLROOT}/lib/intel64/libmkl_lapack95_lp64.a \
