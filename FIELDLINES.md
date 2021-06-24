@@ -131,7 +131,7 @@ name lists should look like:
      ZMAX = 1.5                        ! Maximum extent of vertical grid
      PHIMIN = 0.0                      ! Minimum extent of toroidal grid, overridden by mgrid or coils file
      PHIMAX = 0.628                    ! Maximum extent of toroidal grid, overridden by mgrid or coils file
-     MU = 0.0                          ! Fieldline diffusion (mu=sqrt(D*tau*2))
+     MU = 0.0                          ! Fieldline diffusion (mu=D/v) [m^2/m]
      R_START =  3.6  3.7  3.8          ! Radial starting locations of fieldlines
      Z_START =  0.0  0.0  0.0          ! Vertical starting locations of fieldlines
      PHI_START =  0.0  0.0  0.0        ! Toroidal starting locations of fieldlines (radians)
@@ -158,13 +158,9 @@ field period model. In general the formula is NPHI1=(NPHI-1)\*NFP+1,
 where NPHI1 is the full device model (nphi) and NPHI is the field period
 model (nphi).
 
-To use MU you need to take the actual diffusion coefficient D \[m^2/s\]
-multiply it by TAU \[s\] which is the timescale of the simulation and
-the factor 2, then take the square root. This will give you the proper
-value of MU. To calculate TAU use the formula
-TAU=\<PHI_END\*R_START\>/V_PART where V_PART is the velocity of a
-particle (assumed) and the operator \<\> means average. (Note this works
-as of version 1.31)
+The MU diffusion coefficient has units of \[m^2/m\]. To convert the
+traditional diffusion coefficient D \[m^2/s\] to MU you simply divide
+D by the typical velocity (usually the sound speed) of your particle.
 
 ------------------------------------------------------------------------
 
@@ -197,6 +193,7 @@ and FIELDLINES_IN namelists in it.
 | -field | NONE | Outputs the B-Field on the cylindrical grid only. | 
 | -raw | NONE | Treats EXTCUR array as raw values (EXTCUR is a scale factor applied to what\'s in the coils file). | 
 | -auto | NONE | Starting points set equal to radial grid and run from the min to max values of R_START and Z_START | 
+| -field_start | NONE | Extension and fieldline number to use for initializing run. |
 | -noverb | NONE | Suppresses screen output | 
 | -help | NONE | Print help message |
 
