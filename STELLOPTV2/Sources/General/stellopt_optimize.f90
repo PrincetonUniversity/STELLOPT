@@ -199,7 +199,6 @@
             IF (myid == master) info = flag_cleanup_lev
             call stellopt_fcn(mtargets, nvars, vars, fvec, info, nfev)
          CASE('one_iter_norm')
-            lskip_min = .true.
             ALLOCATE(fvec(mtargets))
             fvec     = 0.0
             info     = FLAG_SINGLETASK
