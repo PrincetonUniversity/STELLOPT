@@ -124,7 +124,7 @@
 #######################################################################
 #            TRAVIS Options
 #######################################################################
-  LTRAVIS= T
+  LTRAVIS= F
   TRAVIS_DIR = $(TRAVIS_PATH)
   LIB_TRAVIS = libtravis64_sopt.a
   LIB_MCONF  = libmconf64.a
@@ -152,7 +152,5 @@
 #######################################################################
 #            LIBSTELL Shared Options
 #######################################################################
-  LIB_SHARE = $(LIBS) $(NETCDF_LIB) $(HDF5_LIB) \
-             -lifport -lifcoremt -limf -lm -lc \
-             -lpthread 
+  LIB_SHARE = $(LIBS) $(NETCDF_LIB) $(HDF5_LIB) 
 
