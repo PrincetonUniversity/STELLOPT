@@ -1425,6 +1425,9 @@
                END DO
             END DO
          END DO
+         DEALLOCATE(xs)
+         DEALLOCATE(ys)
+         DEALLOCATE(zs)
       END SUBROUTINE CREATE_BLOCKS
    
       SUBROUTINE FILL_BLOCKS(istat, comm, shar_comm)
