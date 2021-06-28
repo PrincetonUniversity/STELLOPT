@@ -122,11 +122,11 @@
 
       INTERFACE free_mpi_array
          MODULE PROCEDURE free_mpi_array1d_int, free_mpi_array1d_flt, free_mpi_array1d_dbl, &
-                          free_mpi_array2d_int, free_mpi_array2d_dbl, free_mpi_array2d_boo
+                          free_mpi_array2d_int, free_mpi_array2d_dbl
       END INTERFACE
 
       PRIVATE :: mpialloc_1d_int,mpialloc_1d_dbl,mpialloc_2d_int,mpialloc_2d_dbl
-      PRIVATE :: free_mpi_array1d_int, free_mpi_array1d_dbl, free_mpi_array2d_int, free_mpi_array2d_dbl, free_mpi_array2d_boo
+      PRIVATE :: free_mpi_array1d_int, free_mpi_array1d_dbl, free_mpi_array2d_int, free_mpi_array2d_dbl
       CONTAINS
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1923,48 +1923,6 @@
       RETURN
       END SUBROUTINE mpialloc_2d_dbl
 
-      SUBROUTINE mpialloc_2d_boo(array,n1,n2,subid,mymaster,share_comm,win)
-         !-----------------------------------------------------------------------
-         ! mpialloc_2d_boo: Allocated a 2D boolean array to shared memory
-         ! Taken from LIBSTELL/Sources/Modules/mpi_sharemem.f90
-         ! Included here to reduce dependencies
-         !-----------------------------------------------------------------------
-         ! Libraries
-#if defined(MPI_OPT)
-         USE mpi
-#endif        
-         USE ISO_C_BINDING
-         IMPLICIT NONE
-         ! Arguments
-         LOGICAL, POINTER, INTENT(inout) :: array(:,:)
-         INTEGER, INTENT(in) :: n1
-         INTEGER, INTENT(in) :: n2
-         INTEGER, INTENT(in) :: subid
-         INTEGER, INTENT(in) :: mymaster
-         INTEGER, INTENT(inout) :: share_comm
-         INTEGER, INTENT(inout) :: win
-         ! Variables
-         INTEGER :: disp_unit, ier
-         INTEGER :: array_shape(2)
-#if defined(MPI_OPT)
-         INTEGER(KIND=8) :: window_size
-#endif
-         TYPE(C_PTR) :: baseptr
-         ! Initialization
-         ier = 0
-         array_shape(1) = n1
-         array_shape(2) = n2
-         disp_unit = 1
-#if defined(MPI_OPT)
-         window_size = 0_MPI_ADDRESS_KIND
-         IF (subid == mymaster) window_size = INT(n1*n2,8)*4_MPI_ADDRESS_KIND
-         CALL MPI_WIN_ALLOCATE_SHARED(window_size, disp_unit, MPI_INFO_NULL, share_comm, baseptr, win ,ier)
-         IF (subid /= mymaster) CALL MPI_WIN_SHARED_QUERY(win, 0, window_size, disp_unit, baseptr, ier)
-         CALL C_F_POINTER(baseptr, array, array_shape)
-#endif
-         RETURN
-         END SUBROUTINE mpialloc_2d_boo
-
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!    Memory Freeing Subroutines
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2073,27 +2031,6 @@
 #endif
          RETURN
          END SUBROUTINE free_mpi_array2d_dbl
-
-         SUBROUTINE free_mpi_array2d_boo(win_local, array_local, isshared)
-         IMPLICIT NONE
-         LOGICAL, INTENT(in) :: isshared
-         INTEGER, INTENT(inout) :: win_local
-         LOGICAL, POINTER, INTENT(inout) :: array_local(:,:)
-         INTEGER :: istat
-         istat=0
-#if defined(MPI_OPT)
-         IF (isshared) THEN
-            CALL MPI_WIN_FENCE(0, win_local,istat)
-            CALL MPI_WIN_FREE(win_local,istat)
-            IF (ASSOCIATED(array_local)) NULLIFY(array_local)
-         ELSE
-#endif
-            IF (ASSOCIATED(array_local)) DEALLOCATE(array_local)
-#if defined(MPI_OPT)
-         ENDIF
-#endif
-         RETURN
-         END SUBROUTINE free_mpi_array2d_boo
 !-----------------------------------------------------------------------
 !     End Module
 !-----------------------------------------------------------------------
