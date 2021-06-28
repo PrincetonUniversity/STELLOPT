@@ -1594,6 +1594,8 @@
                      counter = counter + 1
                      wall%blocks(i)%face(counter) = j
                   END IF
+                  ! Break if all faces have been found
+                  IF (counter == counter_arr(i)) EXIT
                END DO
             END IF           
          END DO
