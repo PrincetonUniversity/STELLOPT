@@ -1449,17 +1449,16 @@
          INTEGER, POINTER :: counter_arr(:)
          ! Integer array that determines how to split blocks over threads. Only used with MPI
          INTEGER, POINTER :: mysplit(:)
-   
          ! Block bounds
          DOUBLE PRECISION :: rmin(3), rmax(3)
          ! Masks if vertex in block or face already in block
-         LOGICAL, POINTER :: mask_face(:, :)
+         LOGICAL, POINTER :: mask_face(:)
          LOGICAL, POINTER :: mask(:)
          ! Loop integers and counter
-         INTEGER :: i, j, k, counter
+         INTEGER :: i, j, counter
          
          ! Split blocks between threads
-         ! Also allocate counter_arr and mask_face
+         ! Also allocate counter_arr
 #if defined(MPI_OPT)
          IF (PRESENT(comm)) THEN
             shared = .TRUE.
@@ -1468,18 +1467,16 @@
             myend   = mystart + mydelta
             IF (myend > wall%nblocks) myend=wall%nblocks
             CALL mpialloc_1d_int(counter_arr, wall%nblocks, shar_rank, 0, shar_comm, win_counter_arr)
-            CALL mpialloc_2d_boo(mask_face, nface, wall%nblocks, shar_rank, 0, shar_comm, win_mask_face)
          ELSE
 #endif
             shared = .FALSE.
             mystart = 1; myend = wall%nblocks
             ALLOCATE(counter_arr(wall%nblocks))
-            ALLOCATE(mask_face(nface, wall%nblocks))
 #if defined(MPI_OPT)
          END IF
 #endif
          counter_arr = 0
-         mask_face = .FALSE.
+         ALLOCATE(mask_face(nface), STAT=istat)
 
          ! Allocate mask
          ALLOCATE(mask(nvertex), STAT=istat)
@@ -1491,6 +1488,7 @@
          ! Find how many vertices in each block
          IF (shar_rank == 0 .and. ldebug) WRITE(6, *) 'Filling blocks: Finding the number of vertices in each block'
          DO i=mystart, myend
+            mask_face = .FALSE.
             ! Define bounds block
             rmin = wall%blocks(i)%rmin - epsilon
             rmax = wall%blocks(i)%rmax + epsilon
@@ -1500,14 +1498,14 @@
             .and. vertex(:,2) < rmax(2) .and. vertex(:,2) .GE. rmin(2) &
             .and. vertex(:,3) < rmax(3) .and. vertex(:,3) .GE. rmin(3))
    
-            ! Count number of vertices
+            ! Check faces of all vertices
             DO j=1,nvertex
                IF (mask(j)) THEN
-                  mask_face(:, i) = mask_face(:, i) .or. ANY(j == face, DIM=2)
+                  mask_face(:) = mask_face(:) .or. ANY(j == face, DIM=2)
                END IF       
             END DO
-
-            counter_arr(i) = COUNT(mask_face(:, i))
+            ! Count found faces
+            counter_arr(i) = COUNT(mask_face)
          END DO
 
 #if defined(MPI_OPT)
@@ -1573,13 +1571,28 @@
             ! Skip if for some reason out of bounds
             IF (i > wall%nblocks) EXIT
             ! Only add if actually faces in the block
-            IF (counter_arr(i) > 0) THEN    
-               ! Add faces to list
+            IF (counter_arr(i) > 0) THEN
+               mask_face = .FALSE.
+               ! Define bounds block
+               rmin = wall%blocks(i)%rmin - epsilon
+               rmax = wall%blocks(i)%rmax + epsilon
+      
+               ! Check which vertices are in block         
+               mask(:) = (vertex(:,1) < rmax(1) .and. vertex(:,1) .GE. rmin(1) &
+               .and. vertex(:,2) < rmax(2) .and. vertex(:,2) .GE. rmin(2) &
+               .and. vertex(:,3) < rmax(3) .and. vertex(:,3) .GE. rmin(3))
+      
+               ! Check faces of all vertices
+               DO j=1,nvertex
+                  IF (mask(j)) mask_face(:) = mask_face(:) .or. ANY(j == face, DIM=2)
+               END DO 
+               
+               ! Add faces to face list of wall block
                counter = 0
-               DO k=1, nface
-                  IF (mask_face(k, i))  THEN
+               DO j=1,nface
+                  IF (mask_face(j)) THEN
                      counter = counter + 1
-                     wall%blocks(i)%face(counter) = k
+                     wall%blocks(i)%face(counter) = j
                   END IF
                END DO
             END IF           
@@ -1591,7 +1604,7 @@
 #endif
          IF (shar_rank == 0 .and. ldebug) WRITE(6, *) 'Filling blocks: Starting cleanup fill blocks'
          DEALLOCATE(mask)
-         CALL free_mpi_array(win_mask_face, mask_face, shared)
+         DEALLOCATE(mask_face)
          CALL free_mpi_array(win_counter_arr, counter_arr, shared)
          END SUBROUTINE FILL_BLOCKS
    
@@ -1928,13 +1941,13 @@
          INTEGER, INTENT(in) :: n2
          INTEGER, INTENT(in) :: subid
          INTEGER, INTENT(in) :: mymaster
-         INTEGER, INTENT(in) :: share_comm
+         INTEGER, INTENT(inout) :: share_comm
          INTEGER, INTENT(inout) :: win
          ! Variables
          INTEGER :: disp_unit, ier
          INTEGER :: array_shape(2)
 #if defined(MPI_OPT)
-         INTEGER(KIND=MPI_ADDRESS_KIND) :: window_size
+         INTEGER(KIND=8) :: window_size
 #endif
          TYPE(C_PTR) :: baseptr
          ! Initialization
@@ -1944,7 +1957,7 @@
          disp_unit = 1
 #if defined(MPI_OPT)
          window_size = 0_MPI_ADDRESS_KIND
-         IF (subid == mymaster) window_size = INT(n1*n2,MPI_ADDRESS_KIND)*4_MPI_ADDRESS_KIND
+         IF (subid == mymaster) window_size = INT(n1*n2,8)*4_MPI_ADDRESS_KIND
          CALL MPI_WIN_ALLOCATE_SHARED(window_size, disp_unit, MPI_INFO_NULL, share_comm, baseptr, win ,ier)
          IF (subid /= mymaster) CALL MPI_WIN_SHARED_QUERY(win, 0, window_size, disp_unit, baseptr, ier)
          CALL C_F_POINTER(baseptr, array, array_shape)
