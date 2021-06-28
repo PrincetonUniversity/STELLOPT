@@ -1455,7 +1455,7 @@
          LOGICAL, POINTER :: mask_face(:)
          LOGICAL, POINTER :: mask(:)
          ! Loop integers and counter
-         INTEGER :: i, j, counter
+         INTEGER :: i, j, k, counter
          
          ! Split blocks between threads
          ! Also allocate counter_arr
