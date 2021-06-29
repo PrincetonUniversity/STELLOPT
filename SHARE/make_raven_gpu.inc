@@ -1,3 +1,20 @@
+######################################################################
+#            Modules to be used
+#            Load using following commands before running compile
+#            Also set correct machine name
+######################################################################
+# module purge
+# module load git
+# module load nvhpcsdk/21
+# module load impi/2021.2
+# module load mkl
+# module load hdf5-mpi/1.10.7
+# module load netcdf-mpi/4.7.0
+# module load intel/19.1.3
+# module load anaconda
+
+# export MACHINE="raven_gpu"
+
 #######################################################################
 #            Define Basic Utilities
 #######################################################################
