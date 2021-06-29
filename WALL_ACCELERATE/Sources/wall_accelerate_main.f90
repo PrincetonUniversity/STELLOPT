@@ -131,6 +131,8 @@ PROGRAM WALL_ACCELERATE
          CALL wall_load_txt(vessel_string, ier, lverb) 
 #endif
          if (lverb) CALL WALL_INFO(6)
+         ! Write to file
+         IF (myworkid == master) CALL WRITE_WALL(vessel_string, ier)
             
          ! Clean up
 #if defined(MPI_OPT)
