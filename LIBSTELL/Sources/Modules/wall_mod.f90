@@ -466,8 +466,6 @@
          IF (PRESENT(comm)) CALL MPI_BARRIER(shar_comm, istat)
 #endif
          IF (istat/=0) RETURN
-         IF (shar_rank == 0) CALL WRITE_WALL(filename, istat)
-         IF (istat/=0) RETURN
       END IF
       ! close file
       CLOSE(iunit)
