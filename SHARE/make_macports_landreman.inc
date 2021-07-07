@@ -19,7 +19,7 @@
   PRECOMP:= cpp -traditional-cpp -E -P -C -DMACOSX
   COMPILE = gfortran
   COMPILE_FREE = gfortran -ffree-form -ffree-line-length-none -ffixed-line-length-none
-  LINK    = mpif90 $(FLAGS) -o
+  LINK    = mpif90-mpich-gcc8 $(FLAGS) -o
   LINK_AR = ar -ruvs
   LINK_C  = gcc -shared -Wl,-no_compact_unwind
 #  LINK_C  = gcc -shared -Wl,--no-undefined -Wl,-export-dynamic 
@@ -28,7 +28,7 @@
 #            Define Compiler Flags
 #######################################################################
 #  FLAGS_R = -O2 -g -fexternal-blas -fbacktrace -fcheck=all 
-  FLAGS_R = -O0 -g -Wmissing-include-dirs -fbacktrace -fcheck=all 
+  FLAGS_R = -O2 -g -Wmissing-include-dirs -fbacktrace -fcheck=all 
 #  FLAGS_R = -O2 -fexternal-blas -Wmissing-include-dirs
 #  FLAGS_D = -g -O0 -fcheck=all
   FLAGS_D = $(FLAGS_R)
@@ -36,18 +36,19 @@
   LIBS    = -L/opt/local/lib -lopenblas 
 # Because scalapack is broken in macport for MPI4.0
 #  LIBS += /Users/lazerson/Sims_Work/scalapack-2.0.2/libscalapack.a
-  LIBS    = -L/opt/local/lib -framework Accelerate -lscalapack   -g
+#  LIBS    = -L/opt/local/lib -framework Accelerate -lscalapack   -g
+  LIBS    = -L/opt/local/lib -lscalapack
 
 #######################################################################
 #            MPI Options
 #######################################################################
   LMPI    = T
-  MPI_COMPILE = mpif90
-  MPI_COMPILE_FREE = mpif90 -ffree-form \
-                     -ffree-line-length-none -ffixed-line-length-none
-  MPI_COMPILE_C = mpicc 
-  MPI_LINK = mpif90
-  MPI_LINK = mpif90 -shared  -Wl,-no_compact_unwind
+  MPI_COMPILE = mpif90-mpich-gcc8 -g
+  MPI_COMPILE_FREE = mpif90-mpich-gcc8 -ffree-form \
+                     -ffree-line-length-none -ffixed-line-length-none -g
+  MPI_COMPILE_C = mpicc-mpich-gcc8
+  MPI_LINK = mpif90-mpich-gcc8
+  MPI_LINK = mpif90-mpich-gcc8 -shared  -Wl,-no_compact_unwind
   MPI_RUN = mpiexec
   MPI_RUN_OPTS = -np 2
 #  MPI_RUN_OPTS_SM = -np 16
@@ -103,6 +104,16 @@
 #######################################################################
   LDKES = T
   LNEO  = T
+
+#######################################################################
+#            KNOSOS Options
+#######################################################################
+  LKNOSOS = T
+  KNOSOS_PATH = ../../KNOSOS 
+  KNOSOS_INC = -I$(KNOSOS_PATH) 
+  KNOSOS_DIR = $(KNOSOS_PATH) 
+#  LIB_KNOSOS = libknosos.a 
+  KNOSOS_LIB = -lfftw3  
 
 #######################################################################
 #            FFTW3 Options

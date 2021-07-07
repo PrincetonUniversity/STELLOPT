@@ -2,7 +2,7 @@
 
 # Exit with a nonzero exit code if there are any errors.
 # This is needed to catch compile errors in the CI.
-set -ex
+set -e
 
 export FLAG_CALLED_FROM_BUILD_ALL=true
 

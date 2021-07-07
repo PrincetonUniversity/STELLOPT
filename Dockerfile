@@ -13,7 +13,7 @@ RUN chmod -R 777 ${STELLOPT_PATH}/BENCHMARKS
 RUN cp -RP ${STELLOPT_PATH}/bin/* /usr/local/bin/
 
 # add user
-RUN apt-get -y install sudo
+RUN apt-get -y install sudo libfftw3-dev
 RUN useradd visitor && echo "visitor:visitor" | chpasswd && adduser visitor sudo
 WORKDIR /home/visitor
 USER visitor
