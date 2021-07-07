@@ -89,10 +89,6 @@
 #            KNOSOS Options
 #######################################################################
   LKNOSOS = T
-  KNOSOS_PATH = ../../KNOSOS 
-  KNOSOS_INC = -I$(KNOSOS_PATH) 
-  KNOSOS_DIR = $(KNOSOS_PATH) 
-#  LIB_KNOSOS = libknosos.a 
   KNOSOS_LIB = -lfftw3  
 
 #######################################################################

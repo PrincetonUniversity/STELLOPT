@@ -59,7 +59,7 @@
         iCount =0
         DO ik = 1, nsd
             ! positions at which the boozer transform was carried out
-            IF ( lbooz(ik) .eq. .true.) THEN
+            IF (lbooz(ik)) THEN
                 iCount=iCount+1
                 s_val(iCount) = rho(ik)
                 b00(iCount) = bmnc_b(1, ik)
