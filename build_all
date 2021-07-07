@@ -1,5 +1,9 @@
 #!/bin/sh
 
+# Exit with a nonzero exit code if there are any errors.
+# This is needed to catch compile errors in the CI.
+set -ex
+
 export FLAG_CALLED_FROM_BUILD_ALL=true
 
 # A POSIX variable
@@ -43,10 +47,10 @@ do
   # If command line arguments were given, then check to see
   # which codes should be compiled.  Otherwise compile everything.
   if [ $# -ne 0 ]; then
-    echo $@|grep -q $CODE
-    if [ $? -eq 0 ]; then
-      match=1  
-    fi
+    echo $@|grep -q $CODE && match=1
+    #if [ $? -eq 0 ]; then
+    #  match=1  
+    #fi
   else
     match=1
   fi
