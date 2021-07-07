@@ -11,6 +11,8 @@ jobs:
       OMPI_ALLOW_RUN_AS_ROOT: 1
       OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: 1
     steps:
+      - name: apt-get any packages not already in the container
+        run: sudo apt-get install -y libfftw3-dev
       - name: checkout sources
         uses: actions/checkout@master
       - name: compile
