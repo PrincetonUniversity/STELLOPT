@@ -273,7 +273,9 @@ SUBROUTINE FAST_ION_MODELS(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
   !Create table of gamma_c^* and other quantities (ignoring small ripples)
   !and find maximum gamma_c^*
   maxg=-1
-  BI=SQRT(-1.)
+  ! Initialize BI to NAN. If we try to set BI=SQRT(-1.) or BI=0.0/0.0, gfortran gives a compile error.
+  BI=0.0
+  BI=0.0/BI
   il0=0
   DO ila=nlambda,2,-1
      DO ial=1,nalpha 
@@ -296,7 +298,9 @@ SUBROUTINE FAST_ION_MODELS(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
         DO il=1,nalphab 
            jpoint=i_p(ila,ial,il)
            DO jal=1,nalpha
-              IF(jpoint.EQ.i_p(ila,jal,il0(jal))) jpoint=1
+              IF (il0(jal) > 0) THEN
+                 IF (jpoint.EQ.i_p(ila,jal,il0(jal))) jpoint=1
+              END IF
            END DO
            IF(jpoint.LE.1) CYCLE
            WRITE(iout,*) 'Ripple at',ila,ial,il
@@ -716,7 +720,8 @@ SUBROUTINE FAST_ION_JMAP(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
      j_p(ila+ilamin-1,:,:)=i_p(ila,:,:)
   END DO
   ALLOCATE(BI(nmaps,nla,nalpha))
-  BI=SQRT(-1.)
+  BI=0.0
+  BI=0.0/BI
 
   DO ila=nla,2,-1
      DO ial=1,nalpha
@@ -1531,7 +1536,8 @@ SUBROUTINE FORWARD_STEP(it,s,alpha,theta,zeta,E_o_mu,zl,tl,zr,tr,dB,J,dJds,dJda,
 !           WRITE(6200+myrank,*) 'E_o_mu2',one_o_lambda,s_new,theta_new,J_new
            one_o_lambda=one_o_lambda*(1-dlambda*one_o_lambda)
            IF(one_o_lambda.LT.Bmin.OR.one_o_lambda.GT.Bmax) THEN
-              dsdt_new=SQRT(-1.0)
+              dsdt_new=0.0
+              dsdt_new=0.0/dsdt_new
               RETURN
            END IF
            CALL CALC_DSDA(it,theta_new,zeta,one_o_lambda,zl_new,tl_new,zr_new,tr_new,&
@@ -1542,7 +1548,8 @@ SUBROUTINE FORWARD_STEP(it,s,alpha,theta,zeta,E_o_mu,zl,tl,zr,tr,dB,J,dJds,dJda,
 !              dsd1la=-dsdla/(one_o_lambda*one_o_lambda)      !d_{1/x}x=d_y(1/y)=-1/y^2=-x^2,  y=1/x
 !              s_new=s_new+(E_o_mu-one_o_lambda)*dsd1la
 !              IF(s_new.LT.smin.OR.s_new.GT.smax) THEN
-!                 dsdt_new=SQRT(-1.0)
+!                 dsdt_new=0.0
+!                 dsdt_new=0.0/dsdt_new           
 !                 RETURN
 !              END IF
 !              theta_new=theta_new-iota*zeta
