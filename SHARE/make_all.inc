@@ -1,3 +1,5 @@
+# -*- mode: makefile -*-
+
 #######################################################################
 #   This is universal to all build systems, do not edit unless your
 #   adding a NEW code or library to the build.
