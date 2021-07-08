@@ -122,11 +122,11 @@
 
       INTERFACE free_mpi_array
          MODULE PROCEDURE free_mpi_array1d_int, free_mpi_array1d_flt, free_mpi_array1d_dbl, &
-                          free_mpi_array2d_int, free_mpi_array2d_dbl, free_mpi_array2d_boo
+                          free_mpi_array2d_int, free_mpi_array2d_dbl
       END INTERFACE
 
       PRIVATE :: mpialloc_1d_int,mpialloc_1d_dbl,mpialloc_2d_int,mpialloc_2d_dbl
-      PRIVATE :: free_mpi_array1d_int, free_mpi_array1d_dbl, free_mpi_array2d_int, free_mpi_array2d_dbl, free_mpi_array2d_boo
+      PRIVATE :: free_mpi_array1d_int, free_mpi_array1d_dbl, free_mpi_array2d_int, free_mpi_array2d_dbl
       CONTAINS
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -465,8 +465,6 @@
          END IF
          IF (PRESENT(comm)) CALL MPI_BARRIER(shar_comm, istat)
 #endif
-         IF (istat/=0) RETURN
-         IF (shar_rank == 0) CALL WRITE_WALL(filename, istat)
          IF (istat/=0) RETURN
       END IF
       ! close file
@@ -1425,6 +1423,9 @@
                END DO
             END DO
          END DO
+         DEALLOCATE(xs)
+         DEALLOCATE(ys)
+         DEALLOCATE(zs)
       END SUBROUTINE CREATE_BLOCKS
    
       SUBROUTINE FILL_BLOCKS(istat, comm, shar_comm)
@@ -1446,17 +1447,16 @@
          INTEGER, POINTER :: counter_arr(:)
          ! Integer array that determines how to split blocks over threads. Only used with MPI
          INTEGER, POINTER :: mysplit(:)
-   
          ! Block bounds
          DOUBLE PRECISION :: rmin(3), rmax(3)
          ! Masks if vertex in block or face already in block
-         LOGICAL, POINTER :: mask_face(:, :)
+         LOGICAL, POINTER :: mask_face(:)
          LOGICAL, POINTER :: mask(:)
          ! Loop integers and counter
          INTEGER :: i, j, k, counter
          
          ! Split blocks between threads
-         ! Also allocate counter_arr and mask_face
+         ! Also allocate counter_arr
 #if defined(MPI_OPT)
          IF (PRESENT(comm)) THEN
             shared = .TRUE.
@@ -1465,18 +1465,16 @@
             myend   = mystart + mydelta
             IF (myend > wall%nblocks) myend=wall%nblocks
             CALL mpialloc_1d_int(counter_arr, wall%nblocks, shar_rank, 0, shar_comm, win_counter_arr)
-            CALL mpialloc_2d_boo(mask_face, nface, wall%nblocks, shar_rank, 0, shar_comm, win_mask_face)
          ELSE
 #endif
             shared = .FALSE.
             mystart = 1; myend = wall%nblocks
             ALLOCATE(counter_arr(wall%nblocks))
-            ALLOCATE(mask_face(nface, wall%nblocks))
 #if defined(MPI_OPT)
          END IF
 #endif
          counter_arr = 0
-         mask_face = .FALSE.
+         ALLOCATE(mask_face(nface), STAT=istat)
 
          ! Allocate mask
          ALLOCATE(mask(nvertex), STAT=istat)
@@ -1488,6 +1486,7 @@
          ! Find how many vertices in each block
          IF (shar_rank == 0 .and. ldebug) WRITE(6, *) 'Filling blocks: Finding the number of vertices in each block'
          DO i=mystart, myend
+            mask_face = .FALSE.
             ! Define bounds block
             rmin = wall%blocks(i)%rmin - epsilon
             rmax = wall%blocks(i)%rmax + epsilon
@@ -1497,14 +1496,14 @@
             .and. vertex(:,2) < rmax(2) .and. vertex(:,2) .GE. rmin(2) &
             .and. vertex(:,3) < rmax(3) .and. vertex(:,3) .GE. rmin(3))
    
-            ! Count number of vertices
+            ! Check faces of all vertices
             DO j=1,nvertex
                IF (mask(j)) THEN
-                  mask_face(:, i) = mask_face(:, i) .or. ANY(j == face, DIM=2)
+                  mask_face(:) = mask_face(:) .or. ANY(j == face, DIM=2)
                END IF       
             END DO
-
-            counter_arr(i) = COUNT(mask_face(:, i))
+            ! Count found faces
+            counter_arr(i) = COUNT(mask_face)
          END DO
 
 #if defined(MPI_OPT)
@@ -1570,14 +1569,31 @@
             ! Skip if for some reason out of bounds
             IF (i > wall%nblocks) EXIT
             ! Only add if actually faces in the block
-            IF (counter_arr(i) > 0) THEN    
-               ! Add faces to list
+            IF (counter_arr(i) > 0) THEN
+               mask_face = .FALSE.
+               ! Define bounds block
+               rmin = wall%blocks(i)%rmin - epsilon
+               rmax = wall%blocks(i)%rmax + epsilon
+      
+               ! Check which vertices are in block         
+               mask(:) = (vertex(:,1) < rmax(1) .and. vertex(:,1) .GE. rmin(1) &
+               .and. vertex(:,2) < rmax(2) .and. vertex(:,2) .GE. rmin(2) &
+               .and. vertex(:,3) < rmax(3) .and. vertex(:,3) .GE. rmin(3))
+      
+               ! Check faces of all vertices
+               DO j=1,nvertex
+                  IF (mask(j)) mask_face(:) = mask_face(:) .or. ANY(j == face, DIM=2)
+               END DO 
+               
+               ! Add faces to face list of wall block
                counter = 0
-               DO k=1, nface
-                  IF (mask_face(k, i))  THEN
+               DO j=1,nface
+                  IF (mask_face(j)) THEN
                      counter = counter + 1
-                     wall%blocks(i)%face(counter) = k
+                     wall%blocks(i)%face(counter) = j
                   END IF
+                  ! Break if all faces have been found
+                  IF (counter == counter_arr(i)) EXIT
                END DO
             END IF           
          END DO
@@ -1588,7 +1604,7 @@
 #endif
          IF (shar_rank == 0 .and. ldebug) WRITE(6, *) 'Filling blocks: Starting cleanup fill blocks'
          DEALLOCATE(mask)
-         CALL free_mpi_array(win_mask_face, mask_face, shared)
+         DEALLOCATE(mask_face)
          CALL free_mpi_array(win_counter_arr, counter_arr, shared)
          END SUBROUTINE FILL_BLOCKS
    
@@ -1614,8 +1630,8 @@
          WRITE(10, *) 'DATE: ', TRIM(date(6:))
          WRITE(10, "(I12, I12)") 0, 0
          WRITE(10, "(I12, I12)") nvertex, nface
-         WRITE(10, "(E20.10, E20.10, E20.10)") vertex
-         WRITE(10, "(I12, I12, I12)") face
+         WRITE(10, "(E20.10, E20.10, E20.10)") TRANSPOSE(vertex)
+         WRITE(10, "(I12, I12, I12)") TRANSPOSE(face)
 
          IF (ASSOCIATED(wall%blocks)) THEN
    
@@ -1907,48 +1923,6 @@
       RETURN
       END SUBROUTINE mpialloc_2d_dbl
 
-      SUBROUTINE mpialloc_2d_boo(array,n1,n2,subid,mymaster,share_comm,win)
-         !-----------------------------------------------------------------------
-         ! mpialloc_2d_boo: Allocated a 2D boolean array to shared memory
-         ! Taken from LIBSTELL/Sources/Modules/mpi_sharemem.f90
-         ! Included here to reduce dependencies
-         !-----------------------------------------------------------------------
-         ! Libraries
-#if defined(MPI_OPT)
-         USE mpi
-#endif        
-         USE ISO_C_BINDING
-         IMPLICIT NONE
-         ! Arguments
-         LOGICAL, POINTER, INTENT(inout) :: array(:,:)
-         INTEGER, INTENT(in) :: n1
-         INTEGER, INTENT(in) :: n2
-         INTEGER, INTENT(in) :: subid
-         INTEGER, INTENT(in) :: mymaster
-         INTEGER, INTENT(in) :: share_comm
-         INTEGER, INTENT(inout) :: win
-         ! Variables
-         INTEGER :: disp_unit, ier
-         INTEGER :: array_shape(2)
-#if defined(MPI_OPT)
-         INTEGER(KIND=MPI_ADDRESS_KIND) :: window_size
-#endif
-         TYPE(C_PTR) :: baseptr
-         ! Initialization
-         ier = 0
-         array_shape(1) = n1
-         array_shape(2) = n2
-         disp_unit = 1
-#if defined(MPI_OPT)
-         window_size = 0_MPI_ADDRESS_KIND
-         IF (subid == mymaster) window_size = INT(n1*n2,MPI_ADDRESS_KIND)*4_MPI_ADDRESS_KIND
-         CALL MPI_WIN_ALLOCATE_SHARED(window_size, disp_unit, MPI_INFO_NULL, share_comm, baseptr, win ,ier)
-         IF (subid /= mymaster) CALL MPI_WIN_SHARED_QUERY(win, 0, window_size, disp_unit, baseptr, ier)
-         CALL C_F_POINTER(baseptr, array, array_shape)
-#endif
-         RETURN
-         END SUBROUTINE mpialloc_2d_boo
-
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!    Memory Freeing Subroutines
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2057,27 +2031,6 @@
 #endif
          RETURN
          END SUBROUTINE free_mpi_array2d_dbl
-
-         SUBROUTINE free_mpi_array2d_boo(win_local, array_local, isshared)
-         IMPLICIT NONE
-         LOGICAL, INTENT(in) :: isshared
-         INTEGER, INTENT(inout) :: win_local
-         LOGICAL, POINTER, INTENT(inout) :: array_local(:,:)
-         INTEGER :: istat
-         istat=0
-#if defined(MPI_OPT)
-         IF (isshared) THEN
-            CALL MPI_WIN_FENCE(0, win_local,istat)
-            CALL MPI_WIN_FREE(win_local,istat)
-            IF (ASSOCIATED(array_local)) NULLIFY(array_local)
-         ELSE
-#endif
-            IF (ASSOCIATED(array_local)) DEALLOCATE(array_local)
-#if defined(MPI_OPT)
-         ENDIF
-#endif
-         RETURN
-         END SUBROUTINE free_mpi_array2d_boo
 !-----------------------------------------------------------------------
 !     End Module
 !-----------------------------------------------------------------------
