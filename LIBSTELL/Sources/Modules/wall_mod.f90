@@ -1630,8 +1630,8 @@
          WRITE(10, *) 'DATE: ', TRIM(date(6:))
          WRITE(10, "(I12, I12)") 0, 0
          WRITE(10, "(I12, I12)") nvertex, nface
-         WRITE(10, "(E20.10, E20.10, E20.10)") vertex
-         WRITE(10, "(I12, I12, I12)") face
+         WRITE(10, "(E20.10, E20.10, E20.10)") TRANSPOSE(vertex)
+         WRITE(10, "(I12, I12, I12)") TRANSPOSE(face)
 
          IF (ASSOCIATED(wall%blocks)) THEN
    
