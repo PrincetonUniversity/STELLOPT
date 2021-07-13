@@ -194,6 +194,7 @@
          ! Note ns is number of cells not cell boundaries
          ! Just a note here dV/drho = 2*rho*dV/dist
          ! And we need dV so we multiply by drho=1./ns
+         dense_prof = SUM(SUM(SUM(SUM(dist5d_prof,DIM=6),DIM=5),DIM=4),DIM=3) ! [m^-3]
          DO k = 1, ns_prof1
             s1 = REAL(k-0.5)/REAL(ns_prof1) ! Rho
             s2 = s1*s1
@@ -203,8 +204,8 @@
             epower_prof(:,k) = epower_prof(:,k)/vp_temp
             ipower_prof(:,k) = ipower_prof(:,k)/vp_temp
             ndot_prof(:,k)   =   ndot_prof(:,k)/vp_temp
+            dense_prof(:,k)  =  dense_prof(:,k)/vp_temp
          END DO
-         dense_prof = SUM(SUM(SUM(SUM(dist5d_prof,DIM=6),DIM=5),DIM=4),DIM=3) ! [m^-3]
          ! Now calculate J_fast
          ALLOCATE(help3d(nbeams,ns_prof1,ns_prof4))
          help3d = SUM(SUM(SUM(dist5d_prof,DIM=6),DIM=4),DIM=3)
