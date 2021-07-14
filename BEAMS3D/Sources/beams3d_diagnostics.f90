@@ -187,35 +187,34 @@
          ! Allocate the parallel and perpendicular velcoity axis
          nhalf = ns_prof4/2
          ALLOCATE(vllaxis(ns_prof4),vperpaxis(ns_prof5))
+         ALLOCATE(help3d(nbeams,ns_prof1,ns_prof4))
          FORALL(k = 1:ns_prof4) vllaxis(k) = partvmax*REAL(k-nhalf-0.5)/REAL(nhalf)
          FORALL(k = 1:ns_prof5) vperpaxis(k) = partvmax*REAL(k-0.5)/REAL(ns_prof5)
-         ! First normalize the 5D phase space density by dVolume
-         ! Grid in rho, units in [/m^3]
-         ! Note ns is number of cells not cell boundaries
-         ! Just a note here dV/drho = 2*rho*dV/dist
-         ! And we need dV so we multiply by drho=1./ns
-         dense_prof = SUM(SUM(SUM(SUM(dist5d_prof,DIM=6),DIM=5),DIM=4),DIM=3) ! [m^-3]
+         ! The DIST5D distribution is not normalized to anything at this point.
+         !    We calculate a radial profile of FI density.
+         help3d = SUM(SUM(SUM(dist5d_prof,DIM=6),DIM=4),DIM=3)
+         dense_prof = SUM(help3d,DIM=3)
+         ! Now calculate J_fast
+         j_prof = 0
+         DO k = 1, ns_prof4
+            j_prof = j_prof + help3d(:,:,k)*vllaxis(k)
+         END DO
+         DO k = 1, ns_prof1
+            j_prof(1:nbeams,k) = j_prof(1:nbeams,k)*charge_beams(1:nbeams) ! [A*m]
+         END DO
+         DEALLOCATE(help3d)
+         !dense_prof = SUM(SUM(SUM(SUM(dist5d_prof,DIM=6),DIM=5),DIM=4),DIM=3)
+         ! We not apply the volume element for the radial profiles [m^-3]
          DO k = 1, ns_prof1
             s1 = REAL(k-0.5)/REAL(ns_prof1) ! Rho
             s2 = s1*s1
             CALL EZspline_interp(Vp_spl_s,s2,vp_temp,ier)
             vp_temp = vp_temp*2*s1*(1./REAL(ns_prof1))
-            !dist5d_prof(:,k,:,:,:,:) = dist5d_prof(:,k,:,:,:,:)/vp_temp
             epower_prof(:,k) = epower_prof(:,k)/vp_temp
             ipower_prof(:,k) = ipower_prof(:,k)/vp_temp
             ndot_prof(:,k)   =   ndot_prof(:,k)/vp_temp
             dense_prof(:,k)  =  dense_prof(:,k)/vp_temp
-         END DO
-         ! Now calculate J_fast
-         ALLOCATE(help3d(nbeams,ns_prof1,ns_prof4))
-         help3d = SUM(SUM(SUM(dist5d_prof,DIM=6),DIM=4),DIM=3)
-         j_prof = 0
-         DO k = 1, ns_prof4
-            j_prof = j_prof + help3d(:,:,k)*vllaxis(k)
-         END DO
-         DEALLOCATE(help3d)
-         DO k = 1, ns_prof1
-            j_prof(1:nbeams,k) = j_prof(1:nbeams,k)*charge_beams(1:nbeams) ! [A*m^-2]
+            j_prof(:,k)      =      j_prof(:,k)/vp_temp ! [A/m^2]
          END DO
          ! Normalize to velocity space volume element
          dvll = partvmax*2/ns_prof4 ! dVll
