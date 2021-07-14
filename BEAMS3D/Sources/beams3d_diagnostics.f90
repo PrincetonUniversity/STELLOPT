@@ -186,6 +186,7 @@
       IF (lvmec .and. .not.lvac .and. .not.ldepo .and. myworkid == master) THEN
          ! Allocate the parallel and perpendicular velcoity axis
          nhalf = ns_prof4/2
+         ALLOCATE(dense_prof(nbeams,ns_prof1),j_prof(nbeams,ns_prof1))
          ALLOCATE(vllaxis(ns_prof4),vperpaxis(ns_prof5))
          ALLOCATE(help3d(nbeams,ns_prof1,ns_prof4))
          FORALL(k = 1:ns_prof4) vllaxis(k) = partvmax*REAL(k-nhalf-0.5)/REAL(nhalf)
