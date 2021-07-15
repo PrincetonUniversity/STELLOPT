@@ -26,6 +26,7 @@
       lmu      = .false.
       lvessel  = .false.
       lvac     = .false.
+      lpres    = .false.
       lrestart = .false.
       laxis_i  = .false.
       ladvanced = .false.

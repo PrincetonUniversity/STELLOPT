@@ -16,7 +16,7 @@
       USE wall_mod, ONLY: nface,nvertex,face,vertex,ihit_array
       USE fieldlines_lines
       USE fieldlines_grid, ONLY: nr, nphi, nz, B_R, B_PHI, B_Z, raxis, &
-                                 zaxis, phiaxis
+                                 zaxis, phiaxis, PRES_G
       USE fieldlines_runtime, ONLY: id_string, npoinc, lverb, lvmec, &
                                     lpies, lspec, lcoil, lmgrid, lmu, &
                                     lvessel, lvac, laxis_i, handle_err,&
@@ -24,7 +24,7 @@
                                     HDF5_CLOSE_ERR, FIELDLINES_VERSION,&
                                     ladvanced, lbfield_only, lreverse,&
                                     lafield_only, lemc3, lmodb, &
-                                    MPI_BARRIER_ERR, iota0, lhint
+                                    MPI_BARRIER_ERR, iota0, lhint, lpres
       USE fieldlines_write_par
       USE mpi_inc
 !-----------------------------------------------------------------------
@@ -66,6 +66,8 @@
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'lvessel',ier)
          CALL write_scalar_hdf5(fid,'lvac',ier,BOOVAR=lvac,ATT='Vacuum calc',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'lvac',ier)
+         CALL write_scalar_hdf5(fid,'lpres',ier,BOOVAR=lpres,ATT='Pressure output',ATT_NAME='description')
+         IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'lpres',ier)
          CALL write_scalar_hdf5(fid,'laxis_i',ier,BOOVAR=laxis_i,ATT='Axis calc',ATT_NAME='description')
          IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'laxis_i',ier)
          CALL write_scalar_hdf5(fid,'ladvanced',ier,BOOVAR=ladvanced,ATT='Advanced Grid Flag',ATT_NAME='description')
@@ -138,6 +140,10 @@
             IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'B_Z',ier)
             CALL write_var_hdf5(fid,'B_PHI',nr,nphi,nz,ier,DBLVAR=B_PHI,ATT='Toroidal Field (BPHI)',ATT_NAME='description')
             IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'B_PHI',ier)
+            IF (lpres) THEN
+               CALL write_var_hdf5(fid,'PRES',nr,nphi,nz,ier,DBLVAR=PRES_G,ATT='Plasma Pressure (PRES)',ATT_NAME='description')
+               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'PRES',ier)
+            END IF
          ELSE
             CALL write_scalar_hdf5(fid,'nr',ier,INTVAR=nr,ATT='Number of Radial Gridpoints',ATT_NAME='description')
             IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'nr',ier)
