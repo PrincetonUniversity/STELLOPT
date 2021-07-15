@@ -18,7 +18,7 @@ profiles:
 -   Pressure
     -   Power Series (power\_series) Default
     -   Truncated Gaussian (gauss\_trunc)
-    -   AM(0)( 1 - s \^ AM(1) ) \^ AM(2) (two\_power)
+    -   AM(0)(1-s^AM(1))^AM(2) (two\_power)
     -   Two Lorentz-Type Functions (two\_Lorentz)
     -   Pedestal Profile (pedestal)
     -   Ratio of Polynomials (rational)
@@ -28,7 +28,7 @@ profiles:
     I-prime(s)
     -   Power Series (power\_series) Default
     -   Truncated Gaussian (gauss\_trunc)
-    -   AM(0)( 1 - s \^ AM(1) ) \^ AM(2) (two\_power)
+    -   AM(0)(1-s^AM(1))^AM(2) (two\_power)
     -   Cubic Spline (cubic\_spline\_Ip)
     -   Akima Spline (Akima\_spline\_Ip)
     -   Power Series I(s) (power\_series\_I)
