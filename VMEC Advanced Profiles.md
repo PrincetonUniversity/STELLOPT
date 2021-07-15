@@ -1,4 +1,4 @@
-Tutorial: Advanced VMEC Profiles\[\[image:ncsx\_fieldlines.jpg width=\"240\" height=\"172\" align=\"right\"\]\]
+Tutorial: Advanced VMEC Profiles ![](/images/NCSX_fieldlines_sm.ico)
 ===============================================================================================================
 
 This tutorial introduces the user to more advanced pressure, iota, and
@@ -24,26 +24,19 @@ profiles:
     -   Ratio of Polynomials (rational)
     -   Cubic Spline (cubic\_spline)
     -   Akima Spline (Akima\_spline)
--   Current (note: some profiles are parameterized in \<span
-    style=\"color: \#ff0000;\"\>I(s)\</span\>instead of the default
+-   Current (note: some profiles are parameterized in I(s) instead of the default
     I-prime(s)
     -   Power Series (power\_series) Default
     -   Truncated Gaussian (gauss\_trunc)
     -   AM(0)( 1 - s \^ AM(1) ) \^ AM(2) (two\_power)
     -   Cubic Spline (cubic\_spline\_Ip)
     -   Akima Spline (Akima\_spline\_Ip)
-    -   \<span style=\"color: \#ff0000;\"\>Power Series I(s)
-        (power\_series\_I)\</span\>
-    -   \<span style=\"color: \#ff0000;\"\>Pedestal Profile I(s)
-        (pedestal)\</span\>
-    -   \<span style=\"color: \#ff0000;\"\>Ratio of Polynomials I(s)
-        (rational)\</span\>
-    -   \<span style=\"color: \#ff0000;\"\>Sum of Arctangents I(s)
-        (sum\_atan)\</span\>
-    -   \<span style=\"color: \#ff0000;\"\>Cubic Spline I(s)
-        (cubic\_spline\_I)\</span\>
-    -   \<span style=\"color: \#ff0000;\"\>Akima Spline I(s)
-        (Akima\_spline\_I)\</span\>
+    -   Power Series I(s) (power\_series\_I)
+    -   Pedestal Profile I(s) (pedestal)
+    -   Ratio of Polynomials I(s) (rational)
+    -   Sum of Arctangents I(s) (sum\_atan)
+    -   Cubic Spline I(s) (cubic\_spline\_I)
+    -   Akima Spline I(s) (Akima\_spline\_I)
 -   Rotational Transform (note: If LRFP=T then q=1/iota profile is
     specified)
     -   Power Series (power\_series) Default
@@ -63,10 +56,14 @@ VMEC will then use
 [cubic splines](http://en.wikipedia.org/wiki/Spline_(mathematics)) (or
 Akima Splines) to interpolate between values. Below is a sample of a
 VMEC input namelist which utilizes splines:
-[code format=\"fortran\"](code format="fortran") !\-\-\-\-- Pressure
-Parameters \-\-\-\-- PMASS\_TYPE = \'cubic\_spline\' GAMMA =
-0.00000000000000E+00 BLOAT = 1.00000000000000E+00 SPRES\_PED =
-1.00000000000000E+00 AM\_AUX\_F = 5.7987903122e+04 5.7152921444e+04
+
+```Fortran
+!----- Pressure Parameters -----
+PMASS_TYPE = 'cubic_spline' 
+GAMMA = 0.00000000000000E+00 
+BLOAT = 1.00000000000000E+00 
+SPRES_PED = 1.00000000000000E+00 
+AM_AUX_F = 5.7987903122e+04 5.7152921444e+04
 5.6127917699e+04 5.4954798561e+04 5.3669622346e+04 5.2303178636e+04
 5.0881538678e+04 4.9426572228e+04 4.7956429898e+04 4.6485990907e+04
 4.5027276587e+04 4.3589830215e+04 4.2181063979e+04 4.0806574381e+04
@@ -91,7 +88,8 @@ Parameters \-\-\-\-- PMASS\_TYPE = \'cubic\_spline\' GAMMA =
 5.6534322364e+03 5.2196232788e+03 4.7360980605e+03 4.2044523774e+03
 3.6296254870e+03 3.0208296361e+03 2.3926295839e+03 1.7661879682e+03
 1.1706935033e+03 6.4499038466e+02 2.3943027903e+02 1.7995227582e+01
-0.0000000000e+00 AM\_AUX\_S = 0.0000000000e+00 1.0204081633e-02
+0.0000000000e+00 
+AM_AUX_S = 0.0000000000e+00 1.0204081633e-02
 2.0408163265e-02 3.0612244898e-02 4.0816326531e-02 5.1020408163e-02
 6.1224489796e-02 7.1428571429e-02 8.1632653061e-02 9.1836734694e-02
 1.0204081633e-01 1.1224489796e-01 1.2244897959e-01 1.3265306122e-01
@@ -116,14 +114,21 @@ Parameters \-\-\-\-- PMASS\_TYPE = \'cubic\_spline\' GAMMA =
 8.7755102041e-01 8.8775510204e-01 8.9795918367e-01 9.0816326531e-01
 9.1836734694e-01 9.2857142857e-01 9.3877551020e-01 9.4897959184e-01
 9.5918367347e-01 9.6938775510e-01 9.7959183673e-01 9.8979591837e-01
-1.0000000000e+00 !\-\-\-\-- Current/Iota Parameters \-\-\-\-- CURTOR =
-1.401766E+06 NCURR = 1 PIOTA\_TYPE = \'power\_series\' PCURR\_TYPE =
-\'cubic\_spline\_Ip\' AI = 9.505223E-01 8.664788E-01 -1.999345E+01
+1.0000000000e+00 
+!----- Current/Iota Parameters -----
+CURTOR = 1.401766E+06
+NCURR = 1
+PIOTA_TYPE = 'power_series'
+PCURR_TYPE = 'cubic_spline_Ip'
+AI = 9.505223E-01 8.664788E-01 -1.999345E+01
 1.462790E+02 -7.786226E+02 2.809674E+03 -6.602835E+03 9.882455E+03
--9.050012E+03 4.611235E+03 -9.998666E+02 AI\_AUX\_F = 0.0 AI\_AUX\_S =
-0.0 AC = 3.4339293E+06 1.9790689E+06 -2.1233084E+07 -8.0149736E+08
+-9.050012E+03 4.611235E+03 -9.998666E+02
+AI_AUX_F = 0.0
+AI_AUX_S = 0.0
+AC = 3.4339293E+06 1.9790689E+06 -2.1233084E+07 -8.0149736E+08
 8.5407445E+09 -3.9754562E+10 1.0406096E+11 -1.6245971E+11 1.4984895E+11
--7.5295245E+10 1.5876209E+10 AC\_AUX\_F = 3.4048751000e+06
+-7.5295245E+10 1.5876209E+10
+AC_AUX_F = 3.4048751000e+06
 3.4220975602e+06 3.4309721219e+06 3.4290768887e+06 3.4154294597e+06
 3.3899533868e+06 3.3533019286e+06 3.3065969891e+06 3.2512418189e+06
 3.1887728784e+06 3.1207458891e+06 3.0486511622e+06 2.9738537015e+06
@@ -148,7 +153,8 @@ Parameters \-\-\-\-- PMASS\_TYPE = \'cubic\_spline\' GAMMA =
 6.5921797574e+05 6.8782288276e+05 7.0944011709e+05 7.2139358329e+05
 7.2094840906e+05 7.0560496696e+05 6.7313454627e+05 6.2193233285e+05
 5.5130251442e+05 4.6183488918e+05 3.5585524784e+05 2.3795869819e+05
-1.1563563385e+05 0.0000000000e+00 AC\_AUX\_S = 0.0000000000e+00
+1.1563563385e+05 0.0000000000e+00 
+AC_AUX_S = 0.0000000000e+00
 1.0204081633e-02 2.0408163265e-02 3.0612244898e-02 4.0816326531e-02
 5.1020408163e-02 6.1224489796e-02 7.1428571429e-02 8.1632653061e-02
 9.1836734694e-02 1.0204081633e-01 1.1224489796e-01 1.2244897959e-01
@@ -173,7 +179,8 @@ Parameters \-\-\-\-- PMASS\_TYPE = \'cubic\_spline\' GAMMA =
 8.6734693878e-01 8.7755102041e-01 8.8775510204e-01 8.9795918367e-01
 9.0816326531e-01 9.1836734694e-01 9.2857142857e-01 9.3877551020e-01
 9.4897959184e-01 9.5918367347e-01 9.6938775510e-01 9.7959183673e-01
-9.8979591837e-01 1.0000000000e+00 [code](code)
+9.8979591837e-01 1.0000000000e+00
+```
 
 Here the NCURR variable indicates that we wish to specify the current
 profile and the PCURR\_TYPE indicates that we are specifying it as a
