@@ -90,7 +90,7 @@
       
       ! Load vessel into memory if provided
       IF (lvessel) THEN
-         CALL wall_load_txt(TRIM(vessel_string),ier)
+         CALL wall_load_txt(TRIM(vessel_string),ier,lverb)
          IF (lverb) CALL wall_info(6)
       END IF
          

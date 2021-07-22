@@ -33,6 +33,15 @@ beams3d_diagnostics.o: \
       beams3d_grid.o
 
 
+beams3d_fix_poloidal.o: \
+      ../../LIBSTELL/$(LOCTYPE)/ezspline.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_sharmem.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_inc.o \
+      beams3d_runtime.o \
+      beams3d_lines.o \
+      beams3d_grid.o
+
+
 beams3d_follow.o: \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
       ../../LIBSTELL/$(LOCTYPE)/safe_open_mod.o \

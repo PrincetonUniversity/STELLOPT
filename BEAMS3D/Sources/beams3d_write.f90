@@ -17,14 +17,15 @@
       USE beams3d_grid, ONLY: nr, nphi, nz, B_R, B_PHI, B_Z, raxis, &
                                  zaxis, phiaxis, S_ARR, U_ARR, POT_ARR, &
                                  ZEFF_ARR, TE, TI, NE, wall_load, wall_shine, &
-                                 plasma_mass, plasma_Zavg, plasma_Zmean
+                                 plasma_mass, plasma_Zavg, plasma_Zmean, &
+                                 B_kick_min, B_kick_max, freq_kick, E_kick
       USE beams3d_runtime, ONLY: id_string, npoinc, nbeams, beam, t_end, lverb, &
                                     lvmec, lpies, lspec, lcoil, lmgrid, lbeam, lascot, &
                                     lvessel, lvac, lbeam_simple, handle_err, nparticles_start, &
                                     HDF5_OPEN_ERR,HDF5_WRITE_ERR,&
                                     HDF5_CLOSE_ERR, BEAMS3D_VERSION, weight, e_beams, p_beams,&
                                     charge, Zatom, mass, ldepo, v_neut,lcollision, lfusion, &
-                                    leqdsk, eqdsk_string, lhint
+                                    leqdsk, eqdsk_string, lhint, lhitonly, lkick
       USE safe_open_mod, ONLY: safe_open
       USE wall_mod, ONLY: nface,nvertex,face,vertex,ihit_array
       USE mpi_params
@@ -75,12 +76,16 @@
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'lbeam_simple',ier)
                CALL write_scalar_hdf5(fid,'ldepo',ier,BOOVAR=ldepo,ATT='Only Deposition Flag',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'ldepo',ier)
+               CALL write_scalar_hdf5(fid,'lkick',ier,BOOVAR=lkick,ATT='Kick Model Flag',ATT_NAME='description')
+               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'lkick',ier)
                CALL write_scalar_hdf5(fid,'lcollision',ier,BOOVAR=lcollision,ATT='Collisionall Operators Flag',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'lcollision',ier)
                CALL write_scalar_hdf5(fid,'lascot',ier,BOOVAR=lascot,ATT='ASCOT5 Output Flag',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'lascot',ier)
                CALL write_scalar_hdf5(fid,'lfusion',ier,BOOVAR=lfusion,ATT='Fusion Birth Model Flag',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'lfusion',ier)
+               CALL write_scalar_hdf5(fid,'lhitonly',ier,BOOVAR=lhitonly,ATT='Flag for only saving wall hits',ATT_NAME='description')
+               IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'lhitonly',ier)
                CALL write_scalar_hdf5(fid,'nr',ier,INTVAR=nr,ATT='Number of Radial Gridpoints',ATT_NAME='description')
                IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'nr',ier)
                CALL write_scalar_hdf5(fid,'nphi',ier,INTVAR=nphi,ATT='Number of Toroidal Gridpoints',ATT_NAME='description')
@@ -142,6 +147,16 @@
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'nface',ier)
                   CALL write_var_hdf5(fid,'wall_faces',nface,3,ier,INTVAR=face,ATT='Wall Faces',ATT_NAME='description')
                   IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'wall_faces',ier)
+               END IF
+               IF (lkick) THEN
+                  CALL write_scalar_hdf5(fid,'B_kick_min',ier,DBLVAR=B_kick_min,ATT='|B|_min Kick Model [T]',ATT_NAME='description')
+                  IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'B_kick_min',ier)
+                  CALL write_scalar_hdf5(fid,'B_kick_max',ier,DBLVAR=B_kick_max,ATT='|B|_max Kick Model [T]',ATT_NAME='description')
+                  IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'B_kick_max',ier)
+                  CALL write_scalar_hdf5(fid,'freq_kick',ier,DBLVAR=freq_kick,ATT='Frequency Kick Model [Hz]',ATT_NAME='description')
+                  IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'freq_kick',ier)
+                  CALL write_scalar_hdf5(fid,'E_kick',ier,DBLVAR=E_kick,ATT='E-Field Kick Model [V/m]',ATT_NAME='description')
+                  IF (ier /= 0) CALL handle_err(HDF5_WRITE_ERR,'E_kick',ier)
                END IF
             CASE('TRAJECTORY_PARTIAL')
                CALL open_hdf5('beams3d_'//TRIM(id_string)//'.h5',fid,ier,LCREATE=.false.)
