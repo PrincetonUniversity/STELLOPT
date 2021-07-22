@@ -41,7 +41,7 @@
       INTEGER :: numprocs_local, mylocalid, mylocalmaster
       INTEGER :: MPI_COMM_LOCAL
 #endif
-      LOGICAL :: lnyquist, luse_vc, lcreate_wall
+      LOGICAL :: lnyquist, luse_vc, lcreate_wall, lverb_wall
       INTEGER(KIND=BYTE_8) :: chunk
       INTEGER :: ier, s, i, j, k, nu, nv, mystart, myend, mnmax_temp, u, v
       INTEGER :: bcs1_s(2)
@@ -183,7 +183,9 @@
          k = ns
          i = 120
          j = 180
-         CALL wall_load_mn(DBLE(rmnc(1:mnmax,k)),DBLE(zmns(1:mnmax,k)),DBLE(xm),-DBLE(xn),mnmax,i,j,lverb,MPI_COMM_LOCAL)
+         lverb_wall=.false.
+         IF (lverb) WRITE(6,'(A)')        '   CREATING WALL FROM HARMONICS'
+         CALL wall_load_mn(DBLE(rmnc(1:mnmax,k)),DBLE(zmns(1:mnmax,k)),DBLE(xm),-DBLE(xn),mnmax,i,j,lverb_wall,MPI_COMM_LOCAL)
       END IF
 
       ! Initialize Virtual Casing
