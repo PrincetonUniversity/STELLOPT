@@ -71,6 +71,9 @@
                               coils_file, lmake_coils, lfreeb, mustochf,&
                               lbrho
       USE pies_background, ONLY: k
+      USE mpi_sharmem
+      USE mpi_params
+      USE mpi_inc
 !-----------------------------------------------------------------------
 !     Local Variables
 !          numargs      Number of input arguments
@@ -172,6 +175,11 @@
          stop
       END IF
       DEALLOCATE(args)
+
+#if defined(MPI_OPT)
+      CALL MPI_INIT(ierr_mpi) !MPI
+#endif
+
       ! Initialize the Calculation
       CALL pies_init
       CALL write_pies_input
