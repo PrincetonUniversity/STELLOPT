@@ -454,7 +454,7 @@
       ! Now use virtual casing to calculate plasma response
       IF (lfreeb .and. extsurfs > 0) THEN
          ALLOCATE(bsmns_temp(1:mnmax,0:k),bumnc_temp(1:mnmax,0:k),bvmnc_temp(1:mnmax,0:k))
-         !CALL virtual_casing(vsurf)
+         CALL virtual_casing(vsurf)
          CALL mgrid_field(vsurf+1,1)
          CALL uvtomn(0,k,mnmax,nu,nv,xu,xv,bsmns_temp,xm,xn,bsreal,1,1)
          CALL uvtomn(0,k,mnmax,nu,nv,xu,xv,bumnc_temp,xm,xn,bureal,0,0)

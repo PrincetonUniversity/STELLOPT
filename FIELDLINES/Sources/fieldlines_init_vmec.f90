@@ -20,8 +20,11 @@
                                  zaxis_g => zaxis, nr, nphi, nz, &
                                  rmin, rmax, zmin, zmax, phimin, &
                                  phimax, vc_adapt_tol, B_R, B_Z, B_PHI,&
-                                 BR_spl, BZ_spl
+                                 BR_spl, BZ_spl, PRES_G
+      USE wall_mod, ONLY: wall_load_mn, wall_info,vertex,face
       USE mpi_params                                                    ! MPI
+      USE EZspline_obj
+      USE EZspline
 !      USE mpi
 !-----------------------------------------------------------------------
 !     Local Variables
@@ -47,9 +50,12 @@
                            rmns_temp(:,:),zmnc_temp(:,:),&
                            bumns_temp(:,:),bvmns_temp(:,:)
       LOGICAL :: lvolint = .false.
+      TYPE(EZspline1_r8) :: p_spl
+      INTEGER :: bcs1(2)
 !-----------------------------------------------------------------------
 !     Begin Subroutine
 !-----------------------------------------------------------------------
+      bcs1=(/0,0/)
       ! Handle what we do
       luse_vc = ((lcoil .or. lmgrid) .and. .not.lplasma_only)
 
@@ -83,12 +89,13 @@
       CALL MPI_BCAST(lwout_opened,1,MPI_LOGICAL, master, MPI_COMM_FIELDLINES,ierr_mpi)
       CALL MPI_BCAST(Aminor,1,MPI_DOUBLE_PRECISION, master, MPI_COMM_FIELDLINES,ierr_mpi)
       IF (myworkid /= master) THEN
-         ALLOCATE(phi_vmec(ns))
+         ALLOCATE(phi_vmec(ns),presf(ns))
          ALLOCATE(xm(mnmax),xn(mnmax),xm_nyq(mnmax_nyq),xn_nyq(mnmax_nyq))
          ALLOCATE(rmnc(mnmax,ns),zmns(mnmax,ns),bsupumnc(mnmax_nyq,ns),bsupvmnc(mnmax_nyq,ns))
          IF (lasym) ALLOCATE(rmns(mnmax,ns),zmnc(mnmax,ns),bsupumns(mnmax_nyq,ns),bsupvmns(mnmax_nyq,ns))
       END IF
       CALL MPI_BCAST(phi_vmec,ns,MPI_DOUBLE_PRECISION, master, MPI_COMM_FIELDLINES,ierr_mpi)
+      CALL MPI_BCAST(presf,ns,MPI_DOUBLE_PRECISION, master, MPI_COMM_FIELDLINES,ierr_mpi)
       CALL MPI_BCAST(xm,mnmax,MPI_DOUBLE_PRECISION, master, MPI_COMM_FIELDLINES,ierr_mpi)
       CALL MPI_BCAST(xn,mnmax,MPI_DOUBLE_PRECISION, master, MPI_COMM_FIELDLINES,ierr_mpi)
       CALL MPI_BCAST(xm_nyq,mnmax_nyq,MPI_DOUBLE_PRECISION, master, MPI_COMM_FIELDLINES,ierr_mpi)
@@ -203,7 +210,18 @@
          END IF
          DEALLOCATE(rmnc_temp,zmns_temp)
          DEALLOCATE(bumnc_temp,bvmnc_temp)
-         
+
+         IF (lpres) THEN
+            CALL EZspline_init(p_spl,ns,bcs1,ier)
+            IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,&
+                               'EZspline_init/fieldlines_init_vmec',ier)
+            p_spl%isHermite = 1
+            p_spl%x1 = phi_vmec/phi_vmec(ns) !Spline over normalized toroidal flux
+            CALL EZspline_setup(p_spl,presf,ier)
+            IF (ier /= 0) CALL handle_err(EZSPLINE_ERR,&
+                               'EZspline_setup/fieldlines_init_vmec',ier)
+         END IF 
+
          adapt_tol = 0.0
          adapt_rel = vc_adapt_tol
          DEALLOCATE(xm_temp,xn_temp)
@@ -236,7 +254,7 @@
                   B_R(i,j,k)   = 0.0
                   B_PHI(i,j,k) = 1.0
                   B_Z(i,j,k)   = 0.0
-               ELSE IF (ier == -3 .or. bphi == 0 .or. s>1) THEN
+               ELSE IF (ier == -3 .or. bphi == 0 .or. sflx>1) THEN
                   xaxis_vc = raxis_g(i)*cos(phiaxis(j))
                   yaxis_vc = raxis_g(i)*sin(phiaxis(j))
                   zaxis_vc = zaxis_g(k)
@@ -281,11 +299,14 @@
                   B_R(i,j,k)   = br
                   B_PHI(i,j,k) = bphi
                   B_Z(i,j,k)   = bz
+                  IF (lpres) THEN 
+                     CALL EZspline_interp(p_spl,sflx,PRES_G(i,j,k),ier)
+                  END IF
                ELSE IF (lplasma_only) THEN
                   B_R(i,j,k)   = 0.0
                   B_PHI(i,j,k) = 1.0
                   B_Z(i,j,k)   = 0.0
-               ELSE IF (ier == -3 .or. bphi == 0 .or. s>1) THEN
+               ELSE IF (ier == -3 .or. bphi == 0 .or. sflx>1) THEN
                   xaxis_vc = raxis_g(i)*cos(phiaxis(j))
                   yaxis_vc = raxis_g(i)*sin(phiaxis(j))
                   zaxis_vc = zaxis_g(k)
@@ -297,6 +318,10 @@
                      IF (ABS(br_vc) > 0)   B_R(i,j,k)   = B_R(i,j,k) + br_vc
                      IF (ABS(bphi_vc) > 0) B_PHI(i,j,k) = B_PHI(i,j,k) + bphi_vc
                      IF (ABS(bz_vc) > 0)   B_Z(i,j,k)   = B_Z(i,j,k) + bz_vc
+                  END IF
+                  IF (lpres) THEN ! constant presssure outsise LCFS 
+                     sflx = 1.0
+                     CALL EZspline_interp(p_spl,sflx,PRES_G(i,j,k),ier)
                   END IF
                ELSE
                   ! This is an error code check
@@ -323,11 +348,13 @@
          CALL read_wout_deallocate
       ELSE
          lwout_opened = .FALSE.
-         DEALLOCATE(phi_vmec)
+         DEALLOCATE(phi_vmec,presf)
          DEALLOCATE(xm,xn,xm_nyq,xn_nyq)
          DEALLOCATE(rmnc,zmns,bsupumnc,bsupvmnc)
          IF (lasym) DEALLOCATE(rmns,zmnc,bsupumns,bsupvmns)
       END IF
+
+      IF (EZspline_allocated(p_spl)) CALL EZspline_free(p_spl,ier)
       
       IF (lverb) THEN
          CALL backspace_out(6,36)

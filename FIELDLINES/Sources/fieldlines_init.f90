@@ -184,11 +184,15 @@
          CALL mpialloc(B_R, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_B_R)
          CALL mpialloc(B_PHI, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_B_PHI)
          CALL mpialloc(B_Z, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_B_Z)
+         IF (lpres) THEN
+            CALL mpialloc(PRES_G, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_PRES)
+         END IF
          IF (myid_sharmem == master) THEN
             FORALL(i = 1:nr) raxis(i) = (i-1)*(rmax-rmin)/(nr-1) + rmin
             FORALL(i = 1:nz) zaxis(i) = (i-1)*(zmax-zmin)/(nz-1) + zmin
             FORALL(i = 1:nphi) phiaxis(i) = (i-1)*(phimax-phimin)/(nphi-1) + phimin
             B_R = 0; B_PHI = 0; B_Z = 0
+            IF (lpres) PRES_G = 0 
          END IF
          ! Put the vacuum field on the background grid
          IF (lmgrid) THEN
