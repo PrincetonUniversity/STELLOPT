@@ -17,7 +17,8 @@
       USE beams3d_grid, ONLY: nr, nphi, nz, rmin, rmax, zmin, zmax, &
                               phimin, phimax, vc_adapt_tol, nte, nne, nti,&
                               nzeff, npot, plasma_mass, plasma_Zavg, &
-                              plasma_Zmean, therm_factor
+                              plasma_Zmean, therm_factor, &
+                              B_kick_min, B_kick_max, freq_kick, E_kick
       USE safe_open_mod, ONLY: safe_open
       USE mpi_params
       USE mpi_inc
@@ -80,7 +81,8 @@
                                plasma_Zmean, therm_factor, &
                                fusion_scale, nrho_dist, ntheta_dist, & 
                                nzeta_dist, nvpara_dist, nvperp_dist, &
-                               partvmax, lendt_m
+                               partvmax, lendt_m, te_col_min, &
+                               B_kick_min, B_kick_max, freq_kick, E_kick
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -154,6 +156,13 @@
       plasma_mass = 1.6726219E-27 ! Assume Hydrogen
       therm_factor = 1.5 ! Factor at which to thermalize particles
       lendt_m = 0.05 ! Max distance a particle travels
+      te_col_min = 10 ! Min electron temperature to consider in collisions
+
+      ! Kick model defaults
+      B_kick_min = -1.0 ! T
+      B_kick_max = 0.0 ! T
+      freq_kick = 38.5E6 ! Hz
+      E_kick = 100 !V/m
 
       ! Distribution Function Defaults
       nrho_dist = 64
@@ -192,11 +201,12 @@
          TE_AUX_F = TE_AUX_F*te_scale
          TI_AUX_F = TI_AUX_F*ti_scale
          ZEFF_AUX_F = ZEFF_AUX_F*zeff_scale
-         lbeam = .true.
+         lbeam = .true.; lkick = .false.
          IF (r_start_in(1) /= -1.0) lbeam = .false.
          IF (lfusion .or. lrestart_particles) lbeam = .false.
          IF (lbbnbi) lbeam = .true.
          IF (lbeam) lcollision = .true.
+         IF (B_kick_min >=0 ) lkick = .true.
          nbeams = 0
          DO WHILE ((Asize_beams(nbeams+1) >= 0.0).and.(nbeams<MAXBEAMS))
             nbeams = nbeams + 1
@@ -301,6 +311,13 @@
       WRITE(iunit_out,outint) 'NVPARA_DIST',ns_prof4
       WRITE(iunit_out,outint) 'NVPERP_DIST',ns_prof5
       WRITE(iunit_out,outflt) 'PARTVMAX',partvmax
+      IF (B_kick_min>0) THEN
+         WRITE(iunit_out,'(A)') '!---------- Kick Model Parameters ------------'
+         WRITE(iunit_out,outflt) 'E_KICK',E_kick
+         WRITE(iunit_out,outflt) 'FREQ_KICK',freq_kick
+         WRITE(iunit_out,outflt) 'B_KICK_MIN',B_kick_min
+         WRITE(iunit_out,outflt) 'B_KICK_MAX',B_kick_max
+      END IF
       IF (lbeam) THEN
          WRITE(iunit_out,"(A)") '!---------- Profiles ------------'
          WRITE(iunit_out,outflt) 'NE_SCALE',NE_SCALE
@@ -319,6 +336,8 @@
          WRITE(iunit_out,"(2X,A,1X,'=',4(1X,ES22.12E3))") 'POT_AUX_F',(zeff_aux_f(n), n=1,npot)
          DO n = 1, nbeams
             WRITE(iunit_out,"(A,I2.2)") '!---- BEAM #',n
+            IF (dex_beams(n)>0) &
+               WRITE(iunit_out,vecvar) 'DEX_BEAMS',n,dex_beams(n)
             WRITE(iunit_out,vecvar) 'T_END_IN',n,t_end_in(n)
             WRITE(iunit_out,vecvar) 'DEX_BEAMS',n,dex_beams(n)
             WRITE(iunit_out,vecvar) 'DIV_BEAMS',n,div_beams(n)
@@ -337,6 +356,15 @@
             WRITE(iunit_out,vecvar2) 'Z_BEAMS',n,2,z_beams(n,2)
          END DO
       ELSE
+         n = COUNT(r_start_in > 0)
+         WRITE(iunit_out,"(2X,A,1X,'=',10(1X,ES22.12E3))") 'R_START_IN',(r_start_in(ik), ik=1,n)
+         WRITE(iunit_out,"(2X,A,1X,'=',10(1X,ES22.12E3))") 'Z_START_IN',(z_start_in(ik), ik=1,n)
+         WRITE(iunit_out,"(2X,A,1X,'=',10(1X,ES22.12E3))") 'PHI_START_IN',(phi_start_in(ik), ik=1,n)
+         WRITE(iunit_out,"(2X,A,1X,'=',10(1X,ES22.12E3))") 'VLL_START_IN',(vll_start_in(ik), ik=1,n)
+         WRITE(iunit_out,"(2X,A,1X,'=',10(1X,ES22.12E3))") 'MU_START_IN',(mu_start_in(ik), ik=1,n)
+         WRITE(iunit_out,"(2X,A,1X,'=',10(1X,ES22.12E3))") 'MASS_IN',(mass_in(ik), ik=1,n)
+         WRITE(iunit_out,"(2X,A,1X,'=',10(1X,ES22.12E3))") 'CHARGE_IN',(charge_in(ik), ik=1,n)
+         WRITE(iunit_out,"(2X,A,1X,'=',10(1X,ES22.12E3))") 'ZATOM_IN',(zatom_in(ik), ik=1,n)
          n = COUNT(t_end_in > -1)
          WRITE(iunit_out,"(2X,A,1X,'=',I0,'*',ES22.12E3)") 'T_END_IN',n,MAXVAL(t_end_in)
       END IF
