@@ -86,7 +86,9 @@
                                     S112D, S122D, S212D, S222D
       DOUBLE PRECISION, DIMENSION(:,:,:,:), POINTER, PRIVATE ::  R4D, Z4D, &
                                     G4D, RU4D, ZU4D, RV4D, ZV4D, BS4D, BU4D, &
-                                    BV4D, B4D, L4D, LU4D, LV4D
+                                    BV4D, B4D, L4D, LU4D, LV4D, &
+                                    B_R4D, B_Z4D, B_Phi4D
+      INTEGER, PRIVATE :: win_B_R4D, win_B_Z4D, win_B_Phi4D
       INTEGER, PRIVATE :: win_R4D, win_Z4D, win_G4D, win_RU4D, win_ZU4D, win_RV4D, &
                           win_ZV4D, win_BS4D, win_BU4D, win_BV4D, win_B4D, &   
                           win_L4D, win_LU4D, win_LV4D, win_VP2D, win_GRHO2D, win_GRHO22D, &
@@ -98,7 +100,7 @@
 !-----------------------------------------------------------------------
 !     Private Subroutines
 !-----------------------------------------------------------------------
-      PRIVATE :: mntouv, isingrid, lookupgrid1d, lookupgrid3d
+      PRIVATE :: mntouv, isingrid, lookupgrid1d, lookupgrid3d, mycross
 !-----------------------------------------------------------------------
 !     INTERFACE Modules
 !-----------------------------------------------------------------------
@@ -146,6 +148,9 @@
       END INTERFACE
       INTERFACE get_equil_kappa
          MODULE PROCEDURE get_equil_kappa_dbl, get_equil_kappa_sgl
+      END INTERFACE
+      INTERFACE get_equil_kappa2
+         MODULE PROCEDURE get_equil_kappa2_dbl, get_equil_kappa2_sgl
       END INTERFACE
       INTERFACE get_equil_rho
          MODULE PROCEDURE get_equil_rho_dbl, get_equil_rho_sgl
@@ -198,6 +203,7 @@
       TYPE(EZspline3_r8) :: Ru_spl, Zu_spl
       TYPE(EZspline3_r8) :: Rv_spl, Zv_spl
       TYPE(EZspline3_r8) :: Bs_spl, Bu_spl, Bv_spl, B_spl
+      TYPE(EZspline3_r8) :: B_R_spl, B_Z_spl, B_Phi_spl
       TYPE(EZspline3_r8) :: L_spl, Lu_spl, Lv_spl
 
       !Helper vars
@@ -247,6 +253,9 @@
          IF (ASSOCIATED(L4D))  CALL mpidealloc(L4D,  win_L4D)
          IF (ASSOCIATED(LU4D)) CALL mpidealloc(LU4D, win_LU4D)
          IF (ASSOCIATED(LV4D)) CALL mpidealloc(LV4D, win_LV4D)
+         IF (ASSOCIATED(B_R4D)) CALL mpidealloc(B_R4D, win_B_R4D)
+         IF (ASSOCIATED(B_Z4D)) CALL mpidealloc(B_Z4D, win_B_Z4D)
+         IF (ASSOCIATED(B_Phi4D)) CALL mpidealloc(B_Phi4D, win_B_Phi4D)
          IF (ASSOCIATED(x1)) CALL mpidealloc(x1, win_x1)
          IF (ASSOCIATED(x2)) CALL mpidealloc(x2, win_x2)
          IF (ASSOCIATED(x3)) CALL mpidealloc(x3, win_x3)
@@ -265,6 +274,9 @@
          CALL mpialloc(L4D, 8, nu, nv, ns_t, shar_rank, 0, shar_comm, win_L4D)
          CALL mpialloc(LU4D, 8, nu, nv, ns_t, shar_rank, 0, shar_comm, win_LU4D)
          CALL mpialloc(LV4D, 8, nu, nv, ns_t, shar_rank, 0, shar_comm, win_LV4D)
+         CALL mpialloc(B_R4D, 8, nu, nv, ns_t, shar_rank, 0, shar_comm, win_B_R4D)
+         CALL mpialloc(B_Z4D, 8, nu, nv, ns_t, shar_rank, 0, shar_comm, win_B_Z4D)
+         CALL mpialloc(B_Phi4D, 8, nu, nv, ns_t, shar_rank, 0, shar_comm, win_B_Phi4D)
          CALL mpialloc(x1, nu, shar_rank, 0, shar_comm, win_x1)
          CALL mpialloc(x2, nv, shar_rank, 0, shar_comm, win_x2)
          CALL mpialloc(x3, ns_t, shar_rank, 0, shar_comm, win_x3)
@@ -306,6 +318,9 @@
          IF (ASSOCIATED(L4D))   DEALLOCATE(L4D)
          IF (ASSOCIATED(LU4D))  DEALLOCATE(LU4D)
          IF (ASSOCIATED(LV4D))  DEALLOCATE(LV4D)
+         IF (ASSOCIATED(B_R4D))  DEALLOCATE(B_R4D)
+         IF (ASSOCIATED(B_Z4D))  DEALLOCATE(B_Z4D)
+         IF (ASSOCIATED(B_Phi4D))  DEALLOCATE(B_Phi4D)
          IF (ASSOCIATED(x1))  DEALLOCATE(x1)
          IF (ASSOCIATED(x2))  DEALLOCATE(x2)
          IF (ASSOCIATED(x3))  DEALLOCATE(x3)
@@ -323,6 +338,9 @@
          ALLOCATE(L4D(8,nu,nv,ns_t))
          ALLOCATE(LU4D(8,nu,nv,ns_t))
          ALLOCATE(LV4D(8,nu,nv,ns_t))
+         ALLOCATE(B_R4D(8,nu,nv,ns_t))
+         ALLOCATE(B_Z4D(8,nu,nv,ns_t))
+         ALLOCATE(B_Phi4D(8,nu,nv,ns_t))
          ALLOCATE(x1(nu))
          ALLOCATE(x2(nv))
          ALLOCATE(x3(ns_t))
@@ -373,6 +391,9 @@
          CALL EZspline_init(L_spl,nu,nv,ns_t,bcs1,bcs1,bcs0,iflag)
          CALL EZspline_init(Lu_spl,nu,nv,ns_t,bcs1,bcs1,bcs0,iflag)
          CALL EZspline_init(Lv_spl,nu,nv,ns_t,bcs1,bcs1,bcs0,iflag)
+         CALL EZspline_init(B_R_spl,nu,nv,ns_t,bcs1,bcs1,bcs0,iflag)
+         CALL EZspline_init(B_Z_spl,nu,nv,ns_t,bcs1,bcs1,bcs0,iflag)
+         CALL EZspline_init(B_Phi_spl,nu,nv,ns_t,bcs1,bcs1,bcs0,iflag)
          ! R/Z
          f_temp =0
          R_spl%x1 = xu*pi2; R_spl%x2 = xv*pi2; R_spl%x3 = rho; R_spl%isHermite = isherm
@@ -447,6 +468,8 @@
          END IF
          CALL EZspline_setup(Lv_spl,f_temp,iflag); f_temp = 0
 
+
+
          ! B^s
          Bs_spl%x1 = xu*pi2; Bs_spl%x2 = xv*pi2; Bs_spl%x3 = rho; Bs_spl%isHermite = isherm
          IF (PRESENT(bsmns)) CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,bsmns,xm,xn,f_temp,1,0)
@@ -473,6 +496,24 @@
          IF (PRESENT(gmns)) CALL mntouv(k1,k2,mnmax,nu,nv,xu,xv,gmns,xm,xn,f_temp,1,0)
          CALL EZspline_setup(G_spl,f_temp,iflag); f_temp = 0
 
+         ! B_R, B_Z, B_Phi
+         B_R_spl%x1 = xu*pi2; B_R_spl%x2 = xv*pi2; B_R_spl%x3 = rho; B_R_spl%isHermite = isherm
+         !br = RU_SPL%fspl * BU_SPL%fspl + RV_SPL%fspl * BV_SPL%fspl *nfp
+         ! this part is 0: BS_SPL%fspl * RS_SPL%fspl
+         f_temp = RU_SPL%fspl(1,:,:,:) * BU_SPL%fspl(1,:,:,:) + RV_SPL%fspl(1,:,:,:) * BV_SPL%fspl(1,:,:,:) *nfp 
+         CALL EZspline_setup(B_R_spl,f_temp,iflag); f_temp = 0
+
+         B_Z_spl%x1 = xu*pi2; B_Z_spl%x2 = xv*pi2; B_Z_spl%x3 = rho; B_Z_spl%isHermite = isherm
+         !bz = Z_grad(3)*Bs + Z_grad(1)*Bu + Z_grad(2)*Bv*nfp
+         f_temp = ZU_SPL%fspl(1,:,:,:) * BU_SPL%fspl(1,:,:,:) + ZV_SPL%fspl(1,:,:,:) * BV_SPL%fspl(1,:,:,:)*nfp
+         CALL EZspline_setup(B_Z_spl,f_temp,iflag); f_temp = 0
+
+         B_Phi_spl%x1 = xu*pi2; B_Phi_spl%x2 = xv*pi2; B_Phi_spl%x3 = rho; B_Phi_spl%isHermite = isherm
+         !bphi = r_val * Bv
+         f_temp = R_SPL%fspl(1,:,:,:) * BV_SPL%fspl(1,:,:,:)
+         CALL EZspline_setup(B_Phi_spl,f_temp,iflag); f_temp = 0
+
+
          ! Now we can get rid of some stuff
          x1   = R_SPL%x1
          x2   = R_SPL%x2
@@ -491,6 +532,9 @@
          BU4D = BU_SPL%fspl
          BV4D = BV_SPL%fspl
          B4D  = B_SPL%fspl
+         B_R4D  = B_R_SPL%fspl
+         B_Z4D  = B_Z_SPL%fspl
+         B_Phi4D  = B_Phi_SPL%fspl
          CALL EZspline_free(R_spl,iflag)
          CALL EZspline_free(Z_spl,iflag)
          CALL EZspline_free(RU_spl,iflag)
@@ -505,6 +549,9 @@
          CALL EZspline_free(BU_spl,iflag)
          CALL EZspline_free(BV_spl,iflag)
          CALL EZspline_free(B_spl,iflag)
+         CALL EZspline_free(B_R_spl,iflag)
+         CALL EZspline_free(B_Z_spl,iflag)
+         CALL EZspline_free(B_Phi_spl,iflag)
          
          ! Calculate rho_s
          IF (PRESENT(gmnc) .or. PRESENT(gmns)) THEN
@@ -2033,6 +2080,352 @@
       kappa = kappa_dbl
       RETURN
       END SUBROUTINE get_equil_kappa_sgl
+
+
+
+      SUBROUTINE get_equil_kappa2_dbl(s_val,u_val,v_val,phiedge,zeta_p,kappa2,ier,diagnostic)
+      USE EZspline
+      IMPLICIT NONE
+      DOUBLE PRECISION, INTENT(in)    ::  s_val
+      DOUBLE PRECISION, INTENT(in)    ::  u_val
+      DOUBLE PRECISION, INTENT(in)    ::  v_val
+      DOUBLE PRECISION, INTENT(in)    ::  phiedge
+      DOUBLE PRECISION, INTENT(in)    ::  zeta_p
+      DOUBLE PRECISION, INTENT(out)   ::  kappa2
+      INTEGER, INTENT(inout)     ::  ier
+      DOUBLE PRECISION, INTENT(out),OPTIONAL   :: diagnostic(1,67) 
+      real*8 :: rho_val
+      real*8 :: R, d2R_dudv, d2R_duds, d2R_dvds
+      real*8 :: Z, d2Z_dudv, d2Z_duds, d2Z_dvds
+
+      real*8 :: Bsupu, Bsupv, Bsups
+      real*8 :: B_R, dB_R_du, dB_R_dv, B_Z, dB_Z_du, dB_Z_dv, dB_Phi_du
+      real*8 :: B_Phi, modB
+      real*8 :: sqrtg, norm_binormal
+      real*8 :: subpart2, subpart3, subpart4
+      real*8 :: R_grad(1,3), Z_grad(1,3), B_cyl(1,3), B_xyz(1,3)
+      real*8 :: esubs(1,3), esubu(1,3), esubv(1,3)
+      real*8 :: es(1,3), eu(1,3), ev(1,3), grad_psi(1,3), binormal(1,3)
+      real*8 :: binormal_xyz(1,3), grad_psi_xyz(1,3)
+      real*8 :: subpart1(1,3), subpart5(1,3), subpart6(1,3), subpart7(1,3)
+      INTEGER :: i,j,k
+      REAL*8 :: xparam, yparam, zparam, hx, hy, hz, hxi, hyi, hzi
+      REAL*8 :: fval1(1,1)
+      REAL*8 :: fval2(1,4)
+      REAL*8 :: fval3(1,3)
+      REAL*8 :: fval4(1,7)
+      INTEGER, parameter :: ict1(10)=(/1,0,0,0,0,0,0,0,0,0/)
+      INTEGER, parameter :: ict2(10)=(/1,1,1,1,0,0,0,0,0,0/)
+      INTEGER, parameter :: ict3(10)=(/0,1,1,1,0,0,0,0,0,0/)
+      INTEGER, parameter :: ict4(10)=(/1,1,1,1,0,0,0,1,1,1/)
+
+
+
+
+
+
+
+      kappa2 = 0
+      IF (ier < 0) RETURN
+      rho_val = SQRT(s_val)
+      IF (isingrid(u_val,v_val,rho_val)) THEN
+         ! This will return the geodesic curvature of the surface, or
+         ! (B cross grad(Psi)/|B cross grad(Psi)| ) dot
+         !          [ (B^u grad(v) - B^v grad(u)) (dB_v/du - dB_u/dv)
+         !             + grad(s) ( B^v dB_s/dv - B^u dB_s/du ) ]
+         ! Two of the terms can be expanded in vmec coordinates:
+         ! dB_v/du - dB_u/dv = dB_R/du dR/dv - dB_R/dv dR/du +
+         !                     dB_Z/du dZ/dv - dB_Z/dv dZ/du +
+         !                     (1/NFP) dB_Phi/du
+         ! B^v dB_s/dv  = B^v * [ B_R d^2R/(dvds) + 
+         !                  dB_R/dv dR/ds + B_z d^2Z/(dvds) +
+         !                  dB_Z/dv dZ/ds ]
+         ! B^u dB_s/du = B^u * [ B_R d^2R/(duds) + 
+         !                  dB_R/du dR/ds + B_Z d^2Z/(duds) +
+         !                  dB_Z/du dZ/ds ]
+         ! 
+         ! Variables needed:
+         ! Scalars
+         ! B^u, B^v : get_equil_Bflx
+         ! NFP: set elsewhere
+         ! dR/dv, dR/du, dR/ds :gradR
+         ! dZ/dv, dZ/du, dZ/ds : gradZ
+         ! use new
+         ! d^2R/(duds), d^2R/(dvds), d^2Z/(duds), d^2Z/(dvds)
+         ! use new stuff? or use get_equil_Bcylsuv ?
+         ! dB_Phi/du
+         ! dB_R/du, dB_R/dv, 
+         ! dB_z/du, dB_Z/dv
+       !  
+         ! Vectors
+         ! grad(Psi) , grad(s), grad(v), grad(u): see lines 346-399 of
+         ! chisq_gamma_c_v2_mod.f90
+
+
+         ! Gather the scalars that we need
+
+
+         ! B^u, B^v : get_equil_Bflx
+         !CALL get_equil_Bflx(phi_N, u, v, Bsups(j), Bsupu(j), Bsupv(j), ier, B_GRAD = gradB_init)
+         CALL get_equil_Bflx(s_val, u_val, v_val, Bsups, Bsupu, Bsupv, ier)
+         ! NFP: set elsewhere
+         !nfp
+
+
+         ! use new
+         ! dR/dv, dR/du, dR/ds :gradR
+         ! dZ/dv, dZ/du, dZ/ds : gradZ
+         ! also see: get_equil_RZ(phi_N, u, v, R, Z, ier, gradR, gradZ)
+         ! d^2R/(duds), d^2R/(dvds), d^2Z/(duds), d^2Z/(dvds)
+         CALL lookupgrid3d(u_val,v_val,rho_val,i,j,k,hx,hy,hz,hxi,hyi,hzi,xparam,yparam,zparam)
+         CALL r8fvtricub(ict4, 1, 1, fval4, i, j, k, xparam, yparam, zparam, &
+                            hx, hxi, hy, hyi, hz, hzi, &
+                            R4D(1,1,1,1), nx1, nx2, nx3)
+         R = fval4(1,1)
+         R_grad(1,1) = fval4(1,2); R_grad(1,2) = fval4(1,3); R_grad(1,3) = fval4(1,4)
+         d2R_dudv = fval4(1,5); d2R_duds = fval4(1,6); d2R_dvds = fval4(1,7)
+
+         CALL r8fvtricub(ict4, 1, 1, fval4, i, j, k, xparam, yparam, zparam, &
+                            hx, hxi, hy, hyi, hz, hzi, &
+                            Z4D(1,1,1,1), nx1, nx2, nx3)
+         Z = fval4(1,1)
+         Z_grad(1,1) = fval4(1,2); Z_grad(1,2) = fval4(1,3); Z_grad(1,3) = fval4(1,4)
+         d2Z_dudv = fval4(1,5); d2Z_duds = fval4(1,6); d2Z_dvds = fval4(1,7)
+
+         !   Convert radial gradients from d/drho to d/ds
+         !   phi_Ns = rho^2; ds/drho = 2*rho; drho/ds = 1/(2*rho) = 0.5/rovera
+         !   - use rovera from above
+         !   gradX(1) = dX/du, gradX(2) = dX/dv, gradX(3) = dX/dsqrt(s)
+         R_grad(1,3) = R_grad(1,3) / (2.0 * rho_val)
+         d2R_duds = d2R_duds / (2.0 * rho_val)
+         d2R_dvds = d2R_dvds  / (2.0 * rho_val)
+         Z_grad(1,3) = Z_grad(1,3) / (2.0 * rho_val)
+         d2Z_duds = d2Z_duds / (2.0 * rho_val)
+         d2Z_dvds = d2Z_dvds  / (2.0 * rho_val)
+
+
+
+
+         ! dB_Phi/du
+         CALL r8fvtricub(ict2, 1, 1, fval2, i, j, k, xparam, yparam, zparam, &
+                            hx, hxi, hy, hyi, hz, hzi, &
+                            B_Phi4D(1,1,1,1), nx1, nx2, nx3)
+         B_Phi = fval2(1,1)
+         dB_Phi_du = fval2(1,2)
+         ! dB_R/du, dB_R/dv, 
+         CALL r8fvtricub(ict2, 1, 1, fval2, i, j, k, xparam, yparam, zparam, &
+                            hx, hxi, hy, hyi, hz, hzi, &
+                            B_R4D(1,1,1,1), nx1, nx2, nx3)
+         B_R = fval2(1,1)
+         dB_R_du = fval2(1,2)
+         dB_R_dv = fval2(1,3)*nfp
+         ! dB_z/du, dB_Z/dv
+         CALL r8fvtricub(ict2, 1, 1, fval2, i, j, k, xparam, yparam, zparam, &
+                            hx, hxi, hy, hyi, hz, hzi, &
+                            B_Z4D(1,1,1,1), nx1, nx2, nx3)
+         B_Z = fval2(1,1)
+         dB_Z_du = fval2(1,2)
+         dB_Z_dv = fval2(1,3)*nfp
+
+
+      !         !  
+         ! Vectors
+         ! grad(Psi) , grad(s), grad(v), grad(u): see lines 346-399 of
+         ! chisq_gamma_c_v2_mod.f90
+            esubs(1,1) = R_grad(1,3)    ! dR/ds
+            esubs(1,2) = 0.0        ! dPhi/ds
+            esubs(1,3) = Z_grad(1,3)    ! dZ/ds
+
+            esubu(1,1) = R_grad(1,1)    ! dR/du
+            esubu(1,2) = 0.0        ! dPhi/du
+            esubu(1,3) = Z_grad(1,1)    ! dZ/du
+
+            esubv(1,1) = R_grad(1,2)    ! dR/dv
+            !esubv(2) = one
+            esubv(1,2) = 1.0/nfp         ! dPhi/dv:  v= nfp *mod(phi,2*pi/nfp) -> dv ~ nfp * dphi
+            esubv(1,3) = Z_grad(1,2)    ! dZ/dv
+
+            !  esubv x esubs = (R) esubv(2) * esubs(3) - esubv(3) * esubs(2) +
+            !                 (Phi) esubv(3) * esubs(1) - esubv(1) * esubs(3) +
+            !                  (Z) esubv(1) * esubs(2) - esubv(2) * esubs(1)
+            sqrtg = esubu(1,1) * (esubv(1,2) * esubs(1,3)) +  &
+                    esubu(1,2) * (esubv(1,3) * esubs(1,1)) +  &
+                    esubu(1,3) * (-esubv(1,2) * esubs(1,1))
+
+
+            CALL mycross(esubu,esubv,es)
+            CALL mycross(esubv,esubs,eu)
+            CALL mycross(esubs,esubu,ev)
+
+!           es, eu, ev = e^s,e^u, e^v =  grad(s), grad(u), and grad(v) in cylindrical coordinates
+!           (R, phi, Z) for the points on the single field period.
+            es = es/sqrtg
+            eu = eu/sqrtg
+            ev = ev/sqrtg
+            ! gradS is grad psi
+            grad_psi = es * phiedge
+            ! grad_psi is for the points on a single field period (not full torus)
+
+         ! Now, build combine the terms
+         ! (B cross grad(Psi)/|B cross grad(Psi)| ) dot
+         !     [ (B^u grad(v) - B^v grad(u)) (dB_v/du - dB_u/dv)
+         !       + grad(s) ( B^v dB_s/dv - B^u dB_s/du ) ]
+         !subpart1 = B^u grad(v) - B^v grad(u)
+         subpart1 = Bsupu * ev - Bsupv * eu
+         !subpart2 = dB_v/du - dB_u/dv
+         ! dB_v/du - dB_u/dv = dB_R/du dR/dv - dB_R/dv dR/du +
+         !                     dB_Z/du dZ/dv - dB_Z/dv dZ/du +
+         !                     (1/NFP) dB_Phi/du
+         subpart2 = dB_R_du * R_grad(1,2) - dB_R_dv * R_grad(1,1) + &
+                    dB_Z_du * Z_grad(1,2) - dB_Z_dv * Z_grad(1,1) + &
+                    dB_Phi_du * (1.0 / nfp)
+         !subpart3 = B^v dB_s/dv
+         ! B^v dB_s/dv  = B^v * [ B_R d^2R/(dvds) + 
+         !                  dB_R/dv dR/ds + B_z d^2Z/(dvds) +
+         !                  dB_Z/dv dZ/ds ]
+         ! * phiedge, to normalized correctly
+         subpart3 = Bsupv * (B_R * d2R_dvds + dB_R_dv * R_grad(1,3) + &
+                       B_Z * d2Z_dvds + dB_Z_dv * Z_grad(1,3) ) 
+!JCS to self: Working from below andmoving up.  Adding vars to header as
+!necessary 
+         !subpart4 = B^u dB_s/du
+         ! B^u dB_s/du = B^u * [ B_R d^2R/(duds) + 
+         !                  dB_R/du dR/ds + B_Z d^2Z/(duds) +
+         !                  dB_Z/du dZ/ds ]
+         ! * phiedge, to normalized correctly
+         subpart4 = Bsupu * (B_R * d2R_duds + dB_R_du * d2Z_duds + &
+                       B_Z * d2Z_duds + dB_Z_du * Z_grad(1,3) )
+         !subpart5 = grad(s)*(subpart3 - subpart4)
+         !subpart5 = gradS*(subpart3 - subpart4)
+         subpart5 = es*(subpart3 - subpart4)
+         subpart6 = subpart1 * subpart2 + subpart5
+         !kappa2 = dot_product((B cross grad(Psi)/|B cross grad(Psi)| ) , subpart6)
+         ! subpart7 = (B cross grad(Psi)/|B cross grad(Psi)| ) 
+         !CALL cross_product(grad_psi_xyz/norm_grad_psi_xyz, bnxyz, binormal(j,:))
+         B_cyl(1,1) = B_R
+         B_cyl(1,2) = B_Phi
+         B_cyl(1,3) = B_Z
+         !Bx = sign(one,sqrtg) * ( B_R*cos(-zeta_p) - B_Phi*sin(-zeta_p) )
+         !By = sign(one,sqrtg) * ( B_R*sin(-zeta_p) + B_Phi*cos(-zeta_p) )
+         !Bz = B_Z *sign(one,sqrtg)
+         CALL mycross(es, B_cyl, binormal)
+         norm_binormal = sqrt(binormal(1,1)**2 + binormal(1,2)**2 + &
+                              binormal(1,3)**2)
+         subpart7 = binormal / norm_binormal
+         kappa2 = subpart7(1,1) * subpart6(1,1) + subpart7(1,2) * subpart6(1,2) + &
+                  subpart7(1,3) * subpart6(1,3)
+!
+         IF (PRESENT(diagnostic))  THEN
+            diagnostic(1,1) = s_val
+            diagnostic(1,2) = rho_val
+            diagnostic(1,3) = u_val
+            diagnostic(1,4) = v_val
+            diagnostic(1,5) = B_R
+            diagnostic(1,6) = B_Phi
+            diagnostic(1,7) = B_Z
+            diagnostic(1,8) = Bsups
+            diagnostic(1,9) = Bsupu
+            diagnostic(1,10) = Bsupv
+            diagnostic(1,11) = dB_Phi_du
+            diagnostic(1,12) = dB_R_du
+            diagnostic(1,13) = dB_R_dv
+            diagnostic(1,14) = dB_Z_du
+            diagnostic(1,15) = dB_Z_dv
+            diagnostic(1,16) = R
+            diagnostic(1,17) = R_grad(1,1)
+            diagnostic(1,18) = R_grad(1,2)
+            diagnostic(1,19) = R_grad(1,3)
+            diagnostic(1,20) = d2R_dudv
+            diagnostic(1,21) = d2R_duds
+            diagnostic(1,22) = d2R_dvds
+            diagnostic(1,23) = Z
+            diagnostic(1,24) = Z_grad(1,1)
+            diagnostic(1,25) = Z_grad(1,2)
+            diagnostic(1,26) = Z_grad(1,3)
+            diagnostic(1,27) = d2Z_dudv
+            diagnostic(1,28) = d2Z_duds
+            diagnostic(1,29) = d2Z_dvds
+            diagnostic(1,30) = esubs(1,1)
+            diagnostic(1,31) = esubs(1,2)
+            diagnostic(1,32) = esubs(1,3)
+            diagnostic(1,33) = esubu(1,1)
+            diagnostic(1,34) = esubu(1,2)
+            diagnostic(1,35) = esubu(1,3)
+            diagnostic(1,36) = esubv(1,1)
+            diagnostic(1,37) = esubv(1,2)
+            diagnostic(1,38) = esubv(1,3)
+            diagnostic(1,39) = es(1,1)
+            diagnostic(1,40) = es(1,2)
+            diagnostic(1,41) = es(1,3)
+            diagnostic(1,42) = eu(1,1)
+            diagnostic(1,43) = eu(1,2)
+            diagnostic(1,44) = eu(1,3)
+            diagnostic(1,45) = ev(1,1)
+            diagnostic(1,46) = ev(1,2)
+            diagnostic(1,47) = ev(1,3)
+            diagnostic(1,48) = sqrtg
+            diagnostic(1,49) = phiedge
+            diagnostic(1,50) = subpart1(1,1)
+            diagnostic(1,51) = subpart1(1,2)
+            diagnostic(1,52) = subpart1(1,3)
+            diagnostic(1,53) = subpart2
+            diagnostic(1,54) = subpart3
+            diagnostic(1,55) = subpart4
+            diagnostic(1,56) = subpart5(1,1)
+            diagnostic(1,57) = subpart5(1,2)
+            diagnostic(1,58) = subpart5(1,3)
+            diagnostic(1,59) = subpart6(1,1)
+            diagnostic(1,60) = subpart6(1,2)
+            diagnostic(1,61) = subpart6(1,3)
+            diagnostic(1,62) = binormal(1,1)
+            diagnostic(1,63) = binormal(1,2)
+            diagnostic(1,64) = binormal(1,3)
+            diagnostic(1,65) = subpart7(1,1)
+            diagnostic(1,66) = subpart7(1,2)
+            diagnostic(1,67) = subpart7(1,3)
+
+         END IF
+
+      ELSE
+         ier=9
+      END IF
+      RETURN
+      END SUBROUTINE get_equil_kappa2_dbl
+      
+      SUBROUTINE get_equil_kappa2_sgl(s_val,u_val,v_val,phiedge,zeta_p,kappa2,ier)
+      USE EZspline
+      IMPLICIT NONE
+      REAL, INTENT(in)    ::  s_val
+      REAL, INTENT(in)    ::  u_val
+      REAL, INTENT(in)    ::  v_val
+      REAL, INTENT(in)    ::  phiedge
+      REAL, INTENT(in)    ::  zeta_p
+      REAL, INTENT(out)   ::  kappa2
+      INTEGER, INTENT(inout)     ::  ier
+      DOUBLE PRECISION    ::  s_dbl
+      DOUBLE PRECISION    ::  u_dbl
+      DOUBLE PRECISION    ::  v_dbl
+      DOUBLE PRECISION    ::  phiedge_dbl
+      DOUBLE PRECISION    ::  zeta_p_dbl
+      DOUBLE PRECISION    ::  kappa2_dbl
+      s_dbl = s_val; u_dbl = u_val; v_dbl = v_val; phiedge_dbl = phiedge
+      zeta_p_dbl = deta_p
+      CALL get_equil_kappa2_dbl(s_dbl,u_dbl,v_dbl,phiedge_dbl,zeta_p_dbl,kappa2_dbl,ier)
+      kappa2 = kappa2_dbl
+      RETURN
+      END SUBROUTINE get_equil_kappa2_sgl
+
+
+      SUBROUTINE mycross(a, b, c)
+        real*8 , INTENT(IN)  :: a(1,3), b(1,3)
+        real*8 , INTENT(OUT) :: c(1,3)
+      
+        c(1,1) = a(1,2) * b(1,3) - a(1,3) * b(1,2)
+        c(1,2) = a(1,3) * b(1,1) - a(1,1) * b(1,3)
+        c(1,3) = a(1,1) * b(1,2) - a(1,2) * b(1,1)
+      END SUBROUTINE mycross
+ 
+
       
       SUBROUTINE get_equil_Bcylsuv_dbl(s_val,u_val,v_val,br,bphi,bz,ier,modb_val,B_grad)
       USE EZspline
