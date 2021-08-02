@@ -41,7 +41,7 @@
       INTEGER :: numprocs_local, mylocalid, mylocalmaster, mystart, myend
       INTEGER :: MPI_COMM_LOCAL
 #endif
-      LOGICAL :: lcreate_wall
+      LOGICAL :: lcreate_wall, lverb_wall
       INTEGER :: ier, s, i, j, k
       REAL(rprec) :: brtemp, bptemp, bztemp, betatot, sflx, uflx, &
                      tetemp,netemp,titemp,zetemp,pottemp, rsmax, rsmin,&
@@ -106,11 +106,12 @@
          lvessel = .TRUE.
          k = 128
          ier = 0
+         lverb_wall=.false.
          IF (lplasma_only) THEN
-            CALL wall_load_seg(nbndry,xbndry,zbndry,k,ier,VERB=lverb,COMM=MPI_COMM_LOCAL)
+            CALL wall_load_seg(nbndry,xbndry,zbndry,k,ier,VERB=lverb_wall,COMM=MPI_COMM_LOCAL)
             IF (ier==-327) WRITE(6,'(A)') 'ERROR: EQDSK Boundary has repeated index.'
          ELSE
-            CALL wall_load_seg(nlim,xlim,zlim,k,ier,VERB=lverb,COMM=MPI_COMM_LOCAL)
+            CALL wall_load_seg(nlim,xlim,zlim,k,ier,VERB=lverb_wall,COMM=MPI_COMM_LOCAL)
             IF (ier==-327) WRITE(6,'(A)') 'ERROR: EQDSK Limiter has repeated index.'
          END IF
          ier = 0
@@ -148,7 +149,8 @@
              raxis_g(i)>rsmax .or. raxis_g(i)<rsmin) THEN
             IF (sflx<1) sflx = 2-sflx ! Handle flux issue
          END IF
-         S_ARR(i,:,k)=sqrt(sflx) ! Actually rho
+         S_ARR(i,:,k)=sflx*sflx ! Actually rho
+         IF (uflx<0)  uflx = uflx+pi2
          U_ARR(i,:,k)=uflx
 
          IF (sflx <= 1) THEN
