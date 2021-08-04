@@ -45,7 +45,7 @@
       INTEGER :: ier, s, i, j, k
       REAL(rprec) :: brtemp, bptemp, bztemp, betatot, sflx, uflx, &
                      tetemp,netemp,titemp,zetemp,pottemp, rsmax, rsmin,&
-                     zsmax, zsmin
+                     zsmax, zsmin,rhoflx
 
 !-----------------------------------------------------------------------
 !     Begin Subroutine
@@ -144,12 +144,13 @@
          B_Z(i,:,k) = bztemp
 
          ! Flux
-         CALL get_eqdsk_flux(raxis_g(i),zaxis_g(k),sflx,uflx)
+         CALL get_eqdsk_flux(raxis_g(i),zaxis_g(k),rhoflx,uflx)
+         sflx = rhoflx*rhoflx
          IF (zaxis_g(k)>zsmax .or. zaxis_g(k)<zsmin .or. &
              raxis_g(i)>rsmax .or. raxis_g(i)<rsmin) THEN
             IF (sflx<1) sflx = 2-sflx ! Handle flux issue
          END IF
-         S_ARR(i,:,k)=sflx*sflx ! Actually rho
+         S_ARR(i,:,k)=sflx
          IF (uflx<0)  uflx = uflx+pi2
          U_ARR(i,:,k)=uflx
 
