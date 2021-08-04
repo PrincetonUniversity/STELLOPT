@@ -482,19 +482,21 @@
       RETURN
       END SUBROUTINE wall_load_txt
 
-      SUBROUTINE wall_load_mn(Rmn,Zmn,xm,xn,mn,nu,nv,verb,comm)
+      SUBROUTINE wall_load_mn(Rmn,Zmn,xm,xn,mn,nu,nv,verb,comm,Rmn2,Zmn2)
       !-----------------------------------------------------------------------
       ! wall_load_mn: Creates wall from harmonics
       !-----------------------------------------------------------------------
-      ! param[in]: Rmn. Harmonics in R direction
-      ! param[in]: Zmn. Harmonics in Z direction
-      ! param[in]: xm. 
-      ! param[in]: xn. 
-      ! param[in]: mn. 
-      ! param[in]: nu. 
-      ! param[in]: nv. 
+      ! param[in]: Rmn. Harmonics in R direction (cos)
+      ! param[in]: Zmn. Harmonics in Z direction (sin)
+      ! param[in]: xm. Poloidal Harmonic Array
+      ! param[in]: xn. Toroidal Harmonic Array
+      ! param[in]: mn. Total number of modes
+      ! param[in]: nu. Total poloidal gridpoints
+      ! param[in]: nv. Total toroidal gridpoints
       ! param[in]: verb: Verbosity. True or false
       ! param[in, out]: comm. MPI communicator, handles shared memory
+      ! param[in]: Rmn2. Harmonics in R direction (sin)
+      ! param[in]: Zmn2. Harmonics in Z direction (cos)
       !-----------------------------------------------------------------------
 #if defined(MPI_OPT)
       USE mpi
@@ -504,6 +506,7 @@
       INTEGER, INTENT(in) :: mn, nu, nv
       LOGICAL, INTENT(in), OPTIONAL :: verb
       INTEGER, INTENT(inout), OPTIONAL :: comm
+      DOUBLE PRECISION, INTENT(in), OPTIONAL :: Rmn2(mn), Zmn2(mn)
       INTEGER :: u, v, i, j, istat, dex1, dex2, dex3, ik, nv2
       INTEGER :: shar_comm
       LOGICAL :: shared
@@ -543,6 +546,18 @@
                END DO
             END DO
          END DO
+         IF (PRESENT(Rmn2)) THEN
+            DO u = 1, nu
+               DO v = 1, nv
+                  DO i = 1, mn
+                     th = pi2*DBLE(u-1)/DBLE(nu)
+                     zt = pi2*DBLE(v-1)/DBLE(nv)
+                     r_temp(u,v) = r_temp(u,v) + Rmn2(i)*DSIN(xm(i)*th+xn(i)*zt)
+                     z_temp(u,v) = z_temp(u,v) + Zmn2(i)*DCOS(xm(i)*th+xn(i)*zt)
+                  END DO
+               END DO
+            END DO
+         END IF
          DO v = 1, nv
             zt = pi2*DBLE(v-1)/DBLE(nv)
             x_temp(:,v) = r_temp(:,v) * DCOS(zt)
