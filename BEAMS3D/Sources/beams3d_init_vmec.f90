@@ -185,7 +185,13 @@
          j = 180
          lverb_wall=.false.
          IF (lverb) WRITE(6,'(A)')        '   CREATING WALL FROM HARMONICS'
-         CALL wall_load_mn(DBLE(rmnc(1:mnmax,k)),DBLE(zmns(1:mnmax,k)),DBLE(xm),-DBLE(xn),mnmax,i,j,lverb_wall,MPI_COMM_LOCAL)
+         IF (lasym) THEN
+            CALL wall_load_mn(DBLE(rmnc(1:mnmax,k)),DBLE(zmns(1:mnmax,k)), &
+               DBLE(xm),-DBLE(xn),mnmax,i,j,lverb_wall,MPI_COMM_LOCAL, &
+               DBLE(rmns(1:mnmax,k)),DBLE(zmnc(1:mnmax,k)))
+         ELSE
+            CALL wall_load_mn(DBLE(rmnc(1:mnmax,k)),DBLE(zmns(1:mnmax,k)),DBLE(xm),-DBLE(xn),mnmax,i,j,lverb_wall,MPI_COMM_LOCAL)
+         ENDIF
       END IF
 
       ! Initialize Virtual Casing
@@ -425,8 +431,8 @@
             sflx = REAL(s)/REAL(ns)
             uflx = SQRT(REAL(s)/REAL(ns*scaleup))
             WHERE (MOD(NINT(xm),2)==1)
-               rmns_temp(:,s) = rmns_temp(:,ns)*sflx*uflx
-               zmnc_temp(:,s) = zmnc_temp(:,ns)*sflx*uflx
+               rmns_temp(:,s) = rmns_temp(:,ns)*sflx**1.5
+               zmnc_temp(:,s) = zmnc_temp(:,ns)*sflx**1.5
             ELSEWHERE
                rmns_temp(:,s) = rmns_temp(:,ns)*sflx
                zmnc_temp(:,s) = zmnc_temp(:,ns)*sflx
@@ -447,7 +453,7 @@
          DEALLOCATE(rmns,zmnc,bsupumns,bsupvmns)
          ALLOCATE(rmns(1:mnmax,1:ns),zmnc(1:mnmax,1:ns), &
             bsupumns(1:mnmax_nyq,1:ns),bsupvmns(1:mnmax_nyq,1:ns))
-         rmns=rmnc_temp; zmnc=zmns_temp; bsupumns=0; bsupvmns=0
+         rmns=rmns_temp; zmnc=zmnc_temp; bsupumns=0; bsupvmns=0
          DEALLOCATE(rmns_temp,zmnc_temp)
       END IF
       DO s = mystart, myend ! Now fill in grid
