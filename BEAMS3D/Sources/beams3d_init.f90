@@ -133,6 +133,7 @@
          IF (lcoil) WRITE(6,'(A)')    '   COIL: ' // TRIM(coil_string)
          IF (lmgrid) WRITE(6,'(A)')    '   MGRID: ' // TRIM(mgrid_string)
          IF (lcollision) WRITE(6,'(A)') '   COLLISION OPERATOR ON!'
+         IF (lkick) WRITE(6,'(A)') '   KICK MODEL ON!'
          IF (lvac)  WRITE(6,'(A)') '   VACUUM FIELDS ONLY!'
          IF (ldepo) WRITE(6,'(A)') '   DEPOSITION ONLY!'
          IF (lw7x) WRITE(6,'(A)') '   W7-X BEAM Model!'
@@ -298,7 +299,7 @@
       END IF
 
       ! Adjust the torodial distribution function grid
-      ns_prof2 = MAX(ns_prof2,4*NINT(pi2/phimax)) ! Min 4 per field period
+      ns_prof3 = MAX(ns_prof3,8*NINT(pi2/phimax)) ! Min 8 per field period
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!              Initialize Vessel (we need nbeams here)
@@ -306,7 +307,7 @@
       
       ! Load vessel if not done already vessel
       IF (lvessel .and. (.not. lwall_loaded)) THEN
-         CALL wall_load_txt(TRIM(vessel_string),ier,MPI_COMM_BEAMS)
+         CALL wall_load_txt(TRIM(vessel_string),ier,lverb,MPI_COMM_BEAMS)
          IF (lverb) THEN
             IF (ier /=0 ) WRITE(6,'(A)') 'ERROR: Loading VESSEL : ' // TRIM(vessel_string)
             IF (ier ==-327 ) WRITE(6,'(A)') '   ZERO Area Triagle detected!!!!'
@@ -570,19 +571,11 @@
 
       ! Setup distribution
       ALLOCATE(epower_prof(nbeams,ns_prof1), ipower_prof(nbeams,ns_prof1), &
-               ndot_prof(nbeams,ns_prof1), j_prof(nbeams,ns_prof1), &
-               dense_prof(nbeams,ns_prof1))
-      ipower_prof=0; epower_prof=0; ndot_prof=0; j_prof = 0
-
-      ! ALLOCATE the 6D array of 5D distribution
-      !CALL mpialloc(epower_prof, nbeams, ns_prof1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_epower)
-      !CALL mpialloc(ipower_prof, nbeams, ns_prof1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_ipower)
-      !CALL mpialloc(  ndot_prof, nbeams, ns_prof1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_ndot  )
-      !CALL mpialloc(     j_prof, nbeams, ns_prof1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_jprof )
-      !CALL mpialloc( dense_prof, nbeams, ns_prof1, myid_sharmem, 0, MPI_COMM_SHARMEM, win_dense )
+               ndot_prof(nbeams,ns_prof1))
+      ipower_prof=0; epower_prof=0; ndot_prof=0
       CALL mpialloc(dist5d_prof, nbeams, ns_prof1, ns_prof2, ns_prof3, ns_prof4, ns_prof5, myid_sharmem, 0, MPI_COMM_SHARMEM, win_dist5d)
       IF (myid_sharmem == master) THEN
-         dist5d_prof = 0; !ipower_prof=0; epower_prof=0; ndot_prof=0; j_prof = 0
+         dist5d_prof = 0
       END IF
       h2_prof = ns_prof2*invpi2
       h3_prof = ns_prof3*invpi2
