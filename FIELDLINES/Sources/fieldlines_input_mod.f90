@@ -64,7 +64,8 @@
                                   r_start, phi_start, phi_end,z_start,&
                                   npoinc, dphi, follow_tol,&
                                   vc_adapt_tol, int_type, &
-                                  r_hc, phi_hc, z_hc, num_hcp, delta_hc
+                                  r_hc, phi_hc, z_hc, num_hcp, delta_hc,&
+                                  errorfield_amp,errorfield_phase
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -104,6 +105,9 @@
       dphi   = pi2/360
       follow_tol   = 1.0E-7
       vc_adapt_tol = 1.0E-5
+      lerror_field = .false.
+      errorfield_amp = 0
+      errorfield_phase = 0
       int_type = "NAG"
       ! Read namelist
       IF (ithread == local_master) THEN
@@ -132,6 +136,9 @@
             WRITE(6,*) '!!!!!!!!!!!!!!!!!!!!PHI_END NOT SET!!!!!!!!!!!!!!!!!!!!'
             istat = -1
             IF (istat /= 0) CALL handle_err(NAMELIST_READ_ERR,'fieldlines_input in: input.'//TRIM(id_string),istat)
+         END IF
+         IF (ANY(errorfield_amp .ne. 0)) THEN
+            lerror_field = .true.
          END IF
       END IF
       int_type = TRIM(int_type)
@@ -163,6 +170,9 @@
       CALL MPI_BCAST(z_hc,MAXLINES,MPI_REAL8, local_master, MPI_COMM_FIELDLINES,istat)
       CALL MPI_BCAST(num_hcp,1,MPI_INTEGER, local_master, MPI_COMM_FIELDLINES,istat)
       CALL MPI_BCAST(delta_hc,1,MPI_REAL8, local_master, MPI_COMM_FIELDLINES,istat)
+      CALL MPI_BCAST(lerror_field,1,MPI_LOGICAL, local_master, MPI_COMM_FIELDLINES,istat)
+      CALL MPI_BCAST(errorfield_amp,20,MPI_REAL8, local_master, MPI_COMM_FIELDLINES,istat)
+      CALL MPI_BCAST(errorfield_phase,20,MPI_REAL8, local_master, MPI_COMM_FIELDLINES,istat)
 #endif
       IF (mu > 0.0) lmu=.true.
       END SUBROUTINE read_fieldlines_input

@@ -31,6 +31,7 @@
 !         B_R            Radial Magnetic Field [T]
 !         B_PHI          Toroidal Magnetic Field [T]
 !         B_Z            Vertical Magnetic Field [T]
+!         PRES_G         Plasma Pressure [Pa] on grid
 !         BR_spl         EZSpline Object for B_R/B_PHI
 !         BZ_spl         EZSpline Object for B_Z/B_PHI
 !-----------------------------------------------------------------------
@@ -39,10 +40,10 @@
       REAL(rprec) :: rmin, rmax, zmin, zmax, phimin, phimax, delta_phi,&
                      vc_adapt_tol
       INTEGER  ::    win_raxis, win_phiaxis, win_zaxis, win_B_R, win_B_PHI, win_B_Z, &
-                     win_MU, win_BR4D, win_BPHI4D, win_BZ4D, win_MODB4D, win_MU4D
+                     win_MU, win_BR4D, win_BPHI4D, win_BZ4D, win_MODB4D, win_MU4D, win_PRES
       REAL(rprec), POINTER :: raxis(:), zaxis(:), phiaxis(:)
       REAL(rprec), POINTER :: B_R(:,:,:), B_Z(:,:,:), B_PHI(:,:,:)
-      REAL(rprec), POINTER :: MU3D(:,:,:)
+      REAL(rprec), POINTER :: MU3D(:,:,:), PRES_G(:,:,:)
       REAL(rprec), DIMENSION(:,:,:,:), POINTER :: BR4D, BPHI4D, BZ4D, MODB4D, MU4D
       TYPE(EZspline3_r8) :: BR_spl, BZ_spl, MU_spl, MODB_spl
       REAL*8 ::      eps1, eps2, eps3

@@ -232,8 +232,7 @@
          CALL RANDOM_NUMBER(Z_RAND)
          ! Uniform about 0
          CALL RANDOM_NUMBER(P_rand)
-         !P_rand = 2*(P_rand-0.5)
-         P_rand = cos(pi*P_rand)
+         P_rand = 2*(P_rand-0.5)
          k1 = 1
          ! Do the D-T -> H4 reaction
          vpart = sqrt(2*E_BEAMS(1)/mHe4)
