@@ -5,16 +5,6 @@ This page details how to compile the STELLOPT family of codes
 at [Max-Plank Computational Data Facility (formerly Rechenzentrum Garching)](@http://www.rzg.mpg.de/) (MPCDF). In order to do so you will need an account on their system. These build
 instructions are for the Intel based compilers
 
-Draco
------
-
-    module load git
-    module load intel
-    module load mkl
-    module load impi
-    module load netcdf-mpi
-    module load hdf5-mpi
-    module load fftw-mpi
 
 Cobra
 -----
