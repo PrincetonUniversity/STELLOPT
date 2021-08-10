@@ -270,4 +270,5 @@ bins by VLL the particles at each NPOINC time step.
 
 -   [McMillan, M. and Lazerson, S.A. \"BEAMS3D: Neutral beam injection model.\" Plasma Phys. and Control. Fusion 56, 095019 (2014)](https://doi.org/10.1088/0741-3335/56/9/095019)
 -   [Lazerson, S.A. et al. \"Validation of the BEASM3D neutral beam deposition model on Wendelstein 7-X\" Nuclear Fusion 60, 706020 (2020)](https://doi.org/10.1088/1741-4326/ab8e61)
+-   [Lazerson, S.A. et al. \"Modeling and measurement of energetic particle slowing down on Wendelstein 7-X\" Nuclear Fusion 61, 096006 (2021)](https://doi.org/10.1088/1741-4326/ac0771)
 
