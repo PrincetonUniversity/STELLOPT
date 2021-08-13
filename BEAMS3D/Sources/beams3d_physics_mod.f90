@@ -473,10 +473,6 @@ MODULE beams3d_physics_mod
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             NE4D(1,1,1,1),nr,nphi,nz)
             nelocal(l) = MAX(fval(1),zero)
-            !CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
-            !                hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-            !                ZEFF4D(1,1,1,1),nr,nphi,nz)
-            !zefflocal(l) = MAX(fval(1),zero)
             DO m = 1, NION
                CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
