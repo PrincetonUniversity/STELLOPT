@@ -25,7 +25,7 @@
                                  nte, nne, nti, TE, NE, TI, Vp_spl_s, S_ARR,&
                                  U_ARR, POT_ARR, POT_spl_s, nne, nte, nti, npot, &
                                  ZEFF_spl_s, nzeff, ZEFF_ARR, req_axis, zeq_axis, &
-                                 phiedge_eq, reff_eq
+                                 phiedge_eq, reff_eq, NI_spl_s, NI
       USE beams3d_lines, ONLY: GFactor, ns_prof1
       USE wall_mod, ONLY: wall_load_seg
       USE mpi_params
@@ -42,10 +42,10 @@
       INTEGER :: MPI_COMM_LOCAL
 #endif
       LOGICAL :: lcreate_wall, lverb_wall
-      INTEGER :: ier, s, i, j, k
+      INTEGER :: ier, s, i, j, k, u
       REAL(rprec) :: brtemp, bptemp, bztemp, betatot, sflx, uflx, &
                      tetemp,netemp,titemp,zetemp,pottemp, rsmax, rsmin,&
-                     zsmax, zsmin,rhoflx
+                     zsmax, zsmin,rhoflx, nitemp
 
 !-----------------------------------------------------------------------
 !     Begin Subroutine
@@ -161,6 +161,13 @@
             IF (nti > 0) CALL EZspline_interp(TI_spl_s,sflx,titemp,ier)
             IF (npot > 0) CALL EZspline_interp(POT_spl_s,sflx,pottemp,ier)
             IF (nzeff > 0) CALL EZspline_interp(ZEFF_spl_s,sflx,zetemp,ier)
+            IF (nzeff > 0) THEN 
+               CALL EZspline_interp(ZEFF_spl_s,sflx,zetemp,ier)
+               DO u=1, NION
+                  CALL EZspline_interp(NI_spl_s(u),sflx,nitemp,ier)
+                  NI(u,i,:,k)=nitemp
+               END DO
+            END IF
             NE(i,:,k) = netemp; TE(i,:,k) = tetemp; TI(i,:,k) = titemp
             POT_ARR(i,:,k) = pottemp; ZEFF_ARR(i,:,k) = zetemp
          END IF
