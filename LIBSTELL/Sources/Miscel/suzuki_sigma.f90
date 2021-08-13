@@ -100,7 +100,7 @@
                CONTINUE
             END IF
          END DO
-         IF (k < 0) CONTINUE
+         IF (k <= 0) CONTINUE
          sigma_Z = sigma_Z + ni_in(l) / ne_in * Z_in(l) &
                              *(  B(j,1) + B(j,2)*U + B(j,3)*logN + B(j,4)*logN*U) &
                                                    + B(j,5)*logE + B(j,6)*logE*U  &
