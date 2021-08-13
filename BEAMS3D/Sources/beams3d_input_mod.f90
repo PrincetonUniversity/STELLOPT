@@ -263,6 +263,21 @@
             plasma_mass = SUM(NI_AUX_F(:,1)*NI_AUX_M*NI_AUX_M)/(SUM(NI_AUX_F(:,1)*NI_AUX_M))
             plasma_Zavg = SUM(NI_AUX_F(:,1)*NI_AUX_Z*NI_AUX_Z)/(SUM(NI_AUX_F(:,1)*NI_AUX_Z)) ! Note this is just Zeff
             plasma_Zmean = SUM(NI_AUX_F(:,1)*NI_AUX_Z*NI_AUX_Z*NI_AUX_M)/(SUM(NI_AUX_F(:,1)*NI_AUX_Z)*plasma_mass)
+         ELSEIF (lfusion) THEN ! Assume 50/50 D T
+            nzeff=nne
+            NI_AUX_S = NE_AUX_S
+            NI_AUX_F(1,:) = 0.5*NE_AUX_F
+            NI_AUX_F(2,:) = 0.5*NE_AUX_F
+            NI_AUX_M(1) = 3.3435837724E-27;   NI_AUX_Z(1) = 1
+            NI_AUX_M(2) = 5.008267217094E-27; NI_AUX_Z(2) = 1 
+            ! Now calc Zeff(1)
+            DO i1 = 1, nzeff
+               ZEFF_AUX_S(i1) = NI_AUX_S(i1)
+               ZEFF_AUX_F(i1) = SUM(NI_AUX_F(:,i1)*NI_AUX_Z(:)*NI_AUX_Z(:))/SUM(NI_AUX_F(:,i1)*NI_AUX_Z(:))
+            END DO
+            plasma_mass = SUM(NI_AUX_F(:,1)*NI_AUX_M*NI_AUX_M)/(SUM(NI_AUX_F(:,1)*NI_AUX_M))
+            plasma_Zavg = SUM(NI_AUX_F(:,1)*NI_AUX_Z*NI_AUX_Z)/(SUM(NI_AUX_F(:,1)*NI_AUX_Z)) ! Note this is just Zeff
+            plasma_Zmean = SUM(NI_AUX_F(:,1)*NI_AUX_Z*NI_AUX_Z*NI_AUX_M)/(SUM(NI_AUX_F(:,1)*NI_AUX_Z)*plasma_mass)
          ELSEIF (nne > 0) THEN ! Ni=Ne, Z=Zeff
             nzeff = nne
             NI_AUX_S = NE_AUX_S

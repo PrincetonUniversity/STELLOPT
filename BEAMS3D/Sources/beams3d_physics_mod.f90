@@ -34,7 +34,7 @@ MODULE beams3d_physics_mod
                               zaxis, U4D, &
                               hr, hp, hz, hri, hpi, hzi, &
                               B_kick_min, B_kick_max, E_kick, freq_kick, &
-                              plasma_mass
+                              plasma_mass, NI5D
       USE EZspline_obj
       USE EZspline
       USE adas_mod_parallel
@@ -892,8 +892,9 @@ MODULE beams3d_physics_mod
          !        ict        Spline output control
          !        fval       Spline output array
          !--------------------------------------------------------------
-         DOUBLE PRECISION :: r_temp, z_temp, phi_temp, ne_temp, &
-                             ti_temp, ze_temp, zeta, theta, eta
+         DOUBLE PRECISION :: r_temp, z_temp, phi_temp, &
+                             ti_temp, ze_temp, zeta, theta, eta, &
+                             nd_temp, nt_temp
          ! For splines
          INTEGER :: i,j,k
          REAL*8 :: xparam, yparam, zparam
@@ -921,7 +922,7 @@ MODULE beams3d_physics_mod
          z_temp   = q(3)
 
          ! Initialize values
-         ti_temp = 0; ne_temp = 0; reactrate = 0
+         ti_temp = 0; nd_temp = 0; nt_temp = 0; reactrate = 0
 
          ! Check that we're inside the domain then proceed
          IF ((r_temp >= rmin-eps1) .and. (r_temp <= rmax+eps1) .and. &
@@ -936,16 +937,21 @@ MODULE beams3d_physics_mod
             ! Evaluate the Splines
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                            NE4D(1,1,1,1),nr,nphi,nz)
-            ne_temp = max(fval(1),zero)
-            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
-                            hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             TI4D(1,1,1,1),nr,nphi,nz)
             ti_temp = max(fval(1),zero)
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             ZEFF4D(1,1,1,1),nr,nphi,nz)
             ze_temp = MAX(fval(1),one)
+            ! Assume 1 and 2 are D and T
+            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                            hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                            NI5D(1,1,1,1,1),nr,nphi,nz)
+            nd_temp = max(fval(1),zero)
+            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                            hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                            NI5D(1,1,1,1,2),nr,nphi,nz)
+            nt_temp = max(fval(1),zero)
          ELSE
             RETURN
          END IF
@@ -958,8 +964,7 @@ MODULE beams3d_physics_mod
 
          reactrate = 1E-6*CARR(1)*theta*SQRT(eta/(mrc2*ti_temp*ti_temp*ti_temp))*EXP(-3*eta)
 
-         reactrate = reactrate*0.25*ne_temp*ne_temp/(ze_temp*ze_temp)
-
+         reactrate = reactrate*nd_temp*nt_temp
          RETURN
 
       END SUBROUTINE beams3d_DTRATE
@@ -994,8 +999,9 @@ MODULE beams3d_physics_mod
          !        ict        Spline output control
          !        fval       Spline output array
          !--------------------------------------------------------------
-         DOUBLE PRECISION :: r_temp, z_temp, phi_temp, ne_temp, &
-                             ti_temp, ze_temp, zeta, theta, eta
+         DOUBLE PRECISION :: r_temp, z_temp, phi_temp, &
+                             ti_temp, ze_temp, zeta, theta, eta, &
+                             nd_temp
          ! For splines
          INTEGER :: i,j,k
          REAL*8 :: xparam, yparam, zparam
@@ -1023,7 +1029,7 @@ MODULE beams3d_physics_mod
          z_temp   = q(3)
 
          ! Initialize values
-         ti_temp = 0; ne_temp = 0; reactrate = 0
+         ti_temp = 0; nd_temp = 0; reactrate = 0
 
          ! Check that we're inside the domain then proceed
          IF ((r_temp >= rmin-eps1) .and. (r_temp <= rmax+eps1) .and. &
@@ -1038,16 +1044,17 @@ MODULE beams3d_physics_mod
             ! Evaluate the Splines
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                            NE4D(1,1,1,1),nr,nphi,nz)
-            ne_temp = max(fval(1),zero)
-            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
-                            hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             TI4D(1,1,1,1),nr,nphi,nz)
             ti_temp = max(fval(1),zero)
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             ZEFF4D(1,1,1,1),nr,nphi,nz)
             ze_temp = MAX(fval(1),one)
+            ! Assume 1 and 2 are D and T
+            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                            hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                            NI5D(1,1,1,1,1),nr,nphi,nz)
+            nd_temp = max(fval(1),zero)
          ELSE
             RETURN
          END IF
@@ -1060,7 +1067,7 @@ MODULE beams3d_physics_mod
 
          reactrate = 1E-6*CARR(1)*theta*SQRT(eta/(mrc2*ti_temp*ti_temp*ti_temp))*EXP(-3*eta)
 
-         reactrate = reactrate*0.125*ne_temp*ne_temp/(ze_temp*ze_temp)
+         reactrate = reactrate*nd_temp*nd_temp*0.5
 
          RETURN
 
@@ -1096,7 +1103,7 @@ MODULE beams3d_physics_mod
          !        ict        Spline output control
          !        fval       Spline output array
          !--------------------------------------------------------------
-         DOUBLE PRECISION :: r_temp, z_temp, phi_temp, ne_temp, &
+         DOUBLE PRECISION :: r_temp, z_temp, phi_temp, nd_temp, &
                              ti_temp, ze_temp, zeta, theta, eta
          ! For splines
          INTEGER :: i,j,k
@@ -1125,7 +1132,7 @@ MODULE beams3d_physics_mod
          z_temp   = q(3)
 
          ! Initialize values
-         ti_temp = 0; ne_temp = 0; reactrate = 0
+         ti_temp = 0; nd_temp = 0; reactrate = 0
 
          ! Check that we're inside the domain then proceed
          IF ((r_temp >= rmin-eps1) .and. (r_temp <= rmax+eps1) .and. &
@@ -1140,16 +1147,16 @@ MODULE beams3d_physics_mod
             ! Evaluate the Splines
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                            NE4D(1,1,1,1),nr,nphi,nz)
-            ne_temp = max(fval(1),zero)
-            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
-                            hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             TI4D(1,1,1,1),nr,nphi,nz)
             ti_temp = max(fval(1),zero)
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             ZEFF4D(1,1,1,1),nr,nphi,nz)
             ze_temp = MAX(fval(1),one)
+            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                            hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                            NI5D(1,1,1,1,1),nr,nphi,nz)
+            nd_temp = max(fval(1),zero)
          ELSE
             RETURN
          END IF
@@ -1162,8 +1169,7 @@ MODULE beams3d_physics_mod
 
          reactrate = 1E-6*CARR(1)*theta*SQRT(eta/(mrc2*ti_temp*ti_temp*ti_temp))*EXP(-3*eta)
 
-         reactrate = reactrate*0.125*ne_temp*ne_temp/(ze_temp*ze_temp)
-
+         reactrate = reactrate*nd_temp*nd_temp*0.5
          RETURN
 
       END SUBROUTINE beams3d_DDHe3RATE
