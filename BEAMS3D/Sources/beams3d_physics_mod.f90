@@ -13,7 +13,8 @@ MODULE beams3d_physics_mod
       USE stel_kinds, ONLY: rprec
       USE beams3d_runtime, ONLY: lneut, pi, pi2, dt, lverb, ADAS_ERR, &
                                  dt_save, lbbnbi, weight, ndt, &
-                                 ndt_max, npoinc, lendt_m, te_col_min
+                                 ndt_max, npoinc, lendt_m, te_col_min, &
+                                 NION
       USE beams3d_lines, ONLY: R_lines, Z_lines, PHI_lines, &
                                myline, mytdex, moment, ltherm, &
                                nsteps, nparticles, vll_lines, &
@@ -305,6 +306,7 @@ MODULE beams3d_physics_mod
          DOUBLE PRECISION :: rlocal(num_depo), plocal(num_depo), zlocal(num_depo)
          DOUBLE PRECISION :: tilocal(num_depo), telocal(num_depo), nelocal(num_depo)
          DOUBLE PRECISION :: zefflocal(num_depo)
+         DOUBLE PRECISION :: nilocal(4,num_depo)
          DOUBLE PRECISION :: tau_inv(num_depo), energy(num_depo)
          DOUBLE PRECISION :: sigvii(num_depo), sigvcx(num_depo), sigvei(num_depo)
          ! For splines
@@ -313,8 +315,8 @@ MODULE beams3d_physics_mod
          INTEGER, parameter :: ict(8)=(/1,0,0,0,0,0,0,0/)
          REAL*8 :: fval(1)
          ! For Suzuki
-         INTEGER :: A_IN(1), Z_IN(1)
-         DOUBLE PRECISION :: ni_in(1)
+         INTEGER :: A_IN(NION), Z_IN(NION)
+         DOUBLE PRECISION :: ni_in(NION)
 
          !--------------------------------------------------------------
          !     Begin Subroutine

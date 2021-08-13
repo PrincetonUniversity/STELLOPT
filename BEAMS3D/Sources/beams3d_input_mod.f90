@@ -146,7 +146,6 @@
       NI_AUX_F = 0
       NI_AUX_Z = 0
       NI_AUX_M = 0
-      nion = 1
       npoinc = 1
       follow_tol   = 1.0D-7
       vc_adapt_tol = 1.0D-5
@@ -252,7 +251,6 @@
 
          ! Handle multiple ion species
          IF (ANY(NI_AUX_S >0)) THEN
-            nion = COUNT(NI_AUX_Z>0)
             nzeff = 0
             DO WHILE ((NI_AUX_S(nzeff+1) >= 0.0).and.(nzeff<MAXPROFLEN))
                nzeff = nzeff + 1
@@ -260,18 +258,27 @@
             ! Now calc Zeff(1)
             DO i1 = 1, nzeff
                ZEFF_AUX_S(i1) = NI_AUX_S(i1)
-               ZEFF_AUX_F(i1) = SUM(NI_AUX_F(1:4,i1)*NI_AUX_Z(1:4)*NI_AUX_Z(1:4))/SUM(NI_AUX_F(1:4,i1)*NI_AUX_Z(1:4))
+               ZEFF_AUX_F(i1) = SUM(NI_AUX_F(:,i1)*NI_AUX_Z(:)*NI_AUX_Z(:))/SUM(NI_AUX_F(:,i1)*NI_AUX_Z(:))
             END DO
-            plasma_mass = SUM(NI_AUX_F(1:4,1)*NI_AUX_M*NI_AUX_M)/(SUM(NI_AUX_F(1:4,1)*NI_AUX_M))
-            plasma_Zavg = SUM(NI_AUX_F(1:4,1)*NI_AUX_Z*NI_AUX_Z)/(SUM(NI_AUX_F(1:4,1)*NI_AUX_Z)) ! Note this is just Zeff
-            plasma_Zmean = SUM(NI_AUX_F(1:4,1)*NI_AUX_Z*NI_AUX_Z*NI_AUX_M)/plasma_mass
-         ELSEIF (nzeff < 2) THEN
-            nion = 1
+            plasma_mass = SUM(NI_AUX_F(:,1)*NI_AUX_M*NI_AUX_M)/(SUM(NI_AUX_F(:,1)*NI_AUX_M))
+            plasma_Zavg = SUM(NI_AUX_F(:,1)*NI_AUX_Z*NI_AUX_Z)/(SUM(NI_AUX_F(:,1)*NI_AUX_Z)) ! Note this is just Zeff
+            plasma_Zmean = SUM(NI_AUX_F(:,1)*NI_AUX_Z*NI_AUX_Z*NI_AUX_M)/plasma_mass
+         ELSEIF (nne > 0) THEN ! Ni=Ne, Z=Zeff
+            nzeff = nne
+            NI_AUX_S = NE_AUX_S
+            NI_AUX_F(1,:) = NE_AUX_F ! NI=NE
+            NI_AUX_Z(1) = NINT(plasma_Zavg)
+            NI_AUX_M(1) = plasma_mass
+            DO i1 = 1, nzeff
+               ZEFF_AUX_S(i1) = NI_AUX_S(i1)
+               ZEFF_AUX_F(i1) = SUM(NI_AUX_F(:,i1)*NI_AUX_Z(:)*NI_AUX_Z(:))/SUM(NI_AUX_F(:,i1)*NI_AUX_Z(:))
+            END DO
+         ELSE
             nzeff = 6
             ZEFF_AUX_S(1:6) = (/0.0,0.2,0.4,0.6,0.8,1.0/)
             ZEFF_AUX_F(1:6) = (/1.0,1.0,1.0,1.0,1.0,1.0/)
-            NI_AUX_M(1) = plasma_mass
-            NI_AUX_Z(1) = 1.0
+            NI_AUX_S(1:6)   = (/0.0,0.2,0.4,0.6,0.8,1.0/)
+            NI_AUX_F(:,1:6) = 0
          END IF
 
          nparticles = 0
