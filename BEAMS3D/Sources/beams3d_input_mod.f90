@@ -75,7 +75,7 @@
                                r_beams, z_beams, phi_beams, TE_AUX_S, &
                                TE_AUX_F, NE_AUX_S, NE_AUX_F, TI_AUX_S, &
                                TI_AUX_F, POT_AUX_S, POT_AUX_F, &
-                               NI_AUX_S, NI_AUX_F, &
+                               NI_AUX_S, NI_AUX_F, NI_AUX_Z, NI_AUX_M, &
                                ZEFF_AUX_S, ZEFF_AUX_F, P_beams, &
                                ldebug, ne_scale, te_scale, ti_scale, &
                                zeff_scale, plasma_mass, plasma_Zavg, &
@@ -262,7 +262,7 @@
             END DO
             plasma_mass = SUM(NI_AUX_F(:,1)*NI_AUX_M*NI_AUX_M)/(SUM(NI_AUX_F(:,1)*NI_AUX_M))
             plasma_Zavg = SUM(NI_AUX_F(:,1)*NI_AUX_Z*NI_AUX_Z)/(SUM(NI_AUX_F(:,1)*NI_AUX_Z)) ! Note this is just Zeff
-            plasma_Zmean = SUM(NI_AUX_F(:,1)*NI_AUX_Z*NI_AUX_Z*NI_AUX_M)/plasma_mass
+            plasma_Zmean = SUM(NI_AUX_F(:,1)*NI_AUX_Z*NI_AUX_Z*NI_AUX_M)/(SUM(NI_AUX_F(:,1)*NI_AUX_Z)*plasma_mass)
          ELSEIF (nne > 0) THEN ! Ni=Ne, Z=Zeff
             nzeff = nne
             NI_AUX_S = NE_AUX_S
