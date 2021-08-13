@@ -138,7 +138,8 @@ MODULE beams3d_runtime
                                             POT_AUX_S, POT_AUX_F, ZEFF_AUX_S, ZEFF_AUX_F
     REAL(rprec), DIMENSION(MAXPROFLEN) :: NI_AUX_S
     REAL(rprec), DIMENSION(NION,MAXPROFLEN) :: NI_AUX_F
-    INTEGER, DIMENSION(NION) :: NI_AUX_Z, NI_AUX_M
+    INTEGER, DIMENSION(NION) :: NI_AUX_Z
+    REAL(rprec), DIMENSION(NION) :: NI_AUX_M
     REAL(rprec), DIMENSION(MAXPARTICLES) :: r_start_in, phi_start_in, z_start_in, vll_start_in, &
                                             & mu_start_in, charge_in, Zatom_in, mass_in, t_end_in
     REAL(rprec), ALLOCATABLE :: R_start(:), phi_start(:), Z_start(:), vll_start(:), v_neut(:,:), mu_start(:), &

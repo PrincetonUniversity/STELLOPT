@@ -397,7 +397,7 @@
             CALL EZspline_free(ZEFF_spl,ier)
          END IF
          ! Handle the NI array separately (Use NE_spl since it should be free now)
-         CALL mpialloc(NI5D, nion, 8, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_NI5D)
+         CALL mpialloc(NI5D, 8, nr, nphi, nz, NION, myid_sharmem, 0, MPI_COMM_SHARMEM, win_NI5D)
          IF (myid_sharmem == 0) THEN
             DO i = 1, NION
                CALL EZspline_init(NE_spl,nr,nphi,nz,bcs1,bcs2,bcs3,ier)
@@ -408,7 +408,7 @@
                NE_spl%x3   = zaxis
                CALL EZspline_setup(NE_spl,NI(i,:,:,:),ier,EXACT_DIM=.true.)
                IF (ier /=0) CALL handle_err(EZSPLINE_ERR,'beams3d_init: NI',ier)
-               NI5D(i,:,:,:,:) = NE_SPL%fspl
+               NI5D(:,:,:,:,i) = NE_SPL%fspl
                CALL EZspline_free(NE_spl,ier)
             END DO
          END IF

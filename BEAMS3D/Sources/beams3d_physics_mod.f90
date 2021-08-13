@@ -14,7 +14,7 @@ MODULE beams3d_physics_mod
       USE beams3d_runtime, ONLY: lneut, pi, pi2, dt, lverb, ADAS_ERR, &
                                  dt_save, lbbnbi, weight, ndt, &
                                  ndt_max, npoinc, lendt_m, te_col_min, &
-                                 NION
+                                 NION, NI_AUX_M, NI_AUX_Z
       USE beams3d_lines, ONLY: R_lines, Z_lines, PHI_lines, &
                                myline, mytdex, moment, ltherm, &
                                nsteps, nparticles, vll_lines, &
@@ -299,14 +299,14 @@ MODULE beams3d_physics_mod
          !     Local variables
          !--------------------------------------------------------------
          LOGICAL          :: ltest
-         INTEGER          :: ier, l
+         INTEGER          :: ier, l, m
          DOUBLE PRECISION :: rinv, phi_temp, dt_local, ti_temp, ne_temp,&
                              s_temp, x0, y0, z0, xw, yw, zw, te_temp, Zeff_temp
          DOUBLE PRECISION :: qf(3),qs(3),qe(3)
          DOUBLE PRECISION :: rlocal(num_depo), plocal(num_depo), zlocal(num_depo)
          DOUBLE PRECISION :: tilocal(num_depo), telocal(num_depo), nelocal(num_depo)
          DOUBLE PRECISION :: zefflocal(num_depo)
-         DOUBLE PRECISION :: nilocal(4,num_depo)
+         DOUBLE PRECISION :: nilocal(NION,num_depo)
          DOUBLE PRECISION :: tau_inv(num_depo), energy(num_depo)
          DOUBLE PRECISION :: sigvii(num_depo), sigvcx(num_depo), sigvei(num_depo)
          ! For splines
@@ -473,14 +473,19 @@ MODULE beams3d_physics_mod
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             NE4D(1,1,1,1),nr,nphi,nz)
             nelocal(l) = MAX(fval(1),zero)
-            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+            !CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+            !                hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+            !                ZEFF4D(1,1,1,1),nr,nphi,nz)
+            !zefflocal(l) = MAX(fval(1),zero)
+            DO m = 1, NION
+               CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                            ZEFF4D(1,1,1,1),nr,nphi,nz)
-            zefflocal(l) = MAX(fval(1),zero)
+                            NI5D(1,1,1,1,m),nr,nphi,nz)
+               nilocal(m,l) = MAX(fval(1),zero)
+            END DO
          END DO
          tilocal = tilocal*1D-3
          telocal = telocal*1D-3
-         zeff_temp = SUM(zefflocal)/DBLE(num_depo)
          tau_inv = zero
          
          IF (lsuzuki) THEN
@@ -489,18 +494,19 @@ MODULE beams3d_physics_mod
             !     Note: 10^18<ne<10^21
             !           E(keV/amu)/100 < Te < E(keV/amu)/2
             !--------------------------------------------------------------
-            !Z_in(1)  = NINT(mycharge/e_charge)
-            A_in(1)  = NINT(plasma_mass*inv_dalton)
-            energy   = energy/(e_charge*A_in(1)) ! keV/amu
+            A_in = NINT(NI_AUX_M*inv_dalton)
+            Z_in = NI_AUX_Z
+            energy   = energy/(e_charge*mymass*inv_dalton) ! keV/amu
             DO l = 1, num_depo
                nelocal(l)  = MAX(MIN(nelocal(l),1E21),1E18)
                telocal(l)  = MAX(MIN(telocal(l),energy(l)*0.5),energy(l)*0.01)
-               ni_in(1) = nelocal(l)/zefflocal(l)
-               Z_in(1)  = NINT(zefflocal(l))
-               CALL suzuki_sigma(1,energy(l),nelocal(l),telocal(l),ni_in,A_in,Z_in,tau_inv(l))
+               ni_in = nilocal(:,l)
+               CALL suzuki_sigma(NION,energy(l),nelocal(l),telocal(l),ni_in,A_in,Z_in,tau_inv(l))
             END DO
             tau_inv = tau_inv*nelocal*ABS(q(4))*1E-4 !cm^2 to m^2 for sigma
          ELSE
+            zefflocal = MATMUL(NI_AUX_Z*NI_AUX_Z,NILOCAL)/MATMUL(NI_AUX_Z,NILOCAL)
+            zeff_temp = SUM(zefflocal)/DBLE(num_depo)
             !--------------------------------------------------------------
             !     USE ADAS to calcualte ionization rates
             !--------------------------------------------------------------
