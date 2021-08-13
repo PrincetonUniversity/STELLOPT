@@ -893,7 +893,7 @@ MODULE beams3d_physics_mod
          !        fval       Spline output array
          !--------------------------------------------------------------
          DOUBLE PRECISION :: r_temp, z_temp, phi_temp, &
-                             ti_temp, ze_temp, zeta, theta, eta, &
+                             ti_temp, zeta, theta, eta, &
                              nd_temp, nt_temp
          ! For splines
          INTEGER :: i,j,k
@@ -939,10 +939,6 @@ MODULE beams3d_physics_mod
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             TI4D(1,1,1,1),nr,nphi,nz)
             ti_temp = max(fval(1),zero)
-            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
-                            hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                            ZEFF4D(1,1,1,1),nr,nphi,nz)
-            ze_temp = MAX(fval(1),one)
             ! Assume 1 and 2 are D and T
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
@@ -1000,7 +996,7 @@ MODULE beams3d_physics_mod
          !        fval       Spline output array
          !--------------------------------------------------------------
          DOUBLE PRECISION :: r_temp, z_temp, phi_temp, &
-                             ti_temp, ze_temp, zeta, theta, eta, &
+                             ti_temp, zeta, theta, eta, &
                              nd_temp
          ! For splines
          INTEGER :: i,j,k
@@ -1046,10 +1042,6 @@ MODULE beams3d_physics_mod
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             TI4D(1,1,1,1),nr,nphi,nz)
             ti_temp = max(fval(1),zero)
-            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
-                            hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                            ZEFF4D(1,1,1,1),nr,nphi,nz)
-            ze_temp = MAX(fval(1),one)
             ! Assume 1 and 2 are D and T
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
@@ -1104,7 +1096,7 @@ MODULE beams3d_physics_mod
          !        fval       Spline output array
          !--------------------------------------------------------------
          DOUBLE PRECISION :: r_temp, z_temp, phi_temp, nd_temp, &
-                             ti_temp, ze_temp, zeta, theta, eta
+                             ti_temp, zeta, theta, eta
          ! For splines
          INTEGER :: i,j,k
          REAL*8 :: xparam, yparam, zparam
@@ -1149,10 +1141,6 @@ MODULE beams3d_physics_mod
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             TI4D(1,1,1,1),nr,nphi,nz)
             ti_temp = max(fval(1),zero)
-            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
-                            hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                            ZEFF4D(1,1,1,1),nr,nphi,nz)
-            ze_temp = MAX(fval(1),one)
             CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                             hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                             NI5D(1,1,1,1,1),nr,nphi,nz)
