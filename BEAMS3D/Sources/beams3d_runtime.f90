@@ -124,7 +124,7 @@ MODULE beams3d_runtime
                ldepo, lbeam_simple, ldebug, lcollision, lw7x, lsuzuki, &
                lascot, lascot4, lbbnbi, lvessel_beam, lascotfl, lrandomize, &
                lfusion, lfusion_alpha, leqdsk, lhint, lkick
-    INTEGER :: nextcur, npoinc, nbeams, nparticles_start, nprocs_beams, ndt, ndt_max
+    INTEGER :: nextcur, npoinc, nbeams, nparticles_start, nprocs_beams, ndt, ndt_max, nion
     INTEGER, DIMENSION(MAXBEAMS) :: Dex_beams
     INTEGER, ALLOCATABLE :: beam(:)
     REAL(rprec) :: dt, follow_tol, pi, pi2, invpi2, mu0, to3, dt_save, &
@@ -135,6 +135,9 @@ MODULE beams3d_runtime
     REAL(rprec), DIMENSION(MAXBEAMS, 2) :: r_beams, z_beams, phi_beams
     REAL(rprec), DIMENSION(MAXPROFLEN) :: TE_AUX_S, TE_AUX_F, NE_AUX_S, NE_AUX_F, TI_AUX_S, TI_AUX_F,&
                                             POT_AUX_S, POT_AUX_F, ZEFF_AUX_S, ZEFF_AUX_F
+    REAL(rprec), DIMENSION(MAXPROFLEN) :: NI_AUX_S
+    REAL(rprec), DIMENSION(4,MAXPROFLEN) :: NI_AUX_F
+    INTEGER, DIMENSION(4) :: NI_AUX_Z, NI_AUX_M
     REAL(rprec), DIMENSION(MAXPARTICLES) :: r_start_in, phi_start_in, z_start_in, vll_start_in, &
                                             & mu_start_in, charge_in, Zatom_in, mass_in, t_end_in
     REAL(rprec), ALLOCATABLE :: R_start(:), phi_start(:), Z_start(:), vll_start(:), v_neut(:,:), mu_start(:), &
