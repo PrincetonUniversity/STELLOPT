@@ -69,7 +69,6 @@ SUBROUTINE beams3d_follow
     DOUBLE PRECISION, PARAMETER :: sqrt_pi       = 1.7724538509   !pi^(1/2)
     DOUBLE PRECISION, PARAMETER :: e_charge      = 1.60217662E-19 !e_c
 
-!    DOUBLE PRECISION, PARAMETER :: lendt_m = 0.05  ! Maximum length to travel before updating physics [m]
     !-----------------------------------------------------------------------
     !     External Functions
     !          fpart_nag            RHS of ODE integrator (for NAG)    for BEAMS3D
@@ -95,7 +94,7 @@ SUBROUTINE beams3d_follow
     tf_max = t_end(i)
 
     ! Calculate timestep for integration
-    vel_max = MAXVAL(ABS(vll_start))
+    vel_max = MAX(MAXVAL(ABS(vll_start)),1E6)
     dt = SIGN(MAX(lendt_m/vel_max,1D-9),tf_max)
 
     ! Calculate number of integration timesteps per output timestep
@@ -181,6 +180,7 @@ SUBROUTINE beams3d_follow
     ! Some helpers
     fact_vsound = 1.5*sqrt(e_charge/plasma_mass)*therm_factor
     fact_crit = SQRT(2*e_charge/plasma_mass)*(0.75*sqrt_pi*sqrt(plasma_mass/electron_mass))**(1.0/3.0) ! Wesson pg 226 5.4.9
+    fact_kick = pi2*2*SQRT(pi*1E-7*plasma_mass)*E_kick*freq_kick
 
     ! Follow Trajectories
     IF (mystart <= nparticles) THEN
@@ -205,6 +205,7 @@ SUBROUTINE beams3d_follow
                     moment = mu_start(l)
                     my_end = t_end(l)
                     fact_pa   = plasma_mass*plasma_Zavg/(mymass*plasma_Zmean)
+                    fact_coul = myZ*plasma_Zavg*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
                     myv_neut(:) = v_neut(:,myline)
                     IF (lbeam) lneut = .TRUE.
                     CALL out_beams3d_nag(tf_nag,q)
@@ -264,6 +265,7 @@ SUBROUTINE beams3d_follow
                     moment = mu_start(l)
                     my_end = t_end(l)
                     fact_pa   = plasma_mass*plasma_Zavg/(mymass*plasma_Zmean)
+                    fact_coul = myZ*plasma_Zavg*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
                     myv_neut(:) = v_neut(:,myline)
                     IF (lbeam) lneut = .TRUE.
                     CALL out_beams3d_nag(tf_nag,q)
@@ -348,6 +350,7 @@ SUBROUTINE beams3d_follow
                     moment = mu_start(l)
                     my_end = t_end(l)
                     fact_pa   = plasma_mass*plasma_Zavg/(mymass*plasma_Zmean)
+                    fact_coul = myZ*plasma_Zavg*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
                     myv_neut(:) = v_neut(:,myline)
                     ! Setup timestep
                     !CALL beams3d_calc_dt(q,moment,mymass,dt)
@@ -440,13 +443,11 @@ SUBROUTINE beams3d_follow
        CALL MPI_REDUCE(MPI_IN_PLACE, epower_prof, nbeams*ns_prof1, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
        CALL MPI_REDUCE(MPI_IN_PLACE, ipower_prof, nbeams*ns_prof1, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
        CALL MPI_REDUCE(MPI_IN_PLACE,   ndot_prof, nbeams*ns_prof1, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
-       CALL MPI_REDUCE(MPI_IN_PLACE,      j_prof, nbeams*ns_prof1, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
     ELSE
        CALL MPI_REDUCE(end_state,     end_state,     nparticles,          MPI_INTEGER, MPI_MAX, master, MPI_COMM_SHARMEM, ierr_mpi)
        CALL MPI_REDUCE(epower_prof, epower_prof, nbeams*ns_prof1, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
        CALL MPI_REDUCE(ipower_prof, ipower_prof, nbeams*ns_prof1, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
        CALL MPI_REDUCE(ndot_prof,     ndot_prof, nbeams*ns_prof1, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
-       CALL MPI_REDUCE(j_prof,           j_prof, nbeams*ns_prof1, MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_SHARMEM, ierr_mpi)
     END IF
 
     i = MPI_UNDEFINED
@@ -457,7 +458,6 @@ SUBROUTINE beams3d_follow
        CALL MPI_ALLREDUCE(MPI_IN_PLACE, epower_prof, nbeams*ns_prof1, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
        CALL MPI_ALLREDUCE(MPI_IN_PLACE, ipower_prof, nbeams*ns_prof1, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
        CALL MPI_ALLREDUCE(MPI_IN_PLACE,   ndot_prof, nbeams*ns_prof1, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
-       CALL MPI_ALLREDUCE(MPI_IN_PLACE,      j_prof, nbeams*ns_prof1, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)
        ! This only works becasue of how FORTRAN orders things.
        DO l = 1, ns_prof5
           CALL MPI_ALLREDUCE(MPI_IN_PLACE, dist5d_prof(:,:,:,:,:,l), nbeams*ns_prof1*ns_prof2*ns_prof3*ns_prof4, MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_LOCAL, ierr_mpi)

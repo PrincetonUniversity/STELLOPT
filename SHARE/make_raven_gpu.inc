@@ -1,3 +1,20 @@
+######################################################################
+#            Modules to be used
+#            Load using following commands before running compile
+#            Also set correct machine name
+######################################################################
+# module purge
+# module load git
+# module load nvhpcsdk/21
+# module load impi/2021.2
+# module load mkl
+# module load hdf5-mpi/1.10.7
+# module load netcdf-mpi/4.7.0
+# module load intel/19.1.3
+# module load anaconda
+
+# export MACHINE="raven_gpu"
+
 #######################################################################
 #            Define Basic Utilities
 #######################################################################
@@ -5,37 +22,40 @@
   PWD1 = `pwd`
   MYHOME = $(HOME)/bin
   PRECOMP:= fpp -C -P -DLINUX
-  COMPILE = ifort
-  COMPILE_FREE = ifort
-  LINK    = ftn -Bstatic -o
+  COMPILE = nvfortran
+  COMPILE_FREE = nvfortran
+  LINK    = ifort -Bstatic -o
   LINK_AR = ar -ruv
   LINK_C  = icc -shared -Wl,-z-defs
 
 #######################################################################
 #            Define Compiler Flags
 #######################################################################
-  FLAGS_R = -I$(MKL_HOME)/include -O2 -fp-model strict -ip \
-            -assume noold_unit_star -xCORE-AVX512 -qopt-zmm-usage=high
-  FLAGS_D = -I$(MKL_HOME)/include -O2 -fp-model strict -ip \
-            -assume noold_unit_star -g -traceback -xCORE-AVX512 -qopt-zmm-usage=high
-  LIBS    = -Wl,-rpath,$(MKL_HOME)/lib/intel64 \
-            -L$(MKL_HOME)/lib/intel64 -lmkl_scalapack_lp64 \
-            -lmkl_intel_lp64 -lmkl_core -lmkl_sequential \
-            -lmkl_blacs_intelmpi_lp64  -lpthread -lm -lpthread
-
+  FLAGS_R = -I$(MKL_HOME)/include -O2 -Kieee  \
+            -Mnodefaultunit -mp=gpu -Minfo=mp -gpu=cuda11.2,cc80
+  FLAGS_D = -I$(MKL_HOME)/include -O2 -Kieee  \
+            -Mnodefaultunit -g -traceback -mp=gpu -Minfo=mp -gpu=cuda11.2,cc80
+  LIBS    =  ${MKLROOT}/lib/intel64/libmkl_blas95_lp64.a \
+             ${MKLROOT}/lib/intel64/libmkl_lapack95_lp64.a \
+             ${MKLROOT}/lib/intel64/libmkl_scalapack_lp64.a \
+             -Wl,--start-group ${MKLROOT}/lib/intel64/libmkl_intel_lp64.a \
+             ${MKLROOT}/lib/intel64/libmkl_sequential.a \
+             ${MKLROOT}/lib/intel64/libmkl_core.a \
+             ${MKLROOT}/lib/intel64/libmkl_blacs_intelmpi_lp64.a \
+             -Wl,--end-group -lpthread -lm -ldl
 #######################################################################
 #            MPI Options
 #######################################################################
   LMPI    = T
-  MPI_COMPILE = mpiifort
-  MPI_COMPILE_FREE = mpiifort
-  MPI_COMPILE_C = mpiifort
-  MPI_LINK = mpiifort
+  MPI_COMPILE = mpipgfortran
+  MPI_COMPILE_FREE = mpipgfortran
+  MPI_COMPILE_C = mpipgfortran
+  MPI_LINK = mpipgfortran
   MPI_RUN  = srun
-  MPI_RUN_OPTS = --nodes=1 --ntasks-per-node=40 --time=0:30:00 -p express
-  MPI_RUN_OPTS_SM   = --nodes=1 --ntasks-per-node=40 --time=0:30:00 -p express
-  MPI_RUN_OPTS_MD   = --nodes=8 --ntasks-per-node=40 --time=0:30:00 -p express
-  MPI_RUN_OPTS_LG   = --nodes=32 --ntasks-per-node=40 --time=0:30:00 -p express
+  MPI_RUN_OPTS = --nodes=1 --ntasks-per-node=72 --time=0:30:00 -p express
+  MPI_RUN_OPTS_SM   = --nodes=1 --ntasks-per-node=72 --time=0:30:00 -p express
+  MPI_RUN_OPTS_MD   = --nodes=8 --ntasks-per-node=72 --time=0:30:00 -p express
+  MPI_RUN_OPTS_LG   = --nodes=32 --ntasks-per-node=72 --time=0:30:00 -p express
 
 #######################################################################
 #            NAG Options
@@ -49,9 +69,6 @@
   LNETCDF = T
   NETCDF_INC = $(shell nc-config --fflags)
   NETCDF_LIB = $(shell nc-config --flibs)
-#  NETCDF_INC = -I$(NETCDF_HOME)/include 
-#  NETCDF_LIB = -Wl,-rpath,$(NETCDF_HOME)/lib -L$(NETCDF_HOME)/lib \
-#               -lnetcdf -lnetcdff 
 
 #######################################################################
 #            HDF5 Options
@@ -129,7 +146,7 @@
   LIB_TRAVIS = libtravis64_sopt.a
   LIB_MCONF  = libmconf64.a
   TRAVIS_LIB = $(TRAVIS_DIR)/lib/$(LIB_TRAVIS) \
-               $(TRAVIS_DIR)/mag_conf/lib/$(LIB_MCONF) -lstdc++
+               $(TRAVIS_DIR)/magconf/lib/$(LIB_MCONF) -lstdc++
 
 #######################################################################
 #            SFINCS Options
@@ -152,7 +169,5 @@
 #######################################################################
 #            LIBSTELL Shared Options
 #######################################################################
-  LIB_SHARE = $(LIBS) $(NETCDF_LIB) $(HDF5_LIB) \
-             -lifport -lifcoremt -limf -lm -lc \
-             -lpthread -lirc -lunwind -lirc_s
+  LIB_SHARE = $(LIBS) $(NETCDF_LIB) $(HDF5_LIB) 
 

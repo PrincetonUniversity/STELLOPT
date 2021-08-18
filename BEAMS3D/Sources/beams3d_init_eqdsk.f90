@@ -27,7 +27,7 @@
                                  ZEFF_spl_s, nzeff, ZEFF_ARR, req_axis, zeq_axis, &
                                  phiedge_eq, reff_eq
       USE beams3d_lines, ONLY: GFactor, ns_prof1
-      USE wall_mod, ONLY: wall_load_seg, wall_info,vertex,face, wall_dump
+      USE wall_mod, ONLY: wall_load_seg
       USE mpi_params
       USE mpi_inc
 !-----------------------------------------------------------------------
@@ -107,10 +107,10 @@
          k = 128
          ier = 0
          IF (lplasma_only) THEN
-            CALL wall_load_seg(nbndry,xbndry,zbndry,k,ier,COMM=MPI_COMM_LOCAL)
+            CALL wall_load_seg(nbndry,xbndry,zbndry,k,ier,VERB=lverb,COMM=MPI_COMM_LOCAL)
             IF (ier==-327) WRITE(6,'(A)') 'ERROR: EQDSK Boundary has repeated index.'
          ELSE
-            CALL wall_load_seg(nlim,xlim,zlim,k,ier,COMM=MPI_COMM_LOCAL)
+            CALL wall_load_seg(nlim,xlim,zlim,k,ier,VERB=lverb,COMM=MPI_COMM_LOCAL)
             IF (ier==-327) WRITE(6,'(A)') 'ERROR: EQDSK Limiter has repeated index.'
          END IF
          ier = 0
