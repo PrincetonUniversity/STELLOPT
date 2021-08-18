@@ -98,7 +98,9 @@
                    lverb=.false.
                case ("-vac")     ! Vacuum Fields Only
                    lvac=.true.
-               case ("-plasma") ! Plasma Field only
+               case ("-pres")    ! Calculate and output pressure 
+                   lpres=.true.
+               case ("-plasma") ! Plasma Region only
                    lplasma_only = .true.
                case ("-axis")
                    laxis_i  = .true.
@@ -267,6 +269,8 @@
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_main',ierr_mpi)
       CALL MPI_BCAST(lvac,1,MPI_LOGICAL, master, MPI_COMM_FIELDLINES,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_main',ierr_mpi)
+      CALL MPI_BCAST(lpres,1,MPI_LOGICAL, master, MPI_COMM_FIELDLINES,ierr_mpi)
+      IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_main',ierr_mpi)
       CALL MPI_BCAST(laxis_i,1,MPI_LOGICAL, master, MPI_COMM_FIELDLINES,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BCAST_ERR,'fieldlines_main',ierr_mpi)
       CALL MPI_BCAST(lmu,1,MPI_LOGICAL, master, MPI_COMM_FIELDLINES,ierr_mpi)
@@ -336,13 +340,14 @@
       
 
       ! Clean up
-      IF (lvessel) CALL wall_free(ier)
+      IF (lvessel) CALL wall_free(ier, MPI_COMM_FIELDLINES)
       IF (ASSOCIATED(raxis)) CALL mpidealloc(raxis,win_raxis)
       IF (ASSOCIATED(phiaxis)) CALL mpidealloc(phiaxis,win_phiaxis)
       IF (ASSOCIATED(zaxis)) CALL mpidealloc(zaxis,win_zaxis)
       IF (ASSOCIATED(B_R)) CALL mpidealloc(B_R,win_B_R)
       IF (ASSOCIATED(B_PHI)) CALL mpidealloc(B_PHI,win_B_PHI)
       IF (ASSOCIATED(B_Z)) CALL mpidealloc(B_Z,win_B_Z)
+      IF (ASSOCIATED(PRES_G).and.lpres) CALL mpidealloc(PRES_G,win_PRES)
       IF (ASSOCIATED(BR4D)) CALL mpidealloc(BR4D,win_BR4D)
       IF (ASSOCIATED(BZ4D)) CALL mpidealloc(BZ4D,win_BZ4D)
       IF (ASSOCIATED(MU4D)) CALL mpidealloc(MU4D,win_MU4D)
