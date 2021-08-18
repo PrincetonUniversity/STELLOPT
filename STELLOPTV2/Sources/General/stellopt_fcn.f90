@@ -283,6 +283,7 @@
       IF (iflag < -2) THEN
          IF (ier_paraexe<0) THEN
             PRINT *, "Previous calculations not succeed on exit!"
+            iflag = 0
             RETURN
          ENDIF 
          CALL stellopt_clean_up(ncnt,iflag)
