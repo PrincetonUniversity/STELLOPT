@@ -15,7 +15,7 @@
 #            Define Compiler Flags
 #######################################################################
   # temp add some checking flags to avoid BEAMS3d issues
-  FLAGS_R = -O2 -fexternal-blas -g -fbacktrace -fcheck=all 
+  FLAGS_R = -O2 -fexternal-blas -g -fbacktrace 
   FLAGS_D = -g -O0 -fexternal-blas -fcheck=all -fbacktrace -Wextra \
    -Wtarget-lifetime -fbounds-check -ffpe-trap=zero -finit-real=snan
 
