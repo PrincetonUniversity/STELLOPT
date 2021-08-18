@@ -281,6 +281,10 @@
 
       ! Handle cleanup
       IF (iflag < -2) THEN
+         IF (ier_paraexe<0) THEN
+            PRINT *, "Previous calculations not succeed on exit!"
+            RETURN
+         ENDIF 
          CALL stellopt_clean_up(ncnt,iflag)
          iflag = 0
          ! Now normalize arrays otherwise we'll be multiplying by normalizations on next iteration for non-varied quantities

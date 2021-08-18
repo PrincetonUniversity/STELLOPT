@@ -114,7 +114,7 @@
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
-      IF (ier_paraexe /= 0) RETURN
+      IF (TRIM(in_parameter_1) /= 'exit' .and. ier_paraexe /= 0) RETURN
       code_str = TRIM(in_parameter_1)
       file_str = TRIM(in_parameter_2)
       ierr_mpi = 0
