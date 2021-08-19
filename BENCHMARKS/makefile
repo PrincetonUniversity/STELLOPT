@@ -94,6 +94,7 @@ test_beams3d:
 	$(MAKE) test_beams3d_depo
 	$(MAKE) test_beams3d_eqdsk
 	$(MAKE) test_beams3d_fusion
+	$(MAKE) test_beams3d_multiion
 	@echo "Tesing of BEAMS3D complete"
 	@echo ""
 
