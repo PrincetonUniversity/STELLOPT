@@ -313,7 +313,9 @@
                WHERE(rtemp(:,2,1) < 0.03) rtemp(:,2,1)=0.03
                WHERE(rtemp(:,4,1) < 0.03) rtemp(:,4,1)=0.03
                WHERE(rtemp(:,3,1) < 1.0E10) rtemp(:,3,1)=1.0E10
-               WHERE(rtemp(:,5,1) < 1.0E10) rtemp(:,5,1)=1.0E10
+               DO i = 1, nion_local
+                  WHERE(rtemp(:,i+4,1) < 1.0E10) rtemp(:,i+4,1)=1.0E10
+               END DO
                CALL write_var_hdf5( qid_gid, 'rho',          nr, ier, DBLVAR=rtemp(1:nr,1,1))
                CALL write_var_hdf5( qid_gid, 'etemperature', nr, ier, DBLVAR=rtemp(1:nr,2,1))
                CALL write_var_hdf5( qid_gid, 'edensity',     nr, ier, DBLVAR=rtemp(1:nr,3,1))
