@@ -294,6 +294,8 @@
             ZEFF_AUX_F(1:6) = (/1.0,1.0,1.0,1.0,1.0,1.0/)
             NI_AUX_S(1:6)   = (/0.0,0.2,0.4,0.6,0.8,1.0/)
             NI_AUX_F(:,1:6) = 0
+            NI_AUX_Z(1) = NINT(plasma_Zavg)
+            NI_AUX_M(1) = plasma_mass
          END IF
 
          nparticles = 0
