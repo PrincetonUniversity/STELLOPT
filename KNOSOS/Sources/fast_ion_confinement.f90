@@ -642,7 +642,7 @@ SUBROUTINE FAST_ION_JMAP(vs,is,ns,nalpha,nalphab,nlambda,lambda,i_p,npoint,&
   USE KNOSOS_STELLOPT_MOD  
   IMPLICIT NONE
   !Input
-  INTEGER ns,nalpha,nalphab,nlambda,i_p(nlambda,nalpha,nalphab),npoint
+  INTEGER is,ns,nalpha,nalphab,nlambda,i_p(nlambda,nalpha,nalphab),npoint
   REAL*8 vs(ns),thetap(nalpha,nalphab),theta(nalphab)
   REAL*8 lambda(nlambda)
   REAL*8 BI1(npoint),BI3(npoint),BI4(npoint),BI6(npoint),zlw(npoint),zrw(npoint)
