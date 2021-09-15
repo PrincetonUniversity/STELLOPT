@@ -197,6 +197,13 @@ fieldlines_init_coil.o: \
       fieldlines_grid.o
       
 
+fieldlines_init_errorfield.o: \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
+      fieldlines_runtime.o \
+      fieldlines_grid.o
+      
+
 fieldlines_init_I.o: \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
       ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \

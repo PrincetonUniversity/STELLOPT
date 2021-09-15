@@ -28,7 +28,8 @@
       REAL(rprec) :: xlast,ylast,zlast ! for storing position
       REAL(rprec) :: moment, mycharge, myZ, mymass, myv_neut(3), my_end, &
                      rand_prob, cum_prob, tau, next_t, &
-                     partvmax, fact_crit, fact_pa, fact_vsound, &
+                     partvmax, fact_crit, fact_pa, fact_vsound, fact_kick, &
+                     fact_coul, &
                      partpmax, h2_prof, h3_prof, h4_prof, h5_prof
       LOGICAL, ALLOCATABLE     :: neut_lines(:,:)
       INTEGER, ALLOCATABLE     :: end_state(:)

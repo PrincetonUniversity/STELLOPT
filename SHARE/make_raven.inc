@@ -7,22 +7,25 @@
   PRECOMP:= fpp -C -P -DLINUX
   COMPILE = ifort
   COMPILE_FREE = ifort
-  LINK    = ftn -Bstatic -o
+  LINK    = ifort -Bstatic -o
   LINK_AR = ar -ruv
   LINK_C  = icc -shared -Wl,-z-defs
 
 #######################################################################
 #            Define Compiler Flags
 #######################################################################
-  FLAGS_R = -I$(MKL_HOME)/include -O2 -fp-model strict -ip \
+  FLAGS_R = -I${MKLROOT}/include/intel64/lp64 -I$(MKL_HOME)/include -O2 -fp-model strict -ip \
             -assume noold_unit_star -xCORE-AVX512 -qopt-zmm-usage=high
-  FLAGS_D = -I$(MKL_HOME)/include -O2 -fp-model strict -ip \
+  FLAGS_D = -I${MKLROOT}/include/intel64/lp64 -I$(MKL_HOME)/include -O2 -fp-model strict -ip \
             -assume noold_unit_star -g -traceback -xCORE-AVX512 -qopt-zmm-usage=high
-  LIBS    = -Wl,-rpath,$(MKL_HOME)/lib/intel64 \
-            -L$(MKL_HOME)/lib/intel64 -lmkl_scalapack_lp64 \
-            -lmkl_intel_lp64 -lmkl_core -lmkl_sequential \
-            -lmkl_blacs_intelmpi_lp64  -lpthread -lm -lpthread
-
+  LIBS    =  ${MKLROOT}/lib/intel64/libmkl_blas95_lp64.a \
+             ${MKLROOT}/lib/intel64/libmkl_lapack95_lp64.a \
+             ${MKLROOT}/lib/intel64/libmkl_scalapack_lp64.a \
+             -Wl,--start-group ${MKLROOT}/lib/intel64/libmkl_intel_lp64.a \
+             ${MKLROOT}/lib/intel64/libmkl_sequential.a \
+             ${MKLROOT}/lib/intel64/libmkl_core.a \
+             ${MKLROOT}/lib/intel64/libmkl_blacs_intelmpi_lp64.a \
+             -Wl,--end-group -lpthread -lm -ldl
 #######################################################################
 #            MPI Options
 #######################################################################
@@ -32,10 +35,10 @@
   MPI_COMPILE_C = mpiifort
   MPI_LINK = mpiifort
   MPI_RUN  = srun
-  MPI_RUN_OPTS = --nodes=1 --ntasks-per-node=96 --time=0:30:00 -p express
-  MPI_RUN_OPTS_SM   = --nodes=1 --ntasks-per-node=96 --time=0:30:00 -p express
-  MPI_RUN_OPTS_MD   = --nodes=8 --ntasks-per-node=96 --time=0:30:00 -p express
-  MPI_RUN_OPTS_LG   = --nodes=32 --ntasks-per-node=96 --time=0:30:00 -p express
+  MPI_RUN_OPTS = --nodes=1 --ntasks-per-node=72 --time=0:30:00 -p express
+  MPI_RUN_OPTS_SM   = --nodes=1 --ntasks-per-node=72 --time=0:30:00 -p express
+  MPI_RUN_OPTS_MD   = --nodes=8 --ntasks-per-node=72 --time=0:30:00 -p express
+  MPI_RUN_OPTS_LG   = --nodes=32 --ntasks-per-node=72 --time=0:30:00 -p express
 
 #######################################################################
 #            NAG Options
