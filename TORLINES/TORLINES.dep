@@ -72,9 +72,6 @@ follow.o: \
 jacobian_lsode.o:
 
 
-fzero.o:
-
-
 Map_v.o: \
       torlines_background.o
       
