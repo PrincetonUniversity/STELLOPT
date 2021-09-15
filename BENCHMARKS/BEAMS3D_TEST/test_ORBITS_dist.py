@@ -6,10 +6,10 @@ from math import pi
 from libstell.beams3d import read_beams3d
 
 try:
-	qtCreatorPath=os.environ["STELLOPT_PATH"]
+    qtCreatorPath=os.environ["STELLOPT_PATH"]
 except KeyError:
-	print("Please set environment variable STELLOPT_PATH")
-	sys.exit(1)
+    print("Please set environment variable STELLOPT_PATH")
+    sys.exit(1)
 
 lfail = 0
 failtol = 5.0

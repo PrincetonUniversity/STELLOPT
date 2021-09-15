@@ -536,7 +536,8 @@ C-----------------------------------------------
       hj = eps * MAX(ABS(r01(ns)), ABS(z01(ns)))
       IF (nranks .GT. 1) THEN
          CALL MPI_BCAST(hj,1,MPI_REAL8,lastrank,NS_COMM,MPI_ERR)
-         CALL MPI_BCAST(edge_mesh,3,MPI_REAL8,lastrank,NS_COMM,MPI_ERR)
+         CALL MPI_BCAST(edge_mesh,3,MPI_LOGICAL,lastrank,NS_COMM,              &
+     &                  MPI_ERR)
       END IF
       DO js = mystart(1), myend(1), 3
          xcdot(n_2d,m_2d,js,ntype_2d) = hj

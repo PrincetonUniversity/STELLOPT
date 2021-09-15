@@ -20,7 +20,6 @@ read_eqdsk_mod.o \
 vmec_ohkawa.o \
 common_factor.o \
 suzuki_sigma.o \
-wall_mod_new.o \
 adas_mod_parallel.o \
 sort.o \
 str_length.o \

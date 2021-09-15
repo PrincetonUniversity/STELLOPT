@@ -20,16 +20,21 @@
 !     Local Variables
 !-----------------------------------------------------------------------
       LOGICAL, DIMENSION(:), ALLOCATABLE :: lmask
-      INTEGER ::                  i, j, n1, n2, d1, d2, n, m, mfft, &
-                                  nfft, mpol, ntor
+      INTEGER ::                  d1, d2, n, m, mfft, &
+                                  nfft, mpol, ntor, mn
       INTEGER, DIMENSION(:), ALLOCATABLE :: idex
       REAL(rprec) :: x_old, y_old, norm
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: r, z, p, x, y, r0, z0, &
                                                 th, dth, nth, tth, &
                                                 xth, yth, dr, arr1, arr2, &
                                                 raxis, zaxis
-      REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: x2d, y2d, dx2d, dy2d, &
-                                                  x_new, y_new, rmnc, zmns
+      REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: dx2d, dy2d, &
+                                                  x_new, y_new, rmnc, zmns, &
+                                                  r_temp,z_temp
+
+      INTEGER :: i,j,n1,n2,nHull,nPoints,k
+      REAL, DIMENSION(:,:), ALLOCATABLE :: Points, Hull
+      REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: x2d, y2d
 
 #if defined(FFTW3)
       ! FFTW3
@@ -51,68 +56,30 @@
       FORALL(j=0:i-1) r0(j+1) = R_lines(1,j)
       FORALL(j=0:i-1) z0(j+1) = Z_lines(1,j)
 
-      PRINT *,R_lines(1,0),r0(1:npoinc+2)
-
-!      DO j =1, nsteps
-!         WRITE(325,*) r(j),z(j)
-!      END DO
-
-      ! Calc helpers
-      x = r-r0
-      y = z-z0
-      th = atan2(y,x)
-      dth(1:i-1)=th(2:i)-th(1:i-1)
-      th(1) = 0
-      DO i = 2, nsteps
-         th(i) = th(i-1)+dth(i-1)
-      END DO
-
-!      DO j =1, nsteps
-!         WRITE(326,*) x(j),y(j)
-!      END DO
-
-      ! Sort the data in 2D grid
+      ! Sort into toroidal cutplanes
       n1 = nsteps/npoinc
       n2 = npoinc
-      ALLOCATE(lmask(n1))
-      ALLOCATE(idex(n1))
-      ALLOCATE(tth(n1),xth(n1),yth(n1),dr(n1),arr1(n1))
       ALLOCATE(x2d(n1,n2),y2d(n1,n2))
-      DO i = 1, n2
-         d1 = 1
-         DO j = i, nsteps-1, npoinc
-            xth(d1) = x(j)
-            yth(d1) = y(j)
-            d1 = d1 + 1
-            IF (d1 > n1) EXIT
-         END DO
-         tth=atan2(yth,xth)
-         WHERE(tth<0) tth = tth + pi2
-         CALL SORT(n1,tth,idex)
-         DO j = 1, n1
-            arr1(j) = xth(idex(j))
-         END DO
-         xth = arr1
-         DO j = 1, n1
-            arr1(j) = yth(idex(j))
-         END DO
-         yth = arr1
-         x2d(1,i) = xth(1)
-         y2d(1,i) = yth(1)
-         x_old = xth(1)
-         y_old = yth(1)
-         lmask = .TRUE.
-         lmask(1) = .FALSE.
-         DO j = 2, n1
-            dr = (xth-x_old)**2+(yth-y_old)**2
-            d1 = MINLOC(dr,1,MASK=lmask)
-            x2d(j,i) = xth(d1)
-            y2d(j,i) = yth(d1)
-            x_old = xth(d1)
-            y_old = yth(d1)
-            lmask(d1) = .false.
+      k=1
+      DO i=1,n1
+         DO j=1,n2
+            x2d(i,j) = r(k)
+            y2d(i,j) = z(k)
+            k=k+1
          END DO
       END DO
+
+      ! Now extract the convex hull for each
+      nPoints = n1
+      ALLOCATE(Points(2,0:n1-1),Hull(2,0:n1))
+      DO j=1,n2
+         Points(1,0:n1-1) = x2d(1:n1,j)
+         Points(2,0:n1-1) = y2d(1:n1,j)
+         CALL ConvHull(n1,Points,nHull,Hull)
+         x2d(1:n1,j) = Hull(1,0:n1-1)
+         y2d(1:n1,j) = Hull(2,0:n1-1)
+      END DO
+      DEALLOCATE(Points,Hull)
 
       DO j =1, n1
          WRITE(321,*) x2d(j,:)
@@ -126,78 +93,38 @@
          WRITE(327,*) x2d(j,1),y2d(j,1)
       END DO
 
-      ! Now we calculate a poloidal like angle
-      ALLOCATE(dx2d(n1,n2),dy2d(n1,n2))
-      dx2d=0; dy2d=0;
-      DO i = 1, n1-1
-         dx2d(i,:)=x2d(i+1,:)-x2d(i,:)
-         dy2d(i,:)=y2d(i+1,:)-y2d(i,:)
+      ! Try a Manual DFT
+      mfft = m/2+1
+      nfft = 2*(DBLE(n)/2+1)
+      ALLOCATE(r_temp(n,0:mfft-1),z_temp(n,0:mfft-1))
+      ALLOCATE(rmnc(-n/2:n/2,0:mfft-1),zmns(-n/2:n/2,0:mfft-1))
+      r_temp = 0; z_temp=0;
+      DO i = 1, n1
+         DO j=1, n2
+            DO mn = 0, mfft-1
+               r_temp(j,mn) = r_temp(j,mn) + x2d(i,j)*COS(mn*pi2*DBLE(i-1)/(n1))
+               z_temp(j,mn) = z_temp(j,mn) + y2d(i,j)*SIN(mn*pi2*DBLE(i-1)/(n1))
+            END DO
+         END DO
       END DO
-      dx2d = SQRT(dx2d*dx2d+dy2d*dy2d)
-      dy2d = 0
-      DO i = 2, n1
-         dy2d(i,:) = dy2d(i-1,:)+dx2d(i-1,:)
-      END DO
-      DO i = 1, n2
-         dy2d(:,i) = dy2d(:,i)/MAXVAL(dy2d(:,i),1)
-      END DO
-
-      DO j =1, n1
-         WRITE(328,*) dx2d(j,1),dy2d(j,1)
-      END DO
-
-      ! Now calculated new 2D grid
-      m = 256
-      n = npoinc
-      ALLOCATE(nth(m),arr2(m))
-      ALLOCATE(x_new(m,n),y_new(m,n))
-      FORALL(i=1:m) nth(i) = DBLE(i-1)/DBLE(256)
-      DO i = 1, n-1
-         xth = dy2d(:,i)
-         yth = x2d(:,i)
-         CALL spline_it(n1,xth,yth,m,nth,arr2,0)
-         x_new(:,i) = arr2
-         yth = y2d(:,i)
-         CALL spline_it(n1,xth,yth,m,nth,arr2,0)
-         y_new(:,i) = arr2
+      DO mn = -n/2, n/2
+         DO i=0, mfft-1
+            DO j = 1, n
+               rmnc(mn,i) = rmnc(mn,i) + r_temp(j,i)*COS(-mn*pi2*DBLE(j-1)/(n))
+               zmns(mn,i) = zmns(mn,i) + r_temp(j,i)*SIN(-mn*pi2*DBLE(j-1)/(n))
+            END DO
+         END DO
       END DO
 
-      ! Make sure we start at max x
-      DO i = 1, n-1
-         arr2 = x_new(:,i)
-         j = MAXLOC(arr2,1)
-         IF (j >1) THEN
-            d1 = m-j+1
-            d2 = d1 + 1
-            arr2(1:d1)   = x_new(j:m,i)
-            arr2(d2:m) = x_new(1:j-1,i)
-            x_new(:,i)   = arr2
-            arr2(1:d1)   = y_new(j:m,i)
-            arr2(d2:m) = y_new(1:j-1,i)
-            y_new(:,i)    = arr2
-         END IF
-      END DO
-      x_new(:,n2) = x_new(:,1)
-      y_new(:,n2) = y_new(:,1)
-
-      DO j = 1, n
-         x_new(:,j) = x_new(:,j) + r0(j)
-         y_new(:,j) = y_new(:,j) + z0(j)
+      DO j = 0, mfft-1
+         DO i = -n/2, n/2
+            IF ((j.eq.0) .and. (i<0)) CYCLE
+            WRITE(555,'(2(2X,A,I4,A,I3,A,EN18.10))') 'RBC(',i,',',j,') = ', rmnc(i,j),'  ZBS(',i,',',j,') = ', zmns(i,j)
+         END DO
       END DO
 
-      DO j =1, m
-         WRITE(329,*) x_new(j,1),y_new(j,1)
-      END DO
 
-      DO j =1, m
-         WRITE(401,*) x_new(j,:)
-      END DO
-
-      DO j =1, m
-         WRITE(402,*) y_new(j,:)
-      END DO
-
-#if defined(FFTW3)
+#if defined(FFTW3a)
       ! axis
       nfft = (n)/2+1
       PRINT *,'------------'
@@ -334,3 +261,85 @@
 !     End Subroutine
 !-----------------------------------------------------------------------    
       END SUBROUTINE fieldlines_calc_surface_fit
+
+
+
+SUBROUTINE ConvHull(nPoints,Points,nHull,Hull)
+! IMPLICIT VARIABLE HANDLING
+IMPLICIT NONE 
+!------------------------------------------------
+! INPUT VARIABLES
+INTEGER,INTENT(IN)  :: nPoints
+REAL,INTENT(IN)     :: Points(2,0:nPoints-1)
+!------------------------------------------------
+! OUTPUT VARIABLES
+INTEGER,INTENT(OUT) :: nHull
+! NOTE: allocate Hull always one point greater than Points, because we save the first value twice
+REAL,INTENT(OUT)    :: Hull(2,0:nPoints)
+!------------------------------------------------
+! LOCAL VARIABLES
+REAL                :: Lower(2,0:nPoints-1)
+REAL                :: Upper(2,0:nPoints-1)
+INTEGER             :: i,iLower,iUpper
+!================================================
+IF(nPoints.LE.1)THEN
+  Hull  = Points
+  nHull = nPoints
+ELSE
+  iLower = 0
+  Lower  = -HUGE(1.)
+  DO i=0,nPoints-1
+    DO WHILE(iLower.GE.2.AND.Cross(Lower(:,iLower-2),Lower(:,iLower-1),Points(:,i)).LE.0.)
+      Lower(:,iLower) = -HUGE(1.)
+      iLower          = iLower - 1
+    END DO
+    Lower(:,iLower) = Points(:,i)
+    iLower = iLower + 1
+  END DO
+
+  iUpper = 0
+  Upper  = HUGE(1.)
+  DO i=nPoints-1,0,-1
+    DO WHILE(iUpper.GE.2.AND.Cross(Upper(:,iUpper-2),Upper(:,iUpper-1),Points(:,i)).LE.0.)
+      Upper(:,iUpper) = HUGE(1.)
+      iUpper          = iUpper - 1
+    END DO
+    Upper(:,iUpper) = Points(:,i)
+    iUpper = iUpper + 1
+  END DO
+
+  iLower = iLower-1
+  iUpper = iUpper-1
+  nHull  = iLower+iUpper+1
+  
+  ! NOTE: Initialize Hull with zeros
+  Hull   = 0.
+
+  ! NOTE: save values in Hull
+  Hull(:,0     :iLower       -1) = Lower(:,0:iLower-1)
+  Hull(:,iLower:iLower+iUpper-1) = Upper(:,0:iUpper-1)
+
+  ! NOTE: save first value twice
+  Hull(:,       iLower+iUpper  ) = Hull (:,0         )
+END IF
+
+
+CONTAINS
+FUNCTION Cross(v1,v2,v3)
+! IMPLICIT VARIABLE HANDLING
+IMPLICIT NONE
+!-----------------------------------------------
+! INPUT VARIABLES
+REAL,INTENT(IN) :: v1(2)    !< input vector 1
+REAL,INTENT(IN) :: v2(2)    !< input vector 2
+REAL,INTENT(IN) :: v3(2)    !< input vector 3
+!-----------------------------------------------
+! OUTPUT VARIABLES
+REAL            :: Cross    !< cross product
+!-----------------------------------------------
+! LOCAL VARIABLES
+!===============================================
+Cross=(v2(1)-v1(1))*(v3(2)-v1(2))-(v2(2)-v1(2))*(v3(1)-v1(1))
+END FUNCTION Cross
+
+END SUBROUTINE

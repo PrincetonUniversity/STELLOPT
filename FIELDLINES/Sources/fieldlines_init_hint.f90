@@ -16,7 +16,6 @@
                                  rmin, rmax, zmin, zmax, phimin, &
                                  phimax, vc_adapt_tol, B_R, B_Z, B_PHI,&
                                  BR_spl, BZ_spl
-      USE wall_mod, ONLY: wall_load_mn, wall_info,vertex,face
       USE read_hint_mod, ONLY: get_hint_grid, get_hint_B, get_hint_press, &
                                get_hint_maxp, read_hint_deallocate, &
                                get_hint_magaxis, get_hint_gridB
