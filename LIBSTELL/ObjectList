@@ -1,4 +1,5 @@
 ObjectFiles = \
+d1mach.o \
 dqag.o \
 dqage.o \
 dqagi.o \
