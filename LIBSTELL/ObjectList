@@ -1,4 +1,17 @@
 ObjectFiles = \
+dqag.o \
+dqage.o \
+dqagi.o \
+dqagie.o \
+dqelg.o \
+dqk15.o \
+dqk15i.o \
+dqk21.o \
+dqk31.o \
+dqk41.o \
+dqk51.o \
+dqk61.o \
+dqpsrt.o \
 fzero.o \
 gaunt_freefree.o \
 read_hint_mod.o \
@@ -241,7 +254,6 @@ daxpby.o \
 dutfx.o \
 dcuhre.o \
 smpint.o \
-dqag.o \
 mkbicubw.o \
 bcspgrid.o \
 vecspline.o \

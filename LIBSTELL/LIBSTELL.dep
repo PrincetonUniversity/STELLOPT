@@ -1,7 +1,7 @@
 # Microsoft Developer Studio Generated Dependency File, included by LIBSTELL.mak
       
 fzero.o : \
-      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o
+      stel_kinds.o
       
 gaunt_freefree.o : \
       stel_kinds.o
