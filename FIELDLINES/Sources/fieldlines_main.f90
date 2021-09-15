@@ -122,8 +122,6 @@
                    lraw = .true.
                case ("-emc3")
                    lemc3 = .true.
-               case ("-error")
-                   lerror_field = .true.
                case ("-vmec")
                    i = i + 1
                    lvmec = .true.
@@ -199,7 +197,6 @@
                   write(6,*)'     -auto          Auto calculate starting points'
                   write(6,*)'     -edge          Auto calculate starting points (from VMEC edge)'
                   write(6,*)'     -field         Output B-Field on Grid (no fieldlines)'
-                  write(6,*)'     -error         Added error field (fieldlines_init.f90)'
                   write(6,*)'     -modb          Saves |B| along field line trace'
                   write(6,*)'     -vecpot        Output Vector Potential on Grid (no fieldlines)'
                   write(6,*)'     -noverb        Supress all screen output'
@@ -343,7 +340,7 @@
       
 
       ! Clean up
-      IF (lvessel) CALL wall_free(ier)
+      IF (lvessel) CALL wall_free(ier, MPI_COMM_FIELDLINES)
       IF (ASSOCIATED(raxis)) CALL mpidealloc(raxis,win_raxis)
       IF (ASSOCIATED(phiaxis)) CALL mpidealloc(phiaxis,win_phiaxis)
       IF (ASSOCIATED(zaxis)) CALL mpidealloc(zaxis,win_zaxis)
