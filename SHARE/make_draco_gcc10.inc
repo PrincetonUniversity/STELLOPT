@@ -4,39 +4,43 @@
   SHELL = /bin/sh
   PWD1 = `pwd`
   MYHOME = $(HOME)/bin
-  PRECOMP:= fpp -C -P -DLINUX
-  COMPILE = ifort
-  COMPILE_FREE = ifort
-  LINK    = ftn -Bstatic -o
+  PRECOMP:= cpp -traditional -DLINUX
+  COMPILE = gfortran
+  COMPILE_FREE = gfortran -ffree-form -ffree-line-length-none \
+                          -ffixed-line-length-none
+  LINK    = gfortran -$(FLAGS) -o
   LINK_AR = ar -ruv
-  LINK_C  = icc -shared -Wl,-z-defs
+  LINK_C  = gcc -shared -Wl,-no_compact_unwind
 
 #######################################################################
 #            Define Compiler Flags
 #######################################################################
-  FLAGS_R = -I$(MKL_HOME)/include -O2 -fp-model strict -ip \
-            -assume noold_unit_star -xCORE-AVX512 -qopt-zmm-usage=high
-  FLAGS_D = -I$(MKL_HOME)/include -O2 -fp-model strict -ip \
-            -assume noold_unit_star -g -traceback -xCORE-AVX512 -qopt-zmm-usage=high
-  LIBS    = -Wl,-rpath,$(MKL_HOME)/lib/intel64 \
-            -L$(MKL_HOME)/lib/intel64 -lmkl_scalapack_lp64 \
-            -lmkl_intel_lp64 -lmkl_core -lmkl_sequential \
-            -lmkl_blacs_intelmpi_lp64  -lpthread -lm -lpthread
+  FLAGS_R = -I${MKLROOT}/include -O2 -fexternal-blas
+  FLAGS_D = -I${MKLROOT}/include -O0 -fexternal-blas -g -fbacktrace \
+            -fcheck=all -fbounds-check
+  LIBS    =  ${MKLROOT}/lib/intel64/libmkl_scalapack_ilp64.a \
+            -Wl,--start-group ${MKLROOT}/lib/intel64/libmkl_gf_ilp64.a \
+             ${MKLROOT}/lib/intel64/libmkl_sequential.a \
+             ${MKLROOT}/lib/intel64/libmkl_core.a \
+             ${MKLROOT}/lib/intel64/libmkl_blacs_intelmpi_ilp64.a \
+            -Wl,--end-group -lpthread -lm -ldl
+#  FLAGS_R += -fdefault-integer-8  -m64
+#  FLAGS_D += -fdefault-integer-8  -m64
 
 #######################################################################
 #            MPI Options
 #######################################################################
   LMPI    = T
-  MPI_COMPILE = mpiifort
-  MPI_COMPILE_FREE = mpiifort
-  MPI_COMPILE_C = mpiifort
-  MPI_LINK = mpiifort
-  MPI_RUN  = srun
-  MPI_RUN_OPTS = --nodes=1 --ntasks-per-node=40 --time=0:30:00 -p express
-  MPI_RUN_OPTS_SM   = --nodes=1 --ntasks-per-node=40 --time=0:30:00 -p express
-  MPI_RUN_OPTS_MD   = --nodes=8 --ntasks-per-node=40 --time=0:30:00 -p express
-  MPI_RUN_OPTS_LG   = --nodes=32 --ntasks-per-node=40 --time=0:30:00 -p express
-
+  MPI_COMPILE = mpigfortran
+  MPI_COMPILE_FREE = mpigfortran -ffree-form -ffree-line-length-none \
+                            -ffixed-line-length-none
+  MPI_COMPILE_C = mpigcc
+  MPI_LINK = mpigcc
+  MPI_RUN = srun
+  MPI_RUN_OPTS = --nodes=1 --ntasks-per-node=32 --time=0:30:00 -p express
+  MPI_RUN_OPTS_SM   = --nodes=1 --ntasks-per-node=32 --time=0:30:00 -p express
+  MPI_RUN_OPTS_MD   = --nodes=8 --ntasks-per-node=32 --time=0:30:00 -p express
+  MPI_RUN_OPTS_LG   = --nodes=16 --ntasks-per-node=32 --time=0:30:00 -p express
 #######################################################################
 #            NAG Options
 #######################################################################
@@ -49,9 +53,6 @@
   LNETCDF = T
   NETCDF_INC = $(shell nc-config --fflags)
   NETCDF_LIB = $(shell nc-config --flibs)
-#  NETCDF_INC = -I$(NETCDF_HOME)/include 
-#  NETCDF_LIB = -Wl,-rpath,$(NETCDF_HOME)/lib -L$(NETCDF_HOME)/lib \
-#               -lnetcdf -lnetcdff 
 
 #######################################################################
 #            HDF5 Options
@@ -61,14 +62,6 @@
   HDF5_INC = -I$(HDF5_HOME)/include 
   HDF5_LIB = -Wl,-rpath,$(HDF5_HOME)/lib -L$(HDF5_HOME)/lib \
              -lhdf5 -lhdf5_fortran -lhdf5_hl -lhdf5hl_fortran 
-
-#######################################################################
-#            FFTW3 Options
-#######################################################################
-  LFFTW3 = F
-  FFTW3_INC = -I$(FFTW_HOME)/include
-  FFTW3_LIB = -L$(FFTW_HOME)/lib -lfftw3 -lfftw3f \
-              -Wl,-rpath,$(FFTW_HOME)/lib
 
 #######################################################################
 #             PGPLOT Options
@@ -85,6 +78,14 @@
   SILO_LIB = -L$(SILO_DIR)/lib -lsilo
 
 #######################################################################
+#            FFTW3 Options
+#######################################################################
+  LFFTW3 = F
+  FFTW3_INC = -I$(FFTW_HOME)/include
+  FFTW3_LIB = -Wl,-rpath,$(FFTW_HOME)/lib -L$(FFTW_HOME)/lib \
+              -lfftw3 -lfftw3f 
+
+#######################################################################
 #            DKES/NEO Options
 #######################################################################
   LDKES = T
@@ -94,8 +95,8 @@
 #            GENE Options
 #######################################################################
   LGENE = F
-  GENE_DIR = $(GENE_PATH)/bin/obj_cobra
-  FUTILS_DIR = $(GENE_PATH)/external/cobra/futils-gene-mod/src
+  GENE_DIR = $(GENE_PATH)/bin/obj_draco
+  FUTILS_DIR = $(GENE_PATH)/external/draco/futils-gene-mod/src
   LIB_GENE = libgene.a
   LIB_FUTILS = libfutils.a
   GENE_INC = -I$(GENE_DIR) \
@@ -135,10 +136,23 @@
 #            SFINCS Options
 #######################################################################
   LSFINCS = F
+  SFINCS_DIR = $(SFINCS_PATH)/fortran/version3
   SFINCS_INC = -I$(SFINCS_DIR)
   LIB_SFINCS = libsfincs.a
+  SFINCS_LIB = $(SFINCS_DIR)/$(LIB_SFINCS) 
 
-  SFINCS_LIB = $(SFINCS_DIR)/$(LIB_SFINCS)
+#######################################################################
+#            MANGO Options
+#######################################################################
+
+LMANGO = F
+
+MANGO_DIR = /u/mlan/mango
+
+# If LMANGO=T, any flags specified in the next 2 lines will be added to MANGO_F_COMPILE_FLAGS and MANGO_F_LINK_FLAGS respectively
+# as defined in $(MANGO_DIR)/lib/mangoMakeVariables
+MANGO_INC=
+MANGO_LIB=
 
 #######################################################################
 #            REGCOIL Options
@@ -147,12 +161,10 @@
   REGCOIL_DIR = $(REGCOIL_PATH)
   REGCOIL_INC = -I$(REGCOIL_DIR) 
   LIB_REGCOIL = libregcoil.a
-  REGCOIL_LIB = $(REGCOIL_DIR)/$(LIB_REGCOIL) -fopenmp
+  REGCOIL_LIB = $(REGCOIL_DIR)/$(LIB_REGCOIL) -qopenmp
 
 #######################################################################
 #            LIBSTELL Shared Options
 #######################################################################
-  LIB_SHARE = $(LIBS) $(NETCDF_LIB) $(HDF5_LIB) \
-             -lifport -lifcoremt -limf -lm -lc \
-             -lpthread -lirc -lunwind -lirc_s
+  LIB_SHARE = $(LIBS) $(NETCDF_LIB) $(HDF5_LIB) 
 
