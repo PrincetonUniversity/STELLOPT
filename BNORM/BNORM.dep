@@ -60,10 +60,6 @@ bn_write_nescoil_input.o : \
       bnvariables.o \
       neswrite.o \
       ../../LIBSTELL/$(LOCTYPE)/safe_open_mod.o
-      
-      
-FZERO.o : \
-      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o
 
 
 Map_v.o : \

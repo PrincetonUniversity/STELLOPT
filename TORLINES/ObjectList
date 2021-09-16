@@ -19,7 +19,6 @@ follow.o \
 torlines_follow.o \
 backspace_out.o \
 torlines_gridtest.o \
-FZERO.o \
 scaleup_boundary.o \
 torlines_init_external.o \
 fblin_lsode.o \
