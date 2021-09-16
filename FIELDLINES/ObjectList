@@ -22,7 +22,6 @@ backspace_out.o \
 fieldlines_follow.o \
 fieldlines_input_mod.o \
 fieldlines_write_emc3.o \
-FZERO.o \
 out_fieldlines_nag.o \
 fieldlines_init.o \
 fieldlines_init_restart.o \
