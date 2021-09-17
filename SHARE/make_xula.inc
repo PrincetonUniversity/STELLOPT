@@ -144,24 +144,11 @@
 #            KNOSOS Options
 #######################################################################
   LKNOSOS = T
-  KNOSOS_PATH = ../../KNOSOS 
-  KNOSOS_INC = -I$(KNOSOS_PATH) 
-  KNOSOS_DIR = $(KNOSOS_PATH) 
-  LIB_KNOSOS = libknosos.a 
   KNOSOS_LIB = -lfftw3  
 
 #######################################################################
 #            STELLA Options
 #######################################################################
-  LSTELLA = T
-  STELLA_PATH= ../../STELLA 
-  STELLA_INC = -I$(STELLA_PATH) 
-  STELLA_DIR = $(STELLA_PATH) 
-  LIB_STELLA = libstella.a 
-#  STELLA_LIB = -lfftw3 #$(STELLA_DIR)/$(LIB_STELLA) \
-#       -L${PETSC_DIR}/lib -lpetsc \
-#       -L/${MKL_HOME}/lib/intel64 -mkl \
-#       -lfftw3 -Wl,-rpath,${MKL_HOME}/lib/intel64,-rpath,${PETSC_DIR}/lib
 
 #######################################################################
 #            GENE Options

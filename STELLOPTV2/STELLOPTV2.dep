@@ -362,7 +362,6 @@ chisq_knosos.o : \
 chisq_stella.o : \
       stellopt_runtime.o \
       stellopt_targets.o \
-      $(STELLA_DIR)/$(LOCTYPE)/stella_stellopt.o
 
 
 chisq_raderb00.o : \
