@@ -1,10 +1,10 @@
 #######################################################################
 #            Define Basic Utilities
 #######################################################################
-  SHELL = /bin/sh
+  SHELL = /bin/zsh
   PWD1 = `pwd`
   MYHOME = $(HOME)/bin
-  PRECOMP:= /lib/cpp -traditional -DLINUX
+  PRECOMP:= /usr/bin/cpp -traditional -DLINUX
   COMPILE = $(FC)
   COMPILE_FREE = $(FC) -ffree-form -ffree-line-length-none -ffixed-line-length-none
   LINK    = ld $(FLAGS) -o
@@ -14,19 +14,19 @@
 #######################################################################
 #            Define Compiler Flags
 #######################################################################
-  FLAGS_R = -O2 -fexternal-blas
-  FLAGS_D = -g -O0 -fexternal-blas -fbacktrace -fcheck=all 
-  LIBS    = -L/usr/lib -lblas -llapack -lscalapack-openmpi \
+  FLAGS_R = -O2 -fexternal-blas -fallow-argument-mismatch
+  FLAGS_D = -g -O0 -fexternal-blas -fbacktrace -fcheck=all -fallow-argument-mismatch
+  LIBS    = -L/usr/lib -lblas -llapack -lscalapack
 
 #######################################################################
 #            MPI Options
 #######################################################################
   LMPI    = T
-  MPI_COMPILE = mpif90.openmpi
+  MPI_COMPILE = mpif90
   MPI_COMPILE_FREE = mpif90 -ffree-form \
                      -ffree-line-length-none -ffixed-line-length-none
   MPI_COMPILE_C = mpicc.openmpi
-  MPI_LINK = mpif90.openmpi
+  MPI_LINK = mpif90
   MPI_RUN = mpiexec
   MPI_RUN_OPTS = -np 4
 #  MPI_RUN_OPTS_SM = -np 16
@@ -43,8 +43,8 @@
 #            NETCDF Options
 #######################################################################
   LNETCDF = T
-  NETCDF_INC = $(shell nc-config --fflags)
-  NETCDF_LIB = $(shell nc-config --flibs)
+  NETCDF_INC = -I/usr/include
+  NETCDF_LIB = -L/usr/lib -lnetcdf -lnetcdff
 
 #######################################################################
 #            NTCC Options
@@ -59,8 +59,8 @@
 #            HDF5 Options
 #######################################################################
   LHDF5 = T
-  HDF5_INC = -I/usr/include/hdf5/openmpi
-  HDF5_LIB = -L/usr/lib/x86_64-linux-gnu/hdf5/openmpi \
+  HDF5_INC = -I/usr/include
+  HDF5_LIB = -L/usr/lib \
              -lhdf5 -lhdf5hl_fortran -lhdf5_hl -lhdf5_fortran
 
 #######################################################################
