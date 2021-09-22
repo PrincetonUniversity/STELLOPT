@@ -247,10 +247,10 @@ ifeq ($(LSILO),T)
   LIB_SHARE += $(SILO_LIB)
 endif
 ifeq ($(LIMAS),T)
-#  MOD1_PATH += 
+  MOD1_PATH += $(IMAS_INC)
   PRECOMP += -DIMAS
-#  LIB_LINK += 
-#  LIB_SHARE += 
+  LIB_LINK += $(IMAS_LIB)
+  LIB_SHARE += $(IMAS_LIB)
 endif
 
 # This is hear because of MPI above resetting LINK
