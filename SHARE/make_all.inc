@@ -25,6 +25,8 @@ ifeq ($(LGENE),T)
              -L$(PETSC_HOME)/lib -lpetsc
 endif
 
+LIMAS?=F
+
 # Handle Which Code is being CALLED
 ifeq ($(MAKECMDGOALS),xstelloptv2)
   PRECOMP += -DBNORM -DBEAMS3D_OPT -DJINV_OPT -DTXPORT_OPT -DDIAGNO_OPT -DSKS  -DSKS2
@@ -243,6 +245,12 @@ ifeq ($(LSILO),T)
   PRECOMP += -DSILO_AVAI
   LIB_LINK += $(SILO_LIB)
   LIB_SHARE += $(SILO_LIB)
+endif
+ifeq ($(LIMAS),T)
+#  MOD1_PATH += 
+  PRECOMP += -DIMAS
+#  LIB_LINK += 
+#  LIB_SHARE += 
 endif
 
 # This is hear because of MPI above resetting LINK
