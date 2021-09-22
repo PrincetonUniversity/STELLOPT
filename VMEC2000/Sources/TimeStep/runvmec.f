@@ -5,7 +5,8 @@
      &                       norm_term_flag, successful_term_flag,
      &                       restart_flag, readin_flag,
      &                       timestep_flag, ns_error_flag,
-     &                       reset_jacdt_flag, lamscale
+     &                       reset_jacdt_flag, lamscale, readimas_flag,
+     &                       imas_read_flag
       USE realspace
       USE vmec_params, ONLY: ntmax
       USE vacmod, ONLY: nuv, nuv3
@@ -77,6 +78,7 @@ C-----------------------------------------------
 !                                             code will be skipped even if cleanup_flag is set, so that the run
 !                                             could be continued on the next call to runvmec.
 !             32       reset_jacdt_flag       Resets ijacobian flag and time step to delt0
+!             64       read_imas_flag         Data read from IMAS
 !
 !                  thus, setting ictrl_flag = 1+2+4+8+16 will perform ALL the tasks thru cleanup_flag
 !                  in addition, if ns_index = 0 and numsteps = 0 (see below), vmec will control its own run history
@@ -200,6 +202,23 @@ C-----------------------------------------------
 !
          CALL vsetup (iseq_count)
 
+         CALL readin (input_file, iseq_count, ier_flag, lscreen)
+         max_grid_size = ns_array(multi_ns_grid)
+
+         IF (ier_flag .NE. 0) GOTO 1000
+!
+!        COMPUTE NS-INVARIANT ARRAYS
+!
+         CALL fixaray
+      END IF
+
+      IF (IAND(ictrl_flag, readimas_flag) .NE. 0) THEN
+!
+!        IMAS PROVIDES DATA
+!
+         CALL vsetup (iseq_count)
+         
+         ier_flag = imas_read_flag
          CALL readin (input_file, iseq_count, ier_flag, lscreen)
          max_grid_size = ns_array(multi_ns_grid)
 
