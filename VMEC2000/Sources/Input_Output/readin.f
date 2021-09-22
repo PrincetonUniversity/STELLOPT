@@ -251,6 +251,12 @@ C-----------------------------------------------
       IF (ier_flag_init .EQ. more_iter_flag) GOTO 1000
 
 !
+!     Handle IMAS
+!
+      IF (ier_flag_init .EQ. imas_read_flag) ier_flag = imas_read_flag 
+
+
+!
 !     READ IN DATA FROM INDATA FILE
 !
       CALL read_indata(input_file, iunit, ier_flag)

@@ -1,4 +1,5 @@
 ObjectFiles = \
+vmec_imas.o \
 blocktridiagonalsolver_bst.o \
 blocktridiagonalsolver.o \
 forces.o \
