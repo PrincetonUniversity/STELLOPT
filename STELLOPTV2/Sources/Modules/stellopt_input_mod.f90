@@ -1234,7 +1234,7 @@
          WRITE(6,"(2X,A)") "=========    (D. V. ANDERSON, W. A. COOPER, R. GRUBER AND U. SCHWENN)   ========="
          WRITE(6,"(2X,A)") "=========                   wilfred.cooper@epfl.ch                      ========="
          WRITE(6,"(2X,A)") "================================================================================="
-         WRITE(6,*)        "    "
+         WRITE(6,*)        "    "         
       END IF
 !DEC$ ELSE
       IF (ANY(sigma_kink < bigno)) THEN
