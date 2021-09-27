@@ -68,9 +68,12 @@
 #            HDF5 Options
 #######################################################################
   LHDF5 = T
-#  PRECOMP+= -DHDF5_PAR
-  HDF5_INC = $(shell pkg-config hdf5-ifort --cflags)
-  HDF5_LIB = $(shell pkg-config hdf5-ifort --libs)
+  PRECOMP+= -DHDF5_PAR
+  HDF5_INC = -I$(HDF5_HOME)/include 
+  HDF5_LIB = -Wl,-rpath,$(HDF5_HOME)/lib -L$(HDF5_HOME)/lib \
+             -lhdf5 -lhdf5_fortran -lhdf5_hl -lhdf5hl_fortran
+#  HDF5_INC = $(shell pkg-config hdf5-ifort --cflags)
+#  HDF5_LIB = $(shell pkg-config hdf5-ifort --libs)
 
 #######################################################################
 #            FFTW3 Options
