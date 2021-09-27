@@ -3,11 +3,11 @@
 #######################################################################
   SHELL = /bin/sh
   PWD1 = `pwd`
-  MYHOME = $(HOME)/bin
+  MYHOME ?= $(HOME)/bin
   PRECOMP:= fpp -C -P -DLINUX
   COMPILE = ifort
   COMPILE_FREE = ifort
-  LINK    = ftn -Bstatic -o
+  LINK    = ifort -Bstatic -o
   LINK_AR = ar -ruv
   LINK_C  = icc -shared -Wl,-z-defs
 
@@ -17,12 +17,17 @@
   DIAG_DISABLE = -diag-disable=15009
   FLAGS_R = -O2 -fp-model strict -ip -assume noold_unit_star \
 		-axMIC-AVX512 $(DIAG_DISABLE) \
-		-I$(MKL_LIB)
+		$(shell pkg-config mkl-ifort --cflags)
   FLAGS_D = -g -traceback -O0 -fp-model strict -ip \
 		-assume noold_unit_star -axMIC-AVX512 $(DIAG_DISABLE) \
 		-I$(MKL_INC)
-  LIBS    = -L$(MKL_LIB)  -lmkl_intel_lp64 -lmkl_core -lmkl_sequential \
-		-lmkl_blacs_intelmpi_lp64 -lmkl_scalapack_lp64
+  # This is a workaround for broken pkg-config
+  MKLROOT ?= /cineca/prod/opt/compilers/intel/pe-xe-2017/binary/mkl
+  LIBS =  ${MKLROOT}/lib/intel64/libmkl_scalapack_ilp64.a \
+           -Wl,--start-group ${MKLROOT}/lib/intel64/libmkl_intel_ilp64.a \
+                             ${MKLROOT}/lib/intel64/libmkl_sequential.a ${MKLROOT}/lib/intel64/libmkl_core.a \
+                             ${MKLROOT}/lib/intel64/libmkl_blacs_intelmpi_ilp64.a -Wl,--end-group \
+           -lpthread -lm -ldl
 
 #######################################################################
 #            MPI Options
@@ -33,16 +38,16 @@
   MPI_COMPILE_C = mpiifort
   MPI_LINK = mpiifort
   MPI_RUN  = srun
-  MPI_RUN_OPTS = --partition=skl_fua_dbg \
+  MPI_RUN_OPTS = --partition=gwdbg \
 		--time=0:30:00
-  MPI_RUN_OPTS_SM   = $(MPI_RUN_OPTS) --nodes=1 --ntasks-per-node=24
+  MPI_RUN_OPTS_SM   = $(MPI_RUN_OPTS) --nodes=1 --ntasks-per-node=48
   MPI_RUN_OPTS_MD   = $(MPI_RUN_OPTS) --nodes=2 --ntasks-per-node=48
   MPI_RUN_OPTS_LG   = $(MPI_RUN_OPTS) --nodes=4 --ntasks-per-node=48
 
 #######################################################################
 #            IMAS Options
 #######################################################################
-  LIMAS = T
+  LIMAS = F
   IMAS_INC = $(shell pkg-config imas-ifort --cflags)
   IMAS_LIB = $(shell pkg-config imas-ifort --libs)
 
@@ -56,24 +61,23 @@
 #            NETCDF Options
 #######################################################################
   LNETCDF = T
-  NETCDF_INC = $(shell nc-config --fflags)
-  NETCDF_LIB = $(shell nc-config --flibs)
+  NETCDF_INC = $(shell pkg-config netcdf-fortran-ifort --cflags)
+  NETCDF_LIB = $(shell pkg-config netcdf-fortran-ifort --libs)
 
 #######################################################################
 #            HDF5 Options
 #######################################################################
   LHDF5 = T
-  PRECOMP+= -DHDF5_PAR
-  HDF5_INC = -I$(HDF5_HOME)/include 
-  HDF5_LIB = -Wl,-rpath,$(HDF5_HOME)/lib -L$(HDF5_HOME)/lib \
-             -lhdf5 -lhdf5_fortran -lhdf5_hl -lhdf5hl_fortran 
+#  PRECOMP+= -DHDF5_PAR
+  HDF5_INC = $(shell pkg-config hdf5-ifort --cflags)
+  HDF5_LIB = $(shell pkg-config hdf5-ifort --libs)
 
 #######################################################################
 #            FFTW3 Options
 #######################################################################
   LFFTW3 = T
-  FFTW3_INC = -I$(FFTW_HOME)/include
-  FFTW3_LIB = -L$(FFTW_HOME)/lib -lfftw3 -lfftw3f 
+  FFTW3_INC = $(shell pkg-config fftw3-ifort --cflags)
+  FFTW3_LIB = $(shell pkg-config fftw3-ifort --libs)
 
 #######################################################################
 #             PGPLOT Options
@@ -123,7 +127,7 @@
 #######################################################################
 #            TERPSICHORE Options
 #######################################################################
-  LTERPSICHORE= T
+  LTERPSICHORE= F
   TERPSICHORE_INC = -I$(TERPSICHORE_PATH)
   TERPSICHORE_DIR = $(TERPSICHORE_PATH)
   LIB_TERPSICHORE = libterpsichore.a
@@ -132,7 +136,7 @@
 #######################################################################
 #            TRAVIS Options
 #######################################################################
-  LTRAVIS= T
+  LTRAVIS= F
   TRAVIS_DIR = $(TRAVIS_PATH)/TRAVIS-src
   LIB_TRAVIS = libtravis64_sopt.a
   LIB_MCONF  = libmconf64.a
@@ -163,5 +167,5 @@
 #######################################################################
 #            LIBSTELL Shared Options
 #######################################################################
-  LIB_SHARE = $(LIBS) $(NETCDF_LIB) $(HDF5_LIB) 
+  LIB_SHARE = $(LIBS) 
 
