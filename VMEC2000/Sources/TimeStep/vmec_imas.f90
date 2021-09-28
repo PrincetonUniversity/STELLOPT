@@ -9,19 +9,20 @@
 MODULE VMEC_IMAS_MODULE
 #if defined(IMAS)
 
-   
+CONTAINS   
 !-----------------------------------------------------------------------
 !     SUBROUTINE:        VMEC_IMAS
 !     PURPOSE:           RUNS VMEC ASSUMING XML DEFINES RUN LIKE THE
 !                        NAMELIST
 !-----------------------------------------------------------------------
-SUBROUTINE VMEC_IMAS(IDS_EQ_OUT, INDATA, status_code, status_message)
+SUBROUTINE VMEC_IMAS(IDS_EQ_OUT, INDATA_XML, status_code, status_message)
   !---------------------------------------------------------------------
   !     Libraries
   !---------------------------------------------------------------------
   USE ids_schemas
   USE parallel_vmec_module
   USE parallel_include_module
+  USE vmec_params
 
   !---------------------------------------------------------------------
   !     INPUT/OUTPUT VARIABLES
@@ -32,7 +33,7 @@ SUBROUTINE VMEC_IMAS(IDS_EQ_OUT, INDATA, status_code, status_message)
   !---------------------------------------------------------------------
   IMPLICIT NONE
   TYPE(ids_equilibrium), INTENT(OUT) :: IDS_EQ_OUT
-  TYPE(ids_parameters_input), INTENT(IN) :: INDATA
+  TYPE(ids_parameters_input), INTENT(IN) :: INDATA_XML
   INTEGER, INTENT(OUT) :: status_code
   CHARACTER(LEN=:), POINTER, INTENT(OUT) :: status_message
 
@@ -40,7 +41,7 @@ SUBROUTINE VMEC_IMAS(IDS_EQ_OUT, INDATA, status_code, status_message)
   !     SUBROUTINE VARIABLES
   !---------------------------------------------------------------------
   LOGICAL :: lmpi_flag, lscreen
-  INTEGER :: impi_flag, ivmec_flag
+  INTEGER :: impi_flag, ivmec_flag, RVC_COMM
   INTEGER :: ictrl(5)
   CHARACTER(len = 128)    :: reset_string, filename
 
@@ -56,11 +57,14 @@ SUBROUTINE VMEC_IMAS(IDS_EQ_OUT, INDATA, status_code, status_message)
   PARVMEC = .TRUE.
 
   !----  MIMIC CALL InitializeParallel
-  CALL MPI_Comm_rank(MPI_COMM_WORLD,grank,MPI_ERR)
-  CALL MPI_Comm_size(MPI_COMM_WORLD,gnranks,MPI_ERR)
+  CALL MPI_Comm_rank(MPI_COMM_WORLD,grank,impi_flag)
+  CALL MPI_Comm_size(MPI_COMM_WORLD,gnranks,impi_flag)
+
+  !----  Duplicate the communicator
+  CALL MPI_COMM_DUP(MPI_COMM_WORLD,RVC_COMM,impi_flag)
   
   !----  Mimic Read_Indata
-  CALL VMEC_INDATA_IMAS(INDATA, status_code, status_message)
+  CALL VMEC_INDATA_IMAS(INDATA_XML, status_code, status_message)
 
   !----  Run VMEC
   ictrl(1) = restart_flag + readimas_flag + timestep_flag + output_flag &
@@ -72,7 +76,7 @@ SUBROUTINE VMEC_IMAS(IDS_EQ_OUT, INDATA, status_code, status_message)
   reset_string = ''
   filename=''
   RVCCALLNUM = 1
-  CALL runvmec(ictrl, extension(index_seq), lscreen, RVC_COMM, &
+  CALL runvmec(ictrl, filename, lscreen, RVC_COMM, &
                reset_string)
   ivmec_flag = ictrl(2)
 
@@ -92,7 +96,7 @@ END SUBROUTINE VMEC_IMAS
 !     SUBROUTINE:        VMEC_INDATA_IMAS
 !     PURPOSE:           Handles setting up the indata variables
 !-----------------------------------------------------------------------
-SUBROUTINE VMEC_INDATA_IMAS(INDATA, status_code, status_message)
+SUBROUTINE VMEC_INDATA_IMAS(INDATA_XML, status_code, status_message)
   !---------------------------------------------------------------------
   !     Libraries
   !---------------------------------------------------------------------
@@ -106,7 +110,7 @@ SUBROUTINE VMEC_INDATA_IMAS(INDATA, status_code, status_message)
   !        STATUS_MESSAGE : Text Message
   !---------------------------------------------------------------------
   IMPLICIT NONE
-  TYPE(ids_parameters_input), INTENT(IN) :: INDATA
+  TYPE(ids_parameters_input), INTENT(IN) :: INDATA_XML
   INTEGER, INTENT(OUT) :: status_code
   CHARACTER(LEN=:), POINTER, INTENT(OUT) :: status_message
 
@@ -114,7 +118,7 @@ SUBROUTINE VMEC_INDATA_IMAS(INDATA, status_code, status_message)
   !     SUBROUTINE VARIABLES
   !---------------------------------------------------------------------
   LOGICAL :: lmpi_flag, lscreen
-  INTEGER :: impi_flag, ivmec_flag
+  INTEGER :: impi_flag, ivmec_flag, iunit
   INTEGER :: ictrl(5)
   CHARACTER(len = 128)    :: reset_string
 
