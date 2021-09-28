@@ -3,10 +3,10 @@
 #######################################################################
   SHELL = /bin/sh
   PWD1 = `pwd`
-  MYHOME ?= $(HOME)/bin
+  MYHOME = /pfs/home/$(USER)/bin
   PRECOMP:= fpp -C -P -DLINUX
   COMPILE = ifort
-  COMPILE_FREE = ifort
+  COMPILE_FREE = ifort -free
   LINK    = ifort -Bstatic -o
   LINK_AR = ar -ruv
   LINK_C  = icc -shared -Wl,-z-defs
@@ -20,7 +20,7 @@
 		$(shell pkg-config mkl-ifort --cflags)
   FLAGS_D = -g -traceback -O0 -fp-model strict -ip \
 		-assume noold_unit_star -axMIC-AVX512 $(DIAG_DISABLE) \
-		-I$(MKL_INC)
+		$(shell pkg-config mkl-ifort --cflags)
   # This is a workaround for broken pkg-config
   MKLROOT ?= /cineca/prod/opt/compilers/intel/pe-xe-2017/binary/mkl
   LIBS =  ${MKLROOT}/lib/intel64/libmkl_scalapack_ilp64.a \
@@ -34,8 +34,8 @@
 #######################################################################
   LMPI    = T
   MPI_COMPILE = mpiifort
-  MPI_COMPILE_FREE = mpiifort
-  MPI_COMPILE_C = mpiifort
+  MPI_COMPILE_FREE = mpiifort -free
+  MPI_COMPILE_C = mpicc
   MPI_LINK = mpiifort
   MPI_RUN  = srun
   MPI_RUN_OPTS = --partition=gwdbg \
@@ -47,7 +47,7 @@
 #######################################################################
 #            IMAS Options
 #######################################################################
-  LIMAS = F
+  LIMAS = T
   IMAS_INC = $(shell pkg-config imas-ifort --cflags)
   IMAS_LIB = $(shell pkg-config imas-ifort --libs)
 
@@ -62,7 +62,7 @@
 #######################################################################
   LNETCDF = T
   NETCDF_INC = $(shell pkg-config netcdf-fortran-ifort --cflags)
-  NETCDF_LIB = $(shell pkg-config netcdf-fortran-ifort --libs)
+  NETCDF_LIB = $(shell pkg-config netcdf-fortran-ifort --libs) 
 
 #######################################################################
 #            HDF5 Options
@@ -149,7 +149,6 @@
 #######################################################################
 #            SFINCS Options
 #######################################################################
-
   LSFINCS = F
   SFINCS_DIR = $(SFINCS_PATH)
   SFINCS_INC = -I$(SFINCS_DIR) -I${PETSC_DIR}/include -I${PETSC_DIR}/${PETSC_ARCH}/include
