@@ -18,7 +18,7 @@
   FLAGS_R = -O2 -fp-model strict -ip -assume noold_unit_star \
 		-axMIC-AVX512 $(DIAG_DISABLE) \
 		$(shell pkg-config mkl-ifort --cflags)
-  FLAGS_D = -g -traceback -O0 -fp-model strict -ip \
+  FLAGS_D = -g -traceback -O0 -fp-model strict -ip -check all -fp-stack-check \
 		-assume noold_unit_star -axMIC-AVX512 $(DIAG_DISABLE) \
 		$(shell pkg-config mkl-ifort --cflags)
   # This is a workaround for broken pkg-config
@@ -40,9 +40,9 @@
   MPI_RUN  = srun
   MPI_RUN_OPTS = --partition=gwdbg \
 		--time=0:30:00
-  MPI_RUN_OPTS_SM   = $(MPI_RUN_OPTS) --nodes=1 --ntasks-per-node=48
+  MPI_RUN_OPTS_SM   = $(MPI_RUN_OPTS) --nodes=1 --ntasks-per-node=24
   MPI_RUN_OPTS_MD   = $(MPI_RUN_OPTS) --nodes=2 --ntasks-per-node=48
-  MPI_RUN_OPTS_LG   = $(MPI_RUN_OPTS) --nodes=4 --ntasks-per-node=48
+  MPI_RUN_OPTS_LG   = $(MPI_RUN_OPTS) --nodes=2 --ntasks-per-node=48
 
 #######################################################################
 #            IMAS Options
@@ -69,11 +69,11 @@
 #######################################################################
   LHDF5 = T
   PRECOMP+= -DHDF5_PAR
-  HDF5_INC = -I$(HDF5_HOME)/include 
-  HDF5_LIB = -Wl,-rpath,$(HDF5_HOME)/lib -L$(HDF5_HOME)/lib \
-             -lhdf5 -lhdf5_fortran -lhdf5_hl -lhdf5hl_fortran
-#  HDF5_INC = $(shell pkg-config hdf5-ifort --cflags)
-#  HDF5_LIB = $(shell pkg-config hdf5-ifort --libs)
+#  HDF5_INC = -I$(HDF5_HOME)/include 
+#  HDF5_LIB = -Wl,-rpath,$(HDF5_HOME)/lib -L$(HDF5_HOME)/lib \
+#             -lhdf5 -lhdf5_fortran -lhdf5_hl -lhdf5hl_fortran
+  HDF5_INC = $(shell pkg-config hdf5 --cflags)
+  HDF5_LIB = $(shell pkg-config hdf5 --libs)
 
 #######################################################################
 #            FFTW3 Options
