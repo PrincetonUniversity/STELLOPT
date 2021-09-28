@@ -98,6 +98,19 @@ should look like:
  POT_AUX_F  = 0.0 1.0 2.0           ! Electrostatic Potential [V] (Phi, not dPhi/dr)
  THERM_FACTOR = 1.5                 ! Factor at which to thermalize (Vtherm*THERM_FACTOR)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!            PLASMA PARAMETERS (MULTI-ION)                          !!
+!!     Note: This overrides the above profile deffintion             !!
+!!           of PLASMA_MASS, PLASMA_ZAVG, PLASMA_ZMEAN               !!
+!!           UNITS OF M [kg]; UNITS OF NI [m^-3]                     !!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  NI_AUX_Z = 1 1 2 6 ! D T He C
+  NI_AUX_M = 3.3435837724E-27 5.008267217094E-27 6.6464764063E-27 1.994423482E-26
+  NI_AUX_S =     0.0     0.2     0.4     0.6     0.8    1.0
+  NI_AUX_F(1,:) =  9.60E+18  8.00E+18  6.40E+18  4.80E+18  3.20E+18  1.60E+18
+  NI_AUX_F(2,:) =  9.60E+18  8.00E+18  6.40E+18  4.80E+18  3.20E+18  1.60E+18
+  NI_AUX_F(3,:) =  4.56E+18  3.80E+18  3.04E+18  2.28E+18  1.52E+18  7.60E+17
+  NI_AUX_F(4,:) =  2.40E+17  2.00E+17  1.60E+17  1.20E+17  8.00E+16  4.00E+16
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!            DISTRIBUTION FUNCTION                                  !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  NRHO_DIST   = 64                   ! Radial bins (0,1)
