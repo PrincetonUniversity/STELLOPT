@@ -54,6 +54,10 @@ xvmec2000:  $(LIB) $(ObjectFiles)
          $(COMPILE_FREE) $(FLAGS) $(MOD_PATH).. -c $<; \
       fi
       
+#Make the VMEC2000 library file
+libvmec.a : $(ObjectFiles)
+	ar -cruv libvmec.a $(ObjectFiles)
+
 #Check that library files are current. 
 $(LIB) :
 	@cd $(LIB_DIR); make $(TYPE)

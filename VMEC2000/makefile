@@ -48,3 +48,12 @@ static_release:
 	@echo "Static Release version - xvmec2000 - is now updated"
 	@echo "To free up space, delete all *.o files from Release"
 	@echo ""
+
+lib_release:
+	@echo "Beginning release compilation and linking of libvmec.a"
+	@cd $(REL); rm -f *.f *.f90 *.c; rm -f $(MAKE); ln -fs ../$(MAKE) .; make -f $(MAKE) libvmec.a FLAGS="$(FLAGS_R) $(MOD1_PATH)" TYPE="release" LOCTYPE="Release"
+	@rm -f $(REL)\*.f; rm -f $(REL)\*.f90
+	@echo "Release version - libvmec.a - is now updated"
+	@echo "To free up space, delete all *.o files from Release"
+	@echo ""
+
