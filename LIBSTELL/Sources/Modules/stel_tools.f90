@@ -2409,7 +2409,7 @@
       DOUBLE PRECISION    ::  zeta_p_dbl
       DOUBLE PRECISION    ::  kappa2_dbl
       s_dbl = s_val; u_dbl = u_val; v_dbl = v_val; phiedge_dbl = phiedge
-      zeta_p_dbl = deta_p
+      zeta_p_dbl = zeta_p
       CALL get_equil_kappa2_dbl(s_dbl,u_dbl,v_dbl,phiedge_dbl,zeta_p_dbl,kappa2_dbl,ier)
       kappa2 = kappa2_dbl
       RETURN
