@@ -2100,6 +2100,7 @@
 
       real*8 :: Bsupu, Bsupv, Bsups
       real*8 :: B_R, dB_R_du, dB_R_dv, B_Z, dB_Z_du, dB_Z_dv, dB_Phi_du
+      real*8 :: dB_R_ds, dB_Z_ds, dB_Phi_ds
       real*8 :: B_Phi, modB
       real*8 :: sqrtg, norm_binormal
       real*8 :: subpart2, subpart3, subpart4
@@ -2131,18 +2132,16 @@
       IF (isingrid(u_val,v_val,rho_val)) THEN
          ! This will return the geodesic curvature of the surface, or
          ! (B cross grad(Psi)/|B cross grad(Psi)| ) dot
-         !          [ (B^u grad(v) - B^v grad(u)) (dB_v/du - dB_u/dv)
-         !             + grad(s) ( B^v dB_s/dv - B^u dB_s/du ) ]
-         ! Two of the terms can be expanded in vmec coordinates:
+         !          [ (B^u grad(v) + B^v grad(u)) (dB_v/du - dB_u/dv)
+         !             + grad(s) [ B^v (dB_s/dv-dB_v/ds) + B^u (dB_s/du -dB_u/ds) ] ]
+         ! Three of the terms can be expanded in vmec coordinates:
          ! dB_v/du - dB_u/dv = dB_R/du dR/dv - dB_R/dv dR/du +
          !                     dB_Z/du dZ/dv - dB_Z/dv dZ/du +
          !                     (1/NFP) dB_Phi/du
-         ! B^v dB_s/dv  = B^v * [ B_R d^2R/(dvds) + 
-         !                  dB_R/dv dR/ds + B_z d^2Z/(dvds) +
-         !                  dB_Z/dv dZ/ds ]
-         ! B^u dB_s/du = B^u * [ B_R d^2R/(duds) + 
-         !                  dB_R/du dR/ds + B_Z d^2Z/(duds) +
-         !                  dB_Z/du dZ/ds ]
+         ! dB_s/dv-dB_v/ds  =   dB_R/dv dR/ds - dB_R/ds dR/dv + 
+         !                  dB_Z/dv dZ/ds - dB_Z/ds dZ/dv - (1/NFP) dB_phi/ds
+         ! dB_s/du-dB_u/ds =  dB_R/du dR/ds - dB_R/ds R/du +
+         !                  dB_Z/du dZ/ds - dB_Z/ds dZ/du
          ! 
          ! Variables needed:
          ! Scalars
@@ -2150,20 +2149,16 @@
          ! NFP: set elsewhere
          ! dR/dv, dR/du, dR/ds :gradR
          ! dZ/dv, dZ/du, dZ/ds : gradZ
-         ! use new
-         ! d^2R/(duds), d^2R/(dvds), d^2Z/(duds), d^2Z/(dvds)
-         ! use new stuff? or use get_equil_Bcylsuv ?
-         ! dB_Phi/du
-         ! dB_R/du, dB_R/dv, 
-         ! dB_z/du, dB_Z/dv
-       !  
+         ! use new (not get_equil_Bcylsuv ?)
+         ! dB_Phi/du, dB_Phi/ds
+         ! dB_R/ds, dB_R/du, dB_R/dv, 
+         ! dB_Z/ds, dB_Z/du, dB_Z/dv
+         
          ! Vectors
          ! grad(Psi) , grad(s), grad(v), grad(u): see lines 346-399 of
          ! chisq_gamma_c_v2_mod.f90
 
-
          ! Gather the scalars that we need
-
 
          ! B^u, B^v : get_equil_Bflx
          !CALL get_equil_Bflx(phi_N, u, v, Bsups(j), Bsupu(j), Bsupv(j), ier, B_GRAD = gradB_init)
@@ -2178,54 +2173,60 @@
          ! also see: get_equil_RZ(phi_N, u, v, R, Z, ier, gradR, gradZ)
          ! d^2R/(duds), d^2R/(dvds), d^2Z/(duds), d^2Z/(dvds)
          CALL lookupgrid3d(u_val,v_val,rho_val,i,j,k,hx,hy,hz,hxi,hyi,hzi,xparam,yparam,zparam)
-         CALL r8fvtricub(ict4, 1, 1, fval4, i, j, k, xparam, yparam, zparam, &
+         CALL r8fvtricub(ict2, 1, 1, fval4, i, j, k, xparam, yparam, zparam, &
                             hx, hxi, hy, hyi, hz, hzi, &
                             R4D(1,1,1,1), nx1, nx2, nx3)
          R = fval4(1,1)
+         !R = fval4(1,0)
          R_grad(1,1) = fval4(1,2); R_grad(1,2) = fval4(1,3); R_grad(1,3) = fval4(1,4)
-         d2R_dudv = fval4(1,5); d2R_duds = fval4(1,6); d2R_dvds = fval4(1,7)
+         !d2R_dudv = fval4(1,5); d2R_duds = fval4(1,6); d2R_dvds = fval4(1,7)
 
-         CALL r8fvtricub(ict4, 1, 1, fval4, i, j, k, xparam, yparam, zparam, &
+         CALL r8fvtricub(ict2, 1, 1, fval4, i, j, k, xparam, yparam, zparam, &
                             hx, hxi, hy, hyi, hz, hzi, &
                             Z4D(1,1,1,1), nx1, nx2, nx3)
          Z = fval4(1,1)
          Z_grad(1,1) = fval4(1,2); Z_grad(1,2) = fval4(1,3); Z_grad(1,3) = fval4(1,4)
-         d2Z_dudv = fval4(1,5); d2Z_duds = fval4(1,6); d2Z_dvds = fval4(1,7)
+         !d2Z_dudv = fval4(1,5); d2Z_duds = fval4(1,6); d2Z_dvds = fval4(1,7)
 
          !   Convert radial gradients from d/drho to d/ds
          !   phi_Ns = rho^2; ds/drho = 2*rho; drho/ds = 1/(2*rho) = 0.5/rovera
          !   - use rovera from above
          !   gradX(1) = dX/du, gradX(2) = dX/dv, gradX(3) = dX/dsqrt(s)
          R_grad(1,3) = R_grad(1,3) / (2.0 * rho_val)
-         d2R_duds = d2R_duds / (2.0 * rho_val)
-         d2R_dvds = d2R_dvds  / (2.0 * rho_val)
+         !d2R_duds = d2R_duds / (2.0 * rho_val)
+         !d2R_dvds = d2R_dvds  / (2.0 * rho_val)
          Z_grad(1,3) = Z_grad(1,3) / (2.0 * rho_val)
-         d2Z_duds = d2Z_duds / (2.0 * rho_val)
-         d2Z_dvds = d2Z_dvds  / (2.0 * rho_val)
+         !d2Z_duds = d2Z_duds / (2.0 * rho_val)
+         !d2Z_dvds = d2Z_dvds  / (2.0 * rho_val)
 
 
 
 
-         ! dB_Phi/du
+         ! dB_Phi/du, dB_Phi/ds
          CALL r8fvtricub(ict2, 1, 1, fval2, i, j, k, xparam, yparam, zparam, &
                             hx, hxi, hy, hyi, hz, hzi, &
                             B_Phi4D(1,1,1,1), nx1, nx2, nx3)
          B_Phi = fval2(1,1)
          dB_Phi_du = fval2(1,2)
-         ! dB_R/du, dB_R/dv, 
+         dB_Phi_ds = fval2(1,4)
+  
+       ! dB_R/du, dB_R/dv, dB_R/ds
          CALL r8fvtricub(ict2, 1, 1, fval2, i, j, k, xparam, yparam, zparam, &
                             hx, hxi, hy, hyi, hz, hzi, &
                             B_R4D(1,1,1,1), nx1, nx2, nx3)
          B_R = fval2(1,1)
          dB_R_du = fval2(1,2)
          dB_R_dv = fval2(1,3)*nfp
-         ! dB_z/du, dB_Z/dv
+         dB_R_ds = fval2(1,4)
+
+         ! dB_z/du, dB_Z/dv, dB_Z/ds
          CALL r8fvtricub(ict2, 1, 1, fval2, i, j, k, xparam, yparam, zparam, &
                             hx, hxi, hy, hyi, hz, hzi, &
                             B_Z4D(1,1,1,1), nx1, nx2, nx3)
          B_Z = fval2(1,1)
          dB_Z_du = fval2(1,2)
          dB_Z_dv = fval2(1,3)*nfp
+         dB_Z_ds = fval2(1,4)
 
 
       !         !  
@@ -2268,37 +2269,70 @@
 
          ! Now, build combine the terms
          ! (B cross grad(Psi)/|B cross grad(Psi)| ) dot
-         !     [ (B^u grad(v) - B^v grad(u)) (dB_v/du - dB_u/dv)
-         !       + grad(s) ( B^v dB_s/dv - B^u dB_s/du ) ]
-         !subpart1 = B^u grad(v) - B^v grad(u)
+         !          [ (B^u grad(v) + B^v grad(u)) (dB_v/du - dB_u/dv)
+         !old       + grad(s) ( B^v dB_s/dv - B^u dB_s/du ) ]
+         !             + grad(s) [ B^v (dB_s/dv-dB_v/ds) + B^u (dB_s/du -dB_u/ds) ] ]
+         ! Three of the terms can be expanded in vmec coordinates:
+         ! dB_v/du - dB_u/dv = dB_R/du dR/dv - dB_R/dv dR/du +
+         !                     dB_Z/du dZ/dv - dB_Z/dv dZ/du +
+         !                     (1/NFP) dB_Phi/du
+         ! dB_s/dv-dB_v/ds  =   dB_R/dv dR/ds - dB_R/ds dR/dv + 
+         !         dB_Z/dv dZ/ds - dB_Z/ds dZ/dv - (1/NFP) dB_phi/ds
+         ! dB_s/du-dB_u/ds =  dB_R/du dR/ds - dB_R/ds R/du +
+         !         dB_Z/du dZ/ds - dB_Z/ds dZ/du
+
+
+         !ok subpart1 = B^u grad(v) - B^v grad(u)
          subpart1 = Bsupu * ev - Bsupv * eu
          !subpart2 = dB_v/du - dB_u/dv
-         ! dB_v/du - dB_u/dv = dB_R/du dR/dv - dB_R/dv dR/du +
+         !ok dB_v/du - dB_u/dv = dB_R/du dR/dv - dB_R/dv dR/du +
          !                     dB_Z/du dZ/dv - dB_Z/dv dZ/du +
          !                     (1/NFP) dB_Phi/du
          subpart2 = dB_R_du * R_grad(1,2) - dB_R_dv * R_grad(1,1) + &
                     dB_Z_du * Z_grad(1,2) - dB_Z_dv * Z_grad(1,1) + &
                     dB_Phi_du * (1.0 / nfp)
-         !subpart3 = B^v dB_s/dv
-         ! B^v dB_s/dv  = B^v * [ B_R d^2R/(dvds) + 
-         !                  dB_R/dv dR/ds + B_z d^2Z/(dvds) +
-         !                  dB_Z/dv dZ/ds ]
-         ! * phiedge, to normalized correctly
-         subpart3 = Bsupv * (B_R * d2R_dvds + dB_R_dv * R_grad(1,3) + &
-                       B_Z * d2Z_dvds + dB_Z_dv * Z_grad(1,3) ) 
-!JCS to self: Working from below andmoving up.  Adding vars to header as
-!necessary 
-         !subpart4 = B^u dB_s/du
-         ! B^u dB_s/du = B^u * [ B_R d^2R/(duds) + 
-         !                  dB_R/du dR/ds + B_Z d^2Z/(duds) +
-         !                  dB_Z/du dZ/ds ]
-         ! * phiedge, to normalized correctly
-         subpart4 = Bsupu * (B_R * d2R_duds + dB_R_du * d2Z_duds + &
-                       B_Z * d2Z_duds + dB_Z_du * Z_grad(1,3) )
-         !subpart5 = grad(s)*(subpart3 - subpart4)
-         !subpart5 = gradS*(subpart3 - subpart4)
-         subpart5 = es*(subpart3 - subpart4)
+         !old: subpart3 = B^v dB_s/dv
+         !old:  B^v dB_s/dv  = B^v * [ B_R d^2R/(dvds) + 
+         !old:                   dB_R/dv dR/ds + B_z d^2Z/(dvds) +
+         !old:                   dB_Z/dv dZ/ds ]
+         !old:  * phiedge, to normalized correctly
+      !old subpart3 = Bsupv * (B_R * d2R_dvds + dB_R_dv * R_grad(1,3) + &
+      !old              B_Z * d2Z_dvds + dB_Z_dv * Z_grad(1,3) ) 
+
+     ! new subpart3 = B^v * ( dB_s/dv-dB_v/ds)
+     !             = B^v*[  dB_R/dv dR/ds - dB_R/ds dR/dv + 
+     !    dB_Z/dv dZ/ds - dB_Z/ds dZ/dv - (1/NFP) dB_phi/ds]
+     ! 
+         subpart3 = Bsupv * (dB_R_dv * R_grad(1,3) - &
+                             dB_R_ds * R_grad(1,2) + &
+                             dB_Z_dv * Z_grad(1,3)  - &
+                             dB_Z_ds * Z_grad(1,2) - &
+                             (one/NFP) * dB_Phi_ds ) 
+         !old: subpart4 = B^u dB_s/du
+         !old:  B^u dB_s/du = B^u * [ B_R d^2R/(duds) + 
+         !old:                   dB_R/du dR/ds + B_Z d^2Z/(duds) +
+         !old:                   dB_Z/du dZ/ds ]
+         !old:  * phiedge, to normalized correctly
+         !oldsubpart4 = Bsupu * (B_R * d2R_duds + dB_R_du * d2Z_duds + &
+         !old              B_Z * d2Z_duds + dB_Z_du * Z_grad(1,3) )
+
+         !new: subpart4 = B^u *(dB_s/du - dB_u/ds)
+
+         ! Bsupu * ( dB_R/du dR/ds - dB_R/ds R/du +
+         !         dB_Z/du dZ/ds - dB_Z/ds dZ/du )
+
+         subpart4 = Bsupu * (dB_R_du * R_grad(1,3) - &
+                             dB_R_ds * R_grad(1,1) + &
+                             dB_Z_du * Z_grad(1,3) -  &
+                             dB_Z_ds * Z_grad(1,1)   )
+         !old: subpart5 = grad(s)*(subpart3 - subpart4)
+         !old: subpart5 = gradS*(subpart3 - subpart4)
+         !olssubpart5 = es*(subpart3 - subpart4)
+         !new: subpart5 = gradS*(subpart3 + subpart4)
+         subpart5 = es*(subpart3 + subpart4)
+         ! ok - thi is the total curvature, kappa
          subpart6 = subpart1 * subpart2 + subpart5
+
          !kappa2 = dot_product((B cross grad(Psi)/|B cross grad(Psi)| ) , subpart6)
          ! subpart7 = (B cross grad(Psi)/|B cross grad(Psi)| ) 
          !CALL cross_product(grad_psi_xyz/norm_grad_psi_xyz, bnxyz, binormal(j,:))
@@ -2312,6 +2346,7 @@
          norm_binormal = sqrt(binormal(1,1)**2 + binormal(1,2)**2 + &
                               binormal(1,3)**2)
          subpart7 = binormal / norm_binormal
+         ! ok - geodesic curvature
          kappa2 = subpart7(1,1) * subpart6(1,1) + subpart7(1,2) * subpart6(1,2) + &
                   subpart7(1,3) * subpart6(1,3)
 !
