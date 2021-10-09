@@ -2083,7 +2083,7 @@
 
 
 
-      SUBROUTINE get_equil_kappa2_dbl(s_val,u_val,v_val,phiedge,zeta_p,kappa2,ier,diagnostic)
+      SUBROUTINE get_equil_kappa2_dbl(s_val,u_val,v_val,phiedge,zeta_p,kappa2,kappa2v2,ier,diagnostic)
       USE EZspline
       IMPLICIT NONE
       DOUBLE PRECISION, INTENT(in)    ::  s_val
@@ -2091,7 +2091,7 @@
       DOUBLE PRECISION, INTENT(in)    ::  v_val
       DOUBLE PRECISION, INTENT(in)    ::  phiedge
       DOUBLE PRECISION, INTENT(in)    ::  zeta_p
-      DOUBLE PRECISION, INTENT(out)   ::  kappa2
+      DOUBLE PRECISION, INTENT(out)   ::  kappa2, kappa2v2
       INTEGER, INTENT(inout)     ::  ier
       DOUBLE PRECISION, INTENT(out),OPTIONAL   :: diagnostic(1,67) 
       real*8 :: rho_val
@@ -2331,7 +2331,12 @@
          !new: subpart5 = gradS*(subpart3 + subpart4)
          subpart5 = es*(subpart3 + subpart4)
          ! ok - thi is the total curvature, kappa
+         ! new: I think I only need the 'subpart1 * subpart2' portion
+         !  the subpart 5 portion is normal to the surface and should not contribute
+         ! to the projection into the binormal direction.
+         !  (the binormal and normal direction are perpendicular by construction)
          subpart6 = subpart1 * subpart2 + subpart5
+         subpart6v2 = subpart1 * subpart2 
 
          !kappa2 = dot_product((B cross grad(Psi)/|B cross grad(Psi)| ) , subpart6)
          ! subpart7 = (B cross grad(Psi)/|B cross grad(Psi)| ) 
@@ -2349,6 +2354,8 @@
          ! ok - geodesic curvature
          kappa2 = subpart7(1,1) * subpart6(1,1) + subpart7(1,2) * subpart6(1,2) + &
                   subpart7(1,3) * subpart6(1,3)
+         kappa2v2 = subpart7(1,1) * subpart6v2(1,1) + subpart7(1,2) * subpart6v2(1,2) + &
+                  subpart7(1,3) * subpart6v2(1,3)
 !
          IF (PRESENT(diagnostic))  THEN
             diagnostic(1,1) = s_val
@@ -2418,6 +2425,9 @@
             diagnostic(1,65) = subpart7(1,1)
             diagnostic(1,66) = subpart7(1,2)
             diagnostic(1,67) = subpart7(1,3)
+            diagnostic(1,59) = subpart6(1,1)
+            diagnostic(1,60) = subpart6(1,2)
+            diagnostic(1,61) = subpart6(1,3)
 
          END IF
 
@@ -2427,7 +2437,7 @@
       RETURN
       END SUBROUTINE get_equil_kappa2_dbl
       
-      SUBROUTINE get_equil_kappa2_sgl(s_val,u_val,v_val,phiedge,zeta_p,kappa2,ier)
+      SUBROUTINE get_equil_kappa2_sgl(s_val,u_val,v_val,phiedge,zeta_p,kappa2,kappa2v,2ier)
       USE EZspline
       IMPLICIT NONE
       REAL, INTENT(in)    ::  s_val
@@ -2435,18 +2445,19 @@
       REAL, INTENT(in)    ::  v_val
       REAL, INTENT(in)    ::  phiedge
       REAL, INTENT(in)    ::  zeta_p
-      REAL, INTENT(out)   ::  kappa2
+      REAL, INTENT(out)   ::  kappa2,kappa2v2 
       INTEGER, INTENT(inout)     ::  ier
       DOUBLE PRECISION    ::  s_dbl
       DOUBLE PRECISION    ::  u_dbl
       DOUBLE PRECISION    ::  v_dbl
       DOUBLE PRECISION    ::  phiedge_dbl
       DOUBLE PRECISION    ::  zeta_p_dbl
-      DOUBLE PRECISION    ::  kappa2_dbl
+      DOUBLE PRECISION    ::  kappa2_dbl, kappa2v2_dbl
       s_dbl = s_val; u_dbl = u_val; v_dbl = v_val; phiedge_dbl = phiedge
       zeta_p_dbl = zeta_p
-      CALL get_equil_kappa2_dbl(s_dbl,u_dbl,v_dbl,phiedge_dbl,zeta_p_dbl,kappa2_dbl,ier)
+      CALL get_equil_kappa2_dbl(s_dbl,u_dbl,v_dbl,phiedge_dbl,zeta_p_dbl,kappa2_dbl,kappa2v2_dbl,ier)
       kappa2 = kappa2_dbl
+      kappa2v2 = kappa2v2_dbl  
       RETURN
       END SUBROUTINE get_equil_kappa2_sgl
 

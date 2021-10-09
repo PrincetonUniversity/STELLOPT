@@ -92,7 +92,7 @@ contains
       real(rprec), DIMENSION(3) :: dxyzdu, dxyzdv, dxyzds
       real(rprec), DIMENSION(5) :: modbzeros_extraargs
       REAL(rprec), DIMENSION(:), allocatable :: ds, modB, dBdpsi, kappa_g, kappa_g2
-      REAL(rprec), DIMENSION(:), allocatable :: kappa_g3
+      REAL(rprec), DIMENSION(:), allocatable :: kappa_g3, kappa_g4
       double precision :: this_kappa_g3_diag(1,67)
       REAL(rprec), DIMENSION(:), allocatable :: grad_psi_norm, grad_psi_i
       REAL(rprec), DIMENSION(:), allocatable :: e_theta_norm, e_theta_i
@@ -134,6 +134,7 @@ contains
         allocate ( kappa_g(nsteps) )
         allocate ( kappa_g2(nsteps) )
         allocate ( kappa_g3(nsteps) )
+        allocate ( kappa_g4(nsteps) )
         allocate ( kappa_g3_diag(nsteps, 67) )
         allocate ( grad_psi_norm(nsteps) )
         allocate ( grad_psi_i(nsteps) )
@@ -303,7 +304,7 @@ contains
 
             ! step three: kappa_g on single-FP
             call get_equil_kappa(phi_N, u_initB, v_initB, kappa_g(j), ier)
-            call get_equil_kappa2(phi_N, u_initB, v_initB, phiedge, zeta_p, kappa_g3(j), ier, this_kappa_g3_diag)
+            call get_equil_kappa2(phi_N, u_initB, v_initB, phiedge, zeta_p, kappa_g3(j), kappa_g4(j), ier, this_kappa_g3_diag)
             kappa_g3_diag(j,:) = this_kappa_g3_diag(1,:)
 !!!!!!WARNING
 !        Where the code takes V as an input it is asking for a value
@@ -684,7 +685,7 @@ contains
               if (LGCXFILES .eqv. .true.) then
                 write(igc7,'(1X,I8,4(2X,E16.8E4))') 1,&
                        bdotgradb(1), bdotgradb(2), bdotgradb(3), kappa_g2(1)
-                write(igc13,'(3(2X,E16.8E4))') kappa_g2(1), kappa_g(1), kappa_g3(1)
+                write(igc13,'(4(2X,E16.8E4))') kappa_g2(1), kappa_g(1), kappa_g3(1), kappa_g4(1)
               END IF
             END IF 
 
@@ -731,7 +732,7 @@ contains
               if (LGCXFILES .eqv. .true.) then
                 write(igc7,'(1X,I8,4(2X,E16.8E4))') (j-1),&
                        bdotgradb(1), bdotgradb(2), bdotgradb(3), kappa_g2(j-1)
-                write(igc13,'(3(2X,E16.8E4))') kappa_g2(j-1), kappa_g(j-1), kappa_g3(j-1)
+                write(igc13,'(3(2X,E16.8E4))') kappa_g2(j-1), kappa_g(j-1), kappa_g3(j-1), kappa_g4(j-1)
               END IF
 
               IF (j == nsteps) THEN ! handle the last point
@@ -761,7 +762,7 @@ contains
                 if (LGCXFILES .eqv. .true.) then
                   write(igc7,'(1X,I8,4(2X,E16.8E4))') j, &
                        bdotgradb(1), bdotgradb(2), bdotgradb(3), kappa_g2(j)
-                  write(igc13,'(3(2X,E16.8E4))') kappa_g2(j), kappa_g(j), kappa_g3(j)
+                  write(igc13,'(3(2X,E16.8E4))') kappa_g2(j), kappa_g(j), kappa_g3(j), kappa_g4(j)
                 END IF
               END IF   
             END IF
@@ -1309,6 +1310,7 @@ contains
         deallocate ( kappa_g )
         deallocate ( kappa_g2 )
         deallocate ( kappa_g3 )
+        deallocate ( kappa_g4 )
         deallocate ( kappa_g3_diag )
         deallocate ( grad_psi_norm )
         deallocate ( grad_psi_i )
