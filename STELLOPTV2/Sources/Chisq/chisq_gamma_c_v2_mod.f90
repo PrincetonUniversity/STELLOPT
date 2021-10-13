@@ -93,7 +93,7 @@ contains
       real(rprec), DIMENSION(5) :: modbzeros_extraargs
       REAL(rprec), DIMENSION(:), allocatable :: ds, modB, dBdpsi, kappa_g, kappa_g2
       REAL(rprec), DIMENSION(:), allocatable :: kappa_g3, kappa_g4
-      double precision :: this_kappa_g3_diag(1,67)
+      double precision :: this_kappa_g3_diag(1,71)
       REAL(rprec), DIMENSION(:), allocatable :: grad_psi_norm, grad_psi_i
       REAL(rprec), DIMENSION(:), allocatable :: e_theta_norm, e_theta_i
       REAL(rprec), DIMENSION(:), allocatable :: dBsupvdpsi, dVdb_t1, dBsupphidpsi
@@ -135,7 +135,7 @@ contains
         allocate ( kappa_g2(nsteps) )
         allocate ( kappa_g3(nsteps) )
         allocate ( kappa_g4(nsteps) )
-        allocate ( kappa_g3_diag(nsteps, 67) )
+        allocate ( kappa_g3_diag(nsteps, 71) )
         allocate ( grad_psi_norm(nsteps) )
         allocate ( grad_psi_i(nsteps) )
         allocate ( e_theta_norm(nsteps) )
@@ -260,6 +260,7 @@ contains
 !           end of this do loop. 
 !           phi_N = phi_N  ! phi_N = s
             u_initA = sflCrd(2)  ! sflCrd(2) = theta (pest)
+            !u_initA = theta  ! sflCrd(2) = theta (pest)
             v_initA = sflCrd(3)  ! sflCrd(3) = zeta (pest) (see above and at end of this do-loop)
             
 !           pest2vmec in: s, theta, phi ('laboratory' 0->2pi, full torus)
@@ -270,8 +271,8 @@ contains
 !           For compatibility with stell_tools/pest2vmec
 !           Changing def to match Julia and trying to maintain compatibility with stell_tools/pest2vmec
             sflCrd(1) = phi_N
-            sflCrd(2) = sflCrd(2)
-            sflCrd(3) = -sflCrd(3)
+            sflCrd(2) = sflCrd(2) ! inverting both (or one? test one and none) prior to pest2vmec
+            sflCrd(3) = sflCrd(3)
             !phi = MOD(phi,pi2/nfp)*nfp
             !sflCrd(3) = -sflCrd(3) / nfp
             !sflCrd(3) = -MOD(sflCrd(3),pi2/nfp)*nfp
@@ -732,7 +733,7 @@ contains
               if (LGCXFILES .eqv. .true.) then
                 write(igc7,'(1X,I8,4(2X,E16.8E4))') (j-1),&
                        bdotgradb(1), bdotgradb(2), bdotgradb(3), kappa_g2(j-1)
-                write(igc13,'(3(2X,E16.8E4))') kappa_g2(j-1), kappa_g(j-1), kappa_g3(j-1), kappa_g4(j-1)
+                write(igc13,'(4(2X,E16.8E4))') kappa_g2(j-1), kappa_g(j-1), kappa_g3(j-1), kappa_g4(j-1)
               END IF
 
               IF (j == nsteps) THEN ! handle the last point
@@ -762,7 +763,7 @@ contains
                 if (LGCXFILES .eqv. .true.) then
                   write(igc7,'(1X,I8,4(2X,E16.8E4))') j, &
                        bdotgradb(1), bdotgradb(2), bdotgradb(3), kappa_g2(j)
-                  write(igc13,'(3(2X,E16.8E4))') kappa_g2(j), kappa_g(j), kappa_g3(j), kappa_g4(j)
+                  write(igc13,'(4(2X,E16.8E4))') kappa_g2(j), kappa_g(j), kappa_g3(j), kappa_g4(j)
                 END IF
               END IF   
             END IF
@@ -911,19 +912,22 @@ contains
                grad_psi_xyz(1), grad_psi_xyz(2), grad_psi_xyz(3), &
                norm_grad_psi_xyz,  &
                es(1), es(2), es(3), eu(1), eu(2), eu(3), grad_psi_norm(j)
-             write(igc15, '(67(E16.10, 2X))') kappa_g3_diag(j,:)
+             write(igc15, '(71(E16.10, 2X))') kappa_g3_diag(j,:)
 !
            END IF
 
              !advance the step- note, this zeta and theta are the PEST coordinates
             zeta_p = zeta_p + delzeta_p
-            theta = theta - (iota * delzeta_p)
+            !print *,'<-old theta =',theta
+            theta = theta + (iota * delzeta_p)
             !zeta = modulo(zeta, pi2)
             !theta = modulo(theta, pi2)
             ! reset sflCrd to contain the next PEST coordinate
             phi_N = phi_N !phi_N should be constant
+            sflCrd(1) = phi_N ! jcs added to try to fix theta addition bug
             sflCrd(2) = theta
             sflCrd(3) = zeta_p
+            !print *,'<-new sflCrd(2)=',sflCrd(2)
             ! on exit, the sflCrd variable now contains the PEST coordinate of the next point
            END DO
           !------------------------------END DO j = 1,nsteps over each step along line

@@ -2093,7 +2093,7 @@
       DOUBLE PRECISION, INTENT(in)    ::  zeta_p
       DOUBLE PRECISION, INTENT(out)   ::  kappa2, kappa2v2
       INTEGER, INTENT(inout)     ::  ier
-      DOUBLE PRECISION, INTENT(out),OPTIONAL   :: diagnostic(1,67) 
+      DOUBLE PRECISION, INTENT(out),OPTIONAL   :: diagnostic(1,71) 
       real*8 :: rho_val
       real*8 :: R, d2R_dudv, d2R_duds, d2R_dvds
       real*8 :: Z, d2Z_dudv, d2Z_duds, d2Z_dvds
@@ -2101,14 +2101,16 @@
       real*8 :: Bsupu, Bsupv, Bsups
       real*8 :: B_R, dB_R_du, dB_R_dv, B_Z, dB_Z_du, dB_Z_dv, dB_Phi_du
       real*8 :: dB_R_ds, dB_Z_ds, dB_Phi_ds
-      real*8 :: B_Phi, modB
+      real*8 :: B_Phi, modB, B_X_v2, B_Y_v2, B_Z_v2
       real*8 :: sqrtg, norm_binormal
       real*8 :: subpart2, subpart3, subpart4
       real*8 :: R_grad(1,3), Z_grad(1,3), B_cyl(1,3), B_xyz(1,3)
+      real*8 :: B_cyl2(1,3)
       real*8 :: esubs(1,3), esubu(1,3), esubv(1,3)
       real*8 :: es(1,3), eu(1,3), ev(1,3), grad_psi(1,3), binormal(1,3)
       real*8 :: binormal_xyz(1,3), grad_psi_xyz(1,3)
       real*8 :: subpart1(1,3), subpart5(1,3), subpart6(1,3), subpart7(1,3)
+      real*8 :: subpart6v2(1,3)
       INTEGER :: i,j,k
       REAL*8 :: xparam, yparam, zparam, hx, hy, hz, hxi, hyi, hzi
       REAL*8 :: fval1(1,1)
@@ -2243,7 +2245,7 @@
 
             esubv(1,1) = R_grad(1,2)    ! dR/dv
             !esubv(2) = one
-            esubv(1,2) = 1.0/nfp         ! dPhi/dv:  v= nfp *mod(phi,2*pi/nfp) -> dv ~ nfp * dphi
+            esubv(1,2) = one/nfp         ! dPhi/dv:  v= nfp *mod(phi,2*pi/nfp) -> dv ~ nfp * dphi
             esubv(1,3) = Z_grad(1,2)    ! dZ/dv
 
             !  esubv x esubs = (R) esubv(2) * esubs(3) - esubv(3) * esubs(2) +
@@ -2282,15 +2284,15 @@
          !         dB_Z/du dZ/ds - dB_Z/ds dZ/du
 
 
-         !ok subpart1 = B^u grad(v) - B^v grad(u)
-         subpart1 = Bsupu * ev - Bsupv * eu
+         !ok subpart1 = B^u grad(v) + B^v grad(u)
+         subpart1 = Bsupu * ev + Bsupv * eu
          !subpart2 = dB_v/du - dB_u/dv
          !ok dB_v/du - dB_u/dv = dB_R/du dR/dv - dB_R/dv dR/du +
          !                     dB_Z/du dZ/dv - dB_Z/dv dZ/du +
          !                     (1/NFP) dB_Phi/du
          subpart2 = dB_R_du * R_grad(1,2) - dB_R_dv * R_grad(1,1) + &
                     dB_Z_du * Z_grad(1,2) - dB_Z_dv * Z_grad(1,1) + &
-                    dB_Phi_du * (1.0 / nfp)
+                    dB_Phi_du / nfp
          !old: subpart3 = B^v dB_s/dv
          !old:  B^v dB_s/dv  = B^v * [ B_R d^2R/(dvds) + 
          !old:                   dB_R/dv dR/ds + B_z d^2Z/(dvds) +
@@ -2343,14 +2345,24 @@
          !CALL cross_product(grad_psi_xyz/norm_grad_psi_xyz, bnxyz, binormal(j,:))
          B_cyl(1,1) = B_R
          B_cyl(1,2) = B_Phi
-         B_cyl(1,3) = B_Z
-         !Bx = sign(one,sqrtg) * ( B_R*cos(-zeta_p) - B_Phi*sin(-zeta_p) )
-         !By = sign(one,sqrtg) * ( B_R*sin(-zeta_p) + B_Phi*cos(-zeta_p) )
-         !Bz = B_Z *sign(one,sqrtg)
-         CALL mycross(es, B_cyl, binormal)
+         B_cyl(1,3) = B_Z ! why is this -1??? see gc12
+         modB = sqrt(B_R**2 + B_Phi**2 + B_Z**2)
+         B_X_v2 = sign(one,sqrtg) * ( B_R*cos(-zeta_p) - B_Phi*sin(-zeta_p) )
+         B_Y_v2 = sign(one,sqrtg) * ( B_R*sin(-zeta_p) + B_Phi*cos(-zeta_p) )
+         B_Z_v2 = B_Z *sign(one,sqrtg)
+         B_cyl2(1,1) =  B_X_v2 * cos(-zeta_p) + B_Y_v2 * sin(-zeta_p) ! BR
+         B_cyl2(1,2) = -B_X_v2 * sin(-zeta_p) + B_Y_v2  * cos(-zeta_p) !  BPhi
+         !B_X_v2 = sign(one,sqrtg) * ( B_R*cos(v_val) - B_Phi*sin(v_val) )
+         !B_Y_v2 = sign(one,sqrtg) * ( B_R*sin(v_val) + B_Phi*cos(v_val) )
+         !B_Z_v2 = B_Z *sign(one,sqrtg)
+         !B_cyl2(1,1) =  B_X_v2 * cos(v_val) + B_Y_v2 * sin(v_val) ! BR
+         !B_cyl2(1,2) = -B_X_v2 * sin(v_val) + B_Y_v2  * cos(v_val) !  BPhi
+         B_cyl2(1,3) =  B_Z_v2 ! Bz
+         !CALL mycross(es, B_cyl, binormal)
+         CALL mycross(es, B_cyl2, binormal)
          norm_binormal = sqrt(binormal(1,1)**2 + binormal(1,2)**2 + &
                               binormal(1,3)**2)
-         subpart7 = binormal / norm_binormal
+         subpart7 = binormal /( norm_binormal )
          ! ok - geodesic curvature
          kappa2 = subpart7(1,1) * subpart6(1,1) + subpart7(1,2) * subpart6(1,2) + &
                   subpart7(1,3) * subpart6(1,3)
@@ -2377,9 +2389,9 @@
             diagnostic(1,17) = R_grad(1,1)
             diagnostic(1,18) = R_grad(1,2)
             diagnostic(1,19) = R_grad(1,3)
-            diagnostic(1,20) = d2R_dudv
-            diagnostic(1,21) = d2R_duds
-            diagnostic(1,22) = d2R_dvds
+            diagnostic(1,20) = B_cyl2(1,1)
+            diagnostic(1,21) = B_cyl2(1,2)
+            diagnostic(1,22) = B_cyl2(1,3)
             diagnostic(1,23) = Z
             diagnostic(1,24) = Z_grad(1,1)
             diagnostic(1,25) = Z_grad(1,2)
@@ -2425,9 +2437,10 @@
             diagnostic(1,65) = subpart7(1,1)
             diagnostic(1,66) = subpart7(1,2)
             diagnostic(1,67) = subpart7(1,3)
-            diagnostic(1,59) = subpart6(1,1)
-            diagnostic(1,60) = subpart6(1,2)
-            diagnostic(1,61) = subpart6(1,3)
+            diagnostic(1,68) = subpart6v2(1,1)
+            diagnostic(1,69) = subpart6v2(1,2)
+            diagnostic(1,70) = subpart6v2(1,3)
+            diagnostic(1,71) = zeta_p
 
          END IF
 
@@ -2437,7 +2450,7 @@
       RETURN
       END SUBROUTINE get_equil_kappa2_dbl
       
-      SUBROUTINE get_equil_kappa2_sgl(s_val,u_val,v_val,phiedge,zeta_p,kappa2,kappa2v,2ier)
+      SUBROUTINE get_equil_kappa2_sgl(s_val,u_val,v_val,phiedge,zeta_p,kappa2,kappa2v2,ier)
       USE EZspline
       IMPLICIT NONE
       REAL, INTENT(in)    ::  s_val
@@ -2445,7 +2458,7 @@
       REAL, INTENT(in)    ::  v_val
       REAL, INTENT(in)    ::  phiedge
       REAL, INTENT(in)    ::  zeta_p
-      REAL, INTENT(out)   ::  kappa2,kappa2v2 
+      REAL, INTENT(out)   ::  kappa2, kappa2v2 
       INTEGER, INTENT(inout)     ::  ier
       DOUBLE PRECISION    ::  s_dbl
       DOUBLE PRECISION    ::  u_dbl
@@ -2957,8 +2970,10 @@
       REAL*8 :: fval(1)
       INTEGER, parameter :: ict(10)=(/1,0,0,0,0,0,0,0,0,0/)
       s = coord(1)
-      th = coord(2)
-      phi = coord(3)
+      !th = coord(2)
+      !phi = coord(3)
+      th = -coord(2)
+      phi = -coord(3)
 
       ! suppose nfp = 4, then:  \phi \in -pi/2 to pi/2: phi goes to phi*nfp
       !                         \phi \in pi/2 to pi: phi goes to (phi - pi/2)* nfp
