@@ -204,8 +204,8 @@ SUBROUTINE beams3d_follow
                     mymass = mass(l)
                     moment = mu_start(l)
                     my_end = t_end(l)
-                    fact_pa   = plasma_mass*plasma_Zavg/(mymass*plasma_Zmean)
-                    fact_coul = myZ*plasma_Zavg*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
+                    fact_pa   = plasma_mass/(mymass*plasma_Zmean)
+                    fact_coul = myZ*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
                     myv_neut(:) = v_neut(:,myline)
                     IF (lbeam) lneut = .TRUE.
                     CALL out_beams3d_nag(tf_nag,q)
@@ -264,8 +264,8 @@ SUBROUTINE beams3d_follow
                     mybeam = Beam(l)
                     moment = mu_start(l)
                     my_end = t_end(l)
-                    fact_pa   = plasma_mass*plasma_Zavg/(mymass*plasma_Zmean)
-                    fact_coul = myZ*plasma_Zavg*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
+                    fact_pa   = plasma_mass/(mymass*plasma_Zmean)
+                    fact_coul = myZ*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
                     myv_neut(:) = v_neut(:,myline)
                     IF (lbeam) lneut = .TRUE.
                     CALL out_beams3d_nag(tf_nag,q)
@@ -349,8 +349,8 @@ SUBROUTINE beams3d_follow
                     mybeam = Beam(l)
                     moment = mu_start(l)
                     my_end = t_end(l)
-                    fact_pa   = plasma_mass*plasma_Zavg/(mymass*plasma_Zmean)
-                    fact_coul = myZ*plasma_Zavg*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
+                    fact_pa   = plasma_mass/(mymass*plasma_Zmean)
+                    fact_coul = myZ*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
                     myv_neut(:) = v_neut(:,myline)
                     ! Setup timestep
                     !CALL beams3d_calc_dt(q,moment,mymass,dt)
