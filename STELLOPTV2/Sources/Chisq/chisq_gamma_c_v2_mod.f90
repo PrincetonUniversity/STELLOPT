@@ -271,8 +271,8 @@ contains
 !           For compatibility with stell_tools/pest2vmec
 !           Changing def to match Julia and trying to maintain compatibility with stell_tools/pest2vmec
             sflCrd(1) = phi_N
-            sflCrd(2) = sflCrd(2) ! inverting both (or one? test one and none) prior to pest2vmec
-            sflCrd(3) = sflCrd(3)
+            sflCrd(2) = -sflCrd(2) ! inverting both (or one? test one and none) prior to pest2vmec
+            sflCrd(3) = -sflCrd(3)
             !phi = MOD(phi,pi2/nfp)*nfp
             !sflCrd(3) = -sflCrd(3) / nfp
             !sflCrd(3) = -MOD(sflCrd(3),pi2/nfp)*nfp

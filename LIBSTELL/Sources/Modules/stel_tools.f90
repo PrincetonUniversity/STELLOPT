@@ -2972,8 +2972,8 @@
       s = coord(1)
       !th = coord(2)
       !phi = coord(3)
-      th = -coord(2)
-      phi = -coord(3)
+      th = coord(2)
+      phi = coord(3)
 
       ! suppose nfp = 4, then:  \phi \in -pi/2 to pi/2: phi goes to phi*nfp
       !                         \phi \in pi/2 to pi: phi goes to (phi - pi/2)* nfp
