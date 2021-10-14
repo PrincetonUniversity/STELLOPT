@@ -538,6 +538,7 @@ contains
             ! B vectors on a sigle field period
             ! CHECK THIS USAGE OF ZETA_P!!!! JCS
             ! zeta_p = -zeta_vmec
+! latest change - jcs
             Bx = sign(one,sqrtg) * ( Br*cos(zeta_p) - Bphi*sin(zeta_p) )
             By = sign(one,sqrtg) * ( Br*sin(zeta_p) + Bphi*cos(zeta_p) )
             Bz = Bz *sign(one,sqrtg)
