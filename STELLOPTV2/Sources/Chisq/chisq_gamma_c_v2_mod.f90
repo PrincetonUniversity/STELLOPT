@@ -1328,6 +1328,7 @@ contains
         deallocate ( Bsupu )
         deallocate ( Bsupv )
         deallocate ( binormal )
+        deallocate ( myCoords )
         deallocate ( well_start )
         deallocate ( well_stop )
         deallocate ( bp )
