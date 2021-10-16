@@ -2358,8 +2358,8 @@
          !B_cyl2(1,1) =  B_X_v2 * cos(v_val) + B_Y_v2 * sin(v_val) ! BR
          !B_cyl2(1,2) = -B_X_v2 * sin(v_val) + B_Y_v2  * cos(v_val) !  BPhi
          B_cyl2(1,3) =  B_Z_v2 ! Bz
-         !CALL mycross(es, B_cyl, binormal)
-         CALL mycross(es, B_cyl2, binormal)
+         CALL mycross(es, B_cyl, binormal)
+         !CALL mycross(es, B_cyl2, binormal)
          norm_binormal = sqrt(binormal(1,1)**2 + binormal(1,2)**2 + &
                               binormal(1,3)**2)
          subpart7 = binormal /( norm_binormal )

@@ -484,7 +484,7 @@ contains
            dxyzdv(1) = gradR(2)*coszeta_p - R*sinzeta_p/nfp
 ! (y) - components of d(xyz)/d(v)
 ! dY/dv = dR/dv * dY/dR + dY/dPhi * dPhi/dv
-           dxyzdv(2) = gradR(2)*sinzeta_p + R*coszeta_p /nfp!
+           dxyzdv(2) = gradR(2)*sinzeta_p + R*coszeta_p /nfp
 ! (z) - components of d(xyz)/d(v)
            dxyzdv(3) = gradZ(2)
 ! Now have d(xyz)/dsqrt(s), d(xyz)/du, and d(xyz)/dv projected in cartestian coordinates (x,y,z)
