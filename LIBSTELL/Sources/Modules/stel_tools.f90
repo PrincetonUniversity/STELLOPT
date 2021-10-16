@@ -2343,9 +2343,9 @@
          !kappa2 = dot_product((B cross grad(Psi)/|B cross grad(Psi)| ) , subpart6)
          ! subpart7 = (B cross grad(Psi)/|B cross grad(Psi)| ) 
          !CALL cross_product(grad_psi_xyz/norm_grad_psi_xyz, bnxyz, binormal(j,:))
-         B_cyl(1,1) = B_R
-         B_cyl(1,2) = B_Phi
-         B_cyl(1,3) = B_Z ! why is this -1??? see gc12
+         B_cyl(1,1) = B_R*sign(one,sqrtg)
+         B_cyl(1,2) = B_Phi*sign(one,sqrtg)
+         B_cyl(1,3) = B_Z*sign(one,sqrtg) ! why is this -1??? see gc12
          modB = sqrt(B_R**2 + B_Phi**2 + B_Z**2)
          B_X_v2 = sign(one,sqrtg) * ( B_R*cos(-zeta_p) - B_Phi*sin(-zeta_p) )
          B_Y_v2 = sign(one,sqrtg) * ( B_R*sin(-zeta_p) + B_Phi*cos(-zeta_p) )
