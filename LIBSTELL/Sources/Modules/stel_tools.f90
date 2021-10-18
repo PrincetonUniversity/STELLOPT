@@ -2093,7 +2093,7 @@
       DOUBLE PRECISION, INTENT(in)    ::  zeta_p
       DOUBLE PRECISION, INTENT(out)   ::  kappa2, kappa2v2
       INTEGER, INTENT(inout)     ::  ier
-      DOUBLE PRECISION, INTENT(out),OPTIONAL   :: diagnostic(1,71) 
+      DOUBLE PRECISION, INTENT(out),OPTIONAL   :: diagnostic(1,72) 
       real*8 :: rho_val
       real*8 :: R, d2R_dudv, d2R_duds, d2R_dvds
       real*8 :: Z, d2Z_dudv, d2Z_duds, d2Z_dvds

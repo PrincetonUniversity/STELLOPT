@@ -93,7 +93,7 @@ contains
       real(rprec), DIMENSION(5) :: modbzeros_extraargs
       REAL(rprec), DIMENSION(:), allocatable :: ds, modB, dBdpsi, kappa_g, kappa_g2
       REAL(rprec), DIMENSION(:), allocatable :: kappa_g3, kappa_g4
-      double precision :: this_kappa_g3_diag(1,71)
+      double precision :: this_kappa_g3_diag(1,72)
       REAL(rprec), DIMENSION(:), allocatable :: grad_psi_norm, grad_psi_i
       REAL(rprec), DIMENSION(:), allocatable :: e_theta_norm, e_theta_i
       REAL(rprec), DIMENSION(:), allocatable :: dBsupvdpsi, dVdb_t1, dBsupphidpsi
@@ -135,7 +135,7 @@ contains
         allocate ( kappa_g2(nsteps) )
         allocate ( kappa_g3(nsteps) )
         allocate ( kappa_g4(nsteps) )
-        allocate ( kappa_g3_diag(nsteps, 71) )
+        allocate ( kappa_g3_diag(nsteps, 72) )
         allocate ( grad_psi_norm(nsteps) )
         allocate ( grad_psi_i(nsteps) )
         allocate ( e_theta_norm(nsteps) )
@@ -912,7 +912,7 @@ contains
                grad_psi_xyz(1), grad_psi_xyz(2), grad_psi_xyz(3), &
                norm_grad_psi_xyz,  &
                es(1), es(2), es(3), eu(1), eu(2), eu(3), grad_psi_norm(j)
-             write(igc15, '(71(E16.10, 2X))') kappa_g3_diag(j,:)
+             write(igc15, '(72(E16.10, 2X))') kappa_g3_diag(j,:)
 !
            END IF
 
