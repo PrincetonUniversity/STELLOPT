@@ -2102,7 +2102,7 @@
       real*8 :: B_R, dB_R_du, dB_R_dv, B_Z, dB_Z_du, dB_Z_dv, dB_Phi_du
       real*8 :: dB_R_ds, dB_Z_ds, dB_Phi_ds
       real*8 :: B_Phi, modB, B_X_v2, B_Y_v2, B_Z_v2
-      real*8 :: sqrtg, norm_binormal
+      real*8 :: sqrtg, norm_binormal, kappa_normal
       real*8 :: subpart2, subpart3, subpart4
       real*8 :: R_grad(1,3), Z_grad(1,3), B_cyl(1,3), B_xyz(1,3)
       real*8 :: B_cyl2(1,3)
@@ -2350,10 +2350,15 @@
                               binormal(1,3)**2)
          subpart7 = binormal /( norm_binormal )
          ! ok - geodesic curvature
-         kappa2 = subpart7(1,1) * subpart6(1,1) + subpart7(1,2) * subpart6(1,2) + &
+         kappa2 = subpart7(1,1) * subpart6(1,1) + &
+                  subpart7(1,2) * subpart6(1,2) + &
                   subpart7(1,3) * subpart6(1,3)
-         kappa2v2 = subpart7(1,1) * subpart6v2(1,1) + subpart7(1,2) * subpart6v2(1,2) + &
-                  subpart7(1,3) * subpart6v2(1,3)
+         kappa2v2 = subpart7(1,1) * subpart6v2(1,1) + &
+                    subpart7(1,2) * subpart6v2(1,2) + &
+                    subpart7(1,3) * subpart6v2(1,3)
+         kappa_normal = es(1,1) * subpart6(1,1) + &
+                        es(1,2) * subpart6(1,2) + &
+                        es(1,3) * subpart6(1,3)
 !
          IF (PRESENT(diagnostic))  THEN
             diagnostic(1,1) = s_val
@@ -2427,6 +2432,7 @@
             diagnostic(1,69) = subpart6v2(1,2)
             diagnostic(1,70) = subpart6v2(1,3)
             diagnostic(1,71) = zeta_p
+            diagnostic(1,72) = kappa_normal
 
          END IF
 
@@ -2444,7 +2450,7 @@
       REAL, INTENT(in)    ::  v_val
       REAL, INTENT(in)    ::  phiedge
       REAL, INTENT(in)    ::  zeta_p
-      REAL, INTENT(out)   ::  kappa2, kappa2v2 
+      REAL, INTENT(out)   ::  kappa2, kappa2v2
       INTEGER, INTENT(inout)     ::  ier
       DOUBLE PRECISION    ::  s_dbl
       DOUBLE PRECISION    ::  u_dbl
