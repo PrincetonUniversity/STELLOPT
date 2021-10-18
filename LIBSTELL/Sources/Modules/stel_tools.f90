@@ -2272,7 +2272,6 @@
          ! Now, build combine the terms
          ! (B cross grad(Psi)/|B cross grad(Psi)| ) dot
          !          [ (B^u grad(v) + B^v grad(u)) (dB_v/du - dB_u/dv)
-         !old       + grad(s) ( B^v dB_s/dv - B^u dB_s/du ) ]
          !             + grad(s) [ B^v (dB_s/dv-dB_v/ds) + B^u (dB_s/du -dB_u/ds) ] ]
          ! Three of the terms can be expanded in vmec coordinates:
          ! dB_v/du - dB_u/dv = dB_R/du dR/dv - dB_R/dv dR/du +
@@ -2293,13 +2292,6 @@
          subpart2 = dB_R_du * R_grad(1,2) - dB_R_dv * R_grad(1,1) + &
                     dB_Z_du * Z_grad(1,2) - dB_Z_dv * Z_grad(1,1) + &
                     dB_Phi_du / nfp
-         !old: subpart3 = B^v dB_s/dv
-         !old:  B^v dB_s/dv  = B^v * [ B_R d^2R/(dvds) + 
-         !old:                   dB_R/dv dR/ds + B_z d^2Z/(dvds) +
-         !old:                   dB_Z/dv dZ/ds ]
-         !old:  * phiedge, to normalized correctly
-      !old subpart3 = Bsupv * (B_R * d2R_dvds + dB_R_dv * R_grad(1,3) + &
-      !old              B_Z * d2Z_dvds + dB_Z_dv * Z_grad(1,3) ) 
 
      ! new subpart3 = B^v * ( dB_s/dv-dB_v/ds)
      !             = B^v*[  dB_R/dv dR/ds - dB_R/ds dR/dv + 
@@ -2310,13 +2302,6 @@
                              dB_Z_dv * Z_grad(1,3)  - &
                              dB_Z_ds * Z_grad(1,2) - &
                              (one/NFP) * dB_Phi_ds ) 
-         !old: subpart4 = B^u dB_s/du
-         !old:  B^u dB_s/du = B^u * [ B_R d^2R/(duds) + 
-         !old:                   dB_R/du dR/ds + B_Z d^2Z/(duds) +
-         !old:                   dB_Z/du dZ/ds ]
-         !old:  * phiedge, to normalized correctly
-         !oldsubpart4 = Bsupu * (B_R * d2R_duds + dB_R_du * d2Z_duds + &
-         !old              B_Z * d2Z_duds + dB_Z_du * Z_grad(1,3) )
 
          !new: subpart4 = B^u *(dB_s/du - dB_u/ds)
 
@@ -2327,9 +2312,6 @@
                              dB_R_ds * R_grad(1,1) + &
                              dB_Z_du * Z_grad(1,3) -  &
                              dB_Z_ds * Z_grad(1,1)   )
-         !old: subpart5 = grad(s)*(subpart3 - subpart4)
-         !old: subpart5 = gradS*(subpart3 - subpart4)
-         !olssubpart5 = es*(subpart3 - subpart4)
          !new: subpart5 = gradS*(subpart3 + subpart4)
          subpart5 = es*(subpart3 + subpart4)
          ! ok - thi is the total curvature, kappa
@@ -2358,7 +2340,9 @@
          !B_cyl2(1,1) =  B_X_v2 * cos(v_val) + B_Y_v2 * sin(v_val) ! BR
          !B_cyl2(1,2) = -B_X_v2 * sin(v_val) + B_Y_v2  * cos(v_val) !  BPhi
          B_cyl2(1,3) =  B_Z_v2 ! Bz
+         es(2) = es(2) / R
          CALL mycross(es, B_cyl, binormal)
+         es(2) = es(2) * R
          !CALL mycross(es, B_cyl2, binormal)
          norm_binormal = sqrt(binormal(1,1)**2 + binormal(1,2)**2 + &
                               binormal(1,3)**2)
