@@ -2313,9 +2313,9 @@
                              dB_Z_du * Z_grad(1,3) -  &
                              dB_Z_ds * Z_grad(1,1)   )
          !new: subpart5 = gradS*(subpart3 + subpart4)
-         es(1,2) = es(1,2) / R
+         !es(1,2) = es(1,2) / R
          subpart5 = es*(subpart3 + subpart4)
-         es(1,2) = es(1,2) * R
+         !es(1,2) = es(1,2) * R
          ! ok - thi is the total curvature, kappa
          ! new: I think I only need the 'subpart1 * subpart2' portion
          !  the subpart 5 portion is normal to the surface and should not contribute
