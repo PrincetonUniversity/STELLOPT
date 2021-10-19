@@ -375,7 +375,7 @@
                IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_ERR,'stellopt_paraexe',ierr_mpi)
 
                ! Follow particles
-               CALL beams3d_follow
+               CALL beams3d_follow_gc
                nbeams_beams = 1  ! Do this so the read in cleanup doesn't fail
                CALL beams3d_write('TRAJECTORY_PARTIAL')
 
