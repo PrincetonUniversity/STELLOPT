@@ -1,13 +1,13 @@
 !-----------------------------------------------------------------------
-!     Function:      fpart_rkh68
+!     Function:      fgc_lsode
 !     Authors:       M. McMillan (matthew.mcmillan@my.wheaton.edu)
 !     Date:          06/20/2012
-!     Description:   Just a wrapper to fpart_nag.
+!     Description:   Just a wrapper to fgc_nag
 !
 !-----------------------------------------------------------------------
-      SUBROUTINE fpart_rkh68(t,q,qdot,istat)
+      SUBROUTINE fgc_lsode(neq,t,q,qdot)
 !-----------------------------------------------------------------------
-!     Libraries NONE
+!     Libraries  NONE
 !-----------------------------------------------------------------------
 !-----------------------------------------------------------------------
 !     Input Variables
@@ -16,15 +16,14 @@
 !          qdot       dq/dt
 !-----------------------------------------------------------------------
       IMPLICIT NONE
-      INTEGER          :: istat
+      INTEGER          :: neq
       DOUBLE PRECISION :: t, q(4), qdot(4)
 !-----------------------------------------------------------------------
 !     Begin Subroutine
 !------------------------------------------------
-      CALL fpart_nag(t,q,qdot)
-      istat = 0
+      CALL fgc_nag(t,q,qdot)
       RETURN
 !-----------------------------------------------------------------------
 !     End Subroutine
 !-----------------------------------------------------------------------
-      END SUBROUTINE fpart_rkh68
+      END SUBROUTINE fgc_lsode
