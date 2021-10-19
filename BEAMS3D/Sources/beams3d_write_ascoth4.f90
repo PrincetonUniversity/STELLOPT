@@ -26,7 +26,7 @@
                                     lvessel, lvac, lbeam_simple, handle_err, nparticles_start, &
                                     HDF5_OPEN_ERR,HDF5_WRITE_ERR,&
                                     HDF5_CLOSE_ERR, BEAMS3D_VERSION, weight, &
-                                    charge, Zatom, mass, ldepo, v_neut,lcollision, pi, pi2, &
+                                    charge, Zatom, mass, ldepo,lcollision, pi, pi2, &
                                     t_end_in, nprocs_beams, &
                                     R_beams, PHI_beams, Z_beams, mass_beams, e_beams, p_beams, &
                                     div_beams, charge_beams
@@ -346,16 +346,12 @@
                dbl_temp     = 2*B_lines(d3,i)*moment_lines(d3,i)/mass(i) ! V_perp^2
                rtemp(k,5,1) = 0.5*mass(i)*(vll_lines(d3,i)*vll_lines(d3,i)+dbl_temp)/e_charge
                rtemp(k,10,1) = vll_lines(d3,i)/SQRT(dbl_temp+vll_lines(d3,i)*vll_lines(d3,i)) ! pitch
-               !rtemp(k,5,1) = 0.5*mass(i)*SUM(v_neut(:,i)*v_neut(:,i),DIM=1)*e_charge
                rtemp(k,6,1) = SQRT(S_lines(d3,i))
                dbl_temp = PHI_lines(d3,i)
                rtemp(k,7,1) = dbl_temp*180/pi
                rtemp(k,8,1) = R_lines(d3,i)
                rtemp(k,9,1) = Z_lines(d3,i)
                ! Now we get a little out of order since we need the components of the velocity
-               !rtemp(k,10,1) = v_neut(2,i)*cos(dbl_temp)-v_neut(1,i)*sin(dbl_temp) ! Vphi
-               !rtemp(k,11,1) = v_neut(1,i)*cos(dbl_temp)+v_neut(2,i)*sin(dbl_temp) ! Vr
-               !rtemp(k,12,1) = v_neut(3,i) !Vz
                rtemp(k,11,1) = Beam(i)
                rtemp(k,12,1) = weight(i) ! weight
                rtemp(k,13,1) = k

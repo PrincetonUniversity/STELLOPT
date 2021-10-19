@@ -24,7 +24,7 @@
       IMPLICIT NONE
       INTEGER :: ier, i, j, k, k1, k2
 !      REAL(rprec)  :: br
-      REAL(rprec), ALLOCATABLE :: X(:,:), Y(:,:), block(:,:), Energy(:), X_start(:), Y_start(:)
+      REAL(rprec), ALLOCATABLE :: X(:,:), Y(:,:), block(:,:), Energy(:), X_start(:), Y_start(:), v_neut(:,:)
       REAL(rprec)              :: xbeam(2),ybeam(2),zbeam(2),dxbeam,dybeam,dzbeam,&
                                   dxbeam2,dybeam2,dzbeam2,dlbeam,dxbeam3,dybeam3,dzbeam3
       REAL(rprec)              :: magZ, magX, magV_neut, magV, xx(3), yy(3), zz(3)
@@ -44,7 +44,8 @@
       END IF
 
       ALLOCATE (X(nparticles_start, nbeams), Y(nparticles_start, nbeams), &
-                  & Energy(nparticles_start), block(nparticles_start, nbeams), STAT=ier )
+                  & Energy(nparticles_start), block(nparticles_start, nbeams), &
+                  v_neut(3,nparticles_start), STAT=ier )
       IF (ier /= 0) CALL handle_err(ALLOC_ERR, 'X, Y, weight', ier)
 
       IF (myworkid == master) THEN
@@ -68,9 +69,10 @@
       ALLOCATE( X_start(nparticles_start), Y_start(nparticles_start), STAT=ier   )
       IF (ier /= 0) CALL handle_err(ALLOC_ERR, 'X,Y_start etc.', ier)
       ALLOCATE(   R_start(nparticles), phi_start(nparticles), Z_start(nparticles), vll_start(nparticles), &
-                & v_neut(3,nparticles), mass(nparticles), charge(nparticles), Zatom(nparticles), &
-                & mu_start(nparticles), t_end(nparticles), &
-                & beam(nparticles), weight(nparticles), STAT=ier   )
+                  vr_start(nparticles), vphi_start(nparticles), vz_start(nparticles), &
+                  mass(nparticles), charge(nparticles), Zatom(nparticles), &
+                  mu_start(nparticles), t_end(nparticles), &
+                  beam(nparticles), weight(nparticles), STAT=ier   )
       IF (ier /= 0) CALL handle_err(ALLOC_ERR, 'R,phi,Z _start, etc.', ier)
 
       ! Handle beam distrbution
@@ -125,15 +127,21 @@
             Z_start(k1:k2)   = zbeam(1) + dzbeam3*Y(:,i)                   ! because dzbeam2=0
             ! Starting Velocity
             vll_start(k1:k2) = SQRT(2*Energy/mass_beams(i))  ! speed E=0.5*mv^2
-            v_neut(1,k1:k2)  = dxbeam*vll_start(k1:k2)
-            v_neut(2,k1:k2)  = dybeam*vll_start(k1:k2)
-            v_neut(3,k1:k2)  = dzbeam*vll_start(k1:k2)
+            v_neut(1,:)  = dxbeam*vll_start(k1:k2)
+            v_neut(2,:)  = dybeam*vll_start(k1:k2)
+            v_neut(3,:)  = dzbeam*vll_start(k1:k2)
+            ! To cylindrical coords
+            vr_start(k1:k2)   =  v_neut(1,:)*COS(PHI_start(k1:k2)) + &
+                                 v_neut(2,:)*SIN(PHI_start(k1:k2))
+            vphi_start(k1:k2) = -v_neut(1,:)*SIN(PHI_start(k1:k2)) + &
+                                 v_neut(2,:)*COS(PHI_start(k1:k2))
+            vz_start(k1:k2)   =  v_neut(3,:)
             k1 = k2 + 1
             k2 = k2 + nparticles_start
          END DO
          WHERE(PHI_start < 0) PHI_start = PHI_start+pi2
       END IF
-      DEALLOCATE(X,Y,Energy,X_start,Y_start,block)
+      DEALLOCATE(X,Y,Energy,X_start,Y_start,block,v_neut)
       weight = weight/nparticles_start
 
 #if defined(MPI_OPT)
@@ -149,7 +157,9 @@
       CALL MPI_BCAST(Z_start,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(vll_start,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(beam,nparticles,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
-      CALL MPI_BCAST(v_neut,nparticles*3,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
+      CALL MPI_BCAST(vr_start,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
+      CALL MPI_BCAST(vphi_start,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
+      CALL MPI_BCAST(vz_start,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
 #endif
 
 

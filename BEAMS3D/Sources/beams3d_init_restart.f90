@@ -67,7 +67,6 @@
          !CALL read_scalar_hdf5(fid,'partvmax',ier,DBLVAR=vpartmax)
          !partvmax = MAX(partvmax,vpartmax)
          !IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'partvmax',ier)
-         IF (ALLOCATED(v_neut)) DEALLOCATE(v_neut)
          IF (ALLOCATED(mass)) DEALLOCATE(mass)
          IF (ALLOCATED(charge)) DEALLOCATE(charge)
          IF (ALLOCATED(Zatom)) DEALLOCATE(charge)
@@ -77,6 +76,9 @@
          IF (ALLOCATED(R_lines)) DEALLOCATE(R_lines)
          IF (ALLOCATED(PHI_lines)) DEALLOCATE(PHI_lines)
          IF (ALLOCATED(Z_lines)) DEALLOCATE(Z_lines)
+         IF (ALLOCATED(vr_lines)) DEALLOCATE(vr_lines)
+         IF (ALLOCATED(vphi_lines)) DEALLOCATE(vphi_lines)
+         IF (ALLOCATED(vz_lines)) DEALLOCATE(vz_lines)
          IF (ALLOCATED(moment_lines)) DEALLOCATE(moment_lines)
          IF (ALLOCATED(vll_lines)) DEALLOCATE(vll_lines)
          IF (ALLOCATED(neut_lines)) DEALLOCATE(neut_lines)
@@ -84,7 +86,8 @@
             beam2(nparticles), weight2(nparticles), end_state(nparticles))
          ALLOCATE(R_lines(0:npoinc,nparticles),Z_lines(0:npoinc,nparticles),PHI_lines(0:npoinc,nparticles),&
             vll_lines(0:npoinc,nparticles),neut_lines(0:npoinc,nparticles),moment_lines(0:npoinc,nparticles),&
-            S_lines(0:npoinc,nparticles),B_lines(0:npoinc,nparticles))
+            S_lines(0:npoinc,nparticles),B_lines(0:npoinc,nparticles), &
+            vr_lines(0:npoinc,nparticles),vphi_lines(0:npoinc,nparticles),vz_lines(0:npoinc,nparticles))
          CALL read_var_hdf5(fid,'mass',nparticles,ier,DBLVAR=mass2)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'mass2',ier)
          CALL read_var_hdf5(fid,'charge',nparticles,ier,DBLVAR=charge2)
@@ -113,6 +116,12 @@
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'S_lines',ier)
          CALL read_var_hdf5(fid,'B_lines',npoinc+1,nparticles,ier,DBLVAR=B_lines)
          IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'B_lines',ier)
+         CALL read_var_hdf5(fid,'vr_lines',npoinc+1,nparticles,ier,DBLVAR=vr_lines)
+         IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'vr_lines',ier)
+         CALL read_var_hdf5(fid,'vphi_lines',npoinc+1,nparticles,ier,DBLVAR=vphi_lines)
+         IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'vphi_lines',ier)
+         CALL read_var_hdf5(fid,'vz_lines',npoinc+1,nparticles,ier,DBLVAR=vz_lines)
+         IF (ier /= 0) CALL handle_err(HDF5_READ_ERR,'vz_lines',ier)
          CALL close_hdf5(fid,ier)
          IF (ier /= 0) CALL handle_err(HDF5_CLOSE_ERR,'beams3d_'//TRIM(restart_string)//'.h5',ier)
 
@@ -154,7 +163,8 @@
 
          ! Allocate the particles
          ALLOCATE(  R_start(k), phi_start(k), Z_start(k), &
-                    v_neut(3,k), mass(k), charge(k), &
+                    vr_start(k), vphi_start(k), vz_start(k), &
+                    mass(k), charge(k), &
                     mu_start(k), Zatom(k), t_end(k), vll_start(k), &
                     beam(k), weight(k) )
 
@@ -167,8 +177,10 @@
             Z_start(k)   = Z_lines(npoinc_extract,i)
             phi_start(k) = PHI_lines(npoinc_extract,i)
             vll_start(k) = vll_lines(npoinc_extract,i)
+            vr_start(k) = vr_lines(npoinc_extract,i)
+            vphi_start(k) = vphi_lines(npoinc_extract,i)
+            vz_start(k)  = vz_lines(npoinc_extract,i)
             mu_start(k)  = moment_lines(npoinc_extract,i)*B_lines(npoinc_extract,i)
-            v_neut(3,k)   = 0.0
             mass(k)      = mass2(i)
             charge(k)   = charge2(i)
             Zatom(k)    = Zatom2(i)
@@ -180,7 +192,8 @@
             mu_start(k) = mu_start(k)/B_help
             k = k + 1
          END DO
-         DEALLOCATE(R_lines, Z_lines, PHI_lines, vll_lines, moment_lines, neut_lines, end_state, S_lines, B_lines)
+         DEALLOCATE(R_lines, Z_lines, PHI_lines, vll_lines, moment_lines, &
+            neut_lines, end_state, S_lines, B_lines, vr_lines, vphi_lines, vz_lines)
          DEALLOCATE(mass2, charge2, Zatom2, beam2, weight2, start_dex)
 
          ! Restore quantities
@@ -199,7 +212,8 @@
       CALL MPI_BCAST(partvmax,1,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
       IF (myworkid /= master) THEN
          ALLOCATE(  R_start(nparticles), phi_start(nparticles), Z_start(nparticles), &
-                    v_neut(3,nparticles), mass(nparticles), charge(nparticles), &
+                    vr_start(nparticles), vphi_start(nparticles), vz_start(nparticles), &
+                    mass(nparticles), charge(nparticles), &
                     mu_start(nparticles), Zatom(nparticles), t_end(nparticles), vll_start(nparticles), &
                     beam(nparticles), weight(nparticles) )
       END IF
@@ -212,9 +226,11 @@
       CALL MPI_BCAST(R_start,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(phi_start,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(Z_start,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
+      CALL MPI_BCAST(vr_start,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
+      CALL MPI_BCAST(vphi_start,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
+      CALL MPI_BCAST(vz_start,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(vll_start,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(beam,nparticles,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
-      CALL MPI_BCAST(v_neut,nparticles*3,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
 #endif
 
       RETURN

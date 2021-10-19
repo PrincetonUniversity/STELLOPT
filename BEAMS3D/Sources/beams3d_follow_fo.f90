@@ -1,7 +1,7 @@
 !-----------------------------------------------------------------------
-!     Module:        beams3d_follow_gc
-!     Authors:       S. Lazerson (lazerson@pppl.gov), M. McMillan (matthew.mcmillan@my.wheaton.edu)
-!     Date:          06/20/2012
+!     Module:        beams3d_follow_fo
+!     Authors:       S. Lazerson (samuel.lazerson@ipp.mpg.de)
+!     Date:          10/19/2021
 !     Description:   This subroutine follows the particles through
 !                    the grid.  The general ODE which must be solved
 !                    can be written:
@@ -12,7 +12,7 @@
 !                    to be parametrized in terms of time.
 !                    
 !-----------------------------------------------------------------------
-SUBROUTINE beams3d_follow_gc
+SUBROUTINE beams3d_follow_fo
     !-----------------------------------------------------------------------
     !     Libraries
     !-----------------------------------------------------------------------
@@ -85,7 +85,7 @@ SUBROUTINE beams3d_follow_gc
     ! Initializations
     ier = 0
     tol_nag = follow_tol
-    neqs_nag = 4
+    neqs_nag = 6
     relab = "M"
     mf = 10
 
@@ -93,7 +93,7 @@ SUBROUTINE beams3d_follow_gc
     i = MAXLOC(ABS(t_end),1)
     tf_max = t_end(i)
 
-    ! Calculate timestep for integration
+    ! Calculate timestep for integration (here vll is Vtotal)
     vel_max = MAX(MAXVAL(ABS(vll_start)),1E6)
     dt = SIGN(MAX(lendt_m/vel_max,1D-9),tf_max)
 
@@ -134,12 +134,14 @@ SUBROUTINE beams3d_follow_gc
     IF (ALLOCATED(S_lines)) DEALLOCATE(S_lines)
     IF (ALLOCATED(U_lines)) DEALLOCATE(U_lines)
     IF (ALLOCATED(B_lines)) DEALLOCATE(B_lines)
-    IF (ALLOCATED(moment_lines)) DEALLOCATE(moment_lines)
+    IF (ALLOCATED(vr_lines)) DEALLOCATE(vr_lines)
+    IF (ALLOCATED(vphi_lines)) DEALLOCATE(vphi_lines)
+    IF (ALLOCATED(vz_lines)) DEALLOCATE(vz_lines)
     IF (ALLOCATED(neut_lines)) DEALLOCATE(neut_lines)
     
     ! Output some stuff
     IF (lverb) THEN
-       WRITE(6, '(A)') '----- FOLLOWING GYROCENTER TRAJECTORIES -----'
+       WRITE(6, '(A)') '----- FOLLOWING PARTICLE TRAJECTORIES -----'
        WRITE(6, '(A,A)')          '      Method: ', TRIM(int_type)
        WRITE(6, '(A,I9)')         '   Particles: ', nparticles
        WRITE(6, '(A,I9,A,EN12.3)') '       Steps: ', nsteps, '   Delta-t: ', dt
@@ -157,23 +159,25 @@ SUBROUTINE beams3d_follow_gc
     ALLOCATE(q(neqs_nag), STAT = ier)
     IF (ier /= 0) CALL handle_err(ALLOC_ERR, 'Q', ier)
     ALLOCATE(R_lines(0:npoinc, mystart:myend), Z_lines(0:npoinc, mystart:myend), &
-             PHI_lines(0:npoinc, mystart:myend), vll_lines(0:npoinc, mystart:myend), moment_lines(0:npoinc, mystart:myend), &
+             PHI_lines(0:npoinc, mystart:myend), &
              neut_lines(0:npoinc, mystart:myend), S_lines(0:npoinc, mystart:myend), U_lines(0:npoinc, mystart:myend), &
-              B_lines(0:npoinc, mystart:myend), STAT = ier)
+              B_lines(0:npoinc, mystart:myend), &
+              vr_lines(0:npoinc, mystart:myend), vphi_lines(0:npoinc, mystart:myend), vz_lines(0:npoinc, mystart:myend),STAT = ier)
     IF (ier /= 0) CALL handle_err(ALLOC_ERR, 'R_LINES, PHI_LINES, Z_LINES', ier)
     ALLOCATE(t_last(mystart:myend), STAT = ier)
     IF (ier /= 0) CALL handle_err(ALLOC_ERR, 't_last', ier)
 
     ! Initializations
     R_lines = 0.0; Z_lines = 0.0; PHI_lines = -1.0
-    vll_lines = 0.0; moment_lines = 0.0
+    vr_lines = 0.0; vphi_lines = 0.0; vz_lines = 0.0
     S_lines = 1.5; U_lines = 0.0; B_lines = -1.0
     t_last = 0.0
     R_lines(0, mystart:myend) = R_start(mystart:myend)
     Z_lines(0, mystart:myend) = Z_start(mystart:myend)
     PHI_lines(0, mystart:myend) = phi_start(mystart:myend)
-    vll_lines(0, mystart:myend) = vll_start(mystart:myend)
-    moment_lines(0, mystart:myend) = mu_start(mystart:myend)
+    vr_lines(0, mystart:myend) = vr_start(mystart:myend)
+    vphi_lines(0, mystart:myend) = vphi_start(mystart:myend)
+    vz_lines(0, mystart:myend) = vz_start(mystart:myend)
     neut_lines(0, mystart:myend) = .FALSE.
     IF (lbeam) neut_lines(0, mystart:myend) = .TRUE.
 
@@ -196,13 +200,15 @@ SUBROUTINE beams3d_follow_gc
                     q(1) = R_start(l)
                     q(2) = phi_start(l)
                     q(3) = Z_start(l)
-                    q(4) = vll_start(l)
+                    q(4) = vr_start(l)
+                    q(5) = vphi_start(l)
+                    q(6) = vz_start(l)
                     t_nag = 0.0
                     tf_nag = 0.0
                     mycharge = charge(l)
                     myZ = Zatom(l)
                     mymass = mass(l)
-                    moment = mu_start(l)
+                    mybeam = Beam(l)
                     my_end = t_end(l)
                     fact_pa   = plasma_mass/(mymass*plasma_Zmean)
                     fact_coul = myZ*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
@@ -232,7 +238,7 @@ SUBROUTINE beams3d_follow_gc
                     END IF
                     IF (ldepo) CYCLE
                     DO ! Must do it this way becasue lbeam changes q(4) values
-                       CALL D02CJF(t_nag,tf_nag,neqs_nag,q,fgc_nag,tol_nag,relab,out_beams3d_nag,D02CJW,w,ier)
+                       CALL D02CJF(t_nag,tf_nag,neqs_nag,q,fpart_nag,tol_nag,relab,out_beams3d_nag,D02CJW,w,ier)
                        IF (ier < 0) CALL handle_err(D02CJF_ERR, 'beams3d_follow', ier)
                        t_last(l) = tf_nag ! Save the value here in case out_beams3d changes it
                        CALL out_beams3d_nag(tf_nag,q)
@@ -254,7 +260,9 @@ SUBROUTINE beams3d_follow_gc
                     q(1) = R_start(l)
                     q(2) = phi_start(l)
                     q(3) = Z_start(l)
-                    q(4) = vll_start(l)
+                    q(4) = vr_start(l)
+                    q(5) = vphi_start(l)
+                    q(6) = vz_start(l)
                     xlast = q(1)*cos(q(2))
                     ylast = q(1)*sin(q(2))
                     zlast = q(3)
@@ -264,7 +272,6 @@ SUBROUTINE beams3d_follow_gc
                     myZ = Zatom(l)
                     mymass = mass(l)
                     mybeam = Beam(l)
-                    moment = mu_start(l)
                     my_end = t_end(l)
                     fact_pa   = plasma_mass/(mymass*plasma_Zmean)
                     fact_coul = myZ*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
@@ -294,7 +301,7 @@ SUBROUTINE beams3d_follow_gc
                     END IF
                     IF (ldepo) CYCLE
                     DO
-                        CALL drkhvg(t_nag, q, neqs_nag, dt, 2, fgc_rkh68, rkh_work, iopt, ier)
+                        CALL drkhvg(t_nag, q, neqs_nag, dt, 2, fpart_rkh68, rkh_work, iopt, ier)
                         IF (ier < 0) CALL handle_err(RKH68_ERR, 'beams3d_follow', ier)
                         q(1)=rkh_work(1,2)
                         q(2)=rkh_work(2,2)
@@ -341,7 +348,9 @@ SUBROUTINE beams3d_follow_gc
                     q(1) = R_start(l)
                     q(2) = phi_start(l)
                     q(3) = Z_start(l)
-                    q(4) = vll_start(l)
+                    q(4) = vr_start(l)
+                    q(5) = vphi_start(l)
+                    q(6) = vz_start(l)
                     xlast = q(1)*cos(q(2))
                     ylast = q(1)*sin(q(2))
                     zlast = q(3)
@@ -355,7 +364,6 @@ SUBROUTINE beams3d_follow_gc
                     my_end = t_end(l)
                     fact_pa   = plasma_mass/(mymass*plasma_Zmean)
                     fact_coul = myZ*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
-                    ! Do xyz conversion here
                     myv_neut(1) = vr_start(l)*cos(phi_start(l)) - vphi_start(l)*sin(phi_start(l))
                     myv_neut(2) = vr_start(l)*sin(phi_start(l)) + vphi_start(l)*cos(phi_start(l))
                     myv_neut(3) = vz_start(l)
@@ -387,7 +395,7 @@ SUBROUTINE beams3d_follow_gc
                     DO
                         IF (lcollision) istate = 1
                         CALL FLUSH(6)
-                        CALL DLSODE(fgc_lsode, neqs_nag, q, t_nag, tf_nag, itol, rtol, atol, itask, istate, &
+                        CALL DLSODE(fpart_lsode, neqs_nag, q, t_nag, tf_nag, itol, rtol, atol, itask, istate, &
                                    iopt, w, lrw, iwork, liw, jacobian_lsode, mf)
                         IF ((istate == -3) .or. (istate == -4)) THEN
                            ! BIG  DEBUG MESSAGE
@@ -485,8 +493,9 @@ SUBROUTINE beams3d_follow_gc
     CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend,      'R_lines', DBLVAR=R_lines)
     CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend,    'PHI_lines', DBLVAR=PHI_lines)
     CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend,      'Z_lines', DBLVAR=Z_lines)
-    CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend,    'vll_lines', DBLVAR=vll_lines)
-    CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend, 'moment_lines', DBLVAR=moment_lines)
+    CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend,     'vr_lines', DBLVAR=vr_lines)
+    CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend,   'vphi_lines', DBLVAR=vphi_lines)
+    CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend,     'vz_lines', DBLVAR=vz_lines)
     CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend,      'S_lines', DBLVAR=S_lines)
     CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend,      'U_lines', DBLVAR=U_lines)
     CALL beams3d_write_parhdf5(0, npoinc, 1, nparticles, mystart, myend,      'B_lines', DBLVAR=B_lines)
@@ -506,4 +515,4 @@ SUBROUTINE beams3d_follow_gc
     !-----------------------------------------------------------------------
     !     End Subroutine
     !-----------------------------------------------------------------------
-END SUBROUTINE beams3d_follow_gc
+END SUBROUTINE beams3d_follow_fo
