@@ -67,49 +67,15 @@
       ALLOCATE(shine_through(nbeams))
       ALLOCATE(shine_port(nbeams))
       ALLOCATE(nlost(nbeams))
-      ALLOCATE(partmask(mystart:myend))
-      ALLOCATE(partmask2(0:npoinc,mystart:myend))
-      ALLOCATE(partmask2t(0:npoinc,mystart:myend))
-      ALLOCATE(int_mask(mystart:myend))
-      ALLOCATE(int_mask2(0:npoinc,mystart:myend))
-      ALLOCATE(real_mask(mystart:myend))
 #if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_BEAMS, ierr_mpi)
       IF (ierr_mpi /= 0) CALL handle_err(MPI_BARRIER_ERR, 'beams3d_follow', ierr_mpi)
 #endif
-      maxdist = partvmax
-      mindist = -partvmax
-
-      ! Setup masking arrays
-      FORALL(i=0:npoinc) int_mask2(i,mystart:myend) = beam(mystart:myend)              ! Index of beams
-      WHERE(      ( (R_lines(:,mystart:myend)==0.0) .and. (PHI_lines(:,mystart:myend)==-1.0) )&
-             .or. (neut_lines(:,mystart:myend)) ) int_mask2(:,mystart:myend) = 0  ! Mask the neutral and lost particles
-      int_mask(mystart:myend) = 0
-      IF (lbeam) int_mask(mystart:myend) = 3
-      int_mask(mystart:myend)  = COUNT(neut_lines(:,mystart:myend),DIM=1)-1                  ! Starting index of every charge particle
-      WHERE(int_mask < 0) int_mask = 0
-      FORALL(j=mystart:myend) real_mask(j) = S_lines(int_mask(j),j) ! Starting points in s
 
       ! Do not need R_lines or PHI_lines after this point
       IF (ALLOCATED(R_lines)) DEALLOCATE(R_lines)
       IF (ALLOCATED(PHI_lines)) DEALLOCATE(PHI_lines)
       IF (ALLOCATED(neut_lines)) DEALLOCATE(neut_lines)
-
-      ! Calculate distribution function
-      ALLOCATE(dist_func(1:nbeams,1:ndist,0:npoinc))
-      dist_func = 0
-      dist = maxdist-mindist
-      ddist = dist/ndist
-      sbeam = MINVAL(beam(mystart:myend), DIM=1)
-      ebeam = MAXVAL(beam(mystart:myend), DIM=1)
-      DO k = 1, ndist
-         v1 = mindist+(k-1)*ddist
-         v2 = mindist+(k)*ddist
-         partmask2(:,mystart:myend) = ((vll_lines(:,mystart:myend).ge.v1).and.(vll_lines(:,mystart:myend).lt.v2))
-         DO i = sbeam, ebeam
-            dist_func(i,k,0:npoinc) = COUNT(partmask2(:,mystart:myend).and.(int_mask2(:,mystart:myend)==i),DIM=2)
-         END DO
-      END DO
 
       ! Calculate shinethrough and loss
       shine_through = 0
@@ -121,12 +87,10 @@
 
 #if defined(MPI_OPT)
       IF (myworkid == master) THEN
-         CALL MPI_REDUCE(MPI_IN_PLACE, dist_func,     nbeams*ndist*(npoinc+1), MPI_INTEGER,          MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
          CALL MPI_REDUCE(MPI_IN_PLACE, shine_through, nbeams,                  MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
          CALL MPI_REDUCE(MPI_IN_PLACE, shine_port,    nbeams,                  MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
          CALL MPI_REDUCE(MPI_IN_PLACE, nlost,         nbeams,                  MPI_REAL,          MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
       ELSE
-         CALL MPI_REDUCE(dist_func,     dist_func,     nbeams*ndist*(npoinc+1), MPI_INTEGER,          MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
          CALL MPI_REDUCE(shine_through, shine_through, nbeams,                  MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
          CALL MPI_REDUCE(shine_port,    shine_port,    nbeams,                  MPI_DOUBLE_PRECISION, MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
          CALL MPI_REDUCE(nlost,         nlost,         nbeams,                  MPI_REAL,          MPI_SUM, master, MPI_COMM_BEAMS, ierr_mpi)
@@ -136,6 +100,8 @@
       IF (myworkid == master) THEN
          ! Screen Output
          DO i = 1, nbeams
+            ninj  = SUM(weight,MASK=(beam==i))
+            ninj2  = COUNT(beam==i)
             ! Screen Output
             IF (lverb) THEN
                IF (i==1) WRITE(6,'(A)')  ' BEAMLINE     ENERGY [keV]   CHARGE [e]   MASS [Mp]   Particles [#]   Lost [%]  Shinethrough [%]  Port [%]'
@@ -145,11 +111,6 @@
             END IF
          END DO
       END IF
-
-      DEALLOCATE(dist_func)
-      DEALLOCATE(int_mask2,int_mask)
-      DEALLOCATE(partmask2,partmask2t)
-      DEALLOCATE(partmask,real_mask)
 
       ! These diagnostics need Vp to be defined
       IF (.not.ldepo .and. myworkid == master) THEN
