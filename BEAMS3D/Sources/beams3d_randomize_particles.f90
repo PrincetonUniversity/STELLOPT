@@ -23,8 +23,8 @@
       INTEGER :: i, d1, d2, b_temp
       INTEGER, DIMENSION(:), ALLOCATABLE :: randomindex
       REAL(rprec) :: r_temp, phi_temp, z_temp, vll_temp, w_temp, &
-                     za_temp, m_temp, c_temp, mu_temp, t_temp
-      REAL(rprec), DIMENSION(3) :: v_temp
+                     za_temp, m_temp, c_temp, mu_temp, t_temp, &
+                     vr_temp, vphi_temp, vz_temp
       REAL, DIMENSION(:), ALLOCATABLE :: randomnumbers
 
 !-----------------------------------------------------------------------
@@ -51,7 +51,9 @@
             c_temp   = charge(d2)
             mu_temp  = mu_start(d2)
             t_temp   = t_end(d2)
-            v_temp   = v_neut(:,d2)
+            vr_temp  = vr_start(d2)
+            vphi_temp = vphi_start(d2)
+            vz_temp  = vz_start(d2)
             b_temp   = Beam(d2)
             !swap
             R_start(d2)   = R_start(d1)
@@ -64,7 +66,9 @@
             charge(d2)    = charge(d1)
             mu_start(d2)  = mu_start(d1)
             t_end(d2)     = t_end(d1)
-            v_neut(:,d2)  = v_neut(:,d1)
+            vr_start(d2)  = vr_start(d1)
+            vphi_start(d2)  = vphi_start(d1)
+            vz_start(d2)  = vz_start(d1)
             Beam(d2)      = Beam(d1)
             ! Finish
             R_start(d1)   = r_temp
@@ -77,7 +81,9 @@
             charge(d1)    = c_temp
             mu_start(d1)  = mu_temp
             t_end(d1)     = t_temp
-            v_neut(:,d1)  = v_temp
+            vr_start(d1)  = vr_temp
+            vphi_start(d1)  = vphi_temp
+            vz_start(d1)  = vz_temp
             Beam(d1)      = b_temp
          END DO
          DEALLOCATE(randomindex)
@@ -95,7 +101,9 @@
       CALL MPI_BCAST(charge,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(mu_start,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(t_end,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
-      CALL MPI_BCAST(v_neut,nparticles*3,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
+      CALL MPI_BCAST(vr_start,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
+      CALL MPI_BCAST(vphi_start,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
+      CALL MPI_BCAST(vz_start,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(beam,nparticles,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
 #endif
 

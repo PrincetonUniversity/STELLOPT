@@ -38,6 +38,7 @@
                                   ipower_prof(:,:),j_prof(:,:), dense_prof(:,:)
       REAL(rprec), DIMENSION(:,:,:,:,:,:), POINTER :: dist5d_prof
       REAL(rprec), ALLOCATABLE :: R_lines(:,:),Z_lines(:,:),PHI_lines(:,:),vll_lines(:,:),moment_lines(:,:),&
-                                  S_lines(:,:),U_lines(:,:),B_lines(:,:)
+                                  S_lines(:,:),U_lines(:,:),B_lines(:,:), &
+                                  vr_lines(:,:),vphi_lines(:,:),vz_lines(:,:)
 
       END MODULE beams3d_lines

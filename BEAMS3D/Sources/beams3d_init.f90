@@ -132,6 +132,7 @@
          IF (lvessel) WRITE(6,'(A)')    '   VESSEL: ' // TRIM(vessel_string)
          IF (lcoil) WRITE(6,'(A)')    '   COIL: ' // TRIM(coil_string)
          IF (lmgrid) WRITE(6,'(A)')    '   MGRID: ' // TRIM(mgrid_string)
+         IF (.not.lgcsim) WRITE(6,'(A)') '   FULL ORIBT SIMULATION!'
          IF (lcollision) WRITE(6,'(A)') '   COLLISION OPERATOR ON!'
          IF (lkick) WRITE(6,'(A)') '   KICK MODEL ON!'
          IF (lvac)  WRITE(6,'(A)') '   VACUUM FIELDS ONLY!'
@@ -581,15 +582,18 @@
          CALL beams3d_init_fusion
       ELSE
         ALLOCATE(  R_start(nparticles), phi_start(nparticles), Z_start(nparticles), &
-           v_neut(3,nparticles), mass(nparticles), charge(nparticles), &
+           vr_start(nparticles), vphi_start(nparticles), vz_start(nparticles), &
+           mass(nparticles), charge(nparticles), &
            mu_start(nparticles), Zatom(nparticles), t_end(nparticles), vll_start(nparticles), &
            beam(nparticles), weight(nparticles) )
 
-         R_start = r_start_in(1:nparticles)
-         phi_start = phi_start_in(1:nparticles)
-         Z_start = z_start_in(1:nparticles)
-         vll_start = vll_start_in(1:nparticles)
-         v_neut = 0.0
+         R_start    = r_start_in(1:nparticles)
+         phi_start  = phi_start_in(1:nparticles)
+         Z_start    = z_start_in(1:nparticles)
+         vll_start  = vll_start_in(1:nparticles)
+         vr_start   = vr_start_in(1:nparticles)
+         vphi_start = vphi_start_in(1:nparticles)
+         vz_start   = vz_start_in(1:nparticles)
          weight = 1.0/nparticles
          Zatom = Zatom_in(1:nparticles)
          mass = mass_in(1:nparticles)

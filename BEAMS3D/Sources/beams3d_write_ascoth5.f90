@@ -29,7 +29,7 @@
                                     lvessel, lvac, lbeam_simple, handle_err, nparticles_start, &
                                     HDF5_OPEN_ERR,HDF5_WRITE_ERR,&
                                     HDF5_CLOSE_ERR, BEAMS3D_VERSION, weight, e_beams, p_beams,&
-                                    charge, Zatom, mass, ldepo, v_neut, &
+                                    charge, Zatom, mass, ldepo, &
                                     lcollision, pi, pi2, t_end_in, nprocs_beams, &
                                     div_beams, mass_beams, Zatom_beams, dex_beams, &
                                     qid_str_saved, lascotfl, R_beams, PHI_beams, Z_beams, &

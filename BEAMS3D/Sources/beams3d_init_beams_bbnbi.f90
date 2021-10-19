@@ -29,7 +29,7 @@
       INTEGER, DIMENSION(:), ALLOCATABLE :: N_start
       REAL(rprec) :: rtemp
       REAL(rprec), DIMENSION(:), ALLOCATABLE :: Energy, X_start, Y_start
-      REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: X, Y, U, V
+      REAL(rprec), DIMENSION(:,:), ALLOCATABLE :: X, Y, U, V, v_neut
       REAL(rprec), PARAMETER   :: E_error = .01 ! 1% energy spread
 
       ! For HDF5
@@ -104,12 +104,14 @@
       CALL MPI_BCAST(k2, 1, MPI_INTEGER, master, MPI_COMM_BEAMS, ierr_mpi)
       nparticles = nbeams*nparticles_start
       ALLOCATE(   R_start(nparticles), phi_start(nparticles), Z_start(nparticles), vll_start(nparticles), &
-                  v_neut(3,nparticles), mass(nparticles), charge(nparticles), Zatom(nparticles), &
+                  vr_start(nparticles), vphi_start(nparticles), vz_start(nparticles), &
+                  mass(nparticles), charge(nparticles), Zatom(nparticles), &
                   mu_start(nparticles), t_end(nparticles), &
                   beam(nparticles), weight(nparticles))
       IF (myworkid==master) THEN
          ALLOCATE(N_start(nparticles_start),X_start(nparticles_start),Y_start(nparticles_start),&
-                  Energy(nparticles_start), U(3,nparticles_start), V(3,nparticles_start))
+                  Energy(nparticles_start), U(3,nparticles_start), V(3,nparticles_start), &
+                  v_neut(3,nparticles_start))
          ! Randomly inidialize beamlets
          CALL RANDOM_NUMBER(X_start)
          N_start = NINT(X_Start*dims(2))
@@ -159,13 +161,19 @@
             V(3,:) = U(1,:)*NY_BEAMLET(j,N_start)-U(2,:)*NX_BEAMLET(j,N_start)
             ! Starting Velocity 
             vll_start(k1:k2) = SQRT(2*Energy/mass_beams(i))  ! speed E=0.5*mv^2
-            v_neut(1,k1:k2)  = (NX_BEAMLET(j,N_start) + U(1,:)*X_Start + V(1,:)*Y_start)*vll_start(k1:k2)
-            v_neut(2,k1:k2)  = (NY_BEAMLET(j,N_start) + U(2,:)*X_Start + V(2,:)*Y_start)*vll_start(k1:k2)
-            v_neut(3,k1:k2)  = (NZ_BEAMLET(j,N_start) + U(3,:)*X_Start + V(3,:)*Y_start)*vll_start(k1:k2)
+            v_neut(1,:)  = (NX_BEAMLET(j,N_start) + U(1,:)*X_Start + V(1,:)*Y_start)*vll_start(k1:k2)
+            v_neut(2,:)  = (NY_BEAMLET(j,N_start) + U(2,:)*X_Start + V(2,:)*Y_start)*vll_start(k1:k2)
+            v_neut(3,:)  = (NZ_BEAMLET(j,N_start) + U(3,:)*X_Start + V(3,:)*Y_start)*vll_start(k1:k2)
+            ! To cylindrical coords
+            vr_start(k1:k2)   =  v_neut(1,:)*COS(PHI_start(k1:k2)) + &
+                                 v_neut(2,:)*SIN(PHI_start(k1:k2))
+            vphi_start(k1:k2) = -v_neut(1,:)*SIN(PHI_start(k1:k2)) + &
+                                 v_neut(2,:)*COS(PHI_start(k1:k2))
+            vz_start(k1:k2)   =  v_neut(3,:)
             k1 = k2 + 1
             k2 = k2 + nparticles_start
          END DO
-         DEALLOCATE(N_start,X_Start,Y_start,Energy, U, V)
+         DEALLOCATE(N_start,X_Start,Y_start,Energy, U, V, v_neut)
          DEALLOCATE(X_BEAMLET,Y_BEAMLET,Z_BEAMLET,NX_BEAMLET,NY_BEAMLET,NZ_BEAMLET)
          weight = weight/nparticles_start
       END IF
@@ -184,7 +192,9 @@
       CALL MPI_BCAST(Z_start,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(vll_start,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
       CALL MPI_BCAST(beam,nparticles,MPI_INTEGER, master, MPI_COMM_BEAMS,ierr_mpi)
-      CALL MPI_BCAST(v_neut,nparticles*3,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
+      CALL MPI_BCAST(vr_start,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
+      CALL MPI_BCAST(vphi_start,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
+      CALL MPI_BCAST(vz_start,nparticles,MPI_REAL8, master, MPI_COMM_BEAMS,ierr_mpi)
 #endif
 
 

@@ -12,6 +12,7 @@
       USE beams3d_grid
       USE beams3d_lines, ONLY: R_lines, PHI_lines, Z_lines, vll_lines, &
                                neut_lines, moment_lines, S_lines, U_lines, &
+                               vr_lines, vphi_lines, vz_lines, &
                                shine_through, &
                                B_lines, end_state, shine_port, Gfactor, &
                                ndot_prof, epower_prof, ipower_prof, j_prof,&
@@ -64,6 +65,9 @@
       IF (ALLOCATED(S_lines)) DEALLOCATE(S_lines)
       IF (ALLOCATED(U_lines)) DEALLOCATE(U_lines)
       IF (ALLOCATED(B_lines)) DEALLOCATE(B_lines)
+      IF (ALLOCATED(vr_lines)) DEALLOCATE(vr_lines)
+      IF (ALLOCATED(vphi_lines)) DEALLOCATE(vphi_lines)
+      IF (ALLOCATED(vz_lines)) DEALLOCATE(vz_lines)
       IF (ALLOCATED(weight)) DEALLOCATE(weight)
       IF (ALLOCATED(beam)) DEALLOCATE(beam)
       IF (ALLOCATED(end_state)) DEALLOCATE(end_state)
@@ -165,7 +169,6 @@
       IF (ALLOCATED(R_start))   DEALLOCATE(R_start)
       IF (ALLOCATED(phi_start)) DEALLOCATE(phi_start)
       IF (ALLOCATED(Z_start))   DEALLOCATE(Z_start)
-      IF (ALLOCATED(v_neut))    DEALLOCATE(v_neut)
       IF (ALLOCATED(mass))      DEALLOCATE(mass)
       IF (ALLOCATED(charge))    DEALLOCATE(charge)
       IF (ALLOCATED(mu_start))  DEALLOCATE(mu_start)

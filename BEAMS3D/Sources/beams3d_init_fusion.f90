@@ -160,8 +160,10 @@
       ALLOCATE(   R_start(nparticles), phi_start(nparticles), Z_start(nparticles), vll_start(nparticles), &
                   mass(nparticles), charge(nparticles), Zatom(nparticles), &
                   mu_start(nparticles), t_end(nparticles), &
-                  beam(nparticles), weight(nparticles), v_neut(3,nparticles))
-      v_neut = 0
+                  beam(nparticles), weight(nparticles), &
+                  vr_start(nparticles), vphi_start(nparticles), vz_start(nparticles))
+
+      vr_start=0; vphi_start=0; vz_start=0
       ! BEAM 1 D+T -> He4
       E_BEAMS(1) = 3.52E6*e_charge*fusion_scale
       MASS_BEAMS(1) = mHe4

@@ -206,7 +206,8 @@
          TE_AUX_F = TE_AUX_F*te_scale
          TI_AUX_F = TI_AUX_F*ti_scale
          ZEFF_AUX_F = ZEFF_AUX_F*zeff_scale
-         lbeam = .true.; lkick = .false.
+         lbeam = .true.; lkick = .false.; lgcsim = .true.
+         
          IF (r_start_in(1) /= -1.0) lbeam = .false.
          IF (lfusion .or. lrestart_particles) lbeam = .false.
          IF (lbbnbi) lbeam = .true.

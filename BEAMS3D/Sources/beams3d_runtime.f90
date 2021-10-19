@@ -124,7 +124,7 @@ MODULE beams3d_runtime
                lbeam, lhitonly, lread_input, lplasma_only, lraw,&
                ldepo, lbeam_simple, ldebug, lcollision, lw7x, lsuzuki, &
                lascot, lascot4, lbbnbi, lvessel_beam, lascotfl, lrandomize, &
-               lfusion, lfusion_alpha, leqdsk, lhint, lkick
+               lfusion, lfusion_alpha, leqdsk, lhint, lkick, lgcsim
     INTEGER :: nextcur, npoinc, nbeams, nparticles_start, nprocs_beams, ndt, ndt_max
     INTEGER, DIMENSION(MAXBEAMS) :: Dex_beams
     INTEGER, ALLOCATABLE :: beam(:)
@@ -141,15 +141,16 @@ MODULE beams3d_runtime
     INTEGER, DIMENSION(NION) :: NI_AUX_Z
     REAL(rprec), DIMENSION(NION) :: NI_AUX_M
     REAL(rprec), DIMENSION(MAXPARTICLES) :: r_start_in, phi_start_in, z_start_in, vll_start_in, &
-                                            & mu_start_in, charge_in, Zatom_in, mass_in, t_end_in
-    REAL(rprec), ALLOCATABLE :: R_start(:), phi_start(:), Z_start(:), vll_start(:), v_neut(:,:), mu_start(:), &
-                                & mass(:), charge(:), Zatom(:), t_end(:), weight(:)
+                                            & mu_start_in, charge_in, Zatom_in, mass_in, t_end_in, &
+                                            vr_start_in, vphi_start_in, vz_start_in
+    REAL(rprec), ALLOCATABLE :: R_start(:), phi_start(:), Z_start(:), vll_start(:), mu_start(:), &
+                                & mass(:), charge(:), Zatom(:), t_end(:), weight(:), vr_start(:), vphi_start(:), vz_start(:)
     REAL(rprec), ALLOCATABLE :: extcur(:)
     CHARACTER(LEN=10) ::  qid_str_saved ! For ASCOT5
     CHARACTER(256) :: id_string, mgrid_string, coil_string, &
     vessel_string, int_type, restart_string, bbnbi_string, eqdsk_string
 
-    REAL(rprec), PARAMETER :: BEAMS3D_VERSION = 3.50 ! this is the multi-ion version
+    REAL(rprec), PARAMETER :: BEAMS3D_VERSION = 3.75 ! this is the full orbit test version
     !-----------------------------------------------------------------------
     !     Subroutines
     !          handle_err  Controls Program Termination
