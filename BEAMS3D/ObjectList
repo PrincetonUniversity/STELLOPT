@@ -1,4 +1,5 @@
 ObjectFiles = \
+fpart_nag.o \
 beams3d_fix_poloidal.o \
 beams3d_distnorm.o \
 beams3d_init_hint.o \
@@ -30,7 +31,7 @@ beams3d_init_coil.o \
 beams3d_init_vmec.o \
 beams3d_grid.o \
 backspace_out.o \
-beams3d_follow.o \
+beams3d_follow_gc.o \
 gauss_rand.o \
 beams3d_input_mod.o \
 beams3d_init_beams.o \

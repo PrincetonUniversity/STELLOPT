@@ -1,5 +1,5 @@
 !-----------------------------------------------------------------------
-!     Module:        beams3d_follow
+!     Module:        beams3d_follow_gc
 !     Authors:       S. Lazerson (lazerson@pppl.gov), M. McMillan (matthew.mcmillan@my.wheaton.edu)
 !     Date:          06/20/2012
 !     Description:   This subroutine follows the particles through
@@ -12,7 +12,7 @@
 !                    to be parametrized in terms of time.
 !                    
 !-----------------------------------------------------------------------
-SUBROUTINE beams3d_follow
+SUBROUTINE beams3d_follow_gc
     !-----------------------------------------------------------------------
     !     Libraries
     !-----------------------------------------------------------------------
@@ -499,4 +499,4 @@ SUBROUTINE beams3d_follow
     !-----------------------------------------------------------------------
     !     End Subroutine
     !-----------------------------------------------------------------------
-END SUBROUTINE beams3d_follow
+END SUBROUTINE beams3d_follow_gc
