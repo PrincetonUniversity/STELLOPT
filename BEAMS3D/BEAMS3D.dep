@@ -297,6 +297,10 @@ fpart_nag.o: \
       beams3d_grid.o \
       beams3d_lines.o
 
+fpart_lsode.o: 
+
+fpart_rkh68.o: 
+
 
 fgc_lsode.o: 
       

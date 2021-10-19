@@ -1,5 +1,7 @@
 ObjectFiles = \
 fpart_nag.o \
+fpart_lsode.o \
+fpart_rkh68.o \
 beams3d_fix_poloidal.o \
 beams3d_distnorm.o \
 beams3d_init_hint.o \
