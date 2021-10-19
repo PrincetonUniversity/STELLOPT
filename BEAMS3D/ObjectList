@@ -18,7 +18,7 @@ beams3d_init_mgrid.o \
 jacobian_lsode.o \
 beams3d_write.o \
 beams3d_diagnostics.o \
-fpart_nag.o \
+fgc_nag.o \
 beams3d_main.o \
 beams3d_runtime.o \
 beams3d_physics_mod.o \
@@ -34,5 +34,5 @@ beams3d_follow.o \
 gauss_rand.o \
 beams3d_input_mod.o \
 beams3d_init_beams.o \
-fpart_rkh68.o \
-fpart_lsode.o 
+fgc_rkh68.o \
+fgc_lsode.o 

@@ -6,7 +6,7 @@
 !                    the grid.  The general ODE which must be solved
 !                    can be written:
 !                        dX        
-!                       ----   = fpart(t,q,qdot)
+!                       ----   = fgc(t,q,qdot)
 !                        dt        
 !                    where X=(R,phi,Z).  This allows particle trajectories
 !                    to be parametrized in terms of time.
@@ -71,14 +71,14 @@ SUBROUTINE beams3d_follow
 
     !-----------------------------------------------------------------------
     !     External Functions
-    !          fpart_nag            RHS of ODE integrator (for NAG)    for BEAMS3D
+    !          fgc_nag            RHS of ODE integrator (for NAG)    for BEAMS3D
     !          D02CJF               NAG ODE Solver
     !          D02CJW               NAG Dummy function
     !          jacobian_lsode       Jacobian function (for LSODE, not currently utilized)
     !-----------------------------------------------------------------------
-    EXTERNAL D02CJF, D02CJW, fpart_nag, D02CJX, out_beams3d_nag
-    EXTERNAL fpart_lsode, jacobian_lsode
-    EXTERNAL fpart_rkh68
+    EXTERNAL D02CJF, D02CJW, fgc_nag, D02CJX, out_beams3d_nag
+    EXTERNAL fgc_lsode, jacobian_lsode
+    EXTERNAL fgc_rkh68
     !-----------------------------------------------------------------------
     !     Begin Subroutine
     !-----------------------------------------------------------------------
@@ -230,7 +230,7 @@ SUBROUTINE beams3d_follow
                     END IF
                     IF (ldepo) CYCLE
                     DO ! Must do it this way becasue lbeam changes q(4) values
-                       CALL D02CJF(t_nag,tf_nag,neqs_nag,q,fpart_nag,tol_nag,relab,out_beams3d_nag,D02CJW,w,ier)
+                       CALL D02CJF(t_nag,tf_nag,neqs_nag,q,fgc_nag,tol_nag,relab,out_beams3d_nag,D02CJW,w,ier)
                        IF (ier < 0) CALL handle_err(D02CJF_ERR, 'beams3d_follow', ier)
                        t_last(l) = tf_nag ! Save the value here in case out_beams3d changes it
                        CALL out_beams3d_nag(tf_nag,q)
@@ -290,7 +290,7 @@ SUBROUTINE beams3d_follow
                     END IF
                     IF (ldepo) CYCLE
                     DO
-                        CALL drkhvg(t_nag, q, neqs_nag, dt, 2, fpart_rkh68, rkh_work, iopt, ier)
+                        CALL drkhvg(t_nag, q, neqs_nag, dt, 2, fgc_rkh68, rkh_work, iopt, ier)
                         IF (ier < 0) CALL handle_err(RKH68_ERR, 'beams3d_follow', ier)
                         q(1)=rkh_work(1,2)
                         q(2)=rkh_work(2,2)
@@ -380,7 +380,7 @@ SUBROUTINE beams3d_follow
                     DO
                         IF (lcollision) istate = 1
                         CALL FLUSH(6)
-                        CALL DLSODE(fpart_lsode, neqs_nag, q, t_nag, tf_nag, itol, rtol, atol, itask, istate, &
+                        CALL DLSODE(fgc_lsode, neqs_nag, q, t_nag, tf_nag, itol, rtol, atol, itask, istate, &
                                    iopt, w, lrw, iwork, liw, jacobian_lsode, mf)
                         IF ((istate == -3) .or. (istate == -4)) THEN
                            ! BIG  DEBUG MESSAGE

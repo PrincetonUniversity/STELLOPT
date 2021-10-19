@@ -1,9 +1,9 @@
 !-----------------------------------------------------------------------
-!     Function:      fpart_nag
+!     Function:      fgc_nag
 !     Authors:       M. McMillan (matthew.mcmillan@my.wheaton.edu)
 !     Date:          06/20/2012
 !     Description:   This subroutine calculates the RHS of the ODE for 
-!                    particle orbit following.  The ODE's are similar
+!                    gyrocenter orbit following.  The ODE's are similar
 !                    to those used by the DESORBS code (eqs. 16-20)
 !                    R.H. Fowler, R.N. Morris, J.A. Rome,
 !                    and K. Hantani, "Neutral Beam Injection Benchmark
@@ -11,7 +11,7 @@
 !                    30, p.997 (1990)
 !
 !-----------------------------------------------------------------------
-      SUBROUTINE fpart_nag(t,q,qdot)
+      SUBROUTINE fgc_nag(t,q,qdot)
 !-----------------------------------------------------------------------
 !     Libraries
 !-----------------------------------------------------------------------
@@ -157,4 +157,4 @@
 !-----------------------------------------------------------------------
 !     End Subroutine
 !-----------------------------------------------------------------------
-      END SUBROUTINE fpart_nag
+      END SUBROUTINE fgc_nag

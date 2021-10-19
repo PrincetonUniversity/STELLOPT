@@ -291,10 +291,10 @@ beams3d_write_parhdf5.o: \
 drkhvg.o:  
 
 
-fpart_lsode.o: 
+fgc_lsode.o: 
       
 
-fpart_nag.o: \
+fgc_nag.o: \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
       ../../LIBSTELL/$(LOCTYPE)/mpi_params.o \
       beams3d_grid.o \
@@ -302,7 +302,7 @@ fpart_nag.o: \
       beams3d_runtime.o
 
 
-fpart_rkh68.o: 
+fgc_rkh68.o: 
 
 
 gauss_rand.o: \
