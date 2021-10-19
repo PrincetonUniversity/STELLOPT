@@ -117,9 +117,6 @@
          nlost(i)          =      SUM(weight(mystart:myend), MASK = (end_state(mystart:myend) == 2 .and. (beam(mystart:myend)==i)))
          shine_through(i)  = 100.*SUM(weight(mystart:myend), MASK = (end_state(mystart:myend) == 3 .and. (beam(mystart:myend)==i)))/SUM(weight,MASK=(beam==i))
          shine_port(i)     = 100.*SUM(weight(mystart:myend), MASK = (end_state(mystart:myend) == 4 .and. (beam(mystart:myend)==i)))/SUM(weight,MASK=(beam==i))
-         !shine_through(i) = 100.*COUNT(end_state(mystart:myend) == 3 .and. (beam(mystart:myend)==i),DIM=1)/COUNT(beam==i)
-         !shine_port(i) = 100.*COUNT(end_state(mystart:myend) == 4 .and. (beam(mystart:myend)==i),DIM=1)/COUNT(beam==i)
-         !nlost(i)         = COUNT(end_state(mystart:myend) == 2 .and. beam(mystart:myend) == i)
       END DO
 
 #if defined(MPI_OPT)
@@ -137,25 +134,8 @@
 #endif
 
       IF (myworkid == master) THEN
-         ! Open the file
-         iunit = 10
-         CALL safe_open(iunit,istat,'beams3d_diag_'//TRIM(id_string)//'.txt','replace','formatted')
-         ! Output number of beams
-         WRITE(iunit,'(A,I5)') 'BEAMLINES: ',nbeams
          ! Screen Output
          DO i = 1, nbeams
-            ! Output beam information
-            WRITE(iunit,'(A)') ' BEAMLINE        ENERGY                 CHARGE                 MASS'
-            WRITE(iunit,'((I5,3(2X,E22.12)))') i,E_BEAMS(i),CHARGE_BEAMS(i),MASS_BEAMS(i)
-
-            ! Output beam losses
-            ninj  = SUM(weight,MASK=(beam==i))
-            ninj2  = COUNT(beam==i)
-            WRITE(iunit,'(A)') ' Particles Launched  Particles Lost  Lost(%)  TIME_END'
-            WRITE(iunit,'(6X,I10,11X,I5,7x,F5.1,6x,E22.12)') ninj2, NINT(ninj2*nlost(i)/ninj), 100.*nlost(i)/ninj, MAXVAL(t_end)
-            WRITE(iunit,'(A)') ' '
-            CALL FLUSH(iunit)
-
             ! Screen Output
             IF (lverb) THEN
                IF (i==1) WRITE(6,'(A)')  ' BEAMLINE     ENERGY [keV]   CHARGE [e]   MASS [Mp]   Particles [#]   Lost [%]  Shinethrough [%]  Port [%]'
@@ -163,18 +143,7 @@
                                          NINT(MASS_BEAMS(i)*5.97863320194E26), ninj2, 100.*nlost(i)/ninj, shine_through(i), shine_port(i)
                CALL FLUSH(6)
             END IF
-            ! Write Distribution Function
-            WRITE(iunit,'(A)') ' Parallel Velocity Distribution'
-            WRITE(iunit,'(A,100(1X,E22.12))') 'VLL',(mindist+(j+0.5)*ddist,j=0,ndist-1)
-            WRITE(iunit,'(A)') '==========================================='
-            DO j = 0, npoinc
-               WRITE(iunit,'(100(1X,I12))') dist_func(i,1:ndist,j)
-            END DO
-            WRITE(iunit,'(A)') '==========================================='
-            WRITE(iunit,'(A)') ' '
-            CALL FLUSH(iunit)
          END DO
-         CLOSE(iunit)
       END IF
 
       DEALLOCATE(dist_func)
