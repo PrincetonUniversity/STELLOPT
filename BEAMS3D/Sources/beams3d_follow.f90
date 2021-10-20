@@ -150,7 +150,8 @@ SUBROUTINE beams3d_follow
 
     ! Initialize the particles and do beam deposition
     DO i = mystart, myend
-       IF (lbeam) lneut = .TRUE.
+       lneut = lbeam
+       !IF (lbeam) lneut = .TRUE.
        ltherm = .FALSE.
        q(1) = R_start(i)
        q(2) = phi_start(i)
@@ -169,6 +170,8 @@ SUBROUTINE beams3d_follow
        my_end = t_end(i)
        myline = i
        mytdex = 0
+       fact_pa   = plasma_mass/(mymass*plasma_Zmean)
+       fact_coul = myZ*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
        ! Save the IC of the neutral
        CALL out_beams3d_nag(tf_nag,q)
        IF (lbeam) THEN
@@ -180,15 +183,17 @@ SUBROUTINE beams3d_follow
           ! Follow into plasma
           tf_nag = 0.0
           CALL beams3d_follow_neut(tf_nag,q)
-          mytdex = 1
+          mytdex = 1; ndt=1
           CALL out_beams3d_nag(tf_nag,q)
           ! Detect Shinethrough
+          t_last(i) = tf_nag ! This is here for later
           IF (tf_nag > t_end(i)) CYCLE
           ! Ionize
           CALL beams3d_ionize(tf_nag,q)
-          mytdex = 2
+          mytdex = 2; ndt=1
           CALL out_beams3d_nag(tf_nag,q)
           tf_nag = tf_nag-dt
+          lcollision = .TRUE.
        END IF
        t_last(i) = tf_nag
     END DO
