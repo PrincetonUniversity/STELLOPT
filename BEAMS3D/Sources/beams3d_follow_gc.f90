@@ -90,30 +90,34 @@ SUBROUTINE beams3d_follow_gc
                 ALLOCATE(w(neqs_nag * 21 + 28), STAT = ier)
                 IF (ier /= 0) CALL handle_err(ALLOC_ERR, 'W', ier)
                 DO l = mystart_save, myend_save
-                    IF (neut_lines(2,l)) CYCLE !Don't do neutrals
-                    ndt    = ndt_max-1 ! we only record first point
-                    ltherm = .false.
-                    lneut  = .false.
-                    q(1) = R_lines(mytdex,l)
-                    q(2) = PHI_lines(mytdex,l)
-                    q(3) = Z_lines(mytdex,l)
-                    q(4) = vll_lines(mytdex,l)
-                    moment = moment_lines(mytdex,l)
+                    tf_nag = t_last(l)
+                    IF (tf_nag>t_end(l)) CYCLE !Don't do stopped particles
+                    ! Particle indicies
+                    myline = l
+                    mytdex = 1; ndt = 1
+                    IF (lbeam) mytdex = 3
+                    ! Particle Parameters
+                    q(1) = R_lines(mytdex-1,l)
+                    q(2) = PHI_lines(mytdex-1,l)
+                    q(3) = Z_lines(mytdex-1,l)
+                    q(4) = vll_lines(mytdex-1,l)
+                    moment = moment_lines(mytdex-1,l)
                     xlast = q(1)*cos(q(2))
                     ylast = q(1)*sin(q(2))
                     zlast = q(3)
+                    t_nag = 0.0
                     mycharge = charge(l)
                     myZ = Zatom(l)
                     mymass = mass(l)
-                    moment = mu_start(l)
+                    mybeam = Beam(l)
                     my_end = t_end(l)
+                    ltherm = .false.
+                    lneut  = .false.
+                    ! Collision parameters
                     fact_pa   = plasma_mass/(mymass*plasma_Zmean)
                     fact_coul = myZ*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
-                    myv_neut(1) = vr_start(l)*cos(phi_start(l)) - vphi_start(l)*sin(phi_start(l))
-                    myv_neut(2) = vr_start(l)*sin(phi_start(l)) + vphi_start(l)*cos(phi_start(l))
-                    myv_neut(3) = vz_start(l)
-                    t_nag  = 0
-                    tf_nag = t_last(l)
+                    t_nag  = t_last(l)
+                    tf_nag = t_last(l)+dt
                     DO ! Must do it this way becasue lbeam changes q(4) values
 #if defined(NAG)
                        CALL D02CJF(t_nag,tf_nag,neqs_nag,q,fgc_nag,tol_nag,relab,out_beams3d_nag,D02CJW,w,ier)
@@ -127,33 +131,35 @@ SUBROUTINE beams3d_follow_gc
             CASE ("RKH68")
                 ier = 0
                 DO l = mystart_save, myend_save
-                    IF (neut_lines(2,l)) CYCLE !Don't do neutrals
+                    tf_nag = t_last(l)
+                    IF (tf_nag>t_end(l)) CYCLE !Don't do stopped particles
+                    ! Particle indicies
                     myline = l
-                    mytdex = 1
-                    IF (lbeam) mytdex = 2
-                    ndt    = ndt_max-1 ! we only record first point
-                    ltherm = .false.
-                    lneut  = .false.
-                    q(1) = R_lines(mytdex,l)
-                    q(2) = PHI_lines(mytdex,l)
-                    q(3) = Z_lines(mytdex,l)
-                    q(4) = vll_lines(mytdex,l)
-                    moment = moment_lines(mytdex,l)
+                    mytdex = 1; ndt = 1
+                    IF (lbeam) mytdex = 3
+                    ! Particle Parameters
+                    q(1) = R_lines(mytdex-1,l)
+                    q(2) = PHI_lines(mytdex-1,l)
+                    q(3) = Z_lines(mytdex-1,l)
+                    q(4) = vll_lines(mytdex-1,l)
+                    moment = moment_lines(mytdex-1,l)
                     xlast = q(1)*cos(q(2))
                     ylast = q(1)*sin(q(2))
                     zlast = q(3)
+                    t_nag = 0.0
                     mycharge = charge(l)
                     myZ = Zatom(l)
                     mymass = mass(l)
                     mybeam = Beam(l)
                     my_end = t_end(l)
+                    ltherm = .false.
+                    lneut  = .false.
+                    ! Collision parameters
                     fact_pa   = plasma_mass/(mymass*plasma_Zmean)
                     fact_coul = myZ*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
-                    myv_neut(1) = vr_start(l)*cos(phi_start(l)) - vphi_start(l)*sin(phi_start(l))
-                    myv_neut(2) = vr_start(l)*sin(phi_start(l)) + vphi_start(l)*cos(phi_start(l))
-                    myv_neut(3) = vz_start(l)
+                    ! Setup LSODE parameters
+                    iopt = 0 
                     t_nag  = t_last(l)
-                    tf_nag = t_last(l)
                     DO
                         CALL drkhvg(t_nag, q, neqs_nag, dt, 2, fgc_rkh68, rkh_work, iopt, ier)
                         IF (ier < 0) CALL handle_err(RKH68_ERR, 'beams3d_follow', ier)
@@ -189,34 +195,36 @@ SUBROUTINE beams3d_follow_gc
                 ALLOCATE(iwork(liw))
                 ier = 0
                 DO l = mystart_save, myend_save
-                    IF (t_last(l)>t_end(l)) CYCLE !Don't do stopped particles
-                    ! Setup LSODE parameters
-                    iopt = 0 ! No optional output
-                    w = 0; iwork = 0; itask = 1; istate = 1;
-                    itol = 2; rtol = follow_tol; atol(:) = follow_tol
+                    tf_nag = t_last(l)
+                    IF (tf_nag>t_end(l)) CYCLE !Don't do stopped particles
+                    ! Particle indicies
                     myline = l
                     mytdex = 1
-                    IF (lbeam) mytdex = 2
-                    ndt    = ndt_max-1 ! we only record first point
-                    ! Initialize the calculation
-                    q(1) = R_lines(mytdex,l)
-                    q(2) = PHI_lines(mytdex,l)
-                    q(3) = Z_lines(mytdex,l)
-                    q(4) = vll_lines(mytdex,l)
-                    moment = moment_lines(mytdex,l)
+                    IF (lbeam) mytdex = 3
+                    ! Particle Parameters
+                    q(1) = R_lines(mytdex-1,l)
+                    q(2) = PHI_lines(mytdex-1,l)
+                    q(3) = Z_lines(mytdex-1,l)
+                    q(4) = vll_lines(mytdex-1,l)
+                    moment = moment_lines(mytdex-1,l)
                     xlast = q(1)*cos(q(2))
                     ylast = q(1)*sin(q(2))
                     zlast = q(3)
                     t_nag = 0.0
-                    tf_nag = 0.0
                     mycharge = charge(l)
                     myZ = Zatom(l)
                     mymass = mass(l)
                     mybeam = Beam(l)
                     my_end = t_end(l)
+                    ltherm = .false.
+                    lneut  = .false.
+                    ! Collision parameters
                     fact_pa   = plasma_mass/(mymass*plasma_Zmean)
                     fact_coul = myZ*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
-                    tf_nag = t_last(l)
+                    ! Setup LSODE parameters
+                    iopt = 0 ! No optional output
+                    w = 0; iwork = 0; itask = 1; istate = 1;
+                    itol = 2; rtol = follow_tol; atol(:) = follow_tol
                     DO
                         IF (lcollision) istate = 1
                         CALL FLUSH(6)
