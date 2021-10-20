@@ -42,6 +42,19 @@ beams3d_fix_poloidal.o: \
       beams3d_grid.o
 
 
+beams3d_follow.o: \
+      ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
+      ../../LIBSTELL/$(LOCTYPE)/safe_open_mod.o \
+      ../../LIBSTELL/$(LOCTYPE)/wall_mod.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_inc.o \
+      beams3d_runtime.o \
+      beams3d_lines.o \
+      beams3d_grid.o \
+      beams3d_physics_mod.o \
+      beams3d_write_parhdf5.o \
+      ../../LIBSTELL/$(LOCTYPE)/mpi_params.o
+
+
 beams3d_follow_gc.o: \
       ../../LIBSTELL/$(LOCTYPE)/stel_kinds.o \
       ../../LIBSTELL/$(LOCTYPE)/safe_open_mod.o \
