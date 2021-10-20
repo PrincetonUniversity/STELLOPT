@@ -33,7 +33,7 @@
                      partpmax, h2_prof, h3_prof, h4_prof, h5_prof
       LOGICAL, ALLOCATABLE     :: neut_lines(:,:)
       INTEGER, ALLOCATABLE     :: end_state(:)
-      REAL(rprec), ALLOCATABLE :: shine_through(:), shine_port(:), GFactor(:)
+      REAL(rprec), ALLOCATABLE :: shine_through(:), shine_port(:), GFactor(:), t_last(:)
       REAL(rprec), DIMENSION(:,:), POINTER :: ndot_prof(:,:),epower_prof(:,:), &
                                   ipower_prof(:,:),j_prof(:,:), dense_prof(:,:)
       REAL(rprec), DIMENSION(:,:,:,:,:,:), POINTER :: dist5d_prof
