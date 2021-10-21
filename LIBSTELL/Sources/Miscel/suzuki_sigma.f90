@@ -98,10 +98,10 @@
          DO j = 1, 9
             IF (Z_IMP(j) == Z_in(l) .and. Zeff > ZEFFMIN_IMP(j) .and. Zeff < ZEFFMAX_IMP(j)) THEN
                k = j
-               CONTINUE
+               EXIT
             END IF
          END DO
-         IF (k == 0) CONTINUE
+         IF (k == 0) CYCLE
          sigma_Z = sigma_Z + ni_in(l) / ne_in * Z_in(l) &
                              *(  B(k,1) + B(k,2)*U + B(k,3)*logN + B(k,4)*logN*U) &
                                                    + B(k,5)*logE + B(k,6)*logE*U  &
