@@ -25,10 +25,8 @@ SUBROUTINE beams3d_follow_gc
                             plasma_mass, plasma_Zavg, plasma_Zmean, therm_factor, &
                             rho_fullorbit
     USE mpi_params ! MPI
-    USE beams3d_physics_mod
     USE beams3d_write_par
     USE safe_open_mod, ONLY: safe_open
-    USE wall_mod, ONLY: wall_free, ihit_array, nface
     USE mpi_inc
     !-----------------------------------------------------------------------
     !     Local Variables
@@ -54,7 +52,7 @@ SUBROUTINE beams3d_follow_gc
     DOUBLE PRECISION, ALLOCATABLE :: w(:), q(:)
     DOUBLE PRECISION :: tf_nag, eps_temp, t_nag, &
                         tol_nag, rtol
-    DOUBLE PRECISION :: atol(4), rwork(84)
+    DOUBLE PRECISION :: atol(4)
     DOUBLE PRECISION :: rkh_work(4, 2)
     CHARACTER*1 :: relab
 
@@ -106,11 +104,12 @@ SUBROUTINE beams3d_follow_gc
                     tf_nag = t_last(l)
                     ! Don't do particle if stopped or beyond the full_orbit limit
                     IF (tf_nag>t_end(l)) CYCLE
-                    IF (sqrt(S_lines(mytdex-1,l))>rho_fullorbit) CYCLE
                     ! Particle indicies
                     myline = l
                     mytdex = 1; ndt = 1
                     IF (lbeam) mytdex = 3
+                    ! Don't do full_orbit particles
+                    IF (sqrt(S_lines(mytdex-1,l))>rho_fullorbit) CYCLE
                     ! Particle Parameters
                     q(1) = R_lines(mytdex-1,l)
                     q(2) = PHI_lines(mytdex-1,l)
@@ -142,13 +141,14 @@ SUBROUTINE beams3d_follow_gc
                 ier = 0
                 DO l = mystart_save, myend_save
                     tf_nag = t_last(l)
-                    ! Don't do particle if stopped or beyond the full_orbit limit
+                    ! Don't do particle if stopped
                     IF (tf_nag>t_end(l)) CYCLE
-                    IF (sqrt(S_lines(mytdex-1,l))>rho_fullorbit) CYCLE
                     ! Particle indicies
                     myline = l
                     mytdex = 1; ndt = 1
                     IF (lbeam) mytdex = 3
+                    ! Don't do full_orbit particles
+                    IF (sqrt(S_lines(mytdex-1,l))>rho_fullorbit) CYCLE
                     ! Particle Parameters
                     q(1) = R_lines(mytdex-1,l)
                     q(2) = PHI_lines(mytdex-1,l)
@@ -204,13 +204,14 @@ SUBROUTINE beams3d_follow_gc
                 ier = 0
                 DO l = mystart_save, myend_save
                     tf_nag = t_last(l)
-                    ! Don't do particle if stopped or beyond the full_orbit limit
+                    ! Don't do particle if stopped
                     IF (tf_nag>t_end(l)) CYCLE
-                    IF (sqrt(S_lines(mytdex-1,l))>rho_fullorbit) CYCLE
                     ! Particle indicies
                     myline = l
                     mytdex = 1
                     IF (lbeam) mytdex = 3
+                    ! Don't do full_orbit particles
+                    IF (sqrt(S_lines(mytdex-1,l))>rho_fullorbit) CYCLE
                     t_nag = tf_nag - dt
                     ! Particle Parameters
                     q(1) = R_lines(mytdex-1,l)

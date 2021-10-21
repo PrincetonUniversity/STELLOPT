@@ -189,6 +189,7 @@ SUBROUTINE beams3d_follow
     ! Follow Trajectories
     IF (.not.ldepo) THEN
         CALL beams3d_follow_gc
+        CALL beams3d_follow_fo
     END IF
 
     ! Fix U_lines
