@@ -18,7 +18,8 @@
                               phimin, phimax, vc_adapt_tol, nte, nne, nti,&
                               nzeff, npot, plasma_mass, plasma_Zavg, &
                               plasma_Zmean, therm_factor, &
-                              B_kick_min, B_kick_max, freq_kick, E_kick
+                              B_kick_min, B_kick_max, freq_kick, E_kick, &
+                              rho_fullorbit
       USE safe_open_mod, ONLY: safe_open
       USE mpi_params
       USE mpi_inc
@@ -83,7 +84,9 @@
                                fusion_scale, nrho_dist, ntheta_dist, & 
                                nzeta_dist, nvpara_dist, nvperp_dist, &
                                partvmax, lendt_m, te_col_min, &
-                               B_kick_min, B_kick_max, freq_kick, E_kick
+                               B_kick_min, B_kick_max, freq_kick, E_kick,&
+                               vr_start_in, vphi_start_in, vz_start_in, &
+                               rho_fullorbit
       
 !-----------------------------------------------------------------------
 !     Subroutines
@@ -110,15 +113,18 @@
       phimax =  pi2
       nparticles_start = 10
 
-      r_start_in   = -1.0
-      z_start_in   = -1.0
-      phi_start_in = -1.0
-      vll_start_in = -1.0
-      t_end_in     = -1.0
-      mu_start_in  = -1.0
-      mass_in      = -1.0
-      charge_in    = -1.0
-      Zatom_in     = -1.0
+      r_start_in    = -1.0
+      z_start_in    = -1.0
+      phi_start_in  = -1.0
+      vll_start_in  = -1.0
+      vr_start_in   =  0.0
+      vphi_start_in =  0.0
+      vz_start_in   =  0.0
+      t_end_in      = -1.0
+      mu_start_in   = -1.0
+      mass_in       = -1.0
+      charge_in     = -1.0
+      Zatom_in      = -1.0
 
       Adist_beams = 1.0_rprec
       Asize_beams = -1.0_rprec
@@ -168,6 +174,9 @@
       B_kick_max = 0.0 ! T
       freq_kick = 38.5E6 ! Hz
       E_kick = 100 !V/m
+
+      ! Full Oribt model
+      rho_fullorbit = 1.0E10 ! Default to off
 
       ! Distribution Function Defaults
       nrho_dist = 64
@@ -304,6 +313,19 @@
             nparticles = nparticles + 1
          END DO
 !      END IF
+
+#if !defined(NAG)
+      IF (int_type=='NAG') THEN
+         int_type = 'LSODE'
+         IF (lverb) THEN
+            WRITE(6,*) '======================================='
+            WRITE(6,*) '  INT_TYPE = NAG in input but BEAMS3D'
+            WRITE(6,*) '  is not linked to NAG library.'
+            WRITE(6,*) '  Using INT_TYPE = LSODE instead.'
+            WRITE(6,*) '======================================='
+         END IF
+      END IF
+#endif
 
 #if defined(HDF5_PAR)
       ! Makes sure that NPARTICLES is divisible by the number of processes

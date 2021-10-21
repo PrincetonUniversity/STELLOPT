@@ -22,7 +22,8 @@ SUBROUTINE beams3d_follow_gc
     USE beams3d_grid, ONLY: tmin, tmax, delta_t, BR_spl, BZ_spl, BPHI_spl, &
                             MODB_spl, S_spl, U_spl, TE_spl, NE_spl, TI_spl, &
                             TE_spl, TI_spl, wall_load, wall_shine, &
-                            plasma_mass, plasma_Zavg, plasma_Zmean, therm_factor
+                            plasma_mass, plasma_Zavg, plasma_Zmean, therm_factor, &
+                            rho_fullorbit
     USE mpi_params ! MPI
     USE beams3d_physics_mod
     USE beams3d_write_par
@@ -46,21 +47,16 @@ SUBROUTINE beams3d_follow_gc
     !          istate       LSODE restart flag
     !-----------------------------------------------------------------------
     IMPLICIT NONE
-    INTEGER :: mystart, i, j
+    INTEGER :: i, j
     INTEGER :: ier, l, neqs_nag, itol, itask, &
                istate, iopt, lrw, liw, mf, out, iunit
     INTEGER, ALLOCATABLE :: iwork(:), itemp(:,:)
     DOUBLE PRECISION, ALLOCATABLE :: w(:), q(:)
-    DOUBLE PRECISION :: tf_nag, eps_temp, t_nag, t1_nag, &
+    DOUBLE PRECISION :: tf_nag, eps_temp, t_nag, &
                         tol_nag, rtol
     DOUBLE PRECISION :: atol(4), rwork(84)
     DOUBLE PRECISION :: rkh_work(4, 2)
-    DOUBLE PRECISION :: qdot1(4)
     CHARACTER*1 :: relab
-
-    !DOUBLE PRECISION, PARAMETER :: electron_mass = 9.10938356D-31 !m_e
-    !DOUBLE PRECISION, PARAMETER :: sqrt_pi       = 1.7724538509   !pi^(1/2)
-    !DOUBLE PRECISION, PARAMETER :: e_charge      = 1.60217662E-19 !e_c
 
     !-----------------------------------------------------------------------
     !     External Functions
@@ -83,6 +79,23 @@ SUBROUTINE beams3d_follow_gc
     mf = 10
     ALLOCATE(q(neqs_nag))
 
+! Screen output so we know what's happening
+    IF (lverb) THEN
+       WRITE(6, '(A)') '----- FOLLOWING GYROCENTER TRAJECTORIES -----'
+       WRITE(6, '(A,A)')          '       Method: ', TRIM(int_type)
+       WRITE(6, '(A,I9)')          '   Particles: ', nparticles
+       WRITE(6, '(A,I9,A,EN12.3)') '       Steps: ', nsteps, '   Delta-t: ', dt
+       WRITE(6, '(A,I9)')          '      NPOINC: ', npoinc
+       SELECT CASE(TRIM(int_type))
+          CASE("NAG")
+             WRITE(6, '(A,EN12.3,A,A1)') '         Tol: ', follow_tol, '  Type: ', relab
+          CASE("LSODE")
+             WRITE(6, '(A,EN12.3,A,I2)') '         Tol: ', follow_tol, '  Type: ', mf
+       END SELECT
+       WRITE(6, '(5X,A,I3,A)', ADVANCE = 'no') 'Trajectory Calculation [', 0, ']%'
+       CALL FLUSH(6)
+    END IF
+
     ! Follow Trajectories
     IF (mystart_save <= nparticles) THEN
         SELECT CASE (TRIM(int_type))
@@ -91,7 +104,9 @@ SUBROUTINE beams3d_follow_gc
                 IF (ier /= 0) CALL handle_err(ALLOC_ERR, 'W', ier)
                 DO l = mystart_save, myend_save
                     tf_nag = t_last(l)
-                    IF (tf_nag>t_end(l)) CYCLE !Don't do stopped particles
+                    ! Don't do particle if stopped or beyond the full_orbit limit
+                    IF (tf_nag>t_end(l)) CYCLE
+                    IF (sqrt(S_lines(mytdex-1,l))>rho_fullorbit) CYCLE
                     ! Particle indicies
                     myline = l
                     mytdex = 1; ndt = 1
@@ -102,10 +117,7 @@ SUBROUTINE beams3d_follow_gc
                     q(3) = Z_lines(mytdex-1,l)
                     q(4) = vll_lines(mytdex-1,l)
                     moment = moment_lines(mytdex-1,l)
-                    xlast = q(1)*cos(q(2))
-                    ylast = q(1)*sin(q(2))
-                    zlast = q(3)
-                    t_nag = 0.0
+                    t_nag = tf_nag - dt
                     mycharge = charge(l)
                     myZ = Zatom(l)
                     mymass = mass(l)
@@ -116,8 +128,6 @@ SUBROUTINE beams3d_follow_gc
                     ! Collision parameters
                     fact_pa   = plasma_mass/(mymass*plasma_Zmean)
                     fact_coul = myZ*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
-                    t_nag  = t_last(l)
-                    tf_nag = t_last(l)+dt
                     DO ! Must do it this way becasue lbeam changes q(4) values
 #if defined(NAG)
                        CALL D02CJF(t_nag,tf_nag,neqs_nag,q,fgc_nag,tol_nag,relab,out_beams3d_nag,D02CJW,w,ier)
@@ -132,7 +142,9 @@ SUBROUTINE beams3d_follow_gc
                 ier = 0
                 DO l = mystart_save, myend_save
                     tf_nag = t_last(l)
-                    IF (tf_nag>t_end(l)) CYCLE !Don't do stopped particles
+                    ! Don't do particle if stopped or beyond the full_orbit limit
+                    IF (tf_nag>t_end(l)) CYCLE
+                    IF (sqrt(S_lines(mytdex-1,l))>rho_fullorbit) CYCLE
                     ! Particle indicies
                     myline = l
                     mytdex = 1; ndt = 1
@@ -143,10 +155,7 @@ SUBROUTINE beams3d_follow_gc
                     q(3) = Z_lines(mytdex-1,l)
                     q(4) = vll_lines(mytdex-1,l)
                     moment = moment_lines(mytdex-1,l)
-                    xlast = q(1)*cos(q(2))
-                    ylast = q(1)*sin(q(2))
-                    zlast = q(3)
-                    t_nag = 0.0
+                    t_nag = tf_nag - dt
                     mycharge = charge(l)
                     myZ = Zatom(l)
                     mymass = mass(l)
@@ -157,9 +166,8 @@ SUBROUTINE beams3d_follow_gc
                     ! Collision parameters
                     fact_pa   = plasma_mass/(mymass*plasma_Zmean)
                     fact_coul = myZ*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
-                    ! Setup LSODE parameters
+                    ! Setup DRKHVG parameters
                     iopt = 0 
-                    t_nag  = t_last(l)
                     DO
                         CALL drkhvg(t_nag, q, neqs_nag, dt, 2, fgc_rkh68, rkh_work, iopt, ier)
                         IF (ier < 0) CALL handle_err(RKH68_ERR, 'beams3d_follow', ier)
@@ -196,21 +204,21 @@ SUBROUTINE beams3d_follow_gc
                 ier = 0
                 DO l = mystart_save, myend_save
                     tf_nag = t_last(l)
-                    IF (tf_nag>t_end(l)) CYCLE !Don't do stopped particles
+                    ! Don't do particle if stopped or beyond the full_orbit limit
+                    IF (tf_nag>t_end(l)) CYCLE
+                    IF (sqrt(S_lines(mytdex-1,l))>rho_fullorbit) CYCLE
                     ! Particle indicies
                     myline = l
                     mytdex = 1
                     IF (lbeam) mytdex = 3
+                    t_nag = tf_nag - dt
                     ! Particle Parameters
                     q(1) = R_lines(mytdex-1,l)
                     q(2) = PHI_lines(mytdex-1,l)
                     q(3) = Z_lines(mytdex-1,l)
                     q(4) = vll_lines(mytdex-1,l)
                     moment = moment_lines(mytdex-1,l)
-                    xlast = q(1)*cos(q(2))
-                    ylast = q(1)*sin(q(2))
-                    zlast = q(3)
-                    t_nag = 0.0
+                    t_nag = tf_nag - dt
                     mycharge = charge(l)
                     myZ = Zatom(l)
                     mymass = mass(l)

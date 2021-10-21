@@ -110,35 +110,21 @@ SUBROUTINE beams3d_follow
     vll_lines = 0.0; moment_lines = 0.0
     S_lines = 1.5; U_lines = 0.0; B_lines = -1.0
     t_last = 0.0
-    R_lines(0, mystart:myend) = R_start(mystart:myend)
-    Z_lines(0, mystart:myend) = Z_start(mystart:myend)
-    PHI_lines(0, mystart:myend) = phi_start(mystart:myend)
-    vll_lines(0, mystart:myend) = vll_start(mystart:myend)
+    R_lines(0, mystart:myend)      = R_start(mystart:myend)
+    Z_lines(0, mystart:myend)      = Z_start(mystart:myend)
+    PHI_lines(0, mystart:myend)    = phi_start(mystart:myend)
+    vll_lines(0, mystart:myend)    = vll_start(mystart:myend)
     moment_lines(0, mystart:myend) = mu_start(mystart:myend)
-    neut_lines(0, mystart:myend) = .FALSE.
+    vr_lines(0, mystart:myend)     = vr_start(mystart:myend)
+    vphi_lines(0, mystart:myend)   = vphi_start(mystart:myend)
+    vz_lines(0, mystart:myend)     = vz_start(mystart:myend)
+    neut_lines(0, mystart:myend)   = .FALSE.
     IF (lbeam) neut_lines(0, mystart:myend) = .TRUE.
 
     ! Some helpers
     fact_vsound = 1.5*sqrt(e_charge/plasma_mass)*therm_factor
     fact_crit = SQRT(2*e_charge/plasma_mass)*(0.75*sqrt_pi*sqrt(plasma_mass/electron_mass))**(1.0/3.0) ! Wesson pg 226 5.4.9
     fact_kick = pi2*2*SQRT(pi*1E-7*plasma_mass)*E_kick*freq_kick
-    
-    ! Screen output so we know what's happening
-    IF (lverb) THEN
-       WRITE(6, '(A)') '----- FOLLOWING GYROCENTER TRAJECTORIES -----'
-       WRITE(6, '(A,A)')          '      Method: ', TRIM(int_type)
-       WRITE(6, '(A,I9)')         '   Particles: ', nparticles
-       WRITE(6, '(A,I9,A,EN12.3)') '       Steps: ', nsteps, '   Delta-t: ', dt
-       WRITE(6, '(A,I9,A,EN12.3)') '      NPOINC: ', npoinc, '    dt_out: ', dt_out
-!       SELECT CASE(TRIM(int_type))
-!          CASE("NAG")
-!             WRITE(6, '(A,EN12.3,A,A1)') '         Tol: ', follow_tol, '  Type: ', relab
-!          CASE("LSODE")
-!             WRITE(6, '(A,EN12.3,A,I2)') '         Tol: ', follow_tol, '  Type: ', mf
-!       END SELECT
-       WRITE(6, '(5X,A,I3,A)', ADVANCE = 'no') 'Trajectory Calculation [', 0, ']%'
-       CALL FLUSH(6)
-    END IF
 
     ! Handle the Beam defaults
     IF (lbeam) THEN
