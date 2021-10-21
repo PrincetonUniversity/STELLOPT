@@ -51,7 +51,7 @@
       REAL(rprec) :: rmin, rmax, zmin, zmax, phimin, phimax, tmin, tmax, delta_t, &
                      vc_adapt_tol, psiedge_eq, phiedge_eq, plasma_Zmean, plasma_mass, &
                      reff_eq, plasma_Zavg, therm_factor, B_kick_min, B_kick_max, &
-                     E_kick, freq_kick
+                     E_kick, freq_kick, rho_fullorbit
       REAL(rprec), POINTER :: raxis(:), zaxis(:), phiaxis(:)
       REAL(rprec), POINTER :: req_axis(:), zeq_axis(:)
       REAL(rprec), POINTER :: wall_load(:,:), wall_shine(:,:)
