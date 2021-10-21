@@ -1,5 +1,7 @@
 ObjectFiles = \
+outpart_beams3d_nag.o \
 beams3d_follow.o \
+beams3d_follow_fo.o \
 fpart_nag.o \
 fpart_lsode.o \
 fpart_rkh68.o \

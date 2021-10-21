@@ -106,7 +106,7 @@
          VxB(3) = q(4)*bphi_temp - q(5)*br_temp
          ! Equations
          qdot(1:3) = q(4:6)
-         qdot(4:6) = mycharge*(Efield(1:3)-VxB)/mymass
+         qdot(4:6) = mycharge*(Efield(1:3)+VxB)/mymass
 
          qdot(2) = qdot(2)*rinv
          qdot(5) = qdot(5)*rinv
