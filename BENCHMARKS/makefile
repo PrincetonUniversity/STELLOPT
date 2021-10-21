@@ -91,7 +91,7 @@ test_beams3d:
 	$(MAKE) test_beams3d_er
 	$(MAKE) test_beams3d_loss
 	$(MAKE) test_beams3d_slow
-	$(MAKE) test_beams3d_depo
+	$(MAKE) test_beams3d_restart
 	$(MAKE) test_beams3d_eqdsk
 	$(MAKE) test_beams3d_fusion
 	$(MAKE) test_beams3d_multiion
@@ -132,6 +132,14 @@ test_beams3d_depo:
 	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_depo -plasma -depo -suzuki
 	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_depo -plasma -depo -suzuki
 	@cd $(BEAMS3D_TEST_DIR); ./test_ORBITS_depo.py
+	@echo ""
+
+test_beams3d_restart:
+	$(MAKE) test_beams3d_depo
+	@cd $(BEAMS3D_TEST_DIR);
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_restart -plasma -restart beams3d_ORBITS_depo.h5
+	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_restart -plasma -restart beams3d_ORBITS_depo.h5
+	@cd $(BEAMS3D_TEST_DIR); ./test_ORBITS_restart.py
 	@echo ""
 
 test_beams3d_dist:
