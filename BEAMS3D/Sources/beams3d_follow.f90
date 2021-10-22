@@ -15,7 +15,7 @@ SUBROUTINE beams3d_follow
     USE beams3d_lines
     USE beams3d_grid, ONLY: tmin, tmax, delta_t, BR_spl, BZ_spl, BPHI_spl, &
                             MODB_spl, S_spl, U_spl, TE_spl, NE_spl, TI_spl, &
-                            TE_spl, TI_spl, wall_load, wall_shine, &
+                            TE_spl, TI_spl, wall_load, wall_shine, rho_fullorbit, &
                             plasma_mass, plasma_Zavg, plasma_Zmean, therm_factor
     USE mpi_params ! MPI
     USE beams3d_physics_mod
@@ -134,10 +134,9 @@ SUBROUTINE beams3d_follow
                                        + vz_start(mystart:myend) * vz_start(mystart:myend) )
     END IF
 
-    ! Initialize the particles and do beam deposition
+    ! Initialize the particles
     DO i = mystart, myend
        lneut = lbeam
-       !IF (lbeam) lneut = .TRUE.
        ltherm = .FALSE.
        q(1) = R_start(i)
        q(2) = phi_start(i)
@@ -160,7 +159,32 @@ SUBROUTINE beams3d_follow
        fact_coul = myZ*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
        ! Save the IC of the neutral
        CALL out_beams3d_nag(tf_nag,q)
-       IF (lbeam) THEN
+       t_last(i) = tf_nag
+    END DO
+
+    ! Beam Deposition
+    IF (lbeam) THEN
+       DO i = mystart, myend
+          lneut = lbeam
+          ltherm = .FALSE.
+          q(1) = R_start(i)
+          q(2) = phi_start(i)
+          q(3) = Z_start(i)
+          q(4) = vll_start(i)
+          xlast = q(1)*cos(q(2))
+          ylast = q(1)*sin(q(2))
+          zlast = q(3)
+          tf_nag = t_last(i)
+          mycharge = charge(i)
+          myZ = Zatom(i)
+          mymass = mass(i)
+          mybeam = Beam(i)
+          moment = mu_start(i)
+          my_end = t_end(i)
+          myline = i
+          mytdex = 1; ndt=1
+          fact_pa   = plasma_mass/(mymass*plasma_Zmean)
+          fact_coul = myZ*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
           ! Define neutral trajectory
           myv_neut(1) = vr_start(i)*cos(phi_start(i)) - vphi_start(i)*sin(phi_start(i))
           myv_neut(2) = vr_start(i)*sin(phi_start(i)) + vphi_start(i)*cos(phi_start(i))
@@ -177,19 +201,23 @@ SUBROUTINE beams3d_follow
           ! Ionize
           CALL beams3d_ionize(tf_nag,q)
           mytdex = 2; ndt=1
+          ! This is a trick which works because V_neut hasn't changed
+          vr_lines(1:2,myline)   = vr_start(i)
+          vphi_lines(1:2,myline) = vphi_start(i)
+          vz_lines(1:2,myline)   = vz_start(i)
+          ! Output starting location
           CALL out_beams3d_nag(tf_nag,q)
           tf_nag = tf_nag-dt
-          lcollision = .TRUE.
-       END IF
-       t_last(i) = tf_nag
-    END DO
+          t_last(i) = tf_nag
+       END DO
+    END IF
 
     DEALLOCATE(q)
 
     ! Follow Trajectories
     IF (.not.ldepo) THEN
         CALL beams3d_follow_gc
-        CALL beams3d_follow_fo
+        IF (rho_fullorbit < 100) CALL beams3d_follow_fo
     END IF
 
     ! Fix U_lines

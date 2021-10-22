@@ -31,7 +31,7 @@ SUBROUTINE outpart_beams3d_nag(t, q)
     !-----------------------------------------------------------------------
     !     Input Parameters
     !          t          Location along fieldline in t
-    !          q            (q(1),q(2),q(3),q(4)) = (R,phi,Z,vll)
+    !          q          (R,phi,Z,vR,vphi,vz)
     !-----------------------------------------------------------------------
     IMPLICIT NONE
     DOUBLE PRECISION, INTENT(inout) :: t
@@ -42,8 +42,10 @@ SUBROUTINE outpart_beams3d_nag(t, q)
     !-----------------------------------------------------------------------
     LOGICAL             :: lhit
     INTEGER             :: ier, d1, d2, d3, d4, d5
-    DOUBLE PRECISION         :: x0,y0,z0,x1,y1,z1,xw,yw,zw, vperp
-    DOUBLE PRECISION    :: q2(6),qdot(6)
+    DOUBLE PRECISION         :: x0,y0,z0,x1,y1,z1,xw,yw,zw,vperp, &
+                                br_temp, bphi_temp, bz_temp, &
+                                v_total, binv, vll_temp
+    DOUBLE PRECISION    :: q2(6),qdot(6), q4(4)
     ! For splines
     INTEGER :: i,j,k,l
     REAL*8 :: xparam, yparam, zparam !, hx, hy, hz, hxi, hyi, hzi
@@ -59,8 +61,7 @@ SUBROUTINE outpart_beams3d_nag(t, q)
     vr_lines(mytdex, myline)     = q(4)
     vphi_lines(mytdex, myline)   = q(5)
     vz_lines(mytdex, myline)     = q(6)
-    !moment_lines(mytdex, myline) = moment
-    neut_lines(mytdex,myline)     = lneut
+    neut_lines(mytdex,myline)    = lneut
     x0 = MOD(q(2), phimax)
     IF (x0 < 0) x0 = x0 + phimax
     y0 = 0  
@@ -84,24 +85,49 @@ SUBROUTINE outpart_beams3d_nag(t, q)
                        U4D(1,1,1,1),nr,nphi,nz)
        z0 = fval(1)
        U_lines(mytdex, myline) = z0
+       
+       ! Now We get Br, Bphi, Bz to calc B (and vll)
        CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                        hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
-                       MODB4D(1,1,1,1),nr,nphi,nz)
+                       BR4D(1,1,1,1),nr,nphi,nz)
+       br_temp = fval(1)
+       CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                       hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                       BPHI4D(1,1,1,1),nr,nphi,nz)
+       bphi_temp = fval(1)
+       CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                       hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                       BZ4D(1,1,1,1),nr,nphi,nz)
+       bz_temp = fval(1)
+
+       fval(1) = SQRT( br_temp*br_temp + bphi_temp*bphi_temp + bz_temp*bz_temp )
        B_lines(mytdex, myline) = fval(1)
+       binv = one/fval(1)
+
+       ! Calc Vtotal^2, vll and vperp^2
+       v_total = SUM(q(4:6)*q(4:6)) !Vtotal^2
+       vll_temp = ( br_temp*q(4) +  bphi_temp*q(5) + bz_temp*q(4) ) * binv
+       vperp   = v_total - vll_temp*vll_temp ! Vperp^2
+
+       ! Calculate the moment
+       moment  = 0.5*mymass*vperp*binv
+       moment_lines(mytdex,myline) = moment
+       q4(1:3) = q(1:3)
+       q4(4)   = vll_temp
+
        ! Calc dist func bins
        x0    = MOD(q(2),pi2)
        IF (x0 < 0) x0 = x0 + pi2
-       vperp = SQRT(2*moment*fval(1)/mymass)
        d1 = MAX(MIN(CEILING(SQRT(y0)*ns_prof1     ), ns_prof1), 1) ! Rho Bin
        d2 = MAX(MIN(CEILING( z0*h2_prof           ), ns_prof2), 1) ! U Bin
        d3 = MAX(MIN(CEILING( x0*h3_prof           ), ns_prof3), 1) ! V Bin
-       !d4 = MAX(MIN(1+nsh_prof4+FLOOR(h4_prof*q(4)), ns_prof4), 1) ! vll
-       !d5 = MAX(MIN(CEILING(vperp*h5_prof         ), ns_prof5), 1) ! Vperp
+       d4 = MAX(MIN(1+nsh_prof4+FLOOR(h4_prof*vll_temp), ns_prof4), 1) ! vll
+       d5 = MAX(MIN(CEILING(SQRT(vperp)*h5_prof         ), ns_prof5), 1) ! Vperp
        xw = weight(myline)*dt
        !CALL MPI_WIN_LOCK(MPI_LOCK_EXCLUSIVE,myworkid,0,win_dist5d,ier)
-       !dist5d_prof(mybeam,d1,d2,d3,d4,d5) = dist5d_prof(mybeam,d1,d2,d3,d4,d5) + xw
+       dist5d_prof(mybeam,d1,d2,d3,d4,d5) = dist5d_prof(mybeam,d1,d2,d3,d4,d5) + xw
        !CALL MPI_WIN_UNLOCK(myworkid,win_dist5d,ier)
-       IF (lcollision) CALL beams3d_physics(t,q)
+       IF (lcollision) CALL beams3d_physics(t,q4)
        IF (ltherm) THEN
           ndot_prof(mybeam,d1)   =   ndot_prof(mybeam,d1) + weight(myline)
           end_state(myline) = 1
@@ -109,6 +135,8 @@ SUBROUTINE outpart_beams3d_nag(t, q)
        END IF
     ELSE
        IF (lneut) end_state(myline)=3
+       v_total = SUM(q(4:6)*q(4:6))
+       vll_temp = SQRT(v_total) ! Vll=Vtotal
     END IF
     IF (lvessel .and. mytdex > 0 .and. y0 > 0.5) THEN
        lhit = .false.
@@ -129,24 +157,22 @@ SUBROUTINE outpart_beams3d_nag(t, q)
           t = my_end+dt
           l = get_wall_ik()
           IF (lneut) THEN
-             wall_shine(mybeam,l) = wall_shine(mybeam,l) + weight(myline)*0.5*mymass*q(4)*q(4)/get_wall_area(l)
+             wall_shine(mybeam,l) = wall_shine(mybeam,l) + weight(myline)*0.5*mymass*v_total/get_wall_area(l)
           ELSE
              end_state(myline) = 2
-             CALL fgc_nag(t,q2,qdot)
-             qdot(4)=0
-             wall_load(mybeam,l) = wall_load(mybeam,l) + weight(myline)*0.5*mymass*(SUM(qdot*qdot)+vperp*vperp)/get_wall_area(l)
+             wall_load(mybeam,l) = wall_load(mybeam,l) + weight(myline)*0.5*mymass*v_total/get_wall_area(l)
           END IF
           IF (lhitonly) THEN
              R_lines(0,myline)      = SQRT(xlast*xlast+ylast*ylast)
              PHI_lines(0,myline)    = ATAN2(ylast,xlast)
              Z_lines(0,myline)      = zlast
-             vll_lines(0,myline)    = q(4)
+             vll_lines(0,myline)    = vll_temp
              moment_lines(0,myline) = moment
              neut_lines(0,myline)   = lneut
              R_lines(2,myline)      = q(1)
              PHI_lines(2,myline)    = q(2)
              Z_lines(2,myline)      = q(3)
-             vll_lines(2,myline)    = q(4)
+             vll_lines(2,myline)    = vll_temp
              moment_lines(2,myline) = moment
              neut_lines(2,myline)   = lneut
           END IF

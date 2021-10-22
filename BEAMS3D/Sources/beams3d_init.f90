@@ -150,7 +150,7 @@
          IF (npot > 0) WRITE(6,'(A)') '   RAIDAL ELECTRIC FIELD PRESENT!'
          CALL FLUSH(6)
       END IF
-
+      
       ! Construct 1D splines
       bcs1_s=(/ 0, 0 /)
       IF ((lvmec .or. leqdsk .or. lhint) .and. .not.lvac) THEN
