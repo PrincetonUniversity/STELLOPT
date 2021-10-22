@@ -209,13 +209,12 @@ SUBROUTINE beams3d_follow_fo
                 DO l = mystart_save, myend_save
                     tf_nag = t_last(l)
                     ! Don't do particle if stopped
-                    IF (tf_nag>t_end(l)) CYCLE
+                    !IF ( (tf_nag>t_end(l)) .or. (end_state(l) /= 0) ) CYCLE
                     ! Particle indicies
                     myline = l
                     mytdex = COUNT(R_lines(:,l)>0)
-                    IF (lbeam) mytdex = 3
-                    ! Don't do full_orbit particles
-                    !IF (sqrt(S_lines(mytdex-1,l))>rho_fullorbit) CYCLE
+                    IF ((mytdex>=npoinc) .or. end_state(l) /= 0) CYCLE
+                    !IF (lbeam) mytdex = 3
                     t_nag = tf_nag - dt
                     ! Particle Parameters
                     q(1) = R_lines(mytdex-1,l)
@@ -224,7 +223,6 @@ SUBROUTINE beams3d_follow_fo
                     q(4) = vr_lines(mytdex-1,l)
                     q(5) = vphi_lines(mytdex-1,l)
                     q(6) = vz_lines(mytdex-1,l)
-                    !moment = moment_lines(mytdex-1,l)
                     t_nag = tf_nag - dt
                     mycharge = charge(l)
                     myZ = Zatom(l)

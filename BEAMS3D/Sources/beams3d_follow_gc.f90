@@ -51,7 +51,7 @@ SUBROUTINE beams3d_follow_gc
     INTEGER, ALLOCATABLE :: iwork(:), itemp(:,:)
     DOUBLE PRECISION, ALLOCATABLE :: w(:), q(:)
     DOUBLE PRECISION :: tf_nag, eps_temp, t_nag, &
-                        tol_nag, rtol
+                        tol_nag, rtol, s_fullorbit
     DOUBLE PRECISION :: atol(4)
     DOUBLE PRECISION :: rkh_work(4, 2)
     CHARACTER*1 :: relab
@@ -70,6 +70,7 @@ SUBROUTINE beams3d_follow_gc
     !     Begin Subroutine
     !-----------------------------------------------------------------------
     ! Initializations
+    s_fullorbit = SIGN(rho_fullorbit*rho_fullorbit,rho_fullorbit)
     ier = 0
     tol_nag = follow_tol
     neqs_nag = 4
@@ -124,6 +125,7 @@ SUBROUTINE beams3d_follow_gc
                     my_end = t_end(l)
                     ltherm = .false.
                     lneut  = .false.
+                    lcollision = lbeam
                     ! Collision parameters
                     fact_pa   = plasma_mass/(mymass*plasma_Zmean)
                     fact_coul = myZ*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
@@ -163,6 +165,7 @@ SUBROUTINE beams3d_follow_gc
                     my_end = t_end(l)
                     ltherm = .false.
                     lneut  = .false.
+                    lcollision = lbeam
                     ! Collision parameters
                     fact_pa   = plasma_mass/(mymass*plasma_Zmean)
                     fact_coul = myZ*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
@@ -211,7 +214,7 @@ SUBROUTINE beams3d_follow_gc
                     mytdex = 1
                     IF (lbeam) mytdex = 3
                     ! Don't do full_orbit particles
-                    IF (sqrt(S_lines(mytdex-1,l))>rho_fullorbit) CYCLE
+                    IF (S_lines(mytdex-1,l)>=s_fullorbit) CYCLE
                     t_nag = tf_nag - dt
                     ! Particle Parameters
                     q(1) = R_lines(mytdex-1,l)
@@ -227,6 +230,7 @@ SUBROUTINE beams3d_follow_gc
                     my_end = t_end(l)
                     ltherm = .false.
                     lneut  = .false.
+                    lcollision = lbeam
                     ! Collision parameters
                     fact_pa   = plasma_mass/(mymass*plasma_Zmean)
                     fact_coul = myZ*(mymass+plasma_mass)/(mymass*plasma_mass*6.02214076208E+26)
@@ -258,8 +262,10 @@ SUBROUTINE beams3d_follow_gc
                         END IF
                         iwork(11) = 0; iwork(12) = 0; iwork(13) = 0
                         t_last(l) = tf_nag ! Save the value here in case out_beams3d changes it
+                        IF (S_lines(mytdex,l) >= s_fullorbit) EXIT
                         CALL out_beams3d_nag(tf_nag,q)
-                        IF ((istate == -1) .or. (istate ==-2) .or. (ABS(tf_nag) > ABS(my_end)) ) EXIT
+                        IF ( (istate == -1) .or. (istate ==-2) &
+                                            .or. (ABS(tf_nag) > ABS(my_end)) ) EXIT
                     END DO
                 END DO
                 IF (ldebug) CLOSE(iunit)

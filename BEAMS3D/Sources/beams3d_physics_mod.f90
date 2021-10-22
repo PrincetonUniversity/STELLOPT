@@ -764,10 +764,7 @@ MODULE beams3d_physics_mod
          !moment = 0.5*binv*mymass*(myv_neut(1)*myv_neut(1) + myv_neut(2)*myv_neut(2) + myv_neut(3)*myv_neut(3) - q(4)*q(4) )
 
          ! Check to see we didn't inject perfectly parallel (negative moment possible)
-         IF (moment <= 0) THEN
-            moment = 1000*TINY(moment)
-            RETURN
-         END IF
+         moment = MAX(moment,1000*TINY(moment))
 
          RETURN
 
