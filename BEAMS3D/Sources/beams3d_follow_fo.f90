@@ -26,6 +26,7 @@ SUBROUTINE beams3d_follow_fo
                             rho_fullorbit
     USE mpi_params ! MPI
     USE beams3d_write_par
+    USE beams3d_physics_mod, ONLY: beams3d_gc2fo
     USE safe_open_mod, ONLY: safe_open
     USE mpi_inc
     !-----------------------------------------------------------------------
@@ -51,7 +52,7 @@ SUBROUTINE beams3d_follow_fo
     INTEGER, ALLOCATABLE :: iwork(:), itemp(:,:)
     DOUBLE PRECISION, ALLOCATABLE :: w(:), q(:)
     DOUBLE PRECISION :: tf_nag, eps_temp, t_nag, &
-                        tol_nag, rtol
+                        tol_nag, rtol, s_fullorbit
     DOUBLE PRECISION :: atol(6)
     DOUBLE PRECISION :: rkh_work(6, 2)
     CHARACTER*1 :: relab
@@ -70,6 +71,7 @@ SUBROUTINE beams3d_follow_fo
     !     Begin Subroutine
     !-----------------------------------------------------------------------
     ! Initializations
+    s_fullorbit = SIGN(rho_fullorbit*rho_fullorbit,rho_fullorbit)
     ier = 0
     tol_nag = follow_tol
     neqs_nag = 6
@@ -208,21 +210,39 @@ SUBROUTINE beams3d_follow_fo
                 ier = 0
                 DO l = mystart_save, myend_save
                     tf_nag = t_last(l)
-                    ! Don't do particle if stopped
-                    !IF ( (tf_nag>t_end(l)) .or. (end_state(l) /= 0) ) CYCLE
                     ! Particle indicies
                     myline = l
-                    mytdex = COUNT(R_lines(:,l)>0)
+                    mytdex = MAX(COUNT(R_lines(0:npoinc,l)>0,DIM=1),1)
+                    ! Don't do particle if stopped
                     IF ((mytdex>=npoinc) .or. end_state(l) /= 0) CYCLE
-                    !IF (lbeam) mytdex = 3
-                    t_nag = tf_nag - dt
+                    ! Not handle Coordinate conversion
+                    IF (lbeam .and. mytdex==3) THEN ! Deposition Particle
+                        mytdex = 2
+                        ! Neutral location
+                        q(1) = R_lines(mytdex-1,l)
+                        q(2) = PHI_lines(mytdex-1,l)
+                        q(3) = Z_lines(mytdex-1,l)
+                        q(4) = vr_lines(mytdex-1,l)
+                        q(5) = vphi_lines(mytdex-1,l)
+                        q(6) = vz_lines(mytdex-1,l)
+                    ELSEIF (mytdex == 1) THEN
+                        mytdex = 1
+                        ! Initial condition
+                        q(1) = R_lines(mytdex-1,l)
+                        q(2) = PHI_lines(mytdex-1,l)
+                        q(3) = Z_lines(mytdex-1,l)
+                        q(4) = vr_lines(mytdex-1,l)
+                        q(5) = vphi_lines(mytdex-1,l)
+                        q(6) = vz_lines(mytdex-1,l)
+                    ELSE ! We need to step from GC to FO
+                        q(1) = R_lines(mytdex-1,l)
+                        q(2) = PHI_lines(mytdex-1,l)
+                        q(3) = Z_lines(mytdex-1,l)
+                        q(4) = vll_lines(mytdex-1,l)
+                        q(5) = moment_lines(mytdex-1,l)
+                        CALL beams3d_gc2fo(tf_nag,q)
+                    END IF
                     ! Particle Parameters
-                    q(1) = R_lines(mytdex-1,l)
-                    q(2) = PHI_lines(mytdex-1,l)
-                    q(3) = Z_lines(mytdex-1,l)
-                    q(4) = vr_lines(mytdex-1,l)
-                    q(5) = vphi_lines(mytdex-1,l)
-                    q(6) = vz_lines(mytdex-1,l)
                     t_nag = tf_nag - dt
                     mycharge = charge(l)
                     myZ = Zatom(l)

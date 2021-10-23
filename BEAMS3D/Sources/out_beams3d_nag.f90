@@ -77,7 +77,8 @@ SUBROUTINE out_beams3d_nag(t, q)
                        hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                        S4D(1,1,1,1),nr,nphi,nz)
        y0 = fval(1)
-       S_lines(mytdex, myline) = y0 
+       S_lines(mytdex, myline) = y0
+       rho_help = sqrt(y0)
        CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
                        hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                        U4D(1,1,1,1),nr,nphi,nz)
@@ -91,7 +92,7 @@ SUBROUTINE out_beams3d_nag(t, q)
        x0    = MOD(q(2),pi2)
        IF (x0 < 0) x0 = x0 + pi2
        vperp = SQRT(2*moment*fval(1)/mymass)
-       d1 = MAX(MIN(CEILING(SQRT(y0)*ns_prof1     ), ns_prof1), 1) ! Rho Bin
+       d1 = MAX(MIN(CEILING(rho_help*ns_prof1     ), ns_prof1), 1) ! Rho Bin
        d2 = MAX(MIN(CEILING( z0*h2_prof           ), ns_prof2), 1) ! U Bin
        d3 = MAX(MIN(CEILING( x0*h3_prof           ), ns_prof3), 1) ! V Bin
        d4 = MAX(MIN(1+nsh_prof4+FLOOR(h4_prof*q(4)), ns_prof4), 1) ! vll

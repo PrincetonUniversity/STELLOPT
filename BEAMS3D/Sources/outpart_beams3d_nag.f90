@@ -104,12 +104,14 @@ SUBROUTINE outpart_beams3d_nag(t, q)
        B_lines(mytdex, myline) = fval(1)
        binv = one/fval(1)
 
-       ! Calc Vtotal^2, vll and vperp^2
-       v_total = SUM(q(4:6)*q(4:6)) !Vtotal^2
+       ! Calc Vll
        vll_temp = ( br_temp*q(4) +  bphi_temp*q(5) + bz_temp*q(4) ) * binv
-       vperp   = v_total - vll_temp*vll_temp ! Vperp^2
+       vll_lines(mytdex,myline) = vll_temp
+
 
        ! Calculate the moment
+       v_total = SUM(q(4:6)*q(4:6)) !Vtotal^2
+       vperp   = v_total - vll_temp*vll_temp ! Vperp^2
        moment  = 0.5*mymass*vperp*binv
        moment_lines(mytdex,myline) = moment
        q4(1:3) = q(1:3)
