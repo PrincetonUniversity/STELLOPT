@@ -129,6 +129,7 @@
          ELSE
             WRITE(6,'(A,I8)')               '   # of Particles to Start: ', nparticles
          END IF
+         IF (rho_fullorbit<100) WRITE(6,'(A,F5.2)') '   Full Orbit Following for rho > ', rho_fullorbit
          IF (lvessel) WRITE(6,'(A)')    '   VESSEL: ' // TRIM(vessel_string)
          IF (lcoil) WRITE(6,'(A)')    '   COIL: ' // TRIM(coil_string)
          IF (lmgrid) WRITE(6,'(A)')    '   MGRID: ' // TRIM(mgrid_string)
@@ -150,7 +151,7 @@
          IF (npot > 0) WRITE(6,'(A)') '   RAIDAL ELECTRIC FIELD PRESENT!'
          CALL FLUSH(6)
       END IF
-      
+
       ! Construct 1D splines
       bcs1_s=(/ 0, 0 /)
       IF ((lvmec .or. leqdsk .or. lhint) .and. .not.lvac) THEN

@@ -23,7 +23,7 @@ SUBROUTINE beams3d_follow_gc
                             MODB_spl, S_spl, U_spl, TE_spl, NE_spl, TI_spl, &
                             TE_spl, TI_spl, wall_load, wall_shine, &
                             plasma_mass, plasma_Zavg, plasma_Zmean, therm_factor, &
-                            rho_fullorbit
+                            rho_fullorbit, rho_help
     USE mpi_params ! MPI
     USE beams3d_write_par
     USE safe_open_mod, ONLY: safe_open
@@ -262,10 +262,10 @@ SUBROUTINE beams3d_follow_gc
                         END IF
                         iwork(11) = 0; iwork(12) = 0; iwork(13) = 0
                         t_last(l) = tf_nag ! Save the value here in case out_beams3d changes it
-                        IF (S_lines(mytdex,l) >= s_fullorbit) EXIT
                         CALL out_beams3d_nag(tf_nag,q)
                         IF ( (istate == -1) .or. (istate ==-2) &
-                                            .or. (ABS(tf_nag) > ABS(my_end)) ) EXIT
+                                            .or. (ABS(tf_nag) > ABS(my_end)) &
+                                            .or. (rho_help > rho_fullorbit)) EXIT
                     END DO
                 END DO
                 IF (ldebug) CLOSE(iunit)

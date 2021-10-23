@@ -861,6 +861,143 @@ MODULE beams3d_physics_mod
       END SUBROUTINE beams3d_neutralize
 
       !-----------------------------------------------------------------
+      !     Function:      beams3d_gc2fo
+      !     Authors:       S. Lazerson (samuel.lazerson@ipp.mpg.de)
+      !     Date:          10/22/2021
+      !     Description:   Convert a gyrocenter to a full orbit.
+      !-----------------------------------------------------------------
+      SUBROUTINE beams3d_gc2fo(t, q)
+         USE beams3d_grid
+
+         !--------------------------------------------------------------
+         !     Input Parameters
+         !          t          Location along fieldline in t
+         !          q          on input R,phi,Z,vll,moment
+         !                     on exit  R,phi,Z,vR,Vphi,Vz
+         !--------------------------------------------------------------
+         IMPLICIT NONE
+         DOUBLE PRECISION, INTENT(inout) :: t
+         DOUBLE PRECISION, INTENT(inout) :: q(6)
+
+         !--------------------------------------------------------------
+         !     Local parameters
+         !--------------------------------------------------------------
+         DOUBLE PRECISION, PARAMETER :: zero = 0
+         DOUBLE PRECISION, PARAMETER :: one = 1
+
+         !--------------------------------------------------------------
+         !     Local Variables
+         !--------------------------------------------------------------
+         INTEGER          :: ier
+         DOUBLE PRECISION :: r_temp, phi_temp, z_temp, x, y, &
+                             br_temp, bp_temp, bz_temp, modb_temp, &
+                             bx_temp, by_temp, binv, &
+                             xg,yg,zg, vx, vy, theta, vll_temp, &
+                             rho(3), rho2(3) , moment_temp, vperp, rg
+         DOUBLE PRECISION, DIMENSION(3,3) :: rot_matrix
+         ! For splines
+         INTEGER :: i,j,k
+         REAL*8 :: xparam, yparam, zparam
+         INTEGER, parameter :: ict(8)=(/1,0,0,0,0,0,0,0/)
+         REAL*8 :: fval(1)
+
+         !--------------------------------------------------------------
+         !     Begin Subroutine
+         !--------------------------------------------------------------
+         ! Handle inputs
+         ier = 0
+         phi_temp = MOD(q(2),phimax)
+         IF (phi_temp < 0) phi_temp = phi_temp + phimax
+         r_temp = q(1)
+         z_temp = q(3)
+         vll_temp = q(4)
+         moment_temp = q(5)
+
+         ! Eval Spline
+         i = MIN(MAX(COUNT(raxis < r_temp),1),nr-1)
+         j = MIN(MAX(COUNT(phiaxis < phi_temp),1),nphi-1)
+         k = MIN(MAX(COUNT(zaxis < z_temp),1),nz-1)
+         xparam = (r_temp - raxis(i)) * hri(i)
+         yparam = (phi_temp - phiaxis(j)) * hpi(j)
+         zparam = (z_temp - zaxis(k)) * hzi(k)
+         CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                         hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                         BR4D(1,1,1,1),nr,nphi,nz)
+         br_temp = fval(1)
+         CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                         hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                         BPHI4D(1,1,1,1),nr,nphi,nz)
+         bp_temp = fval(1)
+         CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                         hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                         BZ4D(1,1,1,1),nr,nphi,nz)
+         bz_temp = fval(1)
+         CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                         hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                         MODB4D(1,1,1,1),nr,nphi,nz)
+         modb_temp = fval(1)
+         bx_temp = br_temp*cos(q(2))-bp_temp*sin(q(2))
+         by_temp = br_temp*sin(q(2))+bp_temp*cos(q(2))
+         binv = one/modb_temp
+         bx_temp = bx_temp*binv
+         by_temp = by_temp*binv
+         bz_temp = bz_temp*binv
+
+         ! First we calc the gyroradius
+         vperp = SQRT(2.*modb_temp*moment_temp/mymass)
+         rg    = mymass*vperp/(mycharge*modb_temp)
+
+         ! Create the perpendicular vector
+         ! (BxZ)xB
+         xg = -bx_temp*bz_temp*rg
+         yg = bz_temp*by_temp*rg
+         zg = (by_temp*by_temp+bx_temp*bx_temp)*rg
+
+         ! Now make the rotation matrix
+         !https://en.wikipedia.org/wiki/Rotation_matrix#Rotation_matrix_from_axis_and_angle
+         CALL RANDOM_NUMBER(theta)
+         theta = (theta-0.5)*pi2
+         rot_matrix(1,1) = cos(theta)+bz_temp*bz_temp*(1-cos(theta))
+         rot_matrix(1,2) = bx_temp*by_temp*(1-cos(theta))-bz_temp*sin(theta)
+         rot_matrix(1,3) = bx_temp*bz_temp*(1-cos(theta))+by_temp*sin(theta)
+         rot_matrix(2,1) = by_temp*bx_temp*(1-cos(theta))+bz_temp*sin(theta)
+         rot_matrix(2,2) = cos(theta)+by_temp*by_temp*(1-cos(theta))
+         rot_matrix(2,3) = by_temp*bz_temp*(1-cos(theta))-bx_temp*sin(theta)
+         rot_matrix(3,1) = bz_temp*bx_temp*(1-cos(theta))-by_temp*sin(theta)
+         rot_matrix(3,2) = bz_temp*by_temp*(1-cos(theta))+bx_temp*sin(theta)
+         rot_matrix(3,3) = cos(theta)+bz_temp*bz_temp*(1-cos(theta))
+
+         ! Rotate
+         q(1:3) =  MATMUL(rot_matrix,(/xg,yg,zg/))
+
+         ! Make rg the perp vector
+         xg = by_temp*q(3)-bz_temp*q(2)
+         yg = bz_temp*q(1)-bx_temp*q(3)
+         zg = bx_temp*q(2)-by_temp*q(1)
+         rg = SIGN(one,theta)/sqrt(xg*xg+yg*yg+zg*zg)
+
+         ! Translate
+         q(1:3) = q(1:3) + (/r_temp*cos(phi_temp),r_temp*sin(phi_temp),z_temp/)
+
+         ! Get into R,phi
+         r_temp = sqrt(q(1)*q(1)+q(2)*q(2))
+         phi_temp = atan2(q(2),q(1))
+         q(1) = r_temp
+         q(2) = phi_temp
+
+         ! Now handle the velocity
+         vx = vll_temp*bx_temp + vperp*xg*rg
+         vy = vll_temp*by_temp + vperp*yg*rg
+         q(6) = vll_temp*bz_temp + vperp*zg*rg
+         q(4) = vx*cos(phi_temp) + vy*sin(phi_temp)
+         q(5) = vy*sin(phi_temp) - vx*sin(phi_temp)
+
+
+         RETURN
+
+      END SUBROUTINE beams3d_gc2fo
+
+      !-----------------------------------------------------------------
       !     Function:      beams3d_DTRATE
       !     Authors:       S. Lazerson (samuel.lazerson@ipp.mpg.de)
       !     Date:          09/30/2020
