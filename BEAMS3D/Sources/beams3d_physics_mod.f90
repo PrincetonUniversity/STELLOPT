@@ -34,7 +34,7 @@ MODULE beams3d_physics_mod
                               zaxis, U4D, &
                               hr, hp, hz, hri, hpi, hzi, &
                               B_kick_min, B_kick_max, E_kick, freq_kick, &
-                              plasma_mass, NI5D
+                              plasma_mass, NI5D, BR4D, BZ4D, BPHI4D
       USE EZspline_obj
       USE EZspline
       USE adas_mod_parallel
@@ -63,14 +63,14 @@ MODULE beams3d_physics_mod
       CONTAINS
 
       !-----------------------------------------------------------------
-      !     Function:      beams3d_physics
+      !     Function:      beams3d_physics_gc
       !     Authors:       S. Lazerson (lazerson@pppl.gov)
       !                    M. McMillan (matthew.mcmillan@my.wheaton.edu)
       !     Date:          07/13/2012
       !     Description:   Particle slowing down and pitch angle
-      !                    scattering.
+      !                    scattering for gyrocenters
       !-----------------------------------------------------------------
-      SUBROUTINE beams3d_physics(t, q)
+      SUBROUTINE beams3d_physics_gc(t, q)
          !--------------------------------------------------------------
          !     Input Parameters
          !          t          Location along fieldline in t
@@ -263,7 +263,233 @@ MODULE beams3d_physics_mod
 
          RETURN
 
-      END SUBROUTINE beams3d_physics
+      END SUBROUTINE beams3d_physics_gc
+
+      !-----------------------------------------------------------------
+      !     Function:      beams3d_physics_fo
+      !     Authors:       S. Lazerson (samuel.lazerson@ipp.mpg.de)
+      !     Date:          10/26/2021
+      !     Description:   Particle slowing down and pitch angle
+      !                    scattering for particles
+      !-----------------------------------------------------------------
+      SUBROUTINE beams3d_physics_fo(t, q)
+         !--------------------------------------------------------------
+         !     Input Parameters
+         !          t          Location along fieldline in t
+         !          q            (q(1),q(2),q(3),q(4)) = (R,phi,Z,vll)
+         !--------------------------------------------------------------
+         IMPLICIT NONE
+         DOUBLE PRECISION, INTENT(inout) :: t
+         DOUBLE PRECISION, INTENT(inout) :: q(6)
+         !--------------------------------------------------------------
+         !     Local Variables
+         !        tau_spit The Spitzer characteristic time
+         !        tau_spit_inv Helper 1/tau_spit
+         !        v_crit       Critical velocity (transition to ion slowing)
+         !        coulomb_log  Couloumb Logarithm (see NRL) 
+         !--------------------------------------------------------------
+         INTEGER        :: ier
+         DOUBLE PRECISION    :: r_temp, phi_temp, z_temp, vll, te_temp, ne_temp, ti_temp, speed, newspeed, &
+                          zeta, sigma, zeta_mean, zeta_o, v_s, tau_inv, tau_spit_inv, &
+                          reduction, dve,dvi, tau_spit, v_crit, coulomb_log, te_cube, &
+                          inv_mymass, speed_cube, vcrit_cube, vfrac, modb, s_temp, &
+                          vc3_tauinv, vbeta, zeff_temp, br_temp, bphi_temp, bz_temp, vperp, binv
+         DOUBLE PRECISION :: Ebench  ! for ASCOT Benchmark
+         ! For splines
+         INTEGER :: i,j,k, l
+         REAL*8 :: xparam, yparam, zparam
+         INTEGER, parameter :: ict(8)=(/1,0,0,0,0,0,0,0/)
+         REAL*8 :: fval(1)
+
+         !--------------------------------------------------------------
+         !     Begin Subroutine
+         !--------------------------------------------------------------
+      
+         ier      = 0
+
+         ! Setup position in a vll arrays
+         r_temp   = q(1)
+         phi_temp = MODULO(q(2), phimax)
+         IF (phi_temp < 0) phi_temp = phi_temp + phimax
+         z_temp   = q(3)
+
+         ! Initialize values
+         te_temp  = 0; ne_temp  = 0; ti_temp  = 0; zeff_temp=1;
+         speed = 0; reduction = 0; 
+         br_temp = 0; bphi_temp = 0; bz_temp = 0;
+
+         tau_spit_inv = 0.0; v_crit   = 0.0; coulomb_log = 15
+         tau_inv = 10.0; vcrit_cube = 0.0; vc3_tauinv = 0
+
+         ! Check that we're inside the domain then proceed
+         !CALL EZspline_isInDomain(BR_spl,r_temp,phi_temp,z_temp,ier)
+         IF ((r_temp >= rmin-eps1) .and. (r_temp <= rmax+eps1) .and. &
+             (phi_temp >= phimin-eps2) .and. (phi_temp <= phimax+eps2) .and. &
+             (z_temp >= zmin-eps3) .and. (z_temp <= zmax+eps3)) THEN
+!         IF (ier == 0) THEN
+            ! Get the gridpoint info (this is possible since all grids are the same)
+            i = MIN(MAX(COUNT(raxis < r_temp),1),nr-1)
+            j = MIN(MAX(COUNT(phiaxis < phi_temp),1),nphi-1)
+            k = MIN(MAX(COUNT(zaxis < z_temp),1),nz-1)
+            xparam = (r_temp - raxis(i)) * hri(i)
+            yparam = (phi_temp - phiaxis(j)) * hpi(j)
+            zparam = (z_temp - zaxis(k)) * hzi(k)
+            ! Evaluate the Splines
+            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                            hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                            TE4D(1,1,1,1),nr,nphi,nz)
+            te_temp = max(fval(1),zero)
+            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                            hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                            NE4D(1,1,1,1),nr,nphi,nz)
+            ne_temp = max(fval(1),zero)
+            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                            hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                            TI4D(1,1,1,1),nr,nphi,nz)
+            ti_temp = max(fval(1),zero)
+            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                            hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                            ZEFF4D(1,1,1,1),nr,nphi,nz)
+            zeff_temp = max(fval(1),one)
+            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                            hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                            S4D(1,1,1,1),nr,nphi,nz)
+            s_temp = fval(1)
+            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                            hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                            BR4D(1,1,1,1),nr,nphi,nz)
+            br_temp = fval(1)
+            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                            hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                            BPHI4D(1,1,1,1),nr,nphi,nz)
+            bphi_temp = fval(1)
+            CALL R8HERM3FCN(ict,1,1,fval,i,j,k,xparam,yparam,zparam,&
+                            hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
+                            BZ4D(1,1,1,1),nr,nphi,nz)
+            bz_temp = fval(1)
+
+            !-----------------------------------------------------------
+            !  Helpers
+            !     v_s       Local Sound Speed
+            !     speed     Total particle speed
+            !-----------------------------------------------------------
+            modb = sqrt(br_temp*br_temp+bphi_temp*bphi_temp+bz_temp*bz_temp)
+            binv = one/modb
+            br_temp = br_temp*binv
+            bphi_temp = bphi_temp*binv
+            bz_temp = bz_temp*binv
+            te_cube = te_temp * te_temp * te_temp
+            inv_mymass = 1/mymass
+            v_s = fact_vsound*sqrt(ti_temp)
+            speed = sqrt(SUM(q(4:6)*q(4:6)))
+            vbeta = max(ABS(speed-v_s)*inv_cspeed,1E-6)
+            vll = (q(4)*br_temp+q(5)*bphi_temp+q(6)*bz_temp)*binv
+            ! Make q vperp from this point forward
+            q(4) = q(4) - vll*br_temp
+            q(5) = q(5) - vll*bphi_temp
+            q(6) = q(6) - vll*bz_temp
+
+            !-----------------------------------------------------------
+            !  Calculate Coulomb Logarithm (NRL pg. 35)
+            !     te in eV and ne in cm^-3
+            !-----------------------------------------------------------
+            IF ((te_temp > te_col_min).and.(ne_temp > 0)) THEN
+               coulomb_log = 35 - log( zeff_temp*fact_coul*sqrt(ne_temp*1E-6/te_temp)/(vbeta*vbeta))
+!               IF (te_temp < 10*myZ*myZ) THEN
+!                  coulomb_log = 23 - log( myZ*sqrt(ne_temp*1E-6/(te_cube) )   )
+!               ELSE
+!                  coulomb_log = 24 - log( sqrt(ne_temp*1E-6)/(te_temp) )
+!               END IF
+               coulomb_log = max(coulomb_log,one)
+               ! Callen Ch2 pg41 eq2.135 (fact*Vtherm; Vtherm = SQRT(2*E/mass) so E in J not eV)
+               v_crit = fact_crit*SQRT(te_temp)
+               vcrit_cube = v_crit*v_crit*v_crit
+               tau_spit = 3.777183D41*mymass*SQRT(te_cube)/(ne_temp*myZ*myZ*coulomb_log)  ! note ne should be in m^-3 here
+               tau_spit_inv = (1.0D0)/tau_spit
+               vc3_tauinv = vcrit_cube*tau_spit_inv
+            END IF
+
+            !-----------------------------------------------------------
+            !  Viscouse Velocity Reduction
+            !     v_s       Local Sound Speed
+            !     speed     Total particle speed
+            !     dve       Speed change due to electron slowing down 
+            !     dvi       Speed change due to ion slowing down 
+            !     reduction Total change in speed
+            !     newspeed  New total speed
+            !     vfrac     Ratio between new and old speed (helper) 
+            !-----------------------------------------------------------
+            dve   = speed*tau_spit_inv
+            dvi   = vc3_tauinv/(speed*speed)
+            reduction = dve + dvi
+            newspeed = speed - reduction*dt
+            vfrac = newspeed/speed
+
+            !-----------------------------------------------------------
+            !  Thermalize particle or adjust vll and moment
+            !  Fowler et al. NF 1990 30 (6) 997--1010
+            !-----------------------------------------------------------
+            IF (newspeed < v_s) THEN  ! Thermalize
+               dve       = dve/reduction
+               dvi       = dvi/reduction
+               reduction = (speed - v_s)/dt  ! Thermalize
+               dve       = dve*reduction
+               dvi       = dvi*reduction
+               newspeed = speed - reduction*dt
+               ltherm = .true.
+               vfrac = newspeed/speed
+               vll = vfrac*vll
+               moment = vfrac*vfrac*moment
+               q(4) = vll
+               RETURN
+            END IF
+            l = MAX(MIN(CEILING(SQRT(s_temp)*ns_prof1),ns_prof1),1)
+            epower_prof(mybeam,l) = epower_prof(mybeam,l) + mymass*dve*dt*speed*weight(myline)
+            ipower_prof(mybeam,l) = ipower_prof(mybeam,l) + mymass*dvi*dt*speed*weight(myline)
+            vll = vfrac*vll
+            q(4:6) = q(4:6)*vfrac
+            speed = newspeed
+
+           !------------------------------------------------------------
+           !  Pitch Angle Scattering
+           !------------------------------------------------------------
+           speed_cube = 2*vc3_tauinv*zeff_temp*fact_pa*dt/(speed*speed*speed) ! redefine as inverse
+           zeta_o = vll/speed   ! Record the current pitch.
+           CALL gauss_rand(1,zeta)  ! A random from a standard normal (1,1)
+           sigma = sqrt( ABS((1.0D0-zeta_o*zeta_o)*speed_cube) ) ! The standard deviation.
+           zeta_mean = zeta_o *(1.0D0 - speed_cube )  ! The new mean in the distribution.
+           zeta = zeta*sigma + zeta_mean  ! The new pitch angle.
+           !!!The pitch angle MUST NOT go outside [-1,1] nor be NaN; but could happen accidentally with the distribution.
+           zeta = MIN(MAX(zeta,-0.999D+00),0.999D+00)
+           !IF (ABS(zeta) >  0.999D+00) zeta =  SIGN(0.999D+00,zeta)
+           vll = zeta*speed
+
+           !------------------------------------------------------------
+           !  Kick Model Scattering
+           !------------------------------------------------------------
+           IF (modb>=B_kick_min .and. modb<=B_kick_max) THEN
+              zeta_o = vll/speed   ! Record the current pitch.
+              zeta = zeta_o-zeta_o*(one-zeta_o*zeta_o)*dt*fact_kick*SQRT(ne_temp)*binv*binv
+              vll = zeta*speed
+           END IF
+
+           !------------------------------------------------------------
+           !  Now update velocity
+           !------------------------------------------------------------
+           moment = half*mymass*(speed*speed - vll*vll)*binv
+           ! Normalize Vperp
+           vperp = SQRT(SUM(q(4:6)*q(4:6)))
+           q(4:6) = q(4:6)*sqrt(speed*speed-vll*vll)/vperp
+           q(4) = q(4) + vll*zeta*br_temp
+           q(5) = q(5) + vll*zeta*bphi_temp
+           q(6) = q(6) + vll*zeta*bz_temp
+
+
+         END IF
+
+         RETURN
+
+      END SUBROUTINE beams3d_physics_fo
 
       !-----------------------------------------------------------------
       !     Function:      beams3d_follow_neut

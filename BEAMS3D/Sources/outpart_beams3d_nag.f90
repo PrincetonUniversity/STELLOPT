@@ -24,7 +24,7 @@ SUBROUTINE outpart_beams3d_nag(t, q)
                              dist5d_prof, win_dist5d, nsh_prof4, &
                              h2_prof, h3_prof, h4_prof, h5_prof, my_end
     USE beams3d_grid
-    USE beams3d_physics_mod, ONLY: beams3d_physics
+    USE beams3d_physics_mod, ONLY: beams3d_physics_fo
     USE wall_mod, ONLY: collide, get_wall_ik, get_wall_area
     USE mpi_params
     USE mpi_inc
@@ -114,8 +114,6 @@ SUBROUTINE outpart_beams3d_nag(t, q)
        vperp   = v_total - vll_temp*vll_temp ! Vperp^2
        moment  = 0.5*mymass*vperp*binv
        moment_lines(mytdex,myline) = moment
-       q4(1:3) = q(1:3)
-       q4(4)   = vll_temp
 
        ! Calc dist func bins
        x0    = MOD(q(2),pi2)
@@ -129,7 +127,7 @@ SUBROUTINE outpart_beams3d_nag(t, q)
        !CALL MPI_WIN_LOCK(MPI_LOCK_EXCLUSIVE,myworkid,0,win_dist5d,ier)
        dist5d_prof(mybeam,d1,d2,d3,d4,d5) = dist5d_prof(mybeam,d1,d2,d3,d4,d5) + xw
        !CALL MPI_WIN_UNLOCK(myworkid,win_dist5d,ier)
-       IF (lcollision) CALL beams3d_physics(t,q4)
+       IF (lcollision) CALL beams3d_physics_fo(t,q)
        IF (ltherm) THEN
           ndot_prof(mybeam,d1)   =   ndot_prof(mybeam,d1) + weight(myline)
           end_state(myline) = 1

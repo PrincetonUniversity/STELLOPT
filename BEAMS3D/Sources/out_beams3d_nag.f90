@@ -24,7 +24,7 @@ SUBROUTINE out_beams3d_nag(t, q)
                              dist5d_prof, win_dist5d, nsh_prof4, &
                              h2_prof, h3_prof, h4_prof, h5_prof, my_end
     USE beams3d_grid
-    USE beams3d_physics_mod, ONLY: beams3d_physics
+    USE beams3d_physics_mod, ONLY: beams3d_physics_gc
     USE wall_mod, ONLY: collide, get_wall_ik, get_wall_area
     USE mpi_params
     USE mpi_inc
@@ -101,7 +101,7 @@ SUBROUTINE out_beams3d_nag(t, q)
        !CALL MPI_WIN_LOCK(MPI_LOCK_EXCLUSIVE,myworkid,0,win_dist5d,ier)
        dist5d_prof(mybeam,d1,d2,d3,d4,d5) = dist5d_prof(mybeam,d1,d2,d3,d4,d5) + xw
        !CALL MPI_WIN_UNLOCK(myworkid,win_dist5d,ier)
-       IF (lcollision) CALL beams3d_physics(t,q)
+       IF (lcollision) CALL beams3d_physics_gc(t,q)
        IF (ltherm) THEN
           ndot_prof(mybeam,d1)   =   ndot_prof(mybeam,d1) + weight(myline)
           end_state(myline) = 1
