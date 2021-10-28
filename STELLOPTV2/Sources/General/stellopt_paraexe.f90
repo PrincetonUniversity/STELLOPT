@@ -36,7 +36,7 @@
                              misc_error_flag, successful_term_flag, &
                              restart_flag, readin_flag, timestep_flag, &
                              output_flag, cleanup_flag, reset_jacdt_flag
-      USE vmec_input, ONLY:  ns_array, lfreeb, write_indata_namelist
+      USE vmec_input, ONLY:  ns_array, lfreeb, write_indata_namelist, lnyquist
 !DEC$ IF DEFINED (GENE)
       USE gene_subroutine, ONLY: rungene
       USE par_in, ONLY: diagdir,file_extension, beta_gene => beta
@@ -57,6 +57,7 @@
             lread_input_beams => lread_input, lvmec_beams => lvmec, &
             lverb_beams => lverb, lbeam_beams => lbeam, &
             lpies_beams => lpies, lspec_beams => lspec, &
+            leqdsk_beams => leqdsk, eqdsk_string_beams => eqdsk_string, &
             lmgrid_beams => lmgrid, lascot_beams => lascot, &
             lvessel_beams => lvessel, lcoil_beams => lcoil, &
             lsuzuki_beams => lsuzuki, lrandomize_beams => lrandomize, &
@@ -113,7 +114,7 @@
 !----------------------------------------------------------------------
 !     BEGIN SUBROUTINE
 !----------------------------------------------------------------------
-      IF (ier_paraexe /= 0) RETURN
+      IF (TRIM(in_parameter_1) /= 'exit' .and. ier_paraexe /= 0) RETURN
       code_str = TRIM(in_parameter_1)
       file_str = TRIM(in_parameter_2)
       ierr_mpi = 0
@@ -299,6 +300,7 @@
                lvmec_beams        = .TRUE.  ! Use VMEC Equilibria
                lpies_beams        = .FALSE.
                lspec_beams        = .FALSE.
+               leqdsk_beams       = .FALSE.
                lcoil_beams        = .FALSE.
                lmgrid_beams       = .FALSE.
                lascot_beams       = .FALSE.
@@ -325,6 +327,7 @@
                mgrid_string_beams = ''
                vessel_string_beams = ''
                restart_string_beams = ''
+               eqdsk_string_beams = ''
                IF (myworkid .eq. master) lverb_beams = lscreen
 
 
@@ -402,6 +405,7 @@
             CASE('terpsichore')
                proc_string = file_str
                ier = 0
+               IF (lnyquist) STOP "To use TERPSICHORE, you have to use lnyquist=.f. in VMEC!"
                CALL stellopt_kink(lscreen,ier)
             CASE('booz_xform')
                proc_string = file_str

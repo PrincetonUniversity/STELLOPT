@@ -1,4 +1,6 @@
 ObjectFiles = \
+chisq_line_visbrem.o \
+chisq_gamma_c.o \
 chisq_pressprime.o \
 stellopt_write_auxfiles.o \
 stellopt_write_eqfile.o \

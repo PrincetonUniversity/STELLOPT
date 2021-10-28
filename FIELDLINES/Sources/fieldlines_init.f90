@@ -13,6 +13,7 @@
       USE vmec_input,  ONLY: extcur_in => extcur, read_indata_namelist,&
                              nv_in => nzeta, nfp_in => nfp, nigroup
       USE read_wout_mod, ONLY:  read_wout_file, rmin_surf, rmax_surf, zmax_surf
+      USE read_hint_mod, ONLY: read_hint_mag, get_hint_grid
       USE fieldlines_runtime
       USE fieldlines_grid
       USE fieldlines_input_mod, ONLY: read_fieldlines_input
@@ -53,7 +54,7 @@
 !-----------------------------------------------------------------------
       ! TESTING
       IF (lvessel .and. lverb .and. .false.) THEN
-         CALL wall_load_txt(TRIM(vessel_string),ier)
+         CALL wall_load_txt(TRIM(vessel_string),ier, lverb, MPI_COMM_FIELDLINES)
          IF (lverb) CALL wall_info(6)
          CALL collide(6*1/100._rprec,6*1/100._rprec,0.0_rprec,6*1/100._rprec,6*1/100._rprec,1.5_rprec,xw,yw,zw,lhit)
          WRITE(*,*) xw,yw,zw,lhit
@@ -74,7 +75,6 @@
       
       ! First Read The Input Namelist
       iunit = 11
-      IF (lverb) WRITE(6,'(A)') '----- Input Parameters -----'
 #if defined(MPI_OPT)
       CALL MPI_BARRIER(MPI_COMM_FIELDLINES,ierr_mpi)
       IF (ierr_mpi /= MPI_SUCCESS) CALL handle_err(MPI_BARRIER_ERR,'fieldlines_init',ierr_mpi)
@@ -89,6 +89,13 @@
       ELSE IF (lspec) THEN
          CALL read_fieldlines_input('input.' // TRIM(id_string),ier,myworkid)
          IF (lverb) WRITE(6,'(A)') '   FILE: input.' // TRIM(id_string)
+      ELSE IF (lhint) THEN
+         CALL read_fieldlines_input(TRIM(id_string)//'.input',ier,myworkid)
+         IF (lverb) WRITE(6,'(A)') '   FILE:     ' // TRIM(id_string) // '.input'
+         IF (lverb) WRITE(6,'(A)') '   MAG_FILE: ' // TRIM(id_string) // '.magslice'
+         CALL read_hint_mag(TRIM(id_string)//'.magslice',ier)
+         phimin = 0
+         CALL get_hint_grid(nr,nz,nphi,rmin,rmax,zmin,zmax,phimax)
       END IF
 
       ! TESTING LMU
@@ -113,8 +120,9 @@
 !         ELSE IF (lspec) THEN
 !         END IF
 !      END IF
-      
-      IF (lauto) THEN
+      IF (lfield_start) THEN
+         CALL fieldlines_init_fline
+      ELSE IF (lauto) THEN
          nlines = MAX(nprocs_fieldlines,128)
          IF (nruntype == runtype_full) THEN
             rmin_temp = r_start(1)
@@ -150,6 +158,7 @@
       
       ! Output some information
       IF (lverb .and. .not.lrestart) THEN
+         WRITE(6,'(A)') '----- Input Parameters -----'
          WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   R   = [',rmin,',',rmax,'];  NR:   ',nr
          WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   PHI = [',phimin,',',phimax,'];  NPHI: ',nphi
          WRITE(6,'(A,F8.5,A,F8.5,A,I4)') '   Z   = [',zmin,',',zmax,'];  NZ:   ',nz
@@ -175,11 +184,15 @@
          CALL mpialloc(B_R, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_B_R)
          CALL mpialloc(B_PHI, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_B_PHI)
          CALL mpialloc(B_Z, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_B_Z)
+         IF (lpres) THEN
+            CALL mpialloc(PRES_G, nr, nphi, nz, myid_sharmem, 0, MPI_COMM_SHARMEM, win_PRES)
+         END IF
          IF (myid_sharmem == master) THEN
             FORALL(i = 1:nr) raxis(i) = (i-1)*(rmax-rmin)/(nr-1) + rmin
             FORALL(i = 1:nz) zaxis(i) = (i-1)*(zmax-zmin)/(nz-1) + zmin
             FORALL(i = 1:nphi) phiaxis(i) = (i-1)*(phimax-phimin)/(nphi-1) + phimin
             B_R = 0; B_PHI = 0; B_Z = 0
+            IF (lpres) PRES_G = 0 
          END IF
          ! Put the vacuum field on the background grid
          IF (lmgrid) THEN
@@ -201,30 +214,12 @@
          !CALL fieldlines_init_pies
       ELSE IF (lspec .and. .not.lvac) THEN
          !CALL fieldlines_init_spec
+      ELSE IF (lhint .and. .not.lvac) THEN
+         CALL fieldlines_init_hint
       END IF
 
-      !ERROR FIELD code section
-      ! Note that for this to make sense the code must be run with NFP=1 and PHIMAX=2*pi
-      IF ((lerror_field) .and. (myid_sharmem == master)) THEN
-         IF (lverb) WRITE(6,'(A)') '!!!!!ADDING STATIC ERROR FIELD!!!!!'
-         b_err   = 2.5*2.0E-5
-         ang_err = pi2*0./360.
-         b_err  = SQRT((b_err*b_err)/2)
-         bx_err = b_err * COS(ang_err)
-         by_err = b_err * SIN(ang_err)
-         bz_err = 0
-         DO k = 1, nz
-            DO j = 1, nphi
-               DO i = 1, nr
-                  br_err = bx_err*cos(phiaxis(j)) + by_err*sin(phiaxis(j))
-                  bphi_err = by_err*cos(phiaxis(j)) - bx_err*sin(phiaxis(j))
-                  B_R(i,j,k) = B_R(i,j,k) + br_err
-                  B_PHI(i,j,k) = B_PHI(i,j,k) + bphi_err
-                  B_Z(i,j,k) = B_Z(i,j,k) + bz_err
-               END DO
-            END DO
-         END DO
-      END IF
+      ! Handle error fields
+      IF (lerror_field) CALL fieldlines_init_errorfield
 
       ! Put curtor on axis and calculate the field
       IF (laxis_i)  CALL fieldlines_init_I
@@ -305,9 +300,8 @@
 
       ! Get setup vessel
       IF (lvessel) THEN
-         CALL wall_load_txt(TRIM(vessel_string),ier)
+         CALL wall_load_txt(TRIM(vessel_string),ier, lverb, MPI_COMM_FIELDLINES)
          IF (ier /= 0) CALL handle_err(WALL_ERR,'fieldlines_init',ier)
-         IF (myworkid /= master) DEALLOCATE(vertex,face) ! Do this to save memory
          IF (lverb) THEN
             CALL wall_info(6)
             IF (lwall_trans) WRITE(6,'(A)')'   !!!!! Poincare Screen  !!!!!'

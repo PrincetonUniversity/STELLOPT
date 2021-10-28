@@ -14,7 +14,8 @@
 #######################################################################
 #            Define Compiler Flags
 #######################################################################
-  FLAGS_R = -O2 -fexternal-blas
+  # temp add some checking flags to avoid BEAMS3d issues
+  FLAGS_R = -O2 -fexternal-blas -g -fbacktrace 
   FLAGS_D = -g -O0 -fexternal-blas -fcheck=all -fbacktrace -Wextra \
    -Wtarget-lifetime -fbounds-check -ffpe-trap=zero -finit-real=snan
 
@@ -120,7 +121,7 @@
 #######################################################################
 #            TERPSICHORE Options
 #######################################################################
-  LTERPSICHORE= F
+  LTERPSICHORE= T
   TERPSICHORE_INC = -I$(TERPSICHORE_PATH)
   TERPSICHORE_DIR = $(TERPSICHORE_PATH)
   LIB_TERPSICHORE = libterpsichore.a
@@ -160,7 +161,7 @@
 #            MANGO Options
 #######################################################################
 
-LMANGO = T
+LMANGO = F
 
 MANGO_DIR = /p/focus/share/mango
 

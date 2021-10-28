@@ -1,4 +1,5 @@
 ObjectFiles = \
+torlines_write_parhdf5.o \
 fblin.o \
 torlines_main.o \
 torlines_fieldlines.o \
@@ -18,7 +19,6 @@ follow.o \
 torlines_follow.o \
 backspace_out.o \
 torlines_gridtest.o \
-FZERO.o \
 scaleup_boundary.o \
 torlines_init_external.o \
 fblin_lsode.o \

@@ -15,6 +15,18 @@ CLEAN_ARCH =
 LIB_DIR = ../../LIBSTELL
 LIB = libstell.a
 
+# Handle third party code dependencies
+ifeq ($(LSFINCS),T)
+  include ${PETSC_DIR}/lib/petsc/conf/variables
+  SFINCS_INC += -I${PETSC_DIR}/include
+  SFINCS_LIB += $(PETSC_LIB) $(FC_LINKER_FLAGS) $(FFLAGS)
+endif
+ifeq ($(LGENE),T)
+  GENE_LIB +=-L$(FFTW_HOME)/lib -lfftw3 -lfftw3f -Xlinker \
+             -L$(SLEPC_HOME)/lib -lslepc \
+             -L$(PETSC_HOME)/lib -lpetsc
+endif
+
 # Handle Which Code is being CALLED
 ifeq ($(MAKECMDGOALS),xstelloptv2)
   PRECOMP += -DBNORM -DBEAMS3D_OPT -DJINV_OPT -DTXPORT_OPT -DDIAGNO_OPT -DSKS  -DSKS2

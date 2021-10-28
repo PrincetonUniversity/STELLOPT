@@ -27,17 +27,22 @@
       character*(arg_len)                          :: arg1
       character*(arg_len),allocatable,dimension(:) :: args
       ! Runtime Related
+      INTEGER, PARAMETER     :: nu = 64
+      INTEGER, PARAMETER     :: nv = 64
       LOGICAL                :: lvmec, lexist, lminmax, lrbc, lrhomn,ldeltamn, &
                                 lfix_ntor, llmdif, lgade, lswarm, lmap, lbasic, &
                                 lqas, lneed_booz, lqps, lhelical, lballoon, lneo, &
                                 ldkes, lbootsj, ltxport, lmap_plane, ljdotb0, liota, &
-                                lkink, lvaciota, ljcurv, loutput_harm, lmode, lorbit
-      INTEGER                :: m,n,ns
+                                lkink, lvaciota, ljcurv, loutput_harm, lmode, lorbit, &
+                                lac, lam, lai, lphiedge, lpscale, lcurtor, lkappa, &
+                                lwell, lcurvature, lfieldlines
+      INTEGER                :: m,n,ns,j
       REAL(rprec)            :: bound_min, bound_max, var, var_min, var_max, &
-                                temp, rho_exp,r1t,r2t,z1t, delta, filter_harm
+                                temp, rho_exp,r1t,r2t,z1t, delta, filter_harm, pi2
       REAL(rprec), DIMENSION(-ntord:ntord,-mpol1d:mpol1d) ::  deltamn
       REAL(rprec), DIMENSION(-ntord:ntord,0:mpol1d)       ::  rhobc
       REAL(rprec), DIMENSION(-ntord:ntord,0:mpol1d)       :: rbc_temp,zbs_temp
+      REAL(rprec), DIMENSION(nu,nv)                       :: rreal,zreal
       character(arg_len)     :: id_string, var_name
       
       ! Define output
@@ -56,6 +61,7 @@
 !     Begin Program
 !-----------------------------------------------------------------------
       ! Set Defaults
+      pi2 = 8.0 * ATAN(1.0)
       ier = 0
       lexist = .FALSE.
       lvmec = .FALSE.
@@ -64,6 +70,12 @@
       ldeltamn = .FALSE.
       lrbc = .FALSE.
       lmode = .FALSE.
+      lac = .FALSE.
+      lam = .FALSE.
+      lai = .FALSE.
+      lphiedge= .FALSE.
+      lpscale = .FALSE.
+      lcurtor = .FALSE.
       lmap_plane = .FALSE.
       lfix_ntor = .FALSE.
       llmdif    = .TRUE.
@@ -86,6 +98,10 @@
       lkink = .FALSE.
       lvaciota = .FALSE.
       lorbit = .FALSE.
+      lfieldlines = .FALSE.
+      lkappa = .FALSE.
+      lwell  = .FALSE.
+      lcurvature = .FALSE.
       loutput_harm = .FALSE.
       bound_min = -1.0
       bound_max = 2.0
@@ -117,6 +133,18 @@
                i = i + 1
                CALL GETCARG(i,args(i),numargs)
                READ(args(i),*) filter_harm
+            CASE ("-am")
+               lam = .TRUE.
+            CASE ("-ac")
+               lac = .TRUE.
+            CASE ("-ai")
+               lai = .TRUE.
+            CASE ("-pscale")
+               lpscale = .TRUE.
+            CASE ("-curtor")
+               lcurtor = .TRUE.
+            CASE ("-phiedge")
+               lphiedge = .TRUE.
             CASE ("-rbc")
                lrbc     = .TRUE.
                lrhomn   = .FALSE.
@@ -195,6 +223,7 @@
             CASE ("-fix_ntor")
                lfix_ntor = .TRUE.
             CASE ("-bootstrap")
+               lneed_booz = .TRUE.
                lbootsj = .TRUE.
             CASE ("-jdotb0")
                ljdotb0 = .TRUE.
@@ -210,8 +239,16 @@
                lkink = .TRUE.
             CASE ("-orbit")
                lorbit = .TRUE.
+            CASE ("-fieldlines")
+               lfieldlines = .TRUE.
             CASE ("-harm")
                loutput_harm = .TRUE.
+            CASE ("-kappa")
+               lkappa= .TRUE.
+            CASE ("-magwell")
+               lwell= .TRUE.
+            CASE ("-curvature")
+               lcurvature= .TRUE.
             CASE ("-help","-h")
                WRITE(6,'(a,f5.2)') 'VMEC2STEL Version ',VMEC2STEL_VERSION
                WRITE(6,*) ' STELLOPTV2 Input Generation Utility'
@@ -219,6 +256,12 @@
                WRITE(6,*) '   <options>'
                WRITE(6,*) '   -vmec <ext>   VMEC input extension'
                WRITE(6,*) '   -bounds %min %max Min/Max scaling'
+               WRITE(6,*) '   -phiedge          Vary PHIEDGE'
+               WRITE(6,*) '   -pscale           Vary PSCALE'
+               WRITE(6,*) '   -curtor           Vary CURTOR'
+               WRITE(6,*) '   -am               Vary AM Array'
+               WRITE(6,*) '   -ai               Vary AC Array'
+               WRITE(6,*) '   -ac               Vary AI Array'
                WRITE(6,*) '   -filter %ratio    Boundary Harm. Filter'
                WRITE(6,*) '   -rbc              VMEC Boundary Representation'
                WRITE(6,*) '   -rhomn            H/B Boundary Representation (default)'
@@ -232,6 +275,7 @@
                WRITE(6,*) '   -map              N-Dimensional Mapping'
                WRITE(6,*) '   -map_plane        Hyperplane (2D) Mapping'
                WRITE(6,*) '   -basic            Basic Targets'
+               WRITE(6,*) '   -kappa            Plasma Elongation Target'
                WRITE(6,*) '   -qas              QAS Target'
                WRITE(6,*) '   -qps              QPS Target'
                WRITE(6,*) '   -helical          Helical Target'
@@ -242,9 +286,11 @@
                WRITE(6,*) '   -txport           Turbulent Transport Target'
                WRITE(6,*) '   -iota             Iota Profile Target'
                WRITE(6,*) '   -kink             Kink Stability (TERPSICHORE) Target'
-               WRITE(6,*) '   -jdotb0           Minimize <JdotB>'
-               WRITE(6,*) '   -jcurv            Minimize <Jcurv>'
+               WRITE(6,*) '   -jdotb0           <JdotB> Target'
+               WRITE(6,*) '   -jcurv            <Jcurv> Target'
                WRITE(6,*) '   -vaciota          Vacuum Iota (-S12/S11)'
+               WRITE(6,*) '   -magwell          Magnetic Well Target'
+               WRITE(6,*) '   -curvature        Curvature Kurtosis Target'
                WRITE(6,*) '   -orbit            Orbit (BEAMS3D) Target'
                WRITE(6,*) '   -help             This help message'
                STOP
@@ -257,6 +303,7 @@
          i = i + 1
       END DO
       DEALLOCATE(args)
+
       ! Generate the OPTIMUM NAMELIST
       WRITE(6,'(A)') '&OPTIMUM'
       IF (llmdif) THEN
@@ -267,11 +314,12 @@
          IF (lvmec) WRITE(6,'(2x,A)') 'EQUIL_TYPE = ''VMEC2000'''
          WRITE(6,'(2x,A)')            'OPT_TYPE   = ''LMDIF'''
          WRITE(6,'(2X,A,ES10.2)')     'FTOL       = ',1.0E-6
-         WRITE(6,'(2X,A,ES10.2)')     'XTOL       = ',1.0E-6
+         WRITE(6,'(2X,A,ES10.2)')     'XTOL       = ',1.0E-30
          WRITE(6,'(2X,A,ES10.2)')     'GTOL       = ',1.0E-30
          WRITE(6,'(2X,A,F6.1)')       'FACTOR     = ',10.0
          WRITE(6,'(2X,A,ES10.2)')     'EPSFCN     = ',1.0E-6
          WRITE(6,'(2X,A,I1.1)')       'MODE       = ',1
+         WRITE(6,'(2X,A,I1.1)')       'NOPTIMIZERS =',16
          WRITE(6,'(2X,A)')            'LKEEP_MINS = T'
       ELSEIF (lgade) THEN
          WRITE(6,'(A)')'!-----------------------------------------------------------------------'
@@ -320,55 +368,76 @@
       WRITE(6,'(A)')'!          OPTIMIZED QUANTITIES'
       WRITE(6,'(A)')'!-----------------------------------------------------------------------'
       IF (lvmec .and. .not. lmap_plane) THEN
-      	 ! Read the input file
-      	 INQUIRE(FILE='input.'//TRIM(id_string),EXIST=lexist)
-      	 IF (.not.lexist) STOP '!!!!!COULD not file input file!!!!!'
+         lfreeb = .false.
+         ! Read the input file
+         INQUIRE(FILE='input.'//TRIM(id_string),EXIST=lexist)
+      	IF (.not.lexist) STOP '!!!!!COULD not file input file!!!!!'
          CALL safe_open(iunit,ier,'input.'//TRIM(id_string),'old','formatted')
          IF(ier /= 0) STOP '!!!!!ERROR opening input file!!!!!'
          CALL read_indata_namelist(iunit,ier)
          IF(ier /= 0) STOP '!!!!!ERROR reading &INDATA namelist!!!!!'
          CLOSE(iunit)
+         ! Handle lfreeb=.true. default
+         IF (ALL(extcur==0) .and. lfreeb) lfreeb = .FALSE.
+         ! Fourier Transform rbc zbs
+         rreal = 0; zreal=0;
+         DO i = 1, nu
+            DO j = 1, nv
+               DO m = 0, mpol-1
+                  DO n = -ntor,ntor
+                     rreal(i,j) = rreal(i,j) + rbc(n,m)*cos(pi2*(m*DBLE(i-1)/(nu-1)-n*DBLE(j-1)/(nv-1)))
+                     zreal(i,j) = zreal(i,j) + zbs(n,m)*sin(pi2*(m*DBLE(i-1)/(nu-1)-n*DBLE(j-1)/(nv-1)))
+                  END DO
+               END DO
+            END DO
+         END DO
          ! Handle the optimizer
          ! Handle PHIEDGE
-         var = phiedge
-         var_name = 'PHIEDGE'
-         IF (var == 0) var = 1
-         var_min = bound_min*var
-         var_max = bound_max*var
-         IF (var_max < var_min) THEN
-            temp = var_max
-            var_max = var_min
-            var_min = temp
+         IF (lphiedge) THEN
+            var = phiedge
+            var_name = 'PHIEDGE'
+            IF (var == 0) var = 1
+            var_min = bound_min*var
+            var_max = bound_max*var
+            IF (var_max < var_min) THEN
+               temp = var_max
+               var_max = var_min
+               var_min = temp
+            END IF
+            WRITE(6,onevar) 'L'//TRIM(var_name)//'_OPT',TRIM(var_name)//'_MIN',var_min,TRIM(var_name)//'_MAX',var_max,'D'//TRIM(var_name)//'_OPT',1.0
          END IF
-         WRITE(6,onevar) 'L'//TRIM(var_name)//'_OPT',TRIM(var_name)//'_MIN',var_min,TRIM(var_name)//'_MAX',var_max,'D'//TRIM(var_name)//'_OPT',1.0
          ! Handle CURTOR
-         var = curtor
-         var_name = 'CURTOR'
-         IF (var == 0) var = 1
-         var_min = bound_min*var
-         var_max = bound_max*var
-         IF (var_max < var_min) THEN
-            temp = var_max
-            var_max = var_min
-            var_min = temp
+         IF (lcurtor) THEN
+            var = curtor
+            var_name = 'CURTOR'
+            IF (var == 0) var = 1
+            var_min = bound_min*var
+            var_max = bound_max*var
+            IF (var_max < var_min) THEN
+               temp = var_max
+               var_max = var_min
+               var_min = temp
+            END IF
+            WRITE(6,onevar) 'L'//TRIM(var_name)//'_OPT',TRIM(var_name)//'_MIN',var_min,TRIM(var_name)//'_MAX',var_max,'D'//TRIM(var_name)//'_OPT',1.0
          END IF
-         WRITE(6,onevar) 'L'//TRIM(var_name)//'_OPT',TRIM(var_name)//'_MIN',var_min,TRIM(var_name)//'_MAX',var_max,'D'//TRIM(var_name)//'_OPT',1.0
          ! Handle PSCALE
-         var = pres_scale
-         var_name = 'PSCALE'
-         IF (var == 0) var = 1
-         var_min = bound_min*var
-         var_max = bound_max*var
-         IF (var_max < var_min) THEN
-            temp = var_max
-            var_max = var_min
-            var_min = temp
+         IF (lpscale) THEN
+            var = pres_scale
+            var_name = 'PSCALE'
+            IF (var == 0) var = 1
+            var_min = bound_min*var
+            var_max = bound_max*var
+            IF (var_max < var_min) THEN
+               temp = var_max
+               var_max = var_min
+               var_min = temp
+            END IF
+            IF (var_min < 0) var_min = 0  ! Positive Pressure
+            WRITE(6,onevar) 'L'//TRIM(var_name)//'_OPT',TRIM(var_name)//'_MIN',var_min,TRIM(var_name)//'_MAX',var_max,'D'//TRIM(var_name)//'_OPT',1.0
          END IF
-         IF (var_min < 0) var_min = 0  ! Positive Pressure
-         WRITE(6,onevar) 'L'//TRIM(var_name)//'_OPT',TRIM(var_name)//'_MIN',var_min,TRIM(var_name)//'_MAX',var_max,'D'//TRIM(var_name)//'_OPT',1.0
          IF (lfreeb) THEN
-	    ! Handle EXTCUR
-	    var_name = 'EXTCUR'
+            ! Handle EXTCUR
+            var_name = 'EXTCUR'
             DO i = LBOUND(extcur,DIM=1), UBOUND(extcur,DIM=1)
                IF (ABS(extcur(i)) > 0) THEN
                   var = extcur(i)
@@ -384,112 +453,114 @@
             END DO
          END IF
          ! Pressure Profile
-         CALL tolower(pmass_type)
-         SELECT CASE(pmass_type)
-            CASE('cubic_spline','akima_spline')
-               var_name='AM_F'
-               DO i = LBOUND(am_aux_f,DIM=1),UBOUND(am_aux_f,DIM=1)
-                  IF (am_aux_s(i) .ge. 0) THEN
-                     var = am_aux_f(i)
-                     var_min = bound_min*var
-                     var_max = bound_max*var
-                     IF (var_max < var_min) THEN
-                        temp = var_max
-                        var_max = var_min
-                        var_min = temp
+         IF (lam) THEN
+            CALL tolower(pmass_type)
+            SELECT CASE(pmass_type)
+               CASE('cubic_spline','akima_spline')
+                  var_name='AM_F'
+                  DO i = LBOUND(am_aux_f,DIM=1),UBOUND(am_aux_f,DIM=1)
+                     IF (am_aux_s(i) .ge. 0) THEN
+                        var = am_aux_f(i)
+                        var_min = bound_min*var
+                        var_max = bound_max*var
+                        IF (var_max < var_min) THEN
+                           temp = var_max
+                           var_max = var_min
+                           var_min = temp
+                        END IF
+                        WRITE(6,vecvar) 'L'//TRIM(var_name)//'_OPT',i,TRIM(var_name)//'_MIN',i,var_min,TRIM(var_name)//'_MAX',i,var_max,'D'//TRIM(var_name)//'_OPT',i,1.0
                      END IF
-                     WRITE(6,vecvar) 'L'//TRIM(var_name)//'_OPT',i,TRIM(var_name)//'_MIN',i,var_min,TRIM(var_name)//'_MAX',i,var_max,'D'//TRIM(var_name)//'_OPT',i,1.0
-                  END IF
-               END DO
-            CASE DEFAULT
-               var_name='AM'
-               DO i = LBOUND(am,DIM=1),UBOUND(am,DIM=1)
-                  IF (ABS(am(i)) > 0) THEN
-                     var = am(i)
-                     var_min = bound_min*var
-                     var_max = bound_max*var
-                     IF (var_max < var_min) THEN
-                        temp = var_max
-                        var_max = var_min
-                        var_min = temp
+                  END DO
+               CASE DEFAULT
+                  var_name='AM'
+                  DO i = LBOUND(am,DIM=1),UBOUND(am,DIM=1)
+                     IF (ABS(am(i)) > 0) THEN
+                        var = am(i)
+                        var_min = bound_min*var
+                        var_max = bound_max*var
+                        IF (var_max < var_min) THEN
+                           temp = var_max
+                           var_max = var_min
+                           var_min = temp
+                        END IF
+                        WRITE(6,vecvar) 'L'//TRIM(var_name)//'_OPT',i,TRIM(var_name)//'_MIN',i,var_min,TRIM(var_name)//'_MAX',i,var_max,'D'//TRIM(var_name)//'_OPT',i,1.0
                      END IF
-                     WRITE(6,vecvar) 'L'//TRIM(var_name)//'_OPT',i,TRIM(var_name)//'_MIN',i,var_min,TRIM(var_name)//'_MAX',i,var_max,'D'//TRIM(var_name)//'_OPT',i,1.0
-                  END IF
-               END DO
-         END SELECT
+                  END DO
+            END SELECT
+         END IF 
          ! Current/Iota Profile
-         IF (ncurr == 1) THEN
-	    CALL tolower(pcurr_type)
-	    SELECT CASE(pcurr_type)
-	       CASE('cubic_spline','akima_spline','cubic_spline_ip','akima_spline_ip')
-	          var_name='AC_F'
-	          DO i = LBOUND(ac_aux_f,DIM=1),UBOUND(ac_aux_f,DIM=1)
-		     IF (ac_aux_s(i) .ge. 0) THEN
-		        var = ac_aux_f(i)
-		        var_min = bound_min*var
-		        var_max = bound_max*var
-		        IF (var_max < var_min) THEN
-			   temp = var_max
-			   var_max = var_min
-			   var_min = temp
-		        END IF
-		        WRITE(6,vecvar) 'L'//TRIM(var_name)//'_OPT',i,TRIM(var_name)//'_MIN',i,var_min,TRIM(var_name)//'_MAX',i,var_max,'D'//TRIM(var_name)//'_OPT',i,1.0
-		     END IF
-	          END DO
-	       CASE DEFAULT
-	          var_name='AC'
-	          DO i = LBOUND(ac,DIM=1),UBOUND(ac,DIM=1)
-		     IF (ABS(ac(i)) > 0) THEN
-		        var = ac(i)
-		        var_min = bound_min*var
-		        var_max = bound_max*var
-		        IF (var_max < var_min) THEN
-			   temp = var_max
-			   var_max = var_min
-			   var_min = temp
-		        END IF
-		        WRITE(6,vecvar) 'L'//TRIM(var_name)//'_OPT',i,TRIM(var_name)//'_MIN',i,var_min,TRIM(var_name)//'_MAX',i,var_max,'D'//TRIM(var_name)//'_OPT',i,1.0
-		     END IF
-	          END DO
-	    END SELECT
-         ELSE
-	    CALL tolower(pcurr_type)
-	    SELECT CASE(pcurr_type)
-	       CASE('cubic_spline','akima_spline')
-	          var_name='AI_F'
-	          DO i = LBOUND(ai_aux_f,DIM=1),UBOUND(ai_aux_f,DIM=1)
-		     IF (ai_aux_s(i) .ge. 0) THEN
-		        var = ai_aux_f(i)
-		        var_min = bound_min*var
-		        var_max = bound_max*var
-		        IF (var_max < var_min) THEN
-			   temp = var_max
-			   var_max = var_min
-			   var_min = temp
-		        END IF
-		        WRITE(6,vecvar) 'L'//TRIM(var_name)//'_OPT',i,TRIM(var_name)//'_MIN',i,var_min,TRIM(var_name)//'_MAX',i,var_max,'D'//TRIM(var_name)//'_OPT',i,1.0
-		     END IF
-	          END DO
-	       CASE DEFAULT
-	          var_name='AI'
-	          DO i = LBOUND(ai,DIM=1),UBOUND(ai,DIM=1)
-		     IF (ABS(ai(i)) > 0) THEN
-		        var = ai(i)
-		        var_min = bound_min*var
-		        var_max = bound_max*var
-		        IF (var_max < var_min) THEN
-			   temp = var_max
-			   var_max = var_min
-			   var_min = temp
-		        END IF
-		        WRITE(6,vecvar) 'L'//TRIM(var_name)//'_OPT',i,TRIM(var_name)//'_MIN',i,var_min,TRIM(var_name)//'_MAX',i,var_max,'D'//TRIM(var_name)//'_OPT',i,1.0
-		     END IF
-	          END DO
-	    END SELECT
+         IF (ncurr == 1 .and. lac) THEN
+            CALL tolower(pcurr_type)
+            SELECT CASE(pcurr_type)
+               CASE('cubic_spline','akima_spline','cubic_spline_ip','akima_spline_ip')
+                  var_name='AC_F'
+                  DO i = LBOUND(ac_aux_f,DIM=1),UBOUND(ac_aux_f,DIM=1)
+                     IF (ac_aux_s(i) .ge. 0) THEN
+                        var = ac_aux_f(i)
+                        var_min = bound_min*var
+                        var_max = bound_max*var
+                        IF (var_max < var_min) THEN
+                           temp = var_max
+                           var_max = var_min
+                           var_min = temp
+                        END IF
+                        WRITE(6,vecvar) 'L'//TRIM(var_name)//'_OPT',i,TRIM(var_name)//'_MIN',i,var_min,TRIM(var_name)//'_MAX',i,var_max,'D'//TRIM(var_name)//'_OPT',i,1.0
+                     END IF
+                  END DO
+               CASE DEFAULT
+                  var_name='AC'
+                  DO i = LBOUND(ac,DIM=1),UBOUND(ac,DIM=1)
+                     IF (ABS(ac(i)) > 0) THEN
+                        var = ac(i)
+                        var_min = bound_min*var
+                        var_max = bound_max*var
+                        IF (var_max < var_min) THEN
+                           temp = var_max
+                           var_max = var_min
+                           var_min = temp
+                        END IF
+                        WRITE(6,vecvar) 'L'//TRIM(var_name)//'_OPT',i,TRIM(var_name)//'_MIN',i,var_min,TRIM(var_name)//'_MAX',i,var_max,'D'//TRIM(var_name)//'_OPT',i,1.0
+                     END IF
+                  END DO
+            END SELECT
+         ELSEIF (ncurr==0 .and. lai) THEN
+            CALL tolower(piota_type)
+            SELECT CASE(piota_type)
+               CASE('cubic_spline','akima_spline')
+                  var_name='AI_F'
+                  DO i = LBOUND(ai_aux_f,DIM=1),UBOUND(ai_aux_f,DIM=1)
+                     IF (ai_aux_s(i) .ge. 0) THEN
+                        var = ai_aux_f(i)
+                        var_min = bound_min*var
+                        var_max = bound_max*var
+                        IF (var_max < var_min) THEN
+                           temp = var_max
+                           var_max = var_min
+                           var_min = temp
+                        END IF
+                        WRITE(6,vecvar) 'L'//TRIM(var_name)//'_OPT',i,TRIM(var_name)//'_MIN',i,var_min,TRIM(var_name)//'_MAX',i,var_max,'D'//TRIM(var_name)//'_OPT',i,1.0
+                     END IF
+                  END DO
+               CASE DEFAULT
+                  var_name='AI'
+                  DO i = LBOUND(ai,DIM=1),UBOUND(ai,DIM=1)
+                     IF (ABS(ai(i)) > 0) THEN
+                        var = ai(i)
+                        var_min = bound_min*var
+                        var_max = bound_max*var
+                        IF (var_max < var_min) THEN
+                           temp = var_max
+                           var_max = var_min
+                           var_min = temp
+                        END IF
+                        WRITE(6,vecvar) 'L'//TRIM(var_name)//'_OPT',i,TRIM(var_name)//'_MIN',i,var_min,TRIM(var_name)//'_MAX',i,var_max,'D'//TRIM(var_name)//'_OPT',i,1.0
+                     END IF
+                  END DO
+            END SELECT
          END IF
          ! Magnetic Axis
          IF (.not.lfreeb) THEN
-	    var_name = 'AXIS'
+            var_name = 'AXIS'
             DO i = LBOUND(raxis_cc,DIM=1), UBOUND(raxis_cc,DIM=1)
                IF (ABS(raxis_cc(i)) > 0 .or. ABS(zaxis_cs(i)) > 0) THEN
                   var = raxis_cc(i)
@@ -738,9 +809,9 @@
             END IF
          END IF
       ELSE IF (lvmec .and. lmap_plane) THEN
-      	 ! Read the input file
-      	 INQUIRE(FILE='input.'//TRIM(id_string),EXIST=lexist)
-      	 IF (.not.lexist) STOP '!!!!!COULD not file input file!!!!!'
+         ! Read the input file
+         INQUIRE(FILE='input.'//TRIM(id_string),EXIST=lexist)
+      	IF (.not.lexist) STOP '!!!!!COULD not file input file!!!!!'
          CALL safe_open(iunit,ier,'input.'//TRIM(id_string),'old','formatted')
          IF(ier /= 0) STOP '!!!!!ERROR opening input file!!!!!'
          CALL read_indata_namelist(iunit,ier)
@@ -819,6 +890,8 @@
          WRITE(6,'(2X,A,F6.3,2X,A,ES10.1)') 'TARGET_Z0      = ',zaxis_cs(0),'SIGMA_Z0 = ',0.01*raxis_cs(0)
          WRITE(6,'(2X,A,F6.3,2X,A,ES10.1)') 'TARGET_VOLUME  = ',1.0,'SIGMA_VOLUME = ',0.01
          WRITE(6,'(2X,A,F6.3,2X,A,ES10.1)') 'TARGET_WP      = ',1.0,'SIGMA_WP = ',0.01
+      END IF
+      IF (lkappa) THEN
          WRITE(6,'(A)')'!-----------------------------------------------------------------------'
          WRITE(6,'(A)')'!          PLASMA ELONGATION (kappa)'
          WRITE(6,'(A)')'!             PHI is toroidal angle [0,2pi] over whole device'
@@ -868,7 +941,7 @@
          IF (lqas) WRITE(6,'(2X,A)') 'HELICITY = (1,0)'
          IF (lqps) WRITE(6,'(2X,A)') 'HELICITY = (0,1)'
          IF (lhelical) WRITE(6,'(2X,A)') 'HELICITY = (2,1)'
-         WRITE(6,'(2X,A,I3.3,A,I3.3,A,I3.3,A,I3.3,A)') 'TARGET_HELICITY(1:',ns,') = ',ns,'*0.0  SIGMA_HELICITY(1:',ns,') = ',ns,'*1.0'
+         WRITE(6,'(2X,A,I3.3,A,I3.3,A,I3.3,A,I3.3,A)') 'TARGET_HELICITY(1:',ns,') = ',ns,'*0.0  SIGMA_HELICITY(1:',ns,') = ',ns,'*-1.0'
       END IF
       IF (lballoon) THEN
          WRITE(6,'(A)')'!------------------------------------------------------------------------'
@@ -898,7 +971,7 @@
          WRITE(6,'(A)')'!       Bootstrap Current Calculation (as calculated by BOOTSJ)'
          WRITE(6,'(A)')'!       NE/TE/TI profiles required!'
          WRITE(6,'(A)')'!------------------------------------------------------------------------'
-         WRITE(6,'(2X,A,I3.3,A,I3.3,A,I3.3,A,I3.3,A)') 'TARGET_BOOTSTRAP(1:',ns-1,') = ',ns-1,'*0.0  SIGMA_BOOTSTRAP(1:',ns-1,') = ',ns-1,'*1.0'
+         WRITE(6,'(2X,A,I3.3,A,I3.3,A,I3.3,A,I3.3,A)') 'TARGET_BOOTSTRAP(2:',ns,') = ',ns-1,'*0.0  SIGMA_BOOTSTRAP(1:',ns-1,') = ',ns-1,'*1.0'
       END IF
       IF (lkink) THEN
          WRITE(6,'(A)')'!------------------------------------------------------------------------'
@@ -936,7 +1009,8 @@
          WRITE(6,'(2X,A)') 'LGLOBAL_TXPORT = F'
          WRITE(6,'(2X,A)') 'NZ_TXPORT = 128'
          WRITE(6,'(2X,A)') 'NALPHA_TXPORT = 1'
-         WRITE(6,'(2X,A)') 'ALPHA0_TXPORT = 0.0'
+         WRITE(6,'(2X,A)') 'ALPHA_START_TXPORT = 0.0'
+         WRITE(6,'(2X,A,ES10.8)') 'ALPHA_END_TXPORT = ', pi2/(2*nfp)
          DO i = 2, ns
             WRITE(6,target3) 'TARGET_TXPORT',i,0.0,'SIGMA_TXPORT',i,1.0,'S_TXPORT',i,REAL(i)/REAL(ns)
          END DO
@@ -953,6 +1027,20 @@
          WRITE(6,'(A)')'!------------------------------------------------------------------------'
          WRITE(6,'(2X,A,I3.3,A,I3.3,A,I3.3,A,I3.3,A)') 'TARGET_JCURV(1:',ns,') = ',ns,'*0.0  SIGMA_JCURV(1:',ns,') = ',ns,'*1.0'
       END IF
+      IF (lwell) THEN
+         WRITE(6,'(A)')'!------------------------------------------------------------------------'
+         WRITE(6,'(A)')'!       Magnetic Well'
+         WRITE(6,'(A)')'!       Stable:    +'
+         WRITE(6,'(A)')'!       Un-stable: -'
+         WRITE(6,'(A)')'!------------------------------------------------------------------------'
+         WRITE(6,'(2X,A,I3.3,A,I3.3,A,I3.3,A,I3.3,A)') 'TARGET_MAGWELL(1:',ns,') = ',ns,'*1.0  SIGMA_MAGWELL(1:',ns,') = ',ns,'*1.0'
+      END IF
+      IF (lcurvature) THEN
+         WRITE(6,'(A)')'!------------------------------------------------------------------------'
+         WRITE(6,'(A)')'!       Curvature Kurtosis at Boundary'
+         WRITE(6,'(A)')'!------------------------------------------------------------------------'
+         WRITE(6,'(2X,A,F6.3,2X,A,ES10.1)') 'TARGET_CURVATURE = ',0.0,'SIGMA_CURVATURE = ',1.00
+      END IF
       ! END OPTIMUM Namelist
       WRITE(6,'(A)') '/'
       ! Add namelists
@@ -962,6 +1050,56 @@
       END IF
       IF (lbootsj) THEN
          WRITE(6,'(A)') '&BOOTIN'
+         WRITE(6,'(A)')'!------------------------------------------------------------------------'
+         WRITE(6,'(A)')'!       Notes'
+         WRITE(6,'(A)')'!       ZEFF:  Effective Ion Charge'
+         WRITE(6,'(A)')'!       DENS0: Maximum density (10^20 m^-3) IFF TEMPRES>=0'
+         WRITE(6,'(A)')'!       TEMPRES:  Controls density profile shape'
+         WRITE(6,'(A)')'!       TETI:  TETI Ratio'
+         WRITE(6,'(A)')'!       Note defaults below use STELLOPT NE, TE, TI'
+         WRITE(6,'(A)')'!------------------------------------------------------------------------'
+         WRITE(6,'(A)') '  ZEFF1 = 1'
+         WRITE(6,'(A)') '  TEMPRES = -1.0 ! Switch (-1: use STEL prof, >0: use alternative)'
+         WRITE(6,'(A)') '  DENS0 = 0.5 ! Density (10^20 m^-3)'
+         WRITE(6,'(A)') '  TETI = -1.0 ! TE/TI ratio (set negative to use STEL TI profile)'
+         WRITE(6,'(A)') '/'
+      END IF
+      IF (lorbit) THEN
+         WRITE(6,'(A)') '&BEASM3D'
+         WRITE(6,'(2X,A)') 'NR = 128'
+         WRITE(6,'(2X,A,I3)') 'NPHI = ',180/nfp
+         WRITE(6,'(2X,A)') 'NZ = 128'
+         WRITE(6,'(2X,A,F6.3)') 'RMAX = ',MAXVAL(MAXVAL(rreal,2),1)+0.1
+         WRITE(6,'(2X,A,F6.3)') 'RMIN = ',MINVAL(MINVAL(rreal,2),1)-0.1
+         WRITE(6,'(2X,A,F6.3)') 'ZMAX = ',MAXVAL(MAXVAL(zreal,2),1)+0.1
+         WRITE(6,'(2X,A,F6.3)') 'ZMIN = ',MINVAL(MINVAL(zreal,2),1)-0.1
+         WRITE(6,'(2X,A,F6.3)') 'PHIMIN = ',0.0
+         WRITE(6,'(2X,A,F12.10)') 'PHIMAX = ',pi2/nfp
+         WRITE(6,'(2X,A)') 'NPOINC = 512'
+         WRITE(6,'(2X,A)') 'INT_TYPE = ''LSODE'''
+         WRITE(6,'(2X,A)') 'FOLLOW_TOL = 1.0E-9'
+         WRITE(6,'(2X,A)') 'T_END_IN = 2*1.0E-2'
+         WRITE(6,'(2X,A)') 'R_START_IN(1) = 1.0'
+         WRITE(6,'(A)') '/'
+      END IF
+      IF (lfieldlines) THEN
+         WRITE(6,'(A)') '&FIELDLINES_INPUT'
+         WRITE(6,'(2X,A)') 'NR = 128'
+         WRITE(6,'(2X,A,I3)') 'NPHI = ',180/nfp
+         WRITE(6,'(2X,A)') 'NZ = 128'
+         WRITE(6,'(2X,A,F6.3)') 'RMAX = ',MAXVAL(MAXVAL(rreal,2),1)+0.5
+         WRITE(6,'(2X,A,F6.3)') 'RMIN = ',MINVAL(MINVAL(rreal,2),1)-0.5
+         WRITE(6,'(2X,A,F6.3)') 'ZMAX = ',MAXVAL(MAXVAL(zreal,2),1)+0.5
+         WRITE(6,'(2X,A,F6.3)') 'ZMIN = ',MINVAL(MINVAL(zreal,2),1)-0.5
+         WRITE(6,'(2X,A,F6.3)') 'PHIMIN = ',0.0
+         WRITE(6,'(2X,A,F12.10)') 'PHIMAX = ',pi2/nfp
+         WRITE(6,'(2X,A)') 'NPOINC = 16'
+         WRITE(6,'(2X,A)') 'INT_TYPE = ''LSODE'''
+         WRITE(6,'(2X,A)') 'FOLLOW_TOL = 1.0E-9'
+         WRITE(6,'(2X,2(A,F6.3))') 'R_START = ',sum(raxis_cc),'  ',MAXVAL(rreal(:,1))
+         WRITE(6,'(2X,2(A,F6.3))') 'Z_START = ',0.0,'  ',MAXVAL(zreal(:,1))
+         WRITE(6,'(2X,A)') 'PHI_START = 2*0.0'
+         WRITE(6,'(2X,A,E20.10)') 'PHI_END = 2*',1000*pi2/nfp
          WRITE(6,'(A)') '/'
       END IF
       CALL FLUSH(6)

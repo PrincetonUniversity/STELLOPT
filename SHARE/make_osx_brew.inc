@@ -34,8 +34,9 @@
 #######################################################################
 #            Define Compiler Flags
 #######################################################################
-  FLAGS_R = -O2 
-  FLAGS_D = -O0 -g -fcheck=all -fbacktrace -Wextra \
+  # temp add some checking flags to avoid BEAMS3d issues
+  FLAGS_R = -O2 -fbacktrace -fallow-argument-mismatch # only used for GCC-10
+  FLAGS_D = -O0 -g -fcheck=all -fbacktrace -Wextra -fallow-argument-mismatch \
             -Wtarget-lifetime -fbounds-check -ffpe-trap=zero -finit-real=snan
   LIBS    = -L${SCALAPACK_HOME}/lib -lscalapack
 
@@ -45,7 +46,8 @@
   LMPI    = T
   MPI_COMPILE = mpif90
   MPI_COMPILE_FREE = mpif90 -ffree-form \
-                     -ffree-line-length-none -ffixed-line-length-none
+                     -ffree-line-length-none -ffixed-line-length-none \
+                     -fallow-argument-mismatch # only used for GCC-10
   MPI_COMPILE_C = mpicc 
   MPI_LINK = mpif90
   MPI_LINK = mpif90 -shared  -Wl,-no_compact_unwind

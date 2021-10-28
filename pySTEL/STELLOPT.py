@@ -784,10 +784,11 @@ class MyApp(QMainWindow):
 					'PHIEDGE','RBTOR','R0','Z0','VOLUME','WP','KAPPA',\
 					'B_PROBES','FARADAY','FLUXLOOPS','SEGROG','MSE',\
 					'NE','NELINE','TE','TELINE','TI','TILINE','ZEFFLINE',\
-					'XICS','XICS_BRIGHT','XICS_W3','XICS_V','SXR','VPHI',\
+					'XICS','XICS_BRIGHT','XICS_W3','XICS_V','SXR','VPHI','VACIOTA',\
 					'IOTA','BALLOON','BOOTSTRAP','DKES','HELICITY','HELICITY_FULL',\
 					'KINK','ORBIT','JDOTB','J_STAR','NEO','TXPORT','ECEREFLECT',\
-					]
+					'S11','S12','S21','S22','MAGWELL',\
+					'CURVATURE_KERT','CURVATURE_P2']
 		self.ui.ComboBoxOPTplot_type.clear()
 		self.ui.ComboBoxOPTplot_type.addItem('Chi-Squared')
 		# Handle Chisquared plots
@@ -801,7 +802,10 @@ class MyApp(QMainWindow):
 					'TXPORT','B_PROBES','FLUXLOOPS','SEGROG',\
 					'NELINE','TELINE','TILINE','ZEFFLINE',\
 					'XICS','XICS_BRIGHT','XICS_W3','XICS_V',\
-					'ECEREFLECT','SXR','IOTA','PRESS','PRESSPRIME']:
+					'S11','S12','S21','S22','MAGWELL','VACIOTA',\
+					'CURVATURE_KERT','CURVATURE_P2',\
+					'ECEREFLECT','SXR','IOTA','PRESS','PRESSPRIME'\
+					'VISBREMLINE']:
 			for item in self.stel_data:
 				if (name+'_target' == item):
 					self.ui.ComboBoxOPTplot_type.addItem(name+'_evolution')
@@ -924,6 +928,16 @@ class MyApp(QMainWindow):
 			self.ax2.plot(self.stel_data['HELICITY_FULL_equil'].T,'o',fillstyle='none')
 			self.ax2.set_ylabel('Helicity')
 			self.ax2.set_title('Boozer Spectrum Helicity')
+		elif (plot_name == 'MAGWELL_evolution'):
+			self.ax2.plot(self.stel_data['MAGWELL_k'].T,self.stel_data['MAGWELL_equil'].T,'o',fillstyle='none')
+			self.ax2.set_xlabel('Radial Grid')
+			self.ax2.set_ylabel('Magnetic Well')
+			self.ax2.set_title('Magnetic Well Evolution')
+		elif (plot_name == 'CURVATURE_P2'):
+			self.ax2.plot(self.stel_data['CURVATURE_P2_p2'].T,'o',fillstyle='none')
+			self.ax2.set_xlabel('Radial Grid')
+			self.ax2.set_ylabel('Magnetic Well')
+			self.ax2.set_title('Magnetic Well Evolution')
 		elif (plot_name == 'B_PROBE_evolution'):
 			n=self.stel_data['B_PROBE_target'].shape
 			x = np.ndarray((n[1],1))

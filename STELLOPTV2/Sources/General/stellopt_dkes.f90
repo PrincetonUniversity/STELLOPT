@@ -10,7 +10,7 @@
 !     Libraries
 !-----------------------------------------------------------------------
       USE stellopt_runtime, ONLY:  proc_string, bigno, rprec
-      USE equil_utils, ONLY: get_equil_phi, nrad, rho, phi_type
+      USE equil_utils, ONLY: get_equil_phi, nrad, shat, phi_type
       USE stellopt_targets, ONLY: nu_dkes, sigma_dkes, lbooz, nsd
       ! NEO LIBRARIES
 !DEC$ IF DEFINED (DKES_OPT)

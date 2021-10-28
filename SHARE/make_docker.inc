@@ -137,3 +137,4 @@
 #######################################################################
 #            LIBSTELL Shared Options
 #######################################################################
+LIB_SHARE = -lc -lgfortran -lstdc++ -lmpi -lmpi_mpifh -lz -lc -lm -lpthread $(LIBS) -lc

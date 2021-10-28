@@ -53,7 +53,7 @@
             targets(mtargets) = target(ik)
             sigmas(mtargets)  = sigma(ik)
             vals(mtargets)    = val
-            IF (iflag == 1) WRITE(iunit_out,'(4ES22.12E3)') target(ik),sigma(ik),vals(mtargets),rho(ik)
+            IF (iflag == 1) WRITE(iunit_out,'(4ES22.12E3)') target(ik),sigma(ik),vals(mtargets),shat(ik)
          END DO
       ELSE
          DO ik = 1, nsd

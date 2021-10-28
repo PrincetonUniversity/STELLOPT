@@ -108,6 +108,10 @@
       REAL(rprec), DIMENSION(nprof) ::  target_zeff_line,sigma_zeff_line, &
                                         r0_zeff_line, phi0_zeff_line, z0_zeff_line, &
                                         r1_zeff_line, phi1_zeff_line, z1_zeff_line
+      REAL(rprec), DIMENSION(nprof) ::  target_visbrem_line,sigma_visbrem_line, lambda_visbrem_line, &
+                                        r0_visbrem_line, phi0_visbrem_line, z0_visbrem_line, &
+                                        r1_visbrem_line, phi1_visbrem_line, z1_visbrem_line, &
+                                        calib_visbrem_line
       REAL(rprec), DIMENSION(nprof) ::  target_xics,sigma_xics, &
                                         target_xics_bright,sigma_xics_bright, &
                                         target_xics_w3,sigma_xics_w3, &
@@ -165,7 +169,7 @@
       REAL(rprec), DIMENSION(nsd)   ::  target_knosos_1nu,sigma_knosos_1nu
       REAL(rprec), DIMENSION(nsd)   ::  target_knosos_snu,sigma_knosos_snu
       REAL(rprec), DIMENSION(nsd)   ::  target_knosos_sbp,sigma_knosos_sbp
-      REAL(rprec), DIMENSION(nsd)   ::  target_knosos_gmc,sigma_knosos_gmc
+      REAL(rprec), DIMENSION(nsd)   ::  target_knosos_gmc,sigma_knosos_gmc !this corresponds to gamma_c defined through KNOSOS (EdiSan)
       REAL(rprec), DIMENSION(nsd)   ::  target_knosos_gma,sigma_knosos_gma
       REAL(rprec), DIMENSION(nsd)   ::  target_knosos_qer,sigma_knosos_qer
       REAL(rprec), DIMENSION(nsd)   ::  target_knosos_vbt,sigma_knosos_vbt
@@ -175,6 +179,7 @@
       REAL(rprec), DIMENSION(nsd)   ::  target_stella_q1,sigma_stella_q1
       REAL(rprec), DIMENSION(nsd)   ::  target_stella_q2,sigma_stella_q2
       REAL(rprec), DIMENSION(nsd)   ::  target_raderb00,sigma_raderb00
+      REAL(rprec), DIMENSION(nsd)        :: target_gamma_c, sigma_gamma_c ! this is ganmma_c implennted in STELLOPT (?) (EdiSan)
       REAL(rprec), DIMENSION(nu_max,nv_max) ::  target_separatrix, sigma_separatrix, &
                                                 r_separatrix, z_separatrix, phi_separatrix
       REAL(rprec), DIMENSION(nu_max,nv_max) ::  target_limiter, sigma_limiter, &
@@ -244,6 +249,7 @@
       INTEGER, PARAMETER :: jtarget_ti         = 202
       INTEGER, PARAMETER :: jtarget_line_ti    = 2021
       INTEGER, PARAMETER :: jtarget_line_zeff  = 2031
+      INTEGER, PARAMETER :: jtarget_visbrem_line = 2032
       INTEGER, PARAMETER :: jtarget_xics       = 2042
       INTEGER, PARAMETER :: jtarget_xics_bright= 2043
       INTEGER, PARAMETER :: jtarget_xics_w3    = 2044
@@ -264,6 +270,7 @@
       INTEGER, PARAMETER :: jtarget_regcoil_chi2_b          = 504
       INTEGER, PARAMETER :: jtarget_regcoil_current_density = 5041
       INTEGER, PARAMETER :: jtarget_curvature_P2            = 505
+      INTEGER, PARAMETER :: jtarget_gamma_c    = 506
       INTEGER, PARAMETER :: jtarget_balloon    = 601
       INTEGER, PARAMETER :: jtarget_kink       = 6011
       INTEGER, PARAMETER :: jtarget_bootstrap  = 602
@@ -377,6 +384,8 @@
             WRITE(iunit, out_format) 'Line Integrated Ion Temperature'
          CASE(jtarget_line_zeff)
             WRITE(iunit, out_format) 'Line Integrated Z-Effective'
+         CASE(jtarget_visbrem_line)
+            WRITE(iunit, out_format) 'Line Integrated Visual Bremsstrahlung'
          CASE(jtarget_xics)
             WRITE(iunit, out_format) 'XICS Signal'
          CASE(jtarget_xics_bright)
@@ -491,6 +500,8 @@
             WRITE(iunit, out_format) 'Maximum 2nd Principal Curvature'
          CASE(jtarget_raderb00)
             WRITE(iunit, out_format) 'Radial derivative of B00'
+         CASE(jtarget_gamma_c)
+            WRITE(iunit, out_format) 'Gamma_c'
       END SELECT
       END SUBROUTINE write_targets
 

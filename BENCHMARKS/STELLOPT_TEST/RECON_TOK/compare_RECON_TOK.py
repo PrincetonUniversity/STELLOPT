@@ -36,8 +36,9 @@ for temp in varlist:
 print('==== Vectors ====')
 varlist={}
 
-#print(repr(data['SEPARATRIX_equil']))
+#print(repr(data['VISBREMLINE_equil']))
 
+varlist['VISBREMLINE_equil']=np.array([ 316.75065021, 1059.8022018 ,  566.22876231])
 varlist['XICS_BRIGHT_equil']=np.array([343.98692425, 344.7443,     346.97243891, 350.53233674, 355.17903401, \
  360.5546112,  366.18437659, 371.46896176, 375.67504637, 377.94230007, \
  377.31129416, 372.79147954, 363.50406125, 348.98160525, 330.14520108, \
