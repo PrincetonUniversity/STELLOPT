@@ -101,6 +101,18 @@ ifeq ($(MAKECMDGOALS),xstelloptv2)
     KNOSOS_DIR = 
     LIB_KNOSOS = 
   endif
+  ifeq ($(LSTELLA),T)
+    STELLA_DIR = ../../STELLA
+    LIB_STELLA = libstella.a
+    MOD_PATH += -I$(STELLA_DIR)/$(LOCTYPE)
+    CPPFLAGS = -DFCOMPILER=_INTEL_ -DISO_C_BINDING -DMPI -DFFT=_FFTW3_ -DNETCDF -DLAPACK -DMPIINC
+    PRECOMP += -DSTELLA_OPT
+    LIB_LINK += $(STELLA_DIR)/$(LOCTYPE)/$(LIB_STELLA)
+  else
+    STELLA_DIR =
+    LIB_STELLA =
+  endif
+
 else ifeq ($(MAKECMDGOALS),help)
 else ifeq ($(MAKECMDGOALS),test_stellopt)
 else ifeq ($(MAKECMDGOALS),test_stellopt_coilopt)
@@ -214,10 +226,11 @@ else
 endif
 ifeq ($(LSTELLA),T)
   STELLA_DIR = ../../STELLA
-  LIB_STELLA = libstella.a
+#  LIB_STELLA = libstella.a
   MOD_PATH += -I$(STELLA_DIR)/$(LOCTYPE)
+  CPPFLAGS = -DFCOMPILER=_INTEL_ -DISO_C_BINDING -DMPI -DFFT=_FFTW3_ -DNETCDF -DLAPACK -DMPIINC
   PRECOMP += -DSTELLA_OPT
-  LIB_LINK += $(STELLA_DIR)/$(LOCTYPE)/$(LIB_STELLA)
+#  LIB_LINK += $(STELLA_DIR)/$(LOCTYPE)/$(LIB_STELLA)
 else
   STELLA_DIR =
   LIB_STELLA =

@@ -18,6 +18,7 @@ VPATH = $(SPATH)
 .SUFFIXES :
 .SUFFIXES : .f .f90 .o
 xknosos:  $(LIB) $(ObjectFiles)
+	echo 'KNOSOS LIB_LINK====='$(LIB_LINK)
 	$(LINK) $@ $(ObjectFiles) $(LIB_LINK)
 #Compile object files defined in OBJLIST.
 .f.o :
