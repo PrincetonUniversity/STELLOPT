@@ -1,0 +1,57 @@
+# Host: Marconi
+
+helplocal:
+		# GK_SYSTEM = marconi
+		# You are using  Makefile.marconi to build gs2 executables on MARCONI.
+
+COMPILER=intel
+CHIP=skylake
+
+USE_FFT = fftw3
+USE_NETCDF = on
+
+# This line disables the automated checking
+# of the intel version which is slow
+DBLESIZEOPT = -double-size 128
+
+include Makefile.$(COMPILER)
+
+FC=ifort
+CC=icc
+
+ifdef USE_MPI
+	MPIFC=mpifort
+	MPICC=mpiicc
+	MPIFC=mpif90
+	MPI_HOME=/mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/intel-19.0.5.281/openmpi-3.1.3-xnwkw7bcmpsrdymg77auoyudr2pr3mu5
+	MPI_INC=-I$(MPI_HOME)/include/
+	MPI_LIB=-L$(MPI_HOME)/lib/
+endif
+
+ifeq ($(USE_FFT),fftw3)	
+     	FFT_DIR=/mnt/lustre/ohpc/admin/spack/0.12.1/opt/spack/linux-centos7-x86_64/intel-19.0.5.281/fftw-3.3.8-ymonpurwnnwrjsw3zw4kh5d7brp2sbn6
+	FFT_INC = -I$(FFT_DIR)/include/
+	FFT_LIB = -lfftw3 -lfftw3_mpi -L$(FFT_DIR)/lib/
+        CPPFLAGS += -I$(FFT_INC)
+endif	
+
+USE_HDF5=
+
+#Note the module system sets some env vars for us
+#unfortunately some clash with values we use
+ifdef USE_NETCDF
+  NETCDF_DIR=$(NETCDF_HOME)
+  NETCDF_INC= -I$(NETCDF_DIR)/include/
+  NETCDF_LIB= -L$(NETCDF_DIR)/lib/ -lnetcdff -L$(NETCDF_DIR)lib/ -lnetcdf
+endif
+
+ifdef USE_SFINCS
+      SFINCS_LIB = -L$(SFINCS_DIR) -lsfincs
+      SFINCS_INC = -I$(SFINCS_DIR)
+
+      PETSC_INC = -I$(PETSC_HOME)/include -I$(LAPACK_HOME)/include -I$(MKL_HOME)/include
+      PETSC_LIB = -L$(PETSC_HOME)/lib -lpetsc -L$(LAPACK_HOME)/lib -llapack -L$(MKL_HOME)/lib/intel64 -lmkl_intel_lp64
+
+      HDF5_INC = -I$(HDF5_HOME)/include
+      HDF5_LIB = -L$(HDF5_HOME)/lib -lhdf5hl_fortran -lhdf5_fortran -lhdf5 -lhdf5_hl
+endif

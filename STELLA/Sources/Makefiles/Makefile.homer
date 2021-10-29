@@ -1,0 +1,10 @@
+# Host: homer Dartmouth local Linux machine
+# WARNING: This is not even parallelized. Minimal compilation.
+
+COMPILER= nag
+
+override USE_FFT=
+override USE_NETCDF=
+override USE_MPI=
+
+include Makefile.$(COMPILER)

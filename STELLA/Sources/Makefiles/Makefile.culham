@@ -1,0 +1,15 @@
+# Culham makefile: modified for newer Culham linux boxes
+COMPILER = intel
+include Makefile.$(COMPILER)
+FC = mpif90
+#FFT_INC=-I/usr/local/intellibs/include
+#FFT_LIB=-lrfftw -lfftw
+#NETCDF_INC=$(FFT_INC) #this line worked on OLD culham linux boxes
+#NETCDF_LIB=-lnetcdf
+F90FLAGS += ${FFLAGS} -L${LD_LIBRARY_PATH}
+F90OPTFLAGS	=
+FFT_LIB = -lrfftw -lfftw
+
+#PJK 2013/08/20: As of today, the following line works on the Fedora 13 boxes
+#                and the new Scientific Linux boxes (fuslw100+)...
+NETCDF_LIB= -lnetcdff -lnetcdf

@@ -1,0 +1,58 @@
+# Makefile for openSUSE 12.2
+# Maintainer: edmund.highcock@physics.ox.ac.uk
+
+#Before building install these packages using Yast/zypper:
+#gcc
+#openmpi
+#openmpi-devel
+#lam
+#fftw3
+#fftw3-mpi
+#fftw3-devel
+#netcdf-devel-static
+#hdf5-devel-static
+
+# Add openmpi binaries to your path
+#
+# export PATH=/usr/lib64/mpi/gcc/openmpi/bin/:$PATH
+#
+
+# Go to this webpage and install netcdf-fortran using the 1-click install 
+# http://software.opensuse.org/download.html?project=home:ocefpaf&package=netcdf-fortran
+# Install the development packages
+# sudo zypper install netcdf-fortran-static netcdf-fortran-devel
+#
+#
+# Install the fftw3 static libraries in /usr/local/fftw3_static
+# curl http://www.fftw.org/fftw-3.3.3.tar.gz > fftw-3.3.3.tar.gz
+# sudo mkdir /usr/local/fftw3_static
+# cd fftw-3.3.3/
+# ./configure --prefix=/usr/local/fftw3_static --enable-static
+# make -j
+# sudo make install
+
+
+COMPILER=gnu-gfortran
+include Makefile.$(COMPILER)
+
+USE_LOCAL_SPFUNC=on
+
+ifdef USE_FFT
+#$(info "USE_FFT is $(USE_FFT)")
+ifeq ($(USE_FFT),fftw)
+$(warning "Only fftw3 supported on opensuse... changing ...")
+USE_FFT= fftw3
+endif
+FFT_LIB = -L/usr/local/fftw3_static/lib64 -lfftw3 -lfftw3f
+endif
+#$(info "USE_FFT 2 is $(USE_FFT)")
+
+F90FLAGS+=-I/usr/lib64/mpi/gcc/openmpi/include
+F90FLAGS+=-L /usr/lib64/mpi/gcc/openmpi/lib64/
+
+ifdef USE_NETCDF
+	NETCDF_INC = -I/usr/include/ 
+	#NETCDF_INC = -I/usr/include/ 
+	NETCDF_LIB = -L/usr/lib64 -lnetcdf -lnetcdff
+	#NETCDF_LIB = -L/usr/lib -lnetcdf
+endif

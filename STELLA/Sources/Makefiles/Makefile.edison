@@ -1,0 +1,110 @@
+# Host: Edison at NERSC (USA)
+# Requires the fftw and netcdf modules to be loaded
+# and the PrgEnv-intel modules.
+
+# created from archer config (DRE 1/25/15)
+
+helplocal:
+		# GK_SYSTEM = edison
+		# You are using  Makefile.edison to build gs2 executables on ARCHER.
+		#
+		#   ARCHER defaults : intel compiler, FFTW3, netcdf, MPI
+		#   ARCHER single restart: intel compiler, cray-netcdf-hdf5parallel, 
+		#   					   cray-hdf5-parallel, fftw3
+		# make FRONT_END=on : serial build (no MPI) to run gs2, ingen on ARCHER Front End.
+
+define STANDARD_SYSTEM_CONFIGURATION
+module unload PrgEnv-cray; \
+module load PrgEnv-intel; \
+module load intel; \
+module unload fftw; \
+module load fftw; \
+module load cray-netcdf-hdf5parallel; \
+module load cray-hdf5-parallel; \
+echo Module configuration complete; \
+export MAKEFLAGS='-j -I Makefiles USE_PARALLEL_NETCDF=on'; \
+export TESTEXEC='aprun -N 24 -n 24'
+endef
+
+#module load intel/14.0.0.080; \
+ # older setup: upon login (DRE 1/22/15)
+ # module unload netcdf-hdf5parallel
+ # module unload cray-hdf5-parallel
+ # module unload cray-netcdf
+ # module load cray-netcdf-hdf5parallel
+ # module load fftw/2.1.5.6
+
+COMPILER=intel
+CHIP=ivy-bridge
+CRAY_SYSTEM=true
+
+ifdef FRONT_END
+      STATIC = on
+      override USE_MPI = 
+endif
+
+ifdef FFTW_DIR
+	USE_FFT = fftw3
+else
+	override USE_FFT =
+endif
+
+# switch on netcdf
+ifdef NETCDF_DIR
+	USE_NETCDF = on
+else
+	ifdef CRAY_NETCDF_DIR
+		CRAY_NETCDF = on
+		USE_NETCDF = on
+	else
+		override USE_NETCDF =
+	endif
+endif
+
+#ifdef HDF5_FLIB
+#	USE_HDF5 = on
+#else
+#	override USE_HDF5 =
+#endif
+ifdef PGPLOT_DIR
+	PGPLOT_LIB = -lpgplot -L$$PGPLOT_DIR
+endif
+
+# This line disables the automated checking
+# of the intel version which is slow and 
+# doesn't work in interactive mode
+DBLESIZEOPT = -double-size 128
+
+include Makefile.$(COMPILER)
+
+FC=ftn
+CC=cc
+ifdef USE_MPI
+	MPIFC=ftn
+	MPICC=cc
+endif
+
+# For CRAY machines, this convention is always followed. Do not change without 
+# good reason!
+H5CC_par = cc
+H5FC_par = ftn
+HFCC = cc
+H5FC = ftn
+
+ifeq ($(USE_FFT),fftw)
+	FFT_INC = 
+	ifdef DBLE
+		FFT_LIB = -ldfftw -ldrfftw
+	else
+		FFT_LIB = -lsfftw -lsrfftw
+	endif
+endif
+ifeq ($(USE_FFT),fftw3)	
+        CPPFLAGS   += -I $$FFTW_INC
+endif	
+ifdef USE_NETCDF
+  ifdef OWN_NETCDF
+	NETCDF_INC = -I $(NETCDF_DIR)/include/
+	NETCDF_LIB = -L $(NETCDF_DIR)/lib -lnetcdf
+  endif
+endif

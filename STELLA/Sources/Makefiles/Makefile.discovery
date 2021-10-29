@@ -1,0 +1,40 @@
+# Host: discovery at Dartmouth (Opteron cluster)
+#
+# modules:
+# fftw
+# netcdf
+# hdf5_par
+#
+
+COMPILER=intel
+
+ifdef FFTW_INCLUDE
+	USE_FFT = fftw
+else
+	override USE_FFT =
+endif
+ifdef NETCDF_INCLUDE
+	USE_NETCDF = on
+else
+	override USE_NETCDF =
+endif
+ifdef HDF5_DIR
+	USE_HDF5 = on
+else
+	override USE_HDF5 =
+endif
+ifdef PGPLOT_DIR
+	PGPLOT_LIB = $$PGPLOT_LIBRARY -L/usr/X11/lib -lX11 -lsvml
+endif
+
+include Makefile.$(COMPILER)
+
+ifeq ($(USE_FFT),fftw)
+        FFT_LIB = $$FFTW_LIB
+        FFT_INCLUDE= $$FFTW_INCLUDE
+endif
+
+ifdef USE_NETCDF
+        NETCDF_INC = $$NETCDF_INCLUDE
+        NETCDF_LIB = $$NETCDF_LIBRARY
+endif

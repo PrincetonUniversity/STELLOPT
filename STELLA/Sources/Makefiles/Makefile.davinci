@@ -1,0 +1,57 @@
+# Host: davinci at NERSC (SGI Altix) **decommissioned**
+#
+# modules:
+# fftw/2.1.5
+# netcdf
+# hdf5_par/1.8.4
+#
+
+COMPILER=intel
+
+ifdef FFTW_ROOT
+	USE_FFT = fftw
+else
+	ifdef MKL
+		USE_FFT = mkl_fftw
+	else
+		override USE_FFT =
+	endif
+endif
+ifdef NETCDF_DIR
+	USE_NETCDF = on
+else
+	override USE_NETCDF =
+endif
+ifdef HDF5_DIR
+	USE_HDF5 = on
+else
+	override USE_HDF5 =
+endif
+ifdef PGPLOT_DIR
+	PGPLOT_LIB = -lpgplot -L$$PGPLOT_DIR
+endif
+
+include Makefile.$(COMPILER)
+
+ifdef USE_MPI
+	MPIFC := $(FC)
+	MPICC := $(CC)
+	LIBS	+= -lmpi
+endif
+
+ifeq ($(USE_FFT),fftw)
+	FFT_INC = $$FFTW
+	ifdef DBLE
+		FFT_LIB = $$FFTW -ldfftw -ldrfftw
+	else
+		FFT_LIB = $$FFTW -lsfftw -lsrfftw
+	endif
+endif
+ifeq ($(USE_FFT),mkl_fftw)
+	FFT_LIB = -lmkl $$MKL -L$$HOME/local/fftw2xf -lfftw2xf_intel
+endif
+
+ifdef USE_NETCDF
+	NETCDF_INC = -I$$NETCDF_DIR/include
+	NETCDF_LIB = -L$$NETCDF_DIR/lib -lnetcdf
+endif

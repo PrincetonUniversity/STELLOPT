@@ -1,0 +1,90 @@
+
+####################################################################
+# System requirements
+####################################################################
+
+* python 3.6.2 (for configparser and PosixPath modules)
+* tkinter 8.5 (check with >>> python 3 >>> import tkinter >>> tkinter.TkVersion)
+* TCL 8.5 (check with >>> python 3 >>> import tkinter >>> tkinter.TclVersion)
+* Many other python packages which the command prompt should give you a warning for when
+  attempting to run the GUI, simply install the packages with pip. 
+* Dont forget to set up the stellapy/config/config.ini file which is generated 
+  after the first launch of the GUI. 
+
+####################################################################
+# The steps to make the stellapy module and appliciation work.
+####################################################################
+
+#==============================================
+Files required for stellapy
+#==============================================
+
+The following files should be set up to make the diagnostic tool work on your local computer.
+Replace the paths with the appropriate paths to set it up correctly on your computer.
+The GUI can be run either from the command prompt with >>> stellaplotter (recommended), 
+or as an application, however this will make bugs and crashes harder to detect.
+
+    "~/.alias" file on the local computer where the diagnostics stool is installed:
+
+# Tell the terminal where to look for the python start up file
+export PYTHONSTARTUP=~/.python/startup.py
+
+# Make shortcuts to path folders                                                     			    ! UPDATE PATH
+export RUNS='/home/hanne/CIEMAT/RUNS/'                                                                      ! UPDATE PATH
+export STELLA='/home/hanne/CIEMAT/stella'                                                                   ! UPDATE PATH
+export STELLAPY='/home/hanne/CIEMAT/stella/stellapy'                                                        ! UPDATE PATH  
+
+# Plotting tool
+alias stellaplotter='python3 $STELLAPY/GUI/stella_GUI.py' 
+
+
+
+    "~/.local/share/applications/stellaplotter.desktop" optional file if you want the GUI to be listed between the pc applications
+
+[Desktop Entry]
+Name=Stellapy
+Exec=/home/hanne/Dropbox/stella/stellapy/GUI/interface/run_GUIFromDesktop.sh     ! UPDATE PATH
+Path=/home/hanne/Dropbox/stella/stellapy/GUI/interface/                          ! UPDATE PATH
+Icon=/home/hanne/Dropbox/stella/stellapy/GUI/interface/stellarator_long.png      ! UPDATE PATH
+Terminal=false
+Type=Application
+Categories=Application;
+StartupNotify=true
+
+
+
+    "~/.python/startup.py" on local computer
+
+import sys, os
+sys.path.append(os.environ['STELLA'])
+import stellapy
+from imp import reload
+
+
+
+    "$STELLAPY/GUI/interface/run_GUIFromDesktop.sh" needed to make the desktop icon work
+
+#!/bin/sh
+
+# Make shortcuts to path folders
+export STELLA='/home/hanne/Dropbox/stella'                                          ! UPDATE PATH
+export STELLAPY='/home/hanne/Dropbox/stella/stellapy'                               ! UPDATE PATH
+
+# Run the script
+/usr/bin/python3 $STELLAPY/GUI/stella_GUI.py >> ./crash.log 2>&1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

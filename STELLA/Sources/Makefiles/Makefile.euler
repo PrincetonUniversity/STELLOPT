@@ -1,0 +1,48 @@
+# Host: euler
+#$(warning Processing Makefile.euler)helplocal:
+#                # GK_SYSTEM = mn4
+#                # You are using  Makefile.euler to build stella executables on bsc.
+
+
+COMPILER=intel
+#CHIP=skylake
+
+USE_FFT = fftw3
+USE_NETCDF = on
+USE_MPI= on
+
+# This line disables the automated checking
+# of the intel version which is slow
+DBLESIZEOPT = -double-size 128
+
+include Makefile.$(COMPILER)
+
+FC=ifort
+CC=icc
+ifdef USE_MPI
+	MPIFC=mpif90
+	MPICC=mpiicc
+	MPI_INC=-I$(MPI_ROOT)/include/
+  	MPI_LIB=-L$(MPI_ROOT)/lib/
+	#MPI_LIB=-lmpi
+endif
+
+ifeq ($(USE_FFT),fftw3)	
+	FFT_INC = 
+	FFT_DIR = $(FFTW_HOME)
+#		FFTW_LIB = -lfftw3 #-lfftw3_mpi
+#	FFT_LIB = -lfftw3 $(FFTW_LDFLAGS) #-lfftw3_mpi
+	FFT_LIB = -L$(FFTW_LIB_DIR) -lfftw3
+	FFT_INC= -I$(FFTW_HOME)/include
+        CPPFLAGS += -I$(FFTW_INC)
+endif	
+
+USE_HDF5=
+
+#Note the module system sets some env vars for us
+#unfortunately some clash with values we use
+ifdef USE_NETCDF
+  NETCDF_DIR=$(NETCDF_LIB_DIR)
+  NETCDF_INC= -I $(NETCDF_INC_DIR)
+  NETCDF_LIB= -L $(NETCDF_LIB_DIR) -lnetcdff -L$(NETCDF_HOME)/lib/ -lnetcdf
+endif

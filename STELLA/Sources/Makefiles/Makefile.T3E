@@ -1,0 +1,32 @@
+# T3E (is this still used?)
+USE_MPI = on
+FC = f90
+#USE_SHMEM = on
+override USE_POSIX = on
+#USE_FFT =
+#USE_SHMEM =
+F90FLAGS = -M1110,7212
+CPPFLAGS += -DFCOMPILER=_CRAY_
+
+ifdef USE_MPI
+	MPI_INC = -I$$MPTDIR/include 
+	MPI_LIB = -lmpi
+endif
+
+NETCDF_LIB = $$NETCDF -Wl"-D permok=yes"
+
+ifeq ($(USE_FFT),fftw)
+     FFT_LIB	= -L../fftw/lib -lrfftw -lfftw
+endif
+
+ifdef DEBUG
+     F90FLAGS	+= -g -R abcs -e i
+     LIBS    	+= -Wl"-D preset=inf" # -lmalloc 
+else
+     F90OPTFLAGS = -O vector3 -O aggress 
+endif
+
+ifeq ($(PROJECT),gs2)
+	F90FLAGS += -M1110,7212 -p$(UTILS) -p$(GEO)
+	LIBS += -Wl"-D permok=yes" $(UTILS)/mdslib.a
+endif

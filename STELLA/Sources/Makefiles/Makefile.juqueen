@@ -1,0 +1,40 @@
+# System: IBM Blue Gene/Q
+
+system_help:
+		# 
+		# This is a Makefile for the BlueGene/Q computer, JUQUEEN, 
+		# at Juelich.
+		#
+		# To use this you need to set the following in the Main trunk Makefile:
+		# MPIFC           ?= mpixlf90
+		# MPICC           ?= mpixlc
+		#
+		# We are also manually linking the fftw3 and netcdf libaries below so if these have 
+		# changed location on the machine these will need updated.  We didn't use the module defaults 
+		# on the machine as at the time we built this file loading the modules linked to the front-end 
+		# libraries rather than the backend libraries.  This may have changed since we created this file.
+
+
+CHIP=bluegene_q
+
+
+ifdef USE_FFT
+	USE_FFT= fftw3
+	FFT_INC= -I/bgsys/local/fftw3/3.3.3/fftw/include
+	FFT_LIB= -L/bgsys/local/fftw3/3.3.3/fftw/lib/ -lfftw3 -lfftw3f
+#	FFT_INC=
+#	FFT_LIB= -L/bgsys/local/fftw2/2.1.5/lib -lrfftw -lfftw -ldfftw
+endif
+ifdef USE_NETCDF
+	NETCDF_INC= -I/bgsys/local/netcdf/v4.1.1/include/
+#	NETCDF_INC= -I/bgsys/local/netcdf/v4.1.1_classic/include/
+	NETCDF_LIB= -L/bgsys/local/netcdf/v4.1.1/lib/ -lnetcdf -L/bgsys/local/hdf5/v1.8.9/lib -lhdf5_hl -lhdf5 -L/bgsys/local/zlib/v1.2.7/lib -lz -L/bgsys/local/szip/v2.1/lib/ -lsz 
+#	NETCDF_LIB= -L/bgsys/local/netcdf/v4.1.1_classic/lib/ -lnetcdf
+endif
+
+USE_LOCAL_SPFUNC=on
+
+###################
+include Makefile.xl
+###################
+

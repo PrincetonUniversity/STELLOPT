@@ -1,0 +1,44 @@
+# Host: bigben at Pittsburgh Supercomputing Center (Cray XT3)
+
+COMPILER=pgi
+ifdef FFTW_INC
+	USE_FFT = fftw
+else
+	override USE_FFT =
+endif
+
+	USE_NETCDF = on
+
+
+ifdef HDF5_FLIB
+	USE_HDF5 = on
+else
+	override USE_HDF5 =
+endif
+ifdef PGPLOT_DIR
+	PGPLOT_LIB = -lpgplot -L$$PGPLOT_DIR
+endif
+
+include Makefile.$(COMPILER)
+
+FC=ftn
+CC=cc
+ifdef USE_MPI
+	MPIFC=ftn
+	MPICC=cc
+endif
+
+ifeq ($(USE_FFT),fftw)
+	FFT_INC = -I/usr/local/packages/fftw-2.1.5/pgi/include
+	ifdef DBLE
+		FFT_LIB = -L/usr/local/packages/fftw-2.1.5/pgi/lib -ldfftw -ldrfftw
+	else
+		FFT_LIB = -L/usr/local/packages/fftw-2.1.5/pgi/lib -lsfftw -lsrfftw
+	endif
+endif
+
+ifdef USE_NETCDF
+	NETCDF_INC = -I/usr/local/packages/netcdf/include
+	NETCDF_LIB = -L/usr/local/packages/netcdf/lib -lnetcdf
+endif
+

@@ -1,0 +1,25 @@
+# Makefile for getafix: a local machine at UMD
+# Maintainer: gwilkie@umd.edu
+
+COMPILER=gnu-gfortran
+USE_HDF5=
+
+include Makefile.$(COMPILER)
+
+USE_LOCAL_SPFUNC=on
+
+ifeq ($(USE_FFT),fftw)
+	FFT_LIB = -L/usr/local/lib -lrfftw -lfftw
+endif
+
+ifdef USE_NETCDF
+	NETCDF_INC = -I/usr/local/include
+	NETCDF_LIB = -L/usr/locallib -lnetcdf -lnetcdff
+endif
+
+ifdef USE_LAPACK
+	LAPACK_LIB = -L/usr/lib -llapack
+endif
+
+#MPI_INC= -I/usr/include
+#MPI_LIB= -L/usr/lib64

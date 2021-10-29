@@ -1,0 +1,44 @@
+# Compiler: GNU gcc/Intel ifort
+
+#FC = ifort
+FC = mpif90
+CC = gcc
+F90FLAGS +=
+CPPFLAGS += -DFCOMPILER=_INTEL_
+
+ifdef DBLE
+	DBLEFLAGS = -r8 -m64 -double-size 128
+	F90FLAGS += $(DBLEFLAGS)
+endif
+
+ifdef STATIC
+	LDFLAGS += -static
+endif
+
+ifdef DEBUG
+	F90FLAGS += -g -implicitnone -warn all -check bounds -traceback
+	F90OPTFLAGS =
+	CFLAGS += -g -Wall -fbounds-check
+	COPTFLAGS =
+else
+	ifdef OPT
+		ifeq ($(OPT),aggressive)
+# -fast = -O3 -ipo -static
+			F90OPTFLAGS += -O3 -ipo -vec_report0
+			COPTFLAGS +=  -O3
+		else
+			F90OPTFLAGS += -O3 -vec_report0
+			COPTFLAGS +=  -O3
+		endif
+	endif
+
+	ifeq ($(findstring gprof,$(PROF)),gprof)
+		F90FLAGS += -pg
+		CFLAGS += -pg
+	endif
+endif
+
+ifdef USE_OPENMP
+	F90FLAGS += -openmp
+	CFLAGS += -fopenmp
+endif

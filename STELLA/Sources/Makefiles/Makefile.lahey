@@ -1,0 +1,41 @@
+# Compiler: Lahey/Fujitsu Fortran
+
+FC = lf95
+CPPFLAGS += -DFCOMPILER=_LAHEY_ -DNO_SIZEOF
+
+# Lahey does not have intrinsic Bessel ane error functions
+ifndef USE_LOCAL_SPFUNC
+ifneq ($(findstring spfunc,$(USE_NAGLIB)),spfunc)
+	USE_LOCAL_SPFUNC=on
+endif
+endif
+
+ifdef DBLE
+	# Unlike to --dbl --quad, this does affect a variable or a function
+	# that is declared with a kind
+	F90FLAGS += -CcdRR8 -CcdDR16
+endif
+
+ifdef STATIC
+	LDFLAGS += -static
+endif
+
+ifdef DEBUG
+# -mpitrace -mpianim -mpilog
+	# --chk f,o,u,x causes error
+#	F90FLAGS += -g --chk a,e,s
+	F90FLAGS += -g --chk a,e,f,o,s,u
+#	F90FLAGS += -mpitrace 
+	F90OPTFLAGS =
+	COPTFLAGS =
+else
+	ifdef OPT
+		ifeq ($(OPT),aggressive)
+			F90OPTFLAGS += -O3 
+			COPTFLAGS += -O3
+		else
+			F90OPTFLAGS += -O1
+			COPTFLAGS += -O3
+		endif
+	endif
+endif

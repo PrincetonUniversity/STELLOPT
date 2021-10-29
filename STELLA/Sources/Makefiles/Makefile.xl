@@ -1,0 +1,92 @@
+# Compiler: IBM XL xlf/xlc
+
+# _r means 'with thread-safe components'
+#FC = xlf90
+#FC = xlf90_r
+#FC = xlf95 
+#FC = xlf95_r
+FC = xlf90_r
+CC = xlc_r
+F90FLAGS += -qsuffix=f=f90 -qnoescape -qxlf2003=polymorphic -qxlf90=autodealloc
+CFLAGS += -DNO_UNDERSCORE
+CPPFLAGS += -DFCOMPILER=_XL_
+
+# XL fortran does not have intrinsic Bessel and error functions
+ifndef USE_LOCAL_SPFUNC
+ifneq ($(findstring spfunc,$(USE_NAGLIB)),spfunc)
+	USE_LOCAL_SPFUNC=on
+endif
+endif
+
+ifeq ($(CHIP),power5)
+	F90FLAGS += -q64
+	CFLAGS += -q64
+endif
+
+ifdef DBLE
+	DBLEFLAGS = -qrealsize=8
+	F90FLAGS += $(DBLEFLAGS)
+endif
+
+ifdef STATIC
+	LDFLAGS += -bstatic
+endif
+
+ifdef DEBUG
+# -qfltrap option determines what types of floating-point exception condition
+# to detect. INEXact flag detects inexact results, such as rounding-off
+# of real to integer. This kind of inexact results is common in floating-point
+# calculation, so we don't need this option.
+# UNDerflow flag is also removed because xgrid definitely underflows.
+#	F90FLAGS += -g -C -qcheck -qflttrap=ov:und:zero:inv:inex:en -qinitauto=7FF7FFFF
+	#F90FLAGS += -g -C -qcheck -qflttrap=ov:zero:inv:en -qinitauto=7FF7FFFF -qsigtrap -qfunctrace -qfullpath
+	#F90FLAGS += -g -C -qcheck -qflttrap=ov:zero:inv:en -qinitauto=7FF7FFFF -qsigtrap 
+	F90FLAGS += -g -C -qcheck #-qflttrap=ov:zero:inv:en -qinitauto=7FF7FFFF -qsigtrap 
+	F90OPTFLAGS =
+#	CFLAGS += -g -C -qcheck -qflttrap=ov:und:zero:inv:inex:en
+	CFLAGS += -g -C -qcheck -qflttrap=ov:und:zero:inv:en -qsigtrap
+	COPTFLAGS =
+	LIBS	+= # $$TRACE_MPIF
+else
+	ifdef OPT
+		ifeq ($(OPT),aggressive)
+			F90OPTFLAGS += -O4
+			COPTFLAGS += -O4
+		else
+			F90OPTFLAGS += -O3
+			COPTFLAGS += -O3
+		endif
+	endif
+
+	ifdef OPT
+		ifeq ($(CHIP),g5) # dawson
+			F90OPTFLAGS += -qarch=g5 -qtune=g5
+			COPTFLAGS += -qarch=g5 -qtune=g5
+		endif
+		ifeq ($(CHIP),bluegene_l) # IBM Blue Gene/L
+#			F90OPTFLAGS += -qarch=440d -qtune=440 -qmaxmem=6400
+#			F90OPTFLAGS += -qarch=440d -qtune=440
+			F90OPTFLAGS += -qstrict -qarch=440d -qtune=440
+			COPTFLAGS += -qstrict -qarch=440d -qtune=440
+		endif
+		ifeq ($(CHIP),bluegene_q) # IBM Blue Gene/L
+#			F90OPTFLAGS += -qarch=440d -qtune=440 -qmaxmem=6400
+#			F90OPTFLAGS += -qarch=440d -qtune=440
+			F90OPTFLAGS += -qstrict
+			COPTFLAGS += -qstrict 
+		endif
+		ifeq ($(CHIP),power5) # IBM Power5 (bassi)
+			F90OPTFLAGS += -qarch=auto -qtune=auto
+			COPTFLAGS += -qarch=auto -qtune=auto
+		endif
+		ifeq ($(CHIP),auto) # bassi, ukaff1a
+			F90OPTFLAGS += -qarch=auto -qtune=auto
+			COPTFLAGS += -qarch=auto -qtune=auto
+		endif
+	endif
+
+	ifeq ($(findstring gprof,$(PROF)),gprof)
+		F90FLAGS += -pg
+		CFLAGS += -pg
+	endif
+endif

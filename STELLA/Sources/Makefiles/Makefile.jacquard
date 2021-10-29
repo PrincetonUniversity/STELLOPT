@@ -1,0 +1,43 @@
+# Host: jacquard at NERSC (Opteron cluster) **decommissioned**
+
+COMPILER=pathscale
+CHIP=opteron
+
+ifdef FFTW
+	USE_FFT = fftw
+else
+	override USE_FFT =
+endif
+ifdef NETCDF
+	USE_NETCDF = on
+else
+	override USE_NETCDF =
+endif
+ifdef HDF5
+	USE_HDF5 = on
+else
+	override USE_HDF5 =
+endif
+ifdef PGPLOT
+	PGPLOT_LIB = $$PGPLOT
+endif
+
+include Makefile.$(COMPILER)
+
+ifeq ($(USE_FFT),fftw)
+	FFT_INC = $$FFTW
+	ifdef DBLE
+		FFT_LIB = $$FFTW -ldfftw -ldrfftw
+	else
+		FFT_LIB = $$FFTW -lsfftw -lsrfftw
+	endif
+endif
+
+ifdef USE_NETCDF
+	NETCDF_INC = -I$$NETCDF_DIR/include
+	NETCDF_LIB = -L$$NETCDF_DIR/lib -lnetcdf
+endif
+
+ifdef USE_NAGLIB
+	NAG_LIB = $$NAG
+endif

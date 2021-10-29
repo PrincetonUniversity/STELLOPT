@@ -1,0 +1,51 @@
+# Host: BSC
+
+helplocal:
+		# GK_SYSTEM = marconi
+		# You are using  Makefile.marconi to build gs2 executables on MARCONI.
+
+define STANDARD_SYSTEM_CONFIGURATION
+
+#module load impi petsc/3.7.6-real fftw/3.3.6 fabric/1.4.2 netcdf
+
+module load netcdf/4.4.1.1
+echo Module configuration complete;\
+export MAKEFLAGS='-j -IMakefiles';\
+export TESTEXEC='mpirun -N 48 -n 48';
+endef
+
+COMPILER=intel
+#CHIP=skylake
+
+USE_FFT = fftw3
+USE_NETCDF = on
+
+# This line disables the automated checking
+# of the intel version which is slow
+DBLESIZEOPT = -double-size 128
+
+include Makefile.$(COMPILER)
+
+FC=f90
+CC=icc
+ifdef USE_MPI
+	MPIFC=mpiifort
+	MPICC=mpiicc
+endif
+
+ifeq ($(USE_FFT),fftw3)	
+	FFT_INC = 
+	FFT_DIR = $(FFTW_HOME)
+	FFT_LIB = -lfftw3 #-lfftw3_mpi
+        CPPFLAGS   += -I $$FFTW_INC
+endif	
+
+USE_HDF5=
+
+#Note the module system sets some env vars for us
+#unfortunately some clash with values we use
+ifdef USE_NETCDF
+  NETCDF_DIR=$(NETCDF_HOME)
+  NETCDF_INC= -I $(NETCDF_DIR)/include/ -I$(NETCDF_INCLUDE)
+  NETCDF_LIB= -L $(NETCDF_DIR)/lib/ -lnetcdff -L$(NETCDF_HOME)/lib/ -lnetcdf
+endif

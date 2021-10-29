@@ -1,0 +1,20 @@
+# Makefile for Max OS X
+# Maintainer: bdorland@umd.edu (haha)
+
+define STANDARD_SYSTEM_CONFIGURATION
+export MAKEFLAGS='-j 4 -I Makefiles'
+endef
+
+COMPILER=gnu-gfortran
+include Makefile.$(COMPILER)
+
+USE_LOCAL_SPFUNC=on
+
+ifeq ($(USE_FFT),fftw3)
+	FFT_LIB = -L/usr/local/Cellar/fftw/3.3.4_1/lib -lfftw3 -lfftw3f
+endif
+
+ifdef USE_NETCDF
+	NETCDF_INC = -I/usr/local/Cellar/netcdf/4.3.2_1/include/
+	NETCDF_LIB = -L/usr/local/Cellar/netcdf/4.3.2_1/lib -lnetcdf
+endif

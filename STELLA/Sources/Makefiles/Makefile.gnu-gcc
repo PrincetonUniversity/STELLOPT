@@ -1,0 +1,23 @@
+# Compiler: GNU gcc
+# This file is provided for some systems which do not have other
+# C compiler.
+
+CC = gcc
+
+ifdef DEBUG
+	CFLAGS += -g -Wall -fbounds-check
+	COPTFLAGS +=
+else
+	ifdef OPT
+		COPTFLAGS += -O3
+	endif
+
+	ifeq ($(findstring gprof,$(PROF)),gprof)
+		CFLAGS += -pg
+	endif
+endif
+
+ifdef USE_OPENMP
+	CFLAGS += -fopenmp
+endif
+

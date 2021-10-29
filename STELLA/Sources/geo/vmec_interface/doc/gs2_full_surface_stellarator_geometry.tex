@@ -1,0 +1,517 @@
+\documentclass[11pt,letter]{article}
+
+\usepackage{latexsym, color, graphicx, comment}
+\usepackage[top=1in,bottom=1in,left=1in,right=1in]{geometry}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{hyperref}
+\usepackage{empheq}
+\hypersetup{colorlinks=true,linkcolor=blue}
+
+\newcommand{\vect}[1]{\mbox{\boldmath $#1$}}
+\newcommand{\gyrophase}{\varphi}
+\newcommand{\energy}{\varepsilon}
+\renewcommand{\Re}{\mathrm{Re}}
+\renewcommand{\Im}{\mathrm{Im}}
+\newcommand{\todo}[1]{\textcolor{red}{#1}}
+%\newcommand{\kxfac}{\kappa_x}
+\newcommand{\kxfac}{\mathtt{kxfac}}
+\newcommand{\bmag}{\mathtt{bmag}}
+\newcommand{\smz}{\mathtt{smz}}
+\newcommand{\gdstwo}{\mathtt{gds2}}
+\newcommand{\gdstwoone}{\mathtt{gds21}}
+\newcommand{\gdstwotwo}{\mathtt{gds22}}
+\newcommand{\gbdrift}{\mathtt{gbdrift}}
+\newcommand{\gbdriftO}{\mathtt{gbdrift0}}
+\newcommand{\cvdrift}{\mathtt{cvdrift}}
+\newcommand{\cvdriftO}{\mathtt{cvdrift0}}
+\newcommand{\fprim}{\mathtt{fprim}}
+\newcommand{\tprim}{\mathtt{tprim}}
+\newcommand{\jtwist}{\mathtt{jtwist}}
+\newcommand{\gradpar}{\mathtt{gradpar}}
+\newcommand{\delthet}{\mathtt{delthet}}
+\newcommand{\codedt}{\mathtt{code\_dt}}
+
+
+\title{Definitions for GS2 full-flux-surface stellarator geometry}
+\author{Matt Landreman}
+
+\begin{document}
+\maketitle
+
+In this note, we state the definitions used for geometric quantities in the full-flux-surface
+version of GS2, and we detail how these quantities are computed from the information
+in a VMEC output file. We also derive how the twist-and-shift parallel boundary condition
+and box size quantization conditions, familiar from flux tube simulations,
+are modified in a full-surface calculation.
+
+\section{Review of GS2 geometry definitions}
+
+\subsection{Definitions valid for any GS2 geometry}
+First, we review the definitions used in the flux tube version of GS2,
+as discussed in the note {\ttfamily gs2\_geometry\_definitions.pdf}.
+The Clebsch representation of the magnetic field is
+\begin{equation}
+\vect{B} = \nabla\psi\times\nabla\alpha.
+\label{eq:Clebsch}
+\end{equation}
+We take $\psi$ to represent a flux surface label, but do not (yet) assume that it is necessarily the poloidal or toroidal flux. The $\alpha$ coordinate is a field line label on the flux surface.
+New coordinates $x=x(\psi)$ and $y=y(\alpha)$ are introduced that are scaled versions of $\psi$ and $\alpha$ 
+with dimensions of length. In a flux tube simulation where $x$ and $y$ only vary on a length scale comparable to the gyroradius, then
+\begin{align}
+&x = \frac{dx}{d\psi} \left[ \psi - \psi_0 \right], \\
+&y = \frac{dy}{d\alpha} \left[ \alpha - \alpha_0 \right] \nonumber,
+\end{align}
+where $dx/d\psi$ and $dy/d\alpha$ are constant within the flux tube,
+and $\psi_0$ and $\alpha_0$
+are the coordinates around which the flux tube is centered.
+
+A reference magnetic field strength $B_{ref}$ and reference length $L_{ref}$ are introduced for normalization. 
+Then the quantities needed to specify the geometry in GS2 are the following:
+\begin{align}
+\bmag & = \frac{B}{B_{ref}}, \label{eq:bmag} \\
+\gradpar &= L_{ref} \nabla_{||} z, \\
+\gdstwo &= |\nabla y |^2  = \left( \frac{dy}{d\alpha} \right)^2 |\nabla\alpha|^2 , \\
+\gdstwoone &= \hat{s} \nabla x \cdot \nabla y = \hat{s} \frac{dx}{d\psi} \frac{dy}{d\alpha} \nabla\psi\cdot\nabla\alpha , \\
+\gdstwotwo &= \hat{s}^2|\nabla x |^2  = \hat{s}^2 \left( \frac{dx}{d\psi} \right)^2 |\nabla\psi |^2. \\
+\gbdrift &= \frac{2 B_{ref} L_{ref}}{B^3} \vect{B}\times\nabla B\cdot \nabla y, \\
+\gbdriftO &= \hat{s} \frac{2 B_{ref} L_{ref}}{B^3} \vect{B}\times\nabla B\cdot \nabla x,  \\
+\cvdrift &= \frac{2 B_{ref} L_{ref}}{B^2} \vect{B}\times\vect{\kappa} \cdot \nabla y,  \\
+\cvdriftO &= \hat{s} \frac{2 B_{ref} L_{ref}}{B^2} \vect{B}\times\vect{\kappa} \cdot \nabla x, \label{eq:cvdrift0} \\
+\kxfac & = B_{ref} \frac{dx}{d\psi} \frac{dy}{d\alpha}, \label{eq:kxfac} \\
+\fprim &=
+B_{ref} L_{ref}
+\frac{dy}{d\alpha} \frac{dx}{d\psi} \frac{1}{n_s} \frac{d n_s}{d x}, \\
+\tprim &=
+B_{ref} L_{ref}
+\frac{dy}{d\alpha} \frac{dx}{d\psi} \frac{1}{T_s} \frac{d T_s}{d x}. \label{eq:tprim}
+\end{align}
+These quantities are all dimensionless. In the definition of $\gradpar$, $z$ is any parallel coordinate; the parallel coordinate
+is called {\ttfamily theta} in GS2, although it need not be the poloidal angle.
+Also $\hat{s}$ is whichever number is used to define $\theta_0=${\ttfamily theta0} in the relation
+\begin{equation}
+\theta_0 = \frac{k_x}{\hat{s} k_y}.
+\end{equation}
+The above quantities (\ref{eq:bmag})-(\ref{eq:cvdrift0}) are functions of the parallel coordinate $z$.
+The quantity $\kxfac$ is a single number, and the quantities $\fprim$ and $\tprim$  are each single numbers
+for each particle species.
+
+Since $\vect{B}\times\vect{\kappa}\cdot\nabla\psi = \vect{b}\times\nabla B\cdot\nabla\psi$ for any
+static ideal MHD equilibrium (at any $\beta$), then $\cvdriftO=\gbdriftO$.
+
+\subsection{Definitions used previously for stellarator geometry in GS2}
+
+In stellarator calculations that have been performed using the standard flux tube version of GS2
+and the GIST geometry interface,
+the following additional definitions have been made. 
+The flux surface label $\psi$ has been taken to be the toroidal flux divided by $2\pi$.
+Therefore for consistency with (\ref{eq:Clebsch}),
+$\alpha = \theta - \iota \zeta$ where $\iota = 1/q$ is the rotational transform,
+$q$ is the safety factor, and $\theta$ and $\zeta$ are straight-field-line poloidal and toroidal angles.
+While the GIST GS2 interface takes $\theta$ and $\zeta$ to be Boozer
+angles, all the expressions below are equally valid for other straight-field-line angles such as PEST or Hamada coordinates.
+
+In GIST, the parallel coordinate $z$ is presently taken to be the Boozer poloidal angle. However none of the expressions in this note are altered if a different choice is desired.
+
+In GIST, the reference length $L_{ref}$ is taken to be the effective minor radius computed by VMEC, named Aminor\_p in
+the VMEC wout*.nc file.
+The reference magnetic field is taken to be
+\begin{equation}
+B_{ref} = \frac{2 \psi_{LCFS}}{L_{ref}^2}
+\label{eq:Bref}
+\end{equation}
+where $\psi_{LCFS}$ is the value of $\psi$ at the outermost VMEC flux surface. The choice (\ref{eq:Bref}) is
+motivated by the cylindrical limit: the toroidal flux enclosed by the outermost VMEC surface is equivalent to the flux of a field $B_{ref}$ through a circle of radius $L_{ref}$.
+
+
+
+The radial coordinate $x$ is then chosen to be
+\begin{equation}
+x = L_{ref} \sqrt{\frac{\psi}{\psi_{LCFS}}} = L_{ref} \sqrt{s},
+\label{eq:gist_x}
+\end{equation}
+where $s = \psi / \psi_{LCFS} \in [0,1]$ is the flux surface label coordinate
+used in VMEC. 
+The choice (\ref{eq:gist_x}) is natural since 
+$x$ then reduces to the usual minor radius in the cylindrical limit.
+%the toroidal flux $2\pi\psi$ scales like the square of the radius in the cylindrical limit.
+It follows that
+\begin{equation}
+\frac{dx}{d\psi} = \frac{L_{ref}}{2 \sqrt{ \psi \psi_{LCFS}}}
+= \frac{1}{L_{ref} B_{ref}} \sqrt{ \frac{\psi_{LCFS}}{\psi}}.
+\label{eq:psi_x_conversion}
+\end{equation}
+
+Another choice made in GIST is $\kxfac=1$. According to (\ref{eq:kxfac}), we are then required to take 
+\begin{equation}
+\frac{d y}{d\alpha} = L_{ref} \sqrt{\frac{\psi}{\psi_{LCFS}}} .
+\label{eq:dy_dalpha}
+\end{equation}
+
+GIST computes the global shear parameter $\hat{s}$ using
+\begin{equation}
+\hat{s} = \frac{x}{q} \frac{dq}{dx}.
+\end{equation}
+
+Now that $dx/d\psi$ and $dy/d\alpha$ are specified, equations (\ref{eq:bmag})-(\ref{eq:tprim}) 
+can be evaluated to obtain explicit expressions for the geometry arrays computed by GIST for GS2:
+\begin{eqnarray}
+\bmag &=& B/B_{ref}, \label{eq:gist_Bref}\\
+\gradpar &=& L_{ref} \nabla_{||} z, \\
+\gdstwo &=& |\nabla y|^2 = |\nabla\alpha|^2 L_{ref}^2 \frac{\psi}{\psi_{LCFS}}, \\
+\gdstwoone &=& \hat{s} \nabla x \cdot \nabla y = \frac{\hat{s}}{B_{ref}} \nabla\psi\cdot\nabla\alpha , \\
+\gdstwotwo &=& \hat{s}^2|\nabla x |^2  = \left( \frac{\hat{s}}{L_{ref} B_{ref}}\right)^2 \frac{\psi_{LCFS}}{\psi} |\nabla\psi |^2, \\
+\gbdrift &=& \frac{2 B_{ref} L_{ref}^2}{B^3} \sqrt{\frac{\psi}{\psi_{LCFS}}} \vect{B}\times\nabla B\cdot \nabla \alpha, \\
+\gbdriftO &=& \hat{s} \frac{2 }{B^3}   \sqrt{\frac{\psi_{LCFS}}{\psi}} \vect{B}\times\nabla B\cdot \nabla \psi, \\
+\cvdrift &=& \frac{2 B_{ref} L_{ref}^2}{B^2} \sqrt{\frac{\psi}{\psi_{LCFS}}} \vect{B}\times\vect{\kappa} \cdot \nabla \alpha, \\
+\cvdriftO &=& \hat{s} \frac{2 }{B^2}  \sqrt{\frac{\psi_{LCFS}}{\psi}} \vect{B}\times\vect{\kappa} \cdot \nabla \psi,  \label{eq:gist_cvdrift0} \\
+\fprim &=&   \frac{L_{ref}}{n_s} \frac{d n_s}{d x}, \\
+\tprim &=&   \frac{L_{ref}}{T_s} \frac{d T_s}{d x}. 
+\end{eqnarray}
+
+\section{VMEC coordinates}
+
+The VMEC code uses a toroidal coordinate $\zeta$ which is the conventional azimuthal angle of cylindrical coordinates. 
+
+We let $\theta_v$ denote the poloidal angle used in VMEC, which is \emph{not} a straight-field-line coordinate.
+We also let $\theta_p$ denote the PEST poloidal angle, i.e. the straight-field-line angle which results when
+the toroidal angle is chosen to be the conventional azimuthal angle of cylindrical coordinates, as in VMEC.
+The conversion between the two coordinates is
+\begin{equation}
+\theta_p = \theta_v + \Lambda,
+\end{equation}
+where $\Lambda$ is the quantity given by the {\ttfamily lmns} and {\ttfamily lmnc} arrays in VMEC.
+Thus, the field line label we need for GS2 geometry quantities is
+\begin{equation}
+\alpha = \theta_v + \Lambda - \iota \zeta.
+\label{eq:alpha_vmec}
+\end{equation}
+
+VMEC provides many quantities as functions of the coordinates $(s, \theta_v, \zeta)$,
+where again $s = \psi / \psi_{LCFS}$.
+Specifically, it provides the Fourier amplitudes for expansions in $\theta_v$ and $\zeta$,
+on grid points equally spaced in $s$.
+The quantities that are available include
+$\Lambda$, $B$, the cylindrical coordinates $(R,Z)$, the components
+\begin{align}
+B^\theta &= \vect{B}\cdot\nabla\theta_v, \nonumber \\
+B^\zeta &= \vect{B}\cdot\nabla\zeta, \nonumber \\
+B_s &= \vect{B}\cdot\frac{\partial\vect{r}}{\partial s}, \nonumber \\
+B_\theta &= \vect{B}\cdot\frac{\partial\vect{r}}{\partial \theta_v}, \nonumber \\
+B_\zeta &= \vect{B}\cdot\frac{\partial\vect{r}}{\partial \zeta}, \nonumber
+\end{align}
+and the Jacobian
+\begin{equation}
+\sqrt{g} = \frac{\partial \vect{r}}{\partial s} \cdot \frac{\partial \vect{r}}{\partial\theta_v} \times \frac{\partial\vect{r}}{\partial\zeta}
+= \frac{1}{\nabla s \cdot \nabla \theta_v \times\nabla\zeta}.
+\label{eq:Jacobian}
+\end{equation}
+Here $\vect{r}(s,\theta_v,\zeta)$ is the position vector.
+Throughout this note, we will use $\sqrt{g}$ to denote the Jacobian of the non-straight-field-line
+VMEC coordinates, as in (\ref{eq:Jacobian}).
+
+%\begin{align}
+%\vect{B} &= \nabla\psi \times \nabla\theta_p + \iota \nabla\zeta \times \nabla\psi \nonumber \\
+%& = \nabla\psi \times \nabla\theta_v + \nabla\psi \times \nabla \Lambda + \iota \nabla\zeta \times \nabla\psi .
+%\end{align}
+
+\section{Computation of GS2 geometry quantities from VMEC data} 
+
+
+Given the desired central flux surface $\psi_0$, and given a desired set of grid points in $\alpha$ and $\zeta$, 
+a 1D nonlinear root-finding algorithm is applied to solve (\ref{eq:alpha_vmec}) for the 
+value of $\theta_v$ at each grid point. The $\bmag$ array is then obtained by evaluating $B$
+at the $(\theta_v, \zeta)$ grid points, using VMEC's Fourier arrays {\ttfamily bmnc} and {\ttfamily bmns}.
+
+For the full-flux-surface calculation, we will take the parallel coordinate $z$ to be the toroidal angle $\zeta$.
+Then to evaluate $\gradpar$, we use
+\begin{equation}
+\gradpar = L_{ref} \frac{\vect{B}\cdot\nabla\zeta}{B} = L_{ref} \frac{B^\zeta}{B},
+\end{equation}
+%\begin{align}
+%\gradpar
+%&=\frac{\vect{B}\cdot\nabla\zeta}{B}
+%=\frac{\nabla\psi\times\nabla\alpha\cdot\nabla\zeta}{B}
+%=\frac{\nabla\psi\times\nabla(\theta_v +\Lambda - \iota\zeta)\cdot\nabla\zeta}{B}
+%=\frac{\nabla\psi\times\nabla(\theta_v +\Lambda)\cdot\nabla\zeta}{B} \nonumber \\
+%&=\frac{1}{B \sqrt{g}} \left( 1 + \frac{\partial\Lambda}{\partial\theta_v}\right).
+%\end{align}
+where $B^\zeta$ is available in the VMEC output through the variables {\ttfamily bsupvmnc} and {\ttfamily bsupvmns}.
+
+To evaluate the quantities {\ttfamily gds*}, we must obtain the Cartesian components of
+$\nabla\psi$ and $\nabla \alpha$. To this end, we use the dual relations:
+\begin{align}
+\nabla s &=  \frac{1}{\sqrt{g}} \frac{\partial\vect{r}}{\partial\theta_v} \times \frac{\partial\vect{r}}{\partial\zeta}, \label{eq:nabla_s}\\
+\nabla\theta_v &= \frac{1}{\sqrt{g}} \frac{\partial\vect{r}}{\partial\zeta} \times \frac{\partial\vect{r}}{\partial s}
+\label{eq:nabla_theta}.
+\end{align}
+The right hand sides of these two expressions can be evaluated in terms of Cartesian components using the VMEC
+outputs {\ttfamily rmnc}, {\ttfamily rmns}, {\ttfamily zmnc}, and {\ttfamily zmns}, yielding
+Cartesian components for $\nabla s$ and $\nabla\theta_v$. Also the Cartesian components of $\nabla\zeta$
+are known since $\zeta$ is the standard toroidal angle.
+We can then compute
+\begin{equation}
+\nabla\psi = \frac{d\psi}{ds} \nabla s = \psi_{LCFS}  \frac{1}{\sqrt{g}} \frac{\partial\vect{r}}{\partial\theta_v} \times \frac{\partial\vect{r}}{\partial\zeta}
+\end{equation}
+and
+\begin{align}
+\nabla\alpha 
+&= \nabla(\theta_v + \Lambda - \iota \zeta) \nonumber \\
+&= \left(\frac{\partial\Lambda}{\partial s} - \zeta \frac{d\iota}{ds}\right)\nabla s
++ \left( 1 + \frac{\partial\Lambda}{\partial\theta_v}\right) \nabla\theta_v
++ \left( -\iota + \frac{\partial\Lambda}{\partial\zeta}\right) \nabla\zeta.
+\label{eq:grad_alpha}
+\end{align}
+\todo{Do we want to subtract {\ttfamily zeta\_center} from $\zeta$ here so the secular $\zeta$ term in $\nabla\alpha$ vanishes at the center of the domain? Or might we want it to vanish somehwhere other than the center of the domain?}
+Now that Cartesian components of $\nabla\psi$ and $\nabla \alpha$ are known, $\gdstwo$, $\gdstwoone$, and $\gdstwotwo$ can be computed. 
+
+To evaluate $\gbdriftO = \cvdriftO$, we can use
+\begin{align}
+\vect{B}\times\nabla B\cdot\nabla\psi 
+&= 
+\vect{B}\times\nabla \zeta \cdot \nabla \psi \frac{\partial B}{\partial \zeta} + \vect{B}\times\nabla \theta_v \cdot \nabla \psi \frac{\partial B}{\partial \theta_v} \nonumber \\
+&=  \left(
+B_\theta \nabla\theta_v \times\nabla\zeta\cdot\nabla s \frac{\partial B}{\partial\zeta} + B_\zeta \nabla\zeta\times\nabla\theta_v\cdot\nabla s \frac{\partial B}{\partial\theta_v} \right) \frac{d\psi}{ds} \nonumber \\
+&= \left( B_\theta \frac{\partial B}{\partial\zeta} - B_\zeta \frac{\partial B}{\partial\theta_v} \right) \frac{\psi_{LCFS} }{\sqrt{g} }.
+\end{align}
+To obtain this result we have used
+\begin{equation}
+\nabla B = \frac{\partial B}{\partial s} \nabla s + \frac{\partial B}{\partial\theta_v} \nabla\theta_v + \frac{\partial B}{\partial\zeta} \nabla\zeta
+\label{eq:gradB}
+\end{equation}
+and
+\begin{equation}
+\vect{B} = B_s \nabla s + B_\theta \nabla \theta_v + B_\zeta \nabla\zeta.
+\label{eq:Bsub}
+\end{equation}
+The quantity $B_\theta$ is available as the VMEC outputs {\ttfamily bsubumnc} and {\ttfamily bsubumns},
+and the quantity $B_\zeta$ is available as the VMEC outputs {\ttfamily bsubvmnc} and {\ttfamily bsubvmns}.
+
+
+A couple of options are possible for computing $\gbdrift$. One method is to compute the Cartesian components of $\nabla B$ using
+(\ref{eq:gradB})
+together with (\ref{eq:nabla_s})-(\ref{eq:nabla_theta}). Furthermore, the Cartesian components of $\vect{B}$ can be computed from
+\begin{align}
+\vect{B} &= \nabla\psi \times \nabla (\theta_v + \Lambda) + \iota \nabla\zeta\times\nabla\psi \nonumber \\
+&= \frac{d\psi}{ds} \left[ \left( 1 + \frac{\partial\Lambda}{\partial\theta_v}\right) \nabla s \times\nabla\theta_v 
++ \left(\iota - \frac{\partial\Lambda}{\partial\zeta}\right) \nabla\zeta\times\nabla s \right] \nonumber \\
+&= \frac{\psi_{LCFS}}{\sqrt{g}} \left[ \left(1 + \frac{\partial\Lambda}{\partial\theta_v}\right) \frac{\partial\vect{r}}{\partial\zeta}
++ \left( \iota - \frac{\partial\Lambda}{\partial\zeta}\right) \frac{\partial\vect{r}}{\partial\theta_v}\right].
+\end{align}
+Now that Cartesian components of $\vect{B}$, $\nabla B$, and $\nabla \alpha$ are all known, their cross product
+needed for $\gbdrift$ is straightforward. Alternatively, $\gbdrift$ can be computed by substituting (\ref{eq:gradB})-(\ref{eq:Bsub}) and (\ref{eq:grad_alpha}) into $\vect{B}\times\nabla B \cdot\nabla\alpha$, yielding
+\begin{align}
+\vect{B}\times\nabla B \cdot\nabla\alpha
+=
+\frac{1}{\sqrt{g}} &\left[
+B_s \frac{\partial B}{\partial \theta_v} \left(\frac{\partial \Lambda}{\partial\zeta} - \iota \right)
++ B_\theta \frac{\partial B}{\partial\zeta} \left( \frac{\partial\Lambda}{\partial s} - \zeta \frac{d\iota}{ds}\right)
++ B_\zeta \frac{\partial B}{\partial s} \left( 1 + \frac{\partial \Lambda}{\partial \theta_v}\right) \right. \nonumber \\
+&\left.-B_\zeta \frac{\partial B}{\partial\theta_v} \left( \frac{\partial\Lambda}{\partial s} - \zeta \frac{d\iota}{ds}\right)
+-B_\theta \frac{\partial B}{\partial s} \left( \frac{\partial \Lambda}{\partial\zeta}-\iota\right)
+-B_s \frac{\partial B}{\partial\zeta} \left( 1 + \frac{\partial\Lambda}{\partial\theta_v}\right)
+\right].
+\end{align}
+
+
+The last quantity we need to evaluate is $\cvdrift$. Using
+\begin{align}
+\vect{B}\times\vect{\kappa}
+&= \vect{B}\times(\vect{b}\cdot\nabla \vect{b}) 
+= \vect{B}\times \left[ (\nabla\times\vect{b}) \times\vect{b}\right] \nonumber \\
+&= \vect{B} \times \left[ -\frac{1}{B^2} \left( \nabla B \times\vect{B}\right)\times\vect{b} + \frac{\mu_0}{B^2} \vect{j}\times\vect{B}\right] \nonumber \\
+&= \frac{1}{B} \vect{B}\times\nabla B + \frac{\mu_0}{B^2} \frac{dp}{ds} \vect{B}\times\nabla s,
+\end{align}
+(where we have used the MHD equilibrium equation $\vect{j}\times\vect{B} = \nabla p$), we find
+\begin{equation}
+\cvdrift = \gbdrift 
++ \frac{2 B_{ref} L_{ref}^2}{B^2} \sqrt{\frac{\psi}{\psi_{LCFS}}} \frac{\mu_0}{B^2} \frac{dp}{ds} \vect{B}\times\nabla s \cdot \nabla \alpha.
+\end{equation}
+In the last term, $\vect{B}\times\nabla s \cdot \nabla \alpha$ can either
+be evaluated using the Cartesian components of $\vect{B}$, $\nabla s$, and $\nabla \alpha$,
+the calculation of which has already been described,
+or by combining (\ref{eq:grad_alpha}) and (\ref{eq:Bsub}) to obtain
+\begin{equation}
+\vect{B}\times\nabla s \cdot \nabla \alpha
+= \frac{1}{\sqrt{g}} \left[
+B_\zeta \left( 1  + \frac{\partial\Lambda}{\partial\theta_v}\right)
+-B_\theta \left( \frac{\partial\Lambda}{\partial\zeta} - \iota \right) \right].
+\end{equation}
+
+
+
+
+\section{Parallel boundary condition and wavenumber quantization for a full surface calculation}
+
+Let us now consider a full-flux-surface calculations, using field-aligned coordinates. 
+We continue to use $\psi$ and $\alpha$ as perpendicular coordinates, and $\zeta$ as the third (parallel) coordinate.
+In a full-flux-surface calculation, the range of $\alpha$ is $[0,\; 2\pi)$,
+which can be seen from the fact at fixed $\psi$ and $\zeta$, the $2\pi$-periodicity of quantities in
+$\theta_p$ implies $2\pi$-periodicity in $\alpha$.
+
+Just as in a flux tube code, fluctuating quantities such as the electrostatic potential $\phi$ are represented as
+\begin{equation}
+\phi(\psi,\alpha,\zeta)
+=\sum_{k_\psi, k_\alpha} \bar{\phi}_{k_\psi,k_\alpha}(\zeta) \exp\left( i k_\alpha \alpha + i k_\psi \left[ \psi - \psi_0\right] \right).
+\label{eq:fluctuations}
+\end{equation}
+Again, $\psi_0$ indicates the flux surface about which the numerical domain is centered.
+The wavenumbers with respect to $(\psi,\alpha)$ are related to wavenumbers with respect to $(x,y)$ through
+\begin{align}
+\label{eq:k_conversion}
+k_x &= k_\psi \frac{d\psi}{dx}, \\
+k_y &= k_\alpha \frac{d\alpha}{dy} \nonumber.
+\end{align}
+Note that $k_\alpha$ ranges over the integers, due to the $2\pi$-periodicity in $\alpha$ discussed above.
+The choice of $y$ (\ref{eq:dy_dalpha}) then implies the wavenumber grid in $y$ must be
+\begin{equation}
+k_y \rho_{ref} = \frac{\rho_{ref}}{L_{ref} \sqrt{s(\psi_0)}} \times (\mathrm{integers}).
+\end{equation}
+We take fluctuating quantities to be periodic in $\psi$, just as in a flux tube code. The allowed values of $k_\psi$ and associated `box size' in $\psi$
+will be derived below.
+
+We take fluctuating quantities to be periodic in $\zeta$ with period $2 \pi P$ at fixed $\psi$ and $\theta_p$.
+Here, $P$ is a rational number, typically the inverse of the number of field periods (e.g. 5 for W7-X).
+One could also choose $P=1$ to simulate the entire toroidal domain, or choose $P=$ integer / (number of field periods)
+for an intermediate domain size. When $P=1$, this periodicity condition is the true periodicity of the torus.
+When $P=$ integer / (number of field periods), the periodicity imposed in the code is effectively a statement
+of statistical periodicity of the turbulence at geometrically equivalent points in the domain. To see the implications of imposing
+periodicity in $\zeta$ at fixed $\theta_p$, we substitute $\alpha = \theta_p - \iota \zeta$ and the Taylor expansion
+\begin{equation}
+\iota \approx \iota(\psi_0) + \frac{d\iota}{d\psi} \left[ \psi - \psi_0\right]
+\label{eq:Taylor_iota}
+\end{equation}
+into (\ref{eq:fluctuations}). (We take $d\iota/d\psi$ to be evaluated at $\psi_0$, and hence constant over the domain.) The result is
+\begin{equation}
+\phi
+=\sum_{k_\psi, k_\alpha} \bar{\phi}_{k_\psi,k_\alpha}(\zeta) \exp
+\left( i k_\alpha \theta_p  
+-i k_\alpha \iota(\psi_0) \zeta
++i \left[- k_\alpha \frac{d\iota}{d\psi}  \zeta
+ + k_\psi\right] \left[ \psi - \psi_0\right] \right).
+\end{equation}
+When a particular $(k_\psi,k_\alpha)$ Fourier mode gets to the end of the $\zeta$ domain ($\zeta = 2\pi P$), we want
+the mode to connect exactly to another Fourier mode in the simulation $(k'_\psi,k'_\alpha)$, with the latter evaluated
+at $\zeta=0$. Mathematically, this condition is
+\begin{align}
+&\bar{\phi}_{k_\psi,k_\alpha}(2\pi P) \exp
+\left( i k_\alpha \theta_p  
+-i k_\alpha \iota(\psi_0) 2\pi P
++i \left[- k_\alpha \frac{d\iota}{d\psi}  2 \pi P
++ k_\psi\right] \left[ \psi - \psi_0\right] \right) \nonumber \\
+&=
+\bar{\phi}_{k'_\psi,k'_\alpha}(0) \exp
+\left( i k'_\alpha \theta_p  
++i k'_\psi\left[ \psi - \psi_0\right] \right) .
+\label{eq:parallelBC}
+\end{align}
+For this equation to hold for all $\theta_p$ at fixed $\psi$, we must have $k'_\alpha = k_\alpha$.
+For equality to hold for all $\psi$ at fixed $\theta_p$, we must have
+\begin{equation}
+k'_\psi
+= k_\psi - k_\alpha \frac{d\iota}{d\psi}  2 \pi P.
+\label{eq:twist_and_shift}
+\end{equation}
+This last result is analogous to the twist-and-shift condition used in flux-tube GS2. 
+If $k'_\psi$ is to be included in the wavenumber grid, and assuming the $k_\psi$ grid consists of integer multiples of some
+$k_{\psi,min}$, then the difference $k'_\psi - k_\psi$ should
+be an integer multiple of $k_{\psi,min}$. 
+In particular this must be true for the smallest nonzero $k_\alpha$, which is 1.
+Thus, we conclude
+\begin{equation}
+\frac{d\iota}{d\psi} 2\pi P = (\jtwist) k_{\psi,min}
+\end{equation}
+where $\jtwist$ is an integer. It follows that the `box size' in $\psi$, denoted $L_\psi$, is
+\begin{equation}
+L_\psi = \frac{2\pi}{k_{\psi,min}} = 
+\frac{(\jtwist)}{P} \left( \frac{d\iota}{d\psi} \right)^{-1}.
+\end{equation}
+Using (\ref{eq:k_conversion}) and (\ref{eq:psi_x_conversion}), the equivalent box size in $x$ is
+\begin{equation}
+L_x = \frac{dx}{d\psi} L_\psi = \frac{2\pi}{k_{x,min}} = 
+\frac{(\jtwist)}{ P L_{ref} B_{ref} \sqrt{s}} \left( \frac{d\iota}{d\psi} \right)^{-1}.
+\label{eq:Lx}
+\end{equation}
+Unfortunately, in low-shear stellarators like W7-X and HSX, $d \iota/d\psi$ in 
+(\ref{eq:Lx}) can be quite small, meaning $L_x$ must be quite large.
+
+Equation (\ref{eq:parallelBC}) also indicates there should be a phase shift when two Fourier modes
+are connected:
+\begin{equation}
+\bar{\phi}_{k_\psi,k_\alpha}(2\pi P) \exp
+\left( -i k_\alpha \iota(\psi_0) 2\pi P \right) 
+=
+\bar{\phi}_{k'_\psi,k_\alpha}(0).
+\label{eq:phase}
+\end{equation}
+
+\subsection{Continuity of geometric quantities}
+
+%It is interesting to check whether 
+We can verify that various terms in the gyrokinetic equation are continuous
+% when a Fourier mode is followed 
+across the parallel boundary condition. First, let us consider the magnetic drift term:
+\begin{align}
+\vect{v}_{m}\cdot \nabla h 
+&= \vect{v}_{m} \cdot \nabla \left[
+\sum_{k_\psi,k_\alpha} \bar{h}_{k_\psi,k_\alpha}(\zeta) \exp \left( i k_\alpha \alpha + i k_\psi [\psi - \psi_0] \right) \right] \nonumber \\
+&\approx 
+\sum_{k_\psi,k_\alpha} \bar{h}_{k_\psi,k_\alpha}(\zeta)
+\exp \left( i k_\alpha \alpha + i k_\psi [\psi - \psi_0] \right)
+\left[ i k_\alpha \vect{v}_{m}\cdot \nabla \alpha + i k_\psi \vect{v}_{m}\cdot\nabla\psi \right] \nonumber \\
+& =
+\sum_{k_\psi,k_\alpha} \bar{h}_{k_\psi,k_\alpha}(\zeta)
+\exp \left( i k_\alpha [\theta_p - \iota \zeta] + i k_\psi [\psi - \psi_0] \right) \nonumber \\
+& \hspace{1in}\times \left[ i k_\alpha \vect{v}_{m}\cdot \left(\nabla \theta_p - \iota \nabla\zeta - \zeta \frac{d\iota}{d\psi} \nabla\psi \right) + i k_\psi \vect{v}_{m}\cdot\nabla\psi \right],
+\label{eq:grad_B_drift_term}
+\end{align}
+where $h$ is the nonadiabatic distribution function. (The $\approx$ above comes from dropping the slow $\zeta$ dependence of $\bar{h}_{k_\psi,\zeta}$
+in the gradient.) As $\zeta$ is increased, just before the boundary $\zeta = 2\pi P$ we have
+\begin{align}
+\left( \vect{v}_{m}\cdot \nabla h \right)_-
+& =
+\sum_{k_\psi,k_\alpha} \bar{h}_{k_\psi,k_\alpha}(2\pi P)
+\exp \left( i k_\alpha [\theta_p - \iota 2\pi P] + i k_\psi [\psi - \psi_0] \right) \nonumber \\
+& \hspace{1in}\times \left[ i k_\alpha \vect{v}_{m}\cdot \left(\nabla \theta_p - \iota \nabla\zeta - 2\pi P \frac{d\iota}{d\psi} \nabla\psi \right) + i k_\psi \vect{v}_{m}\cdot\nabla\psi \right].
+\label{eq:v_B_term_minus}
+\end{align}
+The subscript on the left hand side indicates that we have evaluated the result just to the left of the boundary.
+On the other side of the boundary ($\zeta = 0$), (\ref{eq:grad_B_drift_term}) evaluates to
+\begin{equation}
+\left(\vect{v}_{m}\cdot \nabla h \right)_+
+= 
+\sum_{k_\psi,k_\alpha} \bar{h}_{k'_\psi,k_\alpha}(0)
+\exp \left( i k_\alpha \theta_p  + i k'_\psi [\psi - \psi_0] \right) 
+\left[ i k_\alpha \vect{v}_{m}\cdot \left(\nabla \theta_p - \iota \nabla\zeta \right) + i k'_\psi \vect{v}_{m}\cdot\nabla\psi \right].
+\end{equation}
+In this last equation, we were free to put primes on $k_\psi$ because it is summed over. Applying 
+(\ref{eq:twist_and_shift}) and (\ref{eq:phase}),
+\begin{align}
+\left(\vect{v}_{m}\cdot \nabla h \right)_+
+=& 
+\sum_{k_\psi,k_\alpha} \bar{h}_{k_\psi,k_\alpha}(2\pi P) 
+\exp \left( i k_\alpha \theta_p   -i k_\alpha \iota(\psi_0) 2\pi P+ i \left[ k_\psi - k_\alpha \frac{d\iota}{d\psi}  2 \pi P\right] [\psi - \psi_0] \right) \nonumber \\
+& \hspace{1in} \times \left[ i k_\alpha \vect{v}_{m}\cdot \left(\nabla \theta_p - \iota \nabla\zeta \right) + i \left[ k_\psi - k_\alpha \frac{d\iota}{d\psi}  2 \pi P\right] \vect{v}_{m}\cdot\nabla\psi \right].
+\label{eq:v_B_term_plus}
+\end{align}
+Using (\ref{eq:Taylor_iota}), it can be seen that (\ref{eq:v_B_term_minus}) is identical to  (\ref{eq:v_B_term_plus}),
+so the magnetic drift term is indeed continuous across the boundary.
+
+\todo{Also show continuity for $\langle \phi \rangle_R$...}
+
+\begin{comment}
+
+perpendicular wavenumber appearing inside the Bessel functions:
+\begin{equation}
+k_{\perp}^2 = k_\alpha^2 |\nabla \alpha|^2 + 2 k_\alpha k_\psi \nabla\alpha\times\nabla\psi + k_\psi^2 |\nabla\psi|^2.
+\label{eq:kperp2}
+\end{equation}
+Using
+\begin{equation}
+\nabla\alpha = \nabla\theta_p - \iota \nabla\zeta - \zeta \frac{d\iota}{d\psi} \nabla\psi,
+\end{equation}
+we find that (\ref{eq:kperp2}) 
+
+\end{comment}
+
+\end{document} 

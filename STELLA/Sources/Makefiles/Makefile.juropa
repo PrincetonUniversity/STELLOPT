@@ -1,0 +1,43 @@
+# Host: HPC-FF (part of JuRoPA) at Juelich Supercomputing Center (Xeon Cluster)
+#
+# modules:
+# fftw/2.1.5
+#
+COMPILER = intel
+
+ifdef FFTW_ROOT
+	USE_FFT = fftw
+endif
+ifdef PGPLOT_DIR
+	PGPLOT_LIB = -lpgplot -L$$PGPLOT_DIR
+endif
+
+include Makefile.$(COMPILER)
+
+ifeq ($(USE_FFT),fftw)
+	FFT_INC=-I$$FFTW_ROOT/include
+	ifdef DBLE
+		FFT_LIB=-L$$FFTW_ROOT/lib -ldrfftw -ldfftw
+	else
+		FFT_LIB=-L$$FFTW_ROOT/lib -lsrfftw -lsfftw
+	endif
+endif
+ifeq ($(USE_FFT),mkl_fftw)
+	ifdef DBLE
+		FFT_LIB = -L$$MKLPATH -lmkl_core -lguide -lmkl -L$$MKLPATH/fftw2_double -lfftw2xf_intel
+	else
+		FFT_LIB = -L$$MKLPATH -lmkl_core -lguide -lmkl -L$$MKLPATH/fftw2_single -lfftw2xf_intel
+	endif
+endif
+
+ifdef USE_NETCDF
+	NETCDF_INC=-I/usr/local/netcdf/v4.0.1/include
+	NETCDF_LIB=-L/usr/local/netcdf/v4.0.1/lib -lnetcdf
+#	NETCDF_INC=-I/lustre/jhome6/fsngktr/fsgktr01/netcdf/include
+#	NETCDF_LIB=-L/lustre/jhome6/fsngktr/fsgktr01/netcdf/lib -lnetcdf
+endif
+
+ifdef USE_HDF5
+	H5FC_par=/usr/local/hdf5/bin/h5pfc
+	H5CC_par=/usr/local/hdf5/bin/h5cc
+endif

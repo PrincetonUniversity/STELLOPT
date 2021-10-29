@@ -1,0 +1,290 @@
+#!/usr/bin/env python
+
+print "usage: " + __file__+ " <gist_gs2_...>"
+print "It is assumed that the geometry.dat file from the full-surface gs2-vmec interface is in the working directory."
+
+import sys
+import numpy as np
+
+if len(sys.argv) <2:
+    print "Error! You must specify 1 argument: the gist output file."
+    exit(1)
+
+makePDF = False
+for arg in sys.argv:
+   if arg.lower()=='pdf':
+      makePDF = True
+
+########################################################################
+########################################################################
+# First read the GIST file.
+########################################################################
+########################################################################
+
+f = open(sys.argv[1],'r')
+header = f.readline().split()
+
+# Header line is written in gs2_mod.F90 lines 72-73.
+s0 = -1
+alpha = -1
+B0 = -1
+
+nz0 = int(header[0])
+pol_turns = float(header[1])
+shat = float(header[2])
+drhodpsi = float(header[3])
+if len(header)>4:
+    q0 = float(header[4])
+if len(header)>6:
+    s0 = float(header[5])
+    gist_aminor_alpha = float(header[6]) # GIST calls the minor radius alpha, not to be confused with the field line label alpha.
+    B0 = float(header[7])
+
+data = np.loadtxt(f)
+# Main data table is written in GIST in gs2_mod.F90 lines 78-89.
+gist_theta = data[:,0]
+gist_B = data[:,1]
+gist_gradpar = data[:,2]
+gist_gds2 = data[:,3]
+gist_gds21 = data[:,4]
+gist_gds22 = data[:,5]
+gist_cvdrift = data[:,6]
+gist_cvdrift0 = data[:,7]
+gist_gbdrift = data[:,8]
+gist_gbdrift0 = data[:,9]
+
+gist_zeta = gist_theta * q0
+#print "theta:"
+#print theta
+
+print "Info from GIST file:"
+print "              nz0: ",nz0
+print "        pol_turns: ",pol_turns
+print "             shat: ",shat
+print "         drhodpsi: ",drhodpsi
+if len(header)>4:
+    print "               q0: ",q0
+    print "             iota: ",1/q0
+    print "               s0: ",s0
+    print "alpha (=Aminor_p): ",gist_aminor_alpha
+    print "               B0: ",B0
+
+########################################################################
+########################################################################
+# Done reading GIST file.
+# Now read the geometry.dat file from the full-surface gs2-vmec interface.
+########################################################################
+########################################################################
+
+verbose = False
+
+import numpy as np
+
+f = open('geometry.dat','r')
+lines = f.readlines()
+f.close()
+
+splitline = lines[1].split()
+nalpha = int(splitline[0])
+nzgrid = int(splitline[1])
+print "nalpha:",nalpha
+print "nzgrid:",nzgrid
+
+splitline = lines[3].split()
+alpha = np.array([float(item) for item in splitline])
+if verbose: print "alpha:",alpha
+if nalpha != len(alpha):
+    print "Unexpected number of entries for alpha"
+    exit(1)
+
+splitline = lines[5].split()
+zeta = np.array([float(item) for item in splitline])
+if verbose: print "zeta:",zeta
+if nzgrid*2+1 != len(zeta):
+    print "Unexpected number of entries for zeta"
+    exit(1)
+
+next_index = 7
+data = []
+for j in range(next_index, next_index+nalpha):
+    splitline = lines[j].split()
+    data.append([float(item) for item in splitline])
+        
+bmag = np.array(data)
+if verbose: print "bmag:",bmag
+
+next_index += nalpha+1
+data = []
+for j in range(next_index, next_index+nalpha):
+    splitline = lines[j].split()
+    data.append([float(item) for item in splitline])
+        
+gradpar = np.array(data)
+if verbose: print "gradpar:",gradpar
+
+next_index += nalpha+1
+data = []
+for j in range(next_index, next_index+nalpha):
+    splitline = lines[j].split()
+    data.append([float(item) for item in splitline])
+        
+gds2 = np.array(data)
+if verbose: print "gds2:",gds2
+
+next_index += nalpha+1
+data = []
+for j in range(next_index, next_index+nalpha):
+    splitline = lines[j].split()
+    data.append([float(item) for item in splitline])
+        
+gds21 = np.array(data)
+if verbose: print "gds21:",gds21
+
+next_index += nalpha+1
+data = []
+for j in range(next_index, next_index+nalpha):
+    splitline = lines[j].split()
+    data.append([float(item) for item in splitline])
+        
+gds22 = np.array(data)
+if verbose: print "gds22:",gds22
+
+next_index += nalpha+1
+data = []
+for j in range(next_index, next_index+nalpha):
+    splitline = lines[j].split()
+    data.append([float(item) for item in splitline])
+        
+gbdrift = np.array(data)
+if verbose: print "gbdrift:",gbdrift
+
+next_index += nalpha+1
+data = []
+for j in range(next_index, next_index+nalpha):
+    splitline = lines[j].split()
+    data.append([float(item) for item in splitline])
+        
+gbdrift0 = np.array(data)
+if verbose: print "gbdrift0:",gbdrift0
+
+next_index += nalpha+1
+data = []
+for j in range(next_index, next_index+nalpha):
+    splitline = lines[j].split()
+    data.append([float(item) for item in splitline])
+        
+cvdrift = np.array(data)
+if verbose: print "cvdrift:",cvdrift
+
+next_index += nalpha+1
+data = []
+for j in range(next_index, next_index+nalpha):
+    splitline = lines[j].split()
+    data.append([float(item) for item in splitline])
+        
+cvdrift0 = np.array(data)
+if verbose: print "cvdrift0:",cvdrift0
+
+########################################################################
+########################################################################
+# Done reading input files.
+# Now plot results.
+########################################################################
+########################################################################
+
+
+
+import matplotlib.pyplot as plt
+
+fig = plt.figure(figsize=(14,7))
+fig.patch.set_facecolor('white')
+
+numCols = 3
+numRows = 3
+plotNum = 1
+ialpha = 0
+
+linespec_gist='.-'
+linespec_new = '.-'
+markerSize = 3;
+
+# Flipping the sign of (d x / d psi) causes gbdrift0=cvdrift0 and gds21 to flip sign.
+# Furthermore, GIST gets the sign of gds21 backwards.
+
+plt.subplot(numRows,numCols,plotNum)
+plotNum += 1
+plt.plot(gist_zeta,gist_B, linespec_gist,label='GIST')
+plt.plot(zeta,bmag[ialpha,:],linespec_new,label='New interface',ms=markerSize)
+plt.xlabel('zeta')
+plt.title('bmag')
+plt.legend(fontsize=7,loc=0)
+
+plt.subplot(numRows,numCols,plotNum)
+plotNum += 1
+plt.plot(gist_zeta, gist_gradpar, linespec_gist)
+plt.plot(zeta, gradpar[ialpha,:],linespec_new,label='New interface',ms=markerSize)
+plt.xlabel('zeta')
+plt.title('gradpar')
+
+plt.subplot(numRows,numCols,plotNum)
+plotNum += 1
+plt.plot(gist_zeta, gist_gds2, linespec_gist)
+plt.plot(zeta, gds2[ialpha,:],linespec_new,label='New interface',ms=markerSize)
+plt.xlabel('zeta')
+plt.title('gds2')
+
+plt.subplot(numRows,numCols,plotNum)
+plotNum += 1
+plt.plot(gist_zeta, gist_gds21, linespec_gist)
+plt.plot(zeta, gds21[ialpha,:],linespec_new,label='New interface',ms=markerSize)
+plt.xlabel('zeta')
+plt.title('gds21')
+
+plt.subplot(numRows,numCols,plotNum)
+plotNum += 1
+plt.plot(gist_zeta, gist_gds22, linespec_gist)
+plt.plot(zeta, gds22[ialpha,:],linespec_new,label='New interface',ms=markerSize)
+plt.xlabel('zeta')
+plt.title('gds22')
+
+plt.subplot(numRows,numCols,plotNum)
+plotNum += 1
+plt.plot(gist_zeta, gist_gbdrift, linespec_gist)
+plt.plot(zeta, gbdrift[ialpha,:],linespec_new,label='New interface',ms=markerSize)
+plt.xlabel('zeta')
+plt.title('gbdrift')
+
+plt.subplot(numRows,numCols,plotNum)
+plotNum += 1
+plt.plot(gist_zeta, -gist_gbdrift0, linespec_gist) # Note minus sign
+plt.plot(zeta, gbdrift0[ialpha,:],linespec_new,label='New interface',ms=markerSize)
+plt.xlabel('zeta')
+plt.title('gbdrift0')
+
+plt.subplot(numRows,numCols,plotNum)
+plotNum += 1
+plt.plot(gist_zeta, gist_cvdrift, linespec_gist)
+plt.plot(zeta, cvdrift[ialpha,:],linespec_new,label='New interface',ms=markerSize)
+plt.xlabel('zeta')
+plt.title('cvdrift')
+
+plt.subplot(numRows,numCols,plotNum)
+plotNum += 1
+plt.plot(gist_zeta, -gist_cvdrift0, linespec_gist) # Note minus sign
+plt.plot(zeta, cvdrift0[ialpha,:],linespec_new,label='New interface',ms=markerSize)
+plt.xlabel('zeta')
+plt.title('cvdrift0')
+
+import os
+titleString = "Plot generated by "+ os.path.abspath(__file__) + "  GIST data file = "+sys.argv[1]
+#titleString = sys.argv[1]
+plt.figtext(0.5,0.99,titleString,horizontalalignment='center',verticalalignment='top',fontsize=8)
+
+plt.tight_layout()
+
+if makePDF:
+    print "Saving PDF"
+    plt.savefig(__file__ + ".pdf")
+else:
+    plt.show()
+

@@ -1,0 +1,39 @@
+# Host: rokko at UHyogo (SGI Altix)
+#
+#COMPILER ?= gnu-gfortran
+COMPILER ?= intel
+#COMPILER ?= pgi
+
+ifndef USE_MIC
+	CHIP=haswell
+endif
+
+include Makefile.$(COMPILER)
+
+ifdef USE_MPI
+ifdef USE_MIC
+	MPIFC = mpiifort
+	MPICC = mpiicc
+endif
+endif
+
+USE_HDF5=on
+
+ifeq ($(findstring fftw,$(USE_FFT)),fftw)
+	FFT_LIB = $(FFTW_LIB)
+	FFT_INC = $(FFTW_INC)
+endif
+ifeq ($(findstring mkl_fftw,$(USE_FFT)),mkl_fftw)
+### -mkl option chooses appropriate library location
+ifdef USE_OPENMP
+#	FFT_LIB=-L$(MKLROOT)/lib/intel64 -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread -lm -ldl -lfftw2xf_double_intel
+	FFT_LIB=-mkl=parallel -lfftw2xf_double_intel
+else
+#	FFT_LIB=-L$(MKLROOT)/lib/intel64 -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl -lfftw2xf_double_intel
+	FFT_LIB=-mkl=sequential -lfftw2xf_double_intel
+endif
+ifdef USE_MIC
+#	FFT_INC=-I$(MKLROOT)/include/mic/lp64/
+#	FFT_LIB=-L$(MKLROOT)/lib/mic -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl -lfftw2xf_double_intel
+endif
+endif

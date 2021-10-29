@@ -1,0 +1,33 @@
+# Makefile for Ubuntu 14.04 LTS
+# Maintainer: ferdinand.vanwyk@physics.ox.ac.uk
+
+# Before building install these packages
+#
+# gcc openmpi-bin gfortran openmpi-bin libopenmpi-dev libfftw3-3 
+# libfftw3-mpi-dev libfftw3-dev libfftw3-bin libnetcdf-dev netcdf-bin
+
+define STANDARD_SYSTEM_CONFIGURATION
+export PATH=/local/home/Highcock/Tools/bin:$$PATH\n\
+echo No module configuration required\n\
+export MAKEFLAGS='-j 6 -I Makefiles USE_HD5=on USE_PARALLEL_NETCDF=on'\n
+endef
+
+
+CC=/local/home
+COMPILER=gnu-gfortran
+#USE_HDF5=
+include Makefile.$(COMPILER)
+
+USE_LOCAL_SPFUNC=on
+
+ifeq ($(USE_FFT),fftw3)
+	FFT_LIB = -L/local/home/Highcock/Tools/lib -L/local/home/Highcock/Tools/lib/x86_64-linux-gnu/ -lfftw3 -lfftw3f
+endif
+ifeq ($(USE_FFT),fftw)
+	FFT_LIB = -L/local/home/Highcock/Tools/lib -lrfftw -lfftw
+endif
+
+ifdef USE_NETCDF
+	NETCDF_INC = -I/local/home/Highcock/Tools/include
+	NETCDF_LIB = -L/local/home/Highcock/Tools/lib -lnetcdff -lnetcdf -lhdf5  -lhdf5_hl -lhdf5 -lz -lcurl
+endif

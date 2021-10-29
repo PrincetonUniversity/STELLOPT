@@ -1,0 +1,38 @@
+# Compiler: Fujitsu
+
+FC = frtpx
+MPIFC = mpifrtpx
+CC = FCCpx
+MPICC =  mpiFCCpx
+
+#F90FLAGS = -A m -C cdRR8 -X9 -static-flib -Kfast
+#F90FLAGS = -C cdRR8 -X9 -Kfast
+#F90FLAGS = -Kfast
+CPPFLAGS += -DFCOMPILER=_FUJ_
+
+ifdef DBLE
+	DBLEFLAGS = -C cdRR8
+	F90FLAGS += $(DBLEFLAGS)
+endif
+
+#ifndef USE_NR_RAN
+#$(warning USE_NR_RAN cannot be off for Fujitsu Compiler)
+#	override USE_NR_RAN = on
+#endif
+
+#USE_LOCAL_SPFUNC = on
+LIBS += -SSL2
+
+ifdef STATIC
+	F90FLAGS +=
+endif
+
+ifdef DEBUG
+	F90FLAGS += -g -H easu
+	F90OPTFLAGS =
+else
+	ifdef OPT
+		F90OPTFLAGS += -O3 -Kfast
+	endif
+	F90OPTFLAGS += -X9 -f 2004,2006,2008 -Wa,--no-warn
+endif

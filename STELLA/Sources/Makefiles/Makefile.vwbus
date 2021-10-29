@@ -1,0 +1,21 @@
+# Host: wave.physics.uiowa.edu at University of Iowa (Greg Howes' MacPro 2x 3.2GHz quad-core Intel Xeon)
+# Compiler: GNU gcc-4.0 and Intel ifort
+
+# Set in .cshrc file
+#    setenv GK_SYSTEM wave
+#    setenv MAKEFLAGS -IMakefiles
+
+
+COMPILER=gcc-intel
+
+include Makefile.$(COMPILER)
+
+#FFTW libraries using Intel MKL wrapper for gcc and ifort compilers
+USE_FFT =  fftw
+FFT_INC = -I/opt/intel/Compiler/11.1/058/Frameworks/mkl/include/fftw
+FFT_LIB = -L/opt/intel/Compiler/11.1/058/Frameworks/mkl/lib/em64t -lfftw2xf_gnu
+
+#NetCDF Libraries
+NETCDF_INC = -I/opt/local/include
+NETCDF_LIB = -L/opt/local/lib -lnetcdf
+

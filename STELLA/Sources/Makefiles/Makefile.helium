@@ -1,0 +1,40 @@
+# Host: helium.hpc.uiowa.edu at University of Iowa (1600-core HPC Cluster)
+#  200 compute nodes 
+#     Dual Quad Core Intel(R) Xeon(R) CPU X5550  @ 2.67GHz Processors
+#     24 Gb DDR3 1333MHz Memory
+#     1Tb Storage
+# Compiler: Intel  icc and Intel ifort
+
+# Set in .cshrc file
+#    setenv GK_SYSTEM helium
+#    setenv MAKEFLAGS -IMakefiles
+
+
+COMPILER=intel
+
+include Makefile.$(COMPILER)
+
+#Turn off HDF5
+USE_HDF5 ?=	
+
+ifeq ($(USE_FFT),fftw)
+#	FFT_INC = -I/opt/fftw2/2.1.5/include -I/opt/intel/mkl/10.2.5.035/include/fftw
+#	ifdef DBLE
+#		FFT_LIB =  -ldrfftw -ldfftw
+#		FFT_LIB =  -L/usr/lib64 -lrfftw -lfftw
+#		FFT_LIB =  -L/opt/fftw2/2.1.5/lib -ldrfftw -ldfftw
+		FFT_LIB =  -ldrfftw -ldfftw -L/Users/ghowes/fftw2/lib
+#		FFT_LIB =  -ldrfftw -ldfftw -L/Users/kdnielso/fftw2/lib
+#	else
+#		FFT_LIB =  -L/opt/fftw2/2.1.5/lib -lsrfftw -lsfftw
+#	endif
+endif
+
+#NetCDF Libraries
+ifdef USE_NETCDF
+#	NETCDF_INC = -I/usr/include/netcdf-3
+	NETCDF_INC = -I/opt/netcdf/3.6.3/include
+	NETCDF_LIB = -L/opt/netcdf/3.6.3/lib -lnetcdf
+endif
+
+

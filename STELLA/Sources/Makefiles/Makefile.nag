@@ -1,0 +1,51 @@
+# Compiler: NAGWare nagfor (v5.2) or f95 (v5.1 or less)
+# NAG does not provide C compiler, use gcc
+
+FC = f95
+# use nagfor if exists
+cmd=$(shell basename $(shell which nagfor))
+ifeq ($(cmd),nagfor)
+	FC=nagfor
+endif
+#F90FLAGS = -mismatch -maxcontin=50 -w -PIC
+F90FLAGS = -mismatch -maxcontin=50 -w
+#F90FLAGS = -maxcontin=50 -w
+CPPFLAGS += -DFCOMPILER=_NAG_ -DNO_SIZEOF -DNO_ABORT
+
+# NAGWare fortran does not have intrinsic Bessel and error functions
+ifndef USE_LOCAL_SPFUNC
+ifneq ($(findstring spfunc,$(USE_NAGLIB)),spfunc)
+        USE_LOCAL_SPFUNC=on
+endif
+endif
+
+include Makefile.gnu-gcc
+
+ifdef DBLE
+	DBLEFLAGS = -r8
+	F90FLAGS += $(DBLEFLAGS)
+endif
+
+ifdef STATIC
+	LDFLAGS += -Bstatic
+endif
+
+ifdef DEBUG
+	# -nan option initialize variables with NaN
+	# this may cause lots of errors, but may be useful
+	# to debug
+	F90FLAGS += -u -nan -C=all -gline
+	F90OPTFLAGS =
+else
+	ifdef OPT
+		ifeq ($(OPT),aggressive)
+			F90OPTFLAGS += -O4
+		else
+			F90OPTFLAGS += -O2
+		endif	
+	endif
+
+	ifeq ($(findstring gprof,$(PROF)),gprof)
+		F90FLAGS += -pg
+	endif
+endif

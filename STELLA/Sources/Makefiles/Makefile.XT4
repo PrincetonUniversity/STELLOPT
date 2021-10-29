@@ -1,0 +1,8 @@
+# System: Cray XT4 with Linux
+
+#CRAY_SYSTEM = XT4
+
+# RN> I'm not sure if these are necessary
+F90FLAGS += -target=linux
+CFLAGS += -target=linux
+

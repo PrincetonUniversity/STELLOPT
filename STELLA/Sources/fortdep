@@ -1,0 +1,964 @@
+#!/usr/bin/perl
+#
+# Make a dependency list of fortran source codes in search path
+# and store it to $DEPFILE
+#
+# Written by "Ryusuke NUMATA" <rnumata@umd.edu>
+# 		http://terpconnect.umd.edu/~rnumata/
+#         in 5 April 2006
+#
+# $Id: fortdep 561 2008-05-08 22:39:39Z numata $
+#
+use strict;
+
+my $DEPFILE="Makefile.depend";
+{
+    my %OPTION = (
+	"makecmd" => "make", # make command (used for preprocesing)
+	"depfile" => $DEPFILE, # output file
+	"overwrite" => undef, # if defined, output is overwritten
+	"first" => undef, # if defined, use first found file as a given module
+	                  # or program file if there are more than one 
+	                  # module/program files (otherwise, ask which to use)
+	"verbose" => 2, # verbose level (0: silent, 1: info, 
+	                # 2: warning [default], 3: debug)
+	);
+
+    # store search path;
+    my @PATH=();
+
+    # define system files. Suppress error/warning message 
+    # when those files do not exist even if they are used
+#    my @SYSFILE=("mpif.h", "netcdf.inc", "fftw3.f", "netcdf", "mpi" );
+    my @SYSFILE=("mpif.h", "netcdf.inc", "fftw3.f" );
+
+    &process_options(\%OPTION,\@PATH);
+
+    my %MSGTYPE = ( "error" => -1, "debug" => 0, "warn" => 0, "info" => 0 );
+    $MSGTYPE{'debug'} = 3 if ($OPTION{'verbose'} >= 3);
+    $MSGTYPE{'warn'} = 2 if ($OPTION{'verbose'} >= 2);
+    $MSGTYPE{'info'} = 1 if ($OPTION{'verbose'} >= 1);
+
+    &message($MSGTYPE{'debug'},"make command (MAKECMD) is $OPTION{'makecmd'}\n");
+    &message($MSGTYPE{'debug'},"output file (DEPFILE) is $OPTION{'depfile'}\n");
+    &message($MSGTYPE{'debug'},"overwrite mode on\n") if ($OPTION{'overwrite'});
+    &message($MSGTYPE{'debug'},"verbose mode on\n");
+    &message($MSGTYPE{'debug'},"search path = @PATH\n\n");
+
+    # exit if file already exists and is not overwritten
+    if ( -e $OPTION{'depfile'} ) {
+	if ( $OPTION{'overwrite'} ) {
+	    &message($MSGTYPE{'warn'},"output file exists but is overwritten\n\n");
+	} else {
+	    &message($MSGTYPE{'info'},"$OPTION{'depfile'} already exists, bye.\n");
+	    exit 0;
+	}
+    }
+
+    # find source files in directories in @PATH
+    &message($MSGTYPE{'debug'},"find source files in directories: @PATH\n");
+    my %SOURCE=();
+    &find_source(\@PATH,\%SOURCE,\%OPTION,\%MSGTYPE);
+    foreach my $file ( keys %SOURCE ){
+	my @prop = values %{$SOURCE{$file}};
+	&message($MSGTYPE{'debug'}," $file, type = $prop[0] dir = $prop[1]\n");
+    }
+    my @val = values(%SOURCE);
+
+    # preprocess
+    &preprocess(\%SOURCE,\%OPTION,\%MSGTYPE);
+
+    # determine file name of modules and programs
+    my %FILEINFO=();
+    &get_fileinfo(\%SOURCE,\%FILEINFO,\%OPTION,\%MSGTYPE);
+    foreach my $modprog ( keys %FILEINFO ){
+	&message($MSGTYPE{'debug'}," $FILEINFO{$modprog}{'type'}: $modprog = $FILEINFO{$modprog}{'name'}\n");
+    }
+
+    # search dependencies
+    my %REQFILE=();
+    &get_dependency(\%SOURCE,\%FILEINFO,\%REQFILE,\@SYSFILE,\%OPTION,\%MSGTYPE);
+    foreach my $key ( keys %REQFILE ){
+	my @req=keys %{$REQFILE{$key}};
+	&message($MSGTYPE{'debug'}," $key requires @req\n");
+    }
+
+    # check circular dependencies
+    &check_circular(\%REQFILE,\%MSGTYPE);
+
+    # need cleanup of preprocessed files
+    &cleanprep(\%SOURCE,\%OPTION,\%MSGTYPE);
+
+    my %OBJLIST=();
+    # make an object file list for given main programs
+    &make_objlist(\%FILEINFO,\%REQFILE,\%OBJLIST,\%OPTION,\%MSGTYPE);
+    
+    foreach my $key ( keys %OBJLIST ){
+	my @list = keys %{$OBJLIST{$key}};
+	&message($MSGTYPE{'debug'}," $key is linked with @list\n");
+    }
+
+    # write dependency file in $OPTION{'depfile'}
+    &write_dependency(\%REQFILE,\%OBJLIST,\%OPTION,\%MSGTYPE);
+
+    exit 0;
+}
+return 1;
+
+sub process_options {
+#
+# process options and arguments
+#
+# Arguments:
+#  out \%option: store option values
+#  out \@path: store search pathes
+#
+    use Getopt::Long;
+
+    my ($option, $path) = @_;
+    my ($opt_makecmd,$opt_file,$opt_overwrite,$opt_first,$opt_verb,$opt_help);
+
+    &GetOptions(
+	'makecmd=s' => \$opt_makecmd,
+	'file=s' => \$opt_file,
+	'overwrite' => \$opt_overwrite,
+	'1' => \$opt_first,
+	'verbose=i' => \$opt_verb,
+	'help' => \$opt_help
+	);
+    die ("Invalid argument, bye.\n") if ($#ARGV > 0);
+    @$path=split(/[:, ]/,$ARGV[$#ARGV]);
+
+    $$option{'makecmd'} = $opt_makecmd if ( $opt_makecmd ne "" );
+    $$option{'depfile'} = $opt_file if ( $opt_file ne "" );
+    $$option{'overwrite'} = $opt_overwrite if ( $opt_overwrite );
+    $$option{'first'} = $opt_first if ( $opt_first );
+    $$option{'verbose'} = $opt_verb if ( $opt_verb ne "" && $opt_verb >=0 );
+    &usage if ( $opt_help );
+
+    return;
+}
+
+sub find_source{
+#
+# find source files and some informations of those files
+#
+# Arguments:
+#  in \@path: search path
+#  out \%source: source file information 
+#                first key is a file name, and second key is a information type
+#                the information types are
+#                 file types (fort,prep,incl), directory, and
+#                 exist flag which indicates if preprocessed file exists or not
+#  in \%option: options
+#  in \%msgtype: msgtypes
+#
+# Note that files start with a-z, A-Z are searched. The extensions for
+# a fortran source is .f90, for a fortran source with preprocessor directives
+# are .fpp and .F90, for an include file are .h and .inc
+#
+    my ($path,$source,$option,$msgtype)=@_;
+
+    DIRLOOP : foreach my $dir (@$path){
+	if ( ! opendir(DIR,$dir) ) {
+	    &message($$msgtype{'warn'},"cannot open dir: $dir!\n");
+	    next DIRLOOP;
+	}
+
+	my @filelist=readdir(DIR);
+	FILELOOP : foreach my $file ( @filelist ) {
+	    if ( -f "$dir/$file" ) {
+		if ( $file =~ /^[a-zA-Z].*\.f90$/ ) {
+		    $$source{$file}{'dir'} = $dir;
+		    $$source{$file}{'type'}="fort";
+		} elsif ( $file =~ /^[a-zA-Z].*\.(F90|fpp)$/ ) {
+		    my $f90file = $file;
+		    $f90file =~ s/\.(fpp|F90)/\.f90/;
+		    # if preprocessed file already exists, that file is used
+		    if ( ! -f "$dir/$f90file" ){
+			$$source{$file}{'dir'} = $dir;
+			$$source{$file}{'type'}="prep";
+		    }
+		} elsif ( $file =~ /^[a-zA-Z].*\.(h|inc|finc)$/ ) {
+		    $$source{$file}{'dir'} = $dir;
+		    $$source{$file}{'type'}="incl";
+		}
+	    }
+	}
+	closedir(DIR);
+    }
+
+    return;
+}
+
+sub get_fileinfo{
+#
+# get file information of module, programs, subroutines, and functions
+#
+# Arguments:
+#  in \%source: source file information (see find_source)
+#  out \%fileinfo: module and program information
+#                  first key is a module/program name, and second key is a 
+#                  information type. The information types are filename, and
+#                  type denoting if it is module or program
+#  in \%option: options
+#  in \%msgtype: msgtypes
+#    
+    my ($source,$fileinfo,$option,$msgtype) = @_;
+    my ($modname, $progname, $subname, $funcname);
+
+    FILELOOP : foreach my $file ( sort ( keys %$source ) ){
+	next FILELOOP if ( $$source{$file}{'type'} ne "fort" );
+
+	my @publist=();
+	my @prvlist=();
+	my %default_private=();
+
+	my $cont_private=0;
+	my $cont_public=0;
+
+	my $current_module="";
+
+	my @modpublist=();
+	my @modprvlist=();
+
+	open(FILE,"$$source{$file}{'dir'}/$file") ||
+	    die ("cannot open file: $$source{$file}{'dir'}/$file!");
+	SEARCH : while (<FILE>){
+	    my $line;
+	    chop($line=$_);
+	    # remove trailing comments
+	    ($line, my @dummy)=split(/!/,$line);
+	    # lowercase
+	    $line=~tr/[A-Z]/[a-z]/;
+	    $_=$line; # this is necessary for split without arguments.
+	              # I don't want to replace split with split(' ',$line)
+	              # because this may give different result.
+	              # (note preceding white space etc.)
+
+	    # private
+	    # detects if private is default
+	    $default_private{$current_module}=1 
+		if( $line =~ /^\s*private\s*$/ );
+	    # detects private elements
+	    if( $line =~ /^\s*private/ || $cont_private ){
+		# print "private = |$line|\n";
+		my @tmplist=split(/private|::|&|,|\s+/,$line);
+		foreach (@tmplist){
+		    my @tmplist2=split; # remove preceding space
+		    @prvlist=(@prvlist,@tmplist2);
+		}
+
+		if ( $line =~ /&\s*$/ ){
+		    $cont_private=1;
+		} else {
+		    $cont_private=0;
+		}
+	    }
+
+	    # public
+	    # detects if public is default
+	    $default_private{$current_module}=0
+		if( $line =~ /^\s*public\s*$/ );
+	    # detects public elements
+	    if( $line =~ /^\s*public/ || $cont_public ){
+		# print "public = |$line|\n";
+		my @tmplist=split(/public|::|&|,|\s+/,$line);
+		foreach (@tmplist){
+		    my @tmplist2=split; # remove preceding space
+		    @publist=(@publist,@tmplist2);
+		}
+
+		# detects continuation
+		if ( $line =~ /&\s*$/ ){
+		    $cont_public=1;
+		} else {
+		    $cont_public=0;
+		}
+	    }
+
+	    # start module
+	    # this is used for module detection, and to determine 
+            # what module currently in
+	    # subroutines and functions may be associated with module
+	    if( $line =~ /^\s*module\s+/ ){
+		# print "module = |$line|\n";
+		(my $dummy, $modname)=split;
+		next if ( $modname eq "procedure" ); # skip if module procedure statement
+		$current_module = $modname;
+
+		# check if the module is already found.
+		my $stat = 1;
+		if ($$fileinfo{$modname}{'name'} ne ""){
+		    # modname already exists
+		    if ($$fileinfo{$modname}{'name'} eq $file){
+			# in the same file
+			$stat=0;
+		    } else {
+			# in different file
+			$stat = &warn_multifile
+			    ($file,$modname,$fileinfo,$option,$msgtype);
+		    }
+		}
+		if ($stat) {
+		    $$fileinfo{$modname}{'name'} = $file;
+		    $$fileinfo{$modname}{'type'} = "module";
+		}
+	    }
+
+	    # end module
+	    # this is also used for module detection
+	    # if module name is omitted, this cannot be used for detection.
+	    # but still necessary to detect end of current module
+	    if( $line =~ /^\s*end\s+module\s*/ ){
+		# print "end module = |$line|\n";
+		(my $dummy, my $dummy, $modname)=split;
+
+		# check if the module is already found.
+		my $stat = 0;
+		if ($modname ne ""){
+		    $stat=1;
+		    if ($$fileinfo{$modname}{'name'} ne ""){
+			# modname already exists
+			if ($$fileinfo{$modname}{'name'} eq $file){
+			    # in the same file
+			    $stat=0;
+			} else {
+			    # in different file
+			    $stat=&warn_multifile
+				($file,$modname,$fileinfo,$option,$msgtype);
+			}
+		    }
+		}
+		if ($stat) {
+		    $$fileinfo{$modname}{'name'} = $file;
+		    $$fileinfo{$modname}{'type'} = "module";
+		}
+
+		undef $current_module;
+		foreach (@publist) {
+		    push @modpublist,$_."::".$modname;
+		}
+		foreach (@prvlist) {
+		    push @modprvlist,$_."::".$modname;
+		}
+		undef @publist;
+		undef @prvlist;
+	    }
+
+	    # start program
+	    # this is used for program detection
+	    if( $line =~ /^\s*program\s+/ ){
+		# print "program = |$line|\n";
+
+		(my $dummy, $progname)=split;
+		
+		# check if the program is already found.
+		my $stat = 1;
+		if ($$fileinfo{$progname}{'name'} ne ""){
+		    # progname already exists
+		    if ($$fileinfo{$progname}{'name'} eq $file){
+			# in the same file
+			$stat=0;
+		    } else {
+			# in different file
+			$stat = &warn_multifile
+			    ($file,$progname,$fileinfo,$option,$msgtype);
+		    }
+		}
+		if ($stat) {
+		    $$fileinfo{$progname}{'name'} = $file;
+		    $$fileinfo{$progname}{'type'} = "program";
+		}
+	    }
+
+	    # end program
+	    # this is also used for program detection
+	    # if program name is omitted, this fails
+	    if( $line =~ /^\s*end\s+program\s*/ ){
+		# print "end program = |$line|\n";
+		(my $dummy, my $dummy, $progname)=split;
+
+		# check if the program is already found.
+		my $stat = 0;
+		if ($progname ne ""){
+		    $stat=1;
+		    if ($$fileinfo{$progname}{'name'} ne ""){
+			# progname already exists
+			if ($$fileinfo{$progname}{'name'} eq $file){
+			    # in the same file
+			    $stat=0;
+			} else {
+			    $stat = &warn_multifile
+				($file,$progname,$fileinfo,$option,$msgtype);
+			}
+		    }
+		}
+		if ($stat) {
+		    $$fileinfo{$progname}{'name'} = $file;
+		    $$fileinfo{$progname}{'type'} = "program";
+		}
+	    }
+
+	    # start subroutine
+	    # this is used for subroutine detection
+	    if( $line =~ /^\s*subroutine\s+/ ){
+		# print "subroutine = |$line|\n";
+		(my $dummy, $subname)=split;
+		# remove arguments
+		my @tmplist=split(/\(/,$subname);
+		$subname=$tmplist[0];
+		$subname.="::".$current_module if ($current_module ne "");
+
+		# check if the subroutine is already found.
+		my $stat = 1;
+		if ($$fileinfo{$subname}{'name'} ne ""){
+		    # subname already exists
+		    if ($$fileinfo{$subname}{'name'} eq $file){
+			# in the same file
+			$stat=0;
+		    } else {
+			# in different file
+			$stat = &warn_multifile
+			    ($file,$subname,$fileinfo,$option,$msgtype)
+		    }
+		}
+		if ($stat) {
+		    $$fileinfo{$subname}{'name'} = $file;
+		    $$fileinfo{$subname}{'type'} = "subroutine";
+		}
+	    }
+
+	    # end subroutine
+	    # this is also used for subroutine detection
+	    # if subroutine name is omitted, this fails
+	    if( $line =~ /^\s*end\s+subroutine\s*/ ){
+		# print "end subroutine = |$line|\n";
+		(my $dummy, my $dummy, $subname)=split;
+		$subname.="::".$current_module if ($current_module ne "");
+
+		# check if the subroutine is already found.
+		my $stat = 0;
+		if ($subname ne ""){
+		    $stat=1;
+		    if ($$fileinfo{$subname}{'name'} ne ""){
+			# subname already exists
+			if ($$fileinfo{$subname}{'name'} eq $file){
+			    # in the same file
+			    $stat=0;
+			} else {	
+			    # in different file
+			    $stat = &warn_multifile
+				($file,$subname,$fileinfo,$option,$msgtype);
+			}
+		    }
+		}
+		if ($stat) {
+		    $$fileinfo{$subname}{'name'} = $file;
+		    $$fileinfo{$subname}{'type'} = "subroutine";
+		}
+	    }
+
+	    # start function
+	    # this is used for function detection
+	    if( $line =~ /^\s*(|!end|integer|real|double precision|integer|logical|other type)\s+function\s+/ ){
+		# print "function = |$line|\n";
+		my @tmplist=split;
+		# function name is next to 'function'
+		while (my $tmp=shift(@tmplist)){
+		    if ($tmp eq "function"){
+			$funcname = shift(@tmplist);
+			last;
+		    }
+		}
+		# remove arguments
+		my @tmplist=split(/\(/,$funcname);
+		$funcname=$tmplist[0];
+		$funcname.="::".$current_module if ($current_module ne "");
+
+		# check if the function is already found.
+		my $stat = 1;
+		if ($$fileinfo{$funcname}{'name'} ne ""){
+		    # funcname already exists
+		    if ($$fileinfo{$funcname}{'name'} eq $file){
+			# in the same file
+			$stat=0;
+		    } else {
+			# in different file
+			$stat = &warn_multifile
+			    ($file,$funcname,$fileinfo,$option,$msgtype) 
+		    }
+		}
+		if ($stat) {
+		    $$fileinfo{$funcname}{'name'} = $file;
+		    $$fileinfo{$funcname}{'type'} = "function";
+		}
+	    }
+
+	    # end function
+	    # this is also used for function detection
+	    # if function name is omitted, this fails
+	    if( $line =~ /^\s*end\s+function\s*/ ){
+		# print "end function = |$line|\n";
+		(my $dummy, my $dummy, $funcname)=split;
+		$funcname.="::".$current_module if ($current_module ne "");
+
+		# check if the function is already found.
+		my $stat = 0;
+		if ($funcname ne ""){
+		    $stat=1;
+		    if ($$fileinfo{$funcname}{'name'} ne ""){
+			# funcname already exists
+			if ($$fileinfo{$funcname}{'name'} eq $file){
+			    # in the same file
+			    $stat=0;
+			} else {
+			    # in different file
+			    $stat = &warn_multifile
+				($file,$funcname,$fileinfo,$option,$msgtype);
+			}
+		    }
+		}
+		if ($stat) {
+		    $$fileinfo{$funcname}{'name'} = $file;
+		    $$fileinfo{$funcname}{'type'} = "function";
+		}
+	    }
+	}
+	close(FILE);
+
+	pubcheck : foreach my $modprog ( keys %$fileinfo ){
+	    next pubcheck if ( 
+		$$fileinfo{$modprog}{'type'} eq "module"
+		|| 
+		$$fileinfo{$modprog}{'type'} eq "program"
+		);
+	    if ($$fileinfo{$modprog}{'name'} eq $file) {
+		if ($#modpublist >= 0) {
+		    foreach my $pub (@modpublist){
+			next pubcheck if ($pub eq $modprog);
+		    }
+		}
+		if ($#modprvlist >= 0) {
+		    foreach my $prv (@modprvlist){
+			if ($prv eq $modprog){
+			    delete $$fileinfo{$modprog};
+			    next pubcheck;
+			}
+		    }
+		}
+		(my $dummy, my $mod)=split(/::/,$modprog);
+		delete $$fileinfo{$modprog} if ($default_private{$mod});
+	    }
+	}
+
+    }
+    return;
+}
+
+sub warn_multifile{
+#
+# warn if there are multiple files for one module or program.
+# return 0 if keep current file as a module/program file,
+# return 1 if use new file as a module/program file.
+#
+# Arguments:
+#  in $file: newly found source file defining the given module/program.
+#  in $name: module/program name of which file name to be determined
+#  in \%fileinfo: module and program information (see get_fileinfo)
+#  in \%option: options
+#  in \%msgtype: msgtypes
+#    
+    my ($file,$name,$fileinfo,$option,$msgtype) = @_;
+    my $stat=0;
+    if ( $$option{'first'} ){
+	&message($$msgtype{'warn'},"$$fileinfo{$name}{'type'} $name in multiple files: use $$fileinfo{$name}{'name'}\n");
+	$stat=0;
+    } else {
+	&message($$msgtype{'warn'},"module $name in multiple files\n");
+	&message($$msgtype{'info'},"use $file, instead of $$fileinfo{$name}{'name'}? [y/N]\n");
+	chop(my $answer=<STDIN>);
+	if ( $answer eq "y" || $answer eq "Y" ){
+	    $stat=1;
+	} elsif ( $answer eq "n" || $answer eq "N" || $answer eq "" ){
+	    $stat=0;
+	} else {
+	    die ("illegal input, by\n");
+	}
+    }
+
+    return $stat;
+}
+
+sub get_dependency{
+#
+# get dependency list
+#
+# Arguments:
+#  in \%source: source file informations (see find_source)
+#  in \%fileinfo: module/program file information (see get_fileinfo)
+#  out \%reqfile: required file list
+#                 first key is a file name of which dependency is determined,
+#                 and second key is a file name on which the given file depends
+#  in \@sysfile: a list of system include file, which is removed from 
+#               required file list
+#  in \%option:  options
+#  in \%msgtype: msgtypes
+#   
+    my ($source,$fileinfo,$reqfile,$sysfile,$option,$msgtype)=@_;
+    my ($moduse,$subuse,$incfile);
+
+    FILELOOP : foreach my $file ( keys %$source ){
+	my @modlist=();
+
+	next FILELOOP if ( $$source{$file}{'type'} ne "fort" );
+	open(FILE,"$$source{$file}{'dir'}/$file") ||
+	    die ("cannot open file: $$source{$file}{'dir'}/$file!");
+	SEARCH : while (<FILE>){
+	    my $line;
+	    chop($line=$_);
+	    # remove trailing comments
+	    my @tmplist=split(/!/,$line);
+	    $line=$tmplist[0];
+	    # lowercase
+	    $line=~tr/[A-Z]/[a-z]/;
+	    $_=$line; # see comments in get_fileinfo above.
+
+	    # use statement
+	    # this only detects module name
+	    # I don't check what public elements in the module are used.
+	    if( $line =~ /^\s*use\s+/ ){
+		(my $dummy, $moduse)=split;
+		# remove comma if exists (this happens when only is given)
+#		chop($moduse) if ( $moduse =~ /,$/ );
+		my @tmplist=split(/,/,$moduse);
+		$moduse=$tmplist[0];
+		
+		my $modfile = $$fileinfo{$moduse}{'name'};
+		# ignore if depend on itself
+		next SEARCH if ( $modfile eq $file );
+
+		my $match=0;
+		foreach (@$sysfile){ $match++ if ( $moduse eq $_ ); }
+		if ( $match ) {
+ 		    &message($$msgtype{'debug'},"$moduse is defined in a library\n");
+		} else {
+		    # check if required module exists
+		    if ( -f "$$source{$modfile}{'dir'}/$modfile" ){
+			$$reqfile{$file}{$modfile} = "module";
+		    } else {
+			&message($$msgtype{'warn'},"module file of $moduse does not exist.\n");
+#			die ( "Module file $modfile of $moduse does not exist, bye.\n" )
+		    }
+		}
+	    }
+
+# 	    # call statement
+# 	    # this is not working because of the interface, 
+#             # non-public subroutines
+# 	    if( $line =~ /^[\t\n ]*[Cc][Aa][Ll][Ll][\t\n ]/ ){
+# 		($dummy, $subuse)=split;
+# 		my @tmplist=split(/\(/,$subuse);
+# 		$subuse=$tmplist[0];
+# 		$subuse=~tr/[A-Z]/[a-z]/;
+
+# 		my $subfile = $$fileinfo{$subuse}{'name'};
+# 		# ignore if depend on itself
+# 		next SEARCH if ( $subfile eq $file );
+
+# 		# check if required file exists
+# 		if ( -f "$$source{$subfile}{'dir'}/$subfile" ){
+# 		    $$reqfile{$file}{$subfile} = "subroutine";
+# 		} else {
+# 		    &message($$msgtype{'warn'},"subroutine file of $subuse does not exist.\n");
+# #			die ( "Module file $modfile of $moduse does not exist, bye.\n" )
+# 		}
+# 	    }
+
+	    # include statement
+	    if( $line =~ /^\s*include\s+/ ){
+		chop;
+		(my $dummy, my $incfile)=split;
+		$incfile=~s/[\'\"]//g;  # remove quotation
+		my $match=0;
+		foreach (@$sysfile){ $match++ if ( $incfile eq $_ ); }
+		if ( $match ){
+ 		    &message($$msgtype{'debug'},"$incfile is a library include file\n");
+		} else {
+		    if ( -f "$$source{$incfile}{'dir'}/$incfile" ){
+			$$reqfile{$file}{$incfile} = "include";
+		    } else {
+			die ( "Include file $incfile does not exist, bye.\n" )
+		    }
+		}
+	    }
+	}
+	close(FILE);
+    }
+
+    return;
+}
+
+sub preprocess{
+#
+# apply cpp for files need to be preprocessed
+# 
+# Arguments:
+#  in \%source: source file informations (see find_source)
+#  in \%option: options
+#  in \%msgtype: msgtype
+#
+    my ($source,$option,$msgtype)=@_;
+
+#    &message($$msgtype{'info'},"preprocessing");
+    foreach my $file ( keys %$source ){
+#	&message($$msgtype{'info'},".");
+	if($$source{$file}{'type'} eq "prep"){
+	    my $f90file = $file;
+	    $f90file =~ s/\.(fpp|F90)/\.f90/;
+	    system("$$option{'makecmd'} $f90file >/dev/null");
+	    $$source{$f90file}{'dir'} = ".";
+	    $$source{$f90file}{'type'} = "fort";
+	}
+    }
+#    &message($$msgtype{'info'},"end\n");
+
+    return;
+}
+
+sub cleanprep{
+#
+# clean up preprocessed files
+# 
+# Arguments:
+#  in \%source: source file informations (see find_source)
+#  in \%option: options
+#  in \%msgtype: msgtype
+#
+    my ($source,$option,$msgtype)=@_;
+
+    foreach my $file ( keys %$source ){
+	if ($$source{$file}{'type'} eq "prep"){
+	    my $f90file = $file;
+	    $f90file =~ s/\.(fpp|F90)/\.f90/;
+	    if ($$source{$f90file}{'type'} ne ""){
+		unlink $f90file;
+		foreach my $key ( keys %{$$source{$file}} ){
+		    delete $$source{$file}{$key};
+		}
+		delete $$source{$file};
+	    }
+	}
+    }
+
+    return;
+}
+
+sub make_objlist{
+#
+# make an object file lists
+# this subroutine just drives search_object recursively
+#
+# Arguments:
+#  in \%fileinfo: module/program file information (see get_fileinfo)
+#  in \%reqfile:  required file list (see get_dependency)
+#  out \%objlist: object file list 
+#                 first key is a file name of which required object file list
+#                 is constructed, second key is an required object file name
+#  in \%option: options
+#  in \%msgtype: msgtype
+#
+    my ($fileinfo,$reqfile,$objlist,$option,$msgtype) = @_;
+
+    foreach my $prog ( %$fileinfo ){
+	if ( $$fileinfo{$prog}{'type'} eq "program" ){
+	    my $progfile=$$fileinfo{$prog}{'name'};
+	    my $cnt=0;
+	    my $objfile = $progfile;
+	    $objfile =~ s/\.f90/\.o/;
+	    $$objlist{$prog}{$objfile} = 1;
+	    &search_object(\$prog,\$progfile,$fileinfo,$reqfile,$objlist,$msgtype,\$cnt);
+	}
+    }
+
+    return;
+}
+
+sub search_object{
+#
+# make an object file list of given program
+#
+# Arguments:
+#  in \$prog: program name of which object file list is constructed
+#  in \$progfile: filename of which object file list is constructed
+#  in \%fileinfo: module/program file information (see get_fileinfo)
+#  in \%reqfile: required file list (see get_dependency)
+#  inout \%objlist: object file list
+#  in \%msgtype: msgtype
+#  inout \$cnt: recursive count
+#
+    my ($prog,$progfile,$fileinfo,$reqfile,$objlist,$msgtype,$cnt) = @_;
+
+    my $tabbing = "";
+    for (my $i=0;$i<$$cnt;$i++){ $tabbing .= " "; }
+    &message($$msgtype{'debug'},"  $$cnt: $tabbing search_object is called with = $$progfile\n");
+
+    die ( "Too many recursive in search object, bye.\n") if ( $$cnt > 20 );
+
+    ADDOBJ : foreach my $key ( keys %{$$reqfile{$$progfile}} ){
+	if ( $$reqfile{$$progfile}{$key} eq "module" ){
+	    my $objfile = $key;
+	    $objfile =~ s/\.f90/\.o/;
+
+	    # skip if $objfile already exists in %objlist
+	    next ADDOBJ if( $$objlist{$$prog}{$objfile} );
+
+	    $$objlist{$$prog}{$objfile} = 1;
+	    $$cnt++;
+	    &search_object($prog,\$key,$fileinfo,$reqfile,$objlist,$msgtype,$cnt);
+	    $$cnt--;
+	}
+    }
+
+    return;
+}
+
+sub write_dependency{
+    
+    my ($reqfile,$objlist,$option,$msgtype) = @_;
+
+    &message($$msgtype{'debug'},"write dependency list in $$option{'depfile'}\n");
+    open(DEP,">$$option{'depfile'}") ||
+	die ( "cannot open file: $$option{'depfile'}!" );
+    print DEP "#\n";
+    print DEP "# Auto-generated file by fortdep. Do not edit!\n";
+    print DEP "#\n";
+
+    foreach my $key ( sort ( keys %$objlist ) ){
+	print DEP "$key\_mod = ";
+	foreach my $obj ( sort ( keys %{$$objlist{$key}} ) ){
+	    print DEP "\\\n";
+	    print DEP "\t $obj ";
+	}
+	print DEP "\n\n";
+    }
+
+    foreach my $key ( sort ( keys %$reqfile ) ){
+	my $keyo=$key;
+	$keyo =~ s/\.f90$/\.o/g;
+	print DEP "$keyo: ";
+	foreach my $obj ( sort ( keys %{$$reqfile{$key}} ) ){
+	    my $objo = $obj;
+	    $objo =~ s/\.f90$/\.o/g;
+	    print DEP "\\\n";
+	    print DEP "\t $objo ";
+	}
+	print DEP "\n";
+    }
+
+    close(DEP);
+
+    return;
+}
+
+sub check_circular{
+    
+    my ($reqfile,$msgtype) = @_;
+
+    foreach my $file ( keys %$reqfile ){
+	foreach my $dep ( keys %{$$reqfile{$file}} ){
+	    foreach my $depdep ( keys %{$$reqfile{$dep}} ){
+		if ($depdep eq $file){
+		    &message($$msgtype{'error'},"circular dependencies: $file - & $dep!\n");
+		    exit -1;
+		}
+	    }
+	}
+    }
+
+}
+
+sub uniq_array{
+#
+# remove duplication in a given list
+# 
+# Arguments:
+#  inout \@list:
+#
+    my ($list) = @_;
+    my %hash=();
+    
+    foreach my $val (@$list){
+	$hash{$val}=1;
+    }
+
+    @$list=();
+    foreach my $key ( keys ( %hash ) ){
+	push @$list,$key;
+    }
+
+    return;
+}
+
+sub message{
+#
+# output message
+#
+# Arguments:
+#  in $flag: message type
+#  in @msg: message to show
+#
+    my ($flag,@msg)=@_;
+    my $i;
+    my $msg_type;
+
+    if ( $flag == 3 ) { $msg_type = "Debug:: "; }
+    elsif ( $flag == 2 ) { $msg_type = "Warning:: "; }
+    elsif ( $flag == 1 ) { $msg_type = ""; }
+    elsif ( $flag == -1 ) { $msg_type = "Error:: "; }
+
+    if ($flag != 0) {
+	for($i=0;$i<=$#msg;$i++){
+	    print "$msg_type$msg[$i]";
+	}
+    }
+    exit $flag if ($flag < 0);
+
+    return;
+}
+
+sub usage{
+#
+# show usage
+#
+    split("/",$0);
+    my $scriptname=$_[$#_];
+
+    print "\n";
+    print "Make a dependency list of fortran source codes in search path\n";
+    print "(: or , separated list), and store it in $DEPFILE.\n";
+    print "\n";
+    print "Usage: [perl] $scriptname [options] searchpath\n";
+    print "\nOptions\n";
+    print "  --help                 : show this message\n";
+    print "  --file filename        : change output file to filename\n";
+    print "  --makecmd make-command : set make command (to give options to make command\n";
+    print "                           use \' (single quote) like \'make -f make\')\n";
+    print "  --overwrite            : overwrite mode\n";
+    print "  --1                    : use 1st found file for multiply defined module\n";
+    print "  --verbose=0-3          : verbose level (0: silent, 1: info, 2: warn [default], 3: debug)\n";
+    print "\n";
+    print "This script may be kicked by make depend\n";
+    print "Add the folloing statement in your Makefile\n";
+    print "---------------------------------------\n";
+    print "include $DEPFILE\n";
+    print "depend:\n";
+    print "\t$scriptname \$(VPATH)\n";
+    print "---------------------------------------\n";
+    print "Note 1: This script only searches for \"use\" and \"include\" statements.\n";
+    print "        Other dependencies such as external subroutine/function definitions\n";
+    print "        must be declared explicitly.\n";
+    print "Note 2: $DEPFILE must exist if you include it in your Makefile\n";
+    print "        Please touch $DEPFILE if not exists.\n";
+    exit 0;
+}

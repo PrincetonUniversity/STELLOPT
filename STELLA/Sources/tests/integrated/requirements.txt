@@ -1,0 +1,5 @@
+# These modules are required for the stella integrated tests
+netCDF4>=1.4.0
+numpy>=1.17
+pytest~=6.2
+xarray~=0.18

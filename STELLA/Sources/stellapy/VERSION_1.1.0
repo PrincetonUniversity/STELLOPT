@@ -1,0 +1,157 @@
+
+
+####################################################################
+                      STELLA GUI VERSION 1.0.0
+####################################################################
+
+#========================================================
+     FUTURE FUNCTIONS
+#========================================================
+
+- (TAB2) Change the z-axis between "z", "zeta" and "number of poloidal turns", the data is already
+  there but there is no option to switch between the axis.
+
+
+#========================================================
+     CURRENT FUNCTIONS
+#========================================================
+
+            SHORTCUTS 
+            ---------
+  * CTRL+S or F1 will replot the graph.
+
+
+            TAB 1: SELECTED FILES   
+            ---------------------
+
+  * Select input files and sort them by simulations and experiments to create a research object.
+        - Click "Select simulations" to select input files one by one, or a bunch with ctrl+click
+        - Click "Select folders" to select all the input files in a given folder, to select the files
+          go inside the folder then click "OK", the prompt will open again to allow you to select 
+          more folders, when all the folders have been selected click "Cancel". Unfortunatly tkinter
+          does not offer an easy way to select multiple folders at once without designing your own
+          file selection menu. (TODO: OPTIONAL)
+        - Click "Clear simulations" to remove all the selected files and to start again. 
+  * Save research objects to "stellapy/config/research" by clicking the "Save research" button.
+  * Load a saved research object from "stellapy/config/research" by clicking the "Load research" button.
+  * A simulation is a group of input files that are identical except for the modes (kx,ky), or that are identical
+    besides the restart parameters or the resolution settings, since we tweak the resolution to obtain convergence.
+        - This allows us to run 1 mode per file but still consider these input files to be one simulation. 
+        - This allows is to merge the reruns of a nonlinear simulation.
+  * An experiment is a group of simulations that are linked for some reason (see next point). This allows
+    us to create two dimensions in plots: the line color/label/style indicates experiments and the marker
+    color/label/style defines simulations. 
+        - E.g. we have two shots of wendelstein 7-X (= two line styles) and 4 radial positions (= 4 markers).
+  * The division in experiments can be controlled by toggling ("Ignore resolution", "Include resolution")
+    and by choosing the number of varied parameters in the simulations. Moreover, by right-clicking the 
+    varied parameters button we can force the code to consider files in a different folder a different experiment. 
+        - When scanning fprim and tprim we have 3 varied parameters (feprim, fiprim and tiprim) and we ignore the resolution. 
+        - When looking at the influence of the resolution by scanning delta t we have 1 varied parameter and we 
+          include the division based on the resolution parameters. 
+        - We can compare scans of dt for different varied parameters, by choosing "1 folder =  1 experiment".
+  * Progress bar shows what is happening in the backend, when this is frozen, an error occured which is displayed
+    on the command prompt, therefore it is recommanded to run from the command prompt and not as a desktop application.
+  * The right side of the tab shows the basic input parameters which are read from all the selected input files. The
+    data in gray represents the default values which are set by stella itself. The black values indicate values that 
+    are set by the input files and which do not equal the default values of stella. The red values are the values that
+    differ between the selected input files. In the frame "All parameters" one can toggle between the namelists that are 
+    present in stella to view all the possible variables in stella. Some namelists are split in "namelist" and
+    "namelust_more" since they were too long. The top right shows the species that are present and each species
+    is accesible by clicking the tab. Although adiabatic electrons are not technically a species, their temperature
+    can be calculated based on the "tite" variable which is show in the "adiabatic electrons" tab. Hovering over
+    the variables will give a small explanation of their use and meaning (not complete yet.)
+        - The variables display allows one to quickly check the input parameters, more specifcally the modes, 
+          gradients and the resolution. As well as seeing the difference between the input files.
+
+            TAB 2: PLASMA PROFILES   
+            ----------------------
+  * No documentation written yet.
+
+
+            TAB 3: Linear convergence   
+            -------------------------
+  * No documentation written yet.
+    
+
+            TAB 4: Linear Analysis   
+            ----------------------
+  * No documentation written yet.
+
+
+            TAB 5: Nonlinear Analysis   
+            -------------------------
+  * The plotted data can be selected by choosing the experiment and simulation in the labelframe "Simulations"
+  * The fluxes are plotted versus time on the left, the 
+
+
+            TAB 6: Videos  
+            -------------
+  * This tab is empty for now. 
+
+
+#========================================================
+     MODIFICATIONS
+#========================================================
+
+26/01/2021
+  * Moved the time frame to calculate the saturated fluxes in to the simulation.ini file, this way it
+    only needs to be set properly once and the time frame will be remembered. 
+  * Added a normalization option for the nonlinear fluxes that normalizes the fluxes by their saturated
+    value and the time by the time of the end of the ramp-up. This way the shape of the fluxes can be 
+    easily compared. E.g. to see how resolution affects the saturation. 
+
+16/12/2020
+  * Added the bash command kyscan as a pythons script with a bash interface.
+
+15/12/2020
+  * Changed the open files and open directories dialogs to be more pretty, efficient and to be able
+    to select multiple folders at once with CTRL+CLICK or CTRL+A.
+
+11-13/12/2020
+  * STELLA: to unload module hfd5 add a --force flag
+  * Remoddeled TBA4 to have one option frame for each of the three graphs to have it more organized.
+  * Added the option to plot gamma/k_y**2 to TAB4
+  * A folder can be deleted by pressing "delete" in the simulations list
+  * Show the marker and line label for each input_file in the simulations list
+  * Sort experiments based on a stella knob and key by richtclicking the "varied parameters" button.
+
+10/12/2020
+  * Add the possibility to plot z-data = [gamma, omega, ky] on TAB5
+  * Add interpolation of z-data on TAB5
+
+09/12/2020
+
+  * Changed the mode identifier in the simulation.ini file
+  * Fixed a big with the right simulation not showing up
+  * Fixed nonlinear diagnostics tab (TAB5)
+  * Add possibility to manually choose time frames for the calculation of the saturated flux
+
+03/12/2020
+
+  * Changed the default directory to save figures to CONFIG[Paths][Figures] instead of "~/"
+  * Fixed a bug on TAB2 where the correct simulation was not showing.
+  * Fixed a bug on TAB3 where the xlims and ylims would break when encountering NaNs
+  * Fixed a bug on TAB3 where the correct experiments/simulations were not showing.
+
+02/12/2020:     
+
+  * Write linear data and stable/unstable and converged/unconverged modes to a file called simulation.ini
+    This will speed up the plotting since this data requires some time consuming calculations that only
+    have to be executed once and return a very small amount of data which can be easily saved in a .ini file.
+    In order to prevent rewriting this file, the last modified data of the most recent file will be saved in the 
+    .ini file, comparing this each time the .ini file is read will be able to determine whether the data needs
+    to be recalculated and rewritten. E.g. when the resolution of a mode is changed, the files are modified, the 
+    last modified data is updated and therefore the simulation.ini file will be rewritten.
+  * The simulation.ini file also allows to manually remove modes along x and y by adding them to ["remove_k_modes"]
+  * Fixed the potential versus z.
+
+01/12/2020:  
+
+  * Wrote a function to popup warning messages and made sure it poppes up in the middle of the screen, 
+    even when using dual screens.
+  * Added error bars to the linear spectra plots on TAB3
+  * Add the functionality to remove specific modes from the spectra by listing them in the folder.
+  * Simplified the conversion of (kx,ky) data to a one dimensional scan of data.
+  * Fixed a bug on TAB2 where the correct experiment was not showing.
+
+

@@ -1,0 +1,4 @@
+# simplest example of your local makefile
+
+COMPILER= set your compiler
+include Makefile.$(COMPILER)

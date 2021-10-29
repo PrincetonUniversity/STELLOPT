@@ -1,0 +1,53 @@
+# Makefile for Max OS X
+# Maintainer: edmund.highcock@physics.ox.ac.uk
+
+#Before building install these packages (e.g. use Macports or Fink):
+#gcc
+#openmpi
+#openmpi-devel
+#fftw
+#fftw-mpi
+#fftw-devel
+
+#Build and install netcdf in /usr/local/netcdf_static (built statically - do not enable shared):
+
+# Download netcdf source
+# cd <path-to-netcdf-sourcedir>
+# sudo mkdir /usr/local/netcdf_static
+# ./configure --prefix=/usr/local/netcdf_static
+# sudo make install
+
+COMPILER=gnu-gfortran
+include Makefile.$(COMPILER)
+
+USE_LOCAL_SPFUNC=on
+
+#override USE_FFT = fftw
+
+ifeq ($(USE_FFT),fftw3)
+	FFT_LIB = -L$(FFTW_LIB_DIR) -lfftw3
+	FFT_INC = -I$(FFTW_INC_DIR)
+endif
+
+ifdef USE_NETCDF
+	NETCDF_INC = -I$(NETCDF_INC_DIR)
+	NETCDF_LIB = -L$(NETCDF_LIB_DIR) -lnetcdff
+endif
+
+ifdef USE_SFINCS
+      SFINCS_LIB = -L$(SFINCS_DIR) -lsfincs
+      SFINCS_INC = -I$(SFINCS_DIR)
+
+      #include ${PETSC_DIR}/lib/petsc/conf/variables
+      #include $(PETSC_DIR)/lib/petsc/conf/rules
+
+      PETSC_INC = -I$(PETSC_DIR)/include
+      PETSC_LIB = -L$(PETSC_DIR)/lib -lpetsc
+
+      HDF5_LIB = -L$(HDF5_DIR) -lhdf5hl_fortran -lhdf5_fortran
+endif
+
+#ifdef USE_VMEC
+#      LIBSTELL_LIB = -L$(LIBSTELL_DIR) -lmini_libstell
+#      LIBSTELL_INC = -I$(LIBSTELL_DIR)
+#endif

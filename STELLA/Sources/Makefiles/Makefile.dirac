@@ -1,0 +1,74 @@
+# Host: Marconi
+
+helplocal:
+		# GK_SYSTEM = marconi
+		# You are using  Makefile.marconi to build gs2 executables on MARCONI.
+
+define STANDARD_SYSTEM_CONFIGURATION
+module purge;\
+module load intel/mkl/2020.2;\
+module load intel/impi/2020.2/intel;\
+module load openblas/0.2.15;\
+module load netlib-scalapack-2.0.2-intel-17.0.4-wwvkcj6;\
+module load szip-2.1.1-gcc-5.4.0-6vkwvdj;\
+module load zlib/1.2.11;\
+module load hdf5-1.10.4-intel-17.0.4-swn7n43;\
+module load netcdf-4.4.1.1-intel-17.0.4-zysrbqw;\
+module load netcdf-fortran-4.4.4-intel-17.0.4-cesnirf;\
+module load fftw-3.3.6-pl2-intel-17.0.4-qssvkuw;\
+export MAKEFLAGS='-j -IMakefiles'
+endef
+
+COMPILER=intel
+CHIP=skylake
+
+USE_FFT = fftw3
+USE_NETCDF = on
+
+# This line disables the automated checking
+# of the intel version which is slow
+DBLESIZEOPT = -double-size 128
+
+include Makefile.$(COMPILER)
+
+FC=ifort
+CC=icc
+ifdef USE_MPI
+	MPIFC=mpiifort
+	MPICC=mpiicc
+endif
+
+ifeq ($(USE_FFT),fftw3)	
+	FFT_INC = 
+	FFT_DIR = $(FFTW_HOME)
+	FFT_LIB = -lfftw3 #-lfftw3_mpi
+        #CPPFLAGS   += -I $(FFTW_INC_DIC)
+endif	
+
+USE_HDF5=
+
+#Note the module system sets some env vars for us
+#unfortunately some clash with values we use
+ifdef USE_NETCDF
+  NETCDF_LIB= -lnetcdff -lnetcdf
+endif
+
+ifdef USE_LAPACK
+  LAPACK_LIB = -mkl
+endif
+
+ifdef USE_SFINCS
+      SFINCS_LIB = -L$(SFINCS_DIR) -lsfincs
+      SFINCS_INC = -I$(SFINCS_DIR)
+
+      PETSC_INC = -I$(PETSC_HOME)/include -I$(LAPACK_HOME)/include -I$(MKL_HOME)/include
+      PETSC_LIB = -L$(PETSC_HOME)/lib -lpetsc -L$(LAPACK_HOME)/lib -llapack -L$(MKL_HOME)/lib/intel64 -lmkl_intel_lp64
+
+      HDF5_INC = -I$(HDF5_HOME)/include
+      HDF5_LIB = -L$(HDF5_HOME)/lib -lhdf5hl_fortran -lhdf5_fortran -lhdf5 -lhdf5_hl
+else
+      PETSC_INC = 
+      PETSC_LIB = 
+      HDF5_INC = 
+      HDF5_LIB = 
+endif
