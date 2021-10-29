@@ -2093,7 +2093,7 @@
       DOUBLE PRECISION, INTENT(in)    ::  zeta_p
       DOUBLE PRECISION, INTENT(out)   ::  kappa2, kappa2v2
       INTEGER, INTENT(inout)     ::  ier
-      DOUBLE PRECISION, INTENT(out),OPTIONAL   :: diagnostic(1,72) 
+      DOUBLE PRECISION, INTENT(out),OPTIONAL   :: diagnostic(1,75) 
       real*8 :: rho_val
       real*8 :: R, d2R_dudv, d2R_duds, d2R_dvds
       real*8 :: Z, d2Z_dudv, d2Z_duds, d2Z_dvds
@@ -2108,6 +2108,8 @@
       real*8 :: B_cyl2(1,3)
       real*8 :: esubs(1,3), esubu(1,3), esubv(1,3)
       real*8 :: es(1,3), eu(1,3), ev(1,3), grad_psi(1,3), binormal(1,3)
+      real*8 :: mod_esubs, mod_esubu, mod_esubv, dmod_esubu_dv
+      real*8 :: dmod_esubv_du
       real*8 :: binormal_xyz(1,3), grad_psi_xyz(1,3)
       real*8 :: subpart1(1,3), subpart5(1,3), subpart6(1,3), subpart7(1,3)
       real*8 :: subpart6v2(1,3)
@@ -2181,25 +2183,27 @@
          R = fval4(1,1)
          !R = fval4(1,0)
          R_grad(1,1) = fval4(1,2); R_grad(1,2) = fval4(1,3); R_grad(1,3) = fval4(1,4)
-         !d2R_dudv = fval4(1,5); d2R_duds = fval4(1,6); d2R_dvds = fval4(1,7)
+         d2R_dudv = fval4(1,5); d2R_duds = fval4(1,6); d2R_dvds = fval4(1,7)
 
          CALL r8fvtricub(ict2, 1, 1, fval4, i, j, k, xparam, yparam, zparam, &
                             hx, hxi, hy, hyi, hz, hzi, &
                             Z4D(1,1,1,1), nx1, nx2, nx3)
          Z = fval4(1,1)
          Z_grad(1,1) = fval4(1,2); Z_grad(1,2) = fval4(1,3); Z_grad(1,3) = fval4(1,4)
-         !d2Z_dudv = fval4(1,5); d2Z_duds = fval4(1,6); d2Z_dvds = fval4(1,7)
+         d2Z_dudv = fval4(1,5); d2Z_duds = fval4(1,6); d2Z_dvds = fval4(1,7)
 
          !   Convert radial gradients from d/drho to d/ds
          !   phi_Ns = rho^2; ds/drho = 2*rho; drho/ds = 1/(2*rho) = 0.5/rovera
          !   - use rovera from above
          !   gradX(1) = dX/du, gradX(2) = dX/dv, gradX(3) = dX/dsqrt(s)
          R_grad(1,3) = R_grad(1,3) / (2.0 * rho_val)
-         !d2R_duds = d2R_duds / (2.0 * rho_val)
-         !d2R_dvds = d2R_dvds  / (2.0 * rho_val)
+         d2R_duds = d2R_duds / (2.0 * rho_val)
+         d2R_dvds = d2R_dvds  / (2.0 * rho_val) !* nfp
+         !d2R_dudv = d2R_dudv * nfp
          Z_grad(1,3) = Z_grad(1,3) / (2.0 * rho_val)
-         !d2Z_duds = d2Z_duds / (2.0 * rho_val)
-         !d2Z_dvds = d2Z_dvds  / (2.0 * rho_val)
+         d2Z_duds = d2Z_duds / (2.0 * rho_val)
+         d2Z_dvds = d2Z_dvds  / (2.0 * rho_val) !* nfp
+         !d2Z_dudv = d2Z_dudv * nfp
 
 
 
@@ -2245,15 +2249,18 @@
 
             esubv(1,1) = R_grad(1,2)    ! dR/dv
             !esubv(2) = one
-            esubv(1,2) = one/nfp         ! dPhi/dv:  v= nfp *mod(phi,2*pi/nfp) -> dv ~ nfp * dphi
+            !esubv(1,2) = (one/nfp)     ! dPhi/dv:  v= nfp *mod(phi,2*pi/nfp) -> dv ~ nfp * dphi
+            esubv(1,2) = R/nfp     ! dPhi/dv:  v= nfp *mod(phi,2*pi/nfp) -> dv ~ nfp * dphi
             esubv(1,3) = Z_grad(1,2)    ! dZ/dv
 
             !  esubv x esubs = (R) esubv(2) * esubs(3) - esubv(3) * esubs(2) +
             !                 (Phi) esubv(3) * esubs(1) - esubv(1) * esubs(3) +
             !                  (Z) esubv(1) * esubs(2) - esubv(2) * esubs(1)
-            sqrtg = esubu(1,1) * (esubv(1,2) * esubs(1,3)) +  &
-                    esubu(1,2) * (esubv(1,3) * esubs(1,1)) +  &
+            sqrtg = esubu(1,1) * (esubv(1,2) * esubs(1,3) ) +  &
                     esubu(1,3) * (-esubv(1,2) * esubs(1,1))
+                   ! Everything else involves a zero.
+                   ! esubu(1,2) * (esubv(1,3) * esubs(1,1) - &
+                   !               esubv(1,1) * esubs(1,3)) +  &
 
 
             CALL mycross(esubu,esubv,es)
@@ -2266,37 +2273,80 @@
             eu = eu/sqrtg
             ev = ev/sqrtg
             ! gradS is grad psi
-            grad_psi = es * phiedge
+            !grad_psi = es * phiedge
             ! grad_psi is for the points on a single field period (not full torus)
 
-         ! Now, build combine the terms
-         ! (B cross grad(Psi)/|B cross grad(Psi)| ) dot
-         !          [ (B^u grad(v) + B^v grad(u)) (dB_v/du - dB_u/dv)
-         !             + grad(s) [ B^v (dB_s/dv-dB_v/ds) + B^u (dB_s/du -dB_u/ds) ] ]
-         ! Three of the terms can be expanded in vmec coordinates:
-         ! dB_v/du - dB_u/dv = dB_R/du dR/dv - dB_R/dv dR/du +
-         !                     dB_Z/du dZ/dv - dB_Z/dv dZ/du +
-         !                     (1/NFP) dB_Phi/du
-         ! dB_s/dv-dB_v/ds  =   dB_R/dv dR/ds - dB_R/ds dR/dv + 
-         !         dB_Z/dv dZ/ds - dB_Z/ds dZ/dv - (1/NFP) dB_phi/ds
-         ! dB_s/du-dB_u/ds =  dB_R/du dR/ds - dB_R/ds R/du +
-         !         dB_Z/du dZ/ds - dB_Z/ds dZ/du
+           ! adjusting the phi-component by 1/R
+           es(1,2) = es(1,2) / R
+           eu(1,2) = eu(1,2) / R
+           ev(1,2) = ev(1,2) / R
+
+           mod_esubs = sqrt(esubs(1,1)**2 + esubs(1,2)**2 + esubs(1,3)**2)
+           mod_esubu = sqrt(esubu(1,1)**2 + esubu(1,2)**2 + esubu(1,3)**2)
+           mod_esubv = sqrt(esubv(1,1)**2 + esubv(1,2)**2 + esubv(1,3)**2)
+
+           dmod_esubu_dv = (one/mod_esubu) * (R_grad(1,1)*d2R_dudv + &
+                                        Z_grad(1,1)*d2Z_dudv   )
+           dmod_esubv_du = (one/mod_esubv) * (R_grad(1,2) * d2R_dudv + &
+                                              Z_grad(1,2) * d2Z_dudv)
+
+           ! Now, build combine the terms
+           ! (B cross grad(Psi)/|B cross grad(Psi)| ) dot
+           !          [ (B^u grad(v) + B^v grad(u)) (dB_v/du - dB_u/dv)
+           !             + grad(s) [ B^v (dB_s/dv-dB_v/ds) + B^u (dB_s/du -dB_u/ds) ] ]
+           ! Three of the terms can be expanded in vmec coordinates:
+           ! dB_v/du - dB_u/dv = dB_R/du dR/dv - dB_R/dv dR/du +
+           !                     dB_Z/du dZ/dv - dB_Z/dv dZ/du +
+           !                     (1/NFP) dB_Phi/du
+           ! dB_s/dv-dB_v/ds  =   dB_R/dv dR/ds - dB_R/ds dR/dv + 
+           !         dB_Z/dv dZ/ds - dB_Z/ds dZ/dv - (1/NFP) dB_phi/ds
+           ! dB_s/du-dB_u/ds =  dB_R/du dR/ds - dB_R/ds R/du +
+           !         dB_Z/du dZ/ds - dB_Z/ds dZ/du
 
 
-         !ok subpart1 = B^u grad(v) + B^v grad(u)
-         subpart1 = Bsupu * ev + Bsupv * eu
-         !subpart2 = dB_v/du - dB_u/dv
-         !ok dB_v/du - dB_u/dv = dB_R/du dR/dv - dB_R/dv dR/du +
-         !                     dB_Z/du dZ/dv - dB_Z/dv dZ/du +
-         !                     (1/NFP) dB_Phi/du
-         subpart2 = dB_R_du * R_grad(1,2) - dB_R_dv * R_grad(1,1) + &
-                    dB_Z_du * Z_grad(1,2) - dB_Z_dv * Z_grad(1,1) + &
-                    dB_Phi_du / nfp
+           !ok subpart1 = B^u grad(v) + B^v grad(u)
+           !subpart1 = Bsupu * ev/|esubu| - Bsupv * eu/|esubv|
+           subpart1 = Bsupu * ev / mod_esubu + Bsupv * eu / mod_esubv
+           !subpart2 = dB_v/du - dB_u/dv
+           !ok dB_v/du - dB_u/dv = dB_R/du dR/dv - dB_R/dv dR/du +
+           !                     dB_Z/du dZ/dv - dB_Z/dv dZ/du +
+           !                     (1/NFP) dB_Phi/du
+           !subpart2 = dB_R_du * R_grad(1,2) - dB_R_dv * R_grad(1,1) + &
+           !           dB_Z_du * Z_grad(1,2) - dB_Z_dv * Z_grad(1,1) + &
+           !           dB_Phi_du / nfp 
+           !new dB_v/du - dB_u/dv = R* dB_R/du dR/dv + R* B_R d2R/(dudv) +
+           !                    R* dB_Z/du dZ/dv + (R-1)*B_Z d2Z/(dudv)  +
+           !                    R*  (1/NFP) dB_Phi/du +
+           !                    B_Z * dR/du dZ/dv + B_Phi/NFP dR/du
+           !                   - dB_R/dv dR/du - dB_Z/dv dZ/du 
+           !
+           !subpart2 = R * dB_R_du * R_grad(1,2) + R * B_R * d2R_dudv + &
+           !           R * dB_Z_du * Z_grad(1,2) + (R-1) * B_Z * d2Z_dudv + &
+           !           R * dB_Phi_du / nfp  + &
+           !           B_Z * R_grad(1,1) * Z_grad(1,2) + &
+           !           B_Phi * R_grad(1,1) / nfp + &
+           !           - dB_R_dv * R_grad(1,1) - dB_Z_dv * Z_grad(1,1) 
 
-     ! new subpart3 = B^v * ( dB_s/dv-dB_v/ds)
-     !             = B^v*[  dB_R/dv dR/ds - dB_R/ds dR/dv + 
-     !    dB_Z/dv dZ/ds - dB_Z/ds dZ/dv - (1/NFP) dB_phi/ds]
-     ! 
+           subpart2 = (mod_esubv * dB_R_du * R_grad(1,2) + &
+                       mod_esubv * B_R * d2R_dudv + &
+                       mod_esubv * dB_Z_du * Z_grad(1,2) + &
+                       mod_esubv * B_Z * d2Z_dudv + &
+                       mod_esubv * dB_Phi_du / nfp  + &
+                       B_R * dmod_esubv_du * R_grad(1,2) + &
+                       B_Z * dmod_esubv_du * Z_grad(1,2) + &
+                       B_Phi * dmod_esubv_du / NFP) + &
+                      -(mod_esubu * dB_R_dv * R_grad(1,1) + &
+                       mod_esubu * B_R * d2R_dudv + &
+                       mod_esubu * dB_Z_dv * Z_grad(1,1) + &
+                       mod_esubu * B_Z * d2Z_dudv + &
+                       B_R * dmod_esubu_dv * R_grad(1,1) + &
+                       B_Z * dmod_esubu_dv * Z_grad(1,1))
+
+
+       ! new subpart3 = B^v * ( dB_s/dv-dB_v/ds)
+       !             = B^v*[  dB_R/dv dR/ds - dB_R/ds dR/dv + 
+       !    dB_Z/dv dZ/ds - dB_Z/ds dZ/dv - (1/NFP) dB_phi/ds]
+       ! 
          subpart3 = Bsupv * (dB_R_dv * R_grad(1,3) - &
                              dB_R_ds * R_grad(1,2) + &
                              dB_Z_dv * Z_grad(1,3)  - &
@@ -2342,14 +2392,15 @@
          !B_cyl2(1,1) =  B_X_v2 * cos(v_val) + B_Y_v2 * sin(v_val) ! BR
          !B_cyl2(1,2) = -B_X_v2 * sin(v_val) + B_Y_v2  * cos(v_val) !  BPhi
          B_cyl2(1,3) =  B_Z_v2 ! Bz
-         es(1,2) = es(1,2) / R
          CALL mycross(es, B_cyl, binormal)
-         es(1,2) = es(1,2) * R
+         !es(1,2) = es(1,2) * R
          !CALL mycross(es, B_cyl2, binormal)
          norm_binormal = sqrt(binormal(1,1)**2 + binormal(1,2)**2 + &
                               binormal(1,3)**2)
          subpart7 = binormal /( norm_binormal )
          ! ok - geodesic curvature
+         subpart6 = subpart6 / (modB**2)
+         subpart6v2 = subpart6v2 / (modB**2)
          kappa2 = subpart7(1,1) * subpart6(1,1) + &
                   subpart7(1,2) * subpart6(1,2) + &
                   subpart7(1,3) * subpart6(1,3)
@@ -2433,6 +2484,9 @@
             diagnostic(1,70) = subpart6v2(1,3)
             diagnostic(1,71) = zeta_p
             diagnostic(1,72) = kappa_normal
+            diagnostic(1,73) = d2R_dudv
+            diagnostic(1,74) = d2R_duds
+            diagnostic(1,75) = d2R_dvds
 
          END IF
 
