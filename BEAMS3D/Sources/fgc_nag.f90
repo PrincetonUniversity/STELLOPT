@@ -10,6 +10,7 @@
 !                    Studies for Stellarators/Heliotrons" Nuclear Fusion
 !                    30, p.997 (1990)
 !
+!              https://mathworld.wolfram.com/CylindricalCoordinates.html
 !-----------------------------------------------------------------------
       SUBROUTINE fgc_nag(t,q,qdot)
 !-----------------------------------------------------------------------
@@ -110,27 +111,29 @@
                          hr(i),hri(i),hp(j),hpi(j),hz(k),hzi(k),&
                          POT4D(1,1,1,1),nr,nphi,nz)
          Efield(1:3) =-fvalE(1,1:3)
-         ! Fix gradients
+         ! Fix grad(B) & grad(E)
          gradb(2)    = gradb(2)*rinv
+         Efield(2)   = Efield(2)*rinv
+         ! Simplification for Conv. Operator below
          gradbr(2)   = gradbr(2)*rinv
          gradbphi(2) = gradbphi(2)*rinv
          gradbz(2)   = gradbz(2)*rinv
-         Efield(2)   = Efield(2)*rinv
          ! Calculated some helpers
          binv    = one/modb_temp
          cinv    = one/mycharge
-         ! Normalization
+         ! Normalization \vec{B}/|B|
          normb(1) = br_temp*binv
          normb(2) = bphi_temp*binv
          normb(3) = bz_temp*binv
          ! (b.grad)B (https://mathworld.wolfram.com/ConvectiveOperator.html)
          bdgB(1) = normb(1)*gradbr(1)   + normb(2)*gradbr(2)   + normb(3)*gradbr(3)   - normb(2)*bphi_temp*rinv
-         bdgB(2) = normb(1)*gradbphi(1) + normb(2)*gradbphi(2) + normb(3)*gradbphi(3) - normb(2)*br_temp*rinv
+         bdgB(2) = normb(1)*gradbphi(1) + normb(2)*gradbphi(2) + normb(3)*gradbphi(3) + normb(2)*br_temp*rinv
          bdgB(3) = normb(1)*gradbz(1)   + normb(2)*gradbz(2)   + normb(3)*gradbz(3)
+         ! cross(b,(b.grad)B)
          bxbdgB(1) = normb(2)*bdgB(3) - normb(3)*bdgB(2)
          bxbdgB(2) = normb(3)*bdgB(1) - normb(1)*bdgB(3)
          bxbdgB(3) = normb(1)*bdgB(2) - normb(2)*bdgB(1)
-         ! ExB/(B*B)
+         ! cross(E,B)/(B*B)=cross(E,b)/B
          ExB(1) = Efield(2)*normb(3) - Efield(3)*normb(2)
          ExB(2) = Efield(3)*normb(1) - Efield(1)*normb(3)
          ExB(3) = Efield(1)*normb(2) - Efield(2)*normb(1)
@@ -138,17 +141,21 @@
          ! Equations
          A       = moment*binv*cinv
          B       = mymass*vll*vll*binv*binv*cinv
-
+         ! cross(b,grad(B))
          qdot(1) = normb(2)*gradb(3)-normb(3)*gradb(2)
          qdot(2) = normb(3)*gradb(1)-normb(1)*gradb(3)
          qdot(3) = normb(1)*gradb(2)-normb(2)*gradb(1)
+         ! Full Equation
          qdot(1:3) = A*qdot(1:3) + B*bxbdgB(1:3) + vll*normb(1:3) + ExB(1:3)
-          
-         qdot(4) = -moment*( normb(1)*gradb(1) + normb(2)*gradb(2) + normb(3)*gradb(3) )
-!                  +mycharge*(normb(1)*Efield(1) + normb(2)*Efield(2) + normb(3)*Efield(3) )
 
-         qdot(2) = qdot(2)*rinv
+         qdot(4) = -moment*( normb(1)*gradb(1) + normb(2)*gradb(2) + normb(3)*gradb(3) )
+!        This line is only if we have E.B forces
+!                  +mycharge*(normb(1)*Efield(1) + normb(2)*Efield(2) + normb(3)*Efield(3) )
          qdot(4) = qdot(4)/mymass
+         
+         ! Because dphi/dt = vphi/R !rad/s
+         qdot(2) = qdot(2)*rinv
+
       ELSE
          qdot(1:4) = 0
       END IF
