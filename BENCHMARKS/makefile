@@ -170,6 +170,13 @@ test_beams3d_multiion:
 	@cd $(BEAMS3D_TEST_DIR); ./test_ORBITS_multiion.py
 	@echo ""
 
+test_beams3d_fullorbit:
+	@cd $(BEAMS3D_TEST_DIR); rm -f *.h5 *.txt; 
+	@echo $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_fullorbit -plasma
+	@cd $(BEAMS3D_TEST_DIR); $(MPI_RUN) $(MPI_RUN_OPTS_SM) $(MYHOME)/xbeams3d -vmec ORBITS_fullorbit -plasma
+	#@cd $(BEAMS3D_TEST_DIR); ./test_beams3d_fullorbit.py
+	@echo ""
+
 test_stellopt:
 	@echo "Beginning testing of STELLOPT"
 	$(MAKE) test_stellopt_lmdif
