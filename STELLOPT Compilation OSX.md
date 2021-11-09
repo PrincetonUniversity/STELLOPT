@@ -21,6 +21,8 @@ path to the variable MACPORTS in the setup script (and rezip).
 3\. Use MacPorts to install your packages. Note you should probably used
 gcc7 or gcc8 and replace the gccX\'s with the consistent version. I\'ve
 also chosen OpenMPI but the sources could also be built with MPICH.
+Please note that as of GCC10 the flag `-fallow-argument-mismatc` must be
+added at compile time.
 
     <===OSX Version===>
     10.14 Mojave Something appears to be broken in scalapack build (GCC7/GCC8/GCC9)
@@ -28,7 +30,7 @@ also chosen OpenMPI but the sources could also be built with MPICH.
     #  gcc7  : Appears to be working
     #  gcc8  : Problems with PetSc so no GENE/SFINCS
     #  gcc9  : Problems with PetSc so no GENE/SFINCS
-    #  gcc10 : Not tested 
+    #  gcc10 : Appears to be working
     sudo port install gccX                   (gccX should be gcc7 or gcc8 or another gcc variant)
     sudo port install openmpi-gccX +fortran
     sudo port select --set mpi openmpi-gccX-fortran
@@ -37,7 +39,6 @@ also chosen OpenMPI but the sources could also be built with MPICH.
     sudo port install hdf5 +fortran +gccX +hl +openmpi
     sudo port install netcdf-fortran +gccX +openmpi
     sudo port install fftw-3 +gccX +openmpi
-    sudo port install pgplot +gccX
     sudo port install OpenBLAS +gccX +lapack +native
     sudo port install scalapack +gccX +openmpi +openblas
     # The following are needed for TRAVIS
@@ -49,29 +50,21 @@ also chosen OpenMPI but the sources could also be built with MPICH.
     sudo port install python38 +gccX
     sudo port select --set python python27
     sudo port select --set python3 python37
+    sudo port install py38-scipy +gccX +openblas
+    # For GUI support
     sudo port install py38-pyqt4 +gccX     (Note there is a weird issue with dbus requireing the port to be force installed)
     sudo port install py38-matplotlib +dvipng +pyside +qt4 +tkinter +gccX
     sudo port install py38-h5py +gccX +openmpi
     # The following are needed for GENE
     #sudo port install petsc +gccX +openmpi +openblas -accelerate +metis +mumps +parmetis +suitesparse +superlu_dist +complex
     #sudo port install slepc +gccX +openmpi +openblas +arpack -accelerate
-    # NCARG has in issue with ESMF, but you don't need it for STELLOPT just XGTOVMI
-    # I placed it here since it builds upon GSL and FFTW-3
-    #sudo port install ncarg +gccX +openmpi
 
-4\. Now the NCARG package broken as of this writing but there\'s a
-workaround. Download the tarball from the
-[NCAR website](http://www.ncarg.ucar.edu/) the place the tarball in the
-appropriate location
-([see ticket \#43615](https://trac.macports.org/ticket/42541)). Then
-rerun the port install command for ncarg.
-
-5\. Now pull stellopt with the command 
+4\. Now pull stellopt with the command 
 
     git clone git@github.com:PrincetonUniversity/STELLOPT.git
 
 
-6\. Set the environement variable
+5\. Set the environement variable
 
     export MACHINE=macports
     build_all
