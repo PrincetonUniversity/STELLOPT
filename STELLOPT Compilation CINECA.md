@@ -10,16 +10,17 @@ Marconi
 -----
 
     module load git
-    module load intel
-    module load intelmpi
-    module load mkl
+    module load intel/pe-xe-2018--binary
+    module load intelmpi/2018--binary
+    module load mkl/2018--binary
     module load zlib/1.2.8--gnu--6.1.0
     module load szip/2.1--gnu--6.1.0
     module load hdf5/1.10.4--intelmpi--2018--binary
-    module load netcdf
-    module load netcdff netcdf-cxx4
-    module load fftw
-    module load petsc
+    module load netcdf/4.6.1--intelmpi--2018--binary
+    module load netcdff/4.4.4--intelmpi--2018--binary
+    module load netcdf-cxx4/4.3.0--intelmpi--2018--binary
+    module load fftw/3.3.7--intelmpi--2018--binary 
+    module load petsc/3.13.3--intelmpi--2018--binary
 
 General Notes
 -------------
