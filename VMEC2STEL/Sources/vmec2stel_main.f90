@@ -749,7 +749,7 @@
                   DO n = -ntor,ntor
                      DO m = 0, mpol
                          IF (abs(rbc_temp(n,m)) > 0.0 .or. abs(zbs_temp(n,m)) > 0.0) &
-                         WRITE(6,'(2(A,I2,A,I2,A,E22.12))') '  RBC(',n,',',m,') = ',rbc_temp(n,m),'  ZBS(',n,',',m,') = ',zbs_temp(n,m)
+                         WRITE(6,'(2(A,I2,A,I2,A,E22.12))') '!  RBC(',n,',',m,') = ',rbc_temp(n,m),'  ZBS(',n,',',m,') = ',zbs_temp(n,m)
                      END DO
                   END DO
                END IF
