@@ -14,7 +14,7 @@
   
   SHELL = /bin/sh
   PWD1 = `pwd`
-  PRECOMP:= cpp-mp-9 -traditional-cpp -E -P -C -DMACOSX
+  PRECOMP:= cpp-mp-10 -traditional-cpp -E -P -C -DMACOSX
   COMPILE = gfortran
   COMPILE_FREE = gfortran -ffree-form -ffree-line-length-none \
                           -ffixed-line-length-none
@@ -25,8 +25,8 @@
 #######################################################################
 #            Define Compiler Flags
 #######################################################################
-  FLAGS_R = -O2 -g -fexternal-blas -fbacktrace -fcheck=all
-  FLAGS_D = -O0 -g -fexternal-blas -fbacktrace -fcheck=all -fbounds-check
+  FLAGS_R = -O2 -g -fexternal-blas -fbacktrace -fcheck=all,no-array-temps -fallow-argument-mismatch
+  FLAGS_D = -O0 -g -fexternal-blas -fbacktrace -fcheck=all -fbounds-check -fallow-argument-mismatch
   LIBS    = -L/usr/lib -L/opt/local/lib -lopenblas -lscalapack
 
 #######################################################################
