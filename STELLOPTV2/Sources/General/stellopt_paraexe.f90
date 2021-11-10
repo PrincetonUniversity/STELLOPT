@@ -74,6 +74,9 @@
             mu_start_in, charge_in, mass_in, t_end_in, Zatom_in, &
             TE_AUX_S_BEAMS => TE_AUX_S, TE_AUX_F_BEAMS => TE_AUX_F, &
             NE_AUX_S_BEAMS => NE_AUX_S, NE_AUX_F_BEAMS => NE_AUX_F, &
+            NI_AUX_S_BEAMS => NI_AUX_S, NI_AUX_F_BEAMS => NI_AUX_F, &
+            NI_AUX_Z_BEAMS => NI_AUX_Z, NI_AUX_M_BEAMS => NI_AUX_Z, &
+            NION_BEAMS => NION, &
             TI_AUX_S_BEAMS => TI_AUX_S, TI_AUX_F_BEAMS => TI_AUX_F, nprocs_beams, &
             ZEFF_AUX_S_BEAMS => ZEFF_AUX_S, ZEFF_AUX_F_BEAMS => ZEFF_AUX_F
       USE beams3d_lines, ONLY: nparticles_beams => nparticles, R_lines, Z_lines,&
@@ -349,6 +352,10 @@
                CALL MPI_BCAST(TE_AUX_F_BEAMS,nte,MPI_REAL8, master, MPI_COMM_MYWORLD,ierr_mpi)
                CALL MPI_BCAST(NE_AUX_S_BEAMS,nne,MPI_REAL8, master, MPI_COMM_MYWORLD,ierr_mpi)
                CALL MPI_BCAST(NE_AUX_F_BEAMS,nne,MPI_REAL8, master, MPI_COMM_MYWORLD,ierr_mpi)
+               CALL MPI_BCAST(NI_AUX_S_BEAMS,nne,MPI_REAL8, master, MPI_COMM_MYWORLD,ierr_mpi)
+               CALL MPI_BCAST(NI_AUX_F_BEAMS,nne*NION_BEAMS,MPI_REAL8, master, MPI_COMM_MYWORLD,ierr_mpi)
+               CALL MPI_BCAST(NI_AUX_Z_BEAMS,NION_BEAMS,MPI_INTEGER, master, MPI_COMM_MYWORLD,ierr_mpi)
+               CALL MPI_BCAST(NI_AUX_M_BEAMS,NION_BEAMS,MPI_REAL8, master, MPI_COMM_MYWORLD,ierr_mpi)
                CALL MPI_BCAST(TI_AUX_S_BEAMS,nti,MPI_REAL8, master, MPI_COMM_MYWORLD,ierr_mpi)
                CALL MPI_BCAST(TI_AUX_F_BEAMS,nti,MPI_REAL8, master, MPI_COMM_MYWORLD,ierr_mpi)
                CALL MPI_BCAST(ZEFF_AUX_S_BEAMS,nzeff,MPI_REAL8, master, MPI_COMM_MYWORLD,ierr_mpi)
