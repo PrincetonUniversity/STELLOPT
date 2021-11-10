@@ -108,6 +108,7 @@
          qdot(1:3) = q(4:6)
          qdot(4:6) = mycharge*(Efield(1:3)+VxB)/mymass
 
+         ! dA_phi/dt = F_phi/R
          qdot(2) = qdot(2)*rinv
          qdot(5) = qdot(5)*rinv
       ELSE
