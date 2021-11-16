@@ -6,11 +6,9 @@
   PWD1 = `pwd`
   #compiladores=intel   # cambiar para compilar con gnu
   compiladores=intel
-  #MYHOME = $(HOME)/STELLOPT/CIEMAT
-  MYHOME = $(HOME)/STELLOPT/CIEMAT/xintel
-  
-#  MYHOME = $(HOME)/STELLOPT/CIEMAT/x$(compiladores)
-#  MYHOME = $(HOME)/STELLOPT/CIEMAT/xTemp
+ # MYHOME = $(PWD)/../x$(compiladores)
+	
+  MYHOME = $(HOME)/STEL_CIEMAT_tst/xintel.debug/
 
   PRECOMP:= /lib/cpp -P -traditional -DLINUX
   COMPILE = $(FC)
@@ -49,10 +47,10 @@
             -I$(OPENBLAS_HOME)/include/ -I$(MPI_HOME)/include 
 
   #FLAGS_D = -g -O0 -fexternal-blas -fcheck=all -I/usr/include
-  FLAGS_D = -g -O0  -fcheck=all -I/usr/include -Wextra \
-   -Wtarget-lifetime -fbounds-check -ffpe-trap=zero -finit-real=snan\
-             -I$(OPENBLAS_HOME)/include/ \
-        	-I$(MPI_HOME)/include 
+  FLAGS_D = -g -O0 -check all -WB   -I/usr/include -I$(OPENBLAS_HOME)/include/ -I$(MPI_HOME)/include 
+
+	#-I/usr/include -Wextra .fcheck-all\
+   #-Wtarget-lifetime -fbounds-check -ffpe-trap=zero -finit-real=snan\
 
   LIBS    = -L$(OPENBLAS_HOME)/lib \
 		-lopenblas -lm -L$(SCALAPACK_HOME)/lib -lscalapack -lc \

@@ -179,7 +179,7 @@
       REAL(rprec), DIMENSION(nsd)   ::  target_stella_q1,sigma_stella_q1
       REAL(rprec), DIMENSION(nsd)   ::  target_stella_q2,sigma_stella_q2
       REAL(rprec), DIMENSION(nsd)   ::  target_raderb00,sigma_raderb00
-      REAL(rprec), DIMENSION(nsd)        :: target_gamma_c, sigma_gamma_c ! this is ganmma_c implennted in STELLOPT (?) (EdiSan)
+      REAL(rprec), DIMENSION(nsd)   ::  target_gamma_c, sigma_gamma_c ! this is ganmma_c implennted in STELLOPT (?) (EdiSan)
       REAL(rprec), DIMENSION(nu_max,nv_max) ::  target_separatrix, sigma_separatrix, &
                                                 r_separatrix, z_separatrix, phi_separatrix
       REAL(rprec), DIMENSION(nu_max,nv_max) ::  target_limiter, sigma_limiter, &
@@ -280,16 +280,16 @@
       INTEGER, PARAMETER :: jtarget_resjac     = 606
       INTEGER, PARAMETER :: jtarget_txport     = 607
       INTEGER, PARAMETER :: jtarget_dkes       = 608
-      INTEGER, PARAMETER :: jtarget_knosos_1nu = 6081
-      INTEGER, PARAMETER :: jtarget_knosos_snu = 6082
-      INTEGER, PARAMETER :: jtarget_knosos_sbp = 6083
-      INTEGER, PARAMETER :: jtarget_knosos_gmc = 6084
-      INTEGER, PARAMETER :: jtarget_knosos_gma = 6090
-      INTEGER, PARAMETER :: jtarget_knosos_qer = 6085
-      INTEGER, PARAMETER :: jtarget_knosos_vbt = 6086
-      INTEGER, PARAMETER :: jtarget_knosos_vbb = 6087
-      INTEGER, PARAMETER :: jtarget_knosos_wbw = 6088
-      INTEGER, PARAMETER :: jtarget_knosos_dbo = 6089
+!      INTEGER, PARAMETER :: jtarget_knosos_1nu = 6081
+!      INTEGER, PARAMETER :: jtarget_knosos_snu = 6082
+!      INTEGER, PARAMETER :: jtarget_knosos_sbp = 6083
+!      INTEGER, PARAMETER :: jtarget_knosos_gmc = 6084
+!      INTEGER, PARAMETER :: jtarget_knosos_gma = 6090
+!      INTEGER, PARAMETER :: jtarget_knosos_qer = 6085
+!      INTEGER, PARAMETER :: jtarget_knosos_vbt = 6086
+!      INTEGER, PARAMETER :: jtarget_knosos_vbb = 6087
+!      INTEGER, PARAMETER :: jtarget_knosos_wbw = 6088
+!      INTEGER, PARAMETER :: jtarget_knosos_dbo = 6089
       INTEGER, PARAMETER :: jtarget_stella_q1  = 6180
       INTEGER, PARAMETER :: jtarget_stella_q2  = 6181
       INTEGER, PARAMETER :: jtarget_jdotb      = 609
@@ -309,6 +309,16 @@
       INTEGER, PARAMETER :: jtarget_y          = 901
       INTEGER, PARAMETER :: jtarget_Rosenbrock_F   = 902
       INTEGER, PARAMETER :: jtarget_raderb00   = 903
+      INTEGER, PARAMETER :: jtarget_knosos_1nu = 910
+      INTEGER, PARAMETER :: jtarget_knosos_snu = 911
+      INTEGER, PARAMETER :: jtarget_knosos_sbp = 912
+      INTEGER, PARAMETER :: jtarget_knosos_gmc = 913
+      INTEGER, PARAMETER :: jtarget_knosos_gma = 914
+      INTEGER, PARAMETER :: jtarget_knosos_qer = 915
+      INTEGER, PARAMETER :: jtarget_knosos_vbt = 916
+      INTEGER, PARAMETER :: jtarget_knosos_vbb = 917
+      INTEGER, PARAMETER :: jtarget_knosos_wbw = 918
+      INTEGER, PARAMETER :: jtarget_knosos_dbo = 919
 
 
 
@@ -499,7 +509,7 @@
          CASE(jtarget_curvature_p2)
             WRITE(iunit, out_format) 'Maximum 2nd Principal Curvature'
          CASE(jtarget_raderb00)
-            WRITE(iunit, out_format) 'Radial derivative of B00'
+            WRITE(iunit, out_format) 'Radial derivative of B_00'
          CASE(jtarget_gamma_c)
             WRITE(iunit, out_format) 'Gamma_c'
       END SELECT
